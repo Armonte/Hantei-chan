@@ -128,6 +128,7 @@ LRESULT WINAPI WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
 			if(mf->HandleKeys(wParam));
 				return 0;
 		}
+		break;
 	case WM_LBUTTONDOWN:
 		if(!ImGui::GetIO().WantCaptureMouse)
 		{

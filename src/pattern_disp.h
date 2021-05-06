@@ -1,4 +1,5 @@
 #include <imgui.h>
+#include <imgui_stdlib.h>
 #include "framedata.h"
 
 inline void PatternDisplay(Sequence *seq)
@@ -24,21 +25,10 @@ inline void PatternDisplay(Sequence *seq)
 	ImGui::Text("%llu", seq->IF.size());
 	ImGui::EndChild();
 
-	constexpr float ptcnSpacing=22.f;
 	ImGui::SameLine();
 	ImGui::BeginChild("child2", ImVec2(ImGui::GetWindowWidth()-width-60,height), true, ImGuiWindowFlags_HorizontalScrollbar);
-	ImGui::SetNextItemWidth(ptcnSpacing);
-	ImGui::InputScalarN("##PTCN1", ImGuiDataType_S8, &seq->ptcn[0], 1, NULL, NULL, "%d");
-	ImGui::SetNextItemWidth(ptcnSpacing); ImGui::SameLine();
-	ImGui::InputScalarN("##PTCN2", ImGuiDataType_S8, &seq->ptcn[1], 1, NULL, NULL, "%d");
-	ImGui::SetNextItemWidth(ptcnSpacing); ImGui::SameLine();
-	ImGui::InputScalarN("##PTCN3", ImGuiDataType_S8, &seq->ptcn[2], 1, NULL, NULL, "%d");
-	ImGui::SetNextItemWidth(ptcnSpacing); ImGui::SameLine();
-	ImGui::InputScalarN("##PTCN4", ImGuiDataType_S8, &seq->ptcn[3], 1, NULL, NULL, "%d");
-	ImGui::SetNextItemWidth(ptcnSpacing); ImGui::SameLine();
-	ImGui::InputScalarN("PTCN", ImGuiDataType_S8, &seq->ptcn[4], 1, NULL, NULL, "%d");
-	///ImGui::SameLine();
-	//ImGui::Checkbox("##BPTCN", &seq->hasPtcn);
+	ImGui::SetNextItemWidth(140);
+	ImGui::InputText("Codename", &seq->codeName);
 	
 	ImGui::SetNextItemWidth(40.f);
 	ImGui::InputInt("PSTS", &seq->psts, 0, 0);

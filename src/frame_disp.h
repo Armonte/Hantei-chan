@@ -7,8 +7,8 @@ inline void FrameDisplay(Frame *frame)
 	//ImGui::SetNextItemWidth(width);
 	ImGui::InputInt("Sprite", &frame->AF.spriteId);
 	
-	ImGui::SetNextItemWidth(width);
-	ImGui::InputInt("Use .pat file", &frame->AF.usePat, 0, 0);
+	ImGui::Checkbox("Use .pat", &frame->AF.usePat); ImGui::SameLine(0.f, 20);
+	ImGui::Checkbox("Interpolate", &frame->AF.interpolation);
 
 	ImGui::SetNextItemWidth(width);
 	ImGui::InputInt("Jump to", &frame->AF.jump, 0, 0); ImGui::SameLine(0.f, 20); ImGui::SetNextItemWidth(width);
@@ -19,8 +19,7 @@ inline void FrameDisplay(Frame *frame)
 	ImGui::InputInt("Loop N times", &frame->AF.loopCount, 0, 0); ImGui::SameLine(0,20); ImGui::SetNextItemWidth(width);
 	ImGui::InputInt("End of loop", &frame->AF.loopEnd, 0, 0);
 
-	ImGui::SetNextItemWidth(width);
-	ImGui::InputInt("Interpolate?", &frame->AF.interpolation, 0, 0);
+	
 
 	ImGui::SetNextItemWidth(width);
 	ImGui::InputInt("X", &frame->AF.offset_x, 0, 0);
@@ -37,5 +36,14 @@ inline void FrameDisplay(Frame *frame)
 
 	ImGui::InputFloat3("Rot XYZ", frame->AF.rotation); 
 	ImGui::InputFloat2("Scale", frame->AF.scale);
+
+	ImGui::SetNextItemWidth(width);
+	ImGui::InputInt("FSNH", &frame->FSNH, 0, 0);
+	ImGui::SetNextItemWidth(width);
+	ImGui::InputInt("FSNA", &frame->FSNA, 0, 0);
+	ImGui::SetNextItemWidth(width);
+	ImGui::InputInt("FSNE", &frame->FSNE, 0, 0);
+	ImGui::SetNextItemWidth(width);
+	ImGui::InputInt("FSNI", &frame->FSNI, 0, 0);
 
 }

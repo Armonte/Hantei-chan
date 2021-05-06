@@ -7,10 +7,10 @@
 
 struct Frame_AF {
 	// rendering data
-	bool		active;
+	bool active;
 
-	int		spriteId;
-	int		usePat;
+	int spriteId;
+	bool usePat;
 
 	int		offset_y;
 	int		offset_x;
@@ -42,7 +42,7 @@ struct Frame_AF {
 
 	
 	int landJump; //Jumps to this frame if landing.
-	int interpolation; //Appears and the end of some effects. Seems to be an on/off bit.
+	bool interpolation; //Appears and the end of some effects. Seems to be a boolean value
 	int priority; // Default is 0. Used in throws and dodge.
 	int loopCount; //Times to loop, it's the frame just before the loop.
 	int loopEnd; //The frame number is not part of the loop.
@@ -100,13 +100,18 @@ struct Frame {
 
 	Hitbox	*hitboxes[33]{};
 	int nHitbox;
+
+	int FSNA;
+	int FSNH;
+	int FSNE;
+	int FSNI;
 };
 
 struct Sequence {
 	// sequence property data
 	std::string	name;
-
-	char ptcn[5];
+	std::string codeName;
+	
 	int psts;
 	int level;
 	int flag;

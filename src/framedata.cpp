@@ -10,7 +10,7 @@
 #include <iomanip>
 
 Sequence::Sequence():
-ptcn{}, psts(0), level(0), flag(0),
+psts(0), level(0), flag(0),
 empty(true),
 initialized(false)
 {}
@@ -297,6 +297,7 @@ static unsigned int *fd_frame_AF_load(unsigned int *data, const unsigned int *da
 			++data;
 		} else if (!memcmp(buf, "AFHK", 4)) {
 			frame->AF.interpolation = data[0];
+			assert(data[0] == 1);
 			++data;
 		} else if (!memcmp(buf, "AFPR", 4)) {
 			frame->AF.priority = data[0];
@@ -413,19 +414,19 @@ static unsigned int *fd_frame_load(unsigned int *data, const unsigned int *data_
 				
 				data = fd_frame_IF_load(data, data_end, frame->IF[n]);
 			}
-		}/*  else if (!memcmp(buf, "FSNA", 4)) {
-			unsigned int value = data[0];
+		}  else if (!memcmp(buf, "FSNA", 4)) {
+			frame->FSNA = data[0];
 			++data;
 		} else if (!memcmp(buf, "FSNH", 4)) {
-			unsigned int value = data[0];
+			frame->FSNH = data[0];
 			++data;
 		} else if (!memcmp(buf, "FSNE", 4)) {
-			unsigned int value = data[0];
+			frame->FSNE = data[0];
 			++data;
 		} else if (!memcmp(buf, "FSNI", 4)) {
-			unsigned int value = data[0];
+			frame->FSNI = data[0];
 			++data;
-		} */ else if (!memcmp(buf, "FEND", 4)) {
+		} else if (!memcmp(buf, "FEND", 4)) {
 			break;
 		}
 		
@@ -455,14 +456,18 @@ static unsigned int *fd_sequence_load(unsigned int *data, const unsigned int *da
 		++data;
 		
 		if (!memcmp(buf, "PTCN", 4)) {
-			//Seems to always be 1? No idea. Cancel related is my guess.
-			memcpy(seq->ptcn, data, 5);
-			assert(seq->ptcn[0] == 1 && 
-				seq->ptcn[1] == 0 &&
-				seq->ptcn[2] == 0 &&
-				seq->ptcn[3] == 0 &&
-				seq->ptcn[4] == 0);
-			data = (unsigned int *)(((unsigned char *)data)+5);
+			//Name in code. Seems to be unused in melty.
+			unsigned int len = data[0];
+			data += 1;
+
+			assert (len < 64);
+			char str[65];
+			memcpy(str, data, len);
+			str[len] = '\0';
+			
+			seq->codeName = str;
+			
+			data = (unsigned int *)(((unsigned char *)data)+len);
 		} else if (!memcmp(buf, "PSTS", 4)) {
 			//Maybe 技情報. Has to do with the kind of move?
 			//Doesn't appear = 0, Movement

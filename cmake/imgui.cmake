@@ -11,12 +11,14 @@ file(GLOB imgui_CPP
 add_library(imgui
 	"${imgui_PATH}/backends/imgui_impl_opengl3.cpp"
 	"${imgui_PATH}/backends/imgui_impl_win32.cpp"
+	"${imgui_PATH}/misc/cpp/imgui_stdlib.cpp"
 	${imgui_CPP}
 )
 
 target_include_directories(imgui PUBLIC
 	"${imgui_PATH}"
 	"${imgui_PATH}/backends"
+	"${imgui_PATH}/misc/cpp"
 	config
 )
 

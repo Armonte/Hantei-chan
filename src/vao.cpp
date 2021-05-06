@@ -7,7 +7,6 @@ Vao::Vao(AttribType _type, unsigned int _usage):
 type(_type), usage(_usage), loaded(false), stride(0), totalSize(0), vaoId(0), vboId(0),
 quadCount(nullptr), quadIndexes(nullptr)
 {
-	//glGenVertexArrays(1, &vaoId);
 	switch(type)
 	{
 	case F2F2:
@@ -21,7 +20,6 @@ quadCount(nullptr), quadIndexes(nullptr)
 
 Vao::~Vao()
 {
-	//glDeleteVertexArrays(1, &vaoId);
 	glDeleteBuffers(1, &vboId);
 	delete[] quadIndexes;
 }
@@ -87,7 +85,6 @@ void Vao::UpdateBuffer(int which, void *data, size_t count)
 
 void Vao::Bind()
 {
-	//glBindVertexArray(vaoId);
 	//Since we now have to keep the state ourselves.
 	glBindBuffer(GL_ARRAY_BUFFER, vboId);
 	switch(type)
