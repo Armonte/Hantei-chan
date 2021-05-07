@@ -25,6 +25,7 @@ private:
 	int style_idx = 0;
 	FrameData framedata;
 	CG cg;
+	int curPalette;
 
 
 	void DrawBack();

@@ -17,7 +17,8 @@ bool show_demo_window = false;
 
 MainFrame::MainFrame(ContextGl *context_):
 context(context_),
-mainPane(&render)
+mainPane(&render),
+curPalette(0)
 {
 	WarmStyle();
 
@@ -113,6 +114,19 @@ void MainFrame::DrawUi()
 					}
 				}
 
+				if (ImGui::MenuItem("Load palette")) 
+				{
+					std::string &&file = FileDialog(fileType::PAL);
+					if(!file.empty())
+					{
+						if(!cg.loadPalette(file.c_str()))
+						{
+							ImGui::OpenPopup(errorPopupId);	
+						}
+						render.SwitchImage(-1);
+					}
+				}
+
 
 				if (ImGui::MenuItem("Exit")) PostQuitMessage(0);
 				ImGui::EndMenu();
@@ -136,6 +150,18 @@ void MainFrame::DrawUi()
 				if (ImGui::BeginMenu("Background color"))
 				{
 					ImGui::ColorEdit3("##clearColor", (float*)&clearColor, ImGuiColorEditFlags_NoInputs);
+					ImGui::EndMenu();
+				}
+				if (ImGui::BeginMenu("Palette number"))
+				{
+					ImGui::SetNextItemWidth(80);
+					ImGui::InputInt("Palette", &curPalette);
+					if(curPalette >= cg.getPalNumber())
+						curPalette = cg.getPalNumber()-1;
+					else if(curPalette < 0)
+						curPalette = 0;
+					if(cg.changePaletteNumber(curPalette))
+						render.SwitchImage(-1);
 					ImGui::EndMenu();
 				}
 				ImGui::EndMenu();

@@ -44,8 +44,10 @@ struct CG_Image {
 
 class CG {
 protected:
+	unsigned int *origPalette;
 	unsigned int *palette;
-	
+	char *paletteData = nullptr;
+	int palMax = 0;
 
 	char				*m_data;
 	unsigned int			m_data_size;
@@ -90,7 +92,10 @@ protected:
 	const CG_Image	*get_image(unsigned int n);
 public:
 	bool m_loaded;
-	bool			load(const char *name);
+	bool load(const char *name);
+	bool loadPalette(const char *name);
+	bool changePaletteNumber(int number);
+	int getPalNumber();
 
 	void			free();
 

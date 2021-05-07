@@ -348,9 +348,76 @@ void CG::build_image_table() {
 
 }
 
+int CG::getPalNumber()
+{
+	return palMax;
+}
+
+bool CG::loadPalette(const char *name) {
+	if (paletteData) {
+		palette = origPalette;
+		delete[] paletteData;
+		palMax = 0;
+	}
+
+	unsigned int size;
+	char *data;
+	if (!ReadInMem(name, paletteData, size)) {
+		return false;
+	}
+
+	unsigned int *d = (unsigned int *)paletteData;
+	palMax = d[0];
+
+	//Quick filesize check to make sure it's valid.
+	if(palMax*0x400+4 > size)
+	{
+		delete[] paletteData;
+		paletteData = nullptr;
+		palMax = 0;
+		return false;
+	}
+
+	palette = d+1;
+
+	unsigned int *paletteIterator = palette;
+	for(int i = 0; i < palMax; i++)
+	{
+		unsigned int *p = paletteIterator;
+		for (int j = 0; j < 256; ++j) {
+			unsigned int v = *p;
+			unsigned int alpha = v>>24;
+			
+			alpha = (alpha != 0) ? 255 : 0;
+			
+			*p = (v&0xffffff) | (alpha<<24);
+			++p;
+		}
+		paletteIterator[0] &= 0xffffff;
+		paletteIterator += 0x100;
+	}
+}
+
+bool CG::changePaletteNumber(int number)
+{
+	if(paletteData && number < palMax && number >= 0)
+	{
+		unsigned int *d = (unsigned int *)paletteData;
+		palette = d + 1 + number * 0x100;
+		return true;
+	}
+	return false;
+}
+
 bool CG::load(const char *name) {
 	if (m_loaded) {
 		free();
+	}
+
+	if (paletteData) {
+		delete[] paletteData;
+		paletteData = nullptr;
+		palMax = 0;
 	}
 	
 	char *data;
@@ -369,8 +436,10 @@ bool CG::load(const char *name) {
 	
 	// palette data.
 	unsigned int *d = (unsigned int *)(data + 0x10);
-	d += 1;		// has palette data?
+	d += 1; // has palette data?
 	palette = d;
+	origPalette = d;
+	palMax = 1;
 	d += 0x800;	// There are 8 dupe palettes. The game doesn't use them. - always included.
 
 	unsigned int *p = palette;
@@ -433,23 +502,28 @@ bool CG::load(const char *name) {
 }
 
 void CG::free() {
+	if (paletteData) {
+		delete[] paletteData;
+	}
 	if (m_data) {
 		delete[] m_data;
 	}
-	m_data = 0;
+	palMax = 0;
+	paletteData = nullptr;
+	m_data = nullptr;
 	m_data_size = 0;
 	
 	if (pages) {
 		delete[] pages;
 	}
-	pages = 0;
+	pages = nullptr;
 	page_count = 0;
 	
-	m_indices = 0;
+	m_indices = nullptr;
 	
 	m_nimages = 0;
 	
-	m_align = 0;
+	m_align = nullptr;
 	m_nalign = 0;
 	
 	m_loaded = 0;

@@ -25,6 +25,10 @@ std::string FileDialog(int fileType)
 	{
 		ofn.lpstrFilter = "Graphics (*.cg)\0*.cg\0All\0*.*\0";
 	}
+	else if(fileType == fileType::PAL)
+	{
+		ofn.lpstrFilter = "Palette (*.pal)\0*.pal\0All\0*.*\0";
+	}
 	else
 	{
 		ofn.lpstrFilter = "All\0*.*\0";
