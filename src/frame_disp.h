@@ -22,10 +22,10 @@ inline void FrameDisplay(Frame *frame)
 	
 
 	ImGui::SetNextItemWidth(width);
-	ImGui::InputInt("X", &frame->AF.offset_x, 0, 0);
+	ImGui::DragInt("X", &frame->AF.offset_x);
 	ImGui::SameLine();
 	ImGui::SetNextItemWidth(width);
-	ImGui::InputInt("Y", &frame->AF.offset_y, 0, 0);
+	ImGui::DragInt("Y", &frame->AF.offset_y);
 
 	ImGui::InputInt("Duration", &frame->AF.duration, 0, 0);
 
@@ -34,8 +34,8 @@ inline void FrameDisplay(Frame *frame)
 	ImGui::InputInt("Blend Mode", &frame->AF.blend_mode, 0, 0);
 	ImGui::ColorEdit4("Color", frame->AF.rgba);
 
-	ImGui::InputFloat3("Rot XYZ", frame->AF.rotation); 
-	ImGui::InputFloat2("Scale", frame->AF.scale);
+	ImGui::DragFloat3("Rot XYZ", frame->AF.rotation, 0.005); 
+	ImGui::DragFloat2("Scale", frame->AF.scale, 0.1);
 
 	ImGui::SetNextItemWidth(width);
 	ImGui::InputInt("Boxes", &frame->nHitbox, 0, 0);

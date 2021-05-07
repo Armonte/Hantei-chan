@@ -47,6 +47,8 @@ public:
 	int x, offsetX;
 	int y, offsetY;
 	float scale;
+	float scaleX, scaleY;
+	float rotX, rotY, rotZ;
 	
 	Render();
 	void Draw();

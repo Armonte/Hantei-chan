@@ -3,6 +3,7 @@
 
 #include <glm/gtc/matrix_transform.hpp>
 #include <glm/gtc/type_ptr.hpp>
+#include <glm/gtc/constants.hpp>
 
 //Error
 #include <windows.h>
@@ -32,6 +33,7 @@ curImageId(-1),
 quadsToDraw(0),
 x(0), offsetX(0),
 y(0), offsetY(0),
+rotX(0), rotY(0), rotZ(0),
 blendingMode(normal)
 {
 	sSimple.BindAttrib("Position", 0);
@@ -70,7 +72,7 @@ blendingMode(normal)
 	glViewport(0, 0, clientRect.x, clientRect.y);
 	glEnable(GL_BLEND);
 	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-	glEnable(GL_DEPTH_TEST);
+	//glEnable(GL_DEPTH_TEST);
 }
 
 void Render::Draw()
@@ -82,25 +84,29 @@ void Render::Draw()
 		MessageBoxA(nullptr, ss.str().c_str(), "GL Error", MB_ICONSTOP);
 		//PostQuitMessage(1);
 	}
-	SetModelView(
-		glm::scale(
-			glm::translate(glm::mat4(1), glm::vec3(x,y,0)),
-			glm::vec3(scale, scale, 1.f)
-		)
-	);
+
+	//Lines
+	glm::mat4 view = glm::mat4(1.f);
+	view = glm::scale(view, glm::vec3(scale, scale, 1.f));
+	view = glm::translate(view, glm::vec3(x,y,0.f));
+	SetModelView(std::move(view));
 	glUniform1f(lAlphaS, 0.55f);
 	SetMatrix(lProjectionS);
 	vGeometry.Bind();
 	vGeometry.Draw(geoParts[LINES], 0, GL_LINES);
 
-	SetModelView(
-		glm::scale(
-			glm::translate(glm::mat4(1), glm::vec3(x+offsetX,y+offsetY,0)),
-			glm::vec3(scale, scale, 1.f)
-		)
-	);
- 	sTextured.Use();
-	
+	//Sprite
+	constexpr float tau = glm::pi<float>()*2.f;
+	view = glm::mat4(1.f);
+	view = glm::scale(view, glm::vec3(scale, scale, 1.f));
+	view = glm::translate(view, glm::vec3(x,y,0.f));
+	view = glm::rotate(view, rotZ*tau, glm::vec3(0.0, 0.f, 1.f));
+	view = glm::rotate(view, rotY*tau, glm::vec3(0.0, 1.f, 0.f));
+	view = glm::rotate(view, rotX*tau, glm::vec3(1.0, 0.f, 0.f));
+	view = glm::scale(view, glm::vec3(scaleX,scaleY,0));
+	view = glm::translate(view, glm::vec3(-128+offsetX,-224+offsetY,0.f));
+	SetModelView(std::move(view));
+	sTextured.Use();
 	SetMatrix(lProjectionT);
 	if(texture.isApplied)
 	{
@@ -110,9 +116,11 @@ void Render::Draw()
 		vSprite.Bind();
 		vSprite.Draw(0);
 	}
+	//Reset state
 	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 	glBlendEquation(GL_FUNC_ADD);
-	
+
+	//Boxes
 	sSimple.Use();
 	vGeometry.Bind();
 	//glUniform1f(lAlphaS, 0.6f);
@@ -133,7 +141,7 @@ void Render::SetMatrix(int lProjection)
 
 void Render::UpdateProj(float w, float h)
 {
-	projection = glm::ortho<float>(0, w, h, 0, -10.f, 10.f);
+	projection = glm::ortho<float>(0, w, h, 0, -1024.f, 1024.f);
 }
 
 void Render::SetCg(CG *cg_)

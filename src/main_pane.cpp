@@ -150,9 +150,14 @@ void MainPane::ForceUpdate()
 		auto &frame =  seq->frames[currFrame];
 		spriteId = frame.AF.spriteId;
 		render->GenerateHitboxVertices(frame.hitboxes, frame.nHitbox);
-		render->offsetX = (frame.AF.offset_x-128)*2;
-		render->offsetY = (frame.AF.offset_y-224)*2;
+		render->offsetX = (frame.AF.offset_x)*1;
+		render->offsetY = (frame.AF.offset_y)*1;
 		render->SetImageColor(frame.AF.rgba);
+		render->rotX = frame.AF.rotation[0];
+		render->rotY = frame.AF.rotation[1];
+		render->rotZ = frame.AF.rotation[2];
+		render->scaleX = frame.AF.scale[0];
+		render->scaleY = frame.AF.scale[1];
 		switch (frame.AF.blend_mode)
 		{
 		case 2:

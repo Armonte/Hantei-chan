@@ -250,29 +250,13 @@ ImageData *CG::draw_texture(unsigned int n, bool to_pow2_flg, bool draw_8bpp) {
 } 
 
 void CG::build_image_table() {
-	// Go through the entire align table and figure out
-	// how many images there are supposed to be.
-
-	/* This was in the header all the time
-	int max_page_ref = 0;
-	
-	for (unsigned int i = 0; i < m_nalign; ++i) {
-		if (m_align[i].source_image > max_page_ref) {
-			max_page_ref = m_align[i].source_image;
-		}
-	}
-	max_page_ref += 1;
-	*/
-
 
 	// Create new image table and initialize it.
 	pages = new Page[page_count];
 	memset(pages, 0, sizeof(Page) * page_count);
 
 	// Go through and initialize all the cells.
-
-	int maxCelln = 0;
-	
+	int maxCelln = 0;	
 	for (unsigned int i = 0; i < 0x3000; ++i) {
 		const CG_Image *image = get_image(i);
 		
@@ -469,15 +453,6 @@ bool CG::load(const char *name) {
 	}
 	
 	// alignment data
-	/* This is also in the header.
-	int align_count = (size - indices[3000]) / sizeof(CG_Alignment);
-	
-	if (align_count <= 0) {
-		delete[] data;
-		
-		return 0;
-	} */
-	
 	// store everything for lookup later
 	m_align = (CG_Alignment *)(data + indices[3000]);
 	

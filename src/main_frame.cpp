@@ -18,7 +18,8 @@ bool show_demo_window = false;
 MainFrame::MainFrame(ContextGl *context_):
 context(context_),
 mainPane(&render),
-curPalette(0)
+curPalette(0),
+x(200),y(150)
 {
 	WarmStyle();
 
@@ -52,8 +53,8 @@ void MainFrame::DrawBack()
 {
 	glClearColor(clearColor[0], clearColor[1], clearColor[2], 1.f);
 	glClear(GL_COLOR_BUFFER_BIT |  GL_DEPTH_BUFFER_BIT);
-	render.x = x+clientRect.x/2+150;
-	render.y = y+clientRect.y/2+150;
+	render.x = (x+clientRect.x/2)/render.scale;
+	render.y = (y+clientRect.y/2)/render.scale;
 	render.Draw();
 }
 
