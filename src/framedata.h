@@ -3,6 +3,7 @@
 
 #include <string>
 #include <vector>
+#include <unordered_map>
 #include "hitbox.h"
 
 struct Frame_AF {
@@ -98,11 +99,11 @@ struct Frame {
 	Frame_EF	*EF[8]{};
 	Frame_IF	*IF[8]{};
 
-	Hitbox	*hitboxes[33]{};
+	std::unordered_map<int, Hitbox> hitboxes;
 	int nHitbox;
 
-	int FSNA;
-	int FSNH;
+	//int FSNA; Highest attack box index + 1
+	//int FSNH; Highest hantei box index + 1
 	int FSNE;
 	int FSNI;
 };
@@ -120,7 +121,6 @@ struct Sequence {
 	bool initialized;
 
 	std::vector<Frame> frames;
-	std::vector<Hitbox> hitboxes;
 	std::vector<Frame_AT> AT;
 	std::vector<Frame_AS> AS;
 	std::vector<Frame_EF> EF;

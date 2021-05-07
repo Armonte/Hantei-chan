@@ -179,7 +179,7 @@ void Render::AdjustImageQuad(int x, int y, int w, int h)
 	imageVertex[9] = imageVertex[13] = imageVertex[17] = h;
 }
 
-void Render::GenerateHitboxVertices(Hitbox **hitboxes, int size)
+void Render::GenerateHitboxVertices(const std::unordered_map<int, Hitbox> &hitboxes, int size)
 {
 	if(size <= 0)
 	{
@@ -207,10 +207,10 @@ void Render::GenerateHitboxVertices(Hitbox **hitboxes, int size)
 		clientQuads.resize(floats);
 	
 	int dataI = 0;
-	for(int i = 0; i < maxBoxes; i++)
+	for(const auto &boxPair : hitboxes)
 	{
-		if(!hitboxes[i])
-			continue;
+		int i = boxPair.first;
+		const Hitbox& hitbox = boxPair.second;
 
 		if(i==0)
 			color = collisionColor;
@@ -231,8 +231,8 @@ void Render::GenerateHitboxVertices(Hitbox **hitboxes, int size)
 		for(int j = 0; j < 4*6; j+=6)
 		{
 			//X, Y, Z, R, G, B
-			clientQuads[dataI+j+0] = hitboxes[i]->x1 + (hitboxes[i]->x2-hitboxes[i]->x1)*tX[j/5];
-			clientQuads[dataI+j+1] = hitboxes[i]->y1 + (hitboxes[i]->y2-hitboxes[i]->y1)*tY[j/5];
+			clientQuads[dataI+j+0] = hitbox.x1 + (hitbox.x2-hitbox.x1)*tX[j/5];
+			clientQuads[dataI+j+1] = hitbox.y1 + (hitbox.y2-hitbox.y1)*tY[j/5];
 			clientQuads[dataI+j+2] = color[3];
 			clientQuads[dataI+j+3] = color[0];
 			clientQuads[dataI+j+4] = color[1];

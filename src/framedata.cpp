@@ -16,13 +16,21 @@ initialized(false)
 {}
 
 struct TempInfo {
+	struct DelayLoad
+	{
+		unsigned int frameNo;
+		unsigned int location;
+		unsigned int source;
+	};
 	Sequence	*seq;
-	
-	unsigned int	cur_hitbox;
-	unsigned int	cur_AT;
-	unsigned int	cur_AS;
-	unsigned int	cur_EF;
-	unsigned int	cur_IF;
+	std::vector<Hitbox*> boxesRefs;
+	std::vector<DelayLoad> delayLoadList;
+	unsigned int cur_hitbox;
+	unsigned int cur_AT;
+	unsigned int cur_AS;
+	unsigned int cur_EF;
+	unsigned int cur_IF;
+	unsigned int cur_frame;
 };
 
 // local recursive frame data loader
@@ -336,22 +344,22 @@ static unsigned int *fd_frame_load(unsigned int *data, const unsigned int *data_
 			if (!memcmp(buf, "HRAT", 4)) {
 				location += 25;
 			}
-			if (location <= 32 && info->cur_hitbox < info->seq->hitboxes.size()) {
-				Hitbox *hitbox = &info->seq->hitboxes[info->cur_hitbox];
+			if (location <= 32 && info->cur_hitbox < info->boxesRefs.size()) {
+				Hitbox *hitbox = info->boxesRefs[info->cur_hitbox] = &frame->hitboxes[location];
 				++info->cur_hitbox;
 				boxesCount++;
-				
-				frame->hitboxes[location] = hitbox;
+
 				hitbox->x1 = (data[1]);
 				hitbox->y1 = (data[2]);
 				hitbox->x2 = (data[3]);
 				hitbox->y2 = (data[4]);
 			}
+			else
+				assert(0);
 			
 			data += 5;
 		} else if (!memcmp(buf, "HRNS", 4) || !memcmp(buf, "HRAS", 4)) {
 			// read hitbox reference
-			// TODO: Load references only after sequence is loaded.
 			unsigned int location = data[0];
 			unsigned int source = data[1];
 			boxesCount++;
@@ -360,8 +368,8 @@ static unsigned int *fd_frame_load(unsigned int *data, const unsigned int *data_
 				location += 25;
 			}
 			
-			if (location <= 32 && source < info->cur_hitbox) {
-				frame->hitboxes[location] = &info->seq->hitboxes[source];
+			if (location <= 32) {
+				info->delayLoadList.push_back({info->cur_frame, location, source});
 			}
 			else
 				assert(0);
@@ -414,19 +422,20 @@ static unsigned int *fd_frame_load(unsigned int *data, const unsigned int *data_
 				
 				data = fd_frame_IF_load(data, data_end, frame->IF[n]);
 			}
-		}  else if (!memcmp(buf, "FSNA", 4)) {
+		}/*   else if (!memcmp(buf, "FSNA", 4)) {
 			frame->FSNA = data[0];
 			++data;
 		} else if (!memcmp(buf, "FSNH", 4)) {
 			frame->FSNH = data[0];
 			++data;
-		} else if (!memcmp(buf, "FSNE", 4)) {
+		}  */else if (!memcmp(buf, "FSNE", 4)) {
 			frame->FSNE = data[0];
 			++data;
 		} else if (!memcmp(buf, "FSNI", 4)) {
 			frame->FSNI = data[0];
 			++data;
 		} else if (!memcmp(buf, "FEND", 4)) {
+			//assert(frame->FSNA + frame->FSNH == frame->nHitbox);
 			break;
 		}
 		
@@ -537,7 +546,7 @@ static unsigned int *fd_sequence_load(unsigned int *data, const unsigned int *da
 
 				//Ended up a lot more simple huh
 				seq->frames.resize(data[1]);
-				seq->hitboxes.resize(data[2]);
+				temp_info.boxesRefs.resize(data[2]);
 				seq->EF.resize(data[3]);
 				seq->IF.resize(data[4]);
 				seq->AT.resize(data[5]);
@@ -554,7 +563,13 @@ static unsigned int *fd_sequence_load(unsigned int *data, const unsigned int *da
 		} else if (!memcmp(buf, "FSTR", 4)) {
 			if (seq->initialized && frame_it < nframes) {
 				Frame *frame = &seq->frames[frame_it];
+				temp_info.cur_frame = frame_it;
 				data = fd_frame_load(data, data_end, frame, &temp_info);
+				for(const auto &delayLoad : temp_info.delayLoadList)
+				{
+					Frame &frame = seq->frames[delayLoad.frameNo];
+					frame.hitboxes[delayLoad.location] = *temp_info.boxesRefs[delayLoad.source];
+				}
 			
 				++frame_it;
 			}

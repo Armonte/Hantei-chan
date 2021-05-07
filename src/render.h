@@ -7,6 +7,7 @@
 #include "vao.h"
 #include "hitbox.h"
 #include <vector>
+#include <unordered_map>
 #include <glm/mat4x4.hpp>
 
 class Render
@@ -51,7 +52,7 @@ public:
 	void Draw();
 	void UpdateProj(float w, float h);
 
-	void GenerateHitboxVertices(Hitbox **hitboxes, int size);
+	void GenerateHitboxVertices(const std::unordered_map<int, Hitbox> &hitboxes, int size);
 	void SetCg(CG *cg);
 	void SwitchImage(int id);
 	void DontDraw();

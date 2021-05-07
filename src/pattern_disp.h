@@ -9,8 +9,6 @@ inline void PatternDisplay(Sequence *seq)
 	float height = ImGui::GetTextLineHeightWithSpacing()*5.5;
 
 	ImGui::BeginChild("child", ImVec2(width, height), true);
-	ImGui::Text("Hitboxes:"); ImGui::SameLine(spacing);
-	ImGui::Text("%llu", seq->hitboxes.size());
 	
 	ImGui::Text("nAT:"); ImGui::SameLine(spacing);
 	ImGui::Text("%llu", seq->AT.size());

@@ -38,9 +38,7 @@ inline void FrameDisplay(Frame *frame)
 	ImGui::InputFloat2("Scale", frame->AF.scale);
 
 	ImGui::SetNextItemWidth(width);
-	ImGui::InputInt("FSNH", &frame->FSNH, 0, 0);
-	ImGui::SetNextItemWidth(width);
-	ImGui::InputInt("FSNA", &frame->FSNA, 0, 0);
+	ImGui::InputInt("Boxes", &frame->nHitbox, 0, 0);
 	ImGui::SetNextItemWidth(width);
 	ImGui::InputInt("FSNE", &frame->FSNE, 0, 0);
 	ImGui::SetNextItemWidth(width);
