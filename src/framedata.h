@@ -3,7 +3,7 @@
 
 #include <string>
 #include <vector>
-#include <unordered_map>
+
 #include "hitbox.h"
 
 struct Frame_AF {
@@ -99,7 +99,7 @@ struct Frame {
 	Frame_EF	*EF[8]{};
 	Frame_IF	*IF[8]{};
 
-	std::unordered_map<int, Hitbox> hitboxes;
+	BoxList hitboxes;
 	int nHitbox;
 
 	//int FSNA; Highest attack box index + 1

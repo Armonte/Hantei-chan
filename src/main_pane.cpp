@@ -158,6 +158,7 @@ void MainPane::ForceUpdate()
 		render->rotZ = frame.AF.rotation[2];
 		render->scaleX = frame.AF.scale[0];
 		render->scaleY = frame.AF.scale[1];
+		
 		switch (frame.AF.blend_mode)
 		{
 		case 2:

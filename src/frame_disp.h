@@ -37,6 +37,7 @@ inline void FrameDisplay(Frame *frame)
 	ImGui::DragFloat3("Rot XYZ", frame->AF.rotation, 0.005); 
 	ImGui::DragFloat2("Scale", frame->AF.scale, 0.1);
 
+
 	ImGui::SetNextItemWidth(width);
 	ImGui::InputInt("Boxes", &frame->nHitbox, 0, 0);
 	ImGui::SetNextItemWidth(width);

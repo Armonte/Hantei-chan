@@ -54,7 +54,7 @@ public:
 	void Draw();
 	void UpdateProj(float w, float h);
 
-	void GenerateHitboxVertices(const std::unordered_map<int, Hitbox> &hitboxes, int size);
+	void GenerateHitboxVertices(const BoxList &hitboxes, int size);
 	void SetCg(CG *cg);
 	void SwitchImage(int id);
 	void DontDraw();

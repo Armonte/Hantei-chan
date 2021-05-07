@@ -23,6 +23,7 @@ private:
 	ContextGl *context;
 	float clearColor[3];
 	int style_idx = 0;
+	int zoom_idx = 2;
 	FrameData framedata;
 	CG cg;
 	int curPalette;

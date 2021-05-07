@@ -267,10 +267,12 @@ static unsigned int *fd_frame_AF_load(unsigned int *data, const unsigned int *da
 			char t = ((char *)buf)[3];
 			if (t >= '0' && t <= '9') {
 				frame->AF.aniFlag = t - '0';
-			} else if (t == 'X') {
+			} else if (t == 'E') {
 				frame->AF.aniFlag = data[0];
 				++data;
 			}
+			else
+				assert(0 && "Unknown AFF suffix.");
 		} else if (!memcmp(buf, "AFAL", 4)) {
 			frame->AF.blend_mode = data[0];
 			frame->AF.rgba[3] = ((float)data[1])/255.f;
@@ -319,12 +321,20 @@ static unsigned int *fd_frame_AF_load(unsigned int *data, const unsigned int *da
 		} else if (!memcmp(buf, "AFJC", 4)) {
 			frame->AF.landJump = data[0];
 			++data;
+		} else if (!memcmp(buf, "AFTN", 4)) {
+			//Overrides rotation
+			frame->AF.rotation[0] = data[0] ? 0.5f : 0.f;
+			frame->AF.rotation[1] = data[1] ? 0.5f : 0.f;
+			data += 2;
 		} else if (!memcmp(buf, "AFED", 4)) {
 			break;
 		}
+		else
+		{
+			assert(0 && "Unknown tag");
+		}
 		
 		// unhandled:
-		// AFTN(2)
 		// AFRT(1)
 	}
 	
@@ -540,8 +550,7 @@ static unsigned int *fd_sequence_load(unsigned int *data, const unsigned int *da
 			// data[5] = AT count
 			// data[6] = unused
 			// data[7] = AS count
-			// from this we can tell what's referenced
-			// and what's static for each frame. yay!
+			// data[8] = frame count
 			if (data[0] == 32) {
 
 				//Ended up a lot more simple huh
@@ -554,12 +563,14 @@ static unsigned int *fd_sequence_load(unsigned int *data, const unsigned int *da
 
 				nframes = data[1];
 
-				//The eight integer seems to also be the frame count.
 				assert(data[8] == data[1]); //Just to make sure.
 
 				seq->initialized = 1;
 			}
+			else
+				assert(0 && "PSD2 size is not 32");
 			data += 1 + (data[0]/4);
+
 		} else if (!memcmp(buf, "FSTR", 4)) {
 			if (seq->initialized && frame_it < nframes) {
 				Frame *frame = &seq->frames[frame_it];

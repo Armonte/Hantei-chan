@@ -165,6 +165,21 @@ void MainFrame::DrawUi()
 						render.SwitchImage(-1);
 					ImGui::EndMenu();
 				}
+				if (ImGui::BeginMenu("Zoom level"))
+				{
+					ImGui::SetNextItemWidth(80);
+					if (ImGui::Combo("Zoom", &zoom_idx, "x0.5\0x1\0x2\0x3\0"))
+					{
+						switch (zoom_idx)
+						{
+						case 0: render.scale = 0.5f; break;
+						case 1: render.scale = 1.f; break;
+						case 2: render.scale = 2.f; break;
+						case 3: render.scale = 3.f; break;
+						}
+					}
+					ImGui::EndMenu();
+				}
 				ImGui::EndMenu();
 			}
 			if (ImGui::BeginMenu("About"))
