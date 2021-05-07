@@ -72,7 +72,7 @@ blendingMode(normal)
 	glViewport(0, 0, clientRect.x, clientRect.y);
 	glEnable(GL_BLEND);
 	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-	//glEnable(GL_DEPTH_TEST);
+	glEnable(GL_DEPTH_TEST);
 }
 
 void Render::Draw()
@@ -241,7 +241,7 @@ void Render::GenerateHitboxVertices(const std::unordered_map<int, Hitbox> &hitbo
 			//X, Y, Z, R, G, B
 			clientQuads[dataI+j+0] = hitbox.x1 + (hitbox.x2-hitbox.x1)*tX[j/5];
 			clientQuads[dataI+j+1] = hitbox.y1 + (hitbox.y2-hitbox.y1)*tY[j/5];
-			clientQuads[dataI+j+2] = color[3];
+			clientQuads[dataI+j+2] = color[3]+1000.f;
 			clientQuads[dataI+j+3] = color[0];
 			clientQuads[dataI+j+4] = color[1];
 			clientQuads[dataI+j+5] = color[2];
