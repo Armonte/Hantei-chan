@@ -38,33 +38,60 @@ struct TempInfo {
 static unsigned int *fd_frame_AT_load(unsigned int *data, const unsigned int *data_end,
 				Frame_AT *AT) {
 	AT->active = 1;
-	AT->guard_flags = 0;
-	AT->proration = 0;
-	AT->proration_type = 0;
-	AT->damage = 0;
-	AT->red_damage = 0;
-	AT->circuit_gain = 0;
+	AT->correction = 100;
 	
 	while (data < data_end) {
 		unsigned int *buf = data;
 		++data;
 		
 		if (!memcmp(buf, "ATGD", 4)) {
+			//If absent it's UB
 			AT->guard_flags = data[0];
 			++data;
 		} else if (!memcmp(buf, "ATHS", 4)) {
-			AT->proration = data[0];
+			AT->correction = data[0];
 			++data;
 		} else if (!memcmp(buf, "ATVV", 4)) {
 			short *d = (short *)data;
 			AT->red_damage = d[0];
 			AT->damage = d[1];
-			AT->dmg_unknown = d[2];
-			AT->circuit_gain = d[3];
+			AT->guard_damage = d[2];
+			AT->meter_gain = d[3];
 			data += 2;
 		} else if (!memcmp(buf, "ATHT", 4)) {
-			AT->proration_type = data[0];
+			AT->correction_type = data[0];
+			assert(data[0] >= 1 && data[0] <= 2);
 			data += 1;
+		} else if (!memcmp(buf, "ATGV", 4)) {
+			//First number can be different from 3. See CMHisui's 421C
+			memcpy(AT->guardVector, data+1, sizeof(int)*data[0]);
+			data += data[0]+1;
+		} else if (!memcmp(buf, "ATHV", 4)) {
+			memcpy(AT->hitVector, data+1, sizeof(int)*data[0]);
+			data += data[0]+1;
+		} else if (!memcmp(buf, "ATF1", 4)) {
+			AT->otherFlags = data[0];
+			++data;
+		} else if (!memcmp(buf, "ATHE", 4)) {
+			AT->hitEffect = data[0];
+			AT->soundEffect = data[1];
+			data += 2;
+		} else if (!memcmp(buf, "ATKK", 4)) {
+			AT->addedEffect = data[0];
+			assert(data[0] < 5 && data[0] >= 0);
+			data++;
+		} else if (!memcmp(buf, "ATNG", 4)) {
+			AT->hitgrab = data[0];
+			assert(data[0] == 1);
+			data++;
+		} else if (!memcmp(buf, "ATED", 4)) {
+			break;
+		} else if (!memcmp(buf, "ATED", 4)) {
+			break;
+		} else if (!memcmp(buf, "ATED", 4)) {
+			break;
+		} else if (!memcmp(buf, "ATED", 4)) {
+			break;
 		} else if (!memcmp(buf, "ATED", 4)) {
 			break;
 		}
@@ -72,12 +99,6 @@ static unsigned int *fd_frame_AT_load(unsigned int *data, const unsigned int *da
 
 		
 		// unhandled:
-		// ATGV(V) - ?
-		// ATHV(V) - ?
-		// ATHE(2) - ?
-		// ATF1(1) - stun?
-		// ATKK(1) - ?
-		// ATNG(1) - ?
 		// ATUH(1) - ?
 		// ATGN(1) - ?
 		// ATBT(1) - ?
@@ -217,15 +238,8 @@ static unsigned int *fd_frame_AF_load(unsigned int *data, const unsigned int *da
 				Frame *frame) {
 	frame->AF.active = 1;
 	frame->AF.spriteId = -1;
-	frame->AF.usePat = 0;
-	frame->AF.offset_x = 0;
-	frame->AF.offset_y = 8;
 	frame->AF.duration = 1;
-	//frame->AF.aniFlag = -1;
-	frame->AF.blend_mode = 0;
-	frame->AF.has_zoom = 0;
-	//frame->AF.jump = -1;
-	
+
 	while (data < data_end) {
 		unsigned int *buf = data;
 		++data;
@@ -250,9 +264,10 @@ static unsigned int *fd_frame_AF_load(unsigned int *data, const unsigned int *da
 				++data;
 			}
 		} else if (!memcmp(buf, "AFY", 3)) {
-			// yeah i don't know.
 			// 7/8/9/X/1/2/3 -> 7/8/9/10/11/12/13
 			// other numbers are not used.
+			// Overrides AFOF
+			frame->AF.offset_x = 0;
 			char t = ((char *)buf)[3];
 			if (t >= '0' && t <= '9') {
 				int v = (t - '0');
@@ -296,7 +311,6 @@ static unsigned int *fd_frame_AF_load(unsigned int *data, const unsigned int *da
 			
 			++data;
 		} else if (!memcmp(buf, "AFZM", 4)) {
-			frame->AF.has_zoom = 1;
 			frame->AF.scale[0] = ((float *)data)[0];
 			frame->AF.scale[1] = ((float *)data)[1];
 			
@@ -307,7 +321,7 @@ static unsigned int *fd_frame_AF_load(unsigned int *data, const unsigned int *da
 			++data;
 		} else if (!memcmp(buf, "AFHK", 4)) {
 			frame->AF.interpolation = data[0];
-			assert(data[0] == 1);
+			assert(data[0] == 1); //b_arc uses 3????
 			++data;
 		} else if (!memcmp(buf, "AFPR", 4)) {
 			frame->AF.priority = data[0];
@@ -326,16 +340,19 @@ static unsigned int *fd_frame_AF_load(unsigned int *data, const unsigned int *da
 			frame->AF.rotation[0] = data[0] ? 0.5f : 0.f;
 			frame->AF.rotation[1] = data[1] ? 0.5f : 0.f;
 			data += 2;
+		} else if (!memcmp(buf, "AFRT", 4)) {
+			frame->AF.AFRT = data[0];
+			++data;
 		} else if (!memcmp(buf, "AFED", 4)) {
 			break;
 		}
 		else
 		{
-			assert(0 && "Unknown tag");
+			//assert(0 && "Unknown tag");
 		}
 		
 		// unhandled:
-		// AFRT(1)
+		// AFRT(1) No effect? Never seen it.
 	}
 	
 	return data;
@@ -410,10 +427,10 @@ static unsigned int *fd_frame_load(unsigned int *data, const unsigned int *data_
 				frame->AS = &info->seq->AS[value];
 			}
 		} else if (!memcmp(buf, "AFST", 4)) {
-			// start render frame block
+			// start animation flags block
 			data = fd_frame_AF_load(data, data_end, frame);
 		} else if (!memcmp(buf, "EFST", 4)) {
-			// start effect block
+			// start effect flags block
 			int n = data[0];
 			++data;
 			if (n < 8 && info->cur_EF < info->seq->EF.size()) {
@@ -423,7 +440,7 @@ static unsigned int *fd_frame_load(unsigned int *data, const unsigned int *data_
 				data = fd_frame_EF_load(data, data_end, frame->EF[n]);
 			}
 		} else if (!memcmp(buf, "IFST", 4)) {
-			// start cancel block
+			// start condition block
 			int n = data[0];
 			++data;
 			if (n < 8 && info->cur_IF < info->seq->IF.size()) {
@@ -432,13 +449,13 @@ static unsigned int *fd_frame_load(unsigned int *data, const unsigned int *data_
 				
 				data = fd_frame_IF_load(data, data_end, frame->IF[n]);
 			}
-		}/*   else if (!memcmp(buf, "FSNA", 4)) {
-			frame->FSNA = data[0];
+		} else if (!memcmp(buf, "FSNA", 4)) {
+			//Max index of used attack boxes + 1
 			++data;
 		} else if (!memcmp(buf, "FSNH", 4)) {
-			frame->FSNH = data[0];
+			//Max index of used hantei boxes + 1
 			++data;
-		}  */else if (!memcmp(buf, "FSNE", 4)) {
+		} else if (!memcmp(buf, "FSNE", 4)) {
 			frame->FSNE = data[0];
 			++data;
 		} else if (!memcmp(buf, "FSNI", 4)) {

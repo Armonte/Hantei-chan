@@ -3,21 +3,6 @@
 #include "frame_disp.h"
 #include <imgui.h>	
 
-
-/* static void HelpMarker(const char* desc)
-{
-    ImGui::TextDisabled("(?)");
-    if (ImGui::IsItemHovered())
-    {
-        ImGui::BeginTooltip();
-        ImGui::PushTextWrapPos(ImGui::GetFontSize() * 35.0f);
-        ImGui::TextUnformatted(desc);
-        ImGui::PopTextWrapPos();
-        ImGui::EndTooltip();
-    }
-}
- */
-
 MainPane::MainPane(Render* render_):
 frameData(nullptr),
 currentPattern(-1),
@@ -109,12 +94,21 @@ void MainPane::Draw()
 				ImGui::Text("%d/%d", currFrame+1, nframes+1);
 
 				Frame &frame = seq->frames[currFrame];
-				if (ImGui::TreeNode("Frame data"))
+				if(frame.AT)
+					AtDisplay(frame.AT);
+				if (ImGui::TreeNode("Animation data"))
 				{
-					FrameDisplay(&frame);
+					AfDisplay(&frame.AF);
 					ImGui::TreePop();
 					ImGui::Separator();
 				}
+				constexpr float width = 50.f;
+				ImGui::SetNextItemWidth(width);
+				ImGui::InputInt("Boxes", &frame.nHitbox, 0, 0);
+				ImGui::SetNextItemWidth(width);
+				ImGui::InputInt("FSNE", &frame.FSNE, 0, 0);
+				ImGui::SetNextItemWidth(width);
+				ImGui::InputInt("FSNI", &frame.FSNI, 0, 0);
 			}
 			else
 			{

@@ -32,8 +32,7 @@ struct Frame_AF {
 
 	float rotation[3]{}; //XYZ
 
-	bool		has_zoom;
-	float		scale[2]{1,1};//xy
+	float scale[2]{1,1};//xy
 
 	//Depends on aniflag.
 	//If (0)end, it jumps to the number of the sequence
@@ -48,6 +47,7 @@ struct Frame_AF {
 	int loopCount; //Times to loop, it's the frame just before the loop.
 	int loopEnd; //The frame number is not part of the loop.
 	
+	int AFRT;
 };
 
 struct Frame_AS {
@@ -68,15 +68,31 @@ struct Frame_AS {
 struct Frame_AT {
 	bool		active;
 
-	int		guard_flags;
+	unsigned int guard_flags;
+	unsigned int otherFlags;
 
-	int		proration;
-	int		proration_type;
+	int correction;
+	//default = 0, is set only if lower
+	//1 multiplicative
+	//2 substractive
+	int correction_type; 
 
-	int		damage;
-	int		red_damage;
-	int		dmg_unknown;
-	int		circuit_gain;
+	int damage;
+	int red_damage;
+	int guard_damage;
+	int meter_gain;
+
+	//Stand, Air, Crouch
+	int guardVector[3];
+	int hitVector[3];
+
+	int hitEffect;
+	int soundEffect; //Only used when hitEffect is "None"?
+
+	int addedEffect; //Visual effect after being hit, like fire.
+
+	bool hitgrab;
+
 };
 
 struct Frame_EF {

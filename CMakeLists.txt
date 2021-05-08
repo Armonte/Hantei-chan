@@ -23,7 +23,7 @@ add_executable(${EXE} WIN32
 	src/framedata.cpp
 	src/cg.cpp
 	src/misc.cpp
-	
+	src/imgui_utils.cpp
 	res/res.rc
 )
 
