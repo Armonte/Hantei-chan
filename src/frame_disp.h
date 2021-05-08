@@ -6,8 +6,7 @@
 
 inline void AtDisplay(Frame_AT *at)
 {
-	static const char* const hitEffectList[] =
-	{
+	const char* const hitEffectList[] = {
 		"Weak punch",
 		"Medium punch",
 		"Strong punch",
@@ -16,28 +15,51 @@ inline void AtDisplay(Frame_AT *at)
 		"Strong kick",
 		"Super punch",
 		"Super kick",
-		"Cut",
+		"Slash (sparks)",
 		"Burn",
 		"Freeze",
 		"Shock",
-		"Big light",
-		"Small light",
+		"Big light (SE only?)",
+		"Small light (SE only?)",
 		"None",
-		"hikari mabiki",
-		"kiri mabiki"
-		//Figure out the rest? Ryougi uses new ones
+		"Strong hit",
+		"Double slash",
+		"Super slash",
+		"Tiny cut",
+		"Fat cut",
+		"Big fat cut",
+		"Faint wave",
+		//Are there more is it OOB?
 	};
-	static const char* const addedEffectList[] =
-	{
+
+	const char* const addedEffectList[] = {
 		"None",
 		"Burn",
 		"Freeze",
 		"Shock",
 		"Confuse"
 	};
+
+	const char* const vectorFlags[] = {
+		"Default",
+		"Reverse",
+		"Nullify",
+		"Both?"
+	};
+
+	const char* const hitStopList[] = {
+		"Weak",
+		"Medium",
+		"Strong",
+		"None",
+		"Stronger",
+		"Strongest",
+		"Weakest"
+	};
 	
 	constexpr float width = 75.f;
 	unsigned int flagIndex = -1;
+
 	BitField("Guard Flags", &at->guard_flags, &flagIndex);
 	switch (flagIndex)
 	{
@@ -53,23 +75,37 @@ inline void AtDisplay(Frame_AT *at)
 	switch (flagIndex)
 	{
 		case 0: Tooltip("Enable chip damage"); break;
-		case 1: Tooltip("Can't KO(?)"); break;
-		case 2: Tooltip("Can't hit enemy on stun(?)"); break;
-		case 3: Tooltip("Not to be matched with? Not counterhitable?"); break;
-
-		case 5: Tooltip("Don't increase combo counter(?)"); break;
+		case 1: Tooltip("Can't KO"); break;
+		case 2: Tooltip("Make enemy unhittable"); break;
+		case 3: Tooltip("Can't be clashed with"); break;
+		case 4: Tooltip("Auto super jump cancel"); break;
+		case 5: Tooltip("Don't increase combo counter"); break;
 		case 6: Tooltip("Shake the screen on hit"); break;
+		case 7: Tooltip("Not air techable"); break;
 		case 8: Tooltip("Not ground techable (HKD)"); break;
 		case 9: Tooltip("Friendly fire(?)"); break;
 		case 10: Tooltip("No self hitstop"); break;
 		//TODO: Figure out the rest lol
 	}
 
-	ImGui::Checkbox("Hitgrab", &at->hitgrab);
+	ImGui::SetNextItemWidth(width*2);
+	ImGui::Combo("Hitstop", &at->hitStop, hitStopList, IM_ARRAYSIZE(hitStopList)); ImGui::SameLine(0.f, 20);
+	ImGui::SetNextItemWidth(width);
+	ImGui::InputInt("Custom##Hitstop", &at->hitStopTime, 0,0);
+
 
 	ImGui::SetNextItemWidth(width);
-	ImGui::InputInt("Correction %", &at->correction, 0, 0);
-	ImGui::Combo("Correction type", &at->correction_type, "Normal\0Multiplicative\0Substractive\0");
+	ImGui::InputInt("Untech time", &at->untechTime, 0,0);  ImGui::SameLine(0.f, 20); ImGui::SetNextItemWidth(width);
+	ImGui::InputInt("Circuit break time", &at->breakTime, 0,0);
+
+	ImGui::SetNextItemWidth(width);
+	ImGui::InputFloat("Extra gravity", &at->extraGravity, 0,0); ImGui::SameLine(0.f, 20);
+	ImGui::Checkbox("Hitgrab", &at->hitgrab);
+	
+
+	ImGui::SetNextItemWidth(width);
+	ImGui::InputInt("Correction %", &at->correction, 0, 0); ImGui::SameLine(0.f, 20); ImGui::SetNextItemWidth(width*2);
+	ImGui::Combo("Type##Correction", &at->correction_type, "Normal\0Multiplicative\0Substractive\0");
 
 	ImGui::SetNextItemWidth(width);
 	ImGui::InputInt("VS damage", &at->red_damage, 0, 0); ImGui::SameLine(0.f, 20); ImGui::SetNextItemWidth(width);
@@ -79,12 +115,35 @@ inline void AtDisplay(Frame_AT *at)
 	ImGui::InputInt("Guard damage", &at->guard_damage, 0, 0); ImGui::SameLine(0.f, 20); ImGui::SetNextItemWidth(width);
 	ImGui::InputInt("Meter gain", &at->meter_gain, 0, 0);
 
-
+	ImGui::Separator();
+	auto comboWidth = (ImGui::GetWindowWidth())/4.f;
 	ImGui::InputInt3("Guard Vector", at->guardVector);
+	for(int i = 0; i < 3; i++)
+	{	
+		ImGui::SetNextItemWidth(comboWidth);
+		if(i > 0)
+			ImGui::SameLine();
+		ImGui::PushID(i); 
+		ImGui::Combo("##GFLAG", &at->gVFlags[i], vectorFlags, IM_ARRAYSIZE(vectorFlags));
+		ImGui::PopID();
+	}
+
+	ImGui::Separator();
 	ImGui::InputInt3("Hit Vector", at->hitVector);
 	ImGui::SameLine(); ImGui::TextDisabled("(?)");
 	if(ImGui::IsItemHovered())
 		Tooltip("Stand, air and crouch.\nSee vector text file.");
+	
+	for(int i = 0; i < 3; i++)
+	{	
+		ImGui::SetNextItemWidth(comboWidth);
+		if(i > 0)
+			ImGui::SameLine();
+		ImGui::PushID(i); 
+		ImGui::Combo("##HFLAG", &at->hVFlags[i], vectorFlags, IM_ARRAYSIZE(vectorFlags));
+		ImGui::PopID();
+	}
+	ImGui::Separator();
 	
 	ImGui::SetNextItemWidth(150);
 	ImGui::Combo("Hit effect", &at->hitEffect, hitEffectList, IM_ARRAYSIZE(hitEffectList)); ImGui::SameLine(0, 20.f);

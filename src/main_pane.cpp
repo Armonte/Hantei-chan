@@ -86,19 +86,30 @@ void MainPane::Draw()
 				ImGui::SliderInt("##frameSlider", &currFrame, 0, nframes);
 				ImGui::SameLine();
 				ImGui::PushButtonRepeat(true);
-				if (ImGui::ArrowButton("##left", ImGuiDir_Left) && currFrame > 0) {currFrame--;}
+				if(ImGui::ArrowButton("##left", ImGuiDir_Left))
+					currFrame--;
 				ImGui::SameLine(0.0f, spacing);
-				if (ImGui::ArrowButton("##right", ImGuiDir_Right) && currFrame < nframes) {currFrame++;}
+				if(ImGui::ArrowButton("##right", ImGuiDir_Right))
+					currFrame++;
 				ImGui::PopButtonRepeat();
 				ImGui::SameLine();
 				ImGui::Text("%d/%d", currFrame+1, nframes+1);
 
+				if(currFrame < 0)
+					currFrame = 0;
+				else if(currFrame > nframes)
+					currFrame = nframes;
+
 				Frame &frame = seq->frames[currFrame];
-				if(frame.AT)
-					AtDisplay(frame.AT);
 				if (ImGui::TreeNode("Animation data"))
 				{
 					AfDisplay(&frame.AF);
+					ImGui::TreePop();
+					ImGui::Separator();
+				}
+				if (frame.AT && ImGui::TreeNode("Attack data"))
+				{
+					AtDisplay(frame.AT);
 					ImGui::TreePop();
 					ImGui::Separator();
 				}

@@ -85,14 +85,23 @@ struct Frame_AT {
 	//Stand, Air, Crouch
 	int guardVector[3];
 	int hitVector[3];
+	int gVFlags[3];
+	int hVFlags[3];
 
 	int hitEffect;
-	int soundEffect; //Only used when hitEffect is "None"?
+	int soundEffect; //Changes the audio
 
-	int addedEffect; //Visual effect after being hit, like fire.
+	int addedEffect; //Lasting visual effect after being hit
 
 	bool hitgrab;
 
+	//Affects untech time and launch vector, can be negative.
+	float extraGravity;
+
+	int breakTime;
+	int untechTime;
+	int hitStopTime; //Default value zero. Overrides common values.
+	int hitStop; //From common value list
 };
 
 struct Frame_EF {

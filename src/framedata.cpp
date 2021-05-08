@@ -64,10 +64,24 @@ static unsigned int *fd_frame_AT_load(unsigned int *data, const unsigned int *da
 			data += 1;
 		} else if (!memcmp(buf, "ATGV", 4)) {
 			//First number can be different from 3. See CMHisui's 421C
-			memcpy(AT->guardVector, data+1, sizeof(int)*data[0]);
+			//Second byte is a flag. Extract it separately.
+			assert(data[0] <= 3);
+			for(int i = 0; i < data[0]; i++)
+			{
+				AT->guardVector[i] = data[i+1] & 0xFF;
+				AT->gVFlags[i] = data[i+1] >> 8;
+				assert(AT->gVFlags[i] <= 3);
+			}
 			data += data[0]+1;
 		} else if (!memcmp(buf, "ATHV", 4)) {
-			memcpy(AT->hitVector, data+1, sizeof(int)*data[0]);
+			//Same
+			assert(data[0] <= 3);
+			for(int i = 0; i < data[0]; i++)
+			{
+				AT->hitVector[i] = data[i+1] & 0xFF;
+				AT->hVFlags[i] = data[i+1] >> 8;
+				assert(AT->hVFlags[i] <= 3);
+			}
 			data += data[0]+1;
 		} else if (!memcmp(buf, "ATF1", 4)) {
 			AT->otherFlags = data[0];
@@ -84,14 +98,21 @@ static unsigned int *fd_frame_AT_load(unsigned int *data, const unsigned int *da
 			AT->hitgrab = data[0];
 			assert(data[0] == 1);
 			data++;
-		} else if (!memcmp(buf, "ATED", 4)) {
-			break;
-		} else if (!memcmp(buf, "ATED", 4)) {
-			break;
-		} else if (!memcmp(buf, "ATED", 4)) {
-			break;
-		} else if (!memcmp(buf, "ATED", 4)) {
-			break;
+		} else if (!memcmp(buf, "ATUH", 4)) {
+			AT->extraGravity = ((float*)data)[0];
+			data++;
+		} else if (!memcmp(buf, "ATBT", 4)) {
+			AT->breakTime = data[0];
+			data++;
+		} else if (!memcmp(buf, "ATSN", 4)) {
+			AT->hitStopTime = data[0];
+			data++;
+		} else if (!memcmp(buf, "ATSU", 4)) {
+			AT->untechTime = data[0];
+			data++;
+		} else if (!memcmp(buf, "ATSP", 4)) {
+			AT->hitStop = data[0];
+			data++;
 		} else if (!memcmp(buf, "ATED", 4)) {
 			break;
 		}
@@ -99,13 +120,8 @@ static unsigned int *fd_frame_AT_load(unsigned int *data, const unsigned int *da
 
 		
 		// unhandled:
-		// ATUH(1) - ?
-		// ATGN(1) - ?
-		// ATBT(1) - ?
-		// ATSN(1) - ?
-		// ATSU(1) - ?
-		// ATSP(1) - ?
-		// (no others)
+		// ATGN(1) Does it even exist? Can't find it.
+		// More
 	}
 	
 	return data;
@@ -320,8 +336,9 @@ static unsigned int *fd_frame_AF_load(unsigned int *data, const unsigned int *da
 			assert(data[0] != 0);
 			++data;
 		} else if (!memcmp(buf, "AFHK", 4)) {
+			//Effects uses values other than 1.
+			//TODO: Look into it.
 			frame->AF.interpolation = data[0];
-			assert(data[0] == 1); //b_arc uses 3????
 			++data;
 		} else if (!memcmp(buf, "AFPR", 4)) {
 			frame->AF.priority = data[0];
@@ -348,11 +365,8 @@ static unsigned int *fd_frame_AF_load(unsigned int *data, const unsigned int *da
 		}
 		else
 		{
-			//assert(0 && "Unknown tag");
+			assert(0 && "Unknown AF tag");
 		}
-		
-		// unhandled:
-		// AFRT(1) No effect? Never seen it.
 	}
 	
 	return data;
