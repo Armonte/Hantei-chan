@@ -42,7 +42,8 @@ struct Frame_AF {
 
 	
 	int landJump; //Jumps to this frame if landing.
-	bool interpolation; //Appears and the end of some effects. Seems to be a boolean value
+	//1-5: Linear, Fast end, Slow end, Fast middle, Slow Middle. The last type is not used in vanilla
+	int interpolationType; 
 	int priority; // Default is 0. Used in throws and dodge.
 	int loopCount; //Times to loop, it's the frame just before the loop.
 	int loopEnd; //The frame number is not part of the loop.
@@ -102,6 +103,7 @@ struct Frame_AT {
 	int untechTime;
 	int hitStopTime; //Default value zero. Overrides common values.
 	int hitStop; //From common value list
+	int blockStopTime; //Needs flag 16 (0 indexed) to be set
 };
 
 struct Frame_EF {

@@ -8,6 +8,21 @@
 #include <cassert>
 #include <sstream>
 #include <iomanip>
+#include <iostream>
+
+struct TestInfo{
+	const char *filename;
+	std::string seqName;
+	int seqId;
+	int frame;
+
+	void Print(const void *data, const void *data_end)
+	{
+		std::cout <<filename<<" "<<seqName<<" "<<seqId<<":"<<frame<<"\t";
+		std::cout <<"Offsets: "<<(uint64_t)((const char*)data_end - (const char*)data) << "\n";
+	}
+
+} test;
 
 Sequence::Sequence():
 psts(0), level(0), flag(0),
@@ -33,8 +48,7 @@ struct TempInfo {
 	unsigned int cur_frame;
 };
 
-// local recursive frame data loader
-
+//Attack data
 static unsigned int *fd_frame_AT_load(unsigned int *data, const unsigned int *data_end,
 				Frame_AT *AT) {
 	AT->active = 1;
@@ -70,7 +84,7 @@ static unsigned int *fd_frame_AT_load(unsigned int *data, const unsigned int *da
 			{
 				AT->guardVector[i] = data[i+1] & 0xFF;
 				AT->gVFlags[i] = data[i+1] >> 8;
-				assert(AT->gVFlags[i] <= 3);
+				//Only old ckohamech has buggy flag values.
 			}
 			data += data[0]+1;
 		} else if (!memcmp(buf, "ATHV", 4)) {
@@ -80,11 +94,15 @@ static unsigned int *fd_frame_AT_load(unsigned int *data, const unsigned int *da
 			{
 				AT->hitVector[i] = data[i+1] & 0xFF;
 				AT->hVFlags[i] = data[i+1] >> 8;
-				assert(AT->hVFlags[i] <= 3);
 			}
 			data += data[0]+1;
 		} else if (!memcmp(buf, "ATF1", 4)) {
 			AT->otherFlags = data[0];
+/* 			if(AT->otherFlags & 1<<22)
+			{
+				test.Print(data, data_end);
+				std::cout << "Flag 22"<<"\n";
+			} */
 			++data;
 		} else if (!memcmp(buf, "ATHE", 4)) {
 			AT->hitEffect = data[0];
@@ -113,15 +131,19 @@ static unsigned int *fd_frame_AT_load(unsigned int *data, const unsigned int *da
 		} else if (!memcmp(buf, "ATSP", 4)) {
 			AT->hitStop = data[0];
 			data++;
+		} else if (!memcmp(buf, "ATGN", 4)) {
+			AT->blockStopTime = data[0];
+			data++;
 		} else if (!memcmp(buf, "ATED", 4)) {
 			break;
+		} else {
+			char tag[5]{};
+			memcpy(tag,buf,4);
+			test.Print(data, data_end);
+			std::cout <<"\tUnknown tag: " << tag <<"\n";
 		}
-		
 
-		
-		// unhandled:
-		// ATGN(1) Does it even exist? Can't find it.
-		// More
+		//Unhandled: None, unless they're not in the vanilla files.
 	}
 	
 	return data;
@@ -281,7 +303,6 @@ static unsigned int *fd_frame_AF_load(unsigned int *data, const unsigned int *da
 			}
 		} else if (!memcmp(buf, "AFY", 3)) {
 			// 7/8/9/X/1/2/3 -> 7/8/9/10/11/12/13
-			// other numbers are not used.
 			// Overrides AFOF
 			frame->AF.offset_x = 0;
 			char t = ((char *)buf)[3];
@@ -302,8 +323,10 @@ static unsigned int *fd_frame_AF_load(unsigned int *data, const unsigned int *da
 				frame->AF.aniFlag = data[0];
 				++data;
 			}
-			else
-				assert(0 && "Unknown AFF suffix.");
+			else {
+				test.Print(data, data_end);
+				std::cout <<"\tAFF uses uknown value: " << t <<"\n";
+			}
 		} else if (!memcmp(buf, "AFAL", 4)) {
 			frame->AF.blend_mode = data[0];
 			frame->AF.rgba[3] = ((float)data[1])/255.f;
@@ -336,9 +359,7 @@ static unsigned int *fd_frame_AF_load(unsigned int *data, const unsigned int *da
 			assert(data[0] != 0);
 			++data;
 		} else if (!memcmp(buf, "AFHK", 4)) {
-			//Effects uses values other than 1.
-			//TODO: Look into it.
-			frame->AF.interpolation = data[0];
+			frame->AF.interpolationType = data[0];
 			++data;
 		} else if (!memcmp(buf, "AFPR", 4)) {
 			frame->AF.priority = data[0];
@@ -362,19 +383,21 @@ static unsigned int *fd_frame_AF_load(unsigned int *data, const unsigned int *da
 			++data;
 		} else if (!memcmp(buf, "AFED", 4)) {
 			break;
+		} else {
+			char tag[5]{};
+			memcpy(tag,buf,4);
+			test.Print(data, data_end);
+			std::cout <<"\tUnknown tag: " << tag <<"\n";
 		}
-		else
-		{
-			assert(0 && "Unknown AF tag");
-		}
+		//Unhandled: None, unless they're not in the vanilla files.
 	}
-	
 	return data;
 }
 
 static unsigned int *fd_frame_load(unsigned int *data, const unsigned int *data_end,
 				Frame *frame, TempInfo *info) {
 	int boxesCount = 0;
+
 	while (data < data_end) {
 		unsigned int *buf = data;
 		++data;
@@ -501,6 +524,7 @@ static unsigned int *fd_sequence_load(unsigned int *data, const unsigned int *da
 	temp_info.cur_EF = 0;
 	temp_info.cur_IF = 0;
 	
+	
 	while (data < data_end) {
 		unsigned int *buf = data;
 		++data;
@@ -555,6 +579,7 @@ static unsigned int *fd_sequence_load(unsigned int *data, const unsigned int *da
 			
 			seq->name = str;
 			seq->name = sj2utf8(seq->name);
+			test.seqName = seq->name;
 
 			data += 1 + ((len+3)/4);
 		} else if (!memcmp(buf, "PTIT", 4)) {
@@ -606,6 +631,7 @@ static unsigned int *fd_sequence_load(unsigned int *data, const unsigned int *da
 			if (seq->initialized && frame_it < nframes) {
 				Frame *frame = &seq->frames[frame_it];
 				temp_info.cur_frame = frame_it;
+				test.frame = frame_it;
 				data = fd_frame_load(data, data_end, frame, &temp_info);
 				for(const auto &delayLoad : temp_info.delayLoadList)
 				{
@@ -620,6 +646,7 @@ static unsigned int *fd_sequence_load(unsigned int *data, const unsigned int *da
 				assert(0 && "Actual frame number and PDS2 don't match");
 			}
 		} else if (!memcmp(buf, "PEND", 4)) {
+			test.seqName = "";
 			break;
 		} else
 			assert(0);
@@ -646,6 +673,7 @@ static unsigned int *fd_main_load(unsigned int *data, const unsigned int *data_e
 			if (memcmp(data, "PEND", 4)) {
 				if (seq_id < nsequences) {
 					sequences[seq_id].empty = false;
+					test.seqId = seq_id;
 					data = fd_sequence_load(data, data_end, &sequences[seq_id]);
 				}
 			} else {
@@ -675,6 +703,8 @@ bool FrameData::load(const char *filename) {
 		
 		return 0;
 	}
+
+	
 	
 	// initialize the root
 	unsigned int *d = (unsigned int *)(data + 0x20);
@@ -683,6 +713,8 @@ bool FrameData::load(const char *filename) {
 		delete[] data;
 		return 0;
 	}
+
+	test.filename = filename;
 	
 	unsigned int sequence_count = d[1];
 	
@@ -698,6 +730,7 @@ bool FrameData::load(const char *filename) {
 	delete[] data;
 	
 	m_loaded = 1;
+	
 	
 	return 1;
 }

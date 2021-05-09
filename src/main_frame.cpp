@@ -23,8 +23,8 @@ x(200),y(150)
 {
 	WarmStyle();
 
-	framedata.load("test/akaakiha.HA6");
-	cg.load("test/akaakiha.cg");
+	framedata.load("data/akaakiha.HA6");
+	cg.load("data/akaakiha.cg");
 	mainPane.SetFrameData(&framedata);
 	render.SetCg(&cg);
 	render.scale = 2;

@@ -66,8 +66,14 @@ inline void AtDisplay(Frame_AT *at)
 		case 0: Tooltip("Stand blockable"); break;
 		case 1: Tooltip("Air blockable"); break;
 		case 2: Tooltip("Crouch blockable"); break;
+		case 8: Tooltip("Miss if enemy is standing?"); break;
+		case 9: Tooltip("Miss if enemy is airborne?"); break;
+		case 10: Tooltip("Miss if enemy is crouching?"); break;
+		case 11: Tooltip("Miss if enemy is in bound?"); break;
+		case 12: Tooltip("Miss if enemy is in blockstun?"); break;
 		case 13: Tooltip("Miss if OTG"); break;
-		//TODO: Figure out the rest lol
+		case 14: Tooltip("Hit only in bound?"); break;
+		case 15: Tooltip("Can't hit playable character?"); break;
 	}
 
 	flagIndex = -1;
@@ -83,10 +89,15 @@ inline void AtDisplay(Frame_AT *at)
 		case 6: Tooltip("Shake the screen on hit"); break;
 		case 7: Tooltip("Not air techable"); break;
 		case 8: Tooltip("Not ground techable (HKD)"); break;
-		case 9: Tooltip("Friendly fire(?)"); break;
+		case 9: Tooltip("Friendly fire?"); break;
 		case 10: Tooltip("No self hitstop"); break;
-		//TODO: Figure out the rest lol
+		case 16: Tooltip("Use custom blockstop"); break;
+		case 22: Tooltip("Mystery flag 22"); break;
+		case 25: Tooltip("No hitstop on multihit?"); break;
+		case 29: Tooltip("Block enemy blast during Stun?"); break;
 	}
+
+	ImGui::InputInt("Blockstop", &at->blockStopTime, 0,0);
 
 	ImGui::SetNextItemWidth(width*2);
 	ImGui::Combo("Hitstop", &at->hitStop, hitStopList, IM_ARRAYSIZE(hitStopList)); ImGui::SameLine(0.f, 20);
@@ -161,13 +172,24 @@ inline void AtDisplay(Frame_AT *at)
 
 inline void AfDisplay(Frame_AF *af)
 {
+	const char* const interpolationList[] = {
+		"None",
+		"Linear",
+		"Slow->Fast",
+		"Fast->Slow",
+		"Fast middle",
+		"Slow middle", //Not used, but it works.
+	};
+
 	constexpr float width = 50.f;
-	//ImGui::SetNextItemWidth(width);
 	ImGui::InputInt("AFRT", &af->AFRT, 0, 0);
-	ImGui::InputInt("Sprite", &af->spriteId);
+
+	ImGui::SetNextItemWidth(width*3);
+	ImGui::InputInt("Sprite", &af->spriteId); ImGui::SameLine(0, 20.f);
+	ImGui::Checkbox("Use .pat", &af->usePat);
+
 	
-	ImGui::Checkbox("Use .pat", &af->usePat); ImGui::SameLine(0.f, 20);
-	ImGui::Checkbox("Interpolate", &af->interpolation);
+	ImGui::Combo("Interpolation", &af->interpolationType, interpolationList, IM_ARRAYSIZE(interpolationList));
 
 	ImGui::SetNextItemWidth(width);
 	ImGui::InputInt("Jump to", &af->jump, 0, 0); ImGui::SameLine(0.f, 20); ImGui::SetNextItemWidth(width);

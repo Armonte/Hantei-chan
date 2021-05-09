@@ -1,6 +1,9 @@
 cmake_minimum_required(VERSION 3.13...3.19)
 project(ha6gui LANGUAGES C CXX)
 
+set(CMAKE_CXX_STANDARD 17)
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
+
 add_compile_options("$<$<C_COMPILER_ID:MSVC>:/utf-8>")
 add_compile_options("$<$<CXX_COMPILER_ID:MSVC>:/utf-8>")
 
@@ -24,6 +27,7 @@ add_executable(${EXE} WIN32
 	src/cg.cpp
 	src/misc.cpp
 	src/imgui_utils.cpp
+	src/test.cpp
 	res/res.rc
 )
 
@@ -37,3 +41,4 @@ if(MINGW)
 	message(status "With -municode")
 	target_link_options(${EXE} PRIVATE -municode)
 endif()
+

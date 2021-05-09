@@ -1,7 +1,7 @@
 .vscode
 .cache
 /win64
-/test
+/data
 
 *.ini
 *.exe
