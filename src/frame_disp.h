@@ -2,7 +2,71 @@
 #include "imgui_utils.h"
 #include "framedata.h"
 
+namespace im = ImGui;
 
+inline void AsDisplay(Frame_AS *as)
+{
+	const char* const stateList[] = {
+		"Standing",
+		"Airborne",
+		"Crouching"
+	};
+
+	const char* const cancelList[] = {
+		"Never",
+		"On hit",
+		"Always",
+		"On successful hit"
+	};
+
+	const char* const counterList[] = {
+		"No change",
+		"High counter",
+		"Low counter",
+		"Clear"
+	};
+
+	constexpr float width = 75.f;
+
+	unsigned int flagIndex = -1;
+	BitField("Movement Flags", &as->movementFlags, &flagIndex);
+	switch (flagIndex)
+	{
+		case 0: Tooltip("Set Y"); break;
+		case 4: Tooltip("Set X"); break;
+		case 1: Tooltip("Add Y"); break;
+		case 5: Tooltip("Add X"); break;
+	}
+
+
+	im::SetNextItemWidth(width*2);
+	im::InputInt2("Speed", as->speed); im::SameLine(0.f, 20); im::SetNextItemWidth(width); 
+	im::InputInt("Max speed X", &as->maxSpeedX, 0, 0);
+	im::SetNextItemWidth(width*2);
+	im::InputInt2("Accel", as->accel);
+	
+	im::Checkbox("Player can move", &as->canMove); //im::SameLine(0,20.f);
+
+	im::Combo("State", &as->stanceState, stateList, IM_ARRAYSIZE(stateList));
+	im::Combo("Cancel normal", &as->cancelNormal, cancelList, IM_ARRAYSIZE(cancelList));
+	im::Combo("Cancel special", &as->cancelSpecial, cancelList, IM_ARRAYSIZE(cancelList));
+	im::Combo("Counterhit", &as->counterType, counterList, IM_ARRAYSIZE(counterList));
+
+	im::Separator();
+	flagIndex = -1;
+	BitField("Sine flags", &as->sineFlags, &flagIndex, 8);
+	switch (flagIndex)
+	{
+		case 0: Tooltip("Use Y"); break;
+		case 4: Tooltip("Use X"); break;
+	}
+	im::InputInt4("Sinewave", as->sineParameters); im::SameLine();
+	im::TextDisabled("(?)");
+	if(im::IsItemHovered())
+		Tooltip("Sine parameters:\nX dist, Y dist\nX frequency, Y frequency");
+	im::InputFloat2("Phases", as->sinePhases);
+	im::Separator();
+}
 
 inline void AtDisplay(Frame_AT *at)
 {
@@ -97,74 +161,74 @@ inline void AtDisplay(Frame_AT *at)
 		case 29: Tooltip("Block enemy blast during Stun?"); break;
 	}
 
-	ImGui::InputInt("Blockstop", &at->blockStopTime, 0,0);
+	im::InputInt("Blockstop", &at->blockStopTime, 0,0);
 
-	ImGui::SetNextItemWidth(width*2);
-	ImGui::Combo("Hitstop", &at->hitStop, hitStopList, IM_ARRAYSIZE(hitStopList)); ImGui::SameLine(0.f, 20);
-	ImGui::SetNextItemWidth(width);
-	ImGui::InputInt("Custom##Hitstop", &at->hitStopTime, 0,0);
+	im::SetNextItemWidth(width*2);
+	im::Combo("Hitstop", &at->hitStop, hitStopList, IM_ARRAYSIZE(hitStopList)); im::SameLine(0.f, 20);
+	im::SetNextItemWidth(width);
+	im::InputInt("Custom##Hitstop", &at->hitStopTime, 0,0);
 
 
-	ImGui::SetNextItemWidth(width);
-	ImGui::InputInt("Untech time", &at->untechTime, 0,0);  ImGui::SameLine(0.f, 20); ImGui::SetNextItemWidth(width);
-	ImGui::InputInt("Circuit break time", &at->breakTime, 0,0);
+	im::SetNextItemWidth(width);
+	im::InputInt("Untech time", &at->untechTime, 0,0);  im::SameLine(0.f, 20); im::SetNextItemWidth(width);
+	im::InputInt("Circuit break time", &at->breakTime, 0,0);
 
-	ImGui::SetNextItemWidth(width);
-	ImGui::InputFloat("Extra gravity", &at->extraGravity, 0,0); ImGui::SameLine(0.f, 20);
-	ImGui::Checkbox("Hitgrab", &at->hitgrab);
+	im::SetNextItemWidth(width);
+	im::InputFloat("Extra gravity", &at->extraGravity, 0,0); im::SameLine(0.f, 20);
+	im::Checkbox("Hitgrab", &at->hitgrab);
 	
 
-	ImGui::SetNextItemWidth(width);
-	ImGui::InputInt("Correction %", &at->correction, 0, 0); ImGui::SameLine(0.f, 20); ImGui::SetNextItemWidth(width*2);
-	ImGui::Combo("Type##Correction", &at->correction_type, "Normal\0Multiplicative\0Substractive\0");
+	im::SetNextItemWidth(width);
+	im::InputInt("Correction %", &at->correction, 0, 0); im::SameLine(0.f, 20); im::SetNextItemWidth(width*2);
+	im::Combo("Type##Correction", &at->correction_type, "Normal\0Multiplicative\0Substractive\0");
 
-	ImGui::SetNextItemWidth(width);
-	ImGui::InputInt("VS damage", &at->red_damage, 0, 0); ImGui::SameLine(0.f, 20); ImGui::SetNextItemWidth(width);
-	ImGui::InputInt("Damage", &at->damage, 0, 0);
+	im::SetNextItemWidth(width);
+	im::InputInt("VS damage", &at->red_damage, 0, 0); im::SameLine(0.f, 20); im::SetNextItemWidth(width);
+	im::InputInt("Damage", &at->damage, 0, 0);
 
-	ImGui::SetNextItemWidth(width);
-	ImGui::InputInt("Guard damage", &at->guard_damage, 0, 0); ImGui::SameLine(0.f, 20); ImGui::SetNextItemWidth(width);
-	ImGui::InputInt("Meter gain", &at->meter_gain, 0, 0);
+	im::SetNextItemWidth(width);
+	im::InputInt("Guard damage", &at->guard_damage, 0, 0); im::SameLine(0.f, 20); im::SetNextItemWidth(width);
+	im::InputInt("Meter gain", &at->meter_gain, 0, 0);
 
-	ImGui::Separator();
-	auto comboWidth = (ImGui::GetWindowWidth())/4.f;
-	ImGui::InputInt3("Guard Vector", at->guardVector);
+	im::Separator();
+	auto comboWidth = (im::GetWindowWidth())/4.f;
+	im::InputInt3("Guard Vector", at->guardVector);
 	for(int i = 0; i < 3; i++)
 	{	
-		ImGui::SetNextItemWidth(comboWidth);
+		im::SetNextItemWidth(comboWidth);
 		if(i > 0)
-			ImGui::SameLine();
-		ImGui::PushID(i); 
-		ImGui::Combo("##GFLAG", &at->gVFlags[i], vectorFlags, IM_ARRAYSIZE(vectorFlags));
-		ImGui::PopID();
+			im::SameLine();
+		im::PushID(i); 
+		im::Combo("##GFLAG", &at->gVFlags[i], vectorFlags, IM_ARRAYSIZE(vectorFlags));
+		im::PopID();
 	}
 
-	ImGui::Separator();
-	ImGui::InputInt3("Hit Vector", at->hitVector);
-	ImGui::SameLine(); ImGui::TextDisabled("(?)");
-	if(ImGui::IsItemHovered())
+	im::Separator();
+	im::InputInt3("Hit Vector", at->hitVector);
+	im::SameLine(); im::TextDisabled("(?)");
+	if(im::IsItemHovered())
 		Tooltip("Stand, air and crouch.\nSee vector text file.");
 	
 	for(int i = 0; i < 3; i++)
 	{	
-		ImGui::SetNextItemWidth(comboWidth);
+		im::SetNextItemWidth(comboWidth);
 		if(i > 0)
-			ImGui::SameLine();
-		ImGui::PushID(i); 
-		ImGui::Combo("##HFLAG", &at->hVFlags[i], vectorFlags, IM_ARRAYSIZE(vectorFlags));
-		ImGui::PopID();
+			im::SameLine();
+		im::PushID(i); 
+		im::Combo("##HFLAG", &at->hVFlags[i], vectorFlags, IM_ARRAYSIZE(vectorFlags));
+		im::PopID();
 	}
-	ImGui::Separator();
+	im::Separator();
 	
-	ImGui::SetNextItemWidth(150);
-	ImGui::Combo("Hit effect", &at->hitEffect, hitEffectList, IM_ARRAYSIZE(hitEffectList)); ImGui::SameLine(0, 20.f);
-	ImGui::SetNextItemWidth(70);
-	ImGui::InputInt("ID##Hit effect", &at->hitEffect, 0, 0); 
+	im::SetNextItemWidth(150);
+	im::Combo("Hit effect", &at->hitEffect, hitEffectList, IM_ARRAYSIZE(hitEffectList)); im::SameLine(0, 20.f);
+	im::SetNextItemWidth(70);
+	im::InputInt("ID##Hit effect", &at->hitEffect, 0, 0); 
 	
-	ImGui::SetNextItemWidth(70);
-	ImGui::InputInt("Sound effect", &at->soundEffect, 0, 0); ImGui::SameLine(0, 20.f); ImGui::SetNextItemWidth(120);
+	im::SetNextItemWidth(70);
+	im::InputInt("Sound effect", &at->soundEffect, 0, 0); im::SameLine(0, 20.f); im::SetNextItemWidth(120);
 
-	ImGui::Combo("Added effect", &at->addedEffect, addedEffectList, IM_ARRAYSIZE(addedEffectList));
+	im::Combo("Added effect", &at->addedEffect, addedEffectList, IM_ARRAYSIZE(addedEffectList));
 
 
 
@@ -178,47 +242,47 @@ inline void AfDisplay(Frame_AF *af)
 		"Slow->Fast",
 		"Fast->Slow",
 		"Fast middle",
-		"Slow middle", //Not used, but it works.
+		"Slow middle", //Never used, but it works.
 	};
 
 	constexpr float width = 50.f;
-	ImGui::InputInt("AFRT", &af->AFRT, 0, 0);
+	im::InputInt("AFRT", &af->AFRT, 0, 0);
 
-	ImGui::SetNextItemWidth(width*3);
-	ImGui::InputInt("Sprite", &af->spriteId); ImGui::SameLine(0, 20.f);
-	ImGui::Checkbox("Use .pat", &af->usePat);
+	im::SetNextItemWidth(width*3);
+	im::InputInt("Sprite", &af->spriteId); im::SameLine(0, 20.f);
+	im::Checkbox("Use .pat", &af->usePat);
 
 	
-	ImGui::Combo("Interpolation", &af->interpolationType, interpolationList, IM_ARRAYSIZE(interpolationList));
+	im::Combo("Interpolation", &af->interpolationType, interpolationList, IM_ARRAYSIZE(interpolationList));
 
-	ImGui::SetNextItemWidth(width);
-	ImGui::InputInt("Jump to", &af->jump, 0, 0); ImGui::SameLine(0.f, 20); ImGui::SetNextItemWidth(width);
-	ImGui::InputInt("Landing frame", &af->landJump, 0, 0);
+	im::SetNextItemWidth(width);
+	im::InputInt("Jump to", &af->jump, 0, 0); im::SameLine(0.f, 20); im::SetNextItemWidth(width);
+	im::InputInt("Landing frame", &af->landJump, 0, 0);
 
-	ImGui::SetNextItemWidth(width);
-	ImGui::InputInt("Priority", &af->priority, 0, 0); ImGui::SetNextItemWidth(width);
-	ImGui::InputInt("Loop N times", &af->loopCount, 0, 0); ImGui::SameLine(0,20); ImGui::SetNextItemWidth(width);
-	ImGui::InputInt("End of loop", &af->loopEnd, 0, 0);
+	im::SetNextItemWidth(width);
+	im::InputInt("Priority", &af->priority, 0, 0); im::SetNextItemWidth(width);
+	im::InputInt("Loop N times", &af->loopCount, 0, 0); im::SameLine(0,20); im::SetNextItemWidth(width);
+	im::InputInt("End of loop", &af->loopEnd, 0, 0);
 
-	ImGui::SetNextItemWidth(width);
-	ImGui::DragInt("X", &af->offset_x);
-	ImGui::SameLine();
-	ImGui::SetNextItemWidth(width);
-	ImGui::DragInt("Y", &af->offset_y);
+	im::SetNextItemWidth(width);
+	im::DragInt("X", &af->offset_x);
+	im::SameLine();
+	im::SetNextItemWidth(width);
+	im::DragInt("Y", &af->offset_y);
 
-	ImGui::InputInt("Duration", &af->duration, 0, 0);
+	im::InputInt("Duration", &af->duration, 0, 0);
 
-	ImGui::InputInt("AniFlag", &af->aniFlag, 0, 0);
+	im::InputInt("AniFlag", &af->aniFlag, 0, 0);
 
 	int mode = af->blend_mode-1;
 	if(mode < 1)
 		mode = 0;
-	if (ImGui::Combo("Blend Mode", &mode, "Normal\0Additive\0Substractive\0"))
+	if (im::Combo("Blend Mode", &mode, "Normal\0Additive\0Substractive\0"))
 	{
 		af->blend_mode=mode+1;
 	}
-	ImGui::ColorEdit4("Color", af->rgba);
+	im::ColorEdit4("Color", af->rgba);
 
-	ImGui::DragFloat3("Rot XYZ", af->rotation, 0.005); 
-	ImGui::DragFloat2("Scale", af->scale, 0.1);
+	im::DragFloat3("Rot XYZ", af->rotation, 0.005); 
+	im::DragFloat2("Scale", af->scale, 0.1);
 }

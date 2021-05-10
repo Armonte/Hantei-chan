@@ -8,8 +8,6 @@
 
 struct Frame_AF {
 	// rendering data
-	bool active;
-
 	int spriteId;
 	bool usePat;
 
@@ -28,7 +26,7 @@ struct Frame_AF {
 
 	int		blend_mode;
 
-	float	rgba[4]{1,1,1,1};
+	float rgba[4]{1,1,1,1};
 
 	float rotation[3]{}; //XYZ
 
@@ -52,23 +50,36 @@ struct Frame_AF {
 };
 
 struct Frame_AS {
-	// state data
-	int		speed_flags;
-	int		speed_horz;
-	int		speed_vert;
-	int		accel_horz;
-	int		accel_vert;
+	
+	//Acceleration is always set if their corresponding XY speed flags are set.
+	//To only set accel, set the add flags with 0 speed. 
+	unsigned int movementFlags;
+	int speed[2];
+	int accel[2];
 
-	int		ASMV;
+	bool canMove;
 
-	int		stand_state;
+	int stanceState;
+	int cancelNormal;
+	int cancelSpecial;
+	int counterType;
 
-	int		cancel_flags;
+	int maxSpeedX;
+
+	//sinewave thing
+	//0 Flags - Similar to ASV0
+	//1 Distance X
+	//2 Distance Y
+	//3 Frames per cycle X
+	//4 Frames per cycle Y
+	//5 Phase. Use 0.75 for CCW circles
+	//6 Unknown. No effect?
+	unsigned int sineFlags;
+	int sineParameters[4];
+	float sinePhases[2];
 };
 
 struct Frame_AT {
-	bool		active;
-
 	unsigned int guard_flags;
 	unsigned int otherFlags;
 

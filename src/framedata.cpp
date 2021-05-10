@@ -51,7 +51,6 @@ struct TempInfo {
 //Attack data
 static unsigned int *fd_frame_AT_load(unsigned int *data, const unsigned int *data_end,
 				Frame_AT *AT) {
-	AT->active = 1;
 	AT->correction = 100;
 	
 	while (data < data_end) {
@@ -111,7 +110,6 @@ static unsigned int *fd_frame_AT_load(unsigned int *data, const unsigned int *da
 		} else if (!memcmp(buf, "ATKK", 4)) {
 			AT->addedEffect = data[0];
 			//Uni uses higher values.
-			//assert(data[0] < 5 && data[0] >= 0);
 			data++;
 		} else if (!memcmp(buf, "ATNG", 4)) {
 			//Melty only uses 1. UNI uses higher values.
@@ -141,10 +139,10 @@ static unsigned int *fd_frame_AT_load(unsigned int *data, const unsigned int *da
 			char tag[5]{};
 			memcpy(tag,buf,4);
 			test.Print(data, data_end);
-			std::cout <<"\tUnknown tag: " << tag <<"\n";
+			std::cout <<"\tUnknown AT tag: " << tag <<"\n";
 		}
 
-		//Unhandled: None, unless they're not in the vanilla files.
+		//Unhandled: None, unless they're not vanilla melty files.
 	}
 	
 	return data;
@@ -152,53 +150,73 @@ static unsigned int *fd_frame_AT_load(unsigned int *data, const unsigned int *da
 
 static unsigned int *fd_frame_AS_load(unsigned int *data, const unsigned int *data_end,
 				Frame_AS *AS) {
-	AS->speed_flags = 0;
-	AS->ASMV = -1;
-	
-	AS->stand_state = 0;
-	
-	AS->cancel_flags = 0;
-		
+
 	while (data < data_end) {
 		unsigned int *buf = data;
 		++data;
 		
 		if (!memcmp(buf, "ASV0", 4)) {
-			int *d = (int *)data;
-			AS->speed_flags = d[0];
-			AS->speed_horz = d[1];
-			AS->speed_vert = d[2];
-			AS->accel_horz = d[3];
-			AS->accel_vert = d[4];
+			AS->movementFlags = data[0];
+			AS->speed[0] = data[1];
+			AS->speed[1] = data[2];
+			AS->accel[0] = data[3];
+			AS->accel[1] = data[4];
 			data += 5;
 		} else if (!memcmp(buf, "ASVX", 4)) {
-			AS->speed_flags = 0x33; // ?
-			AS->speed_horz = 0;
-			AS->speed_vert = 0;
-			AS->accel_horz = 0;
-			AS->accel_vert = 0;
+			AS->movementFlags = 0x11; //Set only
+			AS->speed[0] = 0;
+			AS->speed[1] = 0;
+			AS->accel[0] = 0;
+			AS->accel[1] = 0;
 		} else if (!memcmp(buf, "ASMV", 4)) {
-			AS->ASMV = data[0];
+			AS->canMove = data[0];
+			if(AS->canMove != 1)
+			{
+				test.Print(data, data_end);
+				std::cout << "ASMV: "<<AS->canMove<<"\n";
+			}
 			++data;
 		} else if (!memcmp(buf, "ASS1", 4)) {
-			AS->stand_state = 1; // airborne
+			AS->stanceState = 1; // airborne
 		} else if (!memcmp(buf, "ASS2", 4)) {
-			AS->stand_state = 2; // crouching
+			AS->stanceState = 2; // crouching
 		} else if (!memcmp(buf, "ASCN", 4)) {
-			AS->cancel_flags |= 1;
+			AS->cancelNormal = data[0];
+			if(AS->cancelNormal > 3 || AS->cancelNormal < 0)
+			{
+				test.Print(data, data_end);
+				std::cout << "Cancel N: "<<AS->cancelNormal<<"\n";
+			}
+			data++;
 		} else if (!memcmp(buf, "ASCS", 4)) {
-			AS->cancel_flags |= 2;
+			AS->cancelSpecial = data[0];
+			if(AS->cancelSpecial > 3 || AS->cancelSpecial < 0)
+			{
+				test.Print(data, data_end);
+				std::cout << "Cancel S: "<<AS->cancelSpecial<<"\n";
+			}
 		} else if (!memcmp(buf, "ASCT", 4)) {
-			AS->cancel_flags |= 4;
-			/*
+			AS->counterType = data[0];
+			if(AS->counterType > 3 || AS->counterType < 0)
+			{
+				test.Print(data, data_end);
+				std::cout << "Counter T: "<<AS->counterType<<"\n";
+			}
+			data++;
 		} else if (!memcmp(buf, "AST0", 4)) {
-			float *d = (float *)(data+5);
-			printf("AST0: %d %d %d %d %d %1.10f %d\n",
-				data[0], data[1], data[2], data[3],
-				data[4], *d, data[6]);
-			
+			AS->sineFlags = data[0] & 0xFF; //Other values have no effect.
+			memcpy(AS->sineParameters, data+1, sizeof(int)*4);
+			AS->sinePhases[0] = ((float*)data)[5];
+			AS->sinePhases[1] = ((float*)data)[6];
+			if((data[0]&~0x11) != 0)
+			{
+				test.Print(data, data_end);
+				std::cout << "AST0 has nonstandard flags\n";
+			}
 			data += 7;
-			 */
+		} else if (!memcmp(buf, "ASMX", 4)) {
+			AS->maxSpeedX = data[0];
+			data++;
 		} else if (!memcmp(buf, "ASED", 4)) {
 			break;
 		}
@@ -209,7 +227,6 @@ static unsigned int *fd_frame_AS_load(unsigned int *data, const unsigned int *da
 		// ASF0(1) - ?
 		// ASF1(1) - ?
 		// ASYS(1) - ?
-		// AST0(7) - ??? Kohaku/Necos/Nero/Roa/Ryougi/Warakia only
 		// (no others)
 	}
 	
@@ -275,9 +292,10 @@ static unsigned int *fd_frame_IF_load(unsigned int *data, const unsigned int *da
 
 static unsigned int *fd_frame_AF_load(unsigned int *data, const unsigned int *data_end,
 				Frame *frame) {
-	frame->AF.active = 1;
 	frame->AF.spriteId = -1;
-	frame->AF.duration = 1;
+	//frame->AF.duration = 0;
+
+	//For UNI
 	int layerId = -1;
 	int spriteLayer = -1;
 
@@ -291,7 +309,7 @@ static unsigned int *fd_frame_AF_load(unsigned int *data, const unsigned int *da
 			frame->AF.usePat = dt[0];
 			assert(dt[0] == 0 || dt[0] == 1);
 			data += 2;
-		} if (!memcmp(buf, "AFGX", 4)) { //UNI only
+		} else if (!memcmp(buf, "AFGX", 4)) { //UNI only
 			int *dt = (int *)data;
 			//There can be multiple of these. Not gonna bother yet.
 			layerId = dt[0];
@@ -301,7 +319,6 @@ static unsigned int *fd_frame_AF_load(unsigned int *data, const unsigned int *da
 				frame->AF.usePat = dt[1];
 				spriteLayer = dt[0];
 			}
-			else
 			data += 3;
 		} else if (!memcmp(buf, "AFOF", 4) && layerId == spriteLayer) {
 			int *dt = (int *)data;
@@ -402,9 +419,9 @@ static unsigned int *fd_frame_AF_load(unsigned int *data, const unsigned int *da
 			char tag[5]{};
 			memcpy(tag,buf,4);
 			test.Print(data, data_end);
-			std::cout <<"\tUnknown tag: " << tag <<"\n";
+			std::cout <<"\tUnknown AF tag: " << tag <<"\n";
 		}
-		//Unhandled: None, unless they're not in the vanilla files.
+		//Unhandled: None, unless they're not in vanilla melty files.
 	}
 	return data;
 }
@@ -479,7 +496,7 @@ static unsigned int *fd_frame_load(unsigned int *data, const unsigned int *data_
 				frame->AS = &info->seq->AS[value];
 			}
 		} else if (!memcmp(buf, "AFST", 4)) {
-			// start animation flags block
+			// start animation block
 			data = fd_frame_AF_load(data, data_end, frame);
 		} else if (!memcmp(buf, "EFST", 4)) {
 			// start effect flags block
@@ -514,13 +531,12 @@ static unsigned int *fd_frame_load(unsigned int *data, const unsigned int *data_
 			frame->FSNI = data[0];
 			++data;
 		} else if (!memcmp(buf, "FEND", 4)) {
-			//assert(frame->FSNA + frame->FSNH == frame->nHitbox);
 			break;
 		}
-		
-		// unhandled:
-		// (no others)
+
 		frame->nHitbox=boxesCount;
+		// unhandled:
+		// ???
 	}
 	
 	return data;
@@ -613,7 +629,7 @@ static unsigned int *fd_sequence_load(unsigned int *data, const unsigned int *da
 		} else if (!memcmp(buf, "PDS2", 4)) {
 			// this is an allocation call
 			// format:
-			// data[0] = byte count // Always 32?
+			// data[0] = byte count. Always 32
 			// data[1] = frame count
 			// data[2] = hitbox count
 			// data[3] = EF count
@@ -623,8 +639,6 @@ static unsigned int *fd_sequence_load(unsigned int *data, const unsigned int *da
 			// data[7] = AS count
 			// data[8] = frame count
 			if (data[0] == 32) {
-
-				//Ended up a lot more simple huh
 				seq->frames.resize(data[1]);
 				temp_info.boxesRefs.resize(data[2]);
 				seq->EF.resize(data[3]);

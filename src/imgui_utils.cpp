@@ -12,7 +12,7 @@ void Tooltip(const char* desc)
 }
 
 //Snippet by JSandusky
-bool BitField(const char* label, unsigned* bits, unsigned* hoverIndex)
+bool BitField(const char* label, unsigned* bits, unsigned* hoverIndex, int showBits)
 	{
 		using namespace ImGui;
 		unsigned val = *bits;
@@ -32,7 +32,7 @@ bool BitField(const char* label, unsigned* bits, unsigned* hoverIndex)
 
 		bool anyPressed = false;
 		ImVec2 currentPos = window->DC.CursorPos;
-		for (unsigned i = 0; i < 32; ++i)
+		for (unsigned i = 0; i < showBits; ++i)
 		{
 			const void* lbl = (void*)(label + i);
 			const ImGuiID localId = window->GetID(lbl);

@@ -101,6 +101,10 @@ void MainPane::Draw()
 					currFrame = nframes;
 
 				Frame &frame = seq->frames[currFrame];
+				if(frame.AS)
+				{
+					AsDisplay(frame.AS);
+				}
 				if (ImGui::TreeNode("Animation data"))
 				{
 					AfDisplay(&frame.AF);
