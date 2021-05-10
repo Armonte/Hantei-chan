@@ -356,13 +356,20 @@ bool CG::loadPalette(const char *name) {
 	//Quick filesize check to make sure it's valid.
 	if(palMax*0x400+4 > size)
 	{
-		delete[] paletteData;
-		paletteData = nullptr;
-		palMax = 0;
-		return false;
+		palMax = d[3];
+		if(palMax*0x400+4*4 > size)
+		{
+			delete[] paletteData;
+			paletteData = nullptr;
+			palMax = 0;
+			return false;
+		}
+		paletteOffset = 4;
 	}
+	else
+		paletteOffset = 1;
 
-	palette = d+1;
+	palette = d+paletteOffset;
 
 	unsigned int *paletteIterator = palette;
 	for(int i = 0; i < palMax; i++)
@@ -380,6 +387,7 @@ bool CG::loadPalette(const char *name) {
 		paletteIterator[0] &= 0xffffff;
 		paletteIterator += 0x100;
 	}
+	return true;
 }
 
 bool CG::changePaletteNumber(int number)
@@ -387,7 +395,7 @@ bool CG::changePaletteNumber(int number)
 	if(paletteData && number < palMax && number >= 0)
 	{
 		unsigned int *d = (unsigned int *)paletteData;
-		palette = d + 1 + number * 0x100;
+		palette = d + paletteOffset + number * 0x100;
 		return true;
 	}
 	return false;

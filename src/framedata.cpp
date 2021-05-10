@@ -110,11 +110,12 @@ static unsigned int *fd_frame_AT_load(unsigned int *data, const unsigned int *da
 			data += 2;
 		} else if (!memcmp(buf, "ATKK", 4)) {
 			AT->addedEffect = data[0];
-			assert(data[0] < 5 && data[0] >= 0);
+			//Uni uses higher values.
+			//assert(data[0] < 5 && data[0] >= 0);
 			data++;
 		} else if (!memcmp(buf, "ATNG", 4)) {
+			//Melty only uses 1. UNI uses higher values.
 			AT->hitgrab = data[0];
-			assert(data[0] == 1);
 			data++;
 		} else if (!memcmp(buf, "ATUH", 4)) {
 			AT->extraGravity = ((float*)data)[0];
@@ -277,6 +278,8 @@ static unsigned int *fd_frame_AF_load(unsigned int *data, const unsigned int *da
 	frame->AF.active = 1;
 	frame->AF.spriteId = -1;
 	frame->AF.duration = 1;
+	int layerId = -1;
+	int spriteLayer = -1;
 
 	while (data < data_end) {
 		unsigned int *buf = data;
@@ -288,7 +291,19 @@ static unsigned int *fd_frame_AF_load(unsigned int *data, const unsigned int *da
 			frame->AF.usePat = dt[0];
 			assert(dt[0] == 0 || dt[0] == 1);
 			data += 2;
-		} else if (!memcmp(buf, "AFOF", 4)) {
+		} if (!memcmp(buf, "AFGX", 4)) { //UNI only
+			int *dt = (int *)data;
+			//There can be multiple of these. Not gonna bother yet.
+			layerId = dt[0];
+			if(frame->AF.spriteId == -1 && dt[1] != 1)
+			{
+				frame->AF.spriteId = dt[2];
+				frame->AF.usePat = dt[1];
+				spriteLayer = dt[0];
+			}
+			else
+			data += 3;
+		} else if (!memcmp(buf, "AFOF", 4) && layerId == spriteLayer) {
 			int *dt = (int *)data;
 			frame->AF.offset_y = dt[1];
 			frame->AF.offset_x = dt[0];
@@ -327,29 +342,29 @@ static unsigned int *fd_frame_AF_load(unsigned int *data, const unsigned int *da
 				test.Print(data, data_end);
 				std::cout <<"\tAFF uses uknown value: " << t <<"\n";
 			}
-		} else if (!memcmp(buf, "AFAL", 4)) {
+		} else if (!memcmp(buf, "AFAL", 4) && layerId == spriteLayer) {
 			frame->AF.blend_mode = data[0];
 			frame->AF.rgba[3] = ((float)data[1])/255.f;
 			assert(data[0] >= 1 || data[0] <= 3 );
 			data += 2;
-		} else if (!memcmp(buf, "AFRG", 4)) {
+		} else if (!memcmp(buf, "AFRG", 4) && layerId == spriteLayer) {
 			frame->AF.rgba[0] = ((float)data[0])/255.f;
 			frame->AF.rgba[1] = ((float)data[1])/255.f;
 			frame->AF.rgba[2] = ((float)data[2])/255.f;
 			data += 3;
-		} else if (!memcmp(buf, "AFAZ", 4)) {
+		} else if (!memcmp(buf, "AFAZ", 4) && layerId == spriteLayer) {
 			frame->AF.rotation[2] = *(float *)data;
 			
 			++data;
-		} else if (!memcmp(buf, "AFAY", 4)) {
+		} else if (!memcmp(buf, "AFAY", 4) && layerId == spriteLayer) {
 			frame->AF.rotation[1] = *(float *)data;
 			
 			++data;
-		} else if (!memcmp(buf, "AFAX", 4)) {
+		} else if (!memcmp(buf, "AFAX", 4) && layerId == spriteLayer) {
 			frame->AF.rotation[0] = *(float *)data;
 			
 			++data;
-		} else if (!memcmp(buf, "AFZM", 4)) {
+		} else if (!memcmp(buf, "AFZM", 4) && layerId == spriteLayer) {
 			frame->AF.scale[0] = ((float *)data)[0];
 			frame->AF.scale[1] = ((float *)data)[1];
 			
@@ -373,7 +388,7 @@ static unsigned int *fd_frame_AF_load(unsigned int *data, const unsigned int *da
 		} else if (!memcmp(buf, "AFJC", 4)) {
 			frame->AF.landJump = data[0];
 			++data;
-		} else if (!memcmp(buf, "AFTN", 4)) {
+		} else if (!memcmp(buf, "AFTN", 4) && layerId == spriteLayer) {
 			//Overrides rotation
 			frame->AF.rotation[0] = data[0] ? 0.5f : 0.f;
 			frame->AF.rotation[1] = data[1] ? 0.5f : 0.f;

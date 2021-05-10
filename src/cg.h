@@ -48,6 +48,7 @@ protected:
 	unsigned int *palette;
 	char *paletteData = nullptr;
 	int palMax = 0;
+	int paletteOffset = 0;
 
 	char				*m_data;
 	unsigned int			m_data_size;
