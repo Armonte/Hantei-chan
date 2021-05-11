@@ -10,6 +10,8 @@
 #include <iomanip>
 #include <iostream>
 
+int aniflag_max = 0;
+
 struct TestInfo{
 	const char *filename;
 	std::string seqName;
@@ -161,6 +163,11 @@ static unsigned int *fd_frame_AS_load(unsigned int *data, const unsigned int *da
 			AS->speed[1] = data[2];
 			AS->accel[0] = data[3];
 			AS->accel[1] = data[4];
+			if((AS->movementFlags&~0x33) != 0)
+			{
+				test.Print(data, data_end);
+				std::cout << "Unknown ASV0 flags: "<<AS->movementFlags<<"\n";
+			}
 			data += 5;
 		} else if (!memcmp(buf, "ASVX", 4)) {
 			AS->movementFlags = 0x11; //Set only
@@ -195,6 +202,7 @@ static unsigned int *fd_frame_AS_load(unsigned int *data, const unsigned int *da
 				test.Print(data, data_end);
 				std::cout << "Cancel S: "<<AS->cancelSpecial<<"\n";
 			}
+			data++;
 		} else if (!memcmp(buf, "ASCT", 4)) {
 			AS->counterType = data[0];
 			if(AS->counterType > 3 || AS->counterType < 0)
@@ -217,17 +225,41 @@ static unsigned int *fd_frame_AS_load(unsigned int *data, const unsigned int *da
 		} else if (!memcmp(buf, "ASMX", 4)) {
 			AS->maxSpeedX = data[0];
 			data++;
+		} else if (!memcmp(buf, "ASAA", 4)) {
+			AS->hitsNumber = data[0];
+			data++;
+		} else if (!memcmp(buf, "ASYS", 4)) {
+			AS->invincibility = data[0];
+			if(data[0] > 4)
+			{
+				test.Print(data, data_end);
+				std::cout <<"\tUnknown ASYS value: " << data[0] <<"\n";
+			}
+			data++;
+		} else if (!memcmp(buf, "ASF", 3)) {
+			char t = ((char *)buf)[3];
+			if(t != '0' && t !='1')
+			{
+				test.Print(data, data_end);
+				std::cout <<"\tUnknown ASF suffix" << t <<"\n";
+			}
+			else
+			{
+				AS->statusFlags[t-'0'] = data[0];
+			}
+			/* test.Print(data, data_end);
+			std::cout <<"\t"<<data[0]<<"\n"; */
+			data++;
 		} else if (!memcmp(buf, "ASED", 4)) {
 			break;
+		} else {
+			char tag[5]{};
+			memcpy(tag,buf,4);
+			test.Print(data, data_end);
+			std::cout <<"\tUnknown AS tag: " << tag <<"\n";
 		}
 		
-		// unhandled:
-		// ASAA(1) - ???
-		// ASMX(1) - ?
-		// ASF0(1) - ?
-		// ASF1(1) - ?
-		// ASYS(1) - ?
-		// (no others)
+		//Unhandled: None, unless they're not vanilla melty files.
 	}
 	
 	return data;
@@ -349,8 +381,9 @@ static unsigned int *fd_frame_AF_load(unsigned int *data, const unsigned int *da
 			}
 		} else if (!memcmp(buf, "AFF", 3)) {
 			char t = ((char *)buf)[3];
-			if (t >= '0' && t <= '9') {
-				frame->AF.aniFlag = t - '0';
+			if (t >= '1' && t <= '2') {
+				//Only values 1 and 2 are used.
+				frame->AF.aniType = t - '0';
 			} else if (t == 'E') {
 				frame->AF.aniFlag = data[0];
 				++data;
@@ -359,6 +392,7 @@ static unsigned int *fd_frame_AF_load(unsigned int *data, const unsigned int *da
 				test.Print(data, data_end);
 				std::cout <<"\tAFF uses uknown value: " << t <<"\n";
 			}
+
 		} else if (!memcmp(buf, "AFAL", 4) && layerId == spriteLayer) {
 			frame->AF.blend_mode = data[0];
 			frame->AF.rgba[3] = ((float)data[1])/255.f;
@@ -759,27 +793,7 @@ bool FrameData::load(const char *filename) {
 	delete[] data;
 	
 	m_loaded = 1;
-	
-	
 	return 1;
-}
-
-static char *split_line(char **data) {
-	char *start = *data;
-	
-	while (*start == ' ' || *start == '\t') {
-		++start;
-	}
-	
-	char *p = start;
-	while (*p && *p != '\n' && *p != '\r') ++p;
-	
-	if (*p) {
-		*p++ = '\0';
-	}
-	*data = p;
-	
-	return start;
 }
 
 void FrameData::Free() {

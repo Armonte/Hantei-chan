@@ -28,7 +28,6 @@ private:
 	CG cg;
 	int curPalette;
 
-
 	void DrawBack();
 	void DrawUi();
 	void WarmStyle();

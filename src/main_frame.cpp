@@ -129,6 +129,7 @@ void MainFrame::DrawUi()
 				}
 
 
+
 				if (ImGui::MenuItem("Exit")) PostQuitMessage(0);
 				ImGui::EndMenu();
 			}
@@ -153,7 +154,7 @@ void MainFrame::DrawUi()
 					ImGui::ColorEdit3("##clearColor", (float*)&clearColor, ImGuiColorEditFlags_NoInputs);
 					ImGui::EndMenu();
 				}
-				if (ImGui::BeginMenu("Palette number"))
+				if (cg.getPalNumber() > 0 && ImGui::BeginMenu("Palette number"))
 				{
 					ImGui::SetNextItemWidth(80);
 					ImGui::InputInt("Palette", &curPalette);

@@ -26,7 +26,7 @@ bool BitField(const char* label, unsigned* bits, unsigned* hoverIndex, int showB
 		const ImGuiStyle& style = ImGui::GetStyle();
 		const ImGuiID id = window->GetID(label);
 		const ImVec2 label_size = CalcTextSize(label, 0x0, true);
-		const ImVec2 smallLabelSize = ImVec2(label_size.x * 0.5f, label_size.y * 0.5f);
+		const ImVec2 smallLabelSize = ImVec2(label_size.x * 0.5f * (showBits <= 16 ? 2 : 1), label_size.y * 0.5f  * (showBits <= 16 ? 2 : 1));
 
 		const float spacingUnit = 2.0f;
 
@@ -69,8 +69,8 @@ bool BitField(const char* label, unsigned* bits, unsigned* hoverIndex, int showB
 		}
 
 		const ImRect matrix_bb(window->DC.CursorPos,
-			{ window->DC.CursorPos.x + (smallLabelSize.y + style.FramePadding.y * 2) * 16 /*# of checks in a row*/ + smallLabelSize.y /*space between sets of 8*/ + 15 * spacingUnit /*spacing between each check*/,
-			  window->DC.CursorPos.y + ((smallLabelSize.y + style.FramePadding.y * 2) * 2 /*# of rows*/ + spacingUnit /*spacing between rows*/) });
+			{ window->DC.CursorPos.x + (smallLabelSize.y + style.FramePadding.y * 2) * (showBits <= 16 ? 8 : 16) /*# of checks in a row*/ + smallLabelSize.y /*space between sets of 8*/ + 15 * spacingUnit /*spacing between each check*/,
+			  window->DC.CursorPos.y + ((smallLabelSize.y + style.FramePadding.y * 2) * (showBits <= 16 ? 1 : 2) /*# of rows*/ + spacingUnit /*spacing between rows*/) });
 
 		ItemSize(matrix_bb, style.FramePadding.y);
 
@@ -79,7 +79,10 @@ bool BitField(const char* label, unsigned* bits, unsigned* hoverIndex, int showB
 		if (label_size.x > 0)
 			SameLine(0, style.ItemInnerSpacing.x);
 
-		const ImRect text_bb({ window->DC.CursorPos.x, window->DC.CursorPos.y + style.FramePadding.y }, { window->DC.CursorPos.x + label_size.x, window->DC.CursorPos.y + style.FramePadding.y + label_size.y });
+		const ImRect text_bb(
+			{ window->DC.CursorPos.x , window->DC.CursorPos.y + style.FramePadding.y },
+			{ window->DC.CursorPos.x + label_size.x, window->DC.CursorPos.y + style.FramePadding.y + label_size.y }
+		);
 		if (label_size.x > 0)
 		{
 			ItemSize(ImVec2(text_bb.GetWidth(), matrix_bb.GetHeight()), style.FramePadding.y);

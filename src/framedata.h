@@ -16,12 +16,15 @@ struct Frame_AF {
 
 	int		duration;
 
-	/* Animation flag
-	Default: End
+	/* Animation action
+	0 (default): End
 	1: Next
 	2: Jump to frame
 	*/
-	int		aniFlag;
+	int aniType;
+
+	// Bit flags. First 4 bits only
+	unsigned int aniFlag;
 
 
 	int		blend_mode;
@@ -56,6 +59,7 @@ struct Frame_AS {
 	unsigned int movementFlags;
 	int speed[2];
 	int accel[2];
+	int maxSpeedX;
 
 	bool canMove;
 
@@ -64,16 +68,15 @@ struct Frame_AS {
 	int cancelSpecial;
 	int counterType;
 
-	int maxSpeedX;
+	int hitsNumber;
+	int invincibility;
+	unsigned int statusFlags[2];
 
 	//sinewave thing
 	//0 Flags - Similar to ASV0
-	//1 Distance X
-	//2 Distance Y
-	//3 Frames per cycle X
-	//4 Frames per cycle Y
-	//5 Phase. Use 0.75 for CCW circles
-	//6 Unknown. No effect?
+	//1,2 Distance X,Y
+	//3,4 Frames per cycle X,Y
+	//5,6 Phases X,Y. Use (0.75, 0) for CCW circles
 	unsigned int sineFlags;
 	int sineParameters[4];
 	float sinePhases[2];

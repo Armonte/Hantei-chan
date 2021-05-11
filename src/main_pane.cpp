@@ -71,13 +71,6 @@ void MainPane::Draw()
 		auto seq = frameData->get_sequence(currentPattern);
 		if(seq)
 		{
-			if (ImGui::TreeNode("Pattern data"))
-			{
-				PatternDisplay(seq);
-				ImGui::TreePop();
-				ImGui::Separator();
-			}
-
 			int nframes = seq->frames.size() - 1;
 			if(nframes >= 0)
 			{			
@@ -99,11 +92,25 @@ void MainPane::Draw()
 					currFrame = 0;
 				else if(currFrame > nframes)
 					currFrame = nframes;
+			}
+			else
+				ImGui::Text("This pattern has no frames.");
 
+			ImGui::BeginChild("FrameInfo", {0, ImGui::GetWindowSize().y-ImGui::GetFrameHeight()*4}, false, ImGuiWindowFlags_HorizontalScrollbar);
+			if (ImGui::TreeNode("Pattern data"))
+			{
+				PatternDisplay(seq);
+				ImGui::TreePop();
+				ImGui::Separator();
+			}
+			if(nframes >= 0)
+			{
 				Frame &frame = seq->frames[currFrame];
-				if(frame.AS)
+				if(frame.AS && ImGui::TreeNode("State data"))
 				{
 					AsDisplay(frame.AS);
+					ImGui::TreePop();
+					ImGui::Separator();
 				}
 				if (ImGui::TreeNode("Animation data"))
 				{
@@ -125,17 +132,10 @@ void MainPane::Draw()
 				ImGui::SetNextItemWidth(width);
 				ImGui::InputInt("FSNI", &frame.FSNI, 0, 0);
 			}
-			else
-			{
-				ImGui::Text("This pattern has no frames.");
-			}
-
-
+			ImGui::EndChild();
 		}
 		else
-		{
 			ImGui::Text("This pattern is empty.");
-		}
 	}
 	else
 		render->DontDraw();

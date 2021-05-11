@@ -26,10 +26,18 @@ inline void AsDisplay(Frame_AS *as)
 		"Clear"
 	};
 
+	const char* const invulList[] = {
+		"None",
+		"High and mid",
+		"Low and mid",
+		"All but throw",
+		"Throw only"
+	};
+
 	constexpr float width = 75.f;
 
 	unsigned int flagIndex = -1;
-	BitField("Movement Flags", &as->movementFlags, &flagIndex);
+	BitField("Movement Flags", &as->movementFlags, &flagIndex, 8);
 	switch (flagIndex)
 	{
 		case 0: Tooltip("Set Y"); break;
@@ -38,19 +46,26 @@ inline void AsDisplay(Frame_AS *as)
 		case 5: Tooltip("Add X"); break;
 	}
 
-
 	im::SetNextItemWidth(width*2);
 	im::InputInt2("Speed", as->speed); im::SameLine(0.f, 20); im::SetNextItemWidth(width); 
-	im::InputInt("Max speed X", &as->maxSpeedX, 0, 0);
+	im::InputInt("Max X speed", &as->maxSpeedX, 0, 0);
 	im::SetNextItemWidth(width*2);
 	im::InputInt2("Accel", as->accel);
 	
-	im::Checkbox("Player can move", &as->canMove); //im::SameLine(0,20.f);
+	im::Separator();
+	flagIndex = -1;
+	BitField("Flagset 1", &as->statusFlags[0], &flagIndex);
+	BitField("Flagset 2", &as->statusFlags[1], &flagIndex);
 
+	im::SetNextItemWidth(width);
+	im::InputInt("Number of hits", &as->hitsNumber, 0, 0); im::SameLine(0,20.f);
+	im::Checkbox("Player can move", &as->canMove); //
 	im::Combo("State", &as->stanceState, stateList, IM_ARRAYSIZE(stateList));
+	im::Combo("Invincibility", &as->invincibility, invulList, IM_ARRAYSIZE(invulList));
+	im::Combo("Counterhit", &as->counterType, counterList, IM_ARRAYSIZE(counterList)); 
 	im::Combo("Cancel normal", &as->cancelNormal, cancelList, IM_ARRAYSIZE(cancelList));
 	im::Combo("Cancel special", &as->cancelSpecial, cancelList, IM_ARRAYSIZE(cancelList));
-	im::Combo("Counterhit", &as->counterType, counterList, IM_ARRAYSIZE(counterList));
+	
 
 	im::Separator();
 	flagIndex = -1;
@@ -245,6 +260,12 @@ inline void AfDisplay(Frame_AF *af)
 		"Slow middle", //Never used, but it works.
 	};
 
+	const char* const animationList[] = {
+		"End",
+		"Next",
+		"Go to"
+	};
+
 	constexpr float width = 50.f;
 	im::InputInt("AFRT", &af->AFRT, 0, 0);
 
@@ -252,27 +273,38 @@ inline void AfDisplay(Frame_AF *af)
 	im::InputInt("Sprite", &af->spriteId); im::SameLine(0, 20.f);
 	im::Checkbox("Use .pat", &af->usePat);
 
-	
-	im::Combo("Interpolation", &af->interpolationType, interpolationList, IM_ARRAYSIZE(interpolationList));
+	im::Separator();
+
+	unsigned int flagIndex = -1;
+	BitField("Animation flags", &af->aniFlag, &flagIndex, 4);
+	switch (flagIndex)
+	{
+		case 0: Tooltip("Unknown"); break;
+		case 1: Tooltip("Unknown"); break;
+		case 2: Tooltip("Unknown"); break;
+		case 3: Tooltip("Unknown"); break;
+	}
+
+	im::Combo("Animation", &af->aniType, animationList, IM_ARRAYSIZE(animationList));
 
 	im::SetNextItemWidth(width);
-	im::InputInt("Jump to", &af->jump, 0, 0); im::SameLine(0.f, 20); im::SetNextItemWidth(width);
+	im::InputInt("Go to", &af->jump, 0, 0); im::SameLine(0.f, 20); im::SetNextItemWidth(width);
 	im::InputInt("Landing frame", &af->landJump, 0, 0);
 
 	im::SetNextItemWidth(width);
 	im::InputInt("Priority", &af->priority, 0, 0); im::SetNextItemWidth(width);
 	im::InputInt("Loop N times", &af->loopCount, 0, 0); im::SameLine(0,20); im::SetNextItemWidth(width);
 	im::InputInt("End of loop", &af->loopEnd, 0, 0);
+	im::InputInt("Duration", &af->duration, 1, 0);
+
+	im::Separator();
+	im::Combo("Interpolation", &af->interpolationType, interpolationList, IM_ARRAYSIZE(interpolationList));
 
 	im::SetNextItemWidth(width);
 	im::DragInt("X", &af->offset_x);
 	im::SameLine();
 	im::SetNextItemWidth(width);
 	im::DragInt("Y", &af->offset_y);
-
-	im::InputInt("Duration", &af->duration, 0, 0);
-
-	im::InputInt("AniFlag", &af->aniFlag, 0, 0);
 
 	int mode = af->blend_mode-1;
 	if(mode < 1)
