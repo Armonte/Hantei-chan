@@ -63,7 +63,7 @@ int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE, PWSTR pCmdLine, int nCmdShow
 			return 0;
 		}
 	}
-
+	
 	WNDCLASSEX wc = {
 		sizeof(WNDCLASSEX),
 		CS_CLASSDC,

@@ -5,7 +5,8 @@ namespace fileType
 enum {
 	HA6,
 	CG,
-	PAL
+	PAL,
+	TXT
 };
 }
 

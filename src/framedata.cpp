@@ -589,6 +589,8 @@ static unsigned int *fd_sequence_load(unsigned int *data, const unsigned int *da
 	temp_info.cur_EF = 0;
 	temp_info.cur_IF = 0;
 	
+	std::string name, codename;
+	int level = 0, psts = 0, flag = 0;
 	
 	while (data < data_end) {
 		unsigned int *buf = data;
@@ -604,7 +606,7 @@ static unsigned int *fd_sequence_load(unsigned int *data, const unsigned int *da
 			memcpy(str, data, len);
 			str[len] = '\0';
 			
-			seq->codeName = str;
+			codename = str;
 			
 			data = (unsigned int *)(((unsigned char *)data)+len);
 		} else if (!memcmp(buf, "PSTS", 4)) {
@@ -616,17 +618,17 @@ static unsigned int *fd_sequence_load(unsigned int *data, const unsigned int *da
 			//4 必殺投げ　Some kouma grab
 			//5 他 Projectiles, but not effects.
 			//6 NAC's 96. 超必殺技
-			seq->psts = *data;
+			psts = *data;
 			assert(*data <= 6 && *data >= 0); //known values
 			++data;
 		} else if (!memcmp(buf, "PLVL", 4)) {
 			//Determines rebeat
-			seq->level = *data;
+			level = *data;
 			assert(*data > 0);
 			++data;
 		} else if (!memcmp(buf, "PFLG", 4)) {
 			//Unknown. Always 1?
-			seq->flag = *data;
+			flag = *data;
 			assert(*data == 1);
 			++data;
 		} else if (!memcmp(buf, "PDST", 4)) {
@@ -642,9 +644,9 @@ static unsigned int *fd_sequence_load(unsigned int *data, const unsigned int *da
 			memcpy(str, data+1, len);
 			str[len] = '\0';
 			
-			seq->name = str;
-			seq->name = sj2utf8(seq->name);
-			test.seqName = seq->name;
+			name = str;
+			name = sj2utf8(name);
+			test.seqName = name;
 
 			data += 1 + ((len+3)/4);
 		} else if (!memcmp(buf, "PTIT", 4)) {
@@ -656,8 +658,8 @@ static unsigned int *fd_sequence_load(unsigned int *data, const unsigned int *da
 			str[32] = '\0';
 			
 			
-			seq->name = str;
-			seq->name = sj2utf8(seq->name);
+			name = str;
+			name = sj2utf8(name);
 			
 			data += 8;
 		} else if (!memcmp(buf, "PDS2", 4)) {
@@ -673,6 +675,7 @@ static unsigned int *fd_sequence_load(unsigned int *data, const unsigned int *da
 			// data[7] = AS count
 			// data[8] = frame count
 			if (data[0] == 32) {
+				seq->frames.clear();
 				seq->frames.resize(data[1]);
 				temp_info.boxesRefs.resize(data[2]);
 				seq->EF.resize(data[3]);
@@ -685,6 +688,12 @@ static unsigned int *fd_sequence_load(unsigned int *data, const unsigned int *da
 				assert(data[8] == data[1]); //Just to make sure.
 
 				seq->initialized = 1;
+
+				seq->name = name;
+				seq->codeName = codename;
+				seq->psts = psts;
+				seq->level = level;
+				seq->flag = flag;
 			}
 			else
 				assert(0 && "PSD2 size is not 32");
@@ -722,7 +731,7 @@ static unsigned int *fd_sequence_load(unsigned int *data, const unsigned int *da
 }
 
 static unsigned int *fd_main_load(unsigned int *data, const unsigned int *data_end,
-				Sequence *sequences,
+				std::vector<Sequence> &sequences,
 				unsigned int nsequences) {
 	while (data < data_end) {
 		unsigned int *buf = data;
@@ -750,7 +759,7 @@ static unsigned int *fd_main_load(unsigned int *data, const unsigned int *data_e
 	return data;
 }
 
-bool FrameData::load(const char *filename) {
+bool FrameData::load(const char *filename, bool patch) {
 	// allow loading over existing data
 	
 	char *data;
@@ -766,8 +775,6 @@ bool FrameData::load(const char *filename) {
 		
 		return 0;
 	}
-
-	
 	
 	// initialize the root
 	unsigned int *d = (unsigned int *)(data + 0x20);
@@ -781,9 +788,12 @@ bool FrameData::load(const char *filename) {
 	
 	unsigned int sequence_count = d[1];
 	
-	Free();
+	if(!patch)
+		Free();
+	
+	if(sequence_count > m_nsequences)
+		m_sequences.resize(sequence_count);
 	m_nsequences = sequence_count;
-	m_sequences = new Sequence[m_nsequences];
 
 	d += 2;	
 	// parse and recursively store data
@@ -797,8 +807,7 @@ bool FrameData::load(const char *filename) {
 }
 
 void FrameData::Free() {
-	delete[] m_sequences;
-	m_sequences = nullptr;
+	m_sequences.clear();
 	m_nsequences = 0;
 	m_loaded = 0;
 }
@@ -850,10 +859,7 @@ std::string FrameData::GetDecoratedName(int n)
 }
 
 FrameData::FrameData() {
-	m_sequences = nullptr;
-	
 	m_nsequences = 0;
-	
 	m_loaded = 0;
 }
 

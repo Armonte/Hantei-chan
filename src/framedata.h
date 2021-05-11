@@ -178,8 +178,8 @@ private:
 public:
 
 	bool		m_loaded;
-	Sequence	*m_sequences;
-	bool		load(const char *filename);
+	std::vector<Sequence> m_sequences;
+	bool		load(const char *filename, bool patch = false);
 
 	//Probably unnecessary.
 	//bool load_move_list(Pack *pack, const char *filename);

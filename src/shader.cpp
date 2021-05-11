@@ -6,9 +6,6 @@
 #include <windows.h>
 #include <glad/glad.h>
 
-const char *vertex = R"()";
-const char *fragment = R"()";
-
 std::string ReadFile(const char *filePath)
 {
     std::string content;
@@ -88,18 +85,28 @@ void Shader::BindAttrib(const char* name, int index)
 	glBindAttribLocation(program, index, name);
 }
 
-void Shader::LoadShader(const char *vertex_path, const char *fragment_path)
+void Shader::LoadShader(const char *vertex_path, const char *fragment_path, bool sourceString)
 {
-	const char *vertShaderSrc = vertex;
-	const char *fragShaderSrc = fragment;
-	std::string vertShaderStr, fragShaderStr;
-	if(vertex_path != nullptr && fragment_path != nullptr)
+	const char *vertShaderSrc = "";
+	const char *fragShaderSrc = "";
+
+	if(sourceString)
 	{
-		vertShaderStr = ReadFile(vertex_path);
-		fragShaderStr = ReadFile(fragment_path);
-		vertShaderSrc = vertShaderStr.c_str();
-		fragShaderSrc = fragShaderStr.c_str();
+		vertShaderSrc = vertex_path;
+		fragShaderSrc = fragment_path;
 	}
+	else
+	{
+		std::string vertShaderStr, fragShaderStr;
+		if(vertex_path != nullptr && fragment_path != nullptr)
+		{
+			vertShaderStr = ReadFile(vertex_path);
+			fragShaderStr = ReadFile(fragment_path);
+			vertShaderSrc = vertShaderStr.c_str();
+			fragShaderSrc = fragShaderStr.c_str();
+		}
+	}
+	
 
 	GLuint myVertexShader = CreateShader(&vertShaderSrc, GL_VERTEX_SHADER);
 	GLuint myFragShader = CreateShader(&fragShaderSrc, GL_FRAGMENT_SHADER);

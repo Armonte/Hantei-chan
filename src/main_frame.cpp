@@ -2,6 +2,7 @@
 
 #include "main.h"
 #include "filedialog.h"
+#include "ini.h"
 
 #include <imgui.h>
 #include <imgui_internal.h>
@@ -23,8 +24,8 @@ x(200),y(150)
 {
 	WarmStyle();
 
-	framedata.load("data/akaakiha.HA6");
-	cg.load("data/akaakiha.cg");
+/* 	framedata.load("data/akaakiha.HA6");
+	cg.load("data/akaakiha.cg"); */
 	mainPane.SetFrameData(&framedata);
 	render.SetCg(&cg);
 	render.scale = 2;
@@ -88,12 +89,43 @@ void MainFrame::DrawUi()
 			//ImGui::Separator();
 			if (ImGui::BeginMenu("File"))
 			{
+				if (ImGui::MenuItem("Load from .txt"))
+				{
+					std::string &&file = FileDialog(fileType::TXT);
+					if(!file.empty())
+					{
+						if(!LoadFromIni(&framedata, &cg, file))
+						{
+							ImGui::OpenPopup(errorPopupId);
+						}
+						else
+						{
+							mainPane.RegenerateNames();
+							render.SwitchImage(-1);
+						}
+					}
+				}
+
 				if (ImGui::MenuItem("Load HA6"))
 				{
 					std::string &&file = FileDialog(fileType::HA6);
 					if(!file.empty())
 					{
 						if(!framedata.load(file.c_str()))
+						{
+							ImGui::OpenPopup(errorPopupId);
+						}
+						else
+							mainPane.RegenerateNames();
+					}
+				}
+
+				if (ImGui::MenuItem("Load HA6 and Patch"))
+				{
+					std::string &&file = FileDialog(fileType::HA6);
+					if(!file.empty())
+					{
+						if(!framedata.load(file.c_str(), true))
 						{
 							ImGui::OpenPopup(errorPopupId);
 						}

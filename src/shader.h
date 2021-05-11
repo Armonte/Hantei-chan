@@ -3,8 +3,6 @@
 
 #include <glm/mat4x4.hpp>
 
-unsigned int LoadShader(const char *vertex_path, const char *fragment_path);
-
 class Shader
 {
 public:
@@ -14,7 +12,7 @@ public:
 	~Shader();
 	Shader(const char *vertex_path, const char *fragment_path);
 
-	void LoadShader(const char *vertex_path, const char *fragment_path);
+	void LoadShader(const char *vertex_path, const char *fragment_path, bool sourceString = false);
 	void Use();
 	int GetLoc(const char* name);
 	int GetAttribLoc(const char* name);

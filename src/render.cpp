@@ -14,6 +14,69 @@
 
 constexpr int maxBoxes = 33;
 
+const char* simpleSrcVert = R"(
+#version 120
+attribute vec3 Position;
+attribute vec3 Color;
+
+varying vec4 Frag_Color;
+
+uniform mat4 ProjMtx;
+uniform float Alpha;
+
+void main()
+{
+    
+    Frag_Color = vec4(Color, Alpha);
+    gl_Position = ProjMtx * vec4(Position, 1);
+};
+)";
+
+const char* simpleSrcFrag = R"(
+#version 120
+
+varying vec4 Frag_Color;
+
+void main()
+{
+    gl_FragColor = Frag_Color;
+};
+)";
+
+const char* texturedSrcVert = R"(
+#version 120
+attribute vec2 Position;
+attribute vec2 UV;
+attribute vec4 Color;
+
+varying vec2 Frag_UV;
+varying vec4 Frag_Color;
+
+uniform mat4 ProjMtx;
+
+void main()
+{
+    Frag_UV = UV;
+    Frag_Color = Color;
+    gl_Position = ProjMtx * vec4(Position.xy, 0, 1);
+};
+)";
+
+const char* texturedSrcFrag = R"(
+#version 120
+uniform sampler2D Texture;
+
+varying vec2 Frag_UV;
+varying vec4 Frag_Color;
+
+void main()
+{
+    vec4 col = texture2D(Texture, Frag_UV.st);
+    
+    gl_FragColor = col * Frag_Color;
+};
+)";
+
 
 Render::Render():
 cg(nullptr),
@@ -38,13 +101,16 @@ blendingMode(normal)
 {
 	sSimple.BindAttrib("Position", 0);
 	sSimple.BindAttrib("Color", 1);
-	sSimple.LoadShader("src/simple.vert", "src/simple.frag");
+	//sSimple.LoadShader("src/simple.vert", "src/simple.frag");
+	sSimple.LoadShader(simpleSrcVert, simpleSrcFrag, true);
+
 	sSimple.Use();
 
 	sTextured.BindAttrib("Position", 0);
 	sTextured.BindAttrib("UV", 1);
 	sTextured.BindAttrib("Color", 2);
-	sTextured.LoadShader("src/textured.vert", "src/textured.frag");
+	//sTextured.LoadShader("src/textured.vert", "src/textured.frag");
+	sTextured.LoadShader(texturedSrcVert, texturedSrcFrag, true);
 	
 	lAlphaS = sSimple.GetLoc("Alpha");
 	lProjectionS = sSimple.GetLoc("ProjMtx");

@@ -28,6 +28,7 @@ add_executable(${EXE} WIN32
 	src/misc.cpp
 	src/imgui_utils.cpp
 	src/test.cpp
+	src/ini.cpp
 	res/res.rc
 )
 
