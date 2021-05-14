@@ -45,11 +45,6 @@ void LoadJapaneseFonts(ImGuiIO& io)
 LRESULT WINAPI WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam);
 int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE, PWSTR pCmdLine, int nCmdShow)
 {
-	std::ofstream coutFile, cerrFile;
-	coutFile.open("cout.txt"); cerrFile.open("cerr.txt");
-	auto cout_buf = std::cout.rdbuf(coutFile.rdbuf());
-	auto cerr_buf = std::cerr.rdbuf(cerrFile.rdbuf());
-
 	int argC;
 	PWSTR* argV = CommandLineToArgvW(pCmdLine, &argC);
 	for(int i=0; i<argC; i++)
@@ -58,6 +53,10 @@ int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE, PWSTR pCmdLine, int nCmdShow
 		wcstombs(arg, argV[i], wcslen(argV[i])+1);
 		if(!strcmp(arg, "--test"))
 		{
+			std::ofstream coutFile, cerrFile;
+			coutFile.open("cout.txt"); cerrFile.open("cerr.txt");
+			auto cout_buf = std::cout.rdbuf(coutFile.rdbuf());
+			auto cerr_buf = std::cerr.rdbuf(cerrFile.rdbuf());
 			TestHa6();
 			LocalFree(argV);
 			return 0;

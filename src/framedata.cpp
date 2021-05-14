@@ -247,8 +247,6 @@ static unsigned int *fd_frame_AS_load(unsigned int *data, const unsigned int *da
 			{
 				AS->statusFlags[t-'0'] = data[0];
 			}
-			/* test.Print(data, data_end);
-			std::cout <<"\t"<<data[0]<<"\n"; */
 			data++;
 		} else if (!memcmp(buf, "ASED", 4)) {
 			break;

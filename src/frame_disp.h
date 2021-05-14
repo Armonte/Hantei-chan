@@ -55,7 +55,27 @@ inline void AsDisplay(Frame_AS *as)
 	im::Separator();
 	flagIndex = -1;
 	BitField("Flagset 1", &as->statusFlags[0], &flagIndex);
+	switch (flagIndex)
+	{
+		case 0: Tooltip("Vector influences other animations (dash momentum)"); break;
+		case 1: Tooltip("Force clean vector (kill dash momentum)"); break;
+		case 2: Tooltip("Don't transition to walking"); break;
+		case 4: Tooltip("Can ground tech"); break;
+		case 5: Tooltip("Unknown"); break;
+		case 8: Tooltip("Unknown"); break;
+		case 9: Tooltip("Unknown"); break;
+		case 12: Tooltip("Unknown"); break;
+		case 31: Tooltip("Vector initialization only at the beginning (?)"); break;
+	}
+	
+	flagIndex = -1;
 	BitField("Flagset 2", &as->statusFlags[1], &flagIndex);
+	switch (flagIndex)
+	{
+		case 0: Tooltip("Can always EX cancel."); break;
+		case 2: Tooltip("Unknown"); break;
+		case 31: Tooltip("Unknown. Used in many dashes"); break;
+	}
 
 	im::SetNextItemWidth(width);
 	im::InputInt("Number of hits", &as->hitsNumber, 0, 0); im::SameLine(0,20.f);
@@ -281,7 +301,7 @@ inline void AfDisplay(Frame_AF *af)
 	{
 		case 0: Tooltip("Unknown"); break;
 		case 1: Tooltip("Unknown"); break;
-		case 2: Tooltip("Unknown"); break;
+		case 2: Tooltip("Go to relative offset"); break;
 		case 3: Tooltip("Unknown"); break;
 	}
 

@@ -124,13 +124,9 @@ void MainPane::Draw()
 					ImGui::TreePop();
 					ImGui::Separator();
 				}
-				constexpr float width = 50.f;
-				ImGui::SetNextItemWidth(width);
-				ImGui::InputInt("Boxes", &frame.nHitbox, 0, 0);
-				ImGui::SetNextItemWidth(width);
-				ImGui::InputInt("FSNE", &frame.FSNE, 0, 0);
-				ImGui::SetNextItemWidth(width);
-				ImGui::InputInt("FSNI", &frame.FSNI, 0, 0);
+				ImGui::Text("Boxes %i", frame.nHitbox);
+				ImGui::Text("FSNE %i", frame.FSNE);
+				ImGui::Text("FSNI %i", frame.FSNI);
 			}
 			ImGui::EndChild();
 		}
