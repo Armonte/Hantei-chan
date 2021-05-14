@@ -4,45 +4,75 @@
 
 namespace im = ImGui;
 
-inline void IfDisplay(Frame_IF *ifList[8])
+inline void IfDisplay(std::vector<Frame_IF> *ifList_)
 {
-	for( int i = 0; i < 8; i++)
+	std::vector<Frame_IF> & ifList = *ifList_;
+	constexpr float width = 75.f;
+	int deleteI = -1;
+	for( int i = 0; i < ifList.size(); i++)
 	{
-		if(!ifList[i])
-			continue;
-
 		if(i>0)
 			im::Separator();
 		im::PushID(i); 
-		im::InputInt("Type", &ifList[i]->type, 0, 0);
-		im::InputScalarN("##params", ImGuiDataType_S32, ifList[i]->parameters, 6, NULL, NULL, "%d", 0);
-		im::InputScalarN("##params2", ImGuiDataType_S32, ifList[i]->parameters+6, 3, NULL, NULL, "%d", 0);
+
+		im::SetNextItemWidth(width); 
+		im::InputInt("Type", &ifList[i].type, 0, 0); im::SameLine(0.f, 40);
+		im::SetNextItemWidth(width);
+
+		ImGui::PushStyleColor(ImGuiCol_Button, ImVec4(1,0,0,0.4));
+		if(im::Button("Delete"))
+		{
+			deleteI = i;
+		}
+		ImGui::PopStyleColor();
+
+		im::InputScalarN("##params", ImGuiDataType_S32, ifList[i].parameters, 6, NULL, NULL, "%d", 0);
+		im::InputScalarN("##params2", ImGuiDataType_S32, ifList[i].parameters+6, 3, NULL, NULL, "%d", 0);
 		im::PopID();
 	};
+
+	if(deleteI >= 0)
+		ifList.erase(ifList.begin() + deleteI);
+
+	if(im::Button("Add"))
+		ifList.push_back({});
 }
 
-inline void EfDisplay(Frame_EF *efList[8])
+inline void EfDisplay(std::vector<Frame_EF> *efList_)
 {
-	constexpr float width = 75.f;
-	for( int i = 0; i < 8; i++)
+	std::vector<Frame_EF> & efList = *efList_;
+	constexpr float width = 50.f;
+	int deleteI = -1;
+	for( int i = 0; i < efList.size(); i++)
 	{
-		if(!efList[i])
-			continue;
-			
 		if(i>0)
 			im::Separator();
 		im::PushID(i); 
 
 		im::SetNextItemWidth(width); 
-		im::InputInt("Type", &efList[i]->type, 0, 0); im::SameLine(0.f, 40);
+		im::InputInt("Type", &efList[i].type, 0, 0); im::SameLine(0.f, 30);
 		im::SetNextItemWidth(width); 
-		im::InputInt("Number", &efList[i]->number, 0, 0);
+		im::InputInt("Number", &efList[i].number, 0, 0); im::SameLine(0.f, 30);
+
+		im::SetNextItemWidth(width);
+		ImGui::PushStyleColor(ImGuiCol_Button, ImVec4(1,0,0,0.4));
+		if(im::Button("Delete"))
+		{
+			deleteI = i;
+		}
+		ImGui::PopStyleColor();
 		
-		im::InputScalarN("##params", ImGuiDataType_S32, efList[i]->parameters, 6, NULL, NULL, "%d", 0);
-		im::InputScalarN("##params2", ImGuiDataType_S32, efList[i]->parameters+6, 6, NULL, NULL, "%d", 0);
+		im::InputScalarN("##params", ImGuiDataType_S32, efList[i].parameters, 6, NULL, NULL, "%d", 0);
+		im::InputScalarN("##params2", ImGuiDataType_S32, efList[i].parameters+6, 6, NULL, NULL, "%d", 0);
 
 		im::PopID();
 	};
+
+	if(deleteI >= 0)
+		efList.erase(efList.begin() + deleteI);
+	
+	if(im::Button("Add"))
+		efList.push_back({});
 }
 
 inline void AsDisplay(Frame_AS *as)

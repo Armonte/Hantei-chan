@@ -99,6 +99,10 @@ void MainPane::Draw()
 			ImGui::BeginChild("FrameInfo", {0, ImGui::GetWindowSize().y-ImGui::GetFrameHeight()*4}, false, ImGuiWindowFlags_HorizontalScrollbar);
 			if (ImGui::TreeNode("Pattern data"))
 			{
+				if(ImGui::InputText("Pattern name", &seq->name))
+				{
+					decoratedNames[currentPattern] = frameData->GetDecoratedName(currentPattern);
+				}
 				PatternDisplay(seq);
 				ImGui::TreePop();
 				ImGui::Separator();
@@ -108,19 +112,19 @@ void MainPane::Draw()
 				Frame &frame = seq->frames[currFrame];
 				if(ImGui::TreeNode("Effects"))
 				{
-					EfDisplay(frame.EF);
+					EfDisplay(&frame.EF);
 					ImGui::TreePop();
 					ImGui::Separator();
 				}
 				if(ImGui::TreeNode("Conditions"))
 				{
-					IfDisplay(frame.IF);
+					IfDisplay(&frame.IF);
 					ImGui::TreePop();
 					ImGui::Separator();
 				}
-				if(frame.AS && ImGui::TreeNode("State data"))
+				if(ImGui::TreeNode("State data"))
 				{
-					AsDisplay(frame.AS);
+					AsDisplay(&frame.AS);
 					ImGui::TreePop();
 					ImGui::Separator();
 				}
@@ -130,15 +134,13 @@ void MainPane::Draw()
 					ImGui::TreePop();
 					ImGui::Separator();
 				}
-				if (frame.AT && ImGui::TreeNode("Attack data"))
+				if (ImGui::TreeNode("Attack data"))
 				{
-					AtDisplay(frame.AT);
+					AtDisplay(&frame.AT);
 					ImGui::TreePop();
 					ImGui::Separator();
 				}
 				ImGui::Text("Boxes %i", frame.nHitbox);
-				ImGui::Text("FSNE %i", frame.FSNE);
-				ImGui::Text("FSNI %i", frame.FSNI);
 			}
 			ImGui::EndChild();
 		}

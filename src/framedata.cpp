@@ -41,11 +41,10 @@ struct TempInfo {
 	std::vector<Hitbox*> boxesRefs;
 	std::vector<DelayLoad> delayLoadList;
 	unsigned int cur_hitbox;
-	unsigned int cur_AT;
 	unsigned int cur_AS;
-	unsigned int cur_EF;
-	unsigned int cur_IF;
 	unsigned int cur_frame;
+
+	std::vector<Frame_AS*> AS;
 };
 
 //Attack data
@@ -515,62 +514,49 @@ static unsigned int *fd_frame_load(unsigned int *data, const unsigned int *data_
 			data += 2;
 		} else if (!memcmp(buf, "ATST", 4)) {
 			// start attack block
-			if (info->cur_AT < info->seq->AT.size()) {
-				frame->AT = &info->seq->AT[info->cur_AT];
-				++info->cur_AT;
-
-				data = fd_frame_AT_load(data, data_end, frame->AT);
-			}
+				data = fd_frame_AT_load(data, data_end, &frame->AT);
+			
 		} else if (!memcmp(buf, "ASST", 4)) {
 			// start state block
-			if (info->cur_AS < info->seq->AS.size()) {
-				frame->AS = &info->seq->AS[info->cur_AS];
+			if (info->cur_AS < info->AS.size()) {
+				info->AS[info->cur_AS] = &frame->AS;
 				++info->cur_AS;
-				
-				data = fd_frame_AS_load(data, data_end, frame->AS);
+
+				data = fd_frame_AS_load(data, data_end, &frame->AS);
 			}
 		} else if (!memcmp(buf, "ASSM", 4)) {
 			// reference previous state block
-			//TODO: Remove ref.
 			unsigned int value = data[0];
 			++data;
 			
-			if (value < info->cur_AS) {
-				frame->AS = &info->seq->AS[value];
+			// Might give trouble if it's a future reference but who gives a shit.
+			if(value < info->cur_AS)
+			{
+				frame->AS = *info->AS[value];
 			}
+			else
+			{
+				test.Print(data, data_end);
+				std::cout <<"\tASSM future reference: " << data[0] <<":"<<info->cur_AS<<"\n";
+			}
+
 		} else if (!memcmp(buf, "AFST", 4)) {
 			// start animation block
 			data = fd_frame_AF_load(data, data_end, frame);
 		} else if (!memcmp(buf, "EFST", 4)) {
 			// start effect flags block
-			int n = data[0];
+			//int n = data[0];
+			frame->EF.push_back({});
 			++data;
-			if (n < 8 && info->cur_EF < info->seq->EF.size()) {
-				frame->EF[n] = &info->seq->EF[info->cur_EF];
-				++info->cur_EF;
-				
-				data = fd_frame_EF_load(data, data_end, frame->EF[n]);
-			}
-			else
-			{
-				test.Print(data, data_end);
-				std::cout <<"\tEF out of bounds: " << data[0] <<"\n";
-			}
+			data = fd_frame_EF_load(data, data_end, &frame->EF.back());
+
 		} else if (!memcmp(buf, "IFST", 4)) {
 			// start condition block
-			int n = data[0];
+			//int n = data[0];
+
+			frame->IF.push_back({});
 			++data;
-			if (n < 8 && info->cur_IF < info->seq->IF.size()) {
-				frame->IF[n] = &info->seq->IF[info->cur_IF];
-				++info->cur_IF;
-				
-				data = fd_frame_IF_load(data, data_end, frame->IF[n]);
-			}
-			else
-			{
-				test.Print(data, data_end);
-				std::cout <<"\tIF out of bounds: " << data[0] <<"\n";
-			}
+			data = fd_frame_IF_load(data, data_end, &frame->IF.back());
 		} else if (!memcmp(buf, "FSNA", 4)) {
 			//Max index of used attack boxes + 1
 			++data;
@@ -578,10 +564,10 @@ static unsigned int *fd_frame_load(unsigned int *data, const unsigned int *data_
 			//Max index of used hantei boxes + 1
 			++data;
 		} else if (!memcmp(buf, "FSNE", 4)) {
-			frame->FSNE = data[0];
+			//Max index of used effects + 1
 			++data;
 		} else if (!memcmp(buf, "FSNI", 4)) {
-			frame->FSNI = data[0];
+			//Max index of used ifs + 1
 			++data;
 		} else if (!memcmp(buf, "FEND", 4)) {
 			break;
@@ -607,10 +593,7 @@ static unsigned int *fd_sequence_load(unsigned int *data, const unsigned int *da
 	
 	temp_info.seq = seq;
 	temp_info.cur_hitbox = 0;
-	temp_info.cur_AT = 0;
 	temp_info.cur_AS = 0;
-	temp_info.cur_EF = 0;
-	temp_info.cur_IF = 0;
 	
 	std::string name, codename;
 	int level = 0, psts = 0, flag = 0;
@@ -700,10 +683,10 @@ static unsigned int *fd_sequence_load(unsigned int *data, const unsigned int *da
 				seq->frames.clear();
 				seq->frames.resize(data[1]);
 				temp_info.boxesRefs.resize(data[2]);
-				seq->EF.resize(data[3]);
-				seq->IF.resize(data[4]);
-				seq->AT.resize(data[5]);
-				seq->AS.resize(data[7]);
+				//temp_info.EF.resize(data[3]);
+				//temp_info.IF.resize(data[4]);
+				//temp_info.AT.resize(data[5]);
+				temp_info.AS.resize(data[7]);
 
 				nframes = data[1];
 

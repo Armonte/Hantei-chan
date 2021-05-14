@@ -132,21 +132,15 @@ struct Frame_IF {
 };
 
 struct Frame {
-	Frame_AF	AF;
+	Frame_AF AF;
+	Frame_AS AS;
+	Frame_AT AT;
 
-	Frame_AS	*AS = nullptr;
-	Frame_AT	*AT = nullptr;
-
-	Frame_EF	*EF[8]{};
-	Frame_IF	*IF[8]{};
+	std::vector<Frame_EF> EF;
+	std::vector<Frame_IF> IF;
 
 	BoxList hitboxes;
 	int nHitbox;
-
-	//int FSNA; Highest attack box index + 1
-	//int FSNH; Highest hantei box index + 1
-	int FSNE;
-	int FSNI;
 };
 
 struct Sequence {
@@ -162,10 +156,6 @@ struct Sequence {
 	bool initialized;
 
 	std::vector<Frame> frames;
-	std::vector<Frame_AT> AT;
-	std::vector<Frame_AS> AS;
-	std::vector<Frame_EF> EF;
-	std::vector<Frame_IF> IF;
 
 	Sequence();
 };
