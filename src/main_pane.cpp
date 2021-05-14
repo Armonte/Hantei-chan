@@ -106,6 +106,18 @@ void MainPane::Draw()
 			if(nframes >= 0)
 			{
 				Frame &frame = seq->frames[currFrame];
+				if(ImGui::TreeNode("Effects"))
+				{
+					EfDisplay(frame.EF);
+					ImGui::TreePop();
+					ImGui::Separator();
+				}
+				if(ImGui::TreeNode("Conditions"))
+				{
+					IfDisplay(frame.IF);
+					ImGui::TreePop();
+					ImGui::Separator();
+				}
 				if(frame.AS && ImGui::TreeNode("State data"))
 				{
 					AsDisplay(frame.AS);

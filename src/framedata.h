@@ -121,14 +121,14 @@ struct Frame_AT {
 };
 
 struct Frame_EF {
-	int		command;
-	int		parameter;
-	int		values[12];
+	int		type;
+	int		number;
+	int		parameters[12];
 };
 
 struct Frame_IF {
-	int		command;
-	int		values[12];
+	int		type;
+	int		parameters[9]; //Max used value is 9. I don't know if parameters beyond have any effect..
 };
 
 struct Frame {

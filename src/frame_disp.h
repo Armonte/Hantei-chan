@@ -4,6 +4,47 @@
 
 namespace im = ImGui;
 
+inline void IfDisplay(Frame_IF *ifList[8])
+{
+	for( int i = 0; i < 8; i++)
+	{
+		if(!ifList[i])
+			continue;
+
+		if(i>0)
+			im::Separator();
+		im::PushID(i); 
+		im::InputInt("Type", &ifList[i]->type, 0, 0);
+		im::InputScalarN("##params", ImGuiDataType_S32, ifList[i]->parameters, 6, NULL, NULL, "%d", 0);
+		im::InputScalarN("##params2", ImGuiDataType_S32, ifList[i]->parameters+6, 3, NULL, NULL, "%d", 0);
+		im::PopID();
+	};
+}
+
+inline void EfDisplay(Frame_EF *efList[8])
+{
+	constexpr float width = 75.f;
+	for( int i = 0; i < 8; i++)
+	{
+		if(!efList[i])
+			continue;
+			
+		if(i>0)
+			im::Separator();
+		im::PushID(i); 
+
+		im::SetNextItemWidth(width); 
+		im::InputInt("Type", &efList[i]->type, 0, 0); im::SameLine(0.f, 40);
+		im::SetNextItemWidth(width); 
+		im::InputInt("Number", &efList[i]->number, 0, 0);
+		
+		im::InputScalarN("##params", ImGuiDataType_S32, efList[i]->parameters, 6, NULL, NULL, "%d", 0);
+		im::InputScalarN("##params2", ImGuiDataType_S32, efList[i]->parameters+6, 6, NULL, NULL, "%d", 0);
+
+		im::PopID();
+	};
+}
+
 inline void AsDisplay(Frame_AS *as)
 {
 	const char* const stateList[] = {
@@ -100,7 +141,6 @@ inline void AsDisplay(Frame_AS *as)
 	if(im::IsItemHovered())
 		Tooltip("Sine parameters:\nX dist, Y dist\nX frequency, Y frequency");
 	im::InputFloat2("Phases", as->sinePhases);
-	im::Separator();
 }
 
 inline void AtDisplay(Frame_AT *at)

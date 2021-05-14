@@ -10,8 +10,6 @@
 #include <iomanip>
 #include <iostream>
 
-int aniflag_max = 0;
-
 struct TestInfo{
 	const char *filename;
 	std::string seqName;
@@ -257,7 +255,7 @@ static unsigned int *fd_frame_AS_load(unsigned int *data, const unsigned int *da
 			std::cout <<"\tUnknown AS tag: " << tag <<"\n";
 		}
 		
-		//Unhandled: None, unless they're not vanilla melty files.
+		//Unhandled: None, unless they're not in vanilla melty files.
 	}
 	
 	return data;
@@ -270,23 +268,29 @@ static unsigned int *fd_frame_EF_load(unsigned int *data, const unsigned int *da
 		++data;
 		
 		if (!memcmp(buf, "EFTP", 4)) {
-			EF->command = data[0];
+			EF->type = data[0];
 			++data;
 		} else if (!memcmp(buf, "EFNO", 4)) {
-			EF->parameter = data[0];
+			EF->number = data[0];
 			++data;
 		} else if (!memcmp(buf, "EFPR", 4)) {
 			int count = data[0];
 			if (count <= 12) {
 				for (int i = 0; i < count; ++i) {
-					EF->values[i] = data[i+1];
+					EF->parameters[i] = data[i+1];
 				}
 			} else {
-				//printf("EFPR %d ???\n",count);
+				test.Print(data, data_end);
+				std::cout <<"\tUnhandled number of EF parameters: " << count <<"\n";
 			}
 			data += count + 1;
 		} else if (!memcmp(buf, "EFED", 4)) {
 			break;
+		} else {
+			char tag[5]{};
+			memcpy(tag,buf,4);
+			test.Print(data, data_end);
+			std::cout <<"\tUnknown EF tag: " << tag <<"\n";
 		}
 	}
 	
@@ -300,20 +304,26 @@ static unsigned int *fd_frame_IF_load(unsigned int *data, const unsigned int *da
 		++data;
 		
 		if (!memcmp(buf, "IFTP", 4)) {
-			IF->command = data[0];
+			IF->type = data[0];
 			++data;
 		} else if (!memcmp(buf, "IFPR", 4)) {
 			int count = data[0];
-			if (count <= 12) {
+			if (count <= 9) {
 				for (int i = 0; i < count; ++i) {
-					IF->values[i] = data[i+1];
+					IF->parameters[i] = data[i+1];
 				}
 			} else {
-				//printf("IFPR %d ???\n",count);
+				test.Print(data, data_end);
+				std::cout <<"\tUnhandled number of IF parameters: " << count <<"\n";
 			}
 			data += count + 1;
 		} else if (!memcmp(buf, "IFED", 4)) {
 			break;
+		} else {
+			char tag[5]{};
+			memcpy(tag,buf,4);
+			test.Print(data, data_end);
+			std::cout <<"\tUnknown IF tag: " << tag <<"\n";
 		}
 	}
 	
@@ -521,6 +531,7 @@ static unsigned int *fd_frame_load(unsigned int *data, const unsigned int *data_
 			}
 		} else if (!memcmp(buf, "ASSM", 4)) {
 			// reference previous state block
+			//TODO: Remove ref.
 			unsigned int value = data[0];
 			++data;
 			
@@ -540,6 +551,11 @@ static unsigned int *fd_frame_load(unsigned int *data, const unsigned int *data_
 				
 				data = fd_frame_EF_load(data, data_end, frame->EF[n]);
 			}
+			else
+			{
+				test.Print(data, data_end);
+				std::cout <<"\tEF out of bounds: " << data[0] <<"\n";
+			}
 		} else if (!memcmp(buf, "IFST", 4)) {
 			// start condition block
 			int n = data[0];
@@ -549,6 +565,11 @@ static unsigned int *fd_frame_load(unsigned int *data, const unsigned int *data_
 				++info->cur_IF;
 				
 				data = fd_frame_IF_load(data, data_end, frame->IF[n]);
+			}
+			else
+			{
+				test.Print(data, data_end);
+				std::cout <<"\tIF out of bounds: " << data[0] <<"\n";
 			}
 		} else if (!memcmp(buf, "FSNA", 4)) {
 			//Max index of used attack boxes + 1
@@ -564,11 +585,15 @@ static unsigned int *fd_frame_load(unsigned int *data, const unsigned int *data_
 			++data;
 		} else if (!memcmp(buf, "FEND", 4)) {
 			break;
+		} else {
+			char tag[5]{};
+			memcpy(tag,buf,4);
+			test.Print(data, data_end);
+			std::cout <<"\tUnknown Frame level tag: " << tag <<"\n";
 		}
 
 		frame->nHitbox=boxesCount;
-		// unhandled:
-		// ???
+		//Unhandled: None, unless they're not in vanilla melty files.
 	}
 	
 	return data;
@@ -648,9 +673,8 @@ static unsigned int *fd_sequence_load(unsigned int *data, const unsigned int *da
 
 			data += 1 + ((len+3)/4);
 		} else if (!memcmp(buf, "PTIT", 4)) {
-			//TODO: verify and remove
-			assert(0 && "PTIT");
 			// fixed-length sequence title
+			// Never used.
 			char str[33];
 			memcpy(str, data, 32);
 			str[32] = '\0';
@@ -719,7 +743,12 @@ static unsigned int *fd_sequence_load(unsigned int *data, const unsigned int *da
 			test.seqName = "";
 			break;
 		} else
-			assert(0);
+		{
+			char tag[5]{};
+			memcpy(tag,buf,4);
+			test.Print(data, data_end);
+			std::cout <<"\tUnknown Pattern level tag: " << tag <<"\n";
+		}
 	}
 	
 	if(seq->initialized)
