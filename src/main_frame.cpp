@@ -29,6 +29,8 @@ x(200),y(150)
 	mainPane.SetFrameData(&framedata);
 	render.SetCg(&cg);
 	render.scale = 2;
+
+	framedata.save("data/_akaakiha.ha6");
 }
 
 MainFrame::~MainFrame()

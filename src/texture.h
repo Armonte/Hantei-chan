@@ -6,15 +6,13 @@
 
 extern int pal;
 
-class Texture //Point to it, do not use directly.
+class Texture
 {
 public: //public only for ease of reading access, do not write anything.
 	std::unique_ptr<ImageData> image;
 	unsigned int id; //OpenGL texture id.
 	bool isLoaded;
 	bool isApplied;
-	//Not needed?
-	//std::string filename;
 	
 public:
 	Texture();

@@ -16,6 +16,3 @@ build\ha6gui.exe
 ```
 
 And that's it!
-
-The executable currently needs the .vert and .frag shader files located in /src to run.
-They will be baked into the file later on.

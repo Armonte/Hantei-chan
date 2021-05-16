@@ -24,6 +24,8 @@ add_executable(${EXE} WIN32
 	src/texture.cpp
 	src/filedialog.cpp
 	src/framedata.cpp
+	src/framedata_load.cpp
+	src/framedata_save.cpp
 	src/cg.cpp
 	src/misc.cpp
 	src/imgui_utils.cpp

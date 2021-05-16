@@ -80,6 +80,7 @@ struct Frame_AS {
 	unsigned int sineFlags;
 	int sineParameters[4];
 	float sinePhases[2];
+	
 };
 
 struct Frame_AT {
@@ -169,7 +170,8 @@ public:
 
 	bool		m_loaded;
 	std::vector<Sequence> m_sequences;
-	bool		load(const char *filename, bool patch = false);
+	bool load(const char *filename, bool patch = false);
+	void save(const char *filename);
 
 	//Probably unnecessary.
 	//bool load_move_list(Pack *pack, const char *filename);
@@ -184,6 +186,8 @@ public:
 	FrameData();
 	~FrameData();
 };
+
+void WriteSequence(std::ofstream &file, const Sequence *seq);
 
 
 #endif /* FRAMEDATA_H_GUARD */

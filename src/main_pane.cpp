@@ -54,7 +54,6 @@ void MainPane::Draw()
 			auto count = frameData->get_sequence_count();
 			for (int n = 0; n < count; n++)
 			{
-				//std::string &&name = std::to_string(n) + " " + frameData->GetName(n); 
 				const bool is_selected = (currentPattern == n);
 				if (ImGui::Selectable(decoratedNames[n].c_str(), is_selected))
 				{
