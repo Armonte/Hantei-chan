@@ -2,7 +2,7 @@
 #include "main.h"
 #include <commdlg.h>
 
-std::string FileDialog(int fileType)
+std::string FileDialog(int fileType, bool save)
 {
 	OPENFILENAMEA ofn;       // common dialog box structure
 	char szFile[260];       // buffer for file name
@@ -41,11 +41,17 @@ std::string FileDialog(int fileType)
 	ofn.lpstrFileTitle = NULL;
 	ofn.nMaxFileTitle = 0;
 	ofn.lpstrInitialDir = ".";
-	ofn.Flags = OFN_PATHMUSTEXIST | OFN_FILEMUSTEXIST;
+
+	if(!save)
+		ofn.Flags = OFN_PATHMUSTEXIST | OFN_FILEMUSTEXIST;
 
 	// Display the Open dialog box. 
-
-	if (GetOpenFileNameA(&ofn)==TRUE)
+	if(save)
+	{
+		if(GetSaveFileNameA(&ofn)==TRUE)
+			return ofn.lpstrFile;
+	}
+	else if (GetOpenFileNameA(&ofn)==TRUE)
 		return ofn.lpstrFile;
 	return {};
 }

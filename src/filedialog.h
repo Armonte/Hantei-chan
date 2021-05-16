@@ -10,4 +10,4 @@ enum {
 };
 }
 
-std::string FileDialog(int fileType = -1);
+std::string FileDialog(int fileType = -1, bool save = false);

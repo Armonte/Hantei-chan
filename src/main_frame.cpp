@@ -29,8 +29,6 @@ x(200),y(150)
 	mainPane.SetFrameData(&framedata);
 	render.SetCg(&cg);
 	render.scale = 2;
-
-	framedata.save("data/_akaakiha.ha6");
 }
 
 MainFrame::~MainFrame()
@@ -91,7 +89,7 @@ void MainFrame::DrawUi()
 			//ImGui::Separator();
 			if (ImGui::BeginMenu("File"))
 			{
-				if (ImGui::MenuItem("Load from .txt"))
+				if (ImGui::MenuItem("Load from .txt..."))
 				{
 					std::string &&file = FileDialog(fileType::TXT);
 					if(!file.empty())
@@ -108,7 +106,7 @@ void MainFrame::DrawUi()
 					}
 				}
 
-				if (ImGui::MenuItem("Load HA6"))
+				if (ImGui::MenuItem("Load HA6..."))
 				{
 					std::string &&file = FileDialog(fileType::HA6);
 					if(!file.empty())
@@ -122,7 +120,7 @@ void MainFrame::DrawUi()
 					}
 				}
 
-				if (ImGui::MenuItem("Load HA6 and Patch"))
+				if (ImGui::MenuItem("Load HA6 and Patch..."))
 				{
 					std::string &&file = FileDialog(fileType::HA6);
 					if(!file.empty())
@@ -136,7 +134,18 @@ void MainFrame::DrawUi()
 					}
 				}
 
-				if (ImGui::MenuItem("Load CG")) 
+				ImGui::Separator();
+				if (ImGui::MenuItem("Save as...")) 
+				{
+					std::string &&file = FileDialog(fileType::HA6, true);
+					if(!file.empty())
+					{
+						framedata.save(file.c_str());
+					}
+				}
+
+				ImGui::Separator();
+				if (ImGui::MenuItem("Load CG...")) 
 				{
 					std::string &&file = FileDialog(fileType::CG);
 					if(!file.empty())
@@ -149,7 +158,7 @@ void MainFrame::DrawUi()
 					}
 				}
 
-				if (ImGui::MenuItem("Load palette")) 
+				if (ImGui::MenuItem("Load palette...")) 
 				{
 					std::string &&file = FileDialog(fileType::PAL);
 					if(!file.empty())
@@ -162,8 +171,7 @@ void MainFrame::DrawUi()
 					}
 				}
 
-
-
+				ImGui::Separator();
 				if (ImGui::MenuItem("Exit")) PostQuitMessage(0);
 				ImGui::EndMenu();
 			}

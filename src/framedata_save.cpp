@@ -121,7 +121,7 @@ void WriteAS(std::ofstream &file, const Frame_AS *as)
 {
 	file.write("ASST", 4);
 
-	if(as->movementFlags & 0x11 && 
+	if((as->movementFlags & 0x11) == 0x11 && 
 		as->speed[0] == 0 &&
 		as->speed[1] == 0 &&
 		as->accel[0] == 0 &&
@@ -163,25 +163,6 @@ void WriteAS(std::ofstream &file, const Frame_AS *as)
 		file.write("ASCT", 4);
 		file.write(VAL(as->counterType), 4);
 	}
-	if(as->sineFlags)
-	{
-		file.write("AST0", 4);
-		file.write(VAL(as->sineFlags), 4);
-		file.write(PTR(as->sineParameters), 4*4);
-		file.write(PTR(as->sinePhases), 2*sizeof(float));
-	}
-	if(as->maxSpeedX){
-		file.write("ASMX", 4);
-		file.write(VAL(as->maxSpeedX), 4);
-	}
-	if(as->hitsNumber){
-		file.write("ASAA", 4);
-		file.write(VAL(as->hitsNumber), 4);
-	}
-	if(as->invincibility){
-		file.write("ASYS", 4);
-		file.write(VAL(as->invincibility), 4);
-	}
 	if(as->statusFlags[0])
 	{
 		file.write("ASF0", 4);
@@ -192,6 +173,26 @@ void WriteAS(std::ofstream &file, const Frame_AS *as)
 		file.write("ASF1", 4);
 		file.write(VAL(as->statusFlags[1]), 4);
 	}
+	if(as->maxSpeedX){
+		file.write("ASMX", 4);
+		file.write(VAL(as->maxSpeedX), 4);
+	}
+	if(as->sineFlags)
+	{
+		file.write("AST0", 4);
+		file.write(VAL(as->sineFlags), 4);
+		file.write(PTR(as->sineParameters), 4*4);
+		file.write(PTR(as->sinePhases), 2*sizeof(float));
+	}
+	if(as->hitsNumber){
+		file.write("ASAA", 4);
+		file.write(VAL(as->hitsNumber), 4);
+	}
+	if(as->invincibility){
+		file.write("ASYS", 4);
+		file.write(VAL(as->invincibility), 4);
+	}
+
 
 	file.write("ASED", 4);
 }
@@ -393,12 +394,12 @@ void WriteFrame(std::ofstream &file, const Frame *frame)
 
 void WriteSequence(std::ofstream &file, const Sequence *seq)
 {
-	if(!seq->codeName.empty()){
+/* 	if(!seq->codeName.empty()){
 		uint32_t size = seq->codeName.size();
 		file.write("PTCN", 4);
 		file.write(VAL(size), 4);
 		file.write(PTR(seq->codeName.data()), size);
-	}
+	} */
 	if(seq->psts){
 		file.write("PSTS", 4);
 		file.write(VAL(seq->psts), 4);
@@ -412,10 +413,13 @@ void WriteSequence(std::ofstream &file, const Sequence *seq)
 		file.write(VAL(seq->flag), 4);
 	}
 	if(!seq->name.empty()){
-		uint32_t size = seq->name.size();
+		char buf[32]{};
+		uint32_t size = 32;
+		strncpy(buf, seq->name.c_str(), 32);
+		buf[31] = 0;
 		file.write("PTT2", 4);
 		file.write(VAL(size), 4);
-		file.write(PTR(seq->name.data()), size);
+		file.write(PTR(buf), 32);
 	}
 
 	constexpr Frame_AT defAT{};
