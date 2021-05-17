@@ -7,7 +7,7 @@
 #include "framedata.h"
 #include "cg.h"
 #include <glm/mat4x4.hpp>
-
+#include <string>
 
 class MainFrame
 {
@@ -26,11 +26,13 @@ private:
 	int style_idx = 0;
 	int zoom_idx = 3;
 	bool smoothRender = false; 
+
 	FrameData framedata;
+	FrameState currState;
 	CG cg;
 	int curPalette;
 
-	FrameState currState;
+	std::string currentFilePath;
 
 	void DrawBack();
 	void DrawUi();

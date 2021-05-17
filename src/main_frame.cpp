@@ -241,6 +241,19 @@ void MainFrame::Menu(unsigned int errorPopupId)
 		//ImGui::Separator();
 		if (ImGui::BeginMenu("File"))
 		{
+			if (ImGui::MenuItem("New file"))
+			{
+				framedata.initEmpty();
+				currentFilePath.clear();
+				mainPane.RegenerateNames();
+			}
+			if (ImGui::MenuItem("Close file"))
+			{
+				framedata.Free();
+				currentFilePath.clear();
+			}
+
+			ImGui::Separator();
 			if (ImGui::MenuItem("Load from .txt..."))
 			{
 				std::string &&file = FileDialog(fileType::TXT);
@@ -252,6 +265,7 @@ void MainFrame::Menu(unsigned int errorPopupId)
 					}
 					else
 					{
+						currentFilePath.clear();
 						mainPane.RegenerateNames();
 						render.SwitchImage(-1);
 					}
@@ -268,7 +282,10 @@ void MainFrame::Menu(unsigned int errorPopupId)
 						ImGui::OpenPopup(errorPopupId);
 					}
 					else
+					{
+						currentFilePath = file;
 						mainPane.RegenerateNames();
+					}
 				}
 			}
 
@@ -283,16 +300,29 @@ void MainFrame::Menu(unsigned int errorPopupId)
 					}
 					else
 						mainPane.RegenerateNames();
+					currentFilePath.clear();
 				}
 			}
 
 			ImGui::Separator();
+			//TODO: Implement hotkeys, someday.
+			if (ImGui::MenuItem("Save"/* , "Ctrl+S" */)) 
+			{
+				if(currentFilePath.empty())
+					std::string &&file = FileDialog(fileType::HA6, true);
+				if(!currentFilePath.empty())
+				{
+					framedata.save(currentFilePath.c_str());
+				}
+			}
+
 			if (ImGui::MenuItem("Save as...")) 
 			{
 				std::string &&file = FileDialog(fileType::HA6, true);
 				if(!file.empty())
 				{
 					framedata.save(file.c_str());
+					currentFilePath = file;
 				}
 			}
 

@@ -170,6 +170,7 @@ public:
 
 	bool		m_loaded;
 	std::vector<Sequence> m_sequences;
+	void initEmpty();
 	bool load(const char *filename, bool patch = false);
 	void save(const char *filename);
 

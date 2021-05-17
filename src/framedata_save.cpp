@@ -5,6 +5,10 @@
 #define VAL(X) ((const char*)&X)
 #define PTR(X) ((const char*)X)
 
+// The order of these things is a bit different from the order the original game files use.
+// (Because I haven't figured out the proper order lol)
+// I don't know if it can cause trouble but it's something to keep in mind.
+
 void WriteAF(std::ofstream &file, const Frame_AF *af)
 {
 	file.write("AFST", 4);
@@ -394,6 +398,7 @@ void WriteFrame(std::ofstream &file, const Frame *frame)
 
 void WriteSequence(std::ofstream &file, const Sequence *seq)
 {
+	//Not used by melty blood, probably.
 /* 	if(!seq->codeName.empty()){
 		uint32_t size = seq->codeName.size();
 		file.write("PTCN", 4);
@@ -436,7 +441,7 @@ void WriteSequence(std::ofstream &file, const Sequence *seq)
 			//Do not write if default constructed.
 			data[4] += (!!memcmp(&frame.AT, &defAT, sizeof(Frame_AT)));
 
-			//TODO: Find number of duplicates and write ASSM instead
+			//Find number of duplicates and write ASSM instead. Not necessary and very low priority.
 			data[6]	+= 1;
 		}
 

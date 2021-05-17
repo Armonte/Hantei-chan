@@ -8,6 +8,8 @@
 #include <cstdlib>
 #include <cstring>
 
+#include <iostream>
+
 const CG_Image *CG::get_image(unsigned int n) {
 	if (n >= m_nimages) {
 		return 0;
@@ -167,6 +169,10 @@ ImageData *CG::draw_texture(unsigned int n, bool to_pow2_flg, bool draw_8bpp) {
 		return 0;
 	}
 
+	if (image->type_id == -1) {
+		return 0; //The game doesn't draw them either.
+	}
+
 	if ((image->align_start + image->align_len) > m_nalign) {
 		return 0;
 	}
@@ -263,6 +269,9 @@ void CG::build_image_table() {
 		if (!image) {
 			continue;
 		}
+
+		if(image->type_id == -1)
+			continue;
 		
 		if ((image->align_start + image->align_len) > m_nalign) {
 			continue;
@@ -278,8 +287,6 @@ void CG::build_image_table() {
 				address += 1024; //Indexed and alpha indexed?
 			}
 		}
-
-		
 
 		for (unsigned int j = 0; j < image->align_len; ++j, ++align) {
 			if (align->copy_flag != 0) {

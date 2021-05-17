@@ -12,6 +12,14 @@ empty(true),
 initialized(false)
 {}
 
+void FrameData::initEmpty()
+{
+	Free();
+	m_nsequences = 1000;
+	m_sequences.resize(m_nsequences);
+	m_loaded = 1;
+}
+
 bool FrameData::load(const char *filename, bool patch) {
 	// allow loading over existing data
 	
@@ -129,14 +137,14 @@ std::string FrameData::GetDecoratedName(int n)
 			bool noFrames = m_sequences[n].frames.empty();
 			if(noFrames)
 				ss << u8"〇 ";
-
-			ss << m_sequences[n].name;
+				
 			if(m_sequences[n].name.empty() && !noFrames)
 			{
 					ss << u8"Untitled";
 			}
 		}
-		
+
+		ss << m_sequences[n].name;
 		return ss.str();
 }
 
