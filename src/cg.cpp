@@ -384,7 +384,7 @@ bool CG::loadPalette(const char *name) {
 			*p = (v&0xffffff) | (alpha<<24);
 			++p;
 		}
-		paletteIterator[0] &= 0xffffff;
+		paletteIterator[0] = 0;
 		paletteIterator += 0x100;
 	}
 	return true;
@@ -444,7 +444,7 @@ bool CG::load(const char *name) {
 		*p = (v&0xffffff) | (alpha<<24);
 		++p;
 	}
-	palette[0] &= 0xffffff;
+	palette[0] = 0;
 	
 	// parse header
 	page_count = (*d) + 1;

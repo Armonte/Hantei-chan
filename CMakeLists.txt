@@ -18,6 +18,7 @@ add_executable(${EXE} WIN32
 	src/main.cpp
 	src/main_frame.cpp
 	src/main_pane.cpp
+	src/right_pane.cpp
 	src/render.cpp
 	src/vao.cpp
 	src/shader.cpp

@@ -18,15 +18,19 @@ bool show_demo_window = false;
 
 MainFrame::MainFrame(ContextGl *context_):
 context(context_),
-mainPane(&render),
+currState{},
+mainPane(&render, &framedata, currState),
+rightPane(&render, &framedata, currState),
 curPalette(0),
-x(200),y(150)
+x(0),y(150)
 {
+	currState.spriteId = -1;
 	WarmStyle();
+/* 
+ 	framedata.load("data/akiha.HA6");
+	cg.load("data/akiha.cg");  */
+	mainPane.RegenerateNames();
 
- 	framedata.load("data/akaakiha.HA6");
-	cg.load("data/akaakiha.cg"); 
-	mainPane.SetFrameData(&framedata);
 	render.SetCg(&cg);
 	render.scale = 2;
 }
@@ -52,6 +56,7 @@ void MainFrame::Draw()
 
 void MainFrame::DrawBack()
 {
+	render.filter = smoothRender;
 	glClearColor(clearColor[0], clearColor[1], clearColor[2], 1.f);
 	glClear(GL_COLOR_BUFFER_BIT |  GL_DEPTH_BUFFER_BIT);
 	render.x = (x+clientRect.x/2)/render.scale;
@@ -84,154 +89,7 @@ void MainFrame::DrawUi()
 		ImGuiWindowFlags_NoBackground 
 	);
 		ImGui::PopStyleVar(3);
-		if (ImGui::BeginMenuBar())
-		{
-			//ImGui::Separator();
-			if (ImGui::BeginMenu("File"))
-			{
-				if (ImGui::MenuItem("Load from .txt..."))
-				{
-					std::string &&file = FileDialog(fileType::TXT);
-					if(!file.empty())
-					{
-						if(!LoadFromIni(&framedata, &cg, file))
-						{
-							ImGui::OpenPopup(errorPopupId);
-						}
-						else
-						{
-							mainPane.RegenerateNames();
-							render.SwitchImage(-1);
-						}
-					}
-				}
-
-				if (ImGui::MenuItem("Load HA6..."))
-				{
-					std::string &&file = FileDialog(fileType::HA6);
-					if(!file.empty())
-					{
-						if(!framedata.load(file.c_str()))
-						{
-							ImGui::OpenPopup(errorPopupId);
-						}
-						else
-							mainPane.RegenerateNames();
-					}
-				}
-
-				if (ImGui::MenuItem("Load HA6 and Patch..."))
-				{
-					std::string &&file = FileDialog(fileType::HA6);
-					if(!file.empty())
-					{
-						if(!framedata.load(file.c_str(), true))
-						{
-							ImGui::OpenPopup(errorPopupId);
-						}
-						else
-							mainPane.RegenerateNames();
-					}
-				}
-
-				ImGui::Separator();
-				if (ImGui::MenuItem("Save as...")) 
-				{
-					std::string &&file = FileDialog(fileType::HA6, true);
-					if(!file.empty())
-					{
-						framedata.save(file.c_str());
-					}
-				}
-
-				ImGui::Separator();
-				if (ImGui::MenuItem("Load CG...")) 
-				{
-					std::string &&file = FileDialog(fileType::CG);
-					if(!file.empty())
-					{
-						if(!cg.load(file.c_str()))
-						{
-							ImGui::OpenPopup(errorPopupId);	
-						}
-						render.SwitchImage(-1);
-					}
-				}
-
-				if (ImGui::MenuItem("Load palette...")) 
-				{
-					std::string &&file = FileDialog(fileType::PAL);
-					if(!file.empty())
-					{
-						if(!cg.loadPalette(file.c_str()))
-						{
-							ImGui::OpenPopup(errorPopupId);	
-						}
-						render.SwitchImage(-1);
-					}
-				}
-
-				ImGui::Separator();
-				if (ImGui::MenuItem("Exit")) PostQuitMessage(0);
-				ImGui::EndMenu();
-			}
-			if (ImGui::BeginMenu("Preferences"))
-			{
-				if (ImGui::BeginMenu("Switch preset style"))
-				{		
-					if (ImGui::Combo("Style", &style_idx, "Warm\0Dark\0Light\0ImGui\0"))
-					{
-						switch (style_idx)
-						{
-						case 0: WarmStyle(); break;
-						case 1: ImGui::StyleColorsDark(); ChangeClearColor(0.202f, 0.243f, 0.293f); break;
-						case 2: ImGui::StyleColorsLight(); ChangeClearColor(0.634f, 0.668f, 0.687f); break;
-						case 3: ImGui::StyleColorsClassic(); ChangeClearColor(0.142f, 0.075f, 0.147f); break;
-						}
-					}
-					ImGui::EndMenu();
-				}
-				if (ImGui::BeginMenu("Background color"))
-				{
-					ImGui::ColorEdit3("##clearColor", (float*)&clearColor, ImGuiColorEditFlags_NoInputs);
-					ImGui::EndMenu();
-				}
-				if (cg.getPalNumber() > 0 && ImGui::BeginMenu("Palette number"))
-				{
-					ImGui::SetNextItemWidth(80);
-					ImGui::InputInt("Palette", &curPalette);
-					if(curPalette >= cg.getPalNumber())
-						curPalette = cg.getPalNumber()-1;
-					else if(curPalette < 0)
-						curPalette = 0;
-					if(cg.changePaletteNumber(curPalette))
-						render.SwitchImage(-1);
-					ImGui::EndMenu();
-				}
-				if (ImGui::BeginMenu("Zoom level"))
-				{
-					ImGui::SetNextItemWidth(80);
-					if (ImGui::Combo("Zoom", &zoom_idx, "x0.5\0x1\0x2\0x3\0"))
-					{
-						switch (zoom_idx)
-						{
-						case 0: render.scale = 0.5f; break;
-						case 1: render.scale = 1.f; break;
-						case 2: render.scale = 2.f; break;
-						case 3: render.scale = 3.f; break;
-						}
-					}
-					ImGui::EndMenu();
-				}
-				ImGui::EndMenu();
-			}
-			if (ImGui::BeginMenu("About"))
-			{
-				if (ImGui::MenuItem("Show Demo Window")) show_demo_window = !show_demo_window;
-				ImGui::EndMenu();
-			}
-			ImGui::EndMenuBar();
-		}
+		Menu(errorPopupId);
 		
 		ImGuiID dockspaceID = ImGui::GetID("Dock Space");
 		if (!ImGui::DockBuilderGetNode(dockspaceID)) {
@@ -240,10 +98,12 @@ void MainFrame::DrawUi()
 			ImGui::DockBuilderSetNodeSize(dockspaceID, clientRect); 
 
 			ImGuiID toSplit = dockspaceID;
-			ImGuiID dock_left_id = ImGui::DockBuilderSplitNode(toSplit, ImGuiDir_Left, 0.35f, nullptr, &toSplit);
+			ImGuiID dock_left_id = ImGui::DockBuilderSplitNode(toSplit, ImGuiDir_Left, 0.30f, nullptr, &toSplit);
+			ImGuiID dock_right_id = ImGui::DockBuilderSplitNode(toSplit, ImGuiDir_Right, 0.40f, nullptr, &toSplit);
 			ImGuiID dock_down_id = ImGui::DockBuilderSplitNode(toSplit, ImGuiDir_Down, 0.45f, nullptr, &toSplit);
 
 			ImGui::DockBuilderDockWindow("Left Pane", dock_left_id);
+			ImGui::DockBuilderDockWindow("Right Pane", dock_right_id);
  			ImGui::DockBuilderDockWindow("Debug", dock_down_id);
 
 			ImGui::DockBuilderFinish(dockspaceID);
@@ -251,8 +111,8 @@ void MainFrame::DrawUi()
 		ImGui::DockSpace(dockspaceID, ImVec2(0.0f, 0.0f),
 			ImGuiDockNodeFlags_PassthruCentralNode |
 			ImGuiDockNodeFlags_NoDockingInCentralNode |
-			ImGuiDockNodeFlags_AutoHideTabBar |
-			ImGuiDockNodeFlags_NoSplit
+			ImGuiDockNodeFlags_AutoHideTabBar 
+			//ImGuiDockNodeFlags_NoSplit
 		); 
 	ImGui::End();
 
@@ -267,11 +127,274 @@ void MainFrame::DrawUi()
 	}
 
 	mainPane.Draw(); 
-
+	rightPane.Draw();
 
 	if (show_demo_window)
 		ImGui::ShowDemoWindow(&show_demo_window);
-	
+
+	RenderUpdate();
+}
+
+void MainFrame::RenderUpdate()
+{
+	Sequence *seq;
+	if((seq = framedata.get_sequence(currState.pattern)) &&
+		seq->frames.size() > 0)
+	{
+		auto &frame =  seq->frames[currState.frame];
+		currState.spriteId = frame.AF.spriteId;
+		render.GenerateHitboxVertices(frame.hitboxes, frame.nHitbox);
+		render.offsetX = (frame.AF.offset_x)*1;
+		render.offsetY = (frame.AF.offset_y)*1;
+		render.SetImageColor(frame.AF.rgba);
+		render.rotX = frame.AF.rotation[0];
+		render.rotY = frame.AF.rotation[1];
+		render.rotZ = frame.AF.rotation[2];
+		render.scaleX = frame.AF.scale[0];
+		render.scaleY = frame.AF.scale[1];
+		
+		switch (frame.AF.blend_mode)
+		{
+		case 2:
+			render.blendingMode = Render::additive;
+			break;
+		case 3:
+			render.blendingMode = Render::substractive;
+			break;
+		default:
+			render.blendingMode = Render::normal;
+			break;
+		}
+	}
+	else
+	{
+		currState.spriteId = -1;
+		
+		render.DontDraw();
+	}
+	render.SwitchImage(currState.spriteId);
+}
+
+void MainFrame::AdvancePattern(int dir)
+{
+	currState.pattern+= dir;
+	if(currState.pattern < 0)
+		currState.pattern = 0;
+	else if(currState.pattern >= framedata.get_sequence_count())
+		currState.pattern = framedata.get_sequence_count()-1;
+	currState.frame = 0;
+}
+
+void MainFrame::AdvanceFrame(int dir)
+{
+	auto seq = framedata.get_sequence(currState.pattern);
+	currState.frame += dir;
+	if(currState.frame < 0)
+		currState.frame = 0;
+	else if(seq && currState.frame >= seq->frames.size())
+		currState.frame = seq->frames.size()-1;
+}
+
+void MainFrame::UpdateBackProj(float x, float y)
+{
+	render.UpdateProj(x, y);
+	glViewport(0, 0, x, y);
+}
+
+void MainFrame::HandleMouseDrag(int x_, int y_)
+{
+	x += x_;
+	y += y_;
+}
+
+bool MainFrame::HandleKeys(uint64_t vkey)
+{
+	switch (vkey)
+	{
+	case VK_UP:
+		AdvancePattern(-1);
+		return true;
+	case VK_DOWN:
+		AdvancePattern(1);
+		return true;
+	case VK_LEFT:
+		AdvanceFrame(-1);
+		return true;
+	case VK_RIGHT:
+		AdvanceFrame(+1);
+		return true;
+	}
+	return false;
+}
+
+void MainFrame::ChangeClearColor(float r, float g, float b)
+{
+	clearColor[0] = r;
+	clearColor[1] = g;
+	clearColor[2] = b;
+}
+
+void MainFrame::Menu(unsigned int errorPopupId)
+{
+	if (ImGui::BeginMenuBar())
+	{
+		//ImGui::Separator();
+		if (ImGui::BeginMenu("File"))
+		{
+			if (ImGui::MenuItem("Load from .txt..."))
+			{
+				std::string &&file = FileDialog(fileType::TXT);
+				if(!file.empty())
+				{
+					if(!LoadFromIni(&framedata, &cg, file))
+					{
+						ImGui::OpenPopup(errorPopupId);
+					}
+					else
+					{
+						mainPane.RegenerateNames();
+						render.SwitchImage(-1);
+					}
+				}
+			}
+
+			if (ImGui::MenuItem("Load HA6..."))
+			{
+				std::string &&file = FileDialog(fileType::HA6);
+				if(!file.empty())
+				{
+					if(!framedata.load(file.c_str()))
+					{
+						ImGui::OpenPopup(errorPopupId);
+					}
+					else
+						mainPane.RegenerateNames();
+				}
+			}
+
+			if (ImGui::MenuItem("Load HA6 and Patch..."))
+			{
+				std::string &&file = FileDialog(fileType::HA6);
+				if(!file.empty())
+				{
+					if(!framedata.load(file.c_str(), true))
+					{
+						ImGui::OpenPopup(errorPopupId);
+					}
+					else
+						mainPane.RegenerateNames();
+				}
+			}
+
+			ImGui::Separator();
+			if (ImGui::MenuItem("Save as...")) 
+			{
+				std::string &&file = FileDialog(fileType::HA6, true);
+				if(!file.empty())
+				{
+					framedata.save(file.c_str());
+				}
+			}
+
+			ImGui::Separator();
+			if (ImGui::MenuItem("Load CG...")) 
+			{
+				std::string &&file = FileDialog(fileType::CG);
+				if(!file.empty())
+				{
+					if(!cg.load(file.c_str()))
+					{
+						ImGui::OpenPopup(errorPopupId);	
+					}
+					render.SwitchImage(-1);
+				}
+			}
+
+			if (ImGui::MenuItem("Load palette...")) 
+			{
+				std::string &&file = FileDialog(fileType::PAL);
+				if(!file.empty())
+				{
+					if(!cg.loadPalette(file.c_str()))
+					{
+						ImGui::OpenPopup(errorPopupId);	
+					}
+					render.SwitchImage(-1);
+				}
+			}
+
+			ImGui::Separator();
+			if (ImGui::MenuItem("Exit")) PostQuitMessage(0);
+			ImGui::EndMenu();
+		}
+		if (ImGui::BeginMenu("Preferences"))
+		{
+			if (ImGui::BeginMenu("Switch preset style"))
+			{		
+				if (ImGui::Combo("Style", &style_idx, "Warm\0Dark\0Light\0ImGui\0"))
+				{
+					switch (style_idx)
+					{
+					case 0: WarmStyle(); break;
+					case 1: ImGui::StyleColorsDark(); ChangeClearColor(0.202f, 0.243f, 0.293f); break;
+					case 2: ImGui::StyleColorsLight(); ChangeClearColor(0.534f, 0.568f, 0.587f); break;
+					case 3: ImGui::StyleColorsClassic(); ChangeClearColor(0.142f, 0.075f, 0.147f); break;
+					}
+				}
+				ImGui::EndMenu();
+			}
+			if (ImGui::BeginMenu("Background color"))
+			{
+				ImGui::ColorEdit3("##clearColor", (float*)&clearColor, ImGuiColorEditFlags_NoInputs);
+				ImGui::EndMenu();
+			}
+			if (cg.getPalNumber() > 0 && ImGui::BeginMenu("Palette number"))
+			{
+				ImGui::SetNextItemWidth(80);
+				ImGui::InputInt("Palette", &curPalette);
+				if(curPalette >= cg.getPalNumber())
+					curPalette = cg.getPalNumber()-1;
+				else if(curPalette < 0)
+					curPalette = 0;
+				if(cg.changePaletteNumber(curPalette))
+					render.SwitchImage(-1);
+				ImGui::EndMenu();
+			}
+			if (ImGui::BeginMenu("Zoom level"))
+			{
+				ImGui::SetNextItemWidth(80);
+				if (ImGui::Combo("Zoom", &zoom_idx, "x0.5\0x1\0x1.5\0x2\0x3\0x4\0"))
+				{
+					switch (zoom_idx)
+					{
+					case 0: render.scale = 0.5f; break;
+					case 1: render.scale = 1.f; break;
+					case 2: render.scale = 1.5f; break;
+					case 3: render.scale = 2.f; break;
+					case 4: render.scale = 3.f; break;
+					case 5: render.scale = 4.f; break;
+					}
+				}
+				ImGui::EndMenu();
+			}
+			if (ImGui::BeginMenu("Filter"))
+			{
+				if (ImGui::Checkbox("Bilinear", &smoothRender))
+				{
+					render.filter = smoothRender;
+					render.SwitchImage(-1);
+				}
+				ImGui::EndMenu();
+			}
+			ImGui::EndMenu();
+		}
+		if (ImGui::BeginMenu("About"))
+		{
+			if (ImGui::MenuItem("Show Demo Window")) show_demo_window = !show_demo_window;
+			ImGui::EndMenu();
+		}
+		ImGui::EndMenuBar();
+	}
 }
 
 void MainFrame::WarmStyle()
@@ -282,7 +405,7 @@ void MainFrame::WarmStyle()
 	colors[ImGuiCol_TextDisabled]           = ImVec4(0.60f, 0.60f, 0.60f, 1.00f);
 	colors[ImGuiCol_WindowBg]               = ImVec4(0.95f, 0.91f, 0.85f, 1.00f);
 	colors[ImGuiCol_ChildBg]                = ImVec4(0.00f, 0.00f, 0.00f, 0.00f);
-	colors[ImGuiCol_PopupBg]                = ImVec4(1.00f, 1.00f, 1.00f, 0.98f);
+	colors[ImGuiCol_PopupBg]                = ImVec4(0.98f, 0.96f, 0.93f, 1.00f);
 	colors[ImGuiCol_Border]                 = ImVec4(0.00f, 0.00f, 0.00f, 0.30f);
 	colors[ImGuiCol_BorderShadow]           = ImVec4(0.00f, 0.00f, 0.00f, 0.00f);
 	colors[ImGuiCol_FrameBg]                = ImVec4(1.00f, 1.00f, 1.00f, 1.00f);
@@ -334,43 +457,4 @@ void MainFrame::WarmStyle()
 	colors[ImGuiCol_NavWindowingDimBg]      = ImVec4(0.20f, 0.20f, 0.20f, 0.20f);
 	colors[ImGuiCol_ModalWindowDimBg]       = ImVec4(0.20f, 0.20f, 0.20f, 0.35f);
 	ChangeClearColor(0.324f, 0.409f, 0.185f);
-}
-
-void MainFrame::ChangeClearColor(float r, float g, float b)
-{
-	clearColor[0] = r;
-	clearColor[1] = g;
-	clearColor[2] = b;
-}
-
-void MainFrame::UpdateBackProj(float x, float y)
-{
-	render.UpdateProj(x, y);
-	glViewport(0, 0, x, y);
-}
-
-void MainFrame::HandleMouseDrag(int x_, int y_)
-{
-	x += x_;
-	y += y_;
-}
-
-bool MainFrame::HandleKeys(uint64_t vkey)
-{
-	switch (vkey)
-	{
-	case VK_UP:
-		mainPane.AdvancePattern(-1);
-		return true;
-	case VK_DOWN:
-		mainPane.AdvancePattern(1);
-		return true;
-	case VK_LEFT:
-		mainPane.AdvanceFrame(-1);
-		return true;
-	case VK_RIGHT:
-		mainPane.AdvanceFrame(+1);
-		return true;
-	}
-	return false;
 }

@@ -80,6 +80,7 @@ void main()
 
 Render::Render():
 cg(nullptr),
+filter(false),
 vSprite(Vao::F2F2, GL_DYNAMIC_DRAW),
 vGeometry(Vao::F3F3, GL_STREAM_DRAW),
 imageVertex{
@@ -156,7 +157,7 @@ void Render::Draw()
 	view = glm::scale(view, glm::vec3(scale, scale, 1.f));
 	view = glm::translate(view, glm::vec3(x,y,0.f));
 	SetModelView(std::move(view));
-	glUniform1f(lAlphaS, 0.55f);
+	glUniform1f(lAlphaS, 0.25f);
 	SetMatrix(lProjectionS);
 	vGeometry.Bind();
 	vGeometry.Draw(geoParts[LINES], 0, GL_LINES);
@@ -189,9 +190,9 @@ void Render::Draw()
 	//Boxes
 	sSimple.Use();
 	vGeometry.Bind();
-	//glUniform1f(lAlphaS, 0.6f);
+	glUniform1f(lAlphaS, 0.6f);
 	vGeometry.DrawQuads(GL_LINE_LOOP, quadsToDraw);
-	glUniform1f(lAlphaS, 0.2f);
+	glUniform1f(lAlphaS, 0.3f);
 	vGeometry.DrawQuads(GL_TRIANGLE_FAN, quadsToDraw);
 }
 
@@ -231,7 +232,7 @@ void Render::SwitchImage(int id)
 			}
 
 			texture.Load(image);
-			texture.Apply();
+			texture.Apply(false, filter);
 			
 			AdjustImageQuad(texture.image->offsetX, texture.image->offsetY, texture.image->width, texture.image->height);
 			vSprite.UpdateBuffer(0, imageVertex);
@@ -266,12 +267,12 @@ void Render::GenerateHitboxVertices(const BoxList &hitboxes, int size)
 	const float *color;
 	//red, green, blue, z order
 	constexpr float collisionColor[] 	{1, 1, 1, 1};
-	constexpr float greenColor[] 		{0, 1, 0, 2};
-	constexpr float redColor[] 			{1, 0, 0, 3};
+	constexpr float greenColor[] 		{0.2, 1, 0.2, 2};
+	constexpr float shieldColor[] 		{0, 0, 1, 3}; //Not only for shield
 	constexpr float clashColor[]		{1, 1, 0, 4};
-	constexpr float shieldColor[] 		{0, 0, 1, 5}; //Not only for shield
+	constexpr float projectileColor[] 	{0, 1, 1, 5}; //飛び道具？ Warc uses them.
 	constexpr float purple[] 			{1, 0, 1, 6}; //特別
-	constexpr float projectileColor[] 	{0, 1, 1, 7}; //飛び道具？ Warc uses them.
+	constexpr float redColor[] 			{1, 0.2, 0.2, 7};
 
 	constexpr int tX[] = {0,1,1,0};
 	constexpr int tY[] = {0,0,1,1};

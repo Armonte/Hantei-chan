@@ -44,6 +44,7 @@ private:
 	void SetBlendingMode();
 
 public:
+	bool filter;
 	int x, offsetX;
 	int y, offsetY;
 	float scale;

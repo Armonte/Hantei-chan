@@ -3,12 +3,8 @@
 #include "frame_disp.h"
 #include <imgui.h>	
 
-MainPane::MainPane(Render* render_):
-frameData(nullptr),
-currentPattern(-1),
-currFrame(0),
-decoratedNames(nullptr),
-render(render_)
+MainPane::MainPane(Render* render, FrameData *framedata, FrameState &fs) : DrawWindow(render, framedata, fs),
+decoratedNames(nullptr)
 {
 	
 }
@@ -17,7 +13,7 @@ void MainPane::RegenerateNames()
 {
 	delete[] decoratedNames;
 	
-	if(frameData)
+	if(frameData && frameData->m_loaded)
 	{
 		decoratedNames = new std::string[frameData->get_sequence_count()];
 		int count = frameData->get_sequence_count();
@@ -31,190 +27,131 @@ void MainPane::RegenerateNames()
 		decoratedNames = nullptr;
 }
 
-void MainPane::SetFrameData(FrameData *frameData_)
-{
-	if(frameData_)
-		currentPattern = 0;
-	else
-		currentPattern = -1;
-
-	frameData = frameData_;
-
-	RegenerateNames();
-}
-
-
 void MainPane::Draw()
 {	
-	ImGui::Begin("Left Pane",0 , ImGuiWindowFlags_NoMove );
+	namespace im = ImGui;
+	im::Begin("Left Pane",0);
 	if(frameData->m_loaded)
 	{
-		if (ImGui::BeginCombo("Pattern", decoratedNames[currentPattern].c_str(), ImGuiComboFlags_HeightLargest))
+		if (im::BeginCombo("Pattern", decoratedNames[currState.pattern].c_str(), ImGuiComboFlags_HeightLargest))
 		{
 			auto count = frameData->get_sequence_count();
 			for (int n = 0; n < count; n++)
 			{
-				const bool is_selected = (currentPattern == n);
-				if (ImGui::Selectable(decoratedNames[n].c_str(), is_selected))
+				const bool is_selected = (currState.pattern == n);
+				if (im::Selectable(decoratedNames[n].c_str(), is_selected))
 				{
-					currentPattern = n;
-					currFrame = 0;
+					currState.pattern = n;
+					currState.frame = 0;
 				}
 
 				// Set the initial focus when opening the combo (scrolling + keyboard navigation focus)
 				if (is_selected)
-					ImGui::SetItemDefaultFocus();
+					im::SetItemDefaultFocus();
 			}
-			ImGui::EndCombo();
+			im::EndCombo();
 		}
-		auto seq = frameData->get_sequence(currentPattern);
+		auto seq = frameData->get_sequence(currState.pattern);
 		if(seq)
 		{
 			int nframes = seq->frames.size() - 1;
 			if(nframes >= 0)
 			{			
-				float spacing = ImGui::GetStyle().ItemInnerSpacing.x;
-				ImGui::SetNextItemWidth(ImGui::GetWindowWidth() - 160.f);
-				ImGui::SliderInt("##frameSlider", &currFrame, 0, nframes);
-				ImGui::SameLine();
-				ImGui::PushButtonRepeat(true);
-				if(ImGui::ArrowButton("##left", ImGuiDir_Left))
-					currFrame--;
-				ImGui::SameLine(0.0f, spacing);
-				if(ImGui::ArrowButton("##right", ImGuiDir_Right))
-					currFrame++;
-				ImGui::PopButtonRepeat();
-				ImGui::SameLine();
-				ImGui::Text("%d/%d", currFrame+1, nframes+1);
+				float spacing = im::GetStyle().ItemInnerSpacing.x;
+				im::SetNextItemWidth(im::GetWindowWidth() - 160.f);
+				im::SliderInt("##frameSlider", &currState.frame, 0, nframes);
+				im::SameLine();
+				im::PushButtonRepeat(true);
+				if(im::ArrowButton("##left", ImGuiDir_Left))
+					currState.frame--;
+				im::SameLine(0.0f, spacing);
+				if(im::ArrowButton("##right", ImGuiDir_Right))
+					currState.frame++;
+				im::PopButtonRepeat();
+				im::SameLine();
+				im::Text("%d/%d", currState.frame+1, nframes+1);
 
-				if(currFrame < 0)
-					currFrame = 0;
-				else if(currFrame > nframes)
-					currFrame = nframes;
+				if(currState.frame < 0)
+					currState.frame = 0;
+				else if(currState.frame > nframes)
+					currState.frame = nframes;
 			}
 			else
-				ImGui::Text("This pattern has no frames.");
-
-			ImGui::BeginChild("FrameInfo", {0, ImGui::GetWindowSize().y-ImGui::GetFrameHeight()*4}, false, ImGuiWindowFlags_HorizontalScrollbar);
-			if (ImGui::TreeNode("Pattern data"))
 			{
-				if(ImGui::InputText("Pattern name", &seq->name))
+				im::Text("This pattern has no frames.");
+				if(im::Button("Add frame"))
 				{
-					decoratedNames[currentPattern] = frameData->GetDecoratedName(currentPattern);
+					seq->frames.push_back({});
+					currState.frame = 0;
+				}
+				
+			}
+
+			im::BeginChild("FrameInfo", {0, im::GetWindowSize().y-im::GetFrameHeight()*4}, false, ImGuiWindowFlags_HorizontalScrollbar);
+			if (im::TreeNode("Pattern data"))
+			{
+				if(im::InputText("Pattern name", &seq->name))
+				{
+					decoratedNames[currState.pattern] = frameData->GetDecoratedName(currState.pattern);
 				}
 				PatternDisplay(seq);
-				ImGui::TreePop();
-				ImGui::Separator();
+				im::TreePop();
+				im::Separator();
 			}
 			if(nframes >= 0)
 			{
-				Frame &frame = seq->frames[currFrame];
-				if(ImGui::TreeNode("Effects"))
-				{
-					EfDisplay(&frame.EF);
-					ImGui::TreePop();
-					ImGui::Separator();
-				}
-				if(ImGui::TreeNode("Conditions"))
-				{
-					IfDisplay(&frame.IF);
-					ImGui::TreePop();
-					ImGui::Separator();
-				}
-				if(ImGui::TreeNode("State data"))
+				Frame &frame = seq->frames[currState.frame];
+				if(im::TreeNode("State data"))
 				{
 					AsDisplay(&frame.AS);
-					ImGui::TreePop();
-					ImGui::Separator();
+					im::TreePop();
+					im::Separator();
 				}
-				if (ImGui::TreeNode("Animation data"))
+				if (im::TreeNode("Animation data"))
 				{
 					AfDisplay(&frame.AF);
-					ImGui::TreePop();
-					ImGui::Separator();
+					im::TreePop();
+					im::Separator();
 				}
-				if (ImGui::TreeNode("Attack data"))
+				if (im::TreeNode("Tools"))
 				{
-					AtDisplay(&frame.AT);
-					ImGui::TreePop();
-					ImGui::Separator();
+					im::Checkbox("Make copy current frame", &copyThisFrame);
+					
+					if(im::Button("Append frame"))
+					{
+						if(copyThisFrame)
+							seq->frames.push_back(frame);
+						else
+							seq->frames.push_back({});
+					}
+
+					im::SameLine(0,20.f); 
+					if(im::Button("Insert frame"))
+					{
+						if(copyThisFrame)
+							seq->frames.insert(seq->frames.begin()+currState.frame, frame);
+						else
+							seq->frames.insert(seq->frames.begin()+currState.frame, {});
+					}
+
+					im::SameLine(0,20.f);
+					if(im::Button("Delete frame"))
+					{
+						seq->frames.erase(seq->frames.begin()+currState.frame);
+						if(currState.frame >= seq->frames.size())
+							currState.frame--;
+					}
+
+					im::TreePop();
+					im::Separator();
 				}
-				ImGui::Text("Boxes %i", frame.nHitbox);
+				im::Text("Boxes %i", frame.nHitbox);
 			}
-			ImGui::EndChild();
-		}
-		else
-			ImGui::Text("This pattern is empty.");
-	}
-	else
-		render->DontDraw();
-
-
-
-
-	ImGui::Text("Application average %.3f ms/frame (%.1f FPS)", 1000.0f / ImGui::GetIO().Framerate, ImGui::GetIO().Framerate);
-
-	ImGui::End();
-
-	ForceUpdate();
-}
-
-void MainPane::ForceUpdate()
-{
-	Sequence *seq;
-	if((seq = frameData->get_sequence(currentPattern)) &&
-		seq->frames.size() > 0)
-	{
-		auto &frame =  seq->frames[currFrame];
-		spriteId = frame.AF.spriteId;
-		render->GenerateHitboxVertices(frame.hitboxes, frame.nHitbox);
-		render->offsetX = (frame.AF.offset_x)*1;
-		render->offsetY = (frame.AF.offset_y)*1;
-		render->SetImageColor(frame.AF.rgba);
-		render->rotX = frame.AF.rotation[0];
-		render->rotY = frame.AF.rotation[1];
-		render->rotZ = frame.AF.rotation[2];
-		render->scaleX = frame.AF.scale[0];
-		render->scaleY = frame.AF.scale[1];
-		
-		switch (frame.AF.blend_mode)
-		{
-		case 2:
-			render->blendingMode = Render::additive;
-			break;
-		case 3:
-			render->blendingMode = Render::substractive;
-			break;
-		default:
-			render->blendingMode = Render::normal;
-			break;
+			im::EndChild();
 		}
 	}
-	else
-	{
-		spriteId = -1;
-		
-		render->DontDraw();
-	}
-	render->SwitchImage(spriteId);
+
+	im::Text("Application average %.3f ms/frame (%.1f FPS)", 1000.0f / im::GetIO().Framerate, im::GetIO().Framerate);
+	im::End();
 }
 
-void MainPane::AdvancePattern(int dir)
-{
-	currentPattern+= dir;
-	if(currentPattern < 0)
-		currentPattern = 0;
-	else if(currentPattern >= frameData->get_sequence_count())
-		currentPattern = frameData->get_sequence_count()-1;
-	currFrame = 0;
-}
-
-void MainPane::AdvanceFrame(int dir)
-{
-	auto seq = frameData->get_sequence(currentPattern);
-	currFrame += dir;
-	if(currFrame < 0)
-		currFrame = 0;
-	else if(seq && currFrame >= seq->frames.size())
-		currFrame = seq->frames.size()-1;
-}

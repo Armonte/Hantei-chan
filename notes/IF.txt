@@ -1,0 +1,42 @@
+0 Nothing
+1 Jump on key input
+2 Effect elimination conditions
+3 Branch on hit
+4 Vector check
+5 KO flag check
+6 Lever & Trigger check 1
+7 Lever & Trigger check 2
+8 Random check
+9 Loop counter settings
+10 Loop counter check
+11 Additional command input check
+12 Opponent distance check
+13 Screen corner check
+14 Box collision check
+15 Box collision check (Capture)
+16 Be affected by scrolling
+17 Branch according to number of hits within animation
+18 Check main/trunk animation and jump.
+19 Projectile box col check. (Reflection)
+20 Box collision check 2
+21 Opponent's character number check
+22 BG number check
+23 BG type check
+24 Projectile flag check
+25 Variable check
+26 Check lever and change vector
+27 Branch if thrown
+28 Jump if knocked out
+29 Check X pos in screen and jump
+30 Facing direction check
+31 Change variable on command input
+32 Jump if on the CPU side of a CPU battle.
+33 If sound effect is playing
+34 Homing
+35 Additional command input check, multiple
+36 Meter bar mode check
+37 Jump according to color selected
+
+50 Effect reflection box.
+
+And many more

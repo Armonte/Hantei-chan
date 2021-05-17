@@ -9,25 +9,15 @@
 class MainPane : DrawWindow
 {
 public:
-	MainPane(Render* render);
+	MainPane(Render* render, FrameData *frameData, FrameState &fs);
 	void Draw();
-	void SetFrameData(FrameData *frameData);
+
 	void RegenerateNames();
-	void AdvancePattern(int dir);
-	void AdvanceFrame(int dir);
-	
 
 private:
-	Render *render;
-	FrameData *frameData;
-	int currentPattern;
-	int currFrame;
-	int spriteId;
-
+	bool copyThisFrame = true;
 	std::string *decoratedNames;
 
-	void ForceUpdate();
-	
 };
 
 #endif /* MAINPANE_H_GUARD */
