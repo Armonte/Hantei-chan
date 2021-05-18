@@ -357,7 +357,6 @@ inline void AfDisplay(Frame_AF *af)
 	};
 
 	constexpr float width = 50.f;
-	im::InputInt("AFRT", &af->AFRT, 0, 0);
 
 	im::SetNextItemWidth(width*3);
 	im::InputInt("Sprite", &af->spriteId); im::SameLine(0, 20.f);
@@ -407,4 +406,6 @@ inline void AfDisplay(Frame_AF *af)
 
 	im::DragFloat3("Rot XYZ", af->rotation, 0.005); 
 	im::DragFloat2("Scale", af->scale, 0.1);
+	im::Checkbox("Rotation keeps scale set by EF", &af->AFRT);
+
 }

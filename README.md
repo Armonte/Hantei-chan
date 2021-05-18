@@ -5,13 +5,25 @@ Feel free to fork it. By the way, this program only for windows.
 
 Stuff that needs to be done:
 * Play animations
-* Copy pasting stuff
+* Copy pasting stuff 
 * Redo/Undo stack
 * Display .pat graphics
 * Better support for Under Night In Birth.
 * A sprite browser
-* Fix holding the arrow in spinner controls
-* Anything else you may need
+* Fix the held spinner controls
+* More hotkeys, like Ctrl+S
+* Other QoL features
+
+-----------------------
+## Hotkeys and stuff ##
+
+Left click and drag in the display to scroll the view.
+Drag right click to draw a box.
+You can switch frames/patterns with the arrow keys.
+You can switch the currently selected type of box with Z and X.
+Don't press these hotkeys while you're drawing a box. You'll make a mess.
+
+There's also a slight bug when you click a control when the window is unfocused. Yeah, idk.
 
 -----------------------
 ## How to build ##

@@ -50,12 +50,13 @@ public:
 	float scale;
 	float scaleX, scaleY;
 	float rotX, rotY, rotZ;
+	int highLightN = -1;
 	
 	Render();
 	void Draw();
 	void UpdateProj(float w, float h);
 
-	void GenerateHitboxVertices(const BoxList &hitboxes, int size);
+	void GenerateHitboxVertices(const BoxList &hitboxes);
 	void SetCg(CG *cg);
 	void SwitchImage(int id);
 	void DontDraw();

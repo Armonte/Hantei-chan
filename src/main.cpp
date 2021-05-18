@@ -16,10 +16,14 @@
 
 #include <res/resource.h>
 
+#ifndef HA6GUIVERSION
+#define HA6GUIVERSION "Custom"
+#endif
+
 ImVec2 clientRect;
 
 HWND mainWindowHandle;
-static bool dragWindow;
+static bool dragLeft = false, dragRight = false;
 static POINT mousePos;
 
 void LoadJapaneseFonts(ImGuiIO& io)
@@ -75,7 +79,7 @@ int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE, PWSTR pCmdLine, int nCmdShow
 	};
 
 	::RegisterClassEx(&wc);
-	HWND hwnd = ::CreateWindow(wc.lpszClassName, L"HA6GUI: 判定ちゃん６", WS_OVERLAPPEDWINDOW, 100, 100, 1280, 800, NULL, NULL, wc.hInstance, nullptr);
+	HWND hwnd = ::CreateWindow(wc.lpszClassName, L"判定ちゃん v" HA6GUIVERSION, WS_OVERLAPPEDWINDOW, 100, 100, 1280, 800, NULL, NULL, wc.hInstance, nullptr);
 	mainWindowHandle = hwnd;
 	::ShowWindow(hwnd, nCmdShow);
 	::UpdateWindow(hwnd);
@@ -146,10 +150,31 @@ LRESULT WINAPI WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
 				return 0;
 		}
 		break;
+	case WM_RBUTTONDOWN:
+		if(!ImGui::GetIO().WantCaptureMouse)
+		{
+			dragRight = true;
+			GetCursorPos(&mousePos);
+			ScreenToClient(hWnd, &mousePos);
+			SetCapture(hWnd);
+			mf->RightClick(mousePos.x, mousePos.y);
+			
+			return 0;
+		}
+		break;
+	case WM_RBUTTONUP:
+		if(dragRight)
+		{
+			if(!dragLeft)
+				ReleaseCapture();
+			dragRight = false;
+			return 0;
+		}
+		break;
 	case WM_LBUTTONDOWN:
 		if(!ImGui::GetIO().WantCaptureMouse)
 		{
-			dragWindow = true;
+			dragLeft = true;
 			GetCursorPos(&mousePos);
 			ScreenToClient(hWnd, &mousePos);
 			SetCapture(hWnd);
@@ -158,21 +183,22 @@ LRESULT WINAPI WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
 		}
 		break;
 	case WM_LBUTTONUP:
-		if(dragWindow)
+		if(dragLeft)
 		{
-			ReleaseCapture();
-			dragWindow = false;
+			if(!dragRight)
+				ReleaseCapture();
+			dragLeft = false;
 			return 0;
 		}
 		break;
 	case WM_MOUSEMOVE:
-		if(dragWindow)
+		if(dragLeft || dragRight)
 		{
 			POINT newMousePos;
 			newMousePos.x = (short) LOWORD(lParam);
 			newMousePos.y = (short) HIWORD(lParam);
 
-			mf->HandleMouseDrag(newMousePos.x-mousePos.x, newMousePos.y-mousePos.y);
+			mf->HandleMouseDrag(newMousePos.x-mousePos.x, newMousePos.y-mousePos.y, dragRight, dragLeft);
 			mousePos = newMousePos;
 		}
 		break;

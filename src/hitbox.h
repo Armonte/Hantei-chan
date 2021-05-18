@@ -2,8 +2,9 @@
 #define HITBOX_H_GUARD
 #include <map>
 
-struct Hitbox {
-	short x1, y1, x2, y2;
+struct Hitbox
+{
+	int xy[4];
 };
 
 using BoxList = std::map<int, Hitbox>;

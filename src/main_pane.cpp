@@ -145,7 +145,6 @@ void MainPane::Draw()
 					im::TreePop();
 					im::Separator();
 				}
-				im::Text("Boxes %i", frame.nHitbox);
 			}
 			im::EndChild();
 		}

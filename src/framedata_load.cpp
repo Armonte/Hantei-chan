@@ -415,7 +415,9 @@ unsigned int *fd_frame_AF_load(unsigned int *data, const unsigned int *data_end,
 			frame->AF.rotation[1] = data[1] ? 0.5f : 0.f;
 			data += 2;
 		} else if (!memcmp(buf, "AFRT", 4)) {
+			//Some fucked up interaction with rotation and scale.
 			frame->AF.AFRT = data[0];
+			test.Print(data, data_end);
 			++data;
 		} else if (!memcmp(buf, "AFED", 4)) {
 			break;
@@ -450,10 +452,7 @@ unsigned int *fd_frame_load(unsigned int *data, const unsigned int *data_end, Fr
 				++info->cur_hitbox;
 				boxesCount++;
 
-				hitbox->x1 = (data[1]);
-				hitbox->y1 = (data[2]);
-				hitbox->x2 = (data[3]);
-				hitbox->y2 = (data[4]);
+				memcpy(hitbox->xy, data+1, sizeof(int)*4);
 			}
 			else
 				assert(0);
@@ -542,7 +541,6 @@ unsigned int *fd_frame_load(unsigned int *data, const unsigned int *data_end, Fr
 			std::cout <<"\tUnknown Frame level tag: " << tag <<"\n";
 		}
 
-		frame->nHitbox=boxesCount;
 		//Unhandled: None, unless they're not in vanilla melty files.
 	}
 	

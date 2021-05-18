@@ -254,8 +254,9 @@ void Render::AdjustImageQuad(int x, int y, int w, int h)
 	imageVertex[9] = imageVertex[13] = imageVertex[17] = h;
 }
 
-void Render::GenerateHitboxVertices(const BoxList &hitboxes, int size)
+void Render::GenerateHitboxVertices(const BoxList &hitboxes)
 {
+	int size = hitboxes.size();
 	if(size <= 0)
 	{
 		quadsToDraw = 0;
@@ -270,9 +271,10 @@ void Render::GenerateHitboxVertices(const BoxList &hitboxes, int size)
 	constexpr float greenColor[] 		{0.2, 1, 0.2, 2};
 	constexpr float shieldColor[] 		{0, 0, 1, 3}; //Not only for shield
 	constexpr float clashColor[]		{1, 1, 0, 4};
-	constexpr float projectileColor[] 	{0, 1, 1, 5}; //飛び道具？ Warc uses them.
-	constexpr float purple[] 			{1, 0, 1, 6}; //特別
+	constexpr float projectileColor[] 	{0, 1, 1, 5}; //飛び道具
+	constexpr float purple[] 			{0.5, 0, 1, 6}; //特別
 	constexpr float redColor[] 			{1, 0.2, 0.2, 7};
+	constexpr float hiLightColor[]		{1, 0.5, 1, 10};
 
 	constexpr int tX[] = {0,1,1,0};
 	constexpr int tY[] = {0,0,1,1};
@@ -287,7 +289,9 @@ void Render::GenerateHitboxVertices(const BoxList &hitboxes, int size)
 		int i = boxPair.first;
 		const Hitbox& hitbox = boxPair.second;
 
-		if(i==0)
+		if (highLightN == i)
+			color = hiLightColor;
+		else if(i==0)
 			color = collisionColor;
 		else if (i >= 1 && i <= 8)
 			color = greenColor;
@@ -303,11 +307,13 @@ void Render::GenerateHitboxVertices(const BoxList &hitboxes, int size)
 			color = redColor;
 
 		
+
+		
 		for(int j = 0; j < 4*6; j+=6)
 		{
 			//X, Y, Z, R, G, B
-			clientQuads[dataI+j+0] = hitbox.x1 + (hitbox.x2-hitbox.x1)*tX[j/5];
-			clientQuads[dataI+j+1] = hitbox.y1 + (hitbox.y2-hitbox.y1)*tY[j/5];
+			clientQuads[dataI+j+0] = hitbox.xy[0] + (hitbox.xy[2]-hitbox.xy[0])*tX[j/5];
+			clientQuads[dataI+j+1] = hitbox.xy[1] + (hitbox.xy[3]-hitbox.xy[1])*tY[j/5];
 			clientQuads[dataI+j+2] = color[3]+1000.f;
 			clientQuads[dataI+j+3] = color[0];
 			clientQuads[dataI+j+4] = color[1];

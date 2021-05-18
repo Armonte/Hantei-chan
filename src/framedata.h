@@ -49,7 +49,7 @@ struct Frame_AF {
 	int loopCount; //Times to loop, it's the frame just before the loop.
 	int loopEnd; //The frame number is not part of the loop.
 	
-	int AFRT;
+	bool AFRT; //Makes rotation respect EF scale.
 };
 
 struct Frame_AS {
@@ -141,7 +141,6 @@ struct Frame {
 	std::vector<Frame_IF> IF;
 
 	BoxList hitboxes;
-	int nHitbox;
 };
 
 struct Sequence {

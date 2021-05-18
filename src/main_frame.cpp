@@ -21,14 +21,15 @@ context(context_),
 currState{},
 mainPane(&render, &framedata, currState),
 rightPane(&render, &framedata, currState),
+boxPane(&render, &framedata, currState),
 curPalette(0),
 x(0),y(150)
 {
 	currState.spriteId = -1;
 	WarmStyle();
-/* 
+
  	framedata.load("data/akiha.HA6");
-	cg.load("data/akiha.cg");  */
+	cg.load("data/akiha.cg");  
 	mainPane.RegenerateNames();
 
 	render.SetCg(&cg);
@@ -100,11 +101,11 @@ void MainFrame::DrawUi()
 			ImGuiID toSplit = dockspaceID;
 			ImGuiID dock_left_id = ImGui::DockBuilderSplitNode(toSplit, ImGuiDir_Left, 0.30f, nullptr, &toSplit);
 			ImGuiID dock_right_id = ImGui::DockBuilderSplitNode(toSplit, ImGuiDir_Right, 0.40f, nullptr, &toSplit);
-			ImGuiID dock_down_id = ImGui::DockBuilderSplitNode(toSplit, ImGuiDir_Down, 0.45f, nullptr, &toSplit);
+			ImGuiID dock_down_id = ImGui::DockBuilderSplitNode(toSplit, ImGuiDir_Down, 0.25f, nullptr, &toSplit);
 
 			ImGui::DockBuilderDockWindow("Left Pane", dock_left_id);
 			ImGui::DockBuilderDockWindow("Right Pane", dock_right_id);
- 			ImGui::DockBuilderDockWindow("Debug", dock_down_id);
+ 			ImGui::DockBuilderDockWindow("Box Pane", dock_down_id);
 
 			ImGui::DockBuilderFinish(dockspaceID);
 		}
@@ -128,6 +129,7 @@ void MainFrame::DrawUi()
 
 	mainPane.Draw(); 
 	rightPane.Draw();
+	boxPane.Draw();
 
 	if (show_demo_window)
 		ImGui::ShowDemoWindow(&show_demo_window);
@@ -143,7 +145,7 @@ void MainFrame::RenderUpdate()
 	{
 		auto &frame =  seq->frames[currState.frame];
 		currState.spriteId = frame.AF.spriteId;
-		render.GenerateHitboxVertices(frame.hitboxes, frame.nHitbox);
+		render.GenerateHitboxVertices(frame.hitboxes);
 		render.offsetX = (frame.AF.offset_x)*1;
 		render.offsetY = (frame.AF.offset_y)*1;
 		render.SetImageColor(frame.AF.rgba);
@@ -201,10 +203,22 @@ void MainFrame::UpdateBackProj(float x, float y)
 	glViewport(0, 0, x, y);
 }
 
-void MainFrame::HandleMouseDrag(int x_, int y_)
+void MainFrame::HandleMouseDrag(int x_, int y_, bool dragRight, bool dragLeft)
 {
-	x += x_;
-	y += y_;
+	if(dragRight)
+	{
+		boxPane.BoxDrag(x_, y_);
+	}
+	if(dragLeft)
+	{
+		x += x_;
+		y += y_;
+	}
+}
+
+void MainFrame::RightClick(int x_, int y_)
+{
+	boxPane.BoxStart((x_-x-clientRect.x/2)/render.scale, (y_-y-clientRect.y/2)/render.scale);
 }
 
 bool MainFrame::HandleKeys(uint64_t vkey)
@@ -222,6 +236,12 @@ bool MainFrame::HandleKeys(uint64_t vkey)
 		return true;
 	case VK_RIGHT:
 		AdvanceFrame(+1);
+		return true;
+	case 'Z':
+		boxPane.AdvanceBox(-1);
+		return true;
+	case 'X':
+		boxPane.AdvanceBox(+1);
 		return true;
 	}
 	return false;
@@ -309,7 +329,7 @@ void MainFrame::Menu(unsigned int errorPopupId)
 			if (ImGui::MenuItem("Save"/* , "Ctrl+S" */)) 
 			{
 				if(currentFilePath.empty())
-					std::string &&file = FileDialog(fileType::HA6, true);
+					currentFilePath = FileDialog(fileType::HA6, true);
 				if(!currentFilePath.empty())
 				{
 					framedata.save(currentFilePath.c_str());

@@ -4,6 +4,7 @@
 #include "render.h"
 #include "main_pane.h"
 #include "right_pane.h"
+#include "box_pane.h"
 #include "framedata.h"
 #include "cg.h"
 #include <glm/mat4x4.hpp>
@@ -17,8 +18,10 @@ public:
 	
 	void Draw();
 	void UpdateBackProj(float x, float y);
-	void HandleMouseDrag(int x, int y);
+	void HandleMouseDrag(int x, int y, bool dragRight, bool dragLeft);
 	bool HandleKeys(uint64_t vkey);
+
+	void RightClick(int x, int y);
 
 private:
 	ContextGl *context;
@@ -26,7 +29,9 @@ private:
 	int style_idx = 0;
 	int zoom_idx = 3;
 	bool smoothRender = false; 
+	
 
+	Render render;
 	FrameData framedata;
 	FrameState currState;
 	CG cg;
@@ -51,7 +56,7 @@ private:
 
 	MainPane mainPane;
 	RightPane rightPane;
-	Render render;
+	BoxPane boxPane;
 };
 
 

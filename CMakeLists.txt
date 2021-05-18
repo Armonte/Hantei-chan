@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.13...3.19)
-project(ha6gui LANGUAGES C CXX)
+project(hanteichan VERSION 0.9 LANGUAGES C CXX)
 
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
@@ -8,7 +8,7 @@ add_compile_options("$<$<C_COMPILER_ID:MSVC>:/utf-8>")
 add_compile_options("$<$<CXX_COMPILER_ID:MSVC>:/utf-8>")
 
 set (CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake" )
-set (EXE "ha6gui" )
+set (EXE "hanteichan" )
 
 include(glad)
 include(imgui)
@@ -19,6 +19,7 @@ add_executable(${EXE} WIN32
 	src/main_frame.cpp
 	src/main_pane.cpp
 	src/right_pane.cpp
+	src/box_pane.cpp
 	src/render.cpp
 	src/vao.cpp
 	src/shader.cpp
@@ -36,7 +37,7 @@ add_executable(${EXE} WIN32
 )
 
 target_include_directories(${EXE} PRIVATE ".")
-target_compile_definitions(${EXE} PRIVATE UNICODE _UNICODE WIN32_LEAN_AND_MEAN)
+target_compile_definitions(${EXE} PRIVATE UNICODE _UNICODE WIN32_LEAN_AND_MEAN HA6GUIVERSION="${CMAKE_PROJECT_VERSION}")
 
 find_package(OpenGL REQUIRED)
 target_link_libraries(${EXE} PRIVATE imgui glad OpenGL::GL glm)

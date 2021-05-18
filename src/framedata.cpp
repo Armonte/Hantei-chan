@@ -37,6 +37,7 @@ bool FrameData::load(const char *filename, bool patch) {
 		return 0;
 	}
 
+	//Names are utf8 because the file was saved by this tool.
 	bool utf8 = ((unsigned char*)data)[31] == 0xFF;
 	
 	// initialize the root
@@ -78,6 +79,28 @@ void FrameData::save(const char *filename)
 	std::ofstream file(filename, std::ios_base::out | std::ios_base::binary);
 	if (!file.is_open())
 		return;
+	
+	for(auto& seq : m_sequences)
+	for(auto &frame : seq.frames)
+	for(auto it = frame.hitboxes.begin(); it != frame.hitboxes.end();)
+	{
+		Hitbox &box = it->second;
+		//Delete degenerate boxes when exporting.
+		if( (box.xy[0] == box.xy[2]) ||
+			(box.xy[1] == box.xy[3]) )
+		{
+			frame.hitboxes.erase(it++);
+		}
+		else
+		{
+			//Fix inverted boxes. Don't know if needed.
+			if(box.xy[0] > box.xy[2])
+				std::swap(box.xy[0], box.xy[2]);
+			if(box.xy[1] > box.xy[3])
+				std::swap(box.xy[1], box.xy[3]);
+			++it;
+		}
+	}
 
 	char header[32] = "Hantei6DataFile";
 
@@ -138,13 +161,15 @@ std::string FrameData::GetDecoratedName(int n)
 			if(noFrames)
 				ss << u8"〇 ";
 				
-			if(m_sequences[n].name.empty() && !noFrames)
+			if(m_sequences[n].name.empty() && m_sequences[n].codeName.empty() && !noFrames)
 			{
 					ss << u8"Untitled";
 			}
 		}
 
 		ss << m_sequences[n].name;
+		if(!m_sequences[n].codeName.empty())
+			ss << " - " << m_sequences[n].codeName;
 		return ss.str();
 }
 

@@ -114,8 +114,9 @@ void WriteAF(std::ofstream &file, const Frame_AF *af)
 		file.write(VAL(af->landJump), 4);
 	}
 	if(af->AFRT){
+		int val = af->AFRT;
 		file.write("AFRT", 4);
-		file.write(VAL(af->AFRT), 4);
+		file.write(VAL(val), 4);
 	}
 	
 	file.write("AFED", 4);
@@ -380,14 +381,8 @@ void WriteFrame(std::ofstream &file, const Frame *frame)
 		else
 			file.write("HRNM", 4);
 
-		int data[4];
-		data[0] = box.second.x1;
-		data[1] = box.second.y1;
-		data[2] = box.second.x2;
-		data[3] = box.second.y2;
-
 		file.write(VAL(index), 4);
-		file.write(PTR(data), 4*4);
+		file.write(PTR(box.second.xy), 4*4);
 	}
 	
 	WriteEF(file, frame->EF);
