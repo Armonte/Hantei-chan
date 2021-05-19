@@ -60,9 +60,11 @@ void BoxPane::Draw()
 	namespace im = ImGui;
 	im::Begin("Box Pane",0);
 
-	auto &frames = frameData->get_sequence(currState.pattern)->frames;
-	if(frames.size()>0)
+
+	if(frameData->get_sequence(currState.pattern) && frameData->get_sequence(currState.pattern)->frames.size() > 0)
 	{
+		auto &frames = frameData->get_sequence(currState.pattern)->frames;
+		
 		im::SetNextItemWidth(200.f);
 		if (im::BeginCombo("Box", boxNameList[currentBox].c_str(), ImGuiComboFlags_HeightLarge))
 		{
@@ -118,6 +120,7 @@ void BoxPane::Draw()
 		im::InputScalarN("Top left", ImGuiDataType_S32, boxes[currentBox].xy, 2, &step, NULL, "%d", 0);
 		im::InputScalarN("Bottom right", ImGuiDataType_S32, boxes[currentBox].xy+2, 2, &step, NULL, "%d", 0);
 	}
+
 
 	im::End();
 }

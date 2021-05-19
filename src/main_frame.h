@@ -5,6 +5,7 @@
 #include "main_pane.h"
 #include "right_pane.h"
 #include "box_pane.h"
+#include "about.h"
 #include "framedata.h"
 #include "cg.h"
 #include <glm/mat4x4.hpp>
@@ -22,6 +23,7 @@ public:
 	bool HandleKeys(uint64_t vkey);
 
 	void RightClick(int x, int y);
+	void LoadSettings();
 
 private:
 	ContextGl *context;
@@ -47,6 +49,8 @@ private:
 	void AdvancePattern(int dir);
 	void AdvanceFrame(int dir);
 
+	void SetZoom(int level);
+	void LoadTheme(int i );
 	void WarmStyle();
 	void ChangeClearColor(float r, float g, float b);
 
@@ -57,6 +61,7 @@ private:
 	MainPane mainPane;
 	RightPane rightPane;
 	BoxPane boxPane;
+	AboutWindow aboutWindow;
 };
 
 

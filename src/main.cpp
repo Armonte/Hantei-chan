@@ -2,11 +2,13 @@
 #include "context_gl.h"
 #include "main_frame.h"
 #include "test.h"
+#include "ini.h"
 
 #include <iostream>
 #include <fstream>
 #include <cstring>
 #include <imgui.h>
+
 #include <imgui_impl_opengl3.h>
 #include <imgui_impl_win32.h>
 #include <windows.h>
@@ -17,7 +19,7 @@
 #include <res/resource.h>
 
 #ifndef HA6GUIVERSION
-#define HA6GUIVERSION "Custom"
+#define HA6GUIVERSION " custom"
 #endif
 
 ImVec2 clientRect;
@@ -25,6 +27,7 @@ ImVec2 clientRect;
 HWND mainWindowHandle;
 static bool dragLeft = false, dragRight = false;
 static POINT mousePos;
+bool init = false;
 
 void LoadJapaneseFonts(ImGuiIO& io)
 {
@@ -35,14 +38,13 @@ void LoadJapaneseFonts(ImGuiIO& io)
 	config.OversampleV = 1; */
 	int appendAt = GetWindowsDirectoryA(winFolder, 512);
 	strcpy(winFolder+appendAt, "\\Fonts\\meiryo.ttc");
-
-	if(!io.Fonts->AddFontFromFileTTF(winFolder, 20.0f, &config, io.Fonts->GetGlyphRangesJapanese()))
+	if(!io.Fonts->AddFontFromFileTTF(winFolder, gSettings.fontSize, &config, io.Fonts->GetGlyphRangesJapanese()))
 	{
 		auto res = FindResource((HMODULE)GetWindowLongPtr(mainWindowHandle, GWLP_HINSTANCE), MAKEINTRESOURCE(NOTO_SANS_JP_F), RT_RCDATA);
 		void *notoFont = LockResource(LoadResource(nullptr, res));
 		config.FontDataOwnedByAtlas = false;
 		
-		io.Fonts->AddFontFromMemoryTTF(notoFont, SizeofResource(nullptr, res), 20.0f, &config, io.Fonts->GetGlyphRangesJapanese());
+		io.Fonts->AddFontFromMemoryTTF(notoFont, SizeofResource(nullptr, res), gSettings.fontSize, &config, io.Fonts->GetGlyphRangesJapanese());
 	}
 }
 
@@ -78,11 +80,15 @@ int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE, PWSTR pCmdLine, int nCmdShow
 		L"Main window", NULL 
 	};
 
+	
 	::RegisterClassEx(&wc);
-	HWND hwnd = ::CreateWindow(wc.lpszClassName, L"判定ちゃん v" HA6GUIVERSION, WS_OVERLAPPEDWINDOW, 100, 100, 1280, 800, NULL, NULL, wc.hInstance, nullptr);
+	HWND hwnd = ::CreateWindow(wc.lpszClassName, L"判定ちゃん v" HA6GUIVERSION, WS_OVERLAPPEDWINDOW,
+		gSettings.posX, gSettings.posY, gSettings.winSizeX, gSettings.winSizeY, NULL, NULL, wc.hInstance, nullptr);
 	mainWindowHandle = hwnd;
-	::ShowWindow(hwnd, nCmdShow);
+	::ShowWindow(hwnd, gSettings.maximized ? SW_SHOWMAXIMIZED : SW_NORMAL);
 	::UpdateWindow(hwnd);
+	init = true;
+
 
 	MSG msg;
 	while (GetMessage(&msg, NULL, 0, 0))
@@ -124,20 +130,41 @@ LRESULT WINAPI WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
 			ImGui::CreateContext();
 			ImGuiIO& io = ImGui::GetIO();
 			io.ConfigFlags |= ImGuiConfigFlags_DockingEnable;
-			io.IniFilename = nullptr;
-			//io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;     // Enable Keyboard Controls
+			io.IniFilename = "hanteichan.ini";
+			InitIni();
+			MoveWindow(hWnd, gSettings.posX, gSettings.posY, gSettings.winSizeX, gSettings.winSizeY, false);
 			LoadJapaneseFonts(io);
+			//io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;     // Enable Keyboard Controls
 			ImGui_ImplWin32_Init(hWnd);
 			ImGui_ImplOpenGL3_Init("#version 120");
+			
 
 			MainFrame* mf = new MainFrame(context);
 			SetWindowLongPtr(hWnd, GWLP_USERDATA, (LONG_PTR)mf);
 			return 0;
 		}
+	case WM_MOVE:
+		{
+			RECT rect;
+			GetWindowRect(hWnd, &rect);
+			gSettings.posX = rect.left;
+			gSettings.posY = rect.top;
+		}
+		break;
 	case WM_SIZE:
+		if (wParam == SIZE_MAXIMIZED && init)
+			gSettings.maximized = true;
+		else if (wParam == SIZE_RESTORED && init)
+			gSettings.maximized = false;
 		if (wParam != SIZE_MINIMIZED)
 		{
 			RECT rect;
+			GetWindowRect(hWnd, &rect);
+			gSettings.posX = rect.left;
+			gSettings.posY = rect.top;
+			gSettings.winSizeX = rect.right-rect.left;
+			gSettings.winSizeY = rect.bottom-rect.top;
+
 			GetClientRect(mainWindowHandle, &rect);
 			clientRect = ImVec2((float)rect.right, (float)rect.bottom);
 			mf->UpdateBackProj(clientRect.x, clientRect.y);

@@ -14,8 +14,6 @@
 #include <glm/vec3.hpp>
 #include <glm/gtc/matrix_transform.hpp>
 
-bool show_demo_window = false;
-
 MainFrame::MainFrame(ContextGl *context_):
 context(context_),
 currState{},
@@ -26,19 +24,21 @@ curPalette(0),
 x(0),y(150)
 {
 	currState.spriteId = -1;
-	WarmStyle();
-
- 	framedata.load("data/akiha.HA6");
-	cg.load("data/akiha.cg");  
-	mainPane.RegenerateNames();
-
 	render.SetCg(&cg);
-	render.scale = 2;
+	LoadSettings();
 }
 
 MainFrame::~MainFrame()
 {
 	delete context;
+}
+
+void MainFrame::LoadSettings()
+{
+	LoadTheme(gSettings.theme);
+	SetZoom(gSettings.zoomLevel);
+	smoothRender = gSettings.bilinear;
+	memcpy(clearColor, gSettings.color, sizeof(float)*3);
 }
 
 void MainFrame::Draw()
@@ -53,6 +53,11 @@ void MainFrame::Draw()
 	ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
 
 	SwapBuffers(context->dc);
+
+	gSettings.theme = style_idx;
+	gSettings.zoomLevel = zoom_idx;
+	gSettings.bilinear = smoothRender;
+	memcpy(gSettings.color, clearColor, sizeof(float)*3);
 }
 
 void MainFrame::DrawBack()
@@ -100,8 +105,8 @@ void MainFrame::DrawUi()
 
 			ImGuiID toSplit = dockspaceID;
 			ImGuiID dock_left_id = ImGui::DockBuilderSplitNode(toSplit, ImGuiDir_Left, 0.30f, nullptr, &toSplit);
-			ImGuiID dock_right_id = ImGui::DockBuilderSplitNode(toSplit, ImGuiDir_Right, 0.40f, nullptr, &toSplit);
-			ImGuiID dock_down_id = ImGui::DockBuilderSplitNode(toSplit, ImGuiDir_Down, 0.25f, nullptr, &toSplit);
+			ImGuiID dock_right_id = ImGui::DockBuilderSplitNode(toSplit, ImGuiDir_Right, 0.45f, nullptr, &toSplit);
+			ImGuiID dock_down_id = ImGui::DockBuilderSplitNode(toSplit, ImGuiDir_Down, 0.20f, nullptr, &toSplit);
 
 			ImGui::DockBuilderDockWindow("Left Pane", dock_left_id);
 			ImGui::DockBuilderDockWindow("Right Pane", dock_right_id);
@@ -130,9 +135,7 @@ void MainFrame::DrawUi()
 	mainPane.Draw(); 
 	rightPane.Draw();
 	boxPane.Draw();
-
-	if (show_demo_window)
-		ImGui::ShowDemoWindow(&show_demo_window);
+	aboutWindow.Draw();
 
 	RenderUpdate();
 }
@@ -209,7 +212,7 @@ void MainFrame::HandleMouseDrag(int x_, int y_, bool dragRight, bool dragLeft)
 	{
 		boxPane.BoxDrag(x_, y_);
 	}
-	if(dragLeft)
+	else if(dragLeft)
 	{
 		x += x_;
 		y += y_;
@@ -252,6 +255,32 @@ void MainFrame::ChangeClearColor(float r, float g, float b)
 	clearColor[0] = r;
 	clearColor[1] = g;
 	clearColor[2] = b;
+}
+
+void MainFrame::SetZoom(int level)
+{
+	zoom_idx = level;
+	switch (level)
+	{
+	case 0: render.scale = 0.5f; break;
+	case 1: render.scale = 1.f; break;
+	case 2: render.scale = 1.5f; break;
+	case 3: render.scale = 2.f; break;
+	case 4: render.scale = 3.f; break;
+	case 5: render.scale = 4.f; break;
+	}
+}
+
+void MainFrame::LoadTheme(int i )
+{
+	style_idx = i;
+	switch (i)
+	{
+		case 0: WarmStyle(); break;
+		case 1: ImGui::StyleColorsDark(); ChangeClearColor(0.202f, 0.243f, 0.293f); break;
+		case 2: ImGui::StyleColorsLight(); ChangeClearColor(0.534f, 0.568f, 0.587f); break;
+		case 3: ImGui::StyleColorsClassic(); ChangeClearColor(0.142f, 0.075f, 0.147f); break;
+	}
 }
 
 void MainFrame::Menu(unsigned int errorPopupId)
@@ -383,13 +412,7 @@ void MainFrame::Menu(unsigned int errorPopupId)
 			{		
 				if (ImGui::Combo("Style", &style_idx, "Warm\0Dark\0Light\0ImGui\0"))
 				{
-					switch (style_idx)
-					{
-					case 0: WarmStyle(); break;
-					case 1: ImGui::StyleColorsDark(); ChangeClearColor(0.202f, 0.243f, 0.293f); break;
-					case 2: ImGui::StyleColorsLight(); ChangeClearColor(0.534f, 0.568f, 0.587f); break;
-					case 3: ImGui::StyleColorsClassic(); ChangeClearColor(0.142f, 0.075f, 0.147f); break;
-					}
+					LoadTheme(style_idx);
 				}
 				ImGui::EndMenu();
 			}
@@ -415,15 +438,7 @@ void MainFrame::Menu(unsigned int errorPopupId)
 				ImGui::SetNextItemWidth(80);
 				if (ImGui::Combo("Zoom", &zoom_idx, "x0.5\0x1\0x1.5\0x2\0x3\0x4\0"))
 				{
-					switch (zoom_idx)
-					{
-					case 0: render.scale = 0.5f; break;
-					case 1: render.scale = 1.f; break;
-					case 2: render.scale = 1.5f; break;
-					case 3: render.scale = 2.f; break;
-					case 4: render.scale = 3.f; break;
-					case 5: render.scale = 4.f; break;
-					}
+					SetZoom(zoom_idx);
 				}
 				ImGui::EndMenu();
 			}
@@ -438,9 +453,9 @@ void MainFrame::Menu(unsigned int errorPopupId)
 			}
 			ImGui::EndMenu();
 		}
-		if (ImGui::BeginMenu("About"))
+		if (ImGui::BeginMenu("Help"))
 		{
-			if (ImGui::MenuItem("Show Demo Window")) show_demo_window = !show_demo_window;
+			if (ImGui::MenuItem("About")) aboutWindow.isVisible = !aboutWindow.isVisible;
 			ImGui::EndMenu();
 		}
 		ImGui::EndMenuBar();

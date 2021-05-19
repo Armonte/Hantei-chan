@@ -87,7 +87,7 @@ void MainPane::Draw()
 				
 			}
 
-			im::BeginChild("FrameInfo", {0, im::GetWindowSize().y-im::GetFrameHeight()*4}, false, ImGuiWindowFlags_HorizontalScrollbar);
+			im::BeginChild("FrameInfo", {0, im::GetWindowSize().y-im::GetFrameHeight()*3}, false, ImGuiWindowFlags_HorizontalScrollbar);
 			if (im::TreeNode("Pattern data"))
 			{
 				if(im::InputText("Pattern name", &seq->name))
@@ -149,8 +149,10 @@ void MainPane::Draw()
 			im::EndChild();
 		}
 	}
+	else
+		im::Text("Load some data first.");
 
-	im::Text("Application average %.3f ms/frame (%.1f FPS)", 1000.0f / im::GetIO().Framerate, im::GetIO().Framerate);
+	//im::Text("Application average %.3f ms/frame (%.1f FPS)", 1000.0f / im::GetIO().Framerate, im::GetIO().Framerate);
 	im::End();
 }
 
