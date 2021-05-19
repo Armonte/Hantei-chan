@@ -234,10 +234,11 @@ LRESULT WINAPI WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
 			return 0;
 		break;
 	case WM_DESTROY:
+		delete mf;
 		ImGui_ImplOpenGL3_Shutdown();
 		ImGui_ImplWin32_Shutdown();
 		ImGui::DestroyContext();
-		delete mf;
+		
 		SetWindowLongPtr(hWnd, GWLP_USERDATA, 0);
 		::PostQuitMessage(0);
 		return 0;

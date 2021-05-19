@@ -30,6 +30,7 @@ x(0),y(150)
 
 MainFrame::~MainFrame()
 {
+	ImGui::SaveIniSettingsToDisk(ImGui::GetCurrentContext()->IO.IniFilename);
 	delete context;
 }
 
