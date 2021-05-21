@@ -22,6 +22,8 @@
 #define HA6GUIVERSION " custom"
 #endif
 
+char iniLocation[512];
+
 ImVec2 clientRect;
 
 HWND mainWindowHandle;
@@ -69,6 +71,10 @@ int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE, PWSTR pCmdLine, int nCmdShow
 			return 0;
 		}
 	}
+
+	//If it fails... Well, that works too.
+	int appendAt = GetCurrentDirectoryA(512, iniLocation);
+	strcpy(iniLocation+appendAt, "\\hanteichan.ini");
 	
 	WNDCLASSEX wc = {
 		sizeof(WNDCLASSEX),
@@ -130,7 +136,7 @@ LRESULT WINAPI WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
 			ImGui::CreateContext();
 			ImGuiIO& io = ImGui::GetIO();
 			io.ConfigFlags |= ImGuiConfigFlags_DockingEnable;
-			io.IniFilename = "hanteichan.ini";
+			io.IniFilename = iniLocation;
 			InitIni();
 			MoveWindow(hWnd, gSettings.posX, gSettings.posY, gSettings.winSizeX, gSettings.winSizeY, false);
 			LoadJapaneseFonts(io);
