@@ -1,3 +1,5 @@
+If you have a problem open an issue.
+
 # Hantei-chan #
 Hantei6 GUI editor for Melty Blood.
 I don't really care too much about modding melty so I won't be updating this anymore.
