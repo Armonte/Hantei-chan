@@ -1,5 +1,3 @@
-If you have a problem, open an issue.
-
 # Hantei-chan #
 Hantei6 GUI editor for Melty Blood.
 I don't really care too much about modding melty so I won't be adding more features.
@@ -15,6 +13,10 @@ Stuff that needs to be done:
 * Fix the held spinner controls
 * More hotkeys, like Ctrl+S
 * Other QoL features
+
+![screenshot](https://user-images.githubusercontent.com/39018575/119175726-311f4580-ba38-11eb-83dd-2d7d57c17f02.png)
+
+If you have a problem, open an issue.
 
 -----------------------
 ## Hotkeys and stuff ##
