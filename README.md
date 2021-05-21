@@ -1,4 +1,4 @@
-If you have a problem open an issue.
+If you have a problem, open an issue.
 
 # Hantei-chan #
 Hantei6 GUI editor for Melty Blood.
