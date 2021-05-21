@@ -138,6 +138,11 @@ LRESULT WINAPI WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
 			io.ConfigFlags |= ImGuiConfigFlags_DockingEnable;
 			io.IniFilename = iniLocation;
 			InitIni();
+			if(gSettings.maximized)
+			{
+				gSettings.posX = 0;
+				gSettings.posY = 0;
+			}
 			MoveWindow(hWnd, gSettings.posX, gSettings.posY, gSettings.winSizeX, gSettings.winSizeY, false);
 			LoadJapaneseFonts(io);
 			//io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;     // Enable Keyboard Controls
