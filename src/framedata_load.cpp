@@ -392,7 +392,6 @@ unsigned int *fd_frame_AF_load(unsigned int *data, const unsigned int *data_end,
 			data += 2;
 		} else if (!memcmp(buf, "AFJP", 4)) {
 			frame->AF.jump = data[0];
-			assert(data[0] != 0);
 			++data;
 		} else if (!memcmp(buf, "AFHK", 4)) {
 			frame->AF.interpolationType = data[0];
@@ -672,12 +671,7 @@ unsigned int *fd_sequence_load(unsigned int *data, const unsigned int *data_end,
 				temp_info.cur_frame = frame_it;
 				test.frame = frame_it;
 				data = fd_frame_load(data, data_end, frame, &temp_info);
-				for(const auto &delayLoad : temp_info.delayLoadList)
-				{
-					Frame &frame = seq->frames[delayLoad.frameNo];
-					frame.hitboxes[delayLoad.location] = *temp_info.boxesRefs[delayLoad.source];
-				}
-			
+						
 				++frame_it;
 			}
 			else
@@ -685,6 +679,11 @@ unsigned int *fd_sequence_load(unsigned int *data, const unsigned int *data_end,
 				assert(0 && "Actual frame number and PDS2 don't match");
 			}
 		} else if (!memcmp(buf, "PEND", 4)) {
+			for(const auto &delayLoad : temp_info.delayLoadList)
+			{
+				Frame &frame = seq->frames[delayLoad.frameNo];
+				frame.hitboxes[delayLoad.location] = *temp_info.boxesRefs[delayLoad.source];
+			}
 			test.seqName = "";
 			break;
 		} else
