@@ -143,9 +143,9 @@ inline void AsDisplay(Frame_AS *as)
 	BitField("Flagset 2", &as->statusFlags[1], &flagIndex);
 	switch (flagIndex)
 	{
-		case 0: Tooltip("Can always EX cancel."); break;
-		case 2: Tooltip("Unknown"); break;
-		case 31: Tooltip("Unknown. Used in many dashes"); break;
+		case 0: Tooltip("Can always EX cancel"); break;
+		case 2: Tooltip("Can only jump cancel"); break;
+		case 31: Tooltip("Can't block"); break;
 	}
 
 	im::SetNextItemWidth(width);
@@ -238,10 +238,10 @@ inline void AtDisplay(Frame_AT *at)
 		case 8: Tooltip("Miss if enemy is standing?"); break;
 		case 9: Tooltip("Miss if enemy is airborne?"); break;
 		case 10: Tooltip("Miss if enemy is crouching?"); break;
-		case 11: Tooltip("Miss if enemy is in bound?"); break;
+		case 11: Tooltip("Miss if enemy is in hitstun?"); break;
 		case 12: Tooltip("Miss if enemy is in blockstun?"); break;
 		case 13: Tooltip("Miss if OTG"); break;
-		case 14: Tooltip("Hit only in bound?"); break;
+		case 14: Tooltip("Hit only in hitstun?"); break;
 		case 15: Tooltip("Can't hit playable character?"); break;
 	}
 
@@ -260,10 +260,22 @@ inline void AtDisplay(Frame_AT *at)
 		case 8: Tooltip("Not ground techable (HKD)"); break;
 		case 9: Tooltip("Friendly fire?"); break;
 		case 10: Tooltip("No self hitstop"); break;
+
+		case 12: Tooltip("Unknown"); break;
+		case 13: Tooltip("Can't be shielded"); break;
+		case 14: Tooltip("Unknown"); break;
+		
 		case 16: Tooltip("Use custom blockstop"); break;
-		case 22: Tooltip("Mystery flag 22"); break;
-		case 25: Tooltip("No hitstop on multihit?"); break;
-		case 29: Tooltip("Block enemy blast during Stun?"); break;
+		case 17: Tooltip("Unknown"); break;
+		case 18: Tooltip("Unknown"); break;
+		case 19: Tooltip("Unknown"); break;
+		case 20: Tooltip("Unknown"); break;
+		case 21: Tooltip("Unknown"); break;
+		case 22: Tooltip("Unknown"); break;
+
+		//Unused or don't exist in melty.
+		//case 25: Tooltip("No hitstop on multihit?"); break; 
+		//case 29: Tooltip("Block enemy blast during Stun?"); break;
 	}
 
 	im::InputInt("Blockstop", &at->blockStopTime, 0,0);

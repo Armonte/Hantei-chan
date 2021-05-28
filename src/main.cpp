@@ -91,10 +91,6 @@ int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE, PWSTR pCmdLine, int nCmdShow
 	HWND hwnd = ::CreateWindow(wc.lpszClassName, L"判定ちゃん v" HA6GUIVERSION, WS_OVERLAPPEDWINDOW,
 		gSettings.posX, gSettings.posY, gSettings.winSizeX, gSettings.winSizeY, NULL, NULL, wc.hInstance, nullptr);
 	mainWindowHandle = hwnd;
-	::ShowWindow(hwnd, gSettings.maximized ? SW_SHOWMAXIMIZED : SW_NORMAL);
-	::UpdateWindow(hwnd);
-	init = true;
-
 
 	MSG msg;
 	while (GetMessage(&msg, NULL, 0, 0))
@@ -138,20 +134,20 @@ LRESULT WINAPI WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
 			io.ConfigFlags |= ImGuiConfigFlags_DockingEnable;
 			io.IniFilename = iniLocation;
 			InitIni();
-			if(gSettings.maximized)
-			{
-				gSettings.posX = 0;
-				gSettings.posY = 0;
-			}
+
+			MainFrame* mf = new MainFrame(context);
+			SetWindowLongPtr(hWnd, GWLP_USERDATA, (LONG_PTR)mf);
+			
 			MoveWindow(hWnd, gSettings.posX, gSettings.posY, gSettings.winSizeX, gSettings.winSizeY, false);
+			init = true;
+			ShowWindow(hWnd, gSettings.maximized ? SW_SHOWMAXIMIZED : SW_NORMAL);
+			UpdateWindow(hWnd);
+
 			LoadJapaneseFonts(io);
 			//io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;     // Enable Keyboard Controls
 			ImGui_ImplWin32_Init(hWnd);
 			ImGui_ImplOpenGL3_Init("#version 120");
 			
-
-			MainFrame* mf = new MainFrame(context);
-			SetWindowLongPtr(hWnd, GWLP_USERDATA, (LONG_PTR)mf);
 			return 0;
 		}
 	case WM_MOVE:
@@ -163,22 +159,26 @@ LRESULT WINAPI WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
 		}
 		break;
 	case WM_SIZE:
-		if (wParam == SIZE_MAXIMIZED && init)
-			gSettings.maximized = true;
-		else if (wParam == SIZE_RESTORED && init)
-			gSettings.maximized = false;
-		if (wParam != SIZE_MINIMIZED)
+		if(init)
 		{
-			RECT rect;
-			GetWindowRect(hWnd, &rect);
-			gSettings.posX = rect.left;
-			gSettings.posY = rect.top;
-			gSettings.winSizeX = rect.right-rect.left;
-			gSettings.winSizeY = rect.bottom-rect.top;
+			if (wParam == SIZE_MAXIMIZED)
+				gSettings.maximized = true;
+			else if (wParam == SIZE_RESTORED)
+				gSettings.maximized = false;
+			if (wParam != SIZE_MINIMIZED)
+			{
+				RECT rect;
+				GetWindowRect(hWnd, &rect);
+				gSettings.posX = rect.left;
+				gSettings.posY = rect.top;
+				gSettings.winSizeX = rect.right-rect.left;
+				gSettings.winSizeY = rect.bottom-rect.top;
 
-			GetClientRect(mainWindowHandle, &rect);
-			clientRect = ImVec2((float)rect.right, (float)rect.bottom);
-			mf->UpdateBackProj(clientRect.x, clientRect.y);
+
+				GetClientRect(hWnd, &rect);
+				clientRect = ImVec2((float)rect.right, (float)rect.bottom);
+				mf->UpdateBackProj(clientRect.x, clientRect.y);
+			}
 		}
 		return 0;
 	case WM_KEYDOWN:

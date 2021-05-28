@@ -29,15 +29,19 @@ currentBox(0), highlight(false)
 
 void BoxPane::BoxStart(int x, int y)
 {
-	auto &frames = frameData->get_sequence(currState.pattern)->frames;
-	if(frames.size()>0)
+	auto seq = frameData->get_sequence(currState.pattern);
+	if(seq)
 	{
-		Hitbox &box = frames[currState.frame].hitboxes[currentBox];
-		box.xy[0] = box.xy[2] = x;
-		box.xy[1] = box.xy[3] = y;
+		auto &frames = seq->frames;
+		if(frames.size()>0)
+		{
+			Hitbox &box = frames[currState.frame].hitboxes[currentBox];
+			box.xy[0] = box.xy[2] = x;
+			box.xy[1] = box.xy[3] = y;
 
-		dragxy[0] = box.xy[0];
-		dragxy[1] = box.xy[1];
+			dragxy[0] = box.xy[0];
+			dragxy[1] = box.xy[1];
+		}
 	}
 }
 

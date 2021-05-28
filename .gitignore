@@ -1,6 +1,7 @@
 .vscode
 .cache
 /win64
+/build
 /rel
 /data
 

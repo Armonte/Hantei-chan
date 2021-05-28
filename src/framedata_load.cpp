@@ -23,6 +23,12 @@ unsigned int *fd_frame_AT_load(unsigned int *data, const unsigned int *data_end,
 		if (!memcmp(buf, "ATGD", 4)) {
 			//If absent it's UB
 			AT->guard_flags = data[0];
+
+			/* if(data[0] & 1<<15)
+			{
+				test.Print(data, data_end);
+				std::cout << "ATGD "<<data[0]<<"\n";
+			} */
 			++data;
 		} else if (!memcmp(buf, "ATHS", 4)) {
 			AT->correction = data[0];
@@ -60,10 +66,11 @@ unsigned int *fd_frame_AT_load(unsigned int *data, const unsigned int *data_end,
 			data += data[0]+1;
 		} else if (!memcmp(buf, "ATF1", 4)) {
 			AT->otherFlags = data[0];
-/* 			if(AT->otherFlags & 1<<22)
+
+ 			/* if(data[0] != 0)
 			{
 				test.Print(data, data_end);
-				std::cout << "Flag 22"<<"\n";
+				std::cout << "ATF1 "<< data[0]<<"\n";
 			} */
 			++data;
 		} else if (!memcmp(buf, "ATHE", 4)) {
@@ -416,7 +423,6 @@ unsigned int *fd_frame_AF_load(unsigned int *data, const unsigned int *data_end,
 		} else if (!memcmp(buf, "AFRT", 4)) {
 			//Some fucked up interaction with rotation and scale.
 			frame->AF.AFRT = data[0];
-			test.Print(data, data_end);
 			++data;
 		} else if (!memcmp(buf, "AFED", 4)) {
 			break;

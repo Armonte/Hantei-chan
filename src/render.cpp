@@ -307,13 +307,11 @@ void Render::GenerateHitboxVertices(const BoxList &hitboxes)
 			color = redColor;
 
 		
-
-		
 		for(int j = 0; j < 4*6; j+=6)
 		{
 			//X, Y, Z, R, G, B
-			clientQuads[dataI+j+0] = hitbox.xy[0] + (hitbox.xy[2]-hitbox.xy[0])*tX[j/5];
-			clientQuads[dataI+j+1] = hitbox.xy[1] + (hitbox.xy[3]-hitbox.xy[1])*tY[j/5];
+			clientQuads[dataI+j+0] = hitbox.xy[0] + (hitbox.xy[2]-hitbox.xy[0])*tX[j/6];
+			clientQuads[dataI+j+1] = hitbox.xy[1] + (hitbox.xy[3]-hitbox.xy[1])*tY[j/6];
 			clientQuads[dataI+j+2] = color[3]+1000.f;
 			clientQuads[dataI+j+3] = color[0];
 			clientQuads[dataI+j+4] = color[1];
