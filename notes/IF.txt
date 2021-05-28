@@ -2,6 +2,11 @@
 1 Jump on key input
 2 Effect elimination conditions
 3 Branch on hit
+	param1: Frame to jump to.
+	param2:
+		0 = branch only on hit
+		1 = branch on block too
+
 4 Vector check
 5 KO flag check
 6 Lever & Trigger check 1
@@ -33,7 +38,9 @@
 32 Jump if on the CPU side of a CPU battle.
 33 If sound effect is playing
 34 Homing
-35 Additional command input check, multiple
+35 Additional command input check, multiple.
+	param2: can input move id defined in c.txt
+
 36 Meter bar mode check
 37 Jump according to color selected
 

@@ -7,6 +7,7 @@
 #include <iostream>
 #include <fstream>
 #include <cstring>
+#include <cstdlib>
 #include <imgui.h>
 
 #include <imgui_impl_opengl3.h>
@@ -22,11 +23,12 @@
 #define HA6GUIVERSION " custom"
 #endif
 
-char iniLocation[512];
+char iniLocation[512] {};
 
 ImVec2 clientRect;
 
 HWND mainWindowHandle;
+ContextGl *context = nullptr;
 static bool dragLeft = false, dragRight = false;
 static POINT mousePos;
 bool init = false;
@@ -50,10 +52,11 @@ void LoadJapaneseFonts(ImGuiIO& io)
 	}
 }
 
+
 LRESULT WINAPI WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam);
 int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE, PWSTR pCmdLine, int nCmdShow)
 {
-	
+	bool useIni = true;
 	int argC;
 	PWSTR* argV = CommandLineToArgvW(pCmdLine, &argC);
 	for(int i=0; i<argC; i++)
@@ -70,11 +73,31 @@ int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE, PWSTR pCmdLine, int nCmdShow
 			LocalFree(argV);
 			return 0;
 		}
+		else if(!strcmp(arg, "-i"))
+		{
+			useIni = false;
+		}
+		else if(!strcmp(arg, "-r") && i+2<argC)
+		{
+			i+=1;
+			int res[2];
+			for(int j = 0; j < 2; j++)
+			{
+				char * arg = (char*)(argV[i+j]);
+				wcstombs(arg, argV[i+j], wcslen(argV[i+j])+1);
+				res[j] = atoi(arg);
+			}
+			gSettings.winSizeX = res[0];
+			gSettings.winSizeY = res[1];
+		}
 	}
 
 	//If it fails... Well, that works too.
-	int appendAt = GetCurrentDirectoryA(512, iniLocation);
-	strcpy(iniLocation+appendAt, "\\hanteichan.ini");
+	if(useIni)
+	{
+		int appendAt = GetCurrentDirectoryA(512, iniLocation);
+		strcpy(iniLocation+appendAt, "\\hanteichan.ini");
+	}
 	
 	WNDCLASSEX wc = {
 		sizeof(WNDCLASSEX),
@@ -91,6 +114,14 @@ int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE, PWSTR pCmdLine, int nCmdShow
 	HWND hwnd = ::CreateWindow(wc.lpszClassName, L"判定ちゃん v" HA6GUIVERSION, WS_OVERLAPPEDWINDOW,
 		gSettings.posX, gSettings.posY, gSettings.winSizeX, gSettings.winSizeY, NULL, NULL, wc.hInstance, nullptr);
 	mainWindowHandle = hwnd;
+
+	init = true;
+	if(useIni)
+		ShowWindow(hwnd, gSettings.maximized ? SW_SHOWMAXIMIZED : SW_NORMAL);
+	else
+		ShowWindow(hwnd, nCmdShow);
+		
+	UpdateWindow(hwnd);
 
 	MSG msg;
 	while (GetMessage(&msg, NULL, 0, 0))
@@ -121,7 +152,7 @@ LRESULT WINAPI WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
 	{
 	case WM_CREATE:
 		{
-			ContextGl *context = new ContextGl(hWnd);
+			context = new ContextGl(hWnd);
 			if(!gladLoadGL())
 			{
 				MessageBox(0, L"glad fail", L"gladLoadGL()", 0);
@@ -139,9 +170,7 @@ LRESULT WINAPI WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
 			SetWindowLongPtr(hWnd, GWLP_USERDATA, (LONG_PTR)mf);
 			
 			MoveWindow(hWnd, gSettings.posX, gSettings.posY, gSettings.winSizeX, gSettings.winSizeY, false);
-			init = true;
-			ShowWindow(hWnd, gSettings.maximized ? SW_SHOWMAXIMIZED : SW_NORMAL);
-			UpdateWindow(hWnd);
+			
 
 			LoadJapaneseFonts(io);
 			//io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;     // Enable Keyboard Controls
@@ -184,7 +213,7 @@ LRESULT WINAPI WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
 	case WM_KEYDOWN:
 		if(!ImGui::GetIO().WantCaptureKeyboard)
 		{
-			if(mf->HandleKeys(wParam));
+			if(mf->HandleKeys(wParam))
 				return 0;
 		}
 		break;
@@ -249,7 +278,7 @@ LRESULT WINAPI WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
 		ImGui_ImplOpenGL3_Shutdown();
 		ImGui_ImplWin32_Shutdown();
 		ImGui::DestroyContext();
-		
+		delete context;
 		SetWindowLongPtr(hWnd, GWLP_USERDATA, 0);
 		::PostQuitMessage(0);
 		return 0;
