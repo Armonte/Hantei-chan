@@ -47,15 +47,19 @@ void BoxPane::BoxStart(int x, int y)
 
 void BoxPane::BoxDrag(int x, int y)
 {
-	auto &frames = frameData->get_sequence(currState.pattern)->frames;
-	if(frames.size()>0)
+	auto seq = frameData->get_sequence(currState.pattern);
+	if(seq)
 	{
-		Hitbox &box = frames[currState.frame].hitboxes[currentBox];
-		dragxy[0] += x/render->scale;
-		dragxy[1] += y/render->scale;
+		auto &frames = seq->frames;
+		if(frames.size()>0)
+		{
+			Hitbox &box = frames[currState.frame].hitboxes[currentBox];
+			dragxy[0] += x/render->scale;
+			dragxy[1] += y/render->scale;
 
-		box.xy[2] = dragxy[0];
-		box.xy[3] = dragxy[1];
+			box.xy[2] = dragxy[0];
+			box.xy[3] = dragxy[1];
+		}
 	}
 }
 
