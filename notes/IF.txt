@@ -1,19 +1,39 @@
-0 Nothing
-1 Jump on key input
-2 Effect elimination conditions
+1 Jump on directional input
+	param1: Lever direction. Numpad notation, with 0 as neutral. Value 10 is both downforward and forward.
+	param2: Pattern to jump to. Add 10000 for frame jump.
+	param3: If 1, logically negate the condition.
+
+2 Effect despawn conditions
+	param1: 
+		1 = Despawn when touching stage walls
+		2 = Despawn when touching stage borders
+		3 = Despawn when outside the screen
+	param2: 0-1 Unknown
+	param3: Despawn at animation end.
+	param4: 1 11 21 31 41 51 61 62 71 79 81 91 - Appears only if param3 is 1. Unknown
+
 3 Branch on hit
-	param1: Frame to jump to.
+	param1: Frame to jump to. Add 10000 for pattern jump.
 	param2:
-		0 = branch only on hit
-		1 = branch on block too
+		0 = only on hit
+		1 = on block too
+		2
+		3
+		5
+		6
+		7
+		100 = only on shield
+	param3: 0 any
+		1 = only on grounded opponent
+		2 = only on airborne opponent
 
 4 Vector check
 5 KO flag check
 6 Lever & Trigger check 1
 7 Lever & Trigger check 2
 8 Random check
-9 Loop counter settings
-10 Loop counter check
+9 Loop counter settings	(Unused?)
+10 Loop counter check	(Unused?)
 11 Additional command input check
 12 Opponent distance check
 13 Screen corner check
@@ -25,17 +45,21 @@
 19 Projectile box col check. (Reflection)
 20 Box collision check 2
 21 Opponent's character number check
-22 BG number check
-23 BG type check
+22 BG number check	(Unused?)
+23 BG type check	(Unused?)
 24 Projectile flag check
 25 Variable check
 26 Check lever and change vector
 27 Branch if thrown
 28 Jump if knocked out
-29 Check X pos in screen and jump
+29 Check X pos in screen and jump	(Unused?)
 30 Facing direction check
 31 Change variable on command input
+
 32 Jump if on the CPU side of a CPU battle.
+	Possibly an arcade mode thing. Only used by Hime's intro animation.
+	param1: ?
+
 33 If sound effect is playing
 34 Homing
 35 Additional command input check, multiple.
@@ -43,7 +67,21 @@
 
 36 Meter bar mode check
 37 Jump according to color selected
+	A leftover from Re-Act? The color selected doesn't affect anything.
+	param1: pattern to jump to.
 
-50 Effect reflection box.
+38 ?
+39 ?
+40 ?
+41 ?
+42 ?
 
-And many more
+50 Effect reflection box.	(Unused?)
+51 ?
+52 ?
+53 ?
+54 ?
+55 ?
+60 ?
+70 ?
+100 ?

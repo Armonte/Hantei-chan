@@ -1,0 +1,19 @@
+1 Spawn effect
+	no: pattern to spawn
+	param1: X offset
+	param2: Y offset
+	
+2
+3
+4
+5
+6
+8
+9 Play audio
+11
+14
+101
+111
+257
+1000
+10002

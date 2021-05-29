@@ -66,9 +66,8 @@ int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE, PWSTR pCmdLine, int nCmdShow
 		if(!strcmp(arg, "--test"))
 		{
 			std::ofstream coutFile, cerrFile;
-			coutFile.open("cout.txt"); cerrFile.open("cerr.txt");
+			coutFile.open("cout.txt");
 			auto cout_buf = std::cout.rdbuf(coutFile.rdbuf());
-			auto cerr_buf = std::cerr.rdbuf(cerrFile.rdbuf());
 			TestHa6();
 			LocalFree(argV);
 			return 0;

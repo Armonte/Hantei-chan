@@ -2,6 +2,7 @@
 #include <fstream>
 #include <iostream>
 #include "framedata.h"
+#include "framedata_load.h"
 
 void TestHa6()
 {
@@ -21,5 +22,12 @@ void TestHa6()
 		{
 			fd.load((folderIn + filename).c_str());
 		}
+	}
+
+	std::cout<<"Max:"<<maxCount<<"\n";
+	std::cout<<"Set:\n";
+	for(int number : numberSet)
+	{
+		std::cout <<number<<"\n";
 	}
 }

@@ -6,6 +6,10 @@
 
 #include "hitbox.h"
 
+#include <set>
+extern std::set<int> numberSet;
+extern int maxCount;
+
 struct Frame_AF {
 	// rendering data
 	int spriteId;

@@ -250,6 +250,18 @@ unsigned int *fd_frame_EF_load(unsigned int *data, const unsigned int *data_end,
 				for (int i = 0; i < count; ++i) {
 					EF->parameters[i] = data[i+1];
 				}
+				if(EF->type == 1 )
+				{
+					if(maxCount < count)
+						 maxCount = count;
+					numberSet.insert(EF->parameters[1]);
+					test.Print(data, data_end);
+					std::cout <<"\tEFTP " << EF->type <<" NO "<<EF->number<<" Params:";
+					for (int i = 0; i < count; ++i) {
+						std::cout <<" "<<EF->parameters[i];
+					}
+					std::cout<<"\n";
+				}
 			} else {
 				test.Print(data, data_end);
 				std::cout <<"\tUnhandled number of EF parameters: " << count <<"\n";
@@ -276,6 +288,8 @@ unsigned int *fd_frame_IF_load(unsigned int *data, const unsigned int *data_end,
 		
 		if (!memcmp(buf, "IFTP", 4)) {
 			IF->type = data[0];
+			
+			
 			++data;
 		} else if (!memcmp(buf, "IFPR", 4)) {
 			int count = data[0];
@@ -283,6 +297,18 @@ unsigned int *fd_frame_IF_load(unsigned int *data, const unsigned int *data_end,
 				for (int i = 0; i < count; ++i) {
 					IF->parameters[i] = data[i+1];
 				}
+				/* if(IF->type == 3 && count > 2)
+				{
+					if(maxCount < count)
+						 maxCount = count;
+					numberSet.insert(IF->parameters[4]);
+					test.Print(data, data_end);
+					std::cout <<"\tIFTP " << IF->type <<" Params:";
+					for (int i = 0; i < count; ++i) {
+						std::cout <<" "<<IF->parameters[i];
+					}
+					std::cout<<"\n";
+				} */
 			} else {
 				test.Print(data, data_end);
 				std::cout <<"\tUnhandled number of IF parameters: " << count <<"\n";
@@ -731,6 +757,8 @@ unsigned int *fd_main_load(unsigned int *data, const unsigned int *data_end, std
 			break;
 		}
 	}
+
+	
 	
 	return data;
 }

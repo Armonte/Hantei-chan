@@ -6,6 +6,9 @@
 #include <sstream>
 #include <iomanip>
 
+int maxCount = 0;
+std::set<int> numberSet;
+
 Sequence::Sequence():
 psts(0), level(0), flag(0),
 empty(true),
