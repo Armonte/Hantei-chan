@@ -29,6 +29,7 @@ add_executable(${EXE} WIN32
 	src/framedata_load.cpp
 	src/framedata_save.cpp
 	src/cg.cpp
+	src/vectors.cpp
 	src/misc.cpp
 	src/imgui_utils.cpp
 	src/test.cpp

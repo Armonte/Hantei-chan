@@ -4,11 +4,11 @@
 struct ImageData
 {
 	unsigned char *pixels = nullptr;
-	int width;
-	int height;
-	bool is8bpp;
-	int offsetX;
-	int offsetY;
+	int		width;
+	int		height;
+	bool	is8bpp;
+	int		offsetX;
+	int		offsetY;
 
 	~ImageData()
 	{
@@ -17,10 +17,10 @@ struct ImageData
 };
 
 struct CG_Alignment {
-	int	x;
-	int	y;
-	int	width;
-	int	height;
+	int		x;
+	int		y;
+	int		width;
+	int		height;
 	short	source_x;
 	short	source_y;
 	short	source_image;
@@ -28,15 +28,15 @@ struct CG_Alignment {
 };
 
 struct CG_Image {
-	char		filename[32];
-	int		type_id;	// i think this is render mode
+	char			filename[32];
+	int				type_id;	// i think this is render mode
 	unsigned int	width;
 	unsigned int	height;
 	unsigned int	bpp;
-	int		bounds_x1;
-	int		bounds_y1;
-	int		bounds_x2;
-	int		bounds_y2;
+	int				bounds_x1;
+	int				bounds_y1;
+	int				bounds_x2;
+	int				bounds_y2;
 	unsigned int	align_start;
 	unsigned int	align_len;
 	unsigned char	data[1]; 	// for indexing.
@@ -44,20 +44,20 @@ struct CG_Image {
 
 class CG {
 protected:
-	unsigned int *origPalette;
-	unsigned int *palette;
-	char *paletteData = nullptr;
-	int palMax = 0;
-	int paletteOffset = 0;
+	unsigned int	*origPalette;
+	unsigned int	*palette;
+	char			*paletteData = nullptr;
+	int				palMax = 0;
+	int				paletteOffset = 0;
 
-	char				*m_data;
+	char					*m_data;
 	unsigned int			m_data_size;
 
 	const unsigned int		*m_indices;
 
 	unsigned int			m_nimages;
 
-	const CG_Alignment	*m_align;
+	const CG_Alignment		*m_align;
 	unsigned int			m_nalign;
 
 	struct ImageCell {
@@ -71,11 +71,11 @@ protected:
 
 	//Hantei4 calls these "pages".
 	struct Page {
-		ImageCell		cell[256];
+		ImageCell	cell[256];
 	};
 
-	Page				*pages;
-	unsigned int			page_count;
+	Page			*pages;
+	unsigned int	page_count;
 
 	void			copy_cells(
 					const CG_Image *image,
@@ -98,16 +98,16 @@ public:
 	bool changePaletteNumber(int number);
 	int getPalNumber();
 
-	void			free();
+	void free();
 
-	const char		*get_filename(unsigned int n);
+	const char *get_filename(unsigned int n);
 
 	ImageData* draw_texture(unsigned int n, bool to_pow2, bool draw_8bpp = 0);
 
-	int			get_image_count();
+	int	get_image_count();
 
-				CG();
-				~CG();
+	CG();
+	~CG();
 };
 
 #endif /* CG_H_GUARD */

@@ -3,6 +3,7 @@
 #include "main.h"
 #include "filedialog.h"
 #include "ini.h"
+#include "imgui_utils.h"
 
 #include <imgui.h>
 #include <imgui_internal.h>
@@ -136,6 +137,7 @@ void MainFrame::DrawUi()
 	rightPane.Draw();
 	boxPane.Draw();
 	aboutWindow.Draw();
+	vectors.Draw();
 
 	RenderUpdate();
 }
@@ -164,7 +166,7 @@ void MainFrame::RenderUpdate()
 			render.blendingMode = Render::additive;
 			break;
 		case 3:
-			render.blendingMode = Render::substractive;
+			render.blendingMode = Render::subtractive;
 			break;
 		default:
 			render.blendingMode = Render::normal;
@@ -257,18 +259,10 @@ void MainFrame::ChangeClearColor(float r, float g, float b)
 	clearColor[2] = b;
 }
 
-void MainFrame::SetZoom(int level)
+void MainFrame::SetZoom(float level)
 {
+	render.scale = level;
 	zoom_idx = level;
-	switch (level)
-	{
-	case 0: render.scale = 0.5f; break;
-	case 1: render.scale = 1.f; break;
-	case 2: render.scale = 1.5f; break;
-	case 3: render.scale = 2.f; break;
-	case 4: render.scale = 3.f; break;
-	case 5: render.scale = 4.f; break;
-	}
 }
 
 void MainFrame::LoadTheme(int i )
@@ -402,6 +396,19 @@ void MainFrame::Menu(unsigned int errorPopupId)
 				}
 			}
 
+			if (ImGui::MenuItem("Load vector.txt..."))
+			{
+				std::string&& file = FileDialog(fileType::VECTOR);
+				if (!file.empty())
+				{
+					if (!vectors.load(file.c_str()))
+					{
+						ImGui::OpenPopup(errorPopupId);
+					}
+					render.SwitchImage(-1);
+				}
+			}
+
 			ImGui::Separator();
 			if (ImGui::MenuItem("Exit")) PostQuitMessage(0);
 			ImGui::EndMenu();
@@ -436,10 +443,14 @@ void MainFrame::Menu(unsigned int errorPopupId)
 			if (ImGui::BeginMenu("Zoom level"))
 			{
 				ImGui::SetNextItemWidth(80);
-				if (ImGui::Combo("Zoom", &zoom_idx, "x0.5\0x1\0x1.5\0x2\0x3\0x4\0"))
+				if (ImGui::SliderFloat("Zoom", &zoom_idx, 0.25f, 20.0f, "%.2f"))
 				{
 					SetZoom(zoom_idx);
 				}
+				ImGui::SameLine();
+				ImGui::TextDisabled("(?)");
+				if (ImGui::IsItemHovered())
+					Tooltip("Ctrl + Click to set exact value");
 				ImGui::EndMenu();
 			}
 			if (ImGui::BeginMenu("Filter"))
@@ -453,11 +464,17 @@ void MainFrame::Menu(unsigned int errorPopupId)
 			}
 			ImGui::EndMenu();
 		}
+		if (ImGui::BeginMenu("Windows"))
+		{
+			if (ImGui::MenuItem("Vectors Guide")) vectors.drawWindow = !vectors.drawWindow;
+			ImGui::EndMenu();
+		}
 		if (ImGui::BeginMenu("Help"))
 		{
 			if (ImGui::MenuItem("About")) aboutWindow.isVisible = !aboutWindow.isVisible;
 			ImGui::EndMenu();
 		}
+		
 		ImGui::EndMenuBar();
 	}
 }

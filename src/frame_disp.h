@@ -1,8 +1,37 @@
 #include <imgui.h>
 #include "imgui_utils.h"
 #include "framedata.h"
+#include "cg.h"
 
 namespace im = ImGui;
+
+inline void HitVectorDisplay()
+{
+	if (im::BeginTable("HitVectors", 17,
+		ImGuiTableFlags_RowBg |
+		ImGuiTableFlags_SizingFixedFit))
+	{
+		im::TableSetupColumn("Description");
+		im::TableSetupColumn("VecCnt");
+		im::TableSetupColumn("UkemiTime");
+		im::TableSetupColumn("Prio");
+		im::TableSetupColumn("PrioAni");
+		im::TableSetupColumn("KoCheck");
+		im::TableSetupColumn("VecNum");
+		im::TableSetupColumn("HitAni");
+		im::TableSetupColumn("GuardAni");
+		im::TableSetupColumn("Time");
+		im::TableSetupColumn("VecTime");
+		im::TableSetupColumn("flag");
+		im::TableSetupColumn("VecNum");
+		im::TableSetupColumn("HitAni");
+		im::TableSetupColumn("GuardAni");
+		im::TableSetupColumn("Time");
+		im::TableSetupColumn("VecTime");
+		im::TableHeadersRow();
+		im::EndTable();
+	}
+}
 
 inline void IfDisplay(std::vector<Frame_IF> *ifList_)
 {
@@ -105,7 +134,7 @@ inline void AsDisplay(Frame_AS *as)
 		"Throw only"
 	};
 
-	constexpr float width = 75.f;
+	constexpr float width = 103.f;
 
 	unsigned int flagIndex = -1;
 	BitField("Movement Flags", &as->movementFlags, &flagIndex, 8);
@@ -118,7 +147,7 @@ inline void AsDisplay(Frame_AS *as)
 	}
 
 	im::SetNextItemWidth(width*2);
-	im::InputInt2("Speed", as->speed); im::SameLine(0.f, 20); im::SetNextItemWidth(width); 
+	im::InputInt2("Speed", as->speed); im::SameLine(0.f, 20); im::SetNextItemWidth(width);
 	im::InputInt("Max X speed", &as->maxSpeedX, 0, 0);
 	im::SetNextItemWidth(width*2);
 	im::InputInt2("Accel", as->accel);
@@ -133,8 +162,8 @@ inline void AsDisplay(Frame_AS *as)
 		case 2: Tooltip("Don't transition to walking"); break;
 		case 4: Tooltip("Can ground tech"); break;
 		case 5: Tooltip("Unknown"); break;
-		case 8: Tooltip("Unknown"); break;
-		case 9: Tooltip("Unknown"); break;
+		case 8: Tooltip("Guard point high and mid"); break;
+		case 9: Tooltip("Guard point air blockable"); break;
 		case 12: Tooltip("Unknown"); break;
 		case 31: Tooltip("Vector initialization only at the beginning (?)"); break;
 	}
@@ -188,15 +217,15 @@ inline void AtDisplay(Frame_AT *at)
 		"Burn",
 		"Freeze",
 		"Shock",
-		"Big light (SE only?)",
-		"Small light (SE only?)",
+		"Big flash (SE)",
+		"Small flash (SE)",
 		"None",
 		"Strong hit",
 		"Double slash",
 		"Super slash",
-		"Tiny cut",
-		"Fat cut",
-		"Big fat cut",
+		"Weak cut",
+		"Medium cut",
+		"Strong cut",
 		"Faint wave",
 		//Are there more is it OOB?
 	};
@@ -217,13 +246,13 @@ inline void AtDisplay(Frame_AT *at)
 	};
 
 	const char* const hitStopList[] = {
-		"Weak",
-		"Medium",
-		"Strong",
-		"None",
-		"Stronger",
-		"Strongest",
-		"Weakest"
+		"Weak (6f)",
+		"Medium (8f)",
+		"Strong (10f)",
+		"None (0f)",
+		"Stronger (15f)",
+		"Strongest (29f)",
+		"Weakest (3f)"
 	};
 	
 	constexpr float width = 75.f;
@@ -235,21 +264,21 @@ inline void AtDisplay(Frame_AT *at)
 		case 0: Tooltip("Stand blockable"); break;
 		case 1: Tooltip("Air blockable"); break;
 		case 2: Tooltip("Crouch blockable"); break;
-		case 8: Tooltip("Miss if enemy is standing?"); break;
-		case 9: Tooltip("Miss if enemy is airborne?"); break;
-		case 10: Tooltip("Miss if enemy is crouching?"); break;
-		case 11: Tooltip("Miss if enemy is in hitstun?"); break;
-		case 12: Tooltip("Miss if enemy is in blockstun?"); break;
+		case 8: Tooltip("Miss if enemy is standing"); break;
+		case 9: Tooltip("Miss if enemy is airborne"); break;
+		case 10: Tooltip("Miss if enemy is crouching"); break;
+		case 11: Tooltip("Miss if enemy is in hitstun (includes blockstun)"); break;
+		case 12: Tooltip("Miss if enemy is in blockstun"); break;
 		case 13: Tooltip("Miss if OTG"); break;
-		case 14: Tooltip("Hit only in hitstun?"); break;
-		case 15: Tooltip("Can't hit playable character?"); break;
+		case 14: Tooltip("Hit only in hitstun"); break;
+		case 15: Tooltip("Can't hit playable character"); break;
 	}
 
 	flagIndex = -1;
 	BitField("Hit Flags", &at->otherFlags, &flagIndex);
 	switch (flagIndex)
 	{
-		case 0: Tooltip("Enable chip damage"); break;
+		case 0: Tooltip("Chip health instead of red health"); break;
 		case 1: Tooltip("Can't KO"); break;
 		case 2: Tooltip("Make enemy unhittable"); break;
 		case 3: Tooltip("Can't be clashed with"); break;
@@ -258,27 +287,28 @@ inline void AtDisplay(Frame_AT *at)
 		case 6: Tooltip("Shake the screen on hit"); break;
 		case 7: Tooltip("Not air techable"); break;
 		case 8: Tooltip("Not ground techable (HKD)"); break;
-		case 9: Tooltip("Friendly fire?"); break;
+		case 9: Tooltip("Friendly fire"); break;
 		case 10: Tooltip("No self hitstop"); break;
 
-		case 12: Tooltip("Unknown"); break;
+		case 12: Tooltip("Lock burst"); break;
 		case 13: Tooltip("Can't be shielded"); break;
-		case 14: Tooltip("Unknown"); break;
+		case 14: Tooltip("Can't critical"); break;
 		
 		case 16: Tooltip("Use custom blockstop"); break;
-		case 17: Tooltip("Unknown"); break;
-		case 18: Tooltip("Unknown"); break;
+		case 17: Tooltip("OTG Relaunch"); break;
+		case 18: Tooltip("Can't counterhit"); break;
 		case 19: Tooltip("Unknown"); break;
-		case 20: Tooltip("Unknown"); break;
+		case 20: Tooltip("Use Type 2 Circuit Break"); break;
 		case 21: Tooltip("Unknown"); break;
-		case 22: Tooltip("Unknown"); break;
+		case 22: Tooltip("Remove 1f of untech"); break;
 
 		//Unused or don't exist in melty.
 		//case 25: Tooltip("No hitstop on multihit?"); break; 
 		//case 29: Tooltip("Block enemy blast during Stun?"); break;
 	}
 
-	im::InputInt("Blockstop", &at->blockStopTime, 0,0);
+	im::SetNextItemWidth(width * 2);
+	im::InputInt("Custom Blockstop", &at->blockStopTime, 0,0);
 
 	im::SetNextItemWidth(width*2);
 	im::Combo("Hitstop", &at->hitStop, hitStopList, IM_ARRAYSIZE(hitStopList)); im::SameLine(0.f, 20);
@@ -297,7 +327,7 @@ inline void AtDisplay(Frame_AT *at)
 
 	im::SetNextItemWidth(width);
 	im::InputInt("Correction %", &at->correction, 0, 0); im::SameLine(0.f, 20); im::SetNextItemWidth(width*2);
-	im::Combo("Type##Correction", &at->correction_type, "Normal\0Multiplicative\0Substractive\0");
+	im::Combo("Type##Correction", &at->correction_type, "Normal\0Multiplicative\0Subtractive\0");
 
 	im::SetNextItemWidth(width);
 	im::InputInt("VS damage", &at->red_damage, 0, 0); im::SameLine(0.f, 20); im::SetNextItemWidth(width);
@@ -310,6 +340,10 @@ inline void AtDisplay(Frame_AT *at)
 	im::Separator();
 	auto comboWidth = (im::GetWindowWidth())/4.f;
 	im::InputInt3("Guard Vector", at->guardVector);
+	im::SameLine(); im::TextDisabled("(?)");
+	if (im::IsItemHovered())
+		Tooltip("Stand, air and crouch.\nSee vector text file.");
+
 	for(int i = 0; i < 3; i++)
 	{	
 		im::SetNextItemWidth(comboWidth);
@@ -363,9 +397,9 @@ inline void AfDisplay(Frame_AF *af)
 	};
 
 	const char* const animationList[] = {
-		"End",
-		"Next",
-		"Go to"
+		"Go to pattern",
+		"Next frame",
+		"Go to frame"
 	};
 
 	constexpr float width = 50.f;
@@ -380,10 +414,10 @@ inline void AfDisplay(Frame_AF *af)
 	BitField("Animation flags", &af->aniFlag, &flagIndex, 4);
 	switch (flagIndex)
 	{
-		case 0: Tooltip("Unknown"); break;
-		case 1: Tooltip("Unknown"); break;
-		case 2: Tooltip("Go to relative offset"); break;
-		case 3: Tooltip("Unknown"); break;
+		case 0: Tooltip("Landing frame: Land to pattern"); break;
+		case 1: Tooltip("Loop: Decrement loops and go to end if 0"); break;
+		case 2: Tooltip("Go to: Use relative offset"); break;
+		case 3: Tooltip("End of loop: Use relative offset"); break;
 	}
 
 	im::Combo("Animation", &af->aniType, animationList, IM_ARRAYSIZE(animationList));
@@ -393,7 +427,7 @@ inline void AfDisplay(Frame_AF *af)
 	im::InputInt("Landing frame", &af->landJump, 0, 0);
 
 	im::SetNextItemWidth(width);
-	im::InputInt("Priority", &af->priority, 0, 0); im::SetNextItemWidth(width);
+	im::InputInt("Z-Priority", &af->priority, 0, 0); im::SetNextItemWidth(width);
 	im::InputInt("Loop N times", &af->loopCount, 0, 0); im::SameLine(0,20); im::SetNextItemWidth(width);
 	im::InputInt("End of loop", &af->loopEnd, 0, 0);
 	im::InputInt("Duration", &af->duration, 1, 0);
@@ -410,7 +444,7 @@ inline void AfDisplay(Frame_AF *af)
 	int mode = af->blend_mode-1;
 	if(mode < 1)
 		mode = 0;
-	if (im::Combo("Blend Mode", &mode, "Normal\0Additive\0Substractive\0"))
+	if (im::Combo("Blend Mode", &mode, "Normal\0Additive\0Subtractive\0"))
 	{
 		af->blend_mode=mode+1;
 	}

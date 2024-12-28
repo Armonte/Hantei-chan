@@ -18,12 +18,13 @@ static void ReadLine(ImGuiContext*, ImGuiSettingsHandler*, void* entry, const ch
 {
 	float x, y, z;
 	int i;
+	float j;
 	if (sscanf(line, "Color=%f,%f,%f", &x, &y, &z) == 3) {
 		gSettings.color[0] = x;
 		gSettings.color[1] = y;
 		gSettings.color[2] = z;
-	} else if (sscanf(line, "Zoom=%i", &i) == 1) {
-		gSettings.zoomLevel = i;
+	} else if (sscanf(line, "Zoom=%f", &j) == 1) {
+		gSettings.zoomLevel = j;
 	} else if (sscanf(line, "Bilinear=%i", &i) == 1){
 		gSettings.bilinear = i; 
 	} else if (sscanf(line, "Theme=%i", &i) == 1){
@@ -47,7 +48,7 @@ static void Write(ImGuiContext* ctx, ImGuiSettingsHandler* handler, ImGuiTextBuf
 {
 	buf->appendf("[%s][]\n", handler->TypeName);
 	buf->appendf("Color=%f,%f,%f\n", gSettings.color[0], gSettings.color[1], gSettings.color[2]);
-	buf->appendf("Zoom=%i\n", gSettings.zoomLevel);
+	buf->appendf("Zoom=%f\n", gSettings.zoomLevel);
 	buf->appendf("Bilinear=%i\n", gSettings.bilinear);
 	buf->appendf("Theme=%i\n", gSettings.theme);
 	buf->appendf("FontSize=%f\n", gSettings.fontSize);

@@ -355,7 +355,7 @@ void Render::SetBlendingMode()
 		//glBlendEquation(GL_FUNC_ADD);
 		glBlendFunc(GL_SRC_ALPHA, GL_ONE);
 		break;
-	case substractive:
+	case subtractive:
 		glBlendFunc(GL_SRC_ALPHA, GL_ONE);
 		glBlendEquation(GL_FUNC_REVERSE_SUBTRACT);
 		break;
