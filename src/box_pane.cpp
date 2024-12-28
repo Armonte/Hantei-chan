@@ -124,7 +124,7 @@ void BoxPane::Draw()
 			render->highLightN = -1;
 		
 
-		const int step = 8;
+		const int step = 1;
 		im::InputScalarN("Top left", ImGuiDataType_S32, boxes[currentBox].xy, 2, &step, NULL, "%d", 0);
 		im::InputScalarN("Bottom right", ImGuiDataType_S32, boxes[currentBox].xy+2, 2, &step, NULL, "%d", 0);
 	}

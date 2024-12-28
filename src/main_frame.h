@@ -6,6 +6,7 @@
 #include "right_pane.h"
 #include "box_pane.h"
 #include "about.h"
+#include "vectors.h"
 #include "framedata.h"
 #include "cg.h"
 #include <glm/mat4x4.hpp>
@@ -29,7 +30,7 @@ private:
 	ContextGl *context;
 	float clearColor[3];
 	int style_idx = 0;
-	int zoom_idx = 3;
+	float zoom_idx = 3.0f;
 	bool smoothRender = false; 
 	
 
@@ -38,6 +39,7 @@ private:
 	FrameState currState;
 	CG cg;
 	int curPalette;
+	VectorTXT vectors;
 
 	std::string currentFilePath;
 
@@ -49,7 +51,7 @@ private:
 	void AdvancePattern(int dir);
 	void AdvanceFrame(int dir);
 
-	void SetZoom(int level);
+	void SetZoom(float level);
 	void LoadTheme(int i );
 	void WarmStyle();
 	void ChangeClearColor(float r, float g, float b);

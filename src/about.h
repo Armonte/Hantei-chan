@@ -18,15 +18,17 @@ public:
 	{
 		if(isVisible)
 		{
-			ImGui::PushStyleColor(ImGuiCol_WindowBg, ImVec4(1,1,1,0.3));
+			ImGui::PushStyleColor(ImGuiCol_WindowBg, ImVec4(1,1,1,1));
 			ImGui::Begin("About", &isVisible, ImGuiWindowFlags_NoDocking | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoCollapse);
 			ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(0,0,0,1));
 			ImGui::Text("Hantei-chan v" HA6GUIVERSION);
 			ImGui::Separator();
 			ImGui::Text("Made by omanko.");
 			ImGui::Spacing();
-			ImGui::Text("Special thanks to mauve, MadScientist, u4ick and Rhekar.");
-		
+			ImGui::Text("Special thanks to mauve, MadScientist, u4ick, and Rhekar");
+			ImGui::Spacing();
+			ImGui::Text("Fork by gonp. https://github.com/gonpgonp/Hantei-chan");
+
 			ImGui::End();
 			ImGui::PopStyleColor(2);
 		}

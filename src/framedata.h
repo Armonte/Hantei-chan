@@ -94,7 +94,7 @@ struct Frame_AT {
 	int correction;
 	//default = 0, is set only if lower
 	//1 multiplicative
-	//2 substractive
+	//2 subtractive
 	int correction_type; 
 
 	int damage;

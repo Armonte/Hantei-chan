@@ -65,7 +65,7 @@ public:
 	enum blendType{
 		normal,
 		additive,
-		substractive
+		subtractive
 	};
 
 	blendType blendingMode;
