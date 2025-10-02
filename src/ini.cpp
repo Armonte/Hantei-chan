@@ -2,6 +2,7 @@
 #include <sstream>
 #include <iomanip>
 #include <string>
+#include <filesystem>
 #include <windows.h>
 
 #include <imgui.h>
@@ -108,7 +109,13 @@ bool LoadFromIni(FrameData *framedata, CG *cg, const std::string& iniPath, std::
 			GetPrivateProfileStringA("BmpcutFile", "File00", nullptr, cgFile, 256, iniPath.c_str());
 
 			std::string fullpath = folder + "\\" + cgFile;
+			auto extensionPos = fullpath.find_last_of(".");
+			auto palPath = fullpath.substr(0, extensionPos) + ".pal";
 			cg->load(fullpath.c_str());
+			if(std::filesystem::exists(palPath))
+			{
+				cg->loadPalette(palPath.c_str());
+			}
 		}
 
 		return true;

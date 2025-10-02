@@ -50,7 +50,6 @@ private:
 	void setActiveCharacter(int index);
 	void closeCharacter(int index);
 	bool tryCloseCharacter(int index); // Returns true if closed, false if cancelled
-	void openCharacterDialog();
 
 	void DrawBack();
 	void DrawUi();

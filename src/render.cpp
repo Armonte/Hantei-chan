@@ -214,6 +214,8 @@ void Render::UpdateProj(float w, float h)
 void Render::SetCg(CG *cg_)
 {
 	cg = cg_;
+	// Reset current image ID to force texture reload on next SwitchImage call
+	curImageId = -1;
 }
 
 void Render::SwitchImage(int id)
