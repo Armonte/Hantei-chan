@@ -248,6 +248,7 @@ struct Command {
 class FrameData {
 private:
 	unsigned int	m_nsequences;
+	bool m_stringsAreUTF8;  // Track if loaded file had UTF-8 strings (for saving back correctly)
 
 
 public:
@@ -278,6 +279,6 @@ public:
 	~FrameData();
 };
 
-void WriteSequence(std::ofstream &file, const Sequence *seq);
+void WriteSequence(std::ofstream &file, const Sequence *seq, bool stringsAreUTF8);
 
 #endif /* FRAMEDATA_H_GUARD */

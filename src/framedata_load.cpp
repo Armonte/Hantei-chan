@@ -600,7 +600,7 @@ unsigned int *fd_frame_load(unsigned int *data, const unsigned int *data_end, Fr
 	return data;
 }
 
-unsigned int *fd_sequence_load(unsigned int *data, const unsigned int *data_end, Sequence *seq)
+unsigned int *fd_sequence_load(unsigned int *data, const unsigned int *data_end, Sequence *seq, bool utf8)
 {
 
 	TempInfo temp_info;
@@ -666,7 +666,9 @@ unsigned int *fd_sequence_load(unsigned int *data, const unsigned int *data_end,
 			str[len] = '\0';
 
 			name = str;
-			// Keep strings in original Shift-JIS format - no conversion
+			// Convert Shift-JIS to UTF-8 for old Hantei-chan files (backwards compatibility)
+			if(!utf8)
+				name = sj2utf8(name);
 			test.seqName = name;
 
 			data = (unsigned int *)(((unsigned char *)data)+len)+1;
@@ -677,10 +679,11 @@ unsigned int *fd_sequence_load(unsigned int *data, const unsigned int *data_end,
 			memcpy(str, data, 32);
 			str[32] = '\0';
 
-
 			name = str;
-			// Keep strings in original Shift-JIS format - no conversion
-			
+			// Convert Shift-JIS to UTF-8 if needed (backwards compatibility)
+			if(!utf8)
+				name = sj2utf8(name);
+
 			data += 8;
 		} else if (!memcmp(buf, "PDS2", 4)) {
 			// this is an allocation call
@@ -754,22 +757,22 @@ unsigned int *fd_sequence_load(unsigned int *data, const unsigned int *data_end,
 	return data;
 }
 
-unsigned int *fd_main_load(unsigned int *data, const unsigned int *data_end, std::vector<Sequence> &sequences, unsigned int nsequences)
+unsigned int *fd_main_load(unsigned int *data, const unsigned int *data_end, std::vector<Sequence> &sequences, unsigned int nsequences, bool utf8)
 {
 	while (data < data_end) {
 		unsigned int *buf = data;
 		++data;
-		
+
 		if (!memcmp(buf, "PSTR", 4)) {
 			unsigned int seq_id = *data;
 			++data;
-			
+
 			// make sure there's actually something here.
 			if (memcmp(data, "PEND", 4)) {
 				if (seq_id < nsequences) {
 					sequences[seq_id].empty = false;
 					test.seqId = seq_id;
-					data = fd_sequence_load(data, data_end, &sequences[seq_id]);
+					data = fd_sequence_load(data, data_end, &sequences[seq_id], utf8);
 				}
 			} else {
 				++data;

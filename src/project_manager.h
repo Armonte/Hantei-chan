@@ -2,6 +2,7 @@
 #define PROJECT_MANAGER_H_GUARD
 
 #include "character_instance.h"
+#include "character_view.h"
 #include <string>
 #include <vector>
 #include <memory>
@@ -9,7 +10,27 @@
 class ProjectManager
 {
 public:
-	// Save/Load project files
+	// Save/Load project files with view support
+	static bool SaveProject(const std::string& path,
+	                        const std::vector<std::unique_ptr<CharacterInstance>>& characters,
+	                        const std::vector<std::unique_ptr<CharacterView>>& views,
+	                        int activeViewIndex,
+	                        int theme,
+	                        float zoomLevel,
+	                        bool smoothRender,
+	                        const float clearColor[3]);
+
+	static bool LoadProject(const std::string& path,
+	                        std::vector<std::unique_ptr<CharacterInstance>>& characters,
+	                        std::vector<std::unique_ptr<CharacterView>>& views,
+	                        int& activeViewIndex,
+	                        class Render* render,
+	                        int* outTheme = nullptr,
+	                        float* outZoomLevel = nullptr,
+	                        bool* outSmoothRender = nullptr,
+	                        float* outClearColor = nullptr);
+
+	// Legacy support (deprecated, uses temporary stubs)
 	static bool SaveProject(const std::string& path,
 	                        const std::vector<std::unique_ptr<CharacterInstance>>& characters,
 	                        int activeIndex,

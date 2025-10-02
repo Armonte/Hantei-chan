@@ -8,6 +8,7 @@
 #include "about.h"
 #include "vectors.h"
 #include "character_instance.h"
+#include "character_view.h"
 #include <glm/mat4x4.hpp>
 #include <string>
 #include <vector>
@@ -38,18 +39,27 @@ private:
 	Render render;
 	VectorTXT vectors;
 
-	// Multi-character support
-	std::vector<std::unique_ptr<CharacterInstance>> characters;
-	int activeCharacterIndex = -1;
+	// Multi-character/view architecture
+	std::vector<std::unique_ptr<CharacterInstance>> characters;  // Shared character data
+	std::vector<std::unique_ptr<CharacterView>> views;           // Independent views
+	int activeViewIndex = -1;
 
 	std::string currentFilePath;
 
 	// Helper methods
-	CharacterInstance* getActive();
-	const CharacterInstance* getActive() const;
-	void setActiveCharacter(int index);
-	void closeCharacter(int index);
-	bool tryCloseCharacter(int index); // Returns true if closed, false if cancelled
+	CharacterView* getActiveView();
+	const CharacterView* getActiveView() const;
+	CharacterInstance* getActiveCharacter();
+	const CharacterInstance* getActiveCharacter() const;
+
+	void setActiveView(int index);
+	void closeView(int index);
+	bool tryCloseView(int index); // Returns true if closed, false if cancelled
+
+	// Character/view management
+	CharacterInstance* findCharacterByPath(const std::string& path);
+	void createViewForCharacter(CharacterInstance* character);
+	int countViewsForCharacter(CharacterInstance* character);
 
 	void DrawBack();
 	void DrawUi();
@@ -66,9 +76,12 @@ private:
 
 	int mDeltaX = 0, mDeltaY = 0;
 
-	// Character close confirmation
-	int pendingCloseCharacterIndex = -1;
+	// View close confirmation
+	int pendingCloseViewIndex = -1;
 	bool shouldOpenUnsavedDialog = false;
+
+	// Right-click context menu
+	int contextMenuViewIndex = -1;
 
 	// Project management
 	bool m_projectModified = false;
@@ -86,10 +99,6 @@ private:
 	void addRecentProject(const std::string& path);
 	void openRecentProject(const std::string& path);
 
-	// Panes (will be dynamically updated with active character)
-	std::unique_ptr<MainPane> mainPane;
-	std::unique_ptr<RightPane> rightPane;
-	std::unique_ptr<BoxPane> boxPane;
 	AboutWindow aboutWindow;
 };
 

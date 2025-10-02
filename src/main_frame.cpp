@@ -62,7 +62,7 @@ void MainFrame::DrawBack()
 	glClearColor(clearColor[0], clearColor[1], clearColor[2], 1.f);
 	glClear(GL_COLOR_BUFFER_BIT |  GL_DEPTH_BUFFER_BIT);
 
-	auto* active = getActive();
+	auto* active = getActiveCharacter();
 	if (active) {
 		render.x = (active->renderX + clientRect.x/2) / render.scale;
 		render.y = (active->renderY + clientRect.y/2) / render.scale;
@@ -97,35 +97,54 @@ void MainFrame::DrawUi()
 		ImGui::PopStyleVar(3);
 		Menu(errorPopupId);
 
-		// Character tabs
+		// View tabs
 		if (ImGui::BeginTabBar("##character_tabs", ImGuiTabBarFlags_Reorderable | ImGuiTabBarFlags_AutoSelectNewTabs | ImGuiTabBarFlags_FittingPolicyScroll)) {
-			for (size_t i = 0; i < characters.size(); i++) {
+			for (size_t i = 0; i < views.size(); i++) {
 				bool open = true;
-				ImGuiTabItemFlags flags = characters[i]->isModified() ? ImGuiTabItemFlags_UnsavedDocument : 0;
+				auto* view = views[i].get();
+				auto* character = view->getCharacter();
+				ImGuiTabItemFlags flags = (character && character->isModified()) ? ImGuiTabItemFlags_UnsavedDocument : 0;
 
-				// Skip rendering if we're waiting for user to confirm closing this character
-				if (pendingCloseCharacterIndex == i) {
+				// Skip rendering if we're waiting for user to confirm closing this view
+				if (pendingCloseViewIndex == (int)i) {
 					// Keep the tab visible while waiting for dialog response
-					if (ImGui::BeginTabItem(characters[i]->getDisplayName().c_str(), nullptr, flags)) {
-						if (activeCharacterIndex != (int)i) {
-							setActiveCharacter(i);
+					if (ImGui::BeginTabItem(view->getDisplayName().c_str(), nullptr, flags)) {
+						if (activeViewIndex != (int)i) {
+							setActiveView(i);
 						}
 						ImGui::EndTabItem();
 					}
 					continue;
 				}
 
-				if (ImGui::BeginTabItem(characters[i]->getDisplayName().c_str(), &open, flags)) {
-					if (activeCharacterIndex != (int)i) {
-						setActiveCharacter(i);
+				if (ImGui::BeginTabItem(view->getDisplayName().c_str(), &open, flags)) {
+					if (activeViewIndex != (int)i) {
+						setActiveView(i);
 					}
 					ImGui::EndTabItem();
 				}
 
-				// If user clicked X button, use tryCloseCharacter to handle unsaved changes
-				if (!open) {
-					tryCloseCharacter(i);
+				// Right-click context menu - check AFTER EndTabItem
+				if (ImGui::IsItemHovered() && ImGui::IsMouseClicked(ImGuiMouseButton_Right)) {
+					contextMenuViewIndex = i;
+					ImGui::OpenPopup("ViewContextMenu");
 				}
+
+				// If user clicked X button, use tryCloseView to handle unsaved changes
+				if (!open) {
+					tryCloseView(i);
+				}
+			}
+
+			// Right-click context menu popup
+			if (ImGui::BeginPopup("ViewContextMenu")) {
+				if (contextMenuViewIndex >= 0 && contextMenuViewIndex < views.size()) {
+					if (ImGui::MenuItem("New View of Character")) {
+						auto* character = views[contextMenuViewIndex]->getCharacter();
+						createViewForCharacter(character);
+					}
+				}
+				ImGui::EndPopup();
 			}
 
 			// "+" button to add new character with dropdown menu
@@ -140,30 +159,48 @@ void MainFrame::DrawUi()
 				if (ImGui::MenuItem("Load from .txt...")) {
 					std::string path = FileDialog(fileType::TXT, false);
 					if (!path.empty()) {
-						auto character = std::make_unique<CharacterInstance>();
-						if (character->loadFromTxt(path)) {
-							characters.push_back(std::move(character));
-							setActiveCharacter(characters.size() - 1);
+						// Check for duplicate
+						if (findCharacterByPath(path)) {
+							ImGui::OpenPopup("DuplicateFileError");
+						} else {
+							auto character = std::make_unique<CharacterInstance>();
+							if (character->loadFromTxt(path)) {
+								characters.push_back(std::move(character));
+								createViewForCharacter(characters.back().get());
+								markProjectModified();
+							}
 						}
 					}
 				}
 				if (ImGui::MenuItem("Load HA6...")) {
 					std::string path = FileDialog(fileType::HA6, false);
 					if (!path.empty()) {
-						auto character = std::make_unique<CharacterInstance>();
-						if (character->loadHA6(path, false)) {
-							characters.push_back(std::move(character));
-							setActiveCharacter(characters.size() - 1);
+						// Check for duplicate
+						if (findCharacterByPath(path)) {
+							ImGui::OpenPopup("DuplicateFileError");
+						} else {
+							auto character = std::make_unique<CharacterInstance>();
+							if (character->loadHA6(path, false)) {
+								characters.push_back(std::move(character));
+								createViewForCharacter(characters.back().get());
+								markProjectModified();
+							}
 						}
 					}
 				}
 				if (ImGui::MenuItem("Load HA6 and Patch...")) {
 					std::string path = FileDialog(fileType::HA6, false);
 					if (!path.empty()) {
-						auto character = std::make_unique<CharacterInstance>();
-						if (character->loadHA6(path, true)) {
-							characters.push_back(std::move(character));
-							setActiveCharacter(characters.size() - 1);
+						// Check for duplicate
+						if (findCharacterByPath(path)) {
+							ImGui::OpenPopup("DuplicateFileError");
+						} else {
+							auto character = std::make_unique<CharacterInstance>();
+							if (character->loadHA6(path, true)) {
+								characters.push_back(std::move(character));
+								createViewForCharacter(characters.back().get());
+								markProjectModified();
+							}
 						}
 					}
 				}
@@ -172,7 +209,20 @@ void MainFrame::DrawUi()
 					character->frameData.initEmpty();
 					character->setName("Untitled");
 					characters.push_back(std::move(character));
-					setActiveCharacter(characters.size() - 1);
+					createViewForCharacter(characters.back().get());
+					markProjectModified();
+				}
+				ImGui::EndPopup();
+			}
+
+			// Duplicate file error popup
+			if (ImGui::BeginPopupModal("DuplicateFileError", nullptr, ImGuiWindowFlags_AlwaysAutoResize)) {
+				ImGui::Text("Character already loaded!");
+				ImGui::Text("Use right-click on the tab and select 'New View of Character'");
+				ImGui::Text("to open multiple views of the same character.");
+				ImGui::Separator();
+				if (ImGui::Button("OK", ImVec2(120, 0))) {
+					ImGui::CloseCurrentPopup();
 				}
 				ImGui::EndPopup();
 			}
@@ -224,29 +274,32 @@ void MainFrame::DrawUi()
 	ImGui::SetNextWindowPos(ImGui::GetMainViewport()->GetCenter(), ImGuiCond_Appearing, ImVec2(0.5f, 0.5f));
 	if (ImGui::BeginPopupModal("Unsaved Changes", NULL, ImGuiWindowFlags_AlwaysAutoResize))
 	{
-		if (pendingCloseCharacterIndex >= 0 && pendingCloseCharacterIndex < characters.size()) {
-			auto& character = characters[pendingCloseCharacterIndex];
-			ImGui::Text("Character '%s' has unsaved changes.", character->getName().c_str());
-			ImGui::Text("Do you want to save before closing?\n\n");
-			ImGui::Separator();
+		if (pendingCloseViewIndex >= 0 && pendingCloseViewIndex < views.size()) {
+			auto* view = views[pendingCloseViewIndex].get();
+			auto* character = view->getCharacter();
+			if (character) {
+				ImGui::Text("Character '%s' has unsaved changes.", character->getName().c_str());
+				ImGui::Text("Do you want to save before closing?\n\n");
+				ImGui::Separator();
 
-			if (ImGui::Button("Save", ImVec2(120, 0))) {
-				if (character->save()) {
-					closeCharacter(pendingCloseCharacterIndex);
-					pendingCloseCharacterIndex = -1;
+				if (ImGui::Button("Save", ImVec2(120, 0))) {
+					if (character->save()) {
+						closeView(pendingCloseViewIndex);
+						pendingCloseViewIndex = -1;
+						ImGui::CloseCurrentPopup();
+					}
+				}
+				ImGui::SameLine();
+				if (ImGui::Button("Don't Save", ImVec2(120, 0))) {
+					closeView(pendingCloseViewIndex);
+					pendingCloseViewIndex = -1;
 					ImGui::CloseCurrentPopup();
 				}
-			}
-			ImGui::SameLine();
-			if (ImGui::Button("Don't Save", ImVec2(120, 0))) {
-				closeCharacter(pendingCloseCharacterIndex);
-				pendingCloseCharacterIndex = -1;
-				ImGui::CloseCurrentPopup();
-			}
-			ImGui::SameLine();
-			if (ImGui::Button("Cancel", ImVec2(120, 0))) {
-				pendingCloseCharacterIndex = -1;
-				ImGui::CloseCurrentPopup();
+				ImGui::SameLine();
+				if (ImGui::Button("Cancel", ImVec2(120, 0))) {
+					pendingCloseViewIndex = -1;
+					ImGui::CloseCurrentPopup();
+				}
 			}
 		}
 		ImGui::EndPopup();
@@ -297,11 +350,9 @@ void MainFrame::DrawUi()
 				switch (m_projectCloseAction) {
 					case ProjectCloseAction::New:
 						// Clear and prepare for new project
+						views.clear();
 						characters.clear();
-						activeCharacterIndex = -1;
-						mainPane.reset();
-						rightPane.reset();
-						boxPane.reset();
+						activeViewIndex = -1;
 						render.DontDraw();
 						render.ClearTexture();
 						render.SetCg(nullptr);
@@ -330,11 +381,9 @@ void MainFrame::DrawUi()
 			// Execute the pending action without saving
 			switch (m_projectCloseAction) {
 				case ProjectCloseAction::New:
+					views.clear();
 					characters.clear();
-					activeCharacterIndex = -1;
-					mainPane.reset();
-					rightPane.reset();
-					boxPane.reset();
+					activeViewIndex = -1;
 					render.DontDraw();
 					render.ClearTexture();
 					render.SetCg(nullptr);
@@ -362,10 +411,13 @@ void MainFrame::DrawUi()
 		ImGui::EndPopup();
 	}
 
-	// Only draw panes if we have an active character
-	if (mainPane) mainPane->Draw();
-	if (rightPane) rightPane->Draw();
-	if (boxPane) boxPane->Draw();
+	// Only draw panes if we have an active view
+	auto* view = getActiveView();
+	if (view) {
+		if (view->getMainPane()) view->getMainPane()->Draw();
+		if (view->getRightPane()) view->getRightPane()->Draw();
+		if (view->getBoxPane()) view->getBoxPane()->Draw();
+	}
 	aboutWindow.Draw();
 	vectors.Draw();
 
@@ -374,30 +426,32 @@ void MainFrame::DrawUi()
 
 void MainFrame::RenderUpdate()
 {
-	auto* active = getActive();
-	if (!active) {
+	auto* view = getActiveView();
+	auto* active = getActiveCharacter();
+	if (!view || !active) {
 		render.DontDraw();
 		return;
 	}
 
+	auto& state = view->getState();
 	Sequence *seq;
-	if((seq = active->frameData.get_sequence(active->state.pattern)) &&
+	if((seq = active->frameData.get_sequence(state.pattern)) &&
 		seq->frames.size() > 0)
 	{
-		auto &frame =  seq->frames[active->state.frame];
+		auto &frame =  seq->frames[state.frame];
 
 		// Render currently selected layer
 		if(!frame.AF.layers.empty()) {
 			// Ensure selectedLayer is valid
-			if(active->state.selectedLayer >= frame.AF.layers.size()) {
-				active->state.selectedLayer = frame.AF.layers.size() - 1;
+			if(state.selectedLayer >= frame.AF.layers.size()) {
+				state.selectedLayer = frame.AF.layers.size() - 1;
 			}
-			if(active->state.selectedLayer < 0) {
-				active->state.selectedLayer = 0;
+			if(state.selectedLayer < 0) {
+				state.selectedLayer = 0;
 			}
 
-			auto &layer = frame.AF.layers[active->state.selectedLayer];
-			active->state.spriteId = layer.spriteId;
+			auto &layer = frame.AF.layers[state.selectedLayer];
+			state.spriteId = layer.spriteId;
 			render.GenerateHitboxVertices(frame.hitboxes);
 			render.offsetX = (layer.offset_x)*1;
 			render.offsetY = (layer.offset_y)*1;
@@ -422,42 +476,46 @@ void MainFrame::RenderUpdate()
 			}
 		}
 		else {
-			active->state.spriteId = -1;
+			state.spriteId = -1;
 			render.DontDraw();
 		}
 	}
 	else
 	{
-		active->state.spriteId = -1;
+		state.spriteId = -1;
 		render.DontDraw();
 	}
-	render.SwitchImage(active->state.spriteId);
+	render.SwitchImage(state.spriteId);
 }
 
 void MainFrame::AdvancePattern(int dir)
 {
-	auto* active = getActive();
-	if (!active) return;
+	auto* view = getActiveView();
+	auto* active = getActiveCharacter();
+	if (!view || !active) return;
 
-	active->state.pattern += dir;
-	if(active->state.pattern < 0)
-		active->state.pattern = 0;
-	else if(active->state.pattern >= active->frameData.get_sequence_count())
-		active->state.pattern = active->frameData.get_sequence_count()-1;
-	active->state.frame = 0;
+	auto& state = view->getState();
+	state.pattern += dir;
+	if(state.pattern < 0)
+		state.pattern = 0;
+	else if(state.pattern >= active->frameData.get_sequence_count())
+		state.pattern = active->frameData.get_sequence_count()-1;
+	state.frame = 0;
 }
 
 void MainFrame::AdvanceFrame(int dir)
 {
-	auto* active = getActive();
-	if (!active) return;
+	auto* view = getActiveView();
+	auto* active = getActiveCharacter();
+	if (!view || !active) return;
 
-	auto seq = active->frameData.get_sequence(active->state.pattern);
-	active->state.frame += dir;
-	if(active->state.frame < 0)
-		active->state.frame = 0;
-	else if(seq && active->state.frame >= seq->frames.size())
-		active->state.frame = seq->frames.size()-1;
+	auto& state = view->getState();
+	auto seq = active->frameData.get_sequence(state.pattern);
+	state.frame += dir;
+	if(state.frame < 0)
+		state.frame = 0;
+	else if(seq && state.frame >= seq->frames.size())
+		state.frame = seq->frames.size()-1;
 }
 
 void MainFrame::UpdateBackProj(float x, float y)
@@ -468,12 +526,13 @@ void MainFrame::UpdateBackProj(float x, float y)
 
 void MainFrame::HandleMouseDrag(int x_, int y_, bool dragRight, bool dragLeft)
 {
-	auto* active = getActive();
-	if (!active) return;
+	auto* view = getActiveView();
+	auto* active = getActiveCharacter();
+	if (!view || !active) return;
 
 	if(dragRight)
 	{
-		if (boxPane) boxPane->BoxDrag(x_, y_);
+		if (view->getBoxPane()) view->getBoxPane()->BoxDrag(x_, y_);
 	}
 	else if(dragLeft)
 	{
@@ -484,8 +543,12 @@ void MainFrame::HandleMouseDrag(int x_, int y_, bool dragRight, bool dragLeft)
 
 void MainFrame::RightClick(int x_, int y_)
 {
-	auto* active = getActive();
-	if (!active || !boxPane) return;
+	auto* view = getActiveView();
+	auto* active = getActiveCharacter();
+	if (!view || !active) return;
+
+	auto* boxPane = view->getBoxPane();
+	if (!boxPane) return;
 
 	boxPane->BoxStart((x_ - active->renderX - clientRect.x/2)/render.scale,
 	                  (y_ - active->renderY - clientRect.y/2)/render.scale);
@@ -495,21 +558,21 @@ bool MainFrame::HandleKeys(uint64_t vkey)
 {
 	bool ctrlPressed = GetKeyState(VK_CONTROL) & 0x8000;
 
-	// Multi-character shortcuts (work even without active character)
+	// Multi-view shortcuts (work even without active view)
 	if (ctrlPressed) {
 		switch (vkey) {
 		case VK_TAB:
-			// Ctrl+Tab: switch to next character
-			if (!characters.empty()) {
-				int nextIndex = (activeCharacterIndex + 1) % characters.size();
-				setActiveCharacter(nextIndex);
+			// Ctrl+Tab: switch to next view
+			if (!views.empty()) {
+				int nextIndex = (activeViewIndex + 1) % views.size();
+				setActiveView(nextIndex);
 				return true;
 			}
 			break;
 		case 'W':
-			// Ctrl+W: close active character
-			if (activeCharacterIndex >= 0 && activeCharacterIndex < characters.size()) {
-				tryCloseCharacter(activeCharacterIndex);
+			// Ctrl+W: close active view
+			if (activeViewIndex >= 0 && activeViewIndex < views.size()) {
+				tryCloseView(activeViewIndex);
 				return true;
 			}
 			break;
@@ -524,7 +587,7 @@ bool MainFrame::HandleKeys(uint64_t vkey)
 				saveProject();
 				return true;
 			}
-			else if (auto* active = getActive()) {
+			else if (auto* active = getActiveCharacter()) {
 				active->save();
 				return true;
 			}
@@ -540,8 +603,9 @@ bool MainFrame::HandleKeys(uint64_t vkey)
 		}
 	}
 
-	// Character-specific shortcuts (require active character)
-	if (!getActive()) return false;
+	// View-specific shortcuts (require active view)
+	auto* view = getActiveView();
+	if (!view) return false;
 
 	switch (vkey)
 	{
@@ -558,10 +622,10 @@ bool MainFrame::HandleKeys(uint64_t vkey)
 		AdvanceFrame(+1);
 		return true;
 	case 'Z':
-		if (boxPane) boxPane->AdvanceBox(-1);
+		if (view->getBoxPane()) view->getBoxPane()->AdvanceBox(-1);
 		return true;
 	case 'X':
-		if (boxPane) boxPane->AdvanceBox(+1);
+		if (view->getBoxPane()) view->getBoxPane()->AdvanceBox(+1);
 		return true;
 	}
 	return false;
@@ -599,7 +663,7 @@ void MainFrame::Menu(unsigned int errorPopupId)
 		//ImGui::Separator();
 		if (ImGui::BeginMenu("File"))
 		{
-			auto* active = getActive();
+			auto* active = getActiveCharacter();
 			bool hasActive = (active != nullptr);
 
 			// Project menu items
@@ -670,14 +734,14 @@ void MainFrame::Menu(unsigned int errorPopupId)
 				character->frameData.initEmpty();
 				character->setName("Untitled");
 				characters.push_back(std::move(character));
-				setActiveCharacter(characters.size() - 1);
+				createViewForCharacter(characters.back().get());
 				markProjectModified();
 			}
 
 			if (ImGui::MenuItem("Close Character", nullptr, false, hasActive))
 			{
 				if (hasActive) {
-					tryCloseCharacter(activeCharacterIndex);
+					tryCloseView(activeViewIndex);
 				}
 			}
 
@@ -687,13 +751,18 @@ void MainFrame::Menu(unsigned int errorPopupId)
 			{
 				std::string path = FileDialog(fileType::TXT, false);
 				if (!path.empty()) {
-					auto character = std::make_unique<CharacterInstance>();
-					if (character->loadFromTxt(path)) {
-						characters.push_back(std::move(character));
-						setActiveCharacter(characters.size() - 1);
-						markProjectModified();
-					} else {
+					// Check for duplicate
+					if (findCharacterByPath(path)) {
 						ImGui::OpenPopup(errorPopupId);
+					} else {
+						auto character = std::make_unique<CharacterInstance>();
+						if (character->loadFromTxt(path)) {
+							characters.push_back(std::move(character));
+							createViewForCharacter(characters.back().get());
+							markProjectModified();
+						} else {
+							ImGui::OpenPopup(errorPopupId);
+						}
 					}
 				}
 			}
@@ -702,13 +771,18 @@ void MainFrame::Menu(unsigned int errorPopupId)
 			{
 				std::string path = FileDialog(fileType::HA6, false);
 				if (!path.empty()) {
-					auto character = std::make_unique<CharacterInstance>();
-					if (character->loadHA6(path, false)) {
-						characters.push_back(std::move(character));
-						setActiveCharacter(characters.size() - 1);
-						markProjectModified();
-					} else {
+					// Check for duplicate
+					if (findCharacterByPath(path)) {
 						ImGui::OpenPopup(errorPopupId);
+					} else {
+						auto character = std::make_unique<CharacterInstance>();
+						if (character->loadHA6(path, false)) {
+							characters.push_back(std::move(character));
+							createViewForCharacter(characters.back().get());
+							markProjectModified();
+						} else {
+							ImGui::OpenPopup(errorPopupId);
+						}
 					}
 				}
 			}
@@ -717,13 +791,18 @@ void MainFrame::Menu(unsigned int errorPopupId)
 			{
 				std::string path = FileDialog(fileType::HA6, false);
 				if (!path.empty()) {
-					auto character = std::make_unique<CharacterInstance>();
-					if (character->loadHA6(path, true)) {
-						characters.push_back(std::move(character));
-						setActiveCharacter(characters.size() - 1);
-						markProjectModified();
-					} else {
+					// Check for duplicate
+					if (findCharacterByPath(path)) {
 						ImGui::OpenPopup(errorPopupId);
+					} else {
+						auto character = std::make_unique<CharacterInstance>();
+						if (character->loadHA6(path, true)) {
+							characters.push_back(std::move(character));
+							createViewForCharacter(characters.back().get());
+							markProjectModified();
+						} else {
+							ImGui::OpenPopup(errorPopupId);
+						}
 					}
 				}
 			}
@@ -838,7 +917,7 @@ void MainFrame::Menu(unsigned int errorPopupId)
 				ImGui::ColorEdit3("##clearColor", (float*)&clearColor, ImGuiColorEditFlags_NoInputs);
 				ImGui::EndMenu();
 			}
-			auto* active = getActive();
+			auto* active = getActiveCharacter();
 			if (active && active->cg.getPalNumber() > 0 && ImGui::BeginMenu("Palette number"))
 			{
 				ImGui::SetNextItemWidth(80);
@@ -891,7 +970,7 @@ void MainFrame::Menu(unsigned int errorPopupId)
 		ImGui::Separator();
 		ImGui::Spacing();
 
-		auto* active = getActive();
+		auto* active = getActiveCharacter();
 		if (active) {
 			const auto& txtPath = active->getTxtPath();
 			const auto& topHA6 = active->getTopHA6Path();
@@ -990,95 +1069,145 @@ void MainFrame::WarmStyle()
 	ChangeClearColor(0.324f, 0.409f, 0.185f);
 }
 
-// Multi-character support helper methods
+// Multi-character/view support helper methods
 
-CharacterInstance* MainFrame::getActive()
+CharacterView* MainFrame::getActiveView()
 {
-	if (activeCharacterIndex >= 0 && activeCharacterIndex < characters.size()) {
-		return characters[activeCharacterIndex].get();
+	if (activeViewIndex >= 0 && activeViewIndex < views.size()) {
+		return views[activeViewIndex].get();
 	}
 	return nullptr;
 }
 
-const CharacterInstance* MainFrame::getActive() const
+const CharacterView* MainFrame::getActiveView() const
 {
-	if (activeCharacterIndex >= 0 && activeCharacterIndex < characters.size()) {
-		return characters[activeCharacterIndex].get();
+	if (activeViewIndex >= 0 && activeViewIndex < views.size()) {
+		return views[activeViewIndex].get();
 	}
 	return nullptr;
 }
 
-void MainFrame::setActiveCharacter(int index)
+CharacterInstance* MainFrame::getActiveCharacter()
 {
-	if (index >= 0 && index < characters.size()) {
-		activeCharacterIndex = index;
+	auto* view = getActiveView();
+	return view ? view->getCharacter() : nullptr;
+}
 
-		// Recreate panes with new active character
-		auto* active = getActive();
-		if (active) {
-			mainPane = std::make_unique<MainPane>(&render, &active->frameData, active->state);
-			rightPane = std::make_unique<RightPane>(&render, &active->frameData, active->state);
-			boxPane = std::make_unique<BoxPane>(&render, &active->frameData, active->state);
+const CharacterInstance* MainFrame::getActiveCharacter() const
+{
+	auto* view = getActiveView();
+	return view ? view->getCharacter() : nullptr;
+}
 
-			// Set modification callbacks
-			auto modifyCallback = [active]() { active->markModified(); };
-			if (mainPane) {
-				mainPane->onModified = modifyCallback;
-				mainPane->RegenerateNames();
+void MainFrame::setActiveView(int index)
+{
+	if (index >= 0 && index < views.size()) {
+		activeViewIndex = index;
+
+		// Refresh panes for this view
+		auto* view = getActiveView();
+		if (view) {
+			view->refreshPanes(&render);
+
+			// Update render state to use this view's character's CG
+			auto* character = view->getCharacter();
+			if (character) {
+				render.SetCg(&character->cg);
 			}
-			if (rightPane) rightPane->onModified = modifyCallback;
-			if (boxPane) boxPane->onModified = modifyCallback;
-
-			// Update render state
-			render.SetCg(&active->cg);
 		}
 	}
 }
 
-void MainFrame::closeCharacter(int index)
+CharacterInstance* MainFrame::findCharacterByPath(const std::string& path)
 {
-	if (index >= 0 && index < characters.size()) {
-		characters.erase(characters.begin() + index);
+	for (auto& character : characters) {
+		if (character->getTxtPath() == path || character->getTopHA6Path() == path) {
+			return character.get();
+		}
+	}
+	return nullptr;
+}
 
-		// Mark project as modified since we removed a character
+void MainFrame::createViewForCharacter(CharacterInstance* character)
+{
+	if (!character) return;
+
+	// Count existing views for this character to determine view number
+	int viewNumber = countViewsForCharacter(character);
+
+	auto view = std::make_unique<CharacterView>(character, &render);
+	view->setViewNumber(viewNumber);
+	views.push_back(std::move(view));
+	setActiveView(views.size() - 1);
+}
+
+int MainFrame::countViewsForCharacter(CharacterInstance* character)
+{
+	int count = 0;
+	for (auto& view : views) {
+		if (view->getCharacter() == character) {
+			count++;
+		}
+	}
+	return count;
+}
+
+void MainFrame::closeView(int index)
+{
+	if (index >= 0 && index < views.size()) {
+		auto* view = views[index].get();
+		auto* character = view->getCharacter();
+
+		// Remove the view
+		views.erase(views.begin() + index);
 		markProjectModified();
 
+		// If this was the last view for this character, remove the character too
+		if (character && countViewsForCharacter(character) == 0) {
+			for (size_t i = 0; i < characters.size(); i++) {
+				if (characters[i].get() == character) {
+					characters.erase(characters.begin() + i);
+					break;
+				}
+			}
+		}
+
 		// Update active index
-		if (characters.empty()) {
-			activeCharacterIndex = -1;
-			mainPane.reset();
-			rightPane.reset();
-			boxPane.reset();
+		if (views.empty()) {
+			activeViewIndex = -1;
 
 			// Clear the render system
 			render.DontDraw();
 			render.ClearTexture();
 			render.SetCg(nullptr);
 		} else {
-			// Select previous character, or first if we closed the first one
-			if (activeCharacterIndex >= characters.size()) {
-				activeCharacterIndex = characters.size() - 1;
+			// Select previous view, or first if we closed the first one
+			if (activeViewIndex >= views.size()) {
+				activeViewIndex = views.size() - 1;
 			}
-			setActiveCharacter(activeCharacterIndex);
+			setActiveView(activeViewIndex);
 		}
 	}
 }
 
-bool MainFrame::tryCloseCharacter(int index)
+bool MainFrame::tryCloseView(int index)
 {
-	if (index < 0 || index >= characters.size()) {
+	if (index < 0 || index >= views.size()) {
 		return false;
 	}
 
-	auto& character = characters[index];
-	if (character->isModified()) {
+	auto& view = views[index];
+	auto* character = view->getCharacter();
+
+	// Only prompt if this is the last view and character is modified
+	if (character && character->isModified() && countViewsForCharacter(character) == 1) {
 		// Show unsaved changes dialog
-		pendingCloseCharacterIndex = index;
+		pendingCloseViewIndex = index;
 		shouldOpenUnsavedDialog = true;
 		return false; // Not closed yet, user needs to confirm
 	}
 
-	closeCharacter(index);
+	closeView(index);
 	return true;
 }
 
@@ -1103,12 +1232,10 @@ void MainFrame::newProject()
 	}
 	m_projectCloseAction = ProjectCloseAction::None;
 
-	// Clear all characters
+	// Clear all views and characters
+	views.clear();
 	characters.clear();
-	activeCharacterIndex = -1;
-	mainPane.reset();
-	rightPane.reset();
-	boxPane.reset();
+	activeViewIndex = -1;
 	render.DontDraw();
 	render.ClearTexture();
 	render.SetCg(nullptr);
@@ -1139,7 +1266,7 @@ void MainFrame::openProject()
 	bool loadedSmooth;
 	float loadedColor[3];
 
-	if (ProjectManager::LoadProject(path, characters, activeCharacterIndex,
+	if (ProjectManager::LoadProject(path, characters, views, activeViewIndex, &render,
 	                                &loadedTheme, &loadedZoom, &loadedSmooth, loadedColor))
 	{
 		// Apply loaded UI state
@@ -1148,9 +1275,9 @@ void MainFrame::openProject()
 		smoothRender = loadedSmooth;
 		ChangeClearColor(loadedColor[0], loadedColor[1], loadedColor[2]);
 
-		// Set active character if any were loaded
-		if (activeCharacterIndex >= 0 && activeCharacterIndex < characters.size()) {
-			setActiveCharacter(activeCharacterIndex);
+		// Set active view
+		if (activeViewIndex >= 0 && activeViewIndex < views.size()) {
+			setActiveView(activeViewIndex);
 		}
 
 		ProjectManager::SetCurrentProjectPath(path);
@@ -1171,7 +1298,7 @@ void MainFrame::saveProject()
 	}
 
 	if (ProjectManager::SaveProject(ProjectManager::GetCurrentProjectPath(),
-	                                characters, activeCharacterIndex,
+	                                characters, views, activeViewIndex,
 	                                style_idx, zoom_idx, smoothRender, clearColor))
 	{
 		m_projectModified = false;
@@ -1193,7 +1320,7 @@ void MainFrame::saveProjectAs()
 		path += ".hproj";
 	}
 
-	if (ProjectManager::SaveProject(path, characters, activeCharacterIndex,
+	if (ProjectManager::SaveProject(path, characters, views, activeViewIndex,
 	                                style_idx, zoom_idx, smoothRender, clearColor))
 	{
 		ProjectManager::SetCurrentProjectPath(path);
@@ -1216,12 +1343,10 @@ void MainFrame::closeProject()
 	}
 	m_projectCloseAction = ProjectCloseAction::None;
 
-	// Clear all characters
+	// Clear all views and characters
+	views.clear();
 	characters.clear();
-	activeCharacterIndex = -1;
-	mainPane.reset();
-	rightPane.reset();
-	boxPane.reset();
+	activeViewIndex = -1;
 
 	// Clear the render system
 	render.DontDraw();
@@ -1321,7 +1446,7 @@ void MainFrame::openRecentProject(const std::string& path)
 	bool loadedSmooth;
 	float loadedColor[3];
 
-	if (ProjectManager::LoadProject(path, characters, activeCharacterIndex,
+	if (ProjectManager::LoadProject(path, characters, views, activeViewIndex, &render,
 	                                &loadedTheme, &loadedZoom, &loadedSmooth, loadedColor))
 	{
 		// Apply loaded UI state
@@ -1330,9 +1455,9 @@ void MainFrame::openRecentProject(const std::string& path)
 		smoothRender = loadedSmooth;
 		ChangeClearColor(loadedColor[0], loadedColor[1], loadedColor[2]);
 
-		// Set active character if any were loaded
-		if (activeCharacterIndex >= 0 && activeCharacterIndex < characters.size()) {
-			setActiveCharacter(activeCharacterIndex);
+		// Set active view
+		if (activeViewIndex >= 0 && activeViewIndex < views.size()) {
+			setActiveView(activeViewIndex);
 		}
 
 		ProjectManager::SetCurrentProjectPath(path);
