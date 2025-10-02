@@ -42,6 +42,8 @@ private:
 	VectorTXT vectors;
 
 	std::string currentFilePath;
+	std::string loadedTxtPath;    // Path to the .txt file used to load character data
+	std::string topHA6Path;       // Path to the highest-indexed HA6 file from .txt (auto-save target)
 
 	void DrawBack();
 	void DrawUi();
