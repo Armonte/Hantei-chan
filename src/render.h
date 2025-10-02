@@ -60,6 +60,7 @@ public:
 	void SetCg(CG *cg);
 	void SwitchImage(int id);
 	void DontDraw();
+	void ClearTexture();
 	void SetImageColor(float *rgbaArr);
 
 	enum blendType{

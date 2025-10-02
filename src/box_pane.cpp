@@ -123,6 +123,7 @@ void BoxPane::Draw()
 				boxes[pair.first] = pair.second;
 			}
 			frameData->mark_modified(currState.pattern);
+			markModified();
 		}
 
 		im::SameLine(0,20.f);
@@ -135,12 +136,17 @@ void BoxPane::Draw()
 		{
 			boxes[currentBox] = currState.copied->box;
 			frameData->mark_modified(currState.pattern);
+			markModified();
 		}
 
 		im::Checkbox("Highlight selected", &highlight);
 		im::SameLine(0,20.f);
 		if(im::Button("Delete selected"))
+		{
 			boxes.erase(currentBox);
+			frameData->mark_modified(currState.pattern);
+			markModified();
+		}
 
 		if(highlight)
 			render->highLightN = currentBox;
@@ -149,8 +155,16 @@ void BoxPane::Draw()
 		
 
 		const int step = 1;
-		im::InputScalarN("Top left", ImGuiDataType_S32, boxes[currentBox].xy, 2, &step, NULL, "%d", 0);
-		im::InputScalarN("Bottom right", ImGuiDataType_S32, boxes[currentBox].xy+2, 2, &step, NULL, "%d", 0);
+		if(im::InputScalarN("Top left", ImGuiDataType_S32, boxes[currentBox].xy, 2, &step, NULL, "%d", 0))
+		{
+			frameData->mark_modified(currState.pattern);
+			markModified();
+		}
+		if(im::InputScalarN("Bottom right", ImGuiDataType_S32, boxes[currentBox].xy+2, 2, &step, NULL, "%d", 0))
+		{
+			frameData->mark_modified(currState.pattern);
+			markModified();
+		}
 	}
 
 

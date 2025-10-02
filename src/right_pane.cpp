@@ -22,6 +22,7 @@ void RightPane::Draw()
 				if(ImGui::Button("Paste AT")) {
 					frame.AT = currState.copied->at;
 					frameData->mark_modified(currState.pattern);
+					markModified();
 				}
 				ImGui::TreePop();
 				ImGui::Separator();
@@ -36,11 +37,13 @@ void RightPane::Draw()
 				if(ImGui::Button("Paste all")) {
 					CopyVectorContents<Frame_EF>(frame.EF, currState.copied->efGroup);
 					frameData->mark_modified(currState.pattern);
+					markModified();
 				}
 				ImGui::SameLine(0,20.f);
 				if(ImGui::Button("Add copy")) {
 					frame.EF.push_back(currState.copied->efSingle);
 					frameData->mark_modified(currState.pattern);
+					markModified();
 				}
 				ImGui::TreePop();
 				ImGui::Separator();
@@ -55,11 +58,13 @@ void RightPane::Draw()
 				if(ImGui::Button("Paste all")) {
 					CopyVectorContents<Frame_IF>(frame.IF, currState.copied->ifGroup);
 					frameData->mark_modified(currState.pattern);
+					markModified();
 				}
 				ImGui::SameLine(0,20.f);
 				if(ImGui::Button("Add copy")) {
 					frame.IF.push_back(currState.copied->ifSingle);
 					frameData->mark_modified(currState.pattern);
+					markModified();
 				}
 				ImGui::TreePop();
 				ImGui::Separator();
