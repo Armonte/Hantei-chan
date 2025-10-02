@@ -7,7 +7,7 @@
 #include <list>
 
 //This is the main pane on the left
-class MainPane : DrawWindow
+class MainPane : public DrawWindow
 {
 public:
 	MainPane(Render* render, FrameData *frameData, FrameState &fs);

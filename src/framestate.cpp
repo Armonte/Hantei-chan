@@ -46,15 +46,14 @@ struct SharedMemoryGlobal {
 			bufSize + appendSize,
 			baseAddress);
 
-		// Initialize tinyalloc with buffer
-		// exists == ERROR_ALREADY_EXISTS means another instance already initialized it
-		ta_init(memory, (char*)memory + bufSize, 65535, 256, 16, exists == ERROR_ALREADY_EXISTS);
-
+		// Initialize tinyalloc with buffer only if this is the first instance
 		if (exists != ERROR_ALREADY_EXISTS) {
-			// First instance - placement new CopyData at end of buffer
+			// First instance - initialize tinyalloc and create CopyData
+			ta_init(memory, (char*)memory + bufSize, 65535, 256, 16, false);
 			copyData = new((char*)memory + bufSize) CopyData;
 		} else {
-			// Subsequent instances - reinterpret existing CopyData
+			// Subsequent instances - reuse existing tinyalloc and CopyData
+			// Just set the heap pointer without re-initializing
 			copyData = reinterpret_cast<CopyData*>((char*)memory + bufSize);
 		}
 
@@ -64,18 +63,11 @@ struct SharedMemoryGlobal {
 
 	void Cleanup() {
 		refCount--;
-		if (refCount == 0 && initialized) {
-			if (memory) {
-				UnmapViewOfFile(memory);
-				memory = nullptr;
-			}
-			if (handle) {
-				CloseHandle(handle);
-				handle = nullptr;
-			}
-			initialized = false;
-			copyData = nullptr;
-		}
+		// NOTE: We intentionally do NOT cleanup when refCount hits 0
+		// because tinyalloc's ta_init() can only be called once per process
+		// (it has a static init_times counter that asserts == 0).
+		// The shared memory will be cleaned up when the process exits.
+		// This is fine since it's a process-wide resource.
 	}
 };
 

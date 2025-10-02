@@ -3,7 +3,7 @@
 #include "draw_window.h"
 
 //This is the main pane on the left
-class RightPane : DrawWindow
+class RightPane : public DrawWindow
 {
 	using DrawWindow::DrawWindow;
 	

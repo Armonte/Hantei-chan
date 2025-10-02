@@ -220,7 +220,7 @@ void Render::SetCg(CG *cg_)
 
 void Render::SwitchImage(int id)
 {
-	if(id != curImageId && cg->m_loaded)
+	if(cg && id != curImageId && cg->m_loaded)
 	{
 		curImageId = id;
 		texture.Unapply();

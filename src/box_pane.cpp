@@ -41,6 +41,8 @@ void BoxPane::BoxStart(int x, int y)
 
 			dragxy[0] = box.xy[0];
 			dragxy[1] = box.xy[1];
+
+			markModified();
 		}
 	}
 }
@@ -59,6 +61,8 @@ void BoxPane::BoxDrag(int x, int y)
 
 			box.xy[2] = dragxy[0];
 			box.xy[3] = dragxy[1];
+
+			markModified();
 		}
 	}
 }

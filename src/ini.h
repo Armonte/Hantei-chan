@@ -2,6 +2,8 @@
 #define INI_H_GUARD
 #include "framedata.h"
 #include "cg.h"
+#include <vector>
+#include <string>
 
 extern struct Settings
 {
@@ -16,6 +18,7 @@ extern struct Settings
 	short winSizeX = 1280;
 	short winSizeY = 800;
 	bool maximized = false;
+	std::vector<std::string> recentProjects; // Recent project paths (max 10)
 } gSettings;
 
 bool LoadFromIni(FrameData *framedata, CG *cg, const std::string& iniPath, std::string* outTopHA6Path = nullptr);

@@ -4,6 +4,7 @@
 #include "filedialog.h"
 #include "ini.h"
 #include "imgui_utils.h"
+#include "project_manager.h"
 
 #include <imgui.h>
 #include <imgui_internal.h>
@@ -14,6 +15,8 @@
 #include <glad/glad.h>
 #include <glm/vec3.hpp>
 #include <glm/gtc/matrix_transform.hpp>
+
+#include <algorithm>
 
 MainFrame::MainFrame(ContextGl *context_):
 context(context_)
@@ -231,6 +234,109 @@ void MainFrame::DrawUi()
 		ImGui::EndPopup();
 	}
 
+	// Project load error dialog
+	ImGui::SetNextWindowPos(ImGui::GetMainViewport()->GetCenter(), ImGuiCond_Appearing, ImVec2(0.5f, 0.5f));
+	if (ImGui::BeginPopupModal("Project Load Error", NULL, ImGuiWindowFlags_AlwaysAutoResize))
+	{
+		ImGui::Text("Failed to load project file.\n"
+			"The file may be corrupted or some character files may be missing.\n\n");
+		ImGui::Separator();
+		if (ImGui::Button("OK", ImVec2(120, 0))) { ImGui::CloseCurrentPopup(); }
+		ImGui::EndPopup();
+	}
+
+	// Project save error dialog
+	ImGui::SetNextWindowPos(ImGui::GetMainViewport()->GetCenter(), ImGuiCond_Appearing, ImVec2(0.5f, 0.5f));
+	if (ImGui::BeginPopupModal("Project Save Error", NULL, ImGuiWindowFlags_AlwaysAutoResize))
+	{
+		ImGui::Text("Failed to save project file.\n"
+			"Check that you have write permissions for the selected location.\n\n");
+		ImGui::Separator();
+		if (ImGui::Button("OK", ImVec2(120, 0))) { ImGui::CloseCurrentPopup(); }
+		ImGui::EndPopup();
+	}
+
+	// Unsaved project dialog
+	ImGui::SetNextWindowPos(ImGui::GetMainViewport()->GetCenter(), ImGuiCond_Appearing, ImVec2(0.5f, 0.5f));
+	if (ImGui::BeginPopupModal("Unsaved Project", NULL, ImGuiWindowFlags_AlwaysAutoResize))
+	{
+		ImGui::Text("The current project has unsaved changes.\n");
+		ImGui::Text("Do you want to save before closing?\n\n");
+		ImGui::Separator();
+
+		if (ImGui::Button("Save", ImVec2(120, 0))) {
+			saveProject();
+			if (!m_projectModified) { // Only proceed if save succeeded
+				m_pendingProjectClose = false;
+				ImGui::CloseCurrentPopup();
+
+				// Execute the pending action
+				switch (m_projectCloseAction) {
+					case ProjectCloseAction::New:
+						// Clear and prepare for new project
+						characters.clear();
+						activeCharacterIndex = -1;
+						mainPane.reset();
+						rightPane.reset();
+						boxPane.reset();
+						render.DontDraw();
+						render.SetCg(nullptr);
+						ProjectManager::ClearCurrentProjectPath();
+						m_projectModified = false;
+						updateWindowTitle();
+						break;
+					case ProjectCloseAction::Open:
+						// Will trigger file dialog in next frame
+						openProject();
+						break;
+					case ProjectCloseAction::Close:
+						closeProject();
+						break;
+					default:
+						break;
+				}
+				m_projectCloseAction = ProjectCloseAction::None;
+			}
+		}
+		ImGui::SameLine();
+		if (ImGui::Button("Don't Save", ImVec2(120, 0))) {
+			m_pendingProjectClose = false;
+			ImGui::CloseCurrentPopup();
+
+			// Execute the pending action without saving
+			switch (m_projectCloseAction) {
+				case ProjectCloseAction::New:
+					characters.clear();
+					activeCharacterIndex = -1;
+					mainPane.reset();
+					rightPane.reset();
+					boxPane.reset();
+					render.DontDraw();
+					render.SetCg(nullptr);
+					ProjectManager::ClearCurrentProjectPath();
+					m_projectModified = false;
+					updateWindowTitle();
+					break;
+				case ProjectCloseAction::Open:
+					openProject();
+					break;
+				case ProjectCloseAction::Close:
+					closeProject();
+					break;
+				default:
+					break;
+			}
+			m_projectCloseAction = ProjectCloseAction::None;
+		}
+		ImGui::SameLine();
+		if (ImGui::Button("Cancel", ImVec2(120, 0))) {
+			m_pendingProjectClose = false;
+			m_projectCloseAction = ProjectCloseAction::None;
+			ImGui::CloseCurrentPopup();
+		}
+		ImGui::EndPopup();
+	}
+
 	// Only draw panes if we have an active character
 	if (mainPane) mainPane->Draw();
 	if (rightPane) rightPane->Draw();
@@ -383,12 +489,29 @@ bool MainFrame::HandleKeys(uint64_t vkey)
 			}
 			break;
 		case 'S':
-			// Ctrl+S: save active character
-			if (auto* active = getActive()) {
+			// Ctrl+Shift+S: save project as
+			if (GetKeyState(VK_SHIFT) & 0x8000) {
+				saveProjectAs();
+				return true;
+			}
+			// Ctrl+S: save project if we have one, otherwise save active character
+			else if (ProjectManager::HasCurrentProject()) {
+				saveProject();
+				return true;
+			}
+			else if (auto* active = getActive()) {
 				active->save();
 				return true;
 			}
 			break;
+		case 'O':
+			// Ctrl+O: open project
+			openProject();
+			return true;
+		case 'N':
+			// Ctrl+N: new project
+			newProject();
+			return true;
 		}
 	}
 
@@ -454,6 +577,66 @@ void MainFrame::Menu(unsigned int errorPopupId)
 			auto* active = getActive();
 			bool hasActive = (active != nullptr);
 
+			// Project menu items
+			if (ImGui::MenuItem("New Project"))
+			{
+				newProject();
+			}
+
+			if (ImGui::MenuItem("Open Project..."))
+			{
+				openProject();
+			}
+
+			// Recent projects submenu
+			if (ImGui::BeginMenu("Recent Projects", !gSettings.recentProjects.empty()))
+			{
+				for (const auto& recentPath : gSettings.recentProjects) {
+					// Extract filename for display
+					size_t lastSlash = recentPath.find_last_of("/\\");
+					std::string filename = (lastSlash != std::string::npos)
+						? recentPath.substr(lastSlash + 1)
+						: recentPath;
+
+					if (ImGui::MenuItem(filename.c_str())) {
+						openRecentProject(recentPath);
+					}
+
+					// Show full path as tooltip
+					if (ImGui::IsItemHovered()) {
+						ImGui::SetTooltip("%s", recentPath.c_str());
+					}
+				}
+				ImGui::Separator();
+				if (ImGui::MenuItem("Clear Recent Projects")) {
+					gSettings.recentProjects.clear();
+				}
+				ImGui::EndMenu();
+			}
+
+			ImGui::Separator();
+
+			bool hasProject = ProjectManager::HasCurrentProject();
+			if (ImGui::MenuItem("Save Project", nullptr, false, hasProject))
+			{
+				saveProject();
+			}
+
+			if (ImGui::MenuItem("Save Project As..."))
+			{
+				saveProjectAs();
+			}
+
+			ImGui::Separator();
+
+			if (ImGui::MenuItem("Close Project", nullptr, false, hasProject))
+			{
+				closeProject();
+			}
+
+			ImGui::Separator();
+
+			// Character menu items
 			if (ImGui::MenuItem("New Character"))
 			{
 				auto character = std::make_unique<CharacterInstance>();
@@ -461,6 +644,7 @@ void MainFrame::Menu(unsigned int errorPopupId)
 				character->setName("Untitled");
 				characters.push_back(std::move(character));
 				setActiveCharacter(characters.size() - 1);
+				markProjectModified();
 			}
 
 			if (ImGui::MenuItem("Close Character", nullptr, false, hasActive))
@@ -480,6 +664,7 @@ void MainFrame::Menu(unsigned int errorPopupId)
 					if (character->loadFromTxt(path)) {
 						characters.push_back(std::move(character));
 						setActiveCharacter(characters.size() - 1);
+						markProjectModified();
 					} else {
 						ImGui::OpenPopup(errorPopupId);
 					}
@@ -494,6 +679,7 @@ void MainFrame::Menu(unsigned int errorPopupId)
 					if (character->loadHA6(path, false)) {
 						characters.push_back(std::move(character));
 						setActiveCharacter(characters.size() - 1);
+						markProjectModified();
 					} else {
 						ImGui::OpenPopup(errorPopupId);
 					}
@@ -508,6 +694,7 @@ void MainFrame::Menu(unsigned int errorPopupId)
 					if (character->loadHA6(path, true)) {
 						characters.push_back(std::move(character));
 						setActiveCharacter(characters.size() - 1);
+						markProjectModified();
 					} else {
 						ImGui::OpenPopup(errorPopupId);
 					}
@@ -806,8 +993,14 @@ void MainFrame::setActiveCharacter(int index)
 			rightPane = std::make_unique<RightPane>(&render, &active->frameData, active->state);
 			boxPane = std::make_unique<BoxPane>(&render, &active->frameData, active->state);
 
-			// Initialize pane data
-			if (mainPane) mainPane->RegenerateNames();
+			// Set modification callbacks
+			auto modifyCallback = [active]() { active->markModified(); };
+			if (mainPane) {
+				mainPane->onModified = modifyCallback;
+				mainPane->RegenerateNames();
+			}
+			if (rightPane) rightPane->onModified = modifyCallback;
+			if (boxPane) boxPane->onModified = modifyCallback;
 
 			// Update render state
 			render.SetCg(&active->cg);
@@ -820,12 +1013,19 @@ void MainFrame::closeCharacter(int index)
 	if (index >= 0 && index < characters.size()) {
 		characters.erase(characters.begin() + index);
 
+		// Mark project as modified since we removed a character
+		markProjectModified();
+
 		// Update active index
 		if (characters.empty()) {
 			activeCharacterIndex = -1;
 			mainPane.reset();
 			rightPane.reset();
 			boxPane.reset();
+
+			// Clear the render system
+			render.DontDraw();
+			render.SetCg(nullptr);
 		} else {
 			// Select previous character, or first if we closed the first one
 			if (activeCharacterIndex >= characters.size()) {
@@ -852,5 +1052,263 @@ bool MainFrame::tryCloseCharacter(int index)
 
 	closeCharacter(index);
 	return true;
+}
+
+// ============================================================================
+// Project Management
+// ============================================================================
+
+void MainFrame::markProjectModified()
+{
+	m_projectModified = true;
+	updateWindowTitle();
+}
+
+void MainFrame::newProject()
+{
+	// Check for unsaved changes
+	m_projectCloseAction = ProjectCloseAction::New;
+	if (!tryCloseProject()) {
+		return; // Dialog will handle the action
+	}
+	m_projectCloseAction = ProjectCloseAction::None;
+
+	// Clear all characters
+	characters.clear();
+	activeCharacterIndex = -1;
+	mainPane.reset();
+	rightPane.reset();
+	boxPane.reset();
+	render.DontDraw();
+	render.SetCg(nullptr);
+
+	ProjectManager::ClearCurrentProjectPath();
+	m_projectModified = false;
+	updateWindowTitle();
+}
+
+void MainFrame::openProject()
+{
+	// Check for unsaved changes
+	m_projectCloseAction = ProjectCloseAction::Open;
+	if (!tryCloseProject()) {
+		return; // Dialog will handle the action
+	}
+	m_projectCloseAction = ProjectCloseAction::None;
+
+	std::string path = FileDialog(fileType::HPROJ, false);
+	if (path.empty()) {
+		return;
+	}
+
+	int loadedTheme;
+	float loadedZoom;
+	bool loadedSmooth;
+	float loadedColor[3];
+
+	if (ProjectManager::LoadProject(path, characters, activeCharacterIndex,
+	                                &loadedTheme, &loadedZoom, &loadedSmooth, loadedColor))
+	{
+		// Apply loaded UI state
+		LoadTheme(loadedTheme);
+		SetZoom(loadedZoom);
+		smoothRender = loadedSmooth;
+		ChangeClearColor(loadedColor[0], loadedColor[1], loadedColor[2]);
+
+		// Set active character if any were loaded
+		if (activeCharacterIndex >= 0 && activeCharacterIndex < characters.size()) {
+			setActiveCharacter(activeCharacterIndex);
+		}
+
+		ProjectManager::SetCurrentProjectPath(path);
+		m_projectModified = false;
+		addRecentProject(path);
+		updateWindowTitle();
+	} else {
+		// Show error popup
+		ImGui::OpenPopup("Project Load Error");
+	}
+}
+
+void MainFrame::saveProject()
+{
+	if (!ProjectManager::HasCurrentProject()) {
+		saveProjectAs();
+		return;
+	}
+
+	if (ProjectManager::SaveProject(ProjectManager::GetCurrentProjectPath(),
+	                                characters, activeCharacterIndex,
+	                                style_idx, zoom_idx, smoothRender, clearColor))
+	{
+		m_projectModified = false;
+		updateWindowTitle();
+	} else {
+		ImGui::OpenPopup("Project Save Error");
+	}
+}
+
+void MainFrame::saveProjectAs()
+{
+	std::string path = FileDialog(fileType::HPROJ, true);
+	if (path.empty()) {
+		return;
+	}
+
+	// Ensure .hproj extension
+	if (path.find(".hproj") == std::string::npos) {
+		path += ".hproj";
+	}
+
+	if (ProjectManager::SaveProject(path, characters, activeCharacterIndex,
+	                                style_idx, zoom_idx, smoothRender, clearColor))
+	{
+		ProjectManager::SetCurrentProjectPath(path);
+		m_projectModified = false;
+		addRecentProject(path);
+		updateWindowTitle();
+	} else {
+		ImGui::OpenPopup("Project Save Error");
+	}
+}
+
+void MainFrame::closeProject()
+{
+	m_projectCloseAction = ProjectCloseAction::Close;
+	if (!tryCloseProject()) {
+		return; // Dialog will handle the action
+	}
+	m_projectCloseAction = ProjectCloseAction::None;
+
+	// Clear all characters
+	characters.clear();
+	activeCharacterIndex = -1;
+	mainPane.reset();
+	rightPane.reset();
+	boxPane.reset();
+
+	// Clear the render system
+	render.DontDraw();
+	render.SetCg(nullptr);
+
+	ProjectManager::ClearCurrentProjectPath();
+	m_projectModified = false;
+	updateWindowTitle();
+}
+
+void MainFrame::updateWindowTitle()
+{
+	std::wstring title = L"判定ちゃん v" HA6GUIVERSION;
+
+	if (ProjectManager::HasCurrentProject()) {
+		const std::string& projectPath = ProjectManager::GetCurrentProjectPath();
+
+		// Extract filename from path
+		size_t lastSlash = projectPath.find_last_of("/\\");
+		std::string filename = (lastSlash != std::string::npos)
+			? projectPath.substr(lastSlash + 1)
+			: projectPath;
+
+		// Convert to wide string
+		std::wstring wFilename(filename.begin(), filename.end());
+
+		title = wFilename + L" - " + title;
+
+		if (m_projectModified) {
+			title = L"*" + title;
+		}
+	}
+
+#ifdef _WIN32
+	SetWindowTextW(mainWindowHandle, title.c_str());
+#else
+	// For GLFW, convert to UTF-8
+	std::string utf8Title;
+	for (wchar_t wc : title) {
+		if (wc < 0x80) {
+			utf8Title += static_cast<char>(wc);
+		} else if (wc < 0x800) {
+			utf8Title += static_cast<char>(0xC0 | (wc >> 6));
+			utf8Title += static_cast<char>(0x80 | (wc & 0x3F));
+		} else {
+			utf8Title += static_cast<char>(0xE0 | (wc >> 12));
+			utf8Title += static_cast<char>(0x80 | ((wc >> 6) & 0x3F));
+			utf8Title += static_cast<char>(0x80 | (wc & 0x3F));
+		}
+	}
+	glfwSetWindowTitle(mainWindowHandle, utf8Title.c_str());
+#endif
+}
+
+bool MainFrame::tryCloseProject()
+{
+	if (m_projectModified || std::any_of(characters.begin(), characters.end(),
+	                                     [](const auto& c) { return c->isModified(); }))
+	{
+		m_pendingProjectClose = true;
+		ImGui::OpenPopup("Unsaved Project");
+		return false; // Don't close yet, wait for user response
+	}
+
+	return true; // No unsaved changes, ok to close
+}
+
+void MainFrame::addRecentProject(const std::string& path)
+{
+	// Remove if already exists
+	auto it = std::find(gSettings.recentProjects.begin(), gSettings.recentProjects.end(), path);
+	if (it != gSettings.recentProjects.end()) {
+		gSettings.recentProjects.erase(it);
+	}
+
+	// Add to front
+	gSettings.recentProjects.insert(gSettings.recentProjects.begin(), path);
+
+	// Keep only last 10
+	if (gSettings.recentProjects.size() > 10) {
+		gSettings.recentProjects.resize(10);
+	}
+}
+
+void MainFrame::openRecentProject(const std::string& path)
+{
+	// Check for unsaved changes
+	m_projectCloseAction = ProjectCloseAction::Open;
+	if (!tryCloseProject()) {
+		return; // Dialog will handle the action
+	}
+	m_projectCloseAction = ProjectCloseAction::None;
+
+	int loadedTheme;
+	float loadedZoom;
+	bool loadedSmooth;
+	float loadedColor[3];
+
+	if (ProjectManager::LoadProject(path, characters, activeCharacterIndex,
+	                                &loadedTheme, &loadedZoom, &loadedSmooth, loadedColor))
+	{
+		// Apply loaded UI state
+		LoadTheme(loadedTheme);
+		SetZoom(loadedZoom);
+		smoothRender = loadedSmooth;
+		ChangeClearColor(loadedColor[0], loadedColor[1], loadedColor[2]);
+
+		// Set active character if any were loaded
+		if (activeCharacterIndex >= 0 && activeCharacterIndex < characters.size()) {
+			setActiveCharacter(activeCharacterIndex);
+		}
+
+		ProjectManager::SetCurrentProjectPath(path);
+		m_projectModified = false;
+		addRecentProject(path);
+		updateWindowTitle();
+	} else {
+		// Show error popup and remove from recent
+		ImGui::OpenPopup("Project Load Error");
+		auto it = std::find(gSettings.recentProjects.begin(), gSettings.recentProjects.end(), path);
+		if (it != gSettings.recentProjects.end()) {
+			gSettings.recentProjects.erase(it);
+		}
+	}
 }
 
