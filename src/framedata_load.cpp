@@ -1,5 +1,7 @@
 #include <cassert>
 #include <iostream>
+#include <cstdint>
+#include <cstring>
 #include "framedata_load.h"
 #include "misc.h"
 

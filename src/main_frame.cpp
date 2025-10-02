@@ -328,6 +328,25 @@ void MainFrame::Menu(unsigned int errorPopupId)
 					{
 						currentFilePath = file;
 						mainPane.RegenerateNames();
+
+						// Try to load _c.txt from the same directory
+						size_t lastSlash = file.find_last_of("/\\");
+						if(lastSlash != std::string::npos) {
+							std::string dir = file.substr(0, lastSlash + 1);
+
+							// Try character-specific _c.txt first (e.g., "aoko_c.txt")
+							size_t lastDot = file.find_last_of(".");
+							size_t nameStart = lastSlash + 1;
+							if(lastDot != std::string::npos && lastDot > nameStart) {
+								std::string charName = file.substr(nameStart, lastDot - nameStart);
+								if(!framedata.load_commands((dir + charName + "_c.txt").c_str())) {
+									// Fall back to generic _c.txt
+									framedata.load_commands((dir + "_c.txt").c_str());
+								}
+							} else {
+								framedata.load_commands((dir + "_c.txt").c_str());
+							}
+						}
 					}
 				}
 			}
@@ -342,7 +361,28 @@ void MainFrame::Menu(unsigned int errorPopupId)
 						ImGui::OpenPopup(errorPopupId);
 					}
 					else
+					{
 						mainPane.RegenerateNames();
+
+						// Try to load _c.txt from the same directory
+						size_t lastSlash = file.find_last_of("/\\");
+						if(lastSlash != std::string::npos) {
+							std::string dir = file.substr(0, lastSlash + 1);
+
+							// Try character-specific _c.txt first (e.g., "aoko_c.txt")
+							size_t lastDot = file.find_last_of(".");
+							size_t nameStart = lastSlash + 1;
+							if(lastDot != std::string::npos && lastDot > nameStart) {
+								std::string charName = file.substr(nameStart, lastDot - nameStart);
+								if(!framedata.load_commands((dir + charName + "_c.txt").c_str())) {
+									// Fall back to generic _c.txt
+									framedata.load_commands((dir + "_c.txt").c_str());
+								}
+							} else {
+								framedata.load_commands((dir + "_c.txt").c_str());
+							}
+						}
+					}
 					currentFilePath.clear();
 				}
 			}
@@ -369,8 +409,17 @@ void MainFrame::Menu(unsigned int errorPopupId)
 				}
 			}
 
+			if (ImGui::MenuItem("Load Commands (_c.txt)..."))
+			{
+				std::string &&file = FileDialog(fileType::TXT);
+				if(!file.empty())
+				{
+					framedata.load_commands(file.c_str());
+				}
+			}
+
 			ImGui::Separator();
-			if (ImGui::MenuItem("Load CG...")) 
+			if (ImGui::MenuItem("Load CG..."))
 			{
 				std::string &&file = FileDialog(fileType::CG);
 				if(!file.empty())

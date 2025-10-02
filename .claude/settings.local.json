@@ -1,0 +1,12 @@
+{
+  "permissions": {
+    "allow": [
+      "Read(//mnt/c/games/qoh/gHantei_Docs/**)",
+      "Bash(cmake:*)",
+      "Bash(make:*)",
+      "Read(//mnt/c/games/qoh/**)"
+    ],
+    "deny": [],
+    "ask": []
+  }
+}

@@ -1,6 +1,7 @@
 #include "framedata.h"
 #include <fstream>
 #include <cstdint>
+#include <cstring>
 
 #define VAL(X) ((const char*)&X)
 #define PTR(X) ((const char*)X)
