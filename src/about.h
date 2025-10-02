@@ -27,7 +27,7 @@ public:
 			ImGui::Spacing();
 			ImGui::Text("Special thanks to mauve, MadScientist, u4ick, and Rhekar");
 			ImGui::Spacing();
-			ImGui::Text("Fork by gonp. https://github.com/gonpgonp/Hantei-chan");
+			ImGui::Text("Fork by gonp & Armonté https://github.com/gonpgonp/Hantei-chan");
 
 			ImGui::End();
 			ImGui::PopStyleColor(2);

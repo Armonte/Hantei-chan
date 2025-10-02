@@ -73,6 +73,7 @@ private:
 	// Project management
 	bool m_projectModified = false;
 	bool m_pendingProjectClose = false;
+	bool shouldOpenUnsavedProjectDialog = false;
 	enum class ProjectCloseAction { None, New, Open, Close } m_projectCloseAction = ProjectCloseAction::None;
 	void newProject();
 	void openProject();

@@ -274,7 +274,12 @@ void MainFrame::DrawUi()
 		ImGui::EndPopup();
 	}
 
-	// Unsaved project dialog
+	// Unsaved project dialog - open it if requested
+	if (shouldOpenUnsavedProjectDialog) {
+		ImGui::OpenPopup("Unsaved Project");
+		shouldOpenUnsavedProjectDialog = false;
+	}
+
 	ImGui::SetNextWindowPos(ImGui::GetMainViewport()->GetCenter(), ImGuiCond_Appearing, ImVec2(0.5f, 0.5f));
 	if (ImGui::BeginPopupModal("Unsaved Project", NULL, ImGuiWindowFlags_AlwaysAutoResize))
 	{
@@ -1087,10 +1092,12 @@ void MainFrame::markProjectModified()
 
 void MainFrame::newProject()
 {
-	// Check for unsaved changes
-	m_projectCloseAction = ProjectCloseAction::New;
-	if (!tryCloseProject()) {
-		return; // Dialog will handle the action
+	// Check for unsaved changes (only if not already handling a close action)
+	if (m_projectCloseAction != ProjectCloseAction::New) {
+		m_projectCloseAction = ProjectCloseAction::New;
+		if (!tryCloseProject()) {
+			return; // Dialog will handle the action
+		}
 	}
 	m_projectCloseAction = ProjectCloseAction::None;
 
@@ -1111,10 +1118,12 @@ void MainFrame::newProject()
 
 void MainFrame::openProject()
 {
-	// Check for unsaved changes
-	m_projectCloseAction = ProjectCloseAction::Open;
-	if (!tryCloseProject()) {
-		return; // Dialog will handle the action
+	// Check for unsaved changes (only if not already handling a close action)
+	if (m_projectCloseAction != ProjectCloseAction::Open) {
+		m_projectCloseAction = ProjectCloseAction::Open;
+		if (!tryCloseProject()) {
+			return; // Dialog will handle the action
+		}
 	}
 	m_projectCloseAction = ProjectCloseAction::None;
 
@@ -1196,9 +1205,12 @@ void MainFrame::saveProjectAs()
 
 void MainFrame::closeProject()
 {
-	m_projectCloseAction = ProjectCloseAction::Close;
-	if (!tryCloseProject()) {
-		return; // Dialog will handle the action
+	// Check for unsaved changes (only if not already handling a close action)
+	if (m_projectCloseAction != ProjectCloseAction::Close) {
+		m_projectCloseAction = ProjectCloseAction::Close;
+		if (!tryCloseProject()) {
+			return; // Dialog will handle the action
+		}
 	}
 	m_projectCloseAction = ProjectCloseAction::None;
 
@@ -1221,7 +1233,7 @@ void MainFrame::closeProject()
 
 void MainFrame::updateWindowTitle()
 {
-	std::wstring title = L"判定ちゃん v" HA6GUIVERSION;
+	std::wstring title = L"gonptéchan v" HA6GUIVERSION;
 
 	if (ProjectManager::HasCurrentProject()) {
 		const std::string& projectPath = ProjectManager::GetCurrentProjectPath();
@@ -1269,7 +1281,7 @@ bool MainFrame::tryCloseProject()
 	                                     [](const auto& c) { return c->isModified(); }))
 	{
 		m_pendingProjectClose = true;
-		ImGui::OpenPopup("Unsaved Project");
+		shouldOpenUnsavedProjectDialog = true;
 		return false; // Don't close yet, wait for user response
 	}
 
