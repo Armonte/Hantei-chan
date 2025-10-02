@@ -288,12 +288,16 @@ void MainFrame::Menu(unsigned int errorPopupId)
 			{
 				framedata.initEmpty();
 				currentFilePath.clear();
+				loadedTxtPath.clear();
+				topHA6Path.clear();
 				mainPane.RegenerateNames();
 			}
 			if (ImGui::MenuItem("Close file"))
 			{
 				framedata.Free();
 				currentFilePath.clear();
+				loadedTxtPath.clear();
+				topHA6Path.clear();
 			}
 
 			ImGui::Separator();
@@ -302,12 +306,15 @@ void MainFrame::Menu(unsigned int errorPopupId)
 				std::string &&file = FileDialog(fileType::TXT);
 				if(!file.empty())
 				{
-					if(!LoadFromIni(&framedata, &cg, file))
+					std::string topHA6;
+					if(!LoadFromIni(&framedata, &cg, file, &topHA6))
 					{
 						ImGui::OpenPopup(errorPopupId);
 					}
 					else
 					{
+						loadedTxtPath = file;
+						topHA6Path = topHA6;
 						currentFilePath.clear();
 						mainPane.RegenerateNames();
 						render.SwitchImage(-1);
@@ -327,6 +334,8 @@ void MainFrame::Menu(unsigned int errorPopupId)
 					else
 					{
 						currentFilePath = file;
+						loadedTxtPath.clear();  // Clear txt-related paths when loading HA6 directly
+						topHA6Path.clear();
 						mainPane.RegenerateNames();
 
 						// Try to load _c.txt from the same directory
@@ -362,6 +371,8 @@ void MainFrame::Menu(unsigned int errorPopupId)
 					}
 					else
 					{
+						loadedTxtPath.clear();  // Clear txt-related paths
+						topHA6Path.clear();
 						mainPane.RegenerateNames();
 
 						// Try to load _c.txt from the same directory
@@ -389,17 +400,27 @@ void MainFrame::Menu(unsigned int errorPopupId)
 
 			ImGui::Separator();
 			//TODO: Implement hotkeys, someday.
-			if (ImGui::MenuItem("Save"/* , "Ctrl+S" */)) 
+			if (ImGui::MenuItem("Save"/* , "Ctrl+S" */))
 			{
 				if(currentFilePath.empty())
-					currentFilePath = FileDialog(fileType::HA6, true);
+				{
+					// If we loaded from .txt, automatically save to the top HA6 file
+					if(!topHA6Path.empty())
+					{
+						currentFilePath = topHA6Path;
+					}
+					else
+					{
+						currentFilePath = FileDialog(fileType::HA6, true);
+					}
+				}
 				if(!currentFilePath.empty())
 				{
 					framedata.save(currentFilePath.c_str());
 				}
 			}
 
-			if (ImGui::MenuItem("Save as...")) 
+			if (ImGui::MenuItem("Save as..."))
 			{
 				std::string &&file = FileDialog(fileType::HA6, true);
 				if(!file.empty())
@@ -407,6 +428,37 @@ void MainFrame::Menu(unsigned int errorPopupId)
 					framedata.save(file.c_str());
 					currentFilePath = file;
 				}
+			}
+
+			if (ImGui::MenuItem("Save as MOD...", nullptr, false, !loadedTxtPath.empty()))
+			{
+				// Generate MOD filename from top HA6 path
+				if(!topHA6Path.empty())
+				{
+					// Remove extension and add _MOD.HA6
+					size_t dotPos = topHA6Path.find_last_of(".");
+					std::string basePath = (dotPos != std::string::npos) ? topHA6Path.substr(0, dotPos) : topHA6Path;
+					std::string modPath = basePath + "_MOD.HA6";
+
+					// Extract just the filename for the .txt entry
+					size_t slashPos = modPath.find_last_of("/\\");
+					std::string modFilename = (slashPos != std::string::npos) ? modPath.substr(slashPos + 1) : modPath;
+
+					// Save only modified patterns
+					framedata.save_modified_only(modPath.c_str());
+
+					// Update the .txt file to include the new MOD file
+					if(AddHA6ToTxt(loadedTxtPath, modFilename))
+					{
+						// Update our tracking variables
+						topHA6Path = modPath;
+						currentFilePath = modPath;
+					}
+				}
+			}
+			if(ImGui::IsItemHovered() && loadedTxtPath.empty())
+			{
+				Tooltip("Only available when loaded from .txt file");
 			}
 
 			if (ImGui::MenuItem("Load Commands (_c.txt)..."))
@@ -523,7 +575,34 @@ void MainFrame::Menu(unsigned int errorPopupId)
 			if (ImGui::MenuItem("About")) aboutWindow.isVisible = !aboutWindow.isVisible;
 			ImGui::EndMenu();
 		}
-		
+
+		// Status display - show current save target
+		ImGui::Spacing();
+		ImGui::Separator();
+		ImGui::Spacing();
+		if(!loadedTxtPath.empty() && !topHA6Path.empty())
+		{
+			// Extract just the filename from the paths for cleaner display
+			size_t txtSlash = loadedTxtPath.find_last_of("/\\");
+			size_t ha6Slash = topHA6Path.find_last_of("/\\");
+			std::string txtName = (txtSlash != std::string::npos) ? loadedTxtPath.substr(txtSlash + 1) : loadedTxtPath;
+			std::string ha6Name = (ha6Slash != std::string::npos) ? topHA6Path.substr(ha6Slash + 1) : topHA6Path;
+
+			ImGui::TextDisabled("Loaded: %s", txtName.c_str());
+			ImGui::SameLine();
+			ImGui::TextColored(ImVec4(0.4f, 0.8f, 0.4f, 1.0f), "-> Saves to: %s", ha6Name.c_str());
+		}
+		else if(!currentFilePath.empty())
+		{
+			size_t slash = currentFilePath.find_last_of("/\\");
+			std::string filename = (slash != std::string::npos) ? currentFilePath.substr(slash + 1) : currentFilePath;
+			ImGui::TextColored(ImVec4(0.4f, 0.8f, 0.4f, 1.0f), "Save to: %s", filename.c_str());
+		}
+		else
+		{
+			ImGui::TextDisabled("No save target set");
+		}
+
 		ImGui::EndMenuBar();
 	}
 }

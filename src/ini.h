@@ -18,7 +18,8 @@ extern struct Settings
 	bool maximized = false;
 } gSettings;
 
-bool LoadFromIni(FrameData *framedata, CG *cg, const std::string& iniPath);
+bool LoadFromIni(FrameData *framedata, CG *cg, const std::string& iniPath, std::string* outTopHA6Path = nullptr);
+bool AddHA6ToTxt(const std::string& txtPath, const std::string& ha6Filename);
 void InitIni();
 
 #endif /* INI_H_GUARD */

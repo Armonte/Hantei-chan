@@ -158,6 +158,7 @@ struct Sequence {
 
 	bool empty;
 	bool initialized;
+	bool modified;  // Track if this sequence has been edited
 
 	std::vector<Frame> frames;
 
@@ -186,6 +187,7 @@ public:
 	void initEmpty();
 	bool load(const char *filename, bool patch = false);
 	void save(const char *filename);
+	void save_modified_only(const char *filename);  // Save only modified sequences
 	bool load_commands(const char *filename);
 
 	//Probably unnecessary.
@@ -196,6 +198,7 @@ public:
 	Sequence* get_sequence(int n);
 	std::string GetDecoratedName(int n);
 	Command* get_command(int id);
+	void mark_modified(int sequence_index);
 
 	void Free();
 

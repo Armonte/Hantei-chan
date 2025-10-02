@@ -14,7 +14,8 @@ std::set<int> numberSet;
 Sequence::Sequence():
 psts(0), level(0), flag(0),
 empty(true),
-initialized(false)
+initialized(false),
+modified(false)
 {}
 
 void FrameData::initEmpty()
@@ -27,24 +28,24 @@ void FrameData::initEmpty()
 
 bool FrameData::load(const char *filename, bool patch) {
 	// allow loading over existing data
-	
+
 	char *data;
 	unsigned int size;
-	
+
 	if (!ReadInMem(filename, data, size)) {
 		return 0;
 	}
-	
+
 	// verify header
 	if (memcmp(data, "Hantei6DataFile", 15)) {
 		delete[] data;
-		
+
 		return 0;
 	}
 
 	//Names are utf8 because the file was saved by this tool.
 	bool utf8 = ((unsigned char*)data)[31] == 0xFF;
-	
+
 	// initialize the root
 	unsigned int *d = (unsigned int *)(data + 0x20);
 	unsigned int *d_end = (unsigned int *)(data + size);
@@ -54,23 +55,28 @@ bool FrameData::load(const char *filename, bool patch) {
 	}
 
 	test.filename = filename;
-	
+
 	unsigned int sequence_count = d[1];
-	
+
 	if(!patch)
 		Free();
-	
+
 	if(sequence_count > m_nsequences)
 		m_sequences.resize(sequence_count);
 	m_nsequences = sequence_count;
 
-	d += 2;	
+	d += 2;
 	// parse and recursively store data
 	d = fd_main_load(d, d_end, m_sequences, m_nsequences, utf8);
-	
+
+	// Clear modified flags after loading - only track NEW edits from this session
+	for(auto& seq : m_sequences) {
+		seq.modified = false;
+	}
+
 	// cleanup and finish
 	delete[] data;
-	
+
 	m_loaded = 1;
 	return 1;
 }
@@ -84,7 +90,7 @@ void FrameData::save(const char *filename)
 	std::ofstream file(filename, std::ios_base::out | std::ios_base::binary);
 	if (!file.is_open())
 		return;
-	
+
 	for(auto& seq : m_sequences)
 	for(auto &frame : seq.frames)
 	for(auto it = frame.hitboxes.begin(); it != frame.hitboxes.end();)
@@ -110,7 +116,7 @@ void FrameData::save(const char *filename)
 	char header[32] = "Hantei6DataFile";
 
 	//Set special byte to know if the file was written by our tool
-	header[31] = 0xFF; 
+	header[31] = 0xFF;
 
 	file.write(header, sizeof(header));
 
@@ -122,6 +128,64 @@ void FrameData::save(const char *filename)
 		file.write("PSTR", 4); file.write(VAL(i), 4);
 		WriteSequence(file, &m_sequences[i]);
 		file.write("PEND", 4);
+	}
+
+	file.write("_END", 4);
+	file.close();
+}
+
+void FrameData::save_modified_only(const char *filename)
+{
+	std::ofstream file(filename, std::ios_base::out | std::ios_base::binary);
+	if (!file.is_open())
+		return;
+
+	// Clean up hitboxes for modified sequences only
+	for(auto& seq : m_sequences)
+	{
+		if(!seq.modified) continue;
+
+		for(auto &frame : seq.frames)
+		for(auto it = frame.hitboxes.begin(); it != frame.hitboxes.end();)
+		{
+			Hitbox &box = it->second;
+			//Delete degenerate boxes when exporting.
+			if( (box.xy[0] == box.xy[2]) ||
+				(box.xy[1] == box.xy[3]) )
+			{
+				frame.hitboxes.erase(it++);
+			}
+			else
+			{
+				//Fix inverted boxes. Don't know if needed.
+				if(box.xy[0] > box.xy[2])
+					std::swap(box.xy[0], box.xy[2]);
+				if(box.xy[1] > box.xy[3])
+					std::swap(box.xy[1], box.xy[3]);
+				++it;
+			}
+		}
+	}
+
+	char header[32] = "Hantei6DataFile";
+
+	//Set special byte to know if the file was written by our tool
+	header[31] = 0xFF;
+
+	file.write(header, sizeof(header));
+
+	uint32_t size = get_sequence_count();
+	file.write("_STR", 4); file.write(VAL(size), 4);
+
+	// Only write modified sequences
+	for(uint32_t i = 0; i < get_sequence_count(); i++)
+	{
+		if(m_sequences[i].modified)
+		{
+			file.write("PSTR", 4); file.write(VAL(i), 4);
+			WriteSequence(file, &m_sequences[i]);
+			file.write("PEND", 4);
+		}
 	}
 
 	file.write("_END", 4);
@@ -185,6 +249,13 @@ Command* FrameData::get_command(int id)
 			return &cmd;
 	}
 	return nullptr;
+}
+
+void FrameData::mark_modified(int sequence_index)
+{
+	if(sequence_index >= 0 && sequence_index < (int)m_sequences.size()) {
+		m_sequences[sequence_index].modified = true;
+	}
 }
 
 bool FrameData::load_commands(const char *filename)
