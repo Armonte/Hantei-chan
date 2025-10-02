@@ -25,10 +25,13 @@ std::string CharacterView::getDisplayName() const
 
 	std::string name = m_character->getDisplayName();
 
-	// Add view number suffix for additional views
+	// Add view number suffix for multi-views (e.g., "Ciel #2")
 	if (m_viewNumber > 0) {
-		name += " (" + std::to_string(m_viewNumber + 1) + ")";
+		name += " #" + std::to_string(m_viewNumber + 1);
 	}
+
+	// Always add pattern number (e.g., "Ciel #2 - 400")
+	name += " - " + std::to_string(m_state.pattern);
 
 	return name;
 }

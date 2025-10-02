@@ -1132,8 +1132,19 @@ void MainFrame::createViewForCharacter(CharacterInstance* character)
 {
 	if (!character) return;
 
-	// Count existing views for this character to determine view number
-	int viewNumber = countViewsForCharacter(character);
+	// Find the lowest available view number for this character
+	int viewNumber = 0;
+	bool foundNumber = false;
+	while (!foundNumber) {
+		foundNumber = true;
+		for (auto& view : views) {
+			if (view->getCharacter() == character && view->getViewNumber() == viewNumber) {
+				viewNumber++;
+				foundNumber = false;
+				break;
+			}
+		}
+	}
 
 	auto view = std::make_unique<CharacterView>(character, &render);
 	view->setViewNumber(viewNumber);

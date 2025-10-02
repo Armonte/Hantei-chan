@@ -29,9 +29,10 @@ public:
 	RightPane* getRightPane() const { return m_rightPane.get(); }
 	BoxPane* getBoxPane() const { return m_boxPane.get(); }
 
-	// Display name (e.g., "Angel" or "Angel (2)")
+	// Display name (e.g., "Ciel - 400" or "Ciel #2 - 100")
 	std::string getDisplayName() const;
 	void setViewNumber(int num) { m_viewNumber = num; }
+	int getViewNumber() const { return m_viewNumber; }
 
 	// Recreate panes (called when switching to this view)
 	void refreshPanes(class Render* render);
