@@ -122,14 +122,43 @@ int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE, PWSTR pCmdLine, int nCmdShow
 		
 	UpdateWindow(hwnd);
 
-	MSG msg;
-	while (GetMessage(&msg, NULL, 0, 0))
+	MSG msg = {};
+	bool done = false;
+	const double targetFPS = 60.0;
+	const double targetFrameTime = 1000.0 / targetFPS; // ~16.67ms per frame
+	LARGE_INTEGER frequency, lastTime, currentTime;
+	QueryPerformanceFrequency(&frequency);
+	QueryPerformanceCounter(&lastTime);
+
+	while (!done)
 	{
-		TranslateMessage(&msg);
-		DispatchMessage(&msg);
+		// Process all pending messages
+		while (PeekMessage(&msg, NULL, 0, 0, PM_REMOVE))
+		{
+			TranslateMessage(&msg);
+			DispatchMessage(&msg);
+			if (msg.message == WM_QUIT)
+				done = true;
+		}
+		if (done)
+			break;
+
+		// Continuous rendering
 		MainFrame* mf = (MainFrame*)GetWindowLongPtr(hwnd, GWLP_USERDATA);
 		if(mf)
 			mf->Draw();
+
+		// Frame rate limiting to exactly 60fps
+		QueryPerformanceCounter(&currentTime);
+		double elapsedMs = (double)(currentTime.QuadPart - lastTime.QuadPart) * 1000.0 / frequency.QuadPart;
+
+		if (elapsedMs < targetFrameTime) {
+			DWORD sleepTime = (DWORD)(targetFrameTime - elapsedMs);
+			if (sleepTime > 0)
+				Sleep(sleepTime);
+		}
+
+		QueryPerformanceCounter(&lastTime);
 	}
 
 	DestroyWindow(hwnd);
