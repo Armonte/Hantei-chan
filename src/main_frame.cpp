@@ -16,16 +16,8 @@
 #include <glm/gtc/matrix_transform.hpp>
 
 MainFrame::MainFrame(ContextGl *context_):
-context(context_),
-currState{},
-mainPane(&render, &framedata, currState),
-rightPane(&render, &framedata, currState),
-boxPane(&render, &framedata, currState),
-curPalette(0),
-x(0),y(150)
+context(context_)
 {
-	currState.spriteId = -1;
-	render.SetCg(&cg);
 	LoadSettings();
 }
 
@@ -66,8 +58,12 @@ void MainFrame::DrawBack()
 	render.filter = smoothRender;
 	glClearColor(clearColor[0], clearColor[1], clearColor[2], 1.f);
 	glClear(GL_COLOR_BUFFER_BIT |  GL_DEPTH_BUFFER_BIT);
-	render.x = (x+clientRect.x/2)/render.scale;
-	render.y = (y+clientRect.y/2)/render.scale;
+
+	auto* active = getActive();
+	if (active) {
+		render.x = (active->renderX + clientRect.x/2) / render.scale;
+		render.y = (active->renderY + clientRect.y/2) / render.scale;
+	}
 	render.Draw();
 }
 
@@ -97,7 +93,36 @@ void MainFrame::DrawUi()
 	);
 		ImGui::PopStyleVar(3);
 		Menu(errorPopupId);
-		
+
+		// Character tabs
+		if (ImGui::BeginTabBar("##character_tabs", ImGuiTabBarFlags_Reorderable | ImGuiTabBarFlags_AutoSelectNewTabs | ImGuiTabBarFlags_FittingPolicyScroll)) {
+			for (size_t i = 0; i < characters.size(); i++) {
+				bool open = true;
+				ImGuiTabItemFlags flags = characters[i]->isModified() ? ImGuiTabItemFlags_UnsavedDocument : 0;
+
+				if (ImGui::BeginTabItem(characters[i]->getDisplayName().c_str(), &open, flags)) {
+					if (activeCharacterIndex != (int)i) {
+						setActiveCharacter(i);
+					}
+					ImGui::EndTabItem();
+				}
+
+				if (!open) {
+					tryCloseCharacter(i);
+				}
+			}
+
+			// "+" button to add new character
+			if (ImGui::TabItemButton("+", ImGuiTabItemFlags_Trailing | ImGuiTabItemFlags_NoTooltip)) {
+				openCharacterDialog();
+			}
+			if (ImGui::IsItemHovered()) {
+				ImGui::SetTooltip("Open Character");
+			}
+
+			ImGui::EndTabBar();
+		}
+
 		ImGuiID dockspaceID = ImGui::GetID("Dock Space");
 		if (!ImGui::DockBuilderGetNode(dockspaceID)) {
 			ImGui::DockBuilderRemoveNode(dockspaceID);
@@ -133,9 +158,42 @@ void MainFrame::DrawUi()
 		ImGui::EndPopup();
 	}
 
-	mainPane.Draw(); 
-	rightPane.Draw();
-	boxPane.Draw();
+	// Unsaved changes dialog
+	ImGui::SetNextWindowPos(ImGui::GetMainViewport()->GetCenter(), ImGuiCond_Appearing, ImVec2(0.5f, 0.5f));
+	if (ImGui::BeginPopupModal("Unsaved Changes", NULL, ImGuiWindowFlags_AlwaysAutoResize))
+	{
+		if (pendingCloseCharacterIndex >= 0 && pendingCloseCharacterIndex < characters.size()) {
+			auto& character = characters[pendingCloseCharacterIndex];
+			ImGui::Text("Character '%s' has unsaved changes.", character->getName().c_str());
+			ImGui::Text("Do you want to save before closing?\n\n");
+			ImGui::Separator();
+
+			if (ImGui::Button("Save", ImVec2(120, 0))) {
+				if (character->save()) {
+					closeCharacter(pendingCloseCharacterIndex);
+					pendingCloseCharacterIndex = -1;
+					ImGui::CloseCurrentPopup();
+				}
+			}
+			ImGui::SameLine();
+			if (ImGui::Button("Don't Save", ImVec2(120, 0))) {
+				closeCharacter(pendingCloseCharacterIndex);
+				pendingCloseCharacterIndex = -1;
+				ImGui::CloseCurrentPopup();
+			}
+			ImGui::SameLine();
+			if (ImGui::Button("Cancel", ImVec2(120, 0))) {
+				pendingCloseCharacterIndex = -1;
+				ImGui::CloseCurrentPopup();
+			}
+		}
+		ImGui::EndPopup();
+	}
+
+	// Only draw panes if we have an active character
+	if (mainPane) mainPane->Draw();
+	if (rightPane) rightPane->Draw();
+	if (boxPane) boxPane->Draw();
 	aboutWindow.Draw();
 	vectors.Draw();
 
@@ -144,24 +202,30 @@ void MainFrame::DrawUi()
 
 void MainFrame::RenderUpdate()
 {
+	auto* active = getActive();
+	if (!active) {
+		render.DontDraw();
+		return;
+	}
+
 	Sequence *seq;
-	if((seq = framedata.get_sequence(currState.pattern)) &&
+	if((seq = active->frameData.get_sequence(active->state.pattern)) &&
 		seq->frames.size() > 0)
 	{
-		auto &frame =  seq->frames[currState.frame];
+		auto &frame =  seq->frames[active->state.frame];
 
 		// Render currently selected layer
 		if(!frame.AF.layers.empty()) {
 			// Ensure selectedLayer is valid
-			if(currState.selectedLayer >= frame.AF.layers.size()) {
-				currState.selectedLayer = frame.AF.layers.size() - 1;
+			if(active->state.selectedLayer >= frame.AF.layers.size()) {
+				active->state.selectedLayer = frame.AF.layers.size() - 1;
 			}
-			if(currState.selectedLayer < 0) {
-				currState.selectedLayer = 0;
+			if(active->state.selectedLayer < 0) {
+				active->state.selectedLayer = 0;
 			}
 
-			auto &layer = frame.AF.layers[currState.selectedLayer];
-			currState.spriteId = layer.spriteId;
+			auto &layer = frame.AF.layers[active->state.selectedLayer];
+			active->state.spriteId = layer.spriteId;
 			render.GenerateHitboxVertices(frame.hitboxes);
 			render.offsetX = (layer.offset_x)*1;
 			render.offsetY = (layer.offset_y)*1;
@@ -186,37 +250,42 @@ void MainFrame::RenderUpdate()
 			}
 		}
 		else {
-			currState.spriteId = -1;
+			active->state.spriteId = -1;
 			render.DontDraw();
 		}
 	}
 	else
 	{
-		currState.spriteId = -1;
-
+		active->state.spriteId = -1;
 		render.DontDraw();
 	}
-	render.SwitchImage(currState.spriteId);
+	render.SwitchImage(active->state.spriteId);
 }
 
 void MainFrame::AdvancePattern(int dir)
 {
-	currState.pattern+= dir;
-	if(currState.pattern < 0)
-		currState.pattern = 0;
-	else if(currState.pattern >= framedata.get_sequence_count())
-		currState.pattern = framedata.get_sequence_count()-1;
-	currState.frame = 0;
+	auto* active = getActive();
+	if (!active) return;
+
+	active->state.pattern += dir;
+	if(active->state.pattern < 0)
+		active->state.pattern = 0;
+	else if(active->state.pattern >= active->frameData.get_sequence_count())
+		active->state.pattern = active->frameData.get_sequence_count()-1;
+	active->state.frame = 0;
 }
 
 void MainFrame::AdvanceFrame(int dir)
 {
-	auto seq = framedata.get_sequence(currState.pattern);
-	currState.frame += dir;
-	if(currState.frame < 0)
-		currState.frame = 0;
-	else if(seq && currState.frame >= seq->frames.size())
-		currState.frame = seq->frames.size()-1;
+	auto* active = getActive();
+	if (!active) return;
+
+	auto seq = active->frameData.get_sequence(active->state.pattern);
+	active->state.frame += dir;
+	if(active->state.frame < 0)
+		active->state.frame = 0;
+	else if(seq && active->state.frame >= seq->frames.size())
+		active->state.frame = seq->frames.size()-1;
 }
 
 void MainFrame::UpdateBackProj(float x, float y)
@@ -227,24 +296,68 @@ void MainFrame::UpdateBackProj(float x, float y)
 
 void MainFrame::HandleMouseDrag(int x_, int y_, bool dragRight, bool dragLeft)
 {
+	auto* active = getActive();
+	if (!active) return;
+
 	if(dragRight)
 	{
-		boxPane.BoxDrag(x_, y_);
+		if (boxPane) boxPane->BoxDrag(x_, y_);
 	}
 	else if(dragLeft)
 	{
-		x += x_;
-		y += y_;
+		active->renderX += x_;
+		active->renderY += y_;
 	}
 }
 
 void MainFrame::RightClick(int x_, int y_)
 {
-	boxPane.BoxStart((x_-x-clientRect.x/2)/render.scale, (y_-y-clientRect.y/2)/render.scale);
+	auto* active = getActive();
+	if (!active || !boxPane) return;
+
+	boxPane->BoxStart((x_ - active->renderX - clientRect.x/2)/render.scale,
+	                  (y_ - active->renderY - clientRect.y/2)/render.scale);
 }
 
 bool MainFrame::HandleKeys(uint64_t vkey)
 {
+	bool ctrlPressed = GetKeyState(VK_CONTROL) & 0x8000;
+
+	// Multi-character shortcuts (work even without active character)
+	if (ctrlPressed) {
+		switch (vkey) {
+		case VK_TAB:
+			// Ctrl+Tab: switch to next character
+			if (!characters.empty()) {
+				int nextIndex = (activeCharacterIndex + 1) % characters.size();
+				setActiveCharacter(nextIndex);
+				return true;
+			}
+			break;
+		case 'W':
+			// Ctrl+W: close active character
+			if (activeCharacterIndex >= 0 && activeCharacterIndex < characters.size()) {
+				tryCloseCharacter(activeCharacterIndex);
+				return true;
+			}
+			break;
+		case 'O':
+			// Ctrl+O: open character
+			openCharacterDialog();
+			return true;
+		case 'S':
+			// Ctrl+S: save active character
+			if (auto* active = getActive()) {
+				active->save();
+				return true;
+			}
+			break;
+		}
+	}
+
+	// Character-specific shortcuts (require active character)
+	if (!getActive()) return false;
+
 	switch (vkey)
 	{
 	case VK_UP:
@@ -260,10 +373,10 @@ bool MainFrame::HandleKeys(uint64_t vkey)
 		AdvanceFrame(+1);
 		return true;
 	case 'Z':
-		boxPane.AdvanceBox(-1);
+		if (boxPane) boxPane->AdvanceBox(-1);
 		return true;
 	case 'X':
-		boxPane.AdvanceBox(+1);
+		if (boxPane) boxPane->AdvanceBox(+1);
 		return true;
 	}
 	return false;
@@ -301,216 +414,105 @@ void MainFrame::Menu(unsigned int errorPopupId)
 		//ImGui::Separator();
 		if (ImGui::BeginMenu("File"))
 		{
-			if (ImGui::MenuItem("New file"))
+			if (ImGui::MenuItem("Add Character..."))
 			{
-				framedata.initEmpty();
-				currentFilePath.clear();
-				loadedTxtPath.clear();
-				topHA6Path.clear();
-				mainPane.RegenerateNames();
+				openCharacterDialog();
 			}
-			if (ImGui::MenuItem("Close file"))
+
+			auto* active = getActive();
+			bool hasActive = (active != nullptr);
+
+			if (ImGui::MenuItem("New Character"))
 			{
-				framedata.Free();
-				currentFilePath.clear();
-				loadedTxtPath.clear();
-				topHA6Path.clear();
+				auto character = std::make_unique<CharacterInstance>();
+				character->frameData.initEmpty();
+				character->setName("Untitled");
+				characters.push_back(std::move(character));
+				setActiveCharacter(characters.size() - 1);
+			}
+
+			if (ImGui::MenuItem("Close Character", nullptr, false, hasActive))
+			{
+				if (hasActive) {
+					tryCloseCharacter(activeCharacterIndex);
+				}
 			}
 
 			ImGui::Separator();
-			if (ImGui::MenuItem("Load from .txt..."))
+
+			if (ImGui::MenuItem("Save Character", nullptr, false, hasActive))
 			{
-				std::string &&file = FileDialog(fileType::TXT);
-				if(!file.empty())
-				{
-					std::string topHA6;
-					if(!LoadFromIni(&framedata, &cg, file, &topHA6))
+				if (hasActive) {
+					active->save();
+				}
+			}
+
+			if (ImGui::MenuItem("Save Character As...", nullptr, false, hasActive))
+			{
+				if (hasActive) {
+					std::string &&file = FileDialog(fileType::HA6, true);
+					if(!file.empty())
 					{
-						ImGui::OpenPopup(errorPopupId);
+						active->saveAs(file);
 					}
-					else
+				}
+			}
+
+			if (ImGui::MenuItem("Save as MOD...", nullptr, false, hasActive && !active->getTxtPath().empty()))
+			{
+				if (hasActive) {
+					// Generate MOD filename from top HA6 path
+					const auto& topHA6 = active->getTopHA6Path();
+					if(!topHA6.empty())
 					{
-						loadedTxtPath = file;
-						topHA6Path = topHA6;
-						currentFilePath.clear();
-						mainPane.RegenerateNames();
+						size_t dotPos = topHA6.find_last_of(".");
+						std::string basePath = (dotPos != std::string::npos) ? topHA6.substr(0, dotPos) : topHA6;
+						std::string modPath = basePath + "_MOD.HA6";
+
+						active->saveModifiedOnly(modPath);
+					}
+				}
+			}
+
+			if (ImGui::MenuItem("Load Commands (_c.txt)...", nullptr, false, hasActive))
+			{
+				if (hasActive) {
+					std::string &&file = FileDialog(fileType::TXT);
+					if(!file.empty())
+					{
+						active->frameData.load_commands(file.c_str());
+					}
+				}
+			}
+
+			ImGui::Separator();
+			if (ImGui::MenuItem("Load CG...", nullptr, false, hasActive))
+			{
+				if (hasActive) {
+					std::string &&file = FileDialog(fileType::CG);
+					if(!file.empty())
+					{
+						if(!active->loadCG(file))
+						{
+							ImGui::OpenPopup(errorPopupId);
+						}
 						render.SwitchImage(-1);
 					}
 				}
 			}
 
-			if (ImGui::MenuItem("Load HA6..."))
+			if (ImGui::MenuItem("Load palette...", nullptr, false, hasActive))
 			{
-				std::string &&file = FileDialog(fileType::HA6);
-				if(!file.empty())
-				{
-					if(!framedata.load(file.c_str()))
+				if (hasActive) {
+					std::string &&file = FileDialog(fileType::PAL);
+					if(!file.empty())
 					{
-						ImGui::OpenPopup(errorPopupId);
-					}
-					else
-					{
-						currentFilePath = file;
-						loadedTxtPath.clear();  // Clear txt-related paths when loading HA6 directly
-						topHA6Path.clear();
-						mainPane.RegenerateNames();
-
-						// Try to load _c.txt from the same directory
-						size_t lastSlash = file.find_last_of("/\\");
-						if(lastSlash != std::string::npos) {
-							std::string dir = file.substr(0, lastSlash + 1);
-
-							// Try character-specific _c.txt first (e.g., "aoko_c.txt")
-							size_t lastDot = file.find_last_of(".");
-							size_t nameStart = lastSlash + 1;
-							if(lastDot != std::string::npos && lastDot > nameStart) {
-								std::string charName = file.substr(nameStart, lastDot - nameStart);
-								if(!framedata.load_commands((dir + charName + "_c.txt").c_str())) {
-									// Fall back to generic _c.txt
-									framedata.load_commands((dir + "_c.txt").c_str());
-								}
-							} else {
-								framedata.load_commands((dir + "_c.txt").c_str());
-							}
+						if(!active->cg.loadPalette(file.c_str()))
+						{
+							ImGui::OpenPopup(errorPopupId);
 						}
+						render.SwitchImage(-1);
 					}
-				}
-			}
-
-			if (ImGui::MenuItem("Load HA6 and Patch..."))
-			{
-				std::string &&file = FileDialog(fileType::HA6);
-				if(!file.empty())
-				{
-					if(!framedata.load(file.c_str(), true))
-					{
-						ImGui::OpenPopup(errorPopupId);
-					}
-					else
-					{
-						loadedTxtPath.clear();  // Clear txt-related paths
-						topHA6Path.clear();
-						mainPane.RegenerateNames();
-
-						// Try to load _c.txt from the same directory
-						size_t lastSlash = file.find_last_of("/\\");
-						if(lastSlash != std::string::npos) {
-							std::string dir = file.substr(0, lastSlash + 1);
-
-							// Try character-specific _c.txt first (e.g., "aoko_c.txt")
-							size_t lastDot = file.find_last_of(".");
-							size_t nameStart = lastSlash + 1;
-							if(lastDot != std::string::npos && lastDot > nameStart) {
-								std::string charName = file.substr(nameStart, lastDot - nameStart);
-								if(!framedata.load_commands((dir + charName + "_c.txt").c_str())) {
-									// Fall back to generic _c.txt
-									framedata.load_commands((dir + "_c.txt").c_str());
-								}
-							} else {
-								framedata.load_commands((dir + "_c.txt").c_str());
-							}
-						}
-					}
-					currentFilePath.clear();
-				}
-			}
-
-			ImGui::Separator();
-			//TODO: Implement hotkeys, someday.
-			if (ImGui::MenuItem("Save"/* , "Ctrl+S" */))
-			{
-				if(currentFilePath.empty())
-				{
-					// If we loaded from .txt, automatically save to the top HA6 file
-					if(!topHA6Path.empty())
-					{
-						currentFilePath = topHA6Path;
-					}
-					else
-					{
-						currentFilePath = FileDialog(fileType::HA6, true);
-					}
-				}
-				if(!currentFilePath.empty())
-				{
-					framedata.save(currentFilePath.c_str());
-				}
-			}
-
-			if (ImGui::MenuItem("Save as..."))
-			{
-				std::string &&file = FileDialog(fileType::HA6, true);
-				if(!file.empty())
-				{
-					framedata.save(file.c_str());
-					currentFilePath = file;
-				}
-			}
-
-			if (ImGui::MenuItem("Save as MOD...", nullptr, false, !loadedTxtPath.empty()))
-			{
-				// Generate MOD filename from top HA6 path
-				if(!topHA6Path.empty())
-				{
-					// Remove extension and add _MOD.HA6
-					size_t dotPos = topHA6Path.find_last_of(".");
-					std::string basePath = (dotPos != std::string::npos) ? topHA6Path.substr(0, dotPos) : topHA6Path;
-					std::string modPath = basePath + "_MOD.HA6";
-
-					// Extract just the filename for the .txt entry
-					size_t slashPos = modPath.find_last_of("/\\");
-					std::string modFilename = (slashPos != std::string::npos) ? modPath.substr(slashPos + 1) : modPath;
-
-					// Save only modified patterns
-					framedata.save_modified_only(modPath.c_str());
-
-					// Update the .txt file to include the new MOD file
-					if(AddHA6ToTxt(loadedTxtPath, modFilename))
-					{
-						// Update our tracking variables
-						topHA6Path = modPath;
-						currentFilePath = modPath;
-					}
-				}
-			}
-			if(ImGui::IsItemHovered() && loadedTxtPath.empty())
-			{
-				Tooltip("Only available when loaded from .txt file");
-			}
-
-			if (ImGui::MenuItem("Load Commands (_c.txt)..."))
-			{
-				std::string &&file = FileDialog(fileType::TXT);
-				if(!file.empty())
-				{
-					framedata.load_commands(file.c_str());
-				}
-			}
-
-			ImGui::Separator();
-			if (ImGui::MenuItem("Load CG..."))
-			{
-				std::string &&file = FileDialog(fileType::CG);
-				if(!file.empty())
-				{
-					if(!cg.load(file.c_str()))
-					{
-						ImGui::OpenPopup(errorPopupId);	
-					}
-					render.SwitchImage(-1);
-				}
-			}
-
-			if (ImGui::MenuItem("Load palette...")) 
-			{
-				std::string &&file = FileDialog(fileType::PAL);
-				if(!file.empty())
-				{
-					if(!cg.loadPalette(file.c_str()))
-					{
-						ImGui::OpenPopup(errorPopupId);	
-					}
-					render.SwitchImage(-1);
 				}
 			}
 
@@ -546,15 +548,16 @@ void MainFrame::Menu(unsigned int errorPopupId)
 				ImGui::ColorEdit3("##clearColor", (float*)&clearColor, ImGuiColorEditFlags_NoInputs);
 				ImGui::EndMenu();
 			}
-			if (cg.getPalNumber() > 0 && ImGui::BeginMenu("Palette number"))
+			auto* active = getActive();
+			if (active && active->cg.getPalNumber() > 0 && ImGui::BeginMenu("Palette number"))
 			{
 				ImGui::SetNextItemWidth(80);
-				ImGui::InputInt("Palette", &curPalette);
-				if(curPalette >= cg.getPalNumber())
-					curPalette = cg.getPalNumber()-1;
-				else if(curPalette < 0)
-					curPalette = 0;
-				if(cg.changePaletteNumber(curPalette))
+				ImGui::InputInt("Palette", &active->palette);
+				if(active->palette >= active->cg.getPalNumber())
+					active->palette = active->cg.getPalNumber()-1;
+				else if(active->palette < 0)
+					active->palette = 0;
+				if(active->cg.changePaletteNumber(active->palette))
 					render.SwitchImage(-1);
 				ImGui::EndMenu();
 			}
@@ -593,31 +596,42 @@ void MainFrame::Menu(unsigned int errorPopupId)
 			ImGui::EndMenu();
 		}
 
-		// Status display - show current save target
+		// Status display - show active character info
 		ImGui::Spacing();
 		ImGui::Separator();
 		ImGui::Spacing();
-		if(!loadedTxtPath.empty() && !topHA6Path.empty())
-		{
-			// Extract just the filename from the paths for cleaner display
-			size_t txtSlash = loadedTxtPath.find_last_of("/\\");
-			size_t ha6Slash = topHA6Path.find_last_of("/\\");
-			std::string txtName = (txtSlash != std::string::npos) ? loadedTxtPath.substr(txtSlash + 1) : loadedTxtPath;
-			std::string ha6Name = (ha6Slash != std::string::npos) ? topHA6Path.substr(ha6Slash + 1) : topHA6Path;
 
-			ImGui::TextDisabled("Loaded: %s", txtName.c_str());
-			ImGui::SameLine();
-			ImGui::TextColored(ImVec4(0.4f, 0.8f, 0.4f, 1.0f), "-> Saves to: %s", ha6Name.c_str());
-		}
-		else if(!currentFilePath.empty())
-		{
-			size_t slash = currentFilePath.find_last_of("/\\");
-			std::string filename = (slash != std::string::npos) ? currentFilePath.substr(slash + 1) : currentFilePath;
-			ImGui::TextColored(ImVec4(0.4f, 0.8f, 0.4f, 1.0f), "Save to: %s", filename.c_str());
+		auto* active = getActive();
+		if (active) {
+			const auto& txtPath = active->getTxtPath();
+			const auto& topHA6 = active->getTopHA6Path();
+
+			if (!txtPath.empty() && !topHA6.empty())
+			{
+				// Extract just the filename from the paths for cleaner display
+				size_t txtSlash = txtPath.find_last_of("/\\");
+				size_t ha6Slash = topHA6.find_last_of("/\\");
+				std::string txtName = (txtSlash != std::string::npos) ? txtPath.substr(txtSlash + 1) : txtPath;
+				std::string ha6Name = (ha6Slash != std::string::npos) ? topHA6.substr(ha6Slash + 1) : topHA6;
+
+				ImGui::TextDisabled("Loaded: %s", txtName.c_str());
+				ImGui::SameLine();
+				ImGui::TextColored(ImVec4(0.4f, 0.8f, 0.4f, 1.0f), "-> Saves to: %s", ha6Name.c_str());
+			}
+			else if (!topHA6.empty())
+			{
+				size_t slash = topHA6.find_last_of("/\\");
+				std::string filename = (slash != std::string::npos) ? topHA6.substr(slash + 1) : topHA6;
+				ImGui::TextColored(ImVec4(0.4f, 0.8f, 0.4f, 1.0f), "Save to: %s", filename.c_str());
+			}
+			else
+			{
+				ImGui::TextDisabled("No save target set for %s", active->getName().c_str());
+			}
 		}
 		else
 		{
-			ImGui::TextDisabled("No save target set");
+			ImGui::TextDisabled("No character loaded");
 		}
 
 		ImGui::EndMenuBar();
@@ -684,4 +698,104 @@ void MainFrame::WarmStyle()
 	colors[ImGuiCol_NavWindowingDimBg]      = ImVec4(0.20f, 0.20f, 0.20f, 0.20f);
 	colors[ImGuiCol_ModalWindowDimBg]       = ImVec4(0.20f, 0.20f, 0.20f, 0.35f);
 	ChangeClearColor(0.324f, 0.409f, 0.185f);
+}
+
+// Multi-character support helper methods
+
+CharacterInstance* MainFrame::getActive()
+{
+	if (activeCharacterIndex >= 0 && activeCharacterIndex < characters.size()) {
+		return characters[activeCharacterIndex].get();
+	}
+	return nullptr;
+}
+
+const CharacterInstance* MainFrame::getActive() const
+{
+	if (activeCharacterIndex >= 0 && activeCharacterIndex < characters.size()) {
+		return characters[activeCharacterIndex].get();
+	}
+	return nullptr;
+}
+
+void MainFrame::setActiveCharacter(int index)
+{
+	if (index >= 0 && index < characters.size()) {
+		activeCharacterIndex = index;
+
+		// Recreate panes with new active character
+		auto* active = getActive();
+		if (active) {
+			mainPane = std::make_unique<MainPane>(&render, &active->frameData, active->state);
+			rightPane = std::make_unique<RightPane>(&render, &active->frameData, active->state);
+			boxPane = std::make_unique<BoxPane>(&render, &active->frameData, active->state);
+
+			// Initialize pane data
+			if (mainPane) mainPane->RegenerateNames();
+
+			// Update render state
+			render.SetCg(&active->cg);
+		}
+	}
+}
+
+void MainFrame::closeCharacter(int index)
+{
+	if (index >= 0 && index < characters.size()) {
+		characters.erase(characters.begin() + index);
+
+		// Update active index
+		if (characters.empty()) {
+			activeCharacterIndex = -1;
+			mainPane.reset();
+			rightPane.reset();
+			boxPane.reset();
+		} else {
+			// Select previous character, or first if we closed the first one
+			if (activeCharacterIndex >= characters.size()) {
+				activeCharacterIndex = characters.size() - 1;
+			}
+			setActiveCharacter(activeCharacterIndex);
+		}
+	}
+}
+
+bool MainFrame::tryCloseCharacter(int index)
+{
+	if (index < 0 || index >= characters.size()) {
+		return false;
+	}
+
+	auto& character = characters[index];
+	if (character->isModified()) {
+		// Show unsaved changes dialog
+		pendingCloseCharacterIndex = index;
+		ImGui::OpenPopup("Unsaved Changes");
+		return false; // Not closed yet, user needs to confirm
+	}
+
+	closeCharacter(index);
+	return true;
+}
+
+void MainFrame::openCharacterDialog()
+{
+	// Use existing file dialog to open .txt or .ha6 file
+	std::string path = FileDialog(-1, false); // -1 means any file type
+	if (!path.empty()) {
+		auto character = std::make_unique<CharacterInstance>();
+
+		// Determine if .txt or .ha6
+		if (path.find(".txt") != std::string::npos) {
+			if (character->loadFromTxt(path)) {
+				characters.push_back(std::move(character));
+				setActiveCharacter(characters.size() - 1);
+			}
+		} else if (path.find(".ha6") != std::string::npos || path.find(".HA6") != std::string::npos) {
+			if (character->loadHA6(path)) {
+				characters.push_back(std::move(character));
+				setActiveCharacter(characters.size() - 1);
+			}
+		}
+	}
 }

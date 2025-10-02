@@ -7,10 +7,11 @@
 #include "box_pane.h"
 #include "about.h"
 #include "vectors.h"
-#include "framedata.h"
-#include "cg.h"
+#include "character_instance.h"
 #include <glm/mat4x4.hpp>
 #include <string>
+#include <vector>
+#include <memory>
 
 class MainFrame
 {
@@ -31,19 +32,25 @@ private:
 	float clearColor[3];
 	int style_idx = 0;
 	float zoom_idx = 3.0f;
-	bool smoothRender = false; 
-	
+	bool smoothRender = false;
+
 
 	Render render;
-	FrameData framedata;
-	FrameState currState;
-	CG cg;
-	int curPalette;
 	VectorTXT vectors;
 
+	// Multi-character support
+	std::vector<std::unique_ptr<CharacterInstance>> characters;
+	int activeCharacterIndex = -1;
+
 	std::string currentFilePath;
-	std::string loadedTxtPath;    // Path to the .txt file used to load character data
-	std::string topHA6Path;       // Path to the highest-indexed HA6 file from .txt (auto-save target)
+
+	// Helper methods
+	CharacterInstance* getActive();
+	const CharacterInstance* getActive() const;
+	void setActiveCharacter(int index);
+	void closeCharacter(int index);
+	bool tryCloseCharacter(int index); // Returns true if closed, false if cancelled
+	void openCharacterDialog();
 
 	void DrawBack();
 	void DrawUi();
@@ -59,12 +66,14 @@ private:
 	void ChangeClearColor(float r, float g, float b);
 
 	int mDeltaX = 0, mDeltaY = 0;
-	int x=0, y=0;
-	
 
-	MainPane mainPane;
-	RightPane rightPane;
-	BoxPane boxPane;
+	// Character close confirmation
+	int pendingCloseCharacterIndex = -1;
+
+	// Panes (will be dynamically updated with active character)
+	std::unique_ptr<MainPane> mainPane;
+	std::unique_ptr<RightPane> rightPane;
+	std::unique_ptr<BoxPane> boxPane;
 	AboutWindow aboutWindow;
 };
 
