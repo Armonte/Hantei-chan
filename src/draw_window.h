@@ -2,13 +2,9 @@
 #define DRAWWINDOW_H_GUARD
 #include "framedata.h"
 #include "render.h"
-
-struct FrameState
-{
-	int pattern;
-	int frame;
-	int spriteId;
-};
+#include "hitbox.h"
+#include "framestate.h"
+#include <vector>
 //ImGui Windows that draw themselves. Just for utility.
 class DrawWindow
 {

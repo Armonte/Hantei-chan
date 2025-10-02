@@ -13,6 +13,7 @@ set (EXE "hanteichan" )
 include(glad)
 include(imgui)
 add_subdirectory(glm)
+add_subdirectory(tinyalloc)
 
 add_executable(${EXE} WIN32
 	src/main.cpp
@@ -28,6 +29,7 @@ add_executable(${EXE} WIN32
 	src/framedata.cpp
 	src/framedata_load.cpp
 	src/framedata_save.cpp
+	src/framestate.cpp
 	src/cg.cpp
 	src/vectors.cpp
 	src/misc.cpp
@@ -41,7 +43,7 @@ target_include_directories(${EXE} PRIVATE ".")
 target_compile_definitions(${EXE} PRIVATE UNICODE _UNICODE WIN32_LEAN_AND_MEAN HA6GUIVERSION="${CMAKE_PROJECT_VERSION}")
 
 find_package(OpenGL REQUIRED)
-target_link_libraries(${EXE} PRIVATE imgui glad OpenGL::GL glm)
+target_link_libraries(${EXE} PRIVATE imgui glad OpenGL::GL glm tinyalloc)
 
 if(MINGW)
 	message(status "With -municode")

@@ -10,28 +10,14 @@
 extern std::set<int> numberSet;
 extern int maxCount;
 
-struct Frame_AF {
-	// rendering data
-	int spriteId;
-	bool usePat;
+struct Layer {
+	int spriteId = -1;
+	bool usePat = false;
 
-	int		offset_y;
-	int		offset_x;
+	int offset_y = 0;
+	int offset_x = 0;
 
-	int		duration;
-
-	/* Animation action
-	0 (default): End
-	1: Next
-	2: Jump to frame
-	*/
-	int aniType;
-
-	// Bit flags. First 4 bits only
-	unsigned int aniFlag;
-
-
-	int		blend_mode;
+	int blend_mode = 0;
 
 	float rgba[4]{1,1,1,1};
 
@@ -39,21 +25,57 @@ struct Frame_AF {
 
 	float scale[2]{1,1};//xy
 
+	int priority = 0; // Default is 0. Used in throws and dodge.
+};
+
+template<template<typename> class Allocator = std::allocator>
+struct Frame_AF_T {
+	// Multi-layer rendering data
+	std::vector<Layer, Allocator<Layer>> layers;
+
+	int		duration = 0;
+
+	/* Animation action
+	0 (default): End
+	1: Next
+	2: Jump to frame
+	*/
+	int aniType = 0;
+
+	// Bit flags. First 4 bits only
+	unsigned int aniFlag = 0;
+
 	//Depends on aniflag.
 	//If (0)end, it jumps to the number of the sequence
 	//If (2)jump, it jumps to the number of the frame of the seq.
 	//It seems to do nothing if the aniflag is 1(next).
-	int jump;
+	int jump = 0;
 
-	
-	int landJump; //Jumps to this frame if landing.
+
+	int landJump = 0; //Jumps to this frame if landing.
 	//1-5: Linear, Fast end, Slow end, Fast middle, Slow Middle. The last type is not used in vanilla
-	int interpolationType; 
-	int priority; // Default is 0. Used in throws and dodge.
-	int loopCount; //Times to loop, it's the frame just before the loop.
-	int loopEnd; //The frame number is not part of the loop.
-	
-	bool AFRT; //Makes rotation respect EF scale.
+	int interpolationType = 0;
+	int loopCount = 0; //Times to loop, it's the frame just before the loop.
+	int loopEnd = 0; //The frame number is not part of the loop.
+
+	bool AFRT = false; //Makes rotation respect EF scale.
+
+	// Assignment operator for cross-allocator copying
+	template<template<typename> class FromT>
+	Frame_AF_T<Allocator>& operator=(const Frame_AF_T<FromT>& from) {
+		layers.resize(from.layers.size());
+		memcpy(layers.data(), from.layers.data(), sizeof(Layer)*from.layers.size());
+		duration = from.duration;
+		aniType = from.aniType;
+		aniFlag = from.aniFlag;
+		jump = from.jump;
+		landJump = from.landJump;
+		interpolationType = from.interpolationType;
+		loopCount = from.loopCount;
+		loopEnd = from.loopEnd;
+		AFRT = from.AFRT;
+		return *this;
+	}
 };
 
 struct Frame_AS {
@@ -136,34 +158,84 @@ struct Frame_IF {
 	int		parameters[9]; //Max used value is 9. I don't know if parameters beyond have any effect..
 };
 
-struct Frame {
-	Frame_AF AF;
-	Frame_AS AS;
-	Frame_AT AT;
+// Helper function for copying vector contents (for EF/IF copy operations)
+template<typename Type, typename A, typename B>
+void CopyVectorContents(A& dst, const B& src)
+{
+	static_assert(sizeof(typename A::value_type) == sizeof(Type) && sizeof(typename B::value_type) == sizeof(Type), "Vector element types don't match");
+	dst.resize(src.size());
+	memcpy(dst.data(), src.data(), sizeof(Type)*src.size());
+}
 
-	std::vector<Frame_EF> EF;
-	std::vector<Frame_IF> IF;
+template<template<typename> class Allocator = std::allocator>
+struct Frame_T {
+	Frame_AF_T<Allocator> AF = {};
+	Frame_AS AS = {};
+	Frame_AT AT = {};
 
-	BoxList hitboxes;
+	std::vector<Frame_EF, Allocator<Frame_EF>> EF;
+	std::vector<Frame_IF, Allocator<Frame_IF>> IF;
+
+	BoxList_T<Allocator> hitboxes{};
+
+	// Cross-allocator assignment operator
+	template<template<typename> class FromT>
+	Frame_T<Allocator>& operator=(const Frame_T<FromT>& from) {
+		AF = from.AF;
+		AS = from.AS;
+		AT = from.AT;
+		CopyVectorContents<Frame_EF>(EF, from.EF);
+		CopyVectorContents<Frame_IF>(IF, from.IF);
+		// Manually copy map contents for cross-allocator support
+		hitboxes.clear();
+		for (const auto& pair : from.hitboxes) {
+			hitboxes[pair.first] = pair.second;
+		}
+		return *this;
+	}
 };
 
-struct Sequence {
+template<template<typename> class Allocator = std::allocator>
+struct Sequence_T {
 	// sequence property data
-	std::string	name;
-	std::string codeName;
+	std::basic_string<char, std::char_traits<char>, Allocator<char>> name;
+	std::basic_string<char, std::char_traits<char>, Allocator<char>> codeName;
 
-	int psts;
-	int level;
-	int flag;
+	int psts = 0;
+	int level = 0;
+	int flag = 0;
 
-	bool empty;
-	bool initialized;
-	bool modified;  // Track if this sequence has been edited
+	bool empty = false;
+	bool initialized = false;
+	bool modified = false;  // Track if this sequence has been edited
 
-	std::vector<Frame> frames;
+	std::vector<Frame_T<Allocator>, Allocator<Frame_T<Allocator>>> frames;
 
-	Sequence();
+	// Cross-allocator assignment operator
+	template<template<typename> class FromT>
+	Sequence_T<Allocator>& operator=(const Sequence_T<FromT>& from) {
+		name = decltype(name)(from.name.data(), from.name.size());
+		codeName = decltype(codeName)(from.codeName.data(), from.codeName.size());
+		psts = from.psts;
+		level = from.level;
+		flag = from.flag;
+		empty = from.empty;
+		initialized = from.initialized;
+		modified = from.modified;
+		frames.resize(from.frames.size());
+		for (size_t i = 0; i < from.frames.size(); i++) {
+			frames[i] = from.frames[i];
+		}
+		return *this;
+	}
+
+	Sequence_T() = default;
 };
+
+// Typedefs for non-templated use (default std::allocator)
+using Frame_AF = Frame_AF_T<std::allocator>;
+using Frame = Frame_T<std::allocator>;
+using Sequence = Sequence_T<std::allocator>;
 
 struct Command {
 	int id;
@@ -207,6 +279,5 @@ public:
 };
 
 void WriteSequence(std::ofstream &file, const Sequence *seq);
-
 
 #endif /* FRAMEDATA_H_GUARD */

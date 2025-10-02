@@ -11,13 +11,6 @@
 int maxCount = 0;
 std::set<int> numberSet;
 
-Sequence::Sequence():
-psts(0), level(0), flag(0),
-empty(true),
-initialized(false),
-modified(false)
-{}
-
 void FrameData::initEmpty()
 {
 	Free();
@@ -239,6 +232,11 @@ std::string FrameData::GetDecoratedName(int n)
 		ss << m_sequences[n].name;
 		if(!m_sequences[n].codeName.empty())
 			ss << " - " << m_sequences[n].codeName;
+
+		// Add asterisk for modified patterns
+		if(m_sequences[n].modified)
+			ss << " *";
+
 		return ss.str();
 }
 
