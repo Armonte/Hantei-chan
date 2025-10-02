@@ -110,7 +110,7 @@ int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE, PWSTR pCmdLine, int nCmdShow
 
 	
 	::RegisterClassEx(&wc);
-	HWND hwnd = ::CreateWindow(wc.lpszClassName, L"判定ちゃん v" HA6GUIVERSION, WS_OVERLAPPEDWINDOW,
+	HWND hwnd = ::CreateWindow(wc.lpszClassName, L"gonptéchan v" HA6GUIVERSION, WS_OVERLAPPEDWINDOW,
 		gSettings.posX, gSettings.posY, gSettings.winSizeX, gSettings.winSizeY, NULL, NULL, wc.hInstance, nullptr);
 	mainWindowHandle = hwnd;
 

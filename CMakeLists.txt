@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.13...3.19)
-project(hanteichan VERSION 1.0.21 LANGUAGES C CXX)
+project(hanteichan VERSION 1.1.21 LANGUAGES C CXX)
 
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
@@ -8,7 +8,7 @@ add_compile_options("$<$<C_COMPILER_ID:MSVC>:/utf-8>")
 add_compile_options("$<$<CXX_COMPILER_ID:MSVC>:/utf-8>")
 
 set (CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake" )
-set (EXE "hanteichan" )
+set (EXE "gonptechan" )
 
 include(glad)
 include(imgui)
