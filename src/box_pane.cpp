@@ -102,15 +102,35 @@ void BoxPane::Draw()
 		BoxList &boxes = frames[currState.frame].hitboxes;
 
 		im::SameLine(0,20.f);
-		if(im::Button("Copy"))
+		if(im::Button("Copy all"))
 		{
-			copiedBoxes = boxes;
+			// Manually copy map for cross-allocator support
+			currState.copied->boxes.clear();
+			for (const auto& pair : boxes) {
+				currState.copied->boxes[pair.first] = pair.second;
+			}
 		}
 		im::SameLine(0,20.f);
-		if(im::Button("Paste"))
+		if(im::Button("Paste all"))
 		{
-			if(copiedBoxes.size()>0)
-				boxes = copiedBoxes;
+			// Manually copy map for cross-allocator support
+			boxes.clear();
+			for (const auto& pair : currState.copied->boxes) {
+				boxes[pair.first] = pair.second;
+			}
+			frameData->mark_modified(currState.pattern);
+		}
+
+		im::SameLine(0,20.f);
+		if(im::Button("Copy params"))
+		{
+			currState.copied->box = boxes[currentBox];
+		}
+		im::SameLine(0,20.f);
+		if(im::Button("Paste params"))
+		{
+			boxes[currentBox] = currState.copied->box;
+			frameData->mark_modified(currState.pattern);
 		}
 
 		im::Checkbox("Highlight selected", &highlight);

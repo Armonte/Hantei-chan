@@ -149,34 +149,51 @@ void MainFrame::RenderUpdate()
 		seq->frames.size() > 0)
 	{
 		auto &frame =  seq->frames[currState.frame];
-		currState.spriteId = frame.AF.spriteId;
-		render.GenerateHitboxVertices(frame.hitboxes);
-		render.offsetX = (frame.AF.offset_x)*1;
-		render.offsetY = (frame.AF.offset_y)*1;
-		render.SetImageColor(frame.AF.rgba);
-		render.rotX = frame.AF.rotation[0];
-		render.rotY = frame.AF.rotation[1];
-		render.rotZ = frame.AF.rotation[2];
-		render.scaleX = frame.AF.scale[0];
-		render.scaleY = frame.AF.scale[1];
-		
-		switch (frame.AF.blend_mode)
-		{
-		case 2:
-			render.blendingMode = Render::additive;
-			break;
-		case 3:
-			render.blendingMode = Render::subtractive;
-			break;
-		default:
-			render.blendingMode = Render::normal;
-			break;
+
+		// Render currently selected layer
+		if(!frame.AF.layers.empty()) {
+			// Ensure selectedLayer is valid
+			if(currState.selectedLayer >= frame.AF.layers.size()) {
+				currState.selectedLayer = frame.AF.layers.size() - 1;
+			}
+			if(currState.selectedLayer < 0) {
+				currState.selectedLayer = 0;
+			}
+
+			auto &layer = frame.AF.layers[currState.selectedLayer];
+			currState.spriteId = layer.spriteId;
+			render.GenerateHitboxVertices(frame.hitboxes);
+			render.offsetX = (layer.offset_x)*1;
+			render.offsetY = (layer.offset_y)*1;
+			render.SetImageColor(layer.rgba);
+			render.rotX = layer.rotation[0];
+			render.rotY = layer.rotation[1];
+			render.rotZ = layer.rotation[2];
+			render.scaleX = layer.scale[0];
+			render.scaleY = layer.scale[1];
+
+			switch (layer.blend_mode)
+			{
+			case 2:
+				render.blendingMode = Render::additive;
+				break;
+			case 3:
+				render.blendingMode = Render::subtractive;
+				break;
+			default:
+				render.blendingMode = Render::normal;
+				break;
+			}
+		}
+		else {
+			currState.spriteId = -1;
+			render.DontDraw();
 		}
 	}
 	else
 	{
 		currState.spriteId = -1;
-		
+
 		render.DontDraw();
 	}
 	render.SwitchImage(currState.spriteId);

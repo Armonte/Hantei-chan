@@ -7,6 +7,9 @@ struct Hitbox
 	int xy[4];
 };
 
-using BoxList = std::map<int, Hitbox>;
+template<template<typename> class Allocator = std::allocator>
+using BoxList_T = std::map<int, Hitbox, std::less<int>, Allocator<std::pair<const int, Hitbox>>>;
+
+using BoxList = BoxList_T<std::allocator>;
 
 #endif /* HITBOX_H_GUARD */

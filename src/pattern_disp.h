@@ -3,13 +3,15 @@
 #include "framedata.h"
 #include "imgui_utils.h"
 
-inline void PatternDisplay(Sequence *seq)
+inline void PatternDisplay(Sequence *seq, FrameData *frameData = nullptr, int patternIndex = -1)
 {
 	constexpr float spacing = 80.0f;
 	//ImGui::InputText("Code name", &seq->codeName);
 	
 	ImGui::SetNextItemWidth(spacing);
-	ImGui::InputInt("PSTS", &seq->psts, 0, 0);
+	if(ImGui::InputInt("PSTS", &seq->psts, 0, 0) && frameData && patternIndex >= 0) {
+		frameData->mark_modified(patternIndex);
+	}
 	ImGui::SameLine(); ImGui::TextDisabled("(?)");
 	if (ImGui::IsItemHovered())
 		Tooltip("Determines shield properties\n"
@@ -19,7 +21,9 @@ inline void PatternDisplay(Sequence *seq)
 			"Projectiles can be shieded either way regardless");
 
 	ImGui::SetNextItemWidth(spacing);
-	ImGui::InputInt("Level", &seq->level, 0, 0);
+	if(ImGui::InputInt("Level", &seq->level, 0, 0) && frameData && patternIndex >= 0) {
+		frameData->mark_modified(patternIndex);
+	}
 	ImGui::SameLine(); ImGui::TextDisabled("(?)");
 	if (ImGui::IsItemHovered())
 		Tooltip("Determines cancel and shield properties\n"
@@ -29,5 +33,7 @@ inline void PatternDisplay(Sequence *seq)
 		"Level 0 can be self canceled");
 
 	ImGui::SetNextItemWidth(spacing);
-	ImGui::InputInt("Flag", &seq->flag, 0, 0);
+	if(ImGui::InputInt("Flag", &seq->flag, 0, 0) && frameData && patternIndex >= 0) {
+		frameData->mark_modified(patternIndex);
+	}
 }

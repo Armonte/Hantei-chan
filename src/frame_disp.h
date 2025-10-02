@@ -89,7 +89,8 @@ static const char* const hitVectorList[] = {
 };
 
 // Helper function for combo with manual entry support
-static inline void ShowComboWithManual(const char* label, int* value, const char* const* items, int itemCount, float comboWidth, float defaultWidth = 75.f) {
+static inline bool ShowComboWithManual(const char* label, int* value, const char* const* items, int itemCount, float comboWidth, float defaultWidth = 75.f) {
+	bool changed = false;
 	if(comboWidth < 0) comboWidth = defaultWidth*2;
 	// Find if current value is in the list
 	int selectedIndex = -1;
@@ -123,6 +124,7 @@ static inline void ShowComboWithManual(const char* label, int* value, const char
 				// Parse and set value
 				if(sscanf(items[i], "%d:", &parsedValue) == 1) {
 					*value = parsedValue;
+					changed = true;
 				}
 			}
 			if(selected)
@@ -132,10 +134,13 @@ static inline void ShowComboWithManual(const char* label, int* value, const char
 		// Add manual entry option
 		im::Separator();
 		im::SetNextItemWidth(defaultWidth);
-		im::InputInt("Custom value", value, 0, 0);
+		if(im::InputInt("Custom value", value, 0, 0)) {
+			changed = true;
+		}
 
 		im::EndCombo();
 	}
+	return changed;
 
 	// Show visual indicator for custom values
 	if(selectedIndex < 0) {
@@ -175,7 +180,7 @@ inline void HitVectorDisplay()
 	}
 }
 
-inline void IfDisplay(std::vector<Frame_IF> *ifList_, FrameData *frameData = nullptr)
+inline void IfDisplay(std::vector<Frame_IF> *ifList_, Frame_IF *singleClipboard = nullptr, FrameData *frameData = nullptr, int patternIndex = -1)
 {
 	std::vector<Frame_IF> & ifList = *ifList_;
 	constexpr float width = 75.f;
@@ -526,7 +531,9 @@ inline void IfDisplay(std::vector<Frame_IF> *ifList_, FrameData *frameData = nul
 			case 3: // Branch on hit
 				ShowJumpField("Jump to", &p[0], "Frame number, or add 10000 for pattern");
 
-				ShowComboWithManual("Hit condition", &p[1], hitConditions, IM_ARRAYSIZE(hitConditions), width*2, width);
+				if(ShowComboWithManual("Hit condition", &p[1], hitConditions, IM_ARRAYSIZE(hitConditions), width*2, width) && frameData && patternIndex >= 0) {
+					frameData->mark_modified(patternIndex);
+				}
 
 				im::SetNextItemWidth(width*2);
 				im::Combo("Opponent state", &p[2], opponentStateList, IM_ARRAYSIZE(opponentStateList));
@@ -1015,8 +1022,16 @@ inline void IfDisplay(std::vector<Frame_IF> *ifList_, FrameData *frameData = nul
 			default:
 				// Generic parameter display for unknown/unimplemented types
 				im::Text("Parameters:");
-				im::InputScalarN("##params", ImGuiDataType_S32, p, 6, NULL, NULL, "%d", 0);
-				im::InputScalarN("##params2", ImGuiDataType_S32, p+6, 3, NULL, NULL, "%d", 0);
+				if(im::InputScalarN("##params", ImGuiDataType_S32, p, 6, NULL, NULL, "%d", 0) && frameData && patternIndex >= 0) {
+					frameData->mark_modified(patternIndex);
+				}
+				im::SameLine();
+				if(singleClipboard && im::Button("Copy")) {
+					*singleClipboard = ifList[i];
+				}
+				if(im::InputScalarN("##params2", ImGuiDataType_S32, p+6, 3, NULL, NULL, "%d", 0) && frameData && patternIndex >= 0) {
+					frameData->mark_modified(patternIndex);
+				}
 				break;
 		}
 		} // End of manual mode else block
@@ -1027,15 +1042,21 @@ inline void IfDisplay(std::vector<Frame_IF> *ifList_, FrameData *frameData = nul
 	if(deleteI >= 0) {
 		ifList.erase(ifList.begin() + deleteI);
 		manualEditMode.erase(manualEditMode.begin() + deleteI);
+		if(frameData && patternIndex >= 0) {
+			frameData->mark_modified(patternIndex);
+		}
 	}
 
 	if(im::Button("Add")) {
 		ifList.push_back({});
 		manualEditMode.push_back(0);
+		if(frameData && patternIndex >= 0) {
+			frameData->mark_modified(patternIndex);
+		}
 	}
 }
 
-inline void EfDisplay(std::vector<Frame_EF> *efList_)
+inline void EfDisplay(std::vector<Frame_EF> *efList_, Frame_EF *singleClipboard = nullptr, FrameData *frameData = nullptr, int patternIndex = -1)
 {
 	std::vector<Frame_EF> & efList = *efList_;
 	constexpr float width = 50.f;
@@ -1044,12 +1065,18 @@ inline void EfDisplay(std::vector<Frame_EF> *efList_)
 	{
 		if(i>0)
 			im::Separator();
-		im::PushID(i); 
+		im::PushID(i);
 
-		im::SetNextItemWidth(width); 
-		im::InputInt("Type", &efList[i].type, 0, 0); im::SameLine(0.f, 30);
-		im::SetNextItemWidth(width); 
-		im::InputInt("Number", &efList[i].number, 0, 0); im::SameLine(0.f, 30);
+		im::SetNextItemWidth(width);
+		if(im::InputInt("Type", &efList[i].type, 0, 0) && frameData && patternIndex >= 0) {
+			frameData->mark_modified(patternIndex);
+		}
+		im::SameLine(0.f, 30);
+		im::SetNextItemWidth(width);
+		if(im::InputInt("Number", &efList[i].number, 0, 0) && frameData && patternIndex >= 0) {
+			frameData->mark_modified(patternIndex);
+		}
+		im::SameLine(0.f, 30);
 
 		im::SetNextItemWidth(width);
 		ImGui::PushStyleColor(ImGuiCol_Button, ImVec4(1,0,0,0.4));
@@ -1058,21 +1085,37 @@ inline void EfDisplay(std::vector<Frame_EF> *efList_)
 			deleteI = i;
 		}
 		ImGui::PopStyleColor();
-		
-		im::InputScalarN("##params", ImGuiDataType_S32, efList[i].parameters, 6, NULL, NULL, "%d", 0);
-		im::InputScalarN("##params2", ImGuiDataType_S32, efList[i].parameters+6, 6, NULL, NULL, "%d", 0);
+
+		if(im::InputScalarN("##params", ImGuiDataType_S32, efList[i].parameters, 6, NULL, NULL, "%d", 0) && frameData && patternIndex >= 0) {
+			frameData->mark_modified(patternIndex);
+		}
+		im::SameLine();
+		if(singleClipboard && im::Button("Copy")) {
+			*singleClipboard = efList[i];
+		}
+		if(im::InputScalarN("##params2", ImGuiDataType_S32, efList[i].parameters+6, 6, NULL, NULL, "%d", 0) && frameData && patternIndex >= 0) {
+			frameData->mark_modified(patternIndex);
+		}
 
 		im::PopID();
 	};
 
-	if(deleteI >= 0)
+	if(deleteI >= 0) {
 		efList.erase(efList.begin() + deleteI);
-	
-	if(im::Button("Add"))
+		if(frameData && patternIndex >= 0) {
+			frameData->mark_modified(patternIndex);
+		}
+	}
+
+	if(im::Button("Add")) {
 		efList.push_back({});
+		if(frameData && patternIndex >= 0) {
+			frameData->mark_modified(patternIndex);
+		}
+	}
 }
 
-inline void AsDisplay(Frame_AS *as)
+inline void AsDisplay(Frame_AS *as, FrameData *frameData = nullptr, int patternIndex = -1)
 {
 	const char* const stateList[] = {
 		"Standing",
@@ -1105,7 +1148,9 @@ inline void AsDisplay(Frame_AS *as)
 	constexpr float width = 103.f;
 
 	unsigned int flagIndex = -1;
-	BitField("Movement Flags", &as->movementFlags, &flagIndex, 8);
+	if(BitField("Movement Flags", &as->movementFlags, &flagIndex, 8) && frameData && patternIndex >= 0) {
+		frameData->mark_modified(patternIndex);
+	}
 	switch (flagIndex)
 	{
 		case 0: Tooltip("Set Y"); break;
@@ -1115,14 +1160,23 @@ inline void AsDisplay(Frame_AS *as)
 	}
 
 	im::SetNextItemWidth(width*2);
-	im::InputInt2("Speed", as->speed); im::SameLine(0.f, 20); im::SetNextItemWidth(width);
-	im::InputInt("Max X speed", &as->maxSpeedX, 0, 0);
+	if(im::InputInt2("Speed", as->speed) && frameData && patternIndex >= 0) {
+		frameData->mark_modified(patternIndex);
+	}
+	im::SameLine(0.f, 20); im::SetNextItemWidth(width);
+	if(im::InputInt("Max X speed", &as->maxSpeedX, 0, 0) && frameData && patternIndex >= 0) {
+		frameData->mark_modified(patternIndex);
+	}
 	im::SetNextItemWidth(width*2);
-	im::InputInt2("Accel", as->accel);
+	if(im::InputInt2("Accel", as->accel) && frameData && patternIndex >= 0) {
+		frameData->mark_modified(patternIndex);
+	}
 	
 	im::Separator();
 	flagIndex = -1;
-	BitField("Flagset 1", &as->statusFlags[0], &flagIndex);
+	if(BitField("Flagset 1", &as->statusFlags[0], &flagIndex) && frameData && patternIndex >= 0) {
+		frameData->mark_modified(patternIndex);
+	}
 	switch (flagIndex)
 	{
 		case 0: Tooltip("Vector influences other animations (dash momentum)"); break;
@@ -1135,9 +1189,11 @@ inline void AsDisplay(Frame_AS *as)
 		case 12: Tooltip("Unknown"); break;
 		case 31: Tooltip("Vector initialization only at the beginning (?)"); break;
 	}
-	
+
 	flagIndex = -1;
-	BitField("Flagset 2", &as->statusFlags[1], &flagIndex);
+	if(BitField("Flagset 2", &as->statusFlags[1], &flagIndex) && frameData && patternIndex >= 0) {
+		frameData->mark_modified(patternIndex);
+	}
 	switch (flagIndex)
 	{
 		case 0: Tooltip("Can always EX cancel"); break;
@@ -1146,31 +1202,53 @@ inline void AsDisplay(Frame_AS *as)
 	}
 
 	im::SetNextItemWidth(width);
-	im::InputInt("Number of hits", &as->hitsNumber, 0, 0); im::SameLine(0,20.f);
-	im::Checkbox("Player can move", &as->canMove); //
-	im::Combo("State", &as->stanceState, stateList, IM_ARRAYSIZE(stateList));
-	im::Combo("Invincibility", &as->invincibility, invulList, IM_ARRAYSIZE(invulList));
-	im::Combo("Counterhit", &as->counterType, counterList, IM_ARRAYSIZE(counterList)); 
-	im::Combo("Cancel normal", &as->cancelNormal, cancelList, IM_ARRAYSIZE(cancelList));
-	im::Combo("Cancel special", &as->cancelSpecial, cancelList, IM_ARRAYSIZE(cancelList));
+	if(im::InputInt("Number of hits", &as->hitsNumber, 0, 0) && frameData && patternIndex >= 0) {
+		frameData->mark_modified(patternIndex);
+	}
+	im::SameLine(0,20.f);
+	if(im::Checkbox("Player can move", &as->canMove) && frameData && patternIndex >= 0) {
+		frameData->mark_modified(patternIndex);
+	}
+	if(im::Combo("State", &as->stanceState, stateList, IM_ARRAYSIZE(stateList)) && frameData && patternIndex >= 0) {
+		frameData->mark_modified(patternIndex);
+	}
+	if(im::Combo("Invincibility", &as->invincibility, invulList, IM_ARRAYSIZE(invulList)) && frameData && patternIndex >= 0) {
+		frameData->mark_modified(patternIndex);
+	}
+	if(im::Combo("Counterhit", &as->counterType, counterList, IM_ARRAYSIZE(counterList)) && frameData && patternIndex >= 0) {
+		frameData->mark_modified(patternIndex);
+	}
+	if(im::Combo("Cancel normal", &as->cancelNormal, cancelList, IM_ARRAYSIZE(cancelList)) && frameData && patternIndex >= 0) {
+		frameData->mark_modified(patternIndex);
+	}
+	if(im::Combo("Cancel special", &as->cancelSpecial, cancelList, IM_ARRAYSIZE(cancelList)) && frameData && patternIndex >= 0) {
+		frameData->mark_modified(patternIndex);
+	}
 	
 
 	im::Separator();
 	flagIndex = -1;
-	BitField("Sine flags", &as->sineFlags, &flagIndex, 8);
+	if(BitField("Sine flags", &as->sineFlags, &flagIndex, 8) && frameData && patternIndex >= 0) {
+		frameData->mark_modified(patternIndex);
+	}
 	switch (flagIndex)
 	{
 		case 0: Tooltip("Use Y"); break;
 		case 4: Tooltip("Use X"); break;
 	}
-	im::InputInt4("Sinewave", as->sineParameters); im::SameLine();
+	if(im::InputInt4("Sinewave", as->sineParameters) && frameData && patternIndex >= 0) {
+		frameData->mark_modified(patternIndex);
+	}
+	im::SameLine();
 	im::TextDisabled("(?)");
 	if(im::IsItemHovered())
 		Tooltip("Sine parameters:\nX dist, Y dist\nX frequency, Y frequency");
-	im::InputFloat2("Phases", as->sinePhases);
+	if(im::InputFloat2("Phases", as->sinePhases) && frameData && patternIndex >= 0) {
+		frameData->mark_modified(patternIndex);
+	}
 }
 
-inline void AtDisplay(Frame_AT *at)
+inline void AtDisplay(Frame_AT *at, FrameData *frameData = nullptr, int patternIndex = -1)
 {
 	const char* const hitEffectList[] = {
 		"Weak punch",
@@ -1226,7 +1304,9 @@ inline void AtDisplay(Frame_AT *at)
 	constexpr float width = 75.f;
 	unsigned int flagIndex = -1;
 
-	BitField("Guard Flags", &at->guard_flags, &flagIndex);
+	if(BitField("Guard Flags", &at->guard_flags, &flagIndex) && frameData && patternIndex >= 0) {
+		frameData->mark_modified(patternIndex);
+	}
 	switch (flagIndex)
 	{
 		case 0: Tooltip("Stand blockable"); break;
@@ -1243,7 +1323,9 @@ inline void AtDisplay(Frame_AT *at)
 	}
 
 	flagIndex = -1;
-	BitField("Hit Flags", &at->otherFlags, &flagIndex);
+	if(BitField("Hit Flags", &at->otherFlags, &flagIndex) && frameData && patternIndex >= 0) {
+		frameData->mark_modified(patternIndex);
+	}
 	switch (flagIndex)
 	{
 		case 0: Tooltip("Chip health instead of red health"); break;
@@ -1261,7 +1343,7 @@ inline void AtDisplay(Frame_AT *at)
 		case 12: Tooltip("Lock burst"); break;
 		case 13: Tooltip("Can't be shielded"); break;
 		case 14: Tooltip("Can't critical"); break;
-		
+
 		case 16: Tooltip("Use custom blockstop"); break;
 		case 17: Tooltip("OTG Relaunch"); break;
 		case 18: Tooltip("Can't counterhit"); break;
@@ -1271,39 +1353,71 @@ inline void AtDisplay(Frame_AT *at)
 		case 22: Tooltip("Remove 1f of untech"); break;
 
 		//Unused or don't exist in melty.
-		//case 25: Tooltip("No hitstop on multihit?"); break; 
+		//case 25: Tooltip("No hitstop on multihit?"); break;
 		//case 29: Tooltip("Block enemy blast during Stun?"); break;
 	}
 
 	im::SetNextItemWidth(width * 2);
-	im::InputInt("Custom Blockstop", &at->blockStopTime, 0,0);
+	if(im::InputInt("Custom Blockstop", &at->blockStopTime, 0,0) && frameData && patternIndex >= 0) {
+		frameData->mark_modified(patternIndex);
+	}
 
 	im::SetNextItemWidth(width*2);
-	im::Combo("Hitstop", &at->hitStop, hitStopList, IM_ARRAYSIZE(hitStopList)); im::SameLine(0.f, 20);
+	if(im::Combo("Hitstop", &at->hitStop, hitStopList, IM_ARRAYSIZE(hitStopList)) && frameData && patternIndex >= 0) {
+		frameData->mark_modified(patternIndex);
+	}
+	im::SameLine(0.f, 20);
 	im::SetNextItemWidth(width);
-	im::InputInt("Custom##Hitstop", &at->hitStopTime, 0,0);
+	if(im::InputInt("Custom##Hitstop", &at->hitStopTime, 0,0) && frameData && patternIndex >= 0) {
+		frameData->mark_modified(patternIndex);
+	}
 
 
 	im::SetNextItemWidth(width);
-	im::InputInt("Untech time", &at->untechTime, 0,0);  im::SameLine(0.f, 20); im::SetNextItemWidth(width);
-	im::InputInt("Circuit break time", &at->breakTime, 0,0);
+	if(im::InputInt("Untech time", &at->untechTime, 0,0) && frameData && patternIndex >= 0) {
+		frameData->mark_modified(patternIndex);
+	}
+	im::SameLine(0.f, 20); im::SetNextItemWidth(width);
+	if(im::InputInt("Circuit break time", &at->breakTime, 0,0) && frameData && patternIndex >= 0) {
+		frameData->mark_modified(patternIndex);
+	}
 
 	im::SetNextItemWidth(width);
-	im::InputFloat("Extra gravity", &at->extraGravity, 0,0); im::SameLine(0.f, 20);
-	im::Checkbox("Hitgrab", &at->hitgrab);
-	
+	if(im::InputFloat("Extra gravity", &at->extraGravity, 0,0) && frameData && patternIndex >= 0) {
+		frameData->mark_modified(patternIndex);
+	}
+	im::SameLine(0.f, 20);
+	if(im::Checkbox("Hitgrab", &at->hitgrab) && frameData && patternIndex >= 0) {
+		frameData->mark_modified(patternIndex);
+	}
+
 
 	im::SetNextItemWidth(width);
-	im::InputInt("Correction %", &at->correction, 0, 0); im::SameLine(0.f, 20); im::SetNextItemWidth(width*2);
-	im::Combo("Type##Correction", &at->correction_type, "Normal\0Multiplicative\0Subtractive\0");
+	if(im::InputInt("Correction %", &at->correction, 0, 0) && frameData && patternIndex >= 0) {
+		frameData->mark_modified(patternIndex);
+	}
+	im::SameLine(0.f, 20); im::SetNextItemWidth(width*2);
+	if(im::Combo("Type##Correction", &at->correction_type, "Normal\0Multiplicative\0Subtractive\0") && frameData && patternIndex >= 0) {
+		frameData->mark_modified(patternIndex);
+	}
 
 	im::SetNextItemWidth(width);
-	im::InputInt("VS damage", &at->red_damage, 0, 0); im::SameLine(0.f, 20); im::SetNextItemWidth(width);
-	im::InputInt("Damage", &at->damage, 0, 0);
+	if(im::InputInt("VS damage", &at->red_damage, 0, 0) && frameData && patternIndex >= 0) {
+		frameData->mark_modified(patternIndex);
+	}
+	im::SameLine(0.f, 20); im::SetNextItemWidth(width);
+	if(im::InputInt("Damage", &at->damage, 0, 0) && frameData && patternIndex >= 0) {
+		frameData->mark_modified(patternIndex);
+	}
 
 	im::SetNextItemWidth(width);
-	im::InputInt("Guard damage", &at->guard_damage, 0, 0); im::SameLine(0.f, 20); im::SetNextItemWidth(width);
-	im::InputInt("Meter gain", &at->meter_gain, 0, 0);
+	if(im::InputInt("Guard damage", &at->guard_damage, 0, 0) && frameData && patternIndex >= 0) {
+		frameData->mark_modified(patternIndex);
+	}
+	im::SameLine(0.f, 20); im::SetNextItemWidth(width);
+	if(im::InputInt("Meter gain", &at->meter_gain, 0, 0) && frameData && patternIndex >= 0) {
+		frameData->mark_modified(patternIndex);
+	}
 
 	im::Separator();
 	auto comboWidth = (im::GetWindowWidth())/4.f;
@@ -1314,7 +1428,9 @@ inline void AtDisplay(Frame_AT *at)
 	for(int i = 0; i < 3; i++)
 	{
 		im::PushID(100+i);
-		ShowComboWithManual(vectorLabels[i], &at->guardVector[i], hitVectorList, IM_ARRAYSIZE(hitVectorList), width*6, width);
+		if(ShowComboWithManual(vectorLabels[i], &at->guardVector[i], hitVectorList, IM_ARRAYSIZE(hitVectorList), width*6, width) && frameData && patternIndex >= 0) {
+			frameData->mark_modified(patternIndex);
+		}
 		im::PopID();
 	}
 
@@ -1325,7 +1441,9 @@ inline void AtDisplay(Frame_AT *at)
 		if(i > 0)
 			im::SameLine();
 		im::PushID(i);
-		im::Combo("##GFLAG", &at->gVFlags[i], vectorFlags, IM_ARRAYSIZE(vectorFlags));
+		if(im::Combo("##GFLAG", &at->gVFlags[i], vectorFlags, IM_ARRAYSIZE(vectorFlags)) && frameData && patternIndex >= 0) {
+			frameData->mark_modified(patternIndex);
+		}
 		im::PopID();
 	}
 
@@ -1336,7 +1454,9 @@ inline void AtDisplay(Frame_AT *at)
 	for(int i = 0; i < 3; i++)
 	{
 		im::PushID(200+i);
-		ShowComboWithManual(vectorLabels[i], &at->hitVector[i], hitVectorList, IM_ARRAYSIZE(hitVectorList), width*6, width);
+		if(ShowComboWithManual(vectorLabels[i], &at->hitVector[i], hitVectorList, IM_ARRAYSIZE(hitVectorList), width*6, width) && frameData && patternIndex >= 0) {
+			frameData->mark_modified(patternIndex);
+		}
 		im::PopID();
 	}
 
@@ -1347,26 +1467,38 @@ inline void AtDisplay(Frame_AT *at)
 		if(i > 0)
 			im::SameLine();
 		im::PushID(i);
-		im::Combo("##HFLAG", &at->hVFlags[i], vectorFlags, IM_ARRAYSIZE(vectorFlags));
+		if(im::Combo("##HFLAG", &at->hVFlags[i], vectorFlags, IM_ARRAYSIZE(vectorFlags)) && frameData && patternIndex >= 0) {
+			frameData->mark_modified(patternIndex);
+		}
 		im::PopID();
 	}
 	im::Separator();
-	
-	im::SetNextItemWidth(150);
-	im::Combo("Hit effect", &at->hitEffect, hitEffectList, IM_ARRAYSIZE(hitEffectList)); im::SameLine(0, 20.f);
-	im::SetNextItemWidth(70);
-	im::InputInt("ID##Hit effect", &at->hitEffect, 0, 0); 
-	
-	im::SetNextItemWidth(70);
-	im::InputInt("Sound effect", &at->soundEffect, 0, 0); im::SameLine(0, 20.f); im::SetNextItemWidth(120);
 
-	im::Combo("Added effect", &at->addedEffect, addedEffectList, IM_ARRAYSIZE(addedEffectList));
+	im::SetNextItemWidth(150);
+	if(im::Combo("Hit effect", &at->hitEffect, hitEffectList, IM_ARRAYSIZE(hitEffectList)) && frameData && patternIndex >= 0) {
+		frameData->mark_modified(patternIndex);
+	}
+	im::SameLine(0, 20.f);
+	im::SetNextItemWidth(70);
+	if(im::InputInt("ID##Hit effect", &at->hitEffect, 0, 0) && frameData && patternIndex >= 0) {
+		frameData->mark_modified(patternIndex);
+	}
+
+	im::SetNextItemWidth(70);
+	if(im::InputInt("Sound effect", &at->soundEffect, 0, 0) && frameData && patternIndex >= 0) {
+		frameData->mark_modified(patternIndex);
+	}
+	im::SameLine(0, 20.f); im::SetNextItemWidth(120);
+
+	if(im::Combo("Added effect", &at->addedEffect, addedEffectList, IM_ARRAYSIZE(addedEffectList)) && frameData && patternIndex >= 0) {
+		frameData->mark_modified(patternIndex);
+	}
 
 
 
 }
 
-inline void AfDisplay(Frame_AF *af)
+inline void AfDisplay(Frame_AF *af, int &selectedLayer, FrameData *frameData = nullptr, int patternIndex = -1)
 {
 	const char* const interpolationList[] = {
 		"None",
@@ -1385,14 +1517,58 @@ inline void AfDisplay(Frame_AF *af)
 
 	constexpr float width = 50.f;
 
+	// Layer management
+	if(af->layers.empty()) {
+		af->layers.push_back({});
+	}
+
+	const int maxLayers = af->layers.size() - 1;
+	if(selectedLayer > maxLayers) {
+		selectedLayer = maxLayers;
+	}
+	if(selectedLayer < 0) {
+		selectedLayer = 0;
+	}
+
+	if(im::SliderInt("Layer", &selectedLayer, 0, maxLayers) && frameData && patternIndex >= 0) {
+		frameData->mark_modified(patternIndex);
+	}
+	im::SameLine();
+	if(im::Button("Add")) {
+		af->layers.push_back({});
+		selectedLayer = af->layers.size() - 1;
+		if(frameData && patternIndex >= 0) {
+			frameData->mark_modified(patternIndex);
+		}
+	}
+	im::SameLine();
+	if(im::Button("Del") && af->layers.size() > 1) {
+		af->layers.erase(af->layers.begin() + selectedLayer);
+		if(selectedLayer >= af->layers.size()) {
+			selectedLayer = af->layers.size() - 1;
+		}
+		if(frameData && patternIndex >= 0) {
+			frameData->mark_modified(patternIndex);
+		}
+	}
+
+	Layer *layer = &af->layers[selectedLayer];
+
 	im::SetNextItemWidth(width*3);
-	im::InputInt("Sprite", &af->spriteId); im::SameLine(0, 20.f);
-	im::Checkbox("Use .pat", &af->usePat);
+	if(im::InputInt("Sprite", &layer->spriteId) && frameData && patternIndex >= 0) {
+		frameData->mark_modified(patternIndex);
+	}
+	im::SameLine(0, 20.f);
+	if(im::Checkbox("Use .pat", &layer->usePat) && frameData && patternIndex >= 0) {
+		frameData->mark_modified(patternIndex);
+	}
 
 	im::Separator();
 
 	unsigned int flagIndex = -1;
-	BitField("Animation flags", &af->aniFlag, &flagIndex, 4);
+	if(BitField("Animation flags", &af->aniFlag, &flagIndex, 4) && frameData && patternIndex >= 0) {
+		frameData->mark_modified(patternIndex);
+	}
 	switch (flagIndex)
 	{
 		case 0: Tooltip("Landing frame: Land to pattern"); break;
@@ -1401,38 +1577,72 @@ inline void AfDisplay(Frame_AF *af)
 		case 3: Tooltip("End of loop: Use relative offset"); break;
 	}
 
-	im::Combo("Animation", &af->aniType, animationList, IM_ARRAYSIZE(animationList));
+	if(im::Combo("Animation", &af->aniType, animationList, IM_ARRAYSIZE(animationList)) && frameData && patternIndex >= 0) {
+		frameData->mark_modified(patternIndex);
+	}
 
 	im::SetNextItemWidth(width);
-	im::InputInt("Go to", &af->jump, 0, 0); im::SameLine(0.f, 20); im::SetNextItemWidth(width);
-	im::InputInt("Landing frame", &af->landJump, 0, 0);
+	if(im::InputInt("Go to", &af->jump, 0, 0) && frameData && patternIndex >= 0) {
+		frameData->mark_modified(patternIndex);
+	}
+	im::SameLine(0.f, 20); im::SetNextItemWidth(width);
+	if(im::InputInt("Landing frame", &af->landJump, 0, 0) && frameData && patternIndex >= 0) {
+		frameData->mark_modified(patternIndex);
+	}
 
 	im::SetNextItemWidth(width);
-	im::InputInt("Z-Priority", &af->priority, 0, 0); im::SetNextItemWidth(width);
-	im::InputInt("Loop N times", &af->loopCount, 0, 0); im::SameLine(0,20); im::SetNextItemWidth(width);
-	im::InputInt("End of loop", &af->loopEnd, 0, 0);
-	im::InputInt("Duration", &af->duration, 1, 0);
+	if(im::InputInt("Z-Priority", &layer->priority, 0, 0) && frameData && patternIndex >= 0) {
+		frameData->mark_modified(patternIndex);
+	}
+	im::SetNextItemWidth(width);
+	if(im::InputInt("Loop N times", &af->loopCount, 0, 0) && frameData && patternIndex >= 0) {
+		frameData->mark_modified(patternIndex);
+	}
+	im::SameLine(0,20); im::SetNextItemWidth(width);
+	if(im::InputInt("End of loop", &af->loopEnd, 0, 0) && frameData && patternIndex >= 0) {
+		frameData->mark_modified(patternIndex);
+	}
+	if(im::InputInt("Duration", &af->duration, 1, 0) && frameData && patternIndex >= 0) {
+		frameData->mark_modified(patternIndex);
+	}
 
 	im::Separator();
-	im::Combo("Interpolation", &af->interpolationType, interpolationList, IM_ARRAYSIZE(interpolationList));
+	if(im::Combo("Interpolation", &af->interpolationType, interpolationList, IM_ARRAYSIZE(interpolationList)) && frameData && patternIndex >= 0) {
+		frameData->mark_modified(patternIndex);
+	}
 
 	im::SetNextItemWidth(width);
-	im::DragInt("X", &af->offset_x);
+	if(im::DragInt("X", &layer->offset_x) && frameData && patternIndex >= 0) {
+		frameData->mark_modified(patternIndex);
+	}
 	im::SameLine();
 	im::SetNextItemWidth(width);
-	im::DragInt("Y", &af->offset_y);
+	if(im::DragInt("Y", &layer->offset_y) && frameData && patternIndex >= 0) {
+		frameData->mark_modified(patternIndex);
+	}
 
-	int mode = af->blend_mode-1;
+	int mode = layer->blend_mode-1;
 	if(mode < 1)
 		mode = 0;
 	if (im::Combo("Blend Mode", &mode, "Normal\0Additive\0Subtractive\0"))
 	{
-		af->blend_mode=mode+1;
+		layer->blend_mode=mode+1;
+		if(frameData && patternIndex >= 0) {
+			frameData->mark_modified(patternIndex);
+		}
 	}
-	im::ColorEdit4("Color", af->rgba);
+	if(im::ColorEdit4("Color", layer->rgba) && frameData && patternIndex >= 0) {
+		frameData->mark_modified(patternIndex);
+	}
 
-	im::DragFloat3("Rot XYZ", af->rotation, 0.005); 
-	im::DragFloat2("Scale", af->scale, 0.1);
-	im::Checkbox("Rotation keeps scale set by EF", &af->AFRT);
+	if(im::DragFloat3("Rot XYZ", layer->rotation, 0.005) && frameData && patternIndex >= 0) {
+		frameData->mark_modified(patternIndex);
+	}
+	if(im::DragFloat2("Scale", layer->scale, 0.1) && frameData && patternIndex >= 0) {
+		frameData->mark_modified(patternIndex);
+	}
+	if(im::Checkbox("Rotation keeps scale set by EF", &af->AFRT) && frameData && patternIndex >= 0) {
+		frameData->mark_modified(patternIndex);
+	}
 
 }

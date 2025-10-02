@@ -14,19 +14,53 @@ void RightPane::Draw()
 			Frame &frame = seq->frames[currState.frame];
 			if (ImGui::TreeNode("Attack data"))
 			{
-				AtDisplay(&frame.AT);
+				AtDisplay(&frame.AT, frameData, currState.pattern);
+				if(ImGui::Button("Copy AT")) {
+					currState.copied->at = frame.AT;
+				}
+				ImGui::SameLine(0,20.f);
+				if(ImGui::Button("Paste AT")) {
+					frame.AT = currState.copied->at;
+					frameData->mark_modified(currState.pattern);
+				}
 				ImGui::TreePop();
 				ImGui::Separator();
 			}
 			if(ImGui::TreeNode("Effects"))
 			{
-				EfDisplay(&frame.EF);
+				EfDisplay(&frame.EF, &currState.copied->efSingle, frameData, currState.pattern);
+				if(ImGui::Button("Copy all")) {
+					CopyVectorContents<Frame_EF>(currState.copied->efGroup, frame.EF);
+				}
+				ImGui::SameLine(0,20.f);
+				if(ImGui::Button("Paste all")) {
+					CopyVectorContents<Frame_EF>(frame.EF, currState.copied->efGroup);
+					frameData->mark_modified(currState.pattern);
+				}
+				ImGui::SameLine(0,20.f);
+				if(ImGui::Button("Add copy")) {
+					frame.EF.push_back(currState.copied->efSingle);
+					frameData->mark_modified(currState.pattern);
+				}
 				ImGui::TreePop();
 				ImGui::Separator();
 			}
 			if(ImGui::TreeNode("Conditions"))
 			{
-				IfDisplay(&frame.IF, frameData);
+				IfDisplay(&frame.IF, &currState.copied->ifSingle, frameData, currState.pattern);
+				if(ImGui::Button("Copy all")) {
+					CopyVectorContents<Frame_IF>(currState.copied->ifGroup, frame.IF);
+				}
+				ImGui::SameLine(0,20.f);
+				if(ImGui::Button("Paste all")) {
+					CopyVectorContents<Frame_IF>(frame.IF, currState.copied->ifGroup);
+					frameData->mark_modified(currState.pattern);
+				}
+				ImGui::SameLine(0,20.f);
+				if(ImGui::Button("Add copy")) {
+					frame.IF.push_back(currState.copied->ifSingle);
+					frameData->mark_modified(currState.pattern);
+				}
 				ImGui::TreePop();
 				ImGui::Separator();
 			}
