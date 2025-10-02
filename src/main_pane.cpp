@@ -119,12 +119,11 @@ void MainPane::Draw()
 
 			if (im::TreeNode("Pattern data"))
 			{
-				// Convert Shift-JIS to UTF-8 for editing
-				nameEditBuffer = sj2utf8(seq->name);
+				// Strings are already stored as UTF-8 in memory
+				nameEditBuffer = seq->name;
 				if(im::InputText("Pattern name", &nameEditBuffer))
 				{
-					// Convert UTF-8 back to Shift-JIS for storage
-					seq->name = utf82sj(nameEditBuffer);
+					seq->name = nameEditBuffer;
 					frameData->mark_modified(currState.pattern);
 					markModified();
 					decoratedNames[currState.pattern] = frameData->GetDecoratedName(currState.pattern);
