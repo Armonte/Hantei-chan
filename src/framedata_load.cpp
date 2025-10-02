@@ -600,7 +600,7 @@ unsigned int *fd_frame_load(unsigned int *data, const unsigned int *data_end, Fr
 	return data;
 }
 
-unsigned int *fd_sequence_load(unsigned int *data, const unsigned int *data_end, Sequence *seq, bool utf8)
+unsigned int *fd_sequence_load(unsigned int *data, const unsigned int *data_end, Sequence *seq)
 {
 
 	TempInfo temp_info;
@@ -664,10 +664,9 @@ unsigned int *fd_sequence_load(unsigned int *data, const unsigned int *data_end,
 			char str[65];
 			memcpy(str, data+1, len);
 			str[len] = '\0';
-			
+
 			name = str;
-			if(!utf8)
-				name = sj2utf8(name);
+			// Keep strings in original Shift-JIS format - no conversion
 			test.seqName = name;
 
 			data = (unsigned int *)(((unsigned char *)data)+len)+1;
@@ -677,10 +676,10 @@ unsigned int *fd_sequence_load(unsigned int *data, const unsigned int *data_end,
 			char str[33];
 			memcpy(str, data, 32);
 			str[32] = '\0';
-			
-			
+
+
 			name = str;
-			name = sj2utf8(name);
+			// Keep strings in original Shift-JIS format - no conversion
 			
 			data += 8;
 		} else if (!memcmp(buf, "PDS2", 4)) {
@@ -755,7 +754,7 @@ unsigned int *fd_sequence_load(unsigned int *data, const unsigned int *data_end,
 	return data;
 }
 
-unsigned int *fd_main_load(unsigned int *data, const unsigned int *data_end, std::vector<Sequence> &sequences, unsigned int nsequences, bool utf8)
+unsigned int *fd_main_load(unsigned int *data, const unsigned int *data_end, std::vector<Sequence> &sequences, unsigned int nsequences)
 {
 	while (data < data_end) {
 		unsigned int *buf = data;
@@ -770,7 +769,7 @@ unsigned int *fd_main_load(unsigned int *data, const unsigned int *data_end, std
 				if (seq_id < nsequences) {
 					sequences[seq_id].empty = false;
 					test.seqId = seq_id;
-					data = fd_sequence_load(data, data_end, &sequences[seq_id], utf8);
+					data = fd_sequence_load(data, data_end, &sequences[seq_id]);
 				}
 			} else {
 				++data;

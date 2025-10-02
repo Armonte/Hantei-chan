@@ -19,6 +19,10 @@ private:
 	bool copyThisFrame = true;
 	std::string *decoratedNames;
 
+	// UTF-8 buffers for text editing (ImGui expects UTF-8)
+	std::string nameEditBuffer;
+	std::string codeNameEditBuffer;
+
 	struct SequenceWId {
 		int id;
 		Sequence seq;

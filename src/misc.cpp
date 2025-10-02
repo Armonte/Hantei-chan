@@ -85,6 +85,86 @@ std::string sj2utf8(const std::string &input)
 	return output;
 }
 
+std::string utf82sj(const std::string &input)
+{
+	std::string output;
+	size_t i = 0;
+
+	while(i < input.length())
+	{
+		uint32_t unicode;
+
+		// Decode UTF-8 to Unicode
+		if((input[i] & 0x80) == 0) {
+			// 1-byte UTF-8 (ASCII)
+			unicode = input[i++];
+		}
+		else if((input[i] & 0xE0) == 0xC0) {
+			// 2-byte UTF-8
+			if(i + 1 >= input.length()) break;
+			unicode = ((input[i] & 0x1F) << 6) | (input[i+1] & 0x3F);
+			i += 2;
+		}
+		else if((input[i] & 0xF0) == 0xE0) {
+			// 3-byte UTF-8
+			if(i + 2 >= input.length()) break;
+			unicode = ((input[i] & 0x0F) << 12) | ((input[i+1] & 0x3F) << 6) | (input[i+2] & 0x3F);
+			i += 3;
+		}
+		else if((input[i] & 0xF8) == 0xF0) {
+			// 4-byte UTF-8 (not supported in Shift-JIS, skip)
+			i += 4;
+			output += '?';
+			continue;
+		}
+		else {
+			// Invalid UTF-8
+			i++;
+			continue;
+		}
+
+		// Search for Unicode value in conversion table
+		bool found = false;
+		for(size_t j = 0; j < 25088; j += 2) {
+			uint16_t tableUnicode = (convTable[j] << 8) | convTable[j+1];
+			if(tableUnicode == unicode) {
+				// Found it! Now reconstruct the Shift-JIS bytes
+				size_t sjisIndex = j >> 1;
+
+				// Determine which section this belongs to
+				if(sjisIndex >= 0x2100) {
+					// 0xE section
+					output += (char)(0xE0 | ((sjisIndex - 0x2100) >> 8));
+					output += (char)((sjisIndex - 0x2100) & 0xFF);
+				}
+				else if(sjisIndex >= 0x1100) {
+					// 0x9 section
+					output += (char)(0x90 | ((sjisIndex - 0x1100) >> 8));
+					output += (char)((sjisIndex - 0x1100) & 0xFF);
+				}
+				else if(sjisIndex >= 0x100) {
+					// 0x8 section
+					output += (char)(0x80 | ((sjisIndex - 0x100) >> 8));
+					output += (char)((sjisIndex - 0x100) & 0xFF);
+				}
+				else {
+					// Single byte
+					output += (char)sjisIndex;
+				}
+				found = true;
+				break;
+			}
+		}
+
+		if(!found) {
+			// Character not in Shift-JIS, use '?'
+			output += '?';
+		}
+	}
+
+	return output;
+}
+
 
 const unsigned char convTable[25088] ={
 	0x00, 0x00, 0x00, 0x01, 0x00, 0x02, 0x00, 0x03, 

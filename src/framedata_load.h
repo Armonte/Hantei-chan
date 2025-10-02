@@ -38,8 +38,8 @@ unsigned int *fd_frame_EF_load(unsigned int *data, const unsigned int *data_end,
 unsigned int *fd_frame_IF_load(unsigned int *data, const unsigned int *data_end, Frame_IF *IF);
 unsigned int *fd_frame_AF_load(unsigned int *data, const unsigned int *data_end, Frame *frame);
 unsigned int *fd_frame_load(unsigned int *data, const unsigned int *data_end, Frame *frame, TempInfo *info);
-unsigned int *fd_sequence_load(unsigned int *data, const unsigned int *data_end, Sequence *seq, bool utf8);
-unsigned int *fd_main_load(unsigned int *data, const unsigned int *data_end, std::vector<Sequence> &sequences, unsigned int nsequences, bool utf8 = false);
+unsigned int *fd_sequence_load(unsigned int *data, const unsigned int *data_end, Sequence *seq);
+unsigned int *fd_main_load(unsigned int *data, const unsigned int *data_end, std::vector<Sequence> &sequences, unsigned int nsequences);
 
 
 
