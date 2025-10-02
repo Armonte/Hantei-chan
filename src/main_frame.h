@@ -69,6 +69,21 @@ private:
 	// Character close confirmation
 	int pendingCloseCharacterIndex = -1;
 
+	// Project management
+	bool m_projectModified = false;
+	bool m_pendingProjectClose = false;
+	enum class ProjectCloseAction { None, New, Open, Close } m_projectCloseAction = ProjectCloseAction::None;
+	void newProject();
+	void openProject();
+	void saveProject();
+	void saveProjectAs();
+	void closeProject();
+	void updateWindowTitle();
+	bool tryCloseProject(); // Returns true if closed, false if cancelled
+	void markProjectModified();
+	void addRecentProject(const std::string& path);
+	void openRecentProject(const std::string& path);
+
 	// Panes (will be dynamically updated with active character)
 	std::unique_ptr<MainPane> mainPane;
 	std::unique_ptr<RightPane> rightPane;

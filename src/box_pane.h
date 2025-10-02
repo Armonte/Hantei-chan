@@ -4,7 +4,7 @@
 #include "draw_window.h"
 
 //This is the main pane on the left
-class BoxPane : DrawWindow
+class BoxPane : public DrawWindow
 {
 public:
 	BoxPane(Render* render, FrameData *frameData, FrameState &state);

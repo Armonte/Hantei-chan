@@ -31,6 +31,7 @@ add_executable(${EXE} WIN32
 	src/framedata_save.cpp
 	src/framestate.cpp
 	src/character_instance.cpp
+	src/project_manager.cpp
 	src/cg.cpp
 	src/vectors.cpp
 	src/misc.cpp
@@ -40,7 +41,7 @@ add_executable(${EXE} WIN32
 	res/res.rc
 )
 
-target_include_directories(${EXE} PRIVATE ".")
+target_include_directories(${EXE} PRIVATE "." "third_party")
 target_compile_definitions(${EXE} PRIVATE UNICODE _UNICODE WIN32_LEAN_AND_MEAN HA6GUIVERSION="${CMAKE_PROJECT_VERSION}")
 
 find_package(OpenGL REQUIRED)
