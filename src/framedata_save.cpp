@@ -1,4 +1,5 @@
 #include "framedata.h"
+#include "misc.h"
 #include <fstream>
 #include <cstdint>
 #include <cstring>
@@ -465,7 +466,7 @@ void WriteFrame(std::ofstream &file, const Frame *frame)
 	file.write("FEND", 4);
 }
 
-void WriteSequence(std::ofstream &file, const Sequence *seq)
+void WriteSequence(std::ofstream &file, const Sequence *seq, bool stringsAreUTF8)
 {
 	//Not used by melty blood, probably.
 /* 	if(!seq->codeName.empty()){
@@ -489,7 +490,14 @@ void WriteSequence(std::ofstream &file, const Sequence *seq)
 	if(!seq->name.empty()){
 		char buf[32]{};
 		uint32_t size = 32;
-		strncpy(buf, seq->name.c_str(), 32);
+
+		// Convert UTF-8 back to Shift-JIS if the original file was Shift-JIS
+		std::string nameToWrite = seq->name;
+		if(!stringsAreUTF8) {
+			nameToWrite = utf82sj(seq->name);
+		}
+
+		strncpy(buf, nameToWrite.c_str(), 32);
 		buf[31] = 0;
 		file.write("PTT2", 4);
 		file.write(VAL(size), 4);

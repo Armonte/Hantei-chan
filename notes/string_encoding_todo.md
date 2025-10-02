@@ -18,27 +18,40 @@ Hantei-chan currently converts strings between Shift-JIS and UTF-8, using a modi
 
 ## u4's Recommendation:
 
-**Remove conversion system - keep everything in Shift-JIS:**
+**Stop converting new files, but maintain backwards compatibility:**
 
-1. Remove `utf8` flag check
-2. Remove `sj2utf8()` conversion
-3. Don't set `header[31] = 0xFF`
-4. Keep strings in original Shift-JIS encoding
-5. (Optional) Add proper metadata section for extra data
+The goal is to:
+1. Stop forcing UTF-8 conversion on new saves
+2. Keep original Shift-JIS encoding when saving
+3. Still support reading files that were already converted to UTF-8 by older Hantei-chan versions
+
+## Backwards Compatibility Requirement:
+
+Some users have files where strings were already converted to UTF-8 by older Hantei-chan versions. We need to:
+- **Keep reading** the `header[31] == 0xFF` flag to detect UTF-8 files
+- **Keep the conversion** when loading UTF-8 files
+- **Stop setting** `header[31] = 0xFF` when saving NEW files
+- **Preserve the original encoding** when re-saving files
 
 ## Benefits:
 
-- Full compatibility with original Melty Blood
-- No encoding confusion
-- Files remain in original format
-- Can still add metadata without breaking encoding
+- Full compatibility with original Melty Blood format
+- Backwards compatible with UTF-8 files from old Hantei-chan
+- No encoding confusion going forward
+- Files remain in original format when saved
 
 ## Implementation:
 
-1. Remove line 40 in `framedata.cpp`: `bool utf8 = ((unsigned char*)data)[31] == 0xFF;`
-2. Remove line 670 in `framedata_load.cpp`: conversion call
-3. Remove lines 112, 166 in `framedata.cpp`: `header[31] = 0xFF;`
-4. Pass `utf8 = false` or remove parameter from `fd_main_load()`
+**What to change:**
+1. **KEEP** line 40 in `framedata.cpp`: `bool utf8 = ((unsigned char*)data)[31] == 0xFF;` (for reading old files)
+2. **KEEP** line 670 in `framedata_load.cpp`: conversion call (for old UTF-8 files)
+3. **REMOVE** lines 112, 166 in `framedata.cpp`: `header[31] = 0xFF;` (stop marking new saves)
+4. **PRESERVE** the original `header[31]` value when saving (don't modify it)
+
+**Result:**
+- Original game files (Shift-JIS): Load as Shift-JIS, save as Shift-JIS
+- Old Hantei-chan files (UTF-8): Load as UTF-8, save as UTF-8 (preserve marker)
+- New edits to original files: Preserve Shift-JIS encoding
 
 ## Note:
 u4 also mentioned that we could add extra metadata to the file without breaking compatibility.

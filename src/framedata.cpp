@@ -36,6 +36,10 @@ bool FrameData::load(const char *filename, bool patch) {
 		return 0;
 	}
 
+	// Check if strings are UTF-8 (old Hantei-chan files) for backwards compatibility
+	bool utf8 = ((unsigned char*)data)[31] == 0xFF;
+	m_stringsAreUTF8 = utf8;  // Remember original encoding for saving
+
 	// initialize the root
 	unsigned int *d = (unsigned int *)(data + 0x20);
 	unsigned int *d_end = (unsigned int *)(data + size);
@@ -56,8 +60,8 @@ bool FrameData::load(const char *filename, bool patch) {
 	m_nsequences = sequence_count;
 
 	d += 2;
-	// parse and recursively store data - strings are always in Shift-JIS (original format)
-	d = fd_main_load(d, d_end, m_sequences, m_nsequences);
+	// parse and recursively store data
+	d = fd_main_load(d, d_end, m_sequences, m_nsequences, utf8);
 
 	// Clear modified flags after loading - only track NEW edits from this session
 	for(auto& seq : m_sequences) {
@@ -114,7 +118,7 @@ void FrameData::save(const char *filename)
 	for(uint32_t i = 0; i < get_sequence_count(); i++)
 	{
 		file.write("PSTR", 4); file.write(VAL(i), 4);
-		WriteSequence(file, &m_sequences[i]);
+		WriteSequence(file, &m_sequences[i], m_stringsAreUTF8);
 		file.write("PEND", 4);
 	}
 
@@ -169,7 +173,7 @@ void FrameData::save_modified_only(const char *filename)
 		if(m_sequences[i].modified)
 		{
 			file.write("PSTR", 4); file.write(VAL(i), 4);
-			WriteSequence(file, &m_sequences[i]);
+			WriteSequence(file, &m_sequences[i], m_stringsAreUTF8);
 			file.write("PEND", 4);
 		}
 	}
@@ -222,10 +226,10 @@ std::string FrameData::GetDecoratedName(int n)
 			}
 		}
 
-		// Convert Shift-JIS to UTF-8 for display in ImGui
-		ss << sj2utf8(m_sequences[n].name);
+		// Strings are already stored as UTF-8 in memory (converted during load)
+		ss << m_sequences[n].name;
 		if(!m_sequences[n].codeName.empty())
-			ss << " - " << sj2utf8(m_sequences[n].codeName);
+			ss << " - " << m_sequences[n].codeName;
 
 		// Add asterisk for modified patterns
 		if(m_sequences[n].modified)

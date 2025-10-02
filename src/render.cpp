@@ -220,7 +220,8 @@ void Render::SetCg(CG *cg_)
 
 void Render::SwitchImage(int id)
 {
-	if(cg && id != curImageId && cg->m_loaded)
+	// Always process when id == -1 to ensure texture clears, even if curImageId is already -1
+	if(cg && (id != curImageId || id == -1) && cg->m_loaded)
 	{
 		curImageId = id;
 		texture.Unapply();
@@ -245,7 +246,7 @@ void Render::SwitchImage(int id)
 
 			texture.Unload();
 		}
-		
+
 	}
 }
 
