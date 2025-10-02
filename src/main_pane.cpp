@@ -1,6 +1,7 @@
 #include "main_pane.h"
 #include "pattern_disp.h"
 #include "frame_disp.h"
+#include "misc.h"
 #include <imgui.h>	
 
 MainPane::MainPane(Render* render, FrameData *framedata, FrameState &fs) : DrawWindow(render, framedata, fs),
@@ -118,8 +119,12 @@ void MainPane::Draw()
 
 			if (im::TreeNode("Pattern data"))
 			{
-				if(im::InputText("Pattern name", &seq->name))
+				// Convert Shift-JIS to UTF-8 for editing
+				nameEditBuffer = sj2utf8(seq->name);
+				if(im::InputText("Pattern name", &nameEditBuffer))
 				{
+					// Convert UTF-8 back to Shift-JIS for storage
+					seq->name = utf82sj(nameEditBuffer);
 					frameData->mark_modified(currState.pattern);
 					markModified();
 					decoratedNames[currState.pattern] = frameData->GetDecoratedName(currState.pattern);

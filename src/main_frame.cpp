@@ -627,9 +627,11 @@ void MainFrame::Menu(unsigned int errorPopupId)
 						openRecentProject(recentPath);
 					}
 
-					// Show full path as tooltip
+					// Show full path as tooltip (convert backslashes to forward slashes for display)
 					if (ImGui::IsItemHovered()) {
-						ImGui::SetTooltip("%s", recentPath.c_str());
+						std::string displayPath = recentPath;
+						std::replace(displayPath.begin(), displayPath.end(), '\\', '/');
+						ImGui::SetTooltip("%s", displayPath.c_str());
 					}
 				}
 				ImGui::Separator();

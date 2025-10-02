@@ -234,10 +234,15 @@ void Render::SwitchImage(int id)
 			}
 
 			texture.Load(image);
-			texture.Apply(false, filter);
-			
-			AdjustImageQuad(texture.image->offsetX, texture.image->offsetY, texture.image->width, texture.image->height);
-			vSprite.UpdateBuffer(0, imageVertex);
+
+			// Validate image dimensions before applying to avoid GL_INVALID_VALUE
+			if(texture.image->width > 0 && texture.image->height > 0)
+			{
+				texture.Apply(false, filter);
+				AdjustImageQuad(texture.image->offsetX, texture.image->offsetY, texture.image->width, texture.image->height);
+				vSprite.UpdateBuffer(0, imageVertex);
+			}
+
 			texture.Unload();
 		}
 		

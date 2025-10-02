@@ -15,6 +15,7 @@ static inline int to_pow2(int a) {
 bool ReadInMem(const char *filename, char *&data, unsigned int &size);
 
 std::string sj2utf8(const std::string &input);
+std::string utf82sj(const std::string &input);
 
 
 #endif

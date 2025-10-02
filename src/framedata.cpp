@@ -36,9 +36,6 @@ bool FrameData::load(const char *filename, bool patch) {
 		return 0;
 	}
 
-	//Names are utf8 because the file was saved by this tool.
-	bool utf8 = ((unsigned char*)data)[31] == 0xFF;
-
 	// initialize the root
 	unsigned int *d = (unsigned int *)(data + 0x20);
 	unsigned int *d_end = (unsigned int *)(data + size);
@@ -59,8 +56,8 @@ bool FrameData::load(const char *filename, bool patch) {
 	m_nsequences = sequence_count;
 
 	d += 2;
-	// parse and recursively store data
-	d = fd_main_load(d, d_end, m_sequences, m_nsequences, utf8);
+	// parse and recursively store data - strings are always in Shift-JIS (original format)
+	d = fd_main_load(d, d_end, m_sequences, m_nsequences);
 
 	// Clear modified flags after loading - only track NEW edits from this session
 	for(auto& seq : m_sequences) {
@@ -108,9 +105,7 @@ void FrameData::save(const char *filename)
 
 	char header[32] = "Hantei6DataFile";
 
-	//Set special byte to know if the file was written by our tool
-	header[31] = 0xFF;
-
+	// Keep header in original format - no modification flag
 	file.write(header, sizeof(header));
 
 	uint32_t size = get_sequence_count();
@@ -162,9 +157,7 @@ void FrameData::save_modified_only(const char *filename)
 
 	char header[32] = "Hantei6DataFile";
 
-	//Set special byte to know if the file was written by our tool
-	header[31] = 0xFF;
-
+	// Keep header in original format - no modification flag
 	file.write(header, sizeof(header));
 
 	uint32_t size = get_sequence_count();
@@ -229,9 +222,10 @@ std::string FrameData::GetDecoratedName(int n)
 			}
 		}
 
-		ss << m_sequences[n].name;
+		// Convert Shift-JIS to UTF-8 for display in ImGui
+		ss << sj2utf8(m_sequences[n].name);
 		if(!m_sequences[n].codeName.empty())
-			ss << " - " << m_sequences[n].codeName;
+			ss << " - " << sj2utf8(m_sequences[n].codeName);
 
 		// Add asterisk for modified patterns
 		if(m_sequences[n].modified)
