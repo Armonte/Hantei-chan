@@ -68,6 +68,7 @@ private:
 
 	// Character close confirmation
 	int pendingCloseCharacterIndex = -1;
+	bool shouldOpenUnsavedDialog = false;
 
 	// Project management
 	bool m_projectModified = false;

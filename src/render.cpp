@@ -330,6 +330,14 @@ void Render::DontDraw()
 	quadsToDraw = 0;
 }
 
+void Render::ClearTexture()
+{
+	if (texture.isApplied) {
+		texture.Unapply();
+	}
+	curImageId = -1;
+}
+
 void Render::SetImageColor(float *rgba)
 {
 	if(rgba)

@@ -103,6 +103,7 @@ void MainPane::Draw()
 					seq->frames.push_back({});
 					currState.frame = 0;
 					frameData->mark_modified(currState.pattern);
+					markModified();
 				}
 				
 			}
@@ -120,6 +121,7 @@ void MainPane::Draw()
 				if(im::InputText("Pattern name", &seq->name))
 				{
 					frameData->mark_modified(currState.pattern);
+					markModified();
 					decoratedNames[currState.pattern] = frameData->GetDecoratedName(currState.pattern);
 				}
 				PatternDisplay(seq, frameData, currState.pattern);
@@ -131,6 +133,7 @@ void MainPane::Draw()
 				if(im::Button("Paste pattern")) {
 					*seq = currState.copied->pattern;
 					frameData->mark_modified(currState.pattern);
+					markModified();
 					decoratedNames[currState.pattern] = frameData->GetDecoratedName(currState.pattern);
 					nframes = seq->frames.size() - 1;
 				}
@@ -163,6 +166,7 @@ void MainPane::Draw()
 					if(im::Button("Paste AS")) {
 						frame.AS = currState.copied->as;
 						frameData->mark_modified(currState.pattern);
+						markModified();
 					}
 					im::TreePop();
 					im::Separator();
@@ -177,6 +181,7 @@ void MainPane::Draw()
 					if(im::Button("Paste AF")) {
 						frame.AF = currState.copied->af;
 						frameData->mark_modified(currState.pattern);
+						markModified();
 					}
 					im::TreePop();
 					im::Separator();
@@ -192,6 +197,7 @@ void MainPane::Draw()
 						else
 							seq->frames.push_back({});
 						frameData->mark_modified(currState.pattern);
+						markModified();
 					}
 
 					im::SameLine(0,20.f);
@@ -202,6 +208,7 @@ void MainPane::Draw()
 						else
 							seq->frames.insert(seq->frames.begin()+currState.frame, {});
 						frameData->mark_modified(currState.pattern);
+						markModified();
 					}
 
 					im::SameLine(0,20.f);
@@ -211,6 +218,7 @@ void MainPane::Draw()
 						if(currState.frame >= seq->frames.size())
 							currState.frame--;
 						frameData->mark_modified(currState.pattern);
+						markModified();
 					}
 
 					if(im::Button("Copy frame"))
@@ -222,6 +230,7 @@ void MainPane::Draw()
 					{
 						frame = currState.copied->frame;
 						frameData->mark_modified(currState.pattern);
+						markModified();
 					}
 
 					im::TreePop();
@@ -278,6 +287,7 @@ void MainPane::Draw()
 						}
 					}
 					frameData->mark_modified(currState.pattern);
+					markModified();
 				}
 
 				// Set landing frame for range
@@ -289,9 +299,14 @@ void MainPane::Draw()
 						seq->frames[i].AF.landJump = landingFrame;
 					}
 					frameData->mark_modified(currState.pattern);
+					markModified();
 				}
 				im::SameLine();
-				im::InputInt("Landing frame", &currentFrame.AF.landJump);
+				if(im::InputInt("Landing frame", &currentFrame.AF.landJump))
+				{
+					frameData->mark_modified(currState.pattern);
+					markModified();
+				}
 
 				// Copy/paste multiple frames
 				if(im::Button("Copy frames in range"))
@@ -318,6 +333,7 @@ void MainPane::Draw()
 							seq->frames.insert(seq->frames.begin() + insertPos + i, temp);
 						}
 						frameData->mark_modified(currState.pattern);
+						markModified();
 					}
 				}
 
@@ -339,6 +355,7 @@ void MainPane::Draw()
 							}
 						}
 						frameData->mark_modified(currState.pattern);
+						markModified();
 					}
 				}
 			}
@@ -354,6 +371,7 @@ void MainPane::PopCopies()
 	{
 		*frameData->get_sequence(pat.id) = pat.seq;
 		frameData->mark_modified(pat.id);
+		markModified();
 	}
 	patCopyStack.clear();
 }

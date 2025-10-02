@@ -103,6 +103,18 @@ void MainFrame::DrawUi()
 				bool open = true;
 				ImGuiTabItemFlags flags = characters[i]->isModified() ? ImGuiTabItemFlags_UnsavedDocument : 0;
 
+				// Skip rendering if we're waiting for user to confirm closing this character
+				if (pendingCloseCharacterIndex == i) {
+					// Keep the tab visible while waiting for dialog response
+					if (ImGui::BeginTabItem(characters[i]->getDisplayName().c_str(), nullptr, flags)) {
+						if (activeCharacterIndex != (int)i) {
+							setActiveCharacter(i);
+						}
+						ImGui::EndTabItem();
+					}
+					continue;
+				}
+
 				if (ImGui::BeginTabItem(characters[i]->getDisplayName().c_str(), &open, flags)) {
 					if (activeCharacterIndex != (int)i) {
 						setActiveCharacter(i);
@@ -110,6 +122,7 @@ void MainFrame::DrawUi()
 					ImGui::EndTabItem();
 				}
 
+				// If user clicked X button, use tryCloseCharacter to handle unsaved changes
 				if (!open) {
 					tryCloseCharacter(i);
 				}
@@ -202,7 +215,12 @@ void MainFrame::DrawUi()
 		ImGui::EndPopup();
 	}
 
-	// Unsaved changes dialog
+	// Unsaved changes dialog - open it if requested
+	if (shouldOpenUnsavedDialog) {
+		ImGui::OpenPopup("Unsaved Changes");
+		shouldOpenUnsavedDialog = false;
+	}
+
 	ImGui::SetNextWindowPos(ImGui::GetMainViewport()->GetCenter(), ImGuiCond_Appearing, ImVec2(0.5f, 0.5f));
 	if (ImGui::BeginPopupModal("Unsaved Changes", NULL, ImGuiWindowFlags_AlwaysAutoResize))
 	{
@@ -280,6 +298,7 @@ void MainFrame::DrawUi()
 						rightPane.reset();
 						boxPane.reset();
 						render.DontDraw();
+						render.ClearTexture();
 						render.SetCg(nullptr);
 						ProjectManager::ClearCurrentProjectPath();
 						m_projectModified = false;
@@ -312,6 +331,7 @@ void MainFrame::DrawUi()
 					rightPane.reset();
 					boxPane.reset();
 					render.DontDraw();
+					render.ClearTexture();
 					render.SetCg(nullptr);
 					ProjectManager::ClearCurrentProjectPath();
 					m_projectModified = false;
@@ -1025,6 +1045,7 @@ void MainFrame::closeCharacter(int index)
 
 			// Clear the render system
 			render.DontDraw();
+			render.ClearTexture();
 			render.SetCg(nullptr);
 		} else {
 			// Select previous character, or first if we closed the first one
@@ -1046,7 +1067,7 @@ bool MainFrame::tryCloseCharacter(int index)
 	if (character->isModified()) {
 		// Show unsaved changes dialog
 		pendingCloseCharacterIndex = index;
-		ImGui::OpenPopup("Unsaved Changes");
+		shouldOpenUnsavedDialog = true;
 		return false; // Not closed yet, user needs to confirm
 	}
 
@@ -1080,6 +1101,7 @@ void MainFrame::newProject()
 	rightPane.reset();
 	boxPane.reset();
 	render.DontDraw();
+	render.ClearTexture();
 	render.SetCg(nullptr);
 
 	ProjectManager::ClearCurrentProjectPath();
@@ -1189,6 +1211,7 @@ void MainFrame::closeProject()
 
 	// Clear the render system
 	render.DontDraw();
+	render.ClearTexture();
 	render.SetCg(nullptr);
 
 	ProjectManager::ClearCurrentProjectPath();
