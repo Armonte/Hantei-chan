@@ -1314,7 +1314,7 @@ inline void AtDisplay(Frame_AT *at)
 	for(int i = 0; i < 3; i++)
 	{
 		im::PushID(100+i);
-		ShowComboWithManual(vectorLabels[i], &at->guardVector[i], hitVectorList, IM_ARRAYSIZE(hitVectorList), width*2, width);
+		ShowComboWithManual(vectorLabels[i], &at->guardVector[i], hitVectorList, IM_ARRAYSIZE(hitVectorList), width*6, width);
 		im::PopID();
 	}
 
@@ -1336,7 +1336,7 @@ inline void AtDisplay(Frame_AT *at)
 	for(int i = 0; i < 3; i++)
 	{
 		im::PushID(200+i);
-		ShowComboWithManual(vectorLabels[i], &at->hitVector[i], hitVectorList, IM_ARRAYSIZE(hitVectorList), width*2, width);
+		ShowComboWithManual(vectorLabels[i], &at->hitVector[i], hitVectorList, IM_ARRAYSIZE(hitVectorList), width*6, width);
 		im::PopID();
 	}
 
