@@ -24,4 +24,4 @@ target_include_directories(imgui PUBLIC
 
 
 target_compile_definitions(imgui PRIVATE IMGUI_IMPL_OPENGL_LOADER_GLAD IMGUI_IMPL_OPENGL_ES2 IMGUI_USER_CONFIG=<config.h> )
-target_link_libraries(imgui PUBLIC glad Imm32 Dwmapi)
+target_link_libraries(imgui PUBLIC glad imm32 dwmapi)

@@ -1,6 +1,7 @@
 #include "misc.h"
 #include <windows.h>
 #include <string>
+#include <cstdint>
 
 bool ReadInMem(const char *filename, char *&data, unsigned int &size)
 {

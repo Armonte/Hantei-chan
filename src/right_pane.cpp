@@ -26,7 +26,7 @@ void RightPane::Draw()
 			}
 			if(ImGui::TreeNode("Conditions"))
 			{
-				IfDisplay(&frame.IF);
+				IfDisplay(&frame.IF, frameData);
 				ImGui::TreePop();
 				ImGui::Separator();
 			}

@@ -45,6 +45,6 @@ target_link_libraries(${EXE} PRIVATE imgui glad OpenGL::GL glm)
 
 if(MINGW)
 	message(status "With -municode")
-	target_link_options(${EXE} PRIVATE -municode)
+	target_link_options(${EXE} PRIVATE -municode -static-libgcc -static-libstdc++ -static)
 endif()
 

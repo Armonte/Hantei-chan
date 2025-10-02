@@ -151,7 +151,7 @@ struct Sequence {
 	// sequence property data
 	std::string	name;
 	std::string codeName;
-	
+
 	int psts;
 	int level;
 	int flag;
@@ -164,18 +164,29 @@ struct Sequence {
 	Sequence();
 };
 
+struct Command {
+	int id;
+	std::string input;      // e.g., "41236C", "6+A+B"
+	std::string comment;    // e.g., "第七聖典", "ダッシュ"
+
+	Command() : id(-1) {}
+};
+
 class FrameData {
 private:
 	unsigned int	m_nsequences;
 
-	
+
 public:
 
 	bool		m_loaded;
 	std::vector<Sequence> m_sequences;
+	std::vector<Command> m_commands;
+
 	void initEmpty();
 	bool load(const char *filename, bool patch = false);
 	void save(const char *filename);
+	bool load_commands(const char *filename);
 
 	//Probably unnecessary.
 	//bool load_move_list(Pack *pack, const char *filename);
@@ -184,6 +195,7 @@ public:
 
 	Sequence* get_sequence(int n);
 	std::string GetDecoratedName(int n);
+	Command* get_command(int id);
 
 	void Free();
 

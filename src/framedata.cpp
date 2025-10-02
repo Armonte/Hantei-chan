@@ -5,6 +5,8 @@
 #include <cstring>
 #include <sstream>
 #include <iomanip>
+#include <cstdint>
+#include <iostream>
 
 int maxCount = 0;
 std::set<int> numberSet;
@@ -155,15 +157,15 @@ std::string FrameData::GetDecoratedName(int n)
 {
 		std::stringstream ss;
 		ss.flags(std::ios_base::right);
-		
+
 		ss << std::setfill('0') << std::setw(3) << n << " ";
-		
+
 		if(!m_sequences[n].empty)
 		{
 			bool noFrames = m_sequences[n].frames.empty();
 			if(noFrames)
 				ss << u8"〇 ";
-				
+
 			if(m_sequences[n].name.empty() && m_sequences[n].codeName.empty() && !noFrames)
 			{
 					ss << u8"Untitled";
@@ -174,6 +176,61 @@ std::string FrameData::GetDecoratedName(int n)
 		if(!m_sequences[n].codeName.empty())
 			ss << " - " << m_sequences[n].codeName;
 		return ss.str();
+}
+
+Command* FrameData::get_command(int id)
+{
+	for(auto &cmd : m_commands) {
+		if(cmd.id == id)
+			return &cmd;
+	}
+	return nullptr;
+}
+
+bool FrameData::load_commands(const char *filename)
+{
+	std::ifstream file(filename);
+	if(!file.is_open()) {
+		std::cout << "Failed to open command file: " << filename << std::endl;
+		return false;
+	}
+
+	m_commands.clear();
+	std::string line;
+	int lineNum = 0;
+
+	while(std::getline(file, line)) {
+		lineNum++;
+
+		// Skip empty lines and comment-only lines
+		if(line.empty() || line[0] == '/' || line[0] == '#')
+			continue;
+
+		// Find the comment part (after //)
+		size_t commentPos = line.find("//");
+		std::string dataPart = (commentPos != std::string::npos) ? line.substr(0, commentPos) : line;
+		std::string commentPart = (commentPos != std::string::npos) ? line.substr(commentPos + 2) : "";
+
+		// Trim comment
+		while(!commentPart.empty() && (commentPart[0] == ' ' || commentPart[0] == '\t' || commentPart[0] == '\xe3' || commentPart[0] == '\x80'))
+			commentPart = commentPart.substr(1);
+		while(!commentPart.empty() && (commentPart.back() == ' ' || commentPart.back() == '\t' || commentPart.back() == '\r' || commentPart.back() == '\n'))
+			commentPart.pop_back();
+
+		// Parse data part
+		std::istringstream iss(dataPart);
+		Command cmd;
+
+		if(!(iss >> cmd.id >> cmd.input))
+			continue; // Failed to parse ID and input
+
+		cmd.comment = commentPart;
+		m_commands.push_back(cmd);
+	}
+
+	file.close();
+	std::cout << "Loaded " << m_commands.size() << " commands from " << filename << std::endl;
+	return true;
 }
 
 FrameData::FrameData() {
