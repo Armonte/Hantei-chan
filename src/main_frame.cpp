@@ -108,7 +108,8 @@ void MainFrame::DrawUi()
 				// Skip rendering if we're waiting for user to confirm closing this view
 				if (pendingCloseViewIndex == (int)i) {
 					// Keep the tab visible while waiting for dialog response
-					if (ImGui::BeginTabItem(view->getDisplayName().c_str(), nullptr, flags)) {
+					std::string tabId = view->getDisplayName() + "###view_" + std::to_string((uintptr_t)view);
+					if (ImGui::BeginTabItem(tabId.c_str(), nullptr, flags)) {
 						if (activeViewIndex != (int)i) {
 							setActiveView(i);
 						}
@@ -117,7 +118,9 @@ void MainFrame::DrawUi()
 					continue;
 				}
 
-				if (ImGui::BeginTabItem(view->getDisplayName().c_str(), &open, flags)) {
+				// Use stable ID (pointer) for ImGui, display name can change
+				std::string tabId = view->getDisplayName() + "###view_" + std::to_string((uintptr_t)view);
+				if (ImGui::BeginTabItem(tabId.c_str(), &open, flags)) {
 					if (activeViewIndex != (int)i) {
 						setActiveView(i);
 					}
@@ -1104,12 +1107,9 @@ void MainFrame::setActiveView(int index)
 	if (index >= 0 && index < views.size()) {
 		activeViewIndex = index;
 
-		// Refresh panes for this view
+		// Update render state to use this view's character's CG
 		auto* view = getActiveView();
 		if (view) {
-			view->refreshPanes(&render);
-
-			// Update render state to use this view's character's CG
 			auto* character = view->getCharacter();
 			if (character) {
 				render.SetCg(&character->cg);

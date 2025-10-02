@@ -322,7 +322,7 @@ void CG::build_image_table() {
 					cell->start = address;
 					cell->width = align->width;
 					cell->height = align->height;
-					cell->offset = (b * 0x10) + (a * align->width * 0x10) * mult;
+					cell->offset = ( (b * 0x10) + (a * align->width * 0x10) ) * mult; //thxxx u4ick <3 
 					cell->type_id = image->type_id;
 					cell->bpp = image->bpp;
 				}
