@@ -112,12 +112,53 @@ void MainFrame::DrawUi()
 				}
 			}
 
-			// "+" button to add new character
+			// "+" button to add new character with dropdown menu
 			if (ImGui::TabItemButton("+", ImGuiTabItemFlags_Trailing | ImGuiTabItemFlags_NoTooltip)) {
-				openCharacterDialog();
+				ImGui::OpenPopup("AddCharacterPopup");
 			}
 			if (ImGui::IsItemHovered()) {
-				ImGui::SetTooltip("Open Character");
+				ImGui::SetTooltip("Add Character");
+			}
+
+			if (ImGui::BeginPopup("AddCharacterPopup")) {
+				if (ImGui::MenuItem("Load from .txt...")) {
+					std::string path = FileDialog(fileType::TXT, false);
+					if (!path.empty()) {
+						auto character = std::make_unique<CharacterInstance>();
+						if (character->loadFromTxt(path)) {
+							characters.push_back(std::move(character));
+							setActiveCharacter(characters.size() - 1);
+						}
+					}
+				}
+				if (ImGui::MenuItem("Load HA6...")) {
+					std::string path = FileDialog(fileType::HA6, false);
+					if (!path.empty()) {
+						auto character = std::make_unique<CharacterInstance>();
+						if (character->loadHA6(path, false)) {
+							characters.push_back(std::move(character));
+							setActiveCharacter(characters.size() - 1);
+						}
+					}
+				}
+				if (ImGui::MenuItem("Load HA6 and Patch...")) {
+					std::string path = FileDialog(fileType::HA6, false);
+					if (!path.empty()) {
+						auto character = std::make_unique<CharacterInstance>();
+						if (character->loadHA6(path, true)) {
+							characters.push_back(std::move(character));
+							setActiveCharacter(characters.size() - 1);
+						}
+					}
+				}
+				if (ImGui::MenuItem("New Character")) {
+					auto character = std::make_unique<CharacterInstance>();
+					character->frameData.initEmpty();
+					character->setName("Untitled");
+					characters.push_back(std::move(character));
+					setActiveCharacter(characters.size() - 1);
+				}
+				ImGui::EndPopup();
 			}
 
 			ImGui::EndTabBar();
@@ -341,10 +382,6 @@ bool MainFrame::HandleKeys(uint64_t vkey)
 				return true;
 			}
 			break;
-		case 'O':
-			// Ctrl+O: open character
-			openCharacterDialog();
-			return true;
 		case 'S':
 			// Ctrl+S: save active character
 			if (auto* active = getActive()) {
@@ -414,11 +451,6 @@ void MainFrame::Menu(unsigned int errorPopupId)
 		//ImGui::Separator();
 		if (ImGui::BeginMenu("File"))
 		{
-			if (ImGui::MenuItem("Add Character..."))
-			{
-				openCharacterDialog();
-			}
-
 			auto* active = getActive();
 			bool hasActive = (active != nullptr);
 
@@ -435,6 +467,50 @@ void MainFrame::Menu(unsigned int errorPopupId)
 			{
 				if (hasActive) {
 					tryCloseCharacter(activeCharacterIndex);
+				}
+			}
+
+			ImGui::Separator();
+
+			if (ImGui::MenuItem("Load from .txt..."))
+			{
+				std::string path = FileDialog(fileType::TXT, false);
+				if (!path.empty()) {
+					auto character = std::make_unique<CharacterInstance>();
+					if (character->loadFromTxt(path)) {
+						characters.push_back(std::move(character));
+						setActiveCharacter(characters.size() - 1);
+					} else {
+						ImGui::OpenPopup(errorPopupId);
+					}
+				}
+			}
+
+			if (ImGui::MenuItem("Load HA6..."))
+			{
+				std::string path = FileDialog(fileType::HA6, false);
+				if (!path.empty()) {
+					auto character = std::make_unique<CharacterInstance>();
+					if (character->loadHA6(path, false)) {
+						characters.push_back(std::move(character));
+						setActiveCharacter(characters.size() - 1);
+					} else {
+						ImGui::OpenPopup(errorPopupId);
+					}
+				}
+			}
+
+			if (ImGui::MenuItem("Load HA6 and Patch..."))
+			{
+				std::string path = FileDialog(fileType::HA6, false);
+				if (!path.empty()) {
+					auto character = std::make_unique<CharacterInstance>();
+					if (character->loadHA6(path, true)) {
+						characters.push_back(std::move(character));
+						setActiveCharacter(characters.size() - 1);
+					} else {
+						ImGui::OpenPopup(errorPopupId);
+					}
 				}
 			}
 
@@ -778,24 +854,3 @@ bool MainFrame::tryCloseCharacter(int index)
 	return true;
 }
 
-void MainFrame::openCharacterDialog()
-{
-	// Use existing file dialog to open .txt or .ha6 file
-	std::string path = FileDialog(-1, false); // -1 means any file type
-	if (!path.empty()) {
-		auto character = std::make_unique<CharacterInstance>();
-
-		// Determine if .txt or .ha6
-		if (path.find(".txt") != std::string::npos) {
-			if (character->loadFromTxt(path)) {
-				characters.push_back(std::move(character));
-				setActiveCharacter(characters.size() - 1);
-			}
-		} else if (path.find(".ha6") != std::string::npos || path.find(".HA6") != std::string::npos) {
-			if (character->loadHA6(path)) {
-				characters.push_back(std::move(character));
-				setActiveCharacter(characters.size() - 1);
-			}
-		}
-	}
-}
