@@ -5,6 +5,148 @@
 
 namespace im = ImGui;
 
+// Hit vector list - from MBAACC Hit Vectors CSV
+// TODO: Translate Japanese names for vectors 80-99 (currently showing JP text)
+static const char* const hitVectorList[] = {
+	"0: Head damage (weak)",
+	"1: Head damage (medium)",
+	"2: Head damage (strong)",
+	"3: Gut damage (weak)",
+	"4: Gut damage (medium)",
+	"5: Gut damage (strong)",
+	"6: Sweep",
+	"7: Down",
+	"8: Airborne damage",
+	"9: Sent flying horizontal",
+	"10: Sent flying upwards",
+	"11: Sent flying up and away",
+	"12: Spiked straight down",
+	"13: Spiked down and away",
+	"14: Stagger (unused?)",
+	"15: Sent flying very far upwards",
+	"16: Guard (unused?)",
+	"17: No hitstun",
+	"30: Standing crush (unused?)",
+	"31: Crouching crush (unused?)",
+	"32: Airborne crush (unused?)",
+	"40: Floating guard? (unused?)",
+	"50: Crouching damage (Weak)",
+	"51: Crouching damage (Medium)",
+	"52: Crouching damage (Strong)",
+	"54: Jumping attack gut damage",
+	"55: Jumping attack standing damage",
+	"56: Jumping attack crouching damage",
+	"57: Airborne down",
+	"58: Soft launch",
+	"59: Soft launch 2",
+	"60: Air guard",
+	"61: Spiked straight down (explode)",
+	"62: Spiked down and away (bounce)",
+	"63: Spike (bounce)",
+	"64: Sent flying up 2",
+	"65: Head damage (strong) 2",
+	"66: Crouching damage (strong) 2",
+	"67: Down 2",
+	"68: Floating low down",
+	"69: 7th HS sent flying horizontal",
+	"70: Sent flying up (low grav)",
+	"71: Home run",
+	"72: Sliding down",
+	"73: In-place head damage",
+	"74: In-place gut damage",
+	"75: Ryougi AT down",
+	"76: Ries j.A head damage (weak)",
+	"77: Sent flying up",
+	"78: Sent flying up and away",
+	"79: Low knockback gut damage",
+	"80: 離れにくい屈中",
+	"81: 離れにくい腹強",
+	"82: 離れにくい屈強",
+	"83: さつき用斜め叩きつけバウンド",
+	"85: 特大のけぞり立",
+	"86: 特大のけぞり屈",
+	"87: 頭やられちょい中",
+	"88: 屈やられちょい中",
+	"90: 地上受け身＿短",
+	"91: 地上受け身＿長",
+	"92: 地上受け身＿前",
+	"93: 空中受け身＿前",
+	"94: 空中受け身＿中",
+	"95: 空中受け身＿後",
+	"98: ダウン追い討ち",
+	"99: KOダウン",
+	"152: 屈やられ中＋１",
+	"153: 腹やられ中＋１",
+	"161: 叩きつけ小バウンド",
+	"162: 斜め叩きつけ小バウンド",
+	"163: 叩きつけ中バウンド",
+	"164: 斜め叩きつけ中バウンド",
+	"171: 叩きつけ小バウンド",
+	"172: 斜め叩きつけ小バウンド",
+	"173: 叩きつけ中バウンド",
+	"174: 斜め叩きつけ中バウンド",
+	"200: 空中ガード2",
+};
+
+// Helper function for combo with manual entry support
+static inline void ShowComboWithManual(const char* label, int* value, const char* const* items, int itemCount, float comboWidth, float defaultWidth = 75.f) {
+	if(comboWidth < 0) comboWidth = defaultWidth*2;
+	// Find if current value is in the list
+	int selectedIndex = -1;
+	int parsedValue;
+	for(int i = 0; i < itemCount; i++) {
+		// Parse "N: Description" format
+		if(sscanf(items[i], "%d:", &parsedValue) == 1) {
+			if(parsedValue == *value) {
+				selectedIndex = i;
+				break;
+			}
+		}
+	}
+
+	// Determine preview text
+	const char* preview;
+	char customBuffer[64];
+	if(selectedIndex >= 0) {
+		preview = items[selectedIndex];
+	} else {
+		snprintf(customBuffer, sizeof(customBuffer), "Custom: %d", *value);
+		preview = customBuffer;
+	}
+
+	im::SetNextItemWidth(comboWidth);
+	if(im::BeginCombo(label, preview)) {
+		// Show all predefined items
+		for(int i = 0; i < itemCount; i++) {
+			bool selected = (i == selectedIndex);
+			if(im::Selectable(items[i], selected)) {
+				// Parse and set value
+				if(sscanf(items[i], "%d:", &parsedValue) == 1) {
+					*value = parsedValue;
+				}
+			}
+			if(selected)
+				im::SetItemDefaultFocus();
+		}
+
+		// Add manual entry option
+		im::Separator();
+		im::SetNextItemWidth(defaultWidth);
+		im::InputInt("Custom value", value, 0, 0);
+
+		im::EndCombo();
+	}
+
+	// Show visual indicator for custom values
+	if(selectedIndex < 0) {
+		im::SameLine();
+		im::TextColored(ImVec4(1.0f, 0.7f, 0.0f, 1.0f), "⚠");
+		if(im::IsItemHovered()) {
+			Tooltip("Using undocumented value");
+		}
+	}
+}
+
 inline void HitVectorDisplay()
 {
 	if (im::BeginTable("HitVectors", 17,
@@ -71,65 +213,6 @@ inline void IfDisplay(std::vector<Frame_IF> *ifList_, FrameData *frameData = nul
 		if(tooltip) {
 			im::SameLine(); im::TextDisabled("(?)");
 			if(im::IsItemHovered()) Tooltip(tooltip);
-		}
-	};
-
-	// Helper lambda for combo with manual entry support
-	auto ShowComboWithManual = [&](const char* label, int* value, const char* const* items, int itemCount, float comboWidth = -1.0f) {
-		if(comboWidth < 0) comboWidth = width*2;
-		// Find if current value is in the list
-		int selectedIndex = -1;
-		int parsedValue;
-		for(int i = 0; i < itemCount; i++) {
-			// Parse "N: Description" format
-			if(sscanf(items[i], "%d:", &parsedValue) == 1) {
-				if(parsedValue == *value) {
-					selectedIndex = i;
-					break;
-				}
-			}
-		}
-
-		// Determine preview text
-		const char* preview;
-		char customBuffer[64];
-		if(selectedIndex >= 0) {
-			preview = items[selectedIndex];
-		} else {
-			snprintf(customBuffer, sizeof(customBuffer), "Custom: %d", *value);
-			preview = customBuffer;
-		}
-
-		im::SetNextItemWidth(comboWidth);
-		if(im::BeginCombo(label, preview)) {
-			// Show all predefined items
-			for(int i = 0; i < itemCount; i++) {
-				bool selected = (i == selectedIndex);
-				if(im::Selectable(items[i], selected)) {
-					// Parse and set value
-					if(sscanf(items[i], "%d:", &parsedValue) == 1) {
-						*value = parsedValue;
-					}
-				}
-				if(selected)
-					im::SetItemDefaultFocus();
-			}
-
-			// Add manual entry option
-			im::Separator();
-			im::SetNextItemWidth(width);
-			im::InputInt("Custom value", value, 0, 0);
-
-			im::EndCombo();
-		}
-
-		// Show visual indicator for custom values
-		if(selectedIndex < 0) {
-			im::SameLine();
-			im::TextColored(ImVec4(1.0f, 0.7f, 0.0f, 1.0f), "⚠");
-			if(im::IsItemHovered()) {
-				Tooltip("Using undocumented value");
-			}
 		}
 	};
 
@@ -443,7 +526,7 @@ inline void IfDisplay(std::vector<Frame_IF> *ifList_, FrameData *frameData = nul
 			case 3: // Branch on hit
 				ShowJumpField("Jump to", &p[0], "Frame number, or add 10000 for pattern");
 
-				ShowComboWithManual("Hit condition", &p[1], hitConditions, IM_ARRAYSIZE(hitConditions));
+				ShowComboWithManual("Hit condition", &p[1], hitConditions, IM_ARRAYSIZE(hitConditions), width*2, width);
 
 				im::SetNextItemWidth(width*2);
 				im::Combo("Opponent state", &p[2], opponentStateList, IM_ARRAYSIZE(opponentStateList));
@@ -496,7 +579,7 @@ inline void IfDisplay(std::vector<Frame_IF> *ifList_, FrameData *frameData = nul
 					"3: On block or clash",
 				};
 				im::SetNextItemWidth(width*2);
-				ShowComboWithManual("When", &p[1], cond11When, IM_ARRAYSIZE(cond11When));
+				ShowComboWithManual("When", &p[1], cond11When, IM_ARRAYSIZE(cond11When), width*2, width);
 
 				im::SetNextItemWidth(width);
 				im::InputInt("State to transition to", &p[2], 0, 0);
@@ -507,7 +590,7 @@ inline void IfDisplay(std::vector<Frame_IF> *ifList_, FrameData *frameData = nul
 					"2: Air hit (according to When)",
 				};
 				im::SetNextItemWidth(width*2);
-				ShowComboWithManual("Opponent state", &p[3], cond11State, IM_ARRAYSIZE(cond11State));
+				ShowComboWithManual("Opponent state", &p[3], cond11State, IM_ARRAYSIZE(cond11State), width*2, width);
 
 				im::SetNextItemWidth(width);
 				im::InputInt("Priority", &p[8], 0, 0); im::SameLine();
@@ -583,7 +666,7 @@ inline void IfDisplay(std::vector<Frame_IF> *ifList_, FrameData *frameData = nul
 					"2: Both",
 				};
 				im::SetNextItemWidth(width*2);
-				ShowComboWithManual("Check target", &p[1], cond14Target, IM_ARRAYSIZE(cond14Target));
+				ShowComboWithManual("Check target", &p[1], cond14Target, IM_ARRAYSIZE(cond14Target), width*2, width);
 				im::SameLine(); im::TextDisabled("(?)");
 				if(im::IsItemHovered()) Tooltip("Add +100X for 'not cornered' check");
 
@@ -618,7 +701,7 @@ inline void IfDisplay(std::vector<Frame_IF> *ifList_, FrameData *frameData = nul
 					"80000: Crouch guardable",
 				};
 				im::SetNextItemWidth(width*3);
-				ShowComboWithManual("Box type", &p[2], cond14BoxType, IM_ARRAYSIZE(cond14BoxType));
+				ShowComboWithManual("Box type", &p[2], cond14BoxType, IM_ARRAYSIZE(cond14BoxType), width*2, width);
 
 				im::SetNextItemWidth(width);
 				im::InputInt("Hitstop on collision", &p[3], 0, 0);
@@ -629,7 +712,7 @@ inline void IfDisplay(std::vector<Frame_IF> *ifList_, FrameData *frameData = nul
 					"4: Turn away from collider",
 				};
 				im::SetNextItemWidth(width*2);
-				ShowComboWithManual("Turn direction", &p[4], cond14Turn, IM_ARRAYSIZE(cond14Turn));
+				ShowComboWithManual("Turn direction", &p[4], cond14Turn, IM_ARRAYSIZE(cond14Turn), width*2, width);
 				break;
 			}
 
@@ -659,7 +742,7 @@ inline void IfDisplay(std::vector<Frame_IF> *ifList_, FrameData *frameData = nul
 			case 21: // Opponent's character check
 				ShowJumpField("Jump to", &p[0], "Frame number, or add 10000 for pattern");
 
-				ShowComboWithManual("Character", &p[1], characterList, IM_ARRAYSIZE(characterList));
+				ShowComboWithManual("Character", &p[1], characterList, IM_ARRAYSIZE(characterList), width*2, width);
 				im::SameLine(); im::TextDisabled("(?)");
 				if(im::IsItemHovered()) Tooltip("Add 50 for boss version");
 				break;
@@ -758,7 +841,7 @@ inline void IfDisplay(std::vector<Frame_IF> *ifList_, FrameData *frameData = nul
 					"7: On block/clash",
 				};
 				im::SetNextItemWidth(width*2);
-				ShowComboWithManual("When", &p[1], cond38When, IM_ARRAYSIZE(cond38When));
+				ShowComboWithManual("When", &p[1], cond38When, IM_ARRAYSIZE(cond38When), width*2, width);
 
 				im::SetNextItemWidth(width*2);
 				im::Combo("Opponent state", &p[2], opponentStateList, IM_ARRAYSIZE(opponentStateList));
@@ -773,7 +856,7 @@ inline void IfDisplay(std::vector<Frame_IF> *ifList_, FrameData *frameData = nul
 					"11: Add owner var",
 				};
 				im::SetNextItemWidth(width*2);
-				ShowComboWithManual("Operation", &p[4], cond38Op, IM_ARRAYSIZE(cond38Op));
+				ShowComboWithManual("Operation", &p[4], cond38Op, IM_ARRAYSIZE(cond38Op), width*2, width);
 				break;
 			}
 
@@ -1224,33 +1307,46 @@ inline void AtDisplay(Frame_AT *at)
 
 	im::Separator();
 	auto comboWidth = (im::GetWindowWidth())/4.f;
-	im::InputInt3("Guard Vector", at->guardVector);
-	im::SameLine(); im::TextDisabled("(?)");
-	if (im::IsItemHovered())
-		Tooltip("Stand, air and crouch.\nSee vector text file.");
 
+	// Guard Vector - Stand, Air, Crouch with dropdowns
+	im::Text("Guard Vector:");
+	const char* const vectorLabels[] = {"Stand", "Air", "Crouch"};
 	for(int i = 0; i < 3; i++)
-	{	
+	{
+		im::PushID(100+i);
+		ShowComboWithManual(vectorLabels[i], &at->guardVector[i], hitVectorList, IM_ARRAYSIZE(hitVectorList), width*2, width);
+		im::PopID();
+	}
+
+	// Guard Vector Flags
+	for(int i = 0; i < 3; i++)
+	{
 		im::SetNextItemWidth(comboWidth);
 		if(i > 0)
 			im::SameLine();
-		im::PushID(i); 
+		im::PushID(i);
 		im::Combo("##GFLAG", &at->gVFlags[i], vectorFlags, IM_ARRAYSIZE(vectorFlags));
 		im::PopID();
 	}
 
 	im::Separator();
-	im::InputInt3("Hit Vector", at->hitVector);
-	im::SameLine(); im::TextDisabled("(?)");
-	if(im::IsItemHovered())
-		Tooltip("Stand, air and crouch.\nSee vector text file.");
-	
+
+	// Hit Vector - Stand, Air, Crouch with dropdowns
+	im::Text("Hit Vector:");
 	for(int i = 0; i < 3; i++)
-	{	
+	{
+		im::PushID(200+i);
+		ShowComboWithManual(vectorLabels[i], &at->hitVector[i], hitVectorList, IM_ARRAYSIZE(hitVectorList), width*2, width);
+		im::PopID();
+	}
+
+	// Hit Vector Flags
+	for(int i = 0; i < 3; i++)
+	{
 		im::SetNextItemWidth(comboWidth);
 		if(i > 0)
 			im::SameLine();
-		im::PushID(i); 
+		im::PushID(i);
 		im::Combo("##HFLAG", &at->hVFlags[i], vectorFlags, IM_ARRAYSIZE(vectorFlags));
 		im::PopID();
 	}
