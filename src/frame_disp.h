@@ -74,6 +74,65 @@ inline void IfDisplay(std::vector<Frame_IF> *ifList_, FrameData *frameData = nul
 		}
 	};
 
+	// Helper lambda for combo with manual entry support
+	auto ShowComboWithManual = [&](const char* label, int* value, const char* const* items, int itemCount, float comboWidth = -1.0f) {
+		if(comboWidth < 0) comboWidth = width*2;
+		// Find if current value is in the list
+		int selectedIndex = -1;
+		int parsedValue;
+		for(int i = 0; i < itemCount; i++) {
+			// Parse "N: Description" format
+			if(sscanf(items[i], "%d:", &parsedValue) == 1) {
+				if(parsedValue == *value) {
+					selectedIndex = i;
+					break;
+				}
+			}
+		}
+
+		// Determine preview text
+		const char* preview;
+		char customBuffer[64];
+		if(selectedIndex >= 0) {
+			preview = items[selectedIndex];
+		} else {
+			snprintf(customBuffer, sizeof(customBuffer), "Custom: %d", *value);
+			preview = customBuffer;
+		}
+
+		im::SetNextItemWidth(comboWidth);
+		if(im::BeginCombo(label, preview)) {
+			// Show all predefined items
+			for(int i = 0; i < itemCount; i++) {
+				bool selected = (i == selectedIndex);
+				if(im::Selectable(items[i], selected)) {
+					// Parse and set value
+					if(sscanf(items[i], "%d:", &parsedValue) == 1) {
+						*value = parsedValue;
+					}
+				}
+				if(selected)
+					im::SetItemDefaultFocus();
+			}
+
+			// Add manual entry option
+			im::Separator();
+			im::SetNextItemWidth(width);
+			im::InputInt("Custom value", value, 0, 0);
+
+			im::EndCombo();
+		}
+
+		// Show visual indicator for custom values
+		if(selectedIndex < 0) {
+			im::SameLine();
+			im::TextColored(ImVec4(1.0f, 0.7f, 0.0f, 1.0f), "⚠");
+			if(im::IsItemHovered()) {
+				Tooltip("Using undocumented value");
+			}
+		}
+	};
+
 	// Condition type names
 	const char* const conditionTypes[] = {
 		"0: (None)",
@@ -119,6 +178,115 @@ inline void IfDisplay(std::vector<Frame_IF> *ifList_, FrameData *frameData = nul
 		"40: Jump after N frames",
 		"41: Jump if controlled char mismatch",
 		"42: (Unknown)",
+		"43: (Unknown)",
+		"44: (Unknown)",
+		"45: (Unknown)",
+		"46: (Unknown)",
+		"47: (Unknown)",
+		"48: (Unknown)",
+		"49: (Unknown)",
+		"50: Effect reflection box",
+		"51: Check Shield Conditions",
+		"52: Throw check",
+		"53: (Unknown)",
+		"54: Jump on hit or block",
+		"55: (Unknown)",
+		"56: (Unknown)",
+		"57: (Unknown)",
+		"58: (Unknown)",
+		"59: (Unknown)",
+		"60: (Unknown)",
+		"61: (Unknown)",
+		"62: (Unknown)",
+		"63: (Unknown)",
+		"64: (Unknown)",
+		"65: (Unknown)",
+		"66: (Unknown)",
+		"67: (Unknown)",
+		"68: (Unknown)",
+		"69: (Unknown)",
+		"70: Jump on reaching screen border",
+		"71: (Unknown)",
+		"72: (Unknown)",
+		"73: (Unknown)",
+		"74: (Unknown)",
+		"75: (Unknown)",
+		"76: (Unknown)",
+		"77: (Unknown)",
+		"78: (Unknown)",
+		"79: (Unknown)",
+		"80: (Unknown)",
+		"81: (Unknown)",
+		"82: (Unknown)",
+		"83: (Unknown)",
+		"84: (Unknown)",
+		"85: (Unknown)",
+		"86: (Unknown)",
+		"87: (Unknown)",
+		"88: (Unknown)",
+		"89: (Unknown)",
+		"90: (Unknown)",
+		"91: (Unknown)",
+		"92: (Unknown)",
+		"93: (Unknown)",
+		"94: (Unknown)",
+		"95: (Unknown)",
+		"96: (Unknown)",
+		"97: (Unknown)",
+		"98: (Unknown)",
+		"99: (Unknown)",
+		"100: Box collision with partner",
+		"101: (Unknown)",
+		"102: (Unknown)",
+		"103: (Unknown)",
+		"104: (Unknown)",
+		"105: (Unknown)",
+		"106: (Unknown)",
+		"107: (Unknown)",
+		"108: (Unknown)",
+		"109: (Unknown)",
+		"110: (Unknown)",
+		"111: (Unknown)",
+		"112: (Unknown)",
+		"113: (Unknown)",
+		"114: (Unknown)",
+		"115: (Unknown)",
+		"116: (Unknown)",
+		"117: (Unknown)",
+		"118: (Unknown)",
+		"119: (Unknown)",
+		"120: (Unknown)",
+		"121: (Unknown)",
+		"122: (Unknown)",
+		"123: (Unknown)",
+		"124: (Unknown)",
+		"125: (Unknown)",
+		"126: (Unknown)",
+		"127: (Unknown)",
+		"128: (Unknown)",
+		"129: (Unknown)",
+		"130: (Unknown)",
+		"131: (Unknown)",
+		"132: (Unknown)",
+		"133: (Unknown)",
+		"134: (Unknown)",
+		"135: (Unknown)",
+		"136: (Unknown)",
+		"137: (Unknown)",
+		"138: (Unknown)",
+		"139: (Unknown)",
+		"140: (Unknown)",
+		"141: (Unknown)",
+		"142: (Unknown)",
+		"143: (Unknown)",
+		"144: (Unknown)",
+		"145: (Unknown)",
+		"146: (Unknown)",
+		"147: (Unknown)",
+		"148: (Unknown)",
+		"149: (Unknown)",
+		"150: (Unknown)",
+		"151: (Unknown)",
 	};
 
 	const char* const characterList[] = {
@@ -166,6 +334,11 @@ inline void IfDisplay(std::vector<Frame_IF> *ifList_, FrameData *frameData = nul
 	};
 
 	int deleteI = -1;
+	static std::vector<int> manualEditMode; // Track manual edit mode per condition (int instead of bool for ImGui)
+	if(manualEditMode.size() != ifList.size()) {
+		manualEditMode.resize(ifList.size(), 0);
+	}
+
 	for( int i = 0; i < ifList.size(); i++)
 	{
 		if(i>0)
@@ -187,6 +360,15 @@ inline void IfDisplay(std::vector<Frame_IF> *ifList_, FrameData *frameData = nul
 		}
 
 		im::SameLine(0.f, 20);
+		bool manualMode = manualEditMode[i] != 0;
+		if(im::Checkbox("Manual", &manualMode)) {
+			manualEditMode[i] = manualMode ? 1 : 0;
+		}
+		if(im::IsItemHovered()) {
+			Tooltip("Enable raw parameter editing for undocumented values");
+		}
+
+		im::SameLine(0.f, 20);
 		ImGui::PushStyleColor(ImGuiCol_Button, ImVec4(1,0,0,0.4));
 		if(im::Button("Delete"))
 			deleteI = i;
@@ -195,6 +377,13 @@ inline void IfDisplay(std::vector<Frame_IF> *ifList_, FrameData *frameData = nul
 		// Smart parameter fields based on type
 		int* p = ifList[i].parameters;
 
+		// If manual mode is enabled, show raw parameter editing
+		if(manualEditMode[i]) {
+			im::Text("Raw parameters:");
+			im::InputScalarN("##params", ImGuiDataType_S32, p, 6, NULL, NULL, "%d", 0);
+			im::InputScalarN("##params2", ImGuiDataType_S32, p+6, 3, NULL, NULL, "%d", 0);
+		} else {
+		// Otherwise show smart UI based on type
 		switch(ifList[i].type) {
 			case 1: // Jump on directional input
 				im::SetNextItemWidth(width);
@@ -254,27 +443,7 @@ inline void IfDisplay(std::vector<Frame_IF> *ifList_, FrameData *frameData = nul
 			case 3: // Branch on hit
 				ShowJumpField("Jump to", &p[0], "Frame number, or add 10000 for pattern");
 
-				im::SetNextItemWidth(width*2);
-				{
-					int hitIdx = p[1];
-					const char* hitPreview = "Custom value";
-					for(int h = 0; h < IM_ARRAYSIZE(hitConditions); h++) {
-						if(atoi(hitConditions[h]) == hitIdx) {
-							hitPreview = hitConditions[h];
-							break;
-						}
-					}
-					if(im::BeginCombo("Hit condition", hitPreview)) {
-						for(int h = 0; h < IM_ARRAYSIZE(hitConditions); h++) {
-							bool selected = (atoi(hitConditions[h]) == hitIdx);
-							if(im::Selectable(hitConditions[h], selected))
-								p[1] = atoi(hitConditions[h]);
-							if(selected)
-								im::SetItemDefaultFocus();
-						}
-						im::EndCombo();
-					}
-				}
+				ShowComboWithManual("Hit condition", &p[1], hitConditions, IM_ARRAYSIZE(hitConditions));
 
 				im::SetNextItemWidth(width*2);
 				im::Combo("Opponent state", &p[2], opponentStateList, IM_ARRAYSIZE(opponentStateList));
@@ -317,40 +486,34 @@ inline void IfDisplay(std::vector<Frame_IF> *ifList_, FrameData *frameData = nul
 				break;
 
 			case 11: // Additional command input check
+			{
 				ShowCommandField("Command ID", &p[0], "From _c.txt file, column 1");
 
+				const char* const cond11When[] = {
+					"0: Always",
+					"1: On hit, block, or clash",
+					"2: On hit",
+					"3: On block or clash",
+				};
 				im::SetNextItemWidth(width*2);
-				{
-					int hitIdx = p[1];
-					const char* hitPreview = "Custom value";
-					for(int h = 0; h < IM_ARRAYSIZE(hitConditions); h++) {
-						if(atoi(hitConditions[h]) == hitIdx) {
-							hitPreview = hitConditions[h];
-							break;
-						}
-					}
-					if(im::BeginCombo("When", hitPreview)) {
-						for(int h = 0; h < IM_ARRAYSIZE(hitConditions); h++) {
-							bool selected = (atoi(hitConditions[h]) == hitIdx);
-							if(im::Selectable(hitConditions[h], selected))
-								p[1] = atoi(hitConditions[h]);
-							if(selected)
-								im::SetItemDefaultFocus();
-						}
-						im::EndCombo();
-					}
-				}
+				ShowComboWithManual("When", &p[1], cond11When, IM_ARRAYSIZE(cond11When));
 
 				im::SetNextItemWidth(width);
 				im::InputInt("State to transition to", &p[2], 0, 0);
 
+				const char* const cond11State[] = {
+					"0: Always",
+					"1: Grounded hit (according to When)",
+					"2: Air hit (according to When)",
+				};
 				im::SetNextItemWidth(width*2);
-				im::Combo("Opponent state", &p[3], opponentStateList, IM_ARRAYSIZE(opponentStateList));
+				ShowComboWithManual("Opponent state", &p[3], cond11State, IM_ARRAYSIZE(cond11State));
 
 				im::SetNextItemWidth(width);
 				im::InputInt("Priority", &p[8], 0, 0); im::SameLine();
 				im::TextDisabled("(?)"); if(im::IsItemHovered()) Tooltip("0-5000: priority = 5000 - value\n10000+: priority = value - 10000");
 				break;
+			}
 
 			case 35: // Custom cancel command check
 			{
@@ -411,23 +574,64 @@ inline void IfDisplay(std::vector<Frame_IF> *ifList_, FrameData *frameData = nul
 				break;
 
 			case 14: // Box collision check
+			{
 				ShowJumpField("Jump to", &p[0], "Frame number, or add 10000 for pattern");
 
-				im::SetNextItemWidth(width);
-				im::InputInt("Check target", &p[1], 0, 0); im::SameLine();
-				im::TextDisabled("(?)"); if(im::IsItemHovered()) Tooltip("0=Enemies, 1=Allies, 2=Both\n+100X for 'not cornered' check");
+				const char* const cond14Target[] = {
+					"0: Enemies only",
+					"1: Allies only",
+					"2: Both",
+				};
+				im::SetNextItemWidth(width*2);
+				ShowComboWithManual("Check target", &p[1], cond14Target, IM_ARRAYSIZE(cond14Target));
+				im::SameLine(); im::TextDisabled("(?)");
+				if(im::IsItemHovered()) Tooltip("Add +100X for 'not cornered' check");
 
-				im::SetNextItemWidth(width);
-				im::InputInt("Box type", &p[2], 0, 0); im::SameLine();
-				im::TextDisabled("(?)"); if(im::IsItemHovered()) Tooltip("0=Hitbox, 1=Collision, 2=Hurtbox\n3-18=Special Box 1-16\n+modifiers: see docs");
+				const char* const cond14BoxType[] = {
+					"0: Hitbox (no cmd grabs, clashable)",
+					"1: Collision Box",
+					"2: Hurtbox",
+					"3: Special Box 1",
+					"4: Special Box 2",
+					"5: Special Box 3",
+					"6: Special Box 4",
+					"7: Special Box 5",
+					"8: Special Box 6",
+					"9: Special Box 7",
+					"10: Special Box 8",
+					"11: Special Box 9",
+					"12: Special Box 10",
+					"13: Special Box 11",
+					"14: Special Box 12",
+					"15: Special Box 13",
+					"16: Special Box 14",
+					"17: Special Box 15",
+					"18: Special Box 16",
+					"1000: No hit consumption, just hitbox",
+					"10000: Stand guardable, no hitgrabs",
+					"20000: Crouch guardable, no hitgrabs",
+					"30000: No hitgrabs",
+					"40000: Stand guardable, hitgrabs only",
+					"50000: Crouch guardable, hitgrabs only",
+					"60000: Hitgrabs only",
+					"70000: Stand guardable",
+					"80000: Crouch guardable",
+				};
+				im::SetNextItemWidth(width*3);
+				ShowComboWithManual("Box type", &p[2], cond14BoxType, IM_ARRAYSIZE(cond14BoxType));
 
 				im::SetNextItemWidth(width);
 				im::InputInt("Hitstop on collision", &p[3], 0, 0);
 
-				im::SetNextItemWidth(width);
-				im::InputInt("Turn direction", &p[4], 0, 0); im::SameLine();
-				im::TextDisabled("(?)"); if(im::IsItemHovered()) Tooltip("0=no turn, 2=toward, 4=away");
+				const char* const cond14Turn[] = {
+					"0: No turnaround",
+					"2: Turn towards collider",
+					"4: Turn away from collider",
+				};
+				im::SetNextItemWidth(width*2);
+				ShowComboWithManual("Turn direction", &p[4], cond14Turn, IM_ARRAYSIZE(cond14Turn));
 				break;
+			}
 
 			case 16: // Be affected by scrolling
 				im::SetNextItemWidth(width);
@@ -455,13 +659,9 @@ inline void IfDisplay(std::vector<Frame_IF> *ifList_, FrameData *frameData = nul
 			case 21: // Opponent's character check
 				ShowJumpField("Jump to", &p[0], "Frame number, or add 10000 for pattern");
 
-				im::SetNextItemWidth(width*2);
-				if(p[1] >= 0 && p[1] < IM_ARRAYSIZE(characterList)) {
-					if(im::Combo("Character", &p[1], characterList, IM_ARRAYSIZE(characterList))) {}
-				} else {
-					im::InputInt("Character ID", &p[1], 0, 0); im::SameLine();
-					im::TextDisabled("(?)"); if(im::IsItemHovered()) Tooltip("Add 50 for boss version");
-				}
+				ShowComboWithManual("Character", &p[1], characterList, IM_ARRAYSIZE(characterList));
+				im::SameLine(); im::TextDisabled("(?)");
+				if(im::IsItemHovered()) Tooltip("Add 50 for boss version");
 				break;
 
 			case 25: // Variable comparison
@@ -544,30 +744,21 @@ inline void IfDisplay(std::vector<Frame_IF> *ifList_, FrameData *frameData = nul
 				break;
 
 			case 38: // Change variable on hit
+			{
 				im::SetNextItemWidth(width);
 				im::InputInt("Value", &p[0], 0, 0);
 
+				const char* const cond38When[] = {
+					"0: On hit",
+					"1: On hit/block",
+					"2: On hit/clash",
+					"3: On hit/block/clash",
+					"5: On block",
+					"6: On clash",
+					"7: On block/clash",
+				};
 				im::SetNextItemWidth(width*2);
-				{
-					int hitIdx = p[1];
-					const char* hitPreview = "Custom value";
-					for(int h = 0; h < IM_ARRAYSIZE(hitConditions); h++) {
-						if(atoi(hitConditions[h]) == hitIdx) {
-							hitPreview = hitConditions[h];
-							break;
-						}
-					}
-					if(im::BeginCombo("When", hitPreview)) {
-						for(int h = 0; h < IM_ARRAYSIZE(hitConditions); h++) {
-							bool selected = (atoi(hitConditions[h]) == hitIdx);
-							if(im::Selectable(hitConditions[h], selected))
-								p[1] = atoi(hitConditions[h]);
-							if(selected)
-								im::SetItemDefaultFocus();
-						}
-						im::EndCombo();
-					}
-				}
+				ShowComboWithManual("When", &p[1], cond38When, IM_ARRAYSIZE(cond38When));
 
 				im::SetNextItemWidth(width*2);
 				im::Combo("Opponent state", &p[2], opponentStateList, IM_ARRAYSIZE(opponentStateList));
@@ -575,9 +766,16 @@ inline void IfDisplay(std::vector<Frame_IF> *ifList_, FrameData *frameData = nul
 				im::SetNextItemWidth(width);
 				im::InputInt("Extra variable ID", &p[3], 0, 0);
 
-				im::SetNextItemWidth(width);
-				im::Combo("Operation", &p[4], "Set\0Add\0\0\0\0\0\0\0\0\010: Set owner var\011: Add owner var\0");
+				const char* const cond38Op[] = {
+					"0: Set",
+					"1: Add",
+					"10: Set owner var",
+					"11: Add owner var",
+				};
+				im::SetNextItemWidth(width*2);
+				ShowComboWithManual("Operation", &p[4], cond38Op, IM_ARRAYSIZE(cond38Op));
 				break;
+			}
 
 			case 40: // Jump after N frames
 				im::SetNextItemWidth(width);
@@ -631,6 +829,106 @@ inline void IfDisplay(std::vector<Frame_IF> *ifList_, FrameData *frameData = nul
 				im::TextDisabled("(?)"); if(im::IsItemHovered()) Tooltip("-1 for no jump");
 				break;
 
+			case 5: // KO flag check
+				im::Text("Automatic check - no parameters needed");
+				im::TextDisabled("Triggers when opponent is KO'd");
+				break;
+
+			case 9: // Loop counter settings
+				im::Text("Unused feature - parameters unknown");
+				im::TextDisabled("Enable Manual mode to edit raw values if needed");
+				break;
+
+			case 10: // Loop counter check
+				im::Text("Unused feature - parameters unknown");
+				im::TextDisabled("Enable Manual mode to edit raw values if needed");
+				break;
+
+			case 12: // Opponent distance check
+				im::Text("Not yet documented - parameters unknown");
+				im::TextDisabled("Enable Manual mode to experiment with values");
+				break;
+
+			case 15: // Box collision check (Capture)
+				im::Text("Not yet documented - parameters unknown");
+				im::TextDisabled("See condition 14 for similar functionality");
+				im::TextDisabled("Enable Manual mode to experiment with values");
+				break;
+
+			case 18: // Check main/trunk animation
+				im::Text("Not yet documented - parameters unknown");
+				im::TextDisabled("Enable Manual mode to experiment with values");
+				break;
+
+			case 19: // Projectile box collision check (Reflection)
+				im::Text("Not yet documented - parameters unknown");
+				im::TextDisabled("Enable Manual mode to experiment with values");
+				break;
+
+			case 20: // Box collision check 2
+				im::Text("Not yet documented - parameters unknown");
+				im::TextDisabled("See condition 14 for similar functionality");
+				im::TextDisabled("Enable Manual mode to experiment with values");
+				break;
+
+			case 22: // BG number check
+				im::Text("Unused feature - parameters unknown");
+				im::TextDisabled("Enable Manual mode to edit raw values if needed");
+				break;
+
+			case 23: // BG type check
+				im::Text("Unused feature - parameters unknown");
+				im::TextDisabled("Enable Manual mode to edit raw values if needed");
+				break;
+
+			case 28: // Jump if knocked out
+				im::Text("Automatic check - no parameters needed");
+				im::TextDisabled("Triggers when this character is KO'd");
+				break;
+
+			case 29: // Check X pos on screen
+				im::Text("Unused feature - parameters unknown");
+				im::TextDisabled("Enable Manual mode to edit raw values if needed");
+				break;
+
+			case 32: // Jump if CPU side of CPU battle
+				im::Text("Arcade mode feature (used in Hime's intro)");
+				im::SetNextItemWidth(width);
+				im::InputInt("Param1", &p[0], 0, 0); im::SameLine();
+				im::TextDisabled("(?)"); if(im::IsItemHovered()) Tooltip("Purpose unknown");
+				break;
+
+			case 36: // Meter bar mode check
+				im::Text("Automatic check - no parameters needed");
+				im::TextDisabled("Checks current meter/moon mode");
+				break;
+
+			case 39: // Unknown
+			case 41: // Jump if controlled char mismatch
+			case 42: // Unknown
+			case 53: // Unknown
+			case 55: // Unknown
+			case 60: // Unknown
+				im::Text("Not yet documented - parameters unknown");
+				im::TextDisabled("Enable Manual mode to experiment with values");
+				break;
+
+			case 50: // Effect reflection box
+				im::Text("Unused feature - parameters unknown");
+				im::TextDisabled("Enable Manual mode to edit raw values if needed");
+				break;
+
+			case 100: // Box collision with partner
+				im::Text("Partner-specific collision check");
+				im::TextDisabled("Not yet documented - Enable Manual mode");
+				break;
+
+			case 150: // Unknown
+			case 151: // Unknown
+				im::Text("Not yet documented - parameters unknown");
+				im::TextDisabled("Enable Manual mode to experiment with values");
+				break;
+
 			default:
 				// Generic parameter display for unknown/unimplemented types
 				im::Text("Parameters:");
@@ -638,15 +936,20 @@ inline void IfDisplay(std::vector<Frame_IF> *ifList_, FrameData *frameData = nul
 				im::InputScalarN("##params2", ImGuiDataType_S32, p+6, 3, NULL, NULL, "%d", 0);
 				break;
 		}
+		} // End of manual mode else block
 
 		im::PopID();
 	}
 
-	if(deleteI >= 0)
+	if(deleteI >= 0) {
 		ifList.erase(ifList.begin() + deleteI);
+		manualEditMode.erase(manualEditMode.begin() + deleteI);
+	}
 
-	if(im::Button("Add"))
+	if(im::Button("Add")) {
 		ifList.push_back({});
+		manualEditMode.push_back(0);
+	}
 }
 
 inline void EfDisplay(std::vector<Frame_EF> *efList_)
