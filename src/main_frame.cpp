@@ -443,29 +443,19 @@ void MainFrame::RenderUpdate()
 	{
 		auto &frame =  seq->frames[state.frame];
 
-		// Render currently selected layer
-		if(!frame.AF.layers.empty()) {
-			// Ensure selectedLayer is valid
-			if(state.selectedLayer >= frame.AF.layers.size()) {
-				state.selectedLayer = frame.AF.layers.size() - 1;
-			}
-			if(state.selectedLayer < 0) {
-				state.selectedLayer = 0;
-			}
+		// Render using flat AF fields (gonp original)
+		state.spriteId = frame.AF.spriteId;
+		render.GenerateHitboxVertices(frame.hitboxes);
+		render.offsetX = (frame.AF.offset_x)*1;
+		render.offsetY = (frame.AF.offset_y)*1;
+		render.SetImageColor(frame.AF.rgba);
+		render.rotX = frame.AF.rotation[0];
+		render.rotY = frame.AF.rotation[1];
+		render.rotZ = frame.AF.rotation[2];
+		render.scaleX = frame.AF.scale[0];
+		render.scaleY = frame.AF.scale[1];
 
-			auto &layer = frame.AF.layers[state.selectedLayer];
-			state.spriteId = layer.spriteId;
-			render.GenerateHitboxVertices(frame.hitboxes);
-			render.offsetX = (layer.offset_x)*1;
-			render.offsetY = (layer.offset_y)*1;
-			render.SetImageColor(layer.rgba);
-			render.rotX = layer.rotation[0];
-			render.rotY = layer.rotation[1];
-			render.rotZ = layer.rotation[2];
-			render.scaleX = layer.scale[0];
-			render.scaleY = layer.scale[1];
-
-			switch (layer.blend_mode)
+		switch (frame.AF.blend_mode)
 			{
 			case 2:
 				render.blendingMode = Render::additive;
@@ -477,11 +467,7 @@ void MainFrame::RenderUpdate()
 				render.blendingMode = Render::normal;
 				break;
 			}
-		}
-		else {
-			state.spriteId = -1;
-			render.DontDraw();
-		}
+		render.SwitchImage(state.spriteId);
 	}
 	else
 	{

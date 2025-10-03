@@ -36,9 +36,8 @@ bool FrameData::load(const char *filename, bool patch) {
 		return 0;
 	}
 
-	// Check if strings are UTF-8 (old Hantei-chan files) for backwards compatibility
-	bool utf8 = ((unsigned char*)data)[31] == 0xFF;
-	m_stringsAreUTF8 = utf8;  // Remember original encoding for saving
+	// HA6 files always use Shift-JIS encoding, convert to UTF-8 for internal use
+	// (Old header flag at byte 31 is no longer used)
 
 	// initialize the root
 	unsigned int *d = (unsigned int *)(data + 0x20);
@@ -61,7 +60,7 @@ bool FrameData::load(const char *filename, bool patch) {
 
 	d += 2;
 	// parse and recursively store data
-	d = fd_main_load(d, d_end, m_sequences, m_nsequences, utf8);
+	d = fd_main_load(d, d_end, m_sequences, m_nsequences, false);
 
 	// Clear modified flags after loading - only track NEW edits from this session
 	for(auto& seq : m_sequences) {
@@ -118,7 +117,7 @@ void FrameData::save(const char *filename)
 	for(uint32_t i = 0; i < get_sequence_count(); i++)
 	{
 		file.write("PSTR", 4); file.write(VAL(i), 4);
-		WriteSequence(file, &m_sequences[i], m_stringsAreUTF8);
+		WriteSequence(file, &m_sequences[i]);
 		file.write("PEND", 4);
 	}
 
@@ -173,7 +172,7 @@ void FrameData::save_modified_only(const char *filename)
 		if(m_sequences[i].modified)
 		{
 			file.write("PSTR", 4); file.write(VAL(i), 4);
-			WriteSequence(file, &m_sequences[i], m_stringsAreUTF8);
+			WriteSequence(file, &m_sequences[i]);
 			file.write("PEND", 4);
 		}
 	}

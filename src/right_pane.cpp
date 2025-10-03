@@ -14,7 +14,7 @@ void RightPane::Draw()
 			Frame &frame = seq->frames[currState.frame];
 			if (ImGui::TreeNode("Attack data"))
 			{
-				AtDisplay(&frame.AT, frameData, currState.pattern);
+				AtDisplay(&frame.AT, frameData, currState.pattern, [this]() { markModified(); });
 				if(ImGui::Button("Copy AT")) {
 					currState.copied->at = frame.AT;
 				}
@@ -29,7 +29,7 @@ void RightPane::Draw()
 			}
 			if(ImGui::TreeNode("Effects"))
 			{
-				EfDisplay(&frame.EF, &currState.copied->efSingle, frameData, currState.pattern);
+				EfDisplay(&frame.EF, &currState.copied->efSingle, frameData, currState.pattern, [this]() { markModified(); });
 				if(ImGui::Button("Copy all")) {
 					CopyVectorContents<Frame_EF>(currState.copied->efGroup, frame.EF);
 				}
@@ -50,7 +50,7 @@ void RightPane::Draw()
 			}
 			if(ImGui::TreeNode("Conditions"))
 			{
-				IfDisplay(&frame.IF, &currState.copied->ifSingle, frameData, currState.pattern);
+				IfDisplay(&frame.IF, &currState.copied->ifSingle, frameData, currState.pattern, [this]() { markModified(); });
 				if(ImGui::Button("Copy all")) {
 					CopyVectorContents<Frame_IF>(currState.copied->ifGroup, frame.IF);
 				}

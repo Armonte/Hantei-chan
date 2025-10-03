@@ -10,14 +10,17 @@
 extern std::set<int> numberSet;
 extern int maxCount;
 
-struct Layer {
+// MBAACC structure - flat fields only (gonp original)
+template<template<typename> class Allocator = std::allocator>
+struct Frame_AF_T {
+	// rendering data
 	int spriteId = -1;
 	bool usePat = false;
 
-	int offset_y = 0;
-	int offset_x = 0;
+	int		offset_y = 0;
+	int		offset_x = 0;
 
-	int blend_mode = 0;
+	int		blend_mode = 0;
 
 	float rgba[4]{1,1,1,1};
 
@@ -25,13 +28,11 @@ struct Layer {
 
 	float scale[2]{1,1};//xy
 
-	int priority = 0; // Default is 0. Used in throws and dodge.
-};
-
-template<template<typename> class Allocator = std::allocator>
-struct Frame_AF_T {
-	// Multi-layer rendering data
-	std::vector<Layer, Allocator<Layer>> layers;
+	//Depends on aniflag.
+	//If (0)end, it jumps to the number of the sequence
+	//If (2)jump, it jumps to the number of the frame of the seq.
+	//It seems to do nothing if the aniflag is 1(next).
+	int jump = 0;
 
 	int		duration = 0;
 
@@ -45,16 +46,10 @@ struct Frame_AF_T {
 	// Bit flags. First 4 bits only
 	unsigned int aniFlag = 0;
 
-	//Depends on aniflag.
-	//If (0)end, it jumps to the number of the sequence
-	//If (2)jump, it jumps to the number of the frame of the seq.
-	//It seems to do nothing if the aniflag is 1(next).
-	int jump = 0;
-
-
 	int landJump = 0; //Jumps to this frame if landing.
 	//1-5: Linear, Fast end, Slow end, Fast middle, Slow Middle. The last type is not used in vanilla
 	int interpolationType = 0;
+	int priority = 0; // Default is 0. Used in throws and dodge.
 	int loopCount = 0; //Times to loop, it's the frame just before the loop.
 	int loopEnd = 0; //The frame number is not part of the loop.
 
@@ -63,14 +58,21 @@ struct Frame_AF_T {
 	// Assignment operator for cross-allocator copying
 	template<template<typename> class FromT>
 	Frame_AF_T<Allocator>& operator=(const Frame_AF_T<FromT>& from) {
-		layers.resize(from.layers.size());
-		memcpy(layers.data(), from.layers.data(), sizeof(Layer)*from.layers.size());
+		spriteId = from.spriteId;
+		usePat = from.usePat;
+		offset_y = from.offset_y;
+		offset_x = from.offset_x;
+		blend_mode = from.blend_mode;
+		memcpy(rgba, from.rgba, sizeof(rgba));
+		memcpy(rotation, from.rotation, sizeof(rotation));
+		memcpy(scale, from.scale, sizeof(scale));
+		jump = from.jump;
 		duration = from.duration;
 		aniType = from.aniType;
 		aniFlag = from.aniFlag;
-		jump = from.jump;
 		landJump = from.landJump;
 		interpolationType = from.interpolationType;
+		priority = from.priority;
 		loopCount = from.loopCount;
 		loopEnd = from.loopEnd;
 		AFRT = from.AFRT;
@@ -208,6 +210,7 @@ struct Sequence_T {
 	bool empty = false;
 	bool initialized = false;
 	bool modified = false;  // Track if this sequence has been edited
+	bool usedAFGX = false;  // Track if this sequence used UNI multi-layer format (AFGX) vs MBAACC (AFGP)
 
 	std::vector<Frame_T<Allocator>, Allocator<Frame_T<Allocator>>> frames;
 
@@ -248,8 +251,6 @@ struct Command {
 class FrameData {
 private:
 	unsigned int	m_nsequences;
-	bool m_stringsAreUTF8;  // Track if loaded file had UTF-8 strings (for saving back correctly)
-
 
 public:
 
@@ -279,6 +280,6 @@ public:
 	~FrameData();
 };
 
-void WriteSequence(std::ofstream &file, const Sequence *seq, bool stringsAreUTF8);
+void WriteSequence(std::ofstream &file, const Sequence *seq);
 
 #endif /* FRAMEDATA_H_GUARD */
