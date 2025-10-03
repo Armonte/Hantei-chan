@@ -4,6 +4,7 @@
 #include "framedata.h"
 #include "framestate.h"
 #include "cg.h"
+#include "undo_manager.h"
 #include <string>
 #include <vector>
 
@@ -48,6 +49,9 @@ public:
 	FrameData frameData;
 	FrameState state;
 	CG cg;
+
+	// Undo/Redo manager
+	UndoManager undoManager;
 
 	// Render state (per-character)
 	int renderX = 0;

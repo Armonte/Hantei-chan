@@ -48,11 +48,19 @@ void CharacterView::refreshPanes(Render* render)
 	m_boxPane = std::make_unique<BoxPane>(render, &m_character->frameData, m_state);
 
 	// Set modification callbacks to mark the character (not the view) as modified
-	auto modifyCallback = [this]() { m_character->markModified(); };
+	auto modifyCallback = [this]() {
+		m_character->markModified();
+		m_character->undoManager.markModified();
+	};
+
 	if (m_mainPane) {
 		m_mainPane->onModified = modifyCallback;
 		m_mainPane->RegenerateNames();
 	}
-	if (m_rightPane) m_rightPane->onModified = modifyCallback;
-	if (m_boxPane) m_boxPane->onModified = modifyCallback;
+	if (m_rightPane) {
+		m_rightPane->onModified = modifyCallback;
+	}
+	if (m_boxPane) {
+		m_boxPane->onModified = modifyCallback;
+	}
 }

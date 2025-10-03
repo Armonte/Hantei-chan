@@ -642,9 +642,13 @@ unsigned int *fd_sequence_load(unsigned int *data, const unsigned int *data_end,
 			memcpy(str, data+1, len);
 			str[len] = '\0';
 
-			// Always convert Shift-JIS to UTF-8 for internal use
-			// HA6 files always store strings as Shift-JIS
-			name = sj2utf8(str);
+			// Convert Shift-JIS to UTF-8 for internal use
+			// Modern HA6 files store strings as Shift-JIS
+			// Legacy files (with UTF-8 flag) already have UTF-8 strings
+			if(!utf8)
+				name = sj2utf8(str);
+			else
+				name = str;
 			test.seqName = name;
 
 			data = (unsigned int *)(((unsigned char *)data)+len)+1;

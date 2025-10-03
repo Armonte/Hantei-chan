@@ -119,7 +119,8 @@ void BoxPane::Draw()
 				// Determine color
 				ImU32 finalColor = color;
 				if(boxIdx == currentBox) {
-					finalColor = IM_COL32(255, 255, 255, 255);
+					// Selected box = #af4c99 (matches highlight feature in viewer)
+					finalColor = IM_COL32(0xaf, 0x4c, 0x99, 255);
 				} else if(!boxExists(boxIdx)) {
 					ImVec4 c = ImGui::ColorConvertU32ToFloat4(color);
 					c.x *= 0.3f; c.y *= 0.3f; c.z *= 0.3f;
