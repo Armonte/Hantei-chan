@@ -1560,6 +1560,37 @@ inline void AfDisplay(Frame_AF *af, int &selectedLayer, FrameData *frameData = n
 
 	constexpr float width = 50.f;
 
+	// Copy/paste buttons for animation section
+	static Frame_AF copiedAnimation = {};
+	if(im::SmallButton("Copy animation")) {
+		copiedAnimation.spriteId = af->spriteId;
+		copiedAnimation.usePat = af->usePat;
+		copiedAnimation.duration = af->duration;
+		copiedAnimation.aniType = af->aniType;
+		copiedAnimation.aniFlag = af->aniFlag;
+		copiedAnimation.jump = af->jump;
+		copiedAnimation.landJump = af->landJump;
+		copiedAnimation.priority = af->priority;
+		copiedAnimation.loopCount = af->loopCount;
+		copiedAnimation.loopEnd = af->loopEnd;
+	}
+	if(im::IsItemHovered()) Tooltip("Copy sprite, duration, jumps, priority, and loops");
+	im::SameLine();
+	if(im::SmallButton("Paste animation")) {
+		af->spriteId = copiedAnimation.spriteId;
+		af->usePat = copiedAnimation.usePat;
+		af->duration = copiedAnimation.duration;
+		af->aniType = copiedAnimation.aniType;
+		af->aniFlag = copiedAnimation.aniFlag;
+		af->jump = copiedAnimation.jump;
+		af->landJump = copiedAnimation.landJump;
+		af->priority = copiedAnimation.priority;
+		af->loopCount = copiedAnimation.loopCount;
+		af->loopEnd = copiedAnimation.loopEnd;
+		markModified();
+	}
+	if(im::IsItemHovered()) Tooltip("Paste sprite, duration, jumps, priority, and loops");
+
 	// MBAACC uses flat structure (no layers)
 	im::SetNextItemWidth(width*3);
 	if(im::InputInt("Sprite", &af->spriteId)) {
@@ -1614,6 +1645,34 @@ inline void AfDisplay(Frame_AF *af, int &selectedLayer, FrameData *frameData = n
 	}
 
 	im::Separator();
+
+	// Copy/paste buttons for transform section
+	static Frame_AF copiedTransform = {};
+	if(im::SmallButton("Copy transforms")) {
+		copiedTransform.offset_x = af->offset_x;
+		copiedTransform.offset_y = af->offset_y;
+		copiedTransform.blend_mode = af->blend_mode;
+		memcpy(copiedTransform.rgba, af->rgba, sizeof(af->rgba));
+		memcpy(copiedTransform.rotation, af->rotation, sizeof(af->rotation));
+		memcpy(copiedTransform.scale, af->scale, sizeof(af->scale));
+		copiedTransform.AFRT = af->AFRT;
+		copiedTransform.interpolationType = af->interpolationType;
+	}
+	if(im::IsItemHovered()) Tooltip("Copy offset, rotation, scale, color, blend mode, and interpolation");
+	im::SameLine();
+	if(im::SmallButton("Paste transforms")) {
+		af->offset_x = copiedTransform.offset_x;
+		af->offset_y = copiedTransform.offset_y;
+		af->blend_mode = copiedTransform.blend_mode;
+		memcpy(af->rgba, copiedTransform.rgba, sizeof(af->rgba));
+		memcpy(af->rotation, copiedTransform.rotation, sizeof(af->rotation));
+		memcpy(af->scale, copiedTransform.scale, sizeof(af->scale));
+		af->AFRT = copiedTransform.AFRT;
+		af->interpolationType = copiedTransform.interpolationType;
+		markModified();
+	}
+	if(im::IsItemHovered()) Tooltip("Paste offset, rotation, scale, color, blend mode, and interpolation");
+
 	if(im::Combo("Interpolation", &af->interpolationType, interpolationList, IM_ARRAYSIZE(interpolationList))) {
 		markModified();
 	}
