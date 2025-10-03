@@ -30,8 +30,7 @@ private:
 	std::list<SequenceWId> patCopyStack;
 	void PopCopies();
 
-	// Range paste window
-	bool rangeWindow = false;
+	// Range paste
 	int ranges[2] = {0, 0};
 
 };
