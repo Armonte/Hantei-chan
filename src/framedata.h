@@ -78,6 +78,9 @@ struct Frame_AF_T {
 		AFRT = from.AFRT;
 		return *this;
 	}
+
+	// Same-allocator assignment operator (use default memberwise copy)
+	Frame_AF_T<Allocator>& operator=(const Frame_AF_T<Allocator>& from) = default;
 };
 
 struct Frame_AS {
@@ -195,6 +198,19 @@ struct Frame_T {
 		}
 		return *this;
 	}
+
+	// Same-allocator assignment operator (deep copy)
+	Frame_T<Allocator>& operator=(const Frame_T<Allocator>& from) {
+		if (this != &from) {
+			AF = from.AF;
+			AS = from.AS;
+			AT = from.AT;
+			EF = from.EF;
+			IF = from.IF;
+			hitboxes = from.hitboxes;
+		}
+		return *this;
+	}
 };
 
 template<template<typename> class Allocator = std::allocator>
@@ -225,9 +241,27 @@ struct Sequence_T {
 		empty = from.empty;
 		initialized = from.initialized;
 		modified = from.modified;
+		usedAFGX = from.usedAFGX;
 		frames.resize(from.frames.size());
 		for (size_t i = 0; i < from.frames.size(); i++) {
 			frames[i] = from.frames[i];
+		}
+		return *this;
+	}
+
+	// Same-allocator assignment operator (deep copy)
+	Sequence_T<Allocator>& operator=(const Sequence_T<Allocator>& from) {
+		if (this != &from) {
+			name = from.name;
+			codeName = from.codeName;
+			psts = from.psts;
+			level = from.level;
+			flag = from.flag;
+			empty = from.empty;
+			initialized = from.initialized;
+			modified = from.modified;
+			usedAFGX = from.usedAFGX;
+			frames = from.frames;
 		}
 		return *this;
 	}

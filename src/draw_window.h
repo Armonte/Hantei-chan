@@ -22,6 +22,8 @@ public:
 
 	// Callback to notify when data is modified
 	std::function<void()> onModified;
+	// Callback to save undo state before modification
+	std::function<void(int)> onSaveUndo;
 protected:
 	Render *render;
 	FrameData *frameData;
@@ -30,6 +32,13 @@ protected:
 	void markModified() {
 		if (onModified) {
 			onModified();
+		}
+	}
+
+	// Helper to save undo state before modifying
+	void saveUndoState(int patternIndex) {
+		if (onSaveUndo) {
+			onSaveUndo(patternIndex);
 		}
 	}
 };

@@ -417,9 +417,24 @@ void MainFrame::DrawUi()
 	// Only draw panes if we have an active view
 	auto* view = getActiveView();
 	if (view) {
+		// Begin undo frame - save snapshot BEFORE any modifications
+		auto* character = view->getCharacter();
+		if (character && character->undoManager.isEnabled()) {
+			int patternIndex = view->getState().pattern;
+			Sequence* seq = character->frameData.get_sequence(patternIndex);
+			if (seq) {
+				character->undoManager.beginFrame(patternIndex, *seq);
+			}
+		}
+
 		if (view->getMainPane()) view->getMainPane()->Draw();
 		if (view->getRightPane()) view->getRightPane()->Draw();
 		if (view->getBoxPane()) view->getBoxPane()->Draw();
+
+		// End undo frame - commit snapshot if anything was modified
+		if (character) {
+			character->undoManager.endFrame();
+		}
 	}
 	aboutWindow.Draw();
 	vectors.Draw();
@@ -562,6 +577,88 @@ bool MainFrame::HandleKeys(uint64_t vkey)
 			// Ctrl+W: close active view
 			if (activeViewIndex >= 0 && activeViewIndex < views.size()) {
 				tryCloseView(activeViewIndex);
+				return true;
+			}
+			break;
+		case 'Z':
+			// Ctrl+Z: undo
+			if (auto* active = getActiveCharacter()) {
+				auto* view = getActiveView();
+				if (view) {
+					int patternIndex = view->getState().pattern;
+					Sequence* currentSeq = active->frameData.get_sequence(patternIndex);
+					if (currentSeq) {
+						// Make a copy of current sequence BEFORE calling undo
+						Sequence currentSeqCopy = *currentSeq;
+
+						active->undoManager.setEnabled(false);
+						SequenceSnapshot* snapshot = active->undoManager.undo(patternIndex, currentSeqCopy);
+						if (snapshot) {
+							Sequence* targetSeq = active->frameData.get_sequence(snapshot->patternIndex);
+							if (targetSeq) {
+								*targetSeq = snapshot->sequence;
+								active->markModified();
+
+								// Validate frame index after undo
+								auto& state = view->getState();
+								int frameCount = targetSeq->frames.size();
+								if (state.frame >= frameCount) {
+									state.frame = frameCount > 0 ? frameCount - 1 : 0;
+								}
+
+								// Force sprite reload by resetting spriteId
+								state.spriteId = -1;
+
+								// Refresh main pane to update pattern names
+								if (view->getMainPane()) {
+									view->getMainPane()->RegenerateNames();
+								}
+							}
+						}
+						active->undoManager.setEnabled(true);
+					}
+				}
+				return true;
+			}
+			break;
+		case 'Y':
+			// Ctrl+Y: redo
+			if (auto* active = getActiveCharacter()) {
+				auto* view = getActiveView();
+				if (view) {
+					int patternIndex = view->getState().pattern;
+					Sequence* currentSeq = active->frameData.get_sequence(patternIndex);
+					if (currentSeq) {
+						// Make a copy of current sequence BEFORE calling redo
+						Sequence currentSeqCopy = *currentSeq;
+
+						active->undoManager.setEnabled(false);
+						SequenceSnapshot* snapshot = active->undoManager.redo(patternIndex, currentSeqCopy);
+						if (snapshot) {
+							Sequence* targetSeq = active->frameData.get_sequence(snapshot->patternIndex);
+							if (targetSeq) {
+								*targetSeq = snapshot->sequence;
+								active->markModified();
+
+								// Validate frame index after redo
+								auto& state = view->getState();
+								int frameCount = targetSeq->frames.size();
+								if (state.frame >= frameCount) {
+									state.frame = frameCount > 0 ? frameCount - 1 : 0;
+								}
+
+								// Force sprite reload by resetting spriteId
+								state.spriteId = -1;
+
+								// Refresh main pane to update pattern names
+								if (view->getMainPane()) {
+									view->getMainPane()->RegenerateNames();
+								}
+							}
+						}
+						active->undoManager.setEnabled(true);
+					}
+				}
 				return true;
 			}
 			break;

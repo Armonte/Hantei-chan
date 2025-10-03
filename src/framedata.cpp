@@ -36,8 +36,9 @@ bool FrameData::load(const char *filename, bool patch) {
 		return 0;
 	}
 
-	// HA6 files always use Shift-JIS encoding, convert to UTF-8 for internal use
-	// (Old header flag at byte 31 is no longer used)
+	// Check for legacy UTF-8 flag (old Hantei-chan set byte 31 to 0xFF for UTF-8 files)
+	// Modern files always use Shift-JIS and don't set this flag
+	bool utf8 = ((unsigned char*)data)[31] == 0xFF;
 
 	// initialize the root
 	unsigned int *d = (unsigned int *)(data + 0x20);
@@ -60,7 +61,7 @@ bool FrameData::load(const char *filename, bool patch) {
 
 	d += 2;
 	// parse and recursively store data
-	d = fd_main_load(d, d_end, m_sequences, m_nsequences, false);
+	d = fd_main_load(d, d_end, m_sequences, m_nsequences, utf8);
 
 	// Clear modified flags after loading - only track NEW edits from this session
 	for(auto& seq : m_sequences) {
