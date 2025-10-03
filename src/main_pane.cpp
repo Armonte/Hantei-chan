@@ -95,6 +95,12 @@ void MainPane::Draw()
 					currState.frame = 0;
 				else if(currState.frame > nframes)
 					currState.frame = nframes;
+
+				if(im::Button("Animate"))
+				{
+					currState.animating = !currState.animating;
+					currState.animeSeq = currState.pattern;
+				}
 			}
 			else
 			{

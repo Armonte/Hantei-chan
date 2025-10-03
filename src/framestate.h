@@ -28,6 +28,10 @@ struct FrameState
 	int spriteId;
 	int selectedLayer = 0;  // Track currently selected layer in UI
 
+	// Animation playback
+	bool animating = false;
+	int animeSeq = 0;
+
 	// Shared memory clipboard for cross-instance copy/paste
 	CopyData *copied;
 

@@ -456,6 +456,84 @@ void MainFrame::RenderUpdate()
 	if((seq = active->frameData.get_sequence(state.pattern)) &&
 		seq->frames.size() > 0)
 	{
+		// Handle animation playback
+		static int duration = 0;
+		static int loopCounter = 0;
+
+		if(state.animeSeq != state.pattern)
+		{
+			duration = 0;
+			loopCounter = 0;
+		}
+
+		if(state.animating)
+		{
+			state.animeSeq = state.pattern;
+			auto& af = seq->frames[state.frame].AF;
+
+			if(duration >= af.duration)
+			{
+				// Determine next frame based on aniType
+				if (af.aniType == 1) {
+					// Jump to next frame or stop
+					if (state.frame + 1 >= seq->frames.size()) {
+						state.animating = false;
+					}
+					else {
+						state.frame++;
+					}
+				}
+				else if (af.aniType == 2)
+				{
+					// Loop/jump logic
+					if ((af.aniFlag & 0x2) && loopCounter < 0)
+					{
+						if (af.aniFlag & 0x8) {
+							state.frame += af.loopEnd;
+						}
+						else {
+							state.frame = af.loopEnd;
+						}
+					}
+					else
+					{
+						if (af.aniFlag & 0x2) {
+							--loopCounter;
+						}
+						if (af.aniFlag & 0x4) {
+							state.frame += af.jump;
+						}
+						else {
+							state.frame = af.jump;
+						}
+					}
+
+					// Bounds check
+					if (state.frame < 0 || state.frame >= seq->frames.size()) {
+						state.animating = false;
+						state.frame = 0;
+					}
+				}
+				else {
+					// aniType 0 or other - advance to next frame
+					state.frame++;
+					if (state.frame >= seq->frames.size()) {
+						state.frame = 0;
+					}
+				}
+
+				// Initialize loop counter for new frame
+				if(state.frame >= 0 && state.frame < seq->frames.size()) {
+					loopCounter = seq->frames[state.frame].AF.loopCount;
+				}
+
+				// Reset duration for new frame
+				duration = 0;
+			}
+
+			duration++;
+		}
+
 		auto &frame =  seq->frames[state.frame];
 
 		// Render using flat AF fields (gonp original)
