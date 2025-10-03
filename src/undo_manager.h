@@ -101,11 +101,12 @@ public:
 		// Save current state to redo stack
 		redoStack.push_back(std::make_unique<SequenceSnapshot>(currentPatternIndex, currentSequence));
 
-		// Pop and return the previous state
-		auto* snapshot = undoStack.back().get();
+		// Move snapshot from undo to redo stack (so it stays alive)
+		redoStack.push_back(std::move(undoStack.back()));
 		undoStack.pop_back();
 
-		return snapshot;
+		// Return pointer to the snapshot in redo stack (still valid)
+		return redoStack.back().get();
 	}
 
 	// Redo last undone action
@@ -118,11 +119,12 @@ public:
 		// Save current state to undo stack
 		undoStack.push_back(std::make_unique<SequenceSnapshot>(currentPatternIndex, currentSequence));
 
-		// Pop and return the state to redo
-		auto* snapshot = redoStack.back().get();
+		// Move snapshot from redo to undo stack (so it stays alive)
+		undoStack.push_back(std::move(redoStack.back()));
 		redoStack.pop_back();
 
-		return snapshot;
+		// Return pointer to the snapshot in undo stack (still valid)
+		return undoStack.back().get();
 	}
 
 	bool canUndo() const {
