@@ -1455,16 +1455,32 @@ inline void AtDisplay(Frame_AT *at, FrameData *frameData = nullptr, int patternI
 	im::Separator();
 	auto comboWidth = (im::GetWindowWidth())/4.f;
 
-	// Guard Vector - Stand, Air, Crouch with dropdowns
+	// Guard Vector
 	im::Text("Guard Vector:");
-	const char* const vectorLabels[] = {"Stand", "Air", "Crouch"};
-	for(int i = 0; i < 3; i++)
-	{
-		im::PushID(100+i);
-		if(ShowComboWithManual(vectorLabels[i], &at->guardVector[i], hitVectorList, IM_ARRAYSIZE(hitVectorList), width*6, width)) {
-		markModified();
+	im::SameLine(0.f, 20);
+	static bool guardVectorManual = false;
+	if(im::Checkbox("Manual##gv", &guardVectorManual)) {
 	}
-		im::PopID();
+	if(im::IsItemHovered()) {
+		Tooltip("Enable manual vector entry");
+	}
+
+	const char* const vectorLabels[] = {"Stand", "Air", "Crouch"};
+	if(guardVectorManual) {
+		// Manual mode - show InputInt3
+		if(im::InputInt3("##guardVec", at->guardVector)) {
+			markModified();
+		}
+	} else {
+		// Dropdown mode - Stand, Air, Crouch with dropdowns
+		for(int i = 0; i < 3; i++)
+		{
+			im::PushID(100+i);
+			if(ShowComboWithManual(vectorLabels[i], &at->guardVector[i], hitVectorList, IM_ARRAYSIZE(hitVectorList), width*6, width)) {
+			markModified();
+		}
+			im::PopID();
+		}
 	}
 
 	// Guard Vector Flags
@@ -1482,15 +1498,31 @@ inline void AtDisplay(Frame_AT *at, FrameData *frameData = nullptr, int patternI
 
 	im::Separator();
 
-	// Hit Vector - Stand, Air, Crouch with dropdowns
+	// Hit Vector
 	im::Text("Hit Vector:");
-	for(int i = 0; i < 3; i++)
-	{
-		im::PushID(200+i);
-		if(ShowComboWithManual(vectorLabels[i], &at->hitVector[i], hitVectorList, IM_ARRAYSIZE(hitVectorList), width*6, width)) {
-		markModified();
+	im::SameLine(0.f, 20);
+	static bool hitVectorManual = false;
+	if(im::Checkbox("Manual##hv", &hitVectorManual)) {
 	}
-		im::PopID();
+	if(im::IsItemHovered()) {
+		Tooltip("Enable manual vector entry");
+	}
+
+	if(hitVectorManual) {
+		// Manual mode - show InputInt3
+		if(im::InputInt3("##hitVec", at->hitVector)) {
+			markModified();
+		}
+	} else {
+		// Dropdown mode - Stand, Air, Crouch with dropdowns
+		for(int i = 0; i < 3; i++)
+		{
+			im::PushID(200+i);
+			if(ShowComboWithManual(vectorLabels[i], &at->hitVector[i], hitVectorList, IM_ARRAYSIZE(hitVectorList), width*6, width)) {
+			markModified();
+		}
+			im::PopID();
+		}
 	}
 
 	// Hit Vector Flags

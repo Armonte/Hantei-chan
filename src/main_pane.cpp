@@ -241,9 +241,149 @@ void MainPane::Draw()
 
 					im::Separator();
 
-					// Range paste window button
-					if(im::Button("Range Paste...")) {
-						rangeWindow = true;
+					// Range paste controls
+					im::Text("Range Paste:");
+					im::InputInt2("Frame range", ranges);
+
+					// Clamp ranges
+					const int maxFrame = seq->frames.size() - 1;
+					if(ranges[0] < 0) ranges[0] = 0;
+					if(ranges[1] < 0) ranges[1] = 0;
+					if(ranges[0] > maxFrame) ranges[0] = maxFrame;
+					if(ranges[1] > maxFrame) ranges[1] = maxFrame;
+
+					// Animation Properties
+					im::Text("Animation:");
+					if(im::Button("Paste sprite & duration"))
+					{
+						for(int i = ranges[0]; i <= ranges[1] && i >= 0 && i < seq->frames.size(); i++)
+						{
+							seq->frames[i].AF.spriteId = frame.AF.spriteId;
+							seq->frames[i].AF.usePat = frame.AF.usePat;
+							seq->frames[i].AF.duration = frame.AF.duration;
+						}
+						frameData->mark_modified(currState.pattern);
+						markModified();
+					}
+
+					if(im::Button("Paste jump & interpolation"))
+					{
+						for(int i = ranges[0]; i <= ranges[1] && i >= 0 && i < seq->frames.size(); i++)
+						{
+							seq->frames[i].AF.aniType = frame.AF.aniType;
+							seq->frames[i].AF.aniFlag = frame.AF.aniFlag;
+							seq->frames[i].AF.jump = frame.AF.jump;
+							seq->frames[i].AF.landJump = frame.AF.landJump;
+							seq->frames[i].AF.interpolationType = frame.AF.interpolationType;
+						}
+						frameData->mark_modified(currState.pattern);
+						markModified();
+					}
+
+					if(im::Button("Paste priority & loops"))
+					{
+						for(int i = ranges[0]; i <= ranges[1] && i >= 0 && i < seq->frames.size(); i++)
+						{
+							seq->frames[i].AF.priority = frame.AF.priority;
+							seq->frames[i].AF.loopCount = frame.AF.loopCount;
+							seq->frames[i].AF.loopEnd = frame.AF.loopEnd;
+						}
+						frameData->mark_modified(currState.pattern);
+						markModified();
+					}
+
+					im::Separator();
+
+					// Transform Properties
+					im::Text("Transforms:");
+					if(im::Button("Paste offset (X/Y)"))
+					{
+						for(int i = ranges[0]; i <= ranges[1] && i >= 0 && i < seq->frames.size(); i++)
+						{
+							seq->frames[i].AF.offset_x = frame.AF.offset_x;
+							seq->frames[i].AF.offset_y = frame.AF.offset_y;
+						}
+						frameData->mark_modified(currState.pattern);
+						markModified();
+					}
+
+					if(im::Button("Paste rotation"))
+					{
+						for(int i = ranges[0]; i <= ranges[1] && i >= 0 && i < seq->frames.size(); i++)
+						{
+							memcpy(seq->frames[i].AF.rotation, frame.AF.rotation, sizeof(float)*3);
+							seq->frames[i].AF.AFRT = frame.AF.AFRT;
+						}
+						frameData->mark_modified(currState.pattern);
+						markModified();
+					}
+
+					if(im::Button("Paste scale"))
+					{
+						for(int i = ranges[0]; i <= ranges[1] && i >= 0 && i < seq->frames.size(); i++)
+						{
+							memcpy(seq->frames[i].AF.scale, frame.AF.scale, sizeof(float)*2);
+						}
+						frameData->mark_modified(currState.pattern);
+						markModified();
+					}
+
+					if(im::Button("Paste color & blend"))
+					{
+						for(int i = ranges[0]; i <= ranges[1] && i >= 0 && i < seq->frames.size(); i++)
+						{
+							memcpy(seq->frames[i].AF.rgba, frame.AF.rgba, sizeof(float)*4);
+							seq->frames[i].AF.blend_mode = frame.AF.blend_mode;
+						}
+						frameData->mark_modified(currState.pattern);
+						markModified();
+					}
+
+					if(im::Button("Paste all transforms"))
+					{
+						for(int i = ranges[0]; i <= ranges[1] && i >= 0 && i < seq->frames.size(); i++)
+						{
+							seq->frames[i].AF.offset_x = frame.AF.offset_x;
+							seq->frames[i].AF.offset_y = frame.AF.offset_y;
+							memcpy(seq->frames[i].AF.rotation, frame.AF.rotation, sizeof(float)*3);
+							memcpy(seq->frames[i].AF.scale, frame.AF.scale, sizeof(float)*2);
+							memcpy(seq->frames[i].AF.rgba, frame.AF.rgba, sizeof(float)*4);
+							seq->frames[i].AF.blend_mode = frame.AF.blend_mode;
+							seq->frames[i].AF.AFRT = frame.AF.AFRT;
+						}
+						frameData->mark_modified(currState.pattern);
+						markModified();
+					}
+
+					im::Separator();
+
+					// Copy/paste multiple frames
+					if(im::Button("Copy frames in range"))
+					{
+						currState.copied->frames.clear();
+						for(int i = ranges[0]; i <= ranges[1] && i >= 0 && i < seq->frames.size(); i++)
+						{
+							Frame_T<LinearAllocator> temp;
+							temp = seq->frames[i];
+							currState.copied->frames.push_back(temp);
+						}
+					}
+
+					im::SameLine();
+					if(im::Button("Paste frames at position"))
+					{
+						int insertPos = ranges[0];
+						if(insertPos >= 0 && insertPos <= seq->frames.size() && !currState.copied->frames.empty())
+						{
+							// Manually copy frames with cross-allocator assignment
+							for (size_t i = 0; i < currState.copied->frames.size(); i++) {
+								Frame temp;
+								temp = currState.copied->frames[i];
+								seq->frames.insert(seq->frames.begin() + insertPos + i, temp);
+							}
+							frameData->mark_modified(currState.pattern);
+							markModified();
+						}
 					}
 
 					im::TreePop();
@@ -258,165 +398,6 @@ void MainPane::Draw()
 
 	//im::Text("Application average %.3f ms/frame (%.1f FPS)", 1000.0f / im::GetIO().Framerate, im::GetIO().Framerate);
 	im::End();
-
-	// Range paste window
-	if(rangeWindow && frameData->m_loaded)
-	{
-		auto seq = frameData->get_sequence(currState.pattern);
-		if(seq && im::Begin("Range paste", &rangeWindow))
-		{
-			im::InputInt2("Range of frames", ranges);
-
-			// Clamp ranges
-			const int maxFrame = seq->frames.size() - 1;
-			if(ranges[0] < 0) ranges[0] = 0;
-			if(ranges[1] < 0) ranges[1] = 0;
-			if(ranges[0] > maxFrame) ranges[0] = maxFrame;
-			if(ranges[1] > maxFrame) ranges[1] = maxFrame;
-
-			int nframes = seq->frames.size();
-			if(nframes > 0 && currState.frame < nframes)
-			{
-				auto &currentFrame = seq->frames[currState.frame];
-
-				// Animation Properties (top section of AF panel)
-				im::Text("Animation Properties:");
-				if(im::Button("Paste sprite & duration"))
-				{
-					for(int i = ranges[0]; i <= ranges[1] && i >= 0 && i < seq->frames.size(); i++)
-					{
-						seq->frames[i].AF.spriteId = currentFrame.AF.spriteId;
-						seq->frames[i].AF.usePat = currentFrame.AF.usePat;
-						seq->frames[i].AF.duration = currentFrame.AF.duration;
-					}
-					frameData->mark_modified(currState.pattern);
-					markModified();
-				}
-
-				if(im::Button("Paste jump & interpolation"))
-				{
-					for(int i = ranges[0]; i <= ranges[1] && i >= 0 && i < seq->frames.size(); i++)
-					{
-						seq->frames[i].AF.aniType = currentFrame.AF.aniType;
-						seq->frames[i].AF.aniFlag = currentFrame.AF.aniFlag;
-						seq->frames[i].AF.jump = currentFrame.AF.jump;
-						seq->frames[i].AF.landJump = currentFrame.AF.landJump;
-						seq->frames[i].AF.interpolationType = currentFrame.AF.interpolationType;
-					}
-					frameData->mark_modified(currState.pattern);
-					markModified();
-				}
-
-				if(im::Button("Paste priority & loops"))
-				{
-					for(int i = ranges[0]; i <= ranges[1] && i >= 0 && i < seq->frames.size(); i++)
-					{
-						seq->frames[i].AF.priority = currentFrame.AF.priority;
-						seq->frames[i].AF.loopCount = currentFrame.AF.loopCount;
-						seq->frames[i].AF.loopEnd = currentFrame.AF.loopEnd;
-					}
-					frameData->mark_modified(currState.pattern);
-					markModified();
-				}
-
-				im::Separator();
-
-				// Transform Properties (bottom section of AF panel)
-				im::Text("Transform Properties:");
-				if(im::Button("Paste offset (X/Y)"))
-				{
-					for(int i = ranges[0]; i <= ranges[1] && i >= 0 && i < seq->frames.size(); i++)
-					{
-						seq->frames[i].AF.offset_x = currentFrame.AF.offset_x;
-						seq->frames[i].AF.offset_y = currentFrame.AF.offset_y;
-					}
-					frameData->mark_modified(currState.pattern);
-					markModified();
-				}
-
-				if(im::Button("Paste rotation"))
-				{
-					for(int i = ranges[0]; i <= ranges[1] && i >= 0 && i < seq->frames.size(); i++)
-					{
-						memcpy(seq->frames[i].AF.rotation, currentFrame.AF.rotation, sizeof(float)*3);
-						seq->frames[i].AF.AFRT = currentFrame.AF.AFRT;
-					}
-					frameData->mark_modified(currState.pattern);
-					markModified();
-				}
-
-				if(im::Button("Paste scale"))
-				{
-					for(int i = ranges[0]; i <= ranges[1] && i >= 0 && i < seq->frames.size(); i++)
-					{
-						memcpy(seq->frames[i].AF.scale, currentFrame.AF.scale, sizeof(float)*2);
-					}
-					frameData->mark_modified(currState.pattern);
-					markModified();
-				}
-
-				if(im::Button("Paste color & blend"))
-				{
-					for(int i = ranges[0]; i <= ranges[1] && i >= 0 && i < seq->frames.size(); i++)
-					{
-						memcpy(seq->frames[i].AF.rgba, currentFrame.AF.rgba, sizeof(float)*4);
-						seq->frames[i].AF.blend_mode = currentFrame.AF.blend_mode;
-					}
-					frameData->mark_modified(currState.pattern);
-					markModified();
-				}
-
-				if(im::Button("Paste all transforms"))
-				{
-					for(int i = ranges[0]; i <= ranges[1] && i >= 0 && i < seq->frames.size(); i++)
-					{
-						seq->frames[i].AF.offset_x = currentFrame.AF.offset_x;
-						seq->frames[i].AF.offset_y = currentFrame.AF.offset_y;
-						memcpy(seq->frames[i].AF.rotation, currentFrame.AF.rotation, sizeof(float)*3);
-						memcpy(seq->frames[i].AF.scale, currentFrame.AF.scale, sizeof(float)*2);
-						memcpy(seq->frames[i].AF.rgba, currentFrame.AF.rgba, sizeof(float)*4);
-						seq->frames[i].AF.blend_mode = currentFrame.AF.blend_mode;
-						seq->frames[i].AF.AFRT = currentFrame.AF.AFRT;
-					}
-					frameData->mark_modified(currState.pattern);
-					markModified();
-				}
-
-				im::Separator();
-
-				// Copy/paste multiple frames
-				if(im::Button("Copy frames in range"))
-				{
-					currState.copied->frames.clear();
-					for(int i = ranges[0]; i <= ranges[1] && i >= 0 && i < seq->frames.size(); i++)
-					{
-						Frame_T<LinearAllocator> temp;
-						temp = seq->frames[i];
-						currState.copied->frames.push_back(temp);
-					}
-				}
-
-				im::SameLine();
-				if(im::Button("Paste frames at position"))
-				{
-					int insertPos = ranges[0];
-					if(insertPos >= 0 && insertPos <= seq->frames.size() && !currState.copied->frames.empty())
-					{
-						// Manually copy frames with cross-allocator assignment
-						for (size_t i = 0; i < currState.copied->frames.size(); i++) {
-							Frame temp;
-							temp = currState.copied->frames[i];
-							seq->frames.insert(seq->frames.begin() + insertPos + i, temp);
-						}
-						frameData->mark_modified(currState.pattern);
-						markModified();
-					}
-				}
-			}
-
-			im::End();
-		}
-	}
 }
 
 void MainPane::PopCopies()
