@@ -1,5 +1,6 @@
 #include "box_pane.h"
 #include <imgui.h>
+#include <imgui_internal.h>
 
 constexpr int boxLimit = 33; 
 
@@ -76,25 +77,94 @@ void BoxPane::Draw()
 	if(frameData->get_sequence(currState.pattern) && frameData->get_sequence(currState.pattern)->frames.size() > 0)
 	{
 		auto &frames = frameData->get_sequence(currState.pattern)->frames;
-		
-		im::SetNextItemWidth(200.f);
-		if (im::BeginCombo("Box", boxNameList[currentBox].c_str(), ImGuiComboFlags_HeightLarge))
-		{
-			for (int n = 0; n < boxLimit; n++)
-			{
-				const bool is_selected = (currentBox == n);
-				if (im::Selectable(boxNameList[n].c_str(), is_selected))
-				{
-					currentBox = n;
+		BoxList &boxes = frames[currState.frame].hitboxes;
+
+		// Helper lambda to check if a box exists (has non-zero coordinates)
+		auto boxExists = [&boxes](int idx) -> bool {
+			if(boxes.count(idx) == 0) return false;
+			const auto& box = boxes.at(idx);
+			return !(box.xy[0] == 0 && box.xy[1] == 0 && box.xy[2] == 0 && box.xy[3] == 0);
+		};
+
+		// Color definitions (matching render.cpp)
+		const ImU32 whiteColor = IM_COL32(255, 255, 255, 255);
+		const ImU32 greenColor = IM_COL32(51, 255, 51, 255);
+		const ImU32 blueColor = IM_COL32(0, 0, 255, 255);
+		const ImU32 yellowColor = IM_COL32(255, 255, 0, 255);
+		const ImU32 cyanColor = IM_COL32(0, 255, 255, 255);
+		const ImU32 purpleColor = IM_COL32(128, 0, 255, 255);
+		const ImU32 redColor = IM_COL32(255, 51, 51, 255);
+
+		// Helper to draw colored box buttons
+		auto DrawBoxes = [&](int startIdx, int count, ImU32 color, float& xPos) {
+			ImGuiWindow* window = ImGui::GetCurrentWindow();
+			const ImVec2 smallBoxSize(12, 12);
+			const float spacing = 2.0f;
+
+			ImVec2 pos = ImVec2(xPos, window->DC.CursorPos.y);
+			for(int i = 0; i < count; i++) {
+				int boxIdx = startIdx + i;
+
+				ImGui::PushID(boxIdx);
+				ImVec2 boxMin = pos;
+				ImVec2 boxMax = ImVec2(pos.x + smallBoxSize.x, pos.y + smallBoxSize.y);
+
+				bool hovered = ImGui::IsMouseHoveringRect(boxMin, boxMax);
+				bool clicked = hovered && ImGui::IsMouseClicked(0);
+
+				if(clicked) {
+					currentBox = boxIdx;
 				}
 
-				if (is_selected)
-					im::SetItemDefaultFocus();
-			}
-			im::EndCombo();
-		}
+				// Determine color
+				ImU32 finalColor = color;
+				if(boxIdx == currentBox) {
+					finalColor = IM_COL32(255, 255, 255, 255);
+				} else if(!boxExists(boxIdx)) {
+					ImVec4 c = ImGui::ColorConvertU32ToFloat4(color);
+					c.x *= 0.3f; c.y *= 0.3f; c.z *= 0.3f;
+					finalColor = ImGui::ColorConvertFloat4ToU32(c);
+				}
 
-		im::SameLine(0.0f, 20.f);
+				window->DrawList->AddRectFilled(boxMin, boxMax, finalColor);
+				window->DrawList->AddRect(boxMin, boxMax, IM_COL32(128, 128, 128, 255));
+
+				if(hovered) {
+					ImGui::SetTooltip("%s", boxNameList[boxIdx].c_str());
+				}
+
+				pos.x += smallBoxSize.x + spacing;
+				ImGui::PopID();
+			}
+
+			xPos = pos.x + 8.0f; // Extra spacing between groups
+		};
+
+		// Draw labels on first line
+		im::Text("Col"); im::SameLine();
+		im::Text("  Hurt"); im::SameLine();
+		im::Text("       Spc1-2"); im::SameLine();
+		im::Text(" Clash"); im::SameLine();
+		im::Text("Proj"); im::SameLine();
+		im::Text("   Spc5-16"); im::SameLine();
+		im::Text("                          Atk");
+
+		// Draw boxes on second line
+		float xPos = ImGui::GetCursorScreenPos().x;
+		DrawBoxes(0, 1, whiteColor, xPos);
+		DrawBoxes(1, 8, greenColor, xPos);
+		DrawBoxes(9, 2, blueColor, xPos);
+		DrawBoxes(11, 1, yellowColor, xPos);
+		DrawBoxes(12, 1, cyanColor, xPos);
+		DrawBoxes(13, 12, purpleColor, xPos);
+		DrawBoxes(25, 8, redColor, xPos);
+
+		// Advance cursor past the boxes
+		ImGui::GetCurrentWindow()->DC.CursorPos.y += 12 + ImGui::GetStyle().ItemSpacing.y;
+
+		im::Separator();
+
+		// Navigation arrows
 		im::PushButtonRepeat(true);
 		if(im::ArrowButton("##left", ImGuiDir_Left))
 			AdvanceBox(-1);
@@ -102,8 +172,6 @@ void BoxPane::Draw()
 		if(im::ArrowButton("##right", ImGuiDir_Right))
 			AdvanceBox(+1);
 		im::PopButtonRepeat();
-
-		BoxList &boxes = frames[currState.frame].hitboxes;
 
 		im::SameLine(0,20.f);
 		if(im::Button("Copy all"))
