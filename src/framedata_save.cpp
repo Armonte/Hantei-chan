@@ -3,6 +3,7 @@
 #include <fstream>
 #include <cstdint>
 #include <cstring>
+#include <iostream>
 
 #define VAL(X) ((const char*)&X)
 #define PTR(X) ((const char*)X)
@@ -11,142 +12,23 @@
 // (Because I haven't figured out the proper order lol)
 // I don't know if it can cause trouble but it's something to keep in mind.
 
+// Write AF (gonp original - MBAACC compatible)
 void WriteAF(std::ofstream &file, const Frame_AF *af)
 {
 	file.write("AFST", 4);
 
-	// Write layers - use AFGP for single layer (Melty format), AFGX for multi-layer (UNI format)
-	if(af->layers.size() == 1) {
-		// Melty Blood format - single layer
-		const auto &l = af->layers[0];
-		file.write("AFGP", 4);
-		uint32_t pat = l.usePat;
-		file.write(VAL(pat), 4);
-		file.write(VAL(l.spriteId), 4);
+	file.write("AFGP", 4);
+	uint32_t pat = af->usePat;
+	file.write(VAL(pat), 4);
+	file.write(VAL(af->spriteId), 4);
 
-		if(l.offset_x || l.offset_y){
-			file.write("AFOF", 4);
-			file.write(VAL(l.offset_x), 4);
-			file.write(VAL(l.offset_y), 4);
-		}
-
-		if(l.blend_mode){
-			file.write("AFAL", 4);
-			int anormalized = l.rgba[3]*255.f;
-			file.write(VAL(l.blend_mode), 4);
-			file.write(VAL(anormalized), 4);
-		}
-		else if (l.rgba[3] != 1.f){
-			int type = 1;
-			int anormalized = l.rgba[3]*255.f;
-			file.write("AFAL", 4);
-			file.write(VAL(type), 4);
-			file.write(VAL(anormalized), 4);
-		}
-
-		if(	l.rgba[0] != 1.f ||
-			l.rgba[1] != 1.f ||
-			l.rgba[2] != 1.f)
-		{
-			int anormalized[3];
-			for(int i = 0; i < 3; i++)
-				anormalized[i] = l.rgba[i]*255.f;
-			file.write("AFRG", 4);
-			file.write(PTR(anormalized), 3*sizeof(float));
-		}
-
-		if(l.rotation[0]){
-			file.write("AFAX", 4);
-			file.write(VAL(l.rotation[0]), sizeof(float));
-		}
-		if(l.rotation[1]){
-			file.write("AFAY", 4);
-			file.write(VAL(l.rotation[1]), sizeof(float));
-		}
-		if(l.rotation[2]){
-			file.write("AFAZ", 4);
-			file.write(VAL(l.rotation[2]), sizeof(float));
-		}
-		if(	l.scale[0] != 1.f ||
-			l.scale[1] != 1.f){
-			file.write("AFZM", 4);
-			file.write(PTR(l.scale), 2*sizeof(float));
-		}
-
-		if(l.priority){
-			file.write("AFPR", 4);
-			file.write(VAL(l.priority), 4);
-		}
-	}
-	else {
-		// UNI format - multiple layers
-		for(int i = 0; i < af->layers.size(); i++)
-		{
-			const auto &l = af->layers[i];
-			file.write("AFGX", 4);
-			file.write(VAL(i), 4);
-			uint32_t pat = l.usePat;
-			file.write(VAL(pat), 4);
-			file.write(VAL(l.spriteId), 4);
-
-			if(l.offset_x || l.offset_y){
-				file.write("AFOF", 4);
-				file.write(VAL(l.offset_x), 4);
-				file.write(VAL(l.offset_y), 4);
-			}
-
-			if(l.priority){
-				file.write("AFPR", 4);
-				file.write(VAL(l.priority), 4);
-			}
-
-			if(l.blend_mode){
-				file.write("AFAL", 4);
-				int anormalized = l.rgba[3]*255.f;
-				file.write(VAL(l.blend_mode), 4);
-				file.write(VAL(anormalized), 4);
-			}
-			else if (l.rgba[3] != 1.f){
-				int type = 1;
-				int anormalized = l.rgba[3]*255.f;
-				file.write("AFAL", 4);
-				file.write(VAL(type), 4);
-				file.write(VAL(anormalized), 4);
-			}
-
-			if(	l.rgba[0] != 1.f ||
-				l.rgba[1] != 1.f ||
-				l.rgba[2] != 1.f)
-			{
-				int anormalized[3];
-				for(int i = 0; i < 3; i++)
-					anormalized[i] = l.rgba[i]*255.f;
-				file.write("AFRG", 4);
-				file.write(PTR(anormalized), 3*sizeof(float));
-			}
-
-			if(l.rotation[2]){
-				file.write("AFAZ", 4);
-				file.write(VAL(l.rotation[2]), sizeof(float));
-			}
-			if(l.rotation[1]){
-				file.write("AFAY", 4);
-				file.write(VAL(l.rotation[1]), sizeof(float));
-			}
-			if(l.rotation[0]){
-				file.write("AFAX", 4);
-				file.write(VAL(l.rotation[0]), sizeof(float));
-			}
-
-			if(	l.scale[0] != 1.f ||
-				l.scale[1] != 1.f){
-				file.write("AFZM", 4);
-				file.write(PTR(l.scale), 2*sizeof(float));
-			}
-		}
+	//AFY can fuck off
+	if(af->offset_x || af->offset_y){
+		file.write("AFOF", 4);
+		file.write(VAL(af->offset_x), 4);
+		file.write(VAL(af->offset_y), 4);
 	}
 
-	// Animation control fields (not layer-specific)
 	if(af->duration >=0 && af->duration < 10){
 		char t = af->duration + '0';
 		file.write("AFD", 3);
@@ -168,6 +50,49 @@ void WriteAF(std::ofstream &file, const Frame_AF *af)
 		file.write(VAL(af->aniFlag), 4);
 	}
 
+	if(af->blend_mode){
+		file.write("AFAL", 4);
+		int anormalized = af->rgba[3]*255.f;
+		file.write(VAL(af->blend_mode), 4);
+		file.write(VAL(anormalized), 4);
+	}
+	else if (af->rgba[3] != 1.f){
+		int type = 1;
+		int anormalized = af->rgba[3]*255.f;
+		file.write("AFAL", 4);
+		file.write(VAL(type), 4);
+		file.write(VAL(anormalized), 4);
+	}
+
+	if(	af->rgba[0] != 1.f ||
+		af->rgba[1] != 1.f ||
+		af->rgba[2] != 1.f)
+	{
+		int anormalized[3];
+		for(int i = 0; i < 3; i++)
+			anormalized[i] = af->rgba[i]*255.f;
+		file.write("AFRG", 4);
+		file.write(PTR(anormalized), 3*sizeof(float));
+	}
+
+	if(af->rotation[0]){
+		file.write("AFAX", 4);
+		file.write(VAL(af->rotation[0]), sizeof(float));
+	}
+	if(af->rotation[1]){
+		file.write("AFAY", 4);
+		file.write(VAL(af->rotation[1]), sizeof(float));
+	}
+	if(af->rotation[2]){
+		file.write("AFAZ", 4);
+		file.write(VAL(af->rotation[2]), sizeof(float));
+	}
+	if(	af->scale[0] != 1.f ||
+		af->scale[1] != 1.f){
+		file.write("AFZM", 4);
+		file.write(PTR(af->scale), 2*sizeof(float));
+	}
+
 	if(af->jump){
 		file.write("AFJP", 4);
 		file.write(VAL(af->jump), 4);
@@ -175,6 +100,10 @@ void WriteAF(std::ofstream &file, const Frame_AF *af)
 	if(af->interpolationType){
 		file.write("AFHK", 4);
 		file.write(VAL(af->interpolationType), 4);
+	}
+	if(af->priority){
+		file.write("AFPR", 4);
+		file.write(VAL(af->priority), 4);
 	}
 	if(af->loopCount){
 		file.write("AFCT", 4);
@@ -201,7 +130,7 @@ void WriteAS(std::ofstream &file, const Frame_AS *as)
 {
 	file.write("ASST", 4);
 
-	if((as->movementFlags & 0x11) == 0x11 && 
+	if((as->movementFlags & 0x11) == 0x11 &&
 		as->speed[0] == 0 &&
 		as->speed[1] == 0 &&
 		as->accel[0] == 0 &&
@@ -209,7 +138,7 @@ void WriteAS(std::ofstream &file, const Frame_AS *as)
 	){
 		file.write("ASVX", 4);
 	}
-	else if(as->movementFlags != 0 || 
+	else if(as->movementFlags != 0 ||
 		as->speed[0] != 0 ||
 		as->speed[1] != 0 ||
 		as->accel[0] != 0 ||
@@ -306,7 +235,7 @@ void WriteAT(std::ofstream &file, const Frame_AT *at)
 	if(true){
 		constexpr int three = 3;
 		int val[three];
-		
+
 		file.write("ATHV", 4);
 		file.write(VAL(three), 4);
 		for(int i = 0; i < 3; i++)
@@ -400,7 +329,7 @@ void WriteIF(std::ofstream &file, const std::vector<Frame_IF> &ef)
 	}
 }
 
-void WriteFrame(std::ofstream &file, const Frame *frame)
+void WriteFrame(std::ofstream &file, const Frame *frame, bool usedAFGX)
 {
 	file.write("FSTR", 4);
 	WriteAF(file, &frame->AF);
@@ -459,14 +388,14 @@ void WriteFrame(std::ofstream &file, const Frame *frame)
 		file.write(VAL(index), 4);
 		file.write(PTR(box.second.xy), 4*4);
 	}
-	
+
 	WriteEF(file, frame->EF);
 	WriteIF(file, frame->IF);
 
 	file.write("FEND", 4);
 }
 
-void WriteSequence(std::ofstream &file, const Sequence *seq, bool stringsAreUTF8)
+void WriteSequence(std::ofstream &file, const Sequence *seq)
 {
 	//Not used by melty blood, probably.
 /* 	if(!seq->codeName.empty()){
@@ -491,11 +420,9 @@ void WriteSequence(std::ofstream &file, const Sequence *seq, bool stringsAreUTF8
 		char buf[32]{};
 		uint32_t size = 32;
 
-		// Convert UTF-8 back to Shift-JIS if the original file was Shift-JIS
-		std::string nameToWrite = seq->name;
-		if(!stringsAreUTF8) {
-			nameToWrite = utf82sj(seq->name);
-		}
+		// Always write Shift-JIS for game compatibility
+		// Internal strings are always UTF-8, so convert to Shift-JIS
+		std::string nameToWrite = utf82sj(seq->name);
 
 		strncpy(buf, nameToWrite.c_str(), 32);
 		buf[31] = 0;
@@ -530,7 +457,7 @@ void WriteSequence(std::ofstream &file, const Sequence *seq, bool stringsAreUTF8
 
 		for(const auto& frame : seq->frames)
 		{
-			WriteFrame(file, &frame);
+			WriteFrame(file, &frame, seq->usedAFGX);
 		}
 	}
 }

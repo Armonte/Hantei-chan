@@ -162,7 +162,7 @@ void MainPane::Draw()
 				Frame &frame = seq->frames[currState.frame];
 				if(im::TreeNode("State data"))
 				{
-					AsDisplay(&frame.AS, frameData, currState.pattern);
+					AsDisplay(&frame.AS, frameData, currState.pattern, [this]() { markModified(); });
 					if(im::Button("Copy AS")) {
 						currState.copied->as = frame.AS;
 					}
@@ -177,7 +177,7 @@ void MainPane::Draw()
 				}
 				if (im::TreeNode("Animation data"))
 				{
-					AfDisplay(&frame.AF, currState.selectedLayer, frameData, currState.pattern);
+					AfDisplay(&frame.AF, currState.selectedLayer, frameData, currState.pattern, [this]() { markModified(); });
 					if(im::Button("Copy AF")) {
 						currState.copied->af = frame.AF;
 					}
@@ -280,15 +280,8 @@ void MainPane::Draw()
 				{
 					for(int i = ranges[0]; i <= ranges[1] && i >= 0 && i < seq->frames.size(); i++)
 					{
-						for(auto &layer : seq->frames[i].AF.layers)
-						{
-							if(currState.selectedLayer < currentFrame.AF.layers.size())
-							{
-								const auto &srcLayer = currentFrame.AF.layers[currState.selectedLayer];
-								memcpy(layer.rgba, srcLayer.rgba, sizeof(float)*4);
-								layer.blend_mode = srcLayer.blend_mode;
-							}
-						}
+						memcpy(seq->frames[i].AF.rgba, currentFrame.AF.rgba, sizeof(float)*4);
+						seq->frames[i].AF.blend_mode = currentFrame.AF.blend_mode;
 					}
 					frameData->mark_modified(currState.pattern);
 					markModified();
@@ -341,26 +334,18 @@ void MainPane::Draw()
 					}
 				}
 
-				// Paste transform to range (current layer only)
-				if(im::Button("Paste transform (Current layer)"))
+				// Paste transform to range
+				if(im::Button("Paste transform"))
 				{
-					if(currState.selectedLayer < currentFrame.AF.layers.size())
+					for(int i = ranges[0]; i <= ranges[1] && i >= 0 && i < seq->frames.size(); i++)
 					{
-						const auto &srcLayer = currentFrame.AF.layers[currState.selectedLayer];
-						for(int i = ranges[0]; i <= ranges[1] && i >= 0 && i < seq->frames.size(); i++)
-						{
-							if(currState.selectedLayer < seq->frames[i].AF.layers.size())
-							{
-								auto &dstLayer = seq->frames[i].AF.layers[currState.selectedLayer];
-								dstLayer.offset_x = srcLayer.offset_x;
-								dstLayer.offset_y = srcLayer.offset_y;
-								memcpy(dstLayer.scale, srcLayer.scale, sizeof(float)*2);
-								memcpy(dstLayer.rotation, srcLayer.rotation, sizeof(float)*3);
-							}
-						}
-						frameData->mark_modified(currState.pattern);
-						markModified();
+						seq->frames[i].AF.offset_x = currentFrame.AF.offset_x;
+						seq->frames[i].AF.offset_y = currentFrame.AF.offset_y;
+						memcpy(seq->frames[i].AF.scale, currentFrame.AF.scale, sizeof(float)*2);
+						memcpy(seq->frames[i].AF.rotation, currentFrame.AF.rotation, sizeof(float)*3);
 					}
+					frameData->mark_modified(currState.pattern);
+					markModified();
 				}
 			}
 
