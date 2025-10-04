@@ -469,66 +469,71 @@ void MainFrame::RenderUpdate()
 		if(state.animating)
 		{
 			state.animeSeq = state.pattern;
-			auto& af = seq->frames[state.frame].AF;
 
-			if(duration >= af.duration)
-			{
-				// Determine next frame based on aniType
-				if (af.aniType == 1) {
-					// Jump to next frame or stop
-					if (state.frame + 1 >= seq->frames.size()) {
-						state.animating = false;
+			// Lambda to calculate next frame - can be called with or without side effects
+			auto GetNextFrame = [&](bool decreaseLoopCounter) {
+				if (seq && !seq->frames.empty())
+				{
+					auto& af = seq->frames[state.frame].AF;
+					if (af.aniType == 1) {
+						// Sequential advance - stop at end
+						if (state.frame + 1 >= seq->frames.size()) {
+							return 0;
+						}
+						else {
+							return state.frame + 1;
+						}
+					}
+					else if (af.aniType == 2)
+					{
+						// Jump/loop logic
+						if ((af.aniFlag & 0x2) && loopCounter < 0)
+						{
+							// Loop count exhausted - use loopEnd
+							if (af.aniFlag & 0x8) {
+								return state.frame + af.loopEnd;
+							}
+							else {
+								return af.loopEnd;
+							}
+						}
+						else
+						{
+							// Decrement loop counter if needed
+							if (af.aniFlag & 0x2 && decreaseLoopCounter) {
+								--loopCounter;
+							}
+							// Jump to next frame
+							if (af.aniFlag & 0x4) {
+								return state.frame + af.jump;
+							}
+							else {
+								return af.jump;
+							}
+						}
 					}
 					else {
-						state.frame++;
+						// aniType 0 or other - stop animation
+						return 0;
 					}
 				}
-				else if (af.aniType == 2)
+				return state.frame;
+			};
+
+			if(duration >= seq->frames[state.frame].AF.duration)
+			{
+				if(seq && !seq->frames.empty())
 				{
-					// Loop/jump logic
-					if ((af.aniFlag & 0x2) && loopCounter < 0)
-					{
-						if (af.aniFlag & 0x8) {
-							state.frame += af.loopEnd;
-						}
-						else {
-							state.frame = af.loopEnd;
-						}
-					}
-					else
-					{
-						if (af.aniFlag & 0x2) {
-							--loopCounter;
-						}
-						if (af.aniFlag & 0x4) {
-							state.frame += af.jump;
-						}
-						else {
-							state.frame = af.jump;
-						}
-					}
+					state.frame = GetNextFrame(true);
+					duration = 0;
 
 					// Bounds check
-					if (state.frame < 0 || state.frame >= seq->frames.size()) {
+					if(state.frame < 0 || state.frame >= seq->frames.size())
+					{
 						state.animating = false;
 						state.frame = 0;
 					}
 				}
-				else {
-					// aniType 0 or other - advance to next frame
-					state.frame++;
-					if (state.frame >= seq->frames.size()) {
-						state.frame = 0;
-					}
-				}
-
-				// Initialize loop counter for new frame
-				if(state.frame >= 0 && state.frame < seq->frames.size()) {
-					loopCounter = seq->frames[state.frame].AF.loopCount;
-				}
-
-				// Reset duration for new frame
-				duration = 0;
 			}
 
 			duration++;
@@ -561,6 +566,9 @@ void MainFrame::RenderUpdate()
 				break;
 			}
 		render.SwitchImage(state.spriteId);
+
+		if(frame.AF.loopCount>0)
+			loopCounter = frame.AF.loopCount;
 	}
 	else
 	{
