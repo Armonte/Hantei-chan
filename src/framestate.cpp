@@ -91,3 +91,99 @@ FrameState::~FrameState()
 	sharedMemHandle = nullptr;
 	sharedMem = nullptr;
 }
+
+// Parse spawned patterns from effects in a frame
+std::vector<SpawnedPatternInfo> ParseSpawnedPatterns(const std::vector<Frame_EF>& effects, int parentFrame)
+{
+	std::vector<SpawnedPatternInfo> spawned;
+
+	for (size_t i = 0; i < effects.size(); i++)
+	{
+		const Frame_EF& effect = effects[i];
+		SpawnedPatternInfo info;
+		info.effectIndex = static_cast<int>(i);
+		info.parentFrame = parentFrame;  // Tag with parent frame
+
+		bool isSpawnEffect = false;
+
+		switch (effect.type)
+		{
+			case 1:   // Spawn Pattern
+			case 101: // Spawn Relative Pattern
+			{
+				info.patternId = effect.number;
+				info.offsetX = effect.parameters[0];
+				info.offsetY = effect.parameters[1];
+				info.flagset1 = effect.parameters[2];
+				info.flagset2 = effect.parameters[3];
+				info.angle = effect.parameters[7];
+				info.projVarDecrease = effect.parameters[8];
+				info.randomRange = 0;
+				isSpawnEffect = true;
+				break;
+			}
+
+			case 11:  // Spawn Random Pattern
+			case 111: // Spawn Random Relative Pattern
+			{
+				info.patternId = effect.number;
+				info.randomRange = effect.parameters[0];
+				info.offsetX = effect.parameters[1];
+				info.offsetY = effect.parameters[2];
+				info.flagset1 = effect.parameters[3];
+				info.flagset2 = effect.parameters[4];
+				info.angle = effect.parameters[8];
+				info.projVarDecrease = effect.parameters[9];
+				isSpawnEffect = true;
+				break;
+			}
+
+			case 8:   // Spawn Actor (effect.ha6) - similar to type 1
+			{
+				info.patternId = effect.number;
+				info.offsetX = effect.parameters[0];
+				info.offsetY = effect.parameters[1];
+				info.flagset1 = effect.parameters[2];
+				info.flagset2 = effect.parameters[3];
+				info.angle = 0;
+				info.projVarDecrease = 0;
+				info.randomRange = 0;
+				isSpawnEffect = true;
+				break;
+			}
+
+			case 1000: // Spawn and Follow (Dust of Osiris, Sion)
+			{
+				info.patternId = effect.number;
+				info.offsetX = 0;
+				info.offsetY = 0;
+				info.flagset1 = 0;
+				info.flagset2 = 0;
+				info.angle = 0;
+				info.projVarDecrease = 0;
+				info.randomRange = 0;
+				isSpawnEffect = true;
+				break;
+			}
+
+			default:
+				break;
+		}
+
+		if (isSpawnEffect)
+		{
+			// Assign default tint colors based on spawn index
+			int spawnIdx = static_cast<int>(spawned.size());
+			switch (spawnIdx % 3)
+			{
+				case 0: info.tintColor = glm::vec4(0.5f, 0.7f, 1.0f, 1.0f); break; // Blue
+				case 1: info.tintColor = glm::vec4(0.5f, 1.0f, 0.5f, 1.0f); break; // Green
+				case 2: info.tintColor = glm::vec4(1.0f, 1.0f, 0.5f, 1.0f); break; // Yellow
+			}
+
+			spawned.push_back(info);
+		}
+	}
+
+	return spawned;
+}
