@@ -4,6 +4,7 @@
 #include <glm/gtc/matrix_transform.hpp>
 #include <glm/gtc/type_ptr.hpp>
 #include <glm/gtc/constants.hpp>
+#include <algorithm>
 
 //Error
 #include <windows.h>
@@ -144,6 +145,26 @@ blendingMode(normal)
 	glEnable(GL_DEPTH_TEST);
 }
 
+void Render::DrawGridLines()
+{
+	if(int err = glGetError())
+	{
+		std::stringstream ss;
+		ss << "GL Error: 0x" << std::hex << err << "\n";
+		MessageBoxA(nullptr, ss.str().c_str(), "GL Error", MB_ICONSTOP);
+	}
+
+	//Lines only
+	glm::mat4 view = glm::mat4(1.f);
+	view = glm::scale(view, glm::vec3(scale, scale, 1.f));
+	view = glm::translate(view, glm::vec3(x,y,0.f));
+	SetModelView(std::move(view));
+	glUniform1f(lAlphaS, 0.25f);
+	SetMatrix(lProjectionS);
+	vGeometry.Bind();
+	vGeometry.Draw(geoParts[LINES], 0, GL_LINES);
+}
+
 void Render::Draw()
 {
 	if(int err = glGetError())
@@ -196,6 +217,56 @@ void Render::Draw()
 	vGeometry.DrawQuads(GL_LINE_LOOP, quadsToDraw);
 	glUniform1f(lAlphaS, 0.3f);
 	vGeometry.DrawQuads(GL_TRIANGLE_FAN, quadsToDraw);
+}
+
+void Render::DrawSpriteOnly()
+{
+	if(int err = glGetError())
+	{
+		std::stringstream ss;
+		ss << "GL Error: 0x" << std::hex << err << "\n";
+		MessageBoxA(nullptr, ss.str().c_str(), "GL Error", MB_ICONSTOP);
+	}
+
+	// Disable depth write so layers don't occlude each other
+	// We still depth TEST against the background, but don't write to depth buffer
+	glDepthMask(GL_FALSE);
+
+	//Sprite and boxes (no grid lines)
+	constexpr float tau = glm::pi<float>()*2.f;
+	glm::mat4 view = glm::mat4(1.f);
+	view = glm::scale(view, glm::vec3(scale, scale, 1.f));
+	view = glm::translate(view, glm::vec3(x,y,0.f));
+	view = glm::scale(view, glm::vec3(scaleX,scaleY,0));
+	view = glm::rotate(view, rotZ*tau, glm::vec3(0.0, 0.f, 1.f));
+	view = glm::rotate(view, rotY*tau, glm::vec3(0.0, 1.f, 0.f));
+	view = glm::rotate(view, rotX*tau, glm::vec3(1.0, 0.f, 0.f));
+	view = glm::translate(view, glm::vec3(-128+offsetX,-224+offsetY,0.f));
+	SetModelView(std::move(view));
+	sTextured.Use();
+	SetMatrix(lProjectionT);
+	if(texture.isApplied)
+	{
+		SetBlendingMode();
+		glDisableVertexAttribArray(2);
+		glVertexAttrib4fv(2, colorRgba);
+		vSprite.Bind();
+		vSprite.Draw(0);
+	}
+	//Reset state
+	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+	glBlendEquation(GL_FUNC_ADD);
+
+	//Boxes
+	sSimple.Use();
+	vGeometry.Bind();
+	glUniform1f(lAlphaS, 0.6f);
+	vGeometry.DrawQuads(GL_LINE_LOOP, quadsToDraw);
+	glUniform1f(lAlphaS, 0.3f);
+	vGeometry.DrawQuads(GL_TRIANGLE_FAN, quadsToDraw);
+
+	// Re-enable depth write
+	glDepthMask(GL_TRUE);
 }
 
 void Render::SetModelView(glm::mat4&& view_)
@@ -378,4 +449,114 @@ void Render::SetBlendingMode()
 		glBlendEquation(GL_FUNC_REVERSE_SUBTRACT);
 		break;
 	}
+}
+
+// Multi-layer rendering support
+void Render::ClearLayers()
+{
+	renderLayers.clear();
+	currentLayerIndex = 0;
+}
+
+void Render::AddLayer(const RenderLayer& layer)
+{
+	renderLayers.push_back(layer);
+}
+
+void Render::SortLayersByZPriority(int mainPatternPriority)
+{
+	// Sort layers by Z-priority
+	// Lower priority = draw first (behind)
+	// Higher priority = draw last (in front)
+	std::sort(renderLayers.begin(), renderLayers.end(),
+		[mainPatternPriority](const RenderLayer& a, const RenderLayer& b) {
+			// Calculate effective priorities based on game logic
+			int priorityA = a.zPriority;
+			int priorityB = b.zPriority;
+
+			// Handle special projectile priority logic if needed
+			// (For now using raw priority values)
+
+			return priorityA < priorityB;  // Lower draws first
+		});
+}
+
+void Render::DrawLayers()
+{
+	if (renderLayers.empty()) return;
+
+	// Save original transform state
+	int origX = x;
+	int origY = y;
+	int origOffsetX = offsetX;
+	int origOffsetY = offsetY;
+	float origScaleX = scaleX;
+	float origScaleY = scaleY;
+	float origRotX = rotX;
+	float origRotY = rotY;
+	float origRotZ = rotZ;
+	blendType origBlendMode = blendingMode;
+	float origColorRgba[4] = {colorRgba[0], colorRgba[1], colorRgba[2], colorRgba[3]};
+
+	// Draw each layer
+	for (const auto& layer : renderLayers)
+	{
+		if (layer.spriteId < 0) continue;
+
+		// Apply layer-specific transforms (spawn offset + frame offset)
+		x = origX + layer.spawnOffsetX;
+		y = origY + layer.spawnOffsetY;
+		offsetX = layer.frameOffsetX;
+		offsetY = layer.frameOffsetY;
+
+		// Apply layer scale and rotation
+		scaleX = layer.scaleX;
+		scaleY = layer.scaleY;
+		rotX = layer.rotX;
+		rotY = layer.rotY;
+		rotZ = layer.rotZ;
+
+		// Apply blend mode
+		switch (layer.blendMode)
+		{
+		case 2:
+			blendingMode = additive;
+			break;
+		case 3:
+			blendingMode = subtractive;
+			break;
+		default:
+			blendingMode = normal;
+			break;
+		}
+
+		// Apply tint color and alpha
+		colorRgba[0] = layer.tintColor.r * origColorRgba[0];
+		colorRgba[1] = layer.tintColor.g * origColorRgba[1];
+		colorRgba[2] = layer.tintColor.b * origColorRgba[2];
+		colorRgba[3] = layer.alpha * origColorRgba[3];
+
+		// Generate hitboxes for this layer
+		GenerateHitboxVertices(layer.hitboxes);
+
+		// Switch to this layer's sprite and draw sprite+boxes (no grid lines)
+		SwitchImage(layer.spriteId);
+		DrawSpriteOnly();
+	}
+
+	// Restore original state
+	x = origX;
+	y = origY;
+	offsetX = origOffsetX;
+	offsetY = origOffsetY;
+	scaleX = origScaleX;
+	scaleY = origScaleY;
+	rotX = origRotX;
+	rotY = origRotY;
+	rotZ = origRotZ;
+	blendingMode = origBlendMode;
+	colorRgba[0] = origColorRgba[0];
+	colorRgba[1] = origColorRgba[1];
+	colorRgba[2] = origColorRgba[2];
+	colorRgba[3] = origColorRgba[3];
 }

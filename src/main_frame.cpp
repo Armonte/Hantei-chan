@@ -67,7 +67,113 @@ void MainFrame::DrawBack()
 		render.x = (active->renderX + clientRect.x/2) / render.scale;
 		render.y = (active->renderY + clientRect.y/2) / render.scale;
 	}
-	render.Draw();
+
+	auto* view = getActiveView();
+
+	// Check if we need to draw with spawned patterns
+	bool hasSpawnedPatterns = false;
+	if (view && active) {
+		auto& state = view->getState();
+		hasSpawnedPatterns = state.vizSettings.showSpawnedPatterns && !state.spawnedPatterns.empty();
+	}
+
+	if (hasSpawnedPatterns && view && active) {
+		// Draw everything as layers (main + spawned) in Z-order
+		auto& state = view->getState();
+
+		// First draw grid lines only
+		render.DrawGridLines();
+
+		// Get current main pattern sequence
+		auto mainSeq = active->frameData.get_sequence(state.pattern);
+		if (!mainSeq || mainSeq->frames.empty()) return;
+		auto& mainFrame = mainSeq->frames[state.frame];
+
+		render.ClearLayers();
+
+		// Add main pattern as a layer
+		RenderLayer mainLayer;
+		mainLayer.spriteId = state.spriteId;
+		mainLayer.spawnOffsetX = 0;
+		mainLayer.spawnOffsetY = 0;
+		mainLayer.frameOffsetX = mainFrame.AF.offset_x;
+		mainLayer.frameOffsetY = mainFrame.AF.offset_y;
+		mainLayer.scaleX = mainFrame.AF.scale[0];
+		mainLayer.scaleY = mainFrame.AF.scale[1];
+		mainLayer.rotX = mainFrame.AF.rotation[0];
+		mainLayer.rotY = mainFrame.AF.rotation[1];
+		mainLayer.rotZ = mainFrame.AF.rotation[2];
+		mainLayer.blendMode = mainFrame.AF.blend_mode;
+		mainLayer.zPriority = mainFrame.AF.priority;
+		mainLayer.alpha = 1.0f;
+		mainLayer.tintColor = glm::vec4(1.0f, 1.0f, 1.0f, 1.0f);
+		mainLayer.isSpawned = false;
+		mainLayer.hitboxes = mainFrame.hitboxes;
+		render.AddLayer(mainLayer);
+
+		// Build render layers for each spawned pattern
+		for (auto& spawnInfo : state.spawnedPatterns) {
+			if (!spawnInfo.visible) continue;
+
+			// Get the spawned pattern's sequence
+			auto spawnedSeq = active->frameData.get_sequence(spawnInfo.patternId);
+			if (!spawnedSeq || spawnedSeq->frames.empty()) continue;
+
+			// Calculate local frame: frames elapsed since spawn
+			// spawnInfo.parentFrame is the frame where the effect exists
+			int localFrame = state.frame - spawnInfo.parentFrame;
+
+			// Check if spawned pattern should be visible
+			if (localFrame < 0) {
+				// Before spawn frame - don't show
+				continue;
+			}
+
+			if (localFrame >= spawnedSeq->frames.size()) {
+				// Past the end of the pattern - check if it should stop
+				auto& lastFrame = spawnedSeq->frames.back();
+				if (lastFrame.AF.aniType == 0 || lastFrame.AF.aniType == 1) {
+					// Pattern ended (stop/sequential type) - don't show
+					continue;
+				}
+				// For looping patterns, clamp to last frame
+				localFrame = spawnedSeq->frames.size() - 1;
+			}
+
+			auto& spawnedFrame = spawnedSeq->frames[localFrame];
+
+			// Create render layer with all frame data
+			RenderLayer layer;
+			layer.spriteId = spawnedFrame.AF.spriteId;
+			layer.spawnOffsetX = spawnInfo.offsetX;
+			layer.spawnOffsetY = spawnInfo.offsetY;
+			layer.frameOffsetX = spawnedFrame.AF.offset_x;
+			layer.frameOffsetY = spawnedFrame.AF.offset_y;
+			layer.scaleX = spawnedFrame.AF.scale[0];
+			layer.scaleY = spawnedFrame.AF.scale[1];
+			layer.rotX = spawnedFrame.AF.rotation[0];
+			layer.rotY = spawnedFrame.AF.rotation[1];
+			layer.rotZ = spawnedFrame.AF.rotation[2];
+			layer.blendMode = spawnedFrame.AF.blend_mode;
+			layer.zPriority = spawnedFrame.AF.priority;
+			layer.alpha = spawnInfo.alpha * state.vizSettings.spawnedOpacity;
+			layer.tintColor = spawnInfo.tintColor;
+			layer.isSpawned = true;
+			layer.hitboxes = spawnedFrame.hitboxes;
+
+			render.AddLayer(layer);
+		}
+
+		// Sort all layers (including main) by Z-priority before drawing
+		render.SortLayersByZPriority(mainFrame.AF.priority);
+
+		// Draw all layers in Z-order
+		render.DrawLayers();
+	}
+	else {
+		// Normal draw without spawned patterns
+		render.Draw();
+	}
 }
 
 void MainFrame::DrawUi()

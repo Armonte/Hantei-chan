@@ -1063,6 +1063,9 @@ inline void IfDisplay(std::vector<Frame_IF> *ifList_, Frame_IF *singleClipboard 
 	}
 }
 
+// Forward declaration for smart effect UI
+static inline void DrawSmartEffectUI(Frame_EF& effect, FrameData* frameData, int patternIndex, std::function<void()> markModified);
+
 inline void EfDisplay(std::vector<Frame_EF> *efList_, Frame_EF *singleClipboard = nullptr, FrameData *frameData = nullptr, int patternIndex = -1, std::function<void()> onModified = nullptr)
 {
 	// Helper lambda to mark both frameData and character as modified
@@ -1076,55 +1079,1459 @@ inline void EfDisplay(std::vector<Frame_EF> *efList_, Frame_EF *singleClipboard 
 	};
 
 	std::vector<Frame_EF> & efList = *efList_;
-	constexpr float width = 50.f;
+	constexpr float width = 75.f;
+
+	// Effect type list
+	const char* const effectTypes[] = {
+		"0: (Unknown)",
+		"1: Spawn Pattern",
+		"2: Various Effects",
+		"3: Spawn Preset Effect",
+		"4: Set Opponent State (no bounce reset)",
+		"5: Damage",
+		"6: Various Effects 2",
+		"8: Spawn Actor (effect.ha6)",
+		"9: Play Audio",
+		"11: Spawn Random Pattern",
+		"14: Set Opponent State (reset bounces)",
+		"101: Spawn Relative Pattern",
+		"111: Spawn Random Relative Pattern",
+		"257: (Arc typo?)",
+		"1000: Spawn and Follow",
+		"10002: Unknown",
+	};
+
+	// Manual edit mode tracking
+	static std::vector<int> manualEditMode;
+	if(manualEditMode.size() != efList.size()) {
+		manualEditMode.resize(efList.size(), 0);
+	}
+
 	int deleteI = -1;
-	for( int i = 0; i < efList.size(); i++)
+	for(int i = 0; i < efList.size(); i++)
 	{
-		if(i>0)
-			im::Separator();
+		if(i>0) im::Separator();
 		im::PushID(i);
 
-		im::SetNextItemWidth(width);
-		if(im::InputInt("Type", &efList[i].type, 0, 0)) {
-		markModified();
-	}
-		im::SameLine(0.f, 30);
-		im::SetNextItemWidth(width);
-		if(im::InputInt("Number", &efList[i].number, 0, 0)) {
-		markModified();
-	}
-		im::SameLine(0.f, 30);
+		// Type dropdown (with fallback for unlisted types)
+		int typeValue = efList[i].type;
+		int typeIndex = -1;
+		int knownTypes[] = {0, 1, 2, 3, 4, 5, 6, 8, 9, 11, 14, 101, 111, 257, 1000, 10002};
+		for(int j = 0; j < IM_ARRAYSIZE(knownTypes); j++) {
+			if(typeValue == knownTypes[j]) {
+				typeIndex = j;
+				break;
+			}
+		}
 
-		im::SetNextItemWidth(width);
+		if(typeIndex >= 0) {
+			im::SetNextItemWidth(width*3);
+			if(im::Combo("Type", &typeIndex, effectTypes, IM_ARRAYSIZE(effectTypes))) {
+				efList[i].type = knownTypes[typeIndex];
+				markModified();
+			}
+		} else {
+			im::SetNextItemWidth(width);
+			if(im::InputInt("Type", &efList[i].type, 0, 0)) {
+				markModified();
+			}
+		}
+
+		im::SameLine(0.f, 20);
+		bool manualMode = manualEditMode[i] != 0;
+		if(im::Checkbox("Manual", &manualMode)) {
+			manualEditMode[i] = manualMode ? 1 : 0;
+		}
+		if(im::IsItemHovered()) {
+			Tooltip("Enable raw parameter editing for undocumented values");
+		}
+
+		im::SameLine(0.f, 20);
 		ImGui::PushStyleColor(ImGuiCol_Button, ImVec4(1,0,0,0.4));
 		if(im::Button("Delete"))
-		{
 			deleteI = i;
-		}
 		ImGui::PopStyleColor();
 
-		if(im::InputScalarN("##params", ImGuiDataType_S32, efList[i].parameters, 6, NULL, NULL, "%d", 0)) {
-		markModified();
-	}
+		// Parameters
+		int* p = efList[i].parameters;
+		int& no = efList[i].number;
+
+		if(manualEditMode[i]) {
+			// Raw parameter editing
+			im::SetNextItemWidth(width);
+			if(im::InputInt("Number", &no, 0, 0)) {
+				markModified();
+			}
+			im::Text("Raw parameters:");
+			if(im::InputScalarN("##params", ImGuiDataType_S32, p, 6, NULL, NULL, "%d", 0)) {
+				markModified();
+			}
+			if(im::InputScalarN("##params2", ImGuiDataType_S32, p+6, 6, NULL, NULL, "%d", 0)) {
+				markModified();
+			}
+		} else {
+			// Smart UI based on effect type
+			DrawSmartEffectUI(efList[i], frameData, patternIndex, markModified);
+		}
+
 		im::SameLine();
 		if(singleClipboard && im::Button("Copy")) {
 			*singleClipboard = efList[i];
 		}
-		if(im::InputScalarN("##params2", ImGuiDataType_S32, efList[i].parameters+6, 6, NULL, NULL, "%d", 0)) {
-		markModified();
-	}
 
 		im::PopID();
-	};
+	}
 
+	// Handle deletion
 	if(deleteI >= 0) {
 		efList.erase(efList.begin() + deleteI);
+		manualEditMode.erase(manualEditMode.begin() + deleteI);
 		markModified();
 	}
 
-	if(im::Button("Add")) {
+	if(im::Button("Add effect")) {
 		efList.push_back({});
+		manualEditMode.push_back(0);
 		markModified();
+	}
+}
+
+// Smart Effect UI implementation
+static inline void DrawSmartEffectUI(Frame_EF& effect, FrameData* frameData, int patternIndex, std::function<void()> markModified)
+{
+	int* p = effect.parameters;
+	int& no = effect.number;
+	constexpr float width = 75.f;
+
+	switch(effect.type) {
+		case 1:   // Spawn Pattern
+		case 101: // Spawn Relative Pattern
+		{
+			// Pattern dropdown with names
+			if(frameData) {
+				im::SetNextItemWidth(width*3);
+				std::string currentName = frameData->GetDecoratedName(no);
+				if(im::BeginCombo("Pattern", currentName.c_str())) {
+					for(int i = 0; i < frameData->get_sequence_count(); i++) {
+						bool selected = (no == i);
+						std::string name = frameData->GetDecoratedName(i);
+						if(im::Selectable(name.c_str(), selected)) {
+							no = i;
+							markModified();
+						}
+						if(selected)
+							im::SetItemDefaultFocus();
+					}
+					im::EndCombo();
+				}
+			} else {
+				im::SetNextItemWidth(width);
+				if(im::InputInt("Pattern", &no, 0, 0)) {
+					markModified();
+				}
+			}
+
+			// Offset
+			im::SetNextItemWidth(width);
+			if(im::InputInt("Offset X", &p[0], 0, 0)) markModified();
+			im::SameLine(0, 20);
+			im::SetNextItemWidth(width);
+			if(im::InputInt("Offset Y", &p[1], 0, 0)) markModified();
+
+			// Flagset 1
+			if(im::TreeNode("Flagset 1 (Spawn Behavior)")) {
+				unsigned int flagIdx = -1;
+				if(BitField("##flags1", (unsigned int*)&p[2], &flagIdx, 13)) {
+					markModified();
+				}
+
+				// Tooltips based on hovered flag
+				switch(flagIdx) {
+					case 0: Tooltip("Remove when parent gets hit (includes shield, throw, not clash/armor)"); break;
+					case 1: Tooltip("Always face right"); break;
+					case 2: Tooltip("Follow parent"); break;
+					case 3: Tooltip("Affected by hitstop of parent"); break;
+					case 4: Tooltip("Coordinates relative to camera"); break;
+					case 5: Tooltip("Remove when parent changes pattern"); break;
+					case 6: Tooltip("Can go below floor level"); break;
+					case 7: Tooltip("Always on floor"); break;
+					case 8: Tooltip("Inherit parent's rotation"); break;
+					case 9: Tooltip("Position relative to screen border in the back"); break;
+					case 10: Tooltip("Unknown effect"); break;
+					case 11: Tooltip("Flip facing"); break;
+					case 12: Tooltip("Unknown (Akiha's 217 only)"); break;
+				}
+
+				im::Text("Raw value: %d", p[2]);
+				im::TreePop();
+			}
+
+			// Flagset 2
+			if(im::TreeNode("Flagset 2 (Child Properties)")) {
+				unsigned int flagIdx = -1;
+				if(BitField("##flags2", (unsigned int*)&p[3], &flagIdx, 13)) {
+					markModified();
+				}
+
+				// Tooltips based on hovered flag
+				switch(flagIdx) {
+					case 0: Tooltip("Child has shadow"); break;
+					case 1: Tooltip("Advance child with parent (also activates Flagset 1 bit 5)"); break;
+					case 2: Tooltip("Remove when parent is thrown"); break;
+					case 3: Tooltip("Parent is affected by hitstop"); break;
+					case 4: case 5: Tooltip("Unknown effect"); break;
+					case 6: Tooltip("Unaffected by parent's Type 2 superflash if spawned during it"); break;
+					case 7: Tooltip("Doesn't move with camera"); break;
+					case 8: Tooltip("Position is relative to opponent"); break;
+					case 9: Tooltip("Position is relative to (-32768, 0)"); break;
+					case 10: Tooltip("Top Z Priority (overridden if projectile sets own priority)"); break;
+					case 11: Tooltip("Face according to player slot"); break;
+					case 12: Tooltip("Unaffected by any superflash"); break;
+				}
+
+				im::Text("Raw value: %d", p[3]);
+				im::TreePop();
+			}
+
+			// Angle
+			im::SetNextItemWidth(width);
+			if(im::InputInt("Angle", &p[7], 0, 0)) markModified();
+			im::SameLine(); im::TextDisabled("(?)");
+			if(im::IsItemHovered()) {
+				Tooltip("Clockwise rotation: 0=0°, 2500=90°, 5000=180°, 10000=360°");
+			}
+
+			// Projectile var decrease
+			im::SetNextItemWidth(width);
+			if(im::InputInt("Proj var decrease", &p[8], 0, 0)) markModified();
+
+			break;
+		}
+
+		case 2: // Various Effects
+		{
+			// Sub-type dropdown
+			const char* const subTypes[] = {
+				"4: Random sparkle/speed line",
+				"26: (Blood) Heat",
+				"50: Superflash",
+				"210: Unknown (Ciel)",
+				"260: Unknown (Arc/Aoko)",
+				"261: Trailing effect",
+				"1260: Fading circle (Boss Aoko)",
+			};
+
+			// Find index or use custom
+			int knownTypes[] = {4, 26, 50, 210, 260, 261, 1260};
+			if(ShowComboWithManual("Effect Number", &no, subTypes, IM_ARRAYSIZE(subTypes), width*2, width)) {
+				markModified();
+			}
+
+			// Sub-type specific parameters
+			if(no == 50) { // Superflash
+				im::Text("--- Superflash Parameters ---");
+
+				im::SetNextItemWidth(width);
+				if(im::InputInt("Position X", &p[0], 0, 0)) markModified();
+				im::SameLine(0, 20);
+				im::SetNextItemWidth(width);
+				if(im::InputInt("Position Y", &p[1], 0, 0)) markModified();
+
+				im::SetNextItemWidth(width*2);
+				if(im::Combo("Freeze Mode", &p[2],
+					"0: Freeze self\000"
+					"1: Don't freeze self (freezes projectiles)\000"
+					"2: Don't freeze self or opponent\000"
+					"3: No flash\000")) {
+					markModified();
+				}
+
+				im::SetNextItemWidth(width);
+				if(im::InputInt("Duration", &p[3], 0, 0)) markModified();
+				im::SameLine(); im::TextDisabled("(?)");
+				if(im::IsItemHovered()) Tooltip("0 = default 30f");
+
+				im::SetNextItemWidth(width*2);
+				if(im::Combo("Portrait", &p[4],
+					"0: EX portrait\000"
+					"1: AD portrait\000"
+					"255: No portrait\000")) {
+					markModified();
+				}
+
+				im::SetNextItemWidth(width);
+				if(im::InputInt("Don't spend meter", &p[8], 0, 0)) markModified();
+
+				im::SetNextItemWidth(width);
+				if(im::InputInt("Meter gain mult", &p[9], 0, 0)) markModified();
+				im::SameLine(); im::TextDisabled("(?)");
+				if(im::IsItemHovered()) Tooltip("256 = 1.0x, requires param9 != 0");
+
+				im::SetNextItemWidth(width);
+				if(im::InputInt("Mult duration", &p[10], 0, 0)) markModified();
+				im::SameLine(); im::TextDisabled("(?)");
+				if(im::IsItemHovered()) Tooltip("Frames, requires param9 != 0");
+
+			} else {
+				// Generic parameters for other sub-types
+				im::Text("Parameters:");
+				if(im::InputScalarN("##params", ImGuiDataType_S32, p, 6, NULL, NULL, "%d", 0)) {
+					markModified();
+				}
+				if(im::InputScalarN("##params2", ImGuiDataType_S32, p+6, 6, NULL, NULL, "%d", 0)) {
+					markModified();
+				}
+			}
+
+			break;
+		}
+
+		case 3: // Spawn Preset Effect
+		{
+			const char* const presetEffects[] = {
+				"1: Jump looking effect",
+				"2: David star (lags)",
+				"3: Red hitspark",
+				"4: Force field",
+				"6: Fire",
+				"7: Snow",
+				"8: Blue flash",
+				"9: Blue hitspark",
+				"10: Superflash background",
+				"15: Blue horizontal wave",
+				"16: Red vertical wave",
+				"19: Foggy rays",
+				"20: 3D rotating waves",
+				"23: Blinding effect",
+				"24: Blinding effect 2",
+				"27: Dust cloud",
+				"28: Dust cloud (large)",
+				"29: Dust cloud (rotating)",
+				"30: Massive dust cloud",
+			};
+
+			if(ShowComboWithManual("Effect Number", &no, presetEffects, IM_ARRAYSIZE(presetEffects), width*2, width)) {
+				markModified();
+			}
+
+			// Position (common to all)
+			im::SetNextItemWidth(width);
+			if(im::InputInt("Position X", &p[0], 0, 0)) markModified();
+			im::SameLine(0, 20);
+			im::SetNextItemWidth(width);
+			if(im::InputInt("Position Y", &p[1], 0, 0)) markModified();
+
+			// Type-specific parameters
+			if(no == 1) { // Jump effect
+				im::Text("--- Jump Effect ---");
+				im::SetNextItemWidth(width);
+				if(im::InputInt("Duration", &p[2], 0, 0)) markModified();
+				im::SetNextItemWidth(width);
+				if(im::InputInt("Size", &p[3], 0, 0)) markModified();
+				im::SetNextItemWidth(width);
+				if(im::InputInt("Growth rate", &p[4], 0, 0)) markModified();
+			} else if(no == 3 || no == 9) { // Hitsparks
+				im::Text("--- Hitspark ---");
+				im::SetNextItemWidth(width);
+				if(im::InputInt("Intensity", &p[2], 0, 0)) markModified();
+			} else if(no >= 27 && no <= 30) { // Dust clouds
+				im::Text("--- Dust Cloud ---");
+				im::SetNextItemWidth(width);
+				if(im::InputInt("X speed", &p[2], 0, 0)) markModified();
+				im::SetNextItemWidth(width);
+				if(im::InputInt("Y speed", &p[3], 0, 0)) markModified();
+				im::SetNextItemWidth(width);
+				if(im::InputInt("Duration", &p[4], 0, 0)) markModified();
+				im::SetNextItemWidth(width);
+				if(im::Combo("Color", &p[5], "0: Brown\0001: Black\0002: Purple\0003: White\000")) {
+					markModified();
+				}
+				im::SetNextItemWidth(width);
+				if(im::InputInt("Flags", &p[6], 0, 0)) markModified();
+				im::SetNextItemWidth(width);
+				if(im::InputInt("Amount", &p[7], 0, 0)) markModified();
+			} else {
+				// Generic
+				im::Text("Parameters:");
+				if(im::InputScalarN("##params", ImGuiDataType_S32, p, 6, NULL, NULL, "%d", 0)) {
+					markModified();
+				}
+			}
+
+			break;
+		}
+
+		case 11:  // Spawn Random Pattern
+		case 111: // Spawn Random Relative Pattern
+		{
+			// Similar to type 1, but for random patterns
+			if(frameData) {
+				im::SetNextItemWidth(width*3);
+				std::string currentName = frameData->GetDecoratedName(no);
+				if(im::BeginCombo("Pattern", currentName.c_str())) {
+					for(int i = 0; i < frameData->get_sequence_count(); i++) {
+						bool selected = (no == i);
+						std::string name = frameData->GetDecoratedName(i);
+						if(im::Selectable(name.c_str(), selected)) {
+							no = i;
+							markModified();
+						}
+						if(selected)
+							im::SetItemDefaultFocus();
+					}
+					im::EndCombo();
+				}
+			} else {
+				im::SetNextItemWidth(width);
+				if(im::InputInt("Pattern", &no, 0, 0)) {
+					markModified();
+				}
+			}
+
+			// Random range
+			im::SetNextItemWidth(width);
+			if(im::InputInt("Random range", &p[0], 0, 0)) markModified();
+			im::SameLine(); im::TextDisabled("(?)");
+			if(im::IsItemHovered()) {
+				Tooltip("Spawns pattern (Pattern + random(0, range))");
+			}
+
+			// Offset
+			im::SetNextItemWidth(width);
+			if(im::InputInt("Offset X", &p[1], 0, 0)) markModified();
+			im::SameLine(0, 20);
+			im::SetNextItemWidth(width);
+			if(im::InputInt("Offset Y", &p[2], 0, 0)) markModified();
+
+			// Same flagsets as type 1
+			if(im::TreeNode("Flagset 1 (Spawn Behavior)")) {
+				unsigned int flagIdx = -1;
+				if(BitField("##flags1", (unsigned int*)&p[3], &flagIdx, 13)) {
+					markModified();
+				}
+
+				switch(flagIdx) {
+					case 0: Tooltip("Remove when parent gets hit (includes shield, throw, not clash/armor)"); break;
+					case 1: Tooltip("Always face right"); break;
+					case 2: Tooltip("Follow parent"); break;
+					case 3: Tooltip("Affected by hitstop of parent"); break;
+					case 4: Tooltip("Coordinates relative to camera"); break;
+					case 5: Tooltip("Remove when parent changes pattern"); break;
+					case 6: Tooltip("Can go below floor level"); break;
+					case 7: Tooltip("Always on floor"); break;
+					case 8: Tooltip("Inherit parent's rotation"); break;
+					case 9: Tooltip("Position relative to screen border in the back"); break;
+					case 10: Tooltip("Unknown effect"); break;
+					case 11: Tooltip("Flip facing"); break;
+					case 12: Tooltip("Unknown (Akiha's 217 only)"); break;
+				}
+
+				im::Text("Raw value: %d", p[3]);
+				im::TreePop();
+			}
+
+			if(im::TreeNode("Flagset 2 (Child Properties)")) {
+				unsigned int flagIdx = -1;
+				if(BitField("##flags2", (unsigned int*)&p[4], &flagIdx, 13)) {
+					markModified();
+				}
+
+				switch(flagIdx) {
+					case 0: Tooltip("Child has shadow"); break;
+					case 1: Tooltip("Advance child with parent (also activates Flagset 1 bit 5)"); break;
+					case 2: Tooltip("Remove when parent is thrown"); break;
+					case 3: Tooltip("Parent is affected by hitstop"); break;
+					case 4: case 5: Tooltip("Unknown effect"); break;
+					case 6: Tooltip("Unaffected by parent's Type 2 superflash if spawned during it"); break;
+					case 7: Tooltip("Doesn't move with camera"); break;
+					case 8: Tooltip("Position is relative to opponent"); break;
+					case 9: Tooltip("Position is relative to (-32768, 0)"); break;
+					case 10: Tooltip("Top Z Priority (overridden if projectile sets own priority)"); break;
+					case 11: Tooltip("Face according to player slot"); break;
+					case 12: Tooltip("Unaffected by any superflash"); break;
+				}
+
+				im::Text("Raw value: %d", p[4]);
+				im::TreePop();
+			}
+
+			// Angle
+			im::SetNextItemWidth(width);
+			if(im::InputInt("Angle", &p[8], 0, 0)) markModified();
+			im::SameLine(); im::TextDisabled("(?)");
+			if(im::IsItemHovered()) {
+				Tooltip("Clockwise rotation: 0=0°, 2500=90°, 5000=180°, 10000=360°");
+			}
+
+			// Projectile var decrease
+			im::SetNextItemWidth(width);
+			if(im::InputInt("Proj var decrease", &p[9], 0, 0)) markModified();
+
+			break;
+		}
+
+		case 4:  // Set Opponent State (no bounce reset)
+		case 14: // Set Opponent State (reset bounces)
+		{
+			// Pattern dropdown for opponent state
+			if(frameData) {
+				im::SetNextItemWidth(width*3);
+				std::string currentName = frameData->GetDecoratedName(no);
+				if(im::BeginCombo("Opponent Pattern", currentName.c_str())) {
+					for(int i = 0; i < frameData->get_sequence_count(); i++) {
+						bool selected = (no == i);
+						std::string name = frameData->GetDecoratedName(i);
+						if(im::Selectable(name.c_str(), selected)) {
+							no = i;
+							markModified();
+						}
+						if(selected)
+							im::SetItemDefaultFocus();
+					}
+					im::EndCombo();
+				}
+			} else {
+				im::SetNextItemWidth(width);
+				if(im::InputInt("Opponent Pattern", &no, 0, 0)) {
+					markModified();
+				}
+			}
+			im::SameLine(); im::TextDisabled("(?)");
+			if(im::IsItemHovered()) {
+				Tooltip("Usually only 23, 24, 26, 30, 350, 354");
+			}
+
+			// Position
+			im::SetNextItemWidth(width);
+			if(im::InputInt("X pos", &p[0], 0, 0)) markModified();
+			im::SameLine(0, 20);
+			im::SetNextItemWidth(width);
+			if(im::InputInt("Y pos", &p[1], 0, 0)) markModified();
+
+			// Type 14 specific
+			if(effect.type == 14) {
+				im::SetNextItemWidth(width);
+				if(im::InputInt("Rotation", &p[2], 0, 0)) markModified();
+				im::SameLine(); im::TextDisabled("(?)");
+				if(im::IsItemHovered()) {
+					Tooltip("Rotation unit (large values like 1000, 4000 used)");
+				}
+			} else {
+				// Type 4 has unknown param3
+				im::SetNextItemWidth(width);
+				if(im::InputInt("Unknown", &p[2], 0, 0)) markModified();
+				im::SameLine(); im::TextDisabled("(?)");
+				if(im::IsItemHovered()) {
+					Tooltip("Found in old airthrows, probably leftover");
+				}
+			}
+
+			// Flags
+			if(im::TreeNode("Flags")) {
+				unsigned int flagIdx = -1;
+				if(BitField("##flags", (unsigned int*)&p[3], &flagIdx, 7)) {
+					markModified();
+				}
+
+				switch(flagIdx) {
+					case 0: Tooltip("Play animation"); break;
+					case 1: Tooltip("Reverse vector"); break;
+					case 2: Tooltip("Can't OTG"); break;
+					case 3:
+						if(effect.type == 14) {
+							Tooltip("Make enemy unhittable");
+						} else {
+							Tooltip("Unknown");
+						}
+						break;
+					case 4:
+						if(effect.type == 14) {
+							Tooltip("Use last position?");
+						} else {
+							Tooltip("Unknown");
+						}
+						break;
+					case 5: Tooltip("Hard Knockdown"); break;
+				}
+
+				im::Text("Raw value: %d", p[3]);
+				im::TreePop();
+			}
+
+			// Vector ID
+			im::SetNextItemWidth(width*2);
+			if(ShowComboWithManual("Vector ID", &p[4], hitVectorList, IM_ARRAYSIZE(hitVectorList), width*2, width)) {
+				markModified();
+			}
+			im::SameLine(); im::TextDisabled("(?)");
+			if(im::IsItemHovered()) {
+				Tooltip("Works only if animation plays");
+			}
+
+			// Untech time
+			im::SetNextItemWidth(width);
+			if(im::InputInt("Untech time", &p[5], 0, 0)) markModified();
+			im::SameLine(); im::TextDisabled("(?)");
+			if(im::IsItemHovered()) {
+				Tooltip(effect.type == 14 ?
+					"Used with vectors" :
+					"0 = infinite, only works for airstun vectors");
+			}
+
+			// Type 14 specific param7
+			if(effect.type == 14) {
+				im::SetNextItemWidth(width);
+				if(im::Combo("Char location", &p[6], "0: Self\0001: Opponent\000")) {
+					markModified();
+				}
+			} else {
+				im::SetNextItemWidth(width);
+				if(im::InputInt("Unknown", &p[6], 0, 0)) markModified();
+				im::SameLine(); im::TextDisabled("(?)");
+				if(im::IsItemHovered()) {
+					Tooltip("Most of the time it's 0");
+				}
+			}
+
+			// Opponent's frame
+			if(effect.type == 4) {
+				im::SetNextItemWidth(width);
+				if(im::InputInt("Opponent frame", &p[7], 0, 0)) markModified();
+			}
+
+			break;
+		}
+
+		case 5: // Damage
+		{
+			const char* const damageTypes[] = {
+				"0: Set added effect",
+				"1: Damage opponent",
+				"4: Unknown (obsolete?)",
+			};
+
+			int typeIndex = -1;
+			int knownTypes[] = {0, 1, 4};
+			for(int j = 0; j < IM_ARRAYSIZE(knownTypes); j++) {
+				if(no == knownTypes[j]) {
+					typeIndex = j;
+					break;
+				}
+			}
+
+			if(typeIndex >= 0) {
+				im::SetNextItemWidth(width*2);
+				if(im::Combo("Damage Type", &typeIndex, damageTypes, IM_ARRAYSIZE(damageTypes))) {
+					no = knownTypes[typeIndex];
+					markModified();
+				}
+			} else {
+				im::SetNextItemWidth(width);
+				if(im::InputInt("Type", &no, 0, 0)) {
+					markModified();
+				}
+			}
+
+			if(no == 0) { // Set added effect
+				im::SetNextItemWidth(width*2);
+				int effectTypes[] = {1, 2, 3, 4, 100};
+				const char* effectNames[] = {
+					"1: Burn",
+					"2: Freeze",
+					"3: Shock",
+					"4: Confuse",
+					"100: Black sprite",
+				};
+
+				// Find current index
+				int currentIdx = 0;
+				for(int i = 0; i < IM_ARRAYSIZE(effectTypes); i++) {
+					if(p[0] == effectTypes[i]) {
+						currentIdx = i;
+						break;
+					}
+				}
+
+				if(im::Combo("Effect", &currentIdx, effectNames, IM_ARRAYSIZE(effectNames))) {
+					p[0] = effectTypes[currentIdx];
+					markModified();
+				}
+			} else if(no == 1) { // Damage opponent
+				im::SetNextItemWidth(width);
+				if(im::InputInt("Damage", &p[0], 0, 0)) markModified();
+
+				im::SetNextItemWidth(width);
+				if(im::Combo("Add to hit count", &p[1], "0\0001\0002\000")) {
+					markModified();
+				}
+
+				im::SetNextItemWidth(width);
+				if(im::InputInt("Hitstop", &p[2], 0, 0)) markModified();
+
+				im::SetNextItemWidth(width);
+				if(im::InputInt("Hit sound", &p[3], 0, 0)) markModified();
+				im::SameLine(); im::TextDisabled("(?)");
+				if(im::IsItemHovered()) {
+					Tooltip("Same as in AT data");
+				}
+
+				im::SetNextItemWidth(width);
+				if(im::Combo("Hit scaling", &p[4], "0\0001\000")) {
+					markModified();
+				}
+
+				im::SetNextItemWidth(width);
+				if(im::InputInt("VS damage", &p[5], 0, 0)) markModified();
+			} else if(no == 4) { // Unknown/obsolete
+				im::SetNextItemWidth(width);
+				if(im::InputInt("Unknown", &p[0], 0, 0)) markModified();
+				im::SameLine(); im::TextDisabled("(?)");
+				if(im::IsItemHovered()) {
+					Tooltip("Always -10, probably obsolete");
+				}
+			} else {
+				// Unknown damage type
+				im::Text("Parameters:");
+				if(im::InputScalarN("##params", ImGuiDataType_S32, p, 6, NULL, NULL, "%d", 0)) {
+					markModified();
+				}
+			}
+
+			break;
+		}
+
+		case 6: // Various Effects 2
+		{
+			im::SetNextItemWidth(width*2);
+			const char* const effect6Types[] = {
+				"0: After-image",
+				"1: Screen effects",
+				"2: Invulnerability",
+				"3: Trailing images",
+				"4: Gauges",
+				"5: Turnaround behavior",
+				"6: Set movement vector",
+				"9: Set No Input flag",
+				"10: Various effects",
+				"11: Super flash",
+				"12: Various teleports",
+				"14: Gauges of char in special box",
+				"15: Start/Stop Music",
+				"16: Directional movement",
+				"19: Prorate",
+				"22: Scale and rotation",
+				"24: Guard Quality Change",
+				"100: Increase Projectile Variable",
+				"101: Decrease Projectile Variable",
+				"102: Increase Dash variable",
+				"103: Decrease Dash variable",
+				"105: Change variable",
+				"106: Make projectile no despawn on hit",
+				"107: Change frames into pattern",
+				"110: Count normal as used",
+				"111: Store/Load Movement",
+				"112: Change proration",
+				"113: Rebeat Penalty (22.5%)",
+				"114: Circuit Break",
+				"150: Command partner",
+				"252: Set tag flag",
+				"253: Hide chars and delay hit effects",
+				"254: Intro check",
+				"255: Char + 0x1b1 | 0x10",
+			};
+
+			if(ShowComboWithManual("Sub-type", &no, effect6Types, IM_ARRAYSIZE(effect6Types), width*2, width)) {
+				markModified();
+			}
+
+			// Sub-type specific parameters
+			if(no == 0 || no == 3) { // After-image or Trailing images
+				im::Text(no == 0 ? "--- After-image (one every 7f) ---" : "--- Trailing images ---");
+
+				im::SetNextItemWidth(width*2);
+				if(im::Combo("Blending mode", &p[0],
+					"0: Blue (Normal)\000"
+					"1: Red (Normal)\000"
+					"2: Green (Normal)\000"
+					"3: Yellow (Normal)\000"
+					"4: Normal (Normal)\000"
+					"5: Black (Normal)\000"
+					"6: Blue (Additive)\000"
+					"7: Red (Additive)\000"
+					"8: Green (Additive)\000"
+					"9: Yellow (Additive)\000"
+					"10: Normal (Additive)\000"
+					"11: Normal (Full opacity)\000")) {
+					markModified();
+				}
+
+				if(no == 3) { // Trailing images only
+					im::SetNextItemWidth(width);
+					if(im::InputInt("Number of images", &p[1], 0, 0)) markModified();
+
+					im::SetNextItemWidth(width);
+					if(im::InputInt("Frames behind", &p[2], 0, 0)) markModified();
+					im::SameLine(); im::TextDisabled("(?)");
+					if(im::IsItemHovered()) {
+						Tooltip("Frames each image is behind previous (max 32)");
+					}
+				}
+
+			} else if(no == 1) { // Screen effects
+				im::Text("--- Screen Effects ---");
+
+				im::SetNextItemWidth(width);
+				if(im::InputInt("Shake duration", &p[0], 0, 0)) markModified();
+
+				im::SetNextItemWidth(width*2);
+				int screenEffectTypes[] = {0, 1, 2, 3, 4, 5, 31, 32};
+				const char* screenEffectNames[] = {
+					"0: Screen dim",
+					"1: Black bg",
+					"2: Blue bg",
+					"3: Red bg",
+					"4: White bg",
+					"5: Red bg with silhouette",
+					"31: EX flash facing right",
+					"32: EX flash facing left",
+				};
+
+				// Find current index
+				int screenIdx = 0;
+				for(int i = 0; i < IM_ARRAYSIZE(screenEffectTypes); i++) {
+					if(p[1] == screenEffectTypes[i]) {
+						screenIdx = i;
+						break;
+					}
+				}
+
+				if(im::Combo("Screen effect", &screenIdx, screenEffectNames, IM_ARRAYSIZE(screenEffectNames))) {
+					p[1] = screenEffectTypes[screenIdx];
+					markModified();
+				}
+
+				im::SetNextItemWidth(width);
+				if(im::InputInt("Effect duration", &p[2], 0, 0)) markModified();
+
+				im::SetNextItemWidth(width);
+				if(im::InputInt("Slowdown duration", &p[3], 0, 0)) markModified();
+
+			} else if(no == 2) { // Invulnerability
+				im::Text("--- Invulnerability ---");
+
+				im::SetNextItemWidth(width);
+				if(im::InputInt("Strike invuln", &p[0], 0, 0)) markModified();
+
+				im::SetNextItemWidth(width);
+				if(im::InputInt("Throw invuln", &p[1], 0, 0)) markModified();
+
+			} else if(no == 4) { // Gauges
+				im::Text("--- Gauges ---");
+
+				im::SetNextItemWidth(width);
+				if(im::InputInt("Health change", &p[0], 0, 0)) markModified();
+				im::SameLine(); im::TextDisabled("(?)");
+				if(im::IsItemHovered()) {
+					Tooltip("May not exceed Red Health");
+				}
+
+				im::SetNextItemWidth(width);
+				if(im::InputInt("Meter change", &p[1], 0, 0)) markModified();
+
+				im::SetNextItemWidth(width);
+				if(im::InputInt("MAX/HEAT time", &p[2], 0, 0)) markModified();
+				im::SameLine(); im::TextDisabled("(?)");
+				if(im::IsItemHovered()) {
+					Tooltip("Only works if owner is in MAX/HEAT/BLOOD HEAT");
+				}
+
+				im::SetNextItemWidth(width);
+				if(im::InputInt("Red Health change", &p[3], 0, 0)) markModified();
+
+			} else if(no == 5) { // Turnaround behavior
+				im::Text("--- Turnaround Behavior ---");
+
+				im::SetNextItemWidth(width*2);
+				if(im::Combo("Behavior", &p[0],
+					"0: Turnaround regardless of input\000"
+					"1: Turn to face opponent\000"
+					"2: Turnaround on 1/4/7 input\000"
+					"3: Turnaround on 3/6/9 input\000"
+					"4: Always face right\000"
+					"5: Always face left\000"
+					"6: Random\000")) {
+					markModified();
+				}
+
+			} else if(no == 6) { // Set movement vector
+				im::Text("--- Set Movement Vector ---");
+
+				im::SetNextItemWidth(width);
+				if(im::InputInt("Min speed", &p[0], 0, 0)) markModified();
+
+				im::SetNextItemWidth(width);
+				if(im::InputInt("Max speed", &p[1], 0, 0)) markModified();
+
+				im::SetNextItemWidth(width);
+				if(im::InputInt("Min accel", &p[2], 0, 0)) markModified();
+
+				im::SetNextItemWidth(width);
+				if(im::InputInt("Max accel", &p[3], 0, 0)) markModified();
+
+				im::SetNextItemWidth(width);
+				if(im::Combo("Axis", &p[4], "0: X\0001: Y\000")) {
+					markModified();
+				}
+
+				im::SetNextItemWidth(width);
+				if(im::Checkbox("Param12=1: param4=angle", (bool*)&p[11])) {
+					markModified();
+				}
+
+			} else if(no == 9) { // Set No Input flag
+				im::SetNextItemWidth(width);
+				if(im::InputInt("Value", &p[0], 0, 0)) markModified();
+
+			} else if(no == 10) { // Various effects (armor/confusion)
+				im::Text("--- Various Effects ---");
+
+				im::SetNextItemWidth(width);
+				if(im::Combo("Effect", &p[0], "0: Armor\0001: Confusion\000")) {
+					markModified();
+				}
+
+				im::SetNextItemWidth(width);
+				if(im::InputInt("Duration", &p[1], 0, 0)) markModified();
+
+			} else if(no == 11) { // Super flash
+				im::Text("--- Super Flash ---");
+
+				im::SetNextItemWidth(width);
+				if(im::InputInt("Global flash dur", &p[0], 0, 0)) markModified();
+				im::SameLine(); im::TextDisabled("(?)");
+				if(im::IsItemHovered()) {
+					Tooltip("Only if param2 != 0");
+				}
+
+				im::SetNextItemWidth(width);
+				if(im::InputInt("Player flash", &p[1], 0, 0)) markModified();
+				im::SameLine(); im::TextDisabled("(?)");
+				if(im::IsItemHovered()) {
+					Tooltip("Set to 0 if 0");
+				}
+
+			} else if(no == 12) { // Various teleports
+				im::Text("--- Teleports ---");
+
+				im::SetNextItemWidth(width);
+				if(im::Combo("Param12 mode", &p[11],
+					"0: Move self/parent relative\000"
+					"1: Reset camera and absolute pos\000"
+					"2: Move relative to parent/grabbed\000"
+					"3: Keep in bounds\000")) {
+					markModified();
+				}
+
+				if(p[11] == 0) {
+					im::SetNextItemWidth(width);
+					if(im::Combo("Param5 mode", &p[4],
+						"0: Move relative to itself/camera\000"
+						"1: Move parent relative to opponent\000"
+						"2: Move parent to self\000")) {
+						markModified();
+					}
+
+					if(p[4] == 0) {
+						im::SetNextItemWidth(width);
+						if(im::Combo("Position relative to", &p[2],
+							"0: param4\0001: Camera edge and floor\000")) {
+							markModified();
+						}
+
+						im::SetNextItemWidth(width);
+						if(im::Combo("Target", &p[3], "0: Parent\0001: Self\000")) {
+							markModified();
+						}
+					}
+
+					im::SetNextItemWidth(width);
+					if(im::InputInt("X offset", &p[0], 0, 0)) markModified();
+					im::SetNextItemWidth(width);
+					if(im::InputInt("Y offset", &p[1], 0, 0)) markModified();
+
+				} else if(p[11] == 1) {
+					im::SetNextItemWidth(width);
+					if(im::InputInt("X position", &p[0], 0, 0)) markModified();
+					im::SetNextItemWidth(width);
+					if(im::InputInt("Y position", &p[1], 0, 0)) markModified();
+
+					im::SetNextItemWidth(width);
+					if(im::Combo("X mode", &p[2],
+						"0: Absolute\0001: Relative to facing\000")) {
+						markModified();
+					}
+
+				} else if(p[11] == 2) {
+					im::SetNextItemWidth(width);
+					if(im::InputInt("X offset", &p[0], 0, 0)) markModified();
+					im::SetNextItemWidth(width);
+					if(im::InputInt("Y offset", &p[1], 0, 0)) markModified();
+				}
+
+			} else if(no == 14) { // Gauges of character in special box
+				im::Text("--- Gauges (Special Box) ---");
+
+				im::SetNextItemWidth(width);
+				if(im::Combo("Target", &p[0],
+					"0: Enemies only\000"
+					"1: Allies only\000"
+					"2: Both\000")) {
+					markModified();
+				}
+
+				im::SetNextItemWidth(width);
+				if(im::InputInt("Health change", &p[1], 0, 0)) markModified();
+
+				im::SetNextItemWidth(width);
+				if(im::InputInt("Meter change", &p[2], 0, 0)) markModified();
+
+				im::SetNextItemWidth(width);
+				if(im::InputInt("MAX/HEAT time", &p[3], 0, 0)) markModified();
+
+			} else if(no == 15) { // Start/Stop Music
+				im::SetNextItemWidth(width);
+				if(im::Combo("Music", &p[0], "0: Stop\0001: Start\000")) {
+					markModified();
+				}
+
+			} else if(no == 16) { // Directional movement
+				im::Text("--- Directional Movement ---");
+
+				im::SetNextItemWidth(width);
+				if(im::Combo("Param12 mode", &p[11],
+					"0: Directional Movement\000"
+					"1: Go to camera relative position\000")) {
+					markModified();
+				}
+
+				if(p[11] == 0) {
+					im::SetNextItemWidth(width);
+					if(im::InputInt("Base angle", &p[0], 0, 0)) markModified();
+					im::SameLine(); im::TextDisabled("(?)");
+					if(im::IsItemHovered()) {
+						Tooltip("Degrees clockwise");
+					}
+
+					im::SetNextItemWidth(width);
+					if(im::InputInt("Random angle range", &p[1], 0, 0)) markModified();
+
+					im::SetNextItemWidth(width);
+					if(im::InputInt("Base speed", &p[2], 0, 0)) markModified();
+
+					im::SetNextItemWidth(width);
+					if(im::InputInt("Random speed range", &p[3], 0, 0)) markModified();
+
+				} else {
+					im::SetNextItemWidth(width);
+					if(im::InputInt("X", &p[0], 0, 0)) markModified();
+
+					im::SetNextItemWidth(width);
+					if(im::InputInt("Y", &p[1], 0, 0)) markModified();
+
+					im::SetNextItemWidth(width);
+					if(im::InputInt("Velocity divisor", &p[2], 0, 0)) markModified();
+					im::SameLine(); im::TextDisabled("(?)");
+					if(im::IsItemHovered()) {
+						Tooltip("If 1 or 0, travels entire distance in 1 frame");
+					}
+				}
+
+			} else if(no == 19) { // Prorate
+				im::Text("--- Prorate ---");
+
+				im::SetNextItemWidth(width);
+				if(im::InputInt("Proration value", &p[0], 0, 0)) markModified();
+
+				im::SetNextItemWidth(width);
+				int prorateType = p[1];
+				// Clamp to valid range for combo
+				if(prorateType < 0 || prorateType > 2) prorateType = 0;
+				if(im::Combo("Type", &prorateType,
+					"0: Absolute\0001: Multiplicative\0002: Subtractive\000")) {
+					p[1] = prorateType;
+					markModified();
+				}
+
+			} else if(no == 22) { // Scale and rotation
+				im::Text("--- Scale and Rotation ---");
+
+				im::SetNextItemWidth(width);
+				int scaleRotTypes[] = {0, 1, 2, 10};
+				const char* scaleRotNames[] = {
+					"0: Something with X scale",
+					"1: Something with Y scale",
+					"2: Something with X and Y scale",
+					"10: Something with rotation",
+				};
+
+				// Find current index
+				int scaleRotIdx = 0;
+				for(int i = 0; i < IM_ARRAYSIZE(scaleRotTypes); i++) {
+					if(p[5] == scaleRotTypes[i]) {
+						scaleRotIdx = i;
+						break;
+					}
+				}
+
+				if(im::Combo("Param6", &scaleRotIdx, scaleRotNames, IM_ARRAYSIZE(scaleRotNames))) {
+					p[5] = scaleRotTypes[scaleRotIdx];
+					markModified();
+				}
+
+			} else if(no == 24) { // Guard Quality Change
+				im::Text("--- Guard Quality Change ---");
+
+				im::SetNextItemWidth(width*2);
+				int guardActionTypes[] = {0, 1, 5, 6, 7, 10, 11, 15, 20, 21, 22, 23, 25, 30, 31, 32, 35, 42, 43, 44};
+				const char* guardActionNames[] = {
+					"0: Guard Reset (-50000)",
+					"1: Super jump (0)",
+					"5: Stand shield (10000)",
+					"6: Crouch shield (10000)",
+					"7: Air shield (10000)",
+					"10: Ground dodge (4000)",
+					"11: Air dodge (7500)",
+					"15: Backdash (0)",
+					"20: Heat/Blood Heat Activation (-50000)",
+					"21: Meter Charge (-500, unused)",
+					"22: Ground burst (-50000)",
+					"23: Air burst (-50000)",
+					"25: Throw escape (-5000, unused)",
+					"30: Successful stand shield (-15000)",
+					"31: Successful crouch shield (-15000)",
+					"32: Successful air shield (-5000)",
+					"35: Throw escape/Guard Crush (-50000)",
+					"42: Meter charge 2F (-500)",
+					"43: Meter charge 3F (-333)",
+					"44: Meter charge 4F (-250)",
+				};
+
+				// Find current index
+				int guardIdx = 0;
+				for(int i = 0; i < IM_ARRAYSIZE(guardActionTypes); i++) {
+					if(p[0] == guardActionTypes[i]) {
+						guardIdx = i;
+						break;
+					}
+				}
+
+				if(im::Combo("Guard action", &guardIdx, guardActionNames, IM_ARRAYSIZE(guardActionNames))) {
+					p[0] = guardActionTypes[guardIdx];
+					markModified();
+				}
+
+			} else if(no == 100 || no == 101) { // Increase/Decrease Projectile Variable
+				im::Text(no == 100 ? "--- Increase Proj Var ---" : "--- Decrease Proj Var ---");
+
+				im::SetNextItemWidth(width);
+				if(im::InputInt("Param1", &p[0], 0, 0)) markModified();
+				im::SameLine(); im::TextDisabled("(?)");
+				if(im::IsItemHovered()) {
+					Tooltip("1s place: Amount\n10s place: Variable ID");
+				}
+
+			} else if(no == 102 || no == 103) { // Increase/Decrease Dash variable
+				im::Text(no == 102 ? "--- Increase Dash Var ---" : "--- Decrease Dash Var ---");
+
+				im::SetNextItemWidth(width);
+				if(im::InputInt("Amount", &p[0], 0, 0)) markModified();
+
+			} else if(no == 105) { // Change variable
+				im::Text("--- Change Variable ---");
+
+				im::SetNextItemWidth(width);
+				if(im::InputInt("Variable ID", &p[0], 0, 0)) markModified();
+				im::SameLine(); im::TextDisabled("(?)");
+				if(im::IsItemHovered()) {
+					Tooltip("0-9, can overflow with <0 and >9");
+				}
+
+				im::SetNextItemWidth(width);
+				if(im::InputInt("Value", &p[1], 0, 0)) markModified();
+
+				im::SetNextItemWidth(width);
+				if(im::Combo("Mode", &p[2], "0: Set\0001: Add\000")) {
+					markModified();
+				}
+
+			} else if(no == 106) { // Make projectile no longer despawn on hit
+				im::Text("Deactivates EFTP1 P3 bit0");
+
+			} else if(no == 107) { // Change frames into pattern
+				im::Text("--- Change Frames ---");
+
+				im::SetNextItemWidth(width);
+				if(im::InputInt("Value", &p[0], 0, 0)) markModified();
+
+				im::SetNextItemWidth(width);
+				if(im::Combo("Mode", &p[1], "0: Set\0001: Add\000")) {
+					markModified();
+				}
+
+			} else if(no == 110) { // Count normal as used
+				im::SetNextItemWidth(width);
+				if(im::InputInt("Pattern - 1", &p[0], 0, 0)) markModified();
+				im::SameLine(); im::TextDisabled("(?)");
+				if(im::IsItemHovered()) {
+					Tooltip("Pattern of normal - 1 (0-8)");
+				}
+
+			} else if(no == 111) { // Store/Load Movement
+				im::Text("--- Store/Load Movement ---");
+
+				im::SetNextItemWidth(width);
+				if(im::Combo("Mode", &p[0], "0: Save\0001: Load\000")) {
+					markModified();
+				}
+
+				im::SetNextItemWidth(width);
+				if(im::InputInt("Clear movement", &p[1], 0, 0)) markModified();
+				im::SameLine(); im::TextDisabled("(?)");
+				if(im::IsItemHovered()) {
+					Tooltip("Clear current movement if not 0");
+				}
+
+				im::SetNextItemWidth(width);
+				if(im::InputInt("Set stored Y accel", &p[2], 0, 0)) markModified();
+				im::SameLine(); im::TextDisabled("(?)");
+				if(im::IsItemHovered()) {
+					Tooltip("If not 0 and current Y velocity/accel < 1");
+				}
+
+			} else if(no == 112) { // Change proration
+				im::Text("--- Change Proration ---");
+
+				im::SetNextItemWidth(width);
+				if(im::InputInt("Proration", &p[0], 0, 0)) markModified();
+
+				im::SetNextItemWidth(width);
+				if(im::Combo("Type", &p[1],
+					"0: Override\0001: Multiply\0002: Subtract\000")) {
+					markModified();
+				}
+
+			} else if(no == 113) { // Rebeat Penalty
+				im::Text("Rebeat Penalty (22.5%)");
+
+			} else if(no == 114) { // Circuit Break
+				im::Text("Circuit Break");
+
+			} else if(no == 150) { // Command partner
+				im::Text("--- Command Partner ---");
+
+				im::SetNextItemWidth(width);
+				if(im::InputInt("Partner pattern", &p[0], 0, 0)) markModified();
+
+				im::SetNextItemWidth(width);
+				if(im::Combo("Condition", &p[1],
+					"0: Always\000"
+					"1: If assist is grounded\000"
+					"2: If assist is airborne\000"
+					"3: If assist is standing\000"
+					"4: If assist is crouching\000")) {
+					markModified();
+				}
+
+			} else if(no == 252) { // Set tag flag
+				im::SetNextItemWidth(width);
+				if(im::InputInt("Value", &p[0], 0, 0)) markModified();
+
+			} else if(no == 253) { // Hide chars
+				im::Text("Hide chars and delay hit effects");
+
+			} else if(no == 254) { // Intro check
+				im::Text("Intro check");
+
+			} else if(no == 255) { // Char + 0x1b1
+				im::Text("Char + 0x1b1 | 0x10");
+
+			} else {
+				// Generic parameters
+				im::Text("Parameters:");
+				if(im::InputScalarN("##params", ImGuiDataType_S32, p, 6, NULL, NULL, "%d", 0)) {
+					markModified();
+				}
+				if(im::InputScalarN("##params2", ImGuiDataType_S32, p+6, 6, NULL, NULL, "%d", 0)) {
+					markModified();
+				}
+			}
+
+			break;
+		}
+
+		case 8: // Spawn Actor (effect.ha6)
+		{
+			im::Text("Same params as Effect 1");
+
+			const char* const actorTypes[] = {
+				"5: Clash",
+				"26: Charge [X]",
+			};
+
+			if(ShowComboWithManual("Actor", &no, actorTypes, IM_ARRAYSIZE(actorTypes), width*2, width)) {
+				markModified();
+			}
+
+			// Pattern dropdown (same as type 1)
+			im::SetNextItemWidth(width);
+			if(im::InputInt("Offset X", &p[0], 0, 0)) markModified();
+			im::SameLine(0, 20);
+			im::SetNextItemWidth(width);
+			if(im::InputInt("Offset Y", &p[1], 0, 0)) markModified();
+
+			// Show flagsets collapsed
+			if(im::TreeNode("Flagset 1 (same as Type 1)")) {
+				unsigned int flagIdx = -1;
+				if(BitField("##flags1", (unsigned int*)&p[2], &flagIdx, 13)) {
+					markModified();
+				}
+				im::Text("Raw value: %d", p[2]);
+				im::TreePop();
+			}
+
+			if(im::TreeNode("Flagset 2 (same as Type 1)")) {
+				unsigned int flagIdx = -1;
+				if(BitField("##flags2", (unsigned int*)&p[3], &flagIdx, 13)) {
+					markModified();
+				}
+				im::Text("Raw value: %d", p[3]);
+				im::TreePop();
+			}
+
+			break;
+		}
+
+		case 9: // Play Audio
+		{
+			im::SetNextItemWidth(width*2);
+			if(im::Combo("Bank", &no,
+				"0: Universal sounds\000"
+				"1: Character specific\000")) {
+				markModified();
+			}
+
+			im::SetNextItemWidth(width);
+			if(im::InputInt("Sound ID", &p[0], 0, 0)) markModified();
+
+			im::SetNextItemWidth(width);
+			if(im::InputInt("Probability", &p[1], 0, 0)) markModified();
+			im::SameLine(); im::TextDisabled("(?)");
+			if(im::IsItemHovered()) {
+				Tooltip("0 = 100%");
+			}
+
+			im::SetNextItemWidth(width);
+			if(im::InputInt("Different sounds", &p[2], 0, 0)) markModified();
+			im::SameLine(); im::TextDisabled("(?)");
+			if(im::IsItemHovered()) {
+				Tooltip("1 and 0 equivalent, IDs adjacent");
+			}
+
+			im::SetNextItemWidth(width);
+			if(im::InputInt("Unknown (param4)", &p[3], 0, 0)) markModified();
+			im::SameLine(); im::TextDisabled("(?)");
+			if(im::IsItemHovered()) {
+				Tooltip("Sometimes 1");
+			}
+
+			im::SetNextItemWidth(width);
+			if(im::InputInt("Unknown (param6)", &p[5], 0, 0)) markModified();
+
+			im::SetNextItemWidth(width);
+			if(im::InputInt("Unknown (param7)", &p[6], 0, 0)) markModified();
+			im::SameLine(); im::TextDisabled("(?)");
+			if(im::IsItemHovered()) {
+				Tooltip("Either 2 or 0, probably related to param6");
+			}
+
+			im::SetNextItemWidth(width);
+			if(im::InputInt("Unknown (param12)", &p[11], 0, 0)) markModified();
+			im::SameLine(); im::TextDisabled("(?)");
+			if(im::IsItemHovered()) {
+				Tooltip("Sometimes 1, used in time up/intro/win");
+			}
+
+			break;
+		}
+
+		case 257: // Arc typo
+		{
+			im::Text("Arc pattern 124 typo - no effect");
+			im::Text("Parameters:");
+			if(im::InputScalarN("##params", ImGuiDataType_S32, p, 6, NULL, NULL, "%d", 0)) {
+				markModified();
+			}
+			break;
+		}
+
+		case 1000: // Spawn and follow
+		{
+			im::Text("Spawns and follows (Dust of Osiris, Sion)");
+			im::Text("Probably interacts with pattern data");
+
+			im::SetNextItemWidth(width);
+			if(im::InputInt("Pattern", &no, 0, 0)) {
+				markModified();
+			}
+
+			im::Text("Parameters:");
+			if(im::InputScalarN("##params", ImGuiDataType_S32, p, 6, NULL, NULL, "%d", 0)) {
+				markModified();
+			}
+			break;
+		}
+
+		case 10002: // Unknown
+		{
+			im::Text("Only for projectiles");
+
+			im::SetNextItemWidth(width);
+			if(im::InputInt("Param1 (*256)", &p[0], 0, 0)) markModified();
+			im::SameLine(); im::TextDisabled("(?)");
+			if(im::IsItemHovered()) {
+				Tooltip("Calculates X + (Param1 * 256)");
+			}
+
+			im::SetNextItemWidth(width);
+			if(im::InputInt("Param2 (*256)", &p[1], 0, 0)) markModified();
+			im::SameLine(); im::TextDisabled("(?)");
+			if(im::IsItemHovered()) {
+				Tooltip("Calculates Y + (Param2 * 256)");
+			}
+
+			im::Text("Other parameters:");
+			if(im::InputScalarN("##params", ImGuiDataType_S32, p+2, 6, NULL, NULL, "%d", 0)) {
+				markModified();
+			}
+			break;
+		}
+
+		// Add more cases for other effect types as needed...
+
+		default:
+			// Unknown effect type - show raw parameters
+			im::SetNextItemWidth(width);
+			if(im::InputInt("Number", &no, 0, 0)) {
+				markModified();
+			}
+			im::Text("Parameters:");
+			if(im::InputScalarN("##params", ImGuiDataType_S32, p, 6, NULL, NULL, "%d", 0)) {
+				markModified();
+			}
+			if(im::InputScalarN("##params2", ImGuiDataType_S32, p+6, 6, NULL, NULL, "%d", 0)) {
+				markModified();
+			}
+			break;
 	}
 }
 
