@@ -11,6 +11,8 @@ public:
 	void Draw();
 
 private:
+	// Helper to recursively display spawn tree
+	void DisplaySpawnNode(int spawnIndex, int displayNumber);
 	
 };
 
