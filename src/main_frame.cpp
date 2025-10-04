@@ -675,7 +675,13 @@ bool MainFrame::HandleKeys(uint64_t vkey)
 							Sequence* targetSeq = active->frameData.get_sequence(snapshot->patternIndex);
 							if (targetSeq) {
 								*targetSeq = snapshot->sequence;
-								active->markModified();
+
+								// Check if we're at clean state
+								if (active->undoManager.isAtCleanState()) {
+									active->clearModified();
+								} else {
+									active->markModified();
+								}
 
 								// Validate frame index after undo
 								auto& state = view->getState();
@@ -716,7 +722,13 @@ bool MainFrame::HandleKeys(uint64_t vkey)
 							Sequence* targetSeq = active->frameData.get_sequence(snapshot->patternIndex);
 							if (targetSeq) {
 								*targetSeq = snapshot->sequence;
-								active->markModified();
+
+								// Check if we're at clean state
+								if (active->undoManager.isAtCleanState()) {
+									active->clearModified();
+								} else {
+									active->markModified();
+								}
 
 								// Validate frame index after redo
 								auto& state = view->getState();

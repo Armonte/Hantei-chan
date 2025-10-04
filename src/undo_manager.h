@@ -25,6 +25,7 @@ private:
 	bool enabled = true;
 	bool hasUnsavedChanges = false;
 	std::unique_ptr<SequenceSnapshot> pendingSnapshot;
+	size_t cleanStateDepth = 0;  // Undo stack depth at last save (0 = initial clean state)
 
 public:
 	UndoManager() = default;
@@ -138,6 +139,17 @@ public:
 	void clear() {
 		undoStack.clear();
 		redoStack.clear();
+		cleanStateDepth = 0;
+	}
+
+	// Mark current state as clean (saved)
+	void markCleanState() {
+		cleanStateDepth = undoStack.size();
+	}
+
+	// Check if we're at the clean state (saved state)
+	bool isAtCleanState() const {
+		return undoStack.size() == cleanStateDepth;
 	}
 };
 

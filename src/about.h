@@ -28,6 +28,7 @@ public:
 			ImGui::Text("Special thanks to mauve, MadScientist, u4ick, and Rhekar");
 			ImGui::Spacing();
 			ImGui::Text("Fork by gonp & Armonté https://github.com/gonpgonp/Hantei-chan");
+			ImGui::Text("\nApplication average %.3f ms/frame (%.1f FPS)", 1000.0f / ImGui::GetIO().Framerate, ImGui::GetIO().Framerate);
 
 			ImGui::End();
 			ImGui::PopStyleColor(2);
