@@ -518,6 +518,11 @@ void Render::DrawLayers()
 		}
 
 		// Apply layer-specific transforms (spawn offset + frame offset)
+		// TODO: Implement positioning flags:
+		//   flagset1 & 0x10: Coordinates relative to camera
+		//   flagset2 & 0x100: Position relative to opponent
+		//   flagset2 & 0x200: Position relative to (-32768, 0)
+		// For now, using basic relative positioning
 		x = origX + layer.spawnOffsetX;
 		y = origY + layer.spawnOffsetY;
 		offsetX = layer.frameOffsetX;
