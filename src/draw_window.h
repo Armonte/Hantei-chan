@@ -13,6 +13,7 @@ public:
 	DrawWindow(Render* render, FrameData *frameData, FrameState &state):
 		render(render),
 		frameData(frameData),
+		effectFrameData(nullptr),
 		currState(state){};
 
 	FrameState &currState;
@@ -24,9 +25,15 @@ public:
 	std::function<void()> onModified;
 	// Callback to save undo state before modification
 	std::function<void(int)> onSaveUndo;
+
+	// Setter for effect.ha6 frame data
+	void setEffectFrameData(FrameData* data) {
+		effectFrameData = data;
+	}
 protected:
 	Render *render;
 	FrameData *frameData;
+	FrameData *effectFrameData;  // Effect.ha6 frame data (can be null)
 
 	// Helper to mark as modified
 	void markModified() {

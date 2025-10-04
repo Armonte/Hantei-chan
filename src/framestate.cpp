@@ -195,3 +195,121 @@ std::vector<SpawnedPatternInfo> ParseSpawnedPatterns(const std::vector<Frame_EF>
 
 	return spawned;
 }
+
+// Recursive function to build full spawn tree
+void BuildSpawnTreeRecursive(
+	FrameData* mainFrameData,
+	FrameData* effectFrameData,
+	int patternId,
+	bool usesEffectHA6,
+	int parentSpawnIndex,
+	int depth,
+	int absoluteSpawnFrame,
+	std::vector<SpawnedPatternInfo>& allSpawns,
+	std::set<int>& visitedPatterns)
+{
+	// Safety: limit max recursion depth
+	constexpr int MAX_DEPTH = 10;
+	if (depth > MAX_DEPTH) {
+		return;
+	}
+
+	// Cycle detection: check if we're already processing this pattern
+	if (visitedPatterns.find(patternId) != visitedPatterns.end()) {
+		// Mark the parent spawn as recursive if it exists
+		if (parentSpawnIndex >= 0 && parentSpawnIndex < allSpawns.size()) {
+			allSpawns[parentSpawnIndex].isRecursive = true;
+		}
+		return;
+	}
+
+	// Get the appropriate frame data source
+	FrameData* sourceFrameData = usesEffectHA6 ? effectFrameData : mainFrameData;
+	if (!sourceFrameData) return;
+
+	// Get the pattern's sequence
+	auto sequence = sourceFrameData->get_sequence(patternId);
+	if (!sequence || sequence->frames.empty()) return;
+
+	// Add pattern to visited set
+	visitedPatterns.insert(patternId);
+
+	// Calculate pattern lifetime
+	int frameCount = sequence->frames.size();
+	int lifetime = frameCount;
+
+	// Check if pattern loops (aniType == 2) or stops (aniType == 0 or 1)
+	if (frameCount > 0) {
+		auto& lastFrame = sequence->frames.back();
+		if (lastFrame.AF.aniType == 2) {
+			// Looping pattern - set lifetime to a large number for now
+			lifetime = 9999;  // Effectively infinite
+		}
+	}
+
+	// Iterate through all frames in this pattern
+	for (int frameIdx = 0; frameIdx < frameCount; frameIdx++) {
+		auto& frame = sequence->frames[frameIdx];
+
+		if (frame.EF.empty()) continue;
+
+		// Parse spawn effects in this frame
+		auto frameSpawns = ParseSpawnedPatterns(frame.EF, frameIdx);
+
+		// Process each spawn found in this frame
+		for (auto& spawn : frameSpawns) {
+			// Set hierarchy fields
+			spawn.depth = depth;
+			spawn.parentSpawnIndex = parentSpawnIndex;
+			spawn.absoluteSpawnFrame = absoluteSpawnFrame + frameIdx;
+
+			// Calculate child pattern's lifetime
+			FrameData* childSource = spawn.usesEffectHA6 ? effectFrameData : mainFrameData;
+			if (childSource) {
+				auto childSeq = childSource->get_sequence(spawn.patternId);
+				if (childSeq && !childSeq->frames.empty()) {
+					spawn.patternFrameCount = childSeq->frames.size();
+					spawn.lifetime = spawn.patternFrameCount;
+
+					// Check child's aniType
+					auto& childLastFrame = childSeq->frames.back();
+					if (childLastFrame.AF.aniType == 2) {
+						spawn.lifetime = 9999;  // Looping
+					}
+				}
+			}
+
+			// Assign tint color based on depth
+			switch (depth % 4) {
+				case 0: spawn.tintColor = glm::vec4(0.5f, 0.7f, 1.0f, 1.0f); break;  // Blue
+				case 1: spawn.tintColor = glm::vec4(0.5f, 1.0f, 0.5f, 1.0f); break;  // Green
+				case 2: spawn.tintColor = glm::vec4(1.0f, 1.0f, 0.5f, 1.0f); break;  // Yellow
+				case 3: spawn.tintColor = glm::vec4(1.0f, 0.5f, 0.5f, 1.0f); break;  // Red
+			}
+
+			// Add this spawn to the output array
+			int currentSpawnIndex = allSpawns.size();
+			allSpawns.push_back(spawn);
+
+			// Update parent's child indices if this has a parent
+			if (parentSpawnIndex >= 0 && parentSpawnIndex < allSpawns.size()) {
+				allSpawns[parentSpawnIndex].childSpawnIndices.push_back(currentSpawnIndex);
+			}
+
+			// Recursively process the spawned pattern's children
+			BuildSpawnTreeRecursive(
+				mainFrameData,
+				effectFrameData,
+				spawn.patternId,
+				spawn.usesEffectHA6,
+				currentSpawnIndex,
+				depth + 1,
+				spawn.absoluteSpawnFrame,
+				allSpawns,
+				visitedPatterns);
+		}
+	}
+
+	// Remove pattern from visited set (allow it to be spawned in different branches)
+	visitedPatterns.erase(patternId);
+}

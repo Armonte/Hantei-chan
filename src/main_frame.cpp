@@ -136,8 +136,8 @@ void MainFrame::DrawBack()
 			if (!spawnedSeq || spawnedSeq->frames.empty()) continue;
 
 			// Calculate local frame: frames elapsed since spawn
-			// spawnInfo.parentFrame is the frame where the effect exists
-			int localFrame = state.frame - spawnInfo.parentFrame;
+			// Use absoluteSpawnFrame for recursive spawn tree support
+			int localFrame = state.frame - spawnInfo.absoluteSpawnFrame;
 
 			// Check if spawned pattern should be visible
 			if (localFrame < 0) {
@@ -145,14 +145,14 @@ void MainFrame::DrawBack()
 				continue;
 			}
 
+			// Check if pattern has ended (use pre-calculated lifetime)
+			if (spawnInfo.lifetime < 9999 && localFrame >= spawnInfo.lifetime) {
+				// Pattern ended - don't show
+				continue;
+			}
+
+			// For looping patterns or frames past sequence end, clamp to last frame
 			if (localFrame >= spawnedSeq->frames.size()) {
-				// Past the end of the pattern - check if it should stop
-				auto& lastFrame = spawnedSeq->frames.back();
-				if (lastFrame.AF.aniType == 0 || lastFrame.AF.aniType == 1) {
-					// Pattern ended (stop/sequential type) - don't show
-					continue;
-				}
-				// For looping patterns, clamp to last frame
 				localFrame = spawnedSeq->frames.size() - 1;
 			}
 
@@ -551,6 +551,13 @@ void MainFrame::DrawUi()
 			if (seq) {
 				character->undoManager.beginFrame(patternIndex, *seq);
 			}
+		}
+
+		// Set effectFrameData on all panes if effect.ha6 is loaded
+		if (effectCharacter) {
+			if (view->getMainPane()) view->getMainPane()->setEffectFrameData(&effectCharacter->frameData);
+			if (view->getRightPane()) view->getRightPane()->setEffectFrameData(&effectCharacter->frameData);
+			if (view->getBoxPane()) view->getBoxPane()->setEffectFrameData(&effectCharacter->frameData);
 		}
 
 		if (view->getMainPane()) view->getMainPane()->Draw();

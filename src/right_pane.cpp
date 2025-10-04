@@ -100,90 +100,49 @@ void RightPane::Draw()
 
 					ImGui::Separator();
 
-					// Parse and accumulate spawned patterns from all frames
+					// Build recursive spawn tree for entire pattern
 					if(vizSettings.autoDetect)
 					{
-						// Track when pattern changes to rebuild spawned patterns list
+						// Track when pattern changes to rebuild spawn tree
 						static int lastPattern = -1;
-						static int lastBuildFrame = -1;
 
 						bool patternChanged = (lastPattern != currState.pattern);
 
-						// Rebuild spawned patterns list when pattern changes
+						// Rebuild spawn tree when pattern changes
 						if (patternChanged) {
 							currState.spawnedPatterns.clear();
 							lastPattern = currState.pattern;
-							lastBuildFrame = -1;
+
+							// Build full recursive spawn tree
+							std::set<int> visitedPatterns;
+							BuildSpawnTreeRecursive(
+								frameData,                // Main character frame data
+								effectFrameData,          // Effect.ha6 frame data (can be null)
+								currState.pattern,        // Root pattern to analyze
+								false,                    // Root pattern is from main character
+								-1,                       // No parent (root level)
+								0,                        // Depth 0
+								0,                        // Starts at absolute frame 0
+								currState.spawnedPatterns,
+								visitedPatterns);
 						}
 
-						// Parse current frame's effects and add to accumulated list
-						if (!frame.EF.empty()) {
-							auto newSpawns = ParseSpawnedPatterns(frame.EF, currState.frame);
-
-							// Add new spawns that aren't already in the list
-							for (const auto& newSpawn : newSpawns) {
-								bool alreadyExists = false;
-								for (const auto& existing : currState.spawnedPatterns) {
-									if (existing.parentFrame == newSpawn.parentFrame &&
-									    existing.effectIndex == newSpawn.effectIndex) {
-										alreadyExists = true;
-										break;
-									}
-								}
-								if (!alreadyExists) {
-									currState.spawnedPatterns.push_back(newSpawn);
-								}
-							}
-						}
-
-						// Display accumulated spawned patterns
+						// Display spawned patterns as hierarchical tree
 						if(!currState.spawnedPatterns.empty())
 						{
 							ImGui::Text("Total spawned pattern(s): %d", (int)currState.spawnedPatterns.size());
 							ImGui::Separator();
 
+							// Display only root-level spawns (parentSpawnIndex == -1)
+							// Children will be displayed recursively
+							int displayNumber = 1;
 							for(size_t i = 0; i < currState.spawnedPatterns.size(); i++)
 							{
-								ImGui::PushID(static_cast<int>(i));
-
 								const auto& sp = currState.spawnedPatterns[i];
-								std::string patternName = frameData->GetDecoratedName(sp.patternId);
-
-								if(ImGui::TreeNode("##spawned", "%d. Pattern %s (frame %d) [Type %d%s]",
-					(int)i+1,
-					patternName.c_str(),
-					sp.parentFrame,
-					sp.effectType,
-					sp.usesEffectHA6 ? " - effect.ha6" : ""))
+								if(sp.parentSpawnIndex == -1)
 								{
-									ImGui::Text("Effect Index: %d", sp.effectIndex);
-									ImGui::Text("Effect Type: %d%s", sp.effectType, sp.usesEffectHA6 ? " (effect.ha6)" : "");
-									ImGui::Text("Offset: (%d, %d)", sp.offsetX, sp.offsetY);
-
-									if(sp.randomRange > 0) {
-										ImGui::Text("Random Range: %d", sp.randomRange);
-									}
-
-									if(sp.angle != 0) {
-										float degrees = (sp.angle / 10000.0f) * 360.0f;
-										ImGui::Text("Angle: %d (%.1f°)", sp.angle, degrees);
-									}
-
-									// Show some key flags
-									if(sp.flagset1 & 0x4) {  // bit 2
-										ImGui::BulletText("Follows parent");
-									}
-									if(sp.flagset1 & 0x10) { // bit 4
-										ImGui::BulletText("Camera relative");
-									}
-									if(sp.flagset2 & 0x100) { // bit 8
-										ImGui::BulletText("Relative to opponent");
-									}
-
-									ImGui::TreePop();
+									DisplaySpawnNode(static_cast<int>(i), displayNumber++);
 								}
-
-								ImGui::PopID();
 							}
 						}
 						else
@@ -203,5 +162,99 @@ void RightPane::Draw()
 		}
 	}
 	ImGui::End();
+}
+
+// Recursively display a spawn node and its children
+void RightPane::DisplaySpawnNode(int spawnIndex, int displayNumber)
+{
+	if(spawnIndex < 0 || spawnIndex >= currState.spawnedPatterns.size()) {
+		return;
+	}
+
+	const auto& sp = currState.spawnedPatterns[spawnIndex];
+
+	// Get pattern name
+	FrameData* sourceData = sp.usesEffectHA6 ? effectFrameData : frameData;
+	std::string patternName = sourceData ? sourceData->GetDecoratedName(sp.patternId) : std::to_string(sp.patternId);
+
+	ImGui::PushID(spawnIndex);
+
+	// Color code by depth
+	ImVec4 depthColor = ImVec4(sp.tintColor.r, sp.tintColor.g, sp.tintColor.b, 1.0f);
+	ImGui::PushStyleColor(ImGuiCol_Text, depthColor);
+
+	// Build tree node label with hierarchy info
+	bool hasChildren = !sp.childSpawnIndices.empty();
+	const char* recursiveMarker = sp.isRecursive ? " [RECURSIVE]" : "";
+
+	bool nodeOpen = ImGui::TreeNode("##spawned", "%d. Pattern %s @ frame %d%s%s",
+		displayNumber,
+		patternName.c_str(),
+		sp.absoluteSpawnFrame,
+		hasChildren ? " ↓" : "",
+		recursiveMarker);
+
+	ImGui::PopStyleColor();
+
+	if(nodeOpen)
+	{
+		// Display spawn details
+		ImGui::Text("Depth: %d", sp.depth);
+		ImGui::Text("Spawned by: Effect %d (type %d%s)",
+			sp.effectIndex,
+			sp.effectType,
+			sp.usesEffectHA6 ? " - effect.ha6" : "");
+		ImGui::Text("Parent frame: %d", sp.parentFrame);
+		ImGui::Text("Absolute spawn frame: %d", sp.absoluteSpawnFrame);
+		ImGui::Text("Pattern frames: %d", sp.patternFrameCount);
+
+		if(sp.lifetime < 9999) {
+			ImGui::Text("Lifetime: %d frames", sp.lifetime);
+		} else {
+			ImGui::TextColored(ImVec4(1.0f, 1.0f, 0.5f, 1.0f), "Lifetime: Looping");
+		}
+
+		ImGui::Text("Offset: (%d, %d)", sp.offsetX, sp.offsetY);
+
+		if(sp.randomRange > 0) {
+			ImGui::Text("Random Range: %d", sp.randomRange);
+		}
+
+		if(sp.angle != 0) {
+			float degrees = (sp.angle / 10000.0f) * 360.0f;
+			ImGui::Text("Angle: %d (%.1f°)", sp.angle, degrees);
+		}
+
+		// Show key flags
+		if(sp.flagset1 & 0x4) {
+			ImGui::BulletText("Follows parent");
+		}
+		if(sp.flagset1 & 0x10) {
+			ImGui::BulletText("Camera relative");
+		}
+		if(sp.flagset2 & 0x100) {
+			ImGui::BulletText("Relative to opponent");
+		}
+
+		// Recursively display children
+		if(hasChildren)
+		{
+			ImGui::Separator();
+			ImGui::Text("Children (%d):", (int)sp.childSpawnIndices.size());
+			ImGui::Indent();
+
+			int childDisplayNum = 1;
+			for(int childIdx : sp.childSpawnIndices)
+			{
+				DisplaySpawnNode(childIdx, childDisplayNum++);
+			}
+
+			ImGui::Unindent();
+		}
+
+		ImGui::TreePop();
+	}
+
+	ImGui::PopID();
 }
 

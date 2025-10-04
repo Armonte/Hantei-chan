@@ -5,6 +5,7 @@
 #include "hitbox.h"
 #include <linear_allocator.hpp>
 #include <vector>
+#include <set>
 #include <glm/vec4.hpp>
 
 struct CopyData {
@@ -38,6 +39,17 @@ struct SpawnedPatternInfo {
 	// Parent frame tracking (stateless approach)
 	int parentFrame;      // The parent frame where this spawn effect exists
 
+	// Hierarchy tracking (for recursive spawn trees)
+	int depth;                          // 0 = direct child, 1 = grandchild, 2 = great-grandchild, etc.
+	int parentSpawnIndex;               // Index in spawnedPatterns array (-1 for root-level spawns)
+	std::vector<int> childSpawnIndices; // Indices of children in spawnedPatterns array
+
+	// Timeline tracking
+	int absoluteSpawnFrame;             // Global frame when this spawns (relative to main pattern frame 0)
+	int patternFrameCount;              // Total frames in the spawned pattern's sequence
+	int lifetime;                       // Calculated frames this lives (respects aniType)
+	bool isRecursive;                   // True if pattern spawns itself (cycle detected)
+
 	// Visualization state
 	bool visible;         // Show/hide this spawned pattern
 	float alpha;          // Transparency (0.0 - 1.0)
@@ -47,6 +59,8 @@ struct SpawnedPatternInfo {
 		effectIndex(-1), effectType(0), usesEffectHA6(false), patternId(-1), offsetX(0), offsetY(0),
 		flagset1(0), flagset2(0), angle(0), projVarDecrease(0), randomRange(0),
 		parentFrame(0),
+		depth(0), parentSpawnIndex(-1),
+		absoluteSpawnFrame(0), patternFrameCount(0), lifetime(0), isRecursive(false),
 		visible(true), alpha(0.6f), tintColor(0.5f, 0.7f, 1.0f, 1.0f) {}
 };
 
@@ -97,7 +111,19 @@ private:
 	void *sharedMem = nullptr;
 };
 
-// Utility function to parse spawned patterns from effects
+// Utility function to parse spawned patterns from effects (single frame)
 std::vector<SpawnedPatternInfo> ParseSpawnedPatterns(const std::vector<Frame_EF>& effects, int parentFrame);
+
+// Recursive function to build full spawn tree
+void BuildSpawnTreeRecursive(
+	class FrameData* mainFrameData,
+	class FrameData* effectFrameData,
+	int patternId,
+	bool usesEffectHA6,
+	int parentSpawnIndex,
+	int depth,
+	int absoluteSpawnFrame,
+	std::vector<SpawnedPatternInfo>& allSpawns,
+	std::set<int>& visitedPatterns);
 
 #endif /* FRAMESTATE_H_GUARD */
