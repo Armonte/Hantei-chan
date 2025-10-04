@@ -113,8 +113,36 @@ void MainFrame::DrawBack()
 		mainLayer.sourceCG = &active->cg;  // Main pattern uses character CG
 		render.AddLayer(mainLayer);
 
-		// Build render layers for each active spawned pattern instance
-		for (auto& spawnInfo : state.activeSpawns) {
+		// Build render layers for spawned patterns
+		// Use activeSpawns during animation (handles looping), spawnedPatterns when paused (for seeking)
+		bool useActiveSpawns = state.animating && !state.activeSpawns.empty();
+		auto& spawnsToRender = useActiveSpawns ?
+			reinterpret_cast<std::vector<ActiveSpawnInstance>&>(state.activeSpawns) :
+			reinterpret_cast<std::vector<ActiveSpawnInstance>&>(state.spawnedPatterns);
+
+		for (size_t i = 0; i < (useActiveSpawns ? state.activeSpawns.size() : state.spawnedPatterns.size()); i++) {
+			// Get spawn info from appropriate source
+			ActiveSpawnInstance spawnInfo;
+
+			if (useActiveSpawns) {
+				spawnInfo = state.activeSpawns[i];
+			} else {
+				// Convert SpawnedPatternInfo to ActiveSpawnInstance for rendering
+				auto& staticSpawn = state.spawnedPatterns[i];
+				if (!staticSpawn.visible) continue;
+
+				spawnInfo.spawnTick = staticSpawn.spawnTick;
+				spawnInfo.patternId = staticSpawn.patternId;
+				spawnInfo.usesEffectHA6 = staticSpawn.usesEffectHA6;
+				spawnInfo.offsetX = staticSpawn.offsetX;
+				spawnInfo.offsetY = staticSpawn.offsetY;
+				spawnInfo.flagset1 = staticSpawn.flagset1;
+				spawnInfo.flagset2 = staticSpawn.flagset2;
+				spawnInfo.angle = staticSpawn.angle;
+				spawnInfo.projVarDecrease = staticSpawn.projVarDecrease;
+				spawnInfo.tintColor = staticSpawn.tintColor;
+				spawnInfo.alpha = staticSpawn.alpha;
+			}
 
 			// Determine which character to pull pattern from
 			FrameData* sourceFrameData;
@@ -626,6 +654,8 @@ void MainFrame::RenderUpdate()
 		{
 			duration = 0;
 			loopCounter = 0;
+			// Clear active spawns when pattern changes
+			state.activeSpawns.clear();
 		}
 
 		if(state.animating)
@@ -700,12 +730,6 @@ void MainFrame::RenderUpdate()
 
 			duration++;
 			state.currentTick++;  // Increment tick counter for spawned pattern synchronization
-		}
-		else {
-			// Not animating - clear active spawns when stopped
-			if(!state.activeSpawns.empty()) {
-				state.activeSpawns.clear();
-			}
 		}
 
 		auto &frame =  seq->frames[state.frame];

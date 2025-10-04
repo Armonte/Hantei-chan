@@ -110,8 +110,9 @@ void MainPane::Draw()
 					currState.animating = !currState.animating;
 					currState.animeSeq = currState.pattern;
 					if (currState.animating) {
-						// Reset tick counter when starting animation
+						// Reset tick counter and clear active spawns when starting animation
 						currState.currentTick = 0;
+						currState.activeSpawns.clear();
 					}
 				}
 			}
