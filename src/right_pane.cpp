@@ -149,9 +149,15 @@ void RightPane::Draw()
 								const auto& sp = currState.spawnedPatterns[i];
 								std::string patternName = frameData->GetDecoratedName(sp.patternId);
 
-								if(ImGui::TreeNode("##spawned", "%d. Pattern %s (frame %d)", (int)i+1, patternName.c_str(), sp.parentFrame))
+								if(ImGui::TreeNode("##spawned", "%d. Pattern %s (frame %d) [Type %d%s]",
+					(int)i+1,
+					patternName.c_str(),
+					sp.parentFrame,
+					sp.effectType,
+					sp.usesEffectHA6 ? " - effect.ha6" : ""))
 								{
 									ImGui::Text("Effect Index: %d", sp.effectIndex);
+									ImGui::Text("Effect Type: %d%s", sp.effectType, sp.usesEffectHA6 ? " (effect.ha6)" : "");
 									ImGui::Text("Offset: (%d, %d)", sp.offsetX, sp.offsetY);
 
 									if(sp.randomRange > 0) {

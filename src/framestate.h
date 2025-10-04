@@ -25,6 +25,8 @@ struct CopyData {
 // Spawned pattern visualization data
 struct SpawnedPatternInfo {
 	int effectIndex;      // Which effect spawned this
+	int effectType;       // Effect type (1, 8, 11, 101, 111, 1000)
+	bool usesEffectHA6;   // True if type 8 (pulls from effect.ha6)
 	int patternId;        // Pattern to spawn
 	int offsetX, offsetY; // Position offset
 	int flagset1;         // Spawn behavior flags
@@ -42,7 +44,7 @@ struct SpawnedPatternInfo {
 	glm::vec4 tintColor;  // RGB tint color
 
 	SpawnedPatternInfo() :
-		effectIndex(-1), patternId(-1), offsetX(0), offsetY(0),
+		effectIndex(-1), effectType(0), usesEffectHA6(false), patternId(-1), offsetX(0), offsetY(0),
 		flagset1(0), flagset2(0), angle(0), projVarDecrease(0), randomRange(0),
 		parentFrame(0),
 		visible(true), alpha(0.6f), tintColor(0.5f, 0.7f, 1.0f, 1.0f) {}

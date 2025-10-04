@@ -44,6 +44,9 @@ private:
 	std::vector<std::unique_ptr<CharacterView>> views;           // Independent views
 	int activeViewIndex = -1;
 
+	// Shared effect character (effect.ha6) - loaded automatically from MBAACC data folder
+	std::unique_ptr<CharacterInstance> effectCharacter;
+
 	std::string currentFilePath;
 
 	// Helper methods
@@ -60,6 +63,11 @@ private:
 	CharacterInstance* findCharacterByPath(const std::string& path);
 	void createViewForCharacter(CharacterInstance* character);
 	int countViewsForCharacter(CharacterInstance* character);
+
+	// Effect character management
+	bool loadEffectCharacter(const std::string& baseFolder);
+	CharacterInstance* getEffectCharacter();
+	void tryLoadEffectCharacter(CharacterInstance* character);
 
 	void DrawBack();
 	void DrawUi();

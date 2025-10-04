@@ -24,6 +24,7 @@ struct RenderLayer {
 	glm::vec4 tintColor;
 	bool isSpawned;
 	BoxList hitboxes;  // Hitboxes for this layer
+	CG* sourceCG;          // CG to pull sprite from (for effect.ha6 support)
 
 	RenderLayer() :
 		spriteId(-1), spawnOffsetX(0), spawnOffsetY(0),
@@ -32,7 +33,7 @@ struct RenderLayer {
 		rotX(0.0f), rotY(0.0f), rotZ(0.0f),
 		blendMode(0), zPriority(0),
 		alpha(1.0f), tintColor(1.0f, 1.0f, 1.0f, 1.0f),
-		isSpawned(false) {}
+		isSpawned(false), sourceCG(nullptr) {}
 };
 
 class Render

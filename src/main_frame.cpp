@@ -17,6 +17,7 @@
 #include <glm/gtc/matrix_transform.hpp>
 
 #include <algorithm>
+#include <filesystem>
 
 MainFrame::MainFrame(ContextGl *context_):
 context(context_)
@@ -109,14 +110,29 @@ void MainFrame::DrawBack()
 		mainLayer.tintColor = glm::vec4(1.0f, 1.0f, 1.0f, 1.0f);
 		mainLayer.isSpawned = false;
 		mainLayer.hitboxes = mainFrame.hitboxes;
+		mainLayer.sourceCG = &active->cg;  // Main pattern uses character CG
 		render.AddLayer(mainLayer);
 
 		// Build render layers for each spawned pattern
 		for (auto& spawnInfo : state.spawnedPatterns) {
 			if (!spawnInfo.visible) continue;
 
-			// Get the spawned pattern's sequence
-			auto spawnedSeq = active->frameData.get_sequence(spawnInfo.patternId);
+			// Determine which character to pull pattern from
+			FrameData* sourceFrameData;
+			CG* sourceCG;
+
+			if (spawnInfo.usesEffectHA6 && effectCharacter) {
+				// Type 8: Pull from effect.ha6
+				sourceFrameData = &effectCharacter->frameData;
+				sourceCG = &effectCharacter->cg;
+			} else {
+				// Type 1/11/101/111/1000: Pull from main character
+				sourceFrameData = &active->frameData;
+				sourceCG = &active->cg;
+			}
+
+			// Get the spawned pattern's sequence from appropriate source
+			auto spawnedSeq = sourceFrameData->get_sequence(spawnInfo.patternId);
 			if (!spawnedSeq || spawnedSeq->frames.empty()) continue;
 
 			// Calculate local frame: frames elapsed since spawn
@@ -160,6 +176,7 @@ void MainFrame::DrawBack()
 			layer.tintColor = spawnInfo.tintColor;
 			layer.isSpawned = true;
 			layer.hitboxes = spawnedFrame.hitboxes;
+			layer.sourceCG = sourceCG;  // Use appropriate CG (character or effect.ha6)
 
 			render.AddLayer(layer);
 		}
@@ -275,6 +292,7 @@ void MainFrame::DrawUi()
 							auto character = std::make_unique<CharacterInstance>();
 							if (character->loadFromTxt(path)) {
 								characters.push_back(std::move(character));
+								tryLoadEffectCharacter(characters.back().get());
 								createViewForCharacter(characters.back().get());
 								markProjectModified();
 							}
@@ -291,6 +309,7 @@ void MainFrame::DrawUi()
 							auto character = std::make_unique<CharacterInstance>();
 							if (character->loadHA6(path, false)) {
 								characters.push_back(std::move(character));
+								tryLoadEffectCharacter(characters.back().get());
 								createViewForCharacter(characters.back().get());
 								markProjectModified();
 							}
@@ -307,6 +326,7 @@ void MainFrame::DrawUi()
 							auto character = std::make_unique<CharacterInstance>();
 							if (character->loadHA6(path, true)) {
 								characters.push_back(std::move(character));
+								tryLoadEffectCharacter(characters.back().get());
 								createViewForCharacter(characters.back().get());
 								markProjectModified();
 							}
@@ -1048,6 +1068,7 @@ void MainFrame::Menu(unsigned int errorPopupId)
 						auto character = std::make_unique<CharacterInstance>();
 						if (character->loadFromTxt(path)) {
 							characters.push_back(std::move(character));
+							tryLoadEffectCharacter(characters.back().get());
 							createViewForCharacter(characters.back().get());
 							markProjectModified();
 						} else {
@@ -1068,6 +1089,7 @@ void MainFrame::Menu(unsigned int errorPopupId)
 						auto character = std::make_unique<CharacterInstance>();
 						if (character->loadHA6(path, false)) {
 							characters.push_back(std::move(character));
+							tryLoadEffectCharacter(characters.back().get());
 							createViewForCharacter(characters.back().get());
 							markProjectModified();
 						} else {
@@ -1088,6 +1110,7 @@ void MainFrame::Menu(unsigned int errorPopupId)
 						auto character = std::make_unique<CharacterInstance>();
 						if (character->loadHA6(path, true)) {
 							characters.push_back(std::move(character));
+							tryLoadEffectCharacter(characters.back().get());
 							createViewForCharacter(characters.back().get());
 							markProjectModified();
 						} else {
@@ -1448,6 +1471,50 @@ int MainFrame::countViewsForCharacter(CharacterInstance* character)
 		}
 	}
 	return count;
+}
+
+bool MainFrame::loadEffectCharacter(const std::string& baseFolder)
+{
+	// Build path to effect.txt
+	std::string effectTxtPath = baseFolder + "/effect.txt";
+	std::filesystem::path effectPath(effectTxtPath);
+
+	// Try backslash if forward slash doesn't exist
+	if (!std::filesystem::exists(effectPath)) {
+		effectTxtPath = baseFolder + "\\effect.txt";
+		effectPath = effectTxtPath;
+	}
+
+	if (!std::filesystem::exists(effectPath)) {
+		return false;
+	}
+
+	// Create and load effect character
+	auto effect = std::make_unique<CharacterInstance>();
+	if (!effect->loadFromTxt(effectTxtPath)) {
+		return false;
+	}
+
+	effect->setName("effect");
+	effectCharacter = std::move(effect);
+	return true;
+}
+
+CharacterInstance* MainFrame::getEffectCharacter()
+{
+	return effectCharacter.get();
+}
+
+// Helper: Auto-load effect character if character is in MBAACC data folder
+void MainFrame::tryLoadEffectCharacter(CharacterInstance* character)
+{
+	if (!character) return;
+	if (effectCharacter) return;  // Already loaded
+
+	if (character->isInMBAACCDataFolder()) {
+		std::string baseFolder = character->getBaseFolder();
+		loadEffectCharacter(baseFolder);
+	}
 }
 
 void MainFrame::closeView(int index)
