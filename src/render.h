@@ -26,6 +26,10 @@ struct RenderLayer {
 	BoxList hitboxes;  // Hitboxes for this layer
 	CG* sourceCG;          // CG to pull sprite from (for effect.ha6 support)
 
+	// Spawn flags for positioning behavior
+	int spawnFlagset1;     // From effect parameters[2]
+	int spawnFlagset2;     // From effect parameters[3]
+
 	RenderLayer() :
 		spriteId(-1), spawnOffsetX(0), spawnOffsetY(0),
 		frameOffsetX(0), frameOffsetY(0),
@@ -33,7 +37,8 @@ struct RenderLayer {
 		rotX(0.0f), rotY(0.0f), rotZ(0.0f),
 		blendMode(0), zPriority(0),
 		alpha(1.0f), tintColor(1.0f, 1.0f, 1.0f, 1.0f),
-		isSpawned(false), sourceCG(nullptr) {}
+		isSpawned(false), sourceCG(nullptr),
+		spawnFlagset1(0), spawnFlagset2(0) {}
 };
 
 class Render

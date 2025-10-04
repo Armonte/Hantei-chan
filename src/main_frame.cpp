@@ -177,6 +177,8 @@ void MainFrame::DrawBack()
 			layer.isSpawned = true;
 			layer.hitboxes = spawnedFrame.hitboxes;
 			layer.sourceCG = sourceCG;  // Use appropriate CG (character or effect.ha6)
+			layer.spawnFlagset1 = spawnInfo.flagset1;
+			layer.spawnFlagset2 = spawnInfo.flagset2;
 
 			render.AddLayer(layer);
 		}

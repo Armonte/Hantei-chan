@@ -17,6 +17,8 @@ public:
 	void AdvanceBox(int dir);
 
 private:
+	// Helper to draw spawn timeline
+	void DrawSpawnTimeline();
 	std::string boxNameList[33];
 	int currentBox;
 	bool highlight;

@@ -236,10 +236,17 @@ unsigned int *fd_frame_AS_load(unsigned int *data, const unsigned int *data_end,
 
 unsigned int *fd_frame_EF_load(unsigned int *data, const unsigned int *data_end, Frame_EF *EF)
 {
+	// Initialize all parameters to 0 to prevent garbage data
+	EF->type = 0;
+	EF->number = 0;
+	for (int i = 0; i < 12; ++i) {
+		EF->parameters[i] = 0;
+	}
+
 	while (data < data_end) {
 		unsigned int *buf = data;
 		++data;
-		
+
 		if (!memcmp(buf, "EFTP", 4)) {
 			EF->type = data[0];
 			++data;
@@ -284,10 +291,16 @@ unsigned int *fd_frame_EF_load(unsigned int *data, const unsigned int *data_end,
 
 unsigned int *fd_frame_IF_load(unsigned int *data, const unsigned int *data_end, Frame_IF *IF)
 {
+	// Initialize all parameters to 0 to prevent garbage data
+	IF->type = 0;
+	for (int i = 0; i < 9; ++i) {
+		IF->parameters[i] = 0;
+	}
+
 	while (data < data_end) {
 		unsigned int *buf = data;
 		++data;
-		
+
 		if (!memcmp(buf, "IFTP", 4)) {
 			IF->type = data[0];
 			
