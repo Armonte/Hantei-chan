@@ -46,6 +46,7 @@ struct SpawnedPatternInfo {
 
 	// Timeline tracking
 	int absoluteSpawnFrame;             // Global frame when this spawns (relative to main pattern frame 0)
+	int spawnTick;                      // Actual game tick when this spawns (sum of parent frame durations)
 	int patternFrameCount;              // Total frames in the spawned pattern's sequence
 	int lifetime;                       // Calculated frames this lives (respects aniType)
 	bool isRecursive;                   // True if pattern spawns itself (cycle detected)
@@ -60,8 +61,27 @@ struct SpawnedPatternInfo {
 		flagset1(0), flagset2(0), angle(0), projVarDecrease(0), randomRange(0),
 		parentFrame(0),
 		depth(0), parentSpawnIndex(-1),
-		absoluteSpawnFrame(0), patternFrameCount(0), lifetime(0), isRecursive(false),
+		absoluteSpawnFrame(0), spawnTick(0), patternFrameCount(0), lifetime(0), isRecursive(false),
 		visible(true), alpha(0.6f), tintColor(0.5f, 0.7f, 1.0f, 1.0f) {}
+};
+
+// Active spawn instance (created during animation when spawn effects fire)
+struct ActiveSpawnInstance {
+	int spawnTick;                // Game tick when this instance was created
+	int patternId;                // Pattern being spawned
+	bool usesEffectHA6;           // Whether to use effect.ha6 or main character data
+	int offsetX, offsetY;         // Spawn position offsets
+	int flagset1, flagset2;       // Spawn flags
+	int angle;                    // Rotation
+	int projVarDecrease;          // Projectile variable
+	glm::vec4 tintColor;          // Visualization tint
+	float alpha;                  // Visualization alpha
+
+	ActiveSpawnInstance() :
+		spawnTick(0), patternId(-1), usesEffectHA6(false),
+		offsetX(0), offsetY(0), flagset1(0), flagset2(0),
+		angle(0), projVarDecrease(0),
+		tintColor(0.5f, 0.7f, 1.0f, 1.0f), alpha(0.6f) {}
 };
 
 // Visualization settings
@@ -94,11 +114,15 @@ struct FrameState
 	// Animation playback
 	bool animating = false;
 	int animeSeq = 0;
+	int currentTick = 0;  // Actual game ticks elapsed (accounts for frame durations)
 
-	// Spawned pattern visualization
+	// Spawned pattern visualization (static tree for UI)
 	std::vector<SpawnedPatternInfo> spawnedPatterns;
 	VisualizationSettings vizSettings;
 	int selectedSpawnedPattern = -1;  // Currently selected in UI
+
+	// Active spawn instances (created dynamically during animation)
+	std::vector<ActiveSpawnInstance> activeSpawns;
 
 	// Shared memory clipboard for cross-instance copy/paste
 	CopyData *copied;
@@ -114,6 +138,12 @@ private:
 // Utility function to parse spawned patterns from effects (single frame)
 std::vector<SpawnedPatternInfo> ParseSpawnedPatterns(const std::vector<Frame_EF>& effects, int parentFrame);
 
+// Helper to calculate tick position from frame number (sums frame durations)
+int CalculateTickFromFrame(class FrameData* frameData, int patternId, int frameNum);
+
+// Helper to calculate frame from tick position
+int CalculateFrameFromTick(class FrameData* frameData, int patternId, int tick);
+
 // Recursive function to build full spawn tree
 void BuildSpawnTreeRecursive(
 	class FrameData* mainFrameData,
@@ -123,6 +153,7 @@ void BuildSpawnTreeRecursive(
 	int parentSpawnIndex,
 	int depth,
 	int absoluteSpawnFrame,
+	int absoluteSpawnTick,
 	std::vector<SpawnedPatternInfo>& allSpawns,
 	std::set<int>& visitedPatterns);
 

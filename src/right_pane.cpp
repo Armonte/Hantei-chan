@@ -123,6 +123,7 @@ void RightPane::Draw()
 								-1,                       // No parent (root level)
 								0,                        // Depth 0
 								0,                        // Starts at absolute frame 0
+								0,                        // Starts at tick 0
 								currState.spawnedPatterns,
 								visitedPatterns);
 						}

@@ -288,7 +288,16 @@ void BoxPane::DrawSpawnTimeline()
 	const float labelWidth = 100.0f;
 	const float timelineWidth = std::min(600.0f, frameWidth * timelineEnd);
 
-	im::Text("Frame: %d / %d", currState.frame, mainFrameCount - 1);
+	im::Text("Frame: %d / %d  |  Tick: %d", currState.frame, mainFrameCount - 1, currState.currentTick);
+
+	// Add tick scrubber
+	int maxTick = timelineEnd * 10;  // Rough estimate
+	if (im::SliderInt("##tickscrub", &currState.currentTick, 0, maxTick, "Tick %d")) {
+		// User scrubbed - update to non-animating mode and sync frame
+		currState.animating = false;
+		currState.frame = CalculateFrameFromTick(frameData, currState.pattern, currState.currentTick);
+	}
+
 	im::Separator();
 
 	// Draw main pattern row

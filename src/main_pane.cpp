@@ -79,14 +79,23 @@ void MainPane::Draw()
 			{			
 				float spacing = im::GetStyle().ItemInnerSpacing.x;
 				im::SetNextItemWidth(im::GetWindowWidth() - 160.f);
-				im::SliderInt("##frameSlider", &currState.frame, 0, nframes);
+				if (im::SliderInt("##frameSlider", &currState.frame, 0, nframes)) {
+					// Sync ticks when slider changes
+					currState.currentTick = CalculateTickFromFrame(frameData, currState.pattern, currState.frame);
+				}
 				im::SameLine();
 				im::PushButtonRepeat(true);
-				if(im::ArrowButton("##left", ImGuiDir_Left))
+				if(im::ArrowButton("##left", ImGuiDir_Left)) {
 					currState.frame--;
+					// Sync ticks when manually seeking
+					currState.currentTick = CalculateTickFromFrame(frameData, currState.pattern, currState.frame);
+				}
 				im::SameLine(0.0f, spacing);
-				if(im::ArrowButton("##right", ImGuiDir_Right))
+				if(im::ArrowButton("##right", ImGuiDir_Right)) {
 					currState.frame++;
+					// Sync ticks when manually seeking
+					currState.currentTick = CalculateTickFromFrame(frameData, currState.pattern, currState.frame);
+				}
 				im::PopButtonRepeat();
 				im::SameLine();
 				im::Text("%d/%d", currState.frame+1, nframes+1);
@@ -100,6 +109,10 @@ void MainPane::Draw()
 				{
 					currState.animating = !currState.animating;
 					currState.animeSeq = currState.pattern;
+					if (currState.animating) {
+						// Reset tick counter when starting animation
+						currState.currentTick = 0;
+					}
 				}
 			}
 			else
