@@ -310,6 +310,14 @@ void BuildSpawnTreeRecursive(
 
 			// Process each spawn found in this frame
 			for (auto& spawn : frameSpawns) {
+				// IMPORTANT: Children should inherit parent's data source
+				// If we're analyzing a pattern from effect.ha6, its children should also use effect.ha6
+				// UNLESS the child explicitly uses type 8 (which forces effect.ha6)
+				if (usesEffectHA6 && spawn.effectType != 8) {
+					// Parent uses effect.ha6 and child is NOT type 8 -> child inherits effect.ha6
+					spawn.usesEffectHA6 = true;
+				}
+
 				// Set hierarchy fields
 				spawn.depth = depth;
 				spawn.parentSpawnIndex = parentSpawnIndex;

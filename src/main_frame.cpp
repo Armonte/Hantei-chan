@@ -154,6 +154,14 @@ void MainFrame::DrawBack()
 				sourceCG = &effectCharacter->cg;
 			} else {
 				// Type 1/11/101/111/1000: Pull from main character
+				// OR type 8 falling back because effect.ha6 not loaded
+				if (spawnInfo.usesEffectHA6 && !effectCharacter) {
+					static bool warned = false;
+					if (!warned) {
+						printf("[Warning] Effect type 8 spawn detected but effect.ha6 not loaded - using main character CG\n");
+						warned = true;
+					}
+				}
 				sourceFrameData = &active->frameData;
 				sourceCG = &active->cg;
 			}
@@ -1635,7 +1643,12 @@ void MainFrame::tryLoadEffectCharacter(CharacterInstance* character)
 
 	if (character->isInMBAACCDataFolder()) {
 		std::string baseFolder = character->getBaseFolder();
-		loadEffectCharacter(baseFolder);
+		bool loaded = loadEffectCharacter(baseFolder);
+		if (loaded) {
+			printf("[Effect] Auto-loaded effect.ha6 from: %s\n", baseFolder.c_str());
+		} else {
+			printf("[Effect] Failed to auto-load effect.ha6 from: %s\n", baseFolder.c_str());
+		}
 	}
 }
 
