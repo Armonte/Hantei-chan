@@ -15,11 +15,11 @@
 constexpr int maxBoxes = 33;
 
 const char* simpleSrcVert = R"(
-#version 120
-attribute vec3 Position;
-attribute vec3 Color;
+#version 330 core
+layout (location = 0) in vec3 Position;
+layout (location = 1) in vec3 Color;
 
-varying vec4 Frag_Color;
+out vec4 Frag_Color;
 
 uniform mat4 ProjMtx;
 uniform float Alpha;
@@ -33,24 +33,25 @@ void main()
 )";
 
 const char* simpleSrcFrag = R"(
-#version 120
+#version 330 core
 
-varying vec4 Frag_Color;
+in vec4 Frag_Color;
+out vec4 FragColor;
 
 void main()
 {
-    gl_FragColor = Frag_Color;
+    FragColor = Frag_Color;
 };
 )";
 
 const char* texturedSrcVert = R"(
-#version 120
-attribute vec2 Position;
-attribute vec2 UV;
-attribute vec4 Color;
+#version 330 core
+layout (location = 0) in vec2 Position;
+layout (location = 1) in vec2 UV;
+layout (location = 2) in vec4 Color;
 
-varying vec2 Frag_UV;
-varying vec4 Frag_Color;
+out vec2 Frag_UV;
+out vec4 Frag_Color;
 
 uniform mat4 ProjMtx;
 
@@ -63,17 +64,18 @@ void main()
 )";
 
 const char* texturedSrcFrag = R"(
-#version 120
+#version 330 core
 uniform sampler2D Texture;
 
-varying vec2 Frag_UV;
-varying vec4 Frag_Color;
+in vec2 Frag_UV;
+in vec4 Frag_Color;
+out vec4 FragColor;
 
 void main()
 {
-    vec4 col = texture2D(Texture, Frag_UV.st);
+    vec4 col = texture(Texture, Frag_UV.st);
     
-    gl_FragColor = col * Frag_Color;
+    FragColor = col * Frag_Color;
 };
 )";
 
