@@ -8,6 +8,7 @@
 #include <fstream>
 #include <cstring>
 #include <cstdlib>
+#include <chrono>
 #include <imgui.h>
 
 #include <imgui_impl_opengl3.h>
@@ -125,11 +126,10 @@ int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE, PWSTR pCmdLine, int nCmdShow
 
 	MSG msg = {};
 	bool done = false;
-	const double targetFPS = 60.0;
-	const double targetFrameTime = 1000.0 / targetFPS; // ~16.67ms per frame
-	LARGE_INTEGER frequency, lastTime, currentTime;
-	QueryPerformanceFrequency(&frequency);
-	QueryPerformanceCounter(&lastTime);
+	double t_val = 1.0/60.0;
+
+	using namespace std::chrono;
+	steady_clock::time_point t1 = steady_clock::now();
 
 	while (!done)
 	{
@@ -144,22 +144,21 @@ int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE, PWSTR pCmdLine, int nCmdShow
 		if (done)
 			break;
 
-		// Continuous rendering
+		// Only render when enough time has passed
 		MainFrame* mf = (MainFrame*)GetWindowLongPtr(hwnd, GWLP_USERDATA);
 		if(mf)
-			mf->Draw();
+		{
+			steady_clock::time_point t2 = steady_clock::now();
+			duration<double> time_span = duration_cast<duration<double>>(t2 - t1);
 
-		// Frame rate limiting to exactly 60fps
-		QueryPerformanceCounter(&currentTime);
-		double elapsedMs = (double)(currentTime.QuadPart - lastTime.QuadPart) * 1000.0 / frequency.QuadPart;
+			double nTime = time_span.count();
 
-		if (elapsedMs < targetFrameTime) {
-			DWORD sleepTime = (DWORD)(targetFrameTime - elapsedMs);
-			if (sleepTime > 0)
-				Sleep(sleepTime);
+			if (nTime >= t_val)
+			{
+				mf->Draw();
+				t1 = steady_clock::now();
+			}
 		}
-
-		QueryPerformanceCounter(&lastTime);
 	}
 
 	DestroyWindow(hwnd);
