@@ -55,6 +55,7 @@ bool CharacterInstance::loadFromTxt(const std::string& txtPath)
 	}
 
 	m_isModified = false;
+	undoManager.markCleanState();
 	return true;
 }
 
@@ -75,6 +76,7 @@ bool CharacterInstance::loadHA6(const std::string& ha6Path, bool patch)
 	m_topHA6Path = ha6Path;
 
 	m_isModified = false;
+	undoManager.markCleanState();
 	return true;
 }
 
@@ -96,6 +98,7 @@ bool CharacterInstance::save()
 
 	frameData.save(m_topHA6Path.c_str());
 	m_isModified = false;
+	undoManager.markCleanState();
 	return true;
 }
 
@@ -109,6 +112,7 @@ bool CharacterInstance::saveAs(const std::string& ha6Path)
 	m_ha6Paths.push_back(ha6Path);
 
 	m_isModified = false;
+	undoManager.markCleanState();
 	return true;
 }
 
@@ -125,6 +129,7 @@ bool CharacterInstance::saveModifiedOnly(const std::string& ha6Path)
 	}
 
 	m_isModified = false;
+	undoManager.markCleanState();
 	return true;
 }
 

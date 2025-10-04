@@ -31,6 +31,7 @@ HWND mainWindowHandle;
 ContextGl *context = nullptr;
 static bool dragLeft = false, dragRight = false;
 static POINT mousePos;
+static bool justActivated = false;  // Track if window just became active
 bool init = false;
 
 void LoadJapaneseFonts(ImGuiIO& io)
@@ -246,16 +247,18 @@ LRESULT WINAPI WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
 		}
 		break;
 	case WM_RBUTTONDOWN:
-		if(!ImGui::GetIO().WantCaptureMouse)
+		// Don't allow drag if window just became active - prevents dragging when clicking back into window
+		if(!ImGui::GetIO().WantCaptureMouse && !justActivated)
 		{
 			dragRight = true;
 			GetCursorPos(&mousePos);
 			ScreenToClient(hWnd, &mousePos);
 			SetCapture(hWnd);
 			mf->RightClick(mousePos.x, mousePos.y);
-			
+
 			return 0;
 		}
+		justActivated = false;  // Clear flag after first click
 		break;
 	case WM_RBUTTONUP:
 		if(dragRight)
@@ -267,15 +270,17 @@ LRESULT WINAPI WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
 		}
 		break;
 	case WM_LBUTTONDOWN:
-		if(!ImGui::GetIO().WantCaptureMouse)
+		// Don't allow drag if window just became active - prevents dragging when clicking back into window
+		if(!ImGui::GetIO().WantCaptureMouse && !justActivated)
 		{
 			dragLeft = true;
 			GetCursorPos(&mousePos);
 			ScreenToClient(hWnd, &mousePos);
 			SetCapture(hWnd);
-			
+
 			return 0;
 		}
+		justActivated = false;  // Clear flag after first click
 		break;
 	case WM_LBUTTONUP:
 		if(dragLeft)
@@ -295,6 +300,23 @@ LRESULT WINAPI WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
 
 			mf->HandleMouseDrag(newMousePos.x-mousePos.x, newMousePos.y-mousePos.y, dragRight, dragLeft);
 			mousePos = newMousePos;
+		}
+		break;
+	case WM_ACTIVATE:
+		// Set flag when window becomes active
+		if(LOWORD(wParam) != WA_INACTIVE)
+		{
+			justActivated = true;
+		}
+		else
+		{
+			// Clear drag states when losing focus
+			if(dragLeft || dragRight)
+			{
+				ReleaseCapture();
+				dragLeft = false;
+				dragRight = false;
+			}
 		}
 		break;
 	case WM_SYSCOMMAND:
