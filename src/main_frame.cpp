@@ -113,9 +113,8 @@ void MainFrame::DrawBack()
 		mainLayer.sourceCG = &active->cg;  // Main pattern uses character CG
 		render.AddLayer(mainLayer);
 
-		// Build render layers for each spawned pattern
-		for (auto& spawnInfo : state.spawnedPatterns) {
-			if (!spawnInfo.visible) continue;
+		// Build render layers for each active spawned pattern instance
+		for (auto& spawnInfo : state.activeSpawns) {
 
 			// Determine which character to pull pattern from
 			FrameData* sourceFrameData;
@@ -135,25 +134,53 @@ void MainFrame::DrawBack()
 			auto spawnedSeq = sourceFrameData->get_sequence(spawnInfo.patternId);
 			if (!spawnedSeq || spawnedSeq->frames.empty()) continue;
 
-			// Calculate local frame: frames elapsed since spawn
-			// Use absoluteSpawnFrame for recursive spawn tree support
-			int localFrame = state.frame - spawnInfo.absoluteSpawnFrame;
+			// Calculate elapsed ticks since spawn (tick-based, not frame-based!)
+			int elapsedTicks = state.currentTick - spawnInfo.spawnTick;
 
 			// Check if spawned pattern should be visible
-			if (localFrame < 0) {
-				// Before spawn frame - don't show
+			if (elapsedTicks < 0) {
+				// Before spawn tick - don't show
 				continue;
 			}
 
-			// Check if pattern has ended (use pre-calculated lifetime)
-			if (spawnInfo.lifetime < 9999 && localFrame >= spawnInfo.lifetime) {
-				// Pattern ended - don't show
+			// Calculate total pattern duration and check for looping
+			int totalDuration = 0;
+			for (int i = 0; i < spawnedSeq->frames.size(); i++) {
+				int dur = spawnedSeq->frames[i].AF.duration;
+				// Safety: treat duration 0 as 1 to avoid infinite loops
+				totalDuration += (dur > 0 ? dur : 1);
+			}
+
+			// Check if pattern should loop
+			bool isLooping = false;
+			if (!spawnedSeq->frames.empty()) {
+				auto& lastFrame = spawnedSeq->frames.back();
+				isLooping = (lastFrame.AF.aniType == 2);
+			}
+
+			// Check if pattern has ended (non-looping)
+			if (!isLooping && elapsedTicks >= totalDuration) {
+				// Pattern finished, don't show
 				continue;
 			}
 
-			// For looping patterns or frames past sequence end, clamp to last frame
-			if (localFrame >= spawnedSeq->frames.size()) {
-				localFrame = spawnedSeq->frames.size() - 1;
+			// Handle looping by wrapping elapsed ticks
+			int effectiveTicks = isLooping ? (elapsedTicks % totalDuration) : elapsedTicks;
+
+			// Find which frame to display based on effectiveTicks
+			int localFrame = 0;
+			int tickAccum = 0;
+			for (int i = 0; i < spawnedSeq->frames.size(); i++) {
+				int frameDuration = spawnedSeq->frames[i].AF.duration;
+				if (frameDuration <= 0) frameDuration = 1; // Safety
+
+				if (tickAccum + frameDuration > effectiveTicks) {
+					// This is the frame we're currently on
+					localFrame = i;
+					break;
+				}
+
+				tickAccum += frameDuration;
 			}
 
 			auto& spawnedFrame = spawnedSeq->frames[localFrame];
@@ -672,9 +699,71 @@ void MainFrame::RenderUpdate()
 			}
 
 			duration++;
+			state.currentTick++;  // Increment tick counter for spawned pattern synchronization
+		}
+		else {
+			// Not animating - clear active spawns when stopped
+			if(!state.activeSpawns.empty()) {
+				state.activeSpawns.clear();
+			}
 		}
 
 		auto &frame =  seq->frames[state.frame];
+
+		// Check current frame for spawn effects (during animation)
+		if(state.animating && state.vizSettings.showSpawnedPatterns && !frame.EF.empty())
+		{
+			// Parse spawn effects in current frame
+			auto spawns = ParseSpawnedPatterns(frame.EF, state.frame);
+
+			// Create active spawn instances for each spawn effect
+			for(const auto& spawnInfo : spawns) {
+				ActiveSpawnInstance instance;
+				instance.spawnTick = state.currentTick;
+				instance.patternId = spawnInfo.patternId;
+				instance.usesEffectHA6 = spawnInfo.usesEffectHA6;
+				instance.offsetX = spawnInfo.offsetX;
+				instance.offsetY = spawnInfo.offsetY;
+				instance.flagset1 = spawnInfo.flagset1;
+				instance.flagset2 = spawnInfo.flagset2;
+				instance.angle = spawnInfo.angle;
+				instance.projVarDecrease = spawnInfo.projVarDecrease;
+				instance.tintColor = spawnInfo.tintColor;
+				instance.alpha = state.vizSettings.spawnedOpacity;
+
+				state.activeSpawns.push_back(instance);
+			}
+		}
+
+		// Clean up finished spawns (remove non-looping patterns that have ended)
+		if(state.animating) {
+			state.activeSpawns.erase(
+				std::remove_if(state.activeSpawns.begin(), state.activeSpawns.end(),
+					[&](const ActiveSpawnInstance& spawn) {
+						// Determine which frameData to use
+						FrameData* sourceData = spawn.usesEffectHA6 && effectCharacter
+							? &effectCharacter->frameData
+							: &active->frameData;
+
+						auto spawnSeq = sourceData->get_sequence(spawn.patternId);
+						if (!spawnSeq || spawnSeq->frames.empty()) return true; // Remove invalid
+
+						// Calculate total duration
+						int totalDuration = 0;
+						for (auto& f : spawnSeq->frames) {
+							totalDuration += (f.AF.duration > 0 ? f.AF.duration : 1);
+						}
+
+						// Check if looping
+						bool isLooping = !spawnSeq->frames.empty() && spawnSeq->frames.back().AF.aniType == 2;
+
+						// Keep if looping, remove if finished
+						int elapsedTicks = state.currentTick - spawn.spawnTick;
+						return !isLooping && elapsedTicks >= totalDuration;
+					}),
+				state.activeSpawns.end()
+			);
+		}
 
 		// Render using flat AF fields (gonp original)
 		state.spriteId = frame.AF.spriteId;

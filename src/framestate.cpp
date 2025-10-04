@@ -196,6 +196,55 @@ std::vector<SpawnedPatternInfo> ParseSpawnedPatterns(const std::vector<Frame_EF>
 	return spawned;
 }
 
+// Helper to calculate tick position from frame number
+int CalculateTickFromFrame(FrameData* frameData, int patternId, int frameNum)
+{
+	if (!frameData) return 0;
+
+	auto seq = frameData->get_sequence(patternId);
+	if (!seq || seq->frames.empty()) return 0;
+
+	// Clamp frame number
+	if (frameNum < 0) frameNum = 0;
+	if (frameNum >= seq->frames.size()) frameNum = seq->frames.size() - 1;
+
+	// Sum durations of all frames before this one
+	int tick = 0;
+	for (int i = 0; i < frameNum && i < seq->frames.size(); i++) {
+		tick += seq->frames[i].AF.duration;
+	}
+
+	return tick;
+}
+
+// Helper to calculate frame from tick position
+int CalculateFrameFromTick(FrameData* frameData, int patternId, int tick)
+{
+	if (!frameData) return 0;
+
+	auto seq = frameData->get_sequence(patternId);
+	if (!seq || seq->frames.empty()) return 0;
+
+	if (tick < 0) return 0;
+
+	// Sum durations until we exceed the tick
+	int tickAccum = 0;
+	for (int i = 0; i < seq->frames.size(); i++) {
+		int frameDuration = seq->frames[i].AF.duration;
+		if (frameDuration <= 0) frameDuration = 1; // Safety
+
+		if (tickAccum + frameDuration > tick) {
+			// This is the frame we're currently on
+			return i;
+		}
+
+		tickAccum += frameDuration;
+	}
+
+	// Past the end - return last frame
+	return seq->frames.size() - 1;
+}
+
 // Recursive function to build full spawn tree
 void BuildSpawnTreeRecursive(
 	FrameData* mainFrameData,
@@ -205,6 +254,7 @@ void BuildSpawnTreeRecursive(
 	int parentSpawnIndex,
 	int depth,
 	int absoluteSpawnFrame,
+	int absoluteSpawnTick,
 	std::vector<SpawnedPatternInfo>& allSpawns,
 	std::set<int>& visitedPatterns)
 {
@@ -247,21 +297,24 @@ void BuildSpawnTreeRecursive(
 		}
 	}
 
+	// Track tick accumulation as we iterate frames
+	int currentTick = absoluteSpawnTick;
+
 	// Iterate through all frames in this pattern
 	for (int frameIdx = 0; frameIdx < frameCount; frameIdx++) {
 		auto& frame = sequence->frames[frameIdx];
 
-		if (frame.EF.empty()) continue;
+		if (!frame.EF.empty()) {
+			// Parse spawn effects in this frame
+			auto frameSpawns = ParseSpawnedPatterns(frame.EF, frameIdx);
 
-		// Parse spawn effects in this frame
-		auto frameSpawns = ParseSpawnedPatterns(frame.EF, frameIdx);
-
-		// Process each spawn found in this frame
-		for (auto& spawn : frameSpawns) {
-			// Set hierarchy fields
-			spawn.depth = depth;
-			spawn.parentSpawnIndex = parentSpawnIndex;
-			spawn.absoluteSpawnFrame = absoluteSpawnFrame + frameIdx;
+			// Process each spawn found in this frame
+			for (auto& spawn : frameSpawns) {
+				// Set hierarchy fields
+				spawn.depth = depth;
+				spawn.parentSpawnIndex = parentSpawnIndex;
+				spawn.absoluteSpawnFrame = absoluteSpawnFrame + frameIdx;
+				spawn.spawnTick = currentTick;  // Set actual spawn tick
 
 			// Calculate child pattern's lifetime
 			FrameData* childSource = spawn.usesEffectHA6 ? effectFrameData : mainFrameData;
@@ -296,18 +349,23 @@ void BuildSpawnTreeRecursive(
 				allSpawns[parentSpawnIndex].childSpawnIndices.push_back(currentSpawnIndex);
 			}
 
-			// Recursively process the spawned pattern's children
-			BuildSpawnTreeRecursive(
-				mainFrameData,
-				effectFrameData,
-				spawn.patternId,
-				spawn.usesEffectHA6,
-				currentSpawnIndex,
-				depth + 1,
-				spawn.absoluteSpawnFrame,
-				allSpawns,
-				visitedPatterns);
+				// Recursively process the spawned pattern's children
+				BuildSpawnTreeRecursive(
+					mainFrameData,
+					effectFrameData,
+					spawn.patternId,
+					spawn.usesEffectHA6,
+					currentSpawnIndex,
+					depth + 1,
+					spawn.absoluteSpawnFrame,
+					spawn.spawnTick,  // Pass spawn tick to children
+					allSpawns,
+					visitedPatterns);
+			}
 		}
+
+		// Accumulate ticks: add this frame's duration
+		currentTick += frame.AF.duration;
 	}
 
 	// Remove pattern from visited set (allow it to be spawned in different branches)
