@@ -9,6 +9,7 @@
 #include <cstring>
 #include <cstdlib>
 #include <chrono>
+#include <thread>
 #include <imgui.h>
 
 #include <imgui_impl_opengl3.h>
@@ -126,10 +127,10 @@ int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE, PWSTR pCmdLine, int nCmdShow
 
 	MSG msg = {};
 	bool done = false;
-	double t_val = 1.0/60.0;
+	const double targetFrameTime = 0.0165; // Slightly faster than 60 FPS to compensate for overhead
 
 	using namespace std::chrono;
-	steady_clock::time_point t1 = steady_clock::now();
+	steady_clock::time_point lastFrameTime = steady_clock::now();
 
 	while (!done)
 	{
@@ -144,20 +145,23 @@ int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE, PWSTR pCmdLine, int nCmdShow
 		if (done)
 			break;
 
-		// Only render when enough time has passed
-		MainFrame* mf = (MainFrame*)GetWindowLongPtr(hwnd, GWLP_USERDATA);
-		if(mf)
+		// Frame rate limiting - only render if enough time has passed
+		steady_clock::time_point currentTime = steady_clock::now();
+		duration<double> elapsed = duration_cast<duration<double>>(currentTime - lastFrameTime);
+		
+		if (elapsed.count() >= targetFrameTime)
 		{
-			steady_clock::time_point t2 = steady_clock::now();
-			duration<double> time_span = duration_cast<duration<double>>(t2 - t1);
-
-			double nTime = time_span.count();
-
-			if (nTime >= t_val)
+			MainFrame* mf = (MainFrame*)GetWindowLongPtr(hwnd, GWLP_USERDATA);
+			if(mf)
 			{
 				mf->Draw();
-				t1 = steady_clock::now();
 			}
+			lastFrameTime = currentTime;
+		}
+		else
+		{
+			// Sleep for a very short time to avoid busy waiting
+			std::this_thread::sleep_for(std::chrono::microseconds(1));
 		}
 	}
 
@@ -203,7 +207,14 @@ LRESULT WINAPI WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
 			LoadJapaneseFonts(io);
 			//io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;     // Enable Keyboard Controls
 			ImGui_ImplWin32_Init(hWnd);
-			ImGui_ImplOpenGL3_Init("#version 120");
+			ImGui_ImplOpenGL3_Init("#version 330 core");
+			
+			// Enable VSync control for better performance testing
+			typedef BOOL (WINAPI *wglSwapIntervalEXT_t)(int);
+			wglSwapIntervalEXT_t wglSwapIntervalEXT = (wglSwapIntervalEXT_t)wglGetProcAddress("wglSwapIntervalEXT");
+			if (wglSwapIntervalEXT) {
+				wglSwapIntervalEXT(0);  // Disable VSync for maximum FPS
+			}
 			
 			return 0;
 		}
