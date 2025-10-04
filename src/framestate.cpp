@@ -111,6 +111,8 @@ std::vector<SpawnedPatternInfo> ParseSpawnedPatterns(const std::vector<Frame_EF>
 			case 1:   // Spawn Pattern
 			case 101: // Spawn Relative Pattern
 			{
+				info.effectType = effect.type;
+				info.usesEffectHA6 = false;
 				info.patternId = effect.number;
 				info.offsetX = effect.parameters[0];
 				info.offsetY = effect.parameters[1];
@@ -126,6 +128,8 @@ std::vector<SpawnedPatternInfo> ParseSpawnedPatterns(const std::vector<Frame_EF>
 			case 11:  // Spawn Random Pattern
 			case 111: // Spawn Random Relative Pattern
 			{
+				info.effectType = effect.type;
+				info.usesEffectHA6 = false;
 				info.patternId = effect.number;
 				info.randomRange = effect.parameters[0];
 				info.offsetX = effect.parameters[1];
@@ -140,6 +144,8 @@ std::vector<SpawnedPatternInfo> ParseSpawnedPatterns(const std::vector<Frame_EF>
 
 			case 8:   // Spawn Actor (effect.ha6) - similar to type 1
 			{
+				info.effectType = effect.type;
+				info.usesEffectHA6 = true;  // Type 8 uses effect.ha6
 				info.patternId = effect.number;
 				info.offsetX = effect.parameters[0];
 				info.offsetY = effect.parameters[1];
@@ -154,6 +160,8 @@ std::vector<SpawnedPatternInfo> ParseSpawnedPatterns(const std::vector<Frame_EF>
 
 			case 1000: // Spawn and Follow (Dust of Osiris, Sion)
 			{
+				info.effectType = effect.type;
+				info.usesEffectHA6 = false;
 				info.patternId = effect.number;
 				info.offsetX = 0;
 				info.offsetY = 0;

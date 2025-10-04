@@ -45,6 +45,10 @@ public:
 	const std::string& getTxtPath() const;
 	const std::string& getTopHA6Path() const; // Auto-save target
 
+	// MBAACC folder detection
+	std::string getBaseFolder() const;
+	bool isInMBAACCDataFolder() const;
+
 	// Data access
 	FrameData frameData;
 	FrameState state;

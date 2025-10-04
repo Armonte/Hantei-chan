@@ -232,7 +232,7 @@ void Render::DrawSpriteOnly()
 	// We still depth TEST against the background, but don't write to depth buffer
 	glDepthMask(GL_FALSE);
 
-	//Sprite and boxes (no grid lines)
+	//Sprite (with full transform including offset)
 	constexpr float tau = glm::pi<float>()*2.f;
 	glm::mat4 view = glm::mat4(1.f);
 	view = glm::scale(view, glm::vec3(scale, scale, 1.f));
@@ -257,8 +257,14 @@ void Render::DrawSpriteOnly()
 	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 	glBlendEquation(GL_FUNC_ADD);
 
-	//Boxes
+	//Boxes (without offsetX/offsetY - boxes should only be positioned by x,y)
+	// Match the behavior of Draw() function which doesn't apply offset to boxes
+	view = glm::mat4(1.f);
+	view = glm::scale(view, glm::vec3(scale, scale, 1.f));
+	view = glm::translate(view, glm::vec3(x,y,0.f));
+	SetModelView(std::move(view));
 	sSimple.Use();
+	SetMatrix(lProjectionS);
 	vGeometry.Bind();
 	glUniform1f(lAlphaS, 0.6f);
 	vGeometry.DrawQuads(GL_LINE_LOOP, quadsToDraw);
@@ -498,10 +504,18 @@ void Render::DrawLayers()
 	blendType origBlendMode = blendingMode;
 	float origColorRgba[4] = {colorRgba[0], colorRgba[1], colorRgba[2], colorRgba[3]};
 
+	// Save original CG
+	CG* origCG = cg;
+
 	// Draw each layer
 	for (const auto& layer : renderLayers)
 	{
 		if (layer.spriteId < 0) continue;
+
+		// Switch CG if this layer uses a different one (e.g., effect.ha6)
+		if (layer.sourceCG && layer.sourceCG != cg) {
+			SetCg(layer.sourceCG);
+		}
 
 		// Apply layer-specific transforms (spawn offset + frame offset)
 		x = origX + layer.spawnOffsetX;
@@ -542,6 +556,11 @@ void Render::DrawLayers()
 		// Switch to this layer's sprite and draw sprite+boxes (no grid lines)
 		SwitchImage(layer.spriteId);
 		DrawSpriteOnly();
+	}
+
+	// Restore original CG
+	if (cg != origCG) {
+		SetCg(origCG);
 	}
 
 	// Restore original state

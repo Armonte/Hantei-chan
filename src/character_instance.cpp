@@ -185,3 +185,52 @@ const std::string& CharacterInstance::getTopHA6Path() const
 {
 	return m_topHA6Path;
 }
+
+std::string CharacterInstance::getBaseFolder() const
+{
+	// Get the folder containing the .txt or .ha6 file
+	std::string basePath;
+	if (!m_txtPath.empty()) {
+		basePath = m_txtPath;
+	} else if (!m_topHA6Path.empty()) {
+		basePath = m_topHA6Path;
+	} else {
+		return "";
+	}
+
+	size_t lastSlash = basePath.find_last_of("\\/");
+	if (lastSlash != std::string::npos) {
+		return basePath.substr(0, lastSlash);
+	}
+	return "";
+}
+
+bool CharacterInstance::isInMBAACCDataFolder() const
+{
+	std::string baseFolder = getBaseFolder();
+	if (baseFolder.empty()) {
+		return false;
+	}
+
+	// Check if path ends with /data or contains /data/
+	size_t dataPos = baseFolder.find("/data");
+	if (dataPos == std::string::npos) {
+		dataPos = baseFolder.find("\\data");
+	}
+
+	if (dataPos == std::string::npos) {
+		return false;
+	}
+
+	// Check if effect.txt exists in the same folder
+	std::string effectTxtPath = baseFolder + "/effect.txt";
+	std::filesystem::path effectPath(effectTxtPath);
+	if (std::filesystem::exists(effectPath)) {
+		return true;
+	}
+
+	// Also try backslash
+	effectTxtPath = baseFolder + "\\effect.txt";
+	effectPath = effectTxtPath;
+	return std::filesystem::exists(effectPath);
+}
