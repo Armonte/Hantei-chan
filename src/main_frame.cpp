@@ -854,7 +854,7 @@ void MainFrame::RenderUpdate()
 		if(state.animating && state.vizSettings.showSpawnedPatterns && !frame.EF.empty())
 		{
 			// Parse spawn effects in current frame
-			auto spawns = ParseSpawnedPatterns(frame.EF, state.frame);
+			auto spawns = ParseSpawnedPatterns(frame.EF, state.frame, state.pattern);
 
 			// Create active spawn instances for each spawn effect
 			for(const auto& spawnInfo : spawns) {
