@@ -3067,6 +3067,68 @@ inline void AfDisplay(Frame_AF *af, int &selectedLayer, FrameData *frameData = n
 		markModified();
 	}
 
+	// Landing frame tools
+	if(frameData && patternIndex >= 0) {
+		static int landingFrameToolValue = 0;
+		static int landingFrameRange[2] = {0, 0};
+
+		im::SetNextItemWidth(width);
+		im::InputInt("##LandingValue", &landingFrameToolValue, 0, 0);
+		if(im::IsItemHovered()) Tooltip("Landing frame value to set");
+
+		im::SameLine();
+		if(im::SmallButton("Set All")) {
+			auto seq = frameData->get_sequence(patternIndex);
+			if(seq) {
+				for(int i = 0; i < seq->frames.size(); i++) {
+					seq->frames[i].AF.landJump = landingFrameToolValue;
+				}
+				frameData->mark_modified(patternIndex);
+				markModified();
+			}
+		}
+		if(im::IsItemHovered()) Tooltip("Apply landing frame to all frames in pattern");
+
+		im::SameLine();
+		if(im::SmallButton("Set Range")) {
+			im::OpenPopup("LandingFrameRange");
+		}
+		if(im::IsItemHovered()) Tooltip("Apply landing frame to a range of frames");
+
+		// Range popup
+		if(im::BeginPopup("LandingFrameRange")) {
+			auto seq = frameData->get_sequence(patternIndex);
+			if(seq) {
+				const int maxFrame = seq->frames.size() - 1;
+
+				// Clamp range values
+				if(landingFrameRange[0] < 0) landingFrameRange[0] = 0;
+				if(landingFrameRange[1] < 0) landingFrameRange[1] = 0;
+				if(landingFrameRange[0] > maxFrame) landingFrameRange[0] = maxFrame;
+				if(landingFrameRange[1] > maxFrame) landingFrameRange[1] = maxFrame;
+
+				im::Text("Set landing frame for range");
+				im::Separator();
+				im::InputInt2("Frame range", landingFrameRange);
+				im::InputInt("Landing frame value", &landingFrameToolValue);
+
+				if(im::Button("Apply", ImVec2(120, 0))) {
+					for(int i = landingFrameRange[0]; i <= landingFrameRange[1] && i >= 0 && i < seq->frames.size(); i++) {
+						seq->frames[i].AF.landJump = landingFrameToolValue;
+					}
+					frameData->mark_modified(patternIndex);
+					markModified();
+					im::CloseCurrentPopup();
+				}
+				im::SameLine();
+				if(im::Button("Cancel", ImVec2(120, 0))) {
+					im::CloseCurrentPopup();
+				}
+			}
+			im::EndPopup();
+		}
+	}
+
 	im::SetNextItemWidth(width);
 	if(im::InputInt("Z-Priority", &af->priority, 0, 0)) {
 		markModified();
