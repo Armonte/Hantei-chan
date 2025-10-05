@@ -847,6 +847,7 @@ void MainFrame::AdvancePattern(int dir)
 	else if(state.pattern >= active->frameData.get_sequence_count())
 		state.pattern = active->frameData.get_sequence_count()-1;
 	state.frame = 0;
+	state.currentTick = 0;  // Reset tick when changing pattern
 }
 
 void MainFrame::AdvanceFrame(int dir)
