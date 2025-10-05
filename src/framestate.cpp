@@ -158,6 +158,23 @@ std::vector<SpawnedPatternInfo> ParseSpawnedPatterns(const std::vector<Frame_EF>
 				break;
 			}
 
+			case 3:   // Spawn Preset Effect
+			{
+				info.effectType = effect.type;
+				info.usesEffectHA6 = false;
+				info.isPresetEffect = true;  // Mark as preset effect, not pattern
+				info.patternId = effect.number;  // Preset effect number (0-302, see Effect_Type3_Implementation.md)
+				info.offsetX = effect.parameters[0];  // X position
+				info.offsetY = effect.parameters[1];  // Y position
+				info.flagset1 = 0;  // Preset effects don't use flagsets
+				info.flagset2 = 0;
+				info.angle = 0;
+				info.projVarDecrease = 0;
+				info.randomRange = 0;
+				isSpawnEffect = true;
+				break;
+			}
+
 			case 1000: // Spawn and Follow (Dust of Osiris, Sion)
 			{
 				info.effectType = effect.type;
@@ -325,19 +342,26 @@ void BuildSpawnTreeRecursive(
 				spawn.spawnTick = currentTick;  // Set actual spawn tick
 
 			// Calculate child pattern's lifetime
-			FrameData* childSource = spawn.usesEffectHA6 ? effectFrameData : mainFrameData;
-			if (childSource) {
-				auto childSeq = childSource->get_sequence(spawn.patternId);
-				if (childSeq && !childSeq->frames.empty()) {
-					spawn.patternFrameCount = childSeq->frames.size();
-					spawn.lifetime = spawn.patternFrameCount;
+			// Skip pattern loading for Effect Type 3 (preset effects)
+			if (!spawn.isPresetEffect) {
+				FrameData* childSource = spawn.usesEffectHA6 ? effectFrameData : mainFrameData;
+				if (childSource) {
+					auto childSeq = childSource->get_sequence(spawn.patternId);
+					if (childSeq && !childSeq->frames.empty()) {
+						spawn.patternFrameCount = childSeq->frames.size();
+						spawn.lifetime = spawn.patternFrameCount;
 
-					// Check child's aniType
-					auto& childLastFrame = childSeq->frames.back();
-					if (childLastFrame.AF.aniType == 2) {
-						spawn.lifetime = 9999;  // Looping
+						// Check child's aniType
+						auto& childLastFrame = childSeq->frames.back();
+						if (childLastFrame.AF.aniType == 2) {
+							spawn.lifetime = 9999;  // Looping
+						}
 					}
 				}
+			} else {
+				// Preset effects don't have patterns - instant effect
+				spawn.patternFrameCount = 0;
+				spawn.lifetime = 0;  // Instant, no duration
 			}
 
 			// Assign tint color based on depth
