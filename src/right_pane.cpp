@@ -117,11 +117,13 @@ void RightPane::Draw()
 						auto seq = frameData->get_sequence(currState.pattern);
 						bool patternChanged = (lastPattern != currState.pattern);
 						bool patternModified = seq && seq->modified;
+						bool forceRebuild = currState.forceSpawnTreeRebuild;
 
-						// Rebuild spawn tree when pattern changes OR when pattern is modified
-						if (patternChanged || patternModified) {
+						// Rebuild spawn tree when pattern changes OR modified OR forced by undo/redo
+						if (patternChanged || patternModified || forceRebuild) {
 							currState.spawnedPatterns.clear();
 							lastPattern = currState.pattern;
+							currState.forceSpawnTreeRebuild = false;
 
 							// Build full recursive spawn tree
 							std::set<int> visitedPatterns;

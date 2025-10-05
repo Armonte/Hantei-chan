@@ -1059,12 +1059,19 @@ bool MainFrame::HandleKeys(uint64_t vkey)
 							Sequence* targetSeq = active->frameData.get_sequence(snapshot->patternIndex);
 							if (targetSeq) {
 								*targetSeq = snapshot->sequence;
+								
+								// Clear pending snapshot to prevent committing stale state
+								active->undoManager.clearPending();
 
 								// Check if we're at clean state
 								if (active->undoManager.isAtCleanState()) {
+									// Clear both character and pattern modified flags
 									active->clearModified();
+									targetSeq->modified = false;
 								} else {
+									// Mark both character and pattern as modified
 									active->markModified();
+									active->frameData.mark_modified(snapshot->patternIndex);
 								}
 
 								// Validate frame index after undo
@@ -1076,6 +1083,9 @@ bool MainFrame::HandleKeys(uint64_t vkey)
 
 								// Force sprite reload by resetting spriteId
 								state.spriteId = -1;
+
+								// Force spawn tree rebuild on next frame
+								state.forceSpawnTreeRebuild = true;
 
 								// Refresh main pane to update pattern names
 								if (view->getMainPane()) {
@@ -1106,12 +1116,19 @@ bool MainFrame::HandleKeys(uint64_t vkey)
 							Sequence* targetSeq = active->frameData.get_sequence(snapshot->patternIndex);
 							if (targetSeq) {
 								*targetSeq = snapshot->sequence;
+								
+								// Clear pending snapshot to prevent committing stale state
+								active->undoManager.clearPending();
 
 								// Check if we're at clean state
 								if (active->undoManager.isAtCleanState()) {
+									// Clear both character and pattern modified flags
 									active->clearModified();
+									targetSeq->modified = false;
 								} else {
+									// Mark both character and pattern as modified
 									active->markModified();
+									active->frameData.mark_modified(snapshot->patternIndex);
 								}
 
 								// Validate frame index after redo
@@ -1123,6 +1140,9 @@ bool MainFrame::HandleKeys(uint64_t vkey)
 
 								// Force sprite reload by resetting spriteId
 								state.spriteId = -1;
+
+								// Force spawn tree rebuild on next frame
+								state.forceSpawnTreeRebuild = true;
 
 								// Refresh main pane to update pattern names
 								if (view->getMainPane()) {
@@ -1462,6 +1482,60 @@ void MainFrame::Menu(unsigned int errorPopupId)
 			}
 
 			ImGui::Separator();
+
+			// Effect.ha6 status and management
+			if (effectCharacter) {
+				// Show status when loaded
+				ImGui::TextDisabled("Effect.ha6: Loaded");
+				if (ImGui::IsItemHovered()) {
+					std::string folder = effectCharacter->getBaseFolder();
+					int patternCount = effectCharacter->frameData.get_sequence_count();
+					int imageCount = effectCharacter->cg.get_image_count();
+
+					// Get first image filename if available
+					const char* cgFileName = (imageCount > 0) ? effectCharacter->cg.get_filename(0) : nullptr;
+					std::string cgFile = cgFileName ? cgFileName : "None";
+
+					ImGui::BeginTooltip();
+					ImGui::Text("Effect.ha6 Details:");
+					ImGui::Separator();
+					ImGui::Text("Folder: %s", folder.c_str());
+					ImGui::Text("CG File: %s", cgFile.c_str());
+					ImGui::Text("Images: %d", imageCount);
+					ImGui::Text("Pattern Count: %d", patternCount);
+					ImGui::EndTooltip();
+				}
+
+				if (ImGui::MenuItem("Unload Effect.ha6")) {
+					printf("[Effect] Manually unloading effect.ha6\n");
+					effectCharacter.reset();
+				}
+			} else {
+				// Show status when not loaded
+				ImGui::TextDisabled("Effect.ha6: Not loaded");
+
+				if (ImGui::MenuItem("Load Effect.ha6... (select effect.txt)")) {
+					std::string effectTxtPath = FileDialog(fileType::TXT, false);
+					if (!effectTxtPath.empty()) {
+						// Extract folder from effect.txt path
+						size_t lastSlash = effectTxtPath.find_last_of("/\\");
+						std::string folder = (lastSlash != std::string::npos)
+							? effectTxtPath.substr(0, lastSlash)
+							: effectTxtPath;
+
+						printf("[Effect] Manually loading effect.ha6 from: %s\n", folder.c_str());
+						bool loaded = loadEffectCharacter(folder);
+						if (loaded) {
+							printf("[Effect] ✓ Successfully loaded\n");
+						} else {
+							printf("[Effect] ✗ Failed to load from: %s\n", folder.c_str());
+							ImGui::OpenPopup(errorPopupId);
+						}
+					}
+				}
+			}
+
+			ImGui::Separator();
 			if (ImGui::MenuItem("Exit")) PostQuitMessage(0);
 			ImGui::EndMenu();
 		}
@@ -1758,17 +1832,37 @@ CharacterInstance* MainFrame::getEffectCharacter()
 // Helper: Auto-load effect character if character is in MBAACC data folder
 void MainFrame::tryLoadEffectCharacter(CharacterInstance* character)
 {
-	if (!character) return;
-	if (effectCharacter) return;  // Already loaded
+	if (!character) {
+		printf("[Effect] tryLoadEffectCharacter: character is NULL\n");
+		return;
+	}
+
+	if (effectCharacter) {
+		printf("[Effect] Effect.ha6 already loaded (from: %s)\n",
+			   effectCharacter->getBaseFolder().c_str());
+		return;  // Already loaded
+	}
 
 	if (character->isInMBAACCDataFolder()) {
 		std::string baseFolder = character->getBaseFolder();
+		printf("[Effect] Attempting to auto-load effect.ha6 from: %s\n", baseFolder.c_str());
+
 		bool loaded = loadEffectCharacter(baseFolder);
 		if (loaded) {
-			printf("[Effect] Auto-loaded effect.ha6 from: %s\n", baseFolder.c_str());
+			printf("[Effect] ✓ Successfully loaded effect.ha6 from: %s\n", baseFolder.c_str());
+
+			int imageCount = effectCharacter->cg.get_image_count();
+			const char* cgFileName = (imageCount > 0) ? effectCharacter->cg.get_filename(0) : nullptr;
+			printf("[Effect]   - effect.cg: %s (%d images)\n",
+				   cgFileName ? cgFileName : "None", imageCount);
+			printf("[Effect]   - Pattern count: %d\n",
+				   effectCharacter->frameData.get_sequence_count());
 		} else {
-			printf("[Effect] Failed to auto-load effect.ha6 from: %s\n", baseFolder.c_str());
+			printf("[Effect] ✗ Failed to load effect.ha6 from: %s\n", baseFolder.c_str());
 		}
+	} else {
+		printf("[Effect] Character not in MBAACC data folder: %s\n",
+			   character->getBaseFolder().c_str());
 	}
 }
 
@@ -1898,6 +1992,12 @@ void MainFrame::openProject()
 		// Set active view
 		if (activeViewIndex >= 0 && activeViewIndex < views.size()) {
 			setActiveView(activeViewIndex);
+		}
+
+		// Try to load effect.ha6 from the first character in the project
+		// (effectCharacter is shared, so we load from first available character)
+		if (!characters.empty()) {
+			tryLoadEffectCharacter(characters[0].get());
 		}
 
 		ProjectManager::SetCurrentProjectPath(path);
@@ -2078,6 +2178,12 @@ void MainFrame::openRecentProject(const std::string& path)
 		// Set active view
 		if (activeViewIndex >= 0 && activeViewIndex < views.size()) {
 			setActiveView(activeViewIndex);
+		}
+
+		// Try to load effect.ha6 from the first character in the project
+		// (effectCharacter is shared, so we load from first available character)
+		if (!characters.empty()) {
+			tryLoadEffectCharacter(characters[0].get());
 		}
 
 		ProjectManager::SetCurrentProjectPath(path);

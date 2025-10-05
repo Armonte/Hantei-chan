@@ -124,6 +124,7 @@ struct FrameState
 	std::vector<SpawnedPatternInfo> spawnedPatterns;
 	VisualizationSettings vizSettings;
 	int selectedSpawnedPattern = -1;  // Currently selected in UI
+	bool forceSpawnTreeRebuild = false;  // Set by undo/redo to force rebuild
 
 	// Active spawn instances (created dynamically during animation)
 	std::vector<ActiveSpawnInstance> activeSpawns;
