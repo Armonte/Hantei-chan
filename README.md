@@ -69,7 +69,7 @@ cmake -B build -DCMAKE_TOOLCHAIN_FILE=mingw-toolchain.cmake
 cmake --build build
 ```
 
-See [.github/README.md](.github/README.md) for CI/CD details.
+See [.github/WORKFLOWS.md](.github/WORKFLOWS.md) for CI/CD details.
 
 ## Contributing
 
