@@ -47,7 +47,7 @@ jobs:
   build-linux-cross:
     name: Build on Linux (MinGW cross-compile)
     runs-on: ubuntu-latest
-    continue-on-error: true  # Don't fail workflow if Linux build fails
+    continue-on-error: true  # Optional build, won't fail workflow
 
     steps:
     - name: Checkout code

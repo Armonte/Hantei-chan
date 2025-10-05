@@ -22,14 +22,15 @@ Add this badge to your README.md to show build status:
 - Builds the project on both Windows (native) and Linux (MinGW cross-compile)
 - Uploads build artifacts for 30 days
 - Runs on every commit to verify builds don't break
-- Linux build is optional and won't fail the workflow if it errors
+- Linux build is optional (`continue-on-error: true`)
 
 **Artifacts:**
 - `hantei-chan-{branch-name}-windows-x64` - Built on Windows
-- `hantei-chan-{branch-name}-linux-mingw-build` - Cross-compiled on Linux (optional)
+- `hantei-chan-{branch-name}-linux-mingw-build` - Cross-compiled on Linux
 
 **Example:** If you push to branch `fix-undo-bug`, you'll get:
 - `hantei-chan-fix-undo-bug-windows-x64`
+- `hantei-chan-fix-undo-bug-linux-mingw-build`
 
 ### Release (`release.yml`)
 
