@@ -93,7 +93,7 @@ FrameState::~FrameState()
 }
 
 // Parse spawned patterns from effects in a frame
-std::vector<SpawnedPatternInfo> ParseSpawnedPatterns(const std::vector<Frame_EF>& effects, int parentFrame)
+std::vector<SpawnedPatternInfo> ParseSpawnedPatterns(const std::vector<Frame_EF>& effects, int parentFrame, int parentPatternId)
 {
 	std::vector<SpawnedPatternInfo> spawned;
 
@@ -108,8 +108,7 @@ std::vector<SpawnedPatternInfo> ParseSpawnedPatterns(const std::vector<Frame_EF>
 
 		switch (effect.type)
 		{
-			case 1:   // Spawn Pattern
-			case 101: // Spawn Relative Pattern
+			case 1:   // Spawn Pattern (absolute)
 			{
 				info.effectType = effect.type;
 				info.usesEffectHA6 = false;
@@ -125,12 +124,45 @@ std::vector<SpawnedPatternInfo> ParseSpawnedPatterns(const std::vector<Frame_EF>
 				break;
 			}
 
-			case 11:  // Spawn Random Pattern
-			case 111: // Spawn Random Relative Pattern
+			case 101: // Spawn Relative Pattern (offset from parent)
+			{
+				info.effectType = effect.type;
+				info.usesEffectHA6 = false;
+				// FIX: For relative spawn, add offset to parent pattern ID
+				info.patternId = parentPatternId + effect.number;
+				info.offsetX = effect.parameters[0];
+				info.offsetY = effect.parameters[1];
+				info.flagset1 = effect.parameters[2];
+				info.flagset2 = effect.parameters[3];
+				info.angle = effect.parameters[7];
+				info.projVarDecrease = effect.parameters[8];
+				info.randomRange = 0;
+				isSpawnEffect = true;
+				break;
+			}
+
+			case 11:  // Spawn Random Pattern (absolute)
 			{
 				info.effectType = effect.type;
 				info.usesEffectHA6 = false;
 				info.patternId = effect.number;
+				info.randomRange = effect.parameters[0];
+				info.offsetX = effect.parameters[1];
+				info.offsetY = effect.parameters[2];
+				info.flagset1 = effect.parameters[3];
+				info.flagset2 = effect.parameters[4];
+				info.angle = effect.parameters[8];
+				info.projVarDecrease = effect.parameters[9];
+				isSpawnEffect = true;
+				break;
+			}
+
+			case 111: // Spawn Random Relative Pattern (offset from parent)
+			{
+				info.effectType = effect.type;
+				info.usesEffectHA6 = false;
+				// FIX: For relative spawn, add offset to parent pattern ID
+				info.patternId = parentPatternId + effect.number;
 				info.randomRange = effect.parameters[0];
 				info.offsetX = effect.parameters[1];
 				info.offsetY = effect.parameters[2];
@@ -155,6 +187,11 @@ std::vector<SpawnedPatternInfo> ParseSpawnedPatterns(const std::vector<Frame_EF>
 				info.projVarDecrease = 0;
 				info.randomRange = 0;
 				isSpawnEffect = true;
+
+				// Debug: Log Effect Type 8 usage
+				printf("[Effect 8] Parent pattern %d spawning effect.ha6 pattern %d\n",
+					   parentPatternId, info.patternId);
+
 				break;
 			}
 
@@ -292,7 +329,18 @@ void BuildSpawnTreeRecursive(
 
 	// Get the appropriate frame data source
 	FrameData* sourceFrameData = usesEffectHA6 ? effectFrameData : mainFrameData;
-	if (!sourceFrameData) return;
+
+	// Debug: Log data source selection
+	if (depth == 0) {
+		printf("[BuildSpawnTree] Pattern %d using %s\n",
+			   patternId, usesEffectHA6 ? "effect.ha6" : "main character");
+	}
+
+	if (!sourceFrameData) {
+		printf("[BuildSpawnTree ERROR] Pattern %d needs %s but data is NULL!\n",
+			   patternId, usesEffectHA6 ? "effect.ha6" : "main character");
+		return;
+	}
 
 	// Get the pattern's sequence
 	auto sequence = sourceFrameData->get_sequence(patternId);
@@ -323,16 +371,36 @@ void BuildSpawnTreeRecursive(
 
 		if (!frame.EF.empty()) {
 			// Parse spawn effects in this frame
-			auto frameSpawns = ParseSpawnedPatterns(frame.EF, frameIdx);
+			auto frameSpawns = ParseSpawnedPatterns(frame.EF, frameIdx, patternId);
 
 			// Process each spawn found in this frame
 			for (auto& spawn : frameSpawns) {
-				// IMPORTANT: Children should inherit parent's data source
-				// If we're analyzing a pattern from effect.ha6, its children should also use effect.ha6
-				// UNLESS the child explicitly uses type 8 (which forces effect.ha6)
-				if (usesEffectHA6 && spawn.effectType != 8) {
-					// Parent uses effect.ha6 and child is NOT type 8 -> child inherits effect.ha6
-					spawn.usesEffectHA6 = true;
+				// IMPORTANT: Data source inheritance rules
+				// 1. Effect Type 8 always explicitly uses effect.ha6 (set by ParseSpawnedPatterns)
+				// 2. Other effect types inherit parent's data source (if parent uses effect.ha6)
+				// 3. Default is main character data (set by ParseSpawnedPatterns)
+
+				bool originalUsesEffectHA6 = spawn.usesEffectHA6;
+
+				// Apply inheritance: if parent uses effect.ha6, children should too
+				// Exception: Type 8 already explicitly sets effect.ha6, so skip it
+				if (usesEffectHA6) {
+					if (spawn.effectType == 8) {
+						// Type 8 already set usesEffectHA6 = true in ParseSpawnedPatterns
+						// Don't override it (though the value should be the same)
+					} else {
+						// Non-Type-8 children inherit parent's data source
+						spawn.usesEffectHA6 = true;
+					}
+				}
+
+				// Debug: Log inheritance decisions
+				if (spawn.effectType == 8 || originalUsesEffectHA6 != spawn.usesEffectHA6) {
+					printf("[Spawn Inheritance] Type %d pattern %d: usesEffectHA6 %s -> %s (parent: %s)\n",
+						   spawn.effectType, spawn.patternId,
+						   originalUsesEffectHA6 ? "true" : "false",
+						   spawn.usesEffectHA6 ? "true" : "false",
+						   usesEffectHA6 ? "effect.ha6" : "main");
 				}
 
 				// Set hierarchy fields
@@ -345,6 +413,13 @@ void BuildSpawnTreeRecursive(
 			// Skip pattern loading for Effect Type 3 (preset effects)
 			if (!spawn.isPresetEffect) {
 				FrameData* childSource = spawn.usesEffectHA6 ? effectFrameData : mainFrameData;
+
+				// Warn if Effect Type 8 needs effect.ha6 but it's null
+				if (spawn.effectType == 8 && !effectFrameData) {
+					printf("[ERROR] Effect Type 8 pattern %d requires effect.ha6 but it's not loaded!\n",
+						   spawn.patternId);
+				}
+
 				if (childSource) {
 					auto childSeq = childSource->get_sequence(spawn.patternId);
 					if (childSeq && !childSeq->frames.empty()) {
@@ -356,7 +431,13 @@ void BuildSpawnTreeRecursive(
 						if (childLastFrame.AF.aniType == 2) {
 							spawn.lifetime = 9999;  // Looping
 						}
+					} else {
+						printf("[WARNING] Pattern %d not found in %s\n",
+							   spawn.patternId, spawn.usesEffectHA6 ? "effect.ha6" : "main character");
 					}
+				} else {
+					printf("[ERROR] Data source is NULL for pattern %d (needs %s)\n",
+						   spawn.patternId, spawn.usesEffectHA6 ? "effect.ha6" : "main character");
 				}
 			} else {
 				// Preset effects don't have patterns - instant effect

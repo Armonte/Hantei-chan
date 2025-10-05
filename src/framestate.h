@@ -124,6 +124,7 @@ struct FrameState
 	std::vector<SpawnedPatternInfo> spawnedPatterns;
 	VisualizationSettings vizSettings;
 	int selectedSpawnedPattern = -1;  // Currently selected in UI
+	bool forceSpawnTreeRebuild = false;  // Set by undo/redo to force rebuild
 
 	// Active spawn instances (created dynamically during animation)
 	std::vector<ActiveSpawnInstance> activeSpawns;
@@ -140,7 +141,7 @@ private:
 };
 
 // Utility function to parse spawned patterns from effects (single frame)
-std::vector<SpawnedPatternInfo> ParseSpawnedPatterns(const std::vector<Frame_EF>& effects, int parentFrame);
+std::vector<SpawnedPatternInfo> ParseSpawnedPatterns(const std::vector<Frame_EF>& effects, int parentFrame, int parentPatternId = -1);
 
 // Helper to calculate tick position from frame number (sums frame durations)
 int CalculateTickFromFrame(class FrameData* frameData, int patternId, int frameNum);
