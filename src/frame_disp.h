@@ -663,6 +663,11 @@ inline void IfDisplay(std::vector<Frame_IF> *ifList_, Frame_IF *singleClipboard 
 				im::SetNextItemWidth(width);
 				im::DragInt("Priority", &p[8]); im::SameLine();
 				im::TextDisabled("(?)"); if(im::IsItemHovered()) Tooltip("0-5000: priority = 5000 - value\n10000+: priority = value - 10000");
+
+				// Copy button
+				if(singleClipboard && im::Button("Copy")) {
+					*singleClipboard = ifList[i];
+				}
 				break;
 			}
 
