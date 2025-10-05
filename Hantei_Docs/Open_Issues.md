@@ -1,7 +1,7 @@
 # Open Issues
 
 **Last Updated:** 2025-10-05
-**Total Open Issues:** 13 (6 bugs, 7 enhancements)
+**Total Open Issues:** 14 (7 bugs, 7 enhancements)
 
 ---
 
@@ -20,6 +20,11 @@ Pattern 160 spawns pattern 163 (geyser), which then spawns pattern 166 (ground b
 #### #26 - [Effect Preview: Sprites that are supposed to be completely transparent still show up](https://github.com/Armonte/Hantei-chan/issues/26)
 **Example:** F Hime pattern 192
 Spawns pattern 165, which should have no visible sprite (alpha set to 0). However, the sprite still renders in the preview. Additionally, something about F Hime's wave patterns (400+) that pattern 165 spawns causes wave sprites to not get drawn when being previewed.
+
+### UI/Editor Issues
+
+#### #29 - [Copy button is missing for Condition 35 (Custom Cancel)](https://github.com/Armonte/Hantei-chan/issues/29)
+In the Conditions panel, you can copy all conditions using the "Copy all" button, but there is no individual copy button for Condition 35 (Custom Cancel). All other condition types have individual copy buttons, but Condition 35 is missing this functionality. This makes it inconvenient to copy just this specific condition type without copying the entire condition set.
 
 ### Effect System
 
@@ -105,13 +110,14 @@ UNI modders are already making great progress with their own mods, but a unified
 **By Priority:**
 - Critical bugs affecting core functionality: 3 (Effect Preview issues)
 - Effect system bugs: 2
+- UI/Editor bugs: 1
 - Stability issues: 1
 - Major enhancements: 2 (#10 Timeline, #14 Game Support)
 - Minor enhancements: 5
 
 **By Area:**
-- Effect System: 5 issues
-- UI/UX: 5 issues
+- Effect System: 5 issues (3 preview + 2 system)
+- UI/UX: 6 issues (5 enhancements + 1 bug)
 - Timeline: 1 issue (major)
 - Game Support: 1 issue
 - Stability: 1 issue
