@@ -93,7 +93,7 @@ FrameState::~FrameState()
 }
 
 // Parse spawned patterns from effects in a frame
-std::vector<SpawnedPatternInfo> ParseSpawnedPatterns(const std::vector<Frame_EF>& effects, int parentFrame)
+std::vector<SpawnedPatternInfo> ParseSpawnedPatterns(const std::vector<Frame_EF>& effects, int parentFrame, int parentPatternId)
 {
 	std::vector<SpawnedPatternInfo> spawned;
 
@@ -108,8 +108,7 @@ std::vector<SpawnedPatternInfo> ParseSpawnedPatterns(const std::vector<Frame_EF>
 
 		switch (effect.type)
 		{
-			case 1:   // Spawn Pattern
-			case 101: // Spawn Relative Pattern
+			case 1:   // Spawn Pattern (absolute)
 			{
 				info.effectType = effect.type;
 				info.usesEffectHA6 = false;
@@ -125,12 +124,45 @@ std::vector<SpawnedPatternInfo> ParseSpawnedPatterns(const std::vector<Frame_EF>
 				break;
 			}
 
-			case 11:  // Spawn Random Pattern
-			case 111: // Spawn Random Relative Pattern
+			case 101: // Spawn Relative Pattern (offset from parent)
+			{
+				info.effectType = effect.type;
+				info.usesEffectHA6 = false;
+				// FIX: For relative spawn, add offset to parent pattern ID
+				info.patternId = parentPatternId + effect.number;
+				info.offsetX = effect.parameters[0];
+				info.offsetY = effect.parameters[1];
+				info.flagset1 = effect.parameters[2];
+				info.flagset2 = effect.parameters[3];
+				info.angle = effect.parameters[7];
+				info.projVarDecrease = effect.parameters[8];
+				info.randomRange = 0;
+				isSpawnEffect = true;
+				break;
+			}
+
+			case 11:  // Spawn Random Pattern (absolute)
 			{
 				info.effectType = effect.type;
 				info.usesEffectHA6 = false;
 				info.patternId = effect.number;
+				info.randomRange = effect.parameters[0];
+				info.offsetX = effect.parameters[1];
+				info.offsetY = effect.parameters[2];
+				info.flagset1 = effect.parameters[3];
+				info.flagset2 = effect.parameters[4];
+				info.angle = effect.parameters[8];
+				info.projVarDecrease = effect.parameters[9];
+				isSpawnEffect = true;
+				break;
+			}
+
+			case 111: // Spawn Random Relative Pattern (offset from parent)
+			{
+				info.effectType = effect.type;
+				info.usesEffectHA6 = false;
+				// FIX: For relative spawn, add offset to parent pattern ID
+				info.patternId = parentPatternId + effect.number;
 				info.randomRange = effect.parameters[0];
 				info.offsetX = effect.parameters[1];
 				info.offsetY = effect.parameters[2];
@@ -323,7 +355,7 @@ void BuildSpawnTreeRecursive(
 
 		if (!frame.EF.empty()) {
 			// Parse spawn effects in this frame
-			auto frameSpawns = ParseSpawnedPatterns(frame.EF, frameIdx);
+			auto frameSpawns = ParseSpawnedPatterns(frame.EF, frameIdx, patternId);
 
 			// Process each spawn found in this frame
 			for (auto& spawn : frameSpawns) {
