@@ -278,6 +278,8 @@ void BoxPane::DrawSpawnTimeline()
 	// Calculate total timeline extent (max spawn frame + max lifetime)
 	int timelineEnd = mainFrameCount;
 	for(const auto& sp : currState.spawnedPatterns) {
+		// Skip preset effects (Type 3) - they're instant with no duration
+		if (sp.isPresetEffect) continue;
 		int spawnEnd = sp.absoluteSpawnFrame + (sp.lifetime < 9999 ? sp.lifetime : sp.patternFrameCount);
 		timelineEnd = std::max(timelineEnd, spawnEnd);
 	}
@@ -335,7 +337,14 @@ void BoxPane::DrawSpawnTimeline()
 
 		// Get pattern name
 		FrameData* sourceData = sp.usesEffectHA6 ? effectFrameData : frameData;
-		std::string patternName = sourceData ? sourceData->GetDecoratedName(sp.patternId) : std::to_string(sp.patternId);
+		std::string patternName;
+		if (sp.isPresetEffect) {
+			// Effect Type 3: Preset effect, not a pattern
+			extern const char* GetPresetEffectName(int);
+			patternName = std::string(GetPresetEffectName(sp.patternId)) + " [" + std::to_string(sp.patternId) + "]";
+		} else {
+			patternName = sourceData ? sourceData->GetDecoratedName(sp.patternId) : std::to_string(sp.patternId);
+		}
 
 		// Indent based on depth
 		float indent = sp.depth * 10.0f;
@@ -349,43 +358,65 @@ void BoxPane::DrawSpawnTimeline()
 		im::Text("%s", label.c_str());
 		im::SameLine(labelWidth);
 
-		// Timeline bar
-		ImVec2 spawnBarMin = ImVec2(
-			timelineStart.x + sp.absoluteSpawnFrame * frameWidth,
-			yPos
-		);
-		int barLength = sp.lifetime < 9999 ? sp.lifetime : sp.patternFrameCount;
-		ImVec2 spawnBarMax = ImVec2(
-			timelineStart.x + (sp.absoluteSpawnFrame + barLength) * frameWidth,
-			yPos + rowHeight
-		);
+		// Timeline visualization
+		if (sp.isPresetEffect) {
+			// Preset effects (Type 3) are instant - draw vertical marker line
+			float spawnX = timelineStart.x + sp.absoluteSpawnFrame * frameWidth;
+			ImU32 markerColor = IM_COL32(255, 128, 0, 255);  // Orange
 
-		// Color from tint
-		ImU32 barColor = IM_COL32(
-			sp.tintColor.r * 255,
-			sp.tintColor.g * 255,
-			sp.tintColor.b * 255,
-			180
-		);
+			// Draw vertical line at spawn frame
+			drawList->AddLine(
+				ImVec2(spawnX, yPos),
+				ImVec2(spawnX, yPos + rowHeight),
+				markerColor,
+				3.0f
+			);
 
-		drawList->AddRectFilled(spawnBarMin, spawnBarMax, barColor);
-		drawList->AddRect(spawnBarMin, spawnBarMax, IM_COL32(255, 255, 255, 255));
+			// Draw circle at spawn point
+			drawList->AddCircleFilled(
+				ImVec2(spawnX, yPos + rowHeight/2),
+				4.0f,
+				markerColor
+			);
+		} else {
+			// Pattern spawns - draw duration bar
+			ImVec2 spawnBarMin = ImVec2(
+				timelineStart.x + sp.absoluteSpawnFrame * frameWidth,
+				yPos
+			);
+			int barLength = sp.lifetime < 9999 ? sp.lifetime : sp.patternFrameCount;
+			ImVec2 spawnBarMax = ImVec2(
+				timelineStart.x + (sp.absoluteSpawnFrame + barLength) * frameWidth,
+				yPos + rowHeight
+			);
 
-		// Mark spawn point
-		drawList->AddCircleFilled(
-			ImVec2(timelineStart.x + sp.absoluteSpawnFrame * frameWidth, yPos + rowHeight/2),
-			3.0f,
-			IM_COL32(255, 255, 255, 255)
-		);
+			// Normal tint color for pattern spawns
+			ImU32 barColor = IM_COL32(
+				sp.tintColor.r * 255,
+				sp.tintColor.g * 255,
+				sp.tintColor.b * 255,
+				180
+			);
 
-		// Show if looping
-		if(sp.lifetime >= 9999) {
+			drawList->AddRectFilled(spawnBarMin, spawnBarMax, barColor);
+			drawList->AddRect(spawnBarMin, spawnBarMax, IM_COL32(255, 255, 255, 255));
+
+			// Mark spawn point
+			drawList->AddCircleFilled(
+				ImVec2(timelineStart.x + sp.absoluteSpawnFrame * frameWidth, yPos + rowHeight/2),
+				3.0f,
+				IM_COL32(255, 255, 255, 255)
+			);
+		}
+
+		// Show if looping (not applicable to preset effects)
+		if(!sp.isPresetEffect && sp.lifetime >= 9999) {
 			im::SameLine();
 			im::TextColored(ImVec4(1, 1, 0.5f, 1), "Loop");
 		}
 
-		// Show if recursive
-		if(sp.isRecursive) {
+		// Show if recursive (not applicable to preset effects)
+		if(!sp.isPresetEffect && sp.isRecursive) {
 			im::SameLine();
 			im::TextColored(ImVec4(1, 0.5f, 0.5f, 1), "REC");
 		}

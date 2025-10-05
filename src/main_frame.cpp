@@ -5,6 +5,7 @@
 #include "ini.h"
 #include "imgui_utils.h"
 #include "project_manager.h"
+#include "preset_effects.h"
 
 #include <imgui.h>
 #include <imgui_internal.h>
@@ -55,6 +56,92 @@ void MainFrame::Draw()
 	gSettings.zoomLevel = zoom_idx;
 	gSettings.bilinear = smoothRender;
 	memcpy(gSettings.color, clearColor, sizeof(float)*3);
+}
+
+void MainFrame::DrawPresetEffectMarkers(FrameState& state, CharacterInstance* character)
+{
+	if (!state.vizSettings.showPresetEffects) return;
+
+	// Get ImGui draw list for overlay
+	ImDrawList* drawList = ImGui::GetBackgroundDrawList();
+
+	// Iterate through active spawns or spawned patterns
+	bool useActiveSpawns = state.animating && !state.activeSpawns.empty();
+	size_t count = useActiveSpawns ? state.activeSpawns.size() : state.spawnedPatterns.size();
+
+	for (size_t i = 0; i < count; i++) {
+		// Get spawn info
+		bool isPreset;
+		int offsetX, offsetY, presetNumber;
+		int spawnFrame, spawnTick;
+
+		if (useActiveSpawns) {
+			auto& spawn = state.activeSpawns[i];
+			if (!spawn.isPresetEffect) continue;
+			isPreset = true;
+			offsetX = spawn.offsetX;
+			offsetY = spawn.offsetY;
+			presetNumber = spawn.patternId;
+			spawnTick = spawn.spawnTick;
+
+			// Check if we're on the spawn tick (unless showing on all frames)
+			if (!state.vizSettings.presetEffectsAllFrames && state.currentTick != spawnTick) {
+				continue;
+			}
+		} else {
+			auto& spawn = state.spawnedPatterns[i];
+			if (!spawn.isPresetEffect || !spawn.visible) continue;
+			isPreset = true;
+			offsetX = spawn.offsetX;
+			offsetY = spawn.offsetY;
+			presetNumber = spawn.patternId;
+			spawnFrame = spawn.parentFrame;
+
+			// Check if we're on the spawn frame (unless showing on all frames)
+			if (!state.vizSettings.presetEffectsAllFrames && state.frame != spawnFrame) {
+				continue;
+			}
+		}
+
+		// Convert game coordinates to screen coordinates
+		// offsetX/offsetY are in game space units (same as render.x/y)
+		// render.x/y formula: (character->renderX + clientRect.x/2) / render.scale
+		// So to go back: screenX = character->renderX + clientRect.x/2 + offsetX * render.scale
+		float screenX = character->renderX + clientRect.x / 2 + offsetX * render.scale;
+		float screenY = character->renderY + clientRect.y / 2 + offsetY * render.scale;
+
+		// Draw crosshair
+		float size = 15.0f;
+		ImU32 color = IM_COL32(255, 128, 0, 255);  // Orange
+		float thickness = 2.0f;
+
+		ImVec2 center(screenX, screenY);
+
+		// Horizontal line
+		drawList->AddLine(
+			ImVec2(center.x - size, center.y),
+			ImVec2(center.x + size, center.y),
+			color, thickness);
+
+		// Vertical line
+		drawList->AddLine(
+			ImVec2(center.x, center.y - size),
+			ImVec2(center.x, center.y + size),
+			color, thickness);
+
+		// Center circle
+		drawList->AddCircleFilled(center, 3.0f, color);
+
+		// Label with preset name (if labels enabled)
+		if (state.vizSettings.showLabels) {
+			const char* presetName = GetPresetEffectName(presetNumber);
+			char label[64];
+			snprintf(label, sizeof(label), "%s [%d]", presetName, presetNumber);
+			drawList->AddText(
+				ImVec2(center.x + size + 5, center.y - 8),
+				color, label);
+		}
+	}
 }
 
 void MainFrame::DrawBack()
@@ -134,6 +221,7 @@ void MainFrame::DrawBack()
 				spawnInfo.spawnTick = staticSpawn.spawnTick;
 				spawnInfo.patternId = staticSpawn.patternId;
 				spawnInfo.usesEffectHA6 = staticSpawn.usesEffectHA6;
+				spawnInfo.isPresetEffect = staticSpawn.isPresetEffect;
 				spawnInfo.offsetX = staticSpawn.offsetX;
 				spawnInfo.offsetY = staticSpawn.offsetY;
 				spawnInfo.flagset1 = staticSpawn.flagset1;
@@ -142,6 +230,17 @@ void MainFrame::DrawBack()
 				spawnInfo.projVarDecrease = staticSpawn.projVarDecrease;
 				spawnInfo.tintColor = staticSpawn.tintColor;
 				spawnInfo.alpha = staticSpawn.alpha;
+			}
+
+			// Check if this is a preset effect (Effect Type 3)
+			if (spawnInfo.isPresetEffect) {
+				// Render crosshair marker for preset effects (not pattern-based)
+				if (state.vizSettings.showPresetEffects) {
+					// TODO: Draw crosshair at (spawnInfo.offsetX, spawnInfo.offsetY)
+					// Preset number: spawnInfo.patternId
+					// For now, skip rendering (will be implemented below)
+				}
+				continue;  // Skip pattern loading for preset effects
 			}
 
 			// Determine which character to pull pattern from
@@ -251,10 +350,19 @@ void MainFrame::DrawBack()
 
 		// Draw all layers in Z-order
 		render.DrawLayers();
+
+		// Draw preset effect crosshairs (Effect Type 3) as overlay
+		DrawPresetEffectMarkers(state, active);
 	}
 	else {
 		// Normal draw without spawned patterns
 		render.Draw();
+
+		// Draw preset effect crosshairs for non-layered mode too
+		if (view) {
+			auto& state = view->getState();
+			DrawPresetEffectMarkers(state, active);
+		}
 	}
 }
 
@@ -754,6 +862,7 @@ void MainFrame::RenderUpdate()
 				instance.spawnTick = state.currentTick;
 				instance.patternId = spawnInfo.patternId;
 				instance.usesEffectHA6 = spawnInfo.usesEffectHA6;
+				instance.isPresetEffect = spawnInfo.isPresetEffect;
 				instance.offsetX = spawnInfo.offsetX;
 				instance.offsetY = spawnInfo.offsetY;
 				instance.flagset1 = spawnInfo.flagset1;
@@ -772,6 +881,13 @@ void MainFrame::RenderUpdate()
 			state.activeSpawns.erase(
 				std::remove_if(state.activeSpawns.begin(), state.activeSpawns.end(),
 					[&](const ActiveSpawnInstance& spawn) {
+						// Preset effects (Type 3) are instant - remove immediately after spawn tick
+						if (spawn.isPresetEffect) {
+							int elapsedTicks = state.currentTick - spawn.spawnTick;
+							// Remove after spawn tick (instant effect)
+							return elapsedTicks > 0;
+						}
+
 						// Determine which frameData to use
 						FrameData* sourceData = spawn.usesEffectHA6 && effectCharacter
 							? &effectCharacter->frameData
