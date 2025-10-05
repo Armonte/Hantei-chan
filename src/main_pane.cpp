@@ -63,6 +63,7 @@ void MainPane::Draw()
 				{
 					currState.pattern = n;
 					currState.frame = 0;
+					currState.currentTick = 0;  // Reset tick when changing pattern
 				}
 
 				// Set the initial focus when opening the combo (scrolling + keyboard navigation focus)
