@@ -33,6 +33,9 @@ private:
 	// Range paste
 	int ranges[2] = {0, 0};
 
+	// Landing frame tools
+	int landingFrameValue = 0;
+
 };
 
 #endif /* MAINPANE_H_GUARD */
