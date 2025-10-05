@@ -371,6 +371,7 @@ void MainPane::Draw()
 							memcpy(seq->frames[i].AF.rgba, frame.AF.rgba, sizeof(float)*4);
 							seq->frames[i].AF.blend_mode = frame.AF.blend_mode;
 							seq->frames[i].AF.AFRT = frame.AF.AFRT;
+							seq->frames[i].AF.priority = frame.AF.priority;
 						}
 						frameData->mark_modified(currState.pattern);
 						markModified();
