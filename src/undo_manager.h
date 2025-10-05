@@ -25,6 +25,7 @@ private:
 	bool enabled = true;
 	bool hasUnsavedChanges = false;
 	std::unique_ptr<SequenceSnapshot> pendingSnapshot;
+	std::unique_ptr<SequenceSnapshot> lastRestored;  // Temporarily holds undo/redo target
 	size_t cleanStateDepth = 0;  // Undo stack depth at last save (0 = initial clean state)
 
 public:
@@ -39,16 +40,12 @@ public:
 		if (!enabled) return;
 
 		// If pattern changed or no pending snapshot, create new one
+		// Don't update existing snapshot - it should preserve the pre-modification state
+		// After endFrame() commits, pendingSnapshot becomes null (via std::move)
 		if (!pendingSnapshot || pendingSnapshot->patternIndex != patternIndex) {
 			pendingSnapshot = std::make_unique<SequenceSnapshot>(patternIndex, sequence);
 			hasUnsavedChanges = false;
 		}
-		// If same pattern and we haven't saved yet this frame, update with current state
-		// This captures the pre-modification state
-		else if (!hasUnsavedChanges) {
-			pendingSnapshot->sequence = sequence;
-		}
-		// else: already marked as modified, don't update (preserve pre-modification state)
 	}
 
 	// Called when data is modified - marks that we should commit the pending snapshot
@@ -74,6 +71,12 @@ public:
 				undoStack.erase(undoStack.begin());
 			}
 		}
+	}
+
+	// Clear pending snapshot (called after undo/redo to discard stale state)
+	void clearPending() {
+		pendingSnapshot.reset();
+		hasUnsavedChanges = false;
 	}
 
 	// Legacy saveState for backward compatibility (immediately commits)
@@ -102,12 +105,12 @@ public:
 		// Save current state to redo stack
 		redoStack.push_back(std::make_unique<SequenceSnapshot>(currentPatternIndex, currentSequence));
 
-		// Move snapshot from undo to redo stack (so it stays alive)
-		redoStack.push_back(std::move(undoStack.back()));
+		// Move target snapshot to temporary storage (keeps it alive for caller)
+		lastRestored = std::move(undoStack.back());
 		undoStack.pop_back();
 
-		// Return pointer to the snapshot in redo stack (still valid)
-		return redoStack.back().get();
+		// Return pointer to the temporarily stored snapshot
+		return lastRestored.get();
 	}
 
 	// Redo last undone action
@@ -120,12 +123,12 @@ public:
 		// Save current state to undo stack
 		undoStack.push_back(std::make_unique<SequenceSnapshot>(currentPatternIndex, currentSequence));
 
-		// Move snapshot from redo to undo stack (so it stays alive)
-		undoStack.push_back(std::move(redoStack.back()));
+		// Move target snapshot to temporary storage (keeps it alive for caller)
+		lastRestored = std::move(redoStack.back());
 		redoStack.pop_back();
 
-		// Return pointer to the snapshot in undo stack (still valid)
-		return undoStack.back().get();
+		// Return pointer to the temporarily stored snapshot
+		return lastRestored.get();
 	}
 
 	bool canUndo() const {
