@@ -85,6 +85,14 @@ void RightPane::Draw()
 					ImGui::Checkbox("Auto-detect from effects", &vizSettings.autoDetect);
 					ImGui::Checkbox("Show offset lines", &vizSettings.showOffsetLines);
 					ImGui::Checkbox("Show pattern labels", &vizSettings.showLabels);
+					ImGui::Checkbox("Show preset effects (Type 3)", &vizSettings.showPresetEffects);
+
+					// Indented option for preset effects
+					if (vizSettings.showPresetEffects) {
+						ImGui::Indent();
+						ImGui::Checkbox("Show on all frames", &vizSettings.presetEffectsAllFrames);
+						ImGui::Unindent();
+					}
 
 					ImGui::SliderFloat("Opacity", &vizSettings.spawnedOpacity, 0.0f, 1.0f, "%.2f");
 
@@ -140,6 +148,8 @@ void RightPane::Draw()
 							for(size_t i = 0; i < currState.spawnedPatterns.size(); i++)
 							{
 								const auto& sp = currState.spawnedPatterns[i];
+								// Skip Effect Type 3 (preset effects) - they don't spawn patterns
+								if(sp.isPresetEffect) continue;
 								if(sp.parentSpawnIndex == -1)
 								{
 									DisplaySpawnNode(static_cast<int>(i), displayNumber++);
@@ -173,6 +183,9 @@ void RightPane::DisplaySpawnNode(int spawnIndex, int displayNumber)
 	}
 
 	const auto& sp = currState.spawnedPatterns[spawnIndex];
+
+	// Skip Effect Type 3 (preset effects) - they don't spawn patterns
+	if(sp.isPresetEffect) return;
 
 	// Get pattern name
 	FrameData* sourceData = sp.usesEffectHA6 ? effectFrameData : frameData;

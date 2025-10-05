@@ -26,9 +26,10 @@ struct CopyData {
 // Spawned pattern visualization data
 struct SpawnedPatternInfo {
 	int effectIndex;      // Which effect spawned this
-	int effectType;       // Effect type (1, 8, 11, 101, 111, 1000)
+	int effectType;       // Effect type (1, 3, 8, 11, 101, 111, 1000)
 	bool usesEffectHA6;   // True if type 8 (pulls from effect.ha6)
-	int patternId;        // Pattern to spawn
+	bool isPresetEffect;  // True if type 3 (preset procedural effect, not pattern)
+	int patternId;        // Pattern to spawn (or preset number for type 3)
 	int offsetX, offsetY; // Position offset
 	int flagset1;         // Spawn behavior flags
 	int flagset2;         // Child property flags
@@ -57,7 +58,7 @@ struct SpawnedPatternInfo {
 	glm::vec4 tintColor;  // RGB tint color
 
 	SpawnedPatternInfo() :
-		effectIndex(-1), effectType(0), usesEffectHA6(false), patternId(-1), offsetX(0), offsetY(0),
+		effectIndex(-1), effectType(0), usesEffectHA6(false), isPresetEffect(false), patternId(-1), offsetX(0), offsetY(0),
 		flagset1(0), flagset2(0), angle(0), projVarDecrease(0), randomRange(0),
 		parentFrame(0),
 		depth(0), parentSpawnIndex(-1),
@@ -68,8 +69,9 @@ struct SpawnedPatternInfo {
 // Active spawn instance (created during animation when spawn effects fire)
 struct ActiveSpawnInstance {
 	int spawnTick;                // Game tick when this instance was created
-	int patternId;                // Pattern being spawned
+	int patternId;                // Pattern being spawned (or preset number for type 3)
 	bool usesEffectHA6;           // Whether to use effect.ha6 or main character data
+	bool isPresetEffect;          // True if type 3 (preset procedural effect)
 	int offsetX, offsetY;         // Spawn position offsets
 	int flagset1, flagset2;       // Spawn flags
 	int angle;                    // Rotation
@@ -78,7 +80,7 @@ struct ActiveSpawnInstance {
 	float alpha;                  // Visualization alpha
 
 	ActiveSpawnInstance() :
-		spawnTick(0), patternId(-1), usesEffectHA6(false),
+		spawnTick(0), patternId(-1), usesEffectHA6(false), isPresetEffect(false),
 		offsetX(0), offsetY(0), flagset1(0), flagset2(0),
 		angle(0), projVarDecrease(0),
 		tintColor(0.5f, 0.7f, 1.0f, 1.0f), alpha(0.6f) {}
@@ -87,6 +89,8 @@ struct ActiveSpawnInstance {
 // Visualization settings
 struct VisualizationSettings {
 	bool showSpawnedPatterns;    // Master toggle
+	bool showPresetEffects;       // Show Effect Type 3 preset effects
+	bool presetEffectsAllFrames;  // Show Type 3 on all frames (vs spawn frame only)
 	bool autoDetect;              // Auto-detect from effects
 	bool showOffsetLines;         // Show lines from parent to spawned
 	bool showLabels;              // Show pattern ID labels
@@ -98,8 +102,8 @@ struct VisualizationSettings {
 	int timelineZoom;             // Frames per unit
 
 	VisualizationSettings() :
-		showSpawnedPatterns(true), autoDetect(true),
-		showOffsetLines(true), showLabels(true),
+		showSpawnedPatterns(true), showPresetEffects(true), presetEffectsAllFrames(false),
+		autoDetect(true), showOffsetLines(true), showLabels(true),
 		animateWithMain(true), spawnedOpacity(0.6f),
 		showTimeline(false), timelineZoom(1) {}
 };
