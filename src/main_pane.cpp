@@ -130,7 +130,7 @@ void MainPane::Draw()
 				
 			}
 
-			im::BeginChild("FrameInfo", {0, im::GetWindowSize().y-im::GetFrameHeight()*3}, false, ImGuiWindowFlags_HorizontalScrollbar);
+			im::BeginChild("FrameInfo", {0, 0}, false);
 
 			// Show if current pattern is modified
 			if(seq->modified)
