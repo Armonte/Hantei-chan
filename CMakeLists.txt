@@ -39,6 +39,7 @@ add_executable(${EXE} WIN32
 	src/imgui_utils.cpp
 	src/test.cpp
 	src/ini.cpp
+	src/preset_effects.cpp
 	res/res.rc
 )
 

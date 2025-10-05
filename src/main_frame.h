@@ -71,6 +71,7 @@ private:
 
 	void DrawBack();
 	void DrawUi();
+	void DrawPresetEffectMarkers(FrameState& state, CharacterInstance* character);
 	void Menu(unsigned int errorId);
 
 	void RenderUpdate();
