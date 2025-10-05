@@ -158,6 +158,22 @@ std::vector<SpawnedPatternInfo> ParseSpawnedPatterns(const std::vector<Frame_EF>
 				break;
 			}
 
+			case 3:   // Spawn Preset Effect
+			{
+				info.effectType = effect.type;
+				info.usesEffectHA6 = false;
+				info.patternId = effect.number;  // Preset effect number (1-30)
+				info.offsetX = effect.parameters[0];  // X position
+				info.offsetY = effect.parameters[1];  // Y position
+				info.flagset1 = 0;  // Preset effects don't use flagsets
+				info.flagset2 = 0;
+				info.angle = 0;
+				info.projVarDecrease = 0;
+				info.randomRange = 0;
+				isSpawnEffect = true;
+				break;
+			}
+
 			case 1000: // Spawn and Follow (Dust of Osiris, Sion)
 			{
 				info.effectType = effect.type;
