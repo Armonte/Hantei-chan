@@ -114,10 +114,12 @@ void RightPane::Draw()
 						// Track when pattern changes to rebuild spawn tree
 						static int lastPattern = -1;
 
+						auto seq = frameData->get_sequence(currState.pattern);
 						bool patternChanged = (lastPattern != currState.pattern);
+						bool patternModified = seq && seq->modified;
 
-						// Rebuild spawn tree when pattern changes
-						if (patternChanged) {
+						// Rebuild spawn tree when pattern changes OR when pattern is modified
+						if (patternChanged || patternModified) {
 							currState.spawnedPatterns.clear();
 							lastPattern = currState.pattern;
 
