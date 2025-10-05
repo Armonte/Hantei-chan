@@ -862,6 +862,9 @@ void MainFrame::AdvanceFrame(int dir)
 		state.frame = 0;
 	else if(seq && state.frame >= seq->frames.size())
 		state.frame = seq->frames.size()-1;
+
+	// Sync ticks when seeking with keyboard
+	state.currentTick = CalculateTickFromFrame(&active->frameData, state.pattern, state.frame);
 }
 
 void MainFrame::UpdateBackProj(float x, float y)
