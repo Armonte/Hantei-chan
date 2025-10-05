@@ -9,3 +9,4 @@
 *.exe
 /cerr.txt
 /cout.txt
+.claude/settings.local.json
