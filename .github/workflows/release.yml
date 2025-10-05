@@ -1,0 +1,81 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v*.*.*'
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Version tag (e.g., v1.1.21)'
+        required: true
+        type: string
+
+jobs:
+  build-and-release:
+    name: Build and Create Release
+    runs-on: windows-latest
+    permissions:
+      contents: write
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      with:
+        submodules: recursive
+
+    - name: Setup CMake
+      uses: jwlawson/actions-setup-cmake@v2
+      with:
+        cmake-version: '3.27.x'
+
+    - name: Configure CMake
+      run: cmake -B build -G "MinGW Makefiles" -DCMAKE_BUILD_TYPE=Release
+
+    - name: Build
+      run: cmake --build build --config Release
+
+    - name: Package release
+      run: |
+        $version = if ($env:GITHUB_REF -match 'refs/tags/(.*)') { $matches[1] } else { "${{ inputs.version }}" }
+        $archiveName = "hantei-chan-$version-windows-x64"
+
+        mkdir -p release/$archiveName
+        cp build/gonptechan.exe release/$archiveName/
+        if (Test-Path config) { cp -r config release/$archiveName/ }
+        if (Test-Path res) { cp -r res release/$archiveName/ }
+        if (Test-Path README.md) { cp README.md release/$archiveName/ }
+
+        cd release
+        Compress-Archive -Path $archiveName -DestinationPath "$archiveName.zip"
+
+        echo "ARCHIVE_NAME=$archiveName" >> $env:GITHUB_ENV
+        echo "VERSION=$version" >> $env:GITHUB_ENV
+      shell: pwsh
+
+    - name: Create Release
+      uses: softprops/action-gh-release@v1
+      with:
+        tag_name: ${{ env.VERSION }}
+        name: Hantei-chan ${{ env.VERSION }}
+        draft: false
+        prerelease: false
+        files: |
+          release/${{ env.ARCHIVE_NAME }}.zip
+        body: |
+          ## Hantei-chan ${{ env.VERSION }}
+
+          ### Changes
+          See commit history for details.
+
+          ### Download
+          - **Windows x64**: `${{ env.ARCHIVE_NAME }}.zip`
+
+          ### Installation
+          1. Extract the ZIP file
+          2. Run `gonptechan.exe`
+
+          ---
+          🤖 Built automatically by GitHub Actions
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

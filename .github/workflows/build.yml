@@ -1,0 +1,84 @@
+name: Build
+
+on:
+  push:
+    # Build on push to any branch
+  pull_request:
+    branches: [ main, master, develop ]
+  workflow_dispatch:
+
+jobs:
+  build-windows:
+    name: Build on Windows
+    runs-on: windows-latest
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      with:
+        submodules: recursive
+
+    - name: Setup CMake
+      uses: jwlawson/actions-setup-cmake@v2
+      with:
+        cmake-version: '3.27.x'
+
+    - name: Configure CMake
+      run: cmake -B build -G "MinGW Makefiles"
+
+    - name: Build
+      run: cmake --build build --config Release
+
+    - name: Package artifacts
+      run: |
+        mkdir -p artifacts
+        cp build/gonptechan.exe artifacts/
+        if (Test-Path config) { cp -r config artifacts/ }
+        if (Test-Path res) { cp -r res artifacts/ }
+      shell: pwsh
+
+    - name: Upload artifacts
+      uses: actions/upload-artifact@v4
+      with:
+        name: hantei-chan-${{ github.ref_name }}-windows-x64
+        path: artifacts/
+        retention-days: 30
+
+  build-linux-cross:
+    name: Build on Linux (MinGW cross-compile)
+    runs-on: ubuntu-latest
+    continue-on-error: true  # Don't fail workflow if Linux build fails
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      with:
+        submodules: recursive
+
+    - name: Install dependencies
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y mingw-w64 cmake
+
+    - name: Configure CMake
+      run: |
+        cmake -B build \
+          -DCMAKE_TOOLCHAIN_FILE=mingw-toolchain.cmake \
+          -DCMAKE_BUILD_TYPE=Release
+
+    - name: Build
+      run: cmake --build build
+
+    - name: Package artifacts
+      run: |
+        mkdir -p artifacts
+        cp build/gonptechan.exe artifacts/
+        [ -d config ] && cp -r config artifacts/ || true
+        [ -d res ] && cp -r res artifacts/ || true
+
+    - name: Upload artifacts
+      uses: actions/upload-artifact@v4
+      with:
+        name: hantei-chan-${{ github.ref_name }}-linux-mingw-build
+        path: artifacts/
+        retention-days: 30
