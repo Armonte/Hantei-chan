@@ -486,7 +486,7 @@ inline void IfDisplay(std::vector<Frame_IF> *ifList_, Frame_IF *singleClipboard 
 		switch(ifList[i].type) {
 			case 1: // Jump on directional input
 				im::SetNextItemWidth(width);
-				im::InputInt("Direction (numpad)", &p[0], 0, 0); im::SameLine();
+				im::DragInt("Direction (numpad)", &p[0]); im::SameLine();
 				im::TextDisabled("(?)"); if(im::IsItemHovered()) Tooltip("0=neutral, 2=down, 4=left, 6=right, 8=up, etc.\n10=both 6 and 3");
 
 				ShowJumpField("Jump to", &p[1], "Frame number, or add 10000 for pattern");
@@ -511,7 +511,7 @@ inline void IfDisplay(std::vector<Frame_IF> *ifList_, Frame_IF *singleClipboard 
 				im::Checkbox("Despawn on pattern transition", (bool*)&p[2]);
 
 				im::SetNextItemWidth(width);
-				im::InputInt("Projectile var decrease", &p[3], 0, 0);
+				im::DragInt("Projectile var decrease", &p[3]);
 				break;
 			}
 
@@ -529,14 +529,14 @@ inline void IfDisplay(std::vector<Frame_IF> *ifList_, Frame_IF *singleClipboard 
 				ShowJumpField("Frame to jump to", &p[0], nullptr);
 
 				im::SetNextItemWidth(width);
-				im::InputInt("Chance", &p[1], 0, 0); im::SameLine();
+				im::DragInt("Chance", &p[1]); im::SameLine();
 				im::TextDisabled("(?)"); if(im::IsItemHovered()) Tooltip("Max 512");
 
 				im::SetNextItemWidth(width);
-				im::InputInt("Jump pattern?", &p[2], 0, 0);
+				im::DragInt("Jump pattern?", &p[2]);
 
 				im::SetNextItemWidth(width);
-				im::InputInt("Random choose N adjacent?", &p[3], 0, 0);
+				im::DragInt("Random choose N adjacent?", &p[3]);
 				break;
 
 			case 3: // Branch on hit
@@ -550,13 +550,13 @@ inline void IfDisplay(std::vector<Frame_IF> *ifList_, Frame_IF *singleClipboard 
 				im::Combo("Opponent state", &p[2], opponentStateList, IM_ARRAYSIZE(opponentStateList));
 
 				im::SetNextItemWidth(width);
-				im::InputInt("Projectile var decrease", &p[3], 0, 0);
+				im::DragInt("Projectile var decrease", &p[3]);
 				break;
 
 			case 6: // Lever & Trigger check (Frame)
 			case 7: // Lever & Trigger check (Pattern)
 				im::SetNextItemWidth(width);
-				im::InputInt("Lever direction", &p[0], 0, 0); im::SameLine();
+				im::DragInt("Lever direction", &p[0]); im::SameLine();
 				im::TextDisabled("(?)"); if(im::IsItemHovered()) Tooltip("Numpad notation\n0=5(neutral), 5=nothing, 10=6/4, 13=1/2/3, 255=any");
 
 				{
@@ -600,7 +600,7 @@ inline void IfDisplay(std::vector<Frame_IF> *ifList_, Frame_IF *singleClipboard 
 				ShowComboWithManual("When", &p[1], cond11When, IM_ARRAYSIZE(cond11When), width*2, width);
 
 				im::SetNextItemWidth(width);
-				im::InputInt("State to transition to", &p[2], 0, 0);
+				im::DragInt("State to transition to", &p[2]);
 
 				const char* const cond11State[] = {
 					"0: Always",
@@ -611,7 +611,7 @@ inline void IfDisplay(std::vector<Frame_IF> *ifList_, Frame_IF *singleClipboard 
 				ShowComboWithManual("Opponent state", &p[3], cond11State, IM_ARRAYSIZE(cond11State), width*2, width);
 
 				im::SetNextItemWidth(width);
-				im::InputInt("Priority", &p[8], 0, 0); im::SameLine();
+				im::DragInt("Priority", &p[8]); im::SameLine();
 				im::TextDisabled("(?)"); if(im::IsItemHovered()) Tooltip("0-5000: priority = 5000 - value\n10000+: priority = value - 10000");
 				break;
 			}
@@ -661,7 +661,7 @@ inline void IfDisplay(std::vector<Frame_IF> *ifList_, Frame_IF *singleClipboard 
 				ShowCommandField("Command ID 4", &p[4], nullptr);
 
 				im::SetNextItemWidth(width);
-				im::InputInt("Priority", &p[8], 0, 0); im::SameLine();
+				im::DragInt("Priority", &p[8]); im::SameLine();
 				im::TextDisabled("(?)"); if(im::IsItemHovered()) Tooltip("0-5000: priority = 5000 - value\n10000+: priority = value - 10000");
 				break;
 			}
@@ -669,9 +669,9 @@ inline void IfDisplay(std::vector<Frame_IF> *ifList_, Frame_IF *singleClipboard 
 			case 13: // Screen corner check
 				ShowJumpField("Jump to", &p[0], "Frame number, or add 10000 for pattern");
 				im::SetNextItemWidth(width);
-				im::InputInt("Param2", &p[1], 0, 0);
+				im::DragInt("Param2", &p[1]);
 				im::SetNextItemWidth(width);
-				im::InputInt("Param3", &p[2], 0, 0);
+				im::DragInt("Param3", &p[2]);
 				break;
 
 			case 14: // Box collision check
@@ -722,7 +722,7 @@ inline void IfDisplay(std::vector<Frame_IF> *ifList_, Frame_IF *singleClipboard 
 				ShowComboWithManual("Box type", &p[2], cond14BoxType, IM_ARRAYSIZE(cond14BoxType), width*2, width);
 
 				im::SetNextItemWidth(width);
-				im::InputInt("Hitstop on collision", &p[3], 0, 0);
+				im::DragInt("Hitstop on collision", &p[3]);
 
 				const char* const cond14Turn[] = {
 					"0: No turnaround",
@@ -746,14 +746,14 @@ inline void IfDisplay(std::vector<Frame_IF> *ifList_, Frame_IF *singleClipboard 
 				ShowJumpField("Frame to jump to", &p[0], nullptr);
 
 				im::SetNextItemWidth(width);
-				im::InputInt("Number of hits", &p[1], 0, 0);
+				im::DragInt("Number of hits", &p[1]);
 				break;
 
 			case 24: // Projectile variable check
 				ShowJumpField("Frame to jump to", &p[0], nullptr);
 
 				im::SetNextItemWidth(width);
-				im::InputInt("Variable ID and Value", &p[1], 0, 0); im::SameLine();
+				im::DragInt("Variable ID and Value", &p[1]); im::SameLine();
 				im::TextDisabled("(?)"); if(im::IsItemHovered()) Tooltip("1s place: Value\n10s place: Variable ID");
 				break;
 
@@ -769,10 +769,10 @@ inline void IfDisplay(std::vector<Frame_IF> *ifList_, Frame_IF *singleClipboard 
 				ShowJumpField("Jump to", &p[0], "Frame number, or add 10000 for pattern");
 
 				im::SetNextItemWidth(width);
-				im::InputInt("Variable ID", &p[1], 0, 0);
+				im::DragInt("Variable ID", &p[1]);
 
 				im::SetNextItemWidth(width);
-				im::InputInt("Compare value", &p[2], 0, 0);
+				im::DragInt("Compare value", &p[2]);
 
 				im::SetNextItemWidth(width*2);
 				im::Combo("Comparison", &p[3], comparisonTypes, IM_ARRAYSIZE(comparisonTypes));
@@ -780,17 +780,17 @@ inline void IfDisplay(std::vector<Frame_IF> *ifList_, Frame_IF *singleClipboard 
 
 			case 26: // Check lever and change vector
 				im::SetNextItemWidth(width);
-				im::InputInt("Direction", &p[0], 0, 0); im::SameLine();
+				im::DragInt("Direction", &p[0]); im::SameLine();
 				im::TextDisabled("(?)"); if(im::IsItemHovered()) Tooltip("0-9: Numpad direction\n10: Only 6/4 (x only)\n11: 4,6,7,8,9 (x+y)");
 
 				im::SetNextItemWidth(width);
-				im::InputInt("X Speed per frame", &p[1], 0, 0);
+				im::DragInt("X Speed per frame", &p[1]);
 
 				im::SetNextItemWidth(width);
-				im::InputInt("Y Speed per frame", &p[2], 0, 0);
+				im::DragInt("Y Speed per frame", &p[2]);
 
 				im::SetNextItemWidth(width);
-				im::InputInt("Max speed", &p[3], 0, 0);
+				im::DragInt("Max speed", &p[3]);
 				break;
 
 			case 27: // Branch when parent gets hurt
@@ -814,7 +814,7 @@ inline void IfDisplay(std::vector<Frame_IF> *ifList_, Frame_IF *singleClipboard 
 				ShowCommandField("Move ID", &p[0], "Command ID from _c.txt");
 
 				im::SetNextItemWidth(width);
-				im::InputInt("Variable ID", &p[1], 0, 0);
+				im::DragInt("Variable ID", &p[1]);
 
 				im::SetNextItemWidth(width);
 				im::InputInt("Value", &p[2], 0, 0);
@@ -822,7 +822,7 @@ inline void IfDisplay(std::vector<Frame_IF> *ifList_, Frame_IF *singleClipboard 
 
 			case 30: // Facing direction check
 				im::SetNextItemWidth(width);
-				im::InputInt("Frame to jump to", &p[0], 0, 0);
+				im::DragInt("Frame to jump to", &p[0]);
 
 				im::SetNextItemWidth(width);
 				im::Combo("Check facing", &p[1], "Right\0Left\0");
@@ -847,7 +847,7 @@ inline void IfDisplay(std::vector<Frame_IF> *ifList_, Frame_IF *singleClipboard 
 			case 38: // Change variable on hit
 			{
 				im::SetNextItemWidth(width);
-				im::InputInt("Value", &p[0], 0, 0);
+				im::DragInt("Value", &p[0]);
 
 				const char* const cond38When[] = {
 					"0: On hit",
@@ -865,7 +865,7 @@ inline void IfDisplay(std::vector<Frame_IF> *ifList_, Frame_IF *singleClipboard 
 				im::Combo("Opponent state", &p[2], opponentStateList, IM_ARRAYSIZE(opponentStateList));
 
 				im::SetNextItemWidth(width);
-				im::InputInt("Extra variable ID", &p[3], 0, 0);
+				im::DragInt("Extra variable ID", &p[3]);
 
 				const char* const cond38Op[] = {
 					"0: Set",
@@ -880,32 +880,32 @@ inline void IfDisplay(std::vector<Frame_IF> *ifList_, Frame_IF *singleClipboard 
 
 			case 40: // Jump after N frames
 				im::SetNextItemWidth(width);
-				im::InputInt("Frame to jump to", &p[0], 0, 0);
+				im::DragInt("Frame to jump to", &p[0]);
 
 				im::SetNextItemWidth(width);
-				im::InputInt("Number of frames", &p[1], 0, 0);
+				im::DragInt("Number of frames", &p[1]);
 				break;
 
 			case 51: // Check Shield Conditions
 				im::SetNextItemWidth(width);
-				im::InputInt("Frame on D release", &p[0], 0, 0);
+				im::DragInt("Frame on D release", &p[0]);
 
 				im::SetNextItemWidth(width);
-				im::InputInt("Frame on shield success", &p[1], 0, 0);
+				im::DragInt("Frame on shield success", &p[1]);
 
 				im::SetNextItemWidth(width);
-				im::InputInt("Pattern on EX shield", &p[2], 0, 0);
+				im::DragInt("Pattern on EX shield", &p[2]);
 				break;
 
 			case 52: // Throw check
 				im::SetNextItemWidth(width);
-				im::InputInt("Frame on throw success", &p[0], 0, 0);
+				im::DragInt("Frame on throw success", &p[0]);
 
 				im::SetNextItemWidth(width);
 				im::Checkbox("Air throw", (bool*)&p[1]);
 
 				im::SetNextItemWidth(width);
-				im::InputInt("Frame if combo air throw", &p[2], 0, 0);
+				im::DragInt("Frame if combo air throw", &p[2]);
 				break;
 
 			case 54: // Jump on hit or block
@@ -914,19 +914,19 @@ inline void IfDisplay(std::vector<Frame_IF> *ifList_, Frame_IF *singleClipboard 
 
 			case 70: // Jump on reaching screen border
 				im::SetNextItemWidth(width);
-				im::InputInt("Frame at top", &p[0], 0, 0); im::SameLine();
+				im::DragInt("Frame at top", &p[0]); im::SameLine();
 				im::TextDisabled("(?)"); if(im::IsItemHovered()) Tooltip("-1 for no jump");
 
 				im::SetNextItemWidth(width);
-				im::InputInt("Frame at bottom", &p[1], 0, 0); im::SameLine();
+				im::DragInt("Frame at bottom", &p[1]); im::SameLine();
 				im::TextDisabled("(?)"); if(im::IsItemHovered()) Tooltip("-1 for no jump");
 
 				im::SetNextItemWidth(width);
-				im::InputInt("Frame at left", &p[2], 0, 0); im::SameLine();
+				im::DragInt("Frame at left", &p[2]); im::SameLine();
 				im::TextDisabled("(?)"); if(im::IsItemHovered()) Tooltip("-1 for no jump");
 
 				im::SetNextItemWidth(width);
-				im::InputInt("Frame at right", &p[3], 0, 0); im::SameLine();
+				im::DragInt("Frame at right", &p[3]); im::SameLine();
 				im::TextDisabled("(?)"); if(im::IsItemHovered()) Tooltip("-1 for no jump");
 				break;
 
@@ -995,7 +995,7 @@ inline void IfDisplay(std::vector<Frame_IF> *ifList_, Frame_IF *singleClipboard 
 			case 32: // Jump if CPU side of CPU battle
 				im::Text("Arcade mode feature (used in Hime's intro)");
 				im::SetNextItemWidth(width);
-				im::InputInt("Param1", &p[0], 0, 0); im::SameLine();
+				im::DragInt("Param1", &p[0]); im::SameLine();
 				im::TextDisabled("(?)"); if(im::IsItemHovered()) Tooltip("Purpose unknown");
 				break;
 
@@ -1233,10 +1233,22 @@ static inline void DrawSmartEffectUI(Frame_EF& effect, FrameData* frameData, int
 
 			// Offset
 			im::SetNextItemWidth(width);
-			if(im::InputInt("Offset X", &p[0], 0, 0)) markModified();
+			im::DragInt("Offset X", &p[0]);
+			if(im::IsItemEdited()) {
+				if (frameData && patternIndex >= 0) frameData->mark_modified(patternIndex);
+			}
+			if(im::IsItemDeactivatedAfterEdit()) {
+				markModified();
+			}
 			im::SameLine(0, 20);
 			im::SetNextItemWidth(width);
-			if(im::InputInt("Offset Y", &p[1], 0, 0)) markModified();
+			im::DragInt("Offset Y", &p[1]);
+			if(im::IsItemEdited()) {
+				if (frameData && patternIndex >= 0) frameData->mark_modified(patternIndex);
+			}
+			if(im::IsItemDeactivatedAfterEdit()) {
+				markModified();
+			}
 
 			// Flagset 1
 			if(im::TreeNode("Flagset 1 (Spawn Behavior)")) {
@@ -1295,7 +1307,13 @@ static inline void DrawSmartEffectUI(Frame_EF& effect, FrameData* frameData, int
 
 			// Angle
 			im::SetNextItemWidth(width);
-			if(im::InputInt("Angle", &p[7], 0, 0)) markModified();
+			im::DragInt("Angle", &p[7]);
+			if(im::IsItemEdited()) {
+				if (frameData && patternIndex >= 0) frameData->mark_modified(patternIndex);
+			}
+			if(im::IsItemDeactivatedAfterEdit()) {
+				markModified();
+			}
 			im::SameLine(); im::TextDisabled("(?)");
 			if(im::IsItemHovered()) {
 				Tooltip("Clockwise rotation: 0=0°, 2500=90°, 5000=180°, 10000=360°");
@@ -1303,7 +1321,13 @@ static inline void DrawSmartEffectUI(Frame_EF& effect, FrameData* frameData, int
 
 			// Projectile var decrease
 			im::SetNextItemWidth(width);
-			if(im::InputInt("Proj var decrease", &p[8], 0, 0)) markModified();
+			im::DragInt("Proj var decrease", &p[8]);
+			if(im::IsItemEdited()) {
+				if (frameData && patternIndex >= 0) frameData->mark_modified(patternIndex);
+			}
+			if(im::IsItemDeactivatedAfterEdit()) {
+				markModified();
+			}
 
 			break;
 		}
@@ -1332,10 +1356,22 @@ static inline void DrawSmartEffectUI(Frame_EF& effect, FrameData* frameData, int
 				im::Text("--- Superflash Parameters ---");
 
 				im::SetNextItemWidth(width);
-				if(im::InputInt("Position X", &p[0], 0, 0)) markModified();
+				im::DragInt("Position X", &p[0]);
+				if(im::IsItemEdited()) {
+				if (frameData && patternIndex >= 0) frameData->mark_modified(patternIndex);
+			}
+			if(im::IsItemDeactivatedAfterEdit()) {
+				markModified();
+			}
 				im::SameLine(0, 20);
 				im::SetNextItemWidth(width);
-				if(im::InputInt("Position Y", &p[1], 0, 0)) markModified();
+				im::DragInt("Position Y", &p[1]);
+				if(im::IsItemEdited()) {
+				if (frameData && patternIndex >= 0) frameData->mark_modified(patternIndex);
+			}
+			if(im::IsItemDeactivatedAfterEdit()) {
+				markModified();
+			}
 
 				im::SetNextItemWidth(width*2);
 				if(im::Combo("Freeze Mode", &p[2],
@@ -1347,7 +1383,13 @@ static inline void DrawSmartEffectUI(Frame_EF& effect, FrameData* frameData, int
 				}
 
 				im::SetNextItemWidth(width);
-				if(im::InputInt("Duration", &p[3], 0, 0)) markModified();
+				im::DragInt("Duration", &p[3]);
+				if(im::IsItemEdited()) {
+				if (frameData && patternIndex >= 0) frameData->mark_modified(patternIndex);
+			}
+			if(im::IsItemDeactivatedAfterEdit()) {
+				markModified();
+			}
 				im::SameLine(); im::TextDisabled("(?)");
 				if(im::IsItemHovered()) Tooltip("0 = default 30f");
 
@@ -1360,15 +1402,33 @@ static inline void DrawSmartEffectUI(Frame_EF& effect, FrameData* frameData, int
 				}
 
 				im::SetNextItemWidth(width);
-				if(im::InputInt("Don't spend meter", &p[8], 0, 0)) markModified();
+				im::DragInt("Don't spend meter", &p[8]);
+				if(im::IsItemEdited()) {
+				if (frameData && patternIndex >= 0) frameData->mark_modified(patternIndex);
+			}
+			if(im::IsItemDeactivatedAfterEdit()) {
+				markModified();
+			}
 
 				im::SetNextItemWidth(width);
-				if(im::InputInt("Meter gain mult", &p[9], 0, 0)) markModified();
+				im::DragInt("Meter gain mult", &p[9]);
+				if(im::IsItemEdited()) {
+				if (frameData && patternIndex >= 0) frameData->mark_modified(patternIndex);
+			}
+			if(im::IsItemDeactivatedAfterEdit()) {
+				markModified();
+			}
 				im::SameLine(); im::TextDisabled("(?)");
 				if(im::IsItemHovered()) Tooltip("256 = 1.0x, requires param9 != 0");
 
 				im::SetNextItemWidth(width);
-				if(im::InputInt("Mult duration", &p[10], 0, 0)) markModified();
+				im::DragInt("Mult duration", &p[10]);
+				if(im::IsItemEdited()) {
+				if (frameData && patternIndex >= 0) frameData->mark_modified(patternIndex);
+			}
+			if(im::IsItemDeactivatedAfterEdit()) {
+				markModified();
+			}
 				im::SameLine(); im::TextDisabled("(?)");
 				if(im::IsItemHovered()) Tooltip("Frames, requires param9 != 0");
 
@@ -1425,31 +1485,85 @@ static inline void DrawSmartEffectUI(Frame_EF& effect, FrameData* frameData, int
 			if(no == 1) { // Jump effect
 				im::Text("--- Jump Effect ---");
 				im::SetNextItemWidth(width);
-				if(im::InputInt("Duration", &p[2], 0, 0)) markModified();
+				im::DragInt("Duration", &p[2]);
+				if(im::IsItemEdited()) {
+				if (frameData && patternIndex >= 0) frameData->mark_modified(patternIndex);
+			}
+			if(im::IsItemDeactivatedAfterEdit()) {
+				markModified();
+			}
 				im::SetNextItemWidth(width);
-				if(im::InputInt("Size", &p[3], 0, 0)) markModified();
+				im::DragInt("Size", &p[3]);
+				if(im::IsItemEdited()) {
+				if (frameData && patternIndex >= 0) frameData->mark_modified(patternIndex);
+			}
+			if(im::IsItemDeactivatedAfterEdit()) {
+				markModified();
+			}
 				im::SetNextItemWidth(width);
-				if(im::InputInt("Growth rate", &p[4], 0, 0)) markModified();
+				im::DragInt("Growth rate", &p[4]);
+				if(im::IsItemEdited()) {
+				if (frameData && patternIndex >= 0) frameData->mark_modified(patternIndex);
+			}
+			if(im::IsItemDeactivatedAfterEdit()) {
+				markModified();
+			}
 			} else if(no == 3 || no == 9) { // Hitsparks
 				im::Text("--- Hitspark ---");
 				im::SetNextItemWidth(width);
-				if(im::InputInt("Intensity", &p[2], 0, 0)) markModified();
+				im::DragInt("Intensity", &p[2]);
+				if(im::IsItemEdited()) {
+				if (frameData && patternIndex >= 0) frameData->mark_modified(patternIndex);
+			}
+			if(im::IsItemDeactivatedAfterEdit()) {
+				markModified();
+			}
 			} else if(no >= 27 && no <= 30) { // Dust clouds
 				im::Text("--- Dust Cloud ---");
 				im::SetNextItemWidth(width);
-				if(im::InputInt("X speed", &p[2], 0, 0)) markModified();
+				im::DragInt("X speed", &p[2]);
+				if(im::IsItemEdited()) {
+				if (frameData && patternIndex >= 0) frameData->mark_modified(patternIndex);
+			}
+			if(im::IsItemDeactivatedAfterEdit()) {
+				markModified();
+			}
 				im::SetNextItemWidth(width);
-				if(im::InputInt("Y speed", &p[3], 0, 0)) markModified();
+				im::DragInt("Y speed", &p[3]);
+				if(im::IsItemEdited()) {
+				if (frameData && patternIndex >= 0) frameData->mark_modified(patternIndex);
+			}
+			if(im::IsItemDeactivatedAfterEdit()) {
+				markModified();
+			}
 				im::SetNextItemWidth(width);
-				if(im::InputInt("Duration", &p[4], 0, 0)) markModified();
+				im::DragInt("Duration", &p[4]);
+				if(im::IsItemEdited()) {
+				if (frameData && patternIndex >= 0) frameData->mark_modified(patternIndex);
+			}
+			if(im::IsItemDeactivatedAfterEdit()) {
+				markModified();
+			}
 				im::SetNextItemWidth(width);
 				if(im::Combo("Color", &p[5], "0: Brown\0001: Black\0002: Purple\0003: White\000")) {
 					markModified();
 				}
 				im::SetNextItemWidth(width);
-				if(im::InputInt("Flags", &p[6], 0, 0)) markModified();
+				im::DragInt("Flags", &p[6]);
+				if(im::IsItemEdited()) {
+				if (frameData && patternIndex >= 0) frameData->mark_modified(patternIndex);
+			}
+			if(im::IsItemDeactivatedAfterEdit()) {
+				markModified();
+			}
 				im::SetNextItemWidth(width);
-				if(im::InputInt("Amount", &p[7], 0, 0)) markModified();
+				im::DragInt("Amount", &p[7]);
+				if(im::IsItemEdited()) {
+				if (frameData && patternIndex >= 0) frameData->mark_modified(patternIndex);
+			}
+			if(im::IsItemDeactivatedAfterEdit()) {
+				markModified();
+			}
 			} else {
 				// Generic
 				im::Text("Parameters:");
@@ -1490,7 +1604,13 @@ static inline void DrawSmartEffectUI(Frame_EF& effect, FrameData* frameData, int
 
 			// Random range
 			im::SetNextItemWidth(width);
-			if(im::InputInt("Random range", &p[0], 0, 0)) markModified();
+			im::DragInt("Random range", &p[0]);
+			if(im::IsItemEdited()) {
+				if (frameData && patternIndex >= 0) frameData->mark_modified(patternIndex);
+			}
+			if(im::IsItemDeactivatedAfterEdit()) {
+				markModified();
+			}
 			im::SameLine(); im::TextDisabled("(?)");
 			if(im::IsItemHovered()) {
 				Tooltip("Spawns pattern (Pattern + random(0, range))");
@@ -1557,7 +1677,13 @@ static inline void DrawSmartEffectUI(Frame_EF& effect, FrameData* frameData, int
 
 			// Angle
 			im::SetNextItemWidth(width);
-			if(im::InputInt("Angle", &p[8], 0, 0)) markModified();
+			im::DragInt("Angle", &p[8]);
+			if(im::IsItemEdited()) {
+				if (frameData && patternIndex >= 0) frameData->mark_modified(patternIndex);
+			}
+			if(im::IsItemDeactivatedAfterEdit()) {
+				markModified();
+			}
 			im::SameLine(); im::TextDisabled("(?)");
 			if(im::IsItemHovered()) {
 				Tooltip("Clockwise rotation: 0=0°, 2500=90°, 5000=180°, 10000=360°");
@@ -1565,7 +1691,13 @@ static inline void DrawSmartEffectUI(Frame_EF& effect, FrameData* frameData, int
 
 			// Projectile var decrease
 			im::SetNextItemWidth(width);
-			if(im::InputInt("Proj var decrease", &p[9], 0, 0)) markModified();
+			im::DragInt("Proj var decrease", &p[9]);
+			if(im::IsItemEdited()) {
+				if (frameData && patternIndex >= 0) frameData->mark_modified(patternIndex);
+			}
+			if(im::IsItemDeactivatedAfterEdit()) {
+				markModified();
+			}
 
 			break;
 		}
@@ -1603,15 +1735,33 @@ static inline void DrawSmartEffectUI(Frame_EF& effect, FrameData* frameData, int
 
 			// Position
 			im::SetNextItemWidth(width);
-			if(im::InputInt("X pos", &p[0], 0, 0)) markModified();
+			im::DragInt("X pos", &p[0]);
+			if(im::IsItemEdited()) {
+				if (frameData && patternIndex >= 0) frameData->mark_modified(patternIndex);
+			}
+			if(im::IsItemDeactivatedAfterEdit()) {
+				markModified();
+			}
 			im::SameLine(0, 20);
 			im::SetNextItemWidth(width);
-			if(im::InputInt("Y pos", &p[1], 0, 0)) markModified();
+			im::DragInt("Y pos", &p[1]);
+			if(im::IsItemEdited()) {
+				if (frameData && patternIndex >= 0) frameData->mark_modified(patternIndex);
+			}
+			if(im::IsItemDeactivatedAfterEdit()) {
+				markModified();
+			}
 
 			// Type 14 specific
 			if(effect.type == 14) {
 				im::SetNextItemWidth(width);
-				if(im::InputInt("Rotation", &p[2], 0, 0)) markModified();
+				im::DragInt("Rotation", &p[2]);
+				if(im::IsItemEdited()) {
+				if (frameData && patternIndex >= 0) frameData->mark_modified(patternIndex);
+			}
+			if(im::IsItemDeactivatedAfterEdit()) {
+				markModified();
+			}
 				im::SameLine(); im::TextDisabled("(?)");
 				if(im::IsItemHovered()) {
 					Tooltip("Rotation unit (large values like 1000, 4000 used)");
@@ -1619,7 +1769,13 @@ static inline void DrawSmartEffectUI(Frame_EF& effect, FrameData* frameData, int
 			} else {
 				// Type 4 has unknown param3
 				im::SetNextItemWidth(width);
-				if(im::InputInt("Unknown", &p[2], 0, 0)) markModified();
+				im::DragInt("Unknown", &p[2]);
+				if(im::IsItemEdited()) {
+				if (frameData && patternIndex >= 0) frameData->mark_modified(patternIndex);
+			}
+			if(im::IsItemDeactivatedAfterEdit()) {
+				markModified();
+			}
 				im::SameLine(); im::TextDisabled("(?)");
 				if(im::IsItemHovered()) {
 					Tooltip("Found in old airthrows, probably leftover");
@@ -1670,7 +1826,13 @@ static inline void DrawSmartEffectUI(Frame_EF& effect, FrameData* frameData, int
 
 			// Untech time
 			im::SetNextItemWidth(width);
-			if(im::InputInt("Untech time", &p[5], 0, 0)) markModified();
+			im::DragInt("Untech time", &p[5]);
+			if(im::IsItemEdited()) {
+				if (frameData && patternIndex >= 0) frameData->mark_modified(patternIndex);
+			}
+			if(im::IsItemDeactivatedAfterEdit()) {
+				markModified();
+			}
 			im::SameLine(); im::TextDisabled("(?)");
 			if(im::IsItemHovered()) {
 				Tooltip(effect.type == 14 ?
@@ -1686,7 +1848,13 @@ static inline void DrawSmartEffectUI(Frame_EF& effect, FrameData* frameData, int
 				}
 			} else {
 				im::SetNextItemWidth(width);
-				if(im::InputInt("Unknown", &p[6], 0, 0)) markModified();
+				im::DragInt("Unknown", &p[6]);
+				if(im::IsItemEdited()) {
+				if (frameData && patternIndex >= 0) frameData->mark_modified(patternIndex);
+			}
+			if(im::IsItemDeactivatedAfterEdit()) {
+				markModified();
+			}
 				im::SameLine(); im::TextDisabled("(?)");
 				if(im::IsItemHovered()) {
 					Tooltip("Most of the time it's 0");
@@ -1696,7 +1864,13 @@ static inline void DrawSmartEffectUI(Frame_EF& effect, FrameData* frameData, int
 			// Opponent's frame
 			if(effect.type == 4) {
 				im::SetNextItemWidth(width);
-				if(im::InputInt("Opponent frame", &p[7], 0, 0)) markModified();
+				im::DragInt("Opponent frame", &p[7]);
+				if(im::IsItemEdited()) {
+				if (frameData && patternIndex >= 0) frameData->mark_modified(patternIndex);
+			}
+			if(im::IsItemDeactivatedAfterEdit()) {
+				markModified();
+			}
 			}
 
 			break;
@@ -1758,7 +1932,13 @@ static inline void DrawSmartEffectUI(Frame_EF& effect, FrameData* frameData, int
 				}
 			} else if(no == 1) { // Damage opponent
 				im::SetNextItemWidth(width);
-				if(im::InputInt("Damage", &p[0], 0, 0)) markModified();
+				im::DragInt("Damage", &p[0]);
+				if(im::IsItemEdited()) {
+				if (frameData && patternIndex >= 0) frameData->mark_modified(patternIndex);
+			}
+			if(im::IsItemDeactivatedAfterEdit()) {
+				markModified();
+			}
 
 				im::SetNextItemWidth(width);
 				if(im::Combo("Add to hit count", &p[1], "0\0001\0002\000")) {
@@ -1766,10 +1946,22 @@ static inline void DrawSmartEffectUI(Frame_EF& effect, FrameData* frameData, int
 				}
 
 				im::SetNextItemWidth(width);
-				if(im::InputInt("Hitstop", &p[2], 0, 0)) markModified();
+				im::DragInt("Hitstop", &p[2]);
+				if(im::IsItemEdited()) {
+				if (frameData && patternIndex >= 0) frameData->mark_modified(patternIndex);
+			}
+			if(im::IsItemDeactivatedAfterEdit()) {
+				markModified();
+			}
 
 				im::SetNextItemWidth(width);
-				if(im::InputInt("Hit sound", &p[3], 0, 0)) markModified();
+				im::DragInt("Hit sound", &p[3]);
+				if(im::IsItemEdited()) {
+				if (frameData && patternIndex >= 0) frameData->mark_modified(patternIndex);
+			}
+			if(im::IsItemDeactivatedAfterEdit()) {
+				markModified();
+			}
 				im::SameLine(); im::TextDisabled("(?)");
 				if(im::IsItemHovered()) {
 					Tooltip("Same as in AT data");
@@ -1781,10 +1973,22 @@ static inline void DrawSmartEffectUI(Frame_EF& effect, FrameData* frameData, int
 				}
 
 				im::SetNextItemWidth(width);
-				if(im::InputInt("VS damage", &p[5], 0, 0)) markModified();
+				im::DragInt("VS damage", &p[5]);
+				if(im::IsItemEdited()) {
+				if (frameData && patternIndex >= 0) frameData->mark_modified(patternIndex);
+			}
+			if(im::IsItemDeactivatedAfterEdit()) {
+				markModified();
+			}
 			} else if(no == 4) { // Unknown/obsolete
 				im::SetNextItemWidth(width);
-				if(im::InputInt("Unknown", &p[0], 0, 0)) markModified();
+				im::DragInt("Unknown", &p[0]);
+				if(im::IsItemEdited()) {
+				if (frameData && patternIndex >= 0) frameData->mark_modified(patternIndex);
+			}
+			if(im::IsItemDeactivatedAfterEdit()) {
+				markModified();
+			}
 				im::SameLine(); im::TextDisabled("(?)");
 				if(im::IsItemHovered()) {
 					Tooltip("Always -10, probably obsolete");
@@ -1867,10 +2071,22 @@ static inline void DrawSmartEffectUI(Frame_EF& effect, FrameData* frameData, int
 
 				if(no == 3) { // Trailing images only
 					im::SetNextItemWidth(width);
-					if(im::InputInt("Number of images", &p[1], 0, 0)) markModified();
+					im::DragInt("Number of images", &p[1]);
+					if(im::IsItemEdited()) {
+				if (frameData && patternIndex >= 0) frameData->mark_modified(patternIndex);
+			}
+			if(im::IsItemDeactivatedAfterEdit()) {
+				markModified();
+			}
 
 					im::SetNextItemWidth(width);
-					if(im::InputInt("Frames behind", &p[2], 0, 0)) markModified();
+					im::DragInt("Frames behind", &p[2]);
+					if(im::IsItemEdited()) {
+				if (frameData && patternIndex >= 0) frameData->mark_modified(patternIndex);
+			}
+			if(im::IsItemDeactivatedAfterEdit()) {
+				markModified();
+			}
 					im::SameLine(); im::TextDisabled("(?)");
 					if(im::IsItemHovered()) {
 						Tooltip("Frames each image is behind previous (max 32)");
@@ -1881,7 +2097,13 @@ static inline void DrawSmartEffectUI(Frame_EF& effect, FrameData* frameData, int
 				im::Text("--- Screen Effects ---");
 
 				im::SetNextItemWidth(width);
-				if(im::InputInt("Shake duration", &p[0], 0, 0)) markModified();
+				im::DragInt("Shake duration", &p[0]);
+				if(im::IsItemEdited()) {
+				if (frameData && patternIndex >= 0) frameData->mark_modified(patternIndex);
+			}
+			if(im::IsItemDeactivatedAfterEdit()) {
+				markModified();
+			}
 
 				im::SetNextItemWidth(width*2);
 				int screenEffectTypes[] = {0, 1, 2, 3, 4, 5, 31, 32};
@@ -1911,42 +2133,90 @@ static inline void DrawSmartEffectUI(Frame_EF& effect, FrameData* frameData, int
 				}
 
 				im::SetNextItemWidth(width);
-				if(im::InputInt("Effect duration", &p[2], 0, 0)) markModified();
+				im::DragInt("Effect duration", &p[2]);
+				if(im::IsItemEdited()) {
+				if (frameData && patternIndex >= 0) frameData->mark_modified(patternIndex);
+			}
+			if(im::IsItemDeactivatedAfterEdit()) {
+				markModified();
+			}
 
 				im::SetNextItemWidth(width);
-				if(im::InputInt("Slowdown duration", &p[3], 0, 0)) markModified();
+				im::DragInt("Slowdown duration", &p[3]);
+				if(im::IsItemEdited()) {
+				if (frameData && patternIndex >= 0) frameData->mark_modified(patternIndex);
+			}
+			if(im::IsItemDeactivatedAfterEdit()) {
+				markModified();
+			}
 
 			} else if(no == 2) { // Invulnerability
 				im::Text("--- Invulnerability ---");
 
 				im::SetNextItemWidth(width);
-				if(im::InputInt("Strike invuln", &p[0], 0, 0)) markModified();
+				im::DragInt("Strike invuln", &p[0]);
+				if(im::IsItemEdited()) {
+				if (frameData && patternIndex >= 0) frameData->mark_modified(patternIndex);
+			}
+			if(im::IsItemDeactivatedAfterEdit()) {
+				markModified();
+			}
 
 				im::SetNextItemWidth(width);
-				if(im::InputInt("Throw invuln", &p[1], 0, 0)) markModified();
+				im::DragInt("Throw invuln", &p[1]);
+				if(im::IsItemEdited()) {
+				if (frameData && patternIndex >= 0) frameData->mark_modified(patternIndex);
+			}
+			if(im::IsItemDeactivatedAfterEdit()) {
+				markModified();
+			}
 
 			} else if(no == 4) { // Gauges
 				im::Text("--- Gauges ---");
 
 				im::SetNextItemWidth(width);
-				if(im::InputInt("Health change", &p[0], 0, 0)) markModified();
+				im::DragInt("Health change", &p[0]);
+				if(im::IsItemEdited()) {
+				if (frameData && patternIndex >= 0) frameData->mark_modified(patternIndex);
+			}
+			if(im::IsItemDeactivatedAfterEdit()) {
+				markModified();
+			}
 				im::SameLine(); im::TextDisabled("(?)");
 				if(im::IsItemHovered()) {
 					Tooltip("May not exceed Red Health");
 				}
 
 				im::SetNextItemWidth(width);
-				if(im::InputInt("Meter change", &p[1], 0, 0)) markModified();
+				im::DragInt("Meter change", &p[1]);
+				if(im::IsItemEdited()) {
+				if (frameData && patternIndex >= 0) frameData->mark_modified(patternIndex);
+			}
+			if(im::IsItemDeactivatedAfterEdit()) {
+				markModified();
+			}
 
 				im::SetNextItemWidth(width);
-				if(im::InputInt("MAX/HEAT time", &p[2], 0, 0)) markModified();
+				im::DragInt("MAX/HEAT time", &p[2]);
+				if(im::IsItemEdited()) {
+				if (frameData && patternIndex >= 0) frameData->mark_modified(patternIndex);
+			}
+			if(im::IsItemDeactivatedAfterEdit()) {
+				markModified();
+			}
 				im::SameLine(); im::TextDisabled("(?)");
 				if(im::IsItemHovered()) {
 					Tooltip("Only works if owner is in MAX/HEAT/BLOOD HEAT");
 				}
 
 				im::SetNextItemWidth(width);
-				if(im::InputInt("Red Health change", &p[3], 0, 0)) markModified();
+				im::DragInt("Red Health change", &p[3]);
+				if(im::IsItemEdited()) {
+				if (frameData && patternIndex >= 0) frameData->mark_modified(patternIndex);
+			}
+			if(im::IsItemDeactivatedAfterEdit()) {
+				markModified();
+			}
 
 			} else if(no == 5) { // Turnaround behavior
 				im::Text("--- Turnaround Behavior ---");
@@ -1967,16 +2237,40 @@ static inline void DrawSmartEffectUI(Frame_EF& effect, FrameData* frameData, int
 				im::Text("--- Set Movement Vector ---");
 
 				im::SetNextItemWidth(width);
-				if(im::InputInt("Min speed", &p[0], 0, 0)) markModified();
+				im::DragInt("Min speed", &p[0]);
+				if(im::IsItemEdited()) {
+				if (frameData && patternIndex >= 0) frameData->mark_modified(patternIndex);
+			}
+			if(im::IsItemDeactivatedAfterEdit()) {
+				markModified();
+			}
 
 				im::SetNextItemWidth(width);
-				if(im::InputInt("Max speed", &p[1], 0, 0)) markModified();
+				im::DragInt("Max speed", &p[1]);
+				if(im::IsItemEdited()) {
+				if (frameData && patternIndex >= 0) frameData->mark_modified(patternIndex);
+			}
+			if(im::IsItemDeactivatedAfterEdit()) {
+				markModified();
+			}
 
 				im::SetNextItemWidth(width);
-				if(im::InputInt("Min accel", &p[2], 0, 0)) markModified();
+				im::DragInt("Min accel", &p[2]);
+				if(im::IsItemEdited()) {
+				if (frameData && patternIndex >= 0) frameData->mark_modified(patternIndex);
+			}
+			if(im::IsItemDeactivatedAfterEdit()) {
+				markModified();
+			}
 
 				im::SetNextItemWidth(width);
-				if(im::InputInt("Max accel", &p[3], 0, 0)) markModified();
+				im::DragInt("Max accel", &p[3]);
+				if(im::IsItemEdited()) {
+				if (frameData && patternIndex >= 0) frameData->mark_modified(patternIndex);
+			}
+			if(im::IsItemDeactivatedAfterEdit()) {
+				markModified();
+			}
 
 				im::SetNextItemWidth(width);
 				if(im::Combo("Axis", &p[4], "0: X\0001: Y\000")) {
@@ -1990,7 +2284,13 @@ static inline void DrawSmartEffectUI(Frame_EF& effect, FrameData* frameData, int
 
 			} else if(no == 9) { // Set No Input flag
 				im::SetNextItemWidth(width);
-				if(im::InputInt("Value", &p[0], 0, 0)) markModified();
+				im::DragInt("Value", &p[0]);
+				if(im::IsItemEdited()) {
+				if (frameData && patternIndex >= 0) frameData->mark_modified(patternIndex);
+			}
+			if(im::IsItemDeactivatedAfterEdit()) {
+				markModified();
+			}
 
 			} else if(no == 10) { // Various effects (armor/confusion)
 				im::Text("--- Various Effects ---");
@@ -2001,20 +2301,38 @@ static inline void DrawSmartEffectUI(Frame_EF& effect, FrameData* frameData, int
 				}
 
 				im::SetNextItemWidth(width);
-				if(im::InputInt("Duration", &p[1], 0, 0)) markModified();
+				im::DragInt("Duration", &p[1]);
+				if(im::IsItemEdited()) {
+				if (frameData && patternIndex >= 0) frameData->mark_modified(patternIndex);
+			}
+			if(im::IsItemDeactivatedAfterEdit()) {
+				markModified();
+			}
 
 			} else if(no == 11) { // Super flash
 				im::Text("--- Super Flash ---");
 
 				im::SetNextItemWidth(width);
-				if(im::InputInt("Global flash dur", &p[0], 0, 0)) markModified();
+				im::DragInt("Global flash dur", &p[0]);
+				if(im::IsItemEdited()) {
+				if (frameData && patternIndex >= 0) frameData->mark_modified(patternIndex);
+			}
+			if(im::IsItemDeactivatedAfterEdit()) {
+				markModified();
+			}
 				im::SameLine(); im::TextDisabled("(?)");
 				if(im::IsItemHovered()) {
 					Tooltip("Only if param2 != 0");
 				}
 
 				im::SetNextItemWidth(width);
-				if(im::InputInt("Player flash", &p[1], 0, 0)) markModified();
+				im::DragInt("Player flash", &p[1]);
+				if(im::IsItemEdited()) {
+				if (frameData && patternIndex >= 0) frameData->mark_modified(patternIndex);
+			}
+			if(im::IsItemDeactivatedAfterEdit()) {
+				markModified();
+			}
 				im::SameLine(); im::TextDisabled("(?)");
 				if(im::IsItemHovered()) {
 					Tooltip("Set to 0 if 0");
@@ -2055,15 +2373,39 @@ static inline void DrawSmartEffectUI(Frame_EF& effect, FrameData* frameData, int
 					}
 
 					im::SetNextItemWidth(width);
-					if(im::InputInt("X offset", &p[0], 0, 0)) markModified();
+					im::DragInt("X offset", &p[0]);
+					if(im::IsItemEdited()) {
+				if (frameData && patternIndex >= 0) frameData->mark_modified(patternIndex);
+			}
+			if(im::IsItemDeactivatedAfterEdit()) {
+				markModified();
+			}
 					im::SetNextItemWidth(width);
-					if(im::InputInt("Y offset", &p[1], 0, 0)) markModified();
+					im::DragInt("Y offset", &p[1]);
+					if(im::IsItemEdited()) {
+				if (frameData && patternIndex >= 0) frameData->mark_modified(patternIndex);
+			}
+			if(im::IsItemDeactivatedAfterEdit()) {
+				markModified();
+			}
 
 				} else if(p[11] == 1) {
 					im::SetNextItemWidth(width);
-					if(im::InputInt("X position", &p[0], 0, 0)) markModified();
+					im::DragInt("X position", &p[0]);
+					if(im::IsItemEdited()) {
+				if (frameData && patternIndex >= 0) frameData->mark_modified(patternIndex);
+			}
+			if(im::IsItemDeactivatedAfterEdit()) {
+				markModified();
+			}
 					im::SetNextItemWidth(width);
-					if(im::InputInt("Y position", &p[1], 0, 0)) markModified();
+					im::DragInt("Y position", &p[1]);
+					if(im::IsItemEdited()) {
+				if (frameData && patternIndex >= 0) frameData->mark_modified(patternIndex);
+			}
+			if(im::IsItemDeactivatedAfterEdit()) {
+				markModified();
+			}
 
 					im::SetNextItemWidth(width);
 					if(im::Combo("X mode", &p[2],
@@ -2073,9 +2415,21 @@ static inline void DrawSmartEffectUI(Frame_EF& effect, FrameData* frameData, int
 
 				} else if(p[11] == 2) {
 					im::SetNextItemWidth(width);
-					if(im::InputInt("X offset", &p[0], 0, 0)) markModified();
+					im::DragInt("X offset", &p[0]);
+					if(im::IsItemEdited()) {
+				if (frameData && patternIndex >= 0) frameData->mark_modified(patternIndex);
+			}
+			if(im::IsItemDeactivatedAfterEdit()) {
+				markModified();
+			}
 					im::SetNextItemWidth(width);
-					if(im::InputInt("Y offset", &p[1], 0, 0)) markModified();
+					im::DragInt("Y offset", &p[1]);
+					if(im::IsItemEdited()) {
+				if (frameData && patternIndex >= 0) frameData->mark_modified(patternIndex);
+			}
+			if(im::IsItemDeactivatedAfterEdit()) {
+				markModified();
+			}
 				}
 
 			} else if(no == 14) { // Gauges of character in special box
@@ -2116,30 +2470,72 @@ static inline void DrawSmartEffectUI(Frame_EF& effect, FrameData* frameData, int
 
 				if(p[11] == 0) {
 					im::SetNextItemWidth(width);
-					if(im::InputInt("Base angle", &p[0], 0, 0)) markModified();
+					im::DragInt("Base angle", &p[0]);
+					if(im::IsItemEdited()) {
+				if (frameData && patternIndex >= 0) frameData->mark_modified(patternIndex);
+			}
+			if(im::IsItemDeactivatedAfterEdit()) {
+				markModified();
+			}
 					im::SameLine(); im::TextDisabled("(?)");
 					if(im::IsItemHovered()) {
 						Tooltip("Degrees clockwise");
 					}
 
 					im::SetNextItemWidth(width);
-					if(im::InputInt("Random angle range", &p[1], 0, 0)) markModified();
+					im::DragInt("Random angle range", &p[1]);
+					if(im::IsItemEdited()) {
+				if (frameData && patternIndex >= 0) frameData->mark_modified(patternIndex);
+			}
+			if(im::IsItemDeactivatedAfterEdit()) {
+				markModified();
+			}
 
 					im::SetNextItemWidth(width);
-					if(im::InputInt("Base speed", &p[2], 0, 0)) markModified();
+					im::DragInt("Base speed", &p[2]);
+					if(im::IsItemEdited()) {
+				if (frameData && patternIndex >= 0) frameData->mark_modified(patternIndex);
+			}
+			if(im::IsItemDeactivatedAfterEdit()) {
+				markModified();
+			}
 
 					im::SetNextItemWidth(width);
-					if(im::InputInt("Random speed range", &p[3], 0, 0)) markModified();
+					im::DragInt("Random speed range", &p[3]);
+					if(im::IsItemEdited()) {
+				if (frameData && patternIndex >= 0) frameData->mark_modified(patternIndex);
+			}
+			if(im::IsItemDeactivatedAfterEdit()) {
+				markModified();
+			}
 
 				} else {
 					im::SetNextItemWidth(width);
-					if(im::InputInt("X", &p[0], 0, 0)) markModified();
+					im::DragInt("X", &p[0]);
+					if(im::IsItemEdited()) {
+				if (frameData && patternIndex >= 0) frameData->mark_modified(patternIndex);
+			}
+			if(im::IsItemDeactivatedAfterEdit()) {
+				markModified();
+			}
 
 					im::SetNextItemWidth(width);
-					if(im::InputInt("Y", &p[1], 0, 0)) markModified();
+					im::DragInt("Y", &p[1]);
+					if(im::IsItemEdited()) {
+				if (frameData && patternIndex >= 0) frameData->mark_modified(patternIndex);
+			}
+			if(im::IsItemDeactivatedAfterEdit()) {
+				markModified();
+			}
 
 					im::SetNextItemWidth(width);
-					if(im::InputInt("Velocity divisor", &p[2], 0, 0)) markModified();
+					im::DragInt("Velocity divisor", &p[2]);
+					if(im::IsItemEdited()) {
+				if (frameData && patternIndex >= 0) frameData->mark_modified(patternIndex);
+			}
+			if(im::IsItemDeactivatedAfterEdit()) {
+				markModified();
+			}
 					im::SameLine(); im::TextDisabled("(?)");
 					if(im::IsItemHovered()) {
 						Tooltip("If 1 or 0, travels entire distance in 1 frame");
@@ -2150,7 +2546,13 @@ static inline void DrawSmartEffectUI(Frame_EF& effect, FrameData* frameData, int
 				im::Text("--- Prorate ---");
 
 				im::SetNextItemWidth(width);
-				if(im::InputInt("Proration value", &p[0], 0, 0)) markModified();
+				im::DragInt("Proration value", &p[0]);
+				if(im::IsItemEdited()) {
+				if (frameData && patternIndex >= 0) frameData->mark_modified(patternIndex);
+			}
+			if(im::IsItemDeactivatedAfterEdit()) {
+				markModified();
+			}
 
 				im::SetNextItemWidth(width);
 				int prorateType = p[1];
@@ -2234,7 +2636,13 @@ static inline void DrawSmartEffectUI(Frame_EF& effect, FrameData* frameData, int
 				im::Text(no == 100 ? "--- Increase Proj Var ---" : "--- Decrease Proj Var ---");
 
 				im::SetNextItemWidth(width);
-				if(im::InputInt("Param1", &p[0], 0, 0)) markModified();
+				im::DragInt("Param1", &p[0]);
+				if(im::IsItemEdited()) {
+				if (frameData && patternIndex >= 0) frameData->mark_modified(patternIndex);
+			}
+			if(im::IsItemDeactivatedAfterEdit()) {
+				markModified();
+			}
 				im::SameLine(); im::TextDisabled("(?)");
 				if(im::IsItemHovered()) {
 					Tooltip("1s place: Amount\n10s place: Variable ID");
@@ -2244,20 +2652,38 @@ static inline void DrawSmartEffectUI(Frame_EF& effect, FrameData* frameData, int
 				im::Text(no == 102 ? "--- Increase Dash Var ---" : "--- Decrease Dash Var ---");
 
 				im::SetNextItemWidth(width);
-				if(im::InputInt("Amount", &p[0], 0, 0)) markModified();
+				im::DragInt("Amount", &p[0]);
+				if(im::IsItemEdited()) {
+				if (frameData && patternIndex >= 0) frameData->mark_modified(patternIndex);
+			}
+			if(im::IsItemDeactivatedAfterEdit()) {
+				markModified();
+			}
 
 			} else if(no == 105) { // Change variable
 				im::Text("--- Change Variable ---");
 
 				im::SetNextItemWidth(width);
-				if(im::InputInt("Variable ID", &p[0], 0, 0)) markModified();
+				im::DragInt("Variable ID", &p[0]);
+				if(im::IsItemEdited()) {
+				if (frameData && patternIndex >= 0) frameData->mark_modified(patternIndex);
+			}
+			if(im::IsItemDeactivatedAfterEdit()) {
+				markModified();
+			}
 				im::SameLine(); im::TextDisabled("(?)");
 				if(im::IsItemHovered()) {
 					Tooltip("0-9, can overflow with <0 and >9");
 				}
 
 				im::SetNextItemWidth(width);
-				if(im::InputInt("Value", &p[1], 0, 0)) markModified();
+				im::DragInt("Value", &p[1]);
+				if(im::IsItemEdited()) {
+				if (frameData && patternIndex >= 0) frameData->mark_modified(patternIndex);
+			}
+			if(im::IsItemDeactivatedAfterEdit()) {
+				markModified();
+			}
 
 				im::SetNextItemWidth(width);
 				if(im::Combo("Mode", &p[2], "0: Set\0001: Add\000")) {
@@ -2271,7 +2697,13 @@ static inline void DrawSmartEffectUI(Frame_EF& effect, FrameData* frameData, int
 				im::Text("--- Change Frames ---");
 
 				im::SetNextItemWidth(width);
-				if(im::InputInt("Value", &p[0], 0, 0)) markModified();
+				im::DragInt("Value", &p[0]);
+				if(im::IsItemEdited()) {
+				if (frameData && patternIndex >= 0) frameData->mark_modified(patternIndex);
+			}
+			if(im::IsItemDeactivatedAfterEdit()) {
+				markModified();
+			}
 
 				im::SetNextItemWidth(width);
 				if(im::Combo("Mode", &p[1], "0: Set\0001: Add\000")) {
@@ -2280,7 +2712,13 @@ static inline void DrawSmartEffectUI(Frame_EF& effect, FrameData* frameData, int
 
 			} else if(no == 110) { // Count normal as used
 				im::SetNextItemWidth(width);
-				if(im::InputInt("Pattern - 1", &p[0], 0, 0)) markModified();
+				im::DragInt("Pattern - 1", &p[0]);
+				if(im::IsItemEdited()) {
+				if (frameData && patternIndex >= 0) frameData->mark_modified(patternIndex);
+			}
+			if(im::IsItemDeactivatedAfterEdit()) {
+				markModified();
+			}
 				im::SameLine(); im::TextDisabled("(?)");
 				if(im::IsItemHovered()) {
 					Tooltip("Pattern of normal - 1 (0-8)");
@@ -2295,14 +2733,26 @@ static inline void DrawSmartEffectUI(Frame_EF& effect, FrameData* frameData, int
 				}
 
 				im::SetNextItemWidth(width);
-				if(im::InputInt("Clear movement", &p[1], 0, 0)) markModified();
+				im::DragInt("Clear movement", &p[1]);
+				if(im::IsItemEdited()) {
+				if (frameData && patternIndex >= 0) frameData->mark_modified(patternIndex);
+			}
+			if(im::IsItemDeactivatedAfterEdit()) {
+				markModified();
+			}
 				im::SameLine(); im::TextDisabled("(?)");
 				if(im::IsItemHovered()) {
 					Tooltip("Clear current movement if not 0");
 				}
 
 				im::SetNextItemWidth(width);
-				if(im::InputInt("Set stored Y accel", &p[2], 0, 0)) markModified();
+				im::DragInt("Set stored Y accel", &p[2]);
+				if(im::IsItemEdited()) {
+				if (frameData && patternIndex >= 0) frameData->mark_modified(patternIndex);
+			}
+			if(im::IsItemDeactivatedAfterEdit()) {
+				markModified();
+			}
 				im::SameLine(); im::TextDisabled("(?)");
 				if(im::IsItemHovered()) {
 					Tooltip("If not 0 and current Y velocity/accel < 1");
@@ -2312,7 +2762,13 @@ static inline void DrawSmartEffectUI(Frame_EF& effect, FrameData* frameData, int
 				im::Text("--- Change Proration ---");
 
 				im::SetNextItemWidth(width);
-				if(im::InputInt("Proration", &p[0], 0, 0)) markModified();
+				im::DragInt("Proration", &p[0]);
+				if(im::IsItemEdited()) {
+				if (frameData && patternIndex >= 0) frameData->mark_modified(patternIndex);
+			}
+			if(im::IsItemDeactivatedAfterEdit()) {
+				markModified();
+			}
 
 				im::SetNextItemWidth(width);
 				if(im::Combo("Type", &p[1],
@@ -2330,7 +2786,13 @@ static inline void DrawSmartEffectUI(Frame_EF& effect, FrameData* frameData, int
 				im::Text("--- Command Partner ---");
 
 				im::SetNextItemWidth(width);
-				if(im::InputInt("Partner pattern", &p[0], 0, 0)) markModified();
+				im::DragInt("Partner pattern", &p[0]);
+				if(im::IsItemEdited()) {
+				if (frameData && patternIndex >= 0) frameData->mark_modified(patternIndex);
+			}
+			if(im::IsItemDeactivatedAfterEdit()) {
+				markModified();
+			}
 
 				im::SetNextItemWidth(width);
 				if(im::Combo("Condition", &p[1],
@@ -2344,7 +2806,13 @@ static inline void DrawSmartEffectUI(Frame_EF& effect, FrameData* frameData, int
 
 			} else if(no == 252) { // Set tag flag
 				im::SetNextItemWidth(width);
-				if(im::InputInt("Value", &p[0], 0, 0)) markModified();
+				im::DragInt("Value", &p[0]);
+				if(im::IsItemEdited()) {
+				if (frameData && patternIndex >= 0) frameData->mark_modified(patternIndex);
+			}
+			if(im::IsItemDeactivatedAfterEdit()) {
+				markModified();
+			}
 
 			} else if(no == 253) { // Hide chars
 				im::Text("Hide chars and delay hit effects");
@@ -2384,10 +2852,22 @@ static inline void DrawSmartEffectUI(Frame_EF& effect, FrameData* frameData, int
 
 			// Pattern dropdown (same as type 1)
 			im::SetNextItemWidth(width);
-			if(im::InputInt("Offset X", &p[0], 0, 0)) markModified();
+			im::DragInt("Offset X", &p[0]);
+			if(im::IsItemEdited()) {
+				if (frameData && patternIndex >= 0) frameData->mark_modified(patternIndex);
+			}
+			if(im::IsItemDeactivatedAfterEdit()) {
+				markModified();
+			}
 			im::SameLine(0, 20);
 			im::SetNextItemWidth(width);
-			if(im::InputInt("Offset Y", &p[1], 0, 0)) markModified();
+			im::DragInt("Offset Y", &p[1]);
+			if(im::IsItemEdited()) {
+				if (frameData && patternIndex >= 0) frameData->mark_modified(patternIndex);
+			}
+			if(im::IsItemDeactivatedAfterEdit()) {
+				markModified();
+			}
 
 			// Show flagsets collapsed
 			if(im::TreeNode("Flagset 1 (same as Type 1)")) {
@@ -2421,41 +2901,83 @@ static inline void DrawSmartEffectUI(Frame_EF& effect, FrameData* frameData, int
 			}
 
 			im::SetNextItemWidth(width);
-			if(im::InputInt("Sound ID", &p[0], 0, 0)) markModified();
+			im::DragInt("Sound ID", &p[0]);
+			if(im::IsItemEdited()) {
+				if (frameData && patternIndex >= 0) frameData->mark_modified(patternIndex);
+			}
+			if(im::IsItemDeactivatedAfterEdit()) {
+				markModified();
+			}
 
 			im::SetNextItemWidth(width);
-			if(im::InputInt("Probability", &p[1], 0, 0)) markModified();
+			im::DragInt("Probability", &p[1]);
+			if(im::IsItemEdited()) {
+				if (frameData && patternIndex >= 0) frameData->mark_modified(patternIndex);
+			}
+			if(im::IsItemDeactivatedAfterEdit()) {
+				markModified();
+			}
 			im::SameLine(); im::TextDisabled("(?)");
 			if(im::IsItemHovered()) {
 				Tooltip("0 = 100%");
 			}
 
 			im::SetNextItemWidth(width);
-			if(im::InputInt("Different sounds", &p[2], 0, 0)) markModified();
+			im::DragInt("Different sounds", &p[2]);
+			if(im::IsItemEdited()) {
+				if (frameData && patternIndex >= 0) frameData->mark_modified(patternIndex);
+			}
+			if(im::IsItemDeactivatedAfterEdit()) {
+				markModified();
+			}
 			im::SameLine(); im::TextDisabled("(?)");
 			if(im::IsItemHovered()) {
 				Tooltip("1 and 0 equivalent, IDs adjacent");
 			}
 
 			im::SetNextItemWidth(width);
-			if(im::InputInt("Unknown (param4)", &p[3], 0, 0)) markModified();
+			im::DragInt("Unknown (param4)", &p[3]);
+			if(im::IsItemEdited()) {
+				if (frameData && patternIndex >= 0) frameData->mark_modified(patternIndex);
+			}
+			if(im::IsItemDeactivatedAfterEdit()) {
+				markModified();
+			}
 			im::SameLine(); im::TextDisabled("(?)");
 			if(im::IsItemHovered()) {
 				Tooltip("Sometimes 1");
 			}
 
 			im::SetNextItemWidth(width);
-			if(im::InputInt("Unknown (param6)", &p[5], 0, 0)) markModified();
+			im::DragInt("Unknown (param6)", &p[5]);
+			if(im::IsItemEdited()) {
+				if (frameData && patternIndex >= 0) frameData->mark_modified(patternIndex);
+			}
+			if(im::IsItemDeactivatedAfterEdit()) {
+				markModified();
+			}
 
 			im::SetNextItemWidth(width);
-			if(im::InputInt("Unknown (param7)", &p[6], 0, 0)) markModified();
+			im::DragInt("Unknown (param7)", &p[6]);
+			if(im::IsItemEdited()) {
+				if (frameData && patternIndex >= 0) frameData->mark_modified(patternIndex);
+			}
+			if(im::IsItemDeactivatedAfterEdit()) {
+				markModified();
+			}
 			im::SameLine(); im::TextDisabled("(?)");
 			if(im::IsItemHovered()) {
 				Tooltip("Either 2 or 0, probably related to param6");
 			}
 
 			im::SetNextItemWidth(width);
-			if(im::InputInt("Unknown (param12)", &p[11], 0, 0)) markModified();
+			im::DragInt("Unknown (param12)", &p[11]);
+			if(im::IsItemEdited()) {
+				if (frameData && patternIndex >= 0) frameData->mark_modified(patternIndex);
+			}
+			if(im::IsItemDeactivatedAfterEdit()) {
+				markModified();
+			}
 			im::SameLine(); im::TextDisabled("(?)");
 			if(im::IsItemHovered()) {
 				Tooltip("Sometimes 1, used in time up/intro/win");
@@ -2496,14 +3018,26 @@ static inline void DrawSmartEffectUI(Frame_EF& effect, FrameData* frameData, int
 			im::Text("Only for projectiles");
 
 			im::SetNextItemWidth(width);
-			if(im::InputInt("Param1 (*256)", &p[0], 0, 0)) markModified();
+			im::DragInt("Param1 (*256)", &p[0]);
+			if(im::IsItemEdited()) {
+				if (frameData && patternIndex >= 0) frameData->mark_modified(patternIndex);
+			}
+			if(im::IsItemDeactivatedAfterEdit()) {
+				markModified();
+			}
 			im::SameLine(); im::TextDisabled("(?)");
 			if(im::IsItemHovered()) {
 				Tooltip("Calculates X + (Param1 * 256)");
 			}
 
 			im::SetNextItemWidth(width);
-			if(im::InputInt("Param2 (*256)", &p[1], 0, 0)) markModified();
+			im::DragInt("Param2 (*256)", &p[1]);
+			if(im::IsItemEdited()) {
+				if (frameData && patternIndex >= 0) frameData->mark_modified(patternIndex);
+			}
+			if(im::IsItemDeactivatedAfterEdit()) {
+				markModified();
+			}
 			im::SameLine(); im::TextDisabled("(?)");
 			if(im::IsItemHovered()) {
 				Tooltip("Calculates Y + (Param2 * 256)");
@@ -3179,12 +3713,14 @@ inline void AfDisplay(Frame_AF *af, int &selectedLayer, FrameData *frameData = n
 	}
 
 	im::SetNextItemWidth(width);
-	if(im::DragInt("X", &af->offset_x)) {
+	im::DragInt("X", &af->offset_x);
+	if(im::IsItemDeactivatedAfterEdit()) {
 		markModified();
 	}
 	im::SameLine();
 	im::SetNextItemWidth(width);
-	if(im::DragInt("Y", &af->offset_y)) {
+	im::DragInt("Y", &af->offset_y);
+	if(im::IsItemDeactivatedAfterEdit()) {
 		markModified();
 	}
 
@@ -3200,10 +3736,12 @@ inline void AfDisplay(Frame_AF *af, int &selectedLayer, FrameData *frameData = n
 		markModified();
 	}
 
-	if(im::DragFloat3("Rot XYZ", af->rotation, 0.005)) {
+	im::DragFloat3("Rot XYZ", af->rotation, 0.005);
+	if(im::IsItemDeactivatedAfterEdit()) {
 		markModified();
 	}
-	if(im::DragFloat2("Scale", af->scale, 0.1)) {
+	im::DragFloat2("Scale", af->scale, 0.1);
+	if(im::IsItemDeactivatedAfterEdit()) {
 		markModified();
 	}
 	if(im::Checkbox("Rotation keeps scale set by EF", &af->AFRT)) {
