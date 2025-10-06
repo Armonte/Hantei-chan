@@ -193,8 +193,8 @@ void MainFrame::DrawBack()
 		mainLayer.rotZ = mainFrame.AF.rotation[2];
 		mainLayer.blendMode = mainFrame.AF.blend_mode;
 		mainLayer.zPriority = mainFrame.AF.priority;
-		mainLayer.alpha = 1.0f;
-		mainLayer.tintColor = glm::vec4(1.0f, 1.0f, 1.0f, 1.0f);
+		mainLayer.alpha = mainFrame.AF.rgba[3];  // Apply frame alpha
+		mainLayer.tintColor = glm::vec4(mainFrame.AF.rgba[0], mainFrame.AF.rgba[1], mainFrame.AF.rgba[2], 1.0f);  // Apply frame RGB
 		mainLayer.isSpawned = false;
 		mainLayer.hitboxes = mainFrame.hitboxes;
 		mainLayer.sourceCG = &active->cg;  // Main pattern uses character CG
@@ -334,8 +334,14 @@ void MainFrame::DrawBack()
 			layer.rotZ = spawnedFrame.AF.rotation[2];
 			layer.blendMode = spawnedFrame.AF.blend_mode;
 			layer.zPriority = spawnedFrame.AF.priority;
-			layer.alpha = spawnInfo.alpha * state.vizSettings.spawnedOpacity;
-			layer.tintColor = spawnInfo.tintColor;
+			// Apply frame RGBA, then visualization alpha
+			layer.alpha = spawnedFrame.AF.rgba[3] * spawnInfo.alpha * state.vizSettings.spawnedOpacity;
+			// Multiply frame RGB with visualization tint
+			layer.tintColor = glm::vec4(
+				spawnedFrame.AF.rgba[0] * spawnInfo.tintColor.r,
+				spawnedFrame.AF.rgba[1] * spawnInfo.tintColor.g,
+				spawnedFrame.AF.rgba[2] * spawnInfo.tintColor.b,
+				1.0f);
 			layer.isSpawned = true;
 			layer.hitboxes = spawnedFrame.hitboxes;
 			layer.sourceCG = sourceCG;  // Use appropriate CG (character or effect.ha6)
