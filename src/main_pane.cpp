@@ -99,7 +99,7 @@ void MainPane::Draw()
 				}
 				im::PopButtonRepeat();
 				im::SameLine();
-				im::Text("%d/%d", currState.frame+1, nframes+1);
+				im::Text("%d/%d", currState.frame, nframes);
 
 				if(currState.frame < 0)
 					currState.frame = 0;
