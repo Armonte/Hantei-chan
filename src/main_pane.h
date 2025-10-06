@@ -32,6 +32,7 @@ private:
 
 	// Range paste
 	int ranges[2] = {0, 0};
+	bool rangeWindow = false;
 
 	// Landing frame tools
 	int landingFrameValue = 0;

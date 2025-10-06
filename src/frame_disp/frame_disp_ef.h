@@ -38,7 +38,8 @@
 // Forward declaration
 static inline void DrawSmartEffectUI(Frame_EF& effect, FrameData* frameData, int patternIndex, std::function<void()> markModified);
 
-inline void EfDisplay(std::vector<Frame_EF> *efList_, Frame_EF *singleClipboard = nullptr, FrameData *frameData = nullptr, int patternIndex = -1, std::function<void()> onModified = nullptr)
+template<typename GroupClipboardType = std::vector<Frame_EF>>
+inline void EfDisplay(std::vector<Frame_EF> *efList_, Frame_EF *singleClipboard = nullptr, FrameData *frameData = nullptr, int patternIndex = -1, std::function<void()> onModified = nullptr, GroupClipboardType *groupClipboard = nullptr)
 {
 	// Helper lambda to mark both frameData and character as modified
 	auto markModified = [&]() {
@@ -145,6 +146,26 @@ inline void EfDisplay(std::vector<Frame_EF> *efList_, Frame_EF *singleClipboard 
 		efList.push_back({});
 		manualEditMode.push_back(0);
 		markModified();
+	}
+
+	if(groupClipboard) {
+		im::SameLine(0,20.f);
+		if(im::Button("Copy all")) {
+			CopyVectorContents<Frame_EF>(*groupClipboard, efList);
+		}
+		im::SameLine(0,20.f);
+		if(im::Button("Paste all")) {
+			CopyVectorContents<Frame_EF>(efList, *groupClipboard);
+			markModified();
+		}
+		im::SameLine(0,20.f);
+		if(im::Button("Add copy")) {
+			if(singleClipboard) {
+				efList.push_back(*singleClipboard);
+				manualEditMode.push_back(0);
+				markModified();
+			}
+		}
 	}
 }
 
