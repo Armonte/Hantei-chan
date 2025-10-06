@@ -151,3 +151,35 @@ UNI modders are already making great progress with their own mods, but a unified
 
 **Recently Closed:**
 - #29 - Copy button for Condition 35 (Fixed 2025-10-06)
+
+---
+
+## Issues by Difficulty (Easiest to Hardest)
+
+### Quick Wins
+1. **#32** - Frames indexed from 1 instead of 0 - Simple offset fix in display logic
+2. **#30** - Missing keyboard shortcuts (Ctrl+S, Ctrl+arrows) - Hook up existing handlers
+3. **#34** - PSTS/Level/Flag layout - Make fields inline to save space
+4. **#2** - Align Box Controls Pane text - UI alignment adjustment
+
+### Easy
+5. **#33** - Manual pattern number entry - Add input field like Hit Effect UI
+6. **#4** - Show pattern name in tabs - Add pattern name to tab labels (~12 chars)
+7. **#15** - Pattern filter/search - Add live filter field to dropdown
+
+### Medium
+8. **#12** - Show Effect Type 3 in visualization - Add preset effects to spawn tree
+9. **#11** - Effect 101 relative pattern selection - Fix relative vs absolute indexing
+10. **#8** - Crash on paste patterns - Debug and fix memory/clipboard handling
+
+### Challenging
+11. **#26** - Transparent sprites rendering - Alpha channel handling in preview
+12. **#27** - Child effects offset inheritance - Fix parent position propagation
+13. **#28** - Effect loops not working - Implement loop count in preview
+14. **#31** - Rotation order incorrect - Fix transformation matrix order
+
+### Major Features
+15. **#9** - Remappable keyboard bindings - Implement keybinding configuration system
+16. **#3** - Detachable tabs/windows - Multi-window support with docking
+17. **#10** - Timeline enhancements - 12 sub-features, major UI overhaul
+18. **#14** - UNI2/MBTL support - Merge multiple forks, new format support
