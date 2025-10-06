@@ -87,18 +87,18 @@ inline void AtDisplay(Frame_AT *at, FrameData *frameData = nullptr, int patternI
 		//case 29: Tooltip("Block enemy blast during Stun?"); break;
 	}
 
-	im::SetNextItemWidth(width * 2);
-	if(im::InputInt("Custom Blockstop", &at->blockStopTime, 0,0)) {
-		markModified();
-	}
-
 	im::SetNextItemWidth(width*2);
 	if(im::Combo("Hitstop", &at->hitStop, hitStopList, IM_ARRAYSIZE(hitStopList))) {
 		markModified();
 	}
 	im::SameLine(0.f, 20);
-	im::SetNextItemWidth(width);
-	if(im::InputInt("Custom##Hitstop", &at->hitStopTime, 0,0)) {
+	im::SetNextItemWidth(width*0.8);
+	if(im::InputInt("Cust HS", &at->hitStopTime, 0,0)) {
+		markModified();
+	}
+	im::SameLine(0.f, 20);
+	im::SetNextItemWidth(width*0.8);
+	if(im::InputInt("Cust BS", &at->blockStopTime, 0,0)) {
 		markModified();
 	}
 
@@ -173,7 +173,7 @@ inline void AtDisplay(Frame_AT *at, FrameData *frameData = nullptr, int patternI
 		for(int i = 0; i < 3; i++)
 		{
 			im::PushID(100+i);
-			if(ShowComboWithManual(vectorLabels[i], &at->guardVector[i], hitVectorList, IM_ARRAYSIZE(hitVectorList), width*6, width)) {
+			if(ShowComboWithManual(vectorLabels[i], &at->guardVector[i], hitVectorList, IM_ARRAYSIZE(hitVectorList), width*4, width)) {
 			markModified();
 		}
 			im::PopID();
@@ -215,7 +215,7 @@ inline void AtDisplay(Frame_AT *at, FrameData *frameData = nullptr, int patternI
 		for(int i = 0; i < 3; i++)
 		{
 			im::PushID(200+i);
-			if(ShowComboWithManual(vectorLabels[i], &at->hitVector[i], hitVectorList, IM_ARRAYSIZE(hitVectorList), width*6, width)) {
+			if(ShowComboWithManual(vectorLabels[i], &at->hitVector[i], hitVectorList, IM_ARRAYSIZE(hitVectorList), width*4, width)) {
 			markModified();
 		}
 			im::PopID();

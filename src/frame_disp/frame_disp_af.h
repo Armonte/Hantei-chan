@@ -18,7 +18,7 @@
 // - Interpolation
 // ============================================================================
 
-inline void AfDisplay(Frame_AF *af, int &selectedLayer, FrameData *frameData = nullptr, int patternIndex = -1, std::function<void()> onModified = nullptr)
+inline void AfDisplay(Frame_AF *af, int &selectedLayer, FrameData *frameData = nullptr, int patternIndex = -1, std::function<void()> onModified = nullptr, Frame_AF *clipboard = nullptr)
 {
 	// Helper lambda to mark both frameData and character as modified
 	auto markModified = [&]() {
@@ -30,11 +30,21 @@ inline void AfDisplay(Frame_AF *af, int &selectedLayer, FrameData *frameData = n
 		}
 	};
 
+	static Frame_AF copiedAnimation = {};
 
 	constexpr float width = 50.f;
 
-	// Copy/paste buttons for animation section
-	static Frame_AF copiedAnimation = {};
+
+	// MBAACC uses flat structure (no layers)
+	im::SetNextItemWidth(width*3);
+	if(im::InputInt("Sprite", &af->spriteId)) {
+		markModified();
+	}
+	im::SameLine(0, 20.f);
+	if(im::Checkbox("Use .pat", &af->usePat)) {
+		markModified();
+	}
+
 	if(im::SmallButton("Copy animation")) {
 		copiedAnimation.spriteId = af->spriteId;
 		copiedAnimation.usePat = af->usePat;
@@ -63,16 +73,6 @@ inline void AfDisplay(Frame_AF *af, int &selectedLayer, FrameData *frameData = n
 		markModified();
 	}
 	if(im::IsItemHovered()) Tooltip("Paste sprite, duration, jumps, priority, and loops");
-
-	// MBAACC uses flat structure (no layers)
-	im::SetNextItemWidth(width*3);
-	if(im::InputInt("Sprite", &af->spriteId)) {
-		markModified();
-	}
-	im::SameLine(0, 20.f);
-	if(im::Checkbox("Use .pat", &af->usePat)) {
-		markModified();
-	}
 
 	im::Separator();
 
@@ -246,6 +246,19 @@ inline void AfDisplay(Frame_AF *af, int &selectedLayer, FrameData *frameData = n
 	}
 	if(im::Checkbox("Rotation keeps scale set by EF", &af->AFRT)) {
 		markModified();
+	}
+	if(clipboard) {
+		im::SameLine(0,20.f);
+		if(im::Button("Copy AF")) {
+			*clipboard = *af;
+		}
+		if(im::IsItemHovered()) Tooltip("Copy all animation data (sprite, timing, transforms, colors)");
+		im::SameLine(0,20.f);
+		if(im::Button("Paste AF")) {
+			*af = *clipboard;
+			markModified();
+		}
+		if(im::IsItemHovered()) Tooltip("Paste all animation data (sprite, timing, transforms, colors)");
 	}
 
 }

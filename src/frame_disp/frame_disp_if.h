@@ -39,7 +39,8 @@
 // ============================================================================
 
 
-inline void IfDisplay(std::vector<Frame_IF> *ifList_, Frame_IF *singleClipboard = nullptr, FrameData *frameData = nullptr, int patternIndex = -1, std::function<void()> onModified = nullptr)
+template<typename GroupClipboardType = std::vector<Frame_IF>>
+inline void IfDisplay(std::vector<Frame_IF> *ifList_, Frame_IF *singleClipboard = nullptr, FrameData *frameData = nullptr, int patternIndex = -1, std::function<void()> onModified = nullptr, GroupClipboardType *groupClipboard = nullptr)
 {
 	// Helper lambda to mark both frameData and character as modified
 	auto markModified = [&]() {
@@ -725,6 +726,26 @@ inline void IfDisplay(std::vector<Frame_IF> *ifList_, Frame_IF *singleClipboard 
 		ifList.push_back({});
 		manualEditMode.push_back(0);
 		markModified();
+	}
+
+	if(groupClipboard) {
+		im::SameLine(0,20.f);
+		if(im::Button("Copy all")) {
+			CopyVectorContents<Frame_IF>(*groupClipboard, ifList);
+		}
+		im::SameLine(0,20.f);
+		if(im::Button("Paste all")) {
+			CopyVectorContents<Frame_IF>(ifList, *groupClipboard);
+			markModified();
+		}
+		im::SameLine(0,20.f);
+		if(im::Button("Add copy")) {
+			if(singleClipboard) {
+				ifList.push_back(*singleClipboard);
+				manualEditMode.push_back(0);
+				markModified();
+			}
+		}
 	}
 }
 

@@ -19,26 +19,69 @@ static inline void DrawEffectSpawn_Type1_101(Frame_EF& effect, FrameData* frameD
 	int& no = effect.number;
 	constexpr float width = 75.f;
 
+	// Check if this is a relative spawn (Type 101)
+	bool isRelative = (effect.type == 101);
+
 	// Pattern dropdown with names
 			if(frameData) {
 				im::SetNextItemWidth(width*3);
-				std::string currentName = frameData->GetDecoratedName(no);
+				
+				// For relative spawns, show as offset notation
+				std::string currentName;
+				if(isRelative) {
+					// Display as "Offset: +N" or "Offset: -N"
+					currentName = "Offset: ";
+					if(no >= 0) currentName += "+";
+					currentName += std::to_string(no);
+					
+					// Also show the target pattern name if valid
+					int targetPattern = patternIndex + no;
+					if(targetPattern >= 0 && targetPattern < frameData->get_sequence_count()) {
+						currentName += " -> " + frameData->GetDecoratedName(targetPattern);
+					}
+				} else {
+					// Absolute spawn - show pattern name directly
+					currentName = frameData->GetDecoratedName(no);
+				}
+				
 				if(im::BeginCombo("Pattern", currentName.c_str())) {
-					for(int i = 0; i < frameData->get_sequence_count(); i++) {
-						bool selected = (no == i);
-						std::string name = frameData->GetDecoratedName(i);
-						if(im::Selectable(name.c_str(), selected)) {
-							no = i;
-							markModified();
+					if(isRelative) {
+						// For Type 101: Show relative offsets
+						for(int i = 0; i < frameData->get_sequence_count(); i++) {
+							int offset = i - patternIndex;
+							bool selected = (no == offset);
+							
+							// Format: "Offset: +5 -> Pattern 105: Name"
+							std::string name = "Offset: ";
+							if(offset >= 0) name += "+";
+							name += std::to_string(offset) + " -> " + frameData->GetDecoratedName(i);
+							
+							if(im::Selectable(name.c_str(), selected)) {
+								no = offset;  // Store the offset
+								markModified();
+							}
+							if(selected)
+								im::SetItemDefaultFocus();
 						}
-						if(selected)
-							im::SetItemDefaultFocus();
+					} else {
+						// For Type 1: Show absolute patterns
+						for(int i = 0; i < frameData->get_sequence_count(); i++) {
+							bool selected = (no == i);
+							std::string name = frameData->GetDecoratedName(i);
+							if(im::Selectable(name.c_str(), selected)) {
+								no = i;
+								markModified();
+							}
+							if(selected)
+								im::SetItemDefaultFocus();
+						}
 					}
 					im::EndCombo();
 				}
 			} else {
 				im::SetNextItemWidth(width);
-				if(im::InputInt("Pattern", &no, 0, 0)) {
+				const char* label = isRelative ? "Pattern Offset" : "Pattern";
+				if(im::InputInt(label, &no, 0, 0)) {
 					markModified();
 				}
 			}
@@ -148,26 +191,69 @@ static inline void DrawEffectSpawn_Type11_111(Frame_EF& effect, FrameData* frame
 	int& no = effect.number;
 	constexpr float width = 75.f;
 
+	// Check if this is a relative spawn (Type 111)
+	bool isRelative = (effect.type == 111);
+
 	// Similar to type 1, but for random patterns
 			if(frameData) {
 				im::SetNextItemWidth(width*3);
-				std::string currentName = frameData->GetDecoratedName(no);
+				
+				// For relative spawns, show as offset notation
+				std::string currentName;
+				if(isRelative) {
+					// Display as "Offset: +N" or "Offset: -N"
+					currentName = "Offset: ";
+					if(no >= 0) currentName += "+";
+					currentName += std::to_string(no);
+					
+					// Also show the target pattern name if valid
+					int targetPattern = patternIndex + no;
+					if(targetPattern >= 0 && targetPattern < frameData->get_sequence_count()) {
+						currentName += " -> " + frameData->GetDecoratedName(targetPattern);
+					}
+				} else {
+					// Absolute spawn - show pattern name directly
+					currentName = frameData->GetDecoratedName(no);
+				}
+				
 				if(im::BeginCombo("Pattern", currentName.c_str())) {
-					for(int i = 0; i < frameData->get_sequence_count(); i++) {
-						bool selected = (no == i);
-						std::string name = frameData->GetDecoratedName(i);
-						if(im::Selectable(name.c_str(), selected)) {
-							no = i;
-							markModified();
+					if(isRelative) {
+						// For Type 111: Show relative offsets
+						for(int i = 0; i < frameData->get_sequence_count(); i++) {
+							int offset = i - patternIndex;
+							bool selected = (no == offset);
+							
+							// Format: "Offset: +5 -> Pattern 105: Name"
+							std::string name = "Offset: ";
+							if(offset >= 0) name += "+";
+							name += std::to_string(offset) + " -> " + frameData->GetDecoratedName(i);
+							
+							if(im::Selectable(name.c_str(), selected)) {
+								no = offset;  // Store the offset
+								markModified();
+							}
+							if(selected)
+								im::SetItemDefaultFocus();
 						}
-						if(selected)
-							im::SetItemDefaultFocus();
+					} else {
+						// For Type 11: Show absolute patterns
+						for(int i = 0; i < frameData->get_sequence_count(); i++) {
+							bool selected = (no == i);
+							std::string name = frameData->GetDecoratedName(i);
+							if(im::Selectable(name.c_str(), selected)) {
+								no = i;
+								markModified();
+							}
+							if(selected)
+								im::SetItemDefaultFocus();
+						}
 					}
 					im::EndCombo();
 				}
 			} else {
 				im::SetNextItemWidth(width);
-				if(im::InputInt("Pattern", &no, 0, 0)) {
+				const char* label = isRelative ? "Pattern Offset" : "Pattern";
+				if(im::InputInt(label, &no, 0, 0)) {
 					markModified();
 				}
 			}

@@ -112,24 +112,26 @@ inline void AsDisplay(Frame_AS *as, FrameData *frameData = nullptr, int patternI
 	
 
 	im::Separator();
-	flagIndex = -1;
-	if(BitField("Sine flags", &as->sineFlags, &flagIndex, 8)) {
-		markModified();
-	}
-	switch (flagIndex)
-	{
-		case 0: Tooltip("Use Y"); break;
-		case 4: Tooltip("Use X"); break;
-	}
-	if(im::InputInt4("Sinewave", as->sineParameters)) {
-		markModified();
-	}
-	im::SameLine();
-	im::TextDisabled("(?)");
-	if(im::IsItemHovered())
-		Tooltip("Sine parameters:\nX dist, Y dist\nX frequency, Y frequency");
-	if(im::InputFloat2("Phases", as->sinePhases)) {
-		markModified();
+	if(im::CollapsingHeader("Sine flags")) {
+		flagIndex = -1;
+		if(BitField("Flags", &as->sineFlags, &flagIndex, 8)) {
+			markModified();
+		}
+		switch (flagIndex)
+		{
+			case 0: Tooltip("Use Y"); break;
+			case 4: Tooltip("Use X"); break;
+		}
+		if(im::InputInt4("Sinewave", as->sineParameters)) {
+			markModified();
+		}
+		im::SameLine();
+		im::TextDisabled("(?)");
+		if(im::IsItemHovered())
+			Tooltip("Sine parameters:\nX dist, Y dist\nX frequency, Y frequency");
+		if(im::InputFloat2("Phases", as->sinePhases)) {
+			markModified();
+		}
 	}
 }
 

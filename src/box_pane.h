@@ -22,6 +22,7 @@ private:
 	std::string boxNameList[33];
 	int currentBox;
 	bool highlight;
+	bool showManualControls;
 
 	float dragxy[2];
 };

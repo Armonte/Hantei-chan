@@ -6,7 +6,7 @@ constexpr int boxLimit = 33;
 
 BoxPane::BoxPane(Render* render, FrameData *frameData, FrameState &state):
 DrawWindow(render, frameData, state),
-currentBox(0), highlight(false)
+currentBox(0), highlight(false), showManualControls(false)
 {
 	//Init box names
 	for(int i = 0; i < boxLimit; i++)
@@ -211,6 +211,7 @@ void BoxPane::Draw()
 				markModified();
 			}
 
+			im::SameLine(0,20.f);
 			im::Checkbox("Highlight selected", &highlight);
 			im::SameLine(0,20.f);
 			if(im::Button("Delete selected"))
@@ -219,13 +220,15 @@ void BoxPane::Draw()
 				frameData->mark_modified(currState.pattern);
 				markModified();
 			}
+			im::SameLine(0,20.f);
+			im::Checkbox("Show manual box controls", &showManualControls);
 
 			if(highlight)
 				render->highLightN = currentBox;
 			else
 				render->highLightN = -1;
-		
-
+			if(showManualControls)
+			{
 			const int step = 1;
 			if(im::InputScalarN("Top left", ImGuiDataType_S32, boxes[currentBox].xy, 2, &step, NULL, "%d", 0))
 			{
@@ -236,6 +239,7 @@ void BoxPane::Draw()
 			{
 				frameData->mark_modified(currState.pattern);
 				markModified();
+			}
 			}
 		} // End Box Controls
 

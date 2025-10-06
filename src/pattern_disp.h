@@ -5,7 +5,7 @@
 
 inline void PatternDisplay(Sequence *seq, FrameData *frameData = nullptr, int patternIndex = -1)
 {
-	constexpr float spacing = 80.0f;
+	constexpr float spacing = 50.0f;  // Compact width for small integer fields
 	//ImGui::InputText("Code name", &seq->codeName);
 	
 	ImGui::SetNextItemWidth(spacing);
@@ -19,6 +19,7 @@ inline void PatternDisplay(Sequence *seq, FrameData *frameData = nullptr, int pa
 			"1: Must be shielded according to level and stance (Level 0 can be shielded both ways)\n"
 			"5: Must be shielded according to stance. Do not trigger H-Moon Shield Counter\n"
 			"Projectiles can be shieded either way regardless");
+	ImGui::SameLine();
 
 	ImGui::SetNextItemWidth(spacing);
 	if(ImGui::InputInt("Level", &seq->level, 0, 0) && frameData && patternIndex >= 0) {
@@ -31,9 +32,15 @@ inline void PatternDisplay(Sequence *seq, FrameData *frameData = nullptr, int pa
 		"C Moon: Rebeat penalty applied for canceling into lower level attacks\n"
 		"Level 0 can be shielded either way if PSTS = 1\n"
 		"Level 0 can be self canceled");
+	ImGui::SameLine();
 
 	ImGui::SetNextItemWidth(spacing);
 	if(ImGui::InputInt("Flag", &seq->flag, 0, 0) && frameData && patternIndex >= 0) {
 		frameData->mark_modified(patternIndex);
 	}
+	ImGui::SameLine(); ImGui::TextDisabled("(?)");
+	if (ImGui::IsItemHovered())
+		Tooltip("Info for the editor about the type of move\n"
+		"No use in game - has no effect during gameplay\n"
+		"Preset values: only 0, 1, or 2 used in Melty Blood");
 }

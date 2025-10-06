@@ -199,17 +199,6 @@ void MainPane::Draw()
 				if (im::TreeNode("Animation data"))
 				{
 					AfDisplay(&frame.AF, currState.selectedLayer, frameData, currState.pattern, [this]() { markModified(); });
-					if(im::Button("Copy AF")) {
-						currState.copied->af = frame.AF;
-					}
-					if(im::IsItemHovered()) Tooltip("Copy all animation data (sprite, timing, transforms, colors)");
-					im::SameLine(0,20.f);
-					if(im::Button("Paste AF")) {
-						frame.AF = currState.copied->af;
-						frameData->mark_modified(currState.pattern);
-						markModified();
-					}
-					if(im::IsItemHovered()) Tooltip("Paste all animation data (sprite, timing, transforms, colors)");
 					im::TreePop();
 					im::Separator();
 				}
@@ -248,6 +237,7 @@ void MainPane::Draw()
 						markModified();
 					}
 
+					im::SameLine(0,20.f);
 					if(im::Button("Copy frame"))
 					{
 						currState.copied->frame = frame;
@@ -258,6 +248,14 @@ void MainPane::Draw()
 						frame = currState.copied->frame;
 						frameData->mark_modified(currState.pattern);
 						markModified();
+					}
+
+					im::SameLine(0,20.f);
+					if(im::Button("Range tool"))
+					{
+						ranges[0] = 0;
+						ranges[1] = 0;
+						rangeWindow = !rangeWindow;
 					}
 
 					im::Separator();
@@ -411,6 +409,24 @@ void MainPane::Draw()
 					im::TreePop();
 					im::Separator();
 				}
+
+			// Range tool popup window
+			if(rangeWindow)
+			{
+				im::SetNextWindowSize(ImVec2{400, 300}, ImGuiCond_FirstUseEver);
+				im::Begin("Range tool", &rangeWindow);
+
+				im::InputInt2("Frame range", ranges);
+
+				// Clamp ranges
+				const int maxFrame = seq->frames.size() - 1;
+				if(ranges[0] < 0) ranges[0] = 0;
+				if(ranges[1] < 0) ranges[1] = 0;
+				if(ranges[0] > maxFrame) ranges[0] = maxFrame;
+				if(ranges[1] > maxFrame) ranges[1] = maxFrame;
+
+				im::End();
+			}
 			}
 			im::EndChild();
 		}
