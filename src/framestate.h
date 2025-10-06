@@ -159,6 +159,8 @@ void BuildSpawnTreeRecursive(
 	int depth,
 	int absoluteSpawnFrame,
 	int absoluteSpawnTick,
+	int accumulatedOffsetX,
+	int accumulatedOffsetY,
 	std::vector<SpawnedPatternInfo>& allSpawns,
 	std::set<int>& visitedPatterns);
 

@@ -309,6 +309,8 @@ void BuildSpawnTreeRecursive(
 	int depth,
 	int absoluteSpawnFrame,
 	int absoluteSpawnTick,
+	int accumulatedOffsetX,
+	int accumulatedOffsetY,
 	std::vector<SpawnedPatternInfo>& allSpawns,
 	std::set<int>& visitedPatterns)
 {
@@ -409,6 +411,10 @@ void BuildSpawnTreeRecursive(
 				spawn.absoluteSpawnFrame = absoluteSpawnFrame + frameIdx;
 				spawn.spawnTick = currentTick;  // Set actual spawn tick
 
+				// Accumulate offsets from parent hierarchy
+				spawn.offsetX += accumulatedOffsetX;
+				spawn.offsetY += accumulatedOffsetY;
+
 			// Calculate child pattern's lifetime
 			// Skip pattern loading for Effect Type 3 (preset effects)
 			if (!spawn.isPresetEffect) {
@@ -472,6 +478,8 @@ void BuildSpawnTreeRecursive(
 					depth + 1,
 					spawn.absoluteSpawnFrame,
 					spawn.spawnTick,  // Pass spawn tick to children
+					spawn.offsetX,    // Pass accumulated X offset to children
+					spawn.offsetY,    // Pass accumulated Y offset to children
 					allSpawns,
 					visitedPatterns);
 			}

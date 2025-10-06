@@ -5,7 +5,9 @@
       "Bash(cmake:*)",
       "Bash(make:*)",
       "Read(//mnt/c/games/qoh/**)",
-      "Bash(gh issue list:*)"
+      "Bash(gh issue list:*)",
+      "Bash(gh issue view:*)",
+      "Bash(cat:*)"
     ],
     "deny": [],
     "ask": []

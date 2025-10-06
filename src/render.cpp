@@ -510,7 +510,7 @@ void Render::DrawLayers()
 	// Draw each layer
 	for (const auto& layer : renderLayers)
 	{
-		if (layer.spriteId < 0) continue;
+		if (layer.spriteId < 0 || layer.alpha == 0.0f) continue;
 
 		// Switch CG if this layer uses a different one (e.g., effect.ha6)
 		if (layer.sourceCG && layer.sourceCG != cg) {

@@ -108,6 +108,8 @@ void RightPane::Draw()
 								0,                        // Depth 0
 								0,                        // Starts at absolute frame 0
 								0,                        // Starts at tick 0
+								0,                        // Accumulated offset X (starts at 0)
+								0,                        // Accumulated offset Y (starts at 0)
 								currState.spawnedPatterns,
 								visitedPatterns);
 						}
