@@ -1,7 +1,7 @@
 # Open Issues
 
-**Last Updated:** 2025-10-05
-**Total Open Issues:** 14 (7 bugs, 7 enhancements)
+**Last Updated:** 2025-10-06
+**Total Open Issues:** 17 (9 bugs, 8 enhancements)
 
 ---
 
@@ -23,8 +23,28 @@ Spawns pattern 165, which should have no visible sprite (alpha set to 0). Howeve
 
 ### UI/Editor Issues
 
-#### #29 - [Copy button is missing for Condition 35 (Custom Cancel)](https://github.com/Armonte/Hantei-chan/issues/29)
-In the Conditions panel, you can copy all conditions using the "Copy all" button, but there is no individual copy button for Condition 35 (Custom Cancel). All other condition types have individual copy buttons, but Condition 35 is missing this functionality. This makes it inconvenient to copy just this specific condition type without copying the entire condition set.
+#### #34 - [PSTS, Level, and Flag take up a lot of space](https://github.com/Armonte/Hantei-chan/issues/34) *(bug + enhancement)*
+The PSTS, Level, and Flag fields currently each take up their own line in the UI, consuming significant screen space. Moving these fields to be displayed in-line would help save screen space without presenting issues, as the values of these fields don't exceed two-digit numbers. This is both a UI bug (inefficient space usage) and an enhancement request (better layout).
+
+#### #32 - [Frames are indexed from 1 to the right of the scroll bar](https://github.com/Armonte/Hantei-chan/issues/32)
+Everything in the game uses 0-indexing for frames, but the frame numbers displayed to the right of the scroll bar are indexed from 1. This creates confusion when working with frame data, as there's a mismatch between the displayed frame numbers and the actual internal indexing used by the game.
+
+#### #30 - [Add back Keyboard Shortcuts to be Save Character, is missing at the moment](https://github.com/Armonte/Hantei-chan/issues/30)
+The keyboard shortcut for saving characters (Ctrl+S) is currently missing from the shortcuts menu. Additionally, it would be welcome to restore Ctrl + arrow keys for position adjustment of X and Y transforms. The shortcut system should eventually be customizable, so shortcuts should be implemented in a way that makes future customization easier (not hardcoded).
+
+### Rendering/Display Issues
+
+#### #31 - [Rotations are applied incorrectly to the sprite viewer](https://github.com/Armonte/Hantei-chan/issues/31)
+**Example:** effect.ha6 pattern 15 (landing effect visual)
+
+The rotation order for sprites appears incorrect. When both Z rotation and X rotation are applied, the sprite displays incorrectly. The issue seems to be that Z rotation is applied after X rotation in Hantei-chan, but in-game it appears to be applied in the opposite order.
+
+**Observed behavior:**
+- Z rotation only: Displays correctly
+- X rotation only: Displays correctly
+- Both rotations: Displays incorrectly (rings should be horizontal with missing part on left, but appear vertical)
+
+This suggests the rotation transformation matrix order needs to be reversed to match in-game rendering.
 
 ### Effect System
 
@@ -52,6 +72,11 @@ The application can crash when pasting patterns. The exact cause is unclear, but
 
 #### #15 - [Add the ability to filter/search patterns by name](https://github.com/Armonte/Hantei-chan/issues/15)
 Add a live filter field at the top of the pattern dropdown that searches by pattern name. The filter should update automatically as you type each letter, making it easier to find specific patterns in large character files.
+
+#### #33 - [Allow pattern numbers to be entered manually](https://github.com/Armonte/Hantei-chan/issues/33)
+Similar to how you can either select a Hit effect from a dropdown or enter it manually into the ID field, it would be very convenient to have the same functionality for pattern selection. Currently, you can only select patterns from a dropdown menu. Adding a manual input field alongside the dropdown (like the Hit Effect UI) would make it faster to select specific patterns when you know the pattern number.
+
+**Proposed change:** Add an ID input field next to the pattern dropdown, matching the pattern used for Hit Effects.
 
 #### #10 - [Extra functions and behaviors to the Timeline](https://github.com/Hantei-chan/issues/10)
 Major enhancement proposal to expand the "Spawn Timeline" into a full-featured "Timeline" tool. This is a long-term project with 12 proposed features:
@@ -110,14 +135,19 @@ UNI modders are already making great progress with their own mods, but a unified
 **By Priority:**
 - Critical bugs affecting core functionality: 3 (Effect Preview issues)
 - Effect system bugs: 2
-- UI/Editor bugs: 1
+- UI/Editor bugs: 3 (#34, #32, #30)
+- Rendering/Display bugs: 1 (#31)
 - Stability issues: 1
 - Major enhancements: 2 (#10 Timeline, #14 Game Support)
-- Minor enhancements: 5
+- Minor enhancements: 6
 
 **By Area:**
 - Effect System: 5 issues (3 preview + 2 system)
-- UI/UX: 6 issues (5 enhancements + 1 bug)
+- UI/UX: 9 issues (6 enhancements + 3 bugs)
+- Rendering: 1 issue
 - Timeline: 1 issue (major)
 - Game Support: 1 issue
 - Stability: 1 issue
+
+**Recently Closed:**
+- #29 - Copy button for Condition 35 (Fixed 2025-10-06)
