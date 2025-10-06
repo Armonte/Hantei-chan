@@ -333,6 +333,24 @@ void MainFrame::DrawBack()
 			layer.rotX = spawnedFrame.AF.rotation[0];
 			layer.rotY = spawnedFrame.AF.rotation[1];
 			layer.rotZ = spawnedFrame.AF.rotation[2];
+
+			// Apply spawn rotation parameter (angle)
+			// Rotation format: 0=0°, 2500=90°, 5000=180°, 10000=360°
+			float spawnRotation = spawnInfo.angle / 10000.0f;
+			layer.rotZ += spawnRotation;
+
+			// Apply flip facing flag (bit 11 of flagset1)
+			if (spawnInfo.flagset1 & (1 << 11)) {
+				layer.scaleX *= -1.0f;
+			}
+
+			// Apply inherit parent rotation flag (bit 8 of flagset1)
+			if (spawnInfo.flagset1 & (1 << 8)) {
+				layer.rotX += mainFrame.AF.rotation[0];
+				layer.rotY += mainFrame.AF.rotation[1];
+				layer.rotZ += mainFrame.AF.rotation[2];
+			}
+
 			layer.blendMode = spawnedFrame.AF.blend_mode;
 			layer.zPriority = spawnedFrame.AF.priority;
 			// Apply frame RGBA, then visualization alpha
