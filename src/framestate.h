@@ -119,6 +119,7 @@ struct FrameState
 	bool animating = false;
 	int animeSeq = 0;
 	int currentTick = 0;  // Actual game ticks elapsed (accounts for frame durations)
+	int previousFrame = -1;  // Track previous frame for spawn detection
 
 	// Spawned pattern visualization (static tree for UI)
 	std::vector<SpawnedPatternInfo> spawnedPatterns;
