@@ -3,6 +3,7 @@
 #include "main_frame.h"
 #include "test.h"
 #include "ini.h"
+#include "version.h"
 
 #include <iostream>
 #include <fstream>
@@ -113,7 +114,9 @@ int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE, PWSTR pCmdLine, int nCmdShow
 
 	
 	::RegisterClassEx(&wc);
-	HWND hwnd = ::CreateWindow(wc.lpszClassName, L"gonptéchan v" HA6GUIVERSION, WS_OVERLAPPEDWINDOW,
+	// Build version string with build number and git hash
+	std::wstring windowTitle = L"gonptéchan v" VERSION_WITH_COMMIT_W;
+	HWND hwnd = ::CreateWindow(wc.lpszClassName, windowTitle.c_str(), WS_OVERLAPPEDWINDOW,
 		gSettings.posX, gSettings.posY, gSettings.winSizeX, gSettings.winSizeY, NULL, NULL, wc.hInstance, nullptr);
 	mainWindowHandle = hwnd;
 
