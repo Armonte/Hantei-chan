@@ -9,6 +9,7 @@
       "Bash(gh issue view:*)",
       "Bash(cat:*)",
       "Bash(chmod:*)"
+      "Bash(/dev/null)"
     ],
     "deny": [],
     "ask": []
