@@ -10,6 +10,9 @@ add_compile_options("$<$<CXX_COMPILER_ID:MSVC>:/utf-8>")
 set (CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake" )
 set (EXE "gonptechan" )
 
+# Generate version info header
+include(GenerateVersionInfo)
+
 include(glad)
 include(imgui)
 add_subdirectory(glm)
@@ -43,8 +46,23 @@ add_executable(${EXE} WIN32
 	res/res.rc
 )
 
-target_include_directories(${EXE} PRIVATE "." "third_party")
+target_include_directories(${EXE} PRIVATE "." "third_party" "${CMAKE_BINARY_DIR}/generated")
 target_compile_definitions(${EXE} PRIVATE UNICODE _UNICODE WIN32_LEAN_AND_MEAN HA6GUIVERSION="${CMAKE_PROJECT_VERSION}")
+
+# Add custom target to regenerate version info on every build
+add_custom_target(update_version ALL
+	COMMAND ${CMAKE_COMMAND}
+		-DVERSION_MAJOR=${PROJECT_VERSION_MAJOR}
+		-DVERSION_MINOR=${PROJECT_VERSION_MINOR}
+		-DVERSION_PATCH=${PROJECT_VERSION_PATCH}
+		-DCMAKE_SOURCE_DIR=${CMAKE_SOURCE_DIR}
+		-DCMAKE_BINARY_DIR=${CMAKE_BINARY_DIR}
+		-P ${CMAKE_SOURCE_DIR}/cmake/GenerateVersionInfo.cmake
+	BYPRODUCTS ${CMAKE_BINARY_DIR}/generated/version.h
+	COMMENT "Updating version information..."
+	WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
+)
+add_dependencies(${EXE} update_version)
 
 find_package(OpenGL REQUIRED)
 target_link_libraries(${EXE} PRIVATE imgui glad OpenGL::GL glm tinyalloc)

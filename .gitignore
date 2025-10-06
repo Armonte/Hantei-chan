@@ -10,3 +10,6 @@
 /cerr.txt
 /cout.txt
 .claude/settings.local.json
+
+# Generated version info
+generated/
