@@ -72,6 +72,18 @@ void MainPane::Draw()
 			}
 			im::EndCombo();
 		}
+		im::SameLine(0, 20.f);
+		im::SetNextItemWidth(45);
+		if(im::InputInt("ID##Pattern", &currState.pattern, 0, 0)) {
+			// Clamp to valid range
+			int count = frameData->get_sequence_count();
+			if(currState.pattern < 0) currState.pattern = 0;
+			if(currState.pattern >= count) currState.pattern = count - 1;
+			currState.frame = 0;
+			currState.currentTick = 0;  // Reset tick when changing pattern
+			// Update decorated name
+			decoratedNames[currState.pattern] = frameData->GetDecoratedName(currState.pattern);
+		}
 		auto seq = frameData->get_sequence(currState.pattern);
 		if(seq)
 		{
@@ -113,6 +125,7 @@ void MainPane::Draw()
 					if (currState.animating) {
 						// Reset tick counter and clear active spawns when starting animation
 						currState.currentTick = 0;
+						currState.previousFrame = -1;
 						currState.activeSpawns.clear();
 					}
 				}
