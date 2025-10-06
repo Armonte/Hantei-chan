@@ -6,6 +6,7 @@
 #include "imgui_utils.h"
 #include "project_manager.h"
 #include "preset_effects.h"
+#include "version.h"
 
 #include <imgui.h>
 #include <imgui_internal.h>
@@ -820,7 +821,8 @@ void MainFrame::closeProject()
 
 void MainFrame::updateWindowTitle()
 {
-	std::wstring title = L"gonptéchan v" HA6GUIVERSION;
+	// Build version string with build number and git hash
+	std::wstring title = L"gonptéchan v" VERSION_WITH_COMMIT_W;
 
 	if (ProjectManager::HasCurrentProject()) {
 		const std::string& projectPath = ProjectManager::GetCurrentProjectPath();

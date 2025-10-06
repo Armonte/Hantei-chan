@@ -8,6 +8,7 @@
       "Bash(gh issue list:*)",
       "Bash(gh issue view:*)",
       "Bash(cat:*)",
+      "Bash(chmod:*)"
       "Bash(/dev/null)"
     ],
     "deny": [],
