@@ -78,15 +78,15 @@ bool File::LoadHeader(const char* data, size_t size, Header& header) {
 	memcpy(&header, data, sizeof(Header));
 	
 	// Show what we actually got
-	printf("Magic header bytes: ");
-	for (int i = 0; i < 16; i++) {
-		if (header.magic[i] >= 32 && header.magic[i] < 127) {
-			printf("%c", header.magic[i]);
-		} else {
-			printf("[0x%02X]", (unsigned char)header.magic[i]);
-		}
-	}
-	printf("\n");
+	//printf("Magic header bytes: ");
+	//for (int i = 0; i < 16; i++) {
+	//	if (header.magic[i] >= 32 && header.magic[i] < 127) {
+	//		printf("%c", header.magic[i]);
+	//	} else {
+	//		printf("[0x%02X]", (unsigned char)header.magic[i]);
+	//	}
+	//}
+	//printf("\n");
 	
 	// Verify magic - bgmake tool writes "bgmake" (6 bytes) + 10 null bytes
 	if (strncmp(header.magic, "bgmake", 6) != 0) {
@@ -162,10 +162,10 @@ bool File::LoadObjects(const char* data, size_t size, const Header& header) {
 			frame.jumpFrame = frameData8[12];
 
 			// Debug opacity values for first few frames
-			if (i < 3 && f < 2) {
-				printf("[BG Load] Obj %d Frame %d: opacity byte=%u (%.2f alpha), blend=%u\n",
-				       i, f, frame.opacity, frame.opacity / 255.0f, frame.blendMode);
-			}
+			//if (i < 3 && f < 2) {
+			//	printf("[BG Load] Obj %d Frame %d: opacity byte=%u (%.2f alpha), blend=%u\n",
+			//	       i, f, frame.opacity, frame.opacity / 255.0f, frame.blendMode);
+			//}
 
 			// Vector fields at offsets 0x2D, 0x33, 0x35
 			frame.enableXVec = frameData8[0x2D];

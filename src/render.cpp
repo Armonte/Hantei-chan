@@ -178,9 +178,9 @@ void Render::Draw()
 	}
 
 	// Draw background FIRST (behind everything)
-	printf("[Draw] 1. Drawing background...\n");
+	//printf("[Draw] 1. Drawing background...\n");
 	DrawBackground();
-	printf("[Draw] 2. Background done, drawing grid lines...\n");
+	//printf("[Draw] 2. Background done, drawing grid lines...\n");
 
 	// Switch to simple shader for grid lines (background uses textured shader)
 	sSimple.Use();
@@ -196,7 +196,7 @@ void Render::Draw()
 	vGeometry.Draw(geoParts[LINES], 0, GL_LINES);
 
 	//Sprite
-	printf("[Draw] 3. Drawing character sprite...\n");
+	//printf("[Draw] 3. Drawing character sprite...\n");
 	constexpr float tau = glm::pi<float>()*2.f;
 	view = glm::mat4(1.f);
 	view = glm::scale(view, glm::vec3(scale, scale, 1.f));
@@ -632,14 +632,14 @@ void Render::SetBackgroundRenderer(bg::Renderer* renderer, bg::Camera* camera) {
 void Render::DrawBackground() {
 	if (bgRenderer && bgCamera) {
 		if (bgRenderer->IsEnabled()) {
-			printf("[Render] Drawing background (enabled)\n");
+			//printf("[Render] Drawing background (enabled)\n");
 			bgRenderer->Render(*bgCamera, this);
 		} else {
-			printf("[Render] Skipping background (disabled)\n");
+			//printf("[Render] Skipping background (disabled)\n");
 		}
 	} else {
-		if (!bgRenderer) printf("[Render] No background renderer\n");
-		if (!bgCamera) printf("[Render] No background camera\n");
+		//if (!bgRenderer) printf("[Render] No background renderer\n");
+		//if (!bgCamera) printf("[Render] No background camera\n");
 	}
 }
 

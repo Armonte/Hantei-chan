@@ -17,7 +17,8 @@
       "mcp__ghidra__get_xrefs_to",
       "Bash(gh pr view:*)",
       "Bash(gh pr diff:*)",
-      "Read(///**)"
+      "Read(///**)",
+      "Read(//mnt/c/dev/mbaa/src/dpu4/stagesrc/bgmaketool/**)"
     ],
     "deny": [],
     "ask": []

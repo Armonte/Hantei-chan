@@ -41,19 +41,49 @@ void LoadJapaneseFonts(ImGuiIO& io)
 {
 	char winFolder[512]{};
 	ImFontConfig config;
-/* 	config.PixelSnapH = 1;
-	config.OversampleH = 1;
-	config.OversampleV = 1; */
+	config.OversampleH = 2;
+	config.OversampleV = 2;
+	config.PixelSnapH = true;
+	
 	int appendAt = GetWindowsDirectoryA(winFolder, 512);
+	
+	// Extended glyph ranges: Japanese + special symbols (★, ○, etc)
+	static const ImWchar ranges[] =
+	{
+		0x0020, 0x00FF, // Basic Latin + Latin Supplement
+		0x2000, 0x206F, // General Punctuation
+		0x2190, 0x21FF, // Arrows
+		0x2200, 0x22FF, // Mathematical Operators
+		0x2300, 0x23FF, // Miscellaneous Technical
+		0x2500, 0x257F, // Box Drawing
+		0x2580, 0x259F, // Block Elements
+		0x25A0, 0x25FF, // Geometric Shapes
+		0x2600, 0x26FF, // Miscellaneous Symbols (includes ★ at U+2605)
+		0x3000, 0x30FF, // CJK Symbols and Punctuation, Hiragana, Katakana (includes ○ at U+25CB and 〇 at U+3007)
+		0x3131, 0x3163, // Korean Hangul
+		0x3200, 0x32FF, // Enclosed CJK Letters and Months
+		0x3300, 0x33FF, // CJK Compatibility
+		0x4E00, 0x9FAF, // CJK Ideographs
+		0xFF00, 0xFFEF, // Half-width and Full-width Forms
+		0,
+	};
+	
+	// Load Meiryo font with extended ranges
 	strcpy(winFolder+appendAt, "\\Fonts\\meiryo.ttc");
-	if(!io.Fonts->AddFontFromFileTTF(winFolder, gSettings.fontSize, &config, io.Fonts->GetGlyphRangesJapanese()))
+	ImFont* font = io.Fonts->AddFontFromFileTTF(winFolder, gSettings.fontSize, &config, ranges);
+	
+	// Final fallback to embedded Noto Sans JP if Meiryo not found
+	if(!font)
 	{
 		auto res = FindResource((HMODULE)GetWindowLongPtr(mainWindowHandle, GWLP_HINSTANCE), MAKEINTRESOURCE(NOTO_SANS_JP_F), RT_RCDATA);
 		void *notoFont = LockResource(LoadResource(nullptr, res));
 		config.FontDataOwnedByAtlas = false;
 		
-		io.Fonts->AddFontFromMemoryTTF(notoFont, SizeofResource(nullptr, res), gSettings.fontSize, &config, io.Fonts->GetGlyphRangesJapanese());
+		io.Fonts->AddFontFromMemoryTTF(notoFont, SizeofResource(nullptr, res), gSettings.fontSize, &config, ranges);
 	}
+	
+	// Build the font atlas - CRITICAL for Japanese characters to display
+	io.Fonts->Build();
 }
 
 
@@ -61,22 +91,22 @@ LRESULT WINAPI WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam);
 int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE, PWSTR pCmdLine, int nCmdShow)
 {
 	// Allocate console for debug output
-	AllocConsole();
-	
-	// Set console to UTF-8 to support Japanese text (SJIS/UTF-8)
-	SetConsoleOutputCP(CP_UTF8);
-	SetConsoleCP(CP_UTF8);
-	
-	// Redirect stdout/stderr to console
-	FILE* dummy;
-	freopen_s(&dummy, "CONOUT$", "w", stdout);
-	freopen_s(&dummy, "CONOUT$", "w", stderr);
-	
-	// Set console title
-	SetConsoleTitleW(L"Hantei-chan Debug Console");
-	
-	printf("=== Hantei-chan Debug Console ===\n");
-	printf("Console code page: UTF-8 (CP %d)\n", GetConsoleOutputCP());
+	//AllocConsole();
+	//
+	//// Set console to UTF-8 to support Japanese text (SJIS/UTF-8)
+	//SetConsoleOutputCP(CP_UTF8);
+	//SetConsoleCP(CP_UTF8);
+	//
+	//// Redirect stdout/stderr to console
+	//FILE* dummy;
+	//freopen_s(&dummy, "CONOUT$", "w", stdout);
+	//freopen_s(&dummy, "CONOUT$", "w", stderr);
+	//
+	//// Set console title
+	//SetConsoleTitleW(L"Hantei-chan Debug Console");
+	//
+	//printf("=== Hantei-chan Debug Console ===\n");
+	//printf("Console code page: UTF-8 (CP %d)\n", GetConsoleOutputCP());
 	
 	bool useIni = true;
 	int argC;
@@ -229,6 +259,9 @@ LRESULT WINAPI WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
 			//io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;     // Enable Keyboard Controls
 			ImGui_ImplWin32_Init(hWnd);
 			ImGui_ImplOpenGL3_Init("#version 330 core");
+			
+			// Force font texture creation after loading Japanese fonts
+			ImGui_ImplOpenGL3_CreateFontsTexture();
 			
 			// Enable VSync control for better performance testing
 			typedef BOOL (WINAPI *wglSwapIntervalEXT_t)(int);

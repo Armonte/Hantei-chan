@@ -57,8 +57,8 @@ void Renderer::Render(const Camera& camera, ::Render* mainRender) {
 
 	// Get all objects and sort by layer (lower = back)
 	auto& objects = file->GetObjects();
-	printf("[BG Render] Rendering %zu objects, camera=(%.0f,%.0f)\n",
-	       objects.size(), camera.x, camera.y);
+	//printf("[BG Render] Rendering %zu objects, camera=(%.0f,%.0f)\n",
+	//       objects.size(), camera.x, camera.y);
 	
 	std::vector<const Object*> sortedObjs;
 	for (const auto& obj : objects) {
@@ -85,34 +85,51 @@ void Renderer::RenderObject(const Object& obj, const Camera& camera, ::Render* m
 	if (obj.frames.empty()) {
 		return;
 	}
-	
+
 	const Frame& frame = obj.frames[obj.currentFrame];
 
-	printf("[BG RenderObj] ObjFrame=%d spriteId=%d offset=(%d,%d) parallax=%d layer=%d\n",
-	       obj.currentFrame, frame.spriteId, frame.offsetX, frame.offsetY,
-	       obj.parallax, obj.layer);
+	//printf("[BG RenderObj] ObjFrame=%d spriteId=%d offset=(%d,%d) parallax=%d layer=%d\n",
+	//       obj.currentFrame, frame.spriteId, frame.offsetX, frame.offsetY,
+	//       obj.parallax, obj.layer);
 
 	if (frame.spriteId < 0) {
-		printf("  -> Skipped: invalid spriteId\n");
+		//printf("  -> Skipped: invalid spriteId\n");
 		return;  // No sprite
 	}
-	
+
 	// Get sprite texture
 	int spriteW, spriteH;
 	GLuint texId = GetOrCreateTexture(frame.spriteId, spriteW, spriteH);
 	if (texId == 0) {
 		return;  // Failed to load texture
 	}
-	
-	// bgmake stores frame offsets as RELATIVE offsets from center
-	// Since we're rendering sprites at 0.5x scale, we also need to scale the offsets
-	// Otherwise positions assume full-size sprite spacing
-	const float BG_SCALE = 0.5f;
-	float screenX = frame.offsetX * BG_SCALE;
-	float screenY = frame.offsetY * BG_SCALE;
 
-	printf("  -> frameOffset=(%d,%d) screenPos=(%.0f,%.0f) parallax=%d\n",
-	       frame.offsetX, frame.offsetY, screenX, screenY, obj.parallax);
+	// Coordinate system transformation:
+	// - MBAA .dat files store offsets in 640x480 screen space with origin at (401, 538)
+	// - Floor line is at Y=224 in MBAA coordinates
+	// - Hantei uses world space with origin (0,0) at floor level
+	//
+	// Transformation needed:
+	// 1. Subtract MBAA origin offset: (401, 538)
+	// 2. Flip Y to account for floor position (538 - 224 = 314 pixels above origin)
+	// 3. Scale by 0.5x to match character rendering scale
+	const float BG_SCALE = 0.5f;
+
+	// MBAA coordinate offsets
+	// bgmake renders at center (401, 538), floor at Y=224
+	// In Hantei: (0,0) is at character feet (floor level)
+	const float MBAA_CENTER_X = 401.0f;
+	const float MBAA_CENTER_Y = 538.0f;
+	const float MBAA_FLOOR_Y = 224.0f;
+
+	// Transform from MBAA coordinates to Hantei world coordinates
+	// Note: The shader (SetSpriteTransform) handles viewport pan/zoom,
+	// so we output WORLD coordinates here, not screen coordinates
+	float worldX = (frame.offsetX - MBAA_CENTER_X) * BG_SCALE;
+	float worldY = (frame.offsetY - MBAA_FLOOR_Y) * BG_SCALE;
+
+	//printf("  -> frameOff=(%d,%d) worldPos=(%.0f,%.0f) parallax=%d (ignored for now)\n",
+	//       frame.offsetX, frame.offsetY, worldX, worldY, obj.parallax);
 
 	// bgmake doesn't scale sprites - uses native size
 	float scaledW = spriteW;
@@ -132,8 +149,8 @@ void Renderer::RenderObject(const Object& obj, const Camera& camera, ::Render* m
 		return;
 	}
 
-	// Draw the sprite with MBAA background scaling (0.5x to match character scale)
-	DrawTexturedQuad(texId, screenX, screenY, (int)scaledW, (int)scaledH,
+	// Draw the sprite in world coordinates (shader handles viewport transform)
+	DrawTexturedQuad(texId, worldX, worldY, (int)scaledW, (int)scaledH,
 	                 alpha, frame.blendMode, mainRender);
 }
 
@@ -313,7 +330,7 @@ void Renderer::DrawLine(float x1, float y1, float x2, float y2, float r, float g
 	// Debug: print first line color
 	static int debugCount = 0;
 	if (debugCount < 1) {
-		printf("[Debug Line] Color RGBA: (%.2f, %.2f, %.2f, %.2f) WhiteTex=%u\n", r, g, b, a, whiteTexture);
+		//printf("[Debug Line] Color RGBA: (%.2f, %.2f, %.2f, %.2f) WhiteTex=%u\n", r, g, b, a, whiteTexture);
 		debugCount++;
 	}
 
@@ -349,11 +366,13 @@ void Renderer::DrawDebugOverlay(const Camera& camera, ::Render* mainRender) {
 		GLuint texId = GetOrCreateTexture(frame.spriteId, spriteW, spriteH);
 		if (texId == 0) continue;
 
-		// Calculate positions (same as RenderObject - no parallax for now)
-		// Scale offsets to match sprite scale
+		// Calculate positions (same as RenderObject - same coordinate transform)
 		const float BG_SCALE = 0.5f;
-		float screenX = frame.offsetX * BG_SCALE;
-		float screenY = frame.offsetY * BG_SCALE;
+		const float MBAA_CENTER_X = 401.0f;
+		const float MBAA_FLOOR_Y = 224.0f;
+
+		float worldX = (frame.offsetX - MBAA_CENTER_X) * BG_SCALE;
+		float worldY = (frame.offsetY - MBAA_FLOOR_Y) * BG_SCALE;
 
 		// Sprites are rendered at 0.5x scale, so bounding boxes should match
 		float scaledW = spriteW * 0.5f;
@@ -366,14 +385,14 @@ void Renderer::DrawDebugOverlay(const Camera& camera, ::Render* mainRender) {
 		}
 
 		// Draw bounding box at same scale as rendered sprite
-		DrawLine(screenX, screenY, screenX + scaledW, screenY, r, g, b, 0.7f, mainRender);
-		DrawLine(screenX + scaledW, screenY, screenX + scaledW, screenY + scaledH, r, g, b, 0.7f, mainRender);
-		DrawLine(screenX + scaledW, screenY + scaledH, screenX, screenY + scaledH, r, g, b, 0.7f, mainRender);
-		DrawLine(screenX, screenY + scaledH, screenX, screenY, r, g, b, 0.7f, mainRender);
+		DrawLine(worldX, worldY, worldX + scaledW, worldY, r, g, b, 0.7f, mainRender);
+		DrawLine(worldX + scaledW, worldY, worldX + scaledW, worldY + scaledH, r, g, b, 0.7f, mainRender);
+		DrawLine(worldX + scaledW, worldY + scaledH, worldX, worldY + scaledH, r, g, b, 0.7f, mainRender);
+		DrawLine(worldX, worldY + scaledH, worldX, worldY, r, g, b, 0.7f, mainRender);
 
 		// Draw origin point (center of crosshair)
-		DrawLine(screenX - 5, screenY, screenX + 5, screenY, 1.0f, 0.0f, 1.0f, 1.0f, mainRender);
-		DrawLine(screenX, screenY - 5, screenX, screenY + 5, 1.0f, 0.0f, 1.0f, 1.0f, mainRender);
+		DrawLine(worldX - 5, worldY, worldX + 5, worldY, 1.0f, 0.0f, 1.0f, 1.0f, mainRender);
+		DrawLine(worldX, worldY - 5, worldX, worldY + 5, 1.0f, 0.0f, 1.0f, 1.0f, mainRender);
 	}
 }
 
