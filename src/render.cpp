@@ -156,6 +156,9 @@ void Render::DrawGridLines()
 		MessageBoxA(nullptr, ss.str().c_str(), "GL Error", MB_ICONSTOP);
 	}
 
+	// Switch to simple shader for grid lines (background uses textured shader)
+	sSimple.Use();
+
 	//Lines only
 	glm::mat4 view = glm::mat4(1.f);
 	view = glm::scale(view, glm::vec3(scale, scale, 1.f));
@@ -182,23 +185,13 @@ void Render::Draw()
 	DrawBackground();
 	//printf("[Draw] 2. Background done, drawing grid lines...\n");
 
-	// Switch to simple shader for grid lines (background uses textured shader)
-	sSimple.Use();
-
-	//Lines
-	glm::mat4 view = glm::mat4(1.f);
-	view = glm::scale(view, glm::vec3(scale, scale, 1.f));
-	view = glm::translate(view, glm::vec3(x,y,0.f));
-	SetModelView(std::move(view));
-	glUniform1f(lAlphaS, 0.25f);
-	SetMatrix(lProjectionS);
-	vGeometry.Bind();
-	vGeometry.Draw(geoParts[LINES], 0, GL_LINES);
+	// Draw grid lines
+	DrawGridLines();
 
 	//Sprite
 	//printf("[Draw] 3. Drawing character sprite...\n");
 	constexpr float tau = glm::pi<float>()*2.f;
-	view = glm::mat4(1.f);
+	glm::mat4 view = glm::mat4(1.f);
 	view = glm::scale(view, glm::vec3(scale, scale, 1.f));
 	view = glm::translate(view, glm::vec3(x,y,0.f));
 	// Apply scale and rotations based on AFRT flag

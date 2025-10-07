@@ -392,6 +392,10 @@ void MainFrame::DrawBack()
 		// Sort all layers (including main) by Z-priority before drawing
 		render.SortLayersByZPriority(mainFrame.AF.priority);
 
+		// Draw background and grid (same as render.Draw() does)
+		render.DrawBackground();
+		render.DrawGridLines();
+
 		// Draw all layers in Z-order
 		render.DrawLayers();
 

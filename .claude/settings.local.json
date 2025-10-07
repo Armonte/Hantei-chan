@@ -18,7 +18,8 @@
       "Bash(gh pr view:*)",
       "Bash(gh pr diff:*)",
       "Read(///**)",
-      "Read(//mnt/c/dev/mbaa/src/dpu4/stagesrc/bgmaketool/**)"
+      "Read(//mnt/c/dev/mbaa/src/dpu4/stagesrc/bgmaketool/**)",
+      "Bash(./build.sh:*)"
     ],
     "deny": [],
     "ask": []
