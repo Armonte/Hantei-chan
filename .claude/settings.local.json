@@ -19,7 +19,8 @@
       "Bash(gh pr diff:*)",
       "Read(///**)",
       "Read(//mnt/c/dev/mbaa/src/dpu4/stagesrc/bgmaketool/**)",
-      "Bash(./build.sh:*)"
+      "Bash(./build.sh:*)",
+      "Bash(./build/gonptechan:*)"
     ],
     "deny": [],
     "ask": []

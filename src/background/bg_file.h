@@ -26,13 +26,21 @@ public:
 	const CG* GetCG() const { return cg.get(); }
 	
 	bool IsLoaded() const { return loaded; }
-	
+
+	// Get filename
+	const std::string& GetFilename() const { return filename; }
+
 	// Update all object animations
 	void UpdateAnimations();
-	
+
+	// Step a specific object forward/backward by one frame
+	void StepObjectForward(int objIndex);
+	void StepObjectBackward(int objIndex);
+
 private:
 	bool loaded = false;
-	
+	std::string filename;
+
 	// File header (64 bytes)
 	struct Header {
 		char magic[16];          // "bgmake_array"

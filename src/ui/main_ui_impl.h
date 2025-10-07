@@ -394,6 +394,110 @@ void MainFrame::DrawUi()
 			character->undoManager.endFrame();
 		}
 	}
+
+	// Background Inspector (global, not per-view)
+	if (currentBgFile && currentBgFile->IsLoaded()) {
+		ImGui::Begin("Background Inspector", nullptr, ImGuiWindowFlags_AlwaysAutoResize);
+
+		// Display filename
+		ImGui::Text("File: %s", currentBgFile->GetFilename().c_str());
+
+		auto& objects = currentBgFile->GetObjects();
+		ImGui::Text("Objects: %zu", objects.size());
+
+		ImGui::Separator();
+
+		// Animation controls
+		static bool bgPaused = false;
+		if (ImGui::Button(bgPaused ? "Play" : "Pause")) {
+			bgPaused = !bgPaused;
+		}
+		ImGui::SameLine();
+		ImGui::Text("Animation: %s", bgPaused ? "PAUSED" : "Playing");
+
+		// Update animations only if not paused
+		if (!bgPaused) {
+			currentBgFile->UpdateAnimations();
+		}
+
+		ImGui::Separator();
+
+		static int selectedObjIndex = 0;
+		if (selectedObjIndex >= (int)objects.size()) selectedObjIndex = 0;
+
+		// Set selected object for debug highlighting
+		bgRenderer.SetSelectedObject(selectedObjIndex);
+
+		// Object selector
+		ImGui::Text("Select Object:");
+		for (size_t i = 0; i < objects.size(); i++) {
+			char label[64];
+			snprintf(label, sizeof(label), "obj_%zu (layer=%d)", i, objects[i].layer);
+			if (ImGui::Selectable(label, selectedObjIndex == (int)i)) {
+				selectedObjIndex = (int)i;
+			}
+		}
+
+		ImGui::Separator();
+
+		// Show selected object details
+		if (selectedObjIndex >= 0 && selectedObjIndex < (int)objects.size()) {
+			auto& obj = objects[selectedObjIndex];  // Non-const for editing
+			ImGui::Text("Object %d Properties:", selectedObjIndex);
+			ImGui::Text("  Name: %s", obj.name.c_str());
+			ImGui::Text("  Layer: %d", obj.layer);
+			ImGui::Text("  Parallax: %d", obj.parallax);
+			ImGui::Text("  Frames: %zu", obj.frames.size());
+			ImGui::Text("  Current Frame: %d / %d", obj.currentFrame, (int)obj.frames.size() - 1);
+
+			// Frame navigation controls
+			if (ImGui::Button("<< Back")) {
+				currentBgFile->StepObjectBackward(selectedObjIndex);
+			}
+			ImGui::SameLine();
+			if (ImGui::Button("Forward >>")) {
+				currentBgFile->StepObjectForward(selectedObjIndex);
+			}
+
+			ImGui::Separator();
+			ImGui::Text("Current Frame Data (Editable):");
+
+			if (obj.currentFrame >= 0 && obj.currentFrame < (int)obj.frames.size()) {
+				auto& frame = obj.frames[obj.currentFrame];  // Non-const for editing
+
+				// Editable fields
+				ImGui::PushItemWidth(120);
+				ImGui::InputScalar("Sprite ID", ImGuiDataType_S16, &frame.spriteId);
+				ImGui::InputScalar("Offset X", ImGuiDataType_S16, &frame.offsetX);
+				ImGui::InputScalar("Offset Y", ImGuiDataType_S16, &frame.offsetY);
+				ImGui::InputScalar("Duration", ImGuiDataType_S16, &frame.duration);
+				ImGui::InputScalar("Blend Mode", ImGuiDataType_U8, &frame.blendMode);
+				ImGui::InputScalar("Opacity", ImGuiDataType_U8, &frame.opacity);
+				ImGui::InputScalar("Animation Type", ImGuiDataType_U8, &frame.aniType);
+				ImGui::InputScalar("Jump Frame", ImGuiDataType_U8, &frame.jumpFrame);
+				ImGui::PopItemWidth();
+
+				// Computed world position
+				float worldX = 401.0f + (float)frame.offsetX;
+				float worldY = 538.0f + (float)frame.offsetY;
+				ImGui::Text("World Pos: (%.0f, %.0f)", worldX, worldY);
+
+				ImGui::Separator();
+				ImGui::Text("All Frames:");
+				for (size_t f = 0; f < obj.frames.size() && f < 20; f++) {
+					const auto& fr = obj.frames[f];
+					ImGui::Text("    [%zu] spriteId=%d offset=(%d,%d) aniType=%d",
+					           f, fr.spriteId, fr.offsetX, fr.offsetY, fr.aniType);
+				}
+				if (obj.frames.size() > 20) {
+					ImGui::Text("    ... (%zu more frames)", obj.frames.size() - 20);
+				}
+			}
+		}
+
+		ImGui::End();
+	}
+
 	aboutWindow.Draw();
 	vectors.Draw();
 

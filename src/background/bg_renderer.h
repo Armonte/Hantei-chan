@@ -37,7 +37,11 @@ public:
 	// Debug: disable parallax to see raw positions
 	void SetParallaxEnabled(bool enable) { parallaxEnabled = enable; }
 	bool IsParallaxEnabled() const { return parallaxEnabled; }
-	
+
+	// Set selected object for highlighting in debug overlay
+	void SetSelectedObject(int index) { selectedObjIndex = index; }
+	int GetSelectedObject() const { return selectedObjIndex; }
+
 	// Clear all cached textures
 	void ClearTextureCache();
 	
@@ -46,7 +50,8 @@ private:
 	bool enabled = false;
 	bool showDebugOverlay = false;
 	bool parallaxEnabled = true;
-	
+	int selectedObjIndex = -1;  // For debug highlighting
+
 	// Texture caching
 	struct CachedTexture {
 		GLuint textureId;

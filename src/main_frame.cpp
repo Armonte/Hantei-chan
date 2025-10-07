@@ -153,9 +153,9 @@ void MainFrame::DrawPresetEffectMarkers(FrameState& state, CharacterInstance* ch
 
 void MainFrame::DrawBack()
 {
-	// Update background animations
-	bgRenderer.Update();
-	
+	// Background animation update is now controlled from the Background Inspector UI
+	// (allows pause/play functionality)
+
 	render.filter = smoothRender;
 	glClearColor(clearColor[0], clearColor[1], clearColor[2], 1.f);
 	glClear(GL_COLOR_BUFFER_BIT |  GL_DEPTH_BUFFER_BIT);

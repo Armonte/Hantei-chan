@@ -26,10 +26,13 @@ bool File::Load(const char* filename) {
 	if (loaded) {
 		Free();
 	}
-	
+
+	// Store filename
+	this->filename = filename;
+
 	char* data;
 	unsigned int size;
-	
+
 	if (!ReadInMem(filename, data, size)) {
 		std::cerr << "Failed to read file: " << filename << std::endl;
 		return false;
@@ -269,6 +272,30 @@ void Object::Reset() {
 		frame.runtimeX = 0.0f;
 		frame.runtimeY = 0.0f;
 	}
+}
+
+void File::StepObjectForward(int objIndex) {
+	if (objIndex < 0 || objIndex >= (int)objects.size()) return;
+	auto& obj = objects[objIndex];
+	if (obj.frames.empty()) return;
+
+	obj.currentFrame++;
+	if (obj.currentFrame >= (int)obj.frames.size()) {
+		obj.currentFrame = 0;
+	}
+	obj.frameDuration = 0;
+}
+
+void File::StepObjectBackward(int objIndex) {
+	if (objIndex < 0 || objIndex >= (int)objects.size()) return;
+	auto& obj = objects[objIndex];
+	if (obj.frames.empty()) return;
+
+	obj.currentFrame--;
+	if (obj.currentFrame < 0) {
+		obj.currentFrame = (int)obj.frames.size() - 1;
+	}
+	obj.frameDuration = 0;
 }
 
 } // namespace bg

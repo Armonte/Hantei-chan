@@ -88,9 +88,14 @@ void Renderer::RenderObject(const Object& obj, const Camera& camera, ::Render* m
 
 	const Frame& frame = obj.frames[obj.currentFrame];
 
-	//printf("[BG RenderObj] ObjFrame=%d spriteId=%d offset=(%d,%d) parallax=%d layer=%d\n",
-	//       obj.currentFrame, frame.spriteId, frame.offsetX, frame.offsetY,
-	//       obj.parallax, obj.layer);
+	// Debug: Print first few objects to check for offset variation
+	static int debugFrameCount = 0;
+	if (debugFrameCount < 20) {
+		printf("[BG RenderObj] Obj frame=%d/%zu spriteId=%d offset=(%d,%d) aniType=%d\n",
+		       obj.currentFrame, obj.frames.size()-1, frame.spriteId,
+		       frame.offsetX, frame.offsetY, frame.aniType);
+		debugFrameCount++;
+	}
 
 	if (frame.spriteId < 0) {
 		//printf("  -> Skipped: invalid spriteId\n");
@@ -104,29 +109,13 @@ void Renderer::RenderObject(const Object& obj, const Camera& camera, ::Render* m
 		return;  // Failed to load texture
 	}
 
-	// Coordinate system transformation:
-	// - MBAA .dat files store offsets in 640x480 screen space with origin at (401, 538)
-	// - Floor line is at Y=224 in MBAA coordinates
-	// - Hantei uses world space with origin (0,0) at floor level
-	//
-	// Transformation needed:
-	// 1. Subtract MBAA origin offset: (401, 538)
-	// 2. Flip Y to account for floor position (538 - 224 = 314 pixels above origin)
-	// 3. Scale by 0.5x to match character rendering scale
-	const float BG_SCALE = 0.5f;
+	// EXACT bgmake logic (MonoForm.cs line 259-260):
+	// x2 = 401 + (int) frame.x_off;
+	// y2 = 538 + (int) frame.y_off;
+	// spriteBatch.Draw(texture, new Vector2(x2, y2), ...);
 
-	// MBAA coordinate offsets
-	// bgmake renders at center (401, 538), floor at Y=224
-	// In Hantei: (0,0) is at character feet (floor level)
-	const float MBAA_CENTER_X = 401.0f;
-	const float MBAA_CENTER_Y = 538.0f;
-	const float MBAA_FLOOR_Y = 224.0f;
-
-	// Transform from MBAA coordinates to Hantei world coordinates
-	// Note: The shader (SetSpriteTransform) handles viewport pan/zoom,
-	// so we output WORLD coordinates here, not screen coordinates
-	float worldX = (frame.offsetX - MBAA_CENTER_X) * BG_SCALE;
-	float worldY = (frame.offsetY - MBAA_FLOOR_Y) * BG_SCALE;
+	float worldX = 401.0f + (float)frame.offsetX;
+	float worldY = 538.0f + (float)frame.offsetY;
 
 	//printf("  -> frameOff=(%d,%d) worldPos=(%.0f,%.0f) parallax=%d (ignored for now)\n",
 	//       frame.offsetX, frame.offsetY, worldX, worldY, obj.parallax);
@@ -210,8 +199,8 @@ void Renderer::DrawTexturedQuad(GLuint texture, float x, float y, int w, int h,
 
 	// Set up shader and projection
 	mainRender->SetupSpriteShader();
-	// Backgrounds at 0.5x scale to match character rendering scale
-	mainRender->SetSpriteTransform(x, y, 0.5f, 0.5f);
+	// EXACT bgmake: native size, no scaling
+	mainRender->SetSpriteTransform(x, y, 1.0f, 1.0f);
 	
 	// Set blend mode
 	if (blendMode == 2) {  // Additive
@@ -280,14 +269,14 @@ void Renderer::ClearTextureCache() {
 }
 
 void Renderer::DrawLine(float x1, float y1, float x2, float y2, float r, float g, float b, float a, ::Render* mainRender) {
-	// Draw a colored quad line (2px thickness like bgmake)
+	// Draw a colored quad line (1px thickness)
 	float dx = x2 - x1;
 	float dy = y2 - y1;
 	float len = std::sqrt(dx*dx + dy*dy);
 	if (len < 0.1f) return;
 
-	// Perpendicular vector for line thickness (2px like bgmake)
-	float thickness = 2.0f;
+	// Perpendicular vector for line thickness (1px)
+	float thickness = 1.0f;
 	float px = -dy / len * thickness;
 	float py = dx / len * thickness;
 
@@ -355,7 +344,8 @@ void Renderer::DrawDebugOverlay(const Camera& camera, ::Render* mainRender) {
 
 	// Draw object bounding boxes
 	auto& objects = file->GetObjects();
-	for (const auto& obj : objects) {
+	for (size_t objIdx = 0; objIdx < objects.size(); objIdx++) {
+		const auto& obj = objects[objIdx];
 		if (obj.frames.empty()) continue;
 
 		const Frame& frame = obj.frames[obj.currentFrame];
@@ -366,33 +356,41 @@ void Renderer::DrawDebugOverlay(const Camera& camera, ::Render* mainRender) {
 		GLuint texId = GetOrCreateTexture(frame.spriteId, spriteW, spriteH);
 		if (texId == 0) continue;
 
-		// Calculate positions (same as RenderObject - same coordinate transform)
-		const float BG_SCALE = 0.5f;
-		const float MBAA_CENTER_X = 401.0f;
-		const float MBAA_FLOOR_Y = 224.0f;
+		// EXACT bgmake positioning
+		float worldX = 401.0f + (float)frame.offsetX;
+		float worldY = 538.0f + (float)frame.offsetY;
 
-		float worldX = (frame.offsetX - MBAA_CENTER_X) * BG_SCALE;
-		float worldY = (frame.offsetY - MBAA_FLOOR_Y) * BG_SCALE;
+		// Native size (no scaling)
+		float scaledW = (float)spriteW;
+		float scaledH = (float)spriteH;
 
-		// Sprites are rendered at 0.5x scale, so bounding boxes should match
-		float scaledW = spriteW * 0.5f;
-		float scaledH = spriteH * 0.5f;
+		// Check if this is the selected object
+		bool isSelected = (selectedObjIndex >= 0 && (int)objIdx == selectedObjIndex);
 
-		// Color based on layer (green for background, blue for foreground)
-		float r = 0.0f, g = 1.0f, b = 0.5f;
-		if (obj.layer > 128) {
-			r = 0.5f; g = 0.5f; b = 1.0f;
+		// Color based on selection status
+		float r, g, b, a;
+		if (isSelected) {
+			// Selected object: bright yellow, fully opaque
+			r = 1.0f; g = 1.0f; b = 0.0f; a = 1.0f;
+		} else if (obj.layer > 128) {
+			// Foreground: blue
+			r = 0.5f; g = 0.5f; b = 1.0f; a = 0.5f;
+		} else {
+			// Background: green
+			r = 0.0f; g = 1.0f; b = 0.5f; a = 0.5f;
 		}
 
 		// Draw bounding box at same scale as rendered sprite
-		DrawLine(worldX, worldY, worldX + scaledW, worldY, r, g, b, 0.7f, mainRender);
-		DrawLine(worldX + scaledW, worldY, worldX + scaledW, worldY + scaledH, r, g, b, 0.7f, mainRender);
-		DrawLine(worldX + scaledW, worldY + scaledH, worldX, worldY + scaledH, r, g, b, 0.7f, mainRender);
-		DrawLine(worldX, worldY + scaledH, worldX, worldY, r, g, b, 0.7f, mainRender);
+		DrawLine(worldX, worldY, worldX + scaledW, worldY, r, g, b, a, mainRender);
+		DrawLine(worldX + scaledW, worldY, worldX + scaledW, worldY + scaledH, r, g, b, a, mainRender);
+		DrawLine(worldX + scaledW, worldY + scaledH, worldX, worldY + scaledH, r, g, b, a, mainRender);
+		DrawLine(worldX, worldY + scaledH, worldX, worldY, r, g, b, a, mainRender);
 
-		// Draw origin point (center of crosshair)
-		DrawLine(worldX - 5, worldY, worldX + 5, worldY, 1.0f, 0.0f, 1.0f, 1.0f, mainRender);
-		DrawLine(worldX, worldY - 5, worldX, worldY + 5, 1.0f, 0.0f, 1.0f, 1.0f, mainRender);
+		// Draw origin point for selected object only (magenta crosshair)
+		if (isSelected) {
+			DrawLine(worldX - 10, worldY, worldX + 10, worldY, 1.0f, 0.0f, 1.0f, 1.0f, mainRender);
+			DrawLine(worldX, worldY - 10, worldX, worldY + 10, 1.0f, 0.0f, 1.0f, 1.0f, mainRender);
+		}
 	}
 }
 
