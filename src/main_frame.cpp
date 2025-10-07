@@ -25,10 +25,16 @@ MainFrame::MainFrame(ContextGl *context_):
 context(context_)
 {
 	LoadSettings();
+	
+	// Initialize background system
+	render.SetBackgroundRenderer(&bgRenderer, &bgCamera);
 }
 
 MainFrame::~MainFrame()
 {
+	// Clean up background system
+	clearStage();
+	
 	ImGui::SaveIniSettingsToDisk(ImGui::GetCurrentContext()->IO.IniFilename);
 }
 
@@ -46,7 +52,7 @@ void MainFrame::Draw()
 	ImGui_ImplWin32_NewFrame();
 	ImGui::NewFrame();
 	DrawUi();
-	DrawBack();
+	DrawBack();  // This calls render.Draw() which calls DrawBackground()
 	ImGui::Render();
 	
 	ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
@@ -147,6 +153,9 @@ void MainFrame::DrawPresetEffectMarkers(FrameState& state, CharacterInstance* ch
 
 void MainFrame::DrawBack()
 {
+	// Update background animations
+	bgRenderer.Update();
+	
 	render.filter = smoothRender;
 	glClearColor(clearColor[0], clearColor[1], clearColor[2], 1.f);
 	glClear(GL_COLOR_BUFFER_BIT |  GL_DEPTH_BUFFER_BIT);
@@ -155,6 +164,11 @@ void MainFrame::DrawBack()
 	if (active) {
 		render.x = (active->renderX + clientRect.x/2) / render.scale;
 		render.y = (active->renderY + clientRect.y/2) / render.scale;
+
+		// Sync background camera with viewport pan
+		// Negate because camera movement is opposite to viewport translation
+		bgCamera.x = -render.x;
+		bgCamera.y = -render.y;
 	}
 
 	auto* view = getActiveView();
@@ -169,6 +183,9 @@ void MainFrame::DrawBack()
 	if (hasSpawnedPatterns && view && active) {
 		// Draw everything as layers (main + spawned) in Z-order
 		auto& state = view->getState();
+
+		// Draw background FIRST (behind everything)
+		render.DrawBackground();
 
 		// First draw grid lines only
 		render.DrawGridLines();
@@ -393,6 +410,39 @@ void MainFrame::DrawBack()
 	}
 }
 
+// ============================================================================
+// Background System Implementation
+// ============================================================================
+
+void MainFrame::loadStageFile(const std::string& path)
+{
+	// Clear previous stage
+	clearStage();
+	
+	// Load new stage
+	currentBgFile = new bg::File();
+	if (currentBgFile->Load(path.c_str())) {
+		bgRenderer.SetFile(currentBgFile);
+		bgRenderer.SetEnabled(true);
+		printf("[Stage] Loaded: %s\n", path.c_str());
+		printf("[Stage] Objects: %zu\n", currentBgFile->GetObjects().size());
+	} else {
+		delete currentBgFile;
+		currentBgFile = nullptr;
+		printf("[Stage] Failed to load: %s\n", path.c_str());
+	}
+}
+
+void MainFrame::clearStage()
+{
+	if (currentBgFile) {
+		bgRenderer.SetFile(nullptr);
+		bgRenderer.SetEnabled(false);
+		delete currentBgFile;
+		currentBgFile = nullptr;
+		printf("[Stage] Cleared\n");
+	}
+}
 
 // ============================================================================
 // UI Implementation - extracted to ui/main_ui_impl.h for better organization

@@ -43,6 +43,9 @@ add_executable(${EXE} WIN32
 	src/test.cpp
 	src/ini.cpp
 	src/preset_effects.cpp
+	# Background system
+	src/background/bg_file.cpp
+	src/background/bg_renderer.cpp
 	res/res.rc
 )
 

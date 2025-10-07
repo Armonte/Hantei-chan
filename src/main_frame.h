@@ -9,6 +9,9 @@
 #include "vectors.h"
 #include "character_instance.h"
 #include "character_view.h"
+#include "background/bg_file.h"
+#include "background/bg_renderer.h"
+#include "background/bg_types.h"
 #include <glm/mat4x4.hpp>
 #include <string>
 #include <vector>
@@ -107,6 +110,13 @@ private:
 	void markProjectModified();
 	void addRecentProject(const std::string& path);
 	void openRecentProject(const std::string& path);
+
+	// Background system
+	bg::File* currentBgFile = nullptr;
+	bg::Renderer bgRenderer;
+	bg::Camera bgCamera;
+	void loadStageFile(const std::string& path);
+	void clearStage();
 
 	AboutWindow aboutWindow;
 };

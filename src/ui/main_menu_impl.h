@@ -372,6 +372,58 @@ void MainFrame::Menu(unsigned int errorPopupId)
 			}
 			ImGui::EndMenu();
 		}
+		if (ImGui::BeginMenu("Stage"))
+		{
+			if (ImGui::MenuItem("Load Stage File..."))
+			{
+				std::string path = FileDialog(fileType::DAT, false);
+				if (!path.empty()) {
+					loadStageFile(path);
+				}
+			}
+
+			bool bgEnabled = bgRenderer.IsEnabled();
+			if (ImGui::MenuItem("Clear Stage", nullptr, false, currentBgFile != nullptr))
+			{
+				clearStage();
+			}
+
+			ImGui::Separator();
+
+			if (ImGui::Checkbox("Enable Stage Rendering", &bgEnabled))
+			{
+				bgRenderer.SetEnabled(bgEnabled);
+			}
+
+			bool showDebug = bgRenderer.IsShowingDebugOverlay();
+			if (ImGui::Checkbox("Show Debug Overlay", &showDebug))
+			{
+				bgRenderer.SetShowDebugOverlay(showDebug);
+			}
+			if (ImGui::IsItemHovered())
+			{
+				ImGui::SetTooltip("Shows bounding boxes, camera position, and screen center");
+			}
+
+			bool parallaxEnabled = bgRenderer.IsParallaxEnabled();
+			if (ImGui::Checkbox("Enable Parallax", &parallaxEnabled))
+			{
+				bgRenderer.SetParallaxEnabled(parallaxEnabled);
+			}
+			if (ImGui::IsItemHovered())
+			{
+				ImGui::SetTooltip("Disable to see objects at world positions without parallax effect");
+			}
+
+			if (currentBgFile && currentBgFile->IsLoaded())
+			{
+				ImGui::Separator();
+				ImGui::TextDisabled("Loaded: %zu objects", currentBgFile->GetObjects().size());
+				ImGui::TextDisabled("Camera: (%.0f, %.0f)", bgCamera.x, bgCamera.y);
+			}
+
+			ImGui::EndMenu();
+		}
 		if (ImGui::BeginMenu("Windows"))
 		{
 			if (ImGui::MenuItem("Vectors Guide")) vectors.drawWindow = !vectors.drawWindow;

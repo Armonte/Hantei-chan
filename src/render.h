@@ -11,6 +11,12 @@
 #include <glm/mat4x4.hpp>
 #include <glm/vec4.hpp>
 
+// Forward declare background types
+namespace bg {
+	class Renderer;
+	struct Camera;
+}
+
 // Layer information for multi-layer rendering
 struct RenderLayer {
 	int spriteId;
@@ -74,6 +80,10 @@ private:
 	std::vector<RenderLayer> renderLayers;
 	int currentLayerIndex;
 
+	// Background rendering
+	bg::Renderer* bgRenderer = nullptr;
+	bg::Camera* bgCamera = nullptr;
+
 	void AdjustImageQuad(int x, int y, int w, int h);
 	void SetModelView(glm::mat4&& view);
 	void SetMatrix(int location);
@@ -108,6 +118,17 @@ public:
 	void SortLayersByZPriority(int mainPatternPriority);
 	void DrawLayers();
 	bool HasLayers() const { return !renderLayers.empty(); }
+
+	// Background rendering
+	void SetBackgroundRenderer(bg::Renderer* renderer, bg::Camera* camera);
+	void DrawBackground();
+	bg::Renderer* GetBackgroundRenderer() { return bgRenderer; }
+	bg::Camera* GetBackgroundCamera() { return bgCamera; }
+	
+	// Public access for background rendering
+	Vao& GetSpriteVAO() { return vSprite; }
+	void SetupSpriteShader();  // Sets up textured shader and projection for background rendering
+	void SetSpriteTransform(float x, float y, float scaleX, float scaleY);  // Sets transform for sprite
 
 	enum blendType{
 		normal,

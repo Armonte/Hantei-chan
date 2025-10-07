@@ -12,6 +12,8 @@
 #include <sstream>
 
 #include "hitbox.h"
+#include "background/bg_renderer.h"
+#include "background/bg_types.h"
 
 constexpr int maxBoxes = 33;
 
@@ -175,6 +177,14 @@ void Render::Draw()
 		//PostQuitMessage(1);
 	}
 
+	// Draw background FIRST (behind everything)
+	printf("[Draw] 1. Drawing background...\n");
+	DrawBackground();
+	printf("[Draw] 2. Background done, drawing grid lines...\n");
+
+	// Switch to simple shader for grid lines (background uses textured shader)
+	sSimple.Use();
+
 	//Lines
 	glm::mat4 view = glm::mat4(1.f);
 	view = glm::scale(view, glm::vec3(scale, scale, 1.f));
@@ -186,6 +196,7 @@ void Render::Draw()
 	vGeometry.Draw(geoParts[LINES], 0, GL_LINES);
 
 	//Sprite
+	printf("[Draw] 3. Drawing character sprite...\n");
 	constexpr float tau = glm::pi<float>()*2.f;
 	view = glm::mat4(1.f);
 	view = glm::scale(view, glm::vec3(scale, scale, 1.f));
@@ -213,6 +224,8 @@ void Render::Draw()
 		SetBlendingMode();
 		glDisableVertexAttribArray(2);
 		glVertexAttrib4fv(2, colorRgba);
+		// Re-bind texture in case background rendering changed it
+		glBindTexture(GL_TEXTURE_2D, texture.id);
 		vSprite.Bind();
 		vSprite.Draw(0);
 	}
@@ -270,6 +283,8 @@ void Render::DrawSpriteOnly()
 		SetBlendingMode();
 		glDisableVertexAttribArray(2);
 		glVertexAttrib4fv(2, colorRgba);
+		// Re-bind texture in case background rendering changed it
+		glBindTexture(GL_TEXTURE_2D, texture.id);
 		vSprite.Bind();
 		vSprite.Draw(0);
 	}
@@ -606,4 +621,44 @@ void Render::DrawLayers()
 	colorRgba[1] = origColorRgba[1];
 	colorRgba[2] = origColorRgba[2];
 	colorRgba[3] = origColorRgba[3];
+}
+
+// Background rendering methods
+void Render::SetBackgroundRenderer(bg::Renderer* renderer, bg::Camera* camera) {
+	bgRenderer = renderer;
+	bgCamera = camera;
+}
+
+void Render::DrawBackground() {
+	if (bgRenderer && bgCamera) {
+		if (bgRenderer->IsEnabled()) {
+			printf("[Render] Drawing background (enabled)\n");
+			bgRenderer->Render(*bgCamera, this);
+		} else {
+			printf("[Render] Skipping background (disabled)\n");
+		}
+	} else {
+		if (!bgRenderer) printf("[Render] No background renderer\n");
+		if (!bgCamera) printf("[Render] No background camera\n");
+	}
+}
+
+void Render::SetupSpriteShader() {
+	sTextured.Use();
+	// Apply viewport transformations (zoom + pan) for backgrounds
+	glm::mat4 view = glm::mat4(1.f);
+	view = glm::scale(view, glm::vec3(scale, scale, 1.f));  // Viewport zoom
+	view = glm::translate(view, glm::vec3(x, y, 0.f));      // Viewport pan
+	SetModelView(std::move(view));
+	SetMatrix(lProjectionT);
+}
+
+void Render::SetSpriteTransform(float spriteX, float spriteY, float spriteScaleX, float spriteScaleY) {
+	glm::mat4 view = glm::mat4(1.f);
+	view = glm::scale(view, glm::vec3(scale, scale, 1.f));  // Viewport zoom
+	view = glm::translate(view, glm::vec3(x, y, 0.f));       // Viewport pan
+	view = glm::translate(view, glm::vec3(spriteX, spriteY, 0.f));  // Sprite position
+	view = glm::scale(view, glm::vec3(spriteScaleX, spriteScaleY, 1.f));  // Sprite scale (1.0 for backgrounds)
+	SetModelView(std::move(view));
+	SetMatrix(lProjectionT);
 }
