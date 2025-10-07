@@ -104,7 +104,7 @@ struct VisualizationSettings {
 	VisualizationSettings() :
 		showSpawnedPatterns(true), showPresetEffects(true), presetEffectsAllFrames(false),
 		autoDetect(true), showOffsetLines(true), showLabels(true),
-		animateWithMain(true), spawnedOpacity(0.6f),
+		animateWithMain(true), spawnedOpacity(1.0f),
 		showTimeline(false), timelineZoom(1) {}
 };
 

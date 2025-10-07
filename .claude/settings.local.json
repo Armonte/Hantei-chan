@@ -8,8 +8,16 @@
       "Bash(gh issue list:*)",
       "Bash(gh issue view:*)",
       "Bash(cat:*)",
-      "Bash(chmod:*)"
-      "Bash(/dev/null)"
+      "Bash(chmod:*)",
+      "Bash(/dev/null)",
+      "Read(//home/teo/**)",
+      "mcp__ghidra__search_functions_by_name",
+      "mcp__ghidra__decompile_function",
+      "mcp__ghidra__decompile_function_by_address",
+      "mcp__ghidra__get_xrefs_to",
+      "Bash(gh pr view:*)",
+      "Bash(gh pr diff:*)",
+      "Read(///**)"
     ],
     "deny": [],
     "ask": []

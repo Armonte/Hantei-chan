@@ -190,10 +190,20 @@ void Render::Draw()
 	view = glm::mat4(1.f);
 	view = glm::scale(view, glm::vec3(scale, scale, 1.f));
 	view = glm::translate(view, glm::vec3(x,y,0.f));
-	view = glm::scale(view, glm::vec3(scaleX,scaleY,0));
-	view = glm::rotate(view, rotX*tau, glm::vec3(1.0, 0.f, 0.f));
-	view = glm::rotate(view, rotY*tau, glm::vec3(0.0, 1.f, 0.f));
-	view = glm::rotate(view, rotZ*tau, glm::vec3(0.0, 0.f, 1.f));
+	// Apply scale and rotations based on AFRT flag
+	if (AFRT) {
+		// AFRT=true: Scale → X → Y → Z (PR #39 order - fixes pattern 15)
+		view = glm::scale(view, glm::vec3(scaleX,scaleY,0));
+		view = glm::rotate(view, rotX*tau, glm::vec3(1.0, 0.f, 0.f));
+		view = glm::rotate(view, rotY*tau, glm::vec3(0.0, 1.f, 0.f));
+		view = glm::rotate(view, rotZ*tau, glm::vec3(0.0, 0.f, 1.f));
+	} else {
+		// AFRT=false: Scale → Z → Y → X (EXACT original pre-PR#39 order)
+		view = glm::scale(view, glm::vec3(scaleX,scaleY,0));
+		view = glm::rotate(view, rotZ*tau, glm::vec3(0.0, 0.f, 1.f));
+		view = glm::rotate(view, rotY*tau, glm::vec3(0.0, 1.f, 0.f));
+		view = glm::rotate(view, rotX*tau, glm::vec3(1.0, 0.f, 0.f));
+	}
 	view = glm::translate(view, glm::vec3(-128+offsetX,-224+offsetY,0.f));
 	SetModelView(std::move(view));
 	sTextured.Use();
@@ -237,10 +247,20 @@ void Render::DrawSpriteOnly()
 	glm::mat4 view = glm::mat4(1.f);
 	view = glm::scale(view, glm::vec3(scale, scale, 1.f));
 	view = glm::translate(view, glm::vec3(x,y,0.f));
-	view = glm::scale(view, glm::vec3(scaleX,scaleY,0));
-	view = glm::rotate(view, rotX*tau, glm::vec3(1.0, 0.f, 0.f));
-	view = glm::rotate(view, rotY*tau, glm::vec3(0.0, 1.f, 0.f));
-	view = glm::rotate(view, rotZ*tau, glm::vec3(0.0, 0.f, 1.f));
+	// Apply scale and rotations based on AFRT flag
+	if (AFRT) {
+		// AFRT=true: Scale → X → Y → Z (PR #39 order - fixes pattern 15)
+		view = glm::scale(view, glm::vec3(scaleX,scaleY,0));
+		view = glm::rotate(view, rotX*tau, glm::vec3(1.0, 0.f, 0.f));
+		view = glm::rotate(view, rotY*tau, glm::vec3(0.0, 1.f, 0.f));
+		view = glm::rotate(view, rotZ*tau, glm::vec3(0.0, 0.f, 1.f));
+	} else {
+		// AFRT=false: Scale → Z → Y → X (EXACT original pre-PR#39 order)
+		view = glm::scale(view, glm::vec3(scaleX,scaleY,0));
+		view = glm::rotate(view, rotZ*tau, glm::vec3(0.0, 0.f, 1.f));
+		view = glm::rotate(view, rotY*tau, glm::vec3(0.0, 1.f, 0.f));
+		view = glm::rotate(view, rotX*tau, glm::vec3(1.0, 0.f, 0.f));
+	}
 	view = glm::translate(view, glm::vec3(-128+offsetX,-224+offsetY,0.f));
 	SetModelView(std::move(view));
 	sTextured.Use();
@@ -501,6 +521,7 @@ void Render::DrawLayers()
 	float origRotX = rotX;
 	float origRotY = rotY;
 	float origRotZ = rotZ;
+	bool origAFRT = AFRT;
 	blendType origBlendMode = blendingMode;
 	float origColorRgba[4] = {colorRgba[0], colorRgba[1], colorRgba[2], colorRgba[3]};
 
@@ -534,6 +555,7 @@ void Render::DrawLayers()
 		rotX = layer.rotX;
 		rotY = layer.rotY;
 		rotZ = layer.rotZ;
+		AFRT = layer.AFRT;
 
 		// Apply blend mode
 		switch (layer.blendMode)
@@ -578,6 +600,7 @@ void Render::DrawLayers()
 	rotX = origRotX;
 	rotY = origRotY;
 	rotZ = origRotZ;
+	AFRT = origAFRT;
 	blendingMode = origBlendMode;
 	colorRgba[0] = origColorRgba[0];
 	colorRgba[1] = origColorRgba[1];

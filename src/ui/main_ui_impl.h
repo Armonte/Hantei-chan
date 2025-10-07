@@ -574,6 +574,7 @@ void MainFrame::RenderUpdate()
 		render.rotX = frame.AF.rotation[0];
 		render.rotY = frame.AF.rotation[1];
 		render.rotZ = frame.AF.rotation[2];
+		render.AFRT = frame.AF.AFRT;
 		render.scaleX = frame.AF.scale[0];
 		render.scaleY = frame.AF.scale[1];
 
