@@ -192,6 +192,7 @@ void MainFrame::DrawBack()
 		mainLayer.rotX = mainFrame.AF.rotation[0];
 		mainLayer.rotY = mainFrame.AF.rotation[1];
 		mainLayer.rotZ = mainFrame.AF.rotation[2];
+		mainLayer.AFRT = mainFrame.AF.AFRT;
 		mainLayer.blendMode = mainFrame.AF.blend_mode;
 		mainLayer.zPriority = mainFrame.AF.priority;
 		mainLayer.alpha = mainFrame.AF.rgba[3];  // Apply frame alpha
@@ -333,6 +334,7 @@ void MainFrame::DrawBack()
 			layer.rotX = spawnedFrame.AF.rotation[0];
 			layer.rotY = spawnedFrame.AF.rotation[1];
 			layer.rotZ = spawnedFrame.AF.rotation[2];
+			layer.AFRT = spawnedFrame.AF.AFRT;
 
 			// Apply spawn rotation parameter (angle)
 			// Rotation format: 0=0°, 2500=90°, 5000=180°, 10000=360°

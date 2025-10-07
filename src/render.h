@@ -18,6 +18,7 @@ struct RenderLayer {
 	int frameOffsetX, frameOffsetY;  // Offset from frame AF data
 	float scaleX, scaleY;
 	float rotX, rotY, rotZ;
+	bool AFRT;             // Rotation order flag: false=X→Y→Z, true=Z→X→Y
 	int blendMode;
 	int zPriority;         // Z-priority for sorting (from AF.priority)
 	float alpha;
@@ -35,6 +36,7 @@ struct RenderLayer {
 		frameOffsetX(0), frameOffsetY(0),
 		scaleX(1.0f), scaleY(1.0f),
 		rotX(0.0f), rotY(0.0f), rotZ(0.0f),
+		AFRT(false),
 		blendMode(0), zPriority(0),
 		alpha(1.0f), tintColor(1.0f, 1.0f, 1.0f, 1.0f),
 		isSpawned(false), sourceCG(nullptr),
@@ -84,6 +86,7 @@ public:
 	float scale;
 	float scaleX, scaleY;
 	float rotX, rotY, rotZ;
+	bool AFRT = false;  // Rotation order flag: false=X→Y→Z, true=Z→X→Y
 	int highLightN = -1;
 	
 	Render();
