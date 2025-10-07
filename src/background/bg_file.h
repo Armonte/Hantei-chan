@@ -71,3 +71,4 @@ private:
 
 #endif /* BG_FILE_H_GUARD */
 
+

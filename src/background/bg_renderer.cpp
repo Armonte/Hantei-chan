@@ -109,13 +109,13 @@ void Renderer::RenderObject(const Object& obj, const Camera& camera, ::Render* m
 		return;  // Failed to load texture
 	}
 
-	// EXACT bgmake logic (MonoForm.cs line 259-260):
-	// x2 = 401 + (int) frame.x_off;
-	// y2 = 538 + (int) frame.y_off;
-	// spriteBatch.Draw(texture, new Vector2(x2, y2), ...);
-
-	float worldX = 401.0f + (float)frame.offsetX;
-	float worldY = 538.0f + (float)frame.offsetY;
+	// Transform from bgmake coordinates to Hantei world space:
+	// - bgmake: character reference at screen (401, 538), draws at (401 + x_off, 538 + y_off)
+	// - bgmake: floor at Y=224, so character is 314px below floor (538 - 224 = 314)
+	// - Hantei: floor at Y=0, so character reference at Y=314
+	// - bgmake uses top-left anchor (XNA default), so we do the same
+	float worldX = (float)frame.offsetX;
+	float worldY = 314.0f + (float)frame.offsetY;
 
 	//printf("  -> frameOff=(%d,%d) worldPos=(%.0f,%.0f) parallax=%d (ignored for now)\n",
 	//       frame.offsetX, frame.offsetY, worldX, worldY, obj.parallax);
@@ -356,9 +356,9 @@ void Renderer::DrawDebugOverlay(const Camera& camera, ::Render* mainRender) {
 		GLuint texId = GetOrCreateTexture(frame.spriteId, spriteW, spriteH);
 		if (texId == 0) continue;
 
-		// EXACT bgmake positioning
-		float worldX = 401.0f + (float)frame.offsetX;
-		float worldY = 538.0f + (float)frame.offsetY;
+		// World position (matching RenderObject transformation)
+		float worldX = (float)frame.offsetX;
+		float worldY = 314.0f + (float)frame.offsetY;
 
 		// Native size (no scaling)
 		float scaledW = (float)spriteW;

@@ -477,10 +477,11 @@ void MainFrame::DrawUi()
 				ImGui::InputScalar("Jump Frame", ImGuiDataType_U8, &frame.jumpFrame);
 				ImGui::PopItemWidth();
 
-				// Computed world position
-				float worldX = 401.0f + (float)frame.offsetX;
-				float worldY = 538.0f + (float)frame.offsetY;
-				ImGui::Text("World Pos: (%.0f, %.0f)", worldX, worldY);
+				// Computed world position formula (top-left anchor like bgmake)
+				// worldX = offsetX
+				// worldY = 314 + offsetY
+				ImGui::Text("Offset: (%d, %d)", frame.offsetX, frame.offsetY);
+				ImGui::Text("World: (%d, %d)", frame.offsetX, 314 + frame.offsetY);
 
 				ImGui::Separator();
 				ImGui::Text("All Frames:");

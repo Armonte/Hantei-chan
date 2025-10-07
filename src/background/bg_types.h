@@ -75,3 +75,4 @@ struct Camera {
 
 #endif /* BG_TYPES_H_GUARD */
 
+
