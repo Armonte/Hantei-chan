@@ -122,21 +122,31 @@ void ConvertFrameHeader(const uint8_t *frame_header, Frame *frame, bool is_csel_
     int16_t duration = *(const int16_t*)(frame_header + 0x06);       // +0x06: WAIT (frame duration)
 
     // Map to HA6 AF fields
-    // SPECIAL CASE: CSEL files store sprite_id as 10000+N where N is the CG index
-    // For CSEL files (frame_data_offset=-1), subtract 10000 to get direct CG index
-    // For full character files, keep sprite_id as-is (it's either <10000 for CG, or >=10000 for patterns)
-    if (is_csel_file && sprite_id >= 10000) {
-        sprite_id -= 10000;  // Convert pattern reference to direct CG index
+    // IMPORTANT: In HA4 format, ALL CG references are stored as 10000 + cg_index
+    // This applies to both CSEL files AND full character files!
+    // The HA6 format expects sprite_id < 10000 for direct CG references.
+    //
+    // HA4 sprite_id encoding:
+    //   >= 10000: CG reference (subtract 10000 to get actual CG index)
+    //   < 10000: Could be pattern reference or invalid (not seen in practice)
+    //
+    // For now, subtract 10000 from ALL sprite_ids >= 10000 to get CG index
+    if (sprite_id >= 10000) {
+        sprite_id -= 10000;  // Convert to direct CG index for HA6
+        frame->AF.usePat = 0;  // Direct CG sprite, not a pattern
+    } else if (sprite_id >= 0) {
+        // Sprite ID is already < 10000, keep as-is
+        // This might be a pattern reference in HA4? Needs investigation
+        frame->AF.usePat = 0;  // Assume direct sprite for now
+    } else {
+        // Negative sprite ID (-1) means no sprite
+        frame->AF.usePat = 0;
     }
 
     frame->AF.spriteId = sprite_id;
     frame->AF.offset_x = position_x;
     frame->AF.offset_y = position_y;
     frame->AF.duration = duration;
-
-    // Determine sprite type (CG part vs Pattern)
-    // < 10000 = CG part (direct sprite), >= 10000 = Pattern (composite)
-    frame->AF.usePat = (sprite_id >= 10000) ? 1 : 0;
 
     // Rendering transformations (+0x10, +0x12)
     uint8_t rotation_flip = frame_header[0x10];      // +0x10: 0-9 sprite transform mode (control 1080)

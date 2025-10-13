@@ -190,8 +190,7 @@ bool FrameData::load(const char *filename, bool patch) {
 			// CG blob starts at anim_data_size offset
 			const uint8_t *cg_blob_start = (const uint8_t*)data + header->anim_data_size;
 
-			// Search for "BMP Cutter3" magic within the CG blob
-			// The blob contains an HA4 wrapper (~1.1MB) before the actual HA6 CG data
+			// Search for "BMP Cutter3" magic within the CG blob to verify it's HA6 format
 			const char *bmp_magic = "BMP Cutter3";
 			const uint8_t *ha6_cg_start = nullptr;
 			size_t search_size = std::min((size_t)header->image_data_size, (size_t)2000000); // Search first 2MB
@@ -205,21 +204,27 @@ bool FrameData::load(const char *filename, bool patch) {
 			}
 
 			if (ha6_cg_start != nullptr) {
-				// Calculate size of HA6 CG (from BMP Cutter3 to end of CG blob)
-				size_t ha6_cg_size = header->image_data_size - (ha6_cg_start - cg_blob_start);
+				// IMPORTANT: The HA6 CG file has offset tables with indices RELATIVE TO THE CG BLOB START,
+				// not relative to "BMP Cutter3". Even though "BMP Cutter3" might be 1MB into the blob,
+				// the indices table expects to see all data from cg_blob_start.
+				//
+				// Solution: Extract the ENTIRE CG blob (from cg_blob_start), not just from "BMP Cutter3".
+				// This ensures all offsets in the indices table are valid.
 
-				std::cout << "HA4: Extracting HA6 CG (" << ha6_cg_size << " bytes)...\n";
+				size_t ha6_cg_size = header->image_data_size;
 
-				// Save HA6 CG to temp file
+				std::cout << "HA4: Extracting full CG blob (" << ha6_cg_size << " bytes) to preserve offset tables...\n";
+
+				// Save ENTIRE CG blob to temp file
 				std::string temp_cg_path = std::string(filename) + ".tmp.cg";
 				std::ofstream cg_file(temp_cg_path, std::ios::binary);
 				if (cg_file.is_open()) {
-					cg_file.write((const char*)ha6_cg_start, ha6_cg_size);
+					cg_file.write((const char*)cg_blob_start, ha6_cg_size);
 					cg_file.close();
 
 					// Store the temp CG path so CharacterInstance can load it
 					m_extracted_cg_path = temp_cg_path;
-					std::cout << "HA4: Saved HA6 CG to temporary file: " << temp_cg_path << "\n";
+					std::cout << "HA4: Saved CG blob to temporary file: " << temp_cg_path << "\n";
 				} else {
 					std::cerr << "HA4 Error: Could not write temporary CG file\n";
 				}

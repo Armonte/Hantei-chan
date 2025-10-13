@@ -1,6 +1,8 @@
 #ifndef CG_H_GUARD
 #define CG_H_GUARD
 
+#include <cstddef>  // for size_t
+
 struct ImageData
 {
 	unsigned char *pixels = nullptr;
@@ -52,6 +54,7 @@ protected:
 
 	char					*m_data;
 	unsigned int			m_data_size;
+	size_t					m_bmp_offset;  // Offset to "BMP Cutter3" within m_data (for HA4 extracted CG)
 
 	const unsigned int		*m_indices;
 

@@ -4,6 +4,7 @@
 #include <sstream>
 #include <iomanip>
 #include <iostream>
+#include <fstream>
 #include <windows.h>
 
 CharacterInstance::CharacterInstance()
@@ -79,6 +80,29 @@ bool CharacterInstance::loadHA6(const std::string& ha6Path, bool patch)
 	// If HA4 binary format extracted a CG file, load it
 	if (!frameData.m_extracted_cg_path.empty()) {
 		std::cout << "Loading extracted CG from: " << frameData.m_extracted_cg_path << "\n";
+
+		// Debug: Check file size before loading
+		std::ifstream test_file(frameData.m_extracted_cg_path, std::ios::binary | std::ios::ate);
+		if (test_file.is_open()) {
+			size_t file_size = test_file.tellg();
+			test_file.close();
+			std::cout << "  Extracted CG file size: " << file_size << " bytes\n";
+
+			// Check minimum size for valid CG (header is 0x4f30 bytes)
+			if (file_size < 0x4f30) {
+				std::cerr << "  ERROR: CG file too small (minimum 0x4f30 bytes required)\n";
+			}
+
+			// Read first 16 bytes to check magic
+			test_file.open(frameData.m_extracted_cg_path, std::ios::binary);
+			char magic[16];
+			test_file.read(magic, 11);
+			test_file.close();
+			std::cout << "  CG file magic: " << std::string(magic, 11) << "\n";
+		} else {
+			std::cerr << "  ERROR: Could not open CG file for verification\n";
+		}
+
 		if (cg.load(frameData.m_extracted_cg_path.c_str())) {
 			m_cgPath = frameData.m_extracted_cg_path;
 			std::cout << "Successfully loaded CG with " << cg.get_image_count() << " images\n";
