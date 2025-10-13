@@ -273,8 +273,9 @@ std::string PartGfx<>::ImportTexture(const char *filename, std::vector<Texture*>
     {
         if (type == 21)
         {
-            // Uncompressed RGB
-            textures.back()->LoadDirect((char*)s3tc, w, h);
+            // Uncompressed RGB/BGRA
+            textures.back()->LoadDirect((char*)s3tc, w, h, true);  // BGRA format
+            textures.back()->Apply();  // Create OpenGL texture
         }
         else
         {
@@ -288,11 +289,13 @@ std::string PartGfx<>::ImportTexture(const char *filename, std::vector<Texture*>
                 assert(0 && "Unknown compression type");
 
             textures.back()->LoadCompressed((char*)s3tc, w, h, compressedSize, type);
+            // LoadCompressed already creates GL texture internally
         }
     }
     else
     {
-        textures.back()->LoadDirect(data, w, h);
+        textures.back()->LoadDirect(data, w, h, true);  // BGRA format
+        textures.back()->Apply();  // Create OpenGL texture
     }
 
     textureIndex = textures.back()->id;

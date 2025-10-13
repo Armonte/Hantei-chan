@@ -18,7 +18,7 @@ include(imgui)
 add_subdirectory(glm)
 add_subdirectory(tinyalloc)
 
-add_executable(${EXE} WIN32
+add_executable(${EXE}
 	src/main.cpp
 	src/main_frame.cpp
 	src/main_pane.cpp

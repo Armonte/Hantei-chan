@@ -35,15 +35,88 @@ inline void AfDisplay(Frame_AF *af, int &selectedLayer, FrameData *frameData = n
 		af->layers.push_back({});
 	}
 
-	// Get reference to the layer we're editing (layer 0 for MBAACC, selectedLayer for UNI)
-	// For now, always use layer 0 until multi-layer UI is implemented
-	Layer_Type& layer = af->layers[0];
+	// Clamp selectedLayer to valid range
+	if (selectedLayer < 0 || selectedLayer >= (int)af->layers.size()) {
+		selectedLayer = 0;
+	}
 
 	static Layer_Type copiedAnimationLayer = {};
 	static Frame_AF copiedAnimationFrame = {};
 
 	constexpr float width = 50.f;
 
+	// ============================================================================
+	// Multi-Layer UI (UNI AFGX support)
+	// ============================================================================
+	bool hasMultipleLayers = af->layers.size() > 1;
+
+	// Layer management section
+	im::PushStyleColor(ImGuiCol_Text, ImVec4(0.2f, 0.7f, 1.0f, 1.0f));  // Blue header
+	if (hasMultipleLayers) {
+		im::Text("Multi-Layer (UNI AFGX) - Layer %d/%d", selectedLayer + 1, (int)af->layers.size());
+	} else {
+		im::Text("Single Layer (MBAACC AFGP)");
+	}
+	im::PopStyleColor();
+
+	im::SameLine(0, 20.f);
+	if (im::SmallButton("Add Layer")) {
+		// Add new layer with default values
+		Layer_Type newLayer = {};
+		newLayer.spriteId = -1;
+		newLayer.usePat = false;
+		newLayer.rgba[0] = newLayer.rgba[1] = newLayer.rgba[2] = newLayer.rgba[3] = 1.0f;
+		newLayer.scale[0] = newLayer.scale[1] = 1.0f;
+		newLayer.priority = 0;
+		af->layers.push_back(newLayer);
+		selectedLayer = af->layers.size() - 1;  // Select newly added layer
+		markModified();
+	}
+	if (im::IsItemHovered()) Tooltip("Add a new layer (creates UNI AFGX multi-layer format)");
+
+	// Only show delete button if we have more than 1 layer
+	if (hasMultipleLayers) {
+		im::SameLine();
+		if (im::SmallButton("Delete Layer")) {
+			if (af->layers.size() > 1) {
+				af->layers.erase(af->layers.begin() + selectedLayer);
+				// Clamp selectedLayer after deletion
+				if (selectedLayer >= (int)af->layers.size()) {
+					selectedLayer = af->layers.size() - 1;
+				}
+				markModified();
+			}
+		}
+		if (im::IsItemHovered()) Tooltip("Delete current layer (reverts to AFGP if only 1 layer remains)");
+	}
+
+	// Layer selector dropdown (only show if we have multiple layers)
+	if (hasMultipleLayers) {
+		im::SetNextItemWidth(width * 2);
+		if (im::Combo("##LayerSelector", &selectedLayer,
+			[](void* data, int idx, const char** out_text) -> bool {
+				static char buf[32];
+				snprintf(buf, sizeof(buf), "Layer %d", idx);
+				*out_text = buf;
+				return true;
+			}, nullptr, af->layers.size())) {
+			// Layer selection changed - no need to mark modified
+		}
+		if (im::IsItemHovered()) Tooltip("Select which layer to edit");
+
+		// Layer priority (UNI AFPL tag) - only shown for multi-layer
+		im::SameLine(0, 20.f);
+		im::SetNextItemWidth(width);
+		if (im::InputInt("Priority", &af->layers[selectedLayer].priority, 0, 0)) {
+			markModified();
+		}
+		if (im::IsItemHovered()) Tooltip("Layer Z-priority (UNI AFPL tag) - higher renders on top");
+	}
+
+	im::Separator();
+
+	// Get reference to the layer we're editing
+	Layer_Type& layer = af->layers[selectedLayer];
 
 	// Sprite and .pat (per-layer properties)
 	im::SetNextItemWidth(width*3);

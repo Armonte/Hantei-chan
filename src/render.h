@@ -75,10 +75,6 @@ private:
 	float colorRgba[4];
 
 	int curImageId;
-	bool usePat = false;
-	int curPattern = 0;
-	int curNextPattern = 0;
-	float curInterp = 0.0f;
 
 	// Multi-layer rendering support
 	std::vector<RenderLayer> renderLayers;
@@ -98,6 +94,12 @@ public:
 	float rotX, rotY, rotZ;
 	bool AFRT = false;  // Rotation order flag: false=X→Y→Z, true=Z→X→Y
 	int highLightN = -1;
+
+	// Parts rendering state (public for PatEditor)
+	bool usePat = false;
+	int curPattern = 0;
+	int curNextPattern = 0;
+	float curInterp = 0.0f;
 	
 	Render();
 	void Draw();

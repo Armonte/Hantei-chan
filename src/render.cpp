@@ -223,6 +223,9 @@ void Render::Draw()
 		//PostQuitMessage(1);
 	}
 
+	printf("[Render::Draw] usePat=%d, m_parts=%p, loaded=%d\n",
+		usePat, m_parts, m_parts ? m_parts->loaded : 0);
+
 	//Lines
 	glm::mat4 view = glm::mat4(1.f);
 	view = glm::scale(view, glm::vec3(scale, scale, 1.f));
@@ -232,6 +235,50 @@ void Render::Draw()
 	SetMatrix(lProjectionS);
 	vGeometry.Bind();
 	vGeometry.Draw(geoParts[LINES], 0, GL_LINES);
+
+	// Check if we should use Parts rendering
+	if (usePat && m_parts && m_parts->loaded)
+	{
+		printf("[Parts Render] Draw() using Parts mode (curPattern=%d, partSets=%zu)\n",
+			curPattern, m_parts->partSets.size());
+
+		// Use Parts rendering with callbacks
+		constexpr float tau = glm::pi<float>()*2.f;
+		glm::mat4 baseView = glm::mat4(1.f);
+		baseView = glm::scale(baseView, glm::vec3(scale, scale, 1.f));
+		baseView = glm::translate(baseView, glm::vec3(x, y, 0.f));
+
+		sPartShader.Use();
+
+		// Callback to set matrix transform
+		auto setMatrix = [this, &baseView, tau](glm::mat4 partMatrix) {
+			glm::mat4 finalView = baseView * partMatrix;
+			glUniformMatrix4fv(lProjectionParts, 1, GL_FALSE, glm::value_ptr(projection * finalView));
+		};
+
+		// Callback to set additive color
+		auto setAddColor = [this](float r, float g, float b) {
+			glUniform3f(lAddColorParts, r, g, b);
+		};
+
+		// Callback to set flip mode
+		auto setFlip = [this](char flip) {
+			glUniform1i(lFlipParts, (int)flip);
+		};
+
+		// Draw Parts with interpolation
+		m_parts->Draw(curPattern, curNextPattern, curInterp, setMatrix, setAddColor, setFlip, colorRgba);
+
+		// Draw hitboxes after Parts
+		sSimple.Use();
+		vGeometry.Bind();
+		glUniform1f(lAlphaS, 0.6f);
+		vGeometry.DrawQuads(GL_LINE_LOOP, quadsToDraw);
+		glUniform1f(lAlphaS, 0.3f);
+		vGeometry.DrawQuads(GL_TRIANGLE_FAN, quadsToDraw);
+
+		return;  // Skip sprite rendering
+	}
 
 	//Sprite
 	constexpr float tau = glm::pi<float>()*2.f;
@@ -562,11 +609,19 @@ void Render::SortLayersByZPriority(int mainPatternPriority)
 
 void Render::DrawLayers()
 {
-	if (renderLayers.empty()) return;
+	if (renderLayers.empty()) {
+		printf("[Render] No layers to draw\n");
+		return;
+	}
+
+	printf("[Render] DrawLayers: usePat=%d, m_parts=%p, m_parts->loaded=%d\n",
+		usePat, m_parts, m_parts ? m_parts->loaded : 0);
 
 	// Check if we should use Parts rendering
 	if (usePat && m_parts && m_parts->loaded)
 	{
+		printf("[Parts Render] Using Parts rendering mode (curPattern=%d, curNextPattern=%d, partSets=%zu)\n",
+			curPattern, curNextPattern, m_parts->partSets.size());
 		// Use Parts rendering with callbacks
 		constexpr float tau = glm::pi<float>()*2.f;
 		glm::mat4 baseView = glm::mat4(1.f);

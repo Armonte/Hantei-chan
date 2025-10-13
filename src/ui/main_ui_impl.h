@@ -601,6 +601,15 @@ void MainFrame::RenderUpdate()
 		const auto& layer = frame.AF.layers[0];
 
 		state.spriteId = layer.spriteId;
+		render.usePat = layer.usePat;  // Enable Parts rendering if usePat is true
+
+		// Set Parts rendering pattern indices (partSet IDs)
+		if (layer.usePat) {
+			render.curPattern = layer.spriteId;  // spriteId is the partSet index when usePat=true
+			render.curNextPattern = layer.spriteId;  // Same for now (no interpolation)
+			render.curInterp = 0.0f;
+		}
+
 		render.GenerateHitboxVertices(frame.hitboxes);
 		render.offsetX = (layer.offset_x)*1;
 		render.offsetY = (layer.offset_y)*1;
