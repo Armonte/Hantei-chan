@@ -46,7 +46,7 @@ void Texture::Load(ImageData *data)
 	isLoaded = true;
 }
 
-void Texture::LoadDirect(char* data, int width, int height)
+void Texture::LoadDirect(char* data, int width, int height, bool bgr)
 {
 	// Load uncompressed RGB/RGBA data
 	ImageData* imgData = new ImageData();
@@ -54,9 +54,10 @@ void Texture::LoadDirect(char* data, int width, int height)
 	imgData->height = height;
 	imgData->offsetX = 0;
 	imgData->offsetY = 0;
+	imgData->bgr = bgr;
 	imgData->pixels = new unsigned char[width * height * 4];
 
-	// Copy RGBA data
+	// Copy RGBA/BGRA data
 	memcpy(imgData->pixels, data, width * height * 4);
 
 	image.reset(imgData);
@@ -103,6 +104,11 @@ void Texture::LoadCompressed(char* data, int width, int height, size_t compresse
 
 void Texture::Apply(bool repeat, bool linearFilter)
 {
+	// Don't apply twice - prevents texture ID leaks and nullptr upload
+	if (isApplied) {
+		return;
+	}
+	
 	isApplied = true;
 	glGenTextures(1, &id);
 
@@ -128,9 +134,9 @@ void Texture::Apply(bool repeat, bool linearFilter)
 		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
 	}
 
-	GLenum extType = GL_RGBA;
+	GLenum extType = image->bgr ? GL_BGRA : GL_RGBA;
 	GLenum intType = GL_RGBA8;
-	
+
 	glTexImage2D(GL_TEXTURE_2D, 0, intType, image->width, image->height, 0, extType, GL_UNSIGNED_BYTE, image->pixels);
 
 }

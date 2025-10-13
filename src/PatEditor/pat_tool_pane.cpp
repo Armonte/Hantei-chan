@@ -118,6 +118,11 @@ void PatToolPane::DrawTool()
                 auto nPartSet = curInstance->parts->partSets.size();
                 if(nPartSet > 0)
                 {
+                    // Clamp spriteId to valid range to prevent out-of-bounds access
+                    if (frame->AF.layers[0].spriteId < 0 || frame->AF.layers[0].spriteId >= nPartSet) {
+                        frame->AF.layers[0].spriteId = 0;
+                    }
+
                     if (ImGui::BeginCombo("Part Set", partSetDecoratedNames[frame->AF.layers[0].spriteId].c_str(),
                                           ImGuiComboFlags_HeightLargest))
                     {

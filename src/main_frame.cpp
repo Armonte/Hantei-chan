@@ -579,6 +579,7 @@ void MainFrame::createPatEditorView(const std::string& patPath)
 			frame->AF.layers.push_back({});
 		}
 		frame->AF.layers[0].usePat = true;
+		frame->AF.layers[0].spriteId = 0;  // Initialize to first partSet for .pat rendering
 	}
 
 	// Load the PAT file

@@ -128,8 +128,9 @@ bool Parts::Load(const char* name)
         {
             if (gfx.type == 21)
             {
-                // Uncompressed RGB
-                textures.back()->LoadDirect((char*)gfx.s3tc, gfx.w, gfx.h);
+                // Uncompressed BGRA (type 21 uses BGRA format)
+                textures.back()->LoadDirect((char*)gfx.s3tc, gfx.w, gfx.h, true);
+                textures.back()->Apply();  // Create OpenGL texture
             }
             else
             {
@@ -149,7 +150,9 @@ bool Parts::Load(const char* name)
         }
         else if (gfx.data)
         {
-            textures.back()->LoadDirect(gfx.data, gfx.w, gfx.h);
+            // PGTX data is also in BGRA format
+            textures.back()->LoadDirect(gfx.data, gfx.w, gfx.h, true);
+            textures.back()->Apply();  // Create OpenGL texture
         }
         gfx.textureIndex = textures.back()->id;
     }
@@ -307,12 +310,25 @@ std::string Parts::GetTexturesDecorateName(int n) {
 
 void Parts::DrawPart(int i)
 {
-    if (cutOuts.size() > i && gfxMeta.size() > cutOuts[i].texture)
-    {
-        curTexId = gfxMeta[cutOuts[i].texture].textureIndex;
-        glBindTexture(GL_TEXTURE_2D, curTexId);
-        partVertices.Draw(0);
+    // Validate cutOut index
+    if (i < 0 || i >= cutOuts.size()) {
+        printf("[DrawPart] Invalid cutOut index: %d (size=%zu)\n", i, cutOuts.size());
+        return;
     }
+
+    auto& cutout = cutOuts[i];
+
+    // Validate texture index (must be >= 0 and < gfxMeta.size())
+    if (cutout.texture < 0 || cutout.texture >= gfxMeta.size()) {
+        printf("[DrawPart] Invalid texture index: %d (gfxMeta.size=%zu)\n", cutout.texture, gfxMeta.size());
+        return;
+    }
+
+    // Bind texture and draw
+    curTexId = gfxMeta[cutout.texture].textureIndex;
+    printf("[DrawPart] Binding texture: cutOut=%d, tex=%d, glTexId=%d\n", i, cutout.texture, curTexId);
+    glBindTexture(GL_TEXTURE_2D, curTexId);
+    partVertices.Draw(0);
 }
 
 void Parts::Draw(int pattern, int nextPattern, float interpolationFactor,
@@ -358,8 +374,23 @@ void Parts::Draw(int pattern, int nextPattern, float interpolationFactor,
             continue;
         auto cutout = cutOuts[part.ppId];
 
-        if(shapes.size() <= cutout.shapeIndex)
-            continue;
+        // Handle MBAACC format: create default plane shape if shapes array is empty
+        // MBAACC .pat files have 0 shapes and use implicit flat planes for all cutouts
+        Shape currentShape;
+        if (shapes.empty() || cutout.shapeIndex < 0 || cutout.shapeIndex >= shapes.size()) {
+            // Default to flat plane for MBAACC compatibility
+            currentShape.type = ShapeType::PLANE;
+            currentShape.vertexCount = 0;
+            currentShape.vertexCount2 = 0;
+            currentShape.length = 0;
+            currentShape.length2 = 0;
+            currentShape.radius = 0;
+            currentShape.dRadius = 0;
+            currentShape.width = 0;
+            currentShape.dz = 0;
+        } else {
+            currentShape = shapes[cutout.shapeIndex];
+        }
 
         glm::vec2 offset = glm::vec2(part.x, part.y);
         glm::vec3 rotation = glm::vec3(part.rotation[1], part.rotation[2], part.rotation[3]);
@@ -367,7 +398,6 @@ void Parts::Draw(int pattern, int nextPattern, float interpolationFactor,
         glm::vec4 rgba = glm::vec4(part.rgba[0]*255.f, part.rgba[1]*255.f,
             part.rgba[2]*255.f, part.rgba[3]*255.f);
 
-        Shape currentShape = shapes[cutout.shapeIndex];
         Shape outShape = currentShape; // Copy for potential interpolation
 
         // Prevent crash on invalid shapes
@@ -461,10 +491,11 @@ void Parts::Draw(int pattern, int nextPattern, float interpolationFactor,
                 newColor[3] *= (palColor >> 24) / 255.f;
             }
         }
-        newColor[0] *= rgba[0] / 255.f;
-        newColor[1] *= rgba[1] / 255.f;
-        newColor[2] *= rgba[2] / 255.f;
-        newColor[3] *= rgba[3] / 255.f;
+        // Part color data is in BGRA format, swap to RGB
+        newColor[0] *= rgba[2] / 255.f;  // RED = rgba[2]
+        newColor[1] *= rgba[1] / 255.f;  // GREEN = rgba[1]
+        newColor[2] *= rgba[0] / 255.f;  // BLUE = rgba[0]
+        newColor[3] *= rgba[3] / 255.f;  // ALPHA = rgba[3]
 
         glVertexAttrib4fv(2, newColor);
         setAddColor(part.addColor[2] / 255.f, part.addColor[1] / 255.f, part.addColor[0] / 255.f);
@@ -515,8 +546,83 @@ void Parts::Draw(int pattern, int nextPattern, float interpolationFactor,
             partVertices.Prepare(6 * 7 * outShape.vertexCount * sizeof(float), &vertexData[0]);
             break;
         }
-        // Additional shape types (ARC, SPHERE, CONE) follow the same pattern
-        // Omitted for brevity but can be added from sosfiro's implementation
+        case ShapeType::ARC:
+        {
+            // Curved arc surface
+            float angle = 0;
+            float delta = glm::pi<float>() * outShape.length / 5000 / outShape.vertexCount;
+            vertexData.resize(size + 6 * outShape.vertexCount * 7);
+            for (int i = 0; i < outShape.vertexCount; i++) {
+                for (int j = 0; j < 6; j++)
+                {
+                    point[j].x = float((outShape.radius - (1 - tX[j]) * outShape.width - ((i + tY[j] == outShape.vertexCount && outShape.length == 10000) ? 0 : float(outShape.dRadius * (i + tY[j])) / outShape.vertexCount)) * glm::sin(angle + delta * tY[j]));
+                    point[j].y = -float((outShape.radius - (1 - tX[j]) * outShape.width - ((i + tY[j] == outShape.vertexCount && outShape.length == 10000) ? 0 : float(outShape.dRadius * (i + tY[j])) / outShape.vertexCount)) * glm::cos(angle + delta * tY[j]));
+                    point[j].z = -float(outShape.dz * (i + tY[j])) / outShape.vertexCount;
+                    point[j].s = float(cutout.uv[0] + cutout.uv[2] * (tX[j])) / width;
+                    point[j].t = float(cutout.uv[1] + 1.0f * cutout.uv[3] * (i + tY[j]) / outShape.vertexCount) / height;
+                    point[j].p = float(cutout.uv[0] + cutout.uv[2] * (1 - tX[j])) / width;
+                    point[j].q = float(cutout.uv[1] + 1.0f * cutout.uv[3] * (outShape.vertexCount - i - tY[j]) / outShape.vertexCount) / height;
+                }
+                angle += delta;
+                memcpy(&vertexData[size + 6 * 7 * i], point, sizeof(point));
+            }
+            partVertices.Prepare(6 * 7 * outShape.vertexCount * sizeof(float), &vertexData[0]);
+            break;
+        }
+        case ShapeType::SPHERE:
+        {
+            // Spherical surface
+            float angle = 0;
+            float delta = glm::pi<float>() * outShape.length / 5000 / outShape.vertexCount;
+            float angle2 = 0;
+            float delta2 = glm::pi<float>() * outShape.length2 / 10000 / outShape.vertexCount2;
+            vertexData.resize(size + 6 * outShape.vertexCount * outShape.vertexCount2 * 7);
+            for (int i = 0; i < outShape.vertexCount; i++) {
+                angle2 = 0;
+                for (int j = 0; j < outShape.vertexCount2; j++) {
+                    for (int k = 0; k < 6; k++)
+                    {
+                        point[k].x = float((outShape.radius) * glm::sin(angle2 + delta2 * tX[k]) * glm::sin(angle + delta * tY[k]));
+                        point[k].y = float((outShape.radius) * glm::sin(angle2 + delta2 * tX[k]) * glm::cos(angle + delta * tY[k]));
+                        point[k].z = outShape.radius * glm::cos(angle2 + delta2 * tX[k]);
+                        point[k].s = float(cutout.uv[0] + float(cutout.uv[2] * (i + tY[k])) / outShape.vertexCount) / width;
+                        point[k].t = float(cutout.uv[1] + float(cutout.uv[3] * (j + tX[k]) / outShape.vertexCount2)) / height;
+                        point[k].p = float(cutout.uv[0] + float(cutout.uv[2] * (outShape.vertexCount - i - tY[k])) / outShape.vertexCount) / width;
+                        point[k].q = float(cutout.uv[1] + float(cutout.uv[3] * (outShape.vertexCount2 - j - tX[k]) / outShape.vertexCount2)) / height;
+                    }
+                    memcpy(&vertexData[size + 6 * 7 * (outShape.vertexCount2 * i + j)], point, sizeof(point));
+                    angle2 += delta2;
+                }
+                angle += delta;
+            }
+            partVertices.Prepare(6 * 7 * outShape.vertexCount * outShape.vertexCount2 * sizeof(float), &vertexData[0]);
+            break;
+        }
+        case ShapeType::CONE:
+        {
+            // Conical surface
+            float angle = 0;
+            float delta = glm::pi<float>() * outShape.length / 5000 / outShape.vertexCount;
+            vertexData.resize(size + 6 * outShape.vertexCount * outShape.vertexCount2 * 7);
+            float w = float(outShape.radius) / outShape.vertexCount2;
+            for (int i = 0; i < outShape.vertexCount; i++) {
+                for (int j = 0; j < outShape.vertexCount2; j++) {
+                    for (int k = 0; k < 6; k++) {
+                        point[k].x = -w * (outShape.vertexCount2 - 1 - j + tX[k]) * glm::sin(angle + delta * tY[k]);
+                        point[k].y = -w * (outShape.vertexCount2 - 1 - j + tX[k]) * glm::cos(angle + delta * tY[k]);
+                        point[k].z = -outShape.dz * float(j + (1 - tX[k])) / outShape.vertexCount2;
+                        point[k].s = float(cutout.uv[0] + 1.0f * cutout.uv[2] * (i + tY[k]) / outShape.vertexCount) / width;
+                        point[k].t = float(cutout.uv[1] + 1.0f * cutout.uv[3] * (1 + j - tX[k]) / outShape.vertexCount2) / height;
+                        point[k].p = float(cutout.uv[0] + 1.0f * cutout.uv[2] * (outShape.vertexCount - i - tY[k]) / outShape.vertexCount) / width;
+                        point[k].q = float(cutout.uv[1] + 1.0f * cutout.uv[3] * (outShape.vertexCount2 - 1 - j + tX[k]) / outShape.vertexCount2) / height;
+                    }
+                    memcpy(&vertexData[size + 6 * 7 * (outShape.vertexCount2 * i + j)], point, sizeof(point));
+                }
+                angle += delta;
+            }
+            partVertices.Prepare(6 * 7 * outShape.vertexCount * outShape.vertexCount2 * sizeof(float), &vertexData[0]);
+            break;
+        }
         default:
             continue;
         }

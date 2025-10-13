@@ -7,6 +7,7 @@ struct ImageData
 	int		width;
 	int		height;
 	bool	is8bpp;
+	bool	bgr = false;  // True if pixel data is in BGR/BGRA format
 	int		offsetX;
 	int		offsetY;
 
