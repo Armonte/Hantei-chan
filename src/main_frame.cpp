@@ -181,22 +181,28 @@ void MainFrame::DrawBack()
 		render.ClearLayers();
 
 		// Add main pattern as a layer
+		// Use first layer (layers[0]) for single-layer MBAACC compatibility
+		if (mainFrame.AF.layers.empty()) {
+			mainFrame.AF.layers.push_back({});  // Ensure at least one layer exists
+		}
+		const auto& mainLayer_data = mainFrame.AF.layers[0];
+
 		RenderLayer mainLayer;
 		mainLayer.spriteId = state.spriteId;
 		mainLayer.spawnOffsetX = 0;
 		mainLayer.spawnOffsetY = 0;
-		mainLayer.frameOffsetX = mainFrame.AF.offset_x;
-		mainLayer.frameOffsetY = mainFrame.AF.offset_y;
-		mainLayer.scaleX = mainFrame.AF.scale[0];
-		mainLayer.scaleY = mainFrame.AF.scale[1];
-		mainLayer.rotX = mainFrame.AF.rotation[0];
-		mainLayer.rotY = mainFrame.AF.rotation[1];
-		mainLayer.rotZ = mainFrame.AF.rotation[2];
+		mainLayer.frameOffsetX = mainLayer_data.offset_x;
+		mainLayer.frameOffsetY = mainLayer_data.offset_y;
+		mainLayer.scaleX = mainLayer_data.scale[0];
+		mainLayer.scaleY = mainLayer_data.scale[1];
+		mainLayer.rotX = mainLayer_data.rotation[0];
+		mainLayer.rotY = mainLayer_data.rotation[1];
+		mainLayer.rotZ = mainLayer_data.rotation[2];
 		mainLayer.AFRT = mainFrame.AF.AFRT;
-		mainLayer.blendMode = mainFrame.AF.blend_mode;
+		mainLayer.blendMode = mainLayer_data.blend_mode;
 		mainLayer.zPriority = mainFrame.AF.priority;
-		mainLayer.alpha = mainFrame.AF.rgba[3];  // Apply frame alpha
-		mainLayer.tintColor = glm::vec4(mainFrame.AF.rgba[0], mainFrame.AF.rgba[1], mainFrame.AF.rgba[2], 1.0f);  // Apply frame RGB
+		mainLayer.alpha = mainLayer_data.rgba[3];  // Apply frame alpha
+		mainLayer.tintColor = glm::vec4(mainLayer_data.rgba[0], mainLayer_data.rgba[1], mainLayer_data.rgba[2], 1.0f);  // Apply frame RGB
 		mainLayer.isSpawned = false;
 		mainLayer.hitboxes = mainFrame.hitboxes;
 		mainLayer.sourceCG = &active->cg;  // Main pattern uses character CG
@@ -322,18 +328,24 @@ void MainFrame::DrawBack()
 
 			auto& spawnedFrame = spawnedSeq->frames[localFrame];
 
+			// Ensure spawned frame has at least one layer
+			if (spawnedFrame.AF.layers.empty()) {
+				spawnedFrame.AF.layers.push_back({});
+			}
+			const auto& spawnedLayer_data = spawnedFrame.AF.layers[0];
+
 			// Create render layer with all frame data
 			RenderLayer layer;
-			layer.spriteId = spawnedFrame.AF.spriteId;
+			layer.spriteId = spawnedLayer_data.spriteId;
 			layer.spawnOffsetX = spawnInfo.offsetX;
 			layer.spawnOffsetY = spawnInfo.offsetY;
-			layer.frameOffsetX = spawnedFrame.AF.offset_x;
-			layer.frameOffsetY = spawnedFrame.AF.offset_y;
-			layer.scaleX = spawnedFrame.AF.scale[0];
-			layer.scaleY = spawnedFrame.AF.scale[1];
-			layer.rotX = spawnedFrame.AF.rotation[0];
-			layer.rotY = spawnedFrame.AF.rotation[1];
-			layer.rotZ = spawnedFrame.AF.rotation[2];
+			layer.frameOffsetX = spawnedLayer_data.offset_x;
+			layer.frameOffsetY = spawnedLayer_data.offset_y;
+			layer.scaleX = spawnedLayer_data.scale[0];
+			layer.scaleY = spawnedLayer_data.scale[1];
+			layer.rotX = spawnedLayer_data.rotation[0];
+			layer.rotY = spawnedLayer_data.rotation[1];
+			layer.rotZ = spawnedLayer_data.rotation[2];
 			layer.AFRT = spawnedFrame.AF.AFRT;
 
 			// Apply spawn rotation parameter (angle)
@@ -348,20 +360,20 @@ void MainFrame::DrawBack()
 
 			// Apply inherit parent rotation flag (bit 8 of flagset1)
 			if (spawnInfo.flagset1 & (1 << 8)) {
-				layer.rotX += mainFrame.AF.rotation[0];
-				layer.rotY += mainFrame.AF.rotation[1];
-				layer.rotZ += mainFrame.AF.rotation[2];
+				layer.rotX += mainLayer_data.rotation[0];
+				layer.rotY += mainLayer_data.rotation[1];
+				layer.rotZ += mainLayer_data.rotation[2];
 			}
 
-			layer.blendMode = spawnedFrame.AF.blend_mode;
+			layer.blendMode = spawnedLayer_data.blend_mode;
 			layer.zPriority = spawnedFrame.AF.priority;
 			// Apply frame RGBA, then visualization alpha
-			layer.alpha = spawnedFrame.AF.rgba[3] * spawnInfo.alpha * state.vizSettings.spawnedOpacity;
+			layer.alpha = spawnedLayer_data.rgba[3] * spawnInfo.alpha * state.vizSettings.spawnedOpacity;
 			// Multiply frame RGB with visualization tint
 			layer.tintColor = glm::vec4(
-				spawnedFrame.AF.rgba[0] * spawnInfo.tintColor.r,
-				spawnedFrame.AF.rgba[1] * spawnInfo.tintColor.g,
-				spawnedFrame.AF.rgba[2] * spawnInfo.tintColor.b,
+				spawnedLayer_data.rgba[0] * spawnInfo.tintColor.r,
+				spawnedLayer_data.rgba[1] * spawnInfo.tintColor.g,
+				spawnedLayer_data.rgba[2] * spawnInfo.tintColor.b,
 				1.0f);
 			layer.isSpawned = true;
 			layer.hitboxes = spawnedFrame.hitboxes;
@@ -562,7 +574,11 @@ void MainFrame::createPatEditorView(const std::string& patPath)
 	auto seq = character->frameData.get_sequence(0);
 	if (seq) {
 		auto frame = &seq->frames.emplace_back();
-		frame->AF.usePat = true;
+		// Ensure frame has at least one layer
+		if (frame->AF.layers.empty()) {
+			frame->AF.layers.push_back({});
+		}
+		frame->AF.layers[0].usePat = true;
 	}
 
 	// Load the PAT file

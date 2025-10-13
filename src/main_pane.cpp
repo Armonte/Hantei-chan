@@ -288,10 +288,20 @@ void MainPane::Draw()
 					im::Text("Animation:");
 					if(im::Button("Paste sprite & duration"))
 					{
+						// Ensure source frame has at least one layer
+						if (frame.AF.layers.empty()) {
+							frame.AF.layers.push_back({});
+						}
+						const auto& srcLayer = frame.AF.layers[0];
+
 						for(int i = ranges[0]; i <= ranges[1] && i >= 0 && i < seq->frames.size(); i++)
 						{
-							seq->frames[i].AF.spriteId = frame.AF.spriteId;
-							seq->frames[i].AF.usePat = frame.AF.usePat;
+							// Ensure destination frame has at least one layer
+							if (seq->frames[i].AF.layers.empty()) {
+								seq->frames[i].AF.layers.push_back({});
+							}
+							seq->frames[i].AF.layers[0].spriteId = srcLayer.spriteId;
+							seq->frames[i].AF.layers[0].usePat = srcLayer.usePat;
 							seq->frames[i].AF.duration = frame.AF.duration;
 						}
 						frameData->mark_modified(currState.pattern);
@@ -330,10 +340,14 @@ void MainPane::Draw()
 					im::Text("Transforms:");
 					if(im::Button("Paste offset (X/Y)"))
 					{
+						if (frame.AF.layers.empty()) frame.AF.layers.push_back({});
+						const auto& srcLayer = frame.AF.layers[0];
+
 						for(int i = ranges[0]; i <= ranges[1] && i >= 0 && i < seq->frames.size(); i++)
 						{
-							seq->frames[i].AF.offset_x = frame.AF.offset_x;
-							seq->frames[i].AF.offset_y = frame.AF.offset_y;
+							if (seq->frames[i].AF.layers.empty()) seq->frames[i].AF.layers.push_back({});
+							seq->frames[i].AF.layers[0].offset_x = srcLayer.offset_x;
+							seq->frames[i].AF.layers[0].offset_y = srcLayer.offset_y;
 						}
 						frameData->mark_modified(currState.pattern);
 						markModified();
@@ -341,9 +355,13 @@ void MainPane::Draw()
 
 					if(im::Button("Paste rotation"))
 					{
+						if (frame.AF.layers.empty()) frame.AF.layers.push_back({});
+						const auto& srcLayer = frame.AF.layers[0];
+
 						for(int i = ranges[0]; i <= ranges[1] && i >= 0 && i < seq->frames.size(); i++)
 						{
-							memcpy(seq->frames[i].AF.rotation, frame.AF.rotation, sizeof(float)*3);
+							if (seq->frames[i].AF.layers.empty()) seq->frames[i].AF.layers.push_back({});
+							memcpy(seq->frames[i].AF.layers[0].rotation, srcLayer.rotation, sizeof(float)*3);
 							seq->frames[i].AF.AFRT = frame.AF.AFRT;
 						}
 						frameData->mark_modified(currState.pattern);
@@ -352,9 +370,13 @@ void MainPane::Draw()
 
 					if(im::Button("Paste scale"))
 					{
+						if (frame.AF.layers.empty()) frame.AF.layers.push_back({});
+						const auto& srcLayer = frame.AF.layers[0];
+
 						for(int i = ranges[0]; i <= ranges[1] && i >= 0 && i < seq->frames.size(); i++)
 						{
-							memcpy(seq->frames[i].AF.scale, frame.AF.scale, sizeof(float)*2);
+							if (seq->frames[i].AF.layers.empty()) seq->frames[i].AF.layers.push_back({});
+							memcpy(seq->frames[i].AF.layers[0].scale, srcLayer.scale, sizeof(float)*2);
 						}
 						frameData->mark_modified(currState.pattern);
 						markModified();
@@ -362,10 +384,14 @@ void MainPane::Draw()
 
 					if(im::Button("Paste color & blend"))
 					{
+						if (frame.AF.layers.empty()) frame.AF.layers.push_back({});
+						const auto& srcLayer = frame.AF.layers[0];
+
 						for(int i = ranges[0]; i <= ranges[1] && i >= 0 && i < seq->frames.size(); i++)
 						{
-							memcpy(seq->frames[i].AF.rgba, frame.AF.rgba, sizeof(float)*4);
-							seq->frames[i].AF.blend_mode = frame.AF.blend_mode;
+							if (seq->frames[i].AF.layers.empty()) seq->frames[i].AF.layers.push_back({});
+							memcpy(seq->frames[i].AF.layers[0].rgba, srcLayer.rgba, sizeof(float)*4);
+							seq->frames[i].AF.layers[0].blend_mode = srcLayer.blend_mode;
 						}
 						frameData->mark_modified(currState.pattern);
 						markModified();
@@ -373,14 +399,18 @@ void MainPane::Draw()
 
 					if(im::Button("Paste all transforms"))
 					{
+						if (frame.AF.layers.empty()) frame.AF.layers.push_back({});
+						const auto& srcLayer = frame.AF.layers[0];
+
 						for(int i = ranges[0]; i <= ranges[1] && i >= 0 && i < seq->frames.size(); i++)
 						{
-							seq->frames[i].AF.offset_x = frame.AF.offset_x;
-							seq->frames[i].AF.offset_y = frame.AF.offset_y;
-							memcpy(seq->frames[i].AF.rotation, frame.AF.rotation, sizeof(float)*3);
-							memcpy(seq->frames[i].AF.scale, frame.AF.scale, sizeof(float)*2);
-							memcpy(seq->frames[i].AF.rgba, frame.AF.rgba, sizeof(float)*4);
-							seq->frames[i].AF.blend_mode = frame.AF.blend_mode;
+							if (seq->frames[i].AF.layers.empty()) seq->frames[i].AF.layers.push_back({});
+							seq->frames[i].AF.layers[0].offset_x = srcLayer.offset_x;
+							seq->frames[i].AF.layers[0].offset_y = srcLayer.offset_y;
+							memcpy(seq->frames[i].AF.layers[0].rotation, srcLayer.rotation, sizeof(float)*3);
+							memcpy(seq->frames[i].AF.layers[0].scale, srcLayer.scale, sizeof(float)*2);
+							memcpy(seq->frames[i].AF.layers[0].rgba, srcLayer.rgba, sizeof(float)*4);
+							seq->frames[i].AF.layers[0].blend_mode = srcLayer.blend_mode;
 							seq->frames[i].AF.AFRT = frame.AF.AFRT;
 							seq->frames[i].AF.priority = frame.AF.priority;
 						}

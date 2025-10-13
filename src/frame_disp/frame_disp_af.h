@@ -30,46 +30,56 @@ inline void AfDisplay(Frame_AF *af, int &selectedLayer, FrameData *frameData = n
 		}
 	};
 
-	static Frame_AF copiedAnimation = {};
+	// Ensure at least one layer exists for MBAACC compatibility
+	if (af->layers.empty()) {
+		af->layers.push_back({});
+	}
+
+	// Get reference to the layer we're editing (layer 0 for MBAACC, selectedLayer for UNI)
+	// For now, always use layer 0 until multi-layer UI is implemented
+	Layer_Type& layer = af->layers[0];
+
+	static Layer_Type copiedAnimationLayer = {};
+	static Frame_AF copiedAnimationFrame = {};
 
 	constexpr float width = 50.f;
 
 
-	// MBAACC uses flat structure (no layers)
+	// Sprite and .pat (per-layer properties)
 	im::SetNextItemWidth(width*3);
-	if(im::InputInt("Sprite", &af->spriteId)) {
+	if(im::InputInt("Sprite", &layer.spriteId)) {
 		markModified();
 	}
 	im::SameLine(0, 20.f);
-	if(im::Checkbox("Use .pat", &af->usePat)) {
+	if(im::Checkbox("Use .pat", &layer.usePat)) {
 		markModified();
 	}
 
 	if(im::SmallButton("Copy animation")) {
-		copiedAnimation.spriteId = af->spriteId;
-		copiedAnimation.usePat = af->usePat;
-		copiedAnimation.duration = af->duration;
-		copiedAnimation.aniType = af->aniType;
-		copiedAnimation.aniFlag = af->aniFlag;
-		copiedAnimation.jump = af->jump;
-		copiedAnimation.landJump = af->landJump;
-		copiedAnimation.priority = af->priority;
-		copiedAnimation.loopCount = af->loopCount;
-		copiedAnimation.loopEnd = af->loopEnd;
+		copiedAnimationLayer.spriteId = layer.spriteId;
+		copiedAnimationLayer.usePat = layer.usePat;
+		copiedAnimationFrame.duration = af->duration;
+		copiedAnimationFrame.aniType = af->aniType;
+		copiedAnimationFrame.aniFlag = af->aniFlag;
+		copiedAnimationFrame.jump = af->jump;
+		copiedAnimationFrame.landJump = af->landJump;
+		copiedAnimationFrame.priority = af->priority;
+		copiedAnimationFrame.loopCount = af->loopCount;
+		copiedAnimationFrame.loopEnd = af->loopEnd;
 	}
 	if(im::IsItemHovered()) Tooltip("Copy sprite, duration, jumps, priority, and loops");
 	im::SameLine();
 	if(im::SmallButton("Paste animation")) {
-		af->spriteId = copiedAnimation.spriteId;
-		af->usePat = copiedAnimation.usePat;
-		af->duration = copiedAnimation.duration;
-		af->aniType = copiedAnimation.aniType;
-		af->aniFlag = copiedAnimation.aniFlag;
-		af->jump = copiedAnimation.jump;
-		af->landJump = copiedAnimation.landJump;
-		af->priority = copiedAnimation.priority;
-		af->loopCount = copiedAnimation.loopCount;
-		af->loopEnd = copiedAnimation.loopEnd;
+		layer.spriteId = copiedAnimationLayer.spriteId;
+		layer.usePat = copiedAnimationLayer.usePat;
+		af->duration = copiedAnimationFrame.duration;
+		af->aniType = copiedAnimationFrame.aniType;
+		af->aniFlag = copiedAnimationFrame.aniFlag;
+		af->jump = copiedAnimationFrame.jump;
+		af->landJump = copiedAnimationFrame.landJump;
+		af->priority = copiedAnimationFrame.priority;
+		af->loopCount = copiedAnimationFrame.loopCount;
+		af->loopEnd = copiedAnimationFrame.loopEnd;
 		markModified();
 	}
 	if(im::IsItemHovered()) Tooltip("Paste sprite, duration, jumps, priority, and loops");
@@ -182,28 +192,30 @@ inline void AfDisplay(Frame_AF *af, int &selectedLayer, FrameData *frameData = n
 	im::Separator();
 
 	// Copy/paste buttons for transform section
-	static Frame_AF copiedTransform = {};
+	static Layer_Type copiedTransformLayer = {};
+	static bool copiedTransformAFRT = false;
+	static int copiedTransformInterpolationType = 0;
 	if(im::SmallButton("Copy transforms")) {
-		copiedTransform.offset_x = af->offset_x;
-		copiedTransform.offset_y = af->offset_y;
-		copiedTransform.blend_mode = af->blend_mode;
-		memcpy(copiedTransform.rgba, af->rgba, sizeof(af->rgba));
-		memcpy(copiedTransform.rotation, af->rotation, sizeof(af->rotation));
-		memcpy(copiedTransform.scale, af->scale, sizeof(af->scale));
-		copiedTransform.AFRT = af->AFRT;
-		copiedTransform.interpolationType = af->interpolationType;
+		copiedTransformLayer.offset_x = layer.offset_x;
+		copiedTransformLayer.offset_y = layer.offset_y;
+		copiedTransformLayer.blend_mode = layer.blend_mode;
+		memcpy(copiedTransformLayer.rgba, layer.rgba, sizeof(layer.rgba));
+		memcpy(copiedTransformLayer.rotation, layer.rotation, sizeof(layer.rotation));
+		memcpy(copiedTransformLayer.scale, layer.scale, sizeof(layer.scale));
+		copiedTransformAFRT = af->AFRT;
+		copiedTransformInterpolationType = af->interpolationType;
 	}
 	if(im::IsItemHovered()) Tooltip("Copy offset, rotation, scale, color, blend mode, and interpolation");
 	im::SameLine();
 	if(im::SmallButton("Paste transforms")) {
-		af->offset_x = copiedTransform.offset_x;
-		af->offset_y = copiedTransform.offset_y;
-		af->blend_mode = copiedTransform.blend_mode;
-		memcpy(af->rgba, copiedTransform.rgba, sizeof(af->rgba));
-		memcpy(af->rotation, copiedTransform.rotation, sizeof(af->rotation));
-		memcpy(af->scale, copiedTransform.scale, sizeof(af->scale));
-		af->AFRT = copiedTransform.AFRT;
-		af->interpolationType = copiedTransform.interpolationType;
+		layer.offset_x = copiedTransformLayer.offset_x;
+		layer.offset_y = copiedTransformLayer.offset_y;
+		layer.blend_mode = copiedTransformLayer.blend_mode;
+		memcpy(layer.rgba, copiedTransformLayer.rgba, sizeof(layer.rgba));
+		memcpy(layer.rotation, copiedTransformLayer.rotation, sizeof(layer.rotation));
+		memcpy(layer.scale, copiedTransformLayer.scale, sizeof(layer.scale));
+		af->AFRT = copiedTransformAFRT;
+		af->interpolationType = copiedTransformInterpolationType;
 		markModified();
 	}
 	if(im::IsItemHovered()) Tooltip("Paste offset, rotation, scale, color, blend mode, and interpolation");
@@ -213,34 +225,34 @@ inline void AfDisplay(Frame_AF *af, int &selectedLayer, FrameData *frameData = n
 	}
 
 	im::SetNextItemWidth(width);
-	im::DragInt("X", &af->offset_x);
+	im::DragInt("X", &layer.offset_x);
 	if(im::IsItemDeactivatedAfterEdit()) {
 		markModified();
 	}
 	im::SameLine();
 	im::SetNextItemWidth(width);
-	im::DragInt("Y", &af->offset_y);
+	im::DragInt("Y", &layer.offset_y);
 	if(im::IsItemDeactivatedAfterEdit()) {
 		markModified();
 	}
 
-	int mode = af->blend_mode-1;
+	int mode = layer.blend_mode-1;
 	if(mode < 1)
 		mode = 0;
 	if (im::Combo("Blend Mode", &mode, "Normal\0Additive\0Subtractive\0"))
 	{
-		af->blend_mode=mode+1;
+		layer.blend_mode=mode+1;
 		markModified();
 	}
-	if(im::ColorEdit4("Color", af->rgba)) {
+	if(im::ColorEdit4("Color", layer.rgba)) {
 		markModified();
 	}
 
-	im::DragFloat3("Rot XYZ", af->rotation, 0.005);
+	im::DragFloat3("Rot XYZ", layer.rotation, 0.005);
 	if(im::IsItemDeactivatedAfterEdit()) {
 		markModified();
 	}
-	im::DragFloat2("Scale", af->scale, 0.1);
+	im::DragFloat2("Scale", layer.scale, 0.1);
 	if(im::IsItemDeactivatedAfterEdit()) {
 		markModified();
 	}

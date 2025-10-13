@@ -593,20 +593,26 @@ void MainFrame::RenderUpdate()
 			);
 		}
 
-		// Render using flat AF fields (gonp original)
-		state.spriteId = frame.AF.spriteId;
-		render.GenerateHitboxVertices(frame.hitboxes);
-		render.offsetX = (frame.AF.offset_x)*1;
-		render.offsetY = (frame.AF.offset_y)*1;
-		render.SetImageColor(frame.AF.rgba);
-		render.rotX = frame.AF.rotation[0];
-		render.rotY = frame.AF.rotation[1];
-		render.rotZ = frame.AF.rotation[2];
-		render.AFRT = frame.AF.AFRT;
-		render.scaleX = frame.AF.scale[0];
-		render.scaleY = frame.AF.scale[1];
+		// Render using layer[0] data for MBAACC compatibility
+		// Ensure frame has at least one layer
+		if (frame.AF.layers.empty()) {
+			frame.AF.layers.push_back({});
+		}
+		const auto& layer = frame.AF.layers[0];
 
-		switch (frame.AF.blend_mode)
+		state.spriteId = layer.spriteId;
+		render.GenerateHitboxVertices(frame.hitboxes);
+		render.offsetX = (layer.offset_x)*1;
+		render.offsetY = (layer.offset_y)*1;
+		render.SetImageColor(const_cast<float*>(layer.rgba));
+		render.rotX = layer.rotation[0];
+		render.rotY = layer.rotation[1];
+		render.rotZ = layer.rotation[2];
+		render.AFRT = frame.AF.AFRT;
+		render.scaleX = layer.scale[0];
+		render.scaleY = layer.scale[1];
+
+		switch (layer.blend_mode)
 			{
 			case 2:
 				render.blendingMode = Render::additive;
