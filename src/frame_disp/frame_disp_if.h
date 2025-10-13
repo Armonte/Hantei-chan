@@ -666,8 +666,14 @@ inline void IfDisplay(std::vector<Frame_IF> *ifList_, Frame_IF *singleClipboard 
 				break;
 
 			case 36: // Meter bar mode check
-				im::Text("Automatic check - no parameters needed");
-				im::TextDisabled("Checks current meter/moon mode");
+				ShowJumpField("Jump to", &p[0], "Frame number, or add 10000 for pattern");
+
+				im::SetNextItemWidth(width);
+				im::DragInt("Meter mode", &p[1]); im::SameLine();
+				im::TextDisabled("(?)"); if(im::IsItemHovered()) Tooltip("Meter mode to check (0-7: Crescent, Half, Full, etc.)");
+
+				im::SetNextItemWidth(width*2);
+				im::Combo("Check type", &p[2], "Equals\0Not equals\0");
 				break;
 
 			case 39: // Unknown
