@@ -9,8 +9,9 @@ enum {
 	TXT,
 	VECTOR,
 	HPROJ,
-	PAT
+	PAT,
+	DDS
 };
 }
 
-std::string FileDialog(int fileType = -1, bool save = false);
+std::string FileDialog(int fileType = -1, bool save = false, char* defaultName = nullptr);

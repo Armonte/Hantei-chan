@@ -635,3 +635,8 @@ bool Parts::Save(const char* filename)
     file.close();
     return true;
 }
+
+void Parts::SetHighlightOpacity(float opacity)
+{
+    highlightOpacity = opacity;
+}
