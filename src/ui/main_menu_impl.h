@@ -171,6 +171,29 @@ void MainFrame::Menu(unsigned int errorPopupId)
 				}
 			}
 
+			if (ImGui::MenuItem("Load HA4 .DAT (Act Cadenza)..."))
+			{
+				std::string path = FileDialog(fileType::HA4, false);
+				if (!path.empty()) {
+					// Check for duplicate
+					if (findCharacterByPath(path)) {
+						ImGui::OpenPopup(errorPopupId);
+					} else {
+						auto character = std::make_unique<CharacterInstance>();
+						// HA4 files are auto-detected and converted to HA6 internally
+						if (character->loadHA6(path, false)) {
+							characters.push_back(std::move(character));
+							// HA4 files don't have separate effect.ha6, but try to load from folder
+							tryLoadEffectCharacter(characters.back().get());
+							createViewForCharacter(characters.back().get());
+							markProjectModified();
+						} else {
+							ImGui::OpenPopup(errorPopupId);
+						}
+					}
+				}
+			}
+
 			ImGui::Separator();
 
 			if (ImGui::MenuItem("Save Character", nullptr, false, hasActive))

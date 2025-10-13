@@ -37,6 +37,10 @@ std::string FileDialog(int fileType, bool save)
 	{
 		ofn.lpstrFilter = "Vector text files (*.txt)\0*.txt\0All\0*.*\0";
 	}
+	else if (fileType == fileType::HA4)
+	{
+		ofn.lpstrFilter = "Hantei4 files (*.dat;*.ha4)\0*.dat;*.ha4\0All\0*.*\0";
+	}
 	else if (fileType == fileType::HPROJ)
 	{
 		ofn.lpstrFilter = "Hantei Project files (*.hproj)\0*.hproj\0All\0*.*\0";

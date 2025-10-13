@@ -32,6 +32,7 @@ struct TestInfo{
 
 extern TestInfo test;
 
+// HA6 loaders (MBAACC/UNI/Dengeki)
 unsigned int *fd_frame_AT_load(unsigned int *data, const unsigned int *data_end, Frame_AT *AT);
 unsigned int *fd_frame_AS_load(unsigned int *data, const unsigned int *data_end, Frame_AS *AS);
 unsigned int *fd_frame_EF_load(unsigned int *data, const unsigned int *data_end, Frame_EF *EF);
@@ -40,6 +41,20 @@ unsigned int *fd_frame_AF_load(unsigned int *data, const unsigned int *data_end,
 unsigned int *fd_frame_load(unsigned int *data, const unsigned int *data_end, Frame *frame, TempInfo *info);
 unsigned int *fd_sequence_load(unsigned int *data, const unsigned int *data_end, Sequence *seq, bool utf8);
 unsigned int *fd_main_load(unsigned int *data, const unsigned int *data_end, std::vector<Sequence> &sequences, unsigned int nsequences, bool utf8);
+
+// HA4 loaders (Act Cadenza)
+// Tag-based format (editor exports)
+unsigned int *fd_frame_AT_load_ha4(unsigned int *data, const unsigned int *data_end, Frame_AT *AT);
+unsigned int *fd_frame_AS_load_ha4(unsigned int *data, const unsigned int *data_end, Frame_AS *AS);
+unsigned int *fd_frame_EF_load_ha4(unsigned int *data, const unsigned int *data_end, Frame_EF *EF);
+unsigned int *fd_frame_IF_load_ha4(unsigned int *data, const unsigned int *data_end, Frame_IF *IF);
+unsigned int *fd_frame_AF_load_ha4(unsigned int *data, const unsigned int *data_end, Frame *frame);
+unsigned int *fd_frame_load_ha4(unsigned int *data, const unsigned int *data_end, Frame *frame, TempInfo *info);
+unsigned int *fd_sequence_load_ha4(unsigned int *data, const unsigned int *data_end, Sequence *seq);
+unsigned int *fd_main_load_ha4(unsigned int *data, const unsigned int *data_end, std::vector<Sequence> &sequences, unsigned int nsequences);
+
+// Binary format (distribution .DAT files)
+unsigned int *fd_main_load_ha4_binary(unsigned int *data, const unsigned int *data_end, std::vector<Sequence> &sequences, unsigned int nsequences);
 
 
 

@@ -291,6 +291,7 @@ public:
 	bool		m_loaded;
 	std::vector<Sequence> m_sequences;
 	std::vector<Command> m_commands;
+	std::string m_extracted_cg_path;  // Path to extracted CG file (for HA4 binary format)
 
 	void initEmpty();
 	bool load(const char *filename, bool patch = false);

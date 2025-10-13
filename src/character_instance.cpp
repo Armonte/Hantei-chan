@@ -3,6 +3,7 @@
 #include <filesystem>
 #include <sstream>
 #include <iomanip>
+#include <iostream>
 #include <windows.h>
 
 CharacterInstance::CharacterInstance()
@@ -74,6 +75,19 @@ bool CharacterInstance::loadHA6(const std::string& ha6Path, bool patch)
 	}
 	m_ha6Paths.push_back(ha6Path);
 	m_topHA6Path = ha6Path;
+
+	// If HA4 binary format extracted a CG file, load it
+	if (!frameData.m_extracted_cg_path.empty()) {
+		std::cout << "Loading extracted CG from: " << frameData.m_extracted_cg_path << "\n";
+		if (cg.load(frameData.m_extracted_cg_path.c_str())) {
+			m_cgPath = frameData.m_extracted_cg_path;
+			std::cout << "Successfully loaded CG with " << cg.get_image_count() << " images\n";
+		} else {
+			std::cerr << "Failed to load extracted CG file\n";
+		}
+		// Clear the path so it doesn't interfere with future loads
+		frameData.m_extracted_cg_path.clear();
+	}
 
 	m_isModified = false;
 	undoManager.markCleanState();

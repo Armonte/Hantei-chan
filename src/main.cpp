@@ -91,22 +91,22 @@ LRESULT WINAPI WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam);
 int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE, PWSTR pCmdLine, int nCmdShow)
 {
 	// Allocate console for debug output
-	//AllocConsole();
-	//
-	//// Set console to UTF-8 to support Japanese text (SJIS/UTF-8)
-	//SetConsoleOutputCP(CP_UTF8);
-	//SetConsoleCP(CP_UTF8);
-	//
-	//// Redirect stdout/stderr to console
-	//FILE* dummy;
-	//freopen_s(&dummy, "CONOUT$", "w", stdout);
-	//freopen_s(&dummy, "CONOUT$", "w", stderr);
-	//
-	//// Set console title
-	//SetConsoleTitleW(L"Hantei-chan Debug Console");
-	//
-	//printf("=== Hantei-chan Debug Console ===\n");
-	//printf("Console code page: UTF-8 (CP %d)\n", GetConsoleOutputCP());
+	AllocConsole();
+	
+	// Set console to UTF-8 to support Japanese text (SJIS/UTF-8)
+	SetConsoleOutputCP(CP_UTF8);
+	SetConsoleCP(CP_UTF8);
+	
+	// Redirect stdout/stderr to console
+	FILE* dummy;
+	freopen_s(&dummy, "CONOUT$", "w", stdout);
+	freopen_s(&dummy, "CONOUT$", "w", stderr);
+	
+	// Set console title
+	SetConsoleTitleW(L"Hantei-chan Debug Console");
+	
+	printf("=== Hantei-chan Debug Console ===\n");
+	printf("Console code page: UTF-8 (CP %d)\n", GetConsoleOutputCP());
 	
 	bool useIni = true;
 	int argC;

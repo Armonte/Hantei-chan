@@ -31,6 +31,8 @@ add_executable(${EXE} WIN32
 	src/filedialog.cpp
 	src/framedata.cpp
 	src/framedata_load.cpp
+	src/framedata_load_ha4.cpp
+	src/framedata_load_ha4_binary.cpp
 	src/framedata_save.cpp
 	src/framestate.cpp
 	src/character_instance.cpp
