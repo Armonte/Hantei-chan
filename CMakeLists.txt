@@ -44,6 +44,11 @@ add_executable(${EXE} WIN32
 	src/ini.cpp
 	src/preset_effects.cpp
 	src/copy_manager.cpp
+	src/PatEditor/pat_partset_pane.cpp
+	src/PatEditor/pat_part_pane.cpp
+	src/PatEditor/pat_shape_pane.cpp
+	src/PatEditor/pat_texture_pane.cpp
+	src/PatEditor/pat_tool_pane.cpp
 	src/parts/parts_partset.cpp
 	src/parts/parts_part.cpp
 	src/parts/parts_shape.cpp

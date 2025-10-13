@@ -2,7 +2,7 @@
 #include "main.h"
 #include <commdlg.h>
 
-std::string FileDialog(int fileType, bool save)
+std::string FileDialog(int fileType, bool save, char* defaultName)
 {
 	OPENFILENAMEA ofn;       // common dialog box structure
 	char szFile[260];       // buffer for file name
@@ -13,9 +13,17 @@ std::string FileDialog(int fileType, bool save)
 	ofn.lStructSize = sizeof(ofn);
 	ofn.hwndOwner = mainWindowHandle;
 	ofn.lpstrFile = szFile;
-	// Set lpstrFile[0] to '\0' so that GetOpenFileName does not 
+	// Set lpstrFile[0] to '\0' so that GetOpenFileName does not
 	// use the contents of szFile to initialize itself.
-	ofn.lpstrFile[0] = '\0';
+	if (defaultName != nullptr)
+	{
+		strncpy(szFile, defaultName, sizeof(szFile) - 1);
+		szFile[sizeof(szFile) - 1] = '\0';
+	}
+	else
+	{
+		ofn.lpstrFile[0] = '\0';
+	}
 	ofn.nMaxFile = sizeof(szFile);
 	if(fileType == fileType::HA6)
 	{
@@ -44,6 +52,10 @@ std::string FileDialog(int fileType, bool save)
 	else if (fileType == fileType::PAT)
 	{
 		ofn.lpstrFilter = "Parts files (*.pat)\0*.pat\0All\0*.*\0";
+	}
+	else if (fileType == fileType::DDS)
+	{
+		ofn.lpstrFilter = "DDS Texture files (*.dds)\0*.dds\0All\0*.*\0";
 	}
 	else
 	{

@@ -138,6 +138,9 @@ struct FrameState
 	int partCutOut = 0;        // Current cut-out index
 	int partShape = 0;         // Current shape index
 	int partGraph = 0;         // Current texture index
+	int framePatEditor = 0;    // Current frame in PatEditor animation tool
+	Sequence_T<std::allocator> animationSequence;  // Animation sequence for PatEditor preview
+	Sequence_T<std::allocator> previewSequence;     // Backup of original sequence before preview
 
 	// Shared memory clipboard for cross-instance copy/paste
 	CopyData *copied;
