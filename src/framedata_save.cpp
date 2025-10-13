@@ -12,23 +12,147 @@
 // (Because I haven't figured out the proper order lol)
 // I don't know if it can cause trouble but it's something to keep in mind.
 
-// Write AF (gonp original - MBAACC compatible)
+// Write AF with smart format detection (AFGP for single-layer, AFGX for multi-layer)
 void WriteAF(std::ofstream &file, const Frame_AF *af)
 {
 	file.write("AFST", 4);
 
-	file.write("AFGP", 4);
-	uint32_t pat = af->usePat;
-	file.write(VAL(pat), 4);
-	file.write(VAL(af->spriteId), 4);
+	// Smart format detection: AFGP (MBAACC) if 1 layer, AFGX (UNI) if multiple layers
+	if (af->layers.size() == 1) {
+		// MBAACC format (AFGP) - single layer
+		const Layer_Type& layer = af->layers[0];
 
-	//AFY can fuck off
-	if(af->offset_x || af->offset_y){
-		file.write("AFOF", 4);
-		file.write(VAL(af->offset_x), 4);
-		file.write(VAL(af->offset_y), 4);
+		file.write("AFGP", 4);
+		uint32_t pat = layer.usePat;
+		file.write(VAL(pat), 4);
+		file.write(VAL(layer.spriteId), 4);
+
+		// Write layer properties (no AFPL for MBAACC)
+		if(layer.offset_x || layer.offset_y){
+			file.write("AFOF", 4);
+			file.write(VAL(layer.offset_x), 4);
+			file.write(VAL(layer.offset_y), 4);
+		}
+	} else {
+		// UNI format (AFGX) - multi-layer
+		for (size_t i = 0; i < af->layers.size(); i++) {
+			const Layer_Type& layer = af->layers[i];
+
+			file.write("AFGX", 4);
+			uint32_t layerId = i;
+			uint32_t pat = layer.usePat;
+			file.write(VAL(layerId), 4);
+			file.write(VAL(pat), 4);
+			file.write(VAL(layer.spriteId), 4);
+
+			// Write layer-specific properties
+			if(layer.offset_x || layer.offset_y){
+				file.write("AFOF", 4);
+				file.write(VAL(layer.offset_x), 4);
+				file.write(VAL(layer.offset_y), 4);
+			}
+
+			if(layer.blend_mode){
+				file.write("AFAL", 4);
+				int anormalized = layer.rgba[3]*255.f;
+				file.write(VAL(layer.blend_mode), 4);
+				file.write(VAL(anormalized), 4);
+			}
+			else if (layer.rgba[3] != 1.f){
+				int type = 1;
+				int anormalized = layer.rgba[3]*255.f;
+				file.write("AFAL", 4);
+				file.write(VAL(type), 4);
+				file.write(VAL(anormalized), 4);
+			}
+
+			if(	layer.rgba[0] != 1.f ||
+				layer.rgba[1] != 1.f ||
+				layer.rgba[2] != 1.f)
+			{
+				int anormalized[3];
+				for(int j = 0; j < 3; j++)
+					anormalized[j] = layer.rgba[j]*255.f;
+				file.write("AFRG", 4);
+				file.write(PTR(anormalized), 3*sizeof(float));
+			}
+
+			if(layer.rotation[0]){
+				file.write("AFAX", 4);
+				file.write(VAL(layer.rotation[0]), sizeof(float));
+			}
+			if(layer.rotation[1]){
+				file.write("AFAY", 4);
+				file.write(VAL(layer.rotation[1]), sizeof(float));
+			}
+			if(layer.rotation[2]){
+				file.write("AFAZ", 4);
+				file.write(VAL(layer.rotation[2]), sizeof(float));
+			}
+			if(	layer.scale[0] != 1.f ||
+				layer.scale[1] != 1.f){
+				file.write("AFZM", 4);
+				file.write(PTR(layer.scale), 2*sizeof(float));
+			}
+
+			// Write AFPL for layer priority (UNI only)
+			if (layer.priority != 0) {
+				file.write("AFPL", 4);
+				file.write(VAL(layer.priority), 4);
+			}
+		}
 	}
 
+	// Continue with MBAACC single-layer format if only one layer
+	if (af->layers.size() == 1) {
+		const Layer_Type& layer = af->layers[0];
+
+		if(layer.blend_mode){
+			file.write("AFAL", 4);
+			int anormalized = layer.rgba[3]*255.f;
+			file.write(VAL(layer.blend_mode), 4);
+			file.write(VAL(anormalized), 4);
+		}
+		else if (layer.rgba[3] != 1.f){
+			int type = 1;
+			int anormalized = layer.rgba[3]*255.f;
+			file.write("AFAL", 4);
+			file.write(VAL(type), 4);
+			file.write(VAL(anormalized), 4);
+		}
+
+		if(	layer.rgba[0] != 1.f ||
+			layer.rgba[1] != 1.f ||
+			layer.rgba[2] != 1.f)
+		{
+			int anormalized[3];
+			for(int i = 0; i < 3; i++)
+				anormalized[i] = layer.rgba[i]*255.f;
+			file.write("AFRG", 4);
+			file.write(PTR(anormalized), 3*sizeof(float));
+		}
+
+		if(layer.rotation[0]){
+			file.write("AFAX", 4);
+			file.write(VAL(layer.rotation[0]), sizeof(float));
+		}
+		if(layer.rotation[1]){
+			file.write("AFAY", 4);
+			file.write(VAL(layer.rotation[1]), sizeof(float));
+		}
+		if(layer.rotation[2]){
+			file.write("AFAZ", 4);
+			file.write(VAL(layer.rotation[2]), sizeof(float));
+		}
+		if(	layer.scale[0] != 1.f ||
+			layer.scale[1] != 1.f){
+			file.write("AFZM", 4);
+			file.write(PTR(layer.scale), 2*sizeof(float));
+		}
+		// NO AFPL for MBAACC single-layer
+	}
+
+	// Frame-level properties (always written, regardless of format)
 	if(af->duration >=0 && af->duration < 10){
 		char t = af->duration + '0';
 		file.write("AFD", 3);
@@ -48,49 +172,6 @@ void WriteAF(std::ofstream &file, const Frame_AF *af)
 	if(af->aniFlag){
 		file.write("AFFE", 4);
 		file.write(VAL(af->aniFlag), 4);
-	}
-
-	if(af->blend_mode){
-		file.write("AFAL", 4);
-		int anormalized = af->rgba[3]*255.f;
-		file.write(VAL(af->blend_mode), 4);
-		file.write(VAL(anormalized), 4);
-	}
-	else if (af->rgba[3] != 1.f){
-		int type = 1;
-		int anormalized = af->rgba[3]*255.f;
-		file.write("AFAL", 4);
-		file.write(VAL(type), 4);
-		file.write(VAL(anormalized), 4);
-	}
-
-	if(	af->rgba[0] != 1.f ||
-		af->rgba[1] != 1.f ||
-		af->rgba[2] != 1.f)
-	{
-		int anormalized[3];
-		for(int i = 0; i < 3; i++)
-			anormalized[i] = af->rgba[i]*255.f;
-		file.write("AFRG", 4);
-		file.write(PTR(anormalized), 3*sizeof(float));
-	}
-
-	if(af->rotation[0]){
-		file.write("AFAX", 4);
-		file.write(VAL(af->rotation[0]), sizeof(float));
-	}
-	if(af->rotation[1]){
-		file.write("AFAY", 4);
-		file.write(VAL(af->rotation[1]), sizeof(float));
-	}
-	if(af->rotation[2]){
-		file.write("AFAZ", 4);
-		file.write(VAL(af->rotation[2]), sizeof(float));
-	}
-	if(	af->scale[0] != 1.f ||
-		af->scale[1] != 1.f){
-		file.write("AFZM", 4);
-		file.write(PTR(af->scale), 2*sizeof(float));
 	}
 
 	if(af->jump){

@@ -55,13 +55,20 @@ void PatPartSetPane::UpdateRenderFrame(int effectId, bool dontChangeProp)
 {
     curInstance->currState->partSet = effectId;
     if(curInstance->currState->animating) return;
+
+    auto& frame = curInstance->framedata->get_sequence(0)->frames.at(0);
+    // Ensure frame has at least one layer
+    if (frame.AF.layers.empty()) {
+        frame.AF.layers.push_back({});
+    }
+
     if(*curInstance->renderMode != RenderMode::DEFAULT)
     {
-        curInstance->framedata->get_sequence(0)->frames.at(0).AF.spriteId = 0;
+        frame.AF.layers[0].spriteId = 0;
     }
     else
     {
-        curInstance->framedata->get_sequence(0)->frames.at(0).AF.spriteId = effectId;
+        frame.AF.layers[0].spriteId = effectId;
         if(!dontChangeProp)
         {
             curInstance->currState->partProp = 0;

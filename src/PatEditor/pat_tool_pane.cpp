@@ -110,17 +110,22 @@ void PatToolPane::DrawTool()
                 else if (curInstance->currState->framePatEditor > nframes)
                     curInstance->currState->framePatEditor = nframes;
 
+                // Ensure frame has at least one layer
+                if (frame->AF.layers.empty()) {
+                    frame->AF.layers.push_back({});
+                }
+
                 auto nPartSet = curInstance->parts->partSets.size();
                 if(nPartSet > 0)
                 {
-                    if (ImGui::BeginCombo("Part Set", partSetDecoratedNames[frame->AF.spriteId].c_str(),
+                    if (ImGui::BeginCombo("Part Set", partSetDecoratedNames[frame->AF.layers[0].spriteId].c_str(),
                                           ImGuiComboFlags_HeightLargest))
                     {
                         auto count = curInstance->parts->partSets.size();
                         for (int n = 0; n < count; n++) {
-                            const bool is_selected = (frame->AF.spriteId == n);
+                            const bool is_selected = (frame->AF.layers[0].spriteId == n);
                             if (ImGui::Selectable(partSetDecoratedNames[n].c_str(), is_selected)) {
-                                frame->AF.spriteId = n;
+                                frame->AF.layers[0].spriteId = n;
                             }
 
                             // Set the initial focus when opening the combo (scrolling + keyboard navigation focus)
@@ -150,7 +155,11 @@ void PatToolPane::DrawTool()
                 {
                     curInstance->currState->frame = 0;
                     curInstance->framedata->m_sequences[0] = curInstance->currState->previewSequence;
-                    curInstance->framedata->m_sequences[0].frames.at(0).AF.spriteId = curInstance->currState->partSet;
+                    auto& restoreFrame = curInstance->framedata->m_sequences[0].frames.at(0);
+                    if (restoreFrame.AF.layers.empty()) {
+                        restoreFrame.AF.layers.push_back({});
+                    }
+                    restoreFrame.AF.layers[0].spriteId = curInstance->currState->partSet;
                 }
             }
 
@@ -161,8 +170,12 @@ void PatToolPane::DrawTool()
                 if(ImGui::Button("Add Frame"))
                 {
                     auto frame = &curInstance->currState->animationSequence.frames.emplace_back();
-                    frame->AF.usePat = true;
-                    frame->AF.spriteId = 0;
+                    // Ensure new frame has at least one layer
+                    if (frame->AF.layers.empty()) {
+                        frame->AF.layers.push_back({});
+                    }
+                    frame->AF.layers[0].usePat = true;
+                    frame->AF.layers[0].spriteId = 0;
                     frame->AF.aniType = 1;
                     curInstance->currState->framePatEditor = curInstance->currState->animationSequence.frames.size() - 1;
                     nframes = curInstance->currState->animationSequence.frames.size() - 1;

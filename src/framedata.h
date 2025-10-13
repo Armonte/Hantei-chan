@@ -10,10 +10,10 @@
 extern std::set<int> numberSet;
 extern int maxCount;
 
-// MBAACC structure - flat fields only (gonp original)
+// Layer structure for multi-layer support (UNI AFGX + MBAACC AFGP compatibility)
 template<template<typename> class Allocator = std::allocator>
-struct Frame_AF_T {
-	// rendering data
+struct Layer {
+	// Rendering data (per-layer)
 	int spriteId = -1;
 	bool usePat = false;
 
@@ -27,6 +27,35 @@ struct Frame_AF_T {
 	float rotation[3]{}; //XYZ
 
 	float scale[2]{1,1};//xy
+
+	int priority = 0; // Layer priority (UNI AFPL tag, not used in MBAACC)
+
+	// Assignment operator for cross-allocator copying
+	template<template<typename> class FromT>
+	Layer<Allocator>& operator=(const Layer<FromT>& from) {
+		spriteId = from.spriteId;
+		usePat = from.usePat;
+		offset_y = from.offset_y;
+		offset_x = from.offset_x;
+		blend_mode = from.blend_mode;
+		memcpy(rgba, from.rgba, sizeof(rgba));
+		memcpy(rotation, from.rotation, sizeof(rotation));
+		memcpy(scale, from.scale, sizeof(scale));
+		priority = from.priority;
+		return *this;
+	}
+
+	// Same-allocator assignment operator (use default memberwise copy)
+	Layer<Allocator>& operator=(const Layer<Allocator>& from) = default;
+};
+
+// Multi-layer Frame structure (supports both MBAACC and UNI formats)
+template<template<typename> class Allocator = std::allocator>
+struct Frame_AF_T {
+	// Multi-layer rendering data
+	std::vector<Layer<Allocator>, Allocator<Layer<Allocator>>> layers;
+
+	// Frame-level properties (not per-layer)
 
 	//Depends on aniflag.
 	//If (0)end, it jumps to the number of the sequence
@@ -58,21 +87,19 @@ struct Frame_AF_T {
 	// Assignment operator for cross-allocator copying
 	template<template<typename> class FromT>
 	Frame_AF_T<Allocator>& operator=(const Frame_AF_T<FromT>& from) {
-		spriteId = from.spriteId;
-		usePat = from.usePat;
-		offset_y = from.offset_y;
-		offset_x = from.offset_x;
-		blend_mode = from.blend_mode;
-		memcpy(rgba, from.rgba, sizeof(rgba));
-		memcpy(rotation, from.rotation, sizeof(rotation));
-		memcpy(scale, from.scale, sizeof(scale));
+		// Copy layers
+		layers.resize(from.layers.size());
+		for (size_t i = 0; i < from.layers.size(); i++) {
+			layers[i] = from.layers[i];
+		}
+
+		// Copy frame-level properties
 		jump = from.jump;
 		duration = from.duration;
 		aniType = from.aniType;
 		aniFlag = from.aniFlag;
 		landJump = from.landJump;
 		interpolationType = from.interpolationType;
-		priority = from.priority;
 		loopCount = from.loopCount;
 		loopEnd = from.loopEnd;
 		AFRT = from.AFRT;
@@ -270,6 +297,7 @@ struct Sequence_T {
 };
 
 // Typedefs for non-templated use (default std::allocator)
+using Layer_Type = Layer<std::allocator>;
 using Frame_AF = Frame_AF_T<std::allocator>;
 using Frame = Frame_T<std::allocator>;
 using Sequence = Sequence_T<std::allocator>;
