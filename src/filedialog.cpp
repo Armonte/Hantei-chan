@@ -41,6 +41,10 @@ std::string FileDialog(int fileType, bool save)
 	{
 		ofn.lpstrFilter = "Hantei Project files (*.hproj)\0*.hproj\0All\0*.*\0";
 	}
+	else if (fileType == fileType::PAT)
+	{
+		ofn.lpstrFilter = "Parts files (*.pat)\0*.pat\0All\0*.*\0";
+	}
 	else
 	{
 		ofn.lpstrFilter = "All\0*.*\0";

@@ -547,6 +547,43 @@ void MainFrame::createViewForCharacter(CharacterInstance* character)
 	setActiveView(views.size() - 1);
 }
 
+void MainFrame::createPatEditorView(const std::string& patPath)
+{
+	// Create a dummy character for PAT editing
+	auto character = std::make_unique<CharacterInstance>();
+	character->frameData.initEmpty();
+
+	// Extract filename from path for display name
+	size_t lastSlash = patPath.find_last_of("/\\");
+	std::string filename = (lastSlash != std::string::npos) ? patPath.substr(lastSlash + 1) : patPath;
+	character->setName(filename);
+
+	// Create dummy frame with usePat layer
+	auto seq = character->frameData.get_sequence(0);
+	if (seq) {
+		auto frame = &seq->frames.emplace_back();
+		frame->AF.usePat = true;
+	}
+
+	// Load the PAT file
+	if (!character->loadPAT(patPath)) {
+		// Failed to load - don't create the view
+		return;
+	}
+
+	// Set up Parts rendering
+	render.SetParts(&character->parts);
+
+	// Add character to list and create PatEditor view
+	characters.push_back(std::move(character));
+	auto view = std::make_unique<CharacterView>(characters.back().get(), &render);
+	view->setPatEditor(true);
+	view->setViewNumber(0);
+	views.push_back(std::move(view));
+	setActiveView(views.size() - 1);
+	markProjectModified();
+}
+
 int MainFrame::countViewsForCharacter(CharacterInstance* character)
 {
 	int count = 0;

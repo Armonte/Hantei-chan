@@ -749,6 +749,225 @@ struct Frame_IF {
 
 ---
 
+## PAT File Format (Parts/3D Models)
+
+PAT files (PAniDataFile) contain 3D model/parts data referenced by HA6 frames when `usePat` flag is set to true. The file structure consists of tag-based sections.
+
+### File Header
+
+| Tag | Description | UNI/Dengeki | MBAACC |
+|-----|-------------|-------------|---------|
+| **PAniDataFile** | 12-byte magic header | ✅ | ✅ |
+| **_STR** | Start of data sections | ✅ | ✅ |
+| **_END** | End of file | ✅ | ✅ |
+
+### PartSet Section (P_ST)
+
+PartSets define complete poses/animation frames for 3D models. Each PartSet contains multiple Part Properties.
+
+| Tag | Value Type | Description | UNI/Dengeki | MBAACC |
+|-----|------------|-------------|-------------|---------|
+| **P_ST** | 1 int32 | PartSet start + PartSet ID | ✅ | ✅ |
+| **PANM** | 32 bytes | PartSet name (null-terminated, Shift-JIS) | ⚠️ (reads but uses PANA) | ✅ |
+| **PANA** | 1 byte + string | PartSet name (length-prefixed, Shift-JIS) | ✅ | ⚠️ (reads but uncommon) |
+| **PRST** | 1 int32 | Part Property start + Property ID | ✅ | ✅ |
+| **P_ED** | - | PartSet end | ✅ | ✅ |
+
+### Part Property Tags (Within PRST)
+
+Part Properties define individual parts within a PartSet (position, rotation, scale, which cutout to use, etc).
+
+| Tag | Value Type | Description | Additional Notes | UNI/Dengeki | MBAACC |
+|-----|------------|-------------|------------------|-------------|---------|
+| **PRXY** | 2 int32 | Position offset (X, Y) | Pixel units | ✅ | ✅ |
+| **PRID** | 1 int32 | CutOut ID to render | References PPST section | ✅ | ✅ |
+| **PRZM** | 2 float | Scale (X, Y) | 1.0 = default size | ✅ | ✅ |
+| **PRAN** | 1 float | 2D rotation angle | Deprecated, use PRA3. 1.0 = 360° | ⚠️ (deprecated) | ⚠️ (deprecated) |
+| **PRA3** | 4 float | 3D rotation (4 components) | First component often unused/unknown | ✅ | ✅ |
+| **PRPR** | 1 int32 | Render priority | Higher = drawn first (lower on stack) | ✅ | ✅ |
+| **PRCL** | 4 bytes | Color RGBA | Stored as BGRA byte order (0-255) | ✅ | ✅ |
+| **PRSP** | 4 bytes | Additive color RGBA | Stored as RGBA byte order (0-255) | ✅ | ✅ |
+| **PRAL** | 1 byte | Additive blending flag | 0=normal, 1=additive, 2=also additive | ✅ | ✅ |
+| **PRRV** | 1 byte | Flip flags | bit 0: flip horizontal, bit 1: flip vertical | ✅ | ✅ |
+| **PRFL** | 1 byte | Filter flag | Unknown exact effect | ✅ | ✅ |
+| **PRED** | - | Part Property end | | ✅ | ✅ |
+
+### CutOut Section (PPST)
+
+CutOuts define which texture region and 3D shape to use for rendering a part.
+
+| Tag | Value Type | Description | Additional Notes | UNI/Dengeki | MBAACC |
+|-----|------------|-------------|------------------|-------------|---------|
+| **PPST** | 1 int32 | CutOut start + CutOut ID | | ✅ | ✅ |
+| **PPNM** | 32 bytes | CutOut name (null-terminated, Shift-JIS) | MBAACC format | ⚠️ (reads but uses PPNA) | ✅ |
+| **PPNA** | 1 byte + string | CutOut name (length-prefixed, Shift-JIS) | UNI format | ✅ | ⚠️ (reads but uncommon) |
+| **PPUV** | 4 int32 | UV texture coordinates | Left, Top, Width, Height (in texture pixels) | ✅ | ⚠️ (UNI-specific, use PPCC+PPSS in MBAACC) |
+| **PPXY** | 2 int32 | Position/origin point | UNI format | ✅ | ⚠️ (UNI-specific, use PPCC in MBAACC) |
+| **PPWH** | 2 int32 | Width and Height | UNI format | ✅ | ⚠️ (UNI-specific, use PPSS in MBAACC) |
+| **PPCC** | 2 int32 | Center/origin coordinates (X, Y) | **MBAACC-specific!** Missing in UNI files | ❌ | ✅ |
+| **PPSS** | 2 int32 | Size (Width, Height) | **MBAACC-specific!** Missing in UNI files | ❌ | ✅ |
+| **PPGR** / **PPTP** | 1 int32 | Texture/Graphic ID reference | PPGR in UNI, PPTP in MBAACC (same meaning) | ✅ | ✅ |
+| **PPVT** / **PPPP** | 1 int32 | Shape/Vertex type index | PPVT in UNI, PPPP in MBAACC (same meaning) | ✅ | ✅ |
+| **PPPA** | 1 byte | Palette color slot | 0 = no palette (MBAACC), -1 = no palette (UNI) | ✅ | ✅ |
+| **PPTE** | 2 int16 | Unknown (2 shorts) | UNI-specific, purpose unknown | ✅ | ❌ |
+| **PPTX** | 1 int32 | Unknown | **MBAACC-specific!** Purpose unknown, rare | ❌ | ✅ |
+| **PPJP** | 2 int32 | Jump/grab offset (X, Y) | For when part "grabs" player, doesn't affect rendering | ✅ | ✅ |
+| **PPED** | - | CutOut end | | ✅ | ✅ |
+
+### Shape Section (VEST)
+
+Shapes define 3D geometry types (planes, rings, arcs, spheres, cones).
+
+| Tag | Value Type | Description | Additional Notes | UNI/Dengeki | MBAACC |
+|-----|------------|-------------|------------------|-------------|---------|
+| **VEST** | 2 int32 | Shape section start + count + param size | param size typically 16 (ints per shape) | ✅ | ✅ |
+| **VNST** | varies | Shape names section | Length-prefixed Shift-JIS names | ✅ | ⚠️ (reads but uncommon) |
+| **VEED** | - | Shape section end | | ✅ | ✅ |
+
+**Shape Data (within VEST, 16 int32 per shape):**
+
+| Field | Offset | Description | Types Using This |
+|-------|--------|-------------|------------------|
+| **Type** | 0 | Shape type (1-6) | All |
+| **Vertex Count** | 1 | Subdivisions (first dimension) | 3, 4, 5, 6 |
+| **Vertex Count 2** | 2 | Subdivisions (second dimension) | 5, 6 |
+| **Length** | 3 | Arc length × 10000 (1-10000 = 0-360°) | 3, 4, 5, 6 |
+| **Length 2** | 4 | Arc length 2 × 10000 (for 2D shapes) | 5 |
+| **Radius** | 5 | Base radius | 3, 4, 5, 6 |
+| **dRadius** | 6 | Radius delta/change | 3, 4 |
+| **Width** | 7 | Width/thickness | 3, 4 |
+| **dz** | 8 | Depth delta/change | 3, 4, 6 |
+| **Reserved** | 9-15 | Unused (always 0) | - |
+
+**Shape Types:**
+
+| Type | Name | Description | Vertex Params Used |
+|------|------|-------------|-------------------|
+| **1** | Plane | Flat quad (2 triangles) | None (always 6 vertices) |
+| **2** | Unknown | Treated same as Plane | None (always 6 vertices) |
+| **3** | Ring | Cylindrical section | vertexCount, length, radius, dRadius, width, dz |
+| **4** | Arc | Curved surface | vertexCount, length, radius, dRadius, width, dz |
+| **5** | Sphere | Spherical surface | vertexCount, vertexCount2, length, length2, radius |
+| **6** | Cone | Conical surface | vertexCount, vertexCount2, length, radius, dz |
+
+### Texture Section (PGST)
+
+Texture/graphics data with optional DDS compression.
+
+| Tag | Value Type | Description | Additional Notes | UNI/Dengeki | MBAACC |
+|-----|------------|-------------|------------------|-------------|---------|
+| **PGST** | 1 int32 | Texture start + Texture ID | | ✅ | ✅ |
+| **PGNM** | 32 bytes | Texture name (null-terminated, Shift-JIS) | MBAACC format | ⚠️ (reads but uncommon) | ✅ |
+| **PGWH** | 2 int32 | Width and Height (pixels) | Must be power of 2 (e.g., 256, 512) | ✅ | ✅ |
+| **PGUV** | 2 int32 | UV BPP? (purpose unclear) | | ✅ | ✅ |
+| **PGBP** | 1 int32 | Bits per pixel | Typically 32 | ✅ | ✅ |
+| **PGTE** | 2 int16 | Unknown (2 shorts) | UNI-specific | ✅ | ❌ |
+| **PGTP** | 1 int32 | Texture type? | Deprecated/unused | ⚠️ (deprecated) | ⚠️ (deprecated) |
+| **PGT1** | 1 int32 | Texture compression type | 1=DXT1, 5=DXT5, 21=RGB uncompressed | ✅ | ✅ |
+| **PGT2** | varies | Compressed texture data follows | See PGT2 structure below | ✅ | ✅ |
+| **PGTX** | 3 int32 + data | Uncompressed texture data | Width, Height, BPP, then raw RGBA data | ⚠️ (deprecated) | ⚠️ (deprecated) |
+| **PGED** | - | Texture end | | ✅ | ✅ |
+
+**PGT2 Compressed Data Structure:**
+
+| Field | Type | Description |
+|-------|------|-------------|
+| Size 1 | int32 | Total size including header (size + 128) |
+| Width | int32 | Texture width |
+| Height | int32 | Texture height |
+| Type | 4 bytes | "DXT1", "DXT5", or 21 (RGB) |
+| Size 2 | int32 | Compressed data size |
+| Size 3 | int32 | Uncompressed data size |
+| PGT2A | 128 bytes | DDS header |
+| PGT2B | varies | Compressed data (or uncompressed if size matches w×h×4) |
+
+### Texture Compression Types
+
+| Type | Format | Description | Compression Ratio |
+|------|--------|-------------|-------------------|
+| **1** | DXT1 / BC1 | No alpha channel | ~6:1 (w×h÷6 bytes) |
+| **5** | DXT5 / BC3 | With alpha channel | ~4:1 (w×h÷4 bytes) |
+| **21** | RGB | Uncompressed RGBA | 1:1 (w×h×4 bytes) |
+
+### PAT File Integration with HA6
+
+PAT files are loaded and referenced through the HA6 layer system:
+
+1. **In Frame AF:** Set `usePat = true` (via AFGX parameter)
+2. **In Frame AF:** Set `spriteId` to the PartSet ID (not a sprite ID)
+3. **Rendering:** Engine uses PartSet data instead of sprite data
+4. **Interpolation:** Can interpolate between PartSets like sprite frames
+
+**Example HA6 usage:**
+```
+AFGX: layer=0, usePat=1, partSetId=5
+AFOF: x=0, y=0
+AFZM: scaleX=1.0, scaleY=1.0
+```
+This renders PartSet #5 from the loaded .pat file.
+
+### MBAACC vs UNI Format Differences
+
+**Key Compatibility Issues:**
+
+1. **CutOut coordinates:**
+   - MBAACC uses: `PPCC` (center) + `PPSS` (size) + implicit UV
+   - UNI uses: `PPUV` (UV coords) + `PPXY` (position) + `PPWH` (size)
+   - **Solution:** Support both, convert between formats
+
+2. **Rotation format:**
+   - Both use `PRA3` with 4 floats
+   - MBAACC typically uses 3 components (skip first)
+   - UNI uses all 4 components (purpose of first unclear)
+
+3. **Color slot default:**
+   - MBAACC: 0 = no palette
+   - UNI: -1 = no palette
+   - **Solution:** Check both values
+
+4. **Names:**
+   - MBAACC: Null-terminated 32-byte strings (PANM, PPNM, PGNM)
+   - UNI: Length-prefixed Shift-JIS strings (PANA, PPNA)
+   - Both formats should support reading either
+
+### PAT Rendering Pipeline
+
+1. **Load Phase:**
+   - Parse PAniDataFile header
+   - Load all PartSets (P_ST sections)
+   - Load all CutOuts (PPST sections)
+   - Load all Shapes (VEST section)
+   - Load all Textures (PGST sections)
+   - Decompress DDS textures
+   - Upload textures to GPU
+
+2. **Render Phase:**
+   - Get PartSet by ID
+   - Sort Part Properties by priority
+   - For each Part Property:
+     - Get referenced CutOut
+     - Get referenced Shape and Texture
+     - Apply transforms (position, rotation, scale)
+     - Generate vertices for shape type
+     - Apply UV coordinates from CutOut
+     - Apply colors and blending
+     - Render with texture
+
+3. **Vertex Format (7 floats per vertex):**
+   - `x, y, z` - 3D position
+   - `s, t` - Normal UV coordinates
+   - `p, q` - Flipped UV coordinates (for PRRV flip flags)
+
+### Implementation Notes
+
+- **Vertex generation is dynamic** - Vertices are regenerated each frame, not cached
+- **Interpolation is supported** - Can blend between two PartSets smoothly
+- **Palette integration** - CutOuts can reference CG palette colors via `PPPA`
+- **Multiple textures** - Each CutOut can use different textures from the PGST list
+- **3D rendering** - Parts support full 3D transformations and shapes
+
+---
+
 ## TODO: Additional Documentation Needed
 
 1. **AFFE bitwise flags** - Complete list of AFFE bitwise values and their effects on AFJP, AFJC, and AFF2

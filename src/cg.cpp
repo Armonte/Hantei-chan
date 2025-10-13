@@ -519,6 +519,15 @@ void CG::free() {
 	m_loaded = 0;
 }
 
+unsigned int CG::getColorFromPal(int palIndex)
+{
+	// Return color from current palette at given index
+	if (!palette || palIndex < 0 || palIndex >= 256) {
+		return 0xFF000000; // Return opaque black if invalid
+	}
+	return palette[palIndex];
+}
+
 CG::CG() {
 	m_data = 0;
 	m_data_size = 0;

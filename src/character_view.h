@@ -34,6 +34,10 @@ public:
 	void setViewNumber(int num) { m_viewNumber = num; }
 	int getViewNumber() const { return m_viewNumber; }
 
+	// PAT Editor mode
+	bool isPatEditor() const { return m_isPatEditor; }
+	void setPatEditor(bool enabled) { m_isPatEditor = enabled; }
+
 	// Recreate panes (called when switching to this view)
 	void refreshPanes(class Render* render);
 
@@ -41,6 +45,7 @@ private:
 	CharacterInstance* m_character;  // Pointer to shared character data (not owned)
 	FrameState m_state;              // Independent view state
 	int m_viewNumber = 0;            // 0 = primary, 1+ = additional views
+	bool m_isPatEditor = false;      // True if this view is for PAT editing
 
 	// UI panes for this view
 	std::unique_ptr<MainPane> m_mainPane;

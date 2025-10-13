@@ -97,6 +97,7 @@ public:
 	bool loadPalette(const char *name);
 	bool changePaletteNumber(int number);
 	int getPalNumber();
+	unsigned int getColorFromPal(int palIndex);
 
 	void free();
 

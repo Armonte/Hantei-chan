@@ -6,6 +6,7 @@
 #include <windows.h>
 
 CharacterInstance::CharacterInstance()
+	: parts(&cg)
 {
 	state.pattern = 0;
 	state.frame = 0;
@@ -87,6 +88,22 @@ bool CharacterInstance::loadCG(const std::string& cgPath)
 	}
 
 	m_cgPath = cgPath;
+
+	// Update Parts CG reference if Parts is loaded
+	if (parts.loaded) {
+		parts.updateCGReference(&cg);
+	}
+
+	return true;
+}
+
+bool CharacterInstance::loadPAT(const std::string& patPath)
+{
+	if (!parts.Load(patPath.c_str())) {
+		return false;
+	}
+
+	m_patPath = patPath;
 	return true;
 }
 
@@ -133,6 +150,24 @@ bool CharacterInstance::saveModifiedOnly(const std::string& ha6Path)
 	return true;
 }
 
+bool CharacterInstance::savePAT()
+{
+	if (m_patPath.empty()) {
+		return false;
+	}
+
+	return parts.Save(m_patPath.c_str());
+}
+
+bool CharacterInstance::savePATAs(const std::string& patPath)
+{
+	if (parts.Save(patPath.c_str())) {
+		m_patPath = patPath;
+		return true;
+	}
+	return false;
+}
+
 void CharacterInstance::setName(const std::string& name)
 {
 	m_name = name;
@@ -174,6 +209,11 @@ const std::vector<std::string>& CharacterInstance::getHA6Paths() const
 const std::string& CharacterInstance::getCGPath() const
 {
 	return m_cgPath;
+}
+
+const std::string& CharacterInstance::getPATPath() const
+{
+	return m_patPath;
 }
 
 const std::string& CharacterInstance::getTxtPath() const

@@ -4,17 +4,31 @@
 #include "render.h"
 #include "hitbox.h"
 #include "framestate.h"
+#include "state_reference.h"
 #include <vector>
 #include <functional>
+
 //ImGui Windows that draw themselves. Just for utility.
 class DrawWindow
 {
 public:
+	// Constructor for existing panes (MainPane, RightPane, BoxPane)
 	DrawWindow(Render* render, FrameData *frameData, FrameState &state):
 		render(render),
 		frameData(frameData),
 		effectFrameData(nullptr),
-		currState(state){};
+		currState(state),
+		curInstance(nullptr){};
+
+	// Constructor for PatEditor panes (uses StateReference)
+	DrawWindow(Render* render, StateReference *curInstance):
+		render(render),
+		frameData(nullptr),
+		effectFrameData(nullptr),
+		currState(*curInstance->currState),
+		curInstance(curInstance){};
+
+	virtual ~DrawWindow() = default;
 
 	FrameState &currState;
 	bool isVisible = true;
@@ -30,10 +44,12 @@ public:
 	void setEffectFrameData(FrameData* data) {
 		effectFrameData = data;
 	}
+
 protected:
 	Render *render;
-	FrameData *frameData;
-	FrameData *effectFrameData;  // Effect.ha6 frame data (can be null)
+	FrameData *frameData;           // For existing panes
+	FrameData *effectFrameData;     // Effect.ha6 frame data (can be null)
+	StateReference *curInstance;     // For PatEditor panes (can be null)
 
 	// Helper to mark as modified
 	void markModified() {

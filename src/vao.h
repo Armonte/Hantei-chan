@@ -10,8 +10,9 @@ class Vao
 public:
 	enum AttribType
 	{
-		F2F2, //Textures
-		F3F3 //Color only
+		F2F2, //Textures (x,y,s,t)
+		F3F3, //Color only (x,y,z,r,g,b)
+		F3F4  //Parts (x,y,z,s,t,p,q) - position + normal/flipped UVs
 	};
 
 private:
@@ -49,7 +50,8 @@ public:
 	void UpdateBuffer(int which, void *data, size_t count = 0);
 	void Bind();
 	void Load();
-	
+	void Clear(); // Clear all prepared data
+
 };
 
 #endif /* VAO_H_GUARD */
