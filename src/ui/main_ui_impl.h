@@ -185,19 +185,38 @@ void MainFrame::DrawUi()
 		}
 
 		ImGuiID dockspaceID = ImGui::GetID("Dock Space");
+
+		// Force rebuild if needsDockRebuild flag is set (e.g., when opening PatEditor)
+		if (needsDockRebuild) {
+			ImGui::DockBuilderRemoveNode(dockspaceID);
+			needsDockRebuild = false;
+		}
+
 		if (!ImGui::DockBuilderGetNode(dockspaceID)) {
 			ImGui::DockBuilderRemoveNode(dockspaceID);
 			ImGui::DockBuilderAddNode(dockspaceID, ImGuiDockNodeFlags_DockSpace);
-			ImGui::DockBuilderSetNodeSize(dockspaceID, clientRect); 
+			ImGui::DockBuilderSetNodeSize(dockspaceID, clientRect);
 
 			ImGuiID toSplit = dockspaceID;
 			ImGuiID dock_left_id = ImGui::DockBuilderSplitNode(toSplit, ImGuiDir_Left, 0.30f, nullptr, &toSplit);
 			ImGuiID dock_right_id = ImGui::DockBuilderSplitNode(toSplit, ImGuiDir_Right, 0.45f, nullptr, &toSplit);
-			ImGuiID dock_down_id = ImGui::DockBuilderSplitNode(toSplit, ImGuiDir_Down, 0.20f, nullptr, &toSplit);
+			ImGuiID dock_down_id = ImGui::DockBuilderSplitNode(toSplit, ImGuiDir_Down, 0.25f, nullptr, &toSplit);
+			ImGuiID dock_pat_right_id = ImGui::DockBuilderSplitNode(toSplit, ImGuiDir_Right, 0.60f, nullptr, &toSplit);
 
+			ImGuiID texture_dock = ImGui::DockBuilderSplitNode(dock_down_id, ImGuiDir_Right, 0.50f, nullptr, &dock_down_id);
+			ImGuiID part_dock = ImGui::DockBuilderSplitNode(dock_left_id, ImGuiDir_Down, 0.50f, nullptr, &dock_left_id);
+
+			// Normal HA6 editing panes
 			ImGui::DockBuilderDockWindow("Left Pane", dock_left_id);
 			ImGui::DockBuilderDockWindow("Right Pane", dock_right_id);
  			ImGui::DockBuilderDockWindow("Box Pane", dock_down_id);
+
+			// PatEditor panes
+			ImGui::DockBuilderDockWindow("PartSet Pane", dock_left_id);
+			ImGui::DockBuilderDockWindow("Part Pane", part_dock);
+			ImGui::DockBuilderDockWindow("Tool Pane", dock_pat_right_id);
+			ImGui::DockBuilderDockWindow("Shape Pane", dock_down_id);
+			ImGui::DockBuilderDockWindow("Texture Pane", texture_dock);
 
 			ImGui::DockBuilderFinish(dockspaceID);
 		}
@@ -388,6 +407,15 @@ void MainFrame::DrawUi()
 		if (view->getMainPane()) view->getMainPane()->Draw();
 		if (view->getRightPane()) view->getRightPane()->Draw();
 		if (view->getBoxPane()) view->getBoxPane()->Draw();
+
+		// Draw PatEditor panes if this is a PAT editor view
+		if (view->isPatEditor()) {
+			if (view->getPartSetPane()) view->getPartSetPane()->Draw();
+			if (view->getPartPane()) view->getPartPane()->Draw();
+			if (view->getShapePane()) view->getShapePane()->Draw();
+			if (view->getTexturePane()) view->getTexturePane()->Draw();
+			if (view->getToolPane()) view->getToolPane()->Draw();
+		}
 
 		// End undo frame - commit snapshot if anything was modified
 		if (character) {

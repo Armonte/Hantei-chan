@@ -63,4 +63,42 @@ void CharacterView::refreshPanes(Render* render)
 	if (m_boxPane) {
 		m_boxPane->onModified = modifyCallback;
 	}
+
+	// Create PatEditor panes if this is a PAT editor view
+	if (m_isPatEditor) {
+		// Set up StateReference to point to this view's data
+		m_stateRef.framedata = &m_character->frameData;
+		m_stateRef.currState = &m_state;
+		m_stateRef.cg = &m_character->cg;
+		m_stateRef.curPalette = nullptr;  // PAT editor doesn't use palettes
+		m_stateRef.currentFilePath = nullptr;
+		m_stateRef.currentPatFilePath = nullptr;
+		m_stateRef.parts = &m_character->parts;
+		m_stateRef.renderMode = &m_state.renderMode;
+
+		// Create PatEditor panes
+		m_partsetPane = std::make_unique<PatPartSetPane>(render, &m_stateRef);
+		m_partPane = std::make_unique<PatPartPane>(render, &m_stateRef, m_partsetPane.get());
+		m_shapePane = std::make_unique<PatShapePane>(render, &m_stateRef);
+		m_texturePane = std::make_unique<PatTexturePane>(render, &m_stateRef);
+		m_toolPane = std::make_unique<PatToolPane>(render, &m_stateRef);
+
+		// Regenerate names for all PatEditor panes
+		if (m_partsetPane) {
+			m_partsetPane->RegeneratePartSetNames();
+			m_partsetPane->RegeneratePartPropNames();
+		}
+		if (m_partPane) {
+			m_partPane->RegeneratePartCutOutsNames();
+		}
+		if (m_shapePane) {
+			m_shapePane->RegenerateShapesNames();
+		}
+		if (m_texturePane) {
+			m_texturePane->RegenerateTexturesNames();
+		}
+		if (m_toolPane) {
+			m_toolPane->RegeneratePartsetNames();
+		}
+	}
 }

@@ -83,60 +83,58 @@ void PatToolPane::DrawTool()
                 "None",
                 "Linear"
             };
-            if(curInstance->currState->animating)
-                ImGui::BeginDisabled();
 
             ImGui::Text("PartSet Test Animation");
-            float spacing = ImGui::GetStyle().ItemInnerSpacing.x;
-            ImGui::SetNextItemWidth(ImGui::GetWindowWidth() - 160.f);
-            ImGui::SliderInt("##frameSlider", &curInstance->currState->framePatEditor, 0, nframes);
-            ImGui::SameLine();
-            ImGui::PushButtonRepeat(true);
-            if (ImGui::ArrowButton("##left", ImGuiDir_Left))
+            if(!curInstance->currState->animating)
             {
-                curInstance->currState->framePatEditor--;
-            }
-            ImGui::SameLine(0.0f, spacing);
-            if (ImGui::ArrowButton("##right", ImGuiDir_Right))
-            {
-                curInstance->currState->framePatEditor++;
-            }
-            auto frame = &curInstance->currState->animationSequence.frames.at(curInstance->currState->framePatEditor);
-            ImGui::PopButtonRepeat();
-            ImGui::SameLine();
-            ImGui::Text("%d/%d", curInstance->currState->framePatEditor + 1, nframes + 1);
-            if (curInstance->currState->framePatEditor < 0)
-                curInstance->currState->framePatEditor = 0;
-            else if (curInstance->currState->framePatEditor > nframes)
-                curInstance->currState->framePatEditor = nframes;
-
-            auto nPartSet = curInstance->parts->partSets.size();
-            if(nPartSet > 0)
-            {
-                if (ImGui::BeginCombo("Part Set", partSetDecoratedNames[frame->AF.spriteId].c_str(),
-                                      ImGuiComboFlags_HeightLargest))
+                float spacing = ImGui::GetStyle().ItemInnerSpacing.x;
+                ImGui::SetNextItemWidth(ImGui::GetWindowWidth() - 160.f);
+                ImGui::SliderInt("##frameSlider", &curInstance->currState->framePatEditor, 0, nframes);
+                ImGui::SameLine();
+                ImGui::PushButtonRepeat(true);
+                if (ImGui::ArrowButton("##left", ImGuiDir_Left))
                 {
-                    auto count = curInstance->parts->partSets.size();
-                    for (int n = 0; n < count; n++) {
-                        const bool is_selected = (frame->AF.spriteId == n);
-                        if (ImGui::Selectable(partSetDecoratedNames[n].c_str(), is_selected)) {
-                            frame->AF.spriteId = n;
+                    curInstance->currState->framePatEditor--;
+                }
+                ImGui::SameLine(0.0f, spacing);
+                if (ImGui::ArrowButton("##right", ImGuiDir_Right))
+                {
+                    curInstance->currState->framePatEditor++;
+                }
+                auto frame = &curInstance->currState->animationSequence.frames.at(curInstance->currState->framePatEditor);
+                ImGui::PopButtonRepeat();
+                ImGui::SameLine();
+                ImGui::Text("%d/%d", curInstance->currState->framePatEditor + 1, nframes + 1);
+                if (curInstance->currState->framePatEditor < 0)
+                    curInstance->currState->framePatEditor = 0;
+                else if (curInstance->currState->framePatEditor > nframes)
+                    curInstance->currState->framePatEditor = nframes;
+
+                auto nPartSet = curInstance->parts->partSets.size();
+                if(nPartSet > 0)
+                {
+                    if (ImGui::BeginCombo("Part Set", partSetDecoratedNames[frame->AF.spriteId].c_str(),
+                                          ImGuiComboFlags_HeightLargest))
+                    {
+                        auto count = curInstance->parts->partSets.size();
+                        for (int n = 0; n < count; n++) {
+                            const bool is_selected = (frame->AF.spriteId == n);
+                            if (ImGui::Selectable(partSetDecoratedNames[n].c_str(), is_selected)) {
+                                frame->AF.spriteId = n;
+                            }
+
+                            // Set the initial focus when opening the combo (scrolling + keyboard navigation focus)
+                            if (is_selected)
+                                ImGui::SetItemDefaultFocus();
                         }
 
-                        // Set the initial focus when opening the combo (scrolling + keyboard navigation focus)
-                        if (is_selected)
-                            ImGui::SetItemDefaultFocus();
+                        ImGui::EndCombo();
                     }
-
-                    ImGui::EndCombo();
+                    auto af = &frame->AF;
+                    ImGui::InputInt("Duration", &af->duration, 1, 0);
+                    ImGui::Combo("Interpolation", &af->interpolationType, interpolationList, IM_ARRAYSIZE(interpolationList));
                 }
-                auto af = &frame->AF;
-                ImGui::InputInt("Duration", &af->duration, 1, 0);
-                ImGui::Combo("Interpolation", &af->interpolationType, interpolationList, IM_ARRAYSIZE(interpolationList));
             }
-
-            if(curInstance->currState->animating)
-                ImGui::EndDisabled();
 
             auto text = curInstance->currState->animating ? "Stop Animation" : "Play Animation";
             if (ImGui::Button(text)) {
@@ -158,45 +156,42 @@ void PatToolPane::DrawTool()
 
             ImGui::Separator();
 
-            if(curInstance->currState->animating)
-                ImGui::BeginDisabled();
-
-            if(ImGui::Button("Add Frame"))
+            if(!curInstance->currState->animating)
             {
-                frame = &curInstance->currState->animationSequence.frames.emplace_back();
-                frame->AF.usePat = true;
-                frame->AF.spriteId = 0;
-                frame->AF.aniType = 1;
-                curInstance->currState->framePatEditor = curInstance->currState->animationSequence.frames.size() - 1;
-                nframes = curInstance->currState->animationSequence.frames.size() - 1;
-            }
-            ImGui::SameLine();
-            if(ImGui::Button("Duplicate Frame"))
-            {
-                auto copyFrame = curInstance->currState->animationSequence.frames[curInstance->currState->framePatEditor];
-                curInstance->currState->animationSequence.frames.push_back(copyFrame);
-                curInstance->currState->framePatEditor = curInstance->currState->animationSequence.frames.size() - 1;
-                nframes = curInstance->currState->animationSequence.frames.size() - 1;
-                frame = &curInstance->currState->animationSequence.frames.back();
-            }
-            if(nframes > 0)
-            {
-                ImGui::SameLine();
-                if(ImGui::Button("Delete Frame"))
+                if(ImGui::Button("Add Frame"))
                 {
-                    auto frames = &curInstance->currState->animationSequence.frames;
-                    frames->erase(
-                        frames->begin() + curInstance->currState->framePatEditor);
-                    int curFrame = curInstance->currState->framePatEditor;
-                    nframes = frames->size() - 1;
-                    if(curFrame > nframes)
-                        curInstance->currState->framePatEditor--;
-                    frame = &curInstance->currState->animationSequence.frames.at(curInstance->currState->framePatEditor);
+                    auto frame = &curInstance->currState->animationSequence.frames.emplace_back();
+                    frame->AF.usePat = true;
+                    frame->AF.spriteId = 0;
+                    frame->AF.aniType = 1;
+                    curInstance->currState->framePatEditor = curInstance->currState->animationSequence.frames.size() - 1;
+                    nframes = curInstance->currState->animationSequence.frames.size() - 1;
+                }
+                ImGui::SameLine();
+                if(ImGui::Button("Duplicate Frame"))
+                {
+                    auto copyFrame = curInstance->currState->animationSequence.frames[curInstance->currState->framePatEditor];
+                    curInstance->currState->animationSequence.frames.push_back(copyFrame);
+                    curInstance->currState->framePatEditor = curInstance->currState->animationSequence.frames.size() - 1;
+                    nframes = curInstance->currState->animationSequence.frames.size() - 1;
+                    auto frame = &curInstance->currState->animationSequence.frames.back();
+                }
+                if(nframes > 0)
+                {
+                    ImGui::SameLine();
+                    if(ImGui::Button("Delete Frame"))
+                    {
+                        auto frames = &curInstance->currState->animationSequence.frames;
+                        frames->erase(
+                            frames->begin() + curInstance->currState->framePatEditor);
+                        int curFrame = curInstance->currState->framePatEditor;
+                        nframes = frames->size() - 1;
+                        if(curFrame > nframes)
+                            curInstance->currState->framePatEditor--;
+                        auto frame = &curInstance->currState->animationSequence.frames.at(curInstance->currState->framePatEditor);
+                    }
                 }
             }
-
-            if(curInstance->currState->animating)
-                ImGui::EndDisabled();
         }
     }
 }

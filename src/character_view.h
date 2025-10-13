@@ -5,6 +5,12 @@
 #include "main_pane.h"
 #include "right_pane.h"
 #include "box_pane.h"
+#include "state_reference.h"
+#include "PatEditor/pat_partset_pane.h"
+#include "PatEditor/pat_part_pane.h"
+#include "PatEditor/pat_shape_pane.h"
+#include "PatEditor/pat_texture_pane.h"
+#include "PatEditor/pat_tool_pane.h"
 #include <memory>
 #include <string>
 
@@ -29,6 +35,13 @@ public:
 	RightPane* getRightPane() const { return m_rightPane.get(); }
 	BoxPane* getBoxPane() const { return m_boxPane.get(); }
 
+	// Get PatEditor panes (only valid when isPatEditor() == true)
+	PatPartSetPane* getPartSetPane() const { return m_partsetPane.get(); }
+	PatPartPane* getPartPane() const { return m_partPane.get(); }
+	PatShapePane* getShapePane() const { return m_shapePane.get(); }
+	PatTexturePane* getTexturePane() const { return m_texturePane.get(); }
+	PatToolPane* getToolPane() const { return m_toolPane.get(); }
+
 	// Display name (e.g., "Ciel - 400" or "Ciel #2 - 100")
 	std::string getDisplayName() const;
 	void setViewNumber(int num) { m_viewNumber = num; }
@@ -51,6 +64,14 @@ private:
 	std::unique_ptr<MainPane> m_mainPane;
 	std::unique_ptr<RightPane> m_rightPane;
 	std::unique_ptr<BoxPane> m_boxPane;
+
+	// PatEditor panes (only created when isPatEditor == true)
+	StateReference m_stateRef;
+	std::unique_ptr<PatPartSetPane> m_partsetPane;
+	std::unique_ptr<PatPartPane> m_partPane;
+	std::unique_ptr<PatShapePane> m_shapePane;
+	std::unique_ptr<PatTexturePane> m_texturePane;
+	std::unique_ptr<PatToolPane> m_toolPane;
 };
 
 #endif /* CHARACTER_VIEW_H_GUARD */

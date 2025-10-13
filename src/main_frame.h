@@ -9,6 +9,12 @@
 #include "vectors.h"
 #include "character_instance.h"
 #include "character_view.h"
+#include "state_reference.h"
+#include "PatEditor/pat_partset_pane.h"
+#include "PatEditor/pat_part_pane.h"
+#include "PatEditor/pat_shape_pane.h"
+#include "PatEditor/pat_texture_pane.h"
+#include "PatEditor/pat_tool_pane.h"
 #include <glm/mat4x4.hpp>
 #include <string>
 #include <vector>
@@ -93,6 +99,9 @@ private:
 	// Right-click context menu
 	int contextMenuViewIndex = -1;
 
+	// Dock layout rebuild flag (set when switching to PatEditor mode)
+	bool needsDockRebuild = false;
+
 	// Project management
 	bool m_projectModified = false;
 	bool m_pendingProjectClose = false;
@@ -108,6 +117,15 @@ private:
 	void markProjectModified();
 	void addRecentProject(const std::string& path);
 	void openRecentProject(const std::string& path);
+
+	// PatEditor panes
+	StateReference stateRef;
+	std::unique_ptr<PatPartSetPane> partsetPane;
+	std::unique_ptr<PatPartPane> partPane;
+	std::unique_ptr<PatShapePane> shapePane;
+	std::unique_ptr<PatTexturePane> texturePane;
+	std::unique_ptr<PatToolPane> toolPane;
+	void updateStateReference();
 
 	AboutWindow aboutWindow;
 };

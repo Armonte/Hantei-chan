@@ -579,9 +579,16 @@ void MainFrame::createPatEditorView(const std::string& patPath)
 	auto view = std::make_unique<CharacterView>(characters.back().get(), &render);
 	view->setPatEditor(true);
 	view->setViewNumber(0);
+
+	// Refresh panes AFTER setting isPatEditor flag to create PatEditor panes
+	view->refreshPanes(&render);
+
 	views.push_back(std::move(view));
 	setActiveView(views.size() - 1);
 	markProjectModified();
+
+	// Force dock layout rebuild to show PatEditor panes
+	needsDockRebuild = true;
 }
 
 int MainFrame::countViewsForCharacter(CharacterInstance* character)
