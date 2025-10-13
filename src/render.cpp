@@ -12,6 +12,7 @@
 #include <sstream>
 
 #include "hitbox.h"
+#include "parts/parts.h"
 
 constexpr int maxBoxes = 33;
 
@@ -75,14 +76,54 @@ out vec4 FragColor;
 void main()
 {
     vec4 col = texture(Texture, Frag_UV.st);
-    
+
     FragColor = col * Frag_Color;
 };
+)";
+
+// Parts shader with flip support and additive color
+const char* partsSrcVert = R"(
+#version 330 core
+layout (location = 0) in vec3 Position;
+layout (location = 1) in vec4 UV;
+
+out vec2 Frag_UV;
+
+uniform mat4 ProjMtx;
+uniform int flip;
+
+void main()
+{
+    // Choose between s,t or p,q based on flip
+    if (flip != 0) {
+        Frag_UV = UV.pq;
+    } else {
+        Frag_UV = UV.st;
+    }
+    gl_Position = ProjMtx * vec4(Position, 1);
+}
+)";
+
+const char* partsSrcFrag = R"(
+#version 330 core
+uniform sampler2D Texture;
+uniform vec3 addColor;
+
+in vec2 Frag_UV;
+out vec4 FragColor;
+
+void main()
+{
+    vec4 col = texture(Texture, Frag_UV);
+    col.rgb += addColor;
+    FragColor = col;
+}
 )";
 
 
 Render::Render():
 cg(nullptr),
+m_parts(nullptr),
 filter(false),
 vSprite(Vao::F2F2, GL_DYNAMIC_DRAW),
 vGeometry(Vao::F3F3, GL_STREAM_DRAW),
@@ -115,10 +156,17 @@ blendingMode(normal)
 	sTextured.BindAttrib("Color", 2);
 	//sTextured.LoadShader("src/textured.vert", "src/textured.frag");
 	sTextured.LoadShader(texturedSrcVert, texturedSrcFrag, true);
-	
+
+	sPartShader.BindAttrib("Position", 0);
+	sPartShader.BindAttrib("UV", 1);
+	sPartShader.LoadShader(partsSrcVert, partsSrcFrag, true);
+
 	lAlphaS = sSimple.GetLoc("Alpha");
 	lProjectionS = sSimple.GetLoc("ProjMtx");
 	lProjectionT = sTextured.GetLoc("ProjMtx");
+	lProjectionParts = sPartShader.GetLoc("ProjMtx");
+	lFlipParts = sPartShader.GetLoc("flip");
+	lAddColorParts = sPartShader.GetLoc("addColor");
 
 	vSprite.Prepare(sizeof(imageVertex), imageVertex);
 	vSprite.Load();
@@ -317,6 +365,11 @@ void Render::SetCg(CG *cg_)
 	curImageId = -1;
 }
 
+void Render::SetParts(Parts *parts)
+{
+	m_parts = parts;
+}
+
 void Render::SwitchImage(int id)
 {
 	// Always process when id == -1 to ensure texture clears, even if curImageId is already -1
@@ -510,6 +563,39 @@ void Render::SortLayersByZPriority(int mainPatternPriority)
 void Render::DrawLayers()
 {
 	if (renderLayers.empty()) return;
+
+	// Check if we should use Parts rendering
+	if (usePat && m_parts && m_parts->loaded)
+	{
+		// Use Parts rendering with callbacks
+		constexpr float tau = glm::pi<float>()*2.f;
+		glm::mat4 baseView = glm::mat4(1.f);
+		baseView = glm::scale(baseView, glm::vec3(scale, scale, 1.f));
+		baseView = glm::translate(baseView, glm::vec3(x, y, 0.f));
+
+		sPartShader.Use();
+
+		// Callback to set matrix transform
+		auto setMatrix = [this, &baseView, tau](glm::mat4 partMatrix) {
+			glm::mat4 finalView = baseView * partMatrix;
+			glUniformMatrix4fv(lProjectionParts, 1, GL_FALSE, glm::value_ptr(projection * finalView));
+		};
+
+		// Callback to set additive color
+		auto setAddColor = [this](float r, float g, float b) {
+			glUniform3f(lAddColorParts, r, g, b);
+		};
+
+		// Callback to set flip mode
+		auto setFlip = [this](char flip) {
+			glUniform1i(lFlipParts, (int)flip);
+		};
+
+		// Draw Parts with interpolation
+		m_parts->Draw(curPattern, curNextPattern, curInterp, setMatrix, setAddColor, setFlip, colorRgba);
+
+		return;
+	}
 
 	// Save original transform state
 	int origX = x;

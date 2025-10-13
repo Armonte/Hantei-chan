@@ -3,6 +3,7 @@
 
 #include "framedata.h"
 #include "hitbox.h"
+#include "enums.h"
 #include <linear_allocator.hpp>
 #include <vector>
 #include <set>
@@ -129,6 +130,14 @@ struct FrameState
 
 	// Active spawn instances (created dynamically during animation)
 	std::vector<ActiveSpawnInstance> activeSpawns;
+
+	// PatEditor state (for .pat file editing)
+	RenderMode renderMode = DEFAULT;
+	int partSet = 0;           // Current part set index
+	int partProp = 0;          // Current part property index
+	int partCutOut = 0;        // Current cut-out index
+	int partShape = 0;         // Current shape index
+	int partGraph = 0;         // Current texture index
 
 	// Shared memory clipboard for cross-instance copy/paste
 	CopyData *copied;

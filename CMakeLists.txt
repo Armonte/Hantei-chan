@@ -43,6 +43,12 @@ add_executable(${EXE} WIN32
 	src/test.cpp
 	src/ini.cpp
 	src/preset_effects.cpp
+	src/copy_manager.cpp
+	src/parts/parts_partset.cpp
+	src/parts/parts_part.cpp
+	src/parts/parts_shape.cpp
+	src/parts/parts_texture.cpp
+	src/parts/parts.cpp
 	res/res.rc
 )
 

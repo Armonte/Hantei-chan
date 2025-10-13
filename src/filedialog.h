@@ -8,7 +8,8 @@ enum {
 	PAL,
 	TXT,
 	VECTOR,
-	HPROJ
+	HPROJ,
+	PAT
 };
 }
 

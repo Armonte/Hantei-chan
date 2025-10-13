@@ -15,6 +15,9 @@ quadCount(nullptr), quadIndexes(nullptr)
 	case F3F3:
 		stride = 6 * sizeof(float);
 		break;
+	case F3F4:
+		stride = 7 * sizeof(float); // x,y,z,s,t,p,q
+		break;
 	}
 }
 
@@ -101,6 +104,14 @@ void Vao::Bind()
 		glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, stride, (void*)(sizeof(float)*2));
 		glEnableVertexAttribArray(1);
 		break;
+	case F3F4:
+		// Position: x,y,z (attribute 0)
+		glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, stride, nullptr);
+		glEnableVertexAttribArray(0);
+		// TexCoord: s,t,p,q (attribute 1)
+		glVertexAttribPointer(1, 4, GL_FLOAT, GL_FALSE, stride, (void*)(sizeof(float)*3));
+		glEnableVertexAttribArray(1);
+		break;
 	}
 }
 
@@ -134,6 +145,21 @@ void Vao::Load()
 		glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, stride, (void*)(sizeof(float)*2));
 		glEnableVertexAttribArray(1);
 		break;
+	case F3F4:
+		// Position: x,y,z (attribute 0)
+		glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, stride, nullptr);
+		glEnableVertexAttribArray(0);
+		// TexCoord: s,t,p,q (attribute 1)
+		glVertexAttribPointer(1, 4, GL_FLOAT, GL_FALSE, stride, (void*)(sizeof(float)*3));
+		glEnableVertexAttribArray(1);
+		break;
 	}
 
+}
+
+void Vao::Clear()
+{
+	dataPointers.clear();
+	totalSize = 0;
+	loaded = false;
 }

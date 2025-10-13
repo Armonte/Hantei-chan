@@ -11,6 +11,9 @@
 #include <glm/mat4x4.hpp>
 #include <glm/vec4.hpp>
 
+// Forward declarations
+class Parts;
+
 // Layer information for multi-layer rendering
 struct RenderLayer {
 	int spriteId;
@@ -47,10 +50,12 @@ class Render
 {
 private:
 	glm::mat4 projection, view;
-	
+
 	CG *cg;
+	Parts *m_parts;
 	Vao vSprite;
 	Vao vGeometry;
+	Shader sPartShader;
 	enum{
 		LINES = 0,
 		BOXES,
@@ -61,14 +66,19 @@ private:
 	std::vector<float> clientQuads;
 	int quadsToDraw;
 
-	int lProjectionS, lProjectionT;
+	int lProjectionS, lProjectionT, lProjectionParts;
 	int lAlphaS;
+	int lFlipParts, lAddColorParts;
 	Shader sSimple;
 	Shader sTextured;
 	Texture texture;
 	float colorRgba[4];
 
 	int curImageId;
+	bool usePat = false;
+	int curPattern = 0;
+	int curNextPattern = 0;
+	float curInterp = 0.0f;
 
 	// Multi-layer rendering support
 	std::vector<RenderLayer> renderLayers;
@@ -97,6 +107,7 @@ public:
 
 	void GenerateHitboxVertices(const BoxList &hitboxes);
 	void SetCg(CG *cg);
+	void SetParts(Parts *parts);
 	void SwitchImage(int id);
 	void DontDraw();
 	void ClearTexture();

@@ -62,6 +62,7 @@ private:
 	// Character/view management
 	CharacterInstance* findCharacterByPath(const std::string& path);
 	void createViewForCharacter(CharacterInstance* character);
+	void createPatEditorView(const std::string& patPath);
 	int countViewsForCharacter(CharacterInstance* character);
 
 	// Effect character management

@@ -262,6 +262,53 @@ void MainFrame::Menu(unsigned int errorPopupId)
 				}
 			}
 
+			if (ImGui::MenuItem("Load Parts (.pat)..."))
+			{
+				std::string &&file = FileDialog(fileType::PAT);
+				if(!file.empty())
+				{
+					if (hasActive) {
+						// Load PAT into existing character
+						if(!active->loadPAT(file))
+						{
+							ImGui::OpenPopup(errorPopupId);
+						}
+						else
+						{
+							render.SetParts(&active->parts);
+						}
+					}
+					else {
+						// No character loaded - create standalone PAT editor
+						createPatEditorView(file);
+					}
+				}
+			}
+
+			if (ImGui::MenuItem("Save Parts (.pat)", nullptr, false, hasActive && active->parts.loaded))
+			{
+				if (hasActive) {
+					if(!active->savePAT())
+					{
+						ImGui::OpenPopup(errorPopupId);
+					}
+				}
+			}
+
+			if (ImGui::MenuItem("Save Parts As...", nullptr, false, hasActive && active->parts.loaded))
+			{
+				if (hasActive) {
+					std::string &&file = FileDialog(fileType::PAT, true);
+					if(!file.empty())
+					{
+						if(!active->savePATAs(file))
+						{
+							ImGui::OpenPopup(errorPopupId);
+						}
+					}
+				}
+			}
+
 			ImGui::Separator();
 
 			// Effect.ha6 status and management
