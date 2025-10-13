@@ -324,11 +324,6 @@ inline void IfDisplay(std::vector<Frame_IF> *ifList_, Frame_IF *singleClipboard 
 				im::SetNextItemWidth(width);
 				im::DragInt("Priority", &p[8]); im::SameLine();
 				im::TextDisabled("(?)"); if(im::IsItemHovered()) Tooltip("0-5000: priority = 5000 - value\n10000+: priority = value - 10000");
-
-				// Copy button
-				if(singleClipboard && im::Button("Copy")) {
-					*singleClipboard = ifList[i];
-				}
 				break;
 			}
 
@@ -702,16 +697,17 @@ inline void IfDisplay(std::vector<Frame_IF> *ifList_, Frame_IF *singleClipboard 
 				if(im::InputScalarN("##params", ImGuiDataType_S32, p, 6, NULL, NULL, "%d", 0)) {
 		markModified();
 	}
-				im::SameLine();
-				if(singleClipboard && im::Button("Copy")) {
-					*singleClipboard = ifList[i];
-				}
 				if(im::InputScalarN("##params2", ImGuiDataType_S32, p+6, 3, NULL, NULL, "%d", 0)) {
 		markModified();
 	}
 				break;
 		}
 		} // End of manual mode else block
+
+		// Copy button for all condition types
+		if(singleClipboard && im::Button("Copy")) {
+			*singleClipboard = ifList[i];
+		}
 
 		im::PopID();
 	}
