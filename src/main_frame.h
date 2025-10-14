@@ -30,6 +30,7 @@ public:
 	void UpdateBackProj(float x, float y);
 	void HandleMouseDrag(int x, int y, bool dragRight, bool dragLeft);
 	bool HandleKeys(uint64_t vkey);
+	void HandleMouseWheel(bool isIncrease);
 
 	void RightClick(int x, int y);
 	void LoadSettings();
@@ -86,7 +87,6 @@ private:
 	void AdvanceFrame(int dir);
 
 	void SetZoom(float level);
-	void HandleMouseWheel(bool isIncrease);
 	void LoadTheme(int i );
 	void WarmStyle();
 	void ChangeClearColor(float r, float g, float b);
