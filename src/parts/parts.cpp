@@ -630,6 +630,7 @@ void Parts::Draw(int pattern, int nextPattern, float interpolationFactor,
         }
 
         glVertexAttrib4fv(2, newColor);
+        // Note: addColor BGR->RGB swap when passing to shader
         setAddColor(part.addColor[2] / 255.f, part.addColor[1] / 255.f, part.addColor[0] / 255.f);
 
         // Generate vertices based on shape type
