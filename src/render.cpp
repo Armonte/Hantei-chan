@@ -223,8 +223,6 @@ void Render::Draw()
 		//PostQuitMessage(1);
 	}
 
-	printf("[Render::Draw] usePat=%d, m_parts=%p, loaded=%d\n",
-		usePat, m_parts, m_parts ? m_parts->loaded : 0);
 
 	//Lines
 	glm::mat4 view = glm::mat4(1.f);
@@ -239,8 +237,6 @@ void Render::Draw()
 	// Check if we should use Parts rendering
 	if (usePat && m_parts && m_parts->loaded)
 	{
-		printf("[Parts Render] Draw() using Parts mode (curPattern=%d, partSets=%zu)\n",
-			curPattern, m_parts->partSets.size());
 
 		// Use Parts rendering with callbacks
 		constexpr float tau = glm::pi<float>()*2.f;
@@ -620,8 +616,6 @@ void Render::DrawLayers()
 	// Check if we should use Parts rendering
 	if (usePat && m_parts && m_parts->loaded)
 	{
-		printf("[Parts Render] Using Parts rendering mode (curPattern=%d, curNextPattern=%d, partSets=%zu)\n",
-			curPattern, curNextPattern, m_parts->partSets.size());
 		// Use Parts rendering with callbacks
 		constexpr float tau = glm::pi<float>()*2.f;
 		glm::mat4 baseView = glm::mat4(1.f);

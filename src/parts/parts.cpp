@@ -115,10 +115,55 @@ bool Parts::Load(const char* name)
 
     // Parse file
     MainLoad(d + 1, d_end);
-    std::cout << "Loaded " << partSets.size() << " part sets, "
-              << cutOuts.size() << " cutouts, "
+    
+    // Count non-empty part sets
+    int nonEmptyPartSets = 0;
+    for (auto& ps : partSets) {
+        if (!ps.groups.empty()) nonEmptyPartSets++;
+    }
+    
+    std::cout << "Loaded " << partSets.size() << " part sets (" << nonEmptyPartSets 
+              << " non-empty), " << cutOuts.size() << " cutouts, "
               << shapes.size() << " shapes, "
               << gfxMeta.size() << " textures" << std::endl;
+    
+    // Show ALL part sets with data (not just first 20)
+    std::cout << "=== All Part Sets with Data ===" << std::endl;
+    for (size_t i = 0; i < partSets.size(); i++) {
+        if (!partSets[i].groups.empty()) {
+            int usedCount = 0;
+            std::vector<int> usedPpIds;
+            for (auto& prop : partSets[i].groups) {
+                if (prop.ppId >= 0) {
+                    usedCount++;
+                    usedPpIds.push_back(prop.ppId);
+                }
+            }
+            std::cout << "  PartSet " << i << ": " << partSets[i].groups.size() 
+                      << " props (" << usedCount << " used) - ppIds: [";
+            for (size_t j = 0; j < usedPpIds.size() && j < 10; j++) {
+                std::cout << usedPpIds[j];
+                if (j < usedPpIds.size()-1 && j < 9) std::cout << ",";
+            }
+            if (usedPpIds.size() > 10) std::cout << "...";
+            std::cout << "]" << std::endl;
+        }
+    }
+    std::cout << "================================" << std::endl;
+    
+    // List all cutOuts to see what's available
+    std::cout << "=== CutOut List ===" << std::endl;
+    for (size_t i = 0; i < cutOuts.size() && i < 30; i++) {
+        auto& co = cutOuts[i];
+        std::cout << "  CutOut " << i << ": texture=" << co.texture 
+                  << ", shape=" << co.shapeIndex 
+                  << ", uv=(" << co.uv[0] << "," << co.uv[1] << "," << co.uv[2] << "," << co.uv[3] << ")"
+                  << ", name=\"" << co.name << "\"" << std::endl;
+    }
+    if (cutOuts.size() > 30) {
+        std::cout << "  ... and " << (cutOuts.size() - 30) << " more cutOuts" << std::endl;
+    }
+    std::cout << "===================" << std::endl;
 
     // Load textures into OpenGL
     for (auto& gfx : gfxMeta)
@@ -326,7 +371,6 @@ void Parts::DrawPart(int i)
 
     // Bind texture and draw
     curTexId = gfxMeta[cutout.texture].textureIndex;
-    printf("[DrawPart] Binding texture: cutOut=%d, tex=%d, glTexId=%d\n", i, cutout.texture, curTexId);
     glBindTexture(GL_TEXTURE_2D, curTexId);
     partVertices.Draw(0);
 }
@@ -349,7 +393,7 @@ void Parts::Draw(int pattern, int nextPattern, float interpolationFactor,
 
     // Sort groups by priority (higher priority = draw first)
     auto copyGroups = partSets[pattern].groups;
-    std::reverse(copyGroups.begin(), copyGroups.end());
+    // Note: No reverse() needed - stable_sort with rbegin/rend handles ordering
     std::stable_sort(copyGroups.rbegin(), copyGroups.rend(),
         [](const PartProperty &a, const PartProperty &b) {
             return a.priority < b.priority;
@@ -368,11 +412,58 @@ void Parts::Draw(int pattern, int nextPattern, float interpolationFactor,
     float width = 256.f;   // Texture UV width
     float height = 256.f;  // Texture UV height
 
+    // Debug pattern changes only
+    static int lastPattern = -1;
+    if (pattern != lastPattern) {
+        printf("\n========== Pattern %d ==========\n", pattern);
+        printf("Total parts in pattern: %zu\n", copyGroups.size());
+        
+        // Show what each part references
+        int validParts = 0;
+        for (size_t i = 0; i < copyGroups.size(); i++) {
+            auto& p = copyGroups[i];
+            if (p.ppId >= 0 && p.ppId < cutOuts.size()) {
+                auto& co = cutOuts[p.ppId];
+                bool validTex = (co.texture >= 0 && co.texture < textures.size() && textures[co.texture] != nullptr);
+                bool validUV = (co.uv[2] > 0 || co.uv[3] > 0);
+                
+                printf("  Part %d: ppId=%d, tex=%d %s, UV=(%d,%d,%dx%d) %s, BGRA=(%d,%d,%d,%d)\n",
+                    p.propId, p.ppId, co.texture,
+                    validTex ? "✓" : "✗MISSING",
+                    co.uv[0], co.uv[1], co.uv[2], co.uv[3],
+                    validUV ? "✓" : "✗EMPTY",
+                    p.bgra[0], p.bgra[1], p.bgra[2], p.bgra[3]);
+                
+                if (validTex && validUV) validParts++;
+            } else if (p.ppId >= 0) {
+                printf("  Part %d: ppId=%d ✗OUT_OF_RANGE (cutOuts.size=%zu)\n", 
+                    p.propId, p.ppId, cutOuts.size());
+            }
+        }
+        printf("Valid renderable parts: %d/%zu\n", validParts, copyGroups.size());
+        printf("Loaded textures: %zu\n", textures.size());
+        printf("===============================\n\n");
+        lastPattern = pattern;
+    }
+    
     for (auto& part : copyGroups)
     {
-        if (cutOuts.size() <= part.ppId)
+        // Skip unused or invalid parts silently
+        if (part.ppId < 0 || part.ppId >= cutOuts.size()) {
             continue;
+        }
+        
         auto cutout = cutOuts[part.ppId];
+        
+        // Skip zero-size cutouts (like PACNyx Rectangle.Empty check)
+        if (cutout.uv[2] == 0 && cutout.uv[3] == 0) {
+            continue;
+        }
+        
+        // Validate texture reference
+        if (cutout.texture < 0 || cutout.texture >= gfxMeta.size()) {
+            continue;
+        }
 
         // Handle MBAACC format: create default plane shape if shapes array is empty
         // MBAACC .pat files have 0 shapes and use implicit flat planes for all cutouts
@@ -395,8 +486,12 @@ void Parts::Draw(int pattern, int nextPattern, float interpolationFactor,
         glm::vec2 offset = glm::vec2(part.x, part.y);
         glm::vec3 rotation = glm::vec3(part.rotation[1], part.rotation[2], part.rotation[3]);
         glm::vec2 scale = glm::vec2(part.scaleX, part.scaleY);
-        glm::vec4 rgba = glm::vec4(part.rgba[0]*255.f, part.rgba[1]*255.f,
-            part.rgba[2]*255.f, part.rgba[3]*255.f);
+        
+        // Use opacity handling like Sosfiro (for part highlighting)
+        float opacity = partHighlight == -1 || partHighlight == part.propId ?
+            part.bgra[3] : highlightOpacity * 255.f;
+        
+        glm::vec4 bgra = glm::vec4(part.bgra[0], part.bgra[1], part.bgra[2], opacity);
 
         Shape outShape = currentShape; // Copy for potential interpolation
 
@@ -445,10 +540,14 @@ void Parts::Draw(int pattern, int nextPattern, float interpolationFactor,
                     rotation[2] = mixRotation(rotation[2], (*nextPart).rotation[3]);
                     scale[0] = mix(scale[0], (*nextPart).scaleX);
                     scale[1] = mix(scale[1], (*nextPart).scaleY);
-                    rgba[0] = mix(rgba[0], (*nextPart).rgba[0]*255.f);
-                    rgba[1] = mix(rgba[1], (*nextPart).rgba[1]*255.f);
-                    rgba[2] = mix(rgba[2], (*nextPart).rgba[2]*255.f);
-                    rgba[3] = mix(rgba[3], (*nextPart).rgba[3]*255.f);
+                    bgra[0] = mix(bgra[0], (*nextPart).bgra[0]);
+                    bgra[1] = mix(bgra[1], (*nextPart).bgra[1]);
+                    bgra[2] = mix(bgra[2], (*nextPart).bgra[2]);
+                    
+                    // Interpolate opacity with same highlighting logic
+                    float opacityNext = partHighlight == -1 || partHighlight == (*nextPart).propId ?
+                        (*nextPart).bgra[3] : highlightOpacity * 255.f;
+                    bgra[3] = mix(bgra[3], opacityNext);
 
                     if ((int)currentShape.type > 2 && nextShape.type == currentShape.type) {
                         outShape.dRadius = mix(outShape.dRadius, nextShape.dRadius);
@@ -473,6 +572,10 @@ void Parts::Draw(int pattern, int nextPattern, float interpolationFactor,
         setMatrix(view);
         setFlip(part.flip);
 
+        // Disable depth test for proper alpha blending of 2D sprites
+        glDisable(GL_DEPTH_TEST);
+        glDepthMask(GL_FALSE);
+
         // Set blending mode
         if (part.additive)
             glBlendFunc(GL_SRC_ALPHA, GL_ONE);
@@ -491,11 +594,21 @@ void Parts::Draw(int pattern, int nextPattern, float interpolationFactor,
                 newColor[3] *= (palColor >> 24) / 255.f;
             }
         }
-        // Part color data is in BGRA format, swap to RGB
-        newColor[0] *= rgba[2] / 255.f;  // RED = rgba[2]
-        newColor[1] *= rgba[1] / 255.f;  // GREEN = rgba[1]
-        newColor[2] *= rgba[0] / 255.f;  // BLUE = rgba[0]
-        newColor[3] *= rgba[3] / 255.f;  // ALPHA = rgba[3]
+        // Apply part color (BGRA order like Eiton - swap B and R)
+        newColor[0] *= bgra[2] / 255.f; // RED = bgra[2]
+        newColor[1] *= bgra[1] / 255.f; // GREEN = bgra[1]
+        newColor[2] *= bgra[0] / 255.f; // BLUE = bgra[0]
+        newColor[3] *= bgra[3] / 255.f; // ALPHA = bgra[3]
+
+        // Debug first part render only
+        static bool debugOnce = true;
+        if (debugOnce) {
+            printf("[RENDER DEBUG] Part propId=%d, ppId=%d\n", part.propId, part.ppId);
+            printf("  bgra input: (%d, %d, %d, %d)\n", part.bgra[0], part.bgra[1], part.bgra[2], part.bgra[3]);
+            printf("  Final color to GL: (%.3f, %.3f, %.3f, %.3f)\n", 
+                newColor[0], newColor[1], newColor[2], newColor[3]);
+            debugOnce = false;
+        }
 
         glVertexAttrib4fv(2, newColor);
         setAddColor(part.addColor[2] / 255.f, part.addColor[1] / 255.f, part.addColor[0] / 255.f);
@@ -633,6 +746,10 @@ void Parts::Draw(int pattern, int nextPattern, float interpolationFactor,
         DrawPart(part.ppId);
         partVertices.Clear();
     }
+    
+    // Restore depth test state
+    glEnable(GL_DEPTH_TEST);
+    glDepthMask(GL_TRUE);
 }
 
 bool Parts::Save(const char* filename)

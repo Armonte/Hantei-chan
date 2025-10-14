@@ -13,7 +13,7 @@
 
 struct PartProperty {
     int propId = -1;
-    int priority = 0;
+    float priority = 0.f;  // Float to preserve sub-ordering from propId
     float rotation[4]{}; // PRA3: 3D rotation (4 floats)
     int x = 0;
     int y = 0;
@@ -23,7 +23,7 @@ struct PartProperty {
     bool additive = false;
     bool filter = false;
     int flip = 0; // 0=none, 1=H, 2=V, 3=both (PRRV)
-    float rgba[4] = { 1.f, 1.f, 1.f, 1.f }; // Color tint (stored as BGRA bytes in file)
+    unsigned char bgra[4] = { 255, 255, 255, 255 }; // Color tint (BGRA byte order like Eiton)
     float addColor[4] = { 0.f, 0.f, 0.f, 0.f }; // Additive color (PRSP)
 };
 

@@ -353,11 +353,23 @@ void PatPartSetPane::DrawPartProperty(PartSet<>* partSet)
                     curInstance->parts->GetPartPropsDecorateName(curInstance->currState->partSet,curInstance->currState->partProp);
         }
         ImGui::SetNextItemWidth(widthInput);
-        ImGui::InputInt("Priority", &props->priority, 1, 0);
+        ImGui::DragFloat("Priority", &props->priority, 1.0f, 0.0f, 1000.0f);
         ImGui::Checkbox("Additive Filter", &props->additive);
         ImGui::SameLine();
         ImGui::Checkbox("Bilinear Filter", &props->filter);
-        ImGui::ColorEdit4("BGRA Color", props->rgba);
+        // Convert bgra bytes to float for UI, then back
+        float rgba_float[4] = {
+            props->bgra[2] / 255.f, // R from B position
+            props->bgra[1] / 255.f, // G
+            props->bgra[0] / 255.f, // B from R position  
+            props->bgra[3] / 255.f  // A
+        };
+        if (ImGui::ColorEdit4("RGBA Color", rgba_float)) {
+            props->bgra[2] = (unsigned char)(rgba_float[0] * 255.f); // R -> B position
+            props->bgra[1] = (unsigned char)(rgba_float[1] * 255.f); // G
+            props->bgra[0] = (unsigned char)(rgba_float[2] * 255.f); // B -> R position
+            props->bgra[3] = (unsigned char)(rgba_float[3] * 255.f); // A
+        }
         ImGui::ColorEdit4("Add Color", props->addColor);
         ImGui::Combo("Flip Side", &props->flip, flipList, IM_ARRAYSIZE(flipList));
     }
