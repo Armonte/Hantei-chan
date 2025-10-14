@@ -396,25 +396,6 @@ void Parts::DrawPart(int i)
 
     // Bind texture and draw
     curTexId = gfxMeta[cutout.texture].textureIndex;
-    
-    // PatEditor: Override texture in TEXTURE_VIEW mode
-    if (renderMode && currState && *renderMode == TEXTURE_VIEW && !currState->animating) {
-        auto gfx = GetPartGfx(currState->partGraph);
-        if (gfx != nullptr) {
-            curTexId = gfx->textureIndex;
-        }
-    }
-    // PatEditor: Override texture in UV_SETTING_VIEW mode  
-    else if (renderMode && currState && *renderMode == UV_SETTING_VIEW && !currState->animating) {
-        auto cutoutSelected = GetCutOut(currState->partCutOut);
-        if (cutoutSelected != nullptr) {
-            auto gfx = GetPartGfx(cutoutSelected->texture);
-            if (gfx != nullptr) {
-                curTexId = gfx->textureIndex;
-            }
-        }
-    }
-    
     glBindTexture(GL_TEXTURE_2D, curTexId);
     partVertices.Draw(0);
 }
@@ -499,6 +480,26 @@ void Parts::Draw(int pattern, int nextPattern, float interpolationFactor,
         
         auto cutout = cutOuts[part.ppId];
         
+        // PatEditor: Override cutout for texture/UV viewing modes
+        auto partGfx = GetPartGfx(currState ? currState->partGraph : 0);
+        auto cutoutSelected = GetCutOut(currState ? currState->partCutOut : 0);
+        if (renderMode && currState && *renderMode == UV_SETTING_VIEW && cutoutSelected != nullptr) {
+            partGfx = GetPartGfx(cutoutSelected->texture);
+        }
+        if (renderMode && currState && *renderMode != DEFAULT && !currState->animating && partGfx != nullptr) {
+            // Override cutout to show full texture
+            cutout.texture = partGfx->id;
+            cutout.shapeIndex = 0;
+            cutout.uv[0] = 0;
+            cutout.uv[1] = 0;
+            cutout.uv[2] = 255;
+            cutout.uv[3] = 255;
+            cutout.xy[0] = 0;
+            cutout.xy[1] = 0;
+            cutout.wh[0] = partGfx->w;
+            cutout.wh[1] = partGfx->h;
+        }
+        
         // Skip zero-size cutouts (like PACNyx Rectangle.Empty check)
         if (cutout.uv[2] == 0 && cutout.uv[3] == 0) {
             continue;
@@ -531,9 +532,10 @@ void Parts::Draw(int pattern, int nextPattern, float interpolationFactor,
         glm::vec3 rotation = glm::vec3(part.rotation[1], part.rotation[2], part.rotation[3]);
         glm::vec2 scale = glm::vec2(part.scaleX, part.scaleY);
         
-        // Use opacity handling like Sosfiro (for part highlighting)
-        float opacity = partHighlight == -1 || partHighlight == part.propId ?
-            part.bgra[3] : highlightOpacity * 255.f;
+        // Opacity handling: use full opacity in special render modes or when part is highlighted
+        float opacity = (renderMode && currState && *renderMode != DEFAULT && !currState->animating) ||
+                        partHighlight == -1 || partHighlight == part.propId ?
+                        part.bgra[3] : highlightOpacity * 255.f;
         
         glm::vec4 bgra = glm::vec4(part.bgra[0], part.bgra[1], part.bgra[2], opacity);
 

@@ -86,6 +86,7 @@ private:
 	void AdvanceFrame(int dir);
 
 	void SetZoom(float level);
+	void HandleMouseWheel(bool isIncrease);
 	void LoadTheme(int i );
 	void WarmStyle();
 	void ChangeClearColor(float r, float g, float b);
