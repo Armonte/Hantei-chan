@@ -380,6 +380,11 @@ std::string Parts::GetTexturesDecorateName(int n) {
 
 void Parts::DrawPart(int i)
 {
+    // Safety: Don't render if Parts is being freed or unloaded
+    if (!loaded || cutOuts.empty() || gfxMeta.empty()) {
+        return;
+    }
+
     // Validate cutOut index
     if (i < 0 || i >= cutOuts.size()) {
         printf("[DrawPart] Invalid cutOut index: %d (size=%zu)\n", i, cutOuts.size());
@@ -392,6 +397,11 @@ void Parts::DrawPart(int i)
     if (cutout.texture < 0 || cutout.texture >= gfxMeta.size()) {
         printf("[DrawPart] Invalid texture index: %d (gfxMeta.size=%zu)\n", cutout.texture, gfxMeta.size());
         return;
+    }
+
+    // Validate that the texture was actually created
+    if (gfxMeta[cutout.texture].textureIndex == 0) {
+        return;  // Texture not loaded, skip silently
     }
 
     // Bind texture and draw
@@ -407,6 +417,11 @@ void Parts::Draw(int pattern, int nextPattern, float interpolationFactor,
     float color[4])
 {
     curTexId = -1;
+
+    // Safety: Don't render if Parts is being freed or unloaded
+    if (!loaded || partSets.empty() || cutOuts.empty()) {
+        return;
+    }
 
     // Validate pattern indices
     if(pattern < 0 || pattern >= partSets.size() ||

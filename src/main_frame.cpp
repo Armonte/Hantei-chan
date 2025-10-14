@@ -514,13 +514,27 @@ void MainFrame::setActiveView(int index)
 	if (index >= 0 && index < views.size()) {
 		activeViewIndex = index;
 
-		// Update render state to use this view's character's CG
+		// Update render state to use this view's character and settings
 		auto* view = getActiveView();
 		if (view) {
 			auto* character = view->getCharacter();
 			if (character) {
+				// Update CG reference (this resets curImageId)
 				render.SetCg(&character->cg);
+				
+				// Set Parts if this view has them loaded (PAT editor or character with PAT)
+				// SetParts internally handles texture clearing when switching between Parts/CG
+				if (character->parts.loaded) {
+					render.SetParts(&character->parts);
+				} else {
+					render.SetParts(nullptr);  // Clear Parts for non-PAT views
+				}
 			}
+			
+			// Restore this view's zoom level
+			float viewZoom = view->getZoom();
+			render.scale = viewZoom;
+			zoom_idx = viewZoom;  // Update UI slider
 		}
 	}
 }
@@ -716,6 +730,7 @@ void MainFrame::closeView(int index)
 			render.DontDraw();
 			render.ClearTexture();
 			render.SetCg(nullptr);
+			render.SetParts(nullptr);
 		} else {
 			// Select previous view, or first if we closed the first one
 			if (activeViewIndex >= views.size()) {
@@ -775,6 +790,7 @@ void MainFrame::newProject()
 	render.DontDraw();
 	render.ClearTexture();
 	render.SetCg(nullptr);
+	render.SetParts(nullptr);
 
 	ProjectManager::ClearCurrentProjectPath();
 	m_projectModified = false;
@@ -894,6 +910,7 @@ void MainFrame::closeProject()
 	render.DontDraw();
 	render.ClearTexture();
 	render.SetCg(nullptr);
+	render.SetParts(nullptr);
 
 	ProjectManager::ClearCurrentProjectPath();
 	m_projectModified = false;

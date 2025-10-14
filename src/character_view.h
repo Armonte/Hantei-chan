@@ -54,11 +54,16 @@ public:
 	// Recreate panes (called when switching to this view)
 	void refreshPanes(class Render* render);
 
+	// View-specific rendering settings
+	float getZoom() const { return m_zoom; }
+	void setZoom(float zoom) { m_zoom = zoom; }
+
 private:
 	CharacterInstance* m_character;  // Pointer to shared character data (not owned)
 	FrameState m_state;              // Independent view state
 	int m_viewNumber = 0;            // 0 = primary, 1+ = additional views
 	bool m_isPatEditor = false;      // True if this view is for PAT editing
+	float m_zoom = 3.0f;             // Per-view zoom level
 
 	// UI panes for this view
 	std::unique_ptr<MainPane> m_mainPane;
