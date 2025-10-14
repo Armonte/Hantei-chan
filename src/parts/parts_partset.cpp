@@ -137,15 +137,8 @@ unsigned int* PartSet<Allocator>::PrLoad(unsigned int* data, const unsigned int*
             ++data;
         }
         else if (!memcmp(buf, "PRCL", 4)) {
-            // Color (BGRA stored as bytes)
-            int byte1 = (data[0] >> 24) & 0xFF;
-            int byte2 = (data[0] >> 16) & 0xFF;
-            int byte3 = (data[0] >> 8) & 0xFF;
-            int byte4 = data[0] & 0xFF;
-            pr.rgba[0] = byte2 / 255.f; // R from B position
-            pr.rgba[1] = byte3 / 255.f; // G from G position
-            pr.rgba[2] = byte4 / 255.f; // B from R position
-            pr.rgba[3] = byte1 / 255.f; // A from A position
+            // Color (BGRA) - copy directly like Eiton
+            memcpy(pr.bgra, data, sizeof(char) * 4);
             ++data;
         }
         else if (!memcmp(buf, "PRED", 4)) {
@@ -183,10 +176,10 @@ bool PartSet<std::allocator>::IsModifiedPropData(const PartProperty *prop)
         return true;
     if(prop->flip != 0)
         return true;
-    if(prop->rgba[0] != 1 ||
-        prop->rgba[1] != 1 ||
-        prop->rgba[2] != 1 ||
-        prop->rgba[3] != 1)
+    if(prop->bgra[0] != 255 ||
+        prop->bgra[1] != 255 ||
+        prop->bgra[2] != 255 ||
+        prop->bgra[3] != 255)
             return true;
     if(prop->addColor[0] != 0 ||
        prop->addColor[1] != 0 ||
@@ -202,7 +195,7 @@ void PartSet<std::allocator>::CopyPropertyTo(PartProperty *propDst, PartProperty
 {
     for(int i = 0; i < 4; i++) {
         propDst->addColor[i] = propSrc->addColor[i];
-        propDst->rgba[i] = propSrc->rgba[i];
+        propDst->bgra[i] = propSrc->bgra[i];
         propDst->rotation[i] = propSrc->rotation[i];
     }
 
@@ -272,22 +265,13 @@ void PartSet<>::Save(std::ofstream &file, const PartSet *partSet)
             file.write(VAL(prop->scaleY), 4);
         }
 
-        if(prop->rgba[0] != 1 ||
-           prop->rgba[1] != 1 ||
-           prop->rgba[2] != 1 ||
-           prop->rgba[3] != 1)
+        if(prop->bgra[0] != 255 ||
+           prop->bgra[1] != 255 ||
+           prop->bgra[2] != 255 ||
+           prop->bgra[3] != 255)
         {
             file.write("PRCL", 4);
-            // Write as BGRA
-            int values[4]{};
-            values[0] = prop->rgba[0] * 255.f;
-            values[1] = prop->rgba[1] * 255.f;
-            values[2] = prop->rgba[2] * 255.f;
-            values[3] = prop->rgba[3] * 255.f;
-            file.write(VAL(values[2]), 1); // B
-            file.write(VAL(values[1]), 1); // G
-            file.write(VAL(values[0]), 1); // R
-            file.write(VAL(values[3]), 1); // A
+            file.write((const char*)prop->bgra, 4); // Write BGRA bytes directly
         }
 
         if(prop->addColor[0] != 0 ||
