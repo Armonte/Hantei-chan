@@ -81,13 +81,15 @@ void main()
 };
 )";
 
-// Parts shader with flip support and additive color
+// Parts shader with flip support, additive color, and vertex color tinting
 const char* partsSrcVert = R"(
 #version 330 core
 layout (location = 0) in vec3 Position;
 layout (location = 1) in vec4 UV;
+layout (location = 2) in vec4 Color;
 
 out vec2 Frag_UV;
+out vec4 Frag_Color;
 
 uniform mat4 ProjMtx;
 uniform int flip;
@@ -100,6 +102,7 @@ void main()
     } else {
         Frag_UV = UV.st;
     }
+    Frag_Color = Color;
     gl_Position = ProjMtx * vec4(Position, 1);
 }
 )";
@@ -110,12 +113,14 @@ uniform sampler2D Texture;
 uniform vec3 addColor;
 
 in vec2 Frag_UV;
+in vec4 Frag_Color;
 out vec4 FragColor;
 
 void main()
 {
     vec4 col = texture(Texture, Frag_UV);
-    col.rgb += addColor;
+    col.rgba *= Frag_Color;  // Apply vertex color tint (BGRA color from part)
+    col.rgb += addColor;     // Apply additive color
     FragColor = col;
 }
 )";
@@ -159,6 +164,7 @@ blendingMode(normal)
 
 	sPartShader.BindAttrib("Position", 0);
 	sPartShader.BindAttrib("UV", 1);
+	sPartShader.BindAttrib("Color", 2);
 	sPartShader.LoadShader(partsSrcVert, partsSrcFrag, true);
 
 	lAlphaS = sSimple.GetLoc("Alpha");
@@ -245,6 +251,9 @@ void Render::Draw()
 		baseView = glm::translate(baseView, glm::vec3(x, y, 0.f));
 
 		sPartShader.Use();
+		
+		// Disable vertex attribute array for color so glVertexAttrib4fv sets a constant value
+		glDisableVertexAttribArray(2);
 
 		// Callback to set matrix transform
 		auto setMatrix = [this, &baseView, tau](glm::mat4 partMatrix) {
@@ -623,6 +632,9 @@ void Render::DrawLayers()
 		baseView = glm::translate(baseView, glm::vec3(x, y, 0.f));
 
 		sPartShader.Use();
+		
+		// Disable vertex attribute array for color so glVertexAttrib4fv sets a constant value
+		glDisableVertexAttribArray(2);
 
 		// Callback to set matrix transform
 		auto setMatrix = [this, &baseView, tau](glm::mat4 partMatrix) {
