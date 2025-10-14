@@ -158,6 +158,12 @@ void MainFrame::DrawUi()
 						}
 					}
 				}
+				if (ImGui::MenuItem("Load Pattern (.pat)...")) {
+					std::string path = FileDialog(fileType::PAT, false);
+					if (!path.empty()) {
+						createPatEditorView(path);
+					}
+				}
 				if (ImGui::MenuItem("New Character")) {
 					auto character = std::make_unique<CharacterInstance>();
 					character->frameData.initEmpty();
@@ -329,6 +335,7 @@ void MainFrame::DrawUi()
 						render.DontDraw();
 						render.ClearTexture();
 						render.SetCg(nullptr);
+						render.SetParts(nullptr);
 						ProjectManager::ClearCurrentProjectPath();
 						m_projectModified = false;
 						updateWindowTitle();
@@ -360,6 +367,7 @@ void MainFrame::DrawUi()
 					render.DontDraw();
 					render.ClearTexture();
 					render.SetCg(nullptr);
+					render.SetParts(nullptr);
 					ProjectManager::ClearCurrentProjectPath();
 					m_projectModified = false;
 					updateWindowTitle();
@@ -917,12 +925,23 @@ void MainFrame::ChangeClearColor(float r, float g, float b)
 void MainFrame::SetZoom(float level)
 {
 	render.scale = level;
-	zoom_idx = level;
+	zoom_idx = level;  // Keep global zoom_idx for saving to settings
+	
+	// Also update active view's zoom
+	auto* view = getActiveView();
+	if (view) {
+		view->setZoom(level);
+	}
 }
 
 void MainFrame::HandleMouseWheel(bool isIncrease)
 {
-	float newZoomVal = zoom_idx;
+	auto* view = getActiveView();
+	if (!view) return;
+	
+	float currentZoom = view->getZoom();
+	float newZoomVal = currentZoom;
+	
 	if (isIncrease)
 	{
 		newZoomVal += 0.25f;  // Smaller increment for smoother zooming

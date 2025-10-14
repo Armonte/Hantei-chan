@@ -329,6 +329,10 @@ bool ProjectManager::SaveProject(
 			viewObj["frame"] = state.frame;
 			viewObj["selected_layer"] = state.selectedLayer;
 			viewObj["sprite_id"] = state.spriteId;
+			
+			// View-specific render settings
+			viewObj["zoom"] = view->getZoom();
+			viewObj["is_pat_editor"] = view->isPatEditor();
 
 			viewsArray.push_back(viewObj);
 		}
@@ -446,6 +450,17 @@ bool ProjectManager::LoadProject(
 				state.frame = viewObj.value("frame", 0);
 				state.selectedLayer = viewObj.value("selected_layer", 0);
 				state.spriteId = viewObj.value("sprite_id", -1);
+				
+				// Restore view-specific render settings
+				float viewZoom = viewObj.value("zoom", 3.0f);
+				view->setZoom(viewZoom);
+				
+				// Restore PatEditor mode if applicable
+				bool isPatEditor = viewObj.value("is_pat_editor", false);
+				if (isPatEditor) {
+					view->setPatEditor(true);
+					view->refreshPanes(render);
+				}
 
 				views.push_back(std::move(view));
 			}

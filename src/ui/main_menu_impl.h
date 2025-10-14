@@ -397,15 +397,18 @@ void MainFrame::Menu(unsigned int errorPopupId)
 			}
 			if (ImGui::BeginMenu("Zoom level"))
 			{
+				auto* view = getActiveView();
+				float currentZoom = view ? view->getZoom() : zoom_idx;
+				
 				ImGui::SetNextItemWidth(80);
-				if (ImGui::SliderFloat("Zoom", &zoom_idx, 0.25f, 20.0f, "%.2f"))
+				if (ImGui::SliderFloat("Zoom", &currentZoom, 0.25f, 20.0f, "%.2f"))
 				{
-					SetZoom(zoom_idx);
+					SetZoom(currentZoom);
 				}
 				ImGui::SameLine();
 				ImGui::TextDisabled("(?)");
 				if (ImGui::IsItemHovered())
-					Tooltip("Ctrl + Click to set exact value");
+					Tooltip("Ctrl + Click to set exact value (per-view setting)");
 				ImGui::EndMenu();
 			}
 			if (ImGui::BeginMenu("Filter"))

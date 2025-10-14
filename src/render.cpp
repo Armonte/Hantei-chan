@@ -419,6 +419,11 @@ void Render::SetCg(CG *cg_)
 
 void Render::SetParts(Parts *parts)
 {
+	// Clear any existing texture when switching to/from Parts rendering
+	// This prevents CG sprite textures from overlaying PAT textures
+	if (m_parts != parts) {
+		ClearTexture();
+	}
 	m_parts = parts;
 }
 
@@ -615,12 +620,8 @@ void Render::SortLayersByZPriority(int mainPatternPriority)
 void Render::DrawLayers()
 {
 	if (renderLayers.empty()) {
-		printf("[Render] No layers to draw\n");
 		return;
 	}
-
-	printf("[Render] DrawLayers: usePat=%d, m_parts=%p, m_parts->loaded=%d\n",
-		usePat, m_parts, m_parts ? m_parts->loaded : 0);
 
 	// Check if we should use Parts rendering
 	if (usePat && m_parts && m_parts->loaded)
