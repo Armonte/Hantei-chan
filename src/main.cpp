@@ -315,6 +315,18 @@ LRESULT WINAPI WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
 			mousePos = newMousePos;
 		}
 		break;
+	case WM_MOUSEWHEEL:
+		if(mf && !ImGui::GetIO().WantCaptureMouse && !(dragLeft || dragRight))
+		{
+			int wheelDelta = GET_WHEEL_DELTA_WPARAM(wParam);
+			if (wheelDelta > 0) {
+				mf->HandleMouseWheel(true);  // Scroll up = zoom in
+			} else {
+				mf->HandleMouseWheel(false); // Scroll down = zoom out
+			}
+			return 0;
+		}
+		break;
 	case WM_ACTIVATE:
 		// Set flag when window becomes active
 		if(LOWORD(wParam) != WA_INACTIVE)

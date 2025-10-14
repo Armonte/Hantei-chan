@@ -920,6 +920,22 @@ void MainFrame::SetZoom(float level)
 	zoom_idx = level;
 }
 
+void MainFrame::HandleMouseWheel(bool isIncrease)
+{
+	float newZoomVal = zoom_idx;
+	if (isIncrease)
+	{
+		newZoomVal += 0.25f;  // Smaller increment for smoother zooming
+		if (newZoomVal > 20.0f) newZoomVal = 20.0f;  // Match slider max
+	}
+	else
+	{
+		newZoomVal -= 0.25f;
+		if (newZoomVal < 0.25f) newZoomVal = 0.25f;  // Match slider min
+	}
+	SetZoom(newZoomVal);
+}
+
 void MainFrame::LoadTheme(int i )
 {
 	style_idx = i;
