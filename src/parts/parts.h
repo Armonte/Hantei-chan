@@ -4,6 +4,8 @@
 #include "../cg.h"
 #include "../texture.h"
 #include "../vao.h"
+#include "../enums.h"
+#include "../framestate.h"
 #include "parts_texture.h"
 #include "parts_shape.h"
 #include "parts_part.h"
@@ -15,6 +17,8 @@
 class Parts {
 public:
     CG* cg = nullptr;
+    class FrameState* currState = nullptr;  // For PatEditor state access
+    enum RenderMode* renderMode = nullptr;   // For PatEditor render mode
     char* data = nullptr;
     std::string filePath;
 
@@ -67,6 +71,7 @@ public:
     void Free();
     void initEmpty();
     void updateCGReference(CG* cgRef);
+    void updatePatEditorReferences(class FrameState* state, enum RenderMode* mode);
 
     // PatEditor
     void SetHighlightOpacity(float opacity);

@@ -82,6 +82,13 @@ FrameState::FrameState()
 	copied = g_sharedMem.copyData;
 	sharedMemHandle = g_sharedMem.handle;
 	sharedMem = g_sharedMem.memory;
+	
+	// Initialize animation sequence with a default frame for PatEditor preview
+	auto frame = &animationSequence.frames.emplace_back();
+	frame->AF.aniType = 1;
+	auto layer = &frame->AF.layers.emplace_back();
+	layer->usePat = true;
+	layer->spriteId = 0;
 }
 
 FrameState::~FrameState()

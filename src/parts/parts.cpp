@@ -254,6 +254,12 @@ void Parts::updateCGReference(CG* cgRef)
     cg = cgRef;
 }
 
+void Parts::updatePatEditorReferences(FrameState* state, RenderMode* mode)
+{
+    currState = state;
+    renderMode = mode;
+}
+
 // Accessor methods
 PartSet<>* Parts::GetPartSet(unsigned int n)
 {
@@ -390,6 +396,25 @@ void Parts::DrawPart(int i)
 
     // Bind texture and draw
     curTexId = gfxMeta[cutout.texture].textureIndex;
+    
+    // PatEditor: Override texture in TEXTURE_VIEW mode
+    if (renderMode && currState && *renderMode == TEXTURE_VIEW && !currState->animating) {
+        auto gfx = GetPartGfx(currState->partGraph);
+        if (gfx != nullptr) {
+            curTexId = gfx->textureIndex;
+        }
+    }
+    // PatEditor: Override texture in UV_SETTING_VIEW mode  
+    else if (renderMode && currState && *renderMode == UV_SETTING_VIEW && !currState->animating) {
+        auto cutoutSelected = GetCutOut(currState->partCutOut);
+        if (cutoutSelected != nullptr) {
+            auto gfx = GetPartGfx(cutoutSelected->texture);
+            if (gfx != nullptr) {
+                curTexId = gfx->textureIndex;
+            }
+        }
+    }
+    
     glBindTexture(GL_TEXTURE_2D, curTexId);
     partVertices.Draw(0);
 }
