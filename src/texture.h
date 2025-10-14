@@ -23,7 +23,7 @@ public:
 	void Load(ImageData *data);
 	void LoadDirect(char* data, int width, int height, bool bgr = false);
 	void LoadCompressed(char* data, int width, int height, size_t compressedSize, int type);
-	void Apply(bool repeat = false, bool linearFilter = false);
+	void Apply(bool repeat = false, bool linearFilter = true);
 	void Unapply();
 	void Unload();
 };
