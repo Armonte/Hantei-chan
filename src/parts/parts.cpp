@@ -127,6 +127,14 @@ bool Parts::Load(const char* name)
               << shapes.size() << " shapes, "
               << gfxMeta.size() << " textures" << std::endl;
     
+    // DEBUG: Check gfxMeta immediately
+    printf("[DEBUG] gfxMeta.size() right after MainLoad: %zu\n", gfxMeta.size());
+    for (size_t i = 0; i < gfxMeta.size() && i < 5; i++) {
+        printf("  gfxMeta[%zu]: w=%d, h=%d, type=%d, data=%p, s3tc=%p\n",
+            i, gfxMeta[i].w, gfxMeta[i].h, gfxMeta[i].type, 
+            gfxMeta[i].data, gfxMeta[i].s3tc);
+    }
+    
     // Show ALL part sets with data (not just first 20)
     std::cout << "=== All Part Sets with Data ===" << std::endl;
     for (size_t i = 0; i < partSets.size(); i++) {
@@ -166,8 +174,13 @@ bool Parts::Load(const char* name)
     std::cout << "===================" << std::endl;
 
     // Load textures into OpenGL
-    for (auto& gfx : gfxMeta)
+    printf("[Texture Loading] Processing %zu gfxMeta entries...\n", gfxMeta.size());
+    for (size_t idx = 0; idx < gfxMeta.size(); idx++)
     {
+        auto& gfx = gfxMeta[idx];
+        printf("  Tex %zu: type=%d, %dx%d, s3tc=%p, data=%p\n",
+            idx, gfx.type, gfx.w, gfx.h, gfx.s3tc, gfx.data);
+        
         textures.push_back(new Texture);
         if (gfx.s3tc)
         {
@@ -198,9 +211,15 @@ bool Parts::Load(const char* name)
             // PGTX data is also in BGRA format
             textures.back()->LoadDirect(gfx.data, gfx.w, gfx.h, true);
             textures.back()->Apply();  // Create OpenGL texture
+            printf("    → Loaded PGTX data\n");
+        }
+        else
+        {
+            printf("    → ERROR: No texture data!\n");
         }
         gfx.textureIndex = textures.back()->id;
     }
+    printf("[Texture Loading] Created %zu OpenGL textures\n", textures.size());
 
     filePath = name;
     loaded = true;
