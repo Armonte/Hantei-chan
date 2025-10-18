@@ -468,9 +468,105 @@ void MainFrame::RenderUpdate()
 		{
 			state.animeSeq = state.pattern;
 
-			// Initialize frame 0 visit count if this is the start of animation
-			if (state.frameVisitCounts.empty()) {
+			// Initialize or reset visit tracking when starting animation on frame 0
+			// This handles both first-time start and when user seeks back to frame 0 and presses play
+			if (state.frameVisitCounts.empty() || state.frame == 0) {
+				// DEBUG: Log reset
+				if (!state.frameVisitCounts.empty() && state.frame == 0) {
+					printf("[ANIM START] Resetting visit counts (starting on frame 0)\n");
+				}
+				state.frameVisitCounts.clear();
 				state.frameVisitCounts[state.frame] = 1;
+				state.lastSpawnCreationFrame = -1;
+
+				// Check for spawns on frame 0 at animation start
+				if (state.vizSettings.showSpawnedPatterns && state.frame >= 0 && state.frame < seq->frames.size()) {
+					auto& frame0 = seq->frames[state.frame];
+					if (!frame0.EF.empty()) {
+						// DEBUG: Log frame 0 spawn creation
+						printf("[SPAWN CREATE - ANIM START] Frame %d, Tick %d, Pattern %d\n", state.frame, state.currentTick, state.pattern);
+
+						state.lastSpawnCreationFrame = state.frame;
+						auto spawns = ParseSpawnedPatterns(frame0.EF, state.frame, state.pattern);
+
+						// DEBUG: Log how many spawns
+						printf("[SPAWN CREATE - ANIM START] Parsed %d spawn(s)\n", (int)spawns.size());
+
+						for(const auto& spawnInfo : spawns) {
+							// DEBUG: Log which pattern is being spawned
+							printf("[SPAWN CREATE - ANIM START]   -> Spawning pattern %d at tick %d\n", spawnInfo.patternId, state.currentTick);
+
+							ActiveSpawnInstance instance;
+							instance.spawnTick = state.currentTick;
+							instance.patternId = spawnInfo.patternId;
+							instance.usesEffectHA6 = spawnInfo.usesEffectHA6;
+							instance.isPresetEffect = spawnInfo.isPresetEffect;
+							instance.offsetX = spawnInfo.offsetX;
+							instance.offsetY = spawnInfo.offsetY;
+							instance.flagset1 = spawnInfo.flagset1;
+							instance.flagset2 = spawnInfo.flagset2;
+							instance.angle = spawnInfo.angle;
+							instance.projVarDecrease = spawnInfo.projVarDecrease;
+							instance.tintColor = state.vizSettings.enableTint ? spawnInfo.tintColor : glm::vec4(1.0f, 1.0f, 1.0f, 1.0f);
+							instance.alpha = state.vizSettings.spawnedOpacity;
+							instance.currentFrame = 0;
+							instance.frameDuration = 0;
+							instance.previousFrame = 0;
+
+							if (!instance.isPresetEffect) {
+								FrameData* sourceData = instance.usesEffectHA6 && effectCharacter
+									? &effectCharacter->frameData
+									: &active->frameData;
+
+								auto spawnSeq = sourceData->get_sequence(instance.patternId);
+								if (spawnSeq && !spawnSeq->frames.empty()) {
+									instance.loopCounter = spawnSeq->frames[0].AF.loopCount;
+
+									if (!spawnSeq->frames[0].EF.empty()) {
+										auto frame0Spawns = ParseSpawnedPatterns(spawnSeq->frames[0].EF, 0, instance.patternId);
+										for (const auto& childInfo : frame0Spawns) {
+											ActiveSpawnInstance childInstance;
+											childInstance.spawnTick = state.currentTick;
+											childInstance.patternId = childInfo.patternId;
+											childInstance.usesEffectHA6 = childInfo.usesEffectHA6;
+											childInstance.isPresetEffect = childInfo.isPresetEffect;
+
+											if (instance.usesEffectHA6 && childInfo.effectType != 8) {
+												childInstance.usesEffectHA6 = true;
+											}
+
+											childInstance.offsetX = instance.offsetX + childInfo.offsetX;
+											childInstance.offsetY = instance.offsetY + childInfo.offsetY;
+											childInstance.flagset1 = childInfo.flagset1;
+											childInstance.flagset2 = childInfo.flagset2;
+											childInstance.angle = childInfo.angle;
+											childInstance.projVarDecrease = childInfo.projVarDecrease;
+											childInstance.tintColor = state.vizSettings.enableTint ? childInfo.tintColor : glm::vec4(1.0f, 1.0f, 1.0f, 1.0f);
+											childInstance.alpha = state.vizSettings.spawnedOpacity;
+											childInstance.currentFrame = 0;
+											childInstance.frameDuration = 0;
+											childInstance.previousFrame = 0;
+
+											if (!childInstance.isPresetEffect) {
+												FrameData* childSourceData = childInstance.usesEffectHA6 && effectCharacter
+													? &effectCharacter->frameData
+													: &active->frameData;
+												auto childSeq = childSourceData->get_sequence(childInstance.patternId);
+												if (childSeq && !childSeq->frames.empty()) {
+													childInstance.loopCounter = childSeq->frames[0].AF.loopCount;
+												}
+											}
+
+											state.activeSpawns.push_back(childInstance);
+										}
+									}
+								}
+							}
+
+							state.activeSpawns.push_back(instance);
+						}
+					}
+				}
 			}
 
 			// Lambda to calculate next frame - can be called with or without side effects
@@ -534,8 +630,123 @@ void MainFrame::RenderUpdate()
 					// Update previousFrame only if we successfully advanced
 					if (state.frame != oldFrame) {
 						state.previousFrame = oldFrame;
+
+						// Detect loop: if we jumped backwards to frame 0, reset visit counts for new playthrough
+						if (state.frame == 0 && oldFrame > state.frame) {
+							// DEBUG: Log loop detection
+							printf("[LOOP DETECTED] Resetting visit counts (jumped from frame %d to 0)\n", oldFrame);
+							state.frameVisitCounts.clear();
+							state.lastSpawnCreationFrame = -1;
+						}
+
 						// Increment visit count for the new frame we're entering
 						state.frameVisitCounts[state.frame]++;
+
+						// DEBUG: Log frame transitions
+						printf("[FRAME ADVANCE] %d -> %d (visit count: %d, tick: %d)\n",
+							oldFrame, state.frame, state.frameVisitCounts[state.frame], state.currentTick);
+
+						// Check for spawns immediately when entering a new frame (BEFORE incrementing tick)
+						if (state.vizSettings.showSpawnedPatterns && state.frame >= 0 && state.frame < seq->frames.size()) {
+							auto& newFrame = seq->frames[state.frame];
+							bool isFirstVisit = (state.frameVisitCounts[state.frame] == 1);
+							bool shouldCreateSpawns = !newFrame.EF.empty() && isFirstVisit &&
+							                          (state.lastSpawnCreationFrame != state.frame);
+
+							if(shouldCreateSpawns)
+							{
+								// DEBUG: Log spawn creation
+								printf("[SPAWN CREATE] Frame %d, Tick %d, Pattern %d\n", state.frame, state.currentTick, state.pattern);
+
+								// Mark that this frame has created spawns
+								state.lastSpawnCreationFrame = state.frame;
+								// Parse spawn effects in current frame
+								auto spawns = ParseSpawnedPatterns(newFrame.EF, state.frame, state.pattern);
+
+								// DEBUG: Log how many spawns were parsed
+								printf("[SPAWN CREATE] Parsed %d spawn(s) from frame %d\n", (int)spawns.size(), state.frame);
+
+								// Create active spawn instances for each spawn effect
+								for(const auto& spawnInfo : spawns) {
+									// DEBUG: Log which pattern is being spawned
+									printf("[SPAWN CREATE]   -> Spawning pattern %d at tick %d\n", spawnInfo.patternId, state.currentTick);
+
+									ActiveSpawnInstance instance;
+									instance.spawnTick = state.currentTick;  // Use current tick BEFORE incrementing
+									instance.patternId = spawnInfo.patternId;
+									instance.usesEffectHA6 = spawnInfo.usesEffectHA6;
+									instance.isPresetEffect = spawnInfo.isPresetEffect;
+									instance.offsetX = spawnInfo.offsetX;
+									instance.offsetY = spawnInfo.offsetY;
+									instance.flagset1 = spawnInfo.flagset1;
+									instance.flagset2 = spawnInfo.flagset2;
+									instance.angle = spawnInfo.angle;
+									instance.projVarDecrease = spawnInfo.projVarDecrease;
+									instance.tintColor = state.vizSettings.enableTint ? spawnInfo.tintColor : glm::vec4(1.0f, 1.0f, 1.0f, 1.0f);
+									instance.alpha = state.vizSettings.spawnedOpacity;
+
+									// Initialize animation state for frame-by-frame advancement
+									instance.currentFrame = 0;
+									instance.frameDuration = 0;
+									instance.previousFrame = 0;
+
+									// Initialize loop counter from the spawned pattern's first frame
+									if (!instance.isPresetEffect) {
+										FrameData* sourceData = instance.usesEffectHA6 && effectCharacter
+											? &effectCharacter->frameData
+											: &active->frameData;
+
+										auto spawnSeq = sourceData->get_sequence(instance.patternId);
+										if (spawnSeq && !spawnSeq->frames.empty()) {
+											instance.loopCounter = spawnSeq->frames[0].AF.loopCount;
+
+											// Check frame 0 for nested spawn effects immediately
+											if (!spawnSeq->frames[0].EF.empty()) {
+												auto frame0Spawns = ParseSpawnedPatterns(spawnSeq->frames[0].EF, 0, instance.patternId);
+
+												for (const auto& childInfo : frame0Spawns) {
+													ActiveSpawnInstance childInstance;
+													childInstance.spawnTick = state.currentTick;
+													childInstance.patternId = childInfo.patternId;
+													childInstance.usesEffectHA6 = childInfo.usesEffectHA6;
+													childInstance.isPresetEffect = childInfo.isPresetEffect;
+
+													if (instance.usesEffectHA6 && childInfo.effectType != 8) {
+														childInstance.usesEffectHA6 = true;
+													}
+
+													childInstance.offsetX = instance.offsetX + childInfo.offsetX;
+													childInstance.offsetY = instance.offsetY + childInfo.offsetY;
+													childInstance.flagset1 = childInfo.flagset1;
+													childInstance.flagset2 = childInfo.flagset2;
+													childInstance.angle = childInfo.angle;
+													childInstance.projVarDecrease = childInfo.projVarDecrease;
+													childInstance.tintColor = state.vizSettings.enableTint ? childInfo.tintColor : glm::vec4(1.0f, 1.0f, 1.0f, 1.0f);
+													childInstance.alpha = state.vizSettings.spawnedOpacity;
+													childInstance.currentFrame = 0;
+													childInstance.frameDuration = 0;
+													childInstance.previousFrame = 0;
+
+													if (!childInstance.isPresetEffect) {
+														FrameData* childSourceData = childInstance.usesEffectHA6 && effectCharacter
+															? &effectCharacter->frameData
+															: &active->frameData;
+														auto childSeq = childSourceData->get_sequence(childInstance.patternId);
+														if (childSeq && !childSeq->frames.empty()) {
+															childInstance.loopCounter = childSeq->frames[0].AF.loopCount;
+														}
+													}
+
+													state.activeSpawns.push_back(childInstance);
+												}
+											}
+										}
+									}
+
+									state.activeSpawns.push_back(instance);
+								}
+							}
+						}
 					}
 
 					// Bounds check
@@ -754,101 +965,6 @@ void MainFrame::RenderUpdate()
 		}
 
 		auto &frame =  seq->frames[state.frame];
-
-		// Check current frame for spawn effects (during animation)
-		// Only create spawns on the FIRST visit to each frame (frameVisitCounts[frame] == 1)
-		// This prevents duplicate spawns when frames jump/loop back to previously visited frames
-		bool isFirstVisit = (state.frameVisitCounts[state.frame] == 1);
-		bool shouldCreateSpawns = state.animating && state.vizSettings.showSpawnedPatterns &&
-		                          !frame.EF.empty() && isFirstVisit &&
-		                          (state.lastSpawnCreationFrame != state.frame);  // Extra safety check
-
-		if(shouldCreateSpawns)
-		{
-			// Mark that this frame has created spawns
-			state.lastSpawnCreationFrame = state.frame;
-			// Parse spawn effects in current frame
-			auto spawns = ParseSpawnedPatterns(frame.EF, state.frame, state.pattern);
-
-			// Create active spawn instances for each spawn effect
-			for(const auto& spawnInfo : spawns) {
-				ActiveSpawnInstance instance;
-				instance.spawnTick = state.currentTick;
-				instance.patternId = spawnInfo.patternId;
-				instance.usesEffectHA6 = spawnInfo.usesEffectHA6;
-				instance.isPresetEffect = spawnInfo.isPresetEffect;
-				instance.offsetX = spawnInfo.offsetX;
-				instance.offsetY = spawnInfo.offsetY;
-				instance.flagset1 = spawnInfo.flagset1;
-				instance.flagset2 = spawnInfo.flagset2;
-				instance.angle = spawnInfo.angle;
-				instance.projVarDecrease = spawnInfo.projVarDecrease;
-				instance.tintColor = state.vizSettings.enableTint ? spawnInfo.tintColor : glm::vec4(1.0f, 1.0f, 1.0f, 1.0f);
-				instance.alpha = state.vizSettings.spawnedOpacity;
-
-				// Initialize animation state for frame-by-frame advancement
-				instance.currentFrame = 0;
-				instance.frameDuration = 0;
-				instance.previousFrame = 0;  // Set to 0 - frame 0 will be checked immediately below
-
-				// Initialize loop counter from the spawned pattern's first frame
-				if (!instance.isPresetEffect) {
-					FrameData* sourceData = instance.usesEffectHA6 && effectCharacter
-						? &effectCharacter->frameData
-						: &active->frameData;
-
-					auto spawnSeq = sourceData->get_sequence(instance.patternId);
-					if (spawnSeq && !spawnSeq->frames.empty()) {
-						instance.loopCounter = spawnSeq->frames[0].AF.loopCount;
-
-						// Check frame 0 for nested spawn effects immediately (before frame advancement)
-						if (!spawnSeq->frames[0].EF.empty()) {
-							auto frame0Spawns = ParseSpawnedPatterns(spawnSeq->frames[0].EF, 0, instance.patternId);
-
-							for (const auto& childInfo : frame0Spawns) {
-								ActiveSpawnInstance childInstance;
-								childInstance.spawnTick = state.currentTick;
-								childInstance.patternId = childInfo.patternId;
-								childInstance.usesEffectHA6 = childInfo.usesEffectHA6;
-								childInstance.isPresetEffect = childInfo.isPresetEffect;
-
-								// Apply inheritance: if parent uses effect.ha6, children should too (unless they're type 8)
-								if (instance.usesEffectHA6 && childInfo.effectType != 8) {
-									childInstance.usesEffectHA6 = true;
-								}
-
-								childInstance.offsetX = instance.offsetX + childInfo.offsetX;
-								childInstance.offsetY = instance.offsetY + childInfo.offsetY;
-								childInstance.flagset1 = childInfo.flagset1;
-								childInstance.flagset2 = childInfo.flagset2;
-								childInstance.angle = childInfo.angle;
-								childInstance.projVarDecrease = childInfo.projVarDecrease;
-								childInstance.tintColor = state.vizSettings.enableTint ? childInfo.tintColor : glm::vec4(1.0f, 1.0f, 1.0f, 1.0f);
-								childInstance.alpha = state.vizSettings.spawnedOpacity;
-								childInstance.currentFrame = 0;
-								childInstance.frameDuration = 0;
-								childInstance.previousFrame = 0;
-
-								// Initialize child's loop counter
-								if (!childInstance.isPresetEffect) {
-									FrameData* childSourceData = childInstance.usesEffectHA6 && effectCharacter
-										? &effectCharacter->frameData
-										: &active->frameData;
-									auto childSeq = childSourceData->get_sequence(childInstance.patternId);
-									if (childSeq && !childSeq->frames.empty()) {
-										childInstance.loopCounter = childSeq->frames[0].AF.loopCount;
-									}
-								}
-
-								state.activeSpawns.push_back(childInstance);
-							}
-						}
-					}
-				}
-
-				state.activeSpawns.push_back(instance);
-			}
-		}
 
 		// Clean up finished spawns
 		if(state.animating) {
