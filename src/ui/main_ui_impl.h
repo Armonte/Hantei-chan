@@ -534,6 +534,159 @@ void MainFrame::RenderUpdate()
 
 			duration++;
 			state.currentTick++;  // Increment tick counter for spawned pattern synchronization
+
+			// Advance all active spawned patterns frame-by-frame (same logic as main pattern)
+			for (auto& spawn : state.activeSpawns) {
+				// Skip preset effects (they don't have frames)
+				if (spawn.isPresetEffect) continue;
+
+				// Get the spawned pattern's sequence
+				FrameData* sourceData = spawn.usesEffectHA6 && effectCharacter
+					? &effectCharacter->frameData
+					: &active->frameData;
+
+				auto spawnSeq = sourceData->get_sequence(spawn.patternId);
+				if (!spawnSeq || spawnSeq->frames.empty()) continue;
+
+				// Increment frame duration
+				spawn.frameDuration++;
+
+				// Check if we need to advance to next frame
+				if (spawn.currentFrame < spawnSeq->frames.size()) {
+					auto& currentSpawnFrame = spawnSeq->frames[spawn.currentFrame];
+
+					if (spawn.frameDuration >= currentSpawnFrame.AF.duration) {
+						// Time to advance - use same logic as GetNextFrame
+						int nextFrame = spawn.currentFrame;  // Default: stay on current frame
+
+						if (currentSpawnFrame.AF.aniType == 1) {
+							// Sequential advance - stop at end
+							if (spawn.currentFrame + 1 >= spawnSeq->frames.size()) {
+								nextFrame = -1;  // Mark for removal
+							} else {
+								nextFrame = spawn.currentFrame + 1;
+							}
+						}
+						else if (currentSpawnFrame.AF.aniType == 2) {
+							// Jump/loop logic (same as main pattern)
+							if ((currentSpawnFrame.AF.aniFlag & 0x2) && spawn.loopCounter < 0) {
+								// Loop count exhausted - use loopEnd
+								if (currentSpawnFrame.AF.aniFlag & 0x8) {
+									nextFrame = spawn.currentFrame + currentSpawnFrame.AF.loopEnd;
+								} else {
+									nextFrame = currentSpawnFrame.AF.loopEnd;
+								}
+							} else {
+								// Decrement loop counter if needed
+								if (currentSpawnFrame.AF.aniFlag & 0x2) {
+									--spawn.loopCounter;
+								}
+								// Jump to next frame
+								if (currentSpawnFrame.AF.aniFlag & 0x4) {
+									nextFrame = spawn.currentFrame + currentSpawnFrame.AF.jump;
+								} else {
+									nextFrame = currentSpawnFrame.AF.jump;
+								}
+							}
+						}
+						else {
+							// aniType 0 or other - stop animation
+							nextFrame = -1;  // Mark for removal
+						}
+
+						// Apply the frame change
+						if (nextFrame < 0 || nextFrame >= spawnSeq->frames.size()) {
+							// Pattern ended - mark for removal by setting currentFrame to invalid
+							spawn.currentFrame = -1;
+						} else {
+							spawn.currentFrame = nextFrame;
+							spawn.frameDuration = 0;
+
+							// Update loop counter from new frame if it has one
+							if (spawnSeq->frames[spawn.currentFrame].AF.loopCount > 0) {
+								spawn.loopCounter = spawnSeq->frames[spawn.currentFrame].AF.loopCount;
+							}
+						}
+					}
+				}
+			}
+		}
+
+		// Create nested spawns (spawned patterns spawning child patterns)
+		// Check for spawns that entered a new frame and create their child spawns
+		if (state.animating && state.vizSettings.showSpawnedPatterns) {
+			// We need to iterate by index (not reference) because we'll be adding to the vector
+			size_t numSpawns = state.activeSpawns.size();
+			for (size_t i = 0; i < numSpawns; i++) {
+				auto& spawn = state.activeSpawns[i];
+
+				// Skip if not a pattern (preset effects don't spawn children)
+				if (spawn.isPresetEffect) continue;
+
+				// Skip if pattern ended
+				if (spawn.currentFrame < 0) continue;
+
+				// Check if this spawn entered a new frame
+				if (spawn.currentFrame != spawn.previousFrame) {
+					// Get the spawned pattern's sequence
+					FrameData* sourceData = spawn.usesEffectHA6 && effectCharacter
+						? &effectCharacter->frameData
+						: &active->frameData;
+
+					auto spawnSeq = sourceData->get_sequence(spawn.patternId);
+					if (spawnSeq && spawn.currentFrame < spawnSeq->frames.size()) {
+						auto& spawnedFrame = spawnSeq->frames[spawn.currentFrame];
+
+						// Check if this frame has spawn effects
+						if (!spawnedFrame.EF.empty()) {
+							// Parse child spawn effects
+							auto childSpawns = ParseSpawnedPatterns(spawnedFrame.EF, spawn.currentFrame, spawn.patternId);
+
+							// Create active instances for each child spawn
+							for (const auto& childInfo : childSpawns) {
+								ActiveSpawnInstance childInstance;
+								childInstance.spawnTick = state.currentTick;
+								childInstance.patternId = childInfo.patternId;
+								childInstance.usesEffectHA6 = childInfo.usesEffectHA6;
+								childInstance.isPresetEffect = childInfo.isPresetEffect;
+
+								// Accumulate offsets from parent
+								childInstance.offsetX = spawn.offsetX + childInfo.offsetX;
+								childInstance.offsetY = spawn.offsetY + childInfo.offsetY;
+
+								childInstance.flagset1 = childInfo.flagset1;
+								childInstance.flagset2 = childInfo.flagset2;
+								childInstance.angle = childInfo.angle;
+								childInstance.projVarDecrease = childInfo.projVarDecrease;
+								childInstance.tintColor = childInfo.tintColor;
+								childInstance.alpha = state.vizSettings.spawnedOpacity;
+
+								// Initialize animation state
+								childInstance.currentFrame = 0;
+								childInstance.frameDuration = 0;
+								childInstance.previousFrame = -1;
+
+								// Initialize loop counter from first frame
+								if (!childInstance.isPresetEffect) {
+									FrameData* childSourceData = childInstance.usesEffectHA6 && effectCharacter
+										? &effectCharacter->frameData
+										: &active->frameData;
+
+									auto childSeq = childSourceData->get_sequence(childInstance.patternId);
+									if (childSeq && !childSeq->frames.empty()) {
+										childInstance.loopCounter = childSeq->frames[0].AF.loopCount;
+									}
+								}
+
+								state.activeSpawns.push_back(childInstance);
+							}
+						}
+					}
+
+					// Update previousFrame tracker
+					spawn.previousFrame = spawn.currentFrame;
+				}
+			}
 		}
 
 		auto &frame =  seq->frames[state.frame];
@@ -560,11 +713,27 @@ void MainFrame::RenderUpdate()
 				instance.tintColor = spawnInfo.tintColor;
 				instance.alpha = state.vizSettings.spawnedOpacity;
 
+				// Initialize animation state for frame-by-frame advancement
+				instance.currentFrame = 0;
+				instance.frameDuration = 0;
+
+				// Initialize loop counter from the spawned pattern's first frame
+				if (!instance.isPresetEffect) {
+					FrameData* sourceData = instance.usesEffectHA6 && effectCharacter
+						? &effectCharacter->frameData
+						: &active->frameData;
+
+					auto spawnSeq = sourceData->get_sequence(instance.patternId);
+					if (spawnSeq && !spawnSeq->frames.empty()) {
+						instance.loopCounter = spawnSeq->frames[0].AF.loopCount;
+					}
+				}
+
 				state.activeSpawns.push_back(instance);
 			}
 		}
 
-		// Clean up finished spawns (remove non-looping patterns that have ended)
+		// Clean up finished spawns
 		if(state.animating) {
 			state.activeSpawns.erase(
 				std::remove_if(state.activeSpawns.begin(), state.activeSpawns.end(),
@@ -576,26 +745,8 @@ void MainFrame::RenderUpdate()
 							return elapsedTicks > 0;
 						}
 
-						// Determine which frameData to use
-						FrameData* sourceData = spawn.usesEffectHA6 && effectCharacter
-							? &effectCharacter->frameData
-							: &active->frameData;
-
-						auto spawnSeq = sourceData->get_sequence(spawn.patternId);
-						if (!spawnSeq || spawnSeq->frames.empty()) return true; // Remove invalid
-
-						// Calculate total duration
-						int totalDuration = 0;
-						for (auto& f : spawnSeq->frames) {
-							totalDuration += (f.AF.duration > 0 ? f.AF.duration : 1);
-						}
-
-						// Check if looping
-						bool isLooping = !spawnSeq->frames.empty() && spawnSeq->frames.back().AF.aniType == 2;
-
-						// Keep if looping, remove if finished
-						int elapsedTicks = state.currentTick - spawn.spawnTick;
-						return !isLooping && elapsedTicks >= totalDuration;
+						// Remove if pattern animation has ended (marked with currentFrame == -1)
+						return spawn.currentFrame < 0;
 					}),
 				state.activeSpawns.end()
 			);
@@ -610,6 +761,16 @@ void MainFrame::RenderUpdate()
 
 		state.spriteId = layer.spriteId;
 		render.usePat = layer.usePat;  // Enable Parts rendering if usePat is true
+
+		// Debug: Log usePat state
+		static bool lastUsePat = false;
+		static int lastSpriteId = -999;
+		if (layer.usePat != lastUsePat || layer.spriteId != lastSpriteId) {
+			printf("[RenderUpdate] usePat=%d, spriteId=%d, Parts=%p\n", 
+				layer.usePat, layer.spriteId, active ? &active->parts : nullptr);
+			lastUsePat = layer.usePat;
+			lastSpriteId = layer.spriteId;
+		}
 
 		// Set Parts rendering pattern indices (partSet IDs)
 		if (layer.usePat) {

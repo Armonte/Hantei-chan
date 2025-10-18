@@ -401,11 +401,24 @@ void Parts::DrawPart(int i)
 
     // Validate that the texture was actually created
     if (gfxMeta[cutout.texture].textureIndex == 0) {
+        static bool warnedOnce = false;
+        if (!warnedOnce) {
+            printf("[DrawPart] WARNING: Texture %d has ID 0 (not created)\n", cutout.texture);
+            warnedOnce = true;
+        }
         return;  // Texture not loaded, skip silently
     }
 
     // Bind texture and draw
     curTexId = gfxMeta[cutout.texture].textureIndex;
+    
+    // Debug: Check if texture ID is valid
+    static int lastReportedTex = -1;
+    if (curTexId != lastReportedTex) {
+        printf("[DrawPart] Binding texture %d (GL ID: %d)\n", cutout.texture, curTexId);
+        lastReportedTex = curTexId;
+    }
+    
     glBindTexture(GL_TEXTURE_2D, curTexId);
     partVertices.Draw(0);
 }
@@ -420,13 +433,22 @@ void Parts::Draw(int pattern, int nextPattern, float interpolationFactor,
 
     // Safety: Don't render if Parts is being freed or unloaded
     if (!loaded || partSets.empty() || cutOuts.empty()) {
+        static bool warnedUnloaded = false;
+        if (!warnedUnloaded) {
+            printf("[Parts::Draw] WARNING: Can't render - loaded=%d, partSets=%zu, cutOuts=%zu\n",
+                loaded, partSets.size(), cutOuts.size());
+            warnedUnloaded = true;
+        }
         return;
     }
 
     // Validate pattern indices
     if(pattern < 0 || pattern >= partSets.size() ||
-       nextPattern < 0 || nextPattern >= partSets.size())
+       nextPattern < 0 || nextPattern >= partSets.size()) {
+        printf("[Parts::Draw] Invalid pattern indices: pattern=%d, next=%d, size=%zu\n",
+            pattern, nextPattern, partSets.size());
         return;
+    }
 
     if (partSets[pattern].groups.empty())
         return;

@@ -277,53 +277,67 @@ void MainFrame::DrawBack()
 			auto spawnedSeq = sourceFrameData->get_sequence(spawnInfo.patternId);
 			if (!spawnedSeq || spawnedSeq->frames.empty()) continue;
 
-			// Calculate elapsed ticks since spawn (tick-based, not frame-based!)
-			int elapsedTicks = state.currentTick - spawnInfo.spawnTick;
-
-			// Check if spawned pattern should be visible
-			if (elapsedTicks < 0) {
-				// Before spawn tick - don't show
-				continue;
-			}
-
-			// Calculate total pattern duration and check for looping
-			int totalDuration = 0;
-			for (int i = 0; i < spawnedSeq->frames.size(); i++) {
-				int dur = spawnedSeq->frames[i].AF.duration;
-				// Safety: treat duration 0 as 1 to avoid infinite loops
-				totalDuration += (dur > 0 ? dur : 1);
-			}
-
-			// Check if pattern should loop
-			bool isLooping = false;
-			if (!spawnedSeq->frames.empty()) {
-				auto& lastFrame = spawnedSeq->frames.back();
-				isLooping = (lastFrame.AF.aniType == 2);
-			}
-
-			// Check if pattern has ended (non-looping)
-			if (!isLooping && elapsedTicks >= totalDuration) {
-				// Pattern finished, don't show
-				continue;
-			}
-
-			// Handle looping by wrapping elapsed ticks
-			int effectiveTicks = isLooping ? (elapsedTicks % totalDuration) : elapsedTicks;
-
-			// Find which frame to display based on effectiveTicks
+			// Calculate which frame to display
+			// When animating with activeSpawns: use currentFrame (respects aniType 2 loops/jumps)
+			// When paused with spawnedPatterns: calculate from ticks (for seeking)
 			int localFrame = 0;
-			int tickAccum = 0;
-			for (int i = 0; i < spawnedSeq->frames.size(); i++) {
-				int frameDuration = spawnedSeq->frames[i].AF.duration;
-				if (frameDuration <= 0) frameDuration = 1; // Safety
 
-				if (tickAccum + frameDuration > effectiveTicks) {
-					// This is the frame we're currently on
-					localFrame = i;
-					break;
+			if (useActiveSpawns) {
+				// Use currentFrame directly (advanced by animation logic in main_ui_impl.h)
+				localFrame = spawnInfo.currentFrame;
+
+				// Skip if frame is invalid (pattern has ended)
+				if (localFrame < 0 || localFrame >= spawnedSeq->frames.size()) {
+					continue;
+				}
+			} else {
+				// Static spawn from spawnedPatterns - calculate frame from ticks for seeking
+				int elapsedTicks = state.currentTick - spawnInfo.spawnTick;
+
+				// Check if spawned pattern should be visible
+				if (elapsedTicks < 0) {
+					// Before spawn tick - don't show
+					continue;
 				}
 
-				tickAccum += frameDuration;
+				// Calculate total pattern duration and check for looping
+				int totalDuration = 0;
+				for (int i = 0; i < spawnedSeq->frames.size(); i++) {
+					int dur = spawnedSeq->frames[i].AF.duration;
+					// Safety: treat duration 0 as 1 to avoid infinite loops
+					totalDuration += (dur > 0 ? dur : 1);
+				}
+
+				// Check if pattern should loop
+				bool isLooping = false;
+				if (!spawnedSeq->frames.empty()) {
+					auto& lastFrame = spawnedSeq->frames.back();
+					isLooping = (lastFrame.AF.aniType == 2);
+				}
+
+				// Check if pattern has ended (non-looping)
+				if (!isLooping && elapsedTicks >= totalDuration) {
+					// Pattern finished, don't show
+					continue;
+				}
+
+				// Handle looping by wrapping elapsed ticks
+				int effectiveTicks = isLooping ? (elapsedTicks % totalDuration) : elapsedTicks;
+
+				// Find which frame to display based on effectiveTicks
+				int tickAccum = 0;
+				for (int i = 0; i < spawnedSeq->frames.size(); i++) {
+					int frameDuration = spawnedSeq->frames[i].AF.duration;
+					if (frameDuration <= 0) frameDuration = 1; // Safety
+
+					if (tickAccum + frameDuration > effectiveTicks) {
+						// This is the frame we're currently on
+						localFrame = i;
+						break;
+					}
+
+					tickAccum += frameDuration;
+				}
 			}
 
 			auto& spawnedFrame = spawnedSeq->frames[localFrame];

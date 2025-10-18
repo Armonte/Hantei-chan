@@ -419,10 +419,22 @@ void Render::SetCg(CG *cg_)
 
 void Render::SetParts(Parts *parts)
 {
-	// Clear any existing texture when switching to/from Parts rendering
+	// When switching between different Parts instances, clear CG sprite texture
 	// This prevents CG sprite textures from overlaying PAT textures
 	if (m_parts != parts) {
-		ClearTexture();
+		printf("[SetParts] Switching Parts: %p -> %p (loaded: %d)\n", 
+			m_parts, parts, parts ? parts->loaded : 0);
+		
+		// Only clear if switching to/from Parts rendering, or between different Parts
+		if ((m_parts == nullptr) != (parts == nullptr)) {
+			// Switching between PAT and non-PAT mode
+			printf("[SetParts] Mode switch (PAT <-> non-PAT), clearing texture\n");
+			ClearTexture();
+		} else if (m_parts != nullptr && parts != nullptr && m_parts != parts) {
+			// Switching between different PAT files
+			printf("[SetParts] Different PAT files, clearing texture\n");
+			ClearTexture();
+		}
 	}
 	m_parts = parts;
 }
