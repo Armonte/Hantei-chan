@@ -210,7 +210,8 @@ void MainFrame::DrawBack()
 
 		// Build render layers for spawned patterns
 		// Use activeSpawns during animation (handles looping), spawnedPatterns when paused (for seeking)
-		bool useActiveSpawns = state.animating && !state.activeSpawns.empty();
+		// IMPORTANT: During animation, ONLY use activeSpawns (even if empty) - never fall back to static tree
+		bool useActiveSpawns = state.animating;
 		auto& spawnsToRender = useActiveSpawns ?
 			reinterpret_cast<std::vector<ActiveSpawnInstance>&>(state.activeSpawns) :
 			reinterpret_cast<std::vector<ActiveSpawnInstance>&>(state.spawnedPatterns);
