@@ -464,20 +464,28 @@ void MainFrame::RenderUpdate()
 			state.lastSpawnCreationFrame = -1;
 		}
 
+		// Track previous animation state to detect play button press (static per-view)
+		static bool wasAnimating = false;
+
 		if(state.animating)
 		{
 			state.animeSeq = state.pattern;
 
-			// Initialize or reset visit tracking when starting animation on frame 0
-			// This handles both first-time start and when user seeks back to frame 0 and presses play
-			if (state.frameVisitCounts.empty() || state.frame == 0) {
-				// DEBUG: Log reset
-				if (!state.frameVisitCounts.empty() && state.frame == 0) {
-					printf("[ANIM START] Resetting visit counts (starting on frame 0)\n");
-				}
+			// Detect animation start: transition from paused (false) to playing (true)
+			bool animationJustStarted = !wasAnimating && state.animating;
+
+			// Reset visit tracking whenever animation starts (play button pressed)
+			// This ensures every playthrough is fresh, regardless of where user seeked to
+			if (animationJustStarted) {
+				printf("[ANIM START] Resetting visit counts (play pressed on frame %d)\n", state.frame);
 				state.frameVisitCounts.clear();
-				state.frameVisitCounts[state.frame] = 1;
+				state.activeSpawns.clear();  // Also clear any stale spawns from previous run
 				state.lastSpawnCreationFrame = -1;
+			}
+
+			// Initialize visit count for starting frame if needed
+			if (state.frameVisitCounts.empty()) {
+				state.frameVisitCounts[state.frame] = 1;
 
 				// Check for spawns on frame 0 at animation start
 				if (state.vizSettings.showSpawnedPatterns && state.frame >= 0 && state.frame < seq->frames.size()) {
@@ -963,6 +971,9 @@ void MainFrame::RenderUpdate()
 				}
 			}
 		}
+
+		// Update animation state tracker for next frame
+		wasAnimating = state.animating;
 
 		auto &frame =  seq->frames[state.frame];
 
