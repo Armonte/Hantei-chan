@@ -236,7 +236,7 @@ void MainFrame::DrawBack()
 				spawnInfo.flagset2 = staticSpawn.flagset2;
 				spawnInfo.angle = staticSpawn.angle;
 				spawnInfo.projVarDecrease = staticSpawn.projVarDecrease;
-				spawnInfo.tintColor = staticSpawn.tintColor;
+				spawnInfo.tintColor = state.vizSettings.enableTint ? staticSpawn.tintColor : glm::vec4(1.0f, 1.0f, 1.0f, 1.0f);
 				spawnInfo.alpha = staticSpawn.alpha;
 			}
 

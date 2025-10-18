@@ -67,6 +67,7 @@ void RightPane::Draw()
 					}
 
 					ImGui::SliderFloat("Opacity", &vizSettings.spawnedOpacity, 0.0f, 1.0f, "%.2f");
+					ImGui::Checkbox("Enable color tint", &vizSettings.enableTint);
 
 					ImGui::Separator();
 					ImGui::Text("Animation:");

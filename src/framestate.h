@@ -7,6 +7,7 @@
 #include <linear_allocator.hpp>
 #include <vector>
 #include <set>
+#include <map>
 #include <glm/vec4.hpp>
 
 struct CopyData {
@@ -103,6 +104,7 @@ struct VisualizationSettings {
 	bool showOffsetLines;         // Show lines from parent to spawned
 	bool showLabels;              // Show pattern ID labels
 	bool animateWithMain;         // Sync animation with main pattern
+	bool enableTint;              // Enable color tinting for spawned patterns
 	float spawnedOpacity;         // Global opacity multiplier
 
 	// Timeline settings
@@ -112,7 +114,7 @@ struct VisualizationSettings {
 	VisualizationSettings() :
 		showSpawnedPatterns(true), showPresetEffects(true), presetEffectsAllFrames(false),
 		autoDetect(true), showOffsetLines(true), showLabels(true),
-		animateWithMain(true), spawnedOpacity(1.0f),
+		animateWithMain(true), enableTint(false), spawnedOpacity(1.0f),
 		showTimeline(false), timelineZoom(1) {}
 };
 
@@ -137,6 +139,8 @@ struct FrameState
 
 	// Active spawn instances (created dynamically during animation)
 	std::vector<ActiveSpawnInstance> activeSpawns;
+	std::map<int, int> frameVisitCounts;  // Track how many times each frame has been visited during current animation
+	int lastSpawnCreationFrame = -1;  // Track which frame last created spawns to prevent duplicates within same frame
 
 	// PatEditor state (for .pat file editing)
 	RenderMode renderMode = DEFAULT;
