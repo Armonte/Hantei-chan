@@ -387,7 +387,6 @@ void Parts::DrawPart(int i)
 
     // Validate cutOut index
     if (i < 0 || i >= cutOuts.size()) {
-        printf("[DrawPart] Invalid cutOut index: %d (size=%zu)\n", i, cutOuts.size());
         return;
     }
 
@@ -395,30 +394,16 @@ void Parts::DrawPart(int i)
 
     // Validate texture index (must be >= 0 and < gfxMeta.size())
     if (cutout.texture < 0 || cutout.texture >= gfxMeta.size()) {
-        printf("[DrawPart] Invalid texture index: %d (gfxMeta.size=%zu)\n", cutout.texture, gfxMeta.size());
         return;
     }
 
     // Validate that the texture was actually created
     if (gfxMeta[cutout.texture].textureIndex == 0) {
-        static bool warnedOnce = false;
-        if (!warnedOnce) {
-            printf("[DrawPart] WARNING: Texture %d has ID 0 (not created)\n", cutout.texture);
-            warnedOnce = true;
-        }
         return;  // Texture not loaded, skip silently
     }
 
     // Bind texture and draw
     curTexId = gfxMeta[cutout.texture].textureIndex;
-    
-    // Debug: Check if texture ID is valid
-    static int lastReportedTex = -1;
-    if (curTexId != lastReportedTex) {
-        printf("[DrawPart] Binding texture %d (GL ID: %d)\n", cutout.texture, curTexId);
-        lastReportedTex = curTexId;
-    }
-    
     glBindTexture(GL_TEXTURE_2D, curTexId);
     partVertices.Draw(0);
 }
@@ -474,40 +459,6 @@ void Parts::Draw(int pattern, int nextPattern, float interpolationFactor,
     float width = 256.f;   // Texture UV width
     float height = 256.f;  // Texture UV height
 
-    // Debug pattern changes only
-    static int lastPattern = -1;
-    if (pattern != lastPattern) {
-        printf("\n========== Pattern %d ==========\n", pattern);
-        printf("Total parts in pattern: %zu\n", copyGroups.size());
-        
-        // Show what each part references
-        int validParts = 0;
-        for (size_t i = 0; i < copyGroups.size(); i++) {
-            auto& p = copyGroups[i];
-            if (p.ppId >= 0 && p.ppId < cutOuts.size()) {
-                auto& co = cutOuts[p.ppId];
-                bool validTex = (co.texture >= 0 && co.texture < textures.size() && textures[co.texture] != nullptr);
-                bool validUV = (co.uv[2] > 0 || co.uv[3] > 0);
-                
-                printf("  Part %d: ppId=%d, tex=%d %s, UV=(%d,%d,%dx%d) %s, BGRA=(%d,%d,%d,%d)\n",
-                    p.propId, p.ppId, co.texture,
-                    validTex ? "✓" : "✗MISSING",
-                    co.uv[0], co.uv[1], co.uv[2], co.uv[3],
-                    validUV ? "✓" : "✗EMPTY",
-                    p.bgra[0], p.bgra[1], p.bgra[2], p.bgra[3]);
-                
-                if (validTex && validUV) validParts++;
-            } else if (p.ppId >= 0) {
-                printf("  Part %d: ppId=%d ✗OUT_OF_RANGE (cutOuts.size=%zu)\n", 
-                    p.propId, p.ppId, cutOuts.size());
-            }
-        }
-        printf("Valid renderable parts: %d/%zu\n", validParts, copyGroups.size());
-        printf("Loaded textures: %zu\n", textures.size());
-        printf("===============================\n\n");
-        lastPattern = pattern;
-    }
-    
     for (auto& part : copyGroups)
     {
         // Skip unused or invalid parts silently

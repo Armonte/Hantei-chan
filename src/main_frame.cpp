@@ -206,6 +206,8 @@ void MainFrame::DrawBack()
 		mainLayer.isSpawned = false;
 		mainLayer.hitboxes = mainFrame.hitboxes;
 		mainLayer.sourceCG = &active->cg;  // Main pattern uses character CG
+		mainLayer.usePat = mainLayer_data.usePat;  // Copy PAT rendering flag
+		mainLayer.sourceParts = &active->parts;  // Main pattern uses character Parts
 		render.AddLayer(mainLayer);
 
 		// Build render layers for spawned patterns
@@ -255,11 +257,13 @@ void MainFrame::DrawBack()
 			// Determine which character to pull pattern from
 			FrameData* sourceFrameData;
 			CG* sourceCG;
+			Parts* sourceParts;
 
 			if (spawnInfo.usesEffectHA6 && effectCharacter) {
 				// Type 8: Pull from effect.ha6
 				sourceFrameData = &effectCharacter->frameData;
 				sourceCG = &effectCharacter->cg;
+				sourceParts = &effectCharacter->parts;
 			} else {
 				// Type 1/11/101/111/1000: Pull from main character
 				// OR type 8 falling back because effect.ha6 not loaded
@@ -272,6 +276,7 @@ void MainFrame::DrawBack()
 				}
 				sourceFrameData = &active->frameData;
 				sourceCG = &active->cg;
+				sourceParts = &active->parts;
 			}
 
 			// Get the spawned pattern's sequence from appropriate source
@@ -393,6 +398,8 @@ void MainFrame::DrawBack()
 			layer.isSpawned = true;
 			layer.hitboxes = spawnedFrame.hitboxes;
 			layer.sourceCG = sourceCG;  // Use appropriate CG (character or effect.ha6)
+			layer.usePat = spawnedLayer_data.usePat;  // Copy PAT rendering flag
+			layer.sourceParts = sourceParts;  // Use appropriate Parts (character or effect.pat)
 			layer.spawnFlagset1 = spawnInfo.flagset1;
 			layer.spawnFlagset2 = spawnInfo.flagset2;
 
@@ -671,6 +678,22 @@ bool MainFrame::loadEffectCharacter(const std::string& baseFolder)
 	}
 
 	effect->setName("effect");
+
+	// Try loading effect.pat (optional - not all effects use PAT)
+	std::string effectPatPath = baseFolder + "/effect.pat";
+	std::filesystem::path patPath(effectPatPath);
+	if (!std::filesystem::exists(patPath)) {
+		effectPatPath = baseFolder + "\\effect.pat";
+		patPath = effectPatPath;
+	}
+
+	if (std::filesystem::exists(patPath)) {
+		bool patLoaded = effect->loadPAT(effectPatPath);
+		printf("[Effect]   - effect.pat: %s (%d part sets)\n",
+			   patLoaded ? "Loaded" : "Failed",
+			   patLoaded ? (int)effect->parts.partSets.size() : 0);
+	}
+
 	effectCharacter = std::move(effect);
 	return true;
 }

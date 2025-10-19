@@ -29,6 +29,8 @@ struct RenderLayer {
 	bool isSpawned;
 	BoxList hitboxes;  // Hitboxes for this layer
 	CG* sourceCG;          // CG to pull sprite from (for effect.ha6 support)
+	bool usePat;           // True if layer uses PAT rendering
+	Parts* sourceParts;    // Parts to use (for PAT rendering, like sourceCG)
 
 	// Spawn flags for positioning behavior
 	int spawnFlagset1;     // From effect parameters[2]
@@ -43,6 +45,7 @@ struct RenderLayer {
 		blendMode(0), zPriority(0),
 		alpha(1.0f), tintColor(1.0f, 1.0f, 1.0f, 1.0f),
 		isSpawned(false), sourceCG(nullptr),
+		usePat(false), sourceParts(nullptr),
 		spawnFlagset1(0), spawnFlagset2(0) {}
 };
 
