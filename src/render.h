@@ -53,6 +53,8 @@ class Render
 {
 private:
 	glm::mat4 projection, view;
+	glm::mat4 perspective;  // Perspective projection for PAT rendering
+	glm::mat4 invOrtho;     // Inverse orthographic for coordinate transforms
 
 	CG *cg;
 	Parts *m_parts;
@@ -86,6 +88,7 @@ private:
 	void AdjustImageQuad(int x, int y, int w, int h);
 	void SetModelView(glm::mat4&& view);
 	void SetMatrix(int location);
+	void SetMatrixPersp(int location, glm::mat4 view, glm::mat4 pre);  // For PAT perspective rendering
 	void SetBlendingMode();
 
 public:
@@ -111,6 +114,7 @@ public:
 	void UpdateProj(float w, float h);
 
 	void GenerateHitboxVertices(const BoxList &hitboxes);
+	bool GeneratePartCenterVertices();  // Draw origin cross for selected part in PatEditor
 	void SetCg(CG *cg);
 	void SetParts(Parts *parts);
 	void SwitchImage(int id);

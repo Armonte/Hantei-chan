@@ -13,6 +13,7 @@
 
 #include "hitbox.h"
 #include "parts/parts.h"
+#include "enums.h"  // For RenderMode enum
 
 constexpr int maxBoxes = 33;
 
@@ -246,19 +247,25 @@ void Render::Draw()
 
 		// Use Parts rendering with callbacks
 		constexpr float tau = glm::pi<float>()*2.f;
-		glm::mat4 baseView = glm::mat4(1.f);
-		baseView = glm::scale(baseView, glm::vec3(scale, scale, 1.f));
-		baseView = glm::translate(baseView, glm::vec3(x, y, 0.f));
 
 		sPartShader.Use();
-		
+
 		// Disable vertex attribute array for color so glVertexAttrib4fv sets a constant value
 		glDisableVertexAttribArray(2);
 
 		// Callback to set matrix transform
-		auto setMatrix = [this, &baseView, tau](glm::mat4 partMatrix) {
-			glm::mat4 finalView = baseView * partMatrix;
-			glUniformMatrix4fv(lProjectionParts, 1, GL_FALSE, glm::value_ptr(projection * finalView));
+		// Use perspective projection for PAT rendering (like sosfiro)
+		auto setMatrix = [this](glm::mat4 partMatrix) {
+			// Build the pre-transform matrix with screen-space transforms only
+			glm::mat4 rview = projection;
+			rview = glm::scale(rview, glm::vec3(scale, scale, 1.f));
+			rview = glm::translate(rview, glm::vec3(x, y, 0));
+			// Don't multiply by partMatrix here - pass it separately to SetMatrixPersp
+			rview = glm::translate(rview, glm::vec3(0, 0, 1024.f));
+			rview *= invOrtho;
+
+			// Apply perspective projection - pass partMatrix separately (like sosfiro)
+			SetMatrixPersp(lProjectionParts, partMatrix, rview);
 		};
 
 		// Callback to set additive color
@@ -413,9 +420,27 @@ void Render::SetMatrix(int lProjection)
 	glUniformMatrix4fv(lProjection, 1, GL_FALSE, glm::value_ptr(projection*view));
 }
 
+void Render::SetMatrixPersp(int lProjection, glm::mat4 partView, glm::mat4 pre)
+{
+	// Apply perspective projection for PAT rendering (like sosfiro)
+	glUniformMatrix4fv(lProjection, 1, GL_FALSE, glm::value_ptr(pre * perspective * partView));
+}
+
 void Render::UpdateProj(float w, float h)
 {
+	if(w == 0 || h == 0)
+		return;
+
 	projection = glm::ortho<float>(0, w, h, 0, -1024.f, 1024.f);
+	invOrtho = glm::inverse(projection);
+
+	// Setup perspective projection for PAT rendering (matches sosfiro's implementation)
+	constexpr float dist = 1024;
+	constexpr float dist2 = dist * 2;
+	constexpr float f = 1.3;
+	perspective = glm::translate(glm::mat4(1.f), glm::vec3(-1, 1, 0)) *
+		glm::frustum<float>(-w/dist2, w/dist2, h/dist2, -h/dist2, 1*f, dist*2*f);
+	perspective = glm::translate(perspective, glm::vec3(0.f, 0.f, -dist*f));
 }
 
 void Render::SetCg(CG *cg_)
@@ -555,9 +580,75 @@ void Render::GenerateHitboxVertices(const BoxList &hitboxes)
 	vGeometry.UpdateBuffer(geoParts[BOXES], clientQuads.data(), dataI*sizeof(float));
 }
 
+bool Render::GeneratePartCenterVertices()
+{
+	// This function draws a colored plus sign at the origin (x, y) of the selected part
+	// This helps visualize the transform origin when editing parts in the PatEditor
+
+	// Safety: m_parts must be loaded to access part properties
+	if (!m_parts || !m_parts->loaded || !m_parts->currState) {
+		return false;
+	}
+
+	// Only draw in DEFAULT mode when not animating
+	if (m_parts->currState->animating || m_parts->currState->renderMode != RenderMode::DEFAULT) {
+		return false;
+	}
+
+	// Get the selected part property to draw its origin
+	int partSetIndex = m_parts->currState->partSet;
+	int partPropIndex = m_parts->currState->partProp;
+
+	auto* partProp = m_parts->GetPartProp(partSetIndex, partPropIndex);
+	if (!partProp) {
+		return false;
+	}
+
+	// Draw a colored plus sign at the part's origin (x, y)
+	// This helps visualize where transforms are applied from
+	float propX = partProp->x;
+	float propY = partProp->y;
+	float lineSize = 50.0f;  // Length of the cross arms in pixels
+
+	// Color for the origin marker (pink/magenta by default)
+	float color[3] = {1.0f, 0.5f, 1.0f};
+
+	// Lines buffer format: 4 grid lines + 4 origin marker lines
+	// Each line: x1, y1, z, r, g, b, x2, y2, z, r, g, b (but stored as individual vertices)
+	float lines[] = {
+		// Grid lines (horizontal and vertical through 0,0)
+		-10000, 0, -1,   1,1,1,
+		10000, 0, -1,    1,1,1,
+		0, 10000, -1,    1,1,1,
+		0, -10000, -1,   1,1,1,
+
+		// Origin marker (plus sign at part origin)
+		propX - lineSize, propY, 1,    color[0], color[1], color[2],  // Left arm
+		propX + lineSize, propY, 1,    color[0], color[1], color[2],  // Right arm
+		propX, propY + lineSize, 1,    color[0], color[1], color[2],  // Top arm
+		propX, propY - lineSize, 1,    color[0], color[1], color[2],  // Bottom arm
+	};
+
+	vGeometry.UpdateBuffer(geoParts[LINES], lines, sizeof(lines));
+	return true;
+}
+
 void Render::DontDraw()
 {
 	quadsToDraw = 0;
+	// Reset lines buffer to show only grid (no part origin markers)
+	float lines[]
+	{
+		-10000, 0, -1,	1,1,1,
+		10000, 0, -1,	1,1,1,
+		0, 10000, -1,	1,1,1,
+		0, -10000, -1,	1,1,1,
+		0, 0, -1,	1,1,1,
+		0, 0, -1,	1,1,1,
+		0, 0, -1,	1,1,1,
+		0, 0, -1,	1,1,1,
+	};
+	vGeometry.UpdateBuffer(geoParts[LINES], lines, sizeof(lines));
 }
 
 void Render::ClearTexture()
@@ -643,19 +734,25 @@ void Render::DrawLayers()
 	{
 		// Use Parts rendering with callbacks
 		constexpr float tau = glm::pi<float>()*2.f;
-		glm::mat4 baseView = glm::mat4(1.f);
-		baseView = glm::scale(baseView, glm::vec3(scale, scale, 1.f));
-		baseView = glm::translate(baseView, glm::vec3(x, y, 0.f));
 
 		sPartShader.Use();
-		
+
 		// Disable vertex attribute array for color so glVertexAttrib4fv sets a constant value
 		glDisableVertexAttribArray(2);
 
 		// Callback to set matrix transform
-		auto setMatrix = [this, &baseView, tau](glm::mat4 partMatrix) {
-			glm::mat4 finalView = baseView * partMatrix;
-			glUniformMatrix4fv(lProjectionParts, 1, GL_FALSE, glm::value_ptr(projection * finalView));
+		// Use perspective projection for PAT rendering (like sosfiro)
+		auto setMatrix = [this](glm::mat4 partMatrix) {
+			// Build the pre-transform matrix with screen-space transforms only
+			glm::mat4 rview = projection;
+			rview = glm::scale(rview, glm::vec3(scale, scale, 1.f));
+			rview = glm::translate(rview, glm::vec3(x, y, 0));
+			// Don't multiply by partMatrix here - pass it separately to SetMatrixPersp
+			rview = glm::translate(rview, glm::vec3(0, 0, 1024.f));
+			rview *= invOrtho;
+
+			// Apply perspective projection - pass partMatrix separately (like sosfiro)
+			SetMatrixPersp(lProjectionParts, partMatrix, rview);
 		};
 
 		// Callback to set additive color
