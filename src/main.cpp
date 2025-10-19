@@ -60,6 +60,14 @@ void LoadJapaneseFonts(ImGuiIO& io)
 LRESULT WINAPI WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam);
 int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE, PWSTR pCmdLine, int nCmdShow)
 {
+	// Allocate console for debug output with Shift-JIS support
+	AllocConsole();
+	FILE* dummy;
+	freopen_s(&dummy, "CONOUT$", "w", stdout);
+	freopen_s(&dummy, "CONOUT$", "w", stderr);
+	SetConsoleOutputCP(932);  // Shift-JIS code page
+	printf("=== Hantei-chan Debug Console (Shift-JIS) ===\n\n");
+	
 	bool useIni = true;
 	int argC;
 	PWSTR* argV = CommandLineToArgvW(pCmdLine, &argC);

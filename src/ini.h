@@ -5,6 +5,9 @@
 #include <vector>
 #include <string>
 
+// Forward declaration
+class Parts;
+
 extern struct Settings
 {
 	//default
@@ -21,7 +24,8 @@ extern struct Settings
 	std::vector<std::string> recentProjects; // Recent project paths (max 10)
 } gSettings;
 
-bool LoadFromIni(FrameData *framedata, CG *cg, const std::string& iniPath, std::string* outTopHA6Path = nullptr);
+bool LoadFromIni(FrameData *framedata, CG *cg, const std::string& iniPath, std::string* outTopHA6Path = nullptr, Parts* parts = nullptr, std::string* outPATPath = nullptr);
+bool LoadChrHA6FromIni(FrameData *framedata, CG *cg, const std::string& iniPath, std::string* outTopHA6Path = nullptr, Parts* parts = nullptr, std::string* outPATPath = nullptr);
 bool AddHA6ToTxt(const std::string& txtPath, const std::string& ha6Filename);
 void InitIni();
 
