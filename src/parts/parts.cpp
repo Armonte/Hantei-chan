@@ -217,7 +217,15 @@ bool Parts::Load(const char* name)
         {
             printf("    → ERROR: No texture data!\n");
         }
-        gfx.textureIndex = textures.back()->id;
+        
+        // Validate texture was created before storing ID
+        if (textures.back() && textures.back()->id != 0) {
+            gfx.textureIndex = textures.back()->id;
+            printf("    → Stored GL texture ID: %u for gfxMeta[%zu]\n", gfx.textureIndex, idx);
+        } else {
+            printf("    → ERROR: Failed to create GL texture for gfxMeta[%zu]\n", idx);
+            gfx.textureIndex = 0;
+        }
     }
     printf("[Texture Loading] Created %zu OpenGL textures\n", textures.size());
 
@@ -387,6 +395,7 @@ void Parts::DrawPart(int i)
 
     // Validate cutOut index
     if (i < 0 || i >= cutOuts.size()) {
+        printf("[DrawPart] Invalid cutOut index: %d (size=%zu)\n", i, cutOuts.size());
         return;
     }
 
@@ -394,11 +403,17 @@ void Parts::DrawPart(int i)
 
     // Validate texture index (must be >= 0 and < gfxMeta.size())
     if (cutout.texture < 0 || cutout.texture >= gfxMeta.size()) {
+        printf("[DrawPart] Invalid texture index: %d (gfxMeta.size=%zu)\n", cutout.texture, gfxMeta.size());
         return;
     }
 
     // Validate that the texture was actually created
     if (gfxMeta[cutout.texture].textureIndex == 0) {
+        static bool warnedOnce = false;
+        if (!warnedOnce) {
+            printf("[DrawPart] WARNING: Texture %d has ID 0 (not created)\n", cutout.texture);
+            warnedOnce = true;
+        }
         return;  // Texture not loaded, skip silently
     }
 
@@ -430,13 +445,14 @@ void Parts::Draw(int pattern, int nextPattern, float interpolationFactor,
     // Validate pattern indices
     if(pattern < 0 || pattern >= partSets.size() ||
        nextPattern < 0 || nextPattern >= partSets.size()) {
-        printf("[Parts::Draw] Invalid pattern indices: pattern=%d, next=%d, size=%zu\n",
+        printf("[Parts::Draw] ERROR: Invalid pattern indices: pattern=%d, next=%d, partSets.size=%zu\n",
             pattern, nextPattern, partSets.size());
         return;
     }
-
-    if (partSets[pattern].groups.empty())
+    
+    if (partSets[pattern].groups.empty()) {
         return;
+    }
 
     // Sort groups by priority (higher priority = draw first)
     auto copyGroups = partSets[pattern].groups;
@@ -459,6 +475,40 @@ void Parts::Draw(int pattern, int nextPattern, float interpolationFactor,
     float width = 256.f;   // Texture UV width
     float height = 256.f;  // Texture UV height
 
+    // Debug pattern changes only
+    static int lastPattern = -1;
+    if (pattern != lastPattern) {
+        printf("\n========== Pattern %d ==========\n", pattern);
+        printf("Total parts in pattern: %zu\n", copyGroups.size());
+        
+        // Show what each part references
+        int validParts = 0;
+        for (size_t i = 0; i < copyGroups.size(); i++) {
+            auto& p = copyGroups[i];
+            if (p.ppId >= 0 && p.ppId < cutOuts.size()) {
+                auto& co = cutOuts[p.ppId];
+                bool validTex = (co.texture >= 0 && co.texture < textures.size() && textures[co.texture] != nullptr);
+                bool validUV = (co.uv[2] > 0 || co.uv[3] > 0);
+                
+                printf("  Part %d: ppId=%d, tex=%d %s, UV=(%d,%d,%dx%d) %s, BGRA=(%d,%d,%d,%d)\n",
+                    p.propId, p.ppId, co.texture,
+                    validTex ? "✓" : "✗MISSING",
+                    co.uv[0], co.uv[1], co.uv[2], co.uv[3],
+                    validUV ? "✓" : "✗EMPTY",
+                    p.bgra[0], p.bgra[1], p.bgra[2], p.bgra[3]);
+                
+                if (validTex && validUV) validParts++;
+            } else if (p.ppId >= 0) {
+                printf("  Part %d: ppId=%d ✗OUT_OF_RANGE (cutOuts.size=%zu)\n", 
+                    p.propId, p.ppId, cutOuts.size());
+            }
+        }
+        printf("Valid renderable parts: %d/%zu\n", validParts, copyGroups.size());
+        printf("Loaded textures: %zu\n", textures.size());
+        printf("===============================\n\n");
+        lastPattern = pattern;
+    }
+    
     for (auto& part : copyGroups)
     {
         // Skip unused or invalid parts silently
@@ -619,6 +669,18 @@ void Parts::Draw(int pattern, int nextPattern, float interpolationFactor,
         // Apply color (including palette color if applicable)
         float newColor[4];
         memcpy(newColor, color, sizeof(float) * 4);
+        
+        // Debug first part render only
+        static bool debugOnce = true;
+        if (debugOnce) {
+            printf("[COLOR DEBUG] Part propId=%d, ppId=%d\n", part.propId, part.ppId);
+            printf("  part.bgra bytes: (%d, %d, %d, %d)\n", part.bgra[0], part.bgra[1], part.bgra[2], part.bgra[3]);
+            printf("  bgra vec4: (%.1f, %.1f, %.1f, %.1f)\n", bgra[0], bgra[1], bgra[2], bgra[3]);
+            printf("  color input: (%.3f, %.3f, %.3f, %.3f)\n", color[0], color[1], color[2], color[3]);
+            printf("  newColor initial: (%.3f, %.3f, %.3f, %.3f)\n", 
+                newColor[0], newColor[1], newColor[2], newColor[3]);
+        }
+        
         if (cutout.colorSlot != -1 && cg) {
             unsigned int palColor = cg->getColorFromPal(cutout.colorSlot);
             if (palColor) {
@@ -626,6 +688,10 @@ void Parts::Draw(int pattern, int nextPattern, float interpolationFactor,
                 newColor[1] *= ((palColor >> 8) & 0xFF) / 255.f;
                 newColor[2] *= ((palColor >> 16) & 0xFF) / 255.f;
                 newColor[3] *= (palColor >> 24) / 255.f;
+                if (debugOnce) {
+                    printf("  After palette: (%.3f, %.3f, %.3f, %.3f)\n", 
+                        newColor[0], newColor[1], newColor[2], newColor[3]);
+                }
             }
         }
         // Apply part color (BGRA order like Eiton - swap B and R)
@@ -634,11 +700,7 @@ void Parts::Draw(int pattern, int nextPattern, float interpolationFactor,
         newColor[2] *= bgra[0] / 255.f; // BLUE = bgra[0]
         newColor[3] *= bgra[3] / 255.f; // ALPHA = bgra[3]
 
-        // Debug first part render only
-        static bool debugOnce = true;
         if (debugOnce) {
-            printf("[RENDER DEBUG] Part propId=%d, ppId=%d\n", part.propId, part.ppId);
-            printf("  bgra input: (%d, %d, %d, %d)\n", part.bgra[0], part.bgra[1], part.bgra[2], part.bgra[3]);
             printf("  Final color to GL: (%.3f, %.3f, %.3f, %.3f)\n", 
                 newColor[0], newColor[1], newColor[2], newColor[3]);
             debugOnce = false;

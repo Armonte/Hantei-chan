@@ -91,6 +91,17 @@ void Texture::LoadCompressed(char* data, int width, int height, size_t compresse
 	}
 
 	glCompressedTexImage2D(GL_TEXTURE_2D, 0, format, width, height, 0, compressedSize, data);
+	
+	// Check for OpenGL errors after compressed texture upload
+	GLenum err = glGetError();
+	if (err != GL_NO_ERROR) {
+		printf("[LoadCompressed] GL ERROR 0x%X uploading %dx%d type=%d compressed texture (size=%zu)\n",
+			err, width, height, type, compressedSize);
+		printf("[LoadCompressed] Format=0x%X, data=%p\n", format, data);
+	} else {
+		printf("[LoadCompressed] SUCCESS: %dx%d type=%d DXT%d texture (GL ID=%u, size=%zu)\n",
+			width, height, type, (type == 1 ? 1 : 5), id, compressedSize);
+	}
 
 	// Create minimal ImageData for compatibility
 	ImageData* imgData = new ImageData();

@@ -1,4 +1,5 @@
 #include "ini.h"
+#include "parts/parts.h"
 #include <sstream>
 #include <iomanip>
 #include <string>
@@ -83,7 +84,7 @@ void InitIni()
 	ImGui::LoadIniSettingsFromDisk(context.IO.IniFilename);
 }
 
-bool LoadFromIni(FrameData *framedata, CG *cg, const std::string& iniPath, std::string* outTopHA6Path)
+bool LoadFromIni(FrameData *framedata, CG *cg, const std::string& iniPath, std::string* outTopHA6Path, Parts* parts, std::string* outPATPath)
 {
 	int fileNum = GetPrivateProfileIntA("DataFile", "FileNum", 0, iniPath.c_str());
 	if(fileNum)
@@ -91,6 +92,7 @@ bool LoadFromIni(FrameData *framedata, CG *cg, const std::string& iniPath, std::
 		std::string folder = iniPath.substr(0, iniPath.find_last_of("\\/"));
 		std::string topHA6File;
 
+		// Load all files (sosfiro's approach - the patch system handles overlays correctly)
 		for(int i = 0; i < fileNum; i++)
 		{
 			char ha6file[256]{};
@@ -127,10 +129,97 @@ bool LoadFromIni(FrameData *framedata, CG *cg, const std::string& iniPath, std::
 			}
 		}
 
+		// Load .pat file if available (for UNIST/DFCI/MBTL/UNI2 characters)
+		int patNum = GetPrivateProfileIntA("PAniFile", "FileNum", 0, iniPath.c_str());
+		if(patNum >= 1 && parts != nullptr)
+		{
+			char patFile[256]{};
+			GetPrivateProfileStringA("PAniFile", "File00", nullptr, patFile, 256, iniPath.c_str());
+
+			if(patFile[0] != '\0')
+			{
+				std::string fullpath = folder + "\\" + patFile;
+				if(parts->Load(fullpath.c_str()))
+				{
+					// Return the PAT file path if caller wants it
+					if(outPATPath)
+					{
+						*outPATPath = fullpath;
+					}
+				}
+			}
+		}
+
 		return true;
 	}
 	else
 		return false;
+}
+
+bool LoadChrHA6FromIni(FrameData *framedata, CG *cg, const std::string& iniPath, std::string* outTopHA6Path, Parts* parts, std::string* outPATPath)
+{
+	int fileNum = GetPrivateProfileIntA("DataFile", "FileNum", 0, iniPath.c_str());
+	if(fileNum < 2)
+		return false;  // Need at least File00 and File01
+
+	std::string folder = iniPath.substr(0, iniPath.find_last_of("\\/"));
+
+	// Load only File01 (the main character .ha6)
+	// Skip File00 (_temp.ha6) and File02+ (BaseData.ha6, etc.)
+	char ha6file[256]{};
+	GetPrivateProfileStringA("DataFile", "File01", nullptr, ha6file, 256, iniPath.c_str());
+
+	if(ha6file[0] == '\0')
+		return false;
+
+	std::string ha6fullpath = folder + "\\" + ha6file;
+	if(!framedata->load(ha6fullpath.c_str(), 0))
+		return false;
+
+	// Return the HA6 file path if caller wants it
+	if(outTopHA6Path) {
+		*outTopHA6Path = ha6fullpath;
+	}
+
+	// Load .cg file
+	int cgNum = GetPrivateProfileIntA("BmpcutFile", "FileNum", 0, iniPath.c_str());
+	if(cgNum == 1)
+	{
+		char cgFile[256]{};
+		GetPrivateProfileStringA("BmpcutFile", "File00", nullptr, cgFile, 256, iniPath.c_str());
+
+		std::string fullpath = folder + "\\" + cgFile;
+		auto extensionPos = fullpath.find_last_of(".");
+		auto palPath = fullpath.substr(0, extensionPos) + ".pal";
+		cg->load(fullpath.c_str());
+		if(std::filesystem::exists(palPath))
+		{
+			cg->loadPalette(palPath.c_str());
+		}
+	}
+
+	// Load .pat file if available (for UNIST/DFCI/MBTL/UNI2 characters)
+	int patNum = GetPrivateProfileIntA("PAniFile", "FileNum", 0, iniPath.c_str());
+	if(patNum >= 1 && parts != nullptr)
+	{
+		char patFile[256]{};
+		GetPrivateProfileStringA("PAniFile", "File00", nullptr, patFile, 256, iniPath.c_str());
+
+		if(patFile[0] != '\0')
+		{
+			std::string fullpath = folder + "\\" + patFile;
+			if(parts->Load(fullpath.c_str()))
+			{
+				// Return the PAT file path if caller wants it
+				if(outPATPath)
+				{
+					*outPATPath = fullpath;
+				}
+			}
+		}
+	}
+
+	return true;
 }
 
 bool AddHA6ToTxt(const std::string& txtPath, const std::string& ha6Filename)

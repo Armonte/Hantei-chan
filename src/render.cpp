@@ -271,8 +271,16 @@ void Render::Draw()
 			glUniform1i(lFlipParts, (int)flip);
 		};
 
-		// Draw Parts with interpolation
-		m_parts->Draw(curPattern, curNextPattern, curInterp, setMatrix, setAddColor, setFlip, colorRgba);
+		// Draw Parts with interpolation (wrapped in try-catch for crash diagnosis)
+		try {
+			m_parts->Draw(curPattern, curNextPattern, curInterp, setMatrix, setAddColor, setFlip, colorRgba);
+		} catch (const std::exception& e) {
+			printf("[Render] EXCEPTION in Parts::Draw: %s\n", e.what());
+			return;
+		} catch (...) {
+			printf("[Render] UNKNOWN EXCEPTION in Parts::Draw\n");
+			return;
+		}
 
 		// Draw hitboxes after Parts
 		sSimple.Use();
@@ -608,53 +616,19 @@ void Render::AddLayer(const RenderLayer& layer)
 
 void Render::SortLayersByZPriority(int mainPatternPriority)
 {
-	// Sort layers by Z-priority using MBAACC's priority calculation system
-	// Lower effective priority = draw first (behind)
-	// Higher effective priority = draw last (in front)
-
+	// Sort layers by Z-priority
+	// Lower priority = draw first (behind)
+	// Higher priority = draw last (in front)
 	std::sort(renderLayers.begin(), renderLayers.end(),
-		[](const RenderLayer& a, const RenderLayer& b) {
-			// Calculate effective rendering priorities using MBAACC formula
-			// Reference: gHantei_Docs/Hantei_Data.md - Projectile Z-Priority guide
+		[mainPatternPriority](const RenderLayer& a, const RenderLayer& b) {
+			// Calculate effective priorities based on game logic
+			int priorityA = a.zPriority;
+			int priorityB = b.zPriority;
 
-			auto calculateEffectivePriority = [](int zp, bool isSpawned) -> int {
-				// MBAACC priority formula for projectiles (spawned patterns)
-				// Characters use a different base priority than projectiles
-				// Reference: gHantei_Docs/Hantei_Data.md - Projectile Z-Priority guide
+			// Handle special projectile priority logic if needed
+			// (For now using raw priority values)
 
-				// Projectile base priority (spawned) vs Character base priority (not spawned)
-				constexpr int PROJECTILE_BASE_PRIORITY = 100;
-				constexpr int CHARACTER_BASE_PRIORITY = 128;
-
-				if (zp == 0) {
-					// ZP=0: Base priority depends on whether it's spawned
-					return isSpawned ? PROJECTILE_BASE_PRIORITY : CHARACTER_BASE_PRIORITY;
-				} else if (zp == 1) {
-					return 143;  // In front of character
-				} else if (zp == 2) {
-					return 98;   // Behind character
-				} else if (zp >= 3 && zp <= 12) {
-					return 144 - zp;  // 141, 140, 139, ..., 132
-				} else if (zp >= 13 && zp <= 22) {
-					return 125 - zp;  // 112, 111, 110, ..., 103
-				} else if (zp == 23) {
-					return CHARACTER_BASE_PRIORITY + 1;  // 129 (just in front of character)
-				} else if (zp == 24) {
-					return CHARACTER_BASE_PRIORITY - 1;  // 127 (just behind character)
-				} else if (zp == 25) {
-					return 15;   // Far background
-				} else if (zp == 26) {
-					return 144;  // Far foreground
-				}
-
-				// Unknown priority values default to character base
-				return CHARACTER_BASE_PRIORITY;
-			};
-
-			int priorityA = calculateEffectivePriority(a.zPriority, a.isSpawned);
-			int priorityB = calculateEffectivePriority(b.zPriority, b.isSpawned);
-
-			return priorityA < priorityB;  // Lower draws first (behind)
+			return priorityA < priorityB;  // Lower draws first
 		});
 }
 
@@ -674,7 +648,7 @@ void Render::DrawLayers()
 		baseView = glm::translate(baseView, glm::vec3(x, y, 0.f));
 
 		sPartShader.Use();
-
+		
 		// Disable vertex attribute array for color so glVertexAttrib4fv sets a constant value
 		glDisableVertexAttribArray(2);
 
@@ -717,92 +691,22 @@ void Render::DrawLayers()
 	// Save original CG
 	CG* origCG = cg;
 
-	// Save original Parts pointer
-	Parts* origParts = m_parts;
-
-	// ========================================================================
-	// PHASE 1: Draw all sprites in z-order (no hitboxes)
-	// ========================================================================
+	// Draw each layer
 	for (const auto& layer : renderLayers)
 	{
 		if (layer.spriteId < 0 || layer.alpha == 0.0f) continue;
 
-		// Check if this layer uses PAT rendering
-		if (layer.usePat && layer.sourceParts && layer.sourceParts->loaded) {
-			// PAT layer sprite rendering
-
-			// Apply layer-specific state
-			x = origX + layer.spawnOffsetX;
-			y = origY + layer.spawnOffsetY;
-			offsetX = layer.frameOffsetX;
-			offsetY = layer.frameOffsetY;
-			scaleX = layer.scaleX;
-			scaleY = layer.scaleY;
-			rotX = layer.rotX;
-			rotY = layer.rotY;
-			rotZ = layer.rotZ;
-			AFRT = layer.AFRT;
-
-			// Apply blend mode
-			switch (layer.blendMode)
-			{
-			case 2:
-				blendingMode = additive;
-				break;
-			case 3:
-				blendingMode = subtractive;
-				break;
-			default:
-				blendingMode = normal;
-				break;
-			}
-
-			// Apply tint color and alpha
-			colorRgba[0] = layer.tintColor.r * origColorRgba[0];
-			colorRgba[1] = layer.tintColor.g * origColorRgba[1];
-			colorRgba[2] = layer.tintColor.b * origColorRgba[2];
-			colorRgba[3] = layer.alpha * origColorRgba[3];
-
-			// Switch to this layer's Parts if different
-			if (layer.sourceParts != m_parts) {
-				SetParts(layer.sourceParts);
-			}
-
-			// Render the PAT layer using layer.spriteId as partSet index
-			constexpr float tau = glm::pi<float>()*2.f;
-			glm::mat4 baseView = glm::mat4(1.f);
-			baseView = glm::scale(baseView, glm::vec3(scale, scale, 1.f));
-			baseView = glm::translate(baseView, glm::vec3(x, y, 0.f));
-
-			sPartShader.Use();
-			glDisableVertexAttribArray(2);
-
-			auto setMatrix = [this, &baseView, tau](glm::mat4 partMatrix) {
-				glm::mat4 finalView = baseView * partMatrix;
-				glUniformMatrix4fv(lProjectionParts, 1, GL_FALSE, glm::value_ptr(projection * finalView));
-			};
-
-			auto setAddColor = [this](float r, float g, float b) {
-				glUniform3f(lAddColorParts, r, g, b);
-			};
-
-			auto setFlip = [this](char flip) {
-				glUniform1i(lFlipParts, (int)flip);
-			};
-
-			// Render this PAT layer (spriteId is the partSet index)
-			layer.sourceParts->Draw(layer.spriteId, layer.spriteId, 0.0f, setMatrix, setAddColor, setFlip, colorRgba);
-
-			continue;  // Skip CG rendering for this layer
-		}
-
-		// CG layer sprite rendering (no boxes)
 		// Switch CG if this layer uses a different one (e.g., effect.ha6)
 		if (layer.sourceCG && layer.sourceCG != cg) {
 			SetCg(layer.sourceCG);
 		}
 
 		// Apply layer-specific transforms (spawn offset + frame offset)
+		// TODO: Implement positioning flags:
+		//   flagset1 & 0x10: Coordinates relative to camera
+		//   flagset2 & 0x100: Position relative to opponent
+		//   flagset2 & 0x200: Position relative to (-32768, 0)
+		// For now, using basic relative positioning
 		x = origX + layer.spawnOffsetX;
 		y = origY + layer.spawnOffsetY;
 		offsetX = layer.frameOffsetX;
@@ -836,93 +740,17 @@ void Render::DrawLayers()
 		colorRgba[2] = layer.tintColor.b * origColorRgba[2];
 		colorRgba[3] = layer.alpha * origColorRgba[3];
 
-		// Switch to this layer's sprite
-		SwitchImage(layer.spriteId);
-
-		// Draw sprite only (inline from DrawSpriteOnly, without boxes)
-		// Disable depth write so layers don't occlude each other
-		glDepthMask(GL_FALSE);
-
-		constexpr float tau = glm::pi<float>()*2.f;
-		glm::mat4 view = glm::mat4(1.f);
-		view = glm::scale(view, glm::vec3(scale, scale, 1.f));
-		view = glm::translate(view, glm::vec3(x,y,0.f));
-		// Apply scale and rotations based on AFRT flag
-		if (AFRT) {
-			view = glm::scale(view, glm::vec3(scaleX,scaleY,0));
-			view = glm::rotate(view, rotX*tau, glm::vec3(1.0, 0.f, 0.f));
-			view = glm::rotate(view, rotY*tau, glm::vec3(0.0, 1.f, 0.f));
-			view = glm::rotate(view, rotZ*tau, glm::vec3(0.0, 0.f, 1.f));
-		} else {
-			view = glm::scale(view, glm::vec3(scaleX,scaleY,0));
-			view = glm::rotate(view, rotZ*tau, glm::vec3(0.0, 0.f, 1.f));
-			view = glm::rotate(view, rotY*tau, glm::vec3(0.0, 1.f, 0.f));
-			view = glm::rotate(view, rotX*tau, glm::vec3(1.0, 0.f, 0.f));
-		}
-		view = glm::translate(view, glm::vec3(-128+offsetX,-224+offsetY,0.f));
-		SetModelView(std::move(view));
-		sTextured.Use();
-		SetMatrix(lProjectionT);
-		if(texture.isApplied)
-		{
-			SetBlendingMode();
-			glDisableVertexAttribArray(2);
-			glVertexAttrib4fv(2, colorRgba);
-			vSprite.Bind();
-			vSprite.Draw(0);
-		}
-		// Reset state
-		glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-		glBlendEquation(GL_FUNC_ADD);
-
-		// Re-enable depth write
-		glDepthMask(GL_TRUE);
-	}
-
-	// ========================================================================
-	// PHASE 2: Draw all hitboxes on top
-	// ========================================================================
-	for (const auto& layer : renderLayers)
-	{
-		// Skip layers with no hitboxes
-		// NOTE: We intentionally do NOT check spriteId or alpha here
-		// Hitboxes should be visible even if there's no sprite (e.g., invincibility frames)
-		if (layer.hitboxes.empty()) continue;
-
-		// Apply layer position for hitbox positioning
-		// (boxes should only be positioned by x,y, not offset)
-		x = origX + layer.spawnOffsetX;
-		y = origY + layer.spawnOffsetY;
-
-		// Generate hitbox vertices for this layer
+		// Generate hitboxes for this layer
 		GenerateHitboxVertices(layer.hitboxes);
 
-		// Draw boxes
-		glm::mat4 view = glm::mat4(1.f);
-		view = glm::scale(view, glm::vec3(scale, scale, 1.f));
-		view = glm::translate(view, glm::vec3(x,y,0.f));
-		SetModelView(std::move(view));
-		sSimple.Use();
-		SetMatrix(lProjectionS);
-		vGeometry.Bind();
-		glUniform1f(lAlphaS, 0.6f);
-		vGeometry.DrawQuads(GL_LINE_LOOP, quadsToDraw);
-		glUniform1f(lAlphaS, 0.3f);
-		vGeometry.DrawQuads(GL_TRIANGLE_FAN, quadsToDraw);
+		// Switch to this layer's sprite and draw sprite+boxes (no grid lines)
+		SwitchImage(layer.spriteId);
+		DrawSpriteOnly();
 	}
-
-	// Switch back to simple shader to ensure clean state before restoring
-	// This prevents GL errors when cleaning up after PAT rendering
-	sSimple.Use();
 
 	// Restore original CG
 	if (cg != origCG) {
 		SetCg(origCG);
-	}
-
-	// Restore original Parts
-	if (m_parts != origParts) {
-		SetParts(origParts);
 	}
 
 	// Restore original state

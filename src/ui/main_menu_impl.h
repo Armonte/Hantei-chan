@@ -129,6 +129,27 @@ void MainFrame::Menu(unsigned int errorPopupId)
 				}
 			}
 
+			if (ImGui::MenuItem("Load chr HA6 from .txt..."))
+			{
+				std::string path = FileDialog(fileType::TXT, false);
+				if (!path.empty()) {
+					// Check for duplicate
+					if (findCharacterByPath(path)) {
+						ImGui::OpenPopup(errorPopupId);
+					} else {
+						auto character = std::make_unique<CharacterInstance>();
+						if (character->loadChrHA6FromTxt(path)) {
+							characters.push_back(std::move(character));
+							tryLoadEffectCharacter(characters.back().get());
+							createViewForCharacter(characters.back().get());
+							markProjectModified();
+						} else {
+							ImGui::OpenPopup(errorPopupId);
+						}
+					}
+				}
+			}
+
 			if (ImGui::MenuItem("Load HA6..."))
 			{
 				std::string path = FileDialog(fileType::HA6, false);

@@ -18,6 +18,9 @@ public:
 	// Load character from .txt file (loads multiple .ha6 files)
 	bool loadFromTxt(const std::string& txtPath);
 
+	// Load only character .ha6 from .txt file (File01 only, skips _temp.ha6 and BaseData.ha6)
+	bool loadChrHA6FromTxt(const std::string& txtPath);
+
 	// Load single .ha6 file
 	bool loadHA6(const std::string& ha6Path, bool patch = false);
 

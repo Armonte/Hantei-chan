@@ -53,6 +53,13 @@ void PatPartSetPane::RegeneratePartPropNames()
 
 void PatPartSetPane::UpdateRenderFrame(int effectId, bool dontChangeProp)
 {
+    // Bounds check effectId
+    if (effectId < 0 || effectId >= curInstance->parts->partSets.size()) {
+        printf("[UpdateRenderFrame] ERROR: Invalid effectId %d (partSets.size=%zu)\n", 
+            effectId, curInstance->parts->partSets.size());
+        return;
+    }
+    
     curInstance->currState->partSet = effectId;
     if(curInstance->currState->animating) return;
 
@@ -189,6 +196,24 @@ void PatPartSetPane::DrawPartSet()
             openpopupWithId = "PartSet Delete";
         }
         if(nPartSet > 0) {
+            // Safety check partSetDecoratedNames FIRST
+            if (!partSetDecoratedNames) {
+                printf("[PatPartSetPane] ERROR: partSetDecoratedNames is null, regenerating\n");
+                RegeneratePartSetNames();
+                if (!partSetDecoratedNames) {
+                    printf("[PatPartSetPane] FATAL: Failed to generate partSetDecoratedNames\n");
+                    return;  // Can't proceed without names
+                }
+            }
+            
+            // Bounds check currentPartSet
+            if (curInstance->currState->partSet < 0 || curInstance->currState->partSet >= nPartSet) {
+                printf("[PatPartSetPane] WARNING: partSet %d out of range [0, %d), resetting to 0\n",
+                    curInstance->currState->partSet, (int)nPartSet);
+                curInstance->currState->partSet = 0;
+                UpdateRenderFrame(0);
+            }
+            
             if (ImGui::BeginCombo("Part Set", partSetDecoratedNames[curInstance->currState->partSet].c_str(),
                                   ImGuiComboFlags_HeightLargest)) {
 
@@ -196,6 +221,7 @@ void PatPartSetPane::DrawPartSet()
                 for (int n = 0; n < count; n++) {
                     const bool is_selected = (curInstance->currState->partSet == n);
                     if (ImGui::Selectable(partSetDecoratedNames[n].c_str(), is_selected)) {
+                        printf("[PatPartSetPane] Switching to PartSet %d\n", n);
                         UpdateRenderFrame(n);
                         RegeneratePartPropNames();
                     }

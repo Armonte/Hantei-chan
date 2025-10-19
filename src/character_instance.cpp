@@ -21,8 +21,8 @@ bool CharacterInstance::loadFromTxt(const std::string& txtPath)
 {
 	m_txtPath = txtPath;
 
-	// Use existing LoadFromIni function
-	if (!LoadFromIni(&frameData, &cg, txtPath, &m_topHA6Path)) {
+	// Use existing LoadFromIni function, now with .pat support
+	if (!LoadFromIni(&frameData, &cg, txtPath, &m_topHA6Path, &parts, &m_patPath)) {
 		return false;
 	}
 
@@ -42,6 +42,47 @@ bool CharacterInstance::loadFromTxt(const std::string& txtPath)
 			ss << "File" << std::setfill('0') << std::setw(2) << i;
 			GetPrivateProfileStringA("DataFile", ss.str().c_str(), nullptr, ha6file, 256, txtPath.c_str());
 
+			std::string fullpath = folder + "\\" + ha6file;
+			m_ha6Paths.push_back(fullpath);
+		}
+	}
+
+	// Extract CG path
+	char cgFile[256]{};
+	GetPrivateProfileStringA("BmpcutFile", "File00", nullptr, cgFile, 256, txtPath.c_str());
+	if (cgFile[0] != '\0') {
+		std::string folder = txtPath.substr(0, txtPath.find_last_of("\\/"));
+		m_cgPath = folder + "\\" + cgFile;
+	}
+
+	m_isModified = false;
+	undoManager.markCleanState();
+	return true;
+}
+
+bool CharacterInstance::loadChrHA6FromTxt(const std::string& txtPath)
+{
+	m_txtPath = txtPath;
+
+	// Use LoadChrHA6FromIni to load only File01 (character .ha6)
+	if (!LoadChrHA6FromIni(&frameData, &cg, txtPath, &m_topHA6Path, &parts, &m_patPath)) {
+		return false;
+	}
+
+	// Extract character name from .txt filename
+	std::filesystem::path p(txtPath);
+	m_name = p.stem().string();
+
+	// Extract HA6 path (only File01)
+	int fileNum = GetPrivateProfileIntA("DataFile", "FileNum", 0, txtPath.c_str());
+	if (fileNum >= 2) {
+		std::string folder = txtPath.substr(0, txtPath.find_last_of("\\/"));
+		m_ha6Paths.clear();
+
+		char ha6file[256]{};
+		GetPrivateProfileStringA("DataFile", "File01", nullptr, ha6file, 256, txtPath.c_str());
+
+		if (ha6file[0] != '\0') {
 			std::string fullpath = folder + "\\" + ha6file;
 			m_ha6Paths.push_back(fullpath);
 		}
