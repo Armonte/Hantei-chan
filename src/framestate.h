@@ -87,12 +87,16 @@ struct ActiveSpawnInstance {
 	int loopCounter;              // Remaining loop iterations (for aniType 2)
 	int previousFrame;            // Track previous frame for nested spawn detection
 
+	// Z-priority tracking (persistent across frames - ZP=0 means "keep current")
+	int currentZPriority;         // Current z-priority (updated only when frame has non-zero ZP)
+
 	ActiveSpawnInstance() :
 		spawnTick(0), patternId(-1), usesEffectHA6(false), isPresetEffect(false),
 		offsetX(0), offsetY(0), flagset1(0), flagset2(0),
 		angle(0), projVarDecrease(0),
 		tintColor(0.5f, 0.7f, 1.0f, 1.0f), alpha(0.6f),
-		currentFrame(0), frameDuration(0), loopCounter(0), previousFrame(-1) {}
+		currentFrame(0), frameDuration(0), loopCounter(0), previousFrame(-1),
+		currentZPriority(0) {}
 };
 
 // Visualization settings
