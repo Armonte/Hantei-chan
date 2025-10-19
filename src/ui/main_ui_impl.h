@@ -529,6 +529,8 @@ void MainFrame::RenderUpdate()
 								auto spawnSeq = sourceData->get_sequence(instance.patternId);
 								if (spawnSeq && !spawnSeq->frames.empty()) {
 									instance.loopCounter = spawnSeq->frames[0].AF.loopCount;
+									// Initialize z-priority from frame 0 (ZP=0 means use projectile base priority)
+									instance.currentZPriority = spawnSeq->frames[0].AF.priority;
 
 									if (!spawnSeq->frames[0].EF.empty()) {
 										auto frame0Spawns = ParseSpawnedPatterns(spawnSeq->frames[0].EF, 0, instance.patternId);
@@ -562,6 +564,7 @@ void MainFrame::RenderUpdate()
 												auto childSeq = childSourceData->get_sequence(childInstance.patternId);
 												if (childSeq && !childSeq->frames.empty()) {
 													childInstance.loopCounter = childSeq->frames[0].AF.loopCount;
+													childInstance.currentZPriority = childSeq->frames[0].AF.priority;
 												}
 											}
 
@@ -639,10 +642,10 @@ void MainFrame::RenderUpdate()
 					if (state.frame != oldFrame) {
 						state.previousFrame = oldFrame;
 
-						// Detect loop: if we jumped backwards to frame 0, reset visit counts for new playthrough
-						if (state.frame == 0 && oldFrame > state.frame) {
+						// Detect loop: if we jumped backwards (any backward jump), reset visit counts for new loop iteration
+						if (state.frame < oldFrame) {
 							// DEBUG: Log loop detection
-							printf("[LOOP DETECTED] Resetting visit counts (jumped from frame %d to 0)\n", oldFrame);
+							printf("[LOOP DETECTED] Resetting visit counts (jumped from frame %d to %d)\n", oldFrame, state.frame);
 							state.frameVisitCounts.clear();
 							state.lastSpawnCreationFrame = -1;
 						}
@@ -660,6 +663,12 @@ void MainFrame::RenderUpdate()
 							bool isFirstVisit = (state.frameVisitCounts[state.frame] == 1);
 							bool shouldCreateSpawns = !newFrame.EF.empty() && isFirstVisit &&
 							                          (state.lastSpawnCreationFrame != state.frame);
+
+							// DEBUG: Log spawn creation check
+							if (!newFrame.EF.empty()) {
+								printf("[SPAWN CHECK] Frame %d: EF count=%d, isFirstVisit=%d, lastSpawnFrame=%d, shouldCreate=%d\n",
+									state.frame, (int)newFrame.EF.size(), isFirstVisit, state.lastSpawnCreationFrame, shouldCreateSpawns);
+							}
 
 							if(shouldCreateSpawns)
 							{
@@ -707,6 +716,7 @@ void MainFrame::RenderUpdate()
 										auto spawnSeq = sourceData->get_sequence(instance.patternId);
 										if (spawnSeq && !spawnSeq->frames.empty()) {
 											instance.loopCounter = spawnSeq->frames[0].AF.loopCount;
+											instance.currentZPriority = spawnSeq->frames[0].AF.priority;
 
 											// Check frame 0 for nested spawn effects immediately
 											if (!spawnSeq->frames[0].EF.empty()) {
@@ -742,6 +752,7 @@ void MainFrame::RenderUpdate()
 														auto childSeq = childSourceData->get_sequence(childInstance.patternId);
 														if (childSeq && !childSeq->frames.empty()) {
 															childInstance.loopCounter = childSeq->frames[0].AF.loopCount;
+															childInstance.currentZPriority = childSeq->frames[0].AF.priority;
 														}
 													}
 
@@ -843,6 +854,12 @@ void MainFrame::RenderUpdate()
 							if (spawnSeq->frames[spawn.currentFrame].AF.loopCount > 0) {
 								spawn.loopCounter = spawnSeq->frames[spawn.currentFrame].AF.loopCount;
 							}
+
+							// Update z-priority only if new frame has non-zero priority (ZP=0 means "keep current")
+							int newPriority = spawnSeq->frames[spawn.currentFrame].AF.priority;
+							if (newPriority != 0) {
+								spawn.currentZPriority = newPriority;
+							}
 						}
 					}
 				}
@@ -917,6 +934,7 @@ void MainFrame::RenderUpdate()
 									auto childSeq = childSourceData->get_sequence(childInstance.patternId);
 									if (childSeq && !childSeq->frames.empty()) {
 										childInstance.loopCounter = childSeq->frames[0].AF.loopCount;
+										childInstance.currentZPriority = childSeq->frames[0].AF.priority;
 
 										// Check frame 0 for nested spawn effects (before frame advancement)
 										if (!childSeq->frames[0].EF.empty()) {
@@ -952,6 +970,7 @@ void MainFrame::RenderUpdate()
 													auto grandchildSeq = grandchildSourceData->get_sequence(grandchildInstance.patternId);
 													if (grandchildSeq && !grandchildSeq->frames.empty()) {
 														grandchildInstance.loopCounter = grandchildSeq->frames[0].AF.loopCount;
+														grandchildInstance.currentZPriority = grandchildSeq->frames[0].AF.priority;
 													}
 												}
 

@@ -612,20 +612,23 @@ void Render::SortLayersByZPriority(int mainPatternPriority)
 	// Lower effective priority = draw first (behind)
 	// Higher effective priority = draw last (in front)
 
-	// Character base priority is always 128 (ZP=0)
-	constexpr int CHARACTER_BASE_PRIORITY = 128;
-
 	std::sort(renderLayers.begin(), renderLayers.end(),
 		[](const RenderLayer& a, const RenderLayer& b) {
 			// Calculate effective rendering priorities using MBAACC formula
 			// Reference: gHantei_Docs/Hantei_Data.md - Projectile Z-Priority guide
 
 			auto calculateEffectivePriority = [](int zp, bool isSpawned) -> int {
-				// MBAACC priority formula applies to both characters and spawned patterns
+				// MBAACC priority formula for projectiles (spawned patterns)
+				// Characters use a different base priority than projectiles
 				// Reference: gHantei_Docs/Hantei_Data.md - Projectile Z-Priority guide
 
+				// Projectile base priority (spawned) vs Character base priority (not spawned)
+				constexpr int PROJECTILE_BASE_PRIORITY = 100;
+				constexpr int CHARACTER_BASE_PRIORITY = 128;
+
 				if (zp == 0) {
-					return 128;  // Character default priority
+					// ZP=0: Base priority depends on whether it's spawned
+					return isSpawned ? PROJECTILE_BASE_PRIORITY : CHARACTER_BASE_PRIORITY;
 				} else if (zp == 1) {
 					return 143;  // In front of character
 				} else if (zp == 2) {
@@ -645,7 +648,7 @@ void Render::SortLayersByZPriority(int mainPatternPriority)
 				}
 
 				// Unknown priority values default to character base
-				return 128;
+				return CHARACTER_BASE_PRIORITY;
 			};
 
 			int priorityA = calculateEffectivePriority(a.zPriority, a.isSpawned);

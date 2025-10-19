@@ -386,7 +386,10 @@ void MainFrame::DrawBack()
 			}
 
 			layer.blendMode = spawnedLayer_data.blend_mode;
-			layer.zPriority = spawnedFrame.AF.priority;
+			// Use persistent z-priority from spawn instance (ZP=0 means "keep current")
+			// When animating, use currentZPriority (updated only when frame has non-zero ZP)
+			// When paused/seeking, use frame's priority directly
+			layer.zPriority = useActiveSpawns ? spawnInfo.currentZPriority : spawnedFrame.AF.priority;
 			// Apply frame RGBA, then visualization alpha
 			layer.alpha = spawnedLayer_data.rgba[3] * spawnInfo.alpha * state.vizSettings.spawnedOpacity;
 			// Multiply frame RGB with visualization tint
