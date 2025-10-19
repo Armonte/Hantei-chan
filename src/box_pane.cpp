@@ -144,23 +144,83 @@ void BoxPane::Draw()
 				xPos = pos.x + 8.0f; // Extra spacing between groups
 			};
 
-			// Draw labels on first line
-			im::Text("Col"); im::SameLine();
-			im::Text("  Hurt"); im::SameLine();
-			im::Text("       Spc1-2"); im::SameLine();
-			im::Text(" Clash"); im::SameLine();
-			im::Text("Proj"); im::SameLine();
-			im::Text("   Spc5-16"); im::SameLine();
-			im::Text("                          Atk");
+			// Calculate box layout dimensions
+			const float smallBoxSize = 12.0f;
+			const float boxSpacing = 2.0f;
+			const float minGroupSpacing = 8.0f;
+			const float labelPadding = 4.0f;  // Padding between label end and next box group
 
-			// Draw boxes on second line
-			float xPos = ImGui::GetCursorScreenPos().x;
+			// Calculate text widths
+			float colW = im::CalcTextSize("Col").x;
+			float hurtW = im::CalcTextSize("Hurt").x;
+			float spc12W = im::CalcTextSize("Spc1-2").x;
+			float clashW = im::CalcTextSize("Clash").x;
+			float projW = im::CalcTextSize("Proj").x;
+			float spc516W = im::CalcTextSize("Spc5-16").x;
+
+			// Calculate X positions ensuring labels don't overlap
+			// Each position is max(previous_boxes_end + minSpacing, previous_label_end + padding)
+			float startX = ImGui::GetCursorScreenPos().x;
+			float colX = 0;
+			float colBoxEnd = colX + smallBoxSize;
+
+			float hurtX = std::max(colBoxEnd + minGroupSpacing, colX + colW + labelPadding);
+			float hurtBoxEnd = hurtX + (8 * smallBoxSize + 7 * boxSpacing);
+
+			float spc12X = std::max(hurtBoxEnd + minGroupSpacing, hurtX + hurtW + labelPadding);
+			float spc12BoxEnd = spc12X + (2 * smallBoxSize + 1 * boxSpacing);
+
+			float clashX = std::max(spc12BoxEnd + minGroupSpacing, spc12X + spc12W + labelPadding);
+			float clashBoxEnd = clashX + smallBoxSize;
+
+			float projX = std::max(clashBoxEnd + minGroupSpacing, clashX + clashW + labelPadding);
+			float projBoxEnd = projX + smallBoxSize;
+
+			float spc516X = std::max(projBoxEnd + minGroupSpacing, projX + projW + labelPadding);
+			float spc516BoxEnd = spc516X + (12 * smallBoxSize + 11 * boxSpacing);
+
+			float atkX = std::max(spc516BoxEnd + minGroupSpacing, spc516X + spc516W + labelPadding);
+
+			// Draw labels on first line, aligned with first box of each category
+			im::SetCursorPosX(im::GetCursorPosX() + colX);
+			im::Text("Col");
+			im::SameLine(0, 0);
+			im::SetCursorPosX(im::GetCursorPosX() + (hurtX - colX - colW));
+			im::Text("Hurt");
+			im::SameLine(0, 0);
+			im::SetCursorPosX(im::GetCursorPosX() + (spc12X - hurtX - hurtW));
+			im::Text("Spc1-2");
+			im::SameLine(0, 0);
+			im::SetCursorPosX(im::GetCursorPosX() + (clashX - spc12X - spc12W));
+			im::Text("Clash");
+			im::SameLine(0, 0);
+			im::SetCursorPosX(im::GetCursorPosX() + (projX - clashX - clashW));
+			im::Text("Proj");
+			im::SameLine(0, 0);
+			im::SetCursorPosX(im::GetCursorPosX() + (spc516X - projX - projW));
+			im::Text("Spc5-16");
+			im::SameLine(0, 0);
+			im::SetCursorPosX(im::GetCursorPosX() + (atkX - spc516X - spc516W));
+			im::Text("Atk");
+
+			// Move cursor down with minimal spacing (2px gap between labels and boxes)
+			ImVec2 labelEnd = im::GetCursorScreenPos();
+			im::SetCursorScreenPos(ImVec2(startX, labelEnd.y + 2.0f));
+
+			// Draw boxes on second line at calculated positions
+			float xPos = startX + colX;
 			DrawBoxes(0, 1, whiteColor, xPos);
+			xPos = startX + hurtX;
 			DrawBoxes(1, 8, greenColor, xPos);
+			xPos = startX + spc12X;
 			DrawBoxes(9, 2, blueColor, xPos);
+			xPos = startX + clashX;
 			DrawBoxes(11, 1, yellowColor, xPos);
+			xPos = startX + projX;
 			DrawBoxes(12, 1, cyanColor, xPos);
+			xPos = startX + spc516X;
 			DrawBoxes(13, 12, purpleColor, xPos);
+			xPos = startX + atkX;
 			DrawBoxes(25, 8, redColor, xPos);
 
 			// Advance cursor past the boxes
