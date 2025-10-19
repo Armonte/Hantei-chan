@@ -8,6 +8,7 @@
 #include <cstring>
 #include <sstream>
 #include <iomanip>
+#include <filesystem>
 
 #include <glm/gtc/matrix_transform.hpp>
 
@@ -230,6 +231,24 @@ bool Parts::Load(const char* name)
     printf("[Texture Loading] Created %zu OpenGL textures\n", textures.size());
 
     filePath = name;
+
+    // Auto-load .pal file if it exists (similar to how .txt loading auto-loads .pal for .cg)
+    // This makes it easier to work with .pat files without manually loading palettes
+    if (cg && !filePath.empty()) {
+        auto extensionPos = filePath.find_last_of(".");
+        if (extensionPos != std::string::npos) {
+            auto palPath = filePath.substr(0, extensionPos) + ".pal";
+            if (std::filesystem::exists(palPath)) {
+                std::cout << "[Parts] Auto-loading palette: " << palPath << std::endl;
+                if (cg->loadPalette(palPath.c_str())) {
+                    std::cout << "[Parts] Palette loaded successfully" << std::endl;
+                } else {
+                    std::cout << "[Parts] Failed to load palette" << std::endl;
+                }
+            }
+        }
+    }
+
     loaded = true;
     return true;
 }
@@ -419,6 +438,26 @@ void Parts::DrawPart(int i)
 
     // Bind texture and draw
     curTexId = gfxMeta[cutout.texture].textureIndex;
+
+    // PatEditor: Override texture for TEXTURE_VIEW mode (like sosfiro)
+    if (renderMode && currState && *renderMode == TEXTURE_VIEW && !currState->animating) {
+        auto gfx = GetPartGfx(currState->partGraph);
+        if (gfx != nullptr) {
+            curTexId = gfx->textureIndex;
+        }
+    }
+
+    // PatEditor: Override texture for UV_SETTING_VIEW mode (like sosfiro)
+    if (renderMode && currState && *renderMode == UV_SETTING_VIEW && !currState->animating) {
+        auto cutoutSelected = GetCutOut(currState->partCutOut);
+        if (cutoutSelected != nullptr) {
+            auto gfx = GetPartGfx(cutoutSelected->texture);
+            if (gfx != nullptr) {
+                curTexId = gfx->textureIndex;
+            }
+        }
+    }
+
     glBindTexture(GL_TEXTURE_2D, curTexId);
     partVertices.Draw(0);
 }
@@ -461,6 +500,14 @@ void Parts::Draw(int pattern, int nextPattern, float interpolationFactor,
         [](const PartProperty &a, const PartProperty &b) {
             return a.priority < b.priority;
     });
+
+    // PatEditor: When viewing texture/UV, clear all parts and draw only one
+    // This ensures we see the full texture or UV map without other parts interfering
+    if (renderMode && currState && *renderMode != DEFAULT && !currState->animating) {
+        copyGroups.clear();
+        auto prop = &copyGroups.emplace_back();
+        prop->ppId = 0;  // Use first cutout as default
+    }
 
     constexpr float tau = glm::pi<float>() * 2.f;
 

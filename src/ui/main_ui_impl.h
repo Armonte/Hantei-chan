@@ -1013,7 +1013,17 @@ void MainFrame::RenderUpdate()
 			render.curInterp = 0.0f;
 		}
 
-		render.GenerateHitboxVertices(frame.hitboxes);
+		// Generate hitboxes for non-PatEditor views or when not editing parts
+		// For PatEditor, try to draw the part origin cross instead
+		if (view->isPatEditor() && layer.usePat) {
+			// Try to draw the origin cross for the selected part
+			// If it returns false (not in correct mode), fall back to hitboxes
+			if (!render.GeneratePartCenterVertices()) {
+				render.GenerateHitboxVertices(frame.hitboxes);
+			}
+		} else {
+			render.GenerateHitboxVertices(frame.hitboxes);
+		}
 		render.offsetX = (layer.offset_x)*1;
 		render.offsetY = (layer.offset_y)*1;
 		
