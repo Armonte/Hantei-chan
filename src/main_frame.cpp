@@ -180,35 +180,43 @@ void MainFrame::DrawBack()
 
 		render.ClearLayers();
 
-		// Add main pattern as a layer
-		// Use first layer (layers[0]) for single-layer MBAACC compatibility
+		// Add main pattern layers (support UNI multi-layer AFGX)
 		if (mainFrame.AF.layers.empty()) {
-			mainFrame.AF.layers.push_back({});  // Ensure at least one layer exists
+			mainFrame.AF.layers.push_back({});  // Ensure at least one layer exists for MBAACC
 		}
-		const auto& mainLayer_data = mainFrame.AF.layers[0];
 
-		RenderLayer mainLayer;
-		mainLayer.spriteId = state.spriteId;
-		mainLayer.spawnOffsetX = 0;
-		mainLayer.spawnOffsetY = 0;
-		mainLayer.frameOffsetX = mainLayer_data.offset_x;
-		mainLayer.frameOffsetY = mainLayer_data.offset_y;
-		mainLayer.scaleX = mainLayer_data.scale[0];
-		mainLayer.scaleY = mainLayer_data.scale[1];
-		mainLayer.rotX = mainLayer_data.rotation[0];
-		mainLayer.rotY = mainLayer_data.rotation[1];
-		mainLayer.rotZ = mainLayer_data.rotation[2];
-		mainLayer.AFRT = mainFrame.AF.AFRT;
-		mainLayer.blendMode = mainLayer_data.blend_mode;
-		mainLayer.zPriority = mainFrame.AF.priority;
-		mainLayer.alpha = mainLayer_data.rgba[3];  // Apply frame alpha
-		mainLayer.tintColor = glm::vec4(mainLayer_data.rgba[0], mainLayer_data.rgba[1], mainLayer_data.rgba[2], 1.0f);  // Apply frame RGB
-		mainLayer.isSpawned = false;
-		mainLayer.hitboxes = mainFrame.hitboxes;
-		mainLayer.sourceCG = &active->cg;  // Main pattern uses character CG
-		mainLayer.usePat = mainLayer_data.usePat;  // Copy PAT rendering flag
-		mainLayer.sourceParts = &active->parts;  // Main pattern uses character Parts
-		render.AddLayer(mainLayer);
+		// Loop through all layers in the frame (UNI multi-layer support)
+		for (size_t layerIndex = 0; layerIndex < mainFrame.AF.layers.size(); layerIndex++) {
+			const auto& mainLayer_data = mainFrame.AF.layers[layerIndex];
+
+			RenderLayer mainLayer;
+			// Layer 0: use UI-selected sprite (state.spriteId) for editor compatibility
+			// Layers 1+: use sprite from layer data (for UNI multi-layer)
+			mainLayer.spriteId = (layerIndex == 0) ? state.spriteId : mainLayer_data.spriteId;
+			mainLayer.spawnOffsetX = 0;
+			mainLayer.spawnOffsetY = 0;
+			mainLayer.frameOffsetX = mainLayer_data.offset_x;
+			mainLayer.frameOffsetY = mainLayer_data.offset_y;
+			mainLayer.scaleX = mainLayer_data.scale[0];
+			mainLayer.scaleY = mainLayer_data.scale[1];
+			mainLayer.rotX = mainLayer_data.rotation[0];
+			mainLayer.rotY = mainLayer_data.rotation[1];
+			mainLayer.rotZ = mainLayer_data.rotation[2];
+			mainLayer.AFRT = mainFrame.AF.AFRT;
+			mainLayer.blendMode = mainLayer_data.blend_mode;
+			mainLayer.zPriority = mainFrame.AF.priority;
+			mainLayer.alpha = mainLayer_data.rgba[3];  // Apply frame alpha
+			mainLayer.tintColor = glm::vec4(mainLayer_data.rgba[0], mainLayer_data.rgba[1], mainLayer_data.rgba[2], 1.0f);  // Apply frame RGB
+			mainLayer.isSpawned = false;
+			mainLayer.hitboxes = (layerIndex == 0) ? mainFrame.hitboxes : BoxList();  // Only layer 0 gets hitboxes
+			mainLayer.sourceCG = &active->cg;  // Main pattern uses character CG
+			mainLayer.usePat = mainLayer_data.usePat;  // Copy PAT rendering flag from layer data
+			mainLayer.sourceParts = &active->parts;  // Main pattern uses character Parts
+			render.AddLayer(mainLayer);
+		}
+
+		// Save reference to main pattern's layer 0 for inherited rotation (spawns may need it)
+		const auto& mainLayer0Data = mainFrame.AF.layers[0];
 
 		// Build render layers for spawned patterns
 		// Use activeSpawns during animation (handles looping), spawnedPatterns when paused (for seeking)
@@ -364,61 +372,66 @@ void MainFrame::DrawBack()
 			if (spawnedFrame.AF.layers.empty()) {
 				spawnedFrame.AF.layers.push_back({});
 			}
-			const auto& spawnedLayer_data = spawnedFrame.AF.layers[0];
 
-			// Create render layer with all frame data
-			RenderLayer layer;
-			layer.spriteId = spawnedLayer_data.spriteId;
-			layer.spawnOffsetX = spawnInfo.offsetX;
-			layer.spawnOffsetY = spawnInfo.offsetY;
-			layer.frameOffsetX = spawnedLayer_data.offset_x;
-			layer.frameOffsetY = spawnedLayer_data.offset_y;
-			layer.scaleX = spawnedLayer_data.scale[0];
-			layer.scaleY = spawnedLayer_data.scale[1];
-			layer.rotX = spawnedLayer_data.rotation[0];
-			layer.rotY = spawnedLayer_data.rotation[1];
-			layer.rotZ = spawnedLayer_data.rotation[2];
-			layer.AFRT = spawnedFrame.AF.AFRT;
+			// Loop through all layers in spawned frame (UNI multi-layer support)
+			for (size_t spawnLayerIndex = 0; spawnLayerIndex < spawnedFrame.AF.layers.size(); spawnLayerIndex++) {
+				const auto& spawnedLayer_data = spawnedFrame.AF.layers[spawnLayerIndex];
 
-			// Apply spawn rotation parameter (angle)
-			// Rotation format: 0=0°, 2500=90°, 5000=180°, 10000=360°
-			float spawnRotation = spawnInfo.angle / 10000.0f;
-			layer.rotZ += spawnRotation;
+				// Create render layer with all frame data
+				RenderLayer layer;
+				layer.spriteId = spawnedLayer_data.spriteId;
+				layer.spawnOffsetX = spawnInfo.offsetX;
+				layer.spawnOffsetY = spawnInfo.offsetY;
+				layer.frameOffsetX = spawnedLayer_data.offset_x;
+				layer.frameOffsetY = spawnedLayer_data.offset_y;
+				layer.scaleX = spawnedLayer_data.scale[0];
+				layer.scaleY = spawnedLayer_data.scale[1];
+				layer.rotX = spawnedLayer_data.rotation[0];
+				layer.rotY = spawnedLayer_data.rotation[1];
+				layer.rotZ = spawnedLayer_data.rotation[2];
+				layer.AFRT = spawnedFrame.AF.AFRT;
 
-			// Apply flip facing flag (bit 11 of flagset1)
-			if (spawnInfo.flagset1 & (1 << 11)) {
-				layer.scaleX *= -1.0f;
+				// Apply spawn rotation parameter (angle)
+				// Rotation format: 0=0°, 2500=90°, 5000=180°, 10000=360°
+				float spawnRotation = spawnInfo.angle / 10000.0f;
+				layer.rotZ += spawnRotation;
+
+				// Apply flip facing flag (bit 11 of flagset1)
+				if (spawnInfo.flagset1 & (1 << 11)) {
+					layer.scaleX *= -1.0f;
+				}
+
+				// Apply inherit parent rotation flag (bit 8 of flagset1)
+				// Inherit from parent pattern's layer 0 (mainLayer0Data)
+				if (spawnInfo.flagset1 & (1 << 8)) {
+					layer.rotX += mainLayer0Data.rotation[0];
+					layer.rotY += mainLayer0Data.rotation[1];
+					layer.rotZ += mainLayer0Data.rotation[2];
+				}
+
+				layer.blendMode = spawnedLayer_data.blend_mode;
+				// Use persistent z-priority from spawn instance (ZP=0 means "keep current")
+				// When animating, use currentZPriority (updated only when frame has non-zero ZP)
+				// When paused/seeking, use frame's priority directly
+				layer.zPriority = useActiveSpawns ? spawnInfo.currentZPriority : spawnedFrame.AF.priority;
+				// Apply frame RGBA, then visualization alpha
+				layer.alpha = spawnedLayer_data.rgba[3] * spawnInfo.alpha * state.vizSettings.spawnedOpacity;
+				// Multiply frame RGB with visualization tint
+				layer.tintColor = glm::vec4(
+					spawnedLayer_data.rgba[0] * spawnInfo.tintColor.r,
+					spawnedLayer_data.rgba[1] * spawnInfo.tintColor.g,
+					spawnedLayer_data.rgba[2] * spawnInfo.tintColor.b,
+					1.0f);
+				layer.isSpawned = true;
+				layer.hitboxes = (spawnLayerIndex == 0) ? spawnedFrame.hitboxes : BoxList();  // Only layer 0 gets hitboxes
+				layer.sourceCG = sourceCG;  // Use appropriate CG (character or effect.ha6)
+				layer.usePat = spawnedLayer_data.usePat;  // Copy PAT rendering flag
+				layer.sourceParts = sourceParts;  // Use appropriate Parts (character or effect.pat)
+				layer.spawnFlagset1 = spawnInfo.flagset1;
+				layer.spawnFlagset2 = spawnInfo.flagset2;
+
+				render.AddLayer(layer);
 			}
-
-			// Apply inherit parent rotation flag (bit 8 of flagset1)
-			if (spawnInfo.flagset1 & (1 << 8)) {
-				layer.rotX += mainLayer_data.rotation[0];
-				layer.rotY += mainLayer_data.rotation[1];
-				layer.rotZ += mainLayer_data.rotation[2];
-			}
-
-			layer.blendMode = spawnedLayer_data.blend_mode;
-			// Use persistent z-priority from spawn instance (ZP=0 means "keep current")
-			// When animating, use currentZPriority (updated only when frame has non-zero ZP)
-			// When paused/seeking, use frame's priority directly
-			layer.zPriority = useActiveSpawns ? spawnInfo.currentZPriority : spawnedFrame.AF.priority;
-			// Apply frame RGBA, then visualization alpha
-			layer.alpha = spawnedLayer_data.rgba[3] * spawnInfo.alpha * state.vizSettings.spawnedOpacity;
-			// Multiply frame RGB with visualization tint
-			layer.tintColor = glm::vec4(
-				spawnedLayer_data.rgba[0] * spawnInfo.tintColor.r,
-				spawnedLayer_data.rgba[1] * spawnInfo.tintColor.g,
-				spawnedLayer_data.rgba[2] * spawnInfo.tintColor.b,
-				1.0f);
-			layer.isSpawned = true;
-			layer.hitboxes = spawnedFrame.hitboxes;
-			layer.sourceCG = sourceCG;  // Use appropriate CG (character or effect.ha6)
-			layer.usePat = spawnedLayer_data.usePat;  // Copy PAT rendering flag
-			layer.sourceParts = sourceParts;  // Use appropriate Parts (character or effect.pat)
-			layer.spawnFlagset1 = spawnInfo.flagset1;
-			layer.spawnFlagset2 = spawnInfo.flagset2;
-
-			render.AddLayer(layer);
 		}
 
 		// Sort all layers (including main) by Z-priority before drawing
@@ -430,15 +443,61 @@ void MainFrame::DrawBack()
 		// Draw preset effect crosshairs (Effect Type 3) as overlay
 		DrawPresetEffectMarkers(state, active);
 	}
-	else {
-		// Normal draw without spawned patterns
-		render.Draw();
+	else if (view && active) {
+		// Normal draw without spawned patterns - use multi-layer rendering for UNI support
+		auto& state = view->getState();
 
-		// Draw preset effect crosshairs for non-layered mode too
-		if (view) {
-			auto& state = view->getState();
-			DrawPresetEffectMarkers(state, active);
+		// First draw grid lines only
+		render.DrawGridLines();
+
+		// Get current main pattern sequence
+		auto mainSeq = active->frameData.get_sequence(state.pattern);
+		if (!mainSeq || mainSeq->frames.empty()) return;
+		auto& mainFrame = mainSeq->frames[state.frame];
+
+		render.ClearLayers();
+
+		// Add main pattern layers (support UNI multi-layer AFGX)
+		if (mainFrame.AF.layers.empty()) {
+			mainFrame.AF.layers.push_back({});  // Ensure at least one layer exists for MBAACC
 		}
+
+		// Loop through all layers in the frame (UNI multi-layer support)
+		for (size_t layerIndex = 0; layerIndex < mainFrame.AF.layers.size(); layerIndex++) {
+			const auto& mainLayer_data = mainFrame.AF.layers[layerIndex];
+
+			RenderLayer mainLayer;
+			// Layer 0: use UI-selected sprite (state.spriteId) for editor compatibility
+			// Layers 1+: use sprite from layer data (for UNI multi-layer)
+			mainLayer.spriteId = (layerIndex == 0) ? state.spriteId : mainLayer_data.spriteId;
+			mainLayer.spawnOffsetX = 0;
+			mainLayer.spawnOffsetY = 0;
+			mainLayer.frameOffsetX = mainLayer_data.offset_x;
+			mainLayer.frameOffsetY = mainLayer_data.offset_y;
+			mainLayer.scaleX = mainLayer_data.scale[0];
+			mainLayer.scaleY = mainLayer_data.scale[1];
+			mainLayer.rotX = mainLayer_data.rotation[0];
+			mainLayer.rotY = mainLayer_data.rotation[1];
+			mainLayer.rotZ = mainLayer_data.rotation[2];
+			mainLayer.AFRT = mainFrame.AF.AFRT;
+			mainLayer.blendMode = mainLayer_data.blend_mode;
+			mainLayer.zPriority = mainFrame.AF.priority;
+			mainLayer.alpha = mainLayer_data.rgba[3];  // Apply frame alpha
+			mainLayer.tintColor = glm::vec4(mainLayer_data.rgba[0], mainLayer_data.rgba[1], mainLayer_data.rgba[2], 1.0f);  // Apply frame RGB
+			mainLayer.isSpawned = false;
+			mainLayer.hitboxes = (layerIndex == 0) ? mainFrame.hitboxes : BoxList();  // Only layer 0 gets hitboxes
+			mainLayer.sourceCG = &active->cg;  // Main pattern uses character CG
+			mainLayer.usePat = mainLayer_data.usePat;  // Copy PAT rendering flag from layer data
+			mainLayer.sourceParts = &active->parts;  // Main pattern uses character Parts
+			render.AddLayer(mainLayer);
+		}
+
+		// Sort and draw all layers
+		render.SortLayersByZPriority(mainFrame.AF.priority);
+		render.DrawLayers();
+
+		// Draw preset effect crosshairs
+		DrawPresetEffectMarkers(state, active);
 	}
 }
 

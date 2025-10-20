@@ -32,7 +32,7 @@ struct TestInfo{
 
 extern TestInfo test;
 
-unsigned int *fd_frame_AT_load(unsigned int *data, const unsigned int *data_end, Frame_AT *AT);
+unsigned int *fd_frame_AT_load(unsigned int *data, const unsigned int *data_end, Frame_AT *AT, TempInfo *info);
 unsigned int *fd_frame_AS_load(unsigned int *data, const unsigned int *data_end, Frame_AS *AS);
 unsigned int *fd_frame_EF_load(unsigned int *data, const unsigned int *data_end, Frame_EF *EF);
 unsigned int *fd_frame_IF_load(unsigned int *data, const unsigned int *data_end, Frame_IF *IF);

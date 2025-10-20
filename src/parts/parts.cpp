@@ -122,65 +122,11 @@ bool Parts::Load(const char* name)
     for (auto& ps : partSets) {
         if (!ps.groups.empty()) nonEmptyPartSets++;
     }
-    
-    std::cout << "Loaded " << partSets.size() << " part sets (" << nonEmptyPartSets 
-              << " non-empty), " << cutOuts.size() << " cutouts, "
-              << shapes.size() << " shapes, "
-              << gfxMeta.size() << " textures" << std::endl;
-    
-    // DEBUG: Check gfxMeta immediately
-    printf("[DEBUG] gfxMeta.size() right after MainLoad: %zu\n", gfxMeta.size());
-    for (size_t i = 0; i < gfxMeta.size() && i < 5; i++) {
-        printf("  gfxMeta[%zu]: w=%d, h=%d, type=%d, data=%p, s3tc=%p\n",
-            i, gfxMeta[i].w, gfxMeta[i].h, gfxMeta[i].type, 
-            gfxMeta[i].data, gfxMeta[i].s3tc);
-    }
-    
-    // Show ALL part sets with data (not just first 20)
-    std::cout << "=== All Part Sets with Data ===" << std::endl;
-    for (size_t i = 0; i < partSets.size(); i++) {
-        if (!partSets[i].groups.empty()) {
-            int usedCount = 0;
-            std::vector<int> usedPpIds;
-            for (auto& prop : partSets[i].groups) {
-                if (prop.ppId >= 0) {
-                    usedCount++;
-                    usedPpIds.push_back(prop.ppId);
-                }
-            }
-            std::cout << "  PartSet " << i << ": " << partSets[i].groups.size() 
-                      << " props (" << usedCount << " used) - ppIds: [";
-            for (size_t j = 0; j < usedPpIds.size() && j < 10; j++) {
-                std::cout << usedPpIds[j];
-                if (j < usedPpIds.size()-1 && j < 9) std::cout << ",";
-            }
-            if (usedPpIds.size() > 10) std::cout << "...";
-            std::cout << "]" << std::endl;
-        }
-    }
-    std::cout << "================================" << std::endl;
-    
-    // List all cutOuts to see what's available
-    std::cout << "=== CutOut List ===" << std::endl;
-    for (size_t i = 0; i < cutOuts.size() && i < 30; i++) {
-        auto& co = cutOuts[i];
-        std::cout << "  CutOut " << i << ": texture=" << co.texture 
-                  << ", shape=" << co.shapeIndex 
-                  << ", uv=(" << co.uv[0] << "," << co.uv[1] << "," << co.uv[2] << "," << co.uv[3] << ")"
-                  << ", name=\"" << co.name << "\"" << std::endl;
-    }
-    if (cutOuts.size() > 30) {
-        std::cout << "  ... and " << (cutOuts.size() - 30) << " more cutOuts" << std::endl;
-    }
-    std::cout << "===================" << std::endl;
 
     // Load textures into OpenGL
-    printf("[Texture Loading] Processing %zu gfxMeta entries...\n", gfxMeta.size());
     for (size_t idx = 0; idx < gfxMeta.size(); idx++)
     {
         auto& gfx = gfxMeta[idx];
-        printf("  Tex %zu: type=%d, %dx%d, s3tc=%p, data=%p\n",
-            idx, gfx.type, gfx.w, gfx.h, gfx.s3tc, gfx.data);
         
         textures.push_back(new Texture);
         if (gfx.s3tc)
@@ -212,23 +158,19 @@ bool Parts::Load(const char* name)
             // PGTX data is also in BGRA format
             textures.back()->LoadDirect(gfx.data, gfx.w, gfx.h, true);
             textures.back()->Apply();  // Create OpenGL texture
-            printf("    → Loaded PGTX data\n");
         }
         else
         {
-            printf("    → ERROR: No texture data!\n");
+            // No texture data - empty slot
         }
-        
+
         // Validate texture was created before storing ID
         if (textures.back() && textures.back()->id != 0) {
             gfx.textureIndex = textures.back()->id;
-            printf("    → Stored GL texture ID: %u for gfxMeta[%zu]\n", gfx.textureIndex, idx);
         } else {
-            printf("    → ERROR: Failed to create GL texture for gfxMeta[%zu]\n", idx);
             gfx.textureIndex = 0;
         }
     }
-    printf("[Texture Loading] Created %zu OpenGL textures\n", textures.size());
 
     filePath = name;
 
