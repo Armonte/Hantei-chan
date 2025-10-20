@@ -650,9 +650,13 @@ void MainFrame::RenderUpdate()
 						// Increment visit count for the new frame we're entering
 						state.frameVisitCounts[state.frame]++;
 
-						// DEBUG: Log frame transitions
-						printf("[FRAME ADVANCE] %d -> %d (visit count: %d, tick: %d)\n",
-							oldFrame, state.frame, state.frameVisitCounts[state.frame], state.currentTick);
+						// DEBUG: Log frame transitions (only for significant changes)
+						static int lastLoggedFrame = -1;
+						if (state.frame != lastLoggedFrame && (state.frame % 10 == 0 || state.frame < 5)) {
+							printf("[FRAME ADVANCE] %d -> %d (visit count: %d, tick: %d)\n",
+								oldFrame, state.frame, state.frameVisitCounts[state.frame], state.currentTick);
+							lastLoggedFrame = state.frame;
+						}
 
 						// Check for spawns immediately when entering a new frame (BEFORE incrementing tick)
 						if (state.vizSettings.showSpawnedPatterns && state.frame >= 0 && state.frame < seq->frames.size()) {
@@ -1013,15 +1017,19 @@ void MainFrame::RenderUpdate()
 			render.curInterp = 0.0f;
 		}
 
-		// Generate hitboxes for non-PatEditor views or when not editing parts
-		// For PatEditor, try to draw the part origin cross instead
+		// Generate geometry for PatEditor or standard views
 		if (view->isPatEditor() && layer.usePat) {
-			// Try to draw the origin cross for the selected part
-			// If it returns false (not in correct mode), fall back to hitboxes
-			if (!render.GeneratePartCenterVertices()) {
-				render.GenerateHitboxVertices(frame.hitboxes);
+			// For PatEditor, try different rendering modes in order:
+			// 1. UV rectangle (TEXTURE_VIEW / UV_SETTING_VIEW)
+			// 2. Part origin cross (DEFAULT mode)
+			// 3. Hitboxes (fallback)
+			if (!render.GenerateUVRectangleVertices()) {
+				if (!render.GeneratePartCenterVertices()) {
+					render.GenerateHitboxVertices(frame.hitboxes);
+				}
 			}
 		} else {
+			// For non-PatEditor views, just show hitboxes
 			render.GenerateHitboxVertices(frame.hitboxes);
 		}
 		render.offsetX = (layer.offset_x)*1;

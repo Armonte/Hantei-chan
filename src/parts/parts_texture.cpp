@@ -269,11 +269,14 @@ std::string PartGfx<>::ImportTexture(const char *filename, std::vector<Texture*>
         textures.push_back(texture);
     }
 
+    printf("[DDS IMPORT] Loading texture: w=%d, h=%d, type=%d, s3tc=%p\n", w, h, type, s3tc);
+
     if (s3tc)
     {
         if (type == 21)
         {
             // Uncompressed RGB/BGRA
+            printf("[DDS IMPORT] Loading uncompressed RGB/BGRA texture\n");
             textures.back()->LoadDirect((char*)s3tc, w, h, true);  // BGRA format
             textures.back()->Apply();  // Create OpenGL texture
         }
@@ -288,17 +291,20 @@ std::string PartGfx<>::ImportTexture(const char *filename, std::vector<Texture*>
             else
                 assert(0 && "Unknown compression type");
 
+            printf("[DDS IMPORT] Loading compressed DXT%d texture, size=%zu\n", (type == 1 ? 1 : 5), compressedSize);
             textures.back()->LoadCompressed((char*)s3tc, w, h, compressedSize, type);
             // LoadCompressed already creates GL texture internally
         }
     }
     else
     {
+        printf("[DDS IMPORT] Loading fallback uncompressed texture\n");
         textures.back()->LoadDirect(data, w, h, true);  // BGRA format
         textures.back()->Apply();  // Create OpenGL texture
     }
 
     textureIndex = textures.back()->id;
+    printf("[DDS IMPORT] Final texture ID: %u\n", textureIndex);
 
     return ""; // Success
 }
