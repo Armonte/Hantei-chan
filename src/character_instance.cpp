@@ -336,7 +336,7 @@ bool CharacterInstance::loadEffectCharacter()
 		return false;
 	}
 
-	// Build path to effect.txt
+	// Try character's folder first (MBAACC: data/chr###/effect.txt)
 	std::string effectTxtPath = baseFolder + "/effect.txt";
 	std::filesystem::path effectPath(effectTxtPath);
 
@@ -346,36 +346,80 @@ bool CharacterInstance::loadEffectCharacter()
 		effectPath = effectTxtPath;
 	}
 
+	bool useParentDirectory = false;
+	std::string effectFolder = baseFolder;
+
+	// If not found in character folder, try parent directory (UNI: data/effect.txt)
 	if (!std::filesystem::exists(effectPath)) {
-		return false;  // No effect.txt found
+		std::filesystem::path charPath(baseFolder);
+		std::filesystem::path parentPath = charPath.parent_path();
+		effectFolder = parentPath.string();
+
+		effectTxtPath = effectFolder + "/effect.txt";
+		effectPath = effectTxtPath;
+
+		if (!std::filesystem::exists(effectPath)) {
+			effectTxtPath = effectFolder + "\\effect.txt";
+			effectPath = effectTxtPath;
+		}
+
+		if (!std::filesystem::exists(effectPath)) {
+			return false;  // No effect.txt found in character or parent folder
+		}
+
+		useParentDirectory = true;
+		printf("[Effect] %s: Using shared effect.txt from parent directory\n", m_name.c_str());
 	}
 
 	// Create and load effect character
 	auto effect = std::make_unique<CharacterInstance>();
 	if (!effect->loadFromTxt(effectTxtPath)) {
-		printf("[Effect] Failed to load effect.txt from: %s\n", baseFolder.c_str());
+		printf("[Effect] Failed to load effect.txt from: %s\n", effectFolder.c_str());
 		return false;
 	}
 
 	effect->setName("effect");
 
-	// Try loading effect.pat (optional - not all effects use PAT)
-	std::string effectPatPath = baseFolder + "/effect.pat";
-	std::filesystem::path patPath(effectPatPath);
-	if (!std::filesystem::exists(patPath)) {
-		effectPatPath = baseFolder + "\\effect.pat";
-		patPath = effectPatPath;
-	}
+	// Try loading PAT file
+	// UNI uses sys_effect.pat in parent directory, MBAACC uses effect.pat in character folder
+	std::string effectPatPath;
+	if (useParentDirectory) {
+		// UNI: data/sys_effect.pat
+		effectPatPath = effectFolder + "/sys_effect.pat";
+		std::filesystem::path patPath(effectPatPath);
+		if (!std::filesystem::exists(patPath)) {
+			effectPatPath = effectFolder + "\\sys_effect.pat";
+			patPath = effectPatPath;
+		}
 
-	if (std::filesystem::exists(patPath)) {
-		bool patLoaded = effect->loadPAT(effectPatPath);
-		printf("[Effect] %s: effect.pat %s (%d part sets)\n",
-			   m_name.c_str(),
-			   patLoaded ? "loaded" : "FAILED",
-			   patLoaded ? (int)effect->parts.partSets.size() : 0);
+		if (std::filesystem::exists(patPath)) {
+			bool patLoaded = effect->loadPAT(effectPatPath);
+			printf("[Effect] %s: sys_effect.pat %s from parent directory (%d part sets)\n",
+				   m_name.c_str(),
+				   patLoaded ? "loaded" : "FAILED",
+				   patLoaded ? (int)effect->parts.partSets.size() : 0);
+		} else {
+			printf("[Effect] %s: sys_effect.pat not found in parent directory\n", m_name.c_str());
+		}
+	} else {
+		// MBAACC: data/chr###/effect.pat
+		effectPatPath = effectFolder + "/effect.pat";
+		std::filesystem::path patPath(effectPatPath);
+		if (!std::filesystem::exists(patPath)) {
+			effectPatPath = effectFolder + "\\effect.pat";
+			patPath = effectPatPath;
+		}
+
+		if (std::filesystem::exists(patPath)) {
+			bool patLoaded = effect->loadPAT(effectPatPath);
+			printf("[Effect] %s: effect.pat %s (%d part sets)\n",
+				   m_name.c_str(),
+				   patLoaded ? "loaded" : "FAILED",
+				   patLoaded ? (int)effect->parts.partSets.size() : 0);
+		}
 	}
 
 	effectCharacter = std::move(effect);
-	printf("[Effect] %s: Loaded effect character from %s\n", m_name.c_str(), baseFolder.c_str());
+	printf("[Effect] %s: Loaded effect character from %s\n", m_name.c_str(), effectFolder.c_str());
 	return true;
 }
