@@ -886,7 +886,7 @@ void Render::DrawLayers()
 			auto setMatrix = [this](glm::mat4 partMatrix) {
 				glm::mat4 rview = projection;
 				rview = glm::scale(rview, glm::vec3(scale, scale, 1.f));
-				rview = glm::translate(rview, glm::vec3(x, y, 0));
+				rview = glm::translate(rview, glm::vec3(x + offsetX, y + offsetY, 0));
 				rview = glm::translate(rview, glm::vec3(0, 0, 1024.f));
 				rview *= invOrtho;
 				SetMatrixPersp(lProjectionParts, partMatrix, rview);
