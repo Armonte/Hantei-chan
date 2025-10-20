@@ -1060,7 +1060,12 @@ void MainFrame::RenderUpdate()
 				render.blendingMode = Render::normal;
 				break;
 			}
-		render.SwitchImage(state.spriteId);
+
+		// Only switch CG sprite texture if NOT using Parts rendering
+		// (Parts have their own textures and shouldn't interfere with CG sprite texture)
+		if (!layer.usePat) {
+			render.SwitchImage(state.spriteId);
+		}
 
 		if(frame.AF.loopCount>0)
 			loopCounter = frame.AF.loopCount;
@@ -1070,7 +1075,6 @@ void MainFrame::RenderUpdate()
 		state.spriteId = -1;
 		render.DontDraw();
 	}
-	render.SwitchImage(state.spriteId);
 }
 
 void MainFrame::AdvancePattern(int dir)
