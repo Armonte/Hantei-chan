@@ -8,6 +8,7 @@
 #include <cstring>
 #include <sstream>
 #include <iomanip>
+#include <filesystem>
 
 #include <glm/gtc/matrix_transform.hpp>
 
@@ -458,14 +459,8 @@ void Parts::DrawPart(int i)
     }
     
     // Bind texture and draw
-    static int lastTexId = -1;
-    if (curTexId != lastTexId) {
-        printf("[TEXTURE RENDER] Binding texture ID: %d\n", curTexId);
-        lastTexId = curTexId;
-    }
-    
     glBindTexture(GL_TEXTURE_2D, curTexId);
-    
+
     // Check for OpenGL errors after binding (only on errors)
     GLenum err = glGetError();
     if (err != GL_NO_ERROR) {
@@ -527,7 +522,16 @@ void Parts::Draw(int pattern, int nextPattern, float interpolationFactor,
     float width = 256.f;   // Texture UV width
     float height = 256.f;  // Texture UV height
 
-    
+    // TEXTURE_VIEW/UV_SETTING_VIEW: Clear parts and create single dummy part
+    // This renders the texture with default properties (no transforms) for raw display
+    if (renderMode && currState && *renderMode != DEFAULT && !currState->animating) {
+        copyGroups.clear();
+        auto prop = &copyGroups.emplace_back();
+        prop->ppId = 0;  // Use cutout 0 (will be overridden below)
+        // All other PartProperty fields use defaults:
+        //   position (0,0), scale (1,1), rotation (0,0,0), no flip, full opacity
+    }
+
     for (auto& part : copyGroups)
     {
         // Skip unused or invalid parts silently
