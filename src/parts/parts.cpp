@@ -8,7 +8,6 @@
 #include <cstring>
 #include <sstream>
 #include <iomanip>
-#include <filesystem>
 
 #include <glm/gtc/matrix_transform.hpp>
 
@@ -436,29 +435,43 @@ void Parts::DrawPart(int i)
         return;  // Texture not loaded, skip silently
     }
 
-    // Bind texture and draw
+    // Determine which texture to use
     curTexId = gfxMeta[cutout.texture].textureIndex;
-
-    // PatEditor: Override texture for TEXTURE_VIEW mode (like sosfiro)
-    if (renderMode && currState && *renderMode == TEXTURE_VIEW && !currState->animating) {
+    
+    // Override texture in TEXTURE_VIEW mode (show currently selected texture)
+    if (renderMode && currState && *renderMode == RenderMode::TEXTURE_VIEW && !currState->animating) {
         auto gfx = GetPartGfx(currState->partGraph);
-        if (gfx != nullptr) {
+        if (gfx != nullptr && gfx->textureIndex != 0) {
             curTexId = gfx->textureIndex;
         }
     }
-
-    // PatEditor: Override texture for UV_SETTING_VIEW mode (like sosfiro)
-    if (renderMode && currState && *renderMode == UV_SETTING_VIEW && !currState->animating) {
+    
+    // Override texture in UV_SETTING_VIEW mode (show texture from current cutout)
+    if (renderMode && currState && *renderMode == RenderMode::UV_SETTING_VIEW && !currState->animating) {
         auto cutoutSelected = GetCutOut(currState->partCutOut);
         if (cutoutSelected != nullptr) {
             auto gfx = GetPartGfx(cutoutSelected->texture);
-            if (gfx != nullptr) {
+            if (gfx != nullptr && gfx->textureIndex != 0) {
                 curTexId = gfx->textureIndex;
             }
         }
     }
-
+    
+    // Bind texture and draw
+    static int lastTexId = -1;
+    if (curTexId != lastTexId) {
+        printf("[TEXTURE RENDER] Binding texture ID: %d\n", curTexId);
+        lastTexId = curTexId;
+    }
+    
     glBindTexture(GL_TEXTURE_2D, curTexId);
+    
+    // Check for OpenGL errors after binding (only on errors)
+    GLenum err = glGetError();
+    if (err != GL_NO_ERROR) {
+        printf("[TEXTURE RENDER] GL ERROR 0x%X after binding texture %d\n", err, curTexId);
+    }
+    
     partVertices.Draw(0);
 }
 
@@ -501,14 +514,6 @@ void Parts::Draw(int pattern, int nextPattern, float interpolationFactor,
             return a.priority < b.priority;
     });
 
-    // PatEditor: When viewing texture/UV, clear all parts and draw only one
-    // This ensures we see the full texture or UV map without other parts interfering
-    if (renderMode && currState && *renderMode != DEFAULT && !currState->animating) {
-        copyGroups.clear();
-        auto prop = &copyGroups.emplace_back();
-        prop->ppId = 0;  // Use first cutout as default
-    }
-
     constexpr float tau = glm::pi<float>() * 2.f;
 
     // Triangle indices for generating geometry
@@ -522,39 +527,6 @@ void Parts::Draw(int pattern, int nextPattern, float interpolationFactor,
     float width = 256.f;   // Texture UV width
     float height = 256.f;  // Texture UV height
 
-    // Debug pattern changes only
-    static int lastPattern = -1;
-    if (pattern != lastPattern) {
-        printf("\n========== Pattern %d ==========\n", pattern);
-        printf("Total parts in pattern: %zu\n", copyGroups.size());
-        
-        // Show what each part references
-        int validParts = 0;
-        for (size_t i = 0; i < copyGroups.size(); i++) {
-            auto& p = copyGroups[i];
-            if (p.ppId >= 0 && p.ppId < cutOuts.size()) {
-                auto& co = cutOuts[p.ppId];
-                bool validTex = (co.texture >= 0 && co.texture < textures.size() && textures[co.texture] != nullptr);
-                bool validUV = (co.uv[2] > 0 || co.uv[3] > 0);
-                
-                printf("  Part %d: ppId=%d, tex=%d %s, UV=(%d,%d,%dx%d) %s, BGRA=(%d,%d,%d,%d)\n",
-                    p.propId, p.ppId, co.texture,
-                    validTex ? "✓" : "✗MISSING",
-                    co.uv[0], co.uv[1], co.uv[2], co.uv[3],
-                    validUV ? "✓" : "✗EMPTY",
-                    p.bgra[0], p.bgra[1], p.bgra[2], p.bgra[3]);
-                
-                if (validTex && validUV) validParts++;
-            } else if (p.ppId >= 0) {
-                printf("  Part %d: ppId=%d ✗OUT_OF_RANGE (cutOuts.size=%zu)\n", 
-                    p.propId, p.ppId, cutOuts.size());
-            }
-        }
-        printf("Valid renderable parts: %d/%zu\n", validParts, copyGroups.size());
-        printf("Loaded textures: %zu\n", textures.size());
-        printf("===============================\n\n");
-        lastPattern = pattern;
-    }
     
     for (auto& part : copyGroups)
     {
@@ -698,10 +670,11 @@ void Parts::Draw(int pattern, int nextPattern, float interpolationFactor,
         view = glm::rotate(view, -rotation[1] * tau, glm::vec3(0.0, 1.f, 0.f));
         view = glm::rotate(view, -rotation[0] * tau, glm::vec3(1.0, 0.f, 0.f));
         view = glm::rotate(view, rotation[2] * tau, glm::vec3(0.0, 0.f, 1.f));
-        view = glm::scale(view, glm::vec3(scale[0], scale[1], 1.f));
-
-        setMatrix(view);
+        
         setFlip(part.flip);
+        
+        view = glm::scale(view, glm::vec3(scale[0], scale[1], 1.f));
+        setMatrix(view);
 
         // Disable depth test for proper alpha blending of 2D sprites
         glDisable(GL_DEPTH_TEST);

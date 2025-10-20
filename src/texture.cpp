@@ -154,6 +154,8 @@ void Texture::Apply(bool repeat, bool linearFilter)
 void Texture::Unapply()
 {
 	isApplied = false;
+	// Unbind texture before deleting to prevent GL_INVALID_OPERATION
+	glBindTexture(GL_TEXTURE_2D, 0);
 	glDeleteTextures(1, &id);
 }
 void Texture::Unload()

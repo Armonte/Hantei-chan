@@ -242,6 +242,18 @@ void Render::Draw()
 	vGeometry.Draw(geoParts[LINES], 0, GL_LINES);
 
 	// Check if we should use Parts rendering
+	// Debug: Only print when renderMode changes
+	static int lastRenderMode = -1;
+	static int debugDrawCount = 0;
+	if (debugDrawCount < 5 && m_parts && m_parts->renderMode && *m_parts->renderMode != lastRenderMode) {
+		printf("[Render::Draw] usePat=%d, m_parts=%p, loaded=%d\n",
+			usePat, (void*)m_parts, m_parts ? m_parts->loaded : -1);
+		printf("  renderMode=%d (0=DEFAULT, 1=TEXTURE_VIEW, 2=UV_SETTING)\n",
+			(int)*m_parts->renderMode);
+		lastRenderMode = *m_parts->renderMode;
+		debugDrawCount++;
+	}
+
 	if (usePat && m_parts && m_parts->loaded)
 	{
 
@@ -633,6 +645,79 @@ bool Render::GeneratePartCenterVertices()
 	return true;
 }
 
+bool Render::GenerateUVRectangleVertices()
+{
+	// This function draws a colored rectangle showing the UV bounds of the selected cutout
+	// when in TEXTURE_VIEW or UV_SETTING_VIEW mode. This helps visualize which portion
+	// of the texture the cutout uses.
+
+	// Safety: m_parts must be loaded to access cutout properties
+	if (!m_parts || !m_parts->loaded || !m_parts->currState) {
+		return false;
+	}
+
+	// Only draw in TEXTURE_VIEW or UV_SETTING_VIEW mode when not animating
+	if (m_parts->currState->animating || m_parts->currState->renderMode == RenderMode::DEFAULT) {
+		return false;
+	}
+
+	// Get the selected cutout to draw its UV bounds
+	int cutOutIndex = m_parts->currState->partCutOut;
+	auto* cutOut = m_parts->GetCutOut(cutOutIndex);
+	if (!cutOut) {
+		return false;
+	}
+
+	// Get the texture to calculate pixel coordinates from UV coordinates
+	auto* gfx = m_parts->GetPartGfx(cutOut->texture);
+	if (!gfx) {
+		return false;
+	}
+
+	// Calculate pixel coordinates from UV coordinates
+	// UV coordinates are in texture space (0-255), we need to convert to pixel space
+	float uvBppX = gfx->uvBpp[0];  // UV units per pixel X
+	float uvBppY = gfx->uvBpp[1];  // UV units per pixel Y
+
+	float x1 = cutOut->uv[0] / uvBppX;  // Left edge
+	float y1 = cutOut->uv[1] / uvBppY;  // Top edge
+	float x2 = (cutOut->uv[0] + cutOut->uv[2]) / uvBppX;  // Right edge
+	float y2 = (cutOut->uv[1] + cutOut->uv[3]) / uvBppY;  // Bottom edge
+
+	// Offset to center the rectangle on the texture
+	float offsetX = -gfx->w / 2.0f;
+	float offsetY = -gfx->h / 2.0f;
+
+	x1 += offsetX;
+	x2 += offsetX;
+	y1 += offsetY;
+	y2 += offsetY;
+
+	// Color for the UV rectangle outline (cyan/blue)
+	constexpr float uvRectColor[] = {0.0f, 1.0f, 1.0f};  // Cyan
+	constexpr float zOrder = 100.0f;  // Draw on top
+
+	// Triangle vertex indices for a quad
+	constexpr int tX[] = {0,1,1,0};
+	constexpr int tY[] = {0,0,1,1};
+
+	// Generate quad vertices (4 vertices with 6 attributes each: X, Y, Z, R, G, B)
+	float rectQuad[4*6];
+	for(int j = 0; j < 4*6; j+=6)
+	{
+		rectQuad[j+0] = x1 + (x2-x1)*tX[j/6];  // X
+		rectQuad[j+1] = y1 + (y2-y1)*tY[j/6];  // Y
+		rectQuad[j+2] = zOrder;                 // Z (draw on top)
+		rectQuad[j+3] = uvRectColor[0];        // R
+		rectQuad[j+4] = uvRectColor[1];        // G
+		rectQuad[j+5] = uvRectColor[2];        // B
+	}
+
+	quadsToDraw = 1;
+	vGeometry.UpdateBuffer(geoParts[BOXES], rectQuad, sizeof(rectQuad));
+	return true;
+}
+
 void Render::DontDraw()
 {
 	quadsToDraw = 0;
@@ -729,46 +814,114 @@ void Render::DrawLayers()
 		return;
 	}
 
-	// Check if we should use Parts rendering
-	if (usePat && m_parts && m_parts->loaded)
+	// Save original Parts pointer to restore later
+	Parts* origParts = m_parts;
+
+	// For multi-layer PAT rendering, we need to draw each layer separately
+	// (can't return early like we did before)
+	bool hasPatLayers = false;
+	for (const auto& layer : renderLayers) {
+		if (layer.usePat) {
+			hasPatLayers = true;
+			break;
+		}
+	}
+
+	// If we have PAT layers, render them per-layer
+	if (hasPatLayers)
 	{
-		// Use Parts rendering with callbacks
 		constexpr float tau = glm::pi<float>()*2.f;
 
-		sPartShader.Use();
+		// Ensure no shader is active before starting (prevents GL_INVALID_OPERATION when switching Parts)
+		glUseProgram(0);
 
-		// Disable vertex attribute array for color so glVertexAttrib4fv sets a constant value
-		glDisableVertexAttribArray(2);
+		// Save original render state
+		int origX = x;
+		int origY = y;
+		int origOffsetX = offsetX;
+		int origOffsetY = offsetY;
 
-		// Callback to set matrix transform
-		// Use perspective projection for PAT rendering (like sosfiro)
-		auto setMatrix = [this](glm::mat4 partMatrix) {
-			// Build the pre-transform matrix with screen-space transforms only
-			glm::mat4 rview = projection;
-			rview = glm::scale(rview, glm::vec3(scale, scale, 1.f));
-			rview = glm::translate(rview, glm::vec3(x, y, 0));
-			// Don't multiply by partMatrix here - pass it separately to SetMatrixPersp
-			rview = glm::translate(rview, glm::vec3(0, 0, 1024.f));
-			rview *= invOrtho;
+		for (const auto& layer : renderLayers)
+		{
+			if (!layer.usePat || layer.spriteId < 0 || layer.alpha == 0.0f) continue;
 
-			// Apply perspective projection - pass partMatrix separately (like sosfiro)
-			SetMatrixPersp(lProjectionParts, partMatrix, rview);
-		};
+			// Determine which Parts to use for this layer
+			Parts* layerParts = layer.sourceParts ? layer.sourceParts : m_parts;
 
-		// Callback to set additive color
-		auto setAddColor = [this](float r, float g, float b) {
-			glUniform3f(lAddColorParts, r, g, b);
-		};
+			// Skip if Parts not loaded
+			if (!layerParts || !layerParts->loaded) {
+				continue;
+			}
 
-		// Callback to set flip mode
-		auto setFlip = [this](char flip) {
-			glUniform1i(lFlipParts, (int)flip);
-		};
+			// Switch Parts if needed (BEFORE starting shader)
+			bool switchedParts = false;
+			if (layerParts != m_parts) {
+				SetParts(layerParts);
+				switchedParts = true;
 
-		// Draw Parts with interpolation
-		m_parts->Draw(curPattern, curNextPattern, curInterp, setMatrix, setAddColor, setFlip, colorRgba);
+				// Copy state pointers from original Parts to layer Parts for TEXTURE_VIEW support
+				// Effect Parts don't have their own views, so they inherit state from main character
+				if (origParts && origParts->renderMode && origParts->currState) {
+					m_parts->updatePatEditorReferences(origParts->currState, origParts->renderMode);
+				}
+			}
 
-		return;
+			// Start shader and setup for this layer
+			sPartShader.Use();
+			glDisableVertexAttribArray(2);
+
+			// Apply layer-specific position offsets
+			x = origX + layer.spawnOffsetX;
+			y = origY + layer.spawnOffsetY;
+			offsetX = layer.frameOffsetX;
+			offsetY = layer.frameOffsetY;
+
+			// Callback to set matrix transform with layer-specific transforms
+			auto setMatrix = [this](glm::mat4 partMatrix) {
+				glm::mat4 rview = projection;
+				rview = glm::scale(rview, glm::vec3(scale, scale, 1.f));
+				rview = glm::translate(rview, glm::vec3(x, y, 0));
+				rview = glm::translate(rview, glm::vec3(0, 0, 1024.f));
+				rview *= invOrtho;
+				SetMatrixPersp(lProjectionParts, partMatrix, rview);
+			};
+
+			auto setAddColor = [this](float r, float g, float b) {
+				glUniform3f(lAddColorParts, r, g, b);
+			};
+
+			auto setFlip = [this](char flip) {
+				glUniform1i(lFlipParts, (int)flip);
+			};
+
+			// Render layer color
+			float layerColor[4] = {
+				layer.tintColor.r,
+				layer.tintColor.g,
+				layer.tintColor.b,
+				layer.alpha
+			};
+
+			// Draw this layer's PAT
+			m_parts->Draw(layer.spriteId, layer.spriteId, 0.0f, setMatrix, setAddColor, setFlip, layerColor);
+
+			// Reset GL state after Parts::Draw() to prevent GL_INVALID_OPERATION
+			glBindBuffer(GL_ARRAY_BUFFER, 0);  // Unbind VBO
+			glBindTexture(GL_TEXTURE_2D, 0);    // Unbind texture
+			glUseProgram(0);                    // Disable shader
+
+			// Restore Parts if we switched
+			if (switchedParts) {
+				SetParts(origParts);
+			}
+		}
+
+		// Restore render state
+		x = origX;
+		y = origY;
+		offsetX = origOffsetX;
+		offsetY = origOffsetY;
+		// Don't return early - continue to CG layers section
 	}
 
 	// Save original transform state
@@ -785,17 +938,27 @@ void Render::DrawLayers()
 	blendType origBlendMode = blendingMode;
 	float origColorRgba[4] = {colorRgba[0], colorRgba[1], colorRgba[2], colorRgba[3]};
 
-	// Save original CG
+	// Save original CG and Parts
 	CG* origCG = cg;
+	Parts* origCGParts = m_parts;
 
-	// Draw each layer
+	// Draw each layer (CG sprites only - PAT layers already rendered above)
 	for (const auto& layer : renderLayers)
 	{
 		if (layer.spriteId < 0 || layer.alpha == 0.0f) continue;
 
+		// Skip PAT layers (already rendered in PAT section above)
+		if (layer.usePat) continue;
+
 		// Switch CG if this layer uses a different one (e.g., effect.ha6)
 		if (layer.sourceCG && layer.sourceCG != cg) {
 			SetCg(layer.sourceCG);
+		}
+
+		// Switch Parts if this layer uses different Parts (e.g., effect.pat)
+		// This is needed even for CG layers in case they reference Parts data
+		if (layer.sourceParts && layer.sourceParts != m_parts) {
+			SetParts(layer.sourceParts);
 		}
 
 		// Apply layer-specific transforms (spawn offset + frame offset)
@@ -845,9 +1008,12 @@ void Render::DrawLayers()
 		DrawSpriteOnly();
 	}
 
-	// Restore original CG
+	// Restore original CG and Parts
 	if (cg != origCG) {
 		SetCg(origCG);
+	}
+	if (m_parts != origCGParts) {
+		SetParts(origCGParts);
 	}
 
 	// Restore original state

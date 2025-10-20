@@ -115,6 +115,7 @@ public:
 
 	void GenerateHitboxVertices(const BoxList &hitboxes);
 	bool GeneratePartCenterVertices();  // Draw origin cross for selected part in PatEditor
+	bool GenerateUVRectangleVertices();  // Draw UV bounds rectangle for selected cutout in TEXTURE_VIEW
 	void SetCg(CG *cg);
 	void SetParts(Parts *parts);
 	void SwitchImage(int id);

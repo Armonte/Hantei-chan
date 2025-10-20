@@ -140,10 +140,16 @@ void PatTexturePane::DrawTexture()
                 if(ImGui::Button(*curInstance->renderMode == RenderMode::TEXTURE_VIEW ?
                     "Hide Texture Render" : "Show Texture Render"))
                 {
+                    printf("[TEXTURE_VIEW BUTTON] Clicked! Current mode: %d\n", (int)*curInstance->renderMode);
+                    
                     *curInstance->renderMode = *curInstance->renderMode == RenderMode::TEXTURE_VIEW ?
                         RenderMode::DEFAULT : RenderMode::TEXTURE_VIEW;
+                    
+                    printf("[TEXTURE_VIEW BUTTON] New mode: %d\n", (int)*curInstance->renderMode);
+                    printf("[TEXTURE_VIEW BUTTON] Parts renderMode pointer: %p\n", (void*)curInstance->parts->renderMode);
+                    printf("[TEXTURE_VIEW BUTTON] Parts currState pointer: %p\n", (void*)curInstance->parts->currState);
 
-                    auto& frame = curInstance->framedata->get_sequence(0)->frames.at(0);
+                    auto& frame = curInstance->currState->animationSequence.frames.at(curInstance->currState->frame);
                     // Ensure frame has at least one layer
                     if (frame.AF.layers.empty()) {
                         frame.AF.layers.push_back({});
@@ -152,10 +158,12 @@ void PatTexturePane::DrawTexture()
                     if(*curInstance->renderMode != RenderMode::DEFAULT)
                     {
                         frame.AF.layers[0].spriteId = 0;
+                        printf("[TEXTURE_VIEW BUTTON] Set spriteId to 0 for texture view\n");
                     }
                     else
                     {
                         frame.AF.layers[0].spriteId = curInstance->currState->partSet;
+                        printf("[TEXTURE_VIEW BUTTON] Set spriteId to %d for default view\n", curInstance->currState->partSet);
                     }
                 }
                 ImGui::Checkbox("No compression on pat file", &gfx->noCompress);
