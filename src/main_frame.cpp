@@ -259,22 +259,33 @@ void MainFrame::DrawBack()
 			CG* sourceCG;
 			Parts* sourceParts;
 
-			if (spawnInfo.usesEffectHA6 && active->effectCharacter) {
-				// Type 8: Pull from effect.ha6 (per-character effect)
-				sourceFrameData = &active->effectCharacter->frameData;
-				sourceCG = &active->effectCharacter->cg;
-				sourceParts = &active->effectCharacter->parts;
-			} else {
-				// Type 1/11/101/111/1000: Pull from main character
-				// OR type 8 falling back because effect.ha6 not loaded
-				if (spawnInfo.usesEffectHA6 && !active->effectCharacter) {
+			if (spawnInfo.usesEffectHA6) {
+				// Type 8: Effect spawn
+				// Priority: Main character PAT (UNI) > effectCharacter (MBAACC) > Main character CG (fallback)
+				if (active->parts.loaded) {
+					// UNI characters have their own .pat file - use it for type 8 spawns
+					sourceFrameData = &active->frameData;
+					sourceCG = &active->cg;
+					sourceParts = &active->parts;
+				} else if (active->effectCharacter) {
+					// MBAACC characters use separate effect.ha6/effect.pat
+					sourceFrameData = &active->effectCharacter->frameData;
+					sourceCG = &active->effectCharacter->cg;
+					sourceParts = &active->effectCharacter->parts;
+				} else {
+					// Fallback: no PAT and no effect.ha6
 					static bool warned = false;
 					if (!warned) {
-						printf("[Warning] Effect type 8 spawn detected but effect.ha6 not loaded for %s - using main character CG\n",
+						printf("[Warning] Type 8 spawn detected but no .pat or effect.ha6 loaded for %s - using main character CG\n",
 							active->getName().c_str());
 						warned = true;
 					}
+					sourceFrameData = &active->frameData;
+					sourceCG = &active->cg;
+					sourceParts = &active->parts;
 				}
+			} else {
+				// Type 1/11/101/111/1000: Pull from main character
 				sourceFrameData = &active->frameData;
 				sourceCG = &active->cg;
 				sourceParts = &active->parts;
