@@ -178,14 +178,20 @@ blendingMode(normal)
 	vSprite.Prepare(sizeof(imageVertex), imageVertex);
 	vSprite.Load();
 
+	// Initialize LINES buffer with 8 vertices (4 lines):
+	// - 2 grid lines (4 vertices)
+	// - 2 origin marker lines (4 vertices, initially hidden at 0,0)
 	float lines[]
 	{
 		-10000, 0, -1,	1,1,1,
 		10000, 0, -1,	1,1,1,
 		0, 10000, -1,	1,1,1,
 		0, -10000, -1,	1,1,1,
+		0, 0, -1,	1,1,1,
+		0, 0, -1,	1,1,1,
+		0, 0, -1,	1,1,1,
+		0, 0, -1,	1,1,1,
 	};
-	
 
 	geoParts[LINES] = vGeometry.Prepare(sizeof(lines), lines);
 	geoParts[BOXES] = vGeometry.Prepare(sizeof(float)*6*4*maxBoxes, nullptr);
