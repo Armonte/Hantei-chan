@@ -117,7 +117,6 @@ void MainFrame::DrawUi()
 							auto character = std::make_unique<CharacterInstance>();
 							if (character->loadFromTxt(path)) {
 								characters.push_back(std::move(character));
-								tryLoadEffectCharacter(characters.back().get());
 								createViewForCharacter(characters.back().get());
 								markProjectModified();
 							}
@@ -134,7 +133,6 @@ void MainFrame::DrawUi()
 							auto character = std::make_unique<CharacterInstance>();
 							if (character->loadHA6(path, false)) {
 								characters.push_back(std::move(character));
-								tryLoadEffectCharacter(characters.back().get());
 								createViewForCharacter(characters.back().get());
 								markProjectModified();
 							}
@@ -151,7 +149,6 @@ void MainFrame::DrawUi()
 							auto character = std::make_unique<CharacterInstance>();
 							if (character->loadHA6(path, true)) {
 								characters.push_back(std::move(character));
-								tryLoadEffectCharacter(characters.back().get());
 								createViewForCharacter(characters.back().get());
 								markProjectModified();
 							}
@@ -405,11 +402,11 @@ void MainFrame::DrawUi()
 			}
 		}
 
-		// Set effectFrameData on all panes if effect.ha6 is loaded
-		if (effectCharacter) {
-			if (view->getMainPane()) view->getMainPane()->setEffectFrameData(&effectCharacter->frameData);
-			if (view->getRightPane()) view->getRightPane()->setEffectFrameData(&effectCharacter->frameData);
-			if (view->getBoxPane()) view->getBoxPane()->setEffectFrameData(&effectCharacter->frameData);
+		// Set effectFrameData on all panes if effect.ha6 is loaded (per-character)
+		if (character && character->effectCharacter) {
+			if (view->getMainPane()) view->getMainPane()->setEffectFrameData(&character->effectCharacter->frameData);
+			if (view->getRightPane()) view->getRightPane()->setEffectFrameData(&character->effectCharacter->frameData);
+			if (view->getBoxPane()) view->getBoxPane()->setEffectFrameData(&character->effectCharacter->frameData);
 		}
 
 		if (view->getMainPane()) view->getMainPane()->Draw();
@@ -522,8 +519,8 @@ void MainFrame::RenderUpdate()
 							instance.previousFrame = 0;
 
 							if (!instance.isPresetEffect) {
-								FrameData* sourceData = instance.usesEffectHA6 && effectCharacter
-									? &effectCharacter->frameData
+								FrameData* sourceData = instance.usesEffectHA6 && active->effectCharacter
+									? &active->effectCharacter->frameData
 									: &active->frameData;
 
 								auto spawnSeq = sourceData->get_sequence(instance.patternId);
@@ -556,8 +553,8 @@ void MainFrame::RenderUpdate()
 											childInstance.previousFrame = 0;
 
 											if (!childInstance.isPresetEffect) {
-												FrameData* childSourceData = childInstance.usesEffectHA6 && effectCharacter
-													? &effectCharacter->frameData
+												FrameData* childSourceData = childInstance.usesEffectHA6 && active->effectCharacter
+													? &active->effectCharacter->frameData
 													: &active->frameData;
 												auto childSeq = childSourceData->get_sequence(childInstance.patternId);
 												if (childSeq && !childSeq->frames.empty()) {
@@ -704,8 +701,8 @@ void MainFrame::RenderUpdate()
 
 									// Initialize loop counter from the spawned pattern's first frame
 									if (!instance.isPresetEffect) {
-										FrameData* sourceData = instance.usesEffectHA6 && effectCharacter
-											? &effectCharacter->frameData
+										FrameData* sourceData = instance.usesEffectHA6 && active->effectCharacter
+											? &active->effectCharacter->frameData
 											: &active->frameData;
 
 										auto spawnSeq = sourceData->get_sequence(instance.patternId);
@@ -740,8 +737,8 @@ void MainFrame::RenderUpdate()
 													childInstance.previousFrame = 0;
 
 													if (!childInstance.isPresetEffect) {
-														FrameData* childSourceData = childInstance.usesEffectHA6 && effectCharacter
-															? &effectCharacter->frameData
+														FrameData* childSourceData = childInstance.usesEffectHA6 && active->effectCharacter
+															? &active->effectCharacter->frameData
 															: &active->frameData;
 														auto childSeq = childSourceData->get_sequence(childInstance.patternId);
 														if (childSeq && !childSeq->frames.empty()) {
@@ -782,8 +779,8 @@ void MainFrame::RenderUpdate()
 				if (spawn.isPresetEffect) continue;
 
 				// Get the spawned pattern's sequence
-				FrameData* sourceData = spawn.usesEffectHA6 && effectCharacter
-					? &effectCharacter->frameData
+				FrameData* sourceData = spawn.usesEffectHA6 && active->effectCharacter
+					? &active->effectCharacter->frameData
 					: &active->frameData;
 
 				auto spawnSeq = sourceData->get_sequence(spawn.patternId);
@@ -870,8 +867,8 @@ void MainFrame::RenderUpdate()
 				// Check if this spawn entered a new frame
 				if (spawn.currentFrame != spawn.previousFrame) {
 					// Get the spawned pattern's sequence
-					FrameData* sourceData = spawn.usesEffectHA6 && effectCharacter
-						? &effectCharacter->frameData
+					FrameData* sourceData = spawn.usesEffectHA6 && active->effectCharacter
+						? &active->effectCharacter->frameData
 						: &active->frameData;
 
 					auto spawnSeq = sourceData->get_sequence(spawn.patternId);
@@ -914,8 +911,8 @@ void MainFrame::RenderUpdate()
 
 								// Initialize loop counter from first frame
 								if (!childInstance.isPresetEffect) {
-									FrameData* childSourceData = childInstance.usesEffectHA6 && effectCharacter
-										? &effectCharacter->frameData
+									FrameData* childSourceData = childInstance.usesEffectHA6 && active->effectCharacter
+										? &active->effectCharacter->frameData
 										: &active->frameData;
 
 									auto childSeq = childSourceData->get_sequence(childInstance.patternId);
@@ -950,8 +947,8 @@ void MainFrame::RenderUpdate()
 												grandchildInstance.previousFrame = 0;
 
 												if (!grandchildInstance.isPresetEffect) {
-													FrameData* grandchildSourceData = grandchildInstance.usesEffectHA6 && effectCharacter
-														? &effectCharacter->frameData
+													FrameData* grandchildSourceData = grandchildInstance.usesEffectHA6 && active->effectCharacter
+														? &active->effectCharacter->frameData
 														: &active->frameData;
 													auto grandchildSeq = grandchildSourceData->get_sequence(grandchildInstance.patternId);
 													if (grandchildSeq && !grandchildSeq->frames.empty()) {

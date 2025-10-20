@@ -57,6 +57,13 @@ bool CharacterInstance::loadFromTxt(const std::string& txtPath)
 
 	m_isModified = false;
 	undoManager.markCleanState();
+
+	// Auto-load effect character if effect.txt exists in same folder
+	// (but don't try to load effect for the effect itself - prevents infinite loop)
+	if (m_name != "effect") {
+		loadEffectCharacter();
+	}
+
 	return true;
 }
 
@@ -314,4 +321,61 @@ bool CharacterInstance::isInMBAACCDataFolder() const
 	effectTxtPath = baseFolder + "\\effect.txt";
 	effectPath = effectTxtPath;
 	return std::filesystem::exists(effectPath);
+}
+
+CharacterInstance* CharacterInstance::getEffectCharacter() const
+{
+	return effectCharacter.get();
+}
+
+bool CharacterInstance::loadEffectCharacter()
+{
+	// Get this character's folder
+	std::string baseFolder = getBaseFolder();
+	if (baseFolder.empty()) {
+		return false;
+	}
+
+	// Build path to effect.txt
+	std::string effectTxtPath = baseFolder + "/effect.txt";
+	std::filesystem::path effectPath(effectTxtPath);
+
+	// Try backslash if forward slash doesn't exist
+	if (!std::filesystem::exists(effectPath)) {
+		effectTxtPath = baseFolder + "\\effect.txt";
+		effectPath = effectTxtPath;
+	}
+
+	if (!std::filesystem::exists(effectPath)) {
+		return false;  // No effect.txt found
+	}
+
+	// Create and load effect character
+	auto effect = std::make_unique<CharacterInstance>();
+	if (!effect->loadFromTxt(effectTxtPath)) {
+		printf("[Effect] Failed to load effect.txt from: %s\n", baseFolder.c_str());
+		return false;
+	}
+
+	effect->setName("effect");
+
+	// Try loading effect.pat (optional - not all effects use PAT)
+	std::string effectPatPath = baseFolder + "/effect.pat";
+	std::filesystem::path patPath(effectPatPath);
+	if (!std::filesystem::exists(patPath)) {
+		effectPatPath = baseFolder + "\\effect.pat";
+		patPath = effectPatPath;
+	}
+
+	if (std::filesystem::exists(patPath)) {
+		bool patLoaded = effect->loadPAT(effectPatPath);
+		printf("[Effect] %s: effect.pat %s (%d part sets)\n",
+			   m_name.c_str(),
+			   patLoaded ? "loaded" : "FAILED",
+			   patLoaded ? (int)effect->parts.partSets.size() : 0);
+	}
+
+	effectCharacter = std::move(effect);
+	printf("[Effect] %s: Loaded effect character from %s\n", m_name.c_str(), baseFolder.c_str());
+	return true;
 }
