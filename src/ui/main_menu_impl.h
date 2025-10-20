@@ -119,7 +119,6 @@ void MainFrame::Menu(unsigned int errorPopupId)
 						auto character = std::make_unique<CharacterInstance>();
 						if (character->loadFromTxt(path)) {
 							characters.push_back(std::move(character));
-							tryLoadEffectCharacter(characters.back().get());
 							createViewForCharacter(characters.back().get());
 							markProjectModified();
 						} else {
@@ -140,7 +139,6 @@ void MainFrame::Menu(unsigned int errorPopupId)
 						auto character = std::make_unique<CharacterInstance>();
 						if (character->loadChrHA6FromTxt(path)) {
 							characters.push_back(std::move(character));
-							tryLoadEffectCharacter(characters.back().get());
 							createViewForCharacter(characters.back().get());
 							markProjectModified();
 						} else {
@@ -161,7 +159,6 @@ void MainFrame::Menu(unsigned int errorPopupId)
 						auto character = std::make_unique<CharacterInstance>();
 						if (character->loadHA6(path, false)) {
 							characters.push_back(std::move(character));
-							tryLoadEffectCharacter(characters.back().get());
 							createViewForCharacter(characters.back().get());
 							markProjectModified();
 						} else {
@@ -182,7 +179,6 @@ void MainFrame::Menu(unsigned int errorPopupId)
 						auto character = std::make_unique<CharacterInstance>();
 						if (character->loadHA6(path, true)) {
 							characters.push_back(std::move(character));
-							tryLoadEffectCharacter(characters.back().get());
 							createViewForCharacter(characters.back().get());
 							markProjectModified();
 						} else {
@@ -332,21 +328,21 @@ void MainFrame::Menu(unsigned int errorPopupId)
 
 			ImGui::Separator();
 
-			// Effect.ha6 status and management
-			if (effectCharacter) {
+			// Effect.ha6 status (per-character, auto-loaded from character folder)
+			if (active && active->effectCharacter) {
 				// Show status when loaded
-				ImGui::TextDisabled("Effect.ha6: Loaded");
+				ImGui::TextDisabled("Effect.ha6: Loaded for %s", active->getName().c_str());
 				if (ImGui::IsItemHovered()) {
-					std::string folder = effectCharacter->getBaseFolder();
-					int patternCount = effectCharacter->frameData.get_sequence_count();
-					int imageCount = effectCharacter->cg.get_image_count();
+					std::string folder = active->effectCharacter->getBaseFolder();
+					int patternCount = active->effectCharacter->frameData.get_sequence_count();
+					int imageCount = active->effectCharacter->cg.get_image_count();
 
 					// Get first image filename if available
-					const char* cgFileName = (imageCount > 0) ? effectCharacter->cg.get_filename(0) : nullptr;
+					const char* cgFileName = (imageCount > 0) ? active->effectCharacter->cg.get_filename(0) : nullptr;
 					std::string cgFile = cgFileName ? cgFileName : "None";
 
 					ImGui::BeginTooltip();
-					ImGui::Text("Effect.ha6 Details:");
+					ImGui::Text("Effect.ha6 Details for %s:", active->getName().c_str());
 					ImGui::Separator();
 					ImGui::Text("Folder: %s", folder.c_str());
 					ImGui::Text("CG File: %s", cgFile.c_str());
@@ -355,33 +351,21 @@ void MainFrame::Menu(unsigned int errorPopupId)
 					ImGui::EndTooltip();
 				}
 
-				if (ImGui::MenuItem("Unload Effect.ha6")) {
-					printf("[Effect] Manually unloading effect.ha6\n");
-					effectCharacter.reset();
-				}
-			} else {
-				// Show status when not loaded
-				ImGui::TextDisabled("Effect.ha6: Not loaded");
-
-				if (ImGui::MenuItem("Load Effect.ha6... (select effect.txt)")) {
-					std::string effectTxtPath = FileDialog(fileType::TXT, false);
-					if (!effectTxtPath.empty()) {
-						// Extract folder from effect.txt path
-						size_t lastSlash = effectTxtPath.find_last_of("/\\");
-						std::string folder = (lastSlash != std::string::npos)
-							? effectTxtPath.substr(0, lastSlash)
-							: effectTxtPath;
-
-						printf("[Effect] Manually loading effect.ha6 from: %s\n", folder.c_str());
-						bool loaded = loadEffectCharacter(folder);
-						if (loaded) {
-							printf("[Effect] ✓ Successfully loaded\n");
-						} else {
-							printf("[Effect] ✗ Failed to load from: %s\n", folder.c_str());
-							ImGui::OpenPopup(errorPopupId);
-						}
+				if (ImGui::MenuItem("Reload Effect.ha6")) {
+					printf("[Effect] Reloading effect.ha6 for %s\n", active->getName().c_str());
+					active->effectCharacter.reset();
+					if (active->loadEffectCharacter()) {
+						printf("[Effect] ✓ Successfully reloaded\n");
+					} else {
+						printf("[Effect] ✗ Failed to reload\n");
 					}
 				}
+			} else if (active) {
+				// Show status when not loaded for current character
+				ImGui::TextDisabled("Effect.ha6: Not loaded for %s", active->getName().c_str());
+			} else {
+				// No active character
+				ImGui::TextDisabled("Effect.ha6: No character loaded");
 			}
 
 			ImGui::Separator();

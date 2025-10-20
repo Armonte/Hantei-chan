@@ -259,18 +259,19 @@ void MainFrame::DrawBack()
 			CG* sourceCG;
 			Parts* sourceParts;
 
-			if (spawnInfo.usesEffectHA6 && effectCharacter) {
-				// Type 8: Pull from effect.ha6
-				sourceFrameData = &effectCharacter->frameData;
-				sourceCG = &effectCharacter->cg;
-				sourceParts = &effectCharacter->parts;
+			if (spawnInfo.usesEffectHA6 && active->effectCharacter) {
+				// Type 8: Pull from effect.ha6 (per-character effect)
+				sourceFrameData = &active->effectCharacter->frameData;
+				sourceCG = &active->effectCharacter->cg;
+				sourceParts = &active->effectCharacter->parts;
 			} else {
 				// Type 1/11/101/111/1000: Pull from main character
 				// OR type 8 falling back because effect.ha6 not loaded
-				if (spawnInfo.usesEffectHA6 && !effectCharacter) {
+				if (spawnInfo.usesEffectHA6 && !active->effectCharacter) {
 					static bool warned = false;
 					if (!warned) {
-						printf("[Warning] Effect type 8 spawn detected but effect.ha6 not loaded - using main character CG\n");
+						printf("[Warning] Effect type 8 spawn detected but effect.ha6 not loaded for %s - using main character CG\n",
+							active->getName().c_str());
 						warned = true;
 					}
 				}
@@ -658,91 +659,6 @@ int MainFrame::countViewsForCharacter(CharacterInstance* character)
 	return count;
 }
 
-bool MainFrame::loadEffectCharacter(const std::string& baseFolder)
-{
-	// Build path to effect.txt
-	std::string effectTxtPath = baseFolder + "/effect.txt";
-	std::filesystem::path effectPath(effectTxtPath);
-
-	// Try backslash if forward slash doesn't exist
-	if (!std::filesystem::exists(effectPath)) {
-		effectTxtPath = baseFolder + "\\effect.txt";
-		effectPath = effectTxtPath;
-	}
-
-	if (!std::filesystem::exists(effectPath)) {
-		return false;
-	}
-
-	// Create and load effect character
-	auto effect = std::make_unique<CharacterInstance>();
-	if (!effect->loadFromTxt(effectTxtPath)) {
-		return false;
-	}
-
-	effect->setName("effect");
-
-	// Try loading effect.pat (optional - not all effects use PAT)
-	std::string effectPatPath = baseFolder + "/effect.pat";
-	std::filesystem::path patPath(effectPatPath);
-	if (!std::filesystem::exists(patPath)) {
-		effectPatPath = baseFolder + "\\effect.pat";
-		patPath = effectPatPath;
-	}
-
-	if (std::filesystem::exists(patPath)) {
-		bool patLoaded = effect->loadPAT(effectPatPath);
-		printf("[Effect]   - effect.pat: %s (%d part sets)\n",
-			   patLoaded ? "Loaded" : "Failed",
-			   patLoaded ? (int)effect->parts.partSets.size() : 0);
-	}
-
-	effectCharacter = std::move(effect);
-	return true;
-}
-
-CharacterInstance* MainFrame::getEffectCharacter()
-{
-	return effectCharacter.get();
-}
-
-// Helper: Auto-load effect character if character is in MBAACC data folder
-void MainFrame::tryLoadEffectCharacter(CharacterInstance* character)
-{
-	if (!character) {
-		printf("[Effect] tryLoadEffectCharacter: character is NULL\n");
-		return;
-	}
-
-	if (effectCharacter) {
-		printf("[Effect] Effect.ha6 already loaded (from: %s)\n",
-			   effectCharacter->getBaseFolder().c_str());
-		return;  // Already loaded
-	}
-
-	if (character->isInMBAACCDataFolder()) {
-		std::string baseFolder = character->getBaseFolder();
-		printf("[Effect] Attempting to auto-load effect.ha6 from: %s\n", baseFolder.c_str());
-
-		bool loaded = loadEffectCharacter(baseFolder);
-		if (loaded) {
-			printf("[Effect] ✓ Successfully loaded effect.ha6 from: %s\n", baseFolder.c_str());
-
-			int imageCount = effectCharacter->cg.get_image_count();
-			const char* cgFileName = (imageCount > 0) ? effectCharacter->cg.get_filename(0) : nullptr;
-			printf("[Effect]   - effect.cg: %s (%d images)\n",
-				   cgFileName ? cgFileName : "None", imageCount);
-			printf("[Effect]   - Pattern count: %d\n",
-				   effectCharacter->frameData.get_sequence_count());
-		} else {
-			printf("[Effect] ✗ Failed to load effect.ha6 from: %s\n", baseFolder.c_str());
-		}
-	} else {
-		printf("[Effect] Character not in MBAACC data folder: %s\n",
-			   character->getBaseFolder().c_str());
-	}
-}
-
 void MainFrame::closeView(int index)
 {
 	if (index >= 0 && index < views.size()) {
@@ -873,11 +789,7 @@ void MainFrame::openProject()
 			setActiveView(activeViewIndex);
 		}
 
-		// Try to load effect.ha6 from the first character in the project
-		// (effectCharacter is shared, so we load from first available character)
-		if (!characters.empty()) {
-			tryLoadEffectCharacter(characters[0].get());
-		}
+		// Effect loading is now automatic per-character in CharacterInstance::loadFromTxt()
 
 		ProjectManager::SetCurrentProjectPath(path);
 		m_projectModified = false;
@@ -1061,11 +973,7 @@ void MainFrame::openRecentProject(const std::string& path)
 			setActiveView(activeViewIndex);
 		}
 
-		// Try to load effect.ha6 from the first character in the project
-		// (effectCharacter is shared, so we load from first available character)
-		if (!characters.empty()) {
-			tryLoadEffectCharacter(characters[0].get());
-		}
+		// Effect loading is now automatic per-character in CharacterInstance::loadFromTxt()
 
 		ProjectManager::SetCurrentProjectPath(path);
 		m_projectModified = false;

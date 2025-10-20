@@ -61,6 +61,10 @@ public:
 	std::string getBaseFolder() const;
 	bool isInMBAACCDataFolder() const;
 
+	// Effect character support (per-character effect.ha6/effect.pat)
+	CharacterInstance* getEffectCharacter() const;
+	bool loadEffectCharacter();  // Load effect.txt/effect.ha6/effect.pat for this character
+
 	// Data access
 	FrameData frameData;
 	FrameState state;
@@ -75,6 +79,9 @@ public:
 	int renderY = 150;
 	float zoom = 3.0f;
 	int palette = 0;
+
+	// Per-character effect (effect.ha6/effect.pat loaded from character's folder)
+	std::unique_ptr<CharacterInstance> effectCharacter;
 
 private:
 	std::string m_name;
