@@ -220,6 +220,9 @@ void Render::DrawGridLines()
 	view = glm::scale(view, glm::vec3(scale, scale, 1.f));
 	view = glm::translate(view, glm::vec3(x,y,0.f));
 	SetModelView(std::move(view));
+
+	// Ensure sSimple shader is active and vertex attributes are enabled
+	sSimple.Use();
 	glUniform1f(lAlphaS, 0.25f);
 	SetMatrix(lProjectionS);
 	vGeometry.Bind();
@@ -494,7 +497,10 @@ void Render::SwitchImage(int id)
 	if(cg && (id != curImageId || id == -1) && cg->m_loaded)
 	{
 		curImageId = id;
-		texture.Unapply();
+
+		if (texture.isApplied) {
+			texture.Unapply();
+		}
 
 		if(id>=0)
 		{
@@ -920,6 +926,9 @@ void Render::DrawLayers()
 			glBindBuffer(GL_ARRAY_BUFFER, 0);  // Unbind VBO
 			glBindTexture(GL_TEXTURE_2D, 0);    // Unbind texture
 			glUseProgram(0);                    // Disable shader
+
+			// Clear any pending GL errors from PAT rendering
+			while (glGetError() != GL_NO_ERROR);
 
 			// Restore Parts if we switched
 			if (switchedParts) {

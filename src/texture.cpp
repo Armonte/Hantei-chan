@@ -27,6 +27,8 @@ Texture::Texture(Texture&& texture)
 	isApplied = texture.isApplied;
 	//filename = std::move(texture.filename);
 
+	// Transfer ownership - prevent the moved-from object from deleting the texture
+	texture.id = 0;
 	texture.isApplied = false;
 	texture.isLoaded = false;
 }
@@ -119,7 +121,7 @@ void Texture::Apply(bool repeat, bool linearFilter)
 	if (isApplied) {
 		return;
 	}
-	
+
 	isApplied = true;
 	glGenTextures(1, &id);
 
@@ -153,10 +155,15 @@ void Texture::Apply(bool repeat, bool linearFilter)
 }
 void Texture::Unapply()
 {
+	if (!isApplied) {
+		return;  // Already unapplied, nothing to do
+	}
+
 	isApplied = false;
 	// Unbind texture before deleting to prevent GL_INVALID_OPERATION
 	glBindTexture(GL_TEXTURE_2D, 0);
 	glDeleteTextures(1, &id);
+	id = 0;  // Reset ID after deletion
 }
 void Texture::Unload()
 {

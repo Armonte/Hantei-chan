@@ -380,7 +380,7 @@ void Parts::DrawPart(int i)
 
     // Determine which texture to use
     curTexId = gfxMeta[cutout.texture].textureIndex;
-    
+
     // Override texture in TEXTURE_VIEW mode (show currently selected texture)
     if (renderMode && currState && *renderMode == RenderMode::TEXTURE_VIEW && !currState->animating) {
         auto gfx = GetPartGfx(currState->partGraph);
@@ -388,7 +388,7 @@ void Parts::DrawPart(int i)
             curTexId = gfx->textureIndex;
         }
     }
-    
+
     // Override texture in UV_SETTING_VIEW mode (show texture from current cutout)
     if (renderMode && currState && *renderMode == RenderMode::UV_SETTING_VIEW && !currState->animating) {
         auto cutoutSelected = GetCutOut(currState->partCutOut);
@@ -399,7 +399,20 @@ void Parts::DrawPart(int i)
             }
         }
     }
-    
+
+    // Validate texture ID before binding
+    if (curTexId != 0 && !glIsTexture(curTexId)) {
+        static bool warnedOnce = false;
+        if (!warnedOnce) {
+            printf("[DrawPart] WARNING: Texture ID %d is not a valid OpenGL texture\n", curTexId);
+            warnedOnce = true;
+        }
+        return;  // Invalid texture, skip rendering
+    }
+
+    // Clear any pending GL errors before binding
+    while (glGetError() != GL_NO_ERROR);
+
     // Bind texture and draw
     glBindTexture(GL_TEXTURE_2D, curTexId);
 
