@@ -930,6 +930,11 @@ void Render::DrawLayers()
 		// Don't return early - continue to CG layers section
 	}
 
+	// Force CG texture rebind after PAT rendering
+	// PAT section unbinds GL textures, so we need to invalidate curImageId
+	// to ensure SwitchImage() rebinds the CG texture even if sprite ID hasn't changed
+	curImageId = -1;
+
 	// Save original transform state
 	int origX = x;
 	int origY = y;
