@@ -14,9 +14,16 @@ void TestInfo::Print(const void *data, const void *data_end)
 }
 
 //Attack data
-unsigned int *fd_frame_AT_load(unsigned int *data, const unsigned int *data_end, Frame_AT *AT)
+unsigned int *fd_frame_AT_load(unsigned int *data, const unsigned int *data_end, Frame_AT *AT, TempInfo *info)
 {
 	AT->correction = 100;
+	AT->damageProration = 100; // Default: no proration
+	AT->minDamage = 0;
+	AT->addHitStun = 0;
+	AT->starterCorrection = 0;
+	AT->hitStunDecay[0] = 0;
+	AT->hitStunDecay[1] = 0;
+	AT->hitStunDecay[2] = 0;
 	
 	while (data < data_end) {
 		unsigned int *buf = data;
@@ -105,6 +112,51 @@ unsigned int *fd_frame_AT_load(unsigned int *data, const unsigned int *data_end,
 		} else if (!memcmp(buf, "ATGN", 4)) {
 			AT->blockStopTime = data[0];
 			data++;
+		} else if (!memcmp(buf, "ATV2", 4)) {
+			// UNI combined vector format (standing, air, crouch HIT+GUARD vectors)
+			assert(data[0] == 3 && data[1] == 2);
+			data += 2;
+			for(int i = 0; i < 3*4; i+=4)
+			{
+				AT->hVFlags[i/4] = data[i];
+				AT->hitVector[i/4] = data[i+1];
+				AT->gVFlags[i/4] = data[i+2];
+				AT->guardVector[i/4] = data[i+3];
+				assert(AT->hVFlags[i/4] <= 3 && AT->gVFlags[i/4] <= 3);
+			}
+			data += 12;
+			// Mark this sequence as using UNI attack format
+			if (info && info->seq) {
+				info->seq->usedATV2 = true;
+			}
+		} else if (!memcmp(buf, "ATAT", 4)) {
+			// UNI standalone damage (alternative to ATVV)
+			AT->damage = data[0];
+			++data;
+		} else if (!memcmp(buf, "ATHH", 4)) {
+			// UNI damage proration (percentage, 100 = no reduction)
+			AT->damageProration = data[0];
+			++data;
+		} else if (!memcmp(buf, "ATAM", 4)) {
+			// UNI minimum damage percentage
+			AT->minDamage = data[0];
+			++data;
+		} else if (!memcmp(buf, "ATCA", 4)) {
+			// UNI meter gain (separate from ATVV in UNI format)
+			AT->meter_gain = data[0];
+			++data;
+		} else if (!memcmp(buf, "ATC0", 4)) {
+			// UNI hit stun decay [reduction, combopoint_set, combopoint_SMP_modifier]
+			memcpy(AT->hitStunDecay, data, sizeof(int)*3);
+			data += 3;
+		} else if (!memcmp(buf, "ATSA", 4)) {
+			// UNI add hit stun (player stun time)
+			AT->addHitStun = data[0];
+			++data;
+		} else if (!memcmp(buf, "ATSH", 4)) {
+			// UNI starter correction
+			AT->starterCorrection = data[0];
+			++data;
 		} else if (!memcmp(buf, "ATED", 4)) {
 			break;
 		} else {
@@ -201,11 +253,15 @@ unsigned int *fd_frame_AS_load(unsigned int *data, const unsigned int *data_end,
 			data++;
 		} else if (!memcmp(buf, "ASYS", 4)) {
 			AS->invincibility = data[0];
-			if(data[0] > 4)
+			if(data[0] > 5)
 			{
 				test.Print(data, data_end);
 				std::cout <<"\tUnknown ASYS value: " << data[0] <<"\n";
 			}
+			data++;
+		} else if (!memcmp(buf, "ASCF", 4)) {
+			// UNI counter/cancel flag
+			AS->ascf = data[0];
 			data++;
 		} else if (!memcmp(buf, "ASF", 3)) {
 			char t = ((char *)buf)[3];
@@ -259,7 +315,7 @@ unsigned int *fd_frame_EF_load(unsigned int *data, const unsigned int *data_end,
 				for (int i = 0; i < count; ++i) {
 					EF->parameters[i] = data[i+1];
 				}
-				if(EF->type == 1 )
+				/* if(EF->type == 1 )
 				{
 					if(maxCount < count)
 						 maxCount = count;
@@ -270,7 +326,7 @@ unsigned int *fd_frame_EF_load(unsigned int *data, const unsigned int *data_end,
 						std::cout <<" "<<EF->parameters[i];
 					}
 					std::cout<<"\n";
-				}
+				} */
 			} else {
 				test.Print(data, data_end);
 				std::cout <<"\tUnhandled number of EF parameters: " << count <<"\n";
@@ -421,6 +477,10 @@ unsigned int *fd_frame_AF_load(unsigned int *data, const unsigned int *data_end,
 			if (t >= '1' && t <= '2') {
 				//Only values 1 and 2 are used.
 				frame->AF.aniType = t - '0';
+			} else if (t == 'L') {
+				// AFFL - long form with int32 value (typically 3 for animation end)
+				frame->AF.aniType = data[0];
+				++data;
 			} else if (t == 'E') {
 				frame->AF.aniFlag = data[0];
 				++data;
@@ -506,13 +566,22 @@ unsigned int *fd_frame_AF_load(unsigned int *data, const unsigned int *data_end,
 			//Some fucked up interaction with rotation and scale.
 			frame->AF.AFRT = data[0];
 			++data;
+		} else if (!memcmp(buf, "AFID", 4)) {
+			// UNI frame ID for Squirrel script reference
+			frame->AF.frameId = data[0];
+			++data;
+		} else if (!memcmp(buf, "AFPA", 4)) {
+			// UNI frame parameters for Squirrel script reference
+			memcpy(frame->AF.param, data, sizeof(uint8_t)*4);
+			++data;
 		} else if (!memcmp(buf, "AFED", 4)) {
 			break;
 		} else {
-			char tag[5]{};
-			memcpy(tag,buf,4);
-			test.Print(data, data_end);
-			std::cout <<"\tUnknown AF tag: " << tag <<"\n";
+			// Unknown AF tag - silently skip
+			// char tag[5]{};
+			// memcpy(tag,buf,4);
+			// test.Print(data, data_end);
+			// std::cout <<"\tUnknown AF tag: " << tag <<"\n";
 		}
 		//Unhandled: None, unless they're not in vanilla melty files.
 	}
@@ -564,7 +633,7 @@ unsigned int *fd_frame_load(unsigned int *data, const unsigned int *data_end, Fr
 			data += 2;
 		} else if (!memcmp(buf, "ATST", 4)) {
 			// start attack block
-				data = fd_frame_AT_load(data, data_end, &frame->AT);
+				data = fd_frame_AT_load(data, data_end, &frame->AT, info);
 			
 		} else if (!memcmp(buf, "ASST", 4)) {
 			// start state block
@@ -645,7 +714,7 @@ unsigned int *fd_sequence_load(unsigned int *data, const unsigned int *data_end,
 	temp_info.cur_AS = 0;
 	
 	std::string name, codename;
-	int level = 0, psts = 0, flag = 0;
+	int level = 0, psts = 0, flag = 0, pups = 0;
 	
 	while (data < data_end) {
 		unsigned int *buf = data;
@@ -685,6 +754,10 @@ unsigned int *fd_sequence_load(unsigned int *data, const unsigned int *data_end,
 			//Unknown. Always 1?
 			flag = *data;
 			assert(*data == 1);
+			++data;
+		} else if (!memcmp(buf, "PUPS", 4)) {
+			// UNI palette switching (0=default, 1=_p1.pal, 2=_p2.pal, etc.)
+			pups = *data;
 			++data;
 		} else if (!memcmp(buf, "PDST", 4)) {
 			// PDST is only used on G_CHAOS
@@ -753,6 +826,7 @@ unsigned int *fd_sequence_load(unsigned int *data, const unsigned int *data_end,
 				seq->psts = psts;
 				seq->level = level;
 				seq->flag = flag;
+				seq->pups = pups;
 			}
 			else
 				assert(0 && "PSD2 size is not 32");

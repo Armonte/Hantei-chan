@@ -3,6 +3,7 @@
 
 #include <string>
 #include <vector>
+#include <cstdint>
 
 #include "hitbox.h"
 
@@ -84,6 +85,10 @@ struct Frame_AF_T {
 
 	bool AFRT = false; //Makes rotation respect EF scale.
 
+	// UNI/Dengeki Squirrel script reference values
+	int frameId = 0;        // AFID - Frame ID for code reference
+	uint8_t param[4] = {0}; // AFPA - 4 separate parameter values (0-255 each)
+
 	// Assignment operator for cross-allocator copying
 	template<template<typename> class FromT>
 	Frame_AF_T<Allocator>& operator=(const Frame_AF_T<FromT>& from) {
@@ -103,6 +108,8 @@ struct Frame_AF_T {
 		loopCount = from.loopCount;
 		loopEnd = from.loopEnd;
 		AFRT = from.AFRT;
+		frameId = from.frameId;
+		memcpy(param, from.param, sizeof(param));
 		return *this;
 	}
 
@@ -139,6 +146,8 @@ struct Frame_AS {
 	int sineParameters[4];
 	float sinePhases[2];
 	
+	// UNI/Dengeki-specific
+	int ascf; // ASCF - counter hit or cancel related flag
 };
 
 struct Frame_AT {
@@ -177,6 +186,13 @@ struct Frame_AT {
 	int hitStopTime; //Default value zero. Overrides common values.
 	int hitStop; //From common value list
 	int blockStopTime; //Needs flag 16 (0 indexed) to be set
+
+	// UNI/Dengeki-specific damage system parameters
+	int damageProration; // ATHH - damage proration percentage (100 = no reduction, 95 = 5% reduction)
+	int minDamage;       // ATAM - minimum damage percentage
+	int addHitStun;      // ATSA - player stun time added
+	int starterCorrection; // ATSH - damage correction if combo starter
+	int hitStunDecay[3]; // ATC0 - [reduction, combopoint_set, combopoint_SMP_modifier]
 };
 
 struct Frame_EF {
@@ -249,11 +265,13 @@ struct Sequence_T {
 	int psts = 0;
 	int level = 0;
 	int flag = 0;
+	int pups = 0; // Palette index (UNI: 0=default, 1=_p1.pal, 2=_p2.pal, etc.)
 
 	bool empty = false;
 	bool initialized = false;
 	bool modified = false;  // Track if this sequence has been edited
 	bool usedAFGX = false;  // Track if this sequence used UNI multi-layer format (AFGX) vs MBAACC (AFGP)
+	bool usedATV2 = false;  // Track if this sequence used UNI attack format (ATV2) vs MBAACC (ATVV/ATHV/ATGV)
 
 	std::vector<Frame_T<Allocator>, Allocator<Frame_T<Allocator>>> frames;
 
@@ -265,10 +283,12 @@ struct Sequence_T {
 		psts = from.psts;
 		level = from.level;
 		flag = from.flag;
+		pups = from.pups;
 		empty = from.empty;
 		initialized = from.initialized;
 		modified = from.modified;
 		usedAFGX = from.usedAFGX;
+		usedATV2 = from.usedATV2;
 		frames.resize(from.frames.size());
 		for (size_t i = 0; i < from.frames.size(); i++) {
 			frames[i] = from.frames[i];
@@ -284,10 +304,12 @@ struct Sequence_T {
 			psts = from.psts;
 			level = from.level;
 			flag = from.flag;
+			pups = from.pups;
 			empty = from.empty;
 			initialized = from.initialized;
 			modified = from.modified;
 			usedAFGX = from.usedAFGX;
+			usedATV2 = from.usedATV2;
 			frames = from.frames;
 		}
 		return *this;

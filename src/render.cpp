@@ -362,7 +362,7 @@ void Render::Draw()
 	vGeometry.DrawQuads(GL_TRIANGLE_FAN, quadsToDraw);
 }
 
-void Render::DrawSpriteOnly()
+void Render::DrawSpriteOnly(bool drawHitboxes)
 {
 	if(int err = glGetError())
 	{
@@ -410,19 +410,22 @@ void Render::DrawSpriteOnly()
 	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 	glBlendEquation(GL_FUNC_ADD);
 
-	//Boxes (without offsetX/offsetY - boxes should only be positioned by x,y)
-	// Match the behavior of Draw() function which doesn't apply offset to boxes
-	view = glm::mat4(1.f);
-	view = glm::scale(view, glm::vec3(scale, scale, 1.f));
-	view = glm::translate(view, glm::vec3(x,y,0.f));
-	SetModelView(std::move(view));
-	sSimple.Use();
-	SetMatrix(lProjectionS);
-	vGeometry.Bind();
-	glUniform1f(lAlphaS, 0.6f);
-	vGeometry.DrawQuads(GL_LINE_LOOP, quadsToDraw);
-	glUniform1f(lAlphaS, 0.3f);
-	vGeometry.DrawQuads(GL_TRIANGLE_FAN, quadsToDraw);
+	// Draw hitboxes if requested
+	if (drawHitboxes) {
+		//Boxes (without offsetX/offsetY - boxes should only be positioned by x,y)
+		// Match the behavior of Draw() function which doesn't apply offset to boxes
+		view = glm::mat4(1.f);
+		view = glm::scale(view, glm::vec3(scale, scale, 1.f));
+		view = glm::translate(view, glm::vec3(x,y,0.f));
+		SetModelView(std::move(view));
+		sSimple.Use();
+		SetMatrix(lProjectionS);
+		vGeometry.Bind();
+		glUniform1f(lAlphaS, 0.6f);
+		vGeometry.DrawQuads(GL_LINE_LOOP, quadsToDraw);
+		glUniform1f(lAlphaS, 0.3f);
+		vGeometry.DrawQuads(GL_TRIANGLE_FAN, quadsToDraw);
+	}
 
 	// Re-enable depth write
 	glDepthMask(GL_TRUE);
@@ -849,7 +852,9 @@ void Render::DrawLayers()
 
 		for (const auto& layer : renderLayers)
 		{
-			if (!layer.usePat || layer.spriteId < 0 || layer.alpha == 0.0f) continue;
+			// Skip if not a PAT layer, or if fully transparent, or if invalid sprite ID
+			// (PAT rendering needs valid sprite ID, unlike CG which can render hitboxes for sprite -1)
+			if (!layer.usePat || layer.alpha == 0.0f || layer.spriteId < 0) continue;
 
 			// Determine which Parts to use for this layer
 			Parts* layerParts = layer.sourceParts ? layer.sourceParts : m_parts;
@@ -956,7 +961,9 @@ void Render::DrawLayers()
 	// Draw each layer (CG sprites only - PAT layers already rendered above)
 	for (const auto& layer : renderLayers)
 	{
-		if (layer.spriteId < 0 || layer.alpha == 0.0f) continue;
+		// Skip if fully transparent
+		// (Don't skip sprite ID -1 - we still want to draw hitboxes)
+		if (layer.alpha == 0.0f) continue;
 
 		// Skip PAT layers (already rendered in PAT section above)
 		if (layer.usePat) continue;
@@ -1014,9 +1021,42 @@ void Render::DrawLayers()
 		// Generate hitboxes for this layer
 		GenerateHitboxVertices(layer.hitboxes);
 
-		// Switch to this layer's sprite and draw sprite+boxes (no grid lines)
+		// Switch to this layer's sprite and draw sprite WITHOUT hitboxes
+		// (Hitboxes will be drawn in a second pass to ensure they're on top)
 		SwitchImage(layer.spriteId);
-		DrawSpriteOnly();
+		DrawSpriteOnly(false);
+	}
+
+	// Second pass: Draw all hitboxes on top of all sprites
+	for (const auto& layer : renderLayers)
+	{
+		// Skip if fully transparent or if it's a PAT layer
+		if (layer.alpha == 0.0f || layer.usePat) continue;
+
+		// Only draw hitboxes if this layer has any
+		if (layer.hitboxes.empty()) continue;
+
+		// Apply layer-specific position for hitboxes (no offsetX/offsetY for boxes)
+		x = origX + layer.spawnOffsetX;
+		y = origY + layer.spawnOffsetY;
+
+		// Generate hitbox vertices for this layer
+		GenerateHitboxVertices(layer.hitboxes);
+
+		// Draw hitboxes
+		glDepthMask(GL_FALSE);
+		glm::mat4 view = glm::mat4(1.f);
+		view = glm::scale(view, glm::vec3(scale, scale, 1.f));
+		view = glm::translate(view, glm::vec3(x, y, 0.f));
+		SetModelView(std::move(view));
+		sSimple.Use();
+		SetMatrix(lProjectionS);
+		vGeometry.Bind();
+		glUniform1f(lAlphaS, 0.6f);
+		vGeometry.DrawQuads(GL_LINE_LOOP, quadsToDraw);
+		glUniform1f(lAlphaS, 0.3f);
+		vGeometry.DrawQuads(GL_TRIANGLE_FAN, quadsToDraw);
+		glDepthMask(GL_TRUE);
 	}
 
 	// Restore original CG and Parts

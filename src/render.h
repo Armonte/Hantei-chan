@@ -110,7 +110,7 @@ public:
 	Render();
 	void Draw();
 	void DrawGridLines();   // Draw only grid lines
-	void DrawSpriteOnly();  // Draw sprite without lines/boxes
+	void DrawSpriteOnly(bool drawHitboxes = true);  // Draw sprite and optionally hitboxes
 	void UpdateProj(float w, float h);
 
 	void GenerateHitboxVertices(const BoxList &hitboxes);
