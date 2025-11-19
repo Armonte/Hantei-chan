@@ -21,7 +21,9 @@ jobs:
     - name: Update imgui submodule to latest docking
       run: |
         cd imgui
-        git checkout -f $(git ls-remote https://github.com/ocornut/imgui.git refs/heads/docking | cut -f1)
+        COMMIT=$(git ls-remote https://github.com/ocornut/imgui.git refs/heads/docking | cut -f1)
+        git fetch https://github.com/ocornut/imgui.git $COMMIT
+        git checkout -f $COMMIT
         cd ..
 
     - name: Setup CMake
@@ -64,7 +66,9 @@ jobs:
     - name: Update imgui submodule to latest docking
       run: |
         cd imgui
-        git checkout -f $(git ls-remote https://github.com/ocornut/imgui.git refs/heads/docking | cut -f1)
+        COMMIT=$(git ls-remote https://github.com/ocornut/imgui.git refs/heads/docking | cut -f1)
+        git fetch https://github.com/ocornut/imgui.git $COMMIT
+        git checkout -f $COMMIT
         cd ..
 
     - name: Install dependencies
