@@ -94,10 +94,11 @@ inline void AfDisplay(Frame_AF *af, int &selectedLayer, FrameData *frameData = n
 	if (hasMultipleLayers) {
 		im::SetNextItemWidth(width * 2);
 		if (im::Combo("##LayerSelector", &selectedLayer,
-			[](void* data, int idx) -> const char* {
+			[](void* data, int idx, const char** out_text) -> bool {
 				static char buf[32];
 				snprintf(buf, sizeof(buf), "Layer %d", idx);
-				return buf;
+				*out_text = buf;
+				return true;
 			}, nullptr, af->layers.size())) {
 			// Layer selection changed - no need to mark modified
 		}

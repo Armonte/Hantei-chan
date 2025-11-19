@@ -55,10 +55,6 @@ jobs:
       with:
         submodules: recursive
 
-    - name: Fix case-sensitive XInput.h for cross-compile
-      run: |
-        sed -i 's/<XInput\.h>/<xinput.h>/g' imgui/backends/imgui_impl_win32.cpp
-
     - name: Install dependencies
       run: |
         sudo apt-get update
