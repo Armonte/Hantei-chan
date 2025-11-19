@@ -2,7 +2,8 @@
 #include "pattern_disp.h"
 #include "frame_disp.h"
 #include "misc.h"
-#include <imgui.h>	
+#include <imgui.h>
+#include "imsearch.h"	
 
 MainPane::MainPane(Render* render, FrameData *framedata, FrameState &fs) : DrawWindow(render, framedata, fs),
 decoratedNames(nullptr)
@@ -51,6 +52,45 @@ void MainPane::Draw()
 		// Update current pattern's decorated name in case it was modified
 		decoratedNames[currState.pattern] = frameData->GetDecoratedName(currState.pattern);
 
+		// Pattern search bar (above pattern dropdown)
+		if(showPatternSearchBar)
+		{
+			if(ImSearch::BeginSearch())
+			{
+				ImSearch::SearchBar("Search pattern names...");
+				
+				// Only show searchable items when there's an active search query
+				const char* query = ImSearch::GetUserQuery();
+				if(query && strlen(query) > 0)
+				{
+					auto count = frameData->get_sequence_count();
+					for(int n = 0; n < count; n++)
+					{
+						auto patternSeq = frameData->get_sequence(n);
+						if(!patternSeq) continue;
+
+						std::string displayName = frameData->GetDecoratedName(n);
+						ImSearch::SearchableItem(displayName.c_str(),
+							[&, n](const char* name)
+							{
+								const bool isSelected = (currState.pattern == n);
+								if(im::Selectable(name, isSelected))
+								{
+									currState.pattern = n;
+									currState.frame = 0;
+									currState.currentTick = 0;
+									// Update decorated name
+									decoratedNames[currState.pattern] = frameData->GetDecoratedName(currState.pattern);
+									// Clear search query to hide the list
+									ImSearch::SetUserQuery("");
+								}
+							});
+					}
+				}
+				ImSearch::EndSearch();
+			}
+		}
+
 		if (im::BeginCombo("Pattern", decoratedNames[currState.pattern].c_str(), ImGuiComboFlags_HeightLargest))
 		{
 			auto count = frameData->get_sequence_count();
@@ -92,6 +132,17 @@ void MainPane::Draw()
 			currState.currentTick = 0;  // Reset tick when changing pattern
 			// Update decorated name
 			decoratedNames[currState.pattern] = frameData->GetDecoratedName(currState.pattern);
+		}
+		im::SameLine(0, 10.f);
+		// Use Unicode magnifying glass character (U+1F50D) or fallback to text
+		const char* searchIcon = u8"🔍";  // UTF-8 encoded magnifying glass emoji
+		if(im::Button(searchIcon))
+		{
+			showPatternSearchBar = !showPatternSearchBar;
+		}
+		if(im::IsItemHovered())
+		{
+			im::SetTooltip(showPatternSearchBar ? "Hide search bar" : "Show search bar");
 		}
 		auto seq = frameData->get_sequence(currState.pattern);
 		if(seq)
@@ -477,6 +528,45 @@ void MainPane::Draw()
 				if(ranges[0] > maxFrame) ranges[0] = maxFrame;
 				if(ranges[1] > maxFrame) ranges[1] = maxFrame;
 
+				im::End();
+			}
+
+			// Pattern name search popup
+			if(showPatternSearch)
+			{
+				im::SetNextWindowSize(ImVec2{500, 400}, ImGuiCond_FirstUseEver);
+				im::SetNextWindowPos(im::GetMainViewport()->GetCenter(), ImGuiCond_FirstUseEver, ImVec2(0.5f, 0.5f));
+				if(im::Begin("Search Pattern Names", &showPatternSearch, ImGuiWindowFlags_NoCollapse))
+				{
+					if(ImSearch::BeginSearch())
+					{
+						ImSearch::SearchBar("Search pattern names...");
+
+						auto count = frameData->get_sequence_count();
+						for(int n = 0; n < count; n++)
+						{
+							auto patternSeq = frameData->get_sequence(n);
+							if(!patternSeq) continue;
+
+							std::string displayName = frameData->GetDecoratedName(n);
+							ImSearch::SearchableItem(displayName.c_str(),
+								[&, n](const char* name)
+								{
+									const bool isSelected = (currState.pattern == n);
+									if(im::Selectable(name, isSelected))
+									{
+										currState.pattern = n;
+										currState.frame = 0;
+										currState.currentTick = 0;
+										showPatternSearch = false;
+										// Update decorated name
+										decoratedNames[currState.pattern] = frameData->GetDecoratedName(currState.pattern);
+									}
+								});
+						}
+						ImSearch::EndSearch();
+					}
+				}
 				im::End();
 			}
 			}

@@ -12,6 +12,7 @@
 #include <chrono>
 #include <thread>
 #include <imgui.h>
+#include "imsearch.h"
 
 #include <imgui_impl_opengl3.h>
 #include <imgui_impl_win32.h>
@@ -341,6 +342,7 @@ LRESULT WINAPI WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
 			}
 			IMGUI_CHECKVERSION();
 			ImGui::CreateContext();
+			ImSearch::CreateContext();
 			ImGuiIO& io = ImGui::GetIO();
 			io.ConfigFlags |= ImGuiConfigFlags_DockingEnable;
 			io.IniFilename = iniLocation;
@@ -354,8 +356,8 @@ LRESULT WINAPI WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
 
 			LoadJapaneseFonts(io);
 			
-			// Increase font atlas size to accommodate all the glyphs
-			io.Fonts->TexDesiredWidth = 4096;  // Increase from default 1024
+			// Note: TexDesiredWidth was removed in ImGui 1.92.0
+			// Font atlas now handles sizing automatically
 			
 			//io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;     // Enable Keyboard Controls
 			ImGui_ImplWin32_Init(hWnd);
@@ -501,6 +503,7 @@ LRESULT WINAPI WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
 		delete mf;
 		ImGui_ImplOpenGL3_Shutdown();
 		ImGui_ImplWin32_Shutdown();
+		ImSearch::DestroyContext();
 		ImGui::DestroyContext();
 		delete context;
 		SetWindowLongPtr(hWnd, GWLP_USERDATA, 0);
