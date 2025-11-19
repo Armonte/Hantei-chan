@@ -197,14 +197,14 @@ void LoadJapaneseFonts(ImGuiIO& io)
 LRESULT WINAPI WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam);
 int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE, PWSTR pCmdLine, int nCmdShow)
 {
-	// Allocate console for debug output with Shift-JIS support
-	AllocConsole();
-	FILE* dummy;
-	freopen_s(&dummy, "CONOUT$", "w", stdout);
-	freopen_s(&dummy, "CONOUT$", "w", stderr);
-	SetConsoleOutputCP(65001);  // UTF-8 code page
-	SetConsoleCP(65001);  // UTF-8 code page for input too
-	printf("=== Hantei-chan Debug Console (UTF-8) ===\n\n");
+	// Allocate console for debug output with Shift-JIS support (DISABLED FOR RELEASE)
+	//AllocConsole();
+	//FILE* dummy;
+	//freopen_s(&dummy, "CONOUT$", "w", stdout);
+	//freopen_s(&dummy, "CONOUT$", "w", stderr);
+	//SetConsoleOutputCP(65001);  // UTF-8 code page
+	//SetConsoleCP(65001);  // UTF-8 code page for input too
+	//printf("=== Hantei-chan Debug Console (UTF-8) ===\n\n");
 	
 	bool useIni = true;
 	int argC;
