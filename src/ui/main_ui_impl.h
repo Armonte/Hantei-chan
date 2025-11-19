@@ -635,17 +635,47 @@ void MainFrame::RenderUpdate()
 					state.frame = GetNextFrame(true);
 					duration = 0;
 
-					// Update previousFrame only if we successfully advanced
-					if (state.frame != oldFrame) {
-						state.previousFrame = oldFrame;
+						// Update previousFrame only if we successfully advanced
+						if (state.frame != oldFrame) {
+							state.previousFrame = oldFrame;
 
-						// Detect loop: if we jumped backwards to frame 0, reset visit counts for new playthrough
-						if (state.frame == 0 && oldFrame > state.frame) {
-							// DEBUG: Log loop detection
-							printf("[LOOP DETECTED] Resetting visit counts (jumped from frame %d to 0)\n", oldFrame);
-							state.frameVisitCounts.clear();
-							state.lastSpawnCreationFrame = -1;
-						}
+							// Detect loop: check if we jumped backwards based on actual animation data
+							// This happens when aniType == 2 and jump points to an earlier frame
+							bool isLooping = false;
+							if (oldFrame >= 0 && oldFrame < seq->frames.size()) {
+								auto& oldFrameData = seq->frames[oldFrame].AF;
+								// Loop detected if: aniType is 2 (jump) and we jumped to an earlier frame
+								// OR if we jumped backwards (which indicates a loop in the animation flow)
+								if (oldFrameData.aniType == 2) {
+									// Check if the jump target is earlier than current frame (loop back)
+									int jumpTarget = oldFrameData.jump;
+									if ((oldFrameData.aniFlag & 0x4) == 0) {
+										// Absolute jump (not relative)
+										isLooping = (jumpTarget < oldFrame);
+									} else {
+										// Relative jump
+										isLooping = ((oldFrame + jumpTarget) < oldFrame);
+									}
+								}
+								// Also detect if frame number decreased (backward jump occurred)
+								if (!isLooping) {
+									isLooping = (state.frame < oldFrame);
+								}
+							}
+							
+							if (isLooping) {
+								// DEBUG: Log loop detection with animation data
+								if (oldFrame >= 0 && oldFrame < seq->frames.size()) {
+									auto& oldFrameData = seq->frames[oldFrame].AF;
+									printf("[LOOP DETECTED] Frame %d (aniType=%d, jump=%d, aniFlag=0x%x) -> Frame %d (tick: %d)\n", 
+										oldFrame, oldFrameData.aniType, oldFrameData.jump, oldFrameData.aniFlag, state.frame, state.currentTick);
+								} else {
+									printf("[LOOP DETECTED] Jumped from frame %d to %d (tick: %d)\n", oldFrame, state.frame, state.currentTick);
+								}
+								// Don't clear visit counts - we want to track how many times we've visited each frame
+								// But reset lastSpawnCreationFrame so spawns can be created again on loop iterations
+								state.lastSpawnCreationFrame = -1;
+							}
 
 						// Increment visit count for the new frame we're entering
 						state.frameVisitCounts[state.frame]++;
@@ -659,10 +689,12 @@ void MainFrame::RenderUpdate()
 						}
 
 						// Check for spawns immediately when entering a new frame (BEFORE incrementing tick)
+						// Create spawns every time we enter a frame with spawn effects (including loop iterations)
 						if (state.vizSettings.showSpawnedPatterns && state.frame >= 0 && state.frame < seq->frames.size()) {
 							auto& newFrame = seq->frames[state.frame];
-							bool isFirstVisit = (state.frameVisitCounts[state.frame] == 1);
-							bool shouldCreateSpawns = !newFrame.EF.empty() && isFirstVisit &&
+							// Allow spawns to be created on every visit to a frame with spawn effects
+							// This ensures spawns appear on loop iterations
+							bool shouldCreateSpawns = !newFrame.EF.empty() &&
 							                          (state.lastSpawnCreationFrame != state.frame);
 
 							if(shouldCreateSpawns)
