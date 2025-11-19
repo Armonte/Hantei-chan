@@ -18,11 +18,10 @@ jobs:
       with:
         submodules: recursive
 
-    - name: Update imgui submodule to docking branch
+    - name: Update imgui submodule to latest docking
       run: |
         cd imgui
-        git fetch origin
-        git checkout origin/docking
+        git checkout -f $(git ls-remote https://github.com/ocornut/imgui.git refs/heads/docking | cut -f1)
         cd ..
 
     - name: Setup CMake
@@ -62,11 +61,10 @@ jobs:
       with:
         submodules: recursive
 
-    - name: Update imgui submodule to docking branch
+    - name: Update imgui submodule to latest docking
       run: |
         cd imgui
-        git fetch origin
-        git checkout origin/docking
+        git checkout -f $(git ls-remote https://github.com/ocornut/imgui.git refs/heads/docking | cut -f1)
         cd ..
 
     - name: Install dependencies
