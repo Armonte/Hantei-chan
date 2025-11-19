@@ -7,6 +7,7 @@
 #include "project_manager.h"
 #include "preset_effects.h"
 #include "version.h"
+#include "framestate.h"
 
 #include <imgui.h>
 #include <imgui_internal.h>
@@ -219,9 +220,10 @@ void MainFrame::DrawBack()
 		const auto& mainLayer0Data = mainFrame.AF.layers[0];
 
 		// Build render layers for spawned patterns
-		// Use activeSpawns during animation (handles looping), spawnedPatterns when paused (for seeking)
-		// IMPORTANT: During animation, ONLY use activeSpawns (even if empty) - never fall back to static tree
-		bool useActiveSpawns = state.animating;
+		// Use activeSpawns during animation OR when seeking (handles looping correctly)
+		// When seeking, activeSpawns is populated by SimulateSpawnsToTick in box_pane.cpp
+		// IMPORTANT: Use activeSpawns if it has entries (either from animation or seeking)
+		bool useActiveSpawns = state.animating || !state.activeSpawns.empty();
 		auto& spawnsToRender = useActiveSpawns ?
 			reinterpret_cast<std::vector<ActiveSpawnInstance>&>(state.activeSpawns) :
 			reinterpret_cast<std::vector<ActiveSpawnInstance>&>(state.spawnedPatterns);
@@ -313,10 +315,98 @@ void MainFrame::DrawBack()
 				}
 			} else {
 				// Static spawn from spawnedPatterns - calculate frame from ticks for seeking
-				int elapsedTicks = state.currentTick - spawnInfo.spawnTick;
+				// Check if current frame (via simulation) matches the spawn frame
+				
+				// Get main pattern to check if it loops
+				auto mainSeq = active->frameData.get_sequence(state.pattern);
+				bool mainPatternLoops = false;
+				int mainPatternLoopPeriod = 0;
+				
+				if (mainSeq && !mainSeq->frames.empty()) {
+					auto& lastFrame = mainSeq->frames.back();
+					mainPatternLoops = (lastFrame.AF.aniType == 2);
+					
+					// Calculate loop period if looping
+					if (mainPatternLoops) {
+						mainPatternLoopPeriod = FindLoopPeriod(&active->frameData, state.pattern);
+						if (mainPatternLoopPeriod == 0) {
+							// Fallback: calculate total duration
+							for (int i = 0; i < mainSeq->frames.size(); i++) {
+								mainPatternLoopPeriod += mainSeq->frames[i].AF.duration;
+							}
+							if (mainPatternLoopPeriod == 0) {
+								mainPatternLoopPeriod = mainSeq->frames.size() * 10; // Fallback estimate
+							}
+						}
+					}
+				}
+				
+				// Get the current frame via simulation
+				int currentFrame = SimulateAnimationFlow(&active->frameData, state.pattern, state.currentTick);
+				
+				// Get the spawn frame from the static spawn info
+				// We need to find which frame in the pattern spawned this
+				// The spawn tree records absoluteSpawnFrame, but we need the relative frame
+				int spawnFrame = -1;
+				if (mainSeq) {
+					// Find the frame that has this spawn effect
+					for (int i = 0; i < mainSeq->frames.size(); i++) {
+						if (!mainSeq->frames[i].EF.empty()) {
+							auto frameSpawns = ParseSpawnedPatterns(mainSeq->frames[i].EF, i, state.pattern);
+							for (const auto& fs : frameSpawns) {
+								if (fs.patternId == spawnInfo.patternId && 
+								    fs.usesEffectHA6 == spawnInfo.usesEffectHA6 &&
+								    fs.effectType == static_cast<int>(spawnInfo.isPresetEffect ? 3 : 1)) {
+									spawnFrame = i;
+									break;
+								}
+							}
+							if (spawnFrame >= 0) break;
+						}
+					}
+				}
+				
+				// Check if we're at the spawn frame (including loop iterations)
+				bool isAtSpawnFrame = false;
+				int effectiveSpawnTick = spawnInfo.spawnTick;
+				
+				if (spawnFrame >= 0) {
+					// Check if current frame matches spawn frame
+					isAtSpawnFrame = (currentFrame == spawnFrame);
+					
+					// If looping, also check if we're at the spawn frame in a loop iteration
+					if (mainPatternLoops && mainPatternLoopPeriod > 0 && !isAtSpawnFrame) {
+						// Check if tick modulo loop period puts us at spawn frame
+						int tickInLoop = state.currentTick % mainPatternLoopPeriod;
+						int spawnTickInLoop = spawnInfo.spawnTick % mainPatternLoopPeriod;
+						int frameAtSpawnTickInLoop = SimulateAnimationFlow(&active->frameData, state.pattern, spawnTickInLoop);
+						
+						if (frameAtSpawnTickInLoop == spawnFrame) {
+							// Check if current tick in loop matches spawn tick in loop
+							int frameAtCurrentTickInLoop = SimulateAnimationFlow(&active->frameData, state.pattern, tickInLoop);
+							isAtSpawnFrame = (frameAtCurrentTickInLoop == spawnFrame);
+							
+							if (isAtSpawnFrame) {
+								// Calculate effective spawn tick for this loop iteration
+								effectiveSpawnTick = (state.currentTick / mainPatternLoopPeriod) * mainPatternLoopPeriod + spawnTickInLoop;
+							}
+						}
+					}
+				} else {
+					// Fallback: use tick-based matching
+					if (mainPatternLoops && mainPatternLoopPeriod > 0) {
+						int tickInLoop = state.currentTick % mainPatternLoopPeriod;
+						isAtSpawnFrame = (tickInLoop == spawnInfo.spawnTick % mainPatternLoopPeriod);
+						effectiveSpawnTick = (state.currentTick / mainPatternLoopPeriod) * mainPatternLoopPeriod + (spawnInfo.spawnTick % mainPatternLoopPeriod);
+					} else {
+						isAtSpawnFrame = (state.currentTick == spawnInfo.spawnTick);
+					}
+				}
+				
+				int elapsedTicks = state.currentTick - effectiveSpawnTick;
 
 				// Check if spawned pattern should be visible
-				if (elapsedTicks < 0) {
+				if (!isAtSpawnFrame && elapsedTicks < 0) {
 					// Before spawn tick - don't show
 					continue;
 				}
@@ -344,21 +434,10 @@ void MainFrame::DrawBack()
 
 				// Handle looping by wrapping elapsed ticks
 				int effectiveTicks = isLooping ? (elapsedTicks % totalDuration) : elapsedTicks;
+				if (effectiveTicks < 0) effectiveTicks = 0; // Safety
 
-				// Find which frame to display based on effectiveTicks
-				int tickAccum = 0;
-				for (int i = 0; i < spawnedSeq->frames.size(); i++) {
-					int frameDuration = spawnedSeq->frames[i].AF.duration;
-					if (frameDuration <= 0) frameDuration = 1; // Safety
-
-					if (tickAccum + frameDuration > effectiveTicks) {
-						// This is the frame we're currently on
-						localFrame = i;
-						break;
-					}
-
-					tickAccum += frameDuration;
-				}
+				// Use flow simulation to find frame (handles loops/jumps properly)
+				localFrame = SimulateAnimationFlow(sourceFrameData, spawnInfo.patternId, effectiveTicks);
 			}
 
 			auto& spawnedFrame = spawnedSeq->frames[localFrame];

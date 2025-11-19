@@ -94,45 +94,86 @@ inline void IfDisplay(std::vector<Frame_IF> *ifList_, Frame_IF *singleClipboard 
 	// Condition type names, character lists, and other labels are now in framedata_labels.h
 
 	int deleteI = -1;
+	static int dragSourceIndex = -1;
+	static bool reorderedThisFrame = false;
+	reorderedThisFrame = false; // Reset at start of frame
 	static std::vector<int> manualEditMode; // Track manual edit mode per condition (int instead of bool for ImGui)
 	if(manualEditMode.size() != ifList.size()) {
 		manualEditMode.resize(ifList.size(), 0);
 	}
+	
+	// Track collapsed state per item
+	static std::vector<bool> collapsedStates;
+	if(collapsedStates.size() != ifList.size()) {
+		collapsedStates.resize(ifList.size(), false);
+	}
 
 	for( int i = 0; i < ifList.size(); i++)
 	{
-		if(i>0)
-			im::Separator();
 		im::PushID(i);
-
-		// Type dropdown
+		
+		// Build header label with condition type
 		int typeIndex = ifList[i].type;
 		if(typeIndex < 0) typeIndex = 0;
-		if(typeIndex >= IM_ARRAYSIZE(conditionTypes)) {
-			// Handle special cases (50+, 100+, 150+)
-			im::SetNextItemWidth(width*2);
-			im::InputInt("Type", &ifList[i].type, 0, 0);
+		char headerLabel[256];
+		if(typeIndex < IM_ARRAYSIZE(conditionTypes)) {
+			snprintf(headerLabel, sizeof(headerLabel), "Condition %d: %s", i, conditionTypes[typeIndex]);
 		} else {
-			im::SetNextItemWidth(width*3);
-			if(im::Combo("Type", &typeIndex, conditionTypes, IM_ARRAYSIZE(conditionTypes))) {
-				ifList[i].type = typeIndex;
+			snprintf(headerLabel, sizeof(headerLabel), "Condition %d: Type %d", i, ifList[i].type);
+		}
+		
+		// Track start position of item
+		ImVec2 itemStartPos = im::GetCursorScreenPos();
+		
+		// Drag handle button - use ASCII characters for compatibility
+		if(im::Button("=", ImVec2(20, 20))) {
+			// Button click does nothing, just for visual
+		}
+		if(im::BeginDragDropSource(ImGuiDragDropFlags_None)) {
+			im::SetDragDropPayload("CONDITION_ITEM", &i, sizeof(int));
+			im::Text("Moving condition %d", i);
+			im::EndDragDropSource();
+			dragSourceIndex = i;
+		}
+		im::SameLine();
+		
+		// Collapsible header - use stored collapsed state
+		ImGuiTreeNodeFlags flags = ImGuiTreeNodeFlags_None;
+		if(!collapsedStates[i]) {
+			flags |= ImGuiTreeNodeFlags_DefaultOpen;
+		}
+		bool isOpen = im::CollapsingHeader(headerLabel, flags);
+		collapsedStates[i] = !isOpen; // Update stored state
+		
+		if(isOpen) {
+			im::Indent();
+			
+			// Type dropdown
+			if(typeIndex >= IM_ARRAYSIZE(conditionTypes)) {
+				// Handle special cases (50+, 100+, 150+)
+				im::SetNextItemWidth(width*2);
+				im::InputInt("Type", &ifList[i].type, 0, 0);
+			} else {
+				im::SetNextItemWidth(width*3);
+				if(im::Combo("Type", &typeIndex, conditionTypes, IM_ARRAYSIZE(conditionTypes))) {
+					ifList[i].type = typeIndex;
+				}
 			}
-		}
 
-		im::SameLine(0.f, 20);
-		bool manualMode = manualEditMode[i] != 0;
-		if(im::Checkbox("Manual", &manualMode)) {
-			manualEditMode[i] = manualMode ? 1 : 0;
-		}
-		if(im::IsItemHovered()) {
-			Tooltip("Enable raw parameter editing for undocumented values");
-		}
+			im::SameLine(0.f, 20);
+			bool manualMode = manualEditMode[i] != 0;
+			if(im::Checkbox("Manual", &manualMode)) {
+				manualEditMode[i] = manualMode ? 1 : 0;
+			}
+			if(im::IsItemHovered()) {
+				Tooltip("Enable raw parameter editing for undocumented values");
+			}
 
-		im::SameLine(0.f, 20);
-		ImGui::PushStyleColor(ImGuiCol_Button, ImVec4(1,0,0,0.4));
-		if(im::Button("Delete"))
-			deleteI = i;
-		ImGui::PopStyleColor();
+			im::SameLine(0.f, 20);
+			ImGui::PushStyleColor(ImGuiCol_Button, ImVec4(1,0,0,0.4));
+			if(im::Button("Delete"))
+				deleteI = i;
+			ImGui::PopStyleColor();
 
 		// Smart parameter fields based on type
 		int* p = ifList[i].parameters;
@@ -704,23 +745,123 @@ inline void IfDisplay(std::vector<Frame_IF> *ifList_, Frame_IF *singleClipboard 
 		}
 		} // End of manual mode else block
 
-		// Copy button for all condition types
-		if(singleClipboard && im::Button("Copy")) {
-			*singleClipboard = ifList[i];
+			// Copy button for all condition types
+			if(singleClipboard && im::Button("Copy")) {
+				*singleClipboard = ifList[i];
+			}
+			
+			im::Unindent();
 		}
+		
+		// Track end position and create drop target covering entire item
+		ImVec2 itemEndPos = im::GetCursorScreenPos();
+		float itemHeight = itemEndPos.y - itemStartPos.y;
+		if(itemHeight < 20.0f) itemHeight = 20.0f; // Minimum height
+		
+		// Create invisible button covering entire item area
+		im::SetCursorScreenPos(itemStartPos);
+		im::InvisibleButton("##item_dropzone", ImVec2(-1, itemHeight));
+		
+		// Make the entire item area a drop target with top/bottom split
+		if(im::BeginDragDropTarget()) {
+			ImVec2 mousePos = im::GetMousePos();
+			float midPoint = itemStartPos.y + itemHeight * 0.5f;
+			bool isTopHalf = mousePos.y < midPoint;
+			
+			// Visual feedback: highlight the half we're hovering over
+			ImU32 highlightColor = im::GetColorU32(ImGuiCol_DragDropTarget);
+			ImVec2 windowPos = im::GetWindowPos();
+			ImVec2 windowSize = im::GetWindowSize();
+			float drawMidPoint = itemStartPos.y + itemHeight * 0.5f;
+			float itemWidth = windowSize.x - (itemStartPos.x - windowPos.x);
+			
+			if(isTopHalf) {
+				// Highlight top half
+				im::GetWindowDrawList()->AddRectFilled(
+					ImVec2(itemStartPos.x, itemStartPos.y),
+					ImVec2(itemStartPos.x + itemWidth, drawMidPoint),
+					(highlightColor & 0x00FFFFFF) | 0x20000000); // Semi-transparent
+				im::GetWindowDrawList()->AddLine(
+					ImVec2(itemStartPos.x, drawMidPoint),
+					ImVec2(itemStartPos.x + itemWidth, drawMidPoint),
+					highlightColor, 3.0f);
+			} else {
+				// Highlight bottom half
+				im::GetWindowDrawList()->AddRectFilled(
+					ImVec2(itemStartPos.x, drawMidPoint),
+					ImVec2(itemStartPos.x + itemWidth, itemEndPos.y),
+					(highlightColor & 0x00FFFFFF) | 0x20000000); // Semi-transparent
+				im::GetWindowDrawList()->AddLine(
+					ImVec2(itemStartPos.x, drawMidPoint),
+					ImVec2(itemStartPos.x + itemWidth, drawMidPoint),
+					highlightColor, 3.0f);
+			}
+			
+			if(const ImGuiPayload* payload = im::AcceptDragDropPayload("CONDITION_ITEM")) {
+				if(!reorderedThisFrame) {
+					int sourceIdx = *(const int*)payload->Data;
+					if(sourceIdx != i && sourceIdx >= 0 && sourceIdx < ifList.size()) {
+						// Determine desired final position in the ORIGINAL array
+						int desiredPos;
+						if(isTopHalf) {
+							// Insert above this item
+							desiredPos = i;
+						} else {
+							// Insert below this item
+							desiredPos = i + 1;
+						}
+						
+						// Reorder: move source to target position
+						Frame_IF temp = ifList[sourceIdx];
+						int tempManual = manualEditMode[sourceIdx];
+						bool tempCollapsed = collapsedStates[sourceIdx];
+						
+						// Remove from source
+						ifList.erase(ifList.begin() + sourceIdx);
+						manualEditMode.erase(manualEditMode.begin() + sourceIdx);
+						collapsedStates.erase(collapsedStates.begin() + sourceIdx);
+						
+						// Calculate insert position in the NEW array (after removal)
+						int insertPos = desiredPos;
+						if(sourceIdx < desiredPos) {
+							// Source was removed before the desired position, so adjust
+							insertPos = desiredPos - 1;
+						}
+						
+						// Clamp insert position
+						if(insertPos < 0) insertPos = 0;
+						if(insertPos > ifList.size()) insertPos = ifList.size();
+						
+						// Insert at target position
+						ifList.insert(ifList.begin() + insertPos, temp);
+						manualEditMode.insert(manualEditMode.begin() + insertPos, tempManual);
+						collapsedStates.insert(collapsedStates.begin() + insertPos, tempCollapsed);
+						markModified();
+						reorderedThisFrame = true;
+					}
+				}
+			}
+			im::EndDragDropTarget();
+		}
+		
+		// Restore cursor position
+		im::SetCursorScreenPos(itemEndPos);
 
 		im::PopID();
 	}
 
+
 	if(deleteI >= 0) {
 		ifList.erase(ifList.begin() + deleteI);
 		manualEditMode.erase(manualEditMode.begin() + deleteI);
+		collapsedStates.erase(collapsedStates.begin() + deleteI);
 		markModified();
 	}
 
 	if(im::Button("Add")) {
 		ifList.push_back({});
 		manualEditMode.push_back(0);
+		collapsedStates.push_back(false); // New items start expanded
 		markModified();
 	}
 

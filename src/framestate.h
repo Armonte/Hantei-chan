@@ -174,8 +174,34 @@ std::vector<SpawnedPatternInfo> ParseSpawnedPatterns(const std::vector<Frame_EF>
 // Helper to calculate tick position from frame number (sums frame durations)
 int CalculateTickFromFrame(class FrameData* frameData, int patternId, int frameNum);
 
+// Simulate animation flow from tick 0 to target tick, following loops/jumps
+int SimulateAnimationFlow(class FrameData* frameData, int patternId, int targetTick);
+
+// Find loop period by detecting cycles (returns to previously seen frames)
+int FindLoopPeriod(class FrameData* frameData, int patternId, int maxTicks = 10000);
+
+// Simulate animation flow and collect all spawn ticks (including loop iterations and nested spawns)
+// Returns a map of compositeKey -> vector of spawn ticks where that pattern spawns
+// compositeKey = patternId * 2 + (usesEffectHA6 ? 1 : 0)
+std::map<int, std::vector<int>> CollectAllSpawnTicks(
+	class FrameData* mainFrameData,
+	class FrameData* effectFrameData,
+	int patternId,
+	int maxTicks = 10000,
+	bool isEffectHA6 = false,
+	int parentSpawnTick = 0);
+
 // Helper to calculate frame from tick position
 int CalculateFrameFromTick(class FrameData* frameData, int patternId, int tick);
+
+// Simulate animation and create spawns up to target tick (for seeking)
+// Populates activeSpawns with spawns that would exist at targetTick
+void SimulateSpawnsToTick(
+	class FrameData* mainFrameData,
+	class FrameData* effectFrameData,
+	int patternId,
+	int targetTick,
+	std::vector<class ActiveSpawnInstance>& activeSpawns);
 
 // Recursive function to build full spawn tree
 void BuildSpawnTreeRecursive(

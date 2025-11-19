@@ -339,29 +339,79 @@ void BoxPane::DrawSpawnTimeline()
 
 	int mainFrameCount = mainSeq->frames.size();
 
-	// Calculate total timeline extent (max spawn frame + max lifetime)
-	int timelineEnd = mainFrameCount;
+	// Calculate main pattern's total duration in ticks (simulate to find loop period)
+	int mainPatternLoopPeriod = 0;
+	bool mainPatternLoops = false;
+	if (!mainSeq->frames.empty()) {
+		auto& lastFrame = mainSeq->frames.back();
+		mainPatternLoops = (lastFrame.AF.aniType == 2);
+		
+		// Calculate loop period using cycle detection
+		if (mainPatternLoops) {
+			mainPatternLoopPeriod = FindLoopPeriod(frameData, currState.pattern);
+			// If no loop detected, use a large estimate
+			if (mainPatternLoopPeriod == 0) {
+				// Fallback: calculate total duration of all frames
+				for (int i = 0; i < mainFrameCount; i++) {
+					int dur = mainSeq->frames[i].AF.duration;
+					if (dur <= 0) dur = 1;
+					mainPatternLoopPeriod += dur;
+				}
+				// If still 0, use estimate
+				if (mainPatternLoopPeriod == 0) {
+					mainPatternLoopPeriod = mainFrameCount * 10;
+				}
+			}
+		} else {
+			// Non-looping - calculate total duration
+			for (int i = 0; i < mainFrameCount; i++) {
+				int dur = mainSeq->frames[i].AF.duration;
+				if (dur <= 0) dur = 1;
+				mainPatternLoopPeriod += dur;
+			}
+		}
+	}
+	
+	// Calculate total timeline extent in ticks
+	// Start with main pattern duration, then extend based on spawns
+	int maxTimelineTick = mainPatternLoopPeriod;
+	
+	// If looping, show at least 3 loop iterations
+	if (mainPatternLoops && mainPatternLoopPeriod > 0) {
+		maxTimelineTick = std::max(maxTimelineTick, mainPatternLoopPeriod * 3);
+	}
+	
+	// Extend based on spawns
 	for(const auto& sp : currState.spawnedPatterns) {
 		// Skip preset effects (Type 3) - they're instant with no duration
 		if (sp.isPresetEffect) continue;
-		int spawnEnd = sp.absoluteSpawnFrame + (sp.lifetime < 9999 ? sp.lifetime : sp.patternFrameCount);
-		timelineEnd = std::max(timelineEnd, spawnEnd);
+		// Use spawn tick + lifetime for timeline extent
+		int spawnEndTick = sp.spawnTick + (sp.lifetime < 9999 ? sp.lifetime : sp.patternFrameCount * 10);
+		maxTimelineTick = std::max(maxTimelineTick, spawnEndTick);
+	}
+	
+	// Ensure minimum timeline size
+	if (maxTimelineTick < 100) {
+		maxTimelineTick = 100;
 	}
 
 	// Timeline settings
 	const float rowHeight = 20.0f;
-	const float frameWidth = 3.0f;
+	const float tickWidth = 1.0f;  // Width per tick
 	const float labelWidth = 100.0f;
-	const float timelineWidth = std::min(600.0f, frameWidth * timelineEnd);
+	const float timelineWidth = std::min(800.0f, tickWidth * maxTimelineTick);
 
 	im::Text("Frame: %d / %d  |  Tick: %d", currState.frame, mainFrameCount - 1, currState.currentTick);
 
 	// Add tick scrubber
-	int maxTick = timelineEnd * 10;  // Rough estimate
-	if (im::SliderInt("##tickscrub", &currState.currentTick, 0, maxTick, "Tick %d")) {
+	if (im::SliderInt("##tickscrub", &currState.currentTick, 0, maxTimelineTick, "Tick %d")) {
 		// User scrubbed - update to non-animating mode and sync frame
 		currState.animating = false;
 		currState.frame = CalculateFrameFromTick(frameData, currState.pattern, currState.currentTick);
+		
+		// When seeking, simulate spawns up to this tick and populate activeSpawns
+		// This makes seeking work the same as animation playback
+		SimulateSpawnsToTick(frameData, effectFrameData, currState.pattern, currState.currentTick, currState.activeSpawns);
 	}
 
 	im::Separator();
@@ -377,14 +427,51 @@ void BoxPane::DrawSpawnTimeline()
 
 	ImVec2 timelineStart = im::GetCursorScreenPos();
 
-	// Main pattern timeline bar
+	// Main pattern timeline bar (use tick-based positioning)
+	// Draw the full timeline extent
 	ImVec2 barMin = ImVec2(timelineStart.x, yPos);
-	ImVec2 barMax = ImVec2(timelineStart.x + mainFrameCount * frameWidth, yPos + rowHeight);
+	ImVec2 barMax = ImVec2(timelineStart.x + maxTimelineTick * tickWidth, yPos + rowHeight);
 	drawList->AddRectFilled(barMin, barMax, IM_COL32(100, 100, 255, 180));
 	drawList->AddRect(barMin, barMax, IM_COL32(255, 255, 255, 255));
+	
+	// Draw frame boundaries and loop indicators by simulating animation flow
+	if (mainPatternLoops && mainPatternLoopPeriod > 0) {
+		// Draw loop period boundaries
+		for (int loopIter = 1; loopIter * mainPatternLoopPeriod <= maxTimelineTick && loopIter < 20; loopIter++) {
+			float loopX = timelineStart.x + loopIter * mainPatternLoopPeriod * tickWidth;
+			drawList->AddLine(
+				ImVec2(loopX, yPos),
+				ImVec2(loopX, yPos + rowHeight),
+				IM_COL32(200, 200, 255, 150),
+				2.0f
+			);
+		}
+		
+		// Draw first loop period bar with different color to show it's the base
+		ImVec2 firstBarMax = ImVec2(timelineStart.x + mainPatternLoopPeriod * tickWidth, yPos + rowHeight);
+		drawList->AddRectFilled(barMin, firstBarMax, IM_COL32(80, 80, 255, 200));
+	}
+	
+	// Draw frame boundaries by simulating to see when frames change
+	// Sample every few ticks to find frame transitions
+	int lastFrameSeen = -1;
+	for (int sampleTick = 0; sampleTick <= maxTimelineTick; sampleTick += 5) {
+		int frameAtTick = SimulateAnimationFlow(frameData, currState.pattern, sampleTick);
+		if (frameAtTick != lastFrameSeen && lastFrameSeen >= 0) {
+			// Frame boundary - draw subtle line
+			float frameX = timelineStart.x + sampleTick * tickWidth;
+			drawList->AddLine(
+				ImVec2(frameX, yPos),
+				ImVec2(frameX, yPos + rowHeight),
+				IM_COL32(150, 150, 200, 80),
+				0.5f
+			);
+		}
+		lastFrameSeen = frameAtTick;
+	}
 
-	// Current frame indicator on main
-	float currentX = timelineStart.x + currState.frame * frameWidth;
+	// Current tick indicator on main (use tick-based positioning)
+	float currentX = timelineStart.x + currState.currentTick * tickWidth;
 	drawList->AddLine(
 		ImVec2(currentX, yPos),
 		ImVec2(currentX, yPos + rowHeight),
@@ -395,7 +482,12 @@ void BoxPane::DrawSpawnTimeline()
 	yPos += rowHeight + 4;
 	im::SetCursorScreenPos(ImVec2(startPos.x, yPos));
 
-	// Draw spawned pattern rows
+	// Collect all spawn ticks by simulating the animation flow (source of truth)
+	// Use a larger maxTicks to ensure we capture all loop iterations
+	int simulationMaxTicks = std::max(maxTimelineTick, mainPatternLoopPeriod * 5);
+	auto allSpawnTicks = CollectAllSpawnTicks(frameData, effectFrameData, currState.pattern, simulationMaxTicks, false, 0);
+	
+	// Draw spawned pattern rows - use simulation data as source of truth
 	for(size_t i = 0; i < currState.spawnedPatterns.size(); i++) {
 		const auto& sp = currState.spawnedPatterns[i];
 
@@ -422,55 +514,105 @@ void BoxPane::DrawSpawnTimeline()
 		im::Text("%s", label.c_str());
 		im::SameLine(labelWidth);
 
-		// Timeline visualization
+		// Get all spawn ticks for this pattern from simulation (includes loop iterations)
+		// Use composite key to match: patternId * 2 + (usesEffectHA6 ? 1 : 0)
+		int compositeKey = sp.patternId * 2 + (sp.usesEffectHA6 ? 1 : 0);
+		auto it = allSpawnTicks.find(compositeKey);
+		if (it == allSpawnTicks.end()) {
+			// No spawns found in simulation - skip visualization
+			yPos += rowHeight + 2;
+			im::SetCursorScreenPos(ImVec2(startPos.x, yPos));
+			continue;
+		}
+		
+		const auto& spawnTickList = it->second;
+		
+		// Calculate spawned pattern duration for bar length
+		int barLengthTicks = sp.lifetime;
+		if (sp.lifetime >= 9999) {
+			// Looping pattern - calculate duration by simulating
+			FrameData* spawnSourceData = sp.usesEffectHA6 ? effectFrameData : frameData;
+			if (spawnSourceData) {
+				auto spawnSeq = spawnSourceData->get_sequence(sp.patternId);
+				if (spawnSeq && !spawnSeq->frames.empty()) {
+					// Calculate total duration of all frames
+					barLengthTicks = 0;
+					for (int j = 0; j < spawnSeq->frames.size(); j++) {
+						int dur = spawnSeq->frames[j].AF.duration;
+						if (dur <= 0) dur = 1;
+						barLengthTicks += dur;
+					}
+					// If still 0, use estimate
+					if (barLengthTicks == 0) {
+						barLengthTicks = spawnSeq->frames.size() * 10;
+					}
+				}
+			}
+		}
+
+		// Timeline visualization - draw bars at ALL spawn ticks from simulation
 		if (sp.isPresetEffect) {
-			// Preset effects (Type 3) are instant - draw vertical marker line
-			float spawnX = timelineStart.x + sp.absoluteSpawnFrame * frameWidth;
+			// Preset effects (Type 3) are instant - draw vertical marker lines at all spawn ticks
 			ImU32 markerColor = IM_COL32(255, 128, 0, 255);  // Orange
+			
+			for (int spawnTick : spawnTickList) {
+				if (spawnTick > maxTimelineTick) continue;
+				
+				float spawnX = timelineStart.x + spawnTick * tickWidth;
+				
+				// Draw vertical line at spawn tick
+				drawList->AddLine(
+					ImVec2(spawnX, yPos),
+					ImVec2(spawnX, yPos + rowHeight),
+					markerColor,
+					3.0f
+				);
 
-			// Draw vertical line at spawn frame
-			drawList->AddLine(
-				ImVec2(spawnX, yPos),
-				ImVec2(spawnX, yPos + rowHeight),
-				markerColor,
-				3.0f
-			);
-
-			// Draw circle at spawn point
-			drawList->AddCircleFilled(
-				ImVec2(spawnX, yPos + rowHeight/2),
-				4.0f,
-				markerColor
-			);
+				// Draw circle at spawn point
+				drawList->AddCircleFilled(
+					ImVec2(spawnX, yPos + rowHeight/2),
+					4.0f,
+					markerColor
+				);
+			}
 		} else {
-			// Pattern spawns - draw duration bar
-			ImVec2 spawnBarMin = ImVec2(
-				timelineStart.x + sp.absoluteSpawnFrame * frameWidth,
-				yPos
-			);
-			int barLength = sp.lifetime < 9999 ? sp.lifetime : sp.patternFrameCount;
-			ImVec2 spawnBarMax = ImVec2(
-				timelineStart.x + (sp.absoluteSpawnFrame + barLength) * frameWidth,
-				yPos + rowHeight
-			);
-
-			// Normal tint color for pattern spawns
+			// Pattern spawns - draw duration bars at all spawn ticks from simulation
 			ImU32 barColor = IM_COL32(
 				sp.tintColor.r * 255,
 				sp.tintColor.g * 255,
 				sp.tintColor.b * 255,
 				180
 			);
-
-			drawList->AddRectFilled(spawnBarMin, spawnBarMax, barColor);
-			drawList->AddRect(spawnBarMin, spawnBarMax, IM_COL32(255, 255, 255, 255));
-
-			// Mark spawn point
-			drawList->AddCircleFilled(
-				ImVec2(timelineStart.x + sp.absoluteSpawnFrame * frameWidth, yPos + rowHeight/2),
-				3.0f,
-				IM_COL32(255, 255, 255, 255)
+			
+			ImU32 loopBarColor = IM_COL32(
+				sp.tintColor.r * 255,
+				sp.tintColor.g * 255,
+				sp.tintColor.b * 255,
+				120  // More transparent for loop iterations
 			);
+			
+			for (size_t tickIdx = 0; tickIdx < spawnTickList.size(); tickIdx++) {
+				int spawnTick = spawnTickList[tickIdx];
+				if (spawnTick > maxTimelineTick) continue;
+				
+				float spawnX = timelineStart.x + spawnTick * tickWidth;
+				ImVec2 spawnBarMin = ImVec2(spawnX, yPos);
+				ImVec2 spawnBarMax = ImVec2(spawnX + barLengthTicks * tickWidth, yPos + rowHeight);
+				
+				// First spawn uses normal color, subsequent ones (loop iterations) use dimmed color
+				bool isLoopIteration = (tickIdx > 0);
+				ImU32 currentBarColor = isLoopIteration ? loopBarColor : barColor;
+				
+				drawList->AddRectFilled(spawnBarMin, spawnBarMax, currentBarColor);
+				drawList->AddRect(spawnBarMin, spawnBarMax, IM_COL32(255, 255, 255, 255));
+				
+				// Mark spawn point
+				drawList->AddCircleFilled(
+					ImVec2(spawnX, yPos + rowHeight/2),
+					isLoopIteration ? 2.0f : 3.0f,
+					isLoopIteration ? IM_COL32(200, 200, 200, 255) : IM_COL32(255, 255, 255, 255)
+				);
+			}
 		}
 
 		// Show if looping (not applicable to preset effects)
