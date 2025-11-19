@@ -703,6 +703,7 @@ void MainFrame::createPatEditorView(const std::string& patPath)
 	view->setViewNumber(0);
 
 	// Refresh panes AFTER setting isPatEditor flag to create PatEditor panes
+	// This will automatically hide HA6 editor panes and show PAT editor panes
 	view->refreshPanes(&render);
 
 	views.push_back(std::move(view));

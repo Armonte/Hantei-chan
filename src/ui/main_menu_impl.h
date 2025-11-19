@@ -293,6 +293,11 @@ void MainFrame::Menu(unsigned int errorPopupId)
 						else
 						{
 							render.SetParts(&active->parts);
+							// Hide Right Pane (attack params) when loading PAT - it's not relevant for PAT editing
+							auto* view = getActiveView();
+							if (view && view->getRightPane()) {
+								view->getRightPane()->isVisible = false;
+							}
 						}
 					}
 					else {
@@ -429,6 +434,69 @@ void MainFrame::Menu(unsigned int errorPopupId)
 		}
 		if (ImGui::BeginMenu("Windows"))
 		{
+			auto* view = getActiveView();
+			bool hasView = (view != nullptr);
+			bool isPatEditor = hasView && view->isPatEditor();
+
+			// HA6 Editor panes (only show when not in PAT editor mode)
+			if (!isPatEditor && hasView) {
+				if (view->getMainPane()) {
+					std::string label = view->getMainPane()->isVisible ? "Hide Animation Panel" : "Show Animation Panel";
+					if (ImGui::MenuItem(label.c_str())) {
+						view->getMainPane()->isVisible = !view->getMainPane()->isVisible;
+					}
+				}
+				if (view->getRightPane()) {
+					std::string label = view->getRightPane()->isVisible ? "Hide Attack Panel" : "Show Attack Panel";
+					if (ImGui::MenuItem(label.c_str())) {
+						view->getRightPane()->isVisible = !view->getRightPane()->isVisible;
+					}
+				}
+				if (view->getBoxPane()) {
+					std::string label = view->getBoxPane()->isVisible ? "Hide Hitbox Panel" : "Show Hitbox Panel";
+					if (ImGui::MenuItem(label.c_str())) {
+						view->getBoxPane()->isVisible = !view->getBoxPane()->isVisible;
+					}
+				}
+				ImGui::Separator();
+			}
+
+			// PAT Editor panes (only show when in PAT editor mode)
+			if (isPatEditor && hasView) {
+				if (view->getPartSetPane()) {
+					std::string label = view->getPartSetPane()->isVisible ? "Hide PartSet Panel" : "Show PartSet Panel";
+					if (ImGui::MenuItem(label.c_str())) {
+						view->getPartSetPane()->isVisible = !view->getPartSetPane()->isVisible;
+					}
+				}
+				if (view->getPartPane()) {
+					std::string label = view->getPartPane()->isVisible ? "Hide Part Panel" : "Show Part Panel";
+					if (ImGui::MenuItem(label.c_str())) {
+						view->getPartPane()->isVisible = !view->getPartPane()->isVisible;
+					}
+				}
+				if (view->getShapePane()) {
+					std::string label = view->getShapePane()->isVisible ? "Hide Shape Panel" : "Show Shape Panel";
+					if (ImGui::MenuItem(label.c_str())) {
+						view->getShapePane()->isVisible = !view->getShapePane()->isVisible;
+					}
+				}
+				if (view->getTexturePane()) {
+					std::string label = view->getTexturePane()->isVisible ? "Hide Texture Panel" : "Show Texture Panel";
+					if (ImGui::MenuItem(label.c_str())) {
+						view->getTexturePane()->isVisible = !view->getTexturePane()->isVisible;
+					}
+				}
+				if (view->getToolPane()) {
+					std::string label = view->getToolPane()->isVisible ? "Hide Tool Panel" : "Show Tool Panel";
+					if (ImGui::MenuItem(label.c_str())) {
+						view->getToolPane()->isVisible = !view->getToolPane()->isVisible;
+					}
+				}
+				ImGui::Separator();
+			}
+
+			// Global windows
 			if (ImGui::MenuItem("Vectors Guide")) vectors.drawWindow = !vectors.drawWindow;
 			ImGui::EndMenu();
 		}

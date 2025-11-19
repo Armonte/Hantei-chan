@@ -150,7 +150,7 @@ inline void IfDisplay(std::vector<Frame_IF> *ifList_, Frame_IF *singleClipboard 
 				im::DragInt("Direction (numpad)", &p[0]); im::SameLine();
 				im::TextDisabled("(?)"); if(im::IsItemHovered()) Tooltip("0=neutral, 2=down, 4=left, 6=right, 8=up, etc.\n10=both 6 and 3");
 
-				ShowJumpField("Jump to", &p[1], "Frame number, or add 10000 for pattern");
+				ShowJumpField("Jump to", &p[1], "Pattern number (default). Add 10000 for frame jump");
 
 				im::SetNextItemWidth(width);
 				im::Checkbox("Negate condition", (bool*)&p[2]);
