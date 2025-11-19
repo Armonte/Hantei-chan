@@ -36,6 +36,7 @@ add_executable(${EXE}
 	src/character_instance.cpp
 	src/character_view.cpp
 	src/project_manager.cpp
+	src/hud_theme_exporter.cpp
 	src/cg.cpp
 	src/vectors.cpp
 	src/misc.cpp

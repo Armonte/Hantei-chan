@@ -44,13 +44,34 @@ std::string sj2utf8(const std::string &input)
 	// CP_ACP = 932 (Shift-JIS) on Japanese Windows, but we use 932 explicitly
 	const UINT CP_SJIS = 932;
 
+	// Clear any previous error state
+	SetLastError(0);
+
 	// First convert Shift-JIS to UTF-16
-	int wideLen = MultiByteToWideChar(CP_SJIS, 0, input.c_str(), (int)input.length(), nullptr, 0);
-	if(wideLen == 0)
-		return std::string(); // Conversion failed
+	// Use MB_ERR_INVALID_CHARS flag to detect invalid sequences
+	int wideLen = MultiByteToWideChar(CP_SJIS, MB_ERR_INVALID_CHARS, input.c_str(), (int)input.length(), nullptr, 0);
+	if(wideLen == 0) {
+		DWORD error = GetLastError();
+		// If it's just an invalid character error, try without the flag
+		if(error == ERROR_NO_UNICODE_TRANSLATION) {
+			SetLastError(0);
+			wideLen = MultiByteToWideChar(CP_SJIS, 0, input.c_str(), (int)input.length(), nullptr, 0);
+			if(wideLen == 0) {
+				// Still failed, return empty
+				return std::string();
+			}
+		} else {
+			// Real error
+			return std::string();
+		}
+	}
 
 	std::wstring wide(wideLen, 0);
-	MultiByteToWideChar(CP_SJIS, 0, input.c_str(), (int)input.length(), &wide[0], wideLen);
+	int result1 = MultiByteToWideChar(CP_SJIS, 0, input.c_str(), (int)input.length(), &wide[0], wideLen);
+	if(result1 == 0) {
+		// Conversion failed on second call
+		return std::string();
+	}
 
 	// Then convert UTF-16 to UTF-8
 	int utf8Len = WideCharToMultiByte(CP_UTF8, 0, wide.c_str(), wideLen, nullptr, 0, nullptr, nullptr);
@@ -58,8 +79,12 @@ std::string sj2utf8(const std::string &input)
 		return std::string(); // Conversion failed
 
 	std::string output(utf8Len, 0);
-	WideCharToMultiByte(CP_UTF8, 0, wide.c_str(), wideLen, &output[0], utf8Len, nullptr, nullptr);
+	int result2 = WideCharToMultiByte(CP_UTF8, 0, wide.c_str(), wideLen, &output[0], utf8Len, nullptr, nullptr);
+	if(result2 == 0)
+		return std::string(); // Conversion failed
 
+	// Resize to actual converted length
+	output.resize(result2);
 	return output;
 }
 
@@ -72,20 +97,30 @@ std::string utf82sj(const std::string &input)
 
 	// First convert UTF-8 to UTF-16
 	int wideLen = MultiByteToWideChar(CP_UTF8, 0, input.c_str(), (int)input.length(), nullptr, 0);
-	if(wideLen == 0)
-		return std::string(); // Conversion failed
+	if(wideLen == 0) {
+		DWORD error = GetLastError();
+		// Return empty string on conversion failure
+		return std::string();
+	}
 
 	std::wstring wide(wideLen, 0);
-	MultiByteToWideChar(CP_UTF8, 0, input.c_str(), (int)input.length(), &wide[0], wideLen);
+	if(MultiByteToWideChar(CP_UTF8, 0, input.c_str(), (int)input.length(), &wide[0], wideLen) == 0) {
+		return std::string(); // Conversion failed
+	}
 
 	// Then convert UTF-16 to Shift-JIS
+	// Shift-JIS symbols like ★ (0x819a), ☆ (0x8199), ● (0x819c) are valid and should convert correctly
 	int sjisLen = WideCharToMultiByte(CP_SJIS, 0, wide.c_str(), wideLen, nullptr, 0, nullptr, nullptr);
 	if(sjisLen == 0)
 		return std::string(); // Conversion failed
 
 	std::string output(sjisLen, 0);
-	WideCharToMultiByte(CP_SJIS, 0, wide.c_str(), wideLen, &output[0], sjisLen, nullptr, nullptr);
+	int result = WideCharToMultiByte(CP_SJIS, 0, wide.c_str(), wideLen, &output[0], sjisLen, nullptr, nullptr);
+	if(result == 0)
+		return std::string(); // Conversion failed
 
+	// Resize to actual converted length (result may be less than sjisLen)
+	output.resize(result);
 	return output;
 }
 

@@ -2,6 +2,7 @@
 #include <iostream>
 #include <cstdint>
 #include <cstring>
+#include <windows.h>
 #include "framedata_load.h"
 #include "misc.h"
 
@@ -775,6 +776,7 @@ unsigned int *fd_sequence_load(unsigned int *data, const unsigned int *data_end,
 			// Convert Shift-JIS to UTF-8 for internal use
 			// Modern HA6 files store strings as Shift-JIS
 			// Legacy files (with UTF-8 flag) already have UTF-8 strings
+			std::string originalStr = str;
 			if(!utf8)
 				name = sj2utf8(str);
 			else

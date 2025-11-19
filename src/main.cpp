@@ -37,6 +37,9 @@ static POINT mousePos;
 static bool justActivated = false;  // Track if window just became active
 bool init = false;
 
+// Static storage for glyph ranges (must persist until font atlas is built)
+static ImVector<ImWchar> g_fontGlyphRanges;
+
 void LoadJapaneseFonts(ImGuiIO& io)
 {
 	char winFolder[512]{};
@@ -44,15 +47,148 @@ void LoadJapaneseFonts(ImGuiIO& io)
 /* 	config.PixelSnapH = 1;
 	config.OversampleH = 1;
 	config.OversampleV = 1; */
-	int appendAt = GetWindowsDirectoryA(winFolder, 512);
-	strcpy(winFolder+appendAt, "\\Fonts\\meiryo.ttc");
-	if(!io.Fonts->AddFontFromFileTTF(winFolder, gSettings.fontSize, &config, io.Fonts->GetGlyphRangesJapanese()))
-	{
-		auto res = FindResource((HMODULE)GetWindowLongPtr(mainWindowHandle, GWLP_HINSTANCE), MAKEINTRESOURCE(NOTO_SANS_JP_F), RT_RCDATA);
-		void *notoFont = LockResource(LoadResource(nullptr, res));
-		config.FontDataOwnedByAtlas = false;
+	
+	// Build custom glyph ranges: Japanese + special symbols (★☆●◆■ etc.)
+	// These symbols are used in pattern names but aren't in GetGlyphRangesJapanese()
+	// Store in static vector so it persists until Build() is called
+	if(g_fontGlyphRanges.empty()) {
+		ImFontGlyphRangesBuilder builder;
+		builder.AddRanges(io.Fonts->GetGlyphRangesJapanese()); // Add Japanese characters
 		
-		io.Fonts->AddFontFromMemoryTTF(notoFont, SizeofResource(nullptr, res), gSettings.fontSize, &config, io.Fonts->GetGlyphRangesJapanese());
+		// Add special symbol ranges manually
+		static const ImWchar symbol_ranges[] = {
+			0x2000, 0x206F, // General Punctuation (includes ※ etc.)
+			0x2190, 0x21FF, // Arrows (includes ←↑→↓ etc.)
+			0x25A0, 0x25FF, // Geometric Shapes (includes ■●◆▲▼ etc.)
+			0x2600, 0x26FF, // Miscellaneous Symbols (includes ★☆☀☁ etc.)
+			0x3000, 0x303F, // CJK Symbols and Punctuation (includes full-width space, 、, 〜, etc.)
+			0xFF00, 0xFFEF, // Halfwidth and Fullwidth Forms (includes ？, ＠, full-width letters/numbers)
+			0,
+		};
+		builder.AddRanges(symbol_ranges); // Add special symbols
+		
+		// Explicitly add common symbols used in pattern names
+		// These are the most frequently used symbols in .ha6 files
+		builder.AddChar(0x203B); // ※ (REFERENCE MARK)
+		builder.AddChar(0x2190); // ← (LEFTWARDS ARROW)
+		builder.AddChar(0x2191); // ↑ (UPWARDS ARROW)
+		builder.AddChar(0x2192); // → (RIGHTWARDS ARROW)
+		builder.AddChar(0x2193); // ↓ (DOWNWARDS ARROW)
+		builder.AddChar(0x2605); // ★ (BLACK STAR)
+		builder.AddChar(0x2606); // ☆ (WHITE STAR)
+		builder.AddChar(0x25CF); // ● (BLACK CIRCLE)
+		builder.AddChar(0x25CB); // ○ (WHITE CIRCLE)
+		builder.AddChar(0x25A0); // ■ (BLACK SQUARE) - explicitly add this one
+		builder.AddChar(0x25A1); // □ (WHITE SQUARE)
+		builder.AddChar(0x25C6); // ◆ (BLACK DIAMOND)
+		builder.AddChar(0x25C7); // ◇ (WHITE DIAMOND)
+		builder.AddChar(0x25B2); // ▲ (BLACK UP-POINTING TRIANGLE)
+		builder.AddChar(0x25B3); // △ (WHITE UP-POINTING TRIANGLE)
+		builder.AddChar(0x25BC); // ▼ (BLACK DOWN-POINTING TRIANGLE)
+		builder.AddChar(0x25BD); // ▽ (WHITE DOWN-POINTING TRIANGLE)
+		builder.AddChar(0x3000); // 　 (IDEOGRAPHIC SPACE - full-width space)
+		
+		// Explicitly add full-width characters that are commonly used
+		builder.AddChar(0xFF00); // 　 (FULLWIDTH SPACE)
+		builder.AddChar(0xFF01); // ！ (FULLWIDTH EXCLAMATION MARK)
+		builder.AddChar(0xFF08); // （ (FULLWIDTH LEFT PARENTHESIS)
+		builder.AddChar(0xFF09); // ） (FULLWIDTH RIGHT PARENTHESIS)
+		builder.AddChar(0xFF0B); // ＋ (FULLWIDTH PLUS SIGN)
+		builder.AddChar(0xFF0D); // － (FULLWIDTH HYPHEN-MINUS)
+		builder.AddChar(0xFF10); // ０ (FULLWIDTH DIGIT ZERO)
+		builder.AddChar(0xFF11); // １ (FULLWIDTH DIGIT ONE)
+		builder.AddChar(0xFF12); // ２ (FULLWIDTH DIGIT TWO)
+		builder.AddChar(0xFF13); // ３ (FULLWIDTH DIGIT THREE)
+		builder.AddChar(0xFF14); // ４ (FULLWIDTH DIGIT FOUR)
+		builder.AddChar(0xFF15); // ５ (FULLWIDTH DIGIT FIVE)
+		builder.AddChar(0xFF16); // ６ (FULLWIDTH DIGIT SIX)
+		builder.AddChar(0xFF17); // ７ (FULLWIDTH DIGIT SEVEN)
+		builder.AddChar(0xFF18); // ８ (FULLWIDTH DIGIT EIGHT)
+		builder.AddChar(0xFF19); // ９ (FULLWIDTH DIGIT NINE)
+		builder.AddChar(0xFF1F); // ？ (FULLWIDTH QUESTION MARK)
+		builder.AddChar(0xFF20); // ＠ (FULLWIDTH COMMERCIAL AT) - explicitly add this one
+		builder.AddChar(0xFF21); // Ａ (FULLWIDTH LATIN CAPITAL LETTER A)
+		builder.AddChar(0xFF22); // Ｂ (FULLWIDTH LATIN CAPITAL LETTER B)
+		builder.AddChar(0xFF23); // Ｃ (FULLWIDTH LATIN CAPITAL LETTER C)
+		builder.AddChar(0xFF24); // Ｄ (FULLWIDTH LATIN CAPITAL LETTER D)
+		builder.AddChar(0xFF25); // Ｅ (FULLWIDTH LATIN CAPITAL LETTER E)
+		builder.AddChar(0xFF26); // Ｆ (FULLWIDTH LATIN CAPITAL LETTER F)
+		builder.AddChar(0xFF2A); // Ｊ (FULLWIDTH LATIN CAPITAL LETTER J)
+		builder.AddChar(0xFF33); // Ｓ (FULLWIDTH LATIN CAPITAL LETTER S)
+		builder.AddChar(0xFF38); // Ｘ (FULLWIDTH LATIN CAPITAL LETTER X)
+		
+		builder.BuildRanges(&g_fontGlyphRanges);
+	}
+	
+	// Ensure ranges are valid (should not be empty)
+	const ImWchar* rangesToUse = g_fontGlyphRanges.empty() ? io.Fonts->GetGlyphRangesJapanese() : g_fontGlyphRanges.Data;
+	
+	// Try embedded Noto font first (it definitely has all the symbols we need)
+	ImFont* japaneseFont = nullptr;
+	HMODULE hModule = GetModuleHandle(nullptr);
+	if(hModule) {
+		HRSRC res = FindResource(hModule, MAKEINTRESOURCE(NOTO_SANS_JP_F), RT_RCDATA);
+		if(res) {
+			HGLOBAL hRes = LoadResource(hModule, res);
+			if(hRes) {
+				void *notoFont = LockResource(hRes);
+				if(notoFont) {
+					config.FontDataOwnedByAtlas = false;
+					japaneseFont = io.Fonts->AddFontFromMemoryTTF(notoFont, SizeofResource(hModule, res), gSettings.fontSize, &config, rangesToUse);
+					if(japaneseFont) {
+						printf("[Font] Noto Sans JP loaded with symbol support\n");
+					}
+				}
+			}
+		}
+	}
+	
+	// If Noto failed, try Meiryo as fallback
+	if(!japaneseFont) {
+		int appendAt = GetWindowsDirectoryA(winFolder, 512);
+		strcpy(winFolder+appendAt, "\\Fonts\\meiryo.ttc");
+		japaneseFont = io.Fonts->AddFontFromFileTTF(winFolder, gSettings.fontSize, &config, rangesToUse);
+		if(japaneseFont) {
+			printf("[Font] Meiryo loaded with symbol support (Noto not available)\n");
+			
+			// Try to merge Noto for missing glyphs if available
+			if(hModule) {
+				HRSRC res = FindResource(hModule, MAKEINTRESOURCE(NOTO_SANS_JP_F), RT_RCDATA);
+				if(res) {
+					HGLOBAL hRes = LoadResource(hModule, res);
+					if(hRes) {
+						void *notoFont = LockResource(hRes);
+						if(notoFont) {
+							ImFontConfig mergeConfig;
+							mergeConfig.MergeMode = true;
+							mergeConfig.FontDataOwnedByAtlas = false;
+							io.Fonts->AddFontFromMemoryTTF(notoFont, SizeofResource(hModule, res), gSettings.fontSize, &mergeConfig, rangesToUse);
+							printf("[Font] Noto merged into Meiryo for missing glyphs\n");
+						}
+					}
+				}
+			}
+		}
+	}
+	
+	// Set the Japanese font as the default font if it loaded successfully
+	if(japaneseFont) {
+		io.FontDefault = japaneseFont;
+		printf("[Font] Japanese font loaded with symbol support and set as default\n");
+		
+		// Debug: Check if specific glyphs are available
+		// Note: This check happens before Build(), so we can't verify glyphs yet
+		// But we can verify the ranges were set correctly
+		printf("[Font] Glyph ranges size: %d\n", g_fontGlyphRanges.Size);
+		if(g_fontGlyphRanges.Size > 0) {
+			printf("[Font] First few glyph ranges: ");
+			for(int i = 0; i < g_fontGlyphRanges.Size && i < 20; i++) {
+				printf("0x%04X ", g_fontGlyphRanges[i]);
+			}
+			printf("\n");
+		}
+	} else {
+		printf("[Font] WARNING: Failed to load Japanese font! Japanese characters may not display correctly.\n");
 	}
 }
 
@@ -65,8 +201,9 @@ int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE, PWSTR pCmdLine, int nCmdShow
 	FILE* dummy;
 	freopen_s(&dummy, "CONOUT$", "w", stdout);
 	freopen_s(&dummy, "CONOUT$", "w", stderr);
-	SetConsoleOutputCP(932);  // Shift-JIS code page
-	printf("=== Hantei-chan Debug Console (Shift-JIS) ===\n\n");
+	SetConsoleOutputCP(65001);  // UTF-8 code page
+	SetConsoleCP(65001);  // UTF-8 code page for input too
+	printf("=== Hantei-chan Debug Console (UTF-8) ===\n\n");
 	
 	bool useIni = true;
 	int argC;
@@ -216,6 +353,10 @@ LRESULT WINAPI WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
 			
 
 			LoadJapaneseFonts(io);
+			
+			// Increase font atlas size to accommodate all the glyphs
+			io.Fonts->TexDesiredWidth = 4096;  // Increase from default 1024
+			
 			//io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;     // Enable Keyboard Controls
 			ImGui_ImplWin32_Init(hWnd);
 			ImGui_ImplOpenGL3_Init("#version 330 core");

@@ -64,6 +64,15 @@ void MainPane::Draw()
 					currState.pattern = n;
 					currState.frame = 0;
 					currState.currentTick = 0;  // Reset tick when changing pattern
+					// Debug: Print pattern name
+					auto seq = frameData->get_sequence(n);
+					if(seq) {
+						printf("[Pattern Switch] Pattern %d: '%s' (UTF-8 bytes: ", n, seq->name.c_str());
+						for(size_t i = 0; i < seq->name.length() && i < 64; i++) {
+							printf("%02x ", (unsigned char)seq->name[i]);
+						}
+						printf(")\n");
+					}
 				}
 
 				// Set the initial focus when opening the combo (scrolling + keyboard navigation focus)

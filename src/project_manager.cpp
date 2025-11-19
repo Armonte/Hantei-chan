@@ -1,5 +1,6 @@
 #include "project_manager.h"
 #include "character_view.h"
+#include "hud_theme_exporter.h"
 #include "../third_party/json/json.hpp"
 #include <fstream>
 #include <filesystem>
@@ -156,6 +157,9 @@ bool ProjectManager::SaveProject(
 
 		file << j.dump(2); // Pretty print with 2-space indentation
 		file.close();
+
+		// Export HUD theme stub alongside the project.
+		ExportHudThemeProfile(std::filesystem::path(path).parent_path());
 
 		return true;
 	} catch (...) {
@@ -357,6 +361,9 @@ bool ProjectManager::SaveProject(
 
 		file << j.dump(2); // Pretty print with 2-space indentation
 		file.close();
+
+		// Export HUD theme stub alongside the project.
+		ExportHudThemeProfile(std::filesystem::path(path).parent_path());
 
 		return true;
 	} catch (...) {

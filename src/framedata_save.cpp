@@ -505,8 +505,22 @@ void WriteSequence(std::ofstream &file, const Sequence *seq)
 		// Internal strings are always UTF-8, so convert to Shift-JIS
 		std::string nameToWrite = utf82sj(seq->name);
 
-		strncpy(buf, nameToWrite.c_str(), 32);
-		buf[31] = 0;
+		// Copy Shift-JIS string, ensuring we don't truncate mid-character
+		// Shift-JIS uses 1-2 bytes per character, so we need to be careful
+		size_t copyLen = nameToWrite.length();
+		if(copyLen > 31) {
+			// Truncate, but ensure we don't cut a 2-byte character in half
+			copyLen = 31;
+			// If the last byte is a lead byte (0x81-0x9F or 0xE0-0xFC), back up one byte
+			if((unsigned char)nameToWrite[copyLen-1] >= 0x81 && (unsigned char)nameToWrite[copyLen-1] <= 0x9F) {
+				copyLen--;
+			} else if((unsigned char)nameToWrite[copyLen-1] >= 0xE0 && (unsigned char)nameToWrite[copyLen-1] <= 0xFC) {
+				copyLen--;
+			}
+		}
+		
+		memcpy(buf, nameToWrite.c_str(), copyLen);
+		buf[copyLen] = 0;
 		file.write("PTT2", 4);
 		file.write(VAL(size), 4);
 		file.write(PTR(buf), 32);

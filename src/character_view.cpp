@@ -56,12 +56,24 @@ void CharacterView::refreshPanes(Render* render)
 	if (m_mainPane) {
 		m_mainPane->onModified = modifyCallback;
 		m_mainPane->RegenerateNames();
+		// Hide HA6 editor panes by default in PAT editor mode
+		if (m_isPatEditor) {
+			m_mainPane->isVisible = false;
+		}
 	}
 	if (m_rightPane) {
 		m_rightPane->onModified = modifyCallback;
+		// Hide Right Pane (attack params) by default in PAT editor mode
+		if (m_isPatEditor) {
+			m_rightPane->isVisible = false;
+		}
 	}
 	if (m_boxPane) {
 		m_boxPane->onModified = modifyCallback;
+		// Hide Box Pane by default in PAT editor mode
+		if (m_isPatEditor) {
+			m_boxPane->isVisible = false;
+		}
 	}
 
 	// Create PatEditor panes if this is a PAT editor view

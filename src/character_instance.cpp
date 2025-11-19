@@ -22,6 +22,8 @@ bool CharacterInstance::loadFromTxt(const std::string& txtPath)
 	m_txtPath = txtPath;
 
 	// Use existing LoadFromIni function, now with .pat support
+	// LoadFromIni will load all files and set m_topHA6Path to File01 (character-specific)
+	// for uni2/mbtl/dbfci/unist characters, or File00 for single-file characters
 	if (!LoadFromIni(&frameData, &cg, txtPath, &m_topHA6Path, &parts, &m_patPath)) {
 		return false;
 	}

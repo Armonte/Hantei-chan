@@ -105,6 +105,7 @@ struct Frame_AF_T {
 		aniFlag = from.aniFlag;
 		landJump = from.landJump;
 		interpolationType = from.interpolationType;
+		priority = from.priority;
 		loopCount = from.loopCount;
 		loopEnd = from.loopEnd;
 		AFRT = from.AFRT;

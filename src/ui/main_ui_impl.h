@@ -409,17 +409,20 @@ void MainFrame::DrawUi()
 			if (view->getBoxPane()) view->getBoxPane()->setEffectFrameData(&character->effectCharacter->frameData);
 		}
 
-		if (view->getMainPane()) view->getMainPane()->Draw();
-		if (view->getRightPane()) view->getRightPane()->Draw();
-		if (view->getBoxPane()) view->getBoxPane()->Draw();
+		// Draw HA6 editor panes (only if visible and not in PAT editor mode)
+		if (!view->isPatEditor()) {
+			if (view->getMainPane() && view->getMainPane()->isVisible) view->getMainPane()->Draw();
+			if (view->getRightPane() && view->getRightPane()->isVisible) view->getRightPane()->Draw();
+			if (view->getBoxPane() && view->getBoxPane()->isVisible) view->getBoxPane()->Draw();
+		}
 
-		// Draw PatEditor panes if this is a PAT editor view
+		// Draw PatEditor panes if this is a PAT editor view (only if visible)
 		if (view->isPatEditor()) {
-			if (view->getPartSetPane()) view->getPartSetPane()->Draw();
-			if (view->getPartPane()) view->getPartPane()->Draw();
-			if (view->getShapePane()) view->getShapePane()->Draw();
-			if (view->getTexturePane()) view->getTexturePane()->Draw();
-			if (view->getToolPane()) view->getToolPane()->Draw();
+			if (view->getPartSetPane() && view->getPartSetPane()->isVisible) view->getPartSetPane()->Draw();
+			if (view->getPartPane() && view->getPartPane()->isVisible) view->getPartPane()->Draw();
+			if (view->getShapePane() && view->getShapePane()->isVisible) view->getShapePane()->Draw();
+			if (view->getTexturePane() && view->getTexturePane()->isVisible) view->getTexturePane()->Draw();
+			if (view->getToolPane() && view->getToolPane()->isVisible) view->getToolPane()->Draw();
 		}
 
 		// End undo frame - commit snapshot if anything was modified
