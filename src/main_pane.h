@@ -15,6 +15,10 @@ public:
 
 	void RegenerateNames();
 
+	// Pattern name search
+	bool showPatternSearch = false;  // Popup window visibility
+	bool showPatternSearchBar = true;  // Search bar visibility (always visible when enabled)
+
 private:
 	bool copyThisFrame = true;
 	std::string *decoratedNames;
@@ -36,7 +40,6 @@ private:
 
 	// Landing frame tools
 	int landingFrameValue = 0;
-
 };
 
 #endif /* MAINPANE_H_GUARD */

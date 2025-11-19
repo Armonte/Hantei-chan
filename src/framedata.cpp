@@ -222,7 +222,7 @@ std::string FrameData::GetDecoratedName(int n)
 
 			if(m_sequences[n].name.empty() && m_sequences[n].codeName.empty() && !noFrames)
 			{
-					ss << u8"Untitled";
+					ss << u8"---";
 			}
 		}
 

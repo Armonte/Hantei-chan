@@ -55,10 +55,11 @@ add_executable(${EXE}
 	src/parts/parts_shape.cpp
 	src/parts/parts_texture.cpp
 	src/parts/parts.cpp
+	../imsearch/imsearch.cpp
 	res/res.rc
 )
 
-target_include_directories(${EXE} PRIVATE "." "third_party" "${CMAKE_BINARY_DIR}/generated")
+target_include_directories(${EXE} PRIVATE "." "third_party" "${CMAKE_BINARY_DIR}/generated" "../imsearch")
 target_compile_definitions(${EXE} PRIVATE UNICODE _UNICODE WIN32_LEAN_AND_MEAN HA6GUIVERSION="${CMAKE_PROJECT_VERSION}")
 
 # Add custom target to regenerate version info on every build

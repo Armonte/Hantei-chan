@@ -445,6 +445,11 @@ void MainFrame::Menu(unsigned int errorPopupId)
 					if (ImGui::MenuItem(label.c_str())) {
 						view->getMainPane()->isVisible = !view->getMainPane()->isVisible;
 					}
+					// Pattern search bar toggle
+					std::string searchLabel = view->getMainPane()->showPatternSearchBar ? "Hide Pattern Search Bar" : "Show Pattern Search Bar";
+					if (ImGui::MenuItem(searchLabel.c_str())) {
+						view->getMainPane()->showPatternSearchBar = !view->getMainPane()->showPatternSearchBar;
+					}
 				}
 				if (view->getRightPane()) {
 					std::string label = view->getRightPane()->isVisible ? "Hide Attack Panel" : "Show Attack Panel";
