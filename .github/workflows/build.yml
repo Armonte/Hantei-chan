@@ -18,8 +18,12 @@ jobs:
       with:
         submodules: recursive
 
-    - name: Update submodules to latest
-      run: git submodule update --remote --recursive
+    - name: Update imgui submodule to docking branch
+      run: |
+        cd imgui
+        git fetch origin
+        git checkout origin/docking
+        cd ..
 
     - name: Setup CMake
       uses: jwlawson/actions-setup-cmake@v2
@@ -58,8 +62,12 @@ jobs:
       with:
         submodules: recursive
 
-    - name: Update submodules to latest
-      run: git submodule update --remote --recursive
+    - name: Update imgui submodule to docking branch
+      run: |
+        cd imgui
+        git fetch origin
+        git checkout origin/docking
+        cd ..
 
     - name: Install dependencies
       run: |
