@@ -1,5 +1,6 @@
 #include "parts_texture.h"
 #include "../texture.h"
+#include <glad/glad.h>
 #include <cstring>
 #include <cassert>
 #include <algorithm>
@@ -278,7 +279,8 @@ std::string PartGfx<>::ImportTexture(const char *filename, std::vector<Texture*>
             // Uncompressed RGB/BGRA
             printf("[DDS IMPORT] Loading uncompressed RGB/BGRA texture\n");
             textures.back()->LoadDirect((char*)s3tc, w, h, true);  // BGRA format
-            textures.back()->Apply();  // Create OpenGL texture
+            // Use GL_NEAREST to match in-game MBAACC behavior (nearest neighbor filtering)
+            textures.back()->Apply(false, false);  // repeat=false, linearFilter=false
         }
         else
         {
@@ -293,14 +295,18 @@ std::string PartGfx<>::ImportTexture(const char *filename, std::vector<Texture*>
 
             printf("[DDS IMPORT] Loading compressed DXT%d texture, size=%zu\n", (type == 1 ? 1 : 5), compressedSize);
             textures.back()->LoadCompressed((char*)s3tc, w, h, compressedSize, type);
-            // LoadCompressed already creates GL texture internally
+            // LoadCompressed already creates GL texture internally, set filtering to match in-game
+            glBindTexture(GL_TEXTURE_2D, textures.back()->id);
+            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
         }
     }
     else
     {
         printf("[DDS IMPORT] Loading fallback uncompressed texture\n");
         textures.back()->LoadDirect(data, w, h, true);  // BGRA format
-        textures.back()->Apply();  // Create OpenGL texture
+        // Use GL_NEAREST to match in-game MBAACC behavior (nearest neighbor filtering)
+        textures.back()->Apply(false, false);  // repeat=false, linearFilter=false
     }
 
     textureIndex = textures.back()->id;
@@ -312,7 +318,7 @@ std::string PartGfx<>::ImportTexture(const char *filename, std::vector<Texture*>
 template<>
 void PartGfx<>::ExportTexture(const char *filename)
 {
-    std::ofstream file(filename, std::ios_base::out | std::ios_base::binary);
+    std::ofstream file(filename, std::ios_base::out | std::ios_base::binary | std::ios_base::trunc);
     if (!file.is_open())
         return;
 

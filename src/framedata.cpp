@@ -81,7 +81,7 @@ bool FrameData::load(const char *filename, bool patch) {
 
 void FrameData::save(const char *filename)
 {
-	std::ofstream file(filename, std::ios_base::out | std::ios_base::binary);
+	std::ofstream file(filename, std::ios_base::out | std::ios_base::binary | std::ios_base::trunc);
 	if (!file.is_open())
 		return;
 
@@ -128,7 +128,7 @@ void FrameData::save(const char *filename)
 
 void FrameData::save_modified_only(const char *filename)
 {
-	std::ofstream file(filename, std::ios_base::out | std::ios_base::binary);
+	std::ofstream file(filename, std::ios_base::out | std::ios_base::binary | std::ios_base::trunc);
 	if (!file.is_open())
 		return;
 
