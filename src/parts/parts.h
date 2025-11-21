@@ -51,7 +51,7 @@ public:
         std::function<void(float, float, float)> setAddColor,
         std::function<void(char)> setFlip,
         float color[4]);
-    void DrawPart(int id);
+    void DrawPart(int id, bool useLinearFilter = false);
 
     // Accessors
     PartSet<>* GetPartSet(unsigned int n);
