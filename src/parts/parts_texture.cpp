@@ -279,7 +279,7 @@ std::string PartGfx<>::ImportTexture(const char *filename, std::vector<Texture*>
             // Uncompressed RGB/BGRA
             printf("[DDS IMPORT] Loading uncompressed RGB/BGRA texture\n");
             textures.back()->LoadDirect((char*)s3tc, w, h, true);  // BGRA format
-            // Use GL_NEAREST to match in-game MBAACC behavior (nearest neighbor filtering)
+            // Default to GL_NEAREST; filtering will be applied per-part based on PRFL flag
             textures.back()->Apply(false, false);  // repeat=false, linearFilter=false
         }
         else
@@ -295,7 +295,8 @@ std::string PartGfx<>::ImportTexture(const char *filename, std::vector<Texture*>
 
             printf("[DDS IMPORT] Loading compressed DXT%d texture, size=%zu\n", (type == 1 ? 1 : 5), compressedSize);
             textures.back()->LoadCompressed((char*)s3tc, w, h, compressedSize, type);
-            // LoadCompressed already creates GL texture internally, set filtering to match in-game
+            // LoadCompressed creates texture internally, set default filtering
+            // Actual filtering will be applied per-part based on PRFL flag in DrawPart()
             glBindTexture(GL_TEXTURE_2D, textures.back()->id);
             glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
             glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
@@ -305,7 +306,7 @@ std::string PartGfx<>::ImportTexture(const char *filename, std::vector<Texture*>
     {
         printf("[DDS IMPORT] Loading fallback uncompressed texture\n");
         textures.back()->LoadDirect(data, w, h, true);  // BGRA format
-        // Use GL_NEAREST to match in-game MBAACC behavior (nearest neighbor filtering)
+        // Default to GL_NEAREST; filtering will be applied per-part based on PRFL flag
         textures.back()->Apply(false, false);  // repeat=false, linearFilter=false
     }
 

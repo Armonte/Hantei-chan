@@ -135,7 +135,7 @@ bool Parts::Load(const char* name)
             {
                 // Uncompressed BGRA (type 21 uses BGRA format)
                 textures.back()->LoadDirect((char*)gfx.s3tc, gfx.w, gfx.h, true);
-                // Use GL_NEAREST to match in-game MBAACC behavior (nearest neighbor filtering)
+                // Default to GL_NEAREST; filtering will be applied per-part based on PRFL flag
                 textures.back()->Apply(false, false);  // repeat=false, linearFilter=false
             }
             else
@@ -150,7 +150,8 @@ bool Parts::Load(const char* name)
                     assert(0 && "Unknown compression type");
 
                 textures.back()->LoadCompressed((char*)gfx.s3tc, gfx.w, gfx.h, compressedSize, gfx.type);
-                // LoadCompressed creates texture internally, need to set filtering after
+                // LoadCompressed creates texture internally, set default filtering
+                // Actual filtering will be applied per-part based on PRFL flag in DrawPart()
                 glBindTexture(GL_TEXTURE_2D, textures.back()->id);
                 glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
                 glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
@@ -162,7 +163,7 @@ bool Parts::Load(const char* name)
         {
             // PGTX data is also in BGRA format
             textures.back()->LoadDirect(gfx.data, gfx.w, gfx.h, true);
-            // Use GL_NEAREST to match in-game MBAACC behavior (nearest neighbor filtering)
+            // Default to GL_NEAREST; filtering will be applied per-part based on PRFL flag
             textures.back()->Apply(false, false);  // repeat=false, linearFilter=false
         }
         else
@@ -353,7 +354,7 @@ std::string Parts::GetTexturesDecorateName(int n) {
 #include "parts.h"
 #include <glm/gtc/matrix_transform.hpp>
 
-void Parts::DrawPart(int i)
+void Parts::DrawPart(int i, bool useLinearFilter)
 {
     // Safety: Don't render if Parts is being freed or unloaded
     if (!loaded || cutOuts.empty() || gfxMeta.empty()) {
@@ -419,8 +420,18 @@ void Parts::DrawPart(int i)
     // Clear any pending GL errors before binding
     while (glGetError() != GL_NO_ERROR);
 
-    // Bind texture and draw
+    // Bind texture
     glBindTexture(GL_TEXTURE_2D, curTexId);
+    
+    // Apply filtering based on part property's PRFL flag
+    // PRFL flag: 0 = GL_NEAREST (no filtering), non-zero = GL_LINEAR (bilinear filtering)
+    if (useLinearFilter) {
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+    } else {
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+    }
 
     // Check for OpenGL errors after binding (only on errors)
     GLenum err = glGetError();
@@ -825,7 +836,8 @@ void Parts::Draw(int pattern, int nextPattern, float interpolationFactor,
         // Render the part
         partVertices.Load();
         partVertices.Bind();
-        DrawPart(part.ppId);
+        // Pass the filter flag from part property (PRFL) to control texture filtering
+        DrawPart(part.ppId, part.filter);
         partVertices.Clear();
     }
     
