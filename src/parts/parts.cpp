@@ -135,7 +135,8 @@ bool Parts::Load(const char* name)
             {
                 // Uncompressed BGRA (type 21 uses BGRA format)
                 textures.back()->LoadDirect((char*)gfx.s3tc, gfx.w, gfx.h, true);
-                textures.back()->Apply();  // Create OpenGL texture
+                // Use GL_NEAREST to match in-game MBAACC behavior (nearest neighbor filtering)
+                textures.back()->Apply(false, false);  // repeat=false, linearFilter=false
             }
             else
             {
@@ -149,6 +150,10 @@ bool Parts::Load(const char* name)
                     assert(0 && "Unknown compression type");
 
                 textures.back()->LoadCompressed((char*)gfx.s3tc, gfx.w, gfx.h, compressedSize, gfx.type);
+                // LoadCompressed creates texture internally, need to set filtering after
+                glBindTexture(GL_TEXTURE_2D, textures.back()->id);
+                glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+                glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
             }
             if (!gfx.dontDelete)
                 delete[](gfx.s3tc - 128);
@@ -157,7 +162,8 @@ bool Parts::Load(const char* name)
         {
             // PGTX data is also in BGRA format
             textures.back()->LoadDirect(gfx.data, gfx.w, gfx.h, true);
-            textures.back()->Apply();  // Create OpenGL texture
+            // Use GL_NEAREST to match in-game MBAACC behavior (nearest neighbor filtering)
+            textures.back()->Apply(false, false);  // repeat=false, linearFilter=false
         }
         else
         {
@@ -864,7 +870,7 @@ bool Parts::Save(const char* filename)
     }
     if(!hasData) return false;
 
-    std::ofstream file(filename, std::ios_base::out | std::ios_base::binary);
+    std::ofstream file(filename, std::ios_base::out | std::ios_base::binary | std::ios_base::trunc);
     if (!file.is_open())
         return false;
 

@@ -74,7 +74,7 @@ void WriteAF(std::ofstream &file, const Frame_AF *af)
 				for(int j = 0; j < 3; j++)
 					anormalized[j] = layer.rgba[j]*255.f;
 				file.write("AFRG", 4);
-				file.write(PTR(anormalized), 3*sizeof(float));
+				file.write(PTR(anormalized), 3*sizeof(int));
 			}
 
 			if(layer.rotation[0]){
@@ -129,7 +129,7 @@ void WriteAF(std::ofstream &file, const Frame_AF *af)
 			for(int i = 0; i < 3; i++)
 				anormalized[i] = layer.rgba[i]*255.f;
 			file.write("AFRG", 4);
-			file.write(PTR(anormalized), 3*sizeof(float));
+			file.write(PTR(anormalized), 3*sizeof(int));
 		}
 
 		if(layer.rotation[0]){

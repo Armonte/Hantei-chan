@@ -105,24 +105,17 @@ bool LoadFromIni(FrameData *framedata, CG *cg, const std::string& iniPath, std::
 				return false;
 		}
 
-		// Determine the save target HA6 file (character-specific file)
-		// For uni2/mbtl/dbfci/unist: File00=temp, File01=chrxxx (save target), File02=BaseData
-		// For custom characters: prefer File01 if available, otherwise File00
-		if(fileNum >= 2)
+		// Determine the save target HA6 file (highest-indexed file)
+		// For uni2/mbtl/dbfci/unist: File00=temp, File01=chrxxx, File02=BaseData (use File01)
+		// For MBAACC: File00=base, File01=base_r, File02=variant, File03=variant_r (use highest)
+		// Always use the highest-indexed file as the save target
+		if(fileNum > 0)
 		{
-			// Standard case: Use File01 (character-specific file)
+			// Use the highest-indexed file (FileNum - 1)
 			char ha6file[256]{};
-			GetPrivateProfileStringA("DataFile", "File01", nullptr, ha6file, 256, iniPath.c_str());
-			if(ha6file[0] != '\0')
-			{
-				topHA6File = folder + "\\" + ha6file;
-			}
-		}
-		else if(fileNum == 1)
-		{
-			// Fallback: Single-file character, use File00
-			char ha6file[256]{};
-			GetPrivateProfileStringA("DataFile", "File00", nullptr, ha6file, 256, iniPath.c_str());
+			std::stringstream ss;
+			ss << "File" << std::setfill('0') << std::setw(2) << (fileNum - 1);
+			GetPrivateProfileStringA("DataFile", ss.str().c_str(), nullptr, ha6file, 256, iniPath.c_str());
 			if(ha6file[0] != '\0')
 			{
 				topHA6File = folder + "\\" + ha6file;
