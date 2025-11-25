@@ -17,7 +17,14 @@
       "mcp__ghidra__get_xrefs_to",
       "Bash(gh pr view:*)",
       "Bash(gh pr diff:*)",
-      "Read(///**)"
+      "Read(///**)",
+      "mcp__ida__list_strings_filter",
+      "mcp__ida__list_functions",
+      "mcp__ida__list_globals_filter",
+      "mcp__ida__get_function_by_name",
+      "mcp__ida__decompile_function",
+      "mcp__ida__get_xrefs_to",
+      "mcp__ida__rename_function"
     ],
     "deny": [],
     "ask": []
