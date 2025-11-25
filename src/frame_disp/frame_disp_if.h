@@ -702,9 +702,24 @@ inline void IfDisplay(std::vector<Frame_IF> *ifList_, Frame_IF *singleClipboard 
 				break;
 
 			case 36: // Meter bar mode check
-				im::Text("Automatic check - no parameters needed");
-				im::TextDisabled("Checks current meter/moon mode");
+			{
+				ShowJumpField("Frame to jump to", &p[0], "Frame number, or add 10000 for pattern");
+
+				const char* const meterModes[] = {
+					"0: Normal",
+					"1: HEAT",
+					"2: MAX",
+					"3: BLOOD HEAT",
+					"4: ???",
+					"5: Unlimited (training only)",
+				};
+				im::SetNextItemWidth(width*2);
+				ShowComboWithManual("Meter mode", &p[1], meterModes, IM_ARRAYSIZE(meterModes), width*2, width);
+
+				im::SetNextItemWidth(width*2);
+				im::Combo("Comparison", &p[2], "0: Equals\0001: Not equals\0");
 				break;
+			}
 
 			case 39: // Unknown
 			case 41: // Jump if controlled char mismatch
