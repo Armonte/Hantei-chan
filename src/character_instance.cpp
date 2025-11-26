@@ -1,5 +1,6 @@
 #include "character_instance.h"
 #include "ini.h"
+#include "misc.h"
 #include <filesystem>
 #include <sstream>
 #include <iomanip>
@@ -289,10 +290,15 @@ std::string CharacterInstance::getBaseFolder() const
 	}
 
 	size_t lastSlash = basePath.find_last_of("\\/");
+	std::string folder;
 	if (lastSlash != std::string::npos) {
-		return basePath.substr(0, lastSlash);
+		folder = basePath.substr(0, lastSlash);
+	} else {
+		folder = "";
 	}
-	return "";
+	
+	// Normalize path for consistency
+	return normalizePath(folder);
 }
 
 bool CharacterInstance::isInMBAACCDataFolder() const
@@ -312,16 +318,9 @@ bool CharacterInstance::isInMBAACCDataFolder() const
 		return false;
 	}
 
-	// Check if effect.txt exists in the same folder
+	// Check if effect.txt exists in the same folder (baseFolder is already normalized)
 	std::string effectTxtPath = baseFolder + "/effect.txt";
 	std::filesystem::path effectPath(effectTxtPath);
-	if (std::filesystem::exists(effectPath)) {
-		return true;
-	}
-
-	// Also try backslash
-	effectTxtPath = baseFolder + "\\effect.txt";
-	effectPath = effectTxtPath;
 	return std::filesystem::exists(effectPath);
 }
 
@@ -339,14 +338,9 @@ bool CharacterInstance::loadEffectCharacter()
 	}
 
 	// Try character's folder first (MBAACC: data/chr###/effect.txt)
+	// baseFolder is already normalized, so use forward slashes consistently
 	std::string effectTxtPath = baseFolder + "/effect.txt";
 	std::filesystem::path effectPath(effectTxtPath);
-
-	// Try backslash if forward slash doesn't exist
-	if (!std::filesystem::exists(effectPath)) {
-		effectTxtPath = baseFolder + "\\effect.txt";
-		effectPath = effectTxtPath;
-	}
 
 	bool useParentDirectory = false;
 	std::string effectFolder = baseFolder;
@@ -355,15 +349,10 @@ bool CharacterInstance::loadEffectCharacter()
 	if (!std::filesystem::exists(effectPath)) {
 		std::filesystem::path charPath(baseFolder);
 		std::filesystem::path parentPath = charPath.parent_path();
-		effectFolder = parentPath.string();
+		effectFolder = normalizePath(parentPath.string());  // Normalize after filesystem operation
 
 		effectTxtPath = effectFolder + "/effect.txt";
 		effectPath = effectTxtPath;
-
-		if (!std::filesystem::exists(effectPath)) {
-			effectTxtPath = effectFolder + "\\effect.txt";
-			effectPath = effectTxtPath;
-		}
 
 		if (!std::filesystem::exists(effectPath)) {
 			return false;  // No effect.txt found in character or parent folder
@@ -389,10 +378,6 @@ bool CharacterInstance::loadEffectCharacter()
 		// UNI: data/sys_effect.pat
 		effectPatPath = effectFolder + "/sys_effect.pat";
 		std::filesystem::path patPath(effectPatPath);
-		if (!std::filesystem::exists(patPath)) {
-			effectPatPath = effectFolder + "\\sys_effect.pat";
-			patPath = effectPatPath;
-		}
 
 		if (std::filesystem::exists(patPath)) {
 			bool patLoaded = effect->loadPAT(effectPatPath);
@@ -407,10 +392,6 @@ bool CharacterInstance::loadEffectCharacter()
 		// MBAACC: data/chr###/effect.pat
 		effectPatPath = effectFolder + "/effect.pat";
 		std::filesystem::path patPath(effectPatPath);
-		if (!std::filesystem::exists(patPath)) {
-			effectPatPath = effectFolder + "\\effect.pat";
-			patPath = effectPatPath;
-		}
 
 		if (std::filesystem::exists(patPath)) {
 			bool patLoaded = effect->loadPAT(effectPatPath);

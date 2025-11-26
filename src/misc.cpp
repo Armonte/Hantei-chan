@@ -1,6 +1,8 @@
 #include "misc.h"
 #include <windows.h>
 #include <string>
+#include <algorithm>
+#include <cctype>
 
 bool ReadInMem(const char *filename, char *&data, unsigned int &size)
 {
@@ -122,6 +124,27 @@ std::string utf82sj(const std::string &input)
 	// Resize to actual converted length (result may be less than sjisLen)
 	output.resize(result);
 	return output;
+}
+
+// Normalize path separators for consistency
+std::string normalizePath(const std::string& path)
+{
+	if (path.empty()) {
+		return path;
+	}
+	
+	std::string normalized = path;
+	// Convert backslashes to forward slashes for consistency
+	std::replace(normalized.begin(), normalized.end(), '\\', '/');
+	// Remove trailing slashes for consistency (but keep root slashes)
+	while (normalized.length() > 1 && normalized.back() == '/') {
+		normalized.pop_back();
+	}
+	// Normalize drive letter to uppercase on Windows (e.g., "c:" -> "C:")
+	if (normalized.length() >= 2 && normalized[1] == ':') {
+		normalized[0] = std::toupper(normalized[0]);
+	}
+	return normalized;
 }
 
 
