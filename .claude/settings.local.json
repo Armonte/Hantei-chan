@@ -24,7 +24,12 @@
       "mcp__ida__get_function_by_name",
       "mcp__ida__decompile_function",
       "mcp__ida__get_xrefs_to",
-      "mcp__ida__rename_function"
+      "mcp__ida__rename_function",
+      "mcp__ida__get_global_variable_value_by_name",
+      "mcp__ida__get_xrefs_to_field",
+      "mcp__ida__get_callers",
+      "mcp__ida__get_callees",
+      "mcp__ida__get_function_by_address"
     ],
     "deny": [],
     "ask": []

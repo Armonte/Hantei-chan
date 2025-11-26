@@ -710,7 +710,7 @@ inline void IfDisplay(std::vector<Frame_IF> *ifList_, Frame_IF *singleClipboard 
 					"1: HEAT",
 					"2: MAX",
 					"3: BLOOD HEAT",
-					"4: ???",
+					"4: (Unused)",
 					"5: Unlimited (training only)",
 				};
 				im::SetNextItemWidth(width*2);

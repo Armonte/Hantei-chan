@@ -1,5 +1,6 @@
 #include "ini.h"
 #include "parts/parts.h"
+#include "misc.h"
 #include <sstream>
 #include <iomanip>
 #include <string>
@@ -44,7 +45,11 @@ static void ReadLine(ImGuiContext*, ImGuiSettingsHandler*, void* entry, const ch
 	} else if (sscanf(line, "Maximized=%i", &i) == 1){
 		gSettings.maximized = i;
 	} else if (strncmp(line, "RecentProject=", 14) == 0){
-		gSettings.recentProjects.push_back(line + 14);
+		// Normalize path when loading from INI for consistency
+		std::string path = normalizePath(line + 14);
+		if (!path.empty()) {
+			gSettings.recentProjects.push_back(path);
+		}
 	}
 }
 

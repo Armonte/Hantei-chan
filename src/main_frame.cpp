@@ -8,6 +8,7 @@
 #include "preset_effects.h"
 #include "version.h"
 #include "framestate.h"
+#include "misc.h"
 
 #include <imgui.h>
 #include <imgui_internal.h>
@@ -1075,14 +1076,25 @@ bool MainFrame::tryCloseProject()
 
 void MainFrame::addRecentProject(const std::string& path)
 {
-	// Remove if already exists
-	auto it = std::find(gSettings.recentProjects.begin(), gSettings.recentProjects.end(), path);
+	if (path.empty()) {
+		return;
+	}
+
+	std::string normalizedPath = normalizePath(path);
+
+	// Remove if already exists (compare normalized paths)
+	auto it = std::find_if(gSettings.recentProjects.begin(), gSettings.recentProjects.end(),
+		[&normalizedPath](const std::string& existing) {
+			return normalizePath(existing) == normalizedPath;
+		});
+	
 	if (it != gSettings.recentProjects.end()) {
 		gSettings.recentProjects.erase(it);
 	}
 
-	// Add to front
-	gSettings.recentProjects.insert(gSettings.recentProjects.begin(), path);
+	// Add to front (store normalized path for consistency)
+	// Use forward slashes as the canonical format for storage
+	gSettings.recentProjects.insert(gSettings.recentProjects.begin(), normalizedPath);
 
 	// Keep only last 10
 	if (gSettings.recentProjects.size() > 10) {
@@ -1127,7 +1139,12 @@ void MainFrame::openRecentProject(const std::string& path)
 	} else {
 		// Show error popup and remove from recent
 		ImGui::OpenPopup("Project Load Error");
-		auto it = std::find(gSettings.recentProjects.begin(), gSettings.recentProjects.end(), path);
+		// Use normalized path comparison to find and remove the entry
+		std::string normalizedPath = normalizePath(path);
+		auto it = std::find_if(gSettings.recentProjects.begin(), gSettings.recentProjects.end(),
+			[&normalizedPath](const std::string& existing) {
+				return normalizePath(existing) == normalizedPath;
+			});
 		if (it != gSettings.recentProjects.end()) {
 			gSettings.recentProjects.erase(it);
 		}
