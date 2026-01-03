@@ -474,6 +474,7 @@ void MainFrame::DrawBack()
 				// Apply flip facing flag (bit 11 of flagset1)
 				if (spawnInfo.flagset1 & (1 << 11)) {
 					layer.scaleX *= -1.0f;
+					layer.spawnOffsetX *= -1;  // Reverse X coordinate when flip facing (fixes #69)
 				}
 
 				// Apply inherit parent rotation flag (bit 8 of flagset1)

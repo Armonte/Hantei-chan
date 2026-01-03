@@ -66,6 +66,16 @@
 	param2: can input move id defined in c.txt
 
 36 Meter bar mode check
+	param1: Frame to jump to (add 10000 for pattern)
+	param2: Meter mode
+		0 = Normal
+		1 = HEAT
+		2 = MAX
+		3 = BLOOD HEAT
+		4 = (Unused)
+		5 = Unlimited (training only, immediately canceled otherwise)
+	param3: Comparison (0 = equals, 1 = not equals)
+
 37 Jump according to color selected
 	A leftover from Re-Act? The color selected doesn't affect anything.
 	param1: pattern to jump to.
