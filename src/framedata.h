@@ -88,6 +88,7 @@ struct Frame_AF_T {
 	// UNI/Dengeki Squirrel script reference values
 	int frameId = 0;        // AFID - Frame ID for code reference
 	uint8_t param[4] = {0}; // AFPA - 4 separate parameter values (0-255 each)
+	bool afjh = false;      // AFJH - UNI jump helper flag
 
 	// Assignment operator for cross-allocator copying
 	template<template<typename> class FromT>
@@ -111,6 +112,7 @@ struct Frame_AF_T {
 		AFRT = from.AFRT;
 		frameId = from.frameId;
 		memcpy(param, from.param, sizeof(param));
+		afjh = from.afjh;
 		return *this;
 	}
 
@@ -189,11 +191,11 @@ struct Frame_AT {
 	int blockStopTime; //Needs flag 16 (0 indexed) to be set
 
 	// UNI/Dengeki-specific damage system parameters
-	int damageProration; // ATHH - damage proration percentage (100 = no reduction, 95 = 5% reduction)
+	int damageProration = 100; // ATHH - damage proration percentage (100 = no reduction, 95 = 5% reduction)
 	int minDamage;       // ATAM - minimum damage percentage
 	int addHitStun;      // ATSA - player stun time added
 	int starterCorrection; // ATSH - damage correction if combo starter
-	int hitStunDecay[3]; // ATC0 - [reduction, combopoint_set, combopoint_SMP_modifier]
+	int hitStunDecay[3] = {0,0,0}; // ATC0 - [reduction, combopoint_set, combopoint_SMP_modifier]
 };
 
 struct Frame_EF {
