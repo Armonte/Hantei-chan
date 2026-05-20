@@ -43,6 +43,15 @@ void CharacterView::setStageFile(std::unique_ptr<bg::File> file, const std::stri
 {
 	m_stageFile = std::move(file);
 	m_stageDisplayName = displayName;
+	// Stage tabs default to scale 1.0 — u4ick's tool also renders 1:1, so
+	// the bg sprites end up at the same pixel size you'd see in his editor.
+	// The pan anchor (m_stageRenderX/Y) is *not* set here; it gets
+	// initialized by MainFrame::loadStageFile once clientRect is known so
+	// world (0, 0) lands at the proportional position 401/1280, 538/720
+	// (the character-feet anchor in u4ick's render window) regardless of the
+	// user's window dimensions. Setting it here would jitter on load.
+	m_zoom = 1.0f;
+	m_stageRenderInit = false;
 }
 
 void CharacterView::refreshPanes(Render* render)
