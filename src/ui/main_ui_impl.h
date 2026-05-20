@@ -433,6 +433,93 @@ void MainFrame::DrawUi()
 	aboutWindow.Draw();
 	vectors.Draw();
 
+	// Background (stage) Inspector — shows the currently loaded stage's
+	// objects, lets you scrub through frames, and exposes editable fields.
+	// Only visible when a stage is loaded.
+	if (currentBgFile && currentBgFile->IsLoaded())
+	{
+		ImGui::Begin("Background Inspector", nullptr, ImGuiWindowFlags_AlwaysAutoResize);
+
+		ImGui::Text("File: %s", currentBgFile->GetFilename().c_str());
+		auto& objects = currentBgFile->GetObjects();
+		ImGui::Text("Objects: %zu", objects.size());
+
+		ImGui::Separator();
+
+		static bool bgPaused = false;
+		if (ImGui::Button(bgPaused ? "Play" : "Pause")) bgPaused = !bgPaused;
+		ImGui::SameLine();
+		ImGui::TextDisabled("Animation: %s", bgPaused ? "PAUSED" : "Playing");
+		if (!bgPaused) currentBgFile->UpdateAnimations();
+
+		ImGui::Separator();
+
+		static int selectedObjIndex = 0;
+		if (selectedObjIndex >= (int)objects.size()) selectedObjIndex = 0;
+		bgRenderer.SetSelectedObject(selectedObjIndex);
+
+		ImGui::Text("Select Object:");
+		for (size_t i = 0; i < objects.size(); ++i)
+		{
+			char label[64];
+			snprintf(label, sizeof(label), "obj_%zu (layer=%d)", i, objects[i].layer);
+			if (ImGui::Selectable(label, selectedObjIndex == (int)i))
+				selectedObjIndex = (int)i;
+		}
+
+		ImGui::Separator();
+
+		if (selectedObjIndex >= 0 && selectedObjIndex < (int)objects.size())
+		{
+			auto& obj = objects[selectedObjIndex];
+			ImGui::Text("Object %d Properties:", selectedObjIndex);
+			ImGui::Text("  Name: %s", obj.name.c_str());
+			ImGui::Text("  Layer: %d", obj.layer);
+			ImGui::Text("  Parallax: %d", obj.parallax);
+			ImGui::Text("  Frames: %zu", obj.frames.size());
+			ImGui::Text("  Current Frame: %d / %d", obj.currentFrame, (int)obj.frames.size() - 1);
+
+			if (ImGui::Button("<< Back")) currentBgFile->StepObjectBackward(selectedObjIndex);
+			ImGui::SameLine();
+			if (ImGui::Button("Forward >>")) currentBgFile->StepObjectForward(selectedObjIndex);
+
+			ImGui::Separator();
+			ImGui::Text("Current Frame Data (Editable):");
+
+			if (obj.currentFrame >= 0 && obj.currentFrame < (int)obj.frames.size())
+			{
+				auto& frame = obj.frames[obj.currentFrame];
+
+				ImGui::PushItemWidth(120);
+				ImGui::InputScalar("Sprite ID",      ImGuiDataType_S16, &frame.spriteId);
+				ImGui::InputScalar("Offset X",       ImGuiDataType_S16, &frame.offsetX);
+				ImGui::InputScalar("Offset Y",       ImGuiDataType_S16, &frame.offsetY);
+				ImGui::InputScalar("Duration",       ImGuiDataType_S16, &frame.duration);
+				ImGui::InputScalar("Blend Mode",     ImGuiDataType_U8,  &frame.blendMode);
+				ImGui::InputScalar("Opacity",        ImGuiDataType_U8,  &frame.opacity);
+				ImGui::InputScalar("Animation Type", ImGuiDataType_U8,  &frame.aniType);
+				ImGui::InputScalar("Jump Frame",     ImGuiDataType_U8,  &frame.jumpFrame);
+				ImGui::PopItemWidth();
+
+				ImGui::Text("World: (%d, %d)", frame.offsetX, 314 + frame.offsetY);
+
+				ImGui::Separator();
+				ImGui::Text("All Frames:");
+				size_t shown = std::min<size_t>(obj.frames.size(), 20);
+				for (size_t f = 0; f < shown; ++f)
+				{
+					const auto& fr = obj.frames[f];
+					ImGui::Text("  [%zu] spriteId=%d offset=(%d,%d) aniType=%d",
+					            f, fr.spriteId, fr.offsetX, fr.offsetY, fr.aniType);
+				}
+				if (obj.frames.size() > shown)
+					ImGui::TextDisabled("  ... (%zu more frames)", obj.frames.size() - shown);
+			}
+		}
+
+		ImGui::End();
+	}
+
 	RenderUpdate();
 }
 

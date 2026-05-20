@@ -440,6 +440,12 @@ void MainFrame::Menu(unsigned int errorPopupId)
 				if (!path.empty())
 					loadStageFile(path);
 			}
+			if (ImGui::MenuItem("Save Stage As...", nullptr, false, currentBgFile != nullptr))
+			{
+				std::string path = FileDialog(fileType::DAT, true);
+				if (!path.empty())
+					currentBgFile->Save(path.c_str());
+			}
 			if (ImGui::MenuItem("Clear Stage", nullptr, false, currentBgFile != nullptr))
 				clearStage();
 

@@ -1,8 +1,10 @@
 #include "bg_file.h"
 #include "../misc.h"
+#include <algorithm>
 #include <cstring>
 #include <fstream>
 #include <iostream>
+#include <vector>
 
 namespace bg {
 
@@ -79,7 +81,14 @@ bool File::LoadHeader(const char* data, size_t size, Header& header) {
 	}
 	
 	memcpy(&header, data, sizeof(Header));
-	
+
+	// Capture these for byte-1:1 round-trip on Save. The C# tool wrote them
+	// back from its own state; we have to preserve them since the editor
+	// never touches them.
+	loadedUnk        = header.unk;
+	loadedPatFileOff = header.pat_file_off;
+	loadedPatFileLen = header.pat_file_len;
+
 	// Show what we actually got
 	//printf("Magic header bytes: ");
 	//for (int i = 0; i < 16; i++) {
@@ -130,6 +139,8 @@ bool File::LoadObjects(const char* data, size_t size, const Header& header) {
 		
 		Object obj;
 		obj.name = "obj_" + std::to_string(i);
+		obj.originalIndex = i;
+		obj.originalOffset = offsetTable[i];
 		
 		// Read object header (60 bytes)
 		const int32_t* objHeader = (const int32_t*)(data + pos);
@@ -187,18 +198,37 @@ bool File::LoadObjects(const char* data, size_t size, const Header& header) {
 }
 
 bool File::LoadEmbeddedCG(const char* data, size_t size, const Header& header) {
+	// Capture the embedded PAT block (stages like bg01/bg20 carry one). We
+	// don't parse it — just hold the raw bytes so Save can write them back.
+	patData.clear();
+	if (header.pat_file_len > 0 && header.pat_file_off > 0 &&
+	    (size_t)(header.pat_file_off + header.pat_file_len) <= size)
+	{
+		patData.assign(data + header.pat_file_off,
+		               data + header.pat_file_off + header.pat_file_len);
+	}
+
 	if (header.cg_file_len <= 0 || header.cg_file_off < 0) {
 		return false;  // No embedded CG
 	}
-	
+
 	if ((size_t)(header.cg_file_off + header.cg_file_len) > size) {
 		std::cerr << "Invalid CG offset/length" << std::endl;
 		return false;
 	}
-	
+
 	// Extract CG data
 	cgData.resize(header.cg_file_len);
 	memcpy(cgData.data(), data + header.cg_file_off, header.cg_file_len);
+
+	// Trailing padding/alignment (all MBAACC stages observed so far have
+	// exactly 16384 bytes after the CG block).
+	size_t cgEnd = (size_t)header.cg_file_off + (size_t)header.cg_file_len;
+	if (cgEnd < size) {
+		trailingBytes.assign(data + cgEnd, data + size);
+	} else {
+		trailingBytes.clear();
+	}
 	
 	// Save to temporary file for CG loader
 	// (In future, can add CG::loadFromMemory() to avoid temp file)
@@ -296,6 +326,187 @@ void File::StepObjectBackward(int objIndex) {
 		obj.currentFrame = (int)obj.frames.size() - 1;
 	}
 	obj.frameDuration = 0;
+}
+
+// File layout (mirrors u4ick's bgmaketool SaveFile in bgmake_file.cs):
+//   0x00..0x05   "bgmake" (6 bytes magic)
+//   0x06..0x0F   10 zero bytes
+//   0x10..0x13   unk
+//   0x14..0x17   pat_file_off  (-1)
+//   0x18..0x1B   pat_file_len  (0)
+//   0x1C..0x1F   cg_file_off   (patched after object writes)
+//   0x20..0x23   cg_file_len   (patched after CG write)
+//   0x24..0x53   48 zero bytes
+//   0x54..0x453  256 * int32 offset table (per-object file offsets, -1 = absent)
+//   0x454..      For each object: 60-byte object header + 132 bytes per frame
+//   trailing     Embedded CG file (bytes preserved verbatim from load)
+bool File::Save(const char* filenameOut)
+{
+	std::ofstream f(filenameOut, std::ios::binary | std::ios::trunc);
+	if (!f) return false;
+
+	auto w32 = [&](int32_t v) { f.write((const char*)&v, 4); };
+	auto w16 = [&](int16_t v) { f.write((const char*)&v, 2); };
+	auto w8  = [&](uint8_t v) { f.write((const char*)&v, 1); };
+	auto wpad = [&](size_t n) { for (size_t i = 0; i < n; ++i) f.put('\0'); };
+
+	// --- Header (84 bytes) ---
+	// pat_file_off / pat_file_len / cg_file_off / cg_file_len all get
+	// patched after the actual writes below; we just reserve the slots here.
+	const char kMagic[6] = {'b','g','m','a','k','e'};
+	f.write(kMagic, 6);
+	wpad(10);
+	w32(loadedUnk);          // unk (preserved from load)
+	std::streampos patRefPos = f.tellp();
+	w32(loadedPatFileOff);   // pat_file_off (placeholder, patched later)
+	w32(loadedPatFileLen);   // pat_file_len (placeholder)
+	std::streampos cgRefPos = f.tellp();
+	w32(0);                  // cg_file_off  (patched later)
+	w32(0);                  // cg_file_len  (patched later)
+	wpad(48);
+
+	// --- Compute object offsets ---
+	// The offset table sits right after the header. Object data follows the
+	// table. First object lives at 84 + 1024 = 1108. Objects are placed in
+	// their originalIndex slot (so sparse files round-trip correctly);
+	// editor-created objects (originalIndex == -1) get the next free slot.
+	constexpr int32_t kHeaderSize     = 84;
+	constexpr int32_t kOffsetTableLen = 256;
+	constexpr int32_t kFirstObjectOff = kHeaderSize + kOffsetTableLen * 4;  // 1108
+
+	int32_t offsets[256];
+	for (int i = 0; i < 256; ++i) offsets[i] = -1;
+
+	// Build a (slot -> objects index) mapping in the order they should land
+	// in the file, then assign sequential file offsets to those slots.
+	std::vector<std::pair<int, size_t>> slotToObj; // (slot, objectsIndex)
+	slotToObj.reserve(objects.size());
+	bool used[256] = {};
+	for (size_t i = 0; i < objects.size(); ++i) {
+		int slot = objects[i].originalIndex;
+		if (slot >= 0 && slot < 256 && !used[slot]) {
+			slotToObj.emplace_back(slot, i);
+			used[slot] = true;
+		}
+	}
+	int nextFree = 0;
+	for (size_t i = 0; i < objects.size(); ++i) {
+		if (objects[i].originalIndex >= 0 && objects[i].originalIndex < 256) continue;
+		while (nextFree < 256 && used[nextFree]) ++nextFree;
+		if (nextFree >= 256) break;
+		slotToObj.emplace_back(nextFree, i);
+		used[nextFree] = true;
+		++nextFree;
+	}
+	// Walk slots in ascending order so byte layout matches the original.
+	std::sort(slotToObj.begin(), slotToObj.end());
+
+	// Assign each object a final byte offset. If we know the original
+	// offset (loaded from file), honor it; the gap-from-end-of-previous
+	// becomes zero-padding emitted in the write loop below. Editor-created
+	// objects (originalOffset == -1) just pack tightly after the previous.
+	int32_t pos = kFirstObjectOff;
+	std::vector<int32_t> writeOffset(slotToObj.size());
+	for (size_t k = 0; k < slotToObj.size(); ++k) {
+		const auto& obj = objects[slotToObj[k].second];
+		int32_t want = obj.originalOffset;
+		if (want >= pos)
+			pos = want;
+		writeOffset[k] = pos;
+		offsets[slotToObj[k].first] = pos;
+		pos += 60 + (int32_t)obj.frames.size() * 132;
+	}
+
+	for (int i = 0; i < 256; ++i) w32(offsets[i]);
+
+	// --- Objects ---
+	// 32-byte trailing buffer is 0xFF-filled per u4ick.
+	uint8_t ffBuf[32];
+	std::memset(ffBuf, 0xFF, sizeof(ffBuf));
+
+	int32_t cursor = kFirstObjectOff;
+	for (size_t k = 0; k < slotToObj.size(); ++k)
+	{
+		const auto& obj = objects[slotToObj[k].second];
+		// Bridge any gap between the previous object's end and this one's
+		// honored start by emitting zero padding.
+		while (cursor < writeOffset[k]) {
+			f.put('\0');
+			++cursor;
+		}
+		w32((int32_t)obj.frames.size());
+		w32(obj.parallax);
+		w32(obj.layer);
+		w32(-1);            // reserved
+		w32(-1);            // reserved
+		wpad(40);
+
+		for (const auto& fr : obj.frames)
+		{
+			w16(fr.spriteId + 10000);
+			w16(fr.offsetX);
+			w16(fr.offsetY);
+			w16(fr.duration);
+			w8(0);                    // unk byte (not tracked in our struct)
+			w8(fr.blendMode);
+			w8(fr.opacity);
+			w8(fr.aniType);
+			w8(fr.jumpFrame);
+			wpad(32);                 // zero pad
+			w8(fr.enableXVec);
+			w8(fr.enableYVec);
+			wpad(4);                  // zero pad
+			w16(fr.xVec);
+			w16(fr.yVec);
+			wpad(45);                 // zero pad
+			f.write((const char*)ffBuf, 32);
+		}
+		// Advance cursor by what we just emitted so the next gap calculation
+		// is right.
+		cursor += 60 + (int32_t)obj.frames.size() * 132;
+	}
+
+	// PAT block sits after the last object, with whatever padding the load
+	// recorded between the two regions. Re-honor loadedPatFileOff if it
+	// points past where we are now (otherwise just append).
+	if (loadedPatFileOff > cursor) {
+		while (cursor < loadedPatFileOff) {
+			f.put('\0');
+			++cursor;
+		}
+	}
+
+	// --- Embedded PAT (only present in some stages, e.g. bg01 / bg20) ---
+	std::streampos patStart = f.tellp();
+	int32_t patOff = (int32_t)patStart;
+	int32_t patLen = (int32_t)patData.size();
+	if (patLen > 0)
+		f.write((const char*)patData.data(), patLen);
+
+	// --- Embedded CG ---
+	std::streampos cgStart = f.tellp();
+	int32_t cgOff = (int32_t)cgStart;
+	int32_t cgLen = (int32_t)cgData.size();
+	if (cgLen > 0)
+		f.write((const char*)cgData.data(), cgLen);
+
+	// --- Trailing alignment bytes ---
+	if (!trailingBytes.empty())
+		f.write((const char*)trailingBytes.data(), trailingBytes.size());
+
+	// Patch pat_file_* and cg_file_* in the header. If we didn't write a
+	// PAT block, keep the loaded offset (often the same as cg_off) so the
+	// game's bookkeeping stays intact.
+	std::streampos endPos = f.tellp();
+	f.seekp(patRefPos);
+	w32(patLen > 0 ? patOff : loadedPatFileOff);
+	w32(patLen);
+	f.seekp(cgRefPos);
+	w32(cgOff);
+	w32(cgLen);
+	f.seekp(endPos);
+
+	return true;
 }
 
 } // namespace bg
