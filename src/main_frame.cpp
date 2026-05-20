@@ -185,6 +185,32 @@ void MainFrame::DrawBack()
 		render.x = bgCamera.panLastX;
 		render.y = bgCamera.panLastY;
 		render.DrawGridLines();
+
+		// u4ick's stage boundary rects (MonoForm.cs:431-435). They live at
+		// the LIVE camera position (movingPoint, = bgCamera.panX/panY), at
+		// parallax=256 implicitly — so during a right-drag they slide with
+		// the cursor at 1:1 while parallax layers shift WRT them at their
+		// own rates. On release, panLast catches up to panX and the
+		// parallax delta collapses back to zero, so layers snap into the
+		// common-frame view aligned to the rects.
+		if (bgRenderer.IsShowingDebugOverlay()) {
+			float z = bgCamera.zoom;
+			float px = bgCamera.panX * z;
+			float py = bgCamera.panY * z;
+			auto* dl = ImGui::GetBackgroundDrawList();
+			// Yellow ground line: (panX-401, panY+224) span 1057 (h=0).
+			dl->AddLine(ImVec2(px - 401*z, py + 224*z),
+			            ImVec2(px + 656*z, py + 224*z),
+			            IM_COL32(255, 255, 0, 255), 1.0f);
+			// Purple full playfield: 1057x810 from (panX-401, panY-538).
+			dl->AddRect(ImVec2(px - 401*z, py - 538*z),
+			            ImVec2(px + 656*z, py + 272*z),
+			            IM_COL32(160,  32, 240, 255), 0.0f, 0, 1.0f);
+			// Purple thin band: 1057x8 just below the ground line.
+			dl->AddRect(ImVec2(px - 401*z, py + 272*z),
+			            ImVec2(px + 656*z, py + 280*z),
+			            IM_COL32(160,  32, 240, 255), 0.0f, 0, 1.0f);
+		}
 		return; // DrawBackground above already drew the stage.
 	}
 

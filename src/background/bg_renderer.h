@@ -48,7 +48,7 @@ private:
 	bool  enabled           = false;
 	bool  paused            = false;
 	bool  parallaxEnabled   = true;
-	bool  showDebugOverlay  = false;
+	bool  showDebugOverlay  = true;  // u4ick draws them unconditionally.
 	int   selectedObjIndex  = -1;
 
 	// GL objects we own.
