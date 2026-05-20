@@ -1109,8 +1109,11 @@ void Render::SetBackgroundRenderer(bg::Renderer* renderer, bg::Camera* camera)
 
 void Render::DrawBackground()
 {
-	if (bgRenderer && bgCamera && bgRenderer->IsEnabled())
-		bgRenderer->Render(*bgCamera, this);
+	// Bg renderer is now invoked directly from MainFrame::DrawBack with
+	// real clientRect dimensions — it owns its own GL program and doesn't
+	// need to thread through our shader helpers anymore. Kept here as a
+	// no-op so existing call sites compile; will be removed once the
+	// remaining stale plumbing is cleaned up.
 }
 
 // The bg renderer drives quads through these two helpers so it doesn't have
