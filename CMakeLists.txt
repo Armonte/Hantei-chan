@@ -101,3 +101,27 @@ if(MINGW)
 	target_link_options(roundtrip PRIVATE -static-libgcc -static-libstdc++ -static)
 endif()
 
+# Standalone PAT round-trip validator. Links the editor's parts code with
+# glad/OpenGL stubs (glad calls no-op without a current context, which is
+# fine for the load/save paths we exercise).
+add_executable(pat_roundtrip
+	src/pat_roundtrip.cpp
+	src/parts/parts.cpp
+	src/parts/parts_part.cpp
+	src/parts/parts_partset.cpp
+	src/parts/parts_shape.cpp
+	src/parts/parts_texture.cpp
+	src/cg.cpp
+	src/texture.cpp
+	src/vao.cpp
+	src/shader.cpp
+	src/misc.cpp
+	tinyalloc/tinyalloc.c
+)
+target_include_directories(pat_roundtrip PRIVATE "." "third_party" "${CMAKE_BINARY_DIR}/generated")
+target_compile_definitions(pat_roundtrip PRIVATE WIN32_LEAN_AND_MEAN HA6GUIVERSION="${CMAKE_PROJECT_VERSION}" PAT_HEADLESS)
+target_link_libraries(pat_roundtrip PRIVATE tinyalloc glad glm OpenGL::GL)
+if(MINGW)
+	target_link_options(pat_roundtrip PRIVATE -static-libgcc -static-libstdc++ -static)
+endif()
+

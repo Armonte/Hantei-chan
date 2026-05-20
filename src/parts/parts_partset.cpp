@@ -303,10 +303,13 @@ void PartSet<>::Save(std::ofstream &file, const PartSet *partSet)
             file.write(VAL(prop->rotation[3]), 4);
         }
 
-        if(prop->priority != 0)
+        // PRPR is an int32 in the file; we store priority as float to embed a
+        // (propId / 1000) sub-priority for sort tiebreaks. Truncate on save.
+        int priorityInt = (int)prop->priority;
+        if(priorityInt != 0)
         {
             file.write("PRPR", 4);
-            file.write(VAL(prop->priority), 4);
+            file.write(VAL(priorityInt), 4);
         }
 
         if(prop->ppId >= 0)

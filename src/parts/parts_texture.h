@@ -58,6 +58,7 @@ public:
     int type = 0;                   // Texture type (1=DXT1, 5=DXT5, 21=RGB)
     int textureIndex = 0;           // GL texture ID
     int pgte[2]{};                  // Unknown (stored as short[2])
+    int pgtp = 0;                   // MBAACC type hint tag (single uint32)
 
     // DDS compression data
     char ddsHeader[124]{};          // DDS header (without "DDS " magic)
