@@ -36,6 +36,14 @@ public:
 	void SetPaused(bool p) { paused = p; }
 	bool IsPaused() const { return paused; }
 
+	// Layer-on-top direction. Both u4ick interpretations are plausible
+	// depending on how XNA's FrontToBack + LessEqual interact with negative
+	// layerDepth values, so we expose the choice and let user A/B test.
+	// true (default) = HIGHER layer drawn last = HIGHER on top (typical
+	// convention, floor-level sprites in front of distant bg).
+	void SetHigherLayerOnTop(bool v) { higherLayerOnTop = v; }
+	bool IsHigherLayerOnTop() const { return higherLayerOnTop; }
+
 	// Debug visualization
 	void SetShowDebugOverlay(bool show) { showDebugOverlay = show; }
 	bool IsShowingDebugOverlay() const { return showDebugOverlay; }
@@ -55,6 +63,7 @@ private:
 	File* file = nullptr;
 	bool enabled = false;
 	bool paused = false;
+	bool higherLayerOnTop = true;
 	bool showDebugOverlay = false;
 	bool parallaxEnabled = true;
 	int selectedObjIndex = -1;  // For debug highlighting
