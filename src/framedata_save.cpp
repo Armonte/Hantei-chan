@@ -27,8 +27,18 @@ void WriteAF(std::ofstream &file, const Frame_AF *af)
 		file.write(VAL(pat), 4);
 		file.write(VAL(layer.spriteId), 4);
 
-		// Write layer properties (no AFPL for MBAACC)
-		if(layer.offset_x || layer.offset_y){
+		// MBAACC uses the compact AFY<n> tag (4 bytes, no payload) when
+		// offset_x == 0 and offset_y is in the narrow range 7..12 (verified
+		// against akaakiha.HA6 — y=4..6 and y=13 always go to AFOF there).
+		// Encoding: y=7..9 -> 'AFY7'..'AFY9'; y=10 -> 'AFYX'; y=11,12 -> 'AFY1','AFY2'.
+		if(layer.offset_x == 0 && layer.offset_y >= 7 && layer.offset_y <= 12){
+			char tag[4] = {'A', 'F', 'Y', '?'};
+			if(layer.offset_y == 10)      tag[3] = 'X';
+			else if(layer.offset_y >= 11) tag[3] = (layer.offset_y - 10) + '0'; // 11,12 -> '1','2'
+			else                          tag[3] = layer.offset_y + '0';        // 7,8,9
+			file.write(tag, 4);
+		}
+		else if(layer.offset_x || layer.offset_y){
 			file.write("AFOF", 4);
 			file.write(VAL(layer.offset_x), 4);
 			file.write(VAL(layer.offset_y), 4);
@@ -152,8 +162,12 @@ void WriteAF(std::ofstream &file, const Frame_AF *af)
 		// NO AFPL for MBAACC single-layer
 	}
 
-	// Frame-level properties (always written, regardless of format)
-	if(af->duration >=0 && af->duration < 10){
+	// Frame-level properties (always written, regardless of format).
+	// AFD<n> is the compact form for duration 1..9; duration 0 (and >= 10
+	// / negative) goes through AFDL with a full int32, matching the
+	// original encoder. We used to emit AFD0 for duration==0 which never
+	// appears in original files.
+	if(af->duration > 0 && af->duration < 10){
 		char t = af->duration + '0';
 		file.write("AFD", 3);
 		file.write(VAL(t), 1);
@@ -164,9 +178,14 @@ void WriteAF(std::ofstream &file, const Frame_AF *af)
 	}
 
 	if(af->aniType){
-		char t = af->aniType + '0';
-		file.write("AFF", 3);
-		file.write(VAL(t), 1);
+		if(af->aniType <= 2){
+			char t = af->aniType + '0';
+			file.write("AFF", 3);
+			file.write(VAL(t), 1);
+		} else {
+			file.write("AFFL", 4);
+			file.write(VAL(af->aniType), 4);
+		}
 	}
 
 	if(af->aniFlag){
@@ -255,6 +274,10 @@ void WriteAS(std::ofstream &file, const Frame_AS *as)
 		file.write("ASS", 3); //lmaop
 		file.write(VAL(t), 1);
 	}
+	if(as->hitsNumber){
+		file.write("ASAA", 4);
+		file.write(VAL(as->hitsNumber), 4);
+	}
 	if(as->cancelNormal){
 		file.write("ASCN", 4);
 		file.write(VAL(as->cancelNormal), 4);
@@ -291,10 +314,6 @@ void WriteAS(std::ofstream &file, const Frame_AS *as)
 		file.write(VAL(as->sineFlags), 4);
 		file.write(PTR(as->sineParameters), 4*4);
 		file.write(PTR(as->sinePhases), 2*sizeof(float));
-	}
-	if(as->hitsNumber){
-		file.write("ASAA", 4);
-		file.write(VAL(as->hitsNumber), 4);
 	}
 	if(as->invincibility){
 		file.write("ASYS", 4);
@@ -441,46 +460,98 @@ void WriteAT(std::ofstream &file, const Frame_AT *at, bool usedATV2)
 	file.write("ATED", 4);
 }
 
+// Trim trailing zero parameters: write EFPR/IFPR with the count of params up
+// through the last non-zero one, and omit the tag entirely when all are zero.
+// Matches the original encoder; saves up to 48 bytes/effect and 36 bytes/cond.
 void WriteEF(std::ofstream &file, const std::vector<Frame_EF> &ef)
 {
-	constexpr int paramN = 12;
-	for(int i = 0; i < ef.size(); i++)
+	constexpr int maxParam = 12;
+	for(size_t i = 0; i < ef.size(); i++)
 	{
+		int paramN = 0;
+		for(int j = 0; j < maxParam; j++)
+			if(ef[i].parameters[j]) paramN = j + 1;
+
 		file.write("EFST", 4);
-		file.write(VAL(i), 4);
+		int idx = (int)i;
+		file.write(VAL(idx), 4);
 		file.write("EFTP", 4);
 		file.write(VAL(ef[i].type), 4);
 		file.write("EFNO", 4);
 		file.write(VAL(ef[i].number), 4);
-		file.write("EFPR", 4);
-		file.write(VAL(paramN), 4);
-		file.write(PTR(ef[i].parameters), 12*4);
+		if(paramN){
+			file.write("EFPR", 4);
+			file.write(VAL(paramN), 4);
+			file.write(PTR(ef[i].parameters), paramN * 4);
+		}
 		file.write("EFED", 4);
 	}
 }
 
-void WriteIF(std::ofstream &file, const std::vector<Frame_IF> &ef)
+void WriteIF(std::ofstream &file, const std::vector<Frame_IF> &ifs)
 {
-	constexpr int paramN = 9;
-	for(int i = 0; i < ef.size(); i++)
+	constexpr int maxParam = 9;
+	for(size_t i = 0; i < ifs.size(); i++)
 	{
+		int paramN = 0;
+		for(int j = 0; j < maxParam; j++)
+			if(ifs[i].parameters[j]) paramN = j + 1;
+
 		file.write("IFST", 4);
-		file.write(VAL(i), 4);
+		int idx = (int)i;
+		file.write(VAL(idx), 4);
 		file.write("IFTP", 4);
-		file.write(VAL(ef[i].type), 4);
-		file.write("IFPR", 4);
-		file.write(VAL(paramN), 4);
-		file.write(PTR(ef[i].parameters), 9*4);
+		file.write(VAL(ifs[i].type), 4);
+		if(paramN){
+			file.write("IFPR", 4);
+			file.write(VAL(paramN), 4);
+			file.write(PTR(ifs[i].parameters), paramN * 4);
+		}
 		file.write("IFED", 4);
 	}
 }
 
-void WriteFrame(std::ofstream &file, const Frame *frame, bool usedAFGX, bool usedATV2)
+// Per-sequence dedup state. Tracks every distinct AS block and hitbox written
+// in this sequence so far. WriteFrame consults these to emit ASSM / HRAS /
+// HRNS references instead of full data when a frame's AS or box matches an
+// earlier one. The totalXxx counters feed PDS2[1]/[4]/[6] back in WriteSequence.
+struct PatInfo
+{
+	std::vector<const int*> boxList;
+	std::vector<const Frame_AS*> asList;
+	int totalBoxes = 0;
+	int totalAses = 0;
+	int totalAts = 0;
+};
+
+void WriteFrame(std::ofstream &file, const Frame *frame, bool usedAFGX, bool usedATV2, PatInfo &info)
 {
 	file.write("FSTR", 4);
 	WriteAF(file, &frame->AF);
-	WriteAS(file, &frame->AS);
 
+	// ASSM: emit a 4-byte ref if this AS matches a previously-written one.
+	int dupeAsIndex = -1;
+	for(int i = 0; i < (int)info.asList.size(); ++i)
+	{
+		if(!memcmp(&frame->AS, info.asList[i], sizeof(Frame_AS)))
+		{
+			dupeAsIndex = i;
+			break;
+		}
+	}
+	if(dupeAsIndex >= 0)
+	{
+		file.write("ASSM", 4);
+		file.write(VAL(dupeAsIndex), 4);
+	}
+	else
+	{
+		WriteAS(file, &frame->AS);
+		info.asList.push_back(&frame->AS);
+		info.totalAses += 1;
+	}
+
+	bool hasAt = false;
 	if(!frame->hitboxes.empty())
 	{
 		auto maxhurt = frame->hitboxes.lower_bound(25);
@@ -500,6 +571,7 @@ void WriteFrame(std::ofstream &file, const Frame *frame, bool usedAFGX, bool use
 			int val = maxhit->first-25+1;
 			file.write("FSNA", 4);
 			file.write(VAL(val), 4);
+			hasAt = true;
 		}
 	}
 
@@ -516,23 +588,50 @@ void WriteFrame(std::ofstream &file, const Frame *frame, bool usedAFGX, bool use
 		file.write(VAL(val), 4);
 	}
 
-	constexpr Frame_AT defAT{};
-	if(!!memcmp(&frame->AT, &defAT, sizeof(Frame_AT)))
+	// AT only written if this frame has attack boxes (matches sosfiro/original).
+	if(hasAt)
+	{
 		WriteAT(file, &frame->AT, usedATV2);
+		info.totalAts += 1;
+	}
 
+	// HRAS / HRNS: dedup hitbox xy data against any previously-emitted box.
+	// box.first < 25 → hurt (HRNM/HRNS), >= 25 → attack (HRAT/HRAS).
 	for(const auto& box : frame->hitboxes)
 	{
 		int index = box.first;
+		int dupeIndex = -1;
+		for(int i = (int)info.boxList.size() - 1; i >= 0; --i)
+		{
+			if(!memcmp(box.second.xy, info.boxList[i], sizeof(int)*4))
+			{
+				dupeIndex = i;
+				break;
+			}
+		}
+
 		if(box.first >= 25)
 		{
 			index -= 25;
-			file.write("HRAT", 4);
+			file.write(dupeIndex >= 0 ? "HRAS" : "HRAT", 4);
 		}
 		else
-			file.write("HRNM", 4);
+		{
+			file.write(dupeIndex >= 0 ? "HRNS" : "HRNM", 4);
+		}
 
-		file.write(VAL(index), 4);
-		file.write(PTR(box.second.xy), 4*4);
+		if(dupeIndex >= 0)
+		{
+			file.write(VAL(index), 4);
+			file.write(VAL(dupeIndex), 4);
+		}
+		else
+		{
+			file.write(VAL(index), 4);
+			file.write(PTR(box.second.xy), 4*4);
+			info.boxList.push_back(box.second.xy);
+			info.totalBoxes += 1;
+		}
 	}
 
 	WriteEF(file, frame->EF);
@@ -543,13 +642,6 @@ void WriteFrame(std::ofstream &file, const Frame *frame, bool usedAFGX, bool use
 
 void WriteSequence(std::ofstream &file, const Sequence *seq)
 {
-	//Not used by melty blood, probably.
-/* 	if(!seq->codeName.empty()){
-		uint32_t size = seq->codeName.size();
-		file.write("PTCN", 4);
-		file.write(VAL(size), 4);
-		file.write(PTR(seq->codeName.data()), size);
-	} */
 	if(seq->psts){
 		file.write("PSTS", 4);
 		file.write(VAL(seq->psts), 4);
@@ -594,34 +686,47 @@ void WriteSequence(std::ofstream &file, const Sequence *seq)
 		file.write(VAL(size), 4);
 		file.write(PTR(buf), 32);
 	}
+	if(!seq->codeName.empty()){
+		uint32_t cnSize = seq->codeName.size() + 1;
+		file.write("PTCN", 4);
+		file.write(VAL(cnSize), 4);
+		file.write(PTR(seq->codeName.data()), cnSize);
+	}
 
-	constexpr Frame_AT defAT{};
 	if(!seq->frames.empty())
 	{
-		uint32_t data[8]{};
-		data[0] = data[7] = seq->frames.size();
+		// PDS2 header: [0]=frame count, [1]=unique hitbox count, [2]=total EF,
+		// [3]=total IF, [4]=AT count, [6]=unique AS count, [7]=frame count.
+		// Values [1], [4], [6] depend on dedup decisions made inside WriteFrame,
+		// so we write the header, walk frames into a PatInfo, then seek back to
+		// patch the counts (matches sosfiro's emitter).
+		uint32_t pds2[8]{};
+		pds2[0] = pds2[7] = seq->frames.size();
 		for(const auto& frame : seq->frames)
 		{
-			data[1] += frame.hitboxes.size();
-			data[2] += frame.EF.size();
-			data[3] += frame.IF.size();
-
-			//Do not write if default constructed.
-			data[4] += (!!memcmp(&frame.AT, &defAT, sizeof(Frame_AT)));
-
-			//Find number of duplicates and write ASSM instead. Not necessary and very low priority.
-			data[6]	+= 1;
+			pds2[2] += frame.EF.size();
+			pds2[3] += frame.IF.size();
 		}
 
-		uint32_t size = sizeof(data);
+		uint32_t pds2Size = sizeof(pds2);
 
 		file.write("PDS2", 4);
-		file.write(VAL(size), 4);
-		file.write(PTR(data), size);
+		file.write(VAL(pds2Size), 4);
+		auto dataBlockPos = file.tellp();
+		file.write(PTR(pds2), pds2Size);
 
+		PatInfo info{};
 		for(const auto& frame : seq->frames)
 		{
-			WriteFrame(file, &frame, seq->usedAFGX, seq->usedATV2);
+			WriteFrame(file, &frame, seq->usedAFGX, seq->usedATV2, info);
 		}
+		pds2[1] = info.totalBoxes;
+		pds2[6] = info.totalAses;
+		pds2[4] = info.totalAts;
+
+		auto curPos = file.tellp();
+		file.seekp(dataBlockPos);
+		file.write(PTR(pds2), pds2Size);
+		file.seekp(curPos);
 	}
 }
