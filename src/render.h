@@ -14,6 +14,11 @@
 // Forward declarations
 class Parts;
 
+namespace bg {
+	class Renderer;
+	struct Camera;
+}
+
 // Layer information for multi-layer rendering
 struct RenderLayer {
 	int spriteId;
@@ -85,6 +90,10 @@ private:
 	std::vector<RenderLayer> renderLayers;
 	int currentLayerIndex;
 
+	// Background (stage) rendering — borrowed from MainFrame, not owned here.
+	bg::Renderer* bgRenderer = nullptr;
+	bg::Camera*   bgCamera   = nullptr;
+
 	void AdjustImageQuad(int x, int y, int w, int h);
 	void SetModelView(glm::mat4&& view);
 	void SetMatrix(int location);
@@ -129,6 +138,16 @@ public:
 	void SortLayersByZPriority(int mainPatternPriority);
 	void DrawLayers();
 	bool HasLayers() const { return !renderLayers.empty(); }
+
+	// Background (stage) rendering.
+	void SetBackgroundRenderer(bg::Renderer* renderer, bg::Camera* camera);
+	void DrawBackground();
+	bg::Renderer* GetBackgroundRenderer() { return bgRenderer; }
+	bg::Camera*   GetBackgroundCamera()   { return bgCamera;   }
+
+	// Hooks the background renderer uses to draw quads through our shader/state.
+	void SetupSpriteShader();
+	void SetSpriteTransform(float x, float y, float scaleX, float scaleY);
 
 	enum blendType{
 		normal,

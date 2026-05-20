@@ -14,6 +14,8 @@
 #include "hitbox.h"
 #include "parts/parts.h"
 #include "enums.h"  // For RenderMode enum
+#include "background/bg_renderer.h"
+#include "background/bg_types.h"
 
 constexpr int maxBoxes = 33;
 
@@ -239,6 +241,12 @@ void Render::Draw()
 		//PostQuitMessage(1);
 	}
 
+	// Background (stage) renders behind everything else.
+	DrawBackground();
+
+	// The background pass leaves the textured shader bound; switch back to
+	// the simple shader for grid lines.
+	sSimple.Use();
 
 	//Lines
 	glm::mat4 view = glm::mat4(1.f);
@@ -1092,4 +1100,41 @@ void Render::DrawLayers()
 	colorRgba[1] = origColorRgba[1];
 	colorRgba[2] = origColorRgba[2];
 	colorRgba[3] = origColorRgba[3];
+}
+// ---------------------------------------------------------------------------
+// Background (stage) rendering — ported from the bgmk branch.
+
+void Render::SetBackgroundRenderer(bg::Renderer* renderer, bg::Camera* camera)
+{
+	bgRenderer = renderer;
+	bgCamera   = camera;
+}
+
+void Render::DrawBackground()
+{
+	if (bgRenderer && bgCamera && bgRenderer->IsEnabled())
+		bgRenderer->Render(*bgCamera, this);
+}
+
+// The bg renderer drives quads through these two helpers so it doesn't have
+// to know about our shader/projection setup.
+void Render::SetupSpriteShader()
+{
+	sTextured.Use();
+	glm::mat4 view = glm::mat4(1.f);
+	view = glm::scale(view, glm::vec3(scale, scale, 1.f));
+	view = glm::translate(view, glm::vec3(x, y, 0.f));
+	SetModelView(std::move(view));
+	SetMatrix(lProjectionT);
+}
+
+void Render::SetSpriteTransform(float spriteX, float spriteY, float spriteScaleX, float spriteScaleY)
+{
+	glm::mat4 view = glm::mat4(1.f);
+	view = glm::scale(view, glm::vec3(scale, scale, 1.f));
+	view = glm::translate(view, glm::vec3(x, y, 0.f));
+	view = glm::translate(view, glm::vec3(spriteX, spriteY, 0.f));
+	view = glm::scale(view, glm::vec3(spriteScaleX, spriteScaleY, 1.f));
+	SetModelView(std::move(view));
+	SetMatrix(lProjectionT);
 }

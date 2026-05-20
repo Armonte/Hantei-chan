@@ -55,6 +55,9 @@ add_executable(${EXE}
 	src/parts/parts_shape.cpp
 	src/parts/parts_texture.cpp
 	src/parts/parts.cpp
+	# Background (stage) system — ported from bgmk branch.
+	src/background/bg_file.cpp
+	src/background/bg_renderer.cpp
 	imsearch/imsearch.cpp
 	res/res.rc
 )
@@ -99,6 +102,21 @@ target_compile_definitions(roundtrip PRIVATE WIN32_LEAN_AND_MEAN HA6GUIVERSION="
 target_link_libraries(roundtrip PRIVATE tinyalloc)
 if(MINGW)
 	target_link_options(roundtrip PRIVATE -static-libgcc -static-libstdc++ -static)
+endif()
+
+# Standalone smoke test for bg::File loader (no GL needed for parse-only).
+add_executable(bg_test
+	src/bg_test.cpp
+	src/background/bg_file.cpp
+	src/cg.cpp
+	src/misc.cpp
+	tinyalloc/tinyalloc.c
+)
+target_include_directories(bg_test PRIVATE "." "third_party" "${CMAKE_BINARY_DIR}/generated")
+target_compile_definitions(bg_test PRIVATE WIN32_LEAN_AND_MEAN HA6GUIVERSION="${CMAKE_PROJECT_VERSION}")
+target_link_libraries(bg_test PRIVATE tinyalloc glm)
+if(MINGW)
+	target_link_options(bg_test PRIVATE -static-libgcc -static-libstdc++ -static)
 endif()
 
 # Standalone PAT round-trip validator. Links the editor's parts code with
