@@ -14,8 +14,12 @@ unsigned int* PartSet<>::P_Load(unsigned int* data, const unsigned int* data_end
         ++data;
 
         if (!memcmp(buf, "PANM", 4)) {
-            // Melty name (null-terminated, 32 bytes)
-            name = (char*)data;
+            // MBAACC name (null-terminated, 32-byte Shift-JIS buffer)
+            char buf32[33]{};
+            std::memcpy(buf32, data, 32);
+            buf32[32] = 0;
+            name = sj2utf8(buf32);
+            partSet->name = name;
             data += 0x20 / 4;
         }
         else if (!memcmp(buf, "PANA", 4)) {
@@ -211,14 +215,23 @@ void PartSet<std::allocator>::CopyPropertyTo(PartProperty *propDst, PartProperty
 }
 
 template<>
-void PartSet<>::Save(std::ofstream &file, const PartSet *partSet)
+void PartSet<>::Save(std::ofstream &file, const PartSet *partSet, bool mbaacc)
 {
     if(!partSet->name.empty()) {
-        file.write("PANA", 4);
         std::string name = utf82sj(partSet->name);
-        uint32_t size = name.size();
-        file.write(VAL(size), 1);
-        file.write(PTR(name.data()), size);
+        if(mbaacc) {
+            // MBAACC: 32-byte null-terminated buffer (PANM)
+            file.write("PANM", 4);
+            char buf[32]{};
+            strncpy(buf, name.c_str(), 31);
+            file.write(PTR(buf), 32);
+        } else {
+            // UNI: length-prefixed Shift-JIS (PANA)
+            file.write("PANA", 4);
+            uint32_t size = name.size();
+            file.write(VAL(size), 1);
+            file.write(PTR(name.data()), size);
+        }
     }
 
     auto props = &partSet->groups;

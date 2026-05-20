@@ -40,7 +40,7 @@ public:
     static unsigned int* PrLoad(unsigned int* data, const unsigned int* data_end, int groupId, int propId, PartSet<>* partSet);
 
     // Saving
-    static void Save(std::ofstream &file, const PartSet *partSet);
+    static void Save(std::ofstream &file, const PartSet *partSet, bool mbaacc = false);
     static bool IsModifiedData(const PartSet *partSet);
     static bool IsModifiedPropData(const PartProperty *prop);
 

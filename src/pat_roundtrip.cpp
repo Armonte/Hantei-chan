@@ -19,19 +19,6 @@ int main(int argc, char** argv)
 	Parts p1(nullptr);
 	std::cout << "[1/3] Loading " << in << "\n" << std::flush;
 	if (!p1.Load(in.c_str())) { std::cerr << "load failed\n" << std::flush; _exit(2); }
-
-	// Diagnostic: which partSets pass IsModifiedData filter?
-	int emptyPS = 0;
-	std::vector<int> emptyIds;
-	for (size_t k = 0; k < p1.partSets.size(); ++k) {
-		if (!PartSet<>::IsModifiedData(&p1.partSets[k])) {
-			emptyPS++;
-			if (emptyIds.size() < 20) emptyIds.push_back((int)k);
-		}
-	}
-	std::cout << "      filter-skipped partSets: " << emptyPS << " (first ids: ";
-	for (int id : emptyIds) std::cout << id << " ";
-	std::cout << ")\n" << std::flush;
 	std::cout << "      partSets=" << p1.partSets.size()
 	          << " cutOuts=" << p1.cutOuts.size()
 	          << " shapes=" << p1.shapes.size()

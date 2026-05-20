@@ -29,7 +29,7 @@ public:
     int pptx = 0;      // Unknown
 
     static unsigned int* PpLoad(unsigned int* data, const unsigned int* data_end, int id, std::vector<CutOut<>>* cutOuts);
-    static void Save(std::ofstream &file, const CutOut *cutOut);
+    static void Save(std::ofstream &file, const CutOut *cutOut, bool mbaacc = false);
     static bool IsModifiedData(const CutOut *cutOut);
     void CopyTo(CutOut *cutOut);
 };

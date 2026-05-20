@@ -184,6 +184,29 @@ bool Parts::Load(const char* name)
 
     filePath = name;
 
+    // Detect MBAACC vs UNI format by inspecting the loaded texture data.
+    // MBAACC textures load via PGTX -> sets `data`, leaves `imageSize` at 0.
+    // UNI textures load via PGT2 -> sets `s3tc` / `imageSize`.
+    // For texture-less files we fall back to scanning the raw file for the
+    // signature legacy tag PANM, which doesn't appear in UNI/MBTL pats.
+    useMBAACCFormat = false;
+    for (const auto& gfx : gfxMeta) {
+        if (gfx.data != nullptr && gfx.imageSize == 0) {
+            useMBAACCFormat = true;
+            break;
+        }
+    }
+    if (!useMBAACCFormat && this->data != nullptr) {
+        unsigned int sz = size;
+        const char* raw = this->data;
+        for (unsigned int k = 0x20; k + 4 <= sz; ++k) {
+            if (raw[k] == 'P' && raw[k+1] == 'A' && raw[k+2] == 'N' && raw[k+3] == 'M') {
+                useMBAACCFormat = true;
+                break;
+            }
+        }
+    }
+
     // Auto-load .pal file if it exists (similar to how .txt loading auto-loads .pal for .cg)
     // This makes it easier to work with .pat files without manually loading palettes
     if (cg && !filePath.empty()) {
@@ -904,7 +927,7 @@ bool Parts::Save(const char* filename)
             continue;
         file.write("P_ST", 4);
         file.write(VAL(i), 4);
-        PartSet<>::Save(file, &partSets[i]);
+        PartSet<>::Save(file, &partSets[i], useMBAACCFormat);
         file.write("P_ED", 4);
     }
 
@@ -915,7 +938,7 @@ bool Parts::Save(const char* filename)
             continue;
         file.write("PPST", 4);
         file.write(VAL(i), 4);
-        CutOut<>::Save(file, &cutOuts[i]);
+        CutOut<>::Save(file, &cutOuts[i], useMBAACCFormat);
         file.write("PPED", 4);
     }
 
