@@ -160,6 +160,9 @@ struct FrameState
 	// Shared memory clipboard for cross-instance copy/paste
 	CopyData *copied;
 
+	// UI scroll state (preserved when switching views)
+	float rightPaneScrollY = 0.0f;
+
 	FrameState();
 	~FrameState();
 
