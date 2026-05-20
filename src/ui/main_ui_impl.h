@@ -1240,23 +1240,38 @@ void MainFrame::UpdateBackProj(float x, float y)
 	glViewport(0, 0, x, y);
 }
 
+void MainFrame::HandleMouseDown(bool dragRight, bool dragLeft)
+{
+	auto* view = getActiveView();
+	if (view && view->isStageView() && dragLeft)
+		bgCamera.BeginDrag();
+}
+
+void MainFrame::HandleMouseUp(bool dragRight, bool dragLeft)
+{
+	auto* view = getActiveView();
+	if (view && view->isStageView() && dragLeft) {
+		bgCamera.EndDrag();
+		view->setStageRenderXY(bgCamera.panLastX, bgCamera.panLastY);
+	}
+}
+
 void MainFrame::HandleMouseDrag(int x_, int y_, bool dragRight, bool dragLeft)
 {
 	auto* view = getActiveView();
 	if (!view) return;
 
-	// Stage tab: drag pans the bg camera. We update bgCamera.panLast (the
-	// stable position) directly — this is conceptually a finished drag at
-	// every mouse delta, which is simpler than wiring full BeginDrag /
-	// UpdateDrag / EndDrag through the existing mouse-button logic. The
-	// trade-off is that the parallax-during-drag effect from u4ick's tool
-	// won't show up here (only fully panned positions). View pan state
-	// stays mirrored so tab switches restore correctly.
+	// Stage tab: left-drag pans the bg camera. We accumulate the live
+	// delta into bgCamera.pan while panLast stays put — that's u4ick's
+	// movingPoint / movingPoint_last pair, and it's what makes the
+	// parallax preview kick in for the duration of the drag (sprites
+	// with parallax > 256 shift faster than the camera, < 256 slower).
+	// On mouse-up HandleMouseUp calls EndDrag which folds pan into
+	// panLast and the parallax delta collapses back to zero.
 	if (view->isStageView()) {
 		if (dragLeft) {
-			bgCamera.SetPan(bgCamera.panLastX + x_ / render.scale,
-			                bgCamera.panLastY + y_ / render.scale);
-			view->setStageRenderXY(bgCamera.panLastX, bgCamera.panLastY);
+			bgCamera.panX += x_ / render.scale;
+			bgCamera.panY += y_ / render.scale;
 		}
 		return;
 	}
