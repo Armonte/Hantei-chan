@@ -575,6 +575,10 @@ unsigned int *fd_frame_AF_load(unsigned int *data, const unsigned int *data_end,
 			// UNI frame parameters for Squirrel script reference
 			memcpy(frame->AF.param, data, sizeof(uint8_t)*4);
 			++data;
+		} else if (!memcmp(buf, "AFJH", 4)) {
+			// UNI jump helper
+			frame->AF.afjh = data[0];
+			++data;
 		} else if (!memcmp(buf, "AFED", 4)) {
 			break;
 		} else {

@@ -182,6 +182,20 @@ void WriteAF(std::ofstream &file, const Frame_AF *af)
 		file.write("AFHK", 4);
 		file.write(VAL(af->interpolationType), 4);
 	}
+	// UNI/Dengeki frame ID and parameters (zero-default, safe for MBAACC)
+	if(af->frameId){
+		file.write("AFID", 4);
+		file.write(VAL(af->frameId), 4);
+	}
+	if(af->afjh){
+		int AFJH = af->afjh;
+		file.write("AFJH", 4);
+		file.write(VAL(AFJH), 4);
+	}
+	if(memcmp(af->param, "\0\0\0\0", 4)){
+		file.write("AFPA", 4);
+		file.write(PTR(af->param), 4);
+	}
 	if(af->priority){
 		file.write("AFPR", 4);
 		file.write(VAL(af->priority), 4);
@@ -253,6 +267,10 @@ void WriteAS(std::ofstream &file, const Frame_AS *as)
 		file.write("ASCT", 4);
 		file.write(VAL(as->counterType), 4);
 	}
+	if(as->ascf){
+		file.write("ASCF", 4);
+		file.write(VAL(as->ascf), 4);
+	}
 	if(as->statusFlags[0])
 	{
 		file.write("ASF0", 4);
@@ -288,7 +306,7 @@ void WriteAS(std::ofstream &file, const Frame_AS *as)
 }
 
 
-void WriteAT(std::ofstream &file, const Frame_AT *at)
+void WriteAT(std::ofstream &file, const Frame_AT *at, bool usedATV2)
 {
 	file.write("ATST", 4);
 
@@ -300,36 +318,50 @@ void WriteAT(std::ofstream &file, const Frame_AT *at)
 		file.write("ATHS", 4);
 		file.write(VAL(at->correction), 4);
 	}
-	{ //Always
-		short d[4];
-		d[0] = at->red_damage;
-		d[1] = at->damage;
-		d[2] = at->guard_damage;
-		d[3] = at->meter_gain;
-		file.write("ATVV", 4);
-		file.write(PTR(d), 2*4);
+
+	if(usedATV2){
+		// UNI/Dengeki: combined hit+guard vector format, damage and meter as separate tags
+		constexpr int sizes[2] = {3, 2};
+		file.write("ATV2", 4);
+		file.write(PTR(sizes), 2*4);
+		for(int i = 0; i < 3; i++){
+			file.write(VAL(at->hVFlags[i]), 4);
+			file.write(VAL(at->hitVector[i]), 4);
+			file.write(VAL(at->gVFlags[i]), 4);
+			file.write(VAL(at->guardVector[i]), 4);
+		}
+	} else {
+		// MBAACC: pack damage/meter into ATVV, separate ATHV/ATGV
+		{ //Always
+			short d[4];
+			d[0] = at->red_damage;
+			d[1] = at->damage;
+			d[2] = at->guard_damage;
+			d[3] = at->meter_gain;
+			file.write("ATVV", 4);
+			file.write(PTR(d), 2*4);
+		}
+		{
+			constexpr int three = 3;
+			int val[three];
+
+			file.write("ATHV", 4);
+			file.write(VAL(three), 4);
+			for(int i = 0; i < 3; i++)
+				val[i] = at->hitVector[i] | (at->hVFlags[i] << 8);
+			file.write(PTR(val), sizeof(val));
+
+			file.write("ATGV", 4);
+			file.write(VAL(three), 4);
+			for(int i = 0; i < 3; i++)
+				val[i] = at->guardVector[i] | (at->gVFlags[i] << 8);
+			file.write(PTR(val), sizeof(val));
+		}
 	}
+
 	if(at->correction_type){
 		file.write("ATHT", 4);
 		file.write(VAL(at->correction_type), 4);
-	}
-	if(true){
-		constexpr int three = 3;
-		int val[three];
-
-		file.write("ATHV", 4);
-		file.write(VAL(three), 4);
-		for(int i = 0; i < 3; i++)
-			val[i] = at->hitVector[i] | (at->hVFlags[i] << 8);
-
-		file.write(PTR(val), sizeof(val));
-
-		file.write("ATGV", 4);
-		file.write(VAL(three), 4);
-		for(int i = 0; i < 3; i++)
-			val[i] = at->guardVector[i] | (at->gVFlags[i] << 8);
-
-		file.write(PTR(val), sizeof(val));
 	}
 	if(at->otherFlags){
 		file.write("ATF1", 4);
@@ -373,6 +405,39 @@ void WriteAT(std::ofstream &file, const Frame_AT *at)
 		file.write("ATGN", 4);
 		file.write(VAL(at->blockStopTime), 4);
 	}
+
+	if(usedATV2){
+		// UNI/Dengeki: damage and meter gain are separate tags (not packed into ATVV)
+		if(at->damage){
+			file.write("ATAT", 4);
+			file.write(VAL(at->damage), 4);
+		}
+		if(at->meter_gain){
+			file.write("ATCA", 4);
+			file.write(VAL(at->meter_gain), 4);
+		}
+		if(at->damageProration != 100){
+			file.write("ATHH", 4);
+			file.write(VAL(at->damageProration), 4);
+		}
+		if(at->minDamage){
+			file.write("ATAM", 4);
+			file.write(VAL(at->minDamage), 4);
+		}
+		if(at->hitStunDecay[0] || at->hitStunDecay[1] || at->hitStunDecay[2]){
+			file.write("ATC0", 4);
+			file.write(PTR(at->hitStunDecay), 3*4);
+		}
+		if(at->addHitStun){
+			file.write("ATSA", 4);
+			file.write(VAL(at->addHitStun), 4);
+		}
+		if(at->starterCorrection){
+			file.write("ATSH", 4);
+			file.write(VAL(at->starterCorrection), 4);
+		}
+	}
+
 	file.write("ATED", 4);
 }
 
@@ -410,7 +475,7 @@ void WriteIF(std::ofstream &file, const std::vector<Frame_IF> &ef)
 	}
 }
 
-void WriteFrame(std::ofstream &file, const Frame *frame, bool usedAFGX)
+void WriteFrame(std::ofstream &file, const Frame *frame, bool usedAFGX, bool usedATV2)
 {
 	file.write("FSTR", 4);
 	WriteAF(file, &frame->AF);
@@ -453,7 +518,7 @@ void WriteFrame(std::ofstream &file, const Frame *frame, bool usedAFGX)
 
 	constexpr Frame_AT defAT{};
 	if(!!memcmp(&frame->AT, &defAT, sizeof(Frame_AT)))
-		WriteAT(file, &frame->AT);
+		WriteAT(file, &frame->AT, usedATV2);
 
 	for(const auto& box : frame->hitboxes)
 	{
@@ -496,6 +561,10 @@ void WriteSequence(std::ofstream &file, const Sequence *seq)
 	if(seq->flag){
 		file.write("PFLG", 4);
 		file.write(VAL(seq->flag), 4);
+	}
+	if(seq->pups){
+		file.write("PUPS", 4);
+		file.write(VAL(seq->pups), 4);
 	}
 	if(!seq->name.empty()){
 		char buf[32]{};
@@ -552,7 +621,7 @@ void WriteSequence(std::ofstream &file, const Sequence *seq)
 
 		for(const auto& frame : seq->frames)
 		{
-			WriteFrame(file, &frame, seq->usedAFGX);
+			WriteFrame(file, &frame, seq->usedAFGX, seq->usedATV2);
 		}
 	}
 }
