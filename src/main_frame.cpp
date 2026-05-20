@@ -183,12 +183,12 @@ void MainFrame::DrawBack()
 		render.y = (active->renderY + clientRect.y/2) / render.scale;
 	}
 	else if (view && view->isStageView()) {
-		// Stage tabs default to u4ick's bgmaketool layout (zoom 1.0, world
-		// (0,0) anchored at screen (401, 538)) — established in
-		// CharacterView::setStageFile, restored by setActiveView. We just
-		// pull the latest pan state in case the user dragged this frame.
-		render.x = view->getStageRenderX();
-		render.y = view->getStageRenderY();
+		// bgCamera.panLastX/Y is the screen anchor (where world (0, 0) sits)
+		// in u4ick's model. Mirror it into render.x/y so the GL transform
+		// translates everything (bg sprites + grid + reference markers)
+		// together when the user pans.
+		render.x = bgCamera.panLastX;
+		render.y = bgCamera.panLastY;
 		render.DrawGridLines();
 		return; // DrawBackground above already drew the stage.
 	}
@@ -747,10 +747,13 @@ void MainFrame::setActiveView(int index)
 				currentBgFile = view->getStageFile();
 				bgRenderer.SetFile(currentBgFile);
 				bgRenderer.SetEnabled(true);
-				// Apply the stage tab's stored pan immediately so the very
-				// first DrawBackground call this frame uses correct coords.
-				render.x = view->getStageRenderX();
-				render.y = view->getStageRenderY();
+				// Apply stored pan from the view into bgCamera (the source
+				// of truth) and mirror into render.x/y so the very first
+				// DrawBackground call this frame uses correct coords.
+				bgCamera.SetPan(view->getStageRenderX(),
+				                view->getStageRenderY());
+				render.x = bgCamera.panLastX;
+				render.y = bgCamera.panLastY;
 			} else {
 				currentBgFile = nullptr;
 				bgRenderer.SetFile(nullptr);
@@ -1222,17 +1225,17 @@ void MainFrame::loadStageFile(const std::string& path)
 	auto view = std::make_unique<CharacterView>(nullptr, &render);
 	view->setStageFile(std::move(file), displayName);
 
-	// Pick an initial pan so world (0, 0) sits at the same proportional
-	// position u4ick's bgmaketool puts character feet at — (401, 538) in his
-	// 1280x720 render window. Using ratios instead of literal pixels keeps
-	// the bg looking right at any window size (the literal version made
-	// fire / torches appear "too high" on taller monitors).
+	// Center the bgmake play area in our viewport. u4ick draws his stage's
+	// purple reference rectangle from (x1-401, y1-538) sized (1057, 810),
+	// so the rectangle's center sits at (x1+127, y1-133). Solve for the pan
+	// (x1, y1) that puts that center at our viewport center.
 	float clientW = clientRect.x > 0 ? clientRect.x : 1280.0f;
 	float clientH = clientRect.y > 0 ? clientRect.y : 720.0f;
-	float anchorX = clientW * (401.0f / 1280.0f);
-	float anchorY = clientH * (538.0f / 720.0f);
+	float anchorX = clientW * 0.5f - 127.0f;
+	float anchorY = clientH * 0.5f + 133.0f;
 	view->setStageRenderXY(anchorX, anchorY);
 	view->setStageRenderInit(true);
+	bgCamera.SetPan(anchorX, anchorY);  // bg Camera tracks the same anchor.
 
 	views.push_back(std::move(view));
 	setActiveView((int)views.size() - 1);

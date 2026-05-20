@@ -471,7 +471,7 @@ void MainFrame::Menu(unsigned int errorPopupId)
 			{
 				ImGui::Separator();
 				ImGui::TextDisabled("Loaded: %zu objects", currentBgFile->GetObjects().size());
-				ImGui::TextDisabled("Camera: (%.0f, %.0f)", bgCamera.x, bgCamera.y);
+				ImGui::TextDisabled("Camera: (%.0f, %.0f)", bgCamera.panLastX, bgCamera.panLastY);
 			}
 
 			ImGui::EndMenu();

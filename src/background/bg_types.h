@@ -62,25 +62,44 @@ struct Object {
 	void Reset();
 };
 
-// Camera for parallax calculations
+// Camera for parallax calculations. Mirrors u4ick's bgmaketool model where
+// `panX/Y` is the live drag position and `panLastX/Y` is the previous stable
+// position; parallax shows as the difference between them scaled by per-object
+// parallax. After a drag ends both pairs are equal again and the rendering
+// reduces to `screen = panLast + offset`.
 struct Camera {
-	float x = 0.0f;
-	float y = 0.0f;
+	float panX = 0.0f;       // movingPoint.X    (live during drag)
+	float panY = 0.0f;       // movingPoint.Y
+	float panLastX = 0.0f;   // movingPoint_last.X (stable, between drags)
+	float panLastY = 0.0f;   // movingPoint_last.Y
 	float zoom = 1.0f;
-	
-	// Apply parallax effect (256 = 1.0x speed)
-	inline float ApplyParallaxX(float worldX, int parallax) const {
-		float factor = parallax / 256.0f;
-		return worldX - (x * factor);
+	bool dragging = false;
+
+	// Sprite *world* position for a given object/frame offset. u4ick's
+	// MonoForm.cs:253-254 formula is `panLast + (pan - panLast) * f + off`
+	// in screen space; the `panLast +` part is the screen anchor (where
+	// world (0, 0) sits on screen). We let mainRender's transform handle
+	// that anchor (via render.x/y in the host editor), so this returns just
+	// the offset plus the live parallax delta. Result == `xOff` when not
+	// mid-drag.
+	inline float ScreenX(float xOff, int parallax) const {
+		float f = parallax / 256.0f;
+		return xOff + (panX - panLastX) * f;
 	}
-	
-	inline float ApplyParallaxY(float worldY, int parallax) const {
-		float factor = parallax / 256.0f;
-		return worldY - (y * factor);
+	inline float ScreenY(float yOff, int parallax) const {
+		float f = parallax / 256.0f;
+		return yOff + (panY - panLastY) * f;
 	}
-	
-	void Pan(float dx, float dy) { x += dx; y += dy; }
-	void SetZoom(float z) { zoom = z; }
+
+	// Drag lifecycle: hands tracking to call BeginDrag on mouse-down,
+	// UpdateDrag on move, EndDrag on mouse-up — mirrors Form1.cs:153-191.
+	void BeginDrag() { dragging = true; }
+	void UpdateDrag(float dx, float dy) { if (dragging) { panX = panLastX + dx; panY = panLastY + dy; } }
+	void EndDrag() { panLastX = panX; panLastY = panY; dragging = false; }
+
+	// Set the stable pan position directly (used for initial centering and
+	// for instantaneous pan from non-drag controls).
+	void SetPan(float x, float y) { panX = panLastX = x; panY = panLastY = y; }
 };
 
 } // namespace bg
