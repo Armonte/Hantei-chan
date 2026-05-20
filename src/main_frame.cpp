@@ -54,8 +54,21 @@ void MainFrame::Draw()
 	DrawUi();
 	DrawBack();
 	ImGui::Render();
-	
+
 	ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
+
+	// Multi-viewport: render windows that the user dragged out of the main
+	// window. Save & restore the WGL context because imgui creates one per
+	// platform window and leaves a different one current after this call.
+	ImGuiIO& io = ImGui::GetIO();
+	if (io.ConfigFlags & ImGuiConfigFlags_ViewportsEnable)
+	{
+		HGLRC backupCtx = wglGetCurrentContext();
+		HDC   backupDc  = wglGetCurrentDC();
+		ImGui::UpdatePlatformWindows();
+		ImGui::RenderPlatformWindowsDefault();
+		wglMakeCurrent(backupDc, backupCtx);
+	}
 
 	SwapBuffers(context->dc);
 
@@ -158,17 +171,25 @@ void MainFrame::DrawBack()
 	glClear(GL_COLOR_BUFFER_BIT |  GL_DEPTH_BUFFER_BIT);
 
 	// Tick background animation (once per frame, regardless of which draw path
-	// we take below). Render::DrawBackground inside render.Draw() pulls the
-	// current state through bgRenderer.
+	// we take below). DrawBackground emits quads under the grid/character.
 	bgRenderer.Update();
+	render.DrawBackground();
 
 	auto* active = getActiveCharacter();
+	auto* view = getActiveView();
+
 	if (active) {
 		render.x = (active->renderX + clientRect.x/2) / render.scale;
 		render.y = (active->renderY + clientRect.y/2) / render.scale;
 	}
-
-	auto* view = getActiveView();
+	else if (view && view->isStageView()) {
+		// Stage view has no character — center the viewport so the user can
+		// see the stage at a reasonable starting position.
+		render.x = (clientRect.x / 2) / render.scale;
+		render.y = (clientRect.y / 2) / render.scale;
+		render.DrawGridLines();
+		return; // DrawBackground above already drew the stage.
+	}
 
 	// Check if we need to draw with spawned patterns
 	bool hasSpawnedPatterns = false;
@@ -702,7 +723,7 @@ void MainFrame::setActiveView(int index)
 			if (character) {
 				// Update CG reference (this resets curImageId)
 				render.SetCg(&character->cg);
-				
+
 				// Set Parts if this view has them loaded (PAT editor or character with PAT)
 				// SetParts internally handles texture clearing when switching between Parts/CG
 				if (character->parts.loaded) {
@@ -711,11 +732,24 @@ void MainFrame::setActiveView(int index)
 					render.SetParts(nullptr);  // Clear Parts for non-PAT views
 				}
 			}
-			
+
 			// Restore this view's zoom level
 			float viewZoom = view->getZoom();
 			render.scale = viewZoom;
 			zoom_idx = viewZoom;  // Update UI slider
+
+			// Point the background renderer at this view's stage (if any).
+			// currentBgFile mirrors the active tab's stage so the Stage menu
+			// and Background Inspector keep working transparently.
+			if (view->isStageView()) {
+				currentBgFile = view->getStageFile();
+				bgRenderer.SetFile(currentBgFile);
+				bgRenderer.SetEnabled(true);
+			} else {
+				currentBgFile = nullptr;
+				bgRenderer.SetFile(nullptr);
+				bgRenderer.SetEnabled(false);
+			}
 		}
 	}
 }
@@ -1163,28 +1197,45 @@ void MainFrame::openRecentProject(const std::string& path)
 
 
 // ---------------------------------------------------------------------------
-// Background (stage) load / clear. The actual rendering hand-off happens via
-// render.SetBackgroundRenderer in the ctor; here we just swap the loaded file.
+// Background (stage) load / clear. Each loaded stage becomes its own view
+// (tab) so it can be docked / undocked alongside character tabs and live in
+// its own viewport. currentBgFile mirrors the active tab's stage file so
+// existing menu items and the inspector keep working without knowing about
+// the view abstraction.
 
 void MainFrame::loadStageFile(const std::string& path)
 {
-	clearStage();
-	currentBgFile = new bg::File();
-	if (currentBgFile->Load(path.c_str())) {
-		bgRenderer.SetFile(currentBgFile);
-		bgRenderer.SetEnabled(true);
-	} else {
-		delete currentBgFile;
-		currentBgFile = nullptr;
-	}
+	auto file = std::make_unique<bg::File>();
+	if (!file->Load(path.c_str()))
+		return;
+
+	std::string displayName = path;
+	auto slash = displayName.find_last_of("/\\");
+	if (slash != std::string::npos) displayName = displayName.substr(slash + 1);
+
+	auto view = std::make_unique<CharacterView>(nullptr, &render);
+	view->setStageFile(std::move(file), displayName);
+	views.push_back(std::move(view));
+	setActiveView((int)views.size() - 1);
 }
 
 void MainFrame::clearStage()
 {
-	if (currentBgFile) {
-		bgRenderer.SetFile(nullptr);
-		bgRenderer.SetEnabled(false);
-		delete currentBgFile;
-		currentBgFile = nullptr;
+	// Drop the active stage view (if any) and detach the renderer.
+	bgRenderer.SetFile(nullptr);
+	bgRenderer.SetEnabled(false);
+	currentBgFile = nullptr;
+
+	if (activeViewIndex >= 0 && activeViewIndex < (int)views.size()) {
+		auto* view = views[activeViewIndex].get();
+		if (view && view->isStageView()) {
+			views.erase(views.begin() + activeViewIndex);
+			if (views.empty())
+				activeViewIndex = -1;
+			else if (activeViewIndex >= (int)views.size())
+				setActiveView((int)views.size() - 1);
+			else
+				setActiveView(activeViewIndex);
+		}
 	}
 }

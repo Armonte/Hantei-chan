@@ -11,6 +11,7 @@
 #include "PatEditor/pat_shape_pane.h"
 #include "PatEditor/pat_texture_pane.h"
 #include "PatEditor/pat_tool_pane.h"
+#include "background/bg_file.h"
 #include <memory>
 #include <string>
 
@@ -51,6 +52,13 @@ public:
 	bool isPatEditor() const { return m_isPatEditor; }
 	void setPatEditor(bool enabled) { m_isPatEditor = enabled; }
 
+	// Stage mode — view shows a bgmake .dat file instead of a character. The
+	// view owns the bg::File*. character may be null for stage-only views.
+	bool isStageView() const { return m_stageFile != nullptr; }
+	bg::File* getStageFile() const { return m_stageFile.get(); }
+	void setStageFile(std::unique_ptr<bg::File> file, const std::string& displayName);
+	const std::string& getStageDisplayName() const { return m_stageDisplayName; }
+
 	// Recreate panes (called when switching to this view)
 	void refreshPanes(class Render* render);
 
@@ -77,6 +85,10 @@ private:
 	std::unique_ptr<PatShapePane> m_shapePane;
 	std::unique_ptr<PatTexturePane> m_texturePane;
 	std::unique_ptr<PatToolPane> m_toolPane;
+
+	// Stage view state (owned by the view, freed when view is destroyed).
+	std::unique_ptr<bg::File> m_stageFile;
+	std::string m_stageDisplayName;
 };
 
 #endif /* CHARACTER_VIEW_H_GUARD */

@@ -19,6 +19,9 @@ CharacterView::~CharacterView()
 
 std::string CharacterView::getDisplayName() const
 {
+	if (isStageView()) {
+		return std::string("Stage: ") + m_stageDisplayName;
+	}
 	if (!m_character) {
 		return "Unknown";
 	}
@@ -34,6 +37,12 @@ std::string CharacterView::getDisplayName() const
 	name += " - " + std::to_string(m_state.pattern);
 
 	return name;
+}
+
+void CharacterView::setStageFile(std::unique_ptr<bg::File> file, const std::string& displayName)
+{
+	m_stageFile = std::move(file);
+	m_stageDisplayName = displayName;
 }
 
 void CharacterView::refreshPanes(Render* render)
