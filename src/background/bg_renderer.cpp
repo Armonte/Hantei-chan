@@ -88,6 +88,14 @@ void Renderer::RenderObject(const Object& obj, const Camera& camera, ::Render* m
 
 	const Frame& frame = obj.frames[obj.currentFrame];
 
+	// Match u4ick's render-time skip: frames with duration=0 and aniType=1
+	// (loop) in a multi-frame object are transient placeholders that the
+	// loop logic advances past. Rendering them for the one tick they're
+	// 'current' produces a visible flicker between loop iterations.
+	// See bgmaketool/MonoForm.cs:211-214.
+	if (frame.duration == 0 && frame.aniType == 1 && obj.frames.size() > 1)
+		return;
+
 	// Debug: Print first few objects to check for offset variation
 	static int debugFrameCount = 0;
 	if (debugFrameCount < 20) {

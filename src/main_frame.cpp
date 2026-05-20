@@ -183,17 +183,10 @@ void MainFrame::DrawBack()
 		render.y = (active->renderY + clientRect.y/2) / render.scale;
 	}
 	else if (view && view->isStageView()) {
-		// Stage view: pan state lives on the view itself so each tab keeps
-		// its own camera. Default to scale=1 with world (0,0) anchored at
-		// screen (401, 538) — this matches u4ick's bgmaketool exactly, so
-		// stages render with their sprites at the same positions you'd see
-		// in his editor (fire / torches above the character reference, etc).
-		if (!view->isStageRenderInit()) {
-			view->setZoom(1.0f);
-			render.scale = 1.0f;
-			view->setStageRenderXY(401.0f, 538.0f);
-			view->setStageRenderInit(true);
-		}
+		// Stage tabs default to u4ick's bgmaketool layout (zoom 1.0, world
+		// (0,0) anchored at screen (401, 538)) — established in
+		// CharacterView::setStageFile, restored by setActiveView. We just
+		// pull the latest pan state in case the user dragged this frame.
 		render.x = view->getStageRenderX();
 		render.y = view->getStageRenderY();
 		render.DrawGridLines();
@@ -754,6 +747,10 @@ void MainFrame::setActiveView(int index)
 				currentBgFile = view->getStageFile();
 				bgRenderer.SetFile(currentBgFile);
 				bgRenderer.SetEnabled(true);
+				// Apply the stage tab's stored pan immediately so the very
+				// first DrawBackground call this frame uses correct coords.
+				render.x = view->getStageRenderX();
+				render.y = view->getStageRenderY();
 			} else {
 				currentBgFile = nullptr;
 				bgRenderer.SetFile(nullptr);
@@ -1224,6 +1221,19 @@ void MainFrame::loadStageFile(const std::string& path)
 
 	auto view = std::make_unique<CharacterView>(nullptr, &render);
 	view->setStageFile(std::move(file), displayName);
+
+	// Pick an initial pan so world (0, 0) sits at the same proportional
+	// position u4ick's bgmaketool puts character feet at — (401, 538) in his
+	// 1280x720 render window. Using ratios instead of literal pixels keeps
+	// the bg looking right at any window size (the literal version made
+	// fire / torches appear "too high" on taller monitors).
+	float clientW = clientRect.x > 0 ? clientRect.x : 1280.0f;
+	float clientH = clientRect.y > 0 ? clientRect.y : 720.0f;
+	float anchorX = clientW * (401.0f / 1280.0f);
+	float anchorY = clientH * (538.0f / 720.0f);
+	view->setStageRenderXY(anchorX, anchorY);
+	view->setStageRenderInit(true);
+
 	views.push_back(std::move(view));
 	setActiveView((int)views.size() - 1);
 }
