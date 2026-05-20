@@ -455,7 +455,7 @@ LRESULT WINAPI WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
 			GetCursorPos(&mousePos);
 			ScreenToClient(hWnd, &mousePos);
 			SetCapture(hWnd);
-
+			if (mf) mf->HandleMouseDown(false, true);
 			return 0;
 		}
 		justActivated = false;  // Clear flag after first click
@@ -466,6 +466,7 @@ LRESULT WINAPI WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
 			if(!dragRight)
 				ReleaseCapture();
 			dragLeft = false;
+			if (mf) mf->HandleMouseUp(false, true);
 			return 0;
 		}
 		break;

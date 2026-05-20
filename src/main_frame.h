@@ -32,6 +32,10 @@ public:
 	void Draw();
 	void UpdateBackProj(float x, float y);
 	void HandleMouseDrag(int x, int y, bool dragRight, bool dragLeft);
+	// Drag start/end edges — currently used to begin/end the bg camera
+	// parallax-preview drag (u4ick's movingPoint/movingPoint_last dance).
+	void HandleMouseDown(bool dragRight, bool dragLeft);
+	void HandleMouseUp(bool dragRight, bool dragLeft);
 	bool HandleKeys(uint64_t vkey);
 	void HandleMouseWheel(bool isIncrease);
 

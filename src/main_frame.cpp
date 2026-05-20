@@ -1225,17 +1225,15 @@ void MainFrame::loadStageFile(const std::string& path)
 	auto view = std::make_unique<CharacterView>(nullptr, &render);
 	view->setStageFile(std::move(file), displayName);
 
-	// Center the bgmake play area in our viewport. u4ick draws his stage's
-	// purple reference rectangle from (x1-401, y1-538) sized (1057, 810),
-	// so the rectangle's center sits at (x1+127, y1-133). Solve for the pan
-	// (x1, y1) that puts that center at our viewport center.
-	float clientW = clientRect.x > 0 ? clientRect.x : 1280.0f;
-	float clientH = clientRect.y > 0 ? clientRect.y : 720.0f;
-	float anchorX = clientW * 0.5f - 127.0f;
-	float anchorY = clientH * 0.5f + 133.0f;
-	view->setStageRenderXY(anchorX, anchorY);
+	// Default camera at (0, 0) — same as u4ick's bgmaketool, which starts
+	// with movingPoint = Point.Empty. The user pans to bring sprites into
+	// view; left-drag now feeds bgCamera's BeginDrag / UpdateDrag / EndDrag
+	// lifecycle so the parallax preview behaves the same way it does in
+	// his tool (objects with different paralax values shift at different
+	// rates while you're dragging, then settle when you release).
+	view->setStageRenderXY(0.0f, 0.0f);
 	view->setStageRenderInit(true);
-	bgCamera.SetPan(anchorX, anchorY);  // bg Camera tracks the same anchor.
+	bgCamera.SetPan(0.0f, 0.0f);
 
 	views.push_back(std::move(view));
 	setActiveView((int)views.size() - 1);
