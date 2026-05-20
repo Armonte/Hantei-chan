@@ -482,10 +482,11 @@ void MainFrame::DrawUi()
 			            f0.spriteId, f0.offsetX, f0.offsetY);
 			ImGui::Text("  -> screen=(%.1f, %.1f)", screenPx, screenPy);
 
-			// Y-flicker diagnostic: dump sprite dimensions for every frame
-			// in obj[0]'s animation. If heights vary, the visible sprite
-			// BOTTOM moves frame to frame even though the offset is fixed —
-			// that's what the user sees as "y position flicker."
+			// Y-flicker diagnostic: dump sprite dimensions AND content
+			// origin (bounds_x1, bounds_y1) for every frame in obj[0]'s
+			// animation. If offsetY varies per frame, the bounded
+			// content position shifts even though width/height are fixed —
+			// that explains the user-visible flicker.
 			if (auto* cg = currentBgFile->GetCG()) {
 				ImGui::Text("Sprite dims (per frame):");
 				for (size_t fi = 0; fi < obj0.frames.size(); ++fi) {
@@ -493,8 +494,11 @@ void MainFrame::DrawUi()
 					ImageData* img = cg->draw_texture(sid, false, false);
 					int w = img ? img->width : -1;
 					int h = img ? img->height : -1;
+					int ox = img ? img->offsetX : -1;
+					int oy = img ? img->offsetY : -1;
 					delete img;
-					ImGui::Text("  [%zu] spr=%d  %dx%d", fi, sid, w, h);
+					ImGui::Text("  [%zu] spr=%d  %dx%d  origin=(%d, %d)",
+					            fi, sid, w, h, ox, oy);
 				}
 			}
 		}
