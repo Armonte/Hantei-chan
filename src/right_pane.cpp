@@ -4,9 +4,20 @@
 
 void RightPane::Draw()
 {
+	// Track view changes to restore scroll position when switching tabs
+	static FrameState* lastViewState = nullptr;
+	bool viewJustChanged = (lastViewState != &currState);
+
 	ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(8, 8));
 	ImGui::Begin("Right Pane", 0);
 	ImGui::PopStyleVar();
+
+	// Restore scroll position when switching views
+	if (viewJustChanged) {
+		ImGui::SetScrollY(currState.rightPaneScrollY);
+		lastViewState = &currState;
+	}
+
 	auto seq = frameData->get_sequence(currState.pattern);
 	if(seq)
 	{
@@ -151,6 +162,10 @@ void RightPane::Draw()
 			}
 		}
 	}
+
+	// Save scroll position before ending
+	currState.rightPaneScrollY = ImGui::GetScrollY();
+
 	ImGui::End();
 }
 
