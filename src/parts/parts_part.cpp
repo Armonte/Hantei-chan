@@ -14,8 +14,11 @@ unsigned int* CutOut<>::PpLoad(unsigned int* data, const unsigned int* data_end,
         ++data;
 
         if (!memcmp(buf, "PPNM", 4)) {
-            // Melty name (null-terminated, 32 bytes)
-            pp.name = (char*)data;
+            // MBAACC name (null-terminated, 32-byte Shift-JIS buffer)
+            char buf32[33]{};
+            std::memcpy(buf32, data, 32);
+            buf32[32] = 0;
+            pp.name = sj2utf8(buf32);
             data += 0x20 / 4;
         }
         else if (!memcmp(buf, "PPNA", 4)) {
@@ -117,19 +120,34 @@ unsigned int* CutOut<>::PpLoad(unsigned int* data, const unsigned int* data_end,
 }
 
 template<>
-void CutOut<>::Save(std::ofstream &file, const CutOut *cutOut)
+void CutOut<>::Save(std::ofstream &file, const CutOut *cutOut, bool mbaacc)
 {
+    // MBAACC uses legacy tag variants that carry identical payloads:
+    //   PPNM (32-byte name) vs PPNA (length-prefixed)
+    //   PPCC vs PPXY (origin)
+    //   PPSS vs PPWH (width/height)
+    //   PPTP vs PPGR (texture id)
+    //   PPPA vs PPCL (color slot)
+    //   PPPP vs PPVT (shape index)
+    // PPUV, PPTX, PPTE, PPJP are the same in both.
     if(!cutOut->name.empty()) {
-        file.write("PPNA", 4);
         std::string name = utf82sj(cutOut->name);
-        uint32_t size = name.size();
-        file.write(VAL(size), 1);
-        file.write(PTR(name.data()), size);
+        if(mbaacc) {
+            file.write("PPNM", 4);
+            char buf[32]{};
+            strncpy(buf, name.c_str(), 31);
+            file.write(PTR(buf), 32);
+        } else {
+            file.write("PPNA", 4);
+            uint32_t size = name.size();
+            file.write(VAL(size), 1);
+            file.write(PTR(name.data()), size);
+        }
     }
 
     if(cutOut->xy[0] != 0 || cutOut->xy[1] != 0)
     {
-        file.write("PPXY", 4);
+        file.write(mbaacc ? "PPCC" : "PPXY", 4);
         file.write(VAL(cutOut->xy[0]), 4);
         file.write(VAL(cutOut->xy[1]), 4);
     }
@@ -148,14 +166,14 @@ void CutOut<>::Save(std::ofstream &file, const CutOut *cutOut)
 
     if(cutOut->wh[0] != 0 || cutOut->wh[1] != 0)
     {
-        file.write("PPWH", 4);
+        file.write(mbaacc ? "PPSS" : "PPWH", 4);
         file.write(VAL(cutOut->wh[0]), 4);
         file.write(VAL(cutOut->wh[1]), 4);
     }
 
     if(cutOut->texture > 0)
     {
-        file.write("PPGR", 4);
+        file.write(mbaacc ? "PPTP" : "PPGR", 4);
         file.write(VAL(cutOut->texture), 4);
     }
 
@@ -174,13 +192,13 @@ void CutOut<>::Save(std::ofstream &file, const CutOut *cutOut)
 
     if(cutOut->colorSlot != -1)
     {
-        file.write("PPCL", 4);
+        file.write(mbaacc ? "PPPA" : "PPCL", 4);
         file.write(VAL(cutOut->colorSlot), 4);
     }
 
     if(cutOut->shapeIndex > 0)
     {
-        file.write("PPVT", 4);
+        file.write(mbaacc ? "PPPP" : "PPVT", 4);
         file.write(VAL(cutOut->shapeIndex), 4);
     }
 

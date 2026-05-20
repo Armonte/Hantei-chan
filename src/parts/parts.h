@@ -31,6 +31,11 @@ public:
 
     int curTexId = -1;
     bool loaded = false;
+    // True if the loaded .pat used MBAACC-era legacy tag names (PANM, PPNM,
+    // PPSS, PPCC, PPPA, PPPP, PPTP, PGTX). Save uses this to emit the same
+    // tag variants back instead of the canonical UNI ones (PANA, PPNA, PPWH,
+    // PPXY, PPCL, PPVT, PPGR, PGT2), preserving byte-1:1 with the original.
+    bool useMBAACCFormat = false;
 
     // PatEditor highlighting
     int partHighlight = -1;        // Index of highlighted part property (-1 = none)
