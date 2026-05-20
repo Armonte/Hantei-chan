@@ -425,6 +425,7 @@ LRESULT WINAPI WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
 			ScreenToClient(hWnd, &mousePos);
 			SetCapture(hWnd);
 			mf->RightClick(mousePos.x, mousePos.y);
+			if (mf) mf->HandleMouseDown(true, false);
 
 			return 0;
 		}
@@ -436,6 +437,7 @@ LRESULT WINAPI WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
 			if(!dragLeft)
 				ReleaseCapture();
 			dragRight = false;
+			if (mf) mf->HandleMouseUp(true, false);
 			return 0;
 		}
 		break;

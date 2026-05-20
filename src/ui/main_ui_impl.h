@@ -542,6 +542,13 @@ void MainFrame::DrawUi()
 		// Animation advancement happens via bgRenderer.Update() in DrawBack;
 		// don't double-tick here.
 
+		bool bgParallax = bgRenderer.IsParallaxEnabled();
+		if (ImGui::Checkbox("Parallax", &bgParallax)) bgRenderer.SetParallaxEnabled(bgParallax);
+		ImGui::SameLine();
+		bool bgOverlay = bgRenderer.IsShowingDebugOverlay();
+		if (ImGui::Checkbox("Stage rects", &bgOverlay)) bgRenderer.SetShowDebugOverlay(bgOverlay);
+		ImGui::TextDisabled("Right-drag the viewport to pan the camera.");
+
 		ImGui::Separator();
 
 		static int selectedObjIndex = 0;
@@ -1332,14 +1339,17 @@ void MainFrame::UpdateBackProj(float x, float y)
 void MainFrame::HandleMouseDown(bool dragRight, bool dragLeft)
 {
 	auto* view = getActiveView();
-	if (view && view->isStageView() && dragLeft)
+	// Stage tab uses RIGHT-mouse pan to match u4ick's bgmaketool
+	// (pan_status=1 on WM_RBUTTONDOWN). Left-mouse is reserved for
+	// future object-drag editing (u4ick's pan_status=2).
+	if (view && view->isStageView() && dragRight)
 		bgCamera.BeginDrag();
 }
 
 void MainFrame::HandleMouseUp(bool dragRight, bool dragLeft)
 {
 	auto* view = getActiveView();
-	if (view && view->isStageView() && dragLeft) {
+	if (view && view->isStageView() && dragRight) {
 		bgCamera.EndDrag();
 		view->setStageRenderXY(bgCamera.panLastX, bgCamera.panLastY);
 	}
@@ -1350,7 +1360,7 @@ void MainFrame::HandleMouseDrag(int x_, int y_, bool dragRight, bool dragLeft)
 	auto* view = getActiveView();
 	if (!view) return;
 
-	// Stage tab: left-drag pans the bg camera. We accumulate the live
+	// Stage tab: right-drag pans the bg camera. We accumulate the live
 	// delta into bgCamera.pan while panLast stays put — that's u4ick's
 	// movingPoint / movingPoint_last pair, and it's what makes the
 	// parallax preview kick in for the duration of the drag (sprites
@@ -1358,7 +1368,7 @@ void MainFrame::HandleMouseDrag(int x_, int y_, bool dragRight, bool dragLeft)
 	// On mouse-up HandleMouseUp calls EndDrag which folds pan into
 	// panLast and the parallax delta collapses back to zero.
 	if (view->isStageView()) {
-		if (dragLeft) {
+		if (dragRight) {
 			bgCamera.panX += x_ / render.scale;
 			bgCamera.panY += y_ / render.scale;
 		}
@@ -1382,8 +1392,13 @@ void MainFrame::HandleMouseDrag(int x_, int y_, bool dragRight, bool dragLeft)
 void MainFrame::RightClick(int x_, int y_)
 {
 	auto* view = getActiveView();
+	if (!view) return;
+	// Stage tab uses RMB for camera pan (handled in HandleMouseDown/Drag);
+	// no box-start here.
+	if (view->isStageView()) return;
+
 	auto* active = getActiveCharacter();
-	if (!view || !active) return;
+	if (!active) return;
 
 	auto* boxPane = view->getBoxPane();
 	if (!boxPane) return;
