@@ -253,66 +253,66 @@ void Renderer::Render(const Camera& camera, int clientW, int clientH) {
 	auto& objects = file->GetObjects();
 	if (objects.empty()) return;
 
-	// --- GL state setup mirroring MonoForm.Draw ---
-	// Use our own program/VAO so we don't fight whatever shader/VAO the host
-	// editor had bound (the host edits character/grid state aggressively).
+	// --- GL state ---
 	glUseProgram(program);
 
-	// Save host's depth-test state so character rendering doesn't see our
-	// changes; mainRender's next draw will rebind whatever it needs anyway.
+	// Save host depth/blend so we don't leak state to character/grid.
 	GLboolean prevDepthTest, prevDepthMask, prevBlend;
 	glGetBooleanv(GL_DEPTH_TEST, &prevDepthTest);
 	glGetBooleanv(GL_DEPTH_WRITEMASK, &prevDepthMask);
 	glGetBooleanv(GL_BLEND, &prevBlend);
 
-	glEnable(GL_DEPTH_TEST);
-	glDepthFunc(GL_LEQUAL);
-	glDepthMask(GL_TRUE);
-	// Clear ONLY the depth buffer for our slice — leaves the color buffer
-	// untouched so we can composite over whatever the host already drew.
-	glClear(GL_DEPTH_BUFFER_BIT);
+	// Disable depth test — we sort on the CPU instead so we don't have to
+	// worry about how our layerDepth range interacts with the host editor's
+	// depth buffer, projection range, or character render afterwards. (My
+	// earlier attempt set GL_DEPTH_TEST + layerDepth z = -1..0, which fell
+	// outside our ortho's [0, 1] z range and clipped most sprites — "everything
+	// looks worse." Pure paint sidesteps the whole problem.)
+	glDisable(GL_DEPTH_TEST);
+	glDepthMask(GL_FALSE);
 	glEnable(GL_BLEND);
 
-	// Projection + view (Scale(zoom) folded in).
+	// Projection (Scale(zoom) folded in).
 	float pview[16];
 	BuildProjView(clientW, clientH, camera.zoom, pview);
 	glUniformMatrix4fv(uProjView, 1, GL_FALSE, pview);
 
+	// --- sort by layer ASCENDING (higher layer drawn LAST = on top) ---
+	// User confirmed "higher on top" matches u4ick's visual ordering in bg51.
+	std::vector<size_t> order(objects.size());
+	for (size_t i = 0; i < objects.size(); ++i) order[i] = i;
+	std::stable_sort(order.begin(), order.end(),
+	                 [&](size_t a, size_t b) { return objects[a].layer < objects[b].layer; });
+
 	// --- emit sprites ---
-	// Mirrors MonoForm.cs FullBlend path: iterate all objects in their file
-	// order, set blend mode per sprite, let the depth test sort visibility
-	// via per-vertex layerDepth = layer/1024 - 1.
-	for (const auto& obj : objects) {
+	for (size_t i : order) {
+		const auto& obj = objects[i];
 		if (obj.frames.empty()) continue;
 		const Frame& fr = obj.frames[obj.currentFrame];
 
-		// Skip transient duration=0 loop-boundary placeholder frames.
+		// Skip transient duration=0 loop-boundary placeholder frames
+		// (MonoForm.cs:211-214).
 		if (fr.duration == 0 && fr.aniType == 1 && obj.frames.size() > 1)
 			continue;
 		if (fr.spriteId < 0) continue;
 
 		int para = parallaxEnabled ? obj.parallax : 256;
-		float screenX = camera.ScreenX((float)fr.offsetX, para);
-		float screenY = camera.ScreenY((float)fr.offsetY, para);
-
-		// Apply pan anchor here (camera.ScreenX returned just offset + delta).
-		screenX += camera.panLastX;
-		screenY += camera.panLastY;
+		float screenX = camera.ScreenX((float)fr.offsetX, para) + camera.panLastX;
+		float screenY = camera.ScreenY((float)fr.offsetY, para) + camera.panLastY;
 
 		int sw, sh;
 		GLuint tex = GetOrCreateTexture(fr.spriteId, sw, sh);
 		if (tex == 0) continue;
 
 		float alpha = (fr.blendMode > 0) ? (fr.opacity / 255.0f) : 1.0f;
-		float layerDepth = (float)obj.layer / 1024.0f - 1.0f;
 
 		DrawSprite(fr.spriteId, screenX, screenY,
 		           (float)sw, (float)sh,
-		           alpha, fr.blendMode, layerDepth);
+		           alpha, fr.blendMode, 0.0f);
 	}
 
 	// --- restore state ---
-	if (!prevDepthTest) glDisable(GL_DEPTH_TEST);
+	if (prevDepthTest) glEnable(GL_DEPTH_TEST); else glDisable(GL_DEPTH_TEST);
 	glDepthMask(prevDepthMask);
 	if (!prevBlend) glDisable(GL_BLEND);
 	glUseProgram(0);

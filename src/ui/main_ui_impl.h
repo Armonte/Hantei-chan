@@ -471,15 +471,32 @@ void MainFrame::DrawUi()
 		            render.scale, render.x, render.y);
 		ImGui::Text("viewport clientRect=(%.0f, %.0f)", clientRect.x, clientRect.y);
 		if (!objects.empty() && !objects[0].frames.empty()) {
-			const auto& f0 = objects[0].frames[objects[0].currentFrame];
-			float sx = bgCamera.ScreenX((float)f0.offsetX, objects[0].parallax);
-			float sy = bgCamera.ScreenY((float)f0.offsetY, objects[0].parallax);
-			float screenPx = (sx + render.x) * render.scale;
-			float screenPy = (sy + render.y) * render.scale;
-			ImGui::Text("obj[0].f[%d] offset=(%d, %d)", objects[0].currentFrame,
-			            f0.offsetX, f0.offsetY);
-			ImGui::Text("  -> bg world=(%.1f, %.1f)  screen px=(%.1f, %.1f)",
-			            sx, sy, screenPx, screenPy);
+			const auto& obj0 = objects[0];
+			const auto& f0 = obj0.frames[obj0.currentFrame];
+			float sx = bgCamera.ScreenX((float)f0.offsetX, obj0.parallax);
+			float sy = bgCamera.ScreenY((float)f0.offsetY, obj0.parallax);
+			float screenPx = sx + bgCamera.panLastX;
+			float screenPy = sy + bgCamera.panLastY;
+			ImGui::Text("obj[0].f[%d/%d] sprId=%d offset=(%d, %d)",
+			            obj0.currentFrame, (int)obj0.frames.size() - 1,
+			            f0.spriteId, f0.offsetX, f0.offsetY);
+			ImGui::Text("  -> screen=(%.1f, %.1f)", screenPx, screenPy);
+
+			// Y-flicker diagnostic: dump sprite dimensions for every frame
+			// in obj[0]'s animation. If heights vary, the visible sprite
+			// BOTTOM moves frame to frame even though the offset is fixed —
+			// that's what the user sees as "y position flicker."
+			if (auto* cg = currentBgFile->GetCG()) {
+				ImGui::Text("Sprite dims (per frame):");
+				for (size_t fi = 0; fi < obj0.frames.size(); ++fi) {
+					int sid = obj0.frames[fi].spriteId;
+					ImageData* img = cg->draw_texture(sid, false, false);
+					int w = img ? img->width : -1;
+					int h = img ? img->height : -1;
+					delete img;
+					ImGui::Text("  [%zu] spr=%d  %dx%d", fi, sid, w, h);
+				}
+			}
 		}
 		if (ImGui::Button("Center View on obj[0]") && !objects.empty() && !objects[0].frames.empty()) {
 			// Pan so obj[0]'s sprite top-left lands at viewport center —
