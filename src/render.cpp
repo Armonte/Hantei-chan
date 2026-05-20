@@ -1039,8 +1039,8 @@ void Render::DrawLayers()
 	// Second pass: Draw all hitboxes on top of all sprites
 	for (const auto& layer : renderLayers)
 	{
-		// Skip if fully transparent or if it's a PAT layer
-		if (layer.alpha == 0.0f || layer.usePat) continue;
+		// Skip if it's a PAT layer (hitboxes handled separately for PAT)
+		if (layer.usePat) continue;
 
 		// Only draw hitboxes if this layer has any
 		if (layer.hitboxes.empty()) continue;
