@@ -40,6 +40,7 @@ unsigned int* Parts::MainLoad(unsigned int* data, const unsigned int* data_end)
                 p->partId = partSets.size() - 1;
             }
             PartSet<>* partSet = &partSets[p_id];
+            partSet->wasLoaded = true;
             data = PartSet<>::P_Load(data, data_end, p_id, partSet);
         }
         else if (!memcmp(buf, "PPST", 4)) {
@@ -123,11 +124,12 @@ bool Parts::Load(const char* name)
         if (!ps.groups.empty()) nonEmptyPartSets++;
     }
 
-    // Load textures into OpenGL
+    // Load textures into OpenGL (skipped in headless / no-GL builds).
+#ifndef PAT_HEADLESS
     for (size_t idx = 0; idx < gfxMeta.size(); idx++)
     {
         auto& gfx = gfxMeta[idx];
-        
+
         textures.push_back(new Texture);
         if (gfx.s3tc)
         {
@@ -178,6 +180,7 @@ bool Parts::Load(const char* name)
             gfx.textureIndex = 0;
         }
     }
+#endif
 
     filePath = name;
 
@@ -891,10 +894,13 @@ bool Parts::Save(const char* filename)
     file.write(header, sizeof(header));
     file.write("_STR", 4);
 
-    // Write PartSets
+    // Write PartSets. Preserve every slot that originated in the loaded
+    // file (even when its body is empty), so the partId numbering matches
+    // the original. Editor-created slots are only emitted when they
+    // actually have data.
     for(uint32_t i = 0; i < partSets.size(); i++)
     {
-        if(!PartSet<>::IsModifiedData(&partSets[i]))
+        if(!partSets[i].wasLoaded && !PartSet<>::IsModifiedData(&partSets[i]))
             continue;
         file.write("P_ST", 4);
         file.write(VAL(i), 4);

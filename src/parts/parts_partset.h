@@ -31,6 +31,7 @@ template<template<typename> class Allocator = std::allocator>
 class PartSet {
 public:
     int partId = -1;
+    bool wasLoaded = false; // True if this slot came from a loaded .pat file
     std::basic_string<char, std::char_traits<char>, Allocator<char>> name;
     std::vector<PartProperty> groups; // Part properties in this set
 
