@@ -67,15 +67,24 @@ void Renderer::Render(const Camera& camera, ::Render* mainRender) {
 	// of letting layer order decide. The user noticed: "bg layers are
 	// wrong/backwards."
 	//
-	// Faithful port: single pass, sort all objects by layer DESCENDING
-	// (highest first → lowest drawn last → lowest ends on top, exactly
-	// like u4ick's depth-test winner), set blend mode per sprite right
-	// before its draw call.
+	// Single pass, sort all objects by layer, set blend mode per sprite
+	// right before its draw call. Sort direction is exposed as a runtime
+	// toggle (higherLayerOnTop) because u4ick's layerDepth math with
+	// negative depth values + LessEqual depth test is ambiguous about
+	// which way the visual ordering goes — easier to A/B test than to
+	// reason about XNA's clipping behavior.
 	auto& objects = file->GetObjects();
 	std::vector<size_t> order(objects.size());
 	for (size_t i = 0; i < objects.size(); ++i) order[i] = i;
 	std::stable_sort(order.begin(), order.end(),
-	                 [&](size_t a, size_t b) { return objects[a].layer > objects[b].layer; });
+	                 [&](size_t a, size_t b) {
+	                     // We want the on-top sprite drawn LAST in pure-paint
+	                     // (no depth test). So we sort so that the on-top
+	                     // sprite comes LAST in the iteration order.
+	                     return higherLayerOnTop
+	                         ? objects[a].layer < objects[b].layer  // ascending → highest drawn last → on top
+	                         : objects[a].layer > objects[b].layer; // descending → lowest drawn last → on top
+	                 });
 
 	for (size_t i : order) {
 		RenderObject(objects[i], camera, mainRender);

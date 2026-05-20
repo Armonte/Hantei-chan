@@ -496,6 +496,18 @@ void MainFrame::DrawUi()
 			bgCamera.SetPan(0.0f, 0.0f);
 			if (auto* v = getActiveView()) v->setStageRenderXY(0.0f, 0.0f);
 		}
+		// Quick A/B for which layer convention u4ick uses. Flip and see
+		// which matches u4ick's view in bg51.
+		bool higherTop = bgRenderer.IsHigherLayerOnTop();
+		if (ImGui::Checkbox("Higher layer = on top (uncheck to flip)", &higherTop))
+			bgRenderer.SetHigherLayerOnTop(higherTop);
+		ImGui::SameLine();
+		ImGui::TextDisabled("(?)");
+		if (ImGui::IsItemHovered())
+			ImGui::SetTooltip(
+				"bg51 obj layers: obj[0]=129 obj[1]=128 obj[2]=126 obj[3]=127 obj[4]=130\n"
+				"Higher-on-top: obj[4] in front, obj[2] in back\n"
+				"Lower-on-top:  obj[2] in front, obj[4] in back");
 		// Manual pan entry so we can test specific values against u4ick's
 		// observed layout pixel-for-pixel.
 		static float manualPanX = 0.0f, manualPanY = 0.0f;
