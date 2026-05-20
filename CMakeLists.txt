@@ -85,3 +85,19 @@ if(MINGW)
 	target_link_options(${EXE} PRIVATE -municode -static-libgcc -static-libstdc++ -static)
 endif()
 
+# Standalone HA6 round-trip validator (load -> save -> reload -> compare).
+add_executable(roundtrip
+	src/roundtrip.cpp
+	src/framedata.cpp
+	src/framedata_load.cpp
+	src/framedata_save.cpp
+	src/misc.cpp
+	tinyalloc/tinyalloc.c
+)
+target_include_directories(roundtrip PRIVATE "." "third_party" "${CMAKE_BINARY_DIR}/generated")
+target_compile_definitions(roundtrip PRIVATE WIN32_LEAN_AND_MEAN HA6GUIVERSION="${CMAKE_PROJECT_VERSION}")
+target_link_libraries(roundtrip PRIVATE tinyalloc)
+if(MINGW)
+	target_link_options(roundtrip PRIVATE -static-libgcc -static-libstdc++ -static)
+endif()
+
