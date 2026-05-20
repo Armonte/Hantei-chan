@@ -55,27 +55,27 @@ void Renderer::Render(const Camera& camera, ::Render* mainRender) {
 		return;
 	}
 
-	// Get all objects and sort by layer (lower = back)
+	// Two-pass blending (mirrors u4ick's MonoForm.Draw's non-FullBlend path
+	// at MonoForm.cs:280-419): first pass draws blendMode != 2 with custom
+	// blend func, then a second pass draws additive (blendMode == 2) on top.
+	// Within each pass we keep file order; FullBlend mode (single sorted
+	// pass) is intentionally not implemented yet since u4ick exposes it
+	// only as an opt-in "full blend" checkbox.
 	auto& objects = file->GetObjects();
-	//printf("[BG Render] Rendering %zu objects, camera=(%.0f,%.0f)\n",
-	//       objects.size(), camera.x, camera.y);
-	
-	std::vector<const Object*> sortedObjs;
+
 	for (const auto& obj : objects) {
-		sortedObjs.push_back(&obj);
+		if (obj.frames.empty()) continue;
+		const Frame& fr = obj.frames[obj.currentFrame];
+		if (fr.blendMode == 2) continue;
+		RenderObject(obj, camera, mainRender);
 	}
-	
-	std::sort(sortedObjs.begin(), sortedObjs.end(),
-		[](const Object* a, const Object* b) {
-			return a->layer < b->layer;
-		});
-	
-	// Render each object in layer order
-	for (const Object* obj : sortedObjs) {
-		RenderObject(*obj, camera, mainRender);
+	for (const auto& obj : objects) {
+		if (obj.frames.empty()) continue;
+		const Frame& fr = obj.frames[obj.currentFrame];
+		if (fr.blendMode != 2) continue;
+		RenderObject(obj, camera, mainRender);
 	}
 
-	// Draw debug overlay if enabled
 	if (showDebugOverlay) {
 		DrawDebugOverlay(camera, mainRender);
 	}
@@ -96,59 +96,32 @@ void Renderer::RenderObject(const Object& obj, const Camera& camera, ::Render* m
 	if (frame.duration == 0 && frame.aniType == 1 && obj.frames.size() > 1)
 		return;
 
-	// Debug: Print first few objects to check for offset variation
-	static int debugFrameCount = 0;
-	if (debugFrameCount < 20) {
-		printf("[BG RenderObj] Obj frame=%d/%zu spriteId=%d offset=(%d,%d) aniType=%d\n",
-		       obj.currentFrame, obj.frames.size()-1, frame.spriteId,
-		       frame.offsetX, frame.offsetY, frame.aniType);
-		debugFrameCount++;
-	}
-
 	if (frame.spriteId < 0) {
-		//printf("  -> Skipped: invalid spriteId\n");
-		return;  // No sprite
-	}
-
-	// Get sprite texture
-	int spriteW, spriteH;
-	GLuint texId = GetOrCreateTexture(frame.spriteId, spriteW, spriteH);
-	if (texId == 0) {
-		return;  // Failed to load texture
-	}
-
-	// bgmake offsets are measured from the character's feet (screen 401, 538
-	// in u4ick's tool; he draws at x = 401 + x_off, y = 538 + y_off). Hantei
-	// world space also puts character feet at (0, 0), so the offsets pass
-	// through unchanged — the old +314 was a misread of the bgmake floor
-	// reference, which manifested as fire / torch sprites floating ~314px
-	// below their intended Y (bg51 was the obvious case).
-	float worldX = (float)frame.offsetX;
-	float worldY = (float)frame.offsetY;
-
-	//printf("  -> frameOff=(%d,%d) worldPos=(%.0f,%.0f) parallax=%d (ignored for now)\n",
-	//       frame.offsetX, frame.offsetY, worldX, worldY, obj.parallax);
-
-	// bgmake doesn't scale sprites - uses native size
-	float scaledW = spriteW;
-	float scaledH = spriteH;
-	
-	// Calculate alpha
-	float alpha = frame.opacity / 255.0f;
-
-	// CRITICAL: Treat opacity=0 as fully opaque (bgmake convention)
-	// In MBAA .dat files, 0 means "no transparency effect applied" = fully visible
-	if (frame.opacity == 0) {
-		alpha = 1.0f;
-	}
-
-	// Skip drawing if alpha is very low (performance optimization)
-	if (alpha < 0.01f && frame.opacity != 0) {
 		return;
 	}
 
-	// Draw the sprite in world coordinates (shader handles viewport transform)
-	DrawTexturedQuad(texId, worldX, worldY, (int)scaledW, (int)scaledH,
+	int spriteW, spriteH;
+	GLuint texId = GetOrCreateTexture(frame.spriteId, spriteW, spriteH);
+	if (texId == 0) {
+		return;
+	}
+
+	// Position math ported from MonoForm.cs lines 253-254 / 334-335 / 400-401:
+	//   x = panLast.X + (pan.X - panLast.X) * parallaxFactor + offsetX
+	//   y = panLast.Y + (pan.Y - panLast.Y) * parallaxFactor + offsetY
+	// Parallax only contributes during a live drag (the pan/panLast delta);
+	// at rest the formula collapses to `panLast + offset`.
+	int para = parallaxEnabled ? obj.parallax : 256;
+	float screenX = camera.ScreenX((float)frame.offsetX, para);
+	float screenY = camera.ScreenY((float)frame.offsetY, para);
+
+	// Alpha: bgmake convention (MonoForm.cs:262) — when draw_type > 0 use
+	// opacity directly; otherwise fully opaque. The previous code used a
+	// special "opacity == 0 means fully opaque" rule which only matched part
+	// of the original behavior.
+	float alpha = (frame.blendMode > 0) ? (frame.opacity / 255.0f) : 1.0f;
+
+	DrawTexturedQuad(texId, screenX, screenY, spriteW, spriteH,
 	                 alpha, frame.blendMode, mainRender);
 }
 
@@ -341,17 +314,21 @@ void Renderer::DrawLine(float x1, float y1, float x2, float y2, float r, float g
 void Renderer::DrawDebugOverlay(const Camera& camera, ::Render* mainRender) {
 	if (!file) return;
 
-	// Simple debug overlay - just show key reference points
+	// Reference markers from u4ick's MonoForm.cs:433-435 — relative to the
+	// pan anchor (panLastX/Y). The 1057x810 play area, the y=224 floor line,
+	// and the y=272 ground-thickness line, all measured from x=-401 / y=0.
+	float ax = camera.panLastX;
+	float ay = camera.panLastY;
 
-	// Floor line (yellow) at character's feet (Y=0 in editor)
-	float floorY = 0.0f;
-	DrawLine(-500, floorY, 500, floorY, 1.0f, 1.0f, 0.0f, 1.0f, mainRender);
+	// Floor line (yellow) at character feet level (y = ay).
+	DrawLine(ax - 401, ay, ax - 401 + 1057, ay,
+	         1.0f, 1.0f, 0.0f, 1.0f, mainRender);
+	// Play area rectangle (purple).
+	DrawLine(ax - 401, ay - 538, ax - 401 + 1057, ay - 538,
+	         0.6f, 0.0f, 0.8f, 0.8f, mainRender);
+	DrawLine(ax - 401, ay + 272, ax - 401 + 1057, ay + 272,
+	         0.6f, 0.0f, 0.8f, 0.8f, mainRender);
 
-	// Character position crosshair (red) at origin (0,0)
-	DrawLine(-20, 0, 20, 0, 1.0f, 0.0f, 0.0f, 1.0f, mainRender);
-	DrawLine(0, -20, 0, 20, 1.0f, 0.0f, 0.0f, 1.0f, mainRender);
-
-	// Draw object bounding boxes
 	auto& objects = file->GetObjects();
 	for (size_t objIdx = 0; objIdx < objects.size(); objIdx++) {
 		const auto& obj = objects[objIdx];
@@ -360,14 +337,13 @@ void Renderer::DrawDebugOverlay(const Camera& camera, ::Render* mainRender) {
 		const Frame& frame = obj.frames[obj.currentFrame];
 		if (frame.spriteId < 0) continue;
 
-		// Get sprite dimensions
 		int spriteW, spriteH;
 		GLuint texId = GetOrCreateTexture(frame.spriteId, spriteW, spriteH);
 		if (texId == 0) continue;
 
-		// World position (matching RenderObject transformation)
-		float worldX = (float)frame.offsetX;
-		float worldY = (float)frame.offsetY;
+		int para = parallaxEnabled ? obj.parallax : 256;
+		float worldX = camera.ScreenX((float)frame.offsetX, para);
+		float worldY = camera.ScreenY((float)frame.offsetY, para);
 
 		// Native size (no scaling)
 		float scaledW = (float)spriteW;

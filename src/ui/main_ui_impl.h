@@ -1245,13 +1245,18 @@ void MainFrame::HandleMouseDrag(int x_, int y_, bool dragRight, bool dragLeft)
 	auto* view = getActiveView();
 	if (!view) return;
 
-	// Stage tab: drag pans the bg camera. The pan delta lives on the view
-	// itself so each stage tab keeps its own camera position across tab
-	// switches. Right-drag is a no-op here (no box pane).
+	// Stage tab: drag pans the bg camera. We update bgCamera.panLast (the
+	// stable position) directly — this is conceptually a finished drag at
+	// every mouse delta, which is simpler than wiring full BeginDrag /
+	// UpdateDrag / EndDrag through the existing mouse-button logic. The
+	// trade-off is that the parallax-during-drag effect from u4ick's tool
+	// won't show up here (only fully panned positions). View pan state
+	// stays mirrored so tab switches restore correctly.
 	if (view->isStageView()) {
 		if (dragLeft) {
-			view->setStageRenderXY(view->getStageRenderX() + x_ / render.scale,
-			                       view->getStageRenderY() + y_ / render.scale);
+			bgCamera.SetPan(bgCamera.panLastX + x_ / render.scale,
+			                bgCamera.panLastY + y_ / render.scale);
+			view->setStageRenderXY(bgCamera.panLastX, bgCamera.panLastY);
 		}
 		return;
 	}
