@@ -136,11 +136,14 @@ void Renderer::Update() {
 
 // ---- texture cache ---------------------------------------------------------
 
-GLuint Renderer::GetOrCreateTexture(int spriteId, int& outW, int& outH) {
+GLuint Renderer::GetOrCreateTexture(int spriteId, int& outW, int& outH,
+                                    int& outOriginX, int& outOriginY) {
 	auto it = textureCache.find(spriteId);
 	if (it != textureCache.end()) {
 		outW = it->second.w;
 		outH = it->second.h;
+		outOriginX = it->second.originX;
+		outOriginY = it->second.originY;
 		return it->second.id;
 	}
 	if (!file) return 0;
@@ -159,9 +162,11 @@ GLuint Renderer::GetOrCreateTexture(int spriteId, int& outW, int& outH) {
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
 
-	textureCache[spriteId] = { id, img->width, img->height };
+	textureCache[spriteId] = { id, img->width, img->height, img->offsetX, img->offsetY };
 	outW = img->width;
 	outH = img->height;
+	outOriginX = img->offsetX;
+	outOriginY = img->offsetY;
 	delete img;
 	return id;
 }
@@ -197,8 +202,8 @@ void Renderer::DrawSprite(int spriteId,
                           float alpha, int blendMode,
                           float layerDepth)
 {
-	int sw, sh;
-	GLuint tex = GetOrCreateTexture(spriteId, sw, sh);
+	int sw, sh, ox, oy;
+	GLuint tex = GetOrCreateTexture(spriteId, sw, sh, ox, oy);
 	if (tex == 0) return;
 	(void)sw; (void)sh; // sprite is drawn at the size requested by caller.
 
@@ -300,9 +305,17 @@ void Renderer::Render(const Camera& camera, int clientW, int clientH) {
 		float screenX = camera.ScreenX((float)fr.offsetX, para) + camera.panLastX;
 		float screenY = camera.ScreenY((float)fr.offsetY, para) + camera.panLastY;
 
-		int sw, sh;
-		GLuint tex = GetOrCreateTexture(fr.spriteId, sw, sh);
+		int sw, sh, ox, oy;
+		GLuint tex = GetOrCreateTexture(fr.spriteId, sw, sh, ox, oy);
 		if (tex == 0) continue;
+
+		// Compensate for the cg lib returning a TIGHT bounded region: u4ick
+		// draws the full sprite canvas at the bg offset, so the content
+		// ends up at (offset + bounds_x1, offset + bounds_y1). Our tight
+		// texture starts at the content's top-left, so we add (ox, oy)
+		// to the draw position to land in the same place.
+		screenX += (float)ox;
+		screenY += (float)oy;
 
 		float alpha = (fr.blendMode > 0) ? (fr.opacity / 255.0f) : 1.0f;
 

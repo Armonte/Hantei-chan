@@ -58,12 +58,19 @@ private:
 	GLint  uTexture         = -1;
 	bool   glInit           = false;
 
-	// Texture cache: spriteId -> {texture, w, h}.
-	struct Tex { GLuint id; int w; int h; };
+	// Texture cache: spriteId -> {texture, w, h, contentOriginX, contentOriginY}.
+	// originX/Y come from ImageData::offsetX/Y (= the sprite's bounds_x1/y1
+	// in the CG canvas). u4ick draws the full sprite canvas at the bg
+	// position; our cg lib returns just the tight bounded region, so we add
+	// (origin_x, origin_y) to the draw position to compensate. Without this
+	// step, sprites whose content origin shifts frame-to-frame (a fire
+	// animation does this even though w/h are fixed) appeared to jitter.
+	struct Tex { GLuint id; int w; int h; int originX; int originY; };
 	std::unordered_map<int, Tex> textureCache;
 
 	void   InitGL();
-	GLuint GetOrCreateTexture(int spriteId, int& outW, int& outH);
+	GLuint GetOrCreateTexture(int spriteId, int& outW, int& outH,
+	                          int& outOriginX, int& outOriginY);
 
 	// Build the orthographic projection that u4ick uses:
 	// Matrix.CreateOrthographicOffCenter(0, W, H, 0, 0, 1).
