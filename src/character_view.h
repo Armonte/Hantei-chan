@@ -89,6 +89,17 @@ private:
 	// Stage view state (owned by the view, freed when view is destroyed).
 	std::unique_ptr<bg::File> m_stageFile;
 	std::string m_stageDisplayName;
+	// Per-stage-tab pan state (Hantei world-space units). Lets the user pan
+	// each stage tab independently; restored by setActiveView.
+	float m_stageRenderX = 0.0f;
+	float m_stageRenderY = 0.0f;
+	bool  m_stageRenderInit = false;
+public:
+	float getStageRenderX() const { return m_stageRenderX; }
+	float getStageRenderY() const { return m_stageRenderY; }
+	void  setStageRenderXY(float rx, float ry) { m_stageRenderX = rx; m_stageRenderY = ry; }
+	bool  isStageRenderInit() const { return m_stageRenderInit; }
+	void  setStageRenderInit(bool v) { m_stageRenderInit = v; }
 };
 
 #endif /* CHARACTER_VIEW_H_GUARD */

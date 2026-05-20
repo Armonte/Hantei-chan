@@ -30,6 +30,12 @@ public:
 	void SetEnabled(bool enabled) { this->enabled = enabled; }
 	bool IsEnabled() const { return enabled; }
 
+	// Pause: when true, Update() skips animation advancement. The Inspector
+	// drives this; both the per-frame Update in DrawBack and the Inspector
+	// Pause button share one source of truth so the toggle actually pauses.
+	void SetPaused(bool p) { paused = p; }
+	bool IsPaused() const { return paused; }
+
 	// Debug visualization
 	void SetShowDebugOverlay(bool show) { showDebugOverlay = show; }
 	bool IsShowingDebugOverlay() const { return showDebugOverlay; }
@@ -48,6 +54,7 @@ public:
 private:
 	File* file = nullptr;
 	bool enabled = false;
+	bool paused = false;
 	bool showDebugOverlay = false;
 	bool parallaxEnabled = true;
 	int selectedObjIndex = -1;  // For debug highlighting

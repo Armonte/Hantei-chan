@@ -183,10 +183,16 @@ void MainFrame::DrawBack()
 		render.y = (active->renderY + clientRect.y/2) / render.scale;
 	}
 	else if (view && view->isStageView()) {
-		// Stage view has no character — center the viewport so the user can
-		// see the stage at a reasonable starting position.
-		render.x = (clientRect.x / 2) / render.scale;
-		render.y = (clientRect.y / 2) / render.scale;
+		// Stage view: pan state lives on the view itself so each tab keeps
+		// its own camera. Initialize once to a sensible center, then let
+		// HandleMouseDrag update the stored value.
+		if (!view->isStageRenderInit()) {
+			view->setStageRenderXY((clientRect.x / 2) / render.scale,
+			                       (clientRect.y / 2) / render.scale);
+			view->setStageRenderInit(true);
+		}
+		render.x = view->getStageRenderX();
+		render.y = view->getStageRenderY();
 		render.DrawGridLines();
 		return; // DrawBackground above already drew the stage.
 	}

@@ -446,11 +446,12 @@ void MainFrame::DrawUi()
 
 		ImGui::Separator();
 
-		static bool bgPaused = false;
-		if (ImGui::Button(bgPaused ? "Play" : "Pause")) bgPaused = !bgPaused;
+		bool bgPaused = bgRenderer.IsPaused();
+		if (ImGui::Button(bgPaused ? "Play" : "Pause")) bgRenderer.SetPaused(!bgPaused);
 		ImGui::SameLine();
 		ImGui::TextDisabled("Animation: %s", bgPaused ? "PAUSED" : "Playing");
-		if (!bgPaused) currentBgFile->UpdateAnimations();
+		// Animation advancement happens via bgRenderer.Update() in DrawBack;
+		// don't double-tick here.
 
 		ImGui::Separator();
 
@@ -501,7 +502,7 @@ void MainFrame::DrawUi()
 				ImGui::InputScalar("Jump Frame",     ImGuiDataType_U8,  &frame.jumpFrame);
 				ImGui::PopItemWidth();
 
-				ImGui::Text("World: (%d, %d)", frame.offsetX, 314 + frame.offsetY);
+				ImGui::Text("World: (%d, %d)", frame.offsetX, frame.offsetY);
 
 				ImGui::Separator();
 				ImGui::Text("All Frames:");
@@ -1242,8 +1243,21 @@ void MainFrame::UpdateBackProj(float x, float y)
 void MainFrame::HandleMouseDrag(int x_, int y_, bool dragRight, bool dragLeft)
 {
 	auto* view = getActiveView();
+	if (!view) return;
+
+	// Stage tab: drag pans the bg camera. The pan delta lives on the view
+	// itself so each stage tab keeps its own camera position across tab
+	// switches. Right-drag is a no-op here (no box pane).
+	if (view->isStageView()) {
+		if (dragLeft) {
+			view->setStageRenderXY(view->getStageRenderX() + x_ / render.scale,
+			                       view->getStageRenderY() + y_ / render.scale);
+		}
+		return;
+	}
+
 	auto* active = getActiveCharacter();
-	if (!view || !active) return;
+	if (!active) return;
 
 	if(dragRight)
 	{
