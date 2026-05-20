@@ -39,13 +39,25 @@ struct Object {
 	std::string name;
 	int32_t parallax = 256;    // 256 = 1.0x camera speed
 	int32_t layer = 128;       // Higher = render in front
-	
+
 	std::vector<Frame> frames;
-	
+
+	// Original slot in the file's 256-entry offset table. Preserved so that
+	// sparse files (e.g. bg01 has objects at indices 0..11, 13, 14, 19, 21,
+	// 23, 25, 26) round-trip without collapsing into dense 0..N indices.
+	// -1 means editor-created (placed at the next free slot on save).
+	int32_t originalIndex = -1;
+
+	// Original file byte offset this object lived at on load. bg01 has
+	// 52-byte gaps between some objects that we can't predict from frame
+	// counts alone — keeping the original offset lets Save reproduce them.
+	// -1 means "no preference, pack tightly after the previous object."
+	int32_t originalOffset = -1;
+
 	// Animation state
 	int32_t currentFrame = 0;
 	int32_t frameDuration = 0;
-	
+
 	void Update();
 	void Reset();
 };
