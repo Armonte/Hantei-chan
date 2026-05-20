@@ -609,6 +609,12 @@ Can input moves with bit5 on.
 
 ### IF Type 36 - Meter Bar Mode Check
 
+| Parameter | Description |
+|-----------|-------------|
+| **param1** | Frame to jump to (add 10000 for pattern) |
+| **param2** | Meter mode: 0=Normal, 1=HEAT, 2=MAX, 3=BLOOD HEAT, 5=Unlimited (training only) |
+| **param3** | Comparison: 0=equals, 1=not equals |
+
 ### IF Type 37 - Jump According to Color Selected
 
 A leftover from Re-Act? The color selected doesn't affect anything.
