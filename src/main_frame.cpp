@@ -27,10 +27,14 @@ MainFrame::MainFrame(ContextGl *context_):
 context(context_)
 {
 	LoadSettings();
+	// Hand the background renderer/camera to the GL Render so its Draw()
+	// loop calls into bgRenderer at the right point (behind the character).
+	render.SetBackgroundRenderer(&bgRenderer, &bgCamera);
 }
 
 MainFrame::~MainFrame()
 {
+	clearStage();
 	ImGui::SaveIniSettingsToDisk(ImGui::GetCurrentContext()->IO.IniFilename);
 }
 
@@ -152,6 +156,11 @@ void MainFrame::DrawBack()
 	render.filter = smoothRender;
 	glClearColor(clearColor[0], clearColor[1], clearColor[2], 1.f);
 	glClear(GL_COLOR_BUFFER_BIT |  GL_DEPTH_BUFFER_BIT);
+
+	// Tick background animation (once per frame, regardless of which draw path
+	// we take below). Render::DrawBackground inside render.Draw() pulls the
+	// current state through bgRenderer.
+	bgRenderer.Update();
 
 	auto* active = getActiveCharacter();
 	if (active) {
@@ -1152,3 +1161,30 @@ void MainFrame::openRecentProject(const std::string& path)
 	}
 }
 
+
+// ---------------------------------------------------------------------------
+// Background (stage) load / clear. The actual rendering hand-off happens via
+// render.SetBackgroundRenderer in the ctor; here we just swap the loaded file.
+
+void MainFrame::loadStageFile(const std::string& path)
+{
+	clearStage();
+	currentBgFile = new bg::File();
+	if (currentBgFile->Load(path.c_str())) {
+		bgRenderer.SetFile(currentBgFile);
+		bgRenderer.SetEnabled(true);
+	} else {
+		delete currentBgFile;
+		currentBgFile = nullptr;
+	}
+}
+
+void MainFrame::clearStage()
+{
+	if (currentBgFile) {
+		bgRenderer.SetFile(nullptr);
+		bgRenderer.SetEnabled(false);
+		delete currentBgFile;
+		currentBgFile = nullptr;
+	}
+}

@@ -15,6 +15,9 @@
 #include "PatEditor/pat_shape_pane.h"
 #include "PatEditor/pat_texture_pane.h"
 #include "PatEditor/pat_tool_pane.h"
+#include "background/bg_file.h"
+#include "background/bg_renderer.h"
+#include "background/bg_types.h"
 #include <glm/mat4x4.hpp>
 #include <string>
 #include <vector>
@@ -119,6 +122,14 @@ private:
 	std::unique_ptr<PatTexturePane> texturePane;
 	std::unique_ptr<PatToolPane> toolPane;
 	void updateStateReference();
+
+	// Background (stage) system — ported from bgmk branch. The renderer and
+	// camera are owned here and handed to Render via SetBackgroundRenderer.
+	bg::File*    currentBgFile = nullptr;
+	bg::Renderer bgRenderer;
+	bg::Camera   bgCamera;
+	void loadStageFile(const std::string& path);
+	void clearStage();
 
 	AboutWindow aboutWindow;
 };
