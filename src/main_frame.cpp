@@ -184,11 +184,14 @@ void MainFrame::DrawBack()
 	}
 	else if (view && view->isStageView()) {
 		// Stage view: pan state lives on the view itself so each tab keeps
-		// its own camera. Initialize once to a sensible center, then let
-		// HandleMouseDrag update the stored value.
+		// its own camera. Default to scale=1 with world (0,0) anchored at
+		// screen (401, 538) — this matches u4ick's bgmaketool exactly, so
+		// stages render with their sprites at the same positions you'd see
+		// in his editor (fire / torches above the character reference, etc).
 		if (!view->isStageRenderInit()) {
-			view->setStageRenderXY((clientRect.x / 2) / render.scale,
-			                       (clientRect.y / 2) / render.scale);
+			view->setZoom(1.0f);
+			render.scale = 1.0f;
+			view->setStageRenderXY(401.0f, 538.0f);
 			view->setStageRenderInit(true);
 		}
 		render.x = view->getStageRenderX();
