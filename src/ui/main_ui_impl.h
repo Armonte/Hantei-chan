@@ -438,11 +438,79 @@ void MainFrame::DrawUi()
 	// Only visible when a stage is loaded.
 	if (currentBgFile && currentBgFile->IsLoaded())
 	{
-		ImGui::Begin("Background Inspector", nullptr, ImGuiWindowFlags_AlwaysAutoResize);
+		// Force a known-good position+size this build (ImGuiCond_Always)
+		// because the user reported the window stuck on the left side of the
+		// viewport — likely the saved .ini coords are off-screen. Disable
+		// multi-viewport for this window so it can't escape the main window
+		// onto a hidden monitor either.
+		ImGui::SetNextWindowPos(ImVec2(80.0f, 80.0f), ImGuiCond_Always);
+		ImGui::SetNextWindowSize(ImVec2(420.0f, 640.0f), ImGuiCond_Always);
+		ImGui::Begin("Background Inspector", nullptr,
+		             ImGuiWindowFlags_NoSavedSettings);
 
 		ImGui::Text("File: %s", currentBgFile->GetFilename().c_str());
 		auto& objects = currentBgFile->GetObjects();
 		ImGui::Text("Objects: %zu", objects.size());
+
+		// Diagnostic readout — exposes the exact values feeding the GL transform
+		// so we can compare numerically to u4ick's bgmaketool. The expected
+		// screen position for any sprite is: (offset + render.x) * render.scale
+		// where render.x = bgCamera.panLastX (mirrored each frame from the
+		// camera's stable pose).
+		ImGui::Separator();
+		ImGui::TextDisabled("--- Diagnostics ---");
+		ImGui::Text("bgCamera pan=(%.1f, %.1f) panLast=(%.1f, %.1f) dragging=%d",
+		            bgCamera.panX, bgCamera.panY,
+		            bgCamera.panLastX, bgCamera.panLastY,
+		            (int)bgCamera.dragging);
+		// render.x / render.y are `int` (defined in render.h); the previous
+		// %.1f format was undefined behavior on x64 and was reporting
+		// garbage zeros that made it look like render.x wasn't being
+		// mirrored from bgCamera. Cast explicitly so we see the real value.
+		ImGui::Text("render scale=%.2f x=%d y=%d",
+		            render.scale, render.x, render.y);
+		ImGui::Text("viewport clientRect=(%.0f, %.0f)", clientRect.x, clientRect.y);
+		if (!objects.empty() && !objects[0].frames.empty()) {
+			const auto& f0 = objects[0].frames[objects[0].currentFrame];
+			float sx = bgCamera.ScreenX((float)f0.offsetX, objects[0].parallax);
+			float sy = bgCamera.ScreenY((float)f0.offsetY, objects[0].parallax);
+			float screenPx = (sx + render.x) * render.scale;
+			float screenPy = (sy + render.y) * render.scale;
+			ImGui::Text("obj[0].f[%d] offset=(%d, %d)", objects[0].currentFrame,
+			            f0.offsetX, f0.offsetY);
+			ImGui::Text("  -> bg world=(%.1f, %.1f)  screen px=(%.1f, %.1f)",
+			            sx, sy, screenPx, screenPy);
+		}
+		if (ImGui::Button("Center View on obj[0]") && !objects.empty() && !objects[0].frames.empty()) {
+			// Pan so obj[0]'s sprite top-left lands at viewport center —
+			// simplest possible 'where IS the sprite supposed to be' test.
+			const auto& f0 = objects[0].frames[0];
+			float wantScreenX = clientRect.x * 0.5f;
+			float wantScreenY = clientRect.y * 0.5f;
+			float newPanX = wantScreenX / render.scale - (float)f0.offsetX;
+			float newPanY = wantScreenY / render.scale - (float)f0.offsetY;
+			bgCamera.SetPan(newPanX, newPanY);
+			if (auto* v = getActiveView()) v->setStageRenderXY(newPanX, newPanY);
+		}
+		if (ImGui::Button("Reset Pan (0, 0)")) {
+			bgCamera.SetPan(0.0f, 0.0f);
+			if (auto* v = getActiveView()) v->setStageRenderXY(0.0f, 0.0f);
+		}
+		// Manual pan entry so we can test specific values against u4ick's
+		// observed layout pixel-for-pixel.
+		static float manualPanX = 0.0f, manualPanY = 0.0f;
+		manualPanX = bgCamera.panLastX;
+		manualPanY = bgCamera.panLastY;
+		ImGui::PushItemWidth(100);
+		ImGui::InputFloat("##manualPanX", &manualPanX);
+		ImGui::SameLine();
+		ImGui::InputFloat("##manualPanY", &manualPanY);
+		ImGui::SameLine();
+		if (ImGui::Button("Apply Pan")) {
+			bgCamera.SetPan(manualPanX, manualPanY);
+			if (auto* v = getActiveView()) v->setStageRenderXY(manualPanX, manualPanY);
+		}
+		ImGui::PopItemWidth();
 
 		ImGui::Separator();
 

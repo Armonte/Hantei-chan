@@ -241,12 +241,9 @@ void Render::Draw()
 		//PostQuitMessage(1);
 	}
 
-	// Background (stage) renders behind everything else.
-	DrawBackground();
-
-	// The background pass leaves the textured shader bound; switch back to
-	// the simple shader for grid lines.
-	sSimple.Use();
+	// Note: DrawBackground is invoked from MainFrame::DrawBack so it runs
+	// even when there is no active character (and master's code paths use
+	// DrawGridLines/DrawLayers directly rather than this Render::Draw).
 
 	//Lines
 	glm::mat4 view = glm::mat4(1.f);
