@@ -438,15 +438,13 @@ void MainFrame::DrawUi()
 	// Only visible when a stage is loaded.
 	if (currentBgFile && currentBgFile->IsLoaded())
 	{
-		// Force a known-good position+size this build (ImGuiCond_Always)
-		// because the user reported the window stuck on the left side of the
-		// viewport — likely the saved .ini coords are off-screen. Disable
-		// multi-viewport for this window so it can't escape the main window
-		// onto a hidden monitor either.
-		ImGui::SetNextWindowPos(ImVec2(80.0f, 80.0f), ImGuiCond_Always);
-		ImGui::SetNextWindowSize(ImVec2(420.0f, 640.0f), ImGuiCond_Always);
-		ImGui::Begin("Background Inspector", nullptr,
-		             ImGuiWindowFlags_NoSavedSettings);
+		// FirstUseEver = land at a sensible default the first time the user
+		// sees the window, but let them move it freely after that (and the
+		// position persists in imgui's .ini between runs, like every other
+		// pane in the editor).
+		ImGui::SetNextWindowPos(ImVec2(80.0f, 80.0f), ImGuiCond_FirstUseEver);
+		ImGui::SetNextWindowSize(ImVec2(420.0f, 640.0f), ImGuiCond_FirstUseEver);
+		ImGui::Begin("Background Inspector", nullptr, 0);
 
 		ImGui::Text("File: %s", currentBgFile->GetFilename().c_str());
 		auto& objects = currentBgFile->GetObjects();
