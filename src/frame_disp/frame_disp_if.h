@@ -58,7 +58,7 @@ inline void IfDisplay(std::vector<Frame_IF> *ifList_, Frame_IF *singleClipboard 
 	// Helper lambda to show pattern/frame jumps with names
 	auto ShowJumpField = [&](const char* label, int* value, const char* tooltip = nullptr) {
 		im::SetNextItemWidth(width);
-		im::InputInt(label, value, 0, 0);
+		if(im::InputInt(label, value, 0, 0)) markModified();
 		if(frameData && *value >= 10000) {
 			int patternNum = *value - 10000;
 			if(patternNum >= 0 && patternNum < frameData->get_sequence_count()) {
@@ -74,7 +74,7 @@ inline void IfDisplay(std::vector<Frame_IF> *ifList_, Frame_IF *singleClipboard 
 	// Helper lambda to show command IDs with names
 	auto ShowCommandField = [&](const char* label, int* value, const char* tooltip = nullptr) {
 		im::SetNextItemWidth(width);
-		im::InputInt(label, value, 0, 0);
+		if(im::InputInt(label, value, 0, 0)) markModified();
 		if(frameData) {
 			Command* cmd = frameData->get_command(*value);
 			if(cmd) {
@@ -152,11 +152,12 @@ inline void IfDisplay(std::vector<Frame_IF> *ifList_, Frame_IF *singleClipboard 
 			if(typeIndex >= IM_ARRAYSIZE(conditionTypes)) {
 				// Handle special cases (50+, 100+, 150+)
 				im::SetNextItemWidth(width*2);
-				im::InputInt("Type", &ifList[i].type, 0, 0);
+				if(im::InputInt("Type", &ifList[i].type, 0, 0)) markModified();
 			} else {
 				im::SetNextItemWidth(width*3);
 				if(im::Combo("Type", &typeIndex, conditionTypes, IM_ARRAYSIZE(conditionTypes))) {
 					ifList[i].type = typeIndex;
+					markModified();
 				}
 			}
 
@@ -181,39 +182,39 @@ inline void IfDisplay(std::vector<Frame_IF> *ifList_, Frame_IF *singleClipboard 
 		// If manual mode is enabled, show raw parameter editing
 		if(manualEditMode[i]) {
 			im::Text("Raw parameters:");
-			im::InputScalarN("##params", ImGuiDataType_S32, p, 6, NULL, NULL, "%d", 0);
-			im::InputScalarN("##params2", ImGuiDataType_S32, p+6, 3, NULL, NULL, "%d", 0);
+			if(im::InputScalarN("##params", ImGuiDataType_S32, p, 6, NULL, NULL, "%d", 0)) markModified();
+			if(im::InputScalarN("##params2", ImGuiDataType_S32, p+6, 3, NULL, NULL, "%d", 0)) markModified();
 		} else {
 		// Otherwise show smart UI based on type
 		switch(ifList[i].type) {
 			case 1: // Jump on directional input
 				im::SetNextItemWidth(width);
-				im::DragInt("Direction (numpad)", &p[0]); im::SameLine();
+				if(im::DragInt("Direction (numpad)", &p[0])) markModified(); im::SameLine();
 				im::TextDisabled("(?)"); if(im::IsItemHovered()) Tooltip("0=neutral, 2=down, 4=left, 6=right, 8=up, etc.\n10=both 6 and 3");
 
 				ShowJumpField("Jump to", &p[1], "Frame number, or add 10000 for pattern");
 
 				im::SetNextItemWidth(width);
-				im::Checkbox("Negate condition", (bool*)&p[2]);
+				if(im::Checkbox("Negate condition", (bool*)&p[2])) markModified();
 				break;
 
 			case 2: // Effect despawn conditions
 			{
 				unsigned int flagIdx = -1;
-				BitField("Despawn flags", (unsigned int*)&p[0], &flagIdx, 2);
+				if(BitField("Despawn flags", (unsigned int*)&p[0], &flagIdx, 2)) markModified();
 				switch(flagIdx) {
 					case 0: Tooltip("Despawn outside camera X bounds"); break;
 					case 1: Tooltip("Despawn outside camera Y bounds"); break;
 				}
 
 				im::SetNextItemWidth(width);
-				im::Checkbox("Despawn on landing", (bool*)&p[1]);
+				if(im::Checkbox("Despawn on landing", (bool*)&p[1])) markModified();
 
 				im::SetNextItemWidth(width);
-				im::Checkbox("Despawn on pattern transition", (bool*)&p[2]);
+				if(im::Checkbox("Despawn on pattern transition", (bool*)&p[2])) markModified();
 
 				im::SetNextItemWidth(width);
-				im::DragInt("Projectile var decrease", &p[3]);
+				if(im::DragInt("Projectile var decrease", &p[3])) markModified();
 				break;
 			}
 
@@ -221,49 +222,47 @@ inline void IfDisplay(std::vector<Frame_IF> *ifList_, Frame_IF *singleClipboard 
 				ShowJumpField("Frame to jump to", &p[0], nullptr);
 
 				im::SetNextItemWidth(width);
-				im::Combo("X velocity", &p[1], "0: No check\0001: Backwards (negative)\0002: Forwards (positive)\0");
+				if(im::Combo("X velocity", &p[1], "0: No check\0001: Backwards (negative)\0002: Forwards (positive)\0")) markModified();
 
 				im::SetNextItemWidth(width);
-				im::Combo("Y velocity", &p[2], "0: No check\0001: Down (positive)\0002: Up (negative)\0");
+				if(im::Combo("Y velocity", &p[2], "0: No check\0001: Down (positive)\0002: Up (negative)\0")) markModified();
 				break;
 
 			case 8: // Random check
 				ShowJumpField("Frame to jump to", &p[0], nullptr);
 
 				im::SetNextItemWidth(width);
-				im::DragInt("Chance", &p[1]); im::SameLine();
+				if(im::DragInt("Chance", &p[1])) markModified(); im::SameLine();
 				im::TextDisabled("(?)"); if(im::IsItemHovered()) Tooltip("Max 512");
 
 				im::SetNextItemWidth(width);
-				im::DragInt("Jump pattern?", &p[2]);
+				if(im::DragInt("Jump pattern?", &p[2])) markModified();
 
 				im::SetNextItemWidth(width);
-				im::DragInt("Random choose N adjacent?", &p[3]);
+				if(im::DragInt("Random choose N adjacent?", &p[3])) markModified();
 				break;
 
 			case 3: // Branch on hit
 				ShowJumpField("Jump to", &p[0], "Frame number, or add 10000 for pattern");
 
-				if(ShowComboWithManual("Hit condition", &p[1], hitConditions, IM_ARRAYSIZE(hitConditions), width*2, width)) {
-		markModified();
-	}
+				if(ShowComboWithManual("Hit condition", &p[1], hitConditions, IM_ARRAYSIZE(hitConditions), width*2, width)) markModified();
 
 				im::SetNextItemWidth(width*2);
-				im::Combo("Opponent state", &p[2], opponentStateList, IM_ARRAYSIZE(opponentStateList));
+				if(im::Combo("Opponent state", &p[2], opponentStateList, IM_ARRAYSIZE(opponentStateList))) markModified();
 
 				im::SetNextItemWidth(width);
-				im::DragInt("Projectile var decrease", &p[3]);
+				if(im::DragInt("Projectile var decrease", &p[3])) markModified();
 				break;
 
 			case 6: // Lever & Trigger check (Frame)
 			case 7: // Lever & Trigger check (Pattern)
 				im::SetNextItemWidth(width);
-				im::DragInt("Lever direction", &p[0]); im::SameLine();
+				if(im::DragInt("Lever direction", &p[0])) markModified(); im::SameLine();
 				im::TextDisabled("(?)"); if(im::IsItemHovered()) Tooltip("Numpad notation\n0=5(neutral), 5=nothing, 10=6/4, 13=1/2/3, 255=any");
 
 				{
 					unsigned int flagIdx = -1;
-					BitField("Buttons", (unsigned int*)&p[1], &flagIdx, 8);
+					if(BitField("Buttons", (unsigned int*)&p[1], &flagIdx, 8)) markModified();
 					switch(flagIdx) {
 						case 0: Tooltip("A button"); break;
 						case 1: Tooltip("B button"); break;
@@ -275,11 +274,11 @@ inline void IfDisplay(std::vector<Frame_IF> *ifList_, Frame_IF *singleClipboard 
 				}
 
 				im::SetNextItemWidth(width);
-				im::InputInt(ifList[i].type == 6 ? "Frame to jump to" : "Pattern to jump to", &p[2], 0, 0);
+				if(im::InputInt(ifList[i].type == 6 ? "Frame to jump to" : "Pattern to jump to", &p[2], 0, 0)) markModified();
 
 				{
 					unsigned int flagIdx = -1;
-					BitField("Flags", (unsigned int*)&p[3], &flagIdx, 8);
+					if(BitField("Flags", (unsigned int*)&p[3], &flagIdx, 8)) markModified();
 					switch(flagIdx) {
 						case 0: Tooltip("Negate the condition"); break;
 						case 1: Tooltip("Can be held"); break;
@@ -299,10 +298,10 @@ inline void IfDisplay(std::vector<Frame_IF> *ifList_, Frame_IF *singleClipboard 
 					"3: On block or clash",
 				};
 				im::SetNextItemWidth(width*2);
-				ShowComboWithManual("When", &p[1], cond11When, IM_ARRAYSIZE(cond11When), width*2, width);
+				if(ShowComboWithManual("When", &p[1], cond11When, IM_ARRAYSIZE(cond11When), width*2, width)) markModified();
 
 				im::SetNextItemWidth(width);
-				im::DragInt("State to transition to", &p[2]);
+				if(im::DragInt("State to transition to", &p[2])) markModified();
 
 				const char* const cond11State[] = {
 					"0: Always",
@@ -310,10 +309,10 @@ inline void IfDisplay(std::vector<Frame_IF> *ifList_, Frame_IF *singleClipboard 
 					"2: Air hit (according to When)",
 				};
 				im::SetNextItemWidth(width*2);
-				ShowComboWithManual("Opponent state", &p[3], cond11State, IM_ARRAYSIZE(cond11State), width*2, width);
+				if(ShowComboWithManual("Opponent state", &p[3], cond11State, IM_ARRAYSIZE(cond11State), width*2, width)) markModified();
 
 				im::SetNextItemWidth(width);
-				im::DragInt("Priority", &p[8]); im::SameLine();
+				if(im::DragInt("Priority", &p[8])) markModified(); im::SameLine();
 				im::TextDisabled("(?)"); if(im::IsItemHovered()) Tooltip("0-5000: priority = 5000 - value\n10000+: priority = value - 10000");
 				break;
 			}
@@ -348,8 +347,10 @@ inline void IfDisplay(std::vector<Frame_IF> *ifList_, Frame_IF *singleClipboard 
 					if(im::BeginCombo("Condition", condPreview)) {
 						for(int h = 0; h < IM_ARRAYSIZE(cancelConditions); h++) {
 							bool selected = (atoi(cancelConditions[h]) == condIdx);
-							if(im::Selectable(cancelConditions[h], selected))
+							if(im::Selectable(cancelConditions[h], selected)) {
 								p[0] = atoi(cancelConditions[h]);
+								markModified();
+							}
 							if(selected)
 								im::SetItemDefaultFocus();
 						}
@@ -363,7 +364,7 @@ inline void IfDisplay(std::vector<Frame_IF> *ifList_, Frame_IF *singleClipboard 
 				ShowCommandField("Command ID 4", &p[4], nullptr);
 
 				im::SetNextItemWidth(width);
-				im::DragInt("Priority", &p[8]); im::SameLine();
+				if(im::DragInt("Priority", &p[8])) markModified(); im::SameLine();
 				im::TextDisabled("(?)"); if(im::IsItemHovered()) Tooltip("0-5000: priority = 5000 - value\n10000+: priority = value - 10000");
 				break;
 			}
@@ -371,9 +372,9 @@ inline void IfDisplay(std::vector<Frame_IF> *ifList_, Frame_IF *singleClipboard 
 			case 13: // Screen corner check
 				ShowJumpField("Jump to", &p[0], "Frame number, or add 10000 for pattern");
 				im::SetNextItemWidth(width);
-				im::DragInt("Param2", &p[1]);
+				if(im::DragInt("Param2", &p[1])) markModified();
 				im::SetNextItemWidth(width);
-				im::DragInt("Param3", &p[2]);
+				if(im::DragInt("Param3", &p[2])) markModified();
 				break;
 
 			case 14: // Box collision check
@@ -386,7 +387,7 @@ inline void IfDisplay(std::vector<Frame_IF> *ifList_, Frame_IF *singleClipboard 
 					"2: Both",
 				};
 				im::SetNextItemWidth(width*2);
-				ShowComboWithManual("Check target", &p[1], cond14Target, IM_ARRAYSIZE(cond14Target), width*2, width);
+				if(ShowComboWithManual("Check target", &p[1], cond14Target, IM_ARRAYSIZE(cond14Target), width*2, width)) markModified();
 				im::SameLine(); im::TextDisabled("(?)");
 				if(im::IsItemHovered()) Tooltip("Add +100X for 'not cornered' check");
 
@@ -421,10 +422,10 @@ inline void IfDisplay(std::vector<Frame_IF> *ifList_, Frame_IF *singleClipboard 
 					"80000: Crouch guardable",
 				};
 				im::SetNextItemWidth(width*3);
-				ShowComboWithManual("Box type", &p[2], cond14BoxType, IM_ARRAYSIZE(cond14BoxType), width*2, width);
+				if(ShowComboWithManual("Box type", &p[2], cond14BoxType, IM_ARRAYSIZE(cond14BoxType), width*2, width)) markModified();
 
 				im::SetNextItemWidth(width);
-				im::DragInt("Hitstop on collision", &p[3]);
+				if(im::DragInt("Hitstop on collision", &p[3])) markModified();
 
 				const char* const cond14Turn[] = {
 					"0: No turnaround",
@@ -432,37 +433,37 @@ inline void IfDisplay(std::vector<Frame_IF> *ifList_, Frame_IF *singleClipboard 
 					"4: Turn away from collider",
 				};
 				im::SetNextItemWidth(width*2);
-				ShowComboWithManual("Turn direction", &p[4], cond14Turn, IM_ARRAYSIZE(cond14Turn), width*2, width);
+				if(ShowComboWithManual("Turn direction", &p[4], cond14Turn, IM_ARRAYSIZE(cond14Turn), width*2, width)) markModified();
 				break;
 			}
 
 			case 16: // Be affected by scrolling
 				im::SetNextItemWidth(width);
-				im::Checkbox("By X", (bool*)&p[0]);
+				if(im::Checkbox("By X", (bool*)&p[0])) markModified();
 
 				im::SetNextItemWidth(width);
-				im::Checkbox("By Y", (bool*)&p[1]);
+				if(im::Checkbox("By Y", (bool*)&p[1])) markModified();
 				break;
 
 			case 17: // Branch according to number of hits
 				ShowJumpField("Frame to jump to", &p[0], nullptr);
 
 				im::SetNextItemWidth(width);
-				im::DragInt("Number of hits", &p[1]);
+				if(im::DragInt("Number of hits", &p[1])) markModified();
 				break;
 
 			case 24: // Projectile variable check
 				ShowJumpField("Frame to jump to", &p[0], nullptr);
 
 				im::SetNextItemWidth(width);
-				im::DragInt("Variable ID and Value", &p[1]); im::SameLine();
+				if(im::DragInt("Variable ID and Value", &p[1])) markModified(); im::SameLine();
 				im::TextDisabled("(?)"); if(im::IsItemHovered()) Tooltip("1s place: Value\n10s place: Variable ID");
 				break;
 
 			case 21: // Opponent's character check
 				ShowJumpField("Jump to", &p[0], "Frame number, or add 10000 for pattern");
 
-				ShowComboWithManual("Character", &p[1], characterList, IM_ARRAYSIZE(characterList), width*2, width);
+				if(ShowComboWithManual("Character", &p[1], characterList, IM_ARRAYSIZE(characterList), width*2, width)) markModified();
 				im::SameLine(); im::TextDisabled("(?)");
 				if(im::IsItemHovered()) Tooltip("Add 50 for boss version");
 				break;
@@ -471,28 +472,28 @@ inline void IfDisplay(std::vector<Frame_IF> *ifList_, Frame_IF *singleClipboard 
 				ShowJumpField("Jump to", &p[0], "Frame number, or add 10000 for pattern");
 
 				im::SetNextItemWidth(width);
-				im::DragInt("Variable ID", &p[1]);
+				if(im::DragInt("Variable ID", &p[1])) markModified();
 
 				im::SetNextItemWidth(width);
-				im::DragInt("Compare value", &p[2]);
+				if(im::DragInt("Compare value", &p[2])) markModified();
 
 				im::SetNextItemWidth(width*2);
-				im::Combo("Comparison", &p[3], comparisonTypes, IM_ARRAYSIZE(comparisonTypes));
+				if(im::Combo("Comparison", &p[3], comparisonTypes, IM_ARRAYSIZE(comparisonTypes))) markModified();
 				break;
 
 			case 26: // Check lever and change vector
 				im::SetNextItemWidth(width);
-				im::DragInt("Direction", &p[0]); im::SameLine();
+				if(im::DragInt("Direction", &p[0])) markModified(); im::SameLine();
 				im::TextDisabled("(?)"); if(im::IsItemHovered()) Tooltip("0-9: Numpad direction\n10: Only 6/4 (x only)\n11: 4,6,7,8,9 (x+y)");
 
 				im::SetNextItemWidth(width);
-				im::DragInt("X Speed per frame", &p[1]);
+				if(im::DragInt("X Speed per frame", &p[1])) markModified();
 
 				im::SetNextItemWidth(width);
-				im::DragInt("Y Speed per frame", &p[2]);
+				if(im::DragInt("Y Speed per frame", &p[2])) markModified();
 
 				im::SetNextItemWidth(width);
-				im::DragInt("Max speed", &p[3]);
+				if(im::DragInt("Max speed", &p[3])) markModified();
 				break;
 
 			case 27: // Branch when parent gets hurt
@@ -500,10 +501,10 @@ inline void IfDisplay(std::vector<Frame_IF> *ifList_, Frame_IF *singleClipboard 
 				ShowJumpField("Frame/Pattern to jump to", &p[0], "Frame number, or add 10000 for pattern");
 
 				im::SetNextItemWidth(width);
-				im::Combo("Jump type", &p[1], "Pattern\0Frame\0");
+				if(im::Combo("Jump type", &p[1], "Pattern\0Frame\0")) markModified();
 
 				unsigned int flagIdx = -1;
-				BitField("Trigger flags", (unsigned int*)&p[2], &flagIdx, 3);
+				if(BitField("Trigger flags", (unsigned int*)&p[2], &flagIdx, 3)) markModified();
 				switch(flagIdx) {
 					case 0: Tooltip("When getting thrown"); break;
 					case 1: Tooltip("When getting hurt"); break;
@@ -516,28 +517,28 @@ inline void IfDisplay(std::vector<Frame_IF> *ifList_, Frame_IF *singleClipboard 
 				ShowCommandField("Move ID", &p[0], "Command ID from _c.txt");
 
 				im::SetNextItemWidth(width);
-				im::DragInt("Variable ID", &p[1]);
+				if(im::DragInt("Variable ID", &p[1])) markModified();
 
 				im::SetNextItemWidth(width);
-				im::InputInt("Value", &p[2], 0, 0);
+				if(im::InputInt("Value", &p[2], 0, 0)) markModified();
 				break;
 
 			case 30: // Facing direction check
 				im::SetNextItemWidth(width);
-				im::DragInt("Frame to jump to", &p[0]);
+				if(im::DragInt("Frame to jump to", &p[0])) markModified();
 
 				im::SetNextItemWidth(width);
-				im::Combo("Check facing", &p[1], "Right\0Left\0");
+				if(im::Combo("Check facing", &p[1], "Right\0Left\0")) markModified();
 				break;
 
 			case 33: // If sound effect is playing
 				im::Text("Parameters unknown - see docs");
-				im::InputScalarN("##params", ImGuiDataType_S32, p, 6, NULL, NULL, "%d", 0);
+				if(im::InputScalarN("##params", ImGuiDataType_S32, p, 6, NULL, NULL, "%d", 0)) markModified();
 				break;
 
 			case 34: // Homing
 				im::SetNextItemWidth(width);
-				im::Combo("Tracking type", &p[8], "Accelerated\0Instant\0");
+				if(im::Combo("Tracking type", &p[8], "Accelerated\0Instant\0")) markModified();
 				im::Text("Other params: See Hime/CMech patterns");
 				break;
 
@@ -549,7 +550,7 @@ inline void IfDisplay(std::vector<Frame_IF> *ifList_, Frame_IF *singleClipboard 
 			case 38: // Change variable on hit
 			{
 				im::SetNextItemWidth(width);
-				im::DragInt("Value", &p[0]);
+				if(im::DragInt("Value", &p[0])) markModified();
 
 				const char* const cond38When[] = {
 					"0: On hit",
@@ -561,13 +562,13 @@ inline void IfDisplay(std::vector<Frame_IF> *ifList_, Frame_IF *singleClipboard 
 					"7: On block/clash",
 				};
 				im::SetNextItemWidth(width*2);
-				ShowComboWithManual("When", &p[1], cond38When, IM_ARRAYSIZE(cond38When), width*2, width);
+				if(ShowComboWithManual("When", &p[1], cond38When, IM_ARRAYSIZE(cond38When), width*2, width)) markModified();
 
 				im::SetNextItemWidth(width*2);
-				im::Combo("Opponent state", &p[2], opponentStateList, IM_ARRAYSIZE(opponentStateList));
+				if(im::Combo("Opponent state", &p[2], opponentStateList, IM_ARRAYSIZE(opponentStateList))) markModified();
 
 				im::SetNextItemWidth(width);
-				im::DragInt("Extra variable ID", &p[3]);
+				if(im::DragInt("Extra variable ID", &p[3])) markModified();
 
 				const char* const cond38Op[] = {
 					"0: Set",
@@ -576,38 +577,38 @@ inline void IfDisplay(std::vector<Frame_IF> *ifList_, Frame_IF *singleClipboard 
 					"11: Add owner var",
 				};
 				im::SetNextItemWidth(width*2);
-				ShowComboWithManual("Operation", &p[4], cond38Op, IM_ARRAYSIZE(cond38Op), width*2, width);
+				if(ShowComboWithManual("Operation", &p[4], cond38Op, IM_ARRAYSIZE(cond38Op), width*2, width)) markModified();
 				break;
 			}
 
 			case 40: // Jump after N frames
 				im::SetNextItemWidth(width);
-				im::DragInt("Frame to jump to", &p[0]);
+				if(im::DragInt("Frame to jump to", &p[0])) markModified();
 
 				im::SetNextItemWidth(width);
-				im::DragInt("Number of frames", &p[1]);
+				if(im::DragInt("Number of frames", &p[1])) markModified();
 				break;
 
 			case 51: // Check Shield Conditions
 				im::SetNextItemWidth(width);
-				im::DragInt("Frame on D release", &p[0]);
+				if(im::DragInt("Frame on D release", &p[0])) markModified();
 
 				im::SetNextItemWidth(width);
-				im::DragInt("Frame on shield success", &p[1]);
+				if(im::DragInt("Frame on shield success", &p[1])) markModified();
 
 				im::SetNextItemWidth(width);
-				im::DragInt("Pattern on EX shield", &p[2]);
+				if(im::DragInt("Pattern on EX shield", &p[2])) markModified();
 				break;
 
 			case 52: // Throw check
 				im::SetNextItemWidth(width);
-				im::DragInt("Frame on throw success", &p[0]);
+				if(im::DragInt("Frame on throw success", &p[0])) markModified();
 
 				im::SetNextItemWidth(width);
-				im::Checkbox("Air throw", (bool*)&p[1]);
+				if(im::Checkbox("Air throw", (bool*)&p[1])) markModified();
 
 				im::SetNextItemWidth(width);
-				im::DragInt("Frame if combo air throw", &p[2]);
+				if(im::DragInt("Frame if combo air throw", &p[2])) markModified();
 				break;
 
 			case 54: // Jump on hit or block
@@ -616,19 +617,19 @@ inline void IfDisplay(std::vector<Frame_IF> *ifList_, Frame_IF *singleClipboard 
 
 			case 70: // Jump on reaching screen border
 				im::SetNextItemWidth(width);
-				im::DragInt("Frame at top", &p[0]); im::SameLine();
+				if(im::DragInt("Frame at top", &p[0])) markModified(); im::SameLine();
 				im::TextDisabled("(?)"); if(im::IsItemHovered()) Tooltip("-1 for no jump");
 
 				im::SetNextItemWidth(width);
-				im::DragInt("Frame at bottom", &p[1]); im::SameLine();
+				if(im::DragInt("Frame at bottom", &p[1])) markModified(); im::SameLine();
 				im::TextDisabled("(?)"); if(im::IsItemHovered()) Tooltip("-1 for no jump");
 
 				im::SetNextItemWidth(width);
-				im::DragInt("Frame at left", &p[2]); im::SameLine();
+				if(im::DragInt("Frame at left", &p[2])) markModified(); im::SameLine();
 				im::TextDisabled("(?)"); if(im::IsItemHovered()) Tooltip("-1 for no jump");
 
 				im::SetNextItemWidth(width);
-				im::DragInt("Frame at right", &p[3]); im::SameLine();
+				if(im::DragInt("Frame at right", &p[3])) markModified(); im::SameLine();
 				im::TextDisabled("(?)"); if(im::IsItemHovered()) Tooltip("-1 for no jump");
 				break;
 
@@ -697,7 +698,7 @@ inline void IfDisplay(std::vector<Frame_IF> *ifList_, Frame_IF *singleClipboard 
 			case 32: // Jump if CPU side of CPU battle
 				im::Text("Arcade mode feature (used in Hime's intro)");
 				im::SetNextItemWidth(width);
-				im::DragInt("Param1", &p[0]); im::SameLine();
+				if(im::DragInt("Param1", &p[0])) markModified(); im::SameLine();
 				im::TextDisabled("(?)"); if(im::IsItemHovered()) Tooltip("Purpose unknown");
 				break;
 
@@ -714,10 +715,10 @@ inline void IfDisplay(std::vector<Frame_IF> *ifList_, Frame_IF *singleClipboard 
 					"5: Unlimited (training only)",
 				};
 				im::SetNextItemWidth(width*2);
-				ShowComboWithManual("Meter mode", &p[1], meterModes, IM_ARRAYSIZE(meterModes), width*2, width);
+				if(ShowComboWithManual("Meter mode", &p[1], meterModes, IM_ARRAYSIZE(meterModes), width*2, width)) markModified();
 
 				im::SetNextItemWidth(width*2);
-				im::Combo("Comparison", &p[2], "0: Equals\0001: Not equals\0");
+				if(im::Combo("Comparison", &p[2], "0: Equals\0001: Not equals\0")) markModified();
 				break;
 			}
 
