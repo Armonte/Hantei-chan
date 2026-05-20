@@ -41,7 +41,7 @@ void Renderer::SetFile(File* file) {
 }
 
 void Renderer::Update() {
-	if (!enabled || !file) return;
+	if (!enabled || !file || paused) return;
 	file->UpdateAnimations();
 }
 
@@ -109,13 +109,14 @@ void Renderer::RenderObject(const Object& obj, const Camera& camera, ::Render* m
 		return;  // Failed to load texture
 	}
 
-	// Transform from bgmake coordinates to Hantei world space:
-	// - bgmake: character reference at screen (401, 538), draws at (401 + x_off, 538 + y_off)
-	// - bgmake: floor at Y=224, so character is 314px below floor (538 - 224 = 314)
-	// - Hantei: floor at Y=0, so character reference at Y=314
-	// - bgmake uses top-left anchor (XNA default), so we do the same
+	// bgmake offsets are measured from the character's feet (screen 401, 538
+	// in u4ick's tool; he draws at x = 401 + x_off, y = 538 + y_off). Hantei
+	// world space also puts character feet at (0, 0), so the offsets pass
+	// through unchanged — the old +314 was a misread of the bgmake floor
+	// reference, which manifested as fire / torch sprites floating ~314px
+	// below their intended Y (bg51 was the obvious case).
 	float worldX = (float)frame.offsetX;
-	float worldY = 314.0f + (float)frame.offsetY;
+	float worldY = (float)frame.offsetY;
 
 	//printf("  -> frameOff=(%d,%d) worldPos=(%.0f,%.0f) parallax=%d (ignored for now)\n",
 	//       frame.offsetX, frame.offsetY, worldX, worldY, obj.parallax);
@@ -358,7 +359,7 @@ void Renderer::DrawDebugOverlay(const Camera& camera, ::Render* mainRender) {
 
 		// World position (matching RenderObject transformation)
 		float worldX = (float)frame.offsetX;
-		float worldY = 314.0f + (float)frame.offsetY;
+		float worldY = (float)frame.offsetY;
 
 		// Native size (no scaling)
 		float scaledW = (float)spriteW;

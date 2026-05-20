@@ -78,14 +78,15 @@ int main(int argc, char** argv)
 		_exit(diffs > 0 ? 5 : 0);
 	}
 
-	if (!objects.empty()) {
-		const auto& obj0 = objects[0];
-		printf("  obj[0]: layer=%d parallax=%d frames=%zu\n",
-		       obj0.layer, obj0.parallax, obj0.frames.size());
-		if (!obj0.frames.empty()) {
-			const auto& f0 = obj0.frames[0];
-			printf("  obj[0].frame[0]: spriteId=%d offset=(%d,%d) duration=%d blend=%d alpha=%d\n",
-			       f0.spriteId, f0.offsetX, f0.offsetY, f0.duration, f0.blendMode, f0.opacity);
+	for (size_t i = 0; i < objects.size(); ++i) {
+		const auto& obj = objects[i];
+		printf("  obj[%zu]: layer=%d parallax=%d frames=%zu\n",
+		       i, obj.layer, obj.parallax, obj.frames.size());
+		for (size_t fi = 0; fi < obj.frames.size(); ++fi) {
+			const auto& f = obj.frames[fi];
+			printf("    frame[%zu]: spriteId=%d offset=(%d,%d) dur=%d blend=%d alpha=%d aniType=%d jump=%d xVec=%d yVec=%d\n",
+			       fi, f.spriteId, f.offsetX, f.offsetY, f.duration,
+			       f.blendMode, f.opacity, f.aniType, f.jumpFrame, f.xVec, f.yVec);
 		}
 	}
 
