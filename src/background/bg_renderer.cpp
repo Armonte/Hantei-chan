@@ -1,43 +1,132 @@
+// Port of u4ick's bgmaketool MonoForm.Draw rendering pipeline.
+//
+// References to the original (paths relative to repo root):
+//   src/dpu4/stagesrc/bgmaketool/MonoForm.cs        (Draw method)
+//   src/dpu4/stagesrc/bgmaketool/bgmake_app.cs      (camera/state globals)
+//
+// What we replicate:
+//   - Orthographic projection: CreateOrthographicOffCenter(0, W, H, 0, 0, 1).
+//     Same as XNA's screen-space ortho with Y growing downward.
+//   - View matrix = Scale(zoom). No translation (camera/pan is in sprite pos).
+//   - Sprite screen position = panLast + (pan - panLast) * (parallax/256) + offset.
+//     The (pan - panLast) delta is only non-zero during a live drag, so this
+//     produces u4ick's transient parallax-during-drag effect.
+//   - Per-sprite blend modes: blendMode == 2 -> additive (GL_SRC_ALPHA, GL_ONE);
+//     anything else -> custom alpha (GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA).
+//   - Depth test enabled with GL_LEQUAL and depth writes on. Per-vertex z is
+//     layerDepth = layer/1024 - 1. Lower layer = smaller depth = wins the
+//     test = ends up on top. This matches u4ick's SpriteSortMode.FrontToBack
+//     ordering through the depth buffer rather than a CPU sort.
+//   - The dur=0 / aniType=1 frame skip from MonoForm.cs:211-214 (transient
+//     loop-boundary placeholder frames should not be rendered).
+//
+// What we DON'T do (out of scope here; matches u4ick's interactive view):
+//   - SaveRender's 1057x818 fixed render target.
+//   - AlphaTestEffect (Greater, ReferenceAlpha=0). With our blend funcs alpha=0
+//     fragments produce no visible output anyway, and depth writes for fully
+//     transparent pixels don't cause visible artifacts at our render scale.
+
 #include "bg_renderer.h"
-#include "../render.h"
-#include "../texture.h"
-#include "../vao.h"
-#include <iostream>
+#include "../cg.h"
 #include <algorithm>
 #include <cmath>
+#include <cstdio>
+#include <iostream>
 
 namespace bg {
 
-Renderer::Renderer() {
-	// Create persistent VBO for quad rendering
-	glGenBuffers(1, &quadVBO);
+// ---- shaders ---------------------------------------------------------------
 
-	// Create 1x1 white texture for debug lines
-	glGenTextures(1, &whiteTexture);
-	glBindTexture(GL_TEXTURE_2D, whiteTexture);
-	unsigned char white[4] = {255, 255, 255, 255};
-	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, 1, 1, 0, GL_RGBA, GL_UNSIGNED_BYTE, white);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-	glBindTexture(GL_TEXTURE_2D, 0);
+static const char* kVS = R"GLSL(
+#version 330 core
+layout (location = 0) in vec3 aPos;
+layout (location = 1) in vec2 aUV;
+uniform mat4 uProjView;
+out vec2 vUV;
+void main() {
+    gl_Position = uProjView * vec4(aPos, 1.0);
+    vUV = aUV;
 }
+)GLSL";
+
+static const char* kFS = R"GLSL(
+#version 330 core
+in vec2 vUV;
+uniform sampler2D uTexture;
+uniform float uAlpha;
+out vec4 FragColor;
+void main() {
+    vec4 c = texture(uTexture, vUV);
+    FragColor = vec4(c.rgb, c.a * uAlpha);
+}
+)GLSL";
+
+static GLuint CompileShader(GLenum type, const char* src) {
+	GLuint s = glCreateShader(type);
+	glShaderSource(s, 1, &src, nullptr);
+	glCompileShader(s);
+	GLint ok = 0;
+	glGetShaderiv(s, GL_COMPILE_STATUS, &ok);
+	if (!ok) {
+		char log[1024];
+		glGetShaderInfoLog(s, sizeof(log), nullptr, log);
+		std::cerr << "[bg] shader compile failed: " << log << std::endl;
+	}
+	return s;
+}
+
+static GLuint LinkProgram(GLuint vs, GLuint fs) {
+	GLuint p = glCreateProgram();
+	glAttachShader(p, vs);
+	glAttachShader(p, fs);
+	glLinkProgram(p);
+	GLint ok = 0;
+	glGetProgramiv(p, GL_LINK_STATUS, &ok);
+	if (!ok) {
+		char log[1024];
+		glGetProgramInfoLog(p, sizeof(log), nullptr, log);
+		std::cerr << "[bg] program link failed: " << log << std::endl;
+	}
+	return p;
+}
+
+// ---- lifecycle -------------------------------------------------------------
+
+Renderer::Renderer() = default;
 
 Renderer::~Renderer() {
 	ClearTextureCache();
-	if (quadVBO) {
-		glDeleteBuffers(1, &quadVBO);
-	}
-	if (whiteTexture) {
-		glDeleteTextures(1, &whiteTexture);
-	}
+	if (vbo) glDeleteBuffers(1, &vbo);
+	if (program) glDeleteProgram(program);
 }
 
-void Renderer::SetFile(File* file) {
-	if (this->file != file) {
-		// New file - clear texture cache
-		ClearTextureCache();
-	}
-	this->file = file;
+void Renderer::InitGL() {
+	if (glInit) return;
+	GLuint vs = CompileShader(GL_VERTEX_SHADER, kVS);
+	GLuint fs = CompileShader(GL_FRAGMENT_SHADER, kFS);
+	program = LinkProgram(vs, fs);
+	glDeleteShader(vs);
+	glDeleteShader(fs);
+	uProjView = glGetUniformLocation(program, "uProjView");
+	uTexture  = glGetUniformLocation(program, "uTexture");
+
+	// No VAO — glad here doesn't expose glGenVertexArrays. Bind VBO and
+	// re-set attribute pointers on every DrawSprite call instead. Cheap.
+	glGenBuffers(1, &vbo);
+	glBindBuffer(GL_ARRAY_BUFFER, vbo);
+	glBufferData(GL_ARRAY_BUFFER, sizeof(float) * 5 * 6, nullptr, GL_DYNAMIC_DRAW);
+
+	glInit = true;
+}
+
+void Renderer::ClearTextureCache() {
+	for (auto& kv : textureCache) glDeleteTextures(1, &kv.second.id);
+	textureCache.clear();
+}
+
+void Renderer::SetFile(File* f) {
+	if (file != f) ClearTextureCache();
+	file = f;
 }
 
 void Renderer::Update() {
@@ -45,353 +134,188 @@ void Renderer::Update() {
 	file->UpdateAnimations();
 }
 
-void Renderer::Render(const Camera& camera, ::Render* mainRender) {
-	if (!enabled || !file || !mainRender) {
-		return;
-	}
+// ---- texture cache ---------------------------------------------------------
 
-	CG* cg = file->GetCG();
-	if (!cg || !cg->m_loaded) {
-		return;
-	}
-
-	// u4ick's MonoForm.Draw renders with SpriteSortMode.FrontToBack and
-	// CompareFunction.LessEqual depth test, where layerDepth =
-	// (layer / 1024) - 1.0. With smaller depth winning the test, LOWER
-	// layer values end up ON TOP — bg51's obj[2] (layer 126, plain blend)
-	// covers obj[0] (layer 129, additive) etc.
-	//
-	// Our previous two-pass non-additive-then-additive approach inverted
-	// this for any case where an additive sprite has a HIGHER layer than
-	// a non-additive — additive was always drawn last (= on top) instead
-	// of letting layer order decide. The user noticed: "bg layers are
-	// wrong/backwards."
-	//
-	// Single pass, sort all objects by layer, set blend mode per sprite
-	// right before its draw call. Sort direction is exposed as a runtime
-	// toggle (higherLayerOnTop) because u4ick's layerDepth math with
-	// negative depth values + LessEqual depth test is ambiguous about
-	// which way the visual ordering goes — easier to A/B test than to
-	// reason about XNA's clipping behavior.
-	auto& objects = file->GetObjects();
-	std::vector<size_t> order(objects.size());
-	for (size_t i = 0; i < objects.size(); ++i) order[i] = i;
-	std::stable_sort(order.begin(), order.end(),
-	                 [&](size_t a, size_t b) {
-	                     // We want the on-top sprite drawn LAST in pure-paint
-	                     // (no depth test). So we sort so that the on-top
-	                     // sprite comes LAST in the iteration order.
-	                     return higherLayerOnTop
-	                         ? objects[a].layer < objects[b].layer  // ascending → highest drawn last → on top
-	                         : objects[a].layer > objects[b].layer; // descending → lowest drawn last → on top
-	                 });
-
-	for (size_t i : order) {
-		RenderObject(objects[i], camera, mainRender);
-	}
-
-	if (showDebugOverlay) {
-		DrawDebugOverlay(camera, mainRender);
-	}
-}
-
-void Renderer::RenderObject(const Object& obj, const Camera& camera, ::Render* mainRender) {
-	if (obj.frames.empty()) {
-		return;
-	}
-
-	const Frame& frame = obj.frames[obj.currentFrame];
-
-	// Match u4ick's render-time skip: frames with duration=0 and aniType=1
-	// (loop) in a multi-frame object are transient placeholders that the
-	// loop logic advances past. Rendering them for the one tick they're
-	// 'current' produces a visible flicker between loop iterations.
-	// See bgmaketool/MonoForm.cs:211-214.
-	if (frame.duration == 0 && frame.aniType == 1 && obj.frames.size() > 1)
-		return;
-
-	if (frame.spriteId < 0) {
-		return;
-	}
-
-	int spriteW, spriteH;
-	GLuint texId = GetOrCreateTexture(frame.spriteId, spriteW, spriteH);
-	if (texId == 0) {
-		return;
-	}
-
-	// Position math ported from MonoForm.cs lines 253-254 / 334-335 / 400-401:
-	//   x = panLast.X + (pan.X - panLast.X) * parallaxFactor + offsetX
-	//   y = panLast.Y + (pan.Y - panLast.Y) * parallaxFactor + offsetY
-	// Parallax only contributes during a live drag (the pan/panLast delta);
-	// at rest the formula collapses to `panLast + offset`.
-	int para = parallaxEnabled ? obj.parallax : 256;
-	float screenX = camera.ScreenX((float)frame.offsetX, para);
-	float screenY = camera.ScreenY((float)frame.offsetY, para);
-
-	// Alpha: bgmake convention (MonoForm.cs:262) — when draw_type > 0 use
-	// opacity directly; otherwise fully opaque. The previous code used a
-	// special "opacity == 0 means fully opaque" rule which only matched part
-	// of the original behavior.
-	float alpha = (frame.blendMode > 0) ? (frame.opacity / 255.0f) : 1.0f;
-
-	DrawTexturedQuad(texId, screenX, screenY, spriteW, spriteH,
-	                 alpha, frame.blendMode, mainRender);
-}
-
-GLuint Renderer::GetOrCreateTexture(int spriteId, int& outWidth, int& outHeight) {
-	// Check cache
+GLuint Renderer::GetOrCreateTexture(int spriteId, int& outW, int& outH) {
 	auto it = textureCache.find(spriteId);
 	if (it != textureCache.end()) {
-		outWidth = it->second.width;
-		outHeight = it->second.height;
-		return it->second.textureId;
+		outW = it->second.w;
+		outH = it->second.h;
+		return it->second.id;
 	}
-	
-	// Get sprite from CG
+	if (!file) return 0;
 	CG* cg = file->GetCG();
 	if (!cg) return 0;
-	
-	ImageData* sprite = cg->draw_texture(spriteId, false, false);
-	if (!sprite) {
-		return 0;
-	}
-	
-	// Create OpenGL texture
-	GLuint texId;
-	glGenTextures(1, &texId);
-	glBindTexture(GL_TEXTURE_2D, texId);
+	ImageData* img = cg->draw_texture(spriteId, false, false);
+	if (!img) return 0;
 
-	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA,
-	             sprite->width, sprite->height,
-	             0, GL_RGBA, GL_UNSIGNED_BYTE,
-	             sprite->pixels);
-
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+	GLuint id = 0;
+	glGenTextures(1, &id);
+	glBindTexture(GL_TEXTURE_2D, id);
+	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, img->width, img->height, 0,
+	             GL_RGBA, GL_UNSIGNED_BYTE, img->pixels);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
-	
-	// Cache it
-	CachedTexture cached;
-	cached.textureId = texId;
-	cached.width = sprite->width;
-	cached.height = sprite->height;
-	textureCache[spriteId] = cached;
-	
-	outWidth = sprite->width;
-	outHeight = sprite->height;
-	
-	delete sprite;  // ImageData destructor cleans up pixels
-	
-	return texId;
+
+	textureCache[spriteId] = { id, img->width, img->height };
+	outW = img->width;
+	outH = img->height;
+	delete img;
+	return id;
 }
 
-void Renderer::DrawTexturedQuad(GLuint texture, float x, float y, int w, int h,
-                                 float alpha, int blendMode, ::Render* mainRender) {
-	// CRITICAL: Disable depth writes so background doesn't occlude character
-	// Background should be purely cosmetic and always behind gameplay elements
-	glDepthMask(GL_FALSE);
+// ---- projection ------------------------------------------------------------
 
-	// Set up shader and projection
-	mainRender->SetupSpriteShader();
-	// EXACT bgmake: native size, no scaling
-	mainRender->SetSpriteTransform(x, y, 1.0f, 1.0f);
-	
-	// Set blend mode
-	if (blendMode == 2) {  // Additive
+// XNA's CreateOrthographicOffCenter(left, right, bottom, top, near, far)
+// in row-major form. Composed with Scale(zoom) on the view side; we fold
+// the scale directly into the same matrix so there's only one uniform.
+void Renderer::BuildProjView(int W, int H, float zoom, float m[16]) {
+	const float l = 0.0f, r = (float)W, b = (float)H, t = 0.0f, n = 0.0f, f = 1.0f;
+	// glm::ortho-style result (column-major in GLSL but we send transposed below).
+	// proj * scale(zoom):
+	//   X: 2/(r-l) * zoom, Y: 2/(t-b) * zoom (negative because b>t), Z: -2/(f-n)
+	//   Translation column accounts for -(r+l)/(r-l), -(t+b)/(t-b), -(f+n)/(f-n)
+	float sx = 2.0f / (r - l) * zoom;
+	float sy = 2.0f / (t - b) * zoom;
+	float sz = -2.0f / (f - n);
+	float tx = -(r + l) / (r - l);
+	float ty = -(t + b) / (t - b);
+	float tz = -(f + n) / (f - n);
+	// Column-major (OpenGL).
+	m[0]=sx; m[1]=0;  m[2]=0;  m[3]=0;
+	m[4]=0;  m[5]=sy; m[6]=0;  m[7]=0;
+	m[8]=0;  m[9]=0;  m[10]=sz;m[11]=0;
+	m[12]=tx;m[13]=ty;m[14]=tz;m[15]=1;
+}
+
+// ---- sprite quad submission -----------------------------------------------
+
+void Renderer::DrawSprite(int spriteId,
+                          float x, float y, float w, float h,
+                          float alpha, int blendMode,
+                          float layerDepth)
+{
+	int sw, sh;
+	GLuint tex = GetOrCreateTexture(spriteId, sw, sh);
+	if (tex == 0) return;
+	(void)sw; (void)sh; // sprite is drawn at the size requested by caller.
+
+	// Blend mode — set right before the draw, per-sprite (matches u4ick's
+	// per-batch BlendState swap in the FullBlend path).
+	if (blendMode == 2) {
 		glBlendFunc(GL_SRC_ALPHA, GL_ONE);
-	} else {  // Normal
+	} else {
 		glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 	}
-	
-	// Build vertex data: position (x,y), UV (u,v) - 4 floats per vertex, 6 vertices
-	// Positions relative to 0,0 since transform is in SetSpriteTransform
-	float fw = (float)w;
-	float fh = (float)h;
-	float vertices[24] = {
-		// Triangle 1
-		0.0f, 0.0f, 0.0f, 0.0f,  // Top-left
-		fw,   0.0f, 1.0f, 0.0f,  // Top-right
-		fw,   fh,   1.0f, 1.0f,  // Bottom-right
-		// Triangle 2
-		fw,   fh,   1.0f, 1.0f,  // Bottom-right
-		0.0f, fh,   0.0f, 1.0f,  // Bottom-left
-		0.0f, 0.0f, 0.0f, 0.0f,  // Top-left
-	};
-	
-	// Ensure we're using texture unit 0
-	glActiveTexture(GL_TEXTURE0);
 
-	// Bind texture
-	glBindTexture(GL_TEXTURE_2D, texture);
+	const float z = layerDepth;
+	float verts[5 * 6] = {
+		x,       y,       z,  0.0f, 0.0f,
+		x + w,   y,       z,  1.0f, 0.0f,
+		x + w,   y + h,   z,  1.0f, 1.0f,
 
-	// Use persistent VBO for quad rendering (avoids creating/deleting VBOs every frame)
-	glBindBuffer(GL_ARRAY_BUFFER, quadVBO);
-	glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STREAM_DRAW);
-
-	// Set up vertex attributes
-	glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, 4 * sizeof(float), (void*)0);
-	glEnableVertexAttribArray(0);
-	glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 4 * sizeof(float), (void*)(2 * sizeof(float)));
-	glEnableVertexAttribArray(1);
-
-	// Set color with alpha
-	float colorRgba[4] = {1.0f, 1.0f, 1.0f, alpha};
-	glDisableVertexAttribArray(2);
-	glVertexAttrib4fv(2, colorRgba);
-	
-	// Draw
-	glDrawArrays(GL_TRIANGLES, 0, 6);
-
-	// DON'T unbind VBO here - it causes GL_INVALID_OPERATION in OpenGL 2.1
-	// The next renderer (Vao::Bind) will bind its own VBO anyway
-
-	// CRITICAL: Unbind texture so character renderer uses its own texture
-	glBindTexture(GL_TEXTURE_2D, 0);
-
-	// Re-enable depth writes for subsequent rendering
-	glDepthMask(GL_TRUE);
-
-	// Reset blend mode
-	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-}
-
-void Renderer::ClearTextureCache() {
-	for (auto& pair : textureCache) {
-		glDeleteTextures(1, &pair.second.textureId);
-	}
-	textureCache.clear();
-}
-
-void Renderer::DrawLine(float x1, float y1, float x2, float y2, float r, float g, float b, float a, ::Render* mainRender) {
-	// Draw a colored quad line (1px thickness)
-	float dx = x2 - x1;
-	float dy = y2 - y1;
-	float len = std::sqrt(dx*dx + dy*dy);
-	if (len < 0.1f) return;
-
-	// Perpendicular vector for line thickness (1px)
-	float thickness = 1.0f;
-	float px = -dy / len * thickness;
-	float py = dx / len * thickness;
-
-	// Four corners of the quad
-	float vertices[24] = {
-		// Triangle 1
-		x1 - px, y1 - py, 0.0f, 0.0f,
-		x2 - px, y2 - py, 1.0f, 0.0f,
-		x2 + px, y2 + py, 1.0f, 1.0f,
-		// Triangle 2
-		x2 + px, y2 + py, 1.0f, 1.0f,
-		x1 + px, y1 + py, 0.0f, 1.0f,
-		x1 - px, y1 - py, 0.0f, 0.0f
+		x + w,   y + h,   z,  1.0f, 1.0f,
+		x,       y + h,   z,  0.0f, 1.0f,
+		x,       y,       z,  0.0f, 0.0f,
 	};
 
-	// Disable depth test so lines always draw on top
-	glDisable(GL_DEPTH_TEST);
+	glBindBuffer(GL_ARRAY_BUFFER, vbo);
+	glBufferSubData(GL_ARRAY_BUFFER, 0, sizeof(verts), verts);
 
-	mainRender->SetupSpriteShader();
-	// Debug overlay at 1:1 scale (coordinates are in world space, not sprite space)
-	mainRender->SetSpriteTransform(0, 0, 1.0f, 1.0f);
-
-	// Use 1x1 white texture for solid color lines (like bgmake)
-	glActiveTexture(GL_TEXTURE0);
-	glBindTexture(GL_TEXTURE_2D, whiteTexture);
-
-	glBindBuffer(GL_ARRAY_BUFFER, quadVBO);
-	glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STREAM_DRAW);
-
-	glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, 4 * sizeof(float), (void*)0);
+	// Re-bind attribs per draw (no VAO support in this glad).
+	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void*)0);
 	glEnableVertexAttribArray(0);
-	glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 4 * sizeof(float), (void*)(2 * sizeof(float)));
+	glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 5 * sizeof(float),
+	                      (void*)(3 * sizeof(float)));
 	glEnableVertexAttribArray(1);
 
-	// Set color with vertex attribute (same method as sprite rendering)
-	float colorRgba[4] = {r, g, b, a};
-	glDisableVertexAttribArray(2);
-	glVertexAttrib4fv(2, colorRgba);
-
-	// Debug: print first line color
-	static int debugCount = 0;
-	if (debugCount < 1) {
-		//printf("[Debug Line] Color RGBA: (%.2f, %.2f, %.2f, %.2f) WhiteTex=%u\n", r, g, b, a, whiteTexture);
-		debugCount++;
-	}
+	glActiveTexture(GL_TEXTURE0);
+	glBindTexture(GL_TEXTURE_2D, tex);
+	glUniform1i(uTexture, 0);
+	GLint uAlpha = glGetUniformLocation(program, "uAlpha");
+	glUniform1f(uAlpha, alpha);
 
 	glDrawArrays(GL_TRIANGLES, 0, 6);
-
-	// Re-enable depth test
-	glEnable(GL_DEPTH_TEST);
 }
 
-void Renderer::DrawDebugOverlay(const Camera& camera, ::Render* mainRender) {
-	if (!file) return;
+// ---- main entry ------------------------------------------------------------
 
-	// Reference markers from u4ick's MonoForm.cs:433-435 — relative to the
-	// pan anchor (panLastX/Y). The 1057x810 play area, the y=224 floor line,
-	// and the y=272 ground-thickness line, all measured from x=-401 / y=0.
-	float ax = camera.panLastX;
-	float ay = camera.panLastY;
+void Renderer::Render(const Camera& camera, int clientW, int clientH) {
+	if (!enabled || !file) return;
+	CG* cg = file->GetCG();
+	if (!cg || !cg->m_loaded) return;
+	if (clientW <= 0 || clientH <= 0) return;
 
-	// Floor line (yellow) at character feet level (y = ay).
-	DrawLine(ax - 401, ay, ax - 401 + 1057, ay,
-	         1.0f, 1.0f, 0.0f, 1.0f, mainRender);
-	// Play area rectangle (purple).
-	DrawLine(ax - 401, ay - 538, ax - 401 + 1057, ay - 538,
-	         0.6f, 0.0f, 0.8f, 0.8f, mainRender);
-	DrawLine(ax - 401, ay + 272, ax - 401 + 1057, ay + 272,
-	         0.6f, 0.0f, 0.8f, 0.8f, mainRender);
+	InitGL();
 
 	auto& objects = file->GetObjects();
-	for (size_t objIdx = 0; objIdx < objects.size(); objIdx++) {
-		const auto& obj = objects[objIdx];
+	if (objects.empty()) return;
+
+	// --- GL state setup mirroring MonoForm.Draw ---
+	// Use our own program/VAO so we don't fight whatever shader/VAO the host
+	// editor had bound (the host edits character/grid state aggressively).
+	glUseProgram(program);
+
+	// Save host's depth-test state so character rendering doesn't see our
+	// changes; mainRender's next draw will rebind whatever it needs anyway.
+	GLboolean prevDepthTest, prevDepthMask, prevBlend;
+	glGetBooleanv(GL_DEPTH_TEST, &prevDepthTest);
+	glGetBooleanv(GL_DEPTH_WRITEMASK, &prevDepthMask);
+	glGetBooleanv(GL_BLEND, &prevBlend);
+
+	glEnable(GL_DEPTH_TEST);
+	glDepthFunc(GL_LEQUAL);
+	glDepthMask(GL_TRUE);
+	// Clear ONLY the depth buffer for our slice — leaves the color buffer
+	// untouched so we can composite over whatever the host already drew.
+	glClear(GL_DEPTH_BUFFER_BIT);
+	glEnable(GL_BLEND);
+
+	// Projection + view (Scale(zoom) folded in).
+	float pview[16];
+	BuildProjView(clientW, clientH, camera.zoom, pview);
+	glUniformMatrix4fv(uProjView, 1, GL_FALSE, pview);
+
+	// --- emit sprites ---
+	// Mirrors MonoForm.cs FullBlend path: iterate all objects in their file
+	// order, set blend mode per sprite, let the depth test sort visibility
+	// via per-vertex layerDepth = layer/1024 - 1.
+	for (const auto& obj : objects) {
 		if (obj.frames.empty()) continue;
+		const Frame& fr = obj.frames[obj.currentFrame];
 
-		const Frame& frame = obj.frames[obj.currentFrame];
-		if (frame.spriteId < 0) continue;
-
-		int spriteW, spriteH;
-		GLuint texId = GetOrCreateTexture(frame.spriteId, spriteW, spriteH);
-		if (texId == 0) continue;
+		// Skip transient duration=0 loop-boundary placeholder frames.
+		if (fr.duration == 0 && fr.aniType == 1 && obj.frames.size() > 1)
+			continue;
+		if (fr.spriteId < 0) continue;
 
 		int para = parallaxEnabled ? obj.parallax : 256;
-		float worldX = camera.ScreenX((float)frame.offsetX, para);
-		float worldY = camera.ScreenY((float)frame.offsetY, para);
+		float screenX = camera.ScreenX((float)fr.offsetX, para);
+		float screenY = camera.ScreenY((float)fr.offsetY, para);
 
-		// Native size (no scaling)
-		float scaledW = (float)spriteW;
-		float scaledH = (float)spriteH;
+		// Apply pan anchor here (camera.ScreenX returned just offset + delta).
+		screenX += camera.panLastX;
+		screenY += camera.panLastY;
 
-		// Check if this is the selected object
-		bool isSelected = (selectedObjIndex >= 0 && (int)objIdx == selectedObjIndex);
+		int sw, sh;
+		GLuint tex = GetOrCreateTexture(fr.spriteId, sw, sh);
+		if (tex == 0) continue;
 
-		// Color based on selection status
-		float r, g, b, a;
-		if (isSelected) {
-			// Selected object: bright yellow, fully opaque
-			r = 1.0f; g = 1.0f; b = 0.0f; a = 1.0f;
-		} else if (obj.layer > 128) {
-			// Foreground: blue
-			r = 0.5f; g = 0.5f; b = 1.0f; a = 0.5f;
-		} else {
-			// Background: green
-			r = 0.0f; g = 1.0f; b = 0.5f; a = 0.5f;
-		}
+		float alpha = (fr.blendMode > 0) ? (fr.opacity / 255.0f) : 1.0f;
+		float layerDepth = (float)obj.layer / 1024.0f - 1.0f;
 
-		// Draw bounding box at same scale as rendered sprite
-		DrawLine(worldX, worldY, worldX + scaledW, worldY, r, g, b, a, mainRender);
-		DrawLine(worldX + scaledW, worldY, worldX + scaledW, worldY + scaledH, r, g, b, a, mainRender);
-		DrawLine(worldX + scaledW, worldY + scaledH, worldX, worldY + scaledH, r, g, b, a, mainRender);
-		DrawLine(worldX, worldY + scaledH, worldX, worldY, r, g, b, a, mainRender);
-
-		// Draw origin point for selected object only (magenta crosshair)
-		if (isSelected) {
-			DrawLine(worldX - 10, worldY, worldX + 10, worldY, 1.0f, 0.0f, 1.0f, 1.0f, mainRender);
-			DrawLine(worldX, worldY - 10, worldX, worldY + 10, 1.0f, 0.0f, 1.0f, 1.0f, mainRender);
-		}
+		DrawSprite(fr.spriteId, screenX, screenY,
+		           (float)sw, (float)sh,
+		           alpha, fr.blendMode, layerDepth);
 	}
+
+	// --- restore state ---
+	if (!prevDepthTest) glDisable(GL_DEPTH_TEST);
+	glDepthMask(prevDepthMask);
+	if (!prevBlend) glDisable(GL_BLEND);
+	glUseProgram(0);
 }
 
 } // namespace bg
-

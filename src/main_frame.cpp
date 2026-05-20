@@ -163,10 +163,12 @@ void MainFrame::DrawBack()
 	glClearColor(clearColor[0], clearColor[1], clearColor[2], 1.f);
 	glClear(GL_COLOR_BUFFER_BIT |  GL_DEPTH_BUFFER_BIT);
 
-	// Tick background animation (once per frame, regardless of which draw path
-	// we take below). DrawBackground emits quads under the grid/character.
+	// Tick background animation (once per frame, regardless of which draw
+	// path we take below).
 	bgRenderer.Update();
-	render.DrawBackground();
+	// Draw the bg ourselves now — the new renderer owns its program / VAO /
+	// depth state and just needs the camera + viewport size.
+	bgRenderer.Render(bgCamera, (int)clientRect.x, (int)clientRect.y);
 
 	auto* active = getActiveCharacter();
 	auto* view = getActiveView();

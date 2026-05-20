@@ -1,103 +1,82 @@
+// Faithful port of u4ick's bgmaketool MonoForm.Draw + supporting state.
+// Renders MBAACC bgmake .dat backgrounds with parallax, per-sprite blend
+// modes, and layer-based depth ordering — owns its own shader, vertex
+// buffer, and depth state instead of borrowing the host editor's
+// SpriteTransform helpers (which couldn't carry per-vertex z for the
+// depth test that drives u4ick's layer ordering).
 #ifndef BG_RENDERER_H_GUARD
 #define BG_RENDERER_H_GUARD
 
 #include "bg_file.h"
-#include <unordered_map>
 #include <glad/glad.h>
-
-// Forward declare Render class from global namespace
-class Render;
+#include <unordered_map>
 
 namespace bg {
 
-// Handles rendering of background files
 class Renderer {
 public:
 	Renderer();
 	~Renderer();
-	
-	// Set current background file to render
-	void SetFile(File* file);
-	
-	// Update animations (call once per frame at 60fps)
-	void Update();
-	
-	// Render the background with camera parallax
-	// Call this BEFORE drawing character sprites
-	void Render(const Camera& camera, ::Render* mainRender);
-	
-	// Enable/disable rendering
-	void SetEnabled(bool enabled) { this->enabled = enabled; }
-	bool IsEnabled() const { return enabled; }
 
-	// Pause: when true, Update() skips animation advancement. The Inspector
-	// drives this; both the per-frame Update in DrawBack and the Inspector
-	// Pause button share one source of truth so the toggle actually pauses.
-	void SetPaused(bool p) { paused = p; }
-	bool IsPaused() const { return paused; }
+	// Current file being rendered (not owned).
+	void   SetFile(File* f);
+	File*  GetFile() const { return file; }
 
-	// Layer-on-top direction. Both u4ick interpretations are plausible
-	// depending on how XNA's FrontToBack + LessEqual interact with negative
-	// layerDepth values, so we expose the choice and let user A/B test.
-	// true (default) = HIGHER layer drawn last = HIGHER on top (typical
-	// convention, floor-level sprites in front of distant bg).
-	void SetHigherLayerOnTop(bool v) { higherLayerOnTop = v; }
-	bool IsHigherLayerOnTop() const { return higherLayerOnTop; }
+	// Per-frame animation tick. Skipped when paused.
+	void   Update();
 
-	// Debug visualization
-	void SetShowDebugOverlay(bool show) { showDebugOverlay = show; }
-	bool IsShowingDebugOverlay() const { return showDebugOverlay; }
+	// Draw all objects in `file` into the current GL framebuffer using the
+	// viewport (clientW, clientH). Camera state is read live every call.
+	void   Render(const Camera& camera, int clientW, int clientH);
 
-	// Debug: disable parallax to see raw positions
-	void SetParallaxEnabled(bool enable) { parallaxEnabled = enable; }
-	bool IsParallaxEnabled() const { return parallaxEnabled; }
+	// Toggles & state.
+	void   SetEnabled(bool v)            { enabled = v; }
+	bool   IsEnabled() const             { return enabled; }
+	void   SetPaused(bool v)             { paused = v; }
+	bool   IsPaused() const              { return paused; }
+	void   SetParallaxEnabled(bool v)    { parallaxEnabled = v; }
+	bool   IsParallaxEnabled() const     { return parallaxEnabled; }
+	void   SetShowDebugOverlay(bool v)   { showDebugOverlay = v; }
+	bool   IsShowingDebugOverlay() const { return showDebugOverlay; }
+	void   SetSelectedObject(int i)      { selectedObjIndex = i; }
+	int    GetSelectedObject() const     { return selectedObjIndex; }
+	void   ClearTextureCache();
 
-	// Set selected object for highlighting in debug overlay
-	void SetSelectedObject(int index) { selectedObjIndex = index; }
-	int GetSelectedObject() const { return selectedObjIndex; }
-
-	// Clear all cached textures
-	void ClearTextureCache();
-	
 private:
-	File* file = nullptr;
-	bool enabled = false;
-	bool paused = false;
-	bool higherLayerOnTop = true;
-	bool showDebugOverlay = false;
-	bool parallaxEnabled = true;
-	int selectedObjIndex = -1;  // For debug highlighting
+	// State.
+	File* file              = nullptr;
+	bool  enabled           = false;
+	bool  paused            = false;
+	bool  parallaxEnabled   = true;
+	bool  showDebugOverlay  = false;
+	int   selectedObjIndex  = -1;
 
-	// Texture caching
-	struct CachedTexture {
-		GLuint textureId;
-		int width;
-		int height;
-	};
-	std::unordered_map<int, CachedTexture> textureCache;
-	
-	// Persistent VBO for quad rendering
-	GLuint quadVBO = 0;
+	// GL objects we own.
+	GLuint program          = 0;
+	GLuint vbo              = 0;
+	GLint  uProjView        = -1;
+	GLint  uTexture         = -1;
+	bool   glInit           = false;
 
-	// 1x1 white texture for debug lines
-	GLuint whiteTexture = 0;
-	
-	// Get or create OpenGL texture for sprite
-	GLuint GetOrCreateTexture(int spriteId, int& outWidth, int& outHeight);
-	
-	// Render a single object
-	void RenderObject(const Object& obj, const Camera& camera, ::Render* mainRender);
-	
-	// Helper to draw a textured quad
-	void DrawTexturedQuad(GLuint texture, float x, float y, int w, int h,
-	                      float alpha, int blendMode, ::Render* mainRender);
+	// Texture cache: spriteId -> {texture, w, h}.
+	struct Tex { GLuint id; int w; int h; };
+	std::unordered_map<int, Tex> textureCache;
 
-	// Debug rendering helpers
-	void DrawDebugOverlay(const Camera& camera, ::Render* mainRender);
-	void DrawLine(float x1, float y1, float x2, float y2, float r, float g, float b, float a, ::Render* mainRender);
+	void   InitGL();
+	GLuint GetOrCreateTexture(int spriteId, int& outW, int& outH);
+
+	// Build the orthographic projection that u4ick uses:
+	// Matrix.CreateOrthographicOffCenter(0, W, H, 0, 0, 1).
+	void   BuildProjView(int clientW, int clientH, float zoom, float pmat[16]);
+
+	// Submit one sprite quad with all positions / blend / depth set up.
+	void   DrawSprite(int spriteId,
+	                  float x, float y,
+	                  float w, float h,
+	                  float alpha, int blendMode,
+	                  float layerDepth);
 };
 
 } // namespace bg
 
-#endif /* BG_RENDERER_H_GUARD */
-
+#endif // BG_RENDERER_H_GUARD
