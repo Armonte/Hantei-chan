@@ -57,18 +57,11 @@ void MainFrame::Draw()
 
 	ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
 
-	// Multi-viewport: render windows that the user dragged out of the main
-	// window. Save & restore the WGL context because imgui creates one per
-	// platform window and leaves a different one current after this call.
-	ImGuiIO& io = ImGui::GetIO();
-	if (io.ConfigFlags & ImGuiConfigFlags_ViewportsEnable)
-	{
-		HGLRC backupCtx = wglGetCurrentContext();
-		HDC   backupDc  = wglGetCurrentDC();
-		ImGui::UpdatePlatformWindows();
-		ImGui::RenderPlatformWindowsDefault();
-		wglMakeCurrent(backupDc, backupCtx);
-	}
+	// Multi-viewport disabled in main.cpp for now; UpdatePlatformWindows is
+	// a no-op without the flag but the guarded read-of-IO is also fine to
+	// skip while we sort out the Inspector interaction bug.
+	// ImGuiIO& io = ImGui::GetIO();
+	// if (io.ConfigFlags & ImGuiConfigFlags_ViewportsEnable) { ... }
 
 	SwapBuffers(context->dc);
 
@@ -1225,15 +1218,21 @@ void MainFrame::loadStageFile(const std::string& path)
 	auto view = std::make_unique<CharacterView>(nullptr, &render);
 	view->setStageFile(std::move(file), displayName);
 
-	// Default camera at (0, 0) — same as u4ick's bgmaketool, which starts
-	// with movingPoint = Point.Empty. The user pans to bring sprites into
-	// view; left-drag now feeds bgCamera's BeginDrag / UpdateDrag / EndDrag
-	// lifecycle so the parallax preview behaves the same way it does in
-	// his tool (objects with different paralax values shift at different
-	// rates while you're dragging, then settle when you release).
-	view->setStageRenderXY(0.0f, 0.0f);
+	// Default the camera so world (0, 0) lands at u4ick's proportional
+	// character-feet anchor: 401/1280 across and 538/720 down of the
+	// viewport. That's where his SaveRender output puts character feet,
+	// and matches the 'fire at bottom near feet' layout the user sees in
+	// his tool. Diagnostics (Screenshot 2026-05) confirmed the underlying
+	// math is correct end-to-end — the only choice was where to put the
+	// initial anchor, and (0, 0) only matches u4ick's *uninteracted*
+	// default (everything off-screen until you drag).
+	float clientW = clientRect.x > 0 ? clientRect.x : 1280.0f;
+	float clientH = clientRect.y > 0 ? clientRect.y : 720.0f;
+	float defaultPanX = clientW * (401.0f / 1280.0f);
+	float defaultPanY = clientH * (538.0f / 720.0f);
+	view->setStageRenderXY(defaultPanX, defaultPanY);
 	view->setStageRenderInit(true);
-	bgCamera.SetPan(0.0f, 0.0f);
+	bgCamera.SetPan(defaultPanX, defaultPanY);
 
 	views.push_back(std::move(view));
 	setActiveView((int)views.size() - 1);

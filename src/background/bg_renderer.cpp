@@ -55,25 +55,30 @@ void Renderer::Render(const Camera& camera, ::Render* mainRender) {
 		return;
 	}
 
-	// Two-pass blending (mirrors u4ick's MonoForm.Draw's non-FullBlend path
-	// at MonoForm.cs:280-419): first pass draws blendMode != 2 with custom
-	// blend func, then a second pass draws additive (blendMode == 2) on top.
-	// Within each pass we keep file order; FullBlend mode (single sorted
-	// pass) is intentionally not implemented yet since u4ick exposes it
-	// only as an opt-in "full blend" checkbox.
+	// u4ick's MonoForm.Draw renders with SpriteSortMode.FrontToBack and
+	// CompareFunction.LessEqual depth test, where layerDepth =
+	// (layer / 1024) - 1.0. With smaller depth winning the test, LOWER
+	// layer values end up ON TOP — bg51's obj[2] (layer 126, plain blend)
+	// covers obj[0] (layer 129, additive) etc.
+	//
+	// Our previous two-pass non-additive-then-additive approach inverted
+	// this for any case where an additive sprite has a HIGHER layer than
+	// a non-additive — additive was always drawn last (= on top) instead
+	// of letting layer order decide. The user noticed: "bg layers are
+	// wrong/backwards."
+	//
+	// Faithful port: single pass, sort all objects by layer DESCENDING
+	// (highest first → lowest drawn last → lowest ends on top, exactly
+	// like u4ick's depth-test winner), set blend mode per sprite right
+	// before its draw call.
 	auto& objects = file->GetObjects();
+	std::vector<size_t> order(objects.size());
+	for (size_t i = 0; i < objects.size(); ++i) order[i] = i;
+	std::stable_sort(order.begin(), order.end(),
+	                 [&](size_t a, size_t b) { return objects[a].layer > objects[b].layer; });
 
-	for (const auto& obj : objects) {
-		if (obj.frames.empty()) continue;
-		const Frame& fr = obj.frames[obj.currentFrame];
-		if (fr.blendMode == 2) continue;
-		RenderObject(obj, camera, mainRender);
-	}
-	for (const auto& obj : objects) {
-		if (obj.frames.empty()) continue;
-		const Frame& fr = obj.frames[obj.currentFrame];
-		if (fr.blendMode != 2) continue;
-		RenderObject(obj, camera, mainRender);
+	for (size_t i : order) {
+		RenderObject(objects[i], camera, mainRender);
 	}
 
 	if (showDebugOverlay) {

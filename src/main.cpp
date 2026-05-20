@@ -345,22 +345,14 @@ LRESULT WINAPI WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
 			ImSearch::CreateContext();
 			ImGuiIO& io = ImGui::GetIO();
 			io.ConfigFlags |= ImGuiConfigFlags_DockingEnable;
-			// Multi-viewport: lets the user drag any imgui window out of the
-			// main window onto another monitor as a real OS window.
-			io.ConfigFlags |= ImGuiConfigFlags_ViewportsEnable;
+			// Multi-viewport temporarily disabled — Background Inspector
+			// pane was becoming uninteractable, almost certainly because
+			// the viewport flag was causing it to spawn as a separate OS
+			// window behind / off-screen-of the main window. Re-enable
+			// once the bg renderer work settles.
+			//io.ConfigFlags |= ImGuiConfigFlags_ViewportsEnable;
 			io.IniFilename = iniLocation;
 			InitIni();
-
-			// Multi-viewport renders against each platform window's surface, so
-			// non-rectangular window backgrounds and rounded corners break the
-			// alpha layer on Windows. The imgui docs recommend forcing both off
-			// when ViewportsEnable is on.
-			if (io.ConfigFlags & ImGuiConfigFlags_ViewportsEnable)
-			{
-				ImGuiStyle& s = ImGui::GetStyle();
-				s.WindowRounding = 0.0f;
-				s.Colors[ImGuiCol_WindowBg].w = 1.0f;
-			}
 
 			MainFrame* mf = new MainFrame(context);
 			SetWindowLongPtr(hWnd, GWLP_USERDATA, (LONG_PTR)mf);
