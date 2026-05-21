@@ -181,11 +181,17 @@ bool File::LoadObjects(const char* data, size_t size, const Header& header) {
 			//	       i, f, frame.opacity, frame.opacity / 255.0f, frame.blendMode);
 			//}
 
-			// Vector fields at offsets 0x2D, 0x33, 0x35
-			frame.enableXVec = frameData8[0x2D];
-			frame.enableYVec = frameData8[0x2E];
-			frame.xVec = *(const int16_t*)(data + pos + 0x33);
-			frame.yVec = *(const int16_t*)(data + pos + 0x35);
+			// Movement block — frame-relative offsets verified against
+			// MBAACC Background_UpdateLayerPositions. Flags at +44..47,
+			// velocity int16 at +52/+54, acceleration int16 at +60/+62.
+			frame.flagClearX = frameData8[44];
+			frame.flagClearY = frameData8[45];
+			frame.flagSetX   = frameData8[46];
+			frame.flagSetY   = frameData8[47];
+			frame.velX = *(const int16_t*)(data + pos + 52);
+			frame.velY = *(const int16_t*)(data + pos + 54);
+			frame.accX = *(const int16_t*)(data + pos + 60);
+			frame.accY = *(const int16_t*)(data + pos + 62);
 			
 			obj.frames.push_back(frame);
 			pos += 132;
@@ -300,56 +306,69 @@ void Object::Update() {
 	if (frames.empty()) return;
 
 	const int count = (int)frames.size();
+	const int oldFrame = currentFrame;
 	Frame* frame1 = (currentFrame >= 0 && currentFrame < count)
 	                ? &frames[currentFrame] : &frames[0];
 
-	// Accumulate the current frame's movement vector every tick. A 2-frame
-	// effect like bg34's orbs has +yVec on f0 and -yVec on f1, so vecY
-	// oscillates and the sprite bobs. Equal-and-opposite vectors over
-	// equal durations make the loop seamless regardless of scale.
-	vecX += (float)frame1->xVec;
-	vecY += (float)frame1->yVec;
-
+	// --- frame stepping ---
 	if (frameDuration < frame1->duration) {
 		frameDuration++;
-		return;
-	}
-
-	// Advance. The loop steps again in the same tick if it lands on a
-	// duration-0 frame (the condition re-tests against the new frame1
-	// after frameDuration is reset by the loop's post-statement).
-	for (; frameDuration >= frame1->duration; frameDuration = 0) {
-		if (IsJumpType(frame1->aniType)) {
-			currentFrame = frame1->jumpFrame;
-			int idx = (currentFrame >= count) ? 0 : currentFrame;
-			Frame& frame2 = frames[idx];
-			currentFrame = (int)frame2.jumpFrame - 1;
-			frameDuration = 0;
-			if (IsJumpType(frame2.aniType)) {
-				currentFrame = frame2.jumpFrame;
+	} else {
+		// Advance. The loop steps again in the same tick if it lands on a
+		// duration-0 frame (the condition re-tests against the new frame1
+		// after frameDuration is reset by the loop's post-statement).
+		for (; frameDuration >= frame1->duration; frameDuration = 0) {
+			if (IsJumpType(frame1->aniType)) {
+				currentFrame = frame1->jumpFrame;
+				int idx = (currentFrame >= count) ? 0 : currentFrame;
+				Frame& frame2 = frames[idx];
+				currentFrame = (int)frame2.jumpFrame - 1;
+				frameDuration = 0;
+				if (IsJumpType(frame2.aniType)) {
+					currentFrame = frame2.jumpFrame;
+					break;
+				}
+			}
+			if (currentFrame >= count - 1) {
+				if (currentFrame > count - 1)
+					currentFrame = 0;
 				break;
 			}
+			if (currentFrame < count)
+				currentFrame++;
+			frame1 = &frames[currentFrame];
 		}
-		if (currentFrame >= count - 1) {
-			if (currentFrame > count - 1)
-				currentFrame = 0;
-			break;
+	}
+
+	// --- kinematic integration (MBAACC Background_UpdateLayerPositions) ---
+	// A frame change clears velLoaded so the new frame's flag bytes get a
+	// chance to reset/set velocity before integration resumes.
+	if (currentFrame != oldFrame)
+		velLoaded = false;
+	if (currentFrame >= 0 && currentFrame < count) {
+		const Frame& cf = frames[currentFrame];
+		if (velLoaded) {
+			posX += curVelX;
+			posY += curVelY;
+			curVelX += curAccX;
+			curVelY += curAccY;
+		} else {
+			if (cf.flagClearX) { curVelX = 0; curAccX = 0; }
+			if (cf.flagClearY) { curVelY = 0; curAccY = 0; }
+			if (cf.flagSetX)   { curVelX = cf.velX; curAccX = cf.accX; }
+			if (cf.flagSetY)   { curVelY = cf.velY; curAccY = cf.accY; }
+			velLoaded = true;
 		}
-		if (currentFrame < count)
-			currentFrame++;
-		frame1 = &frames[currentFrame];
 	}
 }
 
 void Object::Reset() {
 	currentFrame = 0;
 	frameDuration = 0;
-	vecX = 0.0f;
-	vecY = 0.0f;
-	for (auto& frame : frames) {
-		frame.runtimeX = 0.0f;
-		frame.runtimeY = 0.0f;
-	}
+	posX = posY = 0;
+	curVelX = curVelY = 0;
+	curAccX = curAccY = 0;
+	velLoaded = false;
 }
 
 void File::StepObjectForward(int objIndex) {
@@ -500,14 +519,19 @@ bool File::Save(const char* filenameOut)
 			w8(fr.opacity);
 			w8(fr.aniType);
 			w8(fr.jumpFrame);
-			wpad(32);                 // zero pad
-			w8(fr.enableXVec);
-			w8(fr.enableYVec);
-			wpad(4);                  // zero pad
-			w16(fr.xVec);
-			w16(fr.yVec);
-			wpad(45);                 // zero pad
-			f.write((const char*)ffBuf, 32);
+			wpad(31);                 // bytes 13-43 zero pad
+			w8(fr.flagClearX);        // 44
+			w8(fr.flagClearY);        // 45
+			w8(fr.flagSetX);          // 46
+			w8(fr.flagSetY);          // 47
+			wpad(4);                  // bytes 48-51 zero pad
+			w16(fr.velX);             // 52
+			w16(fr.velY);             // 54
+			wpad(4);                  // bytes 56-59 zero pad
+			w16(fr.accX);             // 60
+			w16(fr.accY);             // 62
+			wpad(36);                 // bytes 64-99 zero pad
+			f.write((const char*)ffBuf, 32);  // bytes 100-131
 		}
 		// Advance cursor by what we just emitted so the next gap calculation
 		// is right.
