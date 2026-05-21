@@ -263,20 +263,21 @@ bool File::LoadEmbeddedCG(const char* data, size_t size, const Header& header) {
 	// Clean up temp file
 	std::remove(tempPath);
 
-	// Parse the embedded PAT (if any) into the editor's Parts system, so
-	// stage objects with a PAT sprite-id (< 10000) can be rendered. Uses a
-	// temp file like the CG above — Parts::Load takes a path.
-	if (!patData.empty()) {
+	// Parse the embedded PAT (if any). Two on-disk variants exist:
+	//   - "PAniDataFile" — the newer PAT our Parts system reads.
+	//   - magic 02 00 00 00 / 0x01234567 — the OLDER PAT format used by
+	//     every MBAACC stage with a PAT block. Parts can't read it; it
+	//     needs a dedicated parser (MBAACC StageData_LoadFromFile) — TODO.
+	if (patData.size() >= 12 &&
+	    std::memcmp(patData.data(), "PAniDataFile", 12) == 0) {
 		const char* patPath = "temp_bg_stage.pat";
 		std::ofstream patFile(patPath, std::ios::binary);
 		if (patFile) {
 			patFile.write((const char*)patData.data(), patData.size());
 			patFile.close();
 			parts = std::make_unique<Parts>(cg.get());
-			if (!parts->Load(patPath)) {
-				std::cerr << "Failed to load embedded PAT" << std::endl;
+			if (!parts->Load(patPath))
 				parts.reset();
-			}
 			std::remove(patPath);
 		}
 	}
