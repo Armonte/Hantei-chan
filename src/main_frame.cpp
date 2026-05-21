@@ -171,6 +171,9 @@ void MainFrame::DrawBack()
 	// math (which divides by render.scale to convert screen-px to world-px)
 	// matches what the bg's projection will scale back up to screen-px.
 	bgCamera.zoom = render.scale;
+	// Ease panLast -> panX after a drag so the parallax delta decays
+	// smoothly instead of snapping (no-op while dragging or settled).
+	bgCamera.Settle();
 	// Draw the bg ourselves now — the new renderer owns its program / VAO /
 	// depth state and just needs the camera + viewport size.
 	bgRenderer.Render(bgCamera, (int)clientRect.x, (int)clientRect.y);

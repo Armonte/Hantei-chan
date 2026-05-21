@@ -1352,7 +1352,10 @@ void MainFrame::HandleMouseUp(bool dragRight, bool dragLeft)
 	auto* view = getActiveView();
 	if (view && view->isStageView() && dragRight) {
 		bgCamera.EndDrag();
-		view->setStageRenderXY(bgCamera.panLastX, bgCamera.panLastY);
+		// panX is the true final camera position; panLast is still
+		// easing toward it via Settle(). Persist panX so a tab switch
+		// restores the settled position, not a mid-ease one.
+		view->setStageRenderXY(bgCamera.panX, bgCamera.panY);
 	}
 }
 

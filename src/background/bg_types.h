@@ -2,6 +2,7 @@
 #define BG_TYPES_H_GUARD
 
 #include <cstdint>
+#include <cmath>
 #include <vector>
 #include <string>
 
@@ -97,7 +98,25 @@ struct Camera {
 	// UpdateDrag on move, EndDrag on mouse-up — mirrors Form1.cs:153-191.
 	void BeginDrag() { dragging = true; }
 	void UpdateDrag(float dx, float dy) { if (dragging) { panX = panLastX + dx; panY = panLastY + dy; } }
-	void EndDrag() { panLastX = panX; panLastY = panY; dragging = false; }
+
+	// u4ick snaps movingPoint_last = movingPoint instantly on mouse-up, so
+	// the parallax delta jumps to zero in one frame. We instead leave
+	// panLast where it is and let Settle() ease it toward panX over the
+	// next handful of frames — the parallax layers slide into the
+	// common-frame view instead of popping.
+	void EndDrag() { dragging = false; }
+
+	// Called once per frame. Eases panLast toward panX so the parallax
+	// delta (panX - panLast) decays smoothly to zero after a drag. No-op
+	// while dragging (delta must stay live) or once already settled.
+	void Settle() {
+		if (dragging) return;
+		const float k = 0.22f;  // per-frame ease factor
+		panLastX += (panX - panLastX) * k;
+		panLastY += (panY - panLastY) * k;
+		if (std::fabs(panX - panLastX) < 0.5f) panLastX = panX;
+		if (std::fabs(panY - panLastY) < 0.5f) panLastY = panY;
+	}
 
 	// Set the stable pan position directly (used for initial centering and
 	// for instantaneous pan from non-drag controls).
