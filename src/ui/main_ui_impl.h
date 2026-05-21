@@ -559,7 +559,8 @@ void MainFrame::DrawUi()
 		for (size_t i = 0; i < objects.size(); ++i)
 		{
 			char label[64];
-			snprintf(label, sizeof(label), "obj_%zu (layer=%d)", i, objects[i].layer);
+			snprintf(label, sizeof(label), "obj_%zu (layer=%d  parallax=%d)",
+			         i, objects[i].layer, objects[i].parallax);
 			if (ImGui::Selectable(label, selectedObjIndex == (int)i))
 				selectedObjIndex = (int)i;
 		}
