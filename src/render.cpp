@@ -1116,6 +1116,56 @@ void Render::DrawBackground()
 	// remaining stale plumbing is cleaned up.
 }
 
+// Draw one PAT pattern as a stage object. The bg Renderer calls this for
+// objects whose sprite-id is < 10000 (PAT patterns rather than CG sprites).
+// Mirrors the per-layer PAT draw in DrawLayers.
+void Render::DrawBgPattern(Parts* parts, int pattern,
+                           float worldX, float worldY, float alpha, int blendMode)
+{
+	if (!parts || !parts->loaded)
+		return;
+
+	sPartShader.Use();
+	glDisableVertexAttribArray(2);
+
+	// Blend mode for the whole pattern (frame draw_type: 2 = additive).
+	if (blendMode == 2)
+		glBlendFunc(GL_SRC_ALPHA, GL_ONE);
+	else
+		glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+
+	// Position the pattern at editor-world (worldX, worldY); x/y supply the
+	// camera pan and `scale` the zoom — same convention as DrawLayers.
+	float wx = worldX, wy = worldY;
+	auto setMatrix = [this, wx, wy](glm::mat4 partMatrix) {
+		glm::mat4 rview = projection;
+		rview = glm::scale(rview, glm::vec3(scale, scale, 1.f));
+		rview = glm::translate(rview, glm::vec3(x + wx, y + wy, 0.f));
+		rview = glm::translate(rview, glm::vec3(0.f, 0.f, 1024.f));
+		rview *= invOrtho;
+		SetMatrixPersp(lProjectionParts, partMatrix, rview);
+	};
+	auto setAddColor = [this](float r, float g, float b) {
+		glUniform3f(lAddColorParts, r, g, b);
+	};
+	auto setFlip = [this](char flip) {
+		glUniform1i(lFlipParts, (int)flip);
+	};
+
+	float color[4] = { 1.f, 1.f, 1.f, alpha };
+	try {
+		parts->Draw(pattern, pattern, 0.0f, setMatrix, setAddColor, setFlip, color);
+	} catch (...) {
+		// Parts::Draw already guards bad indices; swallow anything else so
+		// one bad pattern can't kill the whole stage draw.
+	}
+
+	glBindBuffer(GL_ARRAY_BUFFER, 0);
+	glBindTexture(GL_TEXTURE_2D, 0);
+	glUseProgram(0);
+	while (glGetError() != GL_NO_ERROR) {}
+}
+
 // The bg renderer drives quads through these two helpers so it doesn't have
 // to know about our shader/projection setup.
 void Render::SetupSpriteShader()

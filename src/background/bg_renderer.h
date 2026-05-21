@@ -11,6 +11,8 @@
 #include <glad/glad.h>
 #include <unordered_map>
 
+class Render;
+
 namespace bg {
 
 class Renderer {
@@ -21,6 +23,10 @@ public:
 	// Current file being rendered (not owned).
 	void   SetFile(File* f);
 	File*  GetFile() const { return file; }
+
+	// Host editor renderer — used to draw PAT-pattern stage objects
+	// (sprite-id < 10000) through the editor's Parts pipeline. Not owned.
+	void   SetHostRender(::Render* r) { hostRender = r; }
 
 	// Per-frame animation tick. Skipped when paused.
 	void   Update();
@@ -44,7 +50,8 @@ public:
 
 private:
 	// State.
-	File* file              = nullptr;
+	File*     file          = nullptr;
+	::Render* hostRender    = nullptr;
 	bool  enabled           = false;
 	bool  paused            = false;
 	bool  parallaxEnabled   = true;

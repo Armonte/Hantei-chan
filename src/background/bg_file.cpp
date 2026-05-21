@@ -1,5 +1,6 @@
 #include "bg_file.h"
 #include "../misc.h"
+#include "../parts/parts.h"
 #include <algorithm>
 #include <cstring>
 #include <fstream>
@@ -164,7 +165,10 @@ bool File::LoadObjects(const char* data, size_t size, const Header& header) {
 			const int16_t* frameData16 = (const int16_t*)(data + pos);
 			const uint8_t* frameData8 = (const uint8_t*)(data + pos);
 			
-			frame.spriteId = frameData16[0] - 10000;  // File stores as +10000
+			// Raw sprite-id. >= 10000 means a CG sprite (CG index =
+			// spriteId - 10000); < 10000 means a PAT pattern index. The
+			// game branches the same way (Background_RenderLayer).
+			frame.spriteId = frameData16[0];
 			frame.offsetX = frameData16[1];
 			frame.offsetY = frameData16[2];
 			frame.duration = frameData16[3];
@@ -258,7 +262,25 @@ bool File::LoadEmbeddedCG(const char* data, size_t size, const Header& header) {
 	
 	// Clean up temp file
 	std::remove(tempPath);
-	
+
+	// Parse the embedded PAT (if any) into the editor's Parts system, so
+	// stage objects with a PAT sprite-id (< 10000) can be rendered. Uses a
+	// temp file like the CG above — Parts::Load takes a path.
+	if (!patData.empty()) {
+		const char* patPath = "temp_bg_stage.pat";
+		std::ofstream patFile(patPath, std::ios::binary);
+		if (patFile) {
+			patFile.write((const char*)patData.data(), patData.size());
+			patFile.close();
+			parts = std::make_unique<Parts>(cg.get());
+			if (!parts->Load(patPath)) {
+				std::cerr << "Failed to load embedded PAT" << std::endl;
+				parts.reset();
+			}
+			std::remove(patPath);
+		}
+	}
+
 	return true;
 }
 
@@ -510,7 +532,7 @@ bool File::Save(const char* filenameOut)
 
 		for (const auto& fr : obj.frames)
 		{
-			w16(fr.spriteId + 10000);
+			w16(fr.spriteId);   // stored raw (>=10000 CG, <10000 PAT)
 			w16(fr.offsetX);
 			w16(fr.offsetY);
 			w16(fr.duration);

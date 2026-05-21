@@ -489,7 +489,10 @@ void MainFrame::DrawUi()
 				ImGui::Text("Sprite dims (per frame):");
 				for (size_t fi = 0; fi < obj0.frames.size(); ++fi) {
 					int sid = obj0.frames[fi].spriteId;
-					ImageData* img = cg->draw_texture(sid, false, false);
+					// spriteId is raw: >=10000 is a CG sprite (index sid-10000),
+					// <10000 is a PAT pattern (no CG texture to show here).
+					int cgIdx = sid >= 10000 ? sid - 10000 : -1;
+					ImageData* img = cgIdx >= 0 ? cg->draw_texture(cgIdx, false, false) : nullptr;
 					int w = img ? img->width : -1;
 					int h = img ? img->height : -1;
 					int ox = img ? img->offsetX : -1;

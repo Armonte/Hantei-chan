@@ -28,6 +28,8 @@
 
 #include "bg_renderer.h"
 #include "../cg.h"
+#include "../render.h"
+#include "../parts/parts.h"
 #include <algorithm>
 #include <cmath>
 #include <cstdio>
@@ -290,6 +292,7 @@ void Renderer::Render(const Camera& camera, int clientW, int clientH) {
 	                 [&](size_t a, size_t b) { return objects[a].layer < objects[b].layer; });
 
 	// --- emit sprites ---
+	Parts* parts = file->GetParts();
 	for (size_t i : order) {
 		const auto& obj = objects[i];
 		if (obj.frames.empty()) continue;
@@ -307,32 +310,41 @@ void Renderer::Render(const Camera& camera, int clientW, int clientH) {
 		if (fr.spriteId < 0) continue;
 
 		int para = parallaxEnabled ? obj.parallax : 256;
-		// -STAGE_CENTER_X / -STAGE_FLOOR_Y shift the whole stage so u4ick's
-		// playfield centre (bg-x +127.5) and floor (bg-y +224) coincide
-		// with the editor's world origin / grid lines. obj.posX/posY is the
-		// integrator drift (1/128 px — the game draws at pos >> 7).
-		float screenX = camera.ScreenX((float)fr.offsetX, para) + camera.panLastX
-		                - STAGE_CENTER_X + obj.posX * STAGE_POS_SCALE;
-		float screenY = camera.ScreenY((float)fr.offsetY, para) + camera.panLastY
-		                - STAGE_FLOOR_Y + obj.posY * STAGE_POS_SCALE;
-
-		int sw, sh, ox, oy;
-		GLuint tex = GetOrCreateTexture(fr.spriteId, sw, sh, ox, oy);
-		if (tex == 0) continue;
-
-		// Compensate for the cg lib returning a TIGHT bounded region: u4ick
-		// draws the full sprite canvas at the bg offset, so the content
-		// ends up at (offset + bounds_x1, offset + bounds_y1). Our tight
-		// texture starts at the content's top-left, so we add (ox, oy)
-		// to the draw position to land in the same place.
-		screenX += (float)ox;
-		screenY += (float)oy;
-
+		// worldX/worldY: editor-world position WITHOUT the camera pan.
+		// -STAGE_CENTER_X / -STAGE_FLOOR_Y shift the stage so u4ick's
+		// playfield centre / floor land on the grid; obj.posX/posY is the
+		// integrator drift (1/128 px). The CG path adds panLastX/Y itself;
+		// the PAT path lets Render's transform (render.x/y) supply it.
+		float worldX = camera.ScreenX((float)fr.offsetX, para)
+		               - STAGE_CENTER_X + obj.posX * STAGE_POS_SCALE;
+		float worldY = camera.ScreenY((float)fr.offsetY, para)
+		               - STAGE_FLOOR_Y + obj.posY * STAGE_POS_SCALE;
 		float alpha = (fr.blendMode > 0) ? (fr.opacity / 255.0f) : 1.0f;
 
-		DrawSprite(fr.spriteId, screenX, screenY,
-		           (float)sw, (float)sh,
-		           alpha, fr.blendMode, 0.0f);
+		if (fr.spriteId >= 10000) {
+			// --- CG sprite ---
+			int cgIdx = fr.spriteId - 10000;
+			int sw, sh, ox, oy;
+			GLuint tex = GetOrCreateTexture(cgIdx, sw, sh, ox, oy);
+			if (tex == 0) continue;
+			// Compensate for the cg lib returning a TIGHT bounded region:
+			// add (ox, oy) so the content lands where the full canvas would.
+			glUseProgram(program);   // a prior PAT draw unsets the program
+			DrawSprite(cgIdx,
+			           worldX + camera.panLastX + (float)ox,
+			           worldY + camera.panLastY + (float)oy,
+			           (float)sw, (float)sh, alpha, fr.blendMode, 0.0f);
+		} else if (parts && hostRender) {
+			// --- PAT pattern --- (sprite-id < 10000)
+			hostRender->DrawBgPattern(parts, fr.spriteId,
+			                          worldX, worldY, alpha, fr.blendMode);
+			// DrawBgPattern leaves the PAT shader unbound and may have
+			// touched depth state — re-assert ours for the next CG sprite.
+			glUseProgram(program);
+			glDisable(GL_DEPTH_TEST);
+			glDepthMask(GL_FALSE);
+			glEnable(GL_BLEND);
+		}
 	}
 
 	// --- restore state ---
