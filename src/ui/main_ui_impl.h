@@ -547,7 +547,7 @@ void MainFrame::DrawUi()
 		ImGui::SameLine();
 		bool bgOverlay = bgRenderer.IsShowingDebugOverlay();
 		if (ImGui::Checkbox("Stage rects", &bgOverlay)) bgRenderer.SetShowDebugOverlay(bgOverlay);
-		ImGui::TextDisabled("Right-drag the viewport to pan the camera.");
+		ImGui::TextDisabled("Left-drag to pan, mouse-wheel to zoom.");
 
 		ImGui::Separator();
 
@@ -1340,17 +1340,18 @@ void MainFrame::UpdateBackProj(float x, float y)
 void MainFrame::HandleMouseDown(bool dragRight, bool dragLeft)
 {
 	auto* view = getActiveView();
-	// Stage tab uses RIGHT-mouse pan to match u4ick's bgmaketool
-	// (pan_status=1 on WM_RBUTTONDOWN). Left-mouse is reserved for
-	// future object-drag editing (u4ick's pan_status=2).
-	if (view && view->isStageView() && dragRight)
+	// Stage tab pans with LEFT-mouse drag, matching the character tabs'
+	// pan convention (the editor is consistent: left-drag = pan
+	// everywhere). u4ick used right-mouse, but in-editor consistency
+	// wins over matching bgmaketool's input scheme.
+	if (view && view->isStageView() && dragLeft)
 		bgCamera.BeginDrag();
 }
 
 void MainFrame::HandleMouseUp(bool dragRight, bool dragLeft)
 {
 	auto* view = getActiveView();
-	if (view && view->isStageView() && dragRight) {
+	if (view && view->isStageView() && dragLeft) {
 		bgCamera.EndDrag();
 		// panX is the true final camera position; panLast is still
 		// easing toward it via Settle(). Persist panX so a tab switch
@@ -1364,15 +1365,15 @@ void MainFrame::HandleMouseDrag(int x_, int y_, bool dragRight, bool dragLeft)
 	auto* view = getActiveView();
 	if (!view) return;
 
-	// Stage tab: right-drag pans the bg camera. We accumulate the live
+	// Stage tab: left-drag pans the bg camera. We accumulate the live
 	// delta into bgCamera.pan while panLast stays put — that's u4ick's
 	// movingPoint / movingPoint_last pair, and it's what makes the
 	// parallax preview kick in for the duration of the drag (sprites
 	// with parallax > 256 shift faster than the camera, < 256 slower).
-	// On mouse-up HandleMouseUp calls EndDrag which folds pan into
-	// panLast and the parallax delta collapses back to zero.
+	// On mouse-up HandleMouseUp calls EndDrag and Settle() eases the
+	// parallax delta back to zero.
 	if (view->isStageView()) {
-		if (dragRight) {
+		if (dragLeft) {
 			bgCamera.panX += x_ / render.scale;
 			bgCamera.panY += y_ / render.scale;
 		}
@@ -1621,14 +1622,35 @@ void MainFrame::SetZoom(float level)
 	}
 }
 
-void MainFrame::HandleMouseWheel(bool isIncrease)
+void MainFrame::HandleMouseWheel(bool isIncrease, int mouseX, int mouseY)
 {
 	auto* view = getActiveView();
 	if (!view) return;
-	
+
+	if (view->isStageView())
+	{
+		// Smooth zoom centered on the cursor. screen = (world + pan) *
+		// scale, so the world point currently under the cursor is
+		// world = cursor/scale - pan. We capture that point and pin it
+		// under the cursor while DrawBack eases render.scale -> target.
+		float s = render.scale > 0.0f ? render.scale : 1.0f;
+		bgZoomAnchorWorldX = mouseX / s - bgCamera.panLastX;
+		bgZoomAnchorWorldY = mouseY / s - bgCamera.panLastY;
+		bgZoomAnchorScrnX  = (float)mouseX;
+		bgZoomAnchorScrnY  = (float)mouseY;
+
+		if (!bgZoomAnimating) bgZoomTarget = render.scale;
+		bgZoomTarget *= isIncrease ? 1.15f : (1.0f / 1.15f);
+		if (bgZoomTarget > 20.0f)  bgZoomTarget = 20.0f;
+		if (bgZoomTarget < 0.25f)  bgZoomTarget = 0.25f;
+		bgZoomAnimating = true;
+		return;
+	}
+
+	// Character / PAT views — unchanged stepped zoom.
 	float currentZoom = view->getZoom();
 	float newZoomVal = currentZoom;
-	
+
 	if (isIncrease)
 	{
 		newZoomVal += 0.25f;  // Smaller increment for smoother zooming

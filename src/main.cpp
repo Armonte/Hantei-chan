@@ -425,7 +425,6 @@ LRESULT WINAPI WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
 			ScreenToClient(hWnd, &mousePos);
 			SetCapture(hWnd);
 			mf->RightClick(mousePos.x, mousePos.y);
-			if (mf) mf->HandleMouseDown(true, false);
 
 			return 0;
 		}
@@ -437,7 +436,6 @@ LRESULT WINAPI WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
 			if(!dragLeft)
 				ReleaseCapture();
 			dragRight = false;
-			if (mf) mf->HandleMouseUp(true, false);
 			return 0;
 		}
 		break;
@@ -479,11 +477,13 @@ LRESULT WINAPI WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
 		if(mf && !ImGui::GetIO().WantCaptureMouse && !(dragLeft || dragRight))
 		{
 			int wheelDelta = GET_WHEEL_DELTA_WPARAM(wParam);
-			if (wheelDelta > 0) {
-				mf->HandleMouseWheel(true);  // Scroll up = zoom in
-			} else {
-				mf->HandleMouseWheel(false); // Scroll down = zoom out
-			}
+			// WM_MOUSEWHEEL gives the cursor in screen coords; convert to
+			// client space for zoom-to-cursor.
+			POINT wheelPos;
+			wheelPos.x = (short)LOWORD(lParam);
+			wheelPos.y = (short)HIWORD(lParam);
+			ScreenToClient(hWnd, &wheelPos);
+			mf->HandleMouseWheel(wheelDelta > 0, wheelPos.x, wheelPos.y);
 			return 0;
 		}
 		break;

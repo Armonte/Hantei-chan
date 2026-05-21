@@ -307,7 +307,10 @@ void Renderer::Render(const Camera& camera, int clientW, int clientH) {
 
 		int para = parallaxEnabled ? obj.parallax : 256;
 		float screenX = camera.ScreenX((float)fr.offsetX, para) + camera.panLastX;
-		float screenY = camera.ScreenY((float)fr.offsetY, para) + camera.panLastY;
+		// -STAGE_FLOOR_Y lifts the whole stage so u4ick's floor (bg-y 224)
+		// coincides with the editor's world y=0 / grid line.
+		float screenY = camera.ScreenY((float)fr.offsetY, para) + camera.panLastY
+		                - STAGE_FLOOR_Y;
 
 		int sw, sh, ox, oy;
 		GLuint tex = GetOrCreateTexture(fr.spriteId, sw, sh, ox, oy);

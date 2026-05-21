@@ -170,6 +170,30 @@ void MainFrame::DrawBack()
 	// render.scale) drives the bg projection too, and so the drag delta
 	// math (which divides by render.scale to convert screen-px to world-px)
 	// matches what the bg's projection will scale back up to screen-px.
+	// Stage-view smooth zoom-to-cursor: ease render.scale toward the
+	// target and re-pin the cursor's world anchor each frame so the
+	// point under the cursor stays put as the scale changes.
+	if (bgZoomAnimating) {
+		auto* zv = getActiveView();
+		if (!zv || !zv->isStageView()) {
+			bgZoomAnimating = false;  // left the stage tab — abandon
+		} else {
+			render.scale += (bgZoomTarget - render.scale) * 0.30f;
+			float d = bgZoomTarget - render.scale;
+			if (d < 0.004f && d > -0.004f) {
+				render.scale = bgZoomTarget;
+				bgZoomAnimating = false;
+			}
+			float s = render.scale > 0.0f ? render.scale : 1.0f;
+			float zpx = bgZoomAnchorScrnX / s - bgZoomAnchorWorldX;
+			float zpy = bgZoomAnchorScrnY / s - bgZoomAnchorWorldY;
+			bgCamera.SetPan(zpx, zpy);
+			zoom_idx = render.scale;
+			zv->setZoom(render.scale);
+			zv->setStageRenderXY(zpx, zpy);
+		}
+	}
+
 	bgCamera.zoom = render.scale;
 	// Ease panLast -> panX after a drag so the parallax delta decays
 	// smoothly instead of snapping (no-op while dragging or settled).
@@ -204,7 +228,9 @@ void MainFrame::DrawBack()
 		if (bgRenderer.IsShowingDebugOverlay()) {
 			float z = bgCamera.zoom;
 			float px = bgCamera.panX * z;
-			float py = bgCamera.panY * z;
+			// Lift by STAGE_FLOOR_Y so the yellow ground line lands on the
+			// grid's y=0 line — same shift the bg sprites get in bg_renderer.
+			float py = (bgCamera.panY - bg::STAGE_FLOOR_Y) * z;
 			auto* dl = ImGui::GetBackgroundDrawList();
 			// Yellow ground line: (panX-401, panY+224) span 1057 (h=0).
 			dl->AddLine(ImVec2(px - 401*z, py + 224*z),
