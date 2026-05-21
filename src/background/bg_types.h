@@ -19,9 +19,11 @@ struct Frame {
 	uint8_t blendMode = 0;     // 0=normal, 2=additive
 	uint8_t opacity = 255;     // 0-255
 	
-	// Animation control (same as Frame_AF)
-	uint8_t aniType = 1;       // 0=end, 1=loop, 2=jump
-	uint8_t jumpFrame = 0;     // For aniType=2
+	// Animation control. Per u4ick's stepping (see Object::Update):
+	//   0, 1 = normal frame (advance, stop at last frame)
+	//   2    = jump to jumpFrame (this is how animations loop)
+	uint8_t aniType = 1;
+	uint8_t jumpFrame = 0;     // Target frame index when aniType==2
 	
 	// Movement vectors (bgmake-specific)
 	uint8_t enableXVec = 0;
