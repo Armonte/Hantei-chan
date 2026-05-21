@@ -84,6 +84,10 @@ struct Object {
 	// -1 means "no preference, pack tightly after the previous object."
 	int32_t originalOffset = -1;
 
+	// Editor-only: cleared to hide this object (layer-debugging / solo).
+	// Not part of the file format.
+	bool visible = true;
+
 	// Animation state
 	int32_t currentFrame = 0;
 	int32_t frameDuration = 0;

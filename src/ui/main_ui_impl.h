@@ -555,14 +555,26 @@ void MainFrame::DrawUi()
 		if (selectedObjIndex >= (int)objects.size()) selectedObjIndex = 0;
 		bgRenderer.SetSelectedObject(selectedObjIndex);
 
-		ImGui::Text("Select Object:");
+		ImGui::Text("Objects (draw order: low layer first):");
+		if (ImGui::SmallButton("Show All")) {
+			for (auto& o : objects) o.visible = true;
+		}
+		ImGui::SameLine();
+		if (ImGui::SmallButton("Solo Selected")) {
+			for (size_t i = 0; i < objects.size(); ++i)
+				objects[i].visible = ((int)i == selectedObjIndex);
+		}
 		for (size_t i = 0; i < objects.size(); ++i)
 		{
+			ImGui::PushID((int)i);
+			ImGui::Checkbox("##vis", &objects[i].visible);
+			ImGui::SameLine();
 			char label[64];
 			snprintf(label, sizeof(label), "obj_%zu (layer=%d  parallax=%d)",
 			         i, objects[i].layer, objects[i].parallax);
 			if (ImGui::Selectable(label, selectedObjIndex == (int)i))
 				selectedObjIndex = (int)i;
+			ImGui::PopID();
 		}
 
 		ImGui::Separator();
@@ -572,7 +584,9 @@ void MainFrame::DrawUi()
 			auto& obj = objects[selectedObjIndex];
 			ImGui::Text("Object %d Properties:", selectedObjIndex);
 			ImGui::Text("  Name: %s", obj.name.c_str());
-			ImGui::Text("  Layer: %d", obj.layer);
+			ImGui::PushItemWidth(120);
+			ImGui::InputInt("Layer (draw order)", &obj.layer);
+			ImGui::PopItemWidth();
 			ImGui::Text("  Parallax: %d", obj.parallax);
 			ImGui::Text("  Frames: %zu", obj.frames.size());
 			ImGui::Text("  Current Frame: %d / %d", obj.currentFrame, (int)obj.frames.size() - 1);

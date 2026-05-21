@@ -293,6 +293,7 @@ void Renderer::Render(const Camera& camera, int clientW, int clientH) {
 	for (size_t i : order) {
 		const auto& obj = objects[i];
 		if (obj.frames.empty()) continue;
+		if (!obj.visible) continue;   // layer-debug hide / solo
 		// currentFrame can briefly land out of range after an odd jump
 		// chain — u4ick's draw is wrapped in try/catch; we just skip.
 		if (obj.currentFrame < 0 || obj.currentFrame >= (int)obj.frames.size())
