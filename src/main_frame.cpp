@@ -227,9 +227,9 @@ void MainFrame::DrawBack()
 		// common-frame view aligned to the rects.
 		if (bgRenderer.IsShowingDebugOverlay()) {
 			float z = bgCamera.zoom;
-			float px = bgCamera.panX * z;
-			// Lift by STAGE_FLOOR_Y so the yellow ground line lands on the
-			// grid's y=0 line — same shift the bg sprites get in bg_renderer.
+			// Shift by STAGE_CENTER_X / STAGE_FLOOR_Y so the rects land on
+			// the grid lines — same shift the bg sprites get in bg_renderer.
+			float px = (bgCamera.panX - bg::STAGE_CENTER_X) * z;
 			float py = (bgCamera.panY - bg::STAGE_FLOOR_Y) * z;
 			auto* dl = ImGui::GetBackgroundDrawList();
 			// Yellow ground line: (panX-401, panY+224) span 1057 (h=0).

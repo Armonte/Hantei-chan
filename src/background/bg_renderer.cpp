@@ -306,9 +306,11 @@ void Renderer::Render(const Camera& camera, int clientW, int clientH) {
 		if (fr.spriteId < 0) continue;
 
 		int para = parallaxEnabled ? obj.parallax : 256;
-		float screenX = camera.ScreenX((float)fr.offsetX, para) + camera.panLastX;
-		// -STAGE_FLOOR_Y lifts the whole stage so u4ick's floor (bg-y 224)
-		// coincides with the editor's world y=0 / grid line.
+		// -STAGE_CENTER_X / -STAGE_FLOOR_Y shift the whole stage so u4ick's
+		// playfield centre (bg-x +127.5) and floor (bg-y +224) coincide
+		// with the editor's world origin / grid lines.
+		float screenX = camera.ScreenX((float)fr.offsetX, para) + camera.panLastX
+		                - STAGE_CENTER_X;
 		float screenY = camera.ScreenY((float)fr.offsetY, para) + camera.panLastY
 		                - STAGE_FLOOR_Y;
 
