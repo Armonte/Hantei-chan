@@ -262,21 +262,35 @@ void File::UpdateAnimations() {
 	}
 }
 
-// Object animation logic — faithful port of u4ick's bgmaketool per-object
-// frame stepping (Form1.cs RenderForever, lines 213-254). Runs once per
-// 60Hz tick.
+// Hantei4 animation_flow (anim_type, +11) values — see han4docs
+// COMPLETE_HANTEI4_FIELD_MAPPING_FINAL.md:128-138:
+//   0 = Ordinance/normal       3 = Next + landing rules
+//   1 = Next (advance)         4 = Jump + landing rules
+//   2 = Jump                   5 = Loop check (Loop ED)
+// Types 2, 4 and 5 all redirect the frame cursor via jump_frame; types
+// 0, 1 and 3 advance to the next frame. u4ick's bgmaketool RenderForever
+// only special-cased 2, so type-5 "Loop ED" effects (bg04 obj_4/obj_5
+// end on an aniType-5 frame) froze on the last frame in the editor even
+// though the game loops them. We handle all three jump types.
+static inline bool IsJumpType(uint8_t aniType) {
+	return aniType == 2 || aniType == 4 || aniType == 5;
+}
+
+// Object animation logic — port of u4ick's bgmaketool per-object frame
+// stepping (Form1.cs RenderForever, lines 213-254), extended to treat
+// aniType 4/5 as jumps. Runs once per 60Hz tick.
 //
-// anim_type, as the stepping actually treats it:
-//   0, 1 -> "normal" frame. Advance to the next frame; if already on the
-//           LAST frame, stay there (the animation simply stops). The
-//           stepping does not distinguish 0 from 1 — only the render path
-//           does (a dur==0 && type==1 frame is skipped when drawing).
-//           A multi-frame animation therefore does NOT loop just because
-//           its frames are type 1.
-//   2    -> "jump". Redirects currentFrame via jump_frame. Looping is
-//           expressed by ending an animation on a type-2 frame whose
-//           jump_frame points back to the loop start (e.g. bg51 obj[0]
-//           is f0..f8 type-1 then f9 type-2 jump=0).
+// anim_type, as the stepping treats it:
+//   0, 1, 3 -> "advance" frame. Move to the next frame; if already on the
+//              LAST frame, stay there (the animation stops). The stepping
+//              does not distinguish them — only the render path does (a
+//              dur==0 && type==1 frame is skipped when drawing). A
+//              multi-frame animation does NOT loop just by being type 1.
+//   2, 4, 5 -> "jump" frame (IsJumpType). Redirects currentFrame via
+//              jump_frame. Looping is expressed by ending an animation on
+//              a jump-type frame whose jump_frame points to the loop
+//              start (bg26 obj[0]: type-2 jump=0; bg04 obj[4]: type-5
+//              jump=0).
 //
 // Duration: a frame is held for (duration + 1) ticks. u4ick increments
 // frame_duration_index while it is strictly < duration, and only advances
@@ -298,13 +312,13 @@ void Object::Update() {
 	// duration-0 frame (the condition re-tests against the new frame1
 	// after frameDuration is reset by the loop's post-statement).
 	for (; frameDuration >= frame1->duration; frameDuration = 0) {
-		if (frame1->aniType == 2) {
+		if (IsJumpType(frame1->aniType)) {
 			currentFrame = frame1->jumpFrame;
 			int idx = (currentFrame >= count) ? 0 : currentFrame;
 			Frame& frame2 = frames[idx];
 			currentFrame = (int)frame2.jumpFrame - 1;
 			frameDuration = 0;
-			if (frame2.aniType == 2) {
+			if (IsJumpType(frame2.aniType)) {
 				currentFrame = frame2.jumpFrame;
 				break;
 			}

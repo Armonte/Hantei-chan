@@ -34,11 +34,12 @@ struct Frame {
 	uint8_t blendMode = 0;     // 0=normal, 2=additive
 	uint8_t opacity = 255;     // 0-255
 	
-	// Animation control. Per u4ick's stepping (see Object::Update):
-	//   0, 1 = normal frame (advance, stop at last frame)
-	//   2    = jump to jumpFrame (this is how animations loop)
+	// Hantei4 animation_flow (see Object::Update / han4docs):
+	//   0, 1, 3 = advance to next frame (stop at last frame)
+	//   2, 4, 5 = jump to jumpFrame (2=Jump, 4=Jump+landing,
+	//             5=Loop check / Loop ED — this is how animations loop)
 	uint8_t aniType = 1;
-	uint8_t jumpFrame = 0;     // Target frame index when aniType==2
+	uint8_t jumpFrame = 0;     // Target frame index for jump types (2/4/5)
 	
 	// Movement vectors (bgmake-specific)
 	uint8_t enableXVec = 0;
