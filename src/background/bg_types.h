@@ -15,6 +15,13 @@ namespace bg {
 // at a character's feet when a stage is shown behind a character.
 constexpr float STAGE_FLOOR_Y = 224.0f;
 
+// u4ick's playfield rect spans bg-x -401..+656 (width 1057, MonoForm.cs:
+// 433-435), so its horizontal centre is at bg-x (-401 + 1057/2) = +127.5,
+// NOT at the camera origin. We subtract this from every bg x-coordinate
+// so the stage's centre lands on the editor's world x=0 / grid vertical
+// line.
+constexpr float STAGE_CENTER_X = 127.5f;
+
 // Background frame - similar to Frame_AF but simpler (no hitboxes, AS, AT, etc.)
 struct Frame {
 	// Core rendering data (same as Frame_AF)
