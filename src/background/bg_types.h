@@ -22,6 +22,11 @@ constexpr float STAGE_FLOOR_Y = 224.0f;
 // line.
 constexpr float STAGE_CENTER_X = 127.5f;
 
+// Per-frame movement vectors (xVec/yVec) accumulate into a per-object
+// runtime drift each tick; this divides the raw accumulator down to
+// pixels. Empirical — tune if the bob amplitude looks wrong vs the game.
+constexpr float STAGE_VEC_SCALE = 1.0f / 8192.0f;
+
 // Background frame - similar to Frame_AF but simpler (no hitboxes, AS, AT, etc.)
 struct Frame {
 	// Core rendering data (same as Frame_AF)
@@ -75,6 +80,14 @@ struct Object {
 	// Animation state
 	int32_t currentFrame = 0;
 	int32_t frameDuration = 0;
+
+	// Runtime movement-vector drift. Accumulated every tick from the
+	// current frame's xVec/yVec (see Object::Update). This is what makes
+	// effects like bg34's bobbing orbs move — their two frames share a
+	// single sprite + offset and differ only in yVec (f0 +, f1 -), so
+	// the looping frame index alone produces no visible motion.
+	float vecX = 0.0f;
+	float vecY = 0.0f;
 
 	void Update();
 	void Reset();
