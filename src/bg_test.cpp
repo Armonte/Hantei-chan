@@ -66,8 +66,10 @@ int main(int argc, char** argv)
 				if (a.spriteId != b.spriteId || a.offsetX != b.offsetX || a.offsetY != b.offsetY ||
 				    a.duration != b.duration || a.blendMode != b.blendMode || a.opacity != b.opacity ||
 				    a.aniType != b.aniType || a.jumpFrame != b.jumpFrame ||
-				    a.enableXVec != b.enableXVec || a.enableYVec != b.enableYVec ||
-				    a.xVec != b.xVec || a.yVec != b.yVec) {
+				    a.flagClearX != b.flagClearX || a.flagClearY != b.flagClearY ||
+				    a.flagSetX != b.flagSetX || a.flagSetY != b.flagSetY ||
+				    a.velX != b.velX || a.velY != b.velY ||
+				    a.accX != b.accX || a.accY != b.accY) {
 					fprintf(stderr, "obj %zu frame %zu differs\n", i, k);
 					++diffs;
 				}
@@ -84,9 +86,10 @@ int main(int argc, char** argv)
 		       i, obj.layer, obj.parallax, obj.frames.size());
 		for (size_t fi = 0; fi < obj.frames.size(); ++fi) {
 			const auto& f = obj.frames[fi];
-			printf("    frame[%zu]: spriteId=%d offset=(%d,%d) dur=%d blend=%d alpha=%d aniType=%d jump=%d xVec=%d yVec=%d\n",
+			printf("    frame[%zu]: spriteId=%d offset=(%d,%d) dur=%d blend=%d alpha=%d aniType=%d jump=%d vel=(%d,%d) acc=(%d,%d)\n",
 			       fi, f.spriteId, f.offsetX, f.offsetY, f.duration,
-			       f.blendMode, f.opacity, f.aniType, f.jumpFrame, f.xVec, f.yVec);
+			       f.blendMode, f.opacity, f.aniType, f.jumpFrame,
+			       f.velX, f.velY, f.accX, f.accY);
 		}
 	}
 
