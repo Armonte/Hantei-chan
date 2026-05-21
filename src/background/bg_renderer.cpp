@@ -308,11 +308,12 @@ void Renderer::Render(const Camera& camera, int clientW, int clientH) {
 		int para = parallaxEnabled ? obj.parallax : 256;
 		// -STAGE_CENTER_X / -STAGE_FLOOR_Y shift the whole stage so u4ick's
 		// playfield centre (bg-x +127.5) and floor (bg-y +224) coincide
-		// with the editor's world origin / grid lines.
+		// with the editor's world origin / grid lines. obj.vecX/vecY is the
+		// accumulated movement-vector drift (bobbing orbs etc.).
 		float screenX = camera.ScreenX((float)fr.offsetX, para) + camera.panLastX
-		                - STAGE_CENTER_X;
+		                - STAGE_CENTER_X + obj.vecX * STAGE_VEC_SCALE;
 		float screenY = camera.ScreenY((float)fr.offsetY, para) + camera.panLastY
-		                - STAGE_FLOOR_Y;
+		                - STAGE_FLOOR_Y + obj.vecY * STAGE_VEC_SCALE;
 
 		int sw, sh, ox, oy;
 		GLuint tex = GetOrCreateTexture(fr.spriteId, sw, sh, ox, oy);

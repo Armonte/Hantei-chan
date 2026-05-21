@@ -303,6 +303,13 @@ void Object::Update() {
 	Frame* frame1 = (currentFrame >= 0 && currentFrame < count)
 	                ? &frames[currentFrame] : &frames[0];
 
+	// Accumulate the current frame's movement vector every tick. A 2-frame
+	// effect like bg34's orbs has +yVec on f0 and -yVec on f1, so vecY
+	// oscillates and the sprite bobs. Equal-and-opposite vectors over
+	// equal durations make the loop seamless regardless of scale.
+	vecX += (float)frame1->xVec;
+	vecY += (float)frame1->yVec;
+
 	if (frameDuration < frame1->duration) {
 		frameDuration++;
 		return;
@@ -337,6 +344,8 @@ void Object::Update() {
 void Object::Reset() {
 	currentFrame = 0;
 	frameDuration = 0;
+	vecX = 0.0f;
+	vecY = 0.0f;
 	for (auto& frame : frames) {
 		frame.runtimeX = 0.0f;
 		frame.runtimeY = 0.0f;
