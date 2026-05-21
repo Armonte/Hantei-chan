@@ -262,36 +262,61 @@ void File::UpdateAnimations() {
 	}
 }
 
-// Object animation logic
+// Object animation logic — faithful port of u4ick's bgmaketool per-object
+// frame stepping (Form1.cs RenderForever, lines 213-254). Runs once per
+// 60Hz tick.
+//
+// anim_type, as the stepping actually treats it:
+//   0, 1 -> "normal" frame. Advance to the next frame; if already on the
+//           LAST frame, stay there (the animation simply stops). The
+//           stepping does not distinguish 0 from 1 — only the render path
+//           does (a dur==0 && type==1 frame is skipped when drawing).
+//           A multi-frame animation therefore does NOT loop just because
+//           its frames are type 1.
+//   2    -> "jump". Redirects currentFrame via jump_frame. Looping is
+//           expressed by ending an animation on a type-2 frame whose
+//           jump_frame points back to the loop start (e.g. bg51 obj[0]
+//           is f0..f8 type-1 then f9 type-2 jump=0).
+//
+// Duration: a frame is held for (duration + 1) ticks. u4ick increments
+// frame_duration_index while it is strictly < duration, and only advances
+// on the tick where it is no longer < duration. The previous code here
+// advanced after `duration` ticks, making every animation run too fast.
 void Object::Update() {
 	if (frames.empty()) return;
-	
-	frameDuration++;
-	
-	Frame& frame = frames[currentFrame];
-	if (frameDuration >= frame.duration) {
-		frameDuration = 0;
 
-		// bgmake logic - just advance frames, no vector application in Update()
-		// Vectors are NOT used during animation update in bgmake
-		switch (frame.aniType) {
-			case 0:  // End - stop
-				break;
+	const int count = (int)frames.size();
+	Frame* frame1 = (currentFrame >= 0 && currentFrame < count)
+	                ? &frames[currentFrame] : &frames[0];
 
-			case 1:  // Loop
-				currentFrame++;
-				if (currentFrame >= (int)frames.size()) {
-					currentFrame = 0;
-				}
-				break;
+	if (frameDuration < frame1->duration) {
+		frameDuration++;
+		return;
+	}
 
-			case 2:  // Jump
-				currentFrame = frame.jumpFrame;
-				if (currentFrame >= (int)frames.size()) {
-					currentFrame = 0;  // Safety
-				}
+	// Advance. The loop steps again in the same tick if it lands on a
+	// duration-0 frame (the condition re-tests against the new frame1
+	// after frameDuration is reset by the loop's post-statement).
+	for (; frameDuration >= frame1->duration; frameDuration = 0) {
+		if (frame1->aniType == 2) {
+			currentFrame = frame1->jumpFrame;
+			int idx = (currentFrame >= count) ? 0 : currentFrame;
+			Frame& frame2 = frames[idx];
+			currentFrame = (int)frame2.jumpFrame - 1;
+			frameDuration = 0;
+			if (frame2.aniType == 2) {
+				currentFrame = frame2.jumpFrame;
 				break;
+			}
 		}
+		if (currentFrame >= count - 1) {
+			if (currentFrame > count - 1)
+				currentFrame = 0;
+			break;
+		}
+		if (currentFrame < count)
+			currentFrame++;
+		frame1 = &frames[currentFrame];
 	}
 }
 
