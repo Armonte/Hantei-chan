@@ -166,6 +166,11 @@ void MainFrame::DrawBack()
 	// Tick background animation (once per frame, regardless of which draw
 	// path we take below).
 	bgRenderer.Update();
+	// Sync editor zoom -> bg camera zoom so mouse-wheel zoom (which writes
+	// render.scale) drives the bg projection too, and so the drag delta
+	// math (which divides by render.scale to convert screen-px to world-px)
+	// matches what the bg's projection will scale back up to screen-px.
+	bgCamera.zoom = render.scale;
 	// Draw the bg ourselves now — the new renderer owns its program / VAO /
 	// depth state and just needs the camera + viewport size.
 	bgRenderer.Render(bgCamera, (int)clientRect.x, (int)clientRect.y);
