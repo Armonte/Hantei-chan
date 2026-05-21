@@ -8,6 +8,13 @@
 
 namespace bg {
 
+// u4ick's stage floor sits at bg-y = +224 relative to the bgmake camera
+// origin (the yellow ground line in MonoForm.cs:433 is drawn at 224 + y1).
+// We subtract this from every bg y-coordinate so the floor lands on the
+// editor's world y=0 — i.e. on the grid's horizontal line and, eventually,
+// at a character's feet when a stage is shown behind a character.
+constexpr float STAGE_FLOOR_Y = 224.0f;
+
 // Background frame - similar to Frame_AF but simpler (no hitboxes, AS, AT, etc.)
 struct Frame {
 	// Core rendering data (same as Frame_AF)

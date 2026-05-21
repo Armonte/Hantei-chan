@@ -37,7 +37,7 @@ public:
 	void HandleMouseDown(bool dragRight, bool dragLeft);
 	void HandleMouseUp(bool dragRight, bool dragLeft);
 	bool HandleKeys(uint64_t vkey);
-	void HandleMouseWheel(bool isIncrease);
+	void HandleMouseWheel(bool isIncrease, int mouseX, int mouseY);
 
 	void RightClick(int x, int y);
 	void LoadSettings();
@@ -134,6 +134,15 @@ private:
 	bg::Camera   bgCamera;
 	void loadStageFile(const std::string& path);
 	void clearStage();
+
+	// Stage-view smooth zoom-to-cursor. A wheel tick bumps bgZoomTarget;
+	// DrawBack eases render.scale toward it and re-pins the world point
+	// that was under the cursor (bgZoomAnchorWorld) at the cursor's
+	// screen position (bgZoomAnchorScrn) every frame of the animation.
+	float bgZoomTarget       = 1.0f;
+	bool  bgZoomAnimating    = false;
+	float bgZoomAnchorWorldX = 0.0f, bgZoomAnchorWorldY = 0.0f;
+	float bgZoomAnchorScrnX  = 0.0f, bgZoomAnchorScrnY  = 0.0f;
 
 	AboutWindow aboutWindow;
 };
