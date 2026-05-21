@@ -29,7 +29,8 @@ constexpr float STAGE_POS_SCALE = 1.0f / 128.0f;
 
 // Background frame - similar to Frame_AF but simpler (no hitboxes, AS, AT, etc.)
 struct Frame {
-	// Core rendering data (same as Frame_AF)
+	// Raw sprite-id straight from the file. >= 10000 -> CG sprite (CG index
+	// is spriteId - 10000). < 10000 -> PAT pattern index. -1 -> no sprite.
 	int16_t spriteId = -1;
 	int16_t offsetX = 0;
 	int16_t offsetY = 0;

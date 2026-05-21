@@ -30,6 +30,9 @@ context(context_)
 	// Hand the background renderer/camera to the GL Render so its Draw()
 	// loop calls into bgRenderer at the right point (behind the character).
 	render.SetBackgroundRenderer(&bgRenderer, &bgCamera);
+	// The bg renderer draws PAT-pattern stage objects through Render's
+	// Parts pipeline (sprite-id < 10000) — give it the back-reference.
+	bgRenderer.SetHostRender(&render);
 }
 
 MainFrame::~MainFrame()

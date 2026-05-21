@@ -5,6 +5,8 @@
 #include "../cg.h"
 #include <memory>
 
+class Parts;
+
 namespace bg {
 
 // Background file - essentially ha4 format with embedded CG
@@ -27,7 +29,12 @@ public:
 	
 	CG* GetCG() { return cg.get(); }
 	const CG* GetCG() const { return cg.get(); }
-	
+
+	// Embedded PAT, parsed into the editor's Parts system. Stage objects
+	// whose frame sprite-id is < 10000 reference a PAT pattern (not a CG
+	// sprite) — see bg_renderer. Null if the stage carries no PAT.
+	Parts* GetParts() { return parts.get(); }
+
 	bool IsLoaded() const { return loaded; }
 
 	// Get filename
@@ -77,6 +84,7 @@ private:
 	std::vector<Object> objects;
 	std::vector<uint8_t> cgData;     // Raw embedded CG data
 	std::unique_ptr<CG> cg;          // Loaded CG file
+	std::unique_ptr<Parts> parts;    // Embedded PAT, parsed (may be null)
 	
 	// Loading helpers
 	bool LoadHeader(const char* data, size_t size, Header& header);

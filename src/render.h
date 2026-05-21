@@ -142,6 +142,13 @@ public:
 	// Background (stage) rendering.
 	void SetBackgroundRenderer(bg::Renderer* renderer, bg::Camera* camera);
 	void DrawBackground();
+
+	// Draw one PAT pattern for a stage object whose sprite-id is < 10000.
+	// (worldX, worldY) is the object's position in editor-world space
+	// WITHOUT the camera pan (render.x/y supplies that). Used by the bg
+	// Renderer for PAT-based stage objects.
+	void DrawBgPattern(Parts* parts, int pattern,
+	                   float worldX, float worldY, float alpha, int blendMode);
 	bg::Renderer* GetBackgroundRenderer() { return bgRenderer; }
 	bg::Camera*   GetBackgroundCamera()   { return bgCamera;   }
 
