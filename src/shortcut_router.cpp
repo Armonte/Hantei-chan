@@ -1,6 +1,7 @@
 #include "shortcut_router.h"
 
 #include <algorithm>
+#include <cstdio>
 
 namespace {
 // Win32 virtual-key codes, spelled out so this file stays platform-free.
@@ -70,6 +71,7 @@ ShortcutRegistry::ShortcutRegistry()
 		{A::cancelGesture,    "Cancel drag",                  {vkEscape, 0},        R::focusedContext, C::characterView, false, false},
 	}
 {
+	for (const auto& b : m_bindings) m_defaults.push_back(b.chord);
 }
 
 const ShortcutBinding* ShortcutRegistry::binding(ShortcutAction action) const
@@ -139,6 +141,7 @@ std::vector<std::pair<ShortcutAction, ShortcutAction>> ShortcutRegistry::conflic
 
 std::string ShortcutRegistry::ChordLabel(ShortcutChord chord)
 {
+	if (chord.key == 0) return "(none)";
 	std::string s;
 	if (chord.modifiers & shortcutCtrl) s += "Ctrl+";
 	if (chord.modifiers & shortcutShift) s += "Shift+";
@@ -154,8 +157,31 @@ std::string ShortcutRegistry::ChordLabel(ShortcutChord chord)
 	case vkNext: s += "PgDn"; break;
 	case vkMultiply: s += "Num*"; break;
 	case vkDivide: s += "Num/"; break;
+	case 0x20: s += "Space"; break;
+	case 0x08: s += "Backspace"; break;
+	case 0x0D: s += "Enter"; break;
+	case 0x2D: s += "Insert"; break;
+	case 0x2E: s += "Delete"; break;
+	case 0x24: s += "Home"; break;
+	case 0x23: s += "End"; break;
+	case 0x6B: s += "Num+"; break;
+	case 0x6D: s += "Num-"; break;
+	case 0x6E: s += "Num."; break;
+	case 0xBA: s += ";"; break;
+	case 0xBB: s += "="; break;
+	case 0xBC: s += ","; break;
+	case 0xBD: s += "-"; break;
+	case 0xBE: s += "."; break;
+	case 0xBF: s += "/"; break;
+	case 0xC0: s += "`"; break;
+	case 0xDB: s += "["; break;
+	case 0xDC: s += "\\"; break;
+	case 0xDD: s += "]"; break;
+	case 0xDE: s += "'"; break;
 	default:
-		if (chord.key >= 0x20 && chord.key < 0x7F) s += (char)chord.key;
+		if (chord.key >= 0x60 && chord.key <= 0x69) s += "Num" + std::to_string(chord.key - 0x60);
+		else if (chord.key >= 0x70 && chord.key <= 0x87) s += "F" + std::to_string(chord.key - 0x6F);
+		else if (chord.key >= 0x21 && chord.key < 0x7F) s += (char)chord.key;
 		else s += "Key" + std::to_string(chord.key);
 		break;
 	}
@@ -182,4 +208,119 @@ bool ShortcutRouter::dispatchToContext(ShortcutAction action) const
 		if (h.first == m_focused && h.second) return h.second(action);
 	}
 	return false;
+}
+
+// ---------------------------------------------------------------------------
+// Remapping
+// ---------------------------------------------------------------------------
+
+const char* ShortcutRegistry::ActionId(ShortcutAction action)
+{
+	switch (action) {
+	case A::undo: return "undo";
+	case A::redo: return "redo";
+	case A::save: return "save";
+	case A::saveProjectAs: return "saveProjectAs";
+	case A::openProject: return "openProject";
+	case A::newProject: return "newProject";
+	case A::nextView: return "nextView";
+	case A::previousView: return "previousView";
+	case A::closeView: return "closeView";
+	case A::previousPattern: return "previousPattern";
+	case A::nextPattern: return "nextPattern";
+	case A::previousKeyframe: return "previousKeyframe";
+	case A::nextKeyframe: return "nextKeyframe";
+	case A::previousBox: return "previousBox";
+	case A::nextBox: return "nextBox";
+	case A::nudgeLayerLeft: return "nudgeLayerLeft";
+	case A::nudgeLayerRight: return "nudgeLayerRight";
+	case A::nudgeLayerUp: return "nudgeLayerUp";
+	case A::nudgeLayerDown: return "nudgeLayerDown";
+	case A::nudgeLayerLeftFast: return "nudgeLayerLeftFast";
+	case A::nudgeLayerRightFast: return "nudgeLayerRightFast";
+	case A::nudgeLayerUpFast: return "nudgeLayerUpFast";
+	case A::nudgeLayerDownFast: return "nudgeLayerDownFast";
+	case A::toggleSpawnPreview: return "toggleSpawnPreview";
+	case A::playReverse: return "playReverse";
+	case A::togglePlayback: return "togglePlayback";
+	case A::playForward: return "playForward";
+	case A::stepTickBackward: return "stepTickBackward";
+	case A::stepTickForward: return "stepTickForward";
+	case A::cancelGesture: return "cancelGesture";
+	default: return "";
+	}
+}
+
+int ShortcutRegistry::slotOf(size_t index) const
+{
+	int slot = 0;
+	for (size_t i = 0; i < index && i < m_bindings.size(); ++i)
+		if (m_bindings[i].action == m_bindings[index].action) ++slot;
+	return slot;
+}
+
+bool ShortcutRegistry::setBindingChord(size_t index, ShortcutChord chord)
+{
+	if (index >= m_bindings.size()) return false;
+	m_bindings[index].chord = chord;
+	return true;
+}
+
+void ShortcutRegistry::resetDefaults()
+{
+	for (size_t i = 0; i < m_bindings.size() && i < m_defaults.size(); ++i)
+		m_bindings[i].chord = m_defaults[i];
+}
+
+bool ShortcutRegistry::isDefault(size_t index) const
+{
+	return index < m_defaults.size() && m_bindings[index].chord == m_defaults[index];
+}
+
+std::vector<std::string> ShortcutRegistry::serializeOverrides() const
+{
+	std::vector<std::string> out;
+	for (size_t i = 0; i < m_bindings.size(); ++i) {
+		if (isDefault(i)) continue;
+		out.push_back(std::string("Key=") + ActionId(m_bindings[i].action) + "#" + std::to_string(slotOf(i)) + "=" +
+			std::to_string(m_bindings[i].chord.key) + "," + std::to_string(m_bindings[i].chord.modifiers));
+	}
+	return out;
+}
+
+void ShortcutRegistry::applyOverride(const std::string& line)
+{
+	// Key=<id>#<slot>=<vk>,<mods>
+	if (line.compare(0, 4, "Key=") != 0) return;
+	const size_t hash = line.find('#', 4), eq = line.find('=', 4);
+	if (hash == std::string::npos || eq == std::string::npos || eq < hash) return;
+	const std::string id = line.substr(4, hash - 4);
+	int slot = 0;
+	unsigned vk = 0, mods = 0;
+	if (std::sscanf(line.c_str() + hash + 1, "%d=%u,%u", &slot, &vk, &mods) != 3) return;
+	int seen = 0;
+	for (size_t i = 0; i < m_bindings.size(); ++i) {
+		if (id != ActionId(m_bindings[i].action)) continue;
+		if (seen++ == slot) {
+			m_bindings[i].chord = ShortcutChord{vk, (uint8_t)(mods & 7)};
+			return;
+		}
+	}
+}
+
+std::vector<size_t> ShortcutRegistry::conflictsOf(size_t index) const
+{
+	std::vector<size_t> out;
+	if (index >= m_bindings.size() || m_bindings[index].chord.key == 0) return out;
+	const auto& a = m_bindings[index];
+	for (size_t j = 0; j < m_bindings.size(); ++j) {
+		if (j == index) continue;
+		const auto& b = m_bindings[j];
+		if (!(a.chord == b.chord)) continue;
+		for (int c = 0; c < (int)ShortcutContext::count; ++c) {
+			const auto ctx = (ShortcutContext)c;
+			if (reaches(a, ctx) && reaches(b, ctx)) { out.push_back(j); break; }
+		}
+	}
+	return out;
 }

@@ -354,4 +354,74 @@ void MainFrame::drawNotesWindow()
 	ImGui::End();
 }
 
+// ---------------------------------------------------------------------------
+// Keyboard shortcuts / mouse options (#9, #61).
+// ---------------------------------------------------------------------------
+
+void MainFrame::drawKeyBindingsWindow()
+{
+	if (!m_showKeyBindings) { m_keyCapture = -1; return; }
+	ImGui::SetNextWindowSize(ImVec2(560, 560), ImGuiCond_FirstUseEver);
+	if (!ImGui::Begin("Keyboard shortcuts", &m_showKeyBindings)) { ImGui::End(); return; }
+	auto& reg = shortcuts.registry();
+	ImGui::TextWrapped("Click a shortcut, then press the new key (with Ctrl/Shift/Alt). Esc cancels. "
+	                   "Changes are saved with the other settings.");
+	if (ImGui::Button("Reset all to defaults")) {
+		reg.resetDefaults();
+		gSettings.keyBindings.clear();
+		ImGui::MarkIniSettingsDirty();
+	}
+	ImGui::SameLine();
+	if (ImGui::Checkbox("Invert mouse wheel zoom", &gSettings.invertWheelZoom)) ImGui::MarkIniSettingsDirty();
+
+	if (ImGui::BeginTable("##keys", 3, ImGuiTableFlags_RowBg | ImGuiTableFlags_BordersInnerV | ImGuiTableFlags_ScrollY)) {
+		ImGui::TableSetupColumn("Action");
+		ImGui::TableSetupColumn("Shortcut", ImGuiTableColumnFlags_WidthFixed, 150);
+		ImGui::TableSetupColumn("", ImGuiTableColumnFlags_WidthFixed, 110);
+		ImGui::TableHeadersRow();
+		const auto& bindings = reg.bindings();
+		for (size_t i = 0; i < bindings.size(); ++i) {
+			const auto& b = bindings[i];
+			ImGui::PushID((int)i);
+			ImGui::TableNextRow();
+			ImGui::TableNextColumn();
+			ImGui::TextUnformatted(b.name);
+			if (b.reach == ShortcutReach::focusedContext) { ImGui::SameLine(); ImGui::TextDisabled("(character view)"); }
+			ImGui::TableNextColumn();
+			const bool capturing = m_keyCapture == (int)i;
+			std::string label = capturing ? "press a key..." : ShortcutRegistry::ChordLabel(b.chord);
+			if (!reg.isDefault(i)) label += " *";
+			if (ImGui::Button(label.c_str(), ImVec2(-FLT_MIN, 0))) m_keyCapture = capturing ? -1 : (int)i;
+			const auto clash = reg.conflictsOf(i);
+			if (!clash.empty()) {
+				ImGui::SameLine();
+				ImGui::TextColored(ImVec4(1, 0.4f, 0.2f, 1), "!");
+				if (ImGui::IsItemHovered()) {
+					std::string t = "Same key as:";
+					for (size_t j : clash) t += std::string("\n  ") + bindings[j].name;
+					ImGui::SetTooltip("%s", t.c_str());
+				}
+			}
+			ImGui::TableNextColumn();
+			if (ImGui::SmallButton("Clear")) {
+				reg.setBindingChord(i, ShortcutChord{});
+				gSettings.keyBindings = reg.serializeOverrides();
+				ImGui::MarkIniSettingsDirty();
+			}
+			ImGui::SameLine();
+			ImGui::BeginDisabled(reg.isDefault(i));
+			if (ImGui::SmallButton("Default")) {
+				ShortcutRegistry defaults;
+				reg.setBindingChord(i, defaults.bindings()[i].chord);
+				gSettings.keyBindings = reg.serializeOverrides();
+				ImGui::MarkIniSettingsDirty();
+			}
+			ImGui::EndDisabled();
+			ImGui::PopID();
+		}
+		ImGui::EndTable();
+	}
+	ImGui::End();
+}
+
 #endif /* UI_TOOL_WINDOWS_IMPL_H_GUARD */

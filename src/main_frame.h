@@ -224,6 +224,9 @@ private:
 	} m_patMgr;
 	void drawPatternManagerWindow();
 	bool m_showNotes = false;
+	bool m_showKeyBindings = false;
+	int m_keyCapture = -1;   // binding index waiting for a key (Keyboard shortcuts window)
+	void drawKeyBindingsWindow();
 	void drawNotesWindow();
 	void markToolEdit(CharacterInstance* character);
 	void navigateActiveView(int pattern, int frame);

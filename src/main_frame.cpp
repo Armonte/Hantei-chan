@@ -33,6 +33,9 @@ MainFrame::MainFrame(ContextGl *context_):
 context(context_)
 {
 	LoadSettings();
+	// User key bindings (issue #9); unknown or stale entries are ignored.
+	for (const auto& line : gSettings.keyBindings)
+		shortcuts.registry().applyOverride(line);
 	// Hand the background renderer/camera to the GL Render so its Draw()
 	// loop calls into bgRenderer at the right point (behind the character).
 	render.SetBackgroundRenderer(&bgRenderer, &bgCamera);

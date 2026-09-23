@@ -75,6 +75,40 @@ int main()
 	CHECK(act(reg.resolve({0x6F, 0}, ShortcutContext::characterView, false, true)) == ShortcutAction::previousKeyframe);
 	CHECK(reg.label(ShortcutAction::nextView) == "Ctrl+Tab");
 	CHECK(ShortcutRegistry::ChordLabel({0x21, shortcutCtrl}) == "Ctrl+PgUp");
+	// Remapping and persistence (issue #9).
+	{
+		ShortcutRegistry r;
+		CHECK(r.serializeOverrides().empty());
+		size_t nextTabAlt = 0; int seen = 0;
+		for (size_t k = 0; k < r.bindings().size(); ++k)
+			if (r.bindings()[k].action == ShortcutAction::nextView && seen++ == 1) nextTabAlt = k;
+		CHECK(r.setBindingChord(nextTabAlt, {'N', shortcutAlt}));
+		CHECK(!r.isDefault(nextTabAlt));
+		auto lines = r.serializeOverrides();
+		CHECK(lines.size() == 1 && lines[0] == "Key=nextView#1=78,4");
+		ShortcutRegistry r2;
+		r2.applyOverride(lines[0]);
+		r2.applyOverride("Key=noSuchAction#0=65,0");
+		r2.applyOverride("garbage");
+		CHECK(r2.serializeOverrides() == lines);
+		CHECK(act(r2.resolve({'N', shortcutAlt}, ShortcutContext::none, false, false)) == ShortcutAction::nextView);
+		CHECK(r2.resolve({0x22, shortcutCtrl}, ShortcutContext::none, false, false) == nullptr);
+		// Disable a binding.
+		size_t undoIdx = 0;
+		for (size_t k = 0; k < r2.bindings().size(); ++k) if (r2.bindings()[k].action == ShortcutAction::undo) undoIdx = k;
+		r2.setBindingChord(undoIdx, {});
+		CHECK(r2.resolve({'Z', shortcutCtrl}, ShortcutContext::characterView, false, false) == nullptr);
+		// Conflict detection per binding.
+		r2.setBindingChord(undoIdx, {'Y', shortcutCtrl});
+		CHECK(!r2.conflictsOf(undoIdx).empty());
+		r2.resetDefaults();
+		CHECK(r2.serializeOverrides().empty());
+		CHECK(ShortcutRegistry::ChordLabel({0x70, 0}) == "F1");
+		CHECK(ShortcutRegistry::ChordLabel({0x61, shortcutCtrl}) == "Ctrl+Num1");
+		CHECK(ShortcutRegistry::ChordLabel({}) == "(none)");
+		for (int a = 0; a < (int)ShortcutAction::count; ++a)
+			CHECK(ShortcutRegistry::ActionId((ShortcutAction)a)[0] != 0);
+	}
 	custom.setChord(ShortcutAction::togglePlayback, {'X', 0});
 	CHECK(custom.conflicts().size() == 1);
 	CHECK(ShortcutRegistry::ChordLabel({'S', shortcutCtrl | shortcutShift}) == "Ctrl+Shift+S");

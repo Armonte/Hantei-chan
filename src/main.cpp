@@ -504,7 +504,7 @@ LRESULT WINAPI WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
 			wheelPos.x = (short)LOWORD(lParam);
 			wheelPos.y = (short)HIWORD(lParam);
 			ScreenToClient(hWnd, &wheelPos);
-			mf->HandleMouseWheel(wheelDelta > 0, wheelPos.x, wheelPos.y);
+			mf->HandleMouseWheel((wheelDelta > 0) != gSettings.invertWheelZoom, wheelPos.x, wheelPos.y);
 			return 0;
 		}
 		break;

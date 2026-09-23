@@ -47,6 +47,10 @@ static void ReadLine(ImGuiContext*, ImGuiSettingsHandler*, void* entry, const ch
 		gSettings.winSizeY = i;
 	} else if (sscanf(line, "Maximized=%i", &i) == 1){
 		gSettings.maximized = i;
+	} else if (sscanf(line, "InvertWheelZoom=%i", &i) == 1){
+		gSettings.invertWheelZoom = i != 0;
+	} else if (strncmp(line, "Key=", 4) == 0){
+		gSettings.keyBindings.push_back(line);
 	} else if (strncmp(line, "RecentProject=", 14) == 0){
 		// Normalize path when loading from INI for consistency
 		std::string path = normalizePath(line + 14);
@@ -69,6 +73,10 @@ static void Write(ImGuiContext* ctx, ImGuiSettingsHandler* handler, ImGuiTextBuf
 	buf->appendf("sizeX=%hi\n", gSettings.winSizeX);
 	buf->appendf("sizeY=%hi\n", gSettings.winSizeY);
 	buf->appendf("Maximized=%i\n", gSettings.maximized);
+
+	buf->appendf("InvertWheelZoom=%i\n", gSettings.invertWheelZoom ? 1 : 0);
+	for (const auto& k : gSettings.keyBindings)
+		buf->appendf("%s\n", k.c_str());
 
 	// Write recent projects (max 10)
 	size_t maxRecent = gSettings.recentProjects.size() > 10 ? 10 : gSettings.recentProjects.size();
