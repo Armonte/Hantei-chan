@@ -353,6 +353,12 @@ void BoxPane::Draw()
 			}
 			im::SameLine(0,20.f);
 			im::Checkbox("Show manual box controls", &showManualControls);
+			im::SameLine(0,20.f);
+			im::Checkbox("Position tool", &positionTool);
+			if(im::IsItemHovered())
+				im::SetTooltip("Drag the handles in the viewport to move animation layers and\n"
+					"spawn/preset effects on this keyframe. Alt: precision, Shift: axis lock,\n"
+					"Esc: cancel. Each drag is one undo step.");
 
 			if(highlight)
 				render->highLightN = currentBox;

@@ -409,6 +409,46 @@ void MainFrame::Menu(unsigned int errorPopupId)
 			if (ImGui::MenuItem("Exit")) PostQuitMessage(0);
 			ImGui::EndMenu();
 		}
+		if (ImGui::BeginMenu("Edit"))
+		{
+			auto* active = getActiveCharacter();
+			auto* view = getActiveView();
+			const bool editable = active && view && !view->isStageView();
+			const UndoManager* undo = editable ? &active->undoManager : nullptr;
+			auto stepName = [](const UndoManager::Entry* e) {
+				if (!e) return std::string();
+				std::string name = e->label.empty() ? "Edit" : e->label;
+				name += e->changes.size() == 1
+					? " (pattern " + std::to_string(e->changes.front().index) + ")"
+					: " (" + std::to_string(e->changes.size()) + " patterns)";
+				return name;
+			};
+			const std::string undoLabel = "Undo " + (undo ? stepName(undo->peekUndo()) : std::string());
+			const std::string redoLabel = "Redo " + (undo ? stepName(undo->peekRedo()) : std::string());
+			if (ImGui::MenuItem(undoLabel.c_str(), shortcuts.registry().label(ShortcutAction::undo).c_str(),
+			                    false, undo && undo->canUndo()))
+				PerformUndoRedo(false);
+			if (ImGui::MenuItem(redoLabel.c_str(), shortcuts.registry().label(ShortcutAction::redo).c_str(),
+			                    false, undo && undo->canRedo()))
+				PerformUndoRedo(true);
+			if (undo) {
+				ImGui::TextDisabled("History: %zu undo / %zu redo, ~%zu KiB",
+					undo->undoCount(), undo->redoCount(), undo->historyBytes() / 1024);
+			}
+			ImGui::Separator();
+			if (ImGui::BeginMenu("Keyboard shortcuts")) {
+				for (const auto& b : shortcuts.registry().bindings()) {
+					ImGui::TextUnformatted(b.name);
+					ImGui::SameLine(200.f);
+					ImGui::TextDisabled("%s", ShortcutRegistry::ChordLabel(b.chord).c_str());
+				}
+				ImGui::Separator();
+				ImGui::TextDisabled("Left/Right step keyframes; Shift+J/L step ticks.");
+				ImGui::TextDisabled("Text fields keep their own Ctrl+Z / Ctrl+Y.");
+				ImGui::EndMenu();
+			}
+			ImGui::EndMenu();
+		}
 		if (ImGui::BeginMenu("Preferences"))
 		{
 			if (ImGui::BeginMenu("Switch preset style"))
