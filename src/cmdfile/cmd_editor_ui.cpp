@@ -93,6 +93,8 @@ struct CommandFileEditor::View {
 	bool focus = true;
 	std::uint64_t notifiedRevision = 0;
 	bool hasFocus = false;
+	int teamIn = 0, teamOut = 0;
+	bool teamEditing = false;
 
 	// Selection (command-region line uids, so comments are selectable too).
 	std::set<std::uint64_t> selected;
@@ -234,6 +236,22 @@ bool CommandFileEditor::undoFocused(bool redo)
 	if (!v) return false;
 	if (redo) v->ws.redo(); else v->ws.undo();
 	return true; // consumed even when there is nothing to undo: never fall through to HA6 history
+}
+
+void CommandFileEditor::debugRequestTab(int tab)
+{
+	for (auto& v : m_views) v->requestTab = tab;
+}
+
+void CommandFileEditor::debugSelectFirst()
+{
+	for (auto& v : m_views) {
+		const Document& d = v->doc();
+		if (d.commands.empty()) continue;
+		std::uint64_t uid = d.commands.front().uid;
+		for (const auto& c : d.commands) if (!d.checksForCommand(c.fields[CF_Id]).empty()) { uid = c.uid; break; }
+		v->selectByUid(uid, false, false);
+	}
 }
 
 bool CommandFileEditor::requestSaveFocused()
@@ -953,13 +971,23 @@ void CommandFileEditor::View::drawTagTab()
 		ImGui::TextDisabled("This file has no [TeamChangeData] section.");
 		return;
 	}
-	int in = d.teamChange.tagIn.value_or(0), out = d.teamChange.tagOut.value_or(0);
+	// Edit into view-local values; commit once when the field is left (one undo step).
+	if (!teamEditing) { teamIn = d.teamChange.tagIn.value_or(0); teamOut = d.teamChange.tagOut.value_or(0); }
+	bool commit = false, active = false;
 	ImGui::SetNextItemWidth(120);
-	const bool a = ImGui::InputInt("Tag-in pattern", &in, 0, 0, ImGuiInputTextFlags_EnterReturnsTrue);
+	ImGui::InputInt("Tag-in pattern", &teamIn, 0, 0);
+	active |= ImGui::IsItemActive();
+	commit |= ImGui::IsItemDeactivatedAfterEdit();
 	ImGui::SameLine();
 	ImGui::SetNextItemWidth(120);
-	const bool b = ImGui::InputInt("Tag-out pattern", &out, 0, 0, ImGuiInputTextFlags_EnterReturnsTrue);
-	if (a || b) queue([in, out](WorkspaceSnapshot& s) { return s.document.setTeamChange(in, out); });
+	ImGui::InputInt("Tag-out pattern", &teamOut, 0, 0);
+	active |= ImGui::IsItemActive();
+	commit |= ImGui::IsItemDeactivatedAfterEdit();
+	teamEditing = active;
+	if (commit) {
+		const int in = teamIn, out = teamOut;
+		queue([in, out](WorkspaceSnapshot& s) { return s.document.setTeamChange(in, out); });
+	}
 	ImGui::TextDisabled("Line %zu%s", d.teamChange.headerLine + 1, d.teamChange.assignmentForm ? " (key = in, out form)" : " (bare \"in out\" form)");
 }
 
