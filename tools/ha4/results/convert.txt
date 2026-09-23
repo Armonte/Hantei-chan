@@ -1,0 +1,145 @@
+OK   AKAAKIHA.DAT
+     ha6: 185 patterns, 3539 frames
+OK   AKIHA.DAT
+     ha6: 188 patterns, 3592 frames
+OK   AOKO.DAT
+     ha6: 200 patterns, 3005 frames
+OK   ARC.DAT
+     ha6: 218 patterns, 3529 frames
+     pat: 132 part sets, 5 cutouts, 1 textures
+OK   CIEL.DAT
+     ha6: 204 patterns, 3783 frames
+     pat: 4 part sets, 1 cutouts, 1 textures
+OK   CSEL_AKAAKIHA.DAT
+     ha6: 3 patterns, 36 frames
+     pal: no .PAL next to the .DAT (the CG's built-in palette applies)
+OK   CSEL_AKIHA.DAT
+     ha6: 3 patterns, 39 frames
+     pal: no .PAL next to the .DAT (the CG's built-in palette applies)
+OK   CSEL_AOKO.DAT
+     ha6: 3 patterns, 35 frames
+     pal: no .PAL next to the .DAT (the CG's built-in palette applies)
+OK   CSEL_ARC.DAT
+     ha6: 3 patterns, 54 frames
+     pal: no .PAL next to the .DAT (the CG's built-in palette applies)
+OK   CSEL_CIEL.DAT
+     ha6: 3 patterns, 37 frames
+     pal: no .PAL next to the .DAT (the CG's built-in palette applies)
+OK   CSEL_HISUI.DAT
+     ha6: 3 patterns, 32 frames
+     pal: no .PAL next to the .DAT (the CG's built-in palette applies)
+OK   CSEL_KISHIMA.DAT
+     ha6: 3 patterns, 39 frames
+     pal: no .PAL next to the .DAT (the CG's built-in palette applies)
+OK   CSEL_KOHAKU.DAT
+     ha6: 3 patterns, 26 frames
+     pal: no .PAL next to the .DAT (the CG's built-in palette applies)
+OK   CSEL_LEN.DAT
+     ha6: 3 patterns, 34 frames
+     pal: no .PAL next to the .DAT (the CG's built-in palette applies)
+OK   CSEL_MIYAKO.DAT
+     ha6: 3 patterns, 27 frames
+     pal: no .PAL next to the .DAT (the CG's built-in palette applies)
+OK   CSEL_M_HISUI.DAT
+     ha6: 3 patterns, 40 frames
+     pal: no .PAL next to the .DAT (the CG's built-in palette applies)
+OK   CSEL_NANAYA.DAT
+     ha6: 2 patterns, 30 frames
+     pal: no .PAL next to the .DAT (the CG's built-in palette applies)
+OK   CSEL_NECHAOS.DAT
+     ha6: 2 patterns, 17 frames
+     pal: no .PAL next to the .DAT (the CG's built-in palette applies)
+OK   CSEL_NECO.DAT
+     ha6: 3 patterns, 32 frames
+     pal: no .PAL next to the .DAT (the CG's built-in palette applies)
+OK   CSEL_NERO.DAT
+     ha6: 3 patterns, 45 frames
+     pal: no .PAL next to the .DAT (the CG's built-in palette applies)
+OK   CSEL_SATSUKI.DAT
+     ha6: 3 patterns, 55 frames
+     pal: no .PAL next to the .DAT (the CG's built-in palette applies)
+OK   CSEL_SHIKI.DAT
+     ha6: 3 patterns, 50 frames
+     pal: no .PAL next to the .DAT (the CG's built-in palette applies)
+OK   CSEL_SION.DAT
+     ha6: 3 patterns, 42 frames
+     pal: no .PAL next to the .DAT (the CG's built-in palette applies)
+OK   CSEL_V_SION.DAT
+     ha6: 3 patterns, 42 frames
+     pal: no .PAL next to the .DAT (the CG's built-in palette applies)
+OK   CSEL_WARAKIA.DAT
+     ha6: 3 patterns, 36 frames
+     pal: no .PAL next to the .DAT (the CG's built-in palette applies)
+OK   CSEL_WARC.DAT
+     ha6: 3 patterns, 46 frames
+     pal: no .PAL next to the .DAT (the CG's built-in palette applies)
+OK   CSEL_WLEN.DAT
+     ha6: 3 patterns, 48 frames
+     pal: no .PAL next to the .DAT (the CG's built-in palette applies)
+OK   DAMIEN.DAT
+     ha6: 197 patterns, 2000 frames
+     pat: 132 part sets, 5 cutouts, 1 textures
+OK   EFFECT.DAT
+     ha6: 55 patterns, 803 frames
+     pat: 49 part sets, 30 cutouts, 2 textures
+     pal: no .PAL next to the .DAT (the CG's built-in palette applies)
+OK   F_CIEL.DAT
+     ha6: 43 patterns, 694 frames
+     pal: no .PAL next to the .DAT (the CG's built-in palette applies)
+OK   GAKIHA.DAT
+     ha6: 16 patterns, 106 frames
+     cg: source is "BMP Cutter2" (GAKIHA); written as-is
+     pat: 37 part sets, 7 cutouts, 2 textures
+     pal: no .PAL next to the .DAT (the CG's built-in palette applies)
+OK   G_CHAOS.DAT
+     ha6: 85 patterns, 591 frames
+     pat: 165 part sets, 65 cutouts, 5 textures
+     pal: no .PAL next to the .DAT (the CG's built-in palette applies)
+OK   HISUI.DAT
+     ha6: 213 patterns, 3213 frames
+     pat: 74 part sets, 12 cutouts, 3 textures
+OK   KISHIMA.DAT
+     ha6: 143 patterns, 1998 frames
+OK   KOHAKU.DAT
+     ha6: 198 patterns, 3604 frames
+     pat: 36 part sets, 8 cutouts, 1 textures
+OK   LASTLOAD.DAT
+     ha6: 212 patterns, 3164 frames
+     pat: 74 part sets, 12 cutouts, 3 textures
+     pal: no .PAL next to the .DAT (the CG's built-in palette applies)
+OK   LEN.DAT
+     ha6: 151 patterns, 2246 frames
+     pat: 23 part sets, 2 cutouts, 2 textures
+OK   MIYAKO.DAT
+     ha6: 128 patterns, 1533 frames
+     pat: 5 part sets, 4 cutouts, 1 textures
+OK   M_HISUI.DAT
+     ha6: 199 patterns, 2970 frames
+     pat: 8 part sets, 1 cutouts, 1 textures
+OK   NANAYA.DAT
+     ha6: 141 patterns, 2260 frames
+OK   NECHAOS.DAT
+     ha6: 194 patterns, 1999 frames
+     pat: 132 part sets, 5 cutouts, 1 textures
+OK   NECO.DAT
+     ha6: 169 patterns, 1822 frames
+     pat: 132 part sets, 5 cutouts, 1 textures
+OK   NERO.DAT
+     ha6: 163 patterns, 2900 frames
+OK   SATSUKI.DAT
+     ha6: 132 patterns, 1768 frames
+OK   SHIKI.DAT
+     ha6: 144 patterns, 2377 frames
+OK   SION.DAT
+     ha6: 129 patterns, 2201 frames
+OK   V_SION.DAT
+     ha6: 160 patterns, 2627 frames
+     pat: 6 part sets, 2 cutouts, 2 textures
+OK   WARAKIA.DAT
+     ha6: 162 patterns, 2454 frames
+     pat: 2 part sets, 1 cutouts, 1 textures
+OK   WARC.DAT
+     ha6: 171 patterns, 3142 frames
+     pat: 38 part sets, 5 cutouts, 2 textures
+OK   WLEN.DAT
+     ha6: 182 patterns, 2959 frames

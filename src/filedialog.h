@@ -12,7 +12,8 @@ enum {
 	PAT,
 	DDS,
 	DAT,
-	CMDTXT
+	CMDTXT,
+	HA4
 };
 }
 

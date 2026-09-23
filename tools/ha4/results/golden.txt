@@ -1,0 +1,90 @@
+## 1. Tag-in / tag-out golden patterns
+
+OK      sion      p241 23 frames identical (all fields but CG sprite id)
+OK      sion      p242 27 frames identical (all fields but CG sprite id)
+OK      arc       p235 24 frames identical (all fields but CG sprite id)
+OK      arc       p236 34 frames identical (all fields but CG sprite id)
+OK      ciel      p243 17 frames identical (all fields but CG sprite id)
+OK      ciel      p244 33 frames identical (all fields but CG sprite id)
+OK      akiha     p177 21 frames identical (all fields but CG sprite id)
+OK      akiha     p178 34 frames identical (all fields but CG sprite id)
+OK      hisui     p241 18 frames identical (all fields but CG sprite id)
+OK      hisui     p242 35 frames identical (all fields but CG sprite id)
+OK      kohaku    p188 16 frames identical (all fields but CG sprite id)
+OK      kohaku    p189 36 frames identical (all fields but CG sprite id)
+OK      shiki     p241 15 frames identical (all fields but CG sprite id)
+OK      shiki     p242 36 frames identical (all fields but CG sprite id)
+OK      miyako    p241  8 frames identical (all fields but CG sprite id)
+OK      miyako    p242 27 frames identical (all fields but CG sprite id)
+OK      warakia   p241 13 frames identical (all fields but CG sprite id)
+OK      warakia   p242 25 frames identical (all fields but CG sprite id)
+OK      nero      p244 17 frames identical (all fields but CG sprite id)
+OK      nero      p245 32 frames identical (all fields but CG sprite id)
+OK      v_sion    p241 23 frames identical (all fields but CG sprite id)
+OK      v_sion    p242 27 frames identical (all fields but CG sprite id)
+OK      warc      p197 23 frames identical (all fields but CG sprite id)
+OK      warc      p198 37 frames identical (all fields but CG sprite id)
+OK      akaakiha  p241 21 frames identical (all fields but CG sprite id)
+OK      akaakiha  p242 33 frames identical (all fields but CG sprite id)
+OK      m_hisui   p241 21 frames identical (all fields but CG sprite id)
+OK      m_hisui   p242 37 frames identical (all fields but CG sprite id)
+OK      nanaya    p241 15 frames identical (all fields but CG sprite id)
+OK      nanaya    p242 36 frames identical (all fields but CG sprite id)
+OK      satsuki   p241 15 frames identical (all fields but CG sprite id)
+OK      satsuki   p242 36 frames identical (all fields but CG sprite id)
+OK      len       p241 18 frames identical (all fields but CG sprite id)
+OK      len       p242 35 frames identical (all fields but CG sprite id)
+OK      neco      p241 13 frames identical (all fields but CG sprite id)
+OK      neco      p242 24 frames identical (all fields but CG sprite id)
+OK      aoko      p240 21 frames identical (all fields but CG sprite id)
+OK      aoko      p241 34 frames identical (all fields but CG sprite id)
+OK      wlen      p241 13 frames identical (all fields but CG sprite id)
+OK      wlen      p242 34 frames identical (all fields but CG sprite id)
+OK      nechaos   p241 13 frames identical (all fields but CG sprite id)
+OK      nechaos   p242 23 frames identical (all fields but CG sprite id)
+OK      kishima   p241 15 frames identical (all fields but CG sprite id)
+OK      kishima   p242 35 frames identical (all fields but CG sprite id)
+
+golden: 44/44 tag patterns identical
+
+## 2. Field agreement over all patterns with equal frame counts
+
+3178 patterns / 49701 frames compared (MBAACC crescent-moon merged data)
+
+| field | agree | % |
+|---|---|---|
+| AF.AFAX | 49701/49701 | 100.0 |
+| AF.AFAY | 49658/49701 | 99.9 |
+| AF.AFAZ | 49677/49701 | 100.0 |
+| AF.AFTN | 49701/49701 | 100.0 |
+| AF.aniFlag | 49620/49701 | 99.8 |
+| AF.aniType | 49528/49701 | 99.7 |
+| AF.blend | 49417/49701 | 99.4 |
+| AF.dur | 47625/49701 | 95.8 |
+| AF.interp | 49677/49701 | 100.0 |
+| AF.jump | 49433/49701 | 99.5 |
+| AF.landJump | 49302/49701 | 99.2 |
+| AF.loopCount | 49654/49701 | 99.9 |
+| AF.loopEnd | 49584/49701 | 99.8 |
+| AF.off | 48494/49701 | 97.6 |
+| AF.priority | 49317/49701 | 99.2 |
+| AF.rgb | 49701/49701 | 100.0 |
+| AF.usePat | 49685/49701 | 100.0 |
+| AF.zoom | 49283/49701 | 99.2 |
+| AS.accel | 49622/49701 | 99.8 |
+| AS.canMove | 49552/49701 | 99.7 |
+| AS.cancelN | 49468/49701 | 99.5 |
+| AS.cancelS | 49366/49701 | 99.3 |
+| AS.counter | 49453/49701 | 99.5 |
+| AS.flags0 | 49544/49701 | 99.7 |
+| AS.flags1 | 49491/49701 | 99.6 |
+| AS.hits | 49524/49701 | 99.6 |
+| AS.inv | 49488/49701 | 99.6 |
+| AS.maxX | 49656/49701 | 99.9 |
+| AS.mvflags | 49527/49701 | 99.6 |
+| AS.speed | 49520/49701 | 99.6 |
+| AS.stance | 49461/49701 | 99.5 |
+| AT | 46651/49701 | 93.9 |
+| EF | 48283/49701 | 97.1 |
+| IF | 48320/49701 | 97.2 |
+| boxes | 44688/49701 | 89.9 |
