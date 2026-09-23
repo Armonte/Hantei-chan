@@ -71,6 +71,7 @@ bool FrameData::load(const char *filename, bool patch) {
 	// cleanup and finish
 	delete[] data;
 
+	++dataVersion;
 	m_loaded = 1;
 	return 1;
 }
@@ -175,6 +176,7 @@ bool FrameData::save_modified_only(const char *filename)
 }
 
 void FrameData::Free() {
+	++dataVersion;
 	m_sequences.clear();
 	m_nsequences = 0;
 	m_loaded = 0;
@@ -250,6 +252,7 @@ Command* FrameData::get_command(int id)
 
 void FrameData::mark_modified(int sequence_index)
 {
+	++dataVersion;
 	if(sequence_index >= 0 && sequence_index < (int)m_sequences.size()) {
 		m_sequences[sequence_index].modified = true;
 	}

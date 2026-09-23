@@ -353,6 +353,9 @@ public:
 
 	bool		m_loaded;
 	std::vector<Sequence> m_sequences;
+	// Bumped on load/free and by mark_modified(). Caches keyed on pattern data
+	// (e.g. the preview simulator) compare it to detect edits.
+	uint64_t	dataVersion = 0;
 	std::vector<Command> m_commands;
 
 	void initEmpty();
