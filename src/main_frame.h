@@ -1,6 +1,7 @@
 #ifndef MAINFRAME_H_GUARD
 #define MAINFRAME_H_GUARD
 #include "var_refs.h"
+#include "bgm_player.h"
 #include "pattern_refs.h"
 #include "context_gl.h"
 #include "render.h"
@@ -89,6 +90,9 @@ private:
 	// Character/view management
 	CharacterInstance* findCharacterByPath(const std::string& path);
 	void createViewForCharacter(CharacterInstance* character);
+	struct ClosedTab { std::string path; bool isTxt = false; int pattern = 0; int frame = 0; };
+	std::vector<ClosedTab> m_closedTabs;   // most recent last (max 10)
+	bool reopenClosedTab();
 	void createPatEditorView(const std::string& patPath);
 	int countViewsForCharacter(CharacterInstance* character);
 
@@ -225,8 +229,59 @@ private:
 	void drawPatternManagerWindow();
 	bool m_showNotes = false;
 	bool m_showKeyBindings = false;
+	bool m_showCompare = false;
+	bool m_showBgm = false;
+	struct BgmWindow {
+		std::string folder;
+		std::vector<BgmEntry> entries;
+		int selected = -1;
+		std::string status;
+		float leadIn = 5.0f;
+		float volume = 0.8f;
+		std::unique_ptr<BgmPlayer> player;
+	} m_bgm;
+	void drawBgmWindow();
+	bool m_showHud = false;
+	struct HudTexture { std::string name; unsigned id = 0; int w = 0, h = 0; };
+	struct HudWindow {
+		std::string gameDir;
+		std::vector<uint32_t> colors;
+		std::string status;
+		int meterMode = 0;
+		float meterPct = 120.f;
+		bool halfMoon = false;
+		float guardQuality = 0.8f;
+		bool guardBroken = false;
+		std::string texturesFor;
+		std::vector<HudTexture> textures;
+	} m_hud;
+	void drawHudWindow();
 	int m_keyCapture = -1;   // binding index waiting for a key (Keyboard shortcuts window)
+	int m_textNavDir = 0;    // keyframe step requested from a text field
+public:
+	static wchar_t s_swallowChar; // WM_CHAR to drop (the key already acted as a shortcut)
+private:
 	void drawKeyBindingsWindow();
+public:
+	// Pattern comparison overlay (issue #63)
+	struct CompareState {
+		bool enabled = false;
+		CharacterInstance* character = nullptr;  // validated every frame
+		int pattern = 0;
+		int frame = 0;
+		bool followTick = true;     // step with the main view's tick
+		bool movement = false;      // offset by the simulated root movement difference
+		bool mirror = false;
+		int offsetX = 0, offsetY = 0;
+		float alpha = 0.55f;
+		float tint[3] = {1.0f, 0.55f, 0.55f};
+		bool boxes = true;
+		std::shared_ptr<preview::PreviewSim> sim;
+	};
+private:
+	CompareState m_compare;
+	void drawCompareWindow();
+	void AddCompareLayers(CharacterView* view, CharacterInstance* active);
 	void drawNotesWindow();
 	void markToolEdit(CharacterInstance* character);
 	void navigateActiveView(int pattern, int frame);

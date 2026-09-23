@@ -74,6 +74,7 @@ int main()
 	CHECK(act(reg.resolve({0x6A, 0}, ShortcutContext::characterView, false, true)) == ShortcutAction::nextKeyframe);
 	CHECK(act(reg.resolve({0x6F, 0}, ShortcutContext::characterView, false, true)) == ShortcutAction::previousKeyframe);
 	CHECK(reg.label(ShortcutAction::nextView) == "Ctrl+Tab");
+	CHECK(act(reg.resolve({'T', shortcutCtrl | shortcutShift}, ShortcutContext::characterView, false, false)) == ShortcutAction::reopenClosedView);
 	CHECK(ShortcutRegistry::ChordLabel({0x21, shortcutCtrl}) == "Ctrl+PgUp");
 	// Remapping and persistence (issue #9).
 	{

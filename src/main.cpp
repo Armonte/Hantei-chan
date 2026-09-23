@@ -225,7 +225,8 @@ int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE, PWSTR pCmdLine, int nCmdShow
 		}
 		else if(i+1<argC && (!strcmp(arg, "--open") || !strcmp(arg, "--capture") || !strcmp(arg, "--pattern")
 		                     || !strcmp(arg, "--frame") || !strcmp(arg, "--palette")
-		                     || !strcmp(arg, "--zoom") || !strcmp(arg, "--game")))
+		                     || !strcmp(arg, "--zoom") || !strcmp(arg, "--game")
+		                     || !strcmp(arg, "--compare") || !strcmp(arg, "--tool")))
 		{
 			// startup actions, see startup_args.h
 			std::wstring w(argV[i+1]);
@@ -238,6 +239,8 @@ int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE, PWSTR pCmdLine, int nCmdShow
 			else if(!strcmp(arg, "--frame")) gStartup.frame = atoi(v.c_str());
 			else if(!strcmp(arg, "--zoom")) gStartup.zoom = (float)atof(v.c_str());
 			else if(!strcmp(arg, "--game")) gStartup.game = v;
+			else if(!strcmp(arg, "--compare")) gStartup.compare = atoi(v.c_str());
+			else if(!strcmp(arg, "--tool")) gStartup.tool = v;
 			else gStartup.palette = atoi(v.c_str());
 			i++;
 		}
@@ -348,6 +351,12 @@ int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE, PWSTR pCmdLine, int nCmdShow
 extern IMGUI_IMPL_API LRESULT ImGui_ImplWin32_WndProcHandler(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam);
 LRESULT WINAPI WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
 {
+	// A key that already ran a shortcut while a text field was focused (Num*
+	// / Num/ keyframe step) must not also type its character.
+	if (msg == WM_CHAR && MainFrame::s_swallowChar && (wchar_t)wParam == MainFrame::s_swallowChar) {
+		MainFrame::s_swallowChar = 0;
+		return 0;
+	}
 	if (ImGui_ImplWin32_WndProcHandler(hWnd, msg, wParam, lParam))
 		return true;
 

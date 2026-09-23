@@ -53,6 +53,16 @@ bool MainFrame::HandleKeys(uint64_t vkey, bool isRepeat, bool imguiWantsKeyboard
 	// gets first refusal on every action routed while it owns focus.
 	if (shortcuts.dispatchToContext(binding->action))
 		return true;
+
+	// Keyframe step from inside a text field (issue #61): done inside the next
+	// UI frame (commit the field, step, re-focus it). The key's character
+	// (e.g. '*') must not reach the field.
+	if (imguiTextInput && (binding->action == ShortcutAction::nextKeyframe ||
+	                       binding->action == ShortcutAction::previousKeyframe)) {
+		m_textNavDir = binding->action == ShortcutAction::nextKeyframe ? 1 : -1;
+		s_swallowChar = vkey == VK_MULTIPLY ? L'*' : vkey == VK_DIVIDE ? L'/' : 0;
+		return true;
+	}
 	return RunShortcut(binding->action);
 }
 
@@ -103,6 +113,8 @@ bool MainFrame::RunShortcut(ShortcutAction action)
 			return true;
 		}
 		return false;
+	case ShortcutAction::reopenClosedView:
+		return reopenClosedTab();
 	case ShortcutAction::previousView:
 		if (!views.empty()) {
 			setActiveView((activeViewIndex - 1 + (int)views.size()) % (int)views.size());

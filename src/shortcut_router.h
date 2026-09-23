@@ -41,6 +41,7 @@ enum class ShortcutAction : uint8_t {
 	nextView,
 	previousView,
 	closeView,
+	reopenClosedView,
 	// Navigation
 	previousPattern,
 	nextPattern,
