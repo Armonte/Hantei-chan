@@ -1,6 +1,14 @@
 cmake_minimum_required(VERSION 3.13...3.19)
 project(hanteichan VERSION 1.1.21 LANGUAGES C CXX)
 
+# Single-config generators default to an empty build type, which leaves
+# assert()/IM_ASSERT live: CI's "MinGW Makefiles" build shipped that way, and a
+# harmless ImGui bounds assert aborted the app (issue #81). Default to Release.
+get_property(_multi_config GLOBAL PROPERTY GENERATOR_IS_MULTI_CONFIG)
+if(NOT _multi_config AND NOT CMAKE_BUILD_TYPE)
+	set(CMAKE_BUILD_TYPE Release CACHE STRING "Build type" FORCE)
+endif()
+
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
@@ -45,6 +53,13 @@ add_executable(${EXE}
 	src/ha4_character.cpp
 	src/startup_args.cpp
 	src/framestate.cpp
+	src/copy_data.cpp
+	src/var_refs.cpp
+	src/pattern_refs.cpp
+	src/ha6_notes.cpp
+	src/bgm_player.cpp
+	src/hud_colors.cpp
+	src/hud_textures.cpp
 	src/preview_sim.cpp
 	src/mv_script.cpp
 	src/character_instance.cpp
@@ -115,8 +130,8 @@ add_dependencies(${EXE} update_version)
 find_package(OpenGL REQUIRED)
 target_link_libraries(${EXE} PRIVATE imgui glad OpenGL::GL glm tinyalloc)
 if(WIN32)
-	# WIC PNG export, folder picker, detached-window subclassing.
-	target_link_libraries(${EXE} PRIVATE windowscodecs ole32 uuid comctl32)
+	# WIC PNG export, folder picker, detached-window subclassing; winmm for BGM preview (waveOut).
+	target_link_libraries(${EXE} PRIVATE windowscodecs ole32 uuid comctl32 winmm)
 endif()
 
 if(MINGW)
@@ -314,6 +329,87 @@ if(MINGW)
 	target_link_options(cmdfile_ui_smoke PRIVATE -static-libgcc -static-libstdc++ -static)
 endif()
 add_test(NAME cmdfile_ui_smoke COMMAND cmdfile_ui_smoke tests/fixtures/cmdfile/ex_vanilla_ryougi_1_c.txt tests/fixtures/cmdfile/ex_bof_angel_0_c.txt WORKING_DIRECTORY ${CMAKE_SOURCE_DIR})
+# pattern_search_test: pattern-name search (ImSearch) headless, asserts enabled (issue #81).
+add_executable(pattern_search_test
+	tests/pattern_search_test.cpp
+	src/framedata.cpp
+	src/framedata_load.cpp
+	src/framedata_save.cpp
+	src/framedata_ha4.cpp
+	src/misc.cpp
+	src/extension_profile.cpp
+	src/imgui_utils.cpp
+	tinyalloc/tinyalloc.c
+	imsearch/imsearch.cpp
+	imgui/imgui.cpp
+	imgui/imgui_draw.cpp
+	imgui/imgui_tables.cpp
+	imgui/imgui_widgets.cpp
+)
+target_include_directories(pattern_search_test PRIVATE "." "src" "third_party" "imgui" "imsearch" "${CMAKE_BINARY_DIR}/generated")
+target_compile_definitions(pattern_search_test PRIVATE WIN32_LEAN_AND_MEAN HA6GUIVERSION="${CMAKE_PROJECT_VERSION}" IMGUI_USER_CONFIG="${CMAKE_SOURCE_DIR}/tests/imgui_assert_config.h")
+target_link_libraries(pattern_search_test PRIVATE tinyalloc)
+if(MINGW)
+	target_link_options(pattern_search_test PRIVATE -static-libgcc -static-libstdc++ -static)
+endif()
+add_test(NAME pattern_search COMMAND pattern_search_test WORKING_DIRECTORY ${CMAKE_SOURCE_DIR})
+# shared_clipboard_test: cross-instance copy/paste through the shared heap (issue #8).
+add_executable(shared_clipboard_test
+	tests/shared_clipboard_test.cpp
+	src/copy_data.cpp
+	tinyalloc/tinyalloc.c
+)
+target_include_directories(shared_clipboard_test PRIVATE "." "src" "third_party" "tinyalloc")
+target_compile_definitions(shared_clipboard_test PRIVATE WIN32_LEAN_AND_MEAN)
+if(MINGW)
+	target_link_options(shared_clipboard_test PRIVATE -static-libgcc -static-libstdc++ -static)
+endif()
+add_test(NAME shared_clipboard COMMAND shared_clipboard_test)
+# refs_test: variable / pattern reference tools (issues #75, #44).
+add_executable(refs_test
+	tests/refs_test.cpp
+	src/var_refs.cpp
+	src/pattern_refs.cpp
+	src/ha6_notes.cpp
+	src/framedata.cpp
+	src/framedata_load.cpp
+	src/framedata_save.cpp
+	src/framedata_ha4.cpp
+	src/misc.cpp
+	tinyalloc/tinyalloc.c
+)
+target_include_directories(refs_test PRIVATE "." "src" "third_party" "${CMAKE_BINARY_DIR}/generated")
+target_compile_definitions(refs_test PRIVATE WIN32_LEAN_AND_MEAN HA6GUIVERSION="${CMAKE_PROJECT_VERSION}")
+target_link_libraries(refs_test PRIVATE tinyalloc)
+if(MINGW)
+	target_link_options(refs_test PRIVATE -static-libgcc -static-libstdc++ -static)
+endif()
+add_test(NAME refs COMMAND refs_test)
+# bgm_test: bgm.txt parsing, Ogg decoding and loop wrap (issue #66).
+add_executable(bgm_test
+	tests/bgm_test.cpp
+	src/bgm_player.cpp
+	src/misc.cpp
+)
+target_include_directories(bgm_test PRIVATE "." "src" "third_party")
+target_compile_definitions(bgm_test PRIVATE WIN32_LEAN_AND_MEAN)
+target_link_libraries(bgm_test PRIVATE winmm)
+if(MINGW)
+	target_link_options(bgm_test PRIVATE -static-libgcc -static-libstdc++ -static)
+endif()
+add_test(NAME bgm COMMAND bgm_test)
+# hud_test: HUD colour table, MBAA.exe immediates and theme JSON (issue #56).
+add_executable(hud_test
+	tests/hud_test.cpp
+	src/hud_colors.cpp
+	src/misc.cpp
+)
+target_include_directories(hud_test PRIVATE "." "src" "third_party")
+target_compile_definitions(hud_test PRIVATE WIN32_LEAN_AND_MEAN)
+if(MINGW)
+	target_link_options(hud_test PRIVATE -static-libgcc -static-libstdc++ -static)
+endif()
+add_test(NAME hud COMMAND hud_test)
 # MBAC Hantei4 (.DAT) tool: byte-exact round trip, model re-encode check,
 # batch MBAC -> HA6 conversion (see docs/HANTEI_MBAC_SUPPORT.md).
 add_executable(ha4tool

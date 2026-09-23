@@ -13,6 +13,66 @@ namespace im = ImGui;
 // Common Helper Functions for Frame Display UI
 // ============================================================================
 
+// Small arrow button that opens a filterable list of the character's patterns
+// (issue #57). `extra` adds special values shown above the list (e.g. IF 18's
+// 256). Returns true when *value was changed.
+struct PatternPickerExtra { int value; const char* label; };
+static inline bool PatternPickerButton(const char* id, int* value, FrameData* frameData,
+                                       const PatternPickerExtra* extra = nullptr, int extraCount = 0)
+{
+	if(!frameData) return false;
+	bool changed = false;
+	im::PushID(id);
+	im::SameLine(0, 2.f);
+	if(im::ArrowButton("##pick", ImGuiDir_Down)) im::OpenPopup("##patternPicker");
+	if(im::IsItemHovered()) im::SetTooltip("Pick a pattern");
+	if(im::BeginPopup("##patternPicker")) {
+		static char filter[64] = "";
+		if(im::IsWindowAppearing()) { filter[0] = 0; im::SetKeyboardFocusHere(); }
+		im::SetNextItemWidth(300.f);
+		im::InputTextWithHint("##filter", "Filter by number or name", filter, sizeof(filter));
+		auto matches = [](const std::string& text, const char* f) {
+			if(!f[0]) return true;
+			std::string a = text, b = f;
+			for(auto& c : a) c = (char)tolower((unsigned char)c);
+			for(auto& c : b) c = (char)tolower((unsigned char)c);
+			return a.find(b) != std::string::npos;
+		};
+		if(im::BeginChild("##list", ImVec2(420.f, 320.f), ImGuiChildFlags_None)) {
+			for(int i = 0; i < extraCount; ++i) {
+				char buf[128];
+				snprintf(buf, sizeof(buf), "%d: %s", extra[i].value, extra[i].label);
+				if(!matches(buf, filter)) continue;
+				if(im::Selectable(buf, *value == extra[i].value)) {
+					*value = extra[i].value; changed = true; im::CloseCurrentPopup();
+				}
+			}
+			const int count = frameData->get_sequence_count();
+			for(int n = 0; n < count; ++n) {
+				const std::string name = frameData->GetDecoratedName(n);
+				if(!matches(name, filter)) continue;
+				const bool selected = *value == n;
+				if(im::Selectable(name.c_str(), selected)) {
+					*value = n; changed = true; im::CloseCurrentPopup();
+				}
+				if(selected && im::IsWindowAppearing()) im::SetScrollHereY();
+			}
+		}
+		im::EndChild();
+		im::EndPopup();
+	}
+	im::PopID();
+	return changed;
+}
+
+// Optional per-record annotation drawer (issue #58). The right pane installs
+// it around its EfDisplay/IfDisplay calls; the displays call it right after
+// each record's header (so the header is the "last item" for context menus).
+struct RecordNoteHook {
+	std::function<void(bool isEffect, int index, int type)> draw;
+};
+inline RecordNoteHook& CurrentRecordNoteHook() { static RecordNoteHook hook; return hook; }
+
 // Helper function for combo with manual entry support
 static inline bool ShowComboWithManual(const char* label, int* value, const char* const* items, int itemCount, float comboWidth, float defaultWidth = 75.f) {
 	bool changed = false;

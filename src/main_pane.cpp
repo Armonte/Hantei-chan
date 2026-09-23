@@ -3,7 +3,8 @@
 #include "frame_disp.h"
 #include "misc.h"
 #include <imgui.h>
-#include "imsearch.h"	
+#include "imsearch.h"
+#include "pattern_search.h"
 
 MainPane::MainPane(Render* render, FrameData *framedata, FrameState &fs) : DrawWindow(render, framedata, fs),
 decoratedNames(nullptr)
@@ -44,9 +45,18 @@ void MainPane::Draw()
 				modifiedCount++;
 		}
 
-		if(modifiedCount > 0)
+		// Always one status line, so the widgets below never move when patterns
+		// become modified (users drive the pane with position-based macros, #82).
 		{
-			im::TextColored(ImVec4(1.0f, 0.7f, 0.0f, 1.0f), "Modified patterns: %d", modifiedCount);
+			const ImVec4 modifiedColor(1.0f, 0.7f, 0.0f, 1.0f);
+			const ImVec4 idleColor = im::GetStyleColorVec4(ImGuiCol_TextDisabled);
+			im::TextColored(modifiedCount > 0 ? modifiedColor : idleColor, "Modified patterns: %d", modifiedCount);
+			auto curSeq = frameData->get_sequence(currState.pattern);
+			if(curSeq && curSeq->modified)
+			{
+				im::SameLine();
+				im::TextColored(modifiedColor, "[Modified]");
+			}
 		}
 
 		// Update current pattern's decorated name in case it was modified
@@ -55,7 +65,7 @@ void MainPane::Draw()
 		// Pattern search bar (above pattern dropdown)
 		if(showPatternSearchBar)
 		{
-			if(ImSearch::BeginSearch())
+			if(ImSearch::BeginSearch(kPatternSearchFlags))
 			{
 				ImSearch::SearchBar("Search pattern names...");
 				
@@ -211,11 +221,14 @@ void MainPane::Draw()
 			}
 
 			im::BeginChild("FrameInfo", {0, 0}, false);
-
-			// Show if current pattern is modified
-			if(seq->modified)
+			// Keep this view's scroll position across tab switches (#73; the
+			// Right Pane already does the same).
 			{
-				im::TextColored(ImVec4(1.0f, 0.7f, 0.0f, 1.0f), "[Modified]");
+				static FrameState* lastLeftView = nullptr;
+				if (lastLeftView != &currState) {
+					im::SetScrollY(currState.leftPaneScrollY);
+					lastLeftView = &currState;
+				}
 			}
 
 			if (im::TreeNode("Pattern data"))
@@ -228,6 +241,14 @@ void MainPane::Draw()
 					frameData->mark_modified(currState.pattern);
 					markModified();
 					decoratedNames[currState.pattern] = frameData->GetDecoratedName(currState.pattern);
+				}
+				// Pattern note (issue #58), kept beside the HA6, not in it.
+				{
+					const std::string key = Ha6Notes::PatternKey(currState.pattern);
+					const std::string* note = frameData->notes.get(key);
+					noteEditBuffer = note ? *note : std::string();
+					if(im::InputTextMultiline("Pattern note", &noteEditBuffer, ImVec2(0, im::GetTextLineHeight() * 3)))
+						frameData->notes.set(key, noteEditBuffer);
 				}
 				PatternDisplay(seq, frameData, currState.pattern);
 
@@ -254,6 +275,13 @@ void MainPane::Draw()
 				}
 				im::SameLine(0,20.f);
 				im::Text("%zu copies", patCopyStack.size());
+				if(!patCopyStack.empty()) {
+					im::SameLine();
+					if(im::SmallButton("Drop last")) patCopyStack.pop_back();
+					im::SameLine();
+					if(im::SmallButton("Clear")) patCopyStack.clear();
+				}
+				im::TextDisabled("Windows > Pattern manager: multi-select, paste slots, move with references.");
 
 				im::TreePop();
 				im::Separator();
@@ -263,7 +291,7 @@ void MainPane::Draw()
 				// Frame-list mutations are deferred to the end of this block:
 				// inserting/erasing reallocates seq->frames and would leave
 				// `frame` dangling for the rest of the draw.
-				enum class KeyframeOp { None, Append, Insert, Delete } keyframeOp = KeyframeOp::None;
+				enum class KeyframeOp { None, Append, Insert, Delete, AppendNextSprite } keyframeOp = KeyframeOp::None;
 				Frame &frame = seq->frames[currState.frame];
 				if(im::TreeNode("State data"))
 				{
@@ -321,6 +349,30 @@ void MainPane::Draw()
 						ranges[1] = 0;
 						rangeWindow = !rangeWindow;
 					}
+
+					// Sprite numbering (issue #45)
+					if(im::Button("Append frame, sprite +1"))
+						keyframeOp = KeyframeOp::AppendNextSprite;
+					if(im::IsItemHovered())
+						im::SetTooltip("Append a copy of the last frame with its layer 0 sprite number + 1,\nand select it.");
+					im::SameLine(0,20.f);
+					if(im::Button("Number sprites from here"))
+					{
+						if (frame.AF.layers.empty()) frame.AF.layers.push_back({});
+						const int base = frame.AF.layers[0].spriteId;
+						if (base >= 0) {
+							for(int i = currState.frame + 1; i < (int)seq->frames.size(); i++)
+							{
+								auto& layers = seq->frames[i].AF.layers;
+								if (layers.empty()) layers.push_back({});
+								layers[0].spriteId = base + (i - currState.frame);
+							}
+							frameData->mark_modified(currState.pattern);
+							markModified();
+						}
+					}
+					if(im::IsItemHovered())
+						im::SetTooltip("Set layer 0 of every later frame to this frame's sprite + 1, + 2, ...");
 
 					im::Separator();
 
@@ -529,7 +581,7 @@ void MainPane::Draw()
 				im::SetNextWindowPos(im::GetMainViewport()->GetCenter(), ImGuiCond_FirstUseEver, ImVec2(0.5f, 0.5f));
 				if(im::Begin("Search Pattern Names", &showPatternSearch, ImGuiWindowFlags_NoCollapse))
 				{
-					if(ImSearch::BeginSearch())
+					if(ImSearch::BeginSearch(kPatternSearchFlags))
 					{
 						ImSearch::SearchBar("Search pattern names...");
 
@@ -585,6 +637,15 @@ void MainPane::Draw()
 				case KeyframeOp::Delete:
 					seq->frames.erase(seq->frames.begin() + at);
 					break;
+				case KeyframeOp::AppendNextSprite:
+				{
+					Frame newFrame = seq->frames.back();
+					if (newFrame.AF.layers.empty()) newFrame.AF.layers.push_back({});
+					if (newFrame.AF.layers[0].spriteId >= 0) newFrame.AF.layers[0].spriteId += 1;
+					seq->frames.push_back(std::move(newFrame));
+					currState.frame = (int)seq->frames.size() - 1;
+					break;
+				}
 				default:
 					break;
 				}
@@ -601,6 +662,7 @@ void MainPane::Draw()
 				markModified();
 			}
 			}
+			currState.leftPaneScrollY = im::GetScrollY();
 			im::EndChild();
 		}
 	}

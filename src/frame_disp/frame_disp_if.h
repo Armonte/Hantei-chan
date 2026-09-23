@@ -80,6 +80,7 @@ inline void IfDisplay(std::vector<Frame_IF> *ifList_, Frame_IF *singleClipboard 
 	auto ShowPatternField = [&](const char* label, int* value, const char* tooltip = nullptr) {
 		im::SetNextItemWidth(width);
 		if(im::InputInt(label, value, 0, 0)) markModified();
+		if(PatternPickerButton(label, value, frameData)) markModified();
 		if(frameData && *value >= 0 && *value < frameData->get_sequence_count()) {
 			im::SameLine(); im::TextDisabled("[%s]", frameData->GetDecoratedName(*value).c_str());
 		}
@@ -173,6 +174,7 @@ inline void IfDisplay(std::vector<Frame_IF> *ifList_, Frame_IF *singleClipboard 
 		}
 		bool isOpen = im::CollapsingHeader(headerLabel, flags);
 		collapsedStates[i] = !isOpen; // Update stored state
+		if(CurrentRecordNoteHook().draw) CurrentRecordNoteHook().draw(false, i, ifList[i].type);
 		
 		if(isOpen) {
 			im::Indent();
@@ -757,7 +759,15 @@ inline void IfDisplay(std::vector<Frame_IF> *ifList_, Frame_IF *singleClipboard 
 				ShowFrameField("Frame to jump to", &p[0]);
 				im::SetNextItemWidth(width);
 				if(im::InputInt("Owner pattern", &p[1], 0, 0)) markModified();
-				ShowTooltipMarker("Objects only: jumps when the parent/owner is in this pattern");
+				{
+					static const PatternPickerExtra standing[] = {{256, "Owner is standing (runtime flag)"}};
+					if(PatternPickerButton("Owner pattern", &p[1], frameData, standing, 1)) markModified();
+					if(p[1] == 256) { im::SameLine(); im::TextDisabled("[standing]"); }
+					else if(frameData && p[1] >= 0 && p[1] < frameData->get_sequence_count()) {
+						im::SameLine(); im::TextDisabled("[%s]", frameData->GetDecoratedName(p[1]).c_str());
+					}
+				}
+				ShowTooltipMarker("Objects only: jumps when the parent/owner is in this pattern.\n256 = owner is standing (runtime flag)");
 				break;
 
 			case 19: // Projectile box contact (reflection)

@@ -30,6 +30,10 @@ private:
 	bool showManualControls;
 
 	float dragxy[2];
+
+	// Timeline (issue #10)
+	float timelineZoom = 1.0f;
+	struct { bool active = false; int srcFrame = -1; int efIndex = -1; bool copy = false; } spawnDrag;
 };
 
 

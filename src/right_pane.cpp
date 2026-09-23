@@ -1,6 +1,9 @@
+#include "frame_disp/frame_disp_common.h"
 #include "right_pane.h"
 #include "frame_disp.h"
 #include <imgui.h>
+
+void DrawRecordNote(Ha6Notes& notes, const std::string& key);
 
 void RightPane::Draw()
 {
@@ -25,7 +28,22 @@ void RightPane::Draw()
 		if(nframes >= 0)
 		{
 			Frame &frame = seq->frames[currState.frame];
-			if (ImGui::TreeNode("Attack data"))
+			// The attack record (ATST) is written only for frames that have an
+			// attack box; everything else is "null" attack data to the game, no
+			// matter what the fields below say. Show which one this frame is (#79).
+			const bool atSaved = frame.hitboxes.lower_bound(25) != frame.hitboxes.end();
+			const char* atLabel = atSaved ? "Attack data###AttackData"
+			                              : "Attack data (null: no attack box)###AttackData";
+			if (!atSaved) ImGui::PushStyleColor(ImGuiCol_Text, ImGui::GetStyleColorVec4(ImGuiCol_TextDisabled));
+			const bool atOpen = ImGui::TreeNode(atLabel);
+			if (!atSaved) ImGui::PopStyleColor();
+			if (ImGui::IsItemHovered())
+				ImGui::SetTooltip(atSaved
+					? "This frame has an attack box, so its attack data is saved."
+					: "No attack box on this frame: the attack data is not saved,\n"
+					  "and the game treats the frame as having no attack properties.\n"
+					  "Add an attack box (25+) to make it active.");
+			if (atOpen)
 			{
 				AtDisplay(&frame.AT, frameData, currState.pattern, [this]() { markModified(); });
 				if(ImGui::Button("Copy AT")) {
@@ -37,9 +55,24 @@ void RightPane::Draw()
 					frameData->mark_modified(currState.pattern);
 					markModified();
 				}
+				ImGui::SameLine(0,20.f);
+				if(ImGui::Button("Reset AT")) {
+					frame.AT = Frame_AT{};
+					frame.AT.correction = 100; // what a freshly parsed ATST starts from
+					frameData->mark_modified(currState.pattern);
+					markModified();
+				}
+				if (ImGui::IsItemHovered())
+					ImGui::SetTooltip("Reset every attack field to its default.");
 				ImGui::TreePop();
 				ImGui::Separator();
 			}
+			// Record annotations (issue #58): shown under each effect/condition
+			// header; right-click the header to add or edit one.
+			const int notePattern = currState.pattern, noteFrame = currState.frame;
+			CurrentRecordNoteHook().draw = [this, notePattern, noteFrame](bool isEffect, int index, int type) {
+				DrawRecordNote(frameData->notes, Ha6Notes::RecordKey(notePattern, noteFrame, isEffect, index, type));
+			};
 			if(ImGui::TreeNode("Effects"))
 			{
 				EfDisplay(&frame.EF, &currState.copied->efSingle, frameData, currState.pattern, [this]() { markModified(); }, &currState.copied->efGroup);
@@ -52,6 +85,7 @@ void RightPane::Draw()
 				ImGui::TreePop();
 				ImGui::Separator();
 			}
+			CurrentRecordNoteHook().draw = nullptr;
 
 			// Spawned Patterns Visualization
 			if(ImGui::TreeNode("Spawned Patterns Visualization"))
@@ -266,3 +300,33 @@ void RightPane::DisplaySpawnNode(int spawnIndex, int displayNumber)
 	ImGui::PopID();
 }
 
+
+// A note under a record header: its text (like a code comment) and a context
+// menu on the header to edit or remove it.
+void DrawRecordNote(Ha6Notes& notes, const std::string& key)
+{
+	const std::string* note = notes.get(key);
+	static char buf[1024];
+	ImGui::PushID(key.c_str());
+	if (ImGui::BeginPopupContextItem("##notectx")) {
+		if (ImGui::IsWindowAppearing()) snprintf(buf, sizeof(buf), "%s", note ? note->c_str() : "");
+		ImGui::TextDisabled("Note (saved beside the HA6, not in it)");
+		ImGui::InputTextMultiline("##note", buf, sizeof(buf), ImVec2(360, 80));
+		if (ImGui::Button("Save note")) { notes.set(key, buf); ImGui::CloseCurrentPopup(); }
+		ImGui::SameLine();
+		if (note && ImGui::Button("Remove note")) { notes.set(key, ""); ImGui::CloseCurrentPopup(); }
+		ImGui::SameLine();
+		if (ImGui::Button("Cancel")) ImGui::CloseCurrentPopup();
+		ImGui::EndPopup();
+	} else if (ImGui::IsItemHovered() && !note) {
+		ImGui::SetItemTooltip("Right-click to add a note");
+	}
+	if (note) {
+		ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(0.35f, 0.65f, 0.35f, 1.0f));
+		ImGui::PushTextWrapPos(0.0f);
+		ImGui::TextUnformatted(("// " + *note).c_str());
+		ImGui::PopTextWrapPos();
+		ImGui::PopStyleColor();
+	}
+	ImGui::PopID();
+}

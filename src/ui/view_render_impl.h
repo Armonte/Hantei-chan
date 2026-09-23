@@ -329,6 +329,11 @@ void MainFrame::DrawCharacterScene(CharacterView* view, const Render::PassParams
 
 	render.ClearLayers();
 	AddSimulatedActorLayers(view, ts, rootFrame, layer0Sprite, spawns, opt.boxes, 1.f, nullptr);
+	// Pattern comparison overlay (issue #63): drawn over the tool windows'
+	// target view (the tab worked in last, main or detached) at its live
+	// tick, not over onion/export tick samples.
+	if (opt.tick < 0 && view == getToolView())
+		AddCompareLayers(view, active);
 	rootFrame = std::clamp(rootFrame, 0, (int)mainSeq->frames.size() - 1);
 	render.SortLayersByZPriority(mainSeq->frames[rootFrame].AF.priority);
 	render.DrawLayers();

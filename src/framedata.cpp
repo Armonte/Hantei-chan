@@ -28,7 +28,7 @@ void FrameData::initEmpty(unsigned int count)
 	m_loaded = 1;
 }
 
-bool FrameData::load(const char *filename, bool patch) {
+bool FrameData::load(const char *filename, bool patch, bool fillOnly) {
 	// allow loading over existing data
 
 	char *data;
@@ -74,11 +74,21 @@ bool FrameData::load(const char *filename, bool patch) {
 
 	if(sequence_count > m_nsequences)
 		m_sequences.resize(sequence_count);
-	m_nsequences = sequence_count;
+	// A patch file with fewer slots (UNI BaseData has 48) must not shrink the
+	// character: that hid, and dropped on save, every later pattern.
+	if(!patch || sequence_count > m_nsequences)
+		m_nsequences = sequence_count;
 
 	d += 2;
 	// parse and recursively store data
-	d = fd_main_load(d, d_end, m_sequences, m_nsequences, utf8);
+	++m_loadIndex;
+	std::vector<unsigned int> defined;
+	m_stubs.resize(m_loadIndex + 1);
+	d = fd_main_load(d, d_end, m_sequences, sequence_count, utf8, &defined, patch && fillOnly, &m_stubs[m_loadIndex]);
+	if(m_origin.size() < m_sequences.size())
+		m_origin.resize(m_sequences.size(), -1);
+	for(unsigned int id : defined)
+		if(id < m_origin.size()) m_origin[id] = m_loadIndex;
 
 	// Clear modified flags after loading - only track NEW edits from this session
 	for(auto& seq : m_sequences) {
@@ -139,7 +149,9 @@ static void FixBoxesForSave(Sequence &seq)
 // sequences are never modified: sequences that need box cleanup are written
 // from a temporary copy.
 static bool WriteHA6File(const char *filename, const std::vector<Sequence> &sequences,
-                         uint32_t count, bool modifiedOnly)
+                         uint32_t count, bool modifiedOnly,
+                         const std::vector<int> *origin = nullptr, int ownFile = -1,
+                         const std::map<unsigned int, Sequence> *ownStubs = nullptr)
 {
 	if(!filename || !*filename)
 		return false;
@@ -160,6 +172,18 @@ static bool WriteHA6File(const char *filename, const std::vector<Sequence> &sequ
 			continue;
 
 		file.write("PSTR", 4); file.write(VAL(i), 4);
+		// Stacked character: leave patterns inherited from another file of
+		// the stack (and not edited) as empty slots in this one.
+		if(ownFile >= 0 && origin && !src.modified &&
+		   (i >= origin->size() || (*origin)[i] != ownFile))
+		{
+			if(ownStubs) {
+				auto it = ownStubs->find(i);
+				if(it != ownStubs->end()) WriteSequence(file, &it->second);
+			}
+			file.write("PEND", 4);
+			continue;
+		}
 		if(SequenceNeedsBoxFix(src))
 		{
 			Sequence copy = src;
@@ -196,6 +220,23 @@ bool FrameData::save(const char *filename)
 {
 	if (m_ha4 && !TargetIsHA6(filename))
 		return ha4::SaveFile(*this, filename);
+	const std::map<unsigned int, Sequence> *stubs =
+		(m_ownFile >= 0 && m_ownFile < (int)m_stubs.size()) ? &m_stubs[m_ownFile] : nullptr;
+	return WriteHA6File(filename, m_sequences, get_sequence_count(), false, &m_origin, m_ownFile, stubs);
+}
+
+int FrameData::inheritedPatternCount() const
+{
+	if(m_ownFile < 0) return 0;
+	int n = 0;
+	for(size_t i = 0; i < m_sequences.size() && i < m_nsequences; ++i)
+		if(!m_sequences[i].modified && i < m_origin.size() && m_origin[i] >= 0 && m_origin[i] != m_ownFile)
+			++n;
+	return n;
+}
+
+bool FrameData::save_merged(const char *filename)
+{
 	return WriteHA6File(filename, m_sequences, get_sequence_count(), false);
 }
 
@@ -206,6 +247,11 @@ bool FrameData::save_modified_only(const char *filename)
 }
 
 void FrameData::Free() {
+	m_origin.clear();
+	m_stubs.clear();
+	notes = Ha6Notes{};
+	m_loadIndex = -1;
+	m_ownFile = -1;
 	m_ha4.reset();
 	dataVersion = NextFrameDataVersion();
 	m_sequences.clear();

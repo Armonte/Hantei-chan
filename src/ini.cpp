@@ -49,6 +49,10 @@ static void ReadLine(ImGuiContext*, ImGuiSettingsHandler*, void* entry, const ch
 		gSettings.maximized = i;
 	} else if (sscanf(line, "DetachableWindows=%i", &i) == 1){
 		gSettings.detachableWindows = i != 0;
+	} else if (sscanf(line, "InvertWheelZoom=%i", &i) == 1){
+		gSettings.invertWheelZoom = i != 0;
+	} else if (strncmp(line, "Key=", 4) == 0){
+		gSettings.keyBindings.push_back(line);
 	} else if (strncmp(line, "RecentProject=", 14) == 0){
 		// Normalize path when loading from INI for consistency
 		std::string path = normalizePath(line + 14);
@@ -72,6 +76,10 @@ static void Write(ImGuiContext* ctx, ImGuiSettingsHandler* handler, ImGuiTextBuf
 	buf->appendf("sizeY=%hi\n", gSettings.winSizeY);
 	buf->appendf("Maximized=%i\n", gSettings.maximized);
 	buf->appendf("DetachableWindows=%i\n", gSettings.detachableWindows ? 1 : 0);
+
+	buf->appendf("InvertWheelZoom=%i\n", gSettings.invertWheelZoom ? 1 : 0);
+	for (const auto& k : gSettings.keyBindings)
+		buf->appendf("%s\n", k.c_str());
 
 	// Write recent projects (max 10)
 	size_t maxRecent = gSettings.recentProjects.size() > 10 ? 10 : gSettings.recentProjects.size();
@@ -114,7 +122,6 @@ bool LoadFromIni(FrameData *framedata, CG *cg, const std::string& iniPath, std::
 		std::string topHA6File;
 		std::vector<std::string> ha6Names(fileNum);
 
-		// Load all files (sosfiro's approach - the patch system handles overlays correctly)
 		for(int i = 0; i < fileNum; i++)
 		{
 			char ha6file[256]{};
@@ -122,10 +129,6 @@ bool LoadFromIni(FrameData *framedata, CG *cg, const std::string& iniPath, std::
 			ss << "File" << std::setfill('0') << std::setw(2) << i;
 			GetPrivateProfileStringA("DataFile", ss.str().c_str(), nullptr, ha6file, 256, iniPath.c_str());
 			ha6Names[i] = ha6file;
-
-			std::string fullpath = folder + "\\" + ha6file;
-			if(!framedata->load(fullpath.c_str(), i))
-				return false;
 		}
 
 		// Determine the save target HA6 file (issue #46):
@@ -133,21 +136,38 @@ bool LoadFromIni(FrameData *framedata, CG *cg, const std::string& iniPath, std::
 		//   -> the character's own file is File01; BaseData/temp must never be overwritten.
 		// MBAACC: File00=base, File01=base_r, File02=variant, File03=variant_r
 		//   -> the highest-indexed file is the load-order winner and the save target.
+		int target = fileNum - 1;
+		std::string first = BaseNameLower(ha6Names[0]);
+		const bool uniLayout = fileNum >= 2 && (first.rfind("_temp", 0) == 0 || first.rfind("temp.", 0) == 0);
+		if(uniLayout)
+			target = 1;
+		else
 		{
-			int target = fileNum - 1;
-			std::string first = BaseNameLower(ha6Names[0]);
-			bool uniLayout = fileNum >= 2 && (first.rfind("_temp", 0) == 0 || first.rfind("temp.", 0) == 0);
-			if(uniLayout)
-				target = 1;
-			else
-			{
-				// Never pick shared base data as the save target.
-				while(target > 0 && BaseNameLower(ha6Names[target]).find("basedata") != std::string::npos)
-					--target;
-			}
-			if(!ha6Names[target].empty())
-				topHA6File = folder + "\\" + ha6Names[target];
+			// Never pick shared base data as the save target.
+			while(target > 0 && BaseNameLower(ha6Names[target]).find("basedata") != std::string::npos)
+				--target;
 		}
+		if(!ha6Names[target].empty())
+			topHA6File = folder + "\\" + ha6Names[target];
+
+		// Load in order; later files overlay earlier ones (MBAACC moons). Files
+		// after the character's own file in a UNI-style stack are fallbacks:
+		// BaseData holds template patterns (sprite -1/-2, names marked with a
+		// star) for slots the character also defines, and loading it on top
+		// replaced the character's real patterns in the editor and on save
+		// (issues #71/#68). Those files only fill empty slots.
+		for(int i = 0; i < fileNum; i++)
+		{
+			std::string fullpath = folder + "\\" + ha6Names[i];
+			const bool fallback = uniLayout && i > target;
+			if(!framedata->load(fullpath.c_str(), i > 0, fallback))
+				return false;
+		}
+
+		// With several files, saving writes only the target's own patterns
+		// (plus edits), not the whole merged stack (issue #71).
+		if(fileNum > 1)
+			framedata->setOwnFile(target);
 
 		// Return the top HA6 file path if caller wants it
 		if(outTopHA6Path && !topHA6File.empty()) {

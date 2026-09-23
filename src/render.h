@@ -41,6 +41,10 @@ struct RenderLayer {
 	int spawnFlagset1;     // From effect parameters[2]
 	int spawnFlagset2;     // From effect parameters[3]
 
+	// Pattern comparison overlay (issue #63): draw this layer's boxes as
+	// outlines only, so they read apart from the main pattern's filled boxes.
+	bool boxesOutlineOnly = false;
+
 	RenderLayer() :
 		spriteId(-1), spawnOffsetX(0), spawnOffsetY(0),
 		frameOffsetX(0), frameOffsetY(0),

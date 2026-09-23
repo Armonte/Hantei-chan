@@ -28,12 +28,12 @@ void MainFrame::Menu(unsigned int errorPopupId)
 			bool hasActive = (active != nullptr);
 
 			// Project menu items
-			if (ImGui::MenuItem("New Project"))
+			if (ImGui::MenuItem("New Project", shortcuts.registry().label(ShortcutAction::newProject).c_str()))
 			{
 				newProject();
 			}
 
-			if (ImGui::MenuItem("Open Project..."))
+			if (ImGui::MenuItem("Open Project...", shortcuts.registry().label(ShortcutAction::openProject).c_str()))
 			{
 				openProject();
 			}
@@ -69,12 +69,12 @@ void MainFrame::Menu(unsigned int errorPopupId)
 			ImGui::Separator();
 
 			bool hasProject = ProjectManager::HasCurrentProject();
-			if (ImGui::MenuItem("Save Project", nullptr, false, hasProject))
+			if (ImGui::MenuItem("Save Project", hasProject ? shortcuts.registry().label(ShortcutAction::save).c_str() : nullptr, false, hasProject))
 			{
 				saveProject();
 			}
 
-			if (ImGui::MenuItem("Save Project As..."))
+			if (ImGui::MenuItem("Save Project As...", shortcuts.registry().label(ShortcutAction::saveProjectAs).c_str()))
 			{
 				saveProjectAs();
 			}
@@ -98,6 +98,9 @@ void MainFrame::Menu(unsigned int errorPopupId)
 				createViewForCharacter(characters.back().get());
 				markProjectModified();
 			}
+
+			if (ImGui::MenuItem("Reopen Closed Tab", shortcuts.registry().label(ShortcutAction::reopenClosedView).c_str(), false, !m_closedTabs.empty()))
+				reopenClosedTab();
 
 			if (ImGui::MenuItem("Close Character", nullptr, false, hasActive))
 			{
@@ -220,7 +223,8 @@ void MainFrame::Menu(unsigned int errorPopupId)
 
 			ImGui::Separator();
 
-			if (ImGui::MenuItem("Save Character", nullptr, false, hasActive))
+			// Ctrl+S saves the active character (and the .hproj when a project is open).
+			if (ImGui::MenuItem("Save Character", shortcuts.registry().label(ShortcutAction::save).c_str(), false, hasActive))
 			{
 				if (hasActive) {
 					saveCharacter(active);
@@ -237,6 +241,17 @@ void MainFrame::Menu(unsigned int errorPopupId)
 					}
 				}
 			}
+
+			if (ImGui::MenuItem("Save Merged Stack As...", nullptr, false, hasActive && active->frameData.ownFile() >= 0))
+			{
+				// Flatten every file of the .txt stack into one HA6 (what Save
+				// used to write into the target file before issue #71).
+				std::string &&file = FileDialog(fileType::HA6, true);
+				if (!file.empty() && !active->frameData.save_merged(file.c_str()))
+					requestErrorPopup("Save Error", "Could not write " + file);
+			}
+			if (ImGui::IsItemHovered(ImGuiHoveredFlags_AllowWhenDisabled))
+				ImGui::SetTooltip("Write the merged view of all files in the .txt stack to one HA6.\nSave Character writes only the target file's own patterns plus your edits.");
 
 			if (ImGui::MenuItem("Save as MOD...", nullptr, false, hasActive && !active->getTxtPath().empty()))
 			{
@@ -445,17 +460,8 @@ void MainFrame::Menu(unsigned int errorPopupId)
 					undo->undoCount(), undo->redoCount(), undo->historyBytes() / 1024);
 			}
 			ImGui::Separator();
-			if (ImGui::BeginMenu("Keyboard shortcuts")) {
-				for (const auto& b : shortcuts.registry().bindings()) {
-					ImGui::TextUnformatted(b.name);
-					ImGui::SameLine(200.f);
-					ImGui::TextDisabled("%s", ShortcutRegistry::ChordLabel(b.chord).c_str());
-				}
-				ImGui::Separator();
-				ImGui::TextDisabled("Left/Right step keyframes; Shift+J/L step ticks.");
-				ImGui::TextDisabled("Text fields keep their own Ctrl+Z / Ctrl+Y.");
-				ImGui::EndMenu();
-			}
+			if (ImGui::MenuItem("Keyboard shortcuts...", nullptr, m_showKeyBindings))
+				m_showKeyBindings = !m_showKeyBindings;
 			ImGui::EndMenu();
 		}
 		if (ImGui::BeginMenu("Preferences"))
@@ -631,6 +637,12 @@ void MainFrame::Menu(unsigned int errorPopupId)
 
 			// Global windows
 			if (ImGui::MenuItem("Vectors Guide")) vectors.drawWindow = !vectors.drawWindow;
+			if (ImGui::MenuItem("Variable references (batch replace)", nullptr, m_varRefs.open)) m_varRefs.open = !m_varRefs.open;
+			if (ImGui::MenuItem("Pattern manager", nullptr, m_patMgr.open)) m_patMgr.open = !m_patMgr.open;
+			if (ImGui::MenuItem("Notes", nullptr, m_showNotes)) m_showNotes = !m_showNotes;
+			if (ImGui::MenuItem("Pattern comparison", nullptr, m_showCompare)) m_showCompare = !m_showCompare;
+			if (ImGui::MenuItem("BGM preview", nullptr, m_showBgm)) m_showBgm = !m_showBgm;
+			if (ImGui::MenuItem("HUD preview / colours", nullptr, m_showHud)) m_showHud = !m_showHud;
 			if (ImGui::MenuItem("MBAC (HA4) Inspector", nullptr, ha4ui::showInspector)) ha4ui::showInspector = !ha4ui::showInspector;
 			if (ImGui::MenuItem("Game Link (MBAACC)", nullptr, gamelink::showPanel)) gamelink::showPanel = !gamelink::showPanel;
 			ImGui::EndMenu();
@@ -662,6 +674,12 @@ void MainFrame::Menu(unsigned int errorPopupId)
 				ImGui::TextDisabled("Loaded: %s", txtName.c_str());
 				ImGui::SameLine();
 				ImGui::TextColored(ImVec4(0.4f, 0.8f, 0.4f, 1.0f), "-> Saves to: %s", ha6Name.c_str());
+				if (ImGui::IsItemHovered() && active->frameData.ownFile() >= 0) {
+					ImGui::SetTooltip("Saving writes the patterns that came from %s plus every\n"
+					                  "pattern you edited. %d unedited pattern(s) inherited from the\n"
+					                  "other files of %s are left in those files.",
+					                  ha6Name.c_str(), active->frameData.inheritedPatternCount(), txtName.c_str());
+				}
 			}
 			else if (!topHA6.empty())
 			{

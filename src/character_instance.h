@@ -50,6 +50,10 @@ public:
 	void markModified();
 	void clearModified();
 	bool isModified() const;
+	// Annotations side file (<ha6>.notes.json, issue #58)
+	void loadNotes();
+	bool saveNotes(const std::string& ha6Path);
+	const std::string& notesError() const { return m_notesError; }
 
 	// File paths
 	const std::vector<std::string>& getHA6Paths() const;
@@ -99,6 +103,7 @@ private:
 	std::string m_topHA6Path;      // Highest-indexed .ha6 (auto-save target)
 	bool m_isModified = false;
 	MvScriptIndex m_mvScripts;     // MBTL move-script spawns (may be empty)
+	std::string m_notesError;
 };
 
 #endif /* CHARACTER_INSTANCE_H_GUARD */
