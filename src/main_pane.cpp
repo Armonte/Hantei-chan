@@ -266,6 +266,13 @@ void MainPane::Draw()
 				}
 				im::SameLine(0,20.f);
 				im::Text("%zu copies", patCopyStack.size());
+				if(!patCopyStack.empty()) {
+					im::SameLine();
+					if(im::SmallButton("Drop last")) patCopyStack.pop_back();
+					im::SameLine();
+					if(im::SmallButton("Clear")) patCopyStack.clear();
+				}
+				im::TextDisabled("Windows > Pattern manager: multi-select, paste slots, move with references.");
 
 				im::TreePop();
 				im::Separator();

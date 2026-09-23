@@ -1,6 +1,7 @@
 #ifndef MAINFRAME_H_GUARD
 #define MAINFRAME_H_GUARD
 #include "var_refs.h"
+#include "pattern_refs.h"
 #include "context_gl.h"
 #include "render.h"
 #include "main_pane.h"
@@ -205,6 +206,23 @@ private:
 		std::string status;
 	} m_varRefs;
 	void drawVarRefsWindow();
+	struct PatternManagerWindow {
+		bool open = false;
+		CharacterInstance* character = nullptr;
+		std::vector<int> selection;   // click order
+		int lastClicked = -1;
+		char filter[64] = {};
+		bool hideEmpty = false;
+		int placement = 0;
+		int target = 0;
+		bool remapPaste = true;
+		bool remapMove = true;
+		std::string status;
+		std::vector<patrefs::Ref> refs;
+		int refsFor = -1;
+		uint64_t refsVersion = 0;
+	} m_patMgr;
+	void drawPatternManagerWindow();
 	void markToolEdit(CharacterInstance* character);
 	void navigateActiveView(int pattern, int frame);
 	bool PerformUndoRedo(bool redo);

@@ -22,6 +22,11 @@ struct CopyData {
 	Frame_EF efSingle{};
 	BoxList_T<LinearAllocator> boxes;
 	Hitbox box;
+	// Pattern manager clipboard (issue #42): several patterns with the ids
+	// they were copied from, and which character they came from.
+	std::vector<Sequence_T<LinearAllocator>, LinearAllocator<Sequence_T<LinearAllocator>>> patterns{};
+	std::vector<int, LinearAllocator<int>> patternIds{};
+	char patternSource[260] = {};
 };
 
 // Maps (or creates) the shared clipboard and initialises tinyalloc for this
