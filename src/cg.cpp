@@ -44,6 +44,12 @@ int CG::get_image_count() {
 	return m_nimages;
 }
 
+static unsigned long long g_cgGeneration = 0;
+
+void CG::touch() {
+	m_generation = ++g_cgGeneration;
+}
+
 void CG::copy_cells(const CG_Image *image,
 			const CG_Alignment *align,
 			unsigned char *pixels,
@@ -348,6 +354,7 @@ int CG::getPalNumber()
 }
 
 bool CG::loadPalette(const char *name) {
+	touch();
 	if (paletteData) {
 		palette = origPalette;
 		delete[] paletteData;
@@ -402,6 +409,7 @@ bool CG::loadPalette(const char *name) {
 
 bool CG::changePaletteNumber(int number)
 {
+	touch();
 	if(paletteData && number < palMax && number >= 0)
 	{
 		unsigned int *d = (unsigned int *)paletteData;
@@ -448,6 +456,7 @@ bool CG::loadFromMemory(const void *src, unsigned int size) {
 // Takes ownership of `data` (new[]). Shared by load() and loadFromMemory().
 // "BMP Cutter2" (MBAC GAKIHA.DAT) has the same table layout.
 bool CG::loadOwned(char *data, unsigned int size) {
+	touch();
 	// verify size and header
 	if (size < 0x4f30 || (memcmp(data, "BMP Cutter3", 11) && memcmp(data, "BMP Cutter2", 11))) {
 		delete[] data;
@@ -514,6 +523,7 @@ bool CG::loadOwned(char *data, unsigned int size) {
 }
 
 void CG::free() {
+	touch();
 	if (paletteData) {
 		delete[] paletteData;
 	}
@@ -551,6 +561,7 @@ unsigned int CG::getColorFromPal(int palIndex)
 }
 
 CG::CG() {
+	touch();
 	m_data = 0;
 	m_data_size = 0;
 	

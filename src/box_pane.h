@@ -13,6 +13,8 @@ public:
 
 	void BoxStart(int x, int y);
 	void BoxDrag(int x, int y);
+	// Drag by a world-space delta (the caller divides by its view's zoom).
+	void BoxDragWorld(float dx, float dy);
 
 	void AdvanceBox(int dir);
 

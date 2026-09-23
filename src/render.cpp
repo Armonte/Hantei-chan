@@ -247,9 +247,23 @@ blendingMode(normal)
 	glEnable(GL_DEPTH_TEST);
 }
 
+void Render::BeginPass(const PassParams& params)
+{
+	pass = params;
+	if (pass.width < 1) pass.width = 1;
+	if (pass.height < 1) pass.height = 1;
+	if (!(pass.zoom > 0.f)) pass.zoom = 1.f;
+	UpdateProj((float)pass.width, (float)pass.height);
+	scale = pass.zoom;
+	// Same integer truncation the single-surface renderer used, so a pass
+	// with the old camera reproduces the old image pixel for pixel.
+	x = (int)(pass.originX / pass.zoom);
+	y = (int)(pass.originY / pass.zoom);
+}
+
 void Render::ApplySpriteTextureMode()
 {
-	if (texture.isIndexed) {
+	if (spriteIndexed) {
 		//1 = nearest, 2 = shader-side bilinear (indices can't be filtered raw)
 		glUniform1i(lIndexedT, filter ? 2 : 1);
 		//Refresh the palette texture from the CG's current palette. 1KB —
@@ -407,8 +421,9 @@ void Render::Draw()
 	sTextured.Use();
 	ApplySpriteTextureMode();
 	SetMatrix(lProjectionT);
-	if(texture.isApplied)
+	if(spriteTex)
 	{
+		BindSpriteTexture();
 		SetBlendingMode();
 		glDisableVertexAttribArray(2);
 		glVertexAttrib4fv(2, colorRgba);
@@ -465,8 +480,9 @@ void Render::DrawSpriteOnly(bool drawHitboxes)
 	sTextured.Use();
 	ApplySpriteTextureMode();
 	SetMatrix(lProjectionT);
-	if(texture.isApplied)
+	if(spriteTex)
 	{
+		BindSpriteTexture();
 		SetBlendingMode();
 		glDisableVertexAttribArray(2);
 		glVertexAttrib4fv(2, colorRgba);
@@ -562,41 +578,98 @@ void Render::SetParts(Parts *parts)
 	m_parts = parts;
 }
 
+Render::~Render()
+{
+	for (auto& entry : spriteCache)
+		if (entry.second.tex) glDeleteTextures(1, &entry.second.tex);
+	spriteCache.clear();
+	if (paletteTexId) glDeleteTextures(1, &paletteTexId);
+}
+
+void Render::EvictSprites(size_t budget)
+{
+	while (spriteCacheBytes > budget && !spriteCache.empty()) {
+		auto oldest = spriteCache.begin();
+		for (auto it = spriteCache.begin(); it != spriteCache.end(); ++it)
+			if (it->second.lastUse < oldest->second.lastUse) oldest = it;
+		if (&oldest->second == curSprite) { curSprite = nullptr; spriteTex = 0; curImageId = -1; }
+		glDeleteTextures(1, &oldest->second.tex);
+		spriteCacheBytes -= oldest->second.bytes;
+		spriteCache.erase(oldest);
+	}
+}
+
+void Render::BindSpriteTexture()
+{
+	glActiveTexture(GL_TEXTURE0);
+	glBindTexture(GL_TEXTURE_2D, spriteTex);
+	// Indexed sprites filter in the shader (always NEAREST here); direct RGBA
+	// sprites follow the current filter setting.
+	if (curSprite && !curSprite->indexed && curSprite->linear != filter) {
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, filter ? GL_LINEAR : GL_NEAREST);
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, filter ? GL_LINEAR : GL_NEAREST);
+		curSprite->linear = filter;
+	}
+}
+
 void Render::SwitchImage(int id)
 {
-	// Always process when id == -1 to ensure texture clears, even if curImageId is already -1
-	if(cg && (id != curImageId || id == -1) && cg->m_loaded)
-	{
-		curImageId = id;
+	if (!cg || !cg->m_loaded)
+		return;
+	const unsigned long long gen = cg->generation();
+	// id == -1 always clears (palette/CG change callers rely on it).
+	if (id == curImageId && id != -1 && cg == curImageCg && gen == curImageGen && spriteTex)
+		return;
+	curImageId = id;
+	curImageCg = cg;
+	curImageGen = gen;
+	spriteTex = 0;
+	curSprite = nullptr;
+	if (id < 0)
+		return;
 
-		if (texture.isApplied) {
-			texture.Unapply();
+	const SpriteKey key{cg, gen, id};
+	auto it = spriteCache.find(key);
+	if (it == spriteCache.end()) {
+		//8bpp images stay indexed on the GPU; the shader resolves the
+		//palette (see ApplySpriteTextureMode). Other formats bake as before.
+		std::unique_ptr<ImageData> image(cg->draw_texture(id, false, cg->image_is_8bpp(id)));
+		if (!image || image->width <= 0 || image->height <= 0)
+			return;   // (also avoids GL_INVALID_VALUE on empty images)
+		CachedSprite entry;
+		entry.w = image->width; entry.h = image->height;
+		entry.ox = image->offsetX; entry.oy = image->offsetY;
+		entry.indexed = image->is8bpp;
+		glGenTextures(1, &entry.tex);
+		glActiveTexture(GL_TEXTURE0);
+		glBindTexture(GL_TEXTURE_2D, entry.tex);
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+		const bool linear = !entry.indexed && filter;
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, linear ? GL_LINEAR : GL_NEAREST);
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, linear ? GL_LINEAR : GL_NEAREST);
+		if (entry.indexed) {
+			glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
+			glTexImage2D(GL_TEXTURE_2D, 0, GL_R8, entry.w, entry.h, 0, GL_RED, GL_UNSIGNED_BYTE, image->pixels);
+			glPixelStorei(GL_UNPACK_ALIGNMENT, 4);
+			entry.bytes = (size_t)entry.w * entry.h;
+		} else {
+			glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, entry.w, entry.h, 0,
+				image->bgr ? GL_BGRA : GL_RGBA, GL_UNSIGNED_BYTE, image->pixels);
+			entry.bytes = (size_t)entry.w * entry.h * 4;
 		}
-
-		if(id>=0)
-		{
-			//8bpp images stay indexed on the GPU; the shader resolves the
-			//palette (see ApplySpriteTextureMode). Other formats bake as before.
-			ImageData *image = cg->draw_texture(id, false, cg->image_is_8bpp(id));
-			if(!image)
-			{
-				return;
-			}
-
-			texture.Load(image);
-
-			// Validate image dimensions before applying to avoid GL_INVALID_VALUE
-			if(texture.image->width > 0 && texture.image->height > 0)
-			{
-				texture.Apply(false, filter);
-				AdjustImageQuad(texture.image->offsetX, texture.image->offsetY, texture.image->width, texture.image->height);
-				vSprite.UpdateBuffer(0, imageVertex);
-			}
-
-			texture.Unload();
-		}
-
+		entry.linear = linear;
+		constexpr size_t kBudget = 256u << 20;   // 256 MiB of sprite textures
+		EvictSprites(kBudget > entry.bytes ? kBudget - entry.bytes : 0);
+		spriteCacheBytes += entry.bytes;
+		it = spriteCache.emplace(key, entry).first;
 	}
+	it->second.lastUse = ++spriteUseClock;
+	curSprite = &it->second;
+	spriteTex = it->second.tex;
+	spriteIndexed = it->second.indexed;
+	AdjustImageQuad(it->second.ox, it->second.oy, it->second.w, it->second.h);
+	vSprite.UpdateBuffer(0, imageVertex);
 }
 
 void Render::AdjustImageQuad(int x, int y, int w, int h)
@@ -730,6 +803,7 @@ bool Render::GeneratePartCenterVertices()
 	};
 
 	vGeometry.UpdateBuffer(geoParts[LINES], lines, sizeof(lines));
+	gridLinesHaveOverlay = true;
 	return true;
 }
 
@@ -809,6 +883,14 @@ bool Render::GenerateUVRectangleVertices()
 void Render::DontDraw()
 {
 	quadsToDraw = 0;
+	gridLinesHaveOverlay = true;   // force the reset below
+	ResetGridLines();
+}
+
+void Render::ResetGridLines()
+{
+	if (!gridLinesHaveOverlay) return;
+	gridLinesHaveOverlay = false;
 	// Reset lines buffer to show only grid (no part origin markers)
 	float lines[]
 	{
@@ -826,10 +908,11 @@ void Render::DontDraw()
 
 void Render::ClearTexture()
 {
-	if (texture.isApplied) {
-		texture.Unapply();
-	}
+	// Forget the current sprite; cached textures stay (keyed by CG generation).
+	spriteTex = 0;
+	curSprite = nullptr;
 	curImageId = -1;
+	curImageCg = nullptr;
 }
 
 void Render::SetImageColor(float *rgba)
@@ -1060,7 +1143,11 @@ void Render::DrawLayers()
 			if (layer.spriteId < 0) continue;
 			DrawPatLayerItem(layer, origParts);
 		} else {
-			DrawCgLayerItem(layer, origColorRgba);
+			// The layer's tint/alpha already carry the frame RGBA; the base
+			// colour is white (it used to be the root frame's RGBA again,
+			// squaring the colour/alpha of CG layer 0 and tinting spawns).
+			static const float kWhite[4] = {1.f, 1.f, 1.f, 1.f};
+			DrawCgLayerItem(layer, kWhite);
 		}
 	}
 	glDepthMask(GL_TRUE);
