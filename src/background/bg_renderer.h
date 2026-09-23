@@ -10,8 +10,10 @@
 #include "bg_file.h"
 #include <glad/glad.h>
 #include <unordered_map>
+#include <memory>
 
 class Render;
+class Parts;
 
 namespace bg {
 
@@ -75,9 +77,30 @@ private:
 	struct Tex { GLuint id; int w; int h; int originX; int originY; };
 	std::unordered_map<int, Tex> textureCache;
 
+	// The embedded older-PAT, converted into the editor's Parts model so it
+	// can be drawn by the proven orthographic part renderer
+	// (Render::DrawBgPattern). Built lazily on first render after SetFile.
+	std::unique_ptr<Parts> patParts;
+	bool                   patPartsBuilt = false;
+
+	// Debug: when > 0, counts down each Render(); on reaching 0 the bg
+	// viewport is read back and written to C:/dev/bg_dump.png so the actual
+	// rendered output can be inspected. Re-armed by SetFile.
+	int                    dumpCountdown = 0;
+
 	void   InitGL();
 	GLuint GetOrCreateTexture(int spriteId, int& outW, int& outH,
 	                          int& outOriginX, int& outOriginY);
+
+	// Convert file->GetOldPat() into `patParts` (uploads PAT textures to GL).
+	void   BuildPatParts();
+
+	// Draw one older-PAT pattern as flat quads in this renderer's own ortho
+	// (the bg has NO perspective — g_D3DMatrix_Projection in MBAA.exe is a
+	// pure translate — so PAT objects render in the same flat space as the
+	// CG objects). Reads cutout/part/texture data from `patParts`.
+	void   DrawPatPatternFlat(int pattern, float worldX, float worldY,
+	                          float alpha, int frameBlend);
 
 	// Build the orthographic projection that u4ick uses:
 	// Matrix.CreateOrthographicOffCenter(0, W, H, 0, 0, 1).

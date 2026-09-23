@@ -20,7 +20,17 @@ constexpr float STAGE_FLOOR_Y = 224.0f;
 // NOT at the camera origin. We subtract this from every bg x-coordinate
 // so the stage's centre lands on the editor's world x=0 / grid vertical
 // line.
-constexpr float STAGE_CENTER_X = 127.5f;
+constexpr float STAGE_CENTER_X = 128.0f;
+
+// VERIFIED (MBAA.exe Sprite_EmitTransformedQuad): a CG sprite's quad spans
+// (bounds - (128, 224)), i.e. the CG canvas point (128, 224) is the object's
+// origin — which is exactly what STAGE_CENTER_X / STAGE_FLOOR_Y undo (u4ick
+// draws the canvas top-left at the object origin). PAT patterns get NO such
+// pivot in the game (Background_DrawInstance PAT branch), so the PAT path
+// must add these back. Stage world (0,0) == character world origin: the
+// camera matrix is T(-cam/128) * zoom * T(320, 432), same as fighters.
+constexpr float CG_PIVOT_X = 128.0f;
+constexpr float CG_PIVOT_Y = 224.0f;
 
 // Object runtime positions accumulate velocity in 1/128-px units. MBAACC's
 // Background_RenderLayerWithPalette draws each object at (pos >> 7) plus the
@@ -40,12 +50,27 @@ struct Frame {
 	uint8_t blendMode = 0;     // 0=normal, 2=additive
 	uint8_t opacity = 255;     // 0-255
 	
-	// Hantei4 animation_flow (see Object::Update / han4docs):
-	//   0, 1, 3 = advance to next frame (stop at last frame)
-	//   2, 4, 5 = jump to jumpFrame (2=Jump, 4=Jump+landing,
-	//             5=Loop check / Loop ED — this is how animations loop)
+	// Hantei4 animation_flow. Decoded from MBAA.exe
+	// Background_UpdateLayerAnimations @0x4b88b0 (renamed
+	// Background_StepInstanceAnimations):
+	//   0       = DESPAWN the instance when the frame expires (state=0; it is
+	//             no longer drawn — objects come back only if a spawner
+	//             command re-creates them, see bg::Runtime)
+	//   1, 3    = advance to currentFrame + 1
+	//   2, 4    = unconditional jump to jumpFrame
+	//   5       = Loop ED — jump to jumpFrame while loopCounter > 0, else
+	//             fall through to loopEnd. THIS is how looped animations end.
 	uint8_t aniType = 1;
-	uint8_t jumpFrame = 0;     // Target frame index for jump types (2/4/5)
+	uint8_t jumpFrame = 0;     // +12 — target frame for jump types (2/4/5)
+
+	// Loop control, frame bytes +21/+22. Decoded from MBAA.exe
+	// BackgroundLayer_UpdateLayerState @0x4b6d10. On entering a frame, if
+	// loopCount != 0 the object's runtime loopCounter is (re)loaded from it.
+	// A type-5 frame decrements loopCounter on expiry and jumps to jumpFrame
+	// while it stays > 0; once it hits 0 it goes to loopEnd instead. Types
+	// 2/4 also decrement the counter but always jump to jumpFrame.
+	uint8_t loopEnd   = 0;     // +21 — fall-through target when a loop ends
+	uint8_t loopCount = 0;     // +22 — loop iteration count (0 = don't reload)
 	
 	// Movement block. Verified against MBAACC Background_UpdateLayerPositions
 	// (frame-relative offsets — u4ick's bgmaketool mislabeled these, it read
@@ -63,6 +88,44 @@ struct Frame {
 	int16_t velY = 0;          // +54
 	int16_t accX = 0;          // +60
 	int16_t accY = 0;          // +62
+
+	// --- fields added from the MBAA/MBAC runtime RE (docs/bg_research) ---
+	// +16/+18 int16 scale X/Y (256 = 1.0, 0 = 1.0). Read ONLY by MBAC's
+	// Background_DrawInstance (mbacPC 0x401ea0); MBAACC ignores them. All
+	// shipped stages leave them 0.
+	int16_t scaleX = 0;        // +16
+	int16_t scaleY = 0;        // +18
+	// +20: interpolate toward the next frame over this frame's duration —
+	// CG: alpha (+10) lerp; PAT: part scale lerp (MBAC also scale/rotation).
+	uint8_t interpolate = 0;   // +20
+	// +100: 8 int16 indices into the object's position-TRIGGER table,
+	// +116: 8 int16 indices into the object's COMMAND table (-1 = none).
+	// u4ick's tool wrote 0xFF over both (= "no events").
+	int16_t triggerRef[8] = {-1,-1,-1,-1,-1,-1,-1,-1};
+	int16_t commandRef[8] = {-1,-1,-1,-1,-1,-1,-1,-1};
+	// Verbatim 132-byte record as loaded; Save starts from it so bytes the
+	// editor does not model (+8, +13..15, +23..43, +48..51, +56..59,
+	// +64..99) survive a round trip. Frames created in the editor get the
+	// u4ick default (zeros, 0xFF in +100..131).
+	uint8_t raw[132] = {0};
+	bool    hasRaw = false;
+};
+
+// 52-byte event record (MBAA.exe Background_RunFrameCommands @0x4b8cd0 /
+// Background_RunPositionTriggers @0x4b8df0). Layout: int16 type @+0,
+// int16 w2 @+2, int32 d[k] @+4*k (k = 1..12). See BG_HA4_RE.md.
+//   trigger type 1: d[1]=target frame (-1 despawn) d[2]=threshold (1/128 px)
+//                   d[3]=axis (0 X,1 Y) d[4]=cmp (0 pos>thr, 1 pos<thr)
+//   command 1: spawn object w2 at (d[1], d[2]) relative to the spawner
+//   command 2: spawn object w2 + rand % max(1, int16@+20) at random
+//              x in [d[1], d[3]], y in [d[2], d[4]]
+//   command 100 (w2 must be 0): axis int32@+20 (0 X, 1 Y):
+//              vel = rand in [d[1], d[2]), acc = rand in [d[3], d[4])
+struct EventRecord {
+	int16_t type = 0;
+	int16_t w2 = 0;
+	int32_t d[13] = {0};        // d[0] aliases type/w2; d[1..12] = +4..+48
+	uint8_t raw[52] = {0};
 };
 
 // Background object - collection of frames with parallax/layer
@@ -85,6 +148,29 @@ struct Object {
 	// -1 means "no preference, pack tightly after the previous object."
 	int32_t originalOffset = -1;
 
+	// Object header bytes beyond parallax/layer (MBAA.exe
+	// Background_SpawnInitialInstances @0x4b6e00, BgInstance_Init @0x4b6db0):
+	//   +12 int32 trigger-table offset (relative to the object, -1 = none)
+	//   +16 int32 command-table offset (relative to the object, -1 = none)
+	//   +20 u8    1 = NOT spawned at load (only by spawn commands)
+	//   +21 u8    1 = foreground band: drawn after ALL band-0 objects, at
+	//             render priority 600 (in front of the characters)
+	//   +22 u8    1 = bilinear texture filtering for the whole object
+	int32_t triggerTableOff = -1;
+	int32_t commandTableOff = -1;
+	uint8_t noAutoSpawn  = 0;
+	uint8_t foreground   = 0;
+	uint8_t linearFilter = 0;
+	uint8_t rawHeader[60] = {0};
+	bool    hasRawHeader = false;
+	// The 52-byte trigger/command records live right after the frames
+	// (the "unpredictable gaps" older code zero-filled). Kept verbatim and
+	// written back after the frames; table offsets are shifted by the
+	// frame-count delta on save.
+	std::vector<uint8_t> recordBytes;
+	std::vector<EventRecord> triggers;   // parsed views of recordBytes
+	std::vector<EventRecord> commands;
+
 	// Editor-only: cleared to hide this object (layer-debugging / solo).
 	// Not part of the file format.
 	bool visible = true;
@@ -92,6 +178,12 @@ struct Object {
 	// Animation state
 	int32_t currentFrame = 0;
 	int32_t frameDuration = 0;
+
+	// Loop counter — MBAA.exe RuntimeBGObject.frame_timer. (Re)loaded from a
+	// frame's loopCount field on entry; type-2/4/5 frames decrement it; a
+	// type-5 frame jumps while it is > 0 and exits to loopEnd once it reaches
+	// 0. Without this, looped animations (aniType 5) never terminate / branch.
+	int32_t loopCounter = 0;
 
 	// Kinematic integrator state — MBAACC Background_UpdateLayerPositions.
 	// Each tick: posX += velX; posY += velY; velX += accX; velY += accY.
@@ -107,6 +199,23 @@ struct Object {
 
 	void Update();
 	void Reset();
+};
+
+// One live runtime instance — MBAA.exe's 44-byte slot (pool of 2000 at
+// 0x750840). Several instances of the same object can exist at once
+// (spawners re-create scrolling layers while the old copy still runs).
+struct Instance {
+	uint8_t state = 0;        // +0  0 free, 1 new, 2 active
+	int     objIndex = -1;    // +1  index into File::GetObjects()
+	int     curFrame = 0;     // +2
+	int     nextFrame = 0;    // +3  precomputed by EnterFrame (interp target)
+	int     loopCounter = 0;  // +4
+	bool    cmdDone = false;  // +5  frame commands already run
+	bool    motionLoaded = false; // +6
+	int32_t posX = 0, posY = 0;   // +16/+20, 1/128 px
+	int32_t velX = 0, velY = 0;   // +24/+28
+	int32_t accX = 0, accY = 0;   // +32/+36
+	int32_t timer = 0;        // +40
 };
 
 // Camera for parallax calculations. Mirrors u4ick's bgmaketool model where

@@ -1,6 +1,5 @@
 #include "bg_file.h"
 #include "../misc.h"
-#include "../parts/parts.h"
 #include <algorithm>
 #include <cstring>
 #include <fstream>
@@ -21,6 +20,9 @@ void File::Free() {
 	objects.clear();
 	cgData.clear();
 	cg.reset();
+	oldPat.reset();
+	patData.clear();
+	instances.clear();
 	loaded = false;
 	memset(offsetTable, -1, sizeof(offsetTable));
 }
@@ -68,6 +70,7 @@ bool File::Load(const char* filename) {
 	
 	delete[] data;
 	loaded = true;
+	ResetRuntime();
 	
 	std::cout << "Loaded background: " << objects.size() << " objects, "
 	          << (cg ? cg->get_image_count() : 0) << " sprites" << std::endl;
@@ -148,7 +151,15 @@ bool File::LoadObjects(const char* data, size_t size, const Header& header) {
 		int32_t numFrames = objHeader[0];
 		obj.parallax = objHeader[1];
 		obj.layer = objHeader[2];
-		// objHeader[3] and [4] are reserved (-1)
+		// +12/+16 are NOT reserved: relative offsets of the trigger / command
+		// record tables (-1 = none). +20/+21/+22 are flags. See bg_types.h.
+		std::memcpy(obj.rawHeader, data + pos, 60);
+		obj.hasRawHeader = true;
+		obj.triggerTableOff = objHeader[3];
+		obj.commandTableOff = objHeader[4];
+		obj.noAutoSpawn  = (uint8_t)data[pos + 20];
+		obj.foreground   = (uint8_t)data[pos + 21];
+		obj.linearFilter = (uint8_t)data[pos + 22];
 		
 		pos += 60;  // Skip object header
 		
@@ -178,6 +189,10 @@ bool File::LoadObjects(const char* data, size_t size, const Header& header) {
 			frame.opacity = frameData8[10];
 			frame.aniType = frameData8[11];
 			frame.jumpFrame = frameData8[12];
+			// Loop control (BGFrame +21/+22) — see bg_types.h / MBAA.exe
+			// BackgroundLayer_UpdateLayerState. Required for aniType-5 loops.
+			frame.loopEnd   = frameData8[21];
+			frame.loopCount = frameData8[22];
 
 			// Debug opacity values for first few frames
 			//if (i < 3 && f < 2) {
@@ -196,9 +211,65 @@ bool File::LoadObjects(const char* data, size_t size, const Header& header) {
 			frame.velY = *(const int16_t*)(data + pos + 54);
 			frame.accX = *(const int16_t*)(data + pos + 60);
 			frame.accY = *(const int16_t*)(data + pos + 62);
+			// Verified extra fields (docs/bg_research/BG_HA4_RE.md).
+			frame.scaleX = *(const int16_t*)(data + pos + 16);
+			frame.scaleY = *(const int16_t*)(data + pos + 18);
+			frame.interpolate = frameData8[20];
+			for (int k = 0; k < 8; ++k) {
+				frame.triggerRef[k] = *(const int16_t*)(data + pos + 100 + 2 * k);
+				frame.commandRef[k] = *(const int16_t*)(data + pos + 116 + 2 * k);
+			}
+			std::memcpy(frame.raw, data + pos, 132);
+			frame.hasRaw = true;
 			
 			obj.frames.push_back(frame);
 			pos += 132;
+		}
+		
+		// Event record tables: they occupy the bytes between the end of the
+		// frames and the next block (next object, else PAT, else CG).
+		{
+			size_t framesEnd = pos;
+			size_t blockEnd = size;
+			for (int j = 0; j < 256; ++j)
+				if (offsetTable[j] != -1 && (size_t)offsetTable[j] > (size_t)offsetTable[i]
+				    && (size_t)offsetTable[j] < blockEnd)
+					blockEnd = offsetTable[j];
+			if (header.pat_file_len > 0 && header.pat_file_off > offsetTable[i]
+			    && (size_t)header.pat_file_off < blockEnd)
+				blockEnd = header.pat_file_off;
+			if (header.cg_file_len > 0 && header.cg_file_off > offsetTable[i]
+			    && (size_t)header.cg_file_off < blockEnd)
+				blockEnd = header.cg_file_off;
+			if (blockEnd > framesEnd && blockEnd <= size &&
+			    (obj.triggerTableOff != -1 || obj.commandTableOff != -1))
+				obj.recordBytes.assign(data + framesEnd, data + blockEnd);
+			auto parseTable = [&](int32_t tableOff, bool isTrigger, std::vector<EventRecord>& out) {
+				out.clear();
+				if (tableOff == -1) return;
+				size_t base = (size_t)offsetTable[i] + (size_t)tableOff;
+				// Count = highest referenced index + 1 (records are only
+				// ever reached through the frame refs).
+				int maxRef = -1;
+				for (const auto& fr : obj.frames)
+					for (int k = 0; k < 8; ++k) {
+						int r = isTrigger ? fr.triggerRef[k] : fr.commandRef[k];
+						if (r > maxRef) maxRef = r;
+					}
+				for (int r = 0; r <= maxRef; ++r) {
+					size_t q = base + 52 * (size_t)r;
+					if (q + 52 > size) break;
+					EventRecord rec;
+					std::memcpy(rec.raw, data + q, 52);
+					rec.type = *(const int16_t*)(data + q);
+					rec.w2   = *(const int16_t*)(data + q + 2);
+					for (int k = 0; k < 13; ++k)
+						rec.d[k] = *(const int32_t*)(data + q + 4 * k);
+					out.push_back(rec);
+				}
+			};
+			parseTable(obj.triggerTableOff, true, obj.triggers);
+			parseTable(obj.commandTableOff, false, obj.commands);
 		}
 		
 		objects.push_back(obj);
@@ -263,22 +334,17 @@ bool File::LoadEmbeddedCG(const char* data, size_t size, const Header& header) {
 	// Clean up temp file
 	std::remove(tempPath);
 
-	// Parse the embedded PAT (if any). Two on-disk variants exist:
-	//   - "PAniDataFile" — the newer PAT our Parts system reads.
-	//   - magic 02 00 00 00 / 0x01234567 — the OLDER PAT format used by
-	//     every MBAACC stage with a PAT block. Parts can't read it; it
-	//     needs a dedicated parser (MBAACC StageData_LoadFromFile) — TODO.
-	if (patData.size() >= 12 &&
-	    std::memcmp(patData.data(), "PAniDataFile", 12) == 0) {
-		const char* patPath = "temp_bg_stage.pat";
-		std::ofstream patFile(patPath, std::ios::binary);
-		if (patFile) {
-			patFile.write((const char*)patData.data(), patData.size());
-			patFile.close();
-			parts = std::make_unique<Parts>(cg.get());
-			if (!parts->Load(patPath))
-				parts.reset();
-			std::remove(patPath);
+	// Parse the embedded PAT (if any). MBAACC stages with PAT-based objects
+	// carry the older PAT format (magic 02 00 00 00 / 0x01234567) — its
+	// patterns/cutouts/textures are decoded by bg::OldPat and rendered by
+	// bg_renderer's PAT path (frame sprite-id < 10000).
+	if (OldPat::IsOldPat(patData.data(), patData.size())) {
+		oldPat = std::make_unique<OldPat>();
+		if (!oldPat->Parse(patData.data(), patData.size())) {
+			oldPat.reset();
+			std::cerr << "Failed to parse embedded PAT" << std::endl;
+		} else {
+			std::cout << "Parsed embedded PAT (old format)" << std::endl;
 		}
 	}
 
@@ -286,82 +352,109 @@ bool File::LoadEmbeddedCG(const char* data, size_t size, const Header& header) {
 }
 
 void File::UpdateAnimations() {
-	for (auto& obj : objects) {
-		obj.Update();
+	// Game-accurate tick over the instance pool (replaces the per-object
+	// Object::Update model, which could not express despawn/respawn,
+	// spawners, triggers or multiple live copies of one object). The first
+	// live instance of each object is mirrored back into the Object so the
+	// stage panel's "current frame" readout keeps working.
+	TickRuntime();
+	for (auto& obj : objects) obj.currentFrame = -1;
+	for (const auto& in : instances) {
+		if (in.state < 2 || in.objIndex < 0 || in.objIndex >= (int)objects.size()) continue;
+		Object& o = objects[in.objIndex];
+		if (o.currentFrame != -1) continue;
+		o.currentFrame = in.curFrame;
+		o.frameDuration = in.timer;
+		o.loopCounter = in.loopCounter;
+		o.posX = in.posX; o.posY = in.posY;
 	}
+	for (auto& obj : objects) if (obj.currentFrame == -1) obj.currentFrame = 0;
 }
 
-// Hantei4 animation_flow (anim_type, +11) values — see han4docs
-// COMPLETE_HANTEI4_FIELD_MAPPING_FINAL.md:128-138:
-//   0 = Ordinance/normal       3 = Next + landing rules
-//   1 = Next (advance)         4 = Jump + landing rules
-//   2 = Jump                   5 = Loop check (Loop ED)
-// Types 2, 4 and 5 all redirect the frame cursor via jump_frame; types
-// 0, 1 and 3 advance to the next frame. u4ick's bgmaketool RenderForever
-// only special-cased 2, so type-5 "Loop ED" effects (bg04 obj_4/obj_5
-// end on an aniType-5 frame) froze on the last frame in the editor even
-// though the game loops them. We handle all three jump types.
-static inline bool IsJumpType(uint8_t aniType) {
-	return aniType == 2 || aniType == 4 || aniType == 5;
-}
-
-// Object animation logic — port of u4ick's bgmaketool per-object frame
-// stepping (Form1.cs RenderForever, lines 213-254), extended to treat
-// aniType 4/5 as jumps. Runs once per 60Hz tick.
+// Object animation stepper — 1:1 port of MBAA.exe
+// Background_UpdateLayerAnimations @0x4b88b0 (the per-tick stepper) plus the
+// frame-entry logic of BackgroundLayer_UpdateLayerState @0x4b6d10. Runs once
+// per 60Hz tick.
 //
-// anim_type, as the stepping treats it:
-//   0, 1, 3 -> "advance" frame. Move to the next frame; if already on the
-//              LAST frame, stay there (the animation stops). The stepping
-//              does not distinguish them — only the render path does (a
-//              dur==0 && type==1 frame is skipped when drawing). A
-//              multi-frame animation does NOT loop just by being type 1.
-//   2, 4, 5 -> "jump" frame (IsJumpType). Redirects currentFrame via
-//              jump_frame. Looping is expressed by ending an animation on
-//              a jump-type frame whose jump_frame points to the loop
-//              start (bg26 obj[0]: type-2 jump=0; bg04 obj[4]: type-5
-//              jump=0).
+// anim_type (BGFrame +11):
+//   0       -> end of lifetime: the object respawns (Reset) — this is how a
+//              single-frame scrolling layer wraps back to its start.
+//   1, 3    -> advance: currentFrame + 1; running off the end respawns too.
+//   2, 4    -> jump: currentFrame = jumpFrame (also decrements loopCounter).
+//   5       -> Loop ED: decrement loopCounter; jump to jumpFrame while it is
+//              still > 0, otherwise fall through to loopEnd (+21).
 //
-// Duration: a frame is held for (duration + 1) ticks. u4ick increments
-// frame_duration_index while it is strictly < duration, and only advances
-// on the tick where it is no longer < duration. The previous code here
-// advanced after `duration` ticks, making every animation run too fast.
+// loopCounter (RuntimeBGObject.frame_timer): (re)loaded from a frame's
+// loopCount (+22) whenever that frame is entered, if loopCount != 0. This is
+// what makes a type-5 loop run a finite number of times and then branch out.
+// The previous editor code had no counter at all and its jump logic was
+// nonsense (it followed the *target* frame's jumpFrame minus one), so loops
+// and branches never stepped or terminated correctly.
+//
+// Duration: the counter increments every tick and the frame advances on the
+// tick where it reaches `duration` — a frame is shown for exactly `duration`
+// ticks (the game does ++counter, then tests `duration <= counter`). The
+// previous code held it for duration+1 ticks. The game does ONE advance per
+// tick; a duration-0 frame is shown for one tick.
 void Object::Update() {
 	if (frames.empty()) return;
 
 	const int count = (int)frames.size();
 	const int oldFrame = currentFrame;
-	Frame* frame1 = (currentFrame >= 0 && currentFrame < count)
-	                ? &frames[currentFrame] : &frames[0];
+	if (currentFrame < 0 || currentFrame >= count)
+		currentFrame = 0;
+	Frame* frame1 = &frames[currentFrame];
 
 	// --- frame stepping ---
-	if (frameDuration < frame1->duration) {
-		frameDuration++;
-	} else {
-		// Advance. The loop steps again in the same tick if it lands on a
-		// duration-0 frame (the condition re-tests against the new frame1
-		// after frameDuration is reset by the loop's post-statement).
-		for (; frameDuration >= frame1->duration; frameDuration = 0) {
-			if (IsJumpType(frame1->aniType)) {
-				currentFrame = frame1->jumpFrame;
-				int idx = (currentFrame >= count) ? 0 : currentFrame;
-				Frame& frame2 = frames[idx];
-				currentFrame = (int)frame2.jumpFrame - 1;
-				frameDuration = 0;
-				if (IsJumpType(frame2.aniType)) {
-					currentFrame = frame2.jumpFrame;
-					break;
-				}
-			}
-			if (currentFrame >= count - 1) {
-				if (currentFrame > count - 1)
-					currentFrame = 0;
-				break;
-			}
-			if (currentFrame < count)
-				currentFrame++;
-			frame1 = &frames[currentFrame];
+	frameDuration++;
+	if (frameDuration >= frame1->duration) {
+		// `respawn` == the object's animation finished. The game despawns and
+		// respawns such objects, which RESETS posX/posY to 0 — that is the
+		// only way position ever returns to the start (neither the render
+		// path nor the position integrator wraps it). A scrolling layer
+		// (single aniType-0 frame + a velocity) "wraps" precisely because of
+		// this respawn; without it the object translates away forever.
+		bool respawn = false;
+		switch (frame1->aniType) {
+		case 0:                          // lifetime expired -> respawn
+			respawn = true;
+			break;
+		case 1:
+		case 3:                          // advance to the next frame
+			currentFrame++;
+			if (currentFrame >= count)   // ran off the end -> respawn/loop
+				respawn = true;
+			break;
+		case 2:
+		case 4:                          // unconditional jump
+			currentFrame = frame1->jumpFrame;
+			if (loopCounter > 0) loopCounter--;
+			break;
+		case 5:                          // Loop ED — loop, then branch out
+			if (loopCounter > 0) loopCounter--;
+			currentFrame = (loopCounter > 0) ? frame1->jumpFrame
+			                                 : frame1->loopEnd;
+			break;
+		default:
+			break;
 		}
+		// A jump landing out of range is also treated as a finish.
+		if (!respawn && (currentFrame < 0 || currentFrame >= count))
+			respawn = true;
+
+		if (respawn) {
+			// Reset() restarts at frame 0 with posX/posY cleared and the
+			// loop counter re-armed — i.e. the object reappears at its start.
+			Reset();
+			return;
+		}
+		frameDuration = 0;
 	}
+
+	// On entering a new frame, (re)load the loop counter from its loopCount
+	// field if nonzero — BackgroundLayer_UpdateLayerState @0x4b6d10.
+	if (currentFrame != oldFrame && frames[currentFrame].loopCount != 0)
+		loopCounter = frames[currentFrame].loopCount;
 
 	// --- kinematic integration (MBAACC Background_UpdateLayerPositions) ---
 	// A frame change clears velLoaded so the new frame's flag bytes get a
@@ -392,6 +485,11 @@ void Object::Reset() {
 	curVelX = curVelY = 0;
 	curAccX = curAccY = 0;
 	velLoaded = false;
+	// Entering frame 0 arms the loop counter from its loopCount field, the
+	// same as BackgroundLayer_UpdateLayerState does on any frame entry.
+	loopCounter = 0;
+	if (!frames.empty() && frames[0].loopCount != 0)
+		loopCounter = frames[0].loopCount;
 }
 
 void File::StepObjectForward(int objIndex) {
@@ -404,6 +502,8 @@ void File::StepObjectForward(int objIndex) {
 		obj.currentFrame = 0;
 	}
 	obj.frameDuration = 0;
+	for (auto& in : instances)
+		if (in.state >= 1 && in.objIndex == objIndex) { in.curFrame = obj.currentFrame; EnterFrame(in); break; }
 }
 
 void File::StepObjectBackward(int objIndex) {
@@ -416,6 +516,8 @@ void File::StepObjectBackward(int objIndex) {
 		obj.currentFrame = (int)obj.frames.size() - 1;
 	}
 	obj.frameDuration = 0;
+	for (auto& in : instances)
+		if (in.state >= 1 && in.objIndex == objIndex) { in.curFrame = obj.currentFrame; EnterFrame(in); break; }
 }
 
 // File layout (mirrors u4ick's bgmaketool SaveFile in bgmake_file.cs):
@@ -429,6 +531,7 @@ void File::StepObjectBackward(int objIndex) {
 //   0x24..0x53   48 zero bytes
 //   0x54..0x453  256 * int32 offset table (per-object file offsets, -1 = absent)
 //   0x454..      For each object: 60-byte object header + 132 bytes per frame
+//                + its 52-byte trigger/command records (verbatim)
 //   trailing     Embedded CG file (bytes preserved verbatim from load)
 bool File::Save(const char* filenameOut)
 {
@@ -504,15 +607,12 @@ bool File::Save(const char* filenameOut)
 			pos = want;
 		writeOffset[k] = pos;
 		offsets[slotToObj[k].first] = pos;
-		pos += 60 + (int32_t)obj.frames.size() * 132;
+		pos += 60 + (int32_t)obj.frames.size() * 132 + (int32_t)obj.recordBytes.size();
 	}
 
 	for (int i = 0; i < 256; ++i) w32(offsets[i]);
 
 	// --- Objects ---
-	// 32-byte trailing buffer is 0xFF-filled per u4ick.
-	uint8_t ffBuf[32];
-	std::memset(ffBuf, 0xFF, sizeof(ffBuf));
 
 	int32_t cursor = kFirstObjectOff;
 	for (size_t k = 0; k < slotToObj.size(); ++k)
@@ -524,41 +624,56 @@ bool File::Save(const char* filenameOut)
 			f.put('\0');
 			++cursor;
 		}
-		w32((int32_t)obj.frames.size());
-		w32(obj.parallax);
-		w32(obj.layer);
-		w32(-1);            // reserved
-		w32(-1);            // reserved
-		wpad(40);
+		// Object header: start from the loaded bytes so the event-table
+		// offsets (+12/+16) and flags (+20..22) survive. The tables sit right
+		// after the frames, so their relative offsets move by 132 bytes per
+		// added/removed frame.
+		{
+			uint8_t hdr[60];
+			if (obj.hasRawHeader) std::memcpy(hdr, obj.rawHeader, 60);
+			else { std::memset(hdr, 0, 60); int32_t m1 = -1; std::memcpy(hdr + 12, &m1, 4); std::memcpy(hdr + 16, &m1, 4); }
+			int32_t origFrames = 0;
+			std::memcpy(&origFrames, hdr, 4);
+			if (!obj.hasRawHeader) origFrames = (int32_t)obj.frames.size();
+			int32_t delta = ((int32_t)obj.frames.size() - origFrames) * 132;
+			int32_t nf = (int32_t)obj.frames.size();
+			int32_t trig = obj.triggerTableOff, cmd = obj.commandTableOff;
+			if (trig != -1) trig += delta;
+			if (cmd  != -1) cmd  += delta;
+			std::memcpy(hdr + 0,  &nf, 4);
+			std::memcpy(hdr + 4,  &obj.parallax, 4);
+			std::memcpy(hdr + 8,  &obj.layer, 4);
+			std::memcpy(hdr + 12, &trig, 4);
+			std::memcpy(hdr + 16, &cmd, 4);
+			hdr[20] = obj.noAutoSpawn;
+			hdr[21] = obj.foreground;
+			hdr[22] = obj.linearFilter;
+			f.write((const char*)hdr, 60);
+		}
 
 		for (const auto& fr : obj.frames)
 		{
-			w16(fr.spriteId);   // stored raw (>=10000 CG, <10000 PAT)
-			w16(fr.offsetX);
-			w16(fr.offsetY);
-			w16(fr.duration);
-			w8(0);                    // unk byte (not tracked in our struct)
-			w8(fr.blendMode);
-			w8(fr.opacity);
-			w8(fr.aniType);
-			w8(fr.jumpFrame);
-			wpad(31);                 // bytes 13-43 zero pad
-			w8(fr.flagClearX);        // 44
-			w8(fr.flagClearY);        // 45
-			w8(fr.flagSetX);          // 46
-			w8(fr.flagSetY);          // 47
-			wpad(4);                  // bytes 48-51 zero pad
-			w16(fr.velX);             // 52
-			w16(fr.velY);             // 54
-			wpad(4);                  // bytes 56-59 zero pad
-			w16(fr.accX);             // 60
-			w16(fr.accY);             // 62
-			wpad(36);                 // bytes 64-99 zero pad
-			f.write((const char*)ffBuf, 32);  // bytes 100-131
+			// Start from the verbatim record (or u4ick's default for new
+			// frames), then overwrite every field the editor models.
+			uint8_t rec[132];
+			if (fr.hasRaw) std::memcpy(rec, fr.raw, 132);
+			else { std::memset(rec, 0, 132); std::memset(rec + 100, 0xFF, 32); }
+			auto p16 = [&](int off, int16_t v) { std::memcpy(rec + off, &v, 2); };
+			p16(0, fr.spriteId); p16(2, fr.offsetX); p16(4, fr.offsetY); p16(6, fr.duration);
+			rec[9] = fr.blendMode; rec[10] = fr.opacity; rec[11] = fr.aniType; rec[12] = fr.jumpFrame;
+			p16(16, fr.scaleX); p16(18, fr.scaleY); rec[20] = fr.interpolate;
+			rec[21] = fr.loopEnd; rec[22] = fr.loopCount;
+			rec[44] = fr.flagClearX; rec[45] = fr.flagClearY; rec[46] = fr.flagSetX; rec[47] = fr.flagSetY;
+			p16(52, fr.velX); p16(54, fr.velY); p16(60, fr.accX); p16(62, fr.accY);
+			for (int k = 0; k < 8; ++k) { p16(100 + 2 * k, fr.triggerRef[k]); p16(116 + 2 * k, fr.commandRef[k]); }
+			f.write((const char*)rec, 132);
 		}
+		// Event record tables follow the frames (verbatim).
+		if (!obj.recordBytes.empty())
+			f.write((const char*)obj.recordBytes.data(), obj.recordBytes.size());
 		// Advance cursor by what we just emitted so the next gap calculation
 		// is right.
-		cursor += 60 + (int32_t)obj.frames.size() * 132;
+		cursor += 60 + (int32_t)obj.frames.size() * 132 + (int32_t)obj.recordBytes.size();
 	}
 
 	// PAT block sits after the last object, with whatever padding the load
@@ -602,6 +717,204 @@ bool File::Save(const char* filenameOut)
 	f.seekp(endPos);
 
 	return true;
+}
+
+
+// ============================================================================
+// Game-accurate runtime — 1:1 with MBAA.exe (names after this session's
+// renames; addresses unchanged):
+//   Background_SpawnInitialInstances  0x4b6e00   BgInstance_Init   0x4b6db0
+//   BgInstance_EnterFrame             0x4b6d10   Background_StepInstanceAnimations 0x4b88b0
+//   Background_IntegrateInstanceMotion 0x4b8530  Background_RunFrameCommands 0x4b8cd0
+//   Background_RunPositionTriggers    0x4b8df0   BgCmd_* 0x4b8aa0/0x4b8b20/0x4b8c10
+//   BgInstance_PlaceRelativeToParent  0x4b89e0 (camera fixed at the neutral 0,0)
+// The only non-verbatim part is the RNG (the game's lagged-Fibonacci bg
+// stream is replaced by an xorshift; ranges/modulo use are identical).
+// ============================================================================
+static constexpr int kMaxInstances = 2000;
+
+int File::RandInt() {
+	rngState ^= rngState << 13; rngState ^= rngState >> 17; rngState ^= rngState << 5;
+	return (int)(rngState & 0x7FFFFFFF);
+}
+
+const Frame* File::InstanceFrame(const Instance& in) const {
+	if (in.objIndex < 0 || in.objIndex >= (int)objects.size()) return nullptr;
+	const Object& o = objects[in.objIndex];
+	if (in.curFrame < 0 || in.curFrame >= (int)o.frames.size()) return nullptr;
+	return &o.frames[in.curFrame];
+}
+
+void File::EnterFrame(Instance& in) {
+	in.timer = 0;
+	in.cmdDone = false;
+	in.motionLoaded = false;
+	const Frame* fr = InstanceFrame(in);
+	if (!fr) return;
+	if (fr->loopCount) in.loopCounter = fr->loopCount;
+	switch (fr->aniType) {
+	case 0: in.nextFrame = in.curFrame; break;
+	case 1: case 3: in.nextFrame = in.curFrame + 1; break;
+	case 2: case 4: in.nextFrame = fr->jumpFrame; break;
+	case 5: in.nextFrame = (in.loopCounter > 1) ? fr->jumpFrame : fr->loopEnd; break;
+	default: break;
+	}
+}
+
+void File::InitInstance(Instance& in, int objIndex) {
+	in = Instance();
+	in.state = 1;
+	in.objIndex = objIndex;
+	in.curFrame = 0;
+	EnterFrame(in);
+}
+
+int File::AllocInstance() {
+	for (int i = 0; i < (int)instances.size(); ++i)
+		if (instances[i].state == 0) return i;
+	if ((int)instances.size() < kMaxInstances) { instances.emplace_back(); return (int)instances.size() - 1; }
+	return -1;
+}
+
+void File::PlaceRelativeToParent(Instance& child, const Instance& parent, int x, int y) {
+	// camX = camY = 0 (Camera_ResetState); 0x6000 = 24576 is the game's
+	// constant horizontal bias in this formula.
+	const Object& po = objects[parent.objIndex];
+	const Object& co = objects[child.objIndex];
+	double pp = (int16_t)po.parallax * (1.0 / 256.0);
+	double cp = (int16_t)co.parallax * (1.0 / 256.0);
+	child.posY = (int32_t)((double)(y << 7) + (double)parent.posY * pp);
+	child.posX = (int32_t)((double)(x << 7) + pp * (double)(parent.posX + 0x6000) + cp * (double)(-0x6000));
+}
+
+void File::ResetRuntime() {
+	instances.clear();
+	instances.resize(256);
+	for (auto& o : objects) {
+		int idx = o.originalIndex;
+		if (idx < 0 || idx >= 256) continue;
+		if (o.noAutoSpawn || o.frames.empty()) continue;
+		InitInstance(instances[idx], (int)(&o - objects.data()));
+	}
+	for (auto& o : objects) { o.currentFrame = 0; o.frameDuration = 0; o.posX = o.posY = 0; }
+}
+
+void File::TickRuntime() {
+	// Index the file slot -> objects[] mapping once (spawn commands address
+	// objects by their file slot, not by our dense index).
+	int slotToObj[256];
+	for (int i = 0; i < 256; ++i) slotToObj[i] = -1;
+	for (size_t i = 0; i < objects.size(); ++i)
+		if (objects[i].originalIndex >= 0 && objects[i].originalIndex < 256)
+			slotToObj[objects[i].originalIndex] = (int)i;
+
+	// 1) animation stepping
+	for (auto& in : instances) {
+		if (in.state == 1) in.state = 2;
+		else if (in.state < 2) continue;
+		const Object& o = objects[in.objIndex];
+		const Frame* fr = InstanceFrame(in);
+		if (!fr) { in.state = 0; continue; }
+		++in.timer;
+		if ((uint16_t)fr->duration > in.timer) continue;
+		switch (fr->aniType) {
+		case 0: in.state = 0; break;
+		case 1: case 3: in.curFrame = (in.curFrame + 1) & 0xFF; EnterFrame(in); break;
+		case 2: case 4:
+			in.curFrame = fr->jumpFrame;
+			if (in.loopCounter) --in.loopCounter;
+			EnterFrame(in); break;
+		case 5:
+			if (in.loopCounter) --in.loopCounter;
+			in.curFrame = in.loopCounter ? fr->jumpFrame : fr->loopEnd;
+			EnterFrame(in); break;
+		default: break;
+		}
+		if ((int)o.frames.size() <= (in.curFrame & 0xFF)) in.state = 0;
+	}
+
+	// 2) motion
+	for (auto& in : instances) {
+		if (in.state < 2) continue;
+		const Frame* fr = InstanceFrame(in);
+		if (!fr) continue;
+		if (in.motionLoaded) {
+			in.posX += in.velX; in.posY += in.velY;
+			in.velX += in.accX; in.velY += in.accY;
+		} else {
+			if (fr->flagClearX) { in.velX = 0; in.accX = 0; }
+			if (fr->flagClearY) { in.velY = 0; in.accY = 0; }
+			if (fr->flagSetX)   { in.velX = fr->velX; in.accX = fr->accX; }
+			if (fr->flagSetY)   { in.velY = fr->velY; in.accY = fr->accY; }
+			in.motionLoaded = true;
+		}
+	}
+
+	// 3) frame commands (once per frame entry). Iterate by index: spawning
+	// may grow the pool; the game's fixed array lets a new instance be
+	// visited later in the same pass, which the index loop reproduces.
+	for (size_t i = 0; i < instances.size(); ++i) {
+		if (instances[i].state < 2 || instances[i].cmdDone) continue;
+		const Frame* fr = InstanceFrame(instances[i]);
+		if (!fr) continue;
+		const Object& o = objects[instances[i].objIndex];
+		for (int k = 0; k < 8; ++k) {
+			int ref = fr->commandRef[k];
+			if (ref < 0 || ref >= (int)o.commands.size()) continue;
+			const EventRecord rec = o.commands[ref];
+			if (rec.type == 1 || rec.type == 2) {
+				int slot = rec.w2;
+				if (rec.type == 2) {
+					int16_t cnt = *(const int16_t*)(rec.raw + 20);
+					if (cnt < 1) cnt = 1;
+					slot = (int16_t)(rec.w2 + RandInt() % cnt);
+				}
+				if (slot < 0 || slot >= 256 || slotToObj[slot] < 0) continue;
+				if (objects[slotToObj[slot]].frames.empty()) continue;
+				int ni = AllocInstance();
+				if (ni < 0) continue;
+				Instance& child = instances[ni];
+				InitInstance(child, slotToObj[slot]);
+				const Instance& parent = instances[i];
+				if (rec.type == 1) {
+					PlaceRelativeToParent(child, parent, rec.d[1], rec.d[2]);
+				} else {
+					int x = rec.d[1] + RandInt() % (rec.d[3] - rec.d[1] + 1);
+					int y = rec.d[2] + RandInt() % (rec.d[4] - rec.d[2] + 1);
+					PlaceRelativeToParent(child, parent, x, y);
+				}
+			} else if (rec.type == 100 && rec.w2 == 0) {
+				Instance& in = instances[i];
+				auto rr = [&](int lo, int hi) { return lo == hi ? lo : lo + RandInt() % (hi - lo); };
+				if (rec.d[5]) { in.velY = rr(rec.d[1], rec.d[2]); in.accY = rr(rec.d[3], rec.d[4]); }
+				else          { in.velX = rr(rec.d[1], rec.d[2]); in.accX = rr(rec.d[3], rec.d[4]); }
+			}
+		}
+		instances[i].cmdDone = true;
+	}
+
+	// 4) position triggers
+	for (auto& in : instances) {
+		if (in.state < 2) continue;
+		const Frame* fr = InstanceFrame(in);
+		if (!fr) continue;
+		const Object& o = objects[in.objIndex];
+		for (int k = 0; k < 8; ++k) {
+			int ref = fr->triggerRef[k];
+			if (ref < 0 || ref >= (int)o.triggers.size()) continue;
+			const EventRecord& rec = o.triggers[ref];
+			if (rec.type != 1) continue;
+			int32_t pos = rec.d[3] == 0 ? in.posX : (rec.d[3] == 1 ? in.posY : 0);
+			if (rec.d[3] != 0 && rec.d[3] != 1) continue;
+			bool fire = (rec.d[4] == 0) ? (rec.d[2] < pos) : (rec.d[4] == 1 ? (rec.d[2] > pos) : false);
+			if (!fire) continue;
+			if (rec.d[1] == -1) { in.state = 0; break; }
+			in.curFrame = rec.d[1] & 0xFF;
+			EnterFrame(in);
+			fr = InstanceFrame(in);
+			if (!fr) break;
+		}
+	}
 }
 
 } // namespace bg
