@@ -122,8 +122,25 @@ public:
 	static std::string ChordLabel(ShortcutChord chord);
 	std::string label(ShortcutAction action) const;
 
+	// ---- Remapping (issue #9) ----
+	// Set the chord of binding `index` (an action can have several). key 0
+	// disables the binding.
+	bool setBindingChord(size_t index, ShortcutChord chord);
+	void resetDefaults();
+	bool isDefault(size_t index) const;
+	// Stable id of an action for settings files ("undo", "nextPattern", ...).
+	static const char* ActionId(ShortcutAction action);
+	// Settings lines "Key=<actionId>#<n>=<vk>,<mods>" for every binding that
+	// differs from the default, and the reverse. Unknown ids are ignored.
+	std::vector<std::string> serializeOverrides() const;
+	void applyOverride(const std::string& line);
+	// Bindings of `index` that share its chord in an overlapping context.
+	std::vector<size_t> conflictsOf(size_t index) const;
+
 private:
 	std::vector<ShortcutBinding> m_bindings;
+	std::vector<ShortcutChord> m_defaults;
+	int slotOf(size_t index) const;
 };
 
 class ShortcutRouter {

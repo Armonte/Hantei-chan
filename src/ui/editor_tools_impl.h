@@ -16,6 +16,26 @@ bool MainFrame::HandleKeys(uint64_t vkey, bool isRepeat, bool imguiWantsKeyboard
 	// A non-text ImGui owner (slider being dragged, modal popup) keeps the
 	// keyboard entirely. A focused text field keeps everything except the
 	// bindings marked duringTextInput (Save), so its native Ctrl+Z works.
+	// Key capture for the Keyboard shortcuts window (issue #9): the next
+	// non-modifier key becomes the chord; Esc cancels.
+	if (m_keyCapture >= 0) {
+		if (vkey == VK_SHIFT || vkey == VK_CONTROL || vkey == VK_MENU || vkey == VK_LSHIFT ||
+		    vkey == VK_RSHIFT || vkey == VK_LCONTROL || vkey == VK_RCONTROL || vkey == VK_LWIN || vkey == VK_RWIN)
+			return true;
+		if (vkey != VK_ESCAPE) {
+			ShortcutChord c;
+			c.key = (uint32_t)vkey;
+			if (GetKeyState(VK_CONTROL) & 0x8000) c.modifiers |= shortcutCtrl;
+			if (GetKeyState(VK_SHIFT) & 0x8000) c.modifiers |= shortcutShift;
+			if (GetKeyState(VK_MENU) & 0x8000) c.modifiers |= shortcutAlt;
+			shortcuts.registry().setBindingChord((size_t)m_keyCapture, c);
+			gSettings.keyBindings = shortcuts.registry().serializeOverrides();
+			ImGui::MarkIniSettingsDirty();
+		}
+		m_keyCapture = -1;
+		return true;
+	}
+
 	if (imguiWantsKeyboard && !imguiTextInput)
 		return false;
 

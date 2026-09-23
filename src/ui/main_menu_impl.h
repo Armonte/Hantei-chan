@@ -455,18 +455,8 @@ void MainFrame::Menu(unsigned int errorPopupId)
 					undo->undoCount(), undo->redoCount(), undo->historyBytes() / 1024);
 			}
 			ImGui::Separator();
-			if (ImGui::BeginMenu("Keyboard shortcuts")) {
-				for (const auto& b : shortcuts.registry().bindings()) {
-					ImGui::TextUnformatted(b.name);
-					ImGui::SameLine(200.f);
-					ImGui::TextDisabled("%s", ShortcutRegistry::ChordLabel(b.chord).c_str());
-				}
-				ImGui::Separator();
-				ImGui::TextDisabled("Left/Right (or Num/ Num*) step keyframes; Shift+J/L step ticks.");
-				ImGui::TextDisabled("Ctrl+arrows move the selected layer (Ctrl+Shift: 10px).");
-				ImGui::TextDisabled("Text fields keep their own Ctrl+Z / Ctrl+Y.");
-				ImGui::EndMenu();
-			}
+			if (ImGui::MenuItem("Keyboard shortcuts...", nullptr, m_showKeyBindings))
+				m_showKeyBindings = !m_showKeyBindings;
 			ImGui::EndMenu();
 		}
 		if (ImGui::BeginMenu("Preferences"))
