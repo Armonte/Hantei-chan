@@ -15,6 +15,7 @@
 
 #include <algorithm>
 #include <chrono>
+#include <cmath>
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>
@@ -107,6 +108,78 @@ void PrintState(const preview::TickState& st)
 	}
 }
 
+
+// ---------------------------------------------------------------------------
+// Baseline: Gonptechan EX 1abc27f9 SimulateSpawnsToTickInternal (per-draw
+// re-simulation from tick 0; every spawn's frame re-derived from its spawn
+// tick via SimulateAnimationFlow on every tick). Ported for cost comparison
+// only; it is not used by the editor.
+// ---------------------------------------------------------------------------
+
+int ExSimulateAnimationFlow(FrameData* fd, int patternId, int targetTick)
+{
+	auto seq = fd ? fd->get_sequence(patternId) : nullptr;
+	if (!seq || seq->frames.empty() || targetTick < 0) return 0;
+	int cur = 0, tick = 0, loop = seq->frames[0].AF.loopCount > 0 ? seq->frames[0].AF.loopCount : 0, dur = 0;
+	for (int it = 0; tick < targetTick && it < 100000; it++) {
+		if (cur < 0 || cur >= (int)seq->frames.size()) return (int)seq->frames.size() - 1;
+		auto& af = seq->frames[cur].AF;
+		int fd_ = af.duration <= 0 ? 1 : af.duration;
+		if (dur >= fd_) {
+			dur = 0;
+			int next = cur;
+			if (af.aniType == 1) { if (cur + 1 >= (int)seq->frames.size()) return cur; next = cur + 1; }
+			else if (af.aniType == 2) {
+				if ((af.aniFlag & 2) && loop < 0) next = (af.aniFlag & 8) ? cur + af.loopEnd : af.loopEnd;
+				else { if (af.aniFlag & 2) loop--; next = (af.aniFlag & 4) ? cur + af.jump : af.jump; }
+			} else return cur;
+			if (next >= 0 && next < (int)seq->frames.size() && seq->frames[next].AF.loopCount > 0)
+				loop = seq->frames[next].AF.loopCount;
+			cur = next;
+		} else {
+			int adv = std::min(fd_ - dur, targetTick - tick);
+			dur += adv; tick += adv;
+		}
+	}
+	return cur;
+}
+
+struct ExSpawn { int spawnTick, pattern; bool effect; int frame; };
+
+size_t ExSimulateSpawnsToTick(FrameData* main, FrameData* effect, int patternId, int targetTick)
+{
+	auto seq = main->get_sequence(patternId);
+	if (!seq || seq->frames.empty()) return 0;
+	std::vector<ExSpawn> spawns;
+	auto src = [&](bool e) { return e && effect ? effect : main; };
+	auto parse = [&](const Frame& f, int ownerPattern, bool ownerEffect, int tick) {
+		for (const auto& ef : f.EF) {
+			int t = ef.type;
+			if (t == 1 || t == 101 || t == 1000 || t == 11 || t == 111)
+				spawns.push_back({tick, ef.number + ((t == 101 || t == 111) ? ownerPattern : 0), ownerEffect, 0});
+			else if (t == 8)
+				spawns.push_back({tick, ef.number, true, 0});
+		}
+	};
+	int prevMain = -1;
+	for (int tick = 0; tick <= targetTick; ++tick) {
+		int mf = ExSimulateAnimationFlow(main, patternId, tick);
+		if (mf != prevMain && mf >= 0 && mf < (int)seq->frames.size()) { parse(seq->frames[mf], patternId, false, tick); prevMain = mf; }
+		for (size_t i = 0; i < spawns.size() && spawns.size() < 4096; ++i) {
+			auto& sp = spawns[i];
+			if (sp.spawnTick > tick) continue;
+			FrameData* s = src(sp.effect);
+			auto ss = s->get_sequence(sp.pattern);
+			if (!ss || ss->frames.empty()) continue;
+			int el = tick - sp.spawnTick;
+			int fr = ExSimulateAnimationFlow(s, sp.pattern, el);
+			int prior = el > 0 ? ExSimulateAnimationFlow(s, sp.pattern, el - 1) : -1;
+			sp.frame = fr;
+			if (fr >= 0 && fr < (int)ss->frames.size() && fr != prior) parse(ss->frames[fr], sp.pattern, sp.effect, tick);
+		}
+	}
+	return spawns.size();
+}
 
 // ---------------------------------------------------------------------------
 // --selftest: synthetic FrameData exercising each engine rule. No game data.
@@ -360,6 +433,41 @@ int SelfTest()
 		CHECK(B && B->effectHa6 && B->angle == 2600, "EF1 inside effect.ha6 inherits data + parent angle (bit 8)");
 	}
 
+	// 13) Position-tool placement (ResolveSpawnPlacement) agrees with the
+	//     simulated actor for every flag combination the tool can edit.
+	{
+		const int combos[][2] = {{0, 0}, {0x800, 0}, {0, 0x800}, {0x800, 0x800}, {0x10, 0},
+		                         {0x10, (int)0x80000000}, {0x200, 0}, {0x400, 0x800}, {0, 0x100},
+		                         {0, 0x200}, {(int)0x80000000, 0}, {0x2 | 0x800, 0}};
+		preview::Options o = opt; o.cameraX = 12.f; o.opponentX = 90.f;
+		bool allOk = true;
+		for (int facingLeft = 0; facingLeft < 2; facingLeft++) {
+			for (int pat = 0; pat < 2; pat++) {
+				for (const auto& cb : combos) {
+					FrameData t; t.initEmpty(); FrameData tfx; tfx.initEmpty();
+					Frame& r = AddFrame(t, 1, 5, 0);
+					r.AF.layers[0].usePat = pat != 0;
+					AddEF(r, 1, 2, {37, -21, cb[0], cb[1]});
+					AddFrame(t, 2, 5, 0);
+					preview::Options oo = o; oo.rootFacingLeft = facingLeft != 0;
+					preview::PreviewSim sim;
+					sim.setInputs(&t, &tfx, 1, oo);
+					sim.getStateAt(0, st);
+					auto* A = ByPattern(st, 2);
+					preview::SimActor owner; owner.isRoot = true; owner.facingLeft = oo.rootFacingLeft;
+					auto pl = preview::ResolveSpawnPlacement(oo, owner, pat != 0, cb[0], cb[1]);
+					float hx = pl.baseX + pl.kx * 37, hy = pl.baseY + pl.ky * -21;
+					if (!A || std::fabs(A->x - hx) > 1e-4f || std::fabs(A->y - hy) > 1e-4f || A->facingLeft != pl.facingLeft) {
+						std::printf("  placement mismatch fs1=%x fs2=%x facing=%d pat=%d: actor (%g,%g) handle (%g,%g)\n",
+						            cb[0], cb[1], facingLeft, pat, A ? A->x : -1.f, A ? A->y : -1.f, hx, hy);
+						allOk = false;
+					}
+				}
+			}
+		}
+		CHECK(allOk, "position-tool placement == simulated spawn position (48 combos)");
+	}
+
 	std::printf("\nselftest: %s (%d failure(s))\n", g_fail ? "FAILED" : "passed", g_fail);
 	return g_fail ? 4 : 0;
 }
@@ -568,6 +676,17 @@ int main(int argc, char** argv)
 		std::printf("  onion burst (17 q):  %.4f ms/UI frame\n", onionMs);
 		std::printf("  invalidate+rebuild:  %.4f ms\n", rebuildMs);
 		std::printf("  validate (per query overhead): %.4f ms\n", validateMs);
+
+		// EX baseline: one query per draw re-simulates from tick 0.
+		for (int probe : {span / 4, span / 2, span}) {
+			double e0 = NowMs();
+			size_t n = 0;
+			const int reps = 3;
+			for (int r = 0; r < reps; r++) n = ExSimulateSpawnsToTick(&main, haveEffect ? &effect : nullptr, pat, probe);
+			double exMs = (NowMs() - e0) / reps;
+			std::printf("  EX re-run-from-0 at tick %4d: %8.3f ms/query (%zu spawns); x17 onion = %.1f ms/UI frame\n",
+			            probe, exMs, n, exMs * 17);
+		}
 	}
 	return mismatches ? 3 : 0;
 }

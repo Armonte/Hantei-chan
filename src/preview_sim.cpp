@@ -827,6 +827,52 @@ uint64_t FingerprintSeq(Sequence* s)
 } // namespace
 
 // ---------------------------------------------------------------------------
+// Placement helpers for tools
+// ---------------------------------------------------------------------------
+
+bool SpawnOffsetSlots(const Frame_EF& ef, int& xParam, int& yParam)
+{
+	switch (ef.type) {
+	case 1: case 101: case 1000: case 8: case 108: case 3:
+	case 11: case 111: // base offset of the random rectangle
+		xParam = 0; yParam = 1; return true;
+	default:
+		return false;
+	}
+}
+
+void SpawnFlagsets(const Frame_EF& ef, int& flagset1, int& flagset2)
+{
+	switch (ef.type) {
+	case 1: case 101: case 1000: case 8: case 108:
+		flagset1 = ef.parameters[2]; flagset2 = ef.parameters[3]; return;
+	case 11: case 111:
+		flagset1 = ef.parameters[6]; flagset2 = ef.parameters[7]; return;
+	default:
+		flagset1 = flagset2 = 0; return;
+	}
+}
+
+SpawnPlacement ResolveSpawnPlacement(const Options& o, const SimActor& spawner,
+                                     bool spawnerFrameUsesPat, int flagset1, int flagset2)
+{
+	SpawnPlacement r;
+	r.scale = (o.patOwnerHalfScale && spawnerFrameUsesPat) ? 0.5f : 1.f;
+	// PlaceChild is affine in (ox, oy): sample the origin and unit offsets.
+	SimActor c0, cx, cy;
+	c0.flagset1 = cx.flagset1 = cy.flagset1 = flagset1;
+	c0.flagset2 = cx.flagset2 = cy.flagset2 = flagset2;
+	PlaceChild(o, spawner, c0, 0, 0, 0, r.scale);
+	PlaceChild(o, spawner, cx, 1, 0, 0, r.scale);
+	PlaceChild(o, spawner, cy, 0, 1, 0, r.scale);
+	r.baseX = c0.x; r.baseY = c0.y;
+	r.kx = cx.x - c0.x;
+	r.ky = cy.y - c0.y;
+	r.facingLeft = c0.facingLeft;
+	return r;
+}
+
+// ---------------------------------------------------------------------------
 // PreviewSim
 // ---------------------------------------------------------------------------
 
