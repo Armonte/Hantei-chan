@@ -195,6 +195,7 @@ add_executable(preview_sim_tool
 	src/framedata.cpp
 	src/framedata_load.cpp
 	src/framedata_save.cpp
+	src/framedata_ha4.cpp
 	src/misc.cpp
 	tinyalloc/tinyalloc.c
 )
