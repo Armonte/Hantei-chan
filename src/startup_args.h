@@ -6,6 +6,7 @@
 //   --pattern N / --frame N   select pattern / frame in the opened view
 //   --palette N          palette number
 //   --compare N          overlay pattern N of the same character (pattern comparison)
+//   --tool NAME          open a tool window: hud, bgm, compare, patterns, notes, vars, keys
 //   --capture <png>      after a few frames, save the window to <png> and quit
 //                        (used for automated render checks, e.g. MBAC sprites)
 #include <string>
@@ -16,6 +17,7 @@ struct StartupArgs {
 	int frame = -1;
 	int palette = -1;
 	int compare = -1;
+	std::string tool;
 	std::string capture;
 	int frameCounter = 0;
 };
