@@ -52,6 +52,8 @@ add_executable(${EXE}
 	src/pattern_refs.cpp
 	src/ha6_notes.cpp
 	src/bgm_player.cpp
+	src/hud_colors.cpp
+	src/hud_textures.cpp
 	src/preview_sim.cpp
 	src/mv_script.cpp
 	src/character_instance.cpp
@@ -364,6 +366,18 @@ if(MINGW)
 	target_link_options(bgm_test PRIVATE -static-libgcc -static-libstdc++ -static)
 endif()
 add_test(NAME bgm COMMAND bgm_test)
+# hud_test: HUD colour table, MBAA.exe immediates and theme JSON (issue #56).
+add_executable(hud_test
+	tests/hud_test.cpp
+	src/hud_colors.cpp
+	src/misc.cpp
+)
+target_include_directories(hud_test PRIVATE "." "src" "third_party")
+target_compile_definitions(hud_test PRIVATE WIN32_LEAN_AND_MEAN)
+if(MINGW)
+	target_link_options(hud_test PRIVATE -static-libgcc -static-libstdc++ -static)
+endif()
+add_test(NAME hud COMMAND hud_test)
 # MBAC Hantei4 (.DAT) tool: byte-exact round trip, model re-encode check,
 # batch MBAC -> HA6 conversion (see docs/HANTEI_MBAC_SUPPORT.md).
 add_executable(ha4tool

@@ -241,6 +241,21 @@ private:
 		std::unique_ptr<BgmPlayer> player;
 	} m_bgm;
 	void drawBgmWindow();
+	bool m_showHud = false;
+	struct HudTexture { std::string name; unsigned id = 0; int w = 0, h = 0; };
+	struct HudWindow {
+		std::string gameDir;
+		std::vector<uint32_t> colors;
+		std::string status;
+		int meterMode = 0;
+		float meterPct = 120.f;
+		bool halfMoon = false;
+		float guardQuality = 0.8f;
+		bool guardBroken = false;
+		std::string texturesFor;
+		std::vector<HudTexture> textures;
+	} m_hud;
+	void drawHudWindow();
 	int m_keyCapture = -1;   // binding index waiting for a key (Keyboard shortcuts window)
 	int m_textNavDir = 0;    // keyframe step requested from a text field
 public:

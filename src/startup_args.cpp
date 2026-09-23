@@ -80,6 +80,14 @@ void MainFrame::ProcessStartupArgs()
 			if (gStartup.pattern >= 0) v->getState().pattern = gStartup.pattern;
 			if (gStartup.frame >= 0) v->getState().frame = gStartup.frame;
 		}
+		const std::string& t = gStartup.tool;
+		if (t == "hud") m_showHud = true;
+		else if (t == "bgm") m_showBgm = true;
+		else if (t == "compare") m_showCompare = true;
+		else if (t == "patterns") m_patMgr.open = true;
+		else if (t == "notes") m_showNotes = true;
+		else if (t == "vars") m_varRefs.open = true;
+		else if (t == "keys") m_showKeyBindings = true;
 		if (auto *c = getActiveCharacter(); c && gStartup.compare >= 0) {
 			m_compare.enabled = true;
 			m_compare.character = c;
