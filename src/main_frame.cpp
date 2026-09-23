@@ -11,6 +11,8 @@
 #include "misc.h"
 #include "background/bg_inspector.h"
 #include "extension_profile.h"
+#include "framedata_ha4.h"
+#include "ha4_character.h"
 
 #include <imgui.h>
 #include <imgui_internal.h>
@@ -77,6 +79,7 @@ void MainFrame::Draw()
 	ImGui::Render();
 
 	ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
+	ProcessStartupArgs();
 
 	// Multi-viewport disabled in main.cpp for now; UpdatePlatformWindows is
 	// a no-op without the flag but the guarded read-of-IO is also fine to
@@ -1065,6 +1068,10 @@ bool MainFrame::saveCharacter(CharacterInstance* character)
 	if (!character) return false;
 	if (character->save()) return true;
 	const std::string& path = character->getTopHA6Path();
+	if (character->frameData.isHA4() && !ha4::LastSaveError().empty()) {
+		requestErrorPopup("Save Error", "MBAC .DAT not saved: " + ha4::LastSaveError());
+		return false;
+	}
 	requestErrorPopup("Save Error", path.empty()
 		? "Character '" + character->getName() + "' has no HA6 file to save to. Use Save Character As."
 		: "Could not write " + path);

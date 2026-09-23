@@ -1,4 +1,5 @@
 #include "main.h"
+#include "startup_args.h"
 #include "context_gl.h"
 #include "main_frame.h"
 #include "test.h"
@@ -221,6 +222,21 @@ int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE, PWSTR pCmdLine, int nCmdShow
 			TestHa6();
 			LocalFree(argV);
 			return 0;
+		}
+		else if(i+1<argC && (!strcmp(arg, "--open") || !strcmp(arg, "--capture") || !strcmp(arg, "--pattern")
+		                     || !strcmp(arg, "--frame") || !strcmp(arg, "--palette")))
+		{
+			// startup actions, see startup_args.h
+			std::wstring w(argV[i+1]);
+			std::string v(WideCharToMultiByte(CP_ACP, 0, w.c_str(), -1, nullptr, 0, nullptr, nullptr), 0);
+			WideCharToMultiByte(CP_ACP, 0, w.c_str(), -1, v.data(), (int)v.size(), nullptr, nullptr);
+			if(!v.empty() && v.back() == 0) v.pop_back();
+			if(!strcmp(arg, "--open")) gStartup.open = v;
+			else if(!strcmp(arg, "--capture")) gStartup.capture = v;
+			else if(!strcmp(arg, "--pattern")) gStartup.pattern = atoi(v.c_str());
+			else if(!strcmp(arg, "--frame")) gStartup.frame = atoi(v.c_str());
+			else gStartup.palette = atoi(v.c_str());
+			i++;
 		}
 		else if(!strcmp(arg, "-i"))
 		{

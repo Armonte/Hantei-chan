@@ -1,5 +1,6 @@
 #include "framedata.h"
 #include "framedata_load.h"
+#include "framedata_ha4.h"
 #include <fstream>
 #include "misc.h"
 #include <cstring>
@@ -11,10 +12,10 @@
 int maxCount = 0;
 std::set<int> numberSet;
 
-void FrameData::initEmpty()
+void FrameData::initEmpty(unsigned int count)
 {
 	Free();
-	m_nsequences = 1000;
+	m_nsequences = count;
 	m_sequences.resize(m_nsequences);
 	m_loaded = 1;
 }
@@ -27,6 +28,14 @@ bool FrameData::load(const char *filename, bool patch) {
 
 	if (!ReadInMem(filename, data, size)) {
 		return 0;
+	}
+
+	// MBAC Hantei4 .DAT (detected by content, not extension)
+	if (ha4::IsHA4(data, size)) {
+		bool ok = !patch && ha4::Load(*this, (const uint8_t *)data, size);
+		delete[] data;
+		if (ok && m_ha4) m_ha4->sourcePath = filename;
+		return ok;
 	}
 
 	// verify header
@@ -163,8 +172,21 @@ static bool WriteHA6File(const char *filename, const std::vector<Sequence> &sequ
 	return WriteFileAtomic(filename, bytes.data(), bytes.size());
 }
 
+// HA4 data is written back as HA4 unless the target is explicitly *.ha6
+// (then it is exported through the HA6 writer, i.e. converted).
+static bool TargetIsHA6(const char *filename)
+{
+	std::string f = filename ? filename : "";
+	if (f.size() < 4) return false;
+	std::string ext = f.substr(f.size() - 4);
+	for (auto &c : ext) c = (char)tolower((unsigned char)c);
+	return ext == ".ha6";
+}
+
 bool FrameData::save(const char *filename)
 {
+	if (m_ha4 && !TargetIsHA6(filename))
+		return ha4::SaveFile(*this, filename);
 	return WriteHA6File(filename, m_sequences, get_sequence_count(), false);
 }
 
@@ -175,6 +197,7 @@ bool FrameData::save_modified_only(const char *filename)
 }
 
 void FrameData::Free() {
+	m_ha4.reset();
 	m_sequences.clear();
 	m_nsequences = 0;
 	m_loaded = 0;

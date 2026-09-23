@@ -7,6 +7,8 @@
 #include <iosfwd>
 
 #include "hitbox.h"
+#include "ha4_raw.h"
+#include <memory>
 
 #include <set>
 extern std::set<int> numberSet;
@@ -239,6 +241,9 @@ struct Frame_T {
 
 	BoxList_T<Allocator> hitboxes{};
 
+	// Original HA4 (MBAC .DAT) frame bytes; only set for frames loaded from HA4.
+	Ha4FrameRaw ha4{};
+
 	// Cross-allocator assignment operator
 	template<template<typename> class FromT>
 	Frame_T<Allocator>& operator=(const Frame_T<FromT>& from) {
@@ -252,6 +257,7 @@ struct Frame_T {
 		for (const auto& pair : from.hitboxes) {
 			hitboxes[pair.first] = pair.second;
 		}
+		ha4 = from.ha4;
 		return *this;
 	}
 
@@ -264,6 +270,7 @@ struct Frame_T {
 			EF = from.EF;
 			IF = from.IF;
 			hitboxes = from.hitboxes;
+			ha4 = from.ha4;
 		}
 		return *this;
 	}
@@ -288,6 +295,9 @@ struct Sequence_T {
 
 	std::vector<Frame_T<Allocator>, Allocator<Frame_T<Allocator>>> frames;
 
+	// Original HA4 pattern header / name bytes (MBAC .DAT only).
+	Ha4SeqRaw ha4{};
+
 	// Cross-allocator assignment operator
 	template<template<typename> class FromT>
 	Sequence_T<Allocator>& operator=(const Sequence_T<FromT>& from) {
@@ -302,6 +312,7 @@ struct Sequence_T {
 		modified = from.modified;
 		usedAFGX = from.usedAFGX;
 		usedATV2 = from.usedATV2;
+		ha4 = from.ha4;
 		frames.resize(from.frames.size());
 		for (size_t i = 0; i < from.frames.size(); i++) {
 			frames[i] = from.frames[i];
@@ -323,6 +334,7 @@ struct Sequence_T {
 			modified = from.modified;
 			usedAFGX = from.usedAFGX;
 			usedATV2 = from.usedATV2;
+			ha4 = from.ha4;
 			frames = from.frames;
 		}
 		return *this;
@@ -347,6 +359,8 @@ struct Command {
 	Command() : id(-1) {}
 };
 
+struct Ha4Container; // framedata_ha4.h
+
 class FrameData {
 private:
 	unsigned int	m_nsequences;
@@ -358,7 +372,12 @@ public:
 	std::vector<Command> m_commands;
 	std::string m_commandsPath;     // _c.txt the command table came from (empty = none)
 
-	void initEmpty();
+	// Set when the data came from an MBAC Hantei4 .DAT (header, parts and CG
+	// blobs). save() writes HA4 for such data unless the target is *.ha6.
+	std::shared_ptr<Ha4Container> m_ha4;
+	bool isHA4() const { return (bool)m_ha4; }
+
+	void initEmpty(unsigned int count = 1000);
 	bool load(const char *filename, bool patch = false);
 	bool save(const char *filename);  // Atomic; returns false on failure, never mutates data
 	bool save_modified_only(const char *filename);  // Save only modified sequences (atomic)

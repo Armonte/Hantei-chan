@@ -1,6 +1,7 @@
 #include "character_instance.h"
 #include "ini.h"
 #include "misc.h"
+#include "ha4_character.h"
 #include <filesystem>
 #include <sstream>
 #include <iomanip>
@@ -152,6 +153,11 @@ bool CharacterInstance::loadHA6(const std::string& ha6Path, bool patch)
 	}
 	m_ha6Paths.push_back(ha6Path);
 	m_topHA6Path = ha6Path;
+
+	// MBAC Hantei4 .DAT: sprites, palette, parts and EFFECT.DAT come with it
+	if (frameData.isHA4()) {
+		ha4::AttachCharacterResources(*this, ha6Path);
+	}
 
 	m_isModified = false;
 	undoManager.reset();  // document replaced: new baseline, no history

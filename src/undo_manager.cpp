@@ -23,13 +23,15 @@ static_assert(std::is_trivially_copyable<Frame_AT>::value, "Frame_AT must stay t
 static_assert(std::is_trivially_copyable<Frame_EF>::value, "Frame_EF must stay trivially copyable for undo diffing");
 static_assert(std::is_trivially_copyable<Frame_IF>::value, "Frame_IF must stay trivially copyable for undo diffing");
 static_assert(std::is_trivially_copyable<Hitbox>::value, "Hitbox must stay trivially copyable for undo diffing");
+static_assert(std::is_trivially_copyable<Ha4FrameRaw>::value && std::is_trivially_copyable<Ha4SeqRaw>::value,
+	"HA4 raw blocks must stay trivially copyable for undo diffing");
 #if defined(__x86_64__) || defined(_M_X64)
 static_assert(sizeof(Layer_Type) == 60, "Layer layout changed: update layerEquals() in undo_manager.cpp, then this size");
 static_assert(sizeof(Frame_AF) == 80, "Frame_AF layout changed: update afEquals() in undo_manager.cpp, then this size");
-static_assert(sizeof(Sequence) == 112, "Sequence layout changed: update SequenceContentEquals() in undo_manager.cpp, then this size");
+static_assert(sizeof(Sequence) == 248, "Sequence layout changed: update SequenceContentEquals() in undo_manager.cpp, then this size");
 #endif
 static_assert(sizeof(Frame) == sizeof(Frame_AF) + sizeof(Frame_AS) + sizeof(Frame_AT)
-	+ sizeof(Frame::EF) + sizeof(Frame::IF) + sizeof(BoxList),
+	+ sizeof(Frame::EF) + sizeof(Frame::IF) + sizeof(BoxList) + sizeof(Ha4FrameRaw),
 	"Frame gained a member: update frameEquals() in undo_manager.cpp");
 
 namespace {
@@ -117,7 +119,8 @@ bool frameEquals(const Frame& a, const Frame& b)
 		&& afEquals(a.AF, b.AF)
 		&& podVectorEqual(a.EF, b.EF)
 		&& podVectorEqual(a.IF, b.IF)
-		&& boxesEqual(a.hitboxes, b.hitboxes);
+		&& boxesEqual(a.hitboxes, b.hitboxes)
+		&& bytesEqual(a.ha4, b.ha4);   // original MBAC .DAT bytes (ha4_raw.h)
 }
 
 } // namespace
@@ -130,6 +133,7 @@ bool UndoManager::SequenceContentEquals(const Sequence& a, const Sequence& b)
 	if (a.empty != b.empty || a.initialized != b.initialized) return false;
 	if (a.usedAFGX != b.usedAFGX || a.usedATV2 != b.usedATV2) return false;
 	if (a.name != b.name || a.codeName != b.codeName) return false;
+	if (!bytesEqual(a.ha4, b.ha4)) return false;   // MBAC pattern header/name bytes
 	for (size_t i = 0; i < a.frames.size(); ++i) {
 		if (!frameEquals(a.frames[i], b.frames[i])) return false;
 	}

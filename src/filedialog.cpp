@@ -57,6 +57,10 @@ std::string FileDialog(int fileType, bool save, char* defaultName)
 	{
 		ofn.lpstrFilter = "DDS Texture files (*.dds)\0*.dds\0All\0*.*\0";
 	}
+	else if (fileType == fileType::HA4)
+	{
+		ofn.lpstrFilter = "MBAC Act Cadenza character (*.dat)\0*.dat\0Hantei 6 files (*.ha6)\0*.ha6\0All\0*.*\0";
+	}
 	else if (fileType == fileType::DAT)
 	{
 		ofn.lpstrFilter = "MBAA Stage files (*.dat)\0*.dat\0All\0*.*\0";
