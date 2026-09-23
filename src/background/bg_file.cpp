@@ -75,6 +75,7 @@ bool File::Load(const char* filename) {
 	dirty = false;
 	ReloadSideFiles();
 	ResetRuntime();
+	ResetHistory();
 	
 	std::cout << "Loaded background: " << objects.size() << " objects, "
 	          << (cg ? cg->get_image_count() : 0) << " sprites" << std::endl;
@@ -990,7 +991,7 @@ std::string BaseNoExt(const std::string& p) {
 }
 } // namespace
 
-std::string File::SiblingVariantPath() const {
+static std::string FindSiblingVariant(const std::string& filename) {
 	std::string dir = DirOf(filename), base = BaseNoExt(filename);
 	std::string lb = LowerStr(base);
 	std::string other;
@@ -1012,6 +1013,7 @@ void File::ReloadSideFiles() {
 	std::string dir = DirOf(filename), base = BaseNoExt(filename);
 	std::string lb = LowerStr(base);
 	shortVariant = lb.size() > 2 && lb.compare(lb.size() - 2, 2, "_s") == 0;
+	siblingPath = FindSiblingVariant(filename);
 	std::string stem = shortVariant ? base.substr(0, base.size() - 2) : base;
 
 	stageList = StageList();
@@ -1032,7 +1034,7 @@ void File::ReloadSideFiles() {
 	// folder; an _s variant or an upper-case MBAC dump name means MBAC.
 	bool upper = !base.empty() && base.find_first_of("abcdefghijklmnopqrstuvwxyz") == std::string::npos;
 	if (!ini.empty())                         game = Game::MBAACC;
-	else if (shortVariant || upper || !SiblingVariantPath().empty()) game = Game::MBAC;
+	else if (shortVariant || upper || !siblingPath.empty()) game = Game::MBAC;
 	else                                      game = Game::MBAACC;
 }
 
@@ -1059,7 +1061,7 @@ int File::InsertFrame(int objIndex, int at, bool duplicate) {
 		at = std::min(at + 1, (int)o.frames.size());
 	}
 	o.frames.insert(o.frames.begin() + at, f);
-	dirty = true;
+	MarkDirty();
 	ResetRuntime();
 	return at;
 }
@@ -1069,7 +1071,7 @@ bool File::DeleteFrame(int objIndex, int at) {
 	Object& o = objects[objIndex];
 	if (at < 0 || at >= (int)o.frames.size() || o.frames.size() <= 1) return false;
 	o.frames.erase(o.frames.begin() + at);
-	dirty = true;
+	MarkDirty();
 	ResetRuntime();
 	return true;
 }
@@ -1084,7 +1086,7 @@ int File::AddRecord(int objIndex, bool trigger) {
 	r.SyncRaw();
 	tab.push_back(r);
 	o.recordsRelayout = true;
-	dirty = true;
+	MarkDirty();
 	return (int)tab.size() - 1;
 }
 
@@ -1102,7 +1104,63 @@ bool File::DeleteLastRecord(int objIndex, bool trigger) {
 			if (r == gone) r = -1;
 		}
 	o.recordsRelayout = true;
-	dirty = true;
+	MarkDirty();
+	return true;
+}
+
+
+// ---- stage edit history --------------------------------------------------------
+
+static constexpr size_t kMaxStageUndo = 100;
+
+void File::ResetHistory() {
+	committedSerial = editSerial;
+	undoStack.clear();
+	redoStack.clear();
+	baseline.objects = objects;
+	baseline.dirty = dirty;
+	committedSerial = editSerial;
+}
+
+void File::CommitEdit() {
+	undoStack.push_back(std::move(baseline));
+	if (undoStack.size() > kMaxStageUndo) undoStack.erase(undoStack.begin());
+	redoStack.clear();
+	baseline.objects = objects;
+	baseline.dirty = dirty;
+	committedSerial = editSerial;
+}
+
+void File::RestoreSnapshot(const EditSnapshot& snap) {
+	bool reshaped = snap.objects.size() != objects.size();
+	for (size_t i = 0; !reshaped && i < objects.size(); ++i)
+		reshaped = snap.objects[i].frames.size() != objects[i].frames.size();
+	std::vector<bool> vis;
+	for (const auto& o : objects) vis.push_back(o.visible);
+	objects = snap.objects;
+	for (size_t i = 0; i < objects.size() && i < vis.size(); ++i) objects[i].visible = vis[i];
+	dirty = snap.dirty;
+	baseline.objects = objects;
+	baseline.dirty = dirty;
+	committedSerial = ++editSerial;
+	if (reshaped) ResetRuntime();
+}
+
+bool File::Undo() {
+	if (undoStack.empty()) return false;
+	redoStack.push_back({objects, dirty});
+	EditSnapshot snap = std::move(undoStack.back());
+	undoStack.pop_back();
+	RestoreSnapshot(snap);
+	return true;
+}
+
+bool File::Redo() {
+	if (redoStack.empty()) return false;
+	undoStack.push_back({objects, dirty});
+	EditSnapshot snap = std::move(redoStack.back());
+	redoStack.pop_back();
+	RestoreSnapshot(snap);
 	return true;
 }
 

@@ -129,8 +129,7 @@ void DrawSideFiles(File& file) {
 
 } // namespace
 
-InspectorResult DrawInspector(File& file, Renderer& renderer) {
-	InspectorResult res;
+static void DrawInspectorBody(File& file, Renderer& renderer, InspectorResult& res) {
 	auto& objects = file.GetObjects();
 
 	// --- save ---
@@ -142,6 +141,10 @@ InspectorResult DrawInspector(File& file, Renderer& renderer) {
 		std::string path = FileDialog(fileType::DAT, true);
 		if (!path.empty() && file.Save(path.c_str())) file.ClearDirty();
 	}
+	ImGui::SameLine();
+	if (ImGui::Button("Undo") && file.CanUndo()) file.Undo();
+	ImGui::SameLine();
+	if (ImGui::Button("Redo") && file.CanRedo()) file.Redo();
 	ImGui::SameLine();
 	ImGui::TextDisabled(file.IsDirty() ? "(modified)" : "(saved)");
 
@@ -191,7 +194,7 @@ InspectorResult DrawInspector(File& file, Renderer& renderer) {
 	if (sel >= (int)objects.size()) sel = 0;
 	renderer.SetSelectedObject(sel);
 
-	if (!ImGui::CollapsingHeader("Objects", ImGuiTreeNodeFlags_DefaultOpen)) return res;
+	if (!ImGui::CollapsingHeader("Objects", ImGuiTreeNodeFlags_DefaultOpen)) return;
 	if (ImGui::SmallButton("Show All")) for (auto& o : objects) o.visible = true;
 	ImGui::SameLine();
 	if (ImGui::SmallButton("Solo Selected"))
@@ -215,7 +218,7 @@ InspectorResult DrawInspector(File& file, Renderer& renderer) {
 	}
 	ImGui::EndChild();
 
-	if (sel < 0 || sel >= (int)objects.size()) return res;
+	if (sel < 0 || sel >= (int)objects.size()) return;
 	Object& obj = objects[sel];
 	bool ch = false;
 
@@ -331,6 +334,13 @@ InspectorResult DrawInspector(File& file, Renderer& renderer) {
 		                    "rewrites this object's table block as [triggers][commands].");
 		ImGui::TreePop();
 	}
+}
+
+InspectorResult DrawInspector(File& file, Renderer& renderer) {
+	InspectorResult res;
+	DrawInspectorBody(file, renderer, res);
+	// One history step per gesture: commit once no widget is being edited.
+	if (file.HasUncommittedEdit() && !ImGui::IsAnyItemActive()) file.CommitEdit();
 	return res;
 }
 

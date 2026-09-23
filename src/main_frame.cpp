@@ -36,6 +36,20 @@ context(context_)
 	// The bg renderer draws PAT-pattern stage objects through Render's
 	// Parts pipeline (sprite-id < 10000) — give it the back-reference.
 	bgRenderer.SetHostRender(&render);
+	// Stage edits keep their own history (bg::File), separate from the
+	// character undo stack: while a stage view owns focus, Ctrl+Z / Ctrl+Y
+	// go to the stage and Ctrl+S saves the stage file.
+	shortcuts.setContextHandler(ShortcutContext::stageView, [this](ShortcutAction a) {
+		if (!currentBgFile) return false;
+		switch (a) {
+		case ShortcutAction::undo: currentBgFile->Undo(); return true;
+		case ShortcutAction::redo: currentBgFile->Redo(); return true;
+		case ShortcutAction::save:
+			if (currentBgFile->Save(currentBgFile->GetFilename().c_str())) currentBgFile->ClearDirty();
+			return true;
+		default: return false;
+		}
+	});
 }
 
 MainFrame::~MainFrame()
