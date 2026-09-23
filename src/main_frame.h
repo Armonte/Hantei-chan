@@ -189,6 +189,7 @@ private:
 	void openCommandEditorForActive();
 	void loadCommandsForActive(const std::string& path);
 	void drawCommandEditor();
+	void drawGameLink();   // Game Link window (ui/main_frame_gamelink.cpp)
 	bool m_commandShortcutsRegistered = false;
 	// ---- Editing tools (ui/editor_tools_impl.h) ----------------------------
 	ShortcutRouter shortcuts;

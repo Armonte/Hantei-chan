@@ -7,6 +7,8 @@
 //   --palette N          palette number
 //   --capture <png>      after a few frames, save the window to <png> and quit
 //                        (used for automated render checks, e.g. MBAC sprites)
+//   --game-link N        open the Game Link window, connect, follow game slot N (1-4) and jump the editor to it;
+//                        with --capture the shot is taken later (frame 240) so the link has live state
 #include <string>
 
 struct StartupArgs {
@@ -15,6 +17,7 @@ struct StartupArgs {
 	int frame = -1;
 	int palette = -1;
 	std::string capture;
+	int gameLinkSlot = 0;   // --game-link (1-4); 0 = off
 	int frameCounter = 0;
 };
 extern StartupArgs gStartup;
