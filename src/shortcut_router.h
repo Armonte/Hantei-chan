@@ -39,6 +39,7 @@ enum class ShortcutAction : uint8_t {
 	openProject,
 	newProject,
 	nextView,
+	previousView,
 	closeView,
 	// Navigation
 	previousPattern,
@@ -47,6 +48,17 @@ enum class ShortcutAction : uint8_t {
 	nextKeyframe,
 	previousBox,
 	nextBox,
+	// Layer offset nudge (issue #30)
+	nudgeLayerLeft,
+	nudgeLayerRight,
+	nudgeLayerUp,
+	nudgeLayerDown,
+	nudgeLayerLeftFast,
+	nudgeLayerRightFast,
+	nudgeLayerUpFast,
+	nudgeLayerDownFast,
+	// View toggles (issue #61)
+	toggleSpawnPreview,
 	// Transport (J/K/L)
 	playReverse,
 	togglePlayback,

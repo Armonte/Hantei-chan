@@ -50,16 +50,24 @@ bool MainFrame::RunShortcut(ShortcutAction action)
 		if (m_posDrag.active) EndPositionDrag(false);
 		return PerformUndoRedo(action == ShortcutAction::redo);
 
-	case ShortcutAction::save:
+	case ShortcutAction::save: {
+		// Ctrl+S saves the character being edited, and with a project open also
+		// writes the .hproj. It used to save only the .hproj when a project was
+		// loaded, so character edits were silently left unsaved (issue #80).
+		bool did = false;
+		auto* active = getActiveCharacter();
+		// A character with no file yet is skipped when a project is open (the
+		// project save still runs); without a project the error explains it.
+		if (active && (!active->getTopHA6Path().empty() || !ProjectManager::HasCurrentProject())) {
+			saveCharacter(active);
+			did = true;
+		}
 		if (ProjectManager::HasCurrentProject()) {
 			saveProject();
-			return true;
+			did = true;
 		}
-		if (auto* active = getActiveCharacter()) {
-			saveCharacter(active);
-			return true;
-		}
-		return false;
+		return did;
+	}
 	case ShortcutAction::saveProjectAs:
 		saveProjectAs();
 		return true;
@@ -72,6 +80,12 @@ bool MainFrame::RunShortcut(ShortcutAction action)
 	case ShortcutAction::nextView:
 		if (!views.empty()) {
 			setActiveView((activeViewIndex + 1) % (int)views.size());
+			return true;
+		}
+		return false;
+	case ShortcutAction::previousView:
+		if (!views.empty()) {
+			setActiveView((activeViewIndex - 1 + (int)views.size()) % (int)views.size());
 			return true;
 		}
 		return false;
@@ -92,6 +106,20 @@ bool MainFrame::RunShortcut(ShortcutAction action)
 	case ShortcutAction::nextBox:
 		if (view && view->getBoxPane()) view->getBoxPane()->AdvanceBox(+1);
 		return view != nullptr;
+
+	case ShortcutAction::nudgeLayerLeft:      return NudgeLayer(view, -1, 0);
+	case ShortcutAction::nudgeLayerRight:     return NudgeLayer(view, +1, 0);
+	case ShortcutAction::nudgeLayerUp:        return NudgeLayer(view, 0, -1);
+	case ShortcutAction::nudgeLayerDown:      return NudgeLayer(view, 0, +1);
+	case ShortcutAction::nudgeLayerLeftFast:  return NudgeLayer(view, -10, 0);
+	case ShortcutAction::nudgeLayerRightFast: return NudgeLayer(view, +10, 0);
+	case ShortcutAction::nudgeLayerUpFast:    return NudgeLayer(view, 0, -10);
+	case ShortcutAction::nudgeLayerDownFast:  return NudgeLayer(view, 0, +10);
+	case ShortcutAction::toggleSpawnPreview:
+		if (!view) return false;
+		view->getState().vizSettings.showSpawnedPatterns = !view->getState().vizSettings.showSpawnedPatterns;
+		view->getState().forceSpawnTreeRebuild = true;
+		return true;
 
 	// J/K/L: J plays in reverse, K stops (or resumes forward when stopped),
 	// L plays forward. Shift+J / Shift+L step one tick (auto-repeat allowed).
@@ -140,6 +168,27 @@ bool MainFrame::RunShortcut(ShortcutAction action)
 	default:
 		return false;
 	}
+}
+
+// Ctrl+arrows: move the selected layer of the current keyframe (AF offset X/Y).
+bool MainFrame::NudgeLayer(CharacterView* view, int dx, int dy)
+{
+	if (!view || view->isStageView() || view->isPatEditor()) return false;
+	CharacterInstance* character = view->getCharacter();
+	if (!character) return false;
+	auto& st = view->getState();
+	if (st.animating) return false;
+	Sequence* seq = character->frameData.get_sequence(st.pattern);
+	if (!seq || st.frame < 0 || st.frame >= (int)seq->frames.size()) return false;
+	auto& layers = seq->frames[st.frame].AF.layers;
+	if (layers.empty()) layers.push_back({});
+	const int li = std::clamp(st.selectedLayer, 0, (int)layers.size() - 1);
+	layers[li].offset_x += dx;
+	layers[li].offset_y += dy;
+	character->frameData.mark_modified(st.pattern);
+	character->markModified();
+	character->undoManager.markModified();
+	return true;
 }
 
 // ---------------------------------------------------------------------------

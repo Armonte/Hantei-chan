@@ -61,6 +61,20 @@ int main()
 
 	// Rebinding into an overlapping chord is reported.
 	ShortcutRegistry custom;
+	// Issue #30/#61 bindings.
+	CHECK(act(reg.resolve({0x25, shortcutCtrl}, ShortcutContext::characterView, false, true)) == ShortcutAction::nudgeLayerLeft);
+	CHECK(act(reg.resolve({0x28, shortcutCtrl | shortcutShift}, ShortcutContext::characterView, false, false)) == ShortcutAction::nudgeLayerDownFast);
+	CHECK(reg.resolve({0x25, shortcutCtrl}, ShortcutContext::patEditor, false, false) == nullptr);
+	CHECK(act(reg.resolve({0x28, 0}, ShortcutContext::characterView, false, false)) == ShortcutAction::nextPattern);
+	CHECK(act(reg.resolve({'P', 0}, ShortcutContext::characterView, false, false)) == ShortcutAction::toggleSpawnPreview);
+	CHECK(reg.resolve({'P', 0}, ShortcutContext::characterView, true, false) == nullptr);
+	CHECK(act(reg.resolve({0x22, shortcutCtrl}, ShortcutContext::none, false, false)) == ShortcutAction::nextView);
+	CHECK(act(reg.resolve({0x21, shortcutCtrl}, ShortcutContext::none, false, false)) == ShortcutAction::previousView);
+	CHECK(act(reg.resolve({0x09, shortcutCtrl | shortcutShift}, ShortcutContext::none, false, false)) == ShortcutAction::previousView);
+	CHECK(act(reg.resolve({0x6A, 0}, ShortcutContext::characterView, false, true)) == ShortcutAction::nextKeyframe);
+	CHECK(act(reg.resolve({0x6F, 0}, ShortcutContext::characterView, false, true)) == ShortcutAction::previousKeyframe);
+	CHECK(reg.label(ShortcutAction::nextView) == "Ctrl+Tab");
+	CHECK(ShortcutRegistry::ChordLabel({0x21, shortcutCtrl}) == "Ctrl+PgUp");
 	custom.setChord(ShortcutAction::togglePlayback, {'X', 0});
 	CHECK(custom.conflicts().size() == 1);
 	CHECK(ShortcutRegistry::ChordLabel({'S', shortcutCtrl | shortcutShift}) == "Ctrl+Shift+S");

@@ -10,6 +10,10 @@ constexpr uint32_t vkLeft = 0x25;
 constexpr uint32_t vkUp = 0x26;
 constexpr uint32_t vkRight = 0x27;
 constexpr uint32_t vkDown = 0x28;
+constexpr uint32_t vkPrior = 0x21;     // Page Up
+constexpr uint32_t vkNext = 0x22;      // Page Down
+constexpr uint32_t vkMultiply = 0x6A;  // numpad *
+constexpr uint32_t vkDivide = 0x6F;    // numpad /
 
 constexpr uint8_t ctrl = shortcutCtrl;
 constexpr uint8_t ctrlShift = shortcutCtrl | shortcutShift;
@@ -31,6 +35,10 @@ ShortcutRegistry::ShortcutRegistry()
 		{A::openProject,      "Open project",                 {'O', ctrl},          R::application,   C::none,           false, false},
 		{A::newProject,       "New project",                  {'N', ctrl},          R::application,   C::none,           false, false},
 		{A::nextView,         "Next tab",                     {vkTab, ctrl},        R::application,   C::none,           false, false},
+		{A::previousView,     "Previous tab",                 {vkTab, ctrlShift},   R::application,   C::none,           false, false},
+		// Alternate chords (browser-style). binding()/label()/setChord() use the first entry of an action.
+		{A::nextView,         "Next tab",                     {vkNext, ctrl},       R::application,   C::none,           false, false},
+		{A::previousView,     "Previous tab",                 {vkPrior, ctrl},      R::application,   C::none,           false, false},
 		{A::closeView,        "Close tab",                    {'W', ctrl},          R::application,   C::none,           false, false},
 
 		{A::previousPattern,  "Previous pattern",             {vkUp, 0},            R::editorViews,    C::none,           false, true},
@@ -39,6 +47,19 @@ ShortcutRegistry::ShortcutRegistry()
 		{A::nextKeyframe,     "Next keyframe",                {vkRight, 0},         R::editorViews,    C::none,           false, true},
 		{A::previousBox,      "Previous box",                 {'Z', 0},             R::editorViews,    C::none,           false, true},
 		{A::nextBox,          "Next box",                     {'X', 0},             R::editorViews,    C::none,           false, true},
+
+		{A::previousKeyframe, "Previous keyframe",            {vkDivide, 0},        R::editorViews,    C::none,           false, true},
+		{A::nextKeyframe,     "Next keyframe",                {vkMultiply, 0},      R::editorViews,    C::none,           false, true},
+
+		{A::nudgeLayerLeft,   "Move layer left 1px",          {vkLeft, ctrl},       R::focusedContext, C::characterView, false, true},
+		{A::nudgeLayerRight,  "Move layer right 1px",         {vkRight, ctrl},      R::focusedContext, C::characterView, false, true},
+		{A::nudgeLayerUp,     "Move layer up 1px",            {vkUp, ctrl},         R::focusedContext, C::characterView, false, true},
+		{A::nudgeLayerDown,   "Move layer down 1px",          {vkDown, ctrl},       R::focusedContext, C::characterView, false, true},
+		{A::nudgeLayerLeftFast,  "Move layer left 10px",      {vkLeft, ctrlShift},  R::focusedContext, C::characterView, false, true},
+		{A::nudgeLayerRightFast, "Move layer right 10px",     {vkRight, ctrlShift}, R::focusedContext, C::characterView, false, true},
+		{A::nudgeLayerUpFast,    "Move layer up 10px",        {vkUp, ctrlShift},    R::focusedContext, C::characterView, false, true},
+		{A::nudgeLayerDownFast,  "Move layer down 10px",      {vkDown, ctrlShift},  R::focusedContext, C::characterView, false, true},
+		{A::toggleSpawnPreview,  "Toggle spawned patterns",   {'P', 0},             R::focusedContext, C::characterView, false, false},
 
 		{A::playReverse,      "Play reverse",                 {'J', 0},             R::focusedContext, C::characterView, false, false},
 		{A::togglePlayback,   "Stop / play",                  {'K', 0},             R::focusedContext, C::characterView, false, false},
@@ -129,6 +150,10 @@ std::string ShortcutRegistry::ChordLabel(ShortcutChord chord)
 	case vkRight: s += "Right"; break;
 	case vkUp: s += "Up"; break;
 	case vkDown: s += "Down"; break;
+	case vkPrior: s += "PgUp"; break;
+	case vkNext: s += "PgDn"; break;
+	case vkMultiply: s += "Num*"; break;
+	case vkDivide: s += "Num/"; break;
 	default:
 		if (chord.key >= 0x20 && chord.key < 0x7F) s += (char)chord.key;
 		else s += "Key" + std::to_string(chord.key);
