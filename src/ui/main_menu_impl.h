@@ -239,6 +239,17 @@ void MainFrame::Menu(unsigned int errorPopupId)
 				}
 			}
 
+			if (ImGui::MenuItem("Save Merged Stack As...", nullptr, false, hasActive && active->frameData.ownFile() >= 0))
+			{
+				// Flatten every file of the .txt stack into one HA6 (what Save
+				// used to write into the target file before issue #71).
+				std::string &&file = FileDialog(fileType::HA6, true);
+				if (!file.empty() && !active->frameData.save_merged(file.c_str()))
+					requestErrorPopup("Save Error", "Could not write " + file);
+			}
+			if (ImGui::IsItemHovered(ImGuiHoveredFlags_AllowWhenDisabled))
+				ImGui::SetTooltip("Write the merged view of all files in the .txt stack to one HA6.\nSave Character writes only the target file's own patterns plus your edits.");
+
 			if (ImGui::MenuItem("Save as MOD...", nullptr, false, hasActive && !active->getTxtPath().empty()))
 			{
 				if (hasActive) {
@@ -659,6 +670,12 @@ void MainFrame::Menu(unsigned int errorPopupId)
 				ImGui::TextDisabled("Loaded: %s", txtName.c_str());
 				ImGui::SameLine();
 				ImGui::TextColored(ImVec4(0.4f, 0.8f, 0.4f, 1.0f), "-> Saves to: %s", ha6Name.c_str());
+				if (ImGui::IsItemHovered() && active->frameData.ownFile() >= 0) {
+					ImGui::SetTooltip("Saving writes the patterns that came from %s plus every\n"
+					                  "pattern you edited. %d unedited pattern(s) inherited from the\n"
+					                  "other files of %s are left in those files.",
+					                  ha6Name.c_str(), active->frameData.inheritedPatternCount(), txtName.c_str());
+				}
 			}
 			else if (!topHA6.empty())
 			{

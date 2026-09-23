@@ -1,6 +1,7 @@
 #ifndef FRAMEDATA_LOAD_H_GUARD
 #define FRAMEDATA_LOAD_H_GUARD
 
+#include <map>
 #include "framedata.h"
 
 struct TempInfo {
@@ -38,8 +39,15 @@ unsigned int *fd_frame_EF_load(unsigned int *data, const unsigned int *data_end,
 unsigned int *fd_frame_IF_load(unsigned int *data, const unsigned int *data_end, Frame_IF *IF);
 unsigned int *fd_frame_AF_load(unsigned int *data, const unsigned int *data_end, Frame *frame);
 unsigned int *fd_frame_load(unsigned int *data, const unsigned int *data_end, Frame *frame, TempInfo *info);
-unsigned int *fd_sequence_load(unsigned int *data, const unsigned int *data_end, Sequence *seq, bool utf8);
-unsigned int *fd_main_load(unsigned int *data, const unsigned int *data_end, std::vector<Sequence> &sequences, unsigned int nsequences, bool utf8);
+unsigned int *fd_sequence_load(unsigned int *data, const unsigned int *data_end, Sequence *seq, bool utf8, bool *sawPDS2 = nullptr);
+// definedIds (optional) receives the ids whose content this file supplied:
+// a block with PDS2, or any block for a slot that had no frames yet.
+// fillOnly: blocks for slots that already have content are parsed and dropped
+// (fallback files such as UNI's BaseData, which must not override the
+// character's own patterns).
+// stubs (optional) receives name/flag-only entries that land on a slot that
+// already has frames from an earlier file.
+unsigned int *fd_main_load(unsigned int *data, const unsigned int *data_end, std::vector<Sequence> &sequences, unsigned int nsequences, bool utf8, std::vector<unsigned int> *definedIds = nullptr, bool fillOnly = false, std::map<unsigned int, Sequence> *stubs = nullptr);
 
 
 

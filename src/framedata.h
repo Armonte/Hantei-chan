@@ -1,6 +1,7 @@
 #ifndef FRAMEDATA_H_GUARD
 #define FRAMEDATA_H_GUARD
 
+#include <map>
 #include <string>
 #include <vector>
 #include <cstdint>
@@ -380,10 +381,29 @@ public:
 	std::shared_ptr<Ha4Container> m_ha4;
 	bool isHA4() const { return (bool)m_ha4; }
 
+	// Stacked loads (a .txt with several HA6 files): which file supplied each
+	// pattern, and which file index this character saves to. With an own file
+	// set, save() writes only the patterns that came from it plus the ones
+	// edited this session; patterns inherited from the other files in the
+	// stack are not baked into it (issue #71). -1 = write everything.
+	std::vector<int> m_origin;
+	// Per loaded file: name/flag-only entries that did not replace a pattern
+	// already defined by an earlier file (written back to that file on save).
+	std::vector<std::map<unsigned int, Sequence>> m_stubs;
+	int m_loadIndex = -1;
+	int m_ownFile = -1;
+	void setOwnFile(int fileIndex) { m_ownFile = fileIndex; }
+	int ownFile() const { return m_ownFile; }
+	// Number of patterns a save would take from other files in the stack.
+	int inheritedPatternCount() const;
+
 	void initEmpty(unsigned int count = 1000);
-	bool load(const char *filename, bool patch = false);
+	// patch: overlay onto what is loaded. fillOnly (with patch): only fill
+	// slots that have no content yet (fallback files, e.g. UNI BaseData).
+	bool load(const char *filename, bool patch = false, bool fillOnly = false);
 	bool save(const char *filename);  // Atomic; returns false on failure, never mutates data
 	bool save_modified_only(const char *filename);  // Save only modified sequences (atomic)
+	bool save_merged(const char *filename);  // Whole merged stack, ignoring the own-file filter (atomic)
 	bool load_commands(const char *filename); // cmdfile/cmd_framedata.cpp
 
 	//Probably unnecessary.
