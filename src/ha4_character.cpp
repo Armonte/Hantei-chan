@@ -29,7 +29,8 @@ std::string AttachCharacterResources(CharacterInstance &ch, const std::string &d
 {
 	auto cont = ch.frameData.m_ha4;
 	if (!cont) return {};
-	fs::path dat(datPath);
+	std::error_code aec;
+	fs::path dat = fs::absolute(fs::path(datPath), aec);
 	std::string summary;
 
 	// CG: the bank is embedded in the .DAT (same "BMP Cutter3" format as MBAACC .cg).

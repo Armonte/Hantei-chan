@@ -43,6 +43,7 @@ bool OldPatToParts(const uint8_t *blob, size_t size, Parts &parts, std::string *
 		auto &g = parts.gfxMeta[i];
 		g.id = (int)i;
 		if (tex[i].bgra.empty()) continue;
+		g.name = "tex" + std::to_string(i);   // PGNM; unnamed textures are not saved
 		memcpy(buf + cur, tex[i].bgra.data(), tex[i].bgra.size());
 		g.data = buf + cur;
 		g.w = g.h = tex[i].size;
@@ -95,7 +96,7 @@ bool OldPatToParts(const uint8_t *blob, size_t size, Parts &parts, std::string *
 			pr.flip = pt.flip;
 			pr.additive = pt.additive;
 			pr.filter = pt.linearFilter;
-			pr.priority = (float)pt.priority;
+			pr.priority = pt.priority + pt.partIndex / 1000.f;   // same sub-order as PrLoad
 			pr.bgra[0] = pt.colB; pr.bgra[1] = pt.colG; pr.bgra[2] = pt.colR; pr.bgra[3] = pt.colA;
 			pr.addColor[0] = pt.addB / 255.f; pr.addColor[1] = pt.addG / 255.f; pr.addColor[2] = pt.addR / 255.f;
 			pr.addColor[3] = 0.f;

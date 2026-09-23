@@ -54,7 +54,8 @@ static bool WriteBytes(const std::string &path, const void *d, size_t n)
 bool Convert(const FrameData &src, const std::string &datPath, const Options &opt, Report &rep)
 {
 	if (!src.m_ha4) { rep.lines.push_back("not HA4 data"); return false; }
-	fs::path dat(datPath);
+	std::error_code aec;
+	fs::path dat = fs::absolute(fs::path(datPath), aec);
 	std::string base = opt.baseName.empty() ? Lower(dat.stem().string()) : opt.baseName;
 	fs::path out = opt.outDir.empty() ? dat.parent_path() : fs::path(opt.outDir);
 	std::error_code ec;
@@ -100,11 +101,14 @@ bool Convert(const FrameData &src, const std::string &datPath, const Options &op
 		std::string pal = opt.palPath.empty() ? FindSibling(dat, ".pal") : opt.palPath;
 		if (!pal.empty()) {
 			rep.palPath = (out / (base + ".pal")).string();
-			if (fs::equivalent(pal, rep.palPath, ec)) {}
-			else if (!fs::copy_file(pal, rep.palPath, fs::copy_options::overwrite_existing, ec)) {
+			char *pd = nullptr; unsigned int pn = 0;
+			bool same = fs::equivalent(pal, rep.palPath, ec);
+			// (read + atomic write: MinGW's copy_file(overwrite_existing) fails on existing targets)
+			if (!same && !(ReadInMem(pal.c_str(), pd, pn) && WriteBytes(rep.palPath, pd, pn))) {
 				rep.lines.push_back("could not copy palette " + pal);
 				rep.palPath.clear();
 			}
+			delete[] pd;
 		} else {
 			rep.lines.push_back("pal: no .PAL next to the .DAT (the CG's built-in palette applies)");
 		}
