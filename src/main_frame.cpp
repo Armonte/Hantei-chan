@@ -10,6 +10,7 @@
 #include "framestate.h"
 #include "misc.h"
 #include "background/bg_inspector.h"
+#include "extension_profile.h"
 
 #include <imgui.h>
 #include <imgui_internal.h>

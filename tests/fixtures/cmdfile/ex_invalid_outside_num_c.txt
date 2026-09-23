@@ -1,0 +1,10 @@
+01 5A 00000000 00000000 1 0 0 0 0
+END
+
+[ExComCheck]
+Num = 1
+000_CheckNum = 1
+000_Type = 0
+001_CheckNum = 1
+001_Type = 0
+

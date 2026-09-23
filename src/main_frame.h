@@ -18,6 +18,7 @@
 #include "background/bg_file.h"
 #include "background/bg_renderer.h"
 #include "background/bg_types.h"
+#include "cmdfile/cmd_editor_ui.h"
 #include "shortcut_router.h"
 #include <imgui.h>
 #include <glm/mat4x4.hpp>
@@ -181,6 +182,13 @@ private:
 
 	AboutWindow aboutWindow;
 
+	// _c.txt command-file editor (ui/main_frame_cmdfile.cpp).
+	cmdfile::CommandFileEditor commandEditor;
+	void openCommandEditor(const std::string& path);
+	void openCommandEditorForActive();
+	void loadCommandsForActive(const std::string& path);
+	void drawCommandEditor();
+	bool m_commandShortcutsRegistered = false;
 	// ---- Editing tools (ui/editor_tools_impl.h) ----------------------------
 	ShortcutRouter shortcuts;
 	bool RunShortcut(ShortcutAction action);
