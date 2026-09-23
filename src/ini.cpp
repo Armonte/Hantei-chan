@@ -1,6 +1,7 @@
 #include "ini.h"
 #include "parts/parts.h"
 #include "misc.h"
+#include "extension_profile.h"
 #include <sstream>
 #include <iomanip>
 #include <string>
@@ -88,6 +89,7 @@ void InitIni()
 	ini_handler.ReadLineFn = ReadLine;
 	ini_handler.WriteAllFn = Write;
 	context.SettingsHandlers.push_back(ini_handler);
+	RegisterExtensionProfileSettings(context);
 	ImGui::LoadIniSettingsFromDisk(context.IO.IniFilename);
 }
 
