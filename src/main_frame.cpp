@@ -417,6 +417,7 @@ void MainFrame::DrawBack()
 		}
 
 		// Sort all layers (including main) by Z-priority before drawing
+		AddCompareLayers(view, active);  // pattern comparison overlay (#63)
 		render.SortLayersByZPriority(mainFrame.AF.priority);
 
 		// Draw all layers in Z-order
@@ -479,6 +480,7 @@ void MainFrame::DrawBack()
 		}
 
 		// Sort and draw all layers
+		AddCompareLayers(view, active);  // pattern comparison overlay (#63)
 		render.SortLayersByZPriority(mainFrame.AF.priority);
 		render.DrawLayers();
 

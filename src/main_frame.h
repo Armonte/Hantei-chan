@@ -228,12 +228,33 @@ private:
 	void drawPatternManagerWindow();
 	bool m_showNotes = false;
 	bool m_showKeyBindings = false;
+	bool m_showCompare = false;
 	int m_keyCapture = -1;   // binding index waiting for a key (Keyboard shortcuts window)
 	int m_textNavDir = 0;    // keyframe step requested from a text field
 public:
 	static wchar_t s_swallowChar; // WM_CHAR to drop (the key already acted as a shortcut)
 private:
 	void drawKeyBindingsWindow();
+public:
+	// Pattern comparison overlay (issue #63)
+	struct CompareState {
+		bool enabled = false;
+		CharacterInstance* character = nullptr;  // validated every frame
+		int pattern = 0;
+		int frame = 0;
+		bool followTick = true;     // step with the main view's tick
+		bool movement = false;      // offset by the simulated root movement difference
+		bool mirror = false;
+		int offsetX = 0, offsetY = 0;
+		float alpha = 0.55f;
+		float tint[3] = {1.0f, 0.55f, 0.55f};
+		bool boxes = true;
+		std::shared_ptr<preview::PreviewSim> sim;
+	};
+private:
+	CompareState m_compare;
+	void drawCompareWindow();
+	void AddCompareLayers(CharacterView* view, CharacterInstance* active);
 	void drawNotesWindow();
 	void markToolEdit(CharacterInstance* character);
 	void navigateActiveView(int pattern, int frame);
