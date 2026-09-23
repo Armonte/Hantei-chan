@@ -1,8 +1,10 @@
 #include "framestate.h"
 #include "framedata.h"
 #include "mv_script.h"
+#include "preview_sim.h"
 #include <tinyalloc.h>
 #include <tuple>
+#include <algorithm>
 #include <windows.h>
 
 constexpr const wchar_t *sharedMemHandleName = L"hanteichan-shared_mem";
@@ -263,6 +265,7 @@ std::vector<SpawnedPatternInfo> ParseSpawnedPatterns(const std::vector<Frame_EF>
 		SpawnedPatternInfo info;
 		info.effectIndex = static_cast<int>(i);
 		info.parentFrame = parentFrame;  // Tag with parent frame
+		info.parentPatternId = parentPatternId;
 
 		bool isSpawnEffect = false;
 
@@ -302,56 +305,43 @@ std::vector<SpawnedPatternInfo> ParseSpawnedPatterns(const std::vector<Frame_EF>
 			}
 
 			case 11:  // Spawn Random Pattern (absolute)
-			{
-				info.effectType = effect.type;
-				info.usesEffectHA6 = false;
-				info.patternId = effect.number;
-				info.randomRange = effect.parameters[0];
-				info.offsetX = effect.parameters[1];
-				info.offsetY = effect.parameters[2];
-				info.flagset1 = effect.parameters[3];
-				info.flagset2 = effect.parameters[4];
-				info.angle = effect.parameters[8];
-				info.projVarDecrease = effect.parameters[9];
-				isSpawnEffect = true;
-				break;
-			}
-
 			case 111: // Spawn Random Relative Pattern (offset from parent)
 			{
+				// MBAA Effect11_SpawnRandomPatterns 0x454E30: p1/p2 base offset,
+				// p3/p4 random rectangle (p4 == 30000: circle of radius p3),
+				// p5 pattern range, p6 count, p7/p8 flagsets, p9 angle +
+				// rand(p10), p11 projectile var. (1-based pN = parameters[N-1])
 				info.effectType = effect.type;
 				info.usesEffectHA6 = false;
-				// FIX: For relative spawn, add offset to parent pattern ID
-				info.patternId = parentPatternId + effect.number;
-				info.randomRange = effect.parameters[0];
-				info.offsetX = effect.parameters[1];
-				info.offsetY = effect.parameters[2];
-				info.flagset1 = effect.parameters[3];
-				info.flagset2 = effect.parameters[4];
+				info.patternId = effect.number + (effect.type == 111 ? parentPatternId : 0);
+				info.offsetX = effect.parameters[0];
+				info.offsetY = effect.parameters[1];
+				info.randomRange = effect.parameters[4];
+				info.flagset1 = effect.parameters[6];
+				info.flagset2 = effect.parameters[7];
 				info.angle = effect.parameters[8];
-				info.projVarDecrease = effect.parameters[9];
+				info.projVarDecrease = effect.parameters[10];
 				isSpawnEffect = true;
 				break;
 			}
 
-			case 8:   // Spawn Actor (effect.ha6) - similar to type 1
+			case 8:   // Spawn Actor (effect.ha6)
+			case 108: // Spawn Relative Actor (effect.ha6; 100 < type < 1000 is relative)
 			{
+				// MBAA Effect8_SpawnEffectHa6Actor 0x4551B0 passes the EF record
+				// straight to Effect_InitializeComplex: same layout as EF1,
+				// including the angle in p8.
 				info.effectType = effect.type;
-				info.usesEffectHA6 = true;  // Type 8 uses effect.ha6
-				info.patternId = effect.number;
+				info.usesEffectHA6 = true;
+				info.patternId = effect.number + (effect.type == 108 ? parentPatternId : 0);
 				info.offsetX = effect.parameters[0];
 				info.offsetY = effect.parameters[1];
 				info.flagset1 = effect.parameters[2];
 				info.flagset2 = effect.parameters[3];
-				info.angle = 0;
-				info.projVarDecrease = 0;
+				info.angle = effect.parameters[7];
+				info.projVarDecrease = effect.parameters[8];
 				info.randomRange = 0;
 				isSpawnEffect = true;
-
-				// Debug: Log Effect Type 8 usage (commented out to reduce spam)
-				// printf("[Effect 8] Parent pattern %d spawning effect.ha6 pattern %d\n",
-				// 	   parentPatternId, info.patternId);
-
 				break;
 			}
 
@@ -372,17 +362,17 @@ std::vector<SpawnedPatternInfo> ParseSpawnedPatterns(const std::vector<Frame_EF>
 				break;
 			}
 
-			case 1000: // Spawn and Follow (Dust of Osiris, Sion)
+			case 1000: // Spawn once (Effect1_SpawnPattern: EF1 layout, guarded by var p6)
 			{
 				info.effectType = effect.type;
 				info.usesEffectHA6 = false;
 				info.patternId = effect.number;
-				info.offsetX = 0;
-				info.offsetY = 0;
-				info.flagset1 = 0;
-				info.flagset2 = 0;
-				info.angle = 0;
-				info.projVarDecrease = 0;
+				info.offsetX = effect.parameters[0];
+				info.offsetY = effect.parameters[1];
+				info.flagset1 = effect.parameters[2];
+				info.flagset2 = effect.parameters[3];
+				info.angle = effect.parameters[7];
+				info.projVarDecrease = effect.parameters[8];
 				info.randomRange = 0;
 				isSpawnEffect = true;
 				break;
@@ -410,7 +400,9 @@ std::vector<SpawnedPatternInfo> ParseSpawnedPatterns(const std::vector<Frame_EF>
 	return spawned;
 }
 
-// Helper to calculate tick position from frame number
+// First tick the runtime flow enters frameNum (the tick simulator's root
+// track: engine loop rules, native IFs, runtime IFs assumed false). Frames the
+// flow never reaches fall back to the authored start tick.
 int CalculateTickFromFrame(FrameData* frameData, int patternId, int frameNum)
 {
 	if (!frameData) return 0;
@@ -418,120 +410,24 @@ int CalculateTickFromFrame(FrameData* frameData, int patternId, int frameNum)
 	auto seq = frameData->get_sequence(patternId);
 	if (!seq || seq->frames.empty()) return 0;
 
-	// Clamp frame number
 	if (frameNum < 0) frameNum = 0;
-	if (frameNum >= seq->frames.size()) frameNum = seq->frames.size() - 1;
+	if (frameNum >= (int)seq->frames.size()) frameNum = (int)seq->frames.size() - 1;
 
-	// Sum durations of all frames before this one
+	// Root flow only: spawned children never influence it, so no effect data.
+	// One cached simulator (UI thread): repeated calls for the same pattern,
+	// e.g. while dragging the frame slider, reuse its checkpoints.
+	static preview::PreviewSim s_rootFlowSim;
+	preview::Options o;
+	o.horizonTicks = 3000;
+	o.maxActors = 64;
+	s_rootFlowSim.setInputs(frameData, nullptr, patternId, o);
+	int t = s_rootFlowSim.firstTickOfRootFrame(frameNum);
+	if (t >= 0) return t;
+
 	int tick = 0;
-	for (int i = 0; i < frameNum && i < seq->frames.size(); i++) {
-		tick += seq->frames[i].AF.duration;
-	}
-
+	for (int i = 0; i < frameNum; i++)
+		tick += std::max(1, seq->frames[i].AF.duration);
 	return tick;
-}
-
-// Simulate animation flow from tick 0 to target tick, following loops/jumps
-// Returns the frame that would be active at the target tick
-int SimulateAnimationFlow(FrameData* frameData, int patternId, int targetTick)
-{
-	if (!frameData) return 0;
-
-	auto seq = frameData->get_sequence(patternId);
-	if (!seq || seq->frames.empty()) return 0;
-
-	if (targetTick < 0) return 0;
-
-	int currentFrame = 0;
-	int currentTick = 0;
-	int loopCounter = 0;
-	int frameDuration = 0;
-	const int MAX_ITERATIONS = 100000; // Safety limit
-	int iterations = 0;
-
-	// Initialize loop counter from first frame if it has one
-	if (!seq->frames.empty() && seq->frames[0].AF.loopCount > 0) {
-		loopCounter = seq->frames[0].AF.loopCount;
-	}
-
-	while (currentTick < targetTick && iterations < MAX_ITERATIONS) {
-		iterations++;
-
-		// Get current frame data
-		if (currentFrame < 0 || currentFrame >= seq->frames.size()) {
-			// Invalid frame - return last valid frame
-			return seq->frames.size() - 1;
-		}
-
-		auto& frame = seq->frames[currentFrame];
-		int frameDur = frame.AF.duration;
-		if (frameDur <= 0) frameDur = 1; // Safety
-
-		// Check if we need to advance to next frame
-		if (frameDuration >= frameDur) {
-			// Time to advance frame
-			frameDuration = 0;
-
-			// Calculate next frame based on animation type
-			int nextFrame = currentFrame;
-
-			if (frame.AF.aniType == 1) {
-				// Sequential advance
-				if (currentFrame + 1 >= seq->frames.size()) {
-					// Reached end - stop
-					return currentFrame;
-				} else {
-					nextFrame = currentFrame + 1;
-				}
-			}
-			else if (frame.AF.aniType == 2) {
-				// Jump/loop logic
-				if ((frame.AF.aniFlag & 0x2) && loopCounter < 0) {
-					// Loop count exhausted - use loopEnd
-					if (frame.AF.aniFlag & 0x8) {
-						nextFrame = currentFrame + frame.AF.loopEnd;
-					} else {
-						nextFrame = frame.AF.loopEnd;
-					}
-				} else {
-					// Decrement loop counter if needed
-					if (frame.AF.aniFlag & 0x2) {
-						loopCounter--;
-					}
-					// Jump to next frame
-					if (frame.AF.aniFlag & 0x4) {
-						nextFrame = currentFrame + frame.AF.jump;
-					} else {
-						nextFrame = frame.AF.jump;
-					}
-				}
-			} else {
-				// aniType 0 or other - stop animation
-				return currentFrame;
-			}
-
-			// Update loop counter from new frame if it has one
-			if (nextFrame >= 0 && nextFrame < seq->frames.size()) {
-				if (seq->frames[nextFrame].AF.loopCount > 0) {
-					loopCounter = seq->frames[nextFrame].AF.loopCount;
-				}
-			}
-
-			currentFrame = nextFrame;
-		} else {
-			// Still in current frame - advance tick
-			int ticksToAdvance = std::min(frameDur - frameDuration, targetTick - currentTick);
-			frameDuration += ticksToAdvance;
-			currentTick += ticksToAdvance;
-		}
-	}
-
-	// Safety: if we hit max iterations, return current frame
-	if (iterations >= MAX_ITERATIONS) {
-		printf("[WARNING] SimulateAnimationFlow hit max iterations for pattern %d at tick %d\n", patternId, targetTick);
-	}
-
-	return currentFrame;
 }
 
 // Find loop period by simulating animation flow and detecting when we return to frame 0
@@ -543,25 +439,9 @@ int FindLoopPeriod(FrameData* frameData, int patternId, int maxTicks)
 	auto seq = frameData->get_sequence(patternId);
 	if (!seq || seq->frames.empty()) return 0;
 	
-	// Check if pattern actually loops (aniType 2 on last frame)
-	bool patternLoops = false;
-	if (!seq->frames.empty()) {
-		auto& lastFrame = seq->frames.back();
-		patternLoops = (lastFrame.AF.aniType == 2);
-	}
-	
-	if (!patternLoops) {
-		// Non-looping pattern - calculate total duration
-		int totalDuration = 0;
-		for (int i = 0; i < seq->frames.size(); i++) {
-			int dur = seq->frames[i].AF.duration;
-			if (dur <= 0) dur = 1;
-			totalDuration += dur;
-		}
-		return totalDuration;
-	}
-	
-	// For looping patterns, simulate animation flow and detect when we return to frame 0
+	// Follow the reachable control flow. A go-to can close a cycle long before
+	// the last physical frame (later frames may be alternate branches), so the
+	// last frame's aniType does not decide whether the pattern loops.
 	// Track (frame, loopCounter) state to detect true loops
 	struct AnimationState {
 		int frame;
@@ -584,19 +464,16 @@ int FindLoopPeriod(FrameData* frameData, int patternId, int maxTicks)
 	}
 	
 	for (int i = 0; i < maxTicks; i++) {
-		// Check if we've seen this animation state before
-		AnimationState currentState = {currentFrame, loopCounter};
-		if (stateToTick.find(currentState) != stateToTick.end()) {
-			// Found a cycle! Return the period
-			int firstTick = stateToTick[currentState];
-			int period = currentTick - firstTick;
-			if (period > 0) {
-				return period;
-			}
-		}
-		
-		// Record this state (only at frame boundaries to avoid duplicates)
+		// Compare and record states only at frame boundaries: a frame keeps
+		// the same (frame, loopCounter) for its whole duration, so checking
+		// every tick reported any multi-tick first frame as a 1-tick loop.
 		if (frameDuration == 0) {
+			AnimationState currentState = {currentFrame, loopCounter};
+			auto seen = stateToTick.find(currentState);
+			if (seen != stateToTick.end()) {
+				const int period = currentTick - seen->second;
+				if (period > 0) return period;
+			}
 			stateToTick[currentState] = currentTick;
 		}
 		
@@ -660,444 +537,7 @@ int FindLoopPeriod(FrameData* frameData, int patternId, int maxTicks)
 		}
 	}
 	
-	return 0;  // No loop detected
-}
-
-// Simulate animation flow and collect all spawn ticks (including loop iterations and nested spawns)
-// This is the source of truth for timeline visualization
-std::map<int, std::vector<int>> CollectAllSpawnTicks(
-	FrameData* mainFrameData,
-	FrameData* effectFrameData,
-	int patternId,
-	int maxTicks,
-	bool isEffectHA6,
-	int parentSpawnTick,
-	int recursionDepth)
-{
-	std::map<int, std::vector<int>> spawnTicks;  // compositeKey -> vector of spawn ticks
-
-	FrameData* sourceData = isEffectHA6 ? effectFrameData : mainFrameData;
-	if (!sourceData) return spawnTicks;
-
-	auto seq = sourceData->get_sequence(patternId);
-	if (!seq || seq->frames.empty()) return spawnTicks;
-
-	// Merge MBTL move-script spawns (mv_script.h) for the root pattern with
-	// frame-accurate ticks (script frame-ID gates matched against AFIDs).
-	if (recursionDepth == 0 && !isEffectHA6) {
-		std::vector<ScriptSpawnNode> nodes;
-		EnumerateScriptSpawnNodes(mainFrameData, patternId, nodes);
-		for (const auto& node : nodes) {
-			if (node.isImpact)
-				continue; // markers have no pattern rows
-			int compositeKey = node.patternId * 2;
-			int spawnTick = parentSpawnTick + node.tick;
-			spawnTicks[compositeKey].push_back(spawnTick);
-			// Collect the spawned pattern's own ha6 spawns too.
-			auto nested = CollectAllSpawnTicks(
-				mainFrameData, effectFrameData, node.patternId,
-				maxTicks, false, spawnTick, recursionDepth + 1);
-			for (const auto& nestedPair : nested) {
-				spawnTicks[nestedPair.first].insert(
-					spawnTicks[nestedPair.first].end(),
-					nestedPair.second.begin(),
-					nestedPair.second.end());
-			}
-		}
-	}
-	
-	int currentFrame = 0;
-	int currentTick = 0;
-	int loopCounter = 0;
-	int frameDuration = 0;
-	int lastFrameEntered = -1;  // Track when we enter a new frame
-	
-	// Initialize loop counter
-	if (!seq->frames.empty() && seq->frames[0].AF.loopCount > 0) {
-		loopCounter = seq->frames[0].AF.loopCount;
-	}
-	
-	// Track visited states to detect infinite loops
-	struct AnimationState {
-		int frame;
-		int loopCounter;
-		bool operator<(const AnimationState& other) const {
-			if (frame != other.frame) return frame < other.frame;
-			return loopCounter < other.loopCounter;
-		}
-	};
-	std::set<AnimationState> visitedStates;
-	
-	const int MAX_ITERATIONS = 100000; // Safety limit
-	int iterations = 0;
-	
-	while (currentTick < maxTicks && iterations < MAX_ITERATIONS) {
-		iterations++;
-		
-		// Don't break on infinite loops - we want to collect all spawn ticks including loop iterations
-		// Just track states to avoid infinite recursion in nested spawns
-		AnimationState currentState = {currentFrame, loopCounter};
-		if (visitedStates.find(currentState) != visitedStates.end() && visitedStates.size() > 10) {
-			// We've seen this state before and collected enough data - continue but don't break
-			// This allows us to collect spawns from multiple loop iterations
-		}
-		visitedStates.insert(currentState);
-		
-		// Check if we just entered a new frame (frame boundary)
-		if (currentFrame != lastFrameEntered && frameDuration == 0) {
-			lastFrameEntered = currentFrame;
-			
-			// Check if this frame has spawn effects
-			if (currentFrame >= 0 && currentFrame < seq->frames.size()) {
-				auto& frame = seq->frames[currentFrame];
-				if (!frame.EF.empty()) {
-					// Parse spawn effects
-					auto frameSpawns = ParseSpawnedPatterns(frame.EF, currentFrame, patternId);
-					
-					// Record spawn ticks for each spawn
-					// Use a composite key (patternId + usesEffectHA6 flag) to distinguish
-					// between main pattern spawns and effect.ha6 spawns with same patternId
-					for (const auto& spawn : frameSpawns) {
-						// Create composite key: patternId * 2 + (usesEffectHA6 ? 1 : 0)
-						// This ensures main pattern 20 and effect.ha6 pattern 20 are stored separately
-						int compositeKey = spawn.patternId * 2 + (spawn.usesEffectHA6 ? 1 : 0);
-						
-						// Calculate spawn tick (current tick when we enter this frame, relative to parent)
-						int absoluteSpawnTick = parentSpawnTick + currentTick;
-						spawnTicks[compositeKey].push_back(absoluteSpawnTick);
-						
-						// Recursively collect spawns from nested patterns
-						// Only recurse if the spawned pattern exists and we haven't gone too deep
-						if (!spawn.isPresetEffect && currentTick < maxTicks - 100) {
-							FrameData* nestedSourceData = spawn.usesEffectHA6 ? effectFrameData : mainFrameData;
-							if (nestedSourceData) {
-								auto nestedSeq = nestedSourceData->get_sequence(spawn.patternId);
-								if (nestedSeq && !nestedSeq->frames.empty()) {
-									// Calculate how long this nested pattern runs
-									int nestedMaxTicks = spawn.lifetime < 9999 ? spawn.lifetime : maxTicks - currentTick;
-									if (nestedMaxTicks > 0) {
-										// Recursively collect spawns from nested pattern
-										auto nestedSpawns = CollectAllSpawnTicks(
-											mainFrameData, effectFrameData, spawn.patternId,
-											nestedMaxTicks, spawn.usesEffectHA6, absoluteSpawnTick,
-											recursionDepth + 1);
-										
-										// Merge nested spawns into our result
-										for (const auto& nestedPair : nestedSpawns) {
-											spawnTicks[nestedPair.first].insert(
-												spawnTicks[nestedPair.first].end(),
-												nestedPair.second.begin(),
-												nestedPair.second.end()
-											);
-										}
-									}
-								}
-							}
-						}
-					}
-				}
-			}
-		}
-		
-		// Advance animation using actual Hantei logic
-		if (currentFrame < 0 || currentFrame >= seq->frames.size()) {
-			break;
-		}
-		
-		auto& frame = seq->frames[currentFrame];
-		int frameDur = frame.AF.duration;
-		if (frameDur <= 0) frameDur = 1;
-		
-		if (frameDuration >= frameDur) {
-			frameDuration = 0;
-			
-			// Calculate next frame
-			int nextFrame = currentFrame;
-			if (frame.AF.aniType == 1) {
-				if (currentFrame + 1 >= seq->frames.size()) {
-					break;  // Reached end
-				}
-				nextFrame = currentFrame + 1;
-			}
-			else if (frame.AF.aniType == 2) {
-				if ((frame.AF.aniFlag & 0x2) && loopCounter < 0) {
-					if (frame.AF.aniFlag & 0x8) {
-						nextFrame = currentFrame + frame.AF.loopEnd;
-					} else {
-						nextFrame = frame.AF.loopEnd;
-					}
-				} else {
-					if (frame.AF.aniFlag & 0x2) {
-						loopCounter--;
-					}
-					if (frame.AF.aniFlag & 0x4) {
-						nextFrame = currentFrame + frame.AF.jump;
-					} else {
-						nextFrame = frame.AF.jump;
-					}
-				}
-			} else {
-				break;  // aniType 0 - stops
-			}
-			
-			if (nextFrame >= 0 && nextFrame < seq->frames.size()) {
-				if (seq->frames[nextFrame].AF.loopCount > 0) {
-					loopCounter = seq->frames[nextFrame].AF.loopCount;
-				}
-			}
-			
-			currentFrame = nextFrame;
-		} else {
-			frameDuration++;
-			currentTick++;
-		}
-	}
-	
-	return spawnTicks;
-}
-
-// Helper to calculate frame from tick position
-int CalculateFrameFromTick(FrameData* frameData, int patternId, int tick)
-{
-	// Use flow simulation to properly handle loops/jumps
-	return SimulateAnimationFlow(frameData, patternId, tick);
-}
-
-// Simulate animation and create spawns up to target tick (for seeking)
-// Populates activeSpawns with spawns that would exist at targetTick
-void SimulateSpawnsToTick(
-	FrameData* mainFrameData,
-	FrameData* effectFrameData,
-	int patternId,
-	int targetTick,
-	std::vector<ActiveSpawnInstance>& activeSpawns)
-{
-	if (!mainFrameData) return;
-	
-	auto seq = mainFrameData->get_sequence(patternId);
-	if (!seq || seq->frames.empty()) return;
-	
-	// Clear existing spawns
-	activeSpawns.clear();
-	
-	// Simulate animation from tick 0 to targetTick, creating spawns as we go
-	int currentFrame = 0;
-	int currentTick = 0;
-	int loopCounter = 0;
-	int frameDuration = 0;
-	int lastFrameEntered = -1;
-	
-	// Initialize loop counter
-	if (!seq->frames.empty() && seq->frames[0].AF.loopCount > 0) {
-		loopCounter = seq->frames[0].AF.loopCount;
-	}
-	
-	// Track spawns by composite key to avoid duplicates. The key includes the
-	// EF index so two spawn effects of the same pattern on the same frame both
-	// get instances (an int-packed patternId*2e6 key collapsed them and also
-	// overflowed for patternId >= ~1074).
-	std::set<std::tuple<int, int, int, int>> createdSpawnKeys;  // (patternId, usesEffectHA6, effectIndex, tick)
-	
-	while (currentTick <= targetTick) {
-		// Check if we just entered a frame (frame boundary)
-		// We need to create spawns every time we enter a frame, even if we've seen it before (loops)
-		if (frameDuration == 0) {
-			// Only create spawns if this is actually a new frame entry (not just continuing in the same frame)
-			bool isNewFrameEntry = (currentFrame != lastFrameEntered);
-			lastFrameEntered = currentFrame;
-			
-			if (isNewFrameEntry) {
-			
-			// Check if this frame has spawn effects
-			if (currentFrame >= 0 && currentFrame < seq->frames.size()) {
-				auto& frame = seq->frames[currentFrame];
-				if (!frame.EF.empty()) {
-					// Parse spawn effects
-					auto frameSpawns = ParseSpawnedPatterns(frame.EF, currentFrame, patternId);
-					
-					// Create spawn instances for each spawn
-					for (const auto& spawn : frameSpawns) {
-						auto spawnKey = std::make_tuple(spawn.patternId, spawn.usesEffectHA6 ? 1 : 0, spawn.effectIndex, currentTick);
-
-						// Only create if we haven't already created this spawn at this tick
-						if (createdSpawnKeys.find(spawnKey) == createdSpawnKeys.end()) {
-							createdSpawnKeys.insert(spawnKey);
-							
-							ActiveSpawnInstance instance;
-							instance.spawnTick = currentTick;
-							instance.patternId = spawn.patternId;
-							instance.usesEffectHA6 = spawn.usesEffectHA6;
-							instance.isPresetEffect = spawn.isPresetEffect;
-							instance.offsetX = spawn.offsetX;
-							instance.offsetY = spawn.offsetY;
-							instance.flagset1 = spawn.flagset1;
-							instance.flagset2 = spawn.flagset2;
-							instance.angle = spawn.angle;
-							instance.projVarDecrease = spawn.projVarDecrease;
-							instance.parentFrame = currentFrame;
-							instance.tintColor = spawn.tintColor;
-							instance.alpha = 1.0f;
-							instance.currentFrame = 0;
-							instance.frameDuration = 0;
-							instance.previousFrame = -1;
-							instance.loopCounter = 0;
-							
-							// Initialize loop counter and calculate current frame for spawned pattern
-							if (!instance.isPresetEffect) {
-								FrameData* sourceData = instance.usesEffectHA6 ? effectFrameData : mainFrameData;
-								if (sourceData) {
-									auto spawnSeq = sourceData->get_sequence(instance.patternId);
-									if (spawnSeq && !spawnSeq->frames.empty()) {
-										instance.loopCounter = spawnSeq->frames[0].AF.loopCount;
-										
-										// Calculate how many ticks have elapsed for this spawn
-										int elapsedTicks = targetTick - currentTick;
-										if (elapsedTicks > 0) {
-											// Simulate the spawned pattern to find its current frame
-											instance.currentFrame = SimulateAnimationFlow(sourceData, instance.patternId, elapsedTicks);
-											// Calculate frame duration by simulating backwards
-											// For now, just set a reasonable value
-											instance.frameDuration = elapsedTicks;
-										}
-									}
-								}
-							}
-							
-							activeSpawns.push_back(instance);
-						}
-					}
-				}
-			}
-			}
-		}
-		
-		// Advance animation
-		if (currentFrame < 0 || currentFrame >= seq->frames.size()) {
-			break;
-		}
-		
-		auto& frame = seq->frames[currentFrame];
-		int frameDur = frame.AF.duration;
-		if (frameDur <= 0) frameDur = 1;
-		
-		if (frameDuration >= frameDur) {
-			frameDuration = 0;
-			
-			// Calculate next frame
-			int nextFrame = currentFrame;
-			if (frame.AF.aniType == 1) {
-				if (currentFrame + 1 >= seq->frames.size()) {
-					break;
-				}
-				nextFrame = currentFrame + 1;
-			}
-			else if (frame.AF.aniType == 2) {
-				if ((frame.AF.aniFlag & 0x2) && loopCounter < 0) {
-					if (frame.AF.aniFlag & 0x8) {
-						nextFrame = currentFrame + frame.AF.loopEnd;
-					} else {
-						nextFrame = frame.AF.loopEnd;
-					}
-				} else {
-					if (frame.AF.aniFlag & 0x2) {
-						loopCounter--;
-					}
-					if (frame.AF.aniFlag & 0x4) {
-						nextFrame = currentFrame + frame.AF.jump;
-					} else {
-						nextFrame = frame.AF.jump;
-					}
-				}
-			} else {
-				break;
-			}
-			
-			if (nextFrame >= 0 && nextFrame < seq->frames.size()) {
-				if (seq->frames[nextFrame].AF.loopCount > 0) {
-					loopCounter = seq->frames[nextFrame].AF.loopCount;
-				}
-			}
-			
-			currentFrame = nextFrame;
-			// Reset lastFrameEntered when we change frames so we can detect re-entry on loops
-			lastFrameEntered = -1;
-		} else {
-			frameDuration++;
-			currentTick++;
-		}
-	}
-
-	// Add MBTL move-script spawns (mv_script.h) with frame-accurate spawn
-	// ticks; they advance/expire like other spawns via the fix-up pass below.
-	// Impact-effect markers become preset-style instances (crosshair only).
-	{
-		std::vector<ScriptSpawnNode> nodes;
-		EnumerateScriptSpawnNodes(mainFrameData, patternId, nodes);
-		for (const auto& node : nodes) {
-			ActiveSpawnInstance instance;
-			instance.spawnTick = node.tick;
-			instance.patternId = node.patternId;
-			instance.usesEffectHA6 = false;
-			instance.isPresetEffect = node.isImpact;
-			instance.offsetX = node.offsetX;
-			instance.offsetY = node.offsetY;
-			instance.parentFrame = node.frameInParent;
-			instance.alpha = 1.0f;
-			instance.currentFrame = 0;
-			instance.frameDuration = 0;
-			instance.previousFrame = -1;
-			if (!node.isImpact) {
-				auto ssSeq = mainFrameData->get_sequence(node.patternId);
-				if (!ssSeq || ssSeq->frames.empty())
-					continue;
-				instance.loopCounter = ssSeq->frames[0].AF.loopCount;
-			}
-			activeSpawns.push_back(instance);
-		}
-	}
-
-	// Now advance all spawns to their correct frames at targetTick
-	for (auto& spawn : activeSpawns) {
-		if (spawn.isPresetEffect) continue;
-
-		int elapsedTicks = targetTick - spawn.spawnTick;
-		if (elapsedTicks < 0) {
-			// Spawn hasn't happened yet - remove it
-			spawn.currentFrame = -1;
-			continue;
-		}
-
-		FrameData* sourceData = spawn.usesEffectHA6 ? effectFrameData : mainFrameData;
-		if (sourceData) {
-			// A finished non-looping spawn must be removed, not left frozen on
-			// its last frame: SimulateAnimationFlow never returns -1 for valid
-			// sequences, so check the pattern's total duration explicitly.
-			auto spawnSeq = sourceData->get_sequence(spawn.patternId);
-			if (spawnSeq && !spawnSeq->frames.empty()) {
-				bool loops = (spawnSeq->frames.back().AF.aniType == 2);
-				if (!loops) {
-					int totalDuration = 0;
-					for (const auto& fr : spawnSeq->frames)
-						totalDuration += (fr.AF.duration > 0 ? fr.AF.duration : 1);
-					if (elapsedTicks >= totalDuration) {
-						spawn.currentFrame = -1;
-						continue;
-					}
-				}
-			}
-			// Simulate the spawned pattern to find its current frame
-			spawn.currentFrame = SimulateAnimationFlow(sourceData, spawn.patternId, elapsedTicks);
-		}
-	}
-	
-	// Remove invalid spawns
-	for (auto it = activeSpawns.begin(); it != activeSpawns.end(); ) {
-		if (it->currentFrame < 0) {
-			it = activeSpawns.erase(it);
-		} else {
-			++it;
-		}
-	}
+	return std::max(1, currentTick);  // no cycle: duration of the reachable path
 }
 
 // Recursive function to build full spawn tree
@@ -1374,4 +814,64 @@ void BuildSpawnTreeRecursive(
 
 	// Remove pattern from visited set (allow it to be spawned in different branches)
 	visitedPatterns.erase(patternId);
+}
+
+// ---------------------------------------------------------------------------
+// Preview simulator binding
+// ---------------------------------------------------------------------------
+
+preview::PreviewSim& FrameState::BindPreviewSim(FrameData* mainData, FrameData* effectData)
+{
+	if (!previewSim)
+		previewSim = std::make_shared<preview::PreviewSim>();
+
+	// MBTL move-script spawns become scheduled spawns (same frame-ID timing
+	// the spawn tree uses). Rebuilt when the pattern or data changes.
+	const uint64_t version = mainData ? mainData->dataVersion : 0;
+	if (mainData != scheduleData || pattern != schedulePattern || version != scheduleVersion) {
+		scheduleData = mainData;
+		schedulePattern = pattern;
+		scheduleVersion = version;
+		scriptSchedule.clear();
+		if (mainData) {
+			std::vector<ScriptSpawnNode> nodes;
+			EnumerateScriptSpawnNodes(mainData, pattern, nodes);
+			for (const auto& n : nodes) {
+				preview::ScheduledSpawn e;
+				e.tick = n.tick;
+				e.patternId = n.isImpact ? -1 : n.patternId;
+				e.isMarker = n.isImpact;
+				// Own offset: script nodes accumulate parent + own offsets.
+				e.offsetX = n.src ? n.src->offsetX : n.offsetX;
+				e.offsetY = n.src ? n.src->offsetY : n.offsetY;
+				e.parentIndex = n.parentIndex;
+				scriptSchedule.push_back(e);
+			}
+		}
+	}
+
+	preview::Options o = previewOptions;
+	// The half-scale PAT owner rule is MBAA's; UNI/MBTL data keeps 1:1.
+	o.patOwnerHalfScale = previewOptions.patOwnerHalfScale && mainData && !mainData->usesUniFormat();
+	previewSim->setInputs(mainData, effectData, pattern, o, scriptSchedule);
+	return *previewSim;
+}
+
+const SpawnedPatternInfo* FindSpawnTreeEntry(const std::vector<SpawnedPatternInfo>& tree,
+	int srcPattern, int srcFrame, int srcEffectIndex, bool effectHa6, bool isScript, int pattern)
+{
+	const SpawnedPatternInfo* fallback = nullptr;
+	for (const auto& sp : tree) {
+		if (isScript) {
+			if (sp.isScriptSpawn && sp.patternId == pattern) return &sp;
+			continue;
+		}
+		if (sp.isScriptSpawn) continue;
+		if (sp.parentPatternId == srcPattern && sp.parentFrame == srcFrame &&
+		    sp.effectIndex == srcEffectIndex && sp.usesEffectHA6 == effectHa6)
+			return &sp;
+		if (!fallback && sp.patternId == pattern && sp.usesEffectHA6 == effectHa6)
+			fallback = &sp;
+	}
+	return fallback;
 }

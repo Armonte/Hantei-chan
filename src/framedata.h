@@ -369,6 +369,9 @@ public:
 
 	bool		m_loaded;
 	std::vector<Sequence> m_sequences;
+	// Changes (to a process-unique value) on load/free and in mark_modified().
+	// Caches keyed on pattern data (e.g. the preview simulator) compare it.
+	uint64_t	dataVersion = 0;
 	std::vector<Command> m_commands;
 	std::string m_commandsPath;     // _c.txt the command table came from (empty = none)
 
