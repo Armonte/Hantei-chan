@@ -20,6 +20,23 @@ namespace bg {
 }
 
 // Layer information for multi-layer rendering
+// Draw bucket of an AF layer, as the UNI2/MBTL renderer computes it
+// (Han6Object_Draw / Han6Draw_DrawLayer, MBTL.exe 0x596FA0 / 0x4A0070):
+// the layer is submitted to drawctx bucket[AFPL], where bucket 0 is the
+// object's priority + 256, 1 = 403, 2 = 338, 3 = object + 258 (just in
+// front), 4 = object + 254 (just behind). Buckets draw in ascending order;
+// inside a bucket the frame's layers draw 0 first (bottom) to last (top).
+inline int LayerDrawBucket(int afpl, int objectPriority)
+{
+	switch (afpl) {
+	case 1: return 403;
+	case 2: return 338;
+	case 3: return objectPriority + 258;
+	case 4: return objectPriority + 254;
+	default: return objectPriority + 256;
+	}
+}
+
 struct RenderLayer {
 	int spriteId;
 	int spawnOffsetX, spawnOffsetY;  // Offset from spawn parameters
@@ -40,6 +57,9 @@ struct RenderLayer {
 	// Spawn flags for positioning behavior
 	int spawnFlagset1;     // From effect parameters[2]
 	int spawnFlagset2;     // From effect parameters[3]
+
+	// PUPS of the pattern this layer belongs to: selects <cg>_pN.pal (issue #76).
+	int pups = 0;
 
 	RenderLayer() :
 		spriteId(-1), spawnOffsetX(0), spawnOffsetY(0),
@@ -112,6 +132,8 @@ private:
 	void SetBlendingMode();
 
 public:
+	// Switch to <cg>_pN.pal for layers of patterns with PUPS N (issue #76).
+	bool followPups = true;
 	bool filter;
 	int x, offsetX;
 	int y, offsetY;

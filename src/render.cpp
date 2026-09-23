@@ -1007,6 +1007,11 @@ void Render::DrawCgLayerItem(const RenderLayer& layer, const float* baseColorRgb
 	colorRgba[2] = layer.tintColor.b * baseColorRgba[2];
 	colorRgba[3] = layer.alpha * baseColorRgba[3];
 
+	// PUPS palette file of this layer's pattern (issue #76). Indexed sprites
+	// pick the palette up in the shader; baked ones need a re-bake.
+	if (cg && followPups && cg->setPupsBank(layer.pups))
+		curImageId = -1;
+
 	SwitchImage(layer.spriteId);
 	DrawSpriteOnly(false);
 }
@@ -1100,6 +1105,14 @@ void Render::DrawLayers()
 		glUniform1f(lAlphaS, 0.3f);
 		vGeometry.DrawQuads(GL_TRIANGLE_FAN, quadsToDraw);
 		glDepthMask(GL_TRUE);
+	}
+
+	// Back to the base palette file for anything drawn outside the layers.
+	for (const auto& layer : renderLayers) {
+		if (layer.sourceCG && layer.sourceCG->pupsBank() != 0) {
+			layer.sourceCG->setPupsBank(0);
+			if (layer.sourceCG == cg) curImageId = -1;
+		}
 	}
 
 	// Restore original CG and Parts
