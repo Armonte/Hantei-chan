@@ -47,6 +47,7 @@ add_executable(${EXE}
 	src/ha4_character.cpp
 	src/startup_args.cpp
 	src/framestate.cpp
+	src/copy_data.cpp
 	src/preview_sim.cpp
 	src/mv_script.cpp
 	src/character_instance.cpp
@@ -312,6 +313,18 @@ if(MINGW)
 	target_link_options(pattern_search_test PRIVATE -static-libgcc -static-libstdc++ -static)
 endif()
 add_test(NAME pattern_search COMMAND pattern_search_test WORKING_DIRECTORY ${CMAKE_SOURCE_DIR})
+# shared_clipboard_test: cross-instance copy/paste through the shared heap (issue #8).
+add_executable(shared_clipboard_test
+	tests/shared_clipboard_test.cpp
+	src/copy_data.cpp
+	tinyalloc/tinyalloc.c
+)
+target_include_directories(shared_clipboard_test PRIVATE "." "src" "third_party" "tinyalloc")
+target_compile_definitions(shared_clipboard_test PRIVATE WIN32_LEAN_AND_MEAN)
+if(MINGW)
+	target_link_options(shared_clipboard_test PRIVATE -static-libgcc -static-libstdc++ -static)
+endif()
+add_test(NAME shared_clipboard COMMAND shared_clipboard_test)
 # MBAC Hantei4 (.DAT) tool: byte-exact round trip, model re-encode check,
 # batch MBAC -> HA6 conversion (see docs/HANTEI_MBAC_SUPPORT.md).
 add_executable(ha4tool
