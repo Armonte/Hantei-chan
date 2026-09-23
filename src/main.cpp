@@ -410,11 +410,14 @@ LRESULT WINAPI WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
 		}
 		return 0;
 	case WM_KEYDOWN:
-		if(!ImGui::GetIO().WantCaptureKeyboard)
-		{
-			if(mf->HandleKeys(wParam))
-				return 0;
-		}
+		// The shortcut router decides: a focused ImGui text field keeps its
+		// keys (including its own Ctrl+Z); bit 30 = OS auto-repeat.
+		if(mf && mf->HandleKeys(wParam, (lParam & (1 << 30)) != 0,
+		                        ImGui::GetIO().WantCaptureKeyboard, ImGui::GetIO().WantTextInput))
+			return 0;
+		break;
+	case WM_CANCELMODE:
+		if(mf) mf->CancelViewportGestures();
 		break;
 	case WM_RBUTTONDOWN:
 		// Don't allow drag if window just became active - prevents dragging when clicking back into window
@@ -436,6 +439,7 @@ LRESULT WINAPI WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
 			if(!dragLeft)
 				ReleaseCapture();
 			dragRight = false;
+			if (mf) mf->HandleMouseUp(true, false);
 			return 0;
 		}
 		break;
@@ -448,6 +452,7 @@ LRESULT WINAPI WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
 			ScreenToClient(hWnd, &mousePos);
 			SetCapture(hWnd);
 			if (mf) mf->HandleMouseDown(false, true);
+			if (mf) mf->LeftClick(mousePos.x, mousePos.y);
 			return 0;
 		}
 		justActivated = false;  // Clear flag after first click
@@ -498,6 +503,7 @@ LRESULT WINAPI WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
 			// Clear drag states when losing focus
 			if(dragLeft || dragRight)
 			{
+				if (mf) mf->CancelViewportGestures();
 				ReleaseCapture();
 				dragLeft = false;
 				dragRight = false;

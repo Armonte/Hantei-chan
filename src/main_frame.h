@@ -19,6 +19,8 @@
 #include "background/bg_renderer.h"
 #include "background/bg_types.h"
 #include "cmdfile/cmd_editor_ui.h"
+#include "shortcut_router.h"
+#include <imgui.h>
 #include <glm/mat4x4.hpp>
 #include <string>
 #include <vector>
@@ -37,7 +39,17 @@ public:
 	// parallax-preview drag (u4ick's movingPoint/movingPoint_last dance).
 	void HandleMouseDown(bool dragRight, bool dragLeft);
 	void HandleMouseUp(bool dragRight, bool dragLeft);
-	bool HandleKeys(uint64_t vkey);
+	// Key press routed through the central shortcut table. `imguiWantsKeyboard`
+	// / `imguiTextInput` are ImGui's io.WantCaptureKeyboard / io.WantTextInput:
+	// a focused text field keeps its keys (incl. its own Ctrl+Z).
+	bool HandleKeys(uint64_t vkey, bool isRepeat = false,
+	                bool imguiWantsKeyboard = false, bool imguiTextInput = false);
+	// Left press in the viewport (after HandleMouseDown); starts a position
+	// tool drag when it lands on a handle.
+	void LeftClick(int x, int y);
+	// Window lost capture/activation mid-gesture: close box drags, cancel
+	// position drags.
+	void CancelViewportGestures();
 	void HandleMouseWheel(bool isIncrease, int mouseX, int mouseY);
 
 	void RightClick(int x, int y);
@@ -176,6 +188,49 @@ private:
 	void openCommandEditorForActive();
 	void loadCommandsForActive(const std::string& path);
 	void drawCommandEditor();
+	bool m_commandShortcutsRegistered = false;
+	// ---- Editing tools (ui/editor_tools_impl.h) ----------------------------
+	ShortcutRouter shortcuts;
+	bool RunShortcut(ShortcutAction action);
+	bool PerformUndoRedo(bool redo);
+	void RefreshViewsAfterHistory(CharacterInstance* character, const UndoManager::Entry* entry);
+	bool isLiveCharacter(const CharacterInstance* character) const;
+
+	// Right-button box drawing is one undo transaction.
+	CharacterInstance* m_boxDragCharacter = nullptr;
+	void EndBoxDrag();
+
+	// J/K/L transport. Forward playback is FrameState::animating; reverse
+	// playback is driven here, one tick per UI frame, for one view.
+	CharacterView* m_reverseView = nullptr;
+	void UpdateTransport();
+	void StepTick(CharacterView* view, int dir);
+	void StopTransport(CharacterView* view);
+
+	// Viewport position tool.
+	struct PositionTarget {
+		enum Kind { Layer, Effect } kind = Layer;
+		int index = -1;           // layer index or EF index
+		int xParam = 0, yParam = 1; // EF parameter slots (Effect only)
+		ImVec2 screen{};          // handle position in client pixels
+		float m[4] = {1, 0, 0, 1}; // screen delta = M * authored delta (column-major 2x2)
+		bool invertible = true;
+		std::string label;
+		ImU32 color = 0;
+	};
+	struct PositionDrag {
+		bool active = false;
+		CharacterInstance* character = nullptr;
+		int pattern = -1, frame = -1;
+		PositionTarget target;
+		int startX = 0, startY = 0;
+		float totalDX = 0, totalDY = 0;
+	} m_posDrag;
+	int m_posHoverKind = -1, m_posHoverIndex = -1;
+	std::vector<PositionTarget> CollectPositionTargets();
+	void DrawPositionTool();
+	void PositionDragBy(int dx, int dy);
+	void EndPositionDrag(bool cancel);
 };
 
 

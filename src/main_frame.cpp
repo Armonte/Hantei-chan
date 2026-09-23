@@ -22,6 +22,7 @@
 #include <glm/gtc/matrix_transform.hpp>
 
 #include <algorithm>
+#include <cmath>
 #include <filesystem>
 
 MainFrame::MainFrame(ContextGl *context_):
@@ -703,6 +704,11 @@ void MainFrame::DrawBack()
 // Menu Implementation - extracted to ui/main_menu_impl.h
 // ============================================================================
 #include "ui/main_menu_impl.h"
+
+// ============================================================================
+// Editing tools (shortcuts, undo/redo, J/K/L, box-drag undo, position tool)
+// ============================================================================
+#include "ui/editor_tools_impl.h"
 
 
 void MainFrame::WarmStyle()

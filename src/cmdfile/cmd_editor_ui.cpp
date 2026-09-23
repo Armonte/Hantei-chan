@@ -92,6 +92,7 @@ struct CommandFileEditor::View {
 	bool open = true;
 	bool focus = true;
 	std::uint64_t notifiedRevision = 0;
+	bool hasFocus = false;
 
 	// Selection (command-region line uids, so comments are selectable too).
 	std::set<std::uint64_t> selected;
@@ -211,12 +212,36 @@ bool CommandFileEditor::empty() const { return m_views.empty(); }
 
 void CommandFileEditor::draw(const DocumentChanged& onChanged)
 {
+	m_focusedViewId = 0;
 	for (auto& v : m_views) {
 		const std::string title = "Command file: " + BaseName(v->ws.path()) + (v->ws.dirty() ? " *" : "") +
 			"###cmdfile_" + std::to_string(v->id);
 		v->drawWindow(title, onChanged);
+		if (v->hasFocus && v->open) m_focusedViewId = static_cast<std::uint64_t>(v->id);
 	}
 	m_views.erase(std::remove_if(m_views.begin(), m_views.end(), [](const auto& v) { return !v->open; }), m_views.end());
+}
+
+CommandFileEditor::View* CommandFileEditor::focusedView()
+{
+	for (auto& v : m_views) if (static_cast<std::uint64_t>(v->id) == m_focusedViewId) return v.get();
+	return nullptr;
+}
+
+bool CommandFileEditor::undoFocused(bool redo)
+{
+	View* v = focusedView();
+	if (!v) return false;
+	if (redo) v->ws.redo(); else v->ws.undo();
+	return true; // consumed even when there is nothing to undo: never fall through to HA6 history
+}
+
+bool CommandFileEditor::requestSaveFocused()
+{
+	View* v = focusedView();
+	if (!v) return false;
+	if (v->ws.dirty()) v->openSavePopup = true;
+	return true;
 }
 
 // ---------------------------------------------------------------------------------------
@@ -227,6 +252,7 @@ void CommandFileEditor::View::drawWindow(const std::string& title, const Documen
 	if (focus) { ImGui::SetNextWindowFocus(); focus = false; }
 	bool keepOpen = true;
 	const bool visible = ImGui::Begin(title.c_str(), &keepOpen, ImGuiWindowFlags_NoCollapse);
+	hasFocus = ImGui::IsWindowFocused(ImGuiFocusedFlags_RootAndChildWindows);
 	if (!keepOpen) {
 		if (ws.dirty()) openClosePopup = true;
 		else open = false;
@@ -1048,15 +1074,15 @@ void CommandFileEditor::View::drawPopups()
 	}
 }
 
+// Ctrl+Z / Ctrl+Y / Ctrl+S reach this window through the app ShortcutRouter
+// (ShortcutContext::commands, see MainFrame::drawCommandEditor), so they never touch the
+// character's HA6 history. Only editor-local keys are handled here.
 void CommandFileEditor::View::handleShortcuts()
 {
 	if (!ImGui::IsWindowFocused(ImGuiFocusedFlags_RootAndChildWindows)) return;
 	const auto& io = ImGui::GetIO();
-	if (io.KeyCtrl && ImGui::IsKeyPressed(ImGuiKey_S, false)) { if (ws.dirty()) openSavePopup = true; return; }
-	if (io.WantTextInput) return; // text fields keep their own undo
-	if (io.KeyCtrl && ImGui::IsKeyPressed(ImGuiKey_Z, false)) { if (io.KeyShift) ws.redo(); else ws.undo(); }
-	else if (io.KeyCtrl && ImGui::IsKeyPressed(ImGuiKey_Y, false)) ws.redo();
-	else if (ImGui::IsKeyPressed(ImGuiKey_Delete, false) && !selected.empty()) deleteSelected();
+	if (io.WantTextInput) return;
+	if (ImGui::IsKeyPressed(ImGuiKey_Delete, false) && !selected.empty()) deleteSelected();
 	else if (io.KeyAlt && ImGui::IsKeyPressed(ImGuiKey_UpArrow)) moveSelected(-1);
 	else if (io.KeyAlt && ImGui::IsKeyPressed(ImGuiKey_DownArrow)) moveSelected(1);
 }
