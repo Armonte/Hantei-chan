@@ -241,6 +241,14 @@ void MainPane::Draw()
 					markModified();
 					decoratedNames[currState.pattern] = frameData->GetDecoratedName(currState.pattern);
 				}
+				// Pattern note (issue #58), kept beside the HA6, not in it.
+				{
+					const std::string key = Ha6Notes::PatternKey(currState.pattern);
+					const std::string* note = frameData->notes.get(key);
+					noteEditBuffer = note ? *note : std::string();
+					if(im::InputTextMultiline("Pattern note", &noteEditBuffer, ImVec2(0, im::GetTextLineHeight() * 3)))
+						frameData->notes.set(key, noteEditBuffer);
+				}
 				PatternDisplay(seq, frameData, currState.pattern);
 
 				if(im::Button("Copy pattern")) {

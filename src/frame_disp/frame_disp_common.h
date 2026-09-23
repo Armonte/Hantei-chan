@@ -65,6 +65,14 @@ static inline bool PatternPickerButton(const char* id, int* value, FrameData* fr
 	return changed;
 }
 
+// Optional per-record annotation drawer (issue #58). The right pane installs
+// it around its EfDisplay/IfDisplay calls; the displays call it right after
+// each record's header (so the header is the "last item" for context menus).
+struct RecordNoteHook {
+	std::function<void(bool isEffect, int index, int type)> draw;
+};
+inline RecordNoteHook& CurrentRecordNoteHook() { static RecordNoteHook hook; return hook; }
+
 // Helper function for combo with manual entry support
 static inline bool ShowComboWithManual(const char* label, int* value, const char* const* items, int itemCount, float comboWidth, float defaultWidth = 75.f) {
 	bool changed = false;

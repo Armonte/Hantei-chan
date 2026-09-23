@@ -50,6 +50,7 @@ add_executable(${EXE}
 	src/copy_data.cpp
 	src/var_refs.cpp
 	src/pattern_refs.cpp
+	src/ha6_notes.cpp
 	src/preview_sim.cpp
 	src/mv_script.cpp
 	src/character_instance.cpp
@@ -334,6 +335,7 @@ add_executable(refs_test
 	tests/refs_test.cpp
 	src/var_refs.cpp
 	src/pattern_refs.cpp
+	src/ha6_notes.cpp
 	src/framedata.cpp
 	src/framedata_load.cpp
 	src/framedata_save.cpp

@@ -305,4 +305,53 @@ void MainFrame::drawPatternManagerWindow()
 	ImGui::End();
 }
 
+// ---------------------------------------------------------------------------
+// Notes (#58): every annotation of the active character.
+// ---------------------------------------------------------------------------
+
+void MainFrame::drawNotesWindow()
+{
+	if (!m_showNotes) return;
+	auto* character = getActiveCharacter();
+	ImGui::SetNextWindowSize(ImVec2(560, 380), ImGuiCond_FirstUseEver);
+	if (!ImGui::Begin("Notes", &m_showNotes)) { ImGui::End(); return; }
+	if (!character) { ImGui::TextDisabled("Open a character first."); ImGui::End(); return; }
+	FrameData& fd = character->frameData;
+	ImGui::TextWrapped("Notes on patterns (Pattern data > Pattern note) and on effects/conditions "
+	                   "(right-click a record header). Saved with the character to %s.",
+	                   character->getTopHA6Path().empty() ? "<ha6>.notes.json"
+	                   : Ha6Notes::PathFor(character->getTopHA6Path()).c_str());
+	if (!character->notesError().empty())
+		ImGui::TextColored(ImVec4(1, 0.3f, 0.3f, 1), "Notes file not loaded (it will not be overwritten): %s",
+		                   character->notesError().c_str());
+	ImGui::Text("%zu note(s)%s", fd.notes.notes.size(), fd.notes.dirty ? " (unsaved)" : "");
+	if (ImGui::BeginChild("##notes", ImVec2(0, 0), ImGuiChildFlags_Borders)) {
+		for (const auto& kv : fd.notes.notes) {
+			int p, f, idx, type; bool isEf;
+			if (!Ha6Notes::ParseKey(kv.first, &p, &f, &isEf, &idx, &type)) continue;
+			std::string where = "Pattern " + std::to_string(p);
+			bool matched = fd.get_sequence(p) != nullptr;
+			if (f >= 0) {
+				where += " frame " + std::to_string(f) + (isEf ? " EF#" : " IF#") + std::to_string(idx) +
+					" (type " + std::to_string(type) + ")";
+				Sequence* seq = fd.get_sequence(p);
+				matched = seq && f < (int)seq->frames.size() &&
+					(isEf ? idx < (int)seq->frames[f].EF.size() && seq->frames[f].EF[idx].type == type
+					      : idx < (int)seq->frames[f].IF.size() && seq->frames[f].IF[idx].type == type);
+			}
+			if (!matched) where += "  [unmatched: record moved, deleted or retyped]";
+			ImGui::PushID(kv.first.c_str());
+			if (ImGui::Selectable(where.c_str())) navigateActiveView(p, f < 0 ? 0 : f);
+			ImGui::Indent();
+			ImGui::PushTextWrapPos(0.0f);
+			ImGui::TextDisabled("%s", kv.second.c_str());
+			ImGui::PopTextWrapPos();
+			ImGui::Unindent();
+			ImGui::PopID();
+		}
+	}
+	ImGui::EndChild();
+	ImGui::End();
+}
+
 #endif /* UI_TOOL_WINDOWS_IMPL_H_GUARD */
