@@ -1,6 +1,14 @@
 cmake_minimum_required(VERSION 3.13...3.19)
 project(hanteichan VERSION 1.1.21 LANGUAGES C CXX)
 
+# Single-config generators default to an empty build type, which leaves
+# assert()/IM_ASSERT live: CI's "MinGW Makefiles" build shipped that way, and a
+# harmless ImGui bounds assert aborted the app (issue #81). Default to Release.
+get_property(_multi_config GLOBAL PROPERTY GENERATOR_IS_MULTI_CONFIG)
+if(NOT _multi_config AND NOT CMAKE_BUILD_TYPE)
+	set(CMAKE_BUILD_TYPE Release CACHE STRING "Build type" FORCE)
+endif()
+
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
@@ -282,6 +290,28 @@ if(MINGW)
 	target_link_options(cmdfile_ui_smoke PRIVATE -static-libgcc -static-libstdc++ -static)
 endif()
 add_test(NAME cmdfile_ui_smoke COMMAND cmdfile_ui_smoke tests/fixtures/cmdfile/ex_vanilla_ryougi_1_c.txt tests/fixtures/cmdfile/ex_bof_angel_0_c.txt WORKING_DIRECTORY ${CMAKE_SOURCE_DIR})
+# pattern_search_test: pattern-name search (ImSearch) headless, asserts enabled (issue #81).
+add_executable(pattern_search_test
+	tests/pattern_search_test.cpp
+	src/framedata.cpp
+	src/framedata_load.cpp
+	src/framedata_save.cpp
+	src/framedata_ha4.cpp
+	src/misc.cpp
+	tinyalloc/tinyalloc.c
+	imsearch/imsearch.cpp
+	imgui/imgui.cpp
+	imgui/imgui_draw.cpp
+	imgui/imgui_tables.cpp
+	imgui/imgui_widgets.cpp
+)
+target_include_directories(pattern_search_test PRIVATE "." "src" "third_party" "imgui" "imsearch" "${CMAKE_BINARY_DIR}/generated")
+target_compile_definitions(pattern_search_test PRIVATE WIN32_LEAN_AND_MEAN HA6GUIVERSION="${CMAKE_PROJECT_VERSION}" IMGUI_USER_CONFIG="${CMAKE_SOURCE_DIR}/tests/imgui_assert_config.h")
+target_link_libraries(pattern_search_test PRIVATE tinyalloc)
+if(MINGW)
+	target_link_options(pattern_search_test PRIVATE -static-libgcc -static-libstdc++ -static)
+endif()
+add_test(NAME pattern_search COMMAND pattern_search_test WORKING_DIRECTORY ${CMAKE_SOURCE_DIR})
 # MBAC Hantei4 (.DAT) tool: byte-exact round trip, model re-encode check,
 # batch MBAC -> HA6 conversion (see docs/HANTEI_MBAC_SUPPORT.md).
 add_executable(ha4tool

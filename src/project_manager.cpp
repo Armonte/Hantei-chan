@@ -29,6 +29,20 @@ void ProjectManager::ClearCurrentProjectPath()
 	s_currentProjectPath.clear();
 }
 
+// Point the character's CG at its saved palette number, clamped to what the
+// loaded palette file provides.
+static void ApplySavedPalette(CharacterInstance& character)
+{
+	const int palCount = character.cg.getPalNumber();
+	if (palCount <= 0) {
+		character.palette = 0;
+		return;
+	}
+	if (character.palette < 0) character.palette = 0;
+	if (character.palette >= palCount) character.palette = palCount - 1;
+	character.cg.changePaletteNumber(character.palette);
+}
+
 bool ProjectManager::HasCurrentProject()
 {
 	return !s_currentProjectPath.empty();
@@ -234,6 +248,9 @@ bool ProjectManager::LoadProject(
 				character->renderY = charObj.value("render_y", 150);
 				character->zoom = charObj.value("zoom", 3.0f);
 				character->palette = charObj.value("palette", 0);
+				// The stored number alone does nothing: the CG keeps pointing at
+				// palette 0 until changePaletteNumber runs (issue #70).
+				ApplySavedPalette(*character);
 
 				// Restore frame state
 				character->state.pattern = charObj.value("pattern", 0);
@@ -456,6 +473,9 @@ bool ProjectManager::LoadProject(
 				character->renderY = charObj.value("render_y", 150);
 				character->zoom = charObj.value("zoom", 3.0f);
 				character->palette = charObj.value("palette", 0);
+				// The stored number alone does nothing: the CG keeps pointing at
+				// palette 0 until changePaletteNumber runs (issue #70).
+				ApplySavedPalette(*character);
 
 				fileToLoaded.push_back(character.get());
 				newCharacters.push_back(std::move(character));
