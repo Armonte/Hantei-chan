@@ -14,6 +14,7 @@
 #include "../third_party/json/json.hpp"
 #include "framedata_ha4.h"
 #include "ha4_character.h"
+#include "game_link_panel.h"
 
 #include <imgui.h>
 #include <imgui_internal.h>
