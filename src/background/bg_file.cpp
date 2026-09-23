@@ -1,6 +1,8 @@
 #include "bg_file.h"
 #include "../misc.h"
 #include <algorithm>
+#include <cctype>
+#include <filesystem>
 #include <cstring>
 #include <fstream>
 #include <iostream>
@@ -70,6 +72,8 @@ bool File::Load(const char* filename) {
 	
 	delete[] data;
 	loaded = true;
+	dirty = false;
+	ReloadSideFiles();
 	ResetRuntime();
 	
 	std::cout << "Loaded background: " << objects.size() << " objects, "
@@ -594,6 +598,43 @@ bool File::Save(const char* filenameOut)
 	// Walk slots in ascending order so byte layout matches the original.
 	std::sort(slotToObj.begin(), slotToObj.end());
 
+	// Event-record tables to write per object. Untouched objects write the
+	// loaded bytes verbatim (byte-identical round trip); edited records are
+	// patched in place; added/removed records rebuild the block as
+	// [triggers][commands] with fresh table offsets.
+	struct RecOut { std::vector<uint8_t> bytes; int32_t trig = -1, cmd = -1; bool rebuilt = false; };
+	std::vector<RecOut> recOut(slotToObj.size());
+	for (size_t k = 0; k < slotToObj.size(); ++k) {
+		const Object& o = objects[slotToObj[k].second];
+		RecOut& r = recOut[k];
+		r.bytes = o.recordBytes;
+		r.trig = o.triggerTableOff;
+		r.cmd = o.commandTableOff;
+		int32_t origFrames = (int32_t)o.frames.size();
+		if (o.hasRawHeader) std::memcpy(&origFrames, o.rawHeader, 4);
+		const int32_t framesEnd = 60 + origFrames * 132;
+		if (o.recordsRelayout) {
+			r.bytes.clear();
+			const int32_t base = 60 + (int32_t)o.frames.size() * 132;
+			r.trig = o.triggers.empty() ? -1 : base;
+			r.cmd = o.commands.empty() ? -1 : base + 52 * (int32_t)o.triggers.size();
+			for (const auto& e : o.triggers) r.bytes.insert(r.bytes.end(), e.raw, e.raw + 52);
+			for (const auto& e : o.commands) r.bytes.insert(r.bytes.end(), e.raw, e.raw + 52);
+			r.rebuilt = true;
+		} else if (o.recordsEdited) {
+			auto patch = [&](int32_t tableOff, const std::vector<EventRecord>& tab) {
+				if (tableOff == -1) return;
+				for (size_t i = 0; i < tab.size(); ++i) {
+					int64_t at = (int64_t)tableOff - framesEnd + 52 * (int64_t)i;
+					if (at >= 0 && at + 52 <= (int64_t)r.bytes.size())
+						std::memcpy(r.bytes.data() + at, tab[i].raw, 52);
+				}
+			};
+			patch(o.triggerTableOff, o.triggers);
+			patch(o.commandTableOff, o.commands);
+		}
+	}
+
 	// Assign each object a final byte offset. If we know the original
 	// offset (loaded from file), honor it; the gap-from-end-of-previous
 	// becomes zero-padding emitted in the write loop below. Editor-created
@@ -607,7 +648,7 @@ bool File::Save(const char* filenameOut)
 			pos = want;
 		writeOffset[k] = pos;
 		offsets[slotToObj[k].first] = pos;
-		pos += 60 + (int32_t)obj.frames.size() * 132 + (int32_t)obj.recordBytes.size();
+		pos += 60 + (int32_t)obj.frames.size() * 132 + (int32_t)recOut[k].bytes.size();
 	}
 
 	for (int i = 0; i < 256; ++i) w32(offsets[i]);
@@ -637,9 +678,11 @@ bool File::Save(const char* filenameOut)
 			if (!obj.hasRawHeader) origFrames = (int32_t)obj.frames.size();
 			int32_t delta = ((int32_t)obj.frames.size() - origFrames) * 132;
 			int32_t nf = (int32_t)obj.frames.size();
-			int32_t trig = obj.triggerTableOff, cmd = obj.commandTableOff;
-			if (trig != -1) trig += delta;
-			if (cmd  != -1) cmd  += delta;
+			int32_t trig = recOut[k].trig, cmd = recOut[k].cmd;
+			if (!recOut[k].rebuilt) {
+				if (trig != -1) trig += delta;
+				if (cmd  != -1) cmd  += delta;
+			}
 			std::memcpy(hdr + 0,  &nf, 4);
 			std::memcpy(hdr + 4,  &obj.parallax, 4);
 			std::memcpy(hdr + 8,  &obj.layer, 4);
@@ -669,11 +712,11 @@ bool File::Save(const char* filenameOut)
 			f.write((const char*)rec, 132);
 		}
 		// Event record tables follow the frames (verbatim).
-		if (!obj.recordBytes.empty())
-			f.write((const char*)obj.recordBytes.data(), obj.recordBytes.size());
+		if (!recOut[k].bytes.empty())
+			f.write((const char*)recOut[k].bytes.data(), recOut[k].bytes.size());
 		// Advance cursor by what we just emitted so the next gap calculation
 		// is right.
-		cursor += 60 + (int32_t)obj.frames.size() * 132 + (int32_t)obj.recordBytes.size();
+		cursor += 60 + (int32_t)obj.frames.size() * 132 + (int32_t)recOut[k].bytes.size();
 	}
 
 	// PAT block sits after the last object, with whatever padding the load
@@ -728,14 +771,14 @@ bool File::Save(const char* filenameOut)
 //   Background_IntegrateInstanceMotion 0x4b8530  Background_RunFrameCommands 0x4b8cd0
 //   Background_RunPositionTriggers    0x4b8df0   BgCmd_* 0x4b8aa0/0x4b8b20/0x4b8c10
 //   BgInstance_PlaceRelativeToParent  0x4b89e0 (camera fixed at the neutral 0,0)
-// The only non-verbatim part is the RNG (the game's lagged-Fibonacci bg
-// stream is replaced by an xorshift; ranges/modulo use are identical).
+// Random draws use the game's own generator (bg_rng.h: MBAACC stream 0 of
+// the subtractive RNG bank, MBAC LCG stream 0), seeded by File::SetSeed, in
+// the game's call order — so a seed replays the game's spawns and weather.
 // ============================================================================
 static constexpr int kMaxInstances = 2000;
 
 int File::RandInt() {
-	rngState ^= rngState << 13; rngState ^= rngState >> 17; rngState ^= rngState << 5;
-	return (int)(rngState & 0x7FFFFFFF);
+	return rng.Next();
 }
 
 const Frame* File::InstanceFrame(const Instance& in) const {
@@ -788,6 +831,9 @@ void File::PlaceRelativeToParent(Instance& child, const Instance& parent, int x,
 }
 
 void File::ResetRuntime() {
+	// The game seeds stream 0 before the stage spawns (RngState_Initialize).
+	rng.Seed(seed, game);
+	tick = 0;
 	instances.clear();
 	instances.resize(256);
 	for (auto& o : objects) {
@@ -797,9 +843,14 @@ void File::ResetRuntime() {
 		InitInstance(instances[idx], (int)(&o - objects.data()));
 	}
 	for (auto& o : objects) { o.currentFrame = 0; o.frameDuration = 0; o.posX = o.posY = 0; }
+	// Background_SpawnInitialInstances ends with DropObject_InitializeParticles
+	// (MBAA 0x4b6ee0). MBAC has no weather system.
+	drops.Clear();
+	if (game == Game::MBAACC) drops.Init(stageInfo, rng);
 }
 
 void File::TickRuntime() {
+	++tick;
 	// Index the file slot -> objects[] mapping once (spawn commands address
 	// objects by their file slot, not by our dense index).
 	int slotToObj[256];
@@ -915,6 +966,144 @@ void File::TickRuntime() {
 			if (!fr) break;
 		}
 	}
+
+	// 5) weather particles (Background_UpdateAndRender calls
+	// DropObject_UpdateParticles right after the triggers).
+	if (game == Game::MBAACC) drops.Update(rng);
+}
+
+
+// ============================================================================
+// Side files, game flavour, editing helpers
+// ============================================================================
+namespace {
+std::string LowerStr(std::string v) { for (char& c : v) c = (char)std::tolower((unsigned char)c); return v; }
+std::string DirOf(const std::string& p) {
+	size_t s = p.find_last_of("/\\");
+	return s == std::string::npos ? std::string() : p.substr(0, s);
+}
+std::string BaseNoExt(const std::string& p) {
+	size_t s = p.find_last_of("/\\");
+	std::string b = s == std::string::npos ? p : p.substr(s + 1);
+	size_t d = b.find_last_of('.');
+	return d == std::string::npos ? b : b.substr(0, d);
+}
+} // namespace
+
+std::string File::SiblingVariantPath() const {
+	std::string dir = DirOf(filename), base = BaseNoExt(filename);
+	std::string lb = LowerStr(base);
+	std::string other;
+	if (lb.size() > 2 && lb.compare(lb.size() - 2, 2, "_s") == 0) other = base.substr(0, base.size() - 2) + ".dat";
+	else other = base + "_s.dat";
+	return FindFileNoCase(dir, other);
+}
+
+const StageListEntry* File::GetStageListEntry() const {
+	return stageList.FindByDataFile(BaseNoExt(filename));
+}
+
+std::string File::DropBitmapPath() const {
+	if (stageInfo.dropFile.empty()) return std::string();
+	return FindFileNoCase(DirOf(filename), stageInfo.dropFile + ".bmp");
+}
+
+void File::ReloadSideFiles() {
+	std::string dir = DirOf(filename), base = BaseNoExt(filename);
+	std::string lb = LowerStr(base);
+	shortVariant = lb.size() > 2 && lb.compare(lb.size() - 2, 2, "_s") == 0;
+	std::string stem = shortVariant ? base.substr(0, base.size() - 2) : base;
+
+	stageList = StageList();
+	std::string ini = FindFileNoCase(dir, "BgList.ini");
+	if (!ini.empty()) stageList.Load(ini);
+
+	// MBAACC: Background_LoadInfoFile always opens "<DataFile>Info.txt".
+	stageInfo = StageInfo();
+	std::string info = FindFileNoCase(dir, stem + "Info.txt");
+	if (!info.empty()) stageInfo.Load(info);
+
+	// MBAC: LoadLightingData opens "bg%02dlight.txt".
+	lightFile = LightFile();
+	std::string lt = FindFileNoCase(dir, stem + "light.txt");
+	if (!lt.empty()) lightFile.Load(lt);
+
+	// Flavour guess: a BgList.ini next to the stage means MBAACC's loose bg
+	// folder; an _s variant or an upper-case MBAC dump name means MBAC.
+	bool upper = !base.empty() && base.find_first_of("abcdefghijklmnopqrstuvwxyz") == std::string::npos;
+	if (!ini.empty())                         game = Game::MBAACC;
+	else if (shortVariant || upper || !SiblingVariantPath().empty()) game = Game::MBAC;
+	else                                      game = Game::MBAACC;
+}
+
+std::vector<File::LightView> File::ActiveLights() const {
+	std::vector<LightView> out;
+	if (game == Game::MBAACC) {
+		// Character_Render 0x41b411: lightX = Pos - 512, weight 1 - |x - lightX| / Power.
+		for (const auto& l : stageInfo.lights) out.push_back({l.pos - 512, l.power});
+	} else {
+		// mbacPC Character_Draw 0x44839f: weight 1 - |(x>>7) - Pos + 256| / Power.
+		for (const auto& l : lightFile.lights) out.push_back({l.pos - 256, l.power});
+	}
+	return out;
+}
+
+int File::InsertFrame(int objIndex, int at, bool duplicate) {
+	if (objIndex < 0 || objIndex >= (int)objects.size()) return -1;
+	Object& o = objects[objIndex];
+	if (o.frames.size() >= 255) return -1;          // frame indices are bytes
+	at = std::max(0, std::min(at, (int)o.frames.size()));
+	Frame f;
+	if (duplicate && !o.frames.empty()) {
+		f = o.frames[std::min(at, (int)o.frames.size() - 1)];
+		at = std::min(at + 1, (int)o.frames.size());
+	}
+	o.frames.insert(o.frames.begin() + at, f);
+	dirty = true;
+	ResetRuntime();
+	return at;
+}
+
+bool File::DeleteFrame(int objIndex, int at) {
+	if (objIndex < 0 || objIndex >= (int)objects.size()) return false;
+	Object& o = objects[objIndex];
+	if (at < 0 || at >= (int)o.frames.size() || o.frames.size() <= 1) return false;
+	o.frames.erase(o.frames.begin() + at);
+	dirty = true;
+	ResetRuntime();
+	return true;
+}
+
+int File::AddRecord(int objIndex, bool trigger) {
+	if (objIndex < 0 || objIndex >= (int)objects.size()) return -1;
+	Object& o = objects[objIndex];
+	auto& tab = trigger ? o.triggers : o.commands;
+	EventRecord r;
+	r.type = 1;
+	if (trigger) { r.d[1] = -1; r.d[3] = 1; }   // "despawn when y > 0"
+	r.SyncRaw();
+	tab.push_back(r);
+	o.recordsRelayout = true;
+	dirty = true;
+	return (int)tab.size() - 1;
+}
+
+bool File::DeleteLastRecord(int objIndex, bool trigger) {
+	if (objIndex < 0 || objIndex >= (int)objects.size()) return false;
+	Object& o = objects[objIndex];
+	auto& tab = trigger ? o.triggers : o.commands;
+	if (tab.empty()) return false;
+	int gone = (int)tab.size() - 1;
+	tab.pop_back();
+	// Drop frame refs that pointed at it.
+	for (auto& f : o.frames)
+		for (int k = 0; k < 8; ++k) {
+			int16_t& r = trigger ? f.triggerRef[k] : f.commandRef[k];
+			if (r == gone) r = -1;
+		}
+	o.recordsRelayout = true;
+	dirty = true;
+	return true;
 }
 
 } // namespace bg

@@ -1,30 +1,15 @@
-// Port of u4ick's bgmaketool MonoForm.Draw rendering pipeline.
-//
-// References to the original (paths relative to repo root):
-//   src/dpu4/stagesrc/bgmaketool/MonoForm.cs        (Draw method)
-//   src/dpu4/stagesrc/bgmaketool/bgmake_app.cs      (camera/state globals)
-//
-// What we replicate:
-//   - Orthographic projection: CreateOrthographicOffCenter(0, W, H, 0, 0, 1).
-//     Same as XNA's screen-space ortho with Y growing downward.
-//   - View matrix = Scale(zoom). No translation (camera/pan is in sprite pos).
-//   - Sprite screen position = panLast + (pan - panLast) * (parallax/256) + offset.
-//     The (pan - panLast) delta is only non-zero during a live drag, so this
-//     produces u4ick's transient parallax-during-drag effect.
-//   - Per-sprite blend modes: blendMode == 2 -> additive (GL_SRC_ALPHA, GL_ONE);
-//     anything else -> custom alpha (GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA).
-//   - Depth test enabled with GL_LEQUAL and depth writes on. Per-vertex z is
-//     layerDepth = layer/1024 - 1. Lower layer = smaller depth = wins the
-//     test = ends up on top. This matches u4ick's SpriteSortMode.FrontToBack
-//     ordering through the depth buffer rather than a CPU sort.
-//   - The dur=0 / aniType=1 frame skip from MonoForm.cs:211-214 (transient
-//     loop-boundary placeholder frames should not be rendered).
-//
-// What we DON'T do (out of scope here; matches u4ick's interactive view):
-//   - SaveRender's 1057x818 fixed render target.
-//   - AlphaTestEffect (Greater, ReferenceAlpha=0). With our blend funcs alpha=0
-//     fragments produce no visible output anyway, and depth writes for fully
-//     transparent pixels don't cause visible artifacts at our render scale.
+// Stage renderer. Started as a port of u4ick's bgmaketool MonoForm.Draw
+// (orthographic, Y-down, camera pan in sprite positions, parallax delta only
+// during a drag); everything the game does differently now follows the
+// runtime RE of MBAA.exe / mbacPC.exe (docs/bg_research/BG_HA4_RE.md):
+//   - live instances, not objects, are drawn (spawners, despawn, triggers)
+//   - painter's order: band 0 by layer (255 -> 279), weather, band 1 by
+//     layer; the host splits band 0 / band 1 around its characters (Pass)
+//   - CG: frame +9 blend (1 alpha, 2 additive, 3 multiply), 0xEA vertex tint
+//     (MBAACC), +20 alpha lerp, MBAC +16/+18 scale; objhdr+22 linear filter
+//   - PAT: part ARGB diffuse + RGB specular, +49 additive, +50 linear, flip,
+//     scale int/1000 lerped by frame +20; MBAC rotation +60, no part pos
+//   - no u4ick dur-0 skip, no depth test (CPU sort)
 
 #include "bg_renderer.h"
 #include "../cg.h"
@@ -35,6 +20,9 @@
 #include <algorithm>
 #include <utility>
 #include <fstream>
+#include <iterator>
+#include <string>
+#include <cstring>
 #include <vector>
 #include <cstdint>
 #include <cmath>
@@ -45,29 +33,38 @@
 namespace bg {
 
 // ---- shaders ---------------------------------------------------------------
+// Vertex: pos(3) uv(2) colour(4). The fragment stage models the D3D fixed
+// function the game uses: texel * diffuse (COLOROP/ALPHAOP = MODULATE), then
+// + specular RGB (D3DRS_SPECULARENABLE = 1; PAT part +68..70).
 
 static const char* kVS = R"GLSL(
 #version 330 core
 layout (location = 0) in vec3 aPos;
 layout (location = 1) in vec2 aUV;
+layout (location = 2) in vec4 aColor;
 uniform mat4 uProjView;
 out vec2 vUV;
+out vec4 vCol;
 void main() {
     gl_Position = uProjView * vec4(aPos, 1.0);
     vUV = aUV;
+    vCol = aColor;
 }
 )GLSL";
 
 static const char* kFS = R"GLSL(
 #version 330 core
 in vec2 vUV;
+in vec4 vCol;
 uniform sampler2D uTexture;
 uniform float uAlpha;
-uniform vec4 uTint;   // vertex diffuse colour (D3D COLOROP/ALPHAOP = MODULATE)
+uniform vec4 uTint;   // per-draw diffuse
+uniform vec3 uAdd;    // per-draw specular (added after the texture stage)
 out vec4 FragColor;
 void main() {
     vec4 c = texture(uTexture, vUV);
-    FragColor = vec4(c.rgb * uTint.rgb, c.a * uAlpha * uTint.a);
+    vec4 d = uTint * vCol;
+    FragColor = vec4(c.rgb * d.rgb + uAdd, c.a * uAlpha * d.a);
 }
 )GLSL";
 
@@ -190,6 +187,7 @@ Renderer::Renderer() = default;
 
 Renderer::~Renderer() {
 	ClearTextureCache();
+	if (whiteTex) glDeleteTextures(1, &whiteTex);
 	if (vbo) glDeleteBuffers(1, &vbo);
 	if (program) glDeleteProgram(program);
 }
@@ -203,12 +201,24 @@ void Renderer::InitGL() {
 	glDeleteShader(fs);
 	uProjView = glGetUniformLocation(program, "uProjView");
 	uTexture  = glGetUniformLocation(program, "uTexture");
+	uTint     = glGetUniformLocation(program, "uTint");
+	uAdd      = glGetUniformLocation(program, "uAdd");
+	uAlphaLoc = glGetUniformLocation(program, "uAlpha");
 
 	// No VAO — glad here doesn't expose glGenVertexArrays. Bind VBO and
-	// re-set attribute pointers on every DrawSprite call instead. Cheap.
+	// re-set attribute pointers on every emit instead. Cheap.
 	glGenBuffers(1, &vbo);
 	glBindBuffer(GL_ARRAY_BUFFER, vbo);
-	glBufferData(GL_ARRAY_BUFFER, sizeof(float) * 5 * 6, nullptr, GL_DYNAMIC_DRAW);
+	glBufferData(GL_ARRAY_BUFFER, sizeof(float) * 9 * 6, nullptr, GL_DYNAMIC_DRAW);
+
+	const uint8_t white[4] = {255, 255, 255, 255};
+	glGenTextures(1, &whiteTex);
+	glBindTexture(GL_TEXTURE_2D, whiteTex);
+	glPixelStorei(GL_UNPACK_ALIGNMENT, 4);
+	glPixelStorei(GL_UNPACK_ROW_LENGTH, 0);
+	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, 1, 1, 0, GL_RGBA, GL_UNSIGNED_BYTE, white);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
 
 	glInit = true;
 }
@@ -216,6 +226,10 @@ void Renderer::InitGL() {
 void Renderer::ClearTextureCache() {
 	for (auto& kv : textureCache) glDeleteTextures(1, &kv.second.id);
 	textureCache.clear();
+	if (dropTex) glDeleteTextures(1, &dropTex);
+	dropTex = 0;
+	dropTexW = dropTexH = 0;
+	dropTexTried = false;
 }
 
 void Renderer::SetFile(File* f) {
@@ -225,15 +239,12 @@ void Renderer::SetFile(File* f) {
 		patPartsBuilt = false;
 	}
 	file = f;
-	if (f) dumpCountdown = 30;   // debug self-screenshot ~0.5s after load
 }
 
 void Renderer::Update() {
 	if (!enabled || !file || paused) return;
-	// The game's Background_UpdateLayerAnimations runs at a fixed 60 Hz tick.
-	// The editor renders at the display refresh rate, so stepping the animation
-	// once per render frame runs it 2-2.4x too fast on a high-refresh monitor,
-	// which strobes/skips frames. Accumulate real time and step at exactly 60 Hz.
+	// The game's background tick runs at a fixed 60 Hz. The editor renders
+	// at the display refresh rate, so accumulate real time and step at 60 Hz.
 	using clock = std::chrono::steady_clock;
 	static clock::time_point last = clock::now();
 	static double accum = 0.0;
@@ -400,205 +411,363 @@ void Renderer::BuildPatParts() {
 	          << P.partSets.size() << " patterns" << std::endl;
 }
 
-// Draw one PAT pattern as flat textured quads in this renderer's ortho.
-// Quad math is MBAA.exe Background_RenderLayerWithPalette's PAT branch:
-// per part, local quad spans (-origin)..(quad-origin), scaled by the part
-// scale, offset by the part position, then the pattern's world position.
-// No perspective — the bg projection is a pure translate.
-void Renderer::DrawPatPatternFlat(int pattern, float worldX, float worldY,
-                                  float alpha, int frameBlend) {
-	if (!patParts || pattern < 0 ||
-	    pattern >= (int)patParts->partSets.size())
-		return;
-	const PartSet<>& ps = patParts->partSets[pattern];
+// ---- helpers ---------------------------------------------------------------
 
-	// worldX/Y is the pattern origin (0,0). Each part's cutout quad spans
-	// (-origin)..(quad-origin), so the cutout's origin POINT lands exactly at
-	// worldX/Y + part.pos — i.e. the pattern is PIVOT-anchored on its origin.
-	// This is what MBAA.exe Background_RenderLayerWithPalette does (the quad
-	// corner (0,0) maps through scale*translate(partPos)*translate(frameOff)),
-	// so no bounding-box shift is applied here.
-	static const int tX[6] = {0,1,1, 1,0,0};
-	static const int tY[6] = {0,0,1, 1,1,0};
+namespace {
 
+// mbacPC Math_LerpAngle10000ToDeg: angles in 1/10000 turn, shortest arc,
+// result in degrees (x 0.036).
+double LerpAngle10000ToDeg(int a, int b, float t) {
+	const double k = 0.035999998;
+	if (a <= b) {
+		if (a >= b) return a * k;
+		int d = b - a;
+		if (d >= 5000) {
+			double r = (a - (a - b + 10000) * t) * k;
+			while (r < 0.0) r += 360.0;
+			return r;
+		}
+		return (d * t + a) * k;
+	}
+	int d = a - b;
+	if (d >= 5000) {
+		double r = ((b - a + 10000) * t + a) * k;
+		while (r > 360.0) r -= 360.0;
+		return r;
+	}
+	return (a - d * t) * k;
+}
+
+// MBAA Math_Atan2Normalized (0x4d...): direction of (x, y) as a fraction of
+// a turn, 0.5 = straight down. Note the game's pi constant 3.1415.
+double Atan2Normalized(float x, float y) {
+	if (x == 0.0f) return y > 0.0f ? 0.5 : 0.0;
+	if (y == 0.0f) return x < 0.0f ? 0.75 : 0.25;
+	float len = std::sqrt(y * y + x * x + 0.0f);
+	float c = (float)(x / len);
+	float v = (float)(std::acos(c) / 3.141499996185303 * 0.5);
+	if (y < 0.0f) v = 1.0f - v;
+	v += 0.25f;
+	if (v >= 1.0f) return v - 1.0;
+	return v;
+}
+
+bool LoadBmpRGBA(const std::string& path, std::vector<uint8_t>& rgba, int& w, int& h) {
+	std::ifstream f(path, std::ios::binary);
+	if (!f) return false;
+	std::vector<uint8_t> d((std::istreambuf_iterator<char>(f)), std::istreambuf_iterator<char>());
+	if (d.size() < 54 || d[0] != 'B' || d[1] != 'M') return false;
+	auto r32 = [&](size_t o) { int32_t v; std::memcpy(&v, d.data() + o, 4); return v; };
+	auto r16 = [&](size_t o) { uint16_t v; std::memcpy(&v, d.data() + o, 2); return v; };
+	uint32_t off = (uint32_t)r32(10);
+	w = r32(18);
+	int hh = r32(22);
+	int bpp = r16(28);
+	if (w <= 0 || hh == 0 || (bpp != 32 && bpp != 24) || r32(30) != 0) return false;
+	bool bottomUp = hh > 0;
+	h = bottomUp ? hh : -hh;
+	size_t stride = ((size_t)w * (bpp / 8) + 3) & ~(size_t)3;
+	if (off + stride * h > d.size()) return false;
+	rgba.assign((size_t)w * h * 4, 0);
+	for (int y = 0; y < h; ++y) {
+		const uint8_t* src = d.data() + off + stride * (bottomUp ? (h - 1 - y) : y);
+		uint8_t* dst = rgba.data() + (size_t)y * w * 4;
+		for (int x = 0; x < w; ++x) {
+			const uint8_t* p = src + x * (bpp / 8);
+			dst[x * 4 + 0] = p[2];
+			dst[x * 4 + 1] = p[1];
+			dst[x * 4 + 2] = p[0];
+			dst[x * 4 + 3] = bpp == 32 ? p[3] : 255;
+		}
+	}
+	return true;
+}
+
+} // namespace
+
+// ---- low-level emit ----------------------------------------------------------
+
+// xy: 4 corners (TL, TR, BR, BL) in stage-screen units, uv likewise.
+void Renderer::EmitQuad(GLuint tex, const float xy[8], const float uv[8],
+                        const float rgba[4], bool linear) {
+	static const int idx[6] = {0, 1, 2, 2, 3, 0};
+	float v[9 * 6];
+	for (int i = 0; i < 6; ++i) {
+		int c = idx[i];
+		float* o = v + i * 9;
+		o[0] = xy[c * 2]; o[1] = xy[c * 2 + 1]; o[2] = 0.0f;
+		o[3] = uv[c * 2]; o[4] = uv[c * 2 + 1];
+		o[5] = rgba[0]; o[6] = rgba[1]; o[7] = rgba[2]; o[8] = rgba[3];
+	}
 	glBindBuffer(GL_ARRAY_BUFFER, vbo);
-	GLint uAlpha = glGetUniformLocation(program, "uAlpha");
+	glBufferSubData(GL_ARRAY_BUFFER, 0, sizeof(v), v);
+	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 9 * sizeof(float), (void*)0);
+	glEnableVertexAttribArray(0);
+	glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 9 * sizeof(float), (void*)(3 * sizeof(float)));
+	glEnableVertexAttribArray(1);
+	glVertexAttribPointer(2, 4, GL_FLOAT, GL_FALSE, 9 * sizeof(float), (void*)(5 * sizeof(float)));
+	glEnableVertexAttribArray(2);
+	glActiveTexture(GL_TEXTURE0);
+	glBindTexture(GL_TEXTURE_2D, tex);
+	// Sampler mode: 1 = point (the game default), 2 = linear (object +22 /
+	// PAT part +50 — MBAA sets byte 0x56447F).
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, linear ? GL_LINEAR : GL_NEAREST);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, linear ? GL_LINEAR : GL_NEAREST);
+	glUniform1i(uTexture, 0);
+	glDrawArrays(GL_TRIANGLES, 0, 6);
+}
 
-	for (const PartProperty& part : ps.groups) {
-		if (part.ppId < 0 || part.ppId >= (int)patParts->cutOuts.size())
+// A line as a thin quad `width` units wide, colour interpolated end to end.
+void Renderer::EmitLine(float x0, float y0, float x1, float y1, float width,
+                        const float c0[4], const float c1[4]) {
+	float dx = x1 - x0, dy = y1 - y0;
+	float len = std::sqrt(dx * dx + dy * dy);
+	if (len <= 0.0f) return;
+	float nx = -dy / len * width * 0.5f, ny = dx / len * width * 0.5f;
+	const float xy[8] = { x0 + nx, y0 + ny, x1 + nx, y1 + ny,
+	                      x1 - nx, y1 - ny, x0 - nx, y0 - ny };
+	static const int idx[6] = {0, 1, 2, 2, 3, 0};
+	const float* col[4] = {c0, c1, c1, c0};
+	float v[9 * 6];
+	for (int i = 0; i < 6; ++i) {
+		int c = idx[i];
+		float* o = v + i * 9;
+		o[0] = xy[c * 2]; o[1] = xy[c * 2 + 1]; o[2] = 0.0f;
+		o[3] = 0.5f; o[4] = 0.5f;
+		o[5] = col[c][0]; o[6] = col[c][1]; o[7] = col[c][2]; o[8] = col[c][3];
+	}
+	glBindBuffer(GL_ARRAY_BUFFER, vbo);
+	glBufferSubData(GL_ARRAY_BUFFER, 0, sizeof(v), v);
+	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 9 * sizeof(float), (void*)0);
+	glEnableVertexAttribArray(0);
+	glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 9 * sizeof(float), (void*)(3 * sizeof(float)));
+	glEnableVertexAttribArray(1);
+	glVertexAttribPointer(2, 4, GL_FLOAT, GL_FALSE, 9 * sizeof(float), (void*)(5 * sizeof(float)));
+	glEnableVertexAttribArray(2);
+	glActiveTexture(GL_TEXTURE0);
+	glBindTexture(GL_TEXTURE_2D, whiteTex);
+	glUniform1i(uTexture, 0);
+	glDrawArrays(GL_TRIANGLES, 0, 6);
+}
+
+// ---- PAT pattern -------------------------------------------------------------
+
+// Quad math is MBAA.exe Background_DrawInstance's PAT branch: per part (in
+// BgPat_BuildPartDrawOrder order), the cutout quad spans
+// (-origin)..(quad-origin), scaled by the part scale (int/1000), offset by the
+// part position (int32 +36/+40), then by the instance position. No pivot, no
+// perspective. MBAC (mbacPC 0x401ea0) differs: the part position is NOT read,
+// and the quad is rotated by part +60 (1/10000 turn) about the cutout origin.
+void Renderer::DrawPatPatternFlat(const PatPattern& pat, const PatPattern* next, float t,
+                                  float worldX, float worldY, bool objLinear, bool mbac) {
+	if (!patParts) return;
+	static const int tX[4] = {0, 1, 1, 0};
+	static const int tY[4] = {0, 0, 1, 1};
+	glUniform1f(uAlphaLoc, 1.0f);   // the PAT branch ignores frame +9/+10
+
+	for (const PatPart& part : pat.parts) {
+		if (part.cutoutRef < 0 || part.cutoutRef >= (int)patParts->cutOuts.size())
 			continue;
-		const CutOut<>& cut = patParts->cutOuts[part.ppId];
+		const CutOut<>& cut = patParts->cutOuts[part.cutoutRef];
 		if (cut.texture < 0 || cut.texture >= (int)patParts->gfxMeta.size())
 			continue;
 		GLuint glTex = (GLuint)patParts->gfxMeta[cut.texture].textureIndex;
 		if (glTex == 0) continue;
 
-		// The game's PAT branch ignores the frame's blend/opacity: only the
-		// part's +49 additive flag and its ARGB diffuse colour apply.
-		(void)frameBlend;
-		bool additive = part.additive;
-		glBlendFunc(GL_SRC_ALPHA, additive ? GL_ONE : GL_ONE_MINUS_SRC_ALPHA);
-		glUniform4f(glGetUniformLocation(program, "uTint"),
-		            part.bgra[2] / 255.0f, part.bgra[1] / 255.0f,
-		            part.bgra[0] / 255.0f, part.bgra[3] / 255.0f);
+		const int slot = part.partIndex;
+		float sx = part.scaleX, sy = part.scaleY;
+		double rotDeg = mbac ? part.rotation * 0.035999998 : 0.0;
+		if (next && slot >= 0 && slot < 40) {
+			// frame +20: lerp toward the next pattern's SAME slot.
+			sx = ((float)(next->slotScaleX[slot] - pat.slotScaleX[slot]) * t + (float)pat.slotScaleX[slot]) * 0.001f;
+			sy = ((float)(next->slotScaleY[slot] - pat.slotScaleY[slot]) * t + (float)pat.slotScaleY[slot]) * 0.001f;
+			if (mbac) rotDeg = LerpAngle10000ToDeg(pat.slotRotation[slot], next->slotRotation[slot], t);
+		}
+		const float px = mbac ? 0.0f : part.posX;
+		const float py = mbac ? 0.0f : part.posY;
+		const float cr = (float)std::cos(rotDeg * 0.017453292519943295);
+		const float sr = (float)std::sin(rotDeg * 0.017453292519943295);
 
-		float verts[5 * 6];
-		for (int i = 0; i < 6; ++i) {
-			float lx = (float)(-cut.xy[0] + cut.wh[0] * tX[i]);
-			float ly = (float)(-cut.xy[1] + cut.wh[1] * tY[i]);
-			float wx = worldX + part.x + lx * part.scaleX;
-			float wy = worldY + part.y + ly * part.scaleY;
+		glBlendFunc(GL_SRC_ALPHA, part.additive ? GL_ONE : GL_ONE_MINUS_SRC_ALPHA);
+		glUniform4f(uTint, 1.0f, 1.0f, 1.0f, 1.0f);
+		glUniform3f(uAdd, part.addR / 255.0f, part.addG / 255.0f, part.addB / 255.0f);
+		const float col[4] = { part.colR / 255.0f, part.colG / 255.0f,
+		                       part.colB / 255.0f, part.colA / 255.0f };
+
+		float xy[8], uv[8];
+		for (int i = 0; i < 4; ++i) {
+			float lx = (float)(-cut.xy[0] + cut.wh[0] * tX[i]) * sx;
+			float ly = (float)(-cut.xy[1] + cut.wh[1] * tY[i]) * sy;
+			float rx = lx * cr - ly * sr;
+			float ry = lx * sr + ly * cr;
+			xy[i * 2]     = worldX + px + rx;
+			xy[i * 2 + 1] = worldY + py + ry;
 			int ux = (part.flip & 1) ? (1 - tX[i]) : tX[i];
 			int vy = (part.flip & 2) ? (1 - tY[i]) : tY[i];
-			// cut.uv is the texel rect normalised into the tag-format's
-			// 256-unit space (see BuildPatParts) — divide by 256 for [0,1].
-			float u = (cut.uv[0] + cut.uv[2] * ux) / 256.0f;
-			float v = (cut.uv[1] + cut.uv[3] * vy) / 256.0f;
-			verts[i*5+0] = wx; verts[i*5+1] = wy; verts[i*5+2] = 0.0f;
-			verts[i*5+3] = u;  verts[i*5+4] = v;
+			// Cutout src rects are in 256-unit space (see BuildPatParts).
+			uv[i * 2]     = (cut.uv[0] + cut.uv[2] * ux) / 256.0f;
+			uv[i * 2 + 1] = (cut.uv[1] + cut.uv[3] * vy) / 256.0f;
 		}
-		glBufferSubData(GL_ARRAY_BUFFER, 0, sizeof(verts), verts);
-		glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 5*sizeof(float), (void*)0);
-		glEnableVertexAttribArray(0);
-		glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 5*sizeof(float),
-		                      (void*)(3*sizeof(float)));
-		glEnableVertexAttribArray(1);
-		glActiveTexture(GL_TEXTURE0);
-		glBindTexture(GL_TEXTURE_2D, glTex);
-		glUniform1i(uTexture, 0);
-		glUniform1f(uAlpha, 1.0f);   // frame opacity not applied to PAT
-		(void)alpha;
-		glDrawArrays(GL_TRIANGLES, 0, 6);
+		EmitQuad(glTex, xy, uv, col, part.linearFilter || objLinear);
 	}
+	glUniform3f(uAdd, 0.0f, 0.0f, 0.0f);
 }
 
 // ---- projection ------------------------------------------------------------
 
-// XNA's CreateOrthographicOffCenter(left, right, bottom, top, near, far)
-// in row-major form. Composed with Scale(zoom) on the view side; we fold
-// the scale directly into the same matrix so there's only one uniform.
+// XNA's CreateOrthographicOffCenter(0, W, H, 0, 0, 1) with Scale(zoom)
+// folded in (column-major for GL).
 void Renderer::BuildProjView(int W, int H, float zoom, float m[16]) {
 	const float l = 0.0f, r = (float)W, b = (float)H, t = 0.0f, n = 0.0f, f = 1.0f;
-	// glm::ortho-style result (column-major in GLSL but we send transposed below).
-	// proj * scale(zoom):
-	//   X: 2/(r-l) * zoom, Y: 2/(t-b) * zoom (negative because b>t), Z: -2/(f-n)
-	//   Translation column accounts for -(r+l)/(r-l), -(t+b)/(t-b), -(f+n)/(f-n)
 	float sx = 2.0f / (r - l) * zoom;
 	float sy = 2.0f / (t - b) * zoom;
 	float sz = -2.0f / (f - n);
 	float tx = -(r + l) / (r - l);
 	float ty = -(t + b) / (t - b);
 	float tz = -(f + n) / (f - n);
-	// Column-major (OpenGL).
 	m[0]=sx; m[1]=0;  m[2]=0;  m[3]=0;
 	m[4]=0;  m[5]=sy; m[6]=0;  m[7]=0;
 	m[8]=0;  m[9]=0;  m[10]=sz;m[11]=0;
 	m[12]=tx;m[13]=ty;m[14]=tz;m[15]=1;
 }
 
-// ---- sprite quad submission -----------------------------------------------
+// ---- CG sprite ---------------------------------------------------------------
 
 void Renderer::DrawSprite(int spriteId,
                           float x, float y, float w, float h,
                           float alpha, int blendMode,
-                          float layerDepth)
+                          float tintRGB, bool linear)
 {
 	int sw, sh, ox, oy;
 	GLuint tex = GetOrCreateTexture(spriteId, sw, sh, ox, oy);
 	if (tex == 0) return;
-	(void)sw; (void)sh; // sprite is drawn at the size requested by caller.
-
-	// Blend mode — set right before the draw, per-sprite (matches u4ick's
-	// per-batch BlendState swap in the FullBlend path).
 	// MBAA.exe Background_DrawInstance: frame +9 = 0/1 alpha, 2 additive
-	// (SRCALPHA, ONE), 3 = blend mode 4 = MULTIPLY (DESTCOLOR, ZERO) — not
-	// subtractive as older notes claimed.
-	if (blendMode == 2) {
-		glBlendFunc(GL_SRC_ALPHA, GL_ONE);
-	} else if (blendMode == 3) {
-		glBlendFunc(GL_DST_COLOR, GL_ZERO);
-	} else {
-		glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-	}
-	// CG stage sprites are emitted with vertex RGB 0xEA (234/255) — MBAA.exe
-	// 0x4b791e — so they render ~8% darker than the raw CG.
-	{
-		const float k = 234.0f / 255.0f;
-		glUniform4f(glGetUniformLocation(program, "uTint"), k, k, k, 1.0f);
-	}
-
-	const float z = layerDepth;
-	float verts[5 * 6] = {
-		x,       y,       z,  0.0f, 0.0f,
-		x + w,   y,       z,  1.0f, 0.0f,
-		x + w,   y + h,   z,  1.0f, 1.0f,
-
-		x + w,   y + h,   z,  1.0f, 1.0f,
-		x,       y + h,   z,  0.0f, 1.0f,
-		x,       y,       z,  0.0f, 0.0f,
-	};
-
-	glBindBuffer(GL_ARRAY_BUFFER, vbo);
-	glBufferSubData(GL_ARRAY_BUFFER, 0, sizeof(verts), verts);
-
-	// Re-bind attribs per draw (no VAO support in this glad).
-	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void*)0);
-	glEnableVertexAttribArray(0);
-	glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 5 * sizeof(float),
-	                      (void*)(3 * sizeof(float)));
-	glEnableVertexAttribArray(1);
-
-	glActiveTexture(GL_TEXTURE0);
-	glBindTexture(GL_TEXTURE_2D, tex);
-	glUniform1i(uTexture, 0);
-	GLint uAlpha = glGetUniformLocation(program, "uAlpha");
-	glUniform1f(uAlpha, alpha);
-
-	glDrawArrays(GL_TRIANGLES, 0, 6);
+	// (SRCALPHA, ONE), 3 = blend mode 4 = MULTIPLY (DESTCOLOR, ZERO).
+	if (blendMode == 2)      glBlendFunc(GL_SRC_ALPHA, GL_ONE);
+	else if (blendMode == 3) glBlendFunc(GL_DST_COLOR, GL_ZERO);
+	else                     glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+	// MBAACC emits CG stage sprites with vertex RGB 0xEA (0x4b791e); MBAC
+	// uses 0xFFFFFF.
+	glUniform4f(uTint, tintRGB, tintRGB, tintRGB, 1.0f);
+	glUniform3f(uAdd, 0.0f, 0.0f, 0.0f);
+	glUniform1f(uAlphaLoc, alpha);
+	const float xy[8] = { x, y, x + w, y, x + w, y + h, x, y + h };
+	const float uv[8] = { 0, 0, 1, 0, 1, 1, 0, 1 };
+	const float col[4] = { 1, 1, 1, 1 };
+	EmitQuad(tex, xy, uv, col, linear);
 }
 
-// ---- main entry ------------------------------------------------------------
+// ---- weather / lights ------------------------------------------------------------
 
-void Renderer::Render(const Camera& camera, int clientW, int clientH) {
-	if (!enabled || !file) return;
-	CG* cg = file->GetCG();
-	if (!cg || !cg->m_loaded) return;
-	if (clientW <= 0 || clientH <= 0) return;
+void Renderer::LoadDropTexture() {
+	dropTexTried = true;
+	if (!file) return;
+	std::string path = file->DropBitmapPath();
+	if (path.empty()) return;
+	std::vector<uint8_t> rgba;
+	int w = 0, h = 0;
+	if (!LoadBmpRGBA(path, rgba, w, h)) return;
+	glGenTextures(1, &dropTex);
+	glBindTexture(GL_TEXTURE_2D, dropTex);
+	glPixelStorei(GL_UNPACK_ALIGNMENT, 4);
+	glPixelStorei(GL_UNPACK_ROW_LENGTH, 0);
+	glPixelStorei(GL_UNPACK_SKIP_ROWS, 0);
+	glPixelStorei(GL_UNPACK_SKIP_PIXELS, 0);
+	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, w, h, 0, GL_RGBA, GL_UNSIGNED_BYTE, rgba.data());
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+	dropTexW = w;
+	dropTexH = h;
+}
 
-	InitGL();
+// DropObject_RenderWithBloom 0x4b5cc0. Particles live in world space
+// (parallax 256, same camera matrix as the fighters). The sakura bloom
+// post-effect (TecSakuraBloom) is not reproduced.
+void Renderer::DrawWeather(const Camera& camera) {
+	const DropSystem& drops = file->GetDrops();
+	if (!drops.IsActive() || file->GetGame() != Game::MBAACC) return;
+	const StageInfo& cfg = drops.Info();
+	const float ax = camera.panX, ay = camera.panY;   // world (0,0) on screen
+	const float k = 234.0f / 255.0f;
+	glUniform4f(uTint, 1, 1, 1, 1);
+	glUniform3f(uAdd, 0, 0, 0);
+	glUniform1f(uAlphaLoc, 1.0f);
+	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+	if (drops.Type() == 1) {
+		// Rain: a line from the drop to H px behind it (rotated by the
+		// velocity direction), alpha DropObj_Alpha -> 0.
+		const float width = 1.0f / (camera.zoom > 0.0f ? camera.zoom : 1.0f);
+		const float c0[4] = { k, k, k, (cfg.alpha & 0xFF) / 255.0f };
+		const float c1[4] = { 1, 1, 1, 0 };
+		for (const DropParticle& p : drops.Particles()) {
+			double th = Atan2Normalized(p.vx, p.vy) * 360.0 * 0.01745329238474369;
+			float tx = (float)(-cfg.h * std::sin(th));
+			float ty = (float)(cfg.h * std::cos(th));
+			EmitLine(ax + p.x, ay + p.y, ax + p.x + tx, ay + p.y + ty, width, c0, c1);
+		}
+	} else if (drops.Type() == 0) {
+		if (!dropTexTried) LoadDropTexture();
+		if (!dropTex || dropTexW <= 0 || dropTexH <= 0) return;
+		const int W = cfg.w, H = cfg.h;
+		const float x0 = (float)(W / -2), x1 = (float)(W - W / 2);
+		const float y0 = (float)(H / -2), y1 = (float)(H - H / 2);
+		for (const DropParticle& p : drops.Particles()) {
+			int a = std::max(0, std::min(255, (int)p.alpha));
+			const float col[4] = { k, k, k, a / 255.0f };
+			const float xy[8] = { ax + p.x + x0, ay + p.y + y0, ax + p.x + x1, ay + p.y + y0,
+			                      ax + p.x + x1, ay + p.y + y1, ax + p.x + x0, ay + p.y + y1 };
+			float u0 = (float)(W * (int)p.frame) / dropTexW, v0 = (float)(H * p.pat) / dropTexH;
+			float u1 = u0 + (float)W / dropTexW, v1 = v0 + (float)H / dropTexH;
+			const float uv[8] = { u0, v0, u1, v0, u1, v1, u0, v1 };
+			EmitQuad(dropTex, xy, uv, col, false);
+		}
+	}
+	// DropObj_Type -1 (bg99) runs HudSpriteQueue_RenderGridWith3DTransform —
+	// not previewed.
+}
 
+// Stage lights only affect the fighters (an extra shadow pass per light,
+// MBAA Character_Render 0x41b411), so they are shown as editor markers: a
+// cross at the light source (x, -200) and a floor bar fading over +-Power.
+void Renderer::DrawLights(const Camera& camera) {
+	auto lights = file->ActiveLights();
+	if (lights.empty()) return;
+	const float ax = camera.panX, ay = camera.panY;
+	const float z = camera.zoom > 0.0f ? camera.zoom : 1.0f;
+	const float w = 2.0f / z;
+	glUniform4f(uTint, 1, 1, 1, 1);
+	glUniform3f(uAdd, 0, 0, 0);
+	glUniform1f(uAlphaLoc, 1.0f);
+	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+	const float on[4]  = { 1.0f, 0.85f, 0.25f, 0.9f };
+	const float off[4] = { 1.0f, 0.85f, 0.25f, 0.0f };
+	const float dim[4] = { 1.0f, 0.85f, 0.25f, 0.35f };
+	for (const auto& l : lights) {
+		float x = ax + (float)l.worldX, y = ay - 200.0f, fy = ay + 2.0f;
+		float s = 10.0f / z;
+		EmitLine(x - s, y - s, x + s, y + s, w, on, on);
+		EmitLine(x - s, y + s, x + s, y - s, w, on, on);
+		EmitLine(x, y, x, ay, w * 0.5f, dim, dim);
+		if (l.power > 0) {
+			EmitLine(x, fy, x - (float)l.power, fy, w * 2.0f, on, off);
+			EmitLine(x, fy, x + (float)l.power, fy, w * 2.0f, on, off);
+		}
+	}
+}
+
+// ---- one band of instances ----------------------------------------------------
+
+void Renderer::DrawPass(const Camera& camera, int clientW, int clientH, int band) {
+	(void)clientW; (void)clientH;
 	auto& objects = file->GetObjects();
-	if (objects.empty()) return;
-
-	// --- GL state ---
-	glUseProgram(program);
-
-	// Save host depth/blend so we don't leak state to character/grid.
-	GLboolean prevDepthTest, prevDepthMask, prevBlend;
-	glGetBooleanv(GL_DEPTH_TEST, &prevDepthTest);
-	glGetBooleanv(GL_DEPTH_WRITEMASK, &prevDepthMask);
-	glGetBooleanv(GL_BLEND, &prevBlend);
-
-	// Disable depth test — we sort on the CPU instead so we don't have to
-	// worry about how our layerDepth range interacts with the host editor's
-	// depth buffer, projection range, or character render afterwards. (My
-	// earlier attempt set GL_DEPTH_TEST + layerDepth z = -1..0, which fell
-	// outside our ortho's [0, 1] z range and clipped most sprites — "everything
-	// looks worse." Pure paint sidesteps the whole problem.)
-	glDisable(GL_DEPTH_TEST);
-	glDepthMask(GL_FALSE);
-	glEnable(GL_BLEND);
-
-	// Projection (Scale(zoom) folded in).
-	float pview[16];
-	BuildProjView(clientW, clientH, camera.zoom, pview);
-	glUniformMatrix4fv(uProjView, 1, GL_FALSE, pview);
+	const bool mbac = file->GetGame() == Game::MBAC;
+	const OldPat* oldPat = file->GetOldPat();
 
 	// --- draw order (MBAA.exe Background_DrawAllInstances @0x4b8f80) ---
-	// Live instances are bucketed by (objhdr+21 foreground band, layer);
-	// band 0 is drawn entirely before band 1 (render priority 10 vs 600, the
-	// latter in front of the fighters), layers ascending within a band
-	// (layer 255 in band 0 becomes 279), slot ascending within a layer.
+	// Live instances are bucketed by (objhdr+21 band, layer); band 0 is drawn
+	// at render priority 10 (behind the fighters), band 1 at 600 (in front),
+	// layers ascending within a band (layer 255 in band 0 becomes 279), slot
+	// ascending within a layer.
 	const auto& insts = file->GetInstances();
 	struct DrawItem { int objIdx; int slot; int key; };
 	std::vector<DrawItem> order;
@@ -607,166 +776,157 @@ void Renderer::Render(const Camera& camera, int clientW, int clientH) {
 		const Instance& in = insts[slot];
 		if (in.state < 2 || in.objIndex < 0 || in.objIndex >= (int)objects.size()) continue;
 		const Object& o = objects[in.objIndex];
+		if ((o.foreground ? 1 : 0) != band) continue;
 		int layer = (int16_t)o.layer;
 		if (layer == 255 && !o.foreground) layer = 279;
-		order.push_back({in.objIndex, slot, (o.foreground ? 1000 : 0) + layer});
+		order.push_back({in.objIndex, slot, layer});
 	}
 	std::stable_sort(order.begin(), order.end(),
 	                 [](const DrawItem& a, const DrawItem& b) { return a.key < b.key; });
 
-	// --- emit sprites ---
-	// Build the PAT->Parts conversion once (needs a live GL context, hence
-	// done here rather than at file-load time).
-	if (!patPartsBuilt) BuildPatParts();
-	static int s_geomLog = 0;
-	bool dbgGeom = (s_geomLog < 1);
-	std::ofstream dbgLg;
-	if (dbgGeom) {
-		++s_geomLog;
-		dbgLg.open("C:/dev/bggeom_log.txt", std::ios::trunc);
-		dbgLg << "clientW=" << clientW << " clientH=" << clientH
-		      << " zoom=" << camera.zoom
-		      << " panLast=(" << camera.panLastX << "," << camera.panLastY << ")"
-		      << " STAGE_CENTER_X=" << STAGE_CENTER_X
-		      << " STAGE_FLOOR_Y=" << STAGE_FLOOR_Y << "\n";
-	}
 	for (const DrawItem& item : order) {
-		const size_t i = (size_t)item.objIdx;
-		const auto& obj = objects[i];
+		const auto& obj = objects[(size_t)item.objIdx];
 		const Instance& inst = insts[item.slot];
-		if (obj.frames.empty()) continue;
-		if (!obj.visible) continue;   // layer-debug hide / solo
-		if (inst.curFrame < 0 || inst.curFrame >= (int)obj.frames.size())
-			continue;
+		if (obj.frames.empty() || !obj.visible) continue;
+		if (inst.curFrame < 0 || inst.curFrame >= (int)obj.frames.size()) continue;
 		const Frame& fr = obj.frames[inst.curFrame];
-		// NOTE: u4ick skipped dur==0 && aniType==1 frames here; the game does
-		// not (a dur-0 frame is shown for exactly one tick), so no skip.
+		// The game shows a dur-0 frame for one tick (no u4ick skip).
 		if (fr.spriteId < 0) continue;
+		const Frame* nx = (inst.nextFrame >= 0 && inst.nextFrame < (int)obj.frames.size())
+		                  ? &obj.frames[inst.nextFrame] : nullptr;
+		const uint16_t dur = (uint16_t)fr.duration;
+		const float t = dur ? (float)inst.timer / (float)dur : 0.0f;
 
 		int para = parallaxEnabled ? obj.parallax : 256;
-		// worldX/worldY: editor-world position WITHOUT the camera pan.
-		// -STAGE_CENTER_X / -STAGE_FLOOR_Y shift the stage so u4ick's
-		// playfield centre / floor land on the grid; obj.posX/posY is the
-		// integrator drift (1/128 px). The CG path adds panLastX/Y itself;
-		// the PAT path lets Render's transform (render.x/y) supply it.
-		// CG path draws at (pos >> 7) + offset (integer), PAT at pos/128.
+		// worldX/worldY: editor-world position of the CG canvas top-left
+		// (without the camera pan). CG draws at (pos >> 7) + offset.
 		float worldX = camera.ScreenX((float)fr.offsetX, para)
 		               - STAGE_CENTER_X + (float)(inst.posX >> 7);
 		float worldY = camera.ScreenY((float)fr.offsetY, para)
 		               - STAGE_FLOOR_Y + (float)(inst.posY >> 7);
-		float alpha = (fr.blendMode > 0) ? (fr.opacity / 255.0f) : 1.0f;
-		// frame +20: lerp alpha toward the next frame's over the duration
-		// (MBAA.exe Background_DrawInstance CG branch).
-		if (fr.interpolate && inst.nextFrame >= 0 && inst.nextFrame < (int)obj.frames.size()) {
-			const Frame& nx = obj.frames[inst.nextFrame];
-			float a0 = (fr.blendMode > 0) ? fr.opacity : 255.0f;
-			float a1 = nx.blendMode ? (float)nx.opacity : 255.0f;
-			float t = (uint16_t)fr.duration ? (float)inst.timer / (float)(uint16_t)fr.duration : 1.0f;
-			if (!(uint16_t)fr.duration) t = 0.0f;
-			alpha = ((1.0f - t) * a0 + t * a1) / 255.0f;
-		}
 
 		if (fr.spriteId >= 10000) {
 			// --- CG sprite ---
+			float alpha = (fr.blendMode > 0) ? (fr.opacity / 255.0f) : 1.0f;
+			// MBAC-only per-frame scale (+16/+18, 256 = 1.0, 0 = 1.0).
+			float scx = 1.0f, scy = 1.0f;
+			if (mbac) {
+				scx = fr.scaleX ? fr.scaleX / 256.0f : 1.0f;
+				scy = fr.scaleY ? fr.scaleY / 256.0f : 1.0f;
+			}
+			// frame +20: lerp alpha (and MBAC scale) toward the next frame.
+			if (fr.interpolate && nx) {
+				float a0 = (fr.blendMode > 0) ? fr.opacity : 255.0f;
+				float a1 = nx->blendMode ? (float)nx->opacity : 255.0f;
+				alpha = ((1.0f - t) * a0 + t * a1) / 255.0f;
+				if (mbac) {
+					float n0 = nx->scaleX ? nx->scaleX / 256.0f : 1.0f;
+					float n1 = nx->scaleY ? nx->scaleY / 256.0f : 1.0f;
+					scx = (1.0f - t) * scx + t * n0;
+					scy = (1.0f - t) * scy + t * n1;
+				}
+			}
 			int cgIdx = fr.spriteId - 10000;
 			int sw, sh, ox, oy;
-			GLuint tex = GetOrCreateTexture(cgIdx, sw, sh, ox, oy);
-			if (tex == 0) continue;
-			// Compensate for the cg lib returning a TIGHT bounded region:
-			// add (ox, oy) so the content lands where the full canvas would.
-			glUseProgram(program);   // a prior PAT draw unsets the program
-			if (dbgGeom)
-				dbgLg << "obj_" << i << " CG spr=" << cgIdx
-				      << " off=(" << fr.offsetX << "," << fr.offsetY << ")"
-				      << " para=" << para << " posXY=(" << obj.posX << ","
-				      << obj.posY << ") world=(" << worldX << "," << worldY << ")"
-				      << " ox/oy=(" << ox << "," << oy << ")"
-				      << " wh=(" << sw << "," << sh << ")"
-				      << " screenXY=(" << (worldX+camera.panLastX+ox) << ","
-				      << (worldY+camera.panLastY+oy) << ")\n";
+			if (GetOrCreateTexture(cgIdx, sw, sh, ox, oy) == 0) continue;
+			// The cg lib returns the TIGHT bounded region: (ox, oy) is its
+			// top-left in the canvas. Scale about the object origin (canvas
+			// point 128, 224).
+			float orgX = worldX + CG_PIVOT_X + camera.panLastX;
+			float orgY = worldY + CG_PIVOT_Y + camera.panLastY;
 			DrawSprite(cgIdx,
-			           worldX + camera.panLastX + (float)ox,
-			           worldY + camera.panLastY + (float)oy,
-			           (float)sw, (float)sh, alpha, fr.blendMode, 0.0f);
-		} else if (patParts && patParts->loaded) {
-			if (dbgGeom) {
-				float ax = worldX + camera.panLastX;
-				float ay = worldY + camera.panLastY;
-				dbgLg << "obj_" << i << " PAT spr=" << fr.spriteId
-				      << " off=(" << fr.offsetX << "," << fr.offsetY << ")"
-				      << " para=" << para << " posXY=(" << obj.posX << ","
-				      << obj.posY << ") anchor=(" << ax << "," << ay << ")";
-				if (fr.spriteId >= 0 && fr.spriteId < (int)patParts->partSets.size()) {
-					const PartSet<>& ps = patParts->partSets[fr.spriteId];
-					for (const PartProperty& pp : ps.groups) {
-						if (pp.ppId < 0 || pp.ppId >= (int)patParts->cutOuts.size())
-							continue;
-						const CutOut<>& c = patParts->cutOuts[pp.ppId];
-						float minx = ax + pp.x + (-c.xy[0]) * pp.scaleX;
-						float maxx = ax + pp.x + (c.wh[0]-c.xy[0]) * pp.scaleX;
-						float miny = ay + pp.y + (-c.xy[1]) * pp.scaleY;
-						float maxy = ay + pp.y + (c.wh[1]-c.xy[1]) * pp.scaleY;
-						dbgLg << " | part ppId=" << pp.ppId
-						      << " partXY=(" << pp.x << "," << pp.y << ")"
-						      << " scale=(" << pp.scaleX << "," << pp.scaleY << ")"
-						      << " quadWH=(" << c.wh[0] << "," << c.wh[1] << ")"
-						      << " origin=(" << c.xy[0] << "," << c.xy[1] << ")"
-						      << " screenRect=(" << minx << "," << miny << ")..("
-						      << maxx << "," << maxy << ")";
-					}
-				}
-				dbgLg << "\n";
+			           orgX + ((float)ox - CG_PIVOT_X) * scx,
+			           orgY + ((float)oy - CG_PIVOT_Y) * scy,
+			           (float)sw * scx, (float)sh * scy, alpha, fr.blendMode,
+			           mbac ? 1.0f : 234.0f / 255.0f, obj.linearFilter != 0);
+		} else if (patParts && patParts->loaded && oldPat) {
+			// --- older-PAT pattern (sprite-id < 10000) ---
+			const PatPattern* pat = oldPat->GetPattern(fr.spriteId);
+			if (!pat) continue;
+			// The game looks up the NEXT frame's pattern unconditionally and
+			// skips the draw if it is missing.
+			const PatPattern* nextPat = nullptr;
+			if (nx && nx->spriteId >= 0 && nx->spriteId < 10000) {
+				nextPat = oldPat->GetPattern(nx->spriteId);
+				if (!nextPat) continue;
 			}
-			// --- older-PAT pattern --- (sprite-id < 10000)
-			// Drawn flat in THIS renderer's ortho — same coordinate space
-			// as the CG path above (worldX/Y + panLast). The bg has no
-			// perspective, so no editor part-renderer / DrawBgPattern.
-			// No (128,224) CG pivot on PAT objects in the game — add back
-			// what STAGE_CENTER_X/STAGE_FLOOR_Y removed; and PAT uses pos/128
-			// as float, not pos >> 7.
-			DrawPatPatternFlat(fr.spriteId,
-			                   worldX + CG_PIVOT_X + camera.panLastX
-			                       + (inst.posX * STAGE_POS_SCALE - (float)(inst.posX >> 7)),
-			                   worldY + CG_PIVOT_Y + camera.panLastY
-			                       + (inst.posY * STAGE_POS_SCALE - (float)(inst.posY >> 7)),
-			                   alpha, fr.blendMode);
+			// No (128,224) pivot on PAT objects: add back what
+			// STAGE_CENTER_X / STAGE_FLOOR_Y removed. MBAACC uses pos/128 as
+			// a float, MBAC pos >> 7.
+			float fx = mbac ? 0.0f : (inst.posX * STAGE_POS_SCALE - (float)(inst.posX >> 7));
+			float fy = mbac ? 0.0f : (inst.posY * STAGE_POS_SCALE - (float)(inst.posY >> 7));
+			DrawPatPatternFlat(*pat, (fr.interpolate && nextPat) ? nextPat : nullptr, t,
+			                   worldX + CG_PIVOT_X + camera.panLastX + fx,
+			                   worldY + CG_PIVOT_Y + camera.panLastY + fy,
+			                   obj.linearFilter != 0, mbac);
 		}
+	}
+}
+
+// ---- main entry ------------------------------------------------------------
+
+void Renderer::Render(const Camera& camera, int clientW, int clientH, Pass pass) {
+	if (!enabled || !file) return;
+	CG* cg = file->GetCG();
+	if (!cg || !cg->m_loaded) return;
+	if (clientW <= 0 || clientH <= 0) return;
+	if (file->GetObjects().empty()) return;
+
+	InitGL();
+	// Build the PAT->Parts conversion once (needs a live GL context).
+	if (!patPartsBuilt) BuildPatParts();
+
+	glUseProgram(program);
+
+	// Save host depth/blend so we don't leak state to character/grid.
+	GLboolean prevDepthTest, prevDepthMask, prevBlend;
+	glGetBooleanv(GL_DEPTH_TEST, &prevDepthTest);
+	glGetBooleanv(GL_DEPTH_WRITEMASK, &prevDepthMask);
+	glGetBooleanv(GL_BLEND, &prevBlend);
+
+	// Painter's order on the CPU; no depth test.
+	glDisable(GL_DEPTH_TEST);
+	glDepthMask(GL_FALSE);
+	glEnable(GL_BLEND);
+
+	float pview[16];
+	BuildProjView(clientW, clientH, camera.zoom, pview);
+	glUniformMatrix4fv(uProjView, 1, GL_FALSE, pview);
+	glUniform4f(uTint, 1, 1, 1, 1);
+	glUniform3f(uAdd, 0, 0, 0);
+	glUniform1f(uAlphaLoc, 1.0f);
+
+	if (pass == Pass::All || pass == Pass::Back)
+		DrawPass(camera, clientW, clientH, 0);
+	if (pass == Pass::All || pass == Pass::Front) {
+		// Priority 522 (weather) sits between band 0 (10) and band 1 (600).
+		if (showWeather) DrawWeather(camera);
+		DrawPass(camera, clientW, clientH, 1);
+		if (showLights) DrawLights(camera);
 	}
 
 	// --- restore state ---
+	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+	glDisableVertexAttribArray(2);   // host shaders use a constant colour at 2
 	if (prevDepthTest) glEnable(GL_DEPTH_TEST); else glDisable(GL_DEPTH_TEST);
 	glDepthMask(prevDepthMask);
 	if (!prevBlend) glDisable(GL_BLEND);
 	glUseProgram(0);
 
-	// --- debug self-screenshot (continuous: re-arms so a solo can be caught) ---
-	if (dumpCountdown > 0) {
-		--dumpCountdown;
-		if (dumpCountdown == 0 && clientW > 0 && clientH > 0) {
-			std::vector<uint8_t> rgba((size_t)clientW * clientH * 4);
-			glReadPixels(0, 0, clientW, clientH, GL_RGBA, GL_UNSIGNED_BYTE, rgba.data());
-			std::vector<uint8_t> rgb((size_t)clientW * clientH * 3);
-			for (int yy = 0; yy < clientH; ++yy) {
-				int sy = clientH - 1 - yy;        // GL origin is bottom-left
-				for (int xx = 0; xx < clientW; ++xx) {
-					const uint8_t* s = &rgba[((size_t)sy * clientW + xx) * 4];
-					uint8_t* d = &rgb[((size_t)yy * clientW + xx) * 3];
-					d[0] = s[0]; d[1] = s[1]; d[2] = s[2];
-				}
-			}
-			// Skip near-black captures (caught while the stage view wasn't
-			// on screen) — retry sooner instead of writing a useless dump.
-			uint64_t sum = 0;
-			for (size_t i = 0; i < rgb.size(); ++i) sum += rgb[i];
-			if (rgb.empty() || sum / rgb.size() < 8) {
-				dumpCountdown = 20;   // not a real frame — retry
-			} else {
-				WritePNG("C:/dev/bg_dump.png", rgb.data(), clientW, clientH);
-				std::cerr << "[bg] wrote C:/dev/bg_dump.png (" << clientW << "x"
-				          << clientH << ")" << std::endl;
-				dumpCountdown = 90;   // re-arm: dump again ~1.5s later
+	// --- debug self-screenshot (on request, after the front pass) ---
+	if (dumpCountdown > 0 && pass != Pass::Back && --dumpCountdown == 0) {
+		std::vector<uint8_t> rgba((size_t)clientW * clientH * 4);
+		glReadPixels(0, 0, clientW, clientH, GL_RGBA, GL_UNSIGNED_BYTE, rgba.data());
+		std::vector<uint8_t> rgb((size_t)clientW * clientH * 3);
+		for (int yy = 0; yy < clientH; ++yy) {
+			int sy = clientH - 1 - yy;        // GL origin is bottom-left
+			for (int xx = 0; xx < clientW; ++xx) {
+				const uint8_t* s = &rgba[((size_t)sy * clientW + xx) * 4];
+				uint8_t* d = &rgb[((size_t)yy * clientW + xx) * 3];
+				d[0] = s[0]; d[1] = s[1]; d[2] = s[2];
 			}
 		}
+		WritePNG("C:/dev/bg_dump.png", rgb.data(), clientW, clientH);
 	}
 }
 

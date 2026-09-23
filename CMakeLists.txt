@@ -60,6 +60,7 @@ add_executable(${EXE}
 	src/background/bg_file.cpp
 	src/background/bg_renderer.cpp
 	src/background/bg_pat.cpp
+	src/background/bg_info.cpp
 	imsearch/imsearch.cpp
 	res/res.rc
 )
@@ -111,6 +112,7 @@ add_executable(bg_test
 	src/bg_test.cpp
 	src/background/bg_file.cpp
 	src/background/bg_pat.cpp
+	src/background/bg_info.cpp
 	src/cg.cpp
 	src/misc.cpp
 	tinyalloc/tinyalloc.c
