@@ -48,6 +48,7 @@ add_executable(${EXE}
 	src/startup_args.cpp
 	src/framestate.cpp
 	src/copy_data.cpp
+	src/var_refs.cpp
 	src/preview_sim.cpp
 	src/mv_script.cpp
 	src/character_instance.cpp
@@ -327,6 +328,24 @@ if(MINGW)
 	target_link_options(shared_clipboard_test PRIVATE -static-libgcc -static-libstdc++ -static)
 endif()
 add_test(NAME shared_clipboard COMMAND shared_clipboard_test)
+# refs_test: variable / pattern reference tools (issues #75, #44).
+add_executable(refs_test
+	tests/refs_test.cpp
+	src/var_refs.cpp
+	src/framedata.cpp
+	src/framedata_load.cpp
+	src/framedata_save.cpp
+	src/framedata_ha4.cpp
+	src/misc.cpp
+	tinyalloc/tinyalloc.c
+)
+target_include_directories(refs_test PRIVATE "." "src" "third_party" "${CMAKE_BINARY_DIR}/generated")
+target_compile_definitions(refs_test PRIVATE WIN32_LEAN_AND_MEAN HA6GUIVERSION="${CMAKE_PROJECT_VERSION}")
+target_link_libraries(refs_test PRIVATE tinyalloc)
+if(MINGW)
+	target_link_options(refs_test PRIVATE -static-libgcc -static-libstdc++ -static)
+endif()
+add_test(NAME refs COMMAND refs_test)
 # MBAC Hantei4 (.DAT) tool: byte-exact round trip, model re-encode check,
 # batch MBAC -> HA6 conversion (see docs/HANTEI_MBAC_SUPPORT.md).
 add_executable(ha4tool

@@ -166,6 +166,7 @@ struct FrameState
 
 	// UI scroll state (preserved when switching views)
 	float rightPaneScrollY = 0.0f;
+	float leftPaneScrollY = 0.0f;
 
 	FrameState();
 	~FrameState();

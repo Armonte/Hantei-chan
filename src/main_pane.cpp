@@ -220,6 +220,15 @@ void MainPane::Draw()
 			}
 
 			im::BeginChild("FrameInfo", {0, 0}, false);
+			// Keep this view's scroll position across tab switches (#73; the
+			// Right Pane already does the same).
+			{
+				static FrameState* lastLeftView = nullptr;
+				if (lastLeftView != &currState) {
+					im::SetScrollY(currState.leftPaneScrollY);
+					lastLeftView = &currState;
+				}
+			}
 
 			if (im::TreeNode("Pattern data"))
 			{
@@ -637,6 +646,7 @@ void MainPane::Draw()
 				markModified();
 			}
 			}
+			currState.leftPaneScrollY = im::GetScrollY();
 			im::EndChild();
 		}
 	}
