@@ -46,6 +46,8 @@ add_executable(${EXE}
 	src/ini.cpp
 	src/preset_effects.cpp
 	src/copy_manager.cpp
+	src/undo_manager.cpp
+	src/shortcut_router.cpp
 	src/PatEditor/pat_partset_pane.cpp
 	src/PatEditor/pat_part_pane.cpp
 	src/PatEditor/pat_shape_pane.cpp
@@ -185,3 +187,19 @@ target_link_libraries(pat_dump PRIVATE tinyalloc glad glm OpenGL::GL)
 if(MINGW)
 	target_link_options(pat_dump PRIVATE -static-libgcc -static-libstdc++ -static)
 endif()
+
+# Unit tests for editor infrastructure (no GL / ImGui). Run from WSL with
+# ./build/<name>_test.exe, or ctest.
+enable_testing()
+add_executable(shortcut_router_test tests/shortcut_router_test.cpp src/shortcut_router.cpp)
+target_include_directories(shortcut_router_test PRIVATE "src")
+if(MINGW)
+	target_link_options(shortcut_router_test PRIVATE -static-libgcc -static-libstdc++ -static)
+endif()
+add_test(NAME shortcut_router COMMAND shortcut_router_test)
+add_executable(undo_manager_test tests/undo_manager_test.cpp src/undo_manager.cpp)
+target_include_directories(undo_manager_test PRIVATE "src")
+if(MINGW)
+	target_link_options(undo_manager_test PRIVATE -static-libgcc -static-libstdc++ -static)
+endif()
+add_test(NAME undo_manager COMMAND undo_manager_test)
