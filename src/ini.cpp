@@ -101,159 +101,53 @@ void InitIni()
 	ImGui::LoadIniSettingsFromDisk(context.IO.IniFilename);
 }
 
-// Lowercased filename without any leading directories, for layout detection.
-static std::string BaseNameLower(const std::string& path)
-{
-	auto pos = path.find_last_of("\\/");
-	std::string base = (pos == std::string::npos) ? path : path.substr(pos + 1);
-	for (auto& c : base) c = (char)tolower((unsigned char)c);
-	return base;
-}
 
-bool LoadFromIni(FrameData *framedata, CG *cg, const std::string& iniPath, std::string* outTopHA6Path, Parts* parts, std::string* outPATPath)
+// [DataFile] file list of a project .txt, read the way the games do
+// (Han6_ParseProjectTxt: uni2.exe 0x4C3BA0 / MBTL.exe 0x4A5A50): FileNum N and
+// File%0*d with width 2, or 3 once N >= 100; without FileNum, a single
+// [DataFile] File= entry.
+static std::vector<std::string> ReadDataFileList(const std::string& iniPath)
 {
+	std::vector<std::string> names;
 	int fileNum = GetPrivateProfileIntA("DataFile", "FileNum", 0, iniPath.c_str());
-	if(fileNum)
+	if(fileNum > 0 && fileNum < 1000)
 	{
-		std::string folder = iniPath.substr(0, iniPath.find_last_of("\\/"));
-		std::string topHA6File;
-		std::vector<std::string> ha6Names(fileNum);
-
+		const int width = fileNum >= 100 ? 3 : 2;
 		for(int i = 0; i < fileNum; i++)
 		{
 			char ha6file[256]{};
 			std::stringstream ss;
-			ss << "File" << std::setfill('0') << std::setw(2) << i;
+			ss << "File" << std::setfill('0') << std::setw(width) << i;
 			GetPrivateProfileStringA("DataFile", ss.str().c_str(), nullptr, ha6file, 256, iniPath.c_str());
-			ha6Names[i] = ha6file;
+			names.push_back(ha6file);
 		}
-
-		// Determine the save target HA6 file (issue #46):
-		// uni2/mbtl/dbfci/unist: File00=_temp.ha6, File01=chrxxx.ha6, last=../BaseData.HA6
-		//   -> the character's own file is File01; BaseData/temp must never be overwritten.
-		// MBAACC: File00=base, File01=base_r, File02=variant, File03=variant_r
-		//   -> the highest-indexed file is the load-order winner and the save target.
-		int target = fileNum - 1;
-		std::string first = BaseNameLower(ha6Names[0]);
-		const bool uniLayout = fileNum >= 2 && (first.rfind("_temp", 0) == 0 || first.rfind("temp.", 0) == 0);
-		if(uniLayout)
-			target = 1;
-		else
-		{
-			// Never pick shared base data as the save target.
-			while(target > 0 && BaseNameLower(ha6Names[target]).find("basedata") != std::string::npos)
-				--target;
-		}
-		if(!ha6Names[target].empty())
-			topHA6File = folder + "\\" + ha6Names[target];
-
-		// Load in order; later files overlay earlier ones (MBAACC moons). Files
-		// after the character's own file in a UNI-style stack are fallbacks:
-		// BaseData holds template patterns (sprite -1/-2, names marked with a
-		// star) for slots the character also defines, and loading it on top
-		// replaced the character's real patterns in the editor and on save
-		// (issues #71/#68). Those files only fill empty slots.
-		for(int i = 0; i < fileNum; i++)
-		{
-			std::string fullpath = folder + "\\" + ha6Names[i];
-			const bool fallback = uniLayout && i > target;
-			if(!framedata->load(fullpath.c_str(), i > 0, fallback))
-				return false;
-		}
-
-		// With several files, saving writes only the target's own patterns
-		// (plus edits), not the whole merged stack (issue #71).
-		if(fileNum > 1)
-			framedata->setOwnFile(target);
-
-		// Return the top HA6 file path if caller wants it
-		if(outTopHA6Path && !topHA6File.empty()) {
-			*outTopHA6Path = topHA6File;
-		}
-
-		int cgNum = GetPrivateProfileIntA("BmpcutFile", "FileNum", 0, iniPath.c_str());
-		if(cgNum == 1)
-		{
-			char cgFile[256]{};
-			GetPrivateProfileStringA("BmpcutFile", "File00", nullptr, cgFile, 256, iniPath.c_str());
-
-			std::string fullpath = folder + "\\" + cgFile;
-			auto extensionPos = fullpath.find_last_of(".");
-			auto palPath = fullpath.substr(0, extensionPos) + ".pal";
-			cg->load(fullpath.c_str());
-			if(std::filesystem::exists(palPath))
-			{
-				cg->loadPalette(palPath.c_str());
-			}
-		}
-
-		// Load .pat file if available (for UNIST/DFCI/MBTL/UNI2 characters)
-		int patNum = GetPrivateProfileIntA("PAniFile", "FileNum", 0, iniPath.c_str());
-		if(patNum >= 1 && parts != nullptr)
-		{
-			char patFile[256]{};
-			GetPrivateProfileStringA("PAniFile", "File00", nullptr, patFile, 256, iniPath.c_str());
-
-			if(patFile[0] != '\0')
-			{
-				std::string fullpath = folder + "\\" + patFile;
-				if(parts->Load(fullpath.c_str()))
-				{
-					// Return the PAT file path if caller wants it
-					if(outPATPath)
-					{
-						*outPATPath = fullpath;
-					}
-				}
-			}
-		}
-
-		return true;
 	}
-	else
-		return false;
+	else if(fileNum == 0)
+	{
+		char ha6file[256]{};
+		GetPrivateProfileStringA("DataFile", "File", nullptr, ha6file, 256, iniPath.c_str());
+		if(ha6file[0])
+			names.push_back(ha6file);
+	}
+	return names;
 }
 
-bool LoadChrHA6FromIni(FrameData *framedata, CG *cg, const std::string& iniPath, std::string* outTopHA6Path, Parts* parts, std::string* outPATPath)
+static void LoadCgAndPat(CG *cg, const std::string& folder, const std::string& iniPath, Parts* parts, std::string* outPATPath)
 {
-	int fileNum = GetPrivateProfileIntA("DataFile", "FileNum", 0, iniPath.c_str());
-	if(fileNum < 2)
-		return false;  // Need at least File00 and File01
-
-	std::string folder = iniPath.substr(0, iniPath.find_last_of("\\/"));
-
-	// Load only File01 (the main character .ha6)
-	// Skip File00 (_temp.ha6) and File02+ (BaseData.ha6, etc.)
-	char ha6file[256]{};
-	GetPrivateProfileStringA("DataFile", "File01", nullptr, ha6file, 256, iniPath.c_str());
-
-	if(ha6file[0] == '\0')
-		return false;
-
-	std::string ha6fullpath = folder + "\\" + ha6file;
-	if(!framedata->load(ha6fullpath.c_str(), 0))
-		return false;
-
-	// Return the HA6 file path if caller wants it
-	if(outTopHA6Path) {
-		*outTopHA6Path = ha6fullpath;
-	}
-
-	// Load .cg file
 	int cgNum = GetPrivateProfileIntA("BmpcutFile", "FileNum", 0, iniPath.c_str());
-	if(cgNum == 1)
+	if(cgNum >= 1 && cg)
 	{
 		char cgFile[256]{};
 		GetPrivateProfileStringA("BmpcutFile", "File00", nullptr, cgFile, 256, iniPath.c_str());
 
 		std::string fullpath = folder + "\\" + cgFile;
 		auto extensionPos = fullpath.find_last_of(".");
-		auto palPath = fullpath.substr(0, extensionPos) + ".pal";
+		auto stem = fullpath.substr(0, extensionPos);
 		cg->load(fullpath.c_str());
-		if(std::filesystem::exists(palPath))
-		{
-			cg->loadPalette(palPath.c_str());
-		}
+		// <cg>.pal is PUPS palette file 0; <cg>_p1.._p7.pal are files 1..7
+		// (CharaPalette_LoadPalAndPupsVariants, MBTL.exe 0x5934B0). A pattern's
+		// PUPS value picks the file (issue #76).
+		cg->loadPupsPalettes(stem);
 	}
 
 	// Load .pat file if available (for UNIST/DFCI/MBTL/UNI2 characters)
@@ -268,15 +162,81 @@ bool LoadChrHA6FromIni(FrameData *framedata, CG *cg, const std::string& iniPath,
 			std::string fullpath = folder + "\\" + patFile;
 			if(parts->Load(fullpath.c_str()))
 			{
-				// Return the PAT file path if caller wants it
 				if(outPATPath)
-				{
 					*outPATPath = fullpath;
-				}
 			}
 		}
 	}
+}
 
+bool LoadFromIni(FrameData *framedata, CG *cg, const std::string& iniPath, std::string* outTopHA6Path, Parts* parts, std::string* outPATPath)
+{
+	std::vector<std::string> ha6Names = ReadDataFileList(iniPath);
+	if(ha6Names.empty())
+		return false;
+	const int fileNum = (int)ha6Names.size();
+	std::string folder = iniPath.substr(0, iniPath.find_last_of("\\/"));
+
+	// Save target (issue #46): the file whose patterns win in the game.
+	// The games load File(N-1) first and File00 last, and a pattern already
+	// loaded is kept (Han6_LoadProjectDataFiles_Reverse + Han6_LoadPattern_PSTR),
+	// so the highest-indexed file wins -- except shared data outside the
+	// project folder (../BaseData.HA6), whose PFLG template patterns only lend
+	// timing to the character's own. So the target is the highest-indexed
+	// file that is not shared data:
+	//   UNI2/MBTL base   _temp, chrNNN, ../BaseData          -> chrNNN.ha6
+	//   MBTL variant     _temp, chrNNN, chrNNN_7, ../BaseData -> chrNNN_7.ha6
+	//   effect.txt       effect_temp, effect                  -> effect.ha6
+	//   MBAACC           base, base_r, moon, moon_r           -> last file
+	const int target = FrameData::StackSaveTarget(ha6Names);
+	std::string topHA6File;
+	if(target >= 0 && !ha6Names[target].empty())
+		topHA6File = folder + "\\" + ha6Names[target];
+
+	// Load in order; later files overlay earlier ones, which gives the game's
+	// "highest index wins" for every pattern with frames. Files after the
+	// target (shared BaseData) only fill empty slots: its patterns are
+	// templates for slots the character also defines.
+	for(int i = 0; i < fileNum; i++)
+	{
+		std::string fullpath = folder + "\\" + ha6Names[i];
+		const bool fallback = i > target;
+		if(!framedata->load(fullpath.c_str(), i > 0, fallback))
+			return false;
+	}
+
+	// With several files, saving writes only the target's own patterns
+	// (plus edits), not the whole merged stack (issue #71).
+	if(fileNum > 1)
+		framedata->setOwnFile(target);
+
+	if(outTopHA6Path && !topHA6File.empty())
+		*outTopHA6Path = topHA6File;
+
+	LoadCgAndPat(cg, folder, iniPath, parts, outPATPath);
+	return true;
+}
+
+bool LoadChrHA6FromIni(FrameData *framedata, CG *cg, const std::string& iniPath, std::string* outTopHA6Path, Parts* parts, std::string* outPATPath)
+{
+	// Load only the project's own file (the save target above), e.g.
+	// chrNNN_7.ha6 for an MBTL variant project.
+	std::vector<std::string> ha6Names = ReadDataFileList(iniPath);
+	if(ha6Names.size() < 2)
+		return false;
+	const int target = FrameData::StackSaveTarget(ha6Names);
+	if(target < 0 || ha6Names[target].empty())
+		return false;
+
+	std::string folder = iniPath.substr(0, iniPath.find_last_of("\\/"));
+	std::string ha6fullpath = folder + "\\" + ha6Names[target];
+	if(!framedata->load(ha6fullpath.c_str(), 0))
+		return false;
+
+	if(outTopHA6Path)
+		*outTopHA6Path = ha6fullpath;
+
+	LoadCgAndPat(cg, folder, iniPath, parts, outPATPath);
 	return true;
 }
 
@@ -298,7 +258,7 @@ bool AddHA6ToTxt(const std::string& txtPath, const std::string& ha6Filename)
 
 	// Add new HA6 file entry
 	std::stringstream fileKey;
-	fileKey << "File" << std::setfill('0') << std::setw(2) << fileNum;  // Use old fileNum as index
+	fileKey << "File" << std::setfill('0') << std::setw(newFileNum >= 100 ? 3 : 2) << fileNum;  // Use old fileNum as index
 
 	if(!WritePrivateProfileStringA("DataFile", fileKey.str().c_str(), ha6Filename.c_str(), txtPath.c_str()))
 		return false;
