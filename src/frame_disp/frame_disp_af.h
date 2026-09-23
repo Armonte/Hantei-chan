@@ -309,6 +309,10 @@ inline void AfDisplay(Frame_AF *af, int &selectedLayer, FrameData *frameData = n
 		markModified();
 	}
 
+	// TODO(blend numbering): hantei4/MBAC uses 0 none, 1 multiply, 2 add, 3 subtract
+	// (HANTEI4_EF_IF_LABELS.md section 3). Neither MBAA_NAME_AUDIT.md nor IDA has confirmed
+	// the MBAA renderer's numbering yet, so the stored values (1 Normal, 2 Additive,
+	// 3 Subtractive) are left unchanged. Verify against the MBAA renderer before relabeling.
 	int mode = layer.blend_mode-1;
 	if(mode < 1)
 		mode = 0;

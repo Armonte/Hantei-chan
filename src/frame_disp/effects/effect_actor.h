@@ -2,7 +2,7 @@
 #define EFFECT_ACTOR_H_GUARD
 
 // ============================================================================
-// Effect Type 8: Spawn Actor
+// Effect Types 8/108: Spawn Actor
 // ============================================================================
 // Spawns actors from effect.ha6 file
 // Used for special visual effects, particles, overlays, etc.
@@ -98,6 +98,11 @@ static inline void DrawEffectActor_Type8(Frame_EF& effect, FrameData* frameData,
 				im::TreePop();
 			}
 
+			// Angle: EF8/108 take the same parameters as EF1 (MBAA_NAME_AUDIT.md 2.1); layout as in the Gonptechan EX fork.
+			im::SetNextItemWidth(width);
+			if(im::DragInt("Angle", &p[7])) markModified();
+			im::SameLine(); im::TextDisabled("(?)");
+			if(im::IsItemHovered()) Tooltip("Clockwise rotation: 0=0°, 2500=90°, 5000=180°, 10000=360°");
 
 }
 #endif /* EFFECT_ACTOR_H_GUARD */

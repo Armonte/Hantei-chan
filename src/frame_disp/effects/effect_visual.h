@@ -15,18 +15,26 @@ static inline void DrawEffectVisual_Type2(Frame_EF& effect, FrameData* frameData
 	constexpr float width = 75.f;
 
 	// Sub-type dropdown
+			// Sub-No table: MBAA_NAME_AUDIT.md 2.2 (Effect2_CreateByNo 0x455620).
+			// 2, 3, 5-25 and 27-49 are no-ops in MBAA.
+			if(effect.type == 10002) {
+				im::TextDisabled("Type 10002: same sub-No table as type 2, run in the late (deferred) pass");
+			}
 			const char* const subTypes[] = {
+				"0: System fx 5 (20f, attached to owner)",
+				"1: System fx 6 (90f, rising)",
 				"4: Random sparkle/speed line",
-				"26: (Blood) Heat",
+				"26: (Blood) Heat activation",
 				"50: Superflash",
-				"210: Unknown (Ciel)",
-				"260: Unknown (Arc/Aoko)",
+				"210: (no MBAA handler?) (Ciel)",
+				"256: System fx 17",
+				"257: Particle linked to parent",
+				"258: Particle inside hurtbox 0",
+				"259: System fx 279 (duration p1)",
+				"260: Motion line (prev -> current pos)",
 				"261: Trailing effect",
 				"1260: Fading circle (Boss Aoko)",
 			};
-
-			// Find index or use custom
-			int knownTypes[] = {4, 26, 50, 210, 260, 261, 1260};
 			if(ShowComboWithManual("Effect Number", &no, subTypes, IM_ARRAYSIZE(subTypes), width*2, width)) {
 				markModified();
 			}

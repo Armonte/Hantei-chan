@@ -100,13 +100,18 @@ static const char* const hitVectorList[] = {
 };
 
 // Condition types (IF system)
+// Source: docs/tag_research/MBAA_NAME_AUDIT.md section 3 (IDA-verified MBAA Cond_Dispatch 0x4693E0),
+// plus hantei4 names (HANTEI4_EF_IF_LABELS.md). Every IF "jump" targets a FRAME of the current
+// pattern (Character_JumpToFrame); only a few types queue a pattern instead (e.g. 1/3/14/25 when
+// the target is >= 10000, 7, 8, 12, 13, 27, 37). Types 43-49, 56-59, 61-69, 71-99 and 101-149
+// are no-ops in MBAA. IDs 152+ are not vanilla (154-157 are BOF/Extended Melty only).
 static const char* const conditionTypes[] = {
 	"0: (None)",
-	"1: Jump on directional input",
+	"1: Jump on lever input",
 	"2: Effect despawn conditions",
 	"3: Branch on hit (all hits used)",
 	"4: Vector check",
-	"5: KO flag check",
+	"5: Jump if KO flag set",
 	"6: Lever & Trigger check (Frame)",
 	"7: Lever & Trigger check (Pattern)",
 	"8: Random check",
@@ -114,36 +119,36 @@ static const char* const conditionTypes[] = {
 	"10: Loop counter check",
 	"11: Additional command input check",
 	"12: Opponent distance check",
-	"13: Screen corner check",
+	"13: Screen edge check",
 	"14: Box collision check",
 	"15: Box collision check (Capture)",
 	"16: Be affected by scrolling",
 	"17: Branch on number of hits",
-	"18: Check main/trunk animation",
-	"19: Projectile box col check",
+	"18: Check owner pattern",
+	"19: Projectile box contact (reflection)",
 	"20: Box collision check 2",
-	"21: Opponent's character check",
+	"21: Enemy character check",
 	"22: BG number check",
-	"23: BG type check",
-	"24: Projectile variable check",
+	"23: BG type check (removed in MBAA)",
+	"24: Projectile flag/variable check",
 	"25: Variable comparison",
 	"26: Check lever and change vector",
-	"27: Branch when parent gets hurt",
-	"28: Jump if knocked out",
+	"27: Branch when owner thrown/hurt/blocking",
+	"28: Jump if round-end phase started",
 	"29: Check X pos on screen",
 	"30: Facing direction check",
 	"31: Change variable on command input",
 	"32: Jump if CPU side of CPU battle",
 	"33: If sound effect is playing",
 	"34: Homing",
-	"35: Custom cancel command check",
-	"36: Meter bar mode check",
-	"37: Jump according to color",
+	"35: Multi-command input check (custom cancel)",
+	"36: Circuit (meter) mode check",
+	"37: Queue pattern (MBAA; was color check)",
 	"38: Change variable on hit",
-	"39: (Unknown)",
+	"39: Partner pattern check",
 	"40: Jump after N frames",
-	"41: Jump if controlled char mismatch",
-	"42: (Unknown)",
+	"41: Jump if not team point",
+	"42: Jump if NOT at match point",
 	"43: (Unknown)",
 	"44: (Unknown)",
 	"45: (Unknown)",
@@ -151,17 +156,17 @@ static const char* const conditionTypes[] = {
 	"47: (Unknown)",
 	"48: (Unknown)",
 	"49: (Unknown)",
-	"50: Effect reflection box",
-	"51: Check Shield Conditions",
+	"50: Attack box touches teammate box 10",
+	"51: Shield conditions",
 	"52: Throw check",
-	"53: (Unknown)",
-	"54: Jump on hit or block",
-	"55: (Unknown)",
+	"53: Destroy if owner left shield",
+	"54: Jump when owner thrown or hit",
+	"55: 1P/2P side branch",
 	"56: (Unknown)",
 	"57: (Unknown)",
 	"58: (Unknown)",
 	"59: (Unknown)",
-	"60: (Unknown)",
+	"60: Meter charge hold loop",
 	"61: (Unknown)",
 	"62: (Unknown)",
 	"63: (Unknown)",
@@ -201,7 +206,7 @@ static const char* const conditionTypes[] = {
 	"97: (Unknown)",
 	"98: (Unknown)",
 	"99: (Unknown)",
-	"100: Box collision with partner",
+	"100: Partner box contact (tag touch)",
 	"101: (Unknown)",
 	"102: (Unknown)",
 	"103: (Unknown)",
@@ -251,8 +256,8 @@ static const char* const conditionTypes[] = {
 	"147: (Unknown)",
 	"148: (Unknown)",
 	"149: (Unknown)",
-	"150: (Unknown)",
-	"151: (Unknown)",
+	"150: KO revive check",
+	"151: KO revive",
 };
 
 // Character list
@@ -304,24 +309,30 @@ static const char* const comparisonTypes[] = {
 };
 
 // Effect types
+// Source: docs/tag_research/MBAA_NAME_AUDIT.md section 2.1 (IDA-verified Effect_DispatchFrameEFs 0x453300).
+// Must stay index-aligned with knownEffectTypes[] below.
 static const char* const effectTypes[] = {
-	"0: (Unknown)",
+	"0: (None)",
 	"1: Spawn Pattern",
 	"2: Various Effects",
 	"3: Spawn Preset Effect",
-	"4: Set Opponent State (no bounce reset)",
-	"5: Damage",
+	"4: Set Held Victim State (no bounce reset)",
+	"5: Held Victim Command (damage etc.)",
 	"6: Various Effects 2",
+	"7: System Effect (round call / KO banner)",
 	"8: Spawn Actor (effect.ha6)",
 	"9: Play Audio",
 	"11: Spawn Random Pattern",
-	"14: Set Opponent State (reset bounces)",
+	"14: Set Held Victim State (reset bounces)",
+	"30: Object Behaviour Params",
 	"101: Spawn Relative Pattern",
+	"108: Spawn Actor (effect.ha6, same as 8)",
 	"111: Spawn Random Relative Pattern",
-	"257: (Arc typo?)",
-	"1000: Spawn and Follow",
-	"10002: Unknown",
+	"257: (Not dispatched; Arc data typo)",
+	"1000: Spawn Pattern Once (var-guarded)",
+	"10002: Various Effects (deferred pass)",
 };
+static const int knownEffectTypes[] = {0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 11, 14, 30, 101, 108, 111, 257, 1000, 10002};
 
 // Action state (AS) labels
 static const char* const stateList[] = {
@@ -344,15 +355,17 @@ static const char* const counterList[] = {
 	"Clear"
 };
 
+// hantei4 g_invincibility_strings (HANTEI4_EF_IF_LABELS.md section 3)
 static const char* const invulList[] = {
 	"None",
-	"High and mid",
-	"Low and mid",
-	"All but throw",
-	"Throw only"
+	"Evade highs",
+	"Evade lows",
+	"Strike invincible",
+	"Throw invincible"
 };
 
 // Attack (AT) labels
+// 0-16 from hantei4 g_hitEffectNames (HANTEI4_EF_IF_LABELS.md section 3); 17-21 are MBAA additions.
 static const char* const hitEffectList[] = {
 	"Weak punch",
 	"Medium punch",
@@ -366,11 +379,11 @@ static const char* const hitEffectList[] = {
 	"Burn",
 	"Freeze",
 	"Shock",
-	"Big flash (SE)",
 	"Small flash (SE)",
+	"Big flash (SE)",
 	"None",
-	"Strong hit",
-	"Double slash",
+	"Thinned light",
+	"Thinned slash",
 	"Super slash",
 	"Weak cut",
 	"Medium cut",
