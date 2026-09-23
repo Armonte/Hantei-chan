@@ -37,6 +37,11 @@ public:
 	bool undoFocused(bool redo);
 	bool requestSaveFocused();
 
+	// Test hook (cmdfile_ui_smoke): select a tab in every open window on the next draw.
+	void debugRequestTab(int tab);
+	// Test hook: select the first command with ExComChecks (else the first command) everywhere.
+	void debugSelectFirst();
+
 private:
 	struct View;
 	std::vector<std::unique_ptr<View>> m_views;
