@@ -37,6 +37,7 @@ add_executable(${EXE}
 	src/ha4_parts_gl.cpp
 	src/ha4_convert.cpp
 	src/ha4_character.cpp
+	src/startup_args.cpp
 	src/framestate.cpp
 	src/mv_script.cpp
 	src/character_instance.cpp
