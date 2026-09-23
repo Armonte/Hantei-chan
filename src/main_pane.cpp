@@ -266,7 +266,7 @@ void MainPane::Draw()
 				// Frame-list mutations are deferred to the end of this block:
 				// inserting/erasing reallocates seq->frames and would leave
 				// `frame` dangling for the rest of the draw.
-				enum class KeyframeOp { None, Append, Insert, Delete } keyframeOp = KeyframeOp::None;
+				enum class KeyframeOp { None, Append, Insert, Delete, AppendNextSprite } keyframeOp = KeyframeOp::None;
 				Frame &frame = seq->frames[currState.frame];
 				if(im::TreeNode("State data"))
 				{
@@ -324,6 +324,30 @@ void MainPane::Draw()
 						ranges[1] = 0;
 						rangeWindow = !rangeWindow;
 					}
+
+					// Sprite numbering (issue #45)
+					if(im::Button("Append frame, sprite +1"))
+						keyframeOp = KeyframeOp::AppendNextSprite;
+					if(im::IsItemHovered())
+						im::SetTooltip("Append a copy of the last frame with its layer 0 sprite number + 1,\nand select it.");
+					im::SameLine(0,20.f);
+					if(im::Button("Number sprites from here"))
+					{
+						if (frame.AF.layers.empty()) frame.AF.layers.push_back({});
+						const int base = frame.AF.layers[0].spriteId;
+						if (base >= 0) {
+							for(int i = currState.frame + 1; i < (int)seq->frames.size(); i++)
+							{
+								auto& layers = seq->frames[i].AF.layers;
+								if (layers.empty()) layers.push_back({});
+								layers[0].spriteId = base + (i - currState.frame);
+							}
+							frameData->mark_modified(currState.pattern);
+							markModified();
+						}
+					}
+					if(im::IsItemHovered())
+						im::SetTooltip("Set layer 0 of every later frame to this frame's sprite + 1, + 2, ...");
 
 					im::Separator();
 
@@ -588,6 +612,15 @@ void MainPane::Draw()
 				case KeyframeOp::Delete:
 					seq->frames.erase(seq->frames.begin() + at);
 					break;
+				case KeyframeOp::AppendNextSprite:
+				{
+					Frame newFrame = seq->frames.back();
+					if (newFrame.AF.layers.empty()) newFrame.AF.layers.push_back({});
+					if (newFrame.AF.layers[0].spriteId >= 0) newFrame.AF.layers[0].spriteId += 1;
+					seq->frames.push_back(std::move(newFrame));
+					currState.frame = (int)seq->frames.size() - 1;
+					break;
+				}
 				default:
 					break;
 				}
