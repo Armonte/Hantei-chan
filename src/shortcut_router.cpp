@@ -41,6 +41,7 @@ ShortcutRegistry::ShortcutRegistry()
 		{A::nextView,         "Next tab",                     {vkNext, ctrl},       R::application,   C::none,           false, false},
 		{A::previousView,     "Previous tab",                 {vkPrior, ctrl},      R::application,   C::none,           false, false},
 		{A::closeView,        "Close tab",                    {'W', ctrl},          R::application,   C::none,           false, false},
+		{A::reopenClosedView, "Reopen closed tab",            {'T', ctrlShift},     R::application,   C::none,           false, false},
 
 		{A::previousPattern,  "Previous pattern",             {vkUp, 0},            R::editorViews,    C::none,           false, true},
 		{A::nextPattern,      "Next pattern",                 {vkDown, 0},          R::editorViews,    C::none,           false, true},
@@ -49,8 +50,10 @@ ShortcutRegistry::ShortcutRegistry()
 		{A::previousBox,      "Previous box",                 {'Z', 0},             R::editorViews,    C::none,           false, true},
 		{A::nextBox,          "Next box",                     {'X', 0},             R::editorViews,    C::none,           false, true},
 
-		{A::previousKeyframe, "Previous keyframe",            {vkDivide, 0},        R::editorViews,    C::none,           false, true},
-		{A::nextKeyframe,     "Next keyframe",                {vkMultiply, 0},      R::editorViews,    C::none,           false, true},
+		// Num/ and Num* also work while typing in a field (issue #61): the value
+		// is committed, the keyframe changes and the same field is re-focused.
+		{A::previousKeyframe, "Previous keyframe",            {vkDivide, 0},        R::editorViews,    C::none,           true,  true},
+		{A::nextKeyframe,     "Next keyframe",                {vkMultiply, 0},      R::editorViews,    C::none,           true,  true},
 
 		{A::nudgeLayerLeft,   "Move layer left 1px",          {vkLeft, ctrl},       R::focusedContext, C::characterView, false, true},
 		{A::nudgeLayerRight,  "Move layer right 1px",         {vkRight, ctrl},      R::focusedContext, C::characterView, false, true},
@@ -226,6 +229,7 @@ const char* ShortcutRegistry::ActionId(ShortcutAction action)
 	case A::nextView: return "nextView";
 	case A::previousView: return "previousView";
 	case A::closeView: return "closeView";
+	case A::reopenClosedView: return "reopenClosedView";
 	case A::previousPattern: return "previousPattern";
 	case A::nextPattern: return "nextPattern";
 	case A::previousKeyframe: return "previousKeyframe";

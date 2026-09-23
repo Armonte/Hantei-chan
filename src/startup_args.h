@@ -8,6 +8,8 @@
 //   --zoom F             view zoom
 //   --game auto|mbaacc|uni|mbtl   HA6 dialect override (View > Game format)
 //   --no-pups            ignore PUPS (draw with <cg>.pal only)
+//   --compare N          overlay pattern N of the same character (pattern comparison)
+//   --tool NAME          open a tool window: hud, bgm, compare, patterns, notes, vars, keys
 //   --capture <png>      after a few frames, save the window to <png> and quit
 //                        (used for automated render checks, e.g. MBAC sprites)
 #include <string>
@@ -20,6 +22,8 @@ struct StartupArgs {
 	float zoom = 0.f;
 	std::string game;
 	bool noPups = false;   // --no-pups: draw every pattern with <cg>.pal
+	int compare = -1;
+	std::string tool;
 	std::string capture;
 	int frameCounter = 0;
 };

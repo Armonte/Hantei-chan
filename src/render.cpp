@@ -1102,8 +1102,10 @@ void Render::DrawLayers()
 		vGeometry.Bind();
 		glUniform1f(lAlphaS, 0.6f);
 		vGeometry.DrawQuads(GL_LINE_LOOP, quadsToDraw);
-		glUniform1f(lAlphaS, 0.3f);
-		vGeometry.DrawQuads(GL_TRIANGLE_FAN, quadsToDraw);
+		if (!layer.boxesOutlineOnly) {
+			glUniform1f(lAlphaS, 0.3f);
+			vGeometry.DrawQuads(GL_TRIANGLE_FAN, quadsToDraw);
+		}
 		glDepthMask(GL_TRUE);
 	}
 

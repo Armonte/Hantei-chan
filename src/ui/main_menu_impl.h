@@ -99,6 +99,9 @@ void MainFrame::Menu(unsigned int errorPopupId)
 				markProjectModified();
 			}
 
+			if (ImGui::MenuItem("Reopen Closed Tab", shortcuts.registry().label(ShortcutAction::reopenClosedView).c_str(), false, !m_closedTabs.empty()))
+				reopenClosedTab();
+
 			if (ImGui::MenuItem("Close Character", nullptr, false, hasActive))
 			{
 				if (hasActive) {
@@ -662,6 +665,9 @@ void MainFrame::Menu(unsigned int errorPopupId)
 			if (ImGui::MenuItem("Variable references (batch replace)", nullptr, m_varRefs.open)) m_varRefs.open = !m_varRefs.open;
 			if (ImGui::MenuItem("Pattern manager", nullptr, m_patMgr.open)) m_patMgr.open = !m_patMgr.open;
 			if (ImGui::MenuItem("Notes", nullptr, m_showNotes)) m_showNotes = !m_showNotes;
+			if (ImGui::MenuItem("Pattern comparison", nullptr, m_showCompare)) m_showCompare = !m_showCompare;
+			if (ImGui::MenuItem("BGM preview", nullptr, m_showBgm)) m_showBgm = !m_showBgm;
+			if (ImGui::MenuItem("HUD preview / colours", nullptr, m_showHud)) m_showHud = !m_showHud;
 			if (ImGui::MenuItem("MBAC (HA4) Inspector", nullptr, ha4ui::showInspector)) ha4ui::showInspector = !ha4ui::showInspector;
 			ImGui::EndMenu();
 		}

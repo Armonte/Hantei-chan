@@ -23,6 +23,19 @@ void MainFrame::DrawUi()
 	ImGuiID errorPopupId = ImGui::GetID("Loading Error");
 	shortcuts.beginFrame();
 	UpdateTransport();
+	if (m_textNavDir) {
+		// Commit the focused field, step the keyframe, and re-activate the same
+		// field (same widget id) on the next frame so typing can continue.
+		ImGuiContext& g = *GImGui;
+		const ImGuiID id = g.ActiveId;
+		ImGui::ClearActiveID();
+		if (getActiveView()) AdvanceFrame(m_textNavDir);
+		if (id) {
+			g.NavNextActivateId = id;
+			g.NavNextActivateFlags = ImGuiActivateFlags_PreferInput;
+		}
+		m_textNavDir = 0;
+	}
 	
 
 	//Fullscreen docker to provide the layout for the panes
@@ -458,6 +471,9 @@ void MainFrame::DrawUi()
 	drawPatternManagerWindow();
 	drawNotesWindow();
 	drawKeyBindingsWindow();
+	drawCompareWindow();
+	drawBgmWindow();
+	drawHudWindow();
 
 	// Background (stage) Inspector — shows the currently loaded stage's
 	// objects, lets you scrub through frames, and exposes editable fields.

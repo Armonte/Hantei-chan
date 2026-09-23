@@ -8,6 +8,10 @@
 
 #include "../var_refs.h"
 #include "../pattern_refs.h"
+#include "../frame_disp/frame_disp_common.h"
+#include "../bgm_player.h"
+#include "../hud_colors.h"
+#include <filesystem>
 
 // Commit a tool edit as one undo step and flag the character dirty.
 void MainFrame::markToolEdit(CharacterInstance* character)
@@ -263,6 +267,28 @@ void MainFrame::drawPatternManagerWindow()
 	ImGui::TextDisabled("%d non-selected pattern(s) would be overwritten", moveOverwrites);
 	ImGui::BeginDisabled(w.selection.empty());
 	if (ImGui::Button("Clear selected patterns")) ImGui::OpenPopup("Clear patterns?");
+	ImGui::SameLine();
+	// Template for a fresh character (#44): only the selected patterns (e.g. the
+	// system states), at their own ids, in a new untitled character tab.
+	if (ImGui::Button("New character from selection")) {
+		std::vector<Sequence> pats;
+		std::vector<int> ids;
+		for (int p : w.selection) { pats.push_back(*fd.get_sequence(p)); ids.push_back(p); }
+		auto fresh = std::make_unique<CharacterInstance>();
+		fresh->frameData.initEmpty((unsigned)std::max(count, 1));
+		fresh->setName(character->getName() + " template");
+		patrefs::PastePatterns(fresh->frameData, pats, ids, ids, false);
+		characters.push_back(std::move(fresh));
+		createViewForCharacter(characters.back().get());
+		markProjectModified();
+		w.status = "Created a character with " + std::to_string(pats.size()) + " pattern(s) at their original ids.";
+		ImGui::EndDisabled();
+		ImGui::EndChild();
+		ImGui::End();
+		return; // the active character changed; redraw next frame
+	}
+	if (ImGui::IsItemHovered(ImGuiHoveredFlags_AllowWhenDisabled))
+		ImGui::SetTooltip("Start a new character that holds only the selected patterns\n(for example the system states) at the same ids. Save it with Save Character As.");
 	ImGui::EndDisabled();
 	if (ImGui::BeginPopupModal("Clear patterns?", nullptr, ImGuiWindowFlags_AlwaysAutoResize)) {
 		ImGui::Text("Empty %zu pattern slot(s)? (Undo restores them.)", w.selection.size());
@@ -420,6 +446,477 @@ void MainFrame::drawKeyBindingsWindow()
 			ImGui::PopID();
 		}
 		ImGui::EndTable();
+	}
+	ImGui::End();
+}
+
+// ---------------------------------------------------------------------------
+// Pattern comparison (#63): overlay another pattern (any open character) in
+// the viewport, tinted and translucent, with its boxes as outlines.
+// ---------------------------------------------------------------------------
+
+// Frame and root position of the compare pattern at `tick`.
+static bool CompareFrameAt(MainFrame::CompareState& c, int tick, int* frame, float* x, float* y)
+{
+	if (!c.character) return false;
+	if (!c.sim) c.sim = std::make_shared<preview::PreviewSim>();
+	preview::Options o;
+	FrameData* effect = c.character->effectCharacter ? &c.character->effectCharacter->frameData : nullptr;
+	c.sim->setInputs(&c.character->frameData, effect, c.pattern, o);
+	preview::TickState ts;
+	if (!c.sim->getStateAt(tick, ts)) return false;
+	const preview::SimActor* root = ts.root();
+	if (!root) return false;
+	*frame = root->frame;
+	*x = root->x; *y = root->y;
+	return true;
+}
+
+void MainFrame::AddCompareLayers(CharacterView* view, CharacterInstance* active)
+{
+	auto& c = m_compare;
+	if (!c.enabled || !view || !active) return;
+	if (c.character && !isLiveCharacter(c.character)) { c.character = nullptr; c.sim.reset(); }
+	if (!c.character) return;
+	Sequence* seq = c.character->frameData.get_sequence(c.pattern);
+	if (!seq || seq->frames.empty()) return;
+
+	auto& st = view->getState();
+	int frame = std::clamp(c.frame, 0, (int)seq->frames.size() - 1);
+	float dx = 0.f, dy = 0.f;
+	if (c.followTick || c.movement) {
+		int f; float cx, cy;
+		if (CompareFrameAt(c, st.currentTick, &f, &cx, &cy)) {
+			if (c.followTick) { frame = std::clamp(f, 0, (int)seq->frames.size() - 1); c.frame = frame; }
+			if (c.movement) {
+				FrameData* effect = active->effectCharacter ? &active->effectCharacter->frameData : nullptr;
+				auto& mainSim = st.BindPreviewSim(&active->frameData, effect);
+				preview::TickState ts;
+				float mx = 0.f, my = 0.f;
+				if (mainSim.getStateAt(st.currentTick, ts) && ts.root()) { mx = ts.root()->x; my = ts.root()->y; }
+				dx = (c.mirror ? -1.f : 1.f) * cx - mx;
+				dy = cy - my;
+			}
+		}
+	}
+	Frame& fr = seq->frames[frame];
+	if (fr.AF.layers.empty()) fr.AF.layers.push_back({});
+	for (size_t li = 0; li < fr.AF.layers.size(); ++li) {
+		const auto& L = fr.AF.layers[li];
+		RenderLayer layer;
+		layer.spriteId = L.spriteId;
+		layer.spawnOffsetX = c.offsetX + (int)std::lround(dx);
+		layer.spawnOffsetY = c.offsetY + (int)std::lround(dy);
+		layer.frameOffsetX = c.mirror ? -L.offset_x : L.offset_x;
+		layer.frameOffsetY = L.offset_y;
+		layer.scaleX = c.mirror ? -L.scale[0] : L.scale[0];
+		layer.scaleY = L.scale[1];
+		layer.rotX = L.rotation[0]; layer.rotY = L.rotation[1]; layer.rotZ = L.rotation[2];
+		layer.AFRT = fr.AF.AFRT || L.afrt;
+		layer.blendMode = L.blend_mode;
+		layer.zPriority = LayerDrawBucket(L.priority, fr.AF.priority);
+		layer.pups = seq->pups;
+		layer.alpha = L.rgba[3] * c.alpha;
+		layer.tintColor = glm::vec4(L.rgba[0] * c.tint[0], L.rgba[1] * c.tint[1], L.rgba[2] * c.tint[2], 1.0f);
+		layer.isSpawned = true;
+		if (li == 0 && c.boxes) {
+			if (c.mirror) {
+				for (const auto& b : fr.hitboxes) {
+					Hitbox h = b.second;
+					const int x0 = -h.xy[2], x1 = -h.xy[0];
+					h.xy[0] = x0; h.xy[2] = x1;
+					layer.hitboxes[b.first] = h;
+				}
+			} else {
+				layer.hitboxes = fr.hitboxes;
+			}
+		}
+		layer.boxesOutlineOnly = true;
+		layer.sourceCG = &c.character->cg;
+		layer.usePat = L.usePat;
+		layer.sourceParts = &c.character->parts;
+		render.AddLayer(layer);
+	}
+}
+
+void MainFrame::drawCompareWindow()
+{
+	auto& c = m_compare;
+	if (!m_showCompare) return;
+	ImGui::SetNextWindowSize(ImVec2(440, 420), ImGuiCond_FirstUseEver);
+	if (!ImGui::Begin("Pattern comparison", &m_showCompare)) { ImGui::End(); return; }
+	if (c.character && !isLiveCharacter(c.character)) { c.character = nullptr; c.sim.reset(); }
+	ImGui::Checkbox("Show comparison", &c.enabled);
+	ImGui::TextDisabled("Drawn tinted over the active view; its boxes are outlines.");
+
+	const char* current = c.character ? c.character->getName().c_str() : "(choose a character)";
+	if (ImGui::BeginCombo("Character", current)) {
+		for (auto& ch : characters) {
+			ImGui::PushID(ch.get());
+			if (ImGui::Selectable(ch->getName().c_str(), ch.get() == c.character)) {
+				c.character = ch.get();
+				c.sim.reset();
+				c.enabled = true;
+			}
+			ImGui::PopID();
+		}
+		ImGui::EndCombo();
+	}
+	if (c.character) {
+		FrameData& fd = c.character->frameData;
+		ImGui::SetNextItemWidth(90);
+		if (ImGui::InputInt("Pattern", &c.pattern)) c.pattern = std::clamp(c.pattern, 0, std::max(0, fd.get_sequence_count() - 1));
+		if (PatternPickerButton("Pattern", &c.pattern, &fd)) c.frame = 0;
+		ImGui::SameLine();
+		ImGui::TextDisabled("%s", fd.GetDecoratedName(c.pattern).c_str());
+		if (auto* view = getActiveView()) {
+			if (ImGui::SmallButton("Same pattern as the view")) c.pattern = view->getState().pattern;
+		}
+		Sequence* seq = fd.get_sequence(c.pattern);
+		const int frames = seq ? (int)seq->frames.size() : 0;
+		ImGui::Checkbox("Step with the view's tick", &c.followTick);
+		ImGui::SameLine();
+		ImGui::Checkbox("Apply movement", &c.movement);
+		if (ImGui::IsItemHovered())
+			ImGui::SetTooltip("Offset the overlay by the difference in simulated root movement,\n"
+			                  "to compare effective range (the view's own pattern stays put).");
+		ImGui::BeginDisabled(c.followTick || frames == 0);
+		ImGui::SliderInt("Frame", &c.frame, 0, std::max(0, frames - 1));
+		ImGui::EndDisabled();
+		ImGui::SeparatorText("Placement");
+		ImGui::DragInt("Offset X", &c.offsetX, 0.5f);
+		ImGui::DragInt("Offset Y", &c.offsetY, 0.5f);
+		if (ImGui::SmallButton("Snap X to 0")) c.offsetX = 0;
+		ImGui::SameLine();
+		if (ImGui::SmallButton("Snap Y to 0")) c.offsetY = 0;
+		ImGui::SameLine();
+		ImGui::Checkbox("Mirror", &c.mirror);
+		ImGui::SeparatorText("Look");
+		ImGui::SliderFloat("Opacity", &c.alpha, 0.05f, 1.0f);
+		ImGui::ColorEdit3("Tint", c.tint);
+		ImGui::Checkbox("Show boxes (outlines)", &c.boxes);
+	}
+	ImGui::End();
+}
+
+// ---------------------------------------------------------------------------
+// BGM preview (#66): list the game's Bgm folder with bgm.txt loop points,
+// play a track, and jump near the end to hear the loop.
+// ---------------------------------------------------------------------------
+
+void MainFrame::drawBgmWindow()
+{
+	auto& b = m_bgm;
+	if (!m_showBgm) {
+		if (b.player && b.player->playing()) b.player->stop();
+		return;
+	}
+	ImGui::SetNextWindowSize(ImVec2(620, 480), ImGuiCond_FirstUseEver);
+	if (!ImGui::Begin("BGM preview", &m_showBgm)) { ImGui::End(); return; }
+	if (!b.player) b.player = std::make_unique<BgmPlayer>();
+
+	auto scan = [&]() {
+		b.entries.clear();
+		b.status.clear();
+		namespace fs = std::filesystem;
+		const fs::path dir = fs::u8path(b.folder);
+		std::error_code ec;
+		if (!fs::is_directory(dir, ec)) { b.status = "Not a folder: " + b.folder; return; }
+		if (ParseBgmTxt((dir / "bgm.txt").string(), b.entries)) {
+			b.status = std::to_string(b.entries.size()) + " track(s) from bgm.txt";
+		} else {
+			for (auto& e : fs::directory_iterator(dir, ec)) {
+				if (e.path().extension() != ".ogg" && e.path().extension() != ".OGG") continue;
+				BgmEntry be; be.file = e.path().stem().string(); be.section = be.file;
+				b.entries.push_back(be);
+			}
+			std::sort(b.entries.begin(), b.entries.end(), [](const BgmEntry& x, const BgmEntry& y) { return x.file < y.file; });
+			b.status = std::to_string(b.entries.size()) + " .ogg file(s) (no bgm.txt: no loop points)";
+		}
+	};
+	if (b.folder.empty()) {
+		// Guess <game>/Bgm from the active character's folder (<game>/data).
+		if (auto* c = getActiveCharacter()) {
+			namespace fs = std::filesystem;
+			const std::string src = !c->getTxtPath().empty() ? c->getTxtPath() : c->getTopHA6Path();
+			if (!src.empty()) {
+				const fs::path d = fs::path(src).parent_path();
+				for (const fs::path cand : {d.parent_path() / "Bgm", d / "Bgm", d.parent_path() / "bgm"}) {
+					std::error_code ec;
+					if (fs::is_directory(cand, ec)) { b.folder = cand.string(); break; }
+				}
+			}
+		}
+		if (!b.folder.empty()) scan();
+	}
+
+	char buf[512];
+	snprintf(buf, sizeof(buf), "%s", b.folder.c_str());
+	ImGui::SetNextItemWidth(-140);
+	if (ImGui::InputText("##bgmfolder", buf, sizeof(buf), ImGuiInputTextFlags_EnterReturnsTrue)) { b.folder = buf; scan(); }
+	ImGui::SameLine();
+	if (ImGui::Button("Scan folder")) { b.folder = buf; scan(); }
+	if (!b.status.empty()) ImGui::TextDisabled("%s", b.status.c_str());
+
+	// Transport
+	BgmPlayer& pl = *b.player;
+	ImGui::SeparatorText(pl.loaded() ? std::filesystem::path(pl.path()).filename().string().c_str() : "No track loaded");
+	ImGui::BeginDisabled(!pl.loaded());
+	if (ImGui::Button(pl.playing() ? "Stop" : "Play")) { if (pl.playing()) pl.stop(); else pl.play(); }
+	ImGui::SameLine();
+	float pos = (float)pl.position();
+	ImGui::SetNextItemWidth(-200);
+	if (ImGui::SliderFloat("##pos", &pos, 0.f, (float)std::max(0.001, pl.length()), "%.2f s")) pl.seek(pos);
+	ImGui::SameLine();
+	ImGui::Text("/ %.2f s", pl.length());
+	ImGui::SetNextItemWidth(80);
+	ImGui::InputFloat("s before end", &b.leadIn, 0, 0, "%.1f");
+	ImGui::SameLine();
+	if (ImGui::Button("Preview loop")) {
+		pl.seek(std::max(0.0, pl.length() - b.leadIn));
+		if (!pl.playing()) pl.play();
+	}
+	if (ImGui::IsItemHovered())
+		ImGui::SetTooltip("Jump just before the end of the track to hear it wrap to the loop point.");
+	ImGui::SameLine();
+	if (pl.looping()) ImGui::Text("Loop -> %.3f s (looped %d time(s))", pl.loopPos(), pl.loopsDone());
+	else ImGui::TextDisabled("No loop");
+	float vol = b.volume;
+	ImGui::SetNextItemWidth(160);
+	if (ImGui::SliderFloat("Volume", &vol, 0.f, 1.f)) { b.volume = vol; pl.setVolume(vol); }
+	ImGui::EndDisabled();
+
+	// Track list
+	if (ImGui::BeginTable("##bgm", 4, ImGuiTableFlags_RowBg | ImGuiTableFlags_ScrollY | ImGuiTableFlags_BordersInnerV | ImGuiTableFlags_Resizable)) {
+		ImGui::TableSetupColumn("Section", ImGuiTableColumnFlags_WidthFixed, 80);
+		ImGui::TableSetupColumn("File", ImGuiTableColumnFlags_WidthFixed, 80);
+		ImGui::TableSetupColumn("Loop", ImGuiTableColumnFlags_WidthFixed, 70);
+		ImGui::TableSetupColumn("Title");
+		ImGui::TableHeadersRow();
+		for (size_t i = 0; i < b.entries.size(); ++i) {
+			const auto& e = b.entries[i];
+			ImGui::TableNextRow();
+			ImGui::TableNextColumn();
+			ImGui::PushID((int)i);
+			const bool sel = (int)i == b.selected;
+			if (ImGui::Selectable(e.section.c_str(), sel, ImGuiSelectableFlags_SpanAllColumns | ImGuiSelectableFlags_AllowDoubleClick)) {
+				b.selected = (int)i;
+				std::string err;
+				const std::string path = (std::filesystem::u8path(b.folder) / (e.file + ".ogg")).string();
+				const bool wasPlaying = pl.playing() || ImGui::IsMouseDoubleClicked(0);
+				if (pl.load(path, e.isLoop, e.loopPos, &err)) {
+					pl.setVolume(b.volume);
+					if (wasPlaying) pl.play();
+				} else {
+					b.status = err;
+				}
+			}
+			ImGui::PopID();
+			ImGui::TableNextColumn(); ImGui::TextUnformatted(e.file.c_str());
+			ImGui::TableNextColumn();
+			if (e.isLoop) ImGui::Text("%.3f", e.loopPos); else ImGui::TextDisabled("-");
+			ImGui::TableNextColumn(); ImGui::TextUnformatted(e.comment.c_str());
+		}
+		ImGui::EndTable();
+	}
+	ImGui::End();
+}
+
+// ---------------------------------------------------------------------------
+// HUD preview / colour editor (#56).
+// ---------------------------------------------------------------------------
+
+unsigned LoadPngTexture(const std::string& path, int* w, int* h);
+void FreeTexture(unsigned tex);
+
+static ImVec4 ArgbToVec(uint32_t c)
+{
+	return ImVec4(((c >> 16) & 0xff) / 255.f, ((c >> 8) & 0xff) / 255.f, (c & 0xff) / 255.f, ((c >> 24) & 0xff) / 255.f);
+}
+static uint32_t VecToArgb(const ImVec4& v)
+{
+	auto b = [](float f) { return (uint32_t)std::lround(std::clamp(f, 0.f, 1.f) * 255.f); };
+	return (b(v.w) << 24) | (b(v.x) << 16) | (b(v.y) << 8) | b(v.z);
+}
+
+void MainFrame::drawHudWindow()
+{
+	auto& h = m_hud;
+	if (!m_showHud) return;
+	namespace fs = std::filesystem;
+	const auto& slots = hud::Slots();
+	if (h.colors.size() != slots.size()) {
+		h.colors.clear();
+		for (auto& sl : slots) h.colors.push_back(sl.defaultArgb);
+	}
+	ImGui::SetNextWindowSize(ImVec2(760, 640), ImGuiCond_FirstUseEver);
+	if (!ImGui::Begin("HUD preview", &m_showHud)) { ImGui::End(); return; }
+
+	if (h.gameDir.empty()) {
+		if (auto* c = getActiveCharacter()) {
+			const std::string src = !c->getTxtPath().empty() ? c->getTxtPath() : c->getTopHA6Path();
+			if (!src.empty()) {
+				const fs::path d = fs::path(src).parent_path();
+				for (const fs::path cand : {d.parent_path(), d}) {
+					std::error_code ec;
+					if (fs::exists(cand / "MBAA.exe", ec) || fs::is_directory(cand / "GRP" / "gauge_AA", ec)) { h.gameDir = cand.string(); break; }
+				}
+			}
+		}
+	}
+	char buf[512];
+	snprintf(buf, sizeof(buf), "%s", h.gameDir.c_str());
+	ImGui::SetNextItemWidth(-120);
+	if (ImGui::InputText("Game folder", buf, sizeof(buf), ImGuiInputTextFlags_EnterReturnsTrue)) { h.gameDir = buf; h.texturesFor.clear(); }
+	const std::string exePath = (fs::u8path(h.gameDir) / "MBAA.exe").string();
+
+	if (ImGui::BeginTabBar("##hudtabs")) {
+		if (ImGui::BeginTabItem("Colours")) {
+			if (ImGui::Button("Read from MBAA.exe")) {
+				std::vector<hud::ExeColor> exe;
+				std::string err;
+				if (hud::ReadExeColors(exePath, exe, &err)) {
+					int n = 0;
+					for (size_t i = 0; i < exe.size(); ++i) if (exe[i].found) { h.colors[i] = exe[i].argb; ++n; }
+					h.status = "Read " + std::to_string(n) + "/" + std::to_string(exe.size()) + " colour(s) from " + exePath;
+				} else h.status = err;
+			}
+			ImGui::SameLine();
+			if (ImGui::Button("Defaults")) for (size_t i = 0; i < slots.size(); ++i) h.colors[i] = slots[i].defaultArgb;
+			ImGui::SameLine();
+			if (ImGui::Button("Load hud_theme.json...")) {
+				std::string p = FileDialog(-1, false);
+				std::string err;
+				if (!p.empty()) h.status = hud::LoadThemeColors(p, h.colors, &err) ? "Loaded " + p : err;
+			}
+			ImGui::SameLine();
+			if (ImGui::Button("Save hud_theme.json...")) {
+				std::string p = FileDialog(-1, true);
+				std::string err;
+				if (!p.empty()) h.status = hud::SaveThemeColors(p, h.colors, &err) ? "Saved " + p : err;
+			}
+			ImGui::SameLine();
+			if (ImGui::Button("Write patched exe copy...")) {
+				std::string p = FileDialog(-1, true);
+				std::string err;
+				if (!p.empty()) h.status = hud::WritePatchedExe(exePath, p, h.colors, &err)
+					? "Wrote " + p + " (the original MBAA.exe is untouched)" : err;
+			}
+			if (!h.status.empty()) ImGui::TextWrapped("%s", h.status.c_str());
+			ImGui::TextDisabled("Colours are ARGB immediates in MBAA.exe's gauge code; the patched copy changes only those bytes.");
+
+			for (size_t i = 0; i < slots.size(); ++i) {
+				ImVec4 v = ArgbToVec(h.colors[i]);
+				ImGui::PushID((int)i);
+				if (ImGui::ColorEdit4(slots[i].label, &v.x, ImGuiColorEditFlags_AlphaBar | ImGuiColorEditFlags_DisplayHex))
+					h.colors[i] = VecToArgb(v);
+				ImGui::SameLine();
+				ImGui::TextDisabled("%s", hud::ToHex(h.colors[i]).c_str());
+				if (slots[i].overlaySpeed) { ImGui::SameLine(); ImGui::TextDisabled("overlay %+d", slots[i].overlaySpeed); }
+				ImGui::PopID();
+			}
+
+			// ---- live preview ----
+			ImGui::SeparatorText("Preview");
+			static const char* modes[] = {"Normal", "HEAT", "MAX", "BLOOD HEAT", "UNLIMITED", "BREAK"};
+			ImGui::SetNextItemWidth(140); ImGui::Combo("Meter state", &h.meterMode, modes, IM_ARRAYSIZE(modes));
+			ImGui::SameLine(); ImGui::SetNextItemWidth(200); ImGui::SliderFloat("Meter %", &h.meterPct, 0.f, 300.f, "%.0f%%");
+			ImGui::SameLine(); ImGui::Checkbox("Half moon", &h.halfMoon);
+			ImGui::SetNextItemWidth(200); ImGui::SliderFloat("Guard quality", &h.guardQuality, 0.f, 1.f);
+			ImGui::SameLine(); ImGui::Checkbox("Guard broken", &h.guardBroken);
+
+			int slot = 0;
+			if (h.meterMode == 0) slot = h.meterPct < 100.f ? 0 : (h.meterPct < (h.halfMoon ? 150.f : 200.f) ? 1 : 2);
+			else slot = std::array<int, 6>{0, 4, 5, 6, 3, 7}[h.meterMode];
+			const float t = (float)ImGui::GetTime();
+			ImDrawList* dl = ImGui::GetWindowDrawList();
+			auto bar = [&](const char* label, float fill, uint32_t argb, int speed, bool blackShine) {
+				ImGui::TextUnformatted(label);
+				const ImVec2 p0 = ImGui::GetCursorScreenPos();
+				const float w = std::max(200.f, ImGui::GetContentRegionAvail().x - 10.f), hgt = 18.f;
+				dl->AddRectFilled(p0, ImVec2(p0.x + w, p0.y + hgt), IM_COL32(20, 20, 30, 255));
+				const float fw = w * std::clamp(fill, 0.f, 1.f);
+				dl->AddRectFilled(p0, ImVec2(p0.x + fw, p0.y + hgt), ImGui::ColorConvertFloat4ToU32(ArgbToVec(argb)));
+				if (speed != 0 && fw > 4) {
+					// Shine: a moving highlight, positive speed toward the timer (right).
+					const float period = 2.5f / std::abs((float)speed);
+					float ph = std::fmod(t / period, 1.f);
+					if (speed < 0) ph = 1.f - ph;
+					const float cx = p0.x + ph * fw, half = 30.f;
+					const ImU32 on = blackShine ? IM_COL32(0, 0, 0, 150) : IM_COL32(255, 255, 255, 120), off = on & 0x00ffffff;
+					dl->PushClipRect(p0, ImVec2(p0.x + fw, p0.y + hgt), true);
+					dl->AddRectFilledMultiColor(ImVec2(cx - half, p0.y), ImVec2(cx, p0.y + hgt), off, on, on, off);
+					dl->AddRectFilledMultiColor(ImVec2(cx, p0.y), ImVec2(cx + half, p0.y + hgt), on, off, off, on);
+					dl->PopClipRect();
+				}
+				dl->AddRect(p0, ImVec2(p0.x + w, p0.y + hgt), IM_COL32(255, 255, 255, 180));
+				ImGui::Dummy(ImVec2(w, hgt + 4));
+			};
+			const float fill = h.meterMode == 0 ? std::fmod(h.meterPct, 100.f) / 100.f + (h.meterPct >= 300.f ? 1.f : 0.f) : 1.f;
+			bar("Magic circuit", fill, h.colors[slot], slots[slot].overlaySpeed, slot == 7);
+			uint32_t g;
+			if (h.guardBroken) g = h.colors[10];
+			else {
+				const ImVec4 hi = ArgbToVec(h.colors[8]), lo = ArgbToVec(h.colors[9]);
+				const float q = h.guardQuality;
+				g = VecToArgb(ImVec4(lo.x + (hi.x - lo.x) * q, lo.y + (hi.y - lo.y) * q, lo.z + (hi.z - lo.z) * q, 1.f));
+			}
+			bar("Guard bar", h.guardBroken ? 1.f : 0.75f, g, 0, false);
+			ImGui::TextDisabled("The game blends the guard colour with part of gauge00.png; this shows the raw colour.");
+			ImGui::EndTabItem();
+		}
+		auto ensureTextures = [&]() {
+			if (h.texturesFor == h.gameDir) return;
+			for (auto& tx : h.textures) FreeTexture(tx.id);
+			h.textures.clear();
+			h.texturesFor = h.gameDir;
+			const fs::path dir = fs::u8path(h.gameDir) / "GRP" / "gauge_AA";
+			std::error_code ec;
+			std::vector<fs::path> files;
+			for (int i = 0; i <= 9; ++i) files.push_back(dir / ("gauge0" + std::to_string(i) + ".png"));
+			if (fs::is_directory(dir / "face", ec))
+				for (auto& e : fs::directory_iterator(dir / "face", ec))
+					if (e.path().extension() == ".png") files.push_back(e.path());
+			std::sort(files.begin() + std::min<size_t>(10, files.size()), files.end());
+			for (auto& f : files) {
+				HudTexture tx; tx.name = f.filename().string();
+				tx.id = LoadPngTexture(f.u8string(), &tx.w, &tx.h);
+				if (tx.id) h.textures.push_back(tx);
+			}
+		};
+		if (ImGui::BeginTabItem("Gauge sheets")) {
+			ensureTextures();
+			static const char* notes[] = {
+				"top HUD (health, guard) and C/F moon magic circuit", "system font", "MAX/HEAT/BLOOD HEAT/BREAK/UNLIMITED",
+				"meter numbers", "round numbers, Sion/Roa/F-Maids hearts", "timer numbers", "moon icons",
+				"round counters", "spinning rings", "H moon magic circuit" };
+			int shown = 0;
+			for (auto& tx : h.textures) {
+				if (tx.name.rfind("gauge", 0) != 0) continue;
+				const int n = tx.name[6] - '0';
+				ImGui::Text("%s  -  %s", tx.name.c_str(), n >= 0 && n < 10 ? notes[n] : "");
+				const float scale = std::min(1.f, (ImGui::GetContentRegionAvail().x - 10) / (float)tx.w);
+				ImGui::Image((ImTextureID)(uintptr_t)tx.id, ImVec2(tx.w * scale, tx.h * scale));
+				++shown;
+			}
+			if (!shown) ImGui::TextDisabled("No GRP/gauge_AA/gauge0*.png under the game folder (extract 0003.p / 0008.p there).");
+			ImGui::EndTabItem();
+		}
+		if (ImGui::BeginTabItem("Portraits")) {
+			ensureTextures();
+			ImGui::TextDisabled("face<character>_<side>.png: side 00 = P1/left, 01 = P2/right.");
+			int col = 0;
+			for (auto& tx : h.textures) {
+				if (tx.name.rfind("face", 0) != 0) continue;
+				ImGui::BeginGroup();
+				ImGui::Image((ImTextureID)(uintptr_t)tx.id, ImVec2(tx.w * 0.5f, tx.h * 0.5f));
+				ImGui::TextUnformatted(tx.name.c_str());
+				ImGui::EndGroup();
+				if (++col % 4) ImGui::SameLine();
+			}
+			ImGui::EndTabItem();
+		}
+		ImGui::EndTabBar();
 	}
 	ImGui::End();
 }

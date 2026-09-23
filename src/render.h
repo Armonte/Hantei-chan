@@ -60,6 +60,9 @@ struct RenderLayer {
 
 	// PUPS of the pattern this layer belongs to: selects <cg>_pN.pal (issue #76).
 	int pups = 0;
+	// Pattern comparison overlay (issue #63): draw this layer's boxes as
+	// outlines only, so they read apart from the main pattern's filled boxes.
+	bool boxesOutlineOnly = false;
 
 	RenderLayer() :
 		spriteId(-1), spawnOffsetX(0), spawnOffsetY(0),
