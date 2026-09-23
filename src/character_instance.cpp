@@ -9,6 +9,9 @@
 CharacterInstance::CharacterInstance()
 	: parts(&cg)
 {
+	// Undo tracks the whole pattern list; the baseline is captured lazily on
+	// the first UI frame after (re)load.
+	undoManager.attach(&frameData.m_sequences);
 	state.pattern = 0;
 	state.frame = 0;
 	state.spriteId = -1;
@@ -75,7 +78,7 @@ bool CharacterInstance::loadFromTxt(const std::string& txtPath)
 	}
 
 	m_isModified = false;
-	undoManager.markCleanState();
+	undoManager.reset();  // document replaced: new baseline, no history
 
 	// Load MBTL move scripts for script-spawn visualization
 	loadMvScripts(txtPath);
@@ -126,7 +129,7 @@ bool CharacterInstance::loadChrHA6FromTxt(const std::string& txtPath)
 	}
 
 	m_isModified = false;
-	undoManager.markCleanState();
+	undoManager.reset();  // document replaced: new baseline, no history
 
 	// Load MBTL move scripts for script-spawn visualization
 	loadMvScripts(txtPath);
@@ -151,7 +154,7 @@ bool CharacterInstance::loadHA6(const std::string& ha6Path, bool patch)
 	m_topHA6Path = ha6Path;
 
 	m_isModified = false;
-	undoManager.markCleanState();
+	undoManager.reset();  // document replaced: new baseline, no history
 	return true;
 }
 
@@ -192,7 +195,7 @@ bool CharacterInstance::save()
 		return false;
 	}
 	m_isModified = false;
-	undoManager.markCleanState();
+	undoManager.markClean();  // undoing back to this revision clears dirty
 	return true;
 }
 
@@ -208,7 +211,7 @@ bool CharacterInstance::saveAs(const std::string& ha6Path)
 	m_ha6Paths.push_back(ha6Path);
 
 	m_isModified = false;
-	undoManager.markCleanState();
+	undoManager.markClean();  // undoing back to this revision clears dirty
 	return true;
 }
 
@@ -227,7 +230,7 @@ bool CharacterInstance::saveModifiedOnly(const std::string& ha6Path)
 	}
 
 	m_isModified = false;
-	undoManager.markCleanState();
+	undoManager.markClean();  // undoing back to this revision clears dirty
 	return true;
 }
 
