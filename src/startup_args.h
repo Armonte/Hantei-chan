@@ -18,6 +18,8 @@
 //   --export-crop all|each
 //   --save-project <hproj>  save the project (atomic) before quitting
 //   --capture-windows <prefix>  save every detached OS window (PrintWindow) as <prefix>_<n>.png
+//   --post-key <vk>      frame 12: post WM_KEYDOWN <vk> to the first detached window
+//                        (checks shortcut routing through the HWND subclass)
 //   --stats <file>       frames 10-19: average scene render / onion-skin cost (CPU ms)
 //   --quit               quit after the actions even without --capture
 #include <string>
@@ -46,6 +48,7 @@ struct StartupArgs {
 	bool exportFitEach = false;
 	std::string saveProject;
 	std::string stats;           // UTF-8
+	int postKey = 0;
 	double sceneMs = 0, onionSimMs = 0, onionTotalMs = 0;
 	int statFrames = 0, onionSamples = 0;
 	bool quit = false;

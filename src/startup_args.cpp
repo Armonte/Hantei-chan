@@ -53,6 +53,7 @@ bool ParseWave2StartupArg(const char* arg, const wchar_t* next, int& i)
 	if (!strcmp(arg, "--export-crop")) { gStartup.exportFitEach = value(CP_ACP) == "each"; return true; }
 	if (!strcmp(arg, "--save-project")) { gStartup.saveProject = value(CP_ACP); return true; }
 	if (!strcmp(arg, "--stats")) { gStartup.stats = value(CP_UTF8); return true; }
+	if (!strcmp(arg, "--post-key")) { gStartup.postKey = (int)strtol(value(CP_ACP).c_str(), nullptr, 0); return true; }
 	return false;
 }
 
@@ -184,6 +185,12 @@ void MainFrame::ProcessStartupArgs()
 			}
 		}
 	}
+	if (gStartup.postKey && n == 12) {
+		HWND target = nullptr;
+		for (ImGuiViewport *vp : ImGui::GetPlatformIO().Viewports)
+			if (vp != ImGui::GetMainViewport() && vp->PlatformHandle) { target = (HWND)vp->PlatformHandle; break; }
+		if (target) PostMessage(target, WM_KEYDOWN, (WPARAM)gStartup.postKey, 1);
+	}
 	if (!gStartup.stats.empty() && n >= 10 && n < 20) {
 		gStartup.sceneMs += m_lastSceneMs;
 		gStartup.onionSimMs += m_onionStats.simMs;
@@ -197,6 +204,12 @@ void MainFrame::ProcessStartupArgs()
 			fprintf(f, "frames %d\nscene_ms %.4f\nonion_samples %d\nonion_sim_ms %.4f\nonion_total_ms %.4f\n",
 				gStartup.statFrames, gStartup.sceneMs * k, gStartup.onionSamples,
 				gStartup.onionSimMs * k, gStartup.onionTotalMs * k);
+			if (CharacterView *v = findViewById(m_startupViewId)) {
+				const auto owner = m_session.owner(v->getId());
+				fprintf(f, "view_host %llu\nview_onion_enabled %d\nshortcut_view %llu\nfocused_host %llu\n",
+					(unsigned long long)owner.value_or(0), v->onion().enabled ? 1 : 0,
+					(unsigned long long)shortcuts.focusedViewId(), (unsigned long long)m_focusedHostId);
+			}
 			fclose(f);
 		}
 	}
