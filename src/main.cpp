@@ -224,7 +224,8 @@ int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE, PWSTR pCmdLine, int nCmdShow
 			return 0;
 		}
 		else if(i+1<argC && (!strcmp(arg, "--open") || !strcmp(arg, "--capture") || !strcmp(arg, "--pattern")
-		                     || !strcmp(arg, "--frame") || !strcmp(arg, "--palette")))
+		                     || !strcmp(arg, "--frame") || !strcmp(arg, "--palette")
+		                     || !strcmp(arg, "--zoom") || !strcmp(arg, "--game")))
 		{
 			// startup actions, see startup_args.h
 			std::wstring w(argV[i+1]);
@@ -235,8 +236,14 @@ int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE, PWSTR pCmdLine, int nCmdShow
 			else if(!strcmp(arg, "--capture")) gStartup.capture = v;
 			else if(!strcmp(arg, "--pattern")) gStartup.pattern = atoi(v.c_str());
 			else if(!strcmp(arg, "--frame")) gStartup.frame = atoi(v.c_str());
+			else if(!strcmp(arg, "--zoom")) gStartup.zoom = (float)atof(v.c_str());
+			else if(!strcmp(arg, "--game")) gStartup.game = v;
 			else gStartup.palette = atoi(v.c_str());
 			i++;
+		}
+		else if(!strcmp(arg, "--no-pups"))
+		{
+			gStartup.noPups = true;
 		}
 		else if(!strcmp(arg, "-i"))
 		{

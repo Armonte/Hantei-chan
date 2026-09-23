@@ -34,13 +34,45 @@ inline void PatternDisplay(Sequence *seq, FrameData *frameData = nullptr, int pa
 		"Level 0 can be self canceled");
 	ImGui::SameLine();
 
+	const bool uni = frameData && frameData->usesUniFormat();
 	ImGui::SetNextItemWidth(spacing);
-	if(ImGui::InputInt("Flag", &seq->flag, 0, 0) && frameData && patternIndex >= 0) {
+	if(ImGui::InputInt(uni ? "PFLG" : "Flag", &seq->flag, 0, 0) && frameData && patternIndex >= 0) {
 		frameData->mark_modified(patternIndex);
 	}
 	ImGui::SameLine(); ImGui::TextDisabled("(?)");
 	if (ImGui::IsItemHovered())
-		Tooltip("Info for the editor about the type of move\n"
-		"No use in game - has no effect during gameplay\n"
-		"Preset values: only 0, 1, or 2 used in Melty Blood");
+	{
+		if (uni)
+			Tooltip("PFLG bit 0 = template pattern (UNI2/MBTL BaseData, names marked with a star).\n"
+			"When the game loads a character, a template keeps its own frames (timing,\n"
+			"state, attack data) and takes the layer sprites/offsets and the boxes from\n"
+			"the character's pattern in the same slot (Han6_MergeTemplatePattern_PFLG).");
+		else
+			Tooltip("Info for the editor about the type of move\n"
+			"No use in game - has no effect during gameplay\n"
+			"Preset values: only 0, 1, or 2 used in Melty Blood");
+	}
+
+	if (uni)
+	{
+		// PSTS/PLVL are read and ignored by the UNI2/MBTL loaders.
+		ImGui::SetNextItemWidth(spacing);
+		if(ImGui::InputInt("PUPS", &seq->pups, 0, 0) && frameData && patternIndex >= 0) {
+			if (seq->pups < 0) seq->pups = 0;
+			if (seq->pups > 7) seq->pups = 7;
+			frameData->mark_modified(patternIndex);
+		}
+		ImGui::SameLine(); ImGui::TextDisabled("(?)");
+		if (ImGui::IsItemHovered())
+			Tooltip("PUPS: palette file used while this pattern is drawn.\n"
+			"0 = <cg>.pal, n = <cg>_pn.pal (n = 1..7), same palette number.\n"
+			"(CharaPalette_LoadPalAndPupsVariants / Han6Draw_DrawLayer)");
+		ImGui::SameLine();
+		std::string code = seq->codeName;
+		ImGui::SetNextItemWidth(spacing * 3);
+		if (ImGui::InputText("Code name (PTCN)", &code) && frameData && patternIndex >= 0) {
+			seq->codeName = code;
+			frameData->mark_modified(patternIndex);
+		}
+	}
 }

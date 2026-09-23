@@ -133,6 +133,14 @@ inline void AsDisplay(Frame_AS *as, FrameData *frameData = nullptr, int patternI
 			markModified();
 		}
 	}
+	if(frameData && frameData->usesUniFormat()) {
+		im::SetNextItemWidth(60);
+		if(im::InputInt("ASCF", &as->ascf, 0, 0)) {
+			markModified();
+		}
+		if(im::IsItemHovered())
+			Tooltip("ASCF (UNI2/MBTL, AS +28): one int; used in a few UNI2/MBTL patterns.");
+	}
 }
 
 #endif /* FRAME_DISP_AS_H_GUARD */

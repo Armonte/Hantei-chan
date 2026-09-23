@@ -5,6 +5,9 @@
 //   --open <file>        open a character: .txt, .ha6, MBAC .DAT (by content) or .hproj
 //   --pattern N / --frame N   select pattern / frame in the opened view
 //   --palette N          palette number
+//   --zoom F             view zoom
+//   --game auto|mbaacc|uni|mbtl   HA6 dialect override (View > Game format)
+//   --no-pups            ignore PUPS (draw with <cg>.pal only)
 //   --capture <png>      after a few frames, save the window to <png> and quit
 //                        (used for automated render checks, e.g. MBAC sprites)
 #include <string>
@@ -14,6 +17,9 @@ struct StartupArgs {
 	int pattern = -1;
 	int frame = -1;
 	int palette = -1;
+	float zoom = 0.f;
+	std::string game;
+	bool noPups = false;   // --no-pups: draw every pattern with <cg>.pal
 	std::string capture;
 	int frameCounter = 0;
 };
