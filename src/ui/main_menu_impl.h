@@ -28,12 +28,12 @@ void MainFrame::Menu(unsigned int errorPopupId)
 			bool hasActive = (active != nullptr);
 
 			// Project menu items
-			if (ImGui::MenuItem("New Project"))
+			if (ImGui::MenuItem("New Project", shortcuts.registry().label(ShortcutAction::newProject).c_str()))
 			{
 				newProject();
 			}
 
-			if (ImGui::MenuItem("Open Project..."))
+			if (ImGui::MenuItem("Open Project...", shortcuts.registry().label(ShortcutAction::openProject).c_str()))
 			{
 				openProject();
 			}
@@ -69,12 +69,12 @@ void MainFrame::Menu(unsigned int errorPopupId)
 			ImGui::Separator();
 
 			bool hasProject = ProjectManager::HasCurrentProject();
-			if (ImGui::MenuItem("Save Project", nullptr, false, hasProject))
+			if (ImGui::MenuItem("Save Project", hasProject ? shortcuts.registry().label(ShortcutAction::save).c_str() : nullptr, false, hasProject))
 			{
 				saveProject();
 			}
 
-			if (ImGui::MenuItem("Save Project As..."))
+			if (ImGui::MenuItem("Save Project As...", shortcuts.registry().label(ShortcutAction::saveProjectAs).c_str()))
 			{
 				saveProjectAs();
 			}
@@ -220,7 +220,8 @@ void MainFrame::Menu(unsigned int errorPopupId)
 
 			ImGui::Separator();
 
-			if (ImGui::MenuItem("Save Character", nullptr, false, hasActive))
+			// Ctrl+S saves the active character (and the .hproj when a project is open).
+			if (ImGui::MenuItem("Save Character", shortcuts.registry().label(ShortcutAction::save).c_str(), false, hasActive))
 			{
 				if (hasActive) {
 					saveCharacter(active);
@@ -450,7 +451,8 @@ void MainFrame::Menu(unsigned int errorPopupId)
 					ImGui::TextDisabled("%s", ShortcutRegistry::ChordLabel(b.chord).c_str());
 				}
 				ImGui::Separator();
-				ImGui::TextDisabled("Left/Right step keyframes; Shift+J/L step ticks.");
+				ImGui::TextDisabled("Left/Right (or Num/ Num*) step keyframes; Shift+J/L step ticks.");
+				ImGui::TextDisabled("Ctrl+arrows move the selected layer (Ctrl+Shift: 10px).");
 				ImGui::TextDisabled("Text fields keep their own Ctrl+Z / Ctrl+Y.");
 				ImGui::EndMenu();
 			}

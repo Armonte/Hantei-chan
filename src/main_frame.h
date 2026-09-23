@@ -193,6 +193,7 @@ private:
 	// ---- Editing tools (ui/editor_tools_impl.h) ----------------------------
 	ShortcutRouter shortcuts;
 	bool RunShortcut(ShortcutAction action);
+	bool NudgeLayer(CharacterView* view, int dx, int dy);
 	bool PerformUndoRedo(bool redo);
 	void RefreshViewsAfterHistory(CharacterInstance* character, const UndoManager::Entry* entry);
 	bool isLiveCharacter(const CharacterInstance* character) const;
