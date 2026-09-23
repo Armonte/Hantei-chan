@@ -232,9 +232,16 @@ void MainFrame::Menu(unsigned int errorPopupId)
 					std::string &&file = FileDialog(fileType::TXT);
 					if(!file.empty())
 					{
-						active->frameData.load_commands(file.c_str());
+						loadCommandsForActive(file);
 					}
 				}
+			}
+			if (ImGui::MenuItem("Command File Editor (active character)", nullptr, false, hasActive))
+				openCommandEditorForActive();
+			if (ImGui::MenuItem("Open Command File..."))
+			{
+				std::string &&file = FileDialog(fileType::CMDTXT);
+				if (!file.empty()) openCommandEditor(file);
 			}
 
 			ImGui::Separator();
@@ -381,6 +388,7 @@ void MainFrame::Menu(unsigned int errorPopupId)
 		}
 		if (ImGui::BeginMenu("Preferences"))
 		{
+			DrawExtensionProfileMenu();
 			if (ImGui::BeginMenu("Switch preset style"))
 			{		
 				if (ImGui::Combo("Style", &style_idx, "Warm\0Dark\0Light\0ImGui\0"))

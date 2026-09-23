@@ -18,6 +18,7 @@
 #include "background/bg_file.h"
 #include "background/bg_renderer.h"
 #include "background/bg_types.h"
+#include "cmdfile/cmd_editor_ui.h"
 #include <glm/mat4x4.hpp>
 #include <string>
 #include <vector>
@@ -168,6 +169,13 @@ private:
 	float bgZoomAnchorScrnX  = 0.0f, bgZoomAnchorScrnY  = 0.0f;
 
 	AboutWindow aboutWindow;
+
+	// _c.txt command-file editor (ui/main_frame_cmdfile.cpp).
+	cmdfile::CommandFileEditor commandEditor;
+	void openCommandEditor(const std::string& path);
+	void openCommandEditorForActive();
+	void loadCommandsForActive(const std::string& path);
+	void drawCommandEditor();
 };
 
 

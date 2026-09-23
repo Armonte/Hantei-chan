@@ -61,6 +61,10 @@ std::string FileDialog(int fileType, bool save, char* defaultName)
 	{
 		ofn.lpstrFilter = "MBAA Stage files (*.dat)\0*.dat\0All\0*.*\0";
 	}
+	else if (fileType == fileType::CMDTXT)
+	{
+		ofn.lpstrFilter = "Command files (*_c.txt)\0*_c.txt\0Text files (*.txt)\0*.txt\0All\0*.*\0";
+	}
 	else
 	{
 		ofn.lpstrFilter = "All\0*.*\0";
@@ -70,8 +74,11 @@ std::string FileDialog(int fileType, bool save, char* defaultName)
 	ofn.nMaxFileTitle = 0;
 	ofn.lpstrInitialDir = ".";
 
+	// OFN_NOCHANGEDIR: never move the process working directory into the picked folder
+	// (relative paths such as the ImGui ini must keep resolving from the start folder).
+	ofn.Flags = OFN_NOCHANGEDIR;
 	if(!save)
-		ofn.Flags = OFN_PATHMUSTEXIST | OFN_FILEMUSTEXIST;
+		ofn.Flags |= OFN_PATHMUSTEXIST | OFN_FILEMUSTEXIST;
 
 	// Display the Open dialog box. 
 	if(save)
