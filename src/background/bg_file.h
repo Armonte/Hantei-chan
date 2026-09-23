@@ -2,10 +2,9 @@
 #define BG_FILE_H_GUARD
 
 #include "bg_types.h"
+#include "bg_pat.h"
 #include "../cg.h"
 #include <memory>
-
-class Parts;
 
 namespace bg {
 
@@ -30,10 +29,10 @@ public:
 	CG* GetCG() { return cg.get(); }
 	const CG* GetCG() const { return cg.get(); }
 
-	// Embedded PAT, parsed into the editor's Parts system. Stage objects
-	// whose frame sprite-id is < 10000 reference a PAT pattern (not a CG
-	// sprite) — see bg_renderer. Null if the stage carries no PAT.
-	Parts* GetParts() { return parts.get(); }
+	// Embedded older-format PAT (every MBAACC stage with PAT-based objects
+	// carries one). Stage objects whose frame sprite-id is < 10000 reference
+	// a PAT pattern — see bg_renderer. Null if the stage carries no PAT.
+	OldPat* GetOldPat() { return oldPat.get(); }
 
 	bool IsLoaded() const { return loaded; }
 
@@ -42,6 +41,16 @@ public:
 
 	// Update all object animations
 	void UpdateAnimations();
+
+	// --- Game-accurate runtime (MBAA.exe background tick, see
+	// docs/bg_research/BG_HA4_RE.md). A pool of instances like the game's
+	// 2000-slot array: auto-spawn at load (objhdr+20 == 0), aniType-0 /
+	// run-off-the-end despawn, spawn / random-spawn / random-velocity
+	// commands, position triggers, loop counters, motion integration. ---
+	std::vector<Instance>& GetInstances() { return instances; }
+	const std::vector<Instance>& GetInstances() const { return instances; }
+	void ResetRuntime();      // respawn the initial instances
+	void TickRuntime();       // one 60 Hz game tick
 
 	// Step a specific object forward/backward by one frame
 	void StepObjectForward(int objIndex);
@@ -84,7 +93,17 @@ private:
 	std::vector<Object> objects;
 	std::vector<uint8_t> cgData;     // Raw embedded CG data
 	std::unique_ptr<CG> cg;          // Loaded CG file
-	std::unique_ptr<Parts> parts;    // Embedded PAT, parsed (may be null)
+	std::unique_ptr<OldPat> oldPat;  // Embedded older-format PAT (may be null)
+
+	// Runtime instance pool (see TickRuntime).
+	std::vector<Instance> instances;
+	uint32_t rngState = 0x12345678u;
+	int  RandInt();
+	int  AllocInstance();
+	void InitInstance(Instance& in, int objIndex);
+	void EnterFrame(Instance& in);
+	void PlaceRelativeToParent(Instance& child, const Instance& parent, int x, int y);
+	const Frame* InstanceFrame(const Instance& in) const;
 	
 	// Loading helpers
 	bool LoadHeader(const char* data, size_t size, Header& header);

@@ -2,6 +2,7 @@
 // real MBAACC stage data without crashing and reports object/frame counts.
 #include <cstdio>
 #include <cstring>
+#include <cstdlib>
 #include "background/bg_file.h"
 #include "background/bg_types.h"
 
@@ -23,6 +24,19 @@ int main(int argc, char** argv)
 	size_t totalFrames = 0;
 	for (const auto& obj : objects) totalFrames += obj.frames.size();
 	printf("       objects=%zu total_frames=%zu\n", objects.size(), totalFrames);
+
+	// --sim N: run N game ticks of the instance-pool runtime and report the
+	// live-instance count every 600 ticks (spawners/despawn sanity check).
+	if (argc >= 3 && strcmp(argv[2], "--sim") == 0) {
+		int n = argc >= 4 ? atoi(argv[3]) : 3600;
+		auto live = [&]() { int c = 0; for (auto& in : file.GetInstances()) if (in.state >= 1) ++c; return c; };
+		printf("       tick 0 live=%d\n", live());
+		for (int t = 1; t <= n; ++t) {
+			file.TickRuntime();
+			if (t % 600 == 0) printf("       tick %d live=%d pool=%zu\n", t, live(), file.GetInstances().size());
+		}
+		_exit(0);
+	}
 
 	if (argc >= 3) {
 		const char* out = argv[2];
