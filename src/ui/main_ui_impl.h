@@ -383,6 +383,7 @@ void MainFrame::DrawUi()
 	aboutWindow.Draw();
 	vectors.Draw();
 	drawCommandEditor();
+	drawGameLink();
 
 	// Background (stage) Inspector — shows the currently loaded stage's
 	// objects, lets you scrub through frames, and exposes editable fields.

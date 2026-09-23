@@ -22,6 +22,8 @@
 //                        (checks shortcut routing through the HWND subclass)
 //   --stats <file>       frames 10-19: average scene render / onion-skin cost (CPU ms)
 //   --quit               quit after the actions even without --capture
+//   --game-link N        open the Game Link window, connect, follow game slot N (1-4) and jump the editor to it;
+//                        with --capture the shot is taken later (frame 240) so the link has live state
 #include <string>
 #include <cwchar>
 
@@ -31,6 +33,7 @@ struct StartupArgs {
 	int frame = -1;
 	int palette = -1;
 	std::string capture;
+	int gameLinkSlot = 0;   // --game-link (1-4); 0 = off
 	int frameCounter = 0;
 
 	int tick = -1;

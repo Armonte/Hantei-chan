@@ -87,6 +87,9 @@ add_executable(${EXE}
 	src/cmdfile/cmd_framedata.cpp
 	src/cmdfile/cmd_editor_ui.cpp
 	src/ui/main_frame_cmdfile.cpp
+	src/ui/main_frame_gamelink.cpp
+	src/game_link.cpp
+	src/game_link_panel.cpp
 	imsearch/imsearch.cpp
 	res/res.rc
 )
@@ -180,6 +183,25 @@ if(MINGW)
 endif()
 
 
+
+# Game Link CLI: the editor's Game Link client (src/game_link.cpp) without the GUI, plus an HA6 edit through the
+# editor's own FrameData load/save. Scripted end-to-end checks against a running MBAA.exe (docs/HANTEI_GAME_LINK.md).
+add_executable(game_link_cli
+	src/game_link_cli.cpp
+	src/game_link.cpp
+	src/framedata.cpp
+	src/framedata_load.cpp
+	src/framedata_save.cpp
+	src/framedata_ha4.cpp
+	src/misc.cpp
+	tinyalloc/tinyalloc.c
+)
+target_include_directories(game_link_cli PRIVATE "." "third_party" "${CMAKE_BINARY_DIR}/generated")
+target_compile_definitions(game_link_cli PRIVATE WIN32_LEAN_AND_MEAN HA6GUIVERSION="${CMAKE_PROJECT_VERSION}")
+target_link_libraries(game_link_cli PRIVATE tinyalloc)
+if(MINGW)
+	target_link_options(game_link_cli PRIVATE -static-libgcc -static-libstdc++ -static)
+endif()
 
 # Debug tool: dump pattern frame data via the real loader.
 add_executable(ha6_dump
@@ -370,3 +392,9 @@ if(MINGW)
 	target_link_options(package_tools_test PRIVATE -static-libgcc -static-libstdc++ -static)
 endif()
 add_test(NAME package_tools COMMAND package_tools_test)
+add_executable(game_link_test tests/game_link_test.cpp src/game_link.cpp)
+target_include_directories(game_link_test PRIVATE "src")
+if(MINGW)
+	target_link_options(game_link_test PRIVATE -static-libgcc -static-libstdc++ -static)
+endif()
+add_test(NAME game_link COMMAND game_link_test)
