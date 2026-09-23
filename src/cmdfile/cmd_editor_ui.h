@@ -7,6 +7,7 @@
 
 #include "cmd_document.h"
 
+#include <cstdint>
 #include <functional>
 #include <memory>
 #include <string>
@@ -30,10 +31,18 @@ public:
 	bool hasUnsavedChanges() const;
 	bool empty() const;
 
+	// Focus routing for the app shortcut router: id of the editor window that had keyboard
+	// focus in the last draw (0 = none), and the actions it handles while focused.
+	std::uint64_t focusedViewId() const { return m_focusedViewId; }
+	bool undoFocused(bool redo);
+	bool requestSaveFocused();
+
 private:
 	struct View;
 	std::vector<std::unique_ptr<View>> m_views;
 	int m_nextId = 1;
+	std::uint64_t m_focusedViewId = 0;
+	View* focusedView();
 };
 
 } // namespace cmdfile

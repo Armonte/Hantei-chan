@@ -49,6 +49,18 @@ void MainFrame::loadCommandsForActive(const std::string& path)
 
 void MainFrame::drawCommandEditor()
 {
+	if (!m_commandShortcutsRegistered) {
+		m_commandShortcutsRegistered = true;
+		// While a command window has focus, undo/redo/save go to its own workspace.
+		shortcuts.setContextHandler(ShortcutContext::commands, [this](ShortcutAction action) {
+			switch (action) {
+			case ShortcutAction::undo: return commandEditor.undoFocused(false);
+			case ShortcutAction::redo: return commandEditor.undoFocused(true);
+			case ShortcutAction::save: return commandEditor.requestSaveFocused();
+			default: return false;
+			}
+		});
+	}
 	commandEditor.draw([this](const std::string& path, const cmdfile::Document& doc) {
 		// Keep command names shown in IF panels in step with the staged edits.
 		const std::string key = LowerPath(path);
@@ -58,4 +70,7 @@ void MainFrame::drawCommandEditor()
 				cmdfile::ApplyCommandTable(character->frameData, doc, character->frameData.m_commandsPath);
 		}
 	});
+	// Drawn after the character views, so this claim wins for the next key messages.
+	if (const auto id = commandEditor.focusedViewId())
+		shortcuts.claimFocus(ShortcutContext::commands, id);
 }
