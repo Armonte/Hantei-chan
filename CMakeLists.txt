@@ -61,6 +61,7 @@ add_executable(${EXE}
 	src/background/bg_renderer.cpp
 	src/background/bg_pat.cpp
 	src/background/bg_info.cpp
+	src/background/bg_inspector.cpp
 	imsearch/imsearch.cpp
 	res/res.rc
 )
