@@ -308,9 +308,10 @@ void MainFrame::DrawBack()
 			mainLayer.rotX = mainLayer_data.rotation[0];
 			mainLayer.rotY = mainLayer_data.rotation[1];
 			mainLayer.rotZ = mainLayer_data.rotation[2];
-			mainLayer.AFRT = mainFrame.AF.AFRT;
+			mainLayer.AFRT = mainFrame.AF.AFRT || mainLayer_data.afrt;
 			mainLayer.blendMode = mainLayer_data.blend_mode;
-			mainLayer.zPriority = mainFrame.AF.priority;
+			mainLayer.zPriority = LayerDrawBucket(mainLayer_data.priority, mainFrame.AF.priority);
+			mainLayer.pups = mainSeq->pups;
 			mainLayer.alpha = mainLayer_data.rgba[3];  // Apply frame alpha
 			mainLayer.tintColor = glm::vec4(mainLayer_data.rgba[0], mainLayer_data.rgba[1], mainLayer_data.rgba[2], 1.0f);  // Apply frame RGB
 			mainLayer.isSpawned = false;
@@ -383,7 +384,8 @@ void MainFrame::DrawBack()
 				layer.rotX = spawnedLayer_data.rotation[0];
 				layer.rotY = spawnedLayer_data.rotation[1];
 				layer.rotZ = spawnedLayer_data.rotation[2];
-				layer.AFRT = spawnedFrame.AF.AFRT;
+				layer.AFRT = spawnedFrame.AF.AFRT || spawnedLayer_data.afrt;
+				layer.pups = spawnedSeq->pups;
 
 				// Actor matrix F * R(angle) (MbaaTransform::ActorMatrix): the
 				// renderer applies scale then Z rotation, so mirror via scaleX
@@ -392,8 +394,9 @@ void MainFrame::DrawBack()
 				layer.rotZ += actor.angleTurns();
 
 				layer.blendMode = spawnedLayer_data.blend_mode;
-				// Sticky Z priority (AF priority 0 keeps the previous value)
-				layer.zPriority = actor.zPriority;
+				// Sticky Z priority (AF priority 0 keeps the previous value),
+				// then the layer's AFPL bucket (UNI/MBTL).
+				layer.zPriority = LayerDrawBucket(spawnedLayer_data.priority, actor.zPriority);
 				// Apply frame RGBA, then visualization alpha
 				layer.alpha = spawnedLayer_data.rgba[3] * vizAlpha * state.vizSettings.spawnedOpacity;
 				// Multiply frame RGB with visualization tint
@@ -463,9 +466,10 @@ void MainFrame::DrawBack()
 			mainLayer.rotX = mainLayer_data.rotation[0];
 			mainLayer.rotY = mainLayer_data.rotation[1];
 			mainLayer.rotZ = mainLayer_data.rotation[2];
-			mainLayer.AFRT = mainFrame.AF.AFRT;
+			mainLayer.AFRT = mainFrame.AF.AFRT || mainLayer_data.afrt;
 			mainLayer.blendMode = mainLayer_data.blend_mode;
-			mainLayer.zPriority = mainFrame.AF.priority;
+			mainLayer.zPriority = LayerDrawBucket(mainLayer_data.priority, mainFrame.AF.priority);
+			mainLayer.pups = mainSeq->pups;
 			mainLayer.alpha = mainLayer_data.rgba[3];  // Apply frame alpha
 			mainLayer.tintColor = glm::vec4(mainLayer_data.rgba[0], mainLayer_data.rgba[1], mainLayer_data.rgba[2], 1.0f);  // Apply frame RGB
 			mainLayer.isSpawned = false;
