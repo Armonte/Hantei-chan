@@ -55,6 +55,31 @@ std::string CharacterView::getDisplayName() const
 	// Always add pattern number (e.g., "Ciel #2 - 400")
 	name += " - " + std::to_string(m_state.pattern);
 
+	// ...and the start of the pattern's name, so tabs on the same character
+	// can be told apart (issue #4): at most 12 characters, cut on a UTF-8
+	// boundary.
+	if (const Sequence* seq = m_character->frameData.get_sequence(m_state.pattern)) {
+		const std::string& pat = seq->name.empty() ? seq->codeName : seq->name;
+		constexpr int maxChars = 12;
+		size_t end = 0;
+		int chars = 0;
+		while (end < pat.size() && chars < maxChars) {
+			const unsigned char c = (unsigned char)pat[end];
+			const size_t len = c < 0x80 ? 1 : (c >> 5) == 0x6 ? 2 : (c >> 4) == 0xE ? 3 : (c >> 3) == 0x1E ? 4 : 1;
+			if (end + len > pat.size()) break;
+			end += len;
+			++chars;
+		}
+		std::string shortName = pat.substr(0, end);
+		while (!shortName.empty() && shortName.back() == ' ') shortName.pop_back();
+		// "##" in a label would hide the rest of it (ImGui ID syntax).
+		for (auto& ch : shortName) if (ch == '#') ch = '-';
+		if (!shortName.empty()) {
+			name += " " + shortName;
+			if (end < pat.size()) name += "...";
+		}
+	}
+
 	return name;
 }
 

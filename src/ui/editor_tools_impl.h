@@ -16,6 +16,26 @@ bool MainFrame::HandleKeys(uint64_t vkey, bool isRepeat, bool imguiWantsKeyboard
 	// A non-text ImGui owner (slider being dragged, modal popup) keeps the
 	// keyboard entirely. A focused text field keeps everything except the
 	// bindings marked duringTextInput (Save), so its native Ctrl+Z works.
+	// Key capture for the Keyboard shortcuts window (issue #9): the next
+	// non-modifier key becomes the chord; Esc cancels.
+	if (m_keyCapture >= 0) {
+		if (vkey == VK_SHIFT || vkey == VK_CONTROL || vkey == VK_MENU || vkey == VK_LSHIFT ||
+		    vkey == VK_RSHIFT || vkey == VK_LCONTROL || vkey == VK_RCONTROL || vkey == VK_LWIN || vkey == VK_RWIN)
+			return true;
+		if (vkey != VK_ESCAPE) {
+			ShortcutChord c;
+			c.key = (uint32_t)vkey;
+			if (GetKeyState(VK_CONTROL) & 0x8000) c.modifiers |= shortcutCtrl;
+			if (GetKeyState(VK_SHIFT) & 0x8000) c.modifiers |= shortcutShift;
+			if (GetKeyState(VK_MENU) & 0x8000) c.modifiers |= shortcutAlt;
+			shortcuts.registry().setBindingChord((size_t)m_keyCapture, c);
+			gSettings.keyBindings = shortcuts.registry().serializeOverrides();
+			ImGui::MarkIniSettingsDirty();
+		}
+		m_keyCapture = -1;
+		return true;
+	}
+
 	if (imguiWantsKeyboard && !imguiTextInput)
 		return false;
 
@@ -33,6 +53,16 @@ bool MainFrame::HandleKeys(uint64_t vkey, bool isRepeat, bool imguiWantsKeyboard
 	// gets first refusal on every action routed while it owns focus.
 	if (shortcuts.dispatchToContext(binding->action))
 		return true;
+
+	// Keyframe step from inside a text field (issue #61): done inside the next
+	// UI frame (commit the field, step, re-focus it). The key's character
+	// (e.g. '*') must not reach the field.
+	if (imguiTextInput && (binding->action == ShortcutAction::nextKeyframe ||
+	                       binding->action == ShortcutAction::previousKeyframe)) {
+		m_textNavDir = binding->action == ShortcutAction::nextKeyframe ? 1 : -1;
+		s_swallowChar = vkey == VK_MULTIPLY ? L'*' : vkey == VK_DIVIDE ? L'/' : 0;
+		return true;
+	}
 	return RunShortcut(binding->action);
 }
 
@@ -51,16 +81,25 @@ bool MainFrame::RunShortcut(ShortcutAction action)
 		if (m_posDrag.active) EndPositionDrag(false);
 		return PerformUndoRedo(view, action == ShortcutAction::redo);
 
-	case ShortcutAction::save:
+	case ShortcutAction::save: {
+		// Ctrl+S saves the character being edited, and with a project open also
+		// writes the .hproj. It used to save only the .hproj when a project was
+		// loaded, so character edits were silently left unsaved (issue #80).
+		bool did = false;
+		// The focused window's character (main or detached).
+		auto* active = view ? view->getCharacter() : nullptr;
+		// A character with no file yet is skipped when a project is open (the
+		// project save still runs); without a project the error explains it.
+		if (active && (!active->getTopHA6Path().empty() || !ProjectManager::HasCurrentProject())) {
+			saveCharacter(active);
+			did = true;
+		}
 		if (ProjectManager::HasCurrentProject()) {
 			saveProject();
-			return true;
+			did = true;
 		}
-		if (auto* active = view ? view->getCharacter() : nullptr) {
-			saveCharacter(active);
-			return true;
-		}
-		return false;
+		return did;
+	}
 	case ShortcutAction::saveProjectAs:
 		saveProjectAs();
 		return true;
@@ -70,18 +109,24 @@ bool MainFrame::RunShortcut(ShortcutAction action)
 	case ShortcutAction::newProject:
 		newProject();
 		return true;
-	case ShortcutAction::nextView: {
-		// Cycle the tabs of the focused window.
+	case ShortcutAction::nextView:
+	case ShortcutAction::previousView: {
+		// Cycle the tabs of the focused window (main or detached).
 		const uint64_t hostId = view ? m_session.owner(view->getId()).value_or(WorkspaceSession::MainHost)
 		                             : WorkspaceSession::MainHost;
 		const WorkspaceSession::Host* host = m_session.host(hostId);
 		if (!host || host->tabs.empty()) return false;
+		const size_t n = host->tabs.size();
 		auto it = std::find(host->tabs.begin(), host->tabs.end(), host->active);
-		const size_t next = it == host->tabs.end() ? 0 : ((size_t)(it - host->tabs.begin()) + 1) % host->tabs.size();
+		const size_t cur = it == host->tabs.end() ? 0 : (size_t)(it - host->tabs.begin());
+		const size_t next = it == host->tabs.end() ? 0
+			: action == ShortcutAction::nextView ? (cur + 1) % n : (cur + n - 1) % n;
 		const int index = findViewIndexById(host->tabs[next]);
 		if (index >= 0) setActiveView(index);
 		return true;
 	}
+	case ShortcutAction::reopenClosedView:
+		return reopenClosedTab();
 	case ShortcutAction::closeView:
 		if (view) {
 			tryCloseView(findViewIndexById(view->getId()));
@@ -99,6 +144,20 @@ bool MainFrame::RunShortcut(ShortcutAction action)
 	case ShortcutAction::nextBox:
 		if (view && view->getBoxPane()) view->getBoxPane()->AdvanceBox(+1);
 		return view != nullptr;
+
+	case ShortcutAction::nudgeLayerLeft:      return NudgeLayer(view, -1, 0);
+	case ShortcutAction::nudgeLayerRight:     return NudgeLayer(view, +1, 0);
+	case ShortcutAction::nudgeLayerUp:        return NudgeLayer(view, 0, -1);
+	case ShortcutAction::nudgeLayerDown:      return NudgeLayer(view, 0, +1);
+	case ShortcutAction::nudgeLayerLeftFast:  return NudgeLayer(view, -10, 0);
+	case ShortcutAction::nudgeLayerRightFast: return NudgeLayer(view, +10, 0);
+	case ShortcutAction::nudgeLayerUpFast:    return NudgeLayer(view, 0, -10);
+	case ShortcutAction::nudgeLayerDownFast:  return NudgeLayer(view, 0, +10);
+	case ShortcutAction::toggleSpawnPreview:
+		if (!view) return false;
+		view->getState().vizSettings.showSpawnedPatterns = !view->getState().vizSettings.showSpawnedPatterns;
+		view->getState().forceSpawnTreeRebuild = true;
+		return true;
 
 	// J/K/L: J plays in reverse, K stops (or resumes forward when stopped),
 	// L plays forward. Shift+J / Shift+L step one tick (auto-repeat allowed).
@@ -173,6 +232,27 @@ bool MainFrame::RunShortcut(ShortcutAction action)
 	default:
 		return false;
 	}
+}
+
+// Ctrl+arrows: move the selected layer of the current keyframe (AF offset X/Y).
+bool MainFrame::NudgeLayer(CharacterView* view, int dx, int dy)
+{
+	if (!view || view->isStageView() || view->isPatEditor()) return false;
+	CharacterInstance* character = view->getCharacter();
+	if (!character) return false;
+	auto& st = view->getState();
+	if (st.animating) return false;
+	Sequence* seq = character->frameData.get_sequence(st.pattern);
+	if (!seq || st.frame < 0 || st.frame >= (int)seq->frames.size()) return false;
+	auto& layers = seq->frames[st.frame].AF.layers;
+	if (layers.empty()) layers.push_back({});
+	const int li = std::clamp(st.selectedLayer, 0, (int)layers.size() - 1);
+	layers[li].offset_x += dx;
+	layers[li].offset_y += dy;
+	character->frameData.mark_modified(st.pattern);
+	character->markModified();
+	character->undoManager.markModified();
+	return true;
 }
 
 // ---------------------------------------------------------------------------

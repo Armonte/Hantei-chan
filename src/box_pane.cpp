@@ -411,23 +411,27 @@ void BoxPane::DrawSpawnTimeline()
 {
 	namespace im = ImGui;
 
-	if(!currState.vizSettings.showSpawnedPatterns) {
+	// Always available (issue #10); spawn rows only with the spawn preview on.
+	if(!im::CollapsingHeader("Timeline", ImGuiTreeNodeFlags_DefaultOpen)) {
+		spawnDrag.active = false;
 		return;
 	}
-
-	if(!im::CollapsingHeader("Spawn Timeline")) {
-		return;
-	}
+	if (!currState.vizSettings.showSpawnedPatterns) spawnDrag.active = false;
 
 	auto mainSeq = frameData->get_sequence(currState.pattern);
 	if(!mainSeq || mainSeq->frames.empty()) return;
 	const int mainFrameCount = (int)mainSeq->frames.size();
+	const bool showSpawns = currState.vizSettings.showSpawnedPatterns;
 
 	// Everything below reads the cached tick simulator: the same actors the
 	// viewport draws, with lifetimes from the simulated runtime flow.
 	auto& sim = currState.BindPreviewSim(frameData, effectFrameData);
 	const int settled = sim.settledTick();
 	const int rootEnd = sim.rootEndTick();
+	// Authored keyframe starts (in keyframe order, durations as written).
+	std::vector<int> kfStart(mainFrameCount + 1, 0);
+	for (int i = 0; i < mainFrameCount; ++i)
+		kfStart[i + 1] = kfStart[i] + std::max(1, mainSeq->frames[i].AF.duration);
 	int maxTimelineTick;
 	if (settled >= 0) {
 		maxTimelineTick = std::max(settled + 1, 60);
@@ -436,11 +440,11 @@ void BoxPane::DrawSpawnTimeline()
 		int period = FindLoopPeriod(frameData, currState.pattern);
 		maxTimelineTick = std::clamp(period * 3, 240, sim.horizon());
 	}
+	maxTimelineTick = std::max(maxTimelineTick, kfStart[mainFrameCount]);
 	sim.ensureSimulatedTo(maxTimelineTick);
 	const auto& track = sim.rootFrameTrack();
 
-	// Runtime IF assumption (global)
-	{
+	if (showSpawns) {
 		int mode = currState.previewOptions.defaultIfAssumption == preview::IfAssume::True ? 1 : 0;
 		const char* modes[] = {"Assume false (authored flow)", "Assume true (branch once per frame visit)"};
 		im::SetNextItemWidth(260.f);
@@ -458,51 +462,235 @@ void BoxPane::DrawSpawnTimeline()
 	         rootEnd >= 0 ? std::to_string(rootEnd).c_str() : "loops",
 	         settled >= 0 ? std::to_string(settled).c_str() : "never (looping actor)");
 
+	auto seekTick = [&](int tick) {
+		tick = std::clamp(tick, 0, maxTimelineTick);
+		currState.animating = false;
+		sim.ensureSimulatedTo(tick);
+		currState.currentTick = tick;
+		if (tick < (int)track.size())
+			currState.frame = std::clamp(track[tick], 0, mainFrameCount - 1);
+	};
+
 	// Tick scrubber: seeking is O(checkpoint interval) in the simulator.
 	int scrubTick = std::min(currState.currentTick, maxTimelineTick);
-	if (im::SliderInt("##tickscrub", &scrubTick, 0, maxTimelineTick, "Tick %d")) {
-		currState.animating = false;
-		currState.currentTick = scrubTick;
-		if (scrubTick < (int)track.size())
-			currState.frame = std::clamp(track[scrubTick], 0, mainFrameCount - 1);
-	}
-
-	im::Separator();
+	im::SetNextItemWidth(-160.f);
+	if (im::SliderInt("##tickscrub", &scrubTick, 0, maxTimelineTick, "Tick %d")) seekTick(scrubTick);
+	im::SameLine();
+	im::SetNextItemWidth(100.f);
+	im::SliderFloat("Zoom##tl", &timelineZoom, 0.25f, 16.f, "%.2fx", ImGuiSliderFlags_Logarithmic);
+	if (im::IsItemHovered())
+		im::SetTooltip("Ctrl+wheel over the timeline zooms, middle-drag pans,\n"
+		               "left-drag on the ruler/main row scrubs.\n"
+		               "Keyframes: click selects, drag onto another keyframe moves it,\n"
+		               "right-click for copy/paste/duplicate/delete.\n"
+		               "Spawn bars of this pattern: right-drag moves the spawning effect\n"
+		               "to another keyframe, Alt+right-drag copies it.");
 
 	const float rowHeight = 20.0f;
 	const float labelWidth = 120.0f;
 	const float avail = std::max(200.0f, im::GetContentRegionAvail().x - labelWidth - 8.0f);
-	const float tickWidth = std::clamp(avail / (float)std::max(1, maxTimelineTick), 0.25f, 4.0f);
+	const float fitWidth = std::clamp(avail / (float)std::max(1, maxTimelineTick), 0.25f, 4.0f);
+	const float tickWidth = fitWidth * timelineZoom;
 
+	// Labels in a fixed column, bars in a horizontally scrolling child.
+	const int indicatorRows = 7;
+	int spawnRowEstimate = showSpawns ? (int)std::min<size_t>(sim.spawnRecords().size(), 40) : 0;
+	const float childHeight = std::min(520.f, (3 + indicatorRows + spawnRowEstimate) * (rowHeight + 2) + 30.f);
+
+	// Ctrl+wheel zooms, so the child must not also scroll with it.
+	im::BeginChild("##tlbars", ImVec2(0, childHeight), ImGuiChildFlags_Borders,
+		ImGuiWindowFlags_HorizontalScrollbar | (im::GetIO().KeyCtrl ? ImGuiWindowFlags_NoScrollWithMouse : 0));
 	ImDrawList* drawList = im::GetWindowDrawList();
-	ImVec2 startPos = im::GetCursorScreenPos();
-	float yPos = startPos.y;
+	const ImVec2 origin = im::GetCursorScreenPos();
+	const float contentWidth = labelWidth + (maxTimelineTick + 2) * tickWidth;
+	// Row labels stay in a fixed column on the left (drawn last, on top).
+	struct Label { float y; std::string text; ImU32 color; };
+	std::vector<Label> labels;
+	const bool barsHovered = im::IsWindowHovered();
+	const ImGuiIO& io = im::GetIO();
+	// Ctrl+wheel zoom around the cursor, middle-drag pan.
+	if (barsHovered && io.KeyCtrl && io.MouseWheel != 0.f) {
+		const float mouseTick = (io.MousePos.x - origin.x - labelWidth) / tickWidth;
+		timelineZoom = std::clamp(timelineZoom * (io.MouseWheel > 0 ? 1.25f : 0.8f), 0.25f, 16.f);
+		const float newTickWidth = fitWidth * timelineZoom;
+		im::SetScrollX(std::max(0.f, im::GetScrollX() + mouseTick * (newTickWidth - tickWidth)));
+	}
+	if (barsHovered && im::IsMouseDragging(ImGuiMouseButton_Middle))
+		im::SetScrollX(im::GetScrollX() - io.MouseDelta.x);
 
-	// Main pattern row
-	im::Text("Main");
-	im::SameLine(labelWidth);
-	ImVec2 timelineStart = im::GetCursorScreenPos();
+	float yPos = origin.y;
+	auto tickX = [&](int t) { return origin.x + labelWidth + t * tickWidth; };
+	auto mouseTick = [&]() { return (int)((io.MousePos.x - origin.x - labelWidth) / tickWidth); };
+	auto rowLabel = [&](const char* text, ImU32 col = IM_COL32(220, 220, 220, 255)) {
+		labels.push_back({yPos + 2, text, col});
+	};
+	auto drawLabels = [&]() {
+		const ImVec2 wp = im::GetWindowPos();
+		const float h = im::GetWindowHeight();
+		drawList->AddRectFilled(wp, ImVec2(wp.x + labelWidth - 4, wp.y + h), im::GetColorU32(ImGuiCol_WindowBg));
+		for (const auto& l : labels) {
+			std::string t = l.text;
+			while (t.size() > 3 && im::CalcTextSize(t.c_str()).x > labelWidth - 10) t.pop_back();
+			drawList->AddText(ImVec2(wp.x + 4, l.y), l.color, t.c_str());
+		}
+	};
+
+	// ---- Ruler + scrub ----
+	rowLabel("Tick");
+	for (int t = 0; t <= maxTimelineTick; ++t) {
+		const bool major = t % 10 == 0;
+		if (!major && tickWidth < 3.f) continue;
+		drawList->AddLine(ImVec2(tickX(t), yPos + (major ? 4 : 12)), ImVec2(tickX(t), yPos + rowHeight), IM_COL32(160, 160, 160, 160));
+		if (major && (tickWidth * 10 >= 24 || t % 50 == 0))
+			drawList->AddText(ImVec2(tickX(t) + 2, yPos), IM_COL32(200, 200, 200, 255), std::to_string(t).c_str());
+	}
+	im::SetCursorScreenPos(ImVec2(origin.x, yPos));
+	im::InvisibleButton("##ruler", ImVec2(contentWidth, rowHeight * 2 + 4));
+	if (im::IsItemActive() && im::IsMouseDown(ImGuiMouseButton_Left))
+		seekTick(mouseTick());
+	yPos += rowHeight + 2;
+
+	// ---- Main (simulated flow) ----
+	rowLabel("Main (sim)");
 	{
-		ImVec2 barMin(timelineStart.x, yPos);
 		int liveEnd = rootEnd >= 0 ? rootEnd : maxTimelineTick;
-		drawList->AddRectFilled(barMin, ImVec2(timelineStart.x + liveEnd * tickWidth, yPos + rowHeight), IM_COL32(80, 80, 255, 200));
+		drawList->AddRectFilled(ImVec2(tickX(0), yPos), ImVec2(tickX(liveEnd), yPos + rowHeight), IM_COL32(80, 80, 255, 200));
 		if (rootEnd >= 0 && rootEnd < maxTimelineTick)
-			drawList->AddRectFilled(ImVec2(timelineStart.x + rootEnd * tickWidth, yPos),
-			                        ImVec2(timelineStart.x + maxTimelineTick * tickWidth, yPos + rowHeight), IM_COL32(60, 60, 90, 160));
-		drawList->AddRect(barMin, ImVec2(timelineStart.x + maxTimelineTick * tickWidth, yPos + rowHeight), IM_COL32(255, 255, 255, 255));
-		// Exact frame entries from the simulated root track
+			drawList->AddRectFilled(ImVec2(tickX(rootEnd), yPos), ImVec2(tickX(maxTimelineTick), yPos + rowHeight), IM_COL32(60, 60, 90, 160));
+		drawList->AddRect(ImVec2(tickX(0), yPos), ImVec2(tickX(maxTimelineTick), yPos + rowHeight), IM_COL32(255, 255, 255, 255));
 		for (int t = 1; t < (int)track.size() && t <= maxTimelineTick; t++) {
 			if (track[t] != track[t - 1]) {
-				float fx = timelineStart.x + t * tickWidth;
-				drawList->AddLine(ImVec2(fx, yPos), ImVec2(fx, yPos + rowHeight), IM_COL32(200, 200, 255, 110), 1.0f);
+				drawList->AddLine(ImVec2(tickX(t), yPos), ImVec2(tickX(t), yPos + rowHeight), IM_COL32(200, 200, 255, 110), 1.0f);
+				if (tickWidth * 4 >= 14 && t < (int)track.size())
+					drawList->AddText(ImVec2(tickX(t) + 2, yPos + 3), IM_COL32(255, 255, 255, 200), std::to_string(track[t]).c_str());
 			}
 		}
 	}
-	float currentX = timelineStart.x + currState.currentTick * tickWidth;
-	drawList->AddLine(ImVec2(currentX, yPos), ImVec2(currentX, yPos + rowHeight), IM_COL32(255, 255, 0, 255), 2.0f);
-
 	yPos += rowHeight + 4;
-	im::SetCursorScreenPos(ImVec2(startPos.x, yPos));
+
+	// ---- Keyframes (authored order) ----
+	rowLabel("Keyframes");
+	const float kfY = yPos;
+	for (int i = 0; i < mainFrameCount; ++i) {
+		const float x0 = tickX(kfStart[i]), x1 = tickX(kfStart[i + 1]);
+		const bool cur = i == currState.frame;
+		drawList->AddRectFilled(ImVec2(x0, yPos), ImVec2(x1, yPos + rowHeight),
+			cur ? IM_COL32(230, 160, 40, 230) : (i % 2 ? IM_COL32(90, 110, 150, 220) : IM_COL32(110, 130, 170, 220)));
+		drawList->AddRect(ImVec2(x0, yPos), ImVec2(x1, yPos + rowHeight), IM_COL32(20, 20, 20, 255));
+		const std::string num = std::to_string(i);
+		if (x1 - x0 > im::CalcTextSize(num.c_str()).x + 4)
+			drawList->AddText(ImVec2(x0 + 2, yPos + 3), IM_COL32(255, 255, 255, 255), num.c_str());
+		im::SetCursorScreenPos(ImVec2(x0, yPos));
+		im::PushID(i);
+		im::InvisibleButton("##kf", ImVec2(std::max(2.f, x1 - x0), rowHeight));
+		if (im::IsItemClicked(ImGuiMouseButton_Left)) {
+			currState.animating = false;
+			currState.frame = i;
+			currState.currentTick = CalculateTickFromFrame(frameData, currState.pattern, i);
+			currState.activeSpawns.clear();
+		}
+		if (im::IsItemHovered())
+			im::SetTooltip("Keyframe %d: %d tick(s), starts at %d", i, mainSeq->frames[i].AF.duration, kfStart[i]);
+		if (im::BeginDragDropSource(ImGuiDragDropFlags_SourceNoPreviewTooltip)) {
+			im::SetDragDropPayload("TL_KEYFRAME", &i, sizeof(int));
+			im::EndDragDropSource();
+		}
+		if (im::BeginDragDropTarget()) {
+			if (const ImGuiPayload* pl = im::AcceptDragDropPayload("TL_KEYFRAME")) {
+				const int from = *(const int*)pl->Data;
+				if (from != i && from >= 0 && from < mainFrameCount) {
+					Frame moved = mainSeq->frames[from];
+					mainSeq->frames.erase(mainSeq->frames.begin() + from);
+					mainSeq->frames.insert(mainSeq->frames.begin() + i, std::move(moved));
+					currState.frame = i;
+					currState.currentTick = CalculateTickFromFrame(frameData, currState.pattern, i);
+					frameData->mark_modified(currState.pattern);
+					markModified();
+				}
+			}
+			im::EndDragDropTarget();
+		}
+		if (im::BeginPopupContextItem("##kfctx")) {
+			im::TextDisabled("Keyframe %d", i);
+			if (im::MenuItem("Copy frame")) currState.copied->frame = mainSeq->frames[i];
+			auto insertCopy = [&](int at, const Frame& f) {
+				mainSeq->frames.insert(mainSeq->frames.begin() + at, f);
+				currState.frame = at;
+				frameData->mark_modified(currState.pattern);
+				markModified();
+			};
+			if (im::MenuItem("Paste before")) { Frame f; f = currState.copied->frame; insertCopy(i, f); }
+			if (im::MenuItem("Paste after")) { Frame f; f = currState.copied->frame; insertCopy(i + 1, f); }
+			if (im::MenuItem("Duplicate")) { Frame f = mainSeq->frames[i]; insertCopy(i + 1, f); }
+			if (im::MenuItem("Delete", nullptr, false, mainFrameCount > 1)) {
+				mainSeq->frames.erase(mainSeq->frames.begin() + i);
+				currState.frame = std::clamp(currState.frame, 0, (int)mainSeq->frames.size() - 1);
+				frameData->mark_modified(currState.pattern);
+				markModified();
+			}
+			im::EndPopup();
+		}
+		im::PopID();
+		if ((int)mainSeq->frames.size() != mainFrameCount) break; // edited: redraw next frame
+	}
+	yPos += rowHeight + 2;
+	if ((int)mainSeq->frames.size() != mainFrameCount) {
+		drawLabels();
+		im::EndChild();
+		return;
+	}
+
+	// ---- Per-keyframe indicators ----
+	std::vector<bool> landingTarget(mainFrameCount, false);
+	for (const auto& f : mainSeq->frames)
+		if (f.AF.landJump > 0 && f.AF.landJump < mainFrameCount) landingTarget[f.AF.landJump] = true;
+	struct Indicator { const char* name; ImU32 color; };
+	const Indicator indicators[indicatorRows] = {
+		{"Collision", IM_COL32(200, 200, 200, 255)},
+		{"Hurt", IM_COL32(60, 200, 60, 255)},
+		{"Attack", IM_COL32(230, 50, 50, 255)},
+		{"Clash/Proj/Spec", IM_COL32(200, 120, 230, 255)},
+		{"Landing frame", IM_COL32(240, 220, 60, 255)},
+		{"Effects", IM_COL32(80, 180, 255, 255)},
+		{"Conditions", IM_COL32(255, 150, 60, 255)},
+	};
+	for (int r = 0; r < indicatorRows; ++r) {
+		rowLabel(indicators[r].name, indicators[r].color);
+		for (int i = 0; i < mainFrameCount; ++i) {
+			const Frame& f = mainSeq->frames[i];
+			bool on = false;
+			int count = 0;
+			switch (r) {
+			case 0: on = f.hitboxes.count(0) > 0; break;
+			case 1: for (auto& b : f.hitboxes) if (b.first >= 1 && b.first <= 8) ++count; on = count > 0; break;
+			case 2: for (auto& b : f.hitboxes) if (b.first >= 25) ++count; on = count > 0; break;
+			case 3: for (auto& b : f.hitboxes) if (b.first >= 9 && b.first <= 24) ++count; on = count > 0; break;
+			case 4: on = landingTarget[i]; break;
+			case 5: count = (int)f.EF.size(); on = count > 0; break;
+			case 6: count = (int)f.IF.size(); on = count > 0; break;
+			}
+			if (!on) continue;
+			const float x0 = tickX(kfStart[i]) + 1, x1 = std::max(x0 + 3, tickX(kfStart[i + 1]) - 1);
+			drawList->AddRectFilled(ImVec2(x0, yPos + 5), ImVec2(x1, yPos + rowHeight - 5), indicators[r].color);
+			if (count > 1 && x1 - x0 > 14)
+				drawList->AddText(ImVec2(x0 + 2, yPos + 3), IM_COL32(0, 0, 0, 255), std::to_string(count).c_str());
+		}
+		yPos += rowHeight - 4;
+	}
+	yPos += 6;
+	im::SetCursorScreenPos(ImVec2(origin.x, yPos));
+	float currentX = tickX(currState.currentTick);
+	const ImVec2 startPos(origin.x, origin.y);
+	const ImVec2 timelineStart(origin.x + labelWidth, origin.y);
+	(void)kfY;
+
+	if (!showSpawns) {
+		drawList->AddLine(ImVec2(currentX, origin.y), ImVec2(currentX, yPos), IM_COL32(255, 255, 0, 200), 2.0f);
+		im::Dummy(ImVec2(contentWidth, 1));
+		drawLabels();
+		im::EndChild();
+		return;
+	}
 
 	// Group every simulated actor under its spawn-tree entry (right pane).
 	struct Row {
@@ -542,6 +730,15 @@ void BoxPane::DrawSpawnTimeline()
 		return x.recs.front()->spawnTick < y.recs.front()->spawnTick;
 	});
 
+	// A spawn bar can be dragged when it comes straight from an effect of this
+	// pattern (not effect.ha6, not a script, not a nested child).
+	auto canDragSpawn = [&](const auto& row) {
+		if (row.recs.empty() || row.effect || row.script || row.preset) return false;
+		const auto* r0 = row.recs.front();
+		return r0->srcPattern == currState.pattern && !r0->effectHa6 && r0->srcFrame >= 0 &&
+			r0->srcFrame < mainFrameCount && r0->srcEffectIndex >= 0 &&
+			r0->srcEffectIndex < (int)mainSeq->frames[r0->srcFrame].EF.size();
+	};
 	for (const auto& row : rows) {
 		FrameData* sourceData = row.effect ? effectFrameData : frameData;
 		std::string patternName;
@@ -555,20 +752,31 @@ void BoxPane::DrawSpawnTimeline()
 		}
 		const int depth = row.entry ? row.entry->depth + 1 : row.depth;
 
-		im::SetCursorScreenPos(ImVec2(startPos.x + (depth - 1) * 10.0f, yPos));
 		std::string label = std::string(depth, '>') + " " + patternName;
 		if (label.length() > 14) label = label.substr(0, 14) + "..";
 		if (!row.entry) label += " *";
-		if (row.script) im::TextColored(ImVec4(1.0f, 0.7f, 0.4f, 1.0f), "%s", label.c_str());
-		else im::Text("%s", label.c_str());
-		if (im::IsItemHovered()) {
+		rowLabel(label.c_str(), row.script ? IM_COL32(255, 180, 100, 255) : IM_COL32(220, 220, 220, 255));
+		// Hover anywhere on the row's bars: details.
+		im::SetCursorScreenPos(ImVec2(origin.x, yPos));
+		im::PushID(&row);
+		im::InvisibleButton("##row", ImVec2(contentWidth, rowHeight));
+		const bool rowHovered = im::IsItemHovered();
+		if (rowHovered) {
 			std::string tip = patternName + (row.effect ? " (effect.ha6)" : "") +
 				"\n" + std::to_string(row.recs.size()) + " instance(s)";
 			if (!row.entry) tip += "\n* not in the spawn tree (random pick, pattern chain or nested repeat)";
 			if (row.script && row.entry && !row.entry->scriptSource.empty()) tip += "\n" + row.entry->scriptSource;
+			if (canDragSpawn(row)) tip += "\nRight-drag: move the spawning effect to another keyframe (Alt: copy)";
 			im::SetTooltip("%s", tip.c_str());
 		}
-		im::SameLine(labelWidth);
+		// Right-drag a spawn of this pattern onto another keyframe (issue #10).
+		if (canDragSpawn(row) && rowHovered && im::IsMouseClicked(ImGuiMouseButton_Right)) {
+			spawnDrag.active = true;
+			spawnDrag.srcFrame = row.recs.front()->srcFrame;
+			spawnDrag.efIndex = row.recs.front()->srcEffectIndex;
+			spawnDrag.copy = io.KeyAlt;
+		}
+		im::PopID();
 
 		const glm::vec4 tint = row.entry ? row.entry->tintColor : glm::vec4(0.7f, 0.7f, 0.7f, 1.0f);
 		for (size_t k = 0; k < row.recs.size(); k++) {
@@ -598,12 +806,37 @@ void BoxPane::DrawSpawnTimeline()
 		}
 
 		yPos += rowHeight + 2;
-		im::SetCursorScreenPos(ImVec2(startPos.x, yPos));
+	}
+
+	// Finish a spawn drag: drop tick -> keyframe (authored order).
+	if (spawnDrag.active) {
+		const int tick = mouseTick();
+		int target = mainFrameCount - 1;
+		for (int i = 0; i < mainFrameCount; ++i) if (tick < kfStart[i + 1]) { target = i; break; }
+		const float x0 = tickX(kfStart[std::max(0, target)]), x1 = tickX(kfStart[std::max(0, target) + 1]);
+		drawList->AddRect(ImVec2(x0, kfY), ImVec2(x1, yPos), IM_COL32(255, 255, 255, 220), 0, 0, 2.0f);
+		im::SetTooltip("%s effect to keyframe %d", spawnDrag.copy ? "Copy" : "Move", target);
+		if (!im::IsMouseDown(ImGuiMouseButton_Right)) {
+			spawnDrag.active = false;
+			const bool srcOk = spawnDrag.srcFrame >= 0 && spawnDrag.srcFrame < mainFrameCount;
+			auto& src = mainSeq->frames[srcOk ? spawnDrag.srcFrame : 0].EF;
+			if (srcOk && target >= 0 && spawnDrag.efIndex < (int)src.size() && (target != spawnDrag.srcFrame || spawnDrag.copy)) {
+				const Frame_EF ef = src[spawnDrag.efIndex];
+				if (!spawnDrag.copy) src.erase(src.begin() + spawnDrag.efIndex);
+				mainSeq->frames[target].EF.push_back(ef);
+				frameData->mark_modified(currState.pattern);
+				markModified();
+				currState.forceSpawnTreeRebuild = true;
+			}
+		}
 	}
 
 	// Global current tick line
-	drawList->AddLine(ImVec2(currentX, startPos.y), ImVec2(currentX, yPos), IM_COL32(255, 255, 0, 128), 1.0f);
-	im::SetCursorScreenPos(ImVec2(startPos.x, yPos + 10));
+	drawList->AddLine(ImVec2(currentX, startPos.y), ImVec2(currentX, yPos), IM_COL32(255, 255, 0, 200), 2.0f);
+	im::SetCursorScreenPos(ImVec2(startPos.x, yPos));
+	im::Dummy(ImVec2(contentWidth, 4));
+	drawLabels();
+	im::EndChild();
 
 	// Runtime conditions met so far: per-IF assumption overrides.
 	std::vector<const preview::SimEvent*> conds;

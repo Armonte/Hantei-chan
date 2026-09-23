@@ -80,6 +80,7 @@ bool CharacterInstance::loadFromTxt(const std::string& txtPath)
 
 	m_isModified = false;
 	undoManager.reset();  // document replaced: new baseline, no history
+	loadNotes();
 
 	// Load MBTL move scripts for script-spawn visualization
 	loadMvScripts(txtPath);
@@ -131,6 +132,7 @@ bool CharacterInstance::loadChrHA6FromTxt(const std::string& txtPath)
 
 	m_isModified = false;
 	undoManager.reset();  // document replaced: new baseline, no history
+	loadNotes();
 
 	// Load MBTL move scripts for script-spawn visualization
 	loadMvScripts(txtPath);
@@ -161,6 +163,29 @@ bool CharacterInstance::loadHA6(const std::string& ha6Path, bool patch)
 
 	m_isModified = false;
 	undoManager.reset();  // document replaced: new baseline, no history
+	loadNotes();
+	return true;
+}
+
+void CharacterInstance::loadNotes()
+{
+	if (m_topHA6Path.empty()) return;
+	std::string error;
+	if (!frameData.notes.load(Ha6Notes::PathFor(m_topHA6Path), &error))
+		m_notesError = error;
+	else
+		m_notesError.clear();
+}
+
+bool CharacterInstance::saveNotes(const std::string& ha6Path)
+{
+	// Only touch the side file when there is something to write: notes exist,
+	// or the user removed the last one (dirty). A notes file that failed to
+	// parse is never overwritten.
+	if (!m_notesError.empty()) return false;
+	if (frameData.notes.notes.empty() && !frameData.notes.dirty) return true;
+	if (!frameData.notes.save(Ha6Notes::PathFor(ha6Path))) return false;
+	frameData.notes.dirty = false;
 	return true;
 }
 
@@ -196,10 +221,14 @@ bool CharacterInstance::save()
 		return false;
 	}
 
+	// Commit any pending edit first: a stacked character's save filters on
+	// Sequence::modified, which the undo commit keeps current.
+	undoManager.flush();
 	// Only mark clean if the file actually reached disk.
 	if (!frameData.save(m_topHA6Path.c_str())) {
 		return false;
 	}
+	saveNotes(m_topHA6Path);
 	m_isModified = false;
 	undoManager.markClean();  // undoing back to this revision clears dirty
 	return true;
@@ -207,9 +236,12 @@ bool CharacterInstance::save()
 
 bool CharacterInstance::saveAs(const std::string& ha6Path)
 {
+	undoManager.flush();
 	if (!frameData.save(ha6Path.c_str())) {
 		return false;
 	}
+	frameData.notes.dirty = frameData.notes.dirty || !frameData.notes.notes.empty();
+	saveNotes(ha6Path);
 	m_topHA6Path = ha6Path;
 
 	// Update ha6 paths list

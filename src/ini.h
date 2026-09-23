@@ -23,6 +23,8 @@ extern struct Settings
 	bool maximized = false;
 	std::vector<std::string> recentProjects; // Recent project paths (max 10)
 	bool detachableWindows = true;  // ImGui multi-viewport (native detached windows); restart-bound
+	std::vector<std::string> keyBindings;    // "Key=<action>#<n>=<vk>,<mods>" overrides (issue #9)
+	bool invertWheelZoom = false;            // wheel up zooms out (issue #9)
 } gSettings;
 
 bool LoadFromIni(FrameData *framedata, CG *cg, const std::string& iniPath, std::string* outTopHA6Path = nullptr, Parts* parts = nullptr, std::string* outPATPath = nullptr);

@@ -445,7 +445,7 @@ void MainFrame::DrawRenderToolWindows()
 {
 	DrawExportWindow();
 	DrawPackageToolWindows();
-	// Short confirmation for quick exports (P) made with the window closed.
+	// Short confirmation for quick exports (Shift+P) made with the window closed.
 	if (!m_showExportWindow && !m_lastExport.message.empty() && ImGui::GetTime() - m_lastExportTime < 4.0) {
 		const ImGuiViewport* vp = ImGui::GetMainViewport();
 		ImGui::SetNextWindowPos(ImVec2(vp->Pos.x + vp->Size.x - 16, vp->Pos.y + vp->Size.y - 16), ImGuiCond_Always, ImVec2(1, 1));

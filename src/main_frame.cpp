@@ -31,10 +31,15 @@
 #include <cstdlib>
 #include <filesystem>
 
+wchar_t MainFrame::s_swallowChar = 0;
+
 MainFrame::MainFrame(ContextGl *context_):
 context(context_)
 {
 	LoadSettings();
+	// User key bindings (issue #9); unknown or stale entries are ignored.
+	for (const auto& line : gSettings.keyBindings)
+		shortcuts.registry().applyOverride(line);
 	// Hand the background renderer/camera to the GL Render so its Draw()
 	// loop calls into bgRenderer at the right point (behind the character).
 	render.SetBackgroundRenderer(&bgRenderer, &bgCamera);
@@ -119,6 +124,7 @@ void MainFrame::Draw()
 // Editing tools (shortcuts, undo/redo, J/K/L, box-drag undo, position tool)
 // ============================================================================
 #include "ui/editor_tools_impl.h"
+#include "ui/tool_windows_impl.h"
 
 
 void MainFrame::WarmStyle()
@@ -308,6 +314,38 @@ void MainFrame::createViewForCharacter(CharacterInstance* character)
 	setActiveView(views.size() - 1);
 }
 
+bool MainFrame::reopenClosedTab()
+{
+	while (!m_closedTabs.empty()) {
+		ClosedTab t = m_closedTabs.back();
+		m_closedTabs.pop_back();
+		CharacterInstance* character = findCharacterByPath(t.path);
+		if (!character) {
+			auto loaded = std::make_unique<CharacterInstance>();
+			const bool ok = t.isTxt ? loaded->loadFromTxt(t.path) : loaded->loadHA6(t.path, false);
+			if (!ok) continue;
+			character = loaded.get();
+			characters.push_back(std::move(loaded));
+		}
+		createViewForCharacter(character);
+		markProjectModified();
+		if (auto* view = getActiveView()) {
+			auto& st = view->getState();
+			st.pattern = t.pattern;
+			st.frame = t.frame;
+			Sequence* seq = character->frameData.get_sequence(st.pattern);
+			if (!seq) st.pattern = 0;
+			seq = character->frameData.get_sequence(st.pattern);
+			const int frames = seq ? (int)seq->frames.size() : 0;
+			if (st.frame >= frames) st.frame = frames > 0 ? frames - 1 : 0;
+			st.currentTick = frames > 0 ? CalculateTickFromFrame(&character->frameData, st.pattern, st.frame) : 0;
+			if (view->getMainPane()) view->getMainPane()->RegenerateNames();
+		}
+		return true;
+	}
+	return false;
+}
+
 void MainFrame::createPatEditorView(const std::string& patPath)
 {
 	// Create a dummy character for PAT editing
@@ -376,6 +414,20 @@ void MainFrame::closeView(int index)
 		auto* character = view->getCharacter();
 		const uint64_t view_id = view->getId();
 		if (m_reverseView == view) m_reverseView = nullptr;
+
+		// Remember it for Reopen closed tab (issue #61). Only views whose
+		// character can be loaded again from a file.
+		if (character && !view->isStageView() && !view->isPatEditor()) {
+			ClosedTab t;
+			t.path = !character->getTxtPath().empty() ? character->getTxtPath() : character->getTopHA6Path();
+			t.isTxt = !character->getTxtPath().empty();
+			t.pattern = view->getState().pattern;
+			t.frame = view->getState().frame;
+			if (!t.path.empty()) {
+				m_closedTabs.push_back(t);
+				if (m_closedTabs.size() > 10) m_closedTabs.erase(m_closedTabs.begin());
+			}
+		}
 
 		// Remove the view
 		views.erase(views.begin() + index);

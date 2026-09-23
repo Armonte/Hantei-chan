@@ -120,6 +120,7 @@ inline void EfDisplay(std::vector<Frame_EF> *efList_, Frame_EF *singleClipboard 
 		}
 		bool isOpen = im::CollapsingHeader(headerLabel, flags);
 		collapsedStates[i] = !isOpen; // Update stored state
+		if(CurrentRecordNoteHook().draw) CurrentRecordNoteHook().draw(true, i, efList[i].type);
 		
 		if(isOpen) {
 			im::Indent();

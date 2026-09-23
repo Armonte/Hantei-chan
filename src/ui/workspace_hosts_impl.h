@@ -53,6 +53,47 @@ CharacterView* MainFrame::getShortcutView()
 	return getActiveView();
 }
 
+CharacterView* MainFrame::getToolView()
+{
+	if (CharacterView* v = findViewById(m_toolViewId))
+		return v;
+	if (CharacterView* v = getActiveView())
+		return v;
+	for (uint64_t hostId : m_session.hostIds())
+		if (const WorkspaceSession::Host* h = m_session.host(hostId))
+			if (CharacterView* v = findViewById(h->active))
+				return v;
+	return nullptr;
+}
+
+// Called once per UI frame after the detached hosts are drawn (they set
+// m_focusedHostId).
+void MainFrame::NoteToolViewFocus()
+{
+	if (m_focusedHostId != WorkspaceSession::MainHost) {
+		if (const WorkspaceSession::Host* h = m_session.host(m_focusedHostId))
+			if (findViewById(h->active)) m_toolViewId = h->active;
+		return;
+	}
+	CharacterView* mainView = getActiveView();
+	if (!mainView) return;
+	// Work in the main window: its dock space (tab bar, docked panes) has
+	// keyboard focus, or the canvas was clicked outside every ImGui window.
+	const ImGuiContext& g = *GImGui;
+	bool mainWork = false;
+	if (g.NavWindow) {
+		const ImGuiWindow* root = g.NavWindow->RootWindowDockTree ? g.NavWindow->RootWindowDockTree : g.NavWindow->RootWindow;
+		mainWork = root && (!strcmp(root->Name, "Dock Window") || !strcmp(root->Name, "Left Pane") ||
+		                    !strcmp(root->Name, "Right Pane") || !strcmp(root->Name, "Box Pane"));
+	}
+	const ImGuiIO& io = ImGui::GetIO();
+	if (!mainWork && !io.WantCaptureMouse && (io.MouseClicked[0] || io.MouseClicked[1] || io.MouseClicked[2]) &&
+	    g.MouseViewport == ImGui::GetMainViewport())
+		mainWork = true;
+	if (mainWork || !findViewById(m_toolViewId))
+		m_toolViewId = mainView->getId();
+}
+
 static bool IsDetachableView(const CharacterView* view)
 {
 	// Stage tabs share the single background renderer and PAT-editor tabs
@@ -343,7 +384,8 @@ void MainFrame::FinishPaneUndoFrame()
 		// Tab '*' follows the history: undoing back to the saved revision
 		// clears it, any other committed revision sets it.
 		if (!gesture && !undo.inTransaction()) {
-			if (undo.isClean()) character->clearModified();
+			// Unsaved notes (issue #58) keep the tab dirty too.
+			if (undo.isClean() && !character->frameData.notes.dirty) character->clearModified();
 			else character->markModified();
 		}
 	}
@@ -410,7 +452,7 @@ void MainFrame::DrawDetachedViewSurface(uint64_t hostId, CharacterView* view, Im
 	if (ImGui::IsItemHovered() && io.MouseWheel != 0.f) {
 		// Zoom around the cursor: keep the world point under it fixed.
 		const float z0 = cam.zoom;
-		const float z1 = std::clamp(z0 + (io.MouseWheel > 0 ? 0.25f : -0.25f), 0.25f, 20.f);
+		const float z1 = std::clamp(z0 + (((io.MouseWheel > 0) != gSettings.invertWheelZoom) ? 0.25f : -0.25f), 0.25f, 20.f);
 		const float wx = (io.MousePos.x - origin.x) / z0, wy = (io.MousePos.y - origin.y) / z0;
 		cam.zoom = z1;
 		cam.panX = io.MousePos.x - wx * z1 - mn.x - w / 2.f;
@@ -753,8 +795,17 @@ void MainFrame::RestoreWorkspace(const std::string& text)
 }
 
 // Detached-window keyboard hook (workspace_viewports.cpp subclass).
-static bool DetachedWindowKeyHook(HWND, UINT, WPARAM wParam, LPARAM lParam)
+static bool DetachedWindowKeyHook(HWND, UINT msg, WPARAM wParam, LPARAM lParam)
 {
+	if (msg == WM_CHAR) {
+		// Same rule as the main WndProc: drop the character of a key that
+		// already acted as a shortcut while a text field had focus.
+		if (MainFrame::s_swallowChar && (wchar_t)wParam == MainFrame::s_swallowChar) {
+			MainFrame::s_swallowChar = 0;
+			return true;
+		}
+		return false;
+	}
 	MainFrame* mf = (MainFrame*)GetWindowLongPtr(mainWindowHandle, GWLP_USERDATA);
 	if (!mf || !ImGui::GetCurrentContext()) return false;
 	const ImGuiIO& io = ImGui::GetIO();
