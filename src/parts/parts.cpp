@@ -1031,7 +1031,8 @@ bool Parts::Save(const char* filename)
         if (!doneC[i] && CutOut<>::IsModifiedData(&cutOuts[i])) {
             const std::string e = encode('C', i); file.write(e.data(), e.size());
         }
-    if (!doneV) {
+    // MBAACC files have no VEST block; don't add an empty one.
+    if (!doneV && (rawRecords.empty() || !shapes.empty())) {
         const std::string e = encode('V', 0); file.write(e.data(), e.size());
     }
     for (uint32_t i = 0; i < gfxMeta.size(); i++)
