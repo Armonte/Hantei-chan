@@ -38,6 +38,14 @@ int main()
 	CHECK(act(reg.resolve({'K', 0}, ShortcutContext::characterView, false, false)) == ShortcutAction::togglePlayback);
 	CHECK(act(reg.resolve({'L', 0}, ShortcutContext::characterView, false, false)) == ShortcutAction::playForward);
 	CHECK(act(reg.resolve({'L', shortcutShift}, ShortcutContext::characterView, false, false)) == ShortcutAction::stepTickForward);
+	// Wave 2 rendering bindings: view-scoped, never while typing.
+	CHECK(act(reg.resolve({'O', 0}, ShortcutContext::characterView, false, false)) == ShortcutAction::toggleOnionSkin);
+	CHECK(act(reg.resolve({'O', shortcutCtrl}, ShortcutContext::characterView, false, false)) == ShortcutAction::openProject);
+	CHECK(act(reg.resolve({'P', 0}, ShortcutContext::characterView, false, false)) == ShortcutAction::exportFramePng);
+	CHECK(act(reg.resolve({'P', shortcutCtrl}, ShortcutContext::characterView, false, false)) == ShortcutAction::exportSequencePng);
+	CHECK(act(reg.resolve({'P', 0}, ShortcutContext::characterView, true, false)) == ShortcutAction::count);
+	CHECK(act(reg.resolve({'O', 0}, ShortcutContext::stageView, false, false)) == ShortcutAction::count);
+	CHECK(act(reg.resolve({'D', shortcutCtrl | shortcutShift}, ShortcutContext::characterView, false, false)) == ShortcutAction::detachView);
 	CHECK(reg.resolve({'J', 0}, ShortcutContext::commands, false, false) == nullptr);
 	CHECK(reg.resolve({'J', 0}, ShortcutContext::stageView, false, false) == nullptr);
 

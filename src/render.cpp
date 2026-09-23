@@ -247,6 +247,20 @@ blendingMode(normal)
 	glEnable(GL_DEPTH_TEST);
 }
 
+void Render::BeginPass(const PassParams& params)
+{
+	pass = params;
+	if (pass.width < 1) pass.width = 1;
+	if (pass.height < 1) pass.height = 1;
+	if (!(pass.zoom > 0.f)) pass.zoom = 1.f;
+	UpdateProj((float)pass.width, (float)pass.height);
+	scale = pass.zoom;
+	// Same integer truncation the single-surface renderer used, so a pass
+	// with the old camera reproduces the old image pixel for pixel.
+	x = (int)(pass.originX / pass.zoom);
+	y = (int)(pass.originY / pass.zoom);
+}
+
 void Render::ApplySpriteTextureMode()
 {
 	if (texture.isIndexed) {
@@ -730,6 +744,7 @@ bool Render::GeneratePartCenterVertices()
 	};
 
 	vGeometry.UpdateBuffer(geoParts[LINES], lines, sizeof(lines));
+	gridLinesHaveOverlay = true;
 	return true;
 }
 
@@ -809,6 +824,14 @@ bool Render::GenerateUVRectangleVertices()
 void Render::DontDraw()
 {
 	quadsToDraw = 0;
+	gridLinesHaveOverlay = true;   // force the reset below
+	ResetGridLines();
+}
+
+void Render::ResetGridLines()
+{
+	if (!gridLinesHaveOverlay) return;
+	gridLinesHaveOverlay = false;
 	// Reset lines buffer to show only grid (no part origin markers)
 	float lines[]
 	{
@@ -1060,7 +1083,11 @@ void Render::DrawLayers()
 			if (layer.spriteId < 0) continue;
 			DrawPatLayerItem(layer, origParts);
 		} else {
-			DrawCgLayerItem(layer, origColorRgba);
+			// The layer's tint/alpha already carry the frame RGBA; the base
+			// colour is white (it used to be the root frame's RGBA again,
+			// squaring the colour/alpha of CG layer 0 and tinting spawns).
+			static const float kWhite[4] = {1.f, 1.f, 1.f, 1.f};
+			DrawCgLayerItem(layer, kWhite);
 		}
 	}
 	glDepthMask(GL_TRUE);

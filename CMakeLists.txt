@@ -25,6 +25,10 @@ add_executable(${EXE}
 	src/right_pane.cpp
 	src/box_pane.cpp
 	src/render.cpp
+	src/render_target.cpp
+	src/png_writer.cpp
+	src/workspace_session.cpp
+	src/workspace_viewports.cpp
 	src/vao.cpp
 	src/shader.cpp
 	src/texture.cpp
@@ -105,6 +109,10 @@ add_dependencies(${EXE} update_version)
 
 find_package(OpenGL REQUIRED)
 target_link_libraries(${EXE} PRIVATE imgui glad OpenGL::GL glm tinyalloc)
+if(WIN32)
+	# WIC PNG export, folder picker, detached-window subclassing.
+	target_link_libraries(${EXE} PRIVATE windowscodecs ole32 uuid comctl32)
+endif()
 
 if(MINGW)
 	message(status "With -municode")
@@ -326,3 +334,9 @@ if(MINGW)
 	target_link_options(undo_manager_test PRIVATE -static-libgcc -static-libstdc++ -static)
 endif()
 add_test(NAME undo_manager COMMAND undo_manager_test)
+add_executable(workspace_session_test tests/workspace_session_test.cpp src/workspace_session.cpp)
+target_include_directories(workspace_session_test PRIVATE "src")
+if(MINGW)
+	target_link_options(workspace_session_test PRIVATE -static-libgcc -static-libstdc++ -static)
+endif()
+add_test(NAME workspace_session COMMAND workspace_session_test)

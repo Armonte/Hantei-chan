@@ -75,6 +75,7 @@ private:
 	float imageVertex[6*4];
 	std::vector<float> clientQuads;
 	int quadsToDraw;
+	bool gridLinesHaveOverlay = false;
 
 	int lProjectionS, lProjectionT, lProjectionParts;
 	int lAlphaS;
@@ -128,8 +129,25 @@ public:
 	float curInterp = 0.0f;
 	
 	Render();
+
+	// Per-pass camera (docs/HANTEI_WAVE2.md §2). Every render pass (main
+	// view, detached view, onion sample, PNG export) calls BeginPass with its
+	// own target size and camera before drawing; x/y/scale/projection below
+	// are derived from it and nothing carries over from a previous pass.
+	struct PassParams {
+		int width = 1, height = 1;         // target size in pixels
+		float originX = 0.f, originY = 0.f; // target pixel of world (0,0)
+		float zoom = 1.f;                  // target pixels per world unit
+	};
+	void BeginPass(const PassParams& params);
+	const PassParams& CurrentPass() const { return pass; }
+private:
+	PassParams pass;
+public:
+
 	void Draw();
 	void DrawGridLines();   // Draw only grid lines
+	void ResetGridLines();  // Plain grid again (drops a PAT-editor overlay)
 	void DrawSpriteOnly(bool drawHitboxes = true);  // Draw sprite and optionally hitboxes
 	void UpdateProj(float w, float h);
 

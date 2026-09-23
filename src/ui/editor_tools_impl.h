@@ -38,7 +38,8 @@ bool MainFrame::HandleKeys(uint64_t vkey, bool isRepeat, bool imguiWantsKeyboard
 
 bool MainFrame::RunShortcut(ShortcutAction action)
 {
-	auto* view = getActiveView();
+	// The active tab of the window that owns focus (main or detached).
+	auto* view = getShortcutView();
 
 	switch (action) {
 	case ShortcutAction::undo:
@@ -48,14 +49,14 @@ bool MainFrame::RunShortcut(ShortcutAction action)
 		if (shortcuts.focused() == ShortcutContext::commands)
 			return false;
 		if (m_posDrag.active) EndPositionDrag(false);
-		return PerformUndoRedo(action == ShortcutAction::redo);
+		return PerformUndoRedo(view, action == ShortcutAction::redo);
 
 	case ShortcutAction::save:
 		if (ProjectManager::HasCurrentProject()) {
 			saveProject();
 			return true;
 		}
-		if (auto* active = getActiveCharacter()) {
+		if (auto* active = view ? view->getCharacter() : nullptr) {
 			saveCharacter(active);
 			return true;
 		}
@@ -69,23 +70,29 @@ bool MainFrame::RunShortcut(ShortcutAction action)
 	case ShortcutAction::newProject:
 		newProject();
 		return true;
-	case ShortcutAction::nextView:
-		if (!views.empty()) {
-			setActiveView((activeViewIndex + 1) % (int)views.size());
-			return true;
-		}
-		return false;
+	case ShortcutAction::nextView: {
+		// Cycle the tabs of the focused window.
+		const uint64_t hostId = view ? m_session.owner(view->getId()).value_or(WorkspaceSession::MainHost)
+		                             : WorkspaceSession::MainHost;
+		const WorkspaceSession::Host* host = m_session.host(hostId);
+		if (!host || host->tabs.empty()) return false;
+		auto it = std::find(host->tabs.begin(), host->tabs.end(), host->active);
+		const size_t next = it == host->tabs.end() ? 0 : ((size_t)(it - host->tabs.begin()) + 1) % host->tabs.size();
+		const int index = findViewIndexById(host->tabs[next]);
+		if (index >= 0) setActiveView(index);
+		return true;
+	}
 	case ShortcutAction::closeView:
-		if (activeViewIndex >= 0 && activeViewIndex < (int)views.size()) {
-			tryCloseView(activeViewIndex);
+		if (view) {
+			tryCloseView(findViewIndexById(view->getId()));
 			return true;
 		}
 		return false;
 
-	case ShortcutAction::previousPattern: if (!view) return false; AdvancePattern(-1); return true;
-	case ShortcutAction::nextPattern:     if (!view) return false; AdvancePattern(1);  return true;
-	case ShortcutAction::previousKeyframe:if (!view) return false; AdvanceFrame(-1);   return true;
-	case ShortcutAction::nextKeyframe:    if (!view) return false; AdvanceFrame(1);    return true;
+	case ShortcutAction::previousPattern: if (!view) return false; AdvancePattern(view, -1); return true;
+	case ShortcutAction::nextPattern:     if (!view) return false; AdvancePattern(view, 1);  return true;
+	case ShortcutAction::previousKeyframe:if (!view) return false; AdvanceFrame(view, -1);   return true;
+	case ShortcutAction::nextKeyframe:    if (!view) return false; AdvanceFrame(view, 1);    return true;
 	case ShortcutAction::previousBox:
 		if (view && view->getBoxPane()) view->getBoxPane()->AdvanceBox(-1);
 		return view != nullptr;
@@ -96,12 +103,12 @@ bool MainFrame::RunShortcut(ShortcutAction action)
 	// J/K/L: J plays in reverse, K stops (or resumes forward when stopped),
 	// L plays forward. Shift+J / Shift+L step one tick (auto-repeat allowed).
 	case ShortcutAction::playReverse:
-		if (!view || !getActiveCharacter()) return false;
+		if (!view || !view->getCharacter()) return false;
 		view->getState().animating = false;
 		m_reverseView = view;
 		return true;
 	case ShortcutAction::playForward:
-		if (!view || !getActiveCharacter()) return false;
+		if (!view || !view->getCharacter()) return false;
 		if (m_reverseView == view) m_reverseView = nullptr;
 		if (!view->getState().animating) {
 			auto& st = view->getState();
@@ -111,7 +118,7 @@ bool MainFrame::RunShortcut(ShortcutAction action)
 		}
 		return true;
 	case ShortcutAction::togglePlayback:
-		if (!view || !getActiveCharacter()) return false;
+		if (!view || !view->getCharacter()) return false;
 		if (view->getState().animating || m_reverseView == view) {
 			StopTransport(view);
 		} else {
@@ -122,11 +129,11 @@ bool MainFrame::RunShortcut(ShortcutAction action)
 		}
 		return true;
 	case ShortcutAction::stepTickBackward:
-		if (!view || !getActiveCharacter()) return false;
+		if (!view || !view->getCharacter()) return false;
 		StepTick(view, -1);
 		return true;
 	case ShortcutAction::stepTickForward:
-		if (!view || !getActiveCharacter()) return false;
+		if (!view || !view->getCharacter()) return false;
 		StepTick(view, +1);
 		return true;
 
@@ -136,6 +143,32 @@ bool MainFrame::RunShortcut(ShortcutAction action)
 			return true;
 		}
 		return false;
+
+	case ShortcutAction::toggleOnionSkin:
+		if (!view || !view->getCharacter() || view->isPatEditor()) return false;
+		view->onion().enabled = !view->onion().enabled;
+		markProjectModified();
+		return true;
+	case ShortcutAction::exportFramePng:
+		if (!view || !view->getCharacter()) return false;
+		m_exportViewId = view->getId();
+		m_exportRequest = ExportRequest::quickFrame;
+		return true;
+	case ShortcutAction::exportSequencePng:
+		if (!view || !view->getCharacter()) return false;
+		m_exportViewId = view->getId();
+		m_showExportWindow = true;
+		return true;
+	case ShortcutAction::detachView: {
+		if (!view) return false;
+		const auto owner = m_session.owner(view->getId()).value_or(WorkspaceSession::MainHost);
+		if (owner != WorkspaceSession::MainHost) {
+			MoveViewToHost(view->getId(), WorkspaceSession::MainHost, std::nullopt);
+			return true;
+		}
+		const ImVec2 p = ImGui::GetMainViewport()->Pos;
+		return DetachViewToNewHost(view->getId(), ImVec2(p.x + 140.f, p.y + 120.f)) != 0;
+	}
 
 	default:
 		return false;
@@ -154,10 +187,9 @@ bool MainFrame::isLiveCharacter(const CharacterInstance* character) const
 	return false;
 }
 
-bool MainFrame::PerformUndoRedo(bool redo)
+bool MainFrame::PerformUndoRedo(CharacterView* view, bool redo)
 {
-	auto* view = getActiveView();
-	auto* active = getActiveCharacter();
+	auto* active = view ? view->getCharacter() : nullptr;
 	if (!view || !active || view->isStageView())
 		return false;
 
@@ -167,16 +199,15 @@ bool MainFrame::PerformUndoRedo(bool redo)
 	auto& undo = active->undoManager;
 	const UndoManager::Entry* entry = redo ? undo.redo() : undo.undo();
 	if (entry)
-		RefreshViewsAfterHistory(active, entry);
+		RefreshViewsAfterHistory(view, active, entry);
 
 	if (undo.isClean()) active->clearModified();
 	else active->markModified();
 	return true;
 }
 
-void MainFrame::RefreshViewsAfterHistory(CharacterInstance* character, const UndoManager::Entry* entry)
+void MainFrame::RefreshViewsAfterHistory(CharacterView* activeView, CharacterInstance* character, const UndoManager::Entry* entry)
 {
-	auto* activeView = getActiveView();
 	const int count = character->frameData.get_sequence_count();
 
 	// Navigate the active view to the change when it is not already showing
@@ -262,7 +293,7 @@ void MainFrame::UpdateTransport()
 {
 	if (!m_reverseView) return;
 	// Reverse playback belongs to one view; switching tabs or closing it stops it.
-	if (m_reverseView != getActiveView()) {
+	if (m_reverseView != getShortcutView()) {
 		m_reverseView = nullptr;
 		return;
 	}
@@ -273,7 +304,7 @@ void MainFrame::UpdateTransport()
 		return;
 	}
 	StepTick(m_reverseView, -1);
-	m_reverseView = st.currentTick > 0 ? getActiveView() : nullptr;
+	m_reverseView = st.currentTick > 0 ? m_reverseView : nullptr;
 }
 
 // ---------------------------------------------------------------------------
@@ -320,9 +351,9 @@ std::vector<MainFrame::PositionTarget> MainFrame::CollectPositionTargets()
 	if (!seq || st.frame < 0 || st.frame >= (int)seq->frames.size()) return out;
 	Frame& frame = seq->frames[st.frame];
 
-	const float s = render.scale;
-	const float baseX = active->renderX + clientRect.x / 2;
-	const float baseY = active->renderY + clientRect.y / 2;
+	const float s = view->getZoom();
+	const float baseX = view->camera().panX + clientRect.x / 2;
+	const float baseY = view->camera().panY + clientRect.y / 2;
 	constexpr float tau = glm::pi<float>() * 2.f;
 
 	for (int i = 0; i < (int)frame.AF.layers.size(); ++i) {
@@ -395,6 +426,10 @@ void MainFrame::DrawPositionTool()
 		return;
 	}
 
+	// Handles are in main-window client pixels; ImGui coordinates are
+	// desktop coordinates when detachable windows (viewports) are enabled.
+	const ImVec2 vpPos = ImGui::GetMainViewport()->Pos;
+	for (auto& t : targets) { t.screen.x += vpPos.x; t.screen.y += vpPos.y; }
 	ImDrawList* dl = ImGui::GetBackgroundDrawList();
 	const ImGuiIO& io = ImGui::GetIO();
 	const ImVec2 mouse = io.MousePos;

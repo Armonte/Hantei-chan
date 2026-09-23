@@ -1,9 +1,28 @@
 #include "character_view.h"
 #include "render.h"
 
+namespace {
+uint64_t g_nextViewId = 1;
+}
+
+void CharacterView::setId(uint64_t id)
+{
+	if (id == 0) return;
+	m_id = id;
+	if (id >= g_nextViewId) g_nextViewId = id + 1;
+}
+
 CharacterView::CharacterView(CharacterInstance* character, Render* render)
 	: m_character(character), m_viewNumber(0)
 {
+	m_id = g_nextViewId++;
+	// A new view starts from the character's last camera (projects store it
+	// per character for older files).
+	if (character) {
+		m_camera.panX = (float)character->renderX;
+		m_camera.panY = (float)character->renderY;
+	}
+
 	// Initialize independent state for this view
 	m_state.pattern = 0;
 	m_state.frame = 0;
@@ -50,7 +69,7 @@ void CharacterView::setStageFile(std::unique_ptr<bg::File> file, const std::stri
 	// world (0, 0) lands at the proportional position 401/1280, 538/720
 	// (the character-feet anchor in u4ick's render window) regardless of the
 	// user's window dimensions. Setting it here would jitter on load.
-	m_zoom = 1.0f;
+	m_camera.zoom = 1.0f;
 	m_stageRenderInit = false;
 }
 

@@ -22,6 +22,7 @@ extern struct Settings
 	short winSizeY = 800;
 	bool maximized = false;
 	std::vector<std::string> recentProjects; // Recent project paths (max 10)
+	bool detachableWindows = true;  // ImGui multi-viewport (native detached windows); restart-bound
 } gSettings;
 
 bool LoadFromIni(FrameData *framedata, CG *cg, const std::string& iniPath, std::string* outTopHA6Path = nullptr, Parts* parts = nullptr, std::string* outPATPath = nullptr);
