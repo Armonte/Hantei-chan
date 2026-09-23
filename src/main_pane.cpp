@@ -44,9 +44,18 @@ void MainPane::Draw()
 				modifiedCount++;
 		}
 
-		if(modifiedCount > 0)
+		// Always one status line, so the widgets below never move when patterns
+		// become modified (users drive the pane with position-based macros, #82).
 		{
-			im::TextColored(ImVec4(1.0f, 0.7f, 0.0f, 1.0f), "Modified patterns: %d", modifiedCount);
+			const ImVec4 modifiedColor(1.0f, 0.7f, 0.0f, 1.0f);
+			const ImVec4 idleColor = im::GetStyleColorVec4(ImGuiCol_TextDisabled);
+			im::TextColored(modifiedCount > 0 ? modifiedColor : idleColor, "Modified patterns: %d", modifiedCount);
+			auto curSeq = frameData->get_sequence(currState.pattern);
+			if(curSeq && curSeq->modified)
+			{
+				im::SameLine();
+				im::TextColored(modifiedColor, "[Modified]");
+			}
 		}
 
 		// Update current pattern's decorated name in case it was modified
@@ -211,12 +220,6 @@ void MainPane::Draw()
 			}
 
 			im::BeginChild("FrameInfo", {0, 0}, false);
-
-			// Show if current pattern is modified
-			if(seq->modified)
-			{
-				im::TextColored(ImVec4(1.0f, 0.7f, 0.0f, 1.0f), "[Modified]");
-			}
 
 			if (im::TreeNode("Pattern data"))
 			{
