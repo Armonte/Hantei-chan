@@ -51,6 +51,7 @@ add_executable(${EXE}
 	src/var_refs.cpp
 	src/pattern_refs.cpp
 	src/ha6_notes.cpp
+	src/bgm_player.cpp
 	src/preview_sim.cpp
 	src/mv_script.cpp
 	src/character_instance.cpp
@@ -116,7 +117,7 @@ add_custom_target(update_version ALL
 add_dependencies(${EXE} update_version)
 
 find_package(OpenGL REQUIRED)
-target_link_libraries(${EXE} PRIVATE imgui glad OpenGL::GL glm tinyalloc)
+target_link_libraries(${EXE} PRIVATE imgui glad OpenGL::GL glm tinyalloc winmm)
 
 if(MINGW)
 	message(status "With -municode")
@@ -350,6 +351,19 @@ if(MINGW)
 	target_link_options(refs_test PRIVATE -static-libgcc -static-libstdc++ -static)
 endif()
 add_test(NAME refs COMMAND refs_test)
+# bgm_test: bgm.txt parsing, Ogg decoding and loop wrap (issue #66).
+add_executable(bgm_test
+	tests/bgm_test.cpp
+	src/bgm_player.cpp
+	src/misc.cpp
+)
+target_include_directories(bgm_test PRIVATE "." "src" "third_party")
+target_compile_definitions(bgm_test PRIVATE WIN32_LEAN_AND_MEAN)
+target_link_libraries(bgm_test PRIVATE winmm)
+if(MINGW)
+	target_link_options(bgm_test PRIVATE -static-libgcc -static-libstdc++ -static)
+endif()
+add_test(NAME bgm COMMAND bgm_test)
 # MBAC Hantei4 (.DAT) tool: byte-exact round trip, model re-encode check,
 # batch MBAC -> HA6 conversion (see docs/HANTEI_MBAC_SUPPORT.md).
 add_executable(ha4tool

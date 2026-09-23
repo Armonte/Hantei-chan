@@ -1,6 +1,7 @@
 #ifndef MAINFRAME_H_GUARD
 #define MAINFRAME_H_GUARD
 #include "var_refs.h"
+#include "bgm_player.h"
 #include "pattern_refs.h"
 #include "context_gl.h"
 #include "render.h"
@@ -229,6 +230,17 @@ private:
 	bool m_showNotes = false;
 	bool m_showKeyBindings = false;
 	bool m_showCompare = false;
+	bool m_showBgm = false;
+	struct BgmWindow {
+		std::string folder;
+		std::vector<BgmEntry> entries;
+		int selected = -1;
+		std::string status;
+		float leadIn = 5.0f;
+		float volume = 0.8f;
+		std::unique_ptr<BgmPlayer> player;
+	} m_bgm;
+	void drawBgmWindow();
 	int m_keyCapture = -1;   // binding index waiting for a key (Keyboard shortcuts window)
 	int m_textNavDir = 0;    // keyframe step requested from a text field
 public:
