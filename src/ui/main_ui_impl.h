@@ -22,6 +22,7 @@ void MainFrame::DrawUi()
 {
 	ImGuiID errorPopupId = ImGui::GetID("Loading Error");
 	shortcuts.beginFrame();
+	SyncWorkspaceSession();
 	UpdateTransport();
 	
 
@@ -47,56 +48,16 @@ void MainFrame::DrawUi()
 		ImGui::PopStyleVar(3);
 		Menu(errorPopupId);
 
-		// View tabs
-		if (ImGui::BeginTabBar("##character_tabs", ImGuiTabBarFlags_Reorderable | ImGuiTabBarFlags_AutoSelectNewTabs | ImGuiTabBarFlags_FittingPolicyScroll)) {
-			for (size_t i = 0; i < views.size(); i++) {
-				bool open = true;
-				auto* view = views[i].get();
-				auto* character = view->getCharacter();
-				ImGuiTabItemFlags flags = (character && character->isModified()) ? ImGuiTabItemFlags_UnsavedDocument : 0;
-
-				// Skip rendering if we're waiting for user to confirm closing this view
-				if (pendingCloseViewIndex == (int)i) {
-					// Keep the tab visible while waiting for dialog response
-					std::string tabId = view->getDisplayName() + "###view_" + std::to_string((uintptr_t)view);
-					if (ImGui::BeginTabItem(tabId.c_str(), nullptr, flags)) {
-						if (activeViewIndex != (int)i) {
-							setActiveView(i);
-						}
-						ImGui::EndTabItem();
-					}
-					continue;
-				}
-
-				// Use stable ID (pointer) for ImGui, display name can change
-				std::string tabId = view->getDisplayName() + "###view_" + std::to_string((uintptr_t)view);
-				if (ImGui::BeginTabItem(tabId.c_str(), &open, flags)) {
-					if (activeViewIndex != (int)i) {
-						setActiveView(i);
-					}
-					ImGui::EndTabItem();
-				}
-
-				// Right-click context menu - check AFTER EndTabItem
-				if (ImGui::IsItemHovered() && ImGui::IsMouseClicked(ImGuiMouseButton_Right)) {
-					contextMenuViewIndex = i;
-					ImGui::OpenPopup("ViewContextMenu");
-				}
-
-				// If user clicked X button, use tryCloseView to handle unsaved changes
-				if (!open) {
-					tryCloseView(i);
-				}
-			}
+		// View tabs of the main window (detached windows draw their own; see
+		// ui/workspace_hosts_impl.h). Order and selection come from the
+		// workspace session; tabs can be dragged between windows.
+		const ImVec2 mainBarMin = ImGui::GetCursorScreenPos();
+		if (ImGui::BeginTabBar("##character_tabs", ImGuiTabBarFlags_AutoSelectNewTabs | ImGuiTabBarFlags_FittingPolicyScroll)) {
+			DrawHostTabs(WorkspaceSession::MainHost);
 
 			// Right-click context menu popup
 			if (ImGui::BeginPopup("ViewContextMenu")) {
-				if (contextMenuViewIndex >= 0 && contextMenuViewIndex < views.size()) {
-					if (ImGui::MenuItem("New View of Character")) {
-						auto* character = views[contextMenuViewIndex]->getCharacter();
-						createViewForCharacter(character);
-					}
-				}
+				DrawViewTabContextItems();
 				ImGui::EndPopup();
 			}
 
@@ -188,6 +149,8 @@ void MainFrame::DrawUi()
 
 			ImGui::EndTabBar();
 		}
+		DrawTabBarDropTarget(WorkspaceSession::MainHost,
+			ImRect(mainBarMin, ImVec2(mainBarMin.x + ImGui::GetContentRegionAvail().x, ImGui::GetCursorScreenPos().y)));
 
 		ImGuiID dockspaceID = ImGui::GetID("Dock Space");
 
@@ -396,61 +359,27 @@ void MainFrame::DrawUi()
 	// Only draw panes if we have an active view
 	auto* view = getActiveView();
 	if (view) {
-		// Undo: make sure the committed baseline exists before any pane can
-		// edit, and remember where the user is so undo can navigate back.
-		auto* character = view->getCharacter();
-		if (character) {
+		// Undo: remember where the user is so undo can navigate back.
+		if (auto* character = view->getCharacter())
 			character->undoManager.noteFocus(view->getState().pattern, view->getState().frame);
-			character->undoManager.ensureBaseline();
-		}
 
 		// This view's surface owns focus-scoped shortcuts for the next key
-		// messages (a later claim in the frame, e.g. a command workspace, wins).
+		// messages (a later claim in the frame - a focused detached window, a
+		// command workspace - wins).
 		shortcuts.claimFocus(view->isStageView() ? ShortcutContext::stageView
 			: view->isPatEditor() ? ShortcutContext::patEditor
-			: ShortcutContext::characterView, (uint64_t)(uintptr_t)view);
+			: ShortcutContext::characterView, view->getId());
 
-		// Set effectFrameData on all panes if effect.ha6 is loaded (per-character)
-		if (character && character->effectCharacter) {
-			if (view->getMainPane()) view->getMainPane()->setEffectFrameData(&character->effectCharacter->frameData);
-			if (view->getRightPane()) view->getRightPane()->setEffectFrameData(&character->effectCharacter->frameData);
-			if (view->getBoxPane()) view->getBoxPane()->setEffectFrameData(&character->effectCharacter->frameData);
-		}
-
-		// Draw HA6 editor panes (only if visible and not in PAT editor mode)
-		if (!view->isPatEditor()) {
-			if (view->getMainPane() && view->getMainPane()->isVisible) view->getMainPane()->Draw();
-			if (view->getRightPane() && view->getRightPane()->isVisible) view->getRightPane()->Draw();
-			if (view->getBoxPane() && view->getBoxPane()->isVisible) view->getBoxPane()->Draw();
-			ha4ui::DrawInspector(character, view->getState());   // MBAC .DAT only
-		}
-
-		// Draw PatEditor panes if this is a PAT editor view (only if visible)
-		if (view->isPatEditor()) {
-			if (view->getPartSetPane() && view->getPartSetPane()->isVisible) view->getPartSetPane()->Draw();
-			if (view->getPartPane() && view->getPartPane()->isVisible) view->getPartPane()->Draw();
-			if (view->getShapePane() && view->getShapePane()->isVisible) view->getShapePane()->Draw();
-			if (view->getTexturePane() && view->getTexturePane()->isVisible) view->getTexturePane()->Draw();
-			if (view->getToolPane() && view->getToolPane()->isVisible) view->getToolPane()->Draw();
-		}
-
-		// Undo: a step ends when no widget is active, no mouse button is held
-		// and no explicit transaction (box draw, position drag) is open. Every
-		// edit made during the gesture - on any pattern - becomes one step.
-		if (character) {
-			const ImGuiIO& io = ImGui::GetIO();
-			const bool gesture = ImGui::IsAnyItemActive() ||
-				io.MouseDown[0] || io.MouseDown[1] || io.MouseDown[2];
-			auto& undo = character->undoManager;
-			undo.endFrame(gesture);
-			// Tab '*' follows the history: undoing back to the saved
-			// revision clears it, any other committed revision sets it.
-			if (!gesture && !undo.inTransaction()) {
-				if (undo.isClean()) character->clearModified();
-				else character->markModified();
-			}
-		}
+		DrawViewPanes(view, std::string());
 	}
+
+	// Detached (multi-monitor) windows, their panes and tab moves.
+	DrawDetachedHosts();
+	ApplyPendingTabActions();
+	FinishTabDrag();
+	FinishPaneUndoFrame();
+	DrawRenderToolWindows();
+
 	aboutWindow.Draw();
 	vectors.Draw();
 	drawCommandEditor();
@@ -464,12 +393,16 @@ void MainFrame::DrawUi()
 		// sees the window, but let them move it freely after that (and the
 		// position persists in imgui's .ini between runs, like every other
 		// pane in the editor).
-		ImGui::SetNextWindowPos(ImVec2(80.0f, 80.0f), ImGuiCond_FirstUseEver);
+		// Relative to the main viewport: with detachable windows enabled,
+		// window positions are desktop coordinates, and a fixed (80, 80)
+		// could open the inspector as its own OS window off the main one.
+		const ImVec2 mainPos = ImGui::GetMainViewport()->Pos;
+		ImGui::SetNextWindowPos(ImVec2(mainPos.x + 80.0f, mainPos.y + 80.0f), ImGuiCond_FirstUseEver);
 		ImGui::SetNextWindowSize(ImVec2(420.0f, 640.0f), ImGuiCond_FirstUseEver);
 		ImGui::Begin("Background Inspector", nullptr, 0);
 		// Editing here is stage editing: route Ctrl+Z/Y/S to the stage.
 		if (ImGui::IsWindowFocused(ImGuiFocusedFlags_RootAndChildWindows))
-			shortcuts.claimFocus(ShortcutContext::stageView, (uint64_t)(uintptr_t)getActiveView());
+			shortcuts.claimFocus(ShortcutContext::stageView, getActiveView() ? getActiveView()->getId() : 0);
 
 		ImGui::Text("File: %s", currentBgFile->GetFilename().c_str());
 		auto& objects = currentBgFile->GetObjects();
@@ -490,8 +423,8 @@ void MainFrame::DrawUi()
 		// %.1f format was undefined behavior on x64 and was reporting
 		// garbage zeros that made it look like render.x wasn't being
 		// mirrored from bgCamera. Cast explicitly so we see the real value.
-		ImGui::Text("render scale=%.2f x=%d y=%d",
-		            render.scale, render.x, render.y);
+		ImGui::Text("view zoom=%.2f pass x=%d y=%d",
+		            getActiveView() ? getActiveView()->getZoom() : 0.f, render.x, render.y);
 		ImGui::Text("viewport clientRect=(%.0f, %.0f)", clientRect.x, clientRect.y);
 		if (!objects.empty() && !objects[0].frames.empty()) {
 			const auto& obj0 = objects[0];
@@ -534,8 +467,9 @@ void MainFrame::DrawUi()
 			const auto& f0 = objects[0].frames[0];
 			float wantScreenX = clientRect.x * 0.5f;
 			float wantScreenY = clientRect.y * 0.5f;
-			float newPanX = wantScreenX / render.scale - (float)f0.offsetX;
-			float newPanY = wantScreenY / render.scale - (float)f0.offsetY;
+			const float vz = (getActiveView() && getActiveView()->getZoom() > 0.f) ? getActiveView()->getZoom() : 1.f;
+			float newPanX = wantScreenX / vz - (float)f0.offsetX;
+			float newPanY = wantScreenY / vz - (float)f0.offsetY;
 			bgCamera.SetPan(newPanX, newPanY);
 			if (auto* v = getActiveView()) v->setStageRenderXY(newPanX, newPanY);
 		}
@@ -603,32 +537,10 @@ void MainFrame::RenderUpdate()
 
 	auto& state = view->getState();
 	Sequence *seq;
+	AdvanceViewPlayback(view);
 	if((seq = active->frameData.get_sequence(state.pattern)) &&
 		seq->frames.size() > 0)
 	{
-		state.animeSeq = state.pattern;
-
-		// Playback is driven by the preview tick simulator: one game tick per
-		// UI frame, the root frame comes from the simulated runtime flow
-		// (engine loop rules, EF re-fire on every frame entry), and spawned
-		// actors are read from the same simulation by DrawBack. When the root
-		// has ended and every spawned actor is gone, playback wraps to tick 0.
-		if(state.animating)
-		{
-			FrameData* effectData = active->effectCharacter ? &active->effectCharacter->frameData : nullptr;
-			auto& sim = state.BindPreviewSim(&active->frameData, effectData);
-			int next = state.currentTick + 1;
-			const int settled = sim.settledTick();          // cached after the first call
-			const int wrapAt = settled >= 0 ? settled : sim.horizon();
-			if (next > wrapAt) next = 0;
-			sim.ensureSimulatedTo(next);
-			const auto& track = sim.rootFrameTrack();
-			state.currentTick = next;
-			if (next < (int)track.size())
-				state.frame = track[next];
-		}
-		if (state.frame < 0 || state.frame >= (int)seq->frames.size())
-			state.frame = std::clamp(state.frame, 0, (int)seq->frames.size() - 1);
 
 		auto &frame =  seq->frames[state.frame];
 
@@ -710,10 +622,39 @@ void MainFrame::RenderUpdate()
 	}
 }
 
-void MainFrame::AdvancePattern(int dir)
+// One game tick of playback for one view (no GL). Playback is driven by the
+// preview tick simulator: the root frame comes from the simulated runtime
+// flow (engine loop rules, EF re-fire on every frame entry) and spawned
+// actors are read from the same simulation when the view renders. When the
+// root has ended and every spawned actor is gone, playback wraps to tick 0.
+void MainFrame::AdvanceViewPlayback(CharacterView* view)
 {
-	auto* view = getActiveView();
-	auto* active = getActiveCharacter();
+	CharacterInstance* active = view ? view->getCharacter() : nullptr;
+	if (!active || view->isStageView()) return;
+	auto& state = view->getState();
+	Sequence* seq = active->frameData.get_sequence(state.pattern);
+	if (!seq || seq->frames.empty()) return;
+	state.animeSeq = state.pattern;
+	if (state.animating) {
+		FrameData* effectData = active->effectCharacter ? &active->effectCharacter->frameData : nullptr;
+		auto& sim = state.BindPreviewSim(&active->frameData, effectData);
+		int next = state.currentTick + 1;
+		const int settled = sim.settledTick();          // cached after the first call
+		const int wrapAt = settled >= 0 ? settled : sim.horizon();
+		if (next > wrapAt) next = 0;
+		sim.ensureSimulatedTo(next);
+		const auto& track = sim.rootFrameTrack();
+		state.currentTick = next;
+		if (next < (int)track.size())
+			state.frame = track[next];
+	}
+	if (state.frame < 0 || state.frame >= (int)seq->frames.size())
+		state.frame = std::clamp(state.frame, 0, (int)seq->frames.size() - 1);
+}
+
+void MainFrame::AdvancePattern(CharacterView* view, int dir)
+{
+	auto* active = view ? view->getCharacter() : nullptr;
 	if (!view || !active) return;
 
 	auto& state = view->getState();
@@ -726,10 +667,9 @@ void MainFrame::AdvancePattern(int dir)
 	state.currentTick = 0;  // Reset tick when changing pattern
 }
 
-void MainFrame::AdvanceFrame(int dir)
+void MainFrame::AdvanceFrame(CharacterView* view, int dir)
 {
-	auto* view = getActiveView();
-	auto* active = getActiveCharacter();
+	auto* active = view ? view->getCharacter() : nullptr;
 	if (!view || !active) return;
 
 	auto& state = view->getState();
@@ -789,8 +729,9 @@ void MainFrame::HandleMouseDrag(int x_, int y_, bool dragRight, bool dragLeft)
 	// parallax delta back to zero.
 	if (view->isStageView()) {
 		if (dragLeft) {
-			bgCamera.panX += x_ / render.scale;
-			bgCamera.panY += y_ / render.scale;
+			const float z = view->getZoom() > 0.f ? view->getZoom() : 1.f;
+			bgCamera.panX += x_ / z;
+			bgCamera.panY += y_ / z;
 		}
 		return;
 	}
@@ -807,12 +748,18 @@ void MainFrame::HandleMouseDrag(int x_, int y_, bool dragRight, bool dragLeft)
 
 	if(dragRight)
 	{
-		if (view->getBoxPane()) view->getBoxPane()->BoxDrag(x_, y_);
+		const float z = view->getZoom() > 0.f ? view->getZoom() : 1.f;
+		if (view->getBoxPane()) view->getBoxPane()->BoxDragWorld(x_ / z, y_ / z);
 	}
 	else if(dragLeft)
 	{
-		active->renderX += x_;
-		active->renderY += y_;
+		// Pan this view's own camera; the character keeps the last pan as
+		// the starting camera for views opened later.
+		auto& cam = view->camera();
+		cam.panX += x_;
+		cam.panY += y_;
+		active->renderX = (int)cam.panX;
+		active->renderY = (int)cam.panY;
 	}
 }
 
@@ -836,8 +783,9 @@ void MainFrame::RightClick(int x_, int y_)
 	active->undoManager.beginTransaction("Draw box");
 	m_boxDragCharacter = active;
 
-	boxPane->BoxStart((x_ - active->renderX - clientRect.x/2)/render.scale,
-	                  (y_ - active->renderY - clientRect.y/2)/render.scale);
+	const auto& cam = view->camera();
+	boxPane->BoxStart((x_ - cam.panX - clientRect.x/2)/cam.zoom,
+	                  (y_ - cam.panY - clientRect.y/2)/cam.zoom);
 }
 
 // HandleKeys() and the shortcut/undo/transport/position-tool handlers live
@@ -873,13 +821,13 @@ void MainFrame::HandleMouseWheel(bool isIncrease, int mouseX, int mouseY)
 		// scale, so the world point currently under the cursor is
 		// world = cursor/scale - pan. We capture that point and pin it
 		// under the cursor while DrawBack eases render.scale -> target.
-		float s = render.scale > 0.0f ? render.scale : 1.0f;
+		float s = view->getZoom() > 0.0f ? view->getZoom() : 1.0f;
 		bgZoomAnchorWorldX = mouseX / s - bgCamera.panLastX;
 		bgZoomAnchorWorldY = mouseY / s - bgCamera.panLastY;
 		bgZoomAnchorScrnX  = (float)mouseX;
 		bgZoomAnchorScrnY  = (float)mouseY;
 
-		if (!bgZoomAnimating) bgZoomTarget = render.scale;
+		if (!bgZoomAnimating) bgZoomTarget = view->getZoom();
 		bgZoomTarget *= isIncrease ? 1.15f : (1.0f / 1.15f);
 		if (bgZoomTarget > 20.0f)  bgZoomTarget = 20.0f;
 		if (bgZoomTarget < 0.25f)  bgZoomTarget = 0.25f;
@@ -913,6 +861,12 @@ void MainFrame::LoadTheme(int i )
 		case 1: ImGui::StyleColorsDark(); ChangeClearColor(0.202f, 0.243f, 0.293f); break;
 		case 2: ImGui::StyleColorsLight(); ChangeClearColor(0.534f, 0.568f, 0.587f); break;
 		case 3: ImGui::StyleColorsClassic(); ChangeClearColor(0.142f, 0.075f, 0.147f); break;
+	}
+	// Detached native windows cannot rely on the main OS window to mask
+	// rounded or translucent ImGui window corners.
+	if (ImGui::GetIO().ConfigFlags & ImGuiConfigFlags_ViewportsEnable) {
+		ImGui::GetStyle().WindowRounding = 0.0f;
+		ImGui::GetStyle().Colors[ImGuiCol_WindowBg].w = 1.0f;
 	}
 }
 

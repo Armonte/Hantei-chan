@@ -11,6 +11,7 @@
 #include "misc.h"
 #include "background/bg_inspector.h"
 #include "extension_profile.h"
+#include "../third_party/json/json.hpp"
 #include "framedata_ha4.h"
 #include "ha4_character.h"
 
@@ -81,11 +82,9 @@ void MainFrame::Draw()
 	ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
 	ProcessStartupArgs();
 
-	// Multi-viewport disabled in main.cpp for now; UpdatePlatformWindows is
-	// a no-op without the flag but the guarded read-of-IO is also fine to
-	// skip while we sort out the Inspector interaction bug.
-	// ImGuiIO& io = ImGui::GetIO();
-	// if (io.ConfigFlags & ImGuiConfigFlags_ViewportsEnable) { ... }
+	// Detached windows (ImGui platform windows) render through the same GL
+	// context, each with its own DC; the main window is current again after.
+	WorkspaceViewports::RenderSecondaryWindows();
 
 	SwapBuffers(context->dc);
 
@@ -95,392 +94,14 @@ void MainFrame::Draw()
 	memcpy(gSettings.color, clearColor, sizeof(float)*3);
 }
 
-void MainFrame::DrawPresetEffectMarkers(FrameState& state, CharacterInstance* character)
-{
-	if (!state.vizSettings.showPresetEffects || !state.vizSettings.showSpawnedPatterns) return;
-
-	// Get ImGui draw list for overlay
-	ImDrawList* drawList = ImGui::GetBackgroundDrawList();
-
-	// Preset effects (EF3) and script impact markers are one-tick actors in
-	// the preview simulation. "All frames" shows every one the pattern fires.
-	FrameData* effectData = character->effectCharacter ? &character->effectCharacter->frameData : nullptr;
-	auto& sim = state.BindPreviewSim(&character->frameData, effectData);
-	preview::TickState ts;
-	sim.getStateAt(state.currentTick, ts);
-	const preview::SimActor* root = ts.root();
-	const float rootX = root ? root->x : 0.f, rootY = root ? root->y : 0.f;
-
-	struct Marker { float x, y; int preset; };
-	std::vector<Marker> markers;
-	if (state.vizSettings.presetEffectsAllFrames) {
-		sim.ensureSimulatedTo(std::max(state.currentTick, sim.settledTick()));
-		for (const auto& r : sim.spawnRecords())
-			if (r.isPreset) markers.push_back({r.x - rootX, r.y - rootY, r.pattern});
-	} else {
-		for (const auto& a : ts.actors)
-			if (a.isPreset) markers.push_back({a.x - rootX, a.y - rootY, a.pattern});
-	}
-
-	for (const auto& m : markers) {
-		// Convert game coordinates to screen coordinates
-		// render.x/y formula: (character->renderX + clientRect.x/2) / render.scale
-		float screenX = character->renderX + clientRect.x / 2 + m.x * render.scale;
-		float screenY = character->renderY + clientRect.y / 2 + m.y * render.scale;
-
-		// Draw crosshair
-		float size = 15.0f;
-		ImU32 color = IM_COL32(255, 128, 0, 255);  // Orange
-		float thickness = 2.0f;
-		ImVec2 center(screenX, screenY);
-		drawList->AddLine(ImVec2(center.x - size, center.y), ImVec2(center.x + size, center.y), color, thickness);
-		drawList->AddLine(ImVec2(center.x, center.y - size), ImVec2(center.x, center.y + size), color, thickness);
-		drawList->AddCircleFilled(center, 3.0f, color);
-
-		// Label with preset name (if labels enabled)
-		if (state.vizSettings.showLabels) {
-			const char* presetName = m.preset >= 0 ? GetPresetEffectName(m.preset) : "Impact FX";
-			char label[64];
-			snprintf(label, sizeof(label), "%s [%d]", presetName, m.preset);
-			drawList->AddText(ImVec2(center.x + size + 5, center.y - 8), color, label);
-		}
-	}
-}
-
-void MainFrame::DrawBack()
-{
-	render.filter = smoothRender;
-	glClearColor(clearColor[0], clearColor[1], clearColor[2], 1.f);
-	glClear(GL_COLOR_BUFFER_BIT |  GL_DEPTH_BUFFER_BIT);
-
-	// Dev hook: HANTEI_STAGE_PREVIEW=<stage.dat> opens that stage on the
-	// first frame and captures the stage view to C:/dev/bg_dump.png ~2 s
-	// later (used to eyeball renderer changes without the file dialog).
-	static bool stageEnvChecked = false;
-	if (!stageEnvChecked) {
-		stageEnvChecked = true;
-		if (const char* p = std::getenv("HANTEI_STAGE_PREVIEW")) {
-			loadStageFile(p);
-			bgRenderer.RequestDebugDump(120);
-		}
-	}
-
-	// Tick background animation (once per frame, regardless of which draw
-	// path we take below).
-	bgRenderer.Update();
-	// Sync editor zoom -> bg camera zoom so mouse-wheel zoom (which writes
-	// render.scale) drives the bg projection too, and so the drag delta
-	// math (which divides by render.scale to convert screen-px to world-px)
-	// matches what the bg's projection will scale back up to screen-px.
-	// Stage-view smooth zoom-to-cursor: ease render.scale toward the
-	// target and re-pin the cursor's world anchor each frame so the
-	// point under the cursor stays put as the scale changes.
-	if (bgZoomAnimating) {
-		auto* zv = getActiveView();
-		if (!zv || !zv->isStageView()) {
-			bgZoomAnimating = false;  // left the stage tab — abandon
-		} else {
-			render.scale += (bgZoomTarget - render.scale) * 0.30f;
-			float d = bgZoomTarget - render.scale;
-			if (d < 0.004f && d > -0.004f) {
-				render.scale = bgZoomTarget;
-				bgZoomAnimating = false;
-			}
-			float s = render.scale > 0.0f ? render.scale : 1.0f;
-			float zpx = bgZoomAnchorScrnX / s - bgZoomAnchorWorldX;
-			float zpy = bgZoomAnchorScrnY / s - bgZoomAnchorWorldY;
-			bgCamera.SetPan(zpx, zpy);
-			zoom_idx = render.scale;
-			zv->setZoom(render.scale);
-			zv->setStageRenderXY(zpx, zpy);
-		}
-	}
-
-	bgCamera.zoom = render.scale;
-	// Ease panLast -> panX after a drag so the parallax delta decays
-	// smoothly instead of snapping (no-op while dragging or settled).
-	bgCamera.Settle();
-	// Stage back half (band 0, render priority 10) goes under the
-	// characters; the front half (weather + band 1 "in front of characters",
-	// objhdr+21) is drawn by this guard on every exit path, after them.
-	bgRenderer.Render(bgCamera, (int)clientRect.x, (int)clientRect.y, bg::Pass::Back);
-	struct StageFrontPass {
-		MainFrame* mf;
-		~StageFrontPass() {
-			mf->bgRenderer.Render(mf->bgCamera, (int)clientRect.x,
-			                      (int)clientRect.y, bg::Pass::Front);
-		}
-	} stageFrontPass{this};
-
-	auto* active = getActiveCharacter();
-	auto* view = getActiveView();
-
-	if (active) {
-		render.x = (active->renderX + clientRect.x/2) / render.scale;
-		render.y = (active->renderY + clientRect.y/2) / render.scale;
-	}
-	else if (view && view->isStageView()) {
-		// bgCamera.panLastX/Y is the screen anchor (where world (0, 0) sits)
-		// in u4ick's model. Mirror it into render.x/y so the GL transform
-		// translates everything (bg sprites + grid + reference markers)
-		// together when the user pans.
-		render.x = bgCamera.panLastX;
-		render.y = bgCamera.panLastY;
-		render.DrawGridLines();
-
-		// u4ick's stage boundary rects (MonoForm.cs:431-435). They live at
-		// the LIVE camera position (movingPoint, = bgCamera.panX/panY), at
-		// parallax=256 implicitly — so during a right-drag they slide with
-		// the cursor at 1:1 while parallax layers shift WRT them at their
-		// own rates. On release, panLast catches up to panX and the
-		// parallax delta collapses back to zero, so layers snap into the
-		// common-frame view aligned to the rects.
-		if (bgRenderer.IsShowingDebugOverlay()) {
-			float z = bgCamera.zoom;
-			// Shift by STAGE_CENTER_X / STAGE_FLOOR_Y so the rects land on
-			// the grid lines — same shift the bg sprites get in bg_renderer.
-			float px = (bgCamera.panX - bg::STAGE_CENTER_X) * z;
-			float py = (bgCamera.panY - bg::STAGE_FLOOR_Y) * z;
-			auto* dl = ImGui::GetBackgroundDrawList();
-			// Yellow ground line: (panX-401, panY+224) span 1057 (h=0).
-			dl->AddLine(ImVec2(px - 401*z, py + 224*z),
-			            ImVec2(px + 656*z, py + 224*z),
-			            IM_COL32(255, 255, 0, 255), 1.0f);
-			// Purple full playfield: 1057x810 from (panX-401, panY-538).
-			dl->AddRect(ImVec2(px - 401*z, py - 538*z),
-			            ImVec2(px + 656*z, py + 272*z),
-			            IM_COL32(160,  32, 240, 255), 0.0f, 0, 1.0f);
-			// Purple thin band: 1057x8 just below the ground line.
-			dl->AddRect(ImVec2(px - 401*z, py + 272*z),
-			            ImVec2(px + 656*z, py + 280*z),
-			            IM_COL32(160,  32, 240, 255), 0.0f, 0, 1.0f);
-		}
-		return; // DrawBackground above already drew the stage.
-	}
-
-	// Check if we need to draw with spawned patterns
-	bool hasSpawnedPatterns = false;
-	if (view && active) {
-		auto& state = view->getState();
-		hasSpawnedPatterns = state.vizSettings.showSpawnedPatterns;
-	}
-
-	if (hasSpawnedPatterns && view && active) {
-		// Draw everything as layers (main + spawned) in Z-order
-		auto& state = view->getState();
-
-		// First draw grid lines only
-		render.DrawGridLines();
-
-		// Get current main pattern sequence
-		auto mainSeq = active->frameData.get_sequence(state.pattern);
-		if (!mainSeq || mainSeq->frames.empty()) return;
-		// Self-heal a stale frame index (pattern shrunk by undo/reload while
-		// the Main Pane's clamp didn't run, e.g. when that pane is hidden).
-		if (state.frame < 0) state.frame = 0;
-		if (state.frame >= (int)mainSeq->frames.size()) state.frame = (int)mainSeq->frames.size() - 1;
-		auto& mainFrame = mainSeq->frames[state.frame];
-
-		render.ClearLayers();
-
-		// Add main pattern layers (support UNI multi-layer AFGX)
-		if (mainFrame.AF.layers.empty()) {
-			mainFrame.AF.layers.push_back({});  // Ensure at least one layer exists for MBAACC
-		}
-
-		// Loop through all layers in the frame (UNI multi-layer support)
-		for (size_t layerIndex = 0; layerIndex < mainFrame.AF.layers.size(); layerIndex++) {
-			const auto& mainLayer_data = mainFrame.AF.layers[layerIndex];
-
-			RenderLayer mainLayer;
-			// Layer 0: use UI-selected sprite (state.spriteId) for editor compatibility
-			// Layers 1+: use sprite from layer data (for UNI multi-layer)
-			mainLayer.spriteId = (layerIndex == 0) ? state.spriteId : mainLayer_data.spriteId;
-			mainLayer.spawnOffsetX = 0;
-			mainLayer.spawnOffsetY = 0;
-			mainLayer.frameOffsetX = mainLayer_data.offset_x;
-			mainLayer.frameOffsetY = mainLayer_data.offset_y;
-			mainLayer.scaleX = mainLayer_data.scale[0];
-			mainLayer.scaleY = mainLayer_data.scale[1];
-			mainLayer.rotX = mainLayer_data.rotation[0];
-			mainLayer.rotY = mainLayer_data.rotation[1];
-			mainLayer.rotZ = mainLayer_data.rotation[2];
-			mainLayer.AFRT = mainFrame.AF.AFRT;
-			mainLayer.blendMode = mainLayer_data.blend_mode;
-			mainLayer.zPriority = mainFrame.AF.priority;
-			mainLayer.alpha = mainLayer_data.rgba[3];  // Apply frame alpha
-			mainLayer.tintColor = glm::vec4(mainLayer_data.rgba[0], mainLayer_data.rgba[1], mainLayer_data.rgba[2], 1.0f);  // Apply frame RGB
-			mainLayer.isSpawned = false;
-			mainLayer.hitboxes = (layerIndex == 0) ? mainFrame.hitboxes : BoxList();  // Only layer 0 gets hitboxes
-			mainLayer.sourceCG = &active->cg;  // Main pattern uses character CG
-			mainLayer.usePat = mainLayer_data.usePat;  // Copy PAT rendering flag from layer data
-			mainLayer.sourceParts = &active->parts;  // Main pattern uses character Parts
-			render.AddLayer(mainLayer);
-		}
-
-		// Spawned actors at the current tick, from the cached tick simulator
-		// (preview_sim.h). Positions are world coordinates with the root at
-		// the origin; facing is the engine's resolved child facing (parent
-		// facing, bit-11 toggle, own X mirrored before the parent position is
-		// added) and the actor angle already includes inherited rotation.
-		FrameData* effectFrameDataPtr = active->effectCharacter ? &active->effectCharacter->frameData : nullptr;
-		auto& sim = state.BindPreviewSim(&active->frameData, effectFrameDataPtr);
-		preview::TickState simState;
-		sim.getStateAt(state.currentTick, simState);
-		const preview::SimActor* simRoot = simState.root();
-		const float rootX = simRoot ? simRoot->x : 0.f;
-		const float rootY = simRoot ? simRoot->y : 0.f;
-		const bool rootFacingLeft = simRoot ? simRoot->facingLeft : false;
-
-		for (const auto& actor : simState.actors) {
-			if (actor.isRoot || actor.isPreset) continue;  // presets: DrawPresetEffectMarkers
-
-			// Per-entry visibility / alpha / tint from the spawn tree (right pane)
-			const SpawnedPatternInfo* entry = FindSpawnTreeEntry(state.spawnedPatterns,
-				actor.srcPattern, actor.srcFrame, actor.srcEffectIndex, actor.effectHa6,
-				actor.isScript, actor.pattern);
-			if (entry && !entry->visible) continue;
-			const float vizAlpha = entry ? entry->alpha : 1.0f;
-			const glm::vec4 vizTint = (state.vizSettings.enableTint && entry) ? entry->tintColor : glm::vec4(1.0f);
-
-			// Data source: effect.ha6 actors use the effect character when loaded
-			FrameData* sourceFrameData = &active->frameData;
-			CG* sourceCG = &active->cg;
-			Parts* sourceParts = &active->parts;
-			if (actor.effectHa6 && active->effectCharacter) {
-				sourceFrameData = &active->effectCharacter->frameData;
-				sourceCG = &active->effectCharacter->cg;
-				sourceParts = &active->effectCharacter->parts;
-			}
-
-			auto spawnedSeq = sourceFrameData->get_sequence(actor.pattern);
-			if (!spawnedSeq || spawnedSeq->frames.empty()) continue;
-			if (actor.frame < 0 || actor.frame >= (int)spawnedSeq->frames.size()) continue;
-			auto& spawnedFrame = spawnedSeq->frames[actor.frame];
-
-			// Ensure spawned frame has at least one layer
-			if (spawnedFrame.AF.layers.empty()) {
-				spawnedFrame.AF.layers.push_back({});
-			}
-
-			const bool mirrored = actor.facingLeft != rootFacingLeft;
-
-			// Loop through all layers in spawned frame (UNI multi-layer support)
-			for (size_t spawnLayerIndex = 0; spawnLayerIndex < spawnedFrame.AF.layers.size(); spawnLayerIndex++) {
-				const auto& spawnedLayer_data = spawnedFrame.AF.layers[spawnLayerIndex];
-
-				RenderLayer layer;
-				layer.spriteId = spawnedLayer_data.spriteId;
-				layer.spawnOffsetX = (int)std::lround(actor.x - rootX);
-				layer.spawnOffsetY = (int)std::lround(actor.y - rootY);
-				layer.frameOffsetX = spawnedLayer_data.offset_x;
-				layer.frameOffsetY = spawnedLayer_data.offset_y;
-				layer.scaleX = spawnedLayer_data.scale[0];
-				layer.scaleY = spawnedLayer_data.scale[1];
-				layer.rotX = spawnedLayer_data.rotation[0];
-				layer.rotY = spawnedLayer_data.rotation[1];
-				layer.rotZ = spawnedLayer_data.rotation[2];
-				layer.AFRT = spawnedFrame.AF.AFRT;
-
-				// Actor matrix F * R(angle) (MbaaTransform::ActorMatrix): the
-				// renderer applies scale then Z rotation, so mirror via scaleX
-				// and add the actor angle (10000 = 360 degrees, clockwise).
-				if (mirrored) layer.scaleX *= -1.0f;
-				layer.rotZ += actor.angleTurns();
-
-				layer.blendMode = spawnedLayer_data.blend_mode;
-				// Sticky Z priority (AF priority 0 keeps the previous value)
-				layer.zPriority = actor.zPriority;
-				// Apply frame RGBA, then visualization alpha
-				layer.alpha = spawnedLayer_data.rgba[3] * vizAlpha * state.vizSettings.spawnedOpacity;
-				// Multiply frame RGB with visualization tint
-				layer.tintColor = glm::vec4(
-					spawnedLayer_data.rgba[0] * vizTint.r,
-					spawnedLayer_data.rgba[1] * vizTint.g,
-					spawnedLayer_data.rgba[2] * vizTint.b,
-					1.0f);
-				layer.isSpawned = true;
-				layer.hitboxes = (spawnLayerIndex == 0) ? spawnedFrame.hitboxes : BoxList();  // Only layer 0 gets hitboxes
-				layer.sourceCG = sourceCG;
-				layer.usePat = spawnedLayer_data.usePat;
-				layer.sourceParts = sourceParts;
-				layer.spawnFlagset1 = actor.flagset1;
-				layer.spawnFlagset2 = actor.flagset2;
-
-				render.AddLayer(layer);
-			}
-		}
-
-		// Sort all layers (including main) by Z-priority before drawing
-		render.SortLayersByZPriority(mainFrame.AF.priority);
-
-		// Draw all layers in Z-order
-		render.DrawLayers();
-
-		// Draw preset effect crosshairs (Effect Type 3) as overlay
-		DrawPresetEffectMarkers(state, active);
-	}
-	else if (view && active) {
-		// Normal draw without spawned patterns - use multi-layer rendering for UNI support
-		auto& state = view->getState();
-
-		// First draw grid lines only
-		render.DrawGridLines();
-
-		// Get current main pattern sequence
-		auto mainSeq = active->frameData.get_sequence(state.pattern);
-		if (!mainSeq || mainSeq->frames.empty()) return;
-		// Self-heal a stale frame index (pattern shrunk by undo/reload while
-		// the Main Pane's clamp didn't run, e.g. when that pane is hidden).
-		if (state.frame < 0) state.frame = 0;
-		if (state.frame >= (int)mainSeq->frames.size()) state.frame = (int)mainSeq->frames.size() - 1;
-		auto& mainFrame = mainSeq->frames[state.frame];
-
-		render.ClearLayers();
-
-		// Add main pattern layers (support UNI multi-layer AFGX)
-		if (mainFrame.AF.layers.empty()) {
-			mainFrame.AF.layers.push_back({});  // Ensure at least one layer exists for MBAACC
-		}
-
-		// Loop through all layers in the frame (UNI multi-layer support)
-		for (size_t layerIndex = 0; layerIndex < mainFrame.AF.layers.size(); layerIndex++) {
-			const auto& mainLayer_data = mainFrame.AF.layers[layerIndex];
-
-			RenderLayer mainLayer;
-			// Layer 0: use UI-selected sprite (state.spriteId) for editor compatibility
-			// Layers 1+: use sprite from layer data (for UNI multi-layer)
-			mainLayer.spriteId = (layerIndex == 0) ? state.spriteId : mainLayer_data.spriteId;
-			mainLayer.spawnOffsetX = 0;
-			mainLayer.spawnOffsetY = 0;
-			mainLayer.frameOffsetX = mainLayer_data.offset_x;
-			mainLayer.frameOffsetY = mainLayer_data.offset_y;
-			mainLayer.scaleX = mainLayer_data.scale[0];
-			mainLayer.scaleY = mainLayer_data.scale[1];
-			mainLayer.rotX = mainLayer_data.rotation[0];
-			mainLayer.rotY = mainLayer_data.rotation[1];
-			mainLayer.rotZ = mainLayer_data.rotation[2];
-			mainLayer.AFRT = mainFrame.AF.AFRT;
-			mainLayer.blendMode = mainLayer_data.blend_mode;
-			mainLayer.zPriority = mainFrame.AF.priority;
-			mainLayer.alpha = mainLayer_data.rgba[3];  // Apply frame alpha
-			mainLayer.tintColor = glm::vec4(mainLayer_data.rgba[0], mainLayer_data.rgba[1], mainLayer_data.rgba[2], 1.0f);  // Apply frame RGB
-			mainLayer.isSpawned = false;
-			mainLayer.hitboxes = (layerIndex == 0) ? mainFrame.hitboxes : BoxList();  // Only layer 0 gets hitboxes
-			mainLayer.sourceCG = &active->cg;  // Main pattern uses character CG
-			mainLayer.usePat = mainLayer_data.usePat;  // Copy PAT rendering flag from layer data
-			mainLayer.sourceParts = &active->parts;  // Main pattern uses character Parts
-			render.AddLayer(mainLayer);
-		}
-
-		// Sort and draw all layers
-		render.SortLayersByZPriority(mainFrame.AF.priority);
-		render.DrawLayers();
-
-		// Draw preset effect crosshairs
-		DrawPresetEffectMarkers(state, active);
-	}
-}
+// ============================================================================
+// Per-view scene rendering (render targets, onion skin, detached views, PNG
+// export) - see ui/view_render_impl.h and docs/HANTEI_WAVE2.md
+// ============================================================================
+#include "ui/view_render_impl.h"
+#include "ui/workspace_hosts_impl.h"
+#include "ui/png_export_impl.h"
+#include "ui/package_tools_impl.h"
 
 
 // ============================================================================
@@ -594,6 +215,17 @@ const CharacterInstance* MainFrame::getActiveCharacter() const
 void MainFrame::setActiveView(int index)
 {
 	if (index >= 0 && index < views.size()) {
+		// A view in a detached window is shown there: select its tab and
+		// raise that window instead of taking over the main window.
+		const uint64_t viewId = views[index]->getId();
+		const auto owner = m_session.owner(viewId);
+		if (owner && *owner != WorkspaceSession::MainHost) {
+			m_session.select(*owner, viewId);
+			m_focusHostRequest = *owner;
+			return;
+		}
+		if (!owner) m_session.add(viewId, WorkspaceSession::MainHost, true);
+		else m_session.select(WorkspaceSession::MainHost, viewId);
 		activeViewIndex = index;
 
 		// Update render state to use this view's character and settings
@@ -741,6 +373,8 @@ void MainFrame::closeView(int index)
 	if (index >= 0 && index < views.size()) {
 		auto* view = views[index].get();
 		auto* character = view->getCharacter();
+		const uint64_t view_id = view->getId();
+		if (m_reverseView == view) m_reverseView = nullptr;
 
 		// Remove the view
 		views.erase(views.begin() + index);
@@ -756,8 +390,11 @@ void MainFrame::closeView(int index)
 			}
 		}
 
-		// Update active index
-		if (views.empty()) {
+		// Update active index: the main window shows its own next tab.
+		m_session.close(view_id);
+		if (const auto* mainHost = m_session.host(WorkspaceSession::MainHost))
+			activeViewIndex = findViewIndexById(mainHost->active);
+		if (views.empty() || activeViewIndex < 0) {
 			activeViewIndex = -1;
 
 			// Clear the render system
@@ -766,10 +403,6 @@ void MainFrame::closeView(int index)
 			render.SetCg(nullptr);
 			render.SetParts(nullptr);
 		} else {
-			// Select previous view, or first if we closed the first one
-			if (activeViewIndex >= views.size()) {
-				activeViewIndex = views.size() - 1;
-			}
 			setActiveView(activeViewIndex);
 		}
 	}
@@ -847,6 +480,10 @@ bool MainFrame::saveAllModifiedCharacters()
 
 void MainFrame::clearProjectState()
 {
+	m_session.clear();
+	m_hosts.clear();
+	m_nextHostId = 1;
+	m_reverseView = nullptr;
 	views.clear();
 	characters.clear();
 	activeViewIndex = -1;
@@ -932,9 +569,10 @@ void MainFrame::loadProjectFromPath(const std::string& path, bool isRecent)
 	std::vector<std::unique_ptr<CharacterInstance>> newCharacters;
 	std::vector<std::unique_ptr<CharacterView>> newViews;
 	int newActiveView = -1;
+	std::string workspaceJson;
 	if (ProjectManager::LoadProject(path, newCharacters, newViews, newActiveView, &render,
 	                                &loadedTheme, &loadedZoom, &loadedSmooth, loadedColor,
-	                                &failedCharacters))
+	                                &failedCharacters, &workspaceJson))
 	{
 		// Drop render references into the old project before it is destroyed.
 		render.DontDraw();
@@ -943,6 +581,9 @@ void MainFrame::loadProjectFromPath(const std::string& path, bool isRecent)
 		render.SetParts(nullptr);
 		pendingCloseViewIndex = -1;
 
+		m_session.clear();
+		m_hosts.clear();
+		m_reverseView = nullptr;
 		views = std::move(newViews);
 		characters = std::move(newCharacters);
 		activeViewIndex = newActiveView;
@@ -953,10 +594,11 @@ void MainFrame::loadProjectFromPath(const std::string& path, bool isRecent)
 		smoothRender = loadedSmooth;
 		ChangeClearColor(loadedColor[0], loadedColor[1], loadedColor[2]);
 
-		// Set active view
+		// Set active view, then put tabs back into their windows.
 		if (activeViewIndex >= 0 && activeViewIndex < (int)views.size()) {
 			setActiveView(activeViewIndex);
 		}
+		RestoreWorkspace(workspaceJson);
 
 		// Effect loading is now automatic per-character in CharacterInstance::loadFromTxt()
 
@@ -1010,7 +652,8 @@ void MainFrame::saveProject()
 
 	if (ProjectManager::SaveProject(ProjectManager::GetCurrentProjectPath(),
 	                                characters, views, activeViewIndex,
-	                                style_idx, zoom_idx, smoothRender, clearColor))
+	                                style_idx, zoom_idx, smoothRender, clearColor,
+	                                SerializeWorkspace()))
 	{
 		m_projectModified = false;
 		updateWindowTitle();
@@ -1032,7 +675,8 @@ void MainFrame::saveProjectAs()
 	}
 
 	if (ProjectManager::SaveProject(path, characters, views, activeViewIndex,
-	                                style_idx, zoom_idx, smoothRender, clearColor))
+	                                style_idx, zoom_idx, smoothRender, clearColor,
+	                                SerializeWorkspace()))
 	{
 		ProjectManager::SetCurrentProjectPath(path);
 		m_projectModified = false;

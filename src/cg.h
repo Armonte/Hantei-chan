@@ -93,6 +93,8 @@ protected:
 
 	const CG_Image	*get_image(unsigned int n);
 	bool			loadOwned(char *data, unsigned int size);
+	unsigned long long m_generation = 0;
+	void			touch();
 public:
 	bool m_loaded;
 	bool load(const char *name);
@@ -111,6 +113,9 @@ public:
 	//True if image n is palette-indexed (8bpp) and can use the shader palette path.
 	bool image_is_8bpp(unsigned int n);
 	const unsigned int* getPalettePtr() const { return palette; }
+	// Process-unique stamp, renewed by every load / palette change / free.
+	// Render's sprite texture cache keys on (this, generation, image).
+	unsigned long long generation() const { return m_generation; }
 
 	int	get_image_count();
 

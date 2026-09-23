@@ -20,11 +20,17 @@
 #include "background/bg_types.h"
 #include "cmdfile/cmd_editor_ui.h"
 #include "shortcut_router.h"
+#include "workspace_session.h"
+#include "workspace_viewports.h"
 #include <imgui.h>
 #include <glm/mat4x4.hpp>
 #include <string>
 #include <vector>
 #include <memory>
+#include <map>
+#include <optional>
+
+struct ImRect;
 
 class MainFrame
 {
@@ -55,6 +61,8 @@ public:
 	void RightClick(int x, int y);
 	void LoadSettings();
 	void ProcessStartupArgs();   // --open / --capture (startup_args.cpp)
+	uint64_t m_startupViewId = 0;
+	double m_lastSceneMs = 0.0;   // CPU time of the last main-view scene pass
 
 private:
 	ContextGl *context;
@@ -92,12 +100,125 @@ private:
 
 	void DrawBack();
 	void DrawUi();
-	void DrawPresetEffectMarkers(FrameState& state, CharacterInstance* character);
+
+	// ---- Per-view rendering (ui/view_render_impl.h) ------------------------
+	struct SceneOptions {
+		int tick = -1;       // -1: the view's current tick and selected frame
+		bool grid = true;
+		bool boxes = true;   // hitbox overlay
+		int spawns = -1;     // -1: the view's setting, 0: off, 1: on
+		bool onion = true;   // honour the view's onion-skin settings
+	};
+	void DrawPresetEffectMarkers(FrameState& state, CharacterInstance* character,
+		ImDrawList* drawList, ImVec2 origin, float zoom);
+	void AddSimulatedActorLayers(CharacterView* view, const preview::TickState& ts,
+		int rootFrameIndex, int layer0Sprite, bool includeSpawns, bool boxes,
+		float alphaMul, const glm::vec3* sampleTint);
+	void DrawOnionSkin(CharacterView* view, int tick);
+	// Draw one character/PAT view into the currently bound target.
+	void DrawCharacterScene(CharacterView* view, const Render::PassParams& pass, const SceneOptions& opt);
+	void DrawMainViewScene(CharacterView* view, int width, int height);
+	void RenderDetachedViewTargets();
+
+	// ---- Detached windows (ui/workspace_hosts_impl.h) -----------------------
+	struct HostWindow {
+		uint64_t id = 0;
+		float x = 120.f, y = 120.f, w = 960.f, h = 720.f; // desktop coordinates
+		bool applyGeometry = true;  // push x/y/w/h to ImGui on the next frame
+		bool showPanes = true;      // dock the active view's panes in this window
+	};
+	WorkspaceSession m_session;                 // tab ownership, order, active tab
+	std::map<uint64_t, HostWindow> m_hosts;     // detached windows by host id
+	uint64_t m_nextHostId = 1;
+	uint64_t m_focusedHostId = 0;               // window focused last frame (0 = main)
+	uint64_t m_focusHostRequest = 0;            // bring this window to the front
+	std::map<uint64_t, uint64_t> m_tabShown;    // tab ImGui showed selected, per host
+	std::map<uint64_t, bool> m_tabPushPending;
+	struct TabDrag { bool active = false; bool dropped = false; uint64_t viewId = 0; ImVec2 start{}; } m_tabDrag;
+	struct PendingTabMove { uint64_t viewId = 0; uint64_t hostId = 0; std::optional<size_t> index; bool valid = false; } m_pendingTabMove;
+	int m_pendingTabClose = -1;
+	uint64_t m_hostBoxDragView = 0;
+	std::vector<CharacterInstance*> m_paneCharacters;  // characters whose panes drew this frame
+
+	CharacterView* findViewById(uint64_t id);
+	int findViewIndexById(uint64_t id) const;
+	CharacterView* getShortcutView();
+	void SyncWorkspaceSession();
+	uint64_t DetachViewToNewHost(uint64_t viewId, ImVec2 screenPos);
+	void MoveViewToHost(uint64_t viewId, uint64_t hostId, std::optional<size_t> index);
+	bool DrawViewTabItem(uint64_t hostId, CharacterView* view, size_t position, bool forceSelect);
+	void DrawHostTabs(uint64_t hostId);
+	void DrawViewTabContextItems();
+	void DrawTabBarDropTarget(uint64_t hostId, const ImRect& barRect);
+	void ApplyPendingTabActions();
+	void FinishTabDrag();
+	void DrawViewPanes(CharacterView* view, const std::string& ns);
+	void FinishPaneUndoFrame();
+	void DrawOnionSkinControls(CharacterView* view);
+	void DrawDetachedViewSurface(uint64_t hostId, CharacterView* view, ImVec2 mn, ImVec2 mx);
+	void DrawDetachedHostToolbar(HostWindow& hw, CharacterView* view);
+	void DrawDetachedHosts();
+	std::string SerializeWorkspace() const;
+	void RestoreWorkspace(const std::string& json);
+	void DrawRenderMenu();
+
+	// ---- PNG export (ui/png_export_impl.h) ----------------------------------
+	struct ExportSettings {
+		enum { currentFrame = 0, tickRange = 1, wholePattern = 2 };
+		enum { transparent = 0, editorColor = 1, customColorBg = 2 };
+		enum { fitAll = 0, fitEach = 1, fixedCanvas = 2 };
+		int range = wholePattern;
+		int fromTick = 0, toTick = 30, step = 1, maxTicks = 600;
+		bool keyframesOnly = false;
+		bool skipEmpty = true;
+		bool spawns = true;
+		bool boxes = false;
+		bool smooth = false;
+		int scale = 1;
+		int background = transparent;
+		float customColor[3] = {1.f, 0.f, 1.f};
+		int crop = fitAll;
+		int padding = 4;
+		int canvasW = 512, canvasH = 512, canvasOriginX = 256, canvasOriginY = 448;
+		std::string folder;      // UTF-8
+		std::string baseName;    // UTF-8, sanitised when used
+		bool writeManifest = true;
+	} m_export;
+	struct ExportResult {
+		bool ok = false;
+		int files = 0, skipped = 0;
+		double ms = 0.0;
+		std::string folder, firstFile, message;
+	} m_lastExport;
+	enum class ExportRequest { none, quickFrame, run } m_exportRequest = ExportRequest::none;
+	uint64_t m_exportViewId = 0;
+	bool m_showExportWindow = false;
+	bool m_exportBaseAuto = true;
+	double m_lastExportTime = -100.0;
+	std::vector<int> ExportTicks(CharacterView* view, const ExportSettings& s, bool& liveFrame);
+public:
+	bool RunPngExport(CharacterView* view, const ExportSettings& s, ExportResult& result);
+	static WorkspaceViewports::KeyHook DetachedKeyHook();
+private:
+	std::string DefaultExportFolder(CharacterView* view) const;
+	void PrepareExportSettings(CharacterView* view);
+	void ProcessPendingExport();
+	void DrawExportWindow();
+	void DrawRenderToolWindows();
+
+	// ---- MBAACC package tools (ui/package_tools_impl.h) ----------------------
+	void DrawPackageToolWindows();
+	void DrawPackageToolsMenuItems();
+	preview::TickState m_sceneState, m_onionState;  // reused buffers
+	struct OnionStats { int samples = 0; double simMs = 0.0, totalMs = 0.0; } m_onionStats;
 	void Menu(unsigned int errorId);
 
 	void RenderUpdate();
-	void AdvancePattern(int dir);
-	void AdvanceFrame(int dir);
+	void AdvanceViewPlayback(CharacterView* view);
+	void AdvancePattern(int dir) { AdvancePattern(getActiveView(), dir); }
+	void AdvanceFrame(int dir) { AdvanceFrame(getActiveView(), dir); }
+	void AdvancePattern(CharacterView* view, int dir);
+	void AdvanceFrame(CharacterView* view, int dir);
 
 	void SetZoom(float level);
 	void LoadTheme(int i );
@@ -193,8 +314,8 @@ private:
 	// ---- Editing tools (ui/editor_tools_impl.h) ----------------------------
 	ShortcutRouter shortcuts;
 	bool RunShortcut(ShortcutAction action);
-	bool PerformUndoRedo(bool redo);
-	void RefreshViewsAfterHistory(CharacterInstance* character, const UndoManager::Entry* entry);
+	bool PerformUndoRedo(CharacterView* view, bool redo);
+	void RefreshViewsAfterHistory(CharacterView* activeView, CharacterInstance* character, const UndoManager::Entry* entry);
 	bool isLiveCharacter(const CharacterInstance* character) const;
 
 	// Right-button box drawing is one undo transaction.

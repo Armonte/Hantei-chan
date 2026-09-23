@@ -5,6 +5,7 @@
 #include "test.h"
 #include "ini.h"
 #include "version.h"
+#include "workspace_viewports.h"
 
 #include <iostream>
 #include <fstream>
@@ -238,6 +239,11 @@ int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE, PWSTR pCmdLine, int nCmdShow
 			else gStartup.palette = atoi(v.c_str());
 			i++;
 		}
+		else if(ParseWave2StartupArg(arg, i+1<argC ? argV[i+1] : nullptr, i))
+		{
+			// --tick/--onion/--detach/--capture-view/--export-*/--save-project
+			// (render checks, see startup_args.h); consumed its value if any.
+		}
 		else if(!strcmp(arg, "-i"))
 		{
 			useIni = false;
@@ -361,14 +367,18 @@ LRESULT WINAPI WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
 			ImSearch::CreateContext();
 			ImGuiIO& io = ImGui::GetIO();
 			io.ConfigFlags |= ImGuiConfigFlags_DockingEnable;
-			// Multi-viewport temporarily disabled — Background Inspector
-			// pane was becoming uninteractable, almost certainly because
-			// the viewport flag was causing it to spawn as a separate OS
-			// window behind / off-screen-of the main window. Re-enable
-			// once the bg renderer work settles.
-			//io.ConfigFlags |= ImGuiConfigFlags_ViewportsEnable;
 			io.IniFilename = iniLocation;
 			InitIni();
+			// Multi-viewport: detached tabs become native windows that can
+			// live on other monitors (docs/HANTEI_WAVE2.md §5). It used to be
+			// off because the Background Inspector opened at a fixed desktop
+			// position behind the main window; that window is now placed
+			// relative to the main viewport. Restart-bound preference.
+			if (gSettings.detachableWindows)
+				io.ConfigFlags |= ImGuiConfigFlags_ViewportsEnable;
+			// Native windows only move from their title bar, so dragging in a
+			// detached view pans it instead of moving the window.
+			io.ConfigWindowsMoveFromTitleBarOnly = true;
 
 			MainFrame* mf = new MainFrame(context);
 			SetWindowLongPtr(hWnd, GWLP_USERDATA, (LONG_PTR)mf);
@@ -382,8 +392,15 @@ LRESULT WINAPI WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
 			// Font atlas now handles sizing automatically
 			
 			//io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;     // Enable Keyboard Controls
-			ImGui_ImplWin32_Init(hWnd);
+			ImGui_ImplWin32_InitForOpenGL(hWnd);   // CS_OWNDC for platform windows
 			ImGui_ImplOpenGL3_Init("#version 330 core");
+			if (!WorkspaceViewports::Initialize(*context, hWnd,
+				(io.ConfigFlags & ImGuiConfigFlags_ViewportsEnable) != 0, MainFrame::DetachedKeyHook()))
+			{
+				// Fall back to single-window mode (detached tabs float inside
+				// the main window).
+				io.ConfigFlags &= ~ImGuiConfigFlags_ViewportsEnable;
+			}
 			
 			// Enable VSync control for better performance testing
 			typedef BOOL (WINAPI *wglSwapIntervalEXT_t)(int);
@@ -532,6 +549,7 @@ LRESULT WINAPI WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
 		break;
 	case WM_DESTROY:
 		delete mf;
+		WorkspaceViewports::Shutdown();
 		ImGui_ImplOpenGL3_Shutdown();
 		ImGui_ImplWin32_Shutdown();
 		ImSearch::DestroyContext();

@@ -47,6 +47,11 @@ ShortcutRegistry::ShortcutRegistry()
 		{A::stepTickForward,  "Step one tick forward",        {'L', shortcutShift}, R::focusedContext, C::characterView, false, true},
 
 		{A::cancelGesture,    "Cancel drag",                  {vkEscape, 0},        R::focusedContext, C::characterView, false, false},
+
+		{A::toggleOnionSkin,  "Toggle onion skin",            {'O', 0},             R::focusedContext, C::characterView, false, false},
+		{A::exportFramePng,   "Export current frame (PNG)",   {'P', 0},             R::focusedContext, C::characterView, false, false},
+		{A::exportSequencePng,"Export pattern (PNG sequence)",{'P', ctrl},          R::focusedContext, C::characterView, false, false},
+		{A::detachView,       "Move tab to a new window",     {'D', ctrlShift},     R::editorViews,    C::none,           false, false},
 	}
 {
 }

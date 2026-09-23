@@ -11,6 +11,8 @@ private:
 
 public:
 	HDC dc;
+	HGLRC GetRenderContext() const { return context; }
+	bool MakeCurrent() const { return wglMakeCurrent(dc, context) == TRUE; }
 	ContextGl(HWND hWnd): hwnd(hWnd)
 	{
 		PIXELFORMATDESCRIPTOR pfd =

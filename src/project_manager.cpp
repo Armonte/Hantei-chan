@@ -283,7 +283,8 @@ bool ProjectManager::SaveProject(
 	int theme,
 	float zoomLevel,
 	bool smoothRender,
-	const float clearColor[3])
+	const float clearColor[3],
+	const std::string& workspaceJson)
 {
 	try {
 		json j;
@@ -358,6 +359,20 @@ bool ProjectManager::SaveProject(
 			// View-specific render settings
 			viewObj["zoom"] = view->getZoom();
 			viewObj["is_pat_editor"] = view->isPatEditor();
+			// Per-view camera and onion skin (wave 2). Older builds ignore them.
+			viewObj["id"] = view->getId();
+			viewObj["camera_x"] = view->camera().panX;
+			viewObj["camera_y"] = view->camera().panY;
+			{
+				const auto& o = view->onion();
+				viewObj["onion"] = {
+					{"enabled", o.enabled}, {"before", o.before}, {"after", o.after},
+					{"spacing", o.spacing}, {"keyframes_only", o.keyframesOnly},
+					{"include_spawns", o.includeSpawns}, {"alpha", o.alpha}, {"falloff", o.falloff},
+					{"past_tint", {o.pastTint.r, o.pastTint.g, o.pastTint.b}},
+					{"future_tint", {o.futureTint.r, o.futureTint.g, o.futureTint.b}},
+				};
+			}
 
 			viewsArray.push_back(viewObj);
 		}
@@ -373,6 +388,14 @@ bool ProjectManager::SaveProject(
 		uiState["smooth_render"] = smoothRender;
 		uiState["clear_color"] = json::array({clearColor[0], clearColor[1], clearColor[2]});
 		j["ui_state"] = uiState;
+
+		// Detached windows: which tabs each window holds, geometry and pane
+		// layout toggle. Written in the same atomic pass as everything else
+		// (EX rewrote the file a second time with a plain ofstream).
+		if (!workspaceJson.empty()) {
+			json ws = json::parse(workspaceJson, nullptr, false);
+			if (!ws.is_discarded()) j["workspace"] = ws;
+		}
 
 		// Write to file (atomic replace)
 		if (!WriteProjectFile(path, j)) {
@@ -404,7 +427,8 @@ bool ProjectManager::LoadProject(
 	float* outZoomLevel,
 	bool* outSmoothRender,
 	float* outClearColor,
-	std::vector<std::string>* outFailedCharacters)
+	std::vector<std::string>* outFailedCharacters,
+	std::string* outWorkspaceJson)
 {
 	try {
 		std::ifstream file(path);
@@ -500,6 +524,35 @@ bool ProjectManager::LoadProject(
 				// Restore view-specific render settings
 				float viewZoom = viewObj.value("zoom", 3.0f);
 				view->setZoom(viewZoom);
+				{
+					// Keep the saved id (detached-window tabs refer to it)
+					// unless the file repeats one.
+					const uint64_t savedId = viewObj.value("id", (uint64_t)0);
+					bool duplicate = false;
+					for (const auto& other : newViews) duplicate |= other->getId() == savedId;
+					if (!duplicate) view->setId(savedId);
+				}
+				// The camera defaults to the character's (pre-wave-2 files).
+				view->camera().panX = viewObj.value("camera_x", (float)character->renderX);
+				view->camera().panY = viewObj.value("camera_y", (float)character->renderY);
+				if (viewObj.contains("onion") && viewObj["onion"].is_object()) {
+					const auto& oj = viewObj["onion"];
+					auto& o = view->onion();
+					o.enabled = oj.value("enabled", o.enabled);
+					o.before = std::clamp(oj.value("before", o.before), 0, 16);
+					o.after = std::clamp(oj.value("after", o.after), 0, 16);
+					o.spacing = std::clamp(oj.value("spacing", o.spacing), 1, 600);
+					o.keyframesOnly = oj.value("keyframes_only", o.keyframesOnly);
+					o.includeSpawns = oj.value("include_spawns", o.includeSpawns);
+					o.alpha = std::clamp(oj.value("alpha", o.alpha), 0.f, 1.f);
+					o.falloff = std::clamp(oj.value("falloff", o.falloff), 0.f, 1.f);
+					auto readTint = [&](const char* key, glm::vec3& out) {
+						if (oj.contains(key) && oj[key].is_array() && oj[key].size() >= 3)
+							out = glm::vec3(oj[key][0].get<float>(), oj[key][1].get<float>(), oj[key][2].get<float>());
+					};
+					readTint("past_tint", o.pastTint);
+					readTint("future_tint", o.futureTint);
+				}
 				
 				// Restore PatEditor mode if applicable
 				bool isPatEditor = viewObj.value("is_pat_editor", false);
@@ -570,6 +623,11 @@ bool ProjectManager::LoadProject(
 		activeViewIndex = newActiveView;
 		if (outFailedCharacters) {
 			*outFailedCharacters = std::move(failed);
+		}
+		if (outWorkspaceJson) {
+			outWorkspaceJson->clear();
+			if (j.contains("workspace") && j["workspace"].is_object())
+				*outWorkspaceJson = j["workspace"].dump();
 		}
 		return true;
 	} catch (...) {
