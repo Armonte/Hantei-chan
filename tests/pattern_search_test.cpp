@@ -6,11 +6,14 @@
 //   - every draw command's indices stay inside the vertex buffer (what the GL
 //     backend would read), and the output is identical for a second run.
 //
-//   pattern_search_test [--font FILE.otf] [--queries N] HA6...
+//   pattern_search_test [--font FILE.otf] [--queries N] [--highlight] HA6...
+// --highlight uses ImSearch's default flags (text highlighting on), which
+// reproduces the #81 assert with the unpatched imsearch submodule.
 // With no HA6 argument it uses a built-in list of names shaped like issue #81's.
 
 #include "framedata.h"
 #include "imsearch.h"
+#include "pattern_search.h"
 #include "frame_disp/frame_disp_if.h"
 
 #include <imgui.h>
@@ -24,6 +27,7 @@
 #include <vector>
 
 static int g_asserts = 0;
+static ImSearchFlags g_searchFlags = kPatternSearchFlags; // --highlight: upstream default (0)
 static std::string g_typed; // query typed so far, for the failure report
 void CmdfileUiSmokeAssert(const char* expr, const char* file, int line)
 {
@@ -70,7 +74,7 @@ struct Pane {
 		ImGui::SetNextWindowPos(ImVec2(0, 0), ImGuiCond_Always);
 		ImGui::SetNextWindowSize(ImVec2(320, 700), ImGuiCond_Always);
 		ImGui::Begin("Left Pane");
-		if (ImSearch::BeginSearch()) {
+		if (ImSearch::BeginSearch(g_searchFlags)) {
 			ImSearch::SearchBar("Search pattern names...");
 			const char* query = ImSearch::GetUserQuery();
 			if (query && std::strlen(query) > 0) {
@@ -89,7 +93,7 @@ struct Pane {
 			ImGui::SetNextWindowPos(ImVec2(400, 50), ImGuiCond_Always);
 			ImGui::SetNextWindowSize(ImVec2(500, 400), ImGuiCond_Always);
 			ImGui::Begin("Search Pattern Names", &popup);
-			if (ImSearch::BeginSearch()) {
+			if (ImSearch::BeginSearch(g_searchFlags)) {
 				ImSearch::SearchBar("Search pattern names...");
 				for (int n = 0; n < (int)names.size(); ++n) {
 					ImSearch::SearchableItem(names[n].c_str(), [&, n](const char* name) {
@@ -163,6 +167,7 @@ int main(int argc, char** argv)
 	for (int i = 1; i < argc; ++i) {
 		if (!std::strcmp(argv[i], "--font") && i + 1 < argc) font = argv[++i];
 		else if (!std::strcmp(argv[i], "--queries") && i + 1 < argc) queriesPerFile = std::atoi(argv[++i]);
+		else if (!std::strcmp(argv[i], "--highlight")) g_searchFlags = 0; // reproduce the upstream bug
 		else files.push_back(argv[i]);
 	}
 

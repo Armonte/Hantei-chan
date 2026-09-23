@@ -3,7 +3,8 @@
 #include "frame_disp.h"
 #include "misc.h"
 #include <imgui.h>
-#include "imsearch.h"	
+#include "imsearch.h"
+#include "pattern_search.h"
 
 MainPane::MainPane(Render* render, FrameData *framedata, FrameState &fs) : DrawWindow(render, framedata, fs),
 decoratedNames(nullptr)
@@ -64,7 +65,7 @@ void MainPane::Draw()
 		// Pattern search bar (above pattern dropdown)
 		if(showPatternSearchBar)
 		{
-			if(ImSearch::BeginSearch())
+			if(ImSearch::BeginSearch(kPatternSearchFlags))
 			{
 				ImSearch::SearchBar("Search pattern names...");
 				
@@ -580,7 +581,7 @@ void MainPane::Draw()
 				im::SetNextWindowPos(im::GetMainViewport()->GetCenter(), ImGuiCond_FirstUseEver, ImVec2(0.5f, 0.5f));
 				if(im::Begin("Search Pattern Names", &showPatternSearch, ImGuiWindowFlags_NoCollapse))
 				{
-					if(ImSearch::BeginSearch())
+					if(ImSearch::BeginSearch(kPatternSearchFlags))
 					{
 						ImSearch::SearchBar("Search pattern names...");
 
