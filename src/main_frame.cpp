@@ -77,86 +77,52 @@ void MainFrame::Draw()
 
 void MainFrame::DrawPresetEffectMarkers(FrameState& state, CharacterInstance* character)
 {
-	if (!state.vizSettings.showPresetEffects) return;
+	if (!state.vizSettings.showPresetEffects || !state.vizSettings.showSpawnedPatterns) return;
 
 	// Get ImGui draw list for overlay
 	ImDrawList* drawList = ImGui::GetBackgroundDrawList();
 
-	// Iterate through active spawns or spawned patterns
-	bool useActiveSpawns = state.animating && !state.activeSpawns.empty();
-	size_t count = useActiveSpawns ? state.activeSpawns.size() : state.spawnedPatterns.size();
+	// Preset effects (EF3) and script impact markers are one-tick actors in
+	// the preview simulation. "All frames" shows every one the pattern fires.
+	FrameData* effectData = character->effectCharacter ? &character->effectCharacter->frameData : nullptr;
+	auto& sim = state.BindPreviewSim(&character->frameData, effectData);
+	preview::TickState ts;
+	sim.getStateAt(state.currentTick, ts);
+	const preview::SimActor* root = ts.root();
+	const float rootX = root ? root->x : 0.f, rootY = root ? root->y : 0.f;
 
-	for (size_t i = 0; i < count; i++) {
-		// Get spawn info
-		bool isPreset;
-		int offsetX, offsetY, presetNumber;
-		int spawnFrame, spawnTick;
+	struct Marker { float x, y; int preset; };
+	std::vector<Marker> markers;
+	if (state.vizSettings.presetEffectsAllFrames) {
+		sim.ensureSimulatedTo(std::max(state.currentTick, sim.settledTick()));
+		for (const auto& r : sim.spawnRecords())
+			if (r.isPreset) markers.push_back({r.x - rootX, r.y - rootY, r.pattern});
+	} else {
+		for (const auto& a : ts.actors)
+			if (a.isPreset) markers.push_back({a.x - rootX, a.y - rootY, a.pattern});
+	}
 
-		if (useActiveSpawns) {
-			auto& spawn = state.activeSpawns[i];
-			if (!spawn.isPresetEffect) continue;
-			isPreset = true;
-			offsetX = spawn.offsetX;
-			offsetY = spawn.offsetY;
-			presetNumber = spawn.patternId;
-			spawnTick = spawn.spawnTick;
-
-			// Check if we're on the spawn tick (unless showing on all frames)
-			if (!state.vizSettings.presetEffectsAllFrames && state.currentTick != spawnTick) {
-				continue;
-			}
-		} else {
-			auto& spawn = state.spawnedPatterns[i];
-			if (!spawn.isPresetEffect || !spawn.visible) continue;
-			isPreset = true;
-			offsetX = spawn.offsetX;
-			offsetY = spawn.offsetY;
-			presetNumber = spawn.patternId;
-			spawnFrame = spawn.parentFrame;
-
-			// Check if we're on the spawn frame (unless showing on all frames)
-			if (!state.vizSettings.presetEffectsAllFrames && state.frame != spawnFrame) {
-				continue;
-			}
-		}
-
+	for (const auto& m : markers) {
 		// Convert game coordinates to screen coordinates
-		// offsetX/offsetY are in game space units (same as render.x/y)
 		// render.x/y formula: (character->renderX + clientRect.x/2) / render.scale
-		// So to go back: screenX = character->renderX + clientRect.x/2 + offsetX * render.scale
-		float screenX = character->renderX + clientRect.x / 2 + offsetX * render.scale;
-		float screenY = character->renderY + clientRect.y / 2 + offsetY * render.scale;
+		float screenX = character->renderX + clientRect.x / 2 + m.x * render.scale;
+		float screenY = character->renderY + clientRect.y / 2 + m.y * render.scale;
 
 		// Draw crosshair
 		float size = 15.0f;
 		ImU32 color = IM_COL32(255, 128, 0, 255);  // Orange
 		float thickness = 2.0f;
-
 		ImVec2 center(screenX, screenY);
-
-		// Horizontal line
-		drawList->AddLine(
-			ImVec2(center.x - size, center.y),
-			ImVec2(center.x + size, center.y),
-			color, thickness);
-
-		// Vertical line
-		drawList->AddLine(
-			ImVec2(center.x, center.y - size),
-			ImVec2(center.x, center.y + size),
-			color, thickness);
-
-		// Center circle
+		drawList->AddLine(ImVec2(center.x - size, center.y), ImVec2(center.x + size, center.y), color, thickness);
+		drawList->AddLine(ImVec2(center.x, center.y - size), ImVec2(center.x, center.y + size), color, thickness);
 		drawList->AddCircleFilled(center, 3.0f, color);
 
 		// Label with preset name (if labels enabled)
 		if (state.vizSettings.showLabels) {
-			const char* presetName = GetPresetEffectName(presetNumber);
+			const char* presetName = m.preset >= 0 ? GetPresetEffectName(m.preset) : "Impact FX";
 			char label[64];
-			snprintf(label, sizeof(label), "%s [%d]", presetName, presetNumber);
-			drawList->AddText(
-				ImVec2(center.x + size + 5, center.y - 8),
-				color, label);
+			snprintf(label, sizeof(label), "%s [%d]", presetName, m.preset);
+			drawList->AddText(ImVec2(center.x + size + 5, center.y - 8), color, label);
 		}
 	}
 }
@@ -256,7 +222,7 @@ void MainFrame::DrawBack()
 	bool hasSpawnedPatterns = false;
 	if (view && active) {
 		auto& state = view->getState();
-		hasSpawnedPatterns = state.vizSettings.showSpawnedPatterns && !state.spawnedPatterns.empty();
+		hasSpawnedPatterns = state.vizSettings.showSpawnedPatterns;
 	}
 
 	if (hasSpawnedPatterns && view && active) {
@@ -312,263 +278,61 @@ void MainFrame::DrawBack()
 			render.AddLayer(mainLayer);
 		}
 
-		// Save reference to main pattern's layer 0 for inherited rotation (spawns may need it)
-		const auto& mainLayer0Data = mainFrame.AF.layers[0];
+		// Spawned actors at the current tick, from the cached tick simulator
+		// (preview_sim.h). Positions are world coordinates with the root at
+		// the origin; facing is the engine's resolved child facing (parent
+		// facing, bit-11 toggle, own X mirrored before the parent position is
+		// added) and the actor angle already includes inherited rotation.
+		FrameData* effectFrameDataPtr = active->effectCharacter ? &active->effectCharacter->frameData : nullptr;
+		auto& sim = state.BindPreviewSim(&active->frameData, effectFrameDataPtr);
+		preview::TickState simState;
+		sim.getStateAt(state.currentTick, simState);
+		const preview::SimActor* simRoot = simState.root();
+		const float rootX = simRoot ? simRoot->x : 0.f;
+		const float rootY = simRoot ? simRoot->y : 0.f;
+		const bool rootFacingLeft = simRoot ? simRoot->facingLeft : false;
 
-		// Build render layers for spawned patterns
-		// Use activeSpawns during animation OR when seeking (handles looping correctly)
-		// When seeking, activeSpawns is populated by SimulateSpawnsToTick in box_pane.cpp
-		// IMPORTANT: Use activeSpawns if it has entries (either from animation or seeking)
-		bool useActiveSpawns = state.animating || !state.activeSpawns.empty();
-		auto& spawnsToRender = useActiveSpawns ?
-			reinterpret_cast<std::vector<ActiveSpawnInstance>&>(state.activeSpawns) :
-			reinterpret_cast<std::vector<ActiveSpawnInstance>&>(state.spawnedPatterns);
+		for (const auto& actor : simState.actors) {
+			if (actor.isRoot || actor.isPreset) continue;  // presets: DrawPresetEffectMarkers
 
-		for (size_t i = 0; i < (useActiveSpawns ? state.activeSpawns.size() : state.spawnedPatterns.size()); i++) {
-			// Get spawn info from appropriate source
-			ActiveSpawnInstance spawnInfo;
+			// Per-entry visibility / alpha / tint from the spawn tree (right pane)
+			const SpawnedPatternInfo* entry = FindSpawnTreeEntry(state.spawnedPatterns,
+				actor.srcPattern, actor.srcFrame, actor.srcEffectIndex, actor.effectHa6,
+				actor.isScript, actor.pattern);
+			if (entry && !entry->visible) continue;
+			const float vizAlpha = entry ? entry->alpha : 1.0f;
+			const glm::vec4 vizTint = (state.vizSettings.enableTint && entry) ? entry->tintColor : glm::vec4(1.0f);
 
-			if (useActiveSpawns) {
-				spawnInfo = state.activeSpawns[i];
-
-				// SimulateSpawnsToTick doesn't know per-spawn viz settings, so
-				// inherit visibility/alpha/tint from the matching static spawn
-				// entry — otherwise seeking suddenly re-tints and re-alphas the
-				// spawned patterns compared to the paused view. Prefer the exact
-				// instance (same parent frame): the same pattern spawned from two
-				// frames has two static entries with separate user settings.
-				const SpawnedPatternInfo* match = nullptr;
-				for (const auto& sp : state.spawnedPatterns) {
-					if (sp.patternId != spawnInfo.patternId ||
-					    sp.usesEffectHA6 != spawnInfo.usesEffectHA6 ||
-					    sp.isPresetEffect != spawnInfo.isPresetEffect)
-						continue;
-					if (sp.depth == 0 && sp.parentFrame == spawnInfo.parentFrame) {
-						match = &sp;  // exact instance
-						break;
-					}
-					if (!match)
-						match = &sp;  // fallback: first key match
-				}
-				if (match) {
-					if (!match->visible) continue;
-					spawnInfo.alpha = match->alpha;
-					spawnInfo.tintColor = state.vizSettings.enableTint ? match->tintColor : glm::vec4(1.0f, 1.0f, 1.0f, 1.0f);
-				} else if (!state.vizSettings.enableTint) {
-					spawnInfo.tintColor = glm::vec4(1.0f, 1.0f, 1.0f, 1.0f);
-				}
-			} else {
-				// Convert SpawnedPatternInfo to ActiveSpawnInstance for rendering
-				auto& staticSpawn = state.spawnedPatterns[i];
-				if (!staticSpawn.visible) continue;
-
-				spawnInfo.spawnTick = staticSpawn.spawnTick;
-				spawnInfo.patternId = staticSpawn.patternId;
-				spawnInfo.usesEffectHA6 = staticSpawn.usesEffectHA6;
-				spawnInfo.isPresetEffect = staticSpawn.isPresetEffect;
-				spawnInfo.offsetX = staticSpawn.offsetX;
-				spawnInfo.offsetY = staticSpawn.offsetY;
-				spawnInfo.flagset1 = staticSpawn.flagset1;
-				spawnInfo.flagset2 = staticSpawn.flagset2;
-				spawnInfo.angle = staticSpawn.angle;
-				spawnInfo.projVarDecrease = staticSpawn.projVarDecrease;
-				spawnInfo.parentFrame = staticSpawn.parentFrame;
-				spawnInfo.tintColor = state.vizSettings.enableTint ? staticSpawn.tintColor : glm::vec4(1.0f, 1.0f, 1.0f, 1.0f);
-				spawnInfo.alpha = staticSpawn.alpha;
+			// Data source: effect.ha6 actors use the effect character when loaded
+			FrameData* sourceFrameData = &active->frameData;
+			CG* sourceCG = &active->cg;
+			Parts* sourceParts = &active->parts;
+			if (actor.effectHa6 && active->effectCharacter) {
+				sourceFrameData = &active->effectCharacter->frameData;
+				sourceCG = &active->effectCharacter->cg;
+				sourceParts = &active->effectCharacter->parts;
 			}
 
-			// Check if this is a preset effect (Effect Type 3)
-			if (spawnInfo.isPresetEffect) {
-				// Render crosshair marker for preset effects (not pattern-based)
-				if (state.vizSettings.showPresetEffects) {
-					// TODO: Draw crosshair at (spawnInfo.offsetX, spawnInfo.offsetY)
-					// Preset number: spawnInfo.patternId
-					// For now, skip rendering (will be implemented below)
-				}
-				continue;  // Skip pattern loading for preset effects
-			}
-
-			// Determine which character to pull pattern from
-			FrameData* sourceFrameData;
-			CG* sourceCG;
-			Parts* sourceParts;
-
-			if (spawnInfo.usesEffectHA6) {
-				// Type 8: Effect spawn - ALWAYS use effectCharacter if loaded
-				// effectCharacter contains either MBAACC's effect.ha6/effect.cg or UNI's effect.ha6/sys_effect.pat
-				if (active->effectCharacter) {
-					// Use effect.ha6 data (both MBAACC and UNI)
-					sourceFrameData = &active->effectCharacter->frameData;
-					sourceCG = &active->effectCharacter->cg;
-					sourceParts = &active->effectCharacter->parts;
-				} else {
-					// Fallback: no effect.ha6 loaded - use main character
-					static bool warned = false;
-					if (!warned) {
-						printf("[Warning] Type 8 spawn detected but no effect.ha6 loaded for %s - using main character as fallback\n",
-							active->getName().c_str());
-						warned = true;
-					}
-					sourceFrameData = &active->frameData;
-					sourceCG = &active->cg;
-					sourceParts = &active->parts;
-				}
-			} else {
-				// Type 1/11/101/111/1000: Pull from main character
-				sourceFrameData = &active->frameData;
-				sourceCG = &active->cg;
-				sourceParts = &active->parts;
-			}
-
-			// Get the spawned pattern's sequence from appropriate source
-			auto spawnedSeq = sourceFrameData->get_sequence(spawnInfo.patternId);
+			auto spawnedSeq = sourceFrameData->get_sequence(actor.pattern);
 			if (!spawnedSeq || spawnedSeq->frames.empty()) continue;
-
-			// Calculate which frame to display
-			// When animating with activeSpawns: use currentFrame (respects aniType 2 loops/jumps)
-			// When paused with spawnedPatterns: calculate from ticks (for seeking)
-			int localFrame = 0;
-
-			if (useActiveSpawns) {
-				// Use currentFrame directly (advanced by animation logic in main_ui_impl.h)
-				localFrame = spawnInfo.currentFrame;
-
-				// Skip if frame is invalid (pattern has ended)
-				if (localFrame < 0 || localFrame >= spawnedSeq->frames.size()) {
-					continue;
-				}
-			} else {
-				// Static spawn from spawnedPatterns - calculate frame from ticks for seeking
-				// Check if current frame (via simulation) matches the spawn frame
-				
-				// Get main pattern to check if it loops
-				auto mainSeq = active->frameData.get_sequence(state.pattern);
-				bool mainPatternLoops = false;
-				int mainPatternLoopPeriod = 0;
-				
-				if (mainSeq && !mainSeq->frames.empty()) {
-					auto& lastFrame = mainSeq->frames.back();
-					mainPatternLoops = (lastFrame.AF.aniType == 2);
-					
-					// Calculate loop period if looping
-					if (mainPatternLoops) {
-						mainPatternLoopPeriod = FindLoopPeriod(&active->frameData, state.pattern);
-						if (mainPatternLoopPeriod == 0) {
-							// Fallback: calculate total duration
-							for (int i = 0; i < mainSeq->frames.size(); i++) {
-								mainPatternLoopPeriod += mainSeq->frames[i].AF.duration;
-							}
-							if (mainPatternLoopPeriod == 0) {
-								mainPatternLoopPeriod = mainSeq->frames.size() * 10; // Fallback estimate
-							}
-						}
-					}
-				}
-				
-				// Get the current frame via simulation
-				int currentFrame = SimulateAnimationFlow(&active->frameData, state.pattern, state.currentTick);
-				
-				// Get the spawn frame from the static spawn info. The static entry
-				// already records which parent frame spawned it — the old re-scan
-				// through ParseSpawnedPatterns only matched effect types 1/3, so
-				// type 8/11/101/111 spawns never resolved (chr015 pattern 3's
-				// effect.ha6 spawns rendered mistimed), and two spawns of the same
-				// pattern from different frames both matched the first frame.
-				// Nested spawns (depth > 0) have parentFrame relative to their
-				// parent pattern, not the main one — keep the tick-based fallback.
-				int spawnFrame = (state.spawnedPatterns[i].depth == 0)
-					? state.spawnedPatterns[i].parentFrame : -1;
-				
-				// Check if we're at the spawn frame (including loop iterations)
-				bool isAtSpawnFrame = false;
-				int effectiveSpawnTick = spawnInfo.spawnTick;
-				
-				if (spawnFrame >= 0) {
-					// Check if current frame matches spawn frame
-					isAtSpawnFrame = (currentFrame == spawnFrame);
-					
-					// If looping, also check if we're at the spawn frame in a loop iteration
-					if (mainPatternLoops && mainPatternLoopPeriod > 0 && !isAtSpawnFrame) {
-						// Check if tick modulo loop period puts us at spawn frame
-						int tickInLoop = state.currentTick % mainPatternLoopPeriod;
-						int spawnTickInLoop = spawnInfo.spawnTick % mainPatternLoopPeriod;
-						int frameAtSpawnTickInLoop = SimulateAnimationFlow(&active->frameData, state.pattern, spawnTickInLoop);
-						
-						if (frameAtSpawnTickInLoop == spawnFrame) {
-							// Check if current tick in loop matches spawn tick in loop
-							int frameAtCurrentTickInLoop = SimulateAnimationFlow(&active->frameData, state.pattern, tickInLoop);
-							isAtSpawnFrame = (frameAtCurrentTickInLoop == spawnFrame);
-							
-							if (isAtSpawnFrame) {
-								// Calculate effective spawn tick for this loop iteration
-								effectiveSpawnTick = (state.currentTick / mainPatternLoopPeriod) * mainPatternLoopPeriod + spawnTickInLoop;
-							}
-						}
-					}
-				} else {
-					// Fallback: use tick-based matching
-					if (mainPatternLoops && mainPatternLoopPeriod > 0) {
-						int tickInLoop = state.currentTick % mainPatternLoopPeriod;
-						isAtSpawnFrame = (tickInLoop == spawnInfo.spawnTick % mainPatternLoopPeriod);
-						effectiveSpawnTick = (state.currentTick / mainPatternLoopPeriod) * mainPatternLoopPeriod + (spawnInfo.spawnTick % mainPatternLoopPeriod);
-					} else {
-						isAtSpawnFrame = (state.currentTick == spawnInfo.spawnTick);
-					}
-				}
-				
-				int elapsedTicks = state.currentTick - effectiveSpawnTick;
-
-				// Check if spawned pattern should be visible
-				if (!isAtSpawnFrame && elapsedTicks < 0) {
-					// Before spawn tick - don't show
-					continue;
-				}
-
-				// Calculate total pattern duration and check for looping
-				int totalDuration = 0;
-				for (int i = 0; i < spawnedSeq->frames.size(); i++) {
-					int dur = spawnedSeq->frames[i].AF.duration;
-					// Safety: treat duration 0 as 1 to avoid infinite loops
-					totalDuration += (dur > 0 ? dur : 1);
-				}
-
-				// Check if pattern should loop
-				bool isLooping = false;
-				if (!spawnedSeq->frames.empty()) {
-					auto& lastFrame = spawnedSeq->frames.back();
-					isLooping = (lastFrame.AF.aniType == 2);
-				}
-
-				// Check if pattern has ended (non-looping)
-				if (!isLooping && elapsedTicks >= totalDuration) {
-					// Pattern finished, don't show
-					continue;
-				}
-
-				// Handle looping by wrapping elapsed ticks
-				int effectiveTicks = isLooping ? (elapsedTicks % totalDuration) : elapsedTicks;
-				if (effectiveTicks < 0) effectiveTicks = 0; // Safety
-
-				// Use flow simulation to find frame (handles loops/jumps properly)
-				localFrame = SimulateAnimationFlow(sourceFrameData, spawnInfo.patternId, effectiveTicks);
-			}
-
-			auto& spawnedFrame = spawnedSeq->frames[localFrame];
+			if (actor.frame < 0 || actor.frame >= (int)spawnedSeq->frames.size()) continue;
+			auto& spawnedFrame = spawnedSeq->frames[actor.frame];
 
 			// Ensure spawned frame has at least one layer
 			if (spawnedFrame.AF.layers.empty()) {
 				spawnedFrame.AF.layers.push_back({});
 			}
 
+			const bool mirrored = actor.facingLeft != rootFacingLeft;
+
 			// Loop through all layers in spawned frame (UNI multi-layer support)
 			for (size_t spawnLayerIndex = 0; spawnLayerIndex < spawnedFrame.AF.layers.size(); spawnLayerIndex++) {
 				const auto& spawnedLayer_data = spawnedFrame.AF.layers[spawnLayerIndex];
 
-				// Create render layer with all frame data
 				RenderLayer layer;
 				layer.spriteId = spawnedLayer_data.spriteId;
-				layer.spawnOffsetX = spawnInfo.offsetX;
-				layer.spawnOffsetY = spawnInfo.offsetY;
+				layer.spawnOffsetX = (int)std::lround(actor.x - rootX);
+				layer.spawnOffsetY = (int)std::lround(actor.y - rootY);
 				layer.frameOffsetX = spawnedLayer_data.offset_x;
 				layer.frameOffsetY = spawnedLayer_data.offset_y;
 				layer.scaleX = spawnedLayer_data.scale[0];
@@ -578,45 +342,30 @@ void MainFrame::DrawBack()
 				layer.rotZ = spawnedLayer_data.rotation[2];
 				layer.AFRT = spawnedFrame.AF.AFRT;
 
-				// Apply spawn rotation parameter (angle)
-				// Rotation format: 0=0°, 2500=90°, 5000=180°, 10000=360°
-				float spawnRotation = spawnInfo.angle / 10000.0f;
-				layer.rotZ += spawnRotation;
-
-				// Apply flip facing flag (bit 11 of flagset1)
-				if (spawnInfo.flagset1 & (1 << 11)) {
-					layer.scaleX *= -1.0f;
-					layer.spawnOffsetX *= -1;  // Reverse X coordinate when flip facing (fixes #69)
-				}
-
-				// Apply inherit parent rotation flag (bit 8 of flagset1)
-				// Inherit from parent pattern's layer 0 (mainLayer0Data)
-				if (spawnInfo.flagset1 & (1 << 8)) {
-					layer.rotX += mainLayer0Data.rotation[0];
-					layer.rotY += mainLayer0Data.rotation[1];
-					layer.rotZ += mainLayer0Data.rotation[2];
-				}
+				// Actor matrix F * R(angle) (MbaaTransform::ActorMatrix): the
+				// renderer applies scale then Z rotation, so mirror via scaleX
+				// and add the actor angle (10000 = 360 degrees, clockwise).
+				if (mirrored) layer.scaleX *= -1.0f;
+				layer.rotZ += actor.angleTurns();
 
 				layer.blendMode = spawnedLayer_data.blend_mode;
-				// Use persistent z-priority from spawn instance (ZP=0 means "keep current")
-				// When animating, use currentZPriority (updated only when frame has non-zero ZP)
-				// When paused/seeking, use frame's priority directly
-				layer.zPriority = useActiveSpawns ? spawnInfo.currentZPriority : spawnedFrame.AF.priority;
+				// Sticky Z priority (AF priority 0 keeps the previous value)
+				layer.zPriority = actor.zPriority;
 				// Apply frame RGBA, then visualization alpha
-				layer.alpha = spawnedLayer_data.rgba[3] * spawnInfo.alpha * state.vizSettings.spawnedOpacity;
+				layer.alpha = spawnedLayer_data.rgba[3] * vizAlpha * state.vizSettings.spawnedOpacity;
 				// Multiply frame RGB with visualization tint
 				layer.tintColor = glm::vec4(
-					spawnedLayer_data.rgba[0] * spawnInfo.tintColor.r,
-					spawnedLayer_data.rgba[1] * spawnInfo.tintColor.g,
-					spawnedLayer_data.rgba[2] * spawnInfo.tintColor.b,
+					spawnedLayer_data.rgba[0] * vizTint.r,
+					spawnedLayer_data.rgba[1] * vizTint.g,
+					spawnedLayer_data.rgba[2] * vizTint.b,
 					1.0f);
 				layer.isSpawned = true;
 				layer.hitboxes = (spawnLayerIndex == 0) ? spawnedFrame.hitboxes : BoxList();  // Only layer 0 gets hitboxes
-				layer.sourceCG = sourceCG;  // Use appropriate CG (character or effect.ha6)
-				layer.usePat = spawnedLayer_data.usePat;  // Copy PAT rendering flag
-				layer.sourceParts = sourceParts;  // Use appropriate Parts (character or effect.pat)
-				layer.spawnFlagset1 = spawnInfo.flagset1;
-				layer.spawnFlagset2 = spawnInfo.flagset2;
+				layer.sourceCG = sourceCG;
+				layer.usePat = spawnedLayer_data.usePat;
+				layer.sourceParts = sourceParts;
+				layer.spawnFlagset1 = actor.flagset1;
+				layer.spawnFlagset2 = actor.flagset2;
 
 				render.AddLayer(layer);
 			}

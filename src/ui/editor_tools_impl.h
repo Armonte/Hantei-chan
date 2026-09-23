@@ -248,12 +248,14 @@ void MainFrame::StepTick(CharacterView* view, int dir)
 
 	int tick = st.currentTick + dir;
 	if (tick < 0) tick = 0;
-	st.currentTick = tick;
-	st.frame = CalculateFrameFromTick(&character->frameData, st.pattern, tick);
-	if (st.frame < 0 || st.frame >= (int)seq->frames.size())
-		st.frame = std::clamp(st.frame, 0, (int)seq->frames.size() - 1);
 	FrameData* effectData = character->effectCharacter ? &character->effectCharacter->frameData : nullptr;
-	SimulateSpawnsToTick(&character->frameData, effectData, st.pattern, tick, st.activeSpawns);
+	auto& sim = st.BindPreviewSim(&character->frameData, effectData);
+	if (tick > sim.horizon()) tick = sim.horizon();
+	sim.ensureSimulatedTo(tick);
+	const auto& track = sim.rootFrameTrack();
+	st.currentTick = tick;
+	if (tick < (int)track.size()) st.frame = track[tick];
+	st.frame = std::clamp(st.frame, 0, (int)seq->frames.size() - 1);
 }
 
 void MainFrame::UpdateTransport()
@@ -278,23 +280,29 @@ void MainFrame::UpdateTransport()
 // Viewport position tool
 // ---------------------------------------------------------------------------
 // Handles for the current keyframe's animation layers (AF offset X/Y) and for
-// effects whose X/Y parameter slots are known: spawn pattern 1/101, spawn
-// actor 8, preset 3 (params 0/1) and random spawn 11/111 (params 1/2).
-// Layer handles sit where the renderer places the layer origin (scale and
-// XYZ rotation applied, AFRT order respected) and a screen drag is mapped
-// back through the inverse of that 2x2 transform. A drag is one undo
-// transaction; Escape restores the pre-drag values.
+// position-type effects (spawn 1/101/1000, 8/108, random 11/111 base offset,
+// preset 3). Layer handles sit where the renderer places the layer origin
+// (scale and XYZ rotation applied, AFRT order respected) and a screen drag is
+// mapped back through the inverse of that 2x2 transform. Effect handles use
+// the preview simulator's spawn placement (preview::ResolveSpawnPlacement):
+// facing propagation + bit-11 toggle mirror only the effect's own X, PAT
+// owner frames halve the offset, and the camera / screen-edge / opponent /
+// fixed positioning flags are honoured, so a handle sits exactly where the
+// viewport draws the spawned actor. A drag is one undo transaction; Escape
+// restores the pre-drag values.
 
-static bool PositionEffectSlots(const Frame_EF& ef, int& xParam, int& yParam, const char*& what)
+static const char* PositionEffectName(int type)
 {
-	switch (ef.type) {
-	case 1:   xParam = 0; yParam = 1; what = "Spawn pattern"; return true;
-	case 101: xParam = 0; yParam = 1; what = "Spawn relative pattern"; return true;
-	case 8:   xParam = 0; yParam = 1; what = "Spawn actor (effect.ha6)"; return true;
-	case 3:   xParam = 0; yParam = 1; what = "Preset effect"; return true;
-	case 11:  xParam = 1; yParam = 2; what = "Spawn random pattern"; return true;
-	case 111: xParam = 1; yParam = 2; what = "Spawn random relative pattern"; return true;
-	default:  return false;
+	switch (type) {
+	case 1:    return "Spawn pattern";
+	case 101:  return "Spawn relative pattern";
+	case 1000: return "Spawn pattern once";
+	case 8:    return "Spawn actor (effect.ha6)";
+	case 108:  return "Spawn relative actor (effect.ha6)";
+	case 3:    return "Preset effect";
+	case 11:   return "Spawn random pattern";
+	case 111:  return "Spawn random relative pattern";
+	default:   return "Effect";
 	}
 }
 
@@ -346,17 +354,32 @@ std::vector<MainFrame::PositionTarget> MainFrame::CollectPositionTargets()
 		out.push_back(std::move(t));
 	}
 
+	// The keyframe's owner is the root actor: world origin, preview facing.
+	FrameData* effectData = active->effectCharacter ? &active->effectCharacter->frameData : nullptr;
+	const preview::Options& simOpt = st.BindPreviewSim(&active->frameData, effectData).options();
+	preview::SimActor owner;
+	owner.isRoot = true;
+	owner.facingLeft = simOpt.rootFacingLeft;
+	const bool ownerUsesPat = !frame.AF.layers.empty() && frame.AF.layers[0].usePat;
+
 	for (int i = 0; i < (int)frame.EF.size(); ++i) {
 		const Frame_EF& ef = frame.EF[i];
-		int xp, yp; const char* what;
-		if (!PositionEffectSlots(ef, xp, yp, what)) continue;
+		int xp, yp;
+		if (!preview::SpawnOffsetSlots(ef, xp, yp)) continue;
+		int fs1, fs2;
+		preview::SpawnFlagsets(ef, fs1, fs2);
+		const preview::SpawnPlacement pl = preview::ResolveSpawnPlacement(simOpt, owner, ownerUsesPat, fs1, fs2);
 		PositionTarget t;
 		t.kind = PositionTarget::Effect;
 		t.index = i;
 		t.xParam = xp; t.yParam = yp;
-		t.m[0] = s; t.m[1] = 0; t.m[2] = 0; t.m[3] = s;
-		t.screen = ImVec2(baseX + ef.parameters[xp] * s, baseY + ef.parameters[yp] * s);
-		t.label = "EF " + std::to_string(i) + ": " + what + " " + std::to_string(ef.number);
+		t.m[0] = pl.kx * s; t.m[1] = 0; t.m[2] = 0; t.m[3] = pl.ky * s;
+		t.invertible = std::fabs(pl.kx) > 1e-4f && std::fabs(pl.ky) > 1e-4f;
+		t.screen = ImVec2(baseX + (pl.baseX + pl.kx * ef.parameters[xp]) * s,
+		                  baseY + (pl.baseY + pl.ky * ef.parameters[yp]) * s);
+		t.label = "EF " + std::to_string(i) + ": " + PositionEffectName(ef.type) + " " + std::to_string(ef.number);
+		if (pl.facingLeft) t.label += " (faces left)";
+		if (pl.scale != 1.f) t.label += " (PAT owner: half offset)";
 		t.color = ef.type == 3 ? IM_COL32(255, 150, 40, 255) : IM_COL32(255, 210, 60, 255);
 		out.push_back(std::move(t));
 	}

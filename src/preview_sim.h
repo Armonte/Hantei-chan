@@ -32,6 +32,7 @@
 #include <glm/mat4x4.hpp>
 
 class FrameData;
+struct Frame_EF;
 
 namespace preview {
 
@@ -251,6 +252,32 @@ private:
 
 // Readable name for an event kind.
 const char* EventKindName(EventKind k);
+
+// ---------------------------------------------------------------------------
+// Spawn placement (Effect_InitializeComplex 0x454900), shared with editing
+// tools so handles sit exactly where the simulator puts the spawned actor.
+// ---------------------------------------------------------------------------
+
+// Parameter slots holding an EF's X/Y offset, for position-type EFs
+// (1/101/1000, 8/108, 11/111, 3). False for other EF types.
+bool SpawnOffsetSlots(const Frame_EF& ef, int& xParam, int& yParam);
+
+// Flagset slots of a spawn EF (0 when the type has none, e.g. EF3).
+void SpawnFlagsets(const Frame_EF& ef, int& flagset1, int& flagset2);
+
+// World position of a spawn is (baseX + kx * X, baseY + ky * Y) for authored
+// offsets X/Y. kx carries the facing mirror and the 0.5/1.0 owner scale.
+struct SpawnPlacement {
+	float baseX = 0.f, baseY = 0.f;
+	float kx = 1.f, ky = 1.f;
+	bool facingLeft = false;  // resolved child facing
+	float scale = 1.f;        // owner offset scale used
+};
+
+// `spawner` needs x, y, facingLeft and angle; `spawnerFrameUsesPat` is the
+// spawner's current frame AFGP[0] (layer 0 usePat).
+SpawnPlacement ResolveSpawnPlacement(const Options& o, const SimActor& spawner,
+                                     bool spawnerFrameUsesPat, int flagset1, int flagset2);
 
 } // namespace preview
 

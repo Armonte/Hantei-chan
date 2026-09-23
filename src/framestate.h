@@ -2,12 +2,14 @@
 #define FRAMESTATE_H_GUARD
 
 #include "framedata.h"
+#include "preview_sim.h"
 #include "hitbox.h"
 #include "enums.h"
 #include <linear_allocator.hpp>
 #include <vector>
 #include <set>
 #include <map>
+#include <memory>
 #include <glm/vec4.hpp>
 
 struct CopyData {
@@ -149,10 +151,17 @@ struct FrameState
 	int selectedSpawnedPattern = -1;  // Currently selected in UI
 	bool forceSpawnTreeRebuild = false;  // Set by undo/redo to force rebuild
 
-	// Active spawn instances (created dynamically during animation)
+	// Legacy per-view spawn instances. The viewport now renders spawns from
+	// previewSim; this stays only so older call sites that clear it compile.
 	std::vector<ActiveSpawnInstance> activeSpawns;
-	std::map<int, int> frameVisitCounts;  // Track how many times each frame has been visited during current animation
-	int lastSpawnCreationFrame = -1;  // Track which frame last created spawns to prevent duplicates within same frame
+
+	// Cached tick simulator (preview_sim.h): the single source of truth for
+	// the root flow and spawned actors at a tick. Shared by the viewport,
+	// playback and timeline; onion skin / export / detached views query it
+	// with getStateAt(tick). Bind once per use with BindPreviewSim().
+	std::shared_ptr<preview::PreviewSim> previewSim;
+	preview::Options previewOptions;
+	preview::PreviewSim& BindPreviewSim(FrameData* mainData, FrameData* effectData);
 
 	// PatEditor state (for .pat file editing)
 	RenderMode renderMode = DEFAULT;
@@ -177,44 +186,29 @@ struct FrameState
 private:
 	void *sharedMemHandle = nullptr;
 	void *sharedMem = nullptr;
+
+	// MBTL move-script spawn schedule for previewSim (rebuilt on change)
+	std::vector<preview::ScheduledSpawn> scriptSchedule;
+	FrameData* scheduleData = nullptr;
+	int schedulePattern = -1;
+	uint64_t scheduleVersion = ~0ull;
 };
+
+// Spawn-tree entry (right pane list) that an authored spawn source maps to,
+// for per-entry visibility/alpha/tint. Null when there is none.
+const SpawnedPatternInfo* FindSpawnTreeEntry(const std::vector<SpawnedPatternInfo>& tree,
+	int srcPattern, int srcFrame, int srcEffectIndex, bool effectHa6, bool isScript, int pattern);
 
 // Utility function to parse spawned patterns from effects (single frame)
 std::vector<SpawnedPatternInfo> ParseSpawnedPatterns(const std::vector<Frame_EF>& effects, int parentFrame, int parentPatternId = -1);
 
-// Helper to calculate tick position from frame number (sums frame durations)
+// First tick at which the runtime flow (engine loop rules, native IFs; runtime
+// IFs assumed false) enters frameNum; falls back to the authored start tick
+// (sum of earlier durations) for frames the flow never reaches.
 int CalculateTickFromFrame(class FrameData* frameData, int patternId, int frameNum);
-
-// Simulate animation flow from tick 0 to target tick, following loops/jumps
-int SimulateAnimationFlow(class FrameData* frameData, int patternId, int targetTick);
 
 // Find loop period by detecting cycles (returns to previously seen frames)
 int FindLoopPeriod(class FrameData* frameData, int patternId, int maxTicks = 10000);
-
-// Simulate animation flow and collect all spawn ticks (including loop iterations and nested spawns)
-// Returns a map of compositeKey -> vector of spawn ticks where that pattern spawns
-// compositeKey = patternId * 2 + (usesEffectHA6 ? 1 : 0)
-// recursionDepth is internal (script spawns are only merged at depth 0).
-std::map<int, std::vector<int>> CollectAllSpawnTicks(
-	class FrameData* mainFrameData,
-	class FrameData* effectFrameData,
-	int patternId,
-	int maxTicks = 10000,
-	bool isEffectHA6 = false,
-	int parentSpawnTick = 0,
-	int recursionDepth = 0);
-
-// Helper to calculate frame from tick position
-int CalculateFrameFromTick(class FrameData* frameData, int patternId, int tick);
-
-// Simulate animation and create spawns up to target tick (for seeking)
-// Populates activeSpawns with spawns that would exist at targetTick
-void SimulateSpawnsToTick(
-	class FrameData* mainFrameData,
-	class FrameData* effectFrameData,
-	int patternId,
-	int targetTick,
-	std::vector<class ActiveSpawnInstance>& activeSpawns);
 
 // Recursive function to build full spawn tree
 void BuildSpawnTreeRecursive(
