@@ -150,9 +150,15 @@ bool MainFrame::RunPngExport(CharacterView* view, const ExportSettings& s, Expor
 	const int scale = std::clamp(s.scale, 1, 8);
 	std::vector<uint8_t> pixels, black, white, out;
 
-	// Analysis pass (scale 1): alpha bounds of every tick, in world units.
-	constexpr int A = 2048;
+	// Analysis pass: alpha bounds of every tick, in world units. It renders
+	// at half scale into 1024x1024 (a 2048x2048 world-pixel window around the
+	// root: +-1024 horizontally, -1536..+512 vertically); canvasFor() widens
+	// the result by the analysis pixel size so nothing is cut.
+	constexpr int A = 1024;
+	constexpr float AZ = 0.5f;               // analysis zoom
 	constexpr float AOX = A / 2.f, AOY = A * 0.75f;
+	double analysisMs = 0.0, renderMs = 0.0, encodeMs = 0.0;
+	const auto tA = std::chrono::steady_clock::now();
 	std::vector<pngexport::Bounds> tickBounds(ticks.size());
 	pngexport::Bounds unionBounds;
 	if (s.crop != ExportSettings::fixedCanvas) {
@@ -160,7 +166,7 @@ bool MainFrame::RunPngExport(CharacterView* view, const ExportSettings& s, Expor
 		if (!analysis.ensure(A, A, false)) { result.message = "Could not create the analysis framebuffer."; return false; }
 		Render::PassParams pass;
 		pass.width = pass.height = A;
-		pass.originX = AOX; pass.originY = AOY; pass.zoom = 1.f;
+		pass.originX = AOX; pass.originY = AOY; pass.zoom = AZ;
 		for (size_t i = 0; i < ticks.size(); ++i) {
 			{
 				ScopedTargetBinding bind(analysis);
@@ -173,15 +179,17 @@ bool MainFrame::RunPngExport(CharacterView* view, const ExportSettings& s, Expor
 		}
 		if (unionBounds.empty()) { result.message = "Nothing visible in the exported ticks."; return false; }
 	}
+	analysisMs = viewrender::MsSince(tA);
 
 	// Canvas for a world-space box [wx0, wx1) x [wy0, wy1).
 	struct Canvas { int w, h; float ox, oy; };
 	auto canvasFor = [&](const pngexport::Bounds& b) {
 		const int pad = std::max(0, s.padding);
-		// Bounds are analysis pixels; world = pixel - analysis origin. One
-		// extra world pixel on each side covers bilinear/PAT edge bleed.
-		const float wx0 = b.x0 - AOX - 1.f, wy0 = b.y0 - AOY - 1.f;
-		const float wx1 = b.x1 + 1 - AOX + 1.f, wy1 = b.y1 + 1 - AOY + 1.f;
+		// Bounds are analysis pixels; world = (pixel - origin) / zoom. One
+		// analysis pixel of slack on each side covers the half-scale
+		// rasterisation and bilinear/PAT edge bleed.
+		const float wx0 = (b.x0 - 1 - AOX) / AZ, wy0 = (b.y0 - 1 - AOY) / AZ;
+		const float wx1 = (b.x1 + 2 - AOX) / AZ, wy1 = (b.y1 + 2 - AOY) / AZ;
 		Canvas cv;
 		cv.w = std::min(8192, (int)std::ceil((wx1 - wx0) * scale) + 2 * pad);
 		cv.h = std::min(8192, (int)std::ceil((wy1 - wy0) * scale) + 2 * pad);
@@ -224,6 +232,7 @@ bool MainFrame::RunPngExport(CharacterView* view, const ExportSettings& s, Expor
 		pass.originX = cv.ox; pass.originY = cv.oy;
 		pass.zoom = (float)scale;
 
+		const auto tR = std::chrono::steady_clock::now();
 		auto renderOver = [&](float r, float g, float b, std::vector<uint8_t>& dst) {
 			{
 				ScopedTargetBinding bind(target);
@@ -245,12 +254,15 @@ bool MainFrame::RunPngExport(CharacterView* view, const ExportSettings& s, Expor
 			for (size_t p = 3; p < out.size(); p += 4) out[p] = 255;
 		}
 
+		renderMs += viewrender::MsSince(tR);
 		char suffix[64];
 		if (liveFrame) snprintf(suffix, sizeof(suffix), "_f%03d_t%04d", view->getState().frame, tick);
 		else snprintf(suffix, sizeof(suffix), "_t%04d", tick);
 		const std::string file = base + suffix + ".png";
 		const std::string path = s.folder + "\\" + file;
+		const auto tE = std::chrono::steady_clock::now();
 		if (!WritePngRgba(path, out.data(), cv.w, cv.h, error)) { result.message = error; return false; }
+		encodeMs += viewrender::MsSince(tE);
 
 		sim.getStateAt(tick, probe);
 		const preview::SimActor* root = probe.root();
@@ -266,6 +278,7 @@ bool MainFrame::RunPngExport(CharacterView* view, const ExportSettings& s, Expor
 		++result.files;
 	}
 	manifest["frames"] = frames;
+	manifest["timing_ms"] = {{"analysis", analysisMs}, {"render_readback_matte", renderMs}, {"png_encode", encodeMs}};
 	if (result.files > 1 || s.writeManifest) {
 		const std::string text = manifest.dump(2);
 		const std::string mpath = s.folder + "\\" + base + ".json";
