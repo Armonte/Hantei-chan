@@ -68,6 +68,12 @@ struct PatPart {
 // A pattern = a list of present parts, pre-sorted back-to-front.
 struct PatPattern {
 	std::vector<PatPart> parts;
+	// Raw per-slot values for ALL 40 slots (empty ones included): frame +20
+	// interpolation reads the NEXT pattern's slot i regardless of whether
+	// that slot holds a part (MBAA Background_DrawInstance 0x4b7473).
+	int32_t slotScaleX[40] = {0};
+	int32_t slotScaleY[40] = {0};
+	int32_t slotRotation[40] = {0};
 };
 
 // A sub-rectangle of a texture plus its display quad and pivot.
