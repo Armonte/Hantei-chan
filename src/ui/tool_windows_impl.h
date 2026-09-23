@@ -267,6 +267,28 @@ void MainFrame::drawPatternManagerWindow()
 	ImGui::TextDisabled("%d non-selected pattern(s) would be overwritten", moveOverwrites);
 	ImGui::BeginDisabled(w.selection.empty());
 	if (ImGui::Button("Clear selected patterns")) ImGui::OpenPopup("Clear patterns?");
+	ImGui::SameLine();
+	// Template for a fresh character (#44): only the selected patterns (e.g. the
+	// system states), at their own ids, in a new untitled character tab.
+	if (ImGui::Button("New character from selection")) {
+		std::vector<Sequence> pats;
+		std::vector<int> ids;
+		for (int p : w.selection) { pats.push_back(*fd.get_sequence(p)); ids.push_back(p); }
+		auto fresh = std::make_unique<CharacterInstance>();
+		fresh->frameData.initEmpty((unsigned)std::max(count, 1));
+		fresh->setName(character->getName() + " template");
+		patrefs::PastePatterns(fresh->frameData, pats, ids, ids, false);
+		characters.push_back(std::move(fresh));
+		createViewForCharacter(characters.back().get());
+		markProjectModified();
+		w.status = "Created a character with " + std::to_string(pats.size()) + " pattern(s) at their original ids.";
+		ImGui::EndDisabled();
+		ImGui::EndChild();
+		ImGui::End();
+		return; // the active character changed; redraw next frame
+	}
+	if (ImGui::IsItemHovered(ImGuiHoveredFlags_AllowWhenDisabled))
+		ImGui::SetTooltip("Start a new character that holds only the selected patterns\n(for example the system states) at the same ids. Save it with Save Character As.");
 	ImGui::EndDisabled();
 	if (ImGui::BeginPopupModal("Clear patterns?", nullptr, ImGuiWindowFlags_AlwaysAutoResize)) {
 		ImGui::Text("Empty %zu pattern slot(s)? (Undo restores them.)", w.selection.size());
