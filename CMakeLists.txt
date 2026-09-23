@@ -29,6 +29,8 @@ add_executable(${EXE}
 	src/png_writer.cpp
 	src/workspace_session.cpp
 	src/workspace_viewports.cpp
+	src/mbaacc_pack.cpp
+	src/mbaacc_package.cpp
 	src/vao.cpp
 	src/shader.cpp
 	src/texture.cpp
@@ -340,3 +342,31 @@ if(MINGW)
 	target_link_options(workspace_session_test PRIVATE -static-libgcc -static-libstdc++ -static)
 endif()
 add_test(NAME workspace_session COMMAND workspace_session_test)
+
+# MBAACC package tools (docs/HANTEI_WAVE2.md §6): validator, CRLF repair,
+# HA6 layer consolidation, FilePacHeaderA (.p) reader/extractor.
+set(MBAACC_PACKAGE_SOURCES
+	src/mbaacc_package.cpp
+	src/mbaacc_pack.cpp
+	src/framedata.cpp
+	src/framedata_load.cpp
+	src/framedata_save.cpp
+	src/framedata_ha4.cpp
+	src/misc.cpp
+	tinyalloc/tinyalloc.c
+)
+add_executable(mbaaccpackage src/mbaacc_package_cli.cpp ${MBAACC_PACKAGE_SOURCES})
+target_include_directories(mbaaccpackage PRIVATE "." "src" "third_party" "${CMAKE_BINARY_DIR}/generated")
+target_compile_definitions(mbaaccpackage PRIVATE WIN32_LEAN_AND_MEAN UNICODE _UNICODE HA6GUIVERSION="${CMAKE_PROJECT_VERSION}")
+target_link_libraries(mbaaccpackage PRIVATE tinyalloc)
+if(MINGW)
+	target_link_options(mbaaccpackage PRIVATE -municode -static-libgcc -static-libstdc++ -static)
+endif()
+add_executable(package_tools_test tests/package_tools_test.cpp ${MBAACC_PACKAGE_SOURCES})
+target_include_directories(package_tools_test PRIVATE "." "src" "third_party" "${CMAKE_BINARY_DIR}/generated")
+target_compile_definitions(package_tools_test PRIVATE WIN32_LEAN_AND_MEAN HA6GUIVERSION="${CMAKE_PROJECT_VERSION}")
+target_link_libraries(package_tools_test PRIVATE tinyalloc)
+if(MINGW)
+	target_link_options(package_tools_test PRIVATE -static-libgcc -static-libstdc++ -static)
+endif()
+add_test(NAME package_tools COMMAND package_tools_test)
