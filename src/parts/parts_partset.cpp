@@ -311,7 +311,14 @@ void PartSet<>::Save(std::ofstream &file, const PartSet *partSet, bool mbaacc)
             file.write(VAL(values[3]), 1);
         }
 
-        if(prop->rotation[0] != 0 ||
+        if(mbaacc && prop->rotation[0] == 0 && prop->rotation[1] == 0 && prop->rotation[2] == 0 &&
+           prop->rotation[3] != 0)
+        {
+            // MBAA.exe only knows the single-angle PRAN (it has no PRA3 tag).
+            file.write("PRAN", 4);
+            file.write(VAL(prop->rotation[3]), 4);
+        }
+        else if(prop->rotation[0] != 0 ||
            prop->rotation[1] != 0 ||
            prop->rotation[2] != 0 ||
            prop->rotation[3] != 0)

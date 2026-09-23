@@ -3,7 +3,7 @@
 //   ha4tool roundtrip <file.DAT>...        load -> save must be byte-identical
 //   ha4tool reencode  <file.DAT>...        drop the original bytes, encode from the
 //                                          model only, reload, compare the models
-//   ha4tool convert   <file.DAT>... -o DIR [--effect EFFECT.DAT] [--name N]
+//   ha4tool convert   <file.DAT>... -o DIR [--name N]
 //                                          MBAC -> MBAACC-style HA6 (+ .cg, .pat, .pal, .txt)
 //   ha4tool edittest  <file.DAT>...        apply editor-style edits, save, reload, compare
 //   ha4tool dump      <file.DAT> [pattern] print a pattern summary
@@ -239,10 +239,9 @@ static int CmdDump(int argc, char **argv)
 static int CmdConvert(int argc, char **argv)
 {
 	std::vector<std::string> inputs;
-	std::string outDir = ".", effect, name;
+	std::string outDir = ".", name;
 	for (int i = 0; i < argc; i++) {
 		if (!strcmp(argv[i], "-o") && i + 1 < argc) outDir = argv[++i];
-		else if (!strcmp(argv[i], "--effect") && i + 1 < argc) effect = argv[++i];
 		else if (!strcmp(argv[i], "--name") && i + 1 < argc) name = argv[++i];
 		else inputs.push_back(argv[i]);
 	}
