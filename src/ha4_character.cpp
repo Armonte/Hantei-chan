@@ -116,6 +116,8 @@ static int AniIndex(const Frame &f)
 void DrawInspector(CharacterInstance *ch, FrameState &state)
 {
 	if (!ch || !ch->frameData.isHA4() || !showInspector) return;
+	ImGuiViewport *vp = ImGui::GetMainViewport();
+	ImGui::SetNextWindowPos(ImVec2(vp->WorkPos.x + vp->WorkSize.x - 400, vp->WorkPos.y + vp->WorkSize.y - 480), ImGuiCond_FirstUseEver);
 	ImGui::SetNextWindowSize(ImVec2(380, 460), ImGuiCond_FirstUseEver);
 	if (!ImGui::Begin("MBAC (HA4)", &showInspector)) { ImGui::End(); return; }
 

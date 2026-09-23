@@ -62,6 +62,7 @@ void MainFrame::Draw()
 	ImGui::Render();
 
 	ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
+	ProcessStartupArgs();
 
 	// Multi-viewport disabled in main.cpp for now; UpdatePlatformWindows is
 	// a no-op without the flag but the guarded read-of-IO is also fine to

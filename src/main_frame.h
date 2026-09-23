@@ -53,6 +53,7 @@ public:
 
 	void RightClick(int x, int y);
 	void LoadSettings();
+	void ProcessStartupArgs();   // --open / --capture (startup_args.cpp)
 
 private:
 	ContextGl *context;

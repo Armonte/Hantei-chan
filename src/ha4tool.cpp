@@ -5,6 +5,7 @@
 //                                          model only, reload, compare the models
 //   ha4tool convert   <file.DAT>... -o DIR [--effect EFFECT.DAT] [--name N]
 //                                          MBAC -> MBAACC-style HA6 (+ .cg, .pat, .pal, .txt)
+//   ha4tool edittest  <file.DAT>...        apply editor-style edits, save, reload, compare
 //   ha4tool dump      <file.DAT> [pattern] print a pattern summary
 //
 // Exit code 0 when every file passed.
@@ -162,6 +163,54 @@ static int CmdReencode(int argc, char **argv)
 	return fails ? 1 : 0;
 }
 
+// Edit smoke test: apply editor-style changes (duplicate a frame, move/add/remove
+// boxes, add/remove effects and conditions, change AF/AS/AT fields, new pattern),
+// save, reload, and require the reloaded model to equal the edited model.
+static int CmdEditTest(int argc, char **argv)
+{
+	int fails = 0;
+	for (int i = 0; i < argc; i++) {
+		FrameData A;
+		std::string err;
+		if (!ha4::LoadFile(A, argv[i], &err)) { printf("FAIL %s: %s\n", argv[i], err.c_str()); fails++; continue; }
+		int edits = 0;
+		for (int p = 0; p < 256; p++) {
+			Sequence &s = A.m_sequences[p];
+			if (s.frames.empty()) continue;
+			if (p % 3 == 0 && s.frames.size() < 100) { s.frames.push_back(s.frames[0]); edits++; }
+			Frame &f = s.frames[s.frames.size() / 2];
+			if (!f.hitboxes.empty()) { f.hitboxes.begin()->second.xy[2] += 3; edits++; }
+			if (p % 5 == 0) { f.hitboxes[30] = Hitbox{{-10, -50, 20, -10}}; edits++; }
+			if (p % 7 == 0 && !f.hitboxes.empty()) { f.hitboxes.erase(f.hitboxes.begin()); edits++; }
+			if (f.EF.size() < 8) { Frame_EF e{}; e.type = 1; e.number = 7; e.parameters[0] = -5; e.parameters[1] = 12; e.parameters[9] = 3; f.EF.push_back(e); edits++; }
+			if (!f.IF.empty() && p % 2) { f.IF.erase(f.IF.begin()); edits++; }
+			f.AF.duration += 1; f.AF.layers[0].offset_x -= 2; if (f.AF.layers[0].rotation[0] == 0.f) f.AF.layers[0].rotation[2] = 0.3f;   // (flip V + free Z is not representable; warned)
+			f.AF.layers[0].scale[0] = 1.5f; f.AF.aniType = 2; f.AF.aniFlag = 1;
+			f.AS.movementFlags = 0x21; f.AS.speed[0] = 700; f.AS.accel[1] = -40; f.AS.invincibility = 3;
+			if (f.hitboxes.lower_bound(25) != f.hitboxes.end()) { f.AT.damage += 100; f.AT.correction = 100; f.AT.hitgrab = !f.AT.hitgrab; }
+			edits += 3;
+		}
+		Sequence &n = A.m_sequences[255];
+		if (n.frames.empty()) {           // brand-new pattern without HA4 bytes
+			n.frames.resize(2);
+			for (auto &f : n.frames) { f.AF.layers.push_back({}); f.AF.layers[0].spriteId = 3; f.AF.duration = 4; f.hitboxes[1] = Hitbox{{-5, -60, 5, 0}}; }
+			n.name = "new pattern";
+			edits++;
+		}
+		std::vector<uint8_t> out;
+		std::vector<std::string> warn;
+		if (!ha4::Serialize(A, out, &err, &warn)) { printf("FAIL %s: %s\n", argv[i], err.c_str()); fails++; continue; }
+		FrameData B;
+		if (!ha4::Load(B, out.data(), out.size(), &err)) { printf("FAIL %s: reload %s\n", argv[i], err.c_str()); fails++; continue; }
+		g_diffs = 0;
+		CompareModels(A, B);
+		printf("%s %-22s %d edits, %d model diffs after save+reload, %zu warnings\n", g_diffs ? "DIFF" : "OK  ",
+		       BaseName(argv[i]).c_str(), edits, g_diffs, warn.size());
+		if (g_diffs) fails++;
+	}
+	return fails ? 1 : 0;
+}
+
 static int CmdDump(int argc, char **argv)
 {
 	if (argc < 1) return 2;
@@ -225,6 +274,7 @@ int main(int argc, char **argv)
 	std::string cmd = argv[1];
 	if (cmd == "roundtrip") return CmdRoundtrip(argc - 2, argv + 2);
 	if (cmd == "reencode") return CmdReencode(argc - 2, argv + 2);
+	if (cmd == "edittest") return CmdEditTest(argc - 2, argv + 2);
 	if (cmd == "dump") return CmdDump(argc - 2, argv + 2);
 	if (cmd == "convert") return CmdConvert(argc - 2, argv + 2);
 	printf("unknown command %s\n", cmd.c_str());
