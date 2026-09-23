@@ -12,20 +12,7 @@
 #include <memory>
 #include <glm/vec4.hpp>
 
-struct CopyData {
-	Frame_AS as{};
-	Frame_AF_T<LinearAllocator> af{};
-	Frame_T<LinearAllocator> frame{};
-	Sequence_T<LinearAllocator> pattern{};
-	std::vector<Frame_T<LinearAllocator>, LinearAllocator<Frame_T<LinearAllocator>>> frames{};
-	Frame_AT at{};
-	std::vector<Frame_EF, LinearAllocator<Frame_EF>> efGroup{};
-	std::vector<Frame_IF, LinearAllocator<Frame_IF>> ifGroup{};
-	Frame_IF ifSingle{};
-	Frame_EF efSingle{};
-	BoxList_T<LinearAllocator> boxes;
-	Hitbox box;
-};
+#include "copy_data.h"
 
 // Spawned pattern visualization data
 struct SpawnedPatternInfo {
@@ -184,8 +171,6 @@ struct FrameState
 	~FrameState();
 
 private:
-	void *sharedMemHandle = nullptr;
-	void *sharedMem = nullptr;
 
 	// MBTL move-script spawn schedule for previewSim (rebuilt on change)
 	std::vector<preview::ScheduledSpawn> scriptSchedule;
