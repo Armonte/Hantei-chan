@@ -872,6 +872,17 @@ unsigned int *fd_sequence_load(unsigned int *data, const unsigned int *data_end,
 				assert(0 && "Actual frame number and PDS2 don't match");
 			}
 		} else if (!memcmp(buf, "PEND", 4)) {
+			// A pattern can carry a name (and flags) with no PDS2/frames: UNI
+			// placeholder slots do. Its properties were only stored at PDS2,
+			// so the name was dropped and lost on save (issue #71).
+			if (!seq->initialized) {
+				seq->name = name;
+				seq->codeName = codename;
+				seq->psts = psts;
+				seq->level = level;
+				seq->flag = flag;
+				seq->pups = pups;
+			}
 			for(const auto &delayLoad : temp_info.delayLoadList)
 			{
 				Frame &frame = seq->frames[delayLoad.frameNo];
