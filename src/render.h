@@ -79,10 +79,21 @@ private:
 	int lProjectionS, lProjectionT, lProjectionParts;
 	int lAlphaS;
 	int lFlipParts, lAddColorParts;
+	int lIndexedT = -1;              //sTextured 'indexed' mode uniform
+	unsigned int paletteTexId = 0;   //256x1 palette texture on unit 1
 	Shader sSimple;
 	Shader sTextured;
 	Texture texture;
 	float colorRgba[4];
+
+	//Set sTextured's indexed mode for the current sprite texture and, when
+	//indexed, upload the CG's current palette. Call with sTextured active.
+	void ApplySpriteTextureMode();
+
+	//Per-item draws for DrawLayers. Caller sets x/y/offsetX/offsetY and the
+	//GL baseline state; these must not rely on anything else being set.
+	void DrawPatLayerItem(const RenderLayer& layer, Parts* origParts);
+	void DrawCgLayerItem(const RenderLayer& layer, const float* baseColorRgba);
 
 	int curImageId;
 

@@ -268,6 +268,10 @@ void MainFrame::DrawBack()
 		// Get current main pattern sequence
 		auto mainSeq = active->frameData.get_sequence(state.pattern);
 		if (!mainSeq || mainSeq->frames.empty()) return;
+		// Self-heal a stale frame index (pattern shrunk by undo/reload while
+		// the Main Pane's clamp didn't run, e.g. when that pane is hidden).
+		if (state.frame < 0) state.frame = 0;
+		if (state.frame >= (int)mainSeq->frames.size()) state.frame = (int)mainSeq->frames.size() - 1;
 		auto& mainFrame = mainSeq->frames[state.frame];
 
 		render.ClearLayers();
@@ -325,6 +329,33 @@ void MainFrame::DrawBack()
 
 			if (useActiveSpawns) {
 				spawnInfo = state.activeSpawns[i];
+
+				// SimulateSpawnsToTick doesn't know per-spawn viz settings, so
+				// inherit visibility/alpha/tint from the matching static spawn
+				// entry — otherwise seeking suddenly re-tints and re-alphas the
+				// spawned patterns compared to the paused view. Prefer the exact
+				// instance (same parent frame): the same pattern spawned from two
+				// frames has two static entries with separate user settings.
+				const SpawnedPatternInfo* match = nullptr;
+				for (const auto& sp : state.spawnedPatterns) {
+					if (sp.patternId != spawnInfo.patternId ||
+					    sp.usesEffectHA6 != spawnInfo.usesEffectHA6 ||
+					    sp.isPresetEffect != spawnInfo.isPresetEffect)
+						continue;
+					if (sp.depth == 0 && sp.parentFrame == spawnInfo.parentFrame) {
+						match = &sp;  // exact instance
+						break;
+					}
+					if (!match)
+						match = &sp;  // fallback: first key match
+				}
+				if (match) {
+					if (!match->visible) continue;
+					spawnInfo.alpha = match->alpha;
+					spawnInfo.tintColor = state.vizSettings.enableTint ? match->tintColor : glm::vec4(1.0f, 1.0f, 1.0f, 1.0f);
+				} else if (!state.vizSettings.enableTint) {
+					spawnInfo.tintColor = glm::vec4(1.0f, 1.0f, 1.0f, 1.0f);
+				}
 			} else {
 				// Convert SpawnedPatternInfo to ActiveSpawnInstance for rendering
 				auto& staticSpawn = state.spawnedPatterns[i];
@@ -340,6 +371,7 @@ void MainFrame::DrawBack()
 				spawnInfo.flagset2 = staticSpawn.flagset2;
 				spawnInfo.angle = staticSpawn.angle;
 				spawnInfo.projVarDecrease = staticSpawn.projVarDecrease;
+				spawnInfo.parentFrame = staticSpawn.parentFrame;
 				spawnInfo.tintColor = state.vizSettings.enableTint ? staticSpawn.tintColor : glm::vec4(1.0f, 1.0f, 1.0f, 1.0f);
 				spawnInfo.alpha = staticSpawn.alpha;
 			}
@@ -435,27 +467,16 @@ void MainFrame::DrawBack()
 				// Get the current frame via simulation
 				int currentFrame = SimulateAnimationFlow(&active->frameData, state.pattern, state.currentTick);
 				
-				// Get the spawn frame from the static spawn info
-				// We need to find which frame in the pattern spawned this
-				// The spawn tree records absoluteSpawnFrame, but we need the relative frame
-				int spawnFrame = -1;
-				if (mainSeq) {
-					// Find the frame that has this spawn effect
-					for (int i = 0; i < mainSeq->frames.size(); i++) {
-						if (!mainSeq->frames[i].EF.empty()) {
-							auto frameSpawns = ParseSpawnedPatterns(mainSeq->frames[i].EF, i, state.pattern);
-							for (const auto& fs : frameSpawns) {
-								if (fs.patternId == spawnInfo.patternId && 
-								    fs.usesEffectHA6 == spawnInfo.usesEffectHA6 &&
-								    fs.effectType == static_cast<int>(spawnInfo.isPresetEffect ? 3 : 1)) {
-									spawnFrame = i;
-									break;
-								}
-							}
-							if (spawnFrame >= 0) break;
-						}
-					}
-				}
+				// Get the spawn frame from the static spawn info. The static entry
+				// already records which parent frame spawned it — the old re-scan
+				// through ParseSpawnedPatterns only matched effect types 1/3, so
+				// type 8/11/101/111 spawns never resolved (chr015 pattern 3's
+				// effect.ha6 spawns rendered mistimed), and two spawns of the same
+				// pattern from different frames both matched the first frame.
+				// Nested spawns (depth > 0) have parentFrame relative to their
+				// parent pattern, not the main one — keep the tick-based fallback.
+				int spawnFrame = (state.spawnedPatterns[i].depth == 0)
+					? state.spawnedPatterns[i].parentFrame : -1;
 				
 				// Check if we're at the spawn frame (including loop iterations)
 				bool isAtSpawnFrame = false;
@@ -619,6 +640,10 @@ void MainFrame::DrawBack()
 		// Get current main pattern sequence
 		auto mainSeq = active->frameData.get_sequence(state.pattern);
 		if (!mainSeq || mainSeq->frames.empty()) return;
+		// Self-heal a stale frame index (pattern shrunk by undo/reload while
+		// the Main Pane's clamp didn't run, e.g. when that pane is hidden).
+		if (state.frame < 0) state.frame = 0;
+		if (state.frame >= (int)mainSeq->frames.size()) state.frame = (int)mainSeq->frames.size() - 1;
 		auto& mainFrame = mainSeq->frames[state.frame];
 
 		render.ClearLayers();
@@ -986,21 +1011,49 @@ void MainFrame::markProjectModified()
 	updateWindowTitle();
 }
 
-void MainFrame::newProject()
+void MainFrame::requestErrorPopup(const char* popupName, const std::string& detail)
 {
-	// Check for unsaved changes (only if not already handling a close action)
-	if (m_projectCloseAction != ProjectCloseAction::New) {
-		m_projectCloseAction = ProjectCloseAction::New;
-		if (!tryCloseProject()) {
-			return; // Dialog will handle the action
+	m_pendingErrorPopup = popupName;
+	m_errorDetail = detail;
+}
+
+bool MainFrame::saveCharacter(CharacterInstance* character)
+{
+	if (!character) return false;
+	if (character->save()) return true;
+	const std::string& path = character->getTopHA6Path();
+	requestErrorPopup("Save Error", path.empty()
+		? "Character '" + character->getName() + "' has no HA6 file to save to. Use Save Character As."
+		: "Could not write " + path);
+	return false;
+}
+
+bool MainFrame::saveCharacterAs(CharacterInstance* character, const std::string& path)
+{
+	if (!character) return false;
+	if (character->saveAs(path)) return true;
+	requestErrorPopup("Save Error", "Could not write " + path);
+	return false;
+}
+
+bool MainFrame::saveAllModifiedCharacters()
+{
+	for (auto& character : characters) {
+		if (character->isModified() && !saveCharacter(character.get())) {
+			return false;
 		}
 	}
-	m_projectCloseAction = ProjectCloseAction::None;
+	return true;
+}
 
-	// Clear all views and characters
+void MainFrame::clearProjectState()
+{
 	views.clear();
 	characters.clear();
 	activeViewIndex = -1;
+	pendingCloseViewIndex = -1;
+
+	// Clear the render system
 	render.DontDraw();
 	render.ClearTexture();
 	render.SetCg(nullptr);
@@ -1011,30 +1064,90 @@ void MainFrame::newProject()
 	updateWindowTitle();
 }
 
-void MainFrame::openProject()
+void MainFrame::requestProjectAction(ProjectCloseAction action, const std::string& path, bool confirmed)
 {
-	// Check for unsaved changes (only if not already handling a close action)
-	if (m_projectCloseAction != ProjectCloseAction::Open) {
-		m_projectCloseAction = ProjectCloseAction::Open;
+	m_deferredProjectAction = action;
+	m_deferredProjectPath = path;
+	m_deferredProjectConfirmed = confirmed;
+}
+
+void MainFrame::processDeferredProjectAction()
+{
+	if (m_deferredProjectAction == ProjectCloseAction::None) {
+		return;
+	}
+	ProjectCloseAction action = m_deferredProjectAction;
+	std::string path = std::move(m_deferredProjectPath);
+	bool confirmed = m_deferredProjectConfirmed;
+	m_deferredProjectAction = ProjectCloseAction::None;
+	m_deferredProjectPath.clear();
+	m_deferredProjectConfirmed = false;
+	runProjectAction(action, path, confirmed);
+}
+
+void MainFrame::runProjectAction(ProjectCloseAction action, const std::string& path, bool confirmed)
+{
+	// Ask about unsaved changes first; the dialog re-queues this action
+	// (with the same path) as confirmed.
+	if (!confirmed) {
+		m_projectCloseAction = action;
+		m_pendingProjectPath = path;
 		if (!tryCloseProject()) {
-			return; // Dialog will handle the action
+			return;
 		}
 	}
 	m_projectCloseAction = ProjectCloseAction::None;
+	m_pendingProjectPath.clear();
 
-	std::string path = FileDialog(fileType::HPROJ, false);
-	if (path.empty()) {
-		return;
+	switch (action) {
+		case ProjectCloseAction::New:
+		case ProjectCloseAction::Close:
+			clearProjectState();
+			break;
+		case ProjectCloseAction::Open:
+			if (path.empty()) {
+				std::string chosen = FileDialog(fileType::HPROJ, false);
+				if (!chosen.empty()) {
+					loadProjectFromPath(chosen, false);
+				}
+			} else {
+				loadProjectFromPath(path, true);
+			}
+			break;
+		default:
+			break;
 	}
+}
 
-	int loadedTheme;
-	float loadedZoom;
-	bool loadedSmooth;
-	float loadedColor[3];
+void MainFrame::loadProjectFromPath(const std::string& path, bool isRecent)
+{
+	int loadedTheme = style_idx;
+	float loadedZoom = zoom_idx;
+	bool loadedSmooth = smoothRender;
+	float loadedColor[3] = { clearColor[0], clearColor[1], clearColor[2] };
+	std::vector<std::string> failedCharacters;
 
-	if (ProjectManager::LoadProject(path, characters, views, activeViewIndex, &render,
-	                                &loadedTheme, &loadedZoom, &loadedSmooth, loadedColor))
+	// LoadProject builds the new project off to the side and only replaces
+	// characters/views when the file parsed; on failure the current project
+	// is left untouched.
+	std::vector<std::unique_ptr<CharacterInstance>> newCharacters;
+	std::vector<std::unique_ptr<CharacterView>> newViews;
+	int newActiveView = -1;
+	if (ProjectManager::LoadProject(path, newCharacters, newViews, newActiveView, &render,
+	                                &loadedTheme, &loadedZoom, &loadedSmooth, loadedColor,
+	                                &failedCharacters))
 	{
+		// Drop render references into the old project before it is destroyed.
+		render.DontDraw();
+		render.ClearTexture();
+		render.SetCg(nullptr);
+		render.SetParts(nullptr);
+		pendingCloseViewIndex = -1;
+
+		views = std::move(newViews);
+		characters = std::move(newCharacters);
+		activeViewIndex = newActiveView;
+
 		// Apply loaded UI state
 		LoadTheme(loadedTheme);
 		SetZoom(loadedZoom);
@@ -1042,20 +1155,51 @@ void MainFrame::openProject()
 		ChangeClearColor(loadedColor[0], loadedColor[1], loadedColor[2]);
 
 		// Set active view
-		if (activeViewIndex >= 0 && activeViewIndex < views.size()) {
+		if (activeViewIndex >= 0 && activeViewIndex < (int)views.size()) {
 			setActiveView(activeViewIndex);
 		}
 
 		// Effect loading is now automatic per-character in CharacterInstance::loadFromTxt()
 
 		ProjectManager::SetCurrentProjectPath(path);
-		m_projectModified = false;
+		// A partially loaded project must not look clean: saving it would drop
+		// the missing characters from the .hproj.
+		m_projectModified = !failedCharacters.empty();
 		addRecentProject(path);
 		updateWindowTitle();
+
+		if (!failedCharacters.empty()) {
+			std::string detail = "These characters could not be loaded and were skipped:\n";
+			for (const auto& f : failedCharacters) {
+				detail += "  " + f + "\n";
+			}
+			detail += "Saving the project now would remove them from it.";
+			requestErrorPopup("Project Load Error", detail);
+		}
 	} else {
-		// Show error popup
-		ImGui::OpenPopup("Project Load Error");
+		requestErrorPopup("Project Load Error", path);
+		if (isRecent) {
+			// Use normalized path comparison to find and remove the entry
+			std::string normalizedPath = normalizePath(path);
+			auto it = std::find_if(gSettings.recentProjects.begin(), gSettings.recentProjects.end(),
+				[&normalizedPath](const std::string& existing) {
+					return normalizePath(existing) == normalizedPath;
+				});
+			if (it != gSettings.recentProjects.end()) {
+				gSettings.recentProjects.erase(it);
+			}
+		}
 	}
+}
+
+void MainFrame::newProject()
+{
+	requestProjectAction(ProjectCloseAction::New, std::string(), false);
+}
+
+void MainFrame::openProject()
+{
+	requestProjectAction(ProjectCloseAction::Open, std::string(), false);
 }
 
 void MainFrame::saveProject()
@@ -1072,7 +1216,7 @@ void MainFrame::saveProject()
 		m_projectModified = false;
 		updateWindowTitle();
 	} else {
-		ImGui::OpenPopup("Project Save Error");
+		requestErrorPopup("Project Save Error", ProjectManager::GetCurrentProjectPath());
 	}
 }
 
@@ -1096,35 +1240,13 @@ void MainFrame::saveProjectAs()
 		addRecentProject(path);
 		updateWindowTitle();
 	} else {
-		ImGui::OpenPopup("Project Save Error");
+		requestErrorPopup("Project Save Error", path);
 	}
 }
 
 void MainFrame::closeProject()
 {
-	// Check for unsaved changes (only if not already handling a close action)
-	if (m_projectCloseAction != ProjectCloseAction::Close) {
-		m_projectCloseAction = ProjectCloseAction::Close;
-		if (!tryCloseProject()) {
-			return; // Dialog will handle the action
-		}
-	}
-	m_projectCloseAction = ProjectCloseAction::None;
-
-	// Clear all views and characters
-	views.clear();
-	characters.clear();
-	activeViewIndex = -1;
-
-	// Clear the render system
-	render.DontDraw();
-	render.ClearTexture();
-	render.SetCg(nullptr);
-	render.SetParts(nullptr);
-
-	ProjectManager::ClearCurrentProjectPath();
-	m_projectModified = false;
-	updateWindowTitle();
+	requestProjectAction(ProjectCloseAction::Close, std::string(), false);
 }
 
 void MainFrame::updateWindowTitle()
@@ -1215,51 +1337,9 @@ void MainFrame::addRecentProject(const std::string& path)
 
 void MainFrame::openRecentProject(const std::string& path)
 {
-	// Check for unsaved changes
-	m_projectCloseAction = ProjectCloseAction::Open;
-	if (!tryCloseProject()) {
-		return; // Dialog will handle the action
-	}
-	m_projectCloseAction = ProjectCloseAction::None;
-
-	int loadedTheme;
-	float loadedZoom;
-	bool loadedSmooth;
-	float loadedColor[3];
-
-	if (ProjectManager::LoadProject(path, characters, views, activeViewIndex, &render,
-	                                &loadedTheme, &loadedZoom, &loadedSmooth, loadedColor))
-	{
-		// Apply loaded UI state
-		LoadTheme(loadedTheme);
-		SetZoom(loadedZoom);
-		smoothRender = loadedSmooth;
-		ChangeClearColor(loadedColor[0], loadedColor[1], loadedColor[2]);
-
-		// Set active view
-		if (activeViewIndex >= 0 && activeViewIndex < views.size()) {
-			setActiveView(activeViewIndex);
-		}
-
-		// Effect loading is now automatic per-character in CharacterInstance::loadFromTxt()
-
-		ProjectManager::SetCurrentProjectPath(path);
-		m_projectModified = false;
-		addRecentProject(path);
-		updateWindowTitle();
-	} else {
-		// Show error popup and remove from recent
-		ImGui::OpenPopup("Project Load Error");
-		// Use normalized path comparison to find and remove the entry
-		std::string normalizedPath = normalizePath(path);
-		auto it = std::find_if(gSettings.recentProjects.begin(), gSettings.recentProjects.end(),
-			[&normalizedPath](const std::string& existing) {
-				return normalizePath(existing) == normalizedPath;
-			});
-		if (it != gSettings.recentProjects.end()) {
-			gSettings.recentProjects.erase(it);
-		}
-	}
+	// Deferred: the caller iterates gSettings.recentProjects, which a failed
+	// load modifies. The path is carried through the unsaved-changes prompt.
+	requestProjectAction(ProjectCloseAction::Open, path, false);
 }
 
 

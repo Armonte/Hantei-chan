@@ -1,8 +1,76 @@
 #include "box_pane.h"
+#include "mv_script.h"
 #include <imgui.h>
 #include <imgui_internal.h>
 
-constexpr int boxLimit = 33; 
+constexpr int boxLimit = 33;
+
+// List MBTL move-script spawns (mv_script.h) for the current pattern.
+// Resolved entries get a visibility toggle for their spawn-tree entry;
+// unresolved code names are shown greyed so the data isn't silently dropped.
+static void DrawScriptSpawnList(FrameData* frameData, FrameState& currState)
+{
+	namespace im = ImGui;
+
+	const MvScriptIndex* mvIndex = MvScriptIndex::Lookup(frameData);
+	const std::vector<MvScriptSpawn>* spawns =
+		mvIndex ? mvIndex->spawnsForPattern(currState.pattern) : nullptr;
+	if(!spawns || spawns->empty())
+		return;
+
+	im::Separator();
+	if(!im::CollapsingHeader("Script Spawns"))
+		return;
+
+	im::TextDisabled("Spawns parsed from move scripts (chrXXX_mv_*.txt)");
+
+	int id = 0;
+	for(const auto& ss : *spawns) {
+		im::PushID(id++);
+
+		// Visibility toggle bound to the matching spawn-tree entry
+		// (present once the spawn tree has been built for this pattern).
+		SpawnedPatternInfo* treeEntry = nullptr;
+		for(auto& sp : currState.spawnedPatterns) {
+			if(sp.isScriptSpawn && sp.scriptSource == ss.source &&
+			   (ss.isImpactEffect ? sp.isPresetEffect : sp.patternId == ss.patternId)) {
+				treeEntry = &sp;
+				break;
+			}
+		}
+
+		// Frame gate info ("@ move start" when the script has no frame-ID gate)
+		char gateBuf[48];
+		if(ss.frameIdRef >= 0)
+			snprintf(gateBuf, sizeof(gateBuf), "@ frame ID %d", ss.frameIdRef);
+		else
+			snprintf(gateBuf, sizeof(gateBuf), "@ move start");
+
+		if(ss.isImpactEffect) {
+			if(treeEntry) {
+				im::Checkbox("##scriptvis", &treeEntry->visible);
+				im::SameLine();
+			}
+			im::TextColored(ImVec4(1.0f, 0.7f, 0.4f, 1.0f),
+				"impact effect %s  offset (%d, %d) [script]", gateBuf, ss.offsetX, ss.offsetY);
+		} else if(ss.patternId >= 0 && frameData->get_sequence(ss.patternId)) {
+			if(treeEntry) {
+				im::Checkbox("##scriptvis", &treeEntry->visible);
+				im::SameLine();
+			}
+			std::string name = frameData->GetDecoratedName(ss.patternId);
+			im::TextColored(ImVec4(1.0f, 0.7f, 0.4f, 1.0f),
+				"%s  %s  offset (%d, %d) [script]", name.c_str(), gateBuf, ss.offsetX, ss.offsetY);
+		} else {
+			const char* code = !ss.patternCode.empty() ? ss.patternCode.c_str() :
+				(!ss.mvName.empty() ? ss.mvName.c_str() : "?");
+			im::TextDisabled("unresolved: %s", code);
+		}
+		if(im::IsItemHovered() && !ss.source.empty())
+			im::SetTooltip("%s", ss.source.c_str());
+		im::PopID();
+	}
+}
 
 BoxPane::BoxPane(Render* render, FrameData *frameData, FrameState &state):
 DrawWindow(render, frameData, state),
@@ -34,7 +102,7 @@ void BoxPane::BoxStart(int x, int y)
 	if(seq)
 	{
 		auto &frames = seq->frames;
-		if(frames.size()>0)
+		if(frames.size()>0 && currState.frame >= 0 && currState.frame < (int)frames.size())
 		{
 			Hitbox &box = frames[currState.frame].hitboxes[currentBox];
 			box.xy[0] = box.xy[2] = x;
@@ -54,7 +122,7 @@ void BoxPane::BoxDrag(int x, int y)
 	if(seq)
 	{
 		auto &frames = seq->frames;
-		if(frames.size()>0)
+		if(frames.size()>0 && currState.frame >= 0 && currState.frame < (int)frames.size())
 		{
 			Hitbox &box = frames[currState.frame].hitboxes[currentBox];
 			dragxy[0] += x/render->scale;
@@ -77,6 +145,9 @@ void BoxPane::Draw()
 	if(frameData->get_sequence(currState.pattern) && frameData->get_sequence(currState.pattern)->frames.size() > 0)
 	{
 		auto &frames = frameData->get_sequence(currState.pattern)->frames;
+		// Self-heal a stale frame index before indexing (see main_frame.cpp).
+		if (currState.frame < 0) currState.frame = 0;
+		if (currState.frame >= (int)frames.size()) currState.frame = (int)frames.size() - 1;
 		BoxList &boxes = frames[currState.frame].hitboxes;
 
 		// Box Controls section (collapsible)
@@ -306,6 +377,9 @@ void BoxPane::Draw()
 		// Draw spawn timeline
 		im::Separator();
 		DrawSpawnTimeline();
+
+		// Move-script spawns for this pattern (MBTL chrXXX_mv_*.txt)
+		DrawScriptSpawnList(frameData, currState);
 	}
 
 
@@ -381,12 +455,32 @@ void BoxPane::DrawSpawnTimeline()
 		maxTimelineTick = std::max(maxTimelineTick, mainPatternLoopPeriod * 3);
 	}
 	
+	// A spawned pattern's duration in TICKS (sum of frame durations).
+	// sp.lifetime is a FRAME count for non-looping patterns — using it on the
+	// tick axis drew bars far too short whenever frames last more than 1 tick.
+	auto spawnDurationTicks = [&](const SpawnedPatternInfo& sp) -> int {
+		FrameData* spawnSourceData = sp.usesEffectHA6 ? effectFrameData : frameData;
+		int total = 0;
+		if (spawnSourceData) {
+			auto spawnSeq = spawnSourceData->get_sequence(sp.patternId);
+			if (spawnSeq && !spawnSeq->frames.empty()) {
+				for (size_t j = 0; j < spawnSeq->frames.size(); j++) {
+					int dur = spawnSeq->frames[j].AF.duration;
+					if (dur <= 0) dur = 1;
+					total += dur;
+				}
+			}
+		}
+		if (total == 0) total = sp.patternFrameCount * 10; // fallback estimate
+		return total;
+	};
+
 	// Extend based on spawns
 	for(const auto& sp : currState.spawnedPatterns) {
 		// Skip preset effects (Type 3) - they're instant with no duration
 		if (sp.isPresetEffect) continue;
-		// Use spawn tick + lifetime for timeline extent
-		int spawnEndTick = sp.spawnTick + (sp.lifetime < 9999 ? sp.lifetime : sp.patternFrameCount * 10);
+		// Use spawn tick + tick duration for timeline extent
+		int spawnEndTick = sp.spawnTick + spawnDurationTicks(sp);
 		maxTimelineTick = std::max(maxTimelineTick, spawnEndTick);
 	}
 	
@@ -494,7 +588,10 @@ void BoxPane::DrawSpawnTimeline()
 		// Get pattern name
 		FrameData* sourceData = sp.usesEffectHA6 ? effectFrameData : frameData;
 		std::string patternName;
-		if (sp.isPresetEffect) {
+		if (sp.isPresetEffect && sp.isScriptSpawn) {
+			// Move-script SetImpactHitEffect marker (no pattern behind it)
+			patternName = "Impact FX";
+		} else if (sp.isPresetEffect) {
 			// Effect Type 3: Preset effect, not a pattern
 			extern const char* GetPresetEffectName(int);
 			patternName = std::string(GetPresetEffectName(sp.patternId)) + " [" + std::to_string(sp.patternId) + "]";
@@ -511,44 +608,41 @@ void BoxPane::DrawSpawnTimeline()
 		if(label.length() > 12) {
 			label = label.substr(0, 12) + "..";
 		}
-		im::Text("%s", label.c_str());
+		if(sp.isScriptSpawn) {
+			label += " [script]";
+			im::TextColored(ImVec4(1.0f, 0.7f, 0.4f, 1.0f), "%s", label.c_str());
+		} else {
+			im::Text("%s", label.c_str());
+		}
+		if(sp.isScriptSpawn && im::IsItemHovered() && !sp.scriptSource.empty()) {
+			im::SetTooltip("Move script spawn\n%s", sp.scriptSource.c_str());
+		}
 		im::SameLine(labelWidth);
 
 		// Get all spawn ticks for this pattern from simulation (includes loop iterations)
 		// Use composite key to match: patternId * 2 + (usesEffectHA6 ? 1 : 0)
 		int compositeKey = sp.patternId * 2 + (sp.usesEffectHA6 ? 1 : 0);
 		auto it = allSpawnTicks.find(compositeKey);
+		std::vector<int> scriptTickFallback;
 		if (it == allSpawnTicks.end()) {
-			// No spawns found in simulation - skip visualization
-			yPos += rowHeight + 2;
-			im::SetCursorScreenPos(ImVec2(startPos.x, yPos));
-			continue;
-		}
-		
-		const auto& spawnTickList = it->second;
-		
-		// Calculate spawned pattern duration for bar length
-		int barLengthTicks = sp.lifetime;
-		if (sp.lifetime >= 9999) {
-			// Looping pattern - calculate duration by simulating
-			FrameData* spawnSourceData = sp.usesEffectHA6 ? effectFrameData : frameData;
-			if (spawnSourceData) {
-				auto spawnSeq = spawnSourceData->get_sequence(sp.patternId);
-				if (spawnSeq && !spawnSeq->frames.empty()) {
-					// Calculate total duration of all frames
-					barLengthTicks = 0;
-					for (int j = 0; j < spawnSeq->frames.size(); j++) {
-						int dur = spawnSeq->frames[j].AF.duration;
-						if (dur <= 0) dur = 1;
-						barLengthTicks += dur;
-					}
-					// If still 0, use estimate
-					if (barLengthTicks == 0) {
-						barLengthTicks = spawnSeq->frames.size() * 10;
-					}
-				}
+			if (sp.isScriptSpawn) {
+				// Script entries (e.g. impact markers with no pattern id) may
+				// not be in the simulation map; their tree tick is exact.
+				scriptTickFallback.push_back(sp.spawnTick);
+			} else {
+				// No spawns found in simulation - skip visualization
+				yPos += rowHeight + 2;
+				im::SetCursorScreenPos(ImVec2(startPos.x, yPos));
+				continue;
 			}
 		}
+
+		const auto& spawnTickList = (it != allSpawnTicks.end()) ? it->second : scriptTickFallback;
+		
+		// Bar length: the spawned pattern's duration in ticks (one loop
+		// iteration for looping patterns). sp.lifetime is a frame count and
+		// must not be used on the tick axis.
+		int barLengthTicks = spawnDurationTicks(sp);
 
 		// Timeline visualization - draw bars at ALL spawn ticks from simulation
 		if (sp.isPresetEffect) {

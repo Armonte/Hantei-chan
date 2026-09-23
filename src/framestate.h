@@ -59,13 +59,19 @@ struct SpawnedPatternInfo {
 	float alpha;          // Transparency (0.0 - 1.0)
 	glm::vec4 tintColor;  // RGB tint color
 
+	// MBTL move-script spawns (chrXXX_mv_N.txt), see mv_script.h. These have
+	// no ha6 EF effect backing them (effectIndex stays -1).
+	bool isScriptSpawn;
+	std::string scriptSource;  // file:line + snippet the spawn was parsed from
+
 	SpawnedPatternInfo() :
 		effectIndex(-1), effectType(0), usesEffectHA6(false), isPresetEffect(false), patternId(-1), offsetX(0), offsetY(0),
 		flagset1(0), flagset2(0), angle(0), projVarDecrease(0), randomRange(0),
 		parentFrame(0),
 		depth(0), parentSpawnIndex(-1),
 		absoluteSpawnFrame(0), spawnTick(0), patternFrameCount(0), lifetime(0), isRecursive(false),
-		visible(true), alpha(0.6f), tintColor(0.5f, 0.7f, 1.0f, 1.0f) {}
+		visible(true), alpha(0.6f), tintColor(0.5f, 0.7f, 1.0f, 1.0f),
+		isScriptSpawn(false) {}
 };
 
 // Active spawn instance (created during animation when spawn effects fire)
@@ -78,6 +84,7 @@ struct ActiveSpawnInstance {
 	int flagset1, flagset2;       // Spawn flags
 	int angle;                    // Rotation
 	int projVarDecrease;          // Projectile variable
+	int parentFrame;              // Frame in the parent pattern that spawned this (stable identity for viz matching)
 	glm::vec4 tintColor;          // Visualization tint
 	float alpha;                  // Visualization alpha
 
@@ -93,7 +100,7 @@ struct ActiveSpawnInstance {
 	ActiveSpawnInstance() :
 		spawnTick(0), patternId(-1), usesEffectHA6(false), isPresetEffect(false),
 		offsetX(0), offsetY(0), flagset1(0), flagset2(0),
-		angle(0), projVarDecrease(0),
+		angle(0), projVarDecrease(0), parentFrame(-1),
 		tintColor(0.5f, 0.7f, 1.0f, 1.0f), alpha(0.6f),
 		currentFrame(0), frameDuration(0), loopCounter(0), previousFrame(-1),
 		currentZPriority(0) {}
@@ -186,13 +193,15 @@ int FindLoopPeriod(class FrameData* frameData, int patternId, int maxTicks = 100
 // Simulate animation flow and collect all spawn ticks (including loop iterations and nested spawns)
 // Returns a map of compositeKey -> vector of spawn ticks where that pattern spawns
 // compositeKey = patternId * 2 + (usesEffectHA6 ? 1 : 0)
+// recursionDepth is internal (script spawns are only merged at depth 0).
 std::map<int, std::vector<int>> CollectAllSpawnTicks(
 	class FrameData* mainFrameData,
 	class FrameData* effectFrameData,
 	int patternId,
 	int maxTicks = 10000,
 	bool isEffectHA6 = false,
-	int parentSpawnTick = 0);
+	int parentSpawnTick = 0,
+	int recursionDepth = 0);
 
 // Helper to calculate frame from tick position
 int CalculateFrameFromTick(class FrameData* frameData, int patternId, int tick);

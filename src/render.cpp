@@ -71,14 +71,39 @@ void main()
 const char* texturedSrcFrag = R"(
 #version 330 core
 uniform sampler2D Texture;
+uniform sampler2D Palette;   // 256x1 RGBA, current CG palette
+uniform int indexed;         // 0 = direct RGBA, 1 = indexed nearest, 2 = indexed + bilinear
 
 in vec2 Frag_UV;
 in vec4 Frag_Color;
 out vec4 FragColor;
 
+// Palette lookup for an 8bpp index texture (index stored as R/255).
+vec4 palLookup(vec2 uv)
+{
+    float idx = texture(Texture, uv).r;
+    return texture(Palette, vec2(idx * (255.0/256.0) + (0.5/256.0), 0.5));
+}
+
 void main()
 {
-    vec4 col = texture(Texture, Frag_UV.st);
+    vec4 col;
+    if (indexed == 0) {
+        col = texture(Texture, Frag_UV.st);
+    } else if (indexed == 1) {
+        col = palLookup(Frag_UV.st);
+    } else {
+        // Manual bilinear AFTER palette lookup (filtering raw indices is garbage).
+        vec2 ts = vec2(textureSize(Texture, 0));
+        vec2 p = Frag_UV.st * ts - 0.5;
+        vec2 f = fract(p);
+        vec2 base = (floor(p) + 0.5) / ts;
+        vec4 c00 = palLookup(base);
+        vec4 c10 = palLookup(base + vec2(1.0, 0.0) / ts);
+        vec4 c01 = palLookup(base + vec2(0.0, 1.0) / ts);
+        vec4 c11 = palLookup(base + vec2(1.0, 1.0) / ts);
+        col = mix(mix(c00, c10, f.x), mix(c01, c11, f.x), f.y);
+    }
 
     FragColor = col * Frag_Color;
 };
@@ -173,9 +198,23 @@ blendingMode(normal)
 	lAlphaS = sSimple.GetLoc("Alpha");
 	lProjectionS = sSimple.GetLoc("ProjMtx");
 	lProjectionT = sTextured.GetLoc("ProjMtx");
+	lIndexedT = sTextured.GetLoc("indexed");
 	lProjectionParts = sPartShader.GetLoc("ProjMtx");
 	lFlipParts = sPartShader.GetLoc("flip");
 	lAddColorParts = sPartShader.GetLoc("addColor");
+
+	//Palette texture lives on unit 1; the sampler binding never changes.
+	sTextured.Use();
+	glUniform1i(sTextured.GetLoc("Palette"), 1);
+	glGenTextures(1, &paletteTexId);
+	glActiveTexture(GL_TEXTURE1);
+	glBindTexture(GL_TEXTURE_2D, paletteTexId);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, 256, 1, 0, GL_RGBA, GL_UNSIGNED_BYTE, nullptr);
+	glActiveTexture(GL_TEXTURE0);
 
 	vSprite.Prepare(sizeof(imageVertex), imageVertex);
 	vSprite.Load();
@@ -206,6 +245,24 @@ blendingMode(normal)
 	glEnable(GL_BLEND);
 	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 	glEnable(GL_DEPTH_TEST);
+}
+
+void Render::ApplySpriteTextureMode()
+{
+	if (texture.isIndexed) {
+		//1 = nearest, 2 = shader-side bilinear (indices can't be filtered raw)
+		glUniform1i(lIndexedT, filter ? 2 : 1);
+		//Refresh the palette texture from the CG's current palette. 1KB —
+		//negligible, and it makes palette/PUPS switches free (no re-bake).
+		if (cg && cg->getPalettePtr()) {
+			glActiveTexture(GL_TEXTURE1);
+			glBindTexture(GL_TEXTURE_2D, paletteTexId);
+			glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, 256, 1, GL_RGBA, GL_UNSIGNED_BYTE, cg->getPalettePtr());
+			glActiveTexture(GL_TEXTURE0);
+		}
+	} else {
+		glUniform1i(lIndexedT, 0);
+	}
 }
 
 void Render::DrawGridLines()
@@ -348,6 +405,7 @@ void Render::Draw()
 	view = glm::translate(view, glm::vec3(-128+offsetX,-224+offsetY,0.f));
 	SetModelView(std::move(view));
 	sTextured.Use();
+	ApplySpriteTextureMode();
 	SetMatrix(lProjectionT);
 	if(texture.isApplied)
 	{
@@ -405,6 +463,7 @@ void Render::DrawSpriteOnly(bool drawHitboxes)
 	view = glm::translate(view, glm::vec3(-128+offsetX,-224+offsetY,0.f));
 	SetModelView(std::move(view));
 	sTextured.Use();
+	ApplySpriteTextureMode();
 	SetMatrix(lProjectionT);
 	if(texture.isApplied)
 	{
@@ -463,10 +522,17 @@ void Render::UpdateProj(float w, float h)
 	projection = glm::ortho<float>(0, w, h, 0, -1024.f, 1024.f);
 	invOrtho = glm::inverse(projection);
 
-	// Setup perspective projection for PAT rendering (matches sosfiro's implementation)
+	// Perspective for PAT rendering, plane-fit at z=0 (parts at z=0 map 1:1 to
+	// editor pixels; z!=0 foreshortens). The eye distance comes from uni2.exe's
+	// Pat_GetGlobalViewProjMatrix_640x480 (RE'd via IDA):
+	//   PerspectiveFovLH(1.3045008 rad, aspect 1, zn 0.01, zf 1000), eye at
+	//   z = -cot(fov/2) in unit space, part z pre-scaled by 1/1024
+	// => effective eye distance = 1024 * cot(1.3045008/2) pixels (~1338.9).
+	// (sosfiro's f=1.3 was an empirical approximation of the same value.)
 	constexpr float dist = 1024;
 	constexpr float dist2 = dist * 2;
-	constexpr float f = 1.3;
+	const float gameFovY = 1.3045008f;                 // radians, from the binary
+	const float f = 1.f / glm::tan(gameFovY * 0.5f);   // = cot(fov/2) ~= 1.30737
 	perspective = glm::translate(glm::mat4(1.f), glm::vec3(-1, 1, 0)) *
 		glm::frustum<float>(-w/dist2, w/dist2, h/dist2, -h/dist2, 1*f, dist*2*f);
 	perspective = glm::translate(perspective, glm::vec3(0.f, 0.f, -dist*f));
@@ -509,7 +575,9 @@ void Render::SwitchImage(int id)
 
 		if(id>=0)
 		{
-			ImageData *image = cg->draw_texture(id, false, false);
+			//8bpp images stay indexed on the GPU; the shader resolves the
+			//palette (see ApplySpriteTextureMode). Other formats bake as before.
+			ImageData *image = cg->draw_texture(id, false, cg->image_is_8bpp(id));
 			if(!image)
 			{
 				return;
@@ -815,7 +883,9 @@ void Render::SortLayersByZPriority(int mainPatternPriority)
 	// Sort layers by Z-priority
 	// Lower priority = draw first (behind)
 	// Higher priority = draw last (in front)
-	std::sort(renderLayers.begin(), renderLayers.end(),
+	// stable_sort: equal priorities keep their insertion order, so ties
+	// don't flicker between frames.
+	std::stable_sort(renderLayers.begin(), renderLayers.end(),
 		[mainPatternPriority](const RenderLayer& a, const RenderLayer& b) {
 			// Calculate effective priorities based on game logic
 			int priorityA = a.zPriority;
@@ -828,133 +898,128 @@ void Render::SortLayersByZPriority(int mainPatternPriority)
 		});
 }
 
+void Render::DrawPatLayerItem(const RenderLayer& layer, Parts* origParts)
+{
+	Parts* layerParts = layer.sourceParts ? layer.sourceParts : m_parts;
+	if (!layerParts || !layerParts->loaded)
+		return;
+
+	// Clean shader slate before switching Parts (prevents GL_INVALID_OPERATION)
+	glUseProgram(0);
+	bool switchedParts = false;
+	if (layerParts != m_parts) {
+		SetParts(layerParts);
+		switchedParts = true;
+
+		// Effect Parts don't have their own views, so they inherit state from
+		// the main character for TEXTURE_VIEW support.
+		if (origParts && origParts->renderMode && origParts->currState) {
+			m_parts->updatePatEditorReferences(origParts->currState, origParts->renderMode);
+		}
+	}
+
+	sPartShader.Use();
+	glDisableVertexAttribArray(2);
+
+	// Matrix callback with the layer transform. Order matches the game's
+	// PatPart_BuildTransformMatrix and our CG path: pivot at entity+spawn
+	// position, scale, Z/Y/X rotation, then the AFOF offset in rotated space.
+	auto setMatrix = [this, &layer](glm::mat4 partMatrix) {
+		constexpr float tau = glm::pi<float>()*2.f;
+		glm::mat4 rview = projection;
+		rview = glm::scale(rview, glm::vec3(scale, scale, 1.f));
+		rview = glm::translate(rview, glm::vec3(x, y, 0));
+		rview = glm::scale(rview, glm::vec3(layer.scaleX, layer.scaleY, 1.f));
+		rview = glm::rotate(rview, layer.rotZ*tau, glm::vec3(0.f, 0.f, 1.f));
+		rview = glm::rotate(rview, layer.rotY*tau, glm::vec3(0.f, 1.f, 0.f));
+		rview = glm::rotate(rview, layer.rotX*tau, glm::vec3(1.f, 0.f, 0.f));
+		rview = glm::translate(rview, glm::vec3(offsetX, offsetY, 0));
+		rview = glm::translate(rview, glm::vec3(0, 0, 1024.f));
+		rview *= invOrtho;
+		SetMatrixPersp(lProjectionParts, partMatrix, rview);
+	};
+
+	auto setAddColor = [this](float r, float g, float b) {
+		glUniform3f(lAddColorParts, r, g, b);
+	};
+
+	auto setFlip = [this](char flip) {
+		glUniform1i(lFlipParts, (int)flip);
+	};
+
+	float layerColor[4] = {
+		layer.tintColor.r,
+		layer.tintColor.g,
+		layer.tintColor.b,
+		layer.alpha
+	};
+
+	m_parts->Draw(layer.spriteId, layer.spriteId, 0.0f, setMatrix, setAddColor, setFlip, layerColor);
+
+	// Leave a clean slate: unbind buffers/textures/shader, swallow PAT GL errors.
+	glBindBuffer(GL_ARRAY_BUFFER, 0);
+	glBindTexture(GL_TEXTURE_2D, 0);
+	glUseProgram(0);
+	while (glGetError() != GL_NO_ERROR);
+
+	if (switchedParts) {
+		SetParts(origParts);
+	}
+
+	// CG textures must rebind after the unbind above.
+	curImageId = -1;
+}
+
+void Render::DrawCgLayerItem(const RenderLayer& layer, const float* baseColorRgba)
+{
+	// Switch CG if this layer uses a different one (e.g., effect.ha6)
+	if (layer.sourceCG && layer.sourceCG != cg) {
+		SetCg(layer.sourceCG);
+	}
+	// Switch Parts if this layer uses different Parts (e.g., effect.pat)
+	if (layer.sourceParts && layer.sourceParts != m_parts) {
+		SetParts(layer.sourceParts);
+	}
+
+	// Layer scale and rotation (position members are set by the caller)
+	scaleX = layer.scaleX;
+	scaleY = layer.scaleY;
+	rotX = layer.rotX;
+	rotY = layer.rotY;
+	rotZ = layer.rotZ;
+	AFRT = layer.AFRT;
+
+	switch (layer.blendMode)
+	{
+	case 2:
+		blendingMode = additive;
+		break;
+	case 3:
+		blendingMode = subtractive;
+		break;
+	default:
+		blendingMode = normal;
+		break;
+	}
+
+	colorRgba[0] = layer.tintColor.r * baseColorRgba[0];
+	colorRgba[1] = layer.tintColor.g * baseColorRgba[1];
+	colorRgba[2] = layer.tintColor.b * baseColorRgba[2];
+	colorRgba[3] = layer.alpha * baseColorRgba[3];
+
+	SwitchImage(layer.spriteId);
+	DrawSpriteOnly(false);
+}
+
 void Render::DrawLayers()
 {
 	if (renderLayers.empty()) {
 		return;
 	}
 
-	// Save original Parts pointer to restore later
+	// Save every piece of shared state the per-item draws mutate.
 	Parts* origParts = m_parts;
-
-	// For multi-layer PAT rendering, we need to draw each layer separately
-	// (can't return early like we did before)
-	bool hasPatLayers = false;
-	for (const auto& layer : renderLayers) {
-		if (layer.usePat) {
-			hasPatLayers = true;
-			break;
-		}
-	}
-
-	// If we have PAT layers, render them per-layer
-	if (hasPatLayers)
-	{
-		constexpr float tau = glm::pi<float>()*2.f;
-
-		// Ensure no shader is active before starting (prevents GL_INVALID_OPERATION when switching Parts)
-		glUseProgram(0);
-
-		// Save original render state
-		int origX = x;
-		int origY = y;
-		int origOffsetX = offsetX;
-		int origOffsetY = offsetY;
-
-		for (const auto& layer : renderLayers)
-		{
-			// Skip if not a PAT layer, or if fully transparent, or if invalid sprite ID
-			// (PAT rendering needs valid sprite ID, unlike CG which can render hitboxes for sprite -1)
-			if (!layer.usePat || layer.alpha == 0.0f || layer.spriteId < 0) continue;
-
-			// Determine which Parts to use for this layer
-			Parts* layerParts = layer.sourceParts ? layer.sourceParts : m_parts;
-
-			// Skip if Parts not loaded
-			if (!layerParts || !layerParts->loaded) {
-				continue;
-			}
-
-			// Switch Parts if needed (BEFORE starting shader)
-			bool switchedParts = false;
-			if (layerParts != m_parts) {
-				SetParts(layerParts);
-				switchedParts = true;
-
-				// Copy state pointers from original Parts to layer Parts for TEXTURE_VIEW support
-				// Effect Parts don't have their own views, so they inherit state from main character
-				if (origParts && origParts->renderMode && origParts->currState) {
-					m_parts->updatePatEditorReferences(origParts->currState, origParts->renderMode);
-				}
-			}
-
-			// Start shader and setup for this layer
-			sPartShader.Use();
-			glDisableVertexAttribArray(2);
-
-			// Apply layer-specific position offsets
-			x = origX + layer.spawnOffsetX;
-			y = origY + layer.spawnOffsetY;
-			offsetX = layer.frameOffsetX;
-			offsetY = layer.frameOffsetY;
-
-			// Callback to set matrix transform with layer-specific transforms
-			auto setMatrix = [this](glm::mat4 partMatrix) {
-				glm::mat4 rview = projection;
-				rview = glm::scale(rview, glm::vec3(scale, scale, 1.f));
-				rview = glm::translate(rview, glm::vec3(x + offsetX, y + offsetY, 0));
-				rview = glm::translate(rview, glm::vec3(0, 0, 1024.f));
-				rview *= invOrtho;
-				SetMatrixPersp(lProjectionParts, partMatrix, rview);
-			};
-
-			auto setAddColor = [this](float r, float g, float b) {
-				glUniform3f(lAddColorParts, r, g, b);
-			};
-
-			auto setFlip = [this](char flip) {
-				glUniform1i(lFlipParts, (int)flip);
-			};
-
-			// Render layer color
-			float layerColor[4] = {
-				layer.tintColor.r,
-				layer.tintColor.g,
-				layer.tintColor.b,
-				layer.alpha
-			};
-
-			// Draw this layer's PAT
-			m_parts->Draw(layer.spriteId, layer.spriteId, 0.0f, setMatrix, setAddColor, setFlip, layerColor);
-
-			// Reset GL state after Parts::Draw() to prevent GL_INVALID_OPERATION
-			glBindBuffer(GL_ARRAY_BUFFER, 0);  // Unbind VBO
-			glBindTexture(GL_TEXTURE_2D, 0);    // Unbind texture
-			glUseProgram(0);                    // Disable shader
-
-			// Clear any pending GL errors from PAT rendering
-			while (glGetError() != GL_NO_ERROR);
-
-			// Restore Parts if we switched
-			if (switchedParts) {
-				SetParts(origParts);
-			}
-		}
-
-		// Restore render state
-		x = origX;
-		y = origY;
-		offsetX = origOffsetX;
-		offsetY = origOffsetY;
-		// Don't return early - continue to CG layers section
-	}
-
-	// Force CG texture rebind after PAT rendering
-	// PAT section unbinds GL textures, so we need to invalidate curImageId
-	// to ensure SwitchImage() rebinds the CG texture even if sprite ID hasn't changed
-	curImageId = -1;
-
-	// Save original transform state
+	CG* origCG = cg;
 	int origX = x;
 	int origY = y;
 	int origOffsetX = offsetX;
@@ -968,85 +1033,49 @@ void Render::DrawLayers()
 	blendType origBlendMode = blendingMode;
 	float origColorRgba[4] = {colorRgba[0], colorRgba[1], colorRgba[2], colorRgba[3]};
 
-	// Save original CG and Parts
-	CG* origCG = cg;
-	Parts* origCGParts = m_parts;
-
-	// Draw each layer (CG sprites only - PAT layers already rendered above)
+	// Single pass in sorted order: PAT and CG layers interleave by z-priority.
+	// (The old PAT-pass-then-CG-pass split forced every PAT layer underneath
+	// every CG layer regardless of priority.) Every item starts from an
+	// explicit GL baseline — nothing inherits blend/depth/texture state from
+	// the previous item.
+	// TODO: positioning flags (flagset1 & 0x10 camera-relative,
+	// flagset2 & 0x100 opponent-relative, flagset2 & 0x200 fixed-origin).
 	for (const auto& layer : renderLayers)
 	{
-		// Skip if fully transparent
-		// (Don't skip sprite ID -1 - we still want to draw hitboxes)
+		// Fully transparent layers draw no sprite (their hitboxes still draw
+		// in the box pass below — see issue #78).
 		if (layer.alpha == 0.0f) continue;
 
-		// Skip PAT layers (already rendered in PAT section above)
-		if (layer.usePat) continue;
+		glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+		glBlendEquation(GL_FUNC_ADD);
+		glDepthMask(GL_FALSE);
 
-		// Switch CG if this layer uses a different one (e.g., effect.ha6)
-		if (layer.sourceCG && layer.sourceCG != cg) {
-			SetCg(layer.sourceCG);
-		}
-
-		// Switch Parts if this layer uses different Parts (e.g., effect.pat)
-		// This is needed even for CG layers in case they reference Parts data
-		if (layer.sourceParts && layer.sourceParts != m_parts) {
-			SetParts(layer.sourceParts);
-		}
-
-		// Apply layer-specific transforms (spawn offset + frame offset)
-		// TODO: Implement positioning flags:
-		//   flagset1 & 0x10: Coordinates relative to camera
-		//   flagset2 & 0x100: Position relative to opponent
-		//   flagset2 & 0x200: Position relative to (-32768, 0)
-		// For now, using basic relative positioning
 		x = origX + layer.spawnOffsetX;
 		y = origY + layer.spawnOffsetY;
 		offsetX = layer.frameOffsetX;
 		offsetY = layer.frameOffsetY;
 
-		// Apply layer scale and rotation
-		scaleX = layer.scaleX;
-		scaleY = layer.scaleY;
-		rotX = layer.rotX;
-		rotY = layer.rotY;
-		rotZ = layer.rotZ;
-		AFRT = layer.AFRT;
-
-		// Apply blend mode
-		switch (layer.blendMode)
-		{
-		case 2:
-			blendingMode = additive;
-			break;
-		case 3:
-			blendingMode = subtractive;
-			break;
-		default:
-			blendingMode = normal;
-			break;
+		if (layer.usePat) {
+			// PAT needs a valid part-set id (unlike CG, where -1 still has boxes)
+			if (layer.spriteId < 0) continue;
+			DrawPatLayerItem(layer, origParts);
+		} else {
+			DrawCgLayerItem(layer, origColorRgba);
 		}
-
-		// Apply tint color and alpha
-		colorRgba[0] = layer.tintColor.r * origColorRgba[0];
-		colorRgba[1] = layer.tintColor.g * origColorRgba[1];
-		colorRgba[2] = layer.tintColor.b * origColorRgba[2];
-		colorRgba[3] = layer.alpha * origColorRgba[3];
-
-		// Generate hitboxes for this layer
-		GenerateHitboxVertices(layer.hitboxes);
-
-		// Switch to this layer's sprite and draw sprite WITHOUT hitboxes
-		// (Hitboxes will be drawn in a second pass to ensure they're on top)
-		SwitchImage(layer.spriteId);
-		DrawSpriteOnly(false);
 	}
+	glDepthMask(GL_TRUE);
 
-	// Second pass: Draw all hitboxes on top of all sprites
+	// Explicit baseline for the box pass too.
+	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+	glBlendEquation(GL_FUNC_ADD);
+
+	// Second pass: Draw all hitboxes on top of all sprites.
+	// PAT layers are NOT skipped here: the frame's hitboxes ride on layer 0, and
+	// MBTL/UNI characters whose layer 0 is a PAT part would otherwise lose their
+	// boxes entirely (issue #68). The box draw below only needs x/y + the flat
+	// projection, so it is safe for PAT layers.
 	for (const auto& layer : renderLayers)
 	{
-		// Skip if it's a PAT layer (hitboxes handled separately for PAT)
-		if (layer.usePat) continue;
-
 		// Only draw hitboxes if this layer has any
 		if (layer.hitboxes.empty()) continue;
 
@@ -1077,8 +1106,8 @@ void Render::DrawLayers()
 	if (cg != origCG) {
 		SetCg(origCG);
 	}
-	if (m_parts != origCGParts) {
-		SetParts(origCGParts);
+	if (m_parts != origParts) {
+		SetParts(origParts);
 	}
 
 	// Restore original state
@@ -1171,6 +1200,8 @@ void Render::DrawBgPattern(Parts* parts, int pattern,
 void Render::SetupSpriteShader()
 {
 	sTextured.Use();
+	//The bg renderer uploads direct RGBA textures — never indexed.
+	glUniform1i(lIndexedT, 0);
 	glm::mat4 view = glm::mat4(1.f);
 	view = glm::scale(view, glm::vec3(scale, scale, 1.f));
 	view = glm::translate(view, glm::vec3(x, y, 0.f));

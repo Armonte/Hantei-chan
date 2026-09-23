@@ -126,6 +126,49 @@ std::string utf82sj(const std::string &input)
 	return output;
 }
 
+bool WriteFileAtomic(const char *filename, const void *data, size_t size)
+{
+	if(!filename || !*filename)
+		return false;
+
+	// Unique temp name next to the target so MoveFileEx stays on one volume.
+	// pid + tick + counter avoids collisions between rapid saves and between
+	// several editor instances saving the same file.
+	static unsigned int counter = 0;
+	std::string tmp = std::string(filename) + ".tmp" +
+		std::to_string(GetCurrentProcessId()) + "_" +
+		std::to_string(GetTickCount64()) + "_" + std::to_string(++counter);
+
+	HANDLE file = CreateFileA(tmp.c_str(), GENERIC_WRITE, 0, nullptr, CREATE_NEW,
+		FILE_ATTRIBUTE_NORMAL, nullptr);
+	if(file == INVALID_HANDLE_VALUE)
+		return false;
+
+	bool ok = true;
+	const char *p = (const char*)data;
+	size_t remaining = size;
+	while(ok && remaining > 0)
+	{
+		DWORD chunk = remaining > 0x40000000u ? 0x40000000u : (DWORD)remaining;
+		DWORD written = 0;
+		if(!WriteFile(file, p, chunk, &written, nullptr) || written != chunk)
+			ok = false;
+		p += written;
+		remaining -= written;
+	}
+	if(ok && !FlushFileBuffers(file))
+		ok = false;
+	if(!CloseHandle(file))
+		ok = false;
+
+	if(ok && !MoveFileExA(tmp.c_str(), filename, MOVEFILE_REPLACE_EXISTING | MOVEFILE_WRITE_THROUGH))
+		ok = false;
+
+	if(!ok)
+		DeleteFileA(tmp.c_str());
+	return ok;
+}
+
 // Normalize path separators for consistency
 std::string normalizePath(const std::string& path)
 {

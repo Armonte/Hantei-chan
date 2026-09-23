@@ -4,6 +4,8 @@
 #include <sstream>
 #include <iomanip>
 #include <string>
+#include <vector>
+#include <cctype>
 #include <filesystem>
 #include <windows.h>
 
@@ -89,6 +91,15 @@ void InitIni()
 	ImGui::LoadIniSettingsFromDisk(context.IO.IniFilename);
 }
 
+// Lowercased filename without any leading directories, for layout detection.
+static std::string BaseNameLower(const std::string& path)
+{
+	auto pos = path.find_last_of("\\/");
+	std::string base = (pos == std::string::npos) ? path : path.substr(pos + 1);
+	for (auto& c : base) c = (char)tolower((unsigned char)c);
+	return base;
+}
+
 bool LoadFromIni(FrameData *framedata, CG *cg, const std::string& iniPath, std::string* outTopHA6Path, Parts* parts, std::string* outPATPath)
 {
 	int fileNum = GetPrivateProfileIntA("DataFile", "FileNum", 0, iniPath.c_str());
@@ -96,6 +107,7 @@ bool LoadFromIni(FrameData *framedata, CG *cg, const std::string& iniPath, std::
 	{
 		std::string folder = iniPath.substr(0, iniPath.find_last_of("\\/"));
 		std::string topHA6File;
+		std::vector<std::string> ha6Names(fileNum);
 
 		// Load all files (sosfiro's approach - the patch system handles overlays correctly)
 		for(int i = 0; i < fileNum; i++)
@@ -104,27 +116,32 @@ bool LoadFromIni(FrameData *framedata, CG *cg, const std::string& iniPath, std::
 			std::stringstream ss;
 			ss << "File" << std::setfill('0') << std::setw(2) << i;
 			GetPrivateProfileStringA("DataFile", ss.str().c_str(), nullptr, ha6file, 256, iniPath.c_str());
+			ha6Names[i] = ha6file;
 
 			std::string fullpath = folder + "\\" + ha6file;
 			if(!framedata->load(fullpath.c_str(), i))
 				return false;
 		}
 
-		// Determine the save target HA6 file (highest-indexed file)
-		// For uni2/mbtl/dbfci/unist: File00=temp, File01=chrxxx, File02=BaseData (use File01)
-		// For MBAACC: File00=base, File01=base_r, File02=variant, File03=variant_r (use highest)
-		// Always use the highest-indexed file as the save target
-		if(fileNum > 0)
+		// Determine the save target HA6 file (issue #46):
+		// uni2/mbtl/dbfci/unist: File00=_temp.ha6, File01=chrxxx.ha6, last=../BaseData.HA6
+		//   -> the character's own file is File01; BaseData/temp must never be overwritten.
+		// MBAACC: File00=base, File01=base_r, File02=variant, File03=variant_r
+		//   -> the highest-indexed file is the load-order winner and the save target.
 		{
-			// Use the highest-indexed file (FileNum - 1)
-			char ha6file[256]{};
-			std::stringstream ss;
-			ss << "File" << std::setfill('0') << std::setw(2) << (fileNum - 1);
-			GetPrivateProfileStringA("DataFile", ss.str().c_str(), nullptr, ha6file, 256, iniPath.c_str());
-			if(ha6file[0] != '\0')
+			int target = fileNum - 1;
+			std::string first = BaseNameLower(ha6Names[0]);
+			bool uniLayout = fileNum >= 2 && (first.rfind("_temp", 0) == 0 || first.rfind("temp.", 0) == 0);
+			if(uniLayout)
+				target = 1;
+			else
 			{
-				topHA6File = folder + "\\" + ha6file;
+				// Never pick shared base data as the save target.
+				while(target > 0 && BaseNameLower(ha6Names[target]).find("basedata") != std::string::npos)
+					--target;
 			}
+			if(!ha6Names[target].empty())
+				topHA6File = folder + "\\" + ha6Names[target];
 		}
 
 		// Return the top HA6 file path if caller wants it

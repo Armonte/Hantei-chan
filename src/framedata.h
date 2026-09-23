@@ -4,6 +4,7 @@
 #include <string>
 #include <vector>
 #include <cstdint>
+#include <iosfwd>
 
 #include "hitbox.h"
 
@@ -196,6 +197,15 @@ struct Frame_AT {
 	int addHitStun;      // ATSA - player stun time added
 	int starterCorrection; // ATSH - damage correction if combo starter
 	int hitStunDecay[3] = {0,0,0}; // ATC0 - [reduction, combopoint_set, combopoint_SMP_modifier]
+
+	// UNI2/MBTL tags with unknown semantics, preserved verbatim so saving
+	// doesn't strip them from vanilla files (issue #71/#76 family).
+	bool ats3 = false;   // ATS3 - bare flag, no payload (UNI2 chr006/chr016)
+	bool ats5 = false;   // ATS5 - bare flag, no payload (UNI2 chr021)
+	bool ats6 = false;   // ATS6 - bare flag, no payload (UNI2 chr017/chr026)
+	int atrf = 0;        // ATRF - one int, observed 25/100/200 (UNI2 chr008/009/011/022)
+	int atbc = 0;        // ATBC - one int, observed 30 (UNI2 chr005/chr017)
+	int atvd = 0;        // ATVD - one int, observed 20 (MBTL chr020)
 };
 
 struct Frame_EF {
@@ -347,14 +357,17 @@ public:
 
 	void initEmpty();
 	bool load(const char *filename, bool patch = false);
-	void save(const char *filename);
-	void save_modified_only(const char *filename);  // Save only modified sequences
+	bool save(const char *filename);  // Atomic; returns false on failure, never mutates data
+	bool save_modified_only(const char *filename);  // Save only modified sequences (atomic)
 	bool load_commands(const char *filename);
 
 	//Probably unnecessary.
 	//bool load_move_list(Pack *pack, const char *filename);
 
 	int get_sequence_count();
+	//True if any sequence was loaded with UNI/Dengeki-style tags (ATV2/AFGX).
+	//Used to relabel fields whose meaning differs in modern FB games vs MBAACC.
+	bool usesUniFormat() const;
 
 	Sequence* get_sequence(int n);
 	std::string GetDecoratedName(int n);
@@ -367,6 +380,6 @@ public:
 	~FrameData();
 };
 
-void WriteSequence(std::ofstream &file, const Sequence *seq);
+void WriteSequence(std::ostream &file, const Sequence *seq);
 
 #endif /* FRAMEDATA_H_GUARD */

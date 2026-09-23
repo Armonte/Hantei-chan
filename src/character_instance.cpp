@@ -16,6 +16,22 @@ CharacterInstance::CharacterInstance()
 
 CharacterInstance::~CharacterInstance()
 {
+	MvScriptIndex::Unregister(&frameData);
+}
+
+void CharacterInstance::loadMvScripts(const std::string& txtPath)
+{
+	// MBTL moves spawn patterns from Squirrel scripts (chrXXX_mv_*.txt) next
+	// to the character txt. Parse them so the spawn visualization can show
+	// script-driven spawns; harmless no-op for games without such files.
+	if (m_mvScripts.loadForCharacter(txtPath)) {
+		m_mvScripts.resolveCodeNames(&frameData);
+		MvScriptIndex::Register(&frameData, &m_mvScripts);
+		printf("[MvScript] %s: %d script spawn(s) parsed from move scripts\n",
+			   m_name.c_str(), (int)m_mvScripts.allSpawns().size());
+	} else {
+		MvScriptIndex::Unregister(&frameData);
+	}
 }
 
 bool CharacterInstance::loadFromTxt(const std::string& txtPath)
@@ -60,6 +76,9 @@ bool CharacterInstance::loadFromTxt(const std::string& txtPath)
 
 	m_isModified = false;
 	undoManager.markCleanState();
+
+	// Load MBTL move scripts for script-spawn visualization
+	loadMvScripts(txtPath);
 
 	// Auto-load effect character if effect.txt exists in same folder
 	// (but don't try to load effect for the effect itself - prevents infinite loop)
@@ -108,6 +127,10 @@ bool CharacterInstance::loadChrHA6FromTxt(const std::string& txtPath)
 
 	m_isModified = false;
 	undoManager.markCleanState();
+
+	// Load MBTL move scripts for script-spawn visualization
+	loadMvScripts(txtPath);
+
 	return true;
 }
 
@@ -164,7 +187,10 @@ bool CharacterInstance::save()
 		return false;
 	}
 
-	frameData.save(m_topHA6Path.c_str());
+	// Only mark clean if the file actually reached disk.
+	if (!frameData.save(m_topHA6Path.c_str())) {
+		return false;
+	}
 	m_isModified = false;
 	undoManager.markCleanState();
 	return true;
@@ -172,7 +198,9 @@ bool CharacterInstance::save()
 
 bool CharacterInstance::saveAs(const std::string& ha6Path)
 {
-	frameData.save(ha6Path.c_str());
+	if (!frameData.save(ha6Path.c_str())) {
+		return false;
+	}
 	m_topHA6Path = ha6Path;
 
 	// Update ha6 paths list
@@ -186,7 +214,9 @@ bool CharacterInstance::saveAs(const std::string& ha6Path)
 
 bool CharacterInstance::saveModifiedOnly(const std::string& ha6Path)
 {
-	frameData.save_modified_only(ha6Path.c_str());
+	if (!frameData.save_modified_only(ha6Path.c_str())) {
+		return false;
+	}
 
 	// Add to .txt if we have one
 	if (!m_txtPath.empty()) {

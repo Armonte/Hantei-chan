@@ -231,6 +231,32 @@ void MainFrame::DrawUi()
 		); 
 	ImGui::End();
 
+	// Project actions (new/open/recent/close) requested from menus, shortcuts
+	// or the unsaved-changes dialog run here, outside any menu or popup, so
+	// they never tear down views/characters mid-draw.
+	processDeferredProjectAction();
+
+	// Error popups requested from inside menus/popups are opened here, at the
+	// same ID-stack level as the BeginPopupModal calls below.
+	if (m_pendingErrorPopup) {
+		ImGui::OpenPopup(m_pendingErrorPopup);
+		m_pendingErrorPopup = nullptr;
+	}
+
+	ImGui::SetNextWindowPos(ImGui::GetMainViewport()->GetCenter(), ImGuiCond_Appearing, ImVec2(0.5f, 0.5f));
+	if (ImGui::BeginPopupModal("Save Error", NULL, ImGuiWindowFlags_AlwaysAutoResize))
+	{
+		ImGui::Text("The file could not be saved. The original file on disk was left unchanged\n"
+			"and the character is still marked as modified.\n\n");
+		if (!m_errorDetail.empty()) {
+			ImGui::TextUnformatted(m_errorDetail.c_str());
+			ImGui::Text("\n");
+		}
+		ImGui::Separator();
+		if (ImGui::Button("OK", ImVec2(120, 0))) { ImGui::CloseCurrentPopup(); }
+		ImGui::EndPopup();
+	}
+
 	ImGui::SetNextWindowPos(ImGui::GetMainViewport()->GetCenter(), ImGuiCond_Appearing, ImVec2(0.5f, 0.5f));
 	if (ImGui::BeginPopupModal("Loading Error", NULL, ImGuiWindowFlags_AlwaysAutoResize))
 	{
@@ -259,11 +285,13 @@ void MainFrame::DrawUi()
 				ImGui::Separator();
 
 				if (ImGui::Button("Save", ImVec2(120, 0))) {
-					if (character->save()) {
+					if (saveCharacter(character)) {
 						closeView(pendingCloseViewIndex);
-						pendingCloseViewIndex = -1;
-						ImGui::CloseCurrentPopup();
 					}
+					// On failure the view stays open and the Save Error popup
+					// (queued by saveCharacter) takes over from this one.
+					pendingCloseViewIndex = -1;
+					ImGui::CloseCurrentPopup();
 				}
 				ImGui::SameLine();
 				if (ImGui::Button("Don't Save", ImVec2(120, 0))) {
@@ -287,6 +315,10 @@ void MainFrame::DrawUi()
 	{
 		ImGui::Text("Failed to load project file.\n"
 			"The file may be corrupted or some character files may be missing.\n\n");
+		if (!m_errorDetail.empty()) {
+			ImGui::TextUnformatted(m_errorDetail.c_str());
+			ImGui::Text("\n");
+		}
 		ImGui::Separator();
 		if (ImGui::Button("OK", ImVec2(120, 0))) { ImGui::CloseCurrentPopup(); }
 		ImGui::EndPopup();
@@ -298,6 +330,10 @@ void MainFrame::DrawUi()
 	{
 		ImGui::Text("Failed to save project file.\n"
 			"Check that you have write permissions for the selected location.\n\n");
+		if (!m_errorDetail.empty()) {
+			ImGui::TextUnformatted(m_errorDetail.c_str());
+			ImGui::Text("\n");
+		}
 		ImGui::Separator();
 		if (ImGui::Button("OK", ImVec2(120, 0))) { ImGui::CloseCurrentPopup(); }
 		ImGui::EndPopup();
@@ -317,73 +353,39 @@ void MainFrame::DrawUi()
 		ImGui::Separator();
 
 		if (ImGui::Button("Save", ImVec2(120, 0))) {
-			saveProject();
-			if (!m_projectModified) { // Only proceed if save succeeded
-				m_pendingProjectClose = false;
-				ImGui::CloseCurrentPopup();
-
-				// Execute the pending action
-				switch (m_projectCloseAction) {
-					case ProjectCloseAction::New:
-						// Clear and prepare for new project
-						views.clear();
-						characters.clear();
-						activeViewIndex = -1;
-						render.DontDraw();
-						render.ClearTexture();
-						render.SetCg(nullptr);
-						render.SetParts(nullptr);
-						ProjectManager::ClearCurrentProjectPath();
-						m_projectModified = false;
-						updateWindowTitle();
-						break;
-					case ProjectCloseAction::Open:
-						// Will trigger file dialog in next frame
-						openProject();
-						break;
-					case ProjectCloseAction::Close:
-						closeProject();
-						break;
-					default:
-						break;
-				}
-				m_projectCloseAction = ProjectCloseAction::None;
+			// Save modified characters as well as the project file; the old
+			// code only saved the .hproj and then discarded character edits.
+			bool ok = saveAllModifiedCharacters();
+			if (ok && m_projectModified) {
+				saveProject();
+				ok = !m_projectModified;
 			}
+			m_pendingProjectClose = false;
+			ImGui::CloseCurrentPopup();
+			if (ok) {
+				// Run the pending action (with its path) next, outside this popup
+				requestProjectAction(m_projectCloseAction, m_pendingProjectPath, true);
+			}
+			// On failure the action is cancelled; the save error popup explains why
+			// (a cancelled Save As dialog simply cancels).
+			m_projectCloseAction = ProjectCloseAction::None;
+			m_pendingProjectPath.clear();
 		}
 		ImGui::SameLine();
 		if (ImGui::Button("Don't Save", ImVec2(120, 0))) {
 			m_pendingProjectClose = false;
 			ImGui::CloseCurrentPopup();
 
-			// Execute the pending action without saving
-			switch (m_projectCloseAction) {
-				case ProjectCloseAction::New:
-					views.clear();
-					characters.clear();
-					activeViewIndex = -1;
-					render.DontDraw();
-					render.ClearTexture();
-					render.SetCg(nullptr);
-					render.SetParts(nullptr);
-					ProjectManager::ClearCurrentProjectPath();
-					m_projectModified = false;
-					updateWindowTitle();
-					break;
-				case ProjectCloseAction::Open:
-					openProject();
-					break;
-				case ProjectCloseAction::Close:
-					closeProject();
-					break;
-				default:
-					break;
-			}
+			// Run the pending action without saving, outside this popup
+			requestProjectAction(m_projectCloseAction, m_pendingProjectPath, true);
 			m_projectCloseAction = ProjectCloseAction::None;
+			m_pendingProjectPath.clear();
 		}
 		ImGui::SameLine();
 		if (ImGui::Button("Cancel", ImVec2(120, 0))) {
 			m_pendingProjectClose = false;
 			m_projectCloseAction = ProjectCloseAction::None;
+			m_pendingProjectPath.clear();
 			ImGui::CloseCurrentPopup();
 		}
 		ImGui::EndPopup();
@@ -638,6 +640,37 @@ void MainFrame::DrawUi()
 	RenderUpdate();
 }
 
+// Create ActiveSpawnInstances for script-declared spawns (mv_script) whose
+// spawnTick matches `tick`, so they appear during LIVE playback and not only
+// in the paused/seek views. Reads the spawn-tree entries so visibility
+// toggles and (once implemented) frame-ID timing are honored automatically.
+static void CreateScriptSpawnInstances(FrameState& state, CharacterInstance* active, int tick)
+{
+	if (!active) return;
+	for (const auto& sp : state.spawnedPatterns) {
+		if (!sp.isScriptSpawn || !sp.visible || sp.patternId < 0) continue;
+		if (sp.spawnTick != tick) continue;
+		auto spawnSeq = active->frameData.get_sequence(sp.patternId);
+		if (!spawnSeq || spawnSeq->frames.empty()) continue;
+
+		ActiveSpawnInstance instance;
+		instance.spawnTick = tick;
+		instance.patternId = sp.patternId;
+		instance.usesEffectHA6 = sp.usesEffectHA6;
+		instance.isPresetEffect = false;
+		instance.offsetX = sp.offsetX;
+		instance.offsetY = sp.offsetY;
+		instance.parentFrame = sp.parentFrame;
+		instance.tintColor = state.vizSettings.enableTint ? sp.tintColor : glm::vec4(1.0f, 1.0f, 1.0f, 1.0f);
+		instance.alpha = 1.0f;
+		instance.currentFrame = 0;
+		instance.frameDuration = 0;
+		instance.previousFrame = 0;
+		instance.loopCounter = spawnSeq->frames[0].AF.loopCount;
+		state.activeSpawns.push_back(instance);
+	}
+}
+
 void MainFrame::RenderUpdate()
 {
 	auto* view = getActiveView();
@@ -679,7 +712,6 @@ void MainFrame::RenderUpdate()
 			// Reset visit tracking whenever animation starts (play button pressed)
 			// This ensures every playthrough is fresh, regardless of where user seeked to
 			if (animationJustStarted) {
-				printf("[ANIM START] Resetting visit counts (play pressed on frame %d)\n", state.frame);
 				state.frameVisitCounts.clear();
 				state.activeSpawns.clear();  // Also clear any stale spawns from previous run
 				state.lastSpawnCreationFrame = -1;
@@ -689,23 +721,19 @@ void MainFrame::RenderUpdate()
 			if (state.frameVisitCounts.empty()) {
 				state.frameVisitCounts[state.frame] = 1;
 
+				// Script-declared spawns (mv_script) that fire at the current tick
+				if (state.vizSettings.showSpawnedPatterns) {
+					CreateScriptSpawnInstances(state, active, state.currentTick);
+				}
+
 				// Check for spawns on frame 0 at animation start
 				if (state.vizSettings.showSpawnedPatterns && state.frame >= 0 && state.frame < seq->frames.size()) {
 					auto& frame0 = seq->frames[state.frame];
 					if (!frame0.EF.empty()) {
-						// DEBUG: Log frame 0 spawn creation
-						printf("[SPAWN CREATE - ANIM START] Frame %d, Tick %d, Pattern %d\n", state.frame, state.currentTick, state.pattern);
-
 						state.lastSpawnCreationFrame = state.frame;
 						auto spawns = ParseSpawnedPatterns(frame0.EF, state.frame, state.pattern);
 
-						// DEBUG: Log how many spawns
-						printf("[SPAWN CREATE - ANIM START] Parsed %d spawn(s)\n", (int)spawns.size());
-
 						for(const auto& spawnInfo : spawns) {
-							// DEBUG: Log which pattern is being spawned
-							printf("[SPAWN CREATE - ANIM START]   -> Spawning pattern %d at tick %d\n", spawnInfo.patternId, state.currentTick);
-
 							ActiveSpawnInstance instance;
 							instance.spawnTick = state.currentTick;
 							instance.patternId = spawnInfo.patternId;
@@ -717,8 +745,12 @@ void MainFrame::RenderUpdate()
 							instance.flagset2 = spawnInfo.flagset2;
 							instance.angle = spawnInfo.angle;
 							instance.projVarDecrease = spawnInfo.projVarDecrease;
+							instance.parentFrame = spawnInfo.parentFrame;
 							instance.tintColor = state.vizSettings.enableTint ? spawnInfo.tintColor : glm::vec4(1.0f, 1.0f, 1.0f, 1.0f);
-							instance.alpha = state.vizSettings.spawnedOpacity;
+							// Visualization opacity is applied once at render time
+							// (main_frame layer.alpha multiply) — pre-baking it here
+							// squared it for spawns with no static entry.
+							instance.alpha = 1.0f;
 							instance.currentFrame = 0;
 							instance.frameDuration = 0;
 							instance.previousFrame = 0;
@@ -902,21 +934,13 @@ void MainFrame::RenderUpdate()
 							if(shouldCreateSpawns)
 							{
 								// DEBUG: Log spawn creation
-								printf("[SPAWN CREATE] Frame %d, Tick %d, Pattern %d\n", state.frame, state.currentTick, state.pattern);
-
 								// Mark that this frame has created spawns
 								state.lastSpawnCreationFrame = state.frame;
 								// Parse spawn effects in current frame
 								auto spawns = ParseSpawnedPatterns(newFrame.EF, state.frame, state.pattern);
 
-								// DEBUG: Log how many spawns were parsed
-								printf("[SPAWN CREATE] Parsed %d spawn(s) from frame %d\n", (int)spawns.size(), state.frame);
-
 								// Create active spawn instances for each spawn effect
 								for(const auto& spawnInfo : spawns) {
-									// DEBUG: Log which pattern is being spawned
-									printf("[SPAWN CREATE]   -> Spawning pattern %d at tick %d\n", spawnInfo.patternId, state.currentTick);
-
 									ActiveSpawnInstance instance;
 									instance.spawnTick = state.currentTick;  // Use current tick BEFORE incrementing
 									instance.patternId = spawnInfo.patternId;
@@ -928,8 +952,10 @@ void MainFrame::RenderUpdate()
 									instance.flagset2 = spawnInfo.flagset2;
 									instance.angle = spawnInfo.angle;
 									instance.projVarDecrease = spawnInfo.projVarDecrease;
+									instance.parentFrame = spawnInfo.parentFrame;
 									instance.tintColor = state.vizSettings.enableTint ? spawnInfo.tintColor : glm::vec4(1.0f, 1.0f, 1.0f, 1.0f);
-									instance.alpha = state.vizSettings.spawnedOpacity;
+									// Applied once at render time; pre-baking squared it.
+									instance.alpha = 1.0f;
 
 									// Initialize animation state for frame-by-frame advancement
 									instance.currentFrame = 0;
@@ -1009,6 +1035,13 @@ void MainFrame::RenderUpdate()
 
 			duration++;
 			state.currentTick++;  // Increment tick counter for spawned pattern synchronization
+
+			// Script-declared spawns (mv_script) that fire at this tick — the
+			// ha6 EF path above only creates spawns on frame entry, so script
+			// spawns would otherwise never appear during live playback.
+			if (state.vizSettings.showSpawnedPatterns) {
+				CreateScriptSpawnInstances(state, active, state.currentTick);
+			}
 
 			// Advance all active spawned patterns frame-by-frame (same logic as main pattern)
 			for (auto& spawn : state.activeSpawns) {
@@ -1577,7 +1610,7 @@ bool MainFrame::HandleKeys(uint64_t vkey)
 				return true;
 			}
 			else if (auto* active = getActiveCharacter()) {
-				active->save();
+				saveCharacter(active);
 				return true;
 			}
 			break;

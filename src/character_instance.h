@@ -6,6 +6,7 @@
 #include "cg.h"
 #include "parts/parts.h"
 #include "undo_manager.h"
+#include "mv_script.h"
 #include <string>
 #include <vector>
 
@@ -65,6 +66,9 @@ public:
 	CharacterInstance* getEffectCharacter() const;
 	bool loadEffectCharacter();  // Load effect.txt/effect.ha6/effect.pat for this character
 
+	// MBTL move-script spawn index (sibling chrXXX_mv_*.txt files), see mv_script.h
+	const MvScriptIndex& getMvScripts() const { return m_mvScripts; }
+
 	// Data access
 	FrameData frameData;
 	FrameState state;
@@ -84,6 +88,9 @@ public:
 	std::unique_ptr<CharacterInstance> effectCharacter;
 
 private:
+	// Load sibling chrXXX_mv_*.txt move scripts and register for spawn viz
+	void loadMvScripts(const std::string& txtPath);
+
 	std::string m_name;
 	std::string m_txtPath;         // Original .txt file path
 	std::vector<std::string> m_ha6Paths; // All loaded .ha6 files
@@ -91,6 +98,7 @@ private:
 	std::string m_patPath;         // PAT (Parts) file path
 	std::string m_topHA6Path;      // Highest-indexed .ha6 (auto-save target)
 	bool m_isModified = false;
+	MvScriptIndex m_mvScripts;     // MBTL move-script spawns (may be empty)
 };
 
 #endif /* CHARACTER_INSTANCE_H_GUARD */

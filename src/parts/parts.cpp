@@ -433,15 +433,8 @@ void Parts::DrawPart(int i, bool useLinearFilter)
         }
     }
 
-    // Validate texture ID before binding
-    if (curTexId != 0 && !glIsTexture(curTexId)) {
-        static bool warnedOnce = false;
-        if (!warnedOnce) {
-            printf("[DrawPart] WARNING: Texture ID %d is not a valid OpenGL texture\n", curTexId);
-            warnedOnce = true;
-        }
-        return;  // Invalid texture, skip rendering
-    }
+    // (No glIsTexture validation here: it forces a GPU sync per part per frame,
+    // and the textureIndex != 0 guard above already covers missing textures.)
 
     // Clear any pending GL errors before binding
     while (glGetError() != GL_NO_ERROR);
@@ -530,6 +523,22 @@ void Parts::Draw(int pattern, int nextPattern, float interpolationFactor,
         //   position (0,0), scale (1,1), rotation (0,0,0), no flip, full opacity
     }
 
+    // Prepare the interpolation source (next pattern's groups) ONCE.
+    // This used to be copied, reversed and stable_sorted PER PART, and it also
+    // ran when pattern == nextPattern (where mixing is an identity) — quadratic
+    // cost that made huge part-sets (e.g. MBTL Last Arc art) a slideshow.
+    bool interpolate = interpolationFactor < 1 && pattern != nextPattern &&
+                       !partSets[nextPattern].groups.empty();
+    decltype(copyGroups) copyNextGroups;
+    if (interpolate) {
+        copyNextGroups = partSets[nextPattern].groups;
+        std::reverse(copyNextGroups.begin(), copyNextGroups.end());
+        std::stable_sort(copyNextGroups.rbegin(), copyNextGroups.rend(),
+            [](const PartProperty &a, const PartProperty &b) {
+                return a.priority < b.priority;
+        });
+    }
+
     for (auto& part : copyGroups)
     {
         // Skip unused or invalid parts silently
@@ -600,23 +609,19 @@ void Parts::Draw(int pattern, int nextPattern, float interpolationFactor,
 
         Shape outShape = currentShape; // Copy for potential interpolation
 
-        // Prevent crash on invalid shapes
+        // Prevent crash on invalid shapes. Must be continue, not return: one
+        // degenerate part must not drop every remaining part, and an early
+        // return would also leak the depth-test/depth-mask state disabled by
+        // a previously drawn part.
         if(outShape.type != ShapeType::PLANE && outShape.type != ShapeType::UNK2 &&
             outShape.vertexCount == 0)
-            return;
+            continue;
         if((outShape.type == ShapeType::SPHERE || outShape.type == ShapeType::CONE) &&
            outShape.vertexCount2 == 0)
-            return;
+            continue;
 
         // Interpolation between frames
-        if (interpolationFactor < 1 && !partSets[nextPattern].groups.empty()) {
-            auto copyNextGroups = partSets[nextPattern].groups;
-            std::reverse(copyNextGroups.begin(), copyNextGroups.end());
-            std::stable_sort(copyNextGroups.rbegin(), copyNextGroups.rend(),
-                [](const PartProperty &a, const PartProperty &b) {
-                    return a.priority < b.priority;
-            });
-
+        if (interpolate) {
             auto mix = [interpolationFactor](float a, float b) {
                 return a * interpolationFactor + b * (1 - interpolationFactor);
             };
@@ -666,12 +671,22 @@ void Parts::Draw(int pattern, int nextPattern, float interpolationFactor,
             }
         }
 
-        // Set up transformation matrix
+        // Set up transformation matrix.
+        // Verified against uni2.exe's PatPart_BuildTransformMatrix (RE'd via
+        // IDA): vertex order is scale -> rotZ -> rotX -> rotY -> translate,
+        // with ALL angles positive (turns * 2pi) in the same frame our arc
+        // geometry already uses. The old -Y/-X signs (inherited from Eiton)
+        // mirrored any part with out-of-plane rotation (issue: chr019 pat 102
+        // arcs "totally misoriented").
         glm::mat4 view = glm::mat4(1.f);
         view = glm::translate(view, glm::vec3(offset[0], offset[1], 0.f));
-        view = glm::rotate(view, -rotation[1] * tau, glm::vec3(0.0, 1.f, 0.f));
-        view = glm::rotate(view, -rotation[0] * tau, glm::vec3(1.0, 0.f, 0.f));
+        view = glm::rotate(view, rotation[1] * tau, glm::vec3(0.0, 1.f, 0.f));
+        view = glm::rotate(view, rotation[0] * tau, glm::vec3(1.0, 0.f, 0.f));
         view = glm::rotate(view, rotation[2] * tau, glm::vec3(0.0, 0.f, 1.f));
+        // PRAS pivot: shifts the part before rotation (rotates with the part),
+        // unscaled — matches the game's transform order.
+        if (part.pras[0] || part.pras[1])
+            view = glm::translate(view, glm::vec3(part.pras[0], part.pras[1], 0.f));
         
         setFlip(part.flip);
         
@@ -729,8 +744,10 @@ void Parts::Draw(int pattern, int nextPattern, float interpolationFactor,
         }
 
         glVertexAttrib4fv(2, newColor);
-        // Note: addColor BGR->RGB swap when passing to shader
-        setAddColor(part.addColor[2] / 255.f, part.addColor[1] / 255.f, part.addColor[0] / 255.f);
+        // Note: addColor BGR->RGB swap when passing to shader. addColor is
+        // already normalized to 0..1 at load (PRSP bytes / 255), so it must
+        // not be divided by 255 again here.
+        setAddColor(part.addColor[2], part.addColor[1], part.addColor[0]);
 
         // Generate vertices based on shape type
         std::vector<float> vertexData;

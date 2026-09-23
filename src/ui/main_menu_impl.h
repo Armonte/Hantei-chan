@@ -193,7 +193,7 @@ void MainFrame::Menu(unsigned int errorPopupId)
 			if (ImGui::MenuItem("Save Character", nullptr, false, hasActive))
 			{
 				if (hasActive) {
-					active->save();
+					saveCharacter(active);
 				}
 			}
 
@@ -203,7 +203,7 @@ void MainFrame::Menu(unsigned int errorPopupId)
 					std::string &&file = FileDialog(fileType::HA6, true);
 					if(!file.empty())
 					{
-						active->saveAs(file);
+						saveCharacterAs(active, file);
 					}
 				}
 			}
@@ -219,7 +219,9 @@ void MainFrame::Menu(unsigned int errorPopupId)
 						std::string basePath = (dotPos != std::string::npos) ? topHA6.substr(0, dotPos) : topHA6;
 						std::string modPath = basePath + "_MOD.HA6";
 
-						active->saveModifiedOnly(modPath);
+						if (!active->saveModifiedOnly(modPath)) {
+							requestErrorPopup("Save Error", "Could not write " + modPath);
+						}
 					}
 				}
 			}

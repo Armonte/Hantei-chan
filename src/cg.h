@@ -105,6 +105,9 @@ public:
 	const char *get_filename(unsigned int n);
 
 	ImageData* draw_texture(unsigned int n, bool to_pow2, bool draw_8bpp = 0);
+	//True if image n is palette-indexed (8bpp) and can use the shader palette path.
+	bool image_is_8bpp(unsigned int n);
+	const unsigned int* getPalettePtr() const { return palette; }
 
 	int	get_image_count();
 

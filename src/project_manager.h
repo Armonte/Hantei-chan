@@ -28,7 +28,8 @@ public:
 	                        int* outTheme = nullptr,
 	                        float* outZoomLevel = nullptr,
 	                        bool* outSmoothRender = nullptr,
-	                        float* outClearColor = nullptr);
+	                        float* outClearColor = nullptr,
+	                        std::vector<std::string>* outFailedCharacters = nullptr);
 
 	// Legacy support (deprecated, uses temporary stubs)
 	static bool SaveProject(const std::string& path,

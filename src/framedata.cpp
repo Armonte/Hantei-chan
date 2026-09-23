@@ -79,13 +79,22 @@ bool FrameData::load(const char *filename, bool patch) {
 #define VAL(X) ((const char*)&X)
 #define PTR(X) ((const char*)X)
 
-void FrameData::save(const char *filename)
+// Hitbox cleanup applied to the *written* data only: degenerate boxes are
+// dropped and inverted boxes are fixed. Returns true if anything would change.
+static bool SequenceNeedsBoxFix(const Sequence &seq)
 {
-	std::ofstream file(filename, std::ios_base::out | std::ios_base::binary | std::ios_base::trunc);
-	if (!file.is_open())
-		return;
+	for(const auto &frame : seq.frames)
+	for(const auto &it : frame.hitboxes)
+	{
+		const Hitbox &box = it.second;
+		if(box.xy[0] >= box.xy[2] || box.xy[1] >= box.xy[3])
+			return true;
+	}
+	return false;
+}
 
-	for(auto& seq : m_sequences)
+static void FixBoxesForSave(Sequence &seq)
+{
 	for(auto &frame : seq.frames)
 	for(auto it = frame.hitboxes.begin(); it != frame.hitboxes.end();)
 	{
@@ -106,80 +115,63 @@ void FrameData::save(const char *filename)
 			++it;
 		}
 	}
+}
+
+// Serialize to memory, then atomically replace the target file. The in-memory
+// sequences are never modified: sequences that need box cleanup are written
+// from a temporary copy.
+static bool WriteHA6File(const char *filename, const std::vector<Sequence> &sequences,
+                         uint32_t count, bool modifiedOnly)
+{
+	if(!filename || !*filename)
+		return false;
+
+	std::ostringstream file(std::ios_base::out | std::ios_base::binary);
 
 	char header[32] = "Hantei6DataFile";
 
 	// Keep header in original format - no modification flag
 	file.write(header, sizeof(header));
 
-	uint32_t size = get_sequence_count();
-	file.write("_STR", 4); file.write(VAL(size), 4);
+	file.write("_STR", 4); file.write(VAL(count), 4);
 
-	for(uint32_t i = 0; i < get_sequence_count(); i++)
+	for(uint32_t i = 0; i < count && i < sequences.size(); i++)
 	{
+		const Sequence &src = sequences[i];
+		if(modifiedOnly && !src.modified)
+			continue;
+
 		file.write("PSTR", 4); file.write(VAL(i), 4);
-		WriteSequence(file, &m_sequences[i]);
+		if(SequenceNeedsBoxFix(src))
+		{
+			Sequence copy = src;
+			FixBoxesForSave(copy);
+			WriteSequence(file, &copy);
+		}
+		else
+		{
+			WriteSequence(file, &src);
+		}
 		file.write("PEND", 4);
 	}
 
 	file.write("_END", 4);
-	file.close();
+	if(!file)
+		return false;
+
+	const std::string bytes = file.str();
+	return WriteFileAtomic(filename, bytes.data(), bytes.size());
 }
 
-void FrameData::save_modified_only(const char *filename)
+bool FrameData::save(const char *filename)
 {
-	std::ofstream file(filename, std::ios_base::out | std::ios_base::binary | std::ios_base::trunc);
-	if (!file.is_open())
-		return;
+	return WriteHA6File(filename, m_sequences, get_sequence_count(), false);
+}
 
-	// Clean up hitboxes for modified sequences only
-	for(auto& seq : m_sequences)
-	{
-		if(!seq.modified) continue;
-
-		for(auto &frame : seq.frames)
-		for(auto it = frame.hitboxes.begin(); it != frame.hitboxes.end();)
-		{
-			Hitbox &box = it->second;
-			//Delete degenerate boxes when exporting.
-			if( (box.xy[0] == box.xy[2]) ||
-				(box.xy[1] == box.xy[3]) )
-			{
-				frame.hitboxes.erase(it++);
-			}
-			else
-			{
-				//Fix inverted boxes. Don't know if needed.
-				if(box.xy[0] > box.xy[2])
-					std::swap(box.xy[0], box.xy[2]);
-				if(box.xy[1] > box.xy[3])
-					std::swap(box.xy[1], box.xy[3]);
-				++it;
-			}
-		}
-	}
-
-	char header[32] = "Hantei6DataFile";
-
-	// Keep header in original format - no modification flag
-	file.write(header, sizeof(header));
-
-	uint32_t size = get_sequence_count();
-	file.write("_STR", 4); file.write(VAL(size), 4);
-
+bool FrameData::save_modified_only(const char *filename)
+{
 	// Only write modified sequences
-	for(uint32_t i = 0; i < get_sequence_count(); i++)
-	{
-		if(m_sequences[i].modified)
-		{
-			file.write("PSTR", 4); file.write(VAL(i), 4);
-			WriteSequence(file, &m_sequences[i]);
-			file.write("PEND", 4);
-		}
-	}
-
-	file.write("_END", 4);
-	file.close();
+	return WriteHA6File(filename, m_sequences, get_sequence_count(), true);
 }
 
 void FrameData::Free() {
@@ -193,6 +185,15 @@ int FrameData::get_sequence_count() {
 		return 0;
 	}
 	return m_nsequences;
+}
+
+bool FrameData::usesUniFormat() const {
+	for (const auto& seq : m_sequences) {
+		if (seq.usedATV2 || seq.usedAFGX) {
+			return true;
+		}
+	}
+	return false;
 }
 
 Sequence* FrameData::get_sequence(int n) {

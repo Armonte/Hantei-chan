@@ -163,6 +163,11 @@ void CG::copy_cells(const CG_Image *image,
 }
 			
 
+bool CG::image_is_8bpp(unsigned int n) {
+	const CG_Image *image = get_image(n);
+	return image && image->type_id != -1 && image->bpp <= 8;
+}
+
 ImageData *CG::draw_texture(unsigned int n, bool to_pow2_flg, bool draw_8bpp) {
 	const CG_Image *image = get_image(n);
 	if (!image) {
@@ -177,15 +182,12 @@ ImageData *CG::draw_texture(unsigned int n, bool to_pow2_flg, bool draw_8bpp) {
 		return 0;
 	}
 	
-	// initialize texture and boundaries
-	int x1 = 0;
-	int y1 = 0;
-	
-	if (!draw_8bpp) {
-		x1 = image->bounds_x1;
-		y1 = image->bounds_y1;
-	}
-	
+	// initialize texture and boundaries.
+	// Indexed (draw_8bpp) output crops to the same bounds as the RGBA path so
+	// the renderer can substitute it 1:1 (palette resolved in the shader).
+	int x1 = image->bounds_x1;
+	int y1 = image->bounds_y1;
+
 	int width = image->bounds_x2 - x1+1;
 	int height = image->bounds_y2 - y1+1;
 	

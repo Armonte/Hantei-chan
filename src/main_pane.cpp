@@ -152,9 +152,14 @@ void MainPane::Draw()
 			{			
 				float spacing = im::GetStyle().ItemInnerSpacing.x;
 				im::SetNextItemWidth(im::GetWindowWidth() - 160.f);
+				// On manual frame navigation, drop any activeSpawns left by a
+				// timeline scrub: the render path prefers activeSpawns when
+				// non-empty, so stale entries kept showing the scrubbed tick's
+				// spawns instead of the newly selected frame's.
 				if (im::SliderInt("##frameSlider", &currState.frame, 0, nframes)) {
 					// Sync ticks when slider changes
 					currState.currentTick = CalculateTickFromFrame(frameData, currState.pattern, currState.frame);
+					currState.activeSpawns.clear();
 				}
 				im::SameLine();
 				im::PushButtonRepeat(true);
@@ -162,12 +167,14 @@ void MainPane::Draw()
 					currState.frame--;
 					// Sync ticks when manually seeking
 					currState.currentTick = CalculateTickFromFrame(frameData, currState.pattern, currState.frame);
+					currState.activeSpawns.clear();
 				}
 				im::SameLine(0.0f, spacing);
 				if(im::ArrowButton("##right", ImGuiDir_Right)) {
 					currState.frame++;
 					// Sync ticks when manually seeking
 					currState.currentTick = CalculateTickFromFrame(frameData, currState.pattern, currState.frame);
+					currState.activeSpawns.clear();
 				}
 				im::PopButtonRepeat();
 				im::SameLine();
@@ -253,6 +260,10 @@ void MainPane::Draw()
 			}
 			if(nframes >= 0)
 			{
+				// Frame-list mutations are deferred to the end of this block:
+				// inserting/erasing reallocates seq->frames and would leave
+				// `frame` dangling for the rest of the draw.
+				enum class KeyframeOp { None, Append, Insert, Delete } keyframeOp = KeyframeOp::None;
 				Frame &frame = seq->frames[currState.frame];
 				if(im::TreeNode("State data"))
 				{
@@ -280,35 +291,15 @@ void MainPane::Draw()
 					im::Checkbox("Make copy current frame", &copyThisFrame);
 					
 					if(im::Button("Append frame"))
-					{
-						if(copyThisFrame)
-							seq->frames.push_back(frame);
-						else
-							seq->frames.push_back({});
-						frameData->mark_modified(currState.pattern);
-						markModified();
-					}
+						keyframeOp = KeyframeOp::Append;
 
 					im::SameLine(0,20.f);
 					if(im::Button("Insert frame"))
-					{
-						if(copyThisFrame)
-							seq->frames.insert(seq->frames.begin()+currState.frame, frame);
-						else
-							seq->frames.insert(seq->frames.begin()+currState.frame, {});
-						frameData->mark_modified(currState.pattern);
-						markModified();
-					}
+						keyframeOp = KeyframeOp::Insert;
 
 					im::SameLine(0,20.f);
 					if(im::Button("Delete frame"))
-					{
-						seq->frames.erase(seq->frames.begin()+currState.frame);
-						if(currState.frame >= seq->frames.size())
-							currState.frame--;
-						frameData->mark_modified(currState.pattern);
-						markModified();
-					}
+						keyframeOp = KeyframeOp::Delete;
 
 					im::SameLine(0,20.f);
 					if(im::Button("Copy frame"))
@@ -568,6 +559,46 @@ void MainPane::Draw()
 					}
 				}
 				im::End();
+			}
+
+			// Apply the deferred keyframe op. `frame` is not used past this
+			// point; the frame index is re-validated after the mutation.
+			if(keyframeOp != KeyframeOp::None)
+			{
+				const int at = currState.frame;
+				switch(keyframeOp)
+				{
+				case KeyframeOp::Append:
+				{
+					Frame newFrame = copyThisFrame ? seq->frames[at] : Frame{};
+					seq->frames.push_back(std::move(newFrame));
+					break;
+				}
+				case KeyframeOp::Insert:
+				{
+					// Copy first: insert(pos, {}) picked the initializer_list
+					// overload and inserted nothing.
+					Frame newFrame = copyThisFrame ? seq->frames[at] : Frame{};
+					seq->frames.insert(seq->frames.begin() + at, std::move(newFrame));
+					break;
+				}
+				case KeyframeOp::Delete:
+					seq->frames.erase(seq->frames.begin() + at);
+					break;
+				default:
+					break;
+				}
+
+				const int count = (int)seq->frames.size();
+				if(currState.frame >= count)
+					currState.frame = count - 1;
+				if(currState.frame < 0)
+					currState.frame = 0;
+				currState.currentTick = count > 0
+					? CalculateTickFromFrame(frameData, currState.pattern, currState.frame) : 0;
+				currState.activeSpawns.clear();
+				frameData->mark_modified(currState.pattern);
+				markModified();
 			}
 			}
 			im::EndChild();
