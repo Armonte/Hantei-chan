@@ -17,6 +17,13 @@ class Parts;
 
 namespace bg {
 
+// Which part of the stage to draw. The game draws band 0 (objhdr+21 == 0)
+// at render priority 10 (behind the fighters), then the DropObj weather at
+// priority 522, then band 1 at 600 (in front of the fighters) —
+// Background_DrawAllInstances 0x4b8f80. The host calls Back before and Front
+// after its character layers; All draws both (stage-only previews).
+enum class Pass { All, Back, Front };
+
 class Renderer {
 public:
 	Renderer();
@@ -35,7 +42,7 @@ public:
 
 	// Draw all objects in `file` into the current GL framebuffer using the
 	// viewport (clientW, clientH). Camera state is read live every call.
-	void   Render(const Camera& camera, int clientW, int clientH);
+	void   Render(const Camera& camera, int clientW, int clientH, Pass pass = Pass::All);
 
 	// Toggles & state.
 	void   SetEnabled(bool v)            { enabled = v; }
@@ -48,6 +55,13 @@ public:
 	bool   IsShowingDebugOverlay() const { return showDebugOverlay; }
 	void   SetSelectedObject(int i)      { selectedObjIndex = i; }
 	int    GetSelectedObject() const     { return selectedObjIndex; }
+	void   SetShowWeather(bool v)        { showWeather = v; }
+	bool   IsShowingWeather() const      { return showWeather; }
+	void   SetShowLights(bool v)         { showLights = v; }
+	bool   IsShowingLights() const       { return showLights; }
+	// Debug self-capture of the stage viewport to C:/dev/bg_dump.png
+	// (off by default; armed on demand from the inspector).
+	void   RequestDebugDump(int frames = 2) { dumpCountdown = frames; }
 	void   ClearTextureCache();
 
 private:
@@ -58,7 +72,14 @@ private:
 	bool  paused            = false;
 	bool  parallaxEnabled   = true;
 	bool  showDebugOverlay  = true;  // u4ick draws them unconditionally.
+	bool  showWeather       = true;
+	bool  showLights        = true;
 	int   selectedObjIndex  = -1;
+	GLuint whiteTex         = 0;     // 1x1 white, for untextured lines
+	GLuint dropTex          = 0;     // DropObj bitmap (sakura00.bmp)
+	int    dropTexW = 0, dropTexH = 0;
+	bool   dropTexTried     = false;
+	GLint  uTint = -1, uAdd = -1, uAlphaLoc = -1;
 
 	// GL objects we own.
 	GLuint program          = 0;
@@ -99,8 +120,20 @@ private:
 	// (the bg has NO perspective — g_D3DMatrix_Projection in MBAA.exe is a
 	// pure translate — so PAT objects render in the same flat space as the
 	// CG objects). Reads cutout/part/texture data from `patParts`.
-	void   DrawPatPatternFlat(int pattern, float worldX, float worldY,
-	                          float alpha, int frameBlend);
+	// `next`/`t`: frame +20 scale (and MBAC rotation) interpolation toward
+	// the next frame's pattern (null = none). objLinear = objhdr+22.
+	void   DrawPatPatternFlat(const PatPattern& pat, const PatPattern* next, float t,
+	                          float worldX, float worldY, bool objLinear, bool mbac);
+	// Weather particles (DropObject_RenderWithBloom) and light markers.
+	void   DrawWeather(const Camera& camera);
+	void   DrawLights(const Camera& camera);
+	void   LoadDropTexture();
+	// Low-level quad/line emitters in stage-screen space.
+	void   EmitQuad(GLuint tex, const float xy[8], const float uv[8],
+	                const float rgba[4], bool linear);
+	void   EmitLine(float x0, float y0, float x1, float y1, float width,
+	                const float rgba0[4], const float rgba1[4]);
+	void   DrawPass(const Camera& camera, int clientW, int clientH, int band);
 
 	// Build the orthographic projection that u4ick uses:
 	// Matrix.CreateOrthographicOffCenter(0, W, H, 0, 0, 1).
@@ -111,7 +144,7 @@ private:
 	                  float x, float y,
 	                  float w, float h,
 	                  float alpha, int blendMode,
-	                  float layerDepth);
+	                  float tintRGB, bool linear);
 };
 
 } // namespace bg

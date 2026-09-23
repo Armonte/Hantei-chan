@@ -96,6 +96,9 @@ bool OldPat::Parse(const uint8_t* data, size_t size) {
 		PatPattern pat;
 		for (int p = 0; p < kPartsPerPattern; ++p) {
 			size_t pp = (size_t)po + kPartStride * p;
+			pat.slotScaleX[p]   = rd32(pp + 52);
+			pat.slotScaleY[p]   = rd32(pp + 56);
+			pat.slotRotation[p] = rd32(pp + 60);
 			int32_t cutRef = rd32(pp + 32);
 			if (cutRef == -1) continue;   // empty part
 
