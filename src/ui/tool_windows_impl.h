@@ -9,6 +9,8 @@
 #include "../var_refs.h"
 #include "../pattern_refs.h"
 #include "../frame_disp/frame_disp_common.h"
+#include "../bgm_player.h"
+#include <filesystem>
 
 // Commit a tool edit as one undo step and flag the character dirty.
 void MainFrame::markToolEdit(CharacterInstance* character)
@@ -569,6 +571,129 @@ void MainFrame::drawCompareWindow()
 		ImGui::SliderFloat("Opacity", &c.alpha, 0.05f, 1.0f);
 		ImGui::ColorEdit3("Tint", c.tint);
 		ImGui::Checkbox("Show boxes (outlines)", &c.boxes);
+	}
+	ImGui::End();
+}
+
+// ---------------------------------------------------------------------------
+// BGM preview (#66): list the game's Bgm folder with bgm.txt loop points,
+// play a track, and jump near the end to hear the loop.
+// ---------------------------------------------------------------------------
+
+void MainFrame::drawBgmWindow()
+{
+	auto& b = m_bgm;
+	if (!m_showBgm) {
+		if (b.player && b.player->playing()) b.player->stop();
+		return;
+	}
+	ImGui::SetNextWindowSize(ImVec2(620, 480), ImGuiCond_FirstUseEver);
+	if (!ImGui::Begin("BGM preview", &m_showBgm)) { ImGui::End(); return; }
+	if (!b.player) b.player = std::make_unique<BgmPlayer>();
+
+	auto scan = [&]() {
+		b.entries.clear();
+		b.status.clear();
+		namespace fs = std::filesystem;
+		const fs::path dir = fs::u8path(b.folder);
+		std::error_code ec;
+		if (!fs::is_directory(dir, ec)) { b.status = "Not a folder: " + b.folder; return; }
+		if (ParseBgmTxt((dir / "bgm.txt").string(), b.entries)) {
+			b.status = std::to_string(b.entries.size()) + " track(s) from bgm.txt";
+		} else {
+			for (auto& e : fs::directory_iterator(dir, ec)) {
+				if (e.path().extension() != ".ogg" && e.path().extension() != ".OGG") continue;
+				BgmEntry be; be.file = e.path().stem().string(); be.section = be.file;
+				b.entries.push_back(be);
+			}
+			std::sort(b.entries.begin(), b.entries.end(), [](const BgmEntry& x, const BgmEntry& y) { return x.file < y.file; });
+			b.status = std::to_string(b.entries.size()) + " .ogg file(s) (no bgm.txt: no loop points)";
+		}
+	};
+	if (b.folder.empty()) {
+		// Guess <game>/Bgm from the active character's folder (<game>/data).
+		if (auto* c = getActiveCharacter()) {
+			namespace fs = std::filesystem;
+			const std::string src = !c->getTxtPath().empty() ? c->getTxtPath() : c->getTopHA6Path();
+			if (!src.empty()) {
+				const fs::path d = fs::path(src).parent_path();
+				for (const fs::path cand : {d.parent_path() / "Bgm", d / "Bgm", d.parent_path() / "bgm"}) {
+					std::error_code ec;
+					if (fs::is_directory(cand, ec)) { b.folder = cand.string(); break; }
+				}
+			}
+		}
+		if (!b.folder.empty()) scan();
+	}
+
+	char buf[512];
+	snprintf(buf, sizeof(buf), "%s", b.folder.c_str());
+	ImGui::SetNextItemWidth(-140);
+	if (ImGui::InputText("##bgmfolder", buf, sizeof(buf), ImGuiInputTextFlags_EnterReturnsTrue)) { b.folder = buf; scan(); }
+	ImGui::SameLine();
+	if (ImGui::Button("Scan folder")) { b.folder = buf; scan(); }
+	if (!b.status.empty()) ImGui::TextDisabled("%s", b.status.c_str());
+
+	// Transport
+	BgmPlayer& pl = *b.player;
+	ImGui::SeparatorText(pl.loaded() ? std::filesystem::path(pl.path()).filename().string().c_str() : "No track loaded");
+	ImGui::BeginDisabled(!pl.loaded());
+	if (ImGui::Button(pl.playing() ? "Stop" : "Play")) { if (pl.playing()) pl.stop(); else pl.play(); }
+	ImGui::SameLine();
+	float pos = (float)pl.position();
+	ImGui::SetNextItemWidth(-200);
+	if (ImGui::SliderFloat("##pos", &pos, 0.f, (float)std::max(0.001, pl.length()), "%.2f s")) pl.seek(pos);
+	ImGui::SameLine();
+	ImGui::Text("/ %.2f s", pl.length());
+	ImGui::SetNextItemWidth(80);
+	ImGui::InputFloat("s before end", &b.leadIn, 0, 0, "%.1f");
+	ImGui::SameLine();
+	if (ImGui::Button("Preview loop")) {
+		pl.seek(std::max(0.0, pl.length() - b.leadIn));
+		if (!pl.playing()) pl.play();
+	}
+	if (ImGui::IsItemHovered())
+		ImGui::SetTooltip("Jump just before the end of the track to hear it wrap to the loop point.");
+	ImGui::SameLine();
+	if (pl.looping()) ImGui::Text("Loop -> %.3f s (looped %d time(s))", pl.loopPos(), pl.loopsDone());
+	else ImGui::TextDisabled("No loop");
+	float vol = b.volume;
+	ImGui::SetNextItemWidth(160);
+	if (ImGui::SliderFloat("Volume", &vol, 0.f, 1.f)) { b.volume = vol; pl.setVolume(vol); }
+	ImGui::EndDisabled();
+
+	// Track list
+	if (ImGui::BeginTable("##bgm", 4, ImGuiTableFlags_RowBg | ImGuiTableFlags_ScrollY | ImGuiTableFlags_BordersInnerV | ImGuiTableFlags_Resizable)) {
+		ImGui::TableSetupColumn("Section", ImGuiTableColumnFlags_WidthFixed, 80);
+		ImGui::TableSetupColumn("File", ImGuiTableColumnFlags_WidthFixed, 80);
+		ImGui::TableSetupColumn("Loop", ImGuiTableColumnFlags_WidthFixed, 70);
+		ImGui::TableSetupColumn("Title");
+		ImGui::TableHeadersRow();
+		for (size_t i = 0; i < b.entries.size(); ++i) {
+			const auto& e = b.entries[i];
+			ImGui::TableNextRow();
+			ImGui::TableNextColumn();
+			ImGui::PushID((int)i);
+			const bool sel = (int)i == b.selected;
+			if (ImGui::Selectable(e.section.c_str(), sel, ImGuiSelectableFlags_SpanAllColumns | ImGuiSelectableFlags_AllowDoubleClick)) {
+				b.selected = (int)i;
+				std::string err;
+				const std::string path = (std::filesystem::u8path(b.folder) / (e.file + ".ogg")).string();
+				const bool wasPlaying = pl.playing() || ImGui::IsMouseDoubleClicked(0);
+				if (pl.load(path, e.isLoop, e.loopPos, &err)) {
+					pl.setVolume(b.volume);
+					if (wasPlaying) pl.play();
+				} else {
+					b.status = err;
+				}
+			}
+			ImGui::PopID();
+			ImGui::TableNextColumn(); ImGui::TextUnformatted(e.file.c_str());
+			ImGui::TableNextColumn();
+			if (e.isLoop) ImGui::Text("%.3f", e.loopPos); else ImGui::TextDisabled("-");
+			ImGui::TableNextColumn(); ImGui::TextUnformatted(e.comment.c_str());
+		}
+		ImGui::EndTable();
 	}
 	ImGui::End();
 }
