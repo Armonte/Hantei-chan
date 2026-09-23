@@ -52,6 +52,7 @@ bool ParseWave2StartupArg(const char* arg, const wchar_t* next, int& i)
 	if (!strcmp(arg, "--export-bg")) { gStartup.exportTransparent = value(CP_ACP) != "editor"; return true; }
 	if (!strcmp(arg, "--export-crop")) { gStartup.exportFitEach = value(CP_ACP) == "each"; return true; }
 	if (!strcmp(arg, "--save-project")) { gStartup.saveProject = value(CP_ACP); return true; }
+	if (!strcmp(arg, "--stats")) { gStartup.stats = value(CP_UTF8); return true; }
 	return false;
 }
 
@@ -183,6 +184,22 @@ void MainFrame::ProcessStartupArgs()
 			}
 		}
 	}
+	if (!gStartup.stats.empty() && n >= 10 && n < 20) {
+		gStartup.sceneMs += m_lastSceneMs;
+		gStartup.onionSimMs += m_onionStats.simMs;
+		gStartup.onionTotalMs += m_onionStats.totalMs;
+		gStartup.onionSamples = m_onionStats.samples;
+		++gStartup.statFrames;
+	}
+	if (!gStartup.stats.empty() && n == 20 && gStartup.statFrames) {
+		if (FILE *f = _wfopen(Utf8ToWide(gStartup.stats).c_str(), L"wb")) {
+			const double k = 1.0 / gStartup.statFrames;
+			fprintf(f, "frames %d\nscene_ms %.4f\nonion_samples %d\nonion_sim_ms %.4f\nonion_total_ms %.4f\n",
+				gStartup.statFrames, gStartup.sceneMs * k, gStartup.onionSamples,
+				gStartup.onionSimMs * k, gStartup.onionTotalMs * k);
+			fclose(f);
+		}
+	}
 	if (!gStartup.captureView.empty() && n == 20) {
 		if (CharacterView *v = findViewById(m_startupViewId)) {
 			std::vector<uint8_t> px;
@@ -208,7 +225,7 @@ void MainFrame::ProcessStartupArgs()
 		saveProject();
 	}
 	const bool anyWave2 = !gStartup.captureView.empty() || !gStartup.saveProject.empty() ||
-		!gStartup.captureWindows.empty() ||
+		!gStartup.captureWindows.empty() || !gStartup.stats.empty() ||
 		!gStartup.exportDir.empty() || gStartup.quit;
 	if (gStartup.capture.empty() && anyWave2 && n == 22)
 		PostQuitMessage(0);

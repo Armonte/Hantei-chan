@@ -84,7 +84,39 @@ private:
 	unsigned int paletteTexId = 0;   //256x1 palette texture on unit 1
 	Shader sSimple;
 	Shader sTextured;
-	Texture texture;
+
+	// Sprite textures, cached per (CG, CG generation, image id). Decoding and
+	// uploading a sprite on every switch made multi-actor scenes (spawns,
+	// onion-skin samples, several views) re-upload the same images many
+	// times per frame. LRU by byte budget; a CG load or palette change
+	// renews its generation, so stale entries are never hit (only evicted).
+	struct SpriteKey {
+		const CG* cg; unsigned long long generation; int id;
+		bool operator==(const SpriteKey& o) const { return cg == o.cg && generation == o.generation && id == o.id; }
+	};
+	struct SpriteKeyHash {
+		size_t operator()(const SpriteKey& k) const {
+			return std::hash<const void*>()(k.cg) ^ (std::hash<unsigned long long>()(k.generation) * 31u) ^ ((size_t)k.id * 0x9E3779B97F4A7C15ull);
+		}
+	};
+	struct CachedSprite {
+		unsigned int tex = 0;
+		int w = 0, h = 0, ox = 0, oy = 0;
+		bool indexed = false;
+		bool linear = false;   // GL filter currently set on tex
+		size_t bytes = 0;
+		unsigned long long lastUse = 0;
+	};
+	std::unordered_map<SpriteKey, CachedSprite, SpriteKeyHash> spriteCache;
+	size_t spriteCacheBytes = 0;
+	unsigned long long spriteUseClock = 0;
+	unsigned int spriteTex = 0;      // texture of the current sprite (0 = none)
+	bool spriteIndexed = false;
+	CachedSprite* curSprite = nullptr; // entry of spriteTex (map node, stable)
+	const CG* curImageCg = nullptr;
+	unsigned long long curImageGen = 0;
+	void EvictSprites(size_t budget);
+	void BindSpriteTexture();
 	float colorRgba[4];
 
 	//Set sTextured's indexed mode for the current sprite texture and, when
@@ -129,6 +161,10 @@ public:
 	float curInterp = 0.0f;
 	
 	Render();
+	~Render();
+	Render(const Render&) = delete;
+	Render& operator=(const Render&) = delete;
+	size_t SpriteCacheEntries() const { return spriteCache.size(); }
 
 	// Per-pass camera (docs/HANTEI_WAVE2.md §2). Every render pass (main
 	// view, detached view, onion sample, PNG export) calls BeginPass with its

@@ -301,6 +301,8 @@ void MainFrame::DrawCharacterScene(CharacterView* view, const Render::PassParams
 
 	if (opt.onion && view->onion().enabled && !view->isPatEditor())
 		DrawOnionSkin(view, tick);
+	else if (view == getActiveView())
+		m_onionStats = OnionStats{};
 
 	// Spawned actors at the tick come from the cached tick simulator
 	// (preview_sim.h). Positions are world coordinates with the root at the
@@ -448,7 +450,9 @@ void MainFrame::DrawBack()
 		{
 			ScopedTargetBinding bind(*target);
 			bind.clear(clearColor[0], clearColor[1], clearColor[2], 1.f, true);
+			const auto t0 = std::chrono::steady_clock::now();
 			DrawMainViewScene(view, width, height);
+			m_lastSceneMs = viewrender::MsSince(t0);
 		}
 		target->blitToDefault(width, height);
 	} else {
