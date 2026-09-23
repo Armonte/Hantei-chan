@@ -7,7 +7,8 @@
 //                                             weather particles, RNG draws and a
 //                                             state hash (same seed -> same hash)
 //   bg_test <stage.dat> --info                side files (BgList / Info / light)
-//   bg_test <stage.dat> --edit-test <out.dat> edit fields + records, save, reload, verify
+//   bg_test <stage.dat> --edit-test <out.dat> edit fields + records, save, reload, verify,
+//                                             then undo (must match the input) / redo
 //   bg_test --rng <seed> [n]                  first n values of the MBAACC stage RNG
 #include <cstdio>
 #include <cstring>
@@ -150,6 +151,18 @@ int main(int argc, char** argv)
 			if (ro[i].frames.size() != objs[i].frames.size() || ro[i].commands.size() != objs[i].commands.size()) ++bad;
 		// The edited stage still runs.
 		for (int t = 0; t < 600; ++t) re.TickRuntime();
+		// History: the edits above are one step; undoing it must give back a
+		// file byte-identical to the input, redo the edited one.
+		file.CommitEdit();
+		std::string undoPath = std::string(argv[3]) + ".undo.dat";
+		std::vector<char> in, un, ed, rd;
+		if (!file.Undo() || !file.Save(undoPath.c_str()) || !ReadAll(argv[1], in) || !ReadAll(undoPath.c_str(), un) || in != un) {
+			fprintf(stderr, "undo did not restore the original bytes\n"); ++bad;
+		}
+		if (!file.Redo() || !file.Save(undoPath.c_str()) || !ReadAll(argv[3], ed) || !ReadAll(undoPath.c_str(), rd) || ed != rd) {
+			fprintf(stderr, "redo did not restore the edited bytes\n"); ++bad;
+		}
+		std::remove(undoPath.c_str());
 		printf("EDIT-TEST %s (%d problems)\n", bad ? "FAIL" : "OK", bad);
 		_exit(bad ? 8 : 0);
 	}

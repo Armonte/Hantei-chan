@@ -465,6 +465,9 @@ void MainFrame::DrawUi()
 		ImGui::SetNextWindowPos(ImVec2(80.0f, 80.0f), ImGuiCond_FirstUseEver);
 		ImGui::SetNextWindowSize(ImVec2(420.0f, 640.0f), ImGuiCond_FirstUseEver);
 		ImGui::Begin("Background Inspector", nullptr, 0);
+		// Editing here is stage editing: route Ctrl+Z/Y/S to the stage.
+		if (ImGui::IsWindowFocused(ImGuiFocusedFlags_RootAndChildWindows))
+			shortcuts.claimFocus(ShortcutContext::stageView, (uint64_t)(uintptr_t)getActiveView());
 
 		ImGui::Text("File: %s", currentBgFile->GetFilename().c_str());
 		auto& objects = currentBgFile->GetObjects();
