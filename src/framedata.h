@@ -340,7 +340,9 @@ using Sequence = Sequence_T<std::allocator>;
 struct Command {
 	int id;
 	std::string input;      // e.g., "41236C", "6+A+B"
-	std::string comment;    // e.g., "第七聖典", "ダッシュ"
+	std::string comment;    // UTF-8 (converted from the file's CP932), e.g. "第七聖典"
+	int pattern = -1;       // pattern the command starts
+	int teamSolo = 0;       // 0 both, 1 team only, 2 solo only
 
 	Command() : id(-1) {}
 };
@@ -354,12 +356,13 @@ public:
 	bool		m_loaded;
 	std::vector<Sequence> m_sequences;
 	std::vector<Command> m_commands;
+	std::string m_commandsPath;     // _c.txt the command table came from (empty = none)
 
 	void initEmpty();
 	bool load(const char *filename, bool patch = false);
 	bool save(const char *filename);  // Atomic; returns false on failure, never mutates data
 	bool save_modified_only(const char *filename);  // Save only modified sequences (atomic)
-	bool load_commands(const char *filename);
+	bool load_commands(const char *filename); // cmdfile/cmd_framedata.cpp
 
 	//Probably unnecessary.
 	//bool load_move_list(Pack *pack, const char *filename);

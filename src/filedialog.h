@@ -11,7 +11,8 @@ enum {
 	HPROJ,
 	PAT,
 	DDS,
-	DAT
+	DAT,
+	CMDTXT
 };
 }
 

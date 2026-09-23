@@ -64,6 +64,16 @@ add_executable(${EXE}
 	src/background/bg_pat.cpp
 	src/background/bg_info.cpp
 	src/background/bg_inspector.cpp
+	# _c.txt command-file editor (ported from Gonptechan EX, see docs/HANTEI_CMDFILE_EDITOR.md)
+	src/extension_profile.cpp
+	src/cmdfile/cmd_document.cpp
+	src/cmdfile/cmd_validate.cpp
+	src/cmdfile/cmd_notes.cpp
+	src/cmdfile/cmd_io.cpp
+	src/cmdfile/cmd_workspace.cpp
+	src/cmdfile/cmd_framedata.cpp
+	src/cmdfile/cmd_editor_ui.cpp
+	src/ui/main_frame_cmdfile.cpp
 	imsearch/imsearch.cpp
 	res/res.rc
 )
@@ -191,9 +201,63 @@ if(MINGW)
 	target_link_options(pat_dump PRIVATE -static-libgcc -static-libstdc++ -static)
 endif()
 
+enable_testing()
+
+# Command-file tools (statically linked so they run from a plain Windows prompt or WSL interop).
+# cmdfile_roundtrip: parse -> serialize byte compare + validation summary for any _c.txt.
+add_executable(cmdfile_roundtrip
+	src/cmdfile/cmdfile_roundtrip.cpp
+	src/cmdfile/cmd_document.cpp
+	src/cmdfile/cmd_validate.cpp
+)
+target_include_directories(cmdfile_roundtrip PRIVATE "src")
+if(MINGW)
+	target_link_options(cmdfile_roundtrip PRIVATE -static-libgcc -static-libstdc++ -static)
+endif()
+
+# cmdfile_test: unit + structural tests (ported from EX's command workspace/check tests).
+add_executable(cmdfile_test
+	tests/cmdfile_test.cpp
+	src/cmdfile/cmd_document.cpp
+	src/cmdfile/cmd_validate.cpp
+	src/cmdfile/cmd_notes.cpp
+	src/cmdfile/cmd_io.cpp
+	src/cmdfile/cmd_workspace.cpp
+	src/misc.cpp
+)
+target_include_directories(cmdfile_test PRIVATE "src" "third_party")
+target_compile_definitions(cmdfile_test PRIVATE WIN32_LEAN_AND_MEAN)
+if(MINGW)
+	target_link_options(cmdfile_test PRIVATE -static-libgcc -static-libstdc++ -static)
+endif()
+add_test(NAME cmdfile COMMAND cmdfile_test tests/fixtures/cmdfile WORKING_DIRECTORY ${CMAKE_SOURCE_DIR})
+
+# cmdfile_ui_smoke: draws the editor UI headlessly with ImGui assertions enabled.
+add_executable(cmdfile_ui_smoke
+	tests/cmdfile_ui_smoke.cpp
+	src/extension_profile.cpp
+	src/cmdfile/cmd_editor_ui.cpp
+	src/cmdfile/cmd_document.cpp
+	src/cmdfile/cmd_validate.cpp
+	src/cmdfile/cmd_notes.cpp
+	src/cmdfile/cmd_io.cpp
+	src/cmdfile/cmd_workspace.cpp
+	src/misc.cpp
+	imgui/imgui.cpp
+	imgui/imgui_draw.cpp
+	imgui/imgui_tables.cpp
+	imgui/imgui_widgets.cpp
+	imgui/misc/cpp/imgui_stdlib.cpp
+)
+target_include_directories(cmdfile_ui_smoke PRIVATE "src" "third_party" "imgui" "imgui/misc/cpp")
+target_compile_definitions(cmdfile_ui_smoke PRIVATE WIN32_LEAN_AND_MEAN IMGUI_USER_CONFIG="${CMAKE_SOURCE_DIR}/tests/imgui_assert_config.h")
+if(MINGW)
+	target_link_options(cmdfile_ui_smoke PRIVATE -static-libgcc -static-libstdc++ -static)
+endif()
+add_test(NAME cmdfile_ui_smoke COMMAND cmdfile_ui_smoke tests/fixtures/cmdfile/ex_vanilla_ryougi_1_c.txt tests/fixtures/cmdfile/ex_bof_angel_0_c.txt WORKING_DIRECTORY ${CMAKE_SOURCE_DIR})
+
 # Unit tests for editor infrastructure (no GL / ImGui). Run from WSL with
 # ./build/<name>_test.exe, or ctest.
-enable_testing()
 add_executable(shortcut_router_test tests/shortcut_router_test.cpp src/shortcut_router.cpp)
 target_include_directories(shortcut_router_test PRIVATE "src")
 if(MINGW)
