@@ -416,6 +416,7 @@ void MainFrame::DrawUi()
 			if (view->getMainPane() && view->getMainPane()->isVisible) view->getMainPane()->Draw();
 			if (view->getRightPane() && view->getRightPane()->isVisible) view->getRightPane()->Draw();
 			if (view->getBoxPane() && view->getBoxPane()->isVisible) view->getBoxPane()->Draw();
+			ha4ui::DrawInspector(character, view->getState());   // MBAC .DAT only
 		}
 
 		// Draw PatEditor panes if this is a PAT editor view (only if visible)

@@ -32,6 +32,11 @@ add_executable(${EXE}
 	src/framedata.cpp
 	src/framedata_load.cpp
 	src/framedata_save.cpp
+	src/framedata_ha4.cpp
+	src/ha4_parts.cpp
+	src/ha4_parts_gl.cpp
+	src/ha4_convert.cpp
+	src/ha4_character.cpp
 	src/framestate.cpp
 	src/mv_script.cpp
 	src/character_instance.cpp
@@ -96,6 +101,7 @@ add_executable(roundtrip
 	src/framedata.cpp
 	src/framedata_load.cpp
 	src/framedata_save.cpp
+	src/framedata_ha4.cpp
 	src/misc.cpp
 	tinyalloc/tinyalloc.c
 )
@@ -154,6 +160,7 @@ add_executable(ha6_dump
 	src/framedata.cpp
 	src/framedata_load.cpp
 	src/framedata_save.cpp
+	src/framedata_ha4.cpp
 	src/misc.cpp
 	tinyalloc/tinyalloc.c
 )
@@ -184,4 +191,34 @@ target_compile_definitions(pat_dump PRIVATE WIN32_LEAN_AND_MEAN HA6GUIVERSION="$
 target_link_libraries(pat_dump PRIVATE tinyalloc glad glm OpenGL::GL)
 if(MINGW)
 	target_link_options(pat_dump PRIVATE -static-libgcc -static-libstdc++ -static)
+endif()
+
+# MBAC Hantei4 (.DAT) tool: byte-exact round trip, model re-encode check,
+# batch MBAC -> HA6 conversion (see docs/HANTEI_MBAC_SUPPORT.md).
+add_executable(ha4tool
+	src/ha4tool.cpp
+	src/framedata.cpp
+	src/framedata_load.cpp
+	src/framedata_save.cpp
+	src/framedata_ha4.cpp
+	src/ha4_parts.cpp
+	src/ha4_convert.cpp
+	src/background/bg_pat.cpp
+	src/parts/parts.cpp
+	src/parts/parts_part.cpp
+	src/parts/parts_partset.cpp
+	src/parts/parts_shape.cpp
+	src/parts/parts_texture.cpp
+	src/cg.cpp
+	src/texture.cpp
+	src/vao.cpp
+	src/shader.cpp
+	src/misc.cpp
+	tinyalloc/tinyalloc.c
+)
+target_include_directories(ha4tool PRIVATE "." "third_party" "${CMAKE_BINARY_DIR}/generated")
+target_compile_definitions(ha4tool PRIVATE WIN32_LEAN_AND_MEAN HA6GUIVERSION="${CMAKE_PROJECT_VERSION}" PAT_HEADLESS)
+target_link_libraries(ha4tool PRIVATE tinyalloc glad glm OpenGL::GL)
+if(MINGW)
+	target_link_options(ha4tool PRIVATE -static-libgcc -static-libstdc++ -static)
 endif()
