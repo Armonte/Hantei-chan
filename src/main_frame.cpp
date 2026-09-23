@@ -497,6 +497,7 @@ void MainFrame::DrawBack()
 // Editing tools (shortcuts, undo/redo, J/K/L, box-drag undo, position tool)
 // ============================================================================
 #include "ui/editor_tools_impl.h"
+#include "ui/tool_windows_impl.h"
 
 
 void MainFrame::WarmStyle()

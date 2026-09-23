@@ -1,5 +1,6 @@
 #ifndef MAINFRAME_H_GUARD
 #define MAINFRAME_H_GUARD
+#include "var_refs.h"
 #include "context_gl.h"
 #include "render.h"
 #include "main_pane.h"
@@ -194,6 +195,18 @@ private:
 	ShortcutRouter shortcuts;
 	bool RunShortcut(ShortcutAction action);
 	bool NudgeLayer(CharacterView* view, int dx, int dy);
+	// ---- Tool windows (ui/tool_windows_impl.h) ------------------------------
+	struct VarRefsWindow {
+		bool open = false;
+		unsigned categories = varrefs::catAll;
+		int from = 0, to = 0;
+		bool searched = false;
+		std::vector<varrefs::Ref> results;
+		std::string status;
+	} m_varRefs;
+	void drawVarRefsWindow();
+	void markToolEdit(CharacterInstance* character);
+	void navigateActiveView(int pattern, int frame);
 	bool PerformUndoRedo(bool redo);
 	void RefreshViewsAfterHistory(CharacterInstance* character, const UndoManager::Entry* entry);
 	bool isLiveCharacter(const CharacterInstance* character) const;
