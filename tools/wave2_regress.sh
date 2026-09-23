@@ -58,6 +58,6 @@ line "ha4tool roundtrip" "$out"
 # Stage files.
 out="$("$ROOT/tools/bg_regress.sh" 600 2>&1 | tail -2 | tr '\n' ' ')"
 line "bg_regress.sh 600" "$out"
-echo "$out" | grep -qi 'fail [1-9]\|FAIL' && fail=1
+echo "$out" | grep -qE ' [1-9][0-9]* failed|FAIL ' && fail=1
 
 exit $fail
