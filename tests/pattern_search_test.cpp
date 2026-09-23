@@ -14,8 +14,10 @@
 #include "frame_disp/frame_disp_if.h"
 
 #include <imgui.h>
+#include <imgui_internal.h>
 
 #include <cstdio>
+#include <functional>
 #include <cstring>
 #include <random>
 #include <string>
@@ -267,6 +269,46 @@ int main(int argc, char** argv)
 				CheckDrawData();
 			}
 		}
+	}
+
+	// Keyframe step from a focused field (issue #61): commit, clear the active
+	// item, re-activate the same widget id on the next frame, keep typing.
+	{
+		int values[2] = {0, 0};
+		int cur = 0;
+		auto frame = [&](std::function<void()> before = nullptr) {
+			ImGui::GetIO().DeltaTime = 1.0f / 60.0f;
+			ImGui::NewFrame();
+			if (before) before();
+			ImGui::SetNextWindowPos(ImVec2(0, 0), ImGuiCond_Always);
+			ImGui::Begin("Box Pane");
+			ImGui::InputInt("X", &values[cur], 0, 0);
+			ImGui::End();
+			ImGui::Render();
+		};
+		ImGuiIO& io = ImGui::GetIO();
+		frame();
+		// Click into the field.
+		ImGuiContext& g = *GImGui;
+		ImGuiWindow* win = ImGui::FindWindowByName("Box Pane");
+		const ImGuiID fieldId = win ? win->GetID("X") : 0;
+		g.NavNextActivateId = fieldId; g.NavNextActivateFlags = ImGuiActivateFlags_PreferInput;
+		frame(); frame();
+		const ImGuiID active = g.ActiveId;
+		for (char c : std::string("12")) { io.AddInputCharacter(c); frame(); }
+		// Num* pressed: what DrawUi does.
+		frame([&]() {
+			const ImGuiID id = g.ActiveId;
+			ImGui::ClearActiveID();
+			cur = 1;
+			g.NavNextActivateId = id; g.NavNextActivateFlags = ImGuiActivateFlags_PreferInput;
+		});
+		frame();
+		const bool reactivated = g.ActiveId == active && active != 0;
+		for (char c : std::string("34")) { io.AddInputCharacter(c); frame(); }
+		ImGui::ClearActiveID(); frame();
+		std::printf("text-field keyframe step: first=%d second=%d reactivated=%d\n", values[0], values[1], (int)reactivated);
+		if (values[0] != 12 || values[1] != 34 || !reactivated) { std::printf("text-field keyframe step FAILED\n"); ++g_badDraws; }
 	}
 
 	ImSearch::DestroyContext();

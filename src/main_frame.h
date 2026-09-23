@@ -89,6 +89,9 @@ private:
 	// Character/view management
 	CharacterInstance* findCharacterByPath(const std::string& path);
 	void createViewForCharacter(CharacterInstance* character);
+	struct ClosedTab { std::string path; bool isTxt = false; int pattern = 0; int frame = 0; };
+	std::vector<ClosedTab> m_closedTabs;   // most recent last (max 10)
+	bool reopenClosedTab();
 	void createPatEditorView(const std::string& patPath);
 	int countViewsForCharacter(CharacterInstance* character);
 
@@ -226,6 +229,10 @@ private:
 	bool m_showNotes = false;
 	bool m_showKeyBindings = false;
 	int m_keyCapture = -1;   // binding index waiting for a key (Keyboard shortcuts window)
+	int m_textNavDir = 0;    // keyframe step requested from a text field
+public:
+	static wchar_t s_swallowChar; // WM_CHAR to drop (the key already acted as a shortcut)
+private:
 	void drawKeyBindingsWindow();
 	void drawNotesWindow();
 	void markToolEdit(CharacterInstance* character);

@@ -99,6 +99,9 @@ void MainFrame::Menu(unsigned int errorPopupId)
 				markProjectModified();
 			}
 
+			if (ImGui::MenuItem("Reopen Closed Tab", shortcuts.registry().label(ShortcutAction::reopenClosedView).c_str(), false, !m_closedTabs.empty()))
+				reopenClosedTab();
+
 			if (ImGui::MenuItem("Close Character", nullptr, false, hasActive))
 			{
 				if (hasActive) {
