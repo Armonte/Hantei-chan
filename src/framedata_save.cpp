@@ -13,12 +13,14 @@
 // I don't know if it can cause trouble but it's something to keep in mind.
 
 // Write AF with smart format detection (AFGP for single-layer, AFGX for multi-layer)
-void WriteAF(std::ostream &file, const Frame_AF *af)
+void WriteAF(std::ostream &file, const Frame_AF *af, bool usedAFGX)
 {
 	file.write("AFST", 4);
 
-	// Smart format detection: AFGP (MBAACC) if 1 layer, AFGX (UNI) if multiple layers
-	if (af->layers.size() == 1) {
+	// AFGP (MBAACC) for a single layer, AFGX (UNI) for several. A pattern that
+	// was loaded with AFGX keeps AFGX even on single-layer frames: rewriting
+	// them as AFGP changed UNI files on save (issue #71).
+	if (af->layers.size() == 1 && !usedAFGX) {
 		// MBAACC format (AFGP) - single layer
 		const Layer_Type& layer = af->layers[0];
 
@@ -114,7 +116,7 @@ void WriteAF(std::ostream &file, const Frame_AF *af)
 	}
 
 	// Continue with MBAACC single-layer format if only one layer
-	if (af->layers.size() == 1) {
+	if (af->layers.size() == 1 && !usedAFGX) {
 		const Layer_Type& layer = af->layers[0];
 
 		if(layer.blend_mode){
@@ -547,7 +549,7 @@ struct PatInfo
 void WriteFrame(std::ostream &file, const Frame *frame, bool usedAFGX, bool usedATV2, PatInfo &info)
 {
 	file.write("FSTR", 4);
-	WriteAF(file, &frame->AF);
+	WriteAF(file, &frame->AF, usedAFGX);
 
 	// ASSM: emit a 4-byte ref if this AS matches a previously-written one.
 	int dupeAsIndex = -1;
