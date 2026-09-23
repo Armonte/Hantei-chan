@@ -1,3 +1,4 @@
+#include <map>
 #include <cassert>
 #include <iostream>
 #include <cstdint>
@@ -728,7 +729,7 @@ unsigned int *fd_frame_load(unsigned int *data, const unsigned int *data_end, Fr
 	return data;
 }
 
-unsigned int *fd_sequence_load(unsigned int *data, const unsigned int *data_end, Sequence *seq, bool utf8)
+unsigned int *fd_sequence_load(unsigned int *data, const unsigned int *data_end, Sequence *seq, bool utf8, bool *sawPDS2)
 {
 
 	TempInfo temp_info;
@@ -834,6 +835,7 @@ unsigned int *fd_sequence_load(unsigned int *data, const unsigned int *data_end,
 			// data[7] = AS count
 			// data[8] = frame count
 			if (data[0] == 32) {
+				if (sawPDS2) *sawPDS2 = true;
 				seq->frames.clear();
 				seq->frames.resize(data[1]);
 
@@ -905,7 +907,7 @@ unsigned int *fd_sequence_load(unsigned int *data, const unsigned int *data_end,
 	return data;
 }
 
-unsigned int *fd_main_load(unsigned int *data, const unsigned int *data_end, std::vector<Sequence> &sequences, unsigned int nsequences, bool utf8)
+unsigned int *fd_main_load(unsigned int *data, const unsigned int *data_end, std::vector<Sequence> &sequences, unsigned int nsequences, bool utf8, std::vector<unsigned int> *definedIds, bool fillOnly, std::map<unsigned int, Sequence> *stubs)
 {
 	while (data < data_end) {
 		unsigned int *buf = data;
@@ -918,9 +920,29 @@ unsigned int *fd_main_load(unsigned int *data, const unsigned int *data_end, std
 			// make sure there's actually something here.
 			if (memcmp(data, "PEND", 4)) {
 				if (seq_id < nsequences) {
-					sequences[seq_id].empty = false;
+					Sequence &slot = sequences[seq_id];
+					const bool hadFrames = slot.initialized;
+					const bool hadContent = hadFrames || !slot.name.empty() || !slot.codeName.empty();
 					test.seqId = seq_id;
-					data = fd_sequence_load(data, data_end, &sequences[seq_id], utf8);
+					// Parse the block on its own, then decide how it lands.
+					Sequence blk;
+					bool sawPDS2 = false;
+					data = fd_sequence_load(data, data_end, &blk, utf8, &sawPDS2);
+					if (fillOnly && hadContent)
+						continue; // fallback file: the slot is already defined
+					if (sawPDS2 || !hadFrames) {
+						// The block replaces the slot. (Overlaying in place kept
+						// the previous file's usedAFGX/usedATV2 flags, so a
+						// pattern could be re-saved in the other file's format.)
+						blk.empty = false;
+						slot = std::move(blk);
+						if (definedIds) definedIds->push_back(seq_id);
+					} else if (stubs) {
+						// Name/flag-only entry over a slot that already has
+						// frames from an earlier file: nothing changes in the
+						// merged view, but the entry belongs to this file.
+						(*stubs)[seq_id] = std::move(blk);
+					}
 				}
 			} else {
 				++data;

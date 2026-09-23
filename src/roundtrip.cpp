@@ -2,6 +2,7 @@
 // Built as roundtrip.exe.
 // Compares every field the editor round-trips, including the ones from
 // issue #71 (pattern names, sprite layers, hitboxes, effects, conditions).
+#include <cstdlib>
 #include <iostream>
 #include <cstring>
 #include <string>
@@ -180,8 +181,32 @@ static void CompareSeq(int i, const Sequence* a, const Sequence* b)
 	}
 }
 
+// --stack OWN OUT FILE0 FILE1 ...: load FILE0.. as a .txt stack does (later
+// files overlay earlier ones), save the character the way the editor does
+// with file OWN as the save target, and write OUT. Used to check that saving a
+// stacked character does not bake the other files' patterns into its own.
+static int StackMode(int argc, char** argv)
+{
+	const int own = std::atoi(argv[2]);
+	const std::string out = argv[3];
+	FrameData fd;
+	// Same rule as LoadFromIni: in a UNI-style stack (own file 1, first file
+	// _temp), files after the own one only fill empty slots.
+	for (int i = 4; i < argc; ++i) {
+		const bool fallback = argc - 4 > 1 && own == 1 && i - 4 > own;
+		if (!fd.load(argv[i], i > 4, fallback)) { std::cerr << "load failed: " << argv[i] << "\n"; return 2; }
+	}
+	if (argc - 4 > 1) fd.setOwnFile(own);
+	std::cout << "stack of " << (argc - 4) << " file(s), own file " << own
+	          << ", inherited patterns left out: " << fd.inheritedPatternCount() << "\n";
+	if (!fd.save(out.c_str())) { std::cerr << "save failed\n"; return 6; }
+	return 0;
+}
+
 int main(int argc, char** argv)
 {
+	if (argc >= 5 && std::string(argv[1]) == "--stack")
+		return StackMode(argc, argv);
 	if (argc < 2) {
 		std::cerr << "usage: roundtrip <input.ha6> [output.ha6]\n";
 		return 1;
