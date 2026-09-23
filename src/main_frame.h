@@ -62,6 +62,7 @@ public:
 	void LoadSettings();
 	void ProcessStartupArgs();   // --open / --capture (startup_args.cpp)
 	uint64_t m_startupViewId = 0;
+	double m_lastSceneMs = 0.0;   // CPU time of the last main-view scene pass
 
 private:
 	ContextGl *context;

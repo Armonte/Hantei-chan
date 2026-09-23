@@ -18,6 +18,7 @@
 //   --export-crop all|each
 //   --save-project <hproj>  save the project (atomic) before quitting
 //   --capture-windows <prefix>  save every detached OS window (PrintWindow) as <prefix>_<n>.png
+//   --stats <file>       frames 10-19: average scene render / onion-skin cost (CPU ms)
 //   --quit               quit after the actions even without --capture
 #include <string>
 #include <cwchar>
@@ -44,6 +45,9 @@ struct StartupArgs {
 	bool exportSpawns = true;
 	bool exportFitEach = false;
 	std::string saveProject;
+	std::string stats;           // UTF-8
+	double sceneMs = 0, onionSimMs = 0, onionTotalMs = 0;
+	int statFrames = 0, onionSamples = 0;
 	bool quit = false;
 };
 
