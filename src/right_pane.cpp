@@ -25,7 +25,22 @@ void RightPane::Draw()
 		if(nframes >= 0)
 		{
 			Frame &frame = seq->frames[currState.frame];
-			if (ImGui::TreeNode("Attack data"))
+			// The attack record (ATST) is written only for frames that have an
+			// attack box; everything else is "null" attack data to the game, no
+			// matter what the fields below say. Show which one this frame is (#79).
+			const bool atSaved = frame.hitboxes.lower_bound(25) != frame.hitboxes.end();
+			const char* atLabel = atSaved ? "Attack data###AttackData"
+			                              : "Attack data (null: no attack box)###AttackData";
+			if (!atSaved) ImGui::PushStyleColor(ImGuiCol_Text, ImGui::GetStyleColorVec4(ImGuiCol_TextDisabled));
+			const bool atOpen = ImGui::TreeNode(atLabel);
+			if (!atSaved) ImGui::PopStyleColor();
+			if (ImGui::IsItemHovered())
+				ImGui::SetTooltip(atSaved
+					? "This frame has an attack box, so its attack data is saved."
+					: "No attack box on this frame: the attack data is not saved,\n"
+					  "and the game treats the frame as having no attack properties.\n"
+					  "Add an attack box (25+) to make it active.");
+			if (atOpen)
 			{
 				AtDisplay(&frame.AT, frameData, currState.pattern, [this]() { markModified(); });
 				if(ImGui::Button("Copy AT")) {
@@ -37,6 +52,15 @@ void RightPane::Draw()
 					frameData->mark_modified(currState.pattern);
 					markModified();
 				}
+				ImGui::SameLine(0,20.f);
+				if(ImGui::Button("Reset AT")) {
+					frame.AT = Frame_AT{};
+					frame.AT.correction = 100; // what a freshly parsed ATST starts from
+					frameData->mark_modified(currState.pattern);
+					markModified();
+				}
+				if (ImGui::IsItemHovered())
+					ImGui::SetTooltip("Reset every attack field to its default.");
 				ImGui::TreePop();
 				ImGui::Separator();
 			}

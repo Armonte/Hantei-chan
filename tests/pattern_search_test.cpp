@@ -11,6 +11,7 @@
 
 #include "framedata.h"
 #include "imsearch.h"
+#include "frame_disp/frame_disp_if.h"
 
 #include <imgui.h>
 
@@ -227,6 +228,45 @@ int main(int argc, char** argv)
 		}
 		for (const auto& q : qs) { frames += TypeQuery(pane, q); ++queries; }
 		std::printf("%s: %zu names, %zu queries\n", labels[s].c_str(), pane.names.size(), qs.size());
+	}
+
+	// Condition panels (every type) with pattern fields, including IF 18's
+	// pattern picker popup, drawn with asserts live (issue #57).
+	{
+		FrameData fd;
+		bool haveFd = !files.empty() && fd.load(files[0].c_str());
+		std::vector<Frame_IF> ifs;
+		for (int t = 0; t < 128; ++t) { Frame_IF f{}; f.type = t; if (t == 18) f.parameters[1] = 256; ifs.push_back(f); }
+		int modified = 0;
+		for (int pass = 0; pass < 4; ++pass) {
+			ImGui::GetIO().DeltaTime = 1.0f / 60.0f;
+			ImGui::NewFrame();
+			ImGui::SetNextWindowSize(ImVec2(700, 700), ImGuiCond_Always);
+			ImGui::Begin("Right Pane");
+			if (pass >= 2) ImGui::SetNextItemOpen(true);
+			IfDisplay(&ifs, nullptr, haveFd ? &fd : nullptr, 0, [&]() { ++modified; });
+			ImGui::End();
+			ImGui::Render();
+			CheckDrawData();
+		}
+		std::printf("condition panels: %zu types drawn\n", ifs.size());
+		if (haveFd) {
+			// Open the picker popup directly and draw it.
+			int value = 5;
+			for (int pass = 0; pass < 3; ++pass) {
+				ImGui::NewFrame();
+				ImGui::Begin("Picker");
+				ImGui::InputInt("v", &value);
+				ImGui::PushID("Owner pattern");
+				if (pass == 0) ImGui::OpenPopup("##patternPicker");
+				ImGui::PopID();
+				static const PatternPickerExtra extra[] = {{256, "Owner is standing"}};
+				PatternPickerButton("Owner pattern", &value, &fd, extra, 1);
+				ImGui::End();
+				ImGui::Render();
+				CheckDrawData();
+			}
+		}
 	}
 
 	ImSearch::DestroyContext();

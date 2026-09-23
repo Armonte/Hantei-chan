@@ -299,6 +299,8 @@ add_executable(pattern_search_test
 	src/framedata_save.cpp
 	src/framedata_ha4.cpp
 	src/misc.cpp
+	src/extension_profile.cpp
+	src/imgui_utils.cpp
 	tinyalloc/tinyalloc.c
 	imsearch/imsearch.cpp
 	imgui/imgui.cpp
