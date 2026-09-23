@@ -2,10 +2,11 @@
 #define EFFECT_DAMAGE_H_GUARD
 
 // ============================================================================
-// Effect Type 5: Damage
+// Effect Type 5: Held victim command
 // ============================================================================
-// Direct damage to opponent
-// Includes damage value, hit effects, meter gain, scaling, etc.
+// MBAA Effect5_HeldVictimCommand 0x45D490 (MBAA_NAME_AUDIT.md 2.1): acts on the
+// HELD victim (throw/grab target), not on "the opponent" in general.
+// No0 added status, No1 damage, No2 flip victim facing, No3 victim meter.
 // ============================================================================
 
 static inline void DrawEffectDamage_Type5(Frame_EF& effect, FrameData* frameData, int patternIndex, std::function<void()> markModified)
@@ -15,13 +16,15 @@ static inline void DrawEffectDamage_Type5(Frame_EF& effect, FrameData* frameData
 	constexpr float width = 75.f;
 
 			const char* const damageTypes[] = {
-				"0: Set added effect",
-				"1: Damage opponent",
-				"4: Unknown (obsolete?)",
+				"0: Set added effect on victim",
+				"1: Damage held victim",
+				"2: Flip victim facing",
+				"3: Add to victim meter",
+				"4: No-op in MBAA (obsolete)",
 			};
 
 			int typeIndex = -1;
-			int knownTypes[] = {0, 1, 4};
+			int knownTypes[] = {0, 1, 2, 3, 4};
 			for(int j = 0; j < IM_ARRAYSIZE(knownTypes); j++) {
 				if(no == knownTypes[j]) {
 					typeIndex = j;
@@ -109,14 +112,21 @@ static inline void DrawEffectDamage_Type5(Frame_EF& effect, FrameData* frameData
 				}
 
 				im::SetNextItemWidth(width);
-				im::DragInt("VS damage", &p[5]);
+				im::DragInt("Red damage", &p[5]);
 				if(im::IsItemEdited()) {
 				if (frameData && patternIndex >= 0) frameData->mark_modified(patternIndex);
 			}
 			if(im::IsItemDeactivatedAfterEdit()) {
 				markModified();
 			}
-			} else if(no == 4) { // Unknown/obsolete
+			} else if(no == 2) { // Flip victim facing
+				im::TextDisabled("No parameters");
+			} else if(no == 3) { // Victim meter
+				im::SetNextItemWidth(width);
+				if(im::InputInt("Meter change", &p[0], 0, 0)) markModified();
+				im::SameLine(); im::TextDisabled("(?)");
+				if(im::IsItemHovered()) Tooltip("Victim meter += value, clamped 0..30000");
+			} else if(no == 4) { // Not handled by MBAA
 				im::SetNextItemWidth(width);
 				im::DragInt("Unknown", &p[0]);
 				if(im::IsItemEdited()) {
@@ -127,7 +137,7 @@ static inline void DrawEffectDamage_Type5(Frame_EF& effect, FrameData* frameData
 			}
 				im::SameLine(); im::TextDisabled("(?)");
 				if(im::IsItemHovered()) {
-					Tooltip("Always -10, probably obsolete");
+					Tooltip("Always -10 in data; MBAA's EF5 handler only knows No 0-3, so this does nothing");
 				}
 			} else {
 				// Unknown damage type

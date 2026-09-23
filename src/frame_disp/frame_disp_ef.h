@@ -17,9 +17,13 @@
 // - Opponent state (types 4, 14)
 // - Damage (type 5)
 // - Misc effects (type 6) - THE BIG ONE with 30+ sub-types!
-// - Actors (type 8)
+// - System effects / round banners (type 7)
+// - Actors (types 8, 108)
 // - Audio (type 9)
-// - Special/unknown (types 257, 1000, 10002)
+// - Object behaviour params (type 30)
+// - Special (types 257, 1000, 10002)
+// Type/param meanings: docs/tag_research/MBAA_NAME_AUDIT.md section 2 (IDA-verified).
+// Param numbering in the docs is 1-based (p1 = p[0]).
 //
 // Each category is in its own file in effects/ directory for better organization
 // ============================================================================
@@ -78,8 +82,9 @@ inline void EfDisplay(std::vector<Frame_EF> *efList_, Frame_EF *singleClipboard 
 		// Build header label with effect type
 		int typeValue = efList[i].type;
 		int typeIndex = -1;
-		int knownTypes[] = {0, 1, 2, 3, 4, 5, 6, 8, 9, 11, 14, 101, 111, 257, 1000, 10002};
-		for(int j = 0; j < IM_ARRAYSIZE(knownTypes); j++) {
+		const int* knownTypes = knownEffectTypes;
+		static_assert(IM_ARRAYSIZE(knownEffectTypes) == IM_ARRAYSIZE(effectTypes), "effectTypes/knownEffectTypes mismatch");
+		for(int j = 0; j < IM_ARRAYSIZE(knownEffectTypes); j++) {
 			if(typeValue == knownTypes[j]) {
 				typeIndex = j;
 				break;
@@ -318,10 +323,12 @@ static inline void DrawSmartEffectUI(Frame_EF& effect, FrameData* frameData, int
 	switch(effect.type) {
 		case 1:   // Spawn Pattern
 		case 101: // Spawn Relative Pattern
+		case 1000: // Spawn Pattern once (var-guarded)
 			DrawEffectSpawn_Type1_101(effect, frameData, patternIndex, markModified);
 			break;
 
 		case 2: // Various Effects
+		case 10002: // Various Effects, deferred pass (same sub-No table as EF2)
 			DrawEffectVisual_Type2(effect, frameData, patternIndex, markModified);
 			break;
 
@@ -334,12 +341,12 @@ static inline void DrawSmartEffectUI(Frame_EF& effect, FrameData* frameData, int
 			DrawEffectSpawn_Type11_111(effect, frameData, patternIndex, markModified);
 			break;
 
-		case 4:  // Set Opponent State (no bounce reset)
-		case 14: // Set Opponent State (reset bounces)
+		case 4:  // Set held victim state (no bounce reset)
+		case 14: // Set held victim state (reset bounces)
 			DrawEffectState_Type4_14(effect, frameData, patternIndex, markModified);
 			break;
 
-		case 5: // Damage
+		case 5: // Held victim command
 			DrawEffectDamage_Type5(effect, frameData, patternIndex, markModified);
 			break;
 
@@ -347,7 +354,12 @@ static inline void DrawSmartEffectUI(Frame_EF& effect, FrameData* frameData, int
 			DrawEffectMisc_Type6(effect, frameData, patternIndex, markModified);
 			break;
 
-		case 8: // Spawn Actor (effect.ha6)
+		case 7: // System effect (round call / KO banner)
+			DrawEffectUnknown(effect, frameData, patternIndex, markModified);
+			break;
+
+		case 8:   // Spawn Actor (effect.ha6)
+		case 108: // Same as 8
 			DrawEffectActor_Type8(effect, frameData, patternIndex, markModified);
 			break;
 
@@ -355,9 +367,8 @@ static inline void DrawSmartEffectUI(Frame_EF& effect, FrameData* frameData, int
 			DrawEffectAudio_Type9(effect, frameData, patternIndex, markModified);
 			break;
 
-		case 257:  // Arc typo
-		case 1000: // Spawn and follow
-		case 10002: // Unknown
+		case 30:   // Object behaviour params
+		case 257:  // Not dispatched (Arc typo)
 			DrawEffectUnknown(effect, frameData, patternIndex, markModified);
 			break;
 
