@@ -21,6 +21,8 @@
 void MainFrame::DrawUi()
 {
 	ImGuiID errorPopupId = ImGui::GetID("Loading Error");
+	shortcuts.beginFrame();
+	UpdateTransport();
 	
 
 	//Fullscreen docker to provide the layout for the panes
@@ -394,15 +396,19 @@ void MainFrame::DrawUi()
 	// Only draw panes if we have an active view
 	auto* view = getActiveView();
 	if (view) {
-		// Begin undo frame - save snapshot BEFORE any modifications
+		// Undo: make sure the committed baseline exists before any pane can
+		// edit, and remember where the user is so undo can navigate back.
 		auto* character = view->getCharacter();
-		if (character && character->undoManager.isEnabled()) {
-			int patternIndex = view->getState().pattern;
-			Sequence* seq = character->frameData.get_sequence(patternIndex);
-			if (seq) {
-				character->undoManager.beginFrame(patternIndex, *seq);
-			}
+		if (character) {
+			character->undoManager.noteFocus(view->getState().pattern, view->getState().frame);
+			character->undoManager.ensureBaseline();
 		}
+
+		// This view's surface owns focus-scoped shortcuts for the next key
+		// messages (a later claim in the frame, e.g. a command workspace, wins).
+		shortcuts.claimFocus(view->isStageView() ? ShortcutContext::stageView
+			: view->isPatEditor() ? ShortcutContext::patEditor
+			: ShortcutContext::characterView, (uint64_t)(uintptr_t)view);
 
 		// Set effectFrameData on all panes if effect.ha6 is loaded (per-character)
 		if (character && character->effectCharacter) {
@@ -427,9 +433,21 @@ void MainFrame::DrawUi()
 			if (view->getToolPane() && view->getToolPane()->isVisible) view->getToolPane()->Draw();
 		}
 
-		// End undo frame - commit snapshot if anything was modified
+		// Undo: a step ends when no widget is active, no mouse button is held
+		// and no explicit transaction (box draw, position drag) is open. Every
+		// edit made during the gesture - on any pattern - becomes one step.
 		if (character) {
-			character->undoManager.endFrame();
+			const ImGuiIO& io = ImGui::GetIO();
+			const bool gesture = ImGui::IsAnyItemActive() ||
+				io.MouseDown[0] || io.MouseDown[1] || io.MouseDown[2];
+			auto& undo = character->undoManager;
+			undo.endFrame(gesture);
+			// Tab '*' follows the history: undoing back to the saved
+			// revision clears it, any other committed revision sets it.
+			if (!gesture && !undo.inTransaction()) {
+				if (undo.isClean()) character->clearModified();
+				else character->markModified();
+			}
 		}
 	}
 	aboutWindow.Draw();
@@ -564,6 +582,8 @@ void MainFrame::DrawUi()
 		if (!bgRes.openPath.empty()) loadStageFile(bgRes.openPath);
 	}
 
+	DrawPositionTool();
+	shortcuts.endFrame();
 	RenderUpdate();
 }
 
@@ -1327,6 +1347,8 @@ void MainFrame::HandleMouseDown(bool dragRight, bool dragLeft)
 
 void MainFrame::HandleMouseUp(bool dragRight, bool dragLeft)
 {
+	if (dragRight && m_boxDragCharacter) EndBoxDrag();
+	if (dragLeft && m_posDrag.active) EndPositionDrag(false);
 	auto* view = getActiveView();
 	if (view && view->isStageView() && dragLeft) {
 		bgCamera.EndDrag();
@@ -1360,6 +1382,13 @@ void MainFrame::HandleMouseDrag(int x_, int y_, bool dragRight, bool dragLeft)
 	auto* active = getActiveCharacter();
 	if (!active) return;
 
+	// A position-tool drag owns the left button (no panning while it runs).
+	if (dragLeft && m_posDrag.active)
+	{
+		PositionDragBy(x_, y_);
+		return;
+	}
+
 	if(dragRight)
 	{
 		if (view->getBoxPane()) view->getBoxPane()->BoxDrag(x_, y_);
@@ -1385,200 +1414,18 @@ void MainFrame::RightClick(int x_, int y_)
 	auto* boxPane = view->getBoxPane();
 	if (!boxPane) return;
 
+	// The whole right-drag (start + every drag update) is one undo step,
+	// closed in HandleMouseUp / CancelViewportGestures.
+	if (m_boxDragCharacter) EndBoxDrag();
+	active->undoManager.beginTransaction("Draw box");
+	m_boxDragCharacter = active;
+
 	boxPane->BoxStart((x_ - active->renderX - clientRect.x/2)/render.scale,
 	                  (y_ - active->renderY - clientRect.y/2)/render.scale);
 }
 
-bool MainFrame::HandleKeys(uint64_t vkey)
-{
-	bool ctrlPressed = GetKeyState(VK_CONTROL) & 0x8000;
-
-	// Multi-view shortcuts (work even without active view)
-	if (ctrlPressed) {
-		switch (vkey) {
-		case VK_TAB:
-			// Ctrl+Tab: switch to next view
-			if (!views.empty()) {
-				int nextIndex = (activeViewIndex + 1) % views.size();
-				setActiveView(nextIndex);
-				return true;
-			}
-			break;
-		case 'W':
-			// Ctrl+W: close active view
-			if (activeViewIndex >= 0 && activeViewIndex < views.size()) {
-				tryCloseView(activeViewIndex);
-				return true;
-			}
-			break;
-		case 'Z':
-			// Ctrl+Z: undo
-			if (auto* active = getActiveCharacter()) {
-				auto* view = getActiveView();
-				if (view) {
-					int patternIndex = view->getState().pattern;
-					Sequence* currentSeq = active->frameData.get_sequence(patternIndex);
-					if (currentSeq) {
-						// Make a copy of current sequence BEFORE calling undo
-						Sequence currentSeqCopy = *currentSeq;
-
-						active->undoManager.setEnabled(false);
-						SequenceSnapshot* snapshot = active->undoManager.undo(patternIndex, currentSeqCopy);
-						if (snapshot) {
-							Sequence* targetSeq = active->frameData.get_sequence(snapshot->patternIndex);
-							if (targetSeq) {
-								*targetSeq = snapshot->sequence;
-								
-								// Clear pending snapshot to prevent committing stale state
-								active->undoManager.clearPending();
-
-								// Check if we're at clean state
-								if (active->undoManager.isAtCleanState()) {
-									// Clear both character and pattern modified flags
-									active->clearModified();
-									targetSeq->modified = false;
-								} else {
-									// Mark both character and pattern as modified
-									active->markModified();
-									active->frameData.mark_modified(snapshot->patternIndex);
-								}
-
-								// Validate frame index after undo
-								auto& state = view->getState();
-								int frameCount = targetSeq->frames.size();
-								if (state.frame >= frameCount) {
-									state.frame = frameCount > 0 ? frameCount - 1 : 0;
-								}
-
-								// Force sprite reload by resetting spriteId
-								state.spriteId = -1;
-
-								// Force spawn tree rebuild on next frame
-								state.forceSpawnTreeRebuild = true;
-
-								// Refresh main pane to update pattern names
-								if (view->getMainPane()) {
-									view->getMainPane()->RegenerateNames();
-								}
-							}
-						}
-						active->undoManager.setEnabled(true);
-					}
-				}
-				return true;
-			}
-			break;
-		case 'Y':
-			// Ctrl+Y: redo
-			if (auto* active = getActiveCharacter()) {
-				auto* view = getActiveView();
-				if (view) {
-					int patternIndex = view->getState().pattern;
-					Sequence* currentSeq = active->frameData.get_sequence(patternIndex);
-					if (currentSeq) {
-						// Make a copy of current sequence BEFORE calling redo
-						Sequence currentSeqCopy = *currentSeq;
-
-						active->undoManager.setEnabled(false);
-						SequenceSnapshot* snapshot = active->undoManager.redo(patternIndex, currentSeqCopy);
-						if (snapshot) {
-							Sequence* targetSeq = active->frameData.get_sequence(snapshot->patternIndex);
-							if (targetSeq) {
-								*targetSeq = snapshot->sequence;
-								
-								// Clear pending snapshot to prevent committing stale state
-								active->undoManager.clearPending();
-
-								// Check if we're at clean state
-								if (active->undoManager.isAtCleanState()) {
-									// Clear both character and pattern modified flags
-									active->clearModified();
-									targetSeq->modified = false;
-								} else {
-									// Mark both character and pattern as modified
-									active->markModified();
-									active->frameData.mark_modified(snapshot->patternIndex);
-								}
-
-								// Validate frame index after redo
-								auto& state = view->getState();
-								int frameCount = targetSeq->frames.size();
-								if (state.frame >= frameCount) {
-									state.frame = frameCount > 0 ? frameCount - 1 : 0;
-								}
-
-								// Force sprite reload by resetting spriteId
-								state.spriteId = -1;
-
-								// Force spawn tree rebuild on next frame
-								state.forceSpawnTreeRebuild = true;
-
-								// Refresh main pane to update pattern names
-								if (view->getMainPane()) {
-									view->getMainPane()->RegenerateNames();
-								}
-							}
-						}
-						active->undoManager.setEnabled(true);
-					}
-				}
-				return true;
-			}
-			break;
-		case 'S':
-			// Ctrl+Shift+S: save project as
-			if (GetKeyState(VK_SHIFT) & 0x8000) {
-				saveProjectAs();
-				return true;
-			}
-			// Ctrl+S: save project if we have one, otherwise save active character
-			else if (ProjectManager::HasCurrentProject()) {
-				saveProject();
-				return true;
-			}
-			else if (auto* active = getActiveCharacter()) {
-				saveCharacter(active);
-				return true;
-			}
-			break;
-		case 'O':
-			// Ctrl+O: open project
-			openProject();
-			return true;
-		case 'N':
-			// Ctrl+N: new project
-			newProject();
-			return true;
-		}
-	}
-
-	// View-specific shortcuts (require active view)
-	auto* view = getActiveView();
-	if (!view) return false;
-
-	switch (vkey)
-	{
-	case VK_UP:
-		AdvancePattern(-1);
-		return true;
-	case VK_DOWN:
-		AdvancePattern(1);
-		return true;
-	case VK_LEFT:
-		AdvanceFrame(-1);
-		return true;
-	case VK_RIGHT:
-		AdvanceFrame(+1);
-		return true;
-	case 'Z':
-		if (view->getBoxPane()) view->getBoxPane()->AdvanceBox(-1);
-		return true;
-	case 'X':
-		if (view->getBoxPane()) view->getBoxPane()->AdvanceBox(+1);
-		return true;
-	}
-	return false;
-}
+// HandleKeys() and the shortcut/undo/transport/position-tool handlers live
+// in ui/editor_tools_impl.h.
 
 void MainFrame::ChangeClearColor(float r, float g, float b)
 {

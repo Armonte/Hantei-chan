@@ -16,6 +16,9 @@ public:
 
 	void AdvanceBox(int dir);
 
+	// Viewport position tool (handles drawn/driven by MainFrame).
+	bool positionTool = false;
+
 private:
 	// Helper to draw spawn timeline
 	void DrawSpawnTimeline();
