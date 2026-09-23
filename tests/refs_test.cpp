@@ -7,6 +7,7 @@
 
 #include "framedata.h"
 #include "var_refs.h"
+#include "pattern_refs.h"
 
 #include <cstdio>
 #include <fstream>
@@ -88,9 +89,96 @@ static void RealFile(const char* path)
 	std::remove(b.c_str());
 }
 
+static void PatternRefs()
+{
+	FrameData fd;
+	fd.initEmpty(40);
+	auto pat = [&](int id) { Sequence* s = fd.get_sequence(id); s->frames.resize(1); s->name = "p" + std::to_string(id); s->frames[0].AF.aniType = 1; return s; };
+	Sequence* a = pat(10);
+	a->frames[0].EF.push_back(Ef(1, 11, 0, 0));      // spawn 11 (absolute, in `number`)
+	a->frames[0].EF.back().number = 11;
+	Frame_EF rel{}; rel.type = 101; rel.number = 2;  // spawn 10+2 = 12 (relative)
+	a->frames[0].EF.push_back(rel);
+	a->frames[0].IF.push_back(If(3, 0, 10000 + 12)); // branch on hit: queue 12
+	a->frames[0].IF.push_back(If(3, 0, 5));          // frame jump, not a pattern
+	Sequence* b = pat(11);
+	b->frames[0].AF.aniType = 0; b->frames[0].AF.jump = 12; // end -> pattern 12
+	pat(12);
+	Sequence* c = pat(20);
+	c->frames[0].IF.push_back(If(18, 1, 256));       // standing check, not a pattern
+	c->frames[0].IF.push_back(If(37, 0, 11));
+
+	CHECK(patrefs::Find(fd, 12).size() == 3);
+	CHECK(patrefs::Find(fd, 11).size() == 2);
+	CHECK(patrefs::Find(fd, 256).empty());
+
+	// Move 10,11,12 -> 30,31,32 with reference updates.
+	const int changed = patrefs::MovePatterns(fd, {10, 11, 12}, {30, 31, 32}, true);
+	CHECK(changed == 4); // EF1, IF3, AF jump, IF37 (the relative EF101 offset is unchanged)
+	CHECK(patrefs::IsEmptySlot(fd, 10) && patrefs::IsEmptySlot(fd, 12));
+	Sequence* a2 = fd.get_sequence(30);
+	CHECK(a2->name == "p10");
+	CHECK(a2->frames[0].EF[0].number == 31);
+	CHECK(a2->frames[0].EF[1].number == 2);            // 30+2 = 32: offset unchanged
+	CHECK(a2->frames[0].IF[0].parameters[0] == 10032);
+	CHECK(a2->frames[0].IF[1].parameters[0] == 5);
+	CHECK(fd.get_sequence(31)->frames[0].AF.jump == 32);
+	CHECK(fd.get_sequence(20)->frames[0].IF[1].parameters[0] == 31);
+	CHECK(fd.get_sequence(20)->frames[0].IF[0].parameters[1] == 256);
+
+	// Paste copies of 30 and 32 into next empty slots from 0 with internal remap:
+	// 30 -> 0, 32 -> 1. The copy's relative spawn (+2 from 30 = 32) must become
+	// +1 (0 -> 1); its absolute spawn of 31 (not pasted) stays 31.
+	std::vector<Sequence> pats = {*fd.get_sequence(30), *fd.get_sequence(32)};
+	auto slots = patrefs::PlanSlots(fd, 2, 0, patrefs::Placement::NextEmpty, {30, 32});
+	CHECK(slots.size() == 2 && slots[0] == 0 && slots[1] == 1);
+	patrefs::PastePatterns(fd, pats, {30, 32}, slots, true);
+	Sequence* cp = fd.get_sequence(0);
+	CHECK(cp->frames[0].EF[1].number == 1);
+	CHECK(cp->frames[0].EF[0].number == 31);
+	CHECK(cp->frames[0].IF[0].parameters[0] == 10001);
+	// Originals untouched.
+	CHECK(fd.get_sequence(30)->frames[0].EF[1].number == 2);
+
+	// Placement: next empty skips filled slots; consecutive does not.
+	auto ne = patrefs::PlanSlots(fd, 3, 30, patrefs::Placement::NextEmpty, {});
+	CHECK(ne[0] == 33 && ne[1] == 34 && ne[2] == 35);
+	auto co = patrefs::PlanSlots(fd, 3, 30, patrefs::Placement::Consecutive, {});
+	CHECK(co[0] == 30 && co[1] == 31 && co[2] == 32);
+	auto og = patrefs::PlanSlots(fd, 2, 0, patrefs::Placement::OriginalIds, {7, 99});
+	CHECK(og[0] == 7 && og[1] == -1);
+}
+
+// Move every pattern of a real file by +0 through a temporary slot and back:
+// MovePatterns + remap must give the original bytes.
+static void RealMove(const char* path)
+{
+	FrameData fd;
+	if (!fd.load(path)) return;
+	const int n = fd.get_sequence_count();
+	int free1 = -1;
+	for (int p = n - 1; p >= 0; --p) if (patrefs::IsEmptySlot(fd, p)) { free1 = p; break; }
+	int src = -1;
+	for (int p = 0; p < n; ++p) if (!patrefs::Find(fd, p).empty() && !fd.get_sequence(p)->frames.empty()) { src = p; if (p > 20) break; }
+	if (free1 < 0 || src < 0) return;
+	CHECK(fd.save("refs_test_m1.tmp"));
+	const size_t refs = patrefs::Find(fd, src).size();
+	patrefs::MovePatterns(fd, {src}, {free1}, true);
+	CHECK(patrefs::Find(fd, src).empty() || src == 0);
+	CHECK(patrefs::Find(fd, free1).size() == refs);
+	patrefs::MovePatterns(fd, {free1}, {src}, true);
+	CHECK(fd.save("refs_test_m2.tmp"));
+	CHECK(ReadAll("refs_test_m1.tmp") == ReadAll("refs_test_m2.tmp"));
+	std::printf("%s: moved pattern %d (%zu reference(s)) to %d and back\n", path, src, refs, free1);
+	std::remove("refs_test_m1.tmp");
+	std::remove("refs_test_m2.tmp");
+}
+
 int main(int argc, char** argv)
 {
 	Synthetic();
+	PatternRefs();
+	for (int i = 1; i < argc; ++i) RealMove(argv[i]);
 	for (int i = 1; i < argc; ++i) RealFile(argv[i]);
 	std::printf(g_fail == 0 ? "REFS_TEST_PASS\n" : "REFS_TEST_FAIL (%d)\n", g_fail);
 	return g_fail == 0 ? 0 : 1;

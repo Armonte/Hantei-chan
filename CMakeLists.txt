@@ -49,6 +49,7 @@ add_executable(${EXE}
 	src/framestate.cpp
 	src/copy_data.cpp
 	src/var_refs.cpp
+	src/pattern_refs.cpp
 	src/preview_sim.cpp
 	src/mv_script.cpp
 	src/character_instance.cpp
@@ -332,6 +333,7 @@ add_test(NAME shared_clipboard COMMAND shared_clipboard_test)
 add_executable(refs_test
 	tests/refs_test.cpp
 	src/var_refs.cpp
+	src/pattern_refs.cpp
 	src/framedata.cpp
 	src/framedata_load.cpp
 	src/framedata_save.cpp

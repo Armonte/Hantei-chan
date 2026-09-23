@@ -641,6 +641,7 @@ void MainFrame::Menu(unsigned int errorPopupId)
 			// Global windows
 			if (ImGui::MenuItem("Vectors Guide")) vectors.drawWindow = !vectors.drawWindow;
 			if (ImGui::MenuItem("Variable references (batch replace)", nullptr, m_varRefs.open)) m_varRefs.open = !m_varRefs.open;
+			if (ImGui::MenuItem("Pattern manager", nullptr, m_patMgr.open)) m_patMgr.open = !m_patMgr.open;
 			if (ImGui::MenuItem("MBAC (HA4) Inspector", nullptr, ha4ui::showInspector)) ha4ui::showInspector = !ha4ui::showInspector;
 			ImGui::EndMenu();
 		}

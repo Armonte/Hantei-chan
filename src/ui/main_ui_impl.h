@@ -455,6 +455,7 @@ void MainFrame::DrawUi()
 	vectors.Draw();
 	drawCommandEditor();
 	drawVarRefsWindow();
+	drawPatternManagerWindow();
 
 	// Background (stage) Inspector — shows the currently loaded stage's
 	// objects, lets you scrub through frames, and exposes editable fields.
