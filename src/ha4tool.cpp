@@ -12,6 +12,7 @@
 #include "framedata_ha4.h"
 #include "ha4_convert.h"
 #include "misc.h"
+#include <glad/glad.h>
 
 #include <cstdio>
 #include <cstring>
@@ -210,8 +211,13 @@ static int CmdConvert(int argc, char **argv)
 	return fails ? 1 : 0;
 }
 
+// Headless: Parts owns a Vao whose destructor calls glDeleteBuffers; there is
+// no GL context in this tool, so route it to a no-op.
+static void APIENTRY NoGlDeleteBuffers(GLsizei, const GLuint *) {}
+
 int main(int argc, char **argv)
 {
+	if (!glad_glDeleteBuffers) glad_glDeleteBuffers = NoGlDeleteBuffers;
 	if (argc < 3) {
 		printf("usage: ha4tool roundtrip|reencode|dump|convert <files...>\n");
 		return 2;
