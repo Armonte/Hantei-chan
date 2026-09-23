@@ -33,6 +33,7 @@ add_executable(${EXE}
 	src/framedata_load.cpp
 	src/framedata_save.cpp
 	src/framestate.cpp
+	src/preview_sim.cpp
 	src/mv_script.cpp
 	src/character_instance.cpp
 	src/character_view.cpp
@@ -162,6 +163,23 @@ target_compile_definitions(ha6_dump PRIVATE WIN32_LEAN_AND_MEAN HA6GUIVERSION="$
 target_link_libraries(ha6_dump PRIVATE tinyalloc)
 if(MINGW)
 	target_link_options(ha6_dump PRIVATE -static-libgcc -static-libstdc++ -static)
+endif()
+
+# Headless preview simulator driver: actor dumps, checkpoint verification, scrub bench.
+add_executable(preview_sim_tool
+	src/preview_sim_tool.cpp
+	src/preview_sim.cpp
+	src/framedata.cpp
+	src/framedata_load.cpp
+	src/framedata_save.cpp
+	src/misc.cpp
+	tinyalloc/tinyalloc.c
+)
+target_include_directories(preview_sim_tool PRIVATE "." "third_party" "${CMAKE_BINARY_DIR}/generated")
+target_compile_definitions(preview_sim_tool PRIVATE WIN32_LEAN_AND_MEAN HA6GUIVERSION="${CMAKE_PROJECT_VERSION}")
+target_link_libraries(preview_sim_tool PRIVATE tinyalloc glm)
+if(MINGW)
+	target_link_options(preview_sim_tool PRIVATE -static-libgcc -static-libstdc++ -static)
 endif()
 
 # Debug tool: dump PAT part-set data via the real loader (headless).
