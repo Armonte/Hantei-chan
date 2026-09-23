@@ -1,6 +1,8 @@
 #ifndef EFFECT_MISC_H_GUARD
 #define EFFECT_MISC_H_GUARD
 
+#include "../bof_extensions.h"
+
 // ============================================================================
 // Effect Type 6: Various Effects 2 (Miscellaneous)
 // ============================================================================
@@ -81,7 +83,8 @@ static inline void DrawEffectMisc_Type6(Frame_EF& effect, FrameData* frameData, 
 				"1100: Reverse velocity",
 			};
 
-			if(ShowComboWithManual("Sub-type", &no, effect6Types, IM_ARRAYSIZE(effect6Types), width*2, width)) {
+			const auto effect6List = Effect6TypeLabels(effect6Types, IM_ARRAYSIZE(effect6Types)); // + BOF 154 (Extended)
+			if(ShowComboWithManual("Sub-type", &no, effect6List.data(), (int)effect6List.size(), width*2, width)) {
 				markModified();
 			}
 
@@ -723,6 +726,7 @@ static inline void DrawEffectMisc_Type6(Frame_EF& effect, FrameData* frameData, 
 
 			} else if(no == 105) { // Change variable
 				im::Text("--- Change Variable ---");
+				bof::DrawVar6Presets(p, markModified); // Extended profile only
 
 				im::SetNextItemWidth(width);
 				im::DragInt("Variable ID", &p[0]);
@@ -756,6 +760,7 @@ static inline void DrawEffectMisc_Type6(Frame_EF& effect, FrameData* frameData, 
 					markModified();
 				}
 
+			} else if(no == 154 && bof::DrawEffect154(p, width, markModified)) { // BOF only (Extended profile)
 			} else if(no == 106) { // Make projectile no longer despawn on hit
 				im::Text("Deactivates EFTP1 P3 bit0");
 

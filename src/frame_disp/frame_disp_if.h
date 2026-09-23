@@ -2,6 +2,7 @@
 #define FRAME_DISP_IF_H_GUARD
 
 #include "frame_disp_common.h"
+#include "bof_extensions.h"
 #include "../cg.h"
 #include <vector>
 
@@ -143,8 +144,9 @@ inline void IfDisplay(std::vector<Frame_IF> *ifList_, Frame_IF *singleClipboard 
 		int typeIndex = ifList[i].type;
 		if(typeIndex < 0) typeIndex = 0;
 		char headerLabel[256];
-		if(typeIndex < IM_ARRAYSIZE(conditionTypes)) {
-			snprintf(headerLabel, sizeof(headerLabel), "Condition %d: %s", i, conditionTypes[typeIndex]);
+		const auto& condLabels = ConditionTypeLabels();
+		if(typeIndex < (int)condLabels.size()) {
+			snprintf(headerLabel, sizeof(headerLabel), "Condition %d: %s", i, condLabels[typeIndex]);
 		} else {
 			snprintf(headerLabel, sizeof(headerLabel), "Condition %d: Type %d", i, ifList[i].type);
 		}
@@ -176,13 +178,13 @@ inline void IfDisplay(std::vector<Frame_IF> *ifList_, Frame_IF *singleClipboard 
 			im::Indent();
 			
 			// Type dropdown
-			if(typeIndex >= IM_ARRAYSIZE(conditionTypes)) {
+			if(typeIndex >= (int)condLabels.size()) {
 				// Handle special cases (50+, 100+, 150+)
 				im::SetNextItemWidth(width*2);
 				if(im::InputInt("Type", &ifList[i].type, 0, 0)) markModified();
 			} else {
 				im::SetNextItemWidth(width*3);
-				if(im::Combo("Type", &typeIndex, conditionTypes, IM_ARRAYSIZE(conditionTypes))) {
+				if(im::Combo("Type", &typeIndex, condLabels.data(), (int)condLabels.size())) {
 					ifList[i].type = typeIndex;
 					markModified();
 				}
@@ -492,6 +494,7 @@ inline void IfDisplay(std::vector<Frame_IF> *ifList_, Frame_IF *singleClipboard 
 				};
 				im::SetNextItemWidth(width*2);
 				if(ShowComboWithManual("Turn direction", &p[4], cond14Turn, IM_ARRAYSIZE(cond14Turn), width*2, width)) markModified();
+				bof::DrawIf14Filters(p, width, markModified); // Extended profile only
 				break;
 			}
 
@@ -882,6 +885,9 @@ inline void IfDisplay(std::vector<Frame_IF> *ifList_, Frame_IF *singleClipboard 
 				im::TextDisabled("No parameters");
 				break;
 
+			case 154: case 155: case 156: case 157: // BOF only (Extended profile)
+				if(bof::DrawCondition(ifList[i].type, p, width, frameData, markModified)) break;
+				[[fallthrough]];
 			default:
 				// Generic parameter display for unknown/unimplemented types
 				im::Text("Parameters:");
