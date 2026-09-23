@@ -13,6 +13,7 @@
 #include "extension_profile.h"
 #include "framedata_ha4.h"
 #include "ha4_character.h"
+#include "game_link_panel.h"
 
 #include <imgui.h>
 #include <imgui_internal.h>

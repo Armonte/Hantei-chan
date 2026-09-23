@@ -2,6 +2,7 @@
 #include "startup_args.h"
 #include "main_frame.h"
 #include "character_instance.h"
+#include "game_link_panel.h"
 
 #include <glad/glad.h>
 #include <windows.h>
@@ -85,7 +86,9 @@ void MainFrame::ProcessStartupArgs()
 			c->cg.changePaletteNumber(gStartup.palette);
 		}
 	}
-	if (!gStartup.capture.empty() && n == 20) {
+	if (n == 2 && gStartup.gameLinkSlot >= 1 && gStartup.gameLinkSlot <= 4)
+		gamelink::StartFollowing(gStartup.gameLinkSlot - 1);
+	if (!gStartup.capture.empty() && n == (gStartup.gameLinkSlot ? 240 : 20)) {
 		RECT r; GetClientRect(WindowFromDC(context->dc), &r);
 		int w = r.right - r.left, h = r.bottom - r.top;
 		std::vector<uint8_t> rgba((size_t)w * h * 4), rgb((size_t)w * h * 3);

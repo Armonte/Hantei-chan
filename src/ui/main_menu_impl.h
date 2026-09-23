@@ -628,6 +628,7 @@ void MainFrame::Menu(unsigned int errorPopupId)
 			// Global windows
 			if (ImGui::MenuItem("Vectors Guide")) vectors.drawWindow = !vectors.drawWindow;
 			if (ImGui::MenuItem("MBAC (HA4) Inspector", nullptr, ha4ui::showInspector)) ha4ui::showInspector = !ha4ui::showInspector;
+			if (ImGui::MenuItem("Game Link (MBAACC)", nullptr, gamelink::showPanel)) gamelink::showPanel = !gamelink::showPanel;
 			ImGui::EndMenu();
 		}
 		if (ImGui::BeginMenu("Help"))
