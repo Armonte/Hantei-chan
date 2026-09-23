@@ -119,6 +119,11 @@ void BoxPane::BoxStart(int x, int y)
 
 void BoxPane::BoxDrag(int x, int y)
 {
+	BoxDragWorld(x / render->scale, y / render->scale);
+}
+
+void BoxPane::BoxDragWorld(float dx, float dy)
+{
 	auto seq = frameData->get_sequence(currState.pattern);
 	if(seq)
 	{
@@ -126,8 +131,8 @@ void BoxPane::BoxDrag(int x, int y)
 		if(frames.size()>0 && currState.frame >= 0 && currState.frame < (int)frames.size())
 		{
 			Hitbox &box = frames[currState.frame].hitboxes[currentBox];
-			dragxy[0] += x/render->scale;
-			dragxy[1] += y/render->scale;
+			dragxy[0] += dx;
+			dragxy[1] += dy;
 
 			box.xy[2] = dragxy[0];
 			box.xy[3] = dragxy[1];
@@ -140,7 +145,7 @@ void BoxPane::BoxDrag(int x, int y)
 void BoxPane::Draw()
 {
 	namespace im = ImGui;
-	im::Begin("Box Pane",0);
+	im::Begin(windowName("Box Pane").c_str(),0);
 
 
 	if(frameData->get_sequence(currState.pattern) && frameData->get_sequence(currState.pattern)->frames.size() > 0)

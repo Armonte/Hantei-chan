@@ -9,7 +9,7 @@ void RightPane::Draw()
 	bool viewJustChanged = (lastViewState != &currState);
 
 	ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(8, 8));
-	ImGui::Begin("Right Pane", 0);
+	ImGui::Begin(windowName("Right Pane").c_str(), 0);
 	ImGui::PopStyleVar();
 
 	// Restore scroll position when switching views

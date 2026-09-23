@@ -32,7 +32,7 @@ void MainPane::RegenerateNames()
 void MainPane::Draw()
 {
 	namespace im = ImGui;
-	im::Begin("Left Pane",0);
+	im::Begin(windowName("Left Pane").c_str(),0);
 	if(frameData->m_loaded)
 	{
 		// Count and display modified patterns

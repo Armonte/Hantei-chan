@@ -55,6 +55,11 @@ enum class ShortcutAction : uint8_t {
 	stepTickForward,
 	// Position tool
 	cancelGesture,
+	// Rendering (wave 2): onion skin, PNG export, detached windows
+	toggleOnionSkin,
+	exportFramePng,
+	exportSequencePng,
+	detachView,
 	count
 };
 

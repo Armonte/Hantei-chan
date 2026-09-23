@@ -413,6 +413,8 @@ void MainFrame::Menu(unsigned int errorPopupId)
 			}
 
 			ImGui::Separator();
+			DrawPackageToolsMenuItems();
+			ImGui::Separator();
 			if (ImGui::MenuItem("Exit")) PostQuitMessage(0);
 			ImGui::EndMenu();
 		}
@@ -434,10 +436,10 @@ void MainFrame::Menu(unsigned int errorPopupId)
 			const std::string redoLabel = "Redo " + (undo ? stepName(undo->peekRedo()) : std::string());
 			if (ImGui::MenuItem(undoLabel.c_str(), shortcuts.registry().label(ShortcutAction::undo).c_str(),
 			                    false, undo && undo->canUndo()))
-				PerformUndoRedo(false);
+				PerformUndoRedo(getActiveView(), false);
 			if (ImGui::MenuItem(redoLabel.c_str(), shortcuts.registry().label(ShortcutAction::redo).c_str(),
 			                    false, undo && undo->canRedo()))
-				PerformUndoRedo(true);
+				PerformUndoRedo(getActiveView(), true);
 			if (undo) {
 				ImGui::TextDisabled("History: %zu undo / %zu redo, ~%zu KiB",
 					undo->undoCount(), undo->redoCount(), undo->historyBytes() / 1024);
@@ -556,6 +558,8 @@ void MainFrame::Menu(unsigned int errorPopupId)
 
 			ImGui::EndMenu();
 		}
+		DrawRenderMenu();
+
 		if (ImGui::BeginMenu("Windows"))
 		{
 			auto* view = getActiveView();

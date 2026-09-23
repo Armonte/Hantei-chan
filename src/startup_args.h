@@ -7,7 +7,20 @@
 //   --palette N          palette number
 //   --capture <png>      after a few frames, save the window to <png> and quit
 //                        (used for automated render checks, e.g. MBAC sprites)
+// Wave 2 render checks (docs/HANTEI_WAVE2.md §7):
+//   --tick N             set the view's simulation tick (root frame follows)
+//   --onion B,A,S[,K]    onion skin: B before, A after, spacing S, K=1 keyframes
+//   --detach             move the opened view into a detached window
+//   --capture-view <png> save the opened view's own render target
+//   --export-png <dir>   export PNGs (UTF-8 path) with the options below, then continue
+//   --export-range current|pattern|A:B   (default pattern)
+//   --export-scale N  --export-bg transparent|editor  --export-boxes  --export-nospawns
+//   --export-crop all|each
+//   --save-project <hproj>  save the project (atomic) before quitting
+//   --capture-windows <prefix>  save every detached OS window (PrintWindow) as <prefix>_<n>.png
+//   --quit               quit after the actions even without --capture
 #include <string>
+#include <cwchar>
 
 struct StartupArgs {
 	std::string open;
@@ -16,7 +29,26 @@ struct StartupArgs {
 	int palette = -1;
 	std::string capture;
 	int frameCounter = 0;
+
+	int tick = -1;
+	int onionBefore = -1, onionAfter = 0, onionSpacing = 1;
+	bool onionKeyframes = false;
+	bool detach = false;
+	std::string captureView;
+	std::string captureWindows;  // UTF-8 prefix
+	std::string exportDir;       // UTF-8
+	std::string exportRange = "pattern";
+	int exportScale = 1;
+	bool exportTransparent = true;
+	bool exportBoxes = false;
+	bool exportSpawns = true;
+	bool exportFitEach = false;
+	std::string saveProject;
+	bool quit = false;
 };
+
+// Parses one wave-2 option; advances i past its value. False if not ours.
+bool ParseWave2StartupArg(const char* arg, const wchar_t* next, int& i);
 extern StartupArgs gStartup;
 
 #endif
