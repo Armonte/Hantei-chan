@@ -21,6 +21,7 @@
 #include <glm/gtc/matrix_transform.hpp>
 
 #include <algorithm>
+#include <cstdlib>
 #include <filesystem>
 
 MainFrame::MainFrame(ContextGl *context_):
@@ -166,6 +167,18 @@ void MainFrame::DrawBack()
 	glClearColor(clearColor[0], clearColor[1], clearColor[2], 1.f);
 	glClear(GL_COLOR_BUFFER_BIT |  GL_DEPTH_BUFFER_BIT);
 
+	// Dev hook: HANTEI_STAGE_PREVIEW=<stage.dat> opens that stage on the
+	// first frame and captures the stage view to C:/dev/bg_dump.png ~2 s
+	// later (used to eyeball renderer changes without the file dialog).
+	static bool stageEnvChecked = false;
+	if (!stageEnvChecked) {
+		stageEnvChecked = true;
+		if (const char* p = std::getenv("HANTEI_STAGE_PREVIEW")) {
+			loadStageFile(p);
+			bgRenderer.RequestDebugDump(120);
+		}
+	}
+
 	// Tick background animation (once per frame, regardless of which draw
 	// path we take below).
 	bgRenderer.Update();
@@ -201,9 +214,17 @@ void MainFrame::DrawBack()
 	// Ease panLast -> panX after a drag so the parallax delta decays
 	// smoothly instead of snapping (no-op while dragging or settled).
 	bgCamera.Settle();
-	// Draw the bg ourselves now — the new renderer owns its program / VAO /
-	// depth state and just needs the camera + viewport size.
-	bgRenderer.Render(bgCamera, (int)clientRect.x, (int)clientRect.y);
+	// Stage back half (band 0, render priority 10) goes under the
+	// characters; the front half (weather + band 1 "in front of characters",
+	// objhdr+21) is drawn by this guard on every exit path, after them.
+	bgRenderer.Render(bgCamera, (int)clientRect.x, (int)clientRect.y, bg::Pass::Back);
+	struct StageFrontPass {
+		MainFrame* mf;
+		~StageFrontPass() {
+			mf->bgRenderer.Render(mf->bgCamera, (int)clientRect.x,
+			                      (int)clientRect.y, bg::Pass::Front);
+		}
+	} stageFrontPass{this};
 
 	auto* active = getActiveCharacter();
 	auto* view = getActiveView();
