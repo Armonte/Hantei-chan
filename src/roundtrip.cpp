@@ -37,6 +37,7 @@ static void CompareLayer(size_t li, const Layer_Type& l1, const Layer_Type& l2)
 	std::string p = "layer " + std::to_string(li) + " ";
 	Cmp((p + "spriteId").c_str(), l1.spriteId, l2.spriteId);
 	Cmp((p + "usePat").c_str(), l1.usePat, l2.usePat);
+	Cmp((p + "AFRT").c_str(), l1.afrt, l2.afrt);
 	Cmp((p + "offset_x").c_str(), l1.offset_x, l2.offset_x);
 	Cmp((p + "offset_y").c_str(), l1.offset_y, l2.offset_y);
 	Cmp((p + "blend_mode").c_str(), l1.blend_mode, l2.blend_mode);
@@ -116,9 +117,7 @@ static void CompareFrame(const Frame& f1, const Frame& f2)
 	Cmp("ATSA addHitStun", t1.addHitStun, t2.addHitStun);
 	Cmp("ATSH starterCorrection", t1.starterCorrection, t2.starterCorrection);
 	CmpMem("ATC0 hitStunDecay", t1.hitStunDecay, t2.hitStunDecay, sizeof(t1.hitStunDecay));
-	Cmp("ATS3", t1.ats3, t2.ats3);
-	Cmp("ATS5", t1.ats5, t2.ats5);
-	Cmp("ATS6", t1.ats6, t2.ats6);
+	Cmp("ATS1..6 hitStopLegacy", t1.hitStopLegacy, t2.hitStopLegacy);
 	Cmp("ATRF", t1.atrf, t2.atrf);
 	Cmp("ATBC", t1.atbc, t2.atbc);
 	Cmp("ATVD", t1.atvd, t2.atvd);
@@ -190,10 +189,10 @@ static int StackMode(int argc, char** argv)
 	const int own = std::atoi(argv[2]);
 	const std::string out = argv[3];
 	FrameData fd;
-	// Same rule as LoadFromIni: in a UNI-style stack (own file 1, first file
-	// _temp), files after the own one only fill empty slots.
+	// Same rule as LoadFromIni: files after the own one (shared BaseData)
+	// only fill empty slots.
 	for (int i = 4; i < argc; ++i) {
-		const bool fallback = argc - 4 > 1 && own == 1 && i - 4 > own;
+		const bool fallback = argc - 4 > 1 && i - 4 > own;
 		if (!fd.load(argv[i], i > 4, fallback)) { std::cerr << "load failed: " << argv[i] << "\n"; return 2; }
 	}
 	if (argc - 4 > 1) fd.setOwnFile(own);
@@ -203,21 +202,52 @@ static int StackMode(int argc, char** argv)
 	return 0;
 }
 
+static bool ReadAll(const std::string& path, std::string& out)
+{
+	FILE* f = fopen(path.c_str(), "rb");
+	if (!f) return false;
+	char buf[65536];
+	size_t n;
+	out.clear();
+	while ((n = fread(buf, 1, sizeof(buf), f)) > 0) out.append(buf, n);
+	fclose(f);
+	return true;
+}
+
 int main(int argc, char** argv)
 {
 	if (argc >= 5 && std::string(argv[1]) == "--stack")
 		return StackMode(argc, argv);
-	if (argc < 2) {
-		std::cerr << "usage: roundtrip <input.ha6> [output.ha6]\n";
+	// Options (before the file names):
+	//   --bytes  also require the saved file to be byte-identical to the input (exit 7)
+	//   --fresh  forget the loaded encoding (ha6_enc.h) before saving, so the
+	//            writer re-encodes everything from the model alone
+	bool bytes = false, fresh = false;
+	int ai = 1;
+	for (; ai < argc && argv[ai][0] == '-' && argv[ai][1] == '-'; ++ai) {
+		std::string o = argv[ai];
+		if (o == "--bytes") bytes = true;
+		else if (o == "--fresh") fresh = true;
+	}
+	if (argc - ai < 1) {
+		std::cerr << "usage: roundtrip [--bytes] [--fresh] <input.ha6> [output.ha6]\n";
 		return 1;
 	}
-	std::string in = argv[1];
-	std::string out = (argc >= 3) ? argv[2] : (in + ".rt");
+	std::string in = argv[ai];
+	std::string out = (argc - ai >= 2) ? argv[ai + 1] : (in + ".rt");
 
 	FrameData fd1;
 	std::cout << "[1/3] Loading " << in << "\n";
 	if (!fd1.load(in.c_str())) { std::cerr << "load failed\n"; return 2; }
 	std::cout << "      " << fd1.get_sequence_count() << " sequences\n";
+
+	if (fresh) {
+		for (int i = 0; i < fd1.get_sequence_count(); ++i) {
+			Sequence* q = fd1.get_sequence(i);
+			q->ha6 = Ha6SeqEnc{};
+			for (auto& f : q->frames) f.ha6 = Ha6FrameEnc{};
+		}
+	}
 
 	std::cout << "[2/3] Saving  " << out << "\n";
 	if (!fd1.save(out.c_str())) { std::cerr << "save failed\n"; return 6; }
@@ -241,5 +271,18 @@ int main(int argc, char** argv)
 
 	std::cout << "\nResult: " << diffs << " field-level diffs across "
 	          << seqWithDiffs << " sequences\n";
-	return diffs > 0 ? 5 : 0;
+	if (diffs > 0) return 5;
+	if (bytes) {
+		std::string a, b;
+		if (!ReadAll(in, a) || !ReadAll(out, b)) { std::cerr << "read back failed\n"; return 8; }
+		if (a != b) {
+			size_t i = 0;
+			while (i < a.size() && i < b.size() && a[i] == b[i]) ++i;
+			std::cout << "Bytes differ: size " << a.size() << " vs " << b.size()
+			          << ", first difference at 0x" << std::hex << i << std::dec << "\n";
+			return 7;
+		}
+		std::cout << "Bytes identical (" << a.size() << " bytes)\n";
+	}
+	return 0;
 }

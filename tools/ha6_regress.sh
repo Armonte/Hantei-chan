@@ -18,7 +18,7 @@
 #   HA6_UNI_DIR    (default /mnt/c/games/unib/data)
 set -u
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
-RT="$ROOT/build/roundtrip.exe"
+RT="${RT_EXE:-$ROOT/build/roundtrip.exe}"
 MBAACC_DIR="${HA6_MBAACC_DIR:-/mnt/c/games/mbaacc_tag/data}"
 UNI_DIR="${HA6_UNI_DIR:-/mnt/c/games/unib/data}"
 [ -x "$RT" ] || { echo "build first: $RT missing"; exit 2; }
@@ -48,9 +48,11 @@ stacks() { # dir label
 	while IFS= read -r t; do
 		local num; num=$(txtval "$t" FileNum); [ -z "$num" ] && continue; [ "$num" -lt 2 ] && continue
 		local tdir; tdir=$(dirname "$t"); local files=() names=()
-		for ((i=0;i<num;i++)); do local n; n=$(txtval "$t" "File0$i"); names+=("$n"); files+=("$(wp "$tdir/$n")"); done
-		local own=$((num-1)); local first; first=$(echo "${names[0]}" | tr 'A-Z' 'a-z')
-		case "$first" in _temp*|temp.*) own=1 ;; *) while [ $own -gt 0 ] && echo "${names[$own]}" | grep -qi basedata; do own=$((own-1)); done ;; esac
+		for ((i=0;i<num;i++)); do local n; n=$(txtval "$t" "$(printf 'File%02d' $i)"); names+=("$n"); files+=("$(wp "$tdir/$n")"); done
+		# Save target = FrameData::StackSaveTarget: the highest-indexed file
+		# that is not shared data (a ../ path or BaseData).
+		local own=$((num-1))
+		while [ $own -gt 0 ] && { echo "${names[$own]}" | grep -qi basedata || [ "${names[$own]:0:3}" = "../" ]; }; do own=$((own-1)); done
 		[ -f "$tdir/${names[$own]}" ] || continue
 		local base; base=$(basename "$t" .txt)
 		local out; out=$("$RT" --stack $own "$(wp "$TMP/stack_$base.ha6")" "${files[@]}" </dev/null 2>/dev/null)
@@ -63,5 +65,9 @@ stacks() { # dir label
 
 [ -d "$MBAACC_DIR" ] && { single "$MBAACC_DIR" MBAACC; stacks "$MBAACC_DIR" MBAACC; }
 [ -d "$UNI_DIR" ] && { single "$UNI_DIR" UNI; stacks "$UNI_DIR" UNI; }
+# UNI2 / MBTL project stacks (base _0 projects and MBTL 4-file variants).
+GAMEDATA="${HA6_GAMEDATA_DIR:-/mnt/c/dev/hantei-chan/gamedata}"
+[ -d "$GAMEDATA/uni2/data" ] && stacks "$GAMEDATA/uni2/data" UNI2
+[ -d "$GAMEDATA/mbtl/data" ] && stacks "$GAMEDATA/mbtl/data" MBTL
 [ $fail -eq 0 ] && echo HA6_REGRESS_PASS || echo HA6_REGRESS_FAIL
 exit $fail
