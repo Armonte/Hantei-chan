@@ -92,9 +92,12 @@ protected:
 	void			build_image_table();
 
 	const CG_Image	*get_image(unsigned int n);
+	bool			loadOwned(char *data, unsigned int size);
 public:
 	bool m_loaded;
 	bool load(const char *name);
+	// Load a CG image bank from memory (copied), e.g. the CG blob embedded in an MBAC .DAT.
+	bool loadFromMemory(const void *data, unsigned int size);
 	bool loadPalette(const char *name);
 	bool changePaletteNumber(int number);
 	int getPalNumber();

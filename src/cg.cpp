@@ -428,9 +428,28 @@ bool CG::load(const char *name) {
 	if (!ReadInMem(name, data, size)) {
 		return 0;
 	}
-	
+	return loadOwned(data, size);
+}
+
+bool CG::loadFromMemory(const void *src, unsigned int size) {
+	if (m_loaded) {
+		free();
+	}
+	if (paletteData) {
+		delete[] paletteData;
+		paletteData = nullptr;
+		palMax = 0;
+	}
+	char *data = new char[size ? size : 1];
+	memcpy(data, src, size);
+	return loadOwned(data, size);
+}
+
+// Takes ownership of `data` (new[]). Shared by load() and loadFromMemory().
+// "BMP Cutter2" (MBAC GAKIHA.DAT) has the same table layout.
+bool CG::loadOwned(char *data, unsigned int size) {
 	// verify size and header
-	if (size < 0x4f30 || memcmp(data, "BMP Cutter3", 11)) {
+	if (size < 0x4f30 || (memcmp(data, "BMP Cutter3", 11) && memcmp(data, "BMP Cutter2", 11))) {
 		delete[] data;
 		
 		return 0;

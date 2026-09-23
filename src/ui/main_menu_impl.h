@@ -168,6 +168,36 @@ void MainFrame::Menu(unsigned int errorPopupId)
 				}
 			}
 
+			// MBAC (Act Cadenza) Hantei4 .DAT; detected by content (see framedata_ha4.h)
+			if (ImGui::MenuItem("Load MBAC .DAT (Act Cadenza)..."))
+			{
+				std::string path = FileDialog(fileType::HA4, false);
+				if (!path.empty()) {
+					if (findCharacterByPath(path)) {
+						ImGui::OpenPopup(errorPopupId);
+					} else {
+						auto character = std::make_unique<CharacterInstance>();
+						if (character->loadHA6(path, false)) {
+							characters.push_back(std::move(character));
+							createViewForCharacter(characters.back().get());
+							markProjectModified();
+						} else {
+							requestErrorPopup("Load Error", "Not a Hantei4 (MBAC) or HA6 file:\n" + path);
+						}
+					}
+				}
+			}
+
+			if (ImGui::MenuItem("Export MBAC as HA6...", nullptr, false, hasActive && active->frameData.isHA4()))
+			{
+				std::string &&file = FileDialog(fileType::HA6, true);
+				if (!file.empty()) {
+					std::string report;
+					bool ok = ha4ui::ExportAsHA6(active, file, report);
+					requestErrorPopup(ok ? "MBAC Export" : "Export Error", report);
+				}
+			}
+
 			if (ImGui::MenuItem("Load HA6 and Patch..."))
 			{
 				std::string path = FileDialog(fileType::HA6, false);
@@ -549,6 +579,7 @@ void MainFrame::Menu(unsigned int errorPopupId)
 
 			// Global windows
 			if (ImGui::MenuItem("Vectors Guide")) vectors.drawWindow = !vectors.drawWindow;
+			if (ImGui::MenuItem("MBAC (HA4) Inspector", nullptr, ha4ui::showInspector)) ha4ui::showInspector = !ha4ui::showInspector;
 			ImGui::EndMenu();
 		}
 		if (ImGui::BeginMenu("Help"))

@@ -9,6 +9,8 @@
 #include "version.h"
 #include "framestate.h"
 #include "misc.h"
+#include "framedata_ha4.h"
+#include "ha4_character.h"
 
 #include <imgui.h>
 #include <imgui_internal.h>
@@ -1022,6 +1024,10 @@ bool MainFrame::saveCharacter(CharacterInstance* character)
 	if (!character) return false;
 	if (character->save()) return true;
 	const std::string& path = character->getTopHA6Path();
+	if (character->frameData.isHA4() && !ha4::LastSaveError().empty()) {
+		requestErrorPopup("Save Error", "MBAC .DAT not saved: " + ha4::LastSaveError());
+		return false;
+	}
 	requestErrorPopup("Save Error", path.empty()
 		? "Character '" + character->getName() + "' has no HA6 file to save to. Use Save Character As."
 		: "Could not write " + path);
