@@ -121,8 +121,18 @@ inline void AtDisplay(Frame_AT *at, FrameData *frameData = nullptr, int patternI
 		markModified();
 	}
 	im::SameLine(0.f, 20);
-	if(im::Checkbox("Hitgrab", &at->hitgrab)) {
-		markModified();
+	if(uniFormat) {
+		// UNI2/MBTL ATNG is a byte with values up to 65 (not a bool).
+		im::SetNextItemWidth(width);
+		if(im::InputInt("Hitgrab (ATNG)", &at->hitgrab, 0, 0)) {
+			markModified();
+		}
+	} else {
+		bool hg = at->hitgrab != 0;
+		if(im::Checkbox("Hitgrab", &hg)) {
+			at->hitgrab = hg ? 1 : 0;
+			markModified();
+		}
 	}
 
 

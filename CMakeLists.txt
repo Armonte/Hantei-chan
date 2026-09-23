@@ -140,6 +140,23 @@ if(MINGW)
 	target_link_options(roundtrip PRIVATE -static-libgcc -static-libstdc++ -static)
 endif()
 
+# Issue #71: edit one pattern of a .txt stack, save, diff (tools/uni/uni_regress.sh).
+add_executable(uni_edit_test
+	tests/uni_edit_test.cpp
+	src/framedata.cpp
+	src/framedata_load.cpp
+	src/framedata_save.cpp
+	src/framedata_ha4.cpp
+	src/misc.cpp
+	tinyalloc/tinyalloc.c
+)
+target_include_directories(uni_edit_test PRIVATE "src" "." "third_party" "${CMAKE_BINARY_DIR}/generated")
+target_compile_definitions(uni_edit_test PRIVATE WIN32_LEAN_AND_MEAN HA6GUIVERSION="${CMAKE_PROJECT_VERSION}")
+target_link_libraries(uni_edit_test PRIVATE tinyalloc)
+if(MINGW)
+	target_link_options(uni_edit_test PRIVATE -static-libgcc -static-libstdc++ -static)
+endif()
+
 # Standalone smoke test for bg::File loader (no GL needed for parse-only).
 add_executable(bg_test
 	src/bg_test.cpp
