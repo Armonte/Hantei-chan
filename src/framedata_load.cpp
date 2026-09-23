@@ -158,6 +158,27 @@ unsigned int *fd_frame_AT_load(unsigned int *data, const unsigned int *data_end,
 			// UNI starter correction
 			AT->starterCorrection = data[0];
 			++data;
+		} else if (!memcmp(buf, "ATS3", 4)) {
+			// UNI2 flag tag, unknown semantics, no payload. Preserved for save.
+			AT->ats3 = true;
+		} else if (!memcmp(buf, "ATS5", 4)) {
+			// UNI2 flag tag, unknown semantics, no payload. Preserved for save.
+			AT->ats5 = true;
+		} else if (!memcmp(buf, "ATS6", 4)) {
+			// UNI2 flag tag, unknown semantics, no payload. Preserved for save.
+			AT->ats6 = true;
+		} else if (!memcmp(buf, "ATRF", 4)) {
+			// UNI2 tag, unknown semantics (observed 25/100/200). Preserved for save.
+			AT->atrf = data[0];
+			++data;
+		} else if (!memcmp(buf, "ATBC", 4)) {
+			// UNI2 tag, unknown semantics (observed 30). Preserved for save.
+			AT->atbc = data[0];
+			++data;
+		} else if (!memcmp(buf, "ATVD", 4)) {
+			// MBTL tag, unknown semantics (observed 20). Preserved for save.
+			AT->atvd = data[0];
+			++data;
 		} else if (!memcmp(buf, "ATED", 4)) {
 			break;
 		} else {
@@ -582,11 +603,10 @@ unsigned int *fd_frame_AF_load(unsigned int *data, const unsigned int *data_end,
 		} else if (!memcmp(buf, "AFED", 4)) {
 			break;
 		} else {
-			// Unknown AF tag - silently skip
-			// char tag[5]{};
-			// memcpy(tag,buf,4);
-			// test.Print(data, data_end);
-			// std::cout <<"\tUnknown AF tag: " << tag <<"\n";
+			//Unknown tags are dropped on save — never skip one silently (issues #71/#68).
+			char tag[5]{};
+			memcpy(tag,buf,4);
+			std::cout <<"\tUnknown AF tag: " << tag <<"\n";
 		}
 		//Unhandled: None, unless they're not in vanilla melty files.
 	}

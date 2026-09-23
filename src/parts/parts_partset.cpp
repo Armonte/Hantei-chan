@@ -129,6 +129,13 @@ unsigned int* PartSet<Allocator>::PrLoad(unsigned int* data, const unsigned int*
             memcpy(pr.rotation, data, sizeof(float) * 4);
             data += 4;
         }
+        else if (!memcmp(buf, "PRAS", 4)) {
+            // Rotation pivot offset (2 ints), applied between scale and
+            // rotation in the game (uni2.exe PatPart_BuildTransformMatrix).
+            // Used by UNI2 chr020; previously desynced the parser.
+            memcpy(pr.pras, data, sizeof(int) * 2);
+            data += 2;
+        }
         else if (!memcmp(buf, "PRPR", 4)) {
             // Priority. Higher value means draw first / lower on the stack
             pr.priority = *data;
@@ -314,6 +321,13 @@ void PartSet<>::Save(std::ofstream &file, const PartSet *partSet, bool mbaacc)
             file.write(VAL(prop->rotation[1]), 4);
             file.write(VAL(prop->rotation[2]), 4);
             file.write(VAL(prop->rotation[3]), 4);
+        }
+
+        if(prop->pras[0] != 0 || prop->pras[1] != 0)
+        {
+            file.write("PRAS", 4);
+            file.write(VAL(prop->pras[0]), 4);
+            file.write(VAL(prop->pras[1]), 4);
         }
 
         // PRPR is an int32 in the file; we store priority as float to embed a

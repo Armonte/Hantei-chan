@@ -15,6 +15,7 @@ struct PartProperty {
     int propId = -1;
     float priority = 0.f;  // Float to preserve sub-ordering from propId
     float rotation[4]{}; // PRA3: 3D rotation (4 floats)
+    int pras[2]{}; // PRAS: rotation pivot offset, applied between scale and rotation
     int x = 0;
     int y = 0;
     float scaleX = 1.f;

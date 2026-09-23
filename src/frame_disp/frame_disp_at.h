@@ -30,8 +30,10 @@ inline void AtDisplay(Frame_AT *at, FrameData *frameData = nullptr, int patternI
 		}
 	};
 
-	
+
 	constexpr float width = 75.f;
+	//Some attack flags mean different things in UNI/MBTL/UNI2 than in MBAACC (issue #74).
+	const bool uniFormat = frameData && frameData->usesUniFormat();
 	unsigned int flagIndex = -1;
 
 	if(BitField("Guard Flags", &at->guard_flags, &flagIndex)) {
@@ -62,7 +64,9 @@ inline void AtDisplay(Frame_AT *at, FrameData *frameData = nullptr, int patternI
 		case 1: Tooltip("Can't KO"); break;
 		case 2: Tooltip("Make enemy unhittable"); break;
 		case 3: Tooltip("Can't be clashed with"); break;
-		case 4: Tooltip("Auto super jump cancel"); break;
+		case 4: Tooltip(uniFormat ?
+			"Counter hit vector swap:\nif the attack's vector has a counter hit\nconditional in the vector table, it is used on CH"
+			: "Auto super jump cancel"); break;
 		case 5: Tooltip("Don't increase combo counter"); break;
 		case 6: Tooltip("Shake the screen on hit"); break;
 		case 7: Tooltip("Not air techable"); break;

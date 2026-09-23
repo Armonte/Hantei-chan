@@ -33,6 +33,7 @@ add_executable(${EXE}
 	src/framedata_load.cpp
 	src/framedata_save.cpp
 	src/framestate.cpp
+	src/mv_script.cpp
 	src/character_instance.cpp
 	src/character_view.cpp
 	src/project_manager.cpp
@@ -58,6 +59,7 @@ add_executable(${EXE}
 	# Background (stage) system — ported from bgmk branch.
 	src/background/bg_file.cpp
 	src/background/bg_renderer.cpp
+	src/background/bg_pat.cpp
 	imsearch/imsearch.cpp
 	res/res.rc
 )
@@ -108,6 +110,7 @@ endif()
 add_executable(bg_test
 	src/bg_test.cpp
 	src/background/bg_file.cpp
+	src/background/bg_pat.cpp
 	src/cg.cpp
 	src/misc.cpp
 	tinyalloc/tinyalloc.c
@@ -143,3 +146,42 @@ if(MINGW)
 	target_link_options(pat_roundtrip PRIVATE -static-libgcc -static-libstdc++ -static)
 endif()
 
+
+
+# Debug tool: dump pattern frame data via the real loader.
+add_executable(ha6_dump
+	src/ha6_dump.cpp
+	src/framedata.cpp
+	src/framedata_load.cpp
+	src/framedata_save.cpp
+	src/misc.cpp
+	tinyalloc/tinyalloc.c
+)
+target_include_directories(ha6_dump PRIVATE "." "third_party" "${CMAKE_BINARY_DIR}/generated")
+target_compile_definitions(ha6_dump PRIVATE WIN32_LEAN_AND_MEAN HA6GUIVERSION="${CMAKE_PROJECT_VERSION}")
+target_link_libraries(ha6_dump PRIVATE tinyalloc)
+if(MINGW)
+	target_link_options(ha6_dump PRIVATE -static-libgcc -static-libstdc++ -static)
+endif()
+
+# Debug tool: dump PAT part-set data via the real loader (headless).
+add_executable(pat_dump
+	src/pat_dump.cpp
+	src/parts/parts.cpp
+	src/parts/parts_part.cpp
+	src/parts/parts_partset.cpp
+	src/parts/parts_shape.cpp
+	src/parts/parts_texture.cpp
+	src/cg.cpp
+	src/texture.cpp
+	src/vao.cpp
+	src/shader.cpp
+	src/misc.cpp
+	tinyalloc/tinyalloc.c
+)
+target_include_directories(pat_dump PRIVATE "." "third_party" "${CMAKE_BINARY_DIR}/generated")
+target_compile_definitions(pat_dump PRIVATE WIN32_LEAN_AND_MEAN HA6GUIVERSION="${CMAKE_PROJECT_VERSION}" PAT_HEADLESS)
+target_link_libraries(pat_dump PRIVATE tinyalloc glad glm OpenGL::GL)
+if(MINGW)
+	target_link_options(pat_dump PRIVATE -static-libgcc -static-libstdc++ -static)
+endif()

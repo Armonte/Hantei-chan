@@ -13,7 +13,7 @@
 // I don't know if it can cause trouble but it's something to keep in mind.
 
 // Write AF with smart format detection (AFGP for single-layer, AFGX for multi-layer)
-void WriteAF(std::ofstream &file, const Frame_AF *af)
+void WriteAF(std::ostream &file, const Frame_AF *af)
 {
 	file.write("AFST", 4);
 
@@ -240,7 +240,7 @@ void WriteAF(std::ofstream &file, const Frame_AF *af)
 	file.write("AFED", 4);
 }
 
-void WriteAS(std::ofstream &file, const Frame_AS *as)
+void WriteAS(std::ostream &file, const Frame_AS *as)
 {
 	file.write("ASST", 4);
 
@@ -325,7 +325,7 @@ void WriteAS(std::ofstream &file, const Frame_AS *as)
 }
 
 
-void WriteAT(std::ofstream &file, const Frame_AT *at, bool usedATV2)
+void WriteAT(std::ostream &file, const Frame_AT *at, bool usedATV2)
 {
 	file.write("ATST", 4);
 
@@ -412,9 +412,20 @@ void WriteAT(std::ofstream &file, const Frame_AT *at, bool usedATV2)
 		file.write("ATSN", 4);
 		file.write(VAL(at->hitStopTime), 4);
 	}
+	//UNI2 flag tags with unknown semantics — sit right before ATSU in vanilla files.
+	if(at->ats3)
+		file.write("ATS3", 4);
+	if(at->ats5)
+		file.write("ATS5", 4);
+	if(at->ats6)
+		file.write("ATS6", 4);
 	if(at->untechTime){
 		file.write("ATSU", 4);
 		file.write(VAL(at->untechTime), 4);
+	}
+	if(at->atbc){ //UNI2, unknown semantics — sits right before ATSP in vanilla files.
+		file.write("ATBC", 4);
+		file.write(VAL(at->atbc), 4);
 	}
 	if(at->hitStop){
 		file.write("ATSP", 4);
@@ -434,6 +445,10 @@ void WriteAT(std::ofstream &file, const Frame_AT *at, bool usedATV2)
 		if(at->meter_gain){
 			file.write("ATCA", 4);
 			file.write(VAL(at->meter_gain), 4);
+		}
+		if(at->atrf){ //UNI2, unknown semantics — sits right before ATHH in vanilla files.
+			file.write("ATRF", 4);
+			file.write(VAL(at->atrf), 4);
 		}
 		if(at->damageProration != 100){
 			file.write("ATHH", 4);
@@ -457,13 +472,18 @@ void WriteAT(std::ofstream &file, const Frame_AT *at, bool usedATV2)
 		}
 	}
 
+	if(at->atvd){ //MBTL, unknown semantics — sits right before ATED in vanilla files.
+		file.write("ATVD", 4);
+		file.write(VAL(at->atvd), 4);
+	}
+
 	file.write("ATED", 4);
 }
 
 // Trim trailing zero parameters: write EFPR/IFPR with the count of params up
 // through the last non-zero one, and omit the tag entirely when all are zero.
 // Matches the original encoder; saves up to 48 bytes/effect and 36 bytes/cond.
-void WriteEF(std::ofstream &file, const std::vector<Frame_EF> &ef)
+void WriteEF(std::ostream &file, const std::vector<Frame_EF> &ef)
 {
 	constexpr int maxParam = 12;
 	for(size_t i = 0; i < ef.size(); i++)
@@ -488,7 +508,7 @@ void WriteEF(std::ofstream &file, const std::vector<Frame_EF> &ef)
 	}
 }
 
-void WriteIF(std::ofstream &file, const std::vector<Frame_IF> &ifs)
+void WriteIF(std::ostream &file, const std::vector<Frame_IF> &ifs)
 {
 	constexpr int maxParam = 9;
 	for(size_t i = 0; i < ifs.size(); i++)
@@ -524,7 +544,7 @@ struct PatInfo
 	int totalAts = 0;
 };
 
-void WriteFrame(std::ofstream &file, const Frame *frame, bool usedAFGX, bool usedATV2, PatInfo &info)
+void WriteFrame(std::ostream &file, const Frame *frame, bool usedAFGX, bool usedATV2, PatInfo &info)
 {
 	file.write("FSTR", 4);
 	WriteAF(file, &frame->AF);
@@ -640,7 +660,7 @@ void WriteFrame(std::ofstream &file, const Frame *frame, bool usedAFGX, bool use
 	file.write("FEND", 4);
 }
 
-void WriteSequence(std::ofstream &file, const Sequence *seq)
+void WriteSequence(std::ostream &file, const Sequence *seq)
 {
 	if(seq->psts){
 		file.write("PSTS", 4);

@@ -107,6 +107,29 @@ private:
 	bool m_pendingProjectClose = false;
 	bool shouldOpenUnsavedProjectDialog = false;
 	enum class ProjectCloseAction { None, New, Open, Close } m_projectCloseAction = ProjectCloseAction::None;
+	std::string m_pendingProjectPath; // Open target awaiting the unsaved-changes prompt (empty = ask with file dialog)
+
+	// Project actions are never run from inside a menu/popup: the public entry
+	// points below only queue a request, and processDeferredProjectAction()
+	// runs it at the top level of DrawUi.
+	ProjectCloseAction m_deferredProjectAction = ProjectCloseAction::None;
+	std::string m_deferredProjectPath;
+	bool m_deferredProjectConfirmed = false; // true = unsaved-changes prompt already answered
+	void requestProjectAction(ProjectCloseAction action, const std::string& path, bool confirmed);
+	void processDeferredProjectAction();
+	void runProjectAction(ProjectCloseAction action, const std::string& path, bool confirmed);
+	void clearProjectState();
+	void loadProjectFromPath(const std::string& path, bool isRecent);
+	bool saveAllModifiedCharacters();
+
+	// Error popups requested from menus/popups/shortcuts are opened at the top
+	// level of DrawUi so their ID matches the BeginPopupModal that draws them.
+	const char* m_pendingErrorPopup = nullptr;
+	std::string m_errorDetail;
+	void requestErrorPopup(const char* popupName, const std::string& detail = std::string());
+	bool saveCharacter(CharacterInstance* character);  // Reports failure to the user
+	bool saveCharacterAs(CharacterInstance* character, const std::string& path);
+
 	void newProject();
 	void openProject();
 	void saveProject();

@@ -1,5 +1,8 @@
 #include "framestate.h"
+#include "framedata.h"
+#include "mv_script.h"
 #include <tinyalloc.h>
+#include <tuple>
 #include <windows.h>
 
 constexpr const wchar_t *sharedMemHandleName = L"hanteichan-shared_mem";
@@ -98,6 +101,156 @@ FrameState::~FrameState()
 	sharedMemHandle = nullptr;
 	sharedMem = nullptr;
 }
+
+// ---------------------------------------------------------------------------
+// MBTL move-script spawns (mv_script.h) — shared enumeration used by the
+// spawn tree, the timeline tick collector and the seek simulator so all
+// three (and the live-playback injection that reads the tree entries'
+// spawnTick) agree on timing.
+// ---------------------------------------------------------------------------
+
+namespace {
+
+// Frame index in seq whose AF.frameId (ha6 AFID) equals afid, or -1.
+int FrameIndexForAFID(const Sequence* seq, int afid)
+{
+	if (!seq) return -1;
+	for (int i = 0; i < (int)seq->frames.size(); i++) {
+		if (seq->frames[i].AF.frameId == afid)
+			return i;
+	}
+	return -1;
+}
+
+// Tick at the start of the given frame (durations <= 0 count as 1 tick).
+int TickAtFrameStart(const Sequence* seq, int frameIdx)
+{
+	if (!seq) return 0;
+	int tick = 0;
+	for (int i = 0; i < frameIdx && i < (int)seq->frames.size(); i++) {
+		int dur = seq->frames[i].AF.duration;
+		tick += (dur > 0 ? dur : 1);
+	}
+	return tick;
+}
+
+// One resolved script spawn occurrence with frame-accurate timing.
+struct ScriptSpawnNode {
+	const MvScriptSpawn* src = nullptr;
+	int patternId = -1;      // -1 for impact-effect markers
+	bool isImpact = false;
+	int parentIndex = -1;    // index of parent node in the output list
+	int frameInParent = 0;   // frame index in the parent pattern
+	int tick = 0;            // absolute tick from root pattern start
+	int offsetX = 0, offsetY = 0; // accumulated (parent + own)
+	int depth = 0;           // 0 = spawned by the move, 1 = by the spawned object
+	std::string source;
+};
+
+// Flatten the script spawns of a root pattern into timed nodes:
+//  - depth 0: spawns of the move block itself, timed by matching the script's
+//    frame-ID gate (frameIdRef) against the root pattern's AFIDs.
+//  - depth 1: spawns declared by the spawned object's own template block
+//    (mv=/mvname= reference), timed against the spawned pattern's AFIDs and
+//    chained under their parent node instead of being flattened to the root.
+void EnumerateScriptSpawnNodes(FrameData* mainFrameData, int patternId,
+                               std::vector<ScriptSpawnNode>& out)
+{
+	const MvScriptIndex* mvIndex = MvScriptIndex::Lookup(mainFrameData);
+	const std::vector<MvScriptSpawn>* list =
+		mvIndex ? mvIndex->spawnsForPattern(patternId) : nullptr;
+	if (!list) return;
+
+	auto rootSeq = mainFrameData->get_sequence(patternId);
+	if (!rootSeq || rootSeq->frames.empty()) return;
+
+	// Template blocks whose spawns will be chained under a resolved entry of
+	// this pattern; their flattened duplicates are skipped at root level.
+	std::set<std::string> chainedTemplates;
+	for (const auto& ss : *list) {
+		if (!ss.isImpactEffect && ss.patternId >= 0 && ss.patternId != patternId &&
+		    !ss.mvName.empty() && mvIndex->spawnsForTemplate(ss.mvName))
+			chainedTemplates.insert(ss.mvName);
+	}
+
+	for (const auto& ss : *list) {
+		if (!ss.ownerMove.empty() && chainedTemplates.count(ss.ownerMove))
+			continue; // appears as a grandchild below instead
+
+		// Timing: match the script's frame-ID gate against the pattern AFIDs.
+		int rootFrame = 0;
+		if (ss.frameIdRef >= 0) {
+			int f = FrameIndexForAFID(rootSeq, ss.frameIdRef);
+			if (f >= 0) rootFrame = f;
+		}
+		int rootTick = TickAtFrameStart(rootSeq, rootFrame);
+
+		if (ss.isImpactEffect) {
+			ScriptSpawnNode node;
+			node.src = &ss;
+			node.isImpact = true;
+			node.frameInParent = rootFrame;
+			node.tick = rootTick;
+			node.offsetX = ss.offsetX;
+			node.offsetY = ss.offsetY;
+			node.source = ss.source;
+			out.push_back(node);
+			continue;
+		}
+
+		if (ss.patternId < 0 || ss.patternId == patternId)
+			continue; // unresolved: panel-only (box_pane lists them)
+		auto childSeq = mainFrameData->get_sequence(ss.patternId);
+		if (!childSeq || childSeq->frames.empty())
+			continue;
+
+		int rootIdx = (int)out.size();
+		{
+			ScriptSpawnNode node;
+			node.src = &ss;
+			node.patternId = ss.patternId;
+			node.frameInParent = rootFrame;
+			node.tick = rootTick;
+			node.offsetX = ss.offsetX;
+			node.offsetY = ss.offsetY;
+			node.source = ss.source;
+			out.push_back(node);
+		}
+
+		// Grandchildren: the spawned object's template block's own spawns.
+		const std::vector<MvScriptSpawn>* tplList =
+			ss.mvName.empty() ? nullptr : mvIndex->spawnsForTemplate(ss.mvName);
+		if (!tplList)
+			continue;
+		for (const auto& tpl : *tplList) {
+			if (tpl.isImpactEffect)
+				continue;
+			if (tpl.patternId < 0 || tpl.patternId == ss.patternId)
+				continue;
+			auto gcSeq = mainFrameData->get_sequence(tpl.patternId);
+			if (!gcSeq || gcSeq->frames.empty())
+				continue;
+			int childFrame = 0;
+			if (tpl.frameIdRef >= 0) {
+				int f = FrameIndexForAFID(childSeq, tpl.frameIdRef);
+				if (f >= 0) childFrame = f;
+			}
+			ScriptSpawnNode node;
+			node.src = &tpl;
+			node.patternId = tpl.patternId;
+			node.parentIndex = rootIdx;
+			node.frameInParent = childFrame;
+			node.tick = rootTick + TickAtFrameStart(childSeq, childFrame);
+			node.offsetX = ss.offsetX + tpl.offsetX;
+			node.offsetY = ss.offsetY + tpl.offsetY;
+			node.depth = 1;
+			node.source = "via " + ss.mvName + "  " + tpl.source;
+			out.push_back(node);
+		}
+	}
+}
+
+} // namespace
 
 // Parse spawned patterns from effects in a frame
 std::vector<SpawnedPatternInfo> ParseSpawnedPatterns(const std::vector<Frame_EF>& effects, int parentFrame, int parentPatternId)
@@ -518,15 +671,40 @@ std::map<int, std::vector<int>> CollectAllSpawnTicks(
 	int patternId,
 	int maxTicks,
 	bool isEffectHA6,
-	int parentSpawnTick)
+	int parentSpawnTick,
+	int recursionDepth)
 {
 	std::map<int, std::vector<int>> spawnTicks;  // compositeKey -> vector of spawn ticks
-	
+
 	FrameData* sourceData = isEffectHA6 ? effectFrameData : mainFrameData;
 	if (!sourceData) return spawnTicks;
-	
+
 	auto seq = sourceData->get_sequence(patternId);
 	if (!seq || seq->frames.empty()) return spawnTicks;
+
+	// Merge MBTL move-script spawns (mv_script.h) for the root pattern with
+	// frame-accurate ticks (script frame-ID gates matched against AFIDs).
+	if (recursionDepth == 0 && !isEffectHA6) {
+		std::vector<ScriptSpawnNode> nodes;
+		EnumerateScriptSpawnNodes(mainFrameData, patternId, nodes);
+		for (const auto& node : nodes) {
+			if (node.isImpact)
+				continue; // markers have no pattern rows
+			int compositeKey = node.patternId * 2;
+			int spawnTick = parentSpawnTick + node.tick;
+			spawnTicks[compositeKey].push_back(spawnTick);
+			// Collect the spawned pattern's own ha6 spawns too.
+			auto nested = CollectAllSpawnTicks(
+				mainFrameData, effectFrameData, node.patternId,
+				maxTicks, false, spawnTick, recursionDepth + 1);
+			for (const auto& nestedPair : nested) {
+				spawnTicks[nestedPair.first].insert(
+					spawnTicks[nestedPair.first].end(),
+					nestedPair.second.begin(),
+					nestedPair.second.end());
+			}
+		}
+	}
 	
 	int currentFrame = 0;
 	int currentTick = 0;
@@ -601,7 +779,8 @@ std::map<int, std::vector<int>> CollectAllSpawnTicks(
 										// Recursively collect spawns from nested pattern
 										auto nestedSpawns = CollectAllSpawnTicks(
 											mainFrameData, effectFrameData, spawn.patternId,
-											nestedMaxTicks, spawn.usesEffectHA6, absoluteSpawnTick);
+											nestedMaxTicks, spawn.usesEffectHA6, absoluteSpawnTick,
+											recursionDepth + 1);
 										
 										// Merge nested spawns into our result
 										for (const auto& nestedPair : nestedSpawns) {
@@ -713,8 +892,11 @@ void SimulateSpawnsToTick(
 		loopCounter = seq->frames[0].AF.loopCount;
 	}
 	
-	// Track spawns by composite key to avoid duplicates
-	std::set<int> createdSpawnKeys;  // compositeKey + spawnTick
+	// Track spawns by composite key to avoid duplicates. The key includes the
+	// EF index so two spawn effects of the same pattern on the same frame both
+	// get instances (an int-packed patternId*2e6 key collapsed them and also
+	// overflowed for patternId >= ~1074).
+	std::set<std::tuple<int, int, int, int>> createdSpawnKeys;  // (patternId, usesEffectHA6, effectIndex, tick)
 	
 	while (currentTick <= targetTick) {
 		// Check if we just entered a frame (frame boundary)
@@ -735,9 +917,8 @@ void SimulateSpawnsToTick(
 					
 					// Create spawn instances for each spawn
 					for (const auto& spawn : frameSpawns) {
-						int compositeKey = spawn.patternId * 2 + (spawn.usesEffectHA6 ? 1 : 0);
-						int spawnKey = compositeKey * 1000000 + currentTick;  // Unique key for this spawn at this tick
-						
+						auto spawnKey = std::make_tuple(spawn.patternId, spawn.usesEffectHA6 ? 1 : 0, spawn.effectIndex, currentTick);
+
 						// Only create if we haven't already created this spawn at this tick
 						if (createdSpawnKeys.find(spawnKey) == createdSpawnKeys.end()) {
 							createdSpawnKeys.insert(spawnKey);
@@ -753,6 +934,7 @@ void SimulateSpawnsToTick(
 							instance.flagset2 = spawn.flagset2;
 							instance.angle = spawn.angle;
 							instance.projVarDecrease = spawn.projVarDecrease;
+							instance.parentFrame = currentFrame;
 							instance.tintColor = spawn.tintColor;
 							instance.alpha = 1.0f;
 							instance.currentFrame = 0;
@@ -844,20 +1026,65 @@ void SimulateSpawnsToTick(
 			currentTick++;
 		}
 	}
-	
+
+	// Add MBTL move-script spawns (mv_script.h) with frame-accurate spawn
+	// ticks; they advance/expire like other spawns via the fix-up pass below.
+	// Impact-effect markers become preset-style instances (crosshair only).
+	{
+		std::vector<ScriptSpawnNode> nodes;
+		EnumerateScriptSpawnNodes(mainFrameData, patternId, nodes);
+		for (const auto& node : nodes) {
+			ActiveSpawnInstance instance;
+			instance.spawnTick = node.tick;
+			instance.patternId = node.patternId;
+			instance.usesEffectHA6 = false;
+			instance.isPresetEffect = node.isImpact;
+			instance.offsetX = node.offsetX;
+			instance.offsetY = node.offsetY;
+			instance.parentFrame = node.frameInParent;
+			instance.alpha = 1.0f;
+			instance.currentFrame = 0;
+			instance.frameDuration = 0;
+			instance.previousFrame = -1;
+			if (!node.isImpact) {
+				auto ssSeq = mainFrameData->get_sequence(node.patternId);
+				if (!ssSeq || ssSeq->frames.empty())
+					continue;
+				instance.loopCounter = ssSeq->frames[0].AF.loopCount;
+			}
+			activeSpawns.push_back(instance);
+		}
+	}
+
 	// Now advance all spawns to their correct frames at targetTick
 	for (auto& spawn : activeSpawns) {
 		if (spawn.isPresetEffect) continue;
-		
+
 		int elapsedTicks = targetTick - spawn.spawnTick;
 		if (elapsedTicks < 0) {
 			// Spawn hasn't happened yet - remove it
 			spawn.currentFrame = -1;
 			continue;
 		}
-		
+
 		FrameData* sourceData = spawn.usesEffectHA6 ? effectFrameData : mainFrameData;
 		if (sourceData) {
+			// A finished non-looping spawn must be removed, not left frozen on
+			// its last frame: SimulateAnimationFlow never returns -1 for valid
+			// sequences, so check the pattern's total duration explicitly.
+			auto spawnSeq = sourceData->get_sequence(spawn.patternId);
+			if (spawnSeq && !spawnSeq->frames.empty()) {
+				bool loops = (spawnSeq->frames.back().AF.aniType == 2);
+				if (!loops) {
+					int totalDuration = 0;
+					for (const auto& fr : spawnSeq->frames)
+						totalDuration += (fr.AF.duration > 0 ? fr.AF.duration : 1);
+					if (elapsedTicks >= totalDuration) {
+						spawn.currentFrame = -1;
+						continue;
+					}
+				}
+			}
 			// Simulate the spawned pattern to find its current frame
 			spawn.currentFrame = SimulateAnimationFlow(sourceData, spawn.patternId, elapsedTicks);
 		}
@@ -1061,6 +1288,88 @@ void BuildSpawnTreeRecursive(
 
 		// Accumulate ticks: add this frame's duration
 		currentTick += frame.AF.duration;
+	}
+
+	// Root pattern only: merge MBTL move-script spawns (mv_script.h). MBTL
+	// moves spawn projectile patterns from Squirrel scripts instead of ha6 EF
+	// data; the character's MvScriptIndex (registered by CharacterInstance)
+	// tells us which patterns this move spawns. Spawn frames/ticks come from
+	// the scripts' frame-ID gates matched against the pattern's AFIDs, and
+	// spawns declared by the spawned object's template block are chained
+	// under it as depth-1 children. The live-playback injection reads these
+	// entries' spawnTick, so playback follows the same timing.
+	if (depth == 0 && parentSpawnIndex == -1 && !usesEffectHA6) {
+		std::vector<ScriptSpawnNode> nodes;
+		EnumerateScriptSpawnNodes(mainFrameData, patternId, nodes);
+		// Map node index -> allSpawns index for parent chaining.
+		std::vector<int> nodeToSpawnIndex(nodes.size(), -1);
+		for (size_t ni = 0; ni < nodes.size(); ni++) {
+			const auto& node = nodes[ni];
+			int parentEntryIdx = node.parentIndex >= 0 ? nodeToSpawnIndex[node.parentIndex] : -1;
+			if (node.parentIndex >= 0 && parentEntryIdx < 0)
+				continue; // parent was skipped
+
+			SpawnedPatternInfo spawn;
+			spawn.isScriptSpawn = true;
+			spawn.scriptSource = node.source;
+			spawn.effectIndex = -1;   // no ha6 EF backs this spawn
+			spawn.effectType = 0;
+			spawn.usesEffectHA6 = false;
+			spawn.patternId = node.patternId;
+			spawn.offsetX = node.offsetX + accumulatedOffsetX;
+			spawn.offsetY = node.offsetY + accumulatedOffsetY;
+			spawn.parentFrame = node.frameInParent;
+			spawn.depth = node.depth;
+			spawn.parentSpawnIndex = parentEntryIdx;
+			// Like ha6 entries: parent's absolute frame + frame within parent.
+			spawn.absoluteSpawnFrame = node.frameInParent +
+				(node.parentIndex >= 0 ? nodes[node.parentIndex].frameInParent : 0);
+			spawn.spawnTick = node.tick;
+			spawn.visible = true;
+			spawn.tintColor = glm::vec4(1.0f, 0.7f, 0.4f, 1.0f);  // Orange: script spawn
+
+			if (node.isImpact) {
+				// SetImpactHitEffect marker: preset-effect style crosshair,
+				// no pattern behind it.
+				spawn.isPresetEffect = true;
+				spawn.patternId = -1;
+				spawn.patternFrameCount = 0;
+				spawn.lifetime = 0;
+			} else {
+				auto childSeq = mainFrameData->get_sequence(node.patternId);
+				if (!childSeq || childSeq->frames.empty())
+					continue;
+				spawn.patternFrameCount = childSeq->frames.size();
+				spawn.lifetime = spawn.patternFrameCount;
+				if (childSeq->frames.back().AF.aniType == 2) {
+					spawn.lifetime = 9999;  // Looping
+				}
+			}
+
+			int currentSpawnIndex = allSpawns.size();
+			nodeToSpawnIndex[ni] = currentSpawnIndex;
+			allSpawns.push_back(spawn);
+
+			if (parentEntryIdx >= 0 && parentEntryIdx < (int)allSpawns.size())
+				allSpawns[parentEntryIdx].childSpawnIndices.push_back(currentSpawnIndex);
+
+			// Recurse into the spawned pattern's own ha6 spawns.
+			if (!node.isImpact) {
+				BuildSpawnTreeRecursive(
+					mainFrameData,
+					effectFrameData,
+					node.patternId,
+					false,
+					currentSpawnIndex,
+					node.depth + 1,
+					spawn.absoluteSpawnFrame,
+					spawn.spawnTick,
+					spawn.offsetX,
+					spawn.offsetY,
+					allSpawns,
+					visitedPatterns);
+			}
+		}
 	}
 
 	// Remove pattern from visited set (allow it to be spawned in different branches)
