@@ -3,6 +3,8 @@
 
 #include "bg_types.h"
 #include "bg_pat.h"
+#include "bg_info.h"
+#include "bg_rng.h"
 #include "../cg.h"
 #include <memory>
 
@@ -56,6 +58,45 @@ public:
 	void StepObjectForward(int objIndex);
 	void StepObjectBackward(int objIndex);
 
+	// --- Game flavour. The container is identical; the renderers and the
+	// RNG differ (see bg_rng.h and BG_HA4_RE.md A.6 / Wave 2). Guessed at
+	// load from the file name and side files, overridable in the UI. ---
+	Game GetGame() const { return game; }
+	void SetGame(Game g) { game = g; ResetRuntime(); }
+	bool IsShortVariant() const { return shortVariant; }  // MBAC bgNN_s.dat
+	// Path of the other half of a bgNN.dat / bgNN_s.dat pair ("" if absent).
+	std::string SiblingVariantPath() const;
+
+	// --- RNG seed (RngState_Initialize(seed, stream 0)). ResetRuntime
+	// reseeds, so the same seed always replays the same stage. ---
+	int32_t GetSeed() const { return seed; }
+	void    SetSeed(int32_t s) { seed = s; ResetRuntime(); }
+	const Rng& GetRng() const { return rng; }
+	uint64_t GetTick() const { return tick; }
+
+	// --- Side files, found next to the .dat (case-insensitive). ---
+	const StageList& GetStageList() const { return stageList; }
+	const StageListEntry* GetStageListEntry() const;
+	const StageInfo& GetStageInfo() const { return stageInfo; }
+	const LightFile& GetLightFile() const { return lightFile; }
+	const DropSystem& GetDrops() const { return drops; }
+	// Path of the DropObj bitmap (type 0), "" if not found.
+	std::string DropBitmapPath() const;
+	void ReloadSideFiles();
+	// Lights that apply for the current game flavour, with their world x.
+	struct LightView { int worldX; int power; };
+	std::vector<LightView> ActiveLights() const;
+
+	// --- Editing. Record edits are kept in Object::triggers/commands and
+	// written back by Save (see Object::recordsEdited/recordsRelayout). ---
+	bool IsDirty() const { return dirty; }
+	void MarkDirty() { dirty = true; }
+	void ClearDirty() { dirty = false; }
+	int  InsertFrame(int objIndex, int at, bool duplicate);  // returns new index or -1
+	bool DeleteFrame(int objIndex, int at);
+	int  AddRecord(int objIndex, bool trigger);              // returns new record index
+	bool DeleteLastRecord(int objIndex, bool trigger);
+
 private:
 	bool loaded = false;
 	std::string filename;
@@ -97,7 +138,16 @@ private:
 
 	// Runtime instance pool (see TickRuntime).
 	std::vector<Instance> instances;
-	uint32_t rngState = 0x12345678u;
+	Game     game = Game::MBAACC;
+	bool     shortVariant = false;
+	int32_t  seed = 0;
+	Rng      rng;
+	uint64_t tick = 0;
+	bool     dirty = false;
+	StageList  stageList;
+	StageInfo  stageInfo;
+	LightFile  lightFile;
+	DropSystem drops;
 	int  RandInt();
 	int  AllocInstance();
 	void InitInstance(Instance& in, int objIndex);

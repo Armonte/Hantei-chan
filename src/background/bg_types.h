@@ -2,6 +2,7 @@
 #define BG_TYPES_H_GUARD
 
 #include <cstdint>
+#include <cstring>
 #include <cmath>
 #include <vector>
 #include <string>
@@ -126,6 +127,14 @@ struct EventRecord {
 	int16_t w2 = 0;
 	int32_t d[13] = {0};        // d[0] aliases type/w2; d[1..12] = +4..+48
 	uint8_t raw[52] = {0};
+
+	// Re-derive raw[] from type/w2/d[1..12] (the only modelled fields).
+	void SyncRaw() {
+		std::memcpy(raw + 0, &type, 2);
+		std::memcpy(raw + 2, &w2, 2);
+		for (int k = 1; k < 13; ++k) std::memcpy(raw + 4 * k, &d[k], 4);
+		std::memcpy(&d[0], raw, 4);
+	}
 };
 
 // Background object - collection of frames with parallax/layer
@@ -170,6 +179,12 @@ struct Object {
 	std::vector<uint8_t> recordBytes;
 	std::vector<EventRecord> triggers;   // parsed views of recordBytes
 	std::vector<EventRecord> commands;
+	// Editor bookkeeping for the record tables. recordsEdited: some record's
+	// fields changed (written back in place on save). recordsRelayout: a
+	// record was added/removed, so Save rebuilds recordBytes as
+	// [triggers][commands] and recomputes both table offsets.
+	bool recordsEdited   = false;
+	bool recordsRelayout = false;
 
 	// Editor-only: cleared to hide this object (layer-debugging / solo).
 	// Not part of the file format.
