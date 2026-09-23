@@ -80,6 +80,15 @@ void MainFrame::ProcessStartupArgs()
 			if (gStartup.pattern >= 0) v->getState().pattern = gStartup.pattern;
 			if (gStartup.frame >= 0) v->getState().frame = gStartup.frame;
 		}
+		if (gStartup.noPups)
+			render.followPups = false;
+		if (gStartup.zoom > 0.f)
+			SetZoom(gStartup.zoom);
+		if (!gStartup.game.empty()) {
+			const std::string &g = gStartup.game;
+			g_ha6GameOverride = g == "mbaacc" ? Ha6Game::MBAACC : g == "uni" ? Ha6Game::UNI
+				: g == "mbtl" ? Ha6Game::MBTL : Ha6Game::Auto;
+		}
 		if (auto *c = getActiveCharacter(); c && gStartup.palette >= 0) {
 			c->palette = gStartup.palette;
 			c->cg.changePaletteNumber(gStartup.palette);
