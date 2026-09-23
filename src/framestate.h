@@ -41,6 +41,7 @@ struct SpawnedPatternInfo {
 
 	// Parent frame tracking (stateless approach)
 	int parentFrame;      // The parent frame where this spawn effect exists
+	int parentPatternId;  // Pattern containing the authored spawn effect
 
 	// Hierarchy tracking (for recursive spawn trees)
 	int depth;                          // 0 = direct child, 1 = grandchild, 2 = great-grandchild, etc.
@@ -67,7 +68,7 @@ struct SpawnedPatternInfo {
 	SpawnedPatternInfo() :
 		effectIndex(-1), effectType(0), usesEffectHA6(false), isPresetEffect(false), patternId(-1), offsetX(0), offsetY(0),
 		flagset1(0), flagset2(0), angle(0), projVarDecrease(0), randomRange(0),
-		parentFrame(0),
+		parentFrame(0), parentPatternId(-1),
 		depth(0), parentSpawnIndex(-1),
 		absoluteSpawnFrame(0), spawnTick(0), patternFrameCount(0), lifetime(0), isRecursive(false),
 		visible(true), alpha(0.6f), tintColor(0.5f, 0.7f, 1.0f, 1.0f),

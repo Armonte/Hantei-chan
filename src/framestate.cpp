@@ -3,6 +3,7 @@
 #include "mv_script.h"
 #include <tinyalloc.h>
 #include <tuple>
+#include <algorithm>
 #include <windows.h>
 
 constexpr const wchar_t *sharedMemHandleName = L"hanteichan-shared_mem";
@@ -263,6 +264,7 @@ std::vector<SpawnedPatternInfo> ParseSpawnedPatterns(const std::vector<Frame_EF>
 		SpawnedPatternInfo info;
 		info.effectIndex = static_cast<int>(i);
 		info.parentFrame = parentFrame;  // Tag with parent frame
+		info.parentPatternId = parentPatternId;
 
 		bool isSpawnEffect = false;
 
@@ -302,56 +304,43 @@ std::vector<SpawnedPatternInfo> ParseSpawnedPatterns(const std::vector<Frame_EF>
 			}
 
 			case 11:  // Spawn Random Pattern (absolute)
-			{
-				info.effectType = effect.type;
-				info.usesEffectHA6 = false;
-				info.patternId = effect.number;
-				info.randomRange = effect.parameters[0];
-				info.offsetX = effect.parameters[1];
-				info.offsetY = effect.parameters[2];
-				info.flagset1 = effect.parameters[3];
-				info.flagset2 = effect.parameters[4];
-				info.angle = effect.parameters[8];
-				info.projVarDecrease = effect.parameters[9];
-				isSpawnEffect = true;
-				break;
-			}
-
 			case 111: // Spawn Random Relative Pattern (offset from parent)
 			{
+				// MBAA Effect11_SpawnRandomPatterns 0x454E30: p1/p2 base offset,
+				// p3/p4 random rectangle (p4 == 30000: circle of radius p3),
+				// p5 pattern range, p6 count, p7/p8 flagsets, p9 angle +
+				// rand(p10), p11 projectile var. (1-based pN = parameters[N-1])
 				info.effectType = effect.type;
 				info.usesEffectHA6 = false;
-				// FIX: For relative spawn, add offset to parent pattern ID
-				info.patternId = parentPatternId + effect.number;
-				info.randomRange = effect.parameters[0];
-				info.offsetX = effect.parameters[1];
-				info.offsetY = effect.parameters[2];
-				info.flagset1 = effect.parameters[3];
-				info.flagset2 = effect.parameters[4];
+				info.patternId = effect.number + (effect.type == 111 ? parentPatternId : 0);
+				info.offsetX = effect.parameters[0];
+				info.offsetY = effect.parameters[1];
+				info.randomRange = effect.parameters[4];
+				info.flagset1 = effect.parameters[6];
+				info.flagset2 = effect.parameters[7];
 				info.angle = effect.parameters[8];
-				info.projVarDecrease = effect.parameters[9];
+				info.projVarDecrease = effect.parameters[10];
 				isSpawnEffect = true;
 				break;
 			}
 
-			case 8:   // Spawn Actor (effect.ha6) - similar to type 1
+			case 8:   // Spawn Actor (effect.ha6)
+			case 108: // Spawn Relative Actor (effect.ha6; 100 < type < 1000 is relative)
 			{
+				// MBAA Effect8_SpawnEffectHa6Actor 0x4551B0 passes the EF record
+				// straight to Effect_InitializeComplex: same layout as EF1,
+				// including the angle in p8.
 				info.effectType = effect.type;
-				info.usesEffectHA6 = true;  // Type 8 uses effect.ha6
-				info.patternId = effect.number;
+				info.usesEffectHA6 = true;
+				info.patternId = effect.number + (effect.type == 108 ? parentPatternId : 0);
 				info.offsetX = effect.parameters[0];
 				info.offsetY = effect.parameters[1];
 				info.flagset1 = effect.parameters[2];
 				info.flagset2 = effect.parameters[3];
-				info.angle = 0;
-				info.projVarDecrease = 0;
+				info.angle = effect.parameters[7];
+				info.projVarDecrease = effect.parameters[8];
 				info.randomRange = 0;
 				isSpawnEffect = true;
-
-				// Debug: Log Effect Type 8 usage (commented out to reduce spam)
-				// printf("[Effect 8] Parent pattern %d spawning effect.ha6 pattern %d\n",
-				// 	   parentPatternId, info.patternId);
-
 				break;
 			}
 
@@ -372,17 +361,17 @@ std::vector<SpawnedPatternInfo> ParseSpawnedPatterns(const std::vector<Frame_EF>
 				break;
 			}
 
-			case 1000: // Spawn and Follow (Dust of Osiris, Sion)
+			case 1000: // Spawn once (Effect1_SpawnPattern: EF1 layout, guarded by var p6)
 			{
 				info.effectType = effect.type;
 				info.usesEffectHA6 = false;
 				info.patternId = effect.number;
-				info.offsetX = 0;
-				info.offsetY = 0;
-				info.flagset1 = 0;
-				info.flagset2 = 0;
-				info.angle = 0;
-				info.projVarDecrease = 0;
+				info.offsetX = effect.parameters[0];
+				info.offsetY = effect.parameters[1];
+				info.flagset1 = effect.parameters[2];
+				info.flagset2 = effect.parameters[3];
+				info.angle = effect.parameters[7];
+				info.projVarDecrease = effect.parameters[8];
 				info.randomRange = 0;
 				isSpawnEffect = true;
 				break;
@@ -543,25 +532,9 @@ int FindLoopPeriod(FrameData* frameData, int patternId, int maxTicks)
 	auto seq = frameData->get_sequence(patternId);
 	if (!seq || seq->frames.empty()) return 0;
 	
-	// Check if pattern actually loops (aniType 2 on last frame)
-	bool patternLoops = false;
-	if (!seq->frames.empty()) {
-		auto& lastFrame = seq->frames.back();
-		patternLoops = (lastFrame.AF.aniType == 2);
-	}
-	
-	if (!patternLoops) {
-		// Non-looping pattern - calculate total duration
-		int totalDuration = 0;
-		for (int i = 0; i < seq->frames.size(); i++) {
-			int dur = seq->frames[i].AF.duration;
-			if (dur <= 0) dur = 1;
-			totalDuration += dur;
-		}
-		return totalDuration;
-	}
-	
-	// For looping patterns, simulate animation flow and detect when we return to frame 0
+	// Follow the reachable control flow. A go-to can close a cycle long before
+	// the last physical frame (later frames may be alternate branches), so the
+	// last frame's aniType does not decide whether the pattern loops.
 	// Track (frame, loopCounter) state to detect true loops
 	struct AnimationState {
 		int frame;
@@ -584,19 +557,16 @@ int FindLoopPeriod(FrameData* frameData, int patternId, int maxTicks)
 	}
 	
 	for (int i = 0; i < maxTicks; i++) {
-		// Check if we've seen this animation state before
-		AnimationState currentState = {currentFrame, loopCounter};
-		if (stateToTick.find(currentState) != stateToTick.end()) {
-			// Found a cycle! Return the period
-			int firstTick = stateToTick[currentState];
-			int period = currentTick - firstTick;
-			if (period > 0) {
-				return period;
-			}
-		}
-		
-		// Record this state (only at frame boundaries to avoid duplicates)
+		// Compare and record states only at frame boundaries: a frame keeps
+		// the same (frame, loopCounter) for its whole duration, so checking
+		// every tick reported any multi-tick first frame as a 1-tick loop.
 		if (frameDuration == 0) {
+			AnimationState currentState = {currentFrame, loopCounter};
+			auto seen = stateToTick.find(currentState);
+			if (seen != stateToTick.end()) {
+				const int period = currentTick - seen->second;
+				if (period > 0) return period;
+			}
 			stateToTick[currentState] = currentTick;
 		}
 		
@@ -660,7 +630,7 @@ int FindLoopPeriod(FrameData* frameData, int patternId, int maxTicks)
 		}
 	}
 	
-	return 0;  // No loop detected
+	return std::max(1, currentTick);  // no cycle: duration of the reachable path
 }
 
 // Simulate animation flow and collect all spawn ticks (including loop iterations and nested spawns)

@@ -718,7 +718,12 @@ void Parts::Draw(int pattern, int nextPattern, float interpolationFactor,
                 newColor[0], newColor[1], newColor[2], newColor[3]);
         }
         
-        if (cutout.colorSlot != -1 && cg) {
+        // Palette colour slot (PPCL/PPPA, UNI-era PATs only): slot 0 means
+        // "no tint". MBAA's PAT loader (File_ParsePPTPChunks 0x404220) has no
+        // colour-slot tag at all, so MBAACC data is unaffected; palette entry 0
+        // is the transparent key colour, and tinting by it turned white
+        // material blue (EX report: Linne pattern 135).
+        if (cutout.colorSlot > 0 && cg) {
             unsigned int palColor = cg->getColorFromPal(cutout.colorSlot);
             if (palColor) {
                 newColor[0] *= (palColor & 0xFF) / 255.f;
