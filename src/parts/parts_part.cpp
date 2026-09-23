@@ -19,6 +19,7 @@ unsigned int* CutOut<>::PpLoad(unsigned int* data, const unsigned int* data_end,
             std::memcpy(buf32, data, 32);
             buf32[32] = 0;
             pp.name = sj2utf8(buf32);
+            pp.nameFixed = true;
             data += 0x20 / 4;
         }
         else if (!memcmp(buf, "PPNA", 4)) {
@@ -32,6 +33,7 @@ unsigned int* CutOut<>::PpLoad(unsigned int* data, const unsigned int* data_end,
             pp.name = name;
         }
         else if (!memcmp(buf, "PPXY", 4)) {
+            pp.altTags = true;
             // Origin X, Y
             memcpy(pp.xy, data, sizeof(int) * 2);
             data += 2;
@@ -47,6 +49,7 @@ unsigned int* CutOut<>::PpLoad(unsigned int* data, const unsigned int* data_end,
             data += 4;
         }
         else if (!memcmp(buf, "PPWH", 4)) {
+            pp.altTags = true;
             // Width and Height
             memcpy(pp.wh, data, sizeof(int) * 2);
             data += 2;
@@ -65,6 +68,7 @@ unsigned int* CutOut<>::PpLoad(unsigned int* data, const unsigned int* data_end,
             ++data;
         }
         else if (!memcmp(buf, "PPCL", 4)) {
+            pp.altTags = true;
             // Color slot (palette index)
             pp.colorSlot = *data;
             ++data;
@@ -75,6 +79,7 @@ unsigned int* CutOut<>::PpLoad(unsigned int* data, const unsigned int* data_end,
             ++data;
         }
         else if (!memcmp(buf, "PPGR", 4)) {
+            pp.altTags = true;
             // Texture reference ID (graphic)
             pp.texture = *data;
             ++data;
@@ -85,6 +90,7 @@ unsigned int* CutOut<>::PpLoad(unsigned int* data, const unsigned int* data_end,
             ++data;
         }
         else if (!memcmp(buf, "PPVT", 4)) {
+            pp.altTags = true;
             // Shape index (vertex type)
             pp.shapeIndex = *data;
             ++data;
@@ -120,7 +126,7 @@ unsigned int* CutOut<>::PpLoad(unsigned int* data, const unsigned int* data_end,
 }
 
 template<>
-void CutOut<>::Save(std::ofstream &file, const CutOut *cutOut, bool mbaacc)
+void CutOut<>::Save(std::ostream &file, const CutOut *cutOut, bool mbaacc)
 {
     // MBAACC uses legacy tag variants that carry identical payloads:
     //   PPNM (32-byte name) vs PPNA (length-prefixed)
@@ -130,9 +136,13 @@ void CutOut<>::Save(std::ofstream &file, const CutOut *cutOut, bool mbaacc)
     //   PPPA vs PPCL (color slot)
     //   PPPP vs PPVT (shape index)
     // PPUV, PPTX, PPTE, PPJP are the same in both.
+    // Tag names: UNI2/MBTL (and MBAACC) read PPCC/PPSS/PPTP/PPPA/PPPP only
+    // (PatFile_ParseCutouts_PPST in uni2.exe/MBTL.exe). The PPXY family is
+    // written only for cut-outs loaded with it.
+    const bool alt = cutOut->altTags && !mbaacc;
     if(!cutOut->name.empty()) {
         std::string name = utf82sj(cutOut->name);
-        if(mbaacc) {
+        if(mbaacc || cutOut->nameFixed) {
             file.write("PPNM", 4);
             char buf[32]{};
             strncpy(buf, name.c_str(), 31);
@@ -147,7 +157,7 @@ void CutOut<>::Save(std::ofstream &file, const CutOut *cutOut, bool mbaacc)
 
     if(cutOut->xy[0] != 0 || cutOut->xy[1] != 0)
     {
-        file.write(mbaacc ? "PPCC" : "PPXY", 4);
+        file.write(alt ? "PPXY" : "PPCC", 4);
         file.write(VAL(cutOut->xy[0]), 4);
         file.write(VAL(cutOut->xy[1]), 4);
     }
@@ -166,14 +176,14 @@ void CutOut<>::Save(std::ofstream &file, const CutOut *cutOut, bool mbaacc)
 
     if(cutOut->wh[0] != 0 || cutOut->wh[1] != 0)
     {
-        file.write(mbaacc ? "PPSS" : "PPWH", 4);
+        file.write(alt ? "PPWH" : "PPSS", 4);
         file.write(VAL(cutOut->wh[0]), 4);
         file.write(VAL(cutOut->wh[1]), 4);
     }
 
     if(cutOut->texture > 0)
     {
-        file.write(mbaacc ? "PPTP" : "PPGR", 4);
+        file.write(alt ? "PPGR" : "PPTP", 4);
         file.write(VAL(cutOut->texture), 4);
     }
 
@@ -192,13 +202,13 @@ void CutOut<>::Save(std::ofstream &file, const CutOut *cutOut, bool mbaacc)
 
     if(cutOut->colorSlot != -1)
     {
-        file.write(mbaacc ? "PPPA" : "PPCL", 4);
+        file.write(alt ? "PPCL" : "PPPA", 4);
         file.write(VAL(cutOut->colorSlot), 4);
     }
 
     if(cutOut->shapeIndex > 0)
     {
-        file.write(mbaacc ? "PPPP" : "PPVT", 4);
+        file.write(alt ? "PPVT" : "PPPP", 4);
         file.write(VAL(cutOut->shapeIndex), 4);
     }
 

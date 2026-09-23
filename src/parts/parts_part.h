@@ -27,9 +27,14 @@ public:
     int shapeIndex = 0; // Shape index
     int ppte[2]{};     // Unknown (stored as short[2])
     int pptx = 0;      // Unknown
+    // Tag family the cut-out was loaded with. UNI2 and MBTL read only
+    // PPCC/PPSS/PPTP/PPPA/PPPP (PatFile_ParseCutouts_PPST); PPXY/PPWH/PPGR/
+    // PPCL/PPVT are kept only for files that already use them.
+    bool altTags = false;
+    bool nameFixed = false; // name was a 32-byte PPNM (else PPNA)
 
     static unsigned int* PpLoad(unsigned int* data, const unsigned int* data_end, int id, std::vector<CutOut<>>* cutOuts);
-    static void Save(std::ofstream &file, const CutOut *cutOut, bool mbaacc = false);
+    static void Save(std::ostream &file, const CutOut *cutOut, bool mbaacc = false);
     static bool IsModifiedData(const CutOut *cutOut);
     void CopyTo(CutOut *cutOut);
 };
