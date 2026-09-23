@@ -8,6 +8,7 @@
 
 #include "../var_refs.h"
 #include "../pattern_refs.h"
+#include "../frame_disp/frame_disp_common.h"
 
 // Commit a tool edit as one undo step and flag the character dirty.
 void MainFrame::markToolEdit(CharacterInstance* character)
@@ -420,6 +421,154 @@ void MainFrame::drawKeyBindingsWindow()
 			ImGui::PopID();
 		}
 		ImGui::EndTable();
+	}
+	ImGui::End();
+}
+
+// ---------------------------------------------------------------------------
+// Pattern comparison (#63): overlay another pattern (any open character) in
+// the viewport, tinted and translucent, with its boxes as outlines.
+// ---------------------------------------------------------------------------
+
+// Frame and root position of the compare pattern at `tick`.
+static bool CompareFrameAt(MainFrame::CompareState& c, int tick, int* frame, float* x, float* y)
+{
+	if (!c.character) return false;
+	if (!c.sim) c.sim = std::make_shared<preview::PreviewSim>();
+	preview::Options o;
+	FrameData* effect = c.character->effectCharacter ? &c.character->effectCharacter->frameData : nullptr;
+	c.sim->setInputs(&c.character->frameData, effect, c.pattern, o);
+	preview::TickState ts;
+	if (!c.sim->getStateAt(tick, ts)) return false;
+	const preview::SimActor* root = ts.root();
+	if (!root) return false;
+	*frame = root->frame;
+	*x = root->x; *y = root->y;
+	return true;
+}
+
+void MainFrame::AddCompareLayers(CharacterView* view, CharacterInstance* active)
+{
+	auto& c = m_compare;
+	if (!c.enabled || !view || !active) return;
+	if (c.character && !isLiveCharacter(c.character)) { c.character = nullptr; c.sim.reset(); }
+	if (!c.character) return;
+	Sequence* seq = c.character->frameData.get_sequence(c.pattern);
+	if (!seq || seq->frames.empty()) return;
+
+	auto& st = view->getState();
+	int frame = std::clamp(c.frame, 0, (int)seq->frames.size() - 1);
+	float dx = 0.f, dy = 0.f;
+	if (c.followTick || c.movement) {
+		int f; float cx, cy;
+		if (CompareFrameAt(c, st.currentTick, &f, &cx, &cy)) {
+			if (c.followTick) { frame = std::clamp(f, 0, (int)seq->frames.size() - 1); c.frame = frame; }
+			if (c.movement) {
+				FrameData* effect = active->effectCharacter ? &active->effectCharacter->frameData : nullptr;
+				auto& mainSim = st.BindPreviewSim(&active->frameData, effect);
+				preview::TickState ts;
+				float mx = 0.f, my = 0.f;
+				if (mainSim.getStateAt(st.currentTick, ts) && ts.root()) { mx = ts.root()->x; my = ts.root()->y; }
+				dx = (c.mirror ? -1.f : 1.f) * cx - mx;
+				dy = cy - my;
+			}
+		}
+	}
+	Frame& fr = seq->frames[frame];
+	if (fr.AF.layers.empty()) fr.AF.layers.push_back({});
+	for (size_t li = 0; li < fr.AF.layers.size(); ++li) {
+		const auto& L = fr.AF.layers[li];
+		RenderLayer layer;
+		layer.spriteId = L.spriteId;
+		layer.spawnOffsetX = c.offsetX + (int)std::lround(dx);
+		layer.spawnOffsetY = c.offsetY + (int)std::lround(dy);
+		layer.frameOffsetX = c.mirror ? -L.offset_x : L.offset_x;
+		layer.frameOffsetY = L.offset_y;
+		layer.scaleX = c.mirror ? -L.scale[0] : L.scale[0];
+		layer.scaleY = L.scale[1];
+		layer.rotX = L.rotation[0]; layer.rotY = L.rotation[1]; layer.rotZ = L.rotation[2];
+		layer.AFRT = fr.AF.AFRT;
+		layer.blendMode = L.blend_mode;
+		layer.zPriority = fr.AF.priority;
+		layer.alpha = L.rgba[3] * c.alpha;
+		layer.tintColor = glm::vec4(L.rgba[0] * c.tint[0], L.rgba[1] * c.tint[1], L.rgba[2] * c.tint[2], 1.0f);
+		layer.isSpawned = true;
+		if (li == 0 && c.boxes) {
+			if (c.mirror) {
+				for (const auto& b : fr.hitboxes) {
+					Hitbox h = b.second;
+					const int x0 = -h.xy[2], x1 = -h.xy[0];
+					h.xy[0] = x0; h.xy[2] = x1;
+					layer.hitboxes[b.first] = h;
+				}
+			} else {
+				layer.hitboxes = fr.hitboxes;
+			}
+		}
+		layer.boxesOutlineOnly = true;
+		layer.sourceCG = &c.character->cg;
+		layer.usePat = L.usePat;
+		layer.sourceParts = &c.character->parts;
+		render.AddLayer(layer);
+	}
+}
+
+void MainFrame::drawCompareWindow()
+{
+	auto& c = m_compare;
+	if (!m_showCompare) return;
+	ImGui::SetNextWindowSize(ImVec2(440, 420), ImGuiCond_FirstUseEver);
+	if (!ImGui::Begin("Pattern comparison", &m_showCompare)) { ImGui::End(); return; }
+	if (c.character && !isLiveCharacter(c.character)) { c.character = nullptr; c.sim.reset(); }
+	ImGui::Checkbox("Show comparison", &c.enabled);
+	ImGui::TextDisabled("Drawn tinted over the active view; its boxes are outlines.");
+
+	const char* current = c.character ? c.character->getName().c_str() : "(choose a character)";
+	if (ImGui::BeginCombo("Character", current)) {
+		for (auto& ch : characters) {
+			ImGui::PushID(ch.get());
+			if (ImGui::Selectable(ch->getName().c_str(), ch.get() == c.character)) {
+				c.character = ch.get();
+				c.sim.reset();
+				c.enabled = true;
+			}
+			ImGui::PopID();
+		}
+		ImGui::EndCombo();
+	}
+	if (c.character) {
+		FrameData& fd = c.character->frameData;
+		ImGui::SetNextItemWidth(90);
+		if (ImGui::InputInt("Pattern", &c.pattern)) c.pattern = std::clamp(c.pattern, 0, std::max(0, fd.get_sequence_count() - 1));
+		if (PatternPickerButton("Pattern", &c.pattern, &fd)) c.frame = 0;
+		ImGui::SameLine();
+		ImGui::TextDisabled("%s", fd.GetDecoratedName(c.pattern).c_str());
+		if (auto* view = getActiveView()) {
+			if (ImGui::SmallButton("Same pattern as the view")) c.pattern = view->getState().pattern;
+		}
+		Sequence* seq = fd.get_sequence(c.pattern);
+		const int frames = seq ? (int)seq->frames.size() : 0;
+		ImGui::Checkbox("Step with the view's tick", &c.followTick);
+		ImGui::SameLine();
+		ImGui::Checkbox("Apply movement", &c.movement);
+		if (ImGui::IsItemHovered())
+			ImGui::SetTooltip("Offset the overlay by the difference in simulated root movement,\n"
+			                  "to compare effective range (the view's own pattern stays put).");
+		ImGui::BeginDisabled(c.followTick || frames == 0);
+		ImGui::SliderInt("Frame", &c.frame, 0, std::max(0, frames - 1));
+		ImGui::EndDisabled();
+		ImGui::SeparatorText("Placement");
+		ImGui::DragInt("Offset X", &c.offsetX, 0.5f);
+		ImGui::DragInt("Offset Y", &c.offsetY, 0.5f);
+		if (ImGui::SmallButton("Snap X to 0")) c.offsetX = 0;
+		ImGui::SameLine();
+		if (ImGui::SmallButton("Snap Y to 0")) c.offsetY = 0;
+		ImGui::SameLine();
+		ImGui::Checkbox("Mirror", &c.mirror);
+		ImGui::SeparatorText("Look");
+		ImGui::SliderFloat("Opacity", &c.alpha, 0.05f, 1.0f);
+		ImGui::ColorEdit3("Tint", c.tint);
+		ImGui::Checkbox("Show boxes (outlines)", &c.boxes);
 	}
 	ImGui::End();
 }

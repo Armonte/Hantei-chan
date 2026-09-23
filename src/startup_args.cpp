@@ -80,6 +80,12 @@ void MainFrame::ProcessStartupArgs()
 			if (gStartup.pattern >= 0) v->getState().pattern = gStartup.pattern;
 			if (gStartup.frame >= 0) v->getState().frame = gStartup.frame;
 		}
+		if (auto *c = getActiveCharacter(); c && gStartup.compare >= 0) {
+			m_compare.enabled = true;
+			m_compare.character = c;
+			m_compare.pattern = gStartup.compare;
+			m_compare.offsetX = 60;
+		}
 		if (auto *c = getActiveCharacter(); c && gStartup.palette >= 0) {
 			c->palette = gStartup.palette;
 			c->cg.changePaletteNumber(gStartup.palette);
