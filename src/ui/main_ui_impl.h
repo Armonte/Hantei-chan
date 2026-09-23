@@ -446,7 +446,7 @@ void MainFrame::DrawUi()
 			// Tab '*' follows the history: undoing back to the saved
 			// revision clears it, any other committed revision sets it.
 			if (!gesture && !undo.inTransaction()) {
-				if (undo.isClean()) character->clearModified();
+				if (undo.isClean() && !character->frameData.notes.dirty) character->clearModified();
 				else character->markModified();
 			}
 		}
@@ -456,6 +456,7 @@ void MainFrame::DrawUi()
 	drawCommandEditor();
 	drawVarRefsWindow();
 	drawPatternManagerWindow();
+	drawNotesWindow();
 
 	// Background (stage) Inspector — shows the currently loaded stage's
 	// objects, lets you scrub through frames, and exposes editable fields.

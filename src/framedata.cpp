@@ -249,6 +249,7 @@ bool FrameData::save_modified_only(const char *filename)
 void FrameData::Free() {
 	m_origin.clear();
 	m_stubs.clear();
+	notes = Ha6Notes{};
 	m_loadIndex = -1;
 	m_ownFile = -1;
 	m_ha4.reset();

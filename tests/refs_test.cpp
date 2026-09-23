@@ -8,6 +8,7 @@
 #include "framedata.h"
 #include "var_refs.h"
 #include "pattern_refs.h"
+#include "ha6_notes.h"
 
 #include <cstdio>
 #include <fstream>
@@ -174,9 +175,36 @@ static void RealMove(const char* path)
 	std::remove("refs_test_m2.tmp");
 }
 
+static void Notes()
+{
+	int p, f, i, t; bool ef;
+	CHECK(Ha6Notes::ParseKey("p12", &p, &f, &ef, &i, &t) && p == 12 && f == -1);
+	CHECK(Ha6Notes::RecordKey(12, 3, true, 1, 101) == "p12.f3.ef1.t101");
+	CHECK(Ha6Notes::ParseKey("p12.f3.ef1.t101", &p, &f, &ef, &i, &t) && p == 12 && f == 3 && ef && i == 1 && t == 101);
+	CHECK(Ha6Notes::ParseKey("p7.f0.if2.t25", &p, &f, &ef, &i, &t) && !ef && i == 2 && t == 25);
+	CHECK(!Ha6Notes::ParseKey("hello", &p, &f, &ef, &i, &t));
+
+	Ha6Notes n;
+	n.set("p1", "checks the animation");
+	n.set("p1.f0.if0.t25", "\xe3\x83\x86\xe3\x82\xb9\xe3\x83\x88 UTF-8 \"quoted\"\nline 2");
+	CHECK(n.dirty && n.notes.size() == 2);
+	CHECK(n.save("refs_test_notes.tmp"));
+	Ha6Notes m;
+	std::string err;
+	CHECK(m.load("refs_test_notes.tmp", &err) && m.notes == n.notes && !m.dirty);
+	m.set("p1", "");
+	CHECK(m.dirty && m.notes.size() == 1);
+	Ha6Notes missing;
+	CHECK(missing.load("refs_test_does_not_exist.json", &err) && missing.notes.empty());
+	{ std::ofstream bad("refs_test_notes.tmp"); bad << "{ not json"; }
+	CHECK(!missing.load("refs_test_notes.tmp", &err) && !err.empty());
+	std::remove("refs_test_notes.tmp");
+}
+
 int main(int argc, char** argv)
 {
 	Synthetic();
+	Notes();
 	PatternRefs();
 	for (int i = 1; i < argc; ++i) RealMove(argv[i]);
 	for (int i = 1; i < argc; ++i) RealFile(argv[i]);

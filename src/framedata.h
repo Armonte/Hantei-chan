@@ -2,6 +2,7 @@
 #define FRAMEDATA_H_GUARD
 
 #include <map>
+#include "ha6_notes.h"
 #include <string>
 #include <vector>
 #include <cstdint>
@@ -386,6 +387,9 @@ public:
 	// set, save() writes only the patterns that came from it plus the ones
 	// edited this session; patterns inherited from the other files in the
 	// stack are not baked into it (issue #71). -1 = write everything.
+	// Editor annotations (issue #58), stored beside the save target.
+	Ha6Notes notes;
+
 	std::vector<int> m_origin;
 	// Per loaded file: name/flag-only entries that did not replace a pattern
 	// already defined by an earlier file (written back to that file on save).

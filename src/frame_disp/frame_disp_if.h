@@ -174,6 +174,7 @@ inline void IfDisplay(std::vector<Frame_IF> *ifList_, Frame_IF *singleClipboard 
 		}
 		bool isOpen = im::CollapsingHeader(headerLabel, flags);
 		collapsedStates[i] = !isOpen; // Update stored state
+		if(CurrentRecordNoteHook().draw) CurrentRecordNoteHook().draw(false, i, ifList[i].type);
 		
 		if(isOpen) {
 			im::Indent();

@@ -1,6 +1,9 @@
+#include "frame_disp/frame_disp_common.h"
 #include "right_pane.h"
 #include "frame_disp.h"
 #include <imgui.h>
+
+void DrawRecordNote(Ha6Notes& notes, const std::string& key);
 
 void RightPane::Draw()
 {
@@ -64,6 +67,12 @@ void RightPane::Draw()
 				ImGui::TreePop();
 				ImGui::Separator();
 			}
+			// Record annotations (issue #58): shown under each effect/condition
+			// header; right-click the header to add or edit one.
+			const int notePattern = currState.pattern, noteFrame = currState.frame;
+			CurrentRecordNoteHook().draw = [this, notePattern, noteFrame](bool isEffect, int index, int type) {
+				DrawRecordNote(frameData->notes, Ha6Notes::RecordKey(notePattern, noteFrame, isEffect, index, type));
+			};
 			if(ImGui::TreeNode("Effects"))
 			{
 				EfDisplay(&frame.EF, &currState.copied->efSingle, frameData, currState.pattern, [this]() { markModified(); }, &currState.copied->efGroup);
@@ -76,6 +85,7 @@ void RightPane::Draw()
 				ImGui::TreePop();
 				ImGui::Separator();
 			}
+			CurrentRecordNoteHook().draw = nullptr;
 
 			// Spawned Patterns Visualization
 			if(ImGui::TreeNode("Spawned Patterns Visualization"))
@@ -290,3 +300,33 @@ void RightPane::DisplaySpawnNode(int spawnIndex, int displayNumber)
 	ImGui::PopID();
 }
 
+
+// A note under a record header: its text (like a code comment) and a context
+// menu on the header to edit or remove it.
+void DrawRecordNote(Ha6Notes& notes, const std::string& key)
+{
+	const std::string* note = notes.get(key);
+	static char buf[1024];
+	ImGui::PushID(key.c_str());
+	if (ImGui::BeginPopupContextItem("##notectx")) {
+		if (ImGui::IsWindowAppearing()) snprintf(buf, sizeof(buf), "%s", note ? note->c_str() : "");
+		ImGui::TextDisabled("Note (saved beside the HA6, not in it)");
+		ImGui::InputTextMultiline("##note", buf, sizeof(buf), ImVec2(360, 80));
+		if (ImGui::Button("Save note")) { notes.set(key, buf); ImGui::CloseCurrentPopup(); }
+		ImGui::SameLine();
+		if (note && ImGui::Button("Remove note")) { notes.set(key, ""); ImGui::CloseCurrentPopup(); }
+		ImGui::SameLine();
+		if (ImGui::Button("Cancel")) ImGui::CloseCurrentPopup();
+		ImGui::EndPopup();
+	} else if (ImGui::IsItemHovered() && !note) {
+		ImGui::SetItemTooltip("Right-click to add a note");
+	}
+	if (note) {
+		ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(0.35f, 0.65f, 0.35f, 1.0f));
+		ImGui::PushTextWrapPos(0.0f);
+		ImGui::TextUnformatted(("// " + *note).c_str());
+		ImGui::PopTextWrapPos();
+		ImGui::PopStyleColor();
+	}
+	ImGui::PopID();
+}

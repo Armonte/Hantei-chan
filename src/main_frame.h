@@ -223,6 +223,8 @@ private:
 		uint64_t refsVersion = 0;
 	} m_patMgr;
 	void drawPatternManagerWindow();
+	bool m_showNotes = false;
+	void drawNotesWindow();
 	void markToolEdit(CharacterInstance* character);
 	void navigateActiveView(int pattern, int frame);
 	bool PerformUndoRedo(bool redo);
