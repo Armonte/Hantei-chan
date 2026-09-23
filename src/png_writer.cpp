@@ -80,14 +80,18 @@ bool WritePngRgba(const std::string& utf8Path, const uint8_t* rgba, int width, i
 	const std::wstring finalPath = Utf8ToWide(utf8Path);
 	const std::wstring tempPath = finalPath + L".tmp";
 
-	ComScope com;
-	IWICImagingFactory* factory = nullptr;
+	// One COM apartment + WIC factory for the calling thread, kept for the
+	// process lifetime: creating them per file cost ~15 ms per PNG.
+	static thread_local ComScope com;
+	static thread_local IWICImagingFactory* factory = nullptr;
+	HRESULT hr = S_OK;
+	if (!factory)
+		hr = CoCreateInstance(CLSID_WICImagingFactory, nullptr, CLSCTX_INPROC_SERVER,
+			IID_IWICImagingFactory, reinterpret_cast<void**>(&factory));
 	IWICStream* stream = nullptr;
 	IWICBitmapEncoder* encoder = nullptr;
 	IWICBitmapFrameEncode* frame = nullptr;
 	IPropertyBag2* properties = nullptr;
-	HRESULT hr = CoCreateInstance(CLSID_WICImagingFactory, nullptr, CLSCTX_INPROC_SERVER,
-		IID_IWICImagingFactory, reinterpret_cast<void**>(&factory));
 	if (SUCCEEDED(hr)) hr = factory->CreateStream(&stream);
 	if (SUCCEEDED(hr)) hr = stream->InitializeFromFilename(tempPath.c_str(), GENERIC_WRITE);
 	if (SUCCEEDED(hr)) hr = factory->CreateEncoder(GUID_ContainerFormatPng, nullptr, &encoder);
@@ -105,7 +109,6 @@ bool WritePngRgba(const std::string& utf8Path, const uint8_t* rgba, int width, i
 	ReleaseCom(frame);
 	ReleaseCom(encoder);
 	ReleaseCom(stream);   // closes the file
-	ReleaseCom(factory);
 
 	if (FAILED(hr)) {
 		DeleteFileW(tempPath.c_str());
