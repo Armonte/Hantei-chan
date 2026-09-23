@@ -157,6 +157,14 @@ if(MINGW)
 	target_link_options(uni_edit_test PRIVATE -static-libgcc -static-libstdc++ -static)
 endif()
 
+# .pal (130-palette UNI2/MBTL and MBAACC) lossless round trip.
+add_executable(pal_roundtrip src/pal_roundtrip.cpp src/pal_file.cpp src/misc.cpp)
+target_include_directories(pal_roundtrip PRIVATE "src" "." "third_party" "${CMAKE_BINARY_DIR}/generated")
+target_compile_definitions(pal_roundtrip PRIVATE WIN32_LEAN_AND_MEAN)
+if(MINGW)
+	target_link_options(pal_roundtrip PRIVATE -static-libgcc -static-libstdc++ -static)
+endif()
+
 # Standalone smoke test for bg::File loader (no GL needed for parse-only).
 add_executable(bg_test
 	src/bg_test.cpp

@@ -335,7 +335,7 @@ void PartGfx<>::ExportTexture(const char *filename)
 }
 
 template<>
-void PartGfx<>::CompressDDS(std::ofstream &file, const PartGfx *gfx, std::streampos pgt2A)
+void PartGfx<>::CompressDDS(std::ostream &file, const PartGfx *gfx, std::streampos pgt2A)
 {
     // Custom RLE-like compression
     // Format: 0x00 <value> <count> for runs, or literal bytes
@@ -427,7 +427,7 @@ void PartGfx<>::CompressDDS(std::ofstream &file, const PartGfx *gfx, std::stream
 }
 
 template<>
-void PartGfx<>::Save(std::ofstream &file, const PartGfx *gfx)
+void PartGfx<>::Save(std::ostream &file, const PartGfx *gfx)
 {
     std::streampos pointer;
 

@@ -30,6 +30,17 @@ unsigned int* Parts::MainLoad(unsigned int* data, const unsigned int* data_end)
     while (data < data_end) {
         unsigned int* buf = data;
         ++data;
+        struct RecordEnd {
+            Parts* self; const unsigned int* start; unsigned int*& cur; char kind; uint32_t id;
+            ~RecordEnd() {
+                if (kind) self->rawRecords.push_back({kind, id,
+                    std::string((const char*)start, (const char*)cur - (const char*)start), 0});
+            }
+        } rec{this, buf, data, 0, 0};
+        if (!memcmp(buf, "P_ST", 4)) { rec.kind = 'P'; rec.id = data[0]; }
+        else if (!memcmp(buf, "PPST", 4)) { rec.kind = 'C'; rec.id = data[0]; }
+        else if (!memcmp(buf, "PGST", 4)) { rec.kind = 'G'; rec.id = data[0]; }
+        else if (!memcmp(buf, "VEST", 4)) { rec.kind = 'V'; }
 
         if (!memcmp(buf, "P_ST", 4)) {
             // PartSet
@@ -116,7 +127,11 @@ bool Parts::Load(const char* name)
     partVertices.Clear();
 
     // Parse file
+    rawRecords.clear();
+    rawHeader.assign(loadData, 0x24);
     MainLoad(d + 1, d_end);
+    for (auto& r : rawRecords)
+        r.fp = Fingerprint(r.kind, r.id);
     
     // Count non-empty part sets
     int nonEmptyPartSets = 0;
@@ -934,70 +949,95 @@ bool Parts::Save(const char* filename)
     if (!file.is_open())
         return false;
 
-    // Write header
-    char header[32] = "PAniDataFile";
-    file.write(header, sizeof(header));
-    file.write("_STR", 4);
-
-    // Write PartSets. Preserve every slot that originated in the loaded
-    // file (even when its body is empty), so the partId numbering matches
-    // the original. Editor-created slots are only emitted when they
-    // actually have data.
-    for(uint32_t i = 0; i < partSets.size(); i++)
-    {
-        if(!partSets[i].wasLoaded && !PartSet<>::IsModifiedData(&partSets[i]))
-            continue;
-        file.write("P_ST", 4);
-        file.write(VAL(i), 4);
-        PartSet<>::Save(file, &partSets[i], useMBAACCFormat);
-        file.write("P_ED", 4);
+    // Write header (as loaded when possible)
+    if (rawHeader.size() == 0x24) {
+        file.write(rawHeader.data(), rawHeader.size());
+    } else {
+        char header[32] = "PAniDataFile";
+        file.write(header, sizeof(header));
+        file.write("_STR", 4);
     }
 
-    // Write CutOuts
-    for(uint32_t i = 0; i < cutOuts.size(); i++)
-    {
-        if(!CutOut<>::IsModifiedData(&cutOuts[i]))
-            continue;
-        file.write("PPST", 4);
-        file.write(VAL(i), 4);
-        CutOut<>::Save(file, &cutOuts[i], useMBAACCFormat);
-        file.write("PPED", 4);
+    auto encode = [&](char kind, uint32_t i) {
+        std::ostringstream os(std::ios_base::out | std::ios_base::binary);
+        switch (kind) {
+        case 'P':
+            os.write("P_ST", 4); os.write(VAL(i), 4);
+            PartSet<>::Save(os, &partSets[i], useMBAACCFormat);
+            os.write("P_ED", 4);
+            break;
+        case 'C':
+            os.write("PPST", 4); os.write(VAL(i), 4);
+            CutOut<>::Save(os, &cutOuts[i], useMBAACCFormat);
+            os.write("PPED", 4);
+            break;
+        case 'G':
+            os.write("PGST", 4); os.write(VAL(i), 4);
+            PartGfx<>::Save(os, &gfxMeta[i]);
+            os.write("PGED", 4);
+            break;
+        case 'V': {
+            int paramSize = 16;
+            uint32_t shapeCount = (uint32_t)shapes.size();
+            os.write("VEST", 4);
+            os.write(VAL(shapeCount), 4);
+            os.write(VAL(paramSize), 4);
+            for (uint32_t k = 0; k < shapes.size(); k++)
+                Shape<>::Save(os, &shapes[k], false);
+            os.write("VNST", 4);
+            for (uint32_t k = 0; k < shapes.size(); k++)
+                Shape<>::Save(os, &shapes[k], true);
+            os.write("VEED", 4);
+            break;
+        }
+        }
+        return os.str();
+    };
+    auto exists = [&](char kind, uint32_t i) {
+        switch (kind) {
+        case 'P': return i < partSets.size();
+        case 'C': return i < cutOuts.size();
+        case 'G': return i < gfxMeta.size();
+        default: return true;
+        }
+    };
+
+    // Loaded records in their original order: original bytes while the
+    // model is unchanged, re-encoded otherwise.
+    std::vector<uint8_t> doneP(partSets.size()), doneC(cutOuts.size()), doneG(gfxMeta.size());
+    bool doneV = false;
+    for (const auto& r : rawRecords) {
+        if (!exists(r.kind, r.id)) continue;
+        switch (r.kind) {
+        case 'P': if (doneP[r.id]) continue; doneP[r.id] = 1; break;
+        case 'C': if (doneC[r.id]) continue; doneC[r.id] = 1; break;
+        case 'G': if (doneG[r.id]) continue; doneG[r.id] = 1; break;
+        case 'V': if (doneV) continue; doneV = true; break;
+        }
+        if (Fingerprint(r.kind, r.id) == r.fp)
+            file.write(r.raw.data(), r.raw.size());
+        else {
+            const std::string e = encode(r.kind, r.id);
+            file.write(e.data(), e.size());
+        }
     }
 
-    // Write Shapes
-    int paramSize = 16;
-    size_t shapeCount = shapes.size();
-    file.write("VEST", 4);
-    file.write(VAL(shapeCount), 4);
-    file.write(VAL(paramSize), 4);
-
-    for(uint32_t i = 0; i < shapes.size(); i++)
-    {
-        if(!Shape<>::IsModifiedData(&shapes[i]))
-            continue;
-        Shape<>::Save(file, &shapes[i], false);
+    // Records created in the editor.
+    for (uint32_t i = 0; i < partSets.size(); i++)
+        if (!doneP[i] && (partSets[i].wasLoaded || PartSet<>::IsModifiedData(&partSets[i]))) {
+            const std::string e = encode('P', i); file.write(e.data(), e.size());
+        }
+    for (uint32_t i = 0; i < cutOuts.size(); i++)
+        if (!doneC[i] && CutOut<>::IsModifiedData(&cutOuts[i])) {
+            const std::string e = encode('C', i); file.write(e.data(), e.size());
+        }
+    if (!doneV) {
+        const std::string e = encode('V', 0); file.write(e.data(), e.size());
     }
-
-    file.write("VNST", 4);
-    for(uint32_t i = 0; i < shapes.size(); i++)
-    {
-        if(!Shape<>::IsModifiedData(&shapes[i]))
-            continue;
-        Shape<>::Save(file, &shapes[i], true);
-    }
-
-    file.write("VEED", 4);
-
-    // Write Textures
-    for(uint32_t i = 0; i < gfxMeta.size(); i++)
-    {
-        if(!PartGfx<>::IsModifiedData(&gfxMeta[i]))
-            continue;
-        file.write("PGST", 4);
-        file.write(VAL(i), 4);
-        PartGfx<>::Save(file, &gfxMeta[i]);
-        file.write("PGED", 4);
-    }
+    for (uint32_t i = 0; i < gfxMeta.size(); i++)
+        if (!doneG[i] && PartGfx<>::IsModifiedData(&gfxMeta[i])) {
+            const std::string e = encode('G', i); file.write(e.data(), e.size());
+        }
 
     file.write("_END", 4);
     file.close();
@@ -1007,4 +1047,67 @@ bool Parts::Save(const char* filename)
 void Parts::SetHighlightOpacity(float opacity)
 {
     highlightOpacity = opacity;
+}
+
+// FNV-1a over the model of one record (see RawRecord in parts.h).
+namespace {
+struct Fnv {
+    uint64_t h = 1469598103934665603ull;
+    void add(const void* p, size_t n) {
+        const unsigned char* c = (const unsigned char*)p;
+        for (size_t i = 0; i < n; ++i) { h ^= c[i]; h *= 1099511628211ull; }
+    }
+    template<class T> void v(const T& x) { add(&x, sizeof(x)); }
+    void str(const std::string& s) { size_t n = s.size(); v(n); add(s.data(), n); }
+};
+}
+
+uint64_t Parts::Fingerprint(char kind, uint32_t id) const
+{
+    Fnv f;
+    f.v(kind);
+    switch (kind) {
+    case 'P': {
+        if (id >= partSets.size()) return 0;
+        const auto& ps = partSets[id];
+        f.str(std::string(ps.name.data(), ps.name.size()));
+        size_t n = ps.groups.size(); f.v(n);
+        for (const auto& pr : ps.groups) {
+            f.v(pr.propId); f.v(pr.priority); f.add(pr.rotation, sizeof(pr.rotation)); f.add(pr.pras, sizeof(pr.pras));
+            f.v(pr.x); f.v(pr.y); f.v(pr.scaleX); f.v(pr.scaleY); f.v(pr.ppId); f.v(pr.additive); f.v(pr.filter);
+            f.v(pr.pral); f.v(pr.prfl); f.v(pr.prpa); f.v(pr.hasPrpa); f.v(pr.flip);
+            f.add(pr.bgra, sizeof(pr.bgra)); f.add(pr.addColor, sizeof(pr.addColor));
+        }
+        break;
+    }
+    case 'C': {
+        if (id >= cutOuts.size()) return 0;
+        const auto& c = cutOuts[id];
+        f.str(std::string(c.name.data(), c.name.size()));
+        f.add(c.uv, sizeof(c.uv)); f.add(c.xy, sizeof(c.xy)); f.add(c.wh, sizeof(c.wh)); f.v(c.texture);
+        f.add(c.ppjp, sizeof(c.ppjp)); f.v(c.colorSlot); f.v(c.shapeIndex); f.add(c.ppte, sizeof(c.ppte));
+        f.v(c.pptx); f.v(c.altTags); f.v(c.nameFixed);
+        break;
+    }
+    case 'G': {
+        if (id >= gfxMeta.size()) return 0;
+        const auto& g = gfxMeta[id];
+        f.str(std::string(g.name.data(), g.name.size()));
+        f.v(g.w); f.v(g.h); f.v(g.bpp); f.v(g.type); f.add(g.pgte, sizeof(g.pgte)); f.v(g.pgtp);
+        f.v(g.noCompress); f.add(g.ddsHeader, sizeof(g.ddsHeader)); f.v(g.imageSize);
+        if (g.imageData && g.imageSize > 0) f.add(g.imageData, (size_t)g.imageSize);
+        if (g.data && g.imageSize == 0 && g.w > 0 && g.h > 0) f.add(g.data, (size_t)g.w * g.h * (g.bpp / 8));
+        break;
+    }
+    case 'V': {
+        size_t n = shapes.size(); f.v(n);
+        for (const auto& sh : shapes) {
+            f.str(std::string(sh.name.data(), sh.name.size()));
+            f.v(sh.type); f.v(sh.radius); f.v(sh.width); f.v(sh.vertexCount); f.v(sh.vertexCount2);
+            f.v(sh.length); f.v(sh.length2); f.v(sh.dz); f.v(sh.dRadius);
+        }
+        break;
+    }
+    }
+    return f.h;
 }
