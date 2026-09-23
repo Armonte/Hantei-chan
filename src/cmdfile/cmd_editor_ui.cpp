@@ -106,6 +106,8 @@ struct CommandFileEditor::View {
 	int requestTab = -1;
 
 	std::string search;
+	int flagFilterSet = 0;   // 0 = off, 1 = flagset 1, 2 = flagset 2 (issue #50 "property" search)
+	int flagFilterBit = 0;
 	bool linkedChecksOnly = false;
 
 	// Inline editing
@@ -454,6 +456,15 @@ void CommandFileEditor::View::drawCommandsTab(const std::vector<Diagnostic>& dia
 	ImGui::InputTextWithHint("##search", "Search ID, input, pattern, comment, note", &search);
 	if (!search.empty()) { ImGui::SameLine(); if (ImGui::SmallButton("x")) search.clear(); }
 	ImGui::SameLine();
+	ImGui::SetNextItemWidth(110);
+	ImGui::Combo("##flagfilter", &flagFilterSet, "Any flags\0Flagset 1 bit\0Flagset 2 bit\0");
+	if (flagFilterSet) {
+		ImGui::SameLine();
+		ImGui::SetNextItemWidth(70);
+		if (ImGui::InputInt("##flagbit", &flagFilterBit)) flagFilterBit = std::clamp(flagFilterBit, 0, 31);
+	}
+	if (ImGui::IsItemHovered()) ImGui::SetTooltip("Show only commands with this flag bit set (e.g. every EX-cancelable move)");
+	ImGui::SameLine();
 	ImGui::TextDisabled("%zu commands", doc().commands.size());
 	HelpMarker("Double-click a cell to edit it. Drag rows to reorder (drop on the lower half to place below).\n"
 		"Ctrl/Shift+click selects several rows. Right-click a row for more actions.\n"
@@ -508,6 +519,11 @@ void CommandFileEditor::View::drawCommandTable(const std::vector<Diagnostic>& di
 		const std::string commentUtf8 = cmd ? Cp932ToUtf8(cmd->comment) : Cp932ToUtf8(d.commandRegionText(i));
 		const auto noteIt = ws.state.notes.byUid.find(line.uid);
 		const std::string note = noteIt != ws.state.notes.byUid.end() ? noteIt->second : std::string();
+		if (flagFilterSet) {
+			if (!cmd) continue;
+			const auto v = ParseInteger(cmd->fields[flagFilterSet == 1 ? CF_Flags1 : CF_Flags2]);
+			if (!v || !((*v >> flagFilterBit) & 1)) continue;
+		}
 		if (!needle.empty()) {
 			bool hit = Matches(commentUtf8, needle) || Matches(note, needle);
 			if (cmd) hit = hit || Matches(cmd->fields[CF_Id], needle) || Matches(cmd->fields[CF_Input], needle) || Matches(cmd->fields[CF_Pattern], needle);
