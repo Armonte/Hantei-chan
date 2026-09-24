@@ -29,10 +29,7 @@
       "mcp__ida__get_xrefs_to_field",
       "mcp__ida__get_callers",
       "mcp__ida__get_callees",
-      "mcp__ida__get_function_by_address",
-      "WebFetch(domain:github.com)",
-      "Bash(./build.sh:*)",
-      "Bash(grep:*)"
+      "mcp__ida__get_function_by_address"
     ],
     "deny": [],
     "ask": []
