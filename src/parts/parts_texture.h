@@ -79,10 +79,10 @@ public:
 
     // Compression/decompression
     static bool Decrappress(unsigned char* cdata, unsigned char* outData, size_t csize, size_t outSize);
-    static void CompressDDS(std::ofstream &file, const PartGfx *gfx, std::streampos pgt2A);
+    static void CompressDDS(std::ostream &file, const PartGfx *gfx, std::streampos pgt2A);
 
     // Saving
-    static void Save(std::ofstream &file, const PartGfx *gfx);
+    static void Save(std::ostream &file, const PartGfx *gfx);
     static bool IsModifiedData(const PartGfx *gfx);
 
     // Utilities

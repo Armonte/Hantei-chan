@@ -525,7 +525,7 @@ static bool EncodeFrame(const Frame &F, PatternTables &T, uint8_t out[216], Ctx 
 		wr16(a + 0x30, A.hitStopTime);
 		wr16(a + 0x32, A.untechTime);
 		a[0x38] = u8c(A.addedEffect);
-		if (!(raw && R.hadAT && (R.at[0x39] != 0) == A.hitgrab)) a[0x39] = A.hitgrab ? 1 : 0;
+		if (!(raw && R.hadAT && (R.at[0x39] != 0) == (A.hitgrab != 0))) a[0x39] = A.hitgrab ? 1 : 0;
 		a[0x3A] = u8c(A.hitStop);
 		if (!(raw && R.hadAT && DecodeCorrection(R.at[0x3B]) == A.correction))
 			a[0x3B] = u8c(A.correction == 100 ? 0 : A.correction);

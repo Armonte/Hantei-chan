@@ -2,6 +2,7 @@
 #include "framedata_load.h"
 #include "framedata_ha4.h"
 #include <fstream>
+#include <algorithm>
 #include "misc.h"
 #include <cstring>
 #include <sstream>
@@ -108,13 +109,27 @@ bool FrameData::load(const char *filename, bool patch, bool fillOnly) {
 #define PTR(X) ((const char*)X)
 
 // Hitbox cleanup applied to the *written* data only: degenerate boxes are
-// dropped and inverted boxes are fixed. Returns true if anything would change.
+// dropped and inverted boxes are fixed -- but only boxes created or edited in
+// this session. Boxes exactly as loaded are game data and are written as they
+// are: MBTL chr016 (Powered Ciel) p6 f6 and p25 f2-3 have inverted attack
+// boxes, and "fixing" them moved the box on every save. Returns true if
+// anything would change.
+static bool BoxIsAsLoaded(const Frame &frame, int loc, const Hitbox &box)
+{
+	const Ha6FrameEnc &enc = frame.ha6;
+	if (enc.valid && loc >= 0 && loc < Ha6FrameEnc::kMaxBoxes && ((enc.boxMask >> loc) & 1ull))
+		return !memcmp(enc.boxXY[loc], box.xy, sizeof(box.xy));
+	return false;
+}
+
 static bool SequenceNeedsBoxFix(const Sequence &seq)
 {
 	for(const auto &frame : seq.frames)
 	for(const auto &it : frame.hitboxes)
 	{
 		const Hitbox &box = it.second;
+		if(BoxIsAsLoaded(frame, it.first, box))
+			continue;
 		if(box.xy[0] >= box.xy[2] || box.xy[1] >= box.xy[3])
 			return true;
 	}
@@ -127,6 +142,11 @@ static void FixBoxesForSave(Sequence &seq)
 	for(auto it = frame.hitboxes.begin(); it != frame.hitboxes.end();)
 	{
 		Hitbox &box = it->second;
+		if(BoxIsAsLoaded(frame, it->first, box))
+		{
+			++it;
+			continue;
+		}
 		//Delete degenerate boxes when exporting.
 		if( (box.xy[0] == box.xy[2]) ||
 			(box.xy[1] == box.xy[3]) )
@@ -135,7 +155,7 @@ static void FixBoxesForSave(Sequence &seq)
 		}
 		else
 		{
-			//Fix inverted boxes. Don't know if needed.
+			//Fix inverted boxes drawn backwards in the editor.
 			if(box.xy[0] > box.xy[2])
 				std::swap(box.xy[0], box.xy[2]);
 			if(box.xy[1] > box.xy[3])
@@ -151,7 +171,8 @@ static void FixBoxesForSave(Sequence &seq)
 static bool WriteHA6File(const char *filename, const std::vector<Sequence> &sequences,
                          uint32_t count, bool modifiedOnly,
                          const std::vector<int> *origin = nullptr, int ownFile = -1,
-                         const std::map<unsigned int, Sequence> *ownStubs = nullptr)
+                         const std::map<unsigned int, Sequence> *ownStubs = nullptr,
+                         int uniLayerCount = 0)
 {
 	if(!filename || !*filename)
 		return false;
@@ -179,7 +200,7 @@ static bool WriteHA6File(const char *filename, const std::vector<Sequence> &sequ
 		{
 			if(ownStubs) {
 				auto it = ownStubs->find(i);
-				if(it != ownStubs->end()) WriteSequence(file, &it->second);
+				if(it != ownStubs->end()) WriteSequence(file, &it->second, uniLayerCount);
 			}
 			file.write("PEND", 4);
 			continue;
@@ -188,11 +209,11 @@ static bool WriteHA6File(const char *filename, const std::vector<Sequence> &sequ
 		{
 			Sequence copy = src;
 			FixBoxesForSave(copy);
-			WriteSequence(file, &copy);
+			WriteSequence(file, &copy, uniLayerCount);
 		}
 		else
 		{
-			WriteSequence(file, &src);
+			WriteSequence(file, &src, uniLayerCount);
 		}
 		file.write("PEND", 4);
 	}
@@ -222,7 +243,23 @@ bool FrameData::save(const char *filename)
 		return ha4::SaveFile(*this, filename);
 	const std::map<unsigned int, Sequence> *stubs =
 		(m_ownFile >= 0 && m_ownFile < (int)m_stubs.size()) ? &m_stubs[m_ownFile] : nullptr;
-	return WriteHA6File(filename, m_sequences, get_sequence_count(), false, &m_origin, m_ownFile, stubs);
+	return WriteHA6File(filename, m_sequences, get_sequence_count(), false, &m_origin, m_ownFile, stubs, uniLayerCountForSave());
+}
+
+int FrameData::StackSaveTarget(const std::vector<std::string>& names)
+{
+	auto shared = [](std::string n) {
+		for (auto& c : n) c = (char)tolower((unsigned char)c);
+		std::replace(n.begin(), n.end(), '\\', '/');
+		if (n.rfind("../", 0) == 0) return true;
+		const size_t slash = n.find_last_of('/');
+		const std::string base = slash == std::string::npos ? n : n.substr(slash + 1);
+		return base.find("basedata") != std::string::npos;
+	};
+	int t = (int)names.size() - 1;
+	while (t > 0 && shared(names[t]))
+		--t;
+	return t;
 }
 
 int FrameData::inheritedPatternCount() const
@@ -237,13 +274,13 @@ int FrameData::inheritedPatternCount() const
 
 bool FrameData::save_merged(const char *filename)
 {
-	return WriteHA6File(filename, m_sequences, get_sequence_count(), false);
+	return WriteHA6File(filename, m_sequences, get_sequence_count(), false, nullptr, -1, nullptr, uniLayerCountForSave());
 }
 
 bool FrameData::save_modified_only(const char *filename)
 {
 	// Only write modified sequences
-	return WriteHA6File(filename, m_sequences, get_sequence_count(), true);
+	return WriteHA6File(filename, m_sequences, get_sequence_count(), true, nullptr, -1, nullptr, uniLayerCountForSave());
 }
 
 void FrameData::Free() {
@@ -266,13 +303,65 @@ int FrameData::get_sequence_count() {
 	return m_nsequences;
 }
 
-bool FrameData::usesUniFormat() const {
-	for (const auto& seq : m_sequences) {
-		if (seq.usedATV2 || seq.usedAFGX) {
-			return true;
-		}
+Ha6Game g_ha6GameOverride = Ha6Game::Auto;
+
+const char* Ha6GameName(Ha6Game g)
+{
+	switch (g) {
+	case Ha6Game::MBAACC: return "MBAACC";
+	case Ha6Game::UNI: return "UNI/UNI2";
+	case Ha6Game::MBTL: return "MBTL";
+	default: return "Auto";
 	}
-	return false;
+}
+
+Ha6Game FrameData::detectedGame() const
+{
+	if (m_gameCacheVersion == dataVersion && m_gameCacheVersion != 0)
+		return m_gameCache;
+	// AFGX frames carry every layer the game has (UNI2 always writes ids
+	// 0..4, MBTL 0..2: Han6_LoadFrameAF ignores ids >= 5 / >= 3).
+	bool modern = false;
+	size_t maxLayers = 0;
+	for (const auto& seq : m_sequences) {
+		if (seq.usedATV2 || seq.usedAFGX) modern = true;
+		if (!seq.usedAFGX) continue;
+		for (const auto& f : seq.frames)
+			maxLayers = std::max(maxLayers, f.AF.layers.size());
+	}
+	Ha6Game g = Ha6Game::MBAACC;
+	if (modern)
+		g = (maxLayers == 3) ? Ha6Game::MBTL : Ha6Game::UNI;
+	m_gameCache = g;
+	m_gameCacheVersion = dataVersion;
+	return g;
+}
+
+Ha6Game FrameData::game() const
+{
+	if (g_ha6GameOverride != Ha6Game::Auto) return g_ha6GameOverride;
+	return detectedGame();
+}
+
+bool FrameData::usesUniFormat() const {
+	const Ha6Game g = game();
+	return g == Ha6Game::UNI || g == Ha6Game::MBTL;
+}
+
+int FrameData::uniLayerCountForSave() const
+{
+	// HA4 data exported to HA6 stays MBAACC-style.
+	if (m_ha4 || !usesUniFormat()) return 0;
+	return gameLayerCount();
+}
+
+int FrameData::gameLayerCount() const
+{
+	switch (game()) {
+	case Ha6Game::UNI: return 5;
+	case Ha6Game::MBTL: return 3;
+	default: return 1;
+	}
 }
 
 Sequence* FrameData::get_sequence(int n) {

@@ -226,6 +226,7 @@ int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE, PWSTR pCmdLine, int nCmdShow
 		}
 		else if(i+1<argC && (!strcmp(arg, "--open") || !strcmp(arg, "--capture") || !strcmp(arg, "--pattern")
 		                     || !strcmp(arg, "--frame") || !strcmp(arg, "--palette") || !strcmp(arg, "--game-link")
+		                     || !strcmp(arg, "--zoom") || !strcmp(arg, "--game")
 		                     || !strcmp(arg, "--compare") || !strcmp(arg, "--tool")))
 		{
 			// startup actions, see startup_args.h
@@ -238,10 +239,16 @@ int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE, PWSTR pCmdLine, int nCmdShow
 			else if(!strcmp(arg, "--pattern")) gStartup.pattern = atoi(v.c_str());
 			else if(!strcmp(arg, "--frame")) gStartup.frame = atoi(v.c_str());
 			else if(!strcmp(arg, "--game-link")) gStartup.gameLinkSlot = atoi(v.c_str());
+			else if(!strcmp(arg, "--zoom")) gStartup.zoom = (float)atof(v.c_str());
+			else if(!strcmp(arg, "--game")) gStartup.game = v;
 			else if(!strcmp(arg, "--compare")) gStartup.compare = atoi(v.c_str());
 			else if(!strcmp(arg, "--tool")) gStartup.tool = v;
 			else gStartup.palette = atoi(v.c_str());
 			i++;
+		}
+		else if(!strcmp(arg, "--no-pups"))
+		{
+			gStartup.noPups = true;
 		}
 		else if(ParseWave2StartupArg(arg, i+1<argC ? argV[i+1] : nullptr, i))
 		{

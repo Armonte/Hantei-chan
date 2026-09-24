@@ -78,12 +78,10 @@ unsigned int* PartSet<Allocator>::PrLoad(unsigned int* data, const unsigned int*
             data += 2;
         }
         else if (!memcmp(buf, "PRAL", 4)) {
-            // Additive blend mode
+            // Blend mode byte (1 = additive; 2/3 other modes in UNI2/MBTL)
             unsigned char* cdata = (unsigned char*)data;
-            pr.additive = *cdata;
-            if (pr.additive == 2) {
-                pr.additive = 1;
-            }
+            pr.pral = *cdata;
+            pr.additive = *cdata != 0;
             ++cdata;
             data = (unsigned int*)cdata;
         }
@@ -97,6 +95,7 @@ unsigned int* PartSet<Allocator>::PrLoad(unsigned int* data, const unsigned int*
         else if (!memcmp(buf, "PRFL", 4)) {
             // Filter flag
             unsigned char* cdata = (unsigned char*)data;
+            pr.prfl = *cdata;
             pr.filter = *cdata;
             ++cdata;
             data = (unsigned int*)cdata;
@@ -135,6 +134,12 @@ unsigned int* PartSet<Allocator>::PrLoad(unsigned int* data, const unsigned int*
             // Used by UNI2 chr020; previously desynced the parser.
             memcpy(pr.pras, data, sizeof(int) * 2);
             data += 2;
+        }
+        else if (!memcmp(buf, "PRPA", 4)) {
+            // UNI2/MBTL: one int (part +16). No editor field; kept as loaded.
+            pr.prpa = (int)data[0];
+            pr.hasPrpa = true;
+            ++data;
         }
         else if (!memcmp(buf, "PRPR", 4)) {
             // Priority. Higher value means draw first / lower on the stack
@@ -222,7 +227,7 @@ void PartSet<std::allocator>::CopyPropertyTo(PartProperty *propDst, PartProperty
 }
 
 template<>
-void PartSet<>::Save(std::ofstream &file, const PartSet *partSet, bool mbaacc)
+void PartSet<>::Save(std::ostream &file, const PartSet *partSet, bool mbaacc)
 {
     if(!partSet->name.empty()) {
         std::string name = utf82sj(partSet->name);
@@ -262,8 +267,10 @@ void PartSet<>::Save(std::ofstream &file, const PartSet *partSet, bool mbaacc)
 
         if(prop->additive)
         {
+            // Keep the loaded mode byte (2/3 are distinct modes, not "on").
+            unsigned char v = prop->pral ? prop->pral : 1;
             file.write("PRAL", 4);
-            file.write(VAL(tempValue), 1);
+            file.write(VAL(v), 1);
         }
 
         if(prop->flip != 0)
@@ -274,8 +281,9 @@ void PartSet<>::Save(std::ofstream &file, const PartSet *partSet, bool mbaacc)
 
         if(prop->filter)
         {
+            unsigned char v = prop->prfl ? prop->prfl : 1;
             file.write("PRFL", 4);
-            file.write(VAL(tempValue), 1);
+            file.write(VAL(v), 1);
         }
 
         if(prop->scaleX != 1.f || prop->scaleY != 1.f)
@@ -335,6 +343,12 @@ void PartSet<>::Save(std::ofstream &file, const PartSet *partSet, bool mbaacc)
             file.write("PRAS", 4);
             file.write(VAL(prop->pras[0]), 4);
             file.write(VAL(prop->pras[1]), 4);
+        }
+
+        if(prop->hasPrpa)
+        {
+            file.write("PRPA", 4);
+            file.write(VAL(prop->prpa), 4);
         }
 
         // PRPR is an int32 in the file; we store priority as float to embed a

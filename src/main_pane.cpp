@@ -314,6 +314,31 @@ void MainPane::Draw()
 					im::TreePop();
 					im::Separator();
 				}
+				if (frame.ha6.nExtra > 0 && im::TreeNode("Other tags (kept as loaded)"))
+				{
+					// Tags the UNI2/MBTL loaders read that no editor field covers
+					// (rare: no shipped file uses them). Saved back unchanged.
+					static const struct { const char* tag; const char* what; } kInfo[] = {
+						{"AFAN", "layer Z rotation as an int (same slot as AFAZ)"},
+						{"ASV1", "read, ignored"}, {"ASVA", "AS velocity (2 words)"}, {"ASVC", "AS velocity (2 words)"},
+						{"ASAT", "AS +32"}, {"ASKV", "read, ignored"}, {"ASSS", "stance (same field as ASS1/ASS2)"},
+						{"ASDF", "read, ignored"}, {"ASCL", "movement flags (2 words)"}, {"ASSE", "movement flags (2 words)"},
+						{"ASDE", "AS +36"}, {"ASF2", "read, ignored"}, {"ASF3", "read, ignored"},
+						{"ATAB", "AT +66"}, {"ATBG", "AT +70 (guard related, Hit_ResolveHitstop)"}, {"ATGE", "AT +32/+34"},
+						{"ATKZ", "read, ignored"}, {"ATGS", "read, ignored"}, {"ATF2", "read, ignored"},
+						{"HRFF", "box flag byte: box (attack if < 0), value"},
+					};
+					for (int i = 0; i < frame.ha6.nExtra && i < Ha6FrameEnc::kMaxExtra; ++i) {
+						const Ha6ExtraTag& x = frame.ha6.extra[i];
+						std::string line(x.tag, 4);
+						for (int k = 0; k < x.nwords; ++k) line += " " + std::to_string(x.w[k]);
+						const char* what = "";
+						for (const auto& in : kInfo) if (!memcmp(in.tag, x.tag, 4)) what = in.what;
+						im::Text("%s", line.c_str());
+						im::SameLine(); im::TextDisabled("%s", what);
+					}
+					im::TreePop();
+				}
 				if (im::TreeNode("Tools"))
 				{
 					im::Checkbox("Make copy current frame", &copyThisFrame);

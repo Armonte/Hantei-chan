@@ -1,5 +1,6 @@
 #ifndef CG_H_GUARD
 #define CG_H_GUARD
+#include <string>
 
 struct ImageData
 {
@@ -51,6 +52,20 @@ protected:
 	int				palMax = 0;
 	int				paletteOffset = 0;
 
+	// PUPS palette files (issue #76): bank 0 is <cg>.pal (paletteData above),
+	// bank n is <cg>_pn.pal, n = 1..7 (CharaPalette_LoadPalAndPupsVariants,
+	// MBTL.exe 0x5934B0). A pattern's PUPS value selects the bank; the
+	// palette number (colour) stays the same.
+	static constexpr int kPupsBanks = 8;
+	char			*pupsData[kPupsBanks] = {};
+	int				pupsMax[kPupsBanks] = {};
+	int				pupsOffset[kPupsBanks] = {};
+	int				curPalIndex = 0;
+	int				curPups = 0;
+	int				appliedBank = 0;   // bank whose data `palette` points into
+	void			freePupsBanks();
+	void			applyPalette();
+
 	char					*m_data;
 	unsigned int			m_data_size;
 
@@ -101,6 +116,14 @@ public:
 	// Load a CG image bank from memory (copied), e.g. the CG blob embedded in an MBAC .DAT.
 	bool loadFromMemory(const void *data, unsigned int size);
 	bool loadPalette(const char *name);
+	// Loads <stem>.pal as bank 0 and <stem>_p1.pal .. _p7.pal as banks 1..7.
+	bool loadPupsPalettes(const std::string &stem);
+	// Selects the PUPS bank. A missing bank falls back to bank 0 (the game
+	// would show its default grey ramp). Returns true if the palette changed.
+	bool setPupsBank(int bank);
+	int pupsBank() const { return curPups; }
+	bool hasPupsBank(int bank) const { return bank == 0 ? paletteData != nullptr : (bank > 0 && bank < kPupsBanks && pupsData[bank]); }
+	int pupsBankCount() const;
 	bool changePaletteNumber(int number);
 	int getPalNumber();
 	unsigned int getColorFromPal(int palIndex);
@@ -115,7 +138,10 @@ public:
 	const unsigned int* getPalettePtr() const { return palette; }
 	// Process-unique stamp, renewed by every load / palette change / free.
 	// Render's sprite texture cache keys on (this, generation, image).
-	unsigned long long generation() const { return m_generation; }
+	// The PUPS bank in effect is folded into the low bits, so switching
+	// banks per layer changes the key (no stale baked texture) while
+	// switching back hits the entries made earlier (no cache thrash).
+	unsigned long long generation() const { return (m_generation << 3) | (unsigned)(appliedBank & 7); }
 
 	int	get_image_count();
 

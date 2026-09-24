@@ -481,6 +481,28 @@ void MainFrame::Menu(unsigned int errorPopupId)
 				ImGui::EndMenu();
 			}
 			auto* active = getActiveCharacter();
+			if (ImGui::BeginMenu("Game format"))
+			{
+				// Which game's HA6 dialect the labels and the writer follow (issues #14, #74).
+				const Ha6Game detected = active ? active->frameData.detectedGame() : Ha6Game::Auto;
+				std::string autoLabel = std::string("Auto (detected: ") + Ha6GameName(detected) + ")";
+				if (ImGui::MenuItem(autoLabel.c_str(), nullptr, g_ha6GameOverride == Ha6Game::Auto))
+					g_ha6GameOverride = Ha6Game::Auto;
+				if (ImGui::MenuItem("MBAACC", nullptr, g_ha6GameOverride == Ha6Game::MBAACC))
+					g_ha6GameOverride = Ha6Game::MBAACC;
+				if (ImGui::MenuItem("UNI / UNIST / UNI2 (5 layers)", nullptr, g_ha6GameOverride == Ha6Game::UNI))
+					g_ha6GameOverride = Ha6Game::UNI;
+				if (ImGui::MenuItem("MELTY BLOOD: TYPE LUMINA (3 layers)", nullptr, g_ha6GameOverride == Ha6Game::MBTL))
+					g_ha6GameOverride = Ha6Game::MBTL;
+				ImGui::EndMenu();
+			}
+			if (ImGui::IsItemHovered())
+				ImGui::SetTooltip("Detected from the data: AFGX layer count (5 = UNI, 3 = MBTL),\n"
+					"no ATV2/AFGX = MBAACC. Switches field labels (e.g. attack flag 4, #74)\n"
+					"and the format new patterns are saved in.");
+			ImGui::MenuItem("PUPS palette files", nullptr, &render.followPups);
+			if (ImGui::IsItemHovered())
+				ImGui::SetTooltip("Draw patterns with PUPS n using <cg>_pn.pal, as the game does (#76).");
 			if (active && active->cg.getPalNumber() > 0 && ImGui::BeginMenu("Palette number"))
 			{
 				ImGui::SetNextItemWidth(80);
@@ -491,6 +513,13 @@ void MainFrame::Menu(unsigned int errorPopupId)
 					active->palette = 0;
 				if(active->cg.changePaletteNumber(active->palette))
 					render.SwitchImage(-1);
+				if (active->cg.getPalNumber() == 130)
+					ImGui::TextDisabled("130 = 65 colours x 2 sets:\npalette n+65 is colour n's alternate set.");
+				if (active->cg.pupsBankCount() > 1) {
+					ImGui::TextDisabled("PUPS files loaded:");
+					for (int b = 0; b < active->cg.pupsBankCount(); ++b)
+						if (active->cg.hasPupsBank(b)) { ImGui::SameLine(); ImGui::TextDisabled(b == 0 ? ".pal" : "_p%d", b); }
+				}
 				ImGui::EndMenu();
 			}
 			if (ImGui::BeginMenu("Zoom level"))
