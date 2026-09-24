@@ -28,6 +28,7 @@ struct ActorStyle {
 	bool mirrored = false;               // facing differs from the root
 	float angleTurns = 0.f;              // actor angle (1 = 360 degrees)
 	int zPriority = INT_MIN;             // INT_MIN: the frame's AF priority
+	int pups = 0;                        // PUPS of the actor's pattern: <cg>_pN.pal (UNI2/MBTL, #76)
 	float alphaMul = 1.f;
 	glm::vec3 tint{1.f, 1.f, 1.f};
 	bool boxes = true;                   // attach the frame's hitboxes to layer 0
@@ -54,14 +55,18 @@ static void AddFrameLayers(Render& render, Frame& frame, CG* cg, Parts* parts, c
 		layer.rotX = L.rotation[0];
 		layer.rotY = L.rotation[1];
 		layer.rotZ = L.rotation[2];
-		layer.AFRT = frame.AF.AFRT;
+		// UNI2/MBTL keep AFRT per layer (Han6_LoadFrameAF, layer +32).
+		layer.AFRT = frame.AF.AFRT || L.afrt;
 		// Actor matrix F * R(angle) (MbaaTransform::ActorMatrix): the renderer
 		// applies scale then Z rotation, so mirror via scaleX and add the
 		// actor angle (10000 = 360 degrees, clockwise).
 		if (s.mirrored) layer.scaleX *= -1.0f;
 		layer.rotZ += s.angleTurns;
 		layer.blendMode = L.blend_mode;
-		layer.zPriority = s.zPriority == INT_MIN ? frame.AF.priority : s.zPriority;
+		// Object priority, then the layer's AFPL draw bucket (UNI2/MBTL;
+		// AFPL 0 = object + 256 keeps MBAACC's relative order).
+		layer.zPriority = LayerDrawBucket(L.priority, s.zPriority == INT_MIN ? frame.AF.priority : s.zPriority);
+		layer.pups = s.pups;
 		layer.alpha = L.rgba[3] * s.alphaMul;
 		layer.tintColor = glm::vec4(L.rgba[0] * s.tint.r, L.rgba[1] * s.tint.g, L.rgba[2] * s.tint.b, 1.0f);
 		layer.isSpawned = s.spawned;
@@ -143,6 +148,7 @@ void MainFrame::AddSimulatedActorLayers(CharacterView* view, const preview::Tick
 	rootStyle.layer0Sprite = layer0Sprite;
 	rootStyle.boxes = boxes;
 	rootStyle.alphaMul = alphaMul;
+	rootStyle.pups = mainSeq->pups;
 	if (sampleTint) rootStyle.tint = *sampleTint;
 	viewrender::AddFrameLayers(render, mainFrame, &active->cg, &active->parts, rootStyle);
 
@@ -186,6 +192,7 @@ void MainFrame::AddSimulatedActorLayers(CharacterView* view, const preview::Tick
 		if (sampleTint) s.tint *= *sampleTint;
 		s.boxes = boxes;
 		s.spawned = true;
+		s.pups = spawnedSeq->pups;
 		s.flagset1 = actor.flagset1;
 		s.flagset2 = actor.flagset2;
 		viewrender::AddFrameLayers(render, spawnedSeq->frames[actor.frame], sourceCG, sourceParts, s);

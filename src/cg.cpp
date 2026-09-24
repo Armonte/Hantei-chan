@@ -1,3 +1,4 @@
+#include <filesystem>
 // .CG loader
 //
 // .CG contains information about sprite mappings from the ENC and PVR tiles.
@@ -353,58 +354,125 @@ int CG::getPalNumber()
 	return palMax;
 }
 
-bool CG::loadPalette(const char *name) {
-	touch();
-	if (paletteData) {
-		palette = origPalette;
-		delete[] paletteData;
-		palMax = 0;
-	}
-
+// Parses a .pal file in place: MBAACC "count + count*256 BGRA" or the
+// UNI/MBTL "FFFF, split, 0, count" header + count*256 BGRA (130 palettes =
+// 65 colours x 2 sets; see docs/HANTEI_UNI_MBTL.md). Alpha is made binary and
+// index 0 transparent for display.
+static bool ParsePalette(const char *name, char *&out, int &count, int &offset)
+{
 	unsigned int size;
-	char *data;
-	if (!ReadInMem(name, paletteData, size)) {
+	char *data = nullptr;
+	if (!ReadInMem(name, data, size) || size < 4) {
+		delete[] data;
 		return false;
 	}
-
-	unsigned int *d = (unsigned int *)paletteData;
-	palMax = d[0];
-
-	//Quick filesize check to make sure it's valid.
-	if(palMax*0x400+4 > size)
+	unsigned int *d = (unsigned int *)data;
+	count = d[0];
+	if((unsigned long long)count*0x400+4 > size)
 	{
-		palMax = d[3];
-		if(palMax*0x400+4*4 > size)
+		if (size < 16) { delete[] data; return false; }
+		count = d[3];
+		if((unsigned long long)count*0x400+4*4 > size)
 		{
-			delete[] paletteData;
-			paletteData = nullptr;
-			palMax = 0;
+			delete[] data;
 			return false;
 		}
-		paletteOffset = 4;
+		offset = 4;
 	}
 	else
-		paletteOffset = 1;
+		offset = 1;
 
-	palette = d+paletteOffset;
-
-	unsigned int *paletteIterator = palette;
-	for(int i = 0; i < palMax; i++)
+	unsigned int *paletteIterator = d + offset;
+	for(int i = 0; i < count; i++)
 	{
 		unsigned int *p = paletteIterator;
 		for (int j = 0; j < 256; ++j) {
 			unsigned int v = *p;
 			unsigned int alpha = v>>24;
-			
 			alpha = (alpha != 0) ? 255 : 0;
-			
 			*p = (v&0xffffff) | (alpha<<24);
 			++p;
 		}
 		paletteIterator[0] = 0;
 		paletteIterator += 0x100;
 	}
+	out = data;
 	return true;
+}
+
+bool CG::loadPalette(const char *name) {
+	touch();
+	if (paletteData) {
+		palette = origPalette;
+		delete[] paletteData;
+		paletteData = nullptr;
+		palMax = 0;
+	}
+
+	if (!ParsePalette(name, paletteData, palMax, paletteOffset)) {
+		paletteData = nullptr;
+		palMax = 0;
+		return false;
+	}
+	curPalIndex = 0;
+	curPups = 0;
+	appliedBank = 0;
+	palette = (unsigned int *)paletteData + paletteOffset;
+	return true;
+}
+
+void CG::freePupsBanks()
+{
+	touch();
+	for (int i = 1; i < kPupsBanks; ++i) {
+		delete[] pupsData[i];
+		pupsData[i] = nullptr;
+		pupsMax[i] = 0;
+	}
+}
+
+bool CG::loadPupsPalettes(const std::string &stem)
+{
+	freePupsBanks();
+	bool ok = std::filesystem::exists(stem + ".pal") && loadPalette((stem + ".pal").c_str());
+	for (int i = 1; i < kPupsBanks; ++i) {
+		const std::string p = stem + "_p" + std::to_string(i) + ".pal";
+		if (!std::filesystem::exists(p)) continue;
+		char *data = nullptr; int count = 0, offset = 0;
+		if (ParsePalette(p.c_str(), data, count, offset)) {
+			pupsData[i] = data; pupsMax[i] = count; pupsOffset[i] = offset;
+		}
+	}
+	touch();   // bank contents changed
+	return ok;
+}
+
+int CG::pupsBankCount() const
+{
+	int n = paletteData ? 1 : 0;
+	for (int i = 1; i < kPupsBanks; ++i) if (pupsData[i]) n = i + 1;
+	return n;
+}
+
+void CG::applyPalette()
+{
+	if (curPups > 0 && curPups < kPupsBanks && pupsData[curPups] && curPalIndex < pupsMax[curPups]) {
+		palette = (unsigned int *)pupsData[curPups] + pupsOffset[curPups] + curPalIndex * 0x100;
+		appliedBank = curPups;
+	} else if (paletteData && curPalIndex < palMax) {
+		palette = (unsigned int *)paletteData + paletteOffset + curPalIndex * 0x100;
+		appliedBank = 0;
+	}
+}
+
+bool CG::setPupsBank(int bank)
+{
+	if (bank < 0 || bank >= kPupsBanks) bank = 0;
+	if (bank == curPups) return false;
+	const unsigned int *before = palette;
+	curPups = bank;
+	applyPalette();
+	return palette != before;
 }
 
 bool CG::changePaletteNumber(int number)
@@ -412,8 +480,8 @@ bool CG::changePaletteNumber(int number)
 	touch();
 	if(paletteData && number < palMax && number >= 0)
 	{
-		unsigned int *d = (unsigned int *)paletteData;
-		palette = d + paletteOffset + number * 0x100;
+		curPalIndex = number;
+		applyPalette();
 		return true;
 	}
 	return false;
@@ -524,6 +592,10 @@ bool CG::loadOwned(char *data, unsigned int size) {
 
 void CG::free() {
 	touch();
+	freePupsBanks();
+	curPups = 0;
+	curPalIndex = 0;
+	appliedBank = 0;
 	if (paletteData) {
 		delete[] paletteData;
 	}

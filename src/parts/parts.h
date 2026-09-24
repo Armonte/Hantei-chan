@@ -11,6 +11,8 @@
 #include "parts_part.h"
 #include "parts_partset.h"
 #include <vector>
+#include <cstdint>
+#include <string>
 #include <functional>
 #include <glm/mat4x4.hpp>
 
@@ -36,6 +38,20 @@ public:
     // tag variants back instead of the canonical UNI ones (PANA, PPNA, PPWH,
     // PPXY, PPCL, PPVT, PPGR, PGT2), preserving byte-1:1 with the original.
     bool useMBAACCFormat = false;
+
+    // Records as loaded, in file order, with a fingerprint of the model they
+    // decoded to. Save() writes a record's original bytes while its model is
+    // unchanged (so unmodified .pat files round-trip byte-identical, including
+    // their texture compression) and re-encodes only edited records.
+    struct RawRecord {
+        char kind;          // 'P' P_ST, 'C' PPST, 'G' PGST, 'V' VEST
+        uint32_t id;
+        std::string raw;    // tag .. end tag
+        uint64_t fp = 0;
+    };
+    std::vector<RawRecord> rawRecords;
+    std::string rawHeader;  // 0x20-byte header + "_STR"
+    uint64_t Fingerprint(char kind, uint32_t id) const;
 
     // PatEditor highlighting
     int partHighlight = -1;        // Index of highlighted part property (-1 = none)

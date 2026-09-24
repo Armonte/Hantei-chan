@@ -23,15 +23,17 @@ static_assert(std::is_trivially_copyable<Frame_AT>::value, "Frame_AT must stay t
 static_assert(std::is_trivially_copyable<Frame_EF>::value, "Frame_EF must stay trivially copyable for undo diffing");
 static_assert(std::is_trivially_copyable<Frame_IF>::value, "Frame_IF must stay trivially copyable for undo diffing");
 static_assert(std::is_trivially_copyable<Hitbox>::value, "Hitbox must stay trivially copyable for undo diffing");
+static_assert(std::is_trivially_copyable<Ha6FrameEnc>::value && std::is_trivially_copyable<Ha6SeqEnc>::value,
+	"HA6 encoding blocks must stay trivially copyable for undo diffing");
 static_assert(std::is_trivially_copyable<Ha4FrameRaw>::value && std::is_trivially_copyable<Ha4SeqRaw>::value,
 	"HA4 raw blocks must stay trivially copyable for undo diffing");
 #if defined(__x86_64__) || defined(_M_X64)
 static_assert(sizeof(Layer_Type) == 60, "Layer layout changed: update layerEquals() in undo_manager.cpp, then this size");
 static_assert(sizeof(Frame_AF) == 80, "Frame_AF layout changed: update afEquals() in undo_manager.cpp, then this size");
-static_assert(sizeof(Sequence) == 248, "Sequence layout changed: update SequenceContentEquals() in undo_manager.cpp, then this size");
+static_assert(sizeof(Sequence) == 248 + sizeof(Ha6SeqEnc) + 4, "Sequence layout changed: update SequenceContentEquals() in undo_manager.cpp, then this size");
 #endif
 static_assert(sizeof(Frame) == sizeof(Frame_AF) + sizeof(Frame_AS) + sizeof(Frame_AT)
-	+ sizeof(Frame::EF) + sizeof(Frame::IF) + sizeof(BoxList) + sizeof(Ha4FrameRaw),
+	+ sizeof(Frame::EF) + sizeof(Frame::IF) + sizeof(BoxList) + sizeof(Ha4FrameRaw) + sizeof(Ha6FrameEnc),
 	"Frame gained a member: update frameEquals() in undo_manager.cpp");
 
 namespace {
@@ -54,6 +56,7 @@ bool layerEquals(const Layer_Type& a, const Layer_Type& b)
 {
 	return a.spriteId == b.spriteId
 		&& a.usePat == b.usePat
+		&& a.afrt == b.afrt
 		&& a.offset_y == b.offset_y
 		&& a.offset_x == b.offset_x
 		&& a.blend_mode == b.blend_mode
@@ -120,7 +123,8 @@ bool frameEquals(const Frame& a, const Frame& b)
 		&& podVectorEqual(a.EF, b.EF)
 		&& podVectorEqual(a.IF, b.IF)
 		&& boxesEqual(a.hitboxes, b.hitboxes)
-		&& bytesEqual(a.ha4, b.ha4);   // original MBAC .DAT bytes (ha4_raw.h)
+		&& bytesEqual(a.ha4, b.ha4)    // original MBAC .DAT bytes (ha4_raw.h)
+		&& bytesEqual(a.ha6, b.ha6);   // HA6 encoding as loaded (ha6_enc.h)
 }
 
 } // namespace
@@ -134,6 +138,7 @@ bool UndoManager::SequenceContentEquals(const Sequence& a, const Sequence& b)
 	if (a.usedAFGX != b.usedAFGX || a.usedATV2 != b.usedATV2) return false;
 	if (a.name != b.name || a.codeName != b.codeName) return false;
 	if (!bytesEqual(a.ha4, b.ha4)) return false;   // MBAC pattern header/name bytes
+	if (!bytesEqual(a.ha6, b.ha6)) return false;   // HA6 raw name buffers (ha6_enc.h)
 	for (size_t i = 0; i < a.frames.size(); ++i) {
 		if (!frameEquals(a.frames[i], b.frames[i])) return false;
 	}

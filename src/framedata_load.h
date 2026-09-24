@@ -33,12 +33,12 @@ struct TestInfo{
 
 extern TestInfo test;
 
-unsigned int *fd_frame_AT_load(unsigned int *data, const unsigned int *data_end, Frame_AT *AT, TempInfo *info);
-unsigned int *fd_frame_AS_load(unsigned int *data, const unsigned int *data_end, Frame_AS *AS);
+unsigned int *fd_frame_AT_load(unsigned int *data, const unsigned int *data_end, Frame_AT *AT, TempInfo *info, Ha6FrameEnc *enc = nullptr);
+unsigned int *fd_frame_AS_load(unsigned int *data, const unsigned int *data_end, Frame_AS *AS, Ha6FrameEnc *enc = nullptr);
 unsigned int *fd_frame_EF_load(unsigned int *data, const unsigned int *data_end, Frame_EF *EF);
 unsigned int *fd_frame_IF_load(unsigned int *data, const unsigned int *data_end, Frame_IF *IF);
-unsigned int *fd_frame_AF_load(unsigned int *data, const unsigned int *data_end, Frame *frame);
-unsigned int *fd_frame_load(unsigned int *data, const unsigned int *data_end, Frame *frame, TempInfo *info);
+unsigned int *fd_frame_AF_load(unsigned int *data, const unsigned int *data_end, Frame *frame, bool *usedAFGX);
+unsigned int *fd_frame_load(unsigned int *data, const unsigned int *data_end, Frame *frame, TempInfo *info, bool *usedAFGX);
 unsigned int *fd_sequence_load(unsigned int *data, const unsigned int *data_end, Sequence *seq, bool utf8, bool *sawPDS2 = nullptr);
 // definedIds (optional) receives the ids whose content this file supplied:
 // a block with PDS2, or any block for a slot that had no frames yet.

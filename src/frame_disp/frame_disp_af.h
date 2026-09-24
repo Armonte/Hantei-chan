@@ -51,13 +51,19 @@ inline void AfDisplay(Frame_AF *af, int &selectedLayer, FrameData *frameData = n
 	bool hasMultipleLayers = af->layers.size() > 1;
 
 	// Layer management section
+	const bool uni = frameData && frameData->usesUniFormat();
+	const Ha6Game game = frameData ? frameData->game() : Ha6Game::MBAACC;
 	im::PushStyleColor(ImGuiCol_Text, ImVec4(0.2f, 0.7f, 1.0f, 1.0f));  // Blue header
-	if (hasMultipleLayers) {
-		im::Text("Multi-Layer (UNI AFGX) - Layer %d/%d", selectedLayer + 1, (int)af->layers.size());
+	if (hasMultipleLayers || uni) {
+		im::Text("%s AFGX layers - Layer %d/%d", Ha6GameName(game), selectedLayer + 1, (int)af->layers.size());
 	} else {
 		im::Text("Single Layer (MBAACC AFGP)");
 	}
 	im::PopStyleColor();
+	if (uni && im::IsItemHovered())
+		Tooltip("UNI2 reads 5 AFGX layers, MBTL 3 (Han6_LoadFrameAF ignores higher ids).\n"
+			"Layers are drawn 0 first (bottom) to last (top) within the same draw bucket.\n"
+			"Unused layers have sprite -1; the game skips them.");
 
 	im::SameLine(0, 20.f);
 	if (im::SmallButton("Add Layer")) {
@@ -104,13 +110,24 @@ inline void AfDisplay(Frame_AF *af, int &selectedLayer, FrameData *frameData = n
 		}
 		if (im::IsItemHovered()) Tooltip("Select which layer to edit");
 
-		// Layer priority (UNI AFPL tag) - only shown for multi-layer
+		// AFPL: draw bucket of the layer (UNI2/MBTL).
 		im::SameLine(0, 20.f);
-		im::SetNextItemWidth(width);
-		if (im::InputInt("Priority", &af->layers[selectedLayer].priority, 0, 0)) {
+		im::SetNextItemWidth(width * 3);
+		static const char* const kBuckets[] = {
+			"0: with object", "1: top (403)", "2: front (338)", "3: just in front", "4: just behind" };
+		int& pl = af->layers[selectedLayer].priority;
+		if (pl >= 0 && pl <= 4) {
+			if (im::Combo("Draw bucket (AFPL)", &pl, kBuckets, IM_ARRAYSIZE(kBuckets)))
+				markModified();
+		} else if (im::InputInt("Draw bucket (AFPL)", &pl, 0, 0)) {
 			markModified();
 		}
-		if (im::IsItemHovered()) Tooltip("Layer Z-priority (UNI AFPL tag) - higher renders on top");
+		if (im::IsItemHovered())
+			Tooltip("AFPL picks the render bucket the layer is drawn in (Han6Object_Draw):\n"
+				"0 = the object's priority + 256 (default)\n"
+				"1 = bucket 403, 2 = bucket 338 (drawn over the characters)\n"
+				"3 = object + 258 (just in front of it), 4 = object + 254 (just behind)\n"
+				"Buckets are drawn in ascending order.");
 	}
 
 	im::Separator();
@@ -321,6 +338,12 @@ inline void AfDisplay(Frame_AF *af, int &selectedLayer, FrameData *frameData = n
 		layer.blend_mode=mode+1;
 		markModified();
 	}
+	if (uni && im::IsItemHovered())
+		Tooltip("AFAL mode (UNI2/MBTL D3D blend table, D3D_SetBlendModeFromTable):\n"
+			"1 = normal (src alpha, inv src alpha)\n"
+			"2 = additive (src alpha, one)\n"
+			"3 = subtractive (reverse subtract, src alpha, one)\n"
+			"No AFAL = normal with the alpha forced to 255.");
 	if(im::ColorEdit4("Color", layer.rgba)) {
 		markModified();
 	}
@@ -333,8 +356,39 @@ inline void AfDisplay(Frame_AF *af, int &selectedLayer, FrameData *frameData = n
 	if(im::IsItemDeactivatedAfterEdit()) {
 		markModified();
 	}
-	if(im::Checkbox("Rotation keeps scale set by EF", &af->AFRT)) {
+	if (uni) {
+		// UNI2/MBTL store AFRT per layer (Han6_LoadFrameAF, layer +32).
+		if(im::Checkbox("Rotation keeps scale set by EF (AFRT, this layer)", &layer.afrt)) {
+			markModified();
+		}
+	} else if(im::Checkbox("Rotation keeps scale set by EF", &af->AFRT)) {
 		markModified();
+	}
+	if (uni) {
+		im::Separator();
+		im::TextDisabled("Script references (UNI/MBTL)");
+		im::SetNextItemWidth(width);
+		if (im::InputInt("Frame ID (AFID)", &af->frameId, 0, 0))
+			markModified();
+		if (im::IsItemHovered())
+			Tooltip("AFID: frame id the Squirrel move scripts look up (frame +248, int16).");
+		im::SameLine(0, 20.f);
+		if (im::Checkbox("AFJH", &af->afjh))
+			markModified();
+		if (im::IsItemHovered())
+			Tooltip("AFJH: frame flag byte (+262); set on the first frame of most patterns.");
+		// AFPA is read as two int16 (frame +250 and +252), not four bytes.
+		int16_t pa[2];
+		memcpy(pa, af->param, 4);
+		int pai[2] = { pa[0], pa[1] };
+		im::SetNextItemWidth(width * 2.5f);
+		if (im::InputInt2("Params (AFPA)", pai)) {
+			pa[0] = (int16_t)pai[0]; pa[1] = (int16_t)pai[1];
+			memcpy(af->param, pa, 4);
+			markModified();
+		}
+		if (im::IsItemHovered())
+			Tooltip("AFPA: two int16 values for the move scripts (frame +250 / +252).");
 	}
 	if(clipboard) {
 		im::SameLine(0,20.f);

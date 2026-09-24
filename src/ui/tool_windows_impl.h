@@ -512,9 +512,10 @@ void MainFrame::AddCompareLayers(CharacterView* view, CharacterInstance* active)
 		layer.scaleX = c.mirror ? -L.scale[0] : L.scale[0];
 		layer.scaleY = L.scale[1];
 		layer.rotX = L.rotation[0]; layer.rotY = L.rotation[1]; layer.rotZ = L.rotation[2];
-		layer.AFRT = fr.AF.AFRT;
+		layer.AFRT = fr.AF.AFRT || L.afrt;
 		layer.blendMode = L.blend_mode;
-		layer.zPriority = fr.AF.priority;
+		layer.zPriority = LayerDrawBucket(L.priority, fr.AF.priority);
+		layer.pups = seq->pups;
 		layer.alpha = L.rgba[3] * c.alpha;
 		layer.tintColor = glm::vec4(L.rgba[0] * c.tint[0], L.rgba[1] * c.tint[1], L.rgba[2] * c.tint[2], 1.0f);
 		layer.isSpawned = true;
