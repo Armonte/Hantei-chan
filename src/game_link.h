@@ -65,6 +65,10 @@ struct Snapshot {
 	bool autoReloadStage = false;
 	size_t watchedStage = 0;
 	uint32_t targetPid = 0;          // 0 = discover MBAA.exe by name
+	// [tag-panel] PROPOSED QueryTag (game_link_proto.h Tag)
+	bool haveTag = false;
+	bool tagUnsupported = false;     // the DLL answered QueryTag with Unknown (not implemented yet)
+	wire::Tag tag{};
 };
 
 // Does saving `path` concern the stage the game shows? Stage files are matched by their stage stem, case-
@@ -105,6 +109,15 @@ public:
 
 	void SetTargetPid(uint32_t pid);   // 0 = discover by process name (default)
 
+	// [tag-panel] Poll QueryTag with the state (stops by itself once the DLL answers Unknown).
+	void SetTagQuery(bool on);
+	// [tag-panel] Ask the reload gate without reloading: SetChar(slot 0, keep chara/moon/palette, no reload flag). The
+	// DLL checks its arguments, then the gate (session first), and answers RefusedSession / RefusedRecording /
+	// RefusedScene / ... or Ok ("held until the next reload": a keep-everything pick, a no-op). Returns the seq.
+	uint16_t ProbeGate();
+	// The reply with this seq, if it has arrived (non-blocking; recent replies only).
+	bool PeekReply(uint16_t seq, wire::Reply& out) const;
+
 	void SetPollHz(int hz);   // LinkState polling while connected; 0 = off
 	void SetAutoReload(bool on);
 	void SetWatchedFiles(std::vector<WatchedFile> files);
@@ -142,6 +155,7 @@ private:
 	uint32_t m_stateSerial = 0;
 	uint16_t m_seq = 0;
 	int m_pollHz = 10;
+	bool m_tagQuery = false;
 
 	std::atomic<bool> m_quit{false};
 	std::thread m_thread;
