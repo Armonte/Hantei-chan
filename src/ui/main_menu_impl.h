@@ -581,6 +581,14 @@ void MainFrame::Menu(unsigned int errorPopupId)
 				clearStage();
 			if (ImGui::MenuItem("Stage Browser", nullptr, m_showStageBrowser))
 				m_showStageBrowser = !m_showStageBrowser;
+			if (ImGui::BeginMenu("Open game stage", ensureStageProject())) {
+				const bg::StageEntry* cur = currentBgFile ? stageProject.FindByDat(currentBgFile->GetFilename()) : nullptr;
+				for (const auto& e : stageProject.Entries()) {
+					if (e.datPath.empty()) continue;
+					if (ImGui::MenuItem(e.Label().c_str(), nullptr, cur && cur->id == e.id)) openStageInActiveTab(e.datPath);
+				}
+				ImGui::EndMenu();
+			}
 			if (ImGui::MenuItem("Previous stage", shortcuts.registry().label(ShortcutAction::previousStage).c_str(), false, currentBgFile != nullptr))
 				stepStage(-1);
 			if (ImGui::MenuItem("Next stage", shortcuts.registry().label(ShortcutAction::nextStage).c_str(), false, currentBgFile != nullptr))

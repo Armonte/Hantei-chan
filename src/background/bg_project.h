@@ -87,6 +87,9 @@ struct StageEntry {
 	int bgmLoop = 0;
 	std::string bgmLoopPos;
 	std::string previewPath, nameEnPath, nameJpPath;
+	std::string name;             // UTF-8 display name: English (stage select image text) or nameJp
+	std::string nameJp;           // UTF-8, from the bgm.txt File comment (in the full-width parentheses)
+	std::string Label() const;    // "26  Burning Forest  (bg26)" style list label (UTF-8)
 };
 
 class StageProject {

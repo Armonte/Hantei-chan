@@ -48,11 +48,38 @@ const Thumb* LoadDds(const std::string& path) {
 	int h = (int)rd(12), w = (int)rd(16);
 	uint32_t pfFlags = rd(80), fourcc = rd(84), bits = rd(88);
 	std::vector<uint8_t> rgba;
-	if ((pfFlags & 4) && fourcc == 0x35545844 /*DXT5*/) {
-		if (d.size() < 128 + (size_t)((w + 3) / 4) * ((h + 3) / 4) * 16) return nullptr;
-		int tw = (w + 3) & ~3, th = (h + 3) & ~3;
+	if ((pfFlags & 4) && (fourcc == 0x35545844 /*DXT5*/ || fourcc == 0x33545844 /*DXT3*/ || fourcc == 0x31545844 /*DXT1*/)) {
+		const int bs = fourcc == 0x31545844 ? 8 : 16;
+		const int bw = (w + 3) / 4, bh = (h + 3) / 4;
+		if (d.size() < 128 + (size_t)bw * bh * bs) return nullptr;
+		int tw = bw * 4, th = bh * 4;
 		std::vector<uint8_t> full;
-		DecodeDxt5(d.data() + 128, tw, th, full);
+		if (fourcc == 0x35545844) DecodeDxt5(d.data() + 128, tw, th, full);
+		else {
+			// DXT3: explicit 4-bit alpha + DXT1 colour; DXT1: colour only.
+			full.assign((size_t)tw * th * 4, 0);
+			for (int by = 0; by < bh; ++by)
+				for (int bx = 0; bx < bw; ++bx) {
+					const uint8_t* b = d.data() + 128 + ((size_t)by * bw + bx) * bs;
+					const uint8_t* c = bs == 16 ? b + 8 : b;
+					uint16_t c0 = c[0] | (c[1] << 8), c1 = c[2] | (c[3] << 8);
+					int pal[4][4];
+					auto ex = [](uint16_t v, int* o) { o[0] = ((v >> 11) & 31) * 255 / 31; o[1] = ((v >> 5) & 63) * 255 / 63; o[2] = (v & 31) * 255 / 31; o[3] = 255; };
+					ex(c0, pal[0]); ex(c1, pal[1]);
+					for (int k = 0; k < 3; ++k) {
+						if (bs == 16 || c0 > c1) { pal[2][k] = (2 * pal[0][k] + pal[1][k]) / 3; pal[3][k] = (pal[0][k] + 2 * pal[1][k]) / 3; }
+						else { pal[2][k] = (pal[0][k] + pal[1][k]) / 2; pal[3][k] = 0; }
+					}
+					pal[2][3] = 255; pal[3][3] = (bs == 8 && c0 <= c1) ? 0 : 255;
+					uint32_t cb = c[4] | (c[5] << 8) | (c[6] << 16) | ((uint32_t)c[7] << 24);
+					for (int i = 0; i < 16; ++i) {
+						uint8_t* o = &full[(((size_t)by * 4 + i / 4) * tw + bx * 4 + i % 4) * 4];
+						const int* p = pal[(cb >> (2 * i)) & 3];
+						o[0] = (uint8_t)p[0]; o[1] = (uint8_t)p[1]; o[2] = (uint8_t)p[2];
+						o[3] = bs == 16 ? (uint8_t)(((b[i / 2] >> (4 * (i & 1))) & 15) * 17) : (uint8_t)p[3];
+					}
+				}
+		}
 		rgba.resize((size_t)w * h * 4);
 		for (int y = 0; y < h; ++y) std::memcpy(&rgba[(size_t)y * w * 4], &full[(size_t)y * tw * 4], (size_t)w * 4);
 	} else if ((pfFlags & 0x40) && bits == 32) {
@@ -177,8 +204,8 @@ void DrawStageBrowser(StageProject& pr, const std::string& currentDat, const Bro
 			ImGui::TableNextColumn();
 			if (const Thumb* t = LoadDds(e.previewPath)) ImGui::Image((ImTextureID)(intptr_t)t->id, ImVec2(117, 44));
 			ImGui::TableNextColumn();
-			if (const Thumb* t = LoadDds(e.nameEnPath)) ImGui::Image((ImTextureID)(intptr_t)t->id, ImVec2(192, 24));
-			else ImGui::TextUnformatted(SjisToUtf8(e.bgmComment).c_str());
+			ImGui::TextUnformatted(e.name.empty() ? "-" : e.name.c_str());
+			if (!e.nameJp.empty() && e.nameJp != e.name) ImGui::TextDisabled("%s", e.nameJp.c_str());
 			ImGui::TableNextColumn();
 			if (e.datPath.empty()) ImGui::TextColored(ImVec4(1, 0.4f, 0.4f, 1), "%s", e.dataFile.empty() ? "-" : e.dataFile.c_str());
 			else ImGui::TextUnformatted(e.dataFile.c_str());
