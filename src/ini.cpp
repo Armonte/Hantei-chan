@@ -51,6 +51,10 @@ static void ReadLine(ImGuiContext*, ImGuiSettingsHandler*, void* entry, const ch
 		gSettings.detachableWindows = i != 0;
 	} else if (sscanf(line, "InvertWheelZoom=%i", &i) == 1){
 		gSettings.invertWheelZoom = i != 0;
+	} else if (sscanf(line, "StageGame=%i", &i) == 1){
+		gSettings.stageGame = i;
+	} else if (strncmp(line, "StageGameDir=", 13) == 0){
+		gSettings.stageGameDir = line + 13;
 	} else if (strncmp(line, "Key=", 4) == 0){
 		gSettings.keyBindings.push_back(line);
 	} else if (strncmp(line, "RecentProject=", 14) == 0){
@@ -78,6 +82,8 @@ static void Write(ImGuiContext* ctx, ImGuiSettingsHandler* handler, ImGuiTextBuf
 	buf->appendf("DetachableWindows=%i\n", gSettings.detachableWindows ? 1 : 0);
 
 	buf->appendf("InvertWheelZoom=%i\n", gSettings.invertWheelZoom ? 1 : 0);
+	if (!gSettings.stageGameDir.empty()) buf->appendf("StageGameDir=%s\n", gSettings.stageGameDir.c_str());
+	buf->appendf("StageGame=%i\n", gSettings.stageGame);
 	for (const auto& k : gSettings.keyBindings)
 		buf->appendf("%s\n", k.c_str());
 

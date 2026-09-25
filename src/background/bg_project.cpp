@@ -8,10 +8,143 @@
 #include <cstring>
 #include <fstream>
 #include <iterator>
+#ifdef _WIN32
+#include <windows.h>
+#endif
 
 namespace bg {
 
 uint64_t NextEditSeq() { static uint64_t s = 0; return ++s; }
+
+static std::string Sjis2Utf8(const std::string& s) {
+#ifdef _WIN32
+	if (s.empty()) return s;
+	int wn = MultiByteToWideChar(932, 0, s.data(), (int)s.size(), nullptr, 0);
+	std::wstring w(wn > 0 ? wn : 0, L'\0');
+	if (wn > 0) MultiByteToWideChar(932, 0, s.data(), (int)s.size(), &w[0], wn);
+	int un = WideCharToMultiByte(CP_UTF8, 0, w.data(), (int)w.size(), nullptr, 0, nullptr, nullptr);
+	std::string u(un > 0 ? un : 0, '\0');
+	if (un > 0) WideCharToMultiByte(CP_UTF8, 0, w.data(), (int)w.size(), &u[0], un, nullptr, nullptr);
+	return u;
+#else
+	return s;
+#endif
+}
+
+// English stage names as drawn in the stage select name images
+// (GRP/BgSelect/stsel_en/chr_stsel_enNN.dds; transcribed 2026-09-24, spelling as shipped).
+// The game has no name strings: edit the images to rename a stage in game.
+static const char* kMbaaccEnNames[100] = {
+	"Random Select",
+	"Artificial Eden",
+	"Classic home. Evening party",
+	"Classic home. Invade",
+	"Shade Town Mad Parade",
+	"Tohno's mansion. Main gate",
+	"Night of Walpurgis",
+	"sabbath",
+	"Midnight Park",
+	"Magical Kohaku Prison",
+	"Back alley",
+	nullptr,
+	"School rush!",
+	"Iron Maiden",
+	nullptr,
+	nullptr,
+	"Hologram Summer",
+	"Starlight crossing",
+	"Witch on the Holy night",
+	"Through the Looking-Glass",
+	"Classic",
+	"Temple the Seventh Heaven",
+	"Doctor Kohaku Garage",
+	"Great Cats Village",
+	"Tohno's mansion. Central garden",
+	"Huge library",
+	"Forest of king Cruel",
+	"Battle field",
+	"narvous stray vanguard",
+	"red moon scherzo",
+	"lost world's Biography",
+	"NECO no you may.",
+	"Loser Cats Company",
+	nullptr,
+	"phantom of the opera",
+	"carry back, old village",
+	"Temple the Seventh Heaven",
+	"stranger",
+	"in the park",
+	"on the park",
+	"spiral uroboros",
+	"cherry blossom",
+	"desert town",
+	"Coating earth, Black Land Texture",
+	"Emerald Table, Melty Blood Texture",
+	"Sleeping Forest",
+	"Farewell town",
+	"fateful show down",
+	"the crossing crossing",
+	"Magical Kohaku Prison",
+	"No Control Red",
+	"NECO Burst Camp",
+	"stranger",
+	"Arima's Chinese kempo home",
+	"sayonara Dear Friend",
+	"...and nothing heart",
+	"ONE LIFE, ONE DEATE",
+	"G TABLE",
+	"G TABLE",
+	"good morning, anima mundi",
+	nullptr,
+	nullptr,
+	nullptr,
+	nullptr,
+	nullptr,
+	nullptr,
+	nullptr,
+	nullptr,
+	nullptr,
+	nullptr,
+	nullptr,
+	nullptr,
+	nullptr,
+	nullptr,
+	nullptr,
+	nullptr,
+	nullptr,
+	nullptr,
+	nullptr,
+	nullptr,
+	nullptr,
+	nullptr,
+	nullptr,
+	nullptr,
+	nullptr,
+	nullptr,
+	nullptr,
+	nullptr,
+	nullptr,
+	nullptr,
+	nullptr,
+	nullptr,
+	nullptr,
+	nullptr,
+	nullptr,
+	nullptr,
+	nullptr,
+	nullptr,
+	nullptr,
+	nullptr,
+};
+
+std::string StageEntry::Label() const {
+	char b[32];
+	snprintf(b, sizeof(b), "%02d  ", id);
+	std::string l = b;
+	l += name.empty() ? dataFile : name + "  (" + dataFile + ")";
+	if (datPath.empty()) l += "  [missing]";
+	return l;
+}
 
 namespace {
 
@@ -373,6 +506,12 @@ void StageProject::Rebuild() {
 			e.previewPath = img("stsel_view", "chr_stsel_view", id);
 			e.nameEnPath = img("stsel_en", "chr_stsel_en", id);
 			e.nameJpPath = img("stsel_jp", "chr_stsel_jp", id);
+			{
+				std::string c = Sjis2Utf8(e.bgmComment);
+				size_t a = c.find("\xEF\xBC\x88"), z = c.rfind("\xEF\xBC\x89");   // full-width ( )
+				e.nameJp = (a != std::string::npos && z != std::string::npos && z > a) ? c.substr(a + 3, z - a - 3) : c;
+				e.name = kMbaaccEnNames[id] && !e.nameEnPath.empty() ? kMbaaccEnNames[id] : e.nameJp;
+			}
 			entries.push_back(e);
 		}
 	} else {

@@ -313,6 +313,10 @@ private:
 	bg::StageProject stageProject;
 	bool m_showStageBrowser = false;
 	void drawStageBrowser();
+	// Opens the remembered stage list (settings) if none is open yet.
+	bool ensureStageProject();
+	// Dropdown of the game's stages; picking one loads it in the stage tab.
+	void drawStageCombo(float width);
 	// Replace the active stage tab's file (keeps the camera), or open a tab.
 	void openStageInActiveTab(const std::string& path);
 	void stepStage(int dir);          // PageUp / PageDown in the stage tab
