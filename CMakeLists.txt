@@ -105,6 +105,10 @@ add_executable(${EXE}
 	src/ui/main_frame_gamelink.cpp
 	src/game_link.cpp
 	src/game_link_panel.cpp
+	# Tag / Team panel (experimental, docs/HANTEI_TAG_PANEL.md)
+	src/tag_tuning/tag_ini.cpp
+	src/tag_tuning/tag_assist.cpp
+	src/tag_panel.cpp
 	imsearch/imsearch.cpp
 	res/res.rc
 )
@@ -523,3 +527,20 @@ if(MINGW)
 	target_link_options(game_link_test PRIVATE -static-libgcc -static-libstdc++ -static)
 endif()
 add_test(NAME game_link COMMAND game_link_test)
+# Tag / Team panel: tag_tuning.ini round trip, lever table vs the sample ini and (when on disk) vs PovertyCaster's
+# MbaaccTagTuning.hpp, assist slot resolution and the default-assist pick (docs/HANTEI_TAG_PANEL.md).
+add_executable(tag_tuning_test tests/tag_tuning_test.cpp src/tag_tuning/tag_ini.cpp src/tag_tuning/tag_assist.cpp
+	src/cmdfile/cmd_document.cpp)
+target_include_directories(tag_tuning_test PRIVATE "src")
+set(PC_TAG_TUNING_HPP "/mnt/c/dev/castergroup/PovertyCaster/pc-adapters/mbaacc/include/mbaacc/MbaaccTagTuning.hpp"
+	CACHE FILEPATH "PovertyCaster's MbaaccTagTuning.hpp, for the lever-table drift check (optional)")
+if(EXISTS "${PC_TAG_TUNING_HPP}")
+	get_filename_component(PC_TAG_TUNING_INC "${PC_TAG_TUNING_HPP}" DIRECTORY)
+	get_filename_component(PC_TAG_TUNING_INC "${PC_TAG_TUNING_INC}" DIRECTORY)
+	target_include_directories(tag_tuning_test PRIVATE "${PC_TAG_TUNING_INC}")
+	target_compile_definitions(tag_tuning_test PRIVATE HAVE_PC_TAG_TUNING=1)
+endif()
+if(MINGW)
+	target_link_options(tag_tuning_test PRIVATE -static-libgcc -static-libstdc++ -static)
+endif()
+add_test(NAME tag_tuning COMMAND tag_tuning_test WORKING_DIRECTORY ${CMAKE_SOURCE_DIR})
