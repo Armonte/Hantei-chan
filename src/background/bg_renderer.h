@@ -72,6 +72,12 @@ public:
 	// True if any pattern this object uses has a part at the canvas origin
 	// (the two placements differ for it).
 	static bool ObjectUsesCanvasOriginParts(const File& f, int objIndex);
+	// HEAT preview: MBAA runs the BgPointBlur post effect while a fighter is
+	// in HEAT / BLOOD HEAT (BgPointBlur_UpdateHeatState 0x4b9100): fValue 0..1
+	// (1 = held), fColorHosei = BgList StageColorVal. 0 = off. `timeSec` drives
+	// the circling centre (one turn per 3 s). Applied over the game view.
+	void   SetHeatPreview(float fValue, float timeSec) { heatValue = fValue; heatTime = timeSec; }
+	float  GetHeatPreview() const { return heatValue; }
 	// Stand-in fighters (grey silhouettes) with the game's fighter shadows:
 	// the flat shadow, or one shadow per bgNNInfo.txt light (Character_Render
 	// 0x41af10, Shadow_BuildLightProjectionMatrix 0x44c0a0). x in world px.
@@ -124,6 +130,11 @@ private:
 	// animation does this even though w/h are fixed) appeared to jitter.
 	struct Tex { GLuint id; int w; int h; int originX; int originY; int texW; int texH; };
 	bool   gameTextures = true;
+	float  heatValue = 0.0f, heatTime = 0.0f;
+	GLuint heatProg[2] = {0, 0}, heatSceneTex = 0, heatMaskTex = 0;
+	bool   heatMaskTried = false;
+	int    heatW = 0, heatH = 0;
+	void   ApplyHeatBlur(const Camera& camera, int clientW, int clientH);
 	PatPlacement patPlacement = PatPlacement::Game;
 	long   budgetKB = -1;
 	std::unordered_map<int, Tex> textureCache;

@@ -1044,6 +1044,185 @@ void Renderer::SakuraBloom(const Camera& camera, const std::vector<std::array<fl
 	glUseProgram(program);
 }
 
+// ---- BgPointBlur (HEAT) ----------------------------------------------------------
+
+// Shader/sh_blur.cfx technique BgPointBlur (disassembly in docs/bg_research/data/shaders):
+// pass A (sh_blur_1): k = 1 + fColorHosei*fValue, dir = normalize(centre - p),
+//   T0 = k * sum_{i=1..8} w_i S(p + i*dir*fPower*0.2), T1 = k * S(p);
+// pass B (sh_blur_0): n = EXFADE08(p).r, B = T0(p + normalize(c - p)*n*fPower*3),
+//   both B and T1 desaturated by fValue/2, out = lerp(T1, B, n * B.a).
+// fPower = 0.02 * fValue (held). The pass order and the mask channel are INF.
+static const char* kHeatVS = R"GLSL(
+#version 330 core
+layout (location = 0) in vec2 aPos;
+out vec2 vUV;
+void main() { vUV = aPos * 0.5 + 0.5; gl_Position = vec4(aPos, 0.0, 1.0); }
+)GLSL";
+static const char* kHeatFS_A = R"GLSL(
+#version 330 core
+in vec2 vUV;
+uniform sampler2D uScene;
+uniform vec4 uRect;       // game view in scene-texture uv: x0, y0, w, h (GL, y up)
+uniform float fPower, fValue, fColorHosei;
+layout (location = 0) out vec4 oT0;
+layout (location = 1) out vec4 oT1;
+vec4 S(vec2 g) { return texture(uScene, uRect.xy + vec2(g.x, 1.0 - g.y) * uRect.zw); }
+void main() {
+    vec2 p = vec2(vUV.x, 1.0 - vUV.y);          // game uv, y down
+    vec2 d = normalize(vec2(0.5) - p + 1e-9);
+    float st = fPower * 0.2;
+    float w[8] = float[](0.244, 0.189, 0.162, 0.135, 0.108, 0.081, 0.054, 0.027);
+    vec4 acc = vec4(0.0);
+    for (int i = 0; i < 8; ++i) acc += S(p + d * st * float(i + 1)) * w[i];
+    float k = 1.0 + fColorHosei * fValue;
+    oT0 = acc * k;
+    oT1 = S(p) * k;
+}
+)GLSL";
+static const char* kHeatFS_B = R"GLSL(
+#version 330 core
+in vec2 vUV;
+uniform sampler2D uT0, uT1, uMask;
+uniform vec2 uCenter;     // game uv, y down
+uniform float fPower, fValue;
+out vec4 FragColor;
+vec3 desat(vec3 x) { float a = (x.r + x.g + x.b) / 3.0; return x + fValue * 0.5 * (vec3(a) - x); }
+void main() {
+    vec2 p = vec2(vUV.x, 1.0 - vUV.y);
+    float n = texture(uMask, p).r;
+    vec2 d = normalize(uCenter - p + 1e-9);
+    vec2 q = p + d * n * fPower * 3.0;
+    vec4 B = texture(uT0, vec2(q.x, 1.0 - q.y));
+    vec4 Sv = texture(uT1, vUV);
+    FragColor = vec4(mix(desat(Sv.rgb), desat(B.rgb), n * B.a), 1.0);
+}
+)GLSL";
+
+void Renderer::ApplyHeatBlur(const Camera& camera, int clientW, int clientH) {
+	const StageListEntry* e = file->GetStageListEntry();
+	const float colorHosei = e ? e->stageColorVal : 0.0f;
+	const float fValue = std::max(0.0f, std::min(1.0f, heatValue));
+	const float fPower = 0.02f * fValue;
+	GLint prevFbo = 0, vp[4];
+	glGetIntegerv(GL_FRAMEBUFFER_BINDING, &prevFbo);
+	glGetIntegerv(GL_VIEWPORT, vp);
+	// Game view rectangle in target pixels (GL origin bottom-left).
+	const float z = camera.zoom > 0.0f ? camera.zoom : 1.0f;
+	const float gx0 = (camera.camX - 320.0f + camera.panLastX) * z;
+	const float gy0 = (camera.camY - 432.0f + camera.panLastY) * z;   // top, y down
+	const int gw = std::max(1, (int)std::lround(640.0f * z)), gh = std::max(1, (int)std::lround(480.0f * z));
+	const int rx = (int)std::lround(gx0), ryTop = (int)std::lround(gy0);
+	const int ry = clientH - (ryTop + gh);
+	if (!heatProg[0]) {
+		for (int i = 0; i < 2; ++i) {
+			GLuint vs = CompileShader(GL_VERTEX_SHADER, kHeatVS), fs = CompileShader(GL_FRAGMENT_SHADER, i ? kHeatFS_B : kHeatFS_A);
+			heatProg[i] = LinkProgram(vs, fs);
+			glDeleteShader(vs); glDeleteShader(fs);
+		}
+		glGenTextures(1, &heatSceneTex);
+	}
+	if (!heatMaskTried) {
+		heatMaskTried = true;
+		// .\grp\_NewFx\EXFADE08 next to the game (stage folder's parent).
+		std::string f = file->GetFilename();
+		std::string dir = f.substr(0, f.find_last_of("/\\"));
+		std::string game = dir.substr(0, dir.find_last_of("/\\"));
+		std::string grp = FindFileNoCase(game, "GRP");
+		std::string fx = grp.empty() ? std::string() : FindFileNoCase(grp, "_NewFx");
+		std::string bmp = fx.empty() ? std::string() : FindFileNoCase(fx, "EXFADE08.bmp");
+		std::vector<uint8_t> rgba; int w = 0, h = 0;
+		if (!bmp.empty() && LoadBmpRGBA(bmp, rgba, w, h)) {
+			glGenTextures(1, &heatMaskTex);
+			glBindTexture(GL_TEXTURE_2D, heatMaskTex);
+			glPixelStorei(GL_UNPACK_ALIGNMENT, 4);
+			glPixelStorei(GL_UNPACK_ROW_LENGTH, 0);
+			glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, w, h, 0, GL_RGBA, GL_UNSIGNED_BYTE, rgba.data());
+			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+		}
+	}
+	// Scene copy.
+	glBindTexture(GL_TEXTURE_2D, heatSceneTex);
+	if (heatW != clientW || heatH != clientH) {
+		glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, clientW, clientH, 0, GL_RGBA, GL_UNSIGNED_BYTE, nullptr);
+		heatW = clientW; heatH = clientH;
+	}
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+	glCopyTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, 0, 0, clientW, clientH);
+	// Temps sized to the game view (reuse the bloom targets).
+	if (gw != bloomW || gh != bloomH || !bloomFbo[0]) {
+		for (int i = 0; i < 2; ++i) {
+			if (bloomTex[i]) glDeleteTextures(1, &bloomTex[i]);
+			if (bloomFbo[i]) glDeleteFramebuffers(1, &bloomFbo[i]);
+			glGenTextures(1, &bloomTex[i]);
+			glBindTexture(GL_TEXTURE_2D, bloomTex[i]);
+			glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, gw, gh, 0, GL_RGBA, GL_UNSIGNED_BYTE, nullptr);
+			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+			glGenFramebuffers(1, &bloomFbo[i]);
+		}
+		bloomW = gw; bloomH = gh;
+	}
+	GLuint fbo = bloomFbo[0];
+	glBindFramebuffer(GL_FRAMEBUFFER, fbo);
+	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, bloomTex[0], 0);
+	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT1, GL_TEXTURE_2D, bloomTex[1], 0);
+	const GLenum bufs[2] = {GL_COLOR_ATTACHMENT0, GL_COLOR_ATTACHMENT1};
+	glDrawBuffers(2, bufs);
+	glViewport(0, 0, gw, gh);
+	glDisable(GL_BLEND);
+	if (!blurVbo) {
+		const float quad[12] = {-1, -1, 1, -1, 1, 1, 1, 1, -1, 1, -1, -1};
+		glGenBuffers(1, &blurVbo);
+		glBindBuffer(GL_ARRAY_BUFFER, blurVbo);
+		glBufferData(GL_ARRAY_BUFFER, sizeof(quad), quad, GL_STATIC_DRAW);
+	}
+	glBindBuffer(GL_ARRAY_BUFFER, blurVbo);
+	glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, 2 * sizeof(float), (void*)0);
+	glEnableVertexAttribArray(0);
+	glDisableVertexAttribArray(1);
+	glDisableVertexAttribArray(2);
+	glUseProgram(heatProg[0]);
+	glActiveTexture(GL_TEXTURE0);
+	glBindTexture(GL_TEXTURE_2D, heatSceneTex);
+	glUniform1i(glGetUniformLocation(heatProg[0], "uScene"), 0);
+	glUniform4f(glGetUniformLocation(heatProg[0], "uRect"), (float)rx / clientW, (float)ry / clientH,
+	            (float)gw / clientW, (float)gh / clientH);
+	glUniform1f(glGetUniformLocation(heatProg[0], "fPower"), fPower);
+	glUniform1f(glGetUniformLocation(heatProg[0], "fValue"), fValue);
+	glUniform1f(glGetUniformLocation(heatProg[0], "fColorHosei"), colorHosei);
+	glDrawArrays(GL_TRIANGLES, 0, 6);
+	// Composite back into the game view.
+	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT1, GL_TEXTURE_2D, 0, 0);
+	glDrawBuffers(1, bufs);
+	glBindFramebuffer(GL_FRAMEBUFFER, (GLuint)prevFbo);
+	glViewport(rx, ry, gw, gh);
+	glUseProgram(heatProg[1]);
+	glActiveTexture(GL_TEXTURE0); glBindTexture(GL_TEXTURE_2D, bloomTex[0]);
+	glActiveTexture(GL_TEXTURE1); glBindTexture(GL_TEXTURE_2D, bloomTex[1]);
+	glActiveTexture(GL_TEXTURE2); glBindTexture(GL_TEXTURE_2D, heatMaskTex ? heatMaskTex : whiteTex);
+	glUniform1i(glGetUniformLocation(heatProg[1], "uT0"), 0);
+	glUniform1i(glGetUniformLocation(heatProg[1], "uT1"), 1);
+	glUniform1i(glGetUniformLocation(heatProg[1], "uMask"), 2);
+	const double ang = heatTime / 3.0 * 6.283185307179586;
+	const float cx = 320.0f + (float)(32.0 * std::sin(ang)), cy = 240.0f - (float)(32.0 * std::cos(ang));
+	glUniform2f(glGetUniformLocation(heatProg[1], "uCenter"), cx / 640.0f, cy / 480.0f);
+	glUniform1f(glGetUniformLocation(heatProg[1], "fPower"), fPower);
+	glUniform1f(glGetUniformLocation(heatProg[1], "fValue"), fValue);
+	glDrawArrays(GL_TRIANGLES, 0, 6);
+	glActiveTexture(GL_TEXTURE0);
+	glViewport(vp[0], vp[1], vp[2], vp[3]);
+	glEnable(GL_BLEND);
+	glUseProgram(program);
+}
+
 // ---- stand-in fighters and their shadows ---------------------------------------
 
 namespace {
@@ -1189,6 +1368,10 @@ void Renderer::DrawPass(const Camera& camera, int clientW, int clientH, int band
 		if (fr.spriteId >= 10000) {
 			// --- CG sprite ---
 			float alpha = (fr.blendMode > 0) ? (fr.opacity / 255.0f) : 1.0f;
+			// During HEAT the foreground band fades to 1 - fValue and is skipped at 0
+			// (Background_UpdateAndRender -> Background_DrawAllInstances(0, 1 - fValue)).
+			const float bandFade = (band == 1 && heatValue > 0.0f && !mbac) ? std::max(0.0f, 1.0f - heatValue) : 1.0f;
+			if (bandFade <= 0.0f) continue;
 			// MBAC-only per-frame scale (+16/+18, 256 = 1.0, 0 = 1.0).
 			float scx = 1.0f, scy = 1.0f;
 			if (mbac) {
@@ -1219,6 +1402,7 @@ void Renderer::DrawPass(const Camera& camera, int clientW, int clientH, int band
 			// point 128, 224).
 			float orgX = worldX + CG_PIVOT_X + camera.panLastX;
 			float orgY = worldY + CG_PIVOT_Y + camera.panLastY;
+			alpha = std::floor(alpha * 255.0f * bandFade) / 255.0f;
 			DrawSprite(cgIdx,
 			           orgX + ((float)ox - CG_PIVOT_X) * scx,
 			           orgY + ((float)oy - CG_PIVOT_Y) * scy,
@@ -1295,6 +1479,7 @@ void Renderer::Render(const Camera& camera, int clientW, int clientH, Pass pass)
 		// Priority 522 (weather) sits between band 0 (10) and band 1 (600).
 		if (showWeather) DrawWeather(camera);
 		DrawPass(camera, clientW, clientH, 1);
+		if (heatValue > 0.0f && file->GetGame() == Game::MBAACC) ApplyHeatBlur(camera, clientW, clientH);
 		if (showLights) DrawLights(camera);
 	}
 

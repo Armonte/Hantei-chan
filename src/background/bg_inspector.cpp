@@ -229,6 +229,18 @@ static void DrawInspectorBody(File& file, Renderer& renderer, InspectorResult& r
 			                  "would. Only the wind (bg18/bg20/bg47 slot 8) uses it; MBAACC draws that wind\n"
 			                  "below the floor, where no game camera can see it.");
 	}
+	{
+		static float heat = 0.0f;
+		ImGui::PushItemWidth(120);
+		ImGui::SliderFloat("HEAT preview", &heat, 0.0f, 1.0f, heat > 0.0f ? "%.2f" : "off");
+		ImGui::PopItemWidth();
+		renderer.SetHeatPreview(heat, (float)ImGui::GetTime());
+		if (ImGui::IsItemHovered())
+			ImGui::SetTooltip("The BgPointBlur post effect MBAA runs while a fighter is in HEAT / BLOOD HEAT:\n"
+			                  "radial blur toward the centre, brightened by 1 + StageColorVal * value, masked by\n"
+			                  "grp/_NewFx/EXFADE08, half-desaturated at 1; the foreground band fades out.\n"
+			                  "Drawn over the game view. 1 = held; the game ramps in over 15 frames, out over 30.");
+	}
 	bool l = renderer.IsShowingLights();
 	if (ImGui::Checkbox("Light markers", &l)) renderer.SetShowLights(l);
 	{
