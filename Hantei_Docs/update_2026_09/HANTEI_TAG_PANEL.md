@@ -313,4 +313,17 @@ No game was launched. The real DLL's side of the probe (`requestSetChar` → `ga
 | `fbdb4e5` `7a14678` `4ab7f23` `3312cb6` | the Tag / Team window, menu, startup options, viewport-relative placement, `_c.txt` / game folder from the open character, colours |
 | `1d6aaf3` | `MockDll`, `game_link_test` coverage, `game_link_cli tag` / `mock-dll` |
 | `3be7cfd` `865fcd9` | `--tag-link`, `--tag-apply`, live readout polish |
-| `af81e51` + the final docs commit | this document (copy in `Hantei_Docs/update_2026_09/`) and the capture evidence |
+| `af81e51` `90bbfb9` | this document (copy in `Hantei_Docs/update_2026_09/`) and the capture evidence |
+| `2390b0a` `a83d792` `224c5c8` | the mirror follows the implemented PovertyCaster `LinkTag` (offsets pinned, state names 200/255/256), wording, §5 rewritten |
+
+**PovertyCaster, `mbaacc/link-tag`** (`/mnt/c/dev/castergroup/pc-linktag-wt`, off main `5bf0bc46`; not pushed, not merged):
+
+| Commit | What |
+|---|---|
+| `6d21726c` | `tag_tuning.sample.ini`: `assistFromBlockstun` listed, four help strings synced; `mbaacc_tag_tuning` sample drift test |
+| `9d68513a` | `QueryTag` / `LinkTag` (Proto.hpp), `mbaacc/LinkTag.hpp` (pure build), `tagFillLinkTag` (read-only), `etm::lastGateInputs`, `tagKoRuleInForce`, `tests/mbaacc_link_tag` |
+| `96d1772a` | a query never triggers the first ini load |
+
+Build: the full `pchost.dll` builds (x86, `cmake --build -j4` under the shared lock). ctest: `mbaacc_link_tag`, `mbaacc_tag_tuning` (with the new drift test), `mbaacc_tag_table`, `mbaacc_etm_reload_gate`, `mbaacc_stage_link` and `ipc_link_roundtrip` all pass (6/6).
+
+`pc_lint`: one ratchet reads 3 against a baseline of 2 (`adapter_syms_in_shared_libs`). The extra entry is `libpc_spectate2.a`'s `std::string::_M_replace`, a libstdc++ instantiation. This branch does not touch pc-spectate2, so the baseline was left as it is for hinokakera to judge.
