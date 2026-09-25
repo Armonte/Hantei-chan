@@ -254,6 +254,10 @@ int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE, PWSTR pCmdLine, int nCmdShow
 		{
 			gStartup.tagLink = true;
 		}
+		else if(!strcmp(arg, "--tag-apply"))
+		{
+			gStartup.tagApply = true;
+		}
 		else if(!strcmp(arg, "--no-pups"))
 		{
 			gStartup.noPups = true;

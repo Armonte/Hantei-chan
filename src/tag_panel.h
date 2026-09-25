@@ -30,6 +30,8 @@ void DrawPanel(EditorContext& ctx);
 
 // Startup (--tool tag, --tag-ini, --tag-char, --tag-tab): open the window on this ini / character / tab.
 void OpenStartup(const std::string& iniPath, const std::string& charFile, const std::string& tab);
+// --tag-apply: press "Apply to game" once (scripted check of the session gate / validation).
+void StartupApply();
 
 } // namespace tagpanel
 

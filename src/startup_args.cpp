@@ -110,6 +110,7 @@ void MainFrame::ProcessStartupArgs()
 	if (n == 3 && (gStartup.tool == "tag" || !gStartup.tagIni.empty() || !gStartup.tagTab.empty() || gStartup.tagLink))
 		tagpanel::OpenStartup(gStartup.tagIni, gStartup.tagChar, gStartup.tagTab);
 	if (n == 3 && gStartup.tagLink) gamelink::SharedClient().Connect();
+	if (n == 150 && gStartup.tagApply) tagpanel::StartupApply();
 	if (n == 200 && gStartup.tagLink && !gStartup.tagTab.empty())   // re-select the tab once the link has state
 		tagpanel::OpenStartup("", "", gStartup.tagTab);
 	if (n == 3 && gStartup.tool == "gamelink") gamelink::showPanel = true;
