@@ -381,7 +381,7 @@ void Client::handleMessage(const wire::Header& h, const uint8_t* body)
 			return;
 		}
 		if (r.op == (uint16_t)wire::Op::QueryTag && r.status == (int16_t)wire::Status::Unknown) {
-			if (!m_snap.tagUnsupported) note("the game's pchost.dll has no QueryTag (the proposed tag readout) - using LinkState");
+			if (!m_snap.tagUnsupported) note("the game's pchost.dll has no QueryTag (older than PovertyCaster mbaacc/link-tag) - using LinkState");
 			m_snap.tagUnsupported = true;
 			return;
 		}
