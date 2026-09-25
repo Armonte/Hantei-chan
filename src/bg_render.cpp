@@ -47,6 +47,8 @@ int main(int argc, char** argv) {
 	float camX = 0, camY = 0, zoom = 1.0f;
 	bool camGiven = false, lights = false, weather = true, cleanTex = false, standIns = false;
 	float sx0 = -128.0f, sx1 = 128.0f;
+	int solo = -1;   // file slot to draw alone
+	bool panGiven = false; float panX = 0, panY = 0;   // editor-style anchor: screen = (world + pan) * zoom
 	int ticks = 0, seed = 0, W = 640, H = 480;
 	bool seedGiven = false;
 	for (int i = 2; i < argc; ++i) {
@@ -63,6 +65,8 @@ int main(int argc, char** argv) {
 		else if (a == "--no-weather") weather = false;
 		else if (a == "--game") gameName = next();
 		else if (a == "--clean") cleanTex = true;
+		else if (a == "--solo") solo = atoi(next());
+		else if (a == "--pan") { panGiven = true; sscanf(next(), "%f,%f", &panX, &panY); }
 		else if (a == "--standins") { standIns = true; sscanf(next(), "%f,%f", &sx0, &sx1); }
 		else if (a == "--dxt-mode") bg::SetDxtHelperMode(next());
 	}
@@ -120,9 +124,11 @@ int main(int argc, char** argv) {
 	// Game camera: world (0,0) lands at (W/2 - camX*z, H*0.9 - camY*z).
 	bg::Camera camera;
 	camera.zoom = zoom;
-	camera.SetPan(W * 0.5f / zoom - camX, H * 0.9f / zoom - camY);
+	if (panGiven) camera.SetPan(panX, panY);
+	else camera.SetPan(W * 0.5f / zoom - camX, H * 0.9f / zoom - camY);
 	camera.SetGameCam(camX, camY);
 
+	if (solo >= 0) for (auto& o : file.GetObjects()) o.visible = o.originalIndex == solo;
 	bg::Renderer r;
 	r.SetFile(&file);
 	r.SetEnabled(true);
