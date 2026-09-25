@@ -142,12 +142,56 @@ static int doStep(HANDLE h, unsigned long n) {
     return 0;
 }
 
+// PAT-quad logger (hooks/pat_quad_log.s): the call to HudSpriteQueue_AddQuadFromTemplate in
+// Background_DrawInstance's PAT branch (0x4b774d) is redirected to a code cave that appends
+// {frame counter, camX, camY, zoom, the 44-byte instance, the 152-byte screen-space vertex block,
+// priority} (256-byte records after a 16-byte header, up to 16000) and then jumps to the original.
+static const char* kCaveHex = "9c60bb443322118b3b81ff803e0000735789f8c1e0088d7c0310a1c84977008907a1c4de5500894704a1c8de5500894708a170eb540089470c8bb424900300005783c710b90b000000f3a55f8b7424285783c73cb926000000f3a55f8b44242c8987d4000000ff03619d6810614100c3";
+static const unsigned long kHookSite = 0x4b774d, kHookTarget = 0x416110;
+#define LOG_BYTES (16 + 16000 * 256)
+static int hookPat(HANDLE h, const char* stateFile) {
+    size_t n = strlen(kCaveHex) / 2;
+    unsigned char code[256];
+    for (size_t i = 0; i < n; ++i) code[i] = (unsigned char)(hexval(kCaveHex[2*i]) * 16 + hexval(kCaveHex[2*i+1]));
+    unsigned char* mem = (unsigned char*)VirtualAllocEx(h, 0, 4096 + LOG_BYTES, MEM_COMMIT | MEM_RESERVE, PAGE_EXECUTE_READWRITE);
+    if (!mem) return 1;
+    unsigned long logAddr = (unsigned long)(mem + 4096);
+    for (size_t i = 0; i + 4 <= n; ++i) if (code[i] == 0x44 && code[i+1] == 0x33 && code[i+2] == 0x22 && code[i+3] == 0x11) { memcpy(code + i, &logAddr, 4); break; }
+    SIZE_T wr;
+    WriteProcessMemory(h, mem, code, n, &wr);
+    FlushInstructionCache(h, mem, n);
+    long rel = (long)((unsigned long)mem - (kHookSite + 5));
+    char hx[16]; unsigned char* r = (unsigned char*)&rel;
+    sprintf(hx, "e8%02x%02x%02x%02x", r[0], r[1], r[2], r[3]);
+    if (doWrite(h, kHookSite, hx)) return 1;
+    FILE* f = fopen(stateFile, "w"); if (f) { fprintf(f, "%lx\n", logAddr); fclose(f); }
+    printf("hooked, log at %lx\n", logAddr);
+    return 0;
+}
+static int unhookPat(HANDLE h) {
+    long rel = (long)(kHookTarget - (kHookSite + 5));
+    char hx[16]; unsigned char* r = (unsigned char*)&rel;
+    sprintf(hx, "e8%02x%02x%02x%02x", r[0], r[1], r[2], r[3]);
+    return doWrite(h, kHookSite, hx);
+}
+static int dumpLog(HANDLE h, const char* stateFile, const char* out) {
+    FILE* f = fopen(stateFile, "r"); if (!f) return 1;
+    unsigned long a = 0; fscanf(f, "%lx", &a); fclose(f);
+    DWORD cnt = 0; SIZE_T rd;
+    ReadProcessMemory(h, (LPCVOID)a, &cnt, 4, &rd);
+    if (cnt > 16000) cnt = 16000;
+    return doRead(h, a, 16 + cnt * 256, out);
+}
+
 static int runOp(HANDLE h, int argc, char** argv) {
     if (argc < 1) return 1;
     if (!strcmp(argv[0], "w") && argc >= 3) return doWrite(h, strtoul(argv[1], 0, 16), argv[2]);
     if (!strcmp(argv[0], "r") && argc >= 4) return doRead(h, strtoul(argv[1], 0, 16), strtoul(argv[2], 0, 0), argv[3]);
     if (!strcmp(argv[0], "rd") && argc >= 2) return doRd(h, strtoul(argv[1], 0, 16));
     if (!strcmp(argv[0], "step") && argc >= 2) return doStep(h, strtoul(argv[1], 0, 0));
+    if (!strcmp(argv[0], "hookpat") && argc >= 2) return hookPat(h, argv[1]);
+    if (!strcmp(argv[0], "unhookpat")) return unhookPat(h);
+    if (!strcmp(argv[0], "dumplog") && argc >= 3) return dumpLog(h, argv[1], argv[2]);
     if (!strcmp(argv[0], "freeze")) return setFrozen(h, 1);
     if (!strcmp(argv[0], "unfreeze")) return setFrozen(h, 0);
     if (!strcmp(argv[0], "suspend")) return pSuspend(h) < 0;
