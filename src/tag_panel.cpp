@@ -861,6 +861,10 @@ void LiveTab(EditorContext& ctx, gamelink::Client& c, const gamelink::Snapshot& 
 	if (s.haveTag) {
 		ImGui::Text("tuning: style '%s', sha %s, %u load(s), %u warning(s)%s", s.tag.activeStyle, s.tag.sha, s.tag.tuningLoads,
 		            s.tag.warnings, s.tag.frozen ? ", FROZEN (session)" : "");
+		const uint8_t cf = s.tag.tagConfig;
+		ImGui::Text("session config: %s%s, partners %s/%s, KO rule %s", (cf & gamelink::wire::kTagCfgTag) ? "TAG" : "not TAG",
+		            (cf & gamelink::wire::kTagCfgFromHost) ? " (the host's)" : "", (cf & gamelink::wire::kTagCfgPartner0) ? "P3" : "-",
+		            (cf & gamelink::wire::kTagCfgPartner1) ? "P4" : "-", s.tag.koRule ? "allDown" : "oneDown");
 	} else if (s.tagUnsupported) {
 		ImGui::TextColored(kWarn, "This pchost.dll has no QueryTag (PovertyCaster mbaacc/link-tag): cooldown, raw tag state and");
 		ImGui::TextColored(kWarn, "assist state need a newer DLL. Showing LinkState.");

@@ -85,6 +85,7 @@ static_assert(sizeof(Stage) == 64, "LinkStage size");
 // wrong size instead of misreading it.
 constexpr uint8_t kTagSessNetplay = 1u << 0, kTagSessRollback = 1u << 1, kTagSessReplay = 1u << 2,
                   kTagSessStepped = 1u << 3, kTagSessNetMode = 1u << 4, kTagSessRecording = 1u << 5;
+constexpr uint8_t kTagCfgTag = 1u << 0, kTagCfgFromHost = 1u << 1, kTagCfgPartner0 = 1u << 2, kTagCfgPartner1 = 1u << 3;
 struct TagTeam {
 	int8_t activeSlot;        // g_TeamAux[t].activeSlot (the point)
 	uint8_t assistSlot;       // AssistTeam.slot: directional slot 0..4 (5,2,6,4,8) + mode << 4
@@ -115,14 +116,14 @@ struct Tag {
 	uint32_t tuningLoads;     // successful ini (re)loads in this process
 	uint16_t warnings;        // ini warnings of the last load
 	uint8_t assistEnabled;    // resolved assistEnabled
-	uint8_t _pad;
+	uint8_t tagConfig;        // kTagCfg*: tag::tagSessionConfig() (PovertyCaster tag-session)
 	char activeStyle[24];     // the resolved active style ("" = defaults)
 	char sha[16];             // the first 15 hex digits of the resolved set's sha256 (as the log prints it)
 	TagTeam team[2];
 	TagSlot slot[4];
 };
 static_assert(sizeof(Tag) == 180, "LinkTag size");
-static_assert(offsetof(Tag, activeStyle) == 12 && offsetof(Tag, sha) == 36 && offsetof(Tag, team) == 52 &&
+static_assert(offsetof(Tag, tagConfig) == 11 && offsetof(Tag, activeStyle) == 12 && offsetof(Tag, sha) == 36 && offsetof(Tag, team) == 52 &&
               offsetof(Tag, slot) == 132, "LinkTag offsets (PovertyCaster tests/mbaacc_link_tag pins the same)");
 static_assert(offsetof(TagTeam, tagRequest) == 4 && offsetof(TagTeam, cooldownLeft) == 16 &&
               offsetof(TagTeam, assistPattern) == 28 && offsetof(TagTeam, meterPaid) == 36, "LinkTagTeam offsets");

@@ -149,8 +149,8 @@ int main(int argc, char** argv)
 		if (!s.connected) { std::printf("not connected: %s\n", s.status.c_str()); return 2; }
 		if (!s.haveTag) { std::printf("QueryTag unsupported by this pchost.dll (needs PovertyCaster mbaacc/link-tag)\n"); return 3; }
 		const auto& t = s.tag;
-		std::printf("session 0x%02X frozen %u ini %u koRule %u loads %u warnings %u assist %u style '%s' sha %s\n",
-		            t.sessionFlags, t.frozen, t.iniPresent, t.koRule, t.tuningLoads, t.warnings, t.assistEnabled,
+		std::printf("session 0x%02X config 0x%02X frozen %u ini %u koRule %u loads %u warnings %u assist %u style '%s' sha %s\n",
+		            t.sessionFlags, t.tagConfig, t.frozen, t.iniPresent, t.koRule, t.tuningLoads, t.warnings, t.assistEnabled,
 		            t.activeStyle, t.sha);
 		for (int i = 0; i < 2; ++i) {
 			const auto& m = t.team[i];
