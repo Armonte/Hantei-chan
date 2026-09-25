@@ -2,6 +2,9 @@
 // file -> stage match behind the stage auto-reload (gamelink::StageFileMatches), and the wire-struct sizes the
 // editor shares with PovertyCaster's pc-proto.
 #include "game_link.h"
+#include "game_link_mock.h"
+
+#include <windows.h>
 
 #include <cstdio>
 #include <cstring>
@@ -72,6 +75,44 @@ int main()
 	CHECK(sizeof(gamelink::wire::Stage) == 64);
 	CHECK((int)gamelink::wire::Op::SetStage == 5 && (int)gamelink::wire::Op::QueryStage == 7);
 	CHECK((int)gamelink::wire::Kind::LinkStage == 0x103);
+	// [tag-panel] the proposed QueryTag, its Unknown fallback and the gate probe, against a mock of the DLL side
+	CHECK(sizeof(gamelink::wire::Tag) == 180 && sizeof(gamelink::wire::TagTeam) == 40);
+	CHECK((int)gamelink::wire::Op::QueryTag == 8 && (int)gamelink::wire::Kind::LinkTag == 0x104);
+	for (int mode = 0; mode < 3; ++mode) {   // 0 = tag ops + offline, 1 = no tag ops (today's DLL), 2 = session
+		gamelink::MockDll::Options o;
+		o.tagOps = mode != 1;
+		o.session = mode == 2;
+		gamelink::MockDll mock(o);
+		CHECK(mock.Start());
+		{
+			gamelink::Client c;
+			c.SetTargetPid(mock.Pid());
+			c.SetPollHz(50);
+			c.SetTagQuery(true);
+			c.Connect();
+			gamelink::wire::State st{};
+			CHECK(c.WaitState(3000, st));
+			for (int k = 0; k < 100 && !(c.Get().haveTag || c.Get().tagUnsupported); ++k) Sleep(20);
+			const gamelink::Snapshot snap = c.Get();
+			CHECK(snap.connected);
+			if (mode == 1) CHECK(snap.tagUnsupported && !snap.haveTag);
+			else {
+				CHECK(snap.haveTag && !snap.tagUnsupported);
+				CHECK(snap.tag.team[0].tagRequest == 301 && snap.tag.team[0].assistPattern == 455);
+				CHECK(snap.tag.team[1].cooldownLeft == 80 && std::string(snap.tag.activeStyle) == "Classic");
+				CHECK((snap.tag.sessionFlags != 0) == (mode == 2));
+			}
+			const uint16_t seq = c.ProbeGate();
+			gamelink::wire::Reply r{};
+			CHECK(c.WaitReply(seq, 3000, r));
+			CHECK(r.status == (int16_t)(mode == 2 ? gamelink::wire::Status::RefusedSession : gamelink::wire::Status::Ok));
+			gamelink::wire::Reply p{};
+			CHECK(c.PeekReply(seq, p) && p.status == r.status);
+			CHECK(mock.Probes() == 1);
+			c.Disconnect();
+		}
+		mock.Stop();
+	}
 	std::printf(g_fail ? "game_link_test: %d FAILED\n" : "game_link_test: all passed\n", g_fail);
 	return g_fail ? 1 : 0;
 }
