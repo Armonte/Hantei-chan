@@ -30,6 +30,7 @@
 //   --tool tag           open the Tag / Team window (experimental); --tool gamelink opens the Game Link window
 //   --tag-ini <path>     the tag_tuning.ini it edits (default: next to the linked MBAA.exe)
 //   --tag-char <file>    the [char.<file>] it shows   --tag-tab Global|Character|Assists|Live|Raw
+//   --tag-link           connect the Game Link for it (with --capture the shot is taken at frame 240, as --game-link)
 //   --game-link N        open the Game Link window, connect, follow game slot N (1-4) and jump the editor to it;
 //                        with --capture the shot is taken later (frame 240) so the link has live state
 #include <string>
@@ -46,6 +47,7 @@ struct StartupArgs {
 	int compare = -1;
 	std::string tool;
 	std::string tagIni, tagChar, tagTab;   // --tag-ini / --tag-char / --tag-tab
+	bool tagLink = false;                  // --tag-link
 	std::string capture;
 	int gameLinkSlot = 0;   // --game-link (1-4); 0 = off
 	int frameCounter = 0;

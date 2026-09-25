@@ -107,8 +107,11 @@ void MainFrame::ProcessStartupArgs()
 {
 	int n = ++gStartup.frameCounter;
 	// [tag-panel] after --open (frame 2), so the pickers see the loaded character; works without --open too
-	if (n == 3 && (gStartup.tool == "tag" || !gStartup.tagIni.empty() || !gStartup.tagTab.empty()))
+	if (n == 3 && (gStartup.tool == "tag" || !gStartup.tagIni.empty() || !gStartup.tagTab.empty() || gStartup.tagLink))
 		tagpanel::OpenStartup(gStartup.tagIni, gStartup.tagChar, gStartup.tagTab);
+	if (n == 3 && gStartup.tagLink) gamelink::SharedClient().Connect();
+	if (n == 200 && gStartup.tagLink && !gStartup.tagTab.empty())   // re-select the tab once the link has state
+		tagpanel::OpenStartup("", "", gStartup.tagTab);
 	if (n == 3 && gStartup.tool == "gamelink") gamelink::showPanel = true;
 	if (n == 2 && !gStartup.open.empty()) {
 		std::string path = gStartup.open, ext;
@@ -276,7 +279,7 @@ void MainFrame::ProcessStartupArgs()
 		PostQuitMessage(0);
 	if (n == 2 && gStartup.gameLinkSlot >= 1 && gStartup.gameLinkSlot <= 4)
 		gamelink::StartFollowing(gStartup.gameLinkSlot - 1);
-	if (!gStartup.capture.empty() && n == (gStartup.gameLinkSlot ? 240 : 20)) {
+	if (!gStartup.capture.empty() && n == ((gStartup.gameLinkSlot || gStartup.tagLink) ? 240 : 20)) {
 		RECT r; GetClientRect(WindowFromDC(context->dc), &r);
 		int w = r.right - r.left, h = r.bottom - r.top;
 		std::vector<uint8_t> rgba((size_t)w * h * 4), rgb((size_t)w * h * 3);

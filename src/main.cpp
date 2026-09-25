@@ -250,6 +250,10 @@ int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE, PWSTR pCmdLine, int nCmdShow
 			else gStartup.palette = atoi(v.c_str());
 			i++;
 		}
+		else if(!strcmp(arg, "--tag-link"))
+		{
+			gStartup.tagLink = true;
+		}
 		else if(!strcmp(arg, "--no-pups"))
 		{
 			gStartup.noPups = true;
