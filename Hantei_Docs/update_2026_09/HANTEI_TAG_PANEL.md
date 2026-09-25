@@ -316,6 +316,17 @@ No game was launched. The real DLL's side of the probe (`requestSetChar` → `ga
 * **Sample drift for PovertyCaster:** `tag_tuning.sample.ini` does not list `assistFromBlockstun`, and 4 of its help strings are older than the header.
 * **Windows position.** The window is placed relative to the main viewport. A build that opened it before this fix may have saved a detached position in `hanteichan.ini`; closing and reopening it, or deleting its `[Window][Tag / Team (experimental)]` block, fixes that.
 
-## 8. Commits
+## 8. Commits (`feat/tagpanel`, on `b5567f8`; not pushed)
 
-(filled in below)
+| Commit | What |
+|---|---|
+| `143c3c6` | lever table mirror (`tag_levers.h`) and the byte-preserving `TagIni` editor + resolution |
+| `e2d39ce` | assist slot model (`tag_assist.*`), `tag_tuning_test`, fixtures (shiki C/F/H `_c.txt`, the guide's default table) |
+| `ecf3580` | panel UI first cut (a WIP commit made across a machine restart) |
+| `1e1ece6` | the sample ini fixture (force-added: `*.ini` is ignored) |
+| `a83c47a` | `tag_tuning_test` passing: round trip, PovertyCaster header drift check, 100/100 default assists |
+| `5954e3c` | client: proposed `QueryTag`/`LinkTag`, `ProbeGate`, `PeekReply`, `GameDirOf` exported |
+| `fbdb4e5` `7a14678` `4ab7f23` `3312cb6` | the Tag / Team window, menu, startup options, viewport-relative placement, `_c.txt` / game folder from the open character, colours |
+| `1d6aaf3` | `MockDll`, `game_link_test` coverage, `game_link_cli tag` / `mock-dll` |
+| `3be7cfd` `865fcd9` | `--tag-link`, `--tag-apply`, live readout polish |
+| `af81e51` + the final docs commit | this document (copy in `Hantei_Docs/update_2026_09/`) and the capture evidence |
