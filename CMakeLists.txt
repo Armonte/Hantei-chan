@@ -274,6 +274,7 @@ add_executable(game_link_cli
 	src/game_link_cli.cpp
 	src/game_link.cpp
 	src/background/bg_file.cpp
+	src/background/bg_project.cpp
 	src/background/bg_pat.cpp
 	src/background/bg_info.cpp
 	src/cg.cpp
