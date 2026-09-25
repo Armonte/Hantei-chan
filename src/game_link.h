@@ -65,7 +65,7 @@ struct Snapshot {
 	bool autoReloadStage = false;
 	size_t watchedStage = 0;
 	uint32_t targetPid = 0;          // 0 = discover MBAA.exe by name
-	// [tag-panel] PROPOSED QueryTag (game_link_proto.h Tag)
+	// [link-tag] QueryTag (game_link_proto.h Tag; PovertyCaster mbaacc/link-tag)
 	bool haveTag = false;
 	bool tagUnsupported = false;     // the DLL answered QueryTag with Unknown (not implemented yet)
 	wire::Tag tag{};
