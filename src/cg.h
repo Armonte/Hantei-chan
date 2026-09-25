@@ -88,8 +88,10 @@ protected:
 
 	//Hantei4 calls these "pages".
 	struct Page {
-		ImageCell	cell[256];
+		ImageCell	cell[1024];   // (256 / cu)^2 cells used
 	};
+	int cu = 16;    // cell unit in px
+	int cpr = 16;   // cells per page row
 
 	Page			*pages;
 	unsigned int	page_count;

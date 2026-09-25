@@ -79,11 +79,11 @@ void CG::copy_cells(const CG_Image *image,
 			unsigned int height,
 			unsigned int *palette,
 			bool is_8bpp) {
-	int w = align->width / 0x10;
-	int h = align->height / 0x10;
-	int x = align->source_x / 0x10;
-	int y = align->source_y / 0x10;
-	int cell_n = (y * 0x10) + x;
+	int w = align->width / cu;
+	int h = align->height / cu;
+	int x = align->source_x / cu;
+	int y = align->source_y / cu;
+	int cell_n = (y * cpr) + x;
 	Page *im = &pages[align->source_image];
 	
 	for (int a = 0; a < h; ++a) {
@@ -97,8 +97,8 @@ void CG::copy_cells(const CG_Image *image,
 			unsigned char *dest = pixels;
 			unsigned int offset;
 			
-			offset = (align->y + (a * 0x10) - y1) * width;
-			offset += align->x + (b * 0x10) - x1;
+			offset = (align->y + (a * cu) - y1) * width;
+			offset += align->x + (b * cu) - x1;
 			
 			if (is_8bpp) {
 				// 8bpp -> 8bpp
@@ -107,8 +107,8 @@ void CG::copy_cells(const CG_Image *image,
 				
 				dest += offset;
 				
-				for (int c = 0; c < 0x10; ++c) {
-					for (int d = 0; d < 0x10; ++d) {
+				for (int c = 0; c < cu; ++c) {
+					for (int d = 0; d < cu; ++d) {
 						dest[d] = src[d];
 					}
 					
@@ -123,8 +123,8 @@ void CG::copy_cells(const CG_Image *image,
 				
 				ldest += offset;
 				
-				for (int c = 0; c < 0x10; ++c) {
-					for (int d = 0; d < 0x10; ++d) {
+				for (int c = 0; c < cu; ++c) {
+					for (int d = 0; d < cu; ++d) {
 						ldest[d] = palette[src[d]] & 0xffffff;
 					}
 					
@@ -138,8 +138,8 @@ void CG::copy_cells(const CG_Image *image,
 				src = ((unsigned char *)m_data) + cell->start + cell->offset;
 				src += align->width * align->height;
 
-				for (int c = 0; c < 0x10; ++c) {
-					for (int d = 0; d < 0x10; ++d) {
+				for (int c = 0; c < cu; ++c) {
+					for (int d = 0; d < cu; ++d) {
 						ldest[d] |= src[d] << 24;
 					}
 					
@@ -154,8 +154,8 @@ void CG::copy_cells(const CG_Image *image,
 				
 				ldest += offset;
 				
-				for (int c = 0; c < 0x10; ++c) {
-					for (int d = 0; d < 0x10; ++d) {
+				for (int c = 0; c < cu; ++c) {
+					for (int d = 0; d < cu; ++d) {
 						unsigned int v = src[d];
 						v = (v & 0xff00ff00) | ((v&0xff) << 16) | ((v&0xff0000) >> 16);
 						ldest[d] = v;
@@ -173,8 +173,8 @@ void CG::copy_cells(const CG_Image *image,
 				ldest += offset;
 				
 				
-				for (int c = 0; c < 0x10; ++c) {
-					for (int d = 0; d < 0x10; ++d) {
+				for (int c = 0; c < cu; ++c) {
+					for (int d = 0; d < cu; ++d) {
 						ldest[d] = palette[src[d]];
 					}
 					
@@ -184,7 +184,7 @@ void CG::copy_cells(const CG_Image *image,
 			}
 		}
 		
-		cell_n += 0x10;
+		cell_n += cpr;
 	}
 }
 			
@@ -327,21 +327,21 @@ void CG::build_image_table() {
 			}
 
 			
-			int w = align->width / 0x10;
-			int h = align->height / 0x10;
-			int x = align->source_x / 0x10;
-			int y = align->source_y / 0x10;
-			int cell_n = (y * 0x10) + x;
+			int w = align->width / cu;
+			int h = align->height / cu;
+			int x = align->source_x / cu;
+			int y = align->source_y / cu;
+			int cell_n = (y * cpr) + x;
 			Page *im = &pages[align->source_image];
 
 			if(cell_n > maxCelln)
 				maxCelln = cell_n;
 
-			if (x + w >= 0x10) {
-				w = 0x10 - x;
+			if (x + w >= cpr) {
+				w = cpr - x;
 			}
-			if (y + h >= 0x10) {
-				h = 0x10 - y;
+			if (y + h >= cpr) {
+				h = cpr - y;
 			}
 			
 			int mult = 1;
@@ -355,11 +355,11 @@ void CG::build_image_table() {
 					cell->start = address;
 					cell->width = align->width;
 					cell->height = align->height;
-					cell->offset = ( (b * 0x10) + (a * align->width * 0x10) ) * mult; //thxxx u4ick <3 
+					cell->offset = ( (b * cu) + (a * align->width * cu) ) * mult; //thxxx u4ick <3 
 					cell->type_id = image->type_id;
 					cell->bpp = image->bpp;
 				}
-				cell_n += 0x10;
+				cell_n += cpr;
 			}
 			
 			if (image->type_id == 4) {
@@ -577,6 +577,14 @@ bool CG::loadOwned(char *data, unsigned int size) {
 	
 	// parse header
 	page_count = (*d) + 1;
+	// Cell size of the page grid (header +16). 16 in most banks, 32 in many
+	// stages (both handled on a 16-px grid), 8 in MBAACC bg52 (car/airport):
+	// the game indexes cells with it (CG_BmpCutter_ParseSpriteData 0x402970).
+	{
+		unsigned int cs = d[4];
+		cu = (cs >= 1 && cs < 16) ? (int)cs : 16;
+		cpr = 256 / cu;
+	}
 	m_nalign = *(d+2);
 
 	unsigned int *indices = d + 12;
