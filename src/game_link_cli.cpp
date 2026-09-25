@@ -12,8 +12,22 @@
 //                                                    reload the watcher sends, and print its verdict
 //   game_link_cli ha6-get <chara.txt> <pattern> <frame>
 //   game_link_cli ha6-set-duration <chara.txt> <pattern> <frame> <duration>   edit + save through FrameData
+//
+// Stage ops (docs/HANTEI_STAGE_LINK.md):
+//   game_link_cli stage                              print the stage the game shows
+//   game_link_cli setstage <id> [keepbgm] [list]     switch the live stage and wait for the verdict
+//   game_link_cli reloadstage [list]                 re-read the current stage from disk
+//   game_link_cli stage-watch <file> <timeoutMs>     stage auto-reload-on-save path: wait for <file> to change, then
+//                                                    the ReloadStage the watcher sends, and print its verdict
+//   game_link_cli bg-get <bgNN.dat> <object> <frame>
+//   game_link_cli bg-set <bgNN.dat> <object> <frame> <field> <value>   edit + save through bg::File (the stage
+//                                                    editor's own loader/saver); field = duration | offsetX |
+//                                                    offsetY | opacity  (bg-set-duration <..> <value> = duration)
+//
+// --pid <n> (before the command) or HANTEI_GAME_LINK_PID=<n>: talk ONLY to that MBAA.exe; no discovery by name.
 #include "game_link.h"
 #include "framedata.h"
+#include "background/bg_file.h"
 
 #include <windows.h>
 
@@ -81,12 +95,54 @@ bool LoadStack(const std::string& txt, FrameData& fd, std::string& top)
 	return true;
 }
 
+void PrintStage(const wire::Stage& s)
+{
+	int n = 0;
+	for (int i = 1; i < 100; ++i) n += s.IsValid(i);
+	std::printf("stage loaded=%d (%s) selected=%d bgm=%d stageLoads=%u allowed=%u listEntries=%d\n", s.loaded,
+	            s.dataFile, s.selected, s.bgmId, s.stageLoads, s.allowed, n);
+}
+
 } // namespace
 
 int main(int argc, char** argv)
 {
+	uint32_t pid = 0;
+	if (argc > 2 && std::strcmp(argv[1], "--pid") == 0) {
+		pid = (uint32_t)std::strtoul(argv[2], nullptr, 0);
+		argv += 2; argc -= 2;
+	}
 	if (argc < 2) { std::fprintf(stderr, "usage: see the banner of src/game_link_cli.cpp\n"); return 1; }
 	const std::string cmd = argv[1];
+
+	if (cmd == "bg-get" || cmd == "bg-set-duration" || cmd == "bg-set") {
+		if (argc < 5) return 1;
+		bg::File f;
+		if (!f.Load(argv[2])) { std::fprintf(stderr, "load failed: %s\n", argv[2]); return 2; }
+		const int o = std::atoi(argv[3]), fr = std::atoi(argv[4]);
+		auto& objs = f.GetObjects();
+		if (o < 0 || o >= (int)objs.size() || fr < 0 || fr >= (int)objs[o].frames.size()) {
+			std::fprintf(stderr, "no object %d frame %d (%zu objects)\n", o, fr, objs.size()); return 2;
+		}
+		bg::Frame& frame = objs[o].frames[fr];
+		std::printf("object %d frame %d/%zu sprite %d duration %d offset %d,%d opacity %d (%s)\n", o, fr,
+		            objs[o].frames.size(), frame.spriteId, frame.duration, frame.offsetX, frame.offsetY, frame.opacity,
+		            argv[2]);
+		if (cmd == "bg-get") return 0;
+		const std::string field = cmd == "bg-set" ? (argc > 5 ? argv[5] : "") : "duration";
+		const char* val = cmd == "bg-set" ? (argc > 6 ? argv[6] : nullptr) : (argc > 5 ? argv[5] : nullptr);
+		if (!val) return 1;
+		const int v = std::atoi(val);
+		if (field == "duration") frame.duration = (int16_t)v;
+		else if (field == "offsetX") frame.offsetX = (int16_t)v;
+		else if (field == "offsetY") frame.offsetY = (int16_t)v;
+		else if (field == "opacity") frame.opacity = (uint8_t)v;
+		else { std::fprintf(stderr, "unknown field %s\n", field.c_str()); return 1; }
+		f.MarkDirty();
+		if (!f.Save(argv[2])) { std::fprintf(stderr, "save failed: %s\n", argv[2]); return 2; }
+		std::printf("saved %s %d -> %s\n", field.c_str(), v, argv[2]);
+		return 0;
+	}
 
 	if (cmd == "ha6-get" || cmd == "ha6-set-duration") {
 		if (argc < 5) return 1;
@@ -109,7 +165,54 @@ int main(int argc, char** argv)
 
 	Client c;
 	c.SetPollHz(0);
+	if (pid) c.SetTargetPid(pid);
 	if (!Connect(c)) return 2;
+
+	if (cmd == "stage") {
+		c.SetPollHz(10);
+		wire::Stage s;
+		if (!c.WaitStage(3000, s)) { std::fprintf(stderr, "no stage state (%s)\n", c.Get().stageUnsupported ? "old pchost.dll" : "timeout"); return 3; }
+		PrintStage(s);
+		return 0;
+	}
+	if (cmd == "setstage") {
+		if (argc < 3) return 1;
+		uint8_t fl = 0;
+		for (int i = 3; i < argc; ++i) {
+			if (!std::strcmp(argv[i], "keepbgm")) fl |= wire::kFlagKeepBgm;
+			if (!std::strcmp(argv[i], "list")) fl |= wire::kFlagStageList;
+		}
+		return WaitAndPrintReply(c, c.SetStage(std::atoi(argv[2]), fl), 10000);
+	}
+	if (cmd == "reloadstage") {
+		const uint8_t fl = argc > 2 && !std::strcmp(argv[2], "list") ? wire::kFlagStageList : 0;
+		return WaitAndPrintReply(c, c.ReloadStage(fl), 10000);
+	}
+	if (cmd == "stage-watch") {
+		if (argc < 4) return 1;
+		c.SetPollHz(5);
+		c.SetAutoReloadStage(true);
+		const std::string file = argv[2];
+		const std::string stem = StageStemOf(file);
+		StageFileKind kind = StageFileKind::Dat;
+		if (stem.empty()) kind = StageFileKind::List;
+		else if (file.size() > 8 && (file.find("nfo") != std::string::npos || file.find("NFO") != std::string::npos)) kind = StageFileKind::Info;
+		else if (file.find("ight") != std::string::npos) kind = StageFileKind::Light;
+		c.SetWatchedStageFiles({ { file, kind } });
+		const int timeout = std::atoi(argv[3]);
+		std::printf("watching %s for %d ms\n", file.c_str(), timeout);
+		const auto end = std::chrono::steady_clock::now() + std::chrono::milliseconds(timeout);
+		std::string seen;
+		while (std::chrono::steady_clock::now() < end) {
+			const Snapshot s = c.Get();
+			if (s.lastChange != seen && !s.lastChange.empty()) { seen = s.lastChange; std::printf("%s\n", seen.c_str()); }
+			for (const auto& l : c.RecentLog())
+				if (l.rfind("reloadstage #", 0) == 0) { std::printf("%s\n", l.c_str()); return l.find(": ok") != std::string::npos ? 0 : 4; }
+			std::this_thread::sleep_for(std::chrono::milliseconds(50));
+		}
+		std::fprintf(stderr, "no reloadstage verdict within %d ms\n", timeout);
+		return 3;
+	}
 
 	if (cmd == "state") {
 		const int count = argc > 2 ? std::atoi(argv[2]) : 1;

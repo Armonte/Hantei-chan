@@ -1,9 +1,11 @@
-// game_link_test: the file -> game-slot mapping behind "auto-reload on save" (gamelink::SlotMaskForFile), and
-// the wire-struct sizes the editor shares with PovertyCaster's pc-proto.
+// game_link_test: the file -> game-slot mapping behind "auto-reload on save" (gamelink::SlotMaskForFile), the
+// file -> stage match behind the stage auto-reload (gamelink::StageFileMatches), and the wire-struct sizes the
+// editor shares with PovertyCaster's pc-proto.
 #include "game_link.h"
 
 #include <cstdio>
 #include <cstring>
+#include <string>
 
 static int g_fail = 0;
 #define CHECK(c) do { if (!(c)) { std::printf("FAIL %s:%d  %s\n", __FILE__, __LINE__, #c); ++g_fail; } } while (0)
@@ -42,6 +44,34 @@ int main()
 	CHECK(SlotMaskForFile("sion_1.txt", t) == 0x4);
 	CHECK(SlotMaskForFile("akiha_0.txt", s) == 0);
 	CHECK(sizeof(gamelink::wire::State) == 276 && sizeof(gamelink::wire::Command) == 24);
+
+	// ---- stage auto-reload: which saved files concern the stage the game shows ----
+	using gamelink::StageFileMatches;
+	using gamelink::StageStemOf;
+	gamelink::wire::Stage st{};
+	st.loaded = 28;
+	std::strcpy(st.dataFile, "bg28");
+	bool list = true;
+	CHECK(StageFileMatches("C:\\games\\mbaacc\\Bg\\bg28.dat", st, &list) && !list);
+	CHECK(StageFileMatches("C:/games/mbaacc/bg/BG28Info.txt", st));      // case-insensitive
+	CHECK(StageFileMatches("bg28light.txt", st));
+	CHECK(StageFileMatches("bg28_s.dat", st));                          // MBAC short variant of the same stage
+	CHECK(!StageFileMatches("bg29.dat", st));
+	CHECK(!StageFileMatches("bg280.dat", st));                          // a prefix is not the stage
+	CHECK(!StageFileMatches("bg2.dat", st));
+	CHECK(StageFileMatches("C:\\x\\Bg\\BgList.ini", st, &list) && list);   // the list concerns every stage
+	gamelink::wire::Stage none{};
+	none.loaded = -1;
+	CHECK(!StageFileMatches("bg28.dat", none));                         // no stage on screen: nothing to reload
+	CHECK(!StageFileMatches("BgList.ini", none));
+	CHECK(StageStemOf("C:\\x\\bg28Info.txt") == "bg28");
+	CHECK(StageStemOf("bg16light.txt") == "bg16");
+	CHECK(StageStemOf("BgList.ini").empty());
+	st.valid[3] = 1u << (28 & 7);                                      // 28 = byte 3, bit 4
+	CHECK(st.IsValid(28) && !st.IsValid(27) && !st.IsValid(0) && !st.IsValid(100));
+	CHECK(sizeof(gamelink::wire::Stage) == 64);
+	CHECK((int)gamelink::wire::Op::SetStage == 5 && (int)gamelink::wire::Op::QueryStage == 7);
+	CHECK((int)gamelink::wire::Kind::LinkStage == 0x103);
 	std::printf(g_fail ? "game_link_test: %d FAILED\n" : "game_link_test: all passed\n", g_fail);
 	return g_fail ? 1 : 0;
 }

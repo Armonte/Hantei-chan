@@ -1,8 +1,9 @@
 #ifndef GAME_LINK_PANEL_H_GUARD
 #define GAME_LINK_PANEL_H_GUARD
 // The "Game Link" window: connect Hantei-chan to a running MBAA.exe (PovertyCaster pchost.dll with
-// PCHOST_MBAACC_LINK=1), reload characters on save, follow what a game slot is playing, pick characters.
-// Client: game_link.h. Docs: docs/HANTEI_GAME_LINK.md.
+// PCHOST_MBAACC_LINK=1), reload characters on save, follow what a game slot is playing, pick characters, and
+// switch / hot-reload the game's stage. Client: game_link.h. Docs: docs/HANTEI_GAME_LINK.md,
+// docs/HANTEI_STAGE_LINK.md. Other windows drive it through game_link_api.h.
 #include "game_link.h"
 
 #include <functional>
@@ -21,6 +22,8 @@ struct EditorContext {
 	std::function<int()> patternCount;       // of the active character
 	std::function<int(int)> frameCount;      // frames in a pattern of the active character
 	std::function<bool()> saveAll;           // "Push to game" saves modified characters first
+	std::vector<WatchedStageFile> stageFiles; // the open stage's .dat, Info.txt, light.txt and BgList.ini
+	int openStageIndex = -1;                  // the open stage's BgList.ini index (-1 = no stage open / not listed)
 };
 
 extern bool showPanel;
