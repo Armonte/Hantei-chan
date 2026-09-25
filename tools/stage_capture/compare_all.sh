@@ -10,7 +10,7 @@ CAP="$1"; OUT="$2"; shift 2
 BG=/mnt/c/games/mbaacc_tag/bg   # read-only; the test copy links to the same files
 mkdir -p "$OUT"
 RES="$OUT/results.jsonl"
-: > "$RES"
+[ -n "$*" ] || : > "$RES"   # a partial run (ids given) appends
 IDS="$*"
 [ -n "$IDS" ] || IDS=$(ls "$CAP" | sed -n 's/^s\([0-9][0-9]\)$/\1/p')
 for id in $IDS; do

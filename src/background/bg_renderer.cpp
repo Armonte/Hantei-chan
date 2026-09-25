@@ -1177,7 +1177,11 @@ void Renderer::DrawPass(const Camera& camera, int clientW, int clientH, int band
 			if (fr.interpolate && nx) {
 				float a0 = (fr.blendMode > 0) ? fr.opacity : 255.0f;
 				float a1 = nx->blendMode ? (float)nx->opacity : 255.0f;
-				alpha = ((1.0f - t) * a0 + t * a1) / 255.0f;
+				// MBAA 0x4b7060: w = 1 - timer/dur (float), a = w*a0 + (1-w)*a1 in
+				// x87 double, truncated to the integer vertex alpha.
+				const float w0 = dur ? 1.0f - (float)inst.timer / (float)dur : 1.0f;
+				const float w1 = 1.0f - w0;
+				alpha = (float)(unsigned int)((double)w0 * a0 + (double)a1 * w1) / 255.0f;
 				if (mbac) {
 					float n0 = nx->scaleX ? nx->scaleX / 256.0f : 1.0f;
 					float n1 = nx->scaleY ? nx->scaleY / 256.0f : 1.0f;
