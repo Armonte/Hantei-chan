@@ -1,6 +1,10 @@
 // Game Link window — see game_link_panel.h.
 #include "game_link_panel.h"
+#include "game_link_api.h"
 #include "framestate.h"
+#include "background/bg_info.h"
+
+#include <windows.h>
 
 #include <imgui.h>
 
@@ -27,6 +31,85 @@ int  g_lastFollowPattern = -1, g_lastFollowFrame = -1;
 int  g_setChara[4] = { -1, -1, -1, -1 }, g_setMoon[4] = { 0, 0, 0, 0 }, g_setPal[4] = { 0, 0, 0, 0 };
 bool g_forceReload = false;
 std::string g_pushResult;
+// stage section
+bool g_autoReloadStage = true;
+bool g_stageList = false, g_keepBgm = false;
+int  g_stagePick = -1;
+uint32_t g_stageListPid = 0;
+bg::StageList g_gameStageList;   // the game's own Bg\BgList.ini, for names (the wire only carries validity)
+
+// The game's folder, from its pid (the link knows the pid; the editor may have opened a stage from anywhere).
+std::string GameDirOf(uint32_t pid)
+{
+	HANDLE h = OpenProcess(PROCESS_QUERY_LIMITED_INFORMATION, FALSE, pid);
+	if (!h) return {};
+	char buf[MAX_PATH];
+	DWORD n = sizeof buf;
+	std::string dir;
+	if (QueryFullProcessImageNameA(h, 0, buf, &n)) {
+		dir.assign(buf, n);
+		const size_t b = dir.find_last_of("\\/");
+		dir = b == std::string::npos ? std::string() : dir.substr(0, b);
+	}
+	CloseHandle(h);
+	return dir;
+}
+
+std::string StageLabel(int id)
+{
+	for (const auto& e : g_gameStageList.entries)
+		if (e.index == id) return std::to_string(id) + " " + e.dataFile;
+	return std::to_string(id);
+}
+
+void StageSection(Client& c, const Snapshot& s, const EditorContext& ctx)
+{
+	ImGui::SeparatorText("Stage");
+	if (s.stageUnsupported) {
+		ImGui::TextDisabled("The game's pchost.dll predates the stage ops (rebuild PovertyCaster mbaacc/stage-link).");
+		return;
+	}
+	if (!s.haveStage) { ImGui::TextDisabled("waiting for the game's stage state..."); return; }
+	if (s.pid != g_stageListPid) {
+		g_stageListPid = s.pid;
+		const std::string dir = GameDirOf(s.pid);
+		if (dir.empty() || !g_gameStageList.Load(dir + "\\Bg\\BgList.ini")) g_gameStageList = bg::StageList{};
+	}
+	const wire::Stage& st = s.stage;
+	ImGui::Text("On screen: %s  (selected %d, BGM %d, stage ops %u)", st.loaded > 0 ? StageLabel(st.loaded).c_str() : "none",
+	            st.selected, st.bgmId, st.stageLoads);
+	if (!st.allowed)
+		ImGui::TextColored(ImVec4(1.0f, 0.6f, 0.3f, 1.0f), "Stage ops refused right now (needs an offline battle).");
+	if (g_stagePick < 1) g_stagePick = st.loaded;
+	ImGui::SetNextItemWidth(180);
+	if (ImGui::BeginCombo("##gstage", StageLabel(g_stagePick).c_str())) {
+		for (int i = 1; i < 100; ++i) {
+			if (!st.IsValid(i)) continue;
+			std::string label = StageLabel(i);
+			if (i == st.loaded) label += "  (on screen)";
+			if (ImGui::Selectable(label.c_str(), i == g_stagePick)) g_stagePick = i;
+		}
+		ImGui::EndCombo();
+	}
+	const uint8_t fl = (uint8_t)((g_stageList ? wire::kFlagStageList : 0) | (g_keepBgm ? wire::kFlagKeepBgm : 0));
+	ImGui::SameLine();
+	if (ImGui::Button("Set stage")) c.SetStage(g_stagePick, fl);
+	ImGui::SameLine();
+	if (ImGui::Button("Reload stage")) c.ReloadStage(fl);
+	if (ctx.openStageIndex > 0) {
+		ImGui::SameLine();
+		char b[48];
+		std::snprintf(b, sizeof b, "Show open stage (%d)", ctx.openStageIndex);
+		if (ImGui::Button(b)) c.SetStage(ctx.openStageIndex, fl);
+	}
+	ImGui::Checkbox("re-read BgList.ini", &g_stageList);
+	ImGui::SameLine();
+	ImGui::Checkbox("keep BGM", &g_keepBgm);
+	ImGui::SameLine();
+	ImGui::Checkbox("Auto-reload stage on save", &g_autoReloadStage);
+	ImGui::SameLine();
+	ImGui::TextDisabled("(%zu files)", s.watchedStage);
+}
 
 const char* SceneName(uint16_t s) { return s == 1 ? "battle" : s == 20 ? "character select" : "menu/other"; }
 
@@ -131,6 +214,8 @@ void DrawPanel(EditorContext& ctx)
 	Client& c = SharedClient();
 	c.SetAutoReload(g_autoReload);
 	c.SetWatchedFiles(ctx.files);
+	c.SetAutoReloadStage(g_autoReloadStage);
+	c.SetWatchedStageFiles(ctx.stageFiles);
 	c.SetPollHz(g_follow ? 30 : 5);
 	const Snapshot s = c.Get();
 
@@ -185,6 +270,7 @@ void DrawPanel(EditorContext& ctx)
 		FollowSection(s, ctx);
 		SetCharSection(c, s);
 	}
+	if (s.connected) StageSection(c, s, ctx);
 
 	if (ImGui::TreeNode("Log")) {
 		const auto log = c.RecentLog();
@@ -198,3 +284,31 @@ void DrawPanel(EditorContext& ctx)
 }
 
 } // namespace gamelink
+
+// ---- game_link_api.h ----
+uint16_t GameLink_ShowStageInGame(int stageId)
+{
+	if (stageId < 1 || stageId > 99) return 0;
+	return gamelink::SharedClient().SetStageWhenConnected(stageId);
+}
+
+uint16_t GameLink_ReloadStageInGame(bool rereadList)
+{
+	gamelink::Client& c = gamelink::SharedClient();
+	if (!c.Get().connected) return 0;
+	return c.ReloadStage(rereadList ? gamelink::wire::kFlagStageList : 0);
+}
+
+GameLinkStageInfo GameLink_GetStageInfo()
+{
+	const gamelink::Snapshot s = gamelink::SharedClient().Get();
+	GameLinkStageInfo i;
+	i.connected = s.connected;
+	i.haveStage = s.haveStage;
+	i.allowed = s.haveStage && s.stage.allowed;
+	i.loaded = s.haveStage ? s.stage.loaded : -1;
+	i.bgm = s.haveStage ? s.stage.bgmId : -1;
+	i.dataFile = s.haveStage ? s.stage.dataFile : "";
+	i.lastReply = s.lastReply;
+	return i;
+}

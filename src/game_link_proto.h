@@ -3,23 +3,26 @@
 // The PovertyCaster dev-link wire format, as seen from the editor side.
 //
 // DUPLICATE OF PovertyCaster pc-proto/include/pc/proto/Proto.hpp (IpcHeader, IpcKind::Link*, LinkOp, LinkStatus,
-// kLinkFlag*, LinkCommand, LinkReply, LinkActor, LinkState) — Hantei-chan does not build against PovertyCaster,
+// kLinkFlag*, LinkCommand, LinkReply, LinkActor, LinkState, LinkStage) — Hantei-chan does not build against PovertyCaster,
 // so the structs are mirrored here. Every struct is fixed-width and pointer-free on purpose, and the
 // static_asserts pin the sizes to PovertyCaster's; a size change there must change here too. Protocol doc:
-// docs/HANTEI_GAME_LINK.md.
+// docs/HANTEI_GAME_LINK.md; the stage ops: docs/HANTEI_STAGE_LINK.md.
 #include <cstdint>
 
 namespace gamelink::wire {
 
 constexpr uint16_t kLinkVersion = 1;
 
-enum class Kind : uint16_t { LinkCommand = 0x100, LinkReply = 0x101, LinkState = 0x102 };
+enum class Kind : uint16_t { LinkCommand = 0x100, LinkReply = 0x101, LinkState = 0x102, LinkStage = 0x103 };
 
-enum class Op : uint16_t { Ping = 1, Reload = 2, SetChar = 3, QueryState = 4 };
+// SetStage carries the stage id in Command::slot. Stage ops are answered Unknown by a DLL that predates them.
+enum class Op : uint16_t { Ping = 1, Reload = 2, SetChar = 3, QueryState = 4, SetStage = 5, ReloadStage = 6, QueryStage = 7 };
 
-constexpr uint8_t kFlagReload   = 1u << 0;
-constexpr uint8_t kFlagForce    = 1u << 1;
-constexpr uint8_t kFlagResetPos = 1u << 2;
+constexpr uint8_t kFlagReload    = 1u << 0;
+constexpr uint8_t kFlagForce     = 1u << 1;
+constexpr uint8_t kFlagResetPos  = 1u << 2;
+constexpr uint8_t kFlagStageList = 1u << 3;   // stage ops: re-read Bg\BgList.ini first
+constexpr uint8_t kFlagKeepBgm   = 1u << 4;   // SetStage: do not restart the BGM
 
 enum class Status : int16_t {
 	Ok = 0, Queued = 1, RefusedSession = -1, RefusedRecording = -2, RefusedScene = -3,
@@ -55,6 +58,20 @@ struct State {
 	Actor actors[4];
 };
 static_assert(sizeof(State) == 276, "LinkState size");
+
+// The answer to QueryStage (PovertyCaster LinkStage).
+struct Stage {
+	int32_t selected;       // g_SelectedStageId
+	int32_t loaded;         // on screen (-1 = none)
+	uint32_t stageLoads;    // SetStage + ReloadStage runs so far
+	int16_t bgmId;
+	uint8_t allowed;        // a stage op would be accepted now
+	uint8_t _pad;
+	uint8_t valid[16];      // bit i = BgList.ini entry i exists (i < 100)
+	char dataFile[32];      // the loaded entry's DataFile, e.g. "bg28"
+	bool IsValid(int id) const { return id > 0 && id < 100 && (valid[id >> 3] & (1u << (id & 7))) != 0; }
+};
+static_assert(sizeof(Stage) == 64, "LinkStage size");
 
 inline const char* StatusName(int16_t s)
 {

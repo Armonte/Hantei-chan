@@ -1,0 +1,240 @@
+[22:23:21.626] [pchost] runtime build fa496860 2026-09-25 01:56Z
+[22:23:21.626] [env] dllDir=C:\games\mbaacc_winaspect dll=C:\games\mbaacc_winaspect\pchost.dll exeDir=C:\games\mbaacc_winaspect DLL_PATH=C:\games\mbaacc_winaspect\pchost_stagelink.dll GAME=mbaacc(mbaacc) SYNC_LOG=<null> CC_SYNCHASH=<null> CC_AUTONAV=<null> CC_COMPAT=<null>
+[22:23:21.667] [env] pchost.dll stamp: fnv1a=129AC315 size=14651421 (the bytes that ran; equal on two peers = same build)
+[22:23:21.667] [pchost/mbaacc] patch OK @0x4A3E88 dialog-skip (DialogBoxParamA -> add esp,14h; xor eax,eax; inc eax)
+[22:23:21.667] [pchost/mbaacc] patch OK @0x40D9DB force-windowed (NOP the jnz fullscreen branch)
+[22:23:21.668] [pchost/mbaacc] patch OK @0x54D040 force-windowed (windowed flag := 1 — idempotent data set, deliberately UNGUARDED)
+[22:23:21.668] [pchost/mbaacc] patch OK @0x40D99E window-unclamp (skip high-X clamp: PosX >= SM_CXSCREEN - width)
+[22:23:21.668] [pchost/mbaacc] patch OK @0x40D9BC window-unclamp (skip high-Y clamp: PosY >= SM_CYSCREEN - height)
+[22:23:21.668] [pchost/mbaacc] patch OK @0x40D9CC window-unclamp (skip low-X clamp: PosX < 0 -> 0)
+[22:23:21.668] [pchost/mbaacc] patch OK @0x40D9D2 window-unclamp (skip low-Y clamp: PosY < 0 -> 0)
+[22:23:21.668] [pchost/mbaacc] patch OK @0x40DA17 window-noflash (push 0(Y);push 0(X) -> push ebx;push edi — first move goes straight to PosX/PosY)
+[22:23:21.668] [pchost/mbaacc] patch OK @0x40DA44 window-noflash (add eax,ebx (Y += PosY) -> nop)
+[22:23:21.668] [pchost/mbaacc] patch OK @0x40DA49 window-noflash (add ecx,edi (X += PosX) -> nop)
+[22:23:21.668] [pchost/mbaacc] patch OK @0x4A3B28 poscoord-unclamp (jge -> jmp: keep a negative window PosX, don't floor to 0)
+[22:23:21.668] [pchost/mbaacc] patch OK @0x4A3B36 poscoord-unclamp (jge -> jmp: keep a negative window PosY, don't floor to 0)
+[22:23:21.668] [pchost/mbaacc] patch OK @0x4A3B70 no-persist (_App.ini writer NOP'd @0x4A3B70 — the game won't clobber our boot config)
+[22:23:21.668] [pchost/mbaacc] patch OK @0x40D25A multi-instance (jnz->jmp, 2nd instance allowed)
+[22:23:21.668] [pchost/mbaacc] boot patches: 14/14 byte patches applied
+[22:23:21.669] [pchost/mbaacc] patch OK @0x41F098 hijackControls (NOP joystick store 0x41F098)
+[22:23:21.669] [pchost/mbaacc] patch OK @0x41F0A0 hijackControls (NOP joystick store 0x41F0A0)
+[22:23:21.669] [pchost/mbaacc] patch OK @0x4A024E hijackControls (NOP joystick store 0x4A024E)
+[22:23:21.669] [pchost/mbaacc] patch OK @0x4A027F hijackControls (NOP joystick store 0x4A027F)
+[22:23:21.669] [pchost/mbaacc] patch OK @0x4A0291 hijackControls (NOP joystick store 0x4A0291)
+[22:23:21.669] [pchost/mbaacc] patch OK @0x4A02A2 hijackControls (NOP joystick store 0x4A02A2)
+[22:23:21.669] [pchost/mbaacc] patch OK @0x4A02B4 hijackControls (NOP joystick store 0x4A02B4)
+[22:23:21.669] [pchost/mbaacc] patch OK @0x4A02E9 hijackControls (NOP joystick store 0x4A02E9)
+[22:23:21.669] [pchost/mbaacc] patch OK @0x4A02F2 hijackControls (NOP joystick store 0x4A02F2)
+[22:23:21.669] [pchost/mbaacc] patch OK @0x54D2C0 hijackControls (zero the 20-byte keyboard scancode map @0x54D2C0)
+[22:23:21.669] [pchost/mbaacc] hijackControls: 10/10 byte patches applied
+[22:23:21.669] [pchost/mbaacc] patch OK @0x42B475 force-versus (test al,al -> jmp Versus)
+[22:23:21.669] [pchost/mbaacc] force-versus: 1/1 byte patches applied
+[22:23:21.669] [pchost/mbaacc] file-share: OpenFile not imported by this exe (slot skipped)
+[22:23:21.669] [pc-hooks] IAT mbaacc file-share CreateFileA -> 6479a770 (slot 0051b054)
+[22:23:21.669] [pchost/mbaacc] file-share: LockFile not imported by this exe (slot skipped)
+[22:23:21.669] [pchost/mbaacc] file-share: UnlockFile not imported by this exe (slot skipped)
+[22:23:21.670] [pchost/mbaacc] file-share shims installed (1 slot patched, 3 not imported; read opens -> deny-none, cross-instance asset-open race fix)
+[22:23:21.678] [pchost] worker: entry (watchdog armed) (t=0ms)
+[22:23:21.683] [pchost] crash dumps ARMED -> C:\games\mbaacc_winaspect\pchost_crash_23320_15427453.dmp
+[22:23:21.683] [pchost] worker: paths resolved (t=15ms)
+[22:23:21.683] [pchost] worker: reading video.adapter from ini (t=15ms)
+[22:23:21.734] [pchost] worker: ini read; installing video boot hooks (t=62ms)
+[22:23:21.734] [pchost] video: no adapter pin (target=0, primary)
+[22:23:21.734] [pchost] worker: video boot hooks done; waiting for game main loop (t=62ms)
+[22:23:21.734] [pchost] gate: probing... (t=0ms fc=0 gm=65535)
+[22:23:22.238] [pchost] gate: probing... (t=500ms fc=0 gm=65535)
+[22:23:22.732] [pchost] gate: probing... (t=1000ms fc=0 gm=65535)
+[22:23:23.230] [pchost] gate: probing... (t=1500ms fc=0 gm=65535)
+[22:23:23.730] [pchost] gate: probing... (t=2000ms fc=0 gm=65535)
+[22:23:24.231] [pchost] gate: probing... (t=2500ms fc=0 gm=65535)
+[22:23:24.729] [pchost] gate: probing... (t=3000ms fc=0 gm=65535)
+[22:23:25.229] [pchost] gate: probing... (t=3500ms fc=0 gm=65535)
+[22:23:25.730] [pchost] gate: probing... (t=4000ms fc=0 gm=65535)
+[22:23:26.232] [pchost] gate: probing... (t=4500ms fc=0 gm=65535)
+[22:23:26.731] [pchost] gate: probing... (t=5000ms fc=0 gm=65535)
+[22:23:26.920] [pchost] boot: game main loop RUNNING after 5188ms (frameCounter 0->0, gameMode 65535->3, budget 8000ms) — installing hooks
+[22:23:26.920] [pchost] worker: main-loop gate passed; Driver::init (t=5250ms)
+[22:23:26.921] [pchost] init: base=0x00400000 bin=C:\games\mbaacc_winaspect\rollback.bin
+[22:23:26.921] [pchost/compat] component=pchost contract="fa496860 2026-09-25 01:56Z"
+[22:23:26.921] [pchost/compat] platform wine=no host="native windows"
+[22:23:26.921] [pchost/compat] steam proton=no appid="" overlay=no steaminput=no
+[22:23:26.921] [pchost/compat] state root="C:\\games\\mbaacc_winaspect" fallback=no
+[22:23:26.921] [pchost/compat] timing qpc-frequency=10000000 sane=yes
+[22:23:26.921] [pchost/compat] module name="pchost.dll" path="C:\\games\\mbaacc_winaspect\\pchost.dll" sha256=none
+[22:23:26.921] [pchost/compat] module name="(host exe)" path="C:\\games\\mbaacc_winaspect\\MBAA.exe" sha256=none
+[22:23:26.921] [pchost/compat] socket preflight: winsock 2.2 "WinSock 2.0" | native windows | udp-protocolinfo-repair=available (no duplicated sockets in this build)
+[22:23:26.938] [pchost] savestate map OK: stateSize=1242553 bytes
+[22:23:26.939] [pchost] SFX hooks installed
+[22:23:26.939] [pchost] LOBBY: in-game lobby service registered -- directory "mbaacc" on 2dfm.org:5555, 0 saved player(s), player id ABSENT (no presence for our own rows). It connects when a lobby screen opens.
+[22:23:26.940] [pchost/mbaacc] replay-underflow trap armed (#220)
+[22:23:26.940] [pchost/mbaacc] CSSWIDEN ENV PCHOST_MBAACC_TEAMBATTLE=
+[22:23:26.940] [pchost/mbaacc] CSSWIDEN ENV PCHOST_MBAACC_TEAMSCENE=
+[22:23:26.940] [pchost/mbaacc] CSSWIDEN ENV PCHOST_MBAACC_TEAMMENU=
+[22:23:26.940] [pchost/mbaacc] CSSWIDEN ENV PCHOST_MBAACC_MENUSEEK=
+[22:23:26.940] [pchost/mbaacc] CSSWIDEN ENV PCHOST_MBAACC_CSSREUSE=
+[22:23:26.940] [pchost/mbaacc] CSSWIDEN ENV PCHOST_MBAACC_CSSSENTINEL=
+[22:23:26.940] [pchost/mbaacc] CSSWIDEN ENV PCHOST_MBAACC_CSSWIDEN_MASK=
+[22:23:26.940] [pchost/mbaacc] CSSWIDEN ENV PCHOST_MBAACC_CSSPORTS=
+[22:23:26.940] [pchost/mbaacc] CSSWIDEN ENV PCHOST_MBAACC_CSSPULSE=
+[22:23:26.940] [pchost/mbaacc] CSSWIDEN ENV PCHOST_MBAACC_CSSCONFIRM=
+[22:23:26.959] [pchost/mbaacc] TAG tuning loaded at first use — C:\games\mbaacc_winaspect\tag_tuning.ini; style='Classic'
+[22:23:26.959] [pchost/mbaacc] TAG tuning values: cooldownTicks=120 guardSwapHit=1 exitTimeoutTicks=180 regen=1 regenPerTick=1 parkX=-102400 parkY=0 pinTeamPoint=1 cancelWindowTicks=-1 cancelNormals=1 cancelSpecials=1 airTagOut=0 airTagIn=0 entryStyle=edge entryX=40960 dropX=16384 entryY=-40000 arcY=0 arcVelX=900 arcVelY=-2800 dropVelY=0 entryGravity=150 entryAnchor=camera entryInvulnTicks=0 koRule=oneDown forcedEntryDelayTicks=60 swapRedKeepPct=50
+[22:23:26.959] [pchost/mbaacc] TAG tuning set v1 (block 79 bytes + 0 character section(s), 80 bytes) sha256=c28af5abe6d7a53009c4fb09f4c3cbe1ec9be743d0ea379508044bdec8ced31a set=011a7800000001b400000001010000000070feff00000000ffffffff010100000000a0000000400000c063ffff000000008403000010f5ffff00000000960000000000000000003c0000003200000000
+[22:23:26.959] [pchost/mbaacc] TAG env: PCHOST_MBAACC_TAG=0 TEAMMENU=0 2V2=0 TAG_RULE=mbac P3=- P4=-
+[22:23:26.959] [pchost/mbaacc] TAG H2 TagIn/TagOut fill (post LoadCharacterCommandFile) @00448d4f installed
+[22:23:26.960] [pchost/mbaacc] TAG H1/H3/H4 skipped: neither PCHOST_MBAACC_TAG nor PCHOST_MBAACC_TEAMMENU is set, so TAG is unreachable
+[22:23:26.960] [pchost] menu hooks installed (gate=0)
+[22:23:26.960] [cb] init: localPlayer=0 configDir=C:\games\mbaacc_winaspect -- SDL session deferred to first poll (game thread)
+[22:23:26.960] [pchost] pc-input: loaded mappings from C:\games\mbaacc_winaspect\povertycaster.ini
+[22:23:26.960] [pchost] pc-input: in-process device reader up (localPlayer=0 manualMenus=0 aiBattle=0)
+[22:23:26.960] [pc-hooks] trampoline arena reserved: 1048576 bytes (BAD_ALLOCATION now needs an arena overflow)
+[22:23:26.960] [pchost] EXIT: kernel32!ExitProcess IAT slot rva=0x11B1A0 HOOKED -- a window close or clean quit now ends with BYE + recorder close + sync-log flush
+[22:23:26.960] [pchost] frame driver hook @0x40E390 installed (int __cdecl f(void))
+[22:23:26.961] [pchost] roundStart MidHook @0x440CC5 installed
+[22:23:26.963] [pchost] init OK: frame hook@0x40E390, RuntimeDriver up (net=0) — overlay deferred to the 1st frame
+[22:23:26.967] [cb] focus gate ARMED: game hwnd=000313d2 — background input is gated from here on
+[22:23:26.967] [overlay] acquired Present/Reset from the game's OWN device (no throwaway probe)
+[22:23:26.967] [overlay] wndproc(c) OverlayInput::install hwnd=000313d2 prevProc=ffff0f7f ourProc=647c7ba0 ok=1
+[22:23:26.967] [pchost] overlay: D3D9 hook installed (hwnd=000313d2 present=0x678F05D0 reset=0x678F09D0)
+[22:23:26.971] [pchost] video: scale mode = auto, upscale filter = nearest (midhook=off, settings=00554138)
+[22:23:26.983] [pchost] video: scale mode = auto, upscale filter = nearest (midhook=off, settings=00554138)
+[22:23:26.984] [pchost] capture: setCaptureMirrorRect(0,0 2560x1080) stored (mirror not running yet)
+[22:23:26.984] [pchost] capture: setCaptureMirror(off) pending-rect=(0,0 2560x1080)
+[22:23:26.985] [pchost] menu: installed (ini=C:\games\mbaacc_winaspect\povertycaster.ini scale=1x hud=0 local=P1)
+[22:23:26.986] [pchost] sidebars: off, set 'steam', per-character 0, fade 533 ms, art root C:\games\mbaacc_winaspect\povertycaster\sidebars
+[22:23:26.986] [pchost] video: scale mode = auto, upscale filter = nearest (midhook=off, settings=00554138)
+[22:23:27.058] [pchost] chara filter = off (live@0074d884=0, setting=0) — battle-only effect
+[22:23:27.058] [pchost/mbaacc] ETM-RELOAD Shift+N hotkey wired (pc-overlay message latch; armed only while the offline gate is open)
+[22:23:27.058] [pchost/mbaacc] STAGE-LINK Shift+B stage-reload hotkey wired (pc-overlay message latch, under the Shift+N offline arm)
+[22:23:27.058] [pchost] [#207] hitbox viewer installed (F5), startVisible=0
+[22:23:27.059] [pchost] stage-bg render-only patch installed (advance rides the Present hook)
+[22:23:27.059] [pchost/mbaacc] STAGE-LINK .\0000.p absent at boot: stage ops read the loose Bg\ files
+[22:23:27.059] [pchost/mbaacc] ETM-LINK serving \\.\pipe\povertycaster-link-23320 (PCHOST_MBAACC_LINK=1)
+[22:23:27.220] [cb] session: 2 player slot(s) from the adapter layout (profile=mbaacc, 13 actions)
+[22:23:27.220] [cb] SDL session up on game thread: 1 device(s) (local slot P0, offline: config seats as saved; default dev 0):
+[22:23:27.220] [cb]   [0] Keyboard                     (kb)  -> P2
+[22:23:27.220] [cb] P0 held=0x0000
+[22:23:27.223] [pchost] pacing: game thread MMCSS "Games" ON (tid=46948, err=0)
+[22:23:27.224] [prof/mbaa] section probes installed (logic/rsync/present) +PACE-AT-PRESENT
+[22:23:27.224] [pchost] frame clock taken over (native FPS limiter killed; 1ms sched res)
+[22:23:27.224] [pchost] SCENE -> Initial @f=0 menu=-1 (gameMode=3)
+[22:23:27.225] [overlay] WH_GETMESSAGE hook INSTALLED (thread 46948). MFC's PreTranslateMessage eats WM_KEYDOWN before DispatchMessage, so no window proc ever sees a key -- measured as mouse climbing while keydowns stayed 0. This sees the
+[22:23:27.964] [pchost] monitor t=1s frameCounter=4 (+0) worldTimer=4 gameMode=2
+[22:23:28.035] [pchost] video: borderless applied — style=96000000 ex=00000000 rect=640x480 @-640,0 (monitor 640x480)
+[22:23:28.035] [pchost] nickname: (unset -- titles fall back to P1/P2)
+[22:23:28.129] [perf/offline] STALE(no pace() since last sample — the clock fields are a REPRINT) paced=0 rfps=0.0/0.0 simfps=0.0 wk=0.0ms max=0.0ms jit=0.0ms ovr=0% drop=0/0 scene=Initial
+[22:23:28.129] [pchost] video: boot-restore Borderless
+[22:23:28.134] [pchost] video: setMode borderless 640x480 (cur=win -> keep) reset requested
+[22:23:28.138] [pchost] video: borderless applied — style=96000000 ex=00000000 rect=640x480 @-640,0 (monitor 640x480)
+[22:23:28.142] [overlay] DX9 Reset: device lost -> ImGui objects invalidated
+[22:23:28.165] [overlay] DX9 Reset returned 0x00000000 (OK) back buffer 640x480
+[22:23:28.240] [pchost] video: borderless applied — style=96000000 ex=00000000 rect=640x480 @-640,0 (monitor 640x480)
+[22:23:28.965] [pchost] monitor t=2s frameCounter=89 (+85) worldTimer=89 gameMode=20
+[22:23:29.031] [pchost] SCENE -> CharaSelect @f=89 menu=-1 (gameMode=20)
+[22:23:29.036] [perf/offline] STALE(no pace() since last sample — the clock fields are a REPRINT) paced=0 rfps=0.0/0.0 simfps=66.2 wk=0.0ms max=0.0ms jit=0.0ms ovr=0% drop=0/0 scene=CharaSelect
+[22:23:29.036] [overlay] INPUT ours=000313d2 focus=000313d2 focus2=00000000 | keydowns=0 f3=0 f4=0 mouse=0 capture=0 pendF3=0 pendF4=0
+[22:23:29.042] [perf/offline] STALE(no pace() since last sample — the clock fields are a REPRINT) paced=0 rfps=0.0/0.0 simfps=9337.1 wk=0.0ms max=0.0ms jit=0.0ms ovr=0% drop=0/0 scene=CharaSelect
+[22:23:29.051] [perf/offline] STALE(no pace() since last sample — the clock fields are a REPRINT) paced=0 rfps=0.0/0.0 simfps=7026.6 wk=0.0ms max=0.0ms jit=0.0ms ovr=0% drop=0/0 scene=CharaSelect
+[22:23:29.051] [overlay] INPUT ours=000313d2 focus=000313d2 focus2=00000000 | keydowns=0 f3=0 f4=0 mouse=0 capture=0 pendF3=0 pendF4=0
+[22:23:29.965] [pchost] monitor t=3s frameCounter=291 (+202) worldTimer=291 gameMode=8
+[22:23:29.983] [pchost] SCENE -> Loading @f=291 menu=-1 (gameMode=8)
+[22:23:29.987] [perf/offline] STALE(no pace() since last sample — the clock fields are a REPRINT) paced=0 rfps=0.0/0.0 simfps=64.1 wk=0.0ms max=0.0ms jit=0.0ms ovr=0% drop=0/0 scene=Loading
+[22:23:30.015] [perf/offline] STALE(no pace() since last sample — the clock fields are a REPRINT) paced=0 rfps=0.0/0.0 simfps=2077.5 wk=0.0ms max=0.0ms jit=0.0ms ovr=0% drop=0/0 scene=Loading
+[22:23:30.015] [overlay] INPUT ours=000313d2 focus=000313d2 focus2=00000000 | keydowns=0 f3=0 f4=0 mouse=0 capture=0 pendF3=0 pendF4=0
+[22:23:30.039] [perf/offline] STALE(no pace() since last sample — the clock fields are a REPRINT) paced=0 rfps=0.0/0.0 simfps=2489.7 wk=0.0ms max=0.0ms jit=0.0ms ovr=0% drop=0/0 scene=Loading
+[22:23:30.052] [perf/offline] STALE(no pace() since last sample — the clock fields are a REPRINT) paced=0 rfps=0.0/0.0 simfps=4628.9 wk=0.0ms max=0.0ms jit=0.0ms ovr=0% drop=0/0 scene=Loading
+[22:23:30.052] [overlay] INPUT ours=000313d2 focus=000313d2 focus2=00000000 | keydowns=0 f3=0 f4=0 mouse=0 capture=0 pendF3=0 pendF4=0
+[22:23:30.070] [perf/offline] STALE(no pace() since last sample — the clock fields are a REPRINT) paced=0 rfps=0.0/0.0 simfps=3328.7 wk=0.0ms max=0.0ms jit=0.0ms ovr=0% drop=0/0 scene=Loading
+[22:23:30.084] [perf/offline] STALE(no pace() since last sample — the clock fields are a REPRINT) paced=0 rfps=0.0/0.0 simfps=4331.5 wk=0.0ms max=0.0ms jit=0.0ms ovr=0% drop=0/0 scene=Loading
+[22:23:30.084] [overlay] INPUT ours=000313d2 focus=000313d2 focus2=00000000 | keydowns=0 f3=0 f4=0 mouse=0 capture=0 pendF3=0 pendF4=0
+[22:23:30.099] [perf/offline] STALE(no pace() since last sample — the clock fields are a REPRINT) paced=0 rfps=0.0/0.0 simfps=3966.7 wk=0.0ms max=0.0ms jit=0.0ms ovr=0% drop=0/0 scene=Loading
+[22:23:30.117] [perf/offline] STALE(no pace() since last sample — the clock fields are a REPRINT) paced=0 rfps=0.0/0.0 simfps=3356.3 wk=0.0ms max=0.0ms jit=0.0ms ovr=0% drop=0/0 scene=Loading
+[22:23:30.118] [overlay] INPUT ours=000313d2 focus=000313d2 focus2=00000000 | keydowns=0 f3=0 f4=0 mouse=0 capture=0 pendF3=0 pendF4=0
+[22:23:30.134] [perf/offline] STALE(no pace() since last sample — the clock fields are a REPRINT) paced=0 rfps=0.0/0.0 simfps=3470.6 wk=0.0ms max=0.0ms jit=0.0ms ovr=0% drop=0/0 scene=Loading
+[22:23:30.149] [perf/offline] STALE(no pace() since last sample — the clock fields are a REPRINT) paced=0 rfps=0.0/0.0 simfps=4077.5 wk=0.0ms max=0.0ms jit=0.0ms ovr=0% drop=0/0 scene=Loading
+[22:23:30.149] [overlay] INPUT ours=000313d2 focus=000313d2 focus2=00000000 | keydowns=0 f3=0 f4=0 mouse=0 capture=0 pendF3=0 pendF4=0
+[22:23:30.172] [pchost] pace: no boot stop reached after 900 frames — pacing anyway (an adapter that does not automate its boot would otherwise run unlimited forever)
+[22:23:30.173] [perf/offline] STALE(no pace() since last sample — the clock fields are a REPRINT) paced=0 rfps=0.0/0.0 simfps=2549.6 wk=0.0ms max=0.0ms jit=0.0ms ovr=0% drop=0/0 scene=Loading
+[22:23:30.529] [pchost/mbaacc] TAG H2 slot 0 'SION' moon 0: TagIn=241 TagOut=242 (ok)
+[22:23:30.966] [pchost] monitor t=4s frameCounter=948 (+657) worldTimer=949 gameMode=8
+[22:23:31.142] [pchost/mbaacc] TAG H2 slot 1 'V_SION' moon 0: TagIn=241 TagOut=242 (ok)
+[22:23:31.173] [perf/offline] paced=60 rfps=60.0/60.0 simfps=60.0 wk=1.6ms max=5.3ms jit=0.0ms ovr=0% drop=0/0 scene=Loading
+[22:23:31.173] [overlay] INPUT ours=000313d2 focus=000313d2 focus2=00000000 | keydowns=0 f3=0 f4=0 mouse=0 capture=0 pendF3=0 pendF4=0
+[22:23:31.466] [pchost] [#204] intro gate: s0[act=1 bg=0 done=0 partner=0] s1[act=1 bg=0 done=0 partner=0] s2[act=0 bg=0 done=0 partner=0] s3[act=0 bg=0 done=0 partner=0] -- the gate needs every act&&!bg slot to reach done!=0
+[22:23:31.466] [pchost] OFFLINE: booted mode=0 (Versus) to InGame @f=975 (gameMode=1 — TRUST THIS ONE if it disagrees with the name; the mode can be reached by routes the id does not see)
+[22:23:31.466] [pchost] SCENE -> CharaIntro @f=975 menu=-1 (gameMode=1)
+[22:23:31.476] [overlay] Present detour LIVE (first fire)
+[22:23:31.477] [overlay] ImGui initialized (Win32 + DX9 backends live)
+[22:23:31.967] [pchost] monitor t=5s frameCounter=1005 (+57) worldTimer=1006 gameMode=1
+[22:23:32.222] [perf/offline] paced=60 rfps=59.8/60.0 simfps=57.2 wk=3.2ms max=39.2ms jit=4.0ms ovr=0% drop=1/1 scene=CharaIntro
+[22:23:32.472] [pchost] [#204] intro gate: s0[act=1 bg=0 done=0 partner=0] s1[act=1 bg=0 done=0 partner=0] s2[act=0 bg=0 done=0 partner=0] s3[act=0 bg=0 done=0 partner=0] -- the gate needs every act&&!bg slot to reach done!=0
+[22:23:32.968] [pchost] monitor t=6s frameCounter=1065 (+60) worldTimer=1066 gameMode=1
+[22:23:33.222] [perf/offline] paced=60 rfps=60.0/60.0 simfps=60.0 wk=2.3ms max=22.6ms jit=3.2ms ovr=0% drop=0/0 scene=CharaIntro
+[22:23:33.222] [overlay] INPUT ours=000313d2 focus=000313d2 focus2=00000000 | keydowns=0 f3=0 f4=0 mouse=0 capture=0 pendF3=0 pendF4=0
+[22:23:33.472] [pchost] [#204] intro gate: s0[act=1 bg=0 done=0 partner=0] s1[act=1 bg=0 done=0 partner=0] s2[act=0 bg=0 done=0 partner=0] s3[act=0 bg=0 done=0 partner=0] -- the gate needs every act&&!bg slot to reach done!=0
+[22:23:33.969] [pchost] monitor t=7s frameCounter=1125 (+60) worldTimer=1126 gameMode=1
+[22:23:34.222] [perf/offline] paced=60 rfps=60.0/60.0 simfps=60.0 wk=2.4ms max=13.4ms jit=3.2ms ovr=0% drop=0/0 scene=CharaIntro
+[22:23:34.472] [pchost] [#204] intro gate: s0[act=1 bg=0 done=1 partner=0] s1[act=1 bg=0 done=0 partner=0] s2[act=0 bg=0 done=0 partner=0] s3[act=0 bg=0 done=0 partner=0] -- the gate needs every act&&!bg slot to reach done!=0
+[22:23:34.970] [pchost] monitor t=8s frameCounter=1185 (+60) worldTimer=1186 gameMode=1
+[22:23:35.222] [perf/offline] paced=60 rfps=60.0/60.0 simfps=60.0 wk=4.4ms max=13.3ms jit=0.0ms ovr=0% drop=0/0 scene=CharaIntro
+[22:23:35.222] [overlay] INPUT ours=000313d2 focus=000313d2 focus2=00000000 | keydowns=0 f3=0 f4=0 mouse=0 capture=0 pendF3=0 pendF4=0
+[22:23:35.472] [pchost] [#204] intro gate: s0[act=1 bg=0 done=1 partner=0] s1[act=1 bg=0 done=0 partner=0] s2[act=0 bg=0 done=0 partner=0] s3[act=0 bg=0 done=0 partner=0] -- the gate needs every act&&!bg slot to reach done!=0
+[22:23:35.605] [pchost] SCENE -> InGame @f=1223 menu=-1 (gameMode=1)
+[22:23:35.971] [pchost] monitor t=9s frameCounter=1245 (+60) worldTimer=1246 gameMode=1
+[22:23:36.226] [perf/offline] paced=60 rfps=60.0/60.0 simfps=59.8 wk=3.6ms max=15.3ms jit=0.3ms ovr=0% drop=0/0 scene=InGame
+[22:23:36.971] [pchost] monitor t=10s frameCounter=1305 (+60) worldTimer=1306 gameMode=1
+[22:23:37.226] [perf/offline] paced=60 rfps=60.0/60.0 simfps=60.0 wk=3.6ms max=9.9ms jit=0.3ms ovr=0% drop=0/0 scene=InGame
+[22:23:37.226] [overlay] INPUT ours=000313d2 focus=000313d2 focus2=00000000 | keydowns=0 f3=0 f4=0 mouse=0 capture=0 pendF3=0 pendF4=0
+[22:23:37.973] [pchost] monitor t=11s frameCounter=1365 (+60) worldTimer=1366 gameMode=1
+[22:23:38.226] [perf/offline] paced=60 rfps=60.0/60.0 simfps=60.0 wk=3.7ms max=7.1ms jit=0.3ms ovr=0% drop=0/0 scene=InGame
+[22:23:38.973] [pchost] monitor t=12s frameCounter=1425 (+60) worldTimer=1426 gameMode=1
+[22:23:39.226] [perf/offline] paced=60 rfps=60.0/60.0 simfps=60.0 wk=5.2ms max=11.9ms jit=0.0ms ovr=0% drop=0/0 scene=InGame
+[22:23:39.226] [overlay] INPUT ours=000313d2 focus=000313d2 focus2=00000000 | keydowns=0 f3=0 f4=0 mouse=0 capture=0 pendF3=0 pendF4=0
+[22:23:39.973] [pchost] monitor t=13s frameCounter=1485 (+60) worldTimer=1486 gameMode=1
+[22:23:40.226] [perf/offline] paced=60 rfps=60.0/60.0 simfps=60.0 wk=4.0ms max=8.7ms jit=0.0ms ovr=0% drop=0/0 scene=InGame
+[22:23:40.974] [pchost] monitor t=14s frameCounter=1545 (+60) worldTimer=1546 gameMode=1
+[22:23:41.226] [perf/offline] paced=60 rfps=60.0/60.0 simfps=60.0 wk=3.4ms max=6.4ms jit=0.0ms ovr=0% drop=0/0 scene=InGame
+[22:23:41.226] [overlay] INPUT ours=000313d2 focus=000313d2 focus2=00000000 | keydowns=0 f3=0 f4=0 mouse=0 capture=0 pendF3=0 pendF4=0
+[22:23:41.975] [pchost] monitor t=15s frameCounter=1605 (+60) worldTimer=1606 gameMode=1
+[22:23:42.226] [perf/offline] paced=60 rfps=60.0/60.0 simfps=60.0 wk=3.4ms max=8.1ms jit=0.0ms ovr=0% drop=0/0 scene=InGame
+[22:23:42.976] [pchost] monitor t=16s frameCounter=1666 (+61) worldTimer=1666 gameMode=1
+[22:23:43.226] [perf/offline] paced=60 rfps=60.0/60.0 simfps=60.0 wk=3.4ms max=6.5ms jit=0.0ms ovr=0% drop=0/0 scene=InGame
+[22:23:43.226] [overlay] INPUT ours=000313d2 focus=000313d2 focus2=00000000 | keydowns=0 f3=0 f4=0 mouse=0 capture=0 pendF3=0 pendF4=0
+[22:23:43.978] [pchost] monitor t=17s frameCounter=1726 (+60) worldTimer=1727 gameMode=1
+[22:23:44.226] [perf/offline] paced=60 rfps=60.0/60.0 simfps=60.0 wk=3.4ms max=7.6ms jit=0.0ms ovr=0% drop=0/0 scene=InGame
+[22:23:44.978] [pchost] monitor t=18s frameCounter=1786 (+60) worldTimer=1787 gameMode=1
+[22:23:45.226] [perf/offline] paced=60 rfps=60.0/60.0 simfps=60.0 wk=2.8ms max=6.5ms jit=0.0ms ovr=0% drop=0/0 scene=InGame
+[22:23:45.226] [overlay] INPUT ours=000313d2 focus=000313d2 focus2=00000000 | keydowns=0 f3=0 f4=0 mouse=0 capture=0 pendF3=0 pendF4=0
+[22:23:45.980] [pchost] monitor t=19s frameCounter=1846 (+60) worldTimer=1847 gameMode=1
+[22:23:46.226] [perf/offline] paced=60 rfps=60.0/60.0 simfps=60.0 wk=3.6ms max=7.4ms jit=0.0ms ovr=0% drop=0/0 scene=InGame
+[22:23:46.981] [pchost] monitor t=20s frameCounter=1906 (+60) worldTimer=1907 gameMode=1
+[22:23:47.226] [perf/offline] paced=60 rfps=60.0/60.0 simfps=60.0 wk=4.0ms max=8.4ms jit=0.0ms ovr=0% drop=0/0 scene=InGame
+[22:23:47.226] [overlay] INPUT ours=000313d2 focus=000313d2 focus2=00000000 | keydowns=0 f3=0 f4=0 mouse=0 capture=0 pendF3=0 pendF4=0
+[22:23:47.981] [pchost] monitor t=21s frameCounter=1966 (+60) worldTimer=1967 gameMode=1
+[22:23:48.226] [perf/offline] paced=60 rfps=60.0/60.0 simfps=60.0 wk=3.5ms max=8.0ms jit=0.0ms ovr=0% drop=0/0 scene=InGame
+[22:23:48.986] [pchost] monitor t=22s frameCounter=2026 (+60) worldTimer=2027 gameMode=1
+[22:23:49.226] [perf/offline] paced=60 rfps=60.0/60.0 simfps=60.0 wk=4.2ms max=8.5ms jit=0.0ms ovr=0% drop=0/0 scene=InGame
+[22:23:49.226] [overlay] INPUT ours=000313d2 focus=000313d2 focus2=00000000 | keydowns=0 f3=0 f4=0 mouse=0 capture=0 pendF3=0 pendF4=0
+[22:23:49.987] [pchost] monitor t=23s frameCounter=2086 (+60) worldTimer=2087 gameMode=1
+[22:23:50.226] [perf/offline] paced=60 rfps=60.0/60.0 simfps=60.0 wk=3.7ms max=7.4ms jit=0.0ms ovr=0% drop=0/0 scene=InGame
+[22:23:50.987] [pchost] monitor t=24s frameCounter=2146 (+60) worldTimer=2147 gameMode=1
+[22:23:51.226] [perf/offline] paced=60 rfps=60.0/60.0 simfps=60.0 wk=3.9ms max=7.0ms jit=0.0ms ovr=0% drop=0/0 scene=InGame
+[22:23:51.226] [overlay] INPUT ours=000313d2 focus=000313d2 focus2=00000000 | keydowns=0 f3=0 f4=0 mouse=0 capture=0 pendF3=0 pendF4=0
+[22:23:51.988] [pchost] monitor t=25s frameCounter=2206 (+60) worldTimer=2207 gameMode=1
+[22:23:52.226] [perf/offline] paced=60 rfps=60.0/60.0 simfps=60.0 wk=3.6ms max=6.9ms jit=0.0ms ovr=0% drop=0/0 scene=InGame
+[22:23:52.988] [pchost] monitor t=26s frameCounter=2266 (+60) worldTimer=2267 gameMode=1
+[22:23:53.226] [perf/offline] paced=60 rfps=60.0/60.0 simfps=60.0 wk=3.4ms max=7.0ms jit=0.0ms ovr=0% drop=0/0 scene=InGame
+[22:23:53.226] [overlay] INPUT ours=000313d2 focus=000313d2 focus2=00000000 | keydowns=0 f3=0 f4=0 mouse=0 capture=0 pendF3=0 pendF4=0
+[22:23:53.882] [pchost/mbaacc] STAGE-LINK #1 by Shift+B: ReloadStage 16 -> 16 from .\Bg\bg16.dat in 31 ms (Background_LoadStageData force + Background_InitializeAndLoad)
+[22:23:53.988] [pchost] monitor t=27s frameCounter=2325 (+59) worldTimer=2326 gameMode=1
+[22:23:54.252] [perf/offline] paced=60 rfps=59.1/60.0 simfps=58.4 wk=3.4ms max=35.7ms jit=2.0ms ovr=1% drop=1/1 scene=InGame
+[22:23:54.989] [pchost] monitor t=28s frameCounter=2385 (+60) worldTimer=2386 gameMode=1
+[22:23:55.306] [perf/offline] paced=60 rfps=46.3/60.0 simfps=57.0 wk=6.4ms max=27.1ms jit=3.9ms ovr=10% drop=2/1 scene=InGame
+[22:23:55.306] [overlay] INPUT ours=000313d2 focus=000313d2 focus2=00000000 | keydowns=2 f3=0 f4=0 mouse=0 capture=0 pendF3=0 pendF4=0
+[22:23:55.990] [pchost] monitor t=29s frameCounter=2441 (+56) worldTimer=2442 gameMode=1
+[22:23:56.309] [perf/offline] paced=60 rfps=60.0/60.0 simfps=59.8 wk=3.0ms max=16.3ms jit=3.9ms ovr=0% drop=0/0 scene=InGame
+[22:23:56.990] [pchost] monitor t=30s frameCounter=2501 (+60) worldTimer=2502 gameMode=1
+[22:23:57.309] [perf/offline] paced=60 rfps=60.0/60.0 simfps=60.0 wk=3.1ms max=10.5ms jit=3.3ms ovr=0% drop=0/0 scene=InGame
+[22:23:57.309] [overlay] INPUT ours=000313d2 focus=000313d2 focus2=00000000 | keydowns=2 f3=0 f4=0 mouse=0 capture=0 pendF3=0 pendF4=0
+[22:23:57.992] [pchost] monitor t=31s frameCounter=2561 (+60) worldTimer=2562 gameMode=1
+[22:23:58.309] [perf/offline] paced=60 rfps=60.0/60.0 simfps=60.0 wk=2.5ms max=7.0ms jit=0.2ms ovr=0% drop=0/0 scene=InGame
