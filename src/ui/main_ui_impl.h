@@ -428,6 +428,18 @@ void MainFrame::DrawUi()
 		if (ImGui::IsWindowFocused(ImGuiFocusedFlags_RootAndChildWindows))
 			shortcuts.claimFocus(ShortcutContext::stageView, getActiveView() ? getActiveView()->getId() : 0);
 
+		drawStageCombo(-60.0f);
+		{
+			// Game camera (world px; MBAA 0x55DEC4 / 0x55DEC8 divided by 128). Panning
+			// the view moves it, zooming does not. Round start is (0, 0); the game
+			// limits x to +-(528 - 320/zoom) and y to [-340, 0] (not enforced here).
+			float cam[2] = {bgCamera.camX, bgCamera.camY};
+			ImGui::SetNextItemWidth(160);
+			if (ImGui::DragFloat2("Game camera", cam, 1.0f, -2000.f, 2000.f, "%.0f")) bgCamera.SetGameCam(cam[0], cam[1]);
+			ImGui::SameLine();
+			if (ImGui::SmallButton("Round start")) bgCamera.SetGameCam(0.0f, 0.0f);
+			if (ImGui::IsItemHovered()) ImGui::SetTooltip("Camera (0, 0): what the game shows at round start.\nParallax layers are placed for this camera.");
+		}
 		ImGui::Text("File: %s", currentBgFile->GetFilename().c_str());
 		auto& objects = currentBgFile->GetObjects();
 		ImGui::Text("Objects: %zu", objects.size());

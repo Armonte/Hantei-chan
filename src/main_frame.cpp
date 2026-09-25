@@ -268,6 +268,7 @@ void MainFrame::setActiveView(int index)
 				// DrawBackground call this frame uses correct coords.
 				bgCamera.SetPan(view->getStageRenderX(),
 				                view->getStageRenderY());
+				bgCamera.camInit = false;   // a tab switch is not a pan: keep the game camera
 				render.x = bgCamera.panLastX;
 				render.y = bgCamera.panLastY;
 			} else {
@@ -879,6 +880,10 @@ void MainFrame::loadStageFile(const std::string& path)
 	// The stage list of the game this stage came from (browser, PageUp/Down).
 	if (!stageProject.IsOpen() || !stageProject.FindByDat(path))
 		stageProject.Open(path, currentBgFile ? currentBgFile->GetGame() : bg::Game::MBAACC);
+	if (stageProject.IsOpen()) {
+		gSettings.stageGameDir = stageProject.BgDir();
+		gSettings.stageGame = stageProject.GetGame() == bg::Game::MBAC ? 1 : 0;
+	}
 }
 
 void MainFrame::openStageInActiveTab(const std::string& path)
@@ -891,10 +896,22 @@ void MainFrame::openStageInActiveTab(const std::string& path)
 	auto slash = displayName.find_last_of("/\\");
 	if (slash != std::string::npos) displayName = displayName.substr(slash + 1);
 	// Same tab, same camera: the view keeps its pan/zoom.
+	const float keepZoom = view->getZoom();
+	const bool keepInit = view->isStageRenderInit();
 	view->setStageFile(std::move(file), displayName);
-	setActiveView(activeViewIndex);
+	view->setZoom(keepZoom);
+	view->setStageRenderInit(keepInit);
+	// The old bg::File is gone: repoint the renderer now (setActiveView can
+	// return early for a view shown in a detached window).
+	currentBgFile = view->getStageFile();
+	bgRenderer.SetFile(currentBgFile);
+	bgRenderer.SetEnabled(true);
 	if (!stageProject.IsOpen() || !stageProject.FindByDat(path))
 		stageProject.Open(path, currentBgFile ? currentBgFile->GetGame() : bg::Game::MBAACC);
+	if (stageProject.IsOpen()) {
+		gSettings.stageGameDir = stageProject.BgDir();
+		gSettings.stageGame = stageProject.GetGame() == bg::Game::MBAC ? 1 : 0;
+	}
 }
 
 void MainFrame::stepStage(int dir)
@@ -952,9 +969,44 @@ void MainFrame::saveStageAll()
 	if (stageProject.IsOpen() && stageProject.IsDirty()) stageProject.SaveAll();
 }
 
+bool MainFrame::ensureStageProject()
+{
+	if (stageProject.IsOpen()) return true;
+	if (currentBgFile) stageProject.Open(currentBgFile->GetFilename(), currentBgFile->GetGame());
+	if (!stageProject.IsOpen() && !gSettings.stageGameDir.empty())
+		stageProject.Open(gSettings.stageGameDir, gSettings.stageGame ? bg::Game::MBAC : bg::Game::MBAACC);
+	return stageProject.IsOpen();
+}
+
+void MainFrame::drawStageCombo(float width)
+{
+	if (!ensureStageProject()) {
+		ImGui::TextDisabled("No stage list: load a stage or open a bg folder in Stage > Stage Browser.");
+		return;
+	}
+	const bg::StageEntry* cur = currentBgFile ? stageProject.FindByDat(currentBgFile->GetFilename()) : nullptr;
+	std::string preview = cur ? cur->Label() : std::string("(choose a stage)");
+	if (width > 0) ImGui::SetNextItemWidth(width);
+	if (ImGui::BeginCombo("##stagecombo", preview.c_str(), ImGuiComboFlags_HeightLargest)) {
+		for (const auto& e : stageProject.Entries()) {
+			if (e.datPath.empty()) continue;
+			const bool sel = cur && cur->id == e.id;
+			if (ImGui::Selectable(e.Label().c_str(), sel)) openStageInActiveTab(e.datPath);
+			if (sel) ImGui::SetItemDefaultFocus();
+		}
+		ImGui::EndCombo();
+	}
+	ImGui::SameLine();
+	if (ImGui::ArrowButton("##stprev", ImGuiDir_Left)) stepStage(-1);
+	ImGui::SameLine();
+	if (ImGui::ArrowButton("##stnext", ImGuiDir_Right)) stepStage(1);
+	if (ImGui::IsItemHovered()) ImGui::SetTooltip("Previous / next stage (PageUp / PageDown in the stage tab)");
+}
+
 void MainFrame::drawStageBrowser()
 {
 	if (!m_showStageBrowser) return;
+	ensureStageProject();
 	const ImVec2 mainPos = ImGui::GetMainViewport()->Pos;
 	ImGui::SetNextWindowPos(ImVec2(mainPos.x + 520.0f, mainPos.y + 80.0f), ImGuiCond_FirstUseEver);
 	ImGui::SetNextWindowSize(ImVec2(620.0f, 720.0f), ImGuiCond_FirstUseEver);
@@ -965,6 +1017,10 @@ void MainFrame::drawStageBrowser()
 	hooks.open = [this](const std::string& p) { openStageInActiveTab(p); };
 	hooks.showInGame = stageShowInGame;
 	bg::DrawStageBrowser(stageProject, currentBgFile ? currentBgFile->GetFilename() : std::string(), hooks);
+	if (stageProject.IsOpen()) {
+		gSettings.stageGameDir = stageProject.BgDir();
+		gSettings.stageGame = stageProject.GetGame() == bg::Game::MBAC ? 1 : 0;
+	}
 	ImGui::End();
 }
 

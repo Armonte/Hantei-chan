@@ -53,6 +53,29 @@ int main(int argc, char** argv)
 		for (int i = 0; i < n; ++i) printf("%d\n", r.Next());
 		return 0;
 	}
+	// --camera-test: the stage view's game camera must follow pans but never
+	// zooms (zoom-to-cursor rewrites the pan every frame of the animation).
+	if (argc >= 2 && strcmp(argv[1], "--camera-test") == 0) {
+		bg::Camera c;
+		int bad = 0;
+		c.SetPan(400, 540); c.zoom = 1.0f; c.SetGameCamFromView(1280, 720);
+		c.SetPan(380, 520); c.SetGameCamFromView(1280, 720);            // pan by (-20,-20)
+		if (c.camX != 20 || c.camY != 20) { printf("pan did not move the camera (%g,%g)\n", c.camX, c.camY); ++bad; }
+		const float cx = c.camX, cy = c.camY;
+		// zoom about a cursor at (900, 200) from 1.0 to 2.0 over 12 frames
+		for (int f = 1; f <= 12; ++f) {
+			float z = 1.0f + f / 12.0f, wx = 900.0f / 1.0f - 380.0f, wy = 200.0f - 520.0f;
+			c.zoom = z;
+			c.SetPan(900.0f / z - wx, 200.0f / z - wy);
+			c.SetGameCamFromView(1280, 720);
+		}
+		if (c.camX != cx || c.camY != cy) { printf("zoom moved the camera (%g,%g)\n", c.camX, c.camY); ++bad; }
+		// parallax shift at a fixed camera does not depend on zoom
+		if (c.ParallaxX(128) != (1.0f - 0.5f) * (cx - 1.0f)) ++bad;
+		printf("CAMERA-TEST %s (%d problems)\n", bad ? "FAIL" : "OK", bad);
+		_exit(bad ? 8 : 0);
+	}
+
 	// --project-test <stage.dat|game dir> <scratch dir>: BgList.ini / bgm.txt
 	// open, unedited save byte-identical, edits touch only their value, undo
 	// restores the original bytes, add/move/remove round trip.
