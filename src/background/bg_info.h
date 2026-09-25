@@ -73,8 +73,8 @@ struct LightFile {
 struct DropParticle {
 	float   x = 0, y = 0;      // +0/+4 world px (floor y = 0, centre x = 0)
 	int32_t pat = 0;           // +8  texture row (type 0)
-	float   frame = 0;         // +12 texture column (type 0)
-	float   waitCtr = 0;       // +16 anim tick counter
+	float   frame = 0;         // +12 texture column (type 0; an int in the game)
+	float   waitCtr = 0;       // +16 anim tick counter (an int in the game)
 	int32_t alpha = 255;       // +20 type 0 fade-out after y > 0
 	int32_t phase = 0;         // +24 rand*256, stored but never read
 	float   vx = 0, vy = 0;    // +28/+32

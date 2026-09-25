@@ -296,8 +296,12 @@ void DropSystem::ImportRaw(const StageInfo& info, const uint8_t* raw, size_t n) 
 		const uint8_t* r = raw + i * 44;
 		DropParticle& p = particles[i];
 		std::memcpy(&p.x, r + 0, 4);  std::memcpy(&p.y, r + 4, 4);
-		std::memcpy(&p.pat, r + 8, 4); std::memcpy(&p.frame, r + 12, 4);
-		std::memcpy(&p.waitCtr, r + 16, 4); std::memcpy(&p.alpha, r + 20, 4);
+		// +12 frame and +16 wait counter are ints (DropObject_UpdateParticles
+		// 0x4b5369: add [esi-0Ch], edi); the port keeps them as floats.
+		int32_t fr, wc;
+		std::memcpy(&p.pat, r + 8, 4); std::memcpy(&fr, r + 12, 4);
+		std::memcpy(&wc, r + 16, 4); std::memcpy(&p.alpha, r + 20, 4);
+		p.frame = (float)fr; p.waitCtr = (float)wc;
 		std::memcpy(&p.phase, r + 24, 4);
 		std::memcpy(&p.vx, r + 28, 4); std::memcpy(&p.vy, r + 32, 4);
 		std::memcpy(&p.ax, r + 36, 4); std::memcpy(&p.ay, r + 40, 4);
