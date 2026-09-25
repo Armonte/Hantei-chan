@@ -249,6 +249,18 @@ int main(int argc, char** argv)
 		_exit(b ? 9 : 0);
 	}
 
+	if (argc >= 3 && strcmp(argv[2], "--cgcheck") == 0) {
+		CG* cg = file.GetCG();
+		for (int i = 0; cg && i < cg->get_image_count(); ++i) {
+			ImageData* img = cg->draw_texture(i, false, false);
+			long a = 0, n = 0;
+			if (img) for (int k = 0; k < img->width * img->height; ++k) { a += img->pixels[k * 4 + 3]; n += (img->pixels[k * 4] | img->pixels[k * 4 + 1] | img->pixels[k * 4 + 2]) ? 1 : 0; }
+			printf("img %d %s %dx%d alphaSum=%ld nonblack=%ld\n", i, img ? "ok" : "NULL", img ? img->width : 0, img ? img->height : 0, a, n);
+			delete img;
+		}
+		_exit(0);
+	}
+
 	if (argc >= 3 && strcmp(argv[2], "--census") == 0) {
 		// One JSON line of stage features (docs/bg_research/STAGE_AUDIT.md).
 		CG* cg = file.GetCG();
