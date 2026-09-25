@@ -81,6 +81,17 @@ int main(int argc, char** argv)
 		_exit(bad ? 8 : 0);
 	}
 
+	// --project-list <stage or dir> <mbaacc|mbac>: the stage list as the browser shows it
+	if (argc >= 4 && strcmp(argv[1], "--project-list") == 0) {
+		bg::StageProject pr;
+		if (!pr.Open(argv[2], strcmp(argv[3], "mbac") == 0 ? bg::Game::MBAC : bg::Game::MBAACC)) { fprintf(stderr, "open failed\n"); _exit(2); }
+		for (const auto& e : pr.Entries())
+			printf("%3d order=%2d listed=%d dat=%s bgm=%s loop=%d pos=%s preview=%s | %s\n", e.id, e.order, e.listed ? 1 : 0,
+			       e.datPath.empty() ? "-" : "ok", e.hasBgm ? e.bgmFile.c_str() : "-", e.bgmLoop, e.bgmLoopPos.c_str(),
+			       e.previewPath.empty() ? "-" : "ok", e.Label().c_str());
+		_exit(0);
+	}
+
 	// --project-test <stage.dat|game dir> <scratch dir>: BgList.ini / bgm.txt
 	// open, unedited save byte-identical, edits touch only their value, undo
 	// restores the original bytes, add/move/remove round trip.
