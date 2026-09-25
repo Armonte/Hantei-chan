@@ -275,6 +275,18 @@ struct Camera {
 		if (!camInit) { camInit = true; }
 		else if (z == camLastZoom) { camX -= panLastX - camLastPanX; camY -= panLastY - camLastPanY; }
 		camLastPanX = panLastX; camLastPanY = panLastY; camLastZoom = z;
+		if (clampToGame) ClampToGame();
+	}
+	// The game never moves its camera past these (MBAA Camera_ComputeTargetX/Y,
+	// zoom 1): |x| <= 528 - 320 = 208, -340 <= y <= 0. With the clamp on,
+	// panning past them moves the view but not the camera, so parallax layers
+	// stay where the game can ever show them.
+	bool clampToGame = true;
+	void ClampToGame() {
+		if (camX > 208.0f) camX = 208.0f;
+		if (camX < -208.0f) camX = -208.0f;
+		if (camY > 0.0f) camY = 0.0f;
+		if (camY < -340.0f) camY = -340.0f;
 	}
 	// Set the camera explicitly (bg_render, inspector); the next view update
 	// continues from here.

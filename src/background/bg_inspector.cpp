@@ -9,6 +9,9 @@
 
 namespace bg {
 
+void (*g_onPatPlacementChanged)(bool authoring) = nullptr;
+static void PatPlacementChanged(bool a) { if (g_onPatPlacementChanged) g_onPatPlacementChanged(a); }
+
 namespace {
 
 const char* kAniTypes[] = {
@@ -211,6 +214,21 @@ static void DrawInspectorBody(File& file, Renderer& renderer, InspectorResult& r
 	bool w = renderer.IsShowingWeather();
 	if (ImGui::Checkbox("Weather", &w)) renderer.SetShowWeather(w);
 	ImGui::SameLine();
+	{
+		int pp = renderer.GetPatPlacement() == Renderer::PatPlacement::Authoring ? 1 : 0;
+		const char* pps[] = { "Game-exact", "Authoring" };
+		ImGui::PushItemWidth(120);
+		if (ImGui::Combo("PAT placement", &pp, pps, 2)) {
+			renderer.SetPatPlacement(pp ? Renderer::PatPlacement::Authoring : Renderer::PatPlacement::Game);
+			PatPlacementChanged(pp != 0);
+		}
+		ImGui::PopItemWidth();
+		if (ImGui::IsItemHovered())
+			ImGui::SetTooltip("Game-exact: PAT part positions as MBAACC applies them (checked against the game).\n"
+			                  "Authoring: parts at the PAT canvas origin (320, 320) are drawn unpositioned, as MBAC\n"
+			                  "would. Only the wind (bg18/bg20/bg47 slot 8) uses it; MBAACC draws that wind\n"
+			                  "below the floor, where no game camera can see it.");
+	}
 	bool l = renderer.IsShowingLights();
 	if (ImGui::Checkbox("Light markers", &l)) renderer.SetShowLights(l);
 	{
@@ -252,11 +270,17 @@ static void DrawInspectorBody(File& file, Renderer& renderer, InspectorResult& r
 		ImGui::Checkbox("##vis", &objects[i].visible);
 		ImGui::SameLine();
 		char label[128];
-		snprintf(label, sizeof(label), "slot %d  L%d P%d  %zuf  x%d%s%s%s%s",
+		const bool originParts = Renderer::ObjectUsesCanvasOriginParts(file, (int)i);
+		snprintf(label, sizeof(label), "slot %d  L%d P%d  %zuf  x%d%s%s%s%s%s",
 		         o.originalIndex, o.layer, o.parallax, o.frames.size(), i < 256 ? live[i] : 0,
 		         o.foreground ? " FG" : "", o.noAutoSpawn ? " spawned-only" : "",
-		         o.commands.empty() ? "" : " cmd", o.triggers.empty() ? "" : " trg");
+		         o.commands.empty() ? "" : " cmd", o.triggers.empty() ? "" : " trg",
+		         originParts ? "  [authoring/game placement differ]" : "");
 		if (ImGui::Selectable(label, sel == (int)i)) { sel = (int)i; selFrame = 0; }
+		if (originParts && ImGui::IsItemHovered())
+			ImGui::SetTooltip("Its PAT parts sit at the canvas origin (320, 320). The game applies that offset and\n"
+			                  "draws the object below the floor (off screen); PAT placement 'Authoring' draws it\n"
+			                  "where it was authored (as MBAC does).");
 		ImGui::PopID();
 	}
 	ImGui::EndChild();

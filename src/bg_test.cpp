@@ -57,6 +57,7 @@ int main(int argc, char** argv)
 	// zooms (zoom-to-cursor rewrites the pan every frame of the animation).
 	if (argc >= 2 && strcmp(argv[1], "--camera-test") == 0) {
 		bg::Camera c;
+		c.clampToGame = false;
 		int bad = 0;
 		c.SetPan(400, 540); c.zoom = 1.0f; c.SetGameCamFromView(1280, 720);
 		c.SetPan(380, 520); c.SetGameCamFromView(1280, 720);            // pan by (-20,-20)
@@ -72,6 +73,10 @@ int main(int argc, char** argv)
 		if (c.camX != cx || c.camY != cy) { printf("zoom moved the camera (%g,%g)\n", c.camX, c.camY); ++bad; }
 		// parallax shift at a fixed camera does not depend on zoom
 		if (c.ParallaxX(128) != (1.0f - 0.5f) * (cx - 1.0f)) ++bad;
+		// clamp: panning past the game's limits stops the camera at them
+		c.clampToGame = true;
+		c.SetPan(-2000, 3000); c.SetGameCamFromView(1280, 720);
+		if (c.camX != 208.0f || c.camY != -340.0f) { printf("clamp failed (%g,%g)\n", c.camX, c.camY); ++bad; }
 		printf("CAMERA-TEST %s (%d problems)\n", bad ? "FAIL" : "OK", bad);
 		_exit(bad ? 8 : 0);
 	}

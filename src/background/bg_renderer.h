@@ -60,6 +60,18 @@ public:
 	void   SetShowWeather(bool v)        { showWeather = v; }
 	bool   IsShowingWeather() const      { return showWeather; }
 	void   SetShowLights(bool v)         { showLights = v; }
+	// PAT part placement. Game: the part position (+36/+40) is applied as MBAA
+	// does (verified by capture and by a live log of the game's own vertices).
+	// Authoring: parts sitting exactly at (320, 320), the PAT editor's canvas
+	// origin, are drawn as if unpositioned (as MBAC, which never reads the
+	// part position, would draw them). Only the wind in bg18/bg20/bg47 slot 8
+	// uses (320, 320); MBAACC draws it below the floor, off screen.
+	enum class PatPlacement { Game, Authoring };
+	void   SetPatPlacement(PatPlacement p) { patPlacement = p; }
+	PatPlacement GetPatPlacement() const  { return patPlacement; }
+	// True if any pattern this object uses has a part at the canvas origin
+	// (the two placements differ for it).
+	static bool ObjectUsesCanvasOriginParts(const File& f, int objIndex);
 	// Stand-in fighters (grey silhouettes) with the game's fighter shadows:
 	// the flat shadow, or one shadow per bgNNInfo.txt light (Character_Render
 	// 0x41af10, Shadow_BuildLightProjectionMatrix 0x44c0a0). x in world px.
@@ -112,6 +124,7 @@ private:
 	// animation does this even though w/h are fixed) appeared to jitter.
 	struct Tex { GLuint id; int w; int h; int originX; int originY; int texW; int texH; };
 	bool   gameTextures = true;
+	PatPlacement patPlacement = PatPlacement::Game;
 	long   budgetKB = -1;
 	std::unordered_map<int, Tex> textureCache;
 

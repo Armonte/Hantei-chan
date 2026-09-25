@@ -620,8 +620,10 @@ void Renderer::DrawPatPatternFlat(const PatPattern& pat, const PatPattern* next,
 			sy = ((float)(next->slotScaleY[slot] - pat.slotScaleY[slot]) * t + (float)pat.slotScaleY[slot]) * 0.001f;
 			if (mbac) rotDeg = LerpAngle10000ToDeg(pat.slotRotation[slot], next->slotRotation[slot], t);
 		}
-		const float px = mbac ? 0.0f : part.posX;
-		const float py = mbac ? 0.0f : part.posY;
+		const bool canvasOrigin = part.posX == 320.0f && part.posY == 320.0f;
+		const bool dropPos = mbac || (patPlacement == PatPlacement::Authoring && canvasOrigin);
+		const float px = dropPos ? 0.0f : part.posX;
+		const float py = dropPos ? 0.0f : part.posY;
 		const float cr = (float)std::cos(rotDeg * 0.017453292519943295);
 		const float sr = (float)std::sin(rotDeg * 0.017453292519943295);
 
@@ -670,6 +672,21 @@ void Renderer::DrawPatPatternFlat(const PatPattern& pat, const PatPattern* next,
 		EmitQuad(glTex, xy, uv, col, part.linearFilter || objLinear || (!mbac && part.additive));
 	}
 	glUniform3f(uAdd, 0.0f, 0.0f, 0.0f);
+}
+
+bool Renderer::ObjectUsesCanvasOriginParts(const File& f, int objIndex) {
+	const auto& objs = f.GetObjects();
+	if (objIndex < 0 || objIndex >= (int)objs.size()) return false;
+	const OldPat* op = const_cast<File&>(f).GetOldPat();
+	if (!op) return false;
+	for (const Frame& fr : objs[objIndex].frames) {
+		if (fr.spriteId < 0 || fr.spriteId >= 10000) continue;
+		const PatPattern* p = op->GetPattern(fr.spriteId);
+		if (!p) continue;
+		for (const PatPart& part : p->parts)
+			if (part.posX == 320.0f && part.posY == 320.0f) return true;
+	}
+	return false;
 }
 
 // ---- projection ------------------------------------------------------------
