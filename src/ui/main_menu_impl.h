@@ -459,6 +459,20 @@ void MainFrame::Menu(unsigned int errorPopupId)
 				ImGui::TextDisabled("History: %zu undo / %zu redo, ~%zu KiB",
 					undo->undoCount(), undo->redoCount(), undo->historyBytes() / 1024);
 			}
+			// Stage tabs: object / frame / event / Info.txt edits (bg::File) and
+			// BgList.ini / bgm.txt edits (Stage Browser) share one history.
+			if (view && view->isStageView()) {
+				const std::string su = stageUndoLabel(false), sr = stageUndoLabel(true);
+				if (ImGui::MenuItem(("Undo " + su).c_str(), shortcuts.registry().label(ShortcutAction::undo).c_str(),
+				                    false, !su.empty()))
+					stageUndoRedo(false, true);
+				if (ImGui::MenuItem(("Redo " + sr).c_str(), shortcuts.registry().label(ShortcutAction::redo).c_str(),
+				                    false, !sr.empty()))
+					stageUndoRedo(true, true);
+				if (ImGui::MenuItem("Save stage + metadata", shortcuts.registry().label(ShortcutAction::save).c_str(),
+				                    false, currentBgFile != nullptr))
+					saveStageAll();
+			}
 			ImGui::Separator();
 			if (ImGui::MenuItem("Keyboard shortcuts...", nullptr, m_showKeyBindings))
 				m_showKeyBindings = !m_showKeyBindings;
@@ -565,6 +579,19 @@ void MainFrame::Menu(unsigned int errorPopupId)
 			}
 			if (ImGui::MenuItem("Clear Stage", nullptr, false, currentBgFile != nullptr))
 				clearStage();
+			if (ImGui::MenuItem("Stage Browser", nullptr, m_showStageBrowser))
+				m_showStageBrowser = !m_showStageBrowser;
+			if (ImGui::MenuItem("Previous stage", shortcuts.registry().label(ShortcutAction::previousStage).c_str(), false, currentBgFile != nullptr))
+				stepStage(-1);
+			if (ImGui::MenuItem("Next stage", shortcuts.registry().label(ShortcutAction::nextStage).c_str(), false, currentBgFile != nullptr))
+				stepStage(1);
+			bool gameTex = bgRenderer.IsGameTextures();
+			if (ImGui::Checkbox("Game-accurate textures", &gameTex))
+				bgRenderer.SetGameTextures(gameTex);
+			if (ImGui::IsItemHovered())
+				ImGui::SetTooltip("On: textures as the game builds them (DXT5 on stages over the\n"
+				                  "30000 KB budget via bg_dxt32.exe, pow2 textures, the game's UV insets).\n"
+				                  "Off: the clean CG, for editing.");
 
 			ImGui::Separator();
 
@@ -671,6 +698,7 @@ void MainFrame::Menu(unsigned int errorPopupId)
 			if (ImGui::MenuItem("Notes", nullptr, m_showNotes)) m_showNotes = !m_showNotes;
 			if (ImGui::MenuItem("Pattern comparison", nullptr, m_showCompare)) m_showCompare = !m_showCompare;
 			if (ImGui::MenuItem("BGM preview", nullptr, m_showBgm)) m_showBgm = !m_showBgm;
+			if (ImGui::MenuItem("Stage Browser", nullptr, m_showStageBrowser)) m_showStageBrowser = !m_showStageBrowser;
 			if (ImGui::MenuItem("HUD preview / colours", nullptr, m_showHud)) m_showHud = !m_showHud;
 			if (ImGui::MenuItem("MBAC (HA4) Inspector", nullptr, ha4ui::showInspector)) ha4ui::showInspector = !ha4ui::showInspector;
 			if (ImGui::MenuItem("Game Link (MBAACC)", nullptr, gamelink::showPanel)) gamelink::showPanel = !gamelink::showPanel;

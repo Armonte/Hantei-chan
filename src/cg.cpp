@@ -41,6 +41,25 @@ const char *CG::get_filename(unsigned int n) {
 	return image->filename;
 }
 
+bool CG::image_info(unsigned int n, int &bpp, int &typeId, int &x1, int &y1, int &x2, int &y2) {
+	const CG_Image *image = get_image(n);
+	if (!image || image->type_id == -1) return false;
+	bpp = (int)image->bpp; typeId = image->type_id;
+	x1 = image->bounds_x1; y1 = image->bounds_y1; x2 = image->bounds_x2; y2 = image->bounds_y2;
+	return true;
+}
+
+bool CG::image_cells(unsigned int n, std::vector<CellRect> &out) {
+	out.clear();
+	const CG_Image *image = get_image(n);
+	if (!image || image->type_id == -1) return false;
+	if ((image->align_start + image->align_len) > m_nalign) return false;
+	const CG_Alignment *a = &m_align[image->align_start];
+	for (unsigned int i = 0; i < image->align_len; ++i, ++a)
+		out.push_back({a->x, a->y, a->width, a->height});
+	return true;
+}
+
 int CG::get_image_count() {
 	return m_nimages;
 }

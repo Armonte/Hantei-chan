@@ -359,6 +359,7 @@ void MainFrame::DrawMainViewScene(CharacterView* view, int width, int height)
 		pass.zoom = view->getZoom();
 		pass.originX = bgCamera.panLastX * pass.zoom;
 		pass.originY = bgCamera.panLastY * pass.zoom;
+		bgCamera.SetGameCamFromView((float)width, (float)height);
 		render.BeginPass(pass);
 		// Stage back half (band 0, render priority 10) goes under the grid;
 		// the front half (weather + band 1) goes over it.

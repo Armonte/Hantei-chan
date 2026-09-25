@@ -1,5 +1,7 @@
 #ifndef MAINFRAME_H_GUARD
 #define MAINFRAME_H_GUARD
+#include "background/bg_browser.h"
+#include <functional>
 #include "var_refs.h"
 #include "bgm_player.h"
 #include "pattern_refs.h"
@@ -305,6 +307,23 @@ private:
 	bg::Camera   bgCamera;
 	void loadStageFile(const std::string& path);
 	void clearStage();
+
+	// Stage browser + metadata (BgList.ini / bgm.txt) of the game the stage
+	// belongs to (background/bg_project.h, bg_browser.h).
+	bg::StageProject stageProject;
+	bool m_showStageBrowser = false;
+	void drawStageBrowser();
+	// Replace the active stage tab's file (keeps the camera), or open a tab.
+	void openStageInActiveTab(const std::string& path);
+	void stepStage(int dir);          // PageUp / PageDown in the stage tab
+	// Edit > Undo / Redo for stage tabs: object + Info.txt edits (bg::File)
+	// and metadata edits (StageProject) share one timeline by edit sequence.
+	bool stageUndoRedo(bool redo, bool apply);
+	std::string stageUndoLabel(bool redo);
+	void saveStageAll();
+	// "Show in game" for the browser: set by the Game Link stage switch when
+	// it is available (PovertyCaster mbaacc/stage-link); null until then.
+	std::function<bool(int stageId, const std::string& datPath)> stageShowInGame;
 
 	// Stage-view smooth zoom-to-cursor. A wheel tick bumps bgZoomTarget;
 	// DrawBack eases render.scale toward it and re-pins the world point

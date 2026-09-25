@@ -5,6 +5,7 @@
 #include "bg_pat.h"
 #include "bg_info.h"
 #include "bg_rng.h"
+#include "bg_project.h"
 #include "../cg.h"
 #include <memory>
 
@@ -53,6 +54,14 @@ public:
 	const std::vector<Instance>& GetInstances() const { return instances; }
 	void ResetRuntime();      // respawn the initial instances
 	void TickRuntime();       // one 60 Hz game tick
+	// Replace the live state with a snapshot read from the running game
+	// (tools/stage_capture): `pool` = the 2000 x 44-byte instance array at
+	// MBAA 0x750840; `drops` (optional) = 100 x 44-byte DropObj particles
+	// (0x766008). Instance objIdx (+1) is the FILE slot. Returns the number of
+	// live instances imported, -1 on a malformed dump.
+	int ImportGameState(const std::vector<uint8_t>& pool, const std::vector<uint8_t>* drops);
+	// Continue from the game's stage RNG: stream 0 of the bank (>= 228 bytes).
+	void ImportGameRng(const std::vector<uint8_t>& bank);
 
 	// Step a specific object forward/backward by one frame
 	void StepObjectForward(int objIndex);
@@ -83,6 +92,13 @@ public:
 	// Path of the DropObj bitmap (type 0), "" if not found.
 	std::string DropBitmapPath() const;
 	void ReloadSideFiles();
+	// bgNNInfo.txt as editable text (lights, DropObj). SetInfoValue edits one
+	// key byte-safely (TextIni) and re-parses; "" removes the key. Creates the
+	// file on save if the stage had none. Part of the stage undo history.
+	TextIni& InfoText() { return infoIni; }
+	void SetInfoValue(const std::string& key, const std::string& value);
+	bool SaveInfo();
+	bool IsInfoDirty() const { return infoIni.IsDirty() || (!infoIni.Text().empty() && !infoExists); }
 	// Lights that apply for the current game flavour, with their world x.
 	struct LightView { int worldX; int power; };
 	std::vector<LightView> ActiveLights() const;
@@ -109,6 +125,10 @@ public:
 	bool Redo();
 	bool CanUndo() const { return !undoStack.empty(); }
 	bool CanRedo() const { return !redoStack.empty(); }
+	// Global edit sequence of the newest undo / redo step (bg::NextEditSeq),
+	// so the Edit menu can pick between this and the StageProject history.
+	uint64_t UndoSeq() const { return undoStack.empty() ? 0 : undoStack.back().seq; }
+	uint64_t RedoSeq() const { return redoStack.empty() ? 0 : redoStack.back().seq; }
 
 private:
 	bool loaded = false;
@@ -159,7 +179,10 @@ private:
 	uint64_t tick = 0;
 	bool     dirty = false;
 	uint64_t editSerial = 0, committedSerial = 0;
-	struct EditSnapshot { std::vector<Object> objects; bool dirty = false; };
+	struct EditSnapshot { std::vector<Object> objects; bool dirty = false; std::string info; uint64_t seq = 0; };
+	TextIni  infoIni;
+	bool     infoExists = false;
+	void     ReparseInfo();
 	std::vector<EditSnapshot> undoStack, redoStack;
 	EditSnapshot baseline;
 	void RestoreSnapshot(const EditSnapshot& snap);

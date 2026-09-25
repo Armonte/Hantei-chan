@@ -58,6 +58,7 @@ struct StageInfo {
 	int         count = 100;          // particles (DropObj_Max for rain, default 100; always 100 for type 0)
 	int         alpha = 100;          // type 1: streak alpha (default 100)
 	bool Load(const std::string& txtPath);
+	bool LoadFromText(const std::string& text, const std::string& txtPath);
 };
 
 // MBAC bgNNlight.txt: "count" then "pos, power" lines.
@@ -85,6 +86,8 @@ public:
 	void Init(const StageInfo& info, Rng& rng);   // DropObject_InitializeParticles
 	void Update(Rng& rng);                        // DropObject_UpdateParticles
 	void Clear() { particles.clear(); active = false; }
+	// Overwrite the particles with a game snapshot (100 x 44 bytes, 0x766008).
+	void ImportRaw(const StageInfo& info, const uint8_t* raw, size_t n);
 	bool IsActive() const { return active; }
 	int  Type() const { return type; }
 	const std::vector<DropParticle>& Particles() const { return particles; }

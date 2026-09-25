@@ -13,10 +13,10 @@
 
 #include "bg_renderer.h"
 #include "../cg.h"
-#include "../render.h"
 #include "../texture.h"
 #include "../parts/parts.h"
 #include "bg_pat.h"
+#include "bg_gametex.h"
 #include <algorithm>
 #include <utility>
 #include <fstream>
@@ -223,7 +223,13 @@ void Renderer::InitGL() {
 	glInit = true;
 }
 
+long Renderer::GetTextureBudgetKB() {
+	if (budgetKB < 0) budgetKB = (file && file->GetCG() && file->GetCG()->m_loaded) ? GameTextureBudgetKB(*file->GetCG()) : 0;
+	return budgetKB;
+}
+
 void Renderer::ClearTextureCache() {
+	budgetKB = -1;
 	for (auto& kv : textureCache) glDeleteTextures(1, &kv.second.id);
 	textureCache.clear();
 	if (dropTex) glDeleteTextures(1, &dropTex);
@@ -275,6 +281,36 @@ GLuint Renderer::GetOrCreateTexture(int spriteId, int& outW, int& outH,
 	if (!file) return 0;
 	CG* cg = file->GetCG();
 	if (!cg) return 0;
+	if (gameTextures) {
+		GameTexture gt;
+		const bool dxt = file->GetGame() == Game::MBAACC && IsDxtStage();
+		if (dxt) PrecomposeDxtBank(*cg);   // the game precomposes the whole bank at load
+		if (!ComposeGameTexture(*cg, spriteId, dxt, gt)) return 0;
+		GLuint id = 0;
+		glGenTextures(1, &id);
+		glBindTexture(GL_TEXTURE_2D, id);
+		glPixelStorei(GL_UNPACK_ALIGNMENT, 4);
+		glPixelStorei(GL_UNPACK_ROW_LENGTH, 0);
+		if (gt.dxt5) {
+			// Let the GPU decode the DXT5 blocks, as the game's device does.
+			glCompressedTexImage2D(GL_TEXTURE_2D, 0, 0x83F3 /*GL_COMPRESSED_RGBA_S3TC_DXT5_EXT*/, gt.texW, gt.texH, 0,
+			                       (GLsizei)gt.blocks.size(), gt.blocks.data());
+			if (glGetError() != GL_NO_ERROR) {
+				std::vector<uint8_t> rgba;
+				DecodeDxt5(gt.blocks.data(), gt.texW, gt.texH, rgba);
+				glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, gt.texW, gt.texH, 0, GL_RGBA, GL_UNSIGNED_BYTE, rgba.data());
+			}
+		} else {
+			glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, gt.texW, gt.texH, 0, GL_RGBA, GL_UNSIGNED_BYTE, gt.rgba.data());
+		}
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);   // D3DTADDRESS_CLAMP
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+		textureCache[spriteId] = { id, gt.w, gt.h, gt.originX, gt.originY, gt.texW, gt.texH };
+		outW = gt.w; outH = gt.h; outOriginX = gt.originX; outOriginY = gt.originY;
+		return id;
+	}
 	ImageData* img = cg->draw_texture(spriteId, false, false);
 	if (!img) return 0;
 
@@ -288,7 +324,7 @@ GLuint Renderer::GetOrCreateTexture(int spriteId, int& outW, int& outH,
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
 
-	textureCache[spriteId] = { id, img->width, img->height, img->offsetX, img->offsetY };
+	textureCache[spriteId] = { id, img->width, img->height, img->offsetX, img->offsetY, img->width, img->height };
 	outW = img->width;
 	outH = img->height;
 	outOriginX = img->offsetX;
@@ -602,13 +638,35 @@ void Renderer::DrawPatPatternFlat(const PatPattern& pat, const PatPattern* next,
 			float ry = lx * sr + ly * cr;
 			xy[i * 2]     = worldX + px + rx;
 			xy[i * 2 + 1] = worldY + py + ry;
-			int ux = (part.flip & 1) ? (1 - tX[i]) : tX[i];
-			int vy = (part.flip & 2) ? (1 - tY[i]) : tY[i];
-			// Cutout src rects are in 256-unit space (see BuildPatParts).
-			uv[i * 2]     = (cut.uv[0] + cut.uv[2] * ux) / 256.0f;
-			uv[i * 2 + 1] = (cut.uv[1] + cut.uv[3] * vy) / 256.0f;
+			if (!gameTextures) {
+				int ux = (part.flip & 1) ? (1 - tX[i]) : tX[i];
+				int vy = (part.flip & 2) ? (1 - tY[i]) : tY[i];
+				// Cutout src rects are in 256-unit space (see BuildPatParts).
+				uv[i * 2]     = (cut.uv[0] + cut.uv[2] * ux) / 256.0f;
+				uv[i * 2 + 1] = (cut.uv[1] + cut.uv[3] * vy) / 256.0f;
+			}
 		}
-		EmitQuad(glTex, xy, uv, col, part.linearFilter || objLinear);
+		if (gameTextures) {
+			// MBAA: BgPat_UploadTexturesAndScaleCutouts scales the src rect by
+			// T/256 for textures over 256; the flip picks the start texel and
+			// sign (Background_DrawInstance 0x4b73b9); HudVertex_SetTextureCoords
+			// 0x4163b0 then maps u0 = (U + 0.5)/T, u1 = (U + dU)/T.
+			const int T = std::max(1, patParts->gfxMeta[cut.texture].w);
+			const int TH = std::max(1, patParts->gfxMeta[cut.texture].h);
+			const int k = T > 256 ? T / 256 : 1, kh = TH > 256 ? TH / 256 : 1;
+			int sx = cut.uv[0] * k, sy = cut.uv[1] * kh, sw = cut.uv[2] * k, sh = cut.uv[3] * kh;
+			int U = sx, V = sy, dU = sw, dV = sh;
+			if (part.flip & 1) { U = sx + sw - 1; dU = -sw; }
+			if (part.flip & 2) { V = sy + sh - 1; dV = -sh; }
+			const float u0 = (U + 0.5f) / T, v0 = (V + 0.5f) / TH;
+			const float u1 = (float)(U + dU) / T, v1 = (float)(V + dV) / TH;
+			// corners TL, TR, BR, BL
+			uv[0] = u0; uv[1] = v0; uv[2] = u1; uv[3] = v0;
+			uv[4] = u1; uv[5] = v1; uv[6] = u0; uv[7] = v1;
+		}
+		// MBAA 0x4b7389: part +49 (additive) sets blend 2 AND sampler 2
+		// (linear); +50 or object +22 set linear alone.
+		EmitQuad(glTex, xy, uv, col, part.linearFilter || objLinear || (!mbac && part.additive));
 	}
 	glUniform3f(uAdd, 0.0f, 0.0f, 0.0f);
 }
@@ -629,6 +687,11 @@ void Renderer::BuildProjView(int W, int H, float zoom, float m[16]) {
 	m[4]=0;  m[5]=sy; m[6]=0;  m[7]=0;
 	m[8]=0;  m[9]=0;  m[10]=sz;m[11]=0;
 	m[12]=tx;m[13]=ty;m[14]=tz;m[15]=1;
+	// D3D9 samples pixels at integer screen coordinates, GL at +0.5: move the
+	// geometry half a pixel right/down so every edge covers the same pixels
+	// and every UV lands where the game's does.
+	m[12] += 1.0f / (float)W;
+	m[13] -= 1.0f / (float)H;
 }
 
 // ---- CG sprite ---------------------------------------------------------------
@@ -652,7 +715,15 @@ void Renderer::DrawSprite(int spriteId,
 	glUniform3f(uAdd, 0.0f, 0.0f, 0.0f);
 	glUniform1f(uAlphaLoc, alpha);
 	const float xy[8] = { x, y, x + w, y, x + w, y + h, x, y + h };
-	const float uv[8] = { 0, 0, 1, 0, 1, 1, 0, 1 };
+	float u0 = 0, v0 = 0, u1 = 1, v1 = 1;
+	auto it = textureCache.find(spriteId);
+	if (gameTextures && it != textureCache.end()) {
+		// Sprite_EmitTransformedQuad: u = 0.25 texel .. w texels of the pow2 texture.
+		const Tex& t = it->second;
+		u0 = 0.25f / t.texW; v0 = 0.25f / t.texH;
+		u1 = (float)t.w / t.texW; v1 = (float)t.h / t.texH;
+	}
+	const float uv[8] = { u0, v0, u1, v0, u1, v1, u0, v1 };
 	const float col[4] = { 1, 1, 1, 1 };
 	EmitQuad(tex, xy, uv, col, linear);
 }
@@ -687,7 +758,7 @@ void Renderer::DrawWeather(const Camera& camera) {
 	const DropSystem& drops = file->GetDrops();
 	if (!drops.IsActive() || file->GetGame() != Game::MBAACC) return;
 	const StageInfo& cfg = drops.Info();
-	const float ax = camera.panX, ay = camera.panY;   // world (0,0) on screen
+	const float ax = camera.panLastX, ay = camera.panLastY;   // world (0,0) on screen
 	const float k = 234.0f / 255.0f;
 	glUniform4f(uTint, 1, 1, 1, 1);
 	glUniform3f(uAdd, 0, 0, 0);
@@ -732,7 +803,7 @@ void Renderer::DrawWeather(const Camera& camera) {
 void Renderer::DrawLights(const Camera& camera) {
 	auto lights = file->ActiveLights();
 	if (lights.empty()) return;
-	const float ax = camera.panX, ay = camera.panY;
+	const float ax = camera.panLastX, ay = camera.panLastY;
 	const float z = camera.zoom > 0.0f ? camera.zoom : 1.0f;
 	const float w = 2.0f / z;
 	glUniform4f(uTint, 1, 1, 1, 1);
@@ -800,9 +871,11 @@ void Renderer::DrawPass(const Camera& camera, int clientW, int clientH, int band
 		int para = parallaxEnabled ? obj.parallax : 256;
 		// worldX/worldY: editor-world position of the CG canvas top-left
 		// (without the camera pan). CG draws at (pos >> 7) + offset.
-		float worldX = camera.ScreenX((float)fr.offsetX, para)
+		// Game parallax (Background_DrawInstance): the layer is translated by
+		// (1 - p/256) * cam in world space; see Camera::ParallaxX.
+		float worldX = (float)fr.offsetX + camera.ParallaxX(para)
 		               - STAGE_CENTER_X + (float)(inst.posX >> 7);
-		float worldY = camera.ScreenY((float)fr.offsetY, para)
+		float worldY = (float)fr.offsetY + camera.ParallaxY(para)
 		               - STAGE_FLOOR_Y + (float)(inst.posY >> 7);
 
 		if (fr.spriteId >= 10000) {
@@ -838,7 +911,10 @@ void Renderer::DrawPass(const Camera& camera, int clientW, int clientH, int band
 			           orgX + ((float)ox - CG_PIVOT_X) * scx,
 			           orgY + ((float)oy - CG_PIVOT_Y) * scy,
 			           (float)sw * scx, (float)sh * scy, alpha, fr.blendMode,
-			           mbac ? 1.0f : 234.0f / 255.0f, obj.linearFilter != 0);
+			           mbac ? 1.0f : 234.0f / 255.0f,
+			           // MBAA 0x4b7c7f: an additive CG draw (blend 2) also
+			           // switches the sampler to linear (0x56447F = 2).
+			           obj.linearFilter != 0 || (!mbac && fr.blendMode == 2));
 		} else if (patParts && patParts->loaded && oldPat) {
 			// --- older-PAT pattern (sprite-id < 10000) ---
 			const PatPattern* pat = oldPat->GetPattern(fr.spriteId);

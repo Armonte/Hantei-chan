@@ -5,6 +5,7 @@
 #include <imgui.h>
 #include <algorithm>
 #include <cstdio>
+#include <string>
 
 namespace bg {
 
@@ -92,26 +93,56 @@ void DrawSideFiles(File& file) {
 	}
 	const StageInfo& info = file.GetStageInfo();
 	if (ImGui::TreeNode("Info.txt (lights / weather)")) {
-		if (!info.loaded) ImGui::TextDisabled("no <stage>Info.txt next to the stage");
-		else {
-			ImGui::TextWrapped("%s", info.path.c_str());
-			ImGui::Text("LightNum = %zu", info.lights.size());
-			for (size_t i = 0; i < info.lights.size(); ++i)
-				ImGui::Text("  Light%02zu Pos=%d (world x %d) Power=%d", i, info.lights[i].pos,
-				            info.lights[i].pos - 512, info.lights[i].power);
-			ImGui::Text("DropObj = %d  Type = %d", info.dropObj, info.dropType);
-			if (info.dropObj && info.dropType == 0)
-				ImGui::Text("  bitmap %s.bmp  PatNum=%d FrameNum=%d Wait=%d  %dx%d  (%s)",
-				            info.dropFile.c_str(), info.patNum, info.frameNum, info.wait,
-				            info.w, info.h, file.DropBitmapPath().empty() ? "bmp missing" : "bmp found");
-			else if (info.dropObj && info.dropType == 1)
-				ImGui::Text("  rain: Max=%d H=%d Alpha=%d Wait(speed)=%d", info.count, info.h,
-				            info.alpha, info.wait);
-			else if (info.dropObj && info.dropType == -1)
-				ImGui::TextDisabled("  type -1: 3D grid effect (not previewed)");
-			ImGui::TextDisabled("Lights add one character shadow pass each (not a stage draw);\n"
-			                    "shown as markers.");
+		TextIni& ini = file.InfoText();
+		ImGui::TextWrapped("%s%s", ini.Path().c_str(), info.loaded ? "" : "  (not present: edits create it on save)");
+		if (ImGui::Button("Save Info.txt")) file.SaveInfo();
+		ImGui::SameLine();
+		ImGui::TextDisabled(file.IsInfoDirty() ? "(modified)" : "(saved)");
+		auto setInt = [&](const char* key, int v) { file.SetInfoValue(key, std::to_string(v)); };
+		ImGui::PushItemWidth(110);
+		int n = (int)info.lights.size();
+		if (ImGui::InputInt("LightNum", &n)) setInt("LightNum", std::max(0, std::min(10, n)));
+		for (int i = 0; i < (int)info.lights.size(); ++i) {
+			char k[32];
+			int pos = info.lights[i].pos, pw = info.lights[i].power;
+			snprintf(k, sizeof(k), "Light%02dPos", i);
+			if (ImGui::InputInt(k, &pos)) setInt(k, pos);
+			ImGui::SameLine();
+			snprintf(k, sizeof(k), "Light%02dPower", i);
+			if (ImGui::InputInt(k, &pw)) setInt(k, pw);
+			ImGui::SameLine();
+			ImGui::TextDisabled("world x %d", info.lights[i].pos - 512);
 		}
+		bool drop = info.dropObj != 0;
+		if (ImGui::Checkbox("DropObj (weather)", &drop)) setInt("DropObj", drop ? 1 : 0);
+		if (drop) {
+			int t = info.dropType;
+			const char* types[] = {"-1 grid room (bg99)", "0 bitmap particles", "1 rain"};
+			int ti = t + 1;
+			if (ImGui::Combo("DropObj_Type", &ti, types, 3)) setInt("DropObj_Type", ti - 1);
+			if (t == 0) {
+				char buf[64];
+				snprintf(buf, sizeof(buf), "%s", info.dropFile.c_str());
+				if (ImGui::InputText("DropObjFile", buf, sizeof(buf), ImGuiInputTextFlags_EnterReturnsTrue)) file.SetInfoValue("DropObjFile", buf);
+				int v;
+				v = info.patNum;   if (ImGui::InputInt("DropObj_PatNum", &v)) setInt("DropObj_PatNum", v);
+				v = info.frameNum; if (ImGui::InputInt("DropObj_FrameNum", &v)) setInt("DropObj_FrameNum", v);
+				v = info.wait;     if (ImGui::InputInt("DropObj_Wait", &v)) setInt("DropObj_Wait", v);
+				v = info.w;        if (ImGui::InputInt("DropObj_W", &v)) setInt("DropObj_W", v);
+				v = info.h;        if (ImGui::InputInt("DropObj_H", &v)) setInt("DropObj_H", v);
+				ImGui::TextDisabled("  bitmap %s", file.DropBitmapPath().empty() ? "missing" : "found");
+			} else if (t == 1) {
+				int v;
+				v = info.count; if (ImGui::InputInt("DropObj_Max", &v)) setInt("DropObj_Max", v);
+				ImGui::SameLine(); ImGui::TextDisabled("(game array holds 100)");
+				v = info.alpha; if (ImGui::InputInt("DropObj_Alpha", &v)) setInt("DropObj_Alpha", v);
+				v = info.h;     if (ImGui::InputInt("DropObj_H (streak)", &v)) setInt("DropObj_H", v);
+				v = info.wait;  if (ImGui::InputInt("DropObj_Wait (speed)", &v)) setInt("DropObj_Wait", v);
+			}
+		}
+		ImGui::PopItemWidth();
+		ImGui::TextDisabled("Keys are read from the whole file; the first occurrence wins.\n"
+		                    "Lights: one fighter shadow per light instead of the flat shadow.");
 		ImGui::TreePop();
 	}
 	const LightFile& lf = file.GetLightFile();

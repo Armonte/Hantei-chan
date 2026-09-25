@@ -62,6 +62,14 @@ public:
 	// Debug self-capture of the stage viewport to C:/dev/bg_dump.png
 	// (off by default; armed on demand from the inspector).
 	void   RequestDebugDump(int frames = 2) { dumpCountdown = frames; }
+	// Game-accurate textures (bg_gametex.h): pow2 textures composed like
+	// MBAA, DXT5 on over-budget stages, the game's UV insets. On by default;
+	// off shows the clean CG (for editing).
+	void   SetGameTextures(bool v)       { if (v != gameTextures) { gameTextures = v; ClearTextureCache(); } }
+	bool   IsGameTextures() const        { return gameTextures; }
+	// Budget of the loaded stage and whether the game would use DXT5.
+	long   GetTextureBudgetKB();
+	bool   IsDxtStage()                  { return GetTextureBudgetKB() > 30000; }
 	void   ClearTextureCache();
 
 private:
@@ -95,7 +103,9 @@ private:
 	// (origin_x, origin_y) to the draw position to compensate. Without this
 	// step, sprites whose content origin shifts frame-to-frame (a fire
 	// animation does this even though w/h are fixed) appeared to jitter.
-	struct Tex { GLuint id; int w; int h; int originX; int originY; };
+	struct Tex { GLuint id; int w; int h; int originX; int originY; int texW; int texH; };
+	bool   gameTextures = true;
+	long   budgetKB = -1;
 	std::unordered_map<int, Tex> textureCache;
 
 	// The embedded older-PAT, converted into the editor's Parts model so it
