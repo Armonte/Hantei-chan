@@ -694,7 +694,7 @@ void AssistTab(EditorContext& ctx, const gamelink::Snapshot& s)
 	{
 		AssistAction def;
 		const ActionView dv = DescribeAction(def, g_cmds);
-		ImGui::Text("Character default: %s", dv.text.c_str());
+		ImGui::Text("Character %s", dv.text.c_str());
 		if (ImGui::IsItemHovered())
 			ImGui::SetTooltip("Used when neither the slot nor slot 5 has an action: the lowest _c.txt id whose input is a\nmotion + A, costing no meter, usable standing, with a pattern (TAG_TUNING_GUIDE.md 3.1).\nThe game also checks moon / ExComCheck at call time.");
 		if (dv.pattern >= 0 && ActiveMatches(ctx)) { ImGui::SameLine(); if (ImGui::SmallButton("jump##def")) Jump(ctx, dv.pattern); }
@@ -884,10 +884,18 @@ void LiveTab(EditorContext& ctx, gamelink::Client& c, const gamelink::Snapshot& 
 		if (s.haveTag) {
 			const auto& tt = s.tag.team[t];
 			ImGui::Text("tag state %d %s, counter %d", tt.tagRequest, TagStateName(tt.tagRequest), tt.counter);
-			if (tt.tagInTick >= 0) { ImGui::SameLine(); ImGui::Text(", tag-in tick %d", tt.tagInTick); }
+			if (tt.tagInTick >= 0 && tt.tagInTick < 0x7FFF) { ImGui::SameLine(); ImGui::Text(", tag-in tick %d", tt.tagInTick); }
+			else if (tt.tagInTick >= 0x7FFF) { ImGui::SameLine(); ImGui::TextDisabled(", past the tag-in window"); }
 			if (tt.cooldownLeft > 0) { ImGui::SameLine(); ImGui::TextColored(kWarn, ", cooldown %d", tt.cooldownLeft); }
-			ImGui::Text("assist: %s, slot %d, tick %d, cooldown %d, pattern %d, calls %d", TagStateName(tt.tagRequest),
-			            kAssistDirs[(tt.assistSlot & 15) % 5], tt.assistTick, tt.assistCooldown, tt.assistPattern, tt.assistCalls);
+			const bool inAssist = tt.tagRequest >= 300 && tt.tagRequest <= 303;
+			const char* modes[] = { "default", "pattern", "command", "motion" };
+			const char* places[] = { "behind", "edge", "drop", "arc" };
+			if (inAssist)
+				ImGui::Text("assist: %s, %d+FN1 (%s, %s entry), tick %d, pattern %d, calls %d%s", TagStateName(tt.tagRequest),
+				            kAssistDirs[(tt.assistSlot & 15) % 5], modes[(tt.assistSlot >> 4) & 3], places[tt.assistPlacement & 3],
+				            tt.assistTick, tt.assistPattern, tt.assistCalls, (tt.assistFlags & 1) ? ", was hit" : "");
+			else
+				ImGui::Text("assist: idle, cooldown %d, calls %d this round", tt.assistCooldown, tt.assistCalls);
 		} else {
 			ImGui::Text("tag in progress: %s", st.teamTagRequest[t] ? "yes" : "no");
 		}
@@ -966,6 +974,8 @@ void PollDisk()
 }
 
 } // namespace
+
+void StartupApply() { RequestApply(); }
 
 void OpenStartup(const std::string& iniPath, const std::string& charFile, const std::string& tab)
 {
