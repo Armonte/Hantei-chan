@@ -312,6 +312,7 @@ private:
 	// belongs to (background/bg_project.h, bg_browser.h).
 	bg::StageProject stageProject;
 	bool m_showStageBrowser = false;
+	bool m_showGameViewRect = true;   // outline of the game's 640x480 view at the game camera
 	void drawStageBrowser();
 	// Opens the remembered stage list (settings) if none is open yet.
 	bool ensureStageProject();

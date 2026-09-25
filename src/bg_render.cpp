@@ -48,6 +48,7 @@ int main(int argc, char** argv) {
 	bool camGiven = false, lights = false, weather = true, cleanTex = false, standIns = false;
 	float sx0 = -128.0f, sx1 = 128.0f;
 	int solo = -1;   // file slot to draw alone
+	bool patAuthoring = false;   // default Game-exact (accuracy checks)
 	bool panGiven = false; float panX = 0, panY = 0;   // editor-style anchor: screen = (world + pan) * zoom
 	int ticks = 0, seed = 0, W = 640, H = 480;
 	bool seedGiven = false;
@@ -66,6 +67,7 @@ int main(int argc, char** argv) {
 		else if (a == "--game") gameName = next();
 		else if (a == "--clean") cleanTex = true;
 		else if (a == "--solo") solo = atoi(next());
+		else if (a == "--pat") patAuthoring = std::string(next()) == "authoring";
 		else if (a == "--pan") { panGiven = true; sscanf(next(), "%f,%f", &panX, &panY); }
 		else if (a == "--standins") { standIns = true; sscanf(next(), "%f,%f", &sx0, &sx1); }
 		else if (a == "--dxt-mode") bg::SetDxtHelperMode(next());
@@ -135,6 +137,7 @@ int main(int argc, char** argv) {
 	r.SetShowLights(lights);
 	r.SetShowWeather(weather);
 	r.SetGameTextures(!cleanTex);
+	r.SetPatPlacement(patAuthoring ? bg::Renderer::PatPlacement::Authoring : bg::Renderer::PatPlacement::Game);
 	r.GetStandIns().enabled = standIns;
 	r.GetStandIns().x[0] = sx0; r.GetStandIns().x[1] = sx1;
 	bg::Pass pass = passName == "back" ? bg::Pass::Back : passName == "front" ? bg::Pass::Front : bg::Pass::All;

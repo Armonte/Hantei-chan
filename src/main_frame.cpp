@@ -49,6 +49,10 @@ context(context_)
 	// Stage edits keep their own history (bg::File), separate from the
 	// character undo stack: while a stage view owns focus, Ctrl+Z / Ctrl+Y
 	// go to the stage and Ctrl+S saves the stage file.
+	bgRenderer.SetPatPlacement(gSettings.stagePatAuthoring ? bg::Renderer::PatPlacement::Authoring
+	                                                       : bg::Renderer::PatPlacement::Game);
+	bgCamera.clampToGame = gSettings.stageClampCamera;
+	bg::g_onPatPlacementChanged = [](bool a) { gSettings.stagePatAuthoring = a; };
 	shortcuts.setContextHandler(ShortcutContext::stageView, [this](ShortcutAction a) {
 		switch (a) {
 		case ShortcutAction::undo: return stageUndoRedo(false, true);

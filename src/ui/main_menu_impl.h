@@ -593,6 +593,27 @@ void MainFrame::Menu(unsigned int errorPopupId)
 				stepStage(-1);
 			if (ImGui::MenuItem("Next stage", shortcuts.registry().label(ShortcutAction::nextStage).c_str(), false, currentBgFile != nullptr))
 				stepStage(1);
+			bool authoring = bgRenderer.GetPatPlacement() == bg::Renderer::PatPlacement::Authoring;
+			if (ImGui::Checkbox("PAT placement: Authoring", &authoring)) {
+				bgRenderer.SetPatPlacement(authoring ? bg::Renderer::PatPlacement::Authoring : bg::Renderer::PatPlacement::Game);
+				gSettings.stagePatAuthoring = authoring;
+			}
+			if (ImGui::IsItemHovered())
+				ImGui::SetTooltip("Off (Game-exact): PAT part positions as MBAACC applies them.\n"
+				                  "On (Authoring): parts at the PAT canvas origin (320, 320) are drawn unpositioned,\n"
+				                  "as MBAC would; this puts the bg18/bg20/bg47 wind on the grass. MBAACC itself draws\n"
+				                  "that wind below the floor, off screen.");
+			if (ImGui::Checkbox("Clamp camera to the game's limits", &bgCamera.clampToGame)) {
+				gSettings.stageClampCamera = bgCamera.clampToGame;
+				if (bgCamera.clampToGame) bgCamera.ClampToGame();
+			}
+			if (ImGui::IsItemHovered())
+				ImGui::SetTooltip("The game camera never goes past x +-208, y -340..0. With this on, panning further\n"
+				                  "moves the view but not the camera, so parallax layers stay where the game shows them.");
+			ImGui::Checkbox("Show game view", &m_showGameViewRect);
+			if (ImGui::IsItemHovered())
+				ImGui::SetTooltip("Outline of the 640x480 area the game shows at the current game camera.\n"
+				                  "Parallax layers only line up the way the game shows them inside it.");
 			bool gameTex = bgRenderer.IsGameTextures();
 			if (ImGui::Checkbox("Game-accurate textures", &gameTex))
 				bgRenderer.SetGameTextures(gameTex);

@@ -17,6 +17,8 @@ struct InspectorResult {
 };
 
 InspectorResult DrawInspector(File& file, Renderer& renderer);
+// Called when the inspector changes the PAT placement (host persists it).
+extern void (*g_onPatPlacementChanged)(bool authoring);
 
 } // namespace bg
 
