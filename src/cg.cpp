@@ -247,6 +247,10 @@ ImageData *CG::draw_texture(unsigned int n, bool to_pow2_flg, bool draw_8bpp) {
 			for (int i = 0; i < 256; ++i) {
 				custom_palette[i] = (0xff << 24) | custom_palette[i];
 			}
+			// Index 0 is transparent: MBAA uploads type 2 images as 8-bit
+			// indices with alpha = (index != 0) (Texture_ConvertFormat 0x402eb0,
+			// P8 source 41). Type 4 takes alpha from its own plane instead.
+			if (image->type_id == 2) custom_palette[0] = 0;
 			needsCustom = true;
 		}
 	}
