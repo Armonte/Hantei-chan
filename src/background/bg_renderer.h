@@ -145,6 +145,8 @@ private:
 	void   DrawWeather(const Camera& camera);
 	void   DrawLights(const Camera& camera);
 	void   DrawStandIns(const Camera& camera);
+	// DropObj_Type -1: the training-room grid (BgGrid_RenderTrainingRoom 0x4b58b0), priority 8.
+	void   DrawGridRoom(const Camera& camera);
 	// TecSakuraBloom (Shader/sh_bloom_sakura.txt): petals also drawn into a
 	// temp target, blurred along both diagonals, added onto the scene.
 	void   SakuraBloom(const Camera& camera, const std::vector<std::array<float, 24>>& petals, GLuint tex);

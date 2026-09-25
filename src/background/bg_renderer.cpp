@@ -803,8 +803,8 @@ void Renderer::DrawWeather(const Camera& camera) {
 		}
 		if (sakuraBloom && !petals.empty()) SakuraBloom(camera, petals, dropTex);
 	}
-	// DropObj_Type -1 (bg99) runs HudSpriteQueue_RenderGridWith3DTransform —
-	// not previewed.
+	// DropObj_Type -1 (bg99) is the grid room, drawn at priority 8 by
+	// DrawGridRoom in the back pass.
 }
 
 // Stage lights only affect the fighters (an extra shadow pass per light,
@@ -834,6 +834,78 @@ void Renderer::DrawLights(const Camera& camera) {
 			EmitLine(x, fy, x + (float)l.power, fy, w * 2.0f, on, off);
 		}
 	}
+}
+
+// ---- DropObj type -1: training-room grid -----------------------------------------
+
+namespace {
+// Color_ScaleAlpha 0x4bfc10: each RGB byte scaled and truncated, OR'd back
+// without clamping (a channel over 255 spills into the next byte).
+uint32_t ScaleRgb(uint32_t c, double f) {
+	uint32_t r = (uint32_t)(int)(((c >> 16) & 0xFF) * f), g = (uint32_t)(int)(((c >> 8) & 0xFF) * f),
+	         b = (uint32_t)(int)((c & 0xFF) * f);
+	return (c & 0xFF000000u) | (r << 16) | (g << 8) | b;
+}
+} // namespace
+
+// BgGrid_RenderTrainingRoom 0x4b58b0 / BgGrid_EmitRoomQuads 0x4b5490 /
+// BgGrid_AddCheckerQuad 0x4b53b0 (docs/bg_research/data/stage_system_re.md §3):
+// untextured checker quads on a floor, ceiling, back wall and two side walls,
+// projected with a 45 deg perspective that follows the game camera.
+void Renderer::DrawGridRoom(const Camera& camera) {
+	const StageInfo& info = file->GetStageInfo();
+	if (!info.loaded || !info.dropObj || info.dropType != -1 || file->GetGame() != Game::MBAACC) return;
+	const float ax = camera.panLastX, ay = camera.panLastY;
+	const double zoom = camera.zoom > 0.0f ? camera.zoom : 1.0;
+	const double k = 2.414213562373095;            // cot(22.5 deg)
+	const double u = 100.0 * k / 3.0;              // px per unit at z = 0
+	const double camX = camera.camX, camY = camera.camY;
+	const double cx = camX / u, cy = camY / u - 1.5;
+	// game screen -> editor world: world = (s - (320, 432)) / zoom + cam
+	auto proj = [&](double x, double y, double z, float& wx, float& wy) {
+		double dz = 0.7 * z + 3.0;
+		double sx = 320.0 + 100.0 * zoom * (x - cx) * k / dz;
+		double sy = 432.0 - camY * zoom + 100.0 * zoom * ((y - cy) * k / dz + cy * k / 3.0);
+		wx = (float)((sx - 320.0) / zoom + camX);
+		wy = (float)((sy - 432.0) / zoom + camY);
+	};
+	const double bright = 1.0;   // g_BgBrightness (screen-effect overlay state; 1 in the editor)
+	glUniform4f(uTint, 1, 1, 1, 1);
+	glUniform3f(uAdd, 0, 0, 0);
+	glUniform1f(uAlphaLoc, 1.0f);
+	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+	auto quad = [&](const double p[4][3], uint32_t base, double f, int ci, int ri) {
+		uint32_t c = ScaleRgb(base, f);
+		if ((ci + ri) & 1) c = ScaleRgb(c, 0.5);
+		c = ScaleRgb(c, bright);
+		const float col[4] = { ((c >> 16) & 0xFF) / 255.0f, ((c >> 8) & 0xFF) / 255.0f, (c & 0xFF) / 255.0f, ((c >> 24) & 0xFF) / 255.0f };
+		float xy[8];
+		for (int i = 0; i < 4; ++i) { float wx, wy; proj(p[i][0], p[i][1], p[i][2], wx, wy); xy[i * 2] = ax + wx; xy[i * 2 + 1] = ay + wy; }
+		const float uv[8] = { 0.5f, 0.5f, 0.5f, 0.5f, 0.5f, 0.5f, 0.5f, 0.5f };
+		EmitQuad(whiteTex, xy, uv, col, false);
+	};
+	for (int c = 0; c < 14; ++c)
+		for (int r = 0; r < 7; ++r) {
+			double x0 = c - 7, x1 = c - 6;
+			double fz0 = 4 - r, fz1 = 3 - r;                     // floor, y = 0
+			const double fl[4][3] = {{x0, 0, fz0}, {x1, 0, fz0}, {x1, 0, fz1}, {x0, 0, fz1}};
+			quad(fl, 0xFFC8C8C8u, 1.0 - (4 - r) / 8.0, c, r);
+			double cz0 = r - 3, cz1 = r - 2;                     // ceiling, y = -9
+			const double ce[4][3] = {{x0, -9, cz0}, {x1, -9, cz0}, {x1, -9, cz1}, {x0, -9, cz1}};
+			quad(ce, 0xFFC8C8C8u, 1.0 - (r - 3) / 8.0, c, r);
+		}
+	for (int c = 0; c < 14; ++c)
+		for (int r = 0; r < 9; ++r) {                            // back wall, z = 4
+			const double bw[4][3] = {{c - 7.0, r - 9.0, 4}, {c - 6.0, r - 9.0, 4}, {c - 6.0, r - 8.0, 4}, {c - 7.0, r - 8.0, 4}};
+			quad(bw, 0xFF80C8C8u, 0.5, c, r);
+		}
+	for (int i = 0; i < 9; ++i)
+		for (int c = 0; c < 7; ++c) {
+			const double lw[4][3] = {{-7, i - 9.0, c - 3.0}, {-7, i - 9.0, c - 2.0}, {-7, i - 8.0, c - 2.0}, {-7, i - 8.0, c - 3.0}};
+			quad(lw, 0xFFC880C8u, 1.0 - (c - 3) / 8.0, i, c);
+			const double rw[4][3] = {{7, i - 9.0, 4.0 - c}, {7, i - 9.0, 3.0 - c}, {7, i - 8.0, 3.0 - c}, {7, i - 8.0, 4.0 - c}};
+			quad(rw, 0xFFC880C8u, 1.0 - (4 - c) / 8.0, i, c);
+		}
 }
 
 // ---- TecSakuraBloom ---------------------------------------------------------------
@@ -1186,8 +1258,10 @@ void Renderer::Render(const Camera& camera, int clientW, int clientH, Pass pass)
 	glUniform3f(uAdd, 0, 0, 0);
 	glUniform1f(uAlphaLoc, 1.0f);
 
-	if (pass == Pass::All || pass == Pass::Back)
+	if (pass == Pass::All || pass == Pass::Back) {
+		if (showWeather) DrawGridRoom(camera);   // priority 8, behind band 0
 		DrawPass(camera, clientW, clientH, 0);
+	}
 	if (pass == Pass::All || pass == Pass::Front) {
 		// Fighter shadows (366) and fighters (384) sit above band 0 and below
 		// the weather (522) and band 1 (600).
