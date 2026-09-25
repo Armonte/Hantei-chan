@@ -112,6 +112,8 @@ void MainFrame::ProcessStartupArgs()
 		for (auto &c : ext) c = (char)tolower((unsigned char)c);
 		if (ext == ".hproj") {
 			loadProjectFromPath(path, false);
+		} else if (ext == ".dat") {
+			loadStageFile(path);   // [stage-link] a bgmake stage (with --game-link: the Stage section's files)
 		} else {
 			auto character = std::make_unique<CharacterInstance>();
 			bool ok = ext == ".txt" ? character->loadFromTxt(path) : character->loadHA6(path, false);
