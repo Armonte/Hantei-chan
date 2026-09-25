@@ -264,11 +264,21 @@ struct Camera {
 	// cam from a view of W x H pixels whose world origin sits at panLast
 	// (world units) under `zoom`: the view centre is world x camX, and screen
 	// row 432/480 of a 640x480 game frame is world y camY.
+	// Follow the view: panning at a fixed zoom moves the game camera with it,
+	// zooming never does (zoom is a pure scale of the composed stage; the game
+	// camera, and so every layer's parallax shift, stays put).
+	bool  camInit = false;
+	float camLastPanX = 0.0f, camLastPanY = 0.0f, camLastZoom = 0.0f;
 	void SetGameCamFromView(float W, float H) {
+		(void)W; (void)H;
 		const float z = zoom > 0.0f ? zoom : 1.0f;
-		camX = W * 0.5f / z - panLastX;
-		camY = H * 0.5f / z - panLastY + 192.0f / z;
+		if (!camInit) { camInit = true; }
+		else if (z == camLastZoom) { camX -= panLastX - camLastPanX; camY -= panLastY - camLastPanY; }
+		camLastPanX = panLastX; camLastPanY = panLastY; camLastZoom = z;
 	}
+	// Set the camera explicitly (bg_render, inspector); the next view update
+	// continues from here.
+	void SetGameCam(float x, float y) { camX = x; camY = y; }
 
 	// Sprite *world* position for a given object/frame offset. u4ick's
 	// MonoForm.cs:253-254 formula is `panLast + (pan - panLast) * f + off`

@@ -119,7 +119,7 @@ int main(int argc, char** argv) {
 	bg::Camera camera;
 	camera.zoom = zoom;
 	camera.SetPan(W * 0.5f / zoom - camX, H * 0.9f / zoom - camY);
-	camera.SetGameCamFromView((float)W, (float)H);
+	camera.SetGameCam(camX, camY);
 
 	bg::Renderer r;
 	r.SetFile(&file);
