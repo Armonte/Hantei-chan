@@ -74,6 +74,14 @@ public:
 	// Rng_GetFloat01 (MBAACC only; the MBAC stage code has no float draws).
 	double Float01() { return (double)Next() * 4.656612875028957e-10; }
 
+	// Load a live MBAACC stream: {index, seed[56]} (57 dwords, stream 0 is
+	// the first 228 bytes of g_RngStreamBank 0x563780).
+	void SetRawStream(const int32_t* raw57) {
+		game = Game::MBAACC;
+		inext = raw57[0];
+		for (int i = 0; i < 56; ++i) arr[i] = raw57[1 + i];
+		calls = 0;
+	}
 	int32_t GetSeed() const { return seed; }
 	Game    GetGame() const { return game; }
 	uint64_t Calls()  const { return calls; }
