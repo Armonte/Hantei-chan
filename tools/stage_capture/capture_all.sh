@@ -9,6 +9,7 @@
 set -uo pipefail
 HERE="$(cd "$(dirname "$0")" && pwd)"
 SC="$HERE/stage_capture.sh"
+shot() { "$SC" shot "$@" || "$SC" shot "$@"; }   # one retry: a request can miss the poll
 OUT="$1"; shift
 IDS="$*"
 if [ -z "$IDS" ]; then
@@ -16,7 +17,7 @@ if [ -z "$IDS" ]; then
 fi
 for id in $IDS; do
     d=$(printf '%s/s%02d' "$OUT" "$id")
-    if [ -s "$d/ch.png" ]; then echo "skip $id"; continue; fi
+    if [ "$(ls "$d" 2>/dev/null | grep -c '\.png$')" -ge 10 ]; then echo "skip $id"; continue; fi
     mkdir -p "$d"
     "$SC" stop; sleep 2
     if ! "$SC" start "$id"; then echo "!! stage $id did not start"; continue; fi
@@ -24,19 +25,19 @@ for id in $IDS; do
     "$SC" stageonly
     "$SC" freeze
     "$SC" cam 0 0 1.0; sleep 0.4
-    "$SC" shot "$d" c0
-    "$SC" cam -208 0 1.0; sleep 0.4; "$SC" shot "$d" cL
-    "$SC" cam 208 0 1.0;  sleep 0.4; "$SC" shot "$d" cR
-    "$SC" cam 0 -200 1.0; sleep 0.4; "$SC" shot "$d" cU
-    "$SC" cam 0 0 0.839895; sleep 0.4; "$SC" shot "$d" z0
+    shot "$d" c0
+    "$SC" cam -208 0 1.0; sleep 0.4; shot "$d" cL
+    "$SC" cam 208 0 1.0;  sleep 0.4; shot "$d" cR
+    "$SC" cam 0 -200 1.0; sleep 0.4; shot "$d" cU
+    "$SC" cam 0 0 0.839895; sleep 0.4; shot "$d" z0
     "$SC" cam 0 0 1.0
     # exact animation steps from the c0 state: +1, +30, +120, +600 ticks
-    "$SC" step 1;   sleep 0.4; "$SC" shot "$d" k1
-    "$SC" step 29;  sleep 0.4; "$SC" shot "$d" k30
-    "$SC" step 90;  sleep 0.4; "$SC" shot "$d" k120
-    "$SC" step 480; sleep 0.4; "$SC" shot "$d" k600
+    "$SC" step 1;   sleep 0.4; shot "$d" k1
+    "$SC" step 29;  sleep 0.4; shot "$d" k30
+    "$SC" step 90;  sleep 0.4; shot "$d" k120
+    "$SC" step 480; sleep 0.4; shot "$d" k600
     "$SC" chars; sleep 0.5
-    "$SC" shot "$d" ch
+    shot "$d" ch
     echo "done $id"
 done
 "$SC" stop

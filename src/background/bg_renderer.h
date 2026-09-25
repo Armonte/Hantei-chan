@@ -11,6 +11,8 @@
 #include <glad/glad.h>
 #include <unordered_map>
 #include <memory>
+#include <array>
+#include <vector>
 
 class Render;
 class Parts;
@@ -143,6 +145,18 @@ private:
 	void   DrawWeather(const Camera& camera);
 	void   DrawLights(const Camera& camera);
 	void   DrawStandIns(const Camera& camera);
+	// TecSakuraBloom (Shader/sh_bloom_sakura.txt): petals also drawn into a
+	// temp target, blurred along both diagonals, added onto the scene.
+	void   SakuraBloom(const Camera& camera, const std::vector<std::array<float, 24>>& petals, GLuint tex);
+	GLuint bloomFbo[2] = {0, 0}, bloomTex[2] = {0, 0};
+	int    bloomW = 0, bloomH = 0;
+	GLuint blurProg = 0, blurVbo = 0;
+	GLint  uBlurTex = -1, uBlurStep = -1, uBlurMode = -1;
+public:
+	void   SetSakuraBloom(bool v) { sakuraBloom = v; }
+	bool   IsSakuraBloom() const  { return sakuraBloom; }
+private:
+	bool   sakuraBloom = true;
 	StandIns standIns;
 	GLuint standTex = 0;
 	void   LoadDropTexture();

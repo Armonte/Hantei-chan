@@ -780,6 +780,7 @@ void Renderer::DrawWeather(const Camera& camera) {
 	} else if (drops.Type() == 0) {
 		if (!dropTexTried) LoadDropTexture();
 		if (!dropTex || dropTexW <= 0 || dropTexH <= 0) return;
+		std::vector<std::array<float, 24>> petals;
 		const int W = cfg.w, H = cfg.h;
 		const float x0 = (float)(W / -2), x1 = (float)(W - W / 2);
 		const float y0 = (float)(H / -2), y1 = (float)(H - H / 2);
@@ -791,8 +792,16 @@ void Renderer::DrawWeather(const Camera& camera) {
 			float u0 = (float)(W * (int)p.frame) / dropTexW, v0 = (float)(H * p.pat) / dropTexH;
 			float u1 = u0 + (float)W / dropTexW, v1 = v0 + (float)H / dropTexH;
 			const float uv[8] = { u0, v0, u1, v0, u1, v1, u0, v1 };
-			EmitQuad(dropTex, xy, uv, col, false);
+			// DropObject_RenderWithBloom sets sampler 2 (linear) for the petals.
+			EmitQuad(dropTex, xy, uv, col, true);
+			if (sakuraBloom) {
+				std::array<float, 24> q;
+				std::memcpy(q.data(), xy, sizeof(xy)); std::memcpy(q.data() + 8, uv, sizeof(uv));
+				std::memcpy(q.data() + 16, col, sizeof(col));
+				petals.push_back(q);
+			}
 		}
+		if (sakuraBloom && !petals.empty()) SakuraBloom(camera, petals, dropTex);
 	}
 	// DropObj_Type -1 (bg99) runs HudSpriteQueue_RenderGridWith3DTransform —
 	// not previewed.
@@ -825,6 +834,120 @@ void Renderer::DrawLights(const Camera& camera) {
 			EmitLine(x, fy, x + (float)l.power, fy, w * 2.0f, on, off);
 		}
 	}
+}
+
+// ---- TecSakuraBloom ---------------------------------------------------------------
+
+static const char* kBlurVS = R"GLSL(
+#version 330 core
+layout (location = 0) in vec2 aPos;
+out vec2 vUV;
+void main() { vUV = aPos * 0.5 + 0.5; gl_Position = vec4(aPos, 0.0, 1.0); }
+)GLSL";
+// uMode 0: PS_0_Update0/1, the 9-tap blur along uStep; 1: plain copy.
+static const char* kBlurFS = R"GLSL(
+#version 330 core
+in vec2 vUV;
+uniform sampler2D uTex;
+uniform vec2 uStep;
+uniform int uMode;
+out vec4 FragColor;
+void main() {
+    if (uMode == 1) { FragColor = texture(uTex, vUV); return; }
+    vec4 o = vec4(0.0);
+    o += texture(uTex, vUV + uStep *  4.0) * 0.05;
+    o += texture(uTex, vUV + uStep *  3.0) * 0.075;
+    o += texture(uTex, vUV + uStep *  2.0) * 0.1;
+    o += texture(uTex, vUV + uStep *  1.0) * 0.15;
+    o += texture(uTex, vUV)                 * 0.25;
+    o += texture(uTex, vUV + uStep * -1.0) * 0.15;
+    o += texture(uTex, vUV + uStep * -2.0) * 0.1;
+    o += texture(uTex, vUV + uStep * -3.0) * 0.075;
+    o += texture(uTex, vUV + uStep * -4.0) * 0.05;
+    FragColor = o;
+}
+)GLSL";
+
+// MBAA DropObject_RenderWithBloom 0x4b5cc0 + Shader/sh_bloom_sakura.txt:
+//   Ready: temp RT0/RT1 = (0,0,0,1); each petal is also drawn into RT0 (MRT);
+//   Update pass 0: RT1 = blur(RT0, (+1.5, +1.5) texel); pass 1: RT0 = blur(RT1,
+//   (-1.5, +1.5) texel); then RT0 is drawn over the scene with blend 2
+//   (SRCALPHA, ONE), linear filter. The game's RTs are 640x480; here a game
+//   texel is `zoom` target pixels.
+void Renderer::SakuraBloom(const Camera& camera, const std::vector<std::array<float, 24>>& petals, GLuint tex) {
+	GLint prevFbo = 0, vp[4];
+	glGetIntegerv(GL_FRAMEBUFFER_BINDING, &prevFbo);
+	glGetIntegerv(GL_VIEWPORT, vp);
+	const int W = vp[2], H = vp[3];
+	if (W <= 0 || H <= 0) return;
+	if (!blurProg) {
+		GLuint vs = CompileShader(GL_VERTEX_SHADER, kBlurVS), fs = CompileShader(GL_FRAGMENT_SHADER, kBlurFS);
+		blurProg = LinkProgram(vs, fs);
+		glDeleteShader(vs); glDeleteShader(fs);
+		uBlurTex = glGetUniformLocation(blurProg, "uTex");
+		uBlurStep = glGetUniformLocation(blurProg, "uStep");
+		uBlurMode = glGetUniformLocation(blurProg, "uMode");
+		const float quad[12] = {-1, -1, 1, -1, 1, 1, 1, 1, -1, 1, -1, -1};
+		glGenBuffers(1, &blurVbo);
+		glBindBuffer(GL_ARRAY_BUFFER, blurVbo);
+		glBufferData(GL_ARRAY_BUFFER, sizeof(quad), quad, GL_STATIC_DRAW);
+	}
+	if (W != bloomW || H != bloomH || !bloomFbo[0]) {
+		for (int i = 0; i < 2; ++i) {
+			if (bloomTex[i]) glDeleteTextures(1, &bloomTex[i]);
+			if (bloomFbo[i]) glDeleteFramebuffers(1, &bloomFbo[i]);
+			glGenTextures(1, &bloomTex[i]);
+			glBindTexture(GL_TEXTURE_2D, bloomTex[i]);
+			glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, W, H, 0, GL_RGBA, GL_UNSIGNED_BYTE, nullptr);
+			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+			glGenFramebuffers(1, &bloomFbo[i]);
+			glBindFramebuffer(GL_FRAMEBUFFER, bloomFbo[i]);
+			glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, bloomTex[i], 0);
+		}
+		bloomW = W; bloomH = H;
+	}
+	// Ready + petals into RT0 (same projection / program as the scene draw).
+	glBindFramebuffer(GL_FRAMEBUFFER, bloomFbo[0]);
+	glViewport(0, 0, W, H);
+	glClearColor(0, 0, 0, 1);
+	glClear(GL_COLOR_BUFFER_BIT);
+	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+	for (const auto& q : petals) EmitQuad(tex, q.data(), q.data() + 8, q.data() + 16, true);
+	// Two diagonal blurs.
+	const float z = camera.zoom > 0.0f ? camera.zoom : 1.0f;
+	const float sx = 1.5f * z / W, sy = 1.5f * z / H;
+	glUseProgram(blurProg);
+	glDisable(GL_BLEND);
+	glBindBuffer(GL_ARRAY_BUFFER, blurVbo);
+	glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, 2 * sizeof(float), (void*)0);
+	glEnableVertexAttribArray(0);
+	glDisableVertexAttribArray(1);
+	glDisableVertexAttribArray(2);
+	glActiveTexture(GL_TEXTURE0);
+	glUniform1i(uBlurTex, 0);
+	glUniform1i(uBlurMode, 0);
+	// GL's v runs bottom-up: the game's (+x,+y down) diagonal is (+x,-v).
+	glBindFramebuffer(GL_FRAMEBUFFER, bloomFbo[1]);
+	glBindTexture(GL_TEXTURE_2D, bloomTex[0]);
+	glUniform2f(uBlurStep, sx, -sy);
+	glDrawArrays(GL_TRIANGLES, 0, 6);
+	glBindFramebuffer(GL_FRAMEBUFFER, bloomFbo[0]);
+	glBindTexture(GL_TEXTURE_2D, bloomTex[1]);
+	glUniform2f(uBlurStep, -sx, -sy);
+	glDrawArrays(GL_TRIANGLES, 0, 6);
+	// Add onto the scene.
+	glBindFramebuffer(GL_FRAMEBUFFER, (GLuint)prevFbo);
+	glViewport(vp[0], vp[1], vp[2], vp[3]);
+	glEnable(GL_BLEND);
+	glBlendFunc(GL_SRC_ALPHA, GL_ONE);
+	glBindTexture(GL_TEXTURE_2D, bloomTex[0]);
+	glUniform1i(uBlurMode, 1);
+	glDrawArrays(GL_TRIANGLES, 0, 6);
+	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+	glUseProgram(program);
 }
 
 // ---- stand-in fighters and their shadows ---------------------------------------
