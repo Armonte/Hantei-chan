@@ -27,7 +27,7 @@ namespace fs = std::filesystem;
 using namespace tagtune;
 
 const ImVec4 kWarn(1.0f, 0.62f, 0.25f, 1.0f), kOk(0.45f, 0.95f, 0.45f, 1.0f), kOver(0.55f, 0.8f, 1.0f, 1.0f),
-             kBad(1.0f, 0.4f, 0.4f, 1.0f), kExp(1.0f, 0.85f, 0.2f, 1.0f);
+             kBad(1.0f, 0.4f, 0.4f, 1.0f), kExp(0.95f, 0.35f, 0.05f, 1.0f);
 
 // ---- document state ----
 TagIni g_ini;
@@ -56,7 +56,7 @@ bool g_pendingApply = false;
 std::string g_char;                  // [char.<file>] being edited (lower case file name)
 int g_cmdMoon = 0;
 std::string g_cmdPath;               // the _c.txt the assist editor reads
-std::string g_cmdLoadedPath;
+std::string g_cmdLoadedPath = "\x01";   // never a real path: the first call always loads
 std::vector<CommandInfo> g_cmds;
 std::string g_cmdStatus;
 char g_motionBuf[5][16] = {};
@@ -88,10 +88,19 @@ std::string CharFileOfStem(const std::string& stem)
 	return s;
 }
 
+std::string g_activeTxt;              // the editor's active character .txt (set every frame)
+
+// The game folder: the box, else the linked MBAA.exe's folder, else the folder above the open character's data// when it holds an MBAA.exe (so the panel works without the link, on the game's own data).
 std::string GameDir(const gamelink::Snapshot& s)
 {
 	if (g_gameDirBuf[0]) return g_gameDirBuf;
 	if (s.connected && s.pid) return gamelink::GameDirOf(s.pid);
+	if (!g_activeTxt.empty()) {
+		std::error_code ec;
+		const fs::path data = fs::u8path(g_activeTxt).parent_path();
+		if (ieq(data.filename().u8string(), "data") && fs::exists(data.parent_path() / "MBAA.exe", ec))
+			return data.parent_path().u8string();
+	}
 	return {};
 }
 
@@ -638,6 +647,8 @@ void LoadCommands(const EditorContext& ctx, const gamelink::Snapshot& s)
 {
 	std::string want;
 	if (ActiveMatches(ctx) && !ctx.activeCommandsPath.empty()) want = ctx.activeCommandsPath;
+	else if (ActiveMatches(ctx) && !ctx.activeTxtPath.empty() && !cmdfile::CommandFileCandidates(ctx.activeTxtPath).empty())
+		want = cmdfile::CommandFileCandidates(ctx.activeTxtPath).front();   // the open character's own _c.txt
 	else {
 		const std::string dir = GameDir(s);
 		if (!dir.empty()) want = dir + "\\data\\" + g_char + "_" + std::to_string(g_cmdMoon) + "_c.txt";
@@ -667,7 +678,9 @@ std::string CommandLabel(const CommandInfo& c)
 void AssistTab(EditorContext& ctx, const gamelink::Snapshot& s)
 {
 	CharPicker(ctx, s);
-	if (!(ActiveMatches(ctx) && !ctx.activeCommandsPath.empty())) {
+	const bool fromEditor = ActiveMatches(ctx) && (!ctx.activeCommandsPath.empty() ||
+		(!ctx.activeTxtPath.empty() && !cmdfile::CommandFileCandidates(ctx.activeTxtPath).empty()));
+	if (!fromEditor) {
 		ImGui::SetNextItemWidth(120);
 		const char* moons[] = { "0 Crescent", "1 Full", "2 Half" };
 		ImGui::Combo("moon (_c.txt)", &g_cmdMoon, moons, 3);
@@ -781,8 +794,10 @@ void AssistTab(EditorContext& ctx, const gamelink::Snapshot& s)
 		const AssistAction a = ResolveAssistSlot(ForChar(g_ini, r.global, g_char), slot);
 		const ActionView av = DescribeAction(a, g_cmds);
 		const char* entryNames[] = { "behind", "edge", "drop", "arc" };
-		ImGui::TextColored(av.problem ? kBad : ImVec4(0.8f, 0.8f, 0.8f, 1.0f), "  -> %s%s, entry %s", av.text.c_str(),
-		                   a.fromSlot >= 0 && a.fromSlot != slot ? " (slot 5's action)" : "", entryNames[a.entry & 3]);
+		char line[256];
+		std::snprintf(line, sizeof line, "  -> %s%s, entry %s", av.text.c_str(),
+		              a.fromSlot >= 0 && a.fromSlot != slot ? " (slot 5's action)" : "", entryNames[a.entry & 3]);
+		if (av.problem) ImGui::TextColored(kBad, "%s", line); else ImGui::TextUnformatted(line);
 		if (av.pattern >= 0 && ActiveMatches(ctx)) {
 			ImGui::SameLine();
 			if (ImGui::SmallButton("jump")) Jump(ctx, av.pattern);
@@ -969,6 +984,7 @@ void DrawPanel(EditorContext& ctx)
 		return;
 	}
 	wasOpen = true;
+	g_activeTxt = ctx.activeTxtPath;
 	gamelink::Client& c = gamelink::SharedClient();
 	c.SetTagQuery(true);
 	const gamelink::Snapshot s = c.Get();
