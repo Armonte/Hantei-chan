@@ -150,7 +150,7 @@ From the Game Link:
 * per team: point and reserve (file, tagFlag), the point's pattern/frame, *edit this character*, and "tag in progress";
 * a slot table.
 
-With the proposed `QueryTag` (§5) it also shows:
+With `QueryTag` (§5; a pchost.dll from PovertyCaster `mbaacc/link-tag`) it also shows:
 * the raw tag state (idle / requested / exit / cooldown / 150 forced / entering / 300–303 assist phases), the counter, the tag-in tick and the **cooldown left**;
 * the **assist state**: phase, slot, tick, cooldown, pattern, calls;
 * health/red and the TagIn/TagOut in force per slot;
@@ -178,7 +178,7 @@ They run at frame 3, after `--open`, and work with or without it. `--tool gameli
 | What the link says | Verdict |
 |---|---|
 | not connected | allowed, labelled "session state unknown". Without the link nothing can be known, and the game itself never re-reads the file in a session. |
-| `QueryTag` (proposed) `sessionFlags != 0` | **refused** |
+| `QueryTag` `sessionFlags != 0` | **refused** |
 | `LinkState.gameModeKind == 0xFFFFFFFF` (native netplay) | **refused** |
 | in battle, `LinkState.reloadAllowed == 0` (session / replay / recording / non-CE) | **refused** (conservative) |
 | in battle, `reloadAllowed == 1` | allowed |
@@ -192,63 +192,47 @@ They run at frame 3, after `--open`, and work with or without it. `--tool gameli
 * The probe is sent only on Apply, never polled, because a refused probe writes one line to the game's log. The result is cached for 3 s.
 * One side effect: an `Ok` probe replaces a slot-0 pick that was *held without a reload* (`SetChar` without `kFlagReload`) with keep-everything. The Game Link window always sends picks with reload, so this does not happen in practice.
 
-### The PovertyCaster-side addition this needs (NOT made; for the mbaacc/tag owner)
+### The PovertyCaster side: `QueryTag` (implemented on `mbaacc/link-tag`)
 
-`LinkState` has only a boolean "tag request != 0". It has nothing of the swap counter (cooldown), the assist block, the session kind or the tuning the game resolved. The editor side is already written against the struct below (`game_link_proto.h`, marked PROPOSED):
-* It polls `QueryTag` while the window is open.
-* It stops by itself after one `Unknown` reply, and falls back to LinkState and the probe.
-* It drops a `LinkTag` of the wrong size, so a layout change cannot be misread.
+`LinkState` carries only a boolean "tag request != 0". It has nothing of the swap counter (cooldown), the assist block, the session kind or the tuning the game resolved. So PovertyCaster branch `mbaacc/link-tag` (worktree `/mnt/c/dev/castergroup/pc-linktag-wt`, off main `5bf0bc46`) adds an op for them.
 
-Additive, and `kLinkVersion` stays 1, like the stage ops.
+The change is additive: `kLinkVersion` stays 1, the unknown-op path is unchanged, and an older editor never sends the op.
 
-**`pc-proto/include/pc/proto/Proto.hpp`:**
-```cpp
-enum class IpcKind : uint16_t { ..., LinkStage, LinkTag /* 0x104 */ };
-enum class LinkOp : uint16_t { ..., QueryStage = 7, QueryTag = 8 /* -> LinkTag */ };
-constexpr uint8_t kLinkTagSessNetplay = 1, kLinkTagSessRollback = 2, kLinkTagSessReplay = 4,
-                  kLinkTagSessStepped = 8, kLinkTagSessNetMode = 16, kLinkTagSessRecording = 32;
-struct LinkTagTeam {                 // 40 B
-    int8_t  activeSlot;              // g_TeamAux[t] +0
-    uint8_t assistSlot;              // AssistTeam.slot  (dir index 0..4 = 5,2,6,4,8, + mode << 4)
-    uint8_t assistPlacement;         // AssistTeam.placement
-    uint8_t assistFlags;             // AssistTeam.flags
-    int32_t tagRequest;              // g_TeamAux[t] +4, RAW (0/100/101/150/200/254/255/300..303)
-    int32_t counter;                 // g_TeamAux[t] +8
-    int32_t tagInTick;               // tag::tagInTick(tagRequest, counter, partner < point)
-    int32_t cooldownLeft;            // tagRequest == 101 ? max(0, cooldownTicks - counter) : 0
-    int32_t assistTick, assistCooldown, assistPattern, assistCalls, meterPaid;   // AssistTeam
-};
-struct LinkTagSlot { int16_t tagIn, tagOut; int32_t health, red; };            // 12 B: CSD +0x28/+0x2C, actor +0xB8/+0xBC
-struct LinkTag {                     // 180 B
-    uint8_t  sessionFlags;           // kLinkTagSess*, from the same GateInputs tagTuningFrame gets
-    uint8_t  frozen;                 // tuningReloadVerdict != Allowed
-    uint8_t  iniPresent;             // s_present
-    uint8_t  koRule;                 // the rule in force (the host's in netplay)
-    uint32_t tuningLoads;            // count of successful loadFromDisk()
-    uint16_t warnings;               // s_warnings.size()
-    uint8_t  assistEnabled;          // s_active.assistEnabled
-    uint8_t  _pad;
-    char     activeStyle[24];        // s_style
-    char     sha[16];                // s_sha (the short sha the log prints), NUL-terminated
-    LinkTagTeam team[2];
-    LinkTagSlot slot[4];
-};
-static_assert(sizeof(LinkTag) == 180, "LinkTag layout must be stable across both arches");
-```
+**`pc-proto/Proto.hpp`:**
+* `LinkOp::QueryTag = 8` and `IpcKind::LinkTag = 0x104`.
+* `kLinkTagSess*` (six bits, one per reload-gate input).
+* `LinkTagTeam` (40 B), `LinkTagSlot` (12 B) and `LinkTag` (180 B), mirrored field for field in Hantei-chan's `game_link_proto.h` `Tag`/`TagTeam`/`TagSlot`. The **sizes and offsets are pinned on both sides**: PovertyCaster `tests/mbaacc_link_tag`, and `static_assert`s here.
 
-**`MbaaccSim_EtmLink.cpp` `handle()`:**
-```cpp
-case LinkOp::QueryTag: { LinkTag t; tagui::fillLinkTag(t); sendMsg(IpcKind::LinkTag, &t, sizeof t); return; }
-```
+**`LinkTag` fields:**
+* `sessionFlags`, `frozen`, `iniPresent`;
+* `koRule` in force (the host's in netplay);
+* `tuningLoads`, `warnings`, `assistEnabled`;
+* `activeStyle[24]`, and `sha[16]` (the first 15 hex digits of the tuning set's sha256);
+* per team: point, the raw `tagRequest`, counter, tag-in tick, `cooldownLeft` (state 101: `cooldownTicks - counter`, H6's comparison), and the AssistTeam fields: slot + mode, placement, flags, tick, cooldown, pattern, calls, meterPaid;
+* per slot: TagIn/TagOut in force, health/red.
 
-**`MbaaccSim_TagTuning.cpp`, next to `tagui::snapshot`:**
-* `fillLinkTag` reads the same memory `snapshot()` already reads: `0x557DB8 + t*0x20C` +0/+4/+8, the CSD via `pl + 0x33C`, and actor +0xB8/+0xBC.
-* It also reads the `AssistBlock` at `kAssistBlockBase + kAssistBlockOffset`.
-* Under `s_mx` it reads `s_style`, `s_sha`, `s_present`, `s_warnings`, `s_frozen` and the last `GateInputs` (keep a copy in `tagTuningFrame`).
-* `tuningLoads` needs a counter bumped in `loadFromDisk` on success.
-* No game writes and no new hook: the same thread and read pattern as `fillLinkState`.
+**`mbaacc/LinkTag.hpp`** (new, pure) holds `linktag::build(Inputs, LinkTag&)`, `sessionFlags(GateInputs)` and `cooldownLeft`.
 
-**Test:** the `ipc_link_roundtrip` pattern (size assert + one round trip).
+**`MbaaccSim_TagTuning.cpp` `tagFillLinkTag`** is the live half, running on the game thread from `linkFrame`. It **only reads**:
+* g_TeamAux +0/+4/+8;
+* the savestated AssistBlock, copied out with `memcpy`;
+* the player blocks and CharaSystemData;
+* the tuning's own state, under `s_mx`.
+
+Details:
+* The F3 readout's memory reads were factored into `readTeam`/`readSlot`, so both paths read the same fields.
+* The team and slot parts are filled only in battle, like `fillLinkState`.
+* A query never triggers the first ini load: the koRule accessor is skipped until the tuning is loaded.
+* `etm::lastGateInputs()` (EtmReload) gives the completed gate flags.
+* `tagKoRuleInForce()` (MbaaccSim_Tag.cpp) exposes the existing `requestedRule()`.
+
+**`MbaaccSim_EtmLink.cpp`:**
+* `case QueryTag` answers with `LinkTag`. It is never gated: it is answered in a session too, which is how the editor learns that one is live.
+* At most one QueryTag answer per frame, like QueryState and QueryStage.
+
+**Nothing new writes game memory, touches a savestate region or feeds a hash.**
+
+**Also on that branch:** `tag_tuning.sample.ini` now lists `assistFromBlockstun`, and its four stale help strings are synced. `mbaacc_tag_tuning` gained a drift test that checks every lever's default, group, range and help in the sample's reference list.
 
 ## 6. Verification
 
@@ -268,7 +252,7 @@ case LinkOp::QueryTag: { LinkTag t; tagui::fillLinkTag(t); sendMsg(IpcKind::Link
 
 Total: 3645 checks with `--data`, 3457 with the fixtures only (ctest); 0 failures.
 
-**Link paths against a mock DLL.** `src/game_link_mock.{h,cpp}` (`gamelink::MockDll`) serves `\\.\pipe\povertycaster-link-<own pid>` the way pchost.dll does, and additionally implements the proposed `QueryTag`. It is used in two places:
+**Link paths against a mock DLL.** `src/game_link_mock.{h,cpp}` (`gamelink::MockDll`) serves `\\.\pipe\povertycaster-link-<own pid>` the way pchost.dll does, and also answers `QueryTag` with the same `LinkTag` layout. It is used in two places:
 * `game_link_test` (3 modes: tag ops offline / no tag ops, i.e. today's DLL / session). It checks:
   * the `LinkTag` decode (assist phase 301 pattern 455, cooldown 80, style);
   * the `Unknown` fallback (`tagUnsupported`);
@@ -307,13 +291,13 @@ No game was launched. The real DLL's side of the probe (`requestSetChar` → `ga
 | `undo_manager_test` | PASS on a rerun. The first run, under machine load, reported one failure; it is timing-sensitive, and nothing in the undo code changed. |
 
 **Limits:**
-* **No live game test** (as asked). The real DLL has no `QueryTag` yet. Until PovertyCaster adds §5, the Live tab has point/reserve/tagFlag/"tag in progress", and no cooldown or assist state.
+* **No live game test** (as asked). `QueryTag` exists only on PovertyCaster `mbaacc/link-tag` (§5). With an older pchost.dll, the Live tab has point/reserve/tagFlag/"tag in progress", and no cooldown or assist state.
 * **Session state without the link is unknown.** The panel says so and still writes. The game never re-reads the file in a session, and reads it at the next session start, where the tuning handshake refuses a mismatch.
 * **The probe's one side effect** (§5): a held slot-0 pick without a reload is replaced by keep-everything.
 * **The default assist is the file rule.** The game can pick differently when an ExComCheck fails at call time. Those cases are flagged "conditional", and the game's own log line (`ASSIST default ...`) is the truth.
 * **Pattern pickers and jump** need the character open in the editor (its `.txt` stem must match the `[char]` name). Otherwise the field is a number.
 * **Env overrides** (`PCHOST_MBAACC_TAG_*`) are not shown; they are dev-only, and they win over the file in the game.
-* **Sample drift for PovertyCaster:** `tag_tuning.sample.ini` does not list `assistFromBlockstun`, and 4 of its help strings are older than the header.
+* **Sample drift** (fixed on PovertyCaster `mbaacc/link-tag`): the sample did not list `assistFromBlockstun`, and 4 of its help strings were older than the header.
 * **Windows position.** The window is placed relative to the main viewport. A build that opened it before this fix may have saved a detached position in `hanteichan.ini`; closing and reopening it, or deleting its `[Window][Tag / Team (experimental)]` block, fixes that.
 
 ## 8. Commits (`feat/tagpanel`, on `b5567f8`; not pushed)
