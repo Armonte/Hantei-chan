@@ -233,6 +233,7 @@ endif()
 add_executable(game_link_cli
 	src/game_link_cli.cpp
 	src/game_link.cpp
+	src/game_link_mock.cpp
 	src/background/bg_file.cpp
 	src/background/bg_pat.cpp
 	src/background/bg_info.cpp
@@ -521,7 +522,7 @@ if(MINGW)
 	target_link_options(package_tools_test PRIVATE -static-libgcc -static-libstdc++ -static)
 endif()
 add_test(NAME package_tools COMMAND package_tools_test)
-add_executable(game_link_test tests/game_link_test.cpp src/game_link.cpp)
+add_executable(game_link_test tests/game_link_test.cpp src/game_link.cpp src/game_link_mock.cpp)
 target_include_directories(game_link_test PRIVATE "src")
 if(MINGW)
 	target_link_options(game_link_test PRIVATE -static-libgcc -static-libstdc++ -static)

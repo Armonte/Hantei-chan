@@ -24,8 +24,15 @@
 //                                                    editor's own loader/saver); field = duration | offsetX |
 //                                                    offsetY | opacity  (bg-set-duration <..> <value> = duration)
 //
+// Tag / Team panel (docs/HANTEI_TAG_PANEL.md):
+//   game_link_cli tag                                print the PROPOSED QueryTag readout (or "unsupported")
+//   game_link_cli mock-dll <seconds> [notag] [session] [menu]   serve a MOCK dev-link pipe as this process (a fixed
+//                                                    TAG state, the proposed LinkTag) for headless UI captures;
+//                                                    point the editor at it with HANTEI_GAME_LINK_PID=<printed pid>
+//
 // --pid <n> (before the command) or HANTEI_GAME_LINK_PID=<n>: talk ONLY to that MBAA.exe; no discovery by name.
 #include "game_link.h"
+#include "game_link_mock.h"
 #include "framedata.h"
 #include "background/bg_file.h"
 
@@ -114,6 +121,49 @@ int main(int argc, char** argv)
 	}
 	if (argc < 2) { std::fprintf(stderr, "usage: see the banner of src/game_link_cli.cpp\n"); return 1; }
 	const std::string cmd = argv[1];
+
+	if (cmd == "mock-dll") {
+		gamelink::MockDll::Options o;
+		for (int i = 3; i < argc; ++i) {
+			if (!std::strcmp(argv[i], "notag")) o.tagOps = false;
+			if (!std::strcmp(argv[i], "session")) o.session = true;
+			if (!std::strcmp(argv[i], "menu")) o.inBattle = false;
+		}
+		gamelink::MockDll m(o);
+		if (!m.Start()) { std::fprintf(stderr, "cannot create the mock pipe\n"); return 2; }
+		std::printf("mock dev-link serving as pid %u for %s s\n", m.Pid(), argc > 2 ? argv[2] : "60");
+		std::fflush(stdout);
+		Sleep((DWORD)(1000 * (argc > 2 ? std::atoi(argv[2]) : 60)));
+		std::printf("mock: %u commands, %u gate probes\n", m.Commands(), m.Probes());
+		m.Stop();
+		return 0;
+	}
+	if (cmd == "tag") {
+		gamelink::Client c;
+		if (pid) c.SetTargetPid(pid);
+		c.SetTagQuery(true);
+		c.SetPollHz(20);
+		c.Connect();
+		gamelink::Snapshot s;
+		for (int k = 0; k < 150; ++k) { s = c.Get(); if (s.haveTag || s.tagUnsupported) break; Sleep(20); }
+		if (!s.connected) { std::printf("not connected: %s\n", s.status.c_str()); return 2; }
+		if (!s.haveTag) { std::printf("QueryTag unsupported by this pchost.dll (proposed, docs/HANTEI_TAG_PANEL.md 5)\n"); return 3; }
+		const auto& t = s.tag;
+		std::printf("session 0x%02X frozen %u ini %u koRule %u loads %u warnings %u assist %u style '%s' sha %s\n",
+		            t.sessionFlags, t.frozen, t.iniPresent, t.koRule, t.tuningLoads, t.warnings, t.assistEnabled,
+		            t.activeStyle, t.sha);
+		for (int i = 0; i < 2; ++i) {
+			const auto& m = t.team[i];
+			std::printf("team %d: point %d req %d counter %d tagInTick %d cooldown %d | assist slot 0x%02X place %u flags %u "
+			            "tick %d cd %d pattern %d calls %d meter %d\n", i + 1, m.activeSlot, m.tagRequest, m.counter,
+			            m.tagInTick, m.cooldownLeft, m.assistSlot, m.assistPlacement, m.assistFlags, m.assistTick,
+			            m.assistCooldown, m.assistPattern, m.assistCalls, m.meterPaid);
+		}
+		for (int i = 0; i < 4; ++i)
+			std::printf("P%d tagIn %d tagOut %d hp %d red %d\n", i + 1, t.slot[i].tagIn, t.slot[i].tagOut, t.slot[i].health,
+			            t.slot[i].red);
+		return 0;
+	}
 
 	if (cmd == "bg-get" || cmd == "bg-set-duration" || cmd == "bg-set") {
 		if (argc < 5) return 1;
