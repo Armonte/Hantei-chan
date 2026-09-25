@@ -246,6 +246,30 @@ struct Camera {
 	float zoom = 1.0f;
 	bool dragging = false;
 
+	// Game camera in world px (MBAA keeps it x128 at 0x55DEC4/0x55DEC8): the
+	// world point drawn at the screen's horizontal centre, with world y = camY
+	// on screen row 432 (Camera_UpdateMatrices: T(-cam) * S(zoom) * T(320, 432)).
+	// An object with parallax p is translated by (p/256 - 1) * (-cam) before
+	// that matrix (Background_DrawInstance), i.e. by (1 - p/256) * cam in
+	// world space. The host derives cam from the view each frame
+	// (SetGameCamFromView) so panning the stage view shows the game's parallax.
+	float camX = 0.0f;
+	float camY = 0.0f;
+	// Parallax shift of a layer, in world px. The game builds it as
+	// (p/256 - 1) * ((1, 1) * cameraMatrix) (MBAA 0x4b70cd), i.e. the camera
+	// transform of the point (1, 1) rather than of the origin, which leaves a
+	// sub-pixel (p/256 - 1) term: shift = (1 - p/256) * (cam - 1).
+	inline float ParallaxX(int parallax) const { return (1.0f - parallax / 256.0f) * (camX - 1.0f); }
+	inline float ParallaxY(int parallax) const { return (1.0f - parallax / 256.0f) * (camY - 1.0f); }
+	// cam from a view of W x H pixels whose world origin sits at panLast
+	// (world units) under `zoom`: the view centre is world x camX, and screen
+	// row 432/480 of a 640x480 game frame is world y camY.
+	void SetGameCamFromView(float W, float H) {
+		const float z = zoom > 0.0f ? zoom : 1.0f;
+		camX = W * 0.5f / z - panLastX;
+		camY = H * 0.5f / z - panLastY + 192.0f / z;
+	}
+
 	// Sprite *world* position for a given object/frame offset. u4ick's
 	// MonoForm.cs:253-254 formula is `panLast + (pan - panLast) * f + off`
 	// in screen space; the `panLast +` part is the screen anchor (where

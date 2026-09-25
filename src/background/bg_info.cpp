@@ -142,6 +142,11 @@ bool StageInfo::Load(const std::string& txtPath) {
 	*this = StageInfo();
 	std::string text;
 	if (!ReadText(txtPath, text)) return false;
+	return LoadFromText(text, txtPath);
+}
+
+bool StageInfo::LoadFromText(const std::string& text, const std::string& txtPath) {
+	*this = StageInfo();
 	path = txtPath;
 	loaded = true;
 	std::vector<KV> kvs = ParseIni(text);   // the game ignores [Data]; keys are global
@@ -279,6 +284,23 @@ void DropSystem::Update(Rng& rng) {
 			if (p.frame >= (float)cfg.frameNum) p.frame = 0.0f;
 			p.waitCtr = 0.0f;
 		}
+	}
+}
+
+void DropSystem::ImportRaw(const StageInfo& info, const uint8_t* raw, size_t n) {
+	cfg = info;
+	type = info.dropType;
+	active = info.loaded && info.dropObj != 0;
+	particles.assign(active ? (size_t)info.count : 0, DropParticle());
+	for (size_t i = 0; i < particles.size() && (i + 1) * 44 <= n; ++i) {
+		const uint8_t* r = raw + i * 44;
+		DropParticle& p = particles[i];
+		std::memcpy(&p.x, r + 0, 4);  std::memcpy(&p.y, r + 4, 4);
+		std::memcpy(&p.pat, r + 8, 4); std::memcpy(&p.frame, r + 12, 4);
+		std::memcpy(&p.waitCtr, r + 16, 4); std::memcpy(&p.alpha, r + 20, 4);
+		std::memcpy(&p.phase, r + 24, 4);
+		std::memcpy(&p.vx, r + 28, 4); std::memcpy(&p.vy, r + 32, 4);
+		std::memcpy(&p.ax, r + 36, 4); std::memcpy(&p.ay, r + 40, 4);
 	}
 }
 

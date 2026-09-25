@@ -50,13 +50,12 @@ context(context_)
 	// character undo stack: while a stage view owns focus, Ctrl+Z / Ctrl+Y
 	// go to the stage and Ctrl+S saves the stage file.
 	shortcuts.setContextHandler(ShortcutContext::stageView, [this](ShortcutAction a) {
-		if (!currentBgFile) return false;
 		switch (a) {
-		case ShortcutAction::undo: currentBgFile->Undo(); return true;
-		case ShortcutAction::redo: currentBgFile->Redo(); return true;
-		case ShortcutAction::save:
-			if (currentBgFile->Save(currentBgFile->GetFilename().c_str())) currentBgFile->ClearDirty();
-			return true;
+		case ShortcutAction::undo: return stageUndoRedo(false, true);
+		case ShortcutAction::redo: return stageUndoRedo(true, true);
+		case ShortcutAction::save: if (!currentBgFile) return false; saveStageAll(); return true;
+		case ShortcutAction::nextStage: stepStage(1); return true;
+		case ShortcutAction::previousStage: stepStage(-1); return true;
 		default: return false;
 		}
 	});
@@ -877,6 +876,96 @@ void MainFrame::loadStageFile(const std::string& path)
 
 	views.push_back(std::move(view));
 	setActiveView((int)views.size() - 1);
+	// The stage list of the game this stage came from (browser, PageUp/Down).
+	if (!stageProject.IsOpen() || !stageProject.FindByDat(path))
+		stageProject.Open(path, currentBgFile ? currentBgFile->GetGame() : bg::Game::MBAACC);
+}
+
+void MainFrame::openStageInActiveTab(const std::string& path)
+{
+	CharacterView* view = getActiveView();
+	if (!view || !view->isStageView()) { loadStageFile(path); return; }
+	auto file = std::make_unique<bg::File>();
+	if (!file->Load(path.c_str())) return;
+	std::string displayName = path;
+	auto slash = displayName.find_last_of("/\\");
+	if (slash != std::string::npos) displayName = displayName.substr(slash + 1);
+	// Same tab, same camera: the view keeps its pan/zoom.
+	view->setStageFile(std::move(file), displayName);
+	setActiveView(activeViewIndex);
+	if (!stageProject.IsOpen() || !stageProject.FindByDat(path))
+		stageProject.Open(path, currentBgFile ? currentBgFile->GetGame() : bg::Game::MBAACC);
+}
+
+void MainFrame::stepStage(int dir)
+{
+	if (!currentBgFile) return;
+	if (!stageProject.IsOpen()) stageProject.Open(currentBgFile->GetFilename(), currentBgFile->GetGame());
+	const bg::StageEntry* cur = stageProject.FindByDat(currentBgFile->GetFilename());
+	const bg::StageEntry* next = stageProject.Step(cur ? cur->id : -1, dir);
+	if (next && !next->datPath.empty()) openStageInActiveTab(next->datPath);
+}
+
+// One timeline for the two stage histories: undo takes the step with the
+// newest edit sequence; redo takes the most recently undone one, which is
+// the redo top with the lowest sequence.
+static int PickStageHistory(bool redo, bool fileCan, uint64_t fileSeq, bool projCan, uint64_t projSeq)
+{
+	if (!fileCan && !projCan) return 0;
+	if (!projCan) return 1;
+	if (!fileCan) return 2;
+	if (redo) return fileSeq <= projSeq ? 1 : 2;
+	return fileSeq >= projSeq ? 1 : 2;
+}
+
+bool MainFrame::stageUndoRedo(bool redo, bool apply)
+{
+	const bool fileCan = currentBgFile && (redo ? currentBgFile->CanRedo() : currentBgFile->CanUndo());
+	const bool projCan = stageProject.IsOpen() && (redo ? stageProject.CanRedo() : stageProject.CanUndo());
+	const uint64_t fileSeq = currentBgFile ? (redo ? currentBgFile->RedoSeq() : currentBgFile->UndoSeq()) : 0;
+	const uint64_t projSeq = redo ? stageProject.RedoSeq() : stageProject.UndoSeq();
+	const int pick = PickStageHistory(redo, fileCan, fileSeq, projCan, projSeq);
+	if (!pick) return false;
+	if (!apply) return true;
+	if (pick == 1) return redo ? currentBgFile->Redo() : currentBgFile->Undo();
+	return redo ? stageProject.Redo() : stageProject.Undo();
+}
+
+std::string MainFrame::stageUndoLabel(bool redo)
+{
+	const bool fileCan = currentBgFile && (redo ? currentBgFile->CanRedo() : currentBgFile->CanUndo());
+	const bool projCan = stageProject.IsOpen() && (redo ? stageProject.CanRedo() : stageProject.CanUndo());
+	const uint64_t fileSeq = currentBgFile ? (redo ? currentBgFile->RedoSeq() : currentBgFile->UndoSeq()) : 0;
+	const uint64_t projSeq = redo ? stageProject.RedoSeq() : stageProject.UndoSeq();
+	const int pick = PickStageHistory(redo, fileCan, fileSeq, projCan, projSeq);
+	if (pick == 1) return "stage edit";
+	if (pick == 2) return redo ? stageProject.RedoLabel() : stageProject.UndoLabel();
+	return std::string();
+}
+
+void MainFrame::saveStageAll()
+{
+	if (currentBgFile) {
+		if (currentBgFile->IsDirty() && currentBgFile->Save(currentBgFile->GetFilename().c_str())) currentBgFile->ClearDirty();
+		if (currentBgFile->IsInfoDirty()) currentBgFile->SaveInfo();
+	}
+	if (stageProject.IsOpen() && stageProject.IsDirty()) stageProject.SaveAll();
+}
+
+void MainFrame::drawStageBrowser()
+{
+	if (!m_showStageBrowser) return;
+	const ImVec2 mainPos = ImGui::GetMainViewport()->Pos;
+	ImGui::SetNextWindowPos(ImVec2(mainPos.x + 520.0f, mainPos.y + 80.0f), ImGuiCond_FirstUseEver);
+	ImGui::SetNextWindowSize(ImVec2(620.0f, 720.0f), ImGuiCond_FirstUseEver);
+	if (!ImGui::Begin("Stage Browser", &m_showStageBrowser)) { ImGui::End(); return; }
+	if (ImGui::IsWindowFocused(ImGuiFocusedFlags_RootAndChildWindows))
+		shortcuts.claimFocus(ShortcutContext::stageView, getActiveView() ? getActiveView()->getId() : 0);
+	bg::BrowserHooks hooks;
+	hooks.open = [this](const std::string& p) { openStageInActiveTab(p); };
+	hooks.showInGame = stageShowInGame;
+	bg::DrawStageBrowser(stageProject, currentBgFile ? currentBgFile->GetFilename() : std::string(), hooks);
+	ImGui::End();
 }
 
 void MainFrame::clearStage()
