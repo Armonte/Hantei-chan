@@ -101,6 +101,7 @@ int main()
 				CHECK(snap.tag.team[0].tagRequest == 301 && snap.tag.team[0].assistPattern == 455);
 				CHECK(snap.tag.team[1].cooldownLeft == 80 && std::string(snap.tag.activeStyle) == "Classic");
 				CHECK((snap.tag.sessionFlags != 0) == (mode == 2));
+				CHECK((snap.tag.tagConfig & gamelink::wire::kTagCfgTag) && ((snap.tag.tagConfig & gamelink::wire::kTagCfgFromHost) != 0) == (mode == 2));
 			}
 			const uint16_t seq = c.ProbeGate();
 			gamelink::wire::Reply r{};

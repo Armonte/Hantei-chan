@@ -87,6 +87,7 @@ wire::Tag MockDll::FakeTag(const Options& o)
 	t.tuningLoads = 4;
 	t.warnings = 1;
 	t.assistEnabled = 1;
+	t.tagConfig = wire::kTagCfgTag | wire::kTagCfgPartner0 | wire::kTagCfgPartner1 | (o.session ? wire::kTagCfgFromHost : 0);
 	CopyName(t.activeStyle, sizeof t.activeStyle, "Classic");
 	CopyName(t.sha, sizeof t.sha, "1a2b3c4d");
 	// team 1: point Shiki (slot 0), Sion (slot 2) is acting as a 6+FN1 assist (pattern mode, drop entry), pattern 455
