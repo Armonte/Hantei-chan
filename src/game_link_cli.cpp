@@ -27,7 +27,7 @@
 // Tag / Team panel (docs/HANTEI_TAG_PANEL.md):
 //   game_link_cli tag                                print the QueryTag readout (or "unsupported": pchost.dll older than mbaacc/link-tag)
 //   game_link_cli mock-dll <seconds> [notag] [session] [menu]   serve a MOCK dev-link pipe as this process (a fixed
-//                                                    TAG state, the proposed LinkTag) for headless UI captures;
+//                                                    TAG state + LinkTag) for headless UI captures;
 //                                                    point the editor at it with HANTEI_GAME_LINK_PID=<printed pid>
 //
 // --pid <n> (before the command) or HANTEI_GAME_LINK_PID=<n>: talk ONLY to that MBAA.exe; no discovery by name.
