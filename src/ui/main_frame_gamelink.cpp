@@ -4,6 +4,7 @@
 // lives in the panel and its worker thread.
 #include "../main_frame.h"
 #include "../game_link_panel.h"
+#include "../tag_panel.h"
 #include "../background/bg_file.h"
 #include "../character_view.h"
 
@@ -62,4 +63,30 @@ void MainFrame::drawGameLink()
 	if (currentBgFile && currentBgFile->IsLoaded())
 		if (const bg::StageListEntry* e = currentBgFile->GetStageListEntry()) ctx.openStageIndex = e->index;
 	gamelink::DrawPanel(ctx);
+}
+
+// [tag-panel] The Tag / Team window: the active view (jump / follow), the active character's .txt, _c.txt and pattern
+// names (pickers). docs/HANTEI_TAG_PANEL.md.
+void MainFrame::drawTagPanel()
+{
+	if (!tagpanel::showPanel) { tagpanel::EditorContext none; tagpanel::DrawPanel(none); return; }
+	tagpanel::EditorContext ctx;
+	CharacterView* view = getActiveView();
+	CharacterInstance* active = getActiveCharacter();
+	if (view && active) {
+		ctx.activeState = &view->getState();
+		ctx.activeTxtPath = active->getTxtPath();
+		ctx.activeKey = !active->getTxtPath().empty() ? TxtStem(active->getTxtPath()) : TxtStem(active->getTopHA6Path());
+		ctx.activeCommandsPath = active->frameData.m_commandsPath;
+		ctx.patternCount = [active] { return (int)active->frameData.get_sequence_count(); };
+		ctx.patternName = [active](int p) {
+			auto* seq = active->frameData.get_sequence(p);
+			return seq ? std::string(seq->name.c_str()) : std::string();
+		};
+		ctx.frameCount = [active](int p) {
+			auto* seq = active->frameData.get_sequence(p);
+			return seq ? (int)seq->frames.size() : 0;
+		};
+	}
+	tagpanel::DrawPanel(ctx);
 }
