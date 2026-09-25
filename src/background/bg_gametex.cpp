@@ -344,9 +344,14 @@ bool ComposeGameTexture(CG& cg, int n, bool dxt5, GameTexture& out) {
 	int bpp = 0;
 	if (!ComposeCanvas(cg, n, out, bpp)) return false;
 	if (bpp == 8) {
-		// A1R5G5B5 through the palette: 5-bit channels, 1-bit alpha.
+		// A1R5G5B5 through the palette (Texture_ConvertFormat 0x402eb0, dest 0x19):
+		// channel >> 3 with a nonzero channel kept at least 1, alpha = index != 0.
 		for (size_t i = 0; i < out.rgba.size(); i += 4) {
-			for (int c = 0; c < 3; ++c) { int v = out.rgba[i + c] >> 3; out.rgba[i + c] = (uint8_t)((v << 3) | (v >> 2)); }
+			for (int c = 0; c < 3; ++c) {
+				int v8 = out.rgba[i + c], v = v8 >> 3;
+				if (v8 && !v) v = 1;
+				out.rgba[i + c] = (uint8_t)((v << 3) | (v >> 2));
+			}
 			out.rgba[i + 3] = out.rgba[i + 3] >= 128 ? 255 : 0;
 		}
 		return true;
