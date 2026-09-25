@@ -229,6 +229,10 @@ endif()
 add_executable(game_link_cli
 	src/game_link_cli.cpp
 	src/game_link.cpp
+	src/background/bg_file.cpp
+	src/background/bg_pat.cpp
+	src/background/bg_info.cpp
+	src/cg.cpp
 	src/framedata.cpp
 	src/framedata_load.cpp
 	src/framedata_save.cpp
@@ -238,7 +242,7 @@ add_executable(game_link_cli
 )
 target_include_directories(game_link_cli PRIVATE "." "third_party" "${CMAKE_BINARY_DIR}/generated")
 target_compile_definitions(game_link_cli PRIVATE WIN32_LEAN_AND_MEAN HA6GUIVERSION="${CMAKE_PROJECT_VERSION}")
-target_link_libraries(game_link_cli PRIVATE tinyalloc)
+target_link_libraries(game_link_cli PRIVATE tinyalloc glm)
 if(MINGW)
 	target_link_options(game_link_cli PRIVATE -static-libgcc -static-libstdc++ -static)
 endif()
