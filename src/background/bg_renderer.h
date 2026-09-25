@@ -58,6 +58,11 @@ public:
 	void   SetShowWeather(bool v)        { showWeather = v; }
 	bool   IsShowingWeather() const      { return showWeather; }
 	void   SetShowLights(bool v)         { showLights = v; }
+	// Stand-in fighters (grey silhouettes) with the game's fighter shadows:
+	// the flat shadow, or one shadow per bgNNInfo.txt light (Character_Render
+	// 0x41af10, Shadow_BuildLightProjectionMatrix 0x44c0a0). x in world px.
+	struct StandIns { bool enabled = false; float x[2] = {-128.0f, 128.0f}; float height = 190.0f; };
+	StandIns& GetStandIns()              { return standIns; }
 	bool   IsShowingLights() const       { return showLights; }
 	// Debug self-capture of the stage viewport to C:/dev/bg_dump.png
 	// (off by default; armed on demand from the inspector).
@@ -137,6 +142,9 @@ private:
 	// Weather particles (DropObject_RenderWithBloom) and light markers.
 	void   DrawWeather(const Camera& camera);
 	void   DrawLights(const Camera& camera);
+	void   DrawStandIns(const Camera& camera);
+	StandIns standIns;
+	GLuint standTex = 0;
 	void   LoadDropTexture();
 	// Low-level quad/line emitters in stage-screen space.
 	void   EmitQuad(GLuint tex, const float xy[8], const float uv[8],

@@ -213,6 +213,18 @@ static void DrawInspectorBody(File& file, Renderer& renderer, InspectorResult& r
 	ImGui::SameLine();
 	bool l = renderer.IsShowingLights();
 	if (ImGui::Checkbox("Light markers", &l)) renderer.SetShowLights(l);
+	{
+		auto& si = renderer.GetStandIns();
+		ImGui::Checkbox("Stand-in fighters + shadows", &si.enabled);
+		if (ImGui::IsItemHovered())
+			ImGui::SetTooltip("Two silhouettes with the game's fighter shadows: one flat shadow, or one\n"
+			                  "per Info.txt light (strength fades over the light's Power).");
+		if (si.enabled) {
+			ImGui::PushItemWidth(200);
+			ImGui::DragFloat2("Fighter x", si.x, 1.0f, -512.0f, 512.0f, "%.0f");
+			ImGui::PopItemWidth();
+		}
+	}
 	if (file.GetDrops().IsActive())
 		ImGui::TextDisabled("weather: %zu particles (type %d)", file.GetDrops().Particles().size(),
 		                    file.GetDrops().Type());

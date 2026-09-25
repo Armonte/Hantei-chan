@@ -45,7 +45,8 @@ int main(int argc, char** argv) {
 	}
 	std::string stage = argv[1], out, statePrefix, passName = "all", gameName;
 	float camX = 0, camY = 0, zoom = 1.0f;
-	bool camGiven = false, lights = false, weather = true, cleanTex = false;
+	bool camGiven = false, lights = false, weather = true, cleanTex = false, standIns = false;
+	float sx0 = -128.0f, sx1 = 128.0f;
 	int ticks = 0, seed = 0, W = 640, H = 480;
 	bool seedGiven = false;
 	for (int i = 2; i < argc; ++i) {
@@ -62,6 +63,7 @@ int main(int argc, char** argv) {
 		else if (a == "--no-weather") weather = false;
 		else if (a == "--game") gameName = next();
 		else if (a == "--clean") cleanTex = true;
+		else if (a == "--standins") { standIns = true; sscanf(next(), "%f,%f", &sx0, &sx1); }
 		else if (a == "--dxt-mode") bg::SetDxtHelperMode(next());
 	}
 	if (out.empty()) { fprintf(stderr, "--out required\n"); return 1; }
@@ -127,6 +129,8 @@ int main(int argc, char** argv) {
 	r.SetShowLights(lights);
 	r.SetShowWeather(weather);
 	r.SetGameTextures(!cleanTex);
+	r.GetStandIns().enabled = standIns;
+	r.GetStandIns().x[0] = sx0; r.GetStandIns().x[1] = sx1;
 	bg::Pass pass = passName == "back" ? bg::Pass::Back : passName == "front" ? bg::Pass::Front : bg::Pass::All;
 	r.Render(camera, W, H, pass);
 	glFinish();

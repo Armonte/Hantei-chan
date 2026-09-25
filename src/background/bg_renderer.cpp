@@ -188,6 +188,7 @@ Renderer::Renderer() = default;
 Renderer::~Renderer() {
 	ClearTextureCache();
 	if (whiteTex) glDeleteTextures(1, &whiteTex);
+	if (standTex) glDeleteTextures(1, &standTex);
 	if (vbo) glDeleteBuffers(1, &vbo);
 	if (program) glDeleteProgram(program);
 }
@@ -826,6 +827,96 @@ void Renderer::DrawLights(const Camera& camera) {
 	}
 }
 
+// ---- stand-in fighters and their shadows ---------------------------------------
+
+namespace {
+// A simple standing figure as an alpha mask, 64 x 192, feet on the bottom row.
+std::vector<uint8_t> MakeSilhouette(int W, int H) {
+	std::vector<uint8_t> rgba((size_t)W * H * 4, 0);
+	auto inEll = [](float x, float y, float cx, float cy, float rx, float ry) {
+		float dx = (x - cx) / rx, dy = (y - cy) / ry; return dx * dx + dy * dy <= 1.0f; };
+	for (int y = 0; y < H; ++y)
+		for (int x = 0; x < W; ++x) {
+			float fx = x + 0.5f, fy = y + 0.5f;
+			bool on = inEll(fx, fy, 32, 22, 13, 16)                                  // head
+			       || (fy > 36 && fy < 110 && std::fabs(fx - 32) < 20 - (fy - 36) * 0.06f)  // torso
+			       || (fy > 40 && fy < 104 && (std::fabs(fx - 9) < 5 || std::fabs(fx - 55) < 5))   // arms
+			       || (fy >= 106 && fy < 190 && (std::fabs(fx - 23) < 8 || std::fabs(fx - 41) < 8)); // legs
+			if (on) { uint8_t* p = &rgba[((size_t)y * W + x) * 4]; p[0] = p[1] = p[2] = 255; p[3] = 255; }
+		}
+	return rgba;
+}
+} // namespace
+
+void Renderer::DrawStandIns(const Camera& camera) {
+	if (!standIns.enabled) return;
+	const int TW = 64, TH = 192;
+	if (!standTex) {
+		std::vector<uint8_t> img = MakeSilhouette(TW, TH);
+		glGenTextures(1, &standTex);
+		glBindTexture(GL_TEXTURE_2D, standTex);
+		glPixelStorei(GL_UNPACK_ALIGNMENT, 4);
+		glPixelStorei(GL_UNPACK_ROW_LENGTH, 0);
+		glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, TW, TH, 0, GL_RGBA, GL_UNSIGNED_BYTE, img.data());
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+	}
+	const float ax = camera.panLastX, ay = camera.panLastY;   // world (0,0) on screen
+	const float Hh = standIns.height, Ww = Hh * TW / TH;
+	glUniform4f(uTint, 1, 1, 1, 1);
+	glUniform3f(uAdd, 0, 0, 0);
+	glUniform1f(uAlphaLoc, 1.0f);
+	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+	// Shadow projection (V-rt, checked against captures of bg46 and bg28):
+	//   w = d + y/640, x' = Lx + (x - Lx) d / w, y' = -200 + 200 d / w,
+	//   d = cot(32.5 deg). A floor point stays put; higher points fall behind
+	//   the feet, away from the light. No lights: one flat shadow with Lx = 0,
+	//   alpha 127. Lights: Lx = Pos - 512, alpha w * 127 with
+	//   w = 1 - |x - Lx| / Power (skipped when w <= 0).
+	const double d = 1.5696855771174903;
+	auto lights = file->ActiveLights();
+	const bool mbacLights = file->GetGame() == Game::MBAC;
+	for (int f = 0; f < 2; ++f) {
+		const float fx = standIns.x[f];
+		struct L { float x; float a; };
+		std::vector<L> ls;
+		if (lights.empty()) ls.push_back({0.0f, 127.0f / 255.0f});
+		for (const auto& l : lights) {
+			if (l.power <= 0) continue;
+			float w = 1.0f - std::fabs(fx - (float)l.worldX) / (float)l.power;
+			if (w <= 0.0f) continue;
+			ls.push_back({(float)l.worldX, std::min(255.0f, w * 127.0f) / 255.0f});
+		}
+		(void)mbacLights;
+		// Subdivide so the per-vertex projection stays accurate under affine
+		// interpolation.
+		const int NX = 8, NY = 32;
+		for (const L& l : ls) {
+			const float col[4] = { 0, 0, 0, l.a };
+			for (int j = 0; j < NY; ++j)
+				for (int i = 0; i < NX; ++i) {
+					float xy[8], uv[8];
+					static const int cx[4] = {0, 1, 1, 0}, cy[4] = {0, 0, 1, 1};
+					for (int k = 0; k < 4; ++k) {
+						float u = (float)(i + cx[k]) / NX, v = (float)(j + cy[k]) / NY;
+						double wx = fx - Ww * 0.5 + u * Ww, wy = -Hh + v * Hh;
+						double w = d + wy / 640.0;
+						double px = l.x + (wx - l.x) * d / w, py = -200.0 + 200.0 * d / w;
+						xy[k * 2] = ax + (float)px; xy[k * 2 + 1] = ay + (float)py;
+						uv[k * 2] = u; uv[k * 2 + 1] = v;
+					}
+					EmitQuad(standTex, xy, uv, col, false);
+				}
+		}
+		// the stand-in itself (priority 384, above its shadows at 366)
+		const float col[4] = { 0.55f, 0.58f, 0.66f, 0.92f };
+		const float xy[8] = { ax + fx - Ww * 0.5f, ay - Hh, ax + fx + Ww * 0.5f, ay - Hh,
+		                      ax + fx + Ww * 0.5f, ay, ax + fx - Ww * 0.5f, ay };
+		const float uv[8] = { 0, 0, 1, 0, 1, 1, 0, 1 };
+		EmitQuad(standTex, xy, uv, col, true);
+	}
+}
+
 // ---- one band of instances ----------------------------------------------------
 
 void Renderer::DrawPass(const Camera& camera, int clientW, int clientH, int band) {
@@ -975,6 +1066,9 @@ void Renderer::Render(const Camera& camera, int clientW, int clientH, Pass pass)
 	if (pass == Pass::All || pass == Pass::Back)
 		DrawPass(camera, clientW, clientH, 0);
 	if (pass == Pass::All || pass == Pass::Front) {
+		// Fighter shadows (366) and fighters (384) sit above band 0 and below
+		// the weather (522) and band 1 (600).
+		DrawStandIns(camera);
 		// Priority 522 (weather) sits between band 0 (10) and band 1 (600).
 		if (showWeather) DrawWeather(camera);
 		DrawPass(camera, clientW, clientH, 1);
