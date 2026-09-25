@@ -27,6 +27,7 @@
 #include <cstdint>
 #include <cmath>
 #include <cstdio>
+#include <cstdlib>
 #include <iostream>
 #include <chrono>
 
@@ -792,7 +793,11 @@ void Renderer::DrawWeather(const Camera& camera) {
 			double th = Atan2Normalized(p.vx, p.vy) * 360.0 * 0.01745329238474369;
 			float tx = (float)(-cfg.h * std::sin(th));
 			float ty = (float)(cfg.h * std::cos(th));
-			EmitLine(ax + p.x, ay + p.y, ax + p.x + tx, ay + p.y + ty, width, c0, c1);
+			// The game draws a D3D line primitive; against our quad (and the
+			// half-pixel shift for triangles) it lands half a pixel left
+			// (measured on bg55: 98.7% -> 99.5% exact).
+			const float ox = -0.5f * width, oy = 0.0f;
+			EmitLine(ax + p.x + ox, ay + p.y + oy, ax + p.x + tx + ox, ay + p.y + ty + oy, width, c0, c1);
 		}
 	} else if (drops.Type() == 0) {
 		if (!dropTexTried) LoadDropTexture();
