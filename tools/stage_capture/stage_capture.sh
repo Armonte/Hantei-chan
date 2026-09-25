@@ -3,7 +3,7 @@
 #
 # Runs ONLY the separate test copy /mnt/c/games/mbaacc_winaspect (never mbaacc_tag, the user's play copy),
 # kills only an MBAA.exe whose path is under that dir, and refuses to start if one is already running there
-# (PovertyCaster tools/lib/pc_guard.sh pc_guard_no_stray with the directory scope).
+# (it never touches another agent's instance: every op, and the kill, use the pid this script launched).
 #
 #   stage_capture.sh start <stage_id>        launch MBAA.exe + pchost (PCHOST_STAGE=<id> forces the stage on
 #                                            the offline VS boot), wait for InGame
@@ -26,20 +26,35 @@ TAG=stg
 PIDF="$HERE/.game.pid"
 # Every memory op targets the PID recorded at launch; pcmem also refuses any pid not under mbaacc_winaspect.
 M() { [ -s "$PIDF" ] || { echo "!! no recorded pid (run start)"; return 1; }; "$PCMEM" "$(cat "$PIDF")" "$@"; }
-killours() { powershell.exe -NoProfile -Command "Get-Process MBAA -ErrorAction SilentlyContinue | ? { \$_.Path -like '*mbaacc_winaspect*' } | Stop-Process -Force" >/dev/null 2>&1; }
+# Kill ONLY the MBAA.exe this script launched (recorded pid, re-checked to be the test-copy image). The
+# folder is shared with other agents: never kill by image name or folder.
+ps_pids() {   # MBAA.exe pids whose path is under mbaacc_winaspect
+    powershell.exe -NoProfile -Command "Get-CimInstance Win32_Process -Filter \"Name='MBAA.exe'\" | ? { \$_.ExecutablePath -like '*mbaacc_winaspect*' } | % { \$_.ProcessId }" 2>/dev/null | tr -d '\r' | grep -E '^[0-9]+$'
+}
+killours() {
+    [ -s "$PIDF" ] || return 0
+    local p; p=$(cat "$PIDF")
+    powershell.exe -NoProfile -Command "\$x = Get-Process -Id $p -ErrorAction SilentlyContinue; if (\$x -and \$x.Path -like '*mbaacc_winaspect\\MBAA.exe') { Stop-Process -Id $p -Force }" >/dev/null 2>&1
+}
 
 case "${1:-}" in
 start)
     STAGE="$2"
-    . /mnt/c/dev/castergroup/PovertyCaster/tools/lib/pc_guard.sh
-    pc_guard_no_stray MBAA.exe "$DIR" || { echo "!! an MBAA.exe is already running under $DIR"; exit 2; }
+    # Other agents may run their own MBAA.exe from this folder; ours is told apart by pid (see below), so a
+    # stray is reported, not fatal. Our previous instance (recorded pid) is stopped first.
+    killours
+    [ -z "$(ps_pids)" ] || echo "note: other MBAA.exe running under $DIR: $(ps_pids | tr '\n' ' ')"
     rm -f "$DIR"/pchost_${TAG}*.log "$PIDF"
     SETS="set PCHOST_GAME=mbaacc&& set PCHOST_LOG_TAG=$TAG&& set PCHOST_STAGE=$STAGE&& set PCHOST_BOOT_STOP=ingame&& "
-    ( cd "$DIR" && cmd.exe /c "${SETS}pc_inject.exe MBAA.exe pchost_stage.dll" ) >/dev/null 2>&1 &
+    BEFORE=$(ps_pids | sort)
+    # absolute dll path: the folder's shim loads PCHOST_DLL_PATH only for a path with a directory, a bare
+    # name silently runs the folder's own pchost.dll
+    ( cd "$DIR" && cmd.exe /c "${SETS}pc_inject.exe MBAA.exe ${WDIR}\\pchost_stage.dll" ) >/dev/null 2>&1 &
     for i in $(seq 1 120); do
         L=$(ls -t "$DIR"/pchost_${TAG}*.log 2>/dev/null | head -1)
         if [ -n "$L" ] && grep -q "SCENE -> InGame" "$L"; then
-            P=$("$PCMEM" find mbaacc_winaspect | tr -d '\r'); [ -n "$P" ] || { echo "!! no pid"; exit 1; }
+            # our pid = the MBAA.exe that appeared under this folder since launch
+            P=$(comm -13 <(echo "$BEFORE") <(ps_pids | sort) | head -1); [ -n "$P" ] || { echo "!! no new pid"; exit 1; }
             echo "$P" > "$PIDF"; echo "InGame: $L pid=$P"; exit 0; fi
         sleep 1
     done
