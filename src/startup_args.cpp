@@ -3,6 +3,7 @@
 #include "main_frame.h"
 #include "character_instance.h"
 #include "game_link_panel.h"
+#include "tag_panel.h"
 
 #include <glad/glad.h>
 #include <windows.h>
@@ -105,6 +106,10 @@ void WritePng(const std::string &path, const uint8_t *rgb, int w, int h)
 void MainFrame::ProcessStartupArgs()
 {
 	int n = ++gStartup.frameCounter;
+	// [tag-panel] after --open (frame 2), so the pickers see the loaded character; works without --open too
+	if (n == 3 && (gStartup.tool == "tag" || !gStartup.tagIni.empty() || !gStartup.tagTab.empty()))
+		tagpanel::OpenStartup(gStartup.tagIni, gStartup.tagChar, gStartup.tagTab);
+	if (n == 3 && gStartup.tool == "gamelink") gamelink::showPanel = true;
 	if (n == 2 && !gStartup.open.empty()) {
 		std::string path = gStartup.open, ext;
 		size_t dot = path.find_last_of('.');
@@ -145,6 +150,7 @@ void MainFrame::ProcessStartupArgs()
 		else if (t == "notes") m_showNotes = true;
 		else if (t == "vars") m_varRefs.open = true;
 		else if (t == "keys") m_showKeyBindings = true;
+
 		if (auto *c = getActiveCharacter(); c && gStartup.compare >= 0) {
 			m_compare.enabled = true;
 			m_compare.character = c;

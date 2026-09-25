@@ -227,7 +227,8 @@ int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE, PWSTR pCmdLine, int nCmdShow
 		else if(i+1<argC && (!strcmp(arg, "--open") || !strcmp(arg, "--capture") || !strcmp(arg, "--pattern")
 		                     || !strcmp(arg, "--frame") || !strcmp(arg, "--palette") || !strcmp(arg, "--game-link")
 		                     || !strcmp(arg, "--zoom") || !strcmp(arg, "--game")
-		                     || !strcmp(arg, "--compare") || !strcmp(arg, "--tool")))
+		                     || !strcmp(arg, "--compare") || !strcmp(arg, "--tool") || !strcmp(arg, "--tag-ini")
+		                     || !strcmp(arg, "--tag-char") || !strcmp(arg, "--tag-tab")))
 		{
 			// startup actions, see startup_args.h
 			std::wstring w(argV[i+1]);
@@ -243,6 +244,9 @@ int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE, PWSTR pCmdLine, int nCmdShow
 			else if(!strcmp(arg, "--game")) gStartup.game = v;
 			else if(!strcmp(arg, "--compare")) gStartup.compare = atoi(v.c_str());
 			else if(!strcmp(arg, "--tool")) gStartup.tool = v;
+			else if(!strcmp(arg, "--tag-ini")) gStartup.tagIni = v;
+			else if(!strcmp(arg, "--tag-char")) gStartup.tagChar = v;
+			else if(!strcmp(arg, "--tag-tab")) gStartup.tagTab = v;
 			else gStartup.palette = atoi(v.c_str());
 			i++;
 		}

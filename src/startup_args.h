@@ -27,6 +27,9 @@
 //                        (checks shortcut routing through the HWND subclass)
 //   --stats <file>       frames 10-19: average scene render / onion-skin cost (CPU ms)
 //   --quit               quit after the actions even without --capture
+//   --tool tag           open the Tag / Team window (experimental); --tool gamelink opens the Game Link window
+//   --tag-ini <path>     the tag_tuning.ini it edits (default: next to the linked MBAA.exe)
+//   --tag-char <file>    the [char.<file>] it shows   --tag-tab Global|Character|Assists|Live|Raw
 //   --game-link N        open the Game Link window, connect, follow game slot N (1-4) and jump the editor to it;
 //                        with --capture the shot is taken later (frame 240) so the link has live state
 #include <string>
@@ -42,6 +45,7 @@ struct StartupArgs {
 	bool noPups = false;   // --no-pups: draw every pattern with <cg>.pal
 	int compare = -1;
 	std::string tool;
+	std::string tagIni, tagChar, tagTab;   // --tag-ini / --tag-char / --tag-tab
 	std::string capture;
 	int gameLinkSlot = 0;   // --game-link (1-4); 0 = off
 	int frameCounter = 0;

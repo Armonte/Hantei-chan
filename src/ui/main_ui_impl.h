@@ -399,6 +399,7 @@ void MainFrame::DrawUi()
 	vectors.Draw();
 	drawCommandEditor();
 	drawGameLink();
+	drawTagPanel();
 	drawVarRefsWindow();
 	drawPatternManagerWindow();
 	drawNotesWindow();

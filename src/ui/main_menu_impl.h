@@ -674,6 +674,7 @@ void MainFrame::Menu(unsigned int errorPopupId)
 			if (ImGui::MenuItem("HUD preview / colours", nullptr, m_showHud)) m_showHud = !m_showHud;
 			if (ImGui::MenuItem("MBAC (HA4) Inspector", nullptr, ha4ui::showInspector)) ha4ui::showInspector = !ha4ui::showInspector;
 			if (ImGui::MenuItem("Game Link (MBAACC)", nullptr, gamelink::showPanel)) gamelink::showPanel = !gamelink::showPanel;
+			if (ImGui::MenuItem("Tag / Team (experimental)", nullptr, tagpanel::showPanel)) tagpanel::showPanel = !tagpanel::showPanel;
 			ImGui::EndMenu();
 		}
 		if (ImGui::BeginMenu("Help"))

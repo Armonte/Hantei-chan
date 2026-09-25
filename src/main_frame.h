@@ -324,6 +324,7 @@ private:
 	void loadCommandsForActive(const std::string& path);
 	void drawCommandEditor();
 	void drawGameLink();   // Game Link window (ui/main_frame_gamelink.cpp)
+	void drawTagPanel();   // Tag / Team window, experimental (ui/main_frame_gamelink.cpp, tag_panel.h)
 	bool m_commandShortcutsRegistered = false;
 	// ---- Editing tools (ui/editor_tools_impl.h) ----------------------------
 	ShortcutRouter shortcuts;
