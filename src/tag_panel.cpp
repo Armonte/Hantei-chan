@@ -976,7 +976,10 @@ void DrawPanel(EditorContext& ctx)
 	PumpApply(c, s);
 	if (g_pendingApply && NowMs() - g_editMs > 400) { g_pendingApply = false; RequestApply(); }
 
-	ImGui::SetNextWindowSize(ImVec2(720, 760), ImGuiCond_FirstUseEver);
+	// relative to the main viewport: with detachable windows a fixed position could open it as its own OS window
+	const ImVec2 mainPos = ImGui::GetMainViewport()->Pos;
+	ImGui::SetNextWindowPos(ImVec2(mainPos.x + 60.0f, mainPos.y + 40.0f), ImGuiCond_FirstUseEver);
+	ImGui::SetNextWindowSize(ImVec2(760, 720), ImGuiCond_FirstUseEver);
 	if (!ImGui::Begin("Tag / Team (experimental)", &showPanel)) { ImGui::End(); return; }
 	Header(c, s);
 	ImGui::Separator();
