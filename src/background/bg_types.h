@@ -246,6 +246,52 @@ struct Camera {
 	float zoom = 1.0f;
 	bool dragging = false;
 
+	// Game camera in world px (MBAA keeps it x128 at 0x55DEC4/0x55DEC8): the
+	// world point drawn at the screen's horizontal centre, with world y = camY
+	// on screen row 432 (Camera_UpdateMatrices: T(-cam) * S(zoom) * T(320, 432)).
+	// An object with parallax p is translated by (p/256 - 1) * (-cam) before
+	// that matrix (Background_DrawInstance), i.e. by (1 - p/256) * cam in
+	// world space. The host derives cam from the view each frame
+	// (SetGameCamFromView) so panning the stage view shows the game's parallax.
+	float camX = 0.0f;
+	float camY = 0.0f;
+	// Parallax shift of a layer, in world px. The game builds it as
+	// (p/256 - 1) * ((1, 1) * cameraMatrix) (MBAA 0x4b70cd), i.e. the camera
+	// transform of the point (1, 1) rather than of the origin, which leaves a
+	// sub-pixel (p/256 - 1) term: shift = (1 - p/256) * (cam - 1).
+	inline float ParallaxX(int parallax) const { return (1.0f - parallax / 256.0f) * (camX - 1.0f); }
+	inline float ParallaxY(int parallax) const { return (1.0f - parallax / 256.0f) * (camY - 1.0f); }
+	// cam from a view of W x H pixels whose world origin sits at panLast
+	// (world units) under `zoom`: the view centre is world x camX, and screen
+	// row 432/480 of a 640x480 game frame is world y camY.
+	// Follow the view: panning at a fixed zoom moves the game camera with it,
+	// zooming never does (zoom is a pure scale of the composed stage; the game
+	// camera, and so every layer's parallax shift, stays put).
+	bool  camInit = false;
+	float camLastPanX = 0.0f, camLastPanY = 0.0f, camLastZoom = 0.0f;
+	void SetGameCamFromView(float W, float H) {
+		(void)W; (void)H;
+		const float z = zoom > 0.0f ? zoom : 1.0f;
+		if (!camInit) { camInit = true; }
+		else if (z == camLastZoom) { camX -= panLastX - camLastPanX; camY -= panLastY - camLastPanY; }
+		camLastPanX = panLastX; camLastPanY = panLastY; camLastZoom = z;
+		if (clampToGame) ClampToGame();
+	}
+	// The game never moves its camera past these (MBAA Camera_ComputeTargetX/Y,
+	// zoom 1): |x| <= 528 - 320 = 208, -340 <= y <= 0. With the clamp on,
+	// panning past them moves the view but not the camera, so parallax layers
+	// stay where the game can ever show them.
+	bool clampToGame = true;
+	void ClampToGame() {
+		if (camX > 208.0f) camX = 208.0f;
+		if (camX < -208.0f) camX = -208.0f;
+		if (camY > 0.0f) camY = 0.0f;
+		if (camY < -340.0f) camY = -340.0f;
+	}
+	// Set the camera explicitly (bg_render, inspector); the next view update
+	// continues from here.
+	void SetGameCam(float x, float y) { camX = x; camY = y; }
+
 	// Sprite *world* position for a given object/frame offset. u4ick's
 	// MonoForm.cs:253-254 formula is `panLast + (pan - panLast) * f + off`
 	// in screen space; the `panLast +` part is the screen anchor (where

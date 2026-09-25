@@ -73,6 +73,9 @@ enum class ShortcutAction : uint8_t {
 	exportFramePng,
 	exportSequencePng,
 	detachView,
+	// Stage tab: previous / next stage of the game's stage list
+	previousStage,
+	nextStage,
 	count
 };
 

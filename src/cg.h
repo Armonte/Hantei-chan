@@ -1,6 +1,7 @@
 #ifndef CG_H_GUARD
 #define CG_H_GUARD
 #include <string>
+#include <vector>
 
 struct ImageData
 {
@@ -87,8 +88,10 @@ protected:
 
 	//Hantei4 calls these "pages".
 	struct Page {
-		ImageCell	cell[256];
+		ImageCell	cell[1024];   // (256 / cu)^2 cells used
 	};
+	int cu = 16;    // cell unit in px
+	int cpr = 16;   // cells per page row
 
 	Page			*pages;
 	unsigned int	page_count;
@@ -144,6 +147,12 @@ public:
 	unsigned long long generation() const { return (m_generation << 3) | (unsigned)(appliedBank & 7); }
 
 	int	get_image_count();
+	// Raw header fields of image n (false if absent / unused). bpp is the
+	// stored depth (8 = palette-indexed); bounds are canvas coordinates.
+	bool image_info(unsigned int n, int &bpp, int &typeId, int &x1, int &y1, int &x2, int &y2);
+	// The image's alignment cells (canvas rects), in table order.
+	struct CellRect { int x, y, w, h; };
+	bool image_cells(unsigned int n, std::vector<CellRect> &out);
 
 	CG();
 	~CG();
