@@ -8,6 +8,7 @@
 #include <cctype>
 #include <chrono>
 #include <cstdio>
+#include <cstdlib>
 #include <cstring>
 
 namespace gamelink {
@@ -38,6 +39,9 @@ const char* OpName(uint16_t op)
 	case wire::Op::Reload: return "reload";
 	case wire::Op::SetChar: return "setchar";
 	case wire::Op::QueryState: return "state";
+	case wire::Op::SetStage: return "setstage";
+	case wire::Op::ReloadStage: return "reloadstage";
+	case wire::Op::QueryStage: return "stage";
 	}
 	return "?";
 }
@@ -62,6 +66,27 @@ uint8_t SlotMaskForFile(const std::string& key, const wire::State& st)
 	return mask;
 }
 
+std::string StageStemOf(const std::string& path)
+{
+	std::string stem = Stem(path);
+	if (stem == "bglist") return {};
+	for (const char* suf : { "info", "light", "_s" }) {
+		const size_t n = std::strlen(suf);
+		if (stem.size() > n && stem.compare(stem.size() - n, n, suf) == 0) return stem.substr(0, stem.size() - n);
+	}
+	return stem;
+}
+
+bool StageFileMatches(const std::string& path, const wire::Stage& st, bool* needsList)
+{
+	if (needsList) *needsList = false;
+	if (st.loaded < 1 || !st.dataFile[0]) return false;
+	const std::string stem = Stem(path);
+	if (stem == "bglist") { if (needsList) *needsList = true; return true; }
+	const std::string data = Lower(std::string(st.dataFile, strnlen(st.dataFile, sizeof st.dataFile)));
+	return stem == data || stem == data + "info" || stem == data + "light" || stem == data + "_s";
+}
+
 std::vector<uint32_t> FindGamePids()
 {
 	std::vector<uint32_t> out;
@@ -75,7 +100,11 @@ std::vector<uint32_t> FindGamePids()
 	return out;
 }
 
-Client::Client() { m_thread = std::thread([this] { run(); }); }
+Client::Client()
+{
+	if (const char* e = std::getenv("HANTEI_GAME_LINK_PID")) m_snap.targetPid = (uint32_t)std::strtoul(e, nullptr, 0);
+	m_thread = std::thread([this] { run(); });
+}
 
 Client::~Client()
 {
@@ -102,6 +131,13 @@ void Client::Disconnect()
 {
 	std::lock_guard<std::mutex> lk(m_mx);
 	m_snap.wantConnected = false;
+	m_onConnect.clear();
+}
+
+void Client::SetTargetPid(uint32_t pid)
+{
+	std::lock_guard<std::mutex> lk(m_mx);
+	m_snap.targetPid = pid;
 }
 
 uint16_t Client::queueCommand(wire::Command c)
@@ -131,8 +167,45 @@ uint16_t Client::SetChar(int slot, int chara, int moon, int palette, uint8_t fla
 	return queueCommand(c);
 }
 
+uint16_t Client::SetStage(int stageId, uint8_t flags)
+{
+	wire::Command c{}; c.op = (uint16_t)wire::Op::SetStage; c.slot = stageId; c.flags = flags;
+	return queueCommand(c);
+}
+
+uint16_t Client::ReloadStage(uint8_t flags)
+{
+	wire::Command c{}; c.op = (uint16_t)wire::Op::ReloadStage; c.flags = flags;
+	return queueCommand(c);
+}
+
+uint16_t Client::SetStageWhenConnected(int stageId, uint8_t flags)
+{
+	wire::Command c{}; c.op = (uint16_t)wire::Op::SetStage; c.slot = stageId; c.flags = flags;
+	std::lock_guard<std::mutex> lk(m_mx);
+	c.seq = ++m_seq;
+	if (m_snap.connected) m_out.push_back(c);
+	else {
+		m_onConnect.clear();          // only the latest "show this stage" matters
+		m_onConnect.push_back(c);
+		m_snap.wantConnected = true;
+		m_nextOpenMs = 0;
+		note("stage " + std::to_string(stageId) + ": connecting first, will switch once the link is up");
+	}
+	return c.seq;
+}
+
 void Client::SetPollHz(int hz) { std::lock_guard<std::mutex> lk(m_mx); m_pollHz = hz; }
 void Client::SetAutoReload(bool on) { std::lock_guard<std::mutex> lk(m_mx); m_snap.autoReload = on; }
+
+void Client::SetAutoReloadStage(bool on) { std::lock_guard<std::mutex> lk(m_mx); m_snap.autoReloadStage = on; }
+
+void Client::SetWatchedStageFiles(std::vector<WatchedStageFile> files)
+{
+	std::lock_guard<std::mutex> lk(m_mx);
+	m_stageWatch = std::move(files);
+	m_snap.watchedStage = m_stageWatch.size();
+}
 
 void Client::SetWatchedFiles(std::vector<WatchedFile> files)
 {
@@ -184,11 +257,29 @@ bool Client::WaitState(int timeoutMs, wire::State& out)
 	return false;
 }
 
+bool Client::WaitStage(int timeoutMs, wire::Stage& out)
+{
+	uint32_t start;
+	{ std::lock_guard<std::mutex> lk(m_mx); start = m_stageSerial; }
+	const uint64_t end = NowMs() + (uint64_t)timeoutMs;
+	while (NowMs() < end) {
+		{
+			std::lock_guard<std::mutex> lk(m_mx);
+			if (m_stageSerial != start) { out = m_snap.stage; return true; }
+		}
+		std::this_thread::sleep_for(std::chrono::milliseconds(5));
+	}
+	return false;
+}
+
 // ---- worker ----------------------------------------------------------------------------------------------------
 
 bool Client::tryOpen()
 {
-	const std::vector<uint32_t> pids = FindGamePids();
+	uint32_t target;
+	{ std::lock_guard<std::mutex> lk(m_mx); target = m_snap.targetPid; }
+	// A pinned pid is the ONLY process tried: no discovery (another game may be running next to it).
+	const std::vector<uint32_t> pids = target ? std::vector<uint32_t>{ target } : FindGamePids();
 	std::string why = pids.empty() ? "MBAA.exe is not running" : "";
 	for (uint32_t pid : pids) {
 		char name[96];
@@ -209,7 +300,10 @@ bool Client::tryOpen()
 		m_snap.pid = pid;
 		m_snap.pipe = name;
 		m_snap.status = "connected";
+		m_snap.stageUnsupported = false;
 		note(std::string("connected to ") + name);
+		for (const wire::Command& c : m_onConnect) m_out.push_back(c);   // SetStageWhenConnected
+		m_onConnect.clear();
 		return true;
 	}
 	std::lock_guard<std::mutex> lk(m_mx);
@@ -226,6 +320,7 @@ void Client::closePipe(const char* why)
 	m_snap.connected = false;
 	m_snap.status = why;
 	m_snap.haveState = false;
+	m_snap.haveStage = false;
 }
 
 void Client::handleMessage(const wire::Header& h, const uint8_t* body)
@@ -237,6 +332,11 @@ void Client::handleMessage(const wire::Header& h, const uint8_t* body)
 		m_snap.gameReloads = m_snap.state.reloadCount;
 		m_lastStateMs = NowMs();
 		++m_stateSerial;
+	} else if (h.kind == (uint16_t)wire::Kind::LinkStage && h.size == sizeof(wire::Stage)) {
+		std::memcpy(&m_snap.stage, body, sizeof(wire::Stage));
+		m_snap.stage.dataFile[sizeof m_snap.stage.dataFile - 1] = 0;
+		m_snap.haveStage = true;
+		++m_stageSerial;
 	} else if (h.kind == (uint16_t)wire::Kind::LinkReply && h.size == sizeof(wire::Reply)) {
 		wire::Reply r;
 		std::memcpy(&r, body, sizeof r);
@@ -248,6 +348,11 @@ void Client::handleMessage(const wire::Header& h, const uint8_t* body)
 		std::snprintf(line, sizeof line, "%s #%u: %s - %s", OpName(r.op), (unsigned)r.seq, wire::StatusName(r.status),
 		              r.message);
 		m_snap.lastReply = line;
+		if (r.op == (uint16_t)wire::Op::QueryStage && r.status == (int16_t)wire::Status::Unknown) {
+			if (!m_snap.stageUnsupported) note("the game's pchost.dll predates the stage ops (QueryStage unknown)");
+			m_snap.stageUnsupported = true;
+			return;
+		}
 		if (r.op != (uint16_t)wire::Op::Ping) note(line);
 	} else {
 		note("dropped an unknown message kind " + std::to_string(h.kind));
@@ -259,16 +364,19 @@ void Client::pump()
 	// 1. writes
 	std::deque<wire::Command> out;
 	int pollHz;
+	bool stageOps;
 	{
 		std::lock_guard<std::mutex> lk(m_mx);
 		out.swap(m_out);
 		pollHz = m_pollHz;
+		stageOps = !m_snap.stageUnsupported;
 	}
 	const uint64_t now = NowMs();
 	if (pollHz > 0 && now - m_lastPollMs >= (uint64_t)(1000 / pollHz)) {
 		m_lastPollMs = now;
 		wire::Command q{}; q.op = (uint16_t)wire::Op::QueryState;
 		out.push_back(q);
+		if (stageOps) { wire::Command qs{}; qs.op = (uint16_t)wire::Op::QueryStage; out.push_back(qs); }
 	}
 	for (const wire::Command& c : out) {
 		const wire::Header h{ (uint16_t)wire::Kind::LinkCommand, wire::kLinkVersion, sizeof c };
@@ -366,6 +474,63 @@ void Client::watchTick()
 	note(m_snap.lastChange);
 }
 
+// The stage twin of watchTick: same stamp/settle rule, one ReloadStage for everything that settled together, and
+// only when a saved file belongs to the stage the game is showing (StageFileMatches).
+void Client::stageWatchTick(uint64_t now)
+{
+	std::vector<WatchedStageFile> watch;
+	bool autoReload, connected, haveStage;
+	wire::Stage st{};
+	{
+		std::lock_guard<std::mutex> lk(m_mx);
+		watch = m_stageWatch;
+		autoReload = m_snap.autoReloadStage;
+		connected = m_snap.connected;
+		haveStage = m_snap.haveStage;
+		st = m_snap.stage;
+	}
+	std::vector<StageStamp> next;
+	for (const WatchedStageFile& w : watch) {
+		auto it = std::find_if(m_stageStamps.begin(), m_stageStamps.end(), [&](const StageStamp& f) { return f.path == w.path; });
+		StageStamp f = it != m_stageStamps.end() ? *it : StageStamp{ w.path, w.kind };
+		WIN32_FILE_ATTRIBUTE_DATA fa{};
+		if (GetFileAttributesExA(w.path.c_str(), GetFileExInfoStandard, &fa)) {
+			const uint64_t t = ((uint64_t)fa.ftLastWriteTime.dwHighDateTime << 32) | fa.ftLastWriteTime.dwLowDateTime;
+			const uint64_t sz = ((uint64_t)fa.nFileSizeHigh << 32) | fa.nFileSizeLow;
+			if (it == m_stageStamps.end()) { f.time = t; f.size = sz; }
+			else if (t != f.time || sz != f.size) { f.time = t; f.size = sz; f.changedMs = now; f.pending = true; }
+		}
+		next.push_back(f);
+	}
+	m_stageStamps.swap(next);
+	bool any = false, match = false, list = false;
+	std::string names;
+	for (StageStamp& f : m_stageStamps) {
+		if (!f.pending || now - f.changedMs < 400) continue;
+		f.pending = false;
+		any = true;
+		bool needsList = false;
+		if (haveStage && StageFileMatches(f.path, st, &needsList)) { match = true; list |= needsList; }
+		if (!names.empty()) names += ", ";
+		names += Stem(f.path);
+	}
+	if (!any) return;
+	std::string what;
+	if (!autoReload) what = "stage auto-reload is off";
+	else if (!connected) what = "not connected";
+	else if (!haveStage) what = "the game reports no stage (old pchost.dll?)";
+	else if (!match) what = std::string("the game shows ") + (st.dataFile[0] ? st.dataFile : "no stage") + " - not reloading";
+	else {
+		const uint16_t seq = ReloadStage(list ? wire::kFlagStageList : 0);
+		char b[80];
+		std::snprintf(b, sizeof b, "sent reloadstage #%u%s", (unsigned)seq, list ? " (+BgList.ini)" : "");
+		what = b;
+	}
+	std::lock_guard<std::mutex> lk(m_mx);
+	m_snap.lastChange = "saved " + names + ": " + what;
+	note(m_snap.lastChange);
+}
+
 void Client::run()
 {
 	while (!m_quit) {
@@ -378,6 +543,10 @@ void Client::run()
 		if (m_pipe) pump();
 		else { std::lock_guard<std::mutex> lk(m_mx); m_out.clear(); }
 		watchTick();
+		{
+			const uint64_t now = NowMs();
+			if (now - m_lastStageWatchMs >= 250) { m_lastStageWatchMs = now; stageWatchTick(now); }
+		}
 		std::this_thread::sleep_for(std::chrono::milliseconds(8));
 	}
 }
