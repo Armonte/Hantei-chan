@@ -13,10 +13,12 @@ namespace gamelink::wire {
 
 constexpr uint16_t kLinkVersion = 1;
 
-enum class Kind : uint16_t { LinkCommand = 0x100, LinkReply = 0x101, LinkState = 0x102, LinkStage = 0x103 };
+enum class Kind : uint16_t { LinkCommand = 0x100, LinkReply = 0x101, LinkState = 0x102, LinkStage = 0x103,
+	LinkTag = 0x104 /* PROPOSED, see Tag below */ };
 
 // SetStage carries the stage id in Command::slot. Stage ops are answered Unknown by a DLL that predates them.
-enum class Op : uint16_t { Ping = 1, Reload = 2, SetChar = 3, QueryState = 4, SetStage = 5, ReloadStage = 6, QueryStage = 7 };
+enum class Op : uint16_t { Ping = 1, Reload = 2, SetChar = 3, QueryState = 4, SetStage = 5, ReloadStage = 6, QueryStage = 7,
+	QueryTag = 8 /* PROPOSED, see Tag below */ };
 
 constexpr uint8_t kFlagReload    = 1u << 0;
 constexpr uint8_t kFlagForce     = 1u << 1;
@@ -72,6 +74,52 @@ struct Stage {
 	bool IsValid(int id) const { return id > 0 && id < 100 && (valid[id >> 3] & (1u << (id & 7))) != 0; }
 };
 static_assert(sizeof(Stage) == 64, "LinkStage size");
+
+// ---- PROPOSED [tag-panel]: the answer to QueryTag (docs/HANTEI_TAG_PANEL.md §5) ----
+// NOT YET IN PovertyCaster. Written up as the exact PovertyCaster-side addition (Proto.hpp + MbaaccSim_EtmLink.cpp),
+// because LinkState carries only a boolean tagRequest and nothing of the assist block, the swap counter or the
+// session kind. Until the DLL implements it, QueryTag is answered Unknown and the Tag / Team panel falls back to
+// LinkState (point / reserve / tag flag / "tag in progress") and a gate probe for the session state. The size is
+// pinned so a different layout on the DLL side is dropped by the client's size check instead of misread.
+constexpr uint8_t kTagSessNetplay = 1u << 0, kTagSessRollback = 1u << 1, kTagSessReplay = 1u << 2,
+                  kTagSessStepped = 1u << 3, kTagSessNetMode = 1u << 4, kTagSessRecording = 1u << 5;
+struct TagTeam {
+	int8_t activeSlot;        // g_TeamAux[t].activeSlot (the point)
+	uint8_t assistSlot;       // AssistTeam.slot: directional slot 0..4 (5,2,6,4,8) + mode << 4
+	uint8_t assistPlacement;  // AssistTeam.placement: the resolved entry (0 behind, 1 edge, 2 drop, 3 arc)
+	uint8_t assistFlags;      // AssistTeam.flags (kAssistFlag*)
+	int32_t tagRequest;       // g_TeamAux[t].tagRequest raw: 0 idle, 1.. requested, 100 exit, 101 cooldown,
+	                          //   150 forced tag-in pending, 200 entering, 254/255, 300..303 assist phases
+	int32_t counter;          // g_TeamAux[t] +8 (state tick)
+	int32_t tagInTick;        // tag::tagInTick() for the point (-1 = not in a tag-in)
+	int32_t cooldownLeft;     // state 101: cooldownTicks - counter (0 otherwise)
+	int32_t assistTick;       // AssistTeam.tick
+	int32_t assistCooldown;   // AssistTeam.cooldown
+	int32_t assistPattern;    // AssistTeam.pattern (0 = none)
+	int32_t assistCalls;      // AssistTeam.calls (this round)
+	int32_t meterPaid;        // AssistTeam.meterPaid
+};
+static_assert(sizeof(TagTeam) == 40, "LinkTagTeam size");
+struct TagSlot {
+	int16_t tagIn, tagOut;    // CharaSystemData +0x28 / +0x2C in force for this slot
+	int32_t health, red;      // actor +0xB8 / +0xBC
+};
+static_assert(sizeof(TagSlot) == 12, "LinkTagSlot size");
+struct Tag {
+	uint8_t sessionFlags;     // kTagSess* (the reload gate's inputs: any bit = tuning frozen)
+	uint8_t frozen;           // tag_tuning.ini is frozen (tuningReloadVerdict != Allowed)
+	uint8_t iniPresent;       // tag_tuning.ini exists next to MBAA.exe
+	uint8_t koRule;           // the rule in force (the host's in netplay)
+	uint32_t tuningLoads;     // successful ini (re)loads in this process
+	uint16_t warnings;        // ini warnings of the last load
+	uint8_t assistEnabled;    // resolved assistEnabled
+	uint8_t _pad;
+	char activeStyle[24];     // the resolved active style ("" = defaults)
+	char sha[16];             // short sha256 of the resolved set, as the log prints it
+	TagTeam team[2];
+	TagSlot slot[4];
+};
+static_assert(sizeof(Tag) == 180, "LinkTag size");
 
 inline const char* StatusName(int16_t s)
 {

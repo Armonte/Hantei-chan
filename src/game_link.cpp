@@ -42,6 +42,7 @@ const char* OpName(uint16_t op)
 	case wire::Op::SetStage: return "setstage";
 	case wire::Op::ReloadStage: return "reloadstage";
 	case wire::Op::QueryStage: return "stage";
+	case wire::Op::QueryTag: return "tag";
 	}
 	return "?";
 }
@@ -228,6 +229,22 @@ std::vector<std::string> Client::RecentLog() const
 	return m_log;
 }
 
+void Client::SetTagQuery(bool on) { std::lock_guard<std::mutex> lk(m_mx); m_tagQuery = on; }
+
+uint16_t Client::ProbeGate()
+{
+	wire::Command c{}; c.op = (uint16_t)wire::Op::SetChar; c.slot = 0; c.chara = -1; c.moon = -1; c.palette = -1;
+	return queueCommand(c);
+}
+
+bool Client::PeekReply(uint16_t seq, wire::Reply& out) const
+{
+	std::lock_guard<std::mutex> lk(m_mx);
+	for (const auto& r : m_replies)
+		if (r.seq == seq) { out = r; return true; }
+	return false;
+}
+
 bool Client::WaitReply(uint16_t seq, int timeoutMs, wire::Reply& out)
 {
 	const uint64_t end = NowMs() + (uint64_t)timeoutMs;
@@ -301,6 +318,7 @@ bool Client::tryOpen()
 		m_snap.pipe = name;
 		m_snap.status = "connected";
 		m_snap.stageUnsupported = false;
+		m_snap.tagUnsupported = false;
 		note(std::string("connected to ") + name);
 		for (const wire::Command& c : m_onConnect) m_out.push_back(c);   // SetStageWhenConnected
 		m_onConnect.clear();
@@ -321,6 +339,7 @@ void Client::closePipe(const char* why)
 	m_snap.status = why;
 	m_snap.haveState = false;
 	m_snap.haveStage = false;
+	m_snap.haveTag = false;
 }
 
 void Client::handleMessage(const wire::Header& h, const uint8_t* body)
@@ -337,6 +356,14 @@ void Client::handleMessage(const wire::Header& h, const uint8_t* body)
 		m_snap.stage.dataFile[sizeof m_snap.stage.dataFile - 1] = 0;
 		m_snap.haveStage = true;
 		++m_stageSerial;
+	} else if (h.kind == (uint16_t)wire::Kind::LinkTag && h.size == sizeof(wire::Tag)) {
+		std::memcpy(&m_snap.tag, body, sizeof(wire::Tag));
+		m_snap.tag.activeStyle[sizeof m_snap.tag.activeStyle - 1] = 0;
+		m_snap.tag.sha[sizeof m_snap.tag.sha - 1] = 0;
+		m_snap.haveTag = true;
+	} else if (h.kind == (uint16_t)wire::Kind::LinkTag) {
+		note("dropped a LinkTag of " + std::to_string(h.size) + " bytes (this editor expects " +
+		     std::to_string(sizeof(wire::Tag)) + ": protocol skew)");
 	} else if (h.kind == (uint16_t)wire::Kind::LinkReply && h.size == sizeof(wire::Reply)) {
 		wire::Reply r;
 		std::memcpy(&r, body, sizeof r);
@@ -353,6 +380,11 @@ void Client::handleMessage(const wire::Header& h, const uint8_t* body)
 			m_snap.stageUnsupported = true;
 			return;
 		}
+		if (r.op == (uint16_t)wire::Op::QueryTag && r.status == (int16_t)wire::Status::Unknown) {
+			if (!m_snap.tagUnsupported) note("the game's pchost.dll has no QueryTag (the proposed tag readout) - using LinkState");
+			m_snap.tagUnsupported = true;
+			return;
+		}
 		if (r.op != (uint16_t)wire::Op::Ping) note(line);
 	} else {
 		note("dropped an unknown message kind " + std::to_string(h.kind));
@@ -364,12 +396,13 @@ void Client::pump()
 	// 1. writes
 	std::deque<wire::Command> out;
 	int pollHz;
-	bool stageOps;
+	bool stageOps, tagOps;
 	{
 		std::lock_guard<std::mutex> lk(m_mx);
 		out.swap(m_out);
 		pollHz = m_pollHz;
 		stageOps = !m_snap.stageUnsupported;
+		tagOps = m_tagQuery && !m_snap.tagUnsupported;
 	}
 	const uint64_t now = NowMs();
 	if (pollHz > 0 && now - m_lastPollMs >= (uint64_t)(1000 / pollHz)) {
@@ -377,6 +410,7 @@ void Client::pump()
 		wire::Command q{}; q.op = (uint16_t)wire::Op::QueryState;
 		out.push_back(q);
 		if (stageOps) { wire::Command qs{}; qs.op = (uint16_t)wire::Op::QueryStage; out.push_back(qs); }
+		if (tagOps) { wire::Command qt{}; qt.op = (uint16_t)wire::Op::QueryTag; out.push_back(qt); }
 	}
 	for (const wire::Command& c : out) {
 		const wire::Header h{ (uint16_t)wire::Kind::LinkCommand, wire::kLinkVersion, sizeof c };

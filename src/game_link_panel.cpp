@@ -38,6 +38,8 @@ int  g_stagePick = -1;
 uint32_t g_stageListPid = 0;
 bg::StageList g_gameStageList;   // the game's own Bg\BgList.ini, for names (the wire only carries validity)
 
+} // namespace
+
 // The game's folder, from its pid (the link knows the pid; the editor may have opened a stage from anywhere).
 std::string GameDirOf(uint32_t pid)
 {
@@ -54,6 +56,8 @@ std::string GameDirOf(uint32_t pid)
 	CloseHandle(h);
 	return dir;
 }
+
+namespace {
 
 std::string StageLabel(int id)
 {
