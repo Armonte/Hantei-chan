@@ -2,7 +2,7 @@
 #define GAME_LINK_MOCK_H_GUARD
 // A stand-in for pchost.dll's dev-link endpoint, for tests and headless captures ONLY (never the game): serves
 // \\.\pipe\povertycaster-link-<this pid> and answers Ping / QueryState / QueryStage / SetChar / Reload, plus the
-// PROPOSED QueryTag (game_link_proto.h Tag) — so the client's QueryTag decoding, its Unknown fallback and the Tag /
+// QueryTag (game_link_proto.h Tag, PovertyCaster mbaacc/link-tag) — so the client's QueryTag decoding, its Unknown fallback and the Tag /
 // Team panel's gate probe can be exercised without launching MBAA.exe. The state it reports is a fixed TAG match
 // (Shiki + Sion vs V.Sion + Miyako) with Team 1 in an assist and Team 2 in its swap cooldown.
 // Used by tests/game_link_test.cpp and `game_link_cli mock-dll`. docs/HANTEI_TAG_PANEL.md §6.

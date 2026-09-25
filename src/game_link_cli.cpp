@@ -25,7 +25,7 @@
 //                                                    offsetY | opacity  (bg-set-duration <..> <value> = duration)
 //
 // Tag / Team panel (docs/HANTEI_TAG_PANEL.md):
-//   game_link_cli tag                                print the PROPOSED QueryTag readout (or "unsupported")
+//   game_link_cli tag                                print the QueryTag readout (or "unsupported": pchost.dll older than mbaacc/link-tag)
 //   game_link_cli mock-dll <seconds> [notag] [session] [menu]   serve a MOCK dev-link pipe as this process (a fixed
 //                                                    TAG state, the proposed LinkTag) for headless UI captures;
 //                                                    point the editor at it with HANTEI_GAME_LINK_PID=<printed pid>
@@ -147,7 +147,7 @@ int main(int argc, char** argv)
 		gamelink::Snapshot s;
 		for (int k = 0; k < 150; ++k) { s = c.Get(); if (s.haveTag || s.tagUnsupported) break; Sleep(20); }
 		if (!s.connected) { std::printf("not connected: %s\n", s.status.c_str()); return 2; }
-		if (!s.haveTag) { std::printf("QueryTag unsupported by this pchost.dll (proposed, docs/HANTEI_TAG_PANEL.md 5)\n"); return 3; }
+		if (!s.haveTag) { std::printf("QueryTag unsupported by this pchost.dll (needs PovertyCaster mbaacc/link-tag)\n"); return 3; }
 		const auto& t = s.tag;
 		std::printf("session 0x%02X frozen %u ini %u koRule %u loads %u warnings %u assist %u style '%s' sha %s\n",
 		            t.sessionFlags, t.frozen, t.iniPresent, t.koRule, t.tuningLoads, t.warnings, t.assistEnabled,

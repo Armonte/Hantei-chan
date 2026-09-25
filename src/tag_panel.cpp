@@ -836,15 +836,16 @@ const char* TagStateName(int32_t req)
 	case 100: return "exit";
 	case 101: return "cooldown";
 	case 150: return "forced tag-in pending";
-	case 200: return "entering";
+	case 200: return "22D accepted / entering";
 	case 254: return "swap hit (S1)";
 	case 255: return "swap";
+	case 256: return "swap (retry)";
 	case 300: return "assist-enter";
 	case 301: return "assist-act";
 	case 302: return "assist-hit";
 	case 303: return "assist-exit";
 	}
-	return req > 0 && req < 100 ? "requested" : "?";
+	return "?";
 }
 
 void LiveTab(EditorContext& ctx, gamelink::Client& c, const gamelink::Snapshot& s)
@@ -861,8 +862,8 @@ void LiveTab(EditorContext& ctx, gamelink::Client& c, const gamelink::Snapshot& 
 		ImGui::Text("tuning: style '%s', sha %s, %u load(s), %u warning(s)%s", s.tag.activeStyle, s.tag.sha, s.tag.tuningLoads,
 		            s.tag.warnings, s.tag.frozen ? ", FROZEN (session)" : "");
 	} else if (s.tagUnsupported) {
-		ImGui::TextColored(kWarn, "pchost.dll has no QueryTag (proposed in HANTEI_TAG_PANEL.md 5): cooldown, raw tag state and");
-		ImGui::TextColored(kWarn, "assist state are not on the wire yet. Showing LinkState.");
+		ImGui::TextColored(kWarn, "This pchost.dll has no QueryTag (PovertyCaster mbaacc/link-tag): cooldown, raw tag state and");
+		ImGui::TextColored(kWarn, "assist state need a newer DLL. Showing LinkState.");
 	}
 	for (int t = 0; t < 2; ++t) {
 		ImGui::SeparatorText(t ? "Team 2" : "Team 1");

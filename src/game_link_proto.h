@@ -7,6 +7,7 @@
 // so the structs are mirrored here. Every struct is fixed-width and pointer-free on purpose, and the
 // static_asserts pin the sizes to PovertyCaster's; a size change there must change here too. Protocol doc:
 // docs/HANTEI_GAME_LINK.md; the stage ops: docs/HANTEI_STAGE_LINK.md.
+#include <cstddef>
 #include <cstdint>
 
 namespace gamelink::wire {
@@ -14,11 +15,11 @@ namespace gamelink::wire {
 constexpr uint16_t kLinkVersion = 1;
 
 enum class Kind : uint16_t { LinkCommand = 0x100, LinkReply = 0x101, LinkState = 0x102, LinkStage = 0x103,
-	LinkTag = 0x104 /* PROPOSED, see Tag below */ };
+	LinkTag = 0x104 /* [link-tag], see Tag below */ };
 
 // SetStage carries the stage id in Command::slot. Stage ops are answered Unknown by a DLL that predates them.
 enum class Op : uint16_t { Ping = 1, Reload = 2, SetChar = 3, QueryState = 4, SetStage = 5, ReloadStage = 6, QueryStage = 7,
-	QueryTag = 8 /* PROPOSED, see Tag below */ };
+	QueryTag = 8 /* [link-tag], see Tag below */ };
 
 constexpr uint8_t kFlagReload    = 1u << 0;
 constexpr uint8_t kFlagForce     = 1u << 1;
@@ -75,12 +76,13 @@ struct Stage {
 };
 static_assert(sizeof(Stage) == 64, "LinkStage size");
 
-// ---- PROPOSED [tag-panel]: the answer to QueryTag (docs/HANTEI_TAG_PANEL.md §5) ----
-// NOT YET IN PovertyCaster. Written up as the exact PovertyCaster-side addition (Proto.hpp + MbaaccSim_EtmLink.cpp),
-// because LinkState carries only a boolean tagRequest and nothing of the assist block, the swap counter or the
-// session kind. Until the DLL implements it, QueryTag is answered Unknown and the Tag / Team panel falls back to
-// LinkState (point / reserve / tag flag / "tag in progress") and a gate probe for the session state. The size is
-// pinned so a different layout on the DLL side is dropped by the client's size check instead of misread.
+// ---- [link-tag] the answer to QueryTag (docs/HANTEI_TAG_PANEL.md §5) ----
+// Mirror of PovertyCaster pc-proto Proto.hpp LinkTag / LinkTagTeam / LinkTagSlot (branch mbaacc/link-tag; built by
+// pc-adapters/mbaacc/include/mbaacc/LinkTag.hpp, answered by MbaaccSim_EtmLink.cpp, read-only, in every mode). An
+// older pchost.dll answers QueryTag with Unknown and the Tag / Team panel falls back to LinkState (point / reserve /
+// tag flag / "tag in progress") and a gate probe for the session state. Sizes AND field offsets are pinned on both
+// sides (PovertyCaster tests/mbaacc_link_tag, Hantei-chan tests/game_link_test), and the client drops a reply of the
+// wrong size instead of misreading it.
 constexpr uint8_t kTagSessNetplay = 1u << 0, kTagSessRollback = 1u << 1, kTagSessReplay = 1u << 2,
                   kTagSessStepped = 1u << 3, kTagSessNetMode = 1u << 4, kTagSessRecording = 1u << 5;
 struct TagTeam {
@@ -88,10 +90,10 @@ struct TagTeam {
 	uint8_t assistSlot;       // AssistTeam.slot: directional slot 0..4 (5,2,6,4,8) + mode << 4
 	uint8_t assistPlacement;  // AssistTeam.placement: the resolved entry (0 behind, 1 edge, 2 drop, 3 arc)
 	uint8_t assistFlags;      // AssistTeam.flags (kAssistFlag*)
-	int32_t tagRequest;       // g_TeamAux[t].tagRequest raw: 0 idle, 1.. requested, 100 exit, 101 cooldown,
-	                          //   150 forced tag-in pending, 200 entering, 254/255, 300..303 assist phases
+	int32_t tagRequest;       // g_TeamAux[t].tagRequest raw: 0 idle, 200 22D accepted (the entry starts), 255/256
+	                          //   swap, 254 S1, 100 exit, 101 cooldown, 150 forced tag-in pending, 300..303 assist
 	int32_t counter;          // g_TeamAux[t] +8 (state tick)
-	int32_t tagInTick;        // tag::tagInTick() for the point (-1 = not in a tag-in)
+	int32_t tagInTick;        // tag::tagInTick() for the point (-1 = not in a tag-in, 0x7FFF = past the window)
 	int32_t cooldownLeft;     // state 101: cooldownTicks - counter (0 otherwise)
 	int32_t assistTick;       // AssistTeam.tick
 	int32_t assistCooldown;   // AssistTeam.cooldown
@@ -109,17 +111,21 @@ struct Tag {
 	uint8_t sessionFlags;     // kTagSess* (the reload gate's inputs: any bit = tuning frozen)
 	uint8_t frozen;           // tag_tuning.ini is frozen (tuningReloadVerdict != Allowed)
 	uint8_t iniPresent;       // tag_tuning.ini exists next to MBAA.exe
-	uint8_t koRule;           // the rule in force (the host's in netplay)
+	uint8_t koRule;           // the rule in force: 0 oneDown, 1 allDown (the host's in netplay)
 	uint32_t tuningLoads;     // successful ini (re)loads in this process
 	uint16_t warnings;        // ini warnings of the last load
 	uint8_t assistEnabled;    // resolved assistEnabled
 	uint8_t _pad;
 	char activeStyle[24];     // the resolved active style ("" = defaults)
-	char sha[16];             // short sha256 of the resolved set, as the log prints it
+	char sha[16];             // the first 15 hex digits of the resolved set's sha256 (as the log prints it)
 	TagTeam team[2];
 	TagSlot slot[4];
 };
 static_assert(sizeof(Tag) == 180, "LinkTag size");
+static_assert(offsetof(Tag, activeStyle) == 12 && offsetof(Tag, sha) == 36 && offsetof(Tag, team) == 52 &&
+              offsetof(Tag, slot) == 132, "LinkTag offsets (PovertyCaster tests/mbaacc_link_tag pins the same)");
+static_assert(offsetof(TagTeam, tagRequest) == 4 && offsetof(TagTeam, cooldownLeft) == 16 &&
+              offsetof(TagTeam, assistPattern) == 28 && offsetof(TagTeam, meterPaid) == 36, "LinkTagTeam offsets");
 
 inline const char* StatusName(int16_t s)
 {
