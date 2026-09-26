@@ -86,6 +86,12 @@ struct Snapshot {
 	bool haveTuningSlot[4] = {};
 	uint32_t tuningSerial = 0;       // bumps when a LinkTuningGlobal arrives (its slots follow)
 	bool Authoring() const { return haveCaps && (caps.caps & wire::kCapSetup); }
+	// [game-view] §12.1
+	bool haveFrameShare = false;
+	bool frameShareUnknown = false;  // the DLL answered QueryFrameShare with Unknown
+	wire::FrameShare frameShare{};
+	uint32_t frameShareSerial = 0;
+	std::string lastInjectReply;
 	// Session lock (§3.6, §9.3): any session flag, unless the host is between rounds.
 	bool SessionLive() const;
 	bool HostBetweenRounds() const;
@@ -147,6 +153,11 @@ public:
 	uint16_t ApplyTuning(uint8_t flags = wire::kFlagQueryAfter);     // + kFlagReload for one ETM reload afterwards
 	uint16_t QueryTuning(uint8_t slotMask = 0);
 	uint16_t EndAuthoring();
+	// [game-view] §12.1 (0 = not sent: the DLL lacks the capability)
+	uint16_t QueryFrameShare();
+	uint16_t SetEmbedded(int mode);   // 0 real window, 1 embedded full frame, 2 embedded layered
+	uint16_t SetStageLighting(const wire::StageLighting& l);
+	uint16_t InputInject(const wire::InputInject& in);
 	// Poll cadence (§3.6): QueryMatchSetup at 2 Hz (10 Hz while a setup runs) when on; QueryTuning at 0.5 Hz when on
 	// (and after every ApplyTuning with kFlagQueryAfter / when the setup becomes Ready).
 	void SetAuthoringPoll(bool setupPoll, bool tuningPoll);

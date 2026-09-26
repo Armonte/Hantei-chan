@@ -18,14 +18,20 @@ enum class Kind : uint16_t { LinkCommand = 0x100, LinkReply = 0x101, LinkState =
 	LinkTag = 0x104 /* [link-tag], see Tag below */,
 	// [authoring] docs/HANTEI_AUTHORING_MODE.md §3.2 (0x10A-0x10F / 0x111-0x11F reserved; 0x120-0x13F Training/TAS)
 	LinkCaps = 0x105, LinkRoster = 0x106, LinkSetupState = 0x107, LinkTuningGlobal = 0x108, LinkTuningSlot = 0x109,
-	LinkCommandEx = 0x110 };
+	LinkCommandEx = 0x110,
+	LinkFrameShare = 0x10A /* [game-view] §12.1, ADDED by Hantei agent */ };
 
 // SetStage carries the stage id in Command::slot. Stage ops are answered Unknown by a DLL that predates them.
 enum class Op : uint16_t { Ping = 1, Reload = 2, SetChar = 3, QueryState = 4, SetStage = 5, ReloadStage = 6, QueryStage = 7,
 	QueryTag = 8 /* [link-tag], see Tag below */,
 	// [authoring] §3.2. 16-31 reserved (authoring growth), 32-63 reserved (Training / TAS, §3.8)
 	QueryCaps = 9, QueryRoster = 10, QueryMatchSetup = 11, SetMatchSetup = 12 /* LinkCommandEx only */, ApplyTuning = 13,
-	QueryTuning = 14, EndAuthoring = 15 };
+	QueryTuning = 14, EndAuthoring = 15,
+	// [game-view] §12.1 (ADDED by Hantei agent)
+	QueryFrameShare = 16,
+	SetEmbedded = 17 /* LinkCommand.slot: 0 show the real window (export stays on), 1 embedded full frame, 2 embedded layered */,
+	InputInject = 18 /* LinkCommandEx + LinkInputInject */,
+	SetStageLighting = 19 /* LinkCommandEx + LinkStageLighting (§12.1: custom stages rendered by Hantei-chan) */ };
 
 constexpr uint8_t kFlagReload    = 1u << 0;
 constexpr uint8_t kFlagForce     = 1u << 1;
@@ -183,7 +189,8 @@ static_assert(offsetof(MatchSetup, stage) == 4 && offsetof(MatchSetup, koRule) =
               "LinkMatchSetup offsets");
 
 constexpr uint32_t kCapStage = 1u << 0, kCapTag = 1u << 1, kCapRoster = 1u << 2, kCapSetup = 1u << 3, kCapTuning = 1u << 4,
-                   kCapSidecars = 1u << 5, kCapTeam4P = 1u << 6, kCapTrainingScene = 1u << 7;
+                   kCapSidecars = 1u << 5, kCapTeam4P = 1u << 6, kCapTrainingScene = 1u << 7,
+                   kCapFrameShare = 1u << 8 /* [game-view] QueryFrameShare / SetEmbedded */, kCapInputInject = 1u << 9;
 struct Caps {
 	uint16_t revision;         // +0 authoring revision (1)
 	uint16_t _pad;             // +2
@@ -299,6 +306,57 @@ inline void SetMaskBit(uint32_t m[2], int i) { if (i >= 0 && i < 64) m[i >> 5] |
 static_assert(sizeof(Roster) <= kLinkMaxPayload, "every message <= 1024 B payload");
 static_assert(sizeof(CommandEx) + sizeof(MatchSetup) <= kLinkMaxPayload && sizeof(TuningGlobal) <= kLinkMaxPayload &&
               sizeof(SetupState) <= kLinkMaxPayload, "every message <= 1024 B payload");
+
+
+// ================== [game-view] docs/HANTEI_AUTHORING_MODE.md §12.1 (ADDED by Hantei agent) ==================
+// QueryFrameShare (LinkCommand) -> LinkFrameShare: where the frame ring (game_frame_share.h) lives. Never gated.
+struct FrameShare {               // 96 B
+	uint16_t version;             // +0  framering::kVersion (0 = no ring: the export is off / not started)
+	uint8_t  slotCount;           // +2
+	uint8_t  layerCapacity;       // +3  1 = full frame only; 3 = full + chars + HUD (§12.1)
+	uint32_t maxWidth, maxHeight; // +4 +8
+	uint32_t ringBytes;           // +12 the mapping size (framering::RingBytes)
+	uint32_t flags;               // +16 framering::kFlag* (a copy of the ring header's flags)
+	uint32_t width, height;       // +20 +24 the current backbuffer
+	uint32_t framesPublished;     // +28
+	char     name[64];            // +32 the file mapping name, NUL-terminated ("Local\povertycaster-frames-<pid>")
+};
+static_assert(sizeof(FrameShare) == 96, "LinkFrameShare size");
+static_assert(offsetof(FrameShare, ringBytes) == 12 && offsetof(FrameShare, name) == 32, "LinkFrameShare offsets");
+
+// InputInject (LinkCommandEx, payload = InputInject): the panel's keyboard / pad state for one player. It feeds the
+// game's normal controller input path (the same place the binder writes), never a key poll. Gated like
+// SetMatchSetup (offline / authoring only; netplay, replay, spectate and recording refuse it). A state holds for
+// `holdFrames` game frames and then goes neutral, so a stalled editor never leaves a button stuck.
+constexpr uint8_t kInjBtnA = 1u << 0, kInjBtnB = 1u << 1, kInjBtnC = 1u << 2, kInjBtnD = 1u << 3,
+                  kInjBtnE = 1u << 4 /* FN1 / assist */, kInjBtnFN2 = 1u << 5, kInjBtnStart = 1u << 6;
+constexpr uint8_t kInjFlagRelease = 1u << 0;   // neutral now (focus lost / panel closed), ignores the rest
+constexpr uint8_t kInjectVersion = 1;
+struct InputInject {              // 16 B
+	uint8_t  version;             // +0  kInjectVersion
+	uint8_t  player;              // +1  0..3 (engine input slot)
+	uint8_t  flags;               // +2  kInjFlag*
+	uint8_t  direction;           // +3  numpad notation 1..9 (5 = neutral)
+	uint8_t  buttons;             // +4  kInjBtn*
+	uint8_t  _pad[3];             // +5
+	uint16_t holdFrames;          // +8  frames this state holds (1..600); refreshed by the next inject
+	uint16_t _pad2;               // +10
+	uint32_t serial;              // +12 editor counter (the reply echoes the op; the log shows the serial)
+};
+static_assert(sizeof(InputInject) == 16, "LinkInputInject size");
+static_assert(offsetof(InputInject, buttons) == 4 && offsetof(InputInject, holdFrames) == 8 && offsetof(InputInject, serial) == 12,
+              "LinkInputInject offsets");
+// SetStageLighting (LinkCommandEx): in layered mode Hantei-chan draws the stage, but the game still applies the stage's
+// light / StageColorVal to the characters (and its BgPointBlur); for a custom (scratch) stage those values come from
+// here. Offline only. stageId -1 = "the stage on screen"; flags bit 0 = reset to the game's own values.
+struct StageLighting {            // 16 B
+	int16_t  stageId;             // +0
+	uint16_t flags;               // +2
+	uint32_t lightArgb;           // +4
+	uint32_t stageColorValX1000;  // +8
+	uint32_t _reserved;           // +12
+};
+static_assert(sizeof(StageLighting) == 16, "LinkStageLighting size");
 
 inline const char* PhaseName(uint8_t p)
 {

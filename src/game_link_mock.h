@@ -45,6 +45,12 @@ public:
 		int skewLever = -1;          // slot 0 reports this lever one higher than the files say
 		uint32_t leverHash = 0;      // 0 = HC's own table hash; anything else = a foreign table (mismatch banner)
 		std::string setupHex;        // the setup in force at start ("" = the default TAG match)
+		// [game-view] a fake frame producer (docs §12 / §12.1): an animated test pattern (framering::DrawTestFull, a
+		// moving camera, CHARS + HUD layers when layered) into Local\povertycaster-frames-<this pid>, every layer
+		// checksummed; QueryFrameShare / SetEmbedded / InputInject / SetStageLighting answered. InputInject moves slot 0.
+		bool frames = false;
+		int frameW = 640, frameH = 480, fps = 60;
+		bool layeredAtStart = false;
 	};
 	explicit MockDll(Options o);
 	~MockDll();
@@ -60,6 +66,9 @@ public:
 	static wire::Tag FakeTag(const Options& o);
 	// The setup the mock starts with (the golden TAG setup unless Options::setupHex says otherwise).
 	static wire::MatchSetup DefaultSetup();
+	uint32_t FramesProduced() const { return m_framesProduced; }
+	uint32_t Injects() const { return m_injects; }
+	std::string FrameName() const;
 
 private:
 	void run();
@@ -78,6 +87,16 @@ private:
 	wire::MatchSetup m_pending{};
 	std::string m_busyMsg;
 	uint32_t m_tuningLoads = 0;
+	// [game-view]
+	void produce();
+	std::thread m_producer;
+	void* m_ring = nullptr;                  // framering::Producer
+	std::mutex m_fmx;                        // producer thread <-> serve thread
+	int m_embedMode = 0;                     // SetEmbedded: 0 real window, 1 full, 2 layered
+	struct Held { uint8_t dir = 5, buttons = 0; int frames = 0; } m_held[4];
+	int32_t m_p1Offset = 0;                  // slot 0 x moved by injected input (1/128 px)
+	std::atomic<uint32_t> m_framesProduced{0}, m_injects{0};
+	uint32_t m_lightArgb = 0;
 };
 
 } // namespace gamelink
