@@ -102,7 +102,7 @@ static_assert(offsetof(FrameRingHeader, layerCapacity) == 28 && offsetof(FrameRi
 struct FrameCamera {              // 64 B
 	int32_t  cameraX, cameraY;    // +0 +4   camera, 1/128 px
 	uint32_t zoomX1000;           // +8      1000 = 1.0 (0 = unknown: treat as 1.0)
-	int32_t  shakeX, shakeY;      // +12 +16 this frame's shake offset, screen px x1000 (added after the camera)
+	int32_t  shakeX, shakeY;      // +12 +16 shake, screen px x1000; MBAACC exports 0: cameraX/Y is already the camera as drawn (shake included)
 	int32_t  stageId;             // +20     BgList id on screen (-1 none)
 	uint32_t stageColorValX1000;  // +24     StageColorVal (BgPointBlur fColorHosei) x1000
 	uint32_t stageLightArgb;      // +28     the stage light colour the game applied (0 = none / stock)
