@@ -459,6 +459,20 @@ void MainFrame::Menu(unsigned int errorPopupId)
 				ImGui::TextDisabled("History: %zu undo / %zu redo, ~%zu KiB",
 					undo->undoCount(), undo->redoCount(), undo->historyBytes() / 1024);
 			}
+			// Stage tabs: object / frame / event / Info.txt edits (bg::File) and
+			// BgList.ini / bgm.txt edits (Stage Browser) share one history.
+			if (view && view->isStageView()) {
+				const std::string su = stageUndoLabel(false), sr = stageUndoLabel(true);
+				if (ImGui::MenuItem(("Undo " + su).c_str(), shortcuts.registry().label(ShortcutAction::undo).c_str(),
+				                    false, !su.empty()))
+					stageUndoRedo(false, true);
+				if (ImGui::MenuItem(("Redo " + sr).c_str(), shortcuts.registry().label(ShortcutAction::redo).c_str(),
+				                    false, !sr.empty()))
+					stageUndoRedo(true, true);
+				if (ImGui::MenuItem("Save stage + metadata", shortcuts.registry().label(ShortcutAction::save).c_str(),
+				                    false, currentBgFile != nullptr))
+					saveStageAll();
+			}
 			ImGui::Separator();
 			if (ImGui::MenuItem("Keyboard shortcuts...", nullptr, m_showKeyBindings))
 				m_showKeyBindings = !m_showKeyBindings;
@@ -565,6 +579,48 @@ void MainFrame::Menu(unsigned int errorPopupId)
 			}
 			if (ImGui::MenuItem("Clear Stage", nullptr, false, currentBgFile != nullptr))
 				clearStage();
+			if (ImGui::MenuItem("Stage Browser", nullptr, m_showStageBrowser))
+				m_showStageBrowser = !m_showStageBrowser;
+			if (ImGui::BeginMenu("Open game stage", ensureStageProject())) {
+				const bg::StageEntry* cur = currentBgFile ? stageProject.FindByDat(currentBgFile->GetFilename()) : nullptr;
+				for (const auto& e : stageProject.Entries()) {
+					if (e.datPath.empty()) continue;
+					if (ImGui::MenuItem(e.Label().c_str(), nullptr, cur && cur->id == e.id)) openStageInActiveTab(e.datPath);
+				}
+				ImGui::EndMenu();
+			}
+			if (ImGui::MenuItem("Previous stage", shortcuts.registry().label(ShortcutAction::previousStage).c_str(), false, currentBgFile != nullptr))
+				stepStage(-1);
+			if (ImGui::MenuItem("Next stage", shortcuts.registry().label(ShortcutAction::nextStage).c_str(), false, currentBgFile != nullptr))
+				stepStage(1);
+			bool authoring = bgRenderer.GetPatPlacement() == bg::Renderer::PatPlacement::Authoring;
+			if (ImGui::Checkbox("PAT placement: Authoring", &authoring)) {
+				bgRenderer.SetPatPlacement(authoring ? bg::Renderer::PatPlacement::Authoring : bg::Renderer::PatPlacement::Game);
+				gSettings.stagePatAuthoring = authoring;
+			}
+			if (ImGui::IsItemHovered())
+				ImGui::SetTooltip("Off (Game-exact): PAT part positions as MBAACC applies them.\n"
+				                  "On (Authoring): parts at the PAT canvas origin (320, 320) are drawn unpositioned,\n"
+				                  "as MBAC would; this puts the bg18/bg20/bg47 wind on the grass. MBAACC itself draws\n"
+				                  "that wind below the floor, off screen.");
+			if (ImGui::Checkbox("Clamp camera to the game's limits", &bgCamera.clampToGame)) {
+				gSettings.stageClampCamera = bgCamera.clampToGame;
+				if (bgCamera.clampToGame) bgCamera.ClampToGame();
+			}
+			if (ImGui::IsItemHovered())
+				ImGui::SetTooltip("The game camera never goes past x +-208, y -340..0. With this on, panning further\n"
+				                  "moves the view but not the camera, so parallax layers stay where the game shows them.");
+			ImGui::Checkbox("Show game view", &m_showGameViewRect);
+			if (ImGui::IsItemHovered())
+				ImGui::SetTooltip("Outline of the 640x480 area the game shows at the current game camera.\n"
+				                  "Parallax layers only line up the way the game shows them inside it.");
+			bool gameTex = bgRenderer.IsGameTextures();
+			if (ImGui::Checkbox("Game-accurate textures", &gameTex))
+				bgRenderer.SetGameTextures(gameTex);
+			if (ImGui::IsItemHovered())
+				ImGui::SetTooltip("On: textures as the game builds them (DXT5 on stages over the\n"
+				                  "30000 KB budget via bg_dxt32.exe, pow2 textures, the game's UV insets).\n"
+				                  "Off: the clean CG, for editing.");
 
 			ImGui::Separator();
 
@@ -671,6 +727,7 @@ void MainFrame::Menu(unsigned int errorPopupId)
 			if (ImGui::MenuItem("Notes", nullptr, m_showNotes)) m_showNotes = !m_showNotes;
 			if (ImGui::MenuItem("Pattern comparison", nullptr, m_showCompare)) m_showCompare = !m_showCompare;
 			if (ImGui::MenuItem("BGM preview", nullptr, m_showBgm)) m_showBgm = !m_showBgm;
+			if (ImGui::MenuItem("Stage Browser", nullptr, m_showStageBrowser)) m_showStageBrowser = !m_showStageBrowser;
 			if (ImGui::MenuItem("HUD preview / colours", nullptr, m_showHud)) m_showHud = !m_showHud;
 			if (ImGui::MenuItem("MBAC (HA4) Inspector", nullptr, ha4ui::showInspector)) ha4ui::showInspector = !ha4ui::showInspector;
 			if (ImGui::MenuItem("Game Link (MBAACC)", nullptr, gamelink::showPanel)) gamelink::showPanel = !gamelink::showPanel;

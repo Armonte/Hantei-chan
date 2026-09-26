@@ -13,10 +13,10 @@
 
 #include "bg_renderer.h"
 #include "../cg.h"
-#include "../render.h"
 #include "../texture.h"
 #include "../parts/parts.h"
 #include "bg_pat.h"
+#include "bg_gametex.h"
 #include <algorithm>
 #include <utility>
 #include <fstream>
@@ -27,6 +27,7 @@
 #include <cstdint>
 #include <cmath>
 #include <cstdio>
+#include <cstdlib>
 #include <iostream>
 #include <chrono>
 
@@ -188,6 +189,7 @@ Renderer::Renderer() = default;
 Renderer::~Renderer() {
 	ClearTextureCache();
 	if (whiteTex) glDeleteTextures(1, &whiteTex);
+	if (standTex) glDeleteTextures(1, &standTex);
 	if (vbo) glDeleteBuffers(1, &vbo);
 	if (program) glDeleteProgram(program);
 }
@@ -223,7 +225,13 @@ void Renderer::InitGL() {
 	glInit = true;
 }
 
+long Renderer::GetTextureBudgetKB() {
+	if (budgetKB < 0) budgetKB = (file && file->GetCG() && file->GetCG()->m_loaded) ? GameTextureBudgetKB(*file->GetCG()) : 0;
+	return budgetKB;
+}
+
 void Renderer::ClearTextureCache() {
+	budgetKB = -1;
 	for (auto& kv : textureCache) glDeleteTextures(1, &kv.second.id);
 	textureCache.clear();
 	if (dropTex) glDeleteTextures(1, &dropTex);
@@ -275,6 +283,36 @@ GLuint Renderer::GetOrCreateTexture(int spriteId, int& outW, int& outH,
 	if (!file) return 0;
 	CG* cg = file->GetCG();
 	if (!cg) return 0;
+	if (gameTextures) {
+		GameTexture gt;
+		const bool dxt = file->GetGame() == Game::MBAACC && IsDxtStage();
+		if (dxt) PrecomposeDxtBank(*cg);   // the game precomposes the whole bank at load
+		if (!ComposeGameTexture(*cg, spriteId, dxt, gt)) return 0;
+		GLuint id = 0;
+		glGenTextures(1, &id);
+		glBindTexture(GL_TEXTURE_2D, id);
+		glPixelStorei(GL_UNPACK_ALIGNMENT, 4);
+		glPixelStorei(GL_UNPACK_ROW_LENGTH, 0);
+		if (gt.dxt5) {
+			// Let the GPU decode the DXT5 blocks, as the game's device does.
+			glCompressedTexImage2D(GL_TEXTURE_2D, 0, 0x83F3 /*GL_COMPRESSED_RGBA_S3TC_DXT5_EXT*/, gt.texW, gt.texH, 0,
+			                       (GLsizei)gt.blocks.size(), gt.blocks.data());
+			if (glGetError() != GL_NO_ERROR) {
+				std::vector<uint8_t> rgba;
+				DecodeDxt5(gt.blocks.data(), gt.texW, gt.texH, rgba);
+				glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, gt.texW, gt.texH, 0, GL_RGBA, GL_UNSIGNED_BYTE, rgba.data());
+			}
+		} else {
+			glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, gt.texW, gt.texH, 0, GL_RGBA, GL_UNSIGNED_BYTE, gt.rgba.data());
+		}
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);   // D3DTADDRESS_CLAMP
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+		textureCache[spriteId] = { id, gt.w, gt.h, gt.originX, gt.originY, gt.texW, gt.texH };
+		outW = gt.w; outH = gt.h; outOriginX = gt.originX; outOriginY = gt.originY;
+		return id;
+	}
 	ImageData* img = cg->draw_texture(spriteId, false, false);
 	if (!img) return 0;
 
@@ -288,7 +326,7 @@ GLuint Renderer::GetOrCreateTexture(int spriteId, int& outW, int& outH,
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
 
-	textureCache[spriteId] = { id, img->width, img->height, img->offsetX, img->offsetY };
+	textureCache[spriteId] = { id, img->width, img->height, img->offsetX, img->offsetY, img->width, img->height };
 	outW = img->width;
 	outH = img->height;
 	outOriginX = img->offsetX;
@@ -583,8 +621,10 @@ void Renderer::DrawPatPatternFlat(const PatPattern& pat, const PatPattern* next,
 			sy = ((float)(next->slotScaleY[slot] - pat.slotScaleY[slot]) * t + (float)pat.slotScaleY[slot]) * 0.001f;
 			if (mbac) rotDeg = LerpAngle10000ToDeg(pat.slotRotation[slot], next->slotRotation[slot], t);
 		}
-		const float px = mbac ? 0.0f : part.posX;
-		const float py = mbac ? 0.0f : part.posY;
+		const bool canvasOrigin = part.posX == 320.0f && part.posY == 320.0f;
+		const bool dropPos = mbac || (patPlacement == PatPlacement::Authoring && canvasOrigin);
+		const float px = dropPos ? 0.0f : part.posX;
+		const float py = dropPos ? 0.0f : part.posY;
 		const float cr = (float)std::cos(rotDeg * 0.017453292519943295);
 		const float sr = (float)std::sin(rotDeg * 0.017453292519943295);
 
@@ -602,15 +642,52 @@ void Renderer::DrawPatPatternFlat(const PatPattern& pat, const PatPattern* next,
 			float ry = lx * sr + ly * cr;
 			xy[i * 2]     = worldX + px + rx;
 			xy[i * 2 + 1] = worldY + py + ry;
-			int ux = (part.flip & 1) ? (1 - tX[i]) : tX[i];
-			int vy = (part.flip & 2) ? (1 - tY[i]) : tY[i];
-			// Cutout src rects are in 256-unit space (see BuildPatParts).
-			uv[i * 2]     = (cut.uv[0] + cut.uv[2] * ux) / 256.0f;
-			uv[i * 2 + 1] = (cut.uv[1] + cut.uv[3] * vy) / 256.0f;
+			if (!gameTextures) {
+				int ux = (part.flip & 1) ? (1 - tX[i]) : tX[i];
+				int vy = (part.flip & 2) ? (1 - tY[i]) : tY[i];
+				// Cutout src rects are in 256-unit space (see BuildPatParts).
+				uv[i * 2]     = (cut.uv[0] + cut.uv[2] * ux) / 256.0f;
+				uv[i * 2 + 1] = (cut.uv[1] + cut.uv[3] * vy) / 256.0f;
+			}
 		}
-		EmitQuad(glTex, xy, uv, col, part.linearFilter || objLinear);
+		if (gameTextures) {
+			// MBAA: BgPat_UploadTexturesAndScaleCutouts scales the src rect by
+			// T/256 for textures over 256; the flip picks the start texel and
+			// sign (Background_DrawInstance 0x4b73b9); HudVertex_SetTextureCoords
+			// 0x4163b0 then maps u0 = (U + 0.5)/T, u1 = (U + dU)/T.
+			const int T = std::max(1, patParts->gfxMeta[cut.texture].w);
+			const int TH = std::max(1, patParts->gfxMeta[cut.texture].h);
+			const int k = T > 256 ? T / 256 : 1, kh = TH > 256 ? TH / 256 : 1;
+			int sx = cut.uv[0] * k, sy = cut.uv[1] * kh, sw = cut.uv[2] * k, sh = cut.uv[3] * kh;
+			int U = sx, V = sy, dU = sw, dV = sh;
+			if (part.flip & 1) { U = sx + sw - 1; dU = -sw; }
+			if (part.flip & 2) { V = sy + sh - 1; dV = -sh; }
+			const float u0 = (U + 0.5f) / T, v0 = (V + 0.5f) / TH;
+			const float u1 = (float)(U + dU) / T, v1 = (float)(V + dV) / TH;
+			// corners TL, TR, BR, BL
+			uv[0] = u0; uv[1] = v0; uv[2] = u1; uv[3] = v0;
+			uv[4] = u1; uv[5] = v1; uv[6] = u0; uv[7] = v1;
+		}
+		// MBAA 0x4b7389: part +49 (additive) sets blend 2 AND sampler 2
+		// (linear); +50 or object +22 set linear alone.
+		EmitQuad(glTex, xy, uv, col, part.linearFilter || objLinear || (!mbac && part.additive));
 	}
 	glUniform3f(uAdd, 0.0f, 0.0f, 0.0f);
+}
+
+bool Renderer::ObjectUsesCanvasOriginParts(const File& f, int objIndex) {
+	const auto& objs = f.GetObjects();
+	if (objIndex < 0 || objIndex >= (int)objs.size()) return false;
+	const OldPat* op = const_cast<File&>(f).GetOldPat();
+	if (!op) return false;
+	for (const Frame& fr : objs[objIndex].frames) {
+		if (fr.spriteId < 0 || fr.spriteId >= 10000) continue;
+		const PatPattern* p = op->GetPattern(fr.spriteId);
+		if (!p) continue;
+		for (const PatPart& part : p->parts)
+			if (part.posX == 320.0f && part.posY == 320.0f) return true;
+	}
+	return false;
 }
 
 // ---- projection ------------------------------------------------------------
@@ -629,6 +706,11 @@ void Renderer::BuildProjView(int W, int H, float zoom, float m[16]) {
 	m[4]=0;  m[5]=sy; m[6]=0;  m[7]=0;
 	m[8]=0;  m[9]=0;  m[10]=sz;m[11]=0;
 	m[12]=tx;m[13]=ty;m[14]=tz;m[15]=1;
+	// D3D9 samples pixels at integer screen coordinates, GL at +0.5: move the
+	// geometry half a pixel right/down so every edge covers the same pixels
+	// and every UV lands where the game's does.
+	m[12] += 1.0f / (float)W;
+	m[13] -= 1.0f / (float)H;
 }
 
 // ---- CG sprite ---------------------------------------------------------------
@@ -652,7 +734,15 @@ void Renderer::DrawSprite(int spriteId,
 	glUniform3f(uAdd, 0.0f, 0.0f, 0.0f);
 	glUniform1f(uAlphaLoc, alpha);
 	const float xy[8] = { x, y, x + w, y, x + w, y + h, x, y + h };
-	const float uv[8] = { 0, 0, 1, 0, 1, 1, 0, 1 };
+	float u0 = 0, v0 = 0, u1 = 1, v1 = 1;
+	auto it = textureCache.find(spriteId);
+	if (gameTextures && it != textureCache.end()) {
+		// Sprite_EmitTransformedQuad: u = 0.25 texel .. w texels of the pow2 texture.
+		const Tex& t = it->second;
+		u0 = 0.25f / t.texW; v0 = 0.25f / t.texH;
+		u1 = (float)t.w / t.texW; v1 = (float)t.h / t.texH;
+	}
+	const float uv[8] = { u0, v0, u1, v0, u1, v1, u0, v1 };
 	const float col[4] = { 1, 1, 1, 1 };
 	EmitQuad(tex, xy, uv, col, linear);
 }
@@ -687,7 +777,7 @@ void Renderer::DrawWeather(const Camera& camera) {
 	const DropSystem& drops = file->GetDrops();
 	if (!drops.IsActive() || file->GetGame() != Game::MBAACC) return;
 	const StageInfo& cfg = drops.Info();
-	const float ax = camera.panX, ay = camera.panY;   // world (0,0) on screen
+	const float ax = camera.panLastX, ay = camera.panLastY;   // world (0,0) on screen
 	const float k = 234.0f / 255.0f;
 	glUniform4f(uTint, 1, 1, 1, 1);
 	glUniform3f(uAdd, 0, 0, 0);
@@ -703,11 +793,16 @@ void Renderer::DrawWeather(const Camera& camera) {
 			double th = Atan2Normalized(p.vx, p.vy) * 360.0 * 0.01745329238474369;
 			float tx = (float)(-cfg.h * std::sin(th));
 			float ty = (float)(cfg.h * std::cos(th));
-			EmitLine(ax + p.x, ay + p.y, ax + p.x + tx, ay + p.y + ty, width, c0, c1);
+			// The game draws a D3D line primitive; against our quad (and the
+			// half-pixel shift for triangles) it lands half a pixel left
+			// (measured on bg55: 98.7% -> 99.5% exact).
+			const float ox = -0.5f * width, oy = 0.0f;
+			EmitLine(ax + p.x + ox, ay + p.y + oy, ax + p.x + tx + ox, ay + p.y + ty + oy, width, c0, c1);
 		}
 	} else if (drops.Type() == 0) {
 		if (!dropTexTried) LoadDropTexture();
 		if (!dropTex || dropTexW <= 0 || dropTexH <= 0) return;
+		std::vector<std::array<float, 24>> petals;
 		const int W = cfg.w, H = cfg.h;
 		const float x0 = (float)(W / -2), x1 = (float)(W - W / 2);
 		const float y0 = (float)(H / -2), y1 = (float)(H - H / 2);
@@ -719,11 +814,19 @@ void Renderer::DrawWeather(const Camera& camera) {
 			float u0 = (float)(W * (int)p.frame) / dropTexW, v0 = (float)(H * p.pat) / dropTexH;
 			float u1 = u0 + (float)W / dropTexW, v1 = v0 + (float)H / dropTexH;
 			const float uv[8] = { u0, v0, u1, v0, u1, v1, u0, v1 };
-			EmitQuad(dropTex, xy, uv, col, false);
+			// DropObject_RenderWithBloom sets sampler 2 (linear) for the petals.
+			EmitQuad(dropTex, xy, uv, col, true);
+			if (sakuraBloom) {
+				std::array<float, 24> q;
+				std::memcpy(q.data(), xy, sizeof(xy)); std::memcpy(q.data() + 8, uv, sizeof(uv));
+				std::memcpy(q.data() + 16, col, sizeof(col));
+				petals.push_back(q);
+			}
 		}
+		if (sakuraBloom && !petals.empty()) SakuraBloom(camera, petals, dropTex);
 	}
-	// DropObj_Type -1 (bg99) runs HudSpriteQueue_RenderGridWith3DTransform —
-	// not previewed.
+	// DropObj_Type -1 (bg99) is the grid room, drawn at priority 8 by
+	// DrawGridRoom in the back pass.
 }
 
 // Stage lights only affect the fighters (an extra shadow pass per light,
@@ -732,7 +835,7 @@ void Renderer::DrawWeather(const Camera& camera) {
 void Renderer::DrawLights(const Camera& camera) {
 	auto lights = file->ActiveLights();
 	if (lights.empty()) return;
-	const float ax = camera.panX, ay = camera.panY;
+	const float ax = camera.panLastX, ay = camera.panLastY;
 	const float z = camera.zoom > 0.0f ? camera.zoom : 1.0f;
 	const float w = 2.0f / z;
 	glUniform4f(uTint, 1, 1, 1, 1);
@@ -752,6 +855,461 @@ void Renderer::DrawLights(const Camera& camera) {
 			EmitLine(x, fy, x - (float)l.power, fy, w * 2.0f, on, off);
 			EmitLine(x, fy, x + (float)l.power, fy, w * 2.0f, on, off);
 		}
+	}
+}
+
+// ---- DropObj type -1: training-room grid -----------------------------------------
+
+namespace {
+// Color_ScaleAlpha 0x4bfc10: each RGB byte scaled and truncated, OR'd back
+// without clamping (a channel over 255 spills into the next byte).
+uint32_t ScaleRgb(uint32_t c, double f) {
+	uint32_t r = (uint32_t)(int)(((c >> 16) & 0xFF) * f), g = (uint32_t)(int)(((c >> 8) & 0xFF) * f),
+	         b = (uint32_t)(int)((c & 0xFF) * f);
+	return (c & 0xFF000000u) | (r << 16) | (g << 8) | b;
+}
+} // namespace
+
+// BgGrid_RenderTrainingRoom 0x4b58b0 / BgGrid_EmitRoomQuads 0x4b5490 /
+// BgGrid_AddCheckerQuad 0x4b53b0 (docs/bg_research/data/stage_system_re.md §3):
+// untextured checker quads on a floor, ceiling, back wall and two side walls,
+// projected with a 45 deg perspective that follows the game camera.
+void Renderer::DrawGridRoom(const Camera& camera) {
+	const StageInfo& info = file->GetStageInfo();
+	if (!info.loaded || !info.dropObj || info.dropType != -1 || file->GetGame() != Game::MBAACC) return;
+	const float ax = camera.panLastX, ay = camera.panLastY;
+	const double zoom = camera.zoom > 0.0f ? camera.zoom : 1.0;
+	const double k = 2.414213562373095;            // cot(22.5 deg)
+	const double u = 100.0 * k / 3.0;              // px per unit at z = 0
+	const double camX = camera.camX, camY = camera.camY;
+	const double cx = camX / u, cy = camY / u - 1.5;
+	// game screen -> editor world: world = (s - (320, 432)) / zoom + cam
+	auto proj = [&](double x, double y, double z, float& wx, float& wy) {
+		double dz = 0.7 * z + 3.0;
+		double sx = 320.0 + 100.0 * zoom * (x - cx) * k / dz;
+		double sy = 432.0 - camY * zoom + 100.0 * zoom * ((y - cy) * k / dz + cy * k / 3.0);
+		wx = (float)((sx - 320.0) / zoom + camX);
+		wy = (float)((sy - 432.0) / zoom + camY);
+	};
+	const double bright = 1.0;   // g_BgBrightness (screen-effect overlay state; 1 in the editor)
+	glUniform4f(uTint, 1, 1, 1, 1);
+	glUniform3f(uAdd, 0, 0, 0);
+	glUniform1f(uAlphaLoc, 1.0f);
+	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+	auto quad = [&](const double p[4][3], uint32_t base, double f, int ci, int ri) {
+		uint32_t c = ScaleRgb(base, f);
+		if ((ci + ri) & 1) c = ScaleRgb(c, 0.5);
+		c = ScaleRgb(c, bright);
+		const float col[4] = { ((c >> 16) & 0xFF) / 255.0f, ((c >> 8) & 0xFF) / 255.0f, (c & 0xFF) / 255.0f, ((c >> 24) & 0xFF) / 255.0f };
+		float xy[8];
+		for (int i = 0; i < 4; ++i) { float wx, wy; proj(p[i][0], p[i][1], p[i][2], wx, wy); xy[i * 2] = ax + wx; xy[i * 2 + 1] = ay + wy; }
+		const float uv[8] = { 0.5f, 0.5f, 0.5f, 0.5f, 0.5f, 0.5f, 0.5f, 0.5f };
+		EmitQuad(whiteTex, xy, uv, col, false);
+	};
+	for (int c = 0; c < 14; ++c)
+		for (int r = 0; r < 7; ++r) {
+			double x0 = c - 7, x1 = c - 6;
+			double fz0 = 4 - r, fz1 = 3 - r;                     // floor, y = 0
+			const double fl[4][3] = {{x0, 0, fz0}, {x1, 0, fz0}, {x1, 0, fz1}, {x0, 0, fz1}};
+			quad(fl, 0xFFC8C8C8u, 1.0 - (4 - r) / 8.0, c, r);
+			double cz0 = r - 3, cz1 = r - 2;                     // ceiling, y = -9
+			const double ce[4][3] = {{x0, -9, cz0}, {x1, -9, cz0}, {x1, -9, cz1}, {x0, -9, cz1}};
+			quad(ce, 0xFFC8C8C8u, 1.0 - (r - 3) / 8.0, c, r);
+		}
+	for (int c = 0; c < 14; ++c)
+		for (int r = 0; r < 9; ++r) {                            // back wall, z = 4
+			const double bw[4][3] = {{c - 7.0, r - 9.0, 4}, {c - 6.0, r - 9.0, 4}, {c - 6.0, r - 8.0, 4}, {c - 7.0, r - 8.0, 4}};
+			quad(bw, 0xFF80C8C8u, 0.5, c, r);
+		}
+	for (int i = 0; i < 9; ++i)
+		for (int c = 0; c < 7; ++c) {
+			const double lw[4][3] = {{-7, i - 9.0, c - 3.0}, {-7, i - 9.0, c - 2.0}, {-7, i - 8.0, c - 2.0}, {-7, i - 8.0, c - 3.0}};
+			quad(lw, 0xFFC880C8u, 1.0 - (c - 3) / 8.0, i, c);
+			const double rw[4][3] = {{7, i - 9.0, 4.0 - c}, {7, i - 9.0, 3.0 - c}, {7, i - 8.0, 3.0 - c}, {7, i - 8.0, 4.0 - c}};
+			quad(rw, 0xFFC880C8u, 1.0 - (4 - c) / 8.0, i, c);
+		}
+}
+
+// ---- TecSakuraBloom ---------------------------------------------------------------
+
+static const char* kBlurVS = R"GLSL(
+#version 330 core
+layout (location = 0) in vec2 aPos;
+out vec2 vUV;
+void main() { vUV = aPos * 0.5 + 0.5; gl_Position = vec4(aPos, 0.0, 1.0); }
+)GLSL";
+// uMode 0: PS_0_Update0/1, the 9-tap blur along uStep; 1: plain copy.
+static const char* kBlurFS = R"GLSL(
+#version 330 core
+in vec2 vUV;
+uniform sampler2D uTex;
+uniform vec2 uStep;
+uniform int uMode;
+out vec4 FragColor;
+void main() {
+    if (uMode == 1) { FragColor = texture(uTex, vUV); return; }
+    vec4 o = vec4(0.0);
+    o += texture(uTex, vUV + uStep *  4.0) * 0.05;
+    o += texture(uTex, vUV + uStep *  3.0) * 0.075;
+    o += texture(uTex, vUV + uStep *  2.0) * 0.1;
+    o += texture(uTex, vUV + uStep *  1.0) * 0.15;
+    o += texture(uTex, vUV)                 * 0.25;
+    o += texture(uTex, vUV + uStep * -1.0) * 0.15;
+    o += texture(uTex, vUV + uStep * -2.0) * 0.1;
+    o += texture(uTex, vUV + uStep * -3.0) * 0.075;
+    o += texture(uTex, vUV + uStep * -4.0) * 0.05;
+    FragColor = o;
+}
+)GLSL";
+
+// MBAA DropObject_RenderWithBloom 0x4b5cc0 + Shader/sh_bloom_sakura.txt:
+//   Ready: temp RT0/RT1 = (0,0,0,1); each petal is also drawn into RT0 (MRT);
+//   Update pass 0: RT1 = blur(RT0, (+1.5, +1.5) texel); pass 1: RT0 = blur(RT1,
+//   (-1.5, +1.5) texel); then RT0 is drawn over the scene with blend 2
+//   (SRCALPHA, ONE), linear filter. The game's RTs are 640x480; here a game
+//   texel is `zoom` target pixels.
+void Renderer::SakuraBloom(const Camera& camera, const std::vector<std::array<float, 24>>& petals, GLuint tex) {
+	GLint prevFbo = 0, vp[4];
+	glGetIntegerv(GL_FRAMEBUFFER_BINDING, &prevFbo);
+	glGetIntegerv(GL_VIEWPORT, vp);
+	const int W = vp[2], H = vp[3];
+	if (W <= 0 || H <= 0) return;
+	if (!blurProg) {
+		GLuint vs = CompileShader(GL_VERTEX_SHADER, kBlurVS), fs = CompileShader(GL_FRAGMENT_SHADER, kBlurFS);
+		blurProg = LinkProgram(vs, fs);
+		glDeleteShader(vs); glDeleteShader(fs);
+		uBlurTex = glGetUniformLocation(blurProg, "uTex");
+		uBlurStep = glGetUniformLocation(blurProg, "uStep");
+		uBlurMode = glGetUniformLocation(blurProg, "uMode");
+		const float quad[12] = {-1, -1, 1, -1, 1, 1, 1, 1, -1, 1, -1, -1};
+		glGenBuffers(1, &blurVbo);
+		glBindBuffer(GL_ARRAY_BUFFER, blurVbo);
+		glBufferData(GL_ARRAY_BUFFER, sizeof(quad), quad, GL_STATIC_DRAW);
+	}
+	if (W != bloomW || H != bloomH || !bloomFbo[0]) {
+		for (int i = 0; i < 2; ++i) {
+			if (bloomTex[i]) glDeleteTextures(1, &bloomTex[i]);
+			if (bloomFbo[i]) glDeleteFramebuffers(1, &bloomFbo[i]);
+			glGenTextures(1, &bloomTex[i]);
+			glBindTexture(GL_TEXTURE_2D, bloomTex[i]);
+			glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, W, H, 0, GL_RGBA, GL_UNSIGNED_BYTE, nullptr);
+			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+			glGenFramebuffers(1, &bloomFbo[i]);
+			glBindFramebuffer(GL_FRAMEBUFFER, bloomFbo[i]);
+			glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, bloomTex[i], 0);
+		}
+		bloomW = W; bloomH = H;
+	}
+	// Ready + petals into RT0 (same projection / program as the scene draw).
+	glBindFramebuffer(GL_FRAMEBUFFER, bloomFbo[0]);
+	glViewport(0, 0, W, H);
+	glClearColor(0, 0, 0, 1);
+	glClear(GL_COLOR_BUFFER_BIT);
+	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+	for (const auto& q : petals) EmitQuad(tex, q.data(), q.data() + 8, q.data() + 16, true);
+	// Two diagonal blurs.
+	const float z = camera.zoom > 0.0f ? camera.zoom : 1.0f;
+	const float sx = 1.5f * z / W, sy = 1.5f * z / H;
+	glUseProgram(blurProg);
+	glDisable(GL_BLEND);
+	glBindBuffer(GL_ARRAY_BUFFER, blurVbo);
+	glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, 2 * sizeof(float), (void*)0);
+	glEnableVertexAttribArray(0);
+	glDisableVertexAttribArray(1);
+	glDisableVertexAttribArray(2);
+	glActiveTexture(GL_TEXTURE0);
+	glUniform1i(uBlurTex, 0);
+	glUniform1i(uBlurMode, 0);
+	// GL's v runs bottom-up: the game's (+x,+y down) diagonal is (+x,-v).
+	glBindFramebuffer(GL_FRAMEBUFFER, bloomFbo[1]);
+	glBindTexture(GL_TEXTURE_2D, bloomTex[0]);
+	glUniform2f(uBlurStep, sx, -sy);
+	glDrawArrays(GL_TRIANGLES, 0, 6);
+	glBindFramebuffer(GL_FRAMEBUFFER, bloomFbo[0]);
+	glBindTexture(GL_TEXTURE_2D, bloomTex[1]);
+	glUniform2f(uBlurStep, -sx, -sy);
+	glDrawArrays(GL_TRIANGLES, 0, 6);
+	// Add onto the scene.
+	glBindFramebuffer(GL_FRAMEBUFFER, (GLuint)prevFbo);
+	glViewport(vp[0], vp[1], vp[2], vp[3]);
+	glEnable(GL_BLEND);
+	glBlendFunc(GL_SRC_ALPHA, GL_ONE);
+	glBindTexture(GL_TEXTURE_2D, bloomTex[0]);
+	glUniform1i(uBlurMode, 1);
+	glDrawArrays(GL_TRIANGLES, 0, 6);
+	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+	glUseProgram(program);
+}
+
+// ---- BgPointBlur (HEAT) ----------------------------------------------------------
+
+// Shader/sh_blur.cfx technique BgPointBlur (disassembly in docs/bg_research/data/shaders):
+// pass A (sh_blur_1): k = 1 + fColorHosei*fValue, dir = normalize(centre - p),
+//   T0 = k * sum_{i=1..8} w_i S(p + i*dir*fPower*0.2), T1 = k * S(p);
+// pass B (sh_blur_0): n = EXFADE08(p).r, B = T0(p + normalize(c - p)*n*fPower*3),
+//   both B and T1 desaturated by fValue/2, out = lerp(T1, B, n * B.a).
+// fPower = 0.02 * fValue (held). The pass order and the mask channel are INF.
+static const char* kHeatVS = R"GLSL(
+#version 330 core
+layout (location = 0) in vec2 aPos;
+out vec2 vUV;
+void main() { vUV = aPos * 0.5 + 0.5; gl_Position = vec4(aPos, 0.0, 1.0); }
+)GLSL";
+static const char* kHeatFS_A = R"GLSL(
+#version 330 core
+in vec2 vUV;
+uniform sampler2D uScene;
+uniform vec4 uRect;       // game view in scene-texture uv: x0, y0, w, h (GL, y up)
+uniform float fPower, fValue, fColorHosei;
+layout (location = 0) out vec4 oT0;
+layout (location = 1) out vec4 oT1;
+vec4 S(vec2 g) { return texture(uScene, uRect.xy + vec2(g.x, 1.0 - g.y) * uRect.zw); }
+void main() {
+    vec2 p = vec2(vUV.x, 1.0 - vUV.y);          // game uv, y down
+    vec2 d = normalize(vec2(0.5) - p + 1e-9);
+    float st = fPower * 0.2;
+    float w[8] = float[](0.244, 0.189, 0.162, 0.135, 0.108, 0.081, 0.054, 0.027);
+    vec4 acc = vec4(0.0);
+    for (int i = 0; i < 8; ++i) acc += S(p + d * st * float(i + 1)) * w[i];
+    float k = 1.0 + fColorHosei * fValue;
+    oT0 = acc * k;
+    oT1 = S(p) * k;
+}
+)GLSL";
+static const char* kHeatFS_B = R"GLSL(
+#version 330 core
+in vec2 vUV;
+uniform sampler2D uT0, uT1, uMask;
+uniform vec2 uCenter;     // game uv, y down
+uniform float fPower, fValue;
+out vec4 FragColor;
+vec3 desat(vec3 x) { float a = (x.r + x.g + x.b) / 3.0; return x + fValue * 0.5 * (vec3(a) - x); }
+void main() {
+    vec2 p = vec2(vUV.x, 1.0 - vUV.y);
+    float n = texture(uMask, p).r;
+    vec2 d = normalize(uCenter - p + 1e-9);
+    vec2 q = p + d * n * fPower * 3.0;
+    vec4 B = texture(uT0, vec2(q.x, 1.0 - q.y));
+    vec4 Sv = texture(uT1, vUV);
+    FragColor = vec4(mix(desat(Sv.rgb), desat(B.rgb), n * B.a), 1.0);
+}
+)GLSL";
+
+void Renderer::ApplyHeatBlur(const Camera& camera, int clientW, int clientH) {
+	const StageListEntry* e = file->GetStageListEntry();
+	const float colorHosei = e ? e->stageColorVal : 0.0f;
+	const float fValue = std::max(0.0f, std::min(1.0f, heatValue));
+	const float fPower = 0.02f * fValue;
+	GLint prevFbo = 0, vp[4];
+	glGetIntegerv(GL_FRAMEBUFFER_BINDING, &prevFbo);
+	glGetIntegerv(GL_VIEWPORT, vp);
+	// Game view rectangle in target pixels (GL origin bottom-left).
+	const float z = camera.zoom > 0.0f ? camera.zoom : 1.0f;
+	const float gx0 = (camera.camX - 320.0f + camera.panLastX) * z;
+	const float gy0 = (camera.camY - 432.0f + camera.panLastY) * z;   // top, y down
+	const int gw = std::max(1, (int)std::lround(640.0f * z)), gh = std::max(1, (int)std::lround(480.0f * z));
+	const int rx = (int)std::lround(gx0), ryTop = (int)std::lround(gy0);
+	const int ry = clientH - (ryTop + gh);
+	if (!heatProg[0]) {
+		for (int i = 0; i < 2; ++i) {
+			GLuint vs = CompileShader(GL_VERTEX_SHADER, kHeatVS), fs = CompileShader(GL_FRAGMENT_SHADER, i ? kHeatFS_B : kHeatFS_A);
+			heatProg[i] = LinkProgram(vs, fs);
+			glDeleteShader(vs); glDeleteShader(fs);
+		}
+		glGenTextures(1, &heatSceneTex);
+	}
+	if (!heatMaskTried) {
+		heatMaskTried = true;
+		// .\grp\_NewFx\EXFADE08 next to the game (stage folder's parent).
+		std::string f = file->GetFilename();
+		std::string dir = f.substr(0, f.find_last_of("/\\"));
+		std::string game = dir.substr(0, dir.find_last_of("/\\"));
+		std::string grp = FindFileNoCase(game, "GRP");
+		std::string fx = grp.empty() ? std::string() : FindFileNoCase(grp, "_NewFx");
+		std::string bmp = fx.empty() ? std::string() : FindFileNoCase(fx, "EXFADE08.bmp");
+		std::vector<uint8_t> rgba; int w = 0, h = 0;
+		if (!bmp.empty() && LoadBmpRGBA(bmp, rgba, w, h)) {
+			glGenTextures(1, &heatMaskTex);
+			glBindTexture(GL_TEXTURE_2D, heatMaskTex);
+			glPixelStorei(GL_UNPACK_ALIGNMENT, 4);
+			glPixelStorei(GL_UNPACK_ROW_LENGTH, 0);
+			glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, w, h, 0, GL_RGBA, GL_UNSIGNED_BYTE, rgba.data());
+			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+		}
+	}
+	// Scene copy.
+	glBindTexture(GL_TEXTURE_2D, heatSceneTex);
+	if (heatW != clientW || heatH != clientH) {
+		glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, clientW, clientH, 0, GL_RGBA, GL_UNSIGNED_BYTE, nullptr);
+		heatW = clientW; heatH = clientH;
+	}
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+	glCopyTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, 0, 0, clientW, clientH);
+	// Temps sized to the game view (reuse the bloom targets).
+	if (gw != bloomW || gh != bloomH || !bloomFbo[0]) {
+		for (int i = 0; i < 2; ++i) {
+			if (bloomTex[i]) glDeleteTextures(1, &bloomTex[i]);
+			if (bloomFbo[i]) glDeleteFramebuffers(1, &bloomFbo[i]);
+			glGenTextures(1, &bloomTex[i]);
+			glBindTexture(GL_TEXTURE_2D, bloomTex[i]);
+			glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, gw, gh, 0, GL_RGBA, GL_UNSIGNED_BYTE, nullptr);
+			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+			glGenFramebuffers(1, &bloomFbo[i]);
+		}
+		bloomW = gw; bloomH = gh;
+	}
+	GLuint fbo = bloomFbo[0];
+	glBindFramebuffer(GL_FRAMEBUFFER, fbo);
+	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, bloomTex[0], 0);
+	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT1, GL_TEXTURE_2D, bloomTex[1], 0);
+	const GLenum bufs[2] = {GL_COLOR_ATTACHMENT0, GL_COLOR_ATTACHMENT1};
+	glDrawBuffers(2, bufs);
+	glViewport(0, 0, gw, gh);
+	glDisable(GL_BLEND);
+	if (!blurVbo) {
+		const float quad[12] = {-1, -1, 1, -1, 1, 1, 1, 1, -1, 1, -1, -1};
+		glGenBuffers(1, &blurVbo);
+		glBindBuffer(GL_ARRAY_BUFFER, blurVbo);
+		glBufferData(GL_ARRAY_BUFFER, sizeof(quad), quad, GL_STATIC_DRAW);
+	}
+	glBindBuffer(GL_ARRAY_BUFFER, blurVbo);
+	glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, 2 * sizeof(float), (void*)0);
+	glEnableVertexAttribArray(0);
+	glDisableVertexAttribArray(1);
+	glDisableVertexAttribArray(2);
+	glUseProgram(heatProg[0]);
+	glActiveTexture(GL_TEXTURE0);
+	glBindTexture(GL_TEXTURE_2D, heatSceneTex);
+	glUniform1i(glGetUniformLocation(heatProg[0], "uScene"), 0);
+	glUniform4f(glGetUniformLocation(heatProg[0], "uRect"), (float)rx / clientW, (float)ry / clientH,
+	            (float)gw / clientW, (float)gh / clientH);
+	glUniform1f(glGetUniformLocation(heatProg[0], "fPower"), fPower);
+	glUniform1f(glGetUniformLocation(heatProg[0], "fValue"), fValue);
+	glUniform1f(glGetUniformLocation(heatProg[0], "fColorHosei"), colorHosei);
+	glDrawArrays(GL_TRIANGLES, 0, 6);
+	// Composite back into the game view.
+	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT1, GL_TEXTURE_2D, 0, 0);
+	glDrawBuffers(1, bufs);
+	glBindFramebuffer(GL_FRAMEBUFFER, (GLuint)prevFbo);
+	glViewport(rx, ry, gw, gh);
+	glUseProgram(heatProg[1]);
+	glActiveTexture(GL_TEXTURE0); glBindTexture(GL_TEXTURE_2D, bloomTex[0]);
+	glActiveTexture(GL_TEXTURE1); glBindTexture(GL_TEXTURE_2D, bloomTex[1]);
+	glActiveTexture(GL_TEXTURE2); glBindTexture(GL_TEXTURE_2D, heatMaskTex ? heatMaskTex : whiteTex);
+	glUniform1i(glGetUniformLocation(heatProg[1], "uT0"), 0);
+	glUniform1i(glGetUniformLocation(heatProg[1], "uT1"), 1);
+	glUniform1i(glGetUniformLocation(heatProg[1], "uMask"), 2);
+	const double ang = heatTime / 3.0 * 6.283185307179586;
+	const float cx = 320.0f + (float)(32.0 * std::sin(ang)), cy = 240.0f - (float)(32.0 * std::cos(ang));
+	glUniform2f(glGetUniformLocation(heatProg[1], "uCenter"), cx / 640.0f, cy / 480.0f);
+	glUniform1f(glGetUniformLocation(heatProg[1], "fPower"), fPower);
+	glUniform1f(glGetUniformLocation(heatProg[1], "fValue"), fValue);
+	glDrawArrays(GL_TRIANGLES, 0, 6);
+	glActiveTexture(GL_TEXTURE0);
+	glViewport(vp[0], vp[1], vp[2], vp[3]);
+	glEnable(GL_BLEND);
+	glUseProgram(program);
+}
+
+// ---- stand-in fighters and their shadows ---------------------------------------
+
+namespace {
+// A simple standing figure as an alpha mask, 64 x 192, feet on the bottom row.
+std::vector<uint8_t> MakeSilhouette(int W, int H) {
+	std::vector<uint8_t> rgba((size_t)W * H * 4, 0);
+	auto inEll = [](float x, float y, float cx, float cy, float rx, float ry) {
+		float dx = (x - cx) / rx, dy = (y - cy) / ry; return dx * dx + dy * dy <= 1.0f; };
+	for (int y = 0; y < H; ++y)
+		for (int x = 0; x < W; ++x) {
+			float fx = x + 0.5f, fy = y + 0.5f;
+			bool on = inEll(fx, fy, 32, 22, 13, 16)                                  // head
+			       || (fy > 36 && fy < 110 && std::fabs(fx - 32) < 20 - (fy - 36) * 0.06f)  // torso
+			       || (fy > 40 && fy < 104 && (std::fabs(fx - 9) < 5 || std::fabs(fx - 55) < 5))   // arms
+			       || (fy >= 106 && fy < 190 && (std::fabs(fx - 23) < 8 || std::fabs(fx - 41) < 8)); // legs
+			if (on) { uint8_t* p = &rgba[((size_t)y * W + x) * 4]; p[0] = p[1] = p[2] = 255; p[3] = 255; }
+		}
+	return rgba;
+}
+} // namespace
+
+void Renderer::DrawStandIns(const Camera& camera) {
+	if (!standIns.enabled) return;
+	const int TW = 64, TH = 192;
+	if (!standTex) {
+		std::vector<uint8_t> img = MakeSilhouette(TW, TH);
+		glGenTextures(1, &standTex);
+		glBindTexture(GL_TEXTURE_2D, standTex);
+		glPixelStorei(GL_UNPACK_ALIGNMENT, 4);
+		glPixelStorei(GL_UNPACK_ROW_LENGTH, 0);
+		glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, TW, TH, 0, GL_RGBA, GL_UNSIGNED_BYTE, img.data());
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+	}
+	const float ax = camera.panLastX, ay = camera.panLastY;   // world (0,0) on screen
+	const float Hh = standIns.height, Ww = Hh * TW / TH;
+	glUniform4f(uTint, 1, 1, 1, 1);
+	glUniform3f(uAdd, 0, 0, 0);
+	glUniform1f(uAlphaLoc, 1.0f);
+	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+	// Shadow projection (V-rt, checked against captures of bg46 and bg28):
+	//   w = d + y/640, x' = Lx + (x - Lx) d / w, y' = -200 + 200 d / w,
+	//   d = cot(32.5 deg). A floor point stays put; higher points fall behind
+	//   the feet, away from the light. No lights: one flat shadow with Lx = 0,
+	//   alpha 127. Lights: Lx = Pos - 512, alpha w * 127 with
+	//   w = 1 - |x - Lx| / Power (skipped when w <= 0).
+	const double d = 1.5696855771174903;
+	auto lights = file->ActiveLights();
+	const bool mbacLights = file->GetGame() == Game::MBAC;
+	for (int f = 0; f < 2; ++f) {
+		const float fx = standIns.x[f];
+		struct L { float x; float a; };
+		std::vector<L> ls;
+		if (lights.empty()) ls.push_back({0.0f, 127.0f / 255.0f});
+		for (const auto& l : lights) {
+			if (l.power <= 0) continue;
+			float w = 1.0f - std::fabs(fx - (float)l.worldX) / (float)l.power;
+			if (w <= 0.0f) continue;
+			ls.push_back({(float)l.worldX, std::min(255.0f, w * 127.0f) / 255.0f});
+		}
+		(void)mbacLights;
+		// Subdivide so the per-vertex projection stays accurate under affine
+		// interpolation.
+		const int NX = 8, NY = 32;
+		for (const L& l : ls) {
+			const float col[4] = { 0, 0, 0, l.a };
+			for (int j = 0; j < NY; ++j)
+				for (int i = 0; i < NX; ++i) {
+					float xy[8], uv[8];
+					static const int cx[4] = {0, 1, 1, 0}, cy[4] = {0, 0, 1, 1};
+					for (int k = 0; k < 4; ++k) {
+						float u = (float)(i + cx[k]) / NX, v = (float)(j + cy[k]) / NY;
+						double wx = fx - Ww * 0.5 + u * Ww, wy = -Hh + v * Hh;
+						double w = d + wy / 640.0;
+						double px = l.x + (wx - l.x) * d / w, py = -200.0 + 200.0 * d / w;
+						xy[k * 2] = ax + (float)px; xy[k * 2 + 1] = ay + (float)py;
+						uv[k * 2] = u; uv[k * 2 + 1] = v;
+					}
+					EmitQuad(standTex, xy, uv, col, false);
+				}
+		}
+		// the stand-in itself (priority 384, above its shadows at 366)
+		const float col[4] = { 0.55f, 0.58f, 0.66f, 0.92f };
+		const float xy[8] = { ax + fx - Ww * 0.5f, ay - Hh, ax + fx + Ww * 0.5f, ay - Hh,
+		                      ax + fx + Ww * 0.5f, ay, ax + fx - Ww * 0.5f, ay };
+		const float uv[8] = { 0, 0, 1, 0, 1, 1, 0, 1 };
+		EmitQuad(standTex, xy, uv, col, true);
 	}
 }
 
@@ -800,14 +1358,20 @@ void Renderer::DrawPass(const Camera& camera, int clientW, int clientH, int band
 		int para = parallaxEnabled ? obj.parallax : 256;
 		// worldX/worldY: editor-world position of the CG canvas top-left
 		// (without the camera pan). CG draws at (pos >> 7) + offset.
-		float worldX = camera.ScreenX((float)fr.offsetX, para)
+		// Game parallax (Background_DrawInstance): the layer is translated by
+		// (1 - p/256) * cam in world space; see Camera::ParallaxX.
+		float worldX = (float)fr.offsetX + camera.ParallaxX(para)
 		               - STAGE_CENTER_X + (float)(inst.posX >> 7);
-		float worldY = camera.ScreenY((float)fr.offsetY, para)
+		float worldY = (float)fr.offsetY + camera.ParallaxY(para)
 		               - STAGE_FLOOR_Y + (float)(inst.posY >> 7);
 
 		if (fr.spriteId >= 10000) {
 			// --- CG sprite ---
 			float alpha = (fr.blendMode > 0) ? (fr.opacity / 255.0f) : 1.0f;
+			// During HEAT the foreground band fades to 1 - fValue and is skipped at 0
+			// (Background_UpdateAndRender -> Background_DrawAllInstances(0, 1 - fValue)).
+			const float bandFade = (band == 1 && heatValue > 0.0f && !mbac) ? std::max(0.0f, 1.0f - heatValue) : 1.0f;
+			if (bandFade <= 0.0f) continue;
 			// MBAC-only per-frame scale (+16/+18, 256 = 1.0, 0 = 1.0).
 			float scx = 1.0f, scy = 1.0f;
 			if (mbac) {
@@ -818,7 +1382,11 @@ void Renderer::DrawPass(const Camera& camera, int clientW, int clientH, int band
 			if (fr.interpolate && nx) {
 				float a0 = (fr.blendMode > 0) ? fr.opacity : 255.0f;
 				float a1 = nx->blendMode ? (float)nx->opacity : 255.0f;
-				alpha = ((1.0f - t) * a0 + t * a1) / 255.0f;
+				// MBAA 0x4b7060: w = 1 - timer/dur (float), a = w*a0 + (1-w)*a1 in
+				// x87 double, truncated to the integer vertex alpha.
+				const float w0 = dur ? 1.0f - (float)inst.timer / (float)dur : 1.0f;
+				const float w1 = 1.0f - w0;
+				alpha = (float)(unsigned int)((double)w0 * a0 + (double)a1 * w1) / 255.0f;
 				if (mbac) {
 					float n0 = nx->scaleX ? nx->scaleX / 256.0f : 1.0f;
 					float n1 = nx->scaleY ? nx->scaleY / 256.0f : 1.0f;
@@ -834,11 +1402,15 @@ void Renderer::DrawPass(const Camera& camera, int clientW, int clientH, int band
 			// point 128, 224).
 			float orgX = worldX + CG_PIVOT_X + camera.panLastX;
 			float orgY = worldY + CG_PIVOT_Y + camera.panLastY;
+			alpha = std::floor(alpha * 255.0f * bandFade) / 255.0f;
 			DrawSprite(cgIdx,
 			           orgX + ((float)ox - CG_PIVOT_X) * scx,
 			           orgY + ((float)oy - CG_PIVOT_Y) * scy,
 			           (float)sw * scx, (float)sh * scy, alpha, fr.blendMode,
-			           mbac ? 1.0f : 234.0f / 255.0f, obj.linearFilter != 0);
+			           mbac ? 1.0f : 234.0f / 255.0f,
+			           // MBAA 0x4b7c7f: an additive CG draw (blend 2) also
+			           // switches the sampler to linear (0x56447F = 2).
+			           obj.linearFilter != 0 || (!mbac && fr.blendMode == 2));
 		} else if (patParts && patParts->loaded && oldPat) {
 			// --- older-PAT pattern (sprite-id < 10000) ---
 			const PatPattern* pat = oldPat->GetPattern(fr.spriteId);
@@ -896,12 +1468,18 @@ void Renderer::Render(const Camera& camera, int clientW, int clientH, Pass pass)
 	glUniform3f(uAdd, 0, 0, 0);
 	glUniform1f(uAlphaLoc, 1.0f);
 
-	if (pass == Pass::All || pass == Pass::Back)
+	if (pass == Pass::All || pass == Pass::Back) {
+		if (showWeather) DrawGridRoom(camera);   // priority 8, behind band 0
 		DrawPass(camera, clientW, clientH, 0);
+	}
 	if (pass == Pass::All || pass == Pass::Front) {
+		// Fighter shadows (366) and fighters (384) sit above band 0 and below
+		// the weather (522) and band 1 (600).
+		DrawStandIns(camera);
 		// Priority 522 (weather) sits between band 0 (10) and band 1 (600).
 		if (showWeather) DrawWeather(camera);
 		DrawPass(camera, clientW, clientH, 1);
+		if (heatValue > 0.0f && file->GetGame() == Game::MBAACC) ApplyHeatBlur(camera, clientW, clientH);
 		if (showLights) DrawLights(camera);
 	}
 

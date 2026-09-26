@@ -359,6 +359,7 @@ void MainFrame::DrawMainViewScene(CharacterView* view, int width, int height)
 		pass.zoom = view->getZoom();
 		pass.originX = bgCamera.panLastX * pass.zoom;
 		pass.originY = bgCamera.panLastY * pass.zoom;
+		bgCamera.SetGameCamFromView((float)width, (float)height);
 		render.BeginPass(pass);
 		// Stage back half (band 0, render priority 10) goes under the grid;
 		// the front half (weather + band 1) goes over it.
@@ -367,6 +368,16 @@ void MainFrame::DrawMainViewScene(CharacterView* view, int width, int height)
 		render.DrawGridLines();
 		bgRenderer.Render(bgCamera, width, height, bg::Pass::Front);
 
+		// The game's 640x480 view at the current game camera (zoom 1).
+		if (m_showGameViewRect) {
+			const float z = bgCamera.zoom;
+			const ImVec2 vp = ImGui::GetMainViewport()->Pos;
+			const float x0 = vp.x + (bgCamera.camX - 320.0f + bgCamera.panLastX) * z;
+			const float y0 = vp.y + (bgCamera.camY - 432.0f + bgCamera.panLastY) * z;
+			auto* dl = ImGui::GetBackgroundDrawList();
+			dl->AddRect(ImVec2(x0, y0), ImVec2(x0 + 640.0f * z, y0 + 480.0f * z), IM_COL32(255, 255, 255, 200), 0.0f, 0, 1.5f);
+			dl->AddText(ImVec2(x0 + 4, y0 + 2), IM_COL32(255, 255, 255, 220), "game view");
+		}
 		// u4ick's stage boundary rects (MonoForm.cs:431-435). They live at
 		// the LIVE camera position (movingPoint, = bgCamera.panX/panY), at
 		// parallax=256 implicitly: during a drag they slide with the cursor
