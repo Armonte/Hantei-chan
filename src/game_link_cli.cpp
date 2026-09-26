@@ -618,7 +618,7 @@ int main(int argc, char** argv)
 		framering::Reader rd;
 		std::string why;
 		if (!rd.Open(fs.name, &why)) { std::fprintf(stderr, "%s\n", why.c_str()); return 1; }
-		int got = 0, bad = 0, rebuilt = 0, layeredFrames = 0;
+		int got = 0, bad = 0, rebuilt = 0, layeredFrames = 0, mockLayered = 0, badLayerFormat = 0, checksummed = 0;
 		const DWORD t0 = GetTickCount();
 		std::vector<uint8_t> px;
 		while (got < want && GetTickCount() - t0 < 20000) {
@@ -627,21 +627,30 @@ int main(int argc, char** argv)
 			bool ok = true;
 			for (uint32_t k = 0; k < f.layerCount; ++k) {
 				const framering::FrameLayer& l = f.layers[k];
-				if (l.checksum && framering::FrameChecksum(rd.LayerPixels(l), l.width, l.height, l.pitch) != l.checksum) ok = false;
+				if (!l.checksum) continue;
+				++checksummed;
+				if (framering::FrameChecksum(rd.LayerPixels(l), l.width, l.height, l.pitch) != l.checksum) ok = false;
 			}
 			bad += !ok;
 			const framering::FrameLayer* full = framering::FindLayer(f, framering::kLayerFull);
 			const framering::FrameLayer* ch = framering::FindLayer(f, framering::kLayerChars);
 			const framering::FrameLayer* hud = framering::FindLayer(f, framering::kLayerHud);
-			// the FULL rebuild uses the synthetic DrawTestStage: it is only meaningful against the mock producer (§12.3)
+			// §12.5: a frame is LAYERED when FULL + CHARS + HUD are present (the real game and the mock alike). The FULL rebuild
+			// from the synthetic DrawTestStage is only meaningful against the mock producer.
 			const bool mockRing = rd.Ring() && std::strncmp(rd.Ring()->producer, "mock", 4) == 0;
-			if (full && ch && hud && mockRing) {
+			if (full && ch && hud) {
 				++layeredFrames;
-				px.assign((size_t)full->pitch * full->height, 0);
-				framering::DrawTestStage(px.data(), full->width, full->height, full->pitch, f.camera);
-				framering::CompositePremulOver(px.data(), full->width, full->height, full->pitch, rd.LayerPixels(*ch), ch->width, ch->height, ch->pitch, ch->x, ch->y);
-				framering::CompositePremulOver(px.data(), full->width, full->height, full->pitch, rd.LayerPixels(*hud), hud->width, hud->height, hud->pitch, hud->x, hud->y);
-				rebuilt += framering::FrameChecksum(px.data(), full->width, full->height, full->pitch) == full->checksum;
+				const bool premul = (ch->flags & framering::kLayerPremultiplied) && (hud->flags & framering::kLayerPremultiplied) &&
+				                    ch->format == framering::kFormatBGRA8 && hud->format == framering::kFormatBGRA8;
+				if (!premul) ++badLayerFormat;
+				if (mockRing) {
+					++mockLayered;
+					px.assign((size_t)full->pitch * full->height, 0);
+					framering::DrawTestStage(px.data(), full->width, full->height, full->pitch, f.camera);
+					framering::CompositePremulOver(px.data(), full->width, full->height, full->pitch, rd.LayerPixels(*ch), ch->width, ch->height, ch->pitch, ch->x, ch->y);
+					framering::CompositePremulOver(px.data(), full->width, full->height, full->pitch, rd.LayerPixels(*hud), hud->width, hud->height, hud->pitch, hud->x, hud->y);
+					rebuilt += framering::FrameChecksum(px.data(), full->width, full->height, full->pitch) == full->checksum;
+				}
 			}
 			if (got % 30 == 0)
 				std::printf("frame %u (game %u) %ux%u layers %u checksum %s cam %d,%d\n", f.frameSeq, f.gameFrame, f.width, f.height, f.layerCount,
@@ -649,9 +658,12 @@ int main(int argc, char** argv)
 			++got;
 		}
 		const DWORD ms = GetTickCount() - t0;
-		std::printf("%d frames in %u ms (%.1f fps), %d bad checksums, %u skipped, %u torn retries, latency %u ms; layered %d, rebuilt FULL %d\n",
-		            got, (unsigned)ms, got * 1000.0 / (ms ? ms : 1), bad, rd.Skipped(), rd.Torn(), rd.LatencyMs(), layeredFrames, rebuilt);
-		return got == want && bad == 0 && rebuilt == layeredFrames && (!layered || layeredFrames > 0) ? 0 : 1;
+		std::printf("%d frames in %u ms (%.1f fps), %d bad checksums (%d layers checksummed), %u skipped, %u torn retries, latency %u ms, "
+		            "producer '%s'\n", got, (unsigned)ms, got * 1000.0 / (ms ? ms : 1), bad, checksummed, rd.Skipped(), rd.Torn(),
+		            rd.LatencyMs(), rd.Ring() ? rd.Ring()->producer : "?");
+		std::printf("layered frames (FULL + CHARS + HUD): %d, not premultiplied BGRA: %d; mock rebuild of FULL: %d of %d\n", layeredFrames,
+		            badLayerFormat, rebuilt, mockLayered);
+		return got == want && bad == 0 && rebuilt == mockLayered && badLayerFormat == 0 && (!layered || layeredFrames > 0) ? 0 : 1;
 	}
 	if (cmd == "embed") {
 		c.WaitCaps(3000);
