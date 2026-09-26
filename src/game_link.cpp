@@ -50,6 +50,10 @@ const char* OpName(uint16_t op)
 	case wire::Op::ApplyTuning: return "tuning-apply";
 	case wire::Op::QueryTuning: return "tuning-get";
 	case wire::Op::EndAuthoring: return "end-authoring";
+	case wire::Op::QueryFrameShare: return "frame-share";
+	case wire::Op::SetEmbedded: return "embedded";
+	case wire::Op::InputInject: return "input";
+	case wire::Op::SetStageLighting: return "stage-lighting";
 	}
 	return "?";
 }
@@ -232,6 +236,36 @@ uint16_t Client::SetMatchSetupWhenConnected(const wire::MatchSetup& s)
 	m_snap.wantConnected = true;
 	m_nextOpenMs = 0;
 	note("setup: connecting first, will send once the game's caps are known");
+	return seq;
+}
+
+uint16_t Client::QueryFrameShare()
+{
+	wire::Command c{}; c.op = (uint16_t)wire::Op::QueryFrameShare;
+	return queueCommand(c);
+}
+
+uint16_t Client::SetEmbedded(int mode)
+{
+	wire::Command c{}; c.op = (uint16_t)wire::Op::SetEmbedded; c.slot = mode;
+	return queueCommand(c);
+}
+
+uint16_t Client::SetStageLighting(const wire::StageLighting& l)
+{
+	std::lock_guard<std::mutex> lk(m_mx);
+	if (!m_snap.connected || !m_snap.haveCaps || !(m_snap.caps.caps & wire::kCapFrameShare)) return 0;
+	const uint16_t seq = ++m_seq;
+	m_out.push_back({ (uint16_t)wire::Kind::LinkCommandEx, ExBody((uint16_t)wire::Op::SetStageLighting, seq, &l, sizeof l) });
+	return seq;
+}
+
+uint16_t Client::InputInject(const wire::InputInject& in)
+{
+	std::lock_guard<std::mutex> lk(m_mx);
+	if (!m_snap.connected || !m_snap.haveCaps || !(m_snap.caps.caps & wire::kCapInputInject)) return 0;
+	const uint16_t seq = ++m_seq;
+	m_out.push_back({ (uint16_t)wire::Kind::LinkCommandEx, ExBody((uint16_t)wire::Op::InputInject, seq, &in, sizeof in) });
 	return seq;
 }
 
@@ -460,6 +494,7 @@ bool Client::tryOpen()
 		m_snap.roster.clear();
 		m_snap.rosterComplete = false;
 		m_snap.haveSetup = m_snap.haveTuning = false;
+		m_snap.haveFrameShare = m_snap.frameShareUnknown = false;
 		for (bool& b : m_snap.haveTuningSlot) b = false;
 		m_rosterNext = -1;
 		m_pendingSlots = 0;
@@ -576,7 +611,13 @@ void Client::handleMessage(const wire::Header& h, const uint8_t* body)
 		t.file[sizeof t.file - 1] = 0;
 		if (t.slot < 4) { m_snap.tuningSlot[t.slot] = t; m_snap.haveTuningSlot[t.slot] = true; }
 		if (m_pendingSlots > 0) --m_pendingSlots;
-	} else if (h.kind >= (uint16_t)wire::Kind::LinkCaps && h.kind <= (uint16_t)wire::Kind::LinkTuningSlot) {
+	} else if (h.kind == (uint16_t)wire::Kind::LinkFrameShare && h.size == sizeof(wire::FrameShare)) {
+		std::memcpy(&m_snap.frameShare, body, sizeof(wire::FrameShare));
+		m_snap.frameShare.name[sizeof m_snap.frameShare.name - 1] = 0;
+		m_snap.haveFrameShare = true;
+		++m_snap.frameShareSerial;
+	} else if ((h.kind >= (uint16_t)wire::Kind::LinkCaps && h.kind <= (uint16_t)wire::Kind::LinkTuningSlot) ||
+	           h.kind == (uint16_t)wire::Kind::LinkFrameShare) {
 		note("dropped an authoring message of kind " + std::to_string(h.kind) + " and " + std::to_string(h.size) +
 		     " bytes (protocol skew: update Hantei-chan or pchost.dll)");
 	} else if (h.kind == (uint16_t)wire::Kind::LinkTag) {
@@ -606,6 +647,8 @@ void Client::handleMessage(const wire::Header& h, const uint8_t* body)
 			return;
 		}
 		if (r.op == (uint16_t)wire::Op::QueryTuning && r.status == (int16_t)wire::Status::Unknown) return;
+		if (r.op == (uint16_t)wire::Op::QueryFrameShare && r.status == (int16_t)wire::Status::Unknown) { m_snap.frameShareUnknown = true; return; }
+		if (r.op == (uint16_t)wire::Op::InputInject) { m_snap.lastInjectReply = line; if (r.status == 0) return; }
 		if (r.op == (uint16_t)wire::Op::QueryMatchSetup && r.status == (int16_t)wire::Status::Unknown) return;
 		if (r.op == (uint16_t)wire::Op::QueryTag && r.status == (int16_t)wire::Status::Unknown) {
 			if (!m_snap.tagUnsupported) note("the game's pchost.dll has no QueryTag (older than PovertyCaster mbaacc/link-tag) - using LinkState");

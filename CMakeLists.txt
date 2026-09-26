@@ -284,11 +284,12 @@ target_sources(${EXE} PRIVATE
 	${AUTHORING_CORE_SOURCES}
 	src/authoring/authoring_window.cpp src/authoring/authoring_tuning_ui.cpp src/authoring/authoring_live_ui.cpp
 	src/authoring/frame_summary.cpp src/authoring/mbac_reference.cpp src/authoring/hud_layout.cpp src/authoring/hud_layout_ui.cpp
-	src/pal_file.cpp)
+	src/pal_file.cpp src/game_frame_ring.cpp src/authoring/game_view.cpp)
 add_executable(game_link_cli
 	src/game_link_cli.cpp
 	src/game_link.cpp
 	src/game_link_mock.cpp
+	src/game_frame_ring.cpp
 	${TAG_SIDECAR_SOURCES}
 	${AUTHORING_CORE_SOURCES}
 	src/background/bg_file.cpp
@@ -580,13 +581,22 @@ if(MINGW)
 	target_link_options(package_tools_test PRIVATE -static-libgcc -static-libstdc++ -static)
 endif()
 add_test(NAME package_tools COMMAND package_tools_test)
-add_executable(game_link_test tests/game_link_test.cpp src/game_link.cpp src/game_link_mock.cpp ${AUTHORING_CORE_SOURCES}
+add_executable(game_link_test tests/game_link_test.cpp src/game_link.cpp src/game_link_mock.cpp src/game_frame_ring.cpp ${AUTHORING_CORE_SOURCES}
 	${TAG_SIDECAR_SOURCES})
 target_include_directories(game_link_test PRIVATE "src")
 if(MINGW)
 	target_link_options(game_link_test PRIVATE -static-libgcc -static-libstdc++ -static)
 endif()
 add_test(NAME game_link COMMAND game_link_test WORKING_DIRECTORY ${CMAKE_SOURCE_DIR})
+# [game-view] the embedded game view: frame ring layout + seqlock + layered compositing + the mock producer end to end
+# (docs/HANTEI_AUTHORING_MODE.md §12). Headless: no window is ever created.
+add_executable(game_view_test tests/game_view_test.cpp src/game_frame_ring.cpp src/game_link.cpp src/game_link_mock.cpp
+	${AUTHORING_CORE_SOURCES} ${TAG_SIDECAR_SOURCES})
+target_include_directories(game_view_test PRIVATE "src")
+if(MINGW)
+	target_link_options(game_view_test PRIVATE -static-libgcc -static-libstdc++ -static)
+endif()
+add_test(NAME game_view COMMAND game_view_test WORKING_DIRECTORY ${CMAKE_SOURCE_DIR})
 # Tag / Team panel: tag_tuning.ini round trip, lever table vs the sample ini and (when on disk) vs PovertyCaster's
 # MbaaccTagTuning.hpp, assist slot resolution and the default-assist pick (docs/HANTEI_TAG_PANEL.md).
 add_executable(tag_tuning_test tests/tag_tuning_test.cpp src/tag_tuning/tag_ini.cpp src/tag_tuning/tag_assist.cpp

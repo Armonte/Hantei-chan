@@ -3,6 +3,7 @@
 #include "authoring/authoring_model.h"
 #include "authoring/roster_mirror.h"
 #include "tag_tuning/tag_sidecar.h"
+#include "game_frame_ring.h"
 
 #include <windows.h>
 
@@ -157,6 +158,81 @@ wire::Tag MockDll::FakeTag(const Options& o)
 	return t;
 }
 
+std::string MockDll::FrameName() const { return framering::MappingName(Pid()); }
+
+// [game-view] the fake producer: one frame per 1/fps s into the ring (seqlock writer, like pchost's Present hook).
+void MockDll::produce()
+{
+	using namespace framering;
+	Producer& ring = *(Producer*)m_ring;
+	const uint32_t w = (uint32_t)m_o.frameW, h = (uint32_t)m_o.frameH, pitch = PitchFor(w);
+	std::vector<uint8_t> scratch((size_t)pitch * h);
+	uint32_t n = 0;
+	const uint64_t start = NowMs();
+	while (!m_quit) {
+		++n;
+		int mode;
+		wire::MatchSetup inForce;
+		{
+			std::lock_guard<std::mutex> lk(m_fmx);
+			mode = m_embedMode;
+			inForce = m_ss.inForce;
+			for (Held& hd : m_held) {
+				if (hd.frames <= 0) continue;
+				if (&hd == &m_held[0]) m_p1Offset += (hd.dir == 6 || hd.dir == 3 || hd.dir == 9) ? 4 * 128 : (hd.dir == 4 || hd.dir == 1 || hd.dir == 7) ? -4 * 128 : 0;
+				if (--hd.frames == 0) { hd.dir = 5; hd.buttons = 0; }
+			}
+		}
+		void* base = ring.Base();
+		FrameRingHeader* rh = Header(base);
+		rh->flags = kFlagProducerAlive | kFlagChecksums | (m_o.session ? 0 : kFlagInputInject) | (mode ? kFlagEmbedded : 0) |
+		            (mode == 2 ? kFlagLayered : 0);
+		uint32_t slot = 0;
+		FrameSlotHeader* s = BeginWrite(base, slot);
+		const uint64_t t0 = NowMs();
+		s->frameSeq = n;
+		s->gameFrame = 5400 + n;
+		s->width = (uint16_t)w;
+		s->height = (uint16_t)h;
+		s->flags = kSlotHasFull | (mode == 2 ? kSlotLayered : 0);
+		TestCamera(n, s->camera);
+		s->camera.stageLightArgb = m_lightArgb;
+		// the fighters as drawn: the setup's picks, walking, slot 0 moved by injected input
+		for (int i = 0; i < 4; ++i) {
+			FrameActor& a = s->actors[i];
+			a = FrameActor{};
+			a.exists = inForce.slot[i].chara >= 0 && (i < 2);   // partners are parked (not drawn) in this mock
+			a.team = (uint8_t)(i & 1);
+			a.facing = (uint8_t)(i & 1);
+			a.x = (i == 0 ? -(80 + (int32_t)(n % 60u)) : (80 + (int32_t)(n % 60u))) * 128 + (i == 0 ? m_p1Offset : 0);
+			a.y = 0;
+			a.pattern = 0;
+			a.frame = (int16_t)((n / 6u) % 8u);
+		}
+		uint8_t* full = AddLayer(base, s, kLayerFull, kFormatBGRX8, 0, (uint16_t)w, (uint16_t)h);
+		DrawTestFull(full, w, h, pitch, n, scratch.data());
+		s->layers[0].checksum = FrameChecksum(full, w, h, pitch);
+		if (mode == 2) {
+			if (uint8_t* ch = AddLayer(base, s, kLayerChars, kFormatBGRA8, kLayerPremultiplied, (uint16_t)w, (uint16_t)h)) {
+				DrawTestChars(ch, w, h, pitch, s->camera, n);
+				s->layers[1].checksum = FrameChecksum(ch, w, h, pitch);
+			}
+			if (uint8_t* hud = AddLayer(base, s, kLayerHud, kFormatBGRA8, kLayerPremultiplied, (uint16_t)w, (uint16_t)h)) {
+				DrawTestHud(hud, w, h, pitch, n);
+				s->layers[2].checksum = FrameChecksum(hud, w, h, pitch);
+			}
+		}
+		s->presentMs = (uint32_t)NowMs();
+		rh->lastCopyUs = (uint32_t)((NowMs() - t0) * 1000);
+		Publish(base, slot, (uint32_t)NowMs());
+		++m_framesProduced;
+		// pace to fps against the start time (no drift)
+		const uint64_t due = start + (uint64_t)n * 1000u / (uint64_t)(m_o.fps > 0 ? m_o.fps : 60);
+		const uint64_t now = NowMs();
+		if (due > now) Sleep((DWORD)(due - now));
+	}
+}
+
 bool MockDll::Start()
 {
 	char name[96];
@@ -165,6 +241,19 @@ bool MockDll::Start()
 	                            0, nullptr);
 	if (h == INVALID_HANDLE_VALUE) return false;
 	m_pipe = h;
+	if (m_o.frames) {
+		auto* ring = new framering::Producer();
+		std::string why;
+		if (!ring->Create(FrameName(), (uint32_t)m_o.frameW, (uint32_t)m_o.frameH, 3, 3, Pid(), "mock", &why)) {
+			delete ring;
+			CloseHandle(h);
+			m_pipe = nullptr;
+			return false;
+		}
+		m_ring = ring;
+		m_embedMode = m_o.layeredAtStart ? 2 : 0;
+		m_producer = std::thread([this] { produce(); });
+	}
 	m_thread = std::thread([this] { run(); });
 	return true;
 }
@@ -177,6 +266,9 @@ void MockDll::Stop()
 	DisconnectNamedPipe((HANDLE)m_pipe);
 	CloseHandle((HANDLE)m_pipe);
 	if (m_thread.joinable()) m_thread.join();
+	if (m_producer.joinable()) m_producer.join();
+	delete (framering::Producer*)m_ring;
+	m_ring = nullptr;
 	m_pipe = nullptr;
 }
 
@@ -304,7 +396,7 @@ void MockDll::serve(void* pipe)
 				wire::MatchSetup done = m_pending;
 				if (done.stage == 0) done.stage = m_ss.inForce.stage ? m_ss.inForce.stage : 16;
 				else if (done.stage < 0) done.stage = 7;   // the "random" roll
-				m_ss.inForce = done;
+				{ std::lock_guard<std::mutex> lk(m_fmx); m_ss.inForce = done; }
 				m_ss.phase = (uint8_t)wire::Phase::Battle;
 				m_ss.authState = (uint8_t)wire::AuthState::Ready;
 				m_ss.lastStatus = 0;
@@ -350,6 +442,37 @@ void MockDll::serve(void* pipe)
 				if (body.size() < sizeof x) continue;
 				std::memcpy(&x, body.data(), sizeof x);
 				++m_commands;
+				if (x.op == (uint16_t)wire::Op::InputInject || x.op == (uint16_t)wire::Op::SetStageLighting) {
+					const bool inject = x.op == (uint16_t)wire::Op::InputInject;
+					const size_t want = inject ? sizeof(wire::InputInject) : sizeof(wire::StageLighting);
+					if (!m_o.frames) ok = ReplyTo(h, x.op, x.seq, wire::Status::Unknown, "unknown op");
+					else if (x.size != want || body.size() != sizeof x + want) ok = ReplyTo(h, x.op, x.seq, wire::Status::BadArgs, "bad size (mock)");
+					else if (m_o.session) ok = ReplyTo(h, x.op, x.seq, wire::Status::RefusedSession, "a netplay session is live (mock)");
+					else if (inject) {
+						wire::InputInject in;
+						std::memcpy(&in, body.data() + sizeof x, sizeof in);
+						if (in.version != wire::kInjectVersion || in.player > 3 || in.direction < 1 || in.direction > 9 || in.holdFrames > 600)
+							ok = ReplyTo(h, x.op, x.seq, wire::Status::BadArgs, "bad inject (mock)");
+						else {
+							std::lock_guard<std::mutex> lk(m_fmx);
+							Held& hd = m_held[in.player];
+							if (in.flags & wire::kInjFlagRelease) hd = Held{};
+							else { hd.dir = in.direction; hd.buttons = in.buttons; hd.frames = in.holdFrames ? in.holdFrames : 1; }
+							++m_injects;
+							char b[96];
+							std::snprintf(b, sizeof b, "input #%u p%u dir %u btn 0x%02X hold %u (mock)", (unsigned)in.serial, in.player,
+							              in.direction, in.buttons, in.holdFrames);
+							ok = ReplyTo(h, x.op, x.seq, wire::Status::Ok, b);
+						}
+					} else {
+						wire::StageLighting l;
+						std::memcpy(&l, body.data() + sizeof x, sizeof l);
+						{ std::lock_guard<std::mutex> lk(m_fmx); m_lightArgb = (l.flags & 1) ? 0 : l.lightArgb; }
+						ok = ReplyTo(h, x.op, x.seq, wire::Status::Ok, "stage lighting applied (mock)");
+					}
+					if (!ok) return;
+					continue;
+				}
 				if (x.op != (uint16_t)wire::Op::SetMatchSetup || x.size != sizeof(wire::MatchSetup) || body.size() != sizeof x + x.size) {
 					ok = ReplyTo(h, x.op, x.seq, x.op == (uint16_t)wire::Op::SetMatchSetup ? wire::Status::BadArgs : wire::Status::Unknown,
 					             "bad LinkCommandEx (mock)");
@@ -427,7 +550,8 @@ void MockDll::serve(void* pipe)
 				wire::Caps k{};
 				k.revision = 1;
 				k.caps = wire::kCapTag | wire::kCapRoster | wire::kCapSetup | wire::kCapTuning | wire::kCapSidecars |
-				         wire::kCapTrainingScene | (m_o.team4p ? wire::kCapTeam4P : 0);
+				         wire::kCapTrainingScene | (m_o.team4p ? wire::kCapTeam4P : 0) |
+				         (m_o.frames ? wire::kCapFrameShare | wire::kCapInputInject : 0);
 				k.leverTableHash = m_o.leverHash ? m_o.leverHash : tagtune::LeverTableHash();
 				k.leverCount = (uint8_t)tagtune::kLeverCount;
 				k.perCharLeverCount = (uint8_t)tagtune::PerCharLeverCount();
@@ -493,6 +617,30 @@ void MockDll::serve(void* pipe)
 				ok = SendTuning(h, ResolveForGame(m_o, m_ss.inForce, battle, m_tuningLoads), c.slotMask);
 				break;
 			}
+			case wire::Op::QueryFrameShare: {
+				if (!m_o.frames) { ok = Reply(h, c, wire::Status::Unknown, "unknown op"); break; }
+				const framering::Producer& ring = *(framering::Producer*)m_ring;
+				const framering::FrameRingHeader* rh = framering::Header(ring.Base());
+				wire::FrameShare f{};
+				f.version = framering::kVersion;
+				f.slotCount = (uint8_t)rh->slotCount;
+				f.layerCapacity = (uint8_t)rh->layerCapacity;
+				f.maxWidth = rh->maxWidth; f.maxHeight = rh->maxHeight;
+				f.ringBytes = (uint32_t)ring.Bytes();
+				f.flags = rh->flags;
+				f.width = (uint32_t)m_o.frameW; f.height = (uint32_t)m_o.frameH;
+				f.framesPublished = rh->framesPublished;
+				CopyName(f.name, sizeof f.name, ring.Name().c_str());
+				ok = Send(h, wire::Kind::LinkFrameShare, &f, sizeof f);
+				break;
+			}
+			case wire::Op::SetEmbedded:
+				if (!m_o.frames) { ok = Reply(h, c, wire::Status::Unknown, "unknown op"); break; }
+				if (c.slot < 0 || c.slot > 2) { ok = Reply(h, c, wire::Status::BadArgs, "embedded mode 0..2 (mock)"); break; }
+				{ std::lock_guard<std::mutex> lk(m_fmx); m_embedMode = c.slot; }
+				ok = Reply(h, c, wire::Status::Ok, c.slot == 0 ? "real window shown (mock)" : c.slot == 1 ? "embedded: full frame (mock)"
+				                                                                                   : "embedded: layered (mock)");
+				break;
 			default: ok = Reply(h, c, wire::Status::Unknown, "unknown op"); break;
 			}
 			if (!ok) return;
