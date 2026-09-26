@@ -47,6 +47,7 @@ static void TestLayout()
 	const uint32_t golden1 = FrameChecksum(px.data(), 640, 480, PitchFor(640));
 	DrawTestFull(px.data(), 640, 480, PitchFor(640), 1, scratch.data());
 	CHECK(FrameChecksum(px.data(), 640, 480, PitchFor(640)) == golden1);
+	CHECK(golden1 == 0x1AF20C3Du);   // pinned: DrawTestFull(640x480, frameSeq 1)
 	std::printf("golden test frame 1 checksum: 0x%08X\n", (unsigned)golden1);
 }
 

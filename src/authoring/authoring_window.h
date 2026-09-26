@@ -34,6 +34,13 @@ struct HostContext {
 	// Open the Stage Browser in "pick for the Authoring setup" mode.
 	std::function<void()> browseStage;
 	std::string activeTxt;       // the active tab's .txt ("" = none)
+	// [game-view] Render Hantei-chan's open stage at a game camera into an offscreen target: pass 0 = all, 1 = back
+	// (behind the fighters), 2 = front. Returns the GL texture (bottom-up rows), 0 when no stage is open.
+	// camX / camY in game px (the frame's cameraX / 128), zoom 1.0 = the game's.
+	std::function<unsigned(float camX, float camY, float zoom, int w, int h, int pass, float heat)> renderStage;
+	std::string openStage;       // the open stage's label ("" = none)
+	// The box id selected in the tab of this .txt (BoxPane::currentBox), -1 = none / not the active tab.
+	std::function<int(const std::string& txtPath)> selectedBoxFor;
 };
 
 extern bool showWindow;

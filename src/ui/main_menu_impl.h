@@ -756,6 +756,8 @@ void MainFrame::Menu(unsigned int errorPopupId)
 			if (ImGui::MenuItem("TAG HUD layout")) authoring::Open("HUD");
 			if (ImGui::MenuItem("Live: what the game resolved")) authoring::Open("Live");
 			if (ImGui::MenuItem("Game log")) authoring::Open("Log");
+			if (ImGui::MenuItem("Game view (the game inside Hantei-chan)", nullptr, authoring::showGameView))
+				authoring::showGameView = !authoring::showGameView;
 			ImGui::Separator();
 			if (ImGui::MenuItem("Legacy tag_tuning.ini panel", nullptr, tagpanel::showPanel)) tagpanel::showPanel = !tagpanel::showPanel;
 			if (ImGui::MenuItem("Game Link console", nullptr, gamelink::showPanel)) gamelink::showPanel = !gamelink::showPanel;

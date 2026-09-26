@@ -3,6 +3,7 @@
 // docs/HANTEI_AUTHORING_MODE.md §5 / §8.9. Tuning: authoring_tuning_ui.cpp. Live + Log: authoring_live_ui.cpp.
 #include "authoring_state.h"
 #include "hud_layout.h"
+#include "game_view.h"
 #include "roster_mirror.h"
 #include "../game_link_panel.h"
 #include "../pal_file.h"
@@ -253,6 +254,9 @@ void Header(HostContext& host, const gamelink::Snapshot& s, const LinkPolicy& p)
 		if (ImGui::Button("Close game")) a.launcher.KillOwn();
 		if (ImGui::IsItemHovered()) ImGui::SetTooltip("Terminate the MBAA.exe this window launched (pid %u). Never another process.", ls.gamePid);
 	}
+	ImGui::SameLine();
+	if (ImGui::Button(showGameView ? "Game view: on" : "Game view")) showGameView = !showGameView;
+	if (ImGui::IsItemHovered()) ImGui::SetTooltip("The game rendered inside Hantei-chan (a dockable panel), with input forwarding and a hitbox overlay");
 	ImGui::SameLine();
 	if (launching) ImGui::TextColored(kColWarn, "%s...", LaunchPhaseName(ls.phase));
 	else if (!s.connected) ImGui::TextColored(kColDim, "not linked (%s)", s.status.empty() ? "idle" : s.status.c_str());

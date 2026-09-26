@@ -17,6 +17,7 @@ public:
 	void BoxDragWorld(float dx, float dy);
 
 	void AdvanceBox(int dir);
+	int SelectedBoxId() const { return currentBox; }   // [game-view] the hitbox id selected in this pane
 
 	// Viewport position tool (handles drawn/driven by MainFrame).
 	bool positionTool = false;

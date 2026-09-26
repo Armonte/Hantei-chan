@@ -6,6 +6,10 @@
 #include "../game_link_panel.h"
 #include "../tag_panel.h"
 #include "../authoring/authoring_window.h"
+#include "../authoring/game_view.h"
+#include "../render_target.h"
+#include <glad/glad.h>
+#include "../box_pane.h"
 #include "../game_link.h"
 #include "../background/bg_file.h"
 #include "../character_view.h"
@@ -113,9 +117,51 @@ std::string LowerPathKey(std::string s)
 }
 } // namespace
 
+// [game-view] Hantei-chan's open stage at a game camera (the game-exact mapping bg_render uses: world -> screen =
+// (world - cam) * zoom + (320, 432) at 640x480), into the Game panel's back / front target. A dedicated renderer, so the
+// stage tab's own renderer state is untouched. Returns 0 when no stage tab is open.
+unsigned MainFrame::renderGameViewStage(float camX, float camY, float zoom, int w, int h, int pass, float heat)
+{
+	bg::File* file = nullptr;
+	for (const auto& v : views)
+		if (v && v->isStageView() && v->getStageFile() && v->getStageFile()->IsLoaded()) { file = v->getStageFile(); break; }
+	if (currentBgFile && currentBgFile->IsLoaded()) file = currentBgFile;   // the active stage tab wins
+	if (!file || w <= 0 || h <= 0) return 0;
+	if (!m_gvStage) {
+		m_gvStage = std::make_unique<bg::Renderer>();
+		m_gvStage->SetHostRender(&render);
+		m_gvBack = std::make_unique<RenderTarget>();
+		m_gvFront = std::make_unique<RenderTarget>();
+	}
+	if (m_gvStage->GetFile() != file) m_gvStage->SetFile(file);
+	m_gvStage->SetEnabled(true);
+	m_gvStage->SetShowDebugOverlay(false);
+	const uint64_t frame = (uint64_t)ImGui::GetFrameCount();
+	if (frame != m_gvStageFrame) { m_gvStageFrame = frame; m_gvStage->Update(); }   // one animation tick per UI frame
+	m_gvStage->SetHeatPreview(pass == 2 ? 0.0f : heat, (float)ImGui::GetTime());
+	RenderTarget& rt = pass == 2 ? *m_gvFront : *m_gvBack;
+	if (!rt.ensure(w, h, true)) return 0;
+	{
+		ScopedTargetBinding bind(rt);
+		glClearColor(0, 0, 0, pass == 2 ? 0.0f : 1.0f);
+		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+		bg::Camera cam;
+		cam.zoom = zoom > 0 ? zoom : 1.0f;
+		cam.SetPan(w * 0.5f / cam.zoom - camX, h * 0.9f / cam.zoom - camY);
+		cam.SetGameCam(camX, camY);
+		m_gvStage->Render(cam, w, h, pass == 2 ? bg::Pass::Front : pass == 1 ? bg::Pass::Back : bg::Pass::All);
+	}
+	return rt.texture();
+}
+
 void MainFrame::drawAuthoring()
 {
-	if (!authoring::showWindow) { authoring::HostContext none; authoring::Draw(none); return; }
+	if (!authoring::showWindow && !authoring::showGameView) {
+		authoring::HostContext none;
+		authoring::Draw(none);
+		authoring::DrawGameView(none);
+		return;
+	}
 	static bool registered = false;
 	if (!registered) {
 		registered = true;
@@ -175,6 +221,17 @@ void MainFrame::drawAuthoring()
 		c.SetAutoReload(true);
 		c.SetWatchedFiles(CollectLinkFiles(characters));
 	}
+	host.renderStage = [this](float cx, float cy, float z, int w, int h, int pass, float heat) {
+		return renderGameViewStage(cx, cy, z, w, h, pass, heat);
+	};
+	host.selectedBoxFor = [this, findChar](const std::string& txt) -> int {
+		CharacterInstance* ch = findChar(txt);
+		CharacterView* v = getActiveView();
+		if (!ch || !v || v->getCharacter() != ch || !v->getBoxPane()) return -1;
+		return v->getBoxPane()->SelectedBoxId();
+	};
 	authoring::Draw(host);
-	if (authoring::HasFocus()) shortcuts.claimFocus(ShortcutContext::authoring, 0);
+	authoring::DrawGameView(host);
+	// the Authoring window (tuning undo) or the Game panel (input forwarding) keeps the editor's shortcuts away
+	if (authoring::HasFocus() || authoring::GameViewCapturesInput()) shortcuts.claimFocus(ShortcutContext::authoring, 0);
 }
