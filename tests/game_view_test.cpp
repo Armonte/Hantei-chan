@@ -11,11 +11,16 @@
 #include "game_link.h"
 #include "game_link_mock.h"
 #include "authoring/game_view_input.h"
+#include "authoring/authoring_model.h"
+
+#include <cmath>
 
 #include <windows.h>
 
 #include <algorithm>
 #include <atomic>
+#include <fstream>
+#include <sstream>
 #include <cstdio>
 #include <cstring>
 #include <thread>
@@ -24,6 +29,7 @@
 using namespace framering;
 namespace wire = gamelink::wire;
 
+static constexpr uint32_t kPinnedLayoutHash = 0xF297FDB8u;   // LayoutHash() of the layout both sides ship
 static int g_fail = 0, g_checks = 0;
 #define CHECK(c) do { ++g_checks; if (!(c)) { std::printf("FAIL %s:%d  %s\n", __FILE__, __LINE__, #c); ++g_fail; } } while (0)
 #define CHECKM(c, m) do { ++g_checks; if (!(c)) { std::printf("FAIL %s:%d  %s  (%s)\n", __FILE__, __LINE__, #c, std::string(m).c_str()); ++g_fail; } } while (0)
@@ -320,6 +326,145 @@ static void TestMockEndToEnd()
 	nm.Stop();
 }
 
+
+// ---- the no-silent-drift rule: a hash of every size / offset / constant of the layout, pinned; and the PC copy ----
+static uint32_t LayoutHash()
+{
+	uint32_t h = 2166136261u;
+	auto mix = [&h](uint32_t v) { for (int k = 0; k < 4; ++k) { h ^= (v >> (8 * k)) & 0xFFu; h *= 16777619u; } };
+	for (uint32_t v : { (uint32_t)sizeof(FrameRingHeader), (uint32_t)sizeof(FrameSlotHeader), (uint32_t)sizeof(FrameLayer),
+	                    (uint32_t)sizeof(FrameCamera), (uint32_t)sizeof(FrameActor),
+	                    (uint32_t)offsetof(FrameRingHeader, slotStride), (uint32_t)offsetof(FrameRingHeader, layerCapacity),
+	                    (uint32_t)offsetof(FrameRingHeader, latest), (uint32_t)offsetof(FrameRingHeader, frameSeq),
+	                    (uint32_t)offsetof(FrameRingHeader, flags), (uint32_t)offsetof(FrameRingHeader, producer),
+	                    (uint32_t)offsetof(FrameSlotHeader, frameSeq), (uint32_t)offsetof(FrameSlotHeader, presentMs),
+	                    (uint32_t)offsetof(FrameSlotHeader, width), (uint32_t)offsetof(FrameSlotHeader, layerCount),
+	                    (uint32_t)offsetof(FrameSlotHeader, camera), (uint32_t)offsetof(FrameSlotHeader, layers),
+	                    (uint32_t)offsetof(FrameSlotHeader, actors), (uint32_t)offsetof(FrameCamera, zoomX1000),
+	                    (uint32_t)offsetof(FrameCamera, stageColorValX1000), (uint32_t)offsetof(FrameCamera, viewX),
+	                    (uint32_t)offsetof(FrameLayer, pitch), (uint32_t)offsetof(FrameLayer, kind), (uint32_t)offsetof(FrameLayer, checksum),
+	                    (uint32_t)offsetof(FrameActor, pattern), (uint32_t)offsetof(FrameActor, facing),
+	                    kMagic, (uint32_t)kVersion, kMaxLayers, kMaxSlots, kMaxWidth, kMaxHeight, (uint32_t)kFormatBGRX8,
+	                    (uint32_t)kFormatBGRA8, kFlagProducerAlive, kFlagEmbedded, kFlagInputInject, kFlagChecksums, kFlagLayered,
+	                    RingBytes(640, 480, 3, 3) })
+		mix(v);
+	return h;
+}
+
+static std::string AfterMarker(const std::string& t)
+{
+	return t.compare(0, 15, "// DUPLICATE OF") == 0 ? t.substr(t.find('\n') + 1) : t;
+}
+
+static void TestDrift()
+{
+	const uint32_t lh = LayoutHash();
+	std::printf("frame ring layout hash: 0x%08X\n", (unsigned)lh);
+	CHECK(lh == kPinnedLayoutHash);
+	auto read = [](const char* p) { std::ifstream f(p, std::ios::binary); std::ostringstream s; s << f.rdbuf(); return s.str(); };
+	const std::string mine = read("src/game_frame_share.h");
+	CHECK(mine.compare(0, 15, "// DUPLICATE OF") == 0);
+#ifdef PC_FRAME_SHARE_H
+	const std::string pc = read(PC_FRAME_SHARE_H);
+	if (pc.empty()) std::printf("PovertyCaster game_frame_share.h not readable: drift check skipped\n");
+	else {
+		CHECKM(AfterMarker(mine) == AfterMarker(pc), "src/game_frame_share.h differs from " PC_FRAME_SHARE_H " (after the DUPLICATE line)");
+		std::printf("frame ring header byte-identical to PovertyCaster's copy (after the DUPLICATE line)\n");
+	}
+#else
+	std::printf("PovertyCaster game_frame_share.h not configured (PC_FRAME_SHARE_H): drift check skipped\n");
+#endif
+}
+
+// ---- §12.3 (CHANGED by PC agent) ----
+static void TestPcRules()
+{
+	// the picture rect: a 624x351 frame with the 4:3 picture at 78,0 468x351 (the scaler between sidebars)
+	FrameSlotHeader f{};
+	f.width = 624; f.height = 351;
+	f.camera.zoomX1000 = 1000;
+	f.camera.cameraX = 100 * 128; f.camera.cameraY = -20 * 128;
+	f.camera.viewX = 78; f.camera.viewY = 0; f.camera.viewW = 468; f.camera.viewH = 351;
+	f.camera.shakeX = 5000;   // ignored: the camera is as drawn
+	authoring::FramePoint p = authoring::WorldToFrame(f, 100 * 128, -20 * 128);   // the camera point
+	CHECK(std::fabs(p.x - (78 + 320 * 468.0f / 640.0f)) < 0.01f && std::fabs(p.y - 432 * 351.0f / 480.0f) < 0.01f);
+	CHECK(std::fabs(p.scale - 468.0f / 640.0f) < 1e-5f);
+	p = authoring::WorldToFrame(f, 164 * 128, -20 * 128);   // 64 px right of the camera
+	CHECK(std::fabs(p.x - (78 + 384 * 468.0f / 640.0f)) < 0.01f);
+	f.camera.viewX = f.camera.viewY = f.camera.viewW = f.camera.viewH = 0; f.width = 640; f.height = 480;   // 0 = fills the frame
+	p = authoring::WorldToFrame(f, 100 * 128, 0);
+	CHECK(std::fabs(p.x - 320) < 0.01f && std::fabs(p.y - 452) < 0.01f && std::fabs(p.scale - 1) < 1e-5f);
+	// who can be injected
+	CHECK(authoring::PlayerBlockReason(0, 0x100).empty() && authoring::PlayerBlockReason(1, 0x100).empty());
+	CHECK(!authoring::PlayerBlockReason(2, 0x100).empty() && !authoring::PlayerBlockReason(3, 0).empty());
+	CHECK(!authoring::PlayerBlockReason(1, 0x1010).empty() && authoring::PlayerBlockReason(0, 0x1010).empty());
+
+	// the mock behaving like the real pchost: layered Unsupported, P3/P4 Unsupported, regrow, lighting persists
+	gamelink::MockDll::Options o;
+	o.frames = true;
+	o.layeredUnsupported = true;
+	o.regrowAfter = 40;
+	gamelink::MockDll mock(o);
+	CHECK(mock.Start());
+	gamelink::Client c;
+	c.SetTargetPid(mock.Pid());
+	c.Connect();
+	CHECK(c.WaitCaps(3000));
+	wire::Reply rep{};
+	uint16_t seq = c.SetEmbedded(2);
+	CHECK(c.WaitReply(seq, 2000, rep) && rep.status == (int16_t)wire::Status::Unsupported);
+	seq = c.InputInject(authoring::MakeInject(authoring::GameViewKeys{}, 2, 1, 5));
+	CHECK(c.WaitReply(seq, 2000, rep) && rep.status == (int16_t)wire::Status::Unsupported);
+	c.QueryFrameShare();
+	CHECK(Wait([&] { return c.Get().haveFrameShare; }, 3000));
+	const std::string first = c.Get().frameShare.name;
+	Reader r;
+	std::string why;
+	CHECKM(r.Open(first, &why), why);
+	// lighting: an override stays until reset
+	wire::StageLighting sl{};
+	sl.stageId = -1; sl.stageColorValX1000 = 900;
+	seq = c.SetStageLighting(sl);
+	CHECK(c.WaitReply(seq, 2000, rep) && rep.status == 0);
+	// the regrow: the old ring's producer flag clears; a re-query names <name>-g1, which carries on
+	CHECK(Wait([&] { r.Poll(); return !(LoadAcquire(&r.Ring()->flags) & kFlagProducerAlive); }, 5000));
+	const uint32_t serial = c.Get().frameShareSerial;
+	c.QueryFrameShare();
+	CHECK(Wait([&] { return c.Get().frameShareSerial != serial; }, 3000));
+	const std::string second = c.Get().frameShare.name;
+	CHECK(second == first + "-g1");
+	r.Close();
+	CHECKM(r.Open(second, &why), why);
+	CHECK(Wait([&] { return r.Poll() == ReadResult::Ok && r.Frame().frameSeq > 40; }, 3000));
+	Sleep(300);
+	CHECK(Wait([&] { return r.Poll() == ReadResult::Ok; }, 1000) && r.Frame().camera.stageColorValX1000 == 900);   // still applied
+	sl.flags = 1;
+	seq = c.SetStageLighting(sl);
+	CHECK(c.WaitReply(seq, 2000, rep) && rep.status == 0);
+	CHECK(Wait([&] { r.Poll(); return r.Frame().camera.stageColorValX1000 == 650; }, 2000));
+	r.Close();
+	c.Disconnect();
+	mock.Stop();
+	// P2 in Training is the dummy's
+	gamelink::MockDll::Options to;
+	to.frames = true;
+	authoring::Setup ts;
+	ts.mode = authoring::Mode::Versus; ts.scene = (uint8_t)wire::Scene::Training; ts.slot[0] = { 7, 0, 0 }; ts.slot[1] = { 0, 0, 0 };
+	to.setupHex = authoring::ToHex(authoring::ToWire(ts));
+	gamelink::MockDll tm(to);
+	CHECK(tm.Start());
+	gamelink::Client c2;
+	c2.SetTargetPid(tm.Pid());
+	c2.Connect();
+	CHECK(c2.WaitCaps(3000));
+	seq = c2.InputInject(authoring::MakeInject(authoring::GameViewKeys{}, 1, 1, 5));
+	CHECK(c2.WaitReply(seq, 2000, rep) && rep.status == (int16_t)wire::Status::Unsupported);
+	seq = c2.InputInject(authoring::MakeInject(authoring::GameViewKeys{}, 0, 2, 5));
+	CHECK(c2.WaitReply(seq, 2000, rep) && rep.status == 0);
+	c2.Disconnect();
+	tm.Stop();
+}
+
 int main()
 {
 	TestLayout();
@@ -327,6 +472,8 @@ int main()
 	TestConcurrent();
 	TestInputMapping();
 	TestMockEndToEnd();
+	TestDrift();
+	TestPcRules();
 	std::printf(g_fail ? "game_view_test: %d of %d FAILED\n" : "game_view_test: all %d checks passed\n", g_fail ? g_fail : g_checks, g_checks);
 	return g_fail ? 1 : 0;
 }
