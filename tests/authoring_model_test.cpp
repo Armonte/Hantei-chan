@@ -12,6 +12,7 @@
 
 #include <windows.h>
 
+#include <cstddef>
 #include <cstdio>
 #include <cstring>
 #include <filesystem>
@@ -20,6 +21,9 @@
 
 #ifdef HAVE_PC_ROSTER
 #include "mbaacc/MbaaccRoster.hpp"
+#endif
+#ifdef HAVE_PC_PROTO
+#include "pc/proto/Proto.hpp"
 #endif
 
 using namespace authoring;
@@ -118,6 +122,57 @@ static void TestGolden()
 	Setup v = SetupVersus();
 	v.assist[0][0] = 3;
 	CHECK(ToWire(v).assist[0][0] == 0 && ToWire(v).slot[2].chara == -1);
+}
+
+
+// ---- PovertyCaster's own golden set (docs §10.2, pinned in PC tests/mbaacc_link_authoring): HC encodes AND decodes it ----
+static void TestPcGolden()
+{
+	struct G { const char* name; const char* hex; Setup s; };
+	auto pad = [](const char* h) { return std::string(h) + std::string(56, '0'); };
+	Setup g1;   // TAG, Authoring VS, Assists|TuningFirst, stage 16; Tohno C3 + Sion C1 vs V.Sion C0 + Miyako F7; P1 2+FN1 = 1
+	g1.mode = Mode::Tag; g1.scene = (uint8_t)wire::Scene::AuthoringVs; g1.assists = true; g1.tuningFirst = true; g1.stage = 16;
+	g1.slot[0] = { 7, 0, 3 }; g1.slot[1] = { 11, 0, 0 }; g1.slot[2] = { 0, 0, 1 }; g1.slot[3] = { 8, 1, 7 }; g1.assist[0][1] = 1;
+	Setup g2;   // 1v1 Training, TuningFirst, stage 16; Tohno C3 vs V.Sion C0
+	g2.mode = Mode::Versus; g2.scene = (uint8_t)wire::Scene::Training; g2.assists = false; g2.tuningFirst = true; g2.stage = 16;
+	g2.slot[0] = { 7, 0, 3 }; g2.slot[1] = { 11, 0, 0 };
+	Setup g3;   // TEAM, Authoring VS, TuningFirst, stage -1, allDown, infinite; Tohno C3 / V.Sion C0 / Sion C1 / Miyako F7
+	g3.mode = Mode::Team; g3.scene = (uint8_t)wire::Scene::AuthoringVs; g3.assists = false; g3.tuningFirst = true; g3.stage = -1; g3.koRule = 1; g3.timer = 0;
+	g3.slot[0] = { 7, 0, 3 }; g3.slot[1] = { 11, 0, 0 }; g3.slot[2] = { 0, 0, 1 }; g3.slot[3] = { 8, 1, 7 };
+	const G gs[3] = {
+		{ "G1", "010102211000ffff070000030b0000000000000108000107000100000000000000000000", g1 },
+		{ "G2", "010001201000ffff070000030b000000ffff0000ffff0000000000000000000000000000", g2 },
+		{ "G3", "01020220ffff0100070000030b0000000000000108000107000000000000000000000000", g3 },
+	};
+	for (const G& g : gs) {
+		const std::string hex = pad(g.hex);
+		CHECKM(ToHex(ToWire(g.s)) == hex, std::string(g.name) + " encodes to " + ToHex(ToWire(g.s)));
+		wire::MatchSetup w{};
+		CHECK(FromHex(hex, w) && FromWire(w) == g.s);
+	}
+}
+
+// ---- the mirror vs PovertyCaster's Proto.hpp itself, when the header on disk has the authoring structs ----
+static void TestAgainstPcProto()
+{
+#ifdef HAVE_PC_PROTO
+	namespace P = pc::proto;
+	CHECK(sizeof(P::LinkCommandEx) == sizeof(wire::CommandEx) && sizeof(P::LinkMatchSetup) == sizeof(wire::MatchSetup));
+	CHECK(sizeof(P::LinkCaps) == sizeof(wire::Caps) && sizeof(P::LinkRoster) == sizeof(wire::Roster));
+	CHECK(sizeof(P::LinkSetupState) == sizeof(wire::SetupState) && sizeof(P::LinkTuningGlobal) == sizeof(wire::TuningGlobal));
+	CHECK(sizeof(P::LinkTuningSlot) == sizeof(wire::TuningSlot) && sizeof(P::LinkRosterEntry) == sizeof(wire::RosterEntry));
+	CHECK(offsetof(P::LinkCaps, gameId) == offsetof(wire::Caps, gameId) && offsetof(P::LinkSetupState, sessionRole) == offsetof(wire::SetupState, sessionRole));
+	CHECK(offsetof(P::LinkSetupState, betweenRounds) == offsetof(wire::SetupState, betweenRounds) && offsetof(P::LinkSetupState, message) == offsetof(wire::SetupState, message));
+	CHECK(offsetof(P::LinkTuningGlobal, values) == offsetof(wire::TuningGlobal, values) && offsetof(P::LinkTuningSlot, values) == offsetof(wire::TuningSlot, values));
+	CHECK(offsetof(P::LinkTuningSlot, cssMask) == offsetof(wire::TuningSlot, cssMask) && offsetof(P::LinkMatchSetup, assist) == offsetof(wire::MatchSetup, assist));
+	CHECK((int)P::LinkOp::QueryCaps == (int)wire::Op::QueryCaps && (int)P::LinkOp::EndAuthoring == (int)wire::Op::EndAuthoring);
+	CHECK((int)P::LinkOp::SetMatchSetup == (int)wire::Op::SetMatchSetup && (int)P::IpcKind::LinkCommandEx == (int)wire::Kind::LinkCommandEx);
+	CHECK((int)P::IpcKind::LinkTuningSlot == (int)wire::Kind::LinkTuningSlot && (int)P::LinkStatus::Timeout == (int)wire::Status::Timeout);
+	CHECK(P::kLinkFlagQueryAfter == wire::kFlagQueryAfter && P::kLinkCapSetup == wire::kCapSetup && P::kSetupTuningFirst == wire::kSetupTuningFirst);
+	std::printf("protocol mirror checked against PovertyCaster Proto.hpp\n");
+#else
+	std::printf("PovertyCaster Proto.hpp with the authoring structs not found at configure time (PC_PROTO_HPP): skipped\n");
+#endif
 }
 
 static void TestStructs()
@@ -333,6 +388,8 @@ static void TestLibrary()
 int main()
 {
 	TestGolden();
+	TestPcGolden();
+	TestAgainstPcProto();
 	TestStructs();
 	TestRoster();
 	TestValidation();
