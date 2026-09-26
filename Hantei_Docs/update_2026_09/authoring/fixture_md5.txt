@@ -1,0 +1,9 @@
+29dfa671092d569fe787f1be60f13cc2  ./chars/miyako_full.ini
+59414870cd3a181b043eb2e6bdfc10a1  ./chars/shiki.ini
+d1097e62261ad33d62b86d2b663fc4b7  ./global.ini
+f482968b554ccc14f5427f07b807a737  ./hud.ini
+ee4dd451bdb211348adb003ef43661f3  ./local/chars/shiki.ini
+0ffaa433d1431e3bd9ec998f67ae9db4  ./local/chars/shiki_full.ini
+ae7680448c4ef02ff750a94496e52fe6  ./local/chars/sion.ini
+41dcac560014aa86fd1722c93c5b98c0  ./local/global.ini
+2b3037b77d0258c0fe17f7b8641ad804  ./local/hud.ini

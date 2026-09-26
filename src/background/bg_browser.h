@@ -16,6 +16,9 @@ struct BrowserHooks {
 	// "Show in game" (live Game Link stage switch). Null until the link
 	// supports it; the button is disabled then.
 	std::function<bool(int stageId, const std::string& datPath)> showInGame;
+	// [authoring] Set only while the Authoring workspace's Setup asked for a stage ("Browse..."): the button
+	// "Use for the Authoring setup" hands the selected id back (docs/HANTEI_AUTHORING_MODE.md §5.3).
+	std::function<void(int stageId)> pickForSetup;
 };
 
 // Draws the "Stage Browser" window contents. `currentDat` = the active stage

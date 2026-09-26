@@ -459,6 +459,14 @@ void MainFrame::Menu(unsigned int errorPopupId)
 				ImGui::TextDisabled("History: %zu undo / %zu redo, ~%zu KiB",
 					undo->undoCount(), undo->redoCount(), undo->historyBytes() / 1024);
 			}
+			// [authoring] the tuning history (sidecar files): Ctrl+Z / Ctrl+Y reach it while the Authoring window has focus
+			if (authoring::showWindow) {
+				const std::string tu = authoring::UndoLabel(false), tr = authoring::UndoLabel(true);
+				if (ImGui::MenuItem(("Undo tuning: " + (tu.empty() ? std::string("-") : tu)).c_str(), nullptr, false, !tu.empty()))
+					authoring::UndoRedo(false);
+				if (ImGui::MenuItem(("Redo tuning: " + (tr.empty() ? std::string("-") : tr)).c_str(), nullptr, false, !tr.empty()))
+					authoring::UndoRedo(true);
+			}
 			// Stage tabs: object / frame / event / Info.txt edits (bg::File) and
 			// BgList.ini / bgm.txt edits (Stage Browser) share one history.
 			if (view && view->isStageView()) {
@@ -731,6 +739,28 @@ void MainFrame::Menu(unsigned int errorPopupId)
 			if (ImGui::MenuItem("HUD preview / colours", nullptr, m_showHud)) m_showHud = !m_showHud;
 			if (ImGui::MenuItem("MBAC (HA4) Inspector", nullptr, ha4ui::showInspector)) ha4ui::showInspector = !ha4ui::showInspector;
 			if (ImGui::MenuItem("Game Link (MBAACC)", nullptr, gamelink::showPanel)) gamelink::showPanel = !gamelink::showPanel;
+			// [authoring] the old Tag / Team entry opens the Authoring workspace on its Tuning tab (§5.1)
+			if (ImGui::MenuItem("Tag / Team (experimental)", nullptr, authoring::showWindow)) authoring::Open("Tuning");
+			ImGui::EndMenu();
+		}
+		// [authoring] docs/HANTEI_AUTHORING_MODE.md §8.11: Authoring ships in the public build behind this menu.
+		if (ImGui::BeginMenu("Experimental: Authoring"))
+		{
+			if (ImGui::MenuItem("Authoring workspace (MBAACC)", nullptr, authoring::showWindow)) {
+				if (authoring::showWindow) authoring::showWindow = false; else authoring::Open("Setup");
+			}
+			ImGui::Separator();
+			if (ImGui::MenuItem("Setup: characters, stage, mode")) authoring::Open("Setup");
+			if (ImGui::MenuItem("Saved setups")) authoring::Open("Setups");
+			if (ImGui::MenuItem("Tuning: tag / assists (sidecars)")) authoring::Open("Tuning");
+			if (ImGui::MenuItem("TAG HUD layout")) authoring::Open("HUD");
+			if (ImGui::MenuItem("Live: what the game resolved")) authoring::Open("Live");
+			if (ImGui::MenuItem("Game log")) authoring::Open("Log");
+			if (ImGui::MenuItem("Game view (the game inside Hantei-chan)", nullptr, authoring::showGameView))
+				authoring::showGameView = !authoring::showGameView;
+			ImGui::Separator();
+			if (ImGui::MenuItem("Legacy tag_tuning.ini panel", nullptr, tagpanel::showPanel)) tagpanel::showPanel = !tagpanel::showPanel;
+			if (ImGui::MenuItem("Game Link console", nullptr, gamelink::showPanel)) gamelink::showPanel = !gamelink::showPanel;
 			ImGui::EndMenu();
 		}
 		if (ImGui::BeginMenu("Help"))

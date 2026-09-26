@@ -29,6 +29,8 @@ struct EditorContext {
 extern bool showPanel;
 Client& SharedClient();
 void DrawPanel(EditorContext& ctx);
+// The folder of the running game with this pid ("" if it cannot be read).
+std::string GameDirOf(uint32_t pid);
 // Open the window, connect, and follow + jump to game slot `slot` (0-3). Used by --game-link.
 void StartFollowing(int slot);
 

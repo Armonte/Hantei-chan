@@ -348,6 +348,13 @@ private:
 	void loadCommandsForActive(const std::string& path);
 	void drawCommandEditor();
 	void drawGameLink();   // Game Link window (ui/main_frame_gamelink.cpp)
+	void drawTagPanel();   // Tag / Team window, experimental (ui/main_frame_gamelink.cpp, tag_panel.h)
+	void drawAuthoring();  // [authoring] Authoring workspace (ui/main_frame_gamelink.cpp, authoring/authoring_window.h)
+	// [game-view] the Game panel's own stage renderer + its two offscreen targets (back / front pass)
+	std::unique_ptr<bg::Renderer> m_gvStage;
+	std::unique_ptr<RenderTarget> m_gvBack, m_gvFront;
+	uint64_t m_gvStageFrame = 0;
+	unsigned renderGameViewStage(float camX, float camY, float zoom, int w, int h, int pass, float heat);
 	bool m_commandShortcutsRegistered = false;
 	// ---- Editing tools (ui/editor_tools_impl.h) ----------------------------
 	ShortcutRouter shortcuts;

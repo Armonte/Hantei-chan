@@ -27,10 +27,22 @@
 //                        (checks shortcut routing through the HWND subclass)
 //   --stats <file>       frames 10-19: average scene render / onion-skin cost (CPU ms)
 //   --quit               quit after the actions even without --capture
+//   --tool tag           open the Tag / Team window (experimental); --tool gamelink opens the Game Link window
+//   --tag-ini <path>     the tag_tuning.ini it edits (default: next to the linked MBAA.exe)
+//   --tag-char <file>    the [char.<file>] it shows   --tag-tab Global|Character|Assists|Live|Raw
+//   --tag-apply          press Apply to game once (frame 150; checks the gate / validation from a script)
+//   --tag-link           connect the Game Link for it (with --capture the shot is taken at frame 240, as --game-link)
+//   --tool authoring     [authoring] open the Authoring workspace (docs/HANTEI_AUTHORING_MODE.md); --tool tag opens it on
+//                        its Tuning tab (the old Tag / Team panel: Experimental: Authoring > Legacy, or --tag-ini)
+//   --authoring-tab Setup|Setups|Tuning|HUD|Live|Log   --authoring-setup <128 hex>   --authoring-game <dir>
+//   --authoring-tag-root <povertycaster\tag dir>   --authoring-char <file>   --authoring-layer all|c|f|h
+//   --authoring-view global   --authoring-link (connect; the capture waits to frame 240)   --authoring-load (Load in game)
+//   --authoring-pid <n> (link only to that pid)   --authoring-unlock (session: files unlocked)   --authoring-ab 1 (an A/B pair for a capture; nothing is written)
 //   --game-link N        open the Game Link window, connect, follow game slot N (1-4) and jump the editor to it;
 //                        with --capture the shot is taken later (frame 240) so the link has live state
 #include <string>
 #include <cwchar>
+#include "authoring/authoring_window.h"
 
 struct StartupArgs {
 	std::string open;
@@ -42,6 +54,10 @@ struct StartupArgs {
 	bool noPups = false;   // --no-pups: draw every pattern with <cg>.pal
 	int compare = -1;
 	std::string tool;
+	std::string tagIni, tagChar, tagTab;   // --tag-ini / --tag-char / --tag-tab
+	bool tagLink = false;                  // --tag-link
+	bool tagApply = false;                 // --tag-apply
+	authoring::StartupOptions authoring;   // --authoring-* ([authoring])
 	std::string capture;
 	int gameLinkSlot = 0;   // --game-link (1-4); 0 = off
 	int frameCounter = 0;

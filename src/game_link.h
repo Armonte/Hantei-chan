@@ -65,6 +65,36 @@ struct Snapshot {
 	bool autoReloadStage = false;
 	size_t watchedStage = 0;
 	uint32_t targetPid = 0;          // 0 = discover MBAA.exe by name
+	// [link-tag] QueryTag (game_link_proto.h Tag; PovertyCaster mbaacc/link-tag)
+	bool haveTag = false;
+	bool tagUnsupported = false;     // the DLL answered QueryTag with Unknown (not implemented yet)
+	wire::Tag tag{};
+	// [authoring] docs/HANTEI_AUTHORING_MODE.md §3. QueryCaps is sent on every connect; a DLL that predates Authoring
+	// answers Unknown -> capsUnknown ("link rev 1 mode": Setup disabled, no LinkCommandEx is ever sent).
+	bool haveCaps = false;
+	bool capsUnknown = false;
+	wire::Caps caps{};
+	std::string gameId;              // caps.gameId ("" -> "mbaacc")
+	std::vector<wire::Roster> roster;   // every page received (QueryRoster, once per connection)
+	bool rosterComplete = false;
+	bool haveSetup = false;
+	wire::SetupState setup{};
+	uint32_t setupSerial = 0;
+	bool haveTuning = false;
+	wire::TuningGlobal tuning{};
+	wire::TuningSlot tuningSlot[4]{};
+	bool haveTuningSlot[4] = {};
+	uint32_t tuningSerial = 0;       // bumps when a LinkTuningGlobal arrives (its slots follow)
+	bool Authoring() const { return haveCaps && (caps.caps & wire::kCapSetup); }
+	// [game-view] §12.1
+	bool haveFrameShare = false;
+	bool frameShareUnknown = false;  // the DLL answered QueryFrameShare with Unknown
+	wire::FrameShare frameShare{};
+	uint32_t frameShareSerial = 0;
+	std::string lastInjectReply;
+	// Session lock (§3.6, §9.3): any session flag, unless the host is between rounds.
+	bool SessionLive() const;
+	bool HostBetweenRounds() const;
 };
 
 // Does saving `path` concern the stage the game shows? Stage files are matched by their stage stem, case-
@@ -105,6 +135,38 @@ public:
 
 	void SetTargetPid(uint32_t pid);   // 0 = discover by process name (default)
 
+	// [tag-panel] Poll QueryTag with the state (stops by itself once the DLL answers Unknown).
+	void SetTagQuery(bool on);
+	// [tag-panel] Ask the reload gate without reloading: SetChar(slot 0, keep chara/moon/palette, no reload flag). The
+	// DLL checks its arguments, then the gate (session first), and answers RefusedSession / RefusedRecording /
+	// RefusedScene / ... or Ok ("held until the next reload": a keep-everything pick, a no-op). Returns the seq.
+	uint16_t ProbeGate();
+	// The reply with this seq, if it has arrived (non-blocking; recent replies only).
+	bool PeekReply(uint16_t seq, wire::Reply& out) const;
+
+	// ---- [authoring] §3.2 ops. Each returns the seq (0 = not sent: no link / the DLL lacks the capability) ----
+	uint16_t QueryCaps();
+	uint16_t QueryRoster(int page);
+	uint16_t QueryMatchSetup();
+	uint16_t SetMatchSetup(const wire::MatchSetup& s);               // LinkCommandEx; only after caps say kCapSetup
+	uint16_t SetMatchSetupWhenConnected(const wire::MatchSetup& s);  // connects first when needed
+	uint16_t ApplyTuning(uint8_t flags = wire::kFlagQueryAfter);     // + kFlagReload for one ETM reload afterwards
+	uint16_t QueryTuning(uint8_t slotMask = 0);
+	uint16_t EndAuthoring();
+	// [game-view] §12.1 (0 = not sent: the DLL lacks the capability)
+	uint16_t QueryFrameShare();
+	uint16_t SetEmbedded(int mode);   // 0 real window, 1 embedded full frame, 2 embedded layered
+	uint16_t SetStageLighting(const wire::StageLighting& l);
+	uint16_t InputInject(const wire::InputInject& in);
+	// Poll cadence (§3.6): QueryMatchSetup at 2 Hz (10 Hz while a setup runs) when on; QueryTuning at 0.5 Hz when on
+	// (and after every ApplyTuning with kFlagQueryAfter / when the setup becomes Ready).
+	void SetAuthoringPoll(bool setupPoll, bool tuningPoll);
+	bool WaitCaps(int timeoutMs);
+	bool WaitSetup(int timeoutMs, wire::SetupState& out);          // a LinkSetupState newer than the call
+	// A LinkTuningGlobal (+ its slots) newer than the call, or newer than `since` (a Snapshot::tuningSerial read before
+	// the request: the answer to an ApplyTuning can land before the caller gets here).
+	bool WaitTuning(int timeoutMs, Snapshot& out, uint32_t since = 0xFFFFFFFFu);
+
 	void SetPollHz(int hz);   // LinkState polling while connected; 0 = off
 	void SetAutoReload(bool on);
 	void SetWatchedFiles(std::vector<WatchedFile> files);
@@ -129,10 +191,19 @@ private:
 	void watchTick();
 	void stageWatchTick(uint64_t now);
 	uint16_t queueCommand(wire::Command c);
+	struct OutMsg { uint16_t kind; std::vector<uint8_t> body; };
+	static OutMsg Msg(const wire::Command& c);
+	void authoringPoll(std::deque<OutMsg>& out, uint64_t now);
 
 	mutable std::mutex m_mx;
-	std::deque<wire::Command> m_out;
-	std::deque<wire::Command> m_onConnect;   // SetStageWhenConnected, flushed by tryOpen
+	std::deque<OutMsg> m_out;
+	std::deque<OutMsg> m_onConnect;          // SetStageWhenConnected / SetMatchSetupWhenConnected, flushed once caps are known
+	bool m_setupPoll = false, m_tuningPoll = false;
+	uint64_t m_lastSetupPollMs = 0, m_lastTuningPollMs = 0;
+	uint8_t m_lastAuthState = 0;
+	int m_rosterNext = -1;                   // next roster page to ask for (-1 = none)
+	int m_pendingSlots = 0;                  // LinkTuningSlot messages still expected after a LinkTuningGlobal
+	uint8_t m_lastTuningMask = 0;            // the slotMask of the last QueryTuning sent (0 = all)
 	std::vector<WatchedStageFile> m_stageWatch;
 	uint32_t m_stageSerial = 0;
 	Snapshot m_snap;
@@ -142,6 +213,7 @@ private:
 	uint32_t m_stateSerial = 0;
 	uint16_t m_seq = 0;
 	int m_pollHz = 10;
+	bool m_tagQuery = false;
 
 	std::atomic<bool> m_quit{false};
 	std::thread m_thread;

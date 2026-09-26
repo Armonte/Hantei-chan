@@ -108,6 +108,10 @@ add_executable(${EXE}
 	src/ui/main_frame_gamelink.cpp
 	src/game_link.cpp
 	src/game_link_panel.cpp
+	# Tag / Team panel (experimental, docs/HANTEI_TAG_PANEL.md)
+	src/tag_tuning/tag_ini.cpp
+	src/tag_tuning/tag_assist.cpp
+	src/tag_panel.cpp
 	imsearch/imsearch.cpp
 	res/res.rc
 )
@@ -270,9 +274,24 @@ endif()
 
 # Game Link CLI: the editor's Game Link client (src/game_link.cpp) without the GUI, plus an HA6 edit through the
 # editor's own FrameData load/save. Scripted end-to-end checks against a running MBAA.exe (docs/HANTEI_GAME_LINK.md).
+# [authoring] shared by the editor, game_link_cli, the mock and the tests (docs/HANTEI_AUTHORING_MODE.md)
+set(TAG_SIDECAR_SOURCES src/tag_tuning/tag_ini.cpp src/tag_tuning/tag_sidecar.cpp src/tag_tuning/tag_migrate.cpp
+	src/tag_tuning/tag_history.cpp)
+set(AUTHORING_CORE_SOURCES src/authoring/authoring_model.cpp src/authoring/authoring_policy.cpp src/authoring/game_launcher.cpp)
+# [authoring] the Authoring workspace in the editor (tag_ini.cpp / tag_assist.cpp are already in the list above)
+target_sources(${EXE} PRIVATE
+	src/tag_tuning/tag_sidecar.cpp src/tag_tuning/tag_migrate.cpp src/tag_tuning/tag_history.cpp src/tag_tuning/tag_widgets.cpp
+	${AUTHORING_CORE_SOURCES}
+	src/authoring/authoring_window.cpp src/authoring/authoring_tuning_ui.cpp src/authoring/authoring_live_ui.cpp
+	src/authoring/frame_summary.cpp src/authoring/mbac_reference.cpp src/authoring/hud_layout.cpp src/authoring/hud_layout_ui.cpp
+	src/pal_file.cpp src/game_frame_ring.cpp src/authoring/game_view.cpp)
 add_executable(game_link_cli
 	src/game_link_cli.cpp
 	src/game_link.cpp
+	src/game_link_mock.cpp
+	src/game_frame_ring.cpp
+	${TAG_SIDECAR_SOURCES}
+	${AUTHORING_CORE_SOURCES}
 	src/background/bg_file.cpp
 	src/background/bg_project.cpp
 	src/background/bg_pat.cpp
@@ -562,9 +581,108 @@ if(MINGW)
 	target_link_options(package_tools_test PRIVATE -static-libgcc -static-libstdc++ -static)
 endif()
 add_test(NAME package_tools COMMAND package_tools_test)
-add_executable(game_link_test tests/game_link_test.cpp src/game_link.cpp)
+add_executable(game_link_test tests/game_link_test.cpp src/game_link.cpp src/game_link_mock.cpp src/game_frame_ring.cpp ${AUTHORING_CORE_SOURCES}
+	${TAG_SIDECAR_SOURCES})
 target_include_directories(game_link_test PRIVATE "src")
 if(MINGW)
 	target_link_options(game_link_test PRIVATE -static-libgcc -static-libstdc++ -static)
 endif()
-add_test(NAME game_link COMMAND game_link_test)
+add_test(NAME game_link COMMAND game_link_test WORKING_DIRECTORY ${CMAKE_SOURCE_DIR})
+# [game-view] the embedded game view: frame ring layout + seqlock + layered compositing + the mock producer end to end
+# (docs/HANTEI_AUTHORING_MODE.md §12). Headless: no window is ever created.
+add_executable(game_view_test tests/game_view_test.cpp src/game_frame_ring.cpp src/game_link.cpp src/game_link_mock.cpp
+	${AUTHORING_CORE_SOURCES} ${TAG_SIDECAR_SOURCES})
+target_include_directories(game_view_test PRIVATE "src")
+set(PC_FRAME_SHARE_H "$ENV{HOME}/wt/pc-gameview/pc-proto/include/pc/proto/game_frame_share.h"
+	CACHE FILEPATH "PovertyCaster's copy of game_frame_share.h, for the no-silent-drift check (optional)")
+if(EXISTS "${PC_FRAME_SHARE_H}")
+	execute_process(COMMAND wslpath -m "${PC_FRAME_SHARE_H}" OUTPUT_VARIABLE PC_FRAME_SHARE_WIN OUTPUT_STRIP_TRAILING_WHITESPACE ERROR_QUIET)
+	if(PC_FRAME_SHARE_WIN)
+		target_compile_definitions(game_view_test PRIVATE PC_FRAME_SHARE_H="${PC_FRAME_SHARE_WIN}")
+	endif()
+endif()
+if(MINGW)
+	target_link_options(game_view_test PRIVATE -static-libgcc -static-libstdc++ -static)
+endif()
+add_test(NAME game_view COMMAND game_view_test WORKING_DIRECTORY ${CMAKE_SOURCE_DIR})
+# Tag / Team panel: tag_tuning.ini round trip, lever table vs the sample ini and (when on disk) vs PovertyCaster's
+# MbaaccTagTuning.hpp, assist slot resolution and the default-assist pick (docs/HANTEI_TAG_PANEL.md).
+add_executable(tag_tuning_test tests/tag_tuning_test.cpp src/tag_tuning/tag_ini.cpp src/tag_tuning/tag_assist.cpp
+	src/cmdfile/cmd_document.cpp)
+target_include_directories(tag_tuning_test PRIVATE "src")
+set(PC_TAG_TUNING_HPP "/mnt/c/dev/castergroup/PovertyCaster/pc-adapters/mbaacc/include/mbaacc/MbaaccTagTuning.hpp"
+	CACHE FILEPATH "PovertyCaster's MbaaccTagTuning.hpp, for the lever-table drift check (optional)")
+if(EXISTS "${PC_TAG_TUNING_HPP}")
+	get_filename_component(PC_TAG_TUNING_INC "${PC_TAG_TUNING_HPP}" DIRECTORY)
+	get_filename_component(PC_TAG_TUNING_INC "${PC_TAG_TUNING_INC}" DIRECTORY)
+	target_include_directories(tag_tuning_test PRIVATE "${PC_TAG_TUNING_INC}")
+	target_compile_definitions(tag_tuning_test PRIVATE HAVE_PC_TAG_TUNING=1)
+	file(STRINGS "${PC_TAG_TUNING_HPP}" PC_LEVER_HASH_LINES REGEX "leverTableHash\\(")
+	if(PC_LEVER_HASH_LINES)
+		target_compile_definitions(tag_tuning_test PRIVATE HAVE_PC_LEVER_HASH=1)
+	endif()
+endif()
+if(MINGW)
+	target_link_options(tag_tuning_test PRIVATE -static-libgcc -static-libstdc++ -static)
+endif()
+add_test(NAME tag_tuning COMMAND tag_tuning_test WORKING_DIRECTORY ${CMAKE_SOURCE_DIR})
+# [authoring] the sidecar tree, migration and the workspace undo history (docs/HANTEI_AUTHORING_MODE.md §2 / §9.1).
+add_executable(tag_sidecar_test tests/tag_sidecar_test.cpp ${TAG_SIDECAR_SOURCES})
+target_include_directories(tag_sidecar_test PRIVATE "src")
+set(PC_SIDECAR_HPP "/mnt/c/dev/castergroup/PovertyCaster/pc-adapters/mbaacc/include/mbaacc/TagSidecar.hpp"
+	CACHE FILEPATH "PovertyCaster's TagSidecar.hpp (mbaacc/authoring), for the resolver cross-check (optional)")
+if(EXISTS "${PC_SIDECAR_HPP}")
+	get_filename_component(PC_SIDECAR_INC "${PC_SIDECAR_HPP}" DIRECTORY)
+	get_filename_component(PC_SIDECAR_INC "${PC_SIDECAR_INC}" DIRECTORY)
+	target_include_directories(tag_sidecar_test PRIVATE "${PC_SIDECAR_INC}")
+	target_compile_definitions(tag_sidecar_test PRIVATE HAVE_PC_SIDECAR=1)
+endif()
+if(MINGW)
+	target_link_options(tag_sidecar_test PRIVATE -static-libgcc -static-libstdc++ -static)
+endif()
+add_test(NAME tag_sidecar COMMAND tag_sidecar_test WORKING_DIRECTORY ${CMAKE_SOURCE_DIR})
+# [authoring] the pure model: golden LinkMatchSetup bytes (shared with PovertyCaster tests/mbaacc_authoring), validation,
+# files to open, the launch environment, saved setups; the roster mirror vs PovertyCaster's MbaaccRoster.hpp when on disk.
+set(AUTHORING_MODEL_SOURCES src/authoring/authoring_model.cpp src/authoring/game_launcher.cpp)
+add_executable(authoring_model_test tests/authoring_model_test.cpp ${AUTHORING_MODEL_SOURCES})
+target_include_directories(authoring_model_test PRIVATE "src")
+set(PC_ROSTER_HPP "/mnt/c/dev/castergroup/PovertyCaster/pc-adapters/mbaacc/include/mbaacc/MbaaccRoster.hpp"
+	CACHE FILEPATH "PovertyCaster's MbaaccRoster.hpp, for the roster mirror drift check (optional)")
+if(EXISTS "${PC_ROSTER_HPP}")
+	get_filename_component(PC_ROSTER_INC "${PC_ROSTER_HPP}" DIRECTORY)
+	get_filename_component(PC_ROSTER_INC "${PC_ROSTER_INC}" DIRECTORY)
+	target_include_directories(authoring_model_test PRIVATE "${PC_ROSTER_INC}")
+	target_compile_definitions(authoring_model_test PRIVATE HAVE_PC_ROSTER=1)
+endif()
+set(PC_PROTO_HPP "/mnt/c/dev/castergroup/PovertyCaster/pc-proto/include/pc/proto/Proto.hpp"
+	CACHE FILEPATH "PovertyCaster's Proto.hpp (a branch with the Authoring structs), for the protocol mirror check (optional)")
+if(EXISTS "${PC_PROTO_HPP}")
+	file(STRINGS "${PC_PROTO_HPP}" PC_PROTO_AUTHORING REGEX "struct LinkMatchSetup")
+	if(PC_PROTO_AUTHORING)
+		get_filename_component(PC_PROTO_INC "${PC_PROTO_HPP}" DIRECTORY)
+		get_filename_component(PC_PROTO_INC "${PC_PROTO_INC}/../.." ABSOLUTE)
+		target_include_directories(authoring_model_test PRIVATE "${PC_PROTO_INC}")
+		target_compile_definitions(authoring_model_test PRIVATE HAVE_PC_PROTO=1)
+	endif()
+endif()
+if(MINGW)
+	target_link_options(authoring_model_test PRIVATE -static-libgcc -static-libstdc++ -static)
+endif()
+add_test(NAME authoring_model COMMAND authoring_model_test WORKING_DIRECTORY ${CMAKE_SOURCE_DIR})
+# [authoring] inline frame data (startup / active / recovery) and the MBAC reference values (§8.9).
+add_executable(frame_data_test tests/frame_data_test.cpp src/authoring/frame_summary.cpp src/authoring/mbac_reference.cpp
+	src/framedata.cpp src/framedata_load.cpp src/framedata_save.cpp src/framedata_ha4.cpp src/misc.cpp tinyalloc/tinyalloc.c)
+target_include_directories(frame_data_test PRIVATE "src" "." "third_party" "${CMAKE_BINARY_DIR}/generated")
+target_compile_definitions(frame_data_test PRIVATE WIN32_LEAN_AND_MEAN HA6GUIVERSION="${CMAKE_PROJECT_VERSION}")
+target_link_libraries(frame_data_test PRIVATE tinyalloc)
+if(MINGW)
+	target_link_options(frame_data_test PRIVATE -static-libgcc -static-libstdc++ -static)
+endif()
+add_test(NAME frame_data COMMAND frame_data_test WORKING_DIRECTORY ${CMAKE_SOURCE_DIR})
+# [authoring] the TAG HUD layout sidecar (hud.ini, §9.4): parse / resolve / byte-preserving edits.
+add_executable(hud_layout_test tests/hud_layout_test.cpp src/authoring/hud_layout.cpp ${TAG_SIDECAR_SOURCES})
+target_include_directories(hud_layout_test PRIVATE "src")
+if(MINGW)
+	target_link_options(hud_layout_test PRIVATE -static-libgcc -static-libstdc++ -static)
+endif()
+add_test(NAME hud_layout COMMAND hud_layout_test WORKING_DIRECTORY ${CMAKE_SOURCE_DIR})
