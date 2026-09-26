@@ -164,7 +164,6 @@ std::string MockDll::FrameName() const { return framering::MappingName(Pid()); }
 void MockDll::produce()
 {
 	using namespace framering;
-	Producer& ring = *(Producer*)m_ring;
 	const uint32_t w = (uint32_t)m_o.frameW, h = (uint32_t)m_o.frameH, pitch = PitchFor(w);
 	std::vector<uint8_t> scratch((size_t)pitch * h);
 	uint32_t n = 0;
@@ -183,6 +182,22 @@ void MockDll::produce()
 				if (--hd.frames == 0) { hd.dir = 5; hd.buttons = 0; }
 			}
 		}
+		// §12.3 regrow: a new ring <name>-g<n>, the old one's kFlagProducerAlive cleared (Close clears it)
+		if (m_o.regrowAfter > 0 && n == (uint32_t)m_o.regrowAfter + 1 && m_generation == 0) {
+			auto* next = new Producer();
+			std::string why;
+			if (next->Create(FrameName() + "-g1", w, h, 3, 3, Pid(), "mock g1", &why)) {
+				std::lock_guard<std::mutex> lk(m_fmx);
+				Producer* old = (Producer*)m_ring;
+				m_ring = next;
+				m_generation = 1;
+				old->Close();
+				delete old;
+			} else {
+				delete next;
+			}
+		}
+		Producer& ring = *(Producer*)m_ring;
 		void* base = ring.Base();
 		FrameRingHeader* rh = Header(base);
 		rh->flags = kFlagProducerAlive | kFlagChecksums | (m_o.session ? 0 : kFlagInputInject) | (mode ? kFlagEmbedded : 0) |
@@ -197,6 +212,7 @@ void MockDll::produce()
 		s->flags = kSlotHasFull | (mode == 2 ? kSlotLayered : 0);
 		TestCamera(n, s->camera);
 		s->camera.stageLightArgb = m_lightArgb;
+		if (m_colorOverride) s->camera.stageColorValX1000 = m_colorValX1000;
 		// the fighters as drawn: the setup's picks, walking, slot 0 moved by injected input
 		for (int i = 0; i < 4; ++i) {
 			FrameActor& a = s->actors[i];
@@ -453,6 +469,10 @@ void MockDll::serve(void* pipe)
 						std::memcpy(&in, body.data() + sizeof x, sizeof in);
 						if (in.version != wire::kInjectVersion || in.player > 3 || in.direction < 1 || in.direction > 9 || in.holdFrames > 600)
 							ok = ReplyTo(h, x.op, x.seq, wire::Status::BadArgs, "bad inject (mock)");
+						else if (in.player >= 2)
+							ok = ReplyTo(h, x.op, x.seq, wire::Status::Unsupported, "P3/P4: only the P1/P2 pad words are owned (mock)");
+						else if (in.player == 1 && m_ss.inForce.scene == (uint8_t)wire::Scene::Training)
+							ok = ReplyTo(h, x.op, x.seq, wire::Status::Unsupported, "P2 is the Training dummy's (mock)");
 						else {
 							std::lock_guard<std::mutex> lk(m_fmx);
 							Held& hd = m_held[in.player];
@@ -467,7 +487,12 @@ void MockDll::serve(void* pipe)
 					} else {
 						wire::StageLighting l;
 						std::memcpy(&l, body.data() + sizeof x, sizeof l);
-						{ std::lock_guard<std::mutex> lk(m_fmx); m_lightArgb = (l.flags & 1) ? 0 : l.lightArgb; }
+						{
+							std::lock_guard<std::mutex> lk(m_fmx);   // persists until reset (§12.3)
+							m_lightArgb = (l.flags & 1) ? 0 : l.lightArgb;
+							m_colorOverride = !(l.flags & 1);
+							m_colorValX1000 = l.stageColorValX1000;
+						}
 						ok = ReplyTo(h, x.op, x.seq, wire::Status::Ok, "stage lighting applied (mock)");
 					}
 					if (!ok) return;
@@ -619,6 +644,7 @@ void MockDll::serve(void* pipe)
 			}
 			case wire::Op::QueryFrameShare: {
 				if (!m_o.frames) { ok = Reply(h, c, wire::Status::Unknown, "unknown op"); break; }
+				std::lock_guard<std::mutex> lk(m_fmx);
 				const framering::Producer& ring = *(framering::Producer*)m_ring;
 				const framering::FrameRingHeader* rh = framering::Header(ring.Base());
 				wire::FrameShare f{};
@@ -637,6 +663,7 @@ void MockDll::serve(void* pipe)
 			case wire::Op::SetEmbedded:
 				if (!m_o.frames) { ok = Reply(h, c, wire::Status::Unknown, "unknown op"); break; }
 				if (c.slot < 0 || c.slot > 2) { ok = Reply(h, c, wire::Status::BadArgs, "embedded mode 0..2 (mock)"); break; }
+				if (c.slot == 2 && m_o.layeredUnsupported) { ok = Reply(h, c, wire::Status::Unsupported, "layered capture: use mode 1 (mock)"); break; }
 				{ std::lock_guard<std::mutex> lk(m_fmx); m_embedMode = c.slot; }
 				ok = Reply(h, c, wire::Status::Ok, c.slot == 0 ? "real window shown (mock)" : c.slot == 1 ? "embedded: full frame (mock)"
 				                                                                                   : "embedded: layered (mock)");

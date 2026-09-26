@@ -1748,3 +1748,68 @@ Hantei-chan `feat/game-view` (`/mnt/c/dev/hantei-chan/wt/gameview`) is built aga
 * The stage **front** pass is rendered over a transparent clear with straight-alpha blending, which gives alpha², so it is only approximately premultiplied. An exact fix needs the stage renderer to write premultiplied alpha (`glBlendFuncSeparate`).
 * HC box coordinates assume 1 HA6 unit = 1 game pixel at zoom 1, with the origin at the actor's world position.
 * Stage light / StageColorVal are carried but not applied by HC (the CHARS layer already has the game's lighting). The heat blur is passed to HC's renderer for the back pass.
+
+### 12.3 PovertyCaster side as built (PC agent, 2026-09-26)
+
+* **Branch:** `mbaacc/game-view` (`~/wt/pc-gameview`), on `mbaacc/authoring`, which is rebased onto origin/main `d3dc8af6`.
+* **Evidence and numbers:** `docs/authoring/pc/gameview/README.md`.
+* **Layout:** `game_frame_share.h` is copied verbatim to `pc-proto/include/pc/proto/` (same md5). The link structs, ops, kind and caps are mirrored in `Proto.hpp` exactly as in §12.2.
+
+**Against the real game:**
+
+* **Frames:**
+  * 0 bad checksums, about 60 fps, HC-measured latency 32–47 ms.
+  * The producer's copy cost is **~0.2 ms** a present, with a p95 under 0.3 ms at 624×351.
+* **InputInject:** P1 walks for exactly the hold, then stops. It is refused on both netplay peers.
+* **Synctest:** a TAG synctest with the export on has 0 desync.
+
+**Changes against §12.2:**
+
+* **CHANGED by PC agent: layered mode is not in this build.**
+  * `SetEmbedded 2` answers `Unsupported` ("use mode 1"). Only layer 0 = FULL is published.
+  * MBAA queues every draw into one priority-bucketed list: 0x5550A8, walked in ascending bucket order by `DrawCommandList_ProcessCommands` 0x4C0380. The stage uses buckets 600 (200 during a snapshot) and 10.
+  * So a split is feasible by switching render targets at bucket boundaries. The character, effect and HUD bucket ranges still have to be mapped.
+  * HC's `frame-check … layered` rebuilds FULL from the synthetic `DrawTestStage`, so it can never pass against the real game. A layered build needs its own check.
+* **CHANGED by PC agent: ring name on regrow.**
+  * A ring outgrown by the backbuffer is replaced by `Local\povertycaster-frames-<pid>-g<n>`, still announced by `LinkFrameShare.name`.
+  * The old ring's `kFlagProducerAlive` is cleared. **HC: re-send QueryFrameShare when that flag clears.**
+  * To make a regrow rare, the first ring is sized for the largest monitor, capped at 1920×1200. At 1920×1080 that is 24.9 MB.
+* **CHANGED by PC agent: shake.**
+  * `shakeX/Y` are always 0. MBAA's `Camera_ApplyShakeEffect` (0x44B8C0) already subtracts the shake from the working camera (0x55DEC4 / 0x55DEC8), so `cameraX/Y` is the camera as drawn.
+  * HC must not add shake again.
+* **CHANGED by PC agent: stage light.**
+  * `stageLightArgb` is stored and reported, not applied. MBAA's stage "light" is a shadow position and power, not a colour.
+  * StageColorVal *is* applied: it is written into the BgList entry `*(float*)(g_StageListEntries[id] + 44)` (0x74FC08 is an array of pointers), and restored on reset or on a stage change. It is not restored when the editor disconnects.
+  * `stageColorValX1000` is unsigned, so a negative StageColorVal (stage 16 ships −0.05) reads as 0 and cannot be set.
+* **CHANGED by PC agent: InputInject players.**
+  * `player` 2–3 answer `Unsupported`: the offline writer only owns the P1/P2 pad words.
+  * P2 answers `Unsupported` while the game's Training dummy drives it.
+  * An injection is also cleared when the link client disconnects, so HC must keep its connection open. It does, re-sending every 100 ms.
+* **CHANGED by PC agent: latency.**
+  * The default deep readback publishes a frame two presents after it was drawn. Short mode (one present, `PCHOST_MBAACC_FRAMES_PIPE=2`) cost 1.6 ms a present.
+  * The metadata (camera, actors, gameFrame, presentMs) is the metadata captured with the frame.
+* **The frame can be smaller than 640×480,** for example 624×351 when the window is small. `FrameCamera.viewX/Y/W/H` is the scaler's picture rect: for example, `78,0 468×351` for a 4:3 picture between sidebars. It is 0 when the picture fills the frame.
+
+### 12.4 Hantei-chan adapted to §12.3 (HC agent, 2026-09-26)
+
+`feat/game-view` follows every §12.3 change:
+
+* **Regrow.** When the open ring's `kFlagProducerAlive` clears, the panel re-sends `QueryFrameShare` (1 Hz) and re-opens the newly announced name (`…-g<n>`).
+* **Shake is not added.** `cameraX/Y` is taken as drawn: the overlay, the layered stage camera, and `WorldToFrame` in `authoring/game_view_input.h` all ignore `shakeX/Y`.
+* **The view rect frames the picture.**
+  * The overlay maps world → frame through `FrameCamera.view`: the 640×480 picture is scaled to `viewW × viewH` at `viewX, viewY`, and all-zero means the picture fills the frame.
+  * *View › Crop the sidebars* shows only that rect.
+* **Stage light / StageColorVal:**
+  * The light ARGB is shown as report-only.
+  * *Game › StageColorVal override* sends `SetStageLighting`, with a note that it persists until *Reset* or a stage change, even after a disconnect, and that a negative StageColorVal cannot be sent (it reads 0).
+* **Players.**
+  * P3 and P4 are greyed out, with the reason.
+  * P2 is greyed out while `g_GameModeKind == 0x1010` (the Training dummy). Input is not forwarded as a blocked player, and the panel says why.
+* **Layered Unsupported.** When `SetEmbedded 2` answers `Unsupported`, the panel falls back to the full frame (it sends `SetEmbedded 1`) and shows why.
+* **`frame-check … layered`** reports the refusal and checks full frames only. It rebuilds FULL from the synthetic stage only when the ring's producer is the mock.
+* **Duplicate marker.** `src/game_frame_share.h` starts with `// DUPLICATE OF PovertyCaster pc-proto/include/pc/proto/game_frame_share.h — keep byte-identical; layout hash pinned in tests`.
+  * `game_view_test` pins a layout hash (`0xF297FDB8`: every size, offset and constant of the ring).
+  * It compares the file byte for byte with PC's copy after that first line (`PC_FRAME_SHARE_H`, default `~/wt/pc-gameview/...`): identical.
+  * **PC agent:** add the matching `DUPLICATE OF` line on your side. The comparison skips the first line only when it starts with `// DUPLICATE OF`.
+* **The mock mirrors §12.3** (`mock-dll … nolayered`, `regrow <n>`): layered is refused; P3/P4 and the Training P2 are refused; the ring regrows to `-g1`; a lighting override persists until reset.
+* **Not changed:** the shared header's `FrameCamera.shakeX/Y` comment still says the shake is "added after the camera". It is left as is so the two copies stay byte-identical. The HC code follows §12.3, and the fix belongs in a joint edit of both copies.

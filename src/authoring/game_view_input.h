@@ -3,7 +3,10 @@
 // [game-view] The Game panel's input -> LinkInputInject (docs/HANTEI_AUTHORING_MODE.md §12.2). Pure: the panel fills
 // GameViewKeys from ImGui's input events (keyboard + gamepad, never a key poll of the OS) while it is focused; this turns
 // them into the wire struct. SOCD: left + right = neutral horizontally, up + down = neutral vertically.
+#include "../game_frame_share.h"
 #include "../game_link_proto.h"
+
+#include <string>
 
 namespace authoring {
 
@@ -48,6 +51,32 @@ inline gamelink::wire::InputInject MakeRelease(uint8_t player, uint32_t serial)
 	in.holdFrames = 1;
 	in.serial = serial;
 	return in;
+}
+
+// A world point (1/128 px) -> frame pixels, for the overlay (§12.3 CHANGED by PC agent: cameraX/Y is the camera AS
+// DRAWN, shakeX/Y are 0 and are NOT added; the game's 640x480 picture sits in FrameCamera.view (78,0 468x351 between
+// sidebars in a 624x351 frame), 0 = it fills the frame).
+struct FramePoint { float x, y, scale; };   // scale = frame px per game px (box sizes)
+inline FramePoint WorldToFrame(const framering::FrameSlotHeader& f, int32_t wx, int32_t wy)
+{
+	const framering::FrameCamera& c = f.camera;
+	const float zoom = c.zoomX1000 ? c.zoomX1000 / 1000.0f : 1.0f;
+	const float vw = c.viewW ? (float)c.viewW : (float)f.width, vh = c.viewH ? (float)c.viewH : (float)f.height;
+	FramePoint p;
+	p.x = (float)c.viewX + (((wx - c.cameraX) / 128.0f) * zoom + 320.0f) * (vw / 640.0f);
+	p.y = (float)c.viewY + (((wy - c.cameraY) / 128.0f) * zoom + 432.0f) * (vh / 480.0f);
+	p.scale = zoom * (vw / 640.0f);
+	return p;
+}
+
+// Can the panel inject as this player? "" = yes. §12.3: pchost owns only the P1 / P2 pad words (P3 / P4 answer
+// Unsupported), and P2 answers Unsupported while the Training dummy drives it (g_GameModeKind 0x1010).
+inline std::string PlayerBlockReason(int player, uint32_t gameModeKind)
+{
+	if (player < 0 || player > 3) return "no such player";
+	if (player >= 2) return "P3 / P4 cannot be injected (pchost owns only the P1 / P2 pad words)";
+	if (player == 1 && gameModeKind == 0x1010) return "P2 is the Training dummy's in Training: inject as P1";
+	return {};
 }
 
 } // namespace authoring

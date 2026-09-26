@@ -1,3 +1,4 @@
+// DUPLICATE OF PovertyCaster pc-proto/include/pc/proto/game_frame_share.h — keep byte-identical; layout hash pinned in tests
 #ifndef GAME_FRAME_SHARE_H_GUARD
 #define GAME_FRAME_SHARE_H_GUARD
 // [game-view] The embedded game view's shared-memory FRAME RING (docs/HANTEI_AUTHORING_MODE.md §12, §12.1, and the

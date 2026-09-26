@@ -76,6 +76,15 @@ struct GameViewState {
 	std::vector<uint8_t> testStagePx;
 	uint32_t uploads = 0;
 	std::string status;
+	// §12.3 (CHANGED by PC agent)
+	uint16_t layeredSeq = 0;             // the SetEmbedded 2 request waiting for its answer
+	std::string layeredNote;             // why the panel shows the full frame although layered was asked
+	bool cropSidebars = false;           // show only FrameCamera.view (the 4:3 picture between sidebars)
+	uint16_t embedSeq = 0;
+	int colorValX1000 = 0;               // SetStageLighting override (0..; a negative StageColorVal reads 0)
+	uint16_t lightingSeq = 0;
+	std::string lightingReply;
+	bool lightingOverride = false;
 };
 
 GameViewState& G() { static GameViewState s; return s; }
@@ -95,22 +104,18 @@ void UploadFrame(GameViewState& g)
 	++g.uploads;
 }
 
-// Screen position (panel pixels) of a world point (1/128 px) in this frame.
+// Screen position (panel pixels) of a world point in this frame (game_view_input.h WorldToFrame: §12.3 rules).
 ImVec2 WorldToPanel(const FrameSlotHeader& f, ImVec2 origin, float scale, int32_t wx, int32_t wy)
 {
-	const FrameCamera& c = f.camera;
-	const float zoom = c.zoomX1000 ? c.zoomX1000 / 1000.0f : 1.0f;
-	const float vx = (float)c.viewX, vy = (float)c.viewY;
-	const float sx = vx + ((wx - c.cameraX) / 128.0f) * zoom + 320.0f + c.shakeX / 1000.0f;
-	const float sy = vy + ((wy - c.cameraY) / 128.0f) * zoom + 432.0f + c.shakeY / 1000.0f;
-	return ImVec2(origin.x + sx * scale, origin.y + sy * scale);
+	const FramePoint p = WorldToFrame(f, wx, wy);
+	return ImVec2(origin.x + p.x * scale, origin.y + p.y * scale);
 }
 
 void DrawOverlay(HostContext& host, const gamelink::Snapshot& s, const FrameSlotHeader& f, ImVec2 origin, float scale)
 {
 	GameViewState& g = G();
 	ImDrawList* dl = ImGui::GetWindowDrawList();
-	const float zoom = f.camera.zoomX1000 ? f.camera.zoomX1000 / 1000.0f : 1.0f;
+	const float zoom = WorldToFrame(f, 0, 0).scale;   // HA6 px -> frame px (zoom x the picture's scale)
 	for (int i = 0; i < 4; ++i) {
 		const FrameActor& a = f.actors[i];
 		if (!a.exists) continue;
@@ -182,10 +187,19 @@ GameViewKeys ReadKeys()
 
 bool SameKeys(const GameViewKeys& a, const GameViewKeys& b) { return std::memcmp(&a, &b, sizeof a) == 0; }
 
+// §12.3: pchost owns only the P1 / P2 pad words (P3 / P4 answer Unsupported), and P2 is the Training dummy's while the
+// game is in Training. "" = injectable.
+std::string PlayerBlock(const gamelink::Snapshot& s, int player)
+{
+	const uint32_t kind = s.haveSetup ? s.setup.gameModeKind : s.haveState ? s.state.gameModeKind : 0;
+	return PlayerBlockReason(player, kind);
+}
+
 void ForwardInput(bool focused, const gamelink::Snapshot& s)
 {
 	GameViewState& g = G();
-	const bool can = s.connected && s.haveCaps && (s.caps.caps & wire::kCapInputInject) && !s.SessionLive();
+	const bool can = s.connected && s.haveCaps && (s.caps.caps & wire::kCapInputInject) && !s.SessionLive() &&
+	                 PlayerBlock(s, g.player).empty();
 	g.capturing = focused && g.forwardInput && can;
 	const uint64_t now = NowMs();
 	if (!g.capturing) {
@@ -234,6 +248,33 @@ void DrawGameView(HostContext& host)
 	if (g.reader.IsOpen()) {
 		rr = g.reader.Poll();
 		if (rr == ReadResult::Ok) UploadFrame(g);
+		// §12.3: a ring outgrown by the backbuffer is replaced (…-g<n>) and the old one's kFlagProducerAlive clears:
+		// ask again where the ring is (1 Hz); the new name re-opens it above on the next frames.
+		const FrameRingHeader* old = g.reader.Ring();
+		if (old && !(LoadAcquire(&old->flags) & kFlagProducerAlive) && canShare && now - g.lastQueryMs > 1000) {
+			g.lastQueryMs = now;
+			c.QueryFrameShare();
+			g.status = "the game replaced its frame ring (regrow / restart): asking for the new one";
+		}
+	}
+	// §12.3: SetEmbedded 2 answers Unsupported in this pchost (no layered capture yet): fall back to the full frame
+	if (g.layeredSeq) {
+		wire::Reply r{};
+		if (c.PeekReply(g.layeredSeq, r)) {
+			g.layeredSeq = 0;
+			if (r.status != 0) {
+				g.layeredView = false;
+				g.layeredNote = std::string("layered capture refused (") + wire::StatusName(r.status) + ": " + r.message +
+				                ") - showing the full frame; this pchost.dll publishes only layer 0";
+				g.embedSeq = c.SetEmbedded(1);
+			} else {
+				g.layeredNote.clear();
+			}
+		}
+	}
+	if (g.lightingSeq) {
+		wire::Reply r{};
+		if (c.PeekReply(g.lightingSeq, r)) { g.lightingSeq = 0; g.lightingReply = std::string(wire::StatusName(r.status)) + ": " + r.message; }
 	}
 	// ---- the window ----
 	if (g.ownWindow) {
@@ -265,15 +306,39 @@ void DrawGameView(HostContext& host)
 			ImGui::MenuItem("   attack boxes", nullptr, &g.overlayAttack);
 			ImGui::MenuItem("   other boxes", nullptr, &g.overlayOther);
 			ImGui::MenuItem("Overlay: pattern / frame labels", nullptr, &g.overlayLabels);
+			ImGui::Separator();
+			ImGui::MenuItem("Crop the sidebars (only the game's 4:3 picture)", nullptr, &g.cropSidebars);
 			ImGui::EndMenu();
 		}
 		if (ImGui::BeginMenu("Game")) {
 			const bool can = canShare && !s.SessionLive();
 			if (ImGui::MenuItem("Embed: hide the real window, full frame", nullptr, false, can)) c.SetEmbedded(1);
-			if (ImGui::MenuItem("Embed: layered capture (stage drawn here)", nullptr, false, can)) { c.SetEmbedded(2); g.layeredView = true; }
+			if (ImGui::MenuItem("Embed: layered capture (stage drawn here)", nullptr, false, can)) { g.layeredSeq = c.SetEmbedded(2); g.layeredView = true; }
 			if (ImGui::MenuItem("Undock to real window (show the game's own window)", nullptr, false, canShare)) { c.SetEmbedded(0); g.layeredView = false; }
 			ImGui::Separator();
 			ImGui::MenuItem("This panel in its own OS window", nullptr, &g.ownWindow);
+			ImGui::Separator();
+			// §12.3: StageColorVal is applied (the BgList entry); the stage light colour is report-only
+			ImGui::TextDisabled("StageColorVal override (BgPointBlur fColorHosei)");
+			ImGui::SetNextItemWidth(160);
+			ImGui::SliderInt("x1000##colorval", &g.colorValX1000, 0, 2000);
+			if (ImGui::MenuItem("Apply StageColorVal", nullptr, false, can)) {
+				wire::StageLighting l{};
+				l.stageId = -1;
+				l.stageColorValX1000 = (uint32_t)g.colorValX1000;
+				g.lightingSeq = c.SetStageLighting(l);
+				g.lightingOverride = true;
+			}
+			if (ImGui::MenuItem("Reset stage lighting (the game's own values)", nullptr, false, canShare)) {
+				wire::StageLighting l{};
+				l.stageId = -1;
+				l.flags = 1;
+				g.lightingSeq = c.SetStageLighting(l);
+				g.lightingOverride = false;
+			}
+			ImGui::TextDisabled("an override stays until Reset (or a stage change), even after Hantei-chan disconnects;");
+			ImGui::TextDisabled("negative StageColorVal (stage 16 ships -0.05) cannot be sent and reads 0");
+			if (!g.lightingReply.empty()) ImGui::TextDisabled("last: %s", g.lightingReply.c_str());
 			ImGui::EndMenu();
 		}
 		if (ImGui::BeginMenu("Input")) {
@@ -281,7 +346,9 @@ void DrawGameView(HostContext& host)
 			for (int p = 0; p < 4; ++p) {
 				char l[32];
 				std::snprintf(l, sizeof l, "as player %d", p + 1);
-				if (ImGui::MenuItem(l, nullptr, g.player == p)) g.player = p;
+				const std::string block = PlayerBlock(s, p);
+				if (ImGui::MenuItem(l, nullptr, g.player == p, block.empty())) g.player = p;
+				if (!block.empty() && ImGui::IsItemHovered(ImGuiHoveredFlags_AllowWhenDisabled)) ImGui::SetTooltip("%s", block.c_str());
 			}
 			ImGui::Separator();
 			ImGui::TextDisabled("arrows / WASD, J K L U = A B C D, I = FN1, O = FN2, Enter = Start");
@@ -304,6 +371,18 @@ void DrawGameView(HostContext& host)
 		                    rh && (rh->flags & kFlagLayered) ? " + layered" : "", rh && !(rh->flags & kFlagProducerAlive) ? " (producer stopped)" : "",
 		                    rh ? rh->producer : "");
 	}
+	if (g.haveFrame) {
+		const FrameCamera& cam = g.reader.Frame().camera;
+		ImGui::TextDisabled("stage %d  StageColorVal %.3f%s  light 0x%08X (report only)%s", cam.stageId, cam.stageColorValX1000 / 1000.0,
+		                    g.lightingOverride ? " (override: until Reset)" : "", cam.stageLightArgb,
+		                    cam.viewW ? "" : "  picture fills the frame");
+	}
+	if (!g.layeredNote.empty()) ImGui::TextColored(kColWarn, "%s", g.layeredNote.c_str());
+	if (!g.status.empty() && g.reader.Ring() && !(g.reader.Ring()->flags & kFlagProducerAlive)) ImGui::TextColored(kColWarn, "%s", g.status.c_str());
+	{
+		const std::string block = PlayerBlock(s, g.player);
+		if (!block.empty() && g.forwardInput) ImGui::TextColored(kColWarn, "input not forwarded: %s", block.c_str());
+	}
 	if (g.capturing) { ImGui::SameLine(); ImGui::TextColored(kColOk, "  INPUT -> P%d", g.player + 1); }
 	else if (focused && g.forwardInput && s.SessionLive()) { ImGui::SameLine(); ImGui::TextColored(kColBad, "  input refused: session"); }
 	if (!s.lastInjectReply.empty() && s.lastInjectReply.find("ok") == std::string::npos) ImGui::TextColored(kColBad, "%s", s.lastInjectReply.c_str());
@@ -316,16 +395,22 @@ void DrawGameView(HostContext& host)
 		return;
 	}
 	const FrameSlotHeader& f = g.reader.Frame();
-	const float fw = (float)f.width, fh = (float)f.height;
+	// §12.3: FrameCamera.view = the scaler's picture rect inside the frame (e.g. 78,0 468x351 between sidebars)
+	const bool crop = g.cropSidebars && f.camera.viewW && f.camera.viewH;
+	const float cx0 = crop ? (float)f.camera.viewX : 0.0f, cy0 = crop ? (float)f.camera.viewY : 0.0f;
+	const float fw = crop ? (float)f.camera.viewW : (float)f.width, fh = crop ? (float)f.camera.viewH : (float)f.height;
 	const float scale = std::max(0.05f, std::min(avail.x / fw, avail.y / fh));
 	const ImVec2 size(fw * scale, fh * scale);
-	const ImVec2 origin(ImGui::GetCursorScreenPos().x + (avail.x - size.x) * 0.5f, ImGui::GetCursorScreenPos().y + (avail.y - size.y) * 0.5f);
-	const ImVec2 end(origin.x + size.x, origin.y + size.y);
+	const ImVec2 shown(ImGui::GetCursorScreenPos().x + (avail.x - size.x) * 0.5f, ImGui::GetCursorScreenPos().y + (avail.y - size.y) * 0.5f);
+	// origin = where frame pixel (0,0) lands (left of the shown area when cropping)
+	const ImVec2 origin(shown.x - cx0 * scale, shown.y - cy0 * scale);
+	const ImVec2 end(origin.x + f.width * scale, origin.y + f.height * scale);
 	ImDrawList* dl = ImGui::GetWindowDrawList();
+	dl->PushClipRect(shown, ImVec2(shown.x + size.x, shown.y + size.y), true);
 	const bool layeredAvailable = (f.flags & kSlotLayered) && FindLayer(f, kLayerChars);
 	if (!g.layeredView || !layeredAvailable) {
 		dl->AddImage(g.full.Im(), origin, end);
-		if (g.layeredView && !layeredAvailable) {
+		if (g.layeredView && !layeredAvailable && g.layeredNote.empty()) {
 			ImGui::SetCursorScreenPos(ImVec2(origin.x + 6, origin.y + 6));
 			ImGui::TextColored(kColWarn, "no layers in this frame (Game > Embed: layered capture): showing the full frame");
 		}
@@ -337,7 +422,7 @@ void DrawGameView(HostContext& host)
 		const ImVec2 v0(origin.x + cam.viewX * scale, origin.y + cam.viewY * scale), v1(v0.x + vw * scale, v0.y + vh * scale);
 		dl->AddRectFilled(origin, end, IM_COL32(0, 0, 0, 255));
 		unsigned back = 0, front = 0;
-		const float camPx = cam.cameraX / 128.0f - cam.shakeX / 1000.0f / zoom, camPy = cam.cameraY / 128.0f - cam.shakeY / 1000.0f / zoom;
+		const float camPx = cam.cameraX / 128.0f, camPy = cam.cameraY / 128.0f;   // as drawn (§12.3: no shake to add)
 		if (g.stageSource == StageSource::Hantei && host.renderStage) {
 			back = host.renderStage(camPx, camPy, zoom, vw, vh, 1, cam.heatBlurX1000 / 1000.0f);
 			front = host.renderStage(camPx, camPy, zoom, vw, vh, 2, 0.0f);
@@ -366,8 +451,9 @@ void DrawGameView(HostContext& host)
 		}
 	}
 	DrawOverlay(host, s, f, origin, scale);
+	dl->PopClipRect();
 	// the picture area takes the clicks (focus) without moving the window
-	ImGui::SetCursorScreenPos(origin);
+	ImGui::SetCursorScreenPos(shown);
 	ImGui::InvisibleButton("##picture", size);
 	ForwardInput(focused, s);
 	ImGui::End();

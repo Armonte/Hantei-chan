@@ -593,6 +593,14 @@ add_test(NAME game_link COMMAND game_link_test WORKING_DIRECTORY ${CMAKE_SOURCE_
 add_executable(game_view_test tests/game_view_test.cpp src/game_frame_ring.cpp src/game_link.cpp src/game_link_mock.cpp
 	${AUTHORING_CORE_SOURCES} ${TAG_SIDECAR_SOURCES})
 target_include_directories(game_view_test PRIVATE "src")
+set(PC_FRAME_SHARE_H "$ENV{HOME}/wt/pc-gameview/pc-proto/include/pc/proto/game_frame_share.h"
+	CACHE FILEPATH "PovertyCaster's copy of game_frame_share.h, for the no-silent-drift check (optional)")
+if(EXISTS "${PC_FRAME_SHARE_H}")
+	execute_process(COMMAND wslpath -m "${PC_FRAME_SHARE_H}" OUTPUT_VARIABLE PC_FRAME_SHARE_WIN OUTPUT_STRIP_TRAILING_WHITESPACE ERROR_QUIET)
+	if(PC_FRAME_SHARE_WIN)
+		target_compile_definitions(game_view_test PRIVATE PC_FRAME_SHARE_H="${PC_FRAME_SHARE_WIN}")
+	endif()
+endif()
 if(MINGW)
 	target_link_options(game_view_test PRIVATE -static-libgcc -static-libstdc++ -static)
 endif()

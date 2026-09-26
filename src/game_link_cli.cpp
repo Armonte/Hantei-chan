@@ -371,6 +371,8 @@ int main(int argc, char** argv)
 			else if (i + 1 < argc && !std::strcmp(argv[i], "cold")) o.coldMs = std::atoi(argv[++i]);
 			else if (i + 1 < argc && !std::strcmp(argv[i], "setup")) o.setupHex = argv[++i];
 			else if (!std::strcmp(argv[i], "frames")) o.frames = true;
+			else if (!std::strcmp(argv[i], "nolayered")) { o.frames = true; o.layeredUnsupported = true; }
+			else if (i + 1 < argc && !std::strcmp(argv[i], "regrow")) { o.frames = true; o.regrowAfter = std::atoi(argv[++i]); }
 			else if (!std::strcmp(argv[i], "layered")) { o.frames = true; o.layeredAtStart = true; }
 			else if (i + 1 < argc && !std::strcmp(argv[i], "fps")) o.fps = std::atoi(argv[++i]);
 			else if (i + 2 < argc && !std::strcmp(argv[i], "size")) { o.frameW = std::atoi(argv[++i]); o.frameH = std::atoi(argv[++i]); }
@@ -601,7 +603,13 @@ int main(int argc, char** argv)
 		const int want = argc > 2 ? std::atoi(argv[2]) : 60;
 		const bool layered = argc > 3 && !std::strcmp(argv[3], "layered");
 		if (!c.WaitCaps(3000) || !(c.Get().caps.caps & wire::kCapFrameShare)) { std::fprintf(stderr, "no frame export (kCapFrameShare)\n"); return 1; }
-		if (layered) { wire::Reply r{}; c.WaitReply(c.SetEmbedded(2), 3000, r); }
+		if (layered) {
+			wire::Reply r{};
+			if (c.WaitReply(c.SetEmbedded(2), 3000, r) && r.status != 0) {
+				std::printf("layered capture refused (%s: %s): checking full frames only (§12.3)\n", wire::StatusName(r.status), r.message);
+				c.WaitReply(c.SetEmbedded(1), 3000, r);
+			}
+		}
 		c.QueryFrameShare();
 		for (int k = 0; k < 150 && !c.Get().haveFrameShare; ++k) Sleep(20);
 		const wire::FrameShare fs = c.Get().frameShare;
@@ -625,7 +633,9 @@ int main(int argc, char** argv)
 			const framering::FrameLayer* full = framering::FindLayer(f, framering::kLayerFull);
 			const framering::FrameLayer* ch = framering::FindLayer(f, framering::kLayerChars);
 			const framering::FrameLayer* hud = framering::FindLayer(f, framering::kLayerHud);
-			if (full && ch && hud) {
+			// the FULL rebuild uses the synthetic DrawTestStage: it is only meaningful against the mock producer (§12.3)
+			const bool mockRing = rd.Ring() && std::strncmp(rd.Ring()->producer, "mock", 4) == 0;
+			if (full && ch && hud && mockRing) {
 				++layeredFrames;
 				px.assign((size_t)full->pitch * full->height, 0);
 				framering::DrawTestStage(px.data(), full->width, full->height, full->pitch, f.camera);

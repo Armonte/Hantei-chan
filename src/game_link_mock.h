@@ -51,6 +51,10 @@ public:
 		bool frames = false;
 		int frameW = 640, frameH = 480, fps = 60;
 		bool layeredAtStart = false;
+		// §12.3 (the real pchost): SetEmbedded 2 answers Unsupported; after `regrowAfter` frames the ring is replaced by
+		// <name>-g1 (the old one's kFlagProducerAlive clears)
+		bool layeredUnsupported = false;
+		int regrowAfter = 0;
 	};
 	explicit MockDll(Options o);
 	~MockDll();
@@ -97,6 +101,9 @@ private:
 	int32_t m_p1Offset = 0;                  // slot 0 x moved by injected input (1/128 px)
 	std::atomic<uint32_t> m_framesProduced{0}, m_injects{0};
 	uint32_t m_lightArgb = 0;
+	uint32_t m_colorValX1000 = 650;
+	bool m_colorOverride = false;
+	int m_generation = 0;
 };
 
 } // namespace gamelink
