@@ -1634,3 +1634,117 @@ The views:
 * The HUD preview draws the native gauge frame, bar and moon icon as outlines only, because the atlas sub-rects are not known. There is no tween or slide preview.
 * The inline frame data is the plain pattern walk: no IF branches or landing (see `frame_summary.h`).
 * HC's own warnings (used for the `NewWarnings` save refusal) are HC's texts, not the DLL's. The *values* are proven identical to PC's resolver; the warning *messages* are not compared.
+
+## 12. Embedded game view (approved by the user 2026-09-25: "this sounds godlike")
+
+The game renders inside a Hantei-chan panel.
+
+- **Game side (pchost):**
+  - At Present, copy the final backbuffer into a shared-memory frame ring: a named file mapping, current-user DACL, header {magic, version, width, height, pitch, format, frameSeq, gameFrame}, and 2–3 slots. Readers take the newest complete slot, detected by the seqlock pattern.
+  - The name is announced over the dev link: a new capability bit plus a QueryFrameShare op.
+  - "Embedded mode" hides/minimizes the real game window, but it keeps rendering at native res.
+  - Input injection from the link feeds the normal controller input path, never key polling. It is offline/authoring only, and refused in netplay.
+  - The copy costs ≤1 ms at 640x480; GPU readback is via GetRenderTargetData into a lockable system-memory surface.
+- **Hantei-chan side:**
+  - A dockable "Game" panel in the Authoring workspace. It uploads the newest frame to a GL texture every UI frame and keeps the aspect ratio (including sidebars).
+  - Keyboard/pad input captured while the panel is focused is forwarded over the link.
+  - Overlay layer on top: hitboxes and the selected box from the link state, pattern/frame numbers.
+  - "Undock to real window" as a fallback.
+- **Later:** zero-copy GPU sharing (D3D9Ex shared handle + WGL_NV_DX_interop2), and training/TAS controls (pause, frame step) in the same panel.
+- **Constraint:** the frame ring's size and struct layout get static_asserts on both sides and golden values, like the other link structs. Rule: no visible test windows or screenshots without the user's OK.
+
+### 12.1 Layered capture: stage rendered by Hantei-chan (user idea, 2026-09-25)
+
+The goal is to edit stages live behind the real game's characters with zero game reloads. Hantei-chan's stage renderer matches the game at 99.4–100%.
+
+- **Game side:**
+  - In "layered" embedded mode, pchost skips the stage draw (Background_DrawInstance 0x4B7060, split into back layers and front layers).
+  - It clears the capture targets to transparent and captures separate RGBA layers:
+    - (L1) characters + effects + shadows;
+    - (L2) HUD.
+  - Additive/effect blends into a transparent target use D3DRS_SEPARATEALPHABLENDENABLE so alpha accumulates correctly; the output is premultiplied alpha.
+  - Each frame record also carries the camera (x, y, zoom, the per-frame shake offset) and the stage-effect state the game applied: stage light/StageColorVal, the super-flash darkening amount, and the Heat blur.
+  - The game still has a stage loaded for gameplay logic, so stage light values for custom stages come from Hantei-chan over the link (SetStageLighting).
+- **Hantei-chan side, composite order:** back stage layers (its own renderer, at the game's camera and parallax) → L1 → front stage layers → L2 (HUD), with premultiplied blending. Stage edits apply instantly.
+- **Frame ring format (§12) must support this from day one:** a layer count, a per-layer {offset, w, h, pitch, format, premultiplied flag}, and a per-frame camera/stage-effect block. The first version may ship with only layer 0 = the full composited frame.
+- **Later:** the scratch stage slot, so a custom stage can be checked inside the real game; HUD authoring on layer L2, then HUD mods.
+
+### 10.5 Verified live, and what that changed (2026-09-25)
+
+The evidence is in `docs/authoring/pc/README.md`. Additions to §10.3 / §10.4:
+* **Role detection:** a netplay client's `.pcrep` recorder calls `serialize()` before the host's ruleset chunk arrives. So "serialize ran" does not mark a host. The **client mark (refuseBlob) wins**, and a later serialize never takes the host role back.
+* **Send redundancy:** the host sends the next round's payload **three times a frame** between its barrier entry and the attach. In the loss simulation this took attach refusals from 4% to under 0.1% at 15% loss.
+* **Cold path route:** the cold path always passes through the **main menu** before the character select. A stock select entered straight from a TAG battle ignored the forced confirm; the four panels' port-input relocation, now undone for 1v1 setups, was the cause.
+* **Readback moon:** `inForce` reads the slot's **loaded** moon (H2's load descriptor). The actor's moon field reads 0 for Full/Half picks.
+* **Timing:** cold 1v1 Training takes about 14.5 s on this machine (≈ 4 s CSS + ≈ 10 s of the game's own load). TAG cold ≈ 10.6–10.9 s. Hot ≈ 0.4–0.6 s.
+
+### 12.2 ADDED by Hantei agent: the frame ring and the link ops for the embedded game view (2026-09-25)
+
+Hantei-chan `feat/game-view` (`/mnt/c/dev/hantei-chan/wt/gameview`) is built against this section. **PC agent:** copy `src/game_frame_share.h` verbatim next to `Proto.hpp` (it is pure: no Win32, no pointers, no 64-bit fields). Mirror the structs below in `Proto.hpp`. If you change anything, mark the line `CHANGED by PC agent`.
+
+**The frame ring** (`src/game_frame_share.h`; Win32 open/create in `src/game_frame_ring.{h,cpp}`):
+
+* **Mapping:** `Local\povertycaster-frames-<producer pid>`, current-user DACL (`D:P(A;;GA;;;<user SID>)`), read-only for readers. Its name is announced by `LinkFrameShare.name`.
+* **Layout:**
+  * `FrameRingHeader` (256 B);
+  * then `slotCount` (2–3) slots, each a `FrameSlotHeader` (384 B) followed by `layerCapacity` (1–4) layer regions of `layerStride = PitchFor(maxW) * maxH` bytes;
+  * `PitchFor(w)` = w·4 rounded up to 64 B.
+* **Per frame (`FrameSlotHeader`):** seqlock `seq`, `frameSeq`, `gameFrame`, `presentMs` (latency), width/height, flags, `layerCount`, then:
+  * **`FrameCamera` (64 B, §12.1):** camera x/y (1/128 px), zoom ×1000, shake x/y (px ×1000), stage id, StageColorVal ×1000, stage light ARGB, super-flash darkening ×1000, heat blur ×1000, and the 640×480 view rect inside the frame (sidebars);
+  * **`FrameLayer[4]` (32 B each):** offset, w, h, pitch, format (1 BGRX8, 2 BGRA8), kind (0 FULL, 1 CHARS, 2 HUD), flags (bit 0 premultiplied), x/y placement, and an optional FNV-1a checksum;
+  * **`FrameActor[4]`:** the fighters as drawn (x/y, pattern, frame, facing, team), so the overlay matches the picture.
+* **Seqlock:**
+  * The writer takes the slot after `latest`. It makes `seq` odd, writes, makes `seq` even, then stores `latest` and then `frameSeq`, all with release stores.
+  * The reader acquires `latest` and `seq`, copies, fences, and re-checks `seq`, retrying a bounded number of times.
+* **The first pchost version may fill only layer 0 = FULL.** Layered mode adds CHARS and HUD (premultiplied, stage not drawn) and should keep FULL too, so the panel can toggle without a round trip.
+* **Golden sizes** (`static_assert`s, pinned in HC `tests/game_view_test.cpp`):
+
+| Ring | Bytes |
+|---|---|
+| 640×480, 1 layer, 3 slots | 3687808 |
+| 640×480, 3 layers, 3 slots | 11060608 |
+| 854×480, 3 layers, 3 slots | 14931328 |
+| max: 1920×1200, 4 layers, 3 slots | 110593408 |
+
+  The golden test frame `DrawTestFull(640×480, frameSeq 1)` has FNV-1a **`0x1AF20C3D`**.
+
+**Link additions:**
+
+| What | Value | Payload | Gated |
+|---|---|---|---|
+| cap `kLinkCapFrameShare` | bit 8 | `QueryFrameShare` / `SetEmbedded` / `SetStageLighting` exist | |
+| cap `kLinkCapInputInject` | bit 9 | `InputInject` exists | |
+| op `QueryFrameShare` = 16 | `LinkCommand` → `LinkFrameShare` (kind **0x10A**, 96 B) | version (0 = no ring), slotCount, layerCapacity, maxW/H, ringBytes, flags, current w/h, framesPublished, `name[64]` | never |
+| op `SetEmbedded` = 17 | `LinkCommand.slot`: 0 show the real window (export stays on), 1 embedded full frame, 2 embedded layered | → `LinkReply` | offline |
+| op `InputInject` = 18 | `LinkCommandEx` + `LinkInputInject` (16 B): version 1, player 0–3, flags (bit 0 release), direction (numpad 1–9), buttons (A 1, B 2, C 4, D 8, E/FN1 16, FN2 32, Start 64), holdFrames 1–600, serial | → `LinkReply` | like `SetMatchSetup`: refused in netplay / replay / spectate / recording |
+| op `SetStageLighting` = 19 | `LinkCommandEx` + `LinkStageLighting` (16 B): stageId (−1 = the stage on screen), flags (bit 0 reset), light ARGB, StageColorVal ×1000 | → `LinkReply` | offline |
+
+* The injected state feeds the game's **normal controller input path**, where the binder writes; it never polls keys.
+* The state holds `holdFrames` frames and then goes neutral. HC re-sends every 100 ms with hold 12, and sends a release on focus loss, so a stalled editor never leaves a button held.
+
+**Hantei-chan side (as built):**
+* The **Game panel** (`src/authoring/game_view.{h,cpp}`) is dockable, opened from *Experimental: Authoring › Game view* or the Authoring header.
+* It opens the ring the link announces and uploads the newest frame's layers to GL textures once per UI frame. The picture keeps its aspect ratio, sidebars included.
+* **Readouts:** fps, latency, frame and game frame, skipped frames, the producer's copy cost, and the embed state.
+* **View › Full frame / Layered.**
+  * Layered draws: Hantei-chan's stage **back** pass (a dedicated `bg::Renderer` into an offscreen target at the frame's camera and shake, using `bg_render`'s game-exact mapping) → super-flash darkening → CHARS → the stage **front** pass → HUD. Blending is premultiplied (`glBlendFuncSeparate(ONE, ONE_MINUS_SRC_ALPHA)` via an ImGui draw callback).
+  * The stage source: the open stage tab, a test pattern (for the mock), or black.
+* **Overlay:** from the frame's actors plus the link state's file/moon, it draws the open characters' hit/hurt/other boxes (mirrored by facing, with the box selected in the active tab highlighted), a cross at each origin, and slot / pattern / frame labels.
+* **Input:** forwarded while the panel is focused, as player 1–4. Keyboard: arrows/WASD, J K L U = A B C D, I = FN1, O = FN2, Enter = Start. Pad through ImGui's XInput. While capturing, the editor's shortcuts are kept away from those keys.
+* **Game menu:** Embed full / Embed layered / **Undock to real window** (`SetEmbedded 0`), and *This panel in its own OS window* (ImGui NoAutoMerge viewport).
+* **Mock:** `game_link_cli mock-dll <s> frames [layered] [fps n] [size w h]` runs a fake producer. It draws an animated test stage + CHARS + HUD with a moving camera, shake and super-flash; injected input moves slot 0; stage lighting reaches the camera block.
+* **CLI:** `frame-check <n> [layered]`, `embed <0|1|2>`, `input <player> <dir> <buttons> <frames>`.
+
+**Proof (headless: no window was opened):**
+* `game_view_test`: 125 checks. They cover:
+  * the layout and goldens;
+  * seqlock write/read, Unchanged, NoFrame, a stuck odd `seq` (→ Torn, never half a frame), a corrupt layer table, a wrong version;
+  * a concurrent writer (20,000 frames) against a polling reader: 19,689 frames read, **0 bad**, and every layered one rebuilt FULL;
+  * the SOCD input mapping;
+  * **against the mock:** QueryFrameShare → open by name → 60 frames decoded with checksums and recomputed from `frameSeq`; `SetEmbedded 2` → 40 layered frames that rebuild FULL from stage@camera + CHARS + HUD while the camera moves; InputInject 6 for 30 frames moves slot 0 by exactly 30 × 4 px; SetStageLighting reaches the frames; a session refuses input; a DLL without the export answers Unknown and gets no inject.
+* `game_link_cli frame-check` against `mock-dll frames`: 120 full frames (0 bad checksums, ~50 fps, 16 ms latency) and 90 layered frames (all 90 rebuilt FULL).
+
+**Open / for the PC side:**
+* The stage **front** pass is rendered over a transparent clear with straight-alpha blending, which gives alpha², so it is only approximately premultiplied. An exact fix needs the stage renderer to write premultiplied alpha (`glBlendFuncSeparate`).
+* HC box coordinates assume 1 HA6 unit = 1 game pixel at zoom 1, with the origin at the actor's world position.
+* Stage light / StageColorVal are carried but not applied by HC (the CHARS layer already has the game's lighting). The heat blur is passed to HC's renderer for the back pass.

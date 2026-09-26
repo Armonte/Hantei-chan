@@ -59,6 +59,7 @@
 #include "authoring/roster_mirror.h"
 #include "tag_tuning/tag_migrate.h"
 #include "tag_tuning/tag_levers.h"
+#include "game_frame_ring.h"
 
 #include <windows.h>
 
@@ -369,14 +370,18 @@ int main(int argc, char** argv)
 			else if (i + 1 < argc && !std::strcmp(argv[i], "hot")) o.hotMs = std::atoi(argv[++i]);
 			else if (i + 1 < argc && !std::strcmp(argv[i], "cold")) o.coldMs = std::atoi(argv[++i]);
 			else if (i + 1 < argc && !std::strcmp(argv[i], "setup")) o.setupHex = argv[++i];
+			else if (!std::strcmp(argv[i], "frames")) o.frames = true;
+			else if (!std::strcmp(argv[i], "layered")) { o.frames = true; o.layeredAtStart = true; }
+			else if (i + 1 < argc && !std::strcmp(argv[i], "fps")) o.fps = std::atoi(argv[++i]);
+			else if (i + 2 < argc && !std::strcmp(argv[i], "size")) { o.frameW = std::atoi(argv[++i]); o.frameH = std::atoi(argv[++i]); }
 		}
 		gamelink::MockDll m(o);
 		if (!m.Start()) { std::fprintf(stderr, "cannot create the mock pipe\n"); return 2; }
 		std::printf("mock dev-link serving as pid %u for %s s\n", m.Pid(), argc > 2 ? argv[2] : "60");
 		std::fflush(stdout);
 		Sleep((DWORD)(1000 * (argc > 2 ? std::atoi(argv[2]) : 60)));
-		std::printf("mock: %u commands, %u gate probes, %u setups, %u tuning applies, %u Ex dropped\n", m.Commands(), m.Probes(),
-		            m.SetupsFinished(), m.Applies(), m.ExDropped());
+		std::printf("mock: %u commands, %u gate probes, %u setups, %u tuning applies, %u Ex dropped, %u frames produced, %u injects\n",
+		            m.Commands(), m.Probes(), m.SetupsFinished(), m.Applies(), m.ExDropped(), m.FramesProduced(), m.Injects());
 		m.Stop();
 		return 0;
 	}
@@ -590,6 +595,72 @@ int main(int argc, char** argv)
 		return 0;
 	}
 	if (cmd == "end-authoring") { c.WaitCaps(3000); return WaitAndPrintReply(c, c.EndAuthoring(), 3000); }
+
+	// ---- [game-view] ----
+	if (cmd == "frame-check") {
+		const int want = argc > 2 ? std::atoi(argv[2]) : 60;
+		const bool layered = argc > 3 && !std::strcmp(argv[3], "layered");
+		if (!c.WaitCaps(3000) || !(c.Get().caps.caps & wire::kCapFrameShare)) { std::fprintf(stderr, "no frame export (kCapFrameShare)\n"); return 1; }
+		if (layered) { wire::Reply r{}; c.WaitReply(c.SetEmbedded(2), 3000, r); }
+		c.QueryFrameShare();
+		for (int k = 0; k < 150 && !c.Get().haveFrameShare; ++k) Sleep(20);
+		const wire::FrameShare fs = c.Get().frameShare;
+		if (!fs.version) { std::fprintf(stderr, "the game announces no ring\n"); return 1; }
+		std::printf("ring %s: %ux%u max, %u slots, %u layers, %u bytes\n", fs.name, fs.maxWidth, fs.maxHeight, fs.slotCount, fs.layerCapacity, fs.ringBytes);
+		framering::Reader rd;
+		std::string why;
+		if (!rd.Open(fs.name, &why)) { std::fprintf(stderr, "%s\n", why.c_str()); return 1; }
+		int got = 0, bad = 0, rebuilt = 0, layeredFrames = 0;
+		const DWORD t0 = GetTickCount();
+		std::vector<uint8_t> px;
+		while (got < want && GetTickCount() - t0 < 20000) {
+			if (rd.Poll() != framering::ReadResult::Ok) { Sleep(2); continue; }
+			const framering::FrameSlotHeader& f = rd.Frame();
+			bool ok = true;
+			for (uint32_t k = 0; k < f.layerCount; ++k) {
+				const framering::FrameLayer& l = f.layers[k];
+				if (l.checksum && framering::FrameChecksum(rd.LayerPixels(l), l.width, l.height, l.pitch) != l.checksum) ok = false;
+			}
+			bad += !ok;
+			const framering::FrameLayer* full = framering::FindLayer(f, framering::kLayerFull);
+			const framering::FrameLayer* ch = framering::FindLayer(f, framering::kLayerChars);
+			const framering::FrameLayer* hud = framering::FindLayer(f, framering::kLayerHud);
+			if (full && ch && hud) {
+				++layeredFrames;
+				px.assign((size_t)full->pitch * full->height, 0);
+				framering::DrawTestStage(px.data(), full->width, full->height, full->pitch, f.camera);
+				framering::CompositePremulOver(px.data(), full->width, full->height, full->pitch, rd.LayerPixels(*ch), ch->width, ch->height, ch->pitch, ch->x, ch->y);
+				framering::CompositePremulOver(px.data(), full->width, full->height, full->pitch, rd.LayerPixels(*hud), hud->width, hud->height, hud->pitch, hud->x, hud->y);
+				rebuilt += framering::FrameChecksum(px.data(), full->width, full->height, full->pitch) == full->checksum;
+			}
+			if (got % 30 == 0)
+				std::printf("frame %u (game %u) %ux%u layers %u checksum %s cam %d,%d\n", f.frameSeq, f.gameFrame, f.width, f.height, f.layerCount,
+				            ok ? "ok" : "BAD", f.camera.cameraX, f.camera.cameraY);
+			++got;
+		}
+		const DWORD ms = GetTickCount() - t0;
+		std::printf("%d frames in %u ms (%.1f fps), %d bad checksums, %u skipped, %u torn retries, latency %u ms; layered %d, rebuilt FULL %d\n",
+		            got, (unsigned)ms, got * 1000.0 / (ms ? ms : 1), bad, rd.Skipped(), rd.Torn(), rd.LatencyMs(), layeredFrames, rebuilt);
+		return got == want && bad == 0 && rebuilt == layeredFrames && (!layered || layeredFrames > 0) ? 0 : 1;
+	}
+	if (cmd == "embed") {
+		c.WaitCaps(3000);
+		return WaitAndPrintReply(c, c.SetEmbedded(argc > 2 ? std::atoi(argv[2]) : 1), 3000);
+	}
+	if (cmd == "input") {
+		if (argc < 6) { std::fprintf(stderr, "input <player> <dir 1-9> <buttons hex> <frames>\n"); return 2; }
+		c.WaitCaps(3000);
+		wire::InputInject in{};
+		in.version = wire::kInjectVersion;
+		in.player = (uint8_t)std::atoi(argv[2]);
+		in.direction = (uint8_t)std::atoi(argv[3]);
+		in.buttons = (uint8_t)std::strtoul(argv[4], nullptr, 16);
+		in.holdFrames = (uint16_t)std::atoi(argv[5]);
+		in.serial = 1;
+		const uint16_t seq = c.InputInject(in);
+		if (!seq) { std::fprintf(stderr, "not sent: this pchost.dll has no input injection (kCapInputInject)\n"); return 1; }
+		return WaitAndPrintReply(c, seq, 3000);
+	}
 	if (cmd == "ping") return WaitAndPrintReply(c, c.Ping(), 3000);
 	if (cmd == "reload") {
 		const uint8_t mask = argc > 2 ? (uint8_t)std::strtoul(argv[2], nullptr, 0) : 0;
