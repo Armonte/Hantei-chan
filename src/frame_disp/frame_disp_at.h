@@ -30,8 +30,10 @@ inline void AtDisplay(Frame_AT *at, FrameData *frameData = nullptr, int patternI
 		}
 	};
 
-	
+
 	constexpr float width = 75.f;
+	//Some attack flags mean different things in UNI/MBTL/UNI2 than in MBAACC (issue #74).
+	const bool uniFormat = frameData && frameData->usesUniFormat();
 	unsigned int flagIndex = -1;
 
 	if(BitField("Guard Flags", &at->guard_flags, &flagIndex)) {
@@ -62,7 +64,9 @@ inline void AtDisplay(Frame_AT *at, FrameData *frameData = nullptr, int patternI
 		case 1: Tooltip("Can't KO"); break;
 		case 2: Tooltip("Make enemy unhittable"); break;
 		case 3: Tooltip("Can't be clashed with"); break;
-		case 4: Tooltip("Auto super jump cancel"); break;
+		case 4: Tooltip(uniFormat ?
+			"Counter hit vector swap:\nif the attack's vector has a counter hit\nconditional in the vector table, it is used on CH"
+			: "Auto super jump cancel"); break;
 		case 5: Tooltip("Don't increase combo counter"); break;
 		case 6: Tooltip("Shake the screen on hit"); break;
 		case 7: Tooltip("Not air techable"); break;
@@ -82,8 +86,8 @@ inline void AtDisplay(Frame_AT *at, FrameData *frameData = nullptr, int patternI
 		case 21: Tooltip("Unknown"); break;
 		case 22: Tooltip("Remove 1f of untech"); break;
 
+		case 25: if (uniFormat) Tooltip("Attacker's own hitstop from the ATSA preset\n(Hit_ResolveHitstop, UNI2/MBTL)"); break;
 		//Unused or don't exist in melty.
-		//case 25: Tooltip("No hitstop on multihit?"); break;
 		//case 29: Tooltip("Block enemy blast during Stun?"); break;
 	}
 
@@ -117,8 +121,18 @@ inline void AtDisplay(Frame_AT *at, FrameData *frameData = nullptr, int patternI
 		markModified();
 	}
 	im::SameLine(0.f, 20);
-	if(im::Checkbox("Hitgrab", &at->hitgrab)) {
-		markModified();
+	if(uniFormat) {
+		// UNI2/MBTL ATNG is a byte with values up to 65 (not a bool).
+		im::SetNextItemWidth(width);
+		if(im::InputInt("Hitgrab (ATNG)", &at->hitgrab, 0, 0)) {
+			markModified();
+		}
+	} else {
+		bool hg = at->hitgrab != 0;
+		if(im::Checkbox("Hitgrab", &hg)) {
+			at->hitgrab = hg ? 1 : 0;
+			markModified();
+		}
 	}
 
 
@@ -254,6 +268,48 @@ inline void AtDisplay(Frame_AT *at, FrameData *frameData = nullptr, int patternI
 
 	if(im::Combo("Added effect", &at->addedEffect, addedEffectList, IM_ARRAYSIZE(addedEffectList))) {
 		markModified();
+	}
+
+	if(uniFormat) {
+		// UNI2/MBTL AT fields. Offsets are the game's 76-byte AT record
+		// (Han6_LoadFrameAT). In this dialect "Damage" is ATAT and "Meter
+		// gain" is ATCA; "VS damage" and "Guard damage" exist only in
+		// MBAACC's ATVV and are not saved.
+		im::Separator();
+		im::TextDisabled("UNI/MBTL attack data");
+		auto intField = [&](const char* label, int* v, const char* tip) {
+			im::SetNextItemWidth(width);
+			if(im::InputInt(label, v, 0, 0)) markModified();
+			if(im::IsItemHovered()) Tooltip(tip);
+		};
+		intField("Proration % (ATHH)", &at->damageProration, "ATHH (+48): damage proration for the rest of the combo.\n100 or absent = none.");
+		im::SameLine(0.f, 20);
+		intField("Min damage (ATAM)", &at->minDamage, "ATAM (+62): minimum damage.");
+		intField("Starter corr. (ATSH)", &at->starterCorrection, "ATSH (+46): correction when this attack starts a combo.");
+		im::SameLine(0.f, 20);
+		intField("Self stop (ATSA)", &at->addHitStun, "ATSA (+43): hitstop preset for the attacker itself,\nused when hit flag 25 is set (Hit_ResolveHitstop).");
+		im::SetNextItemWidth(width * 3);
+		if(im::InputInt3("Hitstun decay (ATC0)", at->hitStunDecay)) markModified();
+		if(im::IsItemHovered())
+			Tooltip("ATC0 (+71, +73, +72): hitstun decay values.\n"
+				"The first defaults to 100 and the third to 50 when 0.");
+		intField("ATRF", &at->atrf, "ATRF (+47, byte). Observed 25/100/200 in UNI2.");
+		im::SameLine(0.f, 20);
+		intField("ATBC", &at->atbc, "ATBC (+52, word). Observed 30 in UNI2.");
+		im::SameLine(0.f, 20);
+		intField("Power % (ATVD)", &at->atvd, "ATVD (+68): attack power % override. When > 0 it replaces the\n"
+			"attacker's damage rate (Hit_ComputeDamage_ATVDRateOverride, MBTL).");
+		static const char* const kLegacy[] = {"none", "ATS1", "ATS2", "ATS3", "ATS4", "ATS5", "ATS6"};
+		int legacy = (at->hitStopLegacy >= 0 && at->hitStopLegacy <= 6) ? at->hitStopLegacy : 0;
+		im::SetNextItemWidth(width * 1.5f);
+		if(im::Combo("Hitstop (ATSn form)", &legacy, kLegacy, IM_ARRAYSIZE(kLegacy))) {
+			at->hitStopLegacy = legacy;
+			markModified();
+		}
+		if(im::IsItemHovered())
+			Tooltip("ATS1..ATS6 set the same hitstop field as ATSP (\"Hitstop\" above).\n"
+				"The game reads them first, so an ATSP in the same block wins.\n"
+				"Kept as loaded (UNI2 chr006/016/017/021/026).");
 	}
 
 

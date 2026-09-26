@@ -1,9 +1,11 @@
 #include "main.h"
+#include "startup_args.h"
 #include "context_gl.h"
 #include "main_frame.h"
 #include "test.h"
 #include "ini.h"
 #include "version.h"
+#include "workspace_viewports.h"
 
 #include <iostream>
 #include <fstream>
@@ -222,6 +224,73 @@ int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE, PWSTR pCmdLine, int nCmdShow
 			LocalFree(argV);
 			return 0;
 		}
+		else if(i+1<argC && (!strcmp(arg, "--open") || !strcmp(arg, "--capture") || !strcmp(arg, "--pattern")
+		                     || !strcmp(arg, "--frame") || !strcmp(arg, "--palette") || !strcmp(arg, "--game-link")
+		                     || !strcmp(arg, "--zoom") || !strcmp(arg, "--game")
+		                     || !strcmp(arg, "--compare") || !strcmp(arg, "--tool") || !strcmp(arg, "--tag-ini")
+		                     || !strcmp(arg, "--tag-char") || !strcmp(arg, "--tag-tab")
+		                     || !strncmp(arg, "--authoring-", 12)) && strcmp(arg, "--authoring-link") && strcmp(arg, "--authoring-load")
+		                     && strcmp(arg, "--authoring-unlock"))
+		{
+			// startup actions, see startup_args.h
+			std::wstring w(argV[i+1]);
+			std::string v(WideCharToMultiByte(CP_ACP, 0, w.c_str(), -1, nullptr, 0, nullptr, nullptr), 0);
+			WideCharToMultiByte(CP_ACP, 0, w.c_str(), -1, v.data(), (int)v.size(), nullptr, nullptr);
+			if(!v.empty() && v.back() == 0) v.pop_back();
+			if(!strcmp(arg, "--open")) gStartup.open = v;
+			else if(!strcmp(arg, "--capture")) gStartup.capture = v;
+			else if(!strcmp(arg, "--pattern")) gStartup.pattern = atoi(v.c_str());
+			else if(!strcmp(arg, "--frame")) gStartup.frame = atoi(v.c_str());
+			else if(!strcmp(arg, "--game-link")) gStartup.gameLinkSlot = atoi(v.c_str());
+			else if(!strcmp(arg, "--zoom")) gStartup.zoom = (float)atof(v.c_str());
+			else if(!strcmp(arg, "--game")) gStartup.game = v;
+			else if(!strcmp(arg, "--compare")) gStartup.compare = atoi(v.c_str());
+			else if(!strcmp(arg, "--tool")) gStartup.tool = v;
+			else if(!strcmp(arg, "--tag-ini")) gStartup.tagIni = v;
+			else if(!strcmp(arg, "--tag-char")) gStartup.tagChar = v;
+			else if(!strcmp(arg, "--tag-tab")) gStartup.tagTab = v;
+			else if(!strcmp(arg, "--authoring-tab")) gStartup.authoring.tab = v;
+			else if(!strcmp(arg, "--authoring-setup")) gStartup.authoring.setupHex = v;
+			else if(!strcmp(arg, "--authoring-game")) gStartup.authoring.gameDir = v;
+			else if(!strcmp(arg, "--authoring-tag-root")) gStartup.authoring.tagRoot = v;
+			else if(!strcmp(arg, "--authoring-char")) gStartup.authoring.charFile = v;
+			else if(!strcmp(arg, "--authoring-layer")) gStartup.authoring.layer = v;
+			else if(!strcmp(arg, "--authoring-view")) gStartup.authoring.subTab = v;
+			else if(!strcmp(arg, "--authoring-ab")) gStartup.authoring.abDemo = v;
+			else if(!strcmp(arg, "--authoring-pid")) gStartup.authoring.pid = (uint32_t)strtoul(v.c_str(), nullptr, 0);
+			else if(!strncmp(arg, "--authoring-", 12)) {}
+			else gStartup.palette = atoi(v.c_str());
+			i++;
+		}
+		else if(!strcmp(arg, "--tag-link"))
+		{
+			gStartup.tagLink = true;
+		}
+		else if(!strcmp(arg, "--authoring-link"))
+		{
+			gStartup.authoring.link = true;
+		}
+		else if(!strcmp(arg, "--authoring-load"))
+		{
+			gStartup.authoring.loadInGame = true;
+		}
+		else if(!strcmp(arg, "--authoring-unlock"))
+		{
+			gStartup.authoring.sessionUnlock = true;
+		}
+		else if(!strcmp(arg, "--tag-apply"))
+		{
+			gStartup.tagApply = true;
+		}
+		else if(!strcmp(arg, "--no-pups"))
+		{
+			gStartup.noPups = true;
+		}
+		else if(ParseWave2StartupArg(arg, i+1<argC ? argV[i+1] : nullptr, i))
+		{
+			// --tick/--onion/--detach/--capture-view/--export-*/--save-project
+			// (render checks, see startup_args.h); consumed its value if any.
+		}
 		else if(!strcmp(arg, "-i"))
 		{
 			useIni = false;
@@ -325,6 +394,12 @@ int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE, PWSTR pCmdLine, int nCmdShow
 extern IMGUI_IMPL_API LRESULT ImGui_ImplWin32_WndProcHandler(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam);
 LRESULT WINAPI WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
 {
+	// A key that already ran a shortcut while a text field was focused (Num*
+	// / Num/ keyframe step) must not also type its character.
+	if (msg == WM_CHAR && MainFrame::s_swallowChar && (wchar_t)wParam == MainFrame::s_swallowChar) {
+		MainFrame::s_swallowChar = 0;
+		return 0;
+	}
 	if (ImGui_ImplWin32_WndProcHandler(hWnd, msg, wParam, lParam))
 		return true;
 
@@ -347,6 +422,16 @@ LRESULT WINAPI WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
 			io.ConfigFlags |= ImGuiConfigFlags_DockingEnable;
 			io.IniFilename = iniLocation;
 			InitIni();
+			// Multi-viewport: detached tabs become native windows that can
+			// live on other monitors (docs/HANTEI_WAVE2.md §5). It used to be
+			// off because the Background Inspector opened at a fixed desktop
+			// position behind the main window; that window is now placed
+			// relative to the main viewport. Restart-bound preference.
+			if (gSettings.detachableWindows)
+				io.ConfigFlags |= ImGuiConfigFlags_ViewportsEnable;
+			// Native windows only move from their title bar, so dragging in a
+			// detached view pans it instead of moving the window.
+			io.ConfigWindowsMoveFromTitleBarOnly = true;
 
 			MainFrame* mf = new MainFrame(context);
 			SetWindowLongPtr(hWnd, GWLP_USERDATA, (LONG_PTR)mf);
@@ -360,8 +445,15 @@ LRESULT WINAPI WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
 			// Font atlas now handles sizing automatically
 			
 			//io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;     // Enable Keyboard Controls
-			ImGui_ImplWin32_Init(hWnd);
+			ImGui_ImplWin32_InitForOpenGL(hWnd);   // CS_OWNDC for platform windows
 			ImGui_ImplOpenGL3_Init("#version 330 core");
+			if (!WorkspaceViewports::Initialize(*context, hWnd,
+				(io.ConfigFlags & ImGuiConfigFlags_ViewportsEnable) != 0, MainFrame::DetachedKeyHook()))
+			{
+				// Fall back to single-window mode (detached tabs float inside
+				// the main window).
+				io.ConfigFlags &= ~ImGuiConfigFlags_ViewportsEnable;
+			}
 			
 			// Enable VSync control for better performance testing
 			typedef BOOL (WINAPI *wglSwapIntervalEXT_t)(int);
@@ -404,11 +496,14 @@ LRESULT WINAPI WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
 		}
 		return 0;
 	case WM_KEYDOWN:
-		if(!ImGui::GetIO().WantCaptureKeyboard)
-		{
-			if(mf->HandleKeys(wParam))
-				return 0;
-		}
+		// The shortcut router decides: a focused ImGui text field keeps its
+		// keys (including its own Ctrl+Z); bit 30 = OS auto-repeat.
+		if(mf && mf->HandleKeys(wParam, (lParam & (1 << 30)) != 0,
+		                        ImGui::GetIO().WantCaptureKeyboard, ImGui::GetIO().WantTextInput))
+			return 0;
+		break;
+	case WM_CANCELMODE:
+		if(mf) mf->CancelViewportGestures();
 		break;
 	case WM_RBUTTONDOWN:
 		// Don't allow drag if window just became active - prevents dragging when clicking back into window
@@ -430,6 +525,7 @@ LRESULT WINAPI WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
 			if(!dragLeft)
 				ReleaseCapture();
 			dragRight = false;
+			if (mf) mf->HandleMouseUp(true, false);
 			return 0;
 		}
 		break;
@@ -441,7 +537,8 @@ LRESULT WINAPI WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
 			GetCursorPos(&mousePos);
 			ScreenToClient(hWnd, &mousePos);
 			SetCapture(hWnd);
-
+			if (mf) mf->HandleMouseDown(false, true);
+			if (mf) mf->LeftClick(mousePos.x, mousePos.y);
 			return 0;
 		}
 		justActivated = false;  // Clear flag after first click
@@ -452,6 +549,7 @@ LRESULT WINAPI WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
 			if(!dragRight)
 				ReleaseCapture();
 			dragLeft = false;
+			if (mf) mf->HandleMouseUp(false, true);
 			return 0;
 		}
 		break;
@@ -470,11 +568,13 @@ LRESULT WINAPI WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
 		if(mf && !ImGui::GetIO().WantCaptureMouse && !(dragLeft || dragRight))
 		{
 			int wheelDelta = GET_WHEEL_DELTA_WPARAM(wParam);
-			if (wheelDelta > 0) {
-				mf->HandleMouseWheel(true);  // Scroll up = zoom in
-			} else {
-				mf->HandleMouseWheel(false); // Scroll down = zoom out
-			}
+			// WM_MOUSEWHEEL gives the cursor in screen coords; convert to
+			// client space for zoom-to-cursor.
+			POINT wheelPos;
+			wheelPos.x = (short)LOWORD(lParam);
+			wheelPos.y = (short)HIWORD(lParam);
+			ScreenToClient(hWnd, &wheelPos);
+			mf->HandleMouseWheel((wheelDelta > 0) != gSettings.invertWheelZoom, wheelPos.x, wheelPos.y);
 			return 0;
 		}
 		break;
@@ -489,6 +589,7 @@ LRESULT WINAPI WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
 			// Clear drag states when losing focus
 			if(dragLeft || dragRight)
 			{
+				if (mf) mf->CancelViewportGestures();
 				ReleaseCapture();
 				dragLeft = false;
 				dragRight = false;
@@ -501,6 +602,7 @@ LRESULT WINAPI WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
 		break;
 	case WM_DESTROY:
 		delete mf;
+		WorkspaceViewports::Shutdown();
 		ImGui_ImplOpenGL3_Shutdown();
 		ImGui_ImplWin32_Shutdown();
 		ImSearch::DestroyContext();

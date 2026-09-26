@@ -1,11 +1,17 @@
 #ifndef FRAMEDATA_H_GUARD
 #define FRAMEDATA_H_GUARD
 
+#include <map>
+#include "ha6_notes.h"
 #include <string>
 #include <vector>
 #include <cstdint>
+#include <iosfwd>
 
 #include "hitbox.h"
+#include "ha4_raw.h"
+#include "ha6_enc.h"
+#include <memory>
 
 #include <set>
 extern std::set<int> numberSet;
@@ -17,6 +23,10 @@ struct Layer {
 	// Rendering data (per-layer)
 	int spriteId = -1;
 	bool usePat = false;
+	// AFRT on an AFGX layer. The UNI2/MBTL loader stores AFRT per layer
+	// (layer +32, Han6_LoadFrameAF); MBAACC (AFGP) keeps it frame-level in
+	// Frame_AF::AFRT.
+	bool afrt = false;
 
 	int		offset_y = 0;
 	int		offset_x = 0;
@@ -29,13 +39,18 @@ struct Layer {
 
 	float scale[2]{1,1};//xy
 
-	int priority = 0; // Layer priority (UNI AFPL tag, not used in MBAACC)
+	// AFPL (UNI/MBTL only): render bucket of this layer. The game draws the
+	// layer into drawctx bucket[AFPL]: 0 = object priority+256, 1 = 403,
+	// 2 = 338, 3 = object+258 (just in front), 4 = object+254 (just behind).
+	// Buckets draw in ascending order (MBTL Han6Draw_DrawLayer 0x4A0070).
+	int priority = 0;
 
 	// Assignment operator for cross-allocator copying
 	template<template<typename> class FromT>
 	Layer<Allocator>& operator=(const Layer<FromT>& from) {
 		spriteId = from.spriteId;
 		usePat = from.usePat;
+		afrt = from.afrt;
 		offset_y = from.offset_y;
 		offset_x = from.offset_x;
 		blend_mode = from.blend_mode;
@@ -179,7 +194,9 @@ struct Frame_AT {
 
 	int addedEffect; //Lasting visual effect after being hit
 
-	bool hitgrab;
+	// ATNG. MBAACC only uses 1 (hit grab); UNI2/MBTL store a byte (+41)
+	// with values up to 65 (bit 0 is tested by Hit_ResolveVector: no KO).
+	int hitgrab;
 
 	//Affects untech time and launch vector, can be negative.
 	float extraGravity;
@@ -196,6 +213,16 @@ struct Frame_AT {
 	int addHitStun;      // ATSA - player stun time added
 	int starterCorrection; // ATSH - damage correction if combo starter
 	int hitStunDecay[3] = {0,0,0}; // ATC0 - [reduction, combopoint_set, combopoint_SMP_modifier]
+
+	// UNI2/MBTL AT tags (field offsets are the game's 76-byte AT record,
+	// Han6_LoadFrameAT: uni2.exe 0x4C6CB0, MBTL.exe 0x4A8B00).
+	// ATS1..ATS6: compact hit stop preset. They write the same field as ATSP
+	// (+42); every shipped file that has one also has a later ATSP, which
+	// wins. Kept as written so saving doesn't drop or merge it.
+	int hitStopLegacy = 0;
+	int atrf = 0;        // ATRF (+47, byte): observed 25/100/200 (UNI2 chr008/009/011/022)
+	int atbc = 0;        // ATBC (+52, word): observed 30 (UNI2 chr005/chr017)
+	int atvd = 0;        // ATVD (+68, word): attack power % override; replaces the attacker's damage rate when > 0 (MBTL Hit_ComputeDamage_ATVDRateOverride 0x50CCD0)
 };
 
 struct Frame_EF {
@@ -229,6 +256,11 @@ struct Frame_T {
 
 	BoxList_T<Allocator> hitboxes{};
 
+	// Original HA4 (MBAC .DAT) frame bytes; only set for frames loaded from HA4.
+	Ha4FrameRaw ha4{};
+	// HA6 encoding choices as loaded (ha6_enc.h); used by the UNI/MBTL writer.
+	Ha6FrameEnc ha6{};
+
 	// Cross-allocator assignment operator
 	template<template<typename> class FromT>
 	Frame_T<Allocator>& operator=(const Frame_T<FromT>& from) {
@@ -242,6 +274,8 @@ struct Frame_T {
 		for (const auto& pair : from.hitboxes) {
 			hitboxes[pair.first] = pair.second;
 		}
+		ha4 = from.ha4;
+		ha6 = from.ha6;
 		return *this;
 	}
 
@@ -254,6 +288,8 @@ struct Frame_T {
 			EF = from.EF;
 			IF = from.IF;
 			hitboxes = from.hitboxes;
+			ha4 = from.ha4;
+			ha6 = from.ha6;
 		}
 		return *this;
 	}
@@ -278,6 +314,11 @@ struct Sequence_T {
 
 	std::vector<Frame_T<Allocator>, Allocator<Frame_T<Allocator>>> frames;
 
+	// Original HA4 pattern header / name bytes (MBAC .DAT only).
+	Ha4SeqRaw ha4{};
+	// HA6 pattern encoding as loaded (raw PTT2/PTCN buffers etc., ha6_enc.h).
+	Ha6SeqEnc ha6{};
+
 	// Cross-allocator assignment operator
 	template<template<typename> class FromT>
 	Sequence_T<Allocator>& operator=(const Sequence_T<FromT>& from) {
@@ -292,6 +333,8 @@ struct Sequence_T {
 		modified = from.modified;
 		usedAFGX = from.usedAFGX;
 		usedATV2 = from.usedATV2;
+		ha4 = from.ha4;
+		ha6 = from.ha6;
 		frames.resize(from.frames.size());
 		for (size_t i = 0; i < from.frames.size(); i++) {
 			frames[i] = from.frames[i];
@@ -313,6 +356,8 @@ struct Sequence_T {
 			modified = from.modified;
 			usedAFGX = from.usedAFGX;
 			usedATV2 = from.usedATV2;
+			ha4 = from.ha4;
+			ha6 = from.ha6;
 			frames = from.frames;
 		}
 		return *this;
@@ -330,10 +375,22 @@ using Sequence = Sequence_T<std::allocator>;
 struct Command {
 	int id;
 	std::string input;      // e.g., "41236C", "6+A+B"
-	std::string comment;    // e.g., "第七聖典", "ダッシュ"
+	std::string comment;    // UTF-8 (converted from the file's CP932), e.g. "第七聖典"
+	int pattern = -1;       // pattern the command starts
+	int teamSolo = 0;       // 0 both, 1 team only, 2 solo only
 
 	Command() : id(-1) {}
 };
+
+struct Ha4Container; // framedata_ha4.h
+
+// Which game's HA6 dialect a character uses. Detected from the data
+// (AFGX layer count: 5 = UNI/UNIST/UNI2, 3 = MBTL; ATV2/AFGX absent =
+// MBAACC) and overridable from the UI (View > Game format).
+enum class Ha6Game { Auto = 0, MBAACC = 1, UNI = 2, MBTL = 3 };
+const char* Ha6GameName(Ha6Game g);
+// Global manual override (Auto = use detection).
+extern Ha6Game g_ha6GameOverride;
 
 class FrameData {
 private:
@@ -343,18 +400,65 @@ public:
 
 	bool		m_loaded;
 	std::vector<Sequence> m_sequences;
+	// Changes (to a process-unique value) on load/free and in mark_modified().
+	// Caches keyed on pattern data (e.g. the preview simulator) compare it.
+	uint64_t	dataVersion = 0;
 	std::vector<Command> m_commands;
+	std::string m_commandsPath;     // _c.txt the command table came from (empty = none)
 
-	void initEmpty();
-	bool load(const char *filename, bool patch = false);
-	void save(const char *filename);
-	void save_modified_only(const char *filename);  // Save only modified sequences
-	bool load_commands(const char *filename);
+	// Set when the data came from an MBAC Hantei4 .DAT (header, parts and CG
+	// blobs). save() writes HA4 for such data unless the target is *.ha6.
+	std::shared_ptr<Ha4Container> m_ha4;
+	bool isHA4() const { return (bool)m_ha4; }
+
+	// Stacked loads (a .txt with several HA6 files): which file supplied each
+	// pattern, and which file index this character saves to. With an own file
+	// set, save() writes only the patterns that came from it plus the ones
+	// edited this session; patterns inherited from the other files in the
+	// stack are not baked into it (issue #71). -1 = write everything.
+	// Editor annotations (issue #58), stored beside the save target.
+	Ha6Notes notes;
+
+	std::vector<int> m_origin;
+	// Per loaded file: name/flag-only entries that did not replace a pattern
+	// already defined by an earlier file (written back to that file on save).
+	std::vector<std::map<unsigned int, Sequence>> m_stubs;
+	int m_loadIndex = -1;
+	mutable Ha6Game m_gameCache = Ha6Game::Auto;
+	mutable uint64_t m_gameCacheVersion = 0;
+	int m_ownFile = -1;
+	void setOwnFile(int fileIndex) { m_ownFile = fileIndex; }
+	// Save target of a project .txt's [DataFile] list: the highest-indexed
+	// file that is not shared data ("../" path or BaseData). See ini.cpp.
+	static int StackSaveTarget(const std::vector<std::string>& names);
+	int ownFile() const { return m_ownFile; }
+	// Number of patterns a save would take from other files in the stack.
+	int inheritedPatternCount() const;
+
+	void initEmpty(unsigned int count = 1000);
+	// patch: overlay onto what is loaded. fillOnly (with patch): only fill
+	// slots that have no content yet (fallback files, e.g. UNI BaseData).
+	bool load(const char *filename, bool patch = false, bool fillOnly = false);
+	bool save(const char *filename);  // Atomic; returns false on failure, never mutates data
+	bool save_modified_only(const char *filename);  // Save only modified sequences (atomic)
+	bool save_merged(const char *filename);  // Whole merged stack, ignoring the own-file filter (atomic)
+	bool load_commands(const char *filename); // cmdfile/cmd_framedata.cpp
 
 	//Probably unnecessary.
 	//bool load_move_list(Pack *pack, const char *filename);
 
 	int get_sequence_count();
+	//True if the data is UNI/MBTL-style (modern French-Bread HA6: ATV2/AFGX),
+	//after the manual override. Relabels fields whose meaning differs from
+	//MBAACC (issue #74) and picks the writer for new patterns.
+	bool usesUniFormat() const;
+	//Detected dialect (ignores the override) and the effective one.
+	Ha6Game detectedGame() const;
+	Ha6Game game() const;
+	//Number of AFGX layers the game draws (UNI2 5, MBTL 3; 1 for MBAACC).
+	int gameLayerCount() const;
+	//AFGX layer count the writer pads new UNI frames to (0 = MBAACC writer).
+	int uniLayerCountForSave() const;
 
 	Sequence* get_sequence(int n);
 	std::string GetDecoratedName(int n);
@@ -367,6 +471,8 @@ public:
 	~FrameData();
 };
 
-void WriteSequence(std::ofstream &file, const Sequence *seq);
+// uniLayerCount > 0: the file is UNI/MBTL (that many AFGX layers); patterns
+// without format flags (new ones) are then written in that dialect too.
+void WriteSequence(std::ostream &file, const Sequence *seq, int uniLayerCount = 0);
 
 #endif /* FRAMEDATA_H_GUARD */

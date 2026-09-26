@@ -3,7 +3,8 @@
 #include "frame_disp.h"
 #include "misc.h"
 #include <imgui.h>
-#include "imsearch.h"	
+#include "imsearch.h"
+#include "pattern_search.h"
 
 MainPane::MainPane(Render* render, FrameData *framedata, FrameState &fs) : DrawWindow(render, framedata, fs),
 decoratedNames(nullptr)
@@ -32,7 +33,7 @@ void MainPane::RegenerateNames()
 void MainPane::Draw()
 {
 	namespace im = ImGui;
-	im::Begin("Left Pane",0);
+	im::Begin(windowName("Left Pane").c_str(),0);
 	if(frameData->m_loaded)
 	{
 		// Count and display modified patterns
@@ -44,9 +45,18 @@ void MainPane::Draw()
 				modifiedCount++;
 		}
 
-		if(modifiedCount > 0)
+		// Always one status line, so the widgets below never move when patterns
+		// become modified (users drive the pane with position-based macros, #82).
 		{
-			im::TextColored(ImVec4(1.0f, 0.7f, 0.0f, 1.0f), "Modified patterns: %d", modifiedCount);
+			const ImVec4 modifiedColor(1.0f, 0.7f, 0.0f, 1.0f);
+			const ImVec4 idleColor = im::GetStyleColorVec4(ImGuiCol_TextDisabled);
+			im::TextColored(modifiedCount > 0 ? modifiedColor : idleColor, "Modified patterns: %d", modifiedCount);
+			auto curSeq = frameData->get_sequence(currState.pattern);
+			if(curSeq && curSeq->modified)
+			{
+				im::SameLine();
+				im::TextColored(modifiedColor, "[Modified]");
+			}
 		}
 
 		// Update current pattern's decorated name in case it was modified
@@ -55,7 +65,7 @@ void MainPane::Draw()
 		// Pattern search bar (above pattern dropdown)
 		if(showPatternSearchBar)
 		{
-			if(ImSearch::BeginSearch())
+			if(ImSearch::BeginSearch(kPatternSearchFlags))
 			{
 				ImSearch::SearchBar("Search pattern names...");
 				
@@ -152,9 +162,14 @@ void MainPane::Draw()
 			{			
 				float spacing = im::GetStyle().ItemInnerSpacing.x;
 				im::SetNextItemWidth(im::GetWindowWidth() - 160.f);
+				// On manual frame navigation, drop any activeSpawns left by a
+				// timeline scrub: the render path prefers activeSpawns when
+				// non-empty, so stale entries kept showing the scrubbed tick's
+				// spawns instead of the newly selected frame's.
 				if (im::SliderInt("##frameSlider", &currState.frame, 0, nframes)) {
 					// Sync ticks when slider changes
 					currState.currentTick = CalculateTickFromFrame(frameData, currState.pattern, currState.frame);
+					currState.activeSpawns.clear();
 				}
 				im::SameLine();
 				im::PushButtonRepeat(true);
@@ -162,12 +177,14 @@ void MainPane::Draw()
 					currState.frame--;
 					// Sync ticks when manually seeking
 					currState.currentTick = CalculateTickFromFrame(frameData, currState.pattern, currState.frame);
+					currState.activeSpawns.clear();
 				}
 				im::SameLine(0.0f, spacing);
 				if(im::ArrowButton("##right", ImGuiDir_Right)) {
 					currState.frame++;
 					// Sync ticks when manually seeking
 					currState.currentTick = CalculateTickFromFrame(frameData, currState.pattern, currState.frame);
+					currState.activeSpawns.clear();
 				}
 				im::PopButtonRepeat();
 				im::SameLine();
@@ -204,11 +221,14 @@ void MainPane::Draw()
 			}
 
 			im::BeginChild("FrameInfo", {0, 0}, false);
-
-			// Show if current pattern is modified
-			if(seq->modified)
+			// Keep this view's scroll position across tab switches (#73; the
+			// Right Pane already does the same).
 			{
-				im::TextColored(ImVec4(1.0f, 0.7f, 0.0f, 1.0f), "[Modified]");
+				static FrameState* lastLeftView = nullptr;
+				if (lastLeftView != &currState) {
+					im::SetScrollY(currState.leftPaneScrollY);
+					lastLeftView = &currState;
+				}
 			}
 
 			if (im::TreeNode("Pattern data"))
@@ -221,6 +241,14 @@ void MainPane::Draw()
 					frameData->mark_modified(currState.pattern);
 					markModified();
 					decoratedNames[currState.pattern] = frameData->GetDecoratedName(currState.pattern);
+				}
+				// Pattern note (issue #58), kept beside the HA6, not in it.
+				{
+					const std::string key = Ha6Notes::PatternKey(currState.pattern);
+					const std::string* note = frameData->notes.get(key);
+					noteEditBuffer = note ? *note : std::string();
+					if(im::InputTextMultiline("Pattern note", &noteEditBuffer, ImVec2(0, im::GetTextLineHeight() * 3)))
+						frameData->notes.set(key, noteEditBuffer);
 				}
 				PatternDisplay(seq, frameData, currState.pattern);
 
@@ -247,12 +275,23 @@ void MainPane::Draw()
 				}
 				im::SameLine(0,20.f);
 				im::Text("%zu copies", patCopyStack.size());
+				if(!patCopyStack.empty()) {
+					im::SameLine();
+					if(im::SmallButton("Drop last")) patCopyStack.pop_back();
+					im::SameLine();
+					if(im::SmallButton("Clear")) patCopyStack.clear();
+				}
+				im::TextDisabled("Windows > Pattern manager: multi-select, paste slots, move with references.");
 
 				im::TreePop();
 				im::Separator();
 			}
 			if(nframes >= 0)
 			{
+				// Frame-list mutations are deferred to the end of this block:
+				// inserting/erasing reallocates seq->frames and would leave
+				// `frame` dangling for the rest of the draw.
+				enum class KeyframeOp { None, Append, Insert, Delete, AppendNextSprite } keyframeOp = KeyframeOp::None;
 				Frame &frame = seq->frames[currState.frame];
 				if(im::TreeNode("State data"))
 				{
@@ -275,40 +314,45 @@ void MainPane::Draw()
 					im::TreePop();
 					im::Separator();
 				}
+				if (frame.ha6.nExtra > 0 && im::TreeNode("Other tags (kept as loaded)"))
+				{
+					// Tags the UNI2/MBTL loaders read that no editor field covers
+					// (rare: no shipped file uses them). Saved back unchanged.
+					static const struct { const char* tag; const char* what; } kInfo[] = {
+						{"AFAN", "layer Z rotation as an int (same slot as AFAZ)"},
+						{"ASV1", "read, ignored"}, {"ASVA", "AS velocity (2 words)"}, {"ASVC", "AS velocity (2 words)"},
+						{"ASAT", "AS +32"}, {"ASKV", "read, ignored"}, {"ASSS", "stance (same field as ASS1/ASS2)"},
+						{"ASDF", "read, ignored"}, {"ASCL", "movement flags (2 words)"}, {"ASSE", "movement flags (2 words)"},
+						{"ASDE", "AS +36"}, {"ASF2", "read, ignored"}, {"ASF3", "read, ignored"},
+						{"ATAB", "AT +66"}, {"ATBG", "AT +70 (guard related, Hit_ResolveHitstop)"}, {"ATGE", "AT +32/+34"},
+						{"ATKZ", "read, ignored"}, {"ATGS", "read, ignored"}, {"ATF2", "read, ignored"},
+						{"HRFF", "box flag byte: box (attack if < 0), value"},
+					};
+					for (int i = 0; i < frame.ha6.nExtra && i < Ha6FrameEnc::kMaxExtra; ++i) {
+						const Ha6ExtraTag& x = frame.ha6.extra[i];
+						std::string line(x.tag, 4);
+						for (int k = 0; k < x.nwords; ++k) line += " " + std::to_string(x.w[k]);
+						const char* what = "";
+						for (const auto& in : kInfo) if (!memcmp(in.tag, x.tag, 4)) what = in.what;
+						im::Text("%s", line.c_str());
+						im::SameLine(); im::TextDisabled("%s", what);
+					}
+					im::TreePop();
+				}
 				if (im::TreeNode("Tools"))
 				{
 					im::Checkbox("Make copy current frame", &copyThisFrame);
 					
 					if(im::Button("Append frame"))
-					{
-						if(copyThisFrame)
-							seq->frames.push_back(frame);
-						else
-							seq->frames.push_back({});
-						frameData->mark_modified(currState.pattern);
-						markModified();
-					}
+						keyframeOp = KeyframeOp::Append;
 
 					im::SameLine(0,20.f);
 					if(im::Button("Insert frame"))
-					{
-						if(copyThisFrame)
-							seq->frames.insert(seq->frames.begin()+currState.frame, frame);
-						else
-							seq->frames.insert(seq->frames.begin()+currState.frame, {});
-						frameData->mark_modified(currState.pattern);
-						markModified();
-					}
+						keyframeOp = KeyframeOp::Insert;
 
 					im::SameLine(0,20.f);
 					if(im::Button("Delete frame"))
-					{
-						seq->frames.erase(seq->frames.begin()+currState.frame);
-						if(currState.frame >= seq->frames.size())
-							currState.frame--;
-						frameData->mark_modified(currState.pattern);
-						markModified();
-					}
+						keyframeOp = KeyframeOp::Delete;
 
 					im::SameLine(0,20.f);
 					if(im::Button("Copy frame"))
@@ -330,6 +374,30 @@ void MainPane::Draw()
 						ranges[1] = 0;
 						rangeWindow = !rangeWindow;
 					}
+
+					// Sprite numbering (issue #45)
+					if(im::Button("Append frame, sprite +1"))
+						keyframeOp = KeyframeOp::AppendNextSprite;
+					if(im::IsItemHovered())
+						im::SetTooltip("Append a copy of the last frame with its layer 0 sprite number + 1,\nand select it.");
+					im::SameLine(0,20.f);
+					if(im::Button("Number sprites from here"))
+					{
+						if (frame.AF.layers.empty()) frame.AF.layers.push_back({});
+						const int base = frame.AF.layers[0].spriteId;
+						if (base >= 0) {
+							for(int i = currState.frame + 1; i < (int)seq->frames.size(); i++)
+							{
+								auto& layers = seq->frames[i].AF.layers;
+								if (layers.empty()) layers.push_back({});
+								layers[0].spriteId = base + (i - currState.frame);
+							}
+							frameData->mark_modified(currState.pattern);
+							markModified();
+						}
+					}
+					if(im::IsItemHovered())
+						im::SetTooltip("Set layer 0 of every later frame to this frame's sprite + 1, + 2, ...");
 
 					im::Separator();
 
@@ -538,7 +606,7 @@ void MainPane::Draw()
 				im::SetNextWindowPos(im::GetMainViewport()->GetCenter(), ImGuiCond_FirstUseEver, ImVec2(0.5f, 0.5f));
 				if(im::Begin("Search Pattern Names", &showPatternSearch, ImGuiWindowFlags_NoCollapse))
 				{
-					if(ImSearch::BeginSearch())
+					if(ImSearch::BeginSearch(kPatternSearchFlags))
 					{
 						ImSearch::SearchBar("Search pattern names...");
 
@@ -569,7 +637,57 @@ void MainPane::Draw()
 				}
 				im::End();
 			}
+
+			// Apply the deferred keyframe op. `frame` is not used past this
+			// point; the frame index is re-validated after the mutation.
+			if(keyframeOp != KeyframeOp::None)
+			{
+				const int at = currState.frame;
+				switch(keyframeOp)
+				{
+				case KeyframeOp::Append:
+				{
+					Frame newFrame = copyThisFrame ? seq->frames[at] : Frame{};
+					seq->frames.push_back(std::move(newFrame));
+					break;
+				}
+				case KeyframeOp::Insert:
+				{
+					// Copy first: insert(pos, {}) picked the initializer_list
+					// overload and inserted nothing.
+					Frame newFrame = copyThisFrame ? seq->frames[at] : Frame{};
+					seq->frames.insert(seq->frames.begin() + at, std::move(newFrame));
+					break;
+				}
+				case KeyframeOp::Delete:
+					seq->frames.erase(seq->frames.begin() + at);
+					break;
+				case KeyframeOp::AppendNextSprite:
+				{
+					Frame newFrame = seq->frames.back();
+					if (newFrame.AF.layers.empty()) newFrame.AF.layers.push_back({});
+					if (newFrame.AF.layers[0].spriteId >= 0) newFrame.AF.layers[0].spriteId += 1;
+					seq->frames.push_back(std::move(newFrame));
+					currState.frame = (int)seq->frames.size() - 1;
+					break;
+				}
+				default:
+					break;
+				}
+
+				const int count = (int)seq->frames.size();
+				if(currState.frame >= count)
+					currState.frame = count - 1;
+				if(currState.frame < 0)
+					currState.frame = 0;
+				currState.currentTick = count > 0
+					? CalculateTickFromFrame(frameData, currState.pattern, currState.frame) : 0;
+				currState.activeSpawns.clear();
+				frameData->mark_modified(currState.pattern);
+				markModified();
 			}
+			}
+			currState.leftPaneScrollY = im::GetScrollY();
 			im::EndChild();
 		}
 	}

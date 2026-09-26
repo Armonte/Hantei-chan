@@ -10,7 +10,10 @@ enum {
 	VECTOR,
 	HPROJ,
 	PAT,
-	DDS
+	DDS,
+	DAT,
+	CMDTXT,
+	HA4
 };
 }
 

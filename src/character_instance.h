@@ -6,6 +6,7 @@
 #include "cg.h"
 #include "parts/parts.h"
 #include "undo_manager.h"
+#include "mv_script.h"
 #include <string>
 #include <vector>
 
@@ -49,6 +50,10 @@ public:
 	void markModified();
 	void clearModified();
 	bool isModified() const;
+	// Annotations side file (<ha6>.notes.json, issue #58)
+	void loadNotes();
+	bool saveNotes(const std::string& ha6Path);
+	const std::string& notesError() const { return m_notesError; }
 
 	// File paths
 	const std::vector<std::string>& getHA6Paths() const;
@@ -64,6 +69,9 @@ public:
 	// Effect character support (per-character effect.ha6/effect.pat)
 	CharacterInstance* getEffectCharacter() const;
 	bool loadEffectCharacter();  // Load effect.txt/effect.ha6/effect.pat for this character
+
+	// MBTL move-script spawn index (sibling chrXXX_mv_*.txt files), see mv_script.h
+	const MvScriptIndex& getMvScripts() const { return m_mvScripts; }
 
 	// Data access
 	FrameData frameData;
@@ -84,6 +92,9 @@ public:
 	std::unique_ptr<CharacterInstance> effectCharacter;
 
 private:
+	// Load sibling chrXXX_mv_*.txt move scripts and register for spawn viz
+	void loadMvScripts(const std::string& txtPath);
+
 	std::string m_name;
 	std::string m_txtPath;         // Original .txt file path
 	std::vector<std::string> m_ha6Paths; // All loaded .ha6 files
@@ -91,6 +102,8 @@ private:
 	std::string m_patPath;         // PAT (Parts) file path
 	std::string m_topHA6Path;      // Highest-indexed .ha6 (auto-save target)
 	bool m_isModified = false;
+	MvScriptIndex m_mvScripts;     // MBTL move-script spawns (may be empty)
+	std::string m_notesError;
 };
 
 #endif /* CHARACTER_INSTANCE_H_GUARD */

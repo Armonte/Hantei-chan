@@ -1,6 +1,8 @@
 #include "framedata.h"
 #include "framedata_load.h"
+#include "framedata_ha4.h"
 #include <fstream>
+#include <algorithm>
 #include "misc.h"
 #include <cstring>
 #include <sstream>
@@ -11,15 +13,23 @@
 int maxCount = 0;
 std::set<int> numberSet;
 
-void FrameData::initEmpty()
+// Process-wide version clock: every bump gets a unique value, so a new
+// FrameData at a recycled address never repeats an old (pointer, version).
+static uint64_t NextFrameDataVersion()
+{
+	static uint64_t clock = 0;
+	return ++clock;
+}
+
+void FrameData::initEmpty(unsigned int count)
 {
 	Free();
-	m_nsequences = 1000;
+	m_nsequences = count;
 	m_sequences.resize(m_nsequences);
 	m_loaded = 1;
 }
 
-bool FrameData::load(const char *filename, bool patch) {
+bool FrameData::load(const char *filename, bool patch, bool fillOnly) {
 	// allow loading over existing data
 
 	char *data;
@@ -27,6 +37,14 @@ bool FrameData::load(const char *filename, bool patch) {
 
 	if (!ReadInMem(filename, data, size)) {
 		return 0;
+	}
+
+	// MBAC Hantei4 .DAT (detected by content, not extension)
+	if (ha4::IsHA4(data, size)) {
+		bool ok = !patch && ha4::Load(*this, (const uint8_t *)data, size);
+		delete[] data;
+		if (ok && m_ha4) m_ha4->sourcePath = filename;
+		return ok;
 	}
 
 	// verify header
@@ -57,11 +75,21 @@ bool FrameData::load(const char *filename, bool patch) {
 
 	if(sequence_count > m_nsequences)
 		m_sequences.resize(sequence_count);
-	m_nsequences = sequence_count;
+	// A patch file with fewer slots (UNI BaseData has 48) must not shrink the
+	// character: that hid, and dropped on save, every later pattern.
+	if(!patch || sequence_count > m_nsequences)
+		m_nsequences = sequence_count;
 
 	d += 2;
 	// parse and recursively store data
-	d = fd_main_load(d, d_end, m_sequences, m_nsequences, utf8);
+	++m_loadIndex;
+	std::vector<unsigned int> defined;
+	m_stubs.resize(m_loadIndex + 1);
+	d = fd_main_load(d, d_end, m_sequences, sequence_count, utf8, &defined, patch && fillOnly, &m_stubs[m_loadIndex]);
+	if(m_origin.size() < m_sequences.size())
+		m_origin.resize(m_sequences.size(), -1);
+	for(unsigned int id : defined)
+		if(id < m_origin.size()) m_origin[id] = m_loadIndex;
 
 	// Clear modified flags after loading - only track NEW edits from this session
 	for(auto& seq : m_sequences) {
@@ -71,6 +99,7 @@ bool FrameData::load(const char *filename, bool patch) {
 	// cleanup and finish
 	delete[] data;
 
+	dataVersion = NextFrameDataVersion();
 	m_loaded = 1;
 	return 1;
 }
@@ -79,17 +108,45 @@ bool FrameData::load(const char *filename, bool patch) {
 #define VAL(X) ((const char*)&X)
 #define PTR(X) ((const char*)X)
 
-void FrameData::save(const char *filename)
+// Hitbox cleanup applied to the *written* data only: degenerate boxes are
+// dropped and inverted boxes are fixed -- but only boxes created or edited in
+// this session. Boxes exactly as loaded are game data and are written as they
+// are: MBTL chr016 (Powered Ciel) p6 f6 and p25 f2-3 have inverted attack
+// boxes, and "fixing" them moved the box on every save. Returns true if
+// anything would change.
+static bool BoxIsAsLoaded(const Frame &frame, int loc, const Hitbox &box)
 {
-	std::ofstream file(filename, std::ios_base::out | std::ios_base::binary | std::ios_base::trunc);
-	if (!file.is_open())
-		return;
+	const Ha6FrameEnc &enc = frame.ha6;
+	if (enc.valid && loc >= 0 && loc < Ha6FrameEnc::kMaxBoxes && ((enc.boxMask >> loc) & 1ull))
+		return !memcmp(enc.boxXY[loc], box.xy, sizeof(box.xy));
+	return false;
+}
 
-	for(auto& seq : m_sequences)
+static bool SequenceNeedsBoxFix(const Sequence &seq)
+{
+	for(const auto &frame : seq.frames)
+	for(const auto &it : frame.hitboxes)
+	{
+		const Hitbox &box = it.second;
+		if(BoxIsAsLoaded(frame, it.first, box))
+			continue;
+		if(box.xy[0] >= box.xy[2] || box.xy[1] >= box.xy[3])
+			return true;
+	}
+	return false;
+}
+
+static void FixBoxesForSave(Sequence &seq)
+{
 	for(auto &frame : seq.frames)
 	for(auto it = frame.hitboxes.begin(); it != frame.hitboxes.end();)
 	{
 		Hitbox &box = it->second;
+		if(BoxIsAsLoaded(frame, it->first, box))
+		{
+			++it;
+			continue;
+		}
 		//Delete degenerate boxes when exporting.
 		if( (box.xy[0] == box.xy[2]) ||
 			(box.xy[1] == box.xy[3]) )
@@ -98,7 +155,7 @@ void FrameData::save(const char *filename)
 		}
 		else
 		{
-			//Fix inverted boxes. Don't know if needed.
+			//Fix inverted boxes drawn backwards in the editor.
 			if(box.xy[0] > box.xy[2])
 				std::swap(box.xy[0], box.xy[2]);
 			if(box.xy[1] > box.xy[3])
@@ -106,83 +163,134 @@ void FrameData::save(const char *filename)
 			++it;
 		}
 	}
+}
+
+// Serialize to memory, then atomically replace the target file. The in-memory
+// sequences are never modified: sequences that need box cleanup are written
+// from a temporary copy.
+static bool WriteHA6File(const char *filename, const std::vector<Sequence> &sequences,
+                         uint32_t count, bool modifiedOnly,
+                         const std::vector<int> *origin = nullptr, int ownFile = -1,
+                         const std::map<unsigned int, Sequence> *ownStubs = nullptr,
+                         int uniLayerCount = 0)
+{
+	if(!filename || !*filename)
+		return false;
+
+	std::ostringstream file(std::ios_base::out | std::ios_base::binary);
 
 	char header[32] = "Hantei6DataFile";
 
 	// Keep header in original format - no modification flag
 	file.write(header, sizeof(header));
 
-	uint32_t size = get_sequence_count();
-	file.write("_STR", 4); file.write(VAL(size), 4);
+	file.write("_STR", 4); file.write(VAL(count), 4);
 
-	for(uint32_t i = 0; i < get_sequence_count(); i++)
+	for(uint32_t i = 0; i < count && i < sequences.size(); i++)
 	{
+		const Sequence &src = sequences[i];
+		if(modifiedOnly && !src.modified)
+			continue;
+
 		file.write("PSTR", 4); file.write(VAL(i), 4);
-		WriteSequence(file, &m_sequences[i]);
+		// Stacked character: leave patterns inherited from another file of
+		// the stack (and not edited) as empty slots in this one.
+		if(ownFile >= 0 && origin && !src.modified &&
+		   (i >= origin->size() || (*origin)[i] != ownFile))
+		{
+			if(ownStubs) {
+				auto it = ownStubs->find(i);
+				if(it != ownStubs->end()) WriteSequence(file, &it->second, uniLayerCount);
+			}
+			file.write("PEND", 4);
+			continue;
+		}
+		if(SequenceNeedsBoxFix(src))
+		{
+			Sequence copy = src;
+			FixBoxesForSave(copy);
+			WriteSequence(file, &copy, uniLayerCount);
+		}
+		else
+		{
+			WriteSequence(file, &src, uniLayerCount);
+		}
 		file.write("PEND", 4);
 	}
 
 	file.write("_END", 4);
-	file.close();
+	if(!file)
+		return false;
+
+	const std::string bytes = file.str();
+	return WriteFileAtomic(filename, bytes.data(), bytes.size());
 }
 
-void FrameData::save_modified_only(const char *filename)
+// HA4 data is written back as HA4 unless the target is explicitly *.ha6
+// (then it is exported through the HA6 writer, i.e. converted).
+static bool TargetIsHA6(const char *filename)
 {
-	std::ofstream file(filename, std::ios_base::out | std::ios_base::binary | std::ios_base::trunc);
-	if (!file.is_open())
-		return;
+	std::string f = filename ? filename : "";
+	if (f.size() < 4) return false;
+	std::string ext = f.substr(f.size() - 4);
+	for (auto &c : ext) c = (char)tolower((unsigned char)c);
+	return ext == ".ha6";
+}
 
-	// Clean up hitboxes for modified sequences only
-	for(auto& seq : m_sequences)
-	{
-		if(!seq.modified) continue;
+bool FrameData::save(const char *filename)
+{
+	if (m_ha4 && !TargetIsHA6(filename))
+		return ha4::SaveFile(*this, filename);
+	const std::map<unsigned int, Sequence> *stubs =
+		(m_ownFile >= 0 && m_ownFile < (int)m_stubs.size()) ? &m_stubs[m_ownFile] : nullptr;
+	return WriteHA6File(filename, m_sequences, get_sequence_count(), false, &m_origin, m_ownFile, stubs, uniLayerCountForSave());
+}
 
-		for(auto &frame : seq.frames)
-		for(auto it = frame.hitboxes.begin(); it != frame.hitboxes.end();)
-		{
-			Hitbox &box = it->second;
-			//Delete degenerate boxes when exporting.
-			if( (box.xy[0] == box.xy[2]) ||
-				(box.xy[1] == box.xy[3]) )
-			{
-				frame.hitboxes.erase(it++);
-			}
-			else
-			{
-				//Fix inverted boxes. Don't know if needed.
-				if(box.xy[0] > box.xy[2])
-					std::swap(box.xy[0], box.xy[2]);
-				if(box.xy[1] > box.xy[3])
-					std::swap(box.xy[1], box.xy[3]);
-				++it;
-			}
-		}
-	}
+int FrameData::StackSaveTarget(const std::vector<std::string>& names)
+{
+	auto shared = [](std::string n) {
+		for (auto& c : n) c = (char)tolower((unsigned char)c);
+		std::replace(n.begin(), n.end(), '\\', '/');
+		if (n.rfind("../", 0) == 0) return true;
+		const size_t slash = n.find_last_of('/');
+		const std::string base = slash == std::string::npos ? n : n.substr(slash + 1);
+		return base.find("basedata") != std::string::npos;
+	};
+	int t = (int)names.size() - 1;
+	while (t > 0 && shared(names[t]))
+		--t;
+	return t;
+}
 
-	char header[32] = "Hantei6DataFile";
+int FrameData::inheritedPatternCount() const
+{
+	if(m_ownFile < 0) return 0;
+	int n = 0;
+	for(size_t i = 0; i < m_sequences.size() && i < m_nsequences; ++i)
+		if(!m_sequences[i].modified && i < m_origin.size() && m_origin[i] >= 0 && m_origin[i] != m_ownFile)
+			++n;
+	return n;
+}
 
-	// Keep header in original format - no modification flag
-	file.write(header, sizeof(header));
+bool FrameData::save_merged(const char *filename)
+{
+	return WriteHA6File(filename, m_sequences, get_sequence_count(), false, nullptr, -1, nullptr, uniLayerCountForSave());
+}
 
-	uint32_t size = get_sequence_count();
-	file.write("_STR", 4); file.write(VAL(size), 4);
-
+bool FrameData::save_modified_only(const char *filename)
+{
 	// Only write modified sequences
-	for(uint32_t i = 0; i < get_sequence_count(); i++)
-	{
-		if(m_sequences[i].modified)
-		{
-			file.write("PSTR", 4); file.write(VAL(i), 4);
-			WriteSequence(file, &m_sequences[i]);
-			file.write("PEND", 4);
-		}
-	}
-
-	file.write("_END", 4);
-	file.close();
+	return WriteHA6File(filename, m_sequences, get_sequence_count(), true, nullptr, -1, nullptr, uniLayerCountForSave());
 }
 
 void FrameData::Free() {
+	m_origin.clear();
+	m_stubs.clear();
+	notes = Ha6Notes{};
+	m_loadIndex = -1;
+	m_ownFile = -1;
+	m_ha4.reset();
+	dataVersion = NextFrameDataVersion();
 	m_sequences.clear();
 	m_nsequences = 0;
 	m_loaded = 0;
@@ -193,6 +301,67 @@ int FrameData::get_sequence_count() {
 		return 0;
 	}
 	return m_nsequences;
+}
+
+Ha6Game g_ha6GameOverride = Ha6Game::Auto;
+
+const char* Ha6GameName(Ha6Game g)
+{
+	switch (g) {
+	case Ha6Game::MBAACC: return "MBAACC";
+	case Ha6Game::UNI: return "UNI/UNI2";
+	case Ha6Game::MBTL: return "MBTL";
+	default: return "Auto";
+	}
+}
+
+Ha6Game FrameData::detectedGame() const
+{
+	if (m_gameCacheVersion == dataVersion && m_gameCacheVersion != 0)
+		return m_gameCache;
+	// AFGX frames carry every layer the game has (UNI2 always writes ids
+	// 0..4, MBTL 0..2: Han6_LoadFrameAF ignores ids >= 5 / >= 3).
+	bool modern = false;
+	size_t maxLayers = 0;
+	for (const auto& seq : m_sequences) {
+		if (seq.usedATV2 || seq.usedAFGX) modern = true;
+		if (!seq.usedAFGX) continue;
+		for (const auto& f : seq.frames)
+			maxLayers = std::max(maxLayers, f.AF.layers.size());
+	}
+	Ha6Game g = Ha6Game::MBAACC;
+	if (modern)
+		g = (maxLayers == 3) ? Ha6Game::MBTL : Ha6Game::UNI;
+	m_gameCache = g;
+	m_gameCacheVersion = dataVersion;
+	return g;
+}
+
+Ha6Game FrameData::game() const
+{
+	if (g_ha6GameOverride != Ha6Game::Auto) return g_ha6GameOverride;
+	return detectedGame();
+}
+
+bool FrameData::usesUniFormat() const {
+	const Ha6Game g = game();
+	return g == Ha6Game::UNI || g == Ha6Game::MBTL;
+}
+
+int FrameData::uniLayerCountForSave() const
+{
+	// HA4 data exported to HA6 stays MBAACC-style.
+	if (m_ha4 || !usesUniFormat()) return 0;
+	return gameLayerCount();
+}
+
+int FrameData::gameLayerCount() const
+{
+	switch (game()) {
+	case Ha6Game::UNI: return 5;
+	case Ha6Game::MBTL: return 3;
+	default: return 1;
+	}
 }
 
 Sequence* FrameData::get_sequence(int n) {
@@ -249,56 +418,13 @@ Command* FrameData::get_command(int id)
 
 void FrameData::mark_modified(int sequence_index)
 {
+	dataVersion = NextFrameDataVersion();
 	if(sequence_index >= 0 && sequence_index < (int)m_sequences.size()) {
 		m_sequences[sequence_index].modified = true;
 	}
 }
 
-bool FrameData::load_commands(const char *filename)
-{
-	std::ifstream file(filename);
-	if(!file.is_open()) {
-		std::cout << "Failed to open command file: " << filename << std::endl;
-		return false;
-	}
-
-	m_commands.clear();
-	std::string line;
-	int lineNum = 0;
-
-	while(std::getline(file, line)) {
-		lineNum++;
-
-		// Skip empty lines and comment-only lines
-		if(line.empty() || line[0] == '/' || line[0] == '#')
-			continue;
-
-		// Find the comment part (after //)
-		size_t commentPos = line.find("//");
-		std::string dataPart = (commentPos != std::string::npos) ? line.substr(0, commentPos) : line;
-		std::string commentPart = (commentPos != std::string::npos) ? line.substr(commentPos + 2) : "";
-
-		// Trim comment
-		while(!commentPart.empty() && (commentPart[0] == ' ' || commentPart[0] == '\t' || commentPart[0] == '\xe3' || commentPart[0] == '\x80'))
-			commentPart = commentPart.substr(1);
-		while(!commentPart.empty() && (commentPart.back() == ' ' || commentPart.back() == '\t' || commentPart.back() == '\r' || commentPart.back() == '\n'))
-			commentPart.pop_back();
-
-		// Parse data part
-		std::istringstream iss(dataPart);
-		Command cmd;
-
-		if(!(iss >> cmd.id >> cmd.input))
-			continue; // Failed to parse ID and input
-
-		cmd.comment = commentPart;
-		m_commands.push_back(cmd);
-	}
-
-	file.close();
-	std::cout << "Loaded " << m_commands.size() << " commands from " << filename << std::endl;
-	return true;
-}
+// load_commands() lives in cmdfile/cmd_framedata.cpp (lossless _c.txt parser).
 
 FrameData::FrameData() {
 	m_nsequences = 0;

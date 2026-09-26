@@ -9,6 +9,15 @@
 #include "version.h"
 #include "framestate.h"
 #include "misc.h"
+#include "background/bg_inspector.h"
+#include "extension_profile.h"
+#include "../third_party/json/json.hpp"
+#include "framedata_ha4.h"
+#include "ha4_character.h"
+#include "game_link_panel.h"
+#include "tag_panel.h"
+#include "authoring/authoring_window.h"
+#include "authoring/game_view.h"
 
 #include <imgui.h>
 #include <imgui_internal.h>
@@ -21,16 +30,48 @@
 #include <glm/gtc/matrix_transform.hpp>
 
 #include <algorithm>
+#include <cmath>
+#include <cstdlib>
 #include <filesystem>
+
+wchar_t MainFrame::s_swallowChar = 0;
 
 MainFrame::MainFrame(ContextGl *context_):
 context(context_)
 {
 	LoadSettings();
+	// User key bindings (issue #9); unknown or stale entries are ignored.
+	for (const auto& line : gSettings.keyBindings)
+		shortcuts.registry().applyOverride(line);
+	// Hand the background renderer/camera to the GL Render so its Draw()
+	// loop calls into bgRenderer at the right point (behind the character).
+	render.SetBackgroundRenderer(&bgRenderer, &bgCamera);
+	// The bg renderer draws PAT-pattern stage objects through Render's
+	// Parts pipeline (sprite-id < 10000) — give it the back-reference.
+	bgRenderer.SetHostRender(&render);
+	// Stage edits keep their own history (bg::File), separate from the
+	// character undo stack: while a stage view owns focus, Ctrl+Z / Ctrl+Y
+	// go to the stage and Ctrl+S saves the stage file.
+	bgRenderer.SetPatPlacement(gSettings.stagePatAuthoring ? bg::Renderer::PatPlacement::Authoring
+	                                                       : bg::Renderer::PatPlacement::Game);
+	bgCamera.clampToGame = gSettings.stageClampCamera;
+	bg::g_onPatPlacementChanged = [](bool a) { gSettings.stagePatAuthoring = a; };
+	shortcuts.setContextHandler(ShortcutContext::stageView, [this](ShortcutAction a) {
+		switch (a) {
+		case ShortcutAction::undo: return stageUndoRedo(false, true);
+		case ShortcutAction::redo: return stageUndoRedo(true, true);
+		case ShortcutAction::save: if (!currentBgFile) return false; saveStageAll(); return true;
+		case ShortcutAction::nextStage: stepStage(1); return true;
+		case ShortcutAction::previousStage: stepStage(-1); return true;
+		default: return false;
+		}
+	});
 }
 
 MainFrame::~MainFrame()
 {
+	authoring::SaveSettings();
+	clearStage();
 	ImGui::SaveIniSettingsToDisk(ImGui::GetCurrentContext()->IO.IniFilename);
 }
 
@@ -50,8 +91,13 @@ void MainFrame::Draw()
 	DrawUi();
 	DrawBack();
 	ImGui::Render();
-	
+
 	ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
+	ProcessStartupArgs();
+
+	// Detached windows (ImGui platform windows) render through the same GL
+	// context, each with its own DC; the main window is current again after.
+	WorkspaceViewports::RenderSecondaryWindows();
 
 	SwapBuffers(context->dc);
 
@@ -61,521 +107,14 @@ void MainFrame::Draw()
 	memcpy(gSettings.color, clearColor, sizeof(float)*3);
 }
 
-void MainFrame::DrawPresetEffectMarkers(FrameState& state, CharacterInstance* character)
-{
-	if (!state.vizSettings.showPresetEffects) return;
-
-	// Get ImGui draw list for overlay
-	ImDrawList* drawList = ImGui::GetBackgroundDrawList();
-
-	// Iterate through active spawns or spawned patterns
-	bool useActiveSpawns = state.animating && !state.activeSpawns.empty();
-	size_t count = useActiveSpawns ? state.activeSpawns.size() : state.spawnedPatterns.size();
-
-	for (size_t i = 0; i < count; i++) {
-		// Get spawn info
-		bool isPreset;
-		int offsetX, offsetY, presetNumber;
-		int spawnFrame, spawnTick;
-
-		if (useActiveSpawns) {
-			auto& spawn = state.activeSpawns[i];
-			if (!spawn.isPresetEffect) continue;
-			isPreset = true;
-			offsetX = spawn.offsetX;
-			offsetY = spawn.offsetY;
-			presetNumber = spawn.patternId;
-			spawnTick = spawn.spawnTick;
-
-			// Check if we're on the spawn tick (unless showing on all frames)
-			if (!state.vizSettings.presetEffectsAllFrames && state.currentTick != spawnTick) {
-				continue;
-			}
-		} else {
-			auto& spawn = state.spawnedPatterns[i];
-			if (!spawn.isPresetEffect || !spawn.visible) continue;
-			isPreset = true;
-			offsetX = spawn.offsetX;
-			offsetY = spawn.offsetY;
-			presetNumber = spawn.patternId;
-			spawnFrame = spawn.parentFrame;
-
-			// Check if we're on the spawn frame (unless showing on all frames)
-			if (!state.vizSettings.presetEffectsAllFrames && state.frame != spawnFrame) {
-				continue;
-			}
-		}
-
-		// Convert game coordinates to screen coordinates
-		// offsetX/offsetY are in game space units (same as render.x/y)
-		// render.x/y formula: (character->renderX + clientRect.x/2) / render.scale
-		// So to go back: screenX = character->renderX + clientRect.x/2 + offsetX * render.scale
-		float screenX = character->renderX + clientRect.x / 2 + offsetX * render.scale;
-		float screenY = character->renderY + clientRect.y / 2 + offsetY * render.scale;
-
-		// Draw crosshair
-		float size = 15.0f;
-		ImU32 color = IM_COL32(255, 128, 0, 255);  // Orange
-		float thickness = 2.0f;
-
-		ImVec2 center(screenX, screenY);
-
-		// Horizontal line
-		drawList->AddLine(
-			ImVec2(center.x - size, center.y),
-			ImVec2(center.x + size, center.y),
-			color, thickness);
-
-		// Vertical line
-		drawList->AddLine(
-			ImVec2(center.x, center.y - size),
-			ImVec2(center.x, center.y + size),
-			color, thickness);
-
-		// Center circle
-		drawList->AddCircleFilled(center, 3.0f, color);
-
-		// Label with preset name (if labels enabled)
-		if (state.vizSettings.showLabels) {
-			const char* presetName = GetPresetEffectName(presetNumber);
-			char label[64];
-			snprintf(label, sizeof(label), "%s [%d]", presetName, presetNumber);
-			drawList->AddText(
-				ImVec2(center.x + size + 5, center.y - 8),
-				color, label);
-		}
-	}
-}
-
-void MainFrame::DrawBack()
-{
-	render.filter = smoothRender;
-	glClearColor(clearColor[0], clearColor[1], clearColor[2], 1.f);
-	glClear(GL_COLOR_BUFFER_BIT |  GL_DEPTH_BUFFER_BIT);
-
-	auto* active = getActiveCharacter();
-	if (active) {
-		render.x = (active->renderX + clientRect.x/2) / render.scale;
-		render.y = (active->renderY + clientRect.y/2) / render.scale;
-	}
-
-	auto* view = getActiveView();
-
-	// Check if we need to draw with spawned patterns
-	bool hasSpawnedPatterns = false;
-	if (view && active) {
-		auto& state = view->getState();
-		hasSpawnedPatterns = state.vizSettings.showSpawnedPatterns && !state.spawnedPatterns.empty();
-	}
-
-	if (hasSpawnedPatterns && view && active) {
-		// Draw everything as layers (main + spawned) in Z-order
-		auto& state = view->getState();
-
-		// First draw grid lines only
-		render.DrawGridLines();
-
-		// Get current main pattern sequence
-		auto mainSeq = active->frameData.get_sequence(state.pattern);
-		if (!mainSeq || mainSeq->frames.empty()) return;
-		auto& mainFrame = mainSeq->frames[state.frame];
-
-		render.ClearLayers();
-
-		// Add main pattern layers (support UNI multi-layer AFGX)
-		if (mainFrame.AF.layers.empty()) {
-			mainFrame.AF.layers.push_back({});  // Ensure at least one layer exists for MBAACC
-		}
-
-		// Loop through all layers in the frame (UNI multi-layer support)
-		for (size_t layerIndex = 0; layerIndex < mainFrame.AF.layers.size(); layerIndex++) {
-			const auto& mainLayer_data = mainFrame.AF.layers[layerIndex];
-
-			RenderLayer mainLayer;
-			// Layer 0: use UI-selected sprite (state.spriteId) for editor compatibility
-			// Layers 1+: use sprite from layer data (for UNI multi-layer)
-			mainLayer.spriteId = (layerIndex == 0) ? state.spriteId : mainLayer_data.spriteId;
-			mainLayer.spawnOffsetX = 0;
-			mainLayer.spawnOffsetY = 0;
-			mainLayer.frameOffsetX = mainLayer_data.offset_x;
-			mainLayer.frameOffsetY = mainLayer_data.offset_y;
-			mainLayer.scaleX = mainLayer_data.scale[0];
-			mainLayer.scaleY = mainLayer_data.scale[1];
-			mainLayer.rotX = mainLayer_data.rotation[0];
-			mainLayer.rotY = mainLayer_data.rotation[1];
-			mainLayer.rotZ = mainLayer_data.rotation[2];
-			mainLayer.AFRT = mainFrame.AF.AFRT;
-			mainLayer.blendMode = mainLayer_data.blend_mode;
-			mainLayer.zPriority = mainFrame.AF.priority;
-			mainLayer.alpha = mainLayer_data.rgba[3];  // Apply frame alpha
-			mainLayer.tintColor = glm::vec4(mainLayer_data.rgba[0], mainLayer_data.rgba[1], mainLayer_data.rgba[2], 1.0f);  // Apply frame RGB
-			mainLayer.isSpawned = false;
-			mainLayer.hitboxes = (layerIndex == 0) ? mainFrame.hitboxes : BoxList();  // Only layer 0 gets hitboxes
-			mainLayer.sourceCG = &active->cg;  // Main pattern uses character CG
-			mainLayer.usePat = mainLayer_data.usePat;  // Copy PAT rendering flag from layer data
-			mainLayer.sourceParts = &active->parts;  // Main pattern uses character Parts
-			render.AddLayer(mainLayer);
-		}
-
-		// Save reference to main pattern's layer 0 for inherited rotation (spawns may need it)
-		const auto& mainLayer0Data = mainFrame.AF.layers[0];
-
-		// Build render layers for spawned patterns
-		// Use activeSpawns during animation OR when seeking (handles looping correctly)
-		// When seeking, activeSpawns is populated by SimulateSpawnsToTick in box_pane.cpp
-		// IMPORTANT: Use activeSpawns if it has entries (either from animation or seeking)
-		bool useActiveSpawns = state.animating || !state.activeSpawns.empty();
-		auto& spawnsToRender = useActiveSpawns ?
-			reinterpret_cast<std::vector<ActiveSpawnInstance>&>(state.activeSpawns) :
-			reinterpret_cast<std::vector<ActiveSpawnInstance>&>(state.spawnedPatterns);
-
-		for (size_t i = 0; i < (useActiveSpawns ? state.activeSpawns.size() : state.spawnedPatterns.size()); i++) {
-			// Get spawn info from appropriate source
-			ActiveSpawnInstance spawnInfo;
-
-			if (useActiveSpawns) {
-				spawnInfo = state.activeSpawns[i];
-			} else {
-				// Convert SpawnedPatternInfo to ActiveSpawnInstance for rendering
-				auto& staticSpawn = state.spawnedPatterns[i];
-				if (!staticSpawn.visible) continue;
-
-				spawnInfo.spawnTick = staticSpawn.spawnTick;
-				spawnInfo.patternId = staticSpawn.patternId;
-				spawnInfo.usesEffectHA6 = staticSpawn.usesEffectHA6;
-				spawnInfo.isPresetEffect = staticSpawn.isPresetEffect;
-				spawnInfo.offsetX = staticSpawn.offsetX;
-				spawnInfo.offsetY = staticSpawn.offsetY;
-				spawnInfo.flagset1 = staticSpawn.flagset1;
-				spawnInfo.flagset2 = staticSpawn.flagset2;
-				spawnInfo.angle = staticSpawn.angle;
-				spawnInfo.projVarDecrease = staticSpawn.projVarDecrease;
-				spawnInfo.tintColor = state.vizSettings.enableTint ? staticSpawn.tintColor : glm::vec4(1.0f, 1.0f, 1.0f, 1.0f);
-				spawnInfo.alpha = staticSpawn.alpha;
-			}
-
-			// Check if this is a preset effect (Effect Type 3)
-			if (spawnInfo.isPresetEffect) {
-				// Render crosshair marker for preset effects (not pattern-based)
-				if (state.vizSettings.showPresetEffects) {
-					// TODO: Draw crosshair at (spawnInfo.offsetX, spawnInfo.offsetY)
-					// Preset number: spawnInfo.patternId
-					// For now, skip rendering (will be implemented below)
-				}
-				continue;  // Skip pattern loading for preset effects
-			}
-
-			// Determine which character to pull pattern from
-			FrameData* sourceFrameData;
-			CG* sourceCG;
-			Parts* sourceParts;
-
-			if (spawnInfo.usesEffectHA6) {
-				// Type 8: Effect spawn - ALWAYS use effectCharacter if loaded
-				// effectCharacter contains either MBAACC's effect.ha6/effect.cg or UNI's effect.ha6/sys_effect.pat
-				if (active->effectCharacter) {
-					// Use effect.ha6 data (both MBAACC and UNI)
-					sourceFrameData = &active->effectCharacter->frameData;
-					sourceCG = &active->effectCharacter->cg;
-					sourceParts = &active->effectCharacter->parts;
-				} else {
-					// Fallback: no effect.ha6 loaded - use main character
-					static bool warned = false;
-					if (!warned) {
-						printf("[Warning] Type 8 spawn detected but no effect.ha6 loaded for %s - using main character as fallback\n",
-							active->getName().c_str());
-						warned = true;
-					}
-					sourceFrameData = &active->frameData;
-					sourceCG = &active->cg;
-					sourceParts = &active->parts;
-				}
-			} else {
-				// Type 1/11/101/111/1000: Pull from main character
-				sourceFrameData = &active->frameData;
-				sourceCG = &active->cg;
-				sourceParts = &active->parts;
-			}
-
-			// Get the spawned pattern's sequence from appropriate source
-			auto spawnedSeq = sourceFrameData->get_sequence(spawnInfo.patternId);
-			if (!spawnedSeq || spawnedSeq->frames.empty()) continue;
-
-			// Calculate which frame to display
-			// When animating with activeSpawns: use currentFrame (respects aniType 2 loops/jumps)
-			// When paused with spawnedPatterns: calculate from ticks (for seeking)
-			int localFrame = 0;
-
-			if (useActiveSpawns) {
-				// Use currentFrame directly (advanced by animation logic in main_ui_impl.h)
-				localFrame = spawnInfo.currentFrame;
-
-				// Skip if frame is invalid (pattern has ended)
-				if (localFrame < 0 || localFrame >= spawnedSeq->frames.size()) {
-					continue;
-				}
-			} else {
-				// Static spawn from spawnedPatterns - calculate frame from ticks for seeking
-				// Check if current frame (via simulation) matches the spawn frame
-				
-				// Get main pattern to check if it loops
-				auto mainSeq = active->frameData.get_sequence(state.pattern);
-				bool mainPatternLoops = false;
-				int mainPatternLoopPeriod = 0;
-				
-				if (mainSeq && !mainSeq->frames.empty()) {
-					auto& lastFrame = mainSeq->frames.back();
-					mainPatternLoops = (lastFrame.AF.aniType == 2);
-					
-					// Calculate loop period if looping
-					if (mainPatternLoops) {
-						mainPatternLoopPeriod = FindLoopPeriod(&active->frameData, state.pattern);
-						if (mainPatternLoopPeriod == 0) {
-							// Fallback: calculate total duration
-							for (int i = 0; i < mainSeq->frames.size(); i++) {
-								mainPatternLoopPeriod += mainSeq->frames[i].AF.duration;
-							}
-							if (mainPatternLoopPeriod == 0) {
-								mainPatternLoopPeriod = mainSeq->frames.size() * 10; // Fallback estimate
-							}
-						}
-					}
-				}
-				
-				// Get the current frame via simulation
-				int currentFrame = SimulateAnimationFlow(&active->frameData, state.pattern, state.currentTick);
-				
-				// Get the spawn frame from the static spawn info
-				// We need to find which frame in the pattern spawned this
-				// The spawn tree records absoluteSpawnFrame, but we need the relative frame
-				int spawnFrame = -1;
-				if (mainSeq) {
-					// Find the frame that has this spawn effect
-					for (int i = 0; i < mainSeq->frames.size(); i++) {
-						if (!mainSeq->frames[i].EF.empty()) {
-							auto frameSpawns = ParseSpawnedPatterns(mainSeq->frames[i].EF, i, state.pattern);
-							for (const auto& fs : frameSpawns) {
-								if (fs.patternId == spawnInfo.patternId && 
-								    fs.usesEffectHA6 == spawnInfo.usesEffectHA6 &&
-								    fs.effectType == static_cast<int>(spawnInfo.isPresetEffect ? 3 : 1)) {
-									spawnFrame = i;
-									break;
-								}
-							}
-							if (spawnFrame >= 0) break;
-						}
-					}
-				}
-				
-				// Check if we're at the spawn frame (including loop iterations)
-				bool isAtSpawnFrame = false;
-				int effectiveSpawnTick = spawnInfo.spawnTick;
-				
-				if (spawnFrame >= 0) {
-					// Check if current frame matches spawn frame
-					isAtSpawnFrame = (currentFrame == spawnFrame);
-					
-					// If looping, also check if we're at the spawn frame in a loop iteration
-					if (mainPatternLoops && mainPatternLoopPeriod > 0 && !isAtSpawnFrame) {
-						// Check if tick modulo loop period puts us at spawn frame
-						int tickInLoop = state.currentTick % mainPatternLoopPeriod;
-						int spawnTickInLoop = spawnInfo.spawnTick % mainPatternLoopPeriod;
-						int frameAtSpawnTickInLoop = SimulateAnimationFlow(&active->frameData, state.pattern, spawnTickInLoop);
-						
-						if (frameAtSpawnTickInLoop == spawnFrame) {
-							// Check if current tick in loop matches spawn tick in loop
-							int frameAtCurrentTickInLoop = SimulateAnimationFlow(&active->frameData, state.pattern, tickInLoop);
-							isAtSpawnFrame = (frameAtCurrentTickInLoop == spawnFrame);
-							
-							if (isAtSpawnFrame) {
-								// Calculate effective spawn tick for this loop iteration
-								effectiveSpawnTick = (state.currentTick / mainPatternLoopPeriod) * mainPatternLoopPeriod + spawnTickInLoop;
-							}
-						}
-					}
-				} else {
-					// Fallback: use tick-based matching
-					if (mainPatternLoops && mainPatternLoopPeriod > 0) {
-						int tickInLoop = state.currentTick % mainPatternLoopPeriod;
-						isAtSpawnFrame = (tickInLoop == spawnInfo.spawnTick % mainPatternLoopPeriod);
-						effectiveSpawnTick = (state.currentTick / mainPatternLoopPeriod) * mainPatternLoopPeriod + (spawnInfo.spawnTick % mainPatternLoopPeriod);
-					} else {
-						isAtSpawnFrame = (state.currentTick == spawnInfo.spawnTick);
-					}
-				}
-				
-				int elapsedTicks = state.currentTick - effectiveSpawnTick;
-
-				// Check if spawned pattern should be visible
-				if (!isAtSpawnFrame && elapsedTicks < 0) {
-					// Before spawn tick - don't show
-					continue;
-				}
-
-				// Calculate total pattern duration and check for looping
-				int totalDuration = 0;
-				for (int i = 0; i < spawnedSeq->frames.size(); i++) {
-					int dur = spawnedSeq->frames[i].AF.duration;
-					// Safety: treat duration 0 as 1 to avoid infinite loops
-					totalDuration += (dur > 0 ? dur : 1);
-				}
-
-				// Check if pattern should loop
-				bool isLooping = false;
-				if (!spawnedSeq->frames.empty()) {
-					auto& lastFrame = spawnedSeq->frames.back();
-					isLooping = (lastFrame.AF.aniType == 2);
-				}
-
-				// Check if pattern has ended (non-looping)
-				if (!isLooping && elapsedTicks >= totalDuration) {
-					// Pattern finished, don't show
-					continue;
-				}
-
-				// Handle looping by wrapping elapsed ticks
-				int effectiveTicks = isLooping ? (elapsedTicks % totalDuration) : elapsedTicks;
-				if (effectiveTicks < 0) effectiveTicks = 0; // Safety
-
-				// Use flow simulation to find frame (handles loops/jumps properly)
-				localFrame = SimulateAnimationFlow(sourceFrameData, spawnInfo.patternId, effectiveTicks);
-			}
-
-			auto& spawnedFrame = spawnedSeq->frames[localFrame];
-
-			// Ensure spawned frame has at least one layer
-			if (spawnedFrame.AF.layers.empty()) {
-				spawnedFrame.AF.layers.push_back({});
-			}
-
-			// Loop through all layers in spawned frame (UNI multi-layer support)
-			for (size_t spawnLayerIndex = 0; spawnLayerIndex < spawnedFrame.AF.layers.size(); spawnLayerIndex++) {
-				const auto& spawnedLayer_data = spawnedFrame.AF.layers[spawnLayerIndex];
-
-				// Create render layer with all frame data
-				RenderLayer layer;
-				layer.spriteId = spawnedLayer_data.spriteId;
-				layer.spawnOffsetX = spawnInfo.offsetX;
-				layer.spawnOffsetY = spawnInfo.offsetY;
-				layer.frameOffsetX = spawnedLayer_data.offset_x;
-				layer.frameOffsetY = spawnedLayer_data.offset_y;
-				layer.scaleX = spawnedLayer_data.scale[0];
-				layer.scaleY = spawnedLayer_data.scale[1];
-				layer.rotX = spawnedLayer_data.rotation[0];
-				layer.rotY = spawnedLayer_data.rotation[1];
-				layer.rotZ = spawnedLayer_data.rotation[2];
-				layer.AFRT = spawnedFrame.AF.AFRT;
-
-				// Apply spawn rotation parameter (angle)
-				// Rotation format: 0=0°, 2500=90°, 5000=180°, 10000=360°
-				float spawnRotation = spawnInfo.angle / 10000.0f;
-				layer.rotZ += spawnRotation;
-
-				// Apply flip facing flag (bit 11 of flagset1)
-				if (spawnInfo.flagset1 & (1 << 11)) {
-					layer.scaleX *= -1.0f;
-					layer.spawnOffsetX *= -1;  // Reverse X coordinate when flip facing (fixes #69)
-				}
-
-				// Apply inherit parent rotation flag (bit 8 of flagset1)
-				// Inherit from parent pattern's layer 0 (mainLayer0Data)
-				if (spawnInfo.flagset1 & (1 << 8)) {
-					layer.rotX += mainLayer0Data.rotation[0];
-					layer.rotY += mainLayer0Data.rotation[1];
-					layer.rotZ += mainLayer0Data.rotation[2];
-				}
-
-				layer.blendMode = spawnedLayer_data.blend_mode;
-				// Use persistent z-priority from spawn instance (ZP=0 means "keep current")
-				// When animating, use currentZPriority (updated only when frame has non-zero ZP)
-				// When paused/seeking, use frame's priority directly
-				layer.zPriority = useActiveSpawns ? spawnInfo.currentZPriority : spawnedFrame.AF.priority;
-				// Apply frame RGBA, then visualization alpha
-				layer.alpha = spawnedLayer_data.rgba[3] * spawnInfo.alpha * state.vizSettings.spawnedOpacity;
-				// Multiply frame RGB with visualization tint
-				layer.tintColor = glm::vec4(
-					spawnedLayer_data.rgba[0] * spawnInfo.tintColor.r,
-					spawnedLayer_data.rgba[1] * spawnInfo.tintColor.g,
-					spawnedLayer_data.rgba[2] * spawnInfo.tintColor.b,
-					1.0f);
-				layer.isSpawned = true;
-				layer.hitboxes = (spawnLayerIndex == 0) ? spawnedFrame.hitboxes : BoxList();  // Only layer 0 gets hitboxes
-				layer.sourceCG = sourceCG;  // Use appropriate CG (character or effect.ha6)
-				layer.usePat = spawnedLayer_data.usePat;  // Copy PAT rendering flag
-				layer.sourceParts = sourceParts;  // Use appropriate Parts (character or effect.pat)
-				layer.spawnFlagset1 = spawnInfo.flagset1;
-				layer.spawnFlagset2 = spawnInfo.flagset2;
-
-				render.AddLayer(layer);
-			}
-		}
-
-		// Sort all layers (including main) by Z-priority before drawing
-		render.SortLayersByZPriority(mainFrame.AF.priority);
-
-		// Draw all layers in Z-order
-		render.DrawLayers();
-
-		// Draw preset effect crosshairs (Effect Type 3) as overlay
-		DrawPresetEffectMarkers(state, active);
-	}
-	else if (view && active) {
-		// Normal draw without spawned patterns - use multi-layer rendering for UNI support
-		auto& state = view->getState();
-
-		// First draw grid lines only
-		render.DrawGridLines();
-
-		// Get current main pattern sequence
-		auto mainSeq = active->frameData.get_sequence(state.pattern);
-		if (!mainSeq || mainSeq->frames.empty()) return;
-		auto& mainFrame = mainSeq->frames[state.frame];
-
-		render.ClearLayers();
-
-		// Add main pattern layers (support UNI multi-layer AFGX)
-		if (mainFrame.AF.layers.empty()) {
-			mainFrame.AF.layers.push_back({});  // Ensure at least one layer exists for MBAACC
-		}
-
-		// Loop through all layers in the frame (UNI multi-layer support)
-		for (size_t layerIndex = 0; layerIndex < mainFrame.AF.layers.size(); layerIndex++) {
-			const auto& mainLayer_data = mainFrame.AF.layers[layerIndex];
-
-			RenderLayer mainLayer;
-			// Layer 0: use UI-selected sprite (state.spriteId) for editor compatibility
-			// Layers 1+: use sprite from layer data (for UNI multi-layer)
-			mainLayer.spriteId = (layerIndex == 0) ? state.spriteId : mainLayer_data.spriteId;
-			mainLayer.spawnOffsetX = 0;
-			mainLayer.spawnOffsetY = 0;
-			mainLayer.frameOffsetX = mainLayer_data.offset_x;
-			mainLayer.frameOffsetY = mainLayer_data.offset_y;
-			mainLayer.scaleX = mainLayer_data.scale[0];
-			mainLayer.scaleY = mainLayer_data.scale[1];
-			mainLayer.rotX = mainLayer_data.rotation[0];
-			mainLayer.rotY = mainLayer_data.rotation[1];
-			mainLayer.rotZ = mainLayer_data.rotation[2];
-			mainLayer.AFRT = mainFrame.AF.AFRT;
-			mainLayer.blendMode = mainLayer_data.blend_mode;
-			mainLayer.zPriority = mainFrame.AF.priority;
-			mainLayer.alpha = mainLayer_data.rgba[3];  // Apply frame alpha
-			mainLayer.tintColor = glm::vec4(mainLayer_data.rgba[0], mainLayer_data.rgba[1], mainLayer_data.rgba[2], 1.0f);  // Apply frame RGB
-			mainLayer.isSpawned = false;
-			mainLayer.hitboxes = (layerIndex == 0) ? mainFrame.hitboxes : BoxList();  // Only layer 0 gets hitboxes
-			mainLayer.sourceCG = &active->cg;  // Main pattern uses character CG
-			mainLayer.usePat = mainLayer_data.usePat;  // Copy PAT rendering flag from layer data
-			mainLayer.sourceParts = &active->parts;  // Main pattern uses character Parts
-			render.AddLayer(mainLayer);
-		}
-
-		// Sort and draw all layers
-		render.SortLayersByZPriority(mainFrame.AF.priority);
-		render.DrawLayers();
-
-		// Draw preset effect crosshairs
-		DrawPresetEffectMarkers(state, active);
-	}
-}
+// ============================================================================
+// Per-view scene rendering (render targets, onion skin, detached views, PNG
+// export) - see ui/view_render_impl.h and docs/HANTEI_WAVE2.md
+// ============================================================================
+#include "ui/view_render_impl.h"
+#include "ui/workspace_hosts_impl.h"
+#include "ui/png_export_impl.h"
+#include "ui/package_tools_impl.h"
 
 
 // ============================================================================
@@ -587,6 +126,12 @@ void MainFrame::DrawBack()
 // Menu Implementation - extracted to ui/main_menu_impl.h
 // ============================================================================
 #include "ui/main_menu_impl.h"
+
+// ============================================================================
+// Editing tools (shortcuts, undo/redo, J/K/L, box-drag undo, position tool)
+// ============================================================================
+#include "ui/editor_tools_impl.h"
+#include "ui/tool_windows_impl.h"
 
 
 void MainFrame::WarmStyle()
@@ -684,6 +229,17 @@ const CharacterInstance* MainFrame::getActiveCharacter() const
 void MainFrame::setActiveView(int index)
 {
 	if (index >= 0 && index < views.size()) {
+		// A view in a detached window is shown there: select its tab and
+		// raise that window instead of taking over the main window.
+		const uint64_t viewId = views[index]->getId();
+		const auto owner = m_session.owner(viewId);
+		if (owner && *owner != WorkspaceSession::MainHost) {
+			m_session.select(*owner, viewId);
+			m_focusHostRequest = *owner;
+			return;
+		}
+		if (!owner) m_session.add(viewId, WorkspaceSession::MainHost, true);
+		else m_session.select(WorkspaceSession::MainHost, viewId);
 		activeViewIndex = index;
 
 		// Update render state to use this view's character and settings
@@ -693,7 +249,7 @@ void MainFrame::setActiveView(int index)
 			if (character) {
 				// Update CG reference (this resets curImageId)
 				render.SetCg(&character->cg);
-				
+
 				// Set Parts if this view has them loaded (PAT editor or character with PAT)
 				// SetParts internally handles texture clearing when switching between Parts/CG
 				if (character->parts.loaded) {
@@ -702,11 +258,32 @@ void MainFrame::setActiveView(int index)
 					render.SetParts(nullptr);  // Clear Parts for non-PAT views
 				}
 			}
-			
+
 			// Restore this view's zoom level
 			float viewZoom = view->getZoom();
 			render.scale = viewZoom;
 			zoom_idx = viewZoom;  // Update UI slider
+
+			// Point the background renderer at this view's stage (if any).
+			// currentBgFile mirrors the active tab's stage so the Stage menu
+			// and Background Inspector keep working transparently.
+			if (view->isStageView()) {
+				currentBgFile = view->getStageFile();
+				bgRenderer.SetFile(currentBgFile);
+				bgRenderer.SetEnabled(true);
+				// Apply stored pan from the view into bgCamera (the source
+				// of truth) and mirror into render.x/y so the very first
+				// DrawBackground call this frame uses correct coords.
+				bgCamera.SetPan(view->getStageRenderX(),
+				                view->getStageRenderY());
+				bgCamera.camInit = false;   // a tab switch is not a pan: keep the game camera
+				render.x = bgCamera.panLastX;
+				render.y = bgCamera.panLastY;
+			} else {
+				currentBgFile = nullptr;
+				bgRenderer.SetFile(nullptr);
+				bgRenderer.SetEnabled(false);
+			}
 		}
 	}
 }
@@ -743,6 +320,38 @@ void MainFrame::createViewForCharacter(CharacterInstance* character)
 	view->setViewNumber(viewNumber);
 	views.push_back(std::move(view));
 	setActiveView(views.size() - 1);
+}
+
+bool MainFrame::reopenClosedTab()
+{
+	while (!m_closedTabs.empty()) {
+		ClosedTab t = m_closedTabs.back();
+		m_closedTabs.pop_back();
+		CharacterInstance* character = findCharacterByPath(t.path);
+		if (!character) {
+			auto loaded = std::make_unique<CharacterInstance>();
+			const bool ok = t.isTxt ? loaded->loadFromTxt(t.path) : loaded->loadHA6(t.path, false);
+			if (!ok) continue;
+			character = loaded.get();
+			characters.push_back(std::move(loaded));
+		}
+		createViewForCharacter(character);
+		markProjectModified();
+		if (auto* view = getActiveView()) {
+			auto& st = view->getState();
+			st.pattern = t.pattern;
+			st.frame = t.frame;
+			Sequence* seq = character->frameData.get_sequence(st.pattern);
+			if (!seq) st.pattern = 0;
+			seq = character->frameData.get_sequence(st.pattern);
+			const int frames = seq ? (int)seq->frames.size() : 0;
+			if (st.frame >= frames) st.frame = frames > 0 ? frames - 1 : 0;
+			st.currentTick = frames > 0 ? CalculateTickFromFrame(&character->frameData, st.pattern, st.frame) : 0;
+			if (view->getMainPane()) view->getMainPane()->RegenerateNames();
+		}
+		return true;
+	}
+	return false;
 }
 
 void MainFrame::createPatEditorView(const std::string& patPath)
@@ -811,6 +420,22 @@ void MainFrame::closeView(int index)
 	if (index >= 0 && index < views.size()) {
 		auto* view = views[index].get();
 		auto* character = view->getCharacter();
+		const uint64_t view_id = view->getId();
+		if (m_reverseView == view) m_reverseView = nullptr;
+
+		// Remember it for Reopen closed tab (issue #61). Only views whose
+		// character can be loaded again from a file.
+		if (character && !view->isStageView() && !view->isPatEditor()) {
+			ClosedTab t;
+			t.path = !character->getTxtPath().empty() ? character->getTxtPath() : character->getTopHA6Path();
+			t.isTxt = !character->getTxtPath().empty();
+			t.pattern = view->getState().pattern;
+			t.frame = view->getState().frame;
+			if (!t.path.empty()) {
+				m_closedTabs.push_back(t);
+				if (m_closedTabs.size() > 10) m_closedTabs.erase(m_closedTabs.begin());
+			}
+		}
 
 		// Remove the view
 		views.erase(views.begin() + index);
@@ -826,8 +451,11 @@ void MainFrame::closeView(int index)
 			}
 		}
 
-		// Update active index
-		if (views.empty()) {
+		// Update active index: the main window shows its own next tab.
+		m_session.close(view_id);
+		if (const auto* mainHost = m_session.host(WorkspaceSession::MainHost))
+			activeViewIndex = findViewIndexById(mainHost->active);
+		if (views.empty() || activeViewIndex < 0) {
 			activeViewIndex = -1;
 
 			// Clear the render system
@@ -836,10 +464,6 @@ void MainFrame::closeView(int index)
 			render.SetCg(nullptr);
 			render.SetParts(nullptr);
 		} else {
-			// Select previous view, or first if we closed the first one
-			if (activeViewIndex >= views.size()) {
-				activeViewIndex = views.size() - 1;
-			}
 			setActiveView(activeViewIndex);
 		}
 	}
@@ -876,21 +500,57 @@ void MainFrame::markProjectModified()
 	updateWindowTitle();
 }
 
-void MainFrame::newProject()
+void MainFrame::requestErrorPopup(const char* popupName, const std::string& detail)
 {
-	// Check for unsaved changes (only if not already handling a close action)
-	if (m_projectCloseAction != ProjectCloseAction::New) {
-		m_projectCloseAction = ProjectCloseAction::New;
-		if (!tryCloseProject()) {
-			return; // Dialog will handle the action
+	m_pendingErrorPopup = popupName;
+	m_errorDetail = detail;
+}
+
+bool MainFrame::saveCharacter(CharacterInstance* character)
+{
+	if (!character) return false;
+	if (character->save()) return true;
+	const std::string& path = character->getTopHA6Path();
+	if (character->frameData.isHA4() && !ha4::LastSaveError().empty()) {
+		requestErrorPopup("Save Error", "MBAC .DAT not saved: " + ha4::LastSaveError());
+		return false;
+	}
+	requestErrorPopup("Save Error", path.empty()
+		? "Character '" + character->getName() + "' has no HA6 file to save to. Use Save Character As."
+		: "Could not write " + path);
+	return false;
+}
+
+bool MainFrame::saveCharacterAs(CharacterInstance* character, const std::string& path)
+{
+	if (!character) return false;
+	if (character->saveAs(path)) return true;
+	requestErrorPopup("Save Error", "Could not write " + path);
+	return false;
+}
+
+bool MainFrame::saveAllModifiedCharacters()
+{
+	for (auto& character : characters) {
+		if (character->isModified() && !saveCharacter(character.get())) {
+			return false;
 		}
 	}
-	m_projectCloseAction = ProjectCloseAction::None;
+	return true;
+}
 
-	// Clear all views and characters
+void MainFrame::clearProjectState()
+{
+	m_session.clear();
+	m_hosts.clear();
+	m_nextHostId = 1;
+	m_reverseView = nullptr;
 	views.clear();
 	characters.clear();
 	activeViewIndex = -1;
+	pendingCloseViewIndex = -1;
+
+	// Clear the render system
 	render.DontDraw();
 	render.ClearTexture();
 	render.SetCg(nullptr);
@@ -901,51 +561,147 @@ void MainFrame::newProject()
 	updateWindowTitle();
 }
 
-void MainFrame::openProject()
+void MainFrame::requestProjectAction(ProjectCloseAction action, const std::string& path, bool confirmed)
 {
-	// Check for unsaved changes (only if not already handling a close action)
-	if (m_projectCloseAction != ProjectCloseAction::Open) {
-		m_projectCloseAction = ProjectCloseAction::Open;
+	m_deferredProjectAction = action;
+	m_deferredProjectPath = path;
+	m_deferredProjectConfirmed = confirmed;
+}
+
+void MainFrame::processDeferredProjectAction()
+{
+	if (m_deferredProjectAction == ProjectCloseAction::None) {
+		return;
+	}
+	ProjectCloseAction action = m_deferredProjectAction;
+	std::string path = std::move(m_deferredProjectPath);
+	bool confirmed = m_deferredProjectConfirmed;
+	m_deferredProjectAction = ProjectCloseAction::None;
+	m_deferredProjectPath.clear();
+	m_deferredProjectConfirmed = false;
+	runProjectAction(action, path, confirmed);
+}
+
+void MainFrame::runProjectAction(ProjectCloseAction action, const std::string& path, bool confirmed)
+{
+	// Ask about unsaved changes first; the dialog re-queues this action
+	// (with the same path) as confirmed.
+	if (!confirmed) {
+		m_projectCloseAction = action;
+		m_pendingProjectPath = path;
 		if (!tryCloseProject()) {
-			return; // Dialog will handle the action
+			return;
 		}
 	}
 	m_projectCloseAction = ProjectCloseAction::None;
+	m_pendingProjectPath.clear();
 
-	std::string path = FileDialog(fileType::HPROJ, false);
-	if (path.empty()) {
-		return;
+	switch (action) {
+		case ProjectCloseAction::New:
+		case ProjectCloseAction::Close:
+			clearProjectState();
+			break;
+		case ProjectCloseAction::Open:
+			if (path.empty()) {
+				std::string chosen = FileDialog(fileType::HPROJ, false);
+				if (!chosen.empty()) {
+					loadProjectFromPath(chosen, false);
+				}
+			} else {
+				loadProjectFromPath(path, true);
+			}
+			break;
+		default:
+			break;
 	}
+}
 
-	int loadedTheme;
-	float loadedZoom;
-	bool loadedSmooth;
-	float loadedColor[3];
+void MainFrame::loadProjectFromPath(const std::string& path, bool isRecent)
+{
+	int loadedTheme = style_idx;
+	float loadedZoom = zoom_idx;
+	bool loadedSmooth = smoothRender;
+	float loadedColor[3] = { clearColor[0], clearColor[1], clearColor[2] };
+	std::vector<std::string> failedCharacters;
 
-	if (ProjectManager::LoadProject(path, characters, views, activeViewIndex, &render,
-	                                &loadedTheme, &loadedZoom, &loadedSmooth, loadedColor))
+	// LoadProject builds the new project off to the side and only replaces
+	// characters/views when the file parsed; on failure the current project
+	// is left untouched.
+	std::vector<std::unique_ptr<CharacterInstance>> newCharacters;
+	std::vector<std::unique_ptr<CharacterView>> newViews;
+	int newActiveView = -1;
+	std::string workspaceJson;
+	if (ProjectManager::LoadProject(path, newCharacters, newViews, newActiveView, &render,
+	                                &loadedTheme, &loadedZoom, &loadedSmooth, loadedColor,
+	                                &failedCharacters, &workspaceJson))
 	{
+		// Drop render references into the old project before it is destroyed.
+		render.DontDraw();
+		render.ClearTexture();
+		render.SetCg(nullptr);
+		render.SetParts(nullptr);
+		pendingCloseViewIndex = -1;
+
+		m_session.clear();
+		m_hosts.clear();
+		m_reverseView = nullptr;
+		views = std::move(newViews);
+		characters = std::move(newCharacters);
+		activeViewIndex = newActiveView;
+
 		// Apply loaded UI state
 		LoadTheme(loadedTheme);
 		SetZoom(loadedZoom);
 		smoothRender = loadedSmooth;
 		ChangeClearColor(loadedColor[0], loadedColor[1], loadedColor[2]);
 
-		// Set active view
-		if (activeViewIndex >= 0 && activeViewIndex < views.size()) {
+		// Set active view, then put tabs back into their windows.
+		if (activeViewIndex >= 0 && activeViewIndex < (int)views.size()) {
 			setActiveView(activeViewIndex);
 		}
+		RestoreWorkspace(workspaceJson);
 
 		// Effect loading is now automatic per-character in CharacterInstance::loadFromTxt()
 
 		ProjectManager::SetCurrentProjectPath(path);
-		m_projectModified = false;
+		// A partially loaded project must not look clean: saving it would drop
+		// the missing characters from the .hproj.
+		m_projectModified = !failedCharacters.empty();
 		addRecentProject(path);
 		updateWindowTitle();
+
+		if (!failedCharacters.empty()) {
+			std::string detail = "These characters could not be loaded and were skipped:\n";
+			for (const auto& f : failedCharacters) {
+				detail += "  " + f + "\n";
+			}
+			detail += "Saving the project now would remove them from it.";
+			requestErrorPopup("Project Load Error", detail);
+		}
 	} else {
-		// Show error popup
-		ImGui::OpenPopup("Project Load Error");
+		requestErrorPopup("Project Load Error", path);
+		if (isRecent) {
+			// Use normalized path comparison to find and remove the entry
+			std::string normalizedPath = normalizePath(path);
+			auto it = std::find_if(gSettings.recentProjects.begin(), gSettings.recentProjects.end(),
+				[&normalizedPath](const std::string& existing) {
+					return normalizePath(existing) == normalizedPath;
+				});
+			if (it != gSettings.recentProjects.end()) {
+				gSettings.recentProjects.erase(it);
+			}
+		}
 	}
+}
+
+void MainFrame::newProject()
+{
+	requestProjectAction(ProjectCloseAction::New, std::string(), false);
+}
+
+void MainFrame::openProject()
+{
+	requestProjectAction(ProjectCloseAction::Open, std::string(), false);
 }
 
 void MainFrame::saveProject()
@@ -957,12 +713,13 @@ void MainFrame::saveProject()
 
 	if (ProjectManager::SaveProject(ProjectManager::GetCurrentProjectPath(),
 	                                characters, views, activeViewIndex,
-	                                style_idx, zoom_idx, smoothRender, clearColor))
+	                                style_idx, zoom_idx, smoothRender, clearColor,
+	                                SerializeWorkspace()))
 	{
 		m_projectModified = false;
 		updateWindowTitle();
 	} else {
-		ImGui::OpenPopup("Project Save Error");
+		requestErrorPopup("Project Save Error", ProjectManager::GetCurrentProjectPath());
 	}
 }
 
@@ -979,42 +736,21 @@ void MainFrame::saveProjectAs()
 	}
 
 	if (ProjectManager::SaveProject(path, characters, views, activeViewIndex,
-	                                style_idx, zoom_idx, smoothRender, clearColor))
+	                                style_idx, zoom_idx, smoothRender, clearColor,
+	                                SerializeWorkspace()))
 	{
 		ProjectManager::SetCurrentProjectPath(path);
 		m_projectModified = false;
 		addRecentProject(path);
 		updateWindowTitle();
 	} else {
-		ImGui::OpenPopup("Project Save Error");
+		requestErrorPopup("Project Save Error", path);
 	}
 }
 
 void MainFrame::closeProject()
 {
-	// Check for unsaved changes (only if not already handling a close action)
-	if (m_projectCloseAction != ProjectCloseAction::Close) {
-		m_projectCloseAction = ProjectCloseAction::Close;
-		if (!tryCloseProject()) {
-			return; // Dialog will handle the action
-		}
-	}
-	m_projectCloseAction = ProjectCloseAction::None;
-
-	// Clear all views and characters
-	views.clear();
-	characters.clear();
-	activeViewIndex = -1;
-
-	// Clear the render system
-	render.DontDraw();
-	render.ClearTexture();
-	render.SetCg(nullptr);
-	render.SetParts(nullptr);
-
-	ProjectManager::ClearCurrentProjectPath();
-	m_projectModified = false;
-	updateWindowTitle();
+	requestProjectAction(ProjectCloseAction::Close, std::string(), false);
 }
 
 void MainFrame::updateWindowTitle()
@@ -1105,50 +841,215 @@ void MainFrame::addRecentProject(const std::string& path)
 
 void MainFrame::openRecentProject(const std::string& path)
 {
-	// Check for unsaved changes
-	m_projectCloseAction = ProjectCloseAction::Open;
-	if (!tryCloseProject()) {
-		return; // Dialog will handle the action
-	}
-	m_projectCloseAction = ProjectCloseAction::None;
+	// Deferred: the caller iterates gSettings.recentProjects, which a failed
+	// load modifies. The path is carried through the unsaved-changes prompt.
+	requestProjectAction(ProjectCloseAction::Open, path, false);
+}
 
-	int loadedTheme;
-	float loadedZoom;
-	bool loadedSmooth;
-	float loadedColor[3];
 
-	if (ProjectManager::LoadProject(path, characters, views, activeViewIndex, &render,
-	                                &loadedTheme, &loadedZoom, &loadedSmooth, loadedColor))
-	{
-		// Apply loaded UI state
-		LoadTheme(loadedTheme);
-		SetZoom(loadedZoom);
-		smoothRender = loadedSmooth;
-		ChangeClearColor(loadedColor[0], loadedColor[1], loadedColor[2]);
+// ---------------------------------------------------------------------------
+// Background (stage) load / clear. Each loaded stage becomes its own view
+// (tab) so it can be docked / undocked alongside character tabs and live in
+// its own viewport. currentBgFile mirrors the active tab's stage file so
+// existing menu items and the inspector keep working without knowing about
+// the view abstraction.
 
-		// Set active view
-		if (activeViewIndex >= 0 && activeViewIndex < views.size()) {
-			setActiveView(activeViewIndex);
-		}
+void MainFrame::loadStageFile(const std::string& path)
+{
+	auto file = std::make_unique<bg::File>();
+	if (!file->Load(path.c_str()))
+		return;
 
-		// Effect loading is now automatic per-character in CharacterInstance::loadFromTxt()
+	std::string displayName = path;
+	auto slash = displayName.find_last_of("/\\");
+	if (slash != std::string::npos) displayName = displayName.substr(slash + 1);
 
-		ProjectManager::SetCurrentProjectPath(path);
-		m_projectModified = false;
-		addRecentProject(path);
-		updateWindowTitle();
-	} else {
-		// Show error popup and remove from recent
-		ImGui::OpenPopup("Project Load Error");
-		// Use normalized path comparison to find and remove the entry
-		std::string normalizedPath = normalizePath(path);
-		auto it = std::find_if(gSettings.recentProjects.begin(), gSettings.recentProjects.end(),
-			[&normalizedPath](const std::string& existing) {
-				return normalizePath(existing) == normalizedPath;
-			});
-		if (it != gSettings.recentProjects.end()) {
-			gSettings.recentProjects.erase(it);
-		}
+	auto view = std::make_unique<CharacterView>(nullptr, &render);
+	view->setStageFile(std::move(file), displayName);
+
+	// Default the camera so world (0, 0) lands at u4ick's proportional
+	// character-feet anchor: 401/1280 across and 538/720 down of the
+	// viewport. That's where his SaveRender output puts character feet,
+	// and matches the 'fire at bottom near feet' layout the user sees in
+	// his tool. Diagnostics (Screenshot 2026-05) confirmed the underlying
+	// math is correct end-to-end — the only choice was where to put the
+	// initial anchor, and (0, 0) only matches u4ick's *uninteracted*
+	// default (everything off-screen until you drag).
+	float clientW = clientRect.x > 0 ? clientRect.x : 1280.0f;
+	float clientH = clientRect.y > 0 ? clientRect.y : 720.0f;
+	float defaultPanX = clientW * (401.0f / 1280.0f);
+	float defaultPanY = clientH * (538.0f / 720.0f);
+	view->setStageRenderXY(defaultPanX, defaultPanY);
+	view->setStageRenderInit(true);
+	bgCamera.SetPan(defaultPanX, defaultPanY);
+
+	views.push_back(std::move(view));
+	setActiveView((int)views.size() - 1);
+	// The stage list of the game this stage came from (browser, PageUp/Down).
+	if (!stageProject.IsOpen() || !stageProject.FindByDat(path))
+		stageProject.Open(path, currentBgFile ? currentBgFile->GetGame() : bg::Game::MBAACC);
+	if (stageProject.IsOpen()) {
+		gSettings.stageGameDir = stageProject.BgDir();
+		gSettings.stageGame = stageProject.GetGame() == bg::Game::MBAC ? 1 : 0;
 	}
 }
 
+void MainFrame::openStageInActiveTab(const std::string& path)
+{
+	CharacterView* view = getActiveView();
+	if (!view || !view->isStageView()) { loadStageFile(path); return; }
+	auto file = std::make_unique<bg::File>();
+	if (!file->Load(path.c_str())) return;
+	std::string displayName = path;
+	auto slash = displayName.find_last_of("/\\");
+	if (slash != std::string::npos) displayName = displayName.substr(slash + 1);
+	// Same tab, same camera: the view keeps its pan/zoom.
+	const float keepZoom = view->getZoom();
+	const bool keepInit = view->isStageRenderInit();
+	view->setStageFile(std::move(file), displayName);
+	view->setZoom(keepZoom);
+	view->setStageRenderInit(keepInit);
+	// The old bg::File is gone: repoint the renderer now (setActiveView can
+	// return early for a view shown in a detached window).
+	currentBgFile = view->getStageFile();
+	bgRenderer.SetFile(currentBgFile);
+	bgRenderer.SetEnabled(true);
+	if (!stageProject.IsOpen() || !stageProject.FindByDat(path))
+		stageProject.Open(path, currentBgFile ? currentBgFile->GetGame() : bg::Game::MBAACC);
+	if (stageProject.IsOpen()) {
+		gSettings.stageGameDir = stageProject.BgDir();
+		gSettings.stageGame = stageProject.GetGame() == bg::Game::MBAC ? 1 : 0;
+	}
+}
+
+void MainFrame::stepStage(int dir)
+{
+	if (!currentBgFile) return;
+	if (!stageProject.IsOpen()) stageProject.Open(currentBgFile->GetFilename(), currentBgFile->GetGame());
+	const bg::StageEntry* cur = stageProject.FindByDat(currentBgFile->GetFilename());
+	const bg::StageEntry* next = stageProject.Step(cur ? cur->id : -1, dir);
+	if (next && !next->datPath.empty()) openStageInActiveTab(next->datPath);
+}
+
+// One timeline for the two stage histories: undo takes the step with the
+// newest edit sequence; redo takes the most recently undone one, which is
+// the redo top with the lowest sequence.
+static int PickStageHistory(bool redo, bool fileCan, uint64_t fileSeq, bool projCan, uint64_t projSeq)
+{
+	if (!fileCan && !projCan) return 0;
+	if (!projCan) return 1;
+	if (!fileCan) return 2;
+	if (redo) return fileSeq <= projSeq ? 1 : 2;
+	return fileSeq >= projSeq ? 1 : 2;
+}
+
+bool MainFrame::stageUndoRedo(bool redo, bool apply)
+{
+	const bool fileCan = currentBgFile && (redo ? currentBgFile->CanRedo() : currentBgFile->CanUndo());
+	const bool projCan = stageProject.IsOpen() && (redo ? stageProject.CanRedo() : stageProject.CanUndo());
+	const uint64_t fileSeq = currentBgFile ? (redo ? currentBgFile->RedoSeq() : currentBgFile->UndoSeq()) : 0;
+	const uint64_t projSeq = redo ? stageProject.RedoSeq() : stageProject.UndoSeq();
+	const int pick = PickStageHistory(redo, fileCan, fileSeq, projCan, projSeq);
+	if (!pick) return false;
+	if (!apply) return true;
+	if (pick == 1) return redo ? currentBgFile->Redo() : currentBgFile->Undo();
+	return redo ? stageProject.Redo() : stageProject.Undo();
+}
+
+std::string MainFrame::stageUndoLabel(bool redo)
+{
+	const bool fileCan = currentBgFile && (redo ? currentBgFile->CanRedo() : currentBgFile->CanUndo());
+	const bool projCan = stageProject.IsOpen() && (redo ? stageProject.CanRedo() : stageProject.CanUndo());
+	const uint64_t fileSeq = currentBgFile ? (redo ? currentBgFile->RedoSeq() : currentBgFile->UndoSeq()) : 0;
+	const uint64_t projSeq = redo ? stageProject.RedoSeq() : stageProject.UndoSeq();
+	const int pick = PickStageHistory(redo, fileCan, fileSeq, projCan, projSeq);
+	if (pick == 1) return "stage edit";
+	if (pick == 2) return redo ? stageProject.RedoLabel() : stageProject.UndoLabel();
+	return std::string();
+}
+
+void MainFrame::saveStageAll()
+{
+	if (currentBgFile) {
+		if (currentBgFile->IsDirty() && currentBgFile->Save(currentBgFile->GetFilename().c_str())) currentBgFile->ClearDirty();
+		if (currentBgFile->IsInfoDirty()) currentBgFile->SaveInfo();
+	}
+	if (stageProject.IsOpen() && stageProject.IsDirty()) stageProject.SaveAll();
+}
+
+bool MainFrame::ensureStageProject()
+{
+	if (stageProject.IsOpen()) return true;
+	if (currentBgFile) stageProject.Open(currentBgFile->GetFilename(), currentBgFile->GetGame());
+	if (!stageProject.IsOpen() && !gSettings.stageGameDir.empty())
+		stageProject.Open(gSettings.stageGameDir, gSettings.stageGame ? bg::Game::MBAC : bg::Game::MBAACC);
+	return stageProject.IsOpen();
+}
+
+void MainFrame::drawStageCombo(float width)
+{
+	if (!ensureStageProject()) {
+		ImGui::TextDisabled("No stage list: load a stage or open a bg folder in Stage > Stage Browser.");
+		return;
+	}
+	const bg::StageEntry* cur = currentBgFile ? stageProject.FindByDat(currentBgFile->GetFilename()) : nullptr;
+	std::string preview = cur ? cur->Label() : std::string("(choose a stage)");
+	if (width > 0) ImGui::SetNextItemWidth(width);
+	if (ImGui::BeginCombo("##stagecombo", preview.c_str(), ImGuiComboFlags_HeightLargest)) {
+		for (const auto& e : stageProject.Entries()) {
+			if (e.datPath.empty()) continue;
+			const bool sel = cur && cur->id == e.id;
+			if (ImGui::Selectable(e.Label().c_str(), sel)) openStageInActiveTab(e.datPath);
+			if (sel) ImGui::SetItemDefaultFocus();
+		}
+		ImGui::EndCombo();
+	}
+	ImGui::SameLine();
+	if (ImGui::ArrowButton("##stprev", ImGuiDir_Left)) stepStage(-1);
+	ImGui::SameLine();
+	if (ImGui::ArrowButton("##stnext", ImGuiDir_Right)) stepStage(1);
+	if (ImGui::IsItemHovered()) ImGui::SetTooltip("Previous / next stage (PageUp / PageDown in the stage tab)");
+}
+
+void MainFrame::drawStageBrowser()
+{
+	if (!m_showStageBrowser) return;
+	ensureStageProject();
+	const ImVec2 mainPos = ImGui::GetMainViewport()->Pos;
+	ImGui::SetNextWindowPos(ImVec2(mainPos.x + 520.0f, mainPos.y + 80.0f), ImGuiCond_FirstUseEver);
+	ImGui::SetNextWindowSize(ImVec2(620.0f, 720.0f), ImGuiCond_FirstUseEver);
+	if (!ImGui::Begin("Stage Browser", &m_showStageBrowser)) { ImGui::End(); return; }
+	if (ImGui::IsWindowFocused(ImGuiFocusedFlags_RootAndChildWindows))
+		shortcuts.claimFocus(ShortcutContext::stageView, getActiveView() ? getActiveView()->getId() : 0);
+	bg::BrowserHooks hooks;
+	hooks.open = [this](const std::string& p) { openStageInActiveTab(p); };
+	hooks.showInGame = stageShowInGame;
+	if (authoring::WantsStagePick()) hooks.pickForSetup = [](int id) { authoring::StagePicked(id); };
+	bg::DrawStageBrowser(stageProject, currentBgFile ? currentBgFile->GetFilename() : std::string(), hooks);
+	if (stageProject.IsOpen()) {
+		gSettings.stageGameDir = stageProject.BgDir();
+		gSettings.stageGame = stageProject.GetGame() == bg::Game::MBAC ? 1 : 0;
+	}
+	ImGui::End();
+}
+
+void MainFrame::clearStage()
+{
+	// Drop the active stage view (if any) and detach the renderer.
+	bgRenderer.SetFile(nullptr);
+	bgRenderer.SetEnabled(false);
+	currentBgFile = nullptr;
+
+	if (activeViewIndex >= 0 && activeViewIndex < (int)views.size()) {
+		auto* view = views[activeViewIndex].get();
+		if (view && view->isStageView()) {
+			views.erase(views.begin() + activeViewIndex);
+			if (views.empty())
+				activeViewIndex = -1;
+			else if (activeViewIndex >= (int)views.size())
+				setActiveView((int)views.size() - 1);
+			else
+				setActiveView(activeViewIndex);
+		}
+	}
+}

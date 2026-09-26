@@ -58,6 +58,7 @@ public:
     int type = 0;                   // Texture type (1=DXT1, 5=DXT5, 21=RGB)
     int textureIndex = 0;           // GL texture ID
     int pgte[2]{};                  // Unknown (stored as short[2])
+    int pgtp = 0;                   // MBAACC type hint tag (single uint32)
 
     // DDS compression data
     char ddsHeader[124]{};          // DDS header (without "DDS " magic)
@@ -78,10 +79,10 @@ public:
 
     // Compression/decompression
     static bool Decrappress(unsigned char* cdata, unsigned char* outData, size_t csize, size_t outSize);
-    static void CompressDDS(std::ofstream &file, const PartGfx *gfx, std::streampos pgt2A);
+    static void CompressDDS(std::ostream &file, const PartGfx *gfx, std::streampos pgt2A);
 
     // Saving
-    static void Save(std::ofstream &file, const PartGfx *gfx);
+    static void Save(std::ostream &file, const PartGfx *gfx);
     static bool IsModifiedData(const PartGfx *gfx);
 
     // Utilities

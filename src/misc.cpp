@@ -1,38 +1,46 @@
 #include "misc.h"
 #include <windows.h>
+#include <new>
 #include <string>
 #include <algorithm>
 #include <cctype>
 
 bool ReadInMem(const char *filename, char *&data, unsigned int &size)
 {
-	auto file = CreateFileA(filename, GENERIC_READ, 0, nullptr, OPEN_EXISTING,
+	// Shared read (another program - the game, an editor - may have the file
+	// open), full-length check, no leak if the allocation fails.
+	data = nullptr;
+	size = 0;
+	HANDLE file = CreateFileA(filename, GENERIC_READ, FILE_SHARE_READ | FILE_SHARE_WRITE, nullptr, OPEN_EXISTING,
 		FILE_ATTRIBUTE_NORMAL | FILE_FLAG_SEQUENTIAL_SCAN, nullptr);
-	if(file == INVALID_HANDLE_VALUE || GetLastError() == ERROR_FILE_NOT_FOUND)
+	if(file == INVALID_HANDLE_VALUE)
+		return false;
+
+	LARGE_INTEGER fileSize{};
+	if(!GetFileSizeEx(file, &fileSize) || fileSize.QuadPart > 0x7FFFFFFF)
 	{
-		data = nullptr;
-		size = 0;
+		CloseHandle(file);
 		return false;
 	}
-
-	size = GetFileSize(file, nullptr);
-	if(size != INVALID_FILE_SIZE)
+	const DWORD wanted = (DWORD)fileSize.QuadPart;
+	char *buffer = new (std::nothrow) char[wanted ? wanted : 1];
+	if(!buffer)
 	{
-		data = new char[size];
-		DWORD readBytes;
-		if(!ReadFile(file, data, size, &readBytes, nullptr))
-		{
-			delete[] data;
-			CloseHandle(file);
-			data = nullptr;
-			size = 0;
-			return false;
-		}
+		CloseHandle(file);
+		return false;
 	}
-
+	DWORD readBytes = 0;
+	const BOOL ok = ReadFile(file, buffer, wanted, &readBytes, nullptr);
 	CloseHandle(file);
+	if(!ok || readBytes != wanted)
+	{
+		delete[] buffer;
+		return false;
+	}
+	data = buffer;
+	size = wanted;
 	return true;
-}	
+}
 
 
 // Shift-JIS (CP932) <-> UTF-8 conversion using Windows API
@@ -124,6 +132,49 @@ std::string utf82sj(const std::string &input)
 	// Resize to actual converted length (result may be less than sjisLen)
 	output.resize(result);
 	return output;
+}
+
+bool WriteFileAtomic(const char *filename, const void *data, size_t size)
+{
+	if(!filename || !*filename)
+		return false;
+
+	// Unique temp name next to the target so MoveFileEx stays on one volume.
+	// pid + tick + counter avoids collisions between rapid saves and between
+	// several editor instances saving the same file.
+	static unsigned int counter = 0;
+	std::string tmp = std::string(filename) + ".tmp" +
+		std::to_string(GetCurrentProcessId()) + "_" +
+		std::to_string(GetTickCount64()) + "_" + std::to_string(++counter);
+
+	HANDLE file = CreateFileA(tmp.c_str(), GENERIC_WRITE, 0, nullptr, CREATE_NEW,
+		FILE_ATTRIBUTE_NORMAL, nullptr);
+	if(file == INVALID_HANDLE_VALUE)
+		return false;
+
+	bool ok = true;
+	const char *p = (const char*)data;
+	size_t remaining = size;
+	while(ok && remaining > 0)
+	{
+		DWORD chunk = remaining > 0x40000000u ? 0x40000000u : (DWORD)remaining;
+		DWORD written = 0;
+		if(!WriteFile(file, p, chunk, &written, nullptr) || written != chunk)
+			ok = false;
+		p += written;
+		remaining -= written;
+	}
+	if(ok && !FlushFileBuffers(file))
+		ok = false;
+	if(!CloseHandle(file))
+		ok = false;
+
+	if(ok && !MoveFileExA(tmp.c_str(), filename, MOVEFILE_REPLACE_EXISTING | MOVEFILE_WRITE_THROUGH))
+		ok = false;
+
+	if(!ok)
+		DeleteFileA(tmp.c_str());
+	return ok;
 }
 
 // Normalize path separators for consistency

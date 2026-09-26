@@ -14,8 +14,12 @@ unsigned int* PartSet<>::P_Load(unsigned int* data, const unsigned int* data_end
         ++data;
 
         if (!memcmp(buf, "PANM", 4)) {
-            // Melty name (null-terminated, 32 bytes)
-            name = (char*)data;
+            // MBAACC name (null-terminated, 32-byte Shift-JIS buffer)
+            char buf32[33]{};
+            std::memcpy(buf32, data, 32);
+            buf32[32] = 0;
+            name = sj2utf8(buf32);
+            partSet->name = name;
             data += 0x20 / 4;
         }
         else if (!memcmp(buf, "PANA", 4)) {
@@ -74,12 +78,10 @@ unsigned int* PartSet<Allocator>::PrLoad(unsigned int* data, const unsigned int*
             data += 2;
         }
         else if (!memcmp(buf, "PRAL", 4)) {
-            // Additive blend mode
+            // Blend mode byte (1 = additive; 2/3 other modes in UNI2/MBTL)
             unsigned char* cdata = (unsigned char*)data;
-            pr.additive = *cdata;
-            if (pr.additive == 2) {
-                pr.additive = 1;
-            }
+            pr.pral = *cdata;
+            pr.additive = *cdata != 0;
             ++cdata;
             data = (unsigned int*)cdata;
         }
@@ -93,6 +95,7 @@ unsigned int* PartSet<Allocator>::PrLoad(unsigned int* data, const unsigned int*
         else if (!memcmp(buf, "PRFL", 4)) {
             // Filter flag
             unsigned char* cdata = (unsigned char*)data;
+            pr.prfl = *cdata;
             pr.filter = *cdata;
             ++cdata;
             data = (unsigned int*)cdata;
@@ -124,6 +127,19 @@ unsigned int* PartSet<Allocator>::PrLoad(unsigned int* data, const unsigned int*
             // 3D rotation (4 floats)
             memcpy(pr.rotation, data, sizeof(float) * 4);
             data += 4;
+        }
+        else if (!memcmp(buf, "PRAS", 4)) {
+            // Rotation pivot offset (2 ints), applied between scale and
+            // rotation in the game (uni2.exe PatPart_BuildTransformMatrix).
+            // Used by UNI2 chr020; previously desynced the parser.
+            memcpy(pr.pras, data, sizeof(int) * 2);
+            data += 2;
+        }
+        else if (!memcmp(buf, "PRPA", 4)) {
+            // UNI2/MBTL: one int (part +16). No editor field; kept as loaded.
+            pr.prpa = (int)data[0];
+            pr.hasPrpa = true;
+            ++data;
         }
         else if (!memcmp(buf, "PRPR", 4)) {
             // Priority. Higher value means draw first / lower on the stack
@@ -211,14 +227,23 @@ void PartSet<std::allocator>::CopyPropertyTo(PartProperty *propDst, PartProperty
 }
 
 template<>
-void PartSet<>::Save(std::ofstream &file, const PartSet *partSet)
+void PartSet<>::Save(std::ostream &file, const PartSet *partSet, bool mbaacc)
 {
     if(!partSet->name.empty()) {
-        file.write("PANA", 4);
         std::string name = utf82sj(partSet->name);
-        uint32_t size = name.size();
-        file.write(VAL(size), 1);
-        file.write(PTR(name.data()), size);
+        if(mbaacc) {
+            // MBAACC: 32-byte null-terminated buffer (PANM)
+            file.write("PANM", 4);
+            char buf[32]{};
+            strncpy(buf, name.c_str(), 31);
+            file.write(PTR(buf), 32);
+        } else {
+            // UNI: length-prefixed Shift-JIS (PANA)
+            file.write("PANA", 4);
+            uint32_t size = name.size();
+            file.write(VAL(size), 1);
+            file.write(PTR(name.data()), size);
+        }
     }
 
     auto props = &partSet->groups;
@@ -242,8 +267,10 @@ void PartSet<>::Save(std::ofstream &file, const PartSet *partSet)
 
         if(prop->additive)
         {
+            // Keep the loaded mode byte (2/3 are distinct modes, not "on").
+            unsigned char v = prop->pral ? prop->pral : 1;
             file.write("PRAL", 4);
-            file.write(VAL(tempValue), 1);
+            file.write(VAL(v), 1);
         }
 
         if(prop->flip != 0)
@@ -254,8 +281,9 @@ void PartSet<>::Save(std::ofstream &file, const PartSet *partSet)
 
         if(prop->filter)
         {
+            unsigned char v = prop->prfl ? prop->prfl : 1;
             file.write("PRFL", 4);
-            file.write(VAL(tempValue), 1);
+            file.write(VAL(v), 1);
         }
 
         if(prop->scaleX != 1.f || prop->scaleY != 1.f)
@@ -291,7 +319,14 @@ void PartSet<>::Save(std::ofstream &file, const PartSet *partSet)
             file.write(VAL(values[3]), 1);
         }
 
-        if(prop->rotation[0] != 0 ||
+        if(mbaacc && prop->rotation[0] == 0 && prop->rotation[1] == 0 && prop->rotation[2] == 0 &&
+           prop->rotation[3] != 0)
+        {
+            // MBAA.exe only knows the single-angle PRAN (it has no PRA3 tag).
+            file.write("PRAN", 4);
+            file.write(VAL(prop->rotation[3]), 4);
+        }
+        else if(prop->rotation[0] != 0 ||
            prop->rotation[1] != 0 ||
            prop->rotation[2] != 0 ||
            prop->rotation[3] != 0)
@@ -303,10 +338,26 @@ void PartSet<>::Save(std::ofstream &file, const PartSet *partSet)
             file.write(VAL(prop->rotation[3]), 4);
         }
 
-        if(prop->priority != 0)
+        if(prop->pras[0] != 0 || prop->pras[1] != 0)
+        {
+            file.write("PRAS", 4);
+            file.write(VAL(prop->pras[0]), 4);
+            file.write(VAL(prop->pras[1]), 4);
+        }
+
+        if(prop->hasPrpa)
+        {
+            file.write("PRPA", 4);
+            file.write(VAL(prop->prpa), 4);
+        }
+
+        // PRPR is an int32 in the file; we store priority as float to embed a
+        // (propId / 1000) sub-priority for sort tiebreaks. Truncate on save.
+        int priorityInt = (int)prop->priority;
+        if(priorityInt != 0)
         {
             file.write("PRPR", 4);
-            file.write(VAL(prop->priority), 4);
+            file.write(VAL(priorityInt), 4);
         }
 
         if(prop->ppId >= 0)

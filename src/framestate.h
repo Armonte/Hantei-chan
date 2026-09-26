@@ -2,28 +2,17 @@
 #define FRAMESTATE_H_GUARD
 
 #include "framedata.h"
+#include "preview_sim.h"
 #include "hitbox.h"
 #include "enums.h"
 #include <linear_allocator.hpp>
 #include <vector>
 #include <set>
 #include <map>
+#include <memory>
 #include <glm/vec4.hpp>
 
-struct CopyData {
-	Frame_AS as{};
-	Frame_AF_T<LinearAllocator> af{};
-	Frame_T<LinearAllocator> frame{};
-	Sequence_T<LinearAllocator> pattern{};
-	std::vector<Frame_T<LinearAllocator>, LinearAllocator<Frame_T<LinearAllocator>>> frames{};
-	Frame_AT at{};
-	std::vector<Frame_EF, LinearAllocator<Frame_EF>> efGroup{};
-	std::vector<Frame_IF, LinearAllocator<Frame_IF>> ifGroup{};
-	Frame_IF ifSingle{};
-	Frame_EF efSingle{};
-	BoxList_T<LinearAllocator> boxes;
-	Hitbox box;
-};
+#include "copy_data.h"
 
 // Spawned pattern visualization data
 struct SpawnedPatternInfo {
@@ -41,6 +30,7 @@ struct SpawnedPatternInfo {
 
 	// Parent frame tracking (stateless approach)
 	int parentFrame;      // The parent frame where this spawn effect exists
+	int parentPatternId;  // Pattern containing the authored spawn effect
 
 	// Hierarchy tracking (for recursive spawn trees)
 	int depth;                          // 0 = direct child, 1 = grandchild, 2 = great-grandchild, etc.
@@ -59,13 +49,19 @@ struct SpawnedPatternInfo {
 	float alpha;          // Transparency (0.0 - 1.0)
 	glm::vec4 tintColor;  // RGB tint color
 
+	// MBTL move-script spawns (chrXXX_mv_N.txt), see mv_script.h. These have
+	// no ha6 EF effect backing them (effectIndex stays -1).
+	bool isScriptSpawn;
+	std::string scriptSource;  // file:line + snippet the spawn was parsed from
+
 	SpawnedPatternInfo() :
 		effectIndex(-1), effectType(0), usesEffectHA6(false), isPresetEffect(false), patternId(-1), offsetX(0), offsetY(0),
 		flagset1(0), flagset2(0), angle(0), projVarDecrease(0), randomRange(0),
-		parentFrame(0),
+		parentFrame(0), parentPatternId(-1),
 		depth(0), parentSpawnIndex(-1),
 		absoluteSpawnFrame(0), spawnTick(0), patternFrameCount(0), lifetime(0), isRecursive(false),
-		visible(true), alpha(0.6f), tintColor(0.5f, 0.7f, 1.0f, 1.0f) {}
+		visible(true), alpha(0.6f), tintColor(0.5f, 0.7f, 1.0f, 1.0f),
+		isScriptSpawn(false) {}
 };
 
 // Active spawn instance (created during animation when spawn effects fire)
@@ -78,6 +74,7 @@ struct ActiveSpawnInstance {
 	int flagset1, flagset2;       // Spawn flags
 	int angle;                    // Rotation
 	int projVarDecrease;          // Projectile variable
+	int parentFrame;              // Frame in the parent pattern that spawned this (stable identity for viz matching)
 	glm::vec4 tintColor;          // Visualization tint
 	float alpha;                  // Visualization alpha
 
@@ -93,7 +90,7 @@ struct ActiveSpawnInstance {
 	ActiveSpawnInstance() :
 		spawnTick(0), patternId(-1), usesEffectHA6(false), isPresetEffect(false),
 		offsetX(0), offsetY(0), flagset1(0), flagset2(0),
-		angle(0), projVarDecrease(0),
+		angle(0), projVarDecrease(0), parentFrame(-1),
 		tintColor(0.5f, 0.7f, 1.0f, 1.0f), alpha(0.6f),
 		currentFrame(0), frameDuration(0), loopCounter(0), previousFrame(-1),
 		currentZPriority(0) {}
@@ -141,10 +138,17 @@ struct FrameState
 	int selectedSpawnedPattern = -1;  // Currently selected in UI
 	bool forceSpawnTreeRebuild = false;  // Set by undo/redo to force rebuild
 
-	// Active spawn instances (created dynamically during animation)
+	// Legacy per-view spawn instances. The viewport now renders spawns from
+	// previewSim; this stays only so older call sites that clear it compile.
 	std::vector<ActiveSpawnInstance> activeSpawns;
-	std::map<int, int> frameVisitCounts;  // Track how many times each frame has been visited during current animation
-	int lastSpawnCreationFrame = -1;  // Track which frame last created spawns to prevent duplicates within same frame
+
+	// Cached tick simulator (preview_sim.h): the single source of truth for
+	// the root flow and spawned actors at a tick. Shared by the viewport,
+	// playback and timeline; onion skin / export / detached views query it
+	// with getStateAt(tick). Bind once per use with BindPreviewSim().
+	std::shared_ptr<preview::PreviewSim> previewSim;
+	preview::Options previewOptions;
+	preview::PreviewSim& BindPreviewSim(FrameData* mainData, FrameData* effectData);
 
 	// PatEditor state (for .pat file editing)
 	RenderMode renderMode = DEFAULT;
@@ -162,49 +166,35 @@ struct FrameState
 
 	// UI scroll state (preserved when switching views)
 	float rightPaneScrollY = 0.0f;
+	float leftPaneScrollY = 0.0f;
 
 	FrameState();
 	~FrameState();
 
 private:
-	void *sharedMemHandle = nullptr;
-	void *sharedMem = nullptr;
+
+	// MBTL move-script spawn schedule for previewSim (rebuilt on change)
+	std::vector<preview::ScheduledSpawn> scriptSchedule;
+	FrameData* scheduleData = nullptr;
+	int schedulePattern = -1;
+	uint64_t scheduleVersion = ~0ull;
 };
+
+// Spawn-tree entry (right pane list) that an authored spawn source maps to,
+// for per-entry visibility/alpha/tint. Null when there is none.
+const SpawnedPatternInfo* FindSpawnTreeEntry(const std::vector<SpawnedPatternInfo>& tree,
+	int srcPattern, int srcFrame, int srcEffectIndex, bool effectHa6, bool isScript, int pattern);
 
 // Utility function to parse spawned patterns from effects (single frame)
 std::vector<SpawnedPatternInfo> ParseSpawnedPatterns(const std::vector<Frame_EF>& effects, int parentFrame, int parentPatternId = -1);
 
-// Helper to calculate tick position from frame number (sums frame durations)
+// First tick at which the runtime flow (engine loop rules, native IFs; runtime
+// IFs assumed false) enters frameNum; falls back to the authored start tick
+// (sum of earlier durations) for frames the flow never reaches.
 int CalculateTickFromFrame(class FrameData* frameData, int patternId, int frameNum);
-
-// Simulate animation flow from tick 0 to target tick, following loops/jumps
-int SimulateAnimationFlow(class FrameData* frameData, int patternId, int targetTick);
 
 // Find loop period by detecting cycles (returns to previously seen frames)
 int FindLoopPeriod(class FrameData* frameData, int patternId, int maxTicks = 10000);
-
-// Simulate animation flow and collect all spawn ticks (including loop iterations and nested spawns)
-// Returns a map of compositeKey -> vector of spawn ticks where that pattern spawns
-// compositeKey = patternId * 2 + (usesEffectHA6 ? 1 : 0)
-std::map<int, std::vector<int>> CollectAllSpawnTicks(
-	class FrameData* mainFrameData,
-	class FrameData* effectFrameData,
-	int patternId,
-	int maxTicks = 10000,
-	bool isEffectHA6 = false,
-	int parentSpawnTick = 0);
-
-// Helper to calculate frame from tick position
-int CalculateFrameFromTick(class FrameData* frameData, int patternId, int tick);
-
-// Simulate animation and create spawns up to target tick (for seeking)
-// Populates activeSpawns with spawns that would exist at targetTick
-void SimulateSpawnsToTick(
-	class FrameData* mainFrameData,
-	class FrameData* effectFrameData,
-	int patternId,
-	int targetTick,
-	std::vector<class ActiveSpawnInstance>& activeSpawns);
 
 // Recursive function to build full spawn tree
 void BuildSpawnTreeRecursive(

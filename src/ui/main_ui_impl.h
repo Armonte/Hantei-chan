@@ -21,6 +21,23 @@
 void MainFrame::DrawUi()
 {
 	ImGuiID errorPopupId = ImGui::GetID("Loading Error");
+	shortcuts.beginFrame();
+	SyncWorkspaceSession();
+	UpdateTransport();
+	if (m_textNavDir) {
+		// Commit the focused field, step the keyframe, and re-activate the same
+		// field (same widget id) on the next frame so typing can continue.
+		ImGuiContext& g = *GImGui;
+		const ImGuiID id = g.ActiveId;
+		ImGui::ClearActiveID();
+		// The focused window's tab (main or detached), like every other shortcut.
+		if (CharacterView* nv = getShortcutView()) AdvanceFrame(nv, m_textNavDir);
+		if (id) {
+			g.NavNextActivateId = id;
+			g.NavNextActivateFlags = ImGuiActivateFlags_PreferInput;
+		}
+		m_textNavDir = 0;
+	}
 	
 
 	//Fullscreen docker to provide the layout for the panes
@@ -45,56 +62,16 @@ void MainFrame::DrawUi()
 		ImGui::PopStyleVar(3);
 		Menu(errorPopupId);
 
-		// View tabs
-		if (ImGui::BeginTabBar("##character_tabs", ImGuiTabBarFlags_Reorderable | ImGuiTabBarFlags_AutoSelectNewTabs | ImGuiTabBarFlags_FittingPolicyScroll)) {
-			for (size_t i = 0; i < views.size(); i++) {
-				bool open = true;
-				auto* view = views[i].get();
-				auto* character = view->getCharacter();
-				ImGuiTabItemFlags flags = (character && character->isModified()) ? ImGuiTabItemFlags_UnsavedDocument : 0;
-
-				// Skip rendering if we're waiting for user to confirm closing this view
-				if (pendingCloseViewIndex == (int)i) {
-					// Keep the tab visible while waiting for dialog response
-					std::string tabId = view->getDisplayName() + "###view_" + std::to_string((uintptr_t)view);
-					if (ImGui::BeginTabItem(tabId.c_str(), nullptr, flags)) {
-						if (activeViewIndex != (int)i) {
-							setActiveView(i);
-						}
-						ImGui::EndTabItem();
-					}
-					continue;
-				}
-
-				// Use stable ID (pointer) for ImGui, display name can change
-				std::string tabId = view->getDisplayName() + "###view_" + std::to_string((uintptr_t)view);
-				if (ImGui::BeginTabItem(tabId.c_str(), &open, flags)) {
-					if (activeViewIndex != (int)i) {
-						setActiveView(i);
-					}
-					ImGui::EndTabItem();
-				}
-
-				// Right-click context menu - check AFTER EndTabItem
-				if (ImGui::IsItemHovered() && ImGui::IsMouseClicked(ImGuiMouseButton_Right)) {
-					contextMenuViewIndex = i;
-					ImGui::OpenPopup("ViewContextMenu");
-				}
-
-				// If user clicked X button, use tryCloseView to handle unsaved changes
-				if (!open) {
-					tryCloseView(i);
-				}
-			}
+		// View tabs of the main window (detached windows draw their own; see
+		// ui/workspace_hosts_impl.h). Order and selection come from the
+		// workspace session; tabs can be dragged between windows.
+		const ImVec2 mainBarMin = ImGui::GetCursorScreenPos();
+		if (ImGui::BeginTabBar("##character_tabs", ImGuiTabBarFlags_AutoSelectNewTabs | ImGuiTabBarFlags_FittingPolicyScroll)) {
+			DrawHostTabs(WorkspaceSession::MainHost);
 
 			// Right-click context menu popup
 			if (ImGui::BeginPopup("ViewContextMenu")) {
-				if (contextMenuViewIndex >= 0 && contextMenuViewIndex < views.size()) {
-					if (ImGui::MenuItem("New View of Character")) {
-						auto* character = views[contextMenuViewIndex]->getCharacter();
-						createViewForCharacter(character);
-					}
-				}
+				DrawViewTabContextItems();
 				ImGui::EndPopup();
 			}
 
@@ -186,6 +163,8 @@ void MainFrame::DrawUi()
 
 			ImGui::EndTabBar();
 		}
+		DrawTabBarDropTarget(WorkspaceSession::MainHost,
+			ImRect(mainBarMin, ImVec2(mainBarMin.x + ImGui::GetContentRegionAvail().x, ImGui::GetCursorScreenPos().y)));
 
 		ImGuiID dockspaceID = ImGui::GetID("Dock Space");
 
@@ -231,6 +210,32 @@ void MainFrame::DrawUi()
 		); 
 	ImGui::End();
 
+	// Project actions (new/open/recent/close) requested from menus, shortcuts
+	// or the unsaved-changes dialog run here, outside any menu or popup, so
+	// they never tear down views/characters mid-draw.
+	processDeferredProjectAction();
+
+	// Error popups requested from inside menus/popups are opened here, at the
+	// same ID-stack level as the BeginPopupModal calls below.
+	if (m_pendingErrorPopup) {
+		ImGui::OpenPopup(m_pendingErrorPopup);
+		m_pendingErrorPopup = nullptr;
+	}
+
+	ImGui::SetNextWindowPos(ImGui::GetMainViewport()->GetCenter(), ImGuiCond_Appearing, ImVec2(0.5f, 0.5f));
+	if (ImGui::BeginPopupModal("Save Error", NULL, ImGuiWindowFlags_AlwaysAutoResize))
+	{
+		ImGui::Text("The file could not be saved. The original file on disk was left unchanged\n"
+			"and the character is still marked as modified.\n\n");
+		if (!m_errorDetail.empty()) {
+			ImGui::TextUnformatted(m_errorDetail.c_str());
+			ImGui::Text("\n");
+		}
+		ImGui::Separator();
+		if (ImGui::Button("OK", ImVec2(120, 0))) { ImGui::CloseCurrentPopup(); }
+		ImGui::EndPopup();
+	}
+
 	ImGui::SetNextWindowPos(ImGui::GetMainViewport()->GetCenter(), ImGuiCond_Appearing, ImVec2(0.5f, 0.5f));
 	if (ImGui::BeginPopupModal("Loading Error", NULL, ImGuiWindowFlags_AlwaysAutoResize))
 	{
@@ -259,11 +264,13 @@ void MainFrame::DrawUi()
 				ImGui::Separator();
 
 				if (ImGui::Button("Save", ImVec2(120, 0))) {
-					if (character->save()) {
+					if (saveCharacter(character)) {
 						closeView(pendingCloseViewIndex);
-						pendingCloseViewIndex = -1;
-						ImGui::CloseCurrentPopup();
 					}
+					// On failure the view stays open and the Save Error popup
+					// (queued by saveCharacter) takes over from this one.
+					pendingCloseViewIndex = -1;
+					ImGui::CloseCurrentPopup();
 				}
 				ImGui::SameLine();
 				if (ImGui::Button("Don't Save", ImVec2(120, 0))) {
@@ -287,6 +294,10 @@ void MainFrame::DrawUi()
 	{
 		ImGui::Text("Failed to load project file.\n"
 			"The file may be corrupted or some character files may be missing.\n\n");
+		if (!m_errorDetail.empty()) {
+			ImGui::TextUnformatted(m_errorDetail.c_str());
+			ImGui::Text("\n");
+		}
 		ImGui::Separator();
 		if (ImGui::Button("OK", ImVec2(120, 0))) { ImGui::CloseCurrentPopup(); }
 		ImGui::EndPopup();
@@ -298,6 +309,10 @@ void MainFrame::DrawUi()
 	{
 		ImGui::Text("Failed to save project file.\n"
 			"Check that you have write permissions for the selected location.\n\n");
+		if (!m_errorDetail.empty()) {
+			ImGui::TextUnformatted(m_errorDetail.c_str());
+			ImGui::Text("\n");
+		}
 		ImGui::Separator();
 		if (ImGui::Button("OK", ImVec2(120, 0))) { ImGui::CloseCurrentPopup(); }
 		ImGui::EndPopup();
@@ -317,73 +332,39 @@ void MainFrame::DrawUi()
 		ImGui::Separator();
 
 		if (ImGui::Button("Save", ImVec2(120, 0))) {
-			saveProject();
-			if (!m_projectModified) { // Only proceed if save succeeded
-				m_pendingProjectClose = false;
-				ImGui::CloseCurrentPopup();
-
-				// Execute the pending action
-				switch (m_projectCloseAction) {
-					case ProjectCloseAction::New:
-						// Clear and prepare for new project
-						views.clear();
-						characters.clear();
-						activeViewIndex = -1;
-						render.DontDraw();
-						render.ClearTexture();
-						render.SetCg(nullptr);
-						render.SetParts(nullptr);
-						ProjectManager::ClearCurrentProjectPath();
-						m_projectModified = false;
-						updateWindowTitle();
-						break;
-					case ProjectCloseAction::Open:
-						// Will trigger file dialog in next frame
-						openProject();
-						break;
-					case ProjectCloseAction::Close:
-						closeProject();
-						break;
-					default:
-						break;
-				}
-				m_projectCloseAction = ProjectCloseAction::None;
+			// Save modified characters as well as the project file; the old
+			// code only saved the .hproj and then discarded character edits.
+			bool ok = saveAllModifiedCharacters();
+			if (ok && m_projectModified) {
+				saveProject();
+				ok = !m_projectModified;
 			}
+			m_pendingProjectClose = false;
+			ImGui::CloseCurrentPopup();
+			if (ok) {
+				// Run the pending action (with its path) next, outside this popup
+				requestProjectAction(m_projectCloseAction, m_pendingProjectPath, true);
+			}
+			// On failure the action is cancelled; the save error popup explains why
+			// (a cancelled Save As dialog simply cancels).
+			m_projectCloseAction = ProjectCloseAction::None;
+			m_pendingProjectPath.clear();
 		}
 		ImGui::SameLine();
 		if (ImGui::Button("Don't Save", ImVec2(120, 0))) {
 			m_pendingProjectClose = false;
 			ImGui::CloseCurrentPopup();
 
-			// Execute the pending action without saving
-			switch (m_projectCloseAction) {
-				case ProjectCloseAction::New:
-					views.clear();
-					characters.clear();
-					activeViewIndex = -1;
-					render.DontDraw();
-					render.ClearTexture();
-					render.SetCg(nullptr);
-					render.SetParts(nullptr);
-					ProjectManager::ClearCurrentProjectPath();
-					m_projectModified = false;
-					updateWindowTitle();
-					break;
-				case ProjectCloseAction::Open:
-					openProject();
-					break;
-				case ProjectCloseAction::Close:
-					closeProject();
-					break;
-				default:
-					break;
-			}
+			// Run the pending action without saving, outside this popup
+			requestProjectAction(m_projectCloseAction, m_pendingProjectPath, true);
 			m_projectCloseAction = ProjectCloseAction::None;
+			m_pendingProjectPath.clear();
 		}
 		ImGui::SameLine();
 		if (ImGui::Button("Cancel", ImVec2(120, 0))) {
 			m_pendingProjectClose = false;
 			m_projectCloseAction = ProjectCloseAction::None;
+			m_pendingProjectPath.clear();
 			ImGui::CloseCurrentPopup();
 		}
 		ImGui::EndPopup();
@@ -392,47 +373,194 @@ void MainFrame::DrawUi()
 	// Only draw panes if we have an active view
 	auto* view = getActiveView();
 	if (view) {
-		// Begin undo frame - save snapshot BEFORE any modifications
-		auto* character = view->getCharacter();
-		if (character && character->undoManager.isEnabled()) {
-			int patternIndex = view->getState().pattern;
-			Sequence* seq = character->frameData.get_sequence(patternIndex);
-			if (seq) {
-				character->undoManager.beginFrame(patternIndex, *seq);
-			}
-		}
+		// Undo: remember where the user is so undo can navigate back.
+		if (auto* character = view->getCharacter())
+			character->undoManager.noteFocus(view->getState().pattern, view->getState().frame);
 
-		// Set effectFrameData on all panes if effect.ha6 is loaded (per-character)
-		if (character && character->effectCharacter) {
-			if (view->getMainPane()) view->getMainPane()->setEffectFrameData(&character->effectCharacter->frameData);
-			if (view->getRightPane()) view->getRightPane()->setEffectFrameData(&character->effectCharacter->frameData);
-			if (view->getBoxPane()) view->getBoxPane()->setEffectFrameData(&character->effectCharacter->frameData);
-		}
+		// This view's surface owns focus-scoped shortcuts for the next key
+		// messages (a later claim in the frame - a focused detached window, a
+		// command workspace - wins).
+		shortcuts.claimFocus(view->isStageView() ? ShortcutContext::stageView
+			: view->isPatEditor() ? ShortcutContext::patEditor
+			: ShortcutContext::characterView, view->getId());
 
-		// Draw HA6 editor panes (only if visible and not in PAT editor mode)
-		if (!view->isPatEditor()) {
-			if (view->getMainPane() && view->getMainPane()->isVisible) view->getMainPane()->Draw();
-			if (view->getRightPane() && view->getRightPane()->isVisible) view->getRightPane()->Draw();
-			if (view->getBoxPane() && view->getBoxPane()->isVisible) view->getBoxPane()->Draw();
-		}
-
-		// Draw PatEditor panes if this is a PAT editor view (only if visible)
-		if (view->isPatEditor()) {
-			if (view->getPartSetPane() && view->getPartSetPane()->isVisible) view->getPartSetPane()->Draw();
-			if (view->getPartPane() && view->getPartPane()->isVisible) view->getPartPane()->Draw();
-			if (view->getShapePane() && view->getShapePane()->isVisible) view->getShapePane()->Draw();
-			if (view->getTexturePane() && view->getTexturePane()->isVisible) view->getTexturePane()->Draw();
-			if (view->getToolPane() && view->getToolPane()->isVisible) view->getToolPane()->Draw();
-		}
-
-		// End undo frame - commit snapshot if anything was modified
-		if (character) {
-			character->undoManager.endFrame();
-		}
+		DrawViewPanes(view, std::string());
 	}
+
+	// Detached (multi-monitor) windows, their panes and tab moves.
+	DrawDetachedHosts();
+	NoteToolViewFocus();   // target of the tool windows below
+	ApplyPendingTabActions();
+	FinishTabDrag();
+	FinishPaneUndoFrame();
+	DrawRenderToolWindows();
+
 	aboutWindow.Draw();
 	vectors.Draw();
+	drawCommandEditor();
+	drawGameLink();
+	drawTagPanel();
+	drawAuthoring();
+	drawVarRefsWindow();
+	drawPatternManagerWindow();
+	drawNotesWindow();
+	drawKeyBindingsWindow();
+	drawCompareWindow();
+	drawBgmWindow();
+	drawHudWindow();
+	drawStageBrowser();
 
+	// Background (stage) Inspector — shows the currently loaded stage's
+	// objects, lets you scrub through frames, and exposes editable fields.
+	// Only visible when a stage is loaded.
+	if (currentBgFile && currentBgFile->IsLoaded())
+	{
+		// FirstUseEver = land at a sensible default the first time the user
+		// sees the window, but let them move it freely after that (and the
+		// position persists in imgui's .ini between runs, like every other
+		// pane in the editor).
+		// Relative to the main viewport: with detachable windows enabled,
+		// window positions are desktop coordinates, and a fixed (80, 80)
+		// could open the inspector as its own OS window off the main one.
+		const ImVec2 mainPos = ImGui::GetMainViewport()->Pos;
+		ImGui::SetNextWindowPos(ImVec2(mainPos.x + 80.0f, mainPos.y + 80.0f), ImGuiCond_FirstUseEver);
+		ImGui::SetNextWindowSize(ImVec2(420.0f, 640.0f), ImGuiCond_FirstUseEver);
+		ImGui::Begin("Background Inspector", nullptr, 0);
+		// Editing here is stage editing: route Ctrl+Z/Y/S to the stage.
+		if (ImGui::IsWindowFocused(ImGuiFocusedFlags_RootAndChildWindows))
+			shortcuts.claimFocus(ShortcutContext::stageView, getActiveView() ? getActiveView()->getId() : 0);
+
+		drawStageCombo(-60.0f);
+		{
+			// Game camera (world px; MBAA 0x55DEC4 / 0x55DEC8 divided by 128). Panning
+			// the view moves it, zooming does not. Round start is (0, 0); the game
+			// limits x to +-(528 - 320/zoom) and y to [-340, 0] (not enforced here).
+			float cam[2] = {bgCamera.camX, bgCamera.camY};
+			ImGui::SetNextItemWidth(160);
+			if (ImGui::DragFloat2("Game camera", cam, 1.0f, -2000.f, 2000.f, "%.0f")) bgCamera.SetGameCam(cam[0], cam[1]);
+			ImGui::SameLine();
+			if (ImGui::SmallButton("Round start")) bgCamera.SetGameCam(0.0f, 0.0f);
+			if (ImGui::IsItemHovered()) ImGui::SetTooltip("Camera (0, 0): what the game shows at round start.\nParallax layers are placed for this camera.");
+		}
+		ImGui::Text("File: %s", currentBgFile->GetFilename().c_str());
+		auto& objects = currentBgFile->GetObjects();
+		ImGui::Text("Objects: %zu", objects.size());
+
+		// Diagnostic readout — exposes the exact values feeding the GL transform
+		// so we can compare numerically to u4ick's bgmaketool. The expected
+		// screen position for any sprite is: (offset + render.x) * render.scale
+		// where render.x = bgCamera.panLastX (mirrored each frame from the
+		// camera's stable pose).
+		ImGui::Separator();
+		ImGui::TextDisabled("--- Diagnostics ---");
+		ImGui::Text("bgCamera pan=(%.1f, %.1f) panLast=(%.1f, %.1f) dragging=%d",
+		            bgCamera.panX, bgCamera.panY,
+		            bgCamera.panLastX, bgCamera.panLastY,
+		            (int)bgCamera.dragging);
+		// render.x / render.y are `int` (defined in render.h); the previous
+		// %.1f format was undefined behavior on x64 and was reporting
+		// garbage zeros that made it look like render.x wasn't being
+		// mirrored from bgCamera. Cast explicitly so we see the real value.
+		ImGui::Text("view zoom=%.2f pass x=%d y=%d",
+		            getActiveView() ? getActiveView()->getZoom() : 0.f, render.x, render.y);
+		ImGui::Text("viewport clientRect=(%.0f, %.0f)", clientRect.x, clientRect.y);
+		if (!objects.empty() && !objects[0].frames.empty()) {
+			const auto& obj0 = objects[0];
+			const auto& f0 = obj0.frames[obj0.currentFrame];
+			float sx = bgCamera.ScreenX((float)f0.offsetX, obj0.parallax);
+			float sy = bgCamera.ScreenY((float)f0.offsetY, obj0.parallax);
+			float screenPx = sx + bgCamera.panLastX;
+			float screenPy = sy + bgCamera.panLastY;
+			ImGui::Text("obj[0].f[%d/%d] sprId=%d offset=(%d, %d)",
+			            obj0.currentFrame, (int)obj0.frames.size() - 1,
+			            f0.spriteId, f0.offsetX, f0.offsetY);
+			ImGui::Text("  -> screen=(%.1f, %.1f)", screenPx, screenPy);
+
+			// Y-flicker diagnostic: dump sprite dimensions AND content
+			// origin (bounds_x1, bounds_y1) for every frame in obj[0]'s
+			// animation. If offsetY varies per frame, the bounded
+			// content position shifts even though width/height are fixed —
+			// that explains the user-visible flicker.
+			if (auto* cg = currentBgFile->GetCG()) {
+				ImGui::Text("Sprite dims (per frame):");
+				for (size_t fi = 0; fi < obj0.frames.size(); ++fi) {
+					int sid = obj0.frames[fi].spriteId;
+					// spriteId is raw: >=10000 is a CG sprite (index sid-10000),
+					// <10000 is a PAT pattern (no CG texture to show here).
+					int cgIdx = sid >= 10000 ? sid - 10000 : -1;
+					ImageData* img = cgIdx >= 0 ? cg->draw_texture(cgIdx, false, false) : nullptr;
+					int w = img ? img->width : -1;
+					int h = img ? img->height : -1;
+					int ox = img ? img->offsetX : -1;
+					int oy = img ? img->offsetY : -1;
+					delete img;
+					ImGui::Text("  [%zu] spr=%d  %dx%d  origin=(%d, %d)",
+					            fi, sid, w, h, ox, oy);
+				}
+			}
+		}
+		if (ImGui::Button("Center View on obj[0]") && !objects.empty() && !objects[0].frames.empty()) {
+			// Pan so obj[0]'s sprite top-left lands at viewport center —
+			// simplest possible 'where IS the sprite supposed to be' test.
+			const auto& f0 = objects[0].frames[0];
+			float wantScreenX = clientRect.x * 0.5f;
+			float wantScreenY = clientRect.y * 0.5f;
+			const float vz = (getActiveView() && getActiveView()->getZoom() > 0.f) ? getActiveView()->getZoom() : 1.f;
+			float newPanX = wantScreenX / vz - (float)f0.offsetX;
+			float newPanY = wantScreenY / vz - (float)f0.offsetY;
+			bgCamera.SetPan(newPanX, newPanY);
+			if (auto* v = getActiveView()) v->setStageRenderXY(newPanX, newPanY);
+		}
+		if (ImGui::Button("Reset Pan (0, 0)")) {
+			bgCamera.SetPan(0.0f, 0.0f);
+			if (auto* v = getActiveView()) v->setStageRenderXY(0.0f, 0.0f);
+		}
+		// (Layer ordering is now handled by depth test in the new bg
+		// renderer; toggle removed.)
+		// Manual pan entry so we can test specific values against u4ick's
+		// observed layout pixel-for-pixel.
+		static float manualPanX = 0.0f, manualPanY = 0.0f;
+		manualPanX = bgCamera.panLastX;
+		manualPanY = bgCamera.panLastY;
+		ImGui::PushItemWidth(100);
+		ImGui::InputFloat("##manualPanX", &manualPanX);
+		ImGui::SameLine();
+		ImGui::InputFloat("##manualPanY", &manualPanY);
+		ImGui::SameLine();
+		if (ImGui::Button("Apply Pan")) {
+			bgCamera.SetPan(manualPanX, manualPanY);
+			if (auto* v = getActiveView()) v->setStageRenderXY(manualPanX, manualPanY);
+		}
+		ImGui::PopItemWidth();
+
+		ImGui::Separator();
+
+		bool bgPaused = bgRenderer.IsPaused();
+		if (ImGui::Button(bgPaused ? "Play" : "Pause")) bgRenderer.SetPaused(!bgPaused);
+		ImGui::SameLine();
+		ImGui::TextDisabled("Animation: %s", bgPaused ? "PAUSED" : "Playing");
+		// Animation advancement happens via bgRenderer.Update() in DrawBack;
+		// don't double-tick here.
+
+		bool bgParallax = bgRenderer.IsParallaxEnabled();
+		if (ImGui::Checkbox("Parallax", &bgParallax)) bgRenderer.SetParallaxEnabled(bgParallax);
+		ImGui::SameLine();
+		bool bgOverlay = bgRenderer.IsShowingDebugOverlay();
+		if (ImGui::Checkbox("Stage rects", &bgOverlay)) bgRenderer.SetShowDebugOverlay(bgOverlay);
+		ImGui::TextDisabled("Left-drag to pan, mouse-wheel to zoom.");
+
+		ImGui::Separator();
+
+		// Game flavour / seed / side files / object, frame and event-record
+		// editing live in bg_inspector.cpp.
+		bg::InspectorResult bgRes = bg::DrawInspector(*currentBgFile, bgRenderer);
+
+		ImGui::End();
+		if (!bgRes.openPath.empty()) loadStageFile(bgRes.openPath);
+	}
+
+	DrawPositionTool();
+	shortcuts.endFrame();
 	RenderUpdate();
 }
 
@@ -447,590 +575,12 @@ void MainFrame::RenderUpdate()
 
 	auto& state = view->getState();
 	Sequence *seq;
+	AdvanceViewPlayback(view);
 	if((seq = active->frameData.get_sequence(state.pattern)) &&
 		seq->frames.size() > 0)
 	{
-		// Handle animation playback
-		static int duration = 0;
-		static int loopCounter = 0;
-
-		if(state.animeSeq != state.pattern)
-		{
-			duration = 0;
-			loopCounter = 0;
-			// Clear active spawns when pattern changes
-			state.activeSpawns.clear();
-			state.frameVisitCounts.clear();
-			state.lastSpawnCreationFrame = -1;
-		}
-
-		// Track previous animation state to detect play button press (static per-view)
-		static bool wasAnimating = false;
-
-		if(state.animating)
-		{
-			state.animeSeq = state.pattern;
-
-			// Detect animation start: transition from paused (false) to playing (true)
-			bool animationJustStarted = !wasAnimating && state.animating;
-
-			// Reset visit tracking whenever animation starts (play button pressed)
-			// This ensures every playthrough is fresh, regardless of where user seeked to
-			if (animationJustStarted) {
-				printf("[ANIM START] Resetting visit counts (play pressed on frame %d)\n", state.frame);
-				state.frameVisitCounts.clear();
-				state.activeSpawns.clear();  // Also clear any stale spawns from previous run
-				state.lastSpawnCreationFrame = -1;
-			}
-
-			// Initialize visit count for starting frame if needed
-			if (state.frameVisitCounts.empty()) {
-				state.frameVisitCounts[state.frame] = 1;
-
-				// Check for spawns on frame 0 at animation start
-				if (state.vizSettings.showSpawnedPatterns && state.frame >= 0 && state.frame < seq->frames.size()) {
-					auto& frame0 = seq->frames[state.frame];
-					if (!frame0.EF.empty()) {
-						// DEBUG: Log frame 0 spawn creation
-						printf("[SPAWN CREATE - ANIM START] Frame %d, Tick %d, Pattern %d\n", state.frame, state.currentTick, state.pattern);
-
-						state.lastSpawnCreationFrame = state.frame;
-						auto spawns = ParseSpawnedPatterns(frame0.EF, state.frame, state.pattern);
-
-						// DEBUG: Log how many spawns
-						printf("[SPAWN CREATE - ANIM START] Parsed %d spawn(s)\n", (int)spawns.size());
-
-						for(const auto& spawnInfo : spawns) {
-							// DEBUG: Log which pattern is being spawned
-							printf("[SPAWN CREATE - ANIM START]   -> Spawning pattern %d at tick %d\n", spawnInfo.patternId, state.currentTick);
-
-							ActiveSpawnInstance instance;
-							instance.spawnTick = state.currentTick;
-							instance.patternId = spawnInfo.patternId;
-							instance.usesEffectHA6 = spawnInfo.usesEffectHA6;
-							instance.isPresetEffect = spawnInfo.isPresetEffect;
-							instance.offsetX = spawnInfo.offsetX;
-							instance.offsetY = spawnInfo.offsetY;
-							instance.flagset1 = spawnInfo.flagset1;
-							instance.flagset2 = spawnInfo.flagset2;
-							instance.angle = spawnInfo.angle;
-							instance.projVarDecrease = spawnInfo.projVarDecrease;
-							instance.tintColor = state.vizSettings.enableTint ? spawnInfo.tintColor : glm::vec4(1.0f, 1.0f, 1.0f, 1.0f);
-							instance.alpha = state.vizSettings.spawnedOpacity;
-							instance.currentFrame = 0;
-							instance.frameDuration = 0;
-							instance.previousFrame = 0;
-
-							if (!instance.isPresetEffect) {
-								FrameData* sourceData = instance.usesEffectHA6 && active->effectCharacter
-									? &active->effectCharacter->frameData
-									: &active->frameData;
-
-								auto spawnSeq = sourceData->get_sequence(instance.patternId);
-								if (spawnSeq && !spawnSeq->frames.empty()) {
-									instance.loopCounter = spawnSeq->frames[0].AF.loopCount;
-
-									if (!spawnSeq->frames[0].EF.empty()) {
-										auto frame0Spawns = ParseSpawnedPatterns(spawnSeq->frames[0].EF, 0, instance.patternId);
-										for (const auto& childInfo : frame0Spawns) {
-											ActiveSpawnInstance childInstance;
-											childInstance.spawnTick = state.currentTick;
-											childInstance.patternId = childInfo.patternId;
-											childInstance.usesEffectHA6 = childInfo.usesEffectHA6;
-											childInstance.isPresetEffect = childInfo.isPresetEffect;
-
-											if (instance.usesEffectHA6 && childInfo.effectType != 8) {
-												childInstance.usesEffectHA6 = true;
-											}
-
-											childInstance.offsetX = instance.offsetX + childInfo.offsetX;
-											childInstance.offsetY = instance.offsetY + childInfo.offsetY;
-											childInstance.flagset1 = childInfo.flagset1;
-											childInstance.flagset2 = childInfo.flagset2;
-											childInstance.angle = childInfo.angle;
-											childInstance.projVarDecrease = childInfo.projVarDecrease;
-											childInstance.tintColor = state.vizSettings.enableTint ? childInfo.tintColor : glm::vec4(1.0f, 1.0f, 1.0f, 1.0f);
-											childInstance.alpha = state.vizSettings.spawnedOpacity;
-											childInstance.currentFrame = 0;
-											childInstance.frameDuration = 0;
-											childInstance.previousFrame = 0;
-
-											if (!childInstance.isPresetEffect) {
-												FrameData* childSourceData = childInstance.usesEffectHA6 && active->effectCharacter
-													? &active->effectCharacter->frameData
-													: &active->frameData;
-												auto childSeq = childSourceData->get_sequence(childInstance.patternId);
-												if (childSeq && !childSeq->frames.empty()) {
-													childInstance.loopCounter = childSeq->frames[0].AF.loopCount;
-												}
-											}
-
-											state.activeSpawns.push_back(childInstance);
-										}
-									}
-								}
-							}
-
-							state.activeSpawns.push_back(instance);
-						}
-					}
-				}
-			}
-
-			// Lambda to calculate next frame - can be called with or without side effects
-			auto GetNextFrame = [&](bool decreaseLoopCounter) {
-				if (seq && !seq->frames.empty())
-				{
-					auto& af = seq->frames[state.frame].AF;
-					if (af.aniType == 1) {
-						// Sequential advance - stop at end
-						if (state.frame + 1 >= seq->frames.size()) {
-							return 0;
-						}
-						else {
-							return state.frame + 1;
-						}
-					}
-					else if (af.aniType == 2)
-					{
-						// Jump/loop logic
-						if ((af.aniFlag & 0x2) && loopCounter < 0)
-						{
-							// Loop count exhausted - use loopEnd
-							if (af.aniFlag & 0x8) {
-								return state.frame + af.loopEnd;
-							}
-							else {
-								return af.loopEnd;
-							}
-						}
-						else
-						{
-							// Decrement loop counter if needed
-							if (af.aniFlag & 0x2 && decreaseLoopCounter) {
-								--loopCounter;
-							}
-							// Jump to next frame
-							if (af.aniFlag & 0x4) {
-								return state.frame + af.jump;
-							}
-							else {
-								return af.jump;
-							}
-						}
-					}
-					else {
-						// aniType 0 or other - stop animation
-						return 0;
-					}
-				}
-				return state.frame;
-			};
-
-			if(duration >= seq->frames[state.frame].AF.duration)
-			{
-				if(seq && !seq->frames.empty())
-				{
-					int oldFrame = state.frame;
-					state.frame = GetNextFrame(true);
-					duration = 0;
-
-						// Update previousFrame only if we successfully advanced
-						if (state.frame != oldFrame) {
-							state.previousFrame = oldFrame;
-
-							// Detect loop: check if we jumped backwards based on actual animation data
-							// This happens when aniType == 2 and jump points to an earlier frame
-							bool isLooping = false;
-							if (oldFrame >= 0 && oldFrame < seq->frames.size()) {
-								auto& oldFrameData = seq->frames[oldFrame].AF;
-								// Loop detected if: aniType is 2 (jump) and we jumped to an earlier frame
-								// OR if we jumped backwards (which indicates a loop in the animation flow)
-								if (oldFrameData.aniType == 2) {
-									// Check if the jump target is earlier than current frame (loop back)
-									int jumpTarget = oldFrameData.jump;
-									if ((oldFrameData.aniFlag & 0x4) == 0) {
-										// Absolute jump (not relative)
-										isLooping = (jumpTarget < oldFrame);
-									} else {
-										// Relative jump
-										isLooping = ((oldFrame + jumpTarget) < oldFrame);
-									}
-								}
-								// Also detect if frame number decreased (backward jump occurred)
-								if (!isLooping) {
-									isLooping = (state.frame < oldFrame);
-								}
-							}
-							
-							if (isLooping) {
-								// DEBUG: Log loop detection with animation data
-								if (oldFrame >= 0 && oldFrame < seq->frames.size()) {
-									auto& oldFrameData = seq->frames[oldFrame].AF;
-									printf("[LOOP DETECTED] Frame %d (aniType=%d, jump=%d, aniFlag=0x%x) -> Frame %d (tick: %d)\n", 
-										oldFrame, oldFrameData.aniType, oldFrameData.jump, oldFrameData.aniFlag, state.frame, state.currentTick);
-								} else {
-									printf("[LOOP DETECTED] Jumped from frame %d to %d (tick: %d)\n", oldFrame, state.frame, state.currentTick);
-								}
-								// Don't clear visit counts - we want to track how many times we've visited each frame
-								// But reset lastSpawnCreationFrame so spawns can be created again on loop iterations
-								state.lastSpawnCreationFrame = -1;
-							}
-
-						// Increment visit count for the new frame we're entering
-						state.frameVisitCounts[state.frame]++;
-
-						// DEBUG: Log frame transitions (only for significant changes)
-						static int lastLoggedFrame = -1;
-						if (state.frame != lastLoggedFrame && (state.frame % 10 == 0 || state.frame < 5)) {
-							printf("[FRAME ADVANCE] %d -> %d (visit count: %d, tick: %d)\n",
-								oldFrame, state.frame, state.frameVisitCounts[state.frame], state.currentTick);
-							lastLoggedFrame = state.frame;
-						}
-
-						// Check for spawns immediately when entering a new frame (BEFORE incrementing tick)
-						// Create spawns every time we enter a frame with spawn effects (including loop iterations)
-						if (state.vizSettings.showSpawnedPatterns && state.frame >= 0 && state.frame < seq->frames.size()) {
-							auto& newFrame = seq->frames[state.frame];
-							// Allow spawns to be created on every visit to a frame with spawn effects
-							// This ensures spawns appear on loop iterations
-							bool shouldCreateSpawns = !newFrame.EF.empty() &&
-							                          (state.lastSpawnCreationFrame != state.frame);
-
-							if(shouldCreateSpawns)
-							{
-								// DEBUG: Log spawn creation
-								printf("[SPAWN CREATE] Frame %d, Tick %d, Pattern %d\n", state.frame, state.currentTick, state.pattern);
-
-								// Mark that this frame has created spawns
-								state.lastSpawnCreationFrame = state.frame;
-								// Parse spawn effects in current frame
-								auto spawns = ParseSpawnedPatterns(newFrame.EF, state.frame, state.pattern);
-
-								// DEBUG: Log how many spawns were parsed
-								printf("[SPAWN CREATE] Parsed %d spawn(s) from frame %d\n", (int)spawns.size(), state.frame);
-
-								// Create active spawn instances for each spawn effect
-								for(const auto& spawnInfo : spawns) {
-									// DEBUG: Log which pattern is being spawned
-									printf("[SPAWN CREATE]   -> Spawning pattern %d at tick %d\n", spawnInfo.patternId, state.currentTick);
-
-									ActiveSpawnInstance instance;
-									instance.spawnTick = state.currentTick;  // Use current tick BEFORE incrementing
-									instance.patternId = spawnInfo.patternId;
-									instance.usesEffectHA6 = spawnInfo.usesEffectHA6;
-									instance.isPresetEffect = spawnInfo.isPresetEffect;
-									instance.offsetX = spawnInfo.offsetX;
-									instance.offsetY = spawnInfo.offsetY;
-									instance.flagset1 = spawnInfo.flagset1;
-									instance.flagset2 = spawnInfo.flagset2;
-									instance.angle = spawnInfo.angle;
-									instance.projVarDecrease = spawnInfo.projVarDecrease;
-									instance.tintColor = state.vizSettings.enableTint ? spawnInfo.tintColor : glm::vec4(1.0f, 1.0f, 1.0f, 1.0f);
-									instance.alpha = state.vizSettings.spawnedOpacity;
-
-									// Initialize animation state for frame-by-frame advancement
-									instance.currentFrame = 0;
-									instance.frameDuration = 0;
-									instance.previousFrame = 0;
-
-									// Initialize loop counter from the spawned pattern's first frame
-									if (!instance.isPresetEffect) {
-										FrameData* sourceData = instance.usesEffectHA6 && active->effectCharacter
-											? &active->effectCharacter->frameData
-											: &active->frameData;
-
-										auto spawnSeq = sourceData->get_sequence(instance.patternId);
-										if (spawnSeq && !spawnSeq->frames.empty()) {
-											instance.loopCounter = spawnSeq->frames[0].AF.loopCount;
-
-											// Check frame 0 for nested spawn effects immediately
-											if (!spawnSeq->frames[0].EF.empty()) {
-												auto frame0Spawns = ParseSpawnedPatterns(spawnSeq->frames[0].EF, 0, instance.patternId);
-
-												for (const auto& childInfo : frame0Spawns) {
-													ActiveSpawnInstance childInstance;
-													childInstance.spawnTick = state.currentTick;
-													childInstance.patternId = childInfo.patternId;
-													childInstance.usesEffectHA6 = childInfo.usesEffectHA6;
-													childInstance.isPresetEffect = childInfo.isPresetEffect;
-
-													if (instance.usesEffectHA6 && childInfo.effectType != 8) {
-														childInstance.usesEffectHA6 = true;
-													}
-
-													childInstance.offsetX = instance.offsetX + childInfo.offsetX;
-													childInstance.offsetY = instance.offsetY + childInfo.offsetY;
-													childInstance.flagset1 = childInfo.flagset1;
-													childInstance.flagset2 = childInfo.flagset2;
-													childInstance.angle = childInfo.angle;
-													childInstance.projVarDecrease = childInfo.projVarDecrease;
-													childInstance.tintColor = state.vizSettings.enableTint ? childInfo.tintColor : glm::vec4(1.0f, 1.0f, 1.0f, 1.0f);
-													childInstance.alpha = state.vizSettings.spawnedOpacity;
-													childInstance.currentFrame = 0;
-													childInstance.frameDuration = 0;
-													childInstance.previousFrame = 0;
-
-													if (!childInstance.isPresetEffect) {
-														FrameData* childSourceData = childInstance.usesEffectHA6 && active->effectCharacter
-															? &active->effectCharacter->frameData
-															: &active->frameData;
-														auto childSeq = childSourceData->get_sequence(childInstance.patternId);
-														if (childSeq && !childSeq->frames.empty()) {
-															childInstance.loopCounter = childSeq->frames[0].AF.loopCount;
-														}
-													}
-
-													state.activeSpawns.push_back(childInstance);
-												}
-											}
-										}
-									}
-
-									state.activeSpawns.push_back(instance);
-								}
-							}
-						}
-					}
-
-					// Bounds check
-					if(state.frame < 0 || state.frame >= seq->frames.size())
-					{
-						state.animating = false;
-						state.frame = 0;
-						state.previousFrame = -1;  // Reset on animation end
-						state.frameVisitCounts.clear();  // Clear frame visit tracking on animation end
-						state.lastSpawnCreationFrame = -1;
-					}
-				}
-			}
-
-			duration++;
-			state.currentTick++;  // Increment tick counter for spawned pattern synchronization
-
-			// Advance all active spawned patterns frame-by-frame (same logic as main pattern)
-			for (auto& spawn : state.activeSpawns) {
-				// Skip preset effects (they don't have frames)
-				if (spawn.isPresetEffect) continue;
-
-				// Get the spawned pattern's sequence
-				FrameData* sourceData = spawn.usesEffectHA6 && active->effectCharacter
-					? &active->effectCharacter->frameData
-					: &active->frameData;
-
-				auto spawnSeq = sourceData->get_sequence(spawn.patternId);
-				if (!spawnSeq || spawnSeq->frames.empty()) continue;
-
-				// Increment frame duration
-				spawn.frameDuration++;
-
-				// Check if we need to advance to next frame
-				if (spawn.currentFrame < spawnSeq->frames.size()) {
-					auto& currentSpawnFrame = spawnSeq->frames[spawn.currentFrame];
-
-					if (spawn.frameDuration >= currentSpawnFrame.AF.duration) {
-						// Time to advance - use same logic as GetNextFrame
-						int nextFrame = spawn.currentFrame;  // Default: stay on current frame
-
-						if (currentSpawnFrame.AF.aniType == 1) {
-							// Sequential advance - stop at end
-							if (spawn.currentFrame + 1 >= spawnSeq->frames.size()) {
-								nextFrame = -1;  // Mark for removal
-							} else {
-								nextFrame = spawn.currentFrame + 1;
-							}
-						}
-						else if (currentSpawnFrame.AF.aniType == 2) {
-							// Jump/loop logic (same as main pattern)
-							if ((currentSpawnFrame.AF.aniFlag & 0x2) && spawn.loopCounter < 0) {
-								// Loop count exhausted - use loopEnd
-								if (currentSpawnFrame.AF.aniFlag & 0x8) {
-									nextFrame = spawn.currentFrame + currentSpawnFrame.AF.loopEnd;
-								} else {
-									nextFrame = currentSpawnFrame.AF.loopEnd;
-								}
-							} else {
-								// Decrement loop counter if needed
-								if (currentSpawnFrame.AF.aniFlag & 0x2) {
-									--spawn.loopCounter;
-								}
-								// Jump to next frame
-								if (currentSpawnFrame.AF.aniFlag & 0x4) {
-									nextFrame = spawn.currentFrame + currentSpawnFrame.AF.jump;
-								} else {
-									nextFrame = currentSpawnFrame.AF.jump;
-								}
-							}
-						}
-						else {
-							// aniType 0 or other - stop animation
-							nextFrame = -1;  // Mark for removal
-						}
-
-						// Apply the frame change
-						if (nextFrame < 0 || nextFrame >= spawnSeq->frames.size()) {
-							// Pattern ended - mark for removal by setting currentFrame to invalid
-							spawn.currentFrame = -1;
-						} else {
-							spawn.currentFrame = nextFrame;
-							spawn.frameDuration = 0;
-
-							// Update loop counter from new frame if it has one
-							if (spawnSeq->frames[spawn.currentFrame].AF.loopCount > 0) {
-								spawn.loopCounter = spawnSeq->frames[spawn.currentFrame].AF.loopCount;
-							}
-						}
-					}
-				}
-			}
-		}
-
-		// Create nested spawns (spawned patterns spawning child patterns)
-		// Check for spawns that entered a new frame and create their child spawns
-		if (state.animating && state.vizSettings.showSpawnedPatterns) {
-			// We need to iterate by index (not reference) because we'll be adding to the vector
-			size_t numSpawns = state.activeSpawns.size();
-			for (size_t i = 0; i < numSpawns; i++) {
-				auto& spawn = state.activeSpawns[i];
-
-				// Skip if not a pattern (preset effects don't spawn children)
-				if (spawn.isPresetEffect) continue;
-
-				// Skip if pattern ended
-				if (spawn.currentFrame < 0) continue;
-
-				// Check if this spawn entered a new frame
-				if (spawn.currentFrame != spawn.previousFrame) {
-					// Get the spawned pattern's sequence
-					FrameData* sourceData = spawn.usesEffectHA6 && active->effectCharacter
-						? &active->effectCharacter->frameData
-						: &active->frameData;
-
-					auto spawnSeq = sourceData->get_sequence(spawn.patternId);
-					if (spawnSeq && spawn.currentFrame < spawnSeq->frames.size()) {
-						auto& spawnedFrame = spawnSeq->frames[spawn.currentFrame];
-
-						// Check if this frame has spawn effects
-						if (!spawnedFrame.EF.empty()) {
-							// Parse child spawn effects
-							auto childSpawns = ParseSpawnedPatterns(spawnedFrame.EF, spawn.currentFrame, spawn.patternId);
-
-							// Create active instances for each child spawn
-							for (const auto& childInfo : childSpawns) {
-								ActiveSpawnInstance childInstance;
-								childInstance.spawnTick = state.currentTick;
-								childInstance.patternId = childInfo.patternId;
-								childInstance.usesEffectHA6 = childInfo.usesEffectHA6;
-								childInstance.isPresetEffect = childInfo.isPresetEffect;
-
-								// Apply inheritance: if parent uses effect.ha6, children should too (unless they're type 8)
-								if (spawn.usesEffectHA6 && childInfo.effectType != 8) {
-									childInstance.usesEffectHA6 = true;
-								}
-
-								// Accumulate offsets from parent
-								childInstance.offsetX = spawn.offsetX + childInfo.offsetX;
-								childInstance.offsetY = spawn.offsetY + childInfo.offsetY;
-
-								childInstance.flagset1 = childInfo.flagset1;
-								childInstance.flagset2 = childInfo.flagset2;
-								childInstance.angle = childInfo.angle;
-								childInstance.projVarDecrease = childInfo.projVarDecrease;
-								childInstance.tintColor = state.vizSettings.enableTint ? childInfo.tintColor : glm::vec4(1.0f, 1.0f, 1.0f, 1.0f);
-								childInstance.alpha = state.vizSettings.spawnedOpacity;
-
-								// Initialize animation state
-								childInstance.currentFrame = 0;
-								childInstance.frameDuration = 0;
-								childInstance.previousFrame = 0;  // Set to 0 so frame 0 isn't checked again
-
-								// Initialize loop counter from first frame
-								if (!childInstance.isPresetEffect) {
-									FrameData* childSourceData = childInstance.usesEffectHA6 && active->effectCharacter
-										? &active->effectCharacter->frameData
-										: &active->frameData;
-
-									auto childSeq = childSourceData->get_sequence(childInstance.patternId);
-									if (childSeq && !childSeq->frames.empty()) {
-										childInstance.loopCounter = childSeq->frames[0].AF.loopCount;
-
-										// Check frame 0 for nested spawn effects (before frame advancement)
-										if (!childSeq->frames[0].EF.empty()) {
-											auto grandchildSpawns = ParseSpawnedPatterns(childSeq->frames[0].EF, 0, childInstance.patternId);
-											for (const auto& grandchildInfo : grandchildSpawns) {
-												ActiveSpawnInstance grandchildInstance;
-												grandchildInstance.spawnTick = state.currentTick;
-												grandchildInstance.patternId = grandchildInfo.patternId;
-												grandchildInstance.usesEffectHA6 = grandchildInfo.usesEffectHA6;
-												grandchildInstance.isPresetEffect = grandchildInfo.isPresetEffect;
-
-												// Apply inheritance: if parent uses effect.ha6, children should too (unless they're type 8)
-												if (childInstance.usesEffectHA6 && grandchildInfo.effectType != 8) {
-													grandchildInstance.usesEffectHA6 = true;
-												}
-
-												grandchildInstance.offsetX = childInstance.offsetX + grandchildInfo.offsetX;
-												grandchildInstance.offsetY = childInstance.offsetY + grandchildInfo.offsetY;
-												grandchildInstance.flagset1 = grandchildInfo.flagset1;
-												grandchildInstance.flagset2 = grandchildInfo.flagset2;
-												grandchildInstance.angle = grandchildInfo.angle;
-												grandchildInstance.projVarDecrease = grandchildInfo.projVarDecrease;
-												grandchildInstance.tintColor = state.vizSettings.enableTint ? grandchildInfo.tintColor : glm::vec4(1.0f, 1.0f, 1.0f, 1.0f);
-												grandchildInstance.alpha = state.vizSettings.spawnedOpacity;
-												grandchildInstance.currentFrame = 0;
-												grandchildInstance.frameDuration = 0;
-												grandchildInstance.previousFrame = 0;
-
-												if (!grandchildInstance.isPresetEffect) {
-													FrameData* grandchildSourceData = grandchildInstance.usesEffectHA6 && active->effectCharacter
-														? &active->effectCharacter->frameData
-														: &active->frameData;
-													auto grandchildSeq = grandchildSourceData->get_sequence(grandchildInstance.patternId);
-													if (grandchildSeq && !grandchildSeq->frames.empty()) {
-														grandchildInstance.loopCounter = grandchildSeq->frames[0].AF.loopCount;
-													}
-												}
-
-												state.activeSpawns.push_back(grandchildInstance);
-											}
-										}
-									}
-								}
-
-								state.activeSpawns.push_back(childInstance);
-							}
-						}
-					}
-
-					// Update previousFrame tracker
-					spawn.previousFrame = spawn.currentFrame;
-				}
-			}
-		}
-
-		// Update animation state tracker for next frame
-		wasAnimating = state.animating;
 
 		auto &frame =  seq->frames[state.frame];
-
-		// Clean up finished spawns
-		if(state.animating) {
-			state.activeSpawns.erase(
-				std::remove_if(state.activeSpawns.begin(), state.activeSpawns.end(),
-					[&](const ActiveSpawnInstance& spawn) {
-						// Preset effects (Type 3) are instant - remove immediately after spawn tick
-						if (spawn.isPresetEffect) {
-							int elapsedTicks = state.currentTick - spawn.spawnTick;
-							// Remove after spawn tick (instant effect)
-							return elapsedTicks > 0;
-						}
-
-						// Remove if pattern animation has ended (marked with currentFrame == -1)
-						return spawn.currentFrame < 0;
-					}),
-				state.activeSpawns.end()
-			);
-		}
 
 		// Render using layer[0] data for MBAACC compatibility
 		// Ensure frame has at least one layer
@@ -1102,8 +652,6 @@ void MainFrame::RenderUpdate()
 			render.SwitchImage(state.spriteId);
 		}
 
-		if(frame.AF.loopCount>0)
-			loopCounter = frame.AF.loopCount;
 	}
 	else
 	{
@@ -1112,10 +660,39 @@ void MainFrame::RenderUpdate()
 	}
 }
 
-void MainFrame::AdvancePattern(int dir)
+// One game tick of playback for one view (no GL). Playback is driven by the
+// preview tick simulator: the root frame comes from the simulated runtime
+// flow (engine loop rules, EF re-fire on every frame entry) and spawned
+// actors are read from the same simulation when the view renders. When the
+// root has ended and every spawned actor is gone, playback wraps to tick 0.
+void MainFrame::AdvanceViewPlayback(CharacterView* view)
 {
-	auto* view = getActiveView();
-	auto* active = getActiveCharacter();
+	CharacterInstance* active = view ? view->getCharacter() : nullptr;
+	if (!active || view->isStageView()) return;
+	auto& state = view->getState();
+	Sequence* seq = active->frameData.get_sequence(state.pattern);
+	if (!seq || seq->frames.empty()) return;
+	state.animeSeq = state.pattern;
+	if (state.animating) {
+		FrameData* effectData = active->effectCharacter ? &active->effectCharacter->frameData : nullptr;
+		auto& sim = state.BindPreviewSim(&active->frameData, effectData);
+		int next = state.currentTick + 1;
+		const int settled = sim.settledTick();          // cached after the first call
+		const int wrapAt = settled >= 0 ? settled : sim.horizon();
+		if (next > wrapAt) next = 0;
+		sim.ensureSimulatedTo(next);
+		const auto& track = sim.rootFrameTrack();
+		state.currentTick = next;
+		if (next < (int)track.size())
+			state.frame = track[next];
+	}
+	if (state.frame < 0 || state.frame >= (int)seq->frames.size())
+		state.frame = std::clamp(state.frame, 0, (int)seq->frames.size() - 1);
+}
+
+void MainFrame::AdvancePattern(CharacterView* view, int dir)
+{
+	auto* active = view ? view->getCharacter() : nullptr;
 	if (!view || !active) return;
 
 	auto& state = view->getState();
@@ -1128,10 +705,9 @@ void MainFrame::AdvancePattern(int dir)
 	state.currentTick = 0;  // Reset tick when changing pattern
 }
 
-void MainFrame::AdvanceFrame(int dir)
+void MainFrame::AdvanceFrame(CharacterView* view, int dir)
 {
-	auto* view = getActiveView();
-	auto* active = getActiveCharacter();
+	auto* active = view ? view->getCharacter() : nullptr;
 	if (!view || !active) return;
 
 	auto& state = view->getState();
@@ -1152,226 +728,106 @@ void MainFrame::UpdateBackProj(float x, float y)
 	glViewport(0, 0, x, y);
 }
 
+void MainFrame::HandleMouseDown(bool dragRight, bool dragLeft)
+{
+	auto* view = getActiveView();
+	// Stage tab pans with LEFT-mouse drag, matching the character tabs'
+	// pan convention (the editor is consistent: left-drag = pan
+	// everywhere). u4ick used right-mouse, but in-editor consistency
+	// wins over matching bgmaketool's input scheme.
+	if (view && view->isStageView() && dragLeft)
+		bgCamera.BeginDrag();
+}
+
+void MainFrame::HandleMouseUp(bool dragRight, bool dragLeft)
+{
+	if (dragRight && m_boxDragCharacter) EndBoxDrag();
+	if (dragLeft && m_posDrag.active) EndPositionDrag(false);
+	auto* view = getActiveView();
+	if (view && view->isStageView() && dragLeft) {
+		bgCamera.EndDrag();
+		// panX is the true final camera position; panLast is still
+		// easing toward it via Settle(). Persist panX so a tab switch
+		// restores the settled position, not a mid-ease one.
+		view->setStageRenderXY(bgCamera.panX, bgCamera.panY);
+	}
+}
+
 void MainFrame::HandleMouseDrag(int x_, int y_, bool dragRight, bool dragLeft)
 {
 	auto* view = getActiveView();
+	if (!view) return;
+
+	// Stage tab: left-drag pans the bg camera. We accumulate the live
+	// delta into bgCamera.pan while panLast stays put — that's u4ick's
+	// movingPoint / movingPoint_last pair, and it's what makes the
+	// parallax preview kick in for the duration of the drag (sprites
+	// with parallax > 256 shift faster than the camera, < 256 slower).
+	// On mouse-up HandleMouseUp calls EndDrag and Settle() eases the
+	// parallax delta back to zero.
+	if (view->isStageView()) {
+		if (dragLeft) {
+			const float z = view->getZoom() > 0.f ? view->getZoom() : 1.f;
+			bgCamera.panX += x_ / z;
+			bgCamera.panY += y_ / z;
+		}
+		return;
+	}
+
 	auto* active = getActiveCharacter();
-	if (!view || !active) return;
+	if (!active) return;
+
+	// A position-tool drag owns the left button (no panning while it runs).
+	if (dragLeft && m_posDrag.active)
+	{
+		PositionDragBy(x_, y_);
+		return;
+	}
 
 	if(dragRight)
 	{
-		if (view->getBoxPane()) view->getBoxPane()->BoxDrag(x_, y_);
+		const float z = view->getZoom() > 0.f ? view->getZoom() : 1.f;
+		if (view->getBoxPane()) view->getBoxPane()->BoxDragWorld(x_ / z, y_ / z);
 	}
 	else if(dragLeft)
 	{
-		active->renderX += x_;
-		active->renderY += y_;
+		// Pan this view's own camera; the character keeps the last pan as
+		// the starting camera for views opened later.
+		auto& cam = view->camera();
+		cam.panX += x_;
+		cam.panY += y_;
+		active->renderX = (int)cam.panX;
+		active->renderY = (int)cam.panY;
 	}
 }
 
 void MainFrame::RightClick(int x_, int y_)
 {
 	auto* view = getActiveView();
+	if (!view) return;
+	// Stage tab uses RMB for camera pan (handled in HandleMouseDown/Drag);
+	// no box-start here.
+	if (view->isStageView()) return;
+
 	auto* active = getActiveCharacter();
-	if (!view || !active) return;
+	if (!active) return;
 
 	auto* boxPane = view->getBoxPane();
 	if (!boxPane) return;
 
-	boxPane->BoxStart((x_ - active->renderX - clientRect.x/2)/render.scale,
-	                  (y_ - active->renderY - clientRect.y/2)/render.scale);
+	// The whole right-drag (start + every drag update) is one undo step,
+	// closed in HandleMouseUp / CancelViewportGestures.
+	if (m_boxDragCharacter) EndBoxDrag();
+	active->undoManager.beginTransaction("Draw box");
+	m_boxDragCharacter = active;
+
+	const auto& cam = view->camera();
+	boxPane->BoxStart((x_ - cam.panX - clientRect.x/2)/cam.zoom,
+	                  (y_ - cam.panY - clientRect.y/2)/cam.zoom);
 }
 
-bool MainFrame::HandleKeys(uint64_t vkey)
-{
-	bool ctrlPressed = GetKeyState(VK_CONTROL) & 0x8000;
-
-	// Multi-view shortcuts (work even without active view)
-	if (ctrlPressed) {
-		switch (vkey) {
-		case VK_TAB:
-			// Ctrl+Tab: switch to next view
-			if (!views.empty()) {
-				int nextIndex = (activeViewIndex + 1) % views.size();
-				setActiveView(nextIndex);
-				return true;
-			}
-			break;
-		case 'W':
-			// Ctrl+W: close active view
-			if (activeViewIndex >= 0 && activeViewIndex < views.size()) {
-				tryCloseView(activeViewIndex);
-				return true;
-			}
-			break;
-		case 'Z':
-			// Ctrl+Z: undo
-			if (auto* active = getActiveCharacter()) {
-				auto* view = getActiveView();
-				if (view) {
-					int patternIndex = view->getState().pattern;
-					Sequence* currentSeq = active->frameData.get_sequence(patternIndex);
-					if (currentSeq) {
-						// Make a copy of current sequence BEFORE calling undo
-						Sequence currentSeqCopy = *currentSeq;
-
-						active->undoManager.setEnabled(false);
-						SequenceSnapshot* snapshot = active->undoManager.undo(patternIndex, currentSeqCopy);
-						if (snapshot) {
-							Sequence* targetSeq = active->frameData.get_sequence(snapshot->patternIndex);
-							if (targetSeq) {
-								*targetSeq = snapshot->sequence;
-								
-								// Clear pending snapshot to prevent committing stale state
-								active->undoManager.clearPending();
-
-								// Check if we're at clean state
-								if (active->undoManager.isAtCleanState()) {
-									// Clear both character and pattern modified flags
-									active->clearModified();
-									targetSeq->modified = false;
-								} else {
-									// Mark both character and pattern as modified
-									active->markModified();
-									active->frameData.mark_modified(snapshot->patternIndex);
-								}
-
-								// Validate frame index after undo
-								auto& state = view->getState();
-								int frameCount = targetSeq->frames.size();
-								if (state.frame >= frameCount) {
-									state.frame = frameCount > 0 ? frameCount - 1 : 0;
-								}
-
-								// Force sprite reload by resetting spriteId
-								state.spriteId = -1;
-
-								// Force spawn tree rebuild on next frame
-								state.forceSpawnTreeRebuild = true;
-
-								// Refresh main pane to update pattern names
-								if (view->getMainPane()) {
-									view->getMainPane()->RegenerateNames();
-								}
-							}
-						}
-						active->undoManager.setEnabled(true);
-					}
-				}
-				return true;
-			}
-			break;
-		case 'Y':
-			// Ctrl+Y: redo
-			if (auto* active = getActiveCharacter()) {
-				auto* view = getActiveView();
-				if (view) {
-					int patternIndex = view->getState().pattern;
-					Sequence* currentSeq = active->frameData.get_sequence(patternIndex);
-					if (currentSeq) {
-						// Make a copy of current sequence BEFORE calling redo
-						Sequence currentSeqCopy = *currentSeq;
-
-						active->undoManager.setEnabled(false);
-						SequenceSnapshot* snapshot = active->undoManager.redo(patternIndex, currentSeqCopy);
-						if (snapshot) {
-							Sequence* targetSeq = active->frameData.get_sequence(snapshot->patternIndex);
-							if (targetSeq) {
-								*targetSeq = snapshot->sequence;
-								
-								// Clear pending snapshot to prevent committing stale state
-								active->undoManager.clearPending();
-
-								// Check if we're at clean state
-								if (active->undoManager.isAtCleanState()) {
-									// Clear both character and pattern modified flags
-									active->clearModified();
-									targetSeq->modified = false;
-								} else {
-									// Mark both character and pattern as modified
-									active->markModified();
-									active->frameData.mark_modified(snapshot->patternIndex);
-								}
-
-								// Validate frame index after redo
-								auto& state = view->getState();
-								int frameCount = targetSeq->frames.size();
-								if (state.frame >= frameCount) {
-									state.frame = frameCount > 0 ? frameCount - 1 : 0;
-								}
-
-								// Force sprite reload by resetting spriteId
-								state.spriteId = -1;
-
-								// Force spawn tree rebuild on next frame
-								state.forceSpawnTreeRebuild = true;
-
-								// Refresh main pane to update pattern names
-								if (view->getMainPane()) {
-									view->getMainPane()->RegenerateNames();
-								}
-							}
-						}
-						active->undoManager.setEnabled(true);
-					}
-				}
-				return true;
-			}
-			break;
-		case 'S':
-			// Ctrl+Shift+S: save project as
-			if (GetKeyState(VK_SHIFT) & 0x8000) {
-				saveProjectAs();
-				return true;
-			}
-			// Ctrl+S: save project if we have one, otherwise save active character
-			else if (ProjectManager::HasCurrentProject()) {
-				saveProject();
-				return true;
-			}
-			else if (auto* active = getActiveCharacter()) {
-				active->save();
-				return true;
-			}
-			break;
-		case 'O':
-			// Ctrl+O: open project
-			openProject();
-			return true;
-		case 'N':
-			// Ctrl+N: new project
-			newProject();
-			return true;
-		}
-	}
-
-	// View-specific shortcuts (require active view)
-	auto* view = getActiveView();
-	if (!view) return false;
-
-	switch (vkey)
-	{
-	case VK_UP:
-		AdvancePattern(-1);
-		return true;
-	case VK_DOWN:
-		AdvancePattern(1);
-		return true;
-	case VK_LEFT:
-		AdvanceFrame(-1);
-		return true;
-	case VK_RIGHT:
-		AdvanceFrame(+1);
-		return true;
-	case 'Z':
-		if (view->getBoxPane()) view->getBoxPane()->AdvanceBox(-1);
-		return true;
-	case 'X':
-		if (view->getBoxPane()) view->getBoxPane()->AdvanceBox(+1);
-		return true;
-	}
-	return false;
-}
+// HandleKeys() and the shortcut/undo/transport/position-tool handlers live
+// in ui/editor_tools_impl.h.
 
 void MainFrame::ChangeClearColor(float r, float g, float b)
 {
@@ -1392,14 +848,35 @@ void MainFrame::SetZoom(float level)
 	}
 }
 
-void MainFrame::HandleMouseWheel(bool isIncrease)
+void MainFrame::HandleMouseWheel(bool isIncrease, int mouseX, int mouseY)
 {
 	auto* view = getActiveView();
 	if (!view) return;
-	
+
+	if (view->isStageView())
+	{
+		// Smooth zoom centered on the cursor. screen = (world + pan) *
+		// scale, so the world point currently under the cursor is
+		// world = cursor/scale - pan. We capture that point and pin it
+		// under the cursor while DrawBack eases render.scale -> target.
+		float s = view->getZoom() > 0.0f ? view->getZoom() : 1.0f;
+		bgZoomAnchorWorldX = mouseX / s - bgCamera.panLastX;
+		bgZoomAnchorWorldY = mouseY / s - bgCamera.panLastY;
+		bgZoomAnchorScrnX  = (float)mouseX;
+		bgZoomAnchorScrnY  = (float)mouseY;
+
+		if (!bgZoomAnimating) bgZoomTarget = view->getZoom();
+		bgZoomTarget *= isIncrease ? 1.15f : (1.0f / 1.15f);
+		if (bgZoomTarget > 20.0f)  bgZoomTarget = 20.0f;
+		if (bgZoomTarget < 0.25f)  bgZoomTarget = 0.25f;
+		bgZoomAnimating = true;
+		return;
+	}
+
+	// Character / PAT views — unchanged stepped zoom.
 	float currentZoom = view->getZoom();
 	float newZoomVal = currentZoom;
-	
+
 	if (isIncrease)
 	{
 		newZoomVal += 0.25f;  // Smaller increment for smoother zooming
@@ -1422,6 +899,12 @@ void MainFrame::LoadTheme(int i )
 		case 1: ImGui::StyleColorsDark(); ChangeClearColor(0.202f, 0.243f, 0.293f); break;
 		case 2: ImGui::StyleColorsLight(); ChangeClearColor(0.534f, 0.568f, 0.587f); break;
 		case 3: ImGui::StyleColorsClassic(); ChangeClearColor(0.142f, 0.075f, 0.147f); break;
+	}
+	// Detached native windows cannot rely on the main OS window to mask
+	// rounded or translucent ImGui window corners.
+	if (ImGui::GetIO().ConfigFlags & ImGuiConfigFlags_ViewportsEnable) {
+		ImGui::GetStyle().WindowRounding = 0.0f;
+		ImGui::GetStyle().Colors[ImGuiCol_WindowBg].w = 1.0f;
 	}
 }
 

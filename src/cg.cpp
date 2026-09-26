@@ -1,3 +1,4 @@
+#include <filesystem>
 // .CG loader
 //
 // .CG contains information about sprite mappings from the ENC and PVR tiles.
@@ -40,8 +41,33 @@ const char *CG::get_filename(unsigned int n) {
 	return image->filename;
 }
 
+bool CG::image_info(unsigned int n, int &bpp, int &typeId, int &x1, int &y1, int &x2, int &y2) {
+	const CG_Image *image = get_image(n);
+	if (!image || image->type_id == -1) return false;
+	bpp = (int)image->bpp; typeId = image->type_id;
+	x1 = image->bounds_x1; y1 = image->bounds_y1; x2 = image->bounds_x2; y2 = image->bounds_y2;
+	return true;
+}
+
+bool CG::image_cells(unsigned int n, std::vector<CellRect> &out) {
+	out.clear();
+	const CG_Image *image = get_image(n);
+	if (!image || image->type_id == -1) return false;
+	if ((image->align_start + image->align_len) > m_nalign) return false;
+	const CG_Alignment *a = &m_align[image->align_start];
+	for (unsigned int i = 0; i < image->align_len; ++i, ++a)
+		out.push_back({a->x, a->y, a->width, a->height});
+	return true;
+}
+
 int CG::get_image_count() {
 	return m_nimages;
+}
+
+static unsigned long long g_cgGeneration = 0;
+
+void CG::touch() {
+	m_generation = ++g_cgGeneration;
 }
 
 void CG::copy_cells(const CG_Image *image,
@@ -53,11 +79,11 @@ void CG::copy_cells(const CG_Image *image,
 			unsigned int height,
 			unsigned int *palette,
 			bool is_8bpp) {
-	int w = align->width / 0x10;
-	int h = align->height / 0x10;
-	int x = align->source_x / 0x10;
-	int y = align->source_y / 0x10;
-	int cell_n = (y * 0x10) + x;
+	int w = align->width / cu;
+	int h = align->height / cu;
+	int x = align->source_x / cu;
+	int y = align->source_y / cu;
+	int cell_n = (y * cpr) + x;
 	Page *im = &pages[align->source_image];
 	
 	for (int a = 0; a < h; ++a) {
@@ -71,8 +97,8 @@ void CG::copy_cells(const CG_Image *image,
 			unsigned char *dest = pixels;
 			unsigned int offset;
 			
-			offset = (align->y + (a * 0x10) - y1) * width;
-			offset += align->x + (b * 0x10) - x1;
+			offset = (align->y + (a * cu) - y1) * width;
+			offset += align->x + (b * cu) - x1;
 			
 			if (is_8bpp) {
 				// 8bpp -> 8bpp
@@ -81,8 +107,8 @@ void CG::copy_cells(const CG_Image *image,
 				
 				dest += offset;
 				
-				for (int c = 0; c < 0x10; ++c) {
-					for (int d = 0; d < 0x10; ++d) {
+				for (int c = 0; c < cu; ++c) {
+					for (int d = 0; d < cu; ++d) {
 						dest[d] = src[d];
 					}
 					
@@ -97,8 +123,8 @@ void CG::copy_cells(const CG_Image *image,
 				
 				ldest += offset;
 				
-				for (int c = 0; c < 0x10; ++c) {
-					for (int d = 0; d < 0x10; ++d) {
+				for (int c = 0; c < cu; ++c) {
+					for (int d = 0; d < cu; ++d) {
 						ldest[d] = palette[src[d]] & 0xffffff;
 					}
 					
@@ -112,8 +138,8 @@ void CG::copy_cells(const CG_Image *image,
 				src = ((unsigned char *)m_data) + cell->start + cell->offset;
 				src += align->width * align->height;
 
-				for (int c = 0; c < 0x10; ++c) {
-					for (int d = 0; d < 0x10; ++d) {
+				for (int c = 0; c < cu; ++c) {
+					for (int d = 0; d < cu; ++d) {
 						ldest[d] |= src[d] << 24;
 					}
 					
@@ -128,8 +154,8 @@ void CG::copy_cells(const CG_Image *image,
 				
 				ldest += offset;
 				
-				for (int c = 0; c < 0x10; ++c) {
-					for (int d = 0; d < 0x10; ++d) {
+				for (int c = 0; c < cu; ++c) {
+					for (int d = 0; d < cu; ++d) {
 						unsigned int v = src[d];
 						v = (v & 0xff00ff00) | ((v&0xff) << 16) | ((v&0xff0000) >> 16);
 						ldest[d] = v;
@@ -147,8 +173,8 @@ void CG::copy_cells(const CG_Image *image,
 				ldest += offset;
 				
 				
-				for (int c = 0; c < 0x10; ++c) {
-					for (int d = 0; d < 0x10; ++d) {
+				for (int c = 0; c < cu; ++c) {
+					for (int d = 0; d < cu; ++d) {
 						ldest[d] = palette[src[d]];
 					}
 					
@@ -158,10 +184,15 @@ void CG::copy_cells(const CG_Image *image,
 			}
 		}
 		
-		cell_n += 0x10;
+		cell_n += cpr;
 	}
 }
 			
+
+bool CG::image_is_8bpp(unsigned int n) {
+	const CG_Image *image = get_image(n);
+	return image && image->type_id != -1 && image->bpp <= 8;
+}
 
 ImageData *CG::draw_texture(unsigned int n, bool to_pow2_flg, bool draw_8bpp) {
 	const CG_Image *image = get_image(n);
@@ -177,15 +208,12 @@ ImageData *CG::draw_texture(unsigned int n, bool to_pow2_flg, bool draw_8bpp) {
 		return 0;
 	}
 	
-	// initialize texture and boundaries
-	int x1 = 0;
-	int y1 = 0;
-	
-	if (!draw_8bpp) {
-		x1 = image->bounds_x1;
-		y1 = image->bounds_y1;
-	}
-	
+	// initialize texture and boundaries.
+	// Indexed (draw_8bpp) output crops to the same bounds as the RGBA path so
+	// the renderer can substitute it 1:1 (palette resolved in the shader).
+	int x1 = image->bounds_x1;
+	int y1 = image->bounds_y1;
+
 	int width = image->bounds_x2 - x1+1;
 	int height = image->bounds_y2 - y1+1;
 	
@@ -219,6 +247,10 @@ ImageData *CG::draw_texture(unsigned int n, bool to_pow2_flg, bool draw_8bpp) {
 			for (int i = 0; i < 256; ++i) {
 				custom_palette[i] = (0xff << 24) | custom_palette[i];
 			}
+			// Index 0 is transparent: MBAA uploads type 2 images as 8-bit
+			// indices with alpha = (index != 0) (Texture_ConvertFormat 0x402eb0,
+			// P8 source 41). Type 4 takes alpha from its own plane instead.
+			if (image->type_id == 2) custom_palette[0] = 0;
 			needsCustom = true;
 		}
 	}
@@ -295,21 +327,21 @@ void CG::build_image_table() {
 			}
 
 			
-			int w = align->width / 0x10;
-			int h = align->height / 0x10;
-			int x = align->source_x / 0x10;
-			int y = align->source_y / 0x10;
-			int cell_n = (y * 0x10) + x;
+			int w = align->width / cu;
+			int h = align->height / cu;
+			int x = align->source_x / cu;
+			int y = align->source_y / cu;
+			int cell_n = (y * cpr) + x;
 			Page *im = &pages[align->source_image];
 
 			if(cell_n > maxCelln)
 				maxCelln = cell_n;
 
-			if (x + w >= 0x10) {
-				w = 0x10 - x;
+			if (x + w >= cpr) {
+				w = cpr - x;
 			}
-			if (y + h >= 0x10) {
-				h = 0x10 - y;
+			if (y + h >= cpr) {
+				h = cpr - y;
 			}
 			
 			int mult = 1;
@@ -323,11 +355,11 @@ void CG::build_image_table() {
 					cell->start = address;
 					cell->width = align->width;
 					cell->height = align->height;
-					cell->offset = ( (b * 0x10) + (a * align->width * 0x10) ) * mult; //thxxx u4ick <3 
+					cell->offset = ( (b * cu) + (a * align->width * cu) ) * mult; //thxxx u4ick <3 
 					cell->type_id = image->type_id;
 					cell->bpp = image->bpp;
 				}
-				cell_n += 0x10;
+				cell_n += cpr;
 			}
 			
 			if (image->type_id == 4) {
@@ -345,65 +377,134 @@ int CG::getPalNumber()
 	return palMax;
 }
 
-bool CG::loadPalette(const char *name) {
-	if (paletteData) {
-		palette = origPalette;
-		delete[] paletteData;
-		palMax = 0;
-	}
-
+// Parses a .pal file in place: MBAACC "count + count*256 BGRA" or the
+// UNI/MBTL "FFFF, split, 0, count" header + count*256 BGRA (130 palettes =
+// 65 colours x 2 sets; see docs/HANTEI_UNI_MBTL.md). Alpha is made binary and
+// index 0 transparent for display.
+static bool ParsePalette(const char *name, char *&out, int &count, int &offset)
+{
 	unsigned int size;
-	char *data;
-	if (!ReadInMem(name, paletteData, size)) {
+	char *data = nullptr;
+	if (!ReadInMem(name, data, size) || size < 4) {
+		delete[] data;
 		return false;
 	}
-
-	unsigned int *d = (unsigned int *)paletteData;
-	palMax = d[0];
-
-	//Quick filesize check to make sure it's valid.
-	if(palMax*0x400+4 > size)
+	unsigned int *d = (unsigned int *)data;
+	count = d[0];
+	if((unsigned long long)count*0x400+4 > size)
 	{
-		palMax = d[3];
-		if(palMax*0x400+4*4 > size)
+		if (size < 16) { delete[] data; return false; }
+		count = d[3];
+		if((unsigned long long)count*0x400+4*4 > size)
 		{
-			delete[] paletteData;
-			paletteData = nullptr;
-			palMax = 0;
+			delete[] data;
 			return false;
 		}
-		paletteOffset = 4;
+		offset = 4;
 	}
 	else
-		paletteOffset = 1;
+		offset = 1;
 
-	palette = d+paletteOffset;
-
-	unsigned int *paletteIterator = palette;
-	for(int i = 0; i < palMax; i++)
+	unsigned int *paletteIterator = d + offset;
+	for(int i = 0; i < count; i++)
 	{
 		unsigned int *p = paletteIterator;
 		for (int j = 0; j < 256; ++j) {
 			unsigned int v = *p;
 			unsigned int alpha = v>>24;
-			
 			alpha = (alpha != 0) ? 255 : 0;
-			
 			*p = (v&0xffffff) | (alpha<<24);
 			++p;
 		}
 		paletteIterator[0] = 0;
 		paletteIterator += 0x100;
 	}
+	out = data;
 	return true;
+}
+
+bool CG::loadPalette(const char *name) {
+	touch();
+	if (paletteData) {
+		palette = origPalette;
+		delete[] paletteData;
+		paletteData = nullptr;
+		palMax = 0;
+	}
+
+	if (!ParsePalette(name, paletteData, palMax, paletteOffset)) {
+		paletteData = nullptr;
+		palMax = 0;
+		return false;
+	}
+	curPalIndex = 0;
+	curPups = 0;
+	appliedBank = 0;
+	palette = (unsigned int *)paletteData + paletteOffset;
+	return true;
+}
+
+void CG::freePupsBanks()
+{
+	touch();
+	for (int i = 1; i < kPupsBanks; ++i) {
+		delete[] pupsData[i];
+		pupsData[i] = nullptr;
+		pupsMax[i] = 0;
+	}
+}
+
+bool CG::loadPupsPalettes(const std::string &stem)
+{
+	freePupsBanks();
+	bool ok = std::filesystem::exists(stem + ".pal") && loadPalette((stem + ".pal").c_str());
+	for (int i = 1; i < kPupsBanks; ++i) {
+		const std::string p = stem + "_p" + std::to_string(i) + ".pal";
+		if (!std::filesystem::exists(p)) continue;
+		char *data = nullptr; int count = 0, offset = 0;
+		if (ParsePalette(p.c_str(), data, count, offset)) {
+			pupsData[i] = data; pupsMax[i] = count; pupsOffset[i] = offset;
+		}
+	}
+	touch();   // bank contents changed
+	return ok;
+}
+
+int CG::pupsBankCount() const
+{
+	int n = paletteData ? 1 : 0;
+	for (int i = 1; i < kPupsBanks; ++i) if (pupsData[i]) n = i + 1;
+	return n;
+}
+
+void CG::applyPalette()
+{
+	if (curPups > 0 && curPups < kPupsBanks && pupsData[curPups] && curPalIndex < pupsMax[curPups]) {
+		palette = (unsigned int *)pupsData[curPups] + pupsOffset[curPups] + curPalIndex * 0x100;
+		appliedBank = curPups;
+	} else if (paletteData && curPalIndex < palMax) {
+		palette = (unsigned int *)paletteData + paletteOffset + curPalIndex * 0x100;
+		appliedBank = 0;
+	}
+}
+
+bool CG::setPupsBank(int bank)
+{
+	if (bank < 0 || bank >= kPupsBanks) bank = 0;
+	if (bank == curPups) return false;
+	const unsigned int *before = palette;
+	curPups = bank;
+	applyPalette();
+	return palette != before;
 }
 
 bool CG::changePaletteNumber(int number)
 {
+	touch();
 	if(paletteData && number < palMax && number >= 0)
 	{
-		unsigned int *d = (unsigned int *)paletteData;
-		palette = d + paletteOffset + number * 0x100;
+		curPalIndex = number;
+		applyPalette();
 		return true;
 	}
 	return false;
@@ -426,9 +527,29 @@ bool CG::load(const char *name) {
 	if (!ReadInMem(name, data, size)) {
 		return 0;
 	}
-	
+	return loadOwned(data, size);
+}
+
+bool CG::loadFromMemory(const void *src, unsigned int size) {
+	if (m_loaded) {
+		free();
+	}
+	if (paletteData) {
+		delete[] paletteData;
+		paletteData = nullptr;
+		palMax = 0;
+	}
+	char *data = new char[size ? size : 1];
+	memcpy(data, src, size);
+	return loadOwned(data, size);
+}
+
+// Takes ownership of `data` (new[]). Shared by load() and loadFromMemory().
+// "BMP Cutter2" (MBAC GAKIHA.DAT) has the same table layout.
+bool CG::loadOwned(char *data, unsigned int size) {
+	touch();
 	// verify size and header
-	if (size < 0x4f30 || memcmp(data, "BMP Cutter3", 11)) {
+	if (size < 0x4f30 || (memcmp(data, "BMP Cutter3", 11) && memcmp(data, "BMP Cutter2", 11))) {
 		delete[] data;
 		
 		return 0;
@@ -456,6 +577,14 @@ bool CG::load(const char *name) {
 	
 	// parse header
 	page_count = (*d) + 1;
+	// Cell size of the page grid (header +16). 16 in most banks, 32 in many
+	// stages (both handled on a 16-px grid), 8 in MBAACC bg52 (car/airport):
+	// the game indexes cells with it (CG_BmpCutter_ParseSpriteData 0x402970).
+	{
+		unsigned int cs = d[4];
+		cu = (cs >= 1 && cs < 16) ? (int)cs : 16;
+		cpr = 256 / cu;
+	}
 	m_nalign = *(d+2);
 
 	unsigned int *indices = d + 12;
@@ -493,6 +622,11 @@ bool CG::load(const char *name) {
 }
 
 void CG::free() {
+	touch();
+	freePupsBanks();
+	curPups = 0;
+	curPalIndex = 0;
+	appliedBank = 0;
 	if (paletteData) {
 		delete[] paletteData;
 	}
@@ -530,6 +664,7 @@ unsigned int CG::getColorFromPal(int palIndex)
 }
 
 CG::CG() {
+	touch();
 	m_data = 0;
 	m_data_size = 0;
 	

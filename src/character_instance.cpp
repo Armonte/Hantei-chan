@@ -1,6 +1,7 @@
 #include "character_instance.h"
 #include "ini.h"
 #include "misc.h"
+#include "ha4_character.h"
 #include <filesystem>
 #include <sstream>
 #include <iomanip>
@@ -9,6 +10,9 @@
 CharacterInstance::CharacterInstance()
 	: parts(&cg)
 {
+	// Undo tracks the whole pattern list; the baseline is captured lazily on
+	// the first UI frame after (re)load.
+	undoManager.attach(&frameData.m_sequences);
 	state.pattern = 0;
 	state.frame = 0;
 	state.spriteId = -1;
@@ -16,6 +20,22 @@ CharacterInstance::CharacterInstance()
 
 CharacterInstance::~CharacterInstance()
 {
+	MvScriptIndex::Unregister(&frameData);
+}
+
+void CharacterInstance::loadMvScripts(const std::string& txtPath)
+{
+	// MBTL moves spawn patterns from Squirrel scripts (chrXXX_mv_*.txt) next
+	// to the character txt. Parse them so the spawn visualization can show
+	// script-driven spawns; harmless no-op for games without such files.
+	if (m_mvScripts.loadForCharacter(txtPath)) {
+		m_mvScripts.resolveCodeNames(&frameData);
+		MvScriptIndex::Register(&frameData, &m_mvScripts);
+		printf("[MvScript] %s: %d script spawn(s) parsed from move scripts\n",
+			   m_name.c_str(), (int)m_mvScripts.allSpawns().size());
+	} else {
+		MvScriptIndex::Unregister(&frameData);
+	}
 }
 
 bool CharacterInstance::loadFromTxt(const std::string& txtPath)
@@ -59,7 +79,11 @@ bool CharacterInstance::loadFromTxt(const std::string& txtPath)
 	}
 
 	m_isModified = false;
-	undoManager.markCleanState();
+	undoManager.reset();  // document replaced: new baseline, no history
+	loadNotes();
+
+	// Load MBTL move scripts for script-spawn visualization
+	loadMvScripts(txtPath);
 
 	// Auto-load effect character if effect.txt exists in same folder
 	// (but don't try to load effect for the effect itself - prevents infinite loop)
@@ -107,7 +131,12 @@ bool CharacterInstance::loadChrHA6FromTxt(const std::string& txtPath)
 	}
 
 	m_isModified = false;
-	undoManager.markCleanState();
+	undoManager.reset();  // document replaced: new baseline, no history
+	loadNotes();
+
+	// Load MBTL move scripts for script-spawn visualization
+	loadMvScripts(txtPath);
+
 	return true;
 }
 
@@ -127,8 +156,36 @@ bool CharacterInstance::loadHA6(const std::string& ha6Path, bool patch)
 	m_ha6Paths.push_back(ha6Path);
 	m_topHA6Path = ha6Path;
 
+	// MBAC Hantei4 .DAT: sprites, palette, parts and EFFECT.DAT come with it
+	if (frameData.isHA4()) {
+		ha4::AttachCharacterResources(*this, ha6Path);
+	}
+
 	m_isModified = false;
-	undoManager.markCleanState();
+	undoManager.reset();  // document replaced: new baseline, no history
+	loadNotes();
+	return true;
+}
+
+void CharacterInstance::loadNotes()
+{
+	if (m_topHA6Path.empty()) return;
+	std::string error;
+	if (!frameData.notes.load(Ha6Notes::PathFor(m_topHA6Path), &error))
+		m_notesError = error;
+	else
+		m_notesError.clear();
+}
+
+bool CharacterInstance::saveNotes(const std::string& ha6Path)
+{
+	// Only touch the side file when there is something to write: notes exist,
+	// or the user removed the last one (dirty). A notes file that failed to
+	// parse is never overwritten.
+	if (!m_notesError.empty()) return false;
+	if (frameData.notes.notes.empty() && !frameData.notes.dirty) return true;
+	if (!frameData.notes.save(Ha6Notes::PathFor(ha6Path))) return false;
+	frameData.notes.dirty = false;
 	return true;
 }
 
@@ -164,15 +221,27 @@ bool CharacterInstance::save()
 		return false;
 	}
 
-	frameData.save(m_topHA6Path.c_str());
+	// Commit any pending edit first: a stacked character's save filters on
+	// Sequence::modified, which the undo commit keeps current.
+	undoManager.flush();
+	// Only mark clean if the file actually reached disk.
+	if (!frameData.save(m_topHA6Path.c_str())) {
+		return false;
+	}
+	saveNotes(m_topHA6Path);
 	m_isModified = false;
-	undoManager.markCleanState();
+	undoManager.markClean();  // undoing back to this revision clears dirty
 	return true;
 }
 
 bool CharacterInstance::saveAs(const std::string& ha6Path)
 {
-	frameData.save(ha6Path.c_str());
+	undoManager.flush();
+	if (!frameData.save(ha6Path.c_str())) {
+		return false;
+	}
+	frameData.notes.dirty = frameData.notes.dirty || !frameData.notes.notes.empty();
+	saveNotes(ha6Path);
 	m_topHA6Path = ha6Path;
 
 	// Update ha6 paths list
@@ -180,13 +249,15 @@ bool CharacterInstance::saveAs(const std::string& ha6Path)
 	m_ha6Paths.push_back(ha6Path);
 
 	m_isModified = false;
-	undoManager.markCleanState();
+	undoManager.markClean();  // undoing back to this revision clears dirty
 	return true;
 }
 
 bool CharacterInstance::saveModifiedOnly(const std::string& ha6Path)
 {
-	frameData.save_modified_only(ha6Path.c_str());
+	if (!frameData.save_modified_only(ha6Path.c_str())) {
+		return false;
+	}
 
 	// Add to .txt if we have one
 	if (!m_txtPath.empty()) {
@@ -197,7 +268,7 @@ bool CharacterInstance::saveModifiedOnly(const std::string& ha6Path)
 	}
 
 	m_isModified = false;
-	undoManager.markCleanState();
+	undoManager.markClean();  // undoing back to this revision clears dirty
 	return true;
 }
 
