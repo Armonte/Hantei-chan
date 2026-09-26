@@ -71,8 +71,11 @@ void TagIni::reindex()
 			if (ieq(name, "tuning")) in.kind = SecKind::Tuning;
 			else if (name.size() > 6 && ieq(name.substr(0, 6), "style.")) in.kind = SecKind::Style;
 			else if (name.size() > 5 && ieq(name.substr(0, 5), "char.")) in.kind = SecKind::Char;
+			else if (m_charFile && ieq(name, "char")) in.kind = SecKind::Char;
 			else in.kind = SecKind::Other;
-			if (in.kind == SecKind::Style || in.kind == SecKind::Char) {
+			if (in.kind == SecKind::Char && ieq(name, "char")) {
+				in.name.clear();
+			} else if (in.kind == SecKind::Style || in.kind == SecKind::Char) {
 				std::string n = name.substr(in.kind == SecKind::Style ? 6 : 5);
 				size_t a = 0, z = n.size();
 				while (a < z && IsBlank(n[a])) ++a;
@@ -110,7 +113,7 @@ std::vector<int> TagIni::scope(SecKind k, const std::string& name) const
 	std::vector<int> out;
 	for (size_t i = 0; i < m_inst.size(); ++i) {
 		if (m_inst[i].kind != k) continue;
-		if (k != SecKind::Tuning && !ieq(m_inst[i].name, name)) continue;
+		if (k != SecKind::Tuning && !(k == SecKind::Char && m_charFile) && !ieq(m_inst[i].name, name)) continue;
 		out.push_back((int)i);
 		if (k == SecKind::Style) break;   // only the first [style.<name>] counts
 	}
@@ -177,7 +180,8 @@ void TagIni::Set(SecKind k, const std::string& name, const std::string& keyName,
 		std::string add;
 		if (!m_text.empty() && m_text.back() != '\n') add += nl;
 		if (!m_text.empty()) add += nl;
-		add += k == SecKind::Tuning ? "[tuning]" : k == SecKind::Style ? "[style." + name + "]" : "[char." + name + "]";
+		add += k == SecKind::Tuning ? "[tuning]" : k == SecKind::Style ? "[style." + name + "]"
+		     : m_charFile ? std::string("[char]") : "[char." + name + "]";
 		add += nl + keyName + "=" + v + nl;
 		insertAt(m_text.size(), add);
 		return;
@@ -211,7 +215,8 @@ void TagIni::RemoveSection(SecKind k, const std::string& name)
 {
 	std::vector<int> sc;
 	for (size_t i = 0; i < m_inst.size(); ++i)   // every instance (styles too: remove means gone)
-		if (m_inst[i].kind == k && (k == SecKind::Tuning || ieq(m_inst[i].name, name))) sc.push_back((int)i);
+		if (m_inst[i].kind == k && (k == SecKind::Tuning || (k == SecKind::Char && m_charFile) || ieq(m_inst[i].name, name)))
+			sc.push_back((int)i);
 	if (sc.empty()) return;
 	for (size_t i = m_lines.size(); i-- > 0;) {
 		const Line& l = m_lines[i];
@@ -228,6 +233,13 @@ void TagIni::RemoveSection(SecKind k, const std::string& name)
 		if (b != l.begin) --i;   // the blank line went too
 	}
 	reindex();
+}
+
+std::vector<TagIni::SectionRef> TagIni::Sections() const
+{
+	std::vector<SectionRef> out;
+	for (const Inst& in : m_inst) out.push_back({ in.kind, in.name, (int)in.headerLine + 1 });
+	return out;
 }
 
 std::string TagIni::ActiveStyle() const

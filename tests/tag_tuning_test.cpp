@@ -402,6 +402,18 @@ static void TestAssist(const std::string& fixtures, const std::string& dataDir)
 	CHECK(DescribeAction(act, cmds).problem);
 }
 
+// [authoring] §3.5 lever table hash: pinned (the value pchost.dll must report in LinkCaps.leverTableHash for this
+// table), and equal to PovertyCaster's own function when its header has one (HAVE_PC_LEVER_HASH).
+static constexpr uint32_t kPinnedLeverTableHash = 0x37BDB3FBu;
+static void TestLeverTableHash()
+{
+	CHECK(LeverTableHash() == kPinnedLeverTableHash);
+	CHECK(PerCharLeverCount() == 45);
+#ifdef HAVE_PC_LEVER_HASH
+	CHECK(mbaacc::tag::leverTableHash() == LeverTableHash());
+#endif
+}
+
 int main(int argc, char** argv)
 {
 	std::string fixtures = "tests/fixtures/tag", data;
@@ -422,6 +434,7 @@ int main(int argc, char** argv)
 	std::printf("PovertyCaster header not found at configure time: row-by-row comparison skipped\n");
 #endif
 	TestAssist(fixtures, data);
+	TestLeverTableHash();
 	std::printf("tag_tuning_test: %d passed, %d failed -> %s\n", g_pass, g_fail, g_fail ? "FAIL" : "PASS");
 	return g_fail ? 1 : 0;
 }
