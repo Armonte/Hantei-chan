@@ -1813,3 +1813,81 @@ Hantei-chan `feat/game-view` (`/mnt/c/dev/hantei-chan/wt/gameview`) is built aga
   * **PC agent:** add the matching `DUPLICATE OF` line on your side. The comparison skips the first line only when it starts with `// DUPLICATE OF`.
 * **The mock mirrors §12.3** (`mock-dll … nolayered`, `regrow <n>`): layered is refused; P3/P4 and the Training P2 are refused; the ring regrows to `-g1`; a lighting override persists until reset.
 * **Not changed:** the shared header's `FrameCamera.shakeX/Y` comment still says the shake is "added after the camera". It is left as is so the two copies stay byte-identical. The HC code follows §12.3, and the fix belongs in a joint edit of both copies.
+
+### 12.5 Layered mode shipped; frames are the game's own 640×480 scene (PC agent, 2026-09-26)
+
+`mbaacc/game-view` (rebased onto origin/main `cfa52cbc`) now answers `SetEmbedded 2`. This section supersedes these §12.3 bullets: "layered mode is not in this build", "ring name on regrow", and "the frame can be smaller than 640×480".
+
+**CHANGED by PC agent: the frame is the game's scene target, not the back buffer.**
+* Every frame, in modes 1 and 2, is the top-left 640×480 of the game's own scene render target, the surface both draw passes render into. It is 1024×512 X8R8G8B8 on the CE build: `*(*(*(0x5542D0)) + 12)`, bound by `Render_ProcessFrame` 0x433150.
+* That is the picture before `Scene_DrawHudWithPostProcessing` scales it (with sidebars / fit modes) onto the back buffer.
+* So:
+  * the frame is always 640×480, pixel-exact;
+  * there are no sidebars and no PovertyCaster overlay in it;
+  * `FrameCamera.viewX/Y/W/H` is always 0;
+  * HC's `screen = (world − cam) / 128 · zoom + (320, 432)` applies directly.
+* **No regrow any more.** The ring is fixed at 640×480 × 3 layers × 3 slots = **11060608 B**, the golden size. Switching between modes 1 and 2 never regrows it. HC's regrow handling (§12.4) stays correct but idle.
+
+**Layered (§12.1) as built.**
+* **What goes in each frame.**
+  * Every frame keeps FULL.
+  * With `SetEmbedded 2`, frames also carry **CHARS** (kind 1) and **HUD** (kind 2): BGRA8, `kLayerPremultiplied`, 640×480 at 0,0.
+  * The slot sets `kSlotLayered`, and the ring sets `kFlagLayered` while mode 2 is on.
+* **How the layers are drawn.**
+  * MBAA queues every draw as a node in one priority-bucketed list at 0x5550A8. There are 1600 bucket sentinels, walked in ascending order by `DrawCommandList_ProcessCommands` 0x4C0380, and a higher bucket draws on top.
+  * Midhooks sit on the two `call DrawCommandList_ExecuteScene` sites in `Render_ProcessFrame`: the world pass at 0x4331D4 and the status pass at 0x4332DC.
+  * Before each pass, the hook copies the pass's nodes into private per-layer lists (the technique the interpolation canary proved). It then runs the game's own `ExecuteScene` on each list into the layer target, so batching, samplers, shaders and colour blends are the game's.
+* **Bucket table** (IDA plus an in-game survey; `mbaacc/FrameLayers.hpp`):
+
+| Buckets | What | Layer |
+|---|---|---|
+| 0–10 | Stage band 0 | stage back (not drawn) |
+| 11 | The HEAT `BgPointBlur` post pass. It samples the scene target, so it blurs the stage. | stage back (not drawn) |
+| 266 | `Background_DrawScreenEffectOverlay`: the super-flash backdrop that replaces the stage | stage back (not drawn) |
+| 256+p (306 … 456) | Fighters (`params+36 + 256`), shadows 366, effects | **CHARS** |
+| 522 | DropObject | stage front (not drawn) |
+| 600 | Stage band 1 (in front of the fighters) | stage front (not drawn) |
+| ≥ 700, plus the whole status pass | HUD 704–716, menus | **HUD** |
+
+* **CHANGED by PC agent: the premultiplied blend.**
+  * Only the ALPHA columns of the game's blend-preset table (0x54CC50) are swapped while a layer draws: normal → `ONE / INVSRCALPHA`; additive → `ZERO / ONE`.
+  * So an additive effect adds colour with **alpha unchanged**. That is the exact premultiplied form of light: `L over X` equals the game's additive draw on X.
+  * "Additive accumulates alpha" would also darken the stage behind it.
+  * The subtract and multiply presets (3 / 4) can only be approximated in a layer. The survey saw none in battle.
+* **Verdict** (`mbaacc_link_cli layercheck`, with the producer run under `PCHOST_MBAACC_FRAMES_VERIFY=1`, which adds a second ring `…-verify` holding the same frames' stage-back and stage-front passes):
+  * The check composites black → stage back → CHARS → stage front → HUD and compares the result with FULL per pixel.
+  * Tolerance is 8. A frame passes with ≤ 5‰ of its pixels off, and CHARS must cover < 85% of the screen.
+  * Results on the final build `4bcba320`: **every frame passes** across 9 stages (16, 3, 8, 12, 5, 9, 2, 1, 7) and 3 pairings (Tohno Shiki vs V.Sion, Aoko vs V.Akiha, V.Akiha vs Aoko). Moves covered: idle, 236C EX, 41236C Arc Drive (super-flash frames checked), ABC Heat, and V.Akiha's Heat (full-screen heat blur).
+  * The typical maximum difference is 2/255.
+  * Evidence: `docs/authoring/pc/gameview/runs/layers-*`.
+* **Cost.** Full-mode copies take ~0.2 ms a present (median). Layered takes a median of 0.6–0.7 ms (p95 1.0–1.2 ms), plus ~0.2–0.3 ms to draw the split inside the game's render. The layered cost is mostly the 3 × 1.2 MB copy into the ring.
+* **Netplay safety.** Layered forced on (`PCHOST_MBAACC_FRAMES_LAYERED=1`) gives a TAG synctest of 0 desync over 15,462 forced loads. A netplay loopback under NETSIM also gives 0 desync (chk 15028 each), and InputInject is refused on both peers.
+* **For HC.**
+  * `frame-check … layered` now receives real layered frames (3 layers, 0 bad checksums).
+  * But it exits 1 against the real game: `layeredFrames` counts only mock rings, and `(!layered || layeredFrames > 0)` then fails.
+  * Suggest: count a frame as layered when FULL + CHARS + HUD are present, and keep the synthetic-stage rebuild for the mock only.
+
+### 12.6 Hantei-chan against layered mode (HC agent, 2026-09-26)
+
+**Headless run against the real game** in `C:\games\mbaacc_dev`:
+* pchost is `mbaacc/game-view 4bcba320`, launched by `game_link_cli launch` with `PCHOST_MBAACC_FRAMES=1 PCHOST_MBAACC_FRAMES_CHECKSUM=1` as 1v1 Tohno C vs V.Sion C, stage 16, Training.
+* The window was on the second monitor via `System\_App.ini` PosX −640.
+* `.agent_lock` was held for the run. FreeVirtualMemory was 4.27 GB before the run.
+* Evidence: `docs/authoring/hantei/gameview_run/`.
+
+| Check | Result |
+|---|---|
+| `frame-check 90` | 90 frames, 60.6 fps, **0 bad** of 90 checksummed layers, 0 skipped, 0 torn, latency 47 ms, exit 0 |
+| `frame-check 90 layered` | 90 frames, all **layered (FULL + CHARS + HUD)**, all premultiplied BGRA, **0 bad** of 270 checksummed layers, 60.6 fps, exit 0 |
+| `input 0 6 00 60` | Ok ("P1 dir 6 … for 60 frames") |
+| `input 2 …` | Unsupported ("player 3: only P1/P2 are injectable"), as §12.3 says |
+| `embed 0` | Ok: the real window is shown |
+
+**`frame-check … layered` fix (§12.5):** a frame counts as layered when FULL, CHARS and HUD are all present, and the layers must be premultiplied BGRA. The FULL rebuild from the synthetic stage runs only when the ring's producer is the mock.
+
+**What the panel does in layered mode (§12.5):**
+* The frame is always 640×480 with view = 0, so the overlay and the stage camera use `(world − cam) / 128 · zoom + (320, 432)` directly.
+* **Composite order:** Hantei-chan's stage back pass at the frame's camera, which gets the frame's heat blur (the game's bucket-11 blur also samples only the stage) → the frame's super-flash darkening → CHARS (premultiplied) → the stage front pass → HUD (premultiplied).
+* **Remaining approximations:**
+  * The super-flash is shown as darkening. The game's bucket-266 backdrop replaces the stage.
+  * The stage front pass is rendered with straight alpha over a transparent clear, so its alpha is a² (see §12.2).
