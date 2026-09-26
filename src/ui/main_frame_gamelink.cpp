@@ -5,6 +5,8 @@
 #include "../main_frame.h"
 #include "../game_link_panel.h"
 #include "../tag_panel.h"
+#include "../authoring/authoring_window.h"
+#include "../game_link.h"
 #include "../background/bg_file.h"
 #include "../character_view.h"
 
@@ -18,18 +20,26 @@ std::string TxtStem(const std::string& path)
 }
 } // namespace
 
+// The open characters' files (auto-reload on save).
+static std::vector<gamelink::WatchedFile> CollectLinkFiles(const std::vector<std::unique_ptr<CharacterInstance>>& characters)
+{
+	std::vector<gamelink::WatchedFile> files;
+	for (const auto& ch : characters) {
+		if (!ch) continue;
+		const std::string key = !ch->getTxtPath().empty() ? TxtStem(ch->getTxtPath()) : TxtStem(ch->getTopHA6Path());
+		for (const auto& p : ch->getHA6Paths()) if (!p.empty()) files.push_back({ p, key });
+		if (!ch->getPATPath().empty()) files.push_back({ ch->getPATPath(), key });
+		if (!ch->getTxtPath().empty()) files.push_back({ ch->getTxtPath(), key });
+		if (!ch->frameData.m_commandsPath.empty()) files.push_back({ ch->frameData.m_commandsPath, key });
+	}
+	return files;
+}
+
 void MainFrame::drawGameLink()
 {
 	if (!gamelink::showPanel) return;
 	gamelink::EditorContext ctx;
-	for (const auto& ch : characters) {
-		if (!ch) continue;
-		const std::string key = !ch->getTxtPath().empty() ? TxtStem(ch->getTxtPath()) : TxtStem(ch->getTopHA6Path());
-		for (const auto& p : ch->getHA6Paths()) if (!p.empty()) ctx.files.push_back({ p, key });
-		if (!ch->getPATPath().empty()) ctx.files.push_back({ ch->getPATPath(), key });
-		if (!ch->getTxtPath().empty()) ctx.files.push_back({ ch->getTxtPath(), key });
-		if (!ch->frameData.m_commandsPath.empty()) ctx.files.push_back({ ch->frameData.m_commandsPath, key });
-	}
+	ctx.files = CollectLinkFiles(characters);
 	CharacterView* view = getActiveView();
 	CharacterInstance* active = getActiveCharacter();
 	if (view && active) {
@@ -89,4 +99,82 @@ void MainFrame::drawTagPanel()
 		};
 	}
 	tagpanel::DrawPanel(ctx);
+}
+
+// [authoring] The Authoring workspace (docs/HANTEI_AUTHORING_MODE.md §5 / §8.9): it opens the picked characters as tabs,
+// reads their loaded HA6 (read-only) for the pattern pickers and the inline frame data, and drives the tabs for
+// Follow point. While it is open and the Game Link window is not, the open characters' files are watched here so a save
+// still hot-reloads them in the game.
+namespace {
+std::string LowerPathKey(std::string s)
+{
+	for (char& c : s) { if (c >= 'A' && c <= 'Z') c = (char)(c - 'A' + 'a'); if (c == '/') c = '\\'; }
+	return s;
+}
+} // namespace
+
+void MainFrame::drawAuthoring()
+{
+	if (!authoring::showWindow) { authoring::HostContext none; authoring::Draw(none); return; }
+	static bool registered = false;
+	if (!registered) {
+		registered = true;
+		shortcuts.setContextHandler(ShortcutContext::authoring, [](ShortcutAction a) {
+			if (a == ShortcutAction::undo) return authoring::UndoRedo(false);
+			if (a == ShortcutAction::redo) return authoring::UndoRedo(true);
+			return false;
+		});
+	}
+	auto findChar = [this](const std::string& txt) -> CharacterInstance* {
+		const std::string k = LowerPathKey(txt);
+		for (const auto& ch : characters)
+			if (ch && !ch->getTxtPath().empty() && LowerPathKey(ch->getTxtPath()) == k) return ch.get();
+		return nullptr;
+	};
+	auto viewIndexOf = [this](CharacterInstance* ch) {
+		for (size_t i = 0; i < views.size(); ++i) if (views[i] && views[i]->getCharacter() == ch) return (int)i;
+		return -1;
+	};
+	authoring::HostContext host;
+	host.openCharacter = [this, findChar, viewIndexOf](const std::string& txt, bool focus) {
+		if (CharacterInstance* ch = findChar(txt)) {
+			if (focus) { const int vi = viewIndexOf(ch); if (vi >= 0) setActiveView(vi); }
+			return true;
+		}
+		auto character = std::make_unique<CharacterInstance>();
+		if (!character->loadFromTxt(txt)) return false;
+		characters.push_back(std::move(character));
+		const int before = activeViewIndex;
+		createViewForCharacter(characters.back().get());
+		if (!focus && before >= 0) setActiveView(before);
+		return true;
+	};
+	host.frameDataFor = [findChar](const std::string& txt) -> const FrameData* {
+		CharacterInstance* ch = findChar(txt);
+		return ch ? &ch->frameData : nullptr;
+	};
+	host.showPattern = [this, findChar, viewIndexOf](const std::string& txt, int pattern, int frame, bool focusTab) {
+		CharacterInstance* ch = findChar(txt);
+		if (!ch) return;
+		const int vi = viewIndexOf(ch);
+		if (vi < 0) return;
+		if (focusTab && vi != activeViewIndex) setActiveView(vi);
+		if (pattern < 0 || pattern >= (int)ch->frameData.get_sequence_count()) return;
+		FrameState& st = views[vi]->getState();
+		st.animating = false;
+		st.pattern = pattern;
+		auto* seq = ch->frameData.get_sequence(pattern);
+		const int frames = seq ? (int)seq->frames.size() : 0;
+		st.frame = frames > 0 ? (frame >= 0 && frame < frames ? frame : 0) : 0;
+		st.currentTick = 0;
+	};
+	host.browseStage = [this] { m_showStageBrowser = true; };
+	if (CharacterInstance* active = getActiveCharacter()) host.activeTxt = active->getTxtPath();
+	if (!gamelink::showPanel) {
+		gamelink::Client& c = gamelink::SharedClient();
+		c.SetAutoReload(true);
+		c.SetWatchedFiles(CollectLinkFiles(characters));
+	}
+	authoring::Draw(host);
+	if (authoring::HasFocus()) shortcuts.claimFocus(ShortcutContext::authoring, 0);
 }

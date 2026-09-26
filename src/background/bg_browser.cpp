@@ -243,6 +243,12 @@ void DrawStageBrowser(StageProject& pr, const std::string& currentDat, const Bro
 	ImGui::EndDisabled();
 	if (!hooks.showInGame && ImGui::IsItemHovered(ImGuiHoveredFlags_AllowWhenDisabled))
 		ImGui::SetTooltip("Needs the Game Link stage switch (PovertyCaster mbaacc/stage-link).");
+	if (hooks.pickForSetup) {
+		ImGui::SameLine();
+		ImGui::BeginDisabled(sel->datPath.empty());
+		if (ImGui::Button("Use for the Authoring setup")) hooks.pickForSetup(sel->id);
+		ImGui::EndDisabled();
+	}
 	ImGui::EndGroup();
 
 	if (mbaacc) {

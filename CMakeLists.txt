@@ -278,6 +278,13 @@ endif()
 set(TAG_SIDECAR_SOURCES src/tag_tuning/tag_ini.cpp src/tag_tuning/tag_sidecar.cpp src/tag_tuning/tag_migrate.cpp
 	src/tag_tuning/tag_history.cpp)
 set(AUTHORING_CORE_SOURCES src/authoring/authoring_model.cpp src/authoring/authoring_policy.cpp src/authoring/game_launcher.cpp)
+# [authoring] the Authoring workspace in the editor (tag_ini.cpp / tag_assist.cpp are already in the list above)
+target_sources(${EXE} PRIVATE
+	src/tag_tuning/tag_sidecar.cpp src/tag_tuning/tag_migrate.cpp src/tag_tuning/tag_history.cpp src/tag_tuning/tag_widgets.cpp
+	${AUTHORING_CORE_SOURCES}
+	src/authoring/authoring_window.cpp src/authoring/authoring_tuning_ui.cpp src/authoring/authoring_live_ui.cpp
+	src/authoring/frame_summary.cpp src/authoring/mbac_reference.cpp src/authoring/hud_layout.cpp src/authoring/hud_layout_ui.cpp
+	src/pal_file.cpp)
 add_executable(game_link_cli
 	src/game_link_cli.cpp
 	src/game_link.cpp
