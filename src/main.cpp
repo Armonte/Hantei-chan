@@ -257,6 +257,7 @@ int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE, PWSTR pCmdLine, int nCmdShow
 			else if(!strcmp(arg, "--authoring-layer")) gStartup.authoring.layer = v;
 			else if(!strcmp(arg, "--authoring-view")) gStartup.authoring.subTab = v;
 			else if(!strcmp(arg, "--authoring-ab")) gStartup.authoring.abDemo = v;
+			else if(!strcmp(arg, "--authoring-pid")) gStartup.authoring.pid = (uint32_t)strtoul(v.c_str(), nullptr, 0);
 			else if(!strncmp(arg, "--authoring-", 12)) {}
 			else gStartup.palette = atoi(v.c_str());
 			i++;

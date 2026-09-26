@@ -13,6 +13,7 @@
 // The window talks to the game through gamelink::SharedClient() (one pipe per editor).
 #include "authoring_model.h"
 
+#include <cstdint>
 #include <functional>
 #include <string>
 #include <vector>
@@ -48,6 +49,7 @@ struct StartupOptions {
 	bool loadInGame = false;     // press Load in game once the link is up
 	bool sessionUnlock = false;
 	std::string abDemo;          // "1": take A, change a value, take B (a capture of the A/B strip)
+	uint32_t pid = 0;            // --authoring-pid: link ONLY to this pid (a mock / one game among several)
 };
 void ApplyStartup(const StartupOptions& o);
 void StartupLoadInGame();

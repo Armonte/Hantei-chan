@@ -824,6 +824,7 @@ void ApplyStartup(const StartupOptions& o)
 	a.unlocked = o.sessionUnlock;
 	Open(o.tab.empty() ? "Setup" : o.tab);
 	EnsureWorkspace();
+	if (o.pid) Link().SetTargetPid(o.pid);
 	if (o.link) Link().Connect();
 	if (o.abDemo == "1" && a.ws.IsOpen()) {
 		a.ab[0] = { true, "A (as loaded)", NowText(), a.ws.Take() };
@@ -927,8 +928,9 @@ void Draw(HostContext& host)
 		ImGui::SetNextWindowPos(ImVec2(vp->WorkPos.x + 20, vp->WorkPos.y + 30), ImGuiCond_Always);
 		ImGui::SetNextWindowSize(ImVec2(vp->WorkSize.x - 40, vp->WorkSize.y - 50), ImGuiCond_Always);
 	} else {
-		ImGui::SetNextWindowPos(ImVec2(vp->WorkPos.x + 60, vp->WorkPos.y + 50), ImGuiCond_FirstUseEver);
-		ImGui::SetNextWindowSize(ImVec2(1180, 820), ImGuiCond_FirstUseEver);
+		// inside the main window, so it stays part of it (a window larger than the main viewport becomes its own OS window)
+		ImGui::SetNextWindowPos(ImVec2(vp->WorkPos.x + 30, vp->WorkPos.y + 40), ImGuiCond_FirstUseEver);
+		ImGui::SetNextWindowSize(ImVec2(std::min(1240.0f, vp->WorkSize.x - 60), std::min(900.0f, vp->WorkSize.y - 60)), ImGuiCond_FirstUseEver);
 	}
 	if (!ImGui::Begin("Authoring (MBAACC)###authoring", &showWindow, ImGuiWindowFlags_MenuBar)) {
 		a.focused = false;

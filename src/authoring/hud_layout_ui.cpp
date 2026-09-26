@@ -316,8 +316,8 @@ void DrawHudLayoutEditor(EditSink& sink, const std::string& gameDir, const int p
 			if (ImGui::IsItemDeactivated()) sink.End();
 			if (ImGui::IsItemActive()) st.selected = k.key;
 		}
-		ImGui::SameLine();
 		if (!localValue.empty() || !std::strcmp(layer, "local")) {
+			ImGui::SameLine();   // only when the buttons follow: a trailing SameLine would put the next key on this row
 			if (ImGui::SmallButton("reset")) { sink.Begin("reset " + std::string(k.key) + " (hud)"); ClearHudKey(localIni(), k.key); sink.Edited(); sink.End(); }
 			if (ImGui::IsItemHovered()) ImGui::SetTooltip("remove the local value: the shipped / default one applies again");
 			ImGui::SameLine();

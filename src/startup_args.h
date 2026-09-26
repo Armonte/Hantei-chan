@@ -37,7 +37,7 @@
 //   --authoring-tab Setup|Setups|Tuning|HUD|Live|Log   --authoring-setup <128 hex>   --authoring-game <dir>
 //   --authoring-tag-root <povertycaster\tag dir>   --authoring-char <file>   --authoring-layer all|c|f|h
 //   --authoring-view global   --authoring-link (connect; the capture waits to frame 240)   --authoring-load (Load in game)
-//   --authoring-unlock (session: files unlocked)   --authoring-ab 1 (an A/B pair for a capture; nothing is written)
+//   --authoring-pid <n> (link only to that pid)   --authoring-unlock (session: files unlocked)   --authoring-ab 1 (an A/B pair for a capture; nothing is written)
 //   --game-link N        open the Game Link window, connect, follow game slot N (1-4) and jump the editor to it;
 //                        with --capture the shot is taken later (frame 240) so the link has live state
 #include <string>
