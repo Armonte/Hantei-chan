@@ -1,5 +1,7 @@
 # Hantei-chan Tag / Team panel (EXPERIMENTAL)
 
+> **Superseded by Authoring Mode (2026-09-25).** The per-character sidecar files (`povertycaster\tag\`) replace `tag_tuning.ini`, and the **Experimental: Authoring** workspace replaces this panel: *Windows > Tag / Team (experimental)* now opens it on its Tuning tab. This panel stays reachable as *Experimental: Authoring > Legacy tag_tuning.ini panel*, and with `--tag-ini`, for a `tag_tuning.ini` that has not been migrated yet. See `docs/HANTEI_AUTHORING_MODE.md` (§11 describes what was built).
+
 **Windows > Tag / Team (experimental)** edits the running MBAACC's `tag_tuning.ini` (PovertyCaster's native TAG levers) while you play:
 * the styles, and the global levers;
 * per-character entries;
