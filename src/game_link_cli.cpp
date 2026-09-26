@@ -30,14 +30,39 @@
 //                                                    TAG state + LinkTag) for headless UI captures;
 //                                                    point the editor at it with HANTEI_GAME_LINK_PID=<printed pid>
 //
+// Authoring Mode (docs/HANTEI_AUTHORING_MODE.md §6.3 H10):
+//   game_link_cli caps                               QueryCaps (or "rev 1": pchost.dll predates Authoring Mode)
+//   game_link_cli roster                             the game's roster (QueryRoster pages)
+//   game_link_cli setup-get                          QueryMatchSetup: phase, auth state, requested / in force
+//   game_link_cli setup-set <mode> <p1> <p2> [p3 p4] [stage N] [scene auto|training|vs] [assists on|off] [hot]
+//                           [ko one|all] [timer N] [force] [keepbgm] [resetpos] [notuning] [assist <side> <dir> <choice>]
+//                                                    mode = 1v1|tag|team; a pick = <name|id>/<c|f|h|0-2>/<palette>,
+//                                                    e.g. tohno/c/3; p3 / p4 = the P1 / P2 partners (engine slots 2/3);
+//                                                    waits for the one reply (up to 25 s) and prints the new state
+//   game_link_cli setup-hex <same args as setup-set> print the 128-digit PCHOST_MBAACC_AUTHORING_SETUP value
+//   game_link_cli tuning-apply [reload]              ApplyTuning (+ QueryAfter) and print the global + slot values
+//   game_link_cli tuning-get [slot]                  QueryTuning (all slots, or one)
+//   game_link_cli end-authoring
+//   game_link_cli tag-migrate <gamedir> [--dry-run]  tag_tuning.ini -> povertycaster\tag\local\ (§2.7 / §9.1)
+//   game_link_cli launch <gamedir> <setup args>      pc_inject + pchost with the §3.7 environment, then wait for the
+//                                                    link and the setup to reach Ready (prints the game pid)
+//   game_link_cli mock-dll <s> [notag] [session] [menu] [rev1] [host] [between] [team4p] [paused]
+//                           [root <povertycaster\tag dir>] [skew <lever>] [hash <hex>] [env <lever>] [hot <ms>] [cold <ms>]
+//
 // --pid <n> (before the command) or HANTEI_GAME_LINK_PID=<n>: talk ONLY to that MBAA.exe; no discovery by name.
 #include "game_link.h"
 #include "game_link_mock.h"
 #include "framedata.h"
 #include "background/bg_file.h"
+#include "authoring/authoring_model.h"
+#include "authoring/game_launcher.h"
+#include "authoring/roster_mirror.h"
+#include "tag_tuning/tag_migrate.h"
+#include "tag_tuning/tag_levers.h"
 
 #include <windows.h>
 
+#include <cctype>
 #include <chrono>
 #include <cstdio>
 #include <cstdlib>
@@ -110,6 +135,141 @@ void PrintStage(const wire::Stage& s)
 	            s.dataFile, s.selected, s.bgmId, s.stageLoads, s.allowed, n);
 }
 
+// ---- [authoring] ----
+const char* MoonLetter(int m) { return m == 0 ? "C" : m == 1 ? "F" : m == 2 ? "H" : "?"; }
+
+bool ParsePick(const std::string& spec, const std::vector<authoring::RosterChar>& roster, authoring::SlotPick& out, std::string& err)
+{
+	if (spec == "-" || spec == "none") { out = {}; return true; }
+	const size_t a = spec.find('/'), b = a == std::string::npos ? a : spec.find('/', a + 1);
+	const std::string name = spec.substr(0, a);
+	std::string moon = a == std::string::npos ? "c" : spec.substr(a + 1, b == std::string::npos ? std::string::npos : b - a - 1);
+	const std::string pal = b == std::string::npos ? "0" : spec.substr(b + 1);
+	int chara = -1;
+	if (!name.empty() && (std::isdigit((unsigned char)name[0]) || name[0] == '-')) chara = std::atoi(name.c_str());
+	else
+		for (const authoring::RosterChar& c : roster) {
+			std::string n = c.name, x = name;
+			for (char& ch : n) ch = (char)std::tolower((unsigned char)ch);
+			for (char& ch : x) ch = (char)std::tolower((unsigned char)ch);
+			if (n == x || c.file1 == x) { chara = c.chara; break; }
+		}
+	if (chara < 0) { err = "unknown character '" + name + "'"; return false; }
+	for (char& ch : moon) ch = (char)std::tolower((unsigned char)ch);
+	const int m = moon == "c" || moon == "0" ? 0 : moon == "f" || moon == "1" ? 1 : moon == "h" || moon == "2" ? 2 : -1;
+	if (m < 0) { err = "bad moon '" + moon + "' (c/f/h)"; return false; }
+	out = { chara, m, std::atoi(pal.c_str()) };
+	return true;
+}
+
+// argv[first..] = <mode> <p1> <p2> [p3 p4] [options]
+bool ParseSetupArgs(int argc, char** argv, int first, const std::vector<authoring::RosterChar>& roster, authoring::Setup& s,
+                    std::string& err)
+{
+	if (argc <= first + 2) { err = "setup-set <mode> <p1> <p2> [p3 p4] [options]"; return false; }
+	const std::string mode = argv[first];
+	s = authoring::Setup{};
+	s.mode = mode == "1v1" || mode == "vs" || mode == "versus" ? authoring::Mode::Versus : mode == "team" ? authoring::Mode::Team : authoring::Mode::Tag;
+	if (mode != "1v1" && mode != "vs" && mode != "versus" && mode != "tag" && mode != "team") { err = "mode must be 1v1, tag or team"; return false; }
+	s.assists = s.mode == authoring::Mode::Tag;
+	int i = first + 1, slot = 0;
+	while (i < argc && slot < 4 && (std::strchr(argv[i], '/') || !std::strcmp(argv[i], "-"))) {
+		if (!ParsePick(argv[i], roster, s.slot[slot], err)) return false;
+		++slot; ++i;
+	}
+	if (slot < 2) { err = "two points are required"; return false; }
+	for (; i < argc; ++i) {
+		const std::string o = argv[i];
+		auto next = [&](const char* what) -> const char* {
+			if (i + 1 >= argc) { err = o + " needs " + what; return nullptr; }
+			return argv[++i];
+		};
+		if (o == "stage") { const char* v = next("a number"); if (!v) return false; s.stage = std::atoi(v); }
+		else if (o == "scene") {
+			const char* v = next("auto|training|vs"); if (!v) return false;
+			s.scene = !std::strcmp(v, "training") ? 1 : !std::strcmp(v, "vs") ? 2 : 0;
+		}
+		else if (o == "assists") { const char* v = next("on|off"); if (!v) return false; s.assists = !std::strcmp(v, "on"); }
+		else if (o == "hot") s.hotOnly = true;
+		else if (o == "force") s.force = true;
+		else if (o == "keepbgm") s.keepBgm = true;
+		else if (o == "resetpos") s.resetPos = true;
+		else if (o == "notuning") s.tuningFirst = false;
+		else if (o == "ko") { const char* v = next("one|all"); if (!v) return false; s.koRule = !std::strcmp(v, "all") ? 1 : 0; }
+		else if (o == "timer") { const char* v = next("a number"); if (!v) return false; s.timer = std::atoi(v); }
+		else if (o == "assist") {
+			if (i + 3 >= argc) { err = "assist <side 1|2> <dir 5|2|6|4|8> <choice 0..16 or motion>"; return false; }
+			const int side = std::atoi(argv[++i]) - 1, dir = std::atoi(argv[++i]);
+			const std::string ch = argv[++i];
+			int d = -1;
+			for (int k = 0; k < 5; ++k) if (tagtune::kAssistDirs[k] == dir) d = k;
+			bool num = !ch.empty();
+			for (char x : ch) num = num && std::isdigit((unsigned char)x);
+			int c = num ? std::atoi(ch.c_str()) : -1;
+			for (int k = 0; c < 0 && k < authoring::kAssistMotionCount; ++k) if (ch == authoring::kAssistMotionChoices[k]) c = k + 1;
+			if (side < 0 || side > 1 || d < 0 || c < 0) { err = "bad assist choice"; return false; }
+			s.assist[side][d] = (uint8_t)c;
+		}
+		else { err = "unknown option '" + o + "'"; return false; }
+	}
+	return true;
+}
+
+void PrintMatchSetup(const char* label, const wire::MatchSetup& m, const std::vector<authoring::RosterChar>& roster)
+{
+	std::printf("%s: %s (scene %u flags 0x%02X ko %u timer %u)\n", label, authoring::Describe(authoring::FromWire(m), roster).c_str(),
+	            m.scene, m.flags, m.koRule, m.timer);
+}
+
+void PrintSetupState(const wire::SetupState& s, const std::vector<authoring::RosterChar>& roster)
+{
+	std::printf("phase=%s auth=%s session=0x%02X role=%u betweenRounds=%u editsAllowed=%u lastSeq=%u lastStatus=%s path=%s "
+	            "duration=%ums setups=%u gameModeKind=0x%X message='%s'\n",
+	            wire::PhaseName(s.phase), wire::AuthStateName(s.authState), s.sessionFlags, s.sessionRole, s.betweenRounds,
+	            s.editsAllowed, s.lastSeq, wire::StatusName(s.lastStatus), s.lastPath == 1 ? "hot" : s.lastPath == 2 ? "cold" : "-",
+	            (unsigned)s.lastDurationMs, (unsigned)s.setupCount, (unsigned)s.gameModeKind, s.message);
+	PrintMatchSetup("  requested", s.requested, roster);
+	if (s.phase == (uint8_t)wire::Phase::Battle) PrintMatchSetup("  in force ", s.inForce, roster);
+}
+
+void PrintTuning(const Snapshot& s, int onlySlot)
+{
+	const wire::TuningGlobal& g = s.tuning;
+	std::printf("tuning: source=%u frozen=%u style='%s' sha=%s loads=%u warnings=%u flags=0x%02X charFiles=%u leverTable=0x%08X%s\n",
+	            g.source, g.frozen, g.activeStyle, g.sha, (unsigned)g.tuningLoads, g.warnings, g.flags, g.charFiles,
+	            (unsigned)g.leverTableHash, g.leverTableHash == tagtune::LeverTableHash() ? "" : " (DIFFERS from this editor's)");
+	std::printf("%-22s %10s", "lever", "global");
+	for (int k = 0; k < 4; ++k)
+		if ((onlySlot < 0 || onlySlot == k) && s.haveTuningSlot[k]) {
+			const wire::TuningSlot& t = s.tuningSlot[k];
+			char h[40];
+			std::snprintf(h, sizeof h, "%s %s", t.exists ? t.file : "-", t.exists && t.moon < 3 ? MoonLetter(t.moon) : "");
+			std::printf(" %14s", h);
+		}
+	std::printf("\n");
+	for (size_t i = 0; i < tagtune::kLeverCount && i < 64; ++i) {
+		const tagtune::Lever& l = tagtune::kLevers[i];
+		auto src = [&](const uint32_t* m, char c) { return wire::MaskBit(m, (int)i) ? c : ' '; };
+		std::printf("%-22s %8s %c%c", l.key, tagtune::FormatLeverValue(l, g.values[i]).c_str(),
+		            wire::MaskBit(g.envMask, (int)i) ? 'e' : wire::MaskBit(g.tuningMask, (int)i) ? 'g' : ' ', src(g.styleMask, 's'));
+		for (int k = 0; k < 4; ++k)
+			if ((onlySlot < 0 || onlySlot == k) && s.haveTuningSlot[k]) {
+				const wire::TuningSlot& t = s.tuningSlot[k];
+				const char c = wire::MaskBit(t.cssMask, (int)i) ? 'x' : wire::MaskBit(t.moonMask, (int)i) ? 'm' : wire::MaskBit(t.charMask, (int)i) ? 'c' : ' ';
+				std::printf(" %13s%c", tagtune::FormatLeverValue(l, t.values[i]).c_str(), c);
+			}
+		std::printf("\n");
+	}
+}
+
+std::vector<authoring::RosterChar> RosterOf(Client& c)
+{
+	c.WaitCaps(3000);
+	for (int k = 0; k < 100 && c.Get().haveCaps && (c.Get().caps.caps & wire::kCapRoster) && !c.Get().rosterComplete; ++k) Sleep(20);
+	const Snapshot s = c.Get();
+	return s.rosterComplete ? authoring::RosterFromLink(s.roster) : authoring::MirrorRoster(true);
+}
+
 } // namespace
 
 int main(int argc, char** argv)
@@ -122,19 +282,101 @@ int main(int argc, char** argv)
 	if (argc < 2) { std::fprintf(stderr, "usage: see the banner of src/game_link_cli.cpp\n"); return 1; }
 	const std::string cmd = argv[1];
 
+
+	// ---- [authoring] offline commands ----
+	if (cmd == "tag-migrate") {
+		if (argc < 3) { std::fprintf(stderr, "tag-migrate <gamedir> [--dry-run]\n"); return 2; }
+		const bool dry = argc > 3 && !std::strcmp(argv[3], "--dry-run");
+		SYSTEMTIME st; GetLocalTime(&st);
+		char date[32];
+		std::snprintf(date, sizeof date, "%04u-%02u-%02u", st.wYear, st.wMonth, st.wDay);
+		const tagtune::MigrationResult r = tagtune::MigrateGameDir(argv[2], dry, date);
+		std::printf("%s", r.log.c_str());
+		return r.plan.ok && (dry || r.wrote) ? 0 : 1;
+	}
+	if (cmd == "setup-hex") {
+		authoring::Setup s;
+		std::string err;
+		const std::vector<authoring::RosterChar> roster = authoring::MirrorRoster(true);
+		if (!ParseSetupArgs(argc, argv, 2, roster, s, err)) { std::fprintf(stderr, "%s\n", err.c_str()); return 2; }
+		std::printf("%s\n", authoring::ToHex(authoring::ToWire(s)).c_str());
+		return 0;
+	}
+	if (cmd == "launch") {
+		if (argc < 5) { std::fprintf(stderr, "launch <gamedir> <mode> <p1> <p2> [p3 p4] [options]\n"); return 2; }
+		const std::string dir = argv[2];
+		authoring::Setup s;
+		std::string err;
+		const std::vector<authoring::RosterChar> roster = authoring::MirrorRoster(true);
+		if (!ParseSetupArgs(argc, argv, 3, roster, s, err)) { std::fprintf(stderr, "%s\n", err.c_str()); return 2; }
+		authoring::ValidateContext vc;
+		vc.team4p = s.mode == authoring::Mode::Team;   // the launch itself adds PCHOST_MBAACC_2V2 for TEAM
+		vc.paletteCount = [&](const std::string& f) { return authoring::PaletteCountOf(dir + "\\data\\" + f + ".pal"); };
+		for (const authoring::Problem& p : authoring::Validate(s, roster, vc)) {
+			std::fprintf(stderr, "refused before launch: %s (%s)\n", p.msg.c_str(), wire::StatusName(p.status));
+			return 1;
+		}
+		authoring::GameLauncher l;
+		if (!l.Launch(dir, authoring::LaunchEnv(s), &err)) { std::fprintf(stderr, "launch: %s\n", err.c_str()); return 1; }
+		const DWORD t0 = GetTickCount();
+		size_t printed = 0;
+		for (;;) {
+			const authoring::LaunchState st = l.Get();
+			const std::vector<std::string> log = l.Log();
+			for (; printed < log.size(); ++printed) std::printf("%s\n", log[printed].c_str());
+			if (st.phase == authoring::LaunchPhase::Running) break;
+			if (st.phase == authoring::LaunchPhase::Failed || st.phase == authoring::LaunchPhase::Exited) { std::fprintf(stderr, "%s\n", st.message.c_str()); return 1; }
+			Sleep(50);
+		}
+		const uint32_t gamePid = l.Get().gamePid;
+		std::printf("game pid %u (%u ms after launch)\n", (unsigned)gamePid, (unsigned)(GetTickCount() - t0));
+		std::fflush(stdout);
+		Client c;
+		c.SetTargetPid(gamePid);
+		c.SetAuthoringPoll(true, false);
+		if (!Connect(c, 20000)) return 1;
+		if (!c.WaitCaps(5000) || c.Get().capsUnknown) { std::fprintf(stderr, "pchost.dll has no Authoring Mode (QueryCaps)\n"); return 1; }
+		std::printf("linked %u ms after launch; waiting for the launch setup (seq 0) to reach Ready\n", (unsigned)(GetTickCount() - t0));
+		for (;;) {
+			wire::SetupState st{};
+			if (c.WaitSetup(1000, st)) {
+				if (st.setupCount > 0 && (st.authState == (uint8_t)wire::AuthState::Ready || st.authState == (uint8_t)wire::AuthState::Failed)) {
+					PrintSetupState(st, roster);
+					std::printf("%s %u ms after launch\n", wire::AuthStateName(st.authState), (unsigned)(GetTickCount() - t0));
+					std::printf("GAME_PID=%u\n", (unsigned)gamePid);
+					return st.authState == (uint8_t)wire::AuthState::Ready ? 0 : 1;
+				}
+			}
+			if (GetTickCount() - t0 > 60000) { std::fprintf(stderr, "no Ready within 60 s\n"); std::printf("GAME_PID=%u\n", (unsigned)gamePid); return 1; }
+			if (l.Get().phase == authoring::LaunchPhase::Exited) { std::fprintf(stderr, "%s\n", l.Get().message.c_str()); return 1; }
+		}
+	}
 	if (cmd == "mock-dll") {
 		gamelink::MockDll::Options o;
 		for (int i = 3; i < argc; ++i) {
 			if (!std::strcmp(argv[i], "notag")) o.tagOps = false;
 			if (!std::strcmp(argv[i], "session")) o.session = true;
 			if (!std::strcmp(argv[i], "menu")) o.inBattle = false;
+			if (!std::strcmp(argv[i], "rev1")) o.authoring = false;
+			if (!std::strcmp(argv[i], "host")) o.role = 1;
+			if (!std::strcmp(argv[i], "between")) o.betweenRounds = true;
+			if (!std::strcmp(argv[i], "team4p")) o.team4p = true;
+			if (!std::strcmp(argv[i], "paused")) o.hotReloadPaused = true;
+			if (i + 1 < argc && !std::strcmp(argv[i], "root")) o.tagRoot = argv[++i];
+			else if (i + 1 < argc && !std::strcmp(argv[i], "skew")) o.skewLever = tagtune::FindLever(argv[++i]);
+			else if (i + 1 < argc && !std::strcmp(argv[i], "hash")) o.leverHash = (uint32_t)std::strtoul(argv[++i], nullptr, 16);
+			else if (i + 1 < argc && !std::strcmp(argv[i], "env")) wire::SetMaskBit(o.envMask, tagtune::FindLever(argv[++i]));
+			else if (i + 1 < argc && !std::strcmp(argv[i], "hot")) o.hotMs = std::atoi(argv[++i]);
+			else if (i + 1 < argc && !std::strcmp(argv[i], "cold")) o.coldMs = std::atoi(argv[++i]);
+			else if (i + 1 < argc && !std::strcmp(argv[i], "setup")) o.setupHex = argv[++i];
 		}
 		gamelink::MockDll m(o);
 		if (!m.Start()) { std::fprintf(stderr, "cannot create the mock pipe\n"); return 2; }
 		std::printf("mock dev-link serving as pid %u for %s s\n", m.Pid(), argc > 2 ? argv[2] : "60");
 		std::fflush(stdout);
 		Sleep((DWORD)(1000 * (argc > 2 ? std::atoi(argv[2]) : 60)));
-		std::printf("mock: %u commands, %u gate probes\n", m.Commands(), m.Probes());
+		std::printf("mock: %u commands, %u gate probes, %u setups, %u tuning applies, %u Ex dropped\n", m.Commands(), m.Probes(),
+		            m.SetupsFinished(), m.Applies(), m.ExDropped());
 		m.Stop();
 		return 0;
 	}
@@ -276,6 +518,78 @@ int main(int argc, char** argv)
 		}
 		return 0;
 	}
+
+	// ---- [authoring] linked commands ----
+	if (cmd == "caps") {
+		if (!c.WaitCaps(3000)) { std::fprintf(stderr, "no caps answer\n"); return 1; }
+		const Snapshot s = c.Get();
+		if (s.capsUnknown) { std::printf("rev 1: pchost.dll predates Authoring Mode (QueryCaps unknown)\n"); return 0; }
+		std::printf("authoring rev %u caps=0x%08X build=%s game=%s leverTable=0x%08X (%s) levers=%u perChar=%u setupVersion=%u "
+		            "tuningWire=%u tuningSource=%u tuningFlags=0x%02X charFiles=%u\n",
+		            s.caps.revision, (unsigned)s.caps.caps, s.caps.build, s.gameId.empty() ? "(mbaacc)" : s.gameId.c_str(),
+		            (unsigned)s.caps.leverTableHash, s.caps.leverTableHash == tagtune::LeverTableHash() ? "matches" : "DIFFERS",
+		            s.caps.leverCount, s.caps.perCharLeverCount, s.caps.matchSetupVersion, s.caps.tuningWireVersion,
+		            s.caps.tuningSource, s.caps.tuningFlags, s.caps.charFiles);
+		return 0;
+	}
+	if (cmd == "roster") {
+		const std::vector<authoring::RosterChar> r = RosterOf(c);
+		for (const authoring::RosterChar& x : r)
+			std::printf("%3d sel %2d %-9s %-10s %-10s %s%s%s%s\n", x.chara, x.selector, x.name.c_str(), x.file1.c_str(), x.file2.c_str(),
+			            x.Duo() ? "duo " : "", (x.flags & wire::kRosterTagOk) ? "tag " : "", (x.flags & wire::kRosterTeamOk) ? "team " : "",
+			            (x.flags & wire::kRosterNeedsMod) ? "needs-mod" : "");
+		std::printf("%zu entries (%s)\n", r.size(), c.Get().rosterComplete ? "from the game" : "mirror: the game sent none");
+		return 0;
+	}
+	if (cmd == "setup-get") {
+		c.SetAuthoringPoll(true, false);
+		const std::vector<authoring::RosterChar> roster = RosterOf(c);
+		wire::SetupState st{};
+		if (!c.WaitSetup(3000, st)) { std::fprintf(stderr, "no LinkSetupState (rev 1 DLL?)\n"); return 1; }
+		PrintSetupState(st, roster);
+		return 0;
+	}
+	if (cmd == "setup-set") {
+		const std::vector<authoring::RosterChar> roster = RosterOf(c);
+		authoring::Setup s;
+		std::string err;
+		if (!ParseSetupArgs(argc, argv, 2, roster, s, err)) { std::fprintf(stderr, "%s\n", err.c_str()); return 2; }
+		const DWORD t0 = GetTickCount();
+		const uint16_t seq = c.SetMatchSetup(authoring::ToWire(s));
+		if (!seq) { std::fprintf(stderr, "not sent: %s\n", c.Get().capsUnknown ? "pchost.dll predates Authoring Mode" : "no link"); return 1; }
+		c.SetAuthoringPoll(true, false);
+		wire::Reply r{};
+		if (!c.WaitReply(seq, 25000, r)) { std::fprintf(stderr, "no reply within 25 s\n"); return 1; }
+		std::printf("setup-set #%u: %s - %s (%u ms)\n", seq, wire::StatusName(r.status), r.message, (unsigned)(GetTickCount() - t0));
+		wire::SetupState st{};
+		if (c.WaitSetup(2000, st)) PrintSetupState(st, roster);
+		return r.status == 0 ? 0 : 1;
+	}
+	if (cmd == "tuning-apply") {
+		uint8_t fl = wire::kFlagQueryAfter;
+		if (argc > 2 && !std::strcmp(argv[2], "reload")) fl |= wire::kFlagReload;
+		c.WaitCaps(3000);
+		const uint32_t since = c.Get().tuningSerial;
+		const DWORD t0 = GetTickCount();
+		const uint16_t seq = c.ApplyTuning(fl);
+		wire::Reply r{};
+		if (!c.WaitReply(seq, 5000, r)) { std::fprintf(stderr, "no reply\n"); return 1; }
+		std::printf("tuning-apply #%u: %s - %s (%u ms)\n", seq, wire::StatusName(r.status), r.message, (unsigned)(GetTickCount() - t0));
+		Snapshot s;
+		if (r.status == 0 && c.WaitTuning(3000, s, since)) PrintTuning(s, -1);
+		return r.status == 0 ? 0 : 1;
+	}
+	if (cmd == "tuning-get") {
+		c.WaitCaps(3000);
+		const int slot = argc > 2 ? std::atoi(argv[2]) : -1;
+		const uint32_t since = c.Get().tuningSerial;
+		c.QueryTuning(slot >= 0 && slot < 4 ? (uint8_t)(1u << slot) : 0);
+		Snapshot s;
+		if (!c.WaitTuning(3000, s, since)) { std::fprintf(stderr, "no LinkTuningGlobal (rev 1 DLL?)\n"); return 1; }
+		PrintTuning(s, slot);
+		return 0;
+	}
+	if (cmd == "end-authoring") { c.WaitCaps(3000); return WaitAndPrintReply(c, c.EndAuthoring(), 3000); }
 	if (cmd == "ping") return WaitAndPrintReply(c, c.Ping(), 3000);
 	if (cmd == "reload") {
 		const uint8_t mask = argc > 2 ? (uint8_t)std::strtoul(argv[2], nullptr, 0) : 0;
