@@ -25,6 +25,10 @@ extern struct Settings
 	bool detachableWindows = true;  // ImGui multi-viewport (native detached windows); restart-bound
 	std::vector<std::string> keyBindings;    // "Key=<action>#<n>=<vk>,<mods>" overrides (issue #9)
 	bool invertWheelZoom = false;            // wheel up zooms out (issue #9)
+	std::string stageGameDir;                // last stage list (game bg folder) for the stage browser/dropdown
+	int stageGame = 0;                       // 0 MBAACC, 1 MBAC
+	bool stagePatAuthoring = true;           // PAT placement: Authoring (default) / Game-exact
+	bool stageClampCamera = true;            // keep the stage view's game camera inside the game's limits
 } gSettings;
 
 bool LoadFromIni(FrameData *framedata, CG *cg, const std::string& iniPath, std::string* outTopHA6Path = nullptr, Parts* parts = nullptr, std::string* outPATPath = nullptr);

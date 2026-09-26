@@ -79,6 +79,8 @@ ShortcutRegistry::ShortcutRegistry()
 		{A::exportFramePng,   "Export current frame (PNG)",   {'P', shortcutShift}, R::focusedContext, C::characterView, false, false},
 		{A::exportSequencePng,"Export pattern (PNG sequence)",{'P', ctrl},          R::focusedContext, C::characterView, false, false},
 		{A::detachView,       "Move tab to a new window",     {'D', ctrlShift},     R::editorViews,    C::none,           false, false},
+		{A::previousStage,    "Previous stage",               {vkPrior, 0},         R::focusedContext, C::stageView,      false, false},
+		{A::nextStage,        "Next stage",                   {vkNext, 0},          R::focusedContext, C::stageView,      false, false},
 	}
 {
 	for (const auto& b : m_bindings) m_defaults.push_back(b.chord);
@@ -262,6 +264,8 @@ const char* ShortcutRegistry::ActionId(ShortcutAction action)
 	case A::exportFramePng: return "exportFramePng";
 	case A::exportSequencePng: return "exportSequencePng";
 	case A::detachView: return "detachView";
+	case A::previousStage: return "previousStage";
+	case A::nextStage: return "nextStage";
 	default: return "";
 	}
 }

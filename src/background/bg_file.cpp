@@ -850,6 +850,46 @@ void File::ResetRuntime() {
 	if (game == Game::MBAACC) drops.Init(stageInfo, rng);
 }
 
+int File::ImportGameState(const std::vector<uint8_t>& pool, const std::vector<uint8_t>* dropBytes) {
+	if (pool.size() < 44 || pool.size() % 44) return -1;
+	int slotToObj[256];
+	for (int i = 0; i < 256; ++i) slotToObj[i] = -1;
+	for (size_t i = 0; i < objects.size(); ++i)
+		if (objects[i].originalIndex >= 0 && objects[i].originalIndex < 256)
+			slotToObj[objects[i].originalIndex] = (int)i;
+	const size_t n = std::min<size_t>(pool.size() / 44, kMaxInstances);
+	instances.assign(n, Instance());
+	int live = 0;
+	for (size_t i = 0; i < n; ++i) {
+		const uint8_t* r = pool.data() + i * 44;
+		Instance& in = instances[i];
+		in.state = r[0];
+		in.objIndex = in.state ? slotToObj[r[1]] : -1;
+		if (in.state && in.objIndex < 0) { in.state = 0; continue; }
+		in.curFrame = r[2];
+		in.nextFrame = r[3];
+		in.loopCounter = r[4];
+		in.cmdDone = r[5] != 0;
+		in.motionLoaded = r[6] != 0;
+		std::memcpy(&in.posX, r + 16, 4); std::memcpy(&in.posY, r + 20, 4);
+		std::memcpy(&in.velX, r + 24, 4); std::memcpy(&in.velY, r + 28, 4);
+		std::memcpy(&in.accX, r + 32, 4); std::memcpy(&in.accY, r + 36, 4);
+		std::memcpy(&in.timer, r + 40, 4);
+		if (in.state) ++live;
+	}
+	// Trim the free tail so the pool looks like one grown by AllocInstance.
+	while (!instances.empty() && instances.back().state == 0 && instances.size() > 256) instances.pop_back();
+	if (dropBytes && game == Game::MBAACC) drops.ImportRaw(stageInfo, dropBytes->data(), dropBytes->size());
+	return live;
+}
+
+void File::ImportGameRng(const std::vector<uint8_t>& bank) {
+	if (bank.size() < 57 * 4) return;
+	int32_t raw[57];
+	std::memcpy(raw, bank.data(), sizeof(raw));
+	rng.SetRawStream(raw);
+}
+
 void File::TickRuntime() {
 	++tick;
 	// Index the file slot -> objects[] mapping once (spawn commands address
@@ -1024,6 +1064,10 @@ void File::ReloadSideFiles() {
 	stageInfo = StageInfo();
 	std::string info = FindFileNoCase(dir, stem + "Info.txt");
 	if (!info.empty()) stageInfo.Load(info);
+	infoIni = TextIni();
+	infoExists = !info.empty();
+	if (infoExists) infoIni.Load(info);
+	else infoIni.SetPath(dir.empty() ? stem + "Info.txt" : dir + "\\" + stem + "Info.txt");
 
 	// MBAC: LoadLightingData opens "bg%02dlight.txt".
 	lightFile = LightFile();
@@ -1109,6 +1153,36 @@ bool File::DeleteLastRecord(int objIndex, bool trigger) {
 }
 
 
+// ---- bgNNInfo.txt editing ---------------------------------------------------------
+
+void File::ReparseInfo() {
+	stageInfo = StageInfo();
+	if (!infoIni.Text().empty()) stageInfo.LoadFromText(infoIni.Text(), infoIni.Path());
+	drops.Clear();
+	if (game == Game::MBAACC) drops.Init(stageInfo, rng);
+}
+
+void File::SetInfoValue(const std::string& key, const std::string& value) {
+	std::string before = infoIni.Text();
+	if (!infoIni.IsLoaded() && infoIni.Text().empty()) {
+		std::string p = infoIni.Path();
+		infoIni.LoadText("[Data]\r\n");
+		infoIni.SetPath(p);
+		infoIni.SetText("[Data]\r\n");
+	}
+	if (value.empty()) infoIni.RemoveKey("", key); else infoIni.Set("", key, value);
+	if (infoIni.Text() == before) return;
+	ReparseInfo();
+	MarkDirty();
+}
+
+bool File::SaveInfo() {
+	if (infoIni.Text().empty()) return true;
+	if (!infoIni.Save(infoIni.Path())) return false;
+	infoExists = true;
+	return true;
+}
+
 // ---- stage edit history --------------------------------------------------------
 
 static constexpr size_t kMaxStageUndo = 100;
@@ -1119,15 +1193,18 @@ void File::ResetHistory() {
 	redoStack.clear();
 	baseline.objects = objects;
 	baseline.dirty = dirty;
+	baseline.info = infoIni.Text();
 	committedSerial = editSerial;
 }
 
 void File::CommitEdit() {
+	baseline.seq = NextEditSeq();
 	undoStack.push_back(std::move(baseline));
 	if (undoStack.size() > kMaxStageUndo) undoStack.erase(undoStack.begin());
 	redoStack.clear();
 	baseline.objects = objects;
 	baseline.dirty = dirty;
+	baseline.info = infoIni.Text();
 	committedSerial = editSerial;
 }
 
@@ -1140,15 +1217,17 @@ void File::RestoreSnapshot(const EditSnapshot& snap) {
 	objects = snap.objects;
 	for (size_t i = 0; i < objects.size() && i < vis.size(); ++i) objects[i].visible = vis[i];
 	dirty = snap.dirty;
+	if (snap.info != infoIni.Text()) { infoIni.SetText(snap.info); ReparseInfo(); }
 	baseline.objects = objects;
 	baseline.dirty = dirty;
+	baseline.info = infoIni.Text();
 	committedSerial = ++editSerial;
 	if (reshaped) ResetRuntime();
 }
 
 bool File::Undo() {
 	if (undoStack.empty()) return false;
-	redoStack.push_back({objects, dirty});
+	redoStack.push_back({objects, dirty, infoIni.Text(), undoStack.back().seq});
 	EditSnapshot snap = std::move(undoStack.back());
 	undoStack.pop_back();
 	RestoreSnapshot(snap);
@@ -1157,7 +1236,7 @@ bool File::Undo() {
 
 bool File::Redo() {
 	if (redoStack.empty()) return false;
-	undoStack.push_back({objects, dirty});
+	undoStack.push_back({objects, dirty, infoIni.Text(), redoStack.back().seq});
 	EditSnapshot snap = std::move(redoStack.back());
 	redoStack.pop_back();
 	RestoreSnapshot(snap);

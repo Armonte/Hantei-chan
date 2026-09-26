@@ -21,6 +21,7 @@
 #include "background/bg_file.h"
 #include "background/bg_types.h"
 #include "background/bg_rng.h"
+#include "background/bg_project.h"
 
 static bool ReadAll(const char* p, std::vector<char>& out) {
 	std::ifstream f(p, std::ios::binary);
@@ -52,6 +53,83 @@ int main(int argc, char** argv)
 		for (int i = 0; i < n; ++i) printf("%d\n", r.Next());
 		return 0;
 	}
+	// --camera-test: the stage view's game camera must follow pans but never
+	// zooms (zoom-to-cursor rewrites the pan every frame of the animation).
+	if (argc >= 2 && strcmp(argv[1], "--camera-test") == 0) {
+		bg::Camera c;
+		c.clampToGame = false;
+		int bad = 0;
+		c.SetPan(400, 540); c.zoom = 1.0f; c.SetGameCamFromView(1280, 720);
+		c.SetPan(380, 520); c.SetGameCamFromView(1280, 720);            // pan by (-20,-20)
+		if (c.camX != 20 || c.camY != 20) { printf("pan did not move the camera (%g,%g)\n", c.camX, c.camY); ++bad; }
+		const float cx = c.camX, cy = c.camY;
+		// zoom about a cursor at (900, 200) from 1.0 to 2.0 over 12 frames
+		for (int f = 1; f <= 12; ++f) {
+			float z = 1.0f + f / 12.0f, wx = 900.0f / 1.0f - 380.0f, wy = 200.0f - 520.0f;
+			c.zoom = z;
+			c.SetPan(900.0f / z - wx, 200.0f / z - wy);
+			c.SetGameCamFromView(1280, 720);
+		}
+		if (c.camX != cx || c.camY != cy) { printf("zoom moved the camera (%g,%g)\n", c.camX, c.camY); ++bad; }
+		// parallax shift at a fixed camera does not depend on zoom
+		if (c.ParallaxX(128) != (1.0f - 0.5f) * (cx - 1.0f)) ++bad;
+		// clamp: panning past the game's limits stops the camera at them
+		c.clampToGame = true;
+		c.SetPan(-2000, 3000); c.SetGameCamFromView(1280, 720);
+		if (c.camX != 208.0f || c.camY != -340.0f) { printf("clamp failed (%g,%g)\n", c.camX, c.camY); ++bad; }
+		printf("CAMERA-TEST %s (%d problems)\n", bad ? "FAIL" : "OK", bad);
+		_exit(bad ? 8 : 0);
+	}
+
+	// --project-list <stage or dir> <mbaacc|mbac>: the stage list as the browser shows it
+	if (argc >= 4 && strcmp(argv[1], "--project-list") == 0) {
+		bg::StageProject pr;
+		if (!pr.Open(argv[2], strcmp(argv[3], "mbac") == 0 ? bg::Game::MBAC : bg::Game::MBAACC)) { fprintf(stderr, "open failed\n"); _exit(2); }
+		for (const auto& e : pr.Entries())
+			printf("%3d order=%2d listed=%d dat=%s bgm=%s loop=%d pos=%s preview=%s | %s\n", e.id, e.order, e.listed ? 1 : 0,
+			       e.datPath.empty() ? "-" : "ok", e.hasBgm ? e.bgmFile.c_str() : "-", e.bgmLoop, e.bgmLoopPos.c_str(),
+			       e.previewPath.empty() ? "-" : "ok", e.Label().c_str());
+		_exit(0);
+	}
+
+	// --project-test <stage.dat|game dir> <scratch dir>: BgList.ini / bgm.txt
+	// open, unedited save byte-identical, edits touch only their value, undo
+	// restores the original bytes, add/move/remove round trip.
+	if (argc >= 4 && strcmp(argv[1], "--project-test") == 0) {
+		bg::StageProject pr;
+		if (!pr.Open(argv[2], bg::Game::MBAACC)) { fprintf(stderr, "open failed\n"); _exit(2); }
+		printf("project %s: %zu entries, bgm %s\n", pr.BgDir().c_str(), pr.Entries().size(),
+		       pr.Bgm().IsLoaded() ? "loaded" : "missing");
+		int bad = 0;
+		const std::string origList = pr.BgList().Text(), origBgm = pr.Bgm().Text();
+		std::string sd = argv[3];
+		auto same = [&](const std::string& path, const std::string& want) {
+			std::vector<char> d; if (!ReadAll(path.c_str(), d)) return false;
+			return std::string(d.begin(), d.end()) == want;
+		};
+		// unedited save
+		if (!pr.BgList().Save(sd + "/BgList.ini") || !same(sd + "/BgList.ini", origList)) { printf("unedited BgList save differs\n"); ++bad; }
+		if (pr.Bgm().IsLoaded() && (!pr.Bgm().Save(sd + "/bgm.txt") || !same(sd + "/bgm.txt", origBgm))) { printf("unedited bgm save differs\n"); ++bad; }
+		// edits
+		pr.SetListValue(28, "StageColorVal", "0.75");
+		pr.SetListValue(28, "IsGiantStage", "1");
+		pr.SetBgmValue(28, "LoopPos", "12.500");
+		const bg::StageEntry* e = pr.Find(28);
+		if (!e || e->colorVal != 0.75f || e->giant != 1 || e->bgmLoopPos != "12.500") { printf("edit not visible\n"); ++bad; }
+		size_t delta = pr.BgList().Text().size() > origList.size() ? pr.BgList().Text().size() - origList.size() : origList.size() - pr.BgList().Text().size();
+		printf("BgList grew by %zu bytes for 2 edits\n", delta);
+		pr.AddStage(97, "bg28");
+		pr.MoveStage(97, 98);
+		if (!pr.Find(98) || !pr.Find(98)->listed || (pr.Find(97) && pr.Find(97)->listed)) { printf("add/move failed\n"); ++bad; }
+		pr.RemoveStage(98);
+		for (int i = 0; i < 7; ++i) pr.Undo();
+		if (pr.BgList().Text() != origList || pr.Bgm().Text() != origBgm) { printf("undo did not restore the original bytes\n"); ++bad; }
+		for (int i = 0; i < 2; ++i) pr.Redo();
+		if (!pr.BgList().Save(sd + "/BgList.ini")) ++bad;
+		printf("PROJECT-TEST %s (%d problems)\n", bad ? "FAIL" : "OK", bad);
+		_exit(bad ? 8 : 0);
+	}
+
 	if (argc < 2) {
 		fprintf(stderr, "usage: bg_test <stage.dat> [<out.dat> | --sim N [--seed S] [--game g] | --info | --edit-test <out.dat>]\n");
 		return 1;
@@ -88,6 +166,161 @@ int main(int argc, char** argv)
 		}
 		std::string sib = file.SiblingVariantPath();
 		printf("variant: %s  sibling: %s\n", file.IsShortVariant() ? "_s" : "full", sib.empty() ? "-" : sib.c_str());
+		_exit(0);
+	}
+
+	// Game-state comparison (tools/stage_capture dumps):
+	//   --find-tick <prefix> [max]   sim from reset; report ticks whose live pool
+	//                                matches the game's <prefix>.pool exactly
+	//   --state <prefix> --step N --compare <prefix2>
+	//                                import pool + drops + RNG, tick N, diff against prefix2
+	if (argc >= 4 && (strcmp(argv[2], "--find-tick") == 0 || strcmp(argv[2], "--state") == 0)) {
+		struct G { int st, obj, cur, loop; int32_t px, py, vx, vy, t; };
+		auto loadPool = [&](const std::string& pre, std::vector<G>& out) -> bool {
+			std::vector<char> b;
+			if (!ReadAll((pre + ".pool").c_str(), b) || b.size() < 44) return false;
+			out.clear();
+			for (size_t i = 0; i + 44 <= b.size(); i += 44) {
+				const uint8_t* r = (const uint8_t*)b.data() + i;
+				G g{}; g.st = r[0]; g.obj = r[1]; g.cur = r[2]; g.loop = r[4];
+				std::memcpy(&g.px, r + 16, 4); std::memcpy(&g.py, r + 20, 4);
+				std::memcpy(&g.vx, r + 24, 4); std::memcpy(&g.vy, r + 28, 4);
+				std::memcpy(&g.t, r + 40, 4);
+				out.push_back(g);
+			}
+			return true;
+		};
+		auto diff = [&](const std::vector<G>& gp, bool verbose) -> int {
+			const auto& ins = file.GetInstances();
+			const auto& objs = file.GetObjects();
+			int bad = 0;
+			size_t n = std::max(gp.size(), ins.size());
+			for (size_t i = 0; i < n; ++i) {
+				G g = i < gp.size() ? gp[i] : G{};
+				bool gl = g.st != 0;
+				bool hl = i < ins.size() && ins[i].state != 0;
+				if (!gl && !hl) continue;
+				bool same = gl && hl;
+				if (same) {
+					const bg::Instance& h = ins[i];
+					int hobj = objs[h.objIndex].originalIndex;
+					same = (g.st == 2) == (h.state == 2) && g.obj == hobj && g.cur == h.curFrame && g.px == h.posX &&
+					       g.py == h.posY && g.vx == h.velX && g.vy == h.velY && g.t == h.timer && g.loop == h.loopCounter;
+				}
+				if (!same) {
+					++bad;
+					if (verbose && bad <= 12) {
+						if (gl) printf("  slot %zu game: st=%d obj=%d cur=%d pos=(%d,%d) vel=(%d,%d) t=%d loop=%d\n", i, g.st, g.obj, g.cur, g.px, g.py, g.vx, g.vy, g.t, g.loop);
+						else printf("  slot %zu game: free\n", i);
+						if (hl) { const bg::Instance& h = ins[i];
+							printf("  slot %zu hant: st=%d obj=%d cur=%d pos=(%d,%d) vel=(%d,%d) t=%d loop=%d\n", i, h.state, objs[h.objIndex].originalIndex, h.curFrame, h.posX, h.posY, h.velX, h.velY, h.timer, h.loopCounter); }
+						else printf("  slot %zu hant: free\n", i);
+					}
+				}
+			}
+			return bad;
+		};
+		std::vector<G> gp;
+		if (strcmp(argv[2], "--find-tick") == 0) {
+			if (!loadPool(argv[3], gp)) { fprintf(stderr, "no pool\n"); _exit(2); }
+			int maxT = argc >= 5 ? atoi(argv[4]) : 20000;
+			int best = 1 << 30, bestT = -1, found = 0;
+			for (int t = 0; t <= maxT; ++t) {
+				int b = diff(gp, false);
+				if (b == 0) { printf("MATCH tick=%d\n", t); ++found; if (found >= 3) break; }
+				if (b < best) { best = b; bestT = t; }
+				file.TickRuntime();
+			}
+			if (!found) {
+				printf("NO MATCH; best tick=%d with %d differing slots\n", bestT, best);
+				file.ResetRuntime();
+				for (int t = 0; t < bestT; ++t) file.TickRuntime();
+				diff(gp, true);
+			}
+			_exit(found ? 0 : 9);
+		}
+		// --state <prefix> [--step N] [--compare <prefix2>]
+		std::string pre = argv[3];
+		std::vector<char> pool, drop, rng;
+		if (!ReadAll((pre + ".pool").c_str(), pool)) { fprintf(stderr, "no pool\n"); _exit(2); }
+		std::vector<uint8_t> up(pool.begin(), pool.end()), ud;
+		if (ReadAll((pre + ".drop").c_str(), drop) && drop.size() > 8) ud.assign(drop.begin() + 8, drop.end());
+		file.ImportGameState(up, ud.empty() ? nullptr : &ud);
+		if (ReadAll((pre + ".rng").c_str(), rng)) file.ImportGameRng(std::vector<uint8_t>(rng.begin(), rng.end()));
+		int step = 0; std::string cmp;
+		for (int i = 4; i + 1 < argc; i += 2) {
+			if (strcmp(argv[i], "--step") == 0) step = atoi(argv[i + 1]);
+			else if (strcmp(argv[i], "--compare") == 0) cmp = argv[i + 1];
+		}
+		for (int t = 0; t < step; ++t) file.TickRuntime();
+		if (cmp.empty()) _exit(0);
+		if (!loadPool(cmp, gp)) { fprintf(stderr, "no pool %s\n", cmp.c_str()); _exit(2); }
+		int b = diff(gp, true);
+		printf("%s after %d ticks: %d differing slots\n", b ? "POOL DIFF" : "POOL MATCH", step, b);
+		_exit(b ? 9 : 0);
+	}
+
+	if (argc >= 3 && strcmp(argv[2], "--cgcheck") == 0) {
+		CG* cg = file.GetCG();
+		for (int i = 0; cg && i < cg->get_image_count(); ++i) {
+			ImageData* img = cg->draw_texture(i, false, false);
+			long a = 0, n = 0;
+			if (img) for (int k = 0; k < img->width * img->height; ++k) { a += img->pixels[k * 4 + 3]; n += (img->pixels[k * 4] | img->pixels[k * 4 + 1] | img->pixels[k * 4 + 2]) ? 1 : 0; }
+			printf("img %d %s %dx%d alphaSum=%ld nonblack=%ld\n", i, img ? "ok" : "NULL", img ? img->width : 0, img ? img->height : 0, a, n);
+			delete img;
+		}
+		_exit(0);
+	}
+
+	if (argc >= 3 && strcmp(argv[2], "--census") == 0) {
+		// One JSON line of stage features (docs/bg_research/STAGE_AUDIT.md).
+		CG* cg = file.GetCG();
+		int nImg = 0, n8 = 0, n32 = 0; long budget = 0;
+		if (cg) {
+			for (int i = 0; i < cg->get_image_count(); ++i) {
+				int bpp, tid, x1, y1, x2, y2;
+				if (!cg->image_info(i, bpp, tid, x1, y1, x2, y2)) continue;
+				++nImg;
+				if (bpp == 8) { ++n8; continue; }
+				++n32;
+				int w = 64, h = 64;
+				while (x2 - x1 + 1 > w) w *= 2;
+				while (y2 - y1 + 1 > h) h *= 2;
+				budget += 4L * w * h / 1024;
+			}
+		}
+		int cgFrames = 0, patFrames = 0, blend[4] = {0, 0, 0, 0}, interp = 0, fg = 0, noauto = 0, lin = 0;
+		int cmd1 = 0, cmd2 = 0, cmd100 = 0, trig = 0, ani[6] = {0}, vel = 0, pmin = 9999, pmax = -9999;
+		std::vector<int> usedCg;
+		for (const auto& o : objects) {
+			fg += o.foreground ? 1 : 0; noauto += o.noAutoSpawn ? 1 : 0; lin += o.linearFilter ? 1 : 0;
+			pmin = std::min(pmin, (int)(int16_t)o.parallax); pmax = std::max(pmax, (int)(int16_t)o.parallax);
+			for (const auto& c : o.commands) { if (c.type == 1) ++cmd1; else if (c.type == 2) ++cmd2; else if (c.type == 100) ++cmd100; }
+			trig += (int)o.triggers.size();
+			for (const auto& f : o.frames) {
+				if (f.spriteId >= 10000) { ++cgFrames; if (f.blendMode < 4) ++blend[f.blendMode]; usedCg.push_back(f.spriteId - 10000); }
+				else if (f.spriteId >= 0) ++patFrames;
+				if (f.interpolate) ++interp;
+				if (f.aniType < 6) ++ani[f.aniType];
+				if (f.flagSetX || f.flagSetY) ++vel;
+			}
+		}
+		std::sort(usedCg.begin(), usedCg.end());
+		usedCg.erase(std::unique(usedCg.begin(), usedCg.end()), usedCg.end());
+		int used8 = 0;
+		if (cg) for (int id : usedCg) { int bpp, tid, a, b, c, d; if (cg->image_info(id, bpp, tid, a, b, c, d) && bpp == 8) ++used8; }
+		const auto* e = file.GetStageListEntry();
+		const auto& si = file.GetStageInfo();
+		printf("{\"file\":\"%s\",\"objects\":%zu,\"frames\":%zu,\"cgImages\":%d,\"cg8bpp\":%d,\"cg32\":%d,"
+		       "\"usedCg\":%zu,\"used8bpp\":%d,\"texBudgetKB\":%ld,\"dxt5\":%d,\"pat\":%d,\"cgFrames\":%d,\"patFrames\":%d,"
+		       "\"blend\":[%d,%d,%d,%d],\"interp\":%d,\"fgObjects\":%d,\"noAutoSpawn\":%d,\"linearObj\":%d,"
+		       "\"cmdSpawn\":%d,\"cmdRandSpawn\":%d,\"cmdRandVel\":%d,\"triggers\":%d,\"ani\":[%d,%d,%d,%d,%d,%d],\"moving\":%d,"
+		       "\"parallax\":[%d,%d],\"bglist\":%d,\"colorVal\":%.3f,\"giant\":%d,\"lights\":%zu,\"dropObj\":%d,\"dropType\":%d}\n",
+		       argv[1], objects.size(), totalFrames, nImg, n8, n32, usedCg.size(), used8, budget, budget > 30000 ? 1 : 0,
+		       file.GetOldPat() ? 1 : 0, cgFrames, patFrames, blend[0], blend[1], blend[2], blend[3], interp, fg, noauto, lin,
+		       cmd1, cmd2, cmd100, trig, ani[0], ani[1], ani[2], ani[3], ani[4], ani[5], vel, pmin, pmax,
+		       e ? e->index : -1, e ? e->stageColorVal : 0.0f, e ? e->isGiantStage : 0,
+		       si.loaded ? si.lights.size() : (size_t)0, si.loaded ? si.dropObj : 0, si.loaded ? si.dropType : -2);
 		_exit(0);
 	}
 

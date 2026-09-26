@@ -11,6 +11,8 @@
 #include <glad/glad.h>
 #include <unordered_map>
 #include <memory>
+#include <array>
+#include <vector>
 
 class Render;
 class Parts;
@@ -58,10 +60,41 @@ public:
 	void   SetShowWeather(bool v)        { showWeather = v; }
 	bool   IsShowingWeather() const      { return showWeather; }
 	void   SetShowLights(bool v)         { showLights = v; }
+	// PAT part placement. Game: the part position (+36/+40) is applied as MBAA
+	// does (verified by capture and by a live log of the game's own vertices).
+	// Authoring: parts sitting exactly at (320, 320), the PAT editor's canvas
+	// origin, are drawn as if unpositioned (as MBAC, which never reads the
+	// part position, would draw them). Only the wind in bg18/bg20/bg47 slot 8
+	// uses (320, 320); MBAACC draws it below the floor, off screen.
+	enum class PatPlacement { Game, Authoring };
+	void   SetPatPlacement(PatPlacement p) { patPlacement = p; }
+	PatPlacement GetPatPlacement() const  { return patPlacement; }
+	// True if any pattern this object uses has a part at the canvas origin
+	// (the two placements differ for it).
+	static bool ObjectUsesCanvasOriginParts(const File& f, int objIndex);
+	// HEAT preview: MBAA runs the BgPointBlur post effect while a fighter is
+	// in HEAT / BLOOD HEAT (BgPointBlur_UpdateHeatState 0x4b9100): fValue 0..1
+	// (1 = held), fColorHosei = BgList StageColorVal. 0 = off. `timeSec` drives
+	// the circling centre (one turn per 3 s). Applied over the game view.
+	void   SetHeatPreview(float fValue, float timeSec) { heatValue = fValue; heatTime = timeSec; }
+	float  GetHeatPreview() const { return heatValue; }
+	// Stand-in fighters (grey silhouettes) with the game's fighter shadows:
+	// the flat shadow, or one shadow per bgNNInfo.txt light (Character_Render
+	// 0x41af10, Shadow_BuildLightProjectionMatrix 0x44c0a0). x in world px.
+	struct StandIns { bool enabled = false; float x[2] = {-128.0f, 128.0f}; float height = 190.0f; };
+	StandIns& GetStandIns()              { return standIns; }
 	bool   IsShowingLights() const       { return showLights; }
 	// Debug self-capture of the stage viewport to C:/dev/bg_dump.png
 	// (off by default; armed on demand from the inspector).
 	void   RequestDebugDump(int frames = 2) { dumpCountdown = frames; }
+	// Game-accurate textures (bg_gametex.h): pow2 textures composed like
+	// MBAA, DXT5 on over-budget stages, the game's UV insets. On by default;
+	// off shows the clean CG (for editing).
+	void   SetGameTextures(bool v)       { if (v != gameTextures) { gameTextures = v; ClearTextureCache(); } }
+	bool   IsGameTextures() const        { return gameTextures; }
+	// Budget of the loaded stage and whether the game would use DXT5.
+	long   GetTextureBudgetKB();
+	bool   IsDxtStage()                  { return GetTextureBudgetKB() > 30000; }
 	void   ClearTextureCache();
 
 private:
@@ -95,7 +128,15 @@ private:
 	// (origin_x, origin_y) to the draw position to compensate. Without this
 	// step, sprites whose content origin shifts frame-to-frame (a fire
 	// animation does this even though w/h are fixed) appeared to jitter.
-	struct Tex { GLuint id; int w; int h; int originX; int originY; };
+	struct Tex { GLuint id; int w; int h; int originX; int originY; int texW; int texH; };
+	bool   gameTextures = true;
+	float  heatValue = 0.0f, heatTime = 0.0f;
+	GLuint heatProg[2] = {0, 0}, heatSceneTex = 0, heatMaskTex = 0;
+	bool   heatMaskTried = false;
+	int    heatW = 0, heatH = 0;
+	void   ApplyHeatBlur(const Camera& camera, int clientW, int clientH);
+	PatPlacement patPlacement = PatPlacement::Game;
+	long   budgetKB = -1;
 	std::unordered_map<int, Tex> textureCache;
 
 	// The embedded older-PAT, converted into the editor's Parts model so it
@@ -127,6 +168,23 @@ private:
 	// Weather particles (DropObject_RenderWithBloom) and light markers.
 	void   DrawWeather(const Camera& camera);
 	void   DrawLights(const Camera& camera);
+	void   DrawStandIns(const Camera& camera);
+	// DropObj_Type -1: the training-room grid (BgGrid_RenderTrainingRoom 0x4b58b0), priority 8.
+	void   DrawGridRoom(const Camera& camera);
+	// TecSakuraBloom (Shader/sh_bloom_sakura.txt): petals also drawn into a
+	// temp target, blurred along both diagonals, added onto the scene.
+	void   SakuraBloom(const Camera& camera, const std::vector<std::array<float, 24>>& petals, GLuint tex);
+	GLuint bloomFbo[2] = {0, 0}, bloomTex[2] = {0, 0};
+	int    bloomW = 0, bloomH = 0;
+	GLuint blurProg = 0, blurVbo = 0;
+	GLint  uBlurTex = -1, uBlurStep = -1, uBlurMode = -1;
+public:
+	void   SetSakuraBloom(bool v) { sakuraBloom = v; }
+	bool   IsSakuraBloom() const  { return sakuraBloom; }
+private:
+	bool   sakuraBloom = true;
+	StandIns standIns;
+	GLuint standTex = 0;
 	void   LoadDropTexture();
 	// Low-level quad/line emitters in stage-screen space.
 	void   EmitQuad(GLuint tex, const float xy[8], const float uv[8],

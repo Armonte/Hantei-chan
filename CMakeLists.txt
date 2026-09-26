@@ -89,9 +89,12 @@ add_executable(${EXE}
 	# Background (stage) system — ported from bgmk branch.
 	src/background/bg_file.cpp
 	src/background/bg_renderer.cpp
+	src/background/bg_gametex.cpp
 	src/background/bg_pat.cpp
 	src/background/bg_info.cpp
+	src/background/bg_project.cpp
 	src/background/bg_inspector.cpp
+	src/background/bg_browser.cpp
 	# _c.txt command-file editor (ported from Gonptechan EX, see docs/HANTEI_CMDFILE_EDITOR.md)
 	src/extension_profile.cpp
 	src/cmdfile/cmd_document.cpp
@@ -191,6 +194,7 @@ add_executable(bg_test
 	src/background/bg_file.cpp
 	src/background/bg_pat.cpp
 	src/background/bg_info.cpp
+	src/background/bg_project.cpp
 	src/cg.cpp
 	src/misc.cpp
 	tinyalloc/tinyalloc.c
@@ -200,6 +204,46 @@ target_compile_definitions(bg_test PRIVATE WIN32_LEAN_AND_MEAN HA6GUIVERSION="${
 target_link_libraries(bg_test PRIVATE tinyalloc glm)
 if(MINGW)
 	target_link_options(bg_test PRIVATE -static-libgcc -static-libstdc++ -static)
+endif()
+
+# Headless stage renderer for accuracy checks against game captures
+# (docs/bg_research/STAGE_AUDIT.md): renders through bg::Renderer offscreen.
+add_executable(bg_render
+	src/bg_render.cpp
+	src/background/bg_file.cpp
+	src/background/bg_pat.cpp
+	src/background/bg_info.cpp
+	src/background/bg_project.cpp
+	src/background/bg_renderer.cpp
+	src/background/bg_gametex.cpp
+	src/parts/parts.cpp
+	src/parts/parts_part.cpp
+	src/parts/parts_partset.cpp
+	src/parts/parts_shape.cpp
+	src/parts/parts_texture.cpp
+	src/cg.cpp
+	src/texture.cpp
+	src/vao.cpp
+	src/shader.cpp
+	src/misc.cpp
+	src/png_writer.cpp
+	tinyalloc/tinyalloc.c
+)
+target_include_directories(bg_render PRIVATE "." "src" "third_party" "${CMAKE_BINARY_DIR}/generated")
+target_compile_definitions(bg_render PRIVATE UNICODE _UNICODE WIN32_LEAN_AND_MEAN HA6GUIVERSION="${CMAKE_PROJECT_VERSION}")
+target_link_libraries(bg_render PRIVATE tinyalloc glad glm OpenGL::GL windowscodecs ole32 uuid)
+if(MINGW)
+	target_link_options(bg_render PRIVATE -static-libgcc -static-libstdc++ -static)
+endif()
+
+# 32-bit DXT5 helper for game-accurate stage textures (src/bg_dxt32.c): the game
+# compresses with the 32-bit d3dx9_36.dll, whose x87 results differ from the x64 DLL.
+find_program(I686_MINGW_GCC i686-w64-mingw32-gcc)
+if(I686_MINGW_GCC)
+	add_custom_command(OUTPUT ${CMAKE_BINARY_DIR}/bg_dxt32.exe
+		COMMAND ${I686_MINGW_GCC} -O2 -o ${CMAKE_BINARY_DIR}/bg_dxt32.exe ${CMAKE_SOURCE_DIR}/src/bg_dxt32.c -static
+		DEPENDS ${CMAKE_SOURCE_DIR}/src/bg_dxt32.c)
+	add_custom_target(bg_dxt32 ALL DEPENDS ${CMAKE_BINARY_DIR}/bg_dxt32.exe)
 endif()
 
 # Standalone PAT round-trip validator. Links the editor's parts code with
@@ -235,6 +279,7 @@ add_executable(game_link_cli
 	src/game_link.cpp
 	src/game_link_mock.cpp
 	src/background/bg_file.cpp
+	src/background/bg_project.cpp
 	src/background/bg_pat.cpp
 	src/background/bg_info.cpp
 	src/cg.cpp
