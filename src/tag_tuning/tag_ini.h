@@ -45,6 +45,14 @@ public:
 	void MarkSaved() { m_saved = m_text; }
 	bool IsDirty() const { return m_text != m_saved; }
 	void SetText(const std::string& raw);           // replace (undo), keeps the saved state
+	// [authoring] A per-character sidecar (povertycaster\tag\chars\<file>[_<moon>].ini, HANTEI_AUTHORING_MODE §9.1):
+	// the bare [char] header is a Char section, [char.<name>] is its synonym, and every Char instance is in scope
+	// whatever its name (the FILE names the character). A new Char section is written as "[char]".
+	void SetCharFileMode(bool on) { if (m_charFile != on) { m_charFile = on; reindex(); } }
+	bool CharFileMode() const { return m_charFile; }
+	// Every section header of a kind (instances, file order), with its line: for the per-file warnings.
+	struct SectionRef { SecKind kind; std::string name; int line; };
+	std::vector<SectionRef> Sections() const;
 
 	// Section names of a kind, first appearance order, one entry per distinct (case-insensitive) name.
 	std::vector<std::string> SectionNames(SecKind k) const;
@@ -81,6 +89,7 @@ private:
 	std::string value(const Line& l) const { return m_text.substr(l.valB, l.valE - l.valB); }
 
 	std::string m_text, m_saved;
+	bool m_charFile = false;
 	std::vector<Line> m_lines;
 	std::vector<Inst> m_inst;
 };

@@ -114,6 +114,28 @@ static_assert(kLeverCount == 59, "lever count changed: re-check the mirror again
 using Values = std::array<int32_t, kLeverCount>;
 inline Values DefaultValues() { Values v{}; for (size_t i = 0; i < kLeverCount; ++i) v[i] = kLevers[i].def; return v; }
 
+// ---- [authoring] the lever table hash (docs/HANTEI_AUTHORING_MODE.md §3.5): FNV-1a 32 over, per lever in table order,
+// the key bytes + 0x00, kind (u8), scope (u8), lo / hi / default (i32 LE each), perChar (u8). pchost.dll reports its own in
+// LinkCaps.leverTableHash / LinkTuningGlobal.leverTableHash; on a mismatch the editor never writes a lever it cannot name.
+inline uint32_t LeverTableHash(const Lever* table, size_t count)
+{
+	uint32_t h = 2166136261u;
+	auto byte = [&h](uint8_t b) { h ^= b; h *= 16777619u; };
+	auto i32 = [&byte](int32_t v) { const uint32_t u = (uint32_t)v; for (int k = 0; k < 4; ++k) byte((uint8_t)(u >> (8 * k))); };
+	for (size_t i = 0; i < count; ++i) {
+		const Lever& l = table[i];
+		for (const char* p = l.key; *p; ++p) byte((uint8_t)*p);
+		byte(0);
+		byte((uint8_t)l.kind);
+		byte((uint8_t)l.scope);
+		i32(l.lo); i32(l.hi); i32(l.def);
+		byte(l.perChar ? 1 : 0);
+	}
+	return h;
+}
+inline uint32_t LeverTableHash() { return LeverTableHash(kLevers, kLeverCount); }
+inline int PerCharLeverCount() { int n = 0; for (const Lever& l : kLevers) n += l.perChar ? 1 : 0; return n; }
+
 // Directional assist slots in the header's order: slot index 0..4 = directions 5, 2, 6, 4, 8.
 inline constexpr int kAssistDirs[5] = { 5, 2, 6, 4, 8 };
 

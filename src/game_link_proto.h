@@ -15,21 +15,30 @@ namespace gamelink::wire {
 constexpr uint16_t kLinkVersion = 1;
 
 enum class Kind : uint16_t { LinkCommand = 0x100, LinkReply = 0x101, LinkState = 0x102, LinkStage = 0x103,
-	LinkTag = 0x104 /* [link-tag], see Tag below */ };
+	LinkTag = 0x104 /* [link-tag], see Tag below */,
+	// [authoring] docs/HANTEI_AUTHORING_MODE.md §3.2 (0x10A-0x10F / 0x111-0x11F reserved; 0x120-0x13F Training/TAS)
+	LinkCaps = 0x105, LinkRoster = 0x106, LinkSetupState = 0x107, LinkTuningGlobal = 0x108, LinkTuningSlot = 0x109,
+	LinkCommandEx = 0x110 };
 
 // SetStage carries the stage id in Command::slot. Stage ops are answered Unknown by a DLL that predates them.
 enum class Op : uint16_t { Ping = 1, Reload = 2, SetChar = 3, QueryState = 4, SetStage = 5, ReloadStage = 6, QueryStage = 7,
-	QueryTag = 8 /* [link-tag], see Tag below */ };
+	QueryTag = 8 /* [link-tag], see Tag below */,
+	// [authoring] §3.2. 16-31 reserved (authoring growth), 32-63 reserved (Training / TAS, §3.8)
+	QueryCaps = 9, QueryRoster = 10, QueryMatchSetup = 11, SetMatchSetup = 12 /* LinkCommandEx only */, ApplyTuning = 13,
+	QueryTuning = 14, EndAuthoring = 15 };
 
 constexpr uint8_t kFlagReload    = 1u << 0;
 constexpr uint8_t kFlagForce     = 1u << 1;
 constexpr uint8_t kFlagResetPos  = 1u << 2;
 constexpr uint8_t kFlagStageList = 1u << 3;   // stage ops: re-read Bg\BgList.ini first
 constexpr uint8_t kFlagKeepBgm   = 1u << 4;   // SetStage: do not restart the BGM
+constexpr uint8_t kFlagQueryAfter = 1u << 5;  // [authoring] ApplyTuning: follow the reply with the QueryTuning answer
 
 enum class Status : int16_t {
 	Ok = 0, Queued = 1, RefusedSession = -1, RefusedRecording = -2, RefusedScene = -3,
 	RefusedVariant = -4, BadArgs = -5, MissingFile = -6, Busy = -7, Unknown = -8,
+	// [authoring] §3.2: only the new ops return these
+	NeedsRestart = -9, Unsupported = -10, Ineligible = -11, Timeout = -12,
 };
 
 struct Header { uint16_t kind; uint16_t version; uint32_t size; };
@@ -128,6 +137,180 @@ static_assert(offsetof(Tag, tagConfig) == 11 && offsetof(Tag, activeStyle) == 12
 static_assert(offsetof(TagTeam, tagRequest) == 4 && offsetof(TagTeam, cooldownLeft) == 16 &&
               offsetof(TagTeam, assistPattern) == 28 && offsetof(TagTeam, meterPaid) == 36, "LinkTagTeam offsets");
 
+
+// ================== [authoring] docs/HANTEI_AUTHORING_MODE.md §3.3 (+ §9.2 / §9.3) ==================
+// Mirror of PovertyCaster pc-proto Proto.hpp (branch mbaacc/authoring). Pointer-free, little-endian, no 64-bit fields.
+// Sizes AND offsets are pinned here and in PovertyCaster tests/mbaacc_link_authoring.
+constexpr uint16_t kLinkMaxPayload = 1024;        // pc-ipc PipeChannel kMaxPayload, both ways
+
+// editor -> DLL: the extended command (Kind::LinkCommandEx). Header.size = 8 + size.
+struct CommandEx {
+	uint16_t op;       // +0 Op (only SetMatchSetup in revision 1)
+	uint16_t seq;      // +2 echoed in the LinkReply
+	uint16_t size;     // +4 payload bytes that follow
+	uint16_t _pad;     // +6
+};
+static_assert(sizeof(CommandEx) == 8, "LinkCommandEx size");
+
+struct Pick {
+	int16_t chara;     // +0 g_CharaSelectDataTable index; -1 = empty
+	uint8_t moon;      // +2 0 crescent, 1 full, 2 half
+	uint8_t palette;   // +3 0-based
+};
+static_assert(sizeof(Pick) == 4, "LinkPick size");
+
+constexpr uint8_t kMatchSetupVersion = 1;
+enum class Mode : uint8_t { Versus = 0, Tag = 1, Team = 2 };
+enum class Scene : uint8_t { Auto = 0, Training = 1, AuthoringVs = 2 };
+constexpr uint8_t kSetupAssists = 1u << 0, kSetupKeepBgm = 1u << 1, kSetupForce = 1u << 2, kSetupResetPos = 1u << 3,
+                  kSetupHotOnly = 1u << 4, kSetupTuningFirst = 1u << 5;
+struct MatchSetup {
+	uint8_t version;          // +0 kMatchSetupVersion
+	uint8_t mode;             // +1 Mode
+	uint8_t scene;            // +2 Scene
+	uint8_t flags;            // +3 kSetup*
+	int16_t stage;            // +4 1..99; 0 keep; -1 random
+	uint8_t koRule;           // +6 0 oneDown, 1 allDown, 0xFF tuning
+	uint8_t timer;            // +7 0 infinite, 1/2/4 speeds, 0xFF scene default
+	Pick slot[4];             // +8 engine slots: 0 P1 point, 1 P2 point, 2 P1 partner, 3 P2 partner
+	uint8_t assist[2][5];     // +24 per side per direction (5,2,6,4,8): 0 tuning, k = kAssistMotionChoices[k-1]
+	uint8_t dummy[2];         // +34 reserved (Training), 0
+	uint8_t _reserved[28];    // +36 0
+};
+static_assert(sizeof(MatchSetup) == 64, "LinkMatchSetup size");
+static_assert(offsetof(MatchSetup, stage) == 4 && offsetof(MatchSetup, koRule) == 6 && offsetof(MatchSetup, slot) == 8 &&
+              offsetof(MatchSetup, assist) == 24 && offsetof(MatchSetup, dummy) == 34 && offsetof(MatchSetup, _reserved) == 36,
+              "LinkMatchSetup offsets");
+
+constexpr uint32_t kCapStage = 1u << 0, kCapTag = 1u << 1, kCapRoster = 1u << 2, kCapSetup = 1u << 3, kCapTuning = 1u << 4,
+                   kCapSidecars = 1u << 5, kCapTeam4P = 1u << 6, kCapTrainingScene = 1u << 7;
+struct Caps {
+	uint16_t revision;         // +0 authoring revision (1)
+	uint16_t _pad;             // +2
+	uint32_t caps;             // +4 kCap*
+	uint32_t leverTableHash;   // +8 FNV-1a of the lever table (§3.5)
+	uint8_t leverCount;        // +12
+	uint8_t perCharLeverCount; // +13
+	uint8_t matchSetupVersion; // +14
+	uint8_t tuningWireVersion; // +15
+	char build[16];            // +16 pchost build id
+	uint8_t tuningSource;      // +32 0 defaults, 1 legacy, 2 sidecars, 3 host/tape
+	uint8_t tuningFlags;       // +33 kTunFlag*
+	uint16_t charFiles;        // +34
+	char gameId[8];            // +36 §9.2 "mbaacc" ("" = mbaacc, an early revision-1 DLL)
+	uint8_t _reserved[4];      // +44
+};
+static_assert(sizeof(Caps) == 48, "LinkCaps size");
+static_assert(offsetof(Caps, leverTableHash) == 8 && offsetof(Caps, build) == 16 && offsetof(Caps, tuningSource) == 32 &&
+              offsetof(Caps, charFiles) == 34 && offsetof(Caps, gameId) == 36, "LinkCaps offsets");
+
+constexpr uint8_t kRosterDuo = 1u << 0, kRosterTagOk = 1u << 1, kRosterTeamOk = 1u << 2, kRosterHasTcRow = 1u << 3,
+                  kRosterNeedsMod = 1u << 4;
+struct RosterEntry {
+	int16_t chara;       // +0
+	uint8_t selector;    // +2 CSS grid cell
+	uint8_t flags;       // +3 kRoster*
+	char file1[20];      // +4 lower case
+	char file2[20];      // +24
+	char name[12];       // +44
+};
+static_assert(sizeof(RosterEntry) == 56, "LinkRosterEntry size");
+struct Roster {
+	uint8_t page, pageCount, count, total;   // +0..+3
+	uint8_t modDataLoaded;                    // +4
+	uint8_t _pad[3];                          // +5
+	RosterEntry e[16];                        // +8
+};
+static_assert(sizeof(Roster) == 904, "LinkRoster size");
+
+enum class Phase : uint8_t { Unknown = 0, Boot = 1, Title = 2, MainMenu = 3, CharaSelect = 4, Loading = 5, Battle = 6,
+                             RoundEnd = 7, Other = 8 };
+enum class AuthState : uint8_t { Idle = 0, ApplyingHot = 1, Rebuilding = 2, Ready = 3, Failed = 4 };
+enum class SessionRole : uint8_t { Offline = 0, Host = 1, Client = 2, Viewer = 3 };
+struct SetupState {
+	MatchSetup requested;      // +0
+	MatchSetup inForce;        // +64 read back (valid in Battle)
+	uint8_t phase;             // +128 Phase
+	uint8_t authState;         // +129 AuthState
+	uint8_t sessionFlags;      // +130 kTagSess*
+	uint8_t editsAllowed;      // +131
+	uint16_t lastSeq;          // +132
+	int16_t lastStatus;        // +134
+	uint32_t setupCount;       // +136
+	uint32_t gameModeKind;     // +140
+	uint32_t lastDurationMs;   // +144
+	uint8_t lastPath;          // +148 0 none, 1 hot, 2 cold
+	uint8_t sessionRole;       // +149 §9.3 SessionRole
+	uint8_t betweenRounds;     // +150 §9.3
+	uint8_t _pad;              // +151
+	char message[40];          // +152
+};
+static_assert(sizeof(SetupState) == 192, "LinkSetupState size");
+static_assert(offsetof(SetupState, inForce) == 64 && offsetof(SetupState, phase) == 128 && offsetof(SetupState, lastSeq) == 132 &&
+              offsetof(SetupState, setupCount) == 136 && offsetof(SetupState, lastPath) == 148 &&
+              offsetof(SetupState, sessionRole) == 149 && offsetof(SetupState, message) == 152, "LinkSetupState offsets");
+
+constexpr uint8_t kTunFlagLegacyIgnored = 1u << 0, kTunFlagHotReloadPaused = 1u << 1, kTunFlagParkXRestart = 1u << 2,
+                  kTunFlagGlobalCharSecs = 1u << 3, kTunFlagReadError = 1u << 4;
+enum class TuningSource : uint8_t { Defaults = 0, Legacy = 1, Sidecars = 2, Adopted = 3 };
+struct TuningGlobal {
+	uint8_t revision;          // +0 1
+	uint8_t source;            // +1 TuningSource
+	uint8_t frozen;            // +2
+	uint8_t leverCount;        // +3
+	uint32_t leverTableHash;   // +4
+	uint32_t tuningLoads;      // +8
+	uint16_t warnings;         // +12
+	uint8_t flags;             // +14 kTunFlag*
+	uint8_t sessionFlags;      // +15
+	uint16_t charFiles;        // +16
+	uint16_t _pad;             // +18
+	char activeStyle[24];      // +20
+	char sha[16];              // +44
+	uint8_t _pad2[4];          // +60
+	uint32_t tuningMask[2];    // +64
+	uint32_t styleMask[2];     // +72
+	uint32_t envMask[2];       // +80
+	int32_t values[64];        // +88
+};
+static_assert(sizeof(TuningGlobal) == 344, "LinkTuningGlobal size");
+static_assert(offsetof(TuningGlobal, activeStyle) == 20 && offsetof(TuningGlobal, sha) == 44 && offsetof(TuningGlobal, tuningMask) == 64 &&
+              offsetof(TuningGlobal, envMask) == 80 && offsetof(TuningGlobal, values) == 88, "LinkTuningGlobal offsets");
+constexpr uint8_t kTunSlotHasCharFile = 1u << 0, kTunSlotHasMoonSec = 1u << 1, kTunSlotCssAssists = 1u << 2,
+                  kTunSlotFromHost = 1u << 3;
+struct TuningSlot {
+	uint8_t slot;              // +0
+	uint8_t exists;            // +1
+	uint8_t moon;              // +2 0xFF unknown
+	uint8_t flags;             // +3 kTunSlot*
+	char file[28];             // +4
+	uint32_t charMask[2];      // +32
+	uint32_t moonMask[2];      // +40
+	uint32_t cssMask[2];       // +48
+	int32_t values[64];        // +56
+};
+static_assert(sizeof(TuningSlot) == 312, "LinkTuningSlot size");
+static_assert(offsetof(TuningSlot, file) == 4 && offsetof(TuningSlot, charMask) == 32 && offsetof(TuningSlot, cssMask) == 48 &&
+              offsetof(TuningSlot, values) == 56, "LinkTuningSlot offsets");
+
+inline bool MaskBit(const uint32_t m[2], int i) { return i >= 0 && i < 64 && ((m[i >> 5] >> (i & 31)) & 1u); }
+inline void SetMaskBit(uint32_t m[2], int i) { if (i >= 0 && i < 64) m[i >> 5] |= 1u << (i & 31); }
+
+static_assert(sizeof(Roster) <= kLinkMaxPayload, "every message <= 1024 B payload");
+static_assert(sizeof(CommandEx) + sizeof(MatchSetup) <= kLinkMaxPayload && sizeof(TuningGlobal) <= kLinkMaxPayload &&
+              sizeof(SetupState) <= kLinkMaxPayload, "every message <= 1024 B payload");
+
+inline const char* PhaseName(uint8_t p)
+{
+	static const char* n[] = { "unknown", "boot", "title", "main menu", "character select", "loading", "battle", "round end", "other" };
+	return p < 9 ? n[p] : "?";
+}
+inline const char* AuthStateName(uint8_t a)
+{
+	static const char* n[] = { "idle", "applying (hot)", "rebuilding (cold)", "ready", "failed" };
+	return a < 5 ? n[a] : "?";
+}
+
 inline const char* StatusName(int16_t s)
 {
 	switch ((Status)s) {
@@ -141,6 +324,10 @@ inline const char* StatusName(int16_t s)
 	case Status::MissingFile: return "missing data file";
 	case Status::Busy: return "busy";
 	case Status::Unknown: return "unknown op";
+	case Status::NeedsRestart: return "needs a game restart";
+	case Status::Unsupported: return "unsupported";
+	case Status::Ineligible: return "ineligible pick";
+	case Status::Timeout: return "timeout";
 	}
 	return "?";
 }
