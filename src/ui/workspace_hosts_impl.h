@@ -189,12 +189,19 @@ bool MainFrame::DrawViewTabItem(uint64_t hostId, CharacterView* view, size_t pos
 	CharacterInstance* character = view->getCharacter();
 	ImGuiTabItemFlags flags = (character && character->isModified()) ? ImGuiTabItemFlags_UnsavedDocument : 0;
 	if (forceSelect) flags |= ImGuiTabItemFlags_SetSelected;
-	const std::string tabId = view->getDisplayName() + "###view_" + std::to_string(view->getId());
+	// [authoring] the Authoring workspace marks the picked characters' tabs; a team's current point is highlighted
+	bool isPoint = false;
+	const std::string badge = character ? authoring::TabBadge(character->getTxtPath(), &isPoint) : std::string();
+	const std::string tabId = (badge.empty() ? std::string() : (isPoint ? "[" + badge + " *] " : "[" + badge + "] ")) +
+	                          view->getDisplayName() + "###view_" + std::to_string(view->getId());
+	if (isPoint) ImGui::PushStyleColor(ImGuiCol_Tab, ImVec4(0.45f, 0.32f, 0.08f, 1.0f));
+	if (isPoint) ImGui::PushStyleColor(ImGuiCol_TabSelected, ImVec4(0.7f, 0.5f, 0.1f, 1.0f));
 	bool open = true;
 	const int index = findViewIndexById(view->getId());
 	const bool waitingForClose = pendingCloseViewIndex == index;
 	const bool selected = ImGui::BeginTabItem(tabId.c_str(), waitingForClose ? nullptr : &open, flags);
 	if (selected) ImGui::EndTabItem();
+	if (isPoint) ImGui::PopStyleColor(2);
 
 	// Drag source: reorder within the bar, drop on another window's bar, or
 	// release anywhere else to move the tab into a new window.

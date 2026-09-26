@@ -1,8 +1,10 @@
 // MainFrame startup actions (--open / --capture); see startup_args.h.
 #include "startup_args.h"
+#include "authoring/authoring_window.h"
 #include "main_frame.h"
 #include "character_instance.h"
 #include "game_link_panel.h"
+#include "tag_panel.h"
 
 #include <glad/glad.h>
 #include <windows.h>
@@ -105,6 +107,22 @@ void WritePng(const std::string &path, const uint8_t *rgb, int w, int h)
 void MainFrame::ProcessStartupArgs()
 {
 	int n = ++gStartup.frameCounter;
+	// [tag-panel] after --open (frame 2), so the pickers see the loaded character; works without --open too
+	// [authoring] --tool authoring (and --tool tag without --tag-ini: the old panel's entry now opens Authoring > Tuning)
+	const bool authoringTool = gStartup.tool == "authoring" || (gStartup.tool == "tag" && gStartup.tagIni.empty());
+	if (n == 3 && authoringTool) {
+		authoring::StartupOptions o = gStartup.authoring;
+		if (gStartup.tool == "tag" && o.tab.empty()) o.tab = "Tuning";
+		authoring::ApplyStartup(o);
+	}
+	if (n == 60 && authoringTool && gStartup.authoring.loadInGame) authoring::StartupLoadInGame();
+	if (n == 3 && !authoringTool && (gStartup.tool == "tag" || !gStartup.tagIni.empty() || !gStartup.tagTab.empty() || gStartup.tagLink))
+		tagpanel::OpenStartup(gStartup.tagIni, gStartup.tagChar, gStartup.tagTab);
+	if (n == 3 && gStartup.tagLink) gamelink::SharedClient().Connect();
+	if (n == 150 && gStartup.tagApply) tagpanel::StartupApply();
+	if (n == 200 && gStartup.tagLink && !gStartup.tagTab.empty())   // re-select the tab once the link has state
+		tagpanel::OpenStartup("", "", gStartup.tagTab);
+	if (n == 3 && gStartup.tool == "gamelink") gamelink::showPanel = true;
 	if (n == 2 && !gStartup.open.empty()) {
 		std::string path = gStartup.open, ext;
 		size_t dot = path.find_last_of('.');
@@ -145,6 +163,7 @@ void MainFrame::ProcessStartupArgs()
 		else if (t == "notes") m_showNotes = true;
 		else if (t == "vars") m_varRefs.open = true;
 		else if (t == "keys") m_showKeyBindings = true;
+
 		if (auto *c = getActiveCharacter(); c && gStartup.compare >= 0) {
 			m_compare.enabled = true;
 			m_compare.character = c;
@@ -270,7 +289,7 @@ void MainFrame::ProcessStartupArgs()
 		PostQuitMessage(0);
 	if (n == 2 && gStartup.gameLinkSlot >= 1 && gStartup.gameLinkSlot <= 4)
 		gamelink::StartFollowing(gStartup.gameLinkSlot - 1);
-	if (!gStartup.capture.empty() && n == (gStartup.gameLinkSlot ? 240 : 20)) {
+	if (!gStartup.capture.empty() && n == ((gStartup.gameLinkSlot || gStartup.tagLink || gStartup.authoring.link) ? 240 : 20)) {
 		RECT r; GetClientRect(WindowFromDC(context->dc), &r);
 		int w = r.right - r.left, h = r.bottom - r.top;
 		std::vector<uint8_t> rgba((size_t)w * h * 4), rgb((size_t)w * h * 3);

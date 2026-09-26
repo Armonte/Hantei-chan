@@ -399,6 +399,8 @@ void MainFrame::DrawUi()
 	vectors.Draw();
 	drawCommandEditor();
 	drawGameLink();
+	drawTagPanel();
+	drawAuthoring();
 	drawVarRefsWindow();
 	drawPatternManagerWindow();
 	drawNotesWindow();
