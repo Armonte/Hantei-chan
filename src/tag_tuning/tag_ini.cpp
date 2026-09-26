@@ -181,6 +181,7 @@ void TagIni::Set(SecKind k, const std::string& name, const std::string& keyName,
 		if (!m_text.empty() && m_text.back() != '\n') add += nl;
 		if (!m_text.empty()) add += nl;
 		add += k == SecKind::Tuning ? "[tuning]" : k == SecKind::Style ? "[style." + name + "]"
+		     : k == SecKind::Other ? "[" + name + "]"
 		     : m_charFile ? std::string("[char]") : "[char." + name + "]";
 		add += nl + keyName + "=" + v + nl;
 		insertAt(m_text.size(), add);
