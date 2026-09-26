@@ -43,6 +43,13 @@ const char* OpName(uint16_t op)
 	case wire::Op::ReloadStage: return "reloadstage";
 	case wire::Op::QueryStage: return "stage";
 	case wire::Op::QueryTag: return "tag";
+	case wire::Op::QueryCaps: return "caps";
+	case wire::Op::QueryRoster: return "roster";
+	case wire::Op::QueryMatchSetup: return "setup-get";
+	case wire::Op::SetMatchSetup: return "setup-set";
+	case wire::Op::ApplyTuning: return "tuning-apply";
+	case wire::Op::QueryTuning: return "tuning-get";
+	case wire::Op::EndAuthoring: return "end-authoring";
 	}
 	return "?";
 }
@@ -141,12 +148,141 @@ void Client::SetTargetPid(uint32_t pid)
 	m_snap.targetPid = pid;
 }
 
+Client::OutMsg Client::Msg(const wire::Command& c)
+{
+	OutMsg m;
+	m.kind = (uint16_t)wire::Kind::LinkCommand;
+	m.body.resize(sizeof c);
+	std::memcpy(m.body.data(), &c, sizeof c);
+	return m;
+}
+
 uint16_t Client::queueCommand(wire::Command c)
 {
 	std::lock_guard<std::mutex> lk(m_mx);
 	c.seq = ++m_seq;
-	m_out.push_back(c);
+	m_out.push_back(Msg(c));
 	return c.seq;
+}
+
+bool Snapshot::SessionLive() const
+{
+	if (haveSetup) return setup.sessionFlags != 0;
+	if (haveTag) return tag.sessionFlags != 0;
+	return false;
+}
+
+bool Snapshot::HostBetweenRounds() const
+{
+	return haveSetup && setup.sessionFlags != 0 && setup.sessionRole == (uint8_t)wire::SessionRole::Host && setup.betweenRounds;
+}
+
+// ---- [authoring] ----
+
+uint16_t Client::QueryCaps() { wire::Command c{}; c.op = (uint16_t)wire::Op::QueryCaps; return queueCommand(c); }
+uint16_t Client::QueryRoster(int page) { wire::Command c{}; c.op = (uint16_t)wire::Op::QueryRoster; c.slot = page; return queueCommand(c); }
+uint16_t Client::QueryMatchSetup() { wire::Command c{}; c.op = (uint16_t)wire::Op::QueryMatchSetup; return queueCommand(c); }
+uint16_t Client::EndAuthoring() { wire::Command c{}; c.op = (uint16_t)wire::Op::EndAuthoring; return queueCommand(c); }
+uint16_t Client::QueryTuning(uint8_t slotMask)
+{
+	wire::Command c{}; c.op = (uint16_t)wire::Op::QueryTuning; c.slotMask = slotMask;
+	{ std::lock_guard<std::mutex> lk(m_mx); m_lastTuningMask = slotMask; }
+	return queueCommand(c);
+}
+uint16_t Client::ApplyTuning(uint8_t flags)
+{
+	wire::Command c{}; c.op = (uint16_t)wire::Op::ApplyTuning; c.flags = flags;
+	return queueCommand(c);
+}
+
+namespace {
+std::vector<uint8_t> ExBody(uint16_t op, uint16_t seq, const void* payload, uint16_t n)
+{
+	wire::CommandEx x{ op, seq, n, 0 };
+	std::vector<uint8_t> b(sizeof x + n);
+	std::memcpy(b.data(), &x, sizeof x);
+	std::memcpy(b.data() + sizeof x, payload, n);
+	return b;
+}
+} // namespace
+
+uint16_t Client::SetMatchSetup(const wire::MatchSetup& s)
+{
+	std::lock_guard<std::mutex> lk(m_mx);
+	if (!m_snap.connected || !m_snap.Authoring()) {
+		note(m_snap.capsUnknown ? "setup-set not sent: this pchost.dll predates Authoring Mode (QueryCaps unknown)"
+		                        : "setup-set not sent: the link is not up / caps not known yet");
+		return 0;
+	}
+	const uint16_t seq = ++m_seq;
+	m_out.push_back({ (uint16_t)wire::Kind::LinkCommandEx, ExBody((uint16_t)wire::Op::SetMatchSetup, seq, &s, sizeof s) });
+	return seq;
+}
+
+uint16_t Client::SetMatchSetupWhenConnected(const wire::MatchSetup& s)
+{
+	std::lock_guard<std::mutex> lk(m_mx);
+	const uint16_t seq = ++m_seq;
+	OutMsg m{ (uint16_t)wire::Kind::LinkCommandEx, ExBody((uint16_t)wire::Op::SetMatchSetup, seq, &s, sizeof s) };
+	if (m_snap.connected && m_snap.Authoring()) { m_out.push_back(m); return seq; }
+	if (m_snap.connected && m_snap.capsUnknown) { note("setup-set not sent: this pchost.dll predates Authoring Mode"); return 0; }
+	for (auto it = m_onConnect.begin(); it != m_onConnect.end();)   // only the latest setup matters
+		it = it->kind == (uint16_t)wire::Kind::LinkCommandEx ? m_onConnect.erase(it) : it + 1;
+	m_onConnect.push_back(m);
+	m_snap.wantConnected = true;
+	m_nextOpenMs = 0;
+	note("setup: connecting first, will send once the game's caps are known");
+	return seq;
+}
+
+void Client::SetAuthoringPoll(bool setupPoll, bool tuningPoll)
+{
+	std::lock_guard<std::mutex> lk(m_mx);
+	m_setupPoll = setupPoll;
+	m_tuningPoll = tuningPoll;
+}
+
+bool Client::WaitCaps(int timeoutMs)
+{
+	const uint64_t end = NowMs() + (uint64_t)timeoutMs;
+	while (NowMs() < end) {
+		{
+			std::lock_guard<std::mutex> lk(m_mx);
+			if (m_snap.haveCaps || m_snap.capsUnknown) return true;
+		}
+		std::this_thread::sleep_for(std::chrono::milliseconds(5));
+	}
+	return false;
+}
+
+bool Client::WaitSetup(int timeoutMs, wire::SetupState& out)
+{
+	uint32_t start;
+	{ std::lock_guard<std::mutex> lk(m_mx); start = m_snap.setupSerial; }
+	const uint64_t end = NowMs() + (uint64_t)timeoutMs;
+	while (NowMs() < end) {
+		{
+			std::lock_guard<std::mutex> lk(m_mx);
+			if (m_snap.setupSerial != start) { out = m_snap.setup; return true; }
+		}
+		std::this_thread::sleep_for(std::chrono::milliseconds(5));
+	}
+	return false;
+}
+
+bool Client::WaitTuning(int timeoutMs, Snapshot& out, uint32_t since)
+{
+	uint32_t start = since;
+	if (since == 0xFFFFFFFFu) { std::lock_guard<std::mutex> lk(m_mx); start = m_snap.tuningSerial; }
+	const uint64_t end = NowMs() + (uint64_t)timeoutMs;
+	while (NowMs() < end) {
+		{
+			std::lock_guard<std::mutex> lk(m_mx);
+			if (m_snap.tuningSerial != start && m_pendingSlots == 0) { out = m_snap; return true; }
+		}
+		std::this_thread::sleep_for(std::chrono::milliseconds(5));
+	}
+	return false;
 }
 
 uint16_t Client::Ping()
@@ -185,10 +321,11 @@ uint16_t Client::SetStageWhenConnected(int stageId, uint8_t flags)
 	wire::Command c{}; c.op = (uint16_t)wire::Op::SetStage; c.slot = stageId; c.flags = flags;
 	std::lock_guard<std::mutex> lk(m_mx);
 	c.seq = ++m_seq;
-	if (m_snap.connected) m_out.push_back(c);
+	if (m_snap.connected) m_out.push_back(Msg(c));
 	else {
-		m_onConnect.clear();          // only the latest "show this stage" matters
-		m_onConnect.push_back(c);
+		for (auto it = m_onConnect.begin(); it != m_onConnect.end();)   // only the latest "show this stage" matters
+			it = it->kind == (uint16_t)wire::Kind::LinkCommand ? m_onConnect.erase(it) : it + 1;
+		m_onConnect.push_back(Msg(c));
 		m_snap.wantConnected = true;
 		m_nextOpenMs = 0;
 		note("stage " + std::to_string(stageId) + ": connecting first, will switch once the link is up");
@@ -319,9 +456,21 @@ bool Client::tryOpen()
 		m_snap.status = "connected";
 		m_snap.stageUnsupported = false;
 		m_snap.tagUnsupported = false;
+		m_snap.haveCaps = m_snap.capsUnknown = false;
+		m_snap.roster.clear();
+		m_snap.rosterComplete = false;
+		m_snap.haveSetup = m_snap.haveTuning = false;
+		for (bool& b : m_snap.haveTuningSlot) b = false;
+		m_rosterNext = -1;
+		m_pendingSlots = 0;
 		note(std::string("connected to ") + name);
-		for (const wire::Command& c : m_onConnect) m_out.push_back(c);   // SetStageWhenConnected
-		m_onConnect.clear();
+		// [authoring] QueryCaps first, on every connect (§3.1)
+		wire::Command q{}; q.op = (uint16_t)wire::Op::QueryCaps; q.seq = ++m_seq;
+		m_out.push_back(Msg(q));
+		for (auto it = m_onConnect.begin(); it != m_onConnect.end();) {   // plain commands now; Ex ones wait for the caps
+			if (it->kind == (uint16_t)wire::Kind::LinkCommand) { m_out.push_back(*it); it = m_onConnect.erase(it); }
+			else ++it;
+		}
 		return true;
 	}
 	std::lock_guard<std::mutex> lk(m_mx);
@@ -340,6 +489,9 @@ void Client::closePipe(const char* why)
 	m_snap.haveState = false;
 	m_snap.haveStage = false;
 	m_snap.haveTag = false;
+	m_snap.haveCaps = false;
+	m_snap.haveSetup = false;
+	m_snap.haveTuning = false;
 }
 
 void Client::handleMessage(const wire::Header& h, const uint8_t* body)
@@ -361,6 +513,72 @@ void Client::handleMessage(const wire::Header& h, const uint8_t* body)
 		m_snap.tag.activeStyle[sizeof m_snap.tag.activeStyle - 1] = 0;
 		m_snap.tag.sha[sizeof m_snap.tag.sha - 1] = 0;
 		m_snap.haveTag = true;
+	} else if (h.kind == (uint16_t)wire::Kind::LinkCaps && h.size == sizeof(wire::Caps)) {
+		std::memcpy(&m_snap.caps, body, sizeof(wire::Caps));
+		m_snap.caps.build[sizeof m_snap.caps.build - 1] = 0;
+		m_snap.gameId = std::string(m_snap.caps.gameId, strnlen(m_snap.caps.gameId, sizeof m_snap.caps.gameId));
+		const bool first = !m_snap.haveCaps;
+		m_snap.haveCaps = true;
+		m_snap.capsUnknown = false;
+		if (first) {
+			char b[160];
+			std::snprintf(b, sizeof b, "caps: authoring rev %u, caps 0x%X, pchost %s, game %s, lever table 0x%08X", (unsigned)m_snap.caps.revision,
+			              (unsigned)m_snap.caps.caps, m_snap.caps.build, m_snap.gameId.empty() ? "mbaacc" : m_snap.gameId.c_str(),
+			              (unsigned)m_snap.caps.leverTableHash);
+			note(b);
+			if (m_snap.caps.caps & wire::kCapRoster) m_rosterNext = 0;
+			if (m_snap.caps.caps & wire::kCapSetup) {
+				for (const OutMsg& m : m_onConnect) m_out.push_back(m);
+				m_onConnect.clear();
+				wire::Command q{}; q.op = (uint16_t)wire::Op::QueryMatchSetup; q.seq = ++m_seq;
+				m_out.push_back(Msg(q));
+			}
+			if (m_snap.caps.caps & wire::kCapTuning) {
+				wire::Command q{}; q.op = (uint16_t)wire::Op::QueryTuning; q.seq = ++m_seq;
+				m_out.push_back(Msg(q));
+			}
+		}
+	} else if (h.kind == (uint16_t)wire::Kind::LinkRoster && h.size == sizeof(wire::Roster)) {
+		wire::Roster r;
+		std::memcpy(&r, body, sizeof r);
+		m_snap.roster.erase(std::remove_if(m_snap.roster.begin(), m_snap.roster.end(), [&](const wire::Roster& x) { return x.page == r.page; }),
+		                    m_snap.roster.end());
+		m_snap.roster.push_back(r);
+		std::sort(m_snap.roster.begin(), m_snap.roster.end(), [](const wire::Roster& a, const wire::Roster& b) { return a.page < b.page; });
+		m_snap.rosterComplete = (int)m_snap.roster.size() >= (int)r.pageCount;
+		m_rosterNext = m_snap.rosterComplete ? -1 : r.page + 1;
+	} else if (h.kind == (uint16_t)wire::Kind::LinkSetupState && h.size == sizeof(wire::SetupState)) {
+		std::memcpy(&m_snap.setup, body, sizeof(wire::SetupState));
+		m_snap.setup.message[sizeof m_snap.setup.message - 1] = 0;
+		m_snap.haveSetup = true;
+		++m_snap.setupSerial;
+		// §3.6: the tuning is re-read once the setup becomes Ready
+		if (m_snap.setup.authState == (uint8_t)wire::AuthState::Ready && m_lastAuthState != (uint8_t)wire::AuthState::Ready &&
+		    (m_snap.caps.caps & wire::kCapTuning)) {
+			wire::Command q{}; q.op = (uint16_t)wire::Op::QueryTuning; q.seq = ++m_seq;
+			m_out.push_back(Msg(q));
+		}
+		m_lastAuthState = m_snap.setup.authState;
+	} else if (h.kind == (uint16_t)wire::Kind::LinkTuningGlobal && h.size == sizeof(wire::TuningGlobal)) {
+		std::memcpy(&m_snap.tuning, body, sizeof(wire::TuningGlobal));
+		m_snap.tuning.activeStyle[sizeof m_snap.tuning.activeStyle - 1] = 0;
+		m_snap.tuning.sha[sizeof m_snap.tuning.sha - 1] = 0;
+		m_snap.haveTuning = true;
+		++m_snap.tuningSerial;
+		{
+			const uint8_t m = m_lastTuningMask ? (m_lastTuningMask & 0xF) : 0xF;
+			m_pendingSlots = (m & 1) + ((m >> 1) & 1) + ((m >> 2) & 1) + ((m >> 3) & 1);
+			m_lastTuningMask = 0;   // polls and QueryAfter answers are all-slot
+		}
+	} else if (h.kind == (uint16_t)wire::Kind::LinkTuningSlot && h.size == sizeof(wire::TuningSlot)) {
+		wire::TuningSlot t;
+		std::memcpy(&t, body, sizeof t);
+		t.file[sizeof t.file - 1] = 0;
+		if (t.slot < 4) { m_snap.tuningSlot[t.slot] = t; m_snap.haveTuningSlot[t.slot] = true; }
+		if (m_pendingSlots > 0) --m_pendingSlots;
+	} else if (h.kind >= (uint16_t)wire::Kind::LinkCaps && h.kind <= (uint16_t)wire::Kind::LinkTuningSlot) {
+		note("dropped an authoring message of kind " + std::to_string(h.kind) + " and " + std::to_string(h.size) +
+		     " bytes (protocol skew: update Hantei-chan or pchost.dll)");
 	} else if (h.kind == (uint16_t)wire::Kind::LinkTag) {
 		note("dropped a LinkTag of " + std::to_string(h.size) + " bytes (this editor expects " +
 		     std::to_string(sizeof(wire::Tag)) + ": protocol skew)");
@@ -380,11 +598,21 @@ void Client::handleMessage(const wire::Header& h, const uint8_t* body)
 			m_snap.stageUnsupported = true;
 			return;
 		}
+		if (r.op == (uint16_t)wire::Op::QueryCaps && r.status == (int16_t)wire::Status::Unknown) {
+			if (!m_snap.capsUnknown) note("the game's pchost.dll predates Authoring Mode (QueryCaps unknown): link rev 1 mode");
+			m_snap.capsUnknown = true;
+			if (!m_onConnect.empty()) note("dropped the queued setup: this pchost.dll cannot take one");
+			m_onConnect.clear();
+			return;
+		}
+		if (r.op == (uint16_t)wire::Op::QueryTuning && r.status == (int16_t)wire::Status::Unknown) return;
+		if (r.op == (uint16_t)wire::Op::QueryMatchSetup && r.status == (int16_t)wire::Status::Unknown) return;
 		if (r.op == (uint16_t)wire::Op::QueryTag && r.status == (int16_t)wire::Status::Unknown) {
 			if (!m_snap.tagUnsupported) note("the game's pchost.dll has no QueryTag (older than PovertyCaster mbaacc/link-tag) - using LinkState");
 			m_snap.tagUnsupported = true;
 			return;
 		}
+		if (r.op == (uint16_t)wire::Op::QueryRoster && r.status != 0) m_rosterNext = -1;
 		if (r.op != (uint16_t)wire::Op::Ping) note(line);
 	} else {
 		note("dropped an unknown message kind " + std::to_string(h.kind));
@@ -394,31 +622,33 @@ void Client::handleMessage(const wire::Header& h, const uint8_t* body)
 void Client::pump()
 {
 	// 1. writes
-	std::deque<wire::Command> out;
+	std::deque<OutMsg> out;
 	int pollHz;
 	bool stageOps, tagOps;
+	const uint64_t now = NowMs();
 	{
 		std::lock_guard<std::mutex> lk(m_mx);
 		out.swap(m_out);
 		pollHz = m_pollHz;
 		stageOps = !m_snap.stageUnsupported;
 		tagOps = m_tagQuery && !m_snap.tagUnsupported;
+		authoringPoll(out, now);
 	}
-	const uint64_t now = NowMs();
 	if (pollHz > 0 && now - m_lastPollMs >= (uint64_t)(1000 / pollHz)) {
 		m_lastPollMs = now;
 		wire::Command q{}; q.op = (uint16_t)wire::Op::QueryState;
-		out.push_back(q);
-		if (stageOps) { wire::Command qs{}; qs.op = (uint16_t)wire::Op::QueryStage; out.push_back(qs); }
-		if (tagOps) { wire::Command qt{}; qt.op = (uint16_t)wire::Op::QueryTag; out.push_back(qt); }
+		out.push_back(Msg(q));
+		if (stageOps) { wire::Command qs{}; qs.op = (uint16_t)wire::Op::QueryStage; out.push_back(Msg(qs)); }
+		if (tagOps) { wire::Command qt{}; qt.op = (uint16_t)wire::Op::QueryTag; out.push_back(Msg(qt)); }
 	}
-	for (const wire::Command& c : out) {
-		const wire::Header h{ (uint16_t)wire::Kind::LinkCommand, wire::kLinkVersion, sizeof c };
-		uint8_t buf[sizeof h + sizeof c];
-		std::memcpy(buf, &h, sizeof h);
-		std::memcpy(buf + sizeof h, &c, sizeof c);
+	for (const OutMsg& m : out) {
+		if (m.body.size() > wire::kLinkMaxPayload) continue;
+		const wire::Header h{ m.kind, wire::kLinkVersion, (uint32_t)m.body.size() };
+		std::vector<uint8_t> buf(sizeof h + m.body.size());
+		std::memcpy(buf.data(), &h, sizeof h);
+		std::memcpy(buf.data() + sizeof h, m.body.data(), m.body.size());
 		DWORD wr = 0;
-		if (!WriteFile((HANDLE)m_pipe, buf, sizeof buf, &wr, nullptr) || wr != sizeof buf) {
+		if (!WriteFile((HANDLE)m_pipe, buf.data(), (DWORD)buf.size(), &wr, nullptr) || wr != buf.size()) {
 			closePipe("write failed (game closed?)");
 			return;
 		}
@@ -442,6 +672,31 @@ void Client::pump()
 		if (m_rx.size() < sizeof h + h.size) break;
 		handleMessage(h, m_rx.data() + sizeof h);
 		m_rx.erase(m_rx.begin(), m_rx.begin() + sizeof h + h.size);
+	}
+}
+
+// [authoring] §3.6 cadence. Caller holds m_mx.
+void Client::authoringPoll(std::deque<OutMsg>& out, uint64_t now)
+{
+	if (!m_snap.connected || !m_snap.haveCaps) return;
+	if (m_rosterNext >= 0) {
+		wire::Command q{}; q.op = (uint16_t)wire::Op::QueryRoster; q.slot = m_rosterNext; q.seq = ++m_seq;
+		out.push_back(Msg(q));
+		m_rosterNext = -2;   // wait for the page (the handler sets the next one)
+	}
+	if ((m_snap.caps.caps & wire::kCapSetup) && m_setupPoll) {
+		const bool busy = m_snap.haveSetup && (m_snap.setup.authState == (uint8_t)wire::AuthState::ApplyingHot ||
+		                                       m_snap.setup.authState == (uint8_t)wire::AuthState::Rebuilding);
+		if (now - m_lastSetupPollMs >= (busy ? 100u : 500u)) {
+			m_lastSetupPollMs = now;
+			wire::Command q{}; q.op = (uint16_t)wire::Op::QueryMatchSetup; q.seq = ++m_seq;
+			out.push_back(Msg(q));
+		}
+	}
+	if ((m_snap.caps.caps & wire::kCapTuning) && m_tuningPoll && now - m_lastTuningPollMs >= 2000) {
+		m_lastTuningPollMs = now;
+		wire::Command q{}; q.op = (uint16_t)wire::Op::QueryTuning; q.seq = ++m_seq;
+		out.push_back(Msg(q));
 	}
 }
 

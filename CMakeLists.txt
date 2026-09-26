@@ -274,10 +274,16 @@ endif()
 
 # Game Link CLI: the editor's Game Link client (src/game_link.cpp) without the GUI, plus an HA6 edit through the
 # editor's own FrameData load/save. Scripted end-to-end checks against a running MBAA.exe (docs/HANTEI_GAME_LINK.md).
+# [authoring] shared by the editor, game_link_cli, the mock and the tests (docs/HANTEI_AUTHORING_MODE.md)
+set(TAG_SIDECAR_SOURCES src/tag_tuning/tag_ini.cpp src/tag_tuning/tag_sidecar.cpp src/tag_tuning/tag_migrate.cpp
+	src/tag_tuning/tag_history.cpp)
+set(AUTHORING_CORE_SOURCES src/authoring/authoring_model.cpp src/authoring/authoring_policy.cpp src/authoring/game_launcher.cpp)
 add_executable(game_link_cli
 	src/game_link_cli.cpp
 	src/game_link.cpp
 	src/game_link_mock.cpp
+	${TAG_SIDECAR_SOURCES}
+	${AUTHORING_CORE_SOURCES}
 	src/background/bg_file.cpp
 	src/background/bg_project.cpp
 	src/background/bg_pat.cpp
@@ -567,12 +573,13 @@ if(MINGW)
 	target_link_options(package_tools_test PRIVATE -static-libgcc -static-libstdc++ -static)
 endif()
 add_test(NAME package_tools COMMAND package_tools_test)
-add_executable(game_link_test tests/game_link_test.cpp src/game_link.cpp src/game_link_mock.cpp)
+add_executable(game_link_test tests/game_link_test.cpp src/game_link.cpp src/game_link_mock.cpp ${AUTHORING_CORE_SOURCES}
+	${TAG_SIDECAR_SOURCES})
 target_include_directories(game_link_test PRIVATE "src")
 if(MINGW)
 	target_link_options(game_link_test PRIVATE -static-libgcc -static-libstdc++ -static)
 endif()
-add_test(NAME game_link COMMAND game_link_test)
+add_test(NAME game_link COMMAND game_link_test WORKING_DIRECTORY ${CMAKE_SOURCE_DIR})
 # Tag / Team panel: tag_tuning.ini round trip, lever table vs the sample ini and (when on disk) vs PovertyCaster's
 # MbaaccTagTuning.hpp, assist slot resolution and the default-assist pick (docs/HANTEI_TAG_PANEL.md).
 add_executable(tag_tuning_test tests/tag_tuning_test.cpp src/tag_tuning/tag_ini.cpp src/tag_tuning/tag_assist.cpp
@@ -595,8 +602,6 @@ if(MINGW)
 endif()
 add_test(NAME tag_tuning COMMAND tag_tuning_test WORKING_DIRECTORY ${CMAKE_SOURCE_DIR})
 # [authoring] the sidecar tree, migration and the workspace undo history (docs/HANTEI_AUTHORING_MODE.md §2 / §9.1).
-set(TAG_SIDECAR_SOURCES src/tag_tuning/tag_ini.cpp src/tag_tuning/tag_sidecar.cpp src/tag_tuning/tag_migrate.cpp
-	src/tag_tuning/tag_history.cpp)
 add_executable(tag_sidecar_test tests/tag_sidecar_test.cpp ${TAG_SIDECAR_SOURCES})
 target_include_directories(tag_sidecar_test PRIVATE "src")
 if(MINGW)
