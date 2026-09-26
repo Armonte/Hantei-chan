@@ -400,6 +400,7 @@ void MainFrame::DrawUi()
 	drawCommandEditor();
 	drawGameLink();
 	drawTagPanel();
+	drawAuthoring();
 	drawVarRefsWindow();
 	drawPatternManagerWindow();
 	drawNotesWindow();

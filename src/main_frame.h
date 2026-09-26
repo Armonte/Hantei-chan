@@ -349,6 +349,7 @@ private:
 	void drawCommandEditor();
 	void drawGameLink();   // Game Link window (ui/main_frame_gamelink.cpp)
 	void drawTagPanel();   // Tag / Team window, experimental (ui/main_frame_gamelink.cpp, tag_panel.h)
+	void drawAuthoring();  // [authoring] Authoring workspace (ui/main_frame_gamelink.cpp, authoring/authoring_window.h)
 	bool m_commandShortcutsRegistered = false;
 	// ---- Editing tools (ui/editor_tools_impl.h) ----------------------------
 	ShortcutRouter shortcuts;

@@ -16,6 +16,7 @@
 #include "ha4_character.h"
 #include "game_link_panel.h"
 #include "tag_panel.h"
+#include "authoring/authoring_window.h"
 
 #include <imgui.h>
 #include <imgui_internal.h>
@@ -68,6 +69,7 @@ context(context_)
 
 MainFrame::~MainFrame()
 {
+	authoring::SaveSettings();
 	clearStage();
 	ImGui::SaveIniSettingsToDisk(ImGui::GetCurrentContext()->IO.IniFilename);
 }
@@ -1021,6 +1023,7 @@ void MainFrame::drawStageBrowser()
 	bg::BrowserHooks hooks;
 	hooks.open = [this](const std::string& p) { openStageInActiveTab(p); };
 	hooks.showInGame = stageShowInGame;
+	if (authoring::WantsStagePick()) hooks.pickForSetup = [](int id) { authoring::StagePicked(id); };
 	bg::DrawStageBrowser(stageProject, currentBgFile ? currentBgFile->GetFilename() : std::string(), hooks);
 	if (stageProject.IsOpen()) {
 		gSettings.stageGameDir = stageProject.BgDir();

@@ -228,7 +228,9 @@ int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE, PWSTR pCmdLine, int nCmdShow
 		                     || !strcmp(arg, "--frame") || !strcmp(arg, "--palette") || !strcmp(arg, "--game-link")
 		                     || !strcmp(arg, "--zoom") || !strcmp(arg, "--game")
 		                     || !strcmp(arg, "--compare") || !strcmp(arg, "--tool") || !strcmp(arg, "--tag-ini")
-		                     || !strcmp(arg, "--tag-char") || !strcmp(arg, "--tag-tab")))
+		                     || !strcmp(arg, "--tag-char") || !strcmp(arg, "--tag-tab")
+		                     || !strncmp(arg, "--authoring-", 12)) && strcmp(arg, "--authoring-link") && strcmp(arg, "--authoring-load")
+		                     && strcmp(arg, "--authoring-unlock"))
 		{
 			// startup actions, see startup_args.h
 			std::wstring w(argV[i+1]);
@@ -247,12 +249,33 @@ int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE, PWSTR pCmdLine, int nCmdShow
 			else if(!strcmp(arg, "--tag-ini")) gStartup.tagIni = v;
 			else if(!strcmp(arg, "--tag-char")) gStartup.tagChar = v;
 			else if(!strcmp(arg, "--tag-tab")) gStartup.tagTab = v;
+			else if(!strcmp(arg, "--authoring-tab")) gStartup.authoring.tab = v;
+			else if(!strcmp(arg, "--authoring-setup")) gStartup.authoring.setupHex = v;
+			else if(!strcmp(arg, "--authoring-game")) gStartup.authoring.gameDir = v;
+			else if(!strcmp(arg, "--authoring-tag-root")) gStartup.authoring.tagRoot = v;
+			else if(!strcmp(arg, "--authoring-char")) gStartup.authoring.charFile = v;
+			else if(!strcmp(arg, "--authoring-layer")) gStartup.authoring.layer = v;
+			else if(!strcmp(arg, "--authoring-view")) gStartup.authoring.subTab = v;
+			else if(!strcmp(arg, "--authoring-ab")) gStartup.authoring.abDemo = v;
+			else if(!strncmp(arg, "--authoring-", 12)) {}
 			else gStartup.palette = atoi(v.c_str());
 			i++;
 		}
 		else if(!strcmp(arg, "--tag-link"))
 		{
 			gStartup.tagLink = true;
+		}
+		else if(!strcmp(arg, "--authoring-link"))
+		{
+			gStartup.authoring.link = true;
+		}
+		else if(!strcmp(arg, "--authoring-load"))
+		{
+			gStartup.authoring.loadInGame = true;
+		}
+		else if(!strcmp(arg, "--authoring-unlock"))
+		{
+			gStartup.authoring.sessionUnlock = true;
 		}
 		else if(!strcmp(arg, "--tag-apply"))
 		{
