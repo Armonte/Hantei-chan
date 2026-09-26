@@ -17,6 +17,7 @@
 #include "game_link_panel.h"
 #include "tag_panel.h"
 #include "authoring/authoring_window.h"
+#include "authoring/game_view.h"
 
 #include <imgui.h>
 #include <imgui_internal.h>
