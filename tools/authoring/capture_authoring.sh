@@ -1,5 +1,6 @@
 #!/bin/bash
-# Headless captures of every Authoring workspace view against the MOCK dev link (no game):
+# Captures of every Authoring workspace view against the MOCK dev link (no game). NOTE: each capture OPENS A VISIBLE
+# editor window for a few seconds (it steals focus): run it only when the user agreed. docs/HANTEI_AUTHORING_MODE.md
 # docs/HANTEI_AUTHORING_MODE.md §6.4 H5. Usage: tools/authoring/capture_authoring.sh [outdir]
 #   outdir default: /mnt/c/dev/hantei-chan/docs/authoring/hantei
 # Each capture runs gonptechan.exe in build/capwork with a fresh hanteichan.ini (1600x1000, no detached OS windows, so

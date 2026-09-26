@@ -459,6 +459,14 @@ void MainFrame::Menu(unsigned int errorPopupId)
 				ImGui::TextDisabled("History: %zu undo / %zu redo, ~%zu KiB",
 					undo->undoCount(), undo->redoCount(), undo->historyBytes() / 1024);
 			}
+			// [authoring] the tuning history (sidecar files): Ctrl+Z / Ctrl+Y reach it while the Authoring window has focus
+			if (authoring::showWindow) {
+				const std::string tu = authoring::UndoLabel(false), tr = authoring::UndoLabel(true);
+				if (ImGui::MenuItem(("Undo tuning: " + (tu.empty() ? std::string("-") : tu)).c_str(), nullptr, false, !tu.empty()))
+					authoring::UndoRedo(false);
+				if (ImGui::MenuItem(("Redo tuning: " + (tr.empty() ? std::string("-") : tr)).c_str(), nullptr, false, !tr.empty()))
+					authoring::UndoRedo(true);
+			}
 			// Stage tabs: object / frame / event / Info.txt edits (bg::File) and
 			// BgList.ini / bgm.txt edits (Stage Browser) share one history.
 			if (view && view->isStageView()) {

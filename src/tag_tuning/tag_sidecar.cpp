@@ -200,6 +200,11 @@ GlobalResolution ResolveGlobal(const SidecarSet& s)
 		r.styleFound = found;
 		if (found) r.style = r.styleRequested;
 		else r.warnings.push_back({ 0, "active_style '" + r.styleRequested + "' is neither an ini [style.*] nor a built-in style - using the defaults" });
+		// §3.3 styleMask: a lever counts as the style's only when it DIFFERS from Tuning{} (a style key that restates the
+		// default is not provenance). The same rule as PovertyCaster's TagSidecar.hpp styleMaskOf.
+		const Values def = DefaultValues();
+		for (size_t i = 0; i < kLeverCount; ++i)
+			if (r.from[i].src == Src::Style && r.values[i] == def[i]) r.from[i] = Provenance{ Src::Default, Layer::Shipped };
 	}
 	for (int l = 0; l < 2; ++l) {
 		if (!s.global[l]) continue;

@@ -13,11 +13,19 @@
 
 #include <windows.h>
 
+#ifdef HAVE_PC_SIDECAR
+#include "mbaacc/TagSidecar.hpp"
+#endif
+
 #include <cstdio>
 #include <filesystem>
 #include <fstream>
 #include <sstream>
 #include <string>
+#include <vector>
+#include <set>
+#include <memory>
+#include <map>
 
 using namespace tagtune;
 namespace fs = std::filesystem;
@@ -386,6 +394,102 @@ static void TestHistoryCoalesce()
 	fs::remove_all(fs::u8path(root), ec);
 }
 
+
+// ---- the same trees through PovertyCaster's own pure resolver (TagSidecar.hpp resolveSidecars / resolveSlot) ----
+// HC resolves the files itself to show the provenance and to flag game != editor cells (§1 rule 3); that is only honest
+// if both resolvers agree on every lever for every character and moon. Enabled when PC_SIDECAR_HPP is on disk.
+struct TreeText { std::string global; std::map<std::string, std::string> chars; bool hasGlobal = false; };
+
+static void CrossCheck(const std::string& name, const TreeText& shipped, const TreeText& local)
+{
+#ifdef HAVE_PC_SIDECAR
+	namespace P = mbaacc::tag;
+	// HC
+	std::vector<std::unique_ptr<TagIni>> keep;
+	SidecarSet hs;
+	auto add = [&](const TreeText& t, int layer) {
+		if (t.hasGlobal) { keep.push_back(std::make_unique<TagIni>()); keep.back()->LoadText(t.global); hs.global[layer] = keep.back().get(); }
+		for (const auto& kv : t.chars) {
+			std::string f; int m = -1;
+			if (!ParseCharFileName(kv.first, f, m)) continue;
+			keep.push_back(std::make_unique<TagIni>());
+			keep.back()->SetCharFileMode(true);
+			keep.back()->LoadText(kv.second);
+			if (m < 0) hs.shared[layer][f] = keep.back().get(); else hs.moon[layer][m][f] = keep.back().get();
+		}
+	};
+	add(shipped, 0);
+	add(local, 1);
+	const GlobalResolution hg = ResolveGlobal(hs);
+	// PC
+	P::SidecarSet ps;
+	ps.shipped.hasGlobal = shipped.hasGlobal; ps.shipped.global = shipped.global; ps.shipped.chars = shipped.chars;
+	ps.local.hasGlobal = local.hasGlobal; ps.local.global = local.global; ps.local.chars = local.chars;
+	const P::SidecarResolved pr = P::resolveSidecars(ps, [](const char*) -> const char* { return nullptr; });
+	CHECKM(pr.style == hg.style, name + ": style '" + pr.style + "' (pc) vs '" + hg.style + "' (hc)");
+	for (size_t i = 0; i < kLeverCount; ++i) {
+		const int32_t pv = P::leverGet(pr.g, P::kLevers[i]);
+		CHECKM(pv == hg.values[i], name + ": G " + kLevers[i].key + " pc " + std::to_string(pv) + " hc " + std::to_string(hg.values[i]));
+		CHECKM(pr.tuningMask.test(i) == (hg.from[i].src == Src::Tuning), name + ": tuningMask " + kLevers[i].key);
+		CHECKM(pr.styleMask.test(i) == (hg.from[i].src == Src::Style), name + ": styleMask " + kLevers[i].key);
+	}
+	std::set<std::string> files;
+	for (const auto& kv : pr.chars) files.insert(kv.first);
+	for (const std::string& f : hs.CharFiles()) files.insert(f);
+	files.insert("sion");   // a character with no file at all
+	int slots = 0;
+	for (const std::string& f : files)
+		for (int m = 0; m < 3; ++m) {
+			const P::SlotResolved ps2 = P::resolveSlot(pr, f, m);
+			const SlotResolution hr = ResolveSlot(hs, hg, f, m);
+			for (size_t i = 0; i < kLeverCount; ++i) {
+				const int32_t pv = P::leverGet(ps2.t, P::kLevers[i]);
+				CHECKM(pv == hr.values[i], name + ": " + f + " moon " + std::to_string(m) + " " + kLevers[i].key + " pc " + std::to_string(pv) +
+				                              " hc " + std::to_string(hr.values[i]));
+				CHECKM(ps2.charMask.test(i) == (hr.from[i].src == Src::Char), name + ": charMask " + f + " " + kLevers[i].key);
+				CHECKM(ps2.moonMask.test(i) == (hr.from[i].src == Src::Moon), name + ": moonMask " + f + " " + kLevers[i].key);
+			}
+			++slots;
+		}
+	std::printf("cross-check %s: HC == PovertyCaster TagSidecar.hpp on G + %d character x moon slots\n", name.c_str(), slots);
+#else
+	(void)name; (void)shipped; (void)local;
+#endif
+}
+
+static TreeText ReadTree(const std::string& root)
+{
+	TreeText t;
+	t.hasGlobal = Exists(root + "/global.ini");
+	if (t.hasGlobal) t.global = ReadText(root + "/global.ini");
+	std::error_code ec;
+	for (const auto& e : fs::directory_iterator(fs::u8path(root + "/chars"), ec))
+		if (e.is_regular_file(ec)) t.chars[e.path().filename().u8string()] = ReadText(e.path().u8string());
+	return t;
+}
+
+static void TestCrossCheck(const std::string& sample)
+{
+#ifdef HAVE_PC_SIDECAR
+	CrossCheck("fixture tree", ReadTree("tests/fixtures/authoring/tag"), ReadTree("tests/fixtures/authoring/tag/local"));
+	TreeText s1, l1;
+	s1.hasGlobal = true; s1.global = sample;
+	l1.hasGlobal = true; l1.global = "[tuning]\nactive_style=Chaos\ncooldownTicks=33\n[style.Chaos]\nregen=0\n[char.shiki]\nentryX=100\n";
+	s1.chars["shiki.ini"] = "[char]\ncancelWindowTicks=4\ntagIn=240\n";
+	l1.chars["shiki.ini"] = "[char.shiki]\ntagIn=250\nbogus=1\ncooldownTicks=9\n";
+	s1.chars["shiki_full.ini"] = "[char]\nentryStyle=arc\n";
+	l1.chars["shiki_half.ini"] = "[char]\nassist.5.motion=236C\nassist.5.command=45\n[moon.full]\ntagIn=3\n";
+	l1.chars["miyako_crescent.ini"] = "[char]\nairTagIn=1\nentryStyle=drop\n";
+	CrossCheck("edited trees", s1, l1);
+	TreeText empty, onlyChars;
+	onlyChars.chars["v_sion.ini"] = "[char]\nswapRedKeepPct=10\n";
+	CrossCheck("chars only, no global", empty, onlyChars);
+#else
+	(void)sample;
+	std::printf("PovertyCaster TagSidecar.hpp not found at configure time (PC_SIDECAR_HPP): resolver cross-check skipped\n");
+#endif
+}
+
 int main(int argc, char** argv)
 {
 	std::string dir = "tests/fixtures/tag";
@@ -399,6 +503,7 @@ int main(int argc, char** argv)
 	TestWorkspace();
 	TestMigration(sample, capture);
 	TestHistoryCoalesce();
+	TestCrossCheck(sample);
 	std::printf(g_fail ? "tag_sidecar_test: %d of %d FAILED\n" : "tag_sidecar_test: all %d checks passed\n", g_fail ? g_fail : g_checks, g_checks);
 	return g_fail ? 1 : 0;
 }
