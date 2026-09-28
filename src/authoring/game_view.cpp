@@ -115,7 +115,10 @@ void DrawOverlay(HostContext& host, const gamelink::Snapshot& s, const FrameSlot
 {
 	GameViewState& g = G();
 	ImDrawList* dl = ImGui::GetWindowDrawList();
-	const float zoom = WorldToFrame(f, 0, 0).scale;   // HA6 px -> frame px (zoom x the picture's scale)
+	// HA6 px -> frame px. MBAA draws character CGs at 2x (one HA6 / sprite pixel = 2 game pixels at zoom 1.0), and
+	// boxes are in HA6 pixels, so they scale with the sprite: 2 x zoom x the picture's scale.
+	constexpr float kHa6PxPerGamePx = 2.0f;
+	const float zoom = kHa6PxPerGamePx * WorldToFrame(f, 0, 0).scale;
 	for (int i = 0; i < 4; ++i) {
 		const FrameActor& a = f.actors[i];
 		if (!a.exists) continue;
