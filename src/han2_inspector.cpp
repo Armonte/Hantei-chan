@@ -3,6 +3,7 @@
 #include "character_instance.h"
 #include "framedata_han2.h"
 #include "han2/rbo_types_gen.h"
+#include "han2/rbo_at_gen.h"
 
 #include <imgui.h>
 #include <cstdio>
@@ -15,9 +16,12 @@ bool showInspector = true;
 
 static const Han2EnumInfo *FindEnum(const char *name)
 {
-	for (const auto &e : kHan2Enums) if (!strcmp(e.name, name)) return &e;
+	for (const auto &e : kRboTypesEnums) if (!strcmp(e.name, name)) return &e;
+	for (const auto &e : kRboAtEnums) if (!strcmp(e.name, name)) return &e;
 	return nullptr;
 }
+
+static uint32_t rdu32le(const uint8_t *p) { uint32_t v; memcpy(&v, p, 4); return v; }
 
 static int64_t ReadVal(const uint8_t *p, int size, bool sign)
 {
@@ -129,6 +133,32 @@ void DrawInspector(CharacterInstance *ch, FrameState &state)
 				if (EditRecord("frame", f.han2.rec, kRboFrameRecordFields, (int)(sizeof(kRboFrameRecordFields) / sizeof(kRboFrameRecordFields[0])))) {
 					han2::RedecodeFrame(f);
 					changed = true;
+				}
+				// attack data record (120 bytes, pattern-area section 3)
+				ImGui::SeparatorText("Attack record (AT)");
+				if (f.han2.hadAT) {
+					if (EditRecord("at", f.han2.at, kRboAtRecordFields, (int)(sizeof(kRboAtRecordFields) / sizeof(kRboAtRecordFields[0])))) {
+						han2::RedecodeFrame(f);
+						changed = true;
+					}
+				} else {
+					ImGui::TextDisabled("none: add an attack box (Atk slot) in the Box Controls to create one.");
+				}
+				// script lists (sections 6 and 7): five script ids, 0 = unused
+				for (int k = 0; k < 2; k++) {
+					char hdr[64]; snprintf(hdr, sizeof(hdr), "Script list %c (section %d)", 'A' + k, 6 + k);
+					ImGui::SeparatorText(hdr);
+					bool had = (f.han2.scriptHad >> k) & 1;
+					if (ImGui::Checkbox(k == 0 ? "has list A (frame-enter actions)" : "has list B (transition rules)", &had)) {
+						if (had) f.han2.scriptHad |= (uint8_t)(1 << k); else f.han2.scriptHad &= (uint8_t)~(1 << k);
+						// a frame without a list has index 0; a new list gets a UNIQUE placeholder index so the writer emits its own
+						// record (the writer shares records by original index, a placeholder must never collide with a real one)
+						static uint32_t s_placeholder = 0x40000000u;
+						const uint32_t ph = ++s_placeholder;
+						if (had && rdu32le(f.han2.rec + (k == 0 ? 0xBC : 0xC0)) == 0) memcpy(f.han2.rec + (k == 0 ? 0xBC : 0xC0), &ph, 4);
+						changed = true;
+					}
+					if (had && EditRecord(k == 0 ? "slA" : "slB", f.han2.script[k], kRboScriptListEntryFields, (int)(sizeof(kRboScriptListEntryFields) / sizeof(kRboScriptListEntryFields[0])))) changed = true;
 				}
 			}
 		}

@@ -2,6 +2,7 @@
 #pragma once
 #include <cstddef>
 #include <cstdint>
+#include "han2_reflect.h"
 
 enum RboAniFlag : uint8_t {
 	ANI_END_TO_PATTERN = 0,
@@ -306,8 +307,6 @@ static_assert(offsetof(RboBoxRect, y1) == 0x2, "RboBoxRect.y1");
 static_assert(offsetof(RboBoxRect, x2) == 0x4, "RboBoxRect.x2");
 static_assert(offsetof(RboBoxRect, y2) == 0x6, "RboBoxRect.y2");
 
-struct Han2EnumValue { const char *name; int64_t value; };
-struct Han2EnumInfo { const char *name; const Han2EnumValue *values; int count; bool flags; };
 static const Han2EnumValue kRboAniFlagValues[] = {
 	{"ANI_END_TO_PATTERN", (int64_t)(0)},
 	{"ANI_NEXT", (int64_t)(1)},
@@ -393,7 +392,7 @@ static const Han2EnumValue kRboHan2KindValues[] = {
 	{"HAN2_KIND_FULL_DAT", (int64_t)(0)},
 	{"HAN2_KIND_PATTERN_ONLY_DT2", (int64_t)(3)},
 };
-static const Han2EnumInfo kHan2Enums[] = {
+static const Han2EnumInfo kRboTypesEnums[] = {
 	{"RboAniFlag", kRboAniFlagValues, 10, false},
 	{"RboFlipMode", kRboFlipModeValues, 10, false},
 	{"RboBlendMode", kRboBlendModeValues, 4, false},
@@ -409,7 +408,6 @@ static const Han2EnumInfo kHan2Enums[] = {
 	{"RboHan2Kind", kRboHan2KindValues, 2, false},
 };
 
-struct Han2FieldInfo { const char *name; uint16_t offset; uint8_t size; uint8_t count; uint8_t kind; const char *enumName; const char *comment; };
 static const Han2FieldInfo kRboFrameRecordFields[] = {
 	{"spriteId", 0x0, 2, 1, 1, nullptr, "+0x00 CG image = id-10000 when >=10000, else PAT pose index (Actor_GetFrameSpriteId 0x440B10, Actor_DrawTree 0x4483E0)"},
 	{"offsetX", 0x2, 2, 1, 1, nullptr, "+0x02 Actor_DrawTree: draw offset X"},
