@@ -150,6 +150,15 @@ void MainFrame::ProcessStartupArgs()
 	if (n == 200 && gStartup.tagLink && !gStartup.tagTab.empty())   // re-select the tab once the link has state
 		tagpanel::OpenStartup("", "", gStartup.tagTab);
 	if (n == 3 && gStartup.tool == "gamelink") gamelink::showPanel = true;
+	if (n == 4 && !gStartup.openAny.empty()) {
+		size_t from = 0;
+		while (from <= gStartup.openAny.size()) {
+			size_t bar = gStartup.openAny.find('|', from);
+			if (bar == std::string::npos) bar = gStartup.openAny.size();
+			if (bar > from) openAnyFile(gStartup.openAny.substr(from, bar - from));
+			from = bar + 1;
+		}
+	}
 	if (n == 2 && !gStartup.open.empty()) {
 		std::string path = gStartup.open, ext;
 		size_t dot = path.find_last_of('.');

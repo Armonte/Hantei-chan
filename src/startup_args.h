@@ -46,6 +46,7 @@
 
 struct StartupArgs {
 	std::string open;
+	std::string openAny;   // --open-any a|b|c: each file goes through File > Open... (header-based routing), for scripted checks
 	int pattern = -1;
 	int frame = -1;
 	int palette = -1;
