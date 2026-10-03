@@ -1,0 +1,86 @@
+# gof2_live: int3 debugger harness (gof2_dbg2.py launch) log. LOAD = DirectSound Lock in sub_456D90 (slot, wav data bytes); SND = Sound_RestartBufferAtVolume entry (eax=slot), ret = return address
+# FORCE = HitJudge_StartHitEffect(P1 fighter, kind, 600) called through a remote stub (kinds 1 burn, 2 freeze, 3 shock, 5 shock, 4 none)
+886 LOAD slot=101 wavbytes=16974
+887 LOAD slot=102 wavbytes=28776
+888 LOAD slot=103 wavbytes=15502
+889 LOAD slot=104 wavbytes=12300
+890 LOAD slot=105 wavbytes=27046
+891 LOAD slot=106 wavbytes=26774
+893 LOAD slot=107 wavbytes=37716
+895 LOAD slot=108 wavbytes=25664
+896 LOAD slot=109 wavbytes=48256
+898 LOAD slot=110 wavbytes=24796
+899 LOAD slot=111 wavbytes=30412
+900 LOAD slot=112 wavbytes=44100
+901 LOAD slot=113 wavbytes=5504
+901 LOAD slot=114 wavbytes=39370
+902 LOAD slot=115 wavbytes=11024
+903 LOAD slot=116 wavbytes=11024
+903 LOAD slot=117 wavbytes=16538
+904 LOAD slot=118 wavbytes=49712
+905 LOAD slot=119 wavbytes=44100
+906 LOAD slot=120 wavbytes=88200
+907 LOAD slot=121 wavbytes=8268
+908 LOAD slot=122 wavbytes=6000
+908 LOAD slot=123 wavbytes=8268
+909 LOAD slot=124 wavbytes=27562
+910 LOAD slot=125 wavbytes=22050
+911 LOAD slot=126 wavbytes=23428
+911 LOAD slot=127 wavbytes=11040
+912 LOAD slot=128 wavbytes=8268
+913 LOAD slot=129 wavbytes=44100
+914 LOAD slot=130 wavbytes=44100
+915 LOAD slot=131 wavbytes=11024
+916 LOAD slot=132 wavbytes=88200
+917 LOAD slot=133 wavbytes=88200
+918 LOAD slot=134 wavbytes=22050
+920 LOAD slot=135 wavbytes=51236
+920 LOAD slot=136 wavbytes=88200
+921 LOAD slot=137 wavbytes=38588
+922 LOAD slot=138 wavbytes=88200
+923 LOAD slot=139 wavbytes=13780
+221918 FORCE kind=2 dur=600 obj=0x1DF8A54 thread=True
+221944 SND slot=138 vol=-321 flags=0x0 ret=0x43EEFE arg=0x1df9b40 tid=15376
+222916 SND slot=139 vol=-321 flags=0x0 ret=0x43F2DE arg=0x1df9bc0 tid=15376
+223825 SND slot=139 vol=-321 flags=0x0 ret=0x43F2DE arg=0x1df9bc0 tid=15376
+223992 SND slot=138 vol=-321 flags=0x0 ret=0x43EEFE arg=0x1df9b40 tid=15376
+224705 SND slot=139 vol=-321 flags=0x0 ret=0x43F2DE arg=0x1df9bc0 tid=15376
+225612 SND slot=139 vol=-321 flags=0x0 ret=0x43F2DE arg=0x1df9bc0 tid=15376
+226005 SND slot=138 vol=-321 flags=0x0 ret=0x43EEFE arg=0x1df9b40 tid=15376
+226603 SND slot=139 vol=-321 flags=0x0 ret=0x43F2DE arg=0x1df9bc0 tid=15376
+227490 SND slot=139 vol=-321 flags=0x0 ret=0x43F2DE arg=0x1df9bc0 tid=15376
+228350 SND slot=139 vol=-321 flags=0x0 ret=0x43F2DE arg=0x1df9bc0 tid=15376
+228453 FORCE kind=3 dur=600 obj=0x1DF8A54 thread=True
+228458 SND slot=136 vol=-321 flags=0x0 ret=0x43F02E arg=0x1df9b40 tid=15376
+229198 SND slot=139 vol=-321 flags=0x0 ret=0x43F2DE arg=0x1df9bc0 tid=15376
+229713 SND slot=137 vol=-321 flags=0x0 ret=0x43F3BE arg=0x1df9bc0 tid=15376
+230500 SND slot=136 vol=-321 flags=0x0 ret=0x43F02E arg=0x1df9b40 tid=15376
+231167 SND slot=137 vol=-321 flags=0x0 ret=0x43F3BE arg=0x1df9bc0 tid=15376
+232523 SND slot=136 vol=-321 flags=0x0 ret=0x43F02E arg=0x1df9b40 tid=15376
+232549 SND slot=137 vol=-321 flags=0x0 ret=0x43F3BE arg=0x1df9bc0 tid=15376
+234790 SND slot=136 vol=-321 flags=0x0 ret=0x43F02E arg=0x1df9b40 tid=15376
+235005 FORCE kind=5 dur=600 obj=0x1DF8A54 thread=True
+236887 SND slot=136 vol=-321 flags=0x0 ret=0x43F02E arg=0x1df9b40 tid=15376
+238890 SND slot=136 vol=-321 flags=0x0 ret=0x43F02E arg=0x1df9b40 tid=15376
+240930 SND slot=136 vol=-321 flags=0x0 ret=0x43F02E arg=0x1df9b40 tid=15376
+241557 FORCE kind=4 dur=600 obj=0x1DF8A54 thread=True
+255782 FORCE kind=1 dur=600 obj=0x1DF8A54 thread=True
+255790 SND slot=134 vol=-321 flags=0x0 ret=0x43ED5E arg=0x1df9b40 tid=15376
+256321 SND slot=134 vol=-321 flags=0x0 ret=0x43ED5E arg=0x1df9b40 tid=15376
+256851 SND slot=134 vol=-321 flags=0x0 ret=0x43ED5E arg=0x1df9b40 tid=15376
+257108 SND slot=135 vol=-321 flags=0x0 ret=0x43F14E arg=0x1df9bc0 tid=15376
+257368 SND slot=134 vol=-321 flags=0x0 ret=0x43ED5E arg=0x1df9b40 tid=15376
+257866 SND slot=134 vol=-321 flags=0x0 ret=0x43ED5E arg=0x1df9b40 tid=15376
+258365 SND slot=134 vol=-321 flags=0x0 ret=0x43ED5E arg=0x1df9b40 tid=15376
+258404 SND slot=135 vol=-321 flags=0x0 ret=0x43F14E arg=0x1df9bc0 tid=15376
+258872 SND slot=134 vol=-321 flags=0x0 ret=0x43ED5E arg=0x1df9b40 tid=15376
+259385 SND slot=134 vol=-321 flags=0x0 ret=0x43ED5E arg=0x1df9b40 tid=15376
+259752 SND slot=135 vol=-321 flags=0x0 ret=0x43F14E arg=0x1df9bc0 tid=15376
+259922 SND slot=134 vol=-321 flags=0x0 ret=0x43ED5E arg=0x1df9b40 tid=15376
+260419 SND slot=134 vol=-321 flags=0x0 ret=0x43ED5E arg=0x1df9b40 tid=15376
+260928 SND slot=134 vol=-321 flags=0x0 ret=0x43ED5E arg=0x1df9b40 tid=15376
+261019 SND slot=135 vol=-321 flags=0x0 ret=0x43F14E arg=0x1df9bc0 tid=15376
+262332 SND slot=135 vol=-321 flags=0x0 ret=0x43F14E arg=0x1df9bc0 tid=15376
+263606 SND slot=135 vol=-321 flags=0x0 ret=0x43F14E arg=0x1df9bc0 tid=15376
+265033 SND slot=135 vol=-321 flags=0x0 ret=0x43F14E arg=0x1df9bc0 tid=15376
+266516 SND slot=135 vol=-321 flags=0x0 ret=0x43F14E arg=0x1df9bc0 tid=15376

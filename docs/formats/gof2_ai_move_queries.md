@@ -29,24 +29,24 @@ so moves are identified by pattern id, input and data (attack record), not by na
 | `Obj_IsInMidAttackPreHitWindowByChara` 0x468840 | `Obj_IsInMoveFrameRange5ByChara` | final pre-hit window (0..28 ticks) for mid attacks; multi-hit moves also cover up to 24 ticks after the hit |
 | `Obj_IsInWeakAttackPreHitWindowByChara` 0x469270 | `Obj_IsInMoveFrameRange6ByChara` | pre-hit window (0..24 ticks) of the weak (even 60..76, attackKind 0) normals plus some specials, any guard height |
 | `Obj_IsInPostHitRecoveryWindowByChara` 0x4698F0 | `Obj_IsInMoveFrameRange7ByChara` | from ~2 ticks after the last attack frame to the end of the move (241 ranges), only caller `CComWorkBase__vf30` = probabilistic punish roll |
-| `Obj_IsInPat16Or19AtkStartup_StandGuardOnlySet` 0x466660 | `...StartupWindowA` | pattern 16 (chara 0,9: 19) with frameNo <= first attack frame (+/-1); sets A/B/C split the two attacks 16/19 of each character by guardMask: A = 5 (high), B = 6 (low), C = 7 (mid) |
-| `Obj_IsInPat16Or19AtkStartup_CrouchGuardOnlySet` 0x466770 | `...StartupWindowB` | see above |
-| `Obj_IsInPat16Or19AtkStartup_AnyGuardSet` 0x466850 | `...StartupWindowC` | see above |
+| `Obj_IsInPat16Or19AtkStartup_ReplyGuardDir4Set` 0x466660 | `...StartupWindowA` | pattern 16 (chara 0,9: 19) with frameNo <= first attack frame (+/-1); sets A/B/C split the 16/19 attacks per character: A = mostly guardMask 5 (3 exceptions: KANAE 19 and UESUGI 19 mask 7, MAEDA 16 mask 1), B = guardMask 6, C = guardMask 7; AI answers A with command 0x404, B with 0x408, C with a mix (live-confirmed roles, see gof2_live_evidence.md) |
+| `Obj_IsInPat16Or19AtkStartup_ReplyGuardDir8Set` 0x466770 | `...StartupWindowB` | see above |
+| `Obj_IsInPat16Or19AtkStartup_ReplyGuardDir4Or8Set` 0x466850 | `...StartupWindowC` | see above |
 
 Timeline of one multi-hit move (KANAE pattern 107, hits at frames 7 and 18) shows how they chain: Window4 f2, Range5 f3-7 (hit), KeyFrame-style gap f8-13, Range f14-18 (hit), Range7 f19-29.
 The consumers are the AI: `CComWorkBase__vf9` (case 0x101 high -> guard command 0x404, 0x102 low -> 0x408, 0x103 ...), `__vf21`, `__vf29`, `__vf5`, `CComWorkNormal__vf13/29`, `__vf30`;
-0x400 is the guard button (patterns 49/50 are entered while it is held), dir 8 = crouching direction (pattern 66/67 starts from a lowered hurtbox), so 0x404 = stand guard, 0x408 = crouch guard.
+0x400 is the guard button (patterns 49/50 are entered while it is held alone), dir 8 = crouching direction (pattern 66/67 starts from a lowered hurtbox). **LIVE CORRECTION (gof2_live_evidence.md): 0x404 / 0x408 are NOT plain stand/crouch guard. From neutral, Guard+dir4 enters pattern 15 and Guard+dir8 enters pattern 18 (the 15->16 / 18->19 guard-attack moves); only Guard with no dir 4/8 bit gives guard patterns 49/50. The AI emits these commands to start the 15/18 move as its answer.**
 
 Related predicates (data-verified): `Obj_IsInEvenAttackPatternSetByChara` 0x466000 = weak normals (60,62..78) + per-chara extras; `Obj_IsInOddAttackPatternSetByChara` 0x4661F0 = strong normals (61,63..79) + extras;
 `Obj_IsPatternInHitstunRange49To57` 0x466590 is a misnomer: 49..57 are the **guard** patterns (49/50 entered while 0x400 is held, 51 on release, 54/57 tested by `Obj_IsPattern54Or57`); hit reactions are 28..39 (gof2_at_sections.md).
 
 ## 2. Patterns 15/16/18/19 (the "Pattern16Or19" question)
 
-* `Obj_ProcessTurnAround` 0x433D00 (the per-tick input/state controller; its name is wrong) while button 0x400 is held and the character is in a guard state: dir 4/5/6 -> `Obj_RequestPattern(15)`, dir 8/9/A -> pattern 18 (also dir 1 -> 9, dir 2 -> 11), gated by a gauge check (`DefStatus+48` / `+52`) and by the flags `obj+0x11D8` / `+0x11DC` (`hitDuringAction16` / `hitDuringAction19`).
-* Those two flags are set only in `Obj_ApplyContactEventList` 0x43C845/0x43C851: after `ObjHitFlags_MarkAttackClash`, when the contact category `(obj+0x5DC & 0xF0) == 0x10` and the current pattern is 16 (0x10) / 19 (0x13). They are **clash latches** (attack-vs-attack), cleared by `Obj_ResetTransientStateOnActionStart` etc.; they block re-using 15/18 after a clash. Patterns 16,17,19,20 are also the only states for which the tail of `Obj_ProcessTurnAround` re-opens input rules when `clashState != 0`.
+* `Obj_ProcessInputAndStateTransitions` 0x433D00 (was `Obj_ProcessInputAndStateTransitions`; the per-tick input/state controller) while button 0x400 is held and the character is in a guard state: dir 4/5/6 -> `Obj_RequestPattern(15)`, dir 8/9/A -> pattern 18 (also dir 1 -> 9, dir 2 -> 11), gated by a gauge check (`DefStatus+48` / `+52`) and by the flags `obj+0x11D8` / `+0x11DC` (`hitDuringAction16` / `hitDuringAction19`).
+* Those two flags are set only in `Obj_ApplyContactEventList` 0x43C845/0x43C851: after `ObjHitFlags_MarkAttackClash`, when the contact category `(obj+0x5DC & 0xF0) == 0x10` and the current pattern is 16 (0x10) / 19 (0x13). They are **clash latches** (attack-vs-attack), cleared by `Obj_ResetTransientStateOnActionStart` etc.; they block re-using 15/18 after a clash. Patterns 16,17,19,20 are also the only states for which the tail of `Obj_ProcessInputAndStateTransitions` re-opens input rules when `clashState != 0`.
 * Data: patterns 16 and 19 are present in all 12 characters, hold one (Imagawa two) attack record each, always attackKind 1 (special). Per character the first attack frame equals the frame limit of the matching set (A/B/C) within +/-1 (e.g. KANAE 16: attack f4, set B limit 3; KANAE 19: attack f3, set A limit 4). Pattern 17 / 20 are the recovery-only tails of 16 / 19 (identical duration list from the attack frame on).
 * guardMask of the first hit: pattern 16 = 5 for 8 chars, 1 for 1, 6 for 1 (KANAE), 7 for 2; pattern 19 = 6 for 6 chars, 7 for 4, none for 2; so **16 ~ high version, 19 ~ low version** of each character's Guard-button follow-up attack. DATE 19 and TAKEDA 19 have no attack record; UESUGI 16 (guardMask 7) is not in any set.
-* Exact move names are not recoverable from data (see header). Evidence not obtained: a live trace of the pattern id while performing the input (not needed for the roles above).
+* Exact move names are not recoverable from data (see header). Live trace obtained (gof2_live_evidence.md): Guard+dir4/5/6 -> 15 -> 16 -> 17, Guard+dir8/9/A -> 18 -> 19 (-> 20 not seen); 16/19 also begin when an enemy attack connects while 15 is in its f3 window. Latches `obj+0x11D8/0x11DC` stayed 0 in every live 16/19 (no event-8 clash occurred): still unconfirmed live.
 
 ## 3. Related findings (items c and d of the review)
 
@@ -59,6 +59,8 @@ IDB type `BattlePlayerRec` (140 bytes) created and applied to `g_BattlePlayerRec
 * rec[30] (+0x78): **no reader anywhere** (no instruction, no absolute reference, no register-relative read in any function touching the array); written once with the same value as rec[29] in `Obj_StartPlayerRecTimerFromDefStatusScript` -> write-only "initial duration". rec[32] likewise write-only (`Obj_RunDefStatusScript2UpdatePlayerRec` stores the same value into [31] and [32]).
 
 ### 3.2 Status-effect SE ticks (`SharedMod_TickRepeatRandomBoxEffect*`)
+
+**Live-confirmed (debugger int3 on `Sound_RestartBufferAtVolume`; all six slots and their calling functions, plus the 39 loaded buffers matched by wav data size to SYSTEMSE.FOB order): see gof2_live_evidence.md.**
 
 All four plus the two `ObjTintFx_TickHitFlash*` ticks: every `period` ticks spawn effect object N at a random point of the object's boxes (`Obj_SpawnEffectObjAtRandomBoxPoint`) and **restart** a DirectSound one-shot (`Sound_RestartBufferAtVolume` 0x456FC0: Stop, SetCurrentPosition 0, SetVolume, Play) unless that buffer is still playing (GetStatus & 1).
 Sound id = `g_SoundSourceBuffers` slot (unk_72EC30 = 0). `SystemSE.Fob` kind 1 id 0 (loaded with arg0 = 101 by `sub_457F10`) is the hit-SE group; entry i gets slot 101+i, so slots 134..139 are entries 33..38:
@@ -677,7 +679,7 @@ Sound id = `g_SoundSourceBuffers` slot (unk_72EC30 = 0). `SystemSE.Fob` kind 1 i
 | 11 KATSUKO | 108 | 20-27 | 28 | - | - | - | - | - |
 | 11 KATSUKO | 112 | 16-28 | 29 | - | - | - | - | - |
 
-### Obj_IsInPat16Or19AtkStartup_StandGuardOnlySet 0x466660 (was `Obj_IsInPattern16Or19StartupWindowA`)
+### Obj_IsInPat16Or19AtkStartup_ReplyGuardDir4Set 0x466660 (was `Obj_IsInPattern16Or19StartupWindowA`)
 
 | chara | pattern | frames (minTicks) | nFrames | attack frames | first-hit guardMask | dmg | kind | ticks to hit at range start..end |
 |---|---|---|---|---|---|---|---|---|
@@ -693,7 +695,7 @@ Sound id = `g_SoundSourceBuffers` slot (unk_72EC30 = 0). `SystemSE.Fob` kind 1 i
 | 10 NEGAI | 16 | 0-11 | 25 | 11 | 5 | 300 | 1 | 15..0 |
 | 11 KATSUKO | 16 | 0-5 | 14 | 5 | 5 | 500 | 1 | 19..0 |
 
-### Obj_IsInPat16Or19AtkStartup_CrouchGuardOnlySet 0x466770 (was `Obj_IsInPattern16Or19StartupWindowB`)
+### Obj_IsInPat16Or19AtkStartup_ReplyGuardDir8Set 0x466770 (was `Obj_IsInPattern16Or19StartupWindowB`)
 
 | chara | pattern | frames (minTicks) | nFrames | attack frames | first-hit guardMask | dmg | kind | ticks to hit at range start..end |
 |---|---|---|---|---|---|---|---|---|
@@ -705,7 +707,7 @@ Sound id = `g_SoundSourceBuffers` slot (unk_72EC30 = 0). `SystemSE.Fob` kind 1 i
 | 6 TOKUGAWA | 19 | 0-6 | 16 | 6 | 6 | 600 | 1 | 13..0 |
 | 11 KATSUKO | 19 | 0-5 | 13 | 5 | 6 | 550 | 1 | 13..0 |
 
-### Obj_IsInPat16Or19AtkStartup_AnyGuardSet 0x466850 (was `Obj_IsInPattern16Or19StartupWindowC`)
+### Obj_IsInPat16Or19AtkStartup_ReplyGuardDir4Or8Set 0x466850 (was `Obj_IsInPattern16Or19StartupWindowC`)
 
 | chara | pattern | frames (minTicks) | nFrames | attack frames | first-hit guardMask | dmg | kind | ticks to hit at range start..end |
 |---|---|---|---|---|---|---|---|---|
