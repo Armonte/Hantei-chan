@@ -654,6 +654,106 @@ struct MbrKnockbackRect {
 	int32_t accelX;
 	int32_t accelY;
 };
+struct MbrSpriteDrawRecord {
+	int32_t cutoutTexIndex;  // +0x00 T: read as 16 bit
+	int32_t srcX;  // +0x04 T
+	int32_t srcY;  // +0x08 T
+	int32_t zeroedField0C;  // +0x0C T: always written 0, never read
+	int32_t quadW;  // +0x10 T
+	int32_t quadH;  // +0x14 T
+	int32_t originX;  // +0x18 T
+	int32_t originY;  // +0x1C T
+	int32_t pivotOffX;  // +0x20 T
+	int32_t pivotOffY;  // +0x24 T
+	int32_t screenX;  // +0x28 T
+	int32_t screenY;  // +0x2C T
+	int16_t srcRectL;  // +0x30 T
+	int16_t srcRectT;  // +0x32 T
+	int16_t srcRectR;  // +0x34 T
+	int16_t srcRectB;  // +0x36 T
+	float rotX;  // +0x38 T: degrees, stored 0
+	float rotY;  // +0x3C T: degrees, stored 0
+	float rotZ;  // +0x40 T: degrees (layer rotation * 0.036)
+	float scaleX;  // +0x44 T
+	float scaleY;  // +0x48 T
+	uint32_t modulateArgb;  // +0x4C T: frame tint bytes x caller multiplier
+	uint32_t additiveRgb;  // +0x50 T: frame add bytes + caller additive, saturated
+	int32_t flipMode;  // +0x54 T: 0..9
+	int32_t priorityListIndex;  // +0x58 T: 5 / 11 / caller priority
+	int32_t tweenOffsetX;  // +0x5C U: written only, reader not found
+	int32_t tweenOffsetY;  // +0x60 U
+	int32_t extraRotationDeg;  // +0x64 T
+	int32_t actorFlagsA;  // +0x68 U: actor objectFlagsA copy, reader not found
+	int32_t actorFlagsB;  // +0x6C U: actor objectFlagsB copy
+};
+struct MbrAfterImageEntry {
+	int32_t posX;  // +0x00 T
+	int32_t posY;  // +0x04 T
+	uint8_t patternId;  // +0x08 T
+	uint8_t frameIndex;  // +0x09 T
+	uint8_t pad_0A[2];  // +0x0A U
+	int32_t tweenTargetSpriteId;  // +0x0C T
+	int32_t frameTickCounter;  // +0x10 T
+	uint8_t facing;  // +0x14 T
+	uint8_t pad_15[3];  // +0x15 U
+	uint32_t patternHeader;  // +0x18 T
+	uint32_t frameRecord;  // +0x1C T
+	uint32_t frameRecordAlias;  // +0x20 T
+	uint32_t asRecord;  // +0x24 T
+	uint32_t ifTable;  // +0x28 T
+	uint32_t efTable;  // +0x2C T
+	uint32_t frameBoxIndexArray;  // +0x30 T
+};
+struct MbrSlotScreenFx {
+	int32_t remaining[64];  // +0x000 T: per-effect-id countdown (ScreenFx_StartBgEffect sets, Battle_TickFrameTimers decrements)
+	int32_t elapsed[64];  // +0x100 T
+	int32_t duration[64];  // +0x200 T
+	int32_t superFreezeTimer;  // +0x300 T: Actor_MayActDuringSuperFreeze / EF06 number 11
+	int32_t superFreezeTimer2;  // +0x304 T: decremented together with superFreezeTimer, no other reader
+};
+struct MbrArcadeLadderEntry {
+	int32_t opponentChar;  // +0x00 T: g_CharTable index (255 = unused)
+	int32_t opponentColor;  // +0x04 T: 255 default
+	int32_t init_08;  // +0x08 U: set to 255 by the loader, never read
+	int32_t init_0C;  // +0x0C U: set to 255 by the loader, never read
+	int32_t stageBg;  // +0x10 T
+	int32_t opponentInfiniteHeat;  // +0x14 T: copied to the opponent team record infiniteHeatOption
+	int32_t interludeFlag;  // +0x18 T: non-zero makes WinScreen_Update take the story interlude branch
+};
+struct MbrSysEffect {
+	uint8_t active;  // +0x00 T
+	uint8_t ownerOrSide;  // +0x01 T
+	uint8_t flag02;  // +0x02 T
+	uint8_t pad_03[5];  // +0x03 U
+	int16_t kind;  // +0x08 T
+	int16_t life;  // +0x0A T
+	int16_t lifeMax;  // +0x0C T
+	uint8_t pad_0E[2];  // +0x0E U
+	int32_t posX;  // +0x10 T
+	int32_t posY;  // +0x14 T
+	int32_t param18;  // +0x18 T
+	uint8_t rest_1C[68];  // +0x1C U: preset specific (SysEffect_SpawnPreset)
+};
+struct MbrHudSideLayout {
+	int32_t healthBarX;  // +0x00 T
+	int32_t meterGaugeX;  // +0x04 T
+	int32_t reserved_08[2];  // +0x08 U: no direct reference
+	int32_t infoX;  // +0x10 T
+	int32_t reserved_14[6];  // +0x14 U: no direct reference (0x14..0x2B)
+	int32_t reserved_2C[9];  // +0x2C U: zero padding
+};
+struct MbrHitEffectPreset {
+	int16_t presetId;  // +0x00 T: SysEffect_SpawnPreset id
+	int16_t paramA;  // +0x02 T
+	int16_t paramB;  // +0x04 T
+	int16_t paramC;  // +0x06 T
+	int16_t soundId;  // +0x08 T: Se_RequestPlay id, 10000 = none
+	int16_t unused_0A;  // +0x0A X: 0 in all entries
+};
+struct MbrDamageRankStep {
+	int32_t score;
+	int32_t damageBelow;
+};
 #pragma pack(pop)
 
 static_assert(sizeof(MbrPkEntry) == 0x44, "MbrPkEntry size");
@@ -1216,6 +1316,98 @@ static_assert(offsetof(MbrKnockbackRect, velX) == 0x0, "MbrKnockbackRect.velX");
 static_assert(offsetof(MbrKnockbackRect, velY) == 0x4, "MbrKnockbackRect.velY");
 static_assert(offsetof(MbrKnockbackRect, accelX) == 0x8, "MbrKnockbackRect.accelX");
 static_assert(offsetof(MbrKnockbackRect, accelY) == 0xC, "MbrKnockbackRect.accelY");
+static_assert(sizeof(MbrSpriteDrawRecord) == 0x70, "MbrSpriteDrawRecord size");
+static_assert(offsetof(MbrSpriteDrawRecord, cutoutTexIndex) == 0x0, "MbrSpriteDrawRecord.cutoutTexIndex");
+static_assert(offsetof(MbrSpriteDrawRecord, srcX) == 0x4, "MbrSpriteDrawRecord.srcX");
+static_assert(offsetof(MbrSpriteDrawRecord, srcY) == 0x8, "MbrSpriteDrawRecord.srcY");
+static_assert(offsetof(MbrSpriteDrawRecord, zeroedField0C) == 0xC, "MbrSpriteDrawRecord.zeroedField0C");
+static_assert(offsetof(MbrSpriteDrawRecord, quadW) == 0x10, "MbrSpriteDrawRecord.quadW");
+static_assert(offsetof(MbrSpriteDrawRecord, quadH) == 0x14, "MbrSpriteDrawRecord.quadH");
+static_assert(offsetof(MbrSpriteDrawRecord, originX) == 0x18, "MbrSpriteDrawRecord.originX");
+static_assert(offsetof(MbrSpriteDrawRecord, originY) == 0x1C, "MbrSpriteDrawRecord.originY");
+static_assert(offsetof(MbrSpriteDrawRecord, pivotOffX) == 0x20, "MbrSpriteDrawRecord.pivotOffX");
+static_assert(offsetof(MbrSpriteDrawRecord, pivotOffY) == 0x24, "MbrSpriteDrawRecord.pivotOffY");
+static_assert(offsetof(MbrSpriteDrawRecord, screenX) == 0x28, "MbrSpriteDrawRecord.screenX");
+static_assert(offsetof(MbrSpriteDrawRecord, screenY) == 0x2C, "MbrSpriteDrawRecord.screenY");
+static_assert(offsetof(MbrSpriteDrawRecord, srcRectL) == 0x30, "MbrSpriteDrawRecord.srcRectL");
+static_assert(offsetof(MbrSpriteDrawRecord, srcRectT) == 0x32, "MbrSpriteDrawRecord.srcRectT");
+static_assert(offsetof(MbrSpriteDrawRecord, srcRectR) == 0x34, "MbrSpriteDrawRecord.srcRectR");
+static_assert(offsetof(MbrSpriteDrawRecord, srcRectB) == 0x36, "MbrSpriteDrawRecord.srcRectB");
+static_assert(offsetof(MbrSpriteDrawRecord, rotX) == 0x38, "MbrSpriteDrawRecord.rotX");
+static_assert(offsetof(MbrSpriteDrawRecord, rotY) == 0x3C, "MbrSpriteDrawRecord.rotY");
+static_assert(offsetof(MbrSpriteDrawRecord, rotZ) == 0x40, "MbrSpriteDrawRecord.rotZ");
+static_assert(offsetof(MbrSpriteDrawRecord, scaleX) == 0x44, "MbrSpriteDrawRecord.scaleX");
+static_assert(offsetof(MbrSpriteDrawRecord, scaleY) == 0x48, "MbrSpriteDrawRecord.scaleY");
+static_assert(offsetof(MbrSpriteDrawRecord, modulateArgb) == 0x4C, "MbrSpriteDrawRecord.modulateArgb");
+static_assert(offsetof(MbrSpriteDrawRecord, additiveRgb) == 0x50, "MbrSpriteDrawRecord.additiveRgb");
+static_assert(offsetof(MbrSpriteDrawRecord, flipMode) == 0x54, "MbrSpriteDrawRecord.flipMode");
+static_assert(offsetof(MbrSpriteDrawRecord, priorityListIndex) == 0x58, "MbrSpriteDrawRecord.priorityListIndex");
+static_assert(offsetof(MbrSpriteDrawRecord, tweenOffsetX) == 0x5C, "MbrSpriteDrawRecord.tweenOffsetX");
+static_assert(offsetof(MbrSpriteDrawRecord, tweenOffsetY) == 0x60, "MbrSpriteDrawRecord.tweenOffsetY");
+static_assert(offsetof(MbrSpriteDrawRecord, extraRotationDeg) == 0x64, "MbrSpriteDrawRecord.extraRotationDeg");
+static_assert(offsetof(MbrSpriteDrawRecord, actorFlagsA) == 0x68, "MbrSpriteDrawRecord.actorFlagsA");
+static_assert(offsetof(MbrSpriteDrawRecord, actorFlagsB) == 0x6C, "MbrSpriteDrawRecord.actorFlagsB");
+static_assert(sizeof(MbrAfterImageEntry) == 0x34, "MbrAfterImageEntry size");
+static_assert(offsetof(MbrAfterImageEntry, posX) == 0x0, "MbrAfterImageEntry.posX");
+static_assert(offsetof(MbrAfterImageEntry, posY) == 0x4, "MbrAfterImageEntry.posY");
+static_assert(offsetof(MbrAfterImageEntry, patternId) == 0x8, "MbrAfterImageEntry.patternId");
+static_assert(offsetof(MbrAfterImageEntry, frameIndex) == 0x9, "MbrAfterImageEntry.frameIndex");
+static_assert(offsetof(MbrAfterImageEntry, pad_0A) == 0xA, "MbrAfterImageEntry.pad_0A");
+static_assert(offsetof(MbrAfterImageEntry, tweenTargetSpriteId) == 0xC, "MbrAfterImageEntry.tweenTargetSpriteId");
+static_assert(offsetof(MbrAfterImageEntry, frameTickCounter) == 0x10, "MbrAfterImageEntry.frameTickCounter");
+static_assert(offsetof(MbrAfterImageEntry, facing) == 0x14, "MbrAfterImageEntry.facing");
+static_assert(offsetof(MbrAfterImageEntry, pad_15) == 0x15, "MbrAfterImageEntry.pad_15");
+static_assert(offsetof(MbrAfterImageEntry, patternHeader) == 0x18, "MbrAfterImageEntry.patternHeader");
+static_assert(offsetof(MbrAfterImageEntry, frameRecord) == 0x1C, "MbrAfterImageEntry.frameRecord");
+static_assert(offsetof(MbrAfterImageEntry, frameRecordAlias) == 0x20, "MbrAfterImageEntry.frameRecordAlias");
+static_assert(offsetof(MbrAfterImageEntry, asRecord) == 0x24, "MbrAfterImageEntry.asRecord");
+static_assert(offsetof(MbrAfterImageEntry, ifTable) == 0x28, "MbrAfterImageEntry.ifTable");
+static_assert(offsetof(MbrAfterImageEntry, efTable) == 0x2C, "MbrAfterImageEntry.efTable");
+static_assert(offsetof(MbrAfterImageEntry, frameBoxIndexArray) == 0x30, "MbrAfterImageEntry.frameBoxIndexArray");
+static_assert(sizeof(MbrSlotScreenFx) == 0x308, "MbrSlotScreenFx size");
+static_assert(offsetof(MbrSlotScreenFx, remaining) == 0x0, "MbrSlotScreenFx.remaining");
+static_assert(offsetof(MbrSlotScreenFx, elapsed) == 0x100, "MbrSlotScreenFx.elapsed");
+static_assert(offsetof(MbrSlotScreenFx, duration) == 0x200, "MbrSlotScreenFx.duration");
+static_assert(offsetof(MbrSlotScreenFx, superFreezeTimer) == 0x300, "MbrSlotScreenFx.superFreezeTimer");
+static_assert(offsetof(MbrSlotScreenFx, superFreezeTimer2) == 0x304, "MbrSlotScreenFx.superFreezeTimer2");
+static_assert(sizeof(MbrArcadeLadderEntry) == 0x1C, "MbrArcadeLadderEntry size");
+static_assert(offsetof(MbrArcadeLadderEntry, opponentChar) == 0x0, "MbrArcadeLadderEntry.opponentChar");
+static_assert(offsetof(MbrArcadeLadderEntry, opponentColor) == 0x4, "MbrArcadeLadderEntry.opponentColor");
+static_assert(offsetof(MbrArcadeLadderEntry, init_08) == 0x8, "MbrArcadeLadderEntry.init_08");
+static_assert(offsetof(MbrArcadeLadderEntry, init_0C) == 0xC, "MbrArcadeLadderEntry.init_0C");
+static_assert(offsetof(MbrArcadeLadderEntry, stageBg) == 0x10, "MbrArcadeLadderEntry.stageBg");
+static_assert(offsetof(MbrArcadeLadderEntry, opponentInfiniteHeat) == 0x14, "MbrArcadeLadderEntry.opponentInfiniteHeat");
+static_assert(offsetof(MbrArcadeLadderEntry, interludeFlag) == 0x18, "MbrArcadeLadderEntry.interludeFlag");
+static_assert(sizeof(MbrSysEffect) == 0x60, "MbrSysEffect size");
+static_assert(offsetof(MbrSysEffect, active) == 0x0, "MbrSysEffect.active");
+static_assert(offsetof(MbrSysEffect, ownerOrSide) == 0x1, "MbrSysEffect.ownerOrSide");
+static_assert(offsetof(MbrSysEffect, flag02) == 0x2, "MbrSysEffect.flag02");
+static_assert(offsetof(MbrSysEffect, pad_03) == 0x3, "MbrSysEffect.pad_03");
+static_assert(offsetof(MbrSysEffect, kind) == 0x8, "MbrSysEffect.kind");
+static_assert(offsetof(MbrSysEffect, life) == 0xA, "MbrSysEffect.life");
+static_assert(offsetof(MbrSysEffect, lifeMax) == 0xC, "MbrSysEffect.lifeMax");
+static_assert(offsetof(MbrSysEffect, pad_0E) == 0xE, "MbrSysEffect.pad_0E");
+static_assert(offsetof(MbrSysEffect, posX) == 0x10, "MbrSysEffect.posX");
+static_assert(offsetof(MbrSysEffect, posY) == 0x14, "MbrSysEffect.posY");
+static_assert(offsetof(MbrSysEffect, param18) == 0x18, "MbrSysEffect.param18");
+static_assert(offsetof(MbrSysEffect, rest_1C) == 0x1C, "MbrSysEffect.rest_1C");
+static_assert(sizeof(MbrHudSideLayout) == 0x50, "MbrHudSideLayout size");
+static_assert(offsetof(MbrHudSideLayout, healthBarX) == 0x0, "MbrHudSideLayout.healthBarX");
+static_assert(offsetof(MbrHudSideLayout, meterGaugeX) == 0x4, "MbrHudSideLayout.meterGaugeX");
+static_assert(offsetof(MbrHudSideLayout, reserved_08) == 0x8, "MbrHudSideLayout.reserved_08");
+static_assert(offsetof(MbrHudSideLayout, infoX) == 0x10, "MbrHudSideLayout.infoX");
+static_assert(offsetof(MbrHudSideLayout, reserved_14) == 0x14, "MbrHudSideLayout.reserved_14");
+static_assert(offsetof(MbrHudSideLayout, reserved_2C) == 0x2C, "MbrHudSideLayout.reserved_2C");
+static_assert(sizeof(MbrHitEffectPreset) == 0xC, "MbrHitEffectPreset size");
+static_assert(offsetof(MbrHitEffectPreset, presetId) == 0x0, "MbrHitEffectPreset.presetId");
+static_assert(offsetof(MbrHitEffectPreset, paramA) == 0x2, "MbrHitEffectPreset.paramA");
+static_assert(offsetof(MbrHitEffectPreset, paramB) == 0x4, "MbrHitEffectPreset.paramB");
+static_assert(offsetof(MbrHitEffectPreset, paramC) == 0x6, "MbrHitEffectPreset.paramC");
+static_assert(offsetof(MbrHitEffectPreset, soundId) == 0x8, "MbrHitEffectPreset.soundId");
+static_assert(offsetof(MbrHitEffectPreset, unused_0A) == 0xA, "MbrHitEffectPreset.unused_0A");
+static_assert(sizeof(MbrDamageRankStep) == 0x8, "MbrDamageRankStep size");
+static_assert(offsetof(MbrDamageRankStep, score) == 0x0, "MbrDamageRankStep.score");
+static_assert(offsetof(MbrDamageRankStep, damageBelow) == 0x4, "MbrDamageRankStep.damageBelow");
 
 static const Han2EnumValue kMbrControlTypeValues[] = {
 	{"MBR_CTRL_HUMAN", (int64_t)(0)},
@@ -1280,7 +1472,7 @@ static const Han2EnumInfo kMbrTypesEnums[] = {
 };
 
 static const Han2FieldInfo kMbrPkEntryFields[] = {
-	{"name", 0x0, 1, 60, 0, nullptr, "+0x00 T D: bytes 0..58 are stored as (name[j] ^ ((3*j*i + 61) & 0xFF)); byte 59 is never decoded"},
+	{"name", 0x0, 1, 60, 5, nullptr, "+0x00 T D: bytes 0..58 are stored as (name[j] ^ ((3*j*i + 61) & 0xFF)); byte 59 is never decoded"},
 	{"dataOffset", 0x3C, 4, 1, 0, nullptr, "+0x3C T D: absolute file offset of the payload (stored plain)"},
 	{"sizeXorKey", 0x40, 4, 1, 0, nullptr, "+0x40 T D: payload size ^ 0xE3DF59AC"},
 };
@@ -1298,7 +1490,7 @@ static const Han2FieldInfo kMbrWmtRecordFields[] = {
 	{"unused_01", 0x1, 1, 1, 0, nullptr, "+0x01 X D: never read (only the whole-table qmemcpy touches it); 0 in all 344 shipped records"},
 	{"chanceDivisor", 0x2, 2, 1, 0, nullptr, "+0x02 T D: 0 = always accepted, n = accepted with probability 1/n (rand() % n == 0); shipped values 0,1,3,10"},
 	{"portraitVariant", 0x4, 2, 1, 0, nullptr, "+0x04 T D: picks grp\\win\\win_<name><NN>_<colour>.bmp (NN = this, falls back to 00)"},
-	{"text", 0x6, 1, 256, 0, nullptr, "+0x06 T D: Shift-JIS, NUL terminated, CRLF line breaks, NUL padded; drawn by the win screen with the 262*index+6 pointer"},
+	{"text", 0x6, 1, 256, 5, nullptr, "+0x06 T D: Shift-JIS, NUL terminated, CRLF line breaks, NUL padded; drawn by the win screen with the 262*index+6 pointer"},
 };
 static const Han2FieldInfo kMbrWmtFileFields[] = {
 	{"count", 0x0, 4, 1, 0, nullptr, "+0x00 T D"},
@@ -1354,7 +1546,7 @@ static const Han2FieldInfo kMbrCpfFileFields[] = {
 	{"tail", 0x2E3CC, 1, 4000, 0, nullptr, "+0x2E3CC: never read by the game (stale editor data in the shipped files)"},
 };
 static const Han2FieldInfo kMbrDatHeaderFields[] = {
-	{"magic", 0x0, 1, 8, 0, nullptr, "+0x00 X D: \"Hantei4\\0\", never compared by the game"},
+	{"magic", 0x0, 1, 8, 5, nullptr, "+0x00 X D: \"Hantei4\\0\", never compared by the game"},
 	{"unused_08", 0x8, 4, 2, 0, nullptr, "+0x08 X D: zero in all shipped files, never read"},
 	{"unused_10", 0x10, 4, 1, 0, nullptr, "+0x10 X D: 1 in all shipped files, never read"},
 	{"dataBlobSize", 0x14, 4, 1, 0, nullptr, "+0x14 T D: size of blob A (patterns); the Hantei 'partsOff'"},
@@ -1749,9 +1941,9 @@ static const Han2FieldInfo kMbrCtParamsFields[] = {
 	{"unused_03", 0x3, 1, 2, 0, nullptr, "+0x03 X D: never read (0)"},
 	{"flags", 0x5, 1, 1, 0, nullptr, "+0x05 T D: 0x01 = one use per chain for normals/commands (Character_TryNormalAttackFromInput, CommandMove_TryExecute, Actor_BeginRequestedPattern), 0x10 = air guard allowed (Actor_ResolveIncomingHits), 0x20 = jump cancel / ground jump enabled (Character_ProcessPlayerInput), 0x40 = KO launch override / no random heat request (Actor_ResolveIncomingHits, CPU_UpdateAIForCharacter), 0x80 = read by HUD_DrawHealthMeterBarsAndInfo; shipped 0x39 (0x79 F_CIEL, 0xB9 SION)"},
 	{"unused_06", 0x6, 1, 2, 0, nullptr, "+0x06 X D: never read (0)"},
-	{"unusedFloat08", 0x8, 4, 1, 1, nullptr, "+0x08 X D: never read (1.0 in most files)"},
-	{"damageMultiplier", 0xC, 4, 1, 1, nullptr, "+0x0C T D: multiplies damage dealt/taken by this character in Damage_CalcScaledDamage / Damage_CalcModeScaledDamage (0 = ignored); 1.0 default, 0.9 AKIHA, 1.1 AKAAKIHA, 0.6 GAKIHA/F_CIEL"},
-	{"unusedFloat10", 0x10, 4, 3, 1, nullptr, "+0x10 X D: never read (second..fourth of the five shipped floats)"},
+	{"unusedFloat08", 0x8, 4, 1, 6, nullptr, "+0x08 X D: never read (1.0 in most files)"},
+	{"damageMultiplier", 0xC, 4, 1, 6, nullptr, "+0x0C T D: multiplies damage dealt/taken by this character in Damage_CalcScaledDamage / Damage_CalcModeScaledDamage (0 = ignored); 1.0 default, 0.9 AKIHA, 1.1 AKAAKIHA, 0.6 GAKIHA/F_CIEL"},
+	{"unusedFloat10", 0x10, 4, 3, 6, nullptr, "+0x10 X D: never read (second..fourth of the five shipped floats)"},
 	{"doubleTap", 0x1C, 16, 4, 4, nullptr, "+0x1C T"},
 };
 static const Han2FieldInfo kMbrCharacterSlotFields[] = {
@@ -1786,9 +1978,9 @@ static const Han2FieldInfo kMbrCpuCandidateFields[] = {
 };
 static const Han2FieldInfo kMbrCharEntryFields[] = {
 	{"valid", 0x0, 4, 1, 0, nullptr, "+0x00 T: set to 1 by CharaSelect_BuildCharTableWithUnlocks for available entries (0 in the file)"},
-	{"shortName", 0x4, 1, 48, 0, nullptr, "+0x04 T D: names the .wmt, win/face/ED bitmaps, story files ('AKIHA', 'HISUI&KOHAKU', 'M_HISUI', ...)"},
-	{"memberName0", 0x34, 1, 32, 0, nullptr, "+0x34 T D: file stem of data\\<stem>.dat / .cpf / _c.ct and cut-in / voice names (equals shortName except HISUI&KOHAKU -> HISUI)"},
-	{"memberName1", 0x54, 1, 32, 0, nullptr, "+0x54 T D: partner stem: first char '0' = no partner, '1' = flag only (team.scriptedCharacterFlag = 1, no partner loaded), anything else = partner character files (KOHAKU)"},
+	{"shortName", 0x4, 1, 48, 5, nullptr, "+0x04 T D: names the .wmt, win/face/ED bitmaps, story files ('AKIHA', 'HISUI&KOHAKU', 'M_HISUI', ...)"},
+	{"memberName0", 0x34, 1, 32, 5, nullptr, "+0x34 T D: file stem of data\\<stem>.dat / .cpf / _c.ct and cut-in / voice names (equals shortName except HISUI&KOHAKU -> HISUI)"},
+	{"memberName1", 0x54, 1, 32, 5, nullptr, "+0x54 T D: partner stem: first char '0' = no partner, '1' = flag only (team.scriptedCharacterFlag = 1, no partner loaded), anything else = partner character files (KOHAKU)"},
 	{"compactIndex", 0x74, 4, 1, 1, nullptr, "+0x74 U: written by the build routine, no reader found"},
 	{"charId", 0x78, 4, 1, 1, nullptr, "+0x78 T D: index into g_CharTable; copied to actor.characterId"},
 	{"stageId", 0x7C, 4, 1, 1, nullptr, "+0x7C T D: g_LastCharStage on pick"},
@@ -1858,7 +2050,7 @@ static const Han2FieldInfo kMbrHitVectorStepFields[] = {
 	{"flagMask", 0x10, 4, 1, 0, nullptr, "+0x10 T: bit k set if decimal digit k of the file value is non-zero; bit 1 wall bounce, 2 bump spark (preset 22), 4 floor spark (preset 30)"},
 };
 static const Han2FieldInfo kMbrHitVectorFields[] = {
-	{"name", 0x0, 1, 32, 0, nullptr, "+0x00 T"},
+	{"name", 0x0, 1, 32, 5, nullptr, "+0x00 T"},
 	{"stepCount", 0x20, 4, 1, 1, nullptr, "+0x20 T"},
 	{"defaultUntechTime", 0x24, 4, 1, 1, nullptr, "+0x24 T"},
 	{"priority", 0x28, 4, 1, 1, nullptr, "+0x28 T: arbitration (HitVector_ChooseByPriority)"},
@@ -1871,4 +2063,104 @@ static const Han2FieldInfo kMbrKnockbackRectFields[] = {
 	{"velY", 0x4, 4, 1, 1, nullptr, ""},
 	{"accelX", 0x8, 4, 1, 1, nullptr, ""},
 	{"accelY", 0xC, 4, 1, 1, nullptr, ""},
+};
+static const Han2FieldInfo kMbrSpriteDrawRecordFields[] = {
+	{"cutoutTexIndex", 0x0, 4, 1, 1, nullptr, "+0x00 T: read as 16 bit"},
+	{"srcX", 0x4, 4, 1, 1, nullptr, "+0x04 T"},
+	{"srcY", 0x8, 4, 1, 1, nullptr, "+0x08 T"},
+	{"zeroedField0C", 0xC, 4, 1, 1, nullptr, "+0x0C T: always written 0, never read"},
+	{"quadW", 0x10, 4, 1, 1, nullptr, "+0x10 T"},
+	{"quadH", 0x14, 4, 1, 1, nullptr, "+0x14 T"},
+	{"originX", 0x18, 4, 1, 1, nullptr, "+0x18 T"},
+	{"originY", 0x1C, 4, 1, 1, nullptr, "+0x1C T"},
+	{"pivotOffX", 0x20, 4, 1, 1, nullptr, "+0x20 T"},
+	{"pivotOffY", 0x24, 4, 1, 1, nullptr, "+0x24 T"},
+	{"screenX", 0x28, 4, 1, 1, nullptr, "+0x28 T"},
+	{"screenY", 0x2C, 4, 1, 1, nullptr, "+0x2C T"},
+	{"srcRectL", 0x30, 2, 1, 1, nullptr, "+0x30 T"},
+	{"srcRectT", 0x32, 2, 1, 1, nullptr, "+0x32 T"},
+	{"srcRectR", 0x34, 2, 1, 1, nullptr, "+0x34 T"},
+	{"srcRectB", 0x36, 2, 1, 1, nullptr, "+0x36 T"},
+	{"rotX", 0x38, 4, 1, 6, nullptr, "+0x38 T: degrees, stored 0"},
+	{"rotY", 0x3C, 4, 1, 6, nullptr, "+0x3C T: degrees, stored 0"},
+	{"rotZ", 0x40, 4, 1, 6, nullptr, "+0x40 T: degrees (layer rotation * 0.036)"},
+	{"scaleX", 0x44, 4, 1, 6, nullptr, "+0x44 T"},
+	{"scaleY", 0x48, 4, 1, 6, nullptr, "+0x48 T"},
+	{"modulateArgb", 0x4C, 4, 1, 0, nullptr, "+0x4C T: frame tint bytes x caller multiplier"},
+	{"additiveRgb", 0x50, 4, 1, 0, nullptr, "+0x50 T: frame add bytes + caller additive, saturated"},
+	{"flipMode", 0x54, 4, 1, 1, nullptr, "+0x54 T: 0..9"},
+	{"priorityListIndex", 0x58, 4, 1, 1, nullptr, "+0x58 T: 5 / 11 / caller priority"},
+	{"tweenOffsetX", 0x5C, 4, 1, 1, nullptr, "+0x5C U: written only, reader not found"},
+	{"tweenOffsetY", 0x60, 4, 1, 1, nullptr, "+0x60 U"},
+	{"extraRotationDeg", 0x64, 4, 1, 1, nullptr, "+0x64 T"},
+	{"actorFlagsA", 0x68, 4, 1, 1, nullptr, "+0x68 U: actor objectFlagsA copy, reader not found"},
+	{"actorFlagsB", 0x6C, 4, 1, 1, nullptr, "+0x6C U: actor objectFlagsB copy"},
+};
+static const Han2FieldInfo kMbrAfterImageEntryFields[] = {
+	{"posX", 0x0, 4, 1, 1, nullptr, "+0x00 T"},
+	{"posY", 0x4, 4, 1, 1, nullptr, "+0x04 T"},
+	{"patternId", 0x8, 1, 1, 0, nullptr, "+0x08 T"},
+	{"frameIndex", 0x9, 1, 1, 0, nullptr, "+0x09 T"},
+	{"pad_0A", 0xA, 1, 2, 0, nullptr, "+0x0A U"},
+	{"tweenTargetSpriteId", 0xC, 4, 1, 1, nullptr, "+0x0C T"},
+	{"frameTickCounter", 0x10, 4, 1, 1, nullptr, "+0x10 T"},
+	{"facing", 0x14, 1, 1, 0, nullptr, "+0x14 T"},
+	{"pad_15", 0x15, 1, 3, 0, nullptr, "+0x15 U"},
+	{"patternHeader", 0x18, 4, 1, 4, nullptr, "+0x18 T"},
+	{"frameRecord", 0x1C, 4, 1, 4, nullptr, "+0x1C T"},
+	{"frameRecordAlias", 0x20, 4, 1, 4, nullptr, "+0x20 T"},
+	{"asRecord", 0x24, 4, 1, 4, nullptr, "+0x24 T"},
+	{"ifTable", 0x28, 4, 1, 4, nullptr, "+0x28 T"},
+	{"efTable", 0x2C, 4, 1, 4, nullptr, "+0x2C T"},
+	{"frameBoxIndexArray", 0x30, 4, 1, 1, nullptr, "+0x30 T"},
+};
+static const Han2FieldInfo kMbrSlotScreenFxFields[] = {
+	{"remaining", 0x0, 4, 64, 1, nullptr, "+0x000 T: per-effect-id countdown (ScreenFx_StartBgEffect sets, Battle_TickFrameTimers decrements)"},
+	{"elapsed", 0x100, 4, 64, 1, nullptr, "+0x100 T"},
+	{"duration", 0x200, 4, 64, 1, nullptr, "+0x200 T"},
+	{"superFreezeTimer", 0x300, 4, 1, 1, nullptr, "+0x300 T: Actor_MayActDuringSuperFreeze / EF06 number 11"},
+	{"superFreezeTimer2", 0x304, 4, 1, 1, nullptr, "+0x304 T: decremented together with superFreezeTimer, no other reader"},
+};
+static const Han2FieldInfo kMbrArcadeLadderEntryFields[] = {
+	{"opponentChar", 0x0, 4, 1, 1, nullptr, "+0x00 T: g_CharTable index (255 = unused)"},
+	{"opponentColor", 0x4, 4, 1, 1, nullptr, "+0x04 T: 255 default"},
+	{"init_08", 0x8, 4, 1, 1, nullptr, "+0x08 U: set to 255 by the loader, never read"},
+	{"init_0C", 0xC, 4, 1, 1, nullptr, "+0x0C U: set to 255 by the loader, never read"},
+	{"stageBg", 0x10, 4, 1, 1, nullptr, "+0x10 T"},
+	{"opponentInfiniteHeat", 0x14, 4, 1, 1, nullptr, "+0x14 T: copied to the opponent team record infiniteHeatOption"},
+	{"interludeFlag", 0x18, 4, 1, 1, nullptr, "+0x18 T: non-zero makes WinScreen_Update take the story interlude branch"},
+};
+static const Han2FieldInfo kMbrSysEffectFields[] = {
+	{"active", 0x0, 1, 1, 0, nullptr, "+0x00 T"},
+	{"ownerOrSide", 0x1, 1, 1, 0, nullptr, "+0x01 T"},
+	{"flag02", 0x2, 1, 1, 0, nullptr, "+0x02 T"},
+	{"pad_03", 0x3, 1, 5, 0, nullptr, "+0x03 U"},
+	{"kind", 0x8, 2, 1, 1, nullptr, "+0x08 T"},
+	{"life", 0xA, 2, 1, 1, nullptr, "+0x0A T"},
+	{"lifeMax", 0xC, 2, 1, 1, nullptr, "+0x0C T"},
+	{"pad_0E", 0xE, 1, 2, 0, nullptr, "+0x0E U"},
+	{"posX", 0x10, 4, 1, 1, nullptr, "+0x10 T"},
+	{"posY", 0x14, 4, 1, 1, nullptr, "+0x14 T"},
+	{"param18", 0x18, 4, 1, 1, nullptr, "+0x18 T"},
+	{"rest_1C", 0x1C, 1, 68, 0, nullptr, "+0x1C U: preset specific (SysEffect_SpawnPreset)"},
+};
+static const Han2FieldInfo kMbrHudSideLayoutFields[] = {
+	{"healthBarX", 0x0, 4, 1, 1, nullptr, "+0x00 T"},
+	{"meterGaugeX", 0x4, 4, 1, 1, nullptr, "+0x04 T"},
+	{"reserved_08", 0x8, 4, 2, 1, nullptr, "+0x08 U: no direct reference"},
+	{"infoX", 0x10, 4, 1, 1, nullptr, "+0x10 T"},
+	{"reserved_14", 0x14, 4, 6, 1, nullptr, "+0x14 U: no direct reference (0x14..0x2B)"},
+	{"reserved_2C", 0x2C, 4, 9, 1, nullptr, "+0x2C U: zero padding"},
+};
+static const Han2FieldInfo kMbrHitEffectPresetFields[] = {
+	{"presetId", 0x0, 2, 1, 1, nullptr, "+0x00 T: SysEffect_SpawnPreset id"},
+	{"paramA", 0x2, 2, 1, 1, nullptr, "+0x02 T"},
+	{"paramB", 0x4, 2, 1, 1, nullptr, "+0x04 T"},
+	{"paramC", 0x6, 2, 1, 1, nullptr, "+0x06 T"},
+	{"soundId", 0x8, 2, 1, 1, nullptr, "+0x08 T: Se_RequestPlay id, 10000 = none"},
+	{"unused_0A", 0xA, 2, 1, 1, nullptr, "+0x0A X: 0 in all entries"},
+};
+static const Han2FieldInfo kMbrDamageRankStepFields[] = {
+	{"score", 0x0, 4, 1, 1, nullptr, ""},
+	{"damageBelow", 0x4, 4, 1, 1, nullptr, ""},
 };

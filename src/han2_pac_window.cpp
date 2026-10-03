@@ -1,4 +1,5 @@
 #include "han2_pac_window.h"
+#include "han2_typed_files.h"
 #include "han2/pac_archive.h"
 #include "han2/img_file.h"
 #include "han2/misc_formats.h"
@@ -190,7 +191,8 @@ struct Viewer {
 	int id = 0; bool open = true;
 	std::string name, origin;           // name: CP932
 	std::vector<uint8_t> bytes;
-	enum Kind { Hex, Image, Poly } kind = Hex;
+	enum Kind { Hex, Image, Poly, Typed } kind = Hex;
+	TypedFile typed; std::vector<int> typedSel; std::string typedFilter;
 	han2::PolyObject poly; float polyYaw = 0.f, polyPitch = 0.f, polyZoom = 1.f;
 	han2::ImgFile img; GLuint tex = 0; float zoom = 1.f; bool checker = true; bool dirty = false; std::string msg;
 	std::vector<std::string> strings;
@@ -226,6 +228,7 @@ void OpenFileViewer(const std::string &name, std::vector<uint8_t> bytes, const s
 	v->id = g_nextView++; v->name = name; v->origin = origin; v->bytes = std::move(bytes);
 	if (han2::IsImg(v->bytes.data(), v->bytes.size()) && han2::ParseImg(v->bytes.data(), v->bytes.size(), v->img, nullptr)) { v->kind = Viewer::Image; Upload(*v); }
 	else if (name.size() > 2 && (name.compare(name.size() - 2, 2, ".B") == 0 || name.compare(name.size() - 2, 2, ".b") == 0) && han2::ParsePoly(v->bytes.data(), v->bytes.size(), v->poly, nullptr)) v->kind = Viewer::Poly;
+	else if (DescribeTypedFile(name, v->bytes, v->typed)) { v->kind = Viewer::Typed; v->typedSel.assign(v->typed.regions.size(), 0); }
 	else CollectStrings(*v);
 	g_views.push_back(std::move(v));
 }
@@ -288,6 +291,43 @@ void DrawFileViewers()
 				if (!ok) continue;
 				for (int k = 0; k < f.nIndices; k++) dl->AddLine(pt[k], pt[(k + 1) % f.nIndices], f.texture < v.poly.slots.size() && v.poly.slots[f.texture].name[0] ? IM_COL32(120, 220, 255, 255) : IM_COL32(230, 230, 230, 255));
 			}
+			ImGui::EndChild();
+		} else if (v.kind == Viewer::Typed) {
+			ImGui::Text("%s", v.typed.kind.c_str());
+			if (ImGui::Button(LBL("Save..."))) {
+				std::string p = FileDialog(-1, true, (char *)"");
+				if (!p.empty()) { std::vector<uint8_t> out; TypedFileStored(v.typed, out); std::ofstream f(fs::u8path(p), std::ios::binary); f.write((const char *)out.data(), (std::streamsize)out.size()); v.msg = f ? Fmt(TXT("saved %s"), p.c_str()) : Fmt(TXT("could not write %s"), p.c_str()); if (f) v.dirty = false; }
+			}
+			ImGui::SameLine();
+			if (ImGui::Button(LBL("Put into new PAC"))) { std::vector<uint8_t> out; TypedFileStored(v.typed, out); PacCreateAddMemory(v.name, std::move(out)); }
+			ImGui::BeginChild("typed", ImVec2(0, 0), true);
+			std::string openGroup; bool groupOpen = false;
+			for (size_t ri = 0; ri < v.typed.regions.size(); ri++) {
+				TypedRegion &r = v.typed.regions[ri];
+				if (!r.group.empty() && r.group != openGroup) {
+					if (!openGroup.empty() && groupOpen) ImGui::TreePop();
+					openGroup = r.group; groupOpen = ImGui::TreeNode(openGroup.c_str());
+				} else if (r.group.empty() && !openGroup.empty()) { if (groupOpen) ImGui::TreePop(); openGroup.clear(); groupOpen = false; }
+				if (!r.group.empty() && !groupOpen) continue;
+				ImGui::PushID((int)ri);
+				if (ImGui::TreeNode(r.title.c_str())) {
+					int &sel = v.typedSel[ri];
+					if (r.count > 1) {
+						ImGui::BeginChild("rows", ImVec2(0, std::min<float>(180.f, 20.f * (float)r.count + 8.f)), true);
+						for (size_t i = 0; i < r.count; i++) {
+							const uint8_t *rec = v.typed.work.data() + r.offset + i * r.stride;
+							char b[64]; std::string cap = r.label ? r.label(rec, i) : (snprintf(b, sizeof b, "%zu", i), std::string(b));
+							if (ImGui::Selectable((cap + "##" + std::to_string(i)).c_str(), sel == (int)i)) sel = (int)i;
+						}
+						ImGui::EndChild();
+					}
+					if (r.count && (size_t)sel < r.count && r.offset + (size_t)(sel + 1) * r.stride <= v.typed.work.size())
+						if (EditRecordFields("rec", v.typed.work.data() + r.offset + (size_t)sel * r.stride, r.fields, r.nfields)) v.dirty = true;
+					ImGui::TreePop();
+				}
+				ImGui::PopID();
+			}
+			if (!openGroup.empty() && groupOpen) ImGui::TreePop();
 			ImGui::EndChild();
 		} else {
 			ImGui::TextWrapped("%s", TXT("Script bank / data file. Raw view below; strings found (CP932):"));
