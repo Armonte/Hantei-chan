@@ -324,3 +324,8 @@
 {"destroy", "消滅"},
 {"IF %d  %spat %d fr %d #%d -> %s", "IF %d  %spat %d fr %d #%d -> %s"},
 {"IF %d  %spat %d fr %d #%d -> %s %d", "IF %d  %spat %d fr %d #%d -> %s %d"},
+{"Load Error", "読み込みエラー"},
+{"Export Error", "エクスポートエラー"},
+{"MBAC Export", "MBAC エクスポート"},
+{"RBO / GOF2 export", "RBO / GOF2 エクスポート"},
+{"Notice", "お知らせ"},

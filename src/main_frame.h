@@ -285,6 +285,7 @@ private:
 	// level of DrawUi so their ID matches the BeginPopupModal that draws them.
 	const char* m_pendingErrorPopup = nullptr;
 	std::string m_errorDetail;
+	std::string m_genericTitle;   // title of the generic notice modal (requestErrorPopup names without their own modal)
 	void requestErrorPopup(const char* popupName, const std::string& detail = std::string());
 	bool saveCharacter(CharacterInstance* character);  // Reports failure to the user
 	bool saveCharacterAs(CharacterInstance* character, const std::string& path);
