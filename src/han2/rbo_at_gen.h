@@ -94,7 +94,7 @@ enum RboAtFlags76 : uint32_t {
 	RBO_AT76_PUSHBACK_GATE_INVERT = 0x400,
 	RBO_AT76_UNREAD_2000 = 0x2000,
 	RBO_AT76_SUPPRESS_HIT_SFX = 0x10000,
-	RBO_AT76_UNREAD_100000 = 0x100000,
+	RBO_AT76_RANGED_ATTACK = 0x100000,
 };
 enum RboAtFlags80 : uint32_t {
 	RBO_AT80_UNREAD_0001 = 0x1,
@@ -296,7 +296,7 @@ static const Han2EnumValue kRboAtFlags76Values[] = {
 	{"RBO_AT76_PUSHBACK_GATE_INVERT", (int64_t)(0x400)},
 	{"RBO_AT76_UNREAD_2000", (int64_t)(0x2000)},
 	{"RBO_AT76_SUPPRESS_HIT_SFX", (int64_t)(0x10000)},
-	{"RBO_AT76_UNREAD_100000", (int64_t)(0x100000)},
+	{"RBO_AT76_RANGED_ATTACK", (int64_t)(0x100000)},
 };
 static const Han2EnumValue kRboAtFlags80Values[] = {
 	{"RBO_AT80_UNREAD_0001", (int64_t)(0x1)},
