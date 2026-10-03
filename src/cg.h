@@ -154,6 +154,8 @@ public:
 	// The whole bank as stored (for saving it back into a .DAT).
 	const char *bank_data() const { return m_data; }
 	unsigned int bank_size() const { return m_data_size; }
+	// Restore a previous copy of the bank bytes (same size): used by the editor's sprite-import undo.
+	bool restore_bank(const char *bytes, unsigned int size) { if (!m_data || size != m_data_size) return false; memcpy(m_data, bytes, size); touch(); return true; }
 	// Raw header fields of image n (false if absent / unused). bpp is the
 	// stored depth (8 = palette-indexed); bounds are canvas coordinates.
 	bool image_info(unsigned int n, int &bpp, int &typeId, int &x1, int &y1, int &x2, int &y2);

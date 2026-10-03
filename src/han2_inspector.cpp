@@ -205,6 +205,7 @@ namespace {
 struct CgPreview { const CharacterInstance *owner = nullptr; int image = -1; unsigned long long gen = 0; GLuint tex = 0; int w = 0, h = 0; int ox = 0, oy = 0; };
 CgPreview g_prev;
 char g_cgFilter[32] = "";
+std::vector<std::vector<char>> g_cgUndo, g_cgRedo;   // whole-bank snapshots (max 8)
 std::string g_cgMsg;
 int g_cgSel = 0;
 float g_cgZoom = 1.f;
@@ -259,10 +260,18 @@ void DrawCgWindow(CharacterInstance *ch)
 		if (!p.empty()) {
 			std::vector<uint8_t> px; int w = 0, h = 0; std::string e;
 			if (!ReadImageRgba(p, px, w, h, e)) g_cgMsg = e;
-			else if (ch->cg.replace_image_rgba((unsigned)g_cgSel, px.data(), w, h, &e)) { ch->markModified(); ch->undoManager.markModified(); g_cgMsg = "imported " + p + " (save as .DAT to keep it)"; }
+			else if ((g_cgUndo.push_back(std::vector<char>(ch->cg.bank_data(), ch->cg.bank_data() + ch->cg.bank_size())), g_cgRedo.clear(), g_cgUndo.size() > 8 && (g_cgUndo.erase(g_cgUndo.begin()), true), ch->cg.replace_image_rgba((unsigned)g_cgSel, px.data(), w, h, &e))) { ch->markModified(); ch->undoManager.markModified(); g_cgMsg = "imported " + p + " (save as .DAT to keep it)"; }
 			else g_cgMsg = e;
 		}
 	}
+	ImGui::SameLine();
+	ImGui::BeginDisabled(g_cgUndo.empty());
+	if (ImGui::Button("Undo import")) { g_cgRedo.push_back(std::vector<char>(ch->cg.bank_data(), ch->cg.bank_data() + ch->cg.bank_size())); ch->cg.restore_bank(g_cgUndo.back().data(), (unsigned)g_cgUndo.back().size()); g_cgUndo.pop_back(); ch->markModified(); g_cgMsg = "import undone"; }
+	ImGui::EndDisabled();
+	ImGui::SameLine();
+	ImGui::BeginDisabled(g_cgRedo.empty());
+	if (ImGui::Button("Redo")) { g_cgUndo.push_back(std::vector<char>(ch->cg.bank_data(), ch->cg.bank_data() + ch->cg.bank_size())); ch->cg.restore_bank(g_cgRedo.back().data(), (unsigned)g_cgRedo.back().size()); g_cgRedo.pop_back(); ch->markModified(); g_cgMsg = "import redone"; }
+	ImGui::EndDisabled();
 	ImGui::SameLine();
 	if (ImGui::Button("Export all...")) {
 		std::string d = BrowseForFolderUtf8("");
