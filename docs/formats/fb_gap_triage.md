@@ -139,3 +139,16 @@ Total if everything: roughly 35-45 days. A sensible first tranche (EX3 view, ReA
 
 **Q8. IDB hygiene scope.** The rule says rename/type everything you touch. For titles with IDBs (mb, mbr, pb2k1, DMP, qoh99) I would type only the character-load path and the structs used by the editor. For Rosa/Lilian, create IDBs (1 day each) only if Q3 = (c).
  Recommendation: the minimal path above, unless you want full typed coverage per title.
+
+## User decisions 2026-10-03 (final)
+
+1. Order: EX3 viewer, ReAct, MB, PB2K1, dMp, Rosa, Lilian, QoH99.
+2. dMp: LIVE RELOAD NOW. Edits show up in the running dMp under PovertyCaster. Generic "asset hot-reload" seam on the PovertyCaster side (IPC; pchost receives
+   `reload <archive/entry>`; the DMP adapter re-runs the game's own loader for that entry at a safe point, or declares the session non-netplay). Design first:
+   `docs/formats/dmp_live_reload.md` here + a matching doc in PovertyCaster (worktree off origin/main, `pc_worktree_init.sh`, gate `PC_JOBS=2 nice -n 10 bash tools/pc_precommit.sh`; tell main before pushing).
+3. Rosa and Lilian: FULL editors at fighter depth (scripts, sprites, maps / BG chips, story scripts), byte-exact, proven in-game.
+4. QoH99: FULL support now. Solve the SZUKI MASAMI cipher from the qoh99 IDB (check pc-adapters/qoh99 and /mnt/c/dev/qoh first), full editor + byte-exact for all 37 .chr, .Fob, .Img. QoH98 too.
+5. Encrypted formats: untouched load -> save is byte-exact; edits are re-encrypted with the game's own scheme.
+6. Optional "modded, unencrypted" save mode only where the game is proven in-game to accept plaintext; otherwise the option is disabled with the reason shown.
+7. Images: match French-Bread's compressor EXACTLY (EX3, IMG, any compressed sprite format): re-encoding the original pixels reproduces the shipped bytes bit for bit. Find the encoder in exes/tools; else infer from the data and prove on every shipped image.
+8. IDA: full typing, no unk anywhere it touches, including runtime character structs, as for RBO/GOF.
