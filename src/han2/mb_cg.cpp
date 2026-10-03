@@ -7,22 +7,25 @@ namespace han2 {
 
 static int16_t S16(const uint8_t *p) { int16_t v; memcpy(&v, p, 2); return v; }
 static uint32_t U32(const uint8_t *p) { uint32_t v; memcpy(&v, p, 4); return v; }
-static const size_t kImgOffTable = 0x14, kPalOff = 0x2EF4, kPieceCountOff = 0x4EF4, kPieceOff = 0x4EFC, kPieceSize = 14, kImgHeader = 52;
+static const size_t kImgOffTable = 0x14, kPieceSize = 14, kImgHeader = 52;
+const StripBankLayout kMbCgLayout = { 3000, true, 0x2EF4, 0x4EF4, 0x4EFC, true, true, "Melty Blood CG blob" };
+const StripBankLayout kPb2CgLayout = { 1000, false, 0x0FB4, 0x2FB4, 0x2FBC, false, false, "Party Breakers sprite bank" };
 
-std::shared_ptr<MbCgBank> MbCgBank::Parse(const uint8_t *p, size_t n, std::string *err)
+std::shared_ptr<MbCgBank> MbCgBank::Parse(const uint8_t *p, size_t n, std::string *err, const StripBankLayout &L)
 {
 	auto fail = [&](const char *m) { if (err) *err = m; return std::shared_ptr<MbCgBank>(); };
-	if (n < kPieceOff) return fail("CG blob too short");
+	if (n < L.pieceOff) return fail("sprite bank too short");
 	auto b = std::make_shared<MbCgBank>();
+	b->m_layout = &L;
 	b->m_blob.assign(p, p + n);
-	b->m_trueColor = p[0x10] == 0xFF;
-	const uint32_t pieces = U32(p + kPieceCountOff);
-	if (kPieceOff + (size_t)pieces * kPieceSize > n) return fail("strip table runs past the blob");
-	b->m_pieceOff = kPieceOff;
-	b->m_img.assign(3000, Img());
-	unsigned maxId = 0; size_t expectedNext = kPieceOff + (size_t)pieces * kPieceSize;
+	b->m_trueColor = L.trueColorByte ? (L.offsetsSigned ? p[0x10] == 0xFF : U32(p + 0x10) == 255) : false;
+	const uint32_t pieces = U32(p + L.pieceCountOff);
+	if (L.pieceOff + (size_t)pieces * kPieceSize > n) return fail("strip table runs past the blob");
+	b->m_pieceOff = L.pieceOff;
+	b->m_img.assign(L.maxImages, Img());
+	unsigned maxId = 0; size_t expectedNext = L.pieceOff + (size_t)pieces * kPieceSize;
 	std::vector<std::pair<uint32_t, unsigned>> order;
-	for (unsigned i = 0; i < 3000; i++) {
+	for (unsigned i = 0; i < L.maxImages; i++) {
 		int32_t off; memcpy(&off, p + kImgOffTable + 4 * i, 4);
 		if (off == -1) continue;
 		if (off < 0 || (size_t)off + kImgHeader > n) return fail("image offset out of range");
@@ -41,9 +44,9 @@ std::shared_ptr<MbCgBank> MbCgBank::Parse(const uint8_t *p, size_t n, std::strin
 		expectedNext = im.dataOff + px;
 		if (expectedNext > n) return fail("image pixels run past the blob");
 	}
-	if (expectedNext != n) return fail("images do not end exactly at the end of the blob");
+	if (L.exactEnd ? expectedNext != n : expectedNext > n) return fail("images do not end exactly at the end of the blob");
 	for (int s = 0; s < 8; s++) for (int i = 0; i < 256; i++) {
-		const uint8_t *e = p + kPalOff + (size_t)s * 1024 + 4 * i;
+		const uint8_t *e = p + L.palOff + (size_t)s * 1024 + 4 * i;
 		b->m_pal[s][i] = i == 0 ? 0u : (0xFF000000u | e[0] | (e[1] << 8) | (e[2] << 16));
 	}
 	return b;
