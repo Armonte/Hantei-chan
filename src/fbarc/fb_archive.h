@@ -75,6 +75,15 @@ std::unique_ptr<Archive> OpenAs(Kind kind, const std::string& utf8Path, std::str
 // Returns true when identical; `detail` receives the first difference otherwise.
 bool VerifyRebuild(const Archive& a, std::string* detail);
 
+// ---- editing one entry of an archive from a loose file ---------------------------------------------------------------------------------------------
+// The browser extracts an entry to a temp file and opens it like any loose file; the origin registry remembers where that file came from so that
+// Save As ... .p can write a NEW archive equal to the source with that entry replaced (the source is never touched).
+struct Origin { std::string archive, entry; };   // archive path (UTF-8) and the entry's relative path as relativePath() prints it
+void SetOrigin(const std::string& loosePath, const Origin& o);
+bool GetOrigin(const std::string& loosePath, Origin* out);
+// Writes outPath = the origin archive with `plain` (the entry's STORED bytes) replacing the origin entry.
+bool SaveEntryReplacing(const Origin& o, const std::vector<uint8_t>& plain, const std::string& outPath, std::string* err);
+
 } // namespace fbarc
 
 #endif

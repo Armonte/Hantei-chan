@@ -22,7 +22,7 @@ bool ParseRiff(const uint8_t *p, size_t n, Riff &r, std::string *err)
 		if ((uint64_t)q + 8 + c.declaredSize > end) break;   // truncated last chunk: kept in tail
 		c.data.assign(p + q + 8, p + q + 8 + c.declaredSize);
 		q += 8 + c.declaredSize;
-		if ((c.declaredSize & 1) && q < end) { c.padded = true; q++; }   // pad byte is stored as a zero in the shipped files; verified by round trip
+		if ((c.declaredSize & 1) && q < end) { c.padded = true; c.padValue = p[q]; q++; }   // pad byte: zero in most files, 0x7f in two ReAct 06.p voices; kept as stored
 		if (memcmp(c.id, "fmt ", 4) == 0 && c.data.size() >= 16) { r.fmtTag = R16(c.data.data()); r.channels = R16(c.data.data() + 2); r.sampleRate = R32(c.data.data() + 4); r.bits = R16(c.data.data() + 14); }
 		r.chunks.push_back(std::move(c));
 	}
@@ -33,7 +33,7 @@ bool ParseRiff(const uint8_t *p, size_t n, Riff &r, std::string *err)
 void SerializeRiff(const Riff &r, std::vector<uint8_t> &o)
 {
 	o.assign({ 'R', 'I', 'F', 'F' }); W32(o, r.riffSize); o.insert(o.end(), r.form, r.form + 4);
-	for (auto &c : r.chunks) { o.insert(o.end(), c.id, c.id + 4); W32(o, c.declaredSize); o.insert(o.end(), c.data.begin(), c.data.end()); if (c.padded) o.push_back(0); }
+	for (auto &c : r.chunks) { o.insert(o.end(), c.id, c.id + 4); W32(o, c.declaredSize); o.insert(o.end(), c.data.begin(), c.data.end()); if (c.padded) o.push_back(c.padValue); }
 	o.insert(o.end(), r.tail.begin(), r.tail.end());
 }
 

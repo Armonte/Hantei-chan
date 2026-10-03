@@ -30,6 +30,10 @@ bool LoadCharacter(CharacterInstance &ch, const std::string &stem, const ReadFn 
 // GOF1: load character `entryName` (e.g. AKIKO.DAT) from a gof_0N.p archive: archive cipher + section cipher undone, parts from the old PAT v2 block.
 bool LoadGof1Character(CharacterInstance &ch, const std::string &archivePath, const std::string &entryName, std::string *err);
 
+// Melty Blood (2002) / ReAct leftover / PB2K1-family character .DAT as a loose file (an archive entry extracted by the browser, or a file on disk):
+// the archive cipher is already undone, the section cipher is undone here. Saving writes the enciphered file (or a .p with the entry replaced).
+bool LoadGof1CharacterFile(CharacterInstance &ch, const std::string &path, std::string *err);
+
 // Rebuild the container's PAT block from the character's (possibly edited) Parts model before a save.
 // Returns false with *err on failure; *partsChanged tells whether the block differs from the one loaded.
 bool SyncPartsToContainer(CharacterInstance &ch, bool *partsChanged, std::string *err);

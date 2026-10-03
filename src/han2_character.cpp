@@ -121,6 +121,25 @@ bool LoadGof1Character(CharacterInstance &ch, const std::string &archivePath, co
 	return true;
 }
 
+bool LoadGof1CharacterFile(CharacterInstance &ch, const std::string &path, std::string *err)
+{
+	auto fail = [&](const std::string &m) { if (err) *err = m; return false; };
+	std::ifstream f(std::filesystem::u8path(path), std::ios::binary);
+	if (!f) return fail("cannot read " + path);
+	std::vector<uint8_t> d((std::istreambuf_iterator<char>(f)), std::istreambuf_iterator<char>());
+	gof1::DecryptDat(d);
+	std::string e;
+	if (!gof1::Load(ch.frameData, d.data(), d.size(), &e)) return fail(path + ": " + e);
+	auto cont = ch.frameData.m_han2;
+	cont->sourcePath = path; cont->gof1Name.clear();
+	if (!cont->parts.empty()) {
+		std::string pe;
+		if (PatToParts(cont->parts.data(), cont->parts.size(), ch.parts, &pe)) UploadPartsTextures(ch.parts);
+	}
+	if (!cont->cg.empty()) ch.cg.loadFromMemory(cont->cg.data(), (unsigned)cont->cg.size());
+	return true;
+}
+
 bool SyncPartsToContainer(CharacterInstance &ch, bool *partsChanged, std::string *err)
 {
 	if (partsChanged) *partsChanged = false;

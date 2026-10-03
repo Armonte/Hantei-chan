@@ -335,6 +335,26 @@ std::unique_ptr<Archive> Open(const std::string& path, std::string* err)
 	return OpenAs(k, path, err);
 }
 
+static std::map<std::string, Origin>& Origins() { static std::map<std::string, Origin> m; return m; }
+static std::string OriginKey(std::string p) { for (auto& c : p) { if (c == '\\') c = '/'; else if (c >= 'A' && c <= 'Z') c += 32; } return p; }
+void SetOrigin(const std::string& loosePath, const Origin& o) { Origins()[OriginKey(loosePath)] = o; }
+bool GetOrigin(const std::string& loosePath, Origin* out)
+{
+	auto it = Origins().find(OriginKey(loosePath));
+	if (it == Origins().end()) return false;
+	if (out) *out = it->second;
+	return true;
+}
+bool SaveEntryReplacing(const Origin& o, const std::vector<uint8_t>& plain, const std::string& outPath, std::string* err)
+{
+	auto a = Open(o.archive, err);
+	if (!a) return false;
+	const int idx = a->find(NameFromUtf8(o.entry));
+	if (idx < 0) { if (err) *err = "entry " + o.entry + " not found in " + o.archive; return false; }
+	Edit e; e.replace[(size_t)idx] = plain;
+	return a->rebuild(outPath, e, err);
+}
+
 bool VerifyRebuild(const Archive& a, std::string* detail)
 {
 	std::error_code ec;

@@ -265,6 +265,12 @@ bool SaveFile(const FrameData &fd, const char *filename, std::string *err)
 	if (ext == ".p") {
 		const Han2Container &c = *fd.m_han2;
 		Archive a;
+		if (c.gof1Name.empty() && g_saveEntryIntoArchive) {   // opened from a PAC v0 / v1 archive entry (Melty Blood, ReAct)
+			std::vector<uint8_t> stored = plain; EncryptDat(stored);
+			int r = g_saveEntryIntoArchive(c.sourcePath, stored, f, &g_lastErr);
+			if (r == 0) g_lastErr = "this character was not opened from an archive entry: nothing to replace";
+			return done(r == 1);
+		}
 		if (c.sourcePath.empty() || !Open(c.sourcePath, a, &g_lastErr)) { if (g_lastErr.empty()) g_lastErr = "no source archive to copy"; return done(false); }
 		int idx = Find(a, c.gof1Name);
 		if (idx < 0) { g_lastErr = "entry " + c.gof1Name + " not found in the source archive"; return done(false); }

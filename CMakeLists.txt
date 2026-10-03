@@ -597,6 +597,41 @@ if(MINGW)
 	target_link_options(fbarctool PRIVATE -municode -static-libgcc -static-libstdc++ -static)
 endif()
 
+
+# Per-title byte-exact round trip of every archive member (tools/fb/run_fb_suite.sh).
+add_executable(fbchartool
+	src/fbarc/fbchartool.cpp
+	${FBARC_SOURCES}
+	src/framedata.cpp
+	src/framedata_load.cpp
+	src/framedata_save.cpp
+	src/framedata_ha4.cpp ${HAN2_MODEL_SOURCES}
+	src/han2/fnt_file.cpp
+	src/ha4_parts.cpp
+	src/ha4_convert.cpp
+	src/background/bg_file.cpp
+	src/background/bg_pat.cpp
+	src/background/bg_info.cpp
+	src/background/bg_project.cpp
+	src/parts/parts.cpp
+	src/parts/parts_part.cpp
+	src/parts/parts_partset.cpp
+	src/parts/parts_shape.cpp
+	src/parts/parts_texture.cpp
+	src/cg.cpp
+	src/texture.cpp
+	src/vao.cpp
+	src/shader.cpp
+	src/misc.cpp
+	tinyalloc/tinyalloc.c
+)
+target_include_directories(fbchartool PRIVATE "." "src" "third_party" "${CMAKE_BINARY_DIR}/generated")
+target_compile_definitions(fbchartool PRIVATE WIN32_LEAN_AND_MEAN HA6GUIVERSION="${CMAKE_PROJECT_VERSION}" PAT_HEADLESS)
+target_link_libraries(fbchartool PRIVATE tinyalloc glad glm OpenGL::GL windowscodecs ole32 uuid)
+if(MINGW)
+	target_link_options(fbchartool PRIVATE -static-libgcc -static-libstdc++ -static)
+endif()
+
 # Unit tests for editor infrastructure (no GL / ImGui). Run from WSL with
 # ./build/<name>_test.exe, or ctest.
 add_executable(shortcut_router_test tests/shortcut_router_test.cpp src/shortcut_router.cpp)
