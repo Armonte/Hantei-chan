@@ -480,6 +480,12 @@ bool Serialize(const FrameData &fd, std::vector<uint8_t> &out, std::string *err,
 		wr32(patT.data() + 12 * p, cnt); wr32(patT.data() + 12 * p + 4, flags); wr32(patT.data() + 12 * p + 8, first);
 	}
 
+	if (cont->sub == 1 && warnings) {   // sections 4/5 hold one record per sousai / tobi box slot; the writer keeps them verbatim
+		long sousai = 0, tobi = 0;
+		for (auto &q : fd.m_sequences) for (auto &fr : q.frames) for (auto &kv : fr.hitboxes) { int k = kv.first; if (k == 11 || k == 16 || k == 17) sousai++; if (k == 12 || k == 18 || k == 19 || k == 20) tobi++; }
+		if ((size_t)sousai * 28 != cont->sec[4].size() || (size_t)tobi * 20 != cont->sec[5].size())
+			warnings->push_back("clash/projectile boxes were added or removed: pattern-area sections 4/5 (one record per such box) were kept as loaded and no longer match the box count");
+	}
 	Han2File f;
 	memcpy(f.header, cont->header, 0x40);
 	if (!asDt2 && cont->kind == 3 && cont->parts.empty() && cont->cg.empty())

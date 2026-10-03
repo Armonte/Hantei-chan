@@ -184,6 +184,7 @@ static void ModelRtOne(const std::string &label, const std::vector<uint8_t> &b, 
 	std::vector<uint8_t> out; std::vector<std::string> warn;
 	bool dt2 = fd.m_han2 && fd.m_han2->kind == 3;
 	if (!han2::Serialize(fd, out, &err, &warn, dt2)) { printf("FAIL %s: save: %s\n", label.c_str(), err.c_str()); st.fail++; return; }
+	if (!warn.empty()) { printf("WARN %s: %s\n", label.c_str(), warn[0].c_str()); }
 	if (out == b) { st.pass++; return; }
 	size_t k = 0, m = std::min(out.size(), b.size());
 	while (k < m && out[k] == b[k]) k++;
