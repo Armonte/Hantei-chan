@@ -26,6 +26,10 @@ struct Han2Container
 	std::vector<uint8_t> names;       // 256 x 64 name area (raw)
 	uint32_t areaOff[4]{};            // header area offsets as loaded (a .DT2 keeps the .DAT's)
 	std::string sourcePath;           // file the frame data came from
+	// GOF2: parts and sprites live in <stem>NN.PAT / <stem>NN.CHP (NN = costume variant 00 or 01) next to the .DT2
+	std::string gofVariant = "00";
+	std::string gofDir;               // folder the companions were read from / are written to (empty for archive sources)
+	bool partsDirty = false, cgDirty = false;
 	std::string datPath;              // .DAT carrying parts / CG / names when sourcePath is a .DT2 (may be empty)
 };
 

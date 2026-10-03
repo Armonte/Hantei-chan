@@ -448,6 +448,7 @@ bool Serialize(const FrameData &fd, std::vector<uint8_t> &out, std::string *err,
 	auto fail = [&](const std::string &m) { if (err) *err = m; return false; };
 	const Han2Container *cont = fd.m_han2.get();
 	if (!cont) return fail("not a HAN2RBO character");
+	if (cont->sub == 2) asDt2 = true;   // GOF2 characters are only ever saved as the pattern file (.DT2); parts/sprites are separate files
 	for (size_t p = kPatterns; p < fd.m_sequences.size(); p++)
 		if (!fd.m_sequences[p].frames.empty()) return fail("pattern " + std::to_string(p) + " has frames, but HAN2RBO has 256 pattern slots");
 

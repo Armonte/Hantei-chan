@@ -75,6 +75,13 @@ bool LoadCharacter(CharacterInstance &ch, const std::string &stem, const ReadFn 
 		}
 	}
 
+	if (cont->sub == 2) {   // GOF2: companions <stem>00.PAT / <stem>00.CHP
+		std::vector<uint8_t> pat, chp;
+		const std::string v = cont->gofVariant;
+		if (read(stem + v + ".PAT", pat) && IsPat(pat.data(), pat.size())) cont->parts = std::move(pat);
+		if (read(stem + v + ".CHP", chp)) cont->cg = std::move(chp);
+		cont->sourcePath = origin + "/" + stem + ".DT2";
+	}
 	std::string s = haveDt2 ? "frames from .DT2" : "frames from .DAT";
 	if (haveDt2 && !haveDat) s += ", no .DAT (no sprites)";
 	if (!cont->cg.empty() && ch.cg.loadFromMemory(cont->cg.data(), (unsigned)cont->cg.size()))
@@ -97,19 +104,39 @@ bool SyncPartsToContainer(CharacterInstance &ch, bool *partsChanged, std::string
 	auto cont = ch.frameData.m_han2;
 	if (!cont) return true;
 	if (cont->parts.empty() || !ch.parts.loaded) {
-		if (!cont->cg.empty() && ch.cg.m_loaded && ch.cg.bank_size() == cont->cg.size() && memcmp(ch.cg.bank_data(), cont->cg.data(), cont->cg.size()) != 0) memcpy(cont->cg.data(), ch.cg.bank_data(), cont->cg.size());
+		if (!cont->cg.empty() && ch.cg.m_loaded && ch.cg.bank_size() == cont->cg.size() && memcmp(ch.cg.bank_data(), cont->cg.data(), cont->cg.size()) != 0) { memcpy(cont->cg.data(), ch.cg.bank_data(), cont->cg.size()); cont->cgDirty = true; }
 		return true;
 	}
 	std::vector<uint8_t> out;
 	if (!BuildPat(ch.parts, cont->parts, out, err)) return false;
 	if (out != cont->parts) {
 		if (partsChanged) *partsChanged = true;
+		cont->partsDirty = true;
 		cont->parts.swap(out);
 	}
 	// CG edits (sprite import) change pixel bytes in place; the bank size never changes
 	if (!cont->cg.empty() && ch.cg.m_loaded && ch.cg.bank_size() == cont->cg.size() && memcmp(ch.cg.bank_data(), cont->cg.data(), cont->cg.size()) != 0)
-		memcpy(cont->cg.data(), ch.cg.bank_data(), cont->cg.size());
+	{ memcpy(cont->cg.data(), ch.cg.bank_data(), cont->cg.size()); cont->cgDirty = true; }
 	return true;
+}
+
+bool SaveGof2Companions(CharacterInstance &ch, const std::string &dt2Path, std::string *err)
+{
+	auto cont = ch.frameData.m_han2;
+	if (!cont || cont->sub != 2) return true;
+	std::filesystem::path dir = std::filesystem::u8path(dt2Path).parent_path();
+	std::string stem = std::filesystem::u8path(dt2Path).stem().string();
+	auto put = [&](const std::string &ext, std::vector<uint8_t> &bytes, bool &dirty) {
+		if (!dirty || bytes.empty()) return true;
+		std::filesystem::path p = dir / (stem + cont->gofVariant + ext);
+		std::error_code ec;
+		std::filesystem::path bak = p; bak += ".bak";
+		if (std::filesystem::exists(p, ec) && !std::filesystem::exists(bak, ec)) std::filesystem::copy_file(p, bak, ec);
+		if (!WriteFileAtomic(p.u8string().c_str(), bytes.data(), bytes.size())) { if (err) *err = "could not write " + p.u8string(); return false; }
+		dirty = false;
+		return true;
+	};
+	return put(".PAT", cont->parts, cont->partsDirty) && put(".CHP", cont->cg, cont->cgDirty);
 }
 
 } // namespace han2
