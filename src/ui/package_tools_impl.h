@@ -38,8 +38,8 @@ void MainFrame::DrawPackageToolsMenuItems()
 	CharacterInstance* c = getActiveCharacter();
 	const std::string descriptor = pkgui::DescriptorOf(c);
 	const bool hasDescriptor = !descriptor.empty();
-	if (!ImGui::BeginMenu("MBAACC package")) return;
-	if (ImGui::MenuItem("Validate current character package...", nullptr, false, hasDescriptor)) {
+	if (!ImGui::BeginMenu(LBL("MBAACC package"))) return;
+	if (ImGui::MenuItem(LBL("Validate current character package..."), nullptr, false, hasDescriptor)) {
 		const auto r = mbpackage::ValidateCharacterPackage(descriptor);
 		pkgui::g = pkgui::State{};
 		pkgui::g.showReport = true;
@@ -49,7 +49,7 @@ void MainFrame::DrawPackageToolsMenuItems()
 		pkgui::g.offerRepair = r.newlineRepairAvailable;
 		for (const auto& row : r.rows) pkgui::g.offerExtract |= row.status == mbpackage::RowStatus::packed;
 	}
-	if (ImGui::MenuItem("Consolidate layered HA6...", nullptr, false, hasDescriptor)) {
+	if (ImGui::MenuItem(LBL("Consolidate layered HA6..."), nullptr, false, hasDescriptor)) {
 		pkgui::g = pkgui::State{};
 		pkgui::g.showConsolidate = true;
 		pkgui::g.descriptor = descriptor;
@@ -59,8 +59,8 @@ void MainFrame::DrawPackageToolsMenuItems()
 		snprintf(pkgui::g.mainName, sizeof(pkgui::g.mainName), "%s.HA6", stem.c_str());
 	}
 	if (!hasDescriptor && ImGui::IsItemHovered(ImGuiHoveredFlags_AllowWhenDisabled))
-		ImGui::SetTooltip("Needs a character opened from its .txt descriptor.");
-	ImGui::TextDisabled("Also: mbaaccpackage.exe (validate, repair-crlf,\nconsolidate, extract, pack-list, pack-extract)");
+		ImGui::SetTooltip("%s", TXT("Needs a character opened from its .txt descriptor."));
+	ImGui::TextDisabled("%s", TXT("Also: mbaaccpackage.exe (validate, repair-crlf,\nconsolidate, extract, pack-list, pack-extract)"));
 	ImGui::EndMenu();
 }
 
@@ -71,8 +71,8 @@ void MainFrame::DrawPackageToolWindows()
 	if (g.showReport) {
 		ImGui::SetNextWindowPos(ImVec2(mainPos.x + 120, mainPos.y + 90), ImGuiCond_Appearing);
 		ImGui::SetNextWindowSize(ImVec2(720, 420), ImGuiCond_Appearing);
-		if (ImGui::Begin((g.title + "###pkg_report").c_str(), &g.showReport, ImGuiWindowFlags_NoDocking)) {
-			if (g.offerRepair && ImGui::Button("Repair line endings (backup + CRLF)")) {
+		if (ImGui::Begin(((g.title.empty() ? g.title : std::string(TXT(g.title.c_str()))) + "###pkg_report").c_str(), &g.showReport, ImGuiWindowFlags_NoDocking)) {
+			if (g.offerRepair && ImGui::Button(LBL("Repair line endings (backup + CRLF)"))) {
 				const auto r = mbpackage::RepairDescriptorNewlines(g.descriptor);
 				g.report = r.message;
 				g.title = "Line-ending repair";
@@ -80,15 +80,15 @@ void MainFrame::DrawPackageToolWindows()
 			}
 			if (g.offerExtract) {
 				if (g.offerRepair) ImGui::SameLine();
-				if (ImGui::Button("Extract packed files beside the descriptor")) {
+				if (ImGui::Button(LBL("Extract packed files beside the descriptor"))) {
 					const auto r = mbpackage::ExtractPackedRows(g.descriptor);
 					g.report = r.message;
 					g.title = "Extract from game archives";
 					g.offerExtract = false;
 				}
 				if (ImGui::IsItemHovered())
-					ImGui::SetTooltip("Writes rows found only in the game's .p archives as loose files.\n"
-						"Existing files are never overwritten. PC/Steam cipher is detected per archive.");
+					ImGui::SetTooltip("%s", TXT("Writes rows found only in the game's .p archives as loose files.\n"
+						"Existing files are never overwritten. PC/Steam cipher is detected per archive."));
 			}
 			ImGui::BeginChild("##report", ImVec2(0, 0), ImGuiChildFlags_Borders);
 			ImGui::TextUnformatted(g.report.c_str());
@@ -99,18 +99,18 @@ void MainFrame::DrawPackageToolWindows()
 	if (g.showConsolidate) {
 		ImGui::SetNextWindowPos(ImVec2(mainPos.x + 140, mainPos.y + 110), ImGuiCond_Appearing);
 		ImGui::SetNextWindowSize(ImVec2(560, 0), ImGuiCond_Appearing);
-		if (ImGui::Begin("Consolidate layered HA6###pkg_consolidate", &g.showConsolidate, ImGuiWindowFlags_NoDocking)) {
+		if (ImGui::Begin(LBL("Consolidate layered HA6###pkg_consolidate"), &g.showConsolidate, ImGuiWindowFlags_NoDocking)) {
 			ImGui::TextWrapped("%s", g.descriptor.c_str());
 			ImGui::Separator();
-			ImGui::TextWrapped("Keeps the highest [DataFile] layer byte-for-byte as the only HA6, if it already "
+			ImGui::TextWrapped("%s", TXT("Keeps the highest [DataFile] layer byte-for-byte as the only HA6, if it already "
 				"contains every pattern of the lower layers (refused otherwise). The descriptor, every layer "
 				"and their notes are copied to a timestamped backup folder first; superseded layers are then "
-				"removed from the character folder. Cancel to keep layered authoring.");
-			ImGui::InputText("Canonical HA6 name", g.mainName, sizeof(g.mainName));
-			ImGui::Checkbox("Merge .notes sidecars (higher layer wins)", &g.mergeNotes);
-			ImGui::Checkbox("I understand the old layers leave the folder (backup kept)", &g.acknowledged);
+				"removed from the character folder. Cancel to keep layered authoring."));
+			ImGui::InputText(LBL("Canonical HA6 name"), g.mainName, sizeof(g.mainName));
+			ImGui::Checkbox(LBL("Merge .notes sidecars (higher layer wins)"), &g.mergeNotes);
+			ImGui::Checkbox(LBL("I understand the old layers leave the folder (backup kept)"), &g.acknowledged);
 			ImGui::BeginDisabled(!g.acknowledged);
-			if (ImGui::Button("Back up and consolidate")) {
+			if (ImGui::Button(LBL("Back up and consolidate"))) {
 				const auto r = mbpackage::ConsolidateHa6Layers(g.descriptor, g.mainName, g.mergeNotes);
 				g.showConsolidate = false;
 				g.showReport = true;
@@ -119,7 +119,7 @@ void MainFrame::DrawPackageToolWindows()
 			}
 			ImGui::EndDisabled();
 			ImGui::SameLine();
-			if (ImGui::Button("Cancel")) g.showConsolidate = false;
+			if (ImGui::Button(LBL("Cancel"))) g.showConsolidate = false;
 		}
 		ImGui::End();
 	}

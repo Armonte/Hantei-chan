@@ -1,4 +1,5 @@
 #include "box_pane.h"
+#include "i18n.h"
 #include "mv_script.h"
 #include <algorithm>
 #include <imgui.h>
@@ -20,10 +21,10 @@ static void DrawScriptSpawnList(FrameData* frameData, FrameState& currState)
 		return;
 
 	im::Separator();
-	if(!im::CollapsingHeader("Script Spawns"))
+	if(!im::CollapsingHeader(LBL("Script Spawns")))
 		return;
 
-	im::TextDisabled("Spawns parsed from move scripts (chrXXX_mv_*.txt)");
+	im::TextDisabled(TXT("Spawns parsed from move scripts (chrXXX_mv_*.txt)"));
 
 	int id = 0;
 	for(const auto& ss : *spawns) {
@@ -43,9 +44,9 @@ static void DrawScriptSpawnList(FrameData* frameData, FrameState& currState)
 		// Frame gate info ("@ move start" when the script has no frame-ID gate)
 		char gateBuf[48];
 		if(ss.frameIdRef >= 0)
-			snprintf(gateBuf, sizeof(gateBuf), "@ frame ID %d", ss.frameIdRef);
+			snprintf(gateBuf, sizeof(gateBuf), TXT("@ frame ID %d"), ss.frameIdRef);
 		else
-			snprintf(gateBuf, sizeof(gateBuf), "@ move start");
+			snprintf(gateBuf, sizeof(gateBuf), "%s", TXT("@ move start"));
 
 		if(ss.isImpactEffect) {
 			if(treeEntry) {
@@ -53,7 +54,7 @@ static void DrawScriptSpawnList(FrameData* frameData, FrameState& currState)
 				im::SameLine();
 			}
 			im::TextColored(ImVec4(1.0f, 0.7f, 0.4f, 1.0f),
-				"impact effect %s  offset (%d, %d) [script]", gateBuf, ss.offsetX, ss.offsetY);
+				TXT("impact effect %s  offset (%d, %d) [script]"), gateBuf, ss.offsetX, ss.offsetY);
 		} else if(ss.patternId >= 0 && frameData->get_sequence(ss.patternId)) {
 			if(treeEntry) {
 				im::Checkbox("##scriptvis", &treeEntry->visible);
@@ -61,16 +62,28 @@ static void DrawScriptSpawnList(FrameData* frameData, FrameState& currState)
 			}
 			std::string name = frameData->GetDecoratedName(ss.patternId);
 			im::TextColored(ImVec4(1.0f, 0.7f, 0.4f, 1.0f),
-				"%s  %s  offset (%d, %d) [script]", name.c_str(), gateBuf, ss.offsetX, ss.offsetY);
+				TXT("%s  %s  offset (%d, %d) [script]"), name.c_str(), gateBuf, ss.offsetX, ss.offsetY);
 		} else {
 			const char* code = !ss.patternCode.empty() ? ss.patternCode.c_str() :
 				(!ss.mvName.empty() ? ss.mvName.c_str() : "?");
-			im::TextDisabled("unresolved: %s", code);
+			im::TextDisabled(TXT("unresolved: %s"), code);
 		}
 		if(im::IsItemHovered() && !ss.source.empty())
 			im::SetTooltip("%s", ss.source.c_str());
 		im::PopID();
 	}
+}
+
+// Localized name of box slot i (the English boxNameList is kept as the neutral key set).
+static std::string BoxDisplayName(int i)
+{
+	if(i == 0) return TXT("Collision box");
+	if(i >= 1 && i <= 8) return std::string(TXT("Hurtbox")) + " " + std::to_string(i);
+	if(i >= 9 && i <= 10) return std::string(TXT("Special box")) + " " + std::to_string(i-8);
+	if(i == 11) return TXT("Clash box");
+	if(i == 12) return TXT("Projectile box");
+	if(i > 12 && i <= 24) return std::string(TXT("Special box")) + " " + std::to_string(i-8);
+	return std::string(TXT("Attack box")) + " " + std::to_string(i-24);
 }
 
 BoxPane::BoxPane(Render* render, FrameData *frameData, FrameState &state):
@@ -157,7 +170,7 @@ void BoxPane::Draw()
 		BoxList &boxes = frames[currState.frame].hitboxes;
 
 		// Box Controls section (collapsible)
-		if(im::CollapsingHeader("Box Controls", ImGuiTreeNodeFlags_DefaultOpen))
+		if(im::CollapsingHeader(LBL("Box Controls"), ImGuiTreeNodeFlags_DefaultOpen))
 		{
 			// Helper lambda to check if a box exists (has non-zero coordinates)
 			auto boxExists = [&boxes](int idx) -> bool {
@@ -211,7 +224,7 @@ void BoxPane::Draw()
 					window->DrawList->AddRect(boxMin, boxMax, IM_COL32(128, 128, 128, 255));
 
 					if(hovered) {
-						ImGui::SetTooltip("%s", boxNameList[boxIdx].c_str());
+						ImGui::SetTooltip("%s", BoxDisplayName(boxIdx).c_str());
 					}
 
 					pos.x += smallBoxSize.x + spacing;
@@ -228,12 +241,12 @@ void BoxPane::Draw()
 			const float labelPadding = 4.0f;  // Padding between label end and next box group
 
 			// Calculate text widths
-			float colW = im::CalcTextSize("Col").x;
-			float hurtW = im::CalcTextSize("Hurt").x;
-			float spc12W = im::CalcTextSize("Spc1-2").x;
-			float clashW = im::CalcTextSize("Clash").x;
-			float projW = im::CalcTextSize("Proj").x;
-			float spc516W = im::CalcTextSize("Spc5-16").x;
+			float colW = im::CalcTextSize(TXT("Col")).x;
+			float hurtW = im::CalcTextSize(TXT("Hurt")).x;
+			float spc12W = im::CalcTextSize(TXT("Spc1-2")).x;
+			float clashW = im::CalcTextSize(TXT("Clash")).x;
+			float projW = im::CalcTextSize(TXT("Proj")).x;
+			float spc516W = im::CalcTextSize(TXT("Spc5-16")).x;
 
 			// Calculate X positions ensuring labels don't overlap
 			// Each position is max(previous_boxes_end + minSpacing, previous_label_end + padding)
@@ -260,25 +273,25 @@ void BoxPane::Draw()
 
 			// Draw labels on first line, aligned with first box of each category
 			im::SetCursorPosX(im::GetCursorPosX() + colX);
-			im::Text("Col");
+			im::Text(TXT("Col"));
 			im::SameLine(0, 0);
 			im::SetCursorPosX(im::GetCursorPosX() + (hurtX - colX - colW));
-			im::Text("Hurt");
+			im::Text(TXT("Hurt"));
 			im::SameLine(0, 0);
 			im::SetCursorPosX(im::GetCursorPosX() + (spc12X - hurtX - hurtW));
-			im::Text("Spc1-2");
+			im::Text(TXT("Spc1-2"));
 			im::SameLine(0, 0);
 			im::SetCursorPosX(im::GetCursorPosX() + (clashX - spc12X - spc12W));
-			im::Text("Clash");
+			im::Text(TXT("Clash"));
 			im::SameLine(0, 0);
 			im::SetCursorPosX(im::GetCursorPosX() + (projX - clashX - clashW));
-			im::Text("Proj");
+			im::Text(TXT("Proj"));
 			im::SameLine(0, 0);
 			im::SetCursorPosX(im::GetCursorPosX() + (spc516X - projX - projW));
-			im::Text("Spc5-16");
+			im::Text(TXT("Spc5-16"));
 			im::SameLine(0, 0);
 			im::SetCursorPosX(im::GetCursorPosX() + (atkX - spc516X - spc516W));
-			im::Text("Atk");
+			im::Text(TXT("Atk"));
 
 			// Move cursor down with minimal spacing (2px gap between labels and boxes)
 			ImVec2 labelEnd = im::GetCursorScreenPos();
@@ -315,7 +328,7 @@ void BoxPane::Draw()
 			im::PopButtonRepeat();
 
 			im::SameLine(0,20.f);
-			if(im::Button("Copy all"))
+			if(im::Button(LBL("Copy all")))
 			{
 				// Manually copy map for cross-allocator support
 				currState.copied->boxes.clear();
@@ -324,7 +337,7 @@ void BoxPane::Draw()
 				}
 			}
 			im::SameLine(0,20.f);
-			if(im::Button("Paste all"))
+			if(im::Button(LBL("Paste all")))
 			{
 				// Manually copy map for cross-allocator support
 				boxes.clear();
@@ -336,12 +349,12 @@ void BoxPane::Draw()
 			}
 
 			im::SameLine(0,20.f);
-			if(im::Button("Copy params"))
+			if(im::Button(LBL("Copy params")))
 			{
 				currState.copied->box = boxes[currentBox];
 			}
 			im::SameLine(0,20.f);
-			if(im::Button("Paste params"))
+			if(im::Button(LBL("Paste params")))
 			{
 				boxes[currentBox] = currState.copied->box;
 				frameData->mark_modified(currState.pattern);
@@ -349,22 +362,22 @@ void BoxPane::Draw()
 			}
 
 			im::SameLine(0,20.f);
-			im::Checkbox("Highlight selected", &highlight);
+			im::Checkbox(LBL("Highlight selected"), &highlight);
 			im::SameLine(0,20.f);
-			if(im::Button("Delete selected"))
+			if(im::Button(LBL("Delete selected")))
 			{
 				boxes.erase(currentBox);
 				frameData->mark_modified(currState.pattern);
 				markModified();
 			}
 			im::SameLine(0,20.f);
-			im::Checkbox("Show manual box controls", &showManualControls);
+			im::Checkbox(LBL("Show manual box controls"), &showManualControls);
 			im::SameLine(0,20.f);
-			im::Checkbox("Position tool", &positionTool);
+			im::Checkbox(LBL("Position tool"), &positionTool);
 			if(im::IsItemHovered())
-				im::SetTooltip("Drag the handles in the viewport to move animation layers and\n"
+				im::SetTooltip(TXT("Drag the handles in the viewport to move animation layers and\n"
 					"spawn/preset effects on this keyframe. Alt: precision, Shift: axis lock,\n"
-					"Esc: cancel. Each drag is one undo step.");
+					"Esc: cancel. Each drag is one undo step."));
 
 			if(highlight)
 				render->highLightN = currentBox;
@@ -373,12 +386,12 @@ void BoxPane::Draw()
 			if(showManualControls)
 			{
 			const int step = 1;
-			if(im::InputScalarN("Top left", ImGuiDataType_S32, boxes[currentBox].xy, 2, &step, NULL, "%d", 0))
+			if(im::InputScalarN(LBL("Top left"), ImGuiDataType_S32, boxes[currentBox].xy, 2, &step, NULL, "%d", 0))
 			{
 				frameData->mark_modified(currState.pattern);
 				markModified();
 			}
-			if(im::InputScalarN("Bottom right", ImGuiDataType_S32, boxes[currentBox].xy+2, 2, &step, NULL, "%d", 0))
+			if(im::InputScalarN(LBL("Bottom right"), ImGuiDataType_S32, boxes[currentBox].xy+2, 2, &step, NULL, "%d", 0))
 			{
 				frameData->mark_modified(currState.pattern);
 				markModified();
@@ -412,7 +425,7 @@ void BoxPane::DrawSpawnTimeline()
 	namespace im = ImGui;
 
 	// Always available (issue #10); spawn rows only with the spawn preview on.
-	if(!im::CollapsingHeader("Timeline", ImGuiTreeNodeFlags_DefaultOpen)) {
+	if(!im::CollapsingHeader(LBL("Timeline"), ImGuiTreeNodeFlags_DefaultOpen)) {
 		spawnDrag.active = false;
 		return;
 	}
@@ -446,21 +459,21 @@ void BoxPane::DrawSpawnTimeline()
 
 	if (showSpawns) {
 		int mode = currState.previewOptions.defaultIfAssumption == preview::IfAssume::True ? 1 : 0;
-		const char* modes[] = {"Assume false (authored flow)", "Assume true (branch once per frame visit)"};
+		const char* modes[] = {TXT("Assume false (authored flow)"), TXT("Assume true (branch once per frame visit)")};
 		im::SetNextItemWidth(260.f);
-		if (im::Combo("Runtime IF conditions", &mode, modes, 2)) {
+		if (im::Combo(LBL("Runtime IF conditions"), &mode, modes, 2)) {
 			currState.previewOptions.defaultIfAssumption = mode ? preview::IfAssume::True : preview::IfAssume::False;
 		}
 		if (im::IsItemHovered())
-			im::SetTooltip("Conditions the preview cannot evaluate (input, hit, distance, landing, ...).\n"
+			im::SetTooltip(TXT("Conditions the preview cannot evaluate (input, hit, distance, landing, ...).\n"
 			               "Loop counters (IF 9/10), IF 37, IF 55 and parent-pattern checks are always simulated.\n"
-			               "Per-condition overrides are in 'Runtime conditions' below.");
+			               "Per-condition overrides are in 'Runtime conditions' below."));
 	}
 
-	im::Text("Frame: %d / %d  |  Tick: %d  |  Root ends: %s  |  Settles: %s", currState.frame, mainFrameCount - 1,
+	im::Text(TXT("Frame: %d / %d  |  Tick: %d  |  Root ends: %s  |  Settles: %s"), currState.frame, mainFrameCount - 1,
 	         currState.currentTick,
-	         rootEnd >= 0 ? std::to_string(rootEnd).c_str() : "loops",
-	         settled >= 0 ? std::to_string(settled).c_str() : "never (looping actor)");
+	         rootEnd >= 0 ? std::to_string(rootEnd).c_str() : TXT("loops"),
+	         settled >= 0 ? std::to_string(settled).c_str() : TXT("never (looping actor)"));
 
 	auto seekTick = [&](int tick) {
 		tick = std::clamp(tick, 0, maxTimelineTick);
@@ -474,17 +487,17 @@ void BoxPane::DrawSpawnTimeline()
 	// Tick scrubber: seeking is O(checkpoint interval) in the simulator.
 	int scrubTick = std::min(currState.currentTick, maxTimelineTick);
 	im::SetNextItemWidth(-160.f);
-	if (im::SliderInt("##tickscrub", &scrubTick, 0, maxTimelineTick, "Tick %d")) seekTick(scrubTick);
+	if (im::SliderInt("##tickscrub", &scrubTick, 0, maxTimelineTick, TXT("Tick %d"))) seekTick(scrubTick);
 	im::SameLine();
 	im::SetNextItemWidth(100.f);
-	im::SliderFloat("Zoom##tl", &timelineZoom, 0.25f, 16.f, "%.2fx", ImGuiSliderFlags_Logarithmic);
+	im::SliderFloat(LBL("Zoom##tl"), &timelineZoom, 0.25f, 16.f, "%.2fx", ImGuiSliderFlags_Logarithmic);
 	if (im::IsItemHovered())
-		im::SetTooltip("Ctrl+wheel over the timeline zooms, middle-drag pans,\n"
+		im::SetTooltip(TXT("Ctrl+wheel over the timeline zooms, middle-drag pans,\n"
 		               "left-drag on the ruler/main row scrubs.\n"
 		               "Keyframes: click selects, drag onto another keyframe moves it,\n"
 		               "right-click for copy/paste/duplicate/delete.\n"
 		               "Spawn bars of this pattern: right-drag moves the spawning effect\n"
-		               "to another keyframe, Alt+right-drag copies it.");
+		               "to another keyframe, Alt+right-drag copies it."));
 
 	const float rowHeight = 20.0f;
 	const float labelWidth = 120.0f;
@@ -536,7 +549,7 @@ void BoxPane::DrawSpawnTimeline()
 	};
 
 	// ---- Ruler + scrub ----
-	rowLabel("Tick");
+	rowLabel(TXT("Tick"));
 	for (int t = 0; t <= maxTimelineTick; ++t) {
 		const bool major = t % 10 == 0;
 		if (!major && tickWidth < 3.f) continue;
@@ -551,7 +564,7 @@ void BoxPane::DrawSpawnTimeline()
 	yPos += rowHeight + 2;
 
 	// ---- Main (simulated flow) ----
-	rowLabel("Main (sim)");
+	rowLabel(TXT("Main (sim)"));
 	{
 		int liveEnd = rootEnd >= 0 ? rootEnd : maxTimelineTick;
 		drawList->AddRectFilled(ImVec2(tickX(0), yPos), ImVec2(tickX(liveEnd), yPos + rowHeight), IM_COL32(80, 80, 255, 200));
@@ -569,7 +582,7 @@ void BoxPane::DrawSpawnTimeline()
 	yPos += rowHeight + 4;
 
 	// ---- Keyframes (authored order) ----
-	rowLabel("Keyframes");
+	rowLabel(TXT("Keyframes"));
 	const float kfY = yPos;
 	for (int i = 0; i < mainFrameCount; ++i) {
 		const float x0 = tickX(kfStart[i]), x1 = tickX(kfStart[i + 1]);
@@ -590,7 +603,7 @@ void BoxPane::DrawSpawnTimeline()
 			currState.activeSpawns.clear();
 		}
 		if (im::IsItemHovered())
-			im::SetTooltip("Keyframe %d: %d tick(s), starts at %d", i, mainSeq->frames[i].AF.duration, kfStart[i]);
+			im::SetTooltip(TXT("Keyframe %d: %d tick(s), starts at %d"), i, mainSeq->frames[i].AF.duration, kfStart[i]);
 		if (im::BeginDragDropSource(ImGuiDragDropFlags_SourceNoPreviewTooltip)) {
 			im::SetDragDropPayload("TL_KEYFRAME", &i, sizeof(int));
 			im::EndDragDropSource();
@@ -611,18 +624,18 @@ void BoxPane::DrawSpawnTimeline()
 			im::EndDragDropTarget();
 		}
 		if (im::BeginPopupContextItem("##kfctx")) {
-			im::TextDisabled("Keyframe %d", i);
-			if (im::MenuItem("Copy frame")) currState.copied->frame = mainSeq->frames[i];
+			im::TextDisabled(TXT("Keyframe %d"), i);
+			if (im::MenuItem(LBL("Copy frame"))) currState.copied->frame = mainSeq->frames[i];
 			auto insertCopy = [&](int at, const Frame& f) {
 				mainSeq->frames.insert(mainSeq->frames.begin() + at, f);
 				currState.frame = at;
 				frameData->mark_modified(currState.pattern);
 				markModified();
 			};
-			if (im::MenuItem("Paste before")) { Frame f; f = currState.copied->frame; insertCopy(i, f); }
-			if (im::MenuItem("Paste after")) { Frame f; f = currState.copied->frame; insertCopy(i + 1, f); }
-			if (im::MenuItem("Duplicate")) { Frame f = mainSeq->frames[i]; insertCopy(i + 1, f); }
-			if (im::MenuItem("Delete", nullptr, false, mainFrameCount > 1)) {
+			if (im::MenuItem(LBL("Paste before"))) { Frame f; f = currState.copied->frame; insertCopy(i, f); }
+			if (im::MenuItem(LBL("Paste after"))) { Frame f; f = currState.copied->frame; insertCopy(i + 1, f); }
+			if (im::MenuItem(LBL("Duplicate"))) { Frame f = mainSeq->frames[i]; insertCopy(i + 1, f); }
+			if (im::MenuItem(LBL("Delete"), nullptr, false, mainFrameCount > 1)) {
 				mainSeq->frames.erase(mainSeq->frames.begin() + i);
 				currState.frame = std::clamp(currState.frame, 0, (int)mainSeq->frames.size() - 1);
 				frameData->mark_modified(currState.pattern);
@@ -646,13 +659,13 @@ void BoxPane::DrawSpawnTimeline()
 		if (f.AF.landJump > 0 && f.AF.landJump < mainFrameCount) landingTarget[f.AF.landJump] = true;
 	struct Indicator { const char* name; ImU32 color; };
 	const Indicator indicators[indicatorRows] = {
-		{"Collision", IM_COL32(200, 200, 200, 255)},
-		{"Hurt", IM_COL32(60, 200, 60, 255)},
-		{"Attack", IM_COL32(230, 50, 50, 255)},
-		{"Clash/Proj/Spec", IM_COL32(200, 120, 230, 255)},
-		{"Landing frame", IM_COL32(240, 220, 60, 255)},
-		{"Effects", IM_COL32(80, 180, 255, 255)},
-		{"Conditions", IM_COL32(255, 150, 60, 255)},
+		{TXT("Collision"), IM_COL32(200, 200, 200, 255)},
+		{TXT("Hurt"), IM_COL32(60, 200, 60, 255)},
+		{TXT("Attack"), IM_COL32(230, 50, 50, 255)},
+		{TXT("Clash/Proj/Spec"), IM_COL32(200, 120, 230, 255)},
+		{TXT("Landing frame"), IM_COL32(240, 220, 60, 255)},
+		{TXT("Effects"), IM_COL32(80, 180, 255, 255)},
+		{TXT("Conditions"), IM_COL32(255, 150, 60, 255)},
 	};
 	for (int r = 0; r < indicatorRows; ++r) {
 		rowLabel(indicators[r].name, indicators[r].color);
@@ -743,7 +756,7 @@ void BoxPane::DrawSpawnTimeline()
 		FrameData* sourceData = row.effect ? effectFrameData : frameData;
 		std::string patternName;
 		if (row.preset && row.script) {
-			patternName = "Impact FX";
+			patternName = TXT("Impact FX");
 		} else if (row.preset) {
 			extern const char* GetPresetEffectName(int);
 			patternName = std::string(GetPresetEffectName(row.pattern)) + " [" + std::to_string(row.pattern) + "]";
@@ -763,10 +776,10 @@ void BoxPane::DrawSpawnTimeline()
 		const bool rowHovered = im::IsItemHovered();
 		if (rowHovered) {
 			std::string tip = patternName + (row.effect ? " (effect.ha6)" : "") +
-				"\n" + std::to_string(row.recs.size()) + " instance(s)";
-			if (!row.entry) tip += "\n* not in the spawn tree (random pick, pattern chain or nested repeat)";
+				"\n" + std::to_string(row.recs.size()) + " " + TXT("instance(s)");
+			if (!row.entry) tip += std::string("\n") + TXT("* not in the spawn tree (random pick, pattern chain or nested repeat)");
 			if (row.script && row.entry && !row.entry->scriptSource.empty()) tip += "\n" + row.entry->scriptSource;
-			if (canDragSpawn(row)) tip += "\nRight-drag: move the spawning effect to another keyframe (Alt: copy)";
+			if (canDragSpawn(row)) tip += std::string("\n") + TXT("Right-drag: move the spawning effect to another keyframe (Alt: copy)");
 			im::SetTooltip("%s", tip.c_str());
 		}
 		// Right-drag a spawn of this pattern onto another keyframe (issue #10).
@@ -802,7 +815,7 @@ void BoxPane::DrawSpawnTimeline()
 		}
 		if (row.entry && !row.preset && row.entry->isRecursive) {
 			im::SameLine();
-			im::TextColored(ImVec4(1, 0.5f, 0.5f, 1), "REC");
+			im::TextColored(ImVec4(1, 0.5f, 0.5f, 1), TXT("REC"));
 		}
 
 		yPos += rowHeight + 2;
@@ -815,7 +828,7 @@ void BoxPane::DrawSpawnTimeline()
 		for (int i = 0; i < mainFrameCount; ++i) if (tick < kfStart[i + 1]) { target = i; break; }
 		const float x0 = tickX(kfStart[std::max(0, target)]), x1 = tickX(kfStart[std::max(0, target) + 1]);
 		drawList->AddRect(ImVec2(x0, kfY), ImVec2(x1, yPos), IM_COL32(255, 255, 255, 220), 0, 0, 2.0f);
-		im::SetTooltip("%s effect to keyframe %d", spawnDrag.copy ? "Copy" : "Move", target);
+		im::SetTooltip(spawnDrag.copy ? TXT("Copy effect to keyframe %d") : TXT("Move effect to keyframe %d"), target);
 		if (!im::IsMouseDown(ImGuiMouseButton_Right)) {
 			spawnDrag.active = false;
 			const bool srcOk = spawnDrag.srcFrame >= 0 && spawnDrag.srcFrame < mainFrameCount;
@@ -847,26 +860,26 @@ void BoxPane::DrawSpawnTimeline()
 		if (!dup) conds.push_back(&e);
 	}
 	char header[64];
-	snprintf(header, sizeof(header), "Runtime conditions (%d)###simconds", (int)conds.size());
+	snprintf(header, sizeof(header), "%s (%d)###simconds", TXT("Runtime conditions"), (int)conds.size());
 	if (!conds.empty() && im::TreeNode(header)) {
-		im::TextDisabled("Not modeled by the preview; choose how each one resolves.");
+		im::TextDisabled(TXT("Not modeled by the preview; choose how each one resolves."));
 		for (auto* c : conds) {
 			im::PushID(c->ifKey.pattern * 131 + c->ifKey.frame * 7 + c->ifKey.index + (c->ifKey.effectHa6 ? 1000000 : 0));
 			auto it = currState.previewOptions.ifOverrides.find(c->ifKey);
 			int v = it == currState.previewOptions.ifOverrides.end() ? 0 : (int)it->second;
-			const char* opts[] = {"Default", "False", "True"};
+			const char* opts[] = {TXT("Default"), TXT("False"), TXT("True")};
 			im::SetNextItemWidth(80.f);
 			if (im::Combo("##assume", &v, opts, 3)) {
 				if (v == 0) currState.previewOptions.ifOverrides.erase(c->ifKey);
 				else currState.previewOptions.ifOverrides[c->ifKey] = (preview::IfAssume)v;
 			}
 			im::SameLine();
-			const char* act = c->a == 1 ? "jump to frame" : c->a == 2 ? "queue pattern" : c->a == 3 ? "destroy" : "?";
+			const char* act = c->a == 1 ? TXT("jump to frame") : c->a == 2 ? TXT("queue pattern") : c->a == 3 ? TXT("destroy") : "?";
 			if (c->a == 3)
-				im::Text("IF %d  %spat %d fr %d #%d -> %s", c->ifType, c->ifKey.effectHa6 ? "[fx] " : "",
+				im::Text(TXT("IF %d  %spat %d fr %d #%d -> %s"), c->ifType, c->ifKey.effectHa6 ? "[fx] " : "",
 				         c->ifKey.pattern, c->ifKey.frame, c->ifKey.index, act);
 			else
-				im::Text("IF %d  %spat %d fr %d #%d -> %s %d", c->ifType, c->ifKey.effectHa6 ? "[fx] " : "",
+				im::Text(TXT("IF %d  %spat %d fr %d #%d -> %s %d"), c->ifType, c->ifKey.effectHa6 ? "[fx] " : "",
 				         c->ifKey.pattern, c->ifKey.frame, c->ifKey.index, act, c->b);
 			im::PopID();
 		}

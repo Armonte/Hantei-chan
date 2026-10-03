@@ -413,6 +413,7 @@ add_test(NAME cmdfile COMMAND cmdfile_test tests/fixtures/cmdfile WORKING_DIRECT
 add_executable(cmdfile_ui_smoke
 	tests/cmdfile_ui_smoke.cpp
 	src/extension_profile.cpp
+	src/i18n.cpp
 	src/cmdfile/cmd_editor_ui.cpp
 	src/cmdfile/cmd_document.cpp
 	src/cmdfile/cmd_validate.cpp
@@ -442,6 +443,7 @@ add_executable(pattern_search_test
 	src/misc.cpp
 	src/extension_profile.cpp
 	src/imgui_utils.cpp
+	src/i18n.cpp
 	tinyalloc/tinyalloc.c
 	imsearch/imsearch.cpp
 	imgui/imgui.cpp

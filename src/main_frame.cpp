@@ -524,16 +524,16 @@ bool MainFrame::saveCharacter(CharacterInstance* character)
 	if (character->save()) return true;
 	const std::string& path = character->getTopHA6Path();
 	if (character->frameData.isHan2() && !han2::LastSaveError().empty()) {
-		requestErrorPopup("Save Error", "RBO / GOF2 file not saved: " + han2::LastSaveError());
+		requestErrorPopup("Save Error", std::string(TXT("RBO / GOF2 file not saved: ")) + han2::LastSaveError());
 		return false;
 	}
 	if (character->frameData.isHA4() && !ha4::LastSaveError().empty()) {
-		requestErrorPopup("Save Error", "MBAC .DAT not saved: " + ha4::LastSaveError());
+		requestErrorPopup("Save Error", std::string(TXT("MBAC .DAT not saved: ")) + ha4::LastSaveError());
 		return false;
 	}
 	requestErrorPopup("Save Error", path.empty()
-		? "Character '" + character->getName() + "' has no HA6 file to save to. Use Save Character As."
-		: "Could not write " + path);
+		? std::string(TXT("Character '")) + character->getName() + TXT("' has no HA6 file to save to. Use Save Character As.")
+		: std::string(TXT("Could not write ")) + path);
 	return false;
 }
 
@@ -541,7 +541,7 @@ bool MainFrame::saveCharacterAs(CharacterInstance* character, const std::string&
 {
 	if (!character) return false;
 	if (character->saveAs(path)) return true;
-	requestErrorPopup("Save Error", "Could not write " + path);
+	requestErrorPopup("Save Error", std::string(TXT("Could not write ")) + path);
 	return false;
 }
 
@@ -687,11 +687,11 @@ void MainFrame::loadProjectFromPath(const std::string& path, bool isRecent)
 		updateWindowTitle();
 
 		if (!failedCharacters.empty()) {
-			std::string detail = "These characters could not be loaded and were skipped:\n";
+			std::string detail = std::string(TXT("These characters could not be loaded and were skipped:")) + "\n";
 			for (const auto& f : failedCharacters) {
 				detail += "  " + f + "\n";
 			}
-			detail += "Saving the project now would remove them from it.";
+			detail += TXT("Saving the project now would remove them from it.");
 			requestErrorPopup("Project Load Error", detail);
 		}
 	} else {
@@ -979,7 +979,7 @@ std::string MainFrame::stageUndoLabel(bool redo)
 	const uint64_t fileSeq = currentBgFile ? (redo ? currentBgFile->RedoSeq() : currentBgFile->UndoSeq()) : 0;
 	const uint64_t projSeq = redo ? stageProject.RedoSeq() : stageProject.UndoSeq();
 	const int pick = PickStageHistory(redo, fileCan, fileSeq, projCan, projSeq);
-	if (pick == 1) return "stage edit";
+	if (pick == 1) return TXT("stage edit");
 	if (pick == 2) return redo ? stageProject.RedoLabel() : stageProject.UndoLabel();
 	return std::string();
 }
@@ -1005,11 +1005,11 @@ bool MainFrame::ensureStageProject()
 void MainFrame::drawStageCombo(float width)
 {
 	if (!ensureStageProject()) {
-		ImGui::TextDisabled("No stage list: load a stage or open a bg folder in Stage > Stage Browser.");
+		ImGui::TextDisabled(TXT("No stage list: load a stage or open a bg folder in Stage > Stage Browser."));
 		return;
 	}
 	const bg::StageEntry* cur = currentBgFile ? stageProject.FindByDat(currentBgFile->GetFilename()) : nullptr;
-	std::string preview = cur ? cur->Label() : std::string("(choose a stage)");
+	std::string preview = cur ? cur->Label() : std::string(TXT("(choose a stage)"));
 	if (width > 0) ImGui::SetNextItemWidth(width);
 	if (ImGui::BeginCombo("##stagecombo", preview.c_str(), ImGuiComboFlags_HeightLargest)) {
 		for (const auto& e : stageProject.Entries()) {
@@ -1024,7 +1024,7 @@ void MainFrame::drawStageCombo(float width)
 	if (ImGui::ArrowButton("##stprev", ImGuiDir_Left)) stepStage(-1);
 	ImGui::SameLine();
 	if (ImGui::ArrowButton("##stnext", ImGuiDir_Right)) stepStage(1);
-	if (ImGui::IsItemHovered()) ImGui::SetTooltip("Previous / next stage (PageUp / PageDown in the stage tab)");
+	if (ImGui::IsItemHovered()) ImGui::SetTooltip(TXT("Previous / next stage (PageUp / PageDown in the stage tab)"));
 }
 
 void MainFrame::drawStageBrowser()
@@ -1034,7 +1034,7 @@ void MainFrame::drawStageBrowser()
 	const ImVec2 mainPos = ImGui::GetMainViewport()->Pos;
 	ImGui::SetNextWindowPos(ImVec2(mainPos.x + 520.0f, mainPos.y + 80.0f), ImGuiCond_FirstUseEver);
 	ImGui::SetNextWindowSize(ImVec2(620.0f, 720.0f), ImGuiCond_FirstUseEver);
-	if (!ImGui::Begin("Stage Browser", &m_showStageBrowser)) { ImGui::End(); return; }
+	if (!ImGui::Begin(LBL("Stage Browser"), &m_showStageBrowser)) { ImGui::End(); return; }
 	if (ImGui::IsWindowFocused(ImGuiFocusedFlags_RootAndChildWindows))
 		shortcuts.claimFocus(ShortcutContext::stageView, getActiveView() ? getActiveView()->getId() : 0);
 	bg::BrowserHooks hooks;

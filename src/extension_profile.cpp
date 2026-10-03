@@ -1,3 +1,4 @@
+#include "i18n.h"
 #include "extension_profile.h"
 
 #include <imgui.h>
@@ -35,7 +36,7 @@ void SetExtensionProfile(ExtensionProfile profile)
 
 const char* ExtensionProfileName(ExtensionProfile profile)
 {
-	return profile == ExtensionProfile::Extended ? "Extended Melty / BOF" : "Vanilla MBAACC";
+	return profile == ExtensionProfile::Extended ? TXT("Extended Melty / BOF") : TXT("Vanilla MBAACC");
 }
 
 void RegisterExtensionProfileSettings(ImGuiContext& context)
@@ -51,14 +52,14 @@ void RegisterExtensionProfileSettings(ImGuiContext& context)
 
 void DrawExtensionProfileMenu()
 {
-	if (!ImGui::BeginMenu("Extension profile")) return;
+	if (!ImGui::BeginMenu(LBL("Extension profile"))) return;
 	for (ExtensionProfile p : { ExtensionProfile::Vanilla, ExtensionProfile::Extended }) {
 		if (ImGui::MenuItem(ExtensionProfileName(p), nullptr, GetExtensionProfile() == p))
 			SetExtensionProfile(p);
 	}
 	ImGui::Separator();
 	ImGui::TextDisabled(GetExtensionProfile() == ExtensionProfile::Vanilla
-		? "Stock MBAACC: only engine-verified IDs and rules."
-		: "Patched BOF executables: adds IF 154-157, EF6 154,\nExComCheck Types 2/3 and the BOF _c rules.");
+		? TXT("Stock MBAACC: only engine-verified IDs and rules.")
+		: TXT("Patched BOF executables: adds IF 154-157, EF6 154,\nExComCheck Types 2/3 and the BOF _c rules."));
 	ImGui::EndMenu();
 }

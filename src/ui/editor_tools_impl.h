@@ -405,15 +405,15 @@ void MainFrame::UpdateTransport()
 static const char* PositionEffectName(int type)
 {
 	switch (type) {
-	case 1:    return "Spawn pattern";
-	case 101:  return "Spawn relative pattern";
-	case 1000: return "Spawn pattern once";
-	case 8:    return "Spawn actor (effect.ha6)";
-	case 108:  return "Spawn relative actor (effect.ha6)";
-	case 3:    return "Preset effect";
-	case 11:   return "Spawn random pattern";
-	case 111:  return "Spawn random relative pattern";
-	default:   return "Effect";
+	case 1:    return TXT("Spawn pattern");
+	case 101:  return TXT("Spawn relative pattern");
+	case 1000: return TXT("Spawn pattern once");
+	case 8:    return TXT("Spawn actor (effect.ha6)");
+	case 108:  return TXT("Spawn relative actor (effect.ha6)");
+	case 3:    return TXT("Preset effect");
+	case 11:   return TXT("Spawn random pattern");
+	case 111:  return TXT("Spawn random relative pattern");
+	default:   return TXT("Effect");
 	}
 }
 
@@ -459,7 +459,7 @@ std::vector<MainFrame::PositionTarget> MainFrame::CollectPositionTargets()
 		t.invertible = std::fabs(det) > 1e-4f * s * s;
 		t.screen = ImVec2(baseX + t.m[0] * L.offset_x + t.m[2] * L.offset_y,
 		                  baseY + t.m[1] * L.offset_x + t.m[3] * L.offset_y);
-		t.label = "Layer " + std::to_string(i) + (L.usePat ? " (PAT " : " (sprite ") +
+		t.label = std::string(TXT("Layer")) + " " + std::to_string(i) + (L.usePat ? " (PAT " : TXT(" (sprite ")) +
 			std::to_string(L.spriteId) + ")";
 		t.color = IM_COL32(80, 220, 255, 255);
 		out.push_back(std::move(t));
@@ -489,8 +489,8 @@ std::vector<MainFrame::PositionTarget> MainFrame::CollectPositionTargets()
 		t.screen = ImVec2(baseX + (pl.baseX + pl.kx * ef.parameters[xp]) * s,
 		                  baseY + (pl.baseY + pl.ky * ef.parameters[yp]) * s);
 		t.label = "EF " + std::to_string(i) + ": " + PositionEffectName(ef.type) + " " + std::to_string(ef.number);
-		if (pl.facingLeft) t.label += " (faces left)";
-		if (pl.scale != 1.f) t.label += " (PAT owner: half offset)";
+		if (pl.facingLeft) t.label += TXT(" (faces left)");
+		if (pl.scale != 1.f) t.label += TXT(" (PAT owner: half offset)");
 		t.color = ef.type == 3 ? IM_COL32(255, 150, 40, 255) : IM_COL32(255, 210, 60, 255);
 		out.push_back(std::move(t));
 	}
@@ -556,7 +556,7 @@ void MainFrame::DrawPositionTool()
 					text += "  X " + std::to_string(x) + "  Y " + std::to_string(y);
 				}
 			}
-			if (!t.invertible) text += "  (degenerate transform: locked)";
+			if (!t.invertible) text += TXT("  (degenerate transform: locked)");
 			const ImVec2 p(t.screen.x + 12, t.screen.y - 18);
 			dl->AddText(ImVec2(p.x + 1, p.y + 1), shadow, text.c_str());
 			dl->AddText(p, IM_COL32(255, 255, 255, 255), text.c_str());
@@ -600,7 +600,7 @@ void MainFrame::LeftClick(int x, int y)
 	}
 	st.animating = false;
 	StopTransport(view);
-	active->undoManager.beginTransaction(("Move " + hit->label).c_str());
+	active->undoManager.beginTransaction((std::string(TXT("Move")) + " " + hit->label).c_str());
 	m_posDrag.active = true;
 }
 

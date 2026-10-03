@@ -30,7 +30,7 @@ bool MainFrame::openHan2File(const std::string& path)
 			character->frameData.initEmpty();
 			character->setName(std::filesystem::u8path(path).filename().string());
 			if (isChp) {
-				if (!character->cg.loadFromMemory(all.data(), (unsigned)all.size())) { requestErrorPopup("Load Error", "Could not read the sprite bank: " + path); return true; }
+				if (!character->cg.loadFromMemory(all.data(), (unsigned)all.size())) { requestErrorPopup("Load Error", std::string(TXT("Could not read the sprite bank: ")) + path); return true; }
 				han2ui::showCgWindow = true;
 			} else {
 				std::string perr;
@@ -45,10 +45,10 @@ bool MainFrame::openHan2File(const std::string& path)
 		}
 	}
 	if (!han2::IsHan2(head.data(), head.size())) {
-		requestErrorPopup("Load Error", "Not an RBO / GOF2 character or PAC archive:\n" + path);
+		requestErrorPopup("Load Error", std::string(TXT("Not an RBO / GOF2 character or PAC archive:\n")) + path);
 		return true;
 	}
-	if (findCharacterByPath(path)) { requestErrorPopup("Load Error", "Already open: " + path); return true; }
+	if (findCharacterByPath(path)) { requestErrorPopup("Load Error", std::string(TXT("Already open: ")) + path); return true; }
 	std::filesystem::path p = std::filesystem::u8path(path);
 	han2ui::OpenRequest req;
 	req.stem = p.stem().string();
@@ -130,8 +130,12 @@ void MainFrame::exportHan2Character(CharacterInstance* character)
 	std::string err;
 	const bool ok = han2::ExportCharacter(character->frameData, character->cg, character->parts, folder + "\\" + character->getName(), opt, rep, &err);
 	requestErrorPopup(ok ? "RBO / GOF2 export" : "Export Error",
-		ok ? std::to_string(rep.cgPngs) + " CG images, " + std::to_string(rep.posePngs) + " poses, " + std::to_string(rep.framePngs) + " frames in " +
-		     std::to_string(rep.patternsWritten) + " patterns (strip.png / sheet.png / animation.json each, poses.json, animations.json)\nin " + folder + "\\" + character->getName()
+		ok ? [&] {
+			char b[1024];
+			snprintf(b, sizeof(b), TXT("%d CG images, %d poses, %d frames in %d patterns (strip.png / sheet.png / animation.json each, poses.json, animations.json)\nin %s"),
+			         (int)rep.cgPngs, (int)rep.posePngs, (int)rep.framePngs, (int)rep.patternsWritten, (folder + "\\" + character->getName()).c_str());
+			return std::string(b);
+		}()
 		   : err);
 }
 
@@ -149,9 +153,9 @@ void MainFrame::ProcessDroppedFiles()
 		} else if (ext == ".dt2" || ext == ".dat" || ext == ".pat" || ext == ".chp" || ext == ".pac") {
 			openHan2File(f);
 		} else if (ext == ".png" || ext == ".bmp") {
-			requestErrorPopup("Dropped image", "Open the CG sprite window or an IMG viewer first, then use its Import PNG button.\n" + f);
+			requestErrorPopup("Dropped image", std::string(TXT("Open the CG sprite window or an IMG viewer first, then use its Import PNG button.\n")) + f);
 		} else {
-			requestErrorPopup("Dropped file", "Not an RBO / GOF2 file type: " + f);
+			requestErrorPopup("Dropped file", std::string(TXT("Not an RBO / GOF2 file type: ")) + f);
 		}
 	}
 }

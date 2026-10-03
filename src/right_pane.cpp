@@ -1,5 +1,6 @@
 #include "frame_disp/frame_disp_common.h"
 #include "right_pane.h"
+#include "i18n.h"
 #include "frame_disp.h"
 #include <imgui.h>
 
@@ -32,38 +33,38 @@ void RightPane::Draw()
 			// attack box; everything else is "null" attack data to the game, no
 			// matter what the fields below say. Show which one this frame is (#79).
 			const bool atSaved = frame.hitboxes.lower_bound(25) != frame.hitboxes.end();
-			const char* atLabel = atSaved ? "Attack data###AttackData"
-			                              : "Attack data (null: no attack box)###AttackData";
+			const char* atLabel = atSaved ? LBL("Attack data###AttackData")
+			                              : LBL("Attack data (null: no attack box)###AttackData");
 			if (!atSaved) ImGui::PushStyleColor(ImGuiCol_Text, ImGui::GetStyleColorVec4(ImGuiCol_TextDisabled));
 			const bool atOpen = ImGui::TreeNode(atLabel);
 			if (!atSaved) ImGui::PopStyleColor();
 			if (ImGui::IsItemHovered())
 				ImGui::SetTooltip(atSaved
-					? "This frame has an attack box, so its attack data is saved."
-					: "No attack box on this frame: the attack data is not saved,\n"
+					? TXT("This frame has an attack box, so its attack data is saved.")
+					: TXT("No attack box on this frame: the attack data is not saved,\n"
 					  "and the game treats the frame as having no attack properties.\n"
-					  "Add an attack box (25+) to make it active.");
+					  "Add an attack box (25+) to make it active."));
 			if (atOpen)
 			{
 				AtDisplay(&frame.AT, frameData, currState.pattern, [this]() { markModified(); });
-				if(ImGui::Button("Copy AT")) {
+				if(ImGui::Button(LBL("Copy AT"))) {
 					currState.copied->at = frame.AT;
 				}
 				ImGui::SameLine(0,20.f);
-				if(ImGui::Button("Paste AT")) {
+				if(ImGui::Button(LBL("Paste AT"))) {
 					frame.AT = currState.copied->at;
 					frameData->mark_modified(currState.pattern);
 					markModified();
 				}
 				ImGui::SameLine(0,20.f);
-				if(ImGui::Button("Reset AT")) {
+				if(ImGui::Button(LBL("Reset AT"))) {
 					frame.AT = Frame_AT{};
 					frame.AT.correction = 100; // what a freshly parsed ATST starts from
 					frameData->mark_modified(currState.pattern);
 					markModified();
 				}
 				if (ImGui::IsItemHovered())
-					ImGui::SetTooltip("Reset every attack field to its default.");
+					ImGui::SetTooltip(TXT("Reset every attack field to its default."));
 				ImGui::TreePop();
 				ImGui::Separator();
 			}
@@ -73,13 +74,13 @@ void RightPane::Draw()
 			CurrentRecordNoteHook().draw = [this, notePattern, noteFrame](bool isEffect, int index, int type) {
 				DrawRecordNote(frameData->notes, Ha6Notes::RecordKey(notePattern, noteFrame, isEffect, index, type));
 			};
-			if(ImGui::TreeNode("Effects"))
+			if(ImGui::TreeNode(LBL("Effects")))
 			{
 				EfDisplay(&frame.EF, &currState.copied->efSingle, frameData, currState.pattern, [this]() { markModified(); }, &currState.copied->efGroup);
 				ImGui::TreePop();
 				ImGui::Separator();
 			}
-			if(ImGui::TreeNode("Conditions"))
+			if(ImGui::TreeNode(LBL("Conditions")))
 			{
 				IfDisplay(&frame.IF, &currState.copied->ifSingle, frameData, currState.pattern, [this]() { markModified(); }, &currState.copied->ifGroup);
 				ImGui::TreePop();
@@ -88,39 +89,39 @@ void RightPane::Draw()
 			CurrentRecordNoteHook().draw = nullptr;
 
 			// Spawned Patterns Visualization
-			if(ImGui::TreeNode("Spawned Patterns Visualization"))
+			if(ImGui::TreeNode(LBL("Spawned Patterns Visualization")))
 			{
 				auto& vizSettings = currState.vizSettings;
 
 				// Master toggle
-				if(ImGui::Checkbox("Show spawned patterns", &vizSettings.showSpawnedPatterns)) {
+				if(ImGui::Checkbox(LBL("Show spawned patterns"), &vizSettings.showSpawnedPatterns)) {
 					// Update visualization when toggled
 				}
 
 				if(vizSettings.showSpawnedPatterns)
 				{
-					ImGui::Checkbox("Auto-detect from effects", &vizSettings.autoDetect);
-					ImGui::Checkbox("Show offset lines", &vizSettings.showOffsetLines);
-					ImGui::Checkbox("Show pattern labels", &vizSettings.showLabels);
-					ImGui::Checkbox("Show preset effects (Type 3)", &vizSettings.showPresetEffects);
+					ImGui::Checkbox(LBL("Auto-detect from effects"), &vizSettings.autoDetect);
+					ImGui::Checkbox(LBL("Show offset lines"), &vizSettings.showOffsetLines);
+					ImGui::Checkbox(LBL("Show pattern labels"), &vizSettings.showLabels);
+					ImGui::Checkbox(LBL("Show preset effects (Type 3)"), &vizSettings.showPresetEffects);
 
 					// Indented option for preset effects
 					if (vizSettings.showPresetEffects) {
 						ImGui::Indent();
-						ImGui::Checkbox("Show on all frames", &vizSettings.presetEffectsAllFrames);
+						ImGui::Checkbox(LBL("Show on all frames"), &vizSettings.presetEffectsAllFrames);
 						ImGui::Unindent();
 					}
 
-					ImGui::SliderFloat("Opacity", &vizSettings.spawnedOpacity, 0.0f, 1.0f, "%.2f");
-					ImGui::Checkbox("Enable color tint", &vizSettings.enableTint);
+					ImGui::SliderFloat(LBL("Opacity"), &vizSettings.spawnedOpacity, 0.0f, 1.0f, "%.2f");
+					ImGui::Checkbox(LBL("Enable color tint"), &vizSettings.enableTint);
 
 					ImGui::Separator();
-					ImGui::Text("Animation:");
-					if(ImGui::RadioButton("Sync with main", vizSettings.animateWithMain)) {
+					ImGui::Text(TXT("Animation:"));
+					if(ImGui::RadioButton(LBL("Sync with main"), vizSettings.animateWithMain)) {
 						vizSettings.animateWithMain = true;
 					}
 					ImGui::SameLine();
-					if(ImGui::RadioButton("Independent", !vizSettings.animateWithMain)) {
+					if(ImGui::RadioButton(LBL("Independent"), !vizSettings.animateWithMain)) {
 						vizSettings.animateWithMain = false;
 					}
 
@@ -163,7 +164,7 @@ void RightPane::Draw()
 						// Display spawned patterns as hierarchical tree
 						if(!currState.spawnedPatterns.empty())
 						{
-							ImGui::Text("Total spawned pattern(s): %d", (int)currState.spawnedPatterns.size());
+							ImGui::Text(TXT("Total spawned pattern(s): %d"), (int)currState.spawnedPatterns.size());
 							ImGui::Separator();
 
 							// Display only root-level spawns (parentSpawnIndex == -1)
@@ -182,12 +183,12 @@ void RightPane::Draw()
 						}
 						else
 						{
-							ImGui::TextDisabled("No spawned patterns found");
+							ImGui::TextDisabled(TXT("No spawned patterns found"));
 						}
 					}
 					else if(!vizSettings.autoDetect)
 					{
-						ImGui::TextDisabled("Auto-detect disabled");
+						ImGui::TextDisabled(TXT("Auto-detect disabled"));
 					}
 				}
 
@@ -227,9 +228,9 @@ void RightPane::DisplaySpawnNode(int spawnIndex, int displayNumber)
 
 	// Build tree node label with hierarchy info
 	bool hasChildren = !sp.childSpawnIndices.empty();
-	const char* recursiveMarker = sp.isRecursive ? " [RECURSIVE]" : "";
+	const char* recursiveMarker = sp.isRecursive ? TXT(" [RECURSIVE]") : "";
 
-	bool nodeOpen = ImGui::TreeNode("##spawned", "%d. Pattern %s @ frame %d%s%s",
+	bool nodeOpen = ImGui::TreeNode("##spawned", TXT("%d. Pattern %s @ frame %d%s%s"),
 		displayNumber,
 		patternName.c_str(),
 		sp.absoluteSpawnFrame,
@@ -241,48 +242,48 @@ void RightPane::DisplaySpawnNode(int spawnIndex, int displayNumber)
 	if(nodeOpen)
 	{
 		// Display spawn details
-		ImGui::Text("Depth: %d", sp.depth);
-		ImGui::Text("Spawned by: Effect %d (type %d%s)",
+		ImGui::Text(TXT("Depth: %d"), sp.depth);
+		ImGui::Text(TXT("Spawned by: Effect %d (type %d%s)"),
 			sp.effectIndex,
 			sp.effectType,
 			sp.usesEffectHA6 ? " - effect.ha6" : "");
-		ImGui::Text("Parent frame: %d", sp.parentFrame);
-		ImGui::Text("Absolute spawn frame: %d", sp.absoluteSpawnFrame);
-		ImGui::Text("Pattern frames: %d", sp.patternFrameCount);
+		ImGui::Text(TXT("Parent frame: %d"), sp.parentFrame);
+		ImGui::Text(TXT("Absolute spawn frame: %d"), sp.absoluteSpawnFrame);
+		ImGui::Text(TXT("Pattern frames: %d"), sp.patternFrameCount);
 
 		if(sp.lifetime < 9999) {
-			ImGui::Text("Lifetime: %d frames", sp.lifetime);
+			ImGui::Text(TXT("Lifetime: %d frames"), sp.lifetime);
 		} else {
-			ImGui::TextColored(ImVec4(1.0f, 1.0f, 0.5f, 1.0f), "Lifetime: Looping");
+			ImGui::TextColored(ImVec4(1.0f, 1.0f, 0.5f, 1.0f), TXT("Lifetime: Looping"));
 		}
 
-		ImGui::Text("Offset: (%d, %d)", sp.offsetX, sp.offsetY);
+		ImGui::Text(TXT("Offset: (%d, %d)"), sp.offsetX, sp.offsetY);
 
 		if(sp.randomRange > 0) {
-			ImGui::Text("Random Range: %d", sp.randomRange);
+			ImGui::Text(TXT("Random Range: %d"), sp.randomRange);
 		}
 
 		if(sp.angle != 0) {
 			float degrees = (sp.angle / 10000.0f) * 360.0f;
-			ImGui::Text("Angle: %d (%.1f°)", sp.angle, degrees);
+			ImGui::Text(TXT("Angle: %d (%.1f°)"), sp.angle, degrees);
 		}
 
 		// Show key flags
 		if(sp.flagset1 & 0x4) {
-			ImGui::BulletText("Follows parent");
+			ImGui::BulletText(TXT("Follows parent"));
 		}
 		if(sp.flagset1 & 0x10) {
-			ImGui::BulletText("Camera relative");
+			ImGui::BulletText(TXT("Camera relative"));
 		}
 		if(sp.flagset2 & 0x100) {
-			ImGui::BulletText("Relative to opponent");
+			ImGui::BulletText(TXT("Relative to opponent"));
 		}
 
 		// Recursively display children
 		if(hasChildren)
 		{
 			ImGui::Separator();
-			ImGui::Text("Children (%d):", (int)sp.childSpawnIndices.size());
+			ImGui::Text(TXT("Children (%d):"), (int)sp.childSpawnIndices.size());
 			ImGui::Indent();
 
 			int childDisplayNum = 1;
@@ -310,16 +311,16 @@ void DrawRecordNote(Ha6Notes& notes, const std::string& key)
 	ImGui::PushID(key.c_str());
 	if (ImGui::BeginPopupContextItem("##notectx")) {
 		if (ImGui::IsWindowAppearing()) snprintf(buf, sizeof(buf), "%s", note ? note->c_str() : "");
-		ImGui::TextDisabled("Note (saved beside the HA6, not in it)");
+		ImGui::TextDisabled(TXT("Note (saved beside the HA6, not in it)"));
 		ImGui::InputTextMultiline("##note", buf, sizeof(buf), ImVec2(360, 80));
-		if (ImGui::Button("Save note")) { notes.set(key, buf); ImGui::CloseCurrentPopup(); }
+		if (ImGui::Button(LBL("Save note"))) { notes.set(key, buf); ImGui::CloseCurrentPopup(); }
 		ImGui::SameLine();
-		if (note && ImGui::Button("Remove note")) { notes.set(key, ""); ImGui::CloseCurrentPopup(); }
+		if (note && ImGui::Button(LBL("Remove note"))) { notes.set(key, ""); ImGui::CloseCurrentPopup(); }
 		ImGui::SameLine();
-		if (ImGui::Button("Cancel")) ImGui::CloseCurrentPopup();
+		if (ImGui::Button(LBL("Cancel"))) ImGui::CloseCurrentPopup();
 		ImGui::EndPopup();
 	} else if (ImGui::IsItemHovered() && !note) {
-		ImGui::SetItemTooltip("Right-click to add a note");
+		ImGui::SetItemTooltip(TXT("Right-click to add a note"));
 	}
 	if (note) {
 		ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(0.35f, 0.65f, 0.35f, 1.0f));

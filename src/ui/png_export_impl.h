@@ -124,9 +124,9 @@ bool MainFrame::RunPngExport(CharacterView* view, const ExportSettings& s, Expor
 {
 	result = ExportResult{};
 	CharacterInstance* c = view ? view->getCharacter() : nullptr;
-	if (!c || view->isStageView()) { result.message = "Export needs a character tab."; return false; }
+	if (!c || view->isStageView()) { result.message = TXT("Export needs a character tab."); return false; }
 	Sequence* seq = c->frameData.get_sequence(view->getState().pattern);
-	if (!seq || seq->frames.empty()) { result.message = "The pattern has no frames."; return false; }
+	if (!seq || seq->frames.empty()) { result.message = TXT("The pattern has no frames."); return false; }
 
 	const auto t0 = std::chrono::steady_clock::now();
 	std::string error;
@@ -134,7 +134,7 @@ bool MainFrame::RunPngExport(CharacterView* view, const ExportSettings& s, Expor
 
 	bool liveFrame = false;
 	const std::vector<int> ticks = ExportTicks(view, s, liveFrame);
-	if (ticks.empty()) { result.message = "No ticks to export."; return false; }
+	if (ticks.empty()) { result.message = TXT("No ticks to export."); return false; }
 
 	// Keep the renderer's filter choice for the export only.
 	struct FilterScope { Render& r; bool prev; ~FilterScope() { r.filter = prev; } } filterScope{render, render.filter};
@@ -163,7 +163,7 @@ bool MainFrame::RunPngExport(CharacterView* view, const ExportSettings& s, Expor
 	pngexport::Bounds unionBounds;
 	if (s.crop != ExportSettings::fixedCanvas) {
 		RenderTarget analysis;
-		if (!analysis.ensure(A, A, false)) { result.message = "Could not create the analysis framebuffer."; return false; }
+		if (!analysis.ensure(A, A, false)) { result.message = TXT("Could not create the analysis framebuffer."); return false; }
 		Render::PassParams pass;
 		pass.width = pass.height = A;
 		pass.originX = AOX; pass.originY = AOY; pass.zoom = AZ;
@@ -173,11 +173,11 @@ bool MainFrame::RunPngExport(CharacterView* view, const ExportSettings& s, Expor
 				bind.clear(0.f, 0.f, 0.f, 0.f, false);
 				DrawCharacterScene(view, pass, sceneFor(ticks[i]));
 			}
-			if (!analysis.readRgba(pixels)) { result.message = "Could not read the analysis framebuffer."; return false; }
+			if (!analysis.readRgba(pixels)) { result.message = TXT("Could not read the analysis framebuffer."); return false; }
 			tickBounds[i] = pngexport::AlphaBounds(pixels, A, A);
 			unionBounds.add(tickBounds[i]);
 		}
-		if (unionBounds.empty()) { result.message = "Nothing visible in the exported ticks."; return false; }
+		if (unionBounds.empty()) { result.message = TXT("Nothing visible in the exported ticks."); return false; }
 	}
 	analysisMs = viewrender::MsSince(tA);
 
@@ -226,7 +226,7 @@ bool MainFrame::RunPngExport(CharacterView* view, const ExportSettings& s, Expor
 		const int tick = ticks[i];
 		if (s.crop == ExportSettings::fitEach && tickBounds[i].empty()) { ++result.skipped; continue; }
 		const Canvas cv = s.crop == ExportSettings::fitEach ? canvasFor(tickBounds[i]) : fixedCv;
-		if (!target.ensure(cv.w, cv.h, false)) { result.message = "Could not create the export framebuffer."; return false; }
+		if (!target.ensure(cv.w, cv.h, false)) { result.message = TXT("Could not create the export framebuffer."); return false; }
 		Render::PassParams pass;
 		pass.width = cv.w; pass.height = cv.h;
 		pass.originX = cv.ox; pass.originY = cv.oy;
@@ -243,14 +243,14 @@ bool MainFrame::RunPngExport(CharacterView* view, const ExportSettings& s, Expor
 		};
 		if (s.background == ExportSettings::transparent) {
 			if (!renderOver(0.f, 0.f, 0.f, black) || !renderOver(1.f, 1.f, 1.f, white)) {
-				result.message = "Could not read the export framebuffer.";
+				result.message = TXT("Could not read the export framebuffer.");
 				return false;
 			}
 			pngexport::MatteFromBlackWhite(black, white, out);
 			if (s.skipEmpty && !liveFrame && pngexport::IsFullyTransparent(out)) { ++result.skipped; continue; }
 		} else {
 			const float* col = s.background == ExportSettings::editorColor ? clearColor : s.customColor;
-			if (!renderOver(col[0], col[1], col[2], out)) { result.message = "Could not read the export framebuffer."; return false; }
+			if (!renderOver(col[0], col[1], col[2], out)) { result.message = TXT("Could not read the export framebuffer."); return false; }
 			for (size_t p = 3; p < out.size(); p += 4) out[p] = 255;
 		}
 
@@ -298,10 +298,10 @@ bool MainFrame::RunPngExport(CharacterView* view, const ExportSettings& s, Expor
 	result.folder = s.folder;
 	result.ms = viewrender::MsSince(t0);
 	char msg[256];
-	snprintf(msg, sizeof(msg), "Exported %d PNG%s (%d skipped) in %.0f ms.", result.files,
-		result.files == 1 ? "" : "s", result.skipped, result.ms);
+	snprintf(msg, sizeof(msg), result.files == 1 ? TXT("Exported %d PNG (%d skipped) in %.0f ms.") : TXT("Exported %d PNGs (%d skipped) in %.0f ms."),
+		result.files, result.skipped, result.ms);
 	result.message = msg;
-	if (!result.ok && result.skipped) result.message = "Every tick was empty; nothing was written.";
+	if (!result.ok && result.skipped) result.message = TXT("Every tick was empty; nothing was written.");
 	return result.ok;
 }
 
@@ -356,58 +356,58 @@ void MainFrame::DrawExportWindow()
 	const ImVec2 mainPos = ImGui::GetMainViewport()->Pos;
 	ImGui::SetNextWindowPos(ImVec2(mainPos.x + 160, mainPos.y + 120), ImGuiCond_FirstUseEver);
 	ImGui::SetNextWindowSize(ImVec2(470, 0), ImGuiCond_FirstUseEver);
-	if (!ImGui::Begin("Export PNG", &m_showExportWindow, ImGuiWindowFlags_NoDocking)) { ImGui::End(); return; }
+	if (!ImGui::Begin(LBL("Export PNG"), &m_showExportWindow, ImGuiWindowFlags_NoDocking)) { ImGui::End(); return; }
 	if (!view || !view->getCharacter() || view->isStageView()) {
-		ImGui::TextDisabled("Select a character tab to export.");
+		ImGui::TextDisabled("%s", TXT("Select a character tab to export."));
 		ImGui::End();
 		return;
 	}
 	auto& s = m_export;
 	auto& st = view->getState();
-	ImGui::Text("%s  pattern %d  (frame %d, tick %d)", view->getDisplayName().c_str(), st.pattern, st.frame, st.currentTick);
+	ImGui::Text(TXT("%s  pattern %d  (frame %d, tick %d)"), view->getDisplayName().c_str(), st.pattern, st.frame, st.currentTick);
 	ImGui::Separator();
 
-	ImGui::TextUnformatted("Range");
-	ImGui::RadioButton("Current frame", &s.range, ExportSettings::currentFrame); ImGui::SameLine();
-	ImGui::RadioButton("Tick range", &s.range, ExportSettings::tickRange); ImGui::SameLine();
-	ImGui::RadioButton("Whole pattern", &s.range, ExportSettings::wholePattern);
+	ImGui::TextUnformatted(TXT("Range"));
+	ImGui::RadioButton(LBL("Current frame"), &s.range, ExportSettings::currentFrame); ImGui::SameLine();
+	ImGui::RadioButton(LBL("Tick range"), &s.range, ExportSettings::tickRange); ImGui::SameLine();
+	ImGui::RadioButton(LBL("Whole pattern"), &s.range, ExportSettings::wholePattern);
 	if (s.range == ExportSettings::tickRange) {
-		ImGui::SetNextItemWidth(90); ImGui::InputInt("From##tick", &s.fromTick); ImGui::SameLine();
-		ImGui::SetNextItemWidth(90); ImGui::InputInt("To##tick", &s.toTick); ImGui::SameLine();
-		if (ImGui::SmallButton("Current")) s.fromTick = s.toTick = st.currentTick;
+		ImGui::SetNextItemWidth(90); ImGui::InputInt(LBL("From##tick"), &s.fromTick); ImGui::SameLine();
+		ImGui::SetNextItemWidth(90); ImGui::InputInt(LBL("To##tick"), &s.toTick); ImGui::SameLine();
+		if (ImGui::SmallButton(LBL("Current"))) s.fromTick = s.toTick = st.currentTick;
 	}
 	if (s.range != ExportSettings::currentFrame) {
-		ImGui::SetNextItemWidth(90); ImGui::InputInt("Every N ticks", &s.step); s.step = std::max(1, s.step);
+		ImGui::SetNextItemWidth(90); ImGui::InputInt(LBL("Every N ticks"), &s.step); s.step = std::max(1, s.step);
 		ImGui::SameLine();
-		ImGui::SetNextItemWidth(90); ImGui::InputInt("Max ticks", &s.maxTicks); s.maxTicks = std::clamp(s.maxTicks, 1, 5000);
-		ImGui::Checkbox("Only ticks where the root frame changes", &s.keyframesOnly);
-		ImGui::Checkbox("Skip empty ticks", &s.skipEmpty);
+		ImGui::SetNextItemWidth(90); ImGui::InputInt(LBL("Max ticks"), &s.maxTicks); s.maxTicks = std::clamp(s.maxTicks, 1, 5000);
+		ImGui::Checkbox(LBL("Only ticks where the root frame changes"), &s.keyframesOnly);
+		ImGui::Checkbox(LBL("Skip empty ticks"), &s.skipEmpty);
 	}
 
 	ImGui::Separator();
-	ImGui::TextUnformatted("Content");
-	ImGui::Checkbox("Spawned actors", &s.spawns); ImGui::SameLine();
-	ImGui::Checkbox("Hitboxes", &s.boxes); ImGui::SameLine();
-	ImGui::Checkbox("Smooth filter", &s.smooth);
-	ImGui::SetNextItemWidth(120); ImGui::SliderInt("Scale", &s.scale, 1, 8, "%dx");
+	ImGui::TextUnformatted(TXT("Content"));
+	ImGui::Checkbox(LBL("Spawned actors"), &s.spawns); ImGui::SameLine();
+	ImGui::Checkbox(LBL("Hitboxes"), &s.boxes); ImGui::SameLine();
+	ImGui::Checkbox(LBL("Smooth filter"), &s.smooth);
+	ImGui::SetNextItemWidth(120); ImGui::SliderInt(LBL("Scale"), &s.scale, 1, 8, "%dx");
 
-	ImGui::TextUnformatted("Background");
-	ImGui::RadioButton("Transparent", &s.background, ExportSettings::transparent); ImGui::SameLine();
-	ImGui::RadioButton("Editor colour", &s.background, ExportSettings::editorColor); ImGui::SameLine();
-	ImGui::RadioButton("Colour:", &s.background, ExportSettings::customColorBg); ImGui::SameLine();
+	ImGui::TextUnformatted(TXT("Background"));
+	ImGui::RadioButton(LBL("Transparent"), &s.background, ExportSettings::transparent); ImGui::SameLine();
+	ImGui::RadioButton(LBL("Editor colour"), &s.background, ExportSettings::editorColor); ImGui::SameLine();
+	ImGui::RadioButton(LBL("Colour:"), &s.background, ExportSettings::customColorBg); ImGui::SameLine();
 	ImGui::ColorEdit3("##exportbg", s.customColor, ImGuiColorEditFlags_NoInputs);
 
-	ImGui::TextUnformatted("Canvas");
-	ImGui::RadioButton("Fit all ticks (one fixed size)", &s.crop, ExportSettings::fitAll);
-	ImGui::RadioButton("Fit each tick", &s.crop, ExportSettings::fitEach);
-	ImGui::RadioButton("Fixed size", &s.crop, ExportSettings::fixedCanvas);
+	ImGui::TextUnformatted(TXT("Canvas"));
+	ImGui::RadioButton(LBL("Fit all ticks (one fixed size)"), &s.crop, ExportSettings::fitAll);
+	ImGui::RadioButton(LBL("Fit each tick"), &s.crop, ExportSettings::fitEach);
+	ImGui::RadioButton(LBL("Fixed size"), &s.crop, ExportSettings::fixedCanvas);
 	if (s.crop == ExportSettings::fixedCanvas) {
-		ImGui::SetNextItemWidth(80); ImGui::InputInt("W", &s.canvasW); ImGui::SameLine();
-		ImGui::SetNextItemWidth(80); ImGui::InputInt("H", &s.canvasH); ImGui::SameLine();
-		ImGui::SetNextItemWidth(80); ImGui::InputInt("Origin X", &s.canvasOriginX); ImGui::SameLine();
-		ImGui::SetNextItemWidth(80); ImGui::InputInt("Origin Y", &s.canvasOriginY);
+		ImGui::SetNextItemWidth(80); ImGui::InputInt(LBL("W"), &s.canvasW); ImGui::SameLine();
+		ImGui::SetNextItemWidth(80); ImGui::InputInt(LBL("H"), &s.canvasH); ImGui::SameLine();
+		ImGui::SetNextItemWidth(80); ImGui::InputInt(LBL("Origin X"), &s.canvasOriginX); ImGui::SameLine();
+		ImGui::SetNextItemWidth(80); ImGui::InputInt(LBL("Origin Y"), &s.canvasOriginY);
 	} else {
-		ImGui::SetNextItemWidth(80); ImGui::InputInt("Padding (px)", &s.padding); s.padding = std::clamp(s.padding, 0, 512);
+		ImGui::SetNextItemWidth(80); ImGui::InputInt(LBL("Padding (px)"), &s.padding); s.padding = std::clamp(s.padding, 0, 512);
 	}
 
 	ImGui::Separator();
@@ -416,17 +416,17 @@ void MainFrame::DrawExportWindow()
 	ImGui::SetNextItemWidth(330);
 	if (ImGui::InputText("##folder", folder, sizeof(folder))) s.folder = folder;
 	ImGui::SameLine();
-	if (ImGui::Button("Browse...")) {
+	if (ImGui::Button(LBL("Browse..."))) {
 		const std::string picked = BrowseForFolderUtf8(s.folder);
 		if (!picked.empty()) s.folder = picked;
 	}
 	char base[256];
 	snprintf(base, sizeof(base), "%s", s.baseName.c_str());
 	ImGui::SetNextItemWidth(330);
-	if (ImGui::InputText("File name prefix", base, sizeof(base))) { s.baseName = base; m_exportBaseAuto = false; }
-	ImGui::Checkbox("Write JSON manifest (origin and tick of every file)", &s.writeManifest);
+	if (ImGui::InputText(LBL("File name prefix"), base, sizeof(base))) { s.baseName = base; m_exportBaseAuto = false; }
+	ImGui::Checkbox(LBL("Write JSON manifest (origin and tick of every file)"), &s.writeManifest);
 
-	if (ImGui::Button("Export", ImVec2(120, 0))) {
+	if (ImGui::Button(LBL("Export"), ImVec2(120, 0))) {
 		m_exportRequest = ExportRequest::run;
 		m_exportViewId = view->getId();
 	}

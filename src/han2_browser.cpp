@@ -87,8 +87,8 @@ void DrawLoadReport()
 {
 	if (!showLoadReport) return;
 	ImGui::SetNextWindowSize(ImVec2(620, 320), ImGuiCond_FirstUseEver);
-	if (!ImGui::Begin(Tr("Loading report", "\xe8\xaa\xad\xe3\x81\xbf\xe8\xbe\xbc\xe3\x81\xbf\xe3\x83\xac\xe3\x83\x9d\xe3\x83\xbc\xe3\x83\x88"), &showLoadReport)) { ImGui::End(); return; }
-	if (ImGui::Button(Tr("Clear", "\xe3\x82\xaf\xe3\x83\xaa\xe3\x82\xa2"))) g_reports.clear();
+	if (!ImGui::Begin(LBL("Loading report"), &showLoadReport)) { ImGui::End(); return; }
+	if (ImGui::Button(LBL("Clear"))) g_reports.clear();
 	for (int i = (int)g_reports.size() - 1; i >= 0; i--) {
 		const LoadEntry &e = g_reports[i];
 		ImGui::PushID(i);
@@ -128,21 +128,21 @@ bool DrawBrowser(OpenRequest &req, std::string &message)
 	bool open = false;
 	if (!showBrowser) return false;
 	ImGui::SetNextWindowSize(ImVec2(760, 520), ImGuiCond_FirstUseEver);
-	if (!ImGui::Begin("RBO / GOF2 archives", &showBrowser)) { ImGui::End(); return false; }
+	if (!ImGui::Begin(LBL("RBO / GOF2 archives"), &showBrowser)) { ImGui::End(); return false; }
 
-	if (ImGui::Button(Tr("Add archive...", "\xe3\x82\xa2\xe3\x83\xbc\xe3\x82\xab\xe3\x82\xa4\xe3\x83\x96\xe8\xbf\xbd\xe5\x8a\xa0..."))) {
+	if (ImGui::Button(LBL("Add archive..."))) {
 		std::string path = FileDialog(fileType::HAN2, false);
 		if (!path.empty()) message = AddArchive(path);
 	}
 	ImGui::SameLine();
-	if (ImGui::Button(Tr("Working folder...", "\xe4\xbd\x9c\xe6\xa5\xad\xe3\x83\x95\xe3\x82\xa9\xe3\x83\xab\xe3\x83\x80..."))) { std::string d = BrowseForFolderUtf8(""); if (!d.empty()) { SetWorkFolder(d); g_scanned = false; } }
+	if (ImGui::Button(LBL("Working folder..."))) { std::string d = BrowseForFolderUtf8(""); if (!d.empty()) { SetWorkFolder(d); g_scanned = false; } }
 	ImGui::SameLine();
-	if (ImGui::Button(Tr("Refresh", "\xe6\x9b\xb4\xe6\x96\xb0"))) g_scanned = false;
+	if (ImGui::Button(LBL("Refresh"))) g_scanned = false;
 	ImGui::SameLine();
 	{ const char *lg = i18n::language == 1 ? "EN" : "JP"; if (ImGui::Button(lg)) { i18n::language = 1 - i18n::language; SaveHan2Settings(); } }
 	if (!g_scanned) { g_scanned = true; g_root = FolderNode(); ScanFolder(WorkFolder(), g_root, 0); }
 	ImGui::SameLine();
-	ImGui::TextDisabled("Later archives in the list override earlier ones when a file name occurs twice (Update01 and the Ex discs patch DATA0x).");
+	ImGui::TextDisabled("%s", TXT("Later archives in the list override earlier ones when a file name occurs twice (Update01 and the Ex discs patch DATA0x)."));
 
 	// archive list
 	ImGui::BeginChild("arcs", ImVec2(230, 0), true);
@@ -154,16 +154,16 @@ bool DrawBrowser(OpenRequest &req, std::string &message)
 		ImGui::PopID();
 	}
 	if (!g_mounted.empty() && g_sel >= 0 && g_sel < (int)g_mounted.size()) {
-		if (ImGui::Button("Up") && g_sel > 0) { std::swap(g_mounted[g_sel], g_mounted[g_sel - 1]); g_sel--; }
+		if (ImGui::Button(LBL("Up")) && g_sel > 0) { std::swap(g_mounted[g_sel], g_mounted[g_sel - 1]); g_sel--; }
 		ImGui::SameLine();
-		if (ImGui::Button("Down") && g_sel + 1 < (int)g_mounted.size()) { std::swap(g_mounted[g_sel], g_mounted[g_sel + 1]); g_sel++; }
+		if (ImGui::Button(LBL("Down")) && g_sel + 1 < (int)g_mounted.size()) { std::swap(g_mounted[g_sel], g_mounted[g_sel + 1]); g_sel++; }
 		ImGui::SameLine();
-		if (ImGui::Button("Unmount")) { g_mounted.erase(g_mounted.begin() + g_sel); g_sel = std::max(0, g_sel - 1); }
+		if (ImGui::Button(LBL("Unmount"))) { g_mounted.erase(g_mounted.begin() + g_sel); g_sel = std::max(0, g_sel - 1); }
 	}
 	if (!WorkFolder().empty()) {
 		ImGui::Separator(); ImGui::TextDisabled("%s", WorkFolder().c_str());
 		if (WorkFolder().size() >= 2 && (WorkFolder()[0] == 'C' || WorkFolder()[0] == 'c') && WorkFolder()[1] == ':')
-			ImGui::TextColored(ImVec4(1, .8f, .3f, 1), "%s", Tr("The working folder is on C: (not recommended: Program Files / permission problems).", "\xe4\xbd\x9c\xe6\xa5\xad\xe3\x83\x95\xe3\x82\xa9\xe3\x83\xab\xe3\x83\x80\xe3\x81\x8c C: \xe3\x81\xab\xe3\x81\x82\xe3\x82\x8a\xe3\x81\xbe\xe3\x81\x99 (\xe9\x9d\x9e\xe6\x8e\xa8\xe5\xa5\xa8)"));
+			ImGui::TextColored(ImVec4(1, .8f, .3f, 1), "%s", TXT("The working folder is on C: (not recommended: Program Files / permission problems)."));
 		int uid = 0;
 		std::function<void(const FolderNode &)> draw = [&](const FolderNode &n) {
 			for (auto &d : n.dirs) if (ImGui::TreeNode((d.name + "##" + std::to_string(uid++)).c_str())) { draw(d); ImGui::TreePop(); }
@@ -181,13 +181,13 @@ bool DrawBrowser(OpenRequest &req, std::string &message)
 
 	ImGui::BeginChild("entries");
 	ImGui::SetNextItemWidth(200);
-	ImGui::InputText("filter", g_filter, sizeof(g_filter));
+	ImGui::InputText(LBL("filter"), g_filter, sizeof(g_filter));
 	if (!message.empty()) ImGui::TextColored(ImVec4(1, .5f, .3f, 1), "%s", message.c_str());
 	if (!g_extractStatus.empty()) ImGui::TextDisabled("%s", g_extractStatus.c_str());
 	if (g_sel >= 0 && g_sel < (int)g_mounted.size()) {
 		pac::Archive &a = *g_mounted[g_sel].a;
 		if (ImGui::BeginTable("ents", 3, ImGuiTableFlags_ScrollY | ImGuiTableFlags_RowBg | ImGuiTableFlags_Resizable)) {
-			ImGui::TableSetupColumn("name"); ImGui::TableSetupColumn("size"); ImGui::TableSetupColumn("action");
+			ImGui::TableSetupColumn(LBL("name")); ImGui::TableSetupColumn(LBL("size")); ImGui::TableSetupColumn(LBL("action"));
 			ImGui::TableSetupScrollFreeze(0, 1);
 			ImGui::TableHeadersRow();
 			std::string flt = Lower(g_filter);
@@ -217,15 +217,15 @@ bool DrawBrowser(OpenRequest &req, std::string &message)
 				}
 				ImGui::TableSetColumnIndex(1); ImGui::Text("%u", e.size);
 				ImGui::TableSetColumnIndex(2);
-				if (ImGui::SmallButton("Extract...")) {
+				if (ImGui::SmallButton(LBL("Extract..."))) {
 					char defName[260]{}; snprintf(defName, sizeof(defName), "%s", e.name.c_str());
 					std::string out = FileDialog(-1, true, defName);
 					if (!out.empty()) {
 						std::vector<uint8_t> b; std::string err;
 						if (g_mounted[g_sel].g ? gof1::ReadEntry(*g_mounted[g_sel].g, i, b, &err) : pac::ReadEntry(a, i, b, &err)) {
 							std::ofstream f(std::filesystem::u8path(out), std::ios::binary);
-							if (f && (b.empty() || f.write((const char *)b.data(), (std::streamsize)b.size()))) g_extractStatus = "extracted " + e.name + " to " + out;
-							else g_extractStatus = "could not write " + out;
+							if (f && (b.empty() || f.write((const char *)b.data(), (std::streamsize)b.size()))) { char sb[1024]; snprintf(sb, sizeof(sb), TXT("extracted %s to %s"), e.name.c_str(), out.c_str()); g_extractStatus = sb; }
+							else { char sb[1024]; snprintf(sb, sizeof(sb), TXT("could not write %s"), out.c_str()); g_extractStatus = sb; }
 						} else g_extractStatus = err;
 					}
 				}
@@ -234,7 +234,7 @@ bool DrawBrowser(OpenRequest &req, std::string &message)
 			ImGui::EndTable();
 		}
 	} else {
-		ImGui::TextDisabled("Add a PAC archive (RBO DATA01.PAC ... Ex3Disc.PAC, GOF2 data00.dat ...).");
+		ImGui::TextDisabled("%s", TXT("Add a PAC archive (RBO DATA01.PAC ... Ex3Disc.PAC, GOF2 data00.dat ...)."));
 	}
 	ImGui::EndChild();
 	ImGui::End();
