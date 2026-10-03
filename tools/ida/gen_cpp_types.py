@@ -23,6 +23,18 @@ UND = {'unsigned short': 'uint16_t', 'short': 'int16_t', 'char': 'int8_t', 'unsi
 text = ''
 for p in sys.argv[2:]:
     text += open(p, encoding='utf-8').read() + '\n'
+def _split_one_liners(t):   # `struct X { a; b; };` on one line -> one field per line (agents write compact helper structs)
+    out = []
+    for line in t.split('\n'):
+        m = re.match(r'^(\s*struct\s+\w+\s*\{)(.*;)\s*\}\s*;(\s*//.*)?$', line)
+        if m and ';' in m.group(2):
+            out.append(m.group(1))
+            out += [' ' + f.strip() + ';' for f in m.group(2).split(';') if f.strip()]
+            out.append('};' + (m.group(3) or ''))
+        else:
+            out.append(line)
+    return '\n'.join(out)
+text = _split_one_liners(text)
 text = re.sub(r'^\s*struct\s+\w+\s*;\s*$', '', text, flags=re.M)   # forward declarations
 
 enums = {}   # name -> (underlying, [(n,v)])

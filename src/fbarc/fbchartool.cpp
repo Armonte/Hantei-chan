@@ -10,6 +10,9 @@
 #include "fb_archive.h"
 #include "../han2/misc_formats.h"
 #include "../han2/fnt_file.h"
+#include "../han2/fob_file.h"
+#include "../han2/img_file.h"
+#include "../han2/mbr_formats.h"
 #include "../framedata.h"
 #include "../framedata_ha4.h"
 #include "../framedata_gof1.h"
@@ -140,9 +143,38 @@ bool Gof1CharMember(const std::string &label, const std::vector<uint8_t> &stage1
 using Handler = bool (*)(const std::string &, const std::string &, const std::vector<uint8_t> &, Section &);
 
 // ---- per title -----------------------------------------------------------------------------------------------------------------------------
+// Re-ACT satellites (docs/formats/mbr.md): <CHAR>_C.CT, <CHAR>.WMT, <CHAR>.CPF, CHARASELECT.CT
+bool MbrSatellite(const std::string &label, const std::string &name, const std::vector<uint8_t> &d, Section &s)
+{
+	const std::string e = ExtOf(name); std::string err; std::vector<uint8_t> out;
+	if (e == ".CT" && d.size() == han2::mbr::kCtSize) {
+		han2::mbr::CtFile c; if (!han2::mbr::ParseCt(d.data(), d.size(), c, &err)) { Fail(s, label, "ct: " + err); return true; }
+		han2::mbr::SerializeCt(c, out); if (out == d) Ok(s, "_C.CT command table (44-byte moves + params)"); else Bad(s, "ct", label, out, d);
+		return true;
+	}
+	if (e == ".CT") {
+		han2::mbr::CharaSelectFile c; if (!han2::mbr::ParseCharaSelect(d.data(), d.size(), c, &err)) { Fail(s, label, "charaselect: " + err); return true; }
+		han2::mbr::SerializeCharaSelect(c, out); if (out == d) Ok(s, "CHARASELECT.CT (enciphered character table)"); else Bad(s, "charaselect", label, out, d);
+		return true;
+	}
+	if (e == ".WMT") {
+		han2::mbr::WmtFile w; if (!han2::mbr::ParseWmt(d.data(), d.size(), w, &err)) { Fail(s, label, "wmt: " + err); return true; }
+		han2::mbr::SerializeWmt(w, out); if (out == d) Ok(s, ".WMT (win quotes)"); else Bad(s, "wmt", label, out, d);
+		return true;
+	}
+	if (e == ".CPF") {
+		auto *f = new MbrCpfFile; bool ok = han2::mbr::ParseCpf(d.data(), d.size(), *f, &err);
+		if (ok) han2::mbr::SerializeCpf(*f, out);
+		delete f;
+		if (!ok) Fail(s, label, "cpf: " + err); else if (out == d) Ok(s, ".CPF (CPU script)"); else Bad(s, "cpf", label, out, d);
+		return true;
+	}
+	return false;
+}
+
 bool ReactMember(const std::string &label, const std::string &name, const std::vector<uint8_t> &d, Section &s)
 {
-	(void)name;
+	if (MbrSatellite(label, name, d, s)) return true;
 	if (Ha4Member(label, d, s)) return true;
 	if (StageMember(label, d, s)) return true;
 	if (Gof1CharMember(label, d, s)) return true;
@@ -157,7 +189,26 @@ bool MbMember(const std::string &label, const std::string &name, const std::vect
 	return false;
 }
 
-const Title kTitles[] = { { "react", ReactMember }, { "mb", MbMember } };
+// dMp / Rosa: script VM (.FOB) + sprite sheets (.IMG)
+bool FobImgMember(const std::string &label, const std::string &name, const std::vector<uint8_t> &d, Section &s)
+{
+	const std::string e = ExtOf(name); std::string err; std::vector<uint8_t> out;
+	if (e == ".FOB") {
+		han2::fob::File f; if (!han2::fob::Parse(d.data(), d.size(), f, &err)) { Fail(s, label, "fob: " + err); return true; }
+		if (!han2::fob::Serialize(f, out, &err)) { Fail(s, label, "fob save: " + err); return true; }
+		if (out == d) Ok(s, ".FOB (script bytecode)"); else Bad(s, "fob", label, out, d);
+		return true;
+	}
+	if (e == ".IMG") {
+		han2::ImgFile im; if (!han2::ParseImg(d.data(), d.size(), im, &err)) { Fail(s, label, "img: " + err); return true; }
+		han2::SerializeImg(im, out);
+		if (out == d) Ok(s, ".IMG (sprite sheet)"); else Bad(s, "img", label, out, d);
+		return true;
+	}
+	return false;
+}
+
+const Title kTitles[] = { { "react", ReactMember }, { "mb", MbMember }, { "dmp", FobImgMember }, { "rosa", FobImgMember } };
 
 int Run(const Title &t, int argc, char **argv)
 {
@@ -186,8 +237,37 @@ int Run(const Title &t, int argc, char **argv)
 
 } // namespace
 
+// shift <archive> <ENTRY> <out.p> <dx> <dy>: the in-game proof file. Loads one character (Hantei4 or the GOF1-family container), moves every frame's
+// sprite layers by (dx, dy), serializes it the way the editor does and writes a NEW archive with the entry replaced.
+int CmdShift(int argc, char **argv)
+{
+	if (argc < 5) { puts("shift <archive> <ENTRY> <out.p> <dx> <dy>"); return 2; }
+	std::string err; auto a = fbarc::Open(argv[0], &err);
+	if (!a) { printf("%s\n", err.c_str()); return 1; }
+	const int idx = a->find(fbarc::NameFromUtf8(argv[1]));
+	if (idx < 0) { puts("entry not found"); return 1; }
+	std::vector<uint8_t> d; if (!a->read((size_t)idx, d, &err)) { printf("%s\n", err.c_str()); return 1; }
+	const int dx = atoi(argv[3]), dy = atoi(argv[4]);
+	FrameData fd; std::vector<uint8_t> out; bool gof = false;
+	if (ha4::IsHA4(d.data(), d.size())) {
+		if (!ha4::Load(fd, d.data(), d.size(), &err)) { printf("load: %s\n", err.c_str()); return 1; }
+	} else if (d.size() >= 4 && R32(d.data()) == 0x3dfe93d9u) {
+		gof = true; gof1::DecryptDat(d);
+		if (!gof1::Load(fd, d.data(), d.size(), &err)) { printf("load: %s\n", err.c_str()); return 1; }
+	} else { puts("not a character"); return 1; }
+	int n = 0;
+	for (auto &q : fd.m_sequences) for (auto &f : q.frames) { for (auto &l : f.AF.layers) { l.offset_x += dx; l.offset_y += dy; } n++; }
+	if (gof ? !gof1::Serialize(fd, out, &err) : !ha4::Serialize(fd, out, &err)) { printf("save: %s\n", err.c_str()); return 1; }
+	if (gof) gof1::EncryptDat(out);
+	fbarc::Edit e; e.replace[(size_t)idx] = out;
+	if (!a->rebuild(argv[2], e, &err)) { printf("rebuild: %s\n", err.c_str()); return 1; }
+	printf("shifted %d frames of %s by (%d,%d), wrote %s\n", n, argv[1], dx, dy, argv[2]);
+	return 0;
+}
+
 int main(int argc, char **argv)
 {
+	if (argc >= 2 && !strcmp(argv[1], "shift")) return CmdShift(argc - 2, argv + 2);
 	if (argc < 2) { puts("usage: fbchartool <title> <archive>...   (fbchartool list)"); return 2; }
 	if (!strcmp(argv[1], "list")) { for (auto &t : kTitles) puts(t.key); return 0; }
 	for (auto &t : kTitles) if (!strcmp(argv[1], t.key)) return Run(t, argc - 2, argv + 2);

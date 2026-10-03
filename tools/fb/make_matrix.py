@@ -61,6 +61,12 @@ for t in ('Melty Blood 2002', 'ReAct', 'PB2K1', 'MBAC (Act Cadenza PC)'):
 for t in ('dMp', 'Rosa (2002/2005)', 'Lilian Fourhand (+ Rosa omake)'):
     for e in ('.WAV', '.MP3', '.TXT', '.REP'): SUPPORT.setdefault((t, e), ('read' if e != '.TXT' else 'edit', ''))
 for e in ('.WAV', '.MP3', '.BMP', '.FNT', '.H', '.PAC', '.WMT'): SUPPORT.setdefault(('GOF1', e), ('rt', 'opaque / media, proven by the archive rebuild'))
+# ---- per-title suites (tools/fb/run_fb_suite.sh -> fbchartool <title>) ----
+for e, how in (('.EX3', 'fbchartool: LLIF blocks + bit-exact Gage re-encode'), ('.WAV', 'fbchartool: RIFF chunks'), ('.MP3', 'fbchartool: frames validated'), ('.FNT', 'fbchartool: bitmap font'),
+               ('.TXT', 'fbchartool: Shift-JIS text'), ('.CT', 'fbchartool: _C.CT command table / CHARASELECT.CT typed (docs/formats/mbr.md)'), ('.CPF', 'fbchartool: CPU script typed (mbr.md)'), ('.WMT', 'fbchartool: win quotes typed (mbr.md)')):
+    SUPPORT[('ReAct', e)] = ('rt', how)
+SUPPORT[('ReAct', '.DAT')] = ('proof', 'Hantei4 characters (framedata_ha4) + bgmake stages + the MB-format leftover; fbchartool react; in-game: ARC.DAT shift +160 px visible (docs/formats/evidence/react_ingame_*.png)')
+SUPPORT[('ReAct', '')] = ('rt', 'MB-format character (stage-2 container, 10.p entry 00): gof1 loader, fbchartool react')
 ARCH_LEVEL = 'rt'
 
 def main():
