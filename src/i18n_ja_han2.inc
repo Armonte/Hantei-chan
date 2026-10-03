@@ -124,6 +124,8 @@
 	{"Save as new PAC...", "新規PACとして保存..."},
 	{"%s, %zu bytes", "%s、%zu バイト"},
 	{"IMG v%u, %d x %d, %s", "IMG v%u、%d x %d、%s"},
+	{"GOF1 polygon object: %u vertices, %u faces, %u texture slots", "GOF1ポリゴンオブジェクト: 頂点%u、面%u、テクスチャスロット%u"},
+	{"Reset view", "ビューをリセット"},
 	{"checkerboard", "市松模様"},
 	{"Import PNG (replace pixels)...", "PNG読み込み (ピクセルを置換)..."},
 	{"replaced by %s", "%s で置換しました"},

@@ -26,7 +26,7 @@ include(imgui)
 add_subdirectory(glm)
 add_subdirectory(tinyalloc)
 
-set(HAN2_MODEL_SOURCES src/framedata_han2.cpp src/han2/han2_container.cpp src/han2/pac_archive.cpp src/han2/img_file.cpp src/han2_diff.cpp src/han2_anim.cpp src/framedata_gof1.cpp src/han2/gof1_archive.cpp)
+set(HAN2_MODEL_SOURCES src/framedata_han2.cpp src/han2/han2_container.cpp src/han2/pac_archive.cpp src/han2/img_file.cpp src/han2/misc_formats.cpp src/han2_diff.cpp src/han2_anim.cpp src/framedata_gof1.cpp src/han2/gof1_archive.cpp)
 add_executable(${EXE}
 	src/main.cpp
 	src/main_frame.cpp
@@ -558,7 +558,6 @@ add_executable(han2tool
 	src/han2/fob_file.cpp
 	src/han2/replay_file.cpp
 	src/han2/fnt_file.cpp
-	src/han2/misc_formats.cpp
 	src/han2_pat.cpp
 	src/han2_pat_write.cpp
 	src/han2_export.cpp
