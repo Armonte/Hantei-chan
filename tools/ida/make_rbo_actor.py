@@ -1,7 +1,9 @@
 #!/usr/bin/env python3
-"""Generates the IDA-parsable RboActor struct (size 0x948, Actor_Init 0x441A90) from the table of traced fields.
-Gaps between traced fields become explicit unmapped_<hexoffset> byte arrays (NOT proven unused). Run:
-  python3 tools/ida/make_rbo_actor.py > docs/formats/ida/rbo_actor_types.h   (then idc.parse_decls it in the RBO IDB)"""
+"""Generates the IDA-parsable RboActor struct (size 0x948, Actor_Init 0x441A90) from the traced-field tables:
+table F below (frame/pattern/box fields found first) plus docs/formats/ida/actor_part{1..4}_fields.py (full actor RE, one file per
+offset range, with actor_part*_types.h holding their nested structs/enums). Any byte left uncovered is a hard error: the actor
+has ZERO unmapped bytes. Run:
+  python3 tools/ida/make_rbo_actor.py > docs/formats/ida/rbo_actor_types.h   (parse actor_part*_types.h first, then this file)"""
 SIZE = 0x948
 # (decimal offset, size, c type, name, comment)
 F = [
@@ -46,17 +48,29 @@ F = [
  (2352, 4, 'int', 'ticksUntilWrap', 'Actor_TickFrame: += 256 when <= 0'),
  (2372, 4, 'unsigned int', 'enterFlags', 'Actor_EnterFrame sets 7'),
 ]
+
+import importlib.util, os, sys
+here = os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', '..', 'docs', 'formats', 'ida')
+DROP = {'spareMover', 'patternHistoryTail[8]'}   # duplicates of motionSlot460 / the tail of repeatTracker (parts overlap by design)
+rows = list(F)
+for n in (1, 2, 3, 4):
+    spec = importlib.util.spec_from_file_location('part%d' % n, os.path.join(here, 'actor_part%d_fields.py' % n))
+    m = importlib.util.module_from_spec(spec); spec.loader.exec_module(m)
+    for f in m.FIELDS:
+        if f[3] in DROP: continue
+        rows.append(tuple(f))
 out = ['struct RboAtRecord;', 'struct RboCharContext;', 'struct RboActor;', 'struct RboActor {']
 pos = 0
-for off, sz, ty, nm, cm in sorted(F):
-    if off < pos: raise SystemExit('overlap at %d (%s)' % (off, nm))
-    if off > pos: out.append(' unsigned char unmapped_%03X[0x%X]; // +0x%03X not yet traced' % (pos, off - pos, pos))
+for off, sz, ty, nm, cm in sorted(rows, key=lambda r: r[0]):
+    if off < pos: sys.exit('overlap at %d (%s) pos %d' % (off, nm, pos))
+    if off > pos: sys.exit('UNMAPPED bytes 0x%X..0x%X before %s' % (pos, off, nm))
+    cm = cm.replace('\n', ' ')
     if '[' in nm:
-        base, cnt = nm.split('[')
-        cnt = cnt.rstrip(']'); out.append(' %s %s[%s]; // +0x%03X %s' % (ty, base, cnt, off, cm))
+        base, cnt = nm.split('['); cnt = cnt.rstrip(']')
+        out.append(' %s %s[%s]; // +0x%03X %s' % (ty, base, cnt, off, cm))
     else:
         out.append(' %s %s; // +0x%03X %s' % (ty, nm, off, cm))
     pos = off + sz
-if pos < SIZE: out.append(' unsigned char unmapped_%03X[0x%X]; // +0x%03X not yet traced' % (pos, SIZE - pos, pos))
+if pos != SIZE: sys.exit('actor ends at 0x%X, expected 0x%X' % (pos, SIZE))
 out.append('};')
 print('\n'.join(out))

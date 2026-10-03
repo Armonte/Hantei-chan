@@ -227,6 +227,95 @@ static int CmdCgInfo(int argc, char **argv)
 	return 0;
 }
 
+// edittest: apply editor-style edits to one character, save as .DT2, reload and compare.
+static bool FrameEq(const Frame &a, const Frame &b)
+{
+	if (a.AF.layers.size() != b.AF.layers.size()) return false;
+	for (size_t i = 0; i < a.AF.layers.size(); i++) {
+		const auto &x = a.AF.layers[i], &y = b.AF.layers[i];
+		if (x.spriteId != y.spriteId || x.usePat != y.usePat || x.offset_x != y.offset_x || x.offset_y != y.offset_y) return false;
+		if (memcmp(x.rotation, y.rotation, sizeof(x.rotation)) || memcmp(x.scale, y.scale, sizeof(x.scale)) || x.blend_mode != y.blend_mode) return false;
+	}
+	if (a.AF.duration != b.AF.duration || a.AF.aniType != b.AF.aniType || a.AF.aniFlag != b.AF.aniFlag || a.AF.jump != b.AF.jump) return false;
+	if (a.AS.speed[0] != b.AS.speed[0] || a.AS.movementFlags != b.AS.movementFlags || a.AS.stanceState != b.AS.stanceState) return false;
+	if (a.AT.damage != b.AT.damage || a.AT.guard_damage != b.AT.guard_damage) return false;
+	if (a.hitboxes.size() != b.hitboxes.size()) return false;
+	for (auto &kv : a.hitboxes) {
+		auto it = b.hitboxes.find(kv.first);
+		if (it == b.hitboxes.end() || memcmp(kv.second.xy, it->second.xy, 16)) return false;
+	}
+	return true;
+}
+
+static int CmdEditTest(int argc, char **argv)
+{
+	if (argc < 2) { puts("edittest <in.DAT|DT2> <out.DT2>"); return 2; }
+	std::vector<uint8_t> b;
+	if (!ReadLoose(argv[0], b)) { puts("cannot read"); return 1; }
+	FrameData fd; std::string err;
+	if (!han2::Load(fd, b.data(), b.size(), &err)) { printf("load: %s\n", err.c_str()); return 1; }
+	FrameData orig; han2::Load(orig, b.data(), b.size(), &err);
+	// pick patterns: A = first with >=2 frames, B = a pattern with a hurt box on frame 0
+	int pa = -1, pb = -1;
+	for (int p = 0; p < 256; p++) {
+		if (fd.m_sequences[p].frames.size() >= 2 && pa < 0) pa = p;
+		if (!fd.m_sequences[p].frames.empty() && fd.m_sequences[p].frames[0].hitboxes.count(1) && p != pa && pb < 0) pb = p;
+	}
+	if (pa < 0 || pb < 0) { puts("no suitable patterns"); return 1; }
+	Frame &fa = fd.m_sequences[pa].frames[0];
+	fa.AF.duration += 7;
+	fa.AF.layers[0].offset_x += 5;
+	fa.hitboxes[25] = Hitbox{{10, -90, 60, -50}};          // new attack box -> AT record created
+	fa.AT.damage = 123;
+	Frame &fb = fd.m_sequences[pb].frames[0];
+	fb.hitboxes[1].xy[2] += 11;                              // move a hurt box edge
+	fb.hitboxes.erase(0);                                    // drop the overlap box if there was one
+	std::vector<uint8_t> out; std::vector<std::string> warn;
+	if (!han2::Serialize(fd, out, &err, &warn, true)) { printf("save: %s\n", err.c_str()); return 1; }
+	{ std::ofstream f(std::filesystem::u8path(argv[1]), std::ios::binary); f.write((const char *)out.data(), (std::streamsize)out.size()); }
+	FrameData re;
+	if (!han2::Load(re, out.data(), out.size(), &err)) { printf("reload: %s\n", err.c_str()); return 1; }
+	int bad = 0;
+	for (int p = 0; p < 256; p++) {
+		const auto &A = fd.m_sequences[p].frames, &R = re.m_sequences[p].frames;
+		if (A.size() != R.size()) { printf("pattern %d frame count %zu vs %zu\n", p, A.size(), R.size()); bad++; continue; }
+		for (size_t k = 0; k < A.size(); k++) if (!FrameEq(A[k], R[k])) { printf("pattern %d frame %zu differs after reload\n", p, k); bad++; }
+		// untouched patterns must equal the original
+		if (p != pa && p != pb) {
+			const auto &O = orig.m_sequences[p].frames;
+			for (size_t k = 0; k < O.size(); k++) if (!FrameEq(O[k], R[k])) { printf("untouched pattern %d frame %zu changed\n", p, k); bad++; }
+		}
+	}
+	const Frame &ra = re.m_sequences[pa].frames[0];
+	bool ok = ra.AF.duration == orig.m_sequences[pa].frames[0].AF.duration + 7 && ra.hitboxes.count(25) && ra.AT.damage == 123 && ra.han2.hadAT;
+	printf("edited pattern %d (duration, offset, new attack box+AT) and %d (hurt box); %zu warnings; saved %zu bytes (orig %zu); %s, %d mismatches\n",
+		pa, pb, warn.size(), out.size(), b.size(), ok ? "edits present" : "EDITS LOST", bad);
+	return (ok && !bad) ? 0 : 1;
+}
+
+// shiftoffsets: move every frame's sprite offset and write the .DT2 (used for the in-game proof of an edit)
+static int CmdShift(int argc, char **argv)
+{
+	if (argc < 4) { puts("shift <in.DAT|DT2> <out.DT2> <dx> <dy> [boxgrow]"); return 2; }
+	std::vector<uint8_t> b;
+	if (!ReadLoose(argv[0], b)) { puts("cannot read"); return 1; }
+	FrameData fd; std::string err;
+	if (!han2::Load(fd, b.data(), b.size(), &err)) { printf("load: %s\n", err.c_str()); return 1; }
+	int dx = atoi(argv[2]), dy = atoi(argv[3]), grow = argc > 4 ? atoi(argv[4]) : 0, n = 0;
+	for (auto &seq : fd.m_sequences)
+		for (auto &f : seq.frames) {
+			for (auto &l : f.AF.layers) { l.offset_x += dx; l.offset_y += dy; }
+			if (grow) for (auto &kv : f.hitboxes) { kv.second.xy[0] -= grow; kv.second.xy[1] -= grow; kv.second.xy[2] += grow; kv.second.xy[3] += grow; }
+			n++;
+		}
+	std::vector<uint8_t> out; std::vector<std::string> warn;
+	if (!han2::Serialize(fd, out, &err, &warn, true)) { printf("save: %s\n", err.c_str()); return 1; }
+	std::ofstream f(std::filesystem::u8path(argv[1]), std::ios::binary);
+	f.write((const char *)out.data(), (std::streamsize)out.size());
+	printf("shifted %d frames by (%d,%d), box grow %d, wrote %zu bytes\n", n, dx, dy, grow, out.size());
+	return 0;
+}
+
 int main(int argc, char **argv)
 {
 	if (argc < 2) { puts("usage: han2tool ls|count|extract|pacrt ..."); return 2; }
@@ -237,6 +326,8 @@ int main(int argc, char **argv)
 	if (c == "roundtrip") return CmdRoundtrip(argc - 2, argv + 2);
 	if (c == "modelrt") return CmdModelRt(argc - 2, argv + 2);
 	if (c == "cginfo") return CmdCgInfo(argc - 2, argv + 2);
+	if (c == "edittest") return CmdEditTest(argc - 2, argv + 2);
+	if (c == "shift") return CmdShift(argc - 2, argv + 2);
 	if (c == "pacrt") return CmdPacRt(argc - 2, argv + 2);
 	printf("unknown command %s\n", c.c_str());
 	return 2;
