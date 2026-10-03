@@ -66,13 +66,17 @@ public:
 		if (!loaded)
 		{
 			ImGui::Text(TXT("No vector.txt loaded.\nTo load data, go to File > Load vector.txt..."));
+			ImGui::End();
 			return;
 		}
 
 		if (!ImGui::BeginTable("Vector Guide", 26,
 			ImGuiTableFlags_SizingFixedFit | ImGuiTableFlags_RowBg |
 			ImGuiTableFlags_NoHostExtendX))
+		{
+			ImGui::End();
 			return;
+		}
 
 		ImGui::TableSetupColumn("No.");
 		ImGui::TableSetupColumn(LBL("VecCnt"));

@@ -128,7 +128,7 @@ void PatShapePane::DrawShape()
                     shapesDecoratedNames[curInstance->currState->partShape] = curInstance->parts->GetShapesDecorateName(curInstance->currState->partShape);
                 }
                 ImGui::NewLine();
-                ImGui::SameLine(ImGui::GetWindowWidth()-200);
+                ImGui::SameLine(i18n::RightPairX(LBL("Copy Shape"), LBL("Paste Shape")));
                 if(ImGui::Button(LBL("Copy Shape"))){
                     shape->CopyTo(&CopyManager::copiedParts->shape);
                 }

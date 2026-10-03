@@ -255,7 +255,7 @@ void TreeBar(HostContext& host, const gamelink::Snapshot& s, const LinkPolicy& p
 	else ImGui::TextColored(kColWarn, TXT("no sidecar files yet"));
 	if (!a.tagRootOverride.empty()) { ImGui::SameLine(); ImGui::TextDisabled(TXT("(override)")); }
 	ImGui::SameLine();
-	ImGui::TextDisabled(TXT("editing: %s"), a.editShipped ? "SHIPPED defaults" : "local overlay");
+	ImGui::TextDisabled(TXT("editing: %s"), a.editShipped ? TXT("SHIPPED defaults") : TXT("local overlay"));
 	// migrate: a legacy tag_tuning.ini and no local tree
 	const std::string legacy = a.gameDir.empty() ? std::string() : a.gameDir + "\\tag_tuning.ini";
 	bool localExists = false;

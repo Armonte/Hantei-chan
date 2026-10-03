@@ -299,7 +299,7 @@ void DrawCgWindow(CharacterInstance *ch)
 			ImageData *im = ch->cg.draw_texture((unsigned)g_cgSel, false, false); std::string e;
 			g_cgMsg = (im && WritePngRgba(p, im->pixels, im->width, im->height, e)) ? Fmt(TXT("exported %s"), p.c_str()) : (e.empty() ? std::string(TXT("empty image")) : e); delete im; }
 	}
-	ImGui::SameLine();
+	i18n::SameLineFit(i18n::ButtonWidth(LBL("Import PNG (same size)...")));
 	if (ImGui::Button(LBL("Import PNG (same size)..."))) {
 		std::string p = FileDialog(-1, false);
 		if (!p.empty()) {
@@ -309,15 +309,15 @@ void DrawCgWindow(CharacterInstance *ch)
 			else g_cgMsg = e;
 		}
 	}
-	ImGui::SameLine();
+	i18n::SameLineFit(i18n::ButtonWidth(LBL("Undo import")));
 	ImGui::BeginDisabled(g_cgUndo.empty());
 	if (ImGui::Button(LBL("Undo import"))) { g_cgRedo.push_back(std::vector<char>(ch->cg.bank_data(), ch->cg.bank_data() + ch->cg.bank_size())); ch->cg.restore_bank(g_cgUndo.back().data(), (unsigned)g_cgUndo.back().size()); g_cgUndo.pop_back(); ch->markModified(); g_cgMsg = TXT("import undone"); }
 	ImGui::EndDisabled();
-	ImGui::SameLine();
+	i18n::SameLineFit(i18n::ButtonWidth(LBL("Redo")));
 	ImGui::BeginDisabled(g_cgRedo.empty());
 	if (ImGui::Button(LBL("Redo"))) { g_cgUndo.push_back(std::vector<char>(ch->cg.bank_data(), ch->cg.bank_data() + ch->cg.bank_size())); ch->cg.restore_bank(g_cgRedo.back().data(), (unsigned)g_cgRedo.back().size()); g_cgRedo.pop_back(); ch->markModified(); g_cgMsg = TXT("import redone"); }
 	ImGui::EndDisabled();
-	ImGui::SameLine();
+	i18n::SameLineFit(i18n::ButtonWidth(LBL("Export all...")));
 	if (ImGui::Button(LBL("Export all..."))) {
 		std::string d = BrowseForFolderUtf8("");
 		if (!d.empty()) { int ok = 0; std::string e; for (int i = 0; i < n; i++) { ImageData *im = ch->cg.draw_texture((unsigned)i, false, false); if (!im) continue; char nm[64]; snprintf(nm, sizeof(nm), "\\cg_%04d.png", i); if (WritePngRgba(d + nm, im->pixels, im->width, im->height, e)) ok++; delete im; } g_cgMsg = Fmt(TXT("exported %d PNGs to %s"), ok, d.c_str()); }

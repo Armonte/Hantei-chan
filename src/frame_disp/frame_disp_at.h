@@ -96,12 +96,12 @@ inline void AtDisplay(Frame_AT *at, FrameData *frameData = nullptr, int patternI
 	if(i18n::Combo(LBL("Hitstop"), &at->hitStop, hitStopList, IM_ARRAYSIZE(hitStopList))) {
 		markModified();
 	}
-	im::SameLine(0.f, 20);
+	i18n::SameLineFit(i18n::FieldWidth(width*0.8, LBL("Cust HS")));
 	im::SetNextItemWidth(width*0.8);
 	if(im::InputInt(LBL("Cust HS"), &at->hitStopTime, 0,0)) {
 		markModified();
 	}
-	im::SameLine(0.f, 20);
+	i18n::SameLineFit(i18n::FieldWidth(width*0.8, LBL("Cust BS")));
 	im::SetNextItemWidth(width*0.8);
 	if(im::InputInt(LBL("Cust BS"), &at->blockStopTime, 0,0)) {
 		markModified();

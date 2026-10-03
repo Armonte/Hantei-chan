@@ -449,12 +449,16 @@ void AssistRow(int side)
 	ImGui::PushID(100 + side);
 	ImGui::TextDisabled(TXT("Assists"));
 	ImGui::SameLine(90);
+	// five direction slots must fit the column whatever the language: shrink the combos instead of overflowing into the next column
+	const float st = ImGui::GetStyle().ItemSpacing.x;
+	float comboW = (ImGui::GetContentRegionAvail().x - 5 * (ImGui::CalcTextSize("5").x + 2.f + st)) / 5.f;
+	comboW = comboW < 56.f ? 56.f : (comboW > 104.f ? 104.f : comboW);
 	for (int d = 0; d < 5; ++d) {
 		if (d) ImGui::SameLine();
 		ImGui::PushID(d);
 		ImGui::TextUnformatted(kDirNames[d]);
 		ImGui::SameLine(0, 2);
-		ImGui::SetNextItemWidth(104);
+		ImGui::SetNextItemWidth(comboW);
 		const uint8_t c = a.setup.assist[side][d];
 		if (ImGui::BeginCombo("##as", c == 0 ? TXT("tuning") : TXT(kAssistMotionChoices[c - 1]))) {
 			if (ImGui::Selectable(LBL("tuning"), c == 0)) a.setup.assist[side][d] = 0;

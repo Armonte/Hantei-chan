@@ -248,7 +248,7 @@ void DrawLogTab(const gamelink::Snapshot& s)
 	AuthoringState& a = St();
 	PollGameLog();
 	ImGui::SetNextItemWidth(260);
-	ImGui::InputTextWithHint("##filter", "filter (substring, case-insensitive)", a.logFilter, sizeof a.logFilter);
+	ImGui::InputTextWithHint("##filter", TXT("filter (substring, case-insensitive)"), a.logFilter, sizeof a.logFilter);
 	ImGui::SameLine();
 	ImGui::Checkbox(LBL("tag / authoring lines only"), &a.logTagOnly);
 	ImGui::SameLine();
@@ -275,7 +275,7 @@ void DrawLogTab(const gamelink::Snapshot& s)
 		ImGui::TextColored(IsProblemLine(l) ? kColWarn : ImVec4(0.85f, 0.85f, 0.85f, 1.0f), "%s", l.c_str());
 		++shown;
 	}
-	if (!shown) ImGui::TextDisabled(a.gameLog.empty() ? "(no log yet: launch the game from this window)" : "(nothing matches the filter)");
+	if (!shown) ImGui::TextDisabled(a.gameLog.empty() ? TXT("(no log yet: launch the game from this window)") : TXT("(nothing matches the filter)"));
 	if (a.logFollow) ImGui::SetScrollHereY(1.0f);
 	ImGui::EndChild();
 	ImGui::TextDisabled(TXT("link + launcher"));

@@ -368,7 +368,7 @@ void GlobalTab()
 		if (l.scope == LeverScope::CharOnly) continue;
 		if (!group || std::strcmp(group, l.group)) {
 			group = l.group;
-			ImGui::SeparatorText(group);
+			ImGui::SeparatorText(TXT(group));
 		}
 		ImGui::PushID((int)i);
 		std::string raw;
@@ -517,7 +517,7 @@ void CharacterTab(EditorContext& ctx, const gamelink::Snapshot& s)
 	for (size_t i = 0; i < kLeverCount; ++i) {
 		const Lever& l = kLevers[i];
 		if (!l.perChar || IsSlotAction(l) || IsSlotEntry(l)) continue;
-		if (!group || std::strcmp(group, l.group)) { group = l.group; ImGui::SeparatorText(group); }
+		if (!group || std::strcmp(group, l.group)) { group = l.group; ImGui::SeparatorText(TXT(group)); }
 		ImGui::PushID((int)i);
 		std::string raw;
 		bool own = g_ini.Get(SecKind::Char, g_char, l.key, raw);
