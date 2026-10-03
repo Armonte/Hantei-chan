@@ -9,6 +9,7 @@
 //
 // Exit code 0 when everything passed. Arguments are UTF-8.
 #include "fb_archive.h"
+#include "../han2/misc_formats.h"
 
 #include <cstdio>
 #include <cstring>
@@ -16,6 +17,7 @@
 #include <fstream>
 #include <algorithm>
 #include <map>
+#include <strings.h>
 
 using namespace fbarc;
 namespace fs = std::filesystem;
@@ -198,6 +200,32 @@ static int CmdEditTest(int argc, char** argv)
 	return fails ? 1 : 0;
 }
 
+// ex3rt <archive>...: every .EX3 entry: parse (header size auto-detected) -> serialize must be byte-identical, decoded size must equal the header word
+static int CmdEx3Rt(int argc, char** argv)
+{
+	int pass = 0, fail = 0; std::map<std::string, int> layouts;
+	for (int k = 0; k < argc; k++) {
+		std::string err; auto a = Open(argv[k], &err);
+		if (!a) { printf("FAIL %s: %s\n", argv[k], err.c_str()); fail++; continue; }
+		int p0 = pass, f0 = fail;
+		for (size_t i = 0; i < a->entries().size(); i++) {
+			const std::string& nm = a->entries()[i].name;
+			if (ExtOf(nm).size() != 4 || strcasecmp(ExtOf(nm).c_str(), ".EX3") != 0) continue;
+			std::vector<uint8_t> d; if (!a->read(i, d, &err)) { printf("FAIL %s::%s: %s\n", argv[k], nm.c_str(), err.c_str()); fail++; continue; }
+			han2::Ex3 x; std::string e2;
+			if (!han2::ParseEx3Auto(d.data(), d.size(), x, &e2)) { printf("FAIL %s::%s: %s\n", argv[k], nm.c_str(), e2.c_str()); fail++; continue; }
+			std::vector<uint8_t> out; han2::SerializeEx3(x, out);
+			std::vector<uint8_t> bmp; std::string e3;
+			if (!han2::DecodeEx3(x, bmp, &e3) || bmp.size() != x.decodedBytes || bmp.size() < 54 || bmp[0] != 'B' || bmp[1] != 'M') { printf("FAIL %s::%s: decoded payload is not a BMP (%s)\n", argv[k], nm.c_str(), e3.c_str()); fail++; continue; }
+			if (out == d) { pass++; layouts["header " + std::to_string(x.headerSize)]++; } else { printf("DIFF %s::%s\n", argv[k], nm.c_str()); fail++; }
+		}
+		printf("%-60s pass %d fail %d\n", argv[k], pass - p0, fail - f0);
+	}
+	for (auto& [l, n] : layouts) printf("  %s: %d files\n", l.c_str(), n);
+	printf("SECTION ex3: pass %d fail %d skipped 0\n", pass, fail);
+	return fail ? 1 : 0;
+}
+
 static int Run(int argc, char** argv)
 {
 	if (argc < 2) { puts("usage: fbarctool ls|count|rt|extract|pack|magics ..."); return 2; }
@@ -209,6 +237,7 @@ static int Run(int argc, char** argv)
 	if (c == "pack") return CmdPack(argc - 2, argv + 2);
 	if (c == "census") return CmdCensus(argc - 2, argv + 2);
 	if (c == "edittest") return CmdEditTest(argc - 2, argv + 2);
+	if (c == "ex3rt") return CmdEx3Rt(argc - 2, argv + 2);
 	if (c == "magics") return CmdMagics(argc - 2, argv + 2);
 	printf("unknown command %s\n", c.c_str());
 	return 2;

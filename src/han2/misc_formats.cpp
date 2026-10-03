@@ -70,13 +70,14 @@ bool ValidateMpeg(const uint8_t *p, size_t n, MpegInfo &out, std::string *err)
 }
 
 // ---------------------------------------------------------------- EX3
-bool ParseEx3(const uint8_t *p, size_t n, Ex3 &e, std::string *err)
+bool ParseEx3(const uint8_t *p, size_t n, Ex3 &e, std::string *err, size_t headerSize)
 {
 	auto fail = [&](const char *m) { if (err) *err = m; return false; };
 	e = Ex3();
-	if (n < 64 || memcmp(p, "LLIF", 4) != 0) return fail("no LLIF header");
-	memcpy(e.header, p, 64);
-	const uint8_t *b = p + 64; const size_t sz = n - 64; size_t i = 0;
+	if (headerSize > 80 || n < headerSize || memcmp(p, "LLIF", 4) != 0) return fail("no LLIF header");
+	e.headerSize = headerSize;
+	memcpy(e.header, p, headerSize);
+	const uint8_t *b = p + headerSize; const size_t sz = n - headerSize; size_t i = 0;
 	while (i < sz) {
 		Ex3Block blk; int v = 0;
 		while (true) {
@@ -117,9 +118,45 @@ bool ParseEx3(const uint8_t *p, size_t n, Ex3 &e, std::string *err)
 	return true;
 }
 
+bool DecodeEx3(const Ex3 &e, std::vector<uint8_t> &out, std::string *err)
+{
+	out.clear(); out.reserve(e.decodedBytes);
+	for (auto &blk : e.blocks) {
+		uint8_t tab[256][2]; bool pair[256]; int v = 0;
+		for (int k = 0; k < 256; k++) { tab[k][0] = (uint8_t)k; tab[k][1] = 0; pair[k] = false; }
+		for (auto &g : blk.groups) {
+			if (g.c > 127) v += g.c - 127;
+			for (auto &en : g.entries) { if (v < 256) { tab[v][0] = en.first; if (en.second >= 0) { tab[v][1] = (uint8_t)en.second; pair[v] = true; } } v++; }
+		}
+		for (uint8_t s : blk.symbols) {
+			uint8_t st[4097]; int sp = 0; st[sp++] = s;
+			while (sp > 0) {
+				uint8_t c = st[--sp];
+				if (!pair[c]) out.push_back(c);
+				else { if (sp + 2 > 4096) { if (err) *err = "pair stack overflow"; return false; } st[sp++] = tab[c][1]; st[sp++] = tab[c][0]; }
+			}
+		}
+	}
+	return true;
+}
+
+bool ParseEx3Auto(const uint8_t *p, size_t n, Ex3 &e, std::string *err)
+{
+	std::string last;
+	for (size_t hs : {(size_t)64, (size_t)68, (size_t)72}) {
+		Ex3 t; std::string er;
+		if (!ParseEx3(p, n, t, &er, hs)) { last = er; continue; }
+		uint32_t want; memcpy(&want, p + hs - 4, 4);
+		if (t.decodedBytes != want) { last = "decoded size does not match the header size word"; continue; }
+		e = std::move(t); return true;
+	}
+	if (err) *err = last.empty() ? "not an EX3 file" : last;
+	return false;
+}
+
 void SerializeEx3(const Ex3 &e, std::vector<uint8_t> &o)
 {
-	o.assign(e.header, e.header + 64);
+	o.assign(e.header, e.header + e.headerSize);
 	for (auto &blk : e.blocks) {
 		for (auto &g : blk.groups) { o.push_back(g.c); for (auto &en : g.entries) { o.push_back(en.first); if (en.second >= 0) o.push_back((uint8_t)en.second); } }
 		o.push_back((uint8_t)(blk.count >> 8)); o.push_back((uint8_t)blk.count);
