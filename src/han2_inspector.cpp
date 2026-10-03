@@ -4,6 +4,7 @@
 #include "framedata_han2.h"
 #include "han2/rbo_types_gen.h"
 #include "han2/rbo_at_gen.h"
+#include "han2/gof2_types_gen.h"
 
 #include "cg.h"
 #include "filedialog.h"
@@ -23,6 +24,7 @@ static const Han2EnumInfo *FindEnum(const char *name)
 {
 	for (const auto &e : kRboTypesEnums) if (!strcmp(e.name, name)) return &e;
 	for (const auto &e : kRboAtEnums) if (!strcmp(e.name, name)) return &e;
+	for (const auto &e : kGof2TypesEnums) if (!strcmp(e.name, name)) return &e;
 	return nullptr;
 }
 
@@ -144,6 +146,12 @@ void DrawInspector(CharacterInstance *ch, FrameState &state)
 			ImGui::SeparatorText("Frame record");
 			if (!f.han2.valid) {
 				ImGui::TextDisabled("This frame has no source record yet (it is new); fields appear after the first save and reload.");
+			} else if (c.sub == 2) {
+				if (EditRecord("gframe", f.han2.rec, kGof2FrameRecordFields, (int)(sizeof(kGof2FrameRecordFields) / sizeof(kGof2FrameRecordFields[0])))) {
+					han2::RedecodeFrame(f);
+					changed = true;
+				}
+				ImGui::TextDisabled("GOF2 attack record (%s) and effect-spawn record are kept verbatim.", f.han2.hadAT ? "present" : "none");
 			} else if (c.sub == 1) {
 				if (EditRecord("frame", f.han2.rec, kRboFrameRecordFields, (int)(sizeof(kRboFrameRecordFields) / sizeof(kRboFrameRecordFields[0])))) {
 					han2::RedecodeFrame(f);

@@ -31,6 +31,9 @@ bool LoadCharacter(CharacterInstance &ch, const std::string &stem, const ReadFn 
 // Returns false with *err on failure; *partsChanged tells whether the block differs from the one loaded.
 bool SyncPartsToContainer(CharacterInstance &ch, bool *partsChanged, std::string *err);
 
+// GOF2: write the edited <stem>NN.PAT / <stem>NN.CHP next to the .DT2 (only the ones that changed; .bak of the first version kept).
+bool SaveGof2Companions(CharacterInstance &ch, const std::string &dt2Path, std::string *err);
+
 } // namespace han2
 
 namespace han2ui {

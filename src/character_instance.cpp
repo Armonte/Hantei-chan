@@ -249,6 +249,7 @@ bool CharacterInstance::save()
 	if (!frameData.save(m_topHA6Path.c_str())) {
 		return false;
 	}
+	if (frameData.isHan2()) { std::string perr; han2::SaveGof2Companions(*this, m_topHA6Path, &perr); }
 	saveNotes(m_topHA6Path);
 	m_isModified = false;
 	undoManager.markClean();  // undoing back to this revision clears dirty
@@ -265,6 +266,7 @@ bool CharacterInstance::saveAs(const std::string& ha6Path)
 	if (!frameData.save(ha6Path.c_str())) {
 		return false;
 	}
+	if (frameData.isHan2()) { std::string perr; han2::SaveGof2Companions(*this, ha6Path, &perr); }
 	frameData.notes.dirty = frameData.notes.dirty || !frameData.notes.notes.empty();
 	saveNotes(ha6Path);
 	m_topHA6Path = ha6Path;
