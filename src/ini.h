@@ -22,6 +22,7 @@ extern struct Settings
 	short winSizeY = 800;
 	bool maximized = false;
 	std::vector<std::string> recentProjects; // Recent project paths (max 10)
+	std::vector<std::string> recentFiles;    // File > Open Recent: files opened through the smart Open... (max 10)
 	bool detachableWindows = true;  // ImGui multi-viewport (native detached windows); restart-bound
 	std::vector<std::string> keyBindings;    // "Key=<action>#<n>=<vk>,<mods>" overrides (issue #9)
 	bool invertWheelZoom = false;            // wheel up zooms out (issue #9)

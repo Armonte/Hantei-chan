@@ -225,7 +225,7 @@ int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE, PWSTR pCmdLine, int nCmdShow
 			LocalFree(argV);
 			return 0;
 		}
-		else if(i+1<argC && (!strcmp(arg, "--open") || !strcmp(arg, "--capture") || !strcmp(arg, "--pattern")
+		else if(i+1<argC && (!strcmp(arg, "--open") || !strcmp(arg, "--open-any") || !strcmp(arg, "--capture") || !strcmp(arg, "--pattern")
 		                     || !strcmp(arg, "--frame") || !strcmp(arg, "--palette") || !strcmp(arg, "--game-link")
 		                     || !strcmp(arg, "--zoom") || !strcmp(arg, "--game")
 		                     || !strcmp(arg, "--compare") || !strcmp(arg, "--tool") || !strcmp(arg, "--tag-ini")
@@ -239,6 +239,7 @@ int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE, PWSTR pCmdLine, int nCmdShow
 			WideCharToMultiByte(CP_ACP, 0, w.c_str(), -1, v.data(), (int)v.size(), nullptr, nullptr);
 			if(!v.empty() && v.back() == 0) v.pop_back();
 			if(!strcmp(arg, "--open")) gStartup.open = v;
+			else if(!strcmp(arg, "--open-any")) gStartup.openAny = v;
 			else if(!strcmp(arg, "--capture")) gStartup.capture = v;
 			else if(!strcmp(arg, "--pattern")) gStartup.pattern = atoi(v.c_str());
 			else if(!strcmp(arg, "--frame")) gStartup.frame = atoi(v.c_str());
