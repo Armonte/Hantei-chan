@@ -30,6 +30,7 @@ struct Han2Container
 	std::string gofVariant = "00";
 	std::string gofDir;               // folder the companions were read from / are written to (empty for archive sources)
 	bool partsDirty = false, cgDirty = false;
+	std::vector<uint8_t> originalPatternFile;   // the file's pattern area as loaded (a .DT2-shaped copy), for 'diff against original'
 	std::string datPath;              // .DAT carrying parts / CG / names when sourcePath is a .DT2 (may be empty)
 };
 

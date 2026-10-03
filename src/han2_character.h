@@ -42,6 +42,8 @@ extern bool showInspector;
 void DrawInspector(CharacterInstance *ch, FrameState &state);
 
 extern bool showCgWindow;
+extern bool showDiffWindow;
+void DrawDiffWindow(CharacterInstance *ch);
 // CG bank window: list, preview, export / import of the sprites (PNG).
 void DrawCgWindow(CharacterInstance *ch);
 

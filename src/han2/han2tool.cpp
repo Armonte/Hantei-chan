@@ -14,6 +14,7 @@
 #include "../cg.h"
 #include "../han2_pat.h"
 #include "../han2_export.h"
+#include "../han2_diff.h"
 #include "img_file.h"
 #include "../png_writer.h"
 #include "../parts/parts.h"
@@ -475,6 +476,20 @@ static int CmdCgRt(int argc, char **argv)
 	return bad ? 1 : 0;
 }
 
+static int CmdDiff(int argc, char **argv)
+{
+	if (argc < 2) { puts("diff <a.DAT|DT2> <b.DAT|DT2>   (field level: what b changes against a)"); return 2; }
+	std::vector<uint8_t> a, b; if (!ReadLoose(argv[0], a) || !ReadLoose(argv[1], b)) { puts("cannot read"); return 1; }
+	FrameData fa, fb; std::string err;
+	if (!han2::Load(fa, a.data(), a.size(), &err) || !han2::Load(fb, b.data(), b.size(), &err)) { printf("load: %s\n", err.c_str()); return 1; }
+	fb.m_han2->originalPatternFile = fa.m_han2->originalPatternFile;
+	std::vector<han2::DiffEntry> d;
+	if (!han2::DiffAgainstOriginal(fb, d, &err)) { printf("%s\n", err.c_str()); return 1; }
+	for (auto &e : d) { if (e.frame >= 0) printf("pattern %d frame %d: %s\n", e.pattern, e.frame, e.what.c_str()); else printf("pattern %d: %s\n", e.pattern, e.what.c_str()); }
+	printf("%zu differences\n", d.size());
+	return 0;
+}
+
 int main(int argc, char **argv)
 {
 	CoInitializeEx(nullptr, COINIT_MULTITHREADED);
@@ -493,6 +508,7 @@ int main(int argc, char **argv)
 	if (c == "imgrt") return CmdImgRt(argc - 2, argv + 2);
 	if (c == "pacwrite") return CmdPacWrite(argc - 2, argv + 2);
 	if (c == "cgrt") return CmdCgRt(argc - 2, argv + 2);
+	if (c == "diff") return CmdDiff(argc - 2, argv + 2);
 	if (c == "pacrt") return CmdPacRt(argc - 2, argv + 2);
 	printf("unknown command %s\n", c.c_str());
 	return 2;
