@@ -301,27 +301,31 @@ int Run(const Title &t, int argc, char **argv)
 // sprite layers by (dx, dy), serializes it the way the editor does and writes a NEW archive with the entry replaced.
 int CmdShift(int argc, char **argv)
 {
-	if (argc < 5) { puts("shift <archive> <ENTRY> <out.p> <dx> <dy>"); return 2; }
+	if (argc < 5) { puts("shift <archive> <ENTRY|-all> <out.p> <dx> <dy>"); return 2; }
 	std::string err; auto a = fbarc::Open(argv[0], &err);
 	if (!a) { printf("%s\n", err.c_str()); return 1; }
-	const int idx = a->find(fbarc::NameFromUtf8(argv[1]));
-	if (idx < 0) { puts("entry not found"); return 1; }
-	std::vector<uint8_t> d; if (!a->read((size_t)idx, d, &err)) { printf("%s\n", err.c_str()); return 1; }
+	const bool all = !strcmp(argv[1], "-all");
 	const int dx = atoi(argv[3]), dy = atoi(argv[4]);
-	FrameData fd; std::vector<uint8_t> out; bool gof = false;
-	if (ha4::IsHA4(d.data(), d.size())) {
-		if (!ha4::Load(fd, d.data(), d.size(), &err)) { printf("load: %s\n", err.c_str()); return 1; }
-	} else if (d.size() >= 4 && R32(d.data()) == 0x3dfe93d9u) {
-		gof = true; gof1::DecryptDat(d);
-		if (!gof1::Load(fd, d.data(), d.size(), &err)) { printf("load: %s\n", err.c_str()); return 1; }
-	} else { puts("not a character"); return 1; }
-	int n = 0;
-	for (auto &q : fd.m_sequences) for (auto &f : q.frames) { for (auto &l : f.AF.layers) { l.offset_x += dx; l.offset_y += dy; } n++; }
-	if (gof ? !gof1::Serialize(fd, out, &err) : !ha4::Serialize(fd, out, &err)) { printf("save: %s\n", err.c_str()); return 1; }
-	if (gof) gof1::EncryptDat(out);
-	fbarc::Edit e; e.replace[(size_t)idx] = out;
+	fbarc::Edit e; int done = 0;
+	for (size_t idx = 0; idx < a->entries().size(); idx++) {
+		if (!all && (int)idx != a->find(fbarc::NameFromUtf8(argv[1]))) continue;
+		std::vector<uint8_t> d; if (!a->read(idx, d, &err)) { printf("%s\n", err.c_str()); return 1; }
+		FrameData fd; std::vector<uint8_t> out; bool gof = false;
+		if (ha4::IsHA4(d.data(), d.size())) {
+			if (!ha4::Load(fd, d.data(), d.size(), &err)) { printf("load: %s\n", err.c_str()); return 1; }
+		} else if (d.size() >= 4 && R32(d.data()) == 0x3dfe93d9u && ExtOf(a->entries()[idx].name) == ".DAT") {
+			gof = true; gof1::DecryptDat(d);
+			if (!gof1::Load(fd, d.data(), d.size(), &err)) { printf("load: %s\n", err.c_str()); return 1; }
+		} else { if (!all) { puts("not a character"); return 1; } continue; }
+		if (all && a->entries()[idx].name.find("EFFECT") != std::string::npos) continue;
+		for (auto &q : fd.m_sequences) for (auto &f : q.frames) for (auto &l : f.AF.layers) { l.offset_x += dx; l.offset_y += dy; }
+		if (gof ? !gof1::Serialize(fd, out, &err) : !ha4::Serialize(fd, out, &err)) { printf("save: %s\n", err.c_str()); return 1; }
+		if (gof) gof1::EncryptDat(out);
+		e.replace[idx] = out; done++;
+	}
+	if (!done) { puts("nothing to edit"); return 1; }
 	if (!a->rebuild(argv[2], e, &err)) { printf("rebuild: %s\n", err.c_str()); return 1; }
-	printf("shifted %d frames of %s by (%d,%d), wrote %s\n", n, argv[1], dx, dy, argv[2]);
+	printf("shifted %d character(s) of %s by (%d,%d), wrote %s\n", done, argv[0], dx, dy, argv[2]);
 	return 0;
 }
 

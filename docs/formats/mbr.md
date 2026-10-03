@@ -343,3 +343,22 @@ Blob C: [0..2] "BMP Cutter3", [4] mode (1 = per-image embedded pixels, else pre-
 | 0x7C51F8.. | `g_CameraTargetX/Y/AvgAux`, `g_CameraX/Y` 0x69F780/84, `g_CameraAux` 0x69F788 | camera |
 | 0x88168C / 0xA45738 | `g_RoundEndPhase` / `g_RoundEndPhaseTimer` | round-end state machine (phases 0..5, 255 tally) |
 | 0x69F9FA / 0x69F9F8 | `g_RoundIntroLockState` / `g_RoundTransitionTimer` | 2 locked, 1 intro, 0 fighting |
+
+## 16. Naming sweep (whole binary)
+
+Goal: no `sub_` / `dword_` / `byte_` / `word_` / `unk_` / `off_` / `flt_` / `dbl_` / `stru_` / `asc_` / `nullsub_` / `unknown_libname_` names left, and every referenced global typed.
+
+| | before | after |
+|---|---|---|
+| functions with an auto name | 366 of 1123 | 0 |
+| globals with an auto name that code references | 1375 | 0 |
+| auto-named data items (all heads, .rdata/.data) | about 1450 | 0 |
+| `loc_` labels | 9656 | 9656 (IDA-generated code labels inside functions, not names that were assigned; left as they are) |
+
+What was done, in order of confidence:
+* **Functions (366)**: every one was read in the decompiler and given a behaviour name (video layer `DDraw_*`, `D3D7_*`, `SurfaceSlot_*`, `Texture_*`, `PixelFormat_*`, `Render_Queue*`, `SysFx_*`; menus / title / story / ending / replay / practice `Menu_*`, `Title_*`, `Story_*`, `Replay_*`, `PracticeMenu_*`; audio `DirectSound_*`, `Se_*`, `Bgm_*`, `Mp3_*` (Layer I/II/III decoder, bit reader `Mp3Bits_*`), DirectInput `Joystick_*`, DirectShow `DShow_*`, system info `SysInfo_*`, `Cpu_*`, MSVC6 CRT `Crt_*`). Names for the MP3 decoder internals, the CRT internals and some menu screens are role guesses from callers, strings and call shape (UNPROVEN); the character / stage / CG / draw path is solid.
+* **COM**: `struct IDirect3DDevice7 / IDirect3D7 / IDirectDraw7 / IDirectDrawSurface7 / IDirectDrawClipper` (+ `...Vtbl`) declared in `mbr_types.h` section 10 (method order from ddraw.h / d3d.h); `g_pD3D7Device`, `g_pD3D7`, `g_pDirectDraw7`, `g_SurfaceSlotDDSurface[2200]`, `g_SurfaceSlotAuxInterface[2200]` are typed with them, so the decompiler shows `g_pD3D7Device->lpVtbl->SetTexture(...)`.
+* **Video structs**: `MbrDdPixelFormat`, `MbrDdSurfaceDesc2` (`g_SurfaceSlotDesc[2200]` 0x646710), `MbrTextureFormatInfo` (`g_TextureFormatTable[30]` 0x557CDC with the selected formats `g_TexFmtPalette8 / Argb4444 / Rgb565 / Rgb555 / Argb1555 / Argb8888`), `MbrD3dViewport`.
+* **Constants and tables**: 72 float / double literals named by value (`kFloat_0p5`), DirectX GUIDs named by identity (`IID_IDirectDraw7`, `IID_IGraphBuilder`, `GUID_SysKeyboard`, ...), 26 compiler switch index maps named `<Function>_SwitchCaseMap_<addr>`, the PE import hint/name table named `ImportHintName_<API>` / `ImportLookupEntry_<API>`, short string literals `kStr_*`.
+* **Mechanical names (1253 globals)**: every remaining referenced data item was renamed `g_<Subsystem>_<FirstReferencingFunction>_<Kind>_<ADDR>` (kind = Byte / Word / Dword / Float / Ptr / Bytes / Dwords) and typed as that scalar or byte array. These carry no meaning beyond the subsystem and one referencing function (the first function in name order, which is not always the main user); they exist so that nothing is auto-named and nothing is untyped. About 70 of them were then given real names (texture format selection config `g_Cfg_TextureFormat*`, `g_SysFxCurrentEffect`, `g_SysFxFadePercent`, `g_SysFxElapsedTicks`, `g_LastDDrawErrorText`, ...). The subsystems with most mechanical names: menus / story / title (380), video (283), MP3 decoder (189), CRT (176), input (98), sound (38), effects (78).
+* Not done: array extents / struct layouts for the MP3 decoder state, the sound buffer tables, the menu / story state, the D3D device enumeration records (`dword_5570E8[97*n]` style, 388-byte records), the render command ring (`Render_ExecuteCommandList` 20 KB), the CRT heap tables. They are typed as scalars or byte arrays under mechanical names.

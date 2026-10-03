@@ -67,6 +67,11 @@ for e, how in (('.EX3', 'fbchartool: LLIF blocks + bit-exact Gage re-encode'), (
     SUPPORT[('ReAct', e)] = ('rt', how)
 SUPPORT[('ReAct', '.DAT')] = ('proof', 'Hantei4 characters (framedata_ha4) + bgmake stages + the MB-format leftover; fbchartool react; in-game: ARC.DAT shift +160 px visible (docs/formats/evidence/react_ingame_*.png)')
 SUPPORT[('ReAct', '')] = ('rt', 'MB-format character (stage-2 container, 10.p entry 00): gof1 loader, fbchartool react')
+for e, how in (('.EX3', 'fbchartool mb: LLIF blocks + bit-exact Gage re-encode'), ('.WAV', 'fbchartool: RIFF chunks'), ('.MP3', 'fbchartool: frames validated'), ('.FNT', 'fbchartool: bitmap font'),
+               ('.TXT', 'fbchartool: Shift-JIS text (incl. VECTOR.TXT)'), ('.CT', 'fbchartool: _C.CT / older CT variants / CHARSEL.CT typed (docs/formats/mb.md)'), ('.CT2', 'older command table variant, typed'), ('.CPF', 'fbchartool: CPU script typed (mb.md)'), ('.WMT', 'fbchartool: win messages typed (mb.md)')):
+    SUPPORT[('Melty Blood 2002', e)] = ('rt', how)
+SUPPORT[('Melty Blood 2002', '.DAT')] = ('proof', 'GOF1-family container + embedded MB strip sprite bank (view, per-strip import); fbchartool mb; in-game: all characters layer shift +40 visible (docs/formats/evidence/mb_ingame_*.png; +160 crashes mb.exe)')
+SUPPORT[('Melty Blood 2002', '')] = ('rt', 'extensionless archive entries: MB-format characters / data blobs handled by fbchartool mb')
 ARCH_LEVEL = 'rt'
 
 def main():

@@ -35,5 +35,6 @@ title() { # title <name> <archives...>
 	echo "$out" | grep -E "^SECTION" | grep -qv " fail 0 skipped 0" && { echo "!! $name: failures or members without a model"; rc=1; }
 }
 title react $W/MB/R/0{0,1,2,3,4,5,6}.p $W/MB/R/10.p
+title mb $W/MB/MeltyBlood/data0{0,1,2,3}.p
 echo "n/a: $G/gof/Data/{System00,uninst}.dat, $G/pb/pbex.dat are installer / trainer files, not archives (headers carry no archive magic)"
 exit $rc

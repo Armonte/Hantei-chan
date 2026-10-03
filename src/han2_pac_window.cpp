@@ -228,7 +228,7 @@ void OpenFileViewer(const std::string &name, std::vector<uint8_t> bytes, const s
 	v->id = g_nextView++; v->name = name; v->origin = origin; v->bytes = std::move(bytes);
 	if (han2::IsImg(v->bytes.data(), v->bytes.size()) && han2::ParseImg(v->bytes.data(), v->bytes.size(), v->img, nullptr)) { v->kind = Viewer::Image; Upload(*v); }
 	else if (name.size() > 2 && (name.compare(name.size() - 2, 2, ".B") == 0 || name.compare(name.size() - 2, 2, ".b") == 0) && han2::ParsePoly(v->bytes.data(), v->bytes.size(), v->poly, nullptr)) v->kind = Viewer::Poly;
-	else if (DescribeTypedFile(name, v->bytes, v->typed)) { v->kind = Viewer::Typed; v->typedSel.assign(v->typed.regions.size(), 0); }
+	else if (DescribeTypedFile(name, v->bytes, v->typed, origin)) { v->kind = Viewer::Typed; v->typedSel.assign(v->typed.regions.size(), 0); }
 	else CollectStrings(*v);
 	g_views.push_back(std::move(v));
 }
