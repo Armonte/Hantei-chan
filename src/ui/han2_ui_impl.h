@@ -15,6 +15,30 @@ bool MainFrame::openHan2File(const std::string& path)
 		if (!err.empty()) { requestErrorPopup("Load Error", err); return true; }
 		return true;
 	}
+	{   // standalone GOF2 .PAT (parts) or .CHP (sprite bank)
+		std::vector<uint8_t> all;
+		{ std::ifstream f(std::filesystem::u8path(path), std::ios::binary); all.assign(std::istreambuf_iterator<char>(f), std::istreambuf_iterator<char>()); }
+		const bool isPat = han2::IsPat(all.data(), all.size());
+		const bool isChp = all.size() > 0x4f30 && memcmp(all.data(), "BMP Cutter", 10) == 0;
+		if (isPat || isChp) {
+			auto character = std::make_unique<CharacterInstance>();
+			character->frameData.initEmpty();
+			character->setName(std::filesystem::u8path(path).filename().string());
+			if (isChp) {
+				if (!character->cg.loadFromMemory(all.data(), (unsigned)all.size())) { requestErrorPopup("Load Error", "Could not read the sprite bank: " + path); return true; }
+				han2ui::showCgWindow = true;
+			} else {
+				std::string perr;
+				if (!han2::PatToParts(all.data(), all.size(), character->parts, &perr)) { requestErrorPopup("Load Error", perr); return true; }
+				han2::UploadPartsTextures(character->parts);
+			}
+			characters.push_back(std::move(character));
+			createViewForCharacter(characters.back().get());
+			if (isPat) openPartsEditorForCharacter(characters.back().get());
+			markProjectModified();
+			return true;
+		}
+	}
 	if (!han2::IsHan2(head.data(), head.size())) {
 		requestErrorPopup("Load Error", "Not an RBO / GOF2 character or PAC archive:\n" + path);
 		return true;

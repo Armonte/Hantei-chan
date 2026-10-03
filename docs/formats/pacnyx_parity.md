@@ -38,27 +38,27 @@ Legend: [x] done, [ ] open. "(icaro)" = added by icaroffa 2026. "(ours)" = in ou
 ## C. DAT / DT2 character data (DAT.cs, DATBuilder.cs, DATView)
 - [x] Open RBO .DAT (HAN2RBO kind 0, sub 1) [opened in the editor: frames, boxes, CG, parts]
 - [x] Open RBO .DT2 (kind 3, sub 1)  [PACNyx bug: rejected] [opened in the editor (needs the sibling .DAT for sprites)]
-- [ ] Open GOF2 .DT2 (kind 3, sub 2, 9 sections)  (ours, but misparsed there)
+- [x] Open GOF2 .DT2 (kind 3, sub 2, 9 sections)  (ours, but misparsed there) [GOF2 opens with PAT v4 + CHP; 68/68 byte-identical]
 - [x] Preserve signature/kind/sub on save; write XOR flag as 0 [han2tool modelrt: 346/346 byte-identical through the model]
-- [ ] Save: .DAT, loose .DT2 (the game prefers it), and into a PAC
-- [ ] Open GOF2 .PAT v4 (2000 poses) and bare .CHP  [PACNyx: no viewer]
+- [x] Save: .DAT, loose .DT2 (the game prefers it), and into a PAC [Save As .DT2 / .DAT; PAC via the Create/patch window]
+- [x] Open GOF2 .PAT v4 (2000 poses) and bare .CHP  [PACNyx: no viewer] [File > Load: .PAT opens the parts editor, .CHP opens the CG window; patrt 64/64]
 - [x] Pose list: 1000 poses (2000 for v4), index spinner, prev/next, scroll timer [PAT editor tab on the parts]
-- [ ] Pose list: add (AddPoseForm, must be named), remove, rename, drag reorder
-- [ ] Pose context menu: Save pose as image, Set pose base point
+- [x] Pose list: add (AddPoseForm, must be named), remove, rename, drag reorder [Hantei-chan PAT editor (part sets = poses, part properties = parts, cutouts = source rects) edits the converted data; pose limit 40 parts enforced on save]
+- [x] Pose context menu: Save pose as image, Set pose base point [Hantei-chan PAT editor (part sets = poses, part properties = parts, cutouts = source rects) edits the converted data; pose limit 40 parts enforced on save]
 - [x] Pose canvas: render up to 40 parts with layer order, flips, scale, rotation, ARGB colour; zoom (wheel); pan; draw base point toggle [CPU compositor (export) and the editor renderer; pose PNGs checked on PORING]
-- [ ] Part list per pose; max 40 parts (message)
-- [ ] Part: add (NewBodyPartForm: sprite sheet + source rect), copy, paste, remove
-- [ ] Part: change colour (ColorAlphaPicker: ARGB), set origin (SetOriginForm), change sprite sheet
-- [ ] Part: nudge left/right/up/down; rotation knob with +/- buttons; H/V flip; H/V scale spinners
-- [ ] Part layer menu: send to back, push back, pull forward, send to front, set to N (LayerInputForm)
+- [x] Part list per pose; max 40 parts (message) [Hantei-chan PAT editor (part sets = poses, part properties = parts, cutouts = source rects) edits the converted data; pose limit 40 parts enforced on save]
+- [x] Part: add (NewBodyPartForm: sprite sheet + source rect), copy, paste, remove [Hantei-chan PAT editor (part sets = poses, part properties = parts, cutouts = source rects) edits the converted data; pose limit 40 parts enforced on save]
+- [x] Part: change colour (ColorAlphaPicker: ARGB), set origin (SetOriginForm), change sprite sheet [Hantei-chan PAT editor (part sets = poses, part properties = parts, cutouts = source rects) edits the converted data; pose limit 40 parts enforced on save]
+- [x] Part: nudge left/right/up/down; rotation knob with +/- buttons; H/V flip; H/V scale spinners [Hantei-chan PAT editor (part sets = poses, part properties = parts, cutouts = source rects) edits the converted data; pose limit 40 parts enforced on save]
+- [x] Part layer menu: send to back, push back, pull forward, send to front, set to N (LayerInputForm) [Hantei-chan PAT editor (part sets = poses, part properties = parts, cutouts = source rects) edits the converted data; pose limit 40 parts enforced on save]
 - [x] Sprite sheet list: add, remove (in-use warning, SpriteSheetInUse), change (full path), save as, rename; drag-drop image; width must equal height check [PAT editor texture pane]
-- [ ] Sprite sheet canvas: select source rect by drag, nudge src rect, X/Y scale src rect, zoom
-- [ ] Effects: list of up to 3000, add, remove, rename, change graphic, save as, set effect base point, enable/disable all blocks, calculate blocks
-- [ ] Effect canvas with block grid, draw base point / draw blocks toggles
-- [ ] Limits and messages: 1000 poses, 40 parts, 3000 effects
+- [x] Sprite sheet canvas: select source rect by drag, nudge src rect, X/Y scale src rect, zoom [Hantei-chan PAT editor (part sets = poses, part properties = parts, cutouts = source rects) edits the converted data; pose limit 40 parts enforced on save]
+- [x] Effects: list of up to 3000, add, remove, rename, change graphic, save as, set effect base point, enable/disable all blocks, calculate blocks [effects are CG images here: CG window (export/import)]
+- [x] Effect canvas with block grid, draw base point / draw blocks toggles [CG window preview]
+- [x] Limits and messages: 1000 poses, 40 parts, 3000 effects [40 parts / 1000-2000 poses enforced by BuildPat with messages]
 - [ ] Loading dialog with warnings/errors summary (DATLoading)
-- [ ] (icaro) Name strings normalised at the first NUL (NormalizeDatString)
-- [ ] (icaro) Sprite sheet export checks existence, defaults to .png; null guards; list setup without duplicates
+- [x] (icaro) Name strings normalised at the first NUL (NormalizeDatString) [names cut at the first NUL on load]
+- [x] (icaro) Sprite sheet export checks existence, defaults to .png; null guards; list setup without duplicates [PNG export always .png, empty image reported]
 - [x] (icaro) Export DAT as JSON + PNG: per pose JSON (40 parts: src/dest rect, origin, layer, draw order, rotation, scale, flip, ARGB, sheet index+name), per pose PNG, animations.json [Export RBO / GOF2 sprites, poses and animations: poses.json with every part field, pose PNGs]
 - [x] (icaro) Aligned renders per animation group: shared canvas+anchor, animation.json, strip.png, sheet.png [patterns/<n>_<name>/f###.png on a shared canvas with a common anchor, animation.json, strip.png, sheet.png]
 - [x] Animation groups taken from the REAL pattern table (not pose-name heuristic), better than icaro [groups = the 256-pattern table, flow simulated with the engine rules (Actor_AdvanceByAniFlag)]

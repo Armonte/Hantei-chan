@@ -63,7 +63,7 @@ std::string FileDialog(int fileType, bool save, char* defaultName)
 	}
 	else if (fileType == fileType::HAN2)
 	{
-		ofn.lpstrFilter = "RBO / GOF2 character (*.dt2;*.dat)\0*.dt2;*.dat\0RBO / GOF2 archive (*.pac;data*.dat)\0*.pac;data0*.dat\0All\0*.*\0";
+		ofn.lpstrFilter = "RBO / GOF2 character, parts, sprites (*.dt2;*.dat;*.pat;*.chp)\0*.dt2;*.dat;*.pat;*.chp\0RBO / GOF2 archive (*.pac;data*.dat)\0*.pac;data0*.dat\0All\0*.*\0";
 	}
 	else if (fileType == fileType::HAN2SAVE)
 	{
