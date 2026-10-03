@@ -59,6 +59,7 @@ add_executable(${EXE}
 	src/han2_pat_gl.cpp
 	src/han2_browser.cpp
 	src/i18n.cpp
+	src/i18n_layout.cpp
 	src/han2_pac_window.cpp
 	src/han2_inspector.cpp
 	src/startup_args.cpp
@@ -386,6 +387,7 @@ add_executable(cmdfile_roundtrip
 	src/cmdfile/cmdfile_roundtrip.cpp
 	src/cmdfile/cmd_document.cpp
 	src/cmdfile/cmd_validate.cpp
+	src/i18n.cpp
 )
 target_include_directories(cmdfile_roundtrip PRIVATE "src")
 if(MINGW)
@@ -401,6 +403,7 @@ add_executable(cmdfile_test
 	src/cmdfile/cmd_io.cpp
 	src/cmdfile/cmd_workspace.cpp
 	src/misc.cpp
+	src/i18n.cpp
 )
 target_include_directories(cmdfile_test PRIVATE "src" "third_party")
 target_compile_definitions(cmdfile_test PRIVATE WIN32_LEAN_AND_MEAN)
@@ -414,6 +417,7 @@ add_executable(cmdfile_ui_smoke
 	tests/cmdfile_ui_smoke.cpp
 	src/extension_profile.cpp
 	src/i18n.cpp
+	src/i18n_layout.cpp
 	src/cmdfile/cmd_editor_ui.cpp
 	src/cmdfile/cmd_document.cpp
 	src/cmdfile/cmd_validate.cpp
@@ -444,6 +448,7 @@ add_executable(pattern_search_test
 	src/extension_profile.cpp
 	src/imgui_utils.cpp
 	src/i18n.cpp
+	src/i18n_layout.cpp
 	tinyalloc/tinyalloc.c
 	imsearch/imsearch.cpp
 	imgui/imgui.cpp

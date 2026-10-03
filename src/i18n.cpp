@@ -5,7 +5,6 @@
 #include <vector>
 #include <cstring>
 #include <cstdarg>
-#include <imgui.h>
 
 namespace i18n {
 int language = 0;
@@ -67,7 +66,7 @@ std::string TrDetail(const std::string &s)
 {
 	if (language == 0 || s.empty()) return s;
 	static const char *const kPrefixes[] = { "Could not open ", "cannot open ", "could not write ", "cannot read ", "cannot create ",
-		"no original data kept for this character", "refusing to overwrite ", "short read of ", "name too long (max 59 bytes): " };
+		"no original data kept for this character", "refusing to overwrite ", "short read of ", "name too long (max 59 bytes): ", "Saved. Previous version backed up to ", "Cannot open ", "Cannot read ", "Cannot create backup folder ", "Cannot create backup ", "Cannot write backup ", "No free backup name in ", "Could not replace ", "Notes file is not valid JSON: ", "Notes file could not be read: " };
 	auto one = [&](const std::string &line) -> std::string {
 		auto &t = Table();
 		auto it = t.find(line);
@@ -75,6 +74,13 @@ std::string TrDetail(const std::string &s)
 		for (const char *p : kPrefixes) {
 			const size_t n = strlen(p);
 			if (line.compare(0, n, p) == 0) { auto q = t.find(p); if (q != t.end()) return std::string(q->second) + line.substr(n); }
+		}
+		static const char *const kInfixes[] = { " is not in " };   // "<name>" + infix + "<where>"
+		for (const char *inf : kInfixes) {
+			const size_t at = line.find(inf);
+			if (at == std::string::npos) continue;
+			auto q = t.find(inf);
+			if (q != t.end()) return line.substr(0, at) + q->second + line.substr(at + strlen(inf));
 		}
 		const size_t c = line.find(": ");
 		if (c != std::string::npos) {
@@ -89,54 +95,5 @@ std::string TrDetail(const std::string &s)
 		else line += s[i];
 	}
 	return out;
-}
-void SameLineFit(float nextWidth, float spacing)
-{
-	const float right = ImGui::GetCursorScreenPos().x + ImGui::GetContentRegionAvail().x;
-	if (spacing < 0.f) spacing = ImGui::GetStyle().ItemSpacing.x;
-	if (ImGui::GetItemRectMax().x + spacing + nextWidth <= right) ImGui::SameLine(0.f, spacing);
-}
-void TextDisabledWrapped(const char *fmt, ...)
-{
-	va_list ap; va_start(ap, fmt);
-	ImGui::PushStyleColor(ImGuiCol_Text, ImGui::GetStyle().Colors[ImGuiCol_TextDisabled]);
-	ImGui::TextWrappedV(fmt, ap);
-	ImGui::PopStyleColor();
-	va_end(ap);
-}
-float RightPairX(const char *a, const char *b)
-{
-	const ImGuiStyle &st = ImGui::GetStyle();
-	const float w = ButtonWidth(a) + st.ItemSpacing.x + ButtonWidth(b) + st.WindowPadding.x + st.ScrollbarSize;
-	const float x = ImGui::GetWindowWidth() - w;
-	return x < 0.f ? 0.f : x;
-}
-float ButtonWidth(const char *label)
-{
-	return ImGui::CalcTextSize(label, nullptr, true).x + ImGui::GetStyle().FramePadding.x * 2.f;
-}
-float FieldWidth(float itemWidth, const char *label)
-{
-	return itemWidth + ImGui::GetStyle().ItemInnerSpacing.x + ImGui::CalcTextSize(label, nullptr, true).x;
-}
-
-bool Combo(const char *label, int *current, const char *const *items, int count, int heightInItems)
-{
-	if (language == 0) return ImGui::Combo(label, current, items, count, heightInItems);
-	std::vector<const char *> tr((size_t)(count > 0 ? count : 0));
-	for (int i = 0; i < count; i++) tr[(size_t)i] = Tr(items[i]);
-	return ImGui::Combo(label, current, tr.data(), count, heightInItems);
-}
-
-bool Combo(const char *label, int *current, const char *itemsSeparatedByZeros, int heightInItems)
-{
-	if (language == 0) return ImGui::Combo(label, current, itemsSeparatedByZeros, heightInItems);
-	std::string out;
-	for (const char *p = itemsSeparatedByZeros; *p; ) {
-		out += Tr(p);
-		out.push_back('\0');
-		p += strlen(p) + 1;
-	}
-	return ImGui::Combo(label, current, out.c_str(), heightInItems);   // c_str() keeps the final \0 pair
 }
 }

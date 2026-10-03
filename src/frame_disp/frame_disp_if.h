@@ -193,7 +193,7 @@ inline void IfDisplay(std::vector<Frame_IF> *ifList_, Frame_IF *singleClipboard 
 				}
 			}
 
-			im::SameLine(0.f, 20);
+			i18n::SameLineFit(i18n::FieldWidth(im::GetFrameHeight(), LBL("Manual")), 10.f);
 			bool manualMode = manualEditMode[i] != 0;
 			if(im::Checkbox(LBL("Manual"), &manualMode)) {
 				manualEditMode[i] = manualMode ? 1 : 0;
@@ -202,7 +202,7 @@ inline void IfDisplay(std::vector<Frame_IF> *ifList_, Frame_IF *singleClipboard 
 				Tooltip("Enable raw parameter editing for undocumented values");
 			}
 
-			im::SameLine(0.f, 20);
+			i18n::SameLineFit(i18n::ButtonWidth(LBL("Delete")), 10.f);
 			ImGui::PushStyleColor(ImGuiCol_Button, ImVec4(1,0,0,0.4));
 			if(im::Button(LBL("Delete")))
 				deleteI = i;
@@ -1033,16 +1033,16 @@ inline void IfDisplay(std::vector<Frame_IF> *ifList_, Frame_IF *singleClipboard 
 	}
 
 	if(groupClipboard) {
-		im::SameLine(0,20.f);
+		i18n::SameLineFit(i18n::ButtonWidth(LBL("Copy all")), 20.f);
 		if(im::Button(LBL("Copy all"))) {
 			CopyVectorContents<Frame_IF>(*groupClipboard, ifList);
 		}
-		im::SameLine(0,20.f);
+		i18n::SameLineFit(i18n::ButtonWidth(LBL("Paste all")), 20.f);
 		if(im::Button(LBL("Paste all"))) {
 			CopyVectorContents<Frame_IF>(ifList, *groupClipboard);
 			markModified();
 		}
-		im::SameLine(0,20.f);
+		i18n::SameLineFit(i18n::ButtonWidth(LBL("Add copy")), 20.f);
 		if(im::Button(LBL("Add copy"))) {
 			if(singleClipboard) {
 				ifList.push_back(*singleClipboard);

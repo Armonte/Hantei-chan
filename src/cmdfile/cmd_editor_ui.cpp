@@ -62,9 +62,9 @@ std::string BaseName(const std::string& path)
 
 std::string TeamSoloText(const std::string& v)
 {
-	if (v == "0") return "both";
-	if (v == "1") return "team only";
-	if (v == "2") return "solo only";
+	if (v == "0") return TXT("both");
+	if (v == "1") return TXT("team only");
+	if (v == "2") return TXT("solo only");
 	return v;
 }
 
@@ -135,7 +135,7 @@ struct CommandFileEditor::View {
 		pending.push_back({ std::move(edit), std::move(after) });
 	}
 
-	void setStatus(const std::string& s, bool error) { status = s; statusError = error; }
+	void setStatus(const std::string& s, bool error) { status = i18n::TrDetail(s); statusError = error; }
 
 	const Document& doc() const { return ws.state.document; }
 
@@ -219,7 +219,7 @@ void CommandFileEditor::draw(const DocumentChanged& onChanged)
 {
 	m_focusedViewId = 0;
 	for (auto& v : m_views) {
-		const std::string title = "Command file: " + BaseName(v->ws.path()) + (v->ws.dirty() ? " *" : "") +
+		const std::string title = std::string(TXT("Command file: ")) + BaseName(v->ws.path()) + (v->ws.dirty() ? " *" : "") +
 			"###cmdfile_" + std::to_string(v->id);
 		v->drawWindow(title, onChanged);
 		if (v->hasFocus && v->open) m_focusedViewId = static_cast<std::uint64_t>(v->id);
@@ -287,13 +287,13 @@ void CommandFileEditor::View::drawWindow(const std::string& title, const Documen
 				ImGuiTabItemFlags flags = requestTab == index ? ImGuiTabItemFlags_SetSelected : 0;
 				return ImGui::BeginTabItem(label, nullptr, flags);
 			};
-			if (tab("Commands", 0)) { drawCommandsTab(diagnostics); ImGui::EndTabItem(); }
-			const std::string checksLabel = "ExComChecks (" + std::to_string(doc().checks.size()) + ")###checks";
+			if (tab(LBL("Commands"), 0)) { drawCommandsTab(diagnostics); ImGui::EndTabItem(); }
+			const std::string checksLabel = std::string(TXT("ExComChecks")) + " (" + std::to_string(doc().checks.size()) + ")###checks";
 			if (tab(checksLabel.c_str(), 1)) { drawChecksTab(); ImGui::EndTabItem(); }
-			if (tab("Tag data", 2)) { drawTagTab(); ImGui::EndTabItem(); }
-			if (tab("Other sections", 3)) { drawOtherTab(); ImGui::EndTabItem(); }
+			if (tab(LBL("Tag data"), 2)) { drawTagTab(); ImGui::EndTabItem(); }
+			if (tab(LBL("Other sections"), 3)) { drawOtherTab(); ImGui::EndTabItem(); }
 			const std::size_t errors = CountSeverity(diagnostics, Severity::Error), warnings = CountSeverity(diagnostics, Severity::Warning);
-			const std::string problemsLabel = "Problems (" + std::to_string(errors) + "E/" + std::to_string(warnings) + "W)###problems";
+			const std::string problemsLabel = std::string(TXT("Problems")) + " (" + std::to_string(errors) + "E/" + std::to_string(warnings) + "W)###problems";
 			if (errors) ImGui::PushStyleColor(ImGuiCol_Text, kErrorColor);
 			const bool problemsOpen = tab(problemsLabel.c_str(), 4);
 			if (errors) ImGui::PopStyleColor();
@@ -338,7 +338,7 @@ void CommandFileEditor::View::drawToolbar(const std::vector<Diagnostic>& diagnos
 	if (ImGui::IsItemHovered())
 		ImGui::SetTooltip(TXT("Change the profile under Preferences > Extension profile.\nVanilla accepts every shipped file; Extended adds the BOF-only types and rules."));
 	ImGui::SameLine();
-	if (ws.dirty()) ImGui::TextColored(kWarnColor, "%zu line(s) changed", ws.changedLineCount());
+	if (ws.dirty()) ImGui::TextColored(kWarnColor, TXT("%zu line(s) changed"), ws.changedLineCount());
 	else ImGui::TextColored(kOkColor, TXT("saved"));
 	ImGui::TextDisabled("%s", ws.path().c_str());
 	if (ws.notesReadOnly()) {
@@ -454,10 +454,10 @@ void CommandFileEditor::View::drawCommandsTab(const std::vector<Diagnostic>& dia
 	ImGui::EndDisabled();
 	ImGui::SameLine();
 	ImGui::SetNextItemWidth(260);
-	ImGui::InputTextWithHint("##search", "Search ID, input, pattern, comment, note", &search);
+	ImGui::InputTextWithHint("##search", TXT("Search ID, input, pattern, comment, note"), &search);
 	if (!search.empty()) { ImGui::SameLine(); if (ImGui::SmallButton("x")) search.clear(); }
 	ImGui::SameLine();
-	ImGui::SetNextItemWidth(110);
+	ImGui::SetNextItemWidth(i18n::language ? 150.f : 110.f);
 	i18n::Combo("##flagfilter", &flagFilterSet, "Any flags\0Flagset 1 bit\0Flagset 2 bit\0");
 	if (flagFilterSet) {
 		ImGui::SameLine();
@@ -504,7 +504,7 @@ void CommandFileEditor::View::drawCommandTable(const std::vector<Diagnostic>& di
 	ImGui::TableSetupColumn(LBL("Meter"), ImGuiTableColumnFlags_WidthFixed, 52);
 	ImGui::TableSetupColumn(LBL("Team/solo"), ImGuiTableColumnFlags_WidthFixed, 66);
 	ImGui::TableSetupColumn(LBL("Proj. limit"), ImGuiTableColumnFlags_WidthFixed, 66);
-	ImGui::TableSetupColumn(LBL("Dash"), ImGuiTableColumnFlags_WidthFixed, 40);
+	ImGui::TableSetupColumn(LBL("Dash"), ImGuiTableColumnFlags_WidthFixed, i18n::language ? 80.f : 40.f);
 	ImGui::TableSetupColumn(LBL("ExCC"), ImGuiTableColumnFlags_WidthFixed, 38);
 	ImGui::TableSetupColumn(LBL("Comment"), ImGuiTableColumnFlags_WidthStretch);
 	ImGui::TableSetupColumn(LBL("Note"), ImGuiTableColumnFlags_WidthFixed, 140);
@@ -907,27 +907,27 @@ void CommandFileEditor::View::drawCheckDetail()
 	ImGui::Text(TXT("Row %03d for command %s"), chk.index, chk.values[XF_CheckNum].value_or("?").c_str());
 	ImGui::SameLine();
 	ImGui::SetNextItemWidth(320);
-	const std::string preview = info ? std::to_string(info->type) + ": " + info->name : "Type " + chk.values[XF_Type].value_or("?");
+	const std::string preview = info ? std::to_string(info->type) + ": " + TXT(info->name) : std::string(TXT("Type ")) + chk.values[XF_Type].value_or("?");
 	if (ImGui::BeginCombo(LBL("Type"), preview.c_str())) {
 		for (const auto* t : ExComTypes(GetExtensionProfile())) {
-			const std::string name = std::to_string(t->type) + ": " + t->name;
+			const std::string name = std::to_string(t->type) + ": " + TXT(t->name);
 			if (ImGui::Selectable(name.c_str(), info == t)) {
 				const std::string v = std::to_string(t->type);
 				queue([uid, v](WorkspaceSnapshot& s) { const int r = s.document.findCheckRow(uid); return r >= 0 && s.document.setCheckValue(r, XF_Type, v); });
 			}
-			if (ImGui::IsItemHovered()) ImGui::SetTooltip("%s", t->summary);
+			if (ImGui::IsItemHovered()) ImGui::SetTooltip("%s", TXT(t->summary));
 		}
 		ImGui::EndCombo();
 	}
 	if (info && info->extendedOnly && !ExtendedProfileEnabled())
 		ImGui::TextColored(kErrorColor, TXT("Type %d needs a BOF executable: vanilla MBAACC fails it. Enable the Extended profile or change the type."), info->type);
-	if (info) ImGui::TextDisabled("%s", info->summary);
+	if (info) ImGui::TextWrapped("%s", TXT(info->summary));
 	for (int p = 0; p < 5; ++p) {
 		const int f = XF_P0 + p;
 		ImGui::PushID(f);
 		const bool present = chk.values[f].has_value();
-		ImGui::Text("P%d %s", p, info ? info->paramNames[p] : "");
-		if (info && ImGui::IsItemHovered()) ImGui::SetTooltip("%s", info->paramHelp[p]);
+		ImGui::Text("P%d %s", p, info ? TXT(info->paramNames[p]) : "");
+		if (info && ImGui::IsItemHovered()) ImGui::SetTooltip("%s", TXT(info->paramHelp[p]));
 		ImGui::SameLine(220);
 		if (present) {
 			std::string text = *chk.values[f];
@@ -1005,7 +1005,7 @@ void CommandFileEditor::View::drawTagTab()
 		const int in = teamIn, out = teamOut;
 		queue([in, out](WorkspaceSnapshot& s) { return s.document.setTeamChange(in, out); });
 	}
-	ImGui::TextDisabled(TXT("Line %zu%s"), d.teamChange.headerLine + 1, d.teamChange.assignmentForm ? " (key = in, out form)" : " (bare \"in out\" form)");
+	ImGui::TextDisabled(TXT("Line %zu%s"), d.teamChange.headerLine + 1, d.teamChange.assignmentForm ? TXT(" (key = in, out form)") : TXT(" (bare \"in out\" form)"));
 }
 
 void CommandFileEditor::View::drawOtherTab()
@@ -1041,7 +1041,7 @@ void CommandFileEditor::View::drawProblemsTab(const std::vector<Diagnostic>& dia
 		ImGui::TableSetColumnIndex(0);
 		const ImVec4 color = diag.severity == Severity::Error ? kErrorColor : diag.severity == Severity::Warning ? kWarnColor : ImGui::GetStyleColorVec4(ImGuiCol_TextDisabled);
 		ImGui::PushStyleColor(ImGuiCol_Text, color);
-		const char* sev = diag.severity == Severity::Error ? "error" : diag.severity == Severity::Warning ? "warning" : "info";
+		const char* sev = diag.severity == Severity::Error ? TXT("error") : diag.severity == Severity::Warning ? TXT("warning") : TXT("info");
 		if (ImGui::Selectable(sev, false, ImGuiSelectableFlags_SpanAllColumns) && diag.uid) {
 			const int crow = doc().findCommandRow(diag.uid);
 			const int xrow = doc().findCheckRow(diag.uid);
@@ -1053,7 +1053,7 @@ void CommandFileEditor::View::drawProblemsTab(const std::vector<Diagnostic>& dia
 		ImGui::TableSetColumnIndex(1);
 		if (diag.line) ImGui::Text("%d", diag.line);
 		ImGui::TableSetColumnIndex(2);
-		ImGui::TextWrapped("%s", diag.message.c_str());
+		ImGui::TextWrapped("%s", i18n::TrDetail(diag.message).c_str());
 		ImGui::PopID();
 	}
 	ImGui::EndTable();
@@ -1080,9 +1080,9 @@ void CommandFileEditor::View::doSave(bool overwrite)
 
 void CommandFileEditor::View::drawPopups()
 {
-	const std::string saveId = "Save command file?##" + std::to_string(id);
-	const std::string extId = "File changed on disk##" + std::to_string(id);
-	const std::string closeId = "Discard command file changes?##" + std::to_string(id);
+	const std::string saveId = std::string(TXT("Save command file?")) + "###save" + std::to_string(id);
+	const std::string extId = std::string(TXT("File changed on disk")) + "###ext" + std::to_string(id);
+	const std::string closeId = std::string(TXT("Discard command file changes?")) + "###close" + std::to_string(id);
 	if (openSavePopup) { ImGui::OpenPopup(saveId.c_str()); openSavePopup = false; }
 	if (openExternalPopup) { ImGui::OpenPopup(extId.c_str()); openExternalPopup = false; }
 	if (openClosePopup) { ImGui::OpenPopup(closeId.c_str()); openClosePopup = false; }
@@ -1090,11 +1090,11 @@ void CommandFileEditor::View::drawPopups()
 	if (ImGui::BeginPopupModal(saveId.c_str(), nullptr, ImGuiWindowFlags_AlwaysAutoResize)) {
 		const auto diagnostics = Validate(doc(), GetExtensionProfile());
 		ImGui::Text(TXT("Replace %s"), ws.path().c_str());
-		ImGui::Text(TXT("%zu line(s) changed%s."), ws.changedLineCount(), ws.notesDirty() ? ", notes changed" : "");
+		ImGui::Text(TXT("%zu line(s) changed%s."), ws.changedLineCount(), ws.notesDirty() ? TXT(", notes changed") : "");
 		ImGui::Text(TXT("Profile: %s"), ExtensionProfileName(GetExtensionProfile()));
 		const auto warnings = CountSeverity(diagnostics, Severity::Warning);
-		if (HasErrors(diagnostics)) ImGui::TextColored(kErrorColor, "%zu error(s) block the save. See the Problems tab.", CountSeverity(diagnostics, Severity::Error));
-		else if (warnings) ImGui::TextColored(kWarnColor, "%zu warning(s); saving is allowed.", warnings);
+		if (HasErrors(diagnostics)) ImGui::TextColored(kErrorColor, TXT("%zu error(s) block the save. See the Problems tab."), CountSeverity(diagnostics, Severity::Error));
+		else if (warnings) ImGui::TextColored(kWarnColor, TXT("%zu warning(s); saving is allowed."), warnings);
 		ImGui::TextWrapped(TXT("The current file is copied to .hantei-backups first, then replaced atomically. Only edited lines change; every other byte (CP932 comments, spacing, line endings) is kept."));
 		ImGui::BeginDisabled(HasErrors(diagnostics));
 		if (ImGui::Button(LBL("Back up and save"))) { doSave(false); ImGui::CloseCurrentPopup(); }

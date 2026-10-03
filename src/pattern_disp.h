@@ -20,7 +20,7 @@ inline void PatternDisplay(Sequence *seq, FrameData *frameData = nullptr, int pa
 			"1: Must be shielded according to level and stance (Level 0 can be shielded both ways)\n"
 			"5: Must be shielded according to stance. Do not trigger H-Moon Shield Counter\n"
 			"Projectiles can be shieded either way regardless");
-	ImGui::SameLine();
+	i18n::SameLineFit(i18n::FieldWidth(spacing, LBL("Level")) + 30.f, 10.f);
 
 	ImGui::SetNextItemWidth(spacing);
 	if(ImGui::InputInt(LBL("Level"), &seq->level, 0, 0) && frameData && patternIndex >= 0) {
@@ -33,7 +33,7 @@ inline void PatternDisplay(Sequence *seq, FrameData *frameData = nullptr, int pa
 		"C Moon: Rebeat penalty applied for canceling into lower level attacks\n"
 		"Level 0 can be shielded either way if PSTS = 1\n"
 		"Level 0 can be self canceled");
-	ImGui::SameLine();
+	i18n::SameLineFit(i18n::FieldWidth(spacing, LBL("Flag")) + 30.f, 10.f);
 
 	const bool uni = frameData && frameData->usesUniFormat();
 	ImGui::SetNextItemWidth(spacing);

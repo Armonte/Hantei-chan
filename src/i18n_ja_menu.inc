@@ -150,7 +150,7 @@
 {"About", "バージョン情報"},
 {"Loaded: %s", "読み込み済み: %s"},
 {"-> Saves to: %s", "-> 保存先: %s"},
-{"Saving writes the patterns that came from %s plus every\npattern you edited. %d unedited pattern(s) inherited from the\nother files of %s are left in those files.", "保存すると、%s 由来のパターンと編集したすべての\nパターンが書き込まれます。%s の他のファイルから継承した\n未編集の %d 個のパターンはそれらのファイルに残ります。"},
+{"Saving writes the patterns that came from %s plus every\npattern you edited. %d unedited pattern(s) inherited from the\nother files of %s are left in those files.", "保存すると、%s 由来のパターンと編集したすべての\nパターンが書き込まれます。未編集の %d 個のパターンは\n%s の他のファイルから継承したもので、それらのファイルに残ります。"},
 {"Save to: %s", "保存先: %s"},
 {"No save target set for %s", "%s の保存先が設定されていません"},
 {"No character loaded", "キャラクターが読み込まれていません"},

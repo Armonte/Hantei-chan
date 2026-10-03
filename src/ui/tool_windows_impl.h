@@ -420,7 +420,7 @@ void MainFrame::drawKeyBindingsWindow()
 			ImGui::PushID((int)i);
 			ImGui::TableNextRow();
 			ImGui::TableNextColumn();
-			ImGui::TextUnformatted(b.name);
+			ImGui::TextUnformatted(TXT(b.name));
 			if (b.reach == ShortcutReach::focusedContext) { ImGui::SameLine(); ImGui::TextDisabled("%s", TXT("(character view)")); }
 			ImGui::TableNextColumn();
 			const bool capturing = m_keyCapture == (int)i;

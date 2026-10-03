@@ -112,7 +112,7 @@ inline void AtDisplay(Frame_AT *at, FrameData *frameData = nullptr, int patternI
 	if(im::InputInt(LBL("Untech time"), &at->untechTime, 0,0)) {
 		markModified();
 	}
-	im::SameLine(0.f, 20); im::SetNextItemWidth(width);
+	i18n::SameLineFit(i18n::FieldWidth(width, LBL("Circuit break time"))); im::SetNextItemWidth(width);
 	if(im::InputInt(LBL("Circuit break time"), &at->breakTime, 0,0)) {
 		markModified();
 	}
