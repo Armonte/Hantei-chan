@@ -118,6 +118,97 @@ bool ParseEx3(const uint8_t *p, size_t n, Ex3 &e, std::string *err, size_t heade
 	return true;
 }
 
+namespace {
+struct Bpe {
+	Ex3EncodeParams P;
+	std::vector<uint8_t> hl, hr, count;
+	uint8_t left[256], right[256];
+	int lookup(uint8_t a, uint8_t b)
+	{
+		const int mask = P.hashSize - 1;
+		int i = (a ^ (b << 5)) & mask;
+		while ((hl[i] != a || hr[i] != b) && count[i] != 0) i = (i + 1) & mask;
+		hl[i] = a; hr[i] = b;
+		return i;
+	}
+	// One block, Gage's fileread + compress + (table via WriteTable).
+	size_t Block(const uint8_t *data, size_t pos, size_t n, std::vector<uint8_t> &buf)
+	{
+		hl.assign(P.hashSize, 0); hr.assign(P.hashSize, 0); count.assign(P.hashSize, 0);
+		for (int c = 0; c < 256; c++) { left[c] = (uint8_t)c; right[c] = 0; }
+		buf.clear(); int used = 0; int size = 0;
+		while (size < P.blockSize && used < P.maxChars && pos < n) {
+			const uint8_t c = data[pos++];
+			if (size > 0) { const int idx = lookup(buf[size - 1], c); if (count[idx] < 255) ++count[idx]; }
+			buf.push_back(c);
+			if (!right[c]) { right[c] = 1; used++; }
+			size++;
+		}
+		buf.push_back(0);   // the C buffer has a byte past the end that the final copy reads
+		int code = 256;
+		for (;;) {
+			for (code--; code >= 0; code--) if (code == left[code] && !right[code]) break;
+			if (code < 0) break;
+			int best = 2, lc = 0, rc = 0;
+			for (int idx = 0; idx < P.hashSize; idx++) if (count[idx] > best) { best = count[idx]; lc = hl[idx]; rc = hr[idx]; }
+			if (best < P.threshold) break;
+			const int oldsize = size - 1; int w = 0, r = 0;
+			for (; r < oldsize; r++) {
+				if (buf[r] == lc && buf[r + 1] == rc) {
+					if (r > 0) {
+						int idx = lookup(buf[w - 1], (uint8_t)lc); if (count[idx] > 1) --count[idx];
+						idx = lookup(buf[w - 1], (uint8_t)code); if (count[idx] < 255) ++count[idx];
+					}
+					if (r < oldsize - 1) {
+						int idx = lookup((uint8_t)rc, buf[r + 2]); if (count[idx] > 1) --count[idx];
+						idx = lookup((uint8_t)code, buf[r + 2]); if (count[idx] < 255) ++count[idx];
+					}
+					buf[w++] = (uint8_t)code; r++; size--;
+				} else buf[w++] = buf[r];
+			}
+			buf[w] = buf[r];
+			left[code] = (uint8_t)lc; right[code] = (uint8_t)rc;
+			const int idx = lookup((uint8_t)lc, (uint8_t)rc); count[idx] = 1;
+		}
+		buf.resize((size_t)size);
+		return pos;
+	}
+	void WriteTable(std::vector<uint8_t> &o)
+	{
+		int c = 0;
+		while (c < 256) {
+			int len;
+			if (c == left[c]) {
+				len = 1; c++;
+				while (len < 127 && c < 256 && c == left[c]) { len++; c++; }
+				o.push_back((uint8_t)(len + 127)); len = 0;
+				if (c == 256) break;
+			} else {
+				len = 0; c++;
+				while ((len < 127 && c < 256 && c != left[c]) || (len < 125 && c < 254 && c + 1 != left[c + 1])) { len++; c++; }
+				o.push_back((uint8_t)len); c -= len + 1;
+			}
+			for (int i = 0; i <= len; i++, c++) {
+				o.push_back(left[c]);
+				if (c != left[c]) o.push_back(right[c]);
+			}
+		}
+	}
+};
+}
+
+void EncodeEx3(const uint8_t *header, size_t headerSize, const uint8_t *d, size_t n, std::vector<uint8_t> &out, const Ex3EncodeParams &prm)
+{
+	out.assign(header, header + headerSize);
+	Bpe b; b.P = prm; std::vector<uint8_t> buf; size_t pos = 0;
+	while (pos < n) {
+		pos = b.Block(d, pos, n, buf);
+		b.WriteTable(out);
+		out.push_back((uint8_t)(buf.size() >> 8)); out.push_back((uint8_t)buf.size());
+		out.insert(out.end(), buf.begin(), buf.end());
+	}
+}
+
 bool DecodeEx3(const Ex3 &e, std::vector<uint8_t> &out, std::string *err)
 {
 	out.clear(); out.reserve(e.decodedBytes);
