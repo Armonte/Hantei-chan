@@ -16,6 +16,8 @@
 #include "../han2_export.h"
 #include "../han2_diff.h"
 #include "../han2_anim.h"
+#include "../framedata_gof1.h"
+#include "gof1_archive.h"
 #include "img_file.h"
 #include "../png_writer.h"
 #include "../parts/parts.h"
@@ -513,6 +515,31 @@ static int CmdAnimTest(int argc, char **argv)
 	return bad ? 1 : 0;
 }
 
+// gof1rt: every character .DAT of a GOF1 .p archive: stage-1 + stage-2 decrypt -> model -> save -> must equal the decrypted file; re-encrypt must equal the stored bytes
+static int CmdGof1Rt(int argc, char **argv)
+{
+	int pass = 0, fail = 0, skipped = 0;
+	for (int i = 0; i < argc; i++) {
+		gof1::Archive a; std::string err;
+		if (!gof1::Open(argv[i], a, &err)) { printf("FAIL %s: %s\n", argv[i], err.c_str()); fail++; continue; }
+		for (size_t k = 0; k < a.entries.size(); k++) {
+			if (!EndsWithNoCase(a.entries[k].name, ".DAT")) continue;
+			std::vector<uint8_t> stored, plain;
+			if (!gof1::ReadEntry(a, k, stored, &err)) { fail++; continue; }
+			plain = stored; gof1::DecryptDat(plain);
+			FrameData fd;
+			if (!gof1::Load(fd, plain.data(), plain.size(), &err)) { printf("SKIP %s::%s: %s\n", argv[i], a.entries[k].name.c_str(), err.c_str()); skipped++; continue; }
+			std::vector<uint8_t> out;
+			if (!gof1::Serialize(fd, out, &err)) { printf("FAIL %s: %s\n", a.entries[k].name.c_str(), err.c_str()); fail++; continue; }
+			std::vector<uint8_t> enc = out; gof1::EncryptDat(enc);
+			if (out == plain && enc == stored) pass++;
+			else { size_t d = 0; while (d < std::min(out.size(), plain.size()) && out[d] == plain[d]) d++; if (!getenv("NODUMP")) { std::ofstream(std::filesystem::u8path("C:/dev/hantei-chan/work/g1_out.bin"), std::ios::binary).write((const char *)out.data(), (std::streamsize)out.size()); std::ofstream(std::filesystem::u8path("C:/dev/hantei-chan/work/g1_plain.bin"), std::ios::binary).write((const char *)plain.data(), (std::streamsize)plain.size()); } printf("FAIL %s::%s: first diff 0x%zx (sizes %zu vs %zu)%s\n", argv[i], a.entries[k].name.c_str(), d, out.size(), plain.size(), enc == stored ? "" : " re-encrypt differs"); fail++; }
+		}
+	}
+	printf("TOTAL pass %d fail %d skipped %d\n", pass, fail, skipped);
+	return fail ? 1 : 0;
+}
+
 int main(int argc, char **argv)
 {
 	CoInitializeEx(nullptr, COINIT_MULTITHREADED);
@@ -533,6 +560,7 @@ int main(int argc, char **argv)
 	if (c == "cgrt") return CmdCgRt(argc - 2, argv + 2);
 	if (c == "diff") return CmdDiff(argc - 2, argv + 2);
 	if (c == "animtest") return CmdAnimTest(argc - 2, argv + 2);
+	if (c == "gof1rt") return CmdGof1Rt(argc - 2, argv + 2);
 	if (c == "pacrt") return CmdPacRt(argc - 2, argv + 2);
 	printf("unknown command %s\n", c.c_str());
 	return 2;

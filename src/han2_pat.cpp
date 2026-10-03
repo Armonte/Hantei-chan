@@ -36,7 +36,9 @@ bool IsPat(const uint8_t *blob, size_t size)
 	if (size < 8) return false;
 	uint32_t v, m;
 	memcpy(&v, blob, 4); memcpy(&m, blob + 4, 4);
-	return (v == 3 || v == 4) && m == 0x01234567u;
+	if (m != 0x01234567u) return false;
+	if (v == 3 || v == 4) return true;
+	return v == 2 && size >= 0x8CBC + 3680 && ((uint32_t)rd32(blob + 0x8CB8) <= size);   // GOF1 parts blob: same layout as v3 with magic 2
 }
 
 bool PatToParts(const uint8_t *blob, size_t size, Parts &parts, std::string *err)

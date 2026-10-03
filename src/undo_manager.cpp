@@ -122,13 +122,14 @@ bool han2FrameRawEquals(const Han2FrameRaw& a, const Han2FrameRaw& b)
 {
 	return a.valid == b.valid && a.frameSize == b.frameSize && a.hadAT == b.hadAT && a.hadFx == b.hadFx && std::memcmp(a.fx, b.fx, sizeof(a.fx)) == 0 && a.scriptHad == b.scriptHad && a.boxMask == b.boxMask
 		&& std::memcmp(a.rec, b.rec, sizeof(a.rec)) == 0 && std::memcmp(a.at, b.at, sizeof(a.at)) == 0
-		&& std::memcmp(a.script, b.script, sizeof(a.script)) == 0 && std::memcmp(a.box, b.box, sizeof(a.box)) == 0;
+		&& std::memcmp(a.script, b.script, sizeof(a.script)) == 0 && std::memcmp(a.box, b.box, sizeof(a.box)) == 0
+		&& std::memcmp(a.gofIf, b.gofIf, sizeof(a.gofIf)) == 0 && std::memcmp(a.gofEf, b.gofEf, sizeof(a.gofEf)) == 0 && a.gofIfMask == b.gofIfMask && a.gofEfMask == b.gofEfMask;
 }
 
 bool han2SeqRawEquals(const Han2SeqRaw& a, const Han2SeqRaw& b)
 {
 	return a.valid == b.valid && a.nameValid == b.nameValid && a.patFlags == b.patFlags && a.firstFrame == b.firstFrame
-		&& std::memcmp(a.name, b.name, sizeof(a.name)) == 0;
+		&& std::memcmp(a.name, b.name, sizeof(a.name)) == 0 && std::memcmp(a.gofHdr, b.gofHdr, sizeof(a.gofHdr)) == 0;
 }
 
 bool frameEquals(const Frame& a, const Frame& b)

@@ -16,7 +16,7 @@
 struct Han2Container
 {
 	uint8_t  header[0x40]{};          // file header as loaded (area offsets/sizes are recomputed on save)
-	uint32_t sub = 1;                 // 1 = RBO, 2 = GOF2
+	uint32_t sub = 1;                 // 1 = RBO, 2 = GOF2, 3 = GOF1 (framedata_gof1.cpp; own container, same Han2Raw records)
 	uint32_t kind = 0;                // 0 = full file, 3 = pattern area only (.DT2)
 	std::vector<uint32_t> lead, tail; // pattern-area header dwords kept verbatim
 	std::vector<uint8_t> sec[9];      // sections the model does not rebuild (4, 5, GOF2 8) + record 0 of the script lists (6, 7)
@@ -31,6 +31,8 @@ struct Han2Container
 	std::string gofDir;               // folder the companions were read from / are written to (empty for archive sources)
 	bool partsDirty = false, cgDirty = false;
 	std::vector<uint8_t> originalPatternFile;   // the file's pattern area as loaded (a .DT2-shaped copy), for 'diff against original'
+	std::vector<uint8_t> extra;       // GOF1 (sub 3): the 0x44-byte file header (decrypted)
+	std::string gof1Name;             // GOF1: entry name inside the .p archive (e.g. AKIKO.DAT)
 	std::string datPath;              // .DAT carrying parts / CG / names when sourcePath is a .DT2 (may be empty)
 };
 
