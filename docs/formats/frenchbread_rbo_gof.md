@@ -148,7 +148,7 @@ Totals of the last run (RBO + GOF2 + GOF1 shipped files, 7,971 non-container ent
 | `audiort` | RIFF WAVE chunk round trip (6,101 files); MPEG frames validated | 6,101 | 0 | 0 | - |
 | `miscrt` | `.BMP` header/palette/pixels, Shift-JIS text line structure | 6 | 0 | 0 | - |
 | `opaquert` | the one stale file with no reader (raw passthrough) | 1 | 0 | 0 | - |
-| `gof1rt` | 4 archive rebuilds + 3 nested archives (index re-encoded, entry cipher inverted) + members: 71 character `.DAT`, 232 `.EX3`, 89 `.WAV`, 17 `.MP3`, 14 text, 8 `.BMP`, 8 `.CT`, 8 `.WMT`, 1 `.FNT` | 455 | 0 | 0 | 59 members with no reader (36 `.B`, 4 `.CPF`, 1 `CHARSEL.CT`, 17 binary `.TXT`) + 1 overlap decoy entry |
+| `gof1rt` | 4 archive rebuilds + 3 nested archives (index re-encoded, entry cipher inverted) + every member by what it is: 71 character `.DAT`, 232 `.EX3`, 89 `.WAV`, 17 `.MP3`, 22 text, 36 `.B` polygon objects, 8 `.BMP`, 8 `.CT`, 8 `.WMT`, 8 `_<CHAR>COM.TXT` + 4 `.CPF` AI scripts, `CHARSEL.CT`, `MULTICOM.TXT`, 1 `.FNT` | 513 | 0 | 0 | 0 members left without a structured model (+ 1 overlap decoy entry that has no data) |
 
 `animtest` is a BEHAVIOUR check, not a byte round trip: the live stepper (`han2_anim.cpp`) must reproduce `SimulateFlow`'s tick count. Last run:
 5,335 patterns agree, 0 differ. 10,884 patterns are not comparable because their flow does not end by itself: 3,003 reach an ani flag that branches on game
@@ -209,6 +209,29 @@ when the bytes do not parse).
   Nested archives (`PAC.PAC`, `0083`, `933`): index re-encoded and every entry cipher inverted, members checked recursively. The nested `PAC.PAC` has one decoy entry of size
   0xFFFFFFFF (-1); every LATER entry's stored offset is one byte too small (found at offset + 1, proven by the cipher decoding to the character magic), which is how the
   three copies behind it (`コピー ～ AYAKA.DAT`, `DIGIKO.DAT`, `コピー ～ LASTDATA2.DAT`) now load.
-* **No reader, and why** (archive-rebuild proof only): `.B` polygon objects (36; `SysGraphic_LoadFileIntoSlot` 0x42B170 reads `Object`, a u16 texture count and 56-byte name slots, the
-  vertex data behind them is consumed by a renderer path not decoded), `.CPF` (4; 56,048 B, no loader xref), `CHARSEL.CT` (1; 1,348 B grid, not a command table), binary `.TXT`
-  (`_<CHAR>COM.TXT` 59,048 B x 8 + variants and `MULTICOM.TXT`; AI/command tables, layout unresolved), and `DATA01::DUSTNESS.DAT` (above).
+* **GOF1 .B polygon objects** (36; `Poly_DrawObject` 0x423170 renders them, `SysGraphic_LoadFileIntoSlot` 0x42B170 loads them; both renamed in gof.exe.i64).
+  `header[16] "Object" | u16 nTextures | u16 flag | slot[56] x nTextures | u32 geomOffset | gap | geometry`. Slot = `char name[32]` (empty = untextured, loader prefixes `.\grp\tex\`),
+  `u32 argb`, 5 floats. Geometry at `geomOffset`: `u16 nVerts | u32 nFaces` (the count is read unaligned at +2) `| 20 unread bytes | Vertex[nVerts] (3 floats) | Face[nFaces] (56 B)`;
+  Face = `u16 texture | u16 nIndices (3 = triangle, 4 = quad, anything else is not drawn) | u16 index[4] | float u[4] | float v[4] | 12 unread bytes`. The arrays end exactly at the end
+  of every file (36/36; 5,431 vertices, 5,259 faces). The 396-byte `gap` and the geometry tail are never read by the engine (renderer reads only +16, +18, the offset and the
+  arrays); the gap is high-entropy and identical across groups of files (1.B..4.B; 1P/2P/AKIKO/AYAKA/...; N/O/R/U), so it is kept verbatim. The Hantei-chan file viewer draws a rotatable
+  wireframe for `.B` (`han2_pac_window.cpp`, `Viewer::Poly`).
+* **GOF1 .CPF and `_<CHAR>COM.TXT`** are the same format, the CPU AI script (`FighterCpuAi_LoadScriptFile` 0x403BB0 reads the whole file into a 56,048-byte per-player buffer
+  `g_CpuAiScriptBuffers`; consumers `FighterCpuAiStep` 0x403E70, `FighterCpuAi_ApplyScriptCommand`, `FighterCpuAi_PickWeightedScript`). The four `.CPF` are the training-mode dummy behaviours
+  (`Battle_LoadTrainingCpuAiScripts` 0x4452F0 picks `g_TrainingDummyCpfNames[mode]` = deku / jump / crouch / guard; mode 4 loads the character's own `<CHAR>COM.TXT` named by the CHARSEL table). The earlier
+  "no loader reference" was a pointer table (xref from data, not code). Layout: `u8 guardBase | u8 reactChance | u8 reactCmd[3] | 203 unread bytes | WeightTable[24] (160 B: s32 script[20], s32 weight[20];
+  index = opponentStance + 3 * (distanceBucket + 4 * ownIsAir)) | Script[50] x Step[20] (52 B)`. Step: `u8 action (0..0xF: 0..6 direction, 7..0xA button, 0xB..0xE direction + button, 0xF = command move)`,
+  `s16 commandId` (+2), `s16 durationBase` (+4), `s16 durationRandom` (+6), `u8 endFlag` (+8, 1 = script ends), `u8 flags` (+42: 1/2 continue on hit, 4 sets a request flag), `u8 inputDir` (+43), the rest unread.
+  The archive copies of `_<CHAR>COM.TXT` are 59,048 bytes: the 3,000 bytes after the 56,048-byte buffer are never read (they spill into the next player's buffer) and are kept as a tail.
+* **CHARSEL.CT** is the character table: `CSS_LoadCharselTxtGrid` 0x42BCA0 loads `CHARSEL.TXT` with the extension replaced by `.ct`, then `Crypto_XorWithKeyString` with the Shift-JIS key
+  `ファイルが見つかりません` (`g_CharSelTableKey` 0x4645DC; `buf[i] ^= i + key[i % klen]`) over `168 * count` bytes after the `u32 count`. Entry (168 B): `name[32] | datFile[32] | ctFile[32] | aiFile[32] |
+  u32 runtimeGridIndex | u32 charFileId | u32 ordinal | u32 id2 | u32 unlockMask | u32 page | u32 gridPos (row * 10 + col) | u32 a | u32 b | u32 c` (the last three unread by the loader). Deciphered:
+  CIEL, AYU, ECOCO, MORI, DIGIKO, SATSUKI (unlock 0x10), AKIKO (2), AYAKA (4), with their `.dat`, `_c.txt`/`.ct` and `_<char>com.txt` file names.
+* **MULTICOM.TXT** (19,848 B) is not referenced by any name table in gof.exe (the AI file names come only from the CHARSEL table above); it is an older/unused layout: `i32 15 | i32 0 | 124 x 160-byte`
+  `s32[20] + s32[20]` tables (the same table shape as the AI file's weight tables; 6 of them hold values outside the plausible range, so it is probably a stale dump). Typed as that, round trip exact.
+* **No reader for DATA01::DUSTNESS.DAT** after a second, exhaustive attempt (`tools/han2/dustness_attempts.py`, reads the PAC in place): whole-file XOR under every string key we know (RBO
+  pattern key at 0x48A1A4 / 0x47D338 in rbo.exe, the three GOF1 DAT section keys, the CHARSEL key, name keys `DUSTNESS[.DAT|.FOB]` / `DUSTINESS[...]` in both cases, `SZUKI`; each at 4 offsets),
+  dword streams under 0xE3DF59AC, 0xFA261EFB, 0x47D338 and others, the replay/save LCG stream (`x = 1021 - 354542487 x`) under 6 seeds incl. the file's own first dwords, and zlib / raw deflate / bzip2 / lzma at
+  17 start offsets. None produces the `HAN2RBO ` magic or drops the entropy (best 7.70 bits/byte against 7.993 raw); the keystream implied by a `HAN2RBO ` plaintext (`91 d2 b0 0f b6 8b 56 c9`)
+  is a substring of no known key; DUSTNESS XOR DUSTINESS has no short period (best 7.4 % self-agreement at 256). The string "SZUKI" occurs in none of the four RBO exes. Conclusion: not a keyed
+  French-Bread container; most likely a corrupt or truncated stale build artefact. Kept as the one known-opaque file.

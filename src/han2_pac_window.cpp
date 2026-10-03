@@ -1,10 +1,12 @@
 #include "han2_pac_window.h"
 #include "han2/pac_archive.h"
 #include "han2/img_file.h"
+#include "han2/misc_formats.h"
 #include "filedialog.h"
 #include "png_writer.h"
 #include "misc.h"
 #include "i18n.h"
+#include <cmath>
 #include <cstdarg>
 
 #include <windows.h>
@@ -188,7 +190,8 @@ struct Viewer {
 	int id = 0; bool open = true;
 	std::string name, origin;           // name: CP932
 	std::vector<uint8_t> bytes;
-	enum Kind { Hex, Image } kind = Hex;
+	enum Kind { Hex, Image, Poly } kind = Hex;
+	han2::PolyObject poly; float polyYaw = 0.f, polyPitch = 0.f, polyZoom = 1.f;
 	han2::ImgFile img; GLuint tex = 0; float zoom = 1.f; bool checker = true; bool dirty = false; std::string msg;
 	std::vector<std::string> strings;
 };
@@ -222,6 +225,7 @@ void OpenFileViewer(const std::string &name, std::vector<uint8_t> bytes, const s
 	auto v = std::make_unique<Viewer>();
 	v->id = g_nextView++; v->name = name; v->origin = origin; v->bytes = std::move(bytes);
 	if (han2::IsImg(v->bytes.data(), v->bytes.size()) && han2::ParseImg(v->bytes.data(), v->bytes.size(), v->img, nullptr)) { v->kind = Viewer::Image; Upload(*v); }
+	else if (name.size() > 2 && (name.compare(name.size() - 2, 2, ".B") == 0 || name.compare(name.size() - 2, 2, ".b") == 0) && han2::ParsePoly(v->bytes.data(), v->bytes.size(), v->poly, nullptr)) v->kind = Viewer::Poly;
 	else CollectStrings(*v);
 	g_views.push_back(std::move(v));
 }
@@ -264,6 +268,26 @@ void DrawFileViewers()
 					dl->AddRectFilled(ImVec2(p0.x + x, p0.y + y), ImVec2(std::min(p0.x + x + 16, p0.x + sz.x), std::min(p0.y + y + 16, p0.y + sz.y)), (((int)(x / 16) + (int)(y / 16)) & 1) ? IM_COL32(110, 110, 110, 255) : IM_COL32(160, 160, 160, 255));
 			}
 			ImGui::Image((ImTextureID)(intptr_t)v.tex, sz);
+			ImGui::EndChild();
+		} else if (v.kind == Viewer::Poly) {
+			// GOF1 .B polygon object (docs/formats/frenchbread_rbo_gof.md section 7): wireframe of every triangle/quad face, orthographic, drag to rotate
+			ImGui::Text(TXT("GOF1 polygon object: %u vertices, %u faces, %u texture slots"), (unsigned)v.poly.nVerts, v.poly.nFaces, (unsigned)v.poly.nTextures);
+			ImGui::SetNextItemWidth(120); ImGui::SliderFloat(LBL("zoom"), &v.polyZoom, 0.2f, 6.f);
+			ImGui::SameLine(); if (ImGui::Button(LBL("Reset view"))) { v.polyYaw = v.polyPitch = 0.f; v.polyZoom = 1.f; }
+			ImGui::BeginChild("poly", ImVec2(0, 0), true);
+			ImVec2 p0 = ImGui::GetCursorScreenPos(), sz = ImGui::GetContentRegionAvail();
+			ImGui::InvisibleButton("polydrag", sz);
+			if (ImGui::IsItemActive() && ImGui::IsMouseDragging(ImGuiMouseButton_Left)) { v.polyYaw += ImGui::GetIO().MouseDelta.x * 0.01f; v.polyPitch += ImGui::GetIO().MouseDelta.y * 0.01f; }
+			ImDrawList *dl = ImGui::GetWindowDrawList();
+			float r = 1.f; for (auto &q : v.poly.verts) r = std::max(r, std::max(std::fabs(q.x), std::max(std::fabs(q.y), std::fabs(q.z))));
+			const float sc = 0.45f * std::min(sz.x, sz.y) / r * v.polyZoom, cy = std::cos(v.polyYaw), sy = std::sin(v.polyYaw), cp = std::cos(v.polyPitch), sp = std::sin(v.polyPitch);
+			auto proj = [&](const han2::PolyVertex &q) { float x = q.x * cy + q.z * sy, z = -q.x * sy + q.z * cy, y = q.y * cp - z * sp; return ImVec2(p0.x + sz.x * 0.5f + x * sc, p0.y + sz.y * 0.5f - y * sc); };
+			for (auto &f : v.poly.faces) {
+				if (f.nIndices < 3 || f.nIndices > 4) continue;
+				bool ok = true; ImVec2 pt[4]; for (int k = 0; k < f.nIndices; k++) { if (f.index[k] >= v.poly.verts.size()) { ok = false; break; } pt[k] = proj(v.poly.verts[f.index[k]]); }
+				if (!ok) continue;
+				for (int k = 0; k < f.nIndices; k++) dl->AddLine(pt[k], pt[(k + 1) % f.nIndices], f.texture < v.poly.slots.size() && v.poly.slots[f.texture].name[0] ? IM_COL32(120, 220, 255, 255) : IM_COL32(230, 230, 230, 255));
+			}
 			ImGui::EndChild();
 		} else {
 			ImGui::TextWrapped("%s", TXT("Script bank / data file. Raw view below; strings found (CP932):"));
