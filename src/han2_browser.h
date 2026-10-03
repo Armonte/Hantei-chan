@@ -15,6 +15,7 @@ struct OpenRequest {
 	std::string stem;           // character file name without extension
 	han2::ReadFn read;          // reads files from the mounted archives (later entries in the mount list override earlier ones)
 	std::string origin;
+	std::string gof1Archive, gof1Entry;   // set for GOF1 .p entries: archive path + entry name
 };
 
 // Mount an archive (error text when it is not a PAC).

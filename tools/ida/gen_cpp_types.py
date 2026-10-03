@@ -18,7 +18,7 @@ CT = {'char': 'char', 'unsigned char': 'uint8_t', 'signed char': 'int8_t', '__in
       'int': 'int32_t', 'unsigned int': 'uint32_t', '__int32': 'int32_t', 'unsigned __int32': 'uint32_t', 'float': 'float',
       '__int64': 'int64_t', 'unsigned __int64': 'uint64_t',
       'int8_t': 'int8_t', 'uint8_t': 'uint8_t', 'int16_t': 'int16_t', 'uint16_t': 'uint16_t', 'int32_t': 'int32_t', 'uint32_t': 'uint32_t'}
-UND = {'unsigned char': 'uint8_t', 'unsigned int': 'uint32_t', 'int': 'int32_t', 'unsigned __int16': 'uint16_t', '__int16': 'int16_t', 'int32_t': 'int32_t', 'uint32_t': 'uint32_t', 'uint8_t': 'uint8_t', 'uint16_t': 'uint16_t', 'int8_t': 'int8_t', 'int16_t': 'int16_t'}
+UND = {'unsigned short': 'uint16_t', 'short': 'int16_t', 'char': 'int8_t', 'unsigned char': 'uint8_t', 'unsigned int': 'uint32_t', 'int': 'int32_t', 'unsigned __int16': 'uint16_t', '__int16': 'int16_t', 'int32_t': 'int32_t', 'uint32_t': 'uint32_t', 'uint8_t': 'uint8_t', 'uint16_t': 'uint16_t', 'int8_t': 'int8_t', 'int16_t': 'int16_t'}
 
 text = ''
 for p in sys.argv[2:]:
@@ -47,9 +47,14 @@ for m in re.finditer(r'(struct|union)\s+(\w+)\s*\{(.*?)\n\};', text, re.S):
     for line in m.group(3).split('\n'):
         line = line.strip()
         if not line or line.startswith('//'): continue
-        mm = re.match(r'(.+?)\s+(\*?\w+)(?:\[(\w+)\])?;\s*(?://\s*(.*))?$', line)
+        mm = re.match(r'(.+?)\s+(\*?\w+)((?:\[\w+\])*);\s*(?://\s*(.*))?$', line)
         if not mm: raise SystemExit('cannot parse: ' + line)
-        ty, fn, cnt, cm = mm.group(1).strip(), mm.group(2), mm.group(3), mm.group(4) or ''
+        ty, fn, dims, cm = mm.group(1).strip(), mm.group(2), mm.group(3), mm.group(4) or ''
+        cnt = None
+        if dims:
+            cnt = 1
+            for d in re.findall(r'\[(\w+)\]', dims): cnt *= int(d, 0)
+            cnt = str(cnt)
         ty = re.sub(r'^(struct|union|enum)\s+', '', ty)
         ptr = fn.startswith('*') or ty.endswith('*') or ty in fnptr
         fn = fn.lstrip('*')

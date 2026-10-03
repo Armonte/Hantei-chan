@@ -42,10 +42,10 @@ Dec DecodeRec(const uint8_t *r)
 }
 
 // the record the model asks for (floats converted back the way the reader converted them)
-Dec FromModel(const PartProperty &pr, const CutOut<> &co)
+Dec FromModel(const PartProperty &pr, const CutOut<> &co, int xBias, int yBias)
 {
 	Dec d{};
-	d.x = pr.x; d.y = pr.y; d.dw = co.wh[0]; d.dh = co.wh[1]; d.flip = pr.flip & 3;
+	d.x = pr.x + xBias; d.y = pr.y + yBias; d.dw = co.wh[0]; d.dh = co.wh[1]; d.flip = pr.flip & 3;
 	d.sxp = (int)lroundf(pr.scaleX * 1000.f); d.syp = (int)lroundf(pr.scaleY * 1000.f);
 	d.rot = (int)lroundf(pr.rotation[3] * 10000.f);
 	memcpy(d.bgra, pr.bgra, 4);
@@ -107,6 +107,7 @@ bool BuildPat(const Parts &parts, const std::vector<uint8_t> &orig, std::vector<
 	auto fail = [&](const std::string &m) { if (err) *err = m; return false; };
 	if (!IsPat(orig.data(), orig.size())) return fail("original PAT block missing");
 	const int nPoses = rd32(orig.data()) == 4 ? 2000 : 1000;
+	const bool isV2 = rd32(orig.data()) == 2;
 	const size_t offsTab = kHeader, namesTab = kHeader + 4 * (size_t)nPoses;
 	const size_t imgOffField = namesTab + 32 * (size_t)nPoses, poseBase = imgOffField + 4;
 	const size_t imageOff = (size_t)(uint32_t)rd32(orig.data() + imgOffField);
@@ -147,7 +148,7 @@ bool BuildPat(const Parts &parts, const std::vector<uint8_t> &orig, std::vector<
 				continue;
 			}
 			if (pr->ppId >= (int)parts.cutOuts.size()) return fail("part refers to a missing cutout");
-			Dec nd = FromModel(*pr, parts.cutOuts[pr->ppId]);
+			Dec nd = FromModel(*pr, parts.cutOuts[pr->ppId], isV2 ? 320 : 0, isV2 ? 448 : 0);
 			if (origUsed) Apply(r, nd, od);
 			else { Blank(r); Apply(r, nd, DecodeRec(r)); }
 		}

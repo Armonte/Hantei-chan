@@ -63,11 +63,11 @@ std::string FileDialog(int fileType, bool save, char* defaultName)
 	}
 	else if (fileType == fileType::HAN2)
 	{
-		ofn.lpstrFilter = "RBO / GOF2 character, parts, sprites (*.dt2;*.dat;*.pat;*.chp)\0*.dt2;*.dat;*.pat;*.chp\0RBO / GOF2 archive (*.pac;data*.dat)\0*.pac;data0*.dat\0All\0*.*\0";
+		ofn.lpstrFilter = "RBO / GOF2 / GOF1 character, parts, sprites (*.dt2;*.dat;*.pat;*.chp)\0*.dt2;*.dat;*.pat;*.chp\0RBO / GOF2 / GOF1 archive (*.pac;data*.dat;*.p)\0*.pac;data0*.dat;*.p\0All\0*.*\0";
 	}
 	else if (fileType == fileType::HAN2SAVE)
 	{
-		ofn.lpstrFilter = "RBO / GOF2 pattern file the game prefers (*.dt2)\0*.dt2\0RBO / GOF2 full character (*.dat)\0*.dat\0All\0*.*\0";
+		ofn.lpstrFilter = "RBO / GOF2 pattern file the game prefers (*.dt2)\0*.dt2\0RBO / GOF1 character (*.dat)\0*.dat\0GOF1 archive with this character replaced (*.p)\0*.p\0All\0*.*\0";
 		ofn.lpstrDefExt = "dt2";
 	}
 	else if (fileType == fileType::DAT)

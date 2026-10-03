@@ -6,10 +6,12 @@
 #include "han2/rbo_at_gen.h"
 #include "han2/gof2_types_gen.h"
 #include "han2/gof2_at_gen.h"
+#include "han2/gof1_types_gen.h"
 
 #include "cg.h"
 #include "han2_diff.h"
 #include "han2_anim.h"
+#include "framedata_gof1.h"
 #include "character_view.h"
 #include <chrono>
 #include "filedialog.h"
@@ -31,6 +33,7 @@ static const Han2EnumInfo *FindEnum(const char *name)
 	for (const auto &e : kRboAtEnums) if (!strcmp(e.name, name)) return &e;
 	for (const auto &e : kGof2TypesEnums) if (!strcmp(e.name, name)) return &e;
 	for (const auto &e : kGof2AtEnums) if (!strcmp(e.name, name)) return &e;
+	for (const auto &e : kGof1TypesEnums) if (!strcmp(e.name, name)) return &e;
 	return nullptr;
 }
 
@@ -126,7 +129,7 @@ void DrawInspector(CharacterInstance *ch, FrameState &state)
 
 	const Han2Container &c = *ch->frameData.m_han2;
 	ImGui::TextWrapped("%s", c.sourcePath.c_str());
-	ImGui::TextDisabled("%s, %s. parts %zu B, CG %zu B", c.sub == 2 ? "GOF2" : "RBO", c.kind == 3 ? ".DT2 (pattern area only)" : ".DAT (full)",
+	ImGui::TextDisabled("%s, %s. parts %zu B, CG %zu B", c.sub == 3 ? "GOF1" : c.sub == 2 ? "GOF2" : "RBO", c.kind == 3 ? ".DT2 (pattern area only)" : ".DAT (full)",
 	                    c.parts.size(), c.cg.size());
 	ImGui::TextDisabled("Save As .DT2 writes the file the game prefers; .DAT writes the full character.");
 
@@ -152,6 +155,16 @@ void DrawInspector(CharacterInstance *ch, FrameState &state)
 			ImGui::SeparatorText("Frame record");
 			if (!f.han2.valid) {
 				ImGui::TextDisabled("This frame has no source record yet (it is new); fields appear after the first save and reload.");
+			} else if (c.sub == 3) {
+				bool ch1 = EditRecord("g1af", f.han2.rec, kGof1AnimFrameFields, (int)(sizeof(kGof1AnimFrameFields) / sizeof(kGof1AnimFrameFields[0])));
+				ImGui::SeparatorText("State (AS)");
+				ch1 |= EditRecord("g1as", f.han2.rec + 0x28, kGof1StateFrameFields, (int)(sizeof(kGof1StateFrameFields) / sizeof(kGof1StateFrameFields[0])));
+				ImGui::SeparatorText("Attack record (AT, 26 bytes)");
+				if (f.han2.hadAT) ch1 |= EditRecord("g1at", f.han2.at, kGof1AtRecordFields, (int)(sizeof(kGof1AtRecordFields) / sizeof(kGof1AtRecordFields[0])));
+				else ImGui::TextDisabled("none: add an attack box (slot 8) to create one.");
+				for (int k = 0; k < 3; k++) if (f.han2.gofIfMask >> k & 1) { char h[32]; snprintf(h, sizeof(h), "IF slot %d (28 bytes)", k); ImGui::SeparatorText(h); ch1 |= EditRecord(("g1if" + std::to_string(k)).c_str(), f.han2.gofIf[k], kGof1IfRecordFields, (int)(sizeof(kGof1IfRecordFields) / sizeof(kGof1IfRecordFields[0]))); }
+				for (int k = 0; k < 4; k++) if (f.han2.gofEfMask >> k & 1) { char h[32]; snprintf(h, sizeof(h), "EF slot %d (20 bytes)", k); ImGui::SeparatorText(h); ch1 |= EditRecord(("g1ef" + std::to_string(k)).c_str(), f.han2.gofEf[k], kGof1EfRecordFields, (int)(sizeof(kGof1EfRecordFields) / sizeof(kGof1EfRecordFields[0]))); }
+				if (ch1) { gof1::RedecodeFrame(f); changed = true; }
 			} else if (c.sub == 2) {
 				if (EditRecord("gframe", f.han2.rec, kGof2FrameRecordFields, (int)(sizeof(kGof2FrameRecordFields) / sizeof(kGof2FrameRecordFields[0])))) {
 					han2::RedecodeFrame(f);

@@ -46,6 +46,7 @@ bool PatToParts(const uint8_t *blob, size_t size, Parts &parts, std::string *err
 	auto fail = [&](const std::string &m) { if (err) *err = m; return false; };
 	if (!IsPat(blob, size)) return fail("not a PAT v3/v4 block");
 	const int nPoses = rd32(blob) == 4 ? 2000 : 1000;
+	const bool isV2 = rd32(blob) == 2;
 	const size_t offsTab = kHeader, namesTab = kHeader + 4 * (size_t)nPoses;
 	const size_t imgOffField = namesTab + 32 * (size_t)nPoses;
 	const size_t poseBase = imgOffField + 4;
@@ -148,8 +149,9 @@ bool PatToParts(const uint8_t *blob, size_t size, Parts &parts, std::string *err
 			PartProperty &pr = ps.groups[k];
 			pr.propId = k;
 			pr.ppId = ci;
-			pr.x = rd32(r + 0x00);
-			pr.y = rd32(r + 0x04);
+			// GOF1 (magic 2) stores absolute screen positions (anchor 320,448 like MBAC old PAT); RBO/GOF2 store them relative to the actor
+			pr.x = rd32(r + 0x00) - (isV2 ? 320 : 0);
+			pr.y = rd32(r + 0x04) - (isV2 ? 448 : 0);
 			pr.scaleX = rd32(r + 0x14) / 1000.f;
 			pr.scaleY = rd32(r + 0x18) / 1000.f;
 			pr.rotation[3] = rd32(r + 0x1C) / 10000.f;

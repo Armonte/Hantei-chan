@@ -32,6 +32,9 @@ public:
 	bool loadHan2(const std::string& stem, const std::function<bool(const std::string&, std::vector<uint8_t>&)>& read,
 	              const std::string& origin, const std::string& saveTarget, std::string& err);
 
+	// GOF1 character from a gof_0N.p archive (Save As .DAT / new .p).
+	bool loadGof1(const std::string& archivePath, const std::string& entryName, std::string& err);
+
 	// Load CG file
 	bool loadCG(const std::string& cgPath);
 
