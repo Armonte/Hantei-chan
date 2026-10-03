@@ -1,4 +1,5 @@
 #include "han2_browser.h"
+#include "i18n.h"
 #include "han2/pac_archive.h"
 #include "han2/gof1_archive.h"
 #include "han2_pac_window.h"
@@ -18,9 +19,8 @@ namespace han2ui {
 
 bool showBrowser = false;
 
-int uiLanguage = 0;
 bool showLoadReport = false;
-const char *Tr(const char *en, const char *jp) { return uiLanguage == 1 ? jp : en; }
+const char *Tr(const char *en, const char *jp) { return i18n::language == 1 ? jp : en; }
 
 namespace {
 std::string SettingsPath()
@@ -64,14 +64,14 @@ bool EndsWith(const std::string &s, const char *suf)
 void LoadHan2Settings()
 {
 	const std::string p = SettingsPath();
-	uiLanguage = (int)GetPrivateProfileIntA("han2", "Language", 0, p.c_str());
+	i18n::language = (int)GetPrivateProfileIntA("han2", "Language", 0, p.c_str());
 	char buf[1024]{}; GetPrivateProfileStringA("han2", "WorkFolder", "", buf, sizeof(buf), p.c_str());
 	g_workFolder = buf;
 }
 void SaveHan2Settings()
 {
 	const std::string p = SettingsPath();
-	WritePrivateProfileStringA("han2", "Language", std::to_string(uiLanguage).c_str(), p.c_str());
+	WritePrivateProfileStringA("han2", "Language", std::to_string(i18n::language).c_str(), p.c_str());
 	WritePrivateProfileStringA("han2", "WorkFolder", g_workFolder.c_str(), p.c_str());
 }
 const std::string &WorkFolder() { return g_workFolder; }
@@ -139,7 +139,7 @@ bool DrawBrowser(OpenRequest &req, std::string &message)
 	ImGui::SameLine();
 	if (ImGui::Button(Tr("Refresh", "\xe6\x9b\xb4\xe6\x96\xb0"))) g_scanned = false;
 	ImGui::SameLine();
-	{ const char *lg = uiLanguage == 1 ? "EN" : "JP"; if (ImGui::Button(lg)) { uiLanguage = 1 - uiLanguage; SaveHan2Settings(); } }
+	{ const char *lg = i18n::language == 1 ? "EN" : "JP"; if (ImGui::Button(lg)) { i18n::language = 1 - i18n::language; SaveHan2Settings(); } }
 	if (!g_scanned) { g_scanned = true; g_root = FolderNode(); ScanFolder(WorkFolder(), g_root, 0); }
 	ImGui::SameLine();
 	ImGui::TextDisabled("Later archives in the list override earlier ones when a file name occurs twice (Update01 and the Ex discs patch DATA0x).");

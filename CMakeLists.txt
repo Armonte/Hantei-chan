@@ -58,6 +58,7 @@ add_executable(${EXE}
 	src/han2_export.cpp
 	src/han2_pat_gl.cpp
 	src/han2_browser.cpp
+	src/i18n.cpp
 	src/han2_pac_window.cpp
 	src/han2_inspector.cpp
 	src/startup_args.cpp

@@ -16,6 +16,7 @@
 #include "ha4_character.h"
 #include "han2_character.h"
 #include "han2_browser.h"
+#include "i18n.h"
 #include "han2_export.h"
 #include "han2_pac_window.h"
 #include "han2_pat.h"
