@@ -33,6 +33,7 @@ const char *CG::get_filename(unsigned int n) {
 	if (!m_loaded) {
 		return 0;
 	}
+	if (m_foreign) return n < m_foreign->imageCount() ? m_foreign->imageName(n) : nullptr;
 	
 	const CG_Image *image = get_image(n);
 	if (!image) {
@@ -43,6 +44,7 @@ const char *CG::get_filename(unsigned int n) {
 }
 
 bool CG::image_info(unsigned int n, int &bpp, int &typeId, int &x1, int &y1, int &x2, int &y2) {
+	if (m_foreign) return n < m_foreign->imageCount() && m_foreign->imageInfo(n, bpp, typeId, x1, y1, x2, y2);
 	const CG_Image *image = get_image(n);
 	if (!image || image->type_id == -1) return false;
 	bpp = (int)image->bpp; typeId = image->type_id;
@@ -52,6 +54,7 @@ bool CG::image_info(unsigned int n, int &bpp, int &typeId, int &x1, int &y1, int
 
 bool CG::image_cells(unsigned int n, std::vector<CellRect> &out) {
 	out.clear();
+	if (m_foreign) return n < m_foreign->imageCount() && m_foreign->imageCells(n, out);
 	const CG_Image *image = get_image(n);
 	if (!image || image->type_id == -1) return false;
 	if ((image->align_start + image->align_len) > m_nalign) return false;
@@ -62,6 +65,7 @@ bool CG::image_cells(unsigned int n, std::vector<CellRect> &out) {
 }
 
 int CG::get_image_count() {
+	if (m_foreign) return (int)m_foreign->imageCount();
 	return m_nimages;
 }
 
@@ -221,6 +225,7 @@ void MedianCut(std::vector<unsigned int> colors, int maxColors, std::vector<unsi
 
 bool CG::replace_image_rgba(unsigned int n, const unsigned char *rgba, int w, int h, std::string *err, bool force) {
 	auto fail = [&](const std::string &m) { if (err) *err = m; return false; };
+	if (m_foreign) { (void)force; bool ok = m_foreign->replaceImage(n, rgba, w, h, curPalIndex, err); if (ok) touch(); return ok; }
 	const CG_Image *image = get_image(n);
 	if (!image || image->type_id == -1) return fail("no such image");
 	if ((image->align_start + image->align_len) > m_nalign) return fail("broken alignment table");
@@ -292,11 +297,13 @@ bool CG::replace_image_rgba(unsigned int n, const unsigned char *rgba, int w, in
 }
 
 bool CG::image_is_8bpp(unsigned int n) {
+	if (m_foreign) { int b, t, x1, y1, x2, y2; return n < m_foreign->imageCount() && m_foreign->imageInfo(n, b, t, x1, y1, x2, y2) && b <= 8; }
 	const CG_Image *image = get_image(n);
 	return image && image->type_id != -1 && image->bpp <= 8;
 }
 
 ImageData *CG::draw_texture(unsigned int n, bool to_pow2_flg, bool draw_8bpp) {
+	if (m_foreign) return n < m_foreign->imageCount() ? m_foreign->draw(n, to_pow2_flg, draw_8bpp, palette) : nullptr;
 	const CG_Image *image = get_image(n);
 	if (!image) {
 		return 0;
@@ -603,6 +610,10 @@ bool CG::setPupsBank(int bank)
 bool CG::changePaletteNumber(int number)
 {
 	touch();
+	if (m_foreign) {
+		if (number < 0 || number >= m_foreign->paletteCount()) return false;
+		curPalIndex = number; palette = (unsigned int *)m_foreign->palette(number); origPalette = palette; return true;
+	}
 	if(paletteData && number < palMax && number >= 0)
 	{
 		curPalIndex = number;
@@ -726,8 +737,21 @@ bool CG::loadOwned(char *data, unsigned int size) {
 	return 1;
 }
 
+bool CG::loadForeign(std::shared_ptr<CgForeignBank> bank) {
+	if (m_loaded) free();
+	if (!bank) return false;
+	touch();
+	m_foreign = std::move(bank);
+	palMax = m_foreign->paletteCount(); curPalIndex = 0;
+	palette = (unsigned int *)m_foreign->palette(0); origPalette = palette;
+	m_nimages = m_foreign->imageCount();
+	m_loaded = true;
+	return true;
+}
+
 void CG::free() {
 	touch();
+	m_foreign.reset();
 	freePupsBanks();
 	curPups = 0;
 	curPalIndex = 0;

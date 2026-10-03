@@ -6,6 +6,7 @@
 #include "han2_pat.h"
 #include "han2/gof1_archive.h"
 #include "framedata_gof1.h"
+#include "han2/mb_cg.h"
 #include "misc.h"
 
 #include <cctype>
@@ -16,6 +17,15 @@
 namespace fs = std::filesystem;
 
 namespace han2 {
+
+// Sprite bank embedded in a GOF1-family character: BMP Cutter bank (GOF1 / GOF2 style) or the Melty Blood strip bank.
+static bool LoadEmbeddedCg(CharacterInstance &ch, const std::vector<uint8_t> &cg)
+{
+	if (cg.empty()) return false;
+	if (ch.cg.loadFromMemory(cg.data(), (unsigned)cg.size())) return true;
+	std::string e; auto mb = MbCgBank::Parse(cg.data(), cg.size(), &e);
+	return mb && ch.cg.loadForeign(mb);
+}
 
 static std::string Lower(std::string s) { for (auto &c : s) c = (char)tolower((unsigned char)c); return s; }
 
@@ -117,7 +127,7 @@ bool LoadGof1Character(CharacterInstance &ch, const std::string &archivePath, co
 		std::string pe;
 		if (PatToParts(cont->parts.data(), cont->parts.size(), ch.parts, &pe)) UploadPartsTextures(ch.parts);
 	}
-	if (!cont->cg.empty()) ch.cg.loadFromMemory(cont->cg.data(), (unsigned)cont->cg.size());
+	LoadEmbeddedCg(ch, cont->cg);
 	return true;
 }
 
@@ -136,7 +146,7 @@ bool LoadGof1CharacterFile(CharacterInstance &ch, const std::string &path, std::
 		std::string pe;
 		if (PatToParts(cont->parts.data(), cont->parts.size(), ch.parts, &pe)) UploadPartsTextures(ch.parts);
 	}
-	if (!cont->cg.empty()) ch.cg.loadFromMemory(cont->cg.data(), (unsigned)cont->cg.size());
+	LoadEmbeddedCg(ch, cont->cg);
 	return true;
 }
 
@@ -145,6 +155,11 @@ bool SyncPartsToContainer(CharacterInstance &ch, bool *partsChanged, std::string
 	if (partsChanged) *partsChanged = false;
 	auto cont = ch.frameData.m_han2;
 	if (!cont) return true;
+	if (ch.cg.foreign() && ch.cg.foreign()->dirty() && !cont->cg.empty()) {   // sprite import on a non-Cutter bank: the module's stored bytes replace the container's
+		std::vector<uint8_t> nb; ch.cg.foreign()->serialize(nb);
+		if (nb.size() == cont->cg.size() && nb != cont->cg) { cont->cg = std::move(nb); cont->cgDirty = true; }
+		ch.cg.foreign()->clearDirty();
+	}
 	if (cont->parts.empty() || !ch.parts.loaded) {
 		if (!cont->cg.empty() && ch.cg.m_loaded && ch.cg.bank_size() == cont->cg.size() && memcmp(ch.cg.bank_data(), cont->cg.data(), cont->cg.size()) != 0) { memcpy(cont->cg.data(), ch.cg.bank_data(), cont->cg.size()); cont->cgDirty = true; }
 		return true;

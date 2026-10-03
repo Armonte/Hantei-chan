@@ -13,13 +13,20 @@
 #include "../han2/fob_file.h"
 #include "../han2/img_file.h"
 #include "../han2/mbr_formats.h"
+#include "../han2/mb_formats.h"
 #include "../framedata.h"
 #include "../framedata_ha4.h"
 #include "../framedata_gof1.h"
 #include "../han2/gof1_archive.h"
 #include "../background/bg_file.h"
+#include "../cg.h"
+#include "../png_writer.h"
+#include <windows.h>
+#include <objbase.h>
+#include "../han2/mb_cg.h"
 
 #include <cstdio>
+#include <memory>
 #include <cstring>
 #include <filesystem>
 #include <fstream>
@@ -135,6 +142,19 @@ bool Gof1CharMember(const std::string &label, const std::vector<uint8_t> &stage1
 	std::vector<uint8_t> out;
 	if (!gof1::Serialize(fd, out, &err)) { Fail(s, label, "save: " + err); return true; }
 	std::vector<uint8_t> enc = out; gof1::EncryptDat(enc);
+	if (fd.m_han2 && !fd.m_han2->cg.empty()) {   // the embedded sprite bank must load as a CG bank
+		auto cg = std::make_unique<CG>();
+		if (cg->loadFromMemory(fd.m_han2->cg.data(), (unsigned)fd.m_han2->cg.size())) s.notes["  embedded BMP Cutter banks"]++;
+		else {
+			std::string ce; auto mbcg = han2::MbCgBank::Parse(fd.m_han2->cg.data(), fd.m_han2->cg.size(), &ce);
+			if (!mbcg) { Fail(s, label, "embedded CG bank does not parse: " + ce); return true; }
+			std::vector<uint8_t> back; mbcg->serialize(back);
+			if (back != fd.m_han2->cg) { Fail(s, label, "embedded CG bank does not serialize identically"); return true; }
+			unsigned drawn = 0;
+			for (unsigned i = 0; i < mbcg->imageCount(); i++) { int b, t, x1, y1, x2, y2; if (!mbcg->imageInfo(i, b, t, x1, y1, x2, y2)) continue; std::unique_ptr<ImageData> im(mbcg->draw(i, false, false, mbcg->palette(0))); if (!im) { Fail(s, label, "MB CG image " + std::to_string(i) + " does not decode"); return true; } drawn++; }
+			s.notes["  embedded MB strip bank (parsed, serialized, every image decoded)"]++; s.notes["  MB CG images decoded"] += (int)drawn;
+		}
+	}
 	if (out == plain && enc == stage1) Ok(s, "character .DAT (GOF1 / MB container)");
 	else { Diff("character DAT", label, out, plain); if (enc != stage1) printf("  re-encrypt differs\n"); s.fail++; }
 	return true;
@@ -182,9 +202,49 @@ bool ReactMember(const std::string &label, const std::string &name, const std::v
 }
 
 struct Title { const char *key; Handler fn; };
+// Melty Blood 2002 satellites (docs/formats/mb.md)
+bool MbSatellite(const std::string &label, const std::string &name, const std::vector<uint8_t> &d, Section &s)
+{
+	const std::string e = ExtOf(name); std::string err; std::vector<uint8_t> out;
+	if (e == ".CT" || e == ".CT2") {
+		if (d.size() == sizeof(MbCtFile)) {
+			han2::mb::CtFile c; if (!han2::mb::ParseCt(d.data(), d.size(), c, &err)) { Fail(s, label, "ct: " + err); return true; }
+			han2::mb::SerializeCt(c, out); if (out == d) Ok(s, "_C.CT command table (MB, 44-byte moves + header)"); else Bad(s, "ct", label, out, d);
+			return true;
+		}
+		if (d.size() == 4232 || d.size() == 4432) {
+			han2::mb::OldCtFile c; if (!han2::mb::ParseOldCt(d.data(), d.size(), c, &err)) { Fail(s, label, "old ct: " + err); return true; }
+			han2::mb::SerializeOldCt(c, out); if (out == d) Ok(s, "older command table variants (42/44-byte moves, never loaded by mb.exe)"); else Bad(s, "old ct", label, out, d);
+			return true;
+		}
+		han2::mb::CharSelFile c; if (!han2::mb::ParseCharSel(d.data(), d.size(), c, &err)) { Fail(s, label, "charsel: " + err); return true; }
+		han2::mb::SerializeCharSel(c, out); if (out == d) Ok(s, "CHARSEL.CT (enciphered character table)"); else Bad(s, "charsel", label, out, d);
+		return true;
+	}
+	if (e == ".WMT") {
+		{   // HISKOH.WMT: orphan in the older 154-byte GOF1 layout (docs/formats/mb.md 5.3)
+			han2::Wmt g; if (d.size() >= 4 && han2::ParseWmt(d.data(), d.size(), g, &err) && !han2::mb::ParseWmt(d.data(), d.size(), *std::make_unique<han2::mb::WmtFile>(), nullptr)) {
+				han2::SerializeWmt(g, out); if (out == d) Ok(s, ".WMT orphan in the older 154-byte layout (never loaded)"); else Bad(s, "wmt154", label, out, d);
+				return true;
+			}
+		}
+		han2::mb::WmtFile w; if (!han2::mb::ParseWmt(d.data(), d.size(), w, &err)) { Fail(s, label, "wmt: " + err); return true; }
+		han2::mb::SerializeWmt(w, out); if (out == d) Ok(s, ".WMT (win messages)"); else Bad(s, "wmt", label, out, d);
+		return true;
+	}
+	if (e == ".CPF") {
+		auto *f = new MbCpfFile; bool ok = han2::mb::ParseCpf(d.data(), d.size(), *f, &err);
+		if (ok) han2::mb::SerializeCpf(*f, out);
+		delete f;
+		if (!ok) Fail(s, label, "cpf: " + err); else if (out == d) Ok(s, ".CPF (CPU script)"); else Bad(s, "cpf", label, out, d);
+		return true;
+	}
+	return false;
+}
+
 bool MbMember(const std::string &label, const std::string &name, const std::vector<uint8_t> &d, Section &s)
 {
-	(void)name;
+	if (MbSatellite(label, name, d, s)) return true;
 	if (Gof1CharMember(label, d, s)) return true;
 	return false;
 }
@@ -265,8 +325,27 @@ int CmdShift(int argc, char **argv)
 	return 0;
 }
 
+// cgpng <archive> <ENTRY> <image> <out.png> [palette]: draws one image of the character's embedded MB strip bank (visual check of the decoder)
+int CmdCgPng(int argc, char **argv)
+{
+	if (argc < 4) { puts("cgpng <archive> <ENTRY> <image> <out.png> [palette]"); return 2; }
+	std::string err; auto a = fbarc::Open(argv[0], &err); if (!a) { printf("%s\n", err.c_str()); return 1; }
+	const int idx = a->find(fbarc::NameFromUtf8(argv[1])); if (idx < 0) { puts("entry not found"); return 1; }
+	std::vector<uint8_t> d; if (!a->read((size_t)idx, d, &err)) { printf("%s\n", err.c_str()); return 1; }
+	gof1::DecryptDat(d); FrameData fd; if (!gof1::Load(fd, d.data(), d.size(), &err)) { printf("load: %s\n", err.c_str()); return 1; }
+	auto bank = han2::MbCgBank::Parse(fd.m_han2->cg.data(), fd.m_han2->cg.size(), &err); if (!bank) { printf("cg: %s\n", err.c_str()); return 1; }
+	const int pal = argc > 4 ? atoi(argv[4]) : 0;
+	std::unique_ptr<ImageData> im(bank->draw((unsigned)atoi(argv[2]), false, false, bank->palette(pal)));
+	if (!im) { puts("no such image"); return 1; }
+	std::string e; if (!WritePngRgba(argv[3], im->pixels, im->width, im->height, e)) { printf("png: %s\n", e.c_str()); return 1; }
+	printf("wrote %s (%d x %d, offset %d,%d)\n", argv[3], im->width, im->height, im->offsetX, im->offsetY);
+	return 0;
+}
+
 int main(int argc, char **argv)
 {
+	CoInitializeEx(nullptr, COINIT_MULTITHREADED);
+	if (argc >= 2 && !strcmp(argv[1], "cgpng")) return CmdCgPng(argc - 2, argv + 2);
 	if (argc >= 2 && !strcmp(argv[1], "shift")) return CmdShift(argc - 2, argv + 2);
 	if (argc < 2) { puts("usage: fbchartool <title> <archive>...   (fbchartool list)"); return 2; }
 	if (!strcmp(argv[1], "list")) { for (auto &t : kTitles) puts(t.key); return 0; }

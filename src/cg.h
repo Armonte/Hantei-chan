@@ -2,6 +2,9 @@
 #define CG_H_GUARD
 #include <string>
 #include <vector>
+#include <memory>
+#include <cstdint>
+#include <cstring>
 
 struct ImageData
 {
@@ -45,8 +48,30 @@ struct CG_Image {
 	unsigned char	data[1]; 	// for indexing.
 };
 
+struct CgCellRect { int x, y, w, h; };
+
+// A sprite bank that is not a "BMP Cutter" bank (Melty Blood 2002 strips, Party Breakers groups, QoH sprite tiles ...): the format module decodes its own
+// images and CG forwards every query to it, so the whole editor (renderer, sprite list, import/export) works on it unchanged. The module keeps the
+// stored bytes authoritative: an unedited bank serializes back byte-identical.
+struct CgForeignBank {
+	virtual ~CgForeignBank() {}
+	virtual unsigned imageCount() const = 0;
+	virtual const char *imageName(unsigned n) const = 0;
+	virtual bool imageInfo(unsigned n, int &bpp, int &typeId, int &x1, int &y1, int &x2, int &y2) const = 0;   // false = absent image
+	virtual bool imageCells(unsigned n, std::vector<CgCellRect> &out) const = 0;
+	// RGBA (indexed == false) or 1 byte per pixel palette indices (indexed == true, only for 8-bit images) of the image's bounds rectangle.
+	virtual ImageData *draw(unsigned n, bool toPow2, bool indexed, const unsigned *palette) const = 0;
+	virtual int paletteCount() const = 0;
+	virtual const unsigned *palette(int i) const = 0;               // 256 entries 0xAABBGGRR, entry 0 transparent
+	virtual bool replaceImage(unsigned n, const unsigned char *rgba, int w, int h, int paletteIndex, std::string *err) = 0;
+	virtual bool dirty() const = 0;
+	virtual void clearDirty() = 0;
+	virtual void serialize(std::vector<uint8_t> &out) const = 0;    // the stored bank bytes
+};
+
 class CG {
 protected:
+	std::shared_ptr<CgForeignBank> m_foreign;
 	unsigned int	m_basePalette[256] = {};   // normalised copy of the bank palette (the bank bytes are never modified)
 	unsigned int	*origPalette;
 	unsigned int	*palette;
@@ -119,6 +144,9 @@ public:
 	bool load(const char *name);
 	// Load a CG image bank from memory (copied), e.g. the CG blob embedded in an MBAC .DAT.
 	bool loadFromMemory(const void *data, unsigned int size);
+	// Foreign (non Cutter) bank: see CgForeignBank. Replaces whatever is loaded.
+	bool loadForeign(std::shared_ptr<CgForeignBank> bank);
+	CgForeignBank *foreign() const { return m_foreign.get(); }
 	bool loadPalette(const char *name);
 	// Loads <stem>.pal as bank 0 and <stem>_p1.pal .. _p7.pal as banks 1..7.
 	bool loadPupsPalettes(const std::string &stem);
@@ -163,7 +191,7 @@ public:
 	// stored depth (8 = palette-indexed); bounds are canvas coordinates.
 	bool image_info(unsigned int n, int &bpp, int &typeId, int &x1, int &y1, int &x2, int &y2);
 	// The image's alignment cells (canvas rects), in table order.
-	struct CellRect { int x, y, w, h; };
+	using CellRect = CgCellRect;
 	bool image_cells(unsigned int n, std::vector<CellRect> &out);
 
 	CG();
