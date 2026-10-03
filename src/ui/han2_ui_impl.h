@@ -81,7 +81,10 @@ void MainFrame::openHan2Request(const han2ui::OpenRequest& req)
 
 void MainFrame::DrawHan2Windows()
 {
+	static bool settingsLoaded = false;
+	if (!settingsLoaded) { settingsLoaded = true; han2ui::LoadHan2Settings(); }
 	ProcessDroppedFiles();
+	han2ui::DrawLoadReport();
 	han2ui::DrawPacCreate();
 	han2ui::DrawFileViewers();
 	han2ui::DrawCgWindow(getActiveCharacter());
