@@ -86,6 +86,7 @@ void MainFrame::DrawHan2Windows()
 	static std::string message;
 	if (han2ui::DrawBrowser(req, message)) {
 		message.clear();
+		if (req.stem == "\x01open") openHan2File(req.origin); else
 		openHan2Request(req);
 	}
 }
