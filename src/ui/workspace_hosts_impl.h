@@ -672,10 +672,9 @@ void MainFrame::RenderDetachedViewTargets()
 	}
 }
 
-// "View" menu: onion skin, PNG export and the window workspace.
-void MainFrame::DrawRenderMenu()
+// View menu items (the menu itself lives in ui/main_menu_impl.h): onion skin, PNG export.
+void MainFrame::DrawViewRenderItems()
 {
-	if (!ImGui::BeginMenu(LBL("View"))) return;
 	CharacterView* view = getActiveView();
 	if (ImGui::BeginMenu(LBL("Onion skin"), view && view->getCharacter() && !view->isPatEditor())) {
 		DrawOnionSkinControls(view);
@@ -691,7 +690,12 @@ void MainFrame::DrawRenderMenu()
 		m_exportViewId = view->getId();
 		m_exportRequest = ExportRequest::quickFrame;
 	}
-	ImGui::Separator();
+}
+
+// Window menu items: detach the active tab, list the detached windows, bring them back.
+void MainFrame::DrawDetachedWindowItems()
+{
+	CharacterView* view = getActiveView();
 	if (ImGui::MenuItem(LBL("Move tab to new window"), shortcuts.registry().label(ShortcutAction::detachView).c_str(),
 		false, IsDetachableView(view))) {
 		const ImVec2 p = ImGui::GetMainViewport()->Pos;
@@ -717,7 +721,11 @@ void MainFrame::DrawRenderMenu()
 			markProjectModified();
 		}
 	}
-	ImGui::Separator();
+}
+
+// Edit > Preferences: the (restart-bound) native detached windows switch.
+void MainFrame::DrawDetachPreference()
+{
 	bool detachable = gSettings.detachableWindows;
 	if (ImGui::MenuItem(LBL("Native detached windows (restart)"), nullptr, &detachable)) {
 		gSettings.detachableWindows = detachable;
@@ -727,7 +735,6 @@ void MainFrame::DrawRenderMenu()
 		ImGui::SetTooltip(TXT("Detached tabs open as their own OS windows that can move to other monitors.\n"
 			"Off: they stay inside the main window. Takes effect after a restart.%s"),
 			WorkspaceViewports::IsEnabled() ? "" : TXT("\n(Currently off.)"));
-	ImGui::EndMenu();
 }
 
 // ---- Project persistence ---------------------------------------------------
