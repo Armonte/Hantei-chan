@@ -439,7 +439,7 @@ void MainFrame::DrawUi()
 		// could open the inspector as its own OS window off the main one.
 		const ImVec2 mainPos = ImGui::GetMainViewport()->Pos;
 		ImGui::SetNextWindowPos(ImVec2(mainPos.x + 80.0f, mainPos.y + 80.0f), ImGuiCond_FirstUseEver);
-		ImGui::SetNextWindowSize(ImVec2(420.0f, 640.0f), ImGuiCond_FirstUseEver);
+		ImGui::SetNextWindowSize(ImVec2(540.0f, 640.0f), ImGuiCond_FirstUseEver);
 		ImGui::Begin(LBL("Background Inspector"), nullptr, 0);
 		// Editing here is stage editing: route Ctrl+Z/Y/S to the stage.
 		if (ImGui::IsWindowFocused(ImGuiFocusedFlags_RootAndChildWindows))

@@ -400,7 +400,7 @@ void TreeBar(HostContext& host, const gamelink::Snapshot& s, const LinkPolicy& p
 	const std::vector<Warning> w = AllSidecarWarnings(a.ws.Set());
 	if (!w.empty()) {
 		ImGui::PushStyleColor(ImGuiCol_Text, kColWarn);
-		const bool open = ImGui::TreeNode(LBL("warnings"), "%zu warning(s) the game logs (their keys are skipped)", w.size());
+		const bool open = ImGui::TreeNode(LBL("warnings"), TXT("%zu warning(s) the game logs (their keys are skipped)"), w.size());
 		ImGui::PopStyleColor();
 		if (open) { for (const Warning& x : w) ImGui::BulletText("%s", x.Text().c_str()); ImGui::TreePop(); }
 	}

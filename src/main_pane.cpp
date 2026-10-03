@@ -289,7 +289,7 @@ void MainPane::Draw()
 					im::SameLine();
 					if(im::SmallButton(LBL("Clear"))) patCopyStack.clear();
 				}
-				im::TextDisabled(TXT("Windows > Pattern manager: multi-select, paste slots, move with references."));
+				i18n::TextDisabledWrapped("%s", TXT("Windows > Pattern manager: multi-select, paste slots, move with references."));
 
 				im::TreePop();
 				im::Separator();

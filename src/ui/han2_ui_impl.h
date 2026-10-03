@@ -70,7 +70,7 @@ void MainFrame::openHan2Request(const han2ui::OpenRequest& req)
 {
 	auto character = std::make_unique<CharacterInstance>();
 	std::string err;
-	if (!character->loadHan2(req.stem, req.read, "archive " + req.origin, std::string(), err)) {
+	if (!character->loadHan2(req.stem, req.read, std::string(TXT("archive ")) + req.origin, std::string(), err)) {
 		requestErrorPopup("Load Error", err);
 		return;
 	}

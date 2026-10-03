@@ -49,7 +49,7 @@ inline void AsDisplay(Frame_AS *as, FrameData *frameData = nullptr, int patternI
 	if(im::InputInt2(LBL("Speed"), as->speed)) {
 		markModified();
 	}
-	im::SameLine(0.f, 20); im::SetNextItemWidth(width);
+	i18n::SameLineFit(i18n::FieldWidth(width, LBL("Max X speed"))); im::SetNextItemWidth(width);
 	if(im::InputInt(LBL("Max X speed"), &as->maxSpeedX, 0, 0)) {
 		markModified();
 	}

@@ -85,6 +85,10 @@ def main():
             if k not in rows:
                 missing += 1; print("MISSING %s:%d  %r" % (f, ln, k))
         for n, l in bare_literals(f): print("BARE    %s:%d  %s" % (f, n, l))
+    fmt = re.compile(r'%(?:[-+ #0]*)(?:\d+|\*)?(?:\.\d+)?(?:hh|h|ll|l|z|j|t|L)?[diouxXeEfFgGaAcspn]')
+    for k, (v, f) in rows.items():   # a translated format string must keep the same specifiers in the same order (it is passed to printf)
+        a, b = fmt.findall(k.replace('%%', '')), fmt.findall(v.replace('%%', ''))
+        if a != b and not k.startswith('ATVD'): print("FORMAT  %s: %r -> %r" % (f, a, b)); missing += 1
     for k, a, b in dups: print("DUPLICATE key %r (in %s and %s)" % (k, a, b))
     print("files=%d unique keys=%d table rows=%d missing=%d duplicates=%d" % (len(files), total, len(rows), missing, len(dups)))
     if '--list' in sys.argv:

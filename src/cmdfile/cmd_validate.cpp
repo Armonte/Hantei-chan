@@ -1,3 +1,4 @@
+#include "../i18n.h"
 #include "cmd_validate.h"
 
 #include <algorithm>
@@ -73,23 +74,23 @@ std::string SummarizeCheck(const ExComRecord& c)
 {
 	auto v = [&](int f) { return c.values[f].value_or("-"); };
 	const auto type = c.values[XF_Type] ? ParseInteger(*c.values[XF_Type]) : std::nullopt;
-	if (!type) return "Missing or invalid Type";
+	if (!type) return TXT("Missing or invalid Type");
 	switch (*type) {
-	case 0: return std::string(v(XF_P0) == "1" ? "Hurtboxes" : "Collision box") + " vs owned-effect special box " + v(XF_P1);
+	case 0: return std::string(v(XF_P0) == "1" ? TXT("Hurtboxes") : TXT("Collision box")) + TXT(" vs owned-effect special box ") + v(XF_P1);
 	case 1: {
-		std::string shape = c.values[XF_P2] ? " (shape " + v(XF_P2) + ")" : std::string();
-		return "Range " + v(XF_P0) + " vs owned-effect special box " + v(XF_P1) + shape;
+		std::string shape = c.values[XF_P2] ? TXT(" (shape ") + v(XF_P2) + ")" : std::string();
+		return std::string(TXT("Range ")) + v(XF_P0) + TXT(" vs owned-effect special box ") + v(XF_P1) + shape;
 	}
 	case 2: {
 		static const char* ops[] = { "==", "!=", "<", "<=", ">", ">=" };
-		static const char* owners[] = { "Self", "Opponent", "P1", "P2" };
+		const char* owners[] = { TXT("Self"), TXT("Opponent"), "P1", "P2" };
 		const auto op = c.values[XF_P1] ? ParseInteger(*c.values[XF_P1]) : std::nullopt;
 		const auto ow = c.values[XF_P3] ? ParseInteger(*c.values[XF_P3]) : std::nullopt;
 		return std::string(ow && *ow >= 0 && *ow < 4 ? owners[*ow] : "?") + " CV" + v(XF_P0) + " " +
 			(op && *op >= 0 && *op < 6 ? ops[*op] : "?") + " " + v(XF_P2);
 	}
-	case 3: return "Hold " + v(XF_P2) + "f (selector " + v(XF_P0) + ", mask " + v(XF_P1) + ")";
-	default: return "Unknown type " + std::to_string(*type);
+	case 3: return std::string(TXT("Hold ")) + v(XF_P2) + TXT("f (selector ") + v(XF_P0) + TXT(", mask ") + v(XF_P1) + ")";
+	default: return std::string(TXT("Unknown type ")) + std::to_string(*type);
 	}
 }
 
