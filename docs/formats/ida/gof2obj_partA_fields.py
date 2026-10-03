@@ -31,7 +31,7 @@ FIELDS = [
  (564, 4, 'struct Gof2Obj *', 'firstChild', '[traced] ObjPool_AllocChild 0x49FDD0 `*(a1+564) = new`; ObjPool_FreeSiblingChainRecursive 0x49FE60 frees via it'),
  (568, 4, 'struct Gof2Obj *', 'spawner', '[traced] Obj_SpawnFromSpawnRecord 0x437270 `*(v4+568) = a1` (creator); ScriptVm_LoadArgsForObj 0x43D110 case 2 reads spawner pos/facing/pattern; sub_42F3A0 script-var base `a1[142]+312` (RBO spawner analog)'),
  (572, 4, 'struct Gof2Obj *', 'firstLinkedTarget', '[traced] Obj_ResetOnDetach 0x4390D0 `v2 = a1[143]` walks held targets; Obj_SpawnFrameEffectRecord 0x4327F0 `for (i = obj[143]; i; i = i[145])`; Obj_IsSpecialCancelAllowed tests it'),
- (576, 4, 'void *', 'linkHolder', '[traced] Obj_ResetOnDetach 0x4390D0 zeroes `*(v2+576)`; ScriptVm_LoadArgsForObj 0x43D110 case 2 reads `*(spawner+576)`; Obj_TickTimersRecursive `i[144]` splits held/non-held passes'),
+ (576, 4, 'struct Gof2Obj *', 'linkHolder', '[traced] Obj_ResetOnDetach 0x4390D0 zeroes `*(v2+576)`; ScriptVm_LoadArgsForObj 0x43D110 case 2 reads `*(spawner+576)`; Obj_TickTimersRecursive `i[144]` splits held/non-held passes'),
  (580, 4, 'struct Gof2Obj *', 'nextLinkedTarget', '[traced] Obj_SpawnFrameEffectRecord 0x4327F0 `i = i[145]`; Obj_ResetOnDetach `v2 = *(v2+580)`'),
  (584, 4, 'void *', 'linkContext', '[traced] Obj_ScriptTick 0x434AD0 lerps targets with ctx[2]/ctx[3]; Obj_ResetOnDetach 0x4390D0 writes the 248-byte context node (a1[146]); Obj_ReleaseSubNodes 0x4315C0 frees it to g_ObjSlot248Pool'),
  (588, 4, 'void *', 'linkNode', '[traced] Obj_AttachSlot24CNode 0x431A40 0x431A40; Obj_ResetOnDetach 0x4390D0 `*(*(v2+588)+12..24)`; Obj_ReleaseSubNodes 0x4315C0 frees it to g_ObjSlot24CPool'),
