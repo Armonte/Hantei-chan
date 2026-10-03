@@ -514,7 +514,13 @@ void MainFrame::markProjectModified()
 
 void MainFrame::requestErrorPopup(const char* popupName, const std::string& detail)
 {
-	m_pendingErrorPopup = popupName;
+	// Names with their own modal below keep it; every other title (Load Error, Export Error, MBAC Export, RBO / GOF2 export...) is shown
+	// by the generic notice modal, titled with the (translated) name, so those messages are never dropped.
+	static const char *known[] = {"Save Error", "Loading Error", "Project Load Error", "Project Save Error"};
+	bool isKnown = false;
+	for (const char *k : known) if (popupName && strcmp(k, popupName) == 0) isKnown = true;
+	if (isKnown) m_pendingErrorPopup = popupName;
+	else { m_genericTitle = popupName ? popupName : "Notice"; m_pendingErrorPopup = "\x01generic"; }
 	m_errorDetail = detail;
 }
 

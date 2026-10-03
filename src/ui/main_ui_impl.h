@@ -218,8 +218,23 @@ void MainFrame::DrawUi()
 	// Error popups requested from inside menus/popups are opened here, at the
 	// same ID-stack level as the BeginPopupModal calls below.
 	if (m_pendingErrorPopup) {
-		ImGui::OpenPopup(LBL(m_pendingErrorPopup));
+		if (strcmp(m_pendingErrorPopup, "\x01generic") == 0) ImGui::OpenPopup("###GenericNotice");
+		else ImGui::OpenPopup(LBL(m_pendingErrorPopup));
 		m_pendingErrorPopup = nullptr;
+	}
+
+	ImGui::SetNextWindowPos(ImGui::GetMainViewport()->GetCenter(), ImGuiCond_Appearing, ImVec2(0.5f, 0.5f));
+	{
+		const std::string genericLabel = std::string(TXT(m_genericTitle.c_str())) + "###GenericNotice";
+		if (ImGui::BeginPopupModal(genericLabel.c_str(), NULL, ImGuiWindowFlags_AlwaysAutoResize))
+		{
+			ImGui::PushTextWrapPos(ImGui::GetFontSize() * 40.0f);
+			ImGui::TextUnformatted(m_errorDetail.c_str());
+			ImGui::PopTextWrapPos();
+			ImGui::Separator();
+			if (ImGui::Button(LBL("OK"), ImVec2(120, 0))) { ImGui::CloseCurrentPopup(); }
+			ImGui::EndPopup();
+		}
 	}
 
 	ImGui::SetNextWindowPos(ImGui::GetMainViewport()->GetCenter(), ImGuiCond_Appearing, ImVec2(0.5f, 0.5f));
