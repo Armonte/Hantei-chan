@@ -74,8 +74,8 @@ Legend: [x] done, [ ] open. "(icaro)" = added by icaroffa 2026. "(ours)" = in ou
 ## F. Beyond PACNyx (the Hantei-chan goal)
 - [x] Frames, patterns, hitboxes (all box classes), AT/IF/EF edited, not just parts [view only so far (M3); editing: M4]
 - [x] Byte-preserving load/save (0xCDCD debug fill, unknown fields) [346 RBO files byte-identical (han2tool modelrt)]
-- [ ] In-game proof of an edit (RBO loose .DT2; GOF2)
-- [ ] GOF1 (116-byte frames)
+- [x] In-game proof of an edit (RBO loose .DT2; GOF2) [evidence/m4_*, m5_*; GOF1 evidence/m8_gof1_*]
+- [x] GOF1 (116-byte frames) [docs/formats/gof1.md; 51/51 round trip, in-game proof]
 
 ## G. Beyond PACNyx (improvements as they land)
 - [x] Byte-exact load/save of every RBO file through the editor model (346/346), PACNyx rewrites sections from its own model and mis-sizes GOF2
