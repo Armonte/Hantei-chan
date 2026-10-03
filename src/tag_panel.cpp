@@ -315,7 +315,7 @@ void Header(gamelink::Client& c, const gamelink::Snapshot& s)
 	const std::vector<Warning> all = AllWarnings(g_ini);
 	if (!all.empty()) {
 		ImGui::PushStyleColor(ImGuiCol_Text, kWarn);
-		const bool open = ImGui::TreeNode("warnings", TXT("%zu ini warning(s) (the game skips these keys)"), all.size());
+		const bool open = ImGui::TreeNode(LBL("warnings"), TXT("%zu ini warning(s) (the game skips these keys)"), all.size());
 		ImGui::PopStyleColor();
 		if (open) {
 			for (const Warning& w : all) ImGui::BulletText("%s", w.Text().c_str());
@@ -595,7 +595,7 @@ void AssistTab(EditorContext& ctx, const gamelink::Snapshot& s)
 	if (!fromEditor) {
 		ImGui::SetNextItemWidth(120);
 		const char* moons[] = { TXT("0 Crescent"), TXT("1 Full"), TXT("2 Half") };
-		ImGui::Combo(LBL("moon (_c.txt)"), &g_cmdMoon, moons, 3);
+		i18n::Combo(LBL("moon (_c.txt)"), &g_cmdMoon, moons, 3);
 	}
 	LoadCommands(ctx, s);
 	ImGui::TextDisabled("%s", g_cmdStatus.c_str());
@@ -844,7 +844,7 @@ void LiveTab(EditorContext& ctx, gamelink::Client& c, const gamelink::Snapshot& 
 	ImGui::SameLine();
 	ImGui::SetNextItemWidth(90);
 	const char* teams[] = { TXT("Team 1"), TXT("Team 2") };
-	ImGui::Combo("##fteam", &g_followTeam, teams, 2);
+	i18n::Combo("##fteam", &g_followTeam, teams, 2);
 	if (!g_follow) return;
 	const int point = st.teamActive[g_followTeam];
 	if (point < 0 || point > 3 || !st.actors[point].exists) { ImGui::TextDisabled("%s", TXT("no point")); return; }

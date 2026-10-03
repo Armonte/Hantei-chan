@@ -1,4 +1,5 @@
 #ifndef EFFECT_ACTOR_H_GUARD
+#include "../../i18n.h"
 #define EFFECT_ACTOR_H_GUARD
 
 // ============================================================================
@@ -26,7 +27,7 @@ static inline void DrawEffectActor_Type8(Frame_EF& effect, FrameData* frameData,
 
 			// Pattern dropdown (same as type 1)
 			im::SetNextItemWidth(width);
-			im::DragInt("Offset X", &p[0]);
+			im::DragInt(LBL("Offset X"), &p[0]);
 			if(im::IsItemEdited()) {
 				if (frameData && patternIndex >= 0) frameData->mark_modified(patternIndex);
 			}
@@ -35,7 +36,7 @@ static inline void DrawEffectActor_Type8(Frame_EF& effect, FrameData* frameData,
 			}
 			im::SameLine(0, 20);
 			im::SetNextItemWidth(width);
-			im::DragInt("Offset Y", &p[1]);
+			im::DragInt(LBL("Offset Y"), &p[1]);
 			if(im::IsItemEdited()) {
 				if (frameData && patternIndex >= 0) frameData->mark_modified(patternIndex);
 			}
@@ -44,7 +45,7 @@ static inline void DrawEffectActor_Type8(Frame_EF& effect, FrameData* frameData,
 			}
 
 			// Flagset 1
-			if(im::TreeNode("Flagset 1 (Spawn Behavior)")) {
+			if(im::TreeNode(LBL("Flagset 1 (Spawn Behavior)"))) {
 				unsigned int flagIdx = -1;
 				if(BitField("##flags1", (unsigned int*)&p[2], &flagIdx, 13)) {
 					markModified();
@@ -67,12 +68,12 @@ static inline void DrawEffectActor_Type8(Frame_EF& effect, FrameData* frameData,
 					case 12: Tooltip("Unknown (Akiha's 217 only)"); break;
 				}
 
-				im::Text("Raw value: %d", p[2]);
+				im::Text(TXT("Raw value: %d"), p[2]);
 				im::TreePop();
 			}
 
 			// Flagset 2
-			if(im::TreeNode("Flagset 2 (Child Properties)")) {
+			if(im::TreeNode(LBL("Flagset 2 (Child Properties)"))) {
 				unsigned int flagIdx = -1;
 				if(BitField("##flags2", (unsigned int*)&p[3], &flagIdx, 13)) {
 					markModified();
@@ -94,13 +95,13 @@ static inline void DrawEffectActor_Type8(Frame_EF& effect, FrameData* frameData,
 					case 12: Tooltip("Unaffected by any superflash"); break;
 				}
 
-				im::Text("Raw value: %d", p[3]);
+				im::Text(TXT("Raw value: %d"), p[3]);
 				im::TreePop();
 			}
 
 			// Angle: EF8/108 take the same parameters as EF1 (MBAA_NAME_AUDIT.md 2.1); layout as in the Gonptechan EX fork.
 			im::SetNextItemWidth(width);
-			if(im::DragInt("Angle", &p[7])) markModified();
+			if(im::DragInt(LBL("Angle"), &p[7])) markModified();
 			im::SameLine(); im::TextDisabled("(?)");
 			if(im::IsItemHovered()) Tooltip("Clockwise rotation: 0=0°, 2500=90°, 5000=180°, 10000=360°");
 

@@ -226,7 +226,7 @@ void MainFrame::drawPatternManagerWindow()
 	const char* placements[] = {
 		TXT("Next empty slots from target"), TXT("Consecutive from target (overwrite)"), TXT("Original ids (overwrite)") };
 	ImGui::SetNextItemWidth(260);
-	ImGui::Combo(LBL("Placement"), &w.placement, placements, IM_ARRAYSIZE(placements));
+	i18n::Combo(LBL("Placement"), &w.placement, placements, IM_ARRAYSIZE(placements));
 	ImGui::SetNextItemWidth(90);
 	ImGui::InputInt(LBL("Target slot"), &w.target, 0, 0);
 	ImGui::SameLine();
@@ -817,7 +817,7 @@ void MainFrame::drawHudWindow()
 			for (size_t i = 0; i < slots.size(); ++i) {
 				ImVec4 v = ArgbToVec(h.colors[i]);
 				ImGui::PushID((int)i);
-				if (ImGui::ColorEdit4(slots[i].label, &v.x, ImGuiColorEditFlags_AlphaBar | ImGuiColorEditFlags_DisplayHex))
+				if (ImGui::ColorEdit4(LBL(slots[i].label), &v.x, ImGuiColorEditFlags_AlphaBar | ImGuiColorEditFlags_DisplayHex))
 					h.colors[i] = VecToArgb(v);
 				ImGui::SameLine();
 				ImGui::TextDisabled("%s", hud::ToHex(h.colors[i]).c_str());
@@ -828,7 +828,7 @@ void MainFrame::drawHudWindow()
 			// ---- live preview ----
 			ImGui::SeparatorText(TXT("Preview"));
 			const char* modes[] = {TXT("Normal"), "HEAT", "MAX", "BLOOD HEAT", "UNLIMITED", "BREAK"};
-			ImGui::SetNextItemWidth(140); ImGui::Combo(LBL("Meter state"), &h.meterMode, modes, IM_ARRAYSIZE(modes));
+			ImGui::SetNextItemWidth(140); i18n::Combo(LBL("Meter state"), &h.meterMode, modes, IM_ARRAYSIZE(modes));
 			ImGui::SameLine(); ImGui::SetNextItemWidth(200); ImGui::SliderFloat(LBL("Meter %"), &h.meterPct, 0.f, 300.f, "%.0f%%");
 			ImGui::SameLine(); ImGui::Checkbox(LBL("Half moon"), &h.halfMoon);
 			ImGui::SetNextItemWidth(200); ImGui::SliderFloat(LBL("Guard quality"), &h.guardQuality, 0.f, 1.f);

@@ -461,7 +461,7 @@ void BoxPane::DrawSpawnTimeline()
 		int mode = currState.previewOptions.defaultIfAssumption == preview::IfAssume::True ? 1 : 0;
 		const char* modes[] = {TXT("Assume false (authored flow)"), TXT("Assume true (branch once per frame visit)")};
 		im::SetNextItemWidth(260.f);
-		if (im::Combo(LBL("Runtime IF conditions"), &mode, modes, 2)) {
+		if (i18n::Combo(LBL("Runtime IF conditions"), &mode, modes, 2)) {
 			currState.previewOptions.defaultIfAssumption = mode ? preview::IfAssume::True : preview::IfAssume::False;
 		}
 		if (im::IsItemHovered())
@@ -869,7 +869,7 @@ void BoxPane::DrawSpawnTimeline()
 			int v = it == currState.previewOptions.ifOverrides.end() ? 0 : (int)it->second;
 			const char* opts[] = {TXT("Default"), TXT("False"), TXT("True")};
 			im::SetNextItemWidth(80.f);
-			if (im::Combo("##assume", &v, opts, 3)) {
+			if (i18n::Combo("##assume", &v, opts, 3)) {
 				if (v == 0) currState.previewOptions.ifOverrides.erase(c->ifKey);
 				else currState.previewOptions.ifOverrides[c->ifKey] = (preview::IfAssume)v;
 			}

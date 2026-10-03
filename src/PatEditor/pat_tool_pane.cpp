@@ -7,6 +7,7 @@
 
 #include "../copy_manager.h"
 #include "../imgui_utils.h"
+#include "../i18n.h"
 
 PatToolPane::PatToolPane(Render* render, StateReference *curInstance) : DrawWindow(render, curInstance),
                                                                     partSetDecoratedNames(nullptr)
@@ -38,7 +39,7 @@ constexpr float widthInput = 150.f;
 void PatToolPane::Draw()
 {
     if(isVisible) {
-        ImGui::Begin("Tool Pane", 0);
+        ImGui::Begin(LBL("Tool Pane"), 0);
         if(curInstance->parts->loaded) {
             DrawTool();
             ImGui::End();
@@ -55,9 +56,9 @@ void PatToolPane::Draw()
 
 void PatToolPane::DrawPopUp() {
 
-    if (ImGui::BeginPopupModal("Frame Delete"))
+    if (ImGui::BeginPopupModal(LBL("Frame Delete")))
     {
-        ImGui::Text("Are you sure you want to delete this frame?");
+        ImGui::Text(TXT("Are you sure you want to delete this frame?"));
 
         ImGui::Separator();
 
@@ -66,7 +67,7 @@ void PatToolPane::DrawPopUp() {
             ImGui::CloseCurrentPopup();
         }
         ImGui::SameLine();
-        if (ImGui::Button("Cancel", ImVec2(120, 40))) {
+        if (ImGui::Button(LBL("Cancel"), ImVec2(120, 40))) {
             ImGui::CloseCurrentPopup();
         }
         ImGui::EndPopup();
@@ -84,7 +85,7 @@ void PatToolPane::DrawTool()
                 "Linear"
             };
 
-            ImGui::Text("PartSet Test Animation");
+            ImGui::Text(TXT("PartSet Test Animation"));
             if(!curInstance->currState->animating)
             {
                 float spacing = ImGui::GetStyle().ItemInnerSpacing.x;
@@ -123,7 +124,7 @@ void PatToolPane::DrawTool()
                         frame->AF.layers[0].spriteId = 0;
                     }
 
-                    if (ImGui::BeginCombo("Part Set", partSetDecoratedNames[frame->AF.layers[0].spriteId].c_str(),
+                    if (ImGui::BeginCombo(LBL("Part Set"), partSetDecoratedNames[frame->AF.layers[0].spriteId].c_str(),
                                           ImGuiComboFlags_HeightLargest))
                     {
                         auto count = curInstance->parts->partSets.size();
@@ -141,12 +142,12 @@ void PatToolPane::DrawTool()
                         ImGui::EndCombo();
                     }
                     auto af = &frame->AF;
-                    ImGui::InputInt("Duration", &af->duration, 1, 0);
-                    ImGui::Combo("Interpolation", &af->interpolationType, interpolationList, IM_ARRAYSIZE(interpolationList));
+                    ImGui::InputInt(LBL("Duration"), &af->duration, 1, 0);
+                    i18n::Combo(LBL("Interpolation"), &af->interpolationType, interpolationList, IM_ARRAYSIZE(interpolationList));
                 }
             }
 
-            auto text = curInstance->currState->animating ? "Stop Animation" : "Play Animation";
+            auto text = curInstance->currState->animating ? LBL("Stop Animation") : LBL("Play Animation");
             if (ImGui::Button(text)) {
                 curInstance->currState->animating = !curInstance->currState->animating;
                 curInstance->currState->animeSeq = curInstance->currState->pattern;
@@ -172,7 +173,7 @@ void PatToolPane::DrawTool()
 
             if(!curInstance->currState->animating)
             {
-                if(ImGui::Button("Add Frame"))
+                if(ImGui::Button(LBL("Add Frame")))
                 {
                     auto frame = &curInstance->currState->animationSequence.frames.emplace_back();
                     // Ensure new frame has at least one layer
@@ -186,7 +187,7 @@ void PatToolPane::DrawTool()
                     nframes = curInstance->currState->animationSequence.frames.size() - 1;
                 }
                 ImGui::SameLine();
-                if(ImGui::Button("Duplicate Frame"))
+                if(ImGui::Button(LBL("Duplicate Frame")))
                 {
                     auto copyFrame = curInstance->currState->animationSequence.frames[curInstance->currState->framePatEditor];
                     curInstance->currState->animationSequence.frames.push_back(copyFrame);
@@ -197,7 +198,7 @@ void PatToolPane::DrawTool()
                 if(nframes > 0)
                 {
                     ImGui::SameLine();
-                    if(ImGui::Button("Delete Frame"))
+                    if(ImGui::Button(LBL("Delete Frame")))
                     {
                         auto frames = &curInstance->currState->animationSequence.frames;
                         frames->erase(

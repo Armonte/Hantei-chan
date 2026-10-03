@@ -2,6 +2,9 @@
 #include <unordered_map>
 #include <string>
 #include <windows.h>
+#include <vector>
+#include <cstring>
+#include <imgui.h>
 
 namespace i18n {
 int language = 0;
@@ -13,6 +16,7 @@ const Row kRows[] = {
 #include "i18n_ja_windows.inc"
 #include "i18n_ja_tools.inc"
 #include "i18n_ja_han2.inc"
+#include "i18n_ja_ui2.inc"
 };
 std::unordered_map<std::string, const char *> &Table()
 {
@@ -57,4 +61,24 @@ static std::string SettingsPath()
 }
 void Load() { language = (int)GetPrivateProfileIntA("han2", "Language", 0, SettingsPath().c_str()); }
 void Save() { WritePrivateProfileStringA("han2", "Language", std::to_string(language).c_str(), SettingsPath().c_str()); }
+
+bool Combo(const char *label, int *current, const char *const *items, int count, int heightInItems)
+{
+	if (language == 0) return ImGui::Combo(label, current, items, count, heightInItems);
+	std::vector<const char *> tr((size_t)(count > 0 ? count : 0));
+	for (int i = 0; i < count; i++) tr[(size_t)i] = Tr(items[i]);
+	return ImGui::Combo(label, current, tr.data(), count, heightInItems);
+}
+
+bool Combo(const char *label, int *current, const char *itemsSeparatedByZeros, int heightInItems)
+{
+	if (language == 0) return ImGui::Combo(label, current, itemsSeparatedByZeros, heightInItems);
+	std::string out;
+	for (const char *p = itemsSeparatedByZeros; *p; ) {
+		out += Tr(p);
+		out.push_back('\0');
+		p += strlen(p) + 1;
+	}
+	return ImGui::Combo(label, current, out.c_str(), heightInItems);   // c_str() keeps the final \0 pair
+}
 }

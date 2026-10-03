@@ -7,6 +7,7 @@
 
 #include "../copy_manager.h"
 #include "../imgui_utils.h"
+#include "../i18n.h"
 
 PatPartPane::PatPartPane(Render* render, StateReference *curInstance, PatPartSetPane* partsetPaneRef) : DrawWindow(render, curInstance),
                                                                     cutOutsDecoratedNames(nullptr)
@@ -38,7 +39,7 @@ constexpr float widthInput = 150.f;
 void PatPartPane::Draw()
 {
     if(isVisible) {
-        ImGui::Begin("Part Pane", 0);
+        ImGui::Begin(LBL("Part Pane"), 0);
         auto seq = curInstance->framedata->get_sequence(curInstance->currState->pattern);
         auto pat = curInstance->parts;
         if(curInstance->parts->loaded) {
@@ -57,9 +58,9 @@ void PatPartPane::Draw()
 
 void PatPartPane::DrawPopUp() {
 
-    if (ImGui::BeginPopupModal("Part Delete"))
+    if (ImGui::BeginPopupModal(LBL("Part Delete")))
     {
-        ImGui::Text("Are you sure you want to delete this Part?");
+        ImGui::Text(TXT("Are you sure you want to delete this Part?"));
 
         ImGui::Separator();
 
@@ -70,7 +71,7 @@ void PatPartPane::DrawPopUp() {
             ImGui::CloseCurrentPopup();
         }
         ImGui::SameLine();
-        if (ImGui::Button("Cancel", ImVec2(120, 40))) {
+        if (ImGui::Button(LBL("Cancel"), ImVec2(120, 40))) {
             ImGui::CloseCurrentPopup();
         }
         ImGui::EndPopup();
@@ -90,7 +91,7 @@ const char* labelBR = "BR";
 void PatPartPane::DrawPartCutOut()
 {
     auto npartData = curInstance->parts->cutOuts.size();
-        if(ImGui::Button("Add Part")){
+        if(ImGui::Button(LBL("Add Part"))){
             auto item = &curInstance->parts->cutOuts.emplace_back();
             item->id = curInstance->parts->cutOuts.size() - 1;
             RegeneratePartCutOutsNames();
@@ -98,11 +99,11 @@ void PatPartPane::DrawPartCutOut()
             curInstance->currState->partCutOut = item->id;
         }
         ImGui::SameLine();
-        if(npartData > 0 && ImGui::Button("Delete Part")){
-            openpopupWithId = "Part Delete";
+        if(npartData > 0 && ImGui::Button(LBL("Delete Part"))){
+            openpopupWithId = LBL("Part Delete");
         }
 
-        if (ImGui::BeginCombo("Part", cutOutsDecoratedNames[curInstance->currState->partCutOut].c_str(),
+        if (ImGui::BeginCombo(LBL("Part"), cutOutsDecoratedNames[curInstance->currState->partCutOut].c_str(),
                               ImGuiComboFlags_HeightLargest)) {
 
             auto count = curInstance->parts->cutOuts.size();
@@ -123,22 +124,22 @@ void PatPartPane::DrawPartCutOut()
         if(npartData > 0) {
             auto cutOut = &curInstance->parts->cutOuts[curInstance->currState->partCutOut];
             if (cutOut) {
-                if (ImGui::InputText("Part name", &cutOut->name)) {
+                if (ImGui::InputText(LBL("Part name"), &cutOut->name)) {
                     cutOutsDecoratedNames[curInstance->currState->partCutOut] = curInstance->parts->GetPartCutOutsDecorateName(
                             curInstance->currState->partCutOut);
                 }
                 ImGui::NewLine();
                 ImGui::SameLine(ImGui::GetWindowWidth()-170);
-                if(ImGui::Button("Copy Part")){
+                if(ImGui::Button(LBL("Copy Part"))){
                     cutOut->CopyTo(&CopyManager::copiedParts->cutOut);
                 }
                 ImGui::SameLine();
-                if(ImGui::Button("Paste Part")){
+                if(ImGui::Button(LBL("Paste Part"))){
                     CopyManager::copiedParts->cutOut.CopyTo(cutOut);
                     RegeneratePartCutOutsNames();
                 }
 
-                if (ImGui::Button("Load Reference Data")) {
+                if (ImGui::Button(LBL("Load Reference Data"))) {
                     auto shapeId = cutOut->shapeIndex;
                     auto textureId = cutOut->texture;
                     if (curInstance->parts->shapes.size() > shapeId && shapeId >= 0)
@@ -147,19 +148,19 @@ void PatPartPane::DrawPartCutOut()
                         curInstance->currState->partGraph = textureId;
                 }
                 ImGui::Separator();
-                ImGui::Text("UV Settings");
+                ImGui::Text(TXT("UV Settings"));
                 ImGui::SetNextItemWidth(width);
-                ImGui::DragInt("Top", &cutOut->uv[0], 1);
+                ImGui::DragInt(LBL("Top"), &cutOut->uv[0], 1);
                 ImGui::SameLine();
                 ImGui::SetNextItemWidth(width);
-                ImGui::DragInt("Width", &cutOut->uv[2], 1);
+                ImGui::DragInt(LBL("Width"), &cutOut->uv[2], 1);
                 ImGui::SetNextItemWidth(width);
-                ImGui::DragInt("Left", &cutOut->uv[1], 1);
+                ImGui::DragInt(LBL("Left"), &cutOut->uv[1], 1);
                 ImGui::SameLine();
                 ImGui::SetNextItemWidth(width);
-                ImGui::DragInt("Height", &cutOut->uv[3], 1);
+                ImGui::DragInt(LBL("Height"), &cutOut->uv[3], 1);
                 if(ImGui::Button(*curInstance->renderMode == RenderMode::UV_SETTING_VIEW ?
-                    "Hide UV Render" : "Show UV Render"))
+                    LBL("Hide UV Render") : LBL("Show UV Render")))
                 {
                     *curInstance->renderMode = *curInstance->renderMode == RenderMode::UV_SETTING_VIEW ?
                         RenderMode::DEFAULT : RenderMode::UV_SETTING_VIEW;
@@ -182,7 +183,7 @@ void PatPartPane::DrawPartCutOut()
                 ImGui::Separator();
 
                 ImGui::SetNextItemWidth(widthInput);
-                if(ImGui::InputInt("Texture ID", &cutOut->texture, 1, 0))
+                if(ImGui::InputInt(LBL("Texture ID"), &cutOut->texture, 1, 0))
                 {
                     if(cutOut->texture < curInstance->parts->gfxMeta.size()) {
                         auto gfx = &curInstance->parts->gfxMeta[cutOut->texture];
@@ -196,24 +197,24 @@ void PatPartPane::DrawPartCutOut()
                     }
                 }
                 ImGui::SetNextItemWidth(widthInput);
-                ImGui::InputInt("Shape ID", &cutOut->shapeIndex, 1, 0);
+                ImGui::InputInt(LBL("Shape ID"), &cutOut->shapeIndex, 1, 0);
                 ImGui::SetNextItemWidth(widthInput);
-                ImGui::InputInt("Color Slot", &cutOut->colorSlot, 1, 0);
+                ImGui::InputInt(LBL("Color Slot"), &cutOut->colorSlot, 1, 0);
 
                 int pos[] = {cutOut->xy[0], cutOut->xy[1]};
-                if(ImGui::DragInt2("Center Pos.", pos, 1))
+                if(ImGui::DragInt2(LBL("Center Pos."), pos, 1))
                 {
                     cutOut->xy[0] = pos[0];
                     cutOut->xy[1] = pos[1];
                 }
                 int wh[] = {cutOut->wh[0], cutOut->wh[1]};
-                if(ImGui::DragInt2("Width/Height", wh, 1))
+                if(ImGui::DragInt2(LBL("Width/Height"), wh, 1))
                 {
                     cutOut->wh[0] = wh[0];
                     cutOut->wh[1] = wh[1];
                 }
                 auto gfx = curInstance->parts->GetPartGfx(cutOut->texture);
-                if(ImGui::Button("Set WH with UV"))
+                if(ImGui::Button(LBL("Set WH with UV")))
                 {
                     if(gfx != nullptr)
                     {
@@ -222,7 +223,7 @@ void PatPartPane::DrawPartCutOut()
                     }
                 }
 
-                ImGui::Text("Set Center Position with WH");
+                ImGui::Text(TXT("Set Center Position with WH"));
                 SetButtonCenterCalc(labelTL, new int[]{0,0}, cutOut);
                 ImGui::SameLine();
                 SetButtonCenterCalc(labelTC, new int[]{cutOut->wh[0] / 2,0}, cutOut);
@@ -239,21 +240,21 @@ void PatPartPane::DrawPartCutOut()
                 ImGui::SameLine();
                 SetButtonCenterCalc(labelBR, new int[]{cutOut->wh[0],cutOut->wh[1]}, cutOut);
 
-                ImGui::Checkbox("Show unknown params", &isUnkParams);
+                ImGui::Checkbox(LBL("Show unknown params"), &isUnkParams);
                 if(isUnkParams)
                 {
                     int ppjp[] = {cutOut->ppjp[0], cutOut->ppjp[1]};
-                    if(ImGui::InputInt2("PPJP", ppjp))
+                    if(ImGui::InputInt2(LBL("PPJP"), ppjp))
                     {
                         cutOut->ppjp[0] = ppjp[0];
                         cutOut->ppjp[1] = ppjp[1];
                     }
                     ImGui::SetNextItemWidth(widthInput);
-                    ImGui::InputInt("PPTX", &cutOut->pptx, 1, 0);
+                    ImGui::InputInt(LBL("PPTX"), &cutOut->pptx, 1, 0);
                     ImGui::SetNextItemWidth(widthInput);
-                    ImGui::InputInt("PPTE W", &cutOut->ppte[0], 1, 0, ImGuiInputTextFlags_ReadOnly);
+                    ImGui::InputInt(LBL("PPTE W"), &cutOut->ppte[0], 1, 0, ImGuiInputTextFlags_ReadOnly);
                     ImGui::SetNextItemWidth(widthInput);
-                    ImGui::InputInt("PPTE H", &cutOut->ppte[1], 1, 0, ImGuiInputTextFlags_ReadOnly);
+                    ImGui::InputInt(LBL("PPTE H"), &cutOut->ppte[1], 1, 0, ImGuiInputTextFlags_ReadOnly);
                     ImGui::SameLine();
                     ImGui::TextDisabled("(?)");
                     if(ImGui::IsItemHovered())

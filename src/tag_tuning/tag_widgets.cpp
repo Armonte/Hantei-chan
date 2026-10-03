@@ -6,6 +6,7 @@
 
 #include <cstdio>
 #include <cstring>
+#include "../i18n.h"
 
 namespace tagui {
 
@@ -59,11 +60,11 @@ void LeverTooltip(const Lever& l, int32_t styleValue, const char* where)
 	ImGui::TextUnformatted(l.help);
 	if (const char* n = GuideNote(l.key)) { ImGui::Separator(); ImGui::TextUnformatted(n); }
 	ImGui::Separator();
-	ImGui::Text("default %s, range %s", FormatLeverValue(l, l.def).c_str(), RangeText(l).c_str());
+	ImGui::Text(TXT("default %s, range %s"), FormatLeverValue(l, l.def).c_str(), RangeText(l).c_str());
 	ImGui::Text("%s: %s", where, FormatLeverValue(l, styleValue).c_str());
-	if (l.scope == LeverScope::SimBoot) ImGui::TextColored(kWarn, "boot-time: restart the game to change it");
-	if (l.scope == LeverScope::Harness) ImGui::TextDisabled("stress harness only, never a netplay behaviour");
-	if (l.perChar) ImGui::TextDisabled("can also be set per character");
+	if (l.scope == LeverScope::SimBoot) ImGui::TextColored(kWarn, TXT("boot-time: restart the game to change it"));
+	if (l.scope == LeverScope::Harness) ImGui::TextDisabled(TXT("stress harness only, never a netplay behaviour"));
+	if (l.perChar) ImGui::TextDisabled(TXT("can also be set per character"));
 	ImGui::PopTextWrapPos();
 	ImGui::EndTooltip();
 }

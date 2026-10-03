@@ -7,6 +7,7 @@
 
 #include "../copy_manager.h"
 #include "../imgui_utils.h"
+#include "../i18n.h"
 
 PatTexturePane::PatTexturePane(Render* render, StateReference *curInstance) : DrawWindow(render, curInstance),
                                                                     textureDecoratedNames(nullptr)
@@ -51,7 +52,7 @@ const char* const shapeList[] = {
 void PatTexturePane::Draw()
 {
     if(isVisible) {
-        ImGui::Begin("Texture Pane", 0);
+        ImGui::Begin(LBL("Texture Pane"), 0);
         auto seq = curInstance->framedata->get_sequence(curInstance->currState->pattern);
         auto pat = curInstance->parts;
         if(curInstance->parts->loaded) {
@@ -69,9 +70,9 @@ void PatTexturePane::Draw()
 }
 
 void PatTexturePane::DrawPopUp() {
-    if (ImGui::BeginPopupModal("Texture Delete"))
+    if (ImGui::BeginPopupModal(LBL("Texture Delete")))
     {
-        ImGui::Text("Are you sure you want to delete this Part?");
+        ImGui::Text(TXT("Are you sure you want to delete this Part?"));
 
         ImGui::Separator();
 
@@ -81,13 +82,13 @@ void PatTexturePane::DrawPopUp() {
             ImGui::CloseCurrentPopup();
         }
         ImGui::SameLine();
-        if (ImGui::Button("Cancel", ImVec2(120, 40))) {
+        if (ImGui::Button(LBL("Cancel"), ImVec2(120, 40))) {
             ImGui::CloseCurrentPopup();
         }
         ImGui::EndPopup();
     }
 
-    if (ImGui::BeginPopupModal("Import Texture Error", NULL, ImGuiWindowFlags_AlwaysAutoResize))
+    if (ImGui::BeginPopupModal(LBL("Import Texture Error"), NULL, ImGuiWindowFlags_AlwaysAutoResize))
     {
         ImGui::Text(customPopUpMessage.c_str());
 
@@ -104,18 +105,18 @@ void PatTexturePane::DrawTexture()
 {
 
         auto nTexture = curInstance->parts->gfxMeta.size();
-        if(ImGui::Button("Add Texture")){
+        if(ImGui::Button(LBL("Add Texture"))){
             auto item = &curInstance->parts->gfxMeta.emplace_back();
             item->id = curInstance->parts->gfxMeta.size() - 1;
             RegenerateTexturesNames();
             curInstance->currState->partGraph = item->id;
         }
         ImGui::SameLine();
-        if(nTexture > 0 && ImGui::Button("Delete Texture")){
-            openpopupWithId = "Texture Delete";
+        if(nTexture > 0 && ImGui::Button(LBL("Delete Texture"))){
+            openpopupWithId = LBL("Texture Delete");
         }
         if(nTexture > 0) {
-            if (ImGui::BeginCombo("Texture", textureDecoratedNames[curInstance->currState->partGraph].c_str(),
+            if (ImGui::BeginCombo(LBL("Texture"), textureDecoratedNames[curInstance->currState->partGraph].c_str(),
                                   ImGuiComboFlags_HeightLargest)) {
                 auto count = curInstance->parts->gfxMeta.size();
                 for (int n = 0; n < count; n++) {
@@ -134,11 +135,11 @@ void PatTexturePane::DrawTexture()
             }
             auto gfx = &curInstance->parts->gfxMeta[curInstance->currState->partGraph];
             if (gfx) {
-                if (ImGui::InputText("Texture name", &gfx->name)) {
+                if (ImGui::InputText(LBL("Texture name"), &gfx->name)) {
                     textureDecoratedNames[curInstance->currState->partGraph] = curInstance->parts->GetTexturesDecorateName(curInstance->currState->partGraph);
                 }
                 if(ImGui::Button(*curInstance->renderMode == RenderMode::TEXTURE_VIEW ?
-                    "Hide Texture Render" : "Show Texture Render"))
+                    LBL("Hide Texture Render") : LBL("Show Texture Render")))
                 {
                     printf("[TEXTURE_VIEW BUTTON] Clicked! Current mode: %d\n", (int)*curInstance->renderMode);
                     
@@ -166,12 +167,12 @@ void PatTexturePane::DrawTexture()
                         printf("[TEXTURE_VIEW BUTTON] Set spriteId to %d for default view\n", curInstance->currState->partSet);
                     }
                 }
-                ImGui::Checkbox("No compression on pat file", &gfx->noCompress);
+                ImGui::Checkbox(LBL("No compression on pat file"), &gfx->noCompress);
                 ImGui::SameLine();
                 ImGui::TextDisabled("(?)");
                 if(ImGui::IsItemHovered())
                     Tooltip("Use this only if you see that on compression texture has bigger data size than uncompressed.");
-                if (ImGui::Button("Import Texture")) {
+                if (ImGui::Button(LBL("Import Texture"))) {
                     std::string &&file = FileDialog(fileType::DDS);
                     if (!file.empty()) {
                         std::string message = curInstance->parts->gfxMeta[curInstance->currState->partGraph].ImportTexture(file.c_str(), curInstance->parts->textures);
@@ -190,7 +191,7 @@ void PatTexturePane::DrawTexture()
                         }
                         else
                         {
-                            openpopupWithId = "Import Texture Error";
+                            openpopupWithId = LBL("Import Texture Error");
                             customPopUpMessage = message;
                         }
                     }
@@ -200,7 +201,7 @@ void PatTexturePane::DrawTexture()
                 if(ImGui::IsItemHovered())
                     Tooltip("Textures on import need to be divisible of 128\non width and height.\nAlso DDS need to be: DXT1, DXT5 or Uncompressed.");
                 ImGui::SameLine(0, 20.f);
-                if (ImGui::Button("Export Texture")) {
+                if (ImGui::Button(LBL("Export Texture"))) {
                     std::string filename(gfx->name);
                     std::string &&file = FileDialog(fileType::DDS, true, const_cast<char *>(filename.c_str()));
                     if (!file.empty()) {
@@ -209,27 +210,27 @@ void PatTexturePane::DrawTexture()
                 }
                 ImGui::NewLine();
                 ImGui::SameLine(ImGui::GetWindowWidth()-220);
-                if(ImGui::Button("Copy Texture")){
+                if(ImGui::Button(LBL("Copy Texture"))){
                     gfx->CopyTo(&CopyManager::copiedParts->gfx);
                 }
                 ImGui::SameLine();
-                if(ImGui::Button("Paste Texture")){
+                if(ImGui::Button(LBL("Paste Texture"))){
                     CopyManager::copiedParts->gfx.CopyTo(gfx);
                     RegenerateTexturesNames();
                 }
 
                 ImGui::Text("");
                 ImGui::Separator();
-                ImGui::Text("*Information*");
+                ImGui::Text(TXT("*Information*"));
                 ImGui::Text(" ");
-                ImGui::Text("Width: %d", gfx->w);
-                ImGui::Text("Height %d", gfx->h);
-                ImGui::Text("Type %d", gfx->type);
-                ImGui::Text("BPP %d", gfx->bpp);
-                ImGui::Text("UV BPP Width %d", gfx->uvBpp[0]);
-                ImGui::Text("UV BPP Height %d", gfx->uvBpp[1]);
-                ImGui::Text("PGTE Width %d", gfx->pgte[0]);
-                ImGui::Text("PGTE Height %d", gfx->pgte[1]);
+                ImGui::Text(TXT("Width: %d"), gfx->w);
+                ImGui::Text(TXT("Height %d"), gfx->h);
+                ImGui::Text(TXT("Type %d"), gfx->type);
+                ImGui::Text(TXT("BPP %d"), gfx->bpp);
+                ImGui::Text(TXT("UV BPP Width %d"), gfx->uvBpp[0]);
+                ImGui::Text(TXT("UV BPP Height %d"), gfx->uvBpp[1]);
+                ImGui::Text(TXT("PGTE Width %d"), gfx->pgte[0]);
+                ImGui::Text(TXT("PGTE Height %d"), gfx->pgte[1]);
             }
         }
 }

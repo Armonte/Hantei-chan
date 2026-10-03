@@ -19,12 +19,47 @@
 #include <fstream>
 #include <map>
 #include <sstream>
+#include "../i18n.h"
 
 namespace authoring {
 
 namespace fs = std::filesystem;
 namespace wire = gamelink::wire;
 
+namespace {
+// Messages are composed in English by the model layer (they also go into logs / the wire); translate them for display:
+// "<slot role>: <reason>" and "Describe()" summaries are translated piece by piece.
+std::string ReplaceAll(std::string s, const std::string& a, const std::string& b)
+{
+	if (a.empty()) return s;
+	for (size_t p = 0; (p = s.find(a, p)) != std::string::npos; p += b.size()) s.replace(p, a.size(), b);
+	return s;
+}
+std::string TrMsg(const std::string& m)
+{
+	if (i18n::language == 0) return m;
+	for (int i = 0; i < 4; ++i) {
+		const std::string role = SlotRoleName(i);
+		if (m.compare(0, role.size(), role) == 0 && m.compare(role.size(), 2, ": ") == 0) {
+			const std::string rest = m.substr(role.size() + 2);
+			return std::string(TXT(role.c_str())) + ": " + TXT(rest.c_str());
+		}
+	}
+	return TXT(m.c_str());
+}
+std::string TrDescribe(std::string d)
+{
+	if (i18n::language == 0) return d;
+	d = ReplaceAll(d, " vs ", TXT(" vs "));
+	d = ReplaceAll(d, ", random stage", TXT(", random stage"));
+	d = ReplaceAll(d, ", same stage", TXT(", same stage"));
+	d = ReplaceAll(d, ", no assists", TXT(", no assists"));
+	d = ReplaceAll(d, ", assists", TXT(", assists"));
+	size_t p = d.find(", stage ");
+	if (p != std::string::npos) d.replace(p, 8, TXT(", stage "));
+	return d;
+}
+}
 bool showWindow = false;
 
 namespace {
@@ -183,50 +218,50 @@ void LaunchGame(HostContext& host)
 void Header(HostContext& host, const gamelink::Snapshot& s, const LinkPolicy& p)
 {
 	AuthoringState& a = St();
-	ImGui::TextColored(kColExp, "EXPERIMENTAL");
+	ImGui::TextColored(kColExp, TXT("EXPERIMENTAL"));
 	ImGui::SameLine();
-	ImGui::TextDisabled("Authoring (MBAACC) - docs/HANTEI_AUTHORING_MODE.md");
+	ImGui::TextDisabled(TXT("Authoring (MBAACC) - docs/HANTEI_AUTHORING_MODE.md"));
 	// game folder + checks
 	char buf[512];
 	std::snprintf(buf, sizeof buf, "%s", a.gameDir.c_str());
 	ImGui::SetNextItemWidth(360);
-	if (ImGui::InputTextWithHint("Game##dir", "C:\\games\\mbaacc_dev", buf, sizeof buf, ImGuiInputTextFlags_EnterReturnsTrue)) {
+	if (ImGui::InputTextWithHint(LBL("Game##dir"), "C:\\games\\mbaacc_dev", buf, sizeof buf, ImGuiInputTextFlags_EnterReturnsTrue)) {
 		a.gameDir = buf;
 		SaveSettings();
 	}
 	if (ImGui::IsItemDeactivatedAfterEdit()) { a.gameDir = buf; SaveSettings(); }
 	if (s.connected && s.pid) {
 		ImGui::SameLine();
-		if (ImGui::SmallButton("use the linked game's folder")) { a.gameDir = gamelink::GameDirOf(s.pid); SaveSettings(); }
+		if (ImGui::SmallButton(LBL("use the linked game's folder"))) { a.gameDir = gamelink::GameDirOf(s.pid); SaveSettings(); }
 	}
 	const GameDirCheck chk = CheckGameDir(a.gameDir);
 	ImGui::SameLine();
 	auto mark = [](const char* what, bool ok) {
 		ImGui::SameLine();
-		ImGui::TextColored(ok ? kColOk : kColBad, "%s %s", what, ok ? "ok" : "missing");
+		ImGui::TextColored(ok ? kColOk : kColBad, "%s %s", what, ok ? TXT("ok") : TXT("missing"));
 	};
 	ImGui::TextUnformatted("");
 	mark("MBAA", chk.exe);
 	mark("pchost", chk.pchost);
 	mark("pc_inject", chk.inject);
 	mark("loose data", chk.looseData);
-	for (const std::string& n : chk.notes) ImGui::TextColored(kColWarn, "  %s", n.c_str());
+	for (const std::string& n : chk.notes) ImGui::TextColored(kColWarn, "  %s", TXT(n.c_str()));
 	// launch / attach / detach
 	const LaunchState ls = a.launcher.Get();
 	const bool launching = ls.phase == LaunchPhase::Starting || ls.phase == LaunchPhase::WaitingForGame;
 	ImGui::BeginDisabled(!chk.CanLaunch() || launching || !ValidateNow(s).empty());
-	if (ImGui::Button("Launch")) LaunchGame(host);
+	if (ImGui::Button(LBL("Launch"))) LaunchGame(host);
 	ImGui::EndDisabled();
 	if (ImGui::IsItemHovered(ImGuiHoveredFlags_AllowWhenDisabled)) {
 		const std::vector<Problem> pr = ValidateNow(s);
-		if (!chk.CanLaunch()) ImGui::SetTooltip("%s", chk.problems.front().c_str());
-		else if (!pr.empty()) ImGui::SetTooltip("fix the setup first: %s", pr.front().msg.c_str());
-		else ImGui::SetTooltip("pc_inject MBAA.exe pchost.dll with this setup (PCHOST_MBAACC_AUTHORING_SETUP)");
+		if (!chk.CanLaunch()) ImGui::SetTooltip("%s", TXT(chk.problems.front().c_str()));
+		else if (!pr.empty()) ImGui::SetTooltip(TXT("fix the setup first: %s"), TrMsg(pr.front().msg).c_str());
+		else ImGui::SetTooltip(TXT("pc_inject MBAA.exe pchost.dll with this setup (PCHOST_MBAACC_AUTHORING_SETUP)"));
 	}
 	ImGui::SameLine();
-	if (ImGui::BeginCombo("##attach", "Attach...", ImGuiComboFlags_NoArrowButton | ImGuiComboFlags_WidthFitPreview)) {
+	if (ImGui::BeginCombo("##attach", TXT("Attach..."), ImGuiComboFlags_NoArrowButton | ImGuiComboFlags_WidthFitPreview)) {
 		const std::vector<RunningGame> games = ListRunningGames();
-		if (games.empty()) ImGui::TextDisabled("no MBAA.exe running");
+		if (games.empty()) ImGui::TextDisabled(TXT("no MBAA.exe running"));
 		for (const RunningGame& g : games) {
 			const bool other = !a.gameDir.empty() && Lower(g.dir) != Lower(a.gameDir);
 			char label[600];
@@ -247,46 +282,46 @@ void Header(HostContext& host, const gamelink::Snapshot& s, const LinkPolicy& p)
 	}
 	ImGui::SameLine();
 	ImGui::BeginDisabled(!s.connected && !s.wantConnected);
-	if (ImGui::Button("Detach")) { Link().Disconnect(); a.status = "detached (the game keeps running)"; }
+	if (ImGui::Button(LBL("Detach"))) { Link().Disconnect(); a.status = "detached (the game keeps running)"; }
 	ImGui::EndDisabled();
 	if (a.launcher.Owns(ls.gamePid) && ls.phase == LaunchPhase::Running) {
 		ImGui::SameLine();
-		if (ImGui::Button("Close game")) a.launcher.KillOwn();
-		if (ImGui::IsItemHovered()) ImGui::SetTooltip("Terminate the MBAA.exe this window launched (pid %u). Never another process.", ls.gamePid);
+		if (ImGui::Button(LBL("Close game"))) a.launcher.KillOwn();
+		if (ImGui::IsItemHovered()) ImGui::SetTooltip(TXT("Terminate the MBAA.exe this window launched (pid %u). Never another process."), ls.gamePid);
 	}
 	ImGui::SameLine();
-	if (ImGui::Button(showGameView ? "Game view: on" : "Game view")) showGameView = !showGameView;
-	if (ImGui::IsItemHovered()) ImGui::SetTooltip("The game rendered inside Hantei-chan (a dockable panel), with input forwarding and a hitbox overlay");
+	if (ImGui::Button(showGameView ? LBL("Game view: on") : LBL("Game view"))) showGameView = !showGameView;
+	if (ImGui::IsItemHovered()) ImGui::SetTooltip(TXT("The game rendered inside Hantei-chan (a dockable panel), with input forwarding and a hitbox overlay"));
 	ImGui::SameLine();
-	if (launching) ImGui::TextColored(kColWarn, "%s...", LaunchPhaseName(ls.phase));
-	else if (!s.connected) ImGui::TextColored(kColDim, "not linked (%s)", s.status.empty() ? "idle" : s.status.c_str());
+	if (launching) ImGui::TextColored(kColWarn, "%s...", TXT(LaunchPhaseName(ls.phase)));
+	else if (!s.connected) ImGui::TextColored(kColDim, TXT("not linked (%s)"), s.status.empty() ? TXT("idle") : TXT(s.status.c_str()));
 	else {
-		ImGui::TextColored(kColOk, "linked pid %u", (unsigned)s.pid);
+		ImGui::TextColored(kColOk, TXT("linked pid %u"), (unsigned)s.pid);
 		ImGui::SameLine();
-		if (s.capsUnknown) ImGui::TextColored(kColWarn, "pchost: link rev 1 (no Authoring)");
+		if (s.capsUnknown) ImGui::TextColored(kColWarn, TXT("pchost: link rev 1 (no Authoring)"));
 		else if (s.haveCaps)
-			ImGui::TextColored(p.leverTableOk ? kColOk : kColBad, "pchost %s  authoring rev %u  lever table %s", s.caps.build,
-			                   (unsigned)s.caps.revision, p.leverTableOk ? "ok" : "DIFFERS");
+			ImGui::TextColored(p.leverTableOk ? kColOk : kColBad, TXT("pchost %s  authoring rev %u  lever table %s"), s.caps.build,
+			                   (unsigned)s.caps.revision, p.leverTableOk ? TXT("ok") : TXT("DIFFERS"));
 	}
 	// phase / setup / session
 	if (s.haveSetup) {
 		const wire::SetupState& st = s.setup;
-		ImGui::Text("Phase %s", wire::PhaseName(st.phase));
+		ImGui::Text(TXT("Phase %s"), TXT(wire::PhaseName(st.phase)));
 		ImGui::SameLine();
 		const bool busy = st.authState == (uint8_t)wire::AuthState::ApplyingHot || st.authState == (uint8_t)wire::AuthState::Rebuilding;
-		ImGui::TextColored(st.authState == (uint8_t)wire::AuthState::Failed ? kColBad : busy ? kColWarn : kColOk, "  Setup: %s%s%s",
-		                   wire::AuthStateName(st.authState), st.message[0] ? " - " : "", st.message);
+		ImGui::TextColored(st.authState == (uint8_t)wire::AuthState::Failed ? kColBad : busy ? kColWarn : kColOk, TXT("  Setup: %s%s%s"),
+		                   TXT(wire::AuthStateName(st.authState)), st.message[0] ? " - " : "", st.message);
 		if (st.lastPath && st.authState == (uint8_t)wire::AuthState::Ready) {
 			ImGui::SameLine();
-			ImGui::TextDisabled("(%s, %u ms)", st.lastPath == 1 ? "hot" : "cold", (unsigned)st.lastDurationMs);
+			ImGui::TextDisabled("(%s, %u ms)", st.lastPath == 1 ? TXT("hot") : TXT("cold"), (unsigned)st.lastDurationMs);
 		}
 	}
 	if (!p.banner.empty()) {
 		const ImVec4 c = p.severity >= 3 ? kColBad : p.severity == 2 ? kColWarn : kColDim;
-		ImGui::TextColored(c, "%s", p.banner.c_str());
+		ImGui::TextColored(c, "%s", TXT(p.banner.c_str()));
 		if (p.sessionLocked) {
 			ImGui::SameLine();
-			if (ImGui::SmallButton(a.unlocked ? "Lock again" : "Unlock (edits apply after the session)")) a.unlocked = !a.unlocked;
+			if (ImGui::SmallButton(a.unlocked ? LBL("Lock again") : LBL("Unlock (edits apply after the session)"))) a.unlocked = !a.unlocked;
 		}
 	}
 	// a crash / an exit: offer to relaunch the same setup (§8.9)
@@ -294,23 +329,23 @@ void Header(HostContext& host, const gamelink::Snapshot& s, const LinkPolicy& p)
 		ImGui::PushStyleColor(ImGuiCol_ChildBg, ImVec4(0.25f, 0.08f, 0.08f, 1.0f));
 		ImGui::BeginChild("##crash", ImVec2(0, 150), ImGuiChildFlags_Borders);
 		ImGui::TextColored(ls.crashed ? kColBad : kColWarn, "%s", ls.message.c_str());
-		if (ImGui::Button("Relaunch with the same setup")) {
+		if (ImGui::Button(LBL("Relaunch with the same setup"))) {
 			wire::MatchSetup w{};
 			if (FromHex(ls.setupHex, w)) { const std::string st = a.setup.style; a.setup = FromWire(w); a.setup.style = st; }
 			a.launcher.Forget();
 			LaunchGame(host);
 		}
 		ImGui::SameLine();
-		if (ImGui::Button("Show the log")) { a.requestTab = 5; }
+		if (ImGui::Button(LBL("Show the log"))) { a.requestTab = 5; }
 		ImGui::SameLine();
-		if (ImGui::Button("Dismiss")) { a.crashDismissed = true; a.launcher.Forget(); }
-		ImGui::TextDisabled("last lines of pchost_authoring.log:");
+		if (ImGui::Button(LBL("Dismiss"))) { a.crashDismissed = true; a.launcher.Forget(); }
+		ImGui::TextDisabled(TXT("last lines of pchost_authoring.log:"));
 		for (const std::string& l : ls.lastLog) ImGui::TextUnformatted(l.c_str());
 		ImGui::EndChild();
 		ImGui::PopStyleColor();
 	}
-	if (!a.status.empty()) ImGui::TextWrapped("%s", a.status.c_str());
-	for (const tagtune::Warning& w : a.blocked) ImGui::TextColored(kColBad, "  would add: %s", w.Text().c_str());
+	if (!a.status.empty()) ImGui::TextWrapped("%s", TXT(a.status.c_str()));
+	for (const tagtune::Warning& w : a.blocked) ImGui::TextColored(kColBad, TXT("  would add: %s"), w.Text().c_str());
 }
 
 // ---- palette swatches ----
@@ -350,12 +385,12 @@ bool PickRow(int slot, const char* role, bool optional)
 	SlotPick& pk = a.setup.slot[slot];
 	bool changed = false;
 	ImGui::PushID(slot);
-	ImGui::TextUnformatted(role);
+	ImGui::TextUnformatted(TXT(role));
 	ImGui::SameLine(90);
 	const RosterChar* cur = pk.Empty() ? nullptr : RosterFor(pk.chara);
 	ImGui::SetNextItemWidth(150);
-	if (ImGui::BeginCombo("##chara", cur ? cur->name.c_str() : pk.Empty() ? (optional ? "(none: solo)" : "(pick)") : "?", ImGuiComboFlags_HeightLarge)) {
-		if (optional && ImGui::Selectable("(none: solo)", pk.Empty())) { pk = {}; changed = true; }
+	if (ImGui::BeginCombo("##chara", cur ? cur->name.c_str() : pk.Empty() ? (optional ? TXT("(none: solo)") : TXT("(pick)")) : "?", ImGuiComboFlags_HeightLarge)) {
+		if (optional && ImGui::Selectable(LBL("(none: solo)"), pk.Empty())) { pk = {}; changed = true; }
 		for (const RosterChar& c : a.roster) {
 			const std::string ban = BanReason(c, a.setup.mode);
 			std::string label = c.name + (c.Duo() ? "  (duo)" : "") + (!ban.empty() ? "  - banned" : "");
@@ -380,7 +415,7 @@ bool PickRow(int slot, const char* role, bool optional)
 			if (on) ImGui::PushStyleColor(ImGuiCol_Button, ImVec4(0.55f, 0.45f, 0.1f, 1.0f));
 			if (ImGui::SmallButton(m == 0 ? "C" : m == 1 ? "F" : "H")) { pk.moon = m; changed = true; }
 			if (on) ImGui::PopStyleColor();
-			if (ImGui::IsItemHovered()) ImGui::SetTooltip("%s Moon", MoonText(m).c_str());
+			if (ImGui::IsItemHovered()) ImGui::SetTooltip(TXT("%s Moon"), MoonText(m).c_str());
 		}
 		ImGui::SameLine();
 		const int n = PaletteCount(cur->file1);
@@ -412,24 +447,24 @@ void AssistRow(int side)
 {
 	AuthoringState& a = St();
 	ImGui::PushID(100 + side);
-	ImGui::TextDisabled("Assists");
+	ImGui::TextDisabled(TXT("Assists"));
 	ImGui::SameLine(90);
 	for (int d = 0; d < 5; ++d) {
 		if (d) ImGui::SameLine();
 		ImGui::PushID(d);
 		ImGui::TextUnformatted(kDirNames[d]);
 		ImGui::SameLine(0, 2);
-		ImGui::SetNextItemWidth(72);
+		ImGui::SetNextItemWidth(104);
 		const uint8_t c = a.setup.assist[side][d];
-		if (ImGui::BeginCombo("##as", c == 0 ? "tuning" : kAssistMotionChoices[c - 1])) {
-			if (ImGui::Selectable("tuning", c == 0)) a.setup.assist[side][d] = 0;
+		if (ImGui::BeginCombo("##as", c == 0 ? TXT("tuning") : TXT(kAssistMotionChoices[c - 1]))) {
+			if (ImGui::Selectable(LBL("tuning"), c == 0)) a.setup.assist[side][d] = 0;
 			for (int k = 0; k < kAssistMotionCount; ++k)
-				if (ImGui::Selectable(kAssistMotionChoices[k], c == k + 1)) a.setup.assist[side][d] = (uint8_t)(k + 1);
+				if (ImGui::Selectable(TXT(kAssistMotionChoices[k]), c == k + 1)) a.setup.assist[side][d] = (uint8_t)(k + 1);
 			ImGui::EndCombo();
 		}
 		if (ImGui::IsItemHovered())
-			ImGui::SetTooltip("%s+FN1 for this side's partner. A MATCH setting like a CSS pick: never written to the sidecars.\n"
-			                  "\"tuning\" = the character's own action (its sidecar, else the default).", kDirNames[d]);
+			ImGui::SetTooltip(TXT("%s+FN1 for this side's partner. A MATCH setting like a CSS pick: never written to the sidecars.\n"
+			                  "\"tuning\" = the character's own action (its sidecar, else the default)."), kDirNames[d]);
 		ImGui::PopID();
 	}
 	ImGui::PopID();
@@ -441,13 +476,13 @@ void StageCombo()
 	static bg::StageProject proj;
 	static std::string projDir;
 	if (projDir != a.gameDir) { projDir = a.gameDir; if (!a.gameDir.empty()) proj.Open(a.gameDir, bg::Game::MBAACC); }
-	std::string preview = a.setup.stage == 0 ? "keep the current stage" : a.setup.stage < 0 ? "random" : "stage " + std::to_string(a.setup.stage);
+	std::string preview = a.setup.stage == 0 ? TXT("keep the current stage") : a.setup.stage < 0 ? TXT("random") : "stage " + std::to_string(a.setup.stage);
 	if (a.setup.stage > 0 && proj.IsOpen())
 		if (const bg::StageEntry* e = proj.Find(a.setup.stage)) preview = e->Label();
 	ImGui::SetNextItemWidth(320);
-	if (ImGui::BeginCombo("Stage", preview.c_str(), ImGuiComboFlags_HeightLargest)) {
-		if (ImGui::Selectable("keep the current stage", a.setup.stage == 0)) a.setup.stage = 0;
-		if (ImGui::Selectable("random (the game's roll)", a.setup.stage < 0)) a.setup.stage = -1;
+	if (ImGui::BeginCombo(LBL("Stage"), preview.c_str(), ImGuiComboFlags_HeightLargest)) {
+		if (ImGui::Selectable(LBL("keep the current stage"), a.setup.stage == 0)) a.setup.stage = 0;
+		if (ImGui::Selectable(LBL("random (the game's roll)"), a.setup.stage < 0)) a.setup.stage = -1;
 		if (proj.IsOpen())
 			for (const bg::StageEntry& e : proj.Entries()) {
 				if (!e.listed) continue;
@@ -456,7 +491,7 @@ void StageCombo()
 				if (e.datPath.empty()) l += "  (no .dat)";
 				if (ImGui::Selectable(l.c_str(), a.setup.stage == e.id, e.datPath.empty() ? ImGuiSelectableFlags_Disabled : 0)) a.setup.stage = e.id;
 			}
-		else ImGui::TextDisabled("no Bg\\BgList.ini in the game folder");
+		else ImGui::TextDisabled(TXT("no Bg\\BgList.ini in the game folder"));
 		ImGui::EndCombo();
 	}
 }
@@ -466,13 +501,13 @@ void SetupTab(HostContext& host, const gamelink::Snapshot& s, const LinkPolicy& 
 	AuthoringState& a = St();
 	// mode / scene / style / rules
 	int mode = (int)a.setup.mode;
-	ImGui::TextUnformatted("Mode");
+	ImGui::TextUnformatted(TXT("Mode"));
 	ImGui::SameLine(90);
 	bool modeChanged = ImGui::RadioButton("1v1", &mode, 0);
 	ImGui::SameLine();
-	modeChanged |= ImGui::RadioButton("TAG", &mode, 1);
+	modeChanged |= ImGui::RadioButton(LBL("TAG"), &mode, 1);
 	ImGui::SameLine();
-	modeChanged |= ImGui::RadioButton("TEAM", &mode, 2);
+	modeChanged |= ImGui::RadioButton(LBL("TEAM"), &mode, 2);
 	if (modeChanged) {
 		a.setup.mode = (Mode)mode;
 		if (a.setup.mode == Mode::Versus) { a.setup.slot[2] = {}; a.setup.slot[3] = {}; }
@@ -482,19 +517,19 @@ void SetupTab(HostContext& host, const gamelink::Snapshot& s, const LinkPolicy& 
 	ImGui::SameLine(0, 30);
 	ImGui::SetNextItemWidth(150);
 	const char* scenes[] = { "Auto", "Training", "Authoring VS" };
-	if (ImGui::BeginCombo("Scene", scenes[a.setup.scene < 3 ? a.setup.scene : 0])) {
+	if (ImGui::BeginCombo(LBL("Scene"), TXT(scenes[a.setup.scene < 3 ? a.setup.scene : 0]))) {
 		for (int k = 0; k < 3; ++k) {
 			const bool dis = k == 1 && a.setup.mode != Mode::Versus;
-			if (ImGui::Selectable(scenes[k], a.setup.scene == k, dis ? ImGuiSelectableFlags_Disabled : 0)) a.setup.scene = (uint8_t)k;
+			if (ImGui::Selectable(TXT(scenes[k]), a.setup.scene == k, dis ? ImGuiSelectableFlags_Disabled : 0)) a.setup.scene = (uint8_t)k;
 			if (dis && ImGui::IsItemHovered(ImGuiHoveredFlags_AllowWhenDisabled))
-				ImGui::SetTooltip("Training is 1v1 only for now: TAG / TEAM in native Training breaks the game's == 0x1010 checks\n"
-				                  "(gap G3). They use Authoring VS: infinite timer, an endless round, P2 = the second player.");
+				ImGui::SetTooltip(TXT("Training is 1v1 only for now: TAG / TEAM in native Training breaks the game's == 0x1010 checks\n"
+				                  "(gap G3). They use Authoring VS: infinite timer, an endless round, P2 = the second player."));
 		}
 		ImGui::EndCombo();
 	}
-	if (ImGui::IsItemHovered()) ImGui::SetTooltip("Auto = Training for 1v1, Authoring VS for TAG / TEAM");
+	if (ImGui::IsItemHovered()) ImGui::SetTooltip(TXT("Auto = Training for 1v1, Authoring VS for TAG / TEAM"));
 	// style (a TUNING edit: global.ini active_style)
-	ImGui::TextUnformatted("Style");
+	ImGui::TextUnformatted(TXT("Style"));
 	ImGui::SameLine(90);
 	{
 		const tagtune::GlobalResolution g = a.ws.Global();
@@ -502,7 +537,7 @@ void SetupTab(HostContext& host, const gamelink::Snapshot& s, const LinkPolicy& 
 		ImGui::SetNextItemWidth(150);
 		const bool can = Sink().CanEdit();
 		ImGui::BeginDisabled(!can);
-		if (ImGui::BeginCombo("##style", g.style.empty() ? "(defaults)" : g.style.c_str())) {
+		if (ImGui::BeginCombo("##style", g.style.empty() ? TXT("(defaults)") : g.style.c_str())) {
 			for (const std::string& n : names) {
 				const tagtune::BuiltinStyle* b = tagtune::FindBuiltinStyle(n);
 				if (ImGui::Selectable(n.c_str(), tagtune::ieq(n, g.style))) {
@@ -518,40 +553,40 @@ void SetupTab(HostContext& host, const gamelink::Snapshot& s, const LinkPolicy& 
 		}
 		ImGui::EndDisabled();
 		if (ImGui::IsItemHovered(ImGuiHoveredFlags_AllowWhenDisabled))
-			ImGui::SetTooltip("Edits global.ini active_style (a tuning edit: undoable, applied at once). The style layer sits under\nthe global overrides and every character / moon value.");
+			ImGui::SetTooltip(TXT("Edits global.ini active_style (a tuning edit: undoable, applied at once). The style layer sits under\nthe global overrides and every character / moon value."));
 	}
 	ImGui::SameLine(0, 30);
 	ImGui::SetNextItemWidth(130);
 	const char* ko[] = { "oneDown", "allDown", "the tuning's" };
 	int koi = a.setup.koRule == 0 ? 0 : a.setup.koRule == 1 ? 1 : 2;
-	if (ImGui::Combo("KO rule", &koi, ko, 3)) a.setup.koRule = koi == 2 ? 0xFF : koi;
+	if (i18n::Combo(LBL("KO rule"), &koi, ko, 3)) a.setup.koRule = koi == 2 ? 0xFF : koi;
 	ImGui::SameLine();
 	ImGui::SetNextItemWidth(110);
 	const char* timers[] = { "infinite", "slow (1)", "normal (2)", "fast (4)", "scene default" };
 	const int tv[] = { 0, 1, 2, 4, 0xFF };
 	int ti = 4;
 	for (int k = 0; k < 5; ++k) if (tv[k] == a.setup.timer) ti = k;
-	if (ImGui::Combo("Timer", &ti, timers, 5)) a.setup.timer = tv[ti];
+	if (i18n::Combo(LBL("Timer"), &ti, timers, 5)) a.setup.timer = tv[ti];
 	if (a.setup.mode == Mode::Tag) {
 		ImGui::SameLine();
-		ImGui::Checkbox("Assists this match", &a.setup.assists);
-		if (ImGui::IsItemHovered()) ImGui::SetTooltip("kSetupAssists: the CSS \"TAG Battle\" vs \"no assists\" preset (a match setting).");
+		ImGui::Checkbox(LBL("Assists this match"), &a.setup.assists);
+		if (ImGui::IsItemHovered()) ImGui::SetTooltip(TXT("kSetupAssists: the CSS \"TAG Battle\" vs \"no assists\" preset (a match setting)."));
 	}
 	ImGui::Dummy(ImVec2(0, 0));
 	ImGui::SameLine(90);
 	StageCombo();
 	ImGui::SameLine();
-	if (ImGui::Button("Browse...")) { a.wantStagePick = true; if (host.browseStage) host.browseStage(); }
-	if (a.wantStagePick) { ImGui::SameLine(); ImGui::TextDisabled("(pick in the Stage Browser: \"Use for the Authoring setup\")"); }
+	if (ImGui::Button(LBL("Browse..."))) { a.wantStagePick = true; if (host.browseStage) host.browseStage(); }
+	if (a.wantStagePick) { ImGui::SameLine(); ImGui::TextDisabled(TXT("(pick in the Stage Browser: \"Use for the Authoring setup\")")); }
 	ImGui::SameLine();
-	ImGui::Checkbox("keep BGM", &a.setup.keepBgm);
+	ImGui::Checkbox(LBL("keep BGM"), &a.setup.keepBgm);
 	ImGui::Separator();
 	// the teams
 	const bool partners = a.setup.mode != Mode::Versus;
 	if (ImGui::BeginTable("##teams", 2, ImGuiTableFlags_SizingStretchSame)) {
 		for (int side = 0; side < 2; ++side) {
 			ImGui::TableNextColumn();
-			ImGui::SeparatorText(side == 0 ? "P1 TEAM" : "P2 TEAM");
+			ImGui::SeparatorText(side == 0 ? TXT("P1 TEAM") : TXT("P2 TEAM"));
 			PickRow(EngineSlot(side, 0), "Point", false);
 			if (partners) PickRow(EngineSlot(side, 1), "Partner", a.setup.mode == Mode::Tag);
 			if (a.setup.mode == Mode::Tag) AssistRow(side);
@@ -563,28 +598,28 @@ void SetupTab(HostContext& host, const gamelink::Snapshot& s, const LinkPolicy& 
 	const std::vector<Problem> probs = ValidateNow(s);
 	bool needsRestart = false;
 	for (const Problem& pr : probs) {
-		ImGui::TextColored(pr.status == (int16_t)wire::Status::NeedsRestart ? kColWarn : kColBad, "%s", pr.msg.c_str());
+		ImGui::TextColored(pr.status == (int16_t)wire::Status::NeedsRestart ? kColWarn : kColBad, "%s", TrMsg(pr.msg).c_str());
 		needsRestart |= pr.status == (int16_t)wire::Status::NeedsRestart;
 	}
 	const bool onlyRestart = needsRestart && probs.size() == 1;
 	ImGui::BeginDisabled(!p.canLoadInGame || !probs.empty());
-	if (ImGui::Button("Load in game", ImVec2(160, 0))) LoadInGame(host, s);
+	if (ImGui::Button(LBL("Load in game"), ImVec2(160, 0))) LoadInGame(host, s);
 	ImGui::EndDisabled();
 	if (ImGui::IsItemHovered(ImGuiHoveredFlags_AllowWhenDisabled)) {
-		if (!s.connected) ImGui::SetTooltip("Not linked: Launch (header) starts the game with this setup, or Attach to a running one.");
+		if (!s.connected) ImGui::SetTooltip(TXT("Not linked: Launch (header) starts the game with this setup, or Attach to a running one."));
 		else if (!p.canLoadInGame) ImGui::SetTooltip("%s", p.setupBusy ? "a setup is still being applied" : p.banner.c_str());
-		else ImGui::SetTooltip("SetMatchSetup: the hot path (~1 s) when only picks / stage change in an authoring battle, else the\ncold path through the character select (~3-10 s). The characters open as editor tabs right away.");
+		else ImGui::SetTooltip(TXT("SetMatchSetup: the hot path (~1 s) when only picks / stage change in an authoring battle, else the\ncold path through the character select (~3-10 s). The characters open as editor tabs right away."));
 	}
 	if (onlyRestart) {
 		ImGui::SameLine();
-		if (ImGui::Button("Relaunch with 4 players")) { a.launcher.KillOwn(); LaunchGame(host); }
+		if (ImGui::Button(LBL("Relaunch with 4 players"))) { a.launcher.KillOwn(); LaunchGame(host); }
 	}
 	ImGui::SameLine();
-	ImGui::Checkbox("open characters in the editor", &a.openChars);
+	ImGui::Checkbox(LBL("open characters in the editor"), &a.openChars);
 	ImGui::SameLine();
-	ImGui::Checkbox("re-read tuning first", &a.reReadFirst);
+	ImGui::Checkbox(LBL("re-read tuning first"), &a.reReadFirst);
 	ImGui::SameLine();
-	if (ImGui::Button("Open characters now")) OpenCharacters(host);
+	if (ImGui::Button(LBL("Open characters now"))) OpenCharacters(host);
 	for (const std::string& w : a.charWarnings) ImGui::TextColored(kColWarn, "%s", w.c_str());
 	// the result, and requested != in game
 	if (a.loadSeq) {
@@ -596,7 +631,7 @@ void SetupTab(HostContext& host, const gamelink::Snapshot& s, const LinkPolicy& 
 			a.loadResult = std::string("running: ") + wire::AuthStateName(s.setup.authState) + " - " + s.setup.message;
 		}
 	}
-	if (!a.loadResult.empty()) ImGui::TextWrapped("last: %s", a.loadResult.c_str());
+	if (!a.loadResult.empty()) ImGui::TextWrapped(TXT("last: %s"), a.loadResult.c_str());
 	if (s.haveSetup && s.setup.phase == (uint8_t)wire::Phase::Battle && s.setup.authState == (uint8_t)wire::AuthState::Ready) {
 		const Setup inForce = FromWire(s.setup.inForce);
 		std::string diff;
@@ -604,21 +639,21 @@ void SetupTab(HostContext& host, const gamelink::Snapshot& s, const LinkPolicy& 
 			if (inForce.slot[i].chara != a.loadRequested.slot[i].chara || inForce.slot[i].moon != a.loadRequested.slot[i].moon)
 				diff += std::string(diff.empty() ? "" : ", ") + SlotRoleName(i);
 		if (!diff.empty() && a.loadRequested.slot[0].chara >= 0) {
-			ImGui::TextColored(kColWarn, "requested != in game: %s", diff.c_str());
+			ImGui::TextColored(kColWarn, TXT("requested != in game: %s"), diff.c_str());
 			ImGui::SameLine();
-			if (ImGui::SmallButton("Adopt game's")) { const std::string st = a.setup.style; a.setup = inForce; a.setup.style = st; a.loadRequested = inForce; }
+			if (ImGui::SmallButton(LBL("Adopt game's"))) { const std::string st = a.setup.style; a.setup = inForce; a.setup.style = st; a.loadRequested = inForce; }
 			ImGui::SameLine();
-			if (ImGui::SmallButton("Re-send")) LoadInGame(host, s);
+			if (ImGui::SmallButton(LBL("Re-send"))) LoadInGame(host, s);
 		}
-		ImGui::TextDisabled("in game: %s", Describe(inForce, a.roster).c_str());
+		ImGui::TextDisabled(TXT("in game: %s"), TrDescribe(Describe(inForce, a.roster)).c_str());
 	}
 	ImGui::Separator();
 	// save as a named setup
 	ImGui::SetNextItemWidth(200);
-	ImGui::InputTextWithHint("##savename", "setup name", a.saveName, sizeof a.saveName);
+	ImGui::InputTextWithHint("##savename", TXT("setup name"), a.saveName, sizeof a.saveName);
 	ImGui::SameLine();
 	ImGui::BeginDisabled(!a.saveName[0]);
-	if (ImGui::Button("Save setup")) {
+	if (ImGui::Button(LBL("Save setup"))) {
 		a.setup.style = a.ws.Global().style;
 		a.lib.Save(a.setup, a.saveName);
 		SaveSettings();
@@ -626,7 +661,7 @@ void SetupTab(HostContext& host, const gamelink::Snapshot& s, const LinkPolicy& 
 	}
 	ImGui::EndDisabled();
 	ImGui::SameLine();
-	ImGui::TextDisabled("%s", Describe(a.setup, a.roster).c_str());
+	ImGui::TextDisabled("%s", TrDescribe(Describe(a.setup, a.roster)).c_str());
 }
 
 void SetupsTab(HostContext& host, const gamelink::Snapshot& s, const LinkPolicy& p)
@@ -636,28 +671,28 @@ void SetupsTab(HostContext& host, const gamelink::Snapshot& s, const LinkPolicy&
 	auto row = [&](const Setup& x, bool named, int idx) -> int {
 		ImGui::PushID(idx + (named ? 0 : 1000));
 		int action = 0;
-		if (ImGui::SmallButton("Use")) action = 1;
+		if (ImGui::SmallButton(LBL("Use"))) action = 1;
 		ImGui::SameLine();
-		if (named) { if (ImGui::SmallButton("Delete")) action = 2; ImGui::SameLine(); }
+		if (named) { if (ImGui::SmallButton(LBL("Delete"))) action = 2; ImGui::SameLine(); }
 		if (named) ImGui::Text("%-20s", x.name.c_str()), ImGui::SameLine();
-		ImGui::TextUnformatted(Describe(x, a.roster).c_str());
-		if (!x.style.empty()) { ImGui::SameLine(); ImGui::TextDisabled("style %s", x.style.c_str()); }
+		ImGui::TextUnformatted(TrDescribe(Describe(x, a.roster)).c_str());
+		if (!x.style.empty()) { ImGui::SameLine(); ImGui::TextDisabled(TXT("style %s"), x.style.c_str()); }
 		ImGui::PopID();
 		return action;
 	};
-	ImGui::SeparatorText("Saved setups");
-	if (a.lib.named.empty()) ImGui::TextDisabled("none yet: Setup > Save setup");
+	ImGui::SeparatorText(TXT("Saved setups"));
+	if (a.lib.named.empty()) ImGui::TextDisabled(TXT("none yet: Setup > Save setup"));
 	for (size_t i = 0; i < a.lib.named.size(); ++i) {
 		const int act = row(a.lib.named[i], true, (int)i);
 		if (act == 1) { a.setup = a.lib.named[i]; a.requestTab = 0; a.status = "setup '" + a.setup.name + "' loaded into the Setup tab"; }
 		if (act == 2) { const std::string n = a.lib.named[i].name; a.lib.Remove(n); SaveSettings(); break; }
 	}
-	ImGui::SeparatorText("Recent");
-	if (a.lib.recent.empty()) ImGui::TextDisabled("every Load in game / Launch lands here");
+	ImGui::SeparatorText(TXT("Recent"));
+	if (a.lib.recent.empty()) ImGui::TextDisabled(TXT("every Load in game / Launch lands here"));
 	for (size_t i = 0; i < a.lib.recent.size(); ++i)
 		if (row(a.lib.recent[i], false, (int)i) == 1) { const std::string n = a.setup.name; a.setup = a.lib.recent[i]; a.requestTab = 0; }
-	ImGui::SeparatorText("Setup as hex");
-	ImGui::TextDisabled("PCHOST_MBAACC_AUTHORING_SETUP / game_link_cli setup-hex:");
+	ImGui::SeparatorText(TXT("Setup as hex"));
+	ImGui::TextDisabled(TXT("PCHOST_MBAACC_AUTHORING_SETUP / game_link_cli setup-hex:"));
 	std::string hex = ToHex(ToWire(a.setup));
 	ImGui::SetNextItemWidth(-1);
 	ImGui::InputText("##hex", hex.data(), hex.size() + 1, ImGuiInputTextFlags_ReadOnly);
@@ -884,7 +919,7 @@ std::string TabBadge(const std::string& txtPath, bool* isPoint)
 	std::string badge;
 	int slotFound = -1;
 	for (const OpenTarget& t : FilesToOpen(a.setup, a.roster.empty() ? MirrorRoster(true) : a.roster, a.gameDir))
-		if (leaf == Lower(t.file + "_" + std::to_string(t.moon) + ".txt")) { badge = SlotRoleName(t.slot); slotFound = t.slot; break; }
+		if (leaf == Lower(t.file + "_" + std::to_string(t.moon) + ".txt")) { badge = TXT(SlotRoleName(t.slot)); slotFound = t.slot; break; }
 	if (slotFound < 0) return {};
 	const gamelink::Snapshot s = Link().Get();
 	if (isPoint && s.haveState && s.state.tagLive) {
@@ -936,18 +971,18 @@ void Draw(HostContext& host)
 		ImGui::SetNextWindowPos(ImVec2(vp->WorkPos.x + 30, vp->WorkPos.y + 40), ImGuiCond_FirstUseEver);
 		ImGui::SetNextWindowSize(ImVec2(std::min(1240.0f, vp->WorkSize.x - 60), std::min(900.0f, vp->WorkSize.y - 60)), ImGuiCond_FirstUseEver);
 	}
-	if (!ImGui::Begin("Authoring (MBAACC)###authoring", &showWindow, ImGuiWindowFlags_MenuBar)) {
+	if (!ImGui::Begin(LBL("Authoring (MBAACC)###authoring"), &showWindow, ImGuiWindowFlags_MenuBar)) {
 		a.focused = false;
 		ImGui::End();
 		return;
 	}
 	a.focused = ImGui::IsWindowFocused(ImGuiFocusedFlags_RootAndChildWindows);
 	if (ImGui::BeginMenuBar()) {
-		if (ImGui::BeginMenu("Workspace")) {
-			ImGui::MenuItem("Fill the main window", nullptr, &a.maximize);
-			ImGui::MenuItem("Live apply (save + re-read on every edit)", nullptr, &a.liveApply);
-			ImGui::MenuItem("Open characters on Load in game", nullptr, &a.openChars);
-			ImGui::MenuItem("Edit the SHIPPED defaults (not the local overlay)", nullptr, &a.editShipped);
+		if (ImGui::BeginMenu(LBL("Workspace"))) {
+			ImGui::MenuItem(LBL("Fill the main window"), nullptr, &a.maximize);
+			ImGui::MenuItem(LBL("Live apply (save + re-read on every edit)"), nullptr, &a.liveApply);
+			ImGui::MenuItem(LBL("Open characters on Load in game"), nullptr, &a.openChars);
+			ImGui::MenuItem(LBL("Edit the SHIPPED defaults (not the local overlay)"), nullptr, &a.editShipped);
 			ImGui::Separator();
 			if (ImGui::MenuItem(("Undo " + a.history.UndoLabel()).c_str(), "Ctrl+Z", false, a.history.CanUndo())) UndoRedo(false);
 			if (ImGui::MenuItem(("Redo " + a.history.RedoLabel()).c_str(), "Ctrl+Y", false, a.history.CanRedo())) UndoRedo(true);
@@ -960,7 +995,7 @@ void Draw(HostContext& host)
 	if (ImGui::BeginTabBar("##authoringtabs")) {
 		for (int k = 0; k < kTabCount; ++k) {
 			const ImGuiTabItemFlags fl = a.requestTab == k ? ImGuiTabItemFlags_SetSelected : 0;
-			if (!ImGui::BeginTabItem(kTabNames[k], nullptr, fl)) continue;
+			if (!ImGui::BeginTabItem(LBL(kTabNames[k]), nullptr, fl)) continue;
 			a.tab = k;
 			ImGui::BeginChild("##tabbody", ImVec2(0, 0), ImGuiChildFlags_None);
 			switch (k) {

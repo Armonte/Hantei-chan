@@ -152,7 +152,7 @@ void FollowSection(const Snapshot& s, EditorContext& ctx)
 	ImGui::SameLine();
 	ImGui::SetNextItemWidth(70);
 	const char* slots[] = { "P1", "P2", "P3", "P4" };
-	ImGui::Combo("##followslot", &g_followSlot, slots, 4);
+	i18n::Combo("##followslot", &g_followSlot, slots, 4);
 	ImGui::SameLine();
 	ImGui::Checkbox(LBL("Jump editor to it"), &g_jump);
 	if (!g_follow || !s.haveState) return;

@@ -230,7 +230,7 @@ void DrawInspector(CharacterInstance *ch, FrameState &state)
 	if (!err.empty() || !warn.empty()) {
 		ImGui::SeparatorText(TXT("Last save"));
 		if (!err.empty()) ImGui::TextColored(ImVec4(1, .3f, .3f, 1), "%s", err.c_str());
-		if (!warn.empty() && ImGui::TreeNode("warnings", TXT("%zu lossy-field warnings"), warn.size())) {
+		if (!warn.empty() && ImGui::TreeNode(LBL("warnings"), TXT("%zu lossy-field warnings"), warn.size())) {
 			for (size_t i = 0; i < warn.size() && i < 200; i++) ImGui::TextUnformatted(warn[i].c_str());
 			ImGui::TreePop();
 		}

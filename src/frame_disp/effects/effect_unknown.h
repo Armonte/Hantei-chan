@@ -1,4 +1,5 @@
 #ifndef EFFECT_UNKNOWN_H_GUARD
+#include "../../i18n.h"
 #define EFFECT_UNKNOWN_H_GUARD
 
 // ============================================================================
@@ -38,14 +39,14 @@ static inline void DrawEffectUnknown(Frame_EF& effect, FrameData* frameData, int
 			if(im::IsItemHovered()) Tooltip("Spawned into the system effect pool (SysEffect_SpawnById).\nConfidence: medium.");
 
 			im::SetNextItemWidth(width);
-			if(im::InputInt("Position X", &p[0], 0, 0)) markModified();
+			if(im::InputInt(LBL("Position X"), &p[0], 0, 0)) markModified();
 			im::SameLine(0, 20);
 			im::SetNextItemWidth(width);
-			if(im::InputInt("Position Y", &p[1], 0, 0)) markModified();
+			if(im::InputInt(LBL("Position Y"), &p[1], 0, 0)) markModified();
 
 			if(no == 256) {
 				im::SetNextItemWidth(width);
-				if(im::InputInt("KO variant (p3 % 10)", &p[2], 0, 0)) markModified();
+				if(im::InputInt(LBL("KO variant (p3 % 10)"), &p[2], 0, 0)) markModified();
 			}
 			break;
 		}
@@ -59,25 +60,25 @@ static inline void DrawEffectUnknown(Frame_EF& effect, FrameData* frameData, int
 			if(ShowComboWithManual("Mode", &no, ef30Modes, IM_ARRAYSIZE(ef30Modes), width*2, width)) {
 				markModified();
 			}
-			im::TextDisabled("Same block EF6 No 200 sets (object tracking behaviour)");
+			im::TextDisabled(TXT("Same block EF6 No 200 sets (object tracking behaviour)"));
 			if(no == 0) {
 				im::SetNextItemWidth(width);
-				if(im::InputInt("Value A (+0x30)", &p[0], 0, 0)) markModified();
+				if(im::InputInt(LBL("Value A (+0x30)"), &p[0], 0, 0)) markModified();
 				im::SetNextItemWidth(width);
-				if(im::InputInt("Value B (+0x32)", &p[1], 0, 0)) markModified();
+				if(im::InputInt(LBL("Value B (+0x32)"), &p[1], 0, 0)) markModified();
 				im::SetNextItemWidth(width);
-				if(im::InputInt("Value C (+0x2E)", &p[2], 0, 0)) markModified();
+				if(im::InputInt(LBL("Value C (+0x2E)"), &p[2], 0, 0)) markModified();
 				im::SameLine(); im::TextDisabled("(?)");
 				if(im::IsItemHovered()) Tooltip("Only non-zero values are written.\nExact meaning of each word unknown (?)");
 			} else if(no == 1) {
 				im::SetNextItemWidth(width);
-				if(im::InputInt("Param index", &p[0], 0, 0)) markModified();
+				if(im::InputInt(LBL("Param index"), &p[0], 0, 0)) markModified();
 				im::SetNextItemWidth(width);
-				if(im::InputInt("Value", &p[1], 0, 0)) markModified();
+				if(im::InputInt(LBL("Value"), &p[1], 0, 0)) markModified();
 				im::SameLine(); im::TextDisabled("(?)");
 				if(im::IsItemHovered()) Tooltip("word[+0x36 + 2*index] = value\n(the EF6 No 200 p2..p6 words)");
 			} else {
-				im::Text("Parameters:");
+				im::Text(TXT("Parameters:"));
 				if(im::InputScalarN("##params", ImGuiDataType_S32, p, 6, NULL, NULL, "%d", 0)) markModified();
 			}
 			break;
@@ -85,8 +86,8 @@ static inline void DrawEffectUnknown(Frame_EF& effect, FrameData* frameData, int
 
 		case 257: // Not dispatched
 		{
-			im::Text("Not dispatched by MBAA (Arc pattern 124 data typo) - no effect");
-			im::Text("Parameters:");
+			im::Text(TXT("Not dispatched by MBAA (Arc pattern 124 data typo) - no effect"));
+			im::Text(TXT("Parameters:"));
 			if(im::InputScalarN("##params", ImGuiDataType_S32, p, 6, NULL, NULL, "%d", 0)) {
 				markModified();
 			}

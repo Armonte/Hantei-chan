@@ -516,7 +516,7 @@ void MainFrame::Menu(unsigned int errorPopupId)
 			DrawExtensionProfileMenu();
 			if (ImGui::BeginMenu(LBL("Switch preset style")))
 			{		
-				if (ImGui::Combo(LBL("Style"), &style_idx, "Warm\0Dark\0Light\0ImGui\0"))
+				if (i18n::Combo(LBL("Style"), &style_idx, "Warm\0Dark\0Light\0ImGui\0"))
 				{
 					LoadTheme(style_idx);
 				}

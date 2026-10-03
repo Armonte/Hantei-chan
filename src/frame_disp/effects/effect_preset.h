@@ -1,4 +1,5 @@
 #ifndef EFFECT_PRESET_H_GUARD
+#include "../../i18n.h"
 #define EFFECT_PRESET_H_GUARD
 
 // ============================================================================
@@ -42,16 +43,16 @@ static inline void DrawEffectPreset_Type3(Frame_EF& effect, FrameData* frameData
 
 			// Position (common to all)
 			im::SetNextItemWidth(width);
-			if(im::InputInt("Position X", &p[0], 0, 0)) markModified();
+			if(im::InputInt(LBL("Position X"), &p[0], 0, 0)) markModified();
 			im::SameLine(0, 20);
 			im::SetNextItemWidth(width);
-			if(im::InputInt("Position Y", &p[1], 0, 0)) markModified();
+			if(im::InputInt(LBL("Position Y"), &p[1], 0, 0)) markModified();
 
 			// Type-specific parameters
 			if(no == 1) { // Jump effect
-				im::Text("--- Jump Effect ---");
+				im::Text(TXT("--- Jump Effect ---"));
 				im::SetNextItemWidth(width);
-				im::DragInt("Duration", &p[2]);
+				im::DragInt(LBL("Duration"), &p[2]);
 				if(im::IsItemEdited()) {
 				if (frameData && patternIndex >= 0) frameData->mark_modified(patternIndex);
 			}
@@ -59,7 +60,7 @@ static inline void DrawEffectPreset_Type3(Frame_EF& effect, FrameData* frameData
 				markModified();
 			}
 				im::SetNextItemWidth(width);
-				im::DragInt("Size", &p[3]);
+				im::DragInt(LBL("Size"), &p[3]);
 				if(im::IsItemEdited()) {
 				if (frameData && patternIndex >= 0) frameData->mark_modified(patternIndex);
 			}
@@ -67,7 +68,7 @@ static inline void DrawEffectPreset_Type3(Frame_EF& effect, FrameData* frameData
 				markModified();
 			}
 				im::SetNextItemWidth(width);
-				im::DragInt("Growth rate", &p[4]);
+				im::DragInt(LBL("Growth rate"), &p[4]);
 				if(im::IsItemEdited()) {
 				if (frameData && patternIndex >= 0) frameData->mark_modified(patternIndex);
 			}
@@ -75,9 +76,9 @@ static inline void DrawEffectPreset_Type3(Frame_EF& effect, FrameData* frameData
 				markModified();
 			}
 			} else if(no == 3 || no == 9) { // Hitsparks
-				im::Text("--- Hitspark ---");
+				im::Text(TXT("--- Hitspark ---"));
 				im::SetNextItemWidth(width);
-				im::DragInt("Intensity", &p[2]);
+				im::DragInt(LBL("Intensity"), &p[2]);
 				if(im::IsItemEdited()) {
 				if (frameData && patternIndex >= 0) frameData->mark_modified(patternIndex);
 			}
@@ -85,9 +86,9 @@ static inline void DrawEffectPreset_Type3(Frame_EF& effect, FrameData* frameData
 				markModified();
 			}
 			} else if(no >= 27 && no <= 30) { // Dust clouds
-				im::Text("--- Dust Cloud ---");
+				im::Text(TXT("--- Dust Cloud ---"));
 				im::SetNextItemWidth(width);
-				im::DragInt("X speed", &p[2]);
+				im::DragInt(LBL("X speed"), &p[2]);
 				if(im::IsItemEdited()) {
 				if (frameData && patternIndex >= 0) frameData->mark_modified(patternIndex);
 			}
@@ -95,7 +96,7 @@ static inline void DrawEffectPreset_Type3(Frame_EF& effect, FrameData* frameData
 				markModified();
 			}
 				im::SetNextItemWidth(width);
-				im::DragInt("Y speed", &p[3]);
+				im::DragInt(LBL("Y speed"), &p[3]);
 				if(im::IsItemEdited()) {
 				if (frameData && patternIndex >= 0) frameData->mark_modified(patternIndex);
 			}
@@ -103,7 +104,7 @@ static inline void DrawEffectPreset_Type3(Frame_EF& effect, FrameData* frameData
 				markModified();
 			}
 				im::SetNextItemWidth(width);
-				im::DragInt("Duration", &p[4]);
+				im::DragInt(LBL("Duration"), &p[4]);
 				if(im::IsItemEdited()) {
 				if (frameData && patternIndex >= 0) frameData->mark_modified(patternIndex);
 			}
@@ -111,11 +112,11 @@ static inline void DrawEffectPreset_Type3(Frame_EF& effect, FrameData* frameData
 				markModified();
 			}
 				im::SetNextItemWidth(width);
-				if(im::Combo("Color", &p[5], "0: Brown\0001: Black\0002: Purple\0003: White\000")) {
+				if(i18n::Combo(LBL("Color"), &p[5], "0: Brown\0001: Black\0002: Purple\0003: White\000")) {
 					markModified();
 				}
 				im::SetNextItemWidth(width);
-				im::DragInt("Flags", &p[6]);
+				im::DragInt(LBL("Flags"), &p[6]);
 				if(im::IsItemEdited()) {
 				if (frameData && patternIndex >= 0) frameData->mark_modified(patternIndex);
 			}
@@ -123,7 +124,7 @@ static inline void DrawEffectPreset_Type3(Frame_EF& effect, FrameData* frameData
 				markModified();
 			}
 				im::SetNextItemWidth(width);
-				im::DragInt("Amount", &p[7]);
+				im::DragInt(LBL("Amount"), &p[7]);
 				if(im::IsItemEdited()) {
 				if (frameData && patternIndex >= 0) frameData->mark_modified(patternIndex);
 			}
@@ -132,7 +133,7 @@ static inline void DrawEffectPreset_Type3(Frame_EF& effect, FrameData* frameData
 			}
 	} else {
 		// Generic
-		im::Text("Parameters:");
+		im::Text(TXT("Parameters:"));
 		if(im::InputScalarN("##params", ImGuiDataType_S32, p, 6, NULL, NULL, "%d", 0)) {
 			markModified();
 		}

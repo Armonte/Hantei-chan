@@ -15,6 +15,10 @@ const char *Tr(const char *en);            // pointer valid until the next call 
 const char *Label(const char *en);         // "translated###English" (English id), or "English" when language == 0
 void Load();                               // reads han2_settings.ini [han2] Language (shared with the HAN2 windows)
 void Save();
+// Combo boxes whose item names are English tables: the items are translated at draw time (the stored value is still the index).
+// Same signatures as ImGui::Combo (items array, or one string of items separated by \0).
+bool Combo(const char *label, int *current, const char *const *items, int count, int heightInItems = -1);
+bool Combo(const char *label, int *current, const char *itemsSeparatedByZeros, int heightInItems = -1);
 }
 
 #define TXT(s) ::i18n::Tr(s)

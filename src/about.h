@@ -4,6 +4,7 @@
 #include "draw_window.h"
 #include "version.h"
 #include <imgui.h>
+#include "i18n.h"
 
 #ifndef HA6GUIVERSION
 #define HA6GUIVERSION " custom"
@@ -20,18 +21,18 @@ public:
 		if(isVisible)
 		{
 			ImGui::PushStyleColor(ImGuiCol_WindowBg, ImVec4(1,1,1,1));
-			ImGui::Begin("About", &isVisible, ImGuiWindowFlags_NoDocking | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoCollapse);
+			ImGui::Begin(LBL("About"), &isVisible, ImGuiWindowFlags_NoDocking | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoCollapse);
 			ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(0,0,0,1));
-			ImGui::Text("Hantei-chan v" VERSION_STRING);
-			ImGui::Text("Build %d (commit %s)", BUILD_NUMBER, GIT_COMMIT_HASH GIT_DIRTY_FLAG);
-			ImGui::Text("Built: %s", BUILD_TIMESTAMP);
+			ImGui::Text(TXT("Hantei-chan v%s"), VERSION_STRING);
+			ImGui::Text(TXT("Build %d (commit %s)"), BUILD_NUMBER, GIT_COMMIT_HASH GIT_DIRTY_FLAG);
+			ImGui::Text(TXT("Built: %s"), BUILD_TIMESTAMP);
 			ImGui::Separator();
-			ImGui::Text("Made by omanko.");
+			ImGui::Text(TXT("Made by omanko."));
 			ImGui::Spacing();
-			ImGui::Text("Special thanks to mauve, MadScientist, u4ick, and Rhekar");
+			ImGui::Text(TXT("Special thanks to mauve, MadScientist, u4ick, and Rhekar"));
 			ImGui::Spacing();
-			ImGui::Text("Fork by gonp & Armonté https://github.com/gonpgonp/Hantei-chan");
-			ImGui::Text("\nApplication average %.3f ms/frame (%.1f FPS)", 1000.0f / ImGui::GetIO().Framerate, ImGui::GetIO().Framerate);
+			ImGui::Text(TXT("Fork by gonp & Armonté https://github.com/gonpgonp/Hantei-chan"));
+			ImGui::Text(TXT("\nApplication average %.3f ms/frame (%.1f FPS)"), 1000.0f / ImGui::GetIO().Framerate, ImGui::GetIO().Framerate);
 
 			ImGui::End();
 			ImGui::PopStyleColor(2);

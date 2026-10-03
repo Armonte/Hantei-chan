@@ -6,6 +6,7 @@
 #include "../framedata.h"
 #include "../framedata_labels.h"
 #include <functional>
+#include "../i18n.h"
 
 namespace im = ImGui;
 
@@ -25,7 +26,7 @@ static inline bool PatternPickerButton(const char* id, int* value, FrameData* fr
 	im::PushID(id);
 	im::SameLine(0, 2.f);
 	if(im::ArrowButton("##pick", ImGuiDir_Down)) im::OpenPopup("##patternPicker");
-	if(im::IsItemHovered()) im::SetTooltip("Pick a pattern");
+	if(im::IsItemHovered()) im::SetTooltip(TXT("Pick a pattern"));
 	if(im::BeginPopup("##patternPicker")) {
 		static char filter[64] = "";
 		if(im::IsWindowAppearing()) { filter[0] = 0; im::SetKeyboardFocusHere(); }
@@ -94,18 +95,18 @@ static inline bool ShowComboWithManual(const char* label, int* value, const char
 	const char* preview;
 	char customBuffer[64];
 	if(selectedIndex >= 0) {
-		preview = items[selectedIndex];
+		preview = TXT(items[selectedIndex]);
 	} else {
-		snprintf(customBuffer, sizeof(customBuffer), "Custom: %d", *value);
+		snprintf(customBuffer, sizeof(customBuffer), TXT("Custom: %d"), *value);
 		preview = customBuffer;
 	}
 
 	im::SetNextItemWidth(comboWidth);
-	if(im::BeginCombo(label, preview)) {
+	if(im::BeginCombo(LBL(label), preview)) {
 		// Show all predefined items
 		for(int i = 0; i < itemCount; i++) {
 			bool selected = (i == selectedIndex);
-			if(im::Selectable(items[i], selected)) {
+			if(im::Selectable(TXT(items[i]), selected)) {
 				// Parse and set value
 				if(sscanf(items[i], "%d:", &parsedValue) == 1) {
 					*value = parsedValue;
@@ -119,7 +120,7 @@ static inline bool ShowComboWithManual(const char* label, int* value, const char
 		// Add manual entry option
 		im::Separator();
 		im::SetNextItemWidth(defaultWidth);
-		if(im::InputInt("Custom value", value, 0, 0)) {
+		if(im::InputInt(LBL("Custom value"), value, 0, 0)) {
 			changed = true;
 		}
 
@@ -144,23 +145,23 @@ inline void HitVectorDisplay()
 		ImGuiTableFlags_RowBg |
 		ImGuiTableFlags_SizingFixedFit))
 	{
-		im::TableSetupColumn("Description");
-		im::TableSetupColumn("VecCnt");
-		im::TableSetupColumn("UkemiTime");
-		im::TableSetupColumn("Prio");
-		im::TableSetupColumn("PrioAni");
-		im::TableSetupColumn("KoCheck");
-		im::TableSetupColumn("VecNum");
-		im::TableSetupColumn("HitAni");
-		im::TableSetupColumn("GuardAni");
-		im::TableSetupColumn("Time");
-		im::TableSetupColumn("VecTime");
-		im::TableSetupColumn("flag");
-		im::TableSetupColumn("VecNum");
-		im::TableSetupColumn("HitAni");
-		im::TableSetupColumn("GuardAni");
-		im::TableSetupColumn("Time");
-		im::TableSetupColumn("VecTime");
+		im::TableSetupColumn(LBL("Description"));
+		im::TableSetupColumn(LBL("VecCnt"));
+		im::TableSetupColumn(LBL("UkemiTime"));
+		im::TableSetupColumn(LBL("Prio"));
+		im::TableSetupColumn(LBL("PrioAni"));
+		im::TableSetupColumn(LBL("KoCheck"));
+		im::TableSetupColumn(LBL("VecNum"));
+		im::TableSetupColumn(LBL("HitAni"));
+		im::TableSetupColumn(LBL("GuardAni"));
+		im::TableSetupColumn(LBL("Time"));
+		im::TableSetupColumn(LBL("VecTime"));
+		im::TableSetupColumn(LBL("flag"));
+		im::TableSetupColumn(LBL("VecNum"));
+		im::TableSetupColumn(LBL("HitAni"));
+		im::TableSetupColumn(LBL("GuardAni"));
+		im::TableSetupColumn(LBL("Time"));
+		im::TableSetupColumn(LBL("VecTime"));
 		im::TableHeadersRow();
 		im::EndTable();
 	}

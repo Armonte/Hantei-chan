@@ -17,6 +17,7 @@
 #include <cstring>
 #include <filesystem>
 #include <map>
+#include "../i18n.h"
 
 unsigned LoadPngTexture(const std::string& path, int* w, int* h);   // hud_textures.cpp
 
@@ -143,9 +144,9 @@ void DrawHudLayoutEditor(EditSink& sink, const std::string& gameDir, const int p
 	auto localIni = [&ws]() -> tagtune::TagIni& { return ws.Doc(tagtune::HudDoc(tagtune::Layer::Local)).ini; };
 	auto shippedIni = [&ws]() -> tagtune::TagIni& { return ws.Doc(tagtune::HudDoc(tagtune::Layer::Shipped)).ini; };
 
-	if (!open) ImGui::TextColored(ImVec4(1, 0.6f, 0.3f, 1), "No povertycaster\\tag\\ tree: showing the built-in layout (read-only).");
-	else if (!canEdit) ImGui::TextColored(ImVec4(1, 0.6f, 0.3f, 1), "Read-only right now (session lock / lever table / no tree).");
-	ImGui::TextDisabled("Drag an element (Shift: 8 px grid); drag its corner to resize. Edits go to local\\hud.ini; the game follows.");
+	if (!open) ImGui::TextColored(ImVec4(1, 0.6f, 0.3f, 1), TXT("No povertycaster\\tag\\ tree: showing the built-in layout (read-only)."));
+	else if (!canEdit) ImGui::TextColored(ImVec4(1, 0.6f, 0.3f, 1), TXT("Read-only right now (session lock / lever table / no tree)."));
+	ImGui::TextDisabled(TXT("Drag an element (Shift: 8 px grid); drag its corner to resize. Edits go to local\\hud.ini; the game follows."));
 
 	const float listW = std::min(430.0f, ImGui::GetContentRegionAvail().x * 0.42f);
 	const float previewW = std::max(200.0f, ImGui::GetContentRegionAvail().x - listW - 12.0f);
@@ -318,17 +319,17 @@ void DrawHudLayoutEditor(EditSink& sink, const std::string& gameDir, const int p
 		}
 		if (!localValue.empty() || !std::strcmp(layer, "local")) {
 			ImGui::SameLine();   // only when the buttons follow: a trailing SameLine would put the next key on this row
-			if (ImGui::SmallButton("reset")) { sink.Begin("reset " + std::string(k.key) + " (hud)"); ClearHudKey(localIni(), k.key); sink.Edited(); sink.End(); }
-			if (ImGui::IsItemHovered()) ImGui::SetTooltip("remove the local value: the shipped / default one applies again");
+			if (ImGui::SmallButton(LBL("reset"))) { sink.Begin("reset " + std::string(k.key) + " (hud)"); ClearHudKey(localIni(), k.key); sink.Edited(); sink.End(); }
+			if (ImGui::IsItemHovered()) ImGui::SetTooltip(TXT("remove the local value: the shipped / default one applies again"));
 			ImGui::SameLine();
-			if (ImGui::SmallButton("promote")) {
+			if (ImGui::SmallButton(LBL("promote"))) {
 				sink.Begin("promote " + std::string(k.key) + " (hud)");
 				SetHudKey(shippedIni(), k.key, localValue);
 				ClearHudKey(localIni(), k.key);
 				sink.Edited();
 				sink.End();
 			}
-			if (ImGui::IsItemHovered()) ImGui::SetTooltip("Promote to defaults: write this value into the shipped hud.ini and drop the local one");
+			if (ImGui::IsItemHovered()) ImGui::SetTooltip(TXT("Promote to defaults: write this value into the shipped hud.ini and drop the local one"));
 		}
 		ImGui::PopID();
 	}
