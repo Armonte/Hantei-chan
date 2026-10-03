@@ -53,3 +53,40 @@ Identical in both games.
 | 3 | attack (AT) records | 120 (RBO) | `Actor_CollectAttackBoxes2`: `sec3 + 120 * frame[+200]` (the earlier "80-byte" guess was wrong: 6720 = 56 x 120) |
 | 4,5 | small tables (RBO 196 B / 40 B; GOF2 empty) | ? | not yet traced |
 | 6,7 | script lists, 20 bytes = 5 dwords | 20 | `Actor_RunFrameScriptList6` 0x41DA50 (frame[+188], section 6) and `Actor_RunFrameScriptList7` 0x41F900 (frame[+192], section 7); GOF2 has a 9th (sec 8) |
+
+## 3. RBO frame record (300 bytes, section 1) and the other typed records
+
+Field-by-field tables (offset, type, name, proving IDA function) are generated from the IDA structs and live in
+[rbo_frame_container_fields.md](rbo_frame_container_fields.md). Source of truth: `docs/formats/ida/rbo_frame_types.h` and
+`rbo_container_types.h` (the same text is loaded into the RBO IDB with `idc.parse_decls`, and `tools/ida/gen_cpp_types.py`
+turns it into `src/han2/rbo_types_gen.h` with `static_assert`s on every size and offset). The AT record, script lists, PAT
+and CG are in `docs/formats/ida/rbo_at_record.md` and `rbo_scripts_pat.md` (C++ twins `src/han2/rbo_at_record.h`,
+`rbo_scripts_pat.h`).
+
+Invariants measured on all 346 RBO files / 113 165 frames and relied on by the writer (`framedata_han2.cpp`):
+
+- Frames are packed in pattern order; pattern table entry = {frame count, flags (0, 2, 0x40, 0x80), first frame}.
+- Box table (section 2): every box slot of every frame is numbered in first-use order, walking frames in order and slots in
+  ascending frame offset (0xD4 .. 0x128). Re-references of an earlier index are shared slots. 342 files use every rectangle;
+  4 have unreferenced rectangles after the last one (kept verbatim as `Han2Container::boxTail`). `EMO.DAT` and `SYSTEMEFFECT`
+  hold frame slots whose index points past the box table (kept verbatim, no rectangle).
+- Each box group count field equals the number of slots whose index is not -1 (holes occur: 177 hurt, 37 attack, ...).
+- `hasAttack` (+0xC4) == (attackBoxCount > 0) == (attackRecordIdx >= 0). AT records are numbered sequentially in frame order, no sharing.
+- Script lists A and B (sections 6, 7): record 0 is a dummy, records are numbered in first-use order, sharing happens.
+- Box rectangles are game pixels relative to the actor anchor and are added to the actor position unscaled
+  (`BoxRect_ApplyFacing` 0x440BB0, `Actor_GetAttackBoxWorldRect` 0x440C70); there is no MBAC-style (128,224) bias.
+- CG images are drawn at actor + frame offset + CG canvas position (`Actor_DrawCgSprite` 0x4470E0); Hantei-chan's renderer shifts CG
+  layers by (-128,-224), so the model stores CG frame offsets as raw + (128,224) (parts frames: raw).
+
+Open conflict, recorded honestly: the script/PAT trace (`rbo_scripts_pat.md` section 1) reads frame +0xD0 / +0xE0 as indices into
+sections 4 / 5 (which the engine never reads). The data says otherwise: both fields are group counts with the slots that follow
+holding box-table indices, and the first-use numbering of the box table only holds when those slots are included. They are typed
+as box groups (`sousai` / `tobi`, matching GOF2's `CAppHanteiSousai` / `CAppHanteiTobi` slot counts 3 / 4). Sections 4 and 5
+stay opaque blobs until a consumer is found.
+
+## 4. Parts (PAT v3 / v4) and CG
+
+See `docs/formats/ida/rbo_scripts_pat.md` section 3/4. `src/han2_pat.cpp` converts a PAT block to Hantei-chan's Parts model:
+pose offset table -> part sets, every 92-byte part record -> a part property plus a (texture, source rect, quad size, origin)
+cutout, textures are B,G,R,A squares of 256 or 512 px. Pose slots with `src_w == 0` or `texture_index == 0xFFFF` (clip rectangle,
+which the engine does not draw) are skipped.

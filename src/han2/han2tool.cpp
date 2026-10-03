@@ -11,6 +11,7 @@
 #include "pac_archive.h"
 #include "han2_container.h"
 #include "../framedata_han2.h"
+#include "../cg.h"
 
 #include <cstdio>
 #include <cstring>
@@ -205,6 +206,27 @@ static int CmdModelRt(int argc, char **argv)
 	return total.fail ? 1 : 0;
 }
 
+static int CmdCgInfo(int argc, char **argv)
+{
+	if (argc < 1) return 2;
+	std::vector<uint8_t> b;
+	if (!ReadLoose(argv[0], b)) { printf("cannot read\n"); return 1; }
+	han2::Han2File f; std::string err;
+	if (!han2::Parse(b.data(), b.size(), f, &err)) { printf("parse: %s\n", err.c_str()); return 1; }
+	const auto &cgb = f.area[han2::kAreaCg];
+	CG cg;
+	if (!cg.loadFromMemory(cgb.data(), (unsigned)cgb.size())) { printf("CG load failed (%zu bytes)\n", cgb.size()); return 1; }
+	int n = cg.get_image_count();
+	printf("images %d\n", n);
+	int lo = argc > 1 ? atoi(argv[1]) : 0, hi = argc > 2 ? atoi(argv[2]) : std::min(n, 40);
+	for (int i = lo; i < hi && i < n; i++) {
+		int bpp, ty, x1, y1, x2, y2;
+		if (!cg.image_info(i, bpp, ty, x1, y1, x2, y2)) { printf("%4d absent\n", i); continue; }
+		printf("%4d bpp %d type %d bounds (%d,%d)-(%d,%d)\n", i, bpp, ty, x1, y1, x2, y2);
+	}
+	return 0;
+}
+
 int main(int argc, char **argv)
 {
 	if (argc < 2) { puts("usage: han2tool ls|count|extract|pacrt ..."); return 2; }
@@ -214,6 +236,7 @@ int main(int argc, char **argv)
 	if (c == "extract") return CmdExtract(argc - 2, argv + 2);
 	if (c == "roundtrip") return CmdRoundtrip(argc - 2, argv + 2);
 	if (c == "modelrt") return CmdModelRt(argc - 2, argv + 2);
+	if (c == "cginfo") return CmdCgInfo(argc - 2, argv + 2);
 	if (c == "pacrt") return CmdPacRt(argc - 2, argv + 2);
 	printf("unknown command %s\n", c.c_str());
 	return 2;

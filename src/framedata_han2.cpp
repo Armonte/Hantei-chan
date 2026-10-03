@@ -78,8 +78,11 @@ static void DecodeFrame(Frame &F, const Han2FrameRaw &R)
 	if (spr >= 10000) { L.spriteId = spr - 10000; L.usePat = false; }
 	else if (spr >= 0) { L.spriteId = spr; L.usePat = true; }
 	else { L.spriteId = spr; L.usePat = false; }
-	L.offset_x = r.offsetX;
-	L.offset_y = r.offsetY;
+	// CG images are placed at actor + offset + canvas position (Actor_DrawCgSprite 0x4470E0); the Hantei-chan renderer
+	// shifts CG layers by (-128,-224), so CG frames carry that bias in the model (parts frames do not).
+	const bool cgSprite = spr >= 10000;
+	L.offset_x = r.offsetX + (cgSprite ? 128 : 0);
+	L.offset_y = r.offsetY + (cgSprite ? 224 : 0);
 	F.AF.duration = r.duration;
 	ha4::DecodeFlip(r.flipMode, 0, L.rotation);
 	L.blend_mode = r.blendMode;
@@ -260,8 +263,9 @@ static void EncodeFrame(const Frame &F, Tables &T, uint8_t out[300], Ctx &cx)
 	if (F.AF.layers.empty()) spr = -1;
 	int sprRef = Lr.usePat ? Lr.spriteId : (Lr.spriteId < 0 ? Lr.spriteId : Lr.spriteId + 10000);
 	if (spr != sprRef) r->spriteId = (int16_t)spr;
-	if (L.offset_x != Lr.offset_x) r->offsetX = (int16_t)L.offset_x;
-	if (L.offset_y != Lr.offset_y) r->offsetY = (int16_t)L.offset_y;
+	const bool cgNew = spr >= 10000;
+	if (L.offset_x != Lr.offset_x || cgNew != (sprRef >= 10000)) r->offsetX = (int16_t)(L.offset_x - (cgNew ? 128 : 0));
+	if (L.offset_y != Lr.offset_y || cgNew != (sprRef >= 10000)) r->offsetY = (int16_t)(L.offset_y - (cgNew ? 224 : 0));
 	if (F.AF.duration != ref.AF.duration) r->duration = (uint16_t)F.AF.duration;
 	if (!(L.rotation[0] == Lr.rotation[0] && L.rotation[1] == Lr.rotation[1] && L.rotation[2] == Lr.rotation[2])) {
 		int mode, rot; ha4::EncodeFlip(L.rotation, mode, rot);
