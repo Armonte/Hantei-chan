@@ -1101,8 +1101,8 @@ struct Gof2ObjTailC {
 	Gof2ObjCPendingTransition pendingTransition;  // +0x57C [traced] queued state-change request, applied by sub_4353C0 (renamed Obj_ApplyPendingTransition)
 	uint32_t contactFlagsMisc;  // +0x590 [traced reads] sub_43C530 tests bit 4; only ever zeroed (sub_4306D0, sub_430630, sub_430770, CharaSelect_*Pose) -> effectively 0
 	int32_t cancelLockFrames;  // +0x594 [traced] sub_43C460 sets DefStatus+1144 after a hit; sub_430C80 counts down; Obj_GetNormalCancelState* return "not cancellable" while !=0; sub_4353C0 clears
-	int32_t hitDuringAction16;  // +0x598 [traced] sub_43C530 sets 1 when the victim is in action 16; sub_433D00 cancel conditions read it; cleared by sub_4306D0
-	int32_t hitDuringAction19;  // +0x59C [traced] same for action 19
+	int32_t stanceClashLatchAction16;  // +0x598 [traced live] set on the ATTACKER by Obj_ApplyContactEventList (event type 8, class 0x10) when its pattern-16 attack connects with the opposing counter-stance (15/18) clash box; survives hit reactions, cleared by Obj_ResetTransientStateOnActionStart; Obj_ProcessInputAndStateTransitions refuses Guard+dir4/5/6 -> pattern 15 while set
+	int32_t stanceClashLatchAction19;  // +0x59C [traced live] same for pattern 19 (blocks Guard+dir8/9/A -> pattern 18)
 	Gof2ObjCPositionBlock position;  // +0x5A0 [traced] see struct (RBO localX/Y/Z + posX/Y/Z + prevLocalX/Y)
 	Gof2ObjCEffectList effects;  // +0x5D0 [traced] ObjEffect list: sub_442180 append, sub_442430 tick, sub_4422E0 clear, ObjEffect_RemoveById, sub_442340 aggregate
 	Gof2ObjCRuleOverrideFlags ruleOverrideFlags;  // +0x5DC [traced reads] sub_42F7A0 (state-rule evaluator) bit 8 forces the rule to fail; only zeroed elsewhere (ctor, Obj_InitDefaults, sub_43DD40)
@@ -1291,8 +1291,8 @@ struct Gof2Obj {
 	Gof2ObjCPendingTransition pendingTransition;  // +0x11bc [traced] queued state-change request, applied by sub_4353C0 (renamed Obj_ApplyPendingTransition)
 	uint32_t contactFlagsMisc;  // +0x11d0 [traced reads] sub_43C530 tests bit 4; only ever zeroed (sub_4306D0, sub_430630, sub_430770, CharaSelect_*Pose) -> effectively 0
 	int32_t cancelLockFrames;  // +0x11d4 [traced] sub_43C460 sets DefStatus+1144 after a hit; sub_430C80 counts down; Obj_GetNormalCancelState* return "not cancellable" while !=0; sub_4353C0 clears
-	int32_t hitDuringAction16;  // +0x11d8 [traced] sub_43C530 sets 1 when the victim is in action 16; sub_433D00 cancel conditions read it; cleared by sub_4306D0
-	int32_t hitDuringAction19;  // +0x11dc [traced] same for action 19
+	int32_t stanceClashLatchAction16;  // +0x11d8 [traced live] set on the ATTACKER by Obj_ApplyContactEventList (event type 8, class 0x10) when its pattern-16 attack connects with the opposing counter-stance (15/18) clash box; survives hit reactions, cleared by Obj_ResetTransientStateOnActionStart; Obj_ProcessInputAndStateTransitions refuses Guard+dir4/5/6 -> pattern 15 while set
+	int32_t stanceClashLatchAction19;  // +0x11dc [traced live] same for pattern 19 (blocks Guard+dir8/9/A -> pattern 18)
 	Gof2ObjCPositionBlock position;  // +0x11e0 [traced] see struct (RBO localX/Y/Z + posX/Y/Z + prevLocalX/Y)
 	Gof2ObjCEffectList effects;  // +0x1210 [traced] ObjEffect list: sub_442180 append, sub_442430 tick, sub_4422E0 clear, ObjEffect_RemoveById, sub_442340 aggregate
 	Gof2ObjCRuleOverrideFlags ruleOverrideFlags;  // +0x121c [traced reads] sub_42F7A0 (state-rule evaluator) bit 8 forces the rule to fail; only zeroed elsewhere (ctor, Obj_InitDefaults, sub_43DD40)
@@ -1374,8 +1374,8 @@ struct Gof2ObjYarareState {
 	Gof2ObjCPendingTransition pendingTransition;  // +0xACC (Obj+0x11BC) [traced] queued state-change request, applied by sub_4353C0 (renamed Obj_ApplyPendingTransition)
 	uint32_t contactFlagsMisc;  // +0xAE0 (Obj+0x11D0) [traced reads] sub_43C530 tests bit 4; only ever zeroed (sub_4306D0, sub_430630, sub_430770, CharaSelect_*Pose) -> effectively 0
 	int32_t cancelLockFrames;  // +0xAE4 (Obj+0x11D4) [traced] sub_43C460 sets DefStatus+1144 after a hit; sub_430C80 counts down; Obj_GetNormalCancelState* return "not cancellable" while !=0; sub_4353C0 clears
-	int32_t hitDuringAction16;  // +0xAE8 (Obj+0x11D8) [traced] sub_43C530 sets 1 when the victim is in action 16; sub_433D00 cancel conditions read it; cleared by sub_4306D0
-	int32_t hitDuringAction19;  // +0xAEC (Obj+0x11DC) [traced] same for action 19
+	int32_t stanceClashLatchAction16;  // +0xAE8 (Obj+0x11D8) [traced live] set on the ATTACKER by Obj_ApplyContactEventList (event type 8, class 0x10) when its pattern-16 attack connects with the opposing counter-stance (15/18) clash box; survives hit reactions, cleared by Obj_ResetTransientStateOnActionStart; Obj_ProcessInputAndStateTransitions refuses Guard+dir4/5/6 -> pattern 15 while set
+	int32_t stanceClashLatchAction19;  // +0xAEC (Obj+0x11DC) [traced live] same for pattern 19 (blocks Guard+dir8/9/A -> pattern 18)
 	Gof2ObjCPositionBlock position;  // +0xAF0 (Obj+0x11E0) [traced] see struct (RBO localX/Y/Z + posX/Y/Z + prevLocalX/Y)
 	Gof2ObjCEffectList effects;  // +0xB20 (Obj+0x1210) [traced] ObjEffect list: sub_442180 append, sub_442430 tick, sub_4422E0 clear, ObjEffect_RemoveById, sub_442340 aggregate
 	Gof2ObjCRuleOverrideFlags ruleOverrideFlags;  // +0xB2C (Obj+0x121C) [traced reads] sub_42F7A0 (state-rule evaluator) bit 8 forces the rule to fail; only zeroed elsewhere (ctor, Obj_InitDefaults, sub_43DD40)
@@ -1994,8 +1994,8 @@ static_assert(offsetof(Gof2ObjTailC, frameEventFlags) == 0x578, "Gof2ObjTailC.fr
 static_assert(offsetof(Gof2ObjTailC, pendingTransition) == 0x57C, "Gof2ObjTailC.pendingTransition");
 static_assert(offsetof(Gof2ObjTailC, contactFlagsMisc) == 0x590, "Gof2ObjTailC.contactFlagsMisc");
 static_assert(offsetof(Gof2ObjTailC, cancelLockFrames) == 0x594, "Gof2ObjTailC.cancelLockFrames");
-static_assert(offsetof(Gof2ObjTailC, hitDuringAction16) == 0x598, "Gof2ObjTailC.hitDuringAction16");
-static_assert(offsetof(Gof2ObjTailC, hitDuringAction19) == 0x59C, "Gof2ObjTailC.hitDuringAction19");
+static_assert(offsetof(Gof2ObjTailC, stanceClashLatchAction16) == 0x598, "Gof2ObjTailC.stanceClashLatchAction16");
+static_assert(offsetof(Gof2ObjTailC, stanceClashLatchAction19) == 0x59C, "Gof2ObjTailC.stanceClashLatchAction19");
 static_assert(offsetof(Gof2ObjTailC, position) == 0x5A0, "Gof2ObjTailC.position");
 static_assert(offsetof(Gof2ObjTailC, effects) == 0x5D0, "Gof2ObjTailC.effects");
 static_assert(offsetof(Gof2ObjTailC, ruleOverrideFlags) == 0x5DC, "Gof2ObjTailC.ruleOverrideFlags");
@@ -2183,8 +2183,8 @@ static_assert(offsetof(Gof2Obj, frameEventFlags) == 0x11B8, "Gof2Obj.frameEventF
 static_assert(offsetof(Gof2Obj, pendingTransition) == 0x11BC, "Gof2Obj.pendingTransition");
 static_assert(offsetof(Gof2Obj, contactFlagsMisc) == 0x11D0, "Gof2Obj.contactFlagsMisc");
 static_assert(offsetof(Gof2Obj, cancelLockFrames) == 0x11D4, "Gof2Obj.cancelLockFrames");
-static_assert(offsetof(Gof2Obj, hitDuringAction16) == 0x11D8, "Gof2Obj.hitDuringAction16");
-static_assert(offsetof(Gof2Obj, hitDuringAction19) == 0x11DC, "Gof2Obj.hitDuringAction19");
+static_assert(offsetof(Gof2Obj, stanceClashLatchAction16) == 0x11D8, "Gof2Obj.stanceClashLatchAction16");
+static_assert(offsetof(Gof2Obj, stanceClashLatchAction19) == 0x11DC, "Gof2Obj.stanceClashLatchAction19");
 static_assert(offsetof(Gof2Obj, position) == 0x11E0, "Gof2Obj.position");
 static_assert(offsetof(Gof2Obj, effects) == 0x1210, "Gof2Obj.effects");
 static_assert(offsetof(Gof2Obj, ruleOverrideFlags) == 0x121C, "Gof2Obj.ruleOverrideFlags");
@@ -2265,8 +2265,8 @@ static_assert(offsetof(Gof2ObjYarareState, frameEventFlags) == 0xAC8, "Gof2ObjYa
 static_assert(offsetof(Gof2ObjYarareState, pendingTransition) == 0xACC, "Gof2ObjYarareState.pendingTransition");
 static_assert(offsetof(Gof2ObjYarareState, contactFlagsMisc) == 0xAE0, "Gof2ObjYarareState.contactFlagsMisc");
 static_assert(offsetof(Gof2ObjYarareState, cancelLockFrames) == 0xAE4, "Gof2ObjYarareState.cancelLockFrames");
-static_assert(offsetof(Gof2ObjYarareState, hitDuringAction16) == 0xAE8, "Gof2ObjYarareState.hitDuringAction16");
-static_assert(offsetof(Gof2ObjYarareState, hitDuringAction19) == 0xAEC, "Gof2ObjYarareState.hitDuringAction19");
+static_assert(offsetof(Gof2ObjYarareState, stanceClashLatchAction16) == 0xAE8, "Gof2ObjYarareState.stanceClashLatchAction16");
+static_assert(offsetof(Gof2ObjYarareState, stanceClashLatchAction19) == 0xAEC, "Gof2ObjYarareState.stanceClashLatchAction19");
 static_assert(offsetof(Gof2ObjYarareState, position) == 0xAF0, "Gof2ObjYarareState.position");
 static_assert(offsetof(Gof2ObjYarareState, effects) == 0xB20, "Gof2ObjYarareState.effects");
 static_assert(offsetof(Gof2ObjYarareState, ruleOverrideFlags) == 0xB2C, "Gof2ObjYarareState.ruleOverrideFlags");
@@ -3442,8 +3442,8 @@ static const Han2FieldInfo kGof2ObjTailCFields[] = {
 	{"pendingTransition", 0x57C, 20, 1, 4, nullptr, "+0x57C [traced] queued state-change request, applied by sub_4353C0 (renamed Obj_ApplyPendingTransition)"},
 	{"contactFlagsMisc", 0x590, 4, 1, 0, nullptr, "+0x590 [traced reads] sub_43C530 tests bit 4; only ever zeroed (sub_4306D0, sub_430630, sub_430770, CharaSelect_*Pose) -> effectively 0"},
 	{"cancelLockFrames", 0x594, 4, 1, 1, nullptr, "+0x594 [traced] sub_43C460 sets DefStatus+1144 after a hit; sub_430C80 counts down; Obj_GetNormalCancelState* return \"not cancellable\" while !=0; sub_4353C0 clears"},
-	{"hitDuringAction16", 0x598, 4, 1, 1, nullptr, "+0x598 [traced] sub_43C530 sets 1 when the victim is in action 16; sub_433D00 cancel conditions read it; cleared by sub_4306D0"},
-	{"hitDuringAction19", 0x59C, 4, 1, 1, nullptr, "+0x59C [traced] same for action 19"},
+	{"stanceClashLatchAction16", 0x598, 4, 1, 1, nullptr, "+0x598 [traced live] set on the ATTACKER by Obj_ApplyContactEventList (event type 8, class 0x10) when its pattern-16 attack connects with the opposing counter-stance (15/18) clash box; survives hit reactions, cleared by Obj_ResetTransientStateOnActionStart; Obj_ProcessInputAndStateTransitions refuses Guard+dir4/5/6 -> pattern 15 while set"},
+	{"stanceClashLatchAction19", 0x59C, 4, 1, 1, nullptr, "+0x59C [traced live] same for pattern 19 (blocks Guard+dir8/9/A -> pattern 18)"},
 	{"position", 0x5A0, 48, 1, 4, nullptr, "+0x5A0 [traced] see struct (RBO localX/Y/Z + posX/Y/Z + prevLocalX/Y)"},
 	{"effects", 0x5D0, 12, 1, 4, nullptr, "+0x5D0 [traced] ObjEffect list: sub_442180 append, sub_442430 tick, sub_4422E0 clear, ObjEffect_RemoveById, sub_442340 aggregate"},
 	{"ruleOverrideFlags", 0x5DC, 4, 1, 2, "Gof2ObjCRuleOverrideFlags", "+0x5DC [traced reads] sub_42F7A0 (state-rule evaluator) bit 8 forces the rule to fail; only zeroed elsewhere (ctor, Obj_InitDefaults, sub_43DD40)"},
@@ -3632,8 +3632,8 @@ static const Han2FieldInfo kGof2ObjFields[] = {
 	{"pendingTransition", 0x11BC, 20, 1, 4, nullptr, "+0x11bc [traced] queued state-change request, applied by sub_4353C0 (renamed Obj_ApplyPendingTransition)"},
 	{"contactFlagsMisc", 0x11D0, 4, 1, 0, nullptr, "+0x11d0 [traced reads] sub_43C530 tests bit 4; only ever zeroed (sub_4306D0, sub_430630, sub_430770, CharaSelect_*Pose) -> effectively 0"},
 	{"cancelLockFrames", 0x11D4, 4, 1, 1, nullptr, "+0x11d4 [traced] sub_43C460 sets DefStatus+1144 after a hit; sub_430C80 counts down; Obj_GetNormalCancelState* return \"not cancellable\" while !=0; sub_4353C0 clears"},
-	{"hitDuringAction16", 0x11D8, 4, 1, 1, nullptr, "+0x11d8 [traced] sub_43C530 sets 1 when the victim is in action 16; sub_433D00 cancel conditions read it; cleared by sub_4306D0"},
-	{"hitDuringAction19", 0x11DC, 4, 1, 1, nullptr, "+0x11dc [traced] same for action 19"},
+	{"stanceClashLatchAction16", 0x11D8, 4, 1, 1, nullptr, "+0x11d8 [traced live] set on the ATTACKER by Obj_ApplyContactEventList (event type 8, class 0x10) when its pattern-16 attack connects with the opposing counter-stance (15/18) clash box; survives hit reactions, cleared by Obj_ResetTransientStateOnActionStart; Obj_ProcessInputAndStateTransitions refuses Guard+dir4/5/6 -> pattern 15 while set"},
+	{"stanceClashLatchAction19", 0x11DC, 4, 1, 1, nullptr, "+0x11dc [traced live] same for pattern 19 (blocks Guard+dir8/9/A -> pattern 18)"},
 	{"position", 0x11E0, 48, 1, 4, nullptr, "+0x11e0 [traced] see struct (RBO localX/Y/Z + posX/Y/Z + prevLocalX/Y)"},
 	{"effects", 0x1210, 12, 1, 4, nullptr, "+0x1210 [traced] ObjEffect list: sub_442180 append, sub_442430 tick, sub_4422E0 clear, ObjEffect_RemoveById, sub_442340 aggregate"},
 	{"ruleOverrideFlags", 0x121C, 4, 1, 2, "Gof2ObjCRuleOverrideFlags", "+0x121c [traced reads] sub_42F7A0 (state-rule evaluator) bit 8 forces the rule to fail; only zeroed elsewhere (ctor, Obj_InitDefaults, sub_43DD40)"},
@@ -3715,8 +3715,8 @@ static const Han2FieldInfo kGof2ObjYarareStateFields[] = {
 	{"pendingTransition", 0xACC, 20, 1, 4, nullptr, "+0xACC (Obj+0x11BC) [traced] queued state-change request, applied by sub_4353C0 (renamed Obj_ApplyPendingTransition)"},
 	{"contactFlagsMisc", 0xAE0, 4, 1, 0, nullptr, "+0xAE0 (Obj+0x11D0) [traced reads] sub_43C530 tests bit 4; only ever zeroed (sub_4306D0, sub_430630, sub_430770, CharaSelect_*Pose) -> effectively 0"},
 	{"cancelLockFrames", 0xAE4, 4, 1, 1, nullptr, "+0xAE4 (Obj+0x11D4) [traced] sub_43C460 sets DefStatus+1144 after a hit; sub_430C80 counts down; Obj_GetNormalCancelState* return \"not cancellable\" while !=0; sub_4353C0 clears"},
-	{"hitDuringAction16", 0xAE8, 4, 1, 1, nullptr, "+0xAE8 (Obj+0x11D8) [traced] sub_43C530 sets 1 when the victim is in action 16; sub_433D00 cancel conditions read it; cleared by sub_4306D0"},
-	{"hitDuringAction19", 0xAEC, 4, 1, 1, nullptr, "+0xAEC (Obj+0x11DC) [traced] same for action 19"},
+	{"stanceClashLatchAction16", 0xAE8, 4, 1, 1, nullptr, "+0xAE8 (Obj+0x11D8) [traced live] set on the ATTACKER by Obj_ApplyContactEventList (event type 8, class 0x10) when its pattern-16 attack connects with the opposing counter-stance (15/18) clash box; survives hit reactions, cleared by Obj_ResetTransientStateOnActionStart; Obj_ProcessInputAndStateTransitions refuses Guard+dir4/5/6 -> pattern 15 while set"},
+	{"stanceClashLatchAction19", 0xAEC, 4, 1, 1, nullptr, "+0xAEC (Obj+0x11DC) [traced live] same for pattern 19 (blocks Guard+dir8/9/A -> pattern 18)"},
 	{"position", 0xAF0, 48, 1, 4, nullptr, "+0xAF0 (Obj+0x11E0) [traced] see struct (RBO localX/Y/Z + posX/Y/Z + prevLocalX/Y)"},
 	{"effects", 0xB20, 12, 1, 4, nullptr, "+0xB20 (Obj+0x1210) [traced] ObjEffect list: sub_442180 append, sub_442430 tick, sub_4422E0 clear, ObjEffect_RemoveById, sub_442340 aggregate"},
 	{"ruleOverrideFlags", 0xB2C, 4, 1, 2, "Gof2ObjCRuleOverrideFlags", "+0xB2C (Obj+0x121C) [traced reads] sub_42F7A0 (state-rule evaluator) bit 8 forces the rule to fail; only zeroed elsewhere (ctor, Obj_InitDefaults, sub_43DD40)"},

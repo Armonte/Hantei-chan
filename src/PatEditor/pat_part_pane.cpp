@@ -64,7 +64,7 @@ void PatPartPane::DrawPopUp() {
 
         ImGui::Separator();
 
-        if (ImGui::Button("OK", ImVec2(120, 40))) {
+        if (ImGui::Button(LBL("OK"), ImVec2(120, 40))) {
             curInstance->parts->cutOuts[curInstance->currState->partCutOut] = {};
             partsetPane->RegeneratePartSetNames();
             partsetPane->RegeneratePartPropNames();

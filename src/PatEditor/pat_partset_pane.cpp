@@ -132,7 +132,7 @@ void PatPartSetPane::DrawPopUp() {
 
         ImGui::Separator();
 
-        if (ImGui::Button("OK", ImVec2(120, 40))) {
+        if (ImGui::Button(LBL("OK"), ImVec2(120, 40))) {
             curInstance->parts->partSets[curInstance->currState->partSet] = {};
             RegeneratePartSetNames();
             ImGui::CloseCurrentPopup();

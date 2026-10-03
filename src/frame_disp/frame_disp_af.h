@@ -194,7 +194,7 @@ inline void AfDisplay(Frame_AF *af, int &selectedLayer, FrameData *frameData = n
 	}
 
 	im::SetNextItemWidth(width);
-	if(im::InputInt("Go to", &af->jump, 0, 0)) {
+	if(im::InputInt(LBL("Go to"), &af->jump, 0, 0)) {
 		markModified();
 	}
 	im::SameLine(0.f, 20); im::SetNextItemWidth(width);

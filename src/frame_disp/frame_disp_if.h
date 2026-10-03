@@ -503,10 +503,10 @@ inline void IfDisplay(std::vector<Frame_IF> *ifList_, Frame_IF *singleClipboard 
 
 			case 16: // Be affected by scrolling
 				im::SetNextItemWidth(width);
-				if(im::Checkbox("By X", (bool*)&p[0])) markModified();
+				if(im::Checkbox(LBL("By X"), (bool*)&p[0])) markModified();
 
 				im::SetNextItemWidth(width);
-				if(im::Checkbox("By Y", (bool*)&p[1])) markModified();
+				if(im::Checkbox(LBL("By Y"), (bool*)&p[1])) markModified();
 				break;
 
 			case 17: // Branch according to number of hits

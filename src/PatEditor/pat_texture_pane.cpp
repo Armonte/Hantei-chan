@@ -76,7 +76,7 @@ void PatTexturePane::DrawPopUp() {
 
         ImGui::Separator();
 
-        if (ImGui::Button("OK", ImVec2(120, 40))) {
+        if (ImGui::Button(LBL("OK"), ImVec2(120, 40))) {
             curInstance->parts->gfxMeta[curInstance->currState->partGraph] = {};
             RegenerateTexturesNames();
             ImGui::CloseCurrentPopup();
@@ -94,7 +94,7 @@ void PatTexturePane::DrawPopUp() {
 
         ImGui::Dummy(ImVec2(0.0f, 20.0f));
         ImGui::SetCursorPosX(ImGui::GetWindowWidth() -140);
-        if (ImGui::Button("OK", ImVec2(120, 40))) {
+        if (ImGui::Button(LBL("OK"), ImVec2(120, 40))) {
             ImGui::CloseCurrentPopup();
         }
         ImGui::EndPopup();

@@ -76,7 +76,7 @@ void PatShapePane::DrawPopUp() {
 
         ImGui::Separator();
 
-        if (ImGui::Button("OK", ImVec2(120, 40))) {
+        if (ImGui::Button(LBL("OK"), ImVec2(120, 40))) {
             curInstance->parts->shapes[curInstance->currState->partShape] = {};
             RegenerateShapesNames();
             ImGui::CloseCurrentPopup();
