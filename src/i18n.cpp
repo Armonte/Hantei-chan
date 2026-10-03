@@ -4,6 +4,7 @@
 #include <windows.h>
 #include <vector>
 #include <cstring>
+#include <cstdarg>
 #include <imgui.h>
 
 namespace i18n {
@@ -61,6 +62,63 @@ static std::string SettingsPath()
 }
 void Load() { language = (int)GetPrivateProfileIntA("han2", "Language", 0, SettingsPath().c_str()); }
 void Save() { WritePrivateProfileStringA("han2", "Language", std::to_string(language).c_str(), SettingsPath().c_str()); }
+
+std::string TrDetail(const std::string &s)
+{
+	if (language == 0 || s.empty()) return s;
+	static const char *const kPrefixes[] = { "Could not open ", "cannot open ", "could not write ", "cannot read ", "cannot create ",
+		"no original data kept for this character", "refusing to overwrite ", "short read of ", "name too long (max 59 bytes): " };
+	auto one = [&](const std::string &line) -> std::string {
+		auto &t = Table();
+		auto it = t.find(line);
+		if (it != t.end()) return it->second;
+		for (const char *p : kPrefixes) {
+			const size_t n = strlen(p);
+			if (line.compare(0, n, p) == 0) { auto q = t.find(p); if (q != t.end()) return std::string(q->second) + line.substr(n); }
+		}
+		const size_t c = line.find(": ");
+		if (c != std::string::npos) {
+			auto q = t.find(line.substr(c + 2));
+			if (q != t.end()) return line.substr(0, c) + ": " + q->second;
+		}
+		return line;
+	};
+	std::string out, line;
+	for (size_t i = 0; i <= s.size(); ++i) {
+		if (i == s.size() || s[i] == '\n') { out += one(line); if (i < s.size()) out += '\n'; line.clear(); }
+		else line += s[i];
+	}
+	return out;
+}
+void SameLineFit(float nextWidth, float spacing)
+{
+	const float right = ImGui::GetCursorScreenPos().x + ImGui::GetContentRegionAvail().x;
+	if (spacing < 0.f) spacing = ImGui::GetStyle().ItemSpacing.x;
+	if (ImGui::GetItemRectMax().x + spacing + nextWidth <= right) ImGui::SameLine(0.f, spacing);
+}
+void TextDisabledWrapped(const char *fmt, ...)
+{
+	va_list ap; va_start(ap, fmt);
+	ImGui::PushStyleColor(ImGuiCol_Text, ImGui::GetStyle().Colors[ImGuiCol_TextDisabled]);
+	ImGui::TextWrappedV(fmt, ap);
+	ImGui::PopStyleColor();
+	va_end(ap);
+}
+float RightPairX(const char *a, const char *b)
+{
+	const ImGuiStyle &st = ImGui::GetStyle();
+	const float w = ButtonWidth(a) + st.ItemSpacing.x + ButtonWidth(b) + st.WindowPadding.x + st.ScrollbarSize;
+	const float x = ImGui::GetWindowWidth() - w;
+	return x < 0.f ? 0.f : x;
+}
+float ButtonWidth(const char *label)
+{
+	return ImGui::CalcTextSize(label, nullptr, true).x + ImGui::GetStyle().FramePadding.x * 2.f;
+}
+float FieldWidth(float itemWidth, const char *label)
+{
+	return itemWidth + ImGui::GetStyle().ItemInnerSpacing.x + ImGui::CalcTextSize(label, nullptr, true).x;
+}
 
 bool Combo(const char *label, int *current, const char *const *items, int count, int heightInItems)
 {

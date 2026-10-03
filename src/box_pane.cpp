@@ -327,7 +327,7 @@ void BoxPane::Draw()
 				AdvanceBox(+1);
 			im::PopButtonRepeat();
 
-			im::SameLine(0,20.f);
+			i18n::SameLineFit(i18n::ButtonWidth(LBL("Copy all")), 20.f);
 			if(im::Button(LBL("Copy all")))
 			{
 				// Manually copy map for cross-allocator support
@@ -336,7 +336,7 @@ void BoxPane::Draw()
 					currState.copied->boxes[pair.first] = pair.second;
 				}
 			}
-			im::SameLine(0,20.f);
+			i18n::SameLineFit(i18n::ButtonWidth(LBL("Paste all")), 20.f);
 			if(im::Button(LBL("Paste all")))
 			{
 				// Manually copy map for cross-allocator support
@@ -348,12 +348,12 @@ void BoxPane::Draw()
 				markModified();
 			}
 
-			im::SameLine(0,20.f);
+			i18n::SameLineFit(i18n::ButtonWidth(LBL("Copy params")), 20.f);
 			if(im::Button(LBL("Copy params")))
 			{
 				currState.copied->box = boxes[currentBox];
 			}
-			im::SameLine(0,20.f);
+			i18n::SameLineFit(i18n::ButtonWidth(LBL("Paste params")), 20.f);
 			if(im::Button(LBL("Paste params")))
 			{
 				boxes[currentBox] = currState.copied->box;
@@ -361,18 +361,18 @@ void BoxPane::Draw()
 				markModified();
 			}
 
-			im::SameLine(0,20.f);
+			i18n::SameLineFit(i18n::FieldWidth(im::GetFrameHeight(), LBL("Highlight selected")), 20.f);
 			im::Checkbox(LBL("Highlight selected"), &highlight);
-			im::SameLine(0,20.f);
+			i18n::SameLineFit(i18n::ButtonWidth(LBL("Delete selected")), 20.f);
 			if(im::Button(LBL("Delete selected")))
 			{
 				boxes.erase(currentBox);
 				frameData->mark_modified(currState.pattern);
 				markModified();
 			}
-			im::SameLine(0,20.f);
+			i18n::SameLineFit(i18n::FieldWidth(im::GetFrameHeight(), LBL("Show manual box controls")), 20.f);
 			im::Checkbox(LBL("Show manual box controls"), &showManualControls);
-			im::SameLine(0,20.f);
+			i18n::SameLineFit(i18n::FieldWidth(im::GetFrameHeight(), LBL("Position tool")), 20.f);
 			im::Checkbox(LBL("Position tool"), &positionTool);
 			if(im::IsItemHovered())
 				im::SetTooltip(TXT("Drag the handles in the viewport to move animation layers and\n"

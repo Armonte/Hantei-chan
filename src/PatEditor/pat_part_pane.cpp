@@ -129,7 +129,7 @@ void PatPartPane::DrawPartCutOut()
                             curInstance->currState->partCutOut);
                 }
                 ImGui::NewLine();
-                ImGui::SameLine(ImGui::GetWindowWidth()-170);
+                ImGui::SameLine(i18n::RightPairX(LBL("Copy Part"), LBL("Paste Part")));
                 if(ImGui::Button(LBL("Copy Part"))){
                     cutOut->CopyTo(&CopyManager::copiedParts->cutOut);
                 }

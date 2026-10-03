@@ -173,7 +173,7 @@ void MainFrame::ProcessStartupArgs()
 				characters.push_back(std::move(character));
 				createViewForCharacter(characters.back().get());
 			} else {
-				requestErrorPopup("Load Error", "Could not open " + path);
+				requestErrorPopup("Load Error", std::string(TXT("Could not open ")) + path);
 			}
 		}
 		if (auto *v = getActiveView()) {

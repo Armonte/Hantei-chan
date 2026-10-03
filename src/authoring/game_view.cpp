@@ -349,7 +349,7 @@ void DrawGameView(HostContext& host)
 			ImGui::MenuItem(LBL("Forward keyboard / pad while this panel is focused"), nullptr, &g.forwardInput);
 			for (int p = 0; p < 4; ++p) {
 				char l[32];
-				std::snprintf(l, sizeof l, "as player %d", p + 1);
+				std::snprintf(l, sizeof l, TXT("as player %d"), p + 1);
 				const std::string block = PlayerBlock(s, p);
 				if (ImGui::MenuItem(l, nullptr, g.player == p, block.empty())) g.player = p;
 				if (!block.empty() && ImGui::IsItemHovered(ImGuiHoveredFlags_AllowWhenDisabled)) ImGui::SetTooltip("%s", block.c_str());

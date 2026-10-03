@@ -19,6 +19,16 @@ void Save();
 // Same signatures as ImGui::Combo (items array, or one string of items separated by \0).
 bool Combo(const char *label, int *current, const char *const *items, int count, int heightInItems = -1);
 bool Combo(const char *label, int *current, const char *itemsSeparatedByZeros, int heightInItems = -1);
+// Row layout that survives longer Japanese text: call right after an item; continues on the same line only if the next item
+// (nextWidth px, e.g. ButtonWidth(label) or FieldWidth(w, label)) still fits in the window, otherwise the next item starts a new line.
+// Error / status detail text built from English pieces: translates the whole line, a known prefix ("cannot open " + path), or
+// the part after "name: ". Unknown technical diagnostics (byte offsets etc.) stay English.
+std::string TrDetail(const std::string &s);
+void SameLineFit(float nextWidth, float spacing = -1.f);   // spacing < 0: the style's ItemSpacing.x (pass 20 to match old SameLine(0,20) rows)
+void TextDisabledWrapped(const char *fmt, ...); // TextDisabled that wraps at the window edge (long Japanese lines)
+float RightPairX(const char *a, const char *b);        // window-local X that right-aligns two adjacent buttons
+float ButtonWidth(const char *label);                 // visible width of ImGui::Button(label)
+float FieldWidth(float itemWidth, const char *label); // item of itemWidth px followed by its label
 }
 
 #define TXT(s) ::i18n::Tr(s)

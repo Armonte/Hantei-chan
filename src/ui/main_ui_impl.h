@@ -229,7 +229,7 @@ void MainFrame::DrawUi()
 		if (ImGui::BeginPopupModal(genericLabel.c_str(), NULL, ImGuiWindowFlags_AlwaysAutoResize))
 		{
 			ImGui::PushTextWrapPos(ImGui::GetFontSize() * 40.0f);
-			ImGui::TextUnformatted(m_errorDetail.c_str());
+			ImGui::TextUnformatted(i18n::TrDetail(m_errorDetail).c_str());
 			ImGui::PopTextWrapPos();
 			ImGui::Separator();
 			if (ImGui::Button(LBL("OK"), ImVec2(120, 0))) { ImGui::CloseCurrentPopup(); }
@@ -243,7 +243,7 @@ void MainFrame::DrawUi()
 		ImGui::Text(TXT("The file could not be saved. The original file on disk was left unchanged\n"
 			"and the character is still marked as modified.\n\n"));
 		if (!m_errorDetail.empty()) {
-			ImGui::TextUnformatted(m_errorDetail.c_str());
+			ImGui::TextUnformatted(i18n::TrDetail(m_errorDetail).c_str());
 			ImGui::Text("\n");
 		}
 		ImGui::Separator();
@@ -310,7 +310,7 @@ void MainFrame::DrawUi()
 		ImGui::Text(TXT("Failed to load project file.\n"
 			"The file may be corrupted or some character files may be missing.\n\n"));
 		if (!m_errorDetail.empty()) {
-			ImGui::TextUnformatted(m_errorDetail.c_str());
+			ImGui::TextUnformatted(i18n::TrDetail(m_errorDetail).c_str());
 			ImGui::Text("\n");
 		}
 		ImGui::Separator();
@@ -325,7 +325,7 @@ void MainFrame::DrawUi()
 		ImGui::Text(TXT("Failed to save project file.\n"
 			"Check that you have write permissions for the selected location.\n\n"));
 		if (!m_errorDetail.empty()) {
-			ImGui::TextUnformatted(m_errorDetail.c_str());
+			ImGui::TextUnformatted(i18n::TrDetail(m_errorDetail).c_str());
 			ImGui::Text("\n");
 		}
 		ImGui::Separator();
@@ -497,7 +497,7 @@ void MainFrame::DrawUi()
 			// content position shifts even though width/height are fixed —
 			// that explains the user-visible flicker.
 			if (auto* cg = currentBgFile->GetCG()) {
-				ImGui::Text("Sprite dims (per frame):");
+				ImGui::Text("%s", TXT("Sprite dims (per frame):"));
 				for (size_t fi = 0; fi < obj0.frames.size(); ++fi) {
 					int sid = obj0.frames[fi].spriteId;
 					// spriteId is raw: >=10000 is a CG sprite (index sid-10000),

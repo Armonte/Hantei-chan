@@ -59,6 +59,7 @@ def keys_of(path):
     for m in re.finditer(r'\b(TXT|LBL|BitField|ShowFrameField|ShowPatternField|PickRow|Tooltip)\(\s*(' + SEQ + r')\s*[,)]', s):
         k = joinlits(m.group(2))
         if m.group(1) == 'LBL' and '##' in k: k = k.split('##')[0]
+        if k.startswith('##'): continue   # id-only label (nothing visible to translate)
         ks.setdefault(k, s.count('\n', 0, m.start()) + 1)
     return ks
 HELPERS = ('BitField', 'ShowFrameField', 'Tooltip', 'PickRow', 'HelpMarker', 'ShowFrameFieldInt', 'LabeledInt')

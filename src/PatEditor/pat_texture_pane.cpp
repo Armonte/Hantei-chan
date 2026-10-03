@@ -209,7 +209,7 @@ void PatTexturePane::DrawTexture()
                     }
                 }
                 ImGui::NewLine();
-                ImGui::SameLine(ImGui::GetWindowWidth()-220);
+                ImGui::SameLine(i18n::RightPairX(LBL("Copy Texture"), LBL("Paste Texture")));
                 if(ImGui::Button(LBL("Copy Texture"))){
                     gfx->CopyTo(&CopyManager::copiedParts->gfx);
                 }

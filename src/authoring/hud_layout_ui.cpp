@@ -283,7 +283,7 @@ void DrawHudLayoutEditor(EditSink& sink, const std::string& gameDir, const int p
 		ImGui::SameLine(0, 0);
 		ImGui::TextColored(!std::strcmp(layer, "local") ? ImVec4(0.55f, 0.8f, 1, 1) : !std::strcmp(layer, "shipped") ? ImVec4(0.8f, 0.8f, 0.8f, 1)
 		                                                                                                                  : ImVec4(0.55f, 0.55f, 0.55f, 1),
-		                   "%-16s %-7s", k.key, layer);
+		                   "%-16s %s", k.key, TXT(layer));
 		ImGui::SameLine(210);
 		ImGui::SetNextItemWidth(std::max(60.0f, listW - 210 - 110));
 		const std::string label = std::string(k.key) + " (hud)";

@@ -255,7 +255,7 @@ void PatPartSetPane::DrawPartSet()
                     }
                 }
                 ImGui::NewLine();
-                ImGui::SameLine(ImGui::GetWindowWidth()-210);
+                ImGui::SameLine(i18n::RightPairX(LBL("Copy Part Set"), LBL("Paste Part Set")));
                 if(ImGui::Button(LBL("Copy Part Set"))){
                     partSet->CopyPartSetTo(&CopyManager::copiedParts->partSet);
                 }
@@ -328,7 +328,7 @@ void PatPartSetPane::DrawPartProperty(PartSet<>* partSet)
                               }
         auto props = &partSet->groups[curInstance->currState->partProp];
         ImGui::NewLine();
-        ImGui::SameLine(ImGui::GetWindowWidth()-230);
+        ImGui::SameLine(i18n::RightPairX(LBL("Copy Part Prop"), LBL("Paste Part Prop")));
         if(ImGui::Button(LBL("Copy Part Prop"))){
             PartSet<>::CopyPropertyTo(&CopyManager::copiedParts->partProperty, props);
         }

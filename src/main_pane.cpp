@@ -1,3 +1,4 @@
+#include <algorithm>
 #include "main_pane.h"
 #include "pattern_disp.h"
 #include "frame_disp.h"
@@ -102,6 +103,12 @@ void MainPane::Draw()
 			}
 		}
 
+		{	// the combo takes what the label, the ID field and the search button leave, so a longer (Japanese) label never pushes them out
+			const ImGuiStyle &sty = im::GetStyle();
+			const float others = im::CalcTextSize(LBL("Pattern"), nullptr, true).x + sty.ItemInnerSpacing.x * 2 + 20.f + 45.f
+				+ im::CalcTextSize("ID").x + 10.f + 30.f;
+			im::SetNextItemWidth(std::max(80.f, im::GetContentRegionAvail().x - others));
+		}
 		if (im::BeginCombo(LBL("Pattern"), decoratedNames[currState.pattern].c_str(), ImGuiComboFlags_HeightLargest))
 		{
 			auto count = frameData->get_sequence_count();
@@ -347,20 +354,20 @@ void MainPane::Draw()
 					if(im::Button(LBL("Append frame")))
 						keyframeOp = KeyframeOp::Append;
 
-					im::SameLine(0,20.f);
+					i18n::SameLineFit(i18n::ButtonWidth(LBL("Insert frame")));
 					if(im::Button(LBL("Insert frame")))
 						keyframeOp = KeyframeOp::Insert;
 
-					im::SameLine(0,20.f);
+					i18n::SameLineFit(i18n::ButtonWidth(LBL("Delete frame")));
 					if(im::Button(LBL("Delete frame")))
 						keyframeOp = KeyframeOp::Delete;
 
-					im::SameLine(0,20.f);
+					i18n::SameLineFit(i18n::ButtonWidth(LBL("Copy frame")));
 					if(im::Button(LBL("Copy frame")))
 					{
 						currState.copied->frame = frame;
 					}
-					im::SameLine(0,20.f);
+					i18n::SameLineFit(i18n::ButtonWidth(LBL("Paste frame")));
 					if(im::Button(LBL("Paste frame")))
 					{
 						frame = currState.copied->frame;
@@ -368,7 +375,7 @@ void MainPane::Draw()
 						markModified();
 					}
 
-					im::SameLine(0,20.f);
+					i18n::SameLineFit(i18n::ButtonWidth(LBL("Range tool")));
 					if(im::Button(LBL("Range tool")))
 					{
 						ranges[0] = 0;

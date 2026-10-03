@@ -149,7 +149,7 @@ void MainFrame::drawPatternManagerWindow()
 	ImGui::SetNextItemWidth(-FLT_MIN);
 	ImGui::InputTextWithHint("##filter", TXT("Filter by number or name"), w.filter, sizeof(w.filter));
 	ImGui::Checkbox(LBL("Hide empty slots"), &w.hideEmpty);
-	ImGui::TextDisabled("%s", TXT("Click, Ctrl+click, Shift+click. Order = click order."));
+	i18n::TextDisabledWrapped("%s", TXT("Click, Ctrl+click, Shift+click. Order = click order."));
 	std::vector<int> rows;
 	std::string f = w.filter;
 	for (auto& c : f) c = (char)tolower((unsigned char)c);
@@ -274,7 +274,7 @@ void MainFrame::drawPatternManagerWindow()
 	}
 	ImGui::EndDisabled();
 	ImGui::SameLine();
-	ImGui::TextDisabled(TXT("%d non-selected pattern(s) would be overwritten"), moveOverwrites);
+	i18n::TextDisabledWrapped(TXT("%d non-selected pattern(s) would be overwritten"), moveOverwrites);
 	ImGui::BeginDisabled(w.selection.empty());
 	if (ImGui::Button(LBL("Clear selected patterns"))) ImGui::OpenPopup(LBL("Clear patterns?"));
 	ImGui::SameLine();
@@ -556,7 +556,7 @@ void MainFrame::drawCompareWindow()
 	if (!ImGui::Begin(LBL("Pattern comparison"), &m_showCompare)) { ImGui::End(); return; }
 	if (c.character && !isLiveCharacter(c.character)) { c.character = nullptr; c.sim.reset(); }
 	ImGui::Checkbox(LBL("Show comparison"), &c.enabled);
-	ImGui::TextDisabled("%s", TXT("Drawn tinted over the active view; its boxes are outlines."));
+	i18n::TextDisabledWrapped("%s", TXT("Drawn tinted over the active view; its boxes are outlines."));
 
 	const char* current = c.character ? c.character->getName().c_str() : TXT("(choose a character)");
 	if (ImGui::BeginCombo(LBL("Character"), current)) {
@@ -790,21 +790,21 @@ void MainFrame::drawHudWindow()
 					h.status = TwFmt(TXT("Read %d/%zu colour(s) from %s"), n, exe.size(), exePath.c_str());
 				} else h.status = err;
 			}
-			ImGui::SameLine();
+			i18n::SameLineFit(i18n::ButtonWidth(LBL("Defaults")));
 			if (ImGui::Button(LBL("Defaults"))) for (size_t i = 0; i < slots.size(); ++i) h.colors[i] = slots[i].defaultArgb;
-			ImGui::SameLine();
+			i18n::SameLineFit(i18n::ButtonWidth(LBL("Load hud_theme.json...")));
 			if (ImGui::Button(LBL("Load hud_theme.json..."))) {
 				std::string p = FileDialog(-1, false);
 				std::string err;
 				if (!p.empty()) h.status = hud::LoadThemeColors(p, h.colors, &err) ? TwFmt(TXT("Loaded %s"), p.c_str()) : err;
 			}
-			ImGui::SameLine();
+			i18n::SameLineFit(i18n::ButtonWidth(LBL("Save hud_theme.json...")));
 			if (ImGui::Button(LBL("Save hud_theme.json..."))) {
 				std::string p = FileDialog(-1, true);
 				std::string err;
 				if (!p.empty()) h.status = hud::SaveThemeColors(p, h.colors, &err) ? TwFmt(TXT("Saved %s"), p.c_str()) : err;
 			}
-			ImGui::SameLine();
+			i18n::SameLineFit(i18n::ButtonWidth(LBL("Write patched exe copy...")));
 			if (ImGui::Button(LBL("Write patched exe copy..."))) {
 				std::string p = FileDialog(-1, true);
 				std::string err;
@@ -812,11 +812,12 @@ void MainFrame::drawHudWindow()
 					? TwFmt(TXT("Wrote %s (the original MBAA.exe is untouched)"), p.c_str()) : err;
 			}
 			if (!h.status.empty()) ImGui::TextWrapped("%s", h.status.c_str());
-			ImGui::TextDisabled("%s", TXT("Colours are ARGB immediates in MBAA.exe's gauge code; the patched copy changes only those bytes."));
+			i18n::TextDisabledWrapped("%s", TXT("Colours are ARGB immediates in MBAA.exe's gauge code; the patched copy changes only those bytes."));
 
 			for (size_t i = 0; i < slots.size(); ++i) {
 				ImVec4 v = ArgbToVec(h.colors[i]);
 				ImGui::PushID((int)i);
+				ImGui::SetNextItemWidth(ImGui::GetContentRegionAvail().x * 0.38f);
 				if (ImGui::ColorEdit4(LBL(slots[i].label), &v.x, ImGuiColorEditFlags_AlphaBar | ImGuiColorEditFlags_DisplayHex))
 					h.colors[i] = VecToArgb(v);
 				ImGui::SameLine();
@@ -871,7 +872,7 @@ void MainFrame::drawHudWindow()
 				g = VecToArgb(ImVec4(lo.x + (hi.x - lo.x) * q, lo.y + (hi.y - lo.y) * q, lo.z + (hi.z - lo.z) * q, 1.f));
 			}
 			bar(TXT("Guard bar"), h.guardBroken ? 1.f : 0.75f, g, 0, false);
-			ImGui::TextDisabled("%s", TXT("The game blends the guard colour with part of gauge00.png; this shows the raw colour."));
+			i18n::TextDisabledWrapped("%s", TXT("The game blends the guard colour with part of gauge00.png; this shows the raw colour."));
 			ImGui::EndTabItem();
 		}
 		auto ensureTextures = [&]() {
@@ -908,12 +909,12 @@ void MainFrame::drawHudWindow()
 				ImGui::Image((ImTextureID)(uintptr_t)tx.id, ImVec2(tx.w * scale, tx.h * scale));
 				++shown;
 			}
-			if (!shown) ImGui::TextDisabled("%s", TXT("No GRP/gauge_AA/gauge0*.png under the game folder (extract 0003.p / 0008.p there)."));
+			if (!shown) i18n::TextDisabledWrapped("%s", TXT("No GRP/gauge_AA/gauge0*.png under the game folder (extract 0003.p / 0008.p there)."));
 			ImGui::EndTabItem();
 		}
 		if (ImGui::BeginTabItem(LBL("Portraits"))) {
 			ensureTextures();
-			ImGui::TextDisabled("%s", TXT("face<character>_<side>.png: side 00 = P1/left, 01 = P2/right."));
+			i18n::TextDisabledWrapped("%s", TXT("face<character>_<side>.png: side 00 = P1/left, 01 = P2/right."));
 			int col = 0;
 			for (auto& tx : h.textures) {
 				if (tx.name.rfind("face", 0) != 0) continue;
