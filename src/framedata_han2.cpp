@@ -405,7 +405,9 @@ bool Serialize(const FrameData &fd, std::vector<uint8_t> &out, std::string *err,
 
 	Han2File f;
 	memcpy(f.header, cont->header, 0x40);
-	f.sub = cont->sub; f.kind = asDt2 ? 3 : cont->kind; f.xorFlag = 0;
+	if (!asDt2 && cont->kind == 3 && cont->parts.empty() && cont->cg.empty())
+		return fail("this character was loaded without its .DAT (no parts / CG): save it as .DT2, or open it together with its .DAT");
+	f.sub = cont->sub; f.kind = asDt2 ? 3 : 0; f.xorFlag = 0;
 	f.lead = cont->lead; f.tail = cont->tail;
 	f.sec.assign(8, {});
 	f.sec[0] = patT; f.sec[1] = frames;

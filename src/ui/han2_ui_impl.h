@@ -59,3 +59,19 @@ void MainFrame::DrawHan2Windows()
 		openHan2Request(req);
 	}
 }
+
+void MainFrame::openPartsEditorForCharacter(CharacterInstance* character)
+{
+	if (!character || !character->parts.loaded) return;
+	render.SetParts(&character->parts);
+	auto view = std::make_unique<CharacterView>(character, &render);
+	view->setPatEditor(true);
+	int viewNumber = 0;
+	for (auto& v : views) if (v->getCharacter() == character) viewNumber = std::max(viewNumber, v->getViewNumber() + 1);
+	view->setViewNumber(viewNumber);
+	view->refreshPanes(&render);
+	views.push_back(std::move(view));
+	setActiveView(views.size() - 1);
+	markProjectModified();
+	needsDockRebuild = true;
+}
