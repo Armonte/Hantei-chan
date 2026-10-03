@@ -76,3 +76,16 @@ Legend: [x] done, [ ] open. "(icaro)" = added by icaroffa 2026. "(ours)" = in ou
 - [x] Byte-preserving load/save (0xCDCD debug fill, unknown fields) [346 RBO files byte-identical (han2tool modelrt)]
 - [ ] In-game proof of an edit (RBO loose .DT2; GOF2)
 - [ ] GOF1 (116-byte frames)
+
+## G. Beyond PACNyx (improvements as they land)
+- [x] Byte-exact load/save of every RBO file through the editor model (346/346), PACNyx rewrites sections from its own model and mis-sizes GOF2
+- [x] PAC writer that rebuilds an archive byte-identically (12/12), keeps the leftover name bytes
+- [x] Several archives mounted at once with priority order (the game's own order: later slot wins), per-entry Extract
+- [x] Every frame field named after the IDA struct it was traced from, with enum combos and flag checkboxes (HAN2 inspector)
+- [x] Hitboxes for all six box classes (Kasanari, Yarare, Etc, Sousai, Tobi, Kougeki) shown and edited, not just parts
+- [x] Edits saved as a loose .DT2 the game prefers; proven in the game on a copy (docs/formats/evidence/)
+- [ ] Real animation playback from the pattern table, durations, loops, jumps and script lists (120 Hz), pause/step/loop/onion skin
+- [ ] Undo/redo for every edit including AT, scripts, sequences
+- [ ] Sprite/CG import and export
+- [ ] Pose/sheet export (icaroffa's feature) grouped by the real animation sections
+- [ ] Diff against the original file
