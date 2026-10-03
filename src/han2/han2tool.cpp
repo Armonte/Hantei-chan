@@ -541,6 +541,25 @@ static int CmdGof1Rt(int argc, char **argv)
 	return fail ? 1 : 0;
 }
 
+// gof1shift <in.p> <ENTRY.DAT|-all> <out.p> <dx> <dy>: shifts every frame's sprite offset and writes a NEW archive (the in-game test file)
+static int CmdGof1Shift(int argc, char **argv)
+{
+	if (argc < 5) { puts("gof1shift <in.p> <ENTRY.DAT> <out.p> <dx> <dy>"); return 2; }
+	gof1::Archive a; std::string err;
+	if (!gof1::Open(argv[0], a, &err)) { printf("%s\n", err.c_str()); return 1; }
+	int idx = gof1::Find(a, argv[1]);
+	if (idx < 0) { puts("entry not found"); return 1; }
+	std::vector<uint8_t> d; gof1::ReadEntry(a, (size_t)idx, d, &err); gof1::DecryptDat(d);
+	FrameData fd;
+	if (!gof1::Load(fd, d.data(), d.size(), &err)) { printf("%s\n", err.c_str()); return 1; }
+	fd.m_han2->sourcePath = argv[0]; fd.m_han2->gof1Name = a.entries[(size_t)idx].name;
+	int dx = atoi(argv[3]), dy = atoi(argv[4]), n = 0;
+	for (auto &q : fd.m_sequences) for (auto &f : q.frames) { for (auto &l : f.AF.layers) { l.offset_x += dx; l.offset_y += dy; } n++; }
+	if (!gof1::SaveFile(fd, argv[2], &err)) { printf("save: %s\n", err.c_str()); return 1; }
+	printf("shifted %d frames of %s by (%d,%d), wrote %s\n", n, argv[1], dx, dy, argv[2]);
+	return 0;
+}
+
 int main(int argc, char **argv)
 {
 	CoInitializeEx(nullptr, COINIT_MULTITHREADED);
@@ -562,6 +581,7 @@ int main(int argc, char **argv)
 	if (c == "diff") return CmdDiff(argc - 2, argv + 2);
 	if (c == "animtest") return CmdAnimTest(argc - 2, argv + 2);
 	if (c == "gof1rt") return CmdGof1Rt(argc - 2, argv + 2);
+	if (c == "gof1shift") return CmdGof1Shift(argc - 2, argv + 2);
 	if (c == "pacrt") return CmdPacRt(argc - 2, argv + 2);
 	printf("unknown command %s\n", c.c_str());
 	return 2;
