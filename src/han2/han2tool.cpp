@@ -4,11 +4,13 @@
 //   han2tool count <archive>...                print entry counts
 //   han2tool extract <archive> <name|-all> <outdir>
 //   han2tool roundtrip <archive|file>...       every HAN2RBO .DAT/.DT2 (inside archives or loose): parse -> serialize must be byte-identical
+//   han2tool modelrt <archive|file>...         every RBO .DAT/.DT2: load into the Hantei-chan model -> save must be byte-identical
 //   han2tool pacrt <archive>...                rebuild the archive from its entries; entries must match byte for byte
 //
 // Exit code 0 when everything passed.
 #include "pac_archive.h"
 #include "han2_container.h"
+#include "../framedata_han2.h"
 
 #include <cstdio>
 #include <cstring>
@@ -164,6 +166,45 @@ static int CmdRoundtrip(int argc, char **argv)
 	return total.fail ? 1 : 0;
 }
 
+static void ModelRtOne(const std::string &label, const std::vector<uint8_t> &b, RtStats &st)
+{
+	FrameData fd; std::string err;
+	if (!han2::Load(fd, b.data(), b.size(), &err)) { printf("SKIP %s: %s\n", label.c_str(), err.c_str()); st.skipped++; return; }
+	std::vector<uint8_t> out; std::vector<std::string> warn;
+	bool dt2 = fd.m_han2 && fd.m_han2->kind == 3;
+	if (!han2::Serialize(fd, out, &err, &warn, dt2)) { printf("FAIL %s: save: %s\n", label.c_str(), err.c_str()); st.fail++; return; }
+	if (out == b) { st.pass++; return; }
+	size_t k = 0, m = std::min(out.size(), b.size());
+	while (k < m && out[k] == b[k]) k++;
+	printf("FAIL %s: size %zu vs %zu, first diff at 0x%zx\n", label.c_str(), out.size(), b.size(), k);
+	st.fail++;
+}
+
+static int CmdModelRt(int argc, char **argv)
+{
+	RtStats total;
+	for (int i = 0; i < argc; i++) {
+		RtStats st; std::string err; pac::Archive a;
+		if (pac::Open(argv[i], a, nullptr)) {
+			for (size_t k = 0; k < a.entries.size(); k++) {
+				const std::string &n = a.entries[k].name;
+				if (!EndsWithNoCase(n, ".DAT") && !EndsWithNoCase(n, ".DT2")) continue;
+				std::vector<uint8_t> b;
+				if (!pac::ReadEntry(a, k, b, &err)) { st.fail++; continue; }
+				if (b.size() < 8 || memcmp(b.data(), "HAN2RBO ", 8) != 0) continue;
+				ModelRtOne(std::string(argv[i]) + "::" + n, b, st);
+			}
+		} else {
+			std::vector<uint8_t> b;
+			if (ReadLoose(argv[i], b)) ModelRtOne(argv[i], b, st); else st.fail++;
+		}
+		printf("%-40s pass %d fail %d skipped %d\n", argv[i], st.pass, st.fail, st.skipped);
+		total.pass += st.pass; total.fail += st.fail; total.skipped += st.skipped;
+	}
+	printf("TOTAL pass %d fail %d skipped %d\n", total.pass, total.fail, total.skipped);
+	return total.fail ? 1 : 0;
+}
+
 int main(int argc, char **argv)
 {
 	if (argc < 2) { puts("usage: han2tool ls|count|extract|pacrt ..."); return 2; }
@@ -172,6 +213,7 @@ int main(int argc, char **argv)
 	if (c == "count") return CmdCount(argc - 2, argv + 2);
 	if (c == "extract") return CmdExtract(argc - 2, argv + 2);
 	if (c == "roundtrip") return CmdRoundtrip(argc - 2, argv + 2);
+	if (c == "modelrt") return CmdModelRt(argc - 2, argv + 2);
 	if (c == "pacrt") return CmdPacRt(argc - 2, argv + 2);
 	printf("unknown command %s\n", c.c_str());
 	return 2;

@@ -10,6 +10,7 @@
 
 #include "hitbox.h"
 #include "ha4_raw.h"
+#include "han2_raw.h"
 #include "ha6_enc.h"
 #include <memory>
 
@@ -258,6 +259,8 @@ struct Frame_T {
 
 	// Original HA4 (MBAC .DAT) frame bytes; only set for frames loaded from HA4.
 	Ha4FrameRaw ha4{};
+	// Original HAN2RBO (RBO / GOF2) frame bytes; only set for frames loaded from those formats.
+	Han2FrameRaw han2{};
 	// HA6 encoding choices as loaded (ha6_enc.h); used by the UNI/MBTL writer.
 	Ha6FrameEnc ha6{};
 
@@ -275,6 +278,7 @@ struct Frame_T {
 			hitboxes[pair.first] = pair.second;
 		}
 		ha4 = from.ha4;
+		han2 = from.han2;
 		ha6 = from.ha6;
 		return *this;
 	}
@@ -289,6 +293,7 @@ struct Frame_T {
 			IF = from.IF;
 			hitboxes = from.hitboxes;
 			ha4 = from.ha4;
+			han2 = from.han2;
 			ha6 = from.ha6;
 		}
 		return *this;
@@ -316,6 +321,8 @@ struct Sequence_T {
 
 	// Original HA4 pattern header / name bytes (MBAC .DAT only).
 	Ha4SeqRaw ha4{};
+	// Original HAN2RBO pattern-table entry / name bytes (RBO / GOF2 only).
+	Han2SeqRaw han2{};
 	// HA6 pattern encoding as loaded (raw PTT2/PTCN buffers etc., ha6_enc.h).
 	Ha6SeqEnc ha6{};
 
@@ -334,6 +341,7 @@ struct Sequence_T {
 		usedAFGX = from.usedAFGX;
 		usedATV2 = from.usedATV2;
 		ha4 = from.ha4;
+		han2 = from.han2;
 		ha6 = from.ha6;
 		frames.resize(from.frames.size());
 		for (size_t i = 0; i < from.frames.size(); i++) {
@@ -357,6 +365,7 @@ struct Sequence_T {
 			usedAFGX = from.usedAFGX;
 			usedATV2 = from.usedATV2;
 			ha4 = from.ha4;
+			han2 = from.han2;
 			ha6 = from.ha6;
 			frames = from.frames;
 		}
@@ -383,6 +392,7 @@ struct Command {
 };
 
 struct Ha4Container; // framedata_ha4.h
+struct Han2Container; // framedata_han2.h
 
 // Which game's HA6 dialect a character uses. Detected from the data
 // (AFGX layer count: 5 = UNI/UNIST/UNI2, 3 = MBTL; ATV2/AFGX absent =
@@ -410,6 +420,9 @@ public:
 	// blobs). save() writes HA4 for such data unless the target is *.ha6.
 	std::shared_ptr<Ha4Container> m_ha4;
 	bool isHA4() const { return (bool)m_ha4; }
+	// Set when the data came from a French-Bread HAN2RBO file (RBO .DAT/.DT2, GOF2 .DT2).
+	std::shared_ptr<Han2Container> m_han2;
+	bool isHan2() const { return (bool)m_han2; }
 
 	// Stacked loads (a .txt with several HA6 files): which file supplied each
 	// pattern, and which file index this character saves to. With an own file

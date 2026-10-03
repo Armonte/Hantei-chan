@@ -539,8 +539,31 @@ add_library(han2core STATIC
 	src/han2/han2_container.cpp
 )
 target_include_directories(han2core PUBLIC "src/han2")
-add_executable(han2tool src/han2/han2tool.cpp)
-target_link_libraries(han2tool PRIVATE han2core)
+add_executable(han2tool
+	src/han2/han2tool.cpp
+	src/framedata_han2.cpp
+	src/framedata.cpp
+	src/framedata_load.cpp
+	src/framedata_save.cpp
+	src/framedata_ha4.cpp
+	src/ha4_parts.cpp
+	src/ha4_convert.cpp
+	src/background/bg_pat.cpp
+	src/parts/parts.cpp
+	src/parts/parts_part.cpp
+	src/parts/parts_partset.cpp
+	src/parts/parts_shape.cpp
+	src/parts/parts_texture.cpp
+	src/cg.cpp
+	src/texture.cpp
+	src/vao.cpp
+	src/shader.cpp
+	src/misc.cpp
+	tinyalloc/tinyalloc.c
+)
+target_include_directories(han2tool PRIVATE "." "src" "third_party" "${CMAKE_BINARY_DIR}/generated")
+target_compile_definitions(han2tool PRIVATE WIN32_LEAN_AND_MEAN HA6GUIVERSION="${CMAKE_PROJECT_VERSION}" PAT_HEADLESS)
+target_link_libraries(han2tool PRIVATE han2core tinyalloc glad glm OpenGL::GL)
 if(MINGW)
 	target_link_options(han2tool PRIVATE -static-libgcc -static-libstdc++ -static)
 endif()
