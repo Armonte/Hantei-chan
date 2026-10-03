@@ -136,6 +136,55 @@ bool WriteArchiveReplacing(const Archive &a, int ri, const std::vector<uint8_t> 
 	return true;
 }
 
+void CipherEntry(std::vector<uint8_t> &d, const std::string &name) { StageOne(d, name); }
+
+void EncodeIndex(const Archive &a, std::vector<uint8_t> &head)
+{
+	const size_t n = a.entries.size();
+	head.assign(8 + n * 64, 0);
+	wr32(head.data(), a.plainFlag); wr32(head.data() + 4, (uint32_t)n ^ kKey);
+	for (size_t i = 0; i < n; i++) {
+		uint8_t *e = head.data() + 8 + i * 64;
+		memcpy(e, a.entries[i].rawName, 56);
+		for (int j = 0; j < 56; j++) e[j] ^= (uint8_t)((3 * ((int)j * (int)i - 28)) & 0xFF);
+		wr32(e + 56, a.entries[i].size ^ kKey); wr32(e + 60, a.entries[i].offset);
+	}
+}
+
+bool OpenMem(const uint8_t *b, size_t n, MemArchive &m, std::string *err)
+{
+	m = MemArchive(); Archive &out = m.a;
+	if (!LooksLikeArchive(b, n)) { if (err) *err = "not a GOF1 archive"; return false; }
+	out.fileSize = n; out.plainFlag = rd32(b);
+	uint32_t cnt = rd32(b + 4) ^ kKey;
+	if (8 + (uint64_t)cnt * 64 > n) { if (err) *err = "index past the end"; return false; }
+	uint64_t shift = 0, end = 8 + (uint64_t)cnt * 64;
+	for (uint32_t i = 0; i < cnt; i++) {
+		uint8_t e[64]; memcpy(e, b + 8 + (size_t)i * 64, 64);
+		for (int j = 0; j < 56; j++) e[j] ^= (uint8_t)((3 * ((int)j * (int)i - 28)) & 0xFF);
+		Entry en; size_t len = 0; while (len < 56 && e[len]) len++;
+		en.name.assign((const char *)e, len); memcpy(en.rawName, e, 56);
+		en.size = rd32(e + 56) ^ kKey; en.offset = rd32(e + 60);
+		const bool bad = (uint64_t)en.offset + shift + en.size > n;
+		m.bad.push_back(bad);
+		m.dataOffset.push_back(en.offset + shift);
+		if (!bad) end = std::max<uint64_t>(end, en.offset + shift + en.size);
+		if (en.size == 0xFFFFFFFFu) shift += 1;
+		out.entries.push_back(std::move(en));
+	}
+	m.tiles = end == n;
+	return true;
+}
+
+bool ReadEntryMem(const MemArchive &m, const uint8_t *b, size_t i, std::vector<uint8_t> &out)
+{
+	if (i >= m.a.entries.size() || m.bad[i]) return false;
+	const Entry &e = m.a.entries[i];
+	out.assign(b + m.dataOffset[i], b + m.dataOffset[i] + e.size);
+	if (m.a.plainFlag == 0) StageOne(out, e.name);
+	return true;
+}
+
 bool RewriteAllFromPlain(const Archive &a, const std::string &outPath, std::string *err)
 {
 	auto fail = [&](const std::string &m) { if (err) *err = m; return false; };
