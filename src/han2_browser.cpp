@@ -68,6 +68,7 @@ std::string TempExtract(const Mounted &m, size_t i)
 	std::filesystem::create_directories(out.parent_path(), ec);
 	std::ofstream f(out, std::ios::binary);
 	if (!b.empty()) f.write((const char *)b.data(), (std::streamsize)b.size());
+	if (m.f) fbarc::SetOrigin(out.u8string(), fbarc::Origin{ m.f->path(), fbarc::NameToUtf8(m.f->relativePath(i)) });
 	return f ? out.u8string() : std::string();
 }
 

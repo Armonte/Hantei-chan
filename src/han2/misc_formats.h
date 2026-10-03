@@ -10,7 +10,7 @@
 namespace han2 {
 
 // ---- RIFF (.WAV) -----------------------------------------------------------------------------------------------------------
-struct RiffChunk { char id[4]; std::vector<uint8_t> data; bool padded = false; uint32_t declaredSize = 0; };
+struct RiffChunk { char id[4]; std::vector<uint8_t> data; bool padded = false; uint8_t padValue = 0; uint32_t declaredSize = 0; };
 struct Riff { char form[4]{}; uint32_t riffSize = 0; std::vector<RiffChunk> chunks; std::vector<uint8_t> tail; uint16_t fmtTag = 0, channels = 0; uint32_t sampleRate = 0; uint16_t bits = 0; };
 bool ParseRiff(const uint8_t *p, size_t n, Riff &out, std::string *err);
 void SerializeRiff(const Riff &r, std::vector<uint8_t> &out);

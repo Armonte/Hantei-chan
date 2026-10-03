@@ -134,6 +134,8 @@ std::string utf82sj(const std::string &input)
 	return output;
 }
 
+int (*g_saveEntryIntoArchive)(const std::string &, const std::vector<uint8_t> &, const std::string &, std::string *) = nullptr;
+
 bool WriteFileAtomic(const char *filename, const void *data, size_t size)
 {
 	if(!filename || !*filename)

@@ -525,6 +525,15 @@ void MainFrame::requestErrorPopup(const char* popupName, const std::string& deta
 	m_errorDetail = detail;
 }
 
+// Installed at startup: lets the format savers (HA4 / GOF1-family) replace one entry of the archive a character was opened from.
+static int SaveEntryIntoArchiveImpl(const std::string &loosePath, const std::vector<uint8_t> &stored, const std::string &outPath, std::string *err)
+{
+	fbarc::Origin o;
+	if (!fbarc::GetOrigin(loosePath, &o)) return 0;
+	return fbarc::SaveEntryReplacing(o, stored, outPath, err) ? 1 : -1;
+}
+static const bool s_archiveSaveHookInstalled = (g_saveEntryIntoArchive = SaveEntryIntoArchiveImpl, true);
+
 bool MainFrame::saveCharacter(CharacterInstance* character)
 {
 	if (!character) return false;

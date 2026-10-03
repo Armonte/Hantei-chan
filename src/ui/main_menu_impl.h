@@ -73,6 +73,17 @@ void MainFrame::openAnyFile(const std::string& path)
 		addRecentFile(path);
 		return;
 	}
+	if (starts("\xd9\x93\xfe\x3d", 4)) {   // Melty Blood / GOF1-family character .DAT (stage-2 enciphered), e.g. an entry extracted from a .p
+		if (findCharacterByPath(path)) { fail(TXT("Already open:")); return; }
+		auto character = std::make_unique<CharacterInstance>();
+		std::string err;
+		if (!character->loadGof1File(path, err)) { fail(err); return; }
+		characters.push_back(std::move(character));
+		createViewForCharacter(characters.back().get());
+		markProjectModified();
+		addRecentFile(path);
+		return;
+	}
 	if (han2::IsHan2(head.data(), head.size()) || pac::LooksLikePac(head.data(), head.size()) ||
 	    starts("BMP Cutter", 10) ||
 	    fbarc::Detect(head.data(), head.size(), ext) == fbarc::Kind::PkFileInfo || fbarc::Detect(head.data(), head.size(), ext) == fbarc::Kind::MbFilePacA ||
@@ -396,7 +407,7 @@ void MainFrame::Menu(unsigned int errorPopupId)
 			if (ImGui::MenuItem(LBL("Save Character As..."), nullptr, false, hasActive))
 			{
 				if (hasActive) {
-					std::string &&file = FileDialog(active->frameData.isHan2() ? fileType::HAN2SAVE : fileType::HA6, true);
+					std::string &&file = FileDialog(active->frameData.isHan2() ? fileType::HAN2SAVE : (active->frameData.isHA4() ? fileType::HA4SAVE : fileType::HA6), true);
 					if(!file.empty())
 					{
 						saveCharacterAs(active, file);

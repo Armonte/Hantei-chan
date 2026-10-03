@@ -192,6 +192,15 @@ bool CharacterInstance::loadHan2(const std::string& stem,
 	return true;
 }
 
+bool CharacterInstance::loadGof1File(const std::string& path, std::string& err)
+{
+	if (!han2::LoadGof1CharacterFile(*this, path, &err)) return false;
+	m_name = std::filesystem::u8path(path).stem().string();
+	m_ha6Paths.clear(); m_ha6Paths.push_back(path); m_topHA6Path = path;
+	m_isModified = false; undoManager.reset();
+	return true;
+}
+
 bool CharacterInstance::loadGof1(const std::string& archivePath, const std::string& entryName, std::string& err)
 {
 	if (!han2::LoadGof1Character(*this, archivePath, entryName, &err)) return false;

@@ -722,6 +722,16 @@ bool SaveFile(const FrameData &fd, const char *filename, std::string *err, std::
 	g_lastWarn.clear();
 	std::vector<uint8_t> bytes;
 	bool ok = Serialize(fd, bytes, &g_lastErr, &g_lastWarn);
+	{   // Save As ... .p: a new archive equal to the one the character was opened from, with this entry replaced
+		const std::string f = filename ? filename : "";
+		if (ok && f.size() > 2 && (f.compare(f.size() - 2, 2, ".p") == 0 || f.compare(f.size() - 2, 2, ".P") == 0)) {
+			int r = g_saveEntryIntoArchive && fd.m_ha4 ? g_saveEntryIntoArchive(fd.m_ha4->sourcePath, bytes, f, &g_lastErr) : 0;
+			if (r == 0) g_lastErr = "this character was not opened from an archive entry: nothing to replace";
+			if (err) *err = g_lastErr;
+			if (warnings) *warnings = g_lastWarn;
+			return r == 1;
+		}
+	}
 	if (ok && !WriteFileAtomic(filename, bytes.data(), bytes.size())) {
 		g_lastErr = std::string("could not write ") + filename;
 		ok = false;
