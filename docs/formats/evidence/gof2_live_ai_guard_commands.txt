@@ -1,0 +1,7 @@
+4
+('0x404', 0) 1
+('0x408', 18) 3
+examples with opponent in/near 16/19 or attack:
+AI key 0x408 opp pat 4 x 2
+AI key 0x404 opp pat 4 x 1
+AI key 0x408 opp pat 3 x 1
