@@ -7,6 +7,7 @@
 #include "han2/gof2_types_gen.h"
 #include "han2/gof2_at_gen.h"
 #include "han2/gof1_types_gen.h"
+#include "han2/mbr_types_gen.h"
 
 #include "cg.h"
 #include "han2_diff.h"
@@ -36,6 +37,7 @@ static const Han2EnumInfo *FindEnum(const char *name)
 	for (const auto &e : kGof2TypesEnums) if (!strcmp(e.name, name)) return &e;
 	for (const auto &e : kGof2AtEnums) if (!strcmp(e.name, name)) return &e;
 	for (const auto &e : kGof1TypesEnums) if (!strcmp(e.name, name)) return &e;
+	for (const auto &e : kMbrTypesEnums) if (!strcmp(e.name, name)) return &e;
 	return nullptr;
 }
 
@@ -60,7 +62,9 @@ static void WriteVal(uint8_t *p, int size, int64_t v) { memcpy(p, &v, size); }  
 // Field and enum names shown by the generic reflection editor come from the generated spec tables (rbo_*_gen.h etc.) and stay
 // English: they are the spec identifiers. Only the chrome around them (headers, hints, counts) is translated.
 // Edits the fields of one record; returns true when a byte changed.
-static bool EditRecord(const char *id, uint8_t *rec, const Han2FieldInfo *tbl, int n)
+bool EditRecordFields(const char *id, uint8_t *rec, const Han2FieldInfo *tbl, int n);
+static bool EditRecord(const char *id, uint8_t *rec, const Han2FieldInfo *tbl, int n) { return EditRecordFields(id, rec, tbl, n); }
+bool EditRecordFields(const char *id, uint8_t *rec, const Han2FieldInfo *tbl, int n)
 {
 	bool changed = false;
 	ImGui::PushID(id);
@@ -75,6 +79,19 @@ static bool EditRecord(const char *id, uint8_t *rec, const Han2FieldInfo *tbl, i
 			bool unused = !strncmp(f.name, "unused_", 7);
 			if (unused != showUnused) continue;
 			ImGui::PushID(i);
+			if (f.kind == 5) {   // fixed-size text field: CP932 bytes, NUL padded; edited as UTF-8, written back as CP932 (rest of the field zero-filled)
+				std::string cur((const char *)rec + f.offset, strnlen((const char *)rec + f.offset, f.count));
+				std::string u = sj2utf8(cur);
+				char label[96]; snprintf(label, sizeof(label), "%s +0x%X", f.name, f.offset);
+				std::vector<char> buf(u.begin(), u.end()); buf.resize(u.size() + 512, 0);
+				if (ImGui::InputTextMultiline(label, buf.data(), buf.size(), ImVec2(380, 54))) {
+					std::string sj = utf82sj(std::string(buf.data()));
+					if (sj.size() >= f.count) sj.resize(f.count - 1);
+					memset(rec + f.offset, 0, f.count); memcpy(rec + f.offset, sj.data(), sj.size()); changed = true;
+				}
+				if (f.comment && f.comment[0] && ImGui::IsItemHovered()) ImGui::SetTooltip("%s", f.comment);
+				ImGui::PopID(); continue;
+			}
 			for (int k = 0; k < f.count; k++) {
 				ImGui::PushID(k);
 				uint8_t *p = rec + f.offset + k * f.size;
@@ -88,6 +105,12 @@ static bool EditRecord(const char *id, uint8_t *rec, const Han2FieldInfo *tbl, i
 					ImGui::PushTextWrapPos(0.0f); ImGui::TextDisabled(TXT("%s: %u bytes"), label, (unsigned)(f.count * f.size)); ImGui::PopTextWrapPos();
 					ImGui::PopID();
 					break;
+				}
+				if (f.kind == 6) {
+					float fv; memcpy(&fv, p, 4); ImGui::SetNextItemWidth(150);
+					if (ImGui::InputFloat(label, &fv, 0, 0, "%.6g")) { memcpy(p, &fv, 4); changed = true; }
+					if (f.comment && f.comment[0] && ImGui::IsItemHovered()) ImGui::SetTooltip("%s", f.comment);
+					ImGui::PopID(); continue;
 				}
 				const Han2EnumInfo *en = f.enumName ? FindEnum(f.enumName) : nullptr;
 				ImGui::SetNextItemWidth(150);

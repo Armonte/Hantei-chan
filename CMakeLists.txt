@@ -64,6 +64,8 @@ add_executable(${EXE}
 	src/i18n_layout.cpp
 	src/han2_pac_window.cpp
 	src/han2_inspector.cpp
+	src/han2_typed_files.cpp
+	src/han2/mbr_formats.cpp
 	src/startup_args.cpp
 	src/framestate.cpp
 	src/copy_data.cpp

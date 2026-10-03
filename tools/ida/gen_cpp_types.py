@@ -119,13 +119,15 @@ for n, (u, items) in enums.items():
     out.append('\t{"%s", k%sValues, %d, %s},' % (n, n, len(items), 'true' if isflags else 'false'))
 out.append('};')
 out.append('')
-# reflection table: kind 0 = unsigned, 1 = signed, 2 = enum, 3 = flags enum
+# reflection table: kind 0 = unsigned, 1 = signed, 2 = enum, 3 = flags enum, 4 = nested struct, 5 = char[] text, 6 = float (5 and 6 are only emitted by headers generated after 2026-10-03)
 for n in order:
     out.append('static const Han2FieldInfo k%sFields[] = {' % n)
     for cty, fn, cnt, off, cm, ty, sz in structs[n]:
         if ty in enums: kind = 2
         elif ty.startswith('unsigned') or ty == 'char': kind = 0
         else: kind = 1
+        if ty == 'char' and (cnt or 1) > 1: kind = 5     # fixed-size text field (CP932, NUL padded)
+        if ty == 'float': kind = 6
         if ty not in PRIM and ty not in enums: kind = 4   # nested struct
         en = '"%s"' % ty if ty in enums else 'nullptr'
         cmt = cm.replace('\\', '\\\\').replace('"', '\\"')
