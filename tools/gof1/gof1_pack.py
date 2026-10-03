@@ -9,13 +9,28 @@ Layout (all little endian):
          +56  u32 size ^ 0xFA261EFB
          +60  u32 absolute file offset (plain)
   data: if plain_flag == 0, the first min(size, 9696) bytes of each file are
-        XORed:  b[i] ^= (i + upper(name)[i % len(name)]) & 0xFF
+        XORed:  b[i] ^= (i + upper(name)[i % len(name)]) & 0xFF   (upper = CharUpperA, SJIS aware)
 (Evidence: LoadArchiveAndDecryptIndex 0x423B50, Archive_XOR_Decrypt_With_Filename 0x423D60.)
 """
-import os, struct, sys
+import collections, os, struct, sys
 
 KEY = 0xFA261EFB
 CIPHER_SPAN = 9696
+
+
+def sjis_upper(b):
+    """CharUpperA under code page 932: ASCII a-z become A-Z, double-byte (lead 0x81-0x9F/0xE0-0xFC + trail) characters are left alone."""
+    out = bytearray(b)
+    i = 0
+    while i < len(out):
+        c = out[i]
+        if 0x81 <= c <= 0x9F or 0xE0 <= c <= 0xFC:
+            i += 2
+            continue
+        if 0x61 <= c <= 0x7A:
+            out[i] = c - 0x20
+        i += 1
+    return bytes(out)
 
 
 class Entry:
@@ -65,7 +80,7 @@ class Archive:
             f.seek(e.offset)
             d = bytearray(f.read(e.size))
         if self.plain_flag == 0:
-            key = e.name.upper()
+            key = sjis_upper(e.name)
             n = min(len(d), CIPHER_SPAN)
             kl = len(key)
             for i in range(n):
@@ -73,9 +88,9 @@ class Archive:
         return bytes(d)
 
     def find(self, name):
-        n = name.encode("cp932", "replace").upper() if isinstance(name, str) else name.upper()
+        n = sjis_upper(name.encode("cp932", "replace") if isinstance(name, str) else name)
         for e in self.entries:
-            if e.name.upper() == n:
+            if sjis_upper(e.name) == n:
                 return e
         return None
 
@@ -90,11 +105,22 @@ DAT_HEADER_SIZE = 0x444
 
 
 def xor_key_string(buf, key):
-    b = bytearray(buf)
-    kl = len(key)
-    for p in range(len(b)):
-        b[p] ^= (p + key[p % kl]) & 0xFF
-    return bytes(b)
+    """Crypto_XorWithKeyString 0x4238C0: buf[p] ^= (p + key[p % len(key)]) & 0xFF (p = offset inside the buffer)."""
+    n = len(buf)
+    if n == 0:
+        return b""
+    try:
+        import numpy as np
+        p = np.arange(n, dtype=np.uint32)
+        k = np.frombuffer(bytes(key), dtype=np.uint8)[p % len(key)]
+        ks = ((p + k) & 0xFF).astype(np.uint8)
+        return (np.frombuffer(bytes(buf), dtype=np.uint8) ^ ks).tobytes()
+    except ImportError:
+        b = bytearray(buf)
+        kl = len(key)
+        for i in range(n):
+            b[i] ^= (i + key[i % kl]) & 0xFF
+        return bytes(b)
 
 
 def decrypt_dat(raw):
@@ -105,6 +131,10 @@ def decrypt_dat(raw):
     d[DAT_HEADER_SIZE:pat_end] = xor_key_string(d[DAT_HEADER_SIZE:pat_end], DAT_KEY_PATTERN)
     d[pat_end:pat_end + parts_size] = xor_key_string(d[pat_end:pat_end + parts_size], DAT_KEY_BLOB)
     d[cg_off:cg_off + cg_size] = xor_key_string(d[cg_off:cg_off + cg_size], DAT_KEY_BLOB)
+    # editor-only tail: 256 x 64-byte pattern names, enciphered with the blob key from the tail start (the game never reads it)
+    tail = cg_off + cg_size
+    if len(d) - tail == 0x4000:
+        d[tail:] = xor_key_string(d[tail:], DAT_KEY_BLOB)
     return bytes(d)
 
 
@@ -117,10 +147,13 @@ def _safe(b):
 
 
 def main(argv):
-    if len(argv) < 3 or argv[1] not in ("ls", "extract", "decdat"):
+    if len(argv) < 3 or argv[1] not in ("ls", "extract", "decdat", "chars"):
         print(__doc__)
         print("usage: gof1_pack.py ls <archive>\n       gof1_pack.py extract <archive> <name|-all> <outdir>")
         return 2
+    if argv[1] == "decdat":   # decdat <stage1.DAT> <out>
+        open(argv[3], "wb").write(decrypt_dat(open(argv[2], "rb").read()))
+        return 0
     a = Archive(argv[2])
     if argv[1] == "ls":
         print("# %s: %d entries, plain_flag=%d, file size %d" % (argv[2], a.count, a.plain_flag, a.fsize))
@@ -129,8 +162,18 @@ def main(argv):
         for p in a.validate():
             print("WARN", p)
         return 0
-    if argv[1] == "decdat":   # decdat <stage1.DAT> <out>
-        open(argv[3], "wb").write(decrypt_dat(open(argv[2], "rb").read()))
+    if argv[1] == "chars":    # chars <archive> <outdir>: extract every *.DAT entry and run the character cipher
+        os.makedirs(argv[3], exist_ok=True)
+        n = 0
+        for e in a.entries:
+            if e.name.upper().endswith(b".DAT"):
+                name = _safe(e.name)
+                if sum(1 for x in a.entries if x.name.upper() == e.name.upper()) > 1:
+                    name = "%03d_%s" % (e.index, name)
+                with open(os.path.join(argv[3], name), "wb") as f:
+                    f.write(decrypt_dat(a.read(e)))
+                n += 1
+        print("decrypted", n, "character .DAT files")
         return 0
     if len(argv) < 5:
         print("usage: extract <archive> <name|-all> <outdir>")
@@ -141,10 +184,14 @@ def main(argv):
     if todo == [None]:
         print("not found")
         return 1
+    seen = collections.Counter(e.name.upper() for e in a.entries)
     for e in todo:
-        with open(os.path.join(out, _safe(e.name) if argv[3] == "-all" else _safe(e.name)), "wb") as f:
+        name = _safe(e.name)
+        if seen[e.name.upper()] > 1:      # gof_01.p holds several entries with the same name
+            name = "%03d_%s" % (e.index, name)
+        with open(os.path.join(out, name), "wb") as f:
             f.write(a.read(e))
-        print("extracted", _dec(e.name), e.size)
+        print("extracted", name, e.size)
     return 0
 
 
