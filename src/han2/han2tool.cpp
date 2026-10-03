@@ -786,16 +786,6 @@ static void Gof1Dat(const std::string &label, const std::vector<uint8_t> &stage1
 	else { DiffReport("character DAT", label, out, plain); if (enc != stage1) printf("  re-encrypt differs\n"); s.fail++; }
 }
 
-static const char *Gof1OpaqueWhy(const std::string &name, size_t size)
-{
-	const std::string e = ExtOf(name);
-	if (e == ".B") return ".B polygon object (SysGraphic_LoadFileIntoSlot 0x42B170 reads 'Object' + u16 texture count + 56-byte texture-name slots; the vertex/face data after it is consumed by the renderer and has no reader here)";
-	if (e == ".CPF") return ".CPF (56,048 B, mostly zero; pointer-table loaded, no loader xref in gof.exe, layout unresolved)";
-	if (e == ".CT") return "CHARSEL.CT (1,348 B character-select grid, not a command table; high-entropy, layout unresolved)";
-	if (e == ".TXT") return "binary .TXT (AI/command tables _<CHAR>COM.TXT 59,048 B, MULTICOM.TXT 19,848 B; layout unresolved)";
-	(void)size; return "no structured reader";
-}
-
 static void Gof1Member(const std::string &label, const std::string &name, const std::vector<uint8_t> &d, Section &s, int depth);
 
 static void Gof1Nested(const std::string &label, const std::vector<uint8_t> &d, Section &s, int depth)
@@ -843,6 +833,22 @@ static void Gof1Member(const std::string &label, const std::string &name, const 
 		han2::Ct c; if (!han2::ParseCt(d.data(), d.size(), c, &err)) { printf("FAIL %s: %s\n", label.c_str(), err.c_str()); s.fail++; return; }
 		han2::SerializeCt(c, out); if (out == d) { s.pass++; s.notes[".CT (command table)"]++; } else { DiffReport("ct", label, out, d); s.fail++; } return;
 	}
+	if (e == ".CT") {
+		han2::CharSel c; if (!han2::ParseCharSel(d.data(), d.size(), c, &err)) { printf("FAIL %s: %s\n", label.c_str(), err.c_str()); s.fail++; return; }
+		han2::SerializeCharSel(c, out); if (out == d) { s.pass++; s.notes["CHARSEL.CT (enciphered character table)"]++; } else { DiffReport("charsel", label, out, d); s.fail++; } return;
+	}
+	if (e == ".B") {
+		han2::PolyObject o; if (!han2::ParsePoly(d.data(), d.size(), o, &err)) { printf("FAIL %s: %s\n", label.c_str(), err.c_str()); s.fail++; return; }
+		han2::SerializePoly(o, out); if (out == d) { s.pass++; s.notes[".B (polygon object)"]++; s.notes["  .B faces"] += (int)o.faces.size(); s.notes["  .B vertices"] += o.nVerts; } else { DiffReport("poly", label, out, d); s.fail++; } return;
+	}
+	if (e == ".CPF" || (e == ".TXT" && d.size() >= 56048 && (name.size() > 7 && (name.compare(name.size() - 7, 7, "COM.TXT") == 0 || name.compare(name.size() - 7, 7, "com.txt") == 0)) && name != "MULTICOM.TXT")) {
+		han2::AiFile a; if (!han2::ParseAi(d.data(), d.size(), a, &err)) { printf("FAIL %s: %s\n", label.c_str(), err.c_str()); s.fail++; return; }
+		han2::SerializeAi(a, out); if (out == d) { s.pass++; s.notes[e == ".CPF" ? ".CPF (CPU AI script, training dummy)" : "_<CHAR>COM.TXT (CPU AI script)"]++; } else { DiffReport("ai", label, out, d); s.fail++; } return;
+	}
+	if (e == ".TXT" && name == "MULTICOM.TXT") {
+		han2::AiLegacy a; if (!han2::ParseAiLegacy(d.data(), d.size(), a, &err)) { printf("FAIL %s: %s\n", label.c_str(), err.c_str()); s.fail++; return; }
+		han2::SerializeAiLegacy(a, out); if (out == d) { s.pass++; s.notes["MULTICOM.TXT (legacy AI tables, unreferenced)"]++; } else { DiffReport("ai legacy", label, out, d); s.fail++; } return;
+	}
 	if (e == ".WMT") {
 		han2::Wmt w; if (!han2::ParseWmt(d.data(), d.size(), w, &err)) { printf("FAIL %s: %s\n", label.c_str(), err.c_str()); s.fail++; return; }
 		han2::SerializeWmt(w, out); if (out == d) { s.pass++; s.notes[".WMT (table)"]++; } else { DiffReport("wmt", label, out, d); s.fail++; } return;
@@ -852,8 +858,8 @@ static void Gof1Member(const std::string &label, const std::string &name, const 
 		if (out == d) { s.pass++; s.notes["text (Shift-JIS, line structure)"]++; } else { DiffReport("text", label, out, d); s.fail++; } return;
 	}
 	if (e == ".DAT") printf("NOTE %s: .DAT without the character magic (%zu bytes, head %02x%02x%02x%02x)\n", label.c_str(), d.size(), d.size() > 0 ? d[0] : 0, d.size() > 1 ? d[1] : 0, d.size() > 2 ? d[2] : 0, d.size() > 3 ? d[3] : 0);
+	if (e == ".TXT") printf("NOTE %s: .TXT that does not look like text (%zu bytes)\n", label.c_str(), d.size());
 	s.na[std::string(e.empty() ? "(no ext)" : e) + " (opaque, proven by the archive rebuild)"]++;
-	s.notes[std::string("opaque: ") + Gof1OpaqueWhy(name, d.size())]++;
 }
 
 // gof1rt: (1) every archive rebuilt entry by entry from plain bytes (cipher undone and re-applied, own index re-encoded) must equal the file;

@@ -62,5 +62,50 @@ bool LooksLikeText(const uint8_t *p, size_t n);
 bool ParseText(const uint8_t *p, size_t n, Text &out, std::string *err);
 void SerializeText(const Text &t, std::vector<uint8_t> &out);
 
+
+// ---- GOF1 .B polygon object (gof.exe SysEffects_UpdateAndDrawAll -> Poly_DrawObject 0x423170, loader SysGraphic_LoadFileIntoSlot 0x42B170) --------------
+// header[16] "Object" + garbage | u16 nTextures | u16 flag (non-zero = has geometry) | nTextures x slot[56] | u32 geomOffset | gap | geometry at geomOffset:
+//   u16 nVerts | u32 nFaces (unaligned, bytes 2..5) | tail[20] (unread) | Vertex[nVerts] (3 floats) | Face[nFaces] (56 bytes)
+// Face: u16 textureSlot | u16 nIndices (3 = triangle, 4 = quad, others are not drawn) | u16 index[4] | float u[4] | float v[4] | 12 unread bytes.
+// Texture slot: char name[32] (empty = untextured; the loader prefixes ".\\grp\\tex\\") | u32 argb | float f[5] (unread). `gap` (396 bytes in every file) and the
+// geometry tail are never read by the engine; both are kept verbatim.
+struct PolyVertex { float x = 0, y = 0, z = 0; };
+struct PolyFace { uint16_t texture = 0, nIndices = 0, index[4]{}; float u[4]{}, v[4]{}; uint8_t unread[12]{}; };
+struct PolyTexSlot { char name[32]{}; uint32_t argb = 0; float f[5]{}; };
+struct PolyObject {
+	uint8_t header[16]{}; uint16_t nTextures = 0, flag = 0;
+	std::vector<PolyTexSlot> slots; uint32_t geomOffset = 0; std::vector<uint8_t> gap;
+	uint16_t nVerts = 0; uint32_t nFaces = 0; uint8_t geomTail[20]{};
+	std::vector<PolyVertex> verts; std::vector<PolyFace> faces;
+};
+bool ParsePoly(const uint8_t *p, size_t n, PolyObject &out, std::string *err);
+void SerializePoly(const PolyObject &o, std::vector<uint8_t> &out);
+
+// ---- GOF1 CHARSEL.CT (CSS_LoadCharselTxtGrid 0x42BCA0): u32 count | count x 168-byte entry, the entry block enciphered with the string key "ファイルが見つかりません" ------
+// (buf[i] ^= i + key[i % klen], Crypto_XorWithKeyString 0x4238C0). Entry: name[32] | datFile[32] | ctFile[32] | aiFile[32] | u32 runtimeGridIndex (written by the loader) |
+// u32 charFileId | u32 ordinal | u32 id2 | u32 unlockMask | u32 page (1 = grid rows 10+) | u32 gridPos (row*10+col) | u32 a | u32 b | u32 c.
+struct CharSelEntry { char name[32]{}, datFile[32]{}, ctFile[32]{}, aiFile[32]{}; uint32_t runtimeGridIndex = 0, charFileId = 0, ordinal = 0, id2 = 0, unlockMask = 0, page = 0, gridPos = 0, a = 0, b = 0, c = 0; };
+struct CharSel { uint32_t count = 0; std::vector<CharSelEntry> entries; std::vector<uint8_t> tail; };
+bool ParseCharSel(const uint8_t *p, size_t n, CharSel &out, std::string *err);
+void SerializeCharSel(const CharSel &c, std::vector<uint8_t> &out);
+
+// ---- GOF1 CPU AI script file (<CHAR>_COM.TXT, training dummies *.CPF): FighterCpuAi_LoadScriptFile 0x403BB0 reads the whole file into a 56,048-byte per-player buffer
+// (consumers FighterCpuAiStep 0x403E70, FighterCpuAi_ApplyScriptCommand, FighterCpuAi_PickWeightedScript) -------------------------------------------------------
+//   u8 guardBase | u8 reactChance | u8 reactCmd[3] | 203 unread bytes | WeightTable[24] (160 B: s32 script[20], s32 weight[20]; index = oppStance + 3 * (distBucket + 4 * ownAir))
+//   | Script[50] x Step[20] (52 B). Files from the archive are 59,048 bytes: 3,000 bytes after the buffer (scripts 50, 51 and 920 more bytes) are never read.
+struct AiStep { uint8_t action = 0, unref01 = 0; int16_t commandId = 0, durationBase = 0, durationRandom = 0; uint8_t endFlag = 0, unref09[33]{}, flags = 0, inputDir = 0, unref44[8]{}; };
+struct AiTable { int32_t script[20]{}, weight[20]{}; };
+struct AiFile {
+	uint8_t guardBase = 0, reactChance = 0, reactCmd[3]{}, unref05[203]{};
+	AiTable tables[24]; AiStep steps[50][20]; std::vector<uint8_t> tail;
+};
+bool ParseAi(const uint8_t *p, size_t n, AiFile &out, std::string *err);
+void SerializeAi(const AiFile &a, std::vector<uint8_t> &out);
+
+// ---- legacy AI table list (MULTICOM.TXT, not referenced by any gof.exe name table): i32 a | i32 b | 160-byte weight tables to the end -------------------------------
+struct AiLegacy { int32_t a = 0, b = 0; std::vector<AiTable> tables; };
+bool ParseAiLegacy(const uint8_t *p, size_t n, AiLegacy &out, std::string *err);
+void SerializeAiLegacy(const AiLegacy &a, std::vector<uint8_t> &out);
+
 } // namespace han2
 #endif

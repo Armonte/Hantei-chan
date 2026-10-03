@@ -210,7 +210,7 @@ bool LooksLikeText(const uint8_t *p, size_t n)
 {
 	for (size_t i = 0; i < n; i++) {
 		uint8_t c = p[i];
-		if (c == 0 || (c < 32 && c != '\r' && c != '\n' && c != '\t')) return false;
+		if (c == 0 || (c < 32 && c != '\r' && c != '\n' && c != '\t' && c != 0x1A)) return false;   // 0x1A: DOS end-of-file marker
 		if ((c >= 0x81 && c <= 0x9F) || (c >= 0xE0 && c <= 0xFC)) { if (i + 1 >= n || p[i + 1] < 0x40 || p[i + 1] == 0x7F || p[i + 1] > 0xFC) return false; i++; }
 	}
 	return true;
@@ -243,6 +243,139 @@ void SerializeText(const Text &t, std::vector<uint8_t> &o)
 		o.insert(o.end(), l.begin(), l.end());
 		if (t.eol[i] == 2) { o.push_back('\r'); o.push_back('\n'); } else if (t.eol[i] == 1) o.push_back('\n');
 	}
+}
+
+
+// ---------------------------------------------------------------- .B polygon object
+static void PutF(std::vector<uint8_t> &o, float v) { const uint8_t *b = (const uint8_t *)&v; o.insert(o.end(), b, b + 4); }
+static float GetF(const uint8_t *p) { float v; memcpy(&v, p, 4); return v; }
+
+bool ParsePoly(const uint8_t *b, size_t n, PolyObject &o, std::string *err)
+{
+	auto fail = [&](const char *m) { if (err) *err = m; return false; };
+	o = PolyObject();
+	if (n < 24 || memcmp(b, "Object", 6) != 0) return fail("no Object header");
+	memcpy(o.header, b, 16); o.nTextures = R16(b + 16); o.flag = R16(b + 18);
+	const size_t slotsEnd = 20 + 56 * (size_t)o.nTextures;
+	if (slotsEnd + 4 > n) return fail("texture slots run past the file");
+	for (size_t i = 0; i < o.nTextures; i++) {
+		const uint8_t *s = b + 20 + 56 * i; PolyTexSlot t; memcpy(t.name, s, 32); t.argb = R32(s + 32); for (int k = 0; k < 5; k++) t.f[k] = GetF(s + 36 + 4 * k); o.slots.push_back(t);
+	}
+	o.geomOffset = R32(b + slotsEnd);
+	if (o.geomOffset < slotsEnd + 4 || (uint64_t)o.geomOffset + 26 > n) return fail("geometry offset out of range");
+	o.gap.assign(b + slotsEnd + 4, b + o.geomOffset);
+	const uint8_t *g = b + o.geomOffset;
+	o.nVerts = R16(g); o.nFaces = R32(g + 2); memcpy(o.geomTail, g + 6, 20);
+	const uint64_t end = (uint64_t)o.geomOffset + 26 + 12ull * o.nVerts + 56ull * o.nFaces;
+	if (end != n) return fail("vertex and face arrays do not end at the end of the file");
+	const uint8_t *v = g + 26;
+	for (uint32_t i = 0; i < o.nVerts; i++) { PolyVertex pv; pv.x = GetF(v + 12 * i); pv.y = GetF(v + 12 * i + 4); pv.z = GetF(v + 12 * i + 8); o.verts.push_back(pv); }
+	const uint8_t *f = v + 12 * (size_t)o.nVerts;
+	for (uint32_t i = 0; i < o.nFaces; i++) {
+		const uint8_t *r = f + 56 * (size_t)i; PolyFace pf;
+		pf.texture = R16(r); pf.nIndices = R16(r + 2); for (int k = 0; k < 4; k++) pf.index[k] = R16(r + 4 + 2 * k);
+		for (int k = 0; k < 4; k++) { pf.u[k] = GetF(r + 12 + 4 * k); pf.v[k] = GetF(r + 28 + 4 * k); }
+		memcpy(pf.unread, r + 44, 12); o.faces.push_back(pf);
+	}
+	return true;
+}
+
+void SerializePoly(const PolyObject &o, std::vector<uint8_t> &out)
+{
+	out.assign(o.header, o.header + 16); W16(out, o.nTextures); W16(out, o.flag);
+	for (auto &t : o.slots) { out.insert(out.end(), t.name, t.name + 32); W32(out, t.argb); for (int k = 0; k < 5; k++) PutF(out, t.f[k]); }
+	W32(out, o.geomOffset); out.insert(out.end(), o.gap.begin(), o.gap.end());
+	W16(out, (uint16_t)o.verts.size()); W32(out, (uint32_t)o.faces.size()); out.insert(out.end(), o.geomTail, o.geomTail + 20);
+	for (auto &v : o.verts) { PutF(out, v.x); PutF(out, v.y); PutF(out, v.z); }
+	for (auto &f : o.faces) {
+		W16(out, f.texture); W16(out, f.nIndices); for (int k = 0; k < 4; k++) W16(out, f.index[k]);
+		for (int k = 0; k < 4; k++) PutF(out, f.u[k]); for (int k = 0; k < 4; k++) PutF(out, f.v[k]);
+		out.insert(out.end(), f.unread, f.unread + 12);
+	}
+}
+
+// ---------------------------------------------------------------- CHARSEL.CT
+static const uint8_t kCharSelKey[] = { 0x83, 0x74, 0x83, 0x40, 0x83, 0x43, 0x83, 0x8b, 0x82, 0xaa, 0x8c, 0xa9, 0x82, 0xc2, 0x82, 0xa9, 0x82, 0xe8, 0x82, 0xdc, 0x82, 0xb9, 0x82, 0xf1 };
+static void CharSelCipher(uint8_t *p, size_t n) { for (size_t i = 0; i < n; i++) p[i] ^= (uint8_t)(i + kCharSelKey[i % sizeof kCharSelKey]); }
+
+bool ParseCharSel(const uint8_t *b, size_t n, CharSel &c, std::string *err)
+{
+	auto fail = [&](const char *m) { if (err) *err = m; return false; };
+	c = CharSel();
+	if (n < 4) return fail("short file");
+	c.count = R32(b);
+	if ((uint64_t)c.count * 168 + 4 > n) return fail("entries run past the file");
+	std::vector<uint8_t> body(b + 4, b + 4 + 168 * (size_t)c.count);
+	CharSelCipher(body.data(), body.size());
+	for (uint32_t i = 0; i < c.count; i++) {
+		const uint8_t *r = body.data() + 168 * (size_t)i; CharSelEntry e;
+		memcpy(e.name, r, 32); memcpy(e.datFile, r + 32, 32); memcpy(e.ctFile, r + 64, 32); memcpy(e.aiFile, r + 96, 32);
+		uint32_t *f[10] = { &e.runtimeGridIndex, &e.charFileId, &e.ordinal, &e.id2, &e.unlockMask, &e.page, &e.gridPos, &e.a, &e.b, &e.c };
+		for (int k = 0; k < 10; k++) *f[k] = R32(r + 128 + 4 * k);
+		c.entries.push_back(e);
+	}
+	c.tail.assign(b + 4 + 168 * (size_t)c.count, b + n);
+	return true;
+}
+
+void SerializeCharSel(const CharSel &c, std::vector<uint8_t> &out)
+{
+	out.clear(); W32(out, c.count);
+	std::vector<uint8_t> body;
+	for (auto &e : c.entries) {
+		body.insert(body.end(), e.name, e.name + 32); body.insert(body.end(), e.datFile, e.datFile + 32); body.insert(body.end(), e.ctFile, e.ctFile + 32); body.insert(body.end(), e.aiFile, e.aiFile + 32);
+		const uint32_t f[10] = { e.runtimeGridIndex, e.charFileId, e.ordinal, e.id2, e.unlockMask, e.page, e.gridPos, e.a, e.b, e.c };
+		for (uint32_t v : f) W32(body, v);
+	}
+	CharSelCipher(body.data(), body.size());
+	out.insert(out.end(), body.begin(), body.end()); out.insert(out.end(), c.tail.begin(), c.tail.end());
+}
+
+// ---------------------------------------------------------------- AI script file
+static void ReadTable(const uint8_t *p, AiTable &t) { for (int i = 0; i < 20; i++) { t.script[i] = (int32_t)R32(p + 4 * i); t.weight[i] = (int32_t)R32(p + 80 + 4 * i); } }
+static void WriteTable(std::vector<uint8_t> &o, const AiTable &t) { for (int i = 0; i < 20; i++) W32(o, (uint32_t)t.script[i]); for (int i = 0; i < 20; i++) W32(o, (uint32_t)t.weight[i]); }
+
+bool ParseAi(const uint8_t *b, size_t n, AiFile &a, std::string *err)
+{
+	auto fail = [&](const char *m) { if (err) *err = m; return false; };
+	a = AiFile();
+	if (n < 56048) return fail("shorter than the 56,048-byte AI buffer");
+	a.guardBase = b[0]; a.reactChance = b[1]; memcpy(a.reactCmd, b + 2, 3); memcpy(a.unref05, b + 5, 203);
+	for (int i = 0; i < 24; i++) ReadTable(b + 208 + 160 * i, a.tables[i]);
+	for (int sc = 0; sc < 50; sc++) for (int st = 0; st < 20; st++) {
+		const uint8_t *r = b + 4048 + 1040 * sc + 52 * st; AiStep &s = a.steps[sc][st];
+		s.action = r[0]; s.unref01 = r[1]; s.commandId = (int16_t)R16(r + 2); s.durationBase = (int16_t)R16(r + 4); s.durationRandom = (int16_t)R16(r + 6); s.endFlag = r[8];
+		memcpy(s.unref09, r + 9, 33); s.flags = r[42]; s.inputDir = r[43]; memcpy(s.unref44, r + 44, 8);
+	}
+	a.tail.assign(b + 56048, b + n);
+	return true;
+}
+
+void SerializeAi(const AiFile &a, std::vector<uint8_t> &o)
+{
+	o.assign({ a.guardBase, a.reactChance, a.reactCmd[0], a.reactCmd[1], a.reactCmd[2] }); o.insert(o.end(), a.unref05, a.unref05 + 203);
+	for (int i = 0; i < 24; i++) WriteTable(o, a.tables[i]);
+	for (int sc = 0; sc < 50; sc++) for (int st = 0; st < 20; st++) {
+		const AiStep &s = a.steps[sc][st];
+		o.push_back(s.action); o.push_back(s.unref01); W16(o, (uint16_t)s.commandId); W16(o, (uint16_t)s.durationBase); W16(o, (uint16_t)s.durationRandom); o.push_back(s.endFlag);
+		o.insert(o.end(), s.unref09, s.unref09 + 33); o.push_back(s.flags); o.push_back(s.inputDir); o.insert(o.end(), s.unref44, s.unref44 + 8);
+	}
+	o.insert(o.end(), a.tail.begin(), a.tail.end());
+}
+
+bool ParseAiLegacy(const uint8_t *b, size_t n, AiLegacy &a, std::string *err)
+{
+	a = AiLegacy();
+	if (n < 8 || (n - 8) % 160) { if (err) *err = "size is not 8 + 160 * n"; return false; }
+	a.a = (int32_t)R32(b); a.b = (int32_t)R32(b + 4);
+	for (size_t i = 0; i < (n - 8) / 160; i++) { AiTable t; ReadTable(b + 8 + 160 * i, t); a.tables.push_back(t); }
+	return true;
+}
+
+void SerializeAiLegacy(const AiLegacy &a, std::vector<uint8_t> &o)
+{
+	o.clear(); W32(o, (uint32_t)a.a); W32(o, (uint32_t)a.b);
+	for (auto &t : a.tables) WriteTable(o, t);
 }
 
 } // namespace han2
