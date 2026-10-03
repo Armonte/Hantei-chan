@@ -177,6 +177,114 @@ enum Gof1PartFlipMode : uint8_t {
 	G1PARTFLIP_V = 2,
 	G1PARTFLIP_HV = 3,
 };
+enum Gof1ObjKind : uint8_t {
+	G1OBJ_FIGHTER = 0,
+	G1OBJ_GHOST_TRAIL = 31,
+	G1OBJ_CHILD_8F = 143,
+	G1OBJ_CHILD = 255,
+};
+enum Gof1ControlType : uint8_t {
+	G1CTRL_HUMAN = 0,
+	G1CTRL_CPU = 1,
+};
+enum Gof1RunState : uint8_t {
+	G1RUN_IDLE = 0,
+	G1RUN_PENDING = 1,
+	G1RUN_FORCED = 2,
+};
+enum Gof1ObjFlagsA : uint16_t {
+	G1OF_A_FOLLOW_PARENT_STATE = 1,
+	G1OF_A_NO_MIRROR = 2,
+	G1OF_A_FOLLOW_PARENT_EDGE_PUSH = 4,
+	G1OF_A_FREEZE_WITH_PARENT_HITSTOP = 8,
+	G1OF_A_END_ON_PARENT_ACTION_CHANGE = 0x20,
+	G1OF_A_NO_GROUND_LANDING = 0x40,
+};
+enum Gof1ObjFlagsB : uint16_t {
+	G1OF_B_DRAW_SHADOW = 1,
+	G1OF_B_ADVANCE_WITH_PARENT = 2,
+	G1OF_B_END_WHEN_PARENT_AIRBORNE = 4,
+	G1OF_B_HITSTOP_TO_OWNER = 8,
+	G1OF_B_RENDERER_BIT7 = 0x80,
+};
+enum Gof1DecorFlags : uint16_t {
+	G1DECOR_DEPTH_BUMP = 1,
+};
+enum Gof1HomingMode : uint8_t {
+	G1HOME_NONE = 0,
+	G1HOME_EASE_TO_TARGET = 1,
+	G1HOME_CONSTANT_SPEED = 2,
+};
+enum Gof1AttackResultFlags : uint8_t {
+	G1HITRES_HIT = 1,
+	G1HITRES_GUARDED = 2,
+	G1HITRES_TESTED_BIT4 = 4,
+	G1HITRES_EVADED_STRIKE = 8,
+	G1HITRES_VICTIM_GROUND = 0x10,
+	G1HITRES_VICTIM_AIR = 0x20,
+};
+enum Gof1FlashMode : uint8_t {
+	G1FLASH_BLUE_BLINK = 0,
+	G1FLASH_WHITE_BLINK = 1,
+	G1FLASH_YELLOW_BLINK = 2,
+	G1FLASH_GREEN_BLINK = 3,
+	G1FLASH_GREY_BLINK = 4,
+	G1FLASH_WHITE_FADE = 5,
+	G1FLASH_BLUE_FADE = 6,
+	G1FLASH_RED_FADE = 7,
+	G1FLASH_CYAN_FADE = 8,
+};
+enum Gof1InputDirection : uint8_t {
+	G1DIR_NEUTRAL = 0,
+	G1DIR_DOWN_LEFT = 1,
+	G1DIR_DOWN = 2,
+	G1DIR_DOWN_RIGHT = 3,
+	G1DIR_LEFT = 4,
+	G1DIR_RIGHT = 6,
+	G1DIR_UP_LEFT = 7,
+	G1DIR_UP = 8,
+	G1DIR_UP_RIGHT = 9,
+};
+enum Gof1InputButtonFlags : uint32_t {
+	G1BTN_A = 1,
+	G1BTN_B = 2,
+	G1BTN_C = 4,
+	G1BTN_D = 8,
+	G1BTN_E = 0x10,
+	G1BTN_F = 0x20,
+	G1BTN_A_PRESSED = 0x1000,
+	G1BTN_B_PRESSED = 0x2000,
+	G1BTN_C_PRESSED = 0x4000,
+	G1BTN_D_PRESSED = 0x8000,
+	G1BTN_E_PRESSED = 0x10000,
+	G1BTN_F_PRESSED = 0x20000,
+};
+enum Gof1CommandMoveClass : uint8_t {
+	G1MOVE_SYSTEM = 0,
+	G1MOVE_SPECIAL = 1,
+	G1MOVE_SUPER = 2,
+};
+enum Gof1CommandFlags : uint8_t {
+	G1CMD_STANCE_GROUND = 1,
+	G1CMD_STANCE_AIR = 2,
+	G1CMD_STANCE_CROUCH = 4,
+	G1CMD_IGNORE_CANCEL_RULE = 8,
+	G1CMD_CLEAR_HISTORY_ON_ACTION = 0x10,
+	G1CMD_SCRIPT_ONLY = 0x20,
+	G1CMD_NEEDS_GUARD_CANCEL = 0x40,
+};
+enum Gof1CommandFlags2 : uint8_t {
+	G1CMD2_USE_RING_B = 1,
+	G1CMD2_STRICT_SEQUENCE = 2,
+	G1CMD2_EVADE_MOVE = 0x80,
+};
+enum Gof1CtFlags : uint8_t {
+	G1CT_RESTRICT_REPEAT_MOVES = 1,
+	G1CT_EVADE_ENABLED = 2,
+	G1CT_JUST_GUARD_ENABLED = 8,
+	G1CT_UNREAD_BIT4 = 0x10,
+	G1CT_UNREAD_BIT5 = 0x20,
+};
 
 #pragma pack(push, 1)
 struct Gof1ArchiveFileHeader {
@@ -366,6 +474,277 @@ struct Gof1TextureRegion {
 struct Gof1PatternName {
 	char name[64];  // +0x00 E: CP932 pattern name, e.g. "立ち弱攻撃"; editor-only, the game never reads the tail
 };
+struct Gof1Actor {
+	uint8_t slotIndex;  // +0x000 T: fighter slot / owner player index 0..3 (SetupFighterSlot sub_403A90 stores the slot id; per-player tables dword_18645A0[130*i]; EfType9 sound bank arg0+50*(i+8); children copy it in InitChildObject)
+	uint8_t characterId;  // +0x001 T: roster character id (sub_403A90: dword_17919D4[42*sel]); copied through InitFighterSlotForRound; only reader ObjRunActionScript compares it with 34
+	Gof1ControlType controlType;  // +0x002 T: 0 human, 1 CPU (sub_403A90 a5 == 1; Battle_UpdateAllCharactersInputAndAI, Actor_RunFrameIfRecord IF 11, Damage_ScaleByComboAndLife, sub_43A120)
+	uint8_t unreferenced_03;  // +0x003 U: no access in any function
+	Gof1ObjKind objKind;  // +0x004 T: 0 fighter; 31 ghost trail (SpawnEffectFromActorFrame); 0xFF/0x8F spawned child (InitChildObject, SpawnChildEffectFromParent); >= 0xF0 is non-fighter (sub_4242C0, sub_424560, ObjScreenEdgeOverlap); bit 7 = child (many tests)
+	uint8_t paletteIndex;  // +0x005 T: colour palette chosen at character select (sub_403A90 byte_16224B9 = a4); preserved by InitFighterSlotForRound
+	uint8_t pattern;  // +0x006 T: current pattern (action) id; Actor_ResolveFrameDataPointers indexes charData.patternOffset with it (doc actor+6)
+	uint8_t frame;  // +0x007 T: current frame number inside the pattern (Actor_ResolveFrameDataPointers, ObjRunActionScript)
+	uint16_t spriteId;  // +0x008 T: sprite id of the current frame, written by ObjEnterCurrentAction via Pattern_GetFrameSpriteId, read by DrawFighterSprite / PushFighterAfterimage
+	Gof1RunState ifRunState;  // +0x00A T: IF-table run gate: ObjEnterCurrentAction sets 1 (2 stays), sub_4242C0 sets 2 on action change, Actor_TickWordTimers clears it each tick; sub_426BD0/EffectObjects_UpdateAll test it
+	Gof1RunState efRunState;  // +0x00B T: EF-table run gate, same protocol as ifRunState; Actor_RunFrameEFs clears it after running the frame effects
+	uint8_t airReactionActive;  // +0x00C T: 1 while a launch/air hit-reaction stage (hitStage >= 240) is running: set by Actor_StartKnockback and by ObjRunActionScript on landing, tested/cleared in Actor_ApplyFrameMotionFlags
+	uint8_t unreferenced_0D;  // +0x00D U: no access in any function
+	uint16_t frameTicks;  // +0x00E T: ticks spent on the current frame, compared with AF.duration (ObjRunActionScript); the grab code copies the grabber value (DrawFighterSprite)
+	uint16_t lifeTimer;  // +0x010 T: remaining life of a ghost trail object (EffectObjects_UpdateAll decrements it, sets endConditionMet at 0; sub_413FD0 fades by it)
+	uint8_t animationEnded;  // +0x012 T: set by ObjRunActionScript when the animation reached its last frame (aniFlag 3/4 branch); read by IF 2 END_CONDITION p2 (Actor_RunFrameIfRecord)
+	uint8_t unreferenced_13;  // +0x013 U: no access in any function
+	uint8_t loopCounter;  // +0x014 T: AF.loopCount is loaded here (ObjEnterCurrentAction); IF 9/10 set/test it (Actor_RunFrameIfRecord); aniFlag 2/5 consume it (ObjRunActionScript)
+	uint8_t unreferenced_15;  // +0x015 U: no access in any function
+	Gof1ObjFlagsA spawnFlagsA;  // +0x016 T: child flags from EF arg2 (InitChildObject); EffectObjects_UpdateAll, ObjIntegrateMotion (0x40), sub_413FD0 / sub_4144C0 (2), Render_QueueFighterSprite pass them on
+	Gof1ObjFlagsB spawnFlagsB;  // +0x018 T: child flags from EF arg3 (InitChildObject); EffectObjects_UpdateAll (2, 4), Actor_SetHitstopFrames / ObjFighterStateAndHitReaction (8), sub_413FD0 (1 draws a shadow with sub_42E0D0)
+	Gof1HomingMode homingMode;  // +0x01A T: EF arg4 low byte (InitChildObject); sub_413940 homing object update
+	uint8_t homingBaseAction;  // +0x01B T: EF subType = first of the homing action family (sub_413940 requests base+1..3 with ObjRequestAction)
+	uint8_t homingReserved_1C;  // +0x01C U: only written (0) by InitChildObject, never read
+	uint8_t unreferenced_1D;  // +0x01D U: no access in any function
+	uint16_t homingTick;  // +0x01E T: counts up while homingTimeout != 0 (sub_413940)
+	uint16_t homingTimeout;  // +0x020 T: EfType30_SetActorParams sub 0 arg2; sub_413940 ends the homing when homingTick reaches it
+	int16_t homingOffsetX;  // +0x022 T: EF arg0 / EfType30 arg0; target offset X, 128 = centred (sub_413940 v3 = +-(f022 - 128) << 8)
+	int16_t homingOffsetY;  // +0x024 T: EF arg1 / EfType30 arg1; target offset Y, 224 = baseline (sub_413940 (f024 - 224) << 8)
+	uint16_t homingCooldown;  // +0x026 T: sub_413940 sets 40 after a hit and counts it down
+	int16_t homingParam[10];  // +0x028 T: word table written by EfType30_SetActorParams sub 1 (word[40 + 2*arg0] = arg1) and cleared by InitChildObject; sub_413940 reads [0] as the speed
+	uint16_t aiActionTimer;  // +0x03C T: CPU AI: frames left in the running AI script command (FighterCpuAiStep decrements it when not in hit-stop, then calls FighterCpuAi_ApplyScriptCommand)
+	uint16_t aiReactCooldown;  // +0x03E T: CPU AI: frames before the next decision / guard reaction (FighterCpuAiStep loads the difficulty delay v28 or v28 >> 2 and counts it down)
+	int16_t aiScriptIndex;  // +0x040 T: CPU AI: index of the running AI script, -1 = none (FighterCpuAiStep, FighterCpuAi_ApplyScriptCommand)
+	int16_t aiScriptStep;  // +0x042 T: CPU AI: step inside the AI script (FighterCpuAiStep increments it, sub_403C10 / ApplyScriptCommand)
+	uint8_t cpuCommandReady;  // +0x044 T: CPU command request latch: IF 11/25 consume it when controlType == CPU (Actor_RunFrameIfRecord); cleared by ObjRunActionScript
+	uint8_t unreferenced_45[3];  // +0x045 U: no access in any function
+	int32_t superMeter;  // +0x048 T: super meter, 10000 per level, capped 90000 (AddSuperMeter, EfType6 op 4, Actor_SpawnEffectById spends 10000*cost; IF 11 compares f048/10000 with the move cost); preserved across rounds
+	uint8_t superMeterFlash;  // +0x04C T: AddSuperMeter sets 10 when a 30000 threshold is crossed (no reader in the traced set)
+	uint8_t unreferenced_4D[3];  // +0x04D U: no access in any function
+	int32_t reserveGauge;  // +0x050 T: third gauge 0..10000: EfType6 op 4 adds arg2 and clamps, sub_4252A0 adds the pending combo gauge, sub_424980 clears it at round start; preserved across rounds by InitFighterSlotForRound
+	uint8_t unreferenced_54[4];  // +0x054 U: no access in any function
+	int32_t reservePending;  // +0x058 T: reserve gauge gain waiting to be banked: sub_4252A0 adds it to reserveGauge (capped 10000) when g_combo_guard_flags[teamIndex] is set and clears it; no writer found in the traced set
+	int32_t life;  // +0x05C T: hit points, 11400 at round start (InitFighterSlotForRound); Damage_*, ObjFighterStateAndHitReaction, EfType5/6 modify it; <= 0 is KO
+	int32_t lifeInitCopy;  // +0x060 U: written with 11400 by InitFighterSlotForRound / FighterSlot_ResetKeepingDataPointers, never read
+	uint8_t unreferenced_64[2];  // +0x064 U: no access in any function
+	uint8_t superMoveState;  // +0x066 T: 2 while a super move is active (sub_4242C0 sets it when superMoveFlag; sub_424980 clears it; ObjFighterStateAndHitReaction halves guard damage by the attacker owner state)
+	uint8_t superMoveFlag;  // +0x067 T: armed by sub_426BD0 when a command move is accepted, consumed by sub_4242C0
+	uint8_t clearHistoryOnAction;  // +0x068 T: set from command flag 0x10 (sub_426BD0); sub_4242C0 then clears both input rings with sub_4266D0
+	uint8_t unreferenced_69[3];  // +0x069 U: no access in any function
+	int32_t guardGauge;  // +0x06C T: guard gauge, guard break above 10000 (ObjFighterStateAndHitReaction adds AT.guardBreakValue; Actor_DecayGuardGauge decays it in steps of 7..15; DrawFighterSprite flashes above 8000)
+	uint8_t unreferenced_70[4];  // +0x070 U: no access in any function
+	int32_t guardRegenDelay;  // +0x074 T: frames before the guard gauge starts to decay (45/60/90 set by ObjFighterStateAndHitReaction, 120 by sub_426BD0; Actor_DecayGuardGauge)
+	int32_t posX;  // +0x078 T: world X in 1/128 pixel units (sub_413940, ObjIntegrateMotion, Actor_RunFrameIfRecord, InitChildObject, camera code)
+	int32_t posY;  // +0x07C T: world Y in 1/128 pixel units, 0 = ground, negative = up (ObjIntegrateMotion lands at > 0)
+	uint8_t unreferenced_80[4];  // +0x080 U: no access in any function
+	int32_t posXAtTickEnd;  // +0x084 T: posX copy written at the end of ObjIntegrateMotion; never read
+	int32_t posXAtTickStart;  // +0x088 T: posX before the tick (ObjIntegrateMotion, sub_413940); EffectObjects_UpdateAll and ObjResolvePushboxCollision read it back
+	int32_t posYAtTickStart;  // +0x08C T: posY before the tick (ObjIntegrateMotion, sub_413940, EffectObjects_UpdateAll)
+	int32_t velX;  // +0x090 T: velocity X (Actor_ApplyFrameMotionFlags adds AS.velX, ObjIntegrateMotion integrates it)
+	int32_t velY;  // +0x094 T: velocity Y
+	int16_t accelX;  // +0x098 T: acceleration X (AS.accelX, ObjIntegrateMotion)
+	int16_t accelY;  // +0x09A T: acceleration Y (gravity, AS.accelY)
+	int16_t maxVelX;  // +0x09C T: X speed clamp (AS.maxVelX, ObjIntegrateMotion)
+	uint8_t unreferenced_9E[2];  // +0x09E U: no access in any function
+	int32_t knockVelX;  // +0x0A0 T: knockback velocity X (Actor_StartKnockback, ObjIntegrateMotion adds knockAccelX and zeroes it on sign change)
+	int32_t knockVelY;  // +0x0A4 T: knockback velocity Y
+	int16_t knockAccelX;  // +0x0A8 T: knockback friction X (g_HitVectorTable, ObjIntegrateMotion)
+	int16_t knockAccelY;  // +0x0AA T: knockback gravity Y
+	int32_t inertiaX;  // +0x0AC T: carried inertia added to posX each tick, decays by inertiaDecay (Actor_ApplyFrameMotionFlags, ObjIntegrateMotion; divided by 3 when entering the air)
+	int32_t carriedVelX;  // +0x0B0 T: velX saved when AS.flags1 bit 0 is set, turned into inertiaX on the next pattern (Actor_ApplyFrameMotionFlags)
+	int16_t inertiaDecay;  // +0x0B4 T: carriedVelX / 16 (Actor_ApplyFrameMotionFlags); ObjIntegrateMotion subtracts it from inertiaX
+	uint16_t carryPattern;  // +0x0B6 T: pattern in which carriedVelX was saved (Actor_ApplyFrameMotionFlags, ObjIntegrateMotion)
+	int16_t grabDrawOffsetX0;  // +0x0B8 T: start draw offset X of a grabbed actor (EfType4/5 write it, DrawFighterSprite lerps to grabDrawOffsetX1 by the grabber progress, scaled 0.75)
+	int16_t grabDrawOffsetY0;  // +0x0BA T: start draw offset Y of a grabbed actor
+	int16_t zoomOriginX0;  // +0x0BC T: zoom/rotation origin X at the start of the grab animation, 320 by default (Render_QueueFighterSprite lerps it with zoomOriginX1)
+	int16_t zoomOriginY0;  // +0x0BE T: origin Y, 240 by default
+	int16_t grabDrawOffsetX1;  // +0x0C0 T: end draw offset X of a grabbed actor (EfType4/5, DrawFighterSprite)
+	int16_t grabDrawOffsetY1;  // +0x0C2 T: end draw offset Y
+	int16_t zoomOriginX1;  // +0x0C4 T: zoom/rotation origin X at the end, 320 by default
+	int16_t zoomOriginY1;  // +0x0C6 T: origin Y at the end, 240 by default
+	int16_t rotAngleA;  // +0x0C8 T: rotation angle, 1/10000 turn: ObjRunActionScript adds 950 per tick while thrown; passed to sub_42FEF0 by Render_QueueFighterSprite; EfType5 sets it from EF arg4
+	int16_t rotAngleB;  // +0x0CA T: second rotation angle passed to sub_42FEF0 (set together with rotAngleA)
+	uint8_t clearInertiaRequest;  // +0x0CC T: set by Actor_StartKnockback; Actor_ApplyFrameMotionFlags then clears inertiaX/inertiaDecay
+	Gof1AttackResultFlags attackResult;  // +0x0CD T: result of this actor attack on its victim (doc actor+205): ObjFighterStateAndHitReaction sets 1/2 and 0x10/0x20 by the victim stance, ObjCheckAttackVsFighters sets 8; reset by ObjEnterCurrentAction; tested by IF 3/6, Actor_RequestLocomotionFromInput
+	Gof1AttackResultFlags ownerAttackResult;  // +0x0CE T: copy of a child attack result written into its owner (ObjFighterStateAndHitReaction f22C->f0CE = f0CD)
+	uint8_t drawDepth;  // +0x0CF T: draw order key 5..255 (Actor_ApplyDrawPriority; SpawnEffectFromActorFrame; Render_QueueFighterSprite)
+	uint8_t drawModeVariant;  // +0x0D0 T: row offset into g_DrawModeRemapTable while grabbed (EfType4 sets frame/1000; DrawFighterSprite, Box_ApplyDrawModeTransform)
+	uint8_t activeMoveMeterCost;  // +0x0D1 T: meter levels of the running command move (IF 11 copies command+36; Actor_SpawnEffectById spends it, sub_426BD0)
+	uint8_t superCancelFlag;  // +0x0D2 T: sub_426BD0 sets it when a super is started out of a non-actionable frame (v20); ObjRunActionScript stops voice class 10 with sub_42C5B0 and clears it on the next action change
+	uint8_t hitstopFrames;  // +0x0D3 T: remaining hit-stop frames (Actor_SetHitstopFrames; ObjRunActionScript / ObjIntegrateMotion skip while non-zero)
+	uint8_t hitstopTrailing;  // +0x0D4 T: set to 1 by ObjFighterStateAndHitReaction; ObjRunActionScript counts it down with hitstopFrames and clears landed when it runs out
+	uint8_t contactMark;  // +0x0D5 T: set to 1 by ObjCheckAttackVsFighters / ObjCheckAttackVsObjects / ObjCheckReflectBoxVsAttacks when this actor attack box touched something; read by FighterCpuAiStep to chain AI script steps
+	uint8_t grabState;  // +0x0D6 T: 0 free, 1 held by a fighter, 2 held by a child object (Actor_TryGrabFighter); gates ObjRunActionScript, ObjIntegrateMotion, hit detection
+	uint8_t inputLock;  // +0x0D7 T: EfType6 op 9 sets it (doc SET_FLAG_215); blocks input dispatch (Actor_DispatchInputByStance, sub_43A120, sub_426BD0)
+	uint8_t freezeTimerA;  // +0x0D8 T: EfType6 op 2 arg0; Actor_TickFreezeTimers counts it down; also set to 2/8/10 by Actor_ApplyFrameMotionFlags
+	uint8_t freezeTimerB;  // +0x0D9 T: EfType6 op 2 arg1; counted down by Actor_TickFreezeTimers; checked by ObjCheckAttackVs*
+	uint8_t koFlag;  // +0x0DA T: set at KO by ObjFighterStateAndHitReaction (EfType6 op 252 writes it, doc SET_BYTE_218); tested by sub_424780, ObjResolvePushboxCollision, Camera_UpdateFixedScreen
+	uint8_t cameraExcludeFlag;  // +0x0DB T: Camera_UpdateFixedScreen skips fighters with it set; no writer in the traced set
+	uint8_t attackHitsLeft;  // +0x0DC T: hits the current attack may still land (AS.attackHitCount loaded by ObjEnterCurrentAction; ObjCheckAttackVs* decrement; doc actor+220)
+	uint8_t guardState;  // +0x0DD T: non-zero while guarding (ObjFighterStateAndHitReaction sets 1; DrawFighterSprite flashes when > 4; sub_426BD0 gates guard-cancel moves on > 4)
+	uint8_t cpuGuardRequest;  // +0x0DE T: written by FighterCpuAiStep (random guard decision by difficulty); ObjFighterStateAndHitReaction treats the hit as guardable when set (a human actor never sets it)
+	uint8_t unreferenced_DF[3];  // +0x0DF U: no access in any function
+	uint8_t recoverMode;  // +0x0E2 T: wake-up/recovery selector set by ObjFighterStateAndHitReaction (0, 1, 25), Actor_WallBounceReaction, cleared by EfType4
+	uint8_t recoverReserved;  // +0x0E3 U: only written (0) by ObjRunActionScript / ObjFighterStateAndHitReaction, never read
+	uint8_t bounceCount;  // +0x0E4 T: wall/ground bounces taken (Actor_WallBounceReaction increments; ObjRunActionScript wraps > 2 to -16)
+	uint8_t recoveryTimer;  // +0x0E5 T: frames since the last hit (ObjRunActionScript increments, ObjFighterStateAndHitReaction resets; Actor_TryTechOrCrouchGuardSwitch window < 16)
+	uint8_t throwTechSeen;  // +0x0E6 T: set on the grabber by sub_425E10 when a throw tech succeeds; ComboRecord_RegisterHit flags the combo
+	uint8_t stageEdgeSide;  // +0x0E7 T: 1/2 = pushed past the right/left stage edge by sub_425A50; sub_424780 / ObjResolvePushboxCollision use it for wall bounce
+	uint8_t airComboStarterLatch;  // +0x0E8 T: set by ObjFighterStateAndHitReaction when AT.flagsB 0x10 hit lands, cleared by ObjRunActionScript / Actor_StartKnockback test
+	uint8_t throwTechAllowed;  // +0x0E9 T: ObjFighterStateAndHitReaction sets !(AT.flagsB & 0x20) ...; sub_425E10 requires it
+	uint8_t inputBlockFlag;  // +0x0EA T: sub_43A120 refuses input while set; cleared by ObjRunActionScript; no writer in the traced set
+	uint8_t counterHitSide;  // +0x0EB T: 1 = this actor landed a counter-hit (set on the attacker owner), 2 = this actor was counter-hit (set on the victim) by ObjFighterStateAndHitReaction; Actor_StartKnockback and sub_4242C0 clear it; sub_426BD0 (counter-hit cancels, evade moves) and Actor_RequestLocomotionFromInput read it
+	uint16_t scriptTimer[5];  // +0x0EC T: five countdown words (Actor_TickWordTimers); EfType6 op 10 (doc SET_WORD_VAR_236) sets [arg0]; [0] = hyper armor window and [2] = counter-hit window are read by ObjFighterStateAndHitReaction
+	uint8_t hitQueueClear;  // +0x0F6 T: ObjCheckAttackVs* set 1 to discard last tick hit queue; ObjFighterStateAndHitReaction zeroes hitQueueCount when set
+	uint8_t hitQueueCount;  // +0x0F7 T: number of valid hitAt/hitRect/hitAttacker entries, max 8 (ObjCheckAttackVsFighters, ObjCheckAttackVsObjects, Actor_TryGrabFighter)
+	Gof1StatusEffect tintMode;  // +0x0F8 T: AT.statusEffect written by ObjFighterStateAndHitReaction; DrawFighterSprite tints by it (1 red pulse, 2 random shimmer, 3 yellow/black/grey)
+	uint8_t shakeTimer;  // +0x0F9 T: draw shake after a hit (DrawFighterSprite offsets Y by f0F9>>2 on odd ticks); counted down by Actor_TickFreezeTimers
+	int16_t hitStage;  // +0x0FA T: 0 = not in hit-stun; 1..239 = remaining stun frames; 240..255 = launch/air stages dispatched by Actor_ApplyFrameMotionFlags (byte_425734); set from g_HitVectorTable by Actor_StartKnockback
+	int16_t juggleState;  // +0x0FC T: non-zero while the victim is in an air juggle (halves damage in Damage_ScaleByComboAndLife; sub_424780 wall bounce rule); cleared by Actor_TryGrabFighter
+	uint16_t hitReactionId;  // +0x0FE T: reaction index passed to Actor_StartKnockback (g_HitVectorTable row); sub_424780 / Actor_WallBounceReaction compare 9, 13, 27
+	int16_t hitStageAtHit;  // +0x100 T: copy of hitStage taken by Actor_StartKnockback (read by sub_426BD0 as < 240)
+	uint8_t hitRecoverFrames;  // +0x102 T: recovery frames after a hit, computed by ObjFighterStateAndHitReaction from hitStage and hitsTakenInCombo, cleared by EfType4_ControlGrabbedOpponent; no reader in the traced set
+	uint8_t unreferenced_103;  // +0x103 U: no access in any function
+	uint8_t invulnFlags;  // +0x104 T: non-zero = takes no damage (ObjFighterStateAndHitReaction, sub_43A120); EfType6 op 255 sets 0x10 (doc SET_FLAG_260)
+	uint8_t scriptFlag105;  // +0x105 T: EfType6 op 254 sets 1 (doc SET_FLAG_261); cleared by Battle_InitRoundFighters / Round_IntroStateMachine; no reader in the traced set
+	uint8_t koMoveType;  // +0x106 T: (attacker move type & 0x7F) + 1 when the actor is KO by it (ObjFighterStateAndHitReaction); non-zero blocks recovery (Actor_StartKnockback, sub_426BD0)
+	uint8_t inputHeldFlags;  // +0x107 T: Actor_DispatchInputByStance sets bit 7 when the direction is neutral and clears it for crouch/air; ObjRunActionScript clears it; no reader in the traced set
+	uint8_t inputReserved_108;  // +0x108 U: only written (0) by ObjRunActionScript, never read
+	uint8_t guardRecoveryFlag;  // +0x109 T: 1 after a guard-cancel/early guard (Actor_StartKnockback special case), read by Actor_CanGuardAttack and Actor_TryTechOrCrouchGuardSwitch
+	uint16_t mashCounter;  // +0x10A T: counts button presses while in hit-stun (Actor_TryTechOrCrouchGuardSwitch); Damage_ScaleByComboAndLife reduces damage by 0.3% each; sub_426BD0 tests it
+	int8_t tobiCount[10];  // +0x10C T: ten projectile ("TOBI") counters shown by Debug_DrawEntityInfo as "TOBI %03d"; EfType6 op 100/101 add/subtract (arg0 tens digit = index, units = amount), sub_426BD0 refuses a command when the counter is too low
+	uint8_t dashCount;  // +0x116 T: shown by Debug_DrawEntityInfo as "DASH %03d"; EfType6 op 102/103 add/subtract (doc ADD_BYTE_278); cleared by ObjRunActionScript
+	uint8_t unreferenced_117;  // +0x117 U: no access in any function
+	int16_t paramVar[10];  // +0x118 T: ten word variables shown by Debug_DrawEntityInfo as "PARAM %05d"; EfType6 op 105 sets/adds [arg0]; IF 25/31 compare/write them (Actor_RunFrameIfRecord); Actor_SpawnEffectById reads [1],[2]; SpawnCommonEffectObject copies a 20-byte defaults block here
+	uint8_t trailMode;  // +0x12C T: ghost trail colour mode + 1 (EfType6 op 0; DrawFighterSprite spawns SpawnEffectFromActorFrame every 7th tick); on a ghost object (objKind 31) it is the colour mode read by sub_413FD0
+	uint8_t unreferenced_12D;  // +0x12D U: no access in any function
+	uint16_t decorLifeTotal;  // +0x12E T: ghost object total life (SpawnEffectFromActorFrame a5; sub_413FD0 fades alpha by lifeTimer / this)
+	Gof1DecorFlags decorFlags;  // +0x130 T: ghost object flags (SpawnEffectFromActorFrame a6; sub_413FD0 adds 10 to the depth when bit 0)
+	int16_t decorZoomGrowX;  // +0x132 T: ghost zoom change per remaining tick X (SpawnEffectFromActorFrame a3; sub_413FD0)
+	int16_t decorZoomGrowY;  // +0x134 T: ghost zoom change per remaining tick Y (a4)
+	uint8_t afterimageMode;  // +0x136 T: afterimage config id + 1 (EfType6 op 3); DrawFighterAfterimage switches on it, 0 = off
+	uint8_t afterimageSteps;  // +0x137 T: number of afterimage steps <= 119 (EfType6 op 3 arg1; DrawFighterAfterimage)
+	uint8_t afterimageSpacing;  // +0x138 T: spacing of the steps (EfType6 op 3 arg2; DrawFighterAfterimage)
+	uint8_t afterimageRestart;  // +0x139 T: set to 1 by EfType6 op 3 when the mode changes; no reader in the traced set
+	uint8_t justGuardActive;  // +0x13A T: set when a just-guard (button bit 7 and CT flag 8) absorbs a hit (ObjFighterStateAndHitReaction); Actor_StartKnockback then pushes the attacker back instead
+	uint8_t unreferenced_13B;  // +0x13B U: no access in any function
+	uint16_t locomotionUsedMask;  // +0x13C T: bit n = pattern n (1..9 walk/run/dash/jump) used since the last landing (ObjRunActionScript); Actor_RequestLocomotionFromInput tests bits 1,2,4,0x10,0x20,0x80,0x100
+	uint8_t commandUsedMask[14];  // +0x13E T: bit i = command move i already used in this chain (ObjRunActionScript sets it, sub_426BD0 refuses repeats, sub_43BE80 counts the bits)
+	uint8_t pendingCommandId;  // +0x14C T: command move accepted by sub_426BD0 this tick (0xFF = none); ObjRunActionScript moves it into commandUsedMask
+	uint8_t lastCommandId;  // +0x14D T: previous pendingCommandId (ObjRunActionScript writes it); no reader in the traced set
+	int16_t hitsTakenInCombo;  // +0x14E T: consecutive hits taken (ObjFighterStateAndHitReaction increments; ObjRunActionScript indexes byte_463FE0 with it to time recovery)
+	uint16_t attackHitsConnected;  // +0x150 T: hits landed by the current action (ObjCheckAttackVsFighters/Objects increment; IF 17 compares with p1; sub_4242C0 clears)
+	uint8_t evadeDir;  // +0x152 T: 1 forward / 2 back double-tap evade detected by sub_427040; ObjFighterStateAndHitReaction picks the evade-high/low answer from it
+	uint8_t evadeTimer;  // +0x153 T: evade window counter (sub_427040 loads 8, then -8 cooldown; ObjFighterStateAndHitReaction)
+	uint8_t unreferenced_154[2];  // +0x154 U: no access in any function
+	Gof1FlashMode flashMode;  // +0x156 T: colour flash mode (Actor_SetColorFlash; DrawFighterSprite / sub_413FD0 switch)
+	uint8_t flashTimer;  // +0x157 T: remaining flash frames (Actor_TickFreezeTimers decrements)
+	uint8_t flashDuration;  // +0x158 T: total flash frames, denominator of the fade modes
+	uint8_t requestParam;  // +0x159 T: argument a5 of ObjRequestAction, cleared by ObjRunActionScript, set from command byte +38 by sub_426BD0; no reader in the traced set
+	Gof1CounterCommand counterWindowState;  // +0x15A T: counter-hit window set by frame flags2 bits 20..23 (ObjEnterCurrentAction); ObjFighterStateAndHitReaction reads it to apply the counter bonus
+	uint8_t unreferenced_15B;  // +0x15B U: no access in any function
+	int16_t launchVelX;  // +0x15C T: stage-2 launch velocity X loaded when hitStage advances (Actor_StartKnockback fills it from g_HitVectorTable, Actor_ApplyFrameMotionFlags consumes it)
+	int16_t launchVelY;  // +0x15E T: stage-2 launch velocity Y
+	int16_t launchAccelX;  // +0x160 T: stage-2 acceleration X
+	int16_t launchAccelY;  // +0x162 T: stage-2 acceleration Y
+	uint32_t hitAt[8];  // +0x164 T: AT record of each hit received this tick (ObjCheckAttackVsFighters writes *(a+4*count+356); ObjFighterStateAndHitReaction reads)
+	Gof1RectI32 hitRect[8];  // +0x184 T: world rectangle of each overlap (ObjCheckAttackVsFighters writes 16 bytes at +388+16*count; used to place the hit spark)
+	uint32_t hitAttacker[8];  // +0x204 T: attacking actor of each hit (ObjCheckAttackVsFighters writes *(a+4*count+516))
+	uint32_t lastAttacker;  // +0x224 T: attacker of the last accepted hit (ObjFighterStateAndHitReaction); Actor_StartKnockback applies the push to it on a just-guard; ObjResolvePushboxCollision
+	uint32_t grabbedBy;  // +0x228 T: grabber while grabState != 0 (Actor_TryGrabFighter victim->f228 = grabber; ObjIntegrateMotion drags the grabber position along)
+	uint32_t ownerFighter;  // +0x22C T: owning fighter of a child object (InitChildObject via sub_424560, SpawnChildEffectFromParent); homing target in sub_413940; 0 for fighters
+	uint32_t linkedActor;  // +0x230 T: parent actor of a child (InitChildObject, SpawnChildEffectFromParent; read by EffectObjects_UpdateAll, Actor_SetHitstopFrames, DrawFighterSprite) / grab victim of a fighter (Actor_TryGrabFighter and sub_425E10 write it)
+	Gof1InputDirection inputDir;  // +0x234 T: numpad direction facing-corrected (ReadBattleInputForPlayer; mirrored by Actor_MirrorInputDirection via dword_463FB8; recorded by ReplayRecordOrPlaybackFighterInput)
+	uint8_t unreferenced_235[3];  // +0x235 U: no access in any function
+	Gof1InputButtonFlags inputButtons;  // +0x238 T: buttons held (bits 0..5) and pressed this tick (bits 12..17) (ReadBattleInputForPlayer a3; replay recorder; Actor_RequestLocomotionFromInput, sub_425E10 tests & 0xF)
+	Gof1InputButtonFlags inputButtonsReleased;  // +0x23C T: buttons released this tick (bits 0..5) (ReadBattleInputForPlayer a4); input ring B ORs it in (UpdateFighterInputHistoryRings)
+	uint8_t teamIndex;  // +0x240 T: side/team 0 or 1 (InitFighterSlotForRound a2; children copy it); same-team test in ObjCheckAttackVsFighters, indexes per-team stats (dword_1552F70[15*i])
+	uint8_t endConditionMet;  // +0x241 T: set by IF 2 END_CONDITION and by EffectObjects_UpdateAll (doc actor+577); the object is removed on the next tick
+	uint16_t pendingPattern;  // +0x242 T: pattern requested by ObjRequestAction, 0xFFFF = none (ObjRunActionScript consumes it)
+	int16_t pendingPatternPriority;  // +0x244 T: priority of the pending request, -1 = none; a request wins when its priority is higher (ObjRequestAction)
+	uint16_t pendingFrame;  // +0x246 T: frame requested by sub_424510 / IF jumps, 0xFFFF = none
+	int16_t pendingFramePriority;  // +0x248 T: priority of the pending frame jump, -1 = none
+	uint8_t facingLeft;  // +0x24A T: 0 faces right, 1 faces left (read by ~70 functions: sub_413940, DrawFighterSprite, Actor_ApplyFrameMotionFlags, InitChildObject)
+	uint8_t nextFacingLeft;  // +0x24B T: facing to turn to when the action changes (ObjRunActionScript copies it into facingLeft; Actor_WallBounceReaction, EfType6 op 5, sub_413940)
+	uint8_t facingReserved_24C;  // +0x24C U: only written (0xFF) by InitFighterSlotForRound / FighterSlot_ResetKeepingDataPointers, never read
+	uint8_t mirrorHistoryPending;  // +0x24D T: read by UpdateFighterInputHistoryRings and sub_426910: when the facing changed and it is 1 the recorded directions are mirrored (dword_463FB8) and it is cleared
+	uint8_t inputActionLatch;  // +0x24E T: set 1 by IF 6/7 input jumps with flag 4 (doc actor+590); ObjRunActionScript steps it 1 -> 2 -> 0; EffectObjects_UpdateAll kills children when the parent shows 2
+	uint8_t actionChangedFlag;  // +0x24F T: sub_4242C0 sets 1 on every action change, Actor_TickWordTimers clears it; children with spawnFlagsA bit 0x20 die when the parent shows 1
+	uint8_t landed;  // +0x250 T: 1 when posY reached the ground (ObjIntegrateMotion; doc actor+592): drives aniFlag 3/4 landing jumps, IF 2 p1, Actor_ApplyFrameMotionFlags
+	uint8_t actionEnded;  // +0x251 T: ObjRunActionScript sets it when a landing/animation end finished the action; EffectObjects_UpdateAll ends children whose parent shows it
+	Gof1Stance stanceCopy;  // +0x252 T: AS.stance of the previous tick (ObjRunActionScript); ObjIntegrateMotion divides inertiaX by 3 on a ground-to-air change
+	uint8_t unreferenced_253;  // +0x253 U: no access in any function
+	uint32_t boxTable;  // +0x254 T: pattern + boxTableOffset or 0 (Actor_ResolveFrameDataPointers; doc actor+596)
+	uint32_t charData;  // +0x258 T: character pattern block (Slot_BindCharacterData from g_CharPatternData; Pattern_Get* read patternOffset[] through it)
+	uint32_t patternHeader;  // +0x25C T: current pattern header (Actor_ResolveFrameDataPointers; Actor_GetPatternFrameRecords)
+	uint32_t frameRecord;  // +0x260 T: current 116-byte frame record (Actor_ResolveFrameDataPointers; ObjCheckAttackVsFighters reads atIndex at +80)
+	uint32_t animFrame;  // +0x264 T: same address as frameRecord, typed as the AF half (DrawFighterSprite, ObjRunActionScript)
+	uint32_t stateFrame;  // +0x268 T: frameRecord + 40, the AS half (ObjIntegrateMotion, Actor_ApplyFrameMotionFlags)
+	uint32_t ifTable;  // +0x26C T: pattern + ifTableOffset or 0 (ObjRunFrameEventsForPhase)
+	uint32_t efTable;  // +0x270 T: pattern + efTableOffset or 0 (Actor_RunFrameEFs)
+	uint32_t boxIndex;  // +0x274 T: frameRecord + 96, the 10 box indices (Actor_FindOverlappingTarget, ObjCheckAttackVs*)
+	uint32_t partsData;  // +0x278 T: character parts blob (Slot_BindCharacterData from g_CharPartsData; Render_QueueFighterSprite)
+	uint32_t cgData;  // +0x27C T: character CG blob (Slot_BindCharacterData from g_CharCgData; Render_QueueFighterSprite)
+	uint32_t fighterSlot;  // +0x280 T: pointer to the owning fighter slot (InitFighterSlotForRound stores the slot itself); 0 for child objects; gates AddSuperMeter and gives access to the CT data
+	uint8_t unreferenced_284[4];  // +0x284 U: no access in any function
+	int32_t actionTicks;  // +0x288 T: ticks since the action started (ObjRunActionScript increments, sub_4242C0 clears; DrawFighterSprite flickers on % 3 / % 7)
+	uint8_t ranThisTick;  // +0x28C T: ObjRunActionScript sets 1 once it passed all gates, 0 at its start; Battle_UpdateAllCharactersInputAndAI, hit detection and DrawFighterSprite test it
+	uint8_t unreferenced_28D[3];  // +0x28D U: no access in any function
+};
+struct Gof1HitVectorRow {
+	int16_t velX;  // +0x000 T: knockback velocity X, multiplied by the attack direction sign (Actor_StartKnockback -> actor.knockVelX); vector.txt column 0
+	int16_t velY;  // +0x002 T: knockback velocity Y, scaled by the combo decay factor (-> actor.knockVelY); column 1
+	int16_t accelX;  // +0x004 T: knockback friction X, signed by direction (-> actor.knockAccelX); column 2
+	int16_t accelY;  // +0x006 T: knockback gravity Y (-> actor.knockAccelY); column 3
+	int16_t launchVelX;  // +0x008 T: velocity X of the launch stage reached when hitStage >= 240 (-> actor.launchVelX); column 4
+	int16_t launchVelY;  // +0x00A T: velocity Y of the launch stage (-> actor.launchVelY); column 5
+	int16_t launchAccelX;  // +0x00C T: acceleration X of the launch stage (-> actor.launchAccelX); column 6
+	int16_t launchAccelY;  // +0x00E T: acceleration Y of the launch stage (-> actor.launchAccelY); column 7
+	int16_t hitStage;  // +0x010 T: stun frames (< 240) or launch stage code 240..255 (-> actor.hitStage); column 8; 255 = air launch, 248 = ground slide
+};
+struct Gof1CommandMove {
+	uint8_t commandId;  // +0x000 T: own index, 0xFF = unused slot (sub_426FC0, sub_426BD0 test it)
+	uint8_t unreferenced_01;  // +0x001 U: zero in every record of all 8 characters, never accessed
+	uint8_t sequence[32];  // +0x002 T: input token string 0xFF terminated: 0..9 direction, 0x41..0x46 buttons A..F, 0x2B + joiner, 0x54 T hold; parsed backwards from the last token by sub_4266F0 / sub_4267F0 (sub_426910). Bytes 16..31 are cleared by InitFighterSlotForRound
+	uint8_t targetPattern;  // +0x022 T: pattern requested when the command fires (sub_426BD0 -> ObjRequestAction; compared with the current pattern)
+	Gof1CommandMoveClass moveClass;  // +0x023 T: 0 system, 1 special, 2 super: selects the move-level rule in sub_426BD0
+	uint16_t meterCostLevels;  // +0x024 T: super meter levels needed (compared with superMeter / 10000 in IF 11 and sub_426BD0; low byte -> activeMoveMeterCost)
+	uint8_t requestParam;  // +0x026 T: stored in actor requestParam (sub_426BD0)
+	uint8_t unreferenced_27;  // +0x027 U: zero in every record of all 8 characters, never accessed
+	uint16_t counterRequirement;  // +0x028 T: tens digit = counter[] index and units = amount (< 100), or 100+ = global counter bank dword_1864EA0 (sub_426BD0 refuses when not enough)
+	uint8_t unreferenced_2A[2];  // +0x02A U: zero in every record of all 8 characters, never accessed
+	Gof1CommandFlags flags;  // +0x02C T: see Gof1CommandFlags (sub_426BD0 stance/cancel gating, sub_426FC0 skips SCRIPT_ONLY)
+	Gof1CommandFlags2 flags2;  // +0x02D T: see Gof1CommandFlags2 (sub_426910 ring select / strictness, sub_426BD0 evade moves)
+};
+struct Gof1CtHeader {
+	uint8_t unreferenced_00;  // +0x000 U: zero in all 8 CT files, never accessed
+	uint8_t unreferenced_01;  // +0x001 U: 9 in all 8 CT files, never accessed
+	uint8_t recoveryStyle;  // +0x002 T: 1 in all files; ObjRunActionScript (0x424F23) switches the hit recovery handling on it
+	uint8_t unreferenced_03;  // +0x003 U: zero in all 8 CT files, never accessed
+	uint8_t unreferenced_04;  // +0x004 U: zero in all 8 CT files; sub_426BD0 reads the word at +4 but only tests bit 8 (= flags bit 0)
+	Gof1CtFlags flags;  // +0x005 T: 0x39 / 0x3B in the data; ObjRunActionScript (bit 0), sub_426BD0 (bit 0), ObjFighterStateAndHitReaction (bits 1, 3)
+	uint8_t unreferenced_06[2];  // +0x006 U: zero in all 8 CT files, never accessed
+	float knockbackScale;  // +0x008 T: 1.0 in all files; Actor_StartKnockback multiplies the vertical knockback (0 means 1.0)
+	float damageScaleByLifeTier[4];  // +0x00C T: 1.1 (AKIKO) / 0.9 (others) in all files; Damage_ScaleByComboAndLife picks it by the victim life tier (2850 / 5700 / 8550)
+};
+struct Gof1CtFile {
+	uint32_t commandCount;  // +0x000 T: number of defined commands (Character_LoadCtFile a1[172]); the loop in InitFighterSlotForRound runs to it
+	Gof1CommandMove command[100];  // +0x004 T: command table copied (0x11F8 bytes) to slot+692
+	Gof1CtHeader ct;  // +0x11FC T: 28 bytes copied to slot+660
+};
+struct Gof1InputRing {
+	uint32_t state[64];  // +0x000 T: (direction << 24) | buttons for each distinct input state (ring A: inputButtons, ring B: inputButtons | inputButtonsReleased); matched backwards by sub_426910
+	uint32_t age[64];  // +0x100 T: frames spent in state[i] (capped at 1000000; sub_4266D0 sets 1000000 to invalidate the history)
+};
+struct Gof1FighterSlot {
+	uint8_t active;  // +0x000 T: 1 = slot in use (Slot_BindCharacterData, InitFighterSlotForRound set 1, FighterSlot_ResetKeepingDataPointers 0; all loops test it)
+	uint8_t unreferenced_01[3];  // +0x001 U: no access in any function (pool stride 660 = 1 + 3 + 656)
+	Gof1Actor actor;  // +0x004 T: the actor (actor = slot + 4; memset 0x290 at InitFighterSlotForRound)
+	Gof1CtHeader ct;  // +0x294 T: CT header copied by Character_LoadCtFile (Actor_StartKnockback reads +8, Damage_ScaleByComboAndLife +12, ObjRunActionScript +2/+5)
+	int32_t commandCount;  // +0x2B0 T: Character_LoadCtFile a1[172]; InitFighterSlotForRound clears the runtime tail of each of these commands
+	Gof1CommandMove command[100];  // +0x2B4 T: command-move table (sub_426FC0 scans all 100; IF 11 indexes it)
+	Gof1InputRing ringA;  // +0x14AC T: input history A (UpdateFighterInputHistoryRings at +5292/+5548)
+	Gof1InputRing ringB;  // +0x16AC T: input history B with releases (+5804/+6060)
+};
+struct Gof1ObjectSlot {
+	uint8_t active;  // +0x000 T: 1 = slot in use (Slot_BindCharacterData, InitFighterSlotForRound set 1, FighterSlot_ResetKeepingDataPointers 0; all loops test it)
+	uint8_t unreferenced_01[3];  // +0x001 U: no access in any function (pool stride 660 = 1 + 3 + 656)
+	Gof1Actor actor;  // +0x004 T: the actor (InitChildObject: memset(slot + 4, 0, 0x290))
+};
 #pragma pack(pop)
 
 static_assert(sizeof(Gof1ArchiveFileHeader) == 0x8, "Gof1ArchiveFileHeader size");
@@ -536,6 +915,269 @@ static_assert(offsetof(Gof1TextureRegion, textureSize) == 0xD64, "Gof1TextureReg
 static_assert(offsetof(Gof1TextureRegion, unused_E2C) == 0xE2C, "Gof1TextureRegion.unused_E2C");
 static_assert(sizeof(Gof1PatternName) == 0x40, "Gof1PatternName size");
 static_assert(offsetof(Gof1PatternName, name) == 0x0, "Gof1PatternName.name");
+static_assert(sizeof(Gof1Actor) == 0x290, "Gof1Actor size");
+static_assert(offsetof(Gof1Actor, slotIndex) == 0x0, "Gof1Actor.slotIndex");
+static_assert(offsetof(Gof1Actor, characterId) == 0x1, "Gof1Actor.characterId");
+static_assert(offsetof(Gof1Actor, controlType) == 0x2, "Gof1Actor.controlType");
+static_assert(offsetof(Gof1Actor, unreferenced_03) == 0x3, "Gof1Actor.unreferenced_03");
+static_assert(offsetof(Gof1Actor, objKind) == 0x4, "Gof1Actor.objKind");
+static_assert(offsetof(Gof1Actor, paletteIndex) == 0x5, "Gof1Actor.paletteIndex");
+static_assert(offsetof(Gof1Actor, pattern) == 0x6, "Gof1Actor.pattern");
+static_assert(offsetof(Gof1Actor, frame) == 0x7, "Gof1Actor.frame");
+static_assert(offsetof(Gof1Actor, spriteId) == 0x8, "Gof1Actor.spriteId");
+static_assert(offsetof(Gof1Actor, ifRunState) == 0xA, "Gof1Actor.ifRunState");
+static_assert(offsetof(Gof1Actor, efRunState) == 0xB, "Gof1Actor.efRunState");
+static_assert(offsetof(Gof1Actor, airReactionActive) == 0xC, "Gof1Actor.airReactionActive");
+static_assert(offsetof(Gof1Actor, unreferenced_0D) == 0xD, "Gof1Actor.unreferenced_0D");
+static_assert(offsetof(Gof1Actor, frameTicks) == 0xE, "Gof1Actor.frameTicks");
+static_assert(offsetof(Gof1Actor, lifeTimer) == 0x10, "Gof1Actor.lifeTimer");
+static_assert(offsetof(Gof1Actor, animationEnded) == 0x12, "Gof1Actor.animationEnded");
+static_assert(offsetof(Gof1Actor, unreferenced_13) == 0x13, "Gof1Actor.unreferenced_13");
+static_assert(offsetof(Gof1Actor, loopCounter) == 0x14, "Gof1Actor.loopCounter");
+static_assert(offsetof(Gof1Actor, unreferenced_15) == 0x15, "Gof1Actor.unreferenced_15");
+static_assert(offsetof(Gof1Actor, spawnFlagsA) == 0x16, "Gof1Actor.spawnFlagsA");
+static_assert(offsetof(Gof1Actor, spawnFlagsB) == 0x18, "Gof1Actor.spawnFlagsB");
+static_assert(offsetof(Gof1Actor, homingMode) == 0x1A, "Gof1Actor.homingMode");
+static_assert(offsetof(Gof1Actor, homingBaseAction) == 0x1B, "Gof1Actor.homingBaseAction");
+static_assert(offsetof(Gof1Actor, homingReserved_1C) == 0x1C, "Gof1Actor.homingReserved_1C");
+static_assert(offsetof(Gof1Actor, unreferenced_1D) == 0x1D, "Gof1Actor.unreferenced_1D");
+static_assert(offsetof(Gof1Actor, homingTick) == 0x1E, "Gof1Actor.homingTick");
+static_assert(offsetof(Gof1Actor, homingTimeout) == 0x20, "Gof1Actor.homingTimeout");
+static_assert(offsetof(Gof1Actor, homingOffsetX) == 0x22, "Gof1Actor.homingOffsetX");
+static_assert(offsetof(Gof1Actor, homingOffsetY) == 0x24, "Gof1Actor.homingOffsetY");
+static_assert(offsetof(Gof1Actor, homingCooldown) == 0x26, "Gof1Actor.homingCooldown");
+static_assert(offsetof(Gof1Actor, homingParam) == 0x28, "Gof1Actor.homingParam");
+static_assert(offsetof(Gof1Actor, aiActionTimer) == 0x3C, "Gof1Actor.aiActionTimer");
+static_assert(offsetof(Gof1Actor, aiReactCooldown) == 0x3E, "Gof1Actor.aiReactCooldown");
+static_assert(offsetof(Gof1Actor, aiScriptIndex) == 0x40, "Gof1Actor.aiScriptIndex");
+static_assert(offsetof(Gof1Actor, aiScriptStep) == 0x42, "Gof1Actor.aiScriptStep");
+static_assert(offsetof(Gof1Actor, cpuCommandReady) == 0x44, "Gof1Actor.cpuCommandReady");
+static_assert(offsetof(Gof1Actor, unreferenced_45) == 0x45, "Gof1Actor.unreferenced_45");
+static_assert(offsetof(Gof1Actor, superMeter) == 0x48, "Gof1Actor.superMeter");
+static_assert(offsetof(Gof1Actor, superMeterFlash) == 0x4C, "Gof1Actor.superMeterFlash");
+static_assert(offsetof(Gof1Actor, unreferenced_4D) == 0x4D, "Gof1Actor.unreferenced_4D");
+static_assert(offsetof(Gof1Actor, reserveGauge) == 0x50, "Gof1Actor.reserveGauge");
+static_assert(offsetof(Gof1Actor, unreferenced_54) == 0x54, "Gof1Actor.unreferenced_54");
+static_assert(offsetof(Gof1Actor, reservePending) == 0x58, "Gof1Actor.reservePending");
+static_assert(offsetof(Gof1Actor, life) == 0x5C, "Gof1Actor.life");
+static_assert(offsetof(Gof1Actor, lifeInitCopy) == 0x60, "Gof1Actor.lifeInitCopy");
+static_assert(offsetof(Gof1Actor, unreferenced_64) == 0x64, "Gof1Actor.unreferenced_64");
+static_assert(offsetof(Gof1Actor, superMoveState) == 0x66, "Gof1Actor.superMoveState");
+static_assert(offsetof(Gof1Actor, superMoveFlag) == 0x67, "Gof1Actor.superMoveFlag");
+static_assert(offsetof(Gof1Actor, clearHistoryOnAction) == 0x68, "Gof1Actor.clearHistoryOnAction");
+static_assert(offsetof(Gof1Actor, unreferenced_69) == 0x69, "Gof1Actor.unreferenced_69");
+static_assert(offsetof(Gof1Actor, guardGauge) == 0x6C, "Gof1Actor.guardGauge");
+static_assert(offsetof(Gof1Actor, unreferenced_70) == 0x70, "Gof1Actor.unreferenced_70");
+static_assert(offsetof(Gof1Actor, guardRegenDelay) == 0x74, "Gof1Actor.guardRegenDelay");
+static_assert(offsetof(Gof1Actor, posX) == 0x78, "Gof1Actor.posX");
+static_assert(offsetof(Gof1Actor, posY) == 0x7C, "Gof1Actor.posY");
+static_assert(offsetof(Gof1Actor, unreferenced_80) == 0x80, "Gof1Actor.unreferenced_80");
+static_assert(offsetof(Gof1Actor, posXAtTickEnd) == 0x84, "Gof1Actor.posXAtTickEnd");
+static_assert(offsetof(Gof1Actor, posXAtTickStart) == 0x88, "Gof1Actor.posXAtTickStart");
+static_assert(offsetof(Gof1Actor, posYAtTickStart) == 0x8C, "Gof1Actor.posYAtTickStart");
+static_assert(offsetof(Gof1Actor, velX) == 0x90, "Gof1Actor.velX");
+static_assert(offsetof(Gof1Actor, velY) == 0x94, "Gof1Actor.velY");
+static_assert(offsetof(Gof1Actor, accelX) == 0x98, "Gof1Actor.accelX");
+static_assert(offsetof(Gof1Actor, accelY) == 0x9A, "Gof1Actor.accelY");
+static_assert(offsetof(Gof1Actor, maxVelX) == 0x9C, "Gof1Actor.maxVelX");
+static_assert(offsetof(Gof1Actor, unreferenced_9E) == 0x9E, "Gof1Actor.unreferenced_9E");
+static_assert(offsetof(Gof1Actor, knockVelX) == 0xA0, "Gof1Actor.knockVelX");
+static_assert(offsetof(Gof1Actor, knockVelY) == 0xA4, "Gof1Actor.knockVelY");
+static_assert(offsetof(Gof1Actor, knockAccelX) == 0xA8, "Gof1Actor.knockAccelX");
+static_assert(offsetof(Gof1Actor, knockAccelY) == 0xAA, "Gof1Actor.knockAccelY");
+static_assert(offsetof(Gof1Actor, inertiaX) == 0xAC, "Gof1Actor.inertiaX");
+static_assert(offsetof(Gof1Actor, carriedVelX) == 0xB0, "Gof1Actor.carriedVelX");
+static_assert(offsetof(Gof1Actor, inertiaDecay) == 0xB4, "Gof1Actor.inertiaDecay");
+static_assert(offsetof(Gof1Actor, carryPattern) == 0xB6, "Gof1Actor.carryPattern");
+static_assert(offsetof(Gof1Actor, grabDrawOffsetX0) == 0xB8, "Gof1Actor.grabDrawOffsetX0");
+static_assert(offsetof(Gof1Actor, grabDrawOffsetY0) == 0xBA, "Gof1Actor.grabDrawOffsetY0");
+static_assert(offsetof(Gof1Actor, zoomOriginX0) == 0xBC, "Gof1Actor.zoomOriginX0");
+static_assert(offsetof(Gof1Actor, zoomOriginY0) == 0xBE, "Gof1Actor.zoomOriginY0");
+static_assert(offsetof(Gof1Actor, grabDrawOffsetX1) == 0xC0, "Gof1Actor.grabDrawOffsetX1");
+static_assert(offsetof(Gof1Actor, grabDrawOffsetY1) == 0xC2, "Gof1Actor.grabDrawOffsetY1");
+static_assert(offsetof(Gof1Actor, zoomOriginX1) == 0xC4, "Gof1Actor.zoomOriginX1");
+static_assert(offsetof(Gof1Actor, zoomOriginY1) == 0xC6, "Gof1Actor.zoomOriginY1");
+static_assert(offsetof(Gof1Actor, rotAngleA) == 0xC8, "Gof1Actor.rotAngleA");
+static_assert(offsetof(Gof1Actor, rotAngleB) == 0xCA, "Gof1Actor.rotAngleB");
+static_assert(offsetof(Gof1Actor, clearInertiaRequest) == 0xCC, "Gof1Actor.clearInertiaRequest");
+static_assert(offsetof(Gof1Actor, attackResult) == 0xCD, "Gof1Actor.attackResult");
+static_assert(offsetof(Gof1Actor, ownerAttackResult) == 0xCE, "Gof1Actor.ownerAttackResult");
+static_assert(offsetof(Gof1Actor, drawDepth) == 0xCF, "Gof1Actor.drawDepth");
+static_assert(offsetof(Gof1Actor, drawModeVariant) == 0xD0, "Gof1Actor.drawModeVariant");
+static_assert(offsetof(Gof1Actor, activeMoveMeterCost) == 0xD1, "Gof1Actor.activeMoveMeterCost");
+static_assert(offsetof(Gof1Actor, superCancelFlag) == 0xD2, "Gof1Actor.superCancelFlag");
+static_assert(offsetof(Gof1Actor, hitstopFrames) == 0xD3, "Gof1Actor.hitstopFrames");
+static_assert(offsetof(Gof1Actor, hitstopTrailing) == 0xD4, "Gof1Actor.hitstopTrailing");
+static_assert(offsetof(Gof1Actor, contactMark) == 0xD5, "Gof1Actor.contactMark");
+static_assert(offsetof(Gof1Actor, grabState) == 0xD6, "Gof1Actor.grabState");
+static_assert(offsetof(Gof1Actor, inputLock) == 0xD7, "Gof1Actor.inputLock");
+static_assert(offsetof(Gof1Actor, freezeTimerA) == 0xD8, "Gof1Actor.freezeTimerA");
+static_assert(offsetof(Gof1Actor, freezeTimerB) == 0xD9, "Gof1Actor.freezeTimerB");
+static_assert(offsetof(Gof1Actor, koFlag) == 0xDA, "Gof1Actor.koFlag");
+static_assert(offsetof(Gof1Actor, cameraExcludeFlag) == 0xDB, "Gof1Actor.cameraExcludeFlag");
+static_assert(offsetof(Gof1Actor, attackHitsLeft) == 0xDC, "Gof1Actor.attackHitsLeft");
+static_assert(offsetof(Gof1Actor, guardState) == 0xDD, "Gof1Actor.guardState");
+static_assert(offsetof(Gof1Actor, cpuGuardRequest) == 0xDE, "Gof1Actor.cpuGuardRequest");
+static_assert(offsetof(Gof1Actor, unreferenced_DF) == 0xDF, "Gof1Actor.unreferenced_DF");
+static_assert(offsetof(Gof1Actor, recoverMode) == 0xE2, "Gof1Actor.recoverMode");
+static_assert(offsetof(Gof1Actor, recoverReserved) == 0xE3, "Gof1Actor.recoverReserved");
+static_assert(offsetof(Gof1Actor, bounceCount) == 0xE4, "Gof1Actor.bounceCount");
+static_assert(offsetof(Gof1Actor, recoveryTimer) == 0xE5, "Gof1Actor.recoveryTimer");
+static_assert(offsetof(Gof1Actor, throwTechSeen) == 0xE6, "Gof1Actor.throwTechSeen");
+static_assert(offsetof(Gof1Actor, stageEdgeSide) == 0xE7, "Gof1Actor.stageEdgeSide");
+static_assert(offsetof(Gof1Actor, airComboStarterLatch) == 0xE8, "Gof1Actor.airComboStarterLatch");
+static_assert(offsetof(Gof1Actor, throwTechAllowed) == 0xE9, "Gof1Actor.throwTechAllowed");
+static_assert(offsetof(Gof1Actor, inputBlockFlag) == 0xEA, "Gof1Actor.inputBlockFlag");
+static_assert(offsetof(Gof1Actor, counterHitSide) == 0xEB, "Gof1Actor.counterHitSide");
+static_assert(offsetof(Gof1Actor, scriptTimer) == 0xEC, "Gof1Actor.scriptTimer");
+static_assert(offsetof(Gof1Actor, hitQueueClear) == 0xF6, "Gof1Actor.hitQueueClear");
+static_assert(offsetof(Gof1Actor, hitQueueCount) == 0xF7, "Gof1Actor.hitQueueCount");
+static_assert(offsetof(Gof1Actor, tintMode) == 0xF8, "Gof1Actor.tintMode");
+static_assert(offsetof(Gof1Actor, shakeTimer) == 0xF9, "Gof1Actor.shakeTimer");
+static_assert(offsetof(Gof1Actor, hitStage) == 0xFA, "Gof1Actor.hitStage");
+static_assert(offsetof(Gof1Actor, juggleState) == 0xFC, "Gof1Actor.juggleState");
+static_assert(offsetof(Gof1Actor, hitReactionId) == 0xFE, "Gof1Actor.hitReactionId");
+static_assert(offsetof(Gof1Actor, hitStageAtHit) == 0x100, "Gof1Actor.hitStageAtHit");
+static_assert(offsetof(Gof1Actor, hitRecoverFrames) == 0x102, "Gof1Actor.hitRecoverFrames");
+static_assert(offsetof(Gof1Actor, unreferenced_103) == 0x103, "Gof1Actor.unreferenced_103");
+static_assert(offsetof(Gof1Actor, invulnFlags) == 0x104, "Gof1Actor.invulnFlags");
+static_assert(offsetof(Gof1Actor, scriptFlag105) == 0x105, "Gof1Actor.scriptFlag105");
+static_assert(offsetof(Gof1Actor, koMoveType) == 0x106, "Gof1Actor.koMoveType");
+static_assert(offsetof(Gof1Actor, inputHeldFlags) == 0x107, "Gof1Actor.inputHeldFlags");
+static_assert(offsetof(Gof1Actor, inputReserved_108) == 0x108, "Gof1Actor.inputReserved_108");
+static_assert(offsetof(Gof1Actor, guardRecoveryFlag) == 0x109, "Gof1Actor.guardRecoveryFlag");
+static_assert(offsetof(Gof1Actor, mashCounter) == 0x10A, "Gof1Actor.mashCounter");
+static_assert(offsetof(Gof1Actor, tobiCount) == 0x10C, "Gof1Actor.tobiCount");
+static_assert(offsetof(Gof1Actor, dashCount) == 0x116, "Gof1Actor.dashCount");
+static_assert(offsetof(Gof1Actor, unreferenced_117) == 0x117, "Gof1Actor.unreferenced_117");
+static_assert(offsetof(Gof1Actor, paramVar) == 0x118, "Gof1Actor.paramVar");
+static_assert(offsetof(Gof1Actor, trailMode) == 0x12C, "Gof1Actor.trailMode");
+static_assert(offsetof(Gof1Actor, unreferenced_12D) == 0x12D, "Gof1Actor.unreferenced_12D");
+static_assert(offsetof(Gof1Actor, decorLifeTotal) == 0x12E, "Gof1Actor.decorLifeTotal");
+static_assert(offsetof(Gof1Actor, decorFlags) == 0x130, "Gof1Actor.decorFlags");
+static_assert(offsetof(Gof1Actor, decorZoomGrowX) == 0x132, "Gof1Actor.decorZoomGrowX");
+static_assert(offsetof(Gof1Actor, decorZoomGrowY) == 0x134, "Gof1Actor.decorZoomGrowY");
+static_assert(offsetof(Gof1Actor, afterimageMode) == 0x136, "Gof1Actor.afterimageMode");
+static_assert(offsetof(Gof1Actor, afterimageSteps) == 0x137, "Gof1Actor.afterimageSteps");
+static_assert(offsetof(Gof1Actor, afterimageSpacing) == 0x138, "Gof1Actor.afterimageSpacing");
+static_assert(offsetof(Gof1Actor, afterimageRestart) == 0x139, "Gof1Actor.afterimageRestart");
+static_assert(offsetof(Gof1Actor, justGuardActive) == 0x13A, "Gof1Actor.justGuardActive");
+static_assert(offsetof(Gof1Actor, unreferenced_13B) == 0x13B, "Gof1Actor.unreferenced_13B");
+static_assert(offsetof(Gof1Actor, locomotionUsedMask) == 0x13C, "Gof1Actor.locomotionUsedMask");
+static_assert(offsetof(Gof1Actor, commandUsedMask) == 0x13E, "Gof1Actor.commandUsedMask");
+static_assert(offsetof(Gof1Actor, pendingCommandId) == 0x14C, "Gof1Actor.pendingCommandId");
+static_assert(offsetof(Gof1Actor, lastCommandId) == 0x14D, "Gof1Actor.lastCommandId");
+static_assert(offsetof(Gof1Actor, hitsTakenInCombo) == 0x14E, "Gof1Actor.hitsTakenInCombo");
+static_assert(offsetof(Gof1Actor, attackHitsConnected) == 0x150, "Gof1Actor.attackHitsConnected");
+static_assert(offsetof(Gof1Actor, evadeDir) == 0x152, "Gof1Actor.evadeDir");
+static_assert(offsetof(Gof1Actor, evadeTimer) == 0x153, "Gof1Actor.evadeTimer");
+static_assert(offsetof(Gof1Actor, unreferenced_154) == 0x154, "Gof1Actor.unreferenced_154");
+static_assert(offsetof(Gof1Actor, flashMode) == 0x156, "Gof1Actor.flashMode");
+static_assert(offsetof(Gof1Actor, flashTimer) == 0x157, "Gof1Actor.flashTimer");
+static_assert(offsetof(Gof1Actor, flashDuration) == 0x158, "Gof1Actor.flashDuration");
+static_assert(offsetof(Gof1Actor, requestParam) == 0x159, "Gof1Actor.requestParam");
+static_assert(offsetof(Gof1Actor, counterWindowState) == 0x15A, "Gof1Actor.counterWindowState");
+static_assert(offsetof(Gof1Actor, unreferenced_15B) == 0x15B, "Gof1Actor.unreferenced_15B");
+static_assert(offsetof(Gof1Actor, launchVelX) == 0x15C, "Gof1Actor.launchVelX");
+static_assert(offsetof(Gof1Actor, launchVelY) == 0x15E, "Gof1Actor.launchVelY");
+static_assert(offsetof(Gof1Actor, launchAccelX) == 0x160, "Gof1Actor.launchAccelX");
+static_assert(offsetof(Gof1Actor, launchAccelY) == 0x162, "Gof1Actor.launchAccelY");
+static_assert(offsetof(Gof1Actor, hitAt) == 0x164, "Gof1Actor.hitAt");
+static_assert(offsetof(Gof1Actor, hitRect) == 0x184, "Gof1Actor.hitRect");
+static_assert(offsetof(Gof1Actor, hitAttacker) == 0x204, "Gof1Actor.hitAttacker");
+static_assert(offsetof(Gof1Actor, lastAttacker) == 0x224, "Gof1Actor.lastAttacker");
+static_assert(offsetof(Gof1Actor, grabbedBy) == 0x228, "Gof1Actor.grabbedBy");
+static_assert(offsetof(Gof1Actor, ownerFighter) == 0x22C, "Gof1Actor.ownerFighter");
+static_assert(offsetof(Gof1Actor, linkedActor) == 0x230, "Gof1Actor.linkedActor");
+static_assert(offsetof(Gof1Actor, inputDir) == 0x234, "Gof1Actor.inputDir");
+static_assert(offsetof(Gof1Actor, unreferenced_235) == 0x235, "Gof1Actor.unreferenced_235");
+static_assert(offsetof(Gof1Actor, inputButtons) == 0x238, "Gof1Actor.inputButtons");
+static_assert(offsetof(Gof1Actor, inputButtonsReleased) == 0x23C, "Gof1Actor.inputButtonsReleased");
+static_assert(offsetof(Gof1Actor, teamIndex) == 0x240, "Gof1Actor.teamIndex");
+static_assert(offsetof(Gof1Actor, endConditionMet) == 0x241, "Gof1Actor.endConditionMet");
+static_assert(offsetof(Gof1Actor, pendingPattern) == 0x242, "Gof1Actor.pendingPattern");
+static_assert(offsetof(Gof1Actor, pendingPatternPriority) == 0x244, "Gof1Actor.pendingPatternPriority");
+static_assert(offsetof(Gof1Actor, pendingFrame) == 0x246, "Gof1Actor.pendingFrame");
+static_assert(offsetof(Gof1Actor, pendingFramePriority) == 0x248, "Gof1Actor.pendingFramePriority");
+static_assert(offsetof(Gof1Actor, facingLeft) == 0x24A, "Gof1Actor.facingLeft");
+static_assert(offsetof(Gof1Actor, nextFacingLeft) == 0x24B, "Gof1Actor.nextFacingLeft");
+static_assert(offsetof(Gof1Actor, facingReserved_24C) == 0x24C, "Gof1Actor.facingReserved_24C");
+static_assert(offsetof(Gof1Actor, mirrorHistoryPending) == 0x24D, "Gof1Actor.mirrorHistoryPending");
+static_assert(offsetof(Gof1Actor, inputActionLatch) == 0x24E, "Gof1Actor.inputActionLatch");
+static_assert(offsetof(Gof1Actor, actionChangedFlag) == 0x24F, "Gof1Actor.actionChangedFlag");
+static_assert(offsetof(Gof1Actor, landed) == 0x250, "Gof1Actor.landed");
+static_assert(offsetof(Gof1Actor, actionEnded) == 0x251, "Gof1Actor.actionEnded");
+static_assert(offsetof(Gof1Actor, stanceCopy) == 0x252, "Gof1Actor.stanceCopy");
+static_assert(offsetof(Gof1Actor, unreferenced_253) == 0x253, "Gof1Actor.unreferenced_253");
+static_assert(offsetof(Gof1Actor, boxTable) == 0x254, "Gof1Actor.boxTable");
+static_assert(offsetof(Gof1Actor, charData) == 0x258, "Gof1Actor.charData");
+static_assert(offsetof(Gof1Actor, patternHeader) == 0x25C, "Gof1Actor.patternHeader");
+static_assert(offsetof(Gof1Actor, frameRecord) == 0x260, "Gof1Actor.frameRecord");
+static_assert(offsetof(Gof1Actor, animFrame) == 0x264, "Gof1Actor.animFrame");
+static_assert(offsetof(Gof1Actor, stateFrame) == 0x268, "Gof1Actor.stateFrame");
+static_assert(offsetof(Gof1Actor, ifTable) == 0x26C, "Gof1Actor.ifTable");
+static_assert(offsetof(Gof1Actor, efTable) == 0x270, "Gof1Actor.efTable");
+static_assert(offsetof(Gof1Actor, boxIndex) == 0x274, "Gof1Actor.boxIndex");
+static_assert(offsetof(Gof1Actor, partsData) == 0x278, "Gof1Actor.partsData");
+static_assert(offsetof(Gof1Actor, cgData) == 0x27C, "Gof1Actor.cgData");
+static_assert(offsetof(Gof1Actor, fighterSlot) == 0x280, "Gof1Actor.fighterSlot");
+static_assert(offsetof(Gof1Actor, unreferenced_284) == 0x284, "Gof1Actor.unreferenced_284");
+static_assert(offsetof(Gof1Actor, actionTicks) == 0x288, "Gof1Actor.actionTicks");
+static_assert(offsetof(Gof1Actor, ranThisTick) == 0x28C, "Gof1Actor.ranThisTick");
+static_assert(offsetof(Gof1Actor, unreferenced_28D) == 0x28D, "Gof1Actor.unreferenced_28D");
+static_assert(sizeof(Gof1HitVectorRow) == 0x12, "Gof1HitVectorRow size");
+static_assert(offsetof(Gof1HitVectorRow, velX) == 0x0, "Gof1HitVectorRow.velX");
+static_assert(offsetof(Gof1HitVectorRow, velY) == 0x2, "Gof1HitVectorRow.velY");
+static_assert(offsetof(Gof1HitVectorRow, accelX) == 0x4, "Gof1HitVectorRow.accelX");
+static_assert(offsetof(Gof1HitVectorRow, accelY) == 0x6, "Gof1HitVectorRow.accelY");
+static_assert(offsetof(Gof1HitVectorRow, launchVelX) == 0x8, "Gof1HitVectorRow.launchVelX");
+static_assert(offsetof(Gof1HitVectorRow, launchVelY) == 0xA, "Gof1HitVectorRow.launchVelY");
+static_assert(offsetof(Gof1HitVectorRow, launchAccelX) == 0xC, "Gof1HitVectorRow.launchAccelX");
+static_assert(offsetof(Gof1HitVectorRow, launchAccelY) == 0xE, "Gof1HitVectorRow.launchAccelY");
+static_assert(offsetof(Gof1HitVectorRow, hitStage) == 0x10, "Gof1HitVectorRow.hitStage");
+static_assert(sizeof(Gof1CommandMove) == 0x2E, "Gof1CommandMove size");
+static_assert(offsetof(Gof1CommandMove, commandId) == 0x0, "Gof1CommandMove.commandId");
+static_assert(offsetof(Gof1CommandMove, unreferenced_01) == 0x1, "Gof1CommandMove.unreferenced_01");
+static_assert(offsetof(Gof1CommandMove, sequence) == 0x2, "Gof1CommandMove.sequence");
+static_assert(offsetof(Gof1CommandMove, targetPattern) == 0x22, "Gof1CommandMove.targetPattern");
+static_assert(offsetof(Gof1CommandMove, moveClass) == 0x23, "Gof1CommandMove.moveClass");
+static_assert(offsetof(Gof1CommandMove, meterCostLevels) == 0x24, "Gof1CommandMove.meterCostLevels");
+static_assert(offsetof(Gof1CommandMove, requestParam) == 0x26, "Gof1CommandMove.requestParam");
+static_assert(offsetof(Gof1CommandMove, unreferenced_27) == 0x27, "Gof1CommandMove.unreferenced_27");
+static_assert(offsetof(Gof1CommandMove, counterRequirement) == 0x28, "Gof1CommandMove.counterRequirement");
+static_assert(offsetof(Gof1CommandMove, unreferenced_2A) == 0x2A, "Gof1CommandMove.unreferenced_2A");
+static_assert(offsetof(Gof1CommandMove, flags) == 0x2C, "Gof1CommandMove.flags");
+static_assert(offsetof(Gof1CommandMove, flags2) == 0x2D, "Gof1CommandMove.flags2");
+static_assert(sizeof(Gof1CtHeader) == 0x1C, "Gof1CtHeader size");
+static_assert(offsetof(Gof1CtHeader, unreferenced_00) == 0x0, "Gof1CtHeader.unreferenced_00");
+static_assert(offsetof(Gof1CtHeader, unreferenced_01) == 0x1, "Gof1CtHeader.unreferenced_01");
+static_assert(offsetof(Gof1CtHeader, recoveryStyle) == 0x2, "Gof1CtHeader.recoveryStyle");
+static_assert(offsetof(Gof1CtHeader, unreferenced_03) == 0x3, "Gof1CtHeader.unreferenced_03");
+static_assert(offsetof(Gof1CtHeader, unreferenced_04) == 0x4, "Gof1CtHeader.unreferenced_04");
+static_assert(offsetof(Gof1CtHeader, flags) == 0x5, "Gof1CtHeader.flags");
+static_assert(offsetof(Gof1CtHeader, unreferenced_06) == 0x6, "Gof1CtHeader.unreferenced_06");
+static_assert(offsetof(Gof1CtHeader, knockbackScale) == 0x8, "Gof1CtHeader.knockbackScale");
+static_assert(offsetof(Gof1CtHeader, damageScaleByLifeTier) == 0xC, "Gof1CtHeader.damageScaleByLifeTier");
+static_assert(sizeof(Gof1CtFile) == 0x1218, "Gof1CtFile size");
+static_assert(offsetof(Gof1CtFile, commandCount) == 0x0, "Gof1CtFile.commandCount");
+static_assert(offsetof(Gof1CtFile, command) == 0x4, "Gof1CtFile.command");
+static_assert(offsetof(Gof1CtFile, ct) == 0x11FC, "Gof1CtFile.ct");
+static_assert(sizeof(Gof1InputRing) == 0x200, "Gof1InputRing size");
+static_assert(offsetof(Gof1InputRing, state) == 0x0, "Gof1InputRing.state");
+static_assert(offsetof(Gof1InputRing, age) == 0x100, "Gof1InputRing.age");
+static_assert(sizeof(Gof1FighterSlot) == 0x18AC, "Gof1FighterSlot size");
+static_assert(offsetof(Gof1FighterSlot, active) == 0x0, "Gof1FighterSlot.active");
+static_assert(offsetof(Gof1FighterSlot, unreferenced_01) == 0x1, "Gof1FighterSlot.unreferenced_01");
+static_assert(offsetof(Gof1FighterSlot, actor) == 0x4, "Gof1FighterSlot.actor");
+static_assert(offsetof(Gof1FighterSlot, ct) == 0x294, "Gof1FighterSlot.ct");
+static_assert(offsetof(Gof1FighterSlot, commandCount) == 0x2B0, "Gof1FighterSlot.commandCount");
+static_assert(offsetof(Gof1FighterSlot, command) == 0x2B4, "Gof1FighterSlot.command");
+static_assert(offsetof(Gof1FighterSlot, ringA) == 0x14AC, "Gof1FighterSlot.ringA");
+static_assert(offsetof(Gof1FighterSlot, ringB) == 0x16AC, "Gof1FighterSlot.ringB");
+static_assert(sizeof(Gof1ObjectSlot) == 0x294, "Gof1ObjectSlot size");
+static_assert(offsetof(Gof1ObjectSlot, active) == 0x0, "Gof1ObjectSlot.active");
+static_assert(offsetof(Gof1ObjectSlot, unreferenced_01) == 0x1, "Gof1ObjectSlot.unreferenced_01");
+static_assert(offsetof(Gof1ObjectSlot, actor) == 0x4, "Gof1ObjectSlot.actor");
 
 static const Han2EnumValue kGof1AniFlagValues[] = {
 	{"G1ANI_END_TO_PATTERN", (int64_t)(0)},
@@ -710,6 +1352,114 @@ static const Han2EnumValue kGof1PartFlipModeValues[] = {
 	{"G1PARTFLIP_V", (int64_t)(2)},
 	{"G1PARTFLIP_HV", (int64_t)(3)},
 };
+static const Han2EnumValue kGof1ObjKindValues[] = {
+	{"G1OBJ_FIGHTER", (int64_t)(0)},
+	{"G1OBJ_GHOST_TRAIL", (int64_t)(31)},
+	{"G1OBJ_CHILD_8F", (int64_t)(143)},
+	{"G1OBJ_CHILD", (int64_t)(255)},
+};
+static const Han2EnumValue kGof1ControlTypeValues[] = {
+	{"G1CTRL_HUMAN", (int64_t)(0)},
+	{"G1CTRL_CPU", (int64_t)(1)},
+};
+static const Han2EnumValue kGof1RunStateValues[] = {
+	{"G1RUN_IDLE", (int64_t)(0)},
+	{"G1RUN_PENDING", (int64_t)(1)},
+	{"G1RUN_FORCED", (int64_t)(2)},
+};
+static const Han2EnumValue kGof1ObjFlagsAValues[] = {
+	{"G1OF_A_FOLLOW_PARENT_STATE", (int64_t)(1)},
+	{"G1OF_A_NO_MIRROR", (int64_t)(2)},
+	{"G1OF_A_FOLLOW_PARENT_EDGE_PUSH", (int64_t)(4)},
+	{"G1OF_A_FREEZE_WITH_PARENT_HITSTOP", (int64_t)(8)},
+	{"G1OF_A_END_ON_PARENT_ACTION_CHANGE", (int64_t)(0x20)},
+	{"G1OF_A_NO_GROUND_LANDING", (int64_t)(0x40)},
+};
+static const Han2EnumValue kGof1ObjFlagsBValues[] = {
+	{"G1OF_B_DRAW_SHADOW", (int64_t)(1)},
+	{"G1OF_B_ADVANCE_WITH_PARENT", (int64_t)(2)},
+	{"G1OF_B_END_WHEN_PARENT_AIRBORNE", (int64_t)(4)},
+	{"G1OF_B_HITSTOP_TO_OWNER", (int64_t)(8)},
+	{"G1OF_B_RENDERER_BIT7", (int64_t)(0x80)},
+};
+static const Han2EnumValue kGof1DecorFlagsValues[] = {
+	{"G1DECOR_DEPTH_BUMP", (int64_t)(1)},
+};
+static const Han2EnumValue kGof1HomingModeValues[] = {
+	{"G1HOME_NONE", (int64_t)(0)},
+	{"G1HOME_EASE_TO_TARGET", (int64_t)(1)},
+	{"G1HOME_CONSTANT_SPEED", (int64_t)(2)},
+};
+static const Han2EnumValue kGof1AttackResultFlagsValues[] = {
+	{"G1HITRES_HIT", (int64_t)(1)},
+	{"G1HITRES_GUARDED", (int64_t)(2)},
+	{"G1HITRES_TESTED_BIT4", (int64_t)(4)},
+	{"G1HITRES_EVADED_STRIKE", (int64_t)(8)},
+	{"G1HITRES_VICTIM_GROUND", (int64_t)(0x10)},
+	{"G1HITRES_VICTIM_AIR", (int64_t)(0x20)},
+};
+static const Han2EnumValue kGof1FlashModeValues[] = {
+	{"G1FLASH_BLUE_BLINK", (int64_t)(0)},
+	{"G1FLASH_WHITE_BLINK", (int64_t)(1)},
+	{"G1FLASH_YELLOW_BLINK", (int64_t)(2)},
+	{"G1FLASH_GREEN_BLINK", (int64_t)(3)},
+	{"G1FLASH_GREY_BLINK", (int64_t)(4)},
+	{"G1FLASH_WHITE_FADE", (int64_t)(5)},
+	{"G1FLASH_BLUE_FADE", (int64_t)(6)},
+	{"G1FLASH_RED_FADE", (int64_t)(7)},
+	{"G1FLASH_CYAN_FADE", (int64_t)(8)},
+};
+static const Han2EnumValue kGof1InputDirectionValues[] = {
+	{"G1DIR_NEUTRAL", (int64_t)(0)},
+	{"G1DIR_DOWN_LEFT", (int64_t)(1)},
+	{"G1DIR_DOWN", (int64_t)(2)},
+	{"G1DIR_DOWN_RIGHT", (int64_t)(3)},
+	{"G1DIR_LEFT", (int64_t)(4)},
+	{"G1DIR_RIGHT", (int64_t)(6)},
+	{"G1DIR_UP_LEFT", (int64_t)(7)},
+	{"G1DIR_UP", (int64_t)(8)},
+	{"G1DIR_UP_RIGHT", (int64_t)(9)},
+};
+static const Han2EnumValue kGof1InputButtonFlagsValues[] = {
+	{"G1BTN_A", (int64_t)(1)},
+	{"G1BTN_B", (int64_t)(2)},
+	{"G1BTN_C", (int64_t)(4)},
+	{"G1BTN_D", (int64_t)(8)},
+	{"G1BTN_E", (int64_t)(0x10)},
+	{"G1BTN_F", (int64_t)(0x20)},
+	{"G1BTN_A_PRESSED", (int64_t)(0x1000)},
+	{"G1BTN_B_PRESSED", (int64_t)(0x2000)},
+	{"G1BTN_C_PRESSED", (int64_t)(0x4000)},
+	{"G1BTN_D_PRESSED", (int64_t)(0x8000)},
+	{"G1BTN_E_PRESSED", (int64_t)(0x10000)},
+	{"G1BTN_F_PRESSED", (int64_t)(0x20000)},
+};
+static const Han2EnumValue kGof1CommandMoveClassValues[] = {
+	{"G1MOVE_SYSTEM", (int64_t)(0)},
+	{"G1MOVE_SPECIAL", (int64_t)(1)},
+	{"G1MOVE_SUPER", (int64_t)(2)},
+};
+static const Han2EnumValue kGof1CommandFlagsValues[] = {
+	{"G1CMD_STANCE_GROUND", (int64_t)(1)},
+	{"G1CMD_STANCE_AIR", (int64_t)(2)},
+	{"G1CMD_STANCE_CROUCH", (int64_t)(4)},
+	{"G1CMD_IGNORE_CANCEL_RULE", (int64_t)(8)},
+	{"G1CMD_CLEAR_HISTORY_ON_ACTION", (int64_t)(0x10)},
+	{"G1CMD_SCRIPT_ONLY", (int64_t)(0x20)},
+	{"G1CMD_NEEDS_GUARD_CANCEL", (int64_t)(0x40)},
+};
+static const Han2EnumValue kGof1CommandFlags2Values[] = {
+	{"G1CMD2_USE_RING_B", (int64_t)(1)},
+	{"G1CMD2_STRICT_SEQUENCE", (int64_t)(2)},
+	{"G1CMD2_EVADE_MOVE", (int64_t)(0x80)},
+};
+static const Han2EnumValue kGof1CtFlagsValues[] = {
+	{"G1CT_RESTRICT_REPEAT_MOVES", (int64_t)(1)},
+	{"G1CT_EVADE_ENABLED", (int64_t)(2)},
+	{"G1CT_JUST_GUARD_ENABLED", (int64_t)(8)},
+	{"G1CT_UNREAD_BIT4", (int64_t)(0x10)},
+	{"G1CT_UNREAD_BIT5", (int64_t)(0x20)},
+};
 static const Han2EnumInfo kGof1TypesEnums[] = {
 	{"Gof1AniFlag", kGof1AniFlagValues, 6, false},
 	{"Gof1DrawMode", kGof1DrawModeValues, 10, false},
@@ -729,6 +1479,21 @@ static const Han2EnumInfo kGof1TypesEnums[] = {
 	{"Gof1EfType", kGof1EfTypeValues, 11, false},
 	{"Gof1EfActorOp", kGof1EfActorOpValues, 23, false},
 	{"Gof1PartFlipMode", kGof1PartFlipModeValues, 4, false},
+	{"Gof1ObjKind", kGof1ObjKindValues, 4, false},
+	{"Gof1ControlType", kGof1ControlTypeValues, 2, false},
+	{"Gof1RunState", kGof1RunStateValues, 3, false},
+	{"Gof1ObjFlagsA", kGof1ObjFlagsAValues, 6, true},
+	{"Gof1ObjFlagsB", kGof1ObjFlagsBValues, 5, true},
+	{"Gof1DecorFlags", kGof1DecorFlagsValues, 1, true},
+	{"Gof1HomingMode", kGof1HomingModeValues, 3, false},
+	{"Gof1AttackResultFlags", kGof1AttackResultFlagsValues, 6, true},
+	{"Gof1FlashMode", kGof1FlashModeValues, 9, false},
+	{"Gof1InputDirection", kGof1InputDirectionValues, 9, false},
+	{"Gof1InputButtonFlags", kGof1InputButtonFlagsValues, 12, true},
+	{"Gof1CommandMoveClass", kGof1CommandMoveClassValues, 3, false},
+	{"Gof1CommandFlags", kGof1CommandFlagsValues, 7, true},
+	{"Gof1CommandFlags2", kGof1CommandFlags2Values, 3, true},
+	{"Gof1CtFlags", kGof1CtFlagsValues, 5, true},
 };
 
 static const Han2FieldInfo kGof1ArchiveFileHeaderFields[] = {
@@ -917,4 +1682,275 @@ static const Han2FieldInfo kGof1TextureRegionFields[] = {
 };
 static const Han2FieldInfo kGof1PatternNameFields[] = {
 	{"name", 0x0, 1, 64, 0, nullptr, "+0x00 E: CP932 pattern name, e.g. \"立ち弱攻撃\"; editor-only, the game never reads the tail"},
+};
+static const Han2FieldInfo kGof1ActorFields[] = {
+	{"slotIndex", 0x0, 1, 1, 0, nullptr, "+0x000 T: fighter slot / owner player index 0..3 (SetupFighterSlot sub_403A90 stores the slot id; per-player tables dword_18645A0[130*i]; EfType9 sound bank arg0+50*(i+8); children copy it in InitChildObject)"},
+	{"characterId", 0x1, 1, 1, 0, nullptr, "+0x001 T: roster character id (sub_403A90: dword_17919D4[42*sel]); copied through InitFighterSlotForRound; only reader ObjRunActionScript compares it with 34"},
+	{"controlType", 0x2, 1, 1, 2, "Gof1ControlType", "+0x002 T: 0 human, 1 CPU (sub_403A90 a5 == 1; Battle_UpdateAllCharactersInputAndAI, Actor_RunFrameIfRecord IF 11, Damage_ScaleByComboAndLife, sub_43A120)"},
+	{"unreferenced_03", 0x3, 1, 1, 0, nullptr, "+0x003 U: no access in any function"},
+	{"objKind", 0x4, 1, 1, 2, "Gof1ObjKind", "+0x004 T: 0 fighter; 31 ghost trail (SpawnEffectFromActorFrame); 0xFF/0x8F spawned child (InitChildObject, SpawnChildEffectFromParent); >= 0xF0 is non-fighter (sub_4242C0, sub_424560, ObjScreenEdgeOverlap); bit 7 = child (many tests)"},
+	{"paletteIndex", 0x5, 1, 1, 0, nullptr, "+0x005 T: colour palette chosen at character select (sub_403A90 byte_16224B9 = a4); preserved by InitFighterSlotForRound"},
+	{"pattern", 0x6, 1, 1, 0, nullptr, "+0x006 T: current pattern (action) id; Actor_ResolveFrameDataPointers indexes charData.patternOffset with it (doc actor+6)"},
+	{"frame", 0x7, 1, 1, 0, nullptr, "+0x007 T: current frame number inside the pattern (Actor_ResolveFrameDataPointers, ObjRunActionScript)"},
+	{"spriteId", 0x8, 2, 1, 0, nullptr, "+0x008 T: sprite id of the current frame, written by ObjEnterCurrentAction via Pattern_GetFrameSpriteId, read by DrawFighterSprite / PushFighterAfterimage"},
+	{"ifRunState", 0xA, 1, 1, 2, "Gof1RunState", "+0x00A T: IF-table run gate: ObjEnterCurrentAction sets 1 (2 stays), sub_4242C0 sets 2 on action change, Actor_TickWordTimers clears it each tick; sub_426BD0/EffectObjects_UpdateAll test it"},
+	{"efRunState", 0xB, 1, 1, 2, "Gof1RunState", "+0x00B T: EF-table run gate, same protocol as ifRunState; Actor_RunFrameEFs clears it after running the frame effects"},
+	{"airReactionActive", 0xC, 1, 1, 0, nullptr, "+0x00C T: 1 while a launch/air hit-reaction stage (hitStage >= 240) is running: set by Actor_StartKnockback and by ObjRunActionScript on landing, tested/cleared in Actor_ApplyFrameMotionFlags"},
+	{"unreferenced_0D", 0xD, 1, 1, 0, nullptr, "+0x00D U: no access in any function"},
+	{"frameTicks", 0xE, 2, 1, 0, nullptr, "+0x00E T: ticks spent on the current frame, compared with AF.duration (ObjRunActionScript); the grab code copies the grabber value (DrawFighterSprite)"},
+	{"lifeTimer", 0x10, 2, 1, 0, nullptr, "+0x010 T: remaining life of a ghost trail object (EffectObjects_UpdateAll decrements it, sets endConditionMet at 0; sub_413FD0 fades by it)"},
+	{"animationEnded", 0x12, 1, 1, 0, nullptr, "+0x012 T: set by ObjRunActionScript when the animation reached its last frame (aniFlag 3/4 branch); read by IF 2 END_CONDITION p2 (Actor_RunFrameIfRecord)"},
+	{"unreferenced_13", 0x13, 1, 1, 0, nullptr, "+0x013 U: no access in any function"},
+	{"loopCounter", 0x14, 1, 1, 0, nullptr, "+0x014 T: AF.loopCount is loaded here (ObjEnterCurrentAction); IF 9/10 set/test it (Actor_RunFrameIfRecord); aniFlag 2/5 consume it (ObjRunActionScript)"},
+	{"unreferenced_15", 0x15, 1, 1, 0, nullptr, "+0x015 U: no access in any function"},
+	{"spawnFlagsA", 0x16, 2, 1, 2, "Gof1ObjFlagsA", "+0x016 T: child flags from EF arg2 (InitChildObject); EffectObjects_UpdateAll, ObjIntegrateMotion (0x40), sub_413FD0 / sub_4144C0 (2), Render_QueueFighterSprite pass them on"},
+	{"spawnFlagsB", 0x18, 2, 1, 2, "Gof1ObjFlagsB", "+0x018 T: child flags from EF arg3 (InitChildObject); EffectObjects_UpdateAll (2, 4), Actor_SetHitstopFrames / ObjFighterStateAndHitReaction (8), sub_413FD0 (1 draws a shadow with sub_42E0D0)"},
+	{"homingMode", 0x1A, 1, 1, 2, "Gof1HomingMode", "+0x01A T: EF arg4 low byte (InitChildObject); sub_413940 homing object update"},
+	{"homingBaseAction", 0x1B, 1, 1, 0, nullptr, "+0x01B T: EF subType = first of the homing action family (sub_413940 requests base+1..3 with ObjRequestAction)"},
+	{"homingReserved_1C", 0x1C, 1, 1, 0, nullptr, "+0x01C U: only written (0) by InitChildObject, never read"},
+	{"unreferenced_1D", 0x1D, 1, 1, 0, nullptr, "+0x01D U: no access in any function"},
+	{"homingTick", 0x1E, 2, 1, 0, nullptr, "+0x01E T: counts up while homingTimeout != 0 (sub_413940)"},
+	{"homingTimeout", 0x20, 2, 1, 0, nullptr, "+0x020 T: EfType30_SetActorParams sub 0 arg2; sub_413940 ends the homing when homingTick reaches it"},
+	{"homingOffsetX", 0x22, 2, 1, 1, nullptr, "+0x022 T: EF arg0 / EfType30 arg0; target offset X, 128 = centred (sub_413940 v3 = +-(f022 - 128) << 8)"},
+	{"homingOffsetY", 0x24, 2, 1, 1, nullptr, "+0x024 T: EF arg1 / EfType30 arg1; target offset Y, 224 = baseline (sub_413940 (f024 - 224) << 8)"},
+	{"homingCooldown", 0x26, 2, 1, 0, nullptr, "+0x026 T: sub_413940 sets 40 after a hit and counts it down"},
+	{"homingParam", 0x28, 2, 10, 1, nullptr, "+0x028 T: word table written by EfType30_SetActorParams sub 1 (word[40 + 2*arg0] = arg1) and cleared by InitChildObject; sub_413940 reads [0] as the speed"},
+	{"aiActionTimer", 0x3C, 2, 1, 0, nullptr, "+0x03C T: CPU AI: frames left in the running AI script command (FighterCpuAiStep decrements it when not in hit-stop, then calls FighterCpuAi_ApplyScriptCommand)"},
+	{"aiReactCooldown", 0x3E, 2, 1, 0, nullptr, "+0x03E T: CPU AI: frames before the next decision / guard reaction (FighterCpuAiStep loads the difficulty delay v28 or v28 >> 2 and counts it down)"},
+	{"aiScriptIndex", 0x40, 2, 1, 1, nullptr, "+0x040 T: CPU AI: index of the running AI script, -1 = none (FighterCpuAiStep, FighterCpuAi_ApplyScriptCommand)"},
+	{"aiScriptStep", 0x42, 2, 1, 1, nullptr, "+0x042 T: CPU AI: step inside the AI script (FighterCpuAiStep increments it, sub_403C10 / ApplyScriptCommand)"},
+	{"cpuCommandReady", 0x44, 1, 1, 0, nullptr, "+0x044 T: CPU command request latch: IF 11/25 consume it when controlType == CPU (Actor_RunFrameIfRecord); cleared by ObjRunActionScript"},
+	{"unreferenced_45", 0x45, 1, 3, 0, nullptr, "+0x045 U: no access in any function"},
+	{"superMeter", 0x48, 4, 1, 1, nullptr, "+0x048 T: super meter, 10000 per level, capped 90000 (AddSuperMeter, EfType6 op 4, Actor_SpawnEffectById spends 10000*cost; IF 11 compares f048/10000 with the move cost); preserved across rounds"},
+	{"superMeterFlash", 0x4C, 1, 1, 0, nullptr, "+0x04C T: AddSuperMeter sets 10 when a 30000 threshold is crossed (no reader in the traced set)"},
+	{"unreferenced_4D", 0x4D, 1, 3, 0, nullptr, "+0x04D U: no access in any function"},
+	{"reserveGauge", 0x50, 4, 1, 1, nullptr, "+0x050 T: third gauge 0..10000: EfType6 op 4 adds arg2 and clamps, sub_4252A0 adds the pending combo gauge, sub_424980 clears it at round start; preserved across rounds by InitFighterSlotForRound"},
+	{"unreferenced_54", 0x54, 1, 4, 0, nullptr, "+0x054 U: no access in any function"},
+	{"reservePending", 0x58, 4, 1, 1, nullptr, "+0x058 T: reserve gauge gain waiting to be banked: sub_4252A0 adds it to reserveGauge (capped 10000) when g_combo_guard_flags[teamIndex] is set and clears it; no writer found in the traced set"},
+	{"life", 0x5C, 4, 1, 1, nullptr, "+0x05C T: hit points, 11400 at round start (InitFighterSlotForRound); Damage_*, ObjFighterStateAndHitReaction, EfType5/6 modify it; <= 0 is KO"},
+	{"lifeInitCopy", 0x60, 4, 1, 1, nullptr, "+0x060 U: written with 11400 by InitFighterSlotForRound / FighterSlot_ResetKeepingDataPointers, never read"},
+	{"unreferenced_64", 0x64, 1, 2, 0, nullptr, "+0x064 U: no access in any function"},
+	{"superMoveState", 0x66, 1, 1, 0, nullptr, "+0x066 T: 2 while a super move is active (sub_4242C0 sets it when superMoveFlag; sub_424980 clears it; ObjFighterStateAndHitReaction halves guard damage by the attacker owner state)"},
+	{"superMoveFlag", 0x67, 1, 1, 0, nullptr, "+0x067 T: armed by sub_426BD0 when a command move is accepted, consumed by sub_4242C0"},
+	{"clearHistoryOnAction", 0x68, 1, 1, 0, nullptr, "+0x068 T: set from command flag 0x10 (sub_426BD0); sub_4242C0 then clears both input rings with sub_4266D0"},
+	{"unreferenced_69", 0x69, 1, 3, 0, nullptr, "+0x069 U: no access in any function"},
+	{"guardGauge", 0x6C, 4, 1, 1, nullptr, "+0x06C T: guard gauge, guard break above 10000 (ObjFighterStateAndHitReaction adds AT.guardBreakValue; Actor_DecayGuardGauge decays it in steps of 7..15; DrawFighterSprite flashes above 8000)"},
+	{"unreferenced_70", 0x70, 1, 4, 0, nullptr, "+0x070 U: no access in any function"},
+	{"guardRegenDelay", 0x74, 4, 1, 1, nullptr, "+0x074 T: frames before the guard gauge starts to decay (45/60/90 set by ObjFighterStateAndHitReaction, 120 by sub_426BD0; Actor_DecayGuardGauge)"},
+	{"posX", 0x78, 4, 1, 1, nullptr, "+0x078 T: world X in 1/128 pixel units (sub_413940, ObjIntegrateMotion, Actor_RunFrameIfRecord, InitChildObject, camera code)"},
+	{"posY", 0x7C, 4, 1, 1, nullptr, "+0x07C T: world Y in 1/128 pixel units, 0 = ground, negative = up (ObjIntegrateMotion lands at > 0)"},
+	{"unreferenced_80", 0x80, 1, 4, 0, nullptr, "+0x080 U: no access in any function"},
+	{"posXAtTickEnd", 0x84, 4, 1, 1, nullptr, "+0x084 T: posX copy written at the end of ObjIntegrateMotion; never read"},
+	{"posXAtTickStart", 0x88, 4, 1, 1, nullptr, "+0x088 T: posX before the tick (ObjIntegrateMotion, sub_413940); EffectObjects_UpdateAll and ObjResolvePushboxCollision read it back"},
+	{"posYAtTickStart", 0x8C, 4, 1, 1, nullptr, "+0x08C T: posY before the tick (ObjIntegrateMotion, sub_413940, EffectObjects_UpdateAll)"},
+	{"velX", 0x90, 4, 1, 1, nullptr, "+0x090 T: velocity X (Actor_ApplyFrameMotionFlags adds AS.velX, ObjIntegrateMotion integrates it)"},
+	{"velY", 0x94, 4, 1, 1, nullptr, "+0x094 T: velocity Y"},
+	{"accelX", 0x98, 2, 1, 1, nullptr, "+0x098 T: acceleration X (AS.accelX, ObjIntegrateMotion)"},
+	{"accelY", 0x9A, 2, 1, 1, nullptr, "+0x09A T: acceleration Y (gravity, AS.accelY)"},
+	{"maxVelX", 0x9C, 2, 1, 1, nullptr, "+0x09C T: X speed clamp (AS.maxVelX, ObjIntegrateMotion)"},
+	{"unreferenced_9E", 0x9E, 1, 2, 0, nullptr, "+0x09E U: no access in any function"},
+	{"knockVelX", 0xA0, 4, 1, 1, nullptr, "+0x0A0 T: knockback velocity X (Actor_StartKnockback, ObjIntegrateMotion adds knockAccelX and zeroes it on sign change)"},
+	{"knockVelY", 0xA4, 4, 1, 1, nullptr, "+0x0A4 T: knockback velocity Y"},
+	{"knockAccelX", 0xA8, 2, 1, 1, nullptr, "+0x0A8 T: knockback friction X (g_HitVectorTable, ObjIntegrateMotion)"},
+	{"knockAccelY", 0xAA, 2, 1, 1, nullptr, "+0x0AA T: knockback gravity Y"},
+	{"inertiaX", 0xAC, 4, 1, 1, nullptr, "+0x0AC T: carried inertia added to posX each tick, decays by inertiaDecay (Actor_ApplyFrameMotionFlags, ObjIntegrateMotion; divided by 3 when entering the air)"},
+	{"carriedVelX", 0xB0, 4, 1, 1, nullptr, "+0x0B0 T: velX saved when AS.flags1 bit 0 is set, turned into inertiaX on the next pattern (Actor_ApplyFrameMotionFlags)"},
+	{"inertiaDecay", 0xB4, 2, 1, 1, nullptr, "+0x0B4 T: carriedVelX / 16 (Actor_ApplyFrameMotionFlags); ObjIntegrateMotion subtracts it from inertiaX"},
+	{"carryPattern", 0xB6, 2, 1, 0, nullptr, "+0x0B6 T: pattern in which carriedVelX was saved (Actor_ApplyFrameMotionFlags, ObjIntegrateMotion)"},
+	{"grabDrawOffsetX0", 0xB8, 2, 1, 1, nullptr, "+0x0B8 T: start draw offset X of a grabbed actor (EfType4/5 write it, DrawFighterSprite lerps to grabDrawOffsetX1 by the grabber progress, scaled 0.75)"},
+	{"grabDrawOffsetY0", 0xBA, 2, 1, 1, nullptr, "+0x0BA T: start draw offset Y of a grabbed actor"},
+	{"zoomOriginX0", 0xBC, 2, 1, 1, nullptr, "+0x0BC T: zoom/rotation origin X at the start of the grab animation, 320 by default (Render_QueueFighterSprite lerps it with zoomOriginX1)"},
+	{"zoomOriginY0", 0xBE, 2, 1, 1, nullptr, "+0x0BE T: origin Y, 240 by default"},
+	{"grabDrawOffsetX1", 0xC0, 2, 1, 1, nullptr, "+0x0C0 T: end draw offset X of a grabbed actor (EfType4/5, DrawFighterSprite)"},
+	{"grabDrawOffsetY1", 0xC2, 2, 1, 1, nullptr, "+0x0C2 T: end draw offset Y"},
+	{"zoomOriginX1", 0xC4, 2, 1, 1, nullptr, "+0x0C4 T: zoom/rotation origin X at the end, 320 by default"},
+	{"zoomOriginY1", 0xC6, 2, 1, 1, nullptr, "+0x0C6 T: origin Y at the end, 240 by default"},
+	{"rotAngleA", 0xC8, 2, 1, 1, nullptr, "+0x0C8 T: rotation angle, 1/10000 turn: ObjRunActionScript adds 950 per tick while thrown; passed to sub_42FEF0 by Render_QueueFighterSprite; EfType5 sets it from EF arg4"},
+	{"rotAngleB", 0xCA, 2, 1, 1, nullptr, "+0x0CA T: second rotation angle passed to sub_42FEF0 (set together with rotAngleA)"},
+	{"clearInertiaRequest", 0xCC, 1, 1, 0, nullptr, "+0x0CC T: set by Actor_StartKnockback; Actor_ApplyFrameMotionFlags then clears inertiaX/inertiaDecay"},
+	{"attackResult", 0xCD, 1, 1, 2, "Gof1AttackResultFlags", "+0x0CD T: result of this actor attack on its victim (doc actor+205): ObjFighterStateAndHitReaction sets 1/2 and 0x10/0x20 by the victim stance, ObjCheckAttackVsFighters sets 8; reset by ObjEnterCurrentAction; tested by IF 3/6, Actor_RequestLocomotionFromInput"},
+	{"ownerAttackResult", 0xCE, 1, 1, 2, "Gof1AttackResultFlags", "+0x0CE T: copy of a child attack result written into its owner (ObjFighterStateAndHitReaction f22C->f0CE = f0CD)"},
+	{"drawDepth", 0xCF, 1, 1, 0, nullptr, "+0x0CF T: draw order key 5..255 (Actor_ApplyDrawPriority; SpawnEffectFromActorFrame; Render_QueueFighterSprite)"},
+	{"drawModeVariant", 0xD0, 1, 1, 0, nullptr, "+0x0D0 T: row offset into g_DrawModeRemapTable while grabbed (EfType4 sets frame/1000; DrawFighterSprite, Box_ApplyDrawModeTransform)"},
+	{"activeMoveMeterCost", 0xD1, 1, 1, 0, nullptr, "+0x0D1 T: meter levels of the running command move (IF 11 copies command+36; Actor_SpawnEffectById spends it, sub_426BD0)"},
+	{"superCancelFlag", 0xD2, 1, 1, 0, nullptr, "+0x0D2 T: sub_426BD0 sets it when a super is started out of a non-actionable frame (v20); ObjRunActionScript stops voice class 10 with sub_42C5B0 and clears it on the next action change"},
+	{"hitstopFrames", 0xD3, 1, 1, 0, nullptr, "+0x0D3 T: remaining hit-stop frames (Actor_SetHitstopFrames; ObjRunActionScript / ObjIntegrateMotion skip while non-zero)"},
+	{"hitstopTrailing", 0xD4, 1, 1, 0, nullptr, "+0x0D4 T: set to 1 by ObjFighterStateAndHitReaction; ObjRunActionScript counts it down with hitstopFrames and clears landed when it runs out"},
+	{"contactMark", 0xD5, 1, 1, 0, nullptr, "+0x0D5 T: set to 1 by ObjCheckAttackVsFighters / ObjCheckAttackVsObjects / ObjCheckReflectBoxVsAttacks when this actor attack box touched something; read by FighterCpuAiStep to chain AI script steps"},
+	{"grabState", 0xD6, 1, 1, 0, nullptr, "+0x0D6 T: 0 free, 1 held by a fighter, 2 held by a child object (Actor_TryGrabFighter); gates ObjRunActionScript, ObjIntegrateMotion, hit detection"},
+	{"inputLock", 0xD7, 1, 1, 0, nullptr, "+0x0D7 T: EfType6 op 9 sets it (doc SET_FLAG_215); blocks input dispatch (Actor_DispatchInputByStance, sub_43A120, sub_426BD0)"},
+	{"freezeTimerA", 0xD8, 1, 1, 0, nullptr, "+0x0D8 T: EfType6 op 2 arg0; Actor_TickFreezeTimers counts it down; also set to 2/8/10 by Actor_ApplyFrameMotionFlags"},
+	{"freezeTimerB", 0xD9, 1, 1, 0, nullptr, "+0x0D9 T: EfType6 op 2 arg1; counted down by Actor_TickFreezeTimers; checked by ObjCheckAttackVs*"},
+	{"koFlag", 0xDA, 1, 1, 0, nullptr, "+0x0DA T: set at KO by ObjFighterStateAndHitReaction (EfType6 op 252 writes it, doc SET_BYTE_218); tested by sub_424780, ObjResolvePushboxCollision, Camera_UpdateFixedScreen"},
+	{"cameraExcludeFlag", 0xDB, 1, 1, 0, nullptr, "+0x0DB T: Camera_UpdateFixedScreen skips fighters with it set; no writer in the traced set"},
+	{"attackHitsLeft", 0xDC, 1, 1, 0, nullptr, "+0x0DC T: hits the current attack may still land (AS.attackHitCount loaded by ObjEnterCurrentAction; ObjCheckAttackVs* decrement; doc actor+220)"},
+	{"guardState", 0xDD, 1, 1, 0, nullptr, "+0x0DD T: non-zero while guarding (ObjFighterStateAndHitReaction sets 1; DrawFighterSprite flashes when > 4; sub_426BD0 gates guard-cancel moves on > 4)"},
+	{"cpuGuardRequest", 0xDE, 1, 1, 0, nullptr, "+0x0DE T: written by FighterCpuAiStep (random guard decision by difficulty); ObjFighterStateAndHitReaction treats the hit as guardable when set (a human actor never sets it)"},
+	{"unreferenced_DF", 0xDF, 1, 3, 0, nullptr, "+0x0DF U: no access in any function"},
+	{"recoverMode", 0xE2, 1, 1, 0, nullptr, "+0x0E2 T: wake-up/recovery selector set by ObjFighterStateAndHitReaction (0, 1, 25), Actor_WallBounceReaction, cleared by EfType4"},
+	{"recoverReserved", 0xE3, 1, 1, 0, nullptr, "+0x0E3 U: only written (0) by ObjRunActionScript / ObjFighterStateAndHitReaction, never read"},
+	{"bounceCount", 0xE4, 1, 1, 0, nullptr, "+0x0E4 T: wall/ground bounces taken (Actor_WallBounceReaction increments; ObjRunActionScript wraps > 2 to -16)"},
+	{"recoveryTimer", 0xE5, 1, 1, 0, nullptr, "+0x0E5 T: frames since the last hit (ObjRunActionScript increments, ObjFighterStateAndHitReaction resets; Actor_TryTechOrCrouchGuardSwitch window < 16)"},
+	{"throwTechSeen", 0xE6, 1, 1, 0, nullptr, "+0x0E6 T: set on the grabber by sub_425E10 when a throw tech succeeds; ComboRecord_RegisterHit flags the combo"},
+	{"stageEdgeSide", 0xE7, 1, 1, 0, nullptr, "+0x0E7 T: 1/2 = pushed past the right/left stage edge by sub_425A50; sub_424780 / ObjResolvePushboxCollision use it for wall bounce"},
+	{"airComboStarterLatch", 0xE8, 1, 1, 0, nullptr, "+0x0E8 T: set by ObjFighterStateAndHitReaction when AT.flagsB 0x10 hit lands, cleared by ObjRunActionScript / Actor_StartKnockback test"},
+	{"throwTechAllowed", 0xE9, 1, 1, 0, nullptr, "+0x0E9 T: ObjFighterStateAndHitReaction sets !(AT.flagsB & 0x20) ...; sub_425E10 requires it"},
+	{"inputBlockFlag", 0xEA, 1, 1, 0, nullptr, "+0x0EA T: sub_43A120 refuses input while set; cleared by ObjRunActionScript; no writer in the traced set"},
+	{"counterHitSide", 0xEB, 1, 1, 0, nullptr, "+0x0EB T: 1 = this actor landed a counter-hit (set on the attacker owner), 2 = this actor was counter-hit (set on the victim) by ObjFighterStateAndHitReaction; Actor_StartKnockback and sub_4242C0 clear it; sub_426BD0 (counter-hit cancels, evade moves) and Actor_RequestLocomotionFromInput read it"},
+	{"scriptTimer", 0xEC, 2, 5, 0, nullptr, "+0x0EC T: five countdown words (Actor_TickWordTimers); EfType6 op 10 (doc SET_WORD_VAR_236) sets [arg0]; [0] = hyper armor window and [2] = counter-hit window are read by ObjFighterStateAndHitReaction"},
+	{"hitQueueClear", 0xF6, 1, 1, 0, nullptr, "+0x0F6 T: ObjCheckAttackVs* set 1 to discard last tick hit queue; ObjFighterStateAndHitReaction zeroes hitQueueCount when set"},
+	{"hitQueueCount", 0xF7, 1, 1, 0, nullptr, "+0x0F7 T: number of valid hitAt/hitRect/hitAttacker entries, max 8 (ObjCheckAttackVsFighters, ObjCheckAttackVsObjects, Actor_TryGrabFighter)"},
+	{"tintMode", 0xF8, 1, 1, 2, "Gof1StatusEffect", "+0x0F8 T: AT.statusEffect written by ObjFighterStateAndHitReaction; DrawFighterSprite tints by it (1 red pulse, 2 random shimmer, 3 yellow/black/grey)"},
+	{"shakeTimer", 0xF9, 1, 1, 0, nullptr, "+0x0F9 T: draw shake after a hit (DrawFighterSprite offsets Y by f0F9>>2 on odd ticks); counted down by Actor_TickFreezeTimers"},
+	{"hitStage", 0xFA, 2, 1, 1, nullptr, "+0x0FA T: 0 = not in hit-stun; 1..239 = remaining stun frames; 240..255 = launch/air stages dispatched by Actor_ApplyFrameMotionFlags (byte_425734); set from g_HitVectorTable by Actor_StartKnockback"},
+	{"juggleState", 0xFC, 2, 1, 1, nullptr, "+0x0FC T: non-zero while the victim is in an air juggle (halves damage in Damage_ScaleByComboAndLife; sub_424780 wall bounce rule); cleared by Actor_TryGrabFighter"},
+	{"hitReactionId", 0xFE, 2, 1, 0, nullptr, "+0x0FE T: reaction index passed to Actor_StartKnockback (g_HitVectorTable row); sub_424780 / Actor_WallBounceReaction compare 9, 13, 27"},
+	{"hitStageAtHit", 0x100, 2, 1, 1, nullptr, "+0x100 T: copy of hitStage taken by Actor_StartKnockback (read by sub_426BD0 as < 240)"},
+	{"hitRecoverFrames", 0x102, 1, 1, 0, nullptr, "+0x102 T: recovery frames after a hit, computed by ObjFighterStateAndHitReaction from hitStage and hitsTakenInCombo, cleared by EfType4_ControlGrabbedOpponent; no reader in the traced set"},
+	{"unreferenced_103", 0x103, 1, 1, 0, nullptr, "+0x103 U: no access in any function"},
+	{"invulnFlags", 0x104, 1, 1, 0, nullptr, "+0x104 T: non-zero = takes no damage (ObjFighterStateAndHitReaction, sub_43A120); EfType6 op 255 sets 0x10 (doc SET_FLAG_260)"},
+	{"scriptFlag105", 0x105, 1, 1, 0, nullptr, "+0x105 T: EfType6 op 254 sets 1 (doc SET_FLAG_261); cleared by Battle_InitRoundFighters / Round_IntroStateMachine; no reader in the traced set"},
+	{"koMoveType", 0x106, 1, 1, 0, nullptr, "+0x106 T: (attacker move type & 0x7F) + 1 when the actor is KO by it (ObjFighterStateAndHitReaction); non-zero blocks recovery (Actor_StartKnockback, sub_426BD0)"},
+	{"inputHeldFlags", 0x107, 1, 1, 0, nullptr, "+0x107 T: Actor_DispatchInputByStance sets bit 7 when the direction is neutral and clears it for crouch/air; ObjRunActionScript clears it; no reader in the traced set"},
+	{"inputReserved_108", 0x108, 1, 1, 0, nullptr, "+0x108 U: only written (0) by ObjRunActionScript, never read"},
+	{"guardRecoveryFlag", 0x109, 1, 1, 0, nullptr, "+0x109 T: 1 after a guard-cancel/early guard (Actor_StartKnockback special case), read by Actor_CanGuardAttack and Actor_TryTechOrCrouchGuardSwitch"},
+	{"mashCounter", 0x10A, 2, 1, 0, nullptr, "+0x10A T: counts button presses while in hit-stun (Actor_TryTechOrCrouchGuardSwitch); Damage_ScaleByComboAndLife reduces damage by 0.3% each; sub_426BD0 tests it"},
+	{"tobiCount", 0x10C, 1, 10, 1, nullptr, "+0x10C T: ten projectile (\"TOBI\") counters shown by Debug_DrawEntityInfo as \"TOBI %03d\"; EfType6 op 100/101 add/subtract (arg0 tens digit = index, units = amount), sub_426BD0 refuses a command when the counter is too low"},
+	{"dashCount", 0x116, 1, 1, 0, nullptr, "+0x116 T: shown by Debug_DrawEntityInfo as \"DASH %03d\"; EfType6 op 102/103 add/subtract (doc ADD_BYTE_278); cleared by ObjRunActionScript"},
+	{"unreferenced_117", 0x117, 1, 1, 0, nullptr, "+0x117 U: no access in any function"},
+	{"paramVar", 0x118, 2, 10, 1, nullptr, "+0x118 T: ten word variables shown by Debug_DrawEntityInfo as \"PARAM %05d\"; EfType6 op 105 sets/adds [arg0]; IF 25/31 compare/write them (Actor_RunFrameIfRecord); Actor_SpawnEffectById reads [1],[2]; SpawnCommonEffectObject copies a 20-byte defaults block here"},
+	{"trailMode", 0x12C, 1, 1, 0, nullptr, "+0x12C T: ghost trail colour mode + 1 (EfType6 op 0; DrawFighterSprite spawns SpawnEffectFromActorFrame every 7th tick); on a ghost object (objKind 31) it is the colour mode read by sub_413FD0"},
+	{"unreferenced_12D", 0x12D, 1, 1, 0, nullptr, "+0x12D U: no access in any function"},
+	{"decorLifeTotal", 0x12E, 2, 1, 0, nullptr, "+0x12E T: ghost object total life (SpawnEffectFromActorFrame a5; sub_413FD0 fades alpha by lifeTimer / this)"},
+	{"decorFlags", 0x130, 2, 1, 2, "Gof1DecorFlags", "+0x130 T: ghost object flags (SpawnEffectFromActorFrame a6; sub_413FD0 adds 10 to the depth when bit 0)"},
+	{"decorZoomGrowX", 0x132, 2, 1, 1, nullptr, "+0x132 T: ghost zoom change per remaining tick X (SpawnEffectFromActorFrame a3; sub_413FD0)"},
+	{"decorZoomGrowY", 0x134, 2, 1, 1, nullptr, "+0x134 T: ghost zoom change per remaining tick Y (a4)"},
+	{"afterimageMode", 0x136, 1, 1, 0, nullptr, "+0x136 T: afterimage config id + 1 (EfType6 op 3); DrawFighterAfterimage switches on it, 0 = off"},
+	{"afterimageSteps", 0x137, 1, 1, 0, nullptr, "+0x137 T: number of afterimage steps <= 119 (EfType6 op 3 arg1; DrawFighterAfterimage)"},
+	{"afterimageSpacing", 0x138, 1, 1, 0, nullptr, "+0x138 T: spacing of the steps (EfType6 op 3 arg2; DrawFighterAfterimage)"},
+	{"afterimageRestart", 0x139, 1, 1, 0, nullptr, "+0x139 T: set to 1 by EfType6 op 3 when the mode changes; no reader in the traced set"},
+	{"justGuardActive", 0x13A, 1, 1, 0, nullptr, "+0x13A T: set when a just-guard (button bit 7 and CT flag 8) absorbs a hit (ObjFighterStateAndHitReaction); Actor_StartKnockback then pushes the attacker back instead"},
+	{"unreferenced_13B", 0x13B, 1, 1, 0, nullptr, "+0x13B U: no access in any function"},
+	{"locomotionUsedMask", 0x13C, 2, 1, 0, nullptr, "+0x13C T: bit n = pattern n (1..9 walk/run/dash/jump) used since the last landing (ObjRunActionScript); Actor_RequestLocomotionFromInput tests bits 1,2,4,0x10,0x20,0x80,0x100"},
+	{"commandUsedMask", 0x13E, 1, 14, 0, nullptr, "+0x13E T: bit i = command move i already used in this chain (ObjRunActionScript sets it, sub_426BD0 refuses repeats, sub_43BE80 counts the bits)"},
+	{"pendingCommandId", 0x14C, 1, 1, 0, nullptr, "+0x14C T: command move accepted by sub_426BD0 this tick (0xFF = none); ObjRunActionScript moves it into commandUsedMask"},
+	{"lastCommandId", 0x14D, 1, 1, 0, nullptr, "+0x14D T: previous pendingCommandId (ObjRunActionScript writes it); no reader in the traced set"},
+	{"hitsTakenInCombo", 0x14E, 2, 1, 1, nullptr, "+0x14E T: consecutive hits taken (ObjFighterStateAndHitReaction increments; ObjRunActionScript indexes byte_463FE0 with it to time recovery)"},
+	{"attackHitsConnected", 0x150, 2, 1, 0, nullptr, "+0x150 T: hits landed by the current action (ObjCheckAttackVsFighters/Objects increment; IF 17 compares with p1; sub_4242C0 clears)"},
+	{"evadeDir", 0x152, 1, 1, 0, nullptr, "+0x152 T: 1 forward / 2 back double-tap evade detected by sub_427040; ObjFighterStateAndHitReaction picks the evade-high/low answer from it"},
+	{"evadeTimer", 0x153, 1, 1, 0, nullptr, "+0x153 T: evade window counter (sub_427040 loads 8, then -8 cooldown; ObjFighterStateAndHitReaction)"},
+	{"unreferenced_154", 0x154, 1, 2, 0, nullptr, "+0x154 U: no access in any function"},
+	{"flashMode", 0x156, 1, 1, 2, "Gof1FlashMode", "+0x156 T: colour flash mode (Actor_SetColorFlash; DrawFighterSprite / sub_413FD0 switch)"},
+	{"flashTimer", 0x157, 1, 1, 0, nullptr, "+0x157 T: remaining flash frames (Actor_TickFreezeTimers decrements)"},
+	{"flashDuration", 0x158, 1, 1, 0, nullptr, "+0x158 T: total flash frames, denominator of the fade modes"},
+	{"requestParam", 0x159, 1, 1, 0, nullptr, "+0x159 T: argument a5 of ObjRequestAction, cleared by ObjRunActionScript, set from command byte +38 by sub_426BD0; no reader in the traced set"},
+	{"counterWindowState", 0x15A, 1, 1, 2, "Gof1CounterCommand", "+0x15A T: counter-hit window set by frame flags2 bits 20..23 (ObjEnterCurrentAction); ObjFighterStateAndHitReaction reads it to apply the counter bonus"},
+	{"unreferenced_15B", 0x15B, 1, 1, 0, nullptr, "+0x15B U: no access in any function"},
+	{"launchVelX", 0x15C, 2, 1, 1, nullptr, "+0x15C T: stage-2 launch velocity X loaded when hitStage advances (Actor_StartKnockback fills it from g_HitVectorTable, Actor_ApplyFrameMotionFlags consumes it)"},
+	{"launchVelY", 0x15E, 2, 1, 1, nullptr, "+0x15E T: stage-2 launch velocity Y"},
+	{"launchAccelX", 0x160, 2, 1, 1, nullptr, "+0x160 T: stage-2 acceleration X"},
+	{"launchAccelY", 0x162, 2, 1, 1, nullptr, "+0x162 T: stage-2 acceleration Y"},
+	{"hitAt", 0x164, 4, 8, 4, nullptr, "+0x164 T: AT record of each hit received this tick (ObjCheckAttackVsFighters writes *(a+4*count+356); ObjFighterStateAndHitReaction reads)"},
+	{"hitRect", 0x184, 16, 8, 4, nullptr, "+0x184 T: world rectangle of each overlap (ObjCheckAttackVsFighters writes 16 bytes at +388+16*count; used to place the hit spark)"},
+	{"hitAttacker", 0x204, 4, 8, 4, nullptr, "+0x204 T: attacking actor of each hit (ObjCheckAttackVsFighters writes *(a+4*count+516))"},
+	{"lastAttacker", 0x224, 4, 1, 4, nullptr, "+0x224 T: attacker of the last accepted hit (ObjFighterStateAndHitReaction); Actor_StartKnockback applies the push to it on a just-guard; ObjResolvePushboxCollision"},
+	{"grabbedBy", 0x228, 4, 1, 4, nullptr, "+0x228 T: grabber while grabState != 0 (Actor_TryGrabFighter victim->f228 = grabber; ObjIntegrateMotion drags the grabber position along)"},
+	{"ownerFighter", 0x22C, 4, 1, 4, nullptr, "+0x22C T: owning fighter of a child object (InitChildObject via sub_424560, SpawnChildEffectFromParent); homing target in sub_413940; 0 for fighters"},
+	{"linkedActor", 0x230, 4, 1, 4, nullptr, "+0x230 T: parent actor of a child (InitChildObject, SpawnChildEffectFromParent; read by EffectObjects_UpdateAll, Actor_SetHitstopFrames, DrawFighterSprite) / grab victim of a fighter (Actor_TryGrabFighter and sub_425E10 write it)"},
+	{"inputDir", 0x234, 1, 1, 2, "Gof1InputDirection", "+0x234 T: numpad direction facing-corrected (ReadBattleInputForPlayer; mirrored by Actor_MirrorInputDirection via dword_463FB8; recorded by ReplayRecordOrPlaybackFighterInput)"},
+	{"unreferenced_235", 0x235, 1, 3, 0, nullptr, "+0x235 U: no access in any function"},
+	{"inputButtons", 0x238, 4, 1, 2, "Gof1InputButtonFlags", "+0x238 T: buttons held (bits 0..5) and pressed this tick (bits 12..17) (ReadBattleInputForPlayer a3; replay recorder; Actor_RequestLocomotionFromInput, sub_425E10 tests & 0xF)"},
+	{"inputButtonsReleased", 0x23C, 4, 1, 2, "Gof1InputButtonFlags", "+0x23C T: buttons released this tick (bits 0..5) (ReadBattleInputForPlayer a4); input ring B ORs it in (UpdateFighterInputHistoryRings)"},
+	{"teamIndex", 0x240, 1, 1, 0, nullptr, "+0x240 T: side/team 0 or 1 (InitFighterSlotForRound a2; children copy it); same-team test in ObjCheckAttackVsFighters, indexes per-team stats (dword_1552F70[15*i])"},
+	{"endConditionMet", 0x241, 1, 1, 0, nullptr, "+0x241 T: set by IF 2 END_CONDITION and by EffectObjects_UpdateAll (doc actor+577); the object is removed on the next tick"},
+	{"pendingPattern", 0x242, 2, 1, 0, nullptr, "+0x242 T: pattern requested by ObjRequestAction, 0xFFFF = none (ObjRunActionScript consumes it)"},
+	{"pendingPatternPriority", 0x244, 2, 1, 1, nullptr, "+0x244 T: priority of the pending request, -1 = none; a request wins when its priority is higher (ObjRequestAction)"},
+	{"pendingFrame", 0x246, 2, 1, 0, nullptr, "+0x246 T: frame requested by sub_424510 / IF jumps, 0xFFFF = none"},
+	{"pendingFramePriority", 0x248, 2, 1, 1, nullptr, "+0x248 T: priority of the pending frame jump, -1 = none"},
+	{"facingLeft", 0x24A, 1, 1, 0, nullptr, "+0x24A T: 0 faces right, 1 faces left (read by ~70 functions: sub_413940, DrawFighterSprite, Actor_ApplyFrameMotionFlags, InitChildObject)"},
+	{"nextFacingLeft", 0x24B, 1, 1, 0, nullptr, "+0x24B T: facing to turn to when the action changes (ObjRunActionScript copies it into facingLeft; Actor_WallBounceReaction, EfType6 op 5, sub_413940)"},
+	{"facingReserved_24C", 0x24C, 1, 1, 0, nullptr, "+0x24C U: only written (0xFF) by InitFighterSlotForRound / FighterSlot_ResetKeepingDataPointers, never read"},
+	{"mirrorHistoryPending", 0x24D, 1, 1, 0, nullptr, "+0x24D T: read by UpdateFighterInputHistoryRings and sub_426910: when the facing changed and it is 1 the recorded directions are mirrored (dword_463FB8) and it is cleared"},
+	{"inputActionLatch", 0x24E, 1, 1, 0, nullptr, "+0x24E T: set 1 by IF 6/7 input jumps with flag 4 (doc actor+590); ObjRunActionScript steps it 1 -> 2 -> 0; EffectObjects_UpdateAll kills children when the parent shows 2"},
+	{"actionChangedFlag", 0x24F, 1, 1, 0, nullptr, "+0x24F T: sub_4242C0 sets 1 on every action change, Actor_TickWordTimers clears it; children with spawnFlagsA bit 0x20 die when the parent shows 1"},
+	{"landed", 0x250, 1, 1, 0, nullptr, "+0x250 T: 1 when posY reached the ground (ObjIntegrateMotion; doc actor+592): drives aniFlag 3/4 landing jumps, IF 2 p1, Actor_ApplyFrameMotionFlags"},
+	{"actionEnded", 0x251, 1, 1, 0, nullptr, "+0x251 T: ObjRunActionScript sets it when a landing/animation end finished the action; EffectObjects_UpdateAll ends children whose parent shows it"},
+	{"stanceCopy", 0x252, 1, 1, 2, "Gof1Stance", "+0x252 T: AS.stance of the previous tick (ObjRunActionScript); ObjIntegrateMotion divides inertiaX by 3 on a ground-to-air change"},
+	{"unreferenced_253", 0x253, 1, 1, 0, nullptr, "+0x253 U: no access in any function"},
+	{"boxTable", 0x254, 4, 1, 4, nullptr, "+0x254 T: pattern + boxTableOffset or 0 (Actor_ResolveFrameDataPointers; doc actor+596)"},
+	{"charData", 0x258, 4, 1, 4, nullptr, "+0x258 T: character pattern block (Slot_BindCharacterData from g_CharPatternData; Pattern_Get* read patternOffset[] through it)"},
+	{"patternHeader", 0x25C, 4, 1, 4, nullptr, "+0x25C T: current pattern header (Actor_ResolveFrameDataPointers; Actor_GetPatternFrameRecords)"},
+	{"frameRecord", 0x260, 4, 1, 4, nullptr, "+0x260 T: current 116-byte frame record (Actor_ResolveFrameDataPointers; ObjCheckAttackVsFighters reads atIndex at +80)"},
+	{"animFrame", 0x264, 4, 1, 4, nullptr, "+0x264 T: same address as frameRecord, typed as the AF half (DrawFighterSprite, ObjRunActionScript)"},
+	{"stateFrame", 0x268, 4, 1, 4, nullptr, "+0x268 T: frameRecord + 40, the AS half (ObjIntegrateMotion, Actor_ApplyFrameMotionFlags)"},
+	{"ifTable", 0x26C, 4, 1, 4, nullptr, "+0x26C T: pattern + ifTableOffset or 0 (ObjRunFrameEventsForPhase)"},
+	{"efTable", 0x270, 4, 1, 4, nullptr, "+0x270 T: pattern + efTableOffset or 0 (Actor_RunFrameEFs)"},
+	{"boxIndex", 0x274, 4, 1, 1, nullptr, "+0x274 T: frameRecord + 96, the 10 box indices (Actor_FindOverlappingTarget, ObjCheckAttackVs*)"},
+	{"partsData", 0x278, 4, 1, 4, nullptr, "+0x278 T: character parts blob (Slot_BindCharacterData from g_CharPartsData; Render_QueueFighterSprite)"},
+	{"cgData", 0x27C, 4, 1, 4, nullptr, "+0x27C T: character CG blob (Slot_BindCharacterData from g_CharCgData; Render_QueueFighterSprite)"},
+	{"fighterSlot", 0x280, 4, 1, 4, nullptr, "+0x280 T: pointer to the owning fighter slot (InitFighterSlotForRound stores the slot itself); 0 for child objects; gates AddSuperMeter and gives access to the CT data"},
+	{"unreferenced_284", 0x284, 1, 4, 0, nullptr, "+0x284 U: no access in any function"},
+	{"actionTicks", 0x288, 4, 1, 1, nullptr, "+0x288 T: ticks since the action started (ObjRunActionScript increments, sub_4242C0 clears; DrawFighterSprite flickers on % 3 / % 7)"},
+	{"ranThisTick", 0x28C, 1, 1, 0, nullptr, "+0x28C T: ObjRunActionScript sets 1 once it passed all gates, 0 at its start; Battle_UpdateAllCharactersInputAndAI, hit detection and DrawFighterSprite test it"},
+	{"unreferenced_28D", 0x28D, 1, 3, 0, nullptr, "+0x28D U: no access in any function"},
+};
+static const Han2FieldInfo kGof1HitVectorRowFields[] = {
+	{"velX", 0x0, 2, 1, 1, nullptr, "+0x000 T: knockback velocity X, multiplied by the attack direction sign (Actor_StartKnockback -> actor.knockVelX); vector.txt column 0"},
+	{"velY", 0x2, 2, 1, 1, nullptr, "+0x002 T: knockback velocity Y, scaled by the combo decay factor (-> actor.knockVelY); column 1"},
+	{"accelX", 0x4, 2, 1, 1, nullptr, "+0x004 T: knockback friction X, signed by direction (-> actor.knockAccelX); column 2"},
+	{"accelY", 0x6, 2, 1, 1, nullptr, "+0x006 T: knockback gravity Y (-> actor.knockAccelY); column 3"},
+	{"launchVelX", 0x8, 2, 1, 1, nullptr, "+0x008 T: velocity X of the launch stage reached when hitStage >= 240 (-> actor.launchVelX); column 4"},
+	{"launchVelY", 0xA, 2, 1, 1, nullptr, "+0x00A T: velocity Y of the launch stage (-> actor.launchVelY); column 5"},
+	{"launchAccelX", 0xC, 2, 1, 1, nullptr, "+0x00C T: acceleration X of the launch stage (-> actor.launchAccelX); column 6"},
+	{"launchAccelY", 0xE, 2, 1, 1, nullptr, "+0x00E T: acceleration Y of the launch stage (-> actor.launchAccelY); column 7"},
+	{"hitStage", 0x10, 2, 1, 1, nullptr, "+0x010 T: stun frames (< 240) or launch stage code 240..255 (-> actor.hitStage); column 8; 255 = air launch, 248 = ground slide"},
+};
+static const Han2FieldInfo kGof1CommandMoveFields[] = {
+	{"commandId", 0x0, 1, 1, 0, nullptr, "+0x000 T: own index, 0xFF = unused slot (sub_426FC0, sub_426BD0 test it)"},
+	{"unreferenced_01", 0x1, 1, 1, 0, nullptr, "+0x001 U: zero in every record of all 8 characters, never accessed"},
+	{"sequence", 0x2, 1, 32, 0, nullptr, "+0x002 T: input token string 0xFF terminated: 0..9 direction, 0x41..0x46 buttons A..F, 0x2B + joiner, 0x54 T hold; parsed backwards from the last token by sub_4266F0 / sub_4267F0 (sub_426910). Bytes 16..31 are cleared by InitFighterSlotForRound"},
+	{"targetPattern", 0x22, 1, 1, 0, nullptr, "+0x022 T: pattern requested when the command fires (sub_426BD0 -> ObjRequestAction; compared with the current pattern)"},
+	{"moveClass", 0x23, 1, 1, 2, "Gof1CommandMoveClass", "+0x023 T: 0 system, 1 special, 2 super: selects the move-level rule in sub_426BD0"},
+	{"meterCostLevels", 0x24, 2, 1, 0, nullptr, "+0x024 T: super meter levels needed (compared with superMeter / 10000 in IF 11 and sub_426BD0; low byte -> activeMoveMeterCost)"},
+	{"requestParam", 0x26, 1, 1, 0, nullptr, "+0x026 T: stored in actor requestParam (sub_426BD0)"},
+	{"unreferenced_27", 0x27, 1, 1, 0, nullptr, "+0x027 U: zero in every record of all 8 characters, never accessed"},
+	{"counterRequirement", 0x28, 2, 1, 0, nullptr, "+0x028 T: tens digit = counter[] index and units = amount (< 100), or 100+ = global counter bank dword_1864EA0 (sub_426BD0 refuses when not enough)"},
+	{"unreferenced_2A", 0x2A, 1, 2, 0, nullptr, "+0x02A U: zero in every record of all 8 characters, never accessed"},
+	{"flags", 0x2C, 1, 1, 2, "Gof1CommandFlags", "+0x02C T: see Gof1CommandFlags (sub_426BD0 stance/cancel gating, sub_426FC0 skips SCRIPT_ONLY)"},
+	{"flags2", 0x2D, 1, 1, 2, "Gof1CommandFlags2", "+0x02D T: see Gof1CommandFlags2 (sub_426910 ring select / strictness, sub_426BD0 evade moves)"},
+};
+static const Han2FieldInfo kGof1CtHeaderFields[] = {
+	{"unreferenced_00", 0x0, 1, 1, 0, nullptr, "+0x000 U: zero in all 8 CT files, never accessed"},
+	{"unreferenced_01", 0x1, 1, 1, 0, nullptr, "+0x001 U: 9 in all 8 CT files, never accessed"},
+	{"recoveryStyle", 0x2, 1, 1, 0, nullptr, "+0x002 T: 1 in all files; ObjRunActionScript (0x424F23) switches the hit recovery handling on it"},
+	{"unreferenced_03", 0x3, 1, 1, 0, nullptr, "+0x003 U: zero in all 8 CT files, never accessed"},
+	{"unreferenced_04", 0x4, 1, 1, 0, nullptr, "+0x004 U: zero in all 8 CT files; sub_426BD0 reads the word at +4 but only tests bit 8 (= flags bit 0)"},
+	{"flags", 0x5, 1, 1, 2, "Gof1CtFlags", "+0x005 T: 0x39 / 0x3B in the data; ObjRunActionScript (bit 0), sub_426BD0 (bit 0), ObjFighterStateAndHitReaction (bits 1, 3)"},
+	{"unreferenced_06", 0x6, 1, 2, 0, nullptr, "+0x006 U: zero in all 8 CT files, never accessed"},
+	{"knockbackScale", 0x8, 4, 1, 1, nullptr, "+0x008 T: 1.0 in all files; Actor_StartKnockback multiplies the vertical knockback (0 means 1.0)"},
+	{"damageScaleByLifeTier", 0xC, 4, 4, 1, nullptr, "+0x00C T: 1.1 (AKIKO) / 0.9 (others) in all files; Damage_ScaleByComboAndLife picks it by the victim life tier (2850 / 5700 / 8550)"},
+};
+static const Han2FieldInfo kGof1CtFileFields[] = {
+	{"commandCount", 0x0, 4, 1, 0, nullptr, "+0x000 T: number of defined commands (Character_LoadCtFile a1[172]); the loop in InitFighterSlotForRound runs to it"},
+	{"command", 0x4, 46, 100, 4, nullptr, "+0x004 T: command table copied (0x11F8 bytes) to slot+692"},
+	{"ct", 0x11FC, 28, 1, 4, nullptr, "+0x11FC T: 28 bytes copied to slot+660"},
+};
+static const Han2FieldInfo kGof1InputRingFields[] = {
+	{"state", 0x0, 4, 64, 0, nullptr, "+0x000 T: (direction << 24) | buttons for each distinct input state (ring A: inputButtons, ring B: inputButtons | inputButtonsReleased); matched backwards by sub_426910"},
+	{"age", 0x100, 4, 64, 0, nullptr, "+0x100 T: frames spent in state[i] (capped at 1000000; sub_4266D0 sets 1000000 to invalidate the history)"},
+};
+static const Han2FieldInfo kGof1FighterSlotFields[] = {
+	{"active", 0x0, 1, 1, 0, nullptr, "+0x000 T: 1 = slot in use (Slot_BindCharacterData, InitFighterSlotForRound set 1, FighterSlot_ResetKeepingDataPointers 0; all loops test it)"},
+	{"unreferenced_01", 0x1, 1, 3, 0, nullptr, "+0x001 U: no access in any function (pool stride 660 = 1 + 3 + 656)"},
+	{"actor", 0x4, 656, 1, 4, nullptr, "+0x004 T: the actor (actor = slot + 4; memset 0x290 at InitFighterSlotForRound)"},
+	{"ct", 0x294, 28, 1, 4, nullptr, "+0x294 T: CT header copied by Character_LoadCtFile (Actor_StartKnockback reads +8, Damage_ScaleByComboAndLife +12, ObjRunActionScript +2/+5)"},
+	{"commandCount", 0x2B0, 4, 1, 1, nullptr, "+0x2B0 T: Character_LoadCtFile a1[172]; InitFighterSlotForRound clears the runtime tail of each of these commands"},
+	{"command", 0x2B4, 46, 100, 4, nullptr, "+0x2B4 T: command-move table (sub_426FC0 scans all 100; IF 11 indexes it)"},
+	{"ringA", 0x14AC, 512, 1, 4, nullptr, "+0x14AC T: input history A (UpdateFighterInputHistoryRings at +5292/+5548)"},
+	{"ringB", 0x16AC, 512, 1, 4, nullptr, "+0x16AC T: input history B with releases (+5804/+6060)"},
+};
+static const Han2FieldInfo kGof1ObjectSlotFields[] = {
+	{"active", 0x0, 1, 1, 0, nullptr, "+0x000 T: 1 = slot in use (Slot_BindCharacterData, InitFighterSlotForRound set 1, FighterSlot_ResetKeepingDataPointers 0; all loops test it)"},
+	{"unreferenced_01", 0x1, 1, 3, 0, nullptr, "+0x001 U: no access in any function (pool stride 660 = 1 + 3 + 656)"},
+	{"actor", 0x4, 656, 1, 4, nullptr, "+0x004 T: the actor (InitChildObject: memset(slot + 4, 0, 0x290))"},
 };
