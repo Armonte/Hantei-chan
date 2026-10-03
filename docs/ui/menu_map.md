@@ -97,3 +97,8 @@ Nothing else was dropped. The top menu "Preferences", "Experimental: Authoring" 
 
 File > Import keeps every per-format loader. Drag and drop of `.ha6 .txt .hproj .p` now also uses this routing. Files opened through Open... go into File > Open Recent (new ini key `RecentFile=`, max 10; `RecentProject=` is untouched).
 Test hook: `--open-any a|b|c` runs the same routine at startup.
+
+## Verification of Open... on MBAC data
+- `--open-any` on 6 loose Hantei4 .DATs from `C:\games\MB\R\01` (AKAAKIHA, AKIHA, AOKO, ARC, CIEL, HISUI) and 2 from the MBAC install tree `C:\games\MB\AC\install\MBACPC\02_extracted` (KOHAKU, LEN): all route to the MBAC (HA4) loader and render (`docs/ui/evidence/mbac_open_any_8_characters.png`; the MBAC (HA4) inspector is open in each).
+- The MBAC `.p` archives in `C:\games\MB\AC` start with `PKFileInfo`, not `FilePacHeaderA`: neither `mbaaccpackage pack-list` nor `p_extractor.py` reads them, so the "extracted" files above are the ones already extracted in the install tree.
+- Native dialog: File > Open... opened the Windows dialog; the path was entered and the dialog's own Open button pressed (by window message, because keystrokes did not reach the dialog); MIYAKO.DAT loaded as MBAC (`native_dialog_open_result.png`).
