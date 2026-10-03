@@ -15,7 +15,7 @@ Scanned every instruction of all 5000 functions for `[reg+disp]` with disp 1568.
 Class-relative accesses of the embedded objects were followed through their vtable methods (Kougeki 9 methods, Kasanari, Yarare) and the helpers called with `lea ecx,[obj+6F0h]`.
 
 ## Counts
-67 rows / 2456 bytes (1568..4023): 64 traced, 2 inferred (hitsLandedForLimit, gaugeBonusGranted), 1 unused row (unused_674[8]) plus `unused_0C` inside Gof2ObjHurtBoxSet.
+67 rows / 2456 bytes (1568..4023): 66 traced (hitsLandedForLimit is reads-only, gaugeBonusGranted has reader+writer), 0 inferred, 1 unused row (unused_674[8]) plus `unused_0C` inside Gof2ObjHurtBoxSet.
 Several traced rows are "writer only / reader only" and say so (attackEndLatch, attackActive, guardCrushLatch, knockSpeedXMode).
 
 ## Unused proofs

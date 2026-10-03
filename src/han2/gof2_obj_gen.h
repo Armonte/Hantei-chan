@@ -724,17 +724,17 @@ struct Gof2ObjATransitionEvents {
 	Gof2ObjAEventList overlapRules;  // +0x34 [traced] category 2 (case 2 -> events+13); run by Obj_SpawnFrameEffectRecord 0x4327F0-era overlap pass via ObjEvent_OverlapRuleDispatch 0x43CE30 (event 14, sub_43CC10)
 	Gof2ObjAEventList conditionalJumps;  // +0x3C [traced] category 1 (case 1 -> events+15); sub_4CDDB0 0x4CDDB0 runs `sub_436560(obj+60, ObjEvent_ConditionalRuleDispatch)` (events 200/210)
 	Gof2ObjAEventList tickRules;  // +0x44 [traced] category 3 (case 3 -> events+17); Obj_ScriptTick 0x434AD0 runs `sub_436560(this+68, ObjEvent_TickRuleDispatch)` (events 220/255)
-	Gof2ObjAEventList forcedJumps;  // +0x4C [inferred] category 4 (case 4 -> events+19); run from Obj_SetActionAndRunScript 0x431B90 through sub_436560 (callback in ebx); head only traced via the Link switch
-	Gof2ObjAEventList endRules;  // +0x54 [inferred] category 7 (case 7 -> events+21); same run site as forcedJumps; head only traced via the Link switch
+	Gof2ObjAEventList unused_4C;  // +0x4C [unused] category 4 (TransitionEventList_Link 0x43DF90 case 4 -> events+19; only script event ids 64 and 212 map to category 4 in g_TransitionEventCategory_G2); linked but NEVER consumed: the only ObjEventList_RunUntilHandled 0x436560 call sites (0x432304/0x43231D/0x43232F/0x43233D Obj_SetActionAndRunScript, 0x433D6B/0x4340E2 Obj_ProcessTurnAround, 0x434E57 Obj_ScriptTick, 0x495B23 sub_495A80, 0x4CDE2D/0x4CDE52 sub_4CDDB0, 0x4CDF81 sub_4CDEE0) pass obj+0x2C/0x34/0x3C/0x44/0x54/0x108/0x120 only, never obj+0x4C; every other [reg+4Ch] hit is Init/Reset/Collect zeroing or non-Obj (old guess name forcedJumps was wrong)
+	Gof2ObjAEventList facingKindRules;  // +0x54 [traced] category 7 (case 7 -> events+21; the only id mapped to it is 204 = Obj_ApplyFacingKind); run twice in Obj_SetActionAndRunScript 0x431B90 (0x432304 / 0x43233D, `ObjEventList_RunUntilHandled(&obj->transitionEvents.facingKindRules, Obj_ExecTransitionCmdOp203To205, obj)`) right before/after the frame-enter action list at obj+0x108 depending on Obj_RunFrameScriptLists
 	int32_t clearedSpare;  // +0x5C [unused] [traced writes only] zeroed by Obj_InitDefaults 0x431000 (+92) and Obj_ResetForCmdBroadcast; no category links into it and no reader exists (all [reg+5Ch] operands in Obj-pointer functions scanned)
-	uint32_t singleSlotTimedRule;  // +0x60 [inferred] category 6 (TransitionEventList_Link 0x43DF90 case 6: events[24] = record, single slot); zeroed by Obj_InitDefaults 0x431000 / Obj_ResetForCmdBroadcast; reader only inferred (RBO RboP3 singleSlotTimedRule analog)
+	uint32_t unused_60;  // +0x60 [unused] TransitionEventList_Link 0x43DF90 case 6 would store the record here, but g_TransitionEventCategory_G2 (256 bytes @0x5A1B88) contains no category 6 (values used: 0,1,2,3,4,7,255), so the store is unreachable; the only other accesses are zeroing in Obj_InitDefaults 0x431000 / Obj_FreezeInPlaceAndClearBoxes 0x437D3F; no Obj-based [reg+60h] load exists (all [reg+60h] loads are from obj+0x1254 sub-struct, DefStatus or non-Obj) (old guess name singleSlotTimedRule was wrong)
 };
 struct Gof2ObjAFrameEnterEvents {
 	int32_t count;  // +0x00 [traced] FrameEnterEventList_Link 0x43E120: refuses at count >= 20; Obj_CollectFrameEnterEvents 0x43E1B0 zeroes it (Obj_RunFrameScriptLists passes obj+100)
 	Gof2ObjAEventNode nodePool[20];  // +0x04 [traced] FrameEnterEventList_Link 0x43E120: node k = events[2k+1..2k+2], 20 nodes (count limit)
 	Gof2ObjAEventList actions;  // +0xA4 [traced] category 0 (FrameEnterEventList_Link 0x43E120 case 0 -> events+41 = obj+264); frame-enter actions
-	Gof2ObjAEventList onHitAttackerMods;  // +0xAC [inferred] category 1 (case 1 -> events+43 = obj+272); RBO onHitAttackerMods analog; head traced via the Link switch
-	Gof2ObjAEventList chanceActions;  // +0xB4 [inferred] category 4 (case 4 -> events+45 = obj+280); RBO chanceActions analog; head traced via the Link switch
+	Gof2ObjAEventList unused_AC;  // +0xAC [unused] category 1 (FrameEnterEventList_Link 0x43E120 case 1 -> events+43 = obj+272; only script event id 120 maps to category 1 in g_FrameEnterEventCategory_G2 @0x5A1F88); linked but NEVER consumed: ObjEventList_RunUntilHandled is only called with obj+0x108 and obj+0x120 of the frame-enter lists (Obj_SetActionAndRunScript, sub_4CDEE0); the only Obj-based [reg+110h]/[reg+114h] accesses are Obj_InitDefaults / Obj_FreezeInPlaceAndClearBoxes zeroing (old guess name onHitAttackerMods was wrong)
+	Gof2ObjAEventList unused_B4;  // +0xB4 [unused] category 4 (FrameEnterEventList_Link case 4 -> events+45 = obj+280) but g_FrameEnterEventCategory_G2 maps NO script event id to category 4 (ids: 4->3 (rejected by the switch), 5/6/7/121-123/160-163/201-203 -> 0, 120 -> 1, 200 -> 5, rest 255), so the list is never linked; the only Obj-based [reg+118h]/[reg+11Ch] accesses are Obj_InitDefaults / Obj_FreezeInPlaceAndClearBoxes zeroing (old guess name chanceActions was wrong)
 	Gof2ObjAEventList hitEventActions;  // +0xBC [traced] category 5 (case 5 -> events+47 = obj+288); run in Obj_SetActionAndRunScript 0x431B90-era hit pass: `sub_436560(obj+288, ObjEvent_FrameEnterCat5Dispatch)` (event 50, sub_43B880)
 };
 struct Gof2ObjAOverlayRectNode {
@@ -792,9 +792,9 @@ struct Gof2ObjABoundRect {
 };
 struct Gof2ObjABufferedJump {
 	Gof2ObjABufferedJumpKind kind;  // +0x00 [traced] ObjEvent_InputRuleBufferJump 0x4365D0 `if (a1[148] == -1)` latch gate; sets 0/1; Obj_TestRelativePosition 0x436470 / ObjEvent_ConditionalRuleSelectJump set 2
-	int32_t patternOrRule;  // +0x04 [inferred] ObjEvent_InputRuleBufferJump 0x4365D0: a1[149] = rule index (kind 1) or pattern; write-only in the Obj functions scanned (consumer not found)
-	int32_t frame;  // +0x08 [inferred] ObjEvent_InputRuleBufferJump 0x4365D0: a1[150] = target frame; write-only (consumer not found)
-	int32_t flip;  // +0x0C [inferred] ObjEvent_InputRuleBufferJump 0x4365D0: a1[151] = facing to force (-1 unchanged); write-only (consumer not found)
+	int32_t unused_04;  // +0x04 [unused] write-only: stored by ObjEvent_InputRuleBufferJump 0x4365D0 (a1[149..151]) and reset to -1 by ObjEvent_ConditionalRuleSelectJump 0x436280 / Obj_TestRelativePosition 0x436470, but no instruction anywhere in .text reads Obj+0x254 (all [reg+disp] hits for disp 596/0x254 are those writers or non-Obj scene/capture structs; no immediate-offset pointer arithmetic into the block; the DefStatus+596/600/604 loads in Obj_SetActionAndRunScript are unrelated); the buffered kind at +0x00 is only compared by the latch gate, so the latch never feeds an action (old guess name patternOrRule)
+	int32_t unused_08;  // +0x08 [unused] write-only: stored by ObjEvent_InputRuleBufferJump 0x4365D0 (a1[149..151]) and reset to -1 by ObjEvent_ConditionalRuleSelectJump 0x436280 / Obj_TestRelativePosition 0x436470, but no instruction anywhere in .text reads Obj+0x258 (all [reg+disp] hits for disp 600/0x258 are those writers or non-Obj scene/capture structs; no immediate-offset pointer arithmetic into the block; the DefStatus+596/600/604 loads in Obj_SetActionAndRunScript are unrelated); the buffered kind at +0x00 is only compared by the latch gate, so the latch never feeds an action (old guess name frame)
+	int32_t unused_0C;  // +0x0C [unused] write-only: stored by ObjEvent_InputRuleBufferJump 0x4365D0 (a1[149..151]) and reset to -1 by ObjEvent_ConditionalRuleSelectJump 0x436280 / Obj_TestRelativePosition 0x436470, but no instruction anywhere in .text reads Obj+0x25C (all [reg+disp] hits for disp 604/0x25C are those writers or non-Obj scene/capture structs; no immediate-offset pointer arithmetic into the block; the DefStatus+596/600/604 loads in Obj_SetActionAndRunScript are unrelated); the buffered kind at +0x00 is only compared by the latch gate, so the latch never feeds an action (old guess name flip)
 };
 struct Gof2ObjAMoveVec {
 	int32_t pctX;  // +0x00 [traced] MoveVec_ApplyToPosition 0x441000 `a4 * pct * vel / 100`; Mover_StartVelocity / Obj_ResetMoveTracks memset then =100
@@ -831,7 +831,7 @@ struct Gof2ObjAMoverScriptPayload {
 	int32_t scriptKind;  // +0x00 [traced] MoverScript_Step 0x4414B0 `ScriptVm_CallSyncScript(obj+64600, a5[9], a5[10])`
 	int32_t scriptId;  // +0x04 [traced] a5[10]
 	uint32_t ownerObj;  // +0x08 [traced] MoverScript_Step 0x4414B0 a5[11]: object whose position/pattern is handed to the script
-	int32_t skipSetup;  // +0x0C [inferred] MoverScript_Step 0x4414B0 `if (a5[12] == 0)` fill script args; set from a2[2] by MoverScript_Init
+	int32_t skipSetup;  // +0x0C [traced] writer MoverScript_Init 0x441590 (flag 0x100000: payload+8 = a4, payload+12 = script a2[2]); reader MoverScript_Step 0x4414B0 `if (payload+12 == 0)` fills g_ScriptVm_ArgReg0/1 + dword_5E76F0.. with the target object's position/pattern/facing before ScriptVm_CallSyncScript, non-zero skips that setup (overlaps MoveVec.velY in the union)
 };
 union Gof2ObjAMoverPayload {
 	Gof2ObjAMoveVec velocity;  // +0x00 Mover_StartVelocity 0x4411B0 memset/fill of mover+36 (kind 1)
@@ -889,7 +889,7 @@ struct Gof2ObjARgbFx {
 struct Gof2ObjARotFx {
 	int32_t angle;  // +0x00 [traced] DrawHelper_Draw 0x49EF60 `*(a2+1328)/256`; sub_49C7D0 stores 70*256
 	uint32_t update;  // +0x04 [traced] Obj_TickEffectBlocks 0x430BE0 `(*(a1+1332))(a1+1328)`; Fx_NoOpReturn0 by default
-	int32_t baseAngle;  // +0x08 [inferred] sub_49C7D0 0x49C7D0 stores 17920 at +8 together with +0; Obj_InitDefaults zeroes it
+	int32_t unused_08;  // +0x08 [unused] write-only: sub_49C7D0 0x49C7D0 stores 17920 (same value as angle) at rotYFx+8, sub_49C910 / Effect_SpawnHitSpark write rotZFx+8, Obj_InitDefaults 0x431000 zeroes it; no instruction reads Obj+0x538/0x558/0x578 (the other [reg+538h]/[reg+558h]/[reg+578h] hits are scene structs sub_4CA020/sub_4CA360); update fn is always Fx_NoOpReturn0 so nothing integrates it (old guess name baseAngle)
 	uint8_t unused_0C[20];  // +0x0C [unused] no Obj-based access to +12..+31 of any rotation block (scan of [reg+1340..1359], [reg+1372..1391], [reg+1404..1423] hits only non-Obj structs: sub_4CA020 scene, sub_41C800, sub_4AF5C0); the RBO accum/angVel fields do not exist in GOF2 (update fn is always the no-op)
 };
 struct Gof2ObjAFlickerGate {
@@ -928,7 +928,7 @@ struct Gof2ObjAttackBoxSet {
 	int32_t slot[8];  // +0x30 T BuildFromFrame: frame slot number 0..7 of box[i]
 	uint32_t hitLimitFlags;  // +0x50 T BuildFromFrame copies frame.hitLimitFlags (+0x48) on ATKEV_BEGIN
 	uint32_t hitLimitCount;  // +0x54 T BuildFromFrame copies frame.hitLimitCount; sub_436280 compares it with +0x58
-	uint32_t hitsLandedForLimit;  // +0x58 I only sub_436280 reads it, nothing writes it
+	uint32_t hitsLandedForLimit;  // +0x58 T only ObjEvent_ConditionalRuleSelectJump 0x436280 case 1 reads it, nothing writes it
 	int32_t attackEndLatch;  // +0x5C T vf5 0x449230 and vf6 0x43E2A0 clear it, no reader
 	uint8_t unused_60[8];  // +0x60 U no Kougeki method and no Obj-base operand touches +0x60..+0x67
 	int32_t attackActive;  // +0x68 T BuildFromFrame sets 1 on ATKEV_BEGIN, vf3 0x449220 clears it, no reader
@@ -1129,8 +1129,8 @@ struct Gof2Obj {
 	Gof2ObjABoundRect boundRect;  // +0x1e8 [traced] Obj_ConstructPoolSlot 0x435850 `SetRect(this+488,0,0,0,0)`; read as left/top/right/bottom by Obj_UpdateScreenBoundContacts / Obj_ResolveWallContactLatches
 	int32_t destroyRequested;  // +0x1f8 [traced] Obj_ScriptTick 0x434AD0 `if (*(this+504)) return 0` -> ObjTree_ScriptTickAndReap frees the object; set to 1 by Obj_RunParentLinkAction 0x435070, Obj_UpdateScreenBoundContacts, Obj_TickTimersRecursive (lifetime end), Obj_ResetForCmdBroadcast
 	uint32_t perTickScript;  // +0x1fc [traced] Obj_SetPerTickScriptFromRecord 0x43D0F0 stores record+4 (or 0); Obj_ScriptTick 0x434AD0 `ScriptVm_LoadArgsForObj(this, *(this+508))` every tick (RBO perTickScript analog)
-	int32_t effectCooldownA;  // +0x200 [inferred] Obj_TickTimersRecursive 0x49E120 decrements while > 0; set by HitJudge_ApplyHit 0x4983A0 / sub_497230 from DefStatus; gate in sub_49BB70 0x49BB70 (`n[128] == 0`) before spawning a contact effect
-	int32_t effectCooldownB;  // +0x204 [inferred] same as effectCooldownA (`i[129]--`, sub_49BB70 `n[129] == 0`)
+	int32_t clashCooldownSpecial;  // +0x200 [traced] Obj_TickTimersRecursive 0x49E120 `if (v > 0) --`; set on the VICTIM by HitJudge_ApplyHit 0x4983A0 (DefStatus+108), HitJudge_ResolveHitsOnGuardingVictim (DefStatus+100/+108) and Obj_StartClashRecoilPattern13 (DefStatus+116); read by sub_49BB70 0x49BB70 (attack-clash detection run by sub_49C150): a clash by an attacker whose attackKind is G2AT_KIND_SPECIAL is only accepted while this timer is 0, then the object gets reaction state obj+1900, effect 60001 and the clash recoil (old guess name effectCooldownA)
+	int32_t clashCooldownNormal;  // +0x204 [traced] same as clashCooldownSpecial for attackKind G2AT_KIND_NORMAL (set from DefStatus+112/+104/+120, decremented in Obj_TickTimersRecursive, gate `*(n+516) == 0` in sub_49BB70) (old guess name effectCooldownB)
 	int32_t hitDepthOverridePattern;  // +0x208 [traced] HitJudge_ApplyHit 0x4983A0 stores the requested pattern (a1[130] = a1[175]) with a temporary depth; Obj_RestoreDefaultDepthIfActionChanged 0x432D90 resets depth to 190 when the current pattern differs; Obj_InitDefaults -1
 	uint32_t afterimageTrail;  // +0x20c [traced] Battle_ResetPoolAndSpawnFighters 0x4CC770 `*(v19+524) = AfterimageTrail_Init()`; AfterimageTrail_RecordTick 0x440DC0, Draw_ObjTreeLayerWithAfterimages, Obj_TickTimersRecursive (i[131])
 	int32_t drawDepthOffset;  // +0x210 [traced] Obj_ApplyFrameDrawPriority 0x432E30 0x432E30 writes it; Obj_ComputeTotalDepth 0x430570 sums `*(obj+528) + **(obj+536)` over the depthParent chain (RBO drawDepthOffset analog)
@@ -1194,7 +1194,7 @@ struct Gof2Obj {
 	int32_t attackBoxSlot[8];  // +0x644 [traced] BuildFromFrame writes the frame slot number (0..7) of box i next to attackBoxPtr[i]; read by the vtable getters
 	uint32_t hitLimitFlags;  // +0x664 [traced] BuildFromFrame on ATKEV_BEGIN copies frame.hitLimitFlags (+0x48); cleared by CAppHanteiKougeki__vf4 0x43E2B0 (never read directly; zero in all frames)
 	uint32_t hitLimitCount;  // +0x668 [traced] BuildFromFrame copies frame.hitLimitCount; sub_436280 (transition-rule type 1) compares it with +1644 ([410] vs [411])
-	uint32_t hitsLandedForLimit;  // +0x66c [inferred] only reader is sub_436280 case 1 (`obj[411] < obj[410]` -> rule fails); no writer exists in the exe (all [reg+0x58] stores in the Kougeki vtable methods and no Obj-base store at 1644), so it stays at its zero default
+	uint32_t hitsLandedForLimit;  // +0x66c [traced reads only] only reader is ObjEvent_ConditionalRuleSelectJump 0x436280 case 1 (0x4362F3) (`obj[411] < obj[410]` -> rule fails); no writer exists in the exe (all [reg+0x58] stores in the Kougeki vtable methods and no Obj-base store at 1644), so it stays at its zero default
 	int32_t attackEndLatch;  // +0x670 [traced writer only] CAppHanteiKougeki__vf5 0x449230 and vf6 0x43E2A0 clear it (class +0x5C); no reader found
 	uint8_t unused_674[8];  // +0x674 [unused] class +0x60/+0x64: no Kougeki method touches them and no Obj-base [reg+1652/1656] operand exists outside CharaSelect scene structs (scene hits are different objects)
 	int32_t attackActive;  // +0x67c [traced writer only] BuildFromFrame sets 1 when frame.attackEventFlags has ATKEV_BEGIN; CAppHanteiKougeki__vf3 0x449220 clears it; no reader found
@@ -1253,7 +1253,7 @@ struct Gof2Obj {
 	int32_t launchDamageScaleApplied;  // +0x7a4 [traced] sub_495890 (HitJudge_ScaleDamageByComboHits): first damage in states 36/37 is scaled by ControllerManage+336/+340 and the flag set to 1; cleared by Obj_ResetVictimReactionState
 	int32_t airGuardStunChain;  // +0x7a8 [traced] HitJudge_ResolveGuardPassAndCrush: ++ each time the guard reaction state is 57 (airborne/high classes), reset to 0 for state 54; sub_43DBE0 halves the speed at ==2 (state 57); HitJudge_ResolveHitsOnGuardingVictim tests ==0/<2
 	int32_t airHitLatch;  // +0x7ac [traced] sub_4339F0 (Obj_TestAirRecoverableHit) sets 1 when the victim is airborne, recover-capable and not ignored; Obj_ExecCmdListBetween / HitJudge_ApplyHit use ==1 to show the HUD popup
-	int32_t gaugeBonusGranted;  // +0x7b0 [inferred] sub_438A70 script command 39: opposing player gets the ControllerManage+1156..1168 bonuses once (guard on ==0, then ++); cleared by Yarare_ResetHitState
+	int32_t gaugeBonusGranted;  // +0x7b0 [traced] Obj_ExecStateOpList 0x438A70 script command 39 (0x438C49): on the opposing player object, `if (gaugeBonusGranted == 0) { add DefStatus+484/+488 bonuses to obj+0xFC0/0xFC4; ++gaugeBonusGranted }` (reader = the guard cmp at 0x438C61, writer = add at 0x438CD9); cleared by Yarare_ResetHitState 0x43E3D0 (`yarare->gaugeBonusGranted = 0`)
 	int32_t juggleHitCount;  // +0x7b4 [traced] HitJudge_ApplyHit: ++ while the victim is in launch states 36/38/39 (37 < state <= 39), else 0; sub_495620 subtracts count*ControllerManage+780 (capped by +784) from the launch damage
 	int32_t hitHistoryByAttackerPattern[512];  // +0x7b8 [traced] [2 sides][256 patterns]: Yarare_RegisterHit 0x43E500 / sub_43E590 index 4*(attackerSide*256+attackerPattern)+class200, store 1 and report "already hit" for the repeat-move penalty; memset 0x800 in HitJudge_ResolveHitsOnGuardingVictim and Yarare_ResetHitState 0x43E3D0. Extends to Obj+4023 (beyond this range)
 	Gof2ObjCArmorGauge armorGauge;  // +0xfb8 [traced] see struct; tail of CAppHanteiYarare hit memory (+0x8C8 .. +0x8E3 from Obj+0x6F0, cleared by sub_43E3D0)
@@ -1336,7 +1336,7 @@ struct Gof2ObjYarareState {
 	int32_t launchDamageScaleApplied;  // +0xB4 (Obj+0x7A4) [traced] sub_495890 (HitJudge_ScaleDamageByComboHits): first damage in states 36/37 is scaled by ControllerManage+336/+340 and the flag set to 1; cleared by Obj_ResetVictimReactionState
 	int32_t airGuardStunChain;  // +0xB8 (Obj+0x7A8) [traced] HitJudge_ResolveGuardPassAndCrush: ++ each time the guard reaction state is 57 (airborne/high classes), reset to 0 for state 54; sub_43DBE0 halves the speed at ==2 (state 57); HitJudge_ResolveHitsOnGuardingVictim tests ==0/<2
 	int32_t airHitLatch;  // +0xBC (Obj+0x7AC) [traced] sub_4339F0 (Obj_TestAirRecoverableHit) sets 1 when the victim is airborne, recover-capable and not ignored; Obj_ExecCmdListBetween / HitJudge_ApplyHit use ==1 to show the HUD popup
-	int32_t gaugeBonusGranted;  // +0xC0 (Obj+0x7B0) [inferred] sub_438A70 script command 39: opposing player gets the ControllerManage+1156..1168 bonuses once (guard on ==0, then ++); cleared by Yarare_ResetHitState
+	int32_t gaugeBonusGranted;  // +0xC0 (Obj+0x7B0) [traced] Obj_ExecStateOpList 0x438A70 script command 39: opposing player gets the DefStatus+484/+488 gauge bonuses once (reader = guard cmp ==0 at 0x438C61, writer = ++ at 0x438CD9); cleared by Yarare_ResetHitState
 	int32_t juggleHitCount;  // +0xC4 (Obj+0x7B4) [traced] HitJudge_ApplyHit: ++ while the victim is in launch states 36/38/39 (37 < state <= 39), else 0; sub_495620 subtracts count*ControllerManage+780 (capped by +784) from the launch damage
 	int32_t hitHistoryByAttackerPattern[512];  // +0xC8 (Obj+0x7B8) [traced] [2 sides][256 patterns]: Yarare_RegisterHit 0x43E500 / sub_43E590 index 4*(attackerSide*256+attackerPattern)+class200, store 1 and report "already hit" for the repeat-move penalty; memset 0x800 in HitJudge_ResolveHitsOnGuardingVictim and Yarare_ResetHitState 0x43E3D0. Extends to Obj+4023 (beyond this range)
 	Gof2ObjCArmorGauge armorGauge;  // +0x8C8 (Obj+0xFB8) [traced] see struct; tail of CAppHanteiYarare hit memory (+0x8C8 .. +0x8E3 from Obj+0x6F0, cleared by sub_43E3D0)
@@ -1658,16 +1658,16 @@ static_assert(offsetof(Gof2ObjATransitionEvents, inputRules) == 0x2C, "Gof2ObjAT
 static_assert(offsetof(Gof2ObjATransitionEvents, overlapRules) == 0x34, "Gof2ObjATransitionEvents.overlapRules");
 static_assert(offsetof(Gof2ObjATransitionEvents, conditionalJumps) == 0x3C, "Gof2ObjATransitionEvents.conditionalJumps");
 static_assert(offsetof(Gof2ObjATransitionEvents, tickRules) == 0x44, "Gof2ObjATransitionEvents.tickRules");
-static_assert(offsetof(Gof2ObjATransitionEvents, forcedJumps) == 0x4C, "Gof2ObjATransitionEvents.forcedJumps");
-static_assert(offsetof(Gof2ObjATransitionEvents, endRules) == 0x54, "Gof2ObjATransitionEvents.endRules");
+static_assert(offsetof(Gof2ObjATransitionEvents, unused_4C) == 0x4C, "Gof2ObjATransitionEvents.unused_4C");
+static_assert(offsetof(Gof2ObjATransitionEvents, facingKindRules) == 0x54, "Gof2ObjATransitionEvents.facingKindRules");
 static_assert(offsetof(Gof2ObjATransitionEvents, clearedSpare) == 0x5C, "Gof2ObjATransitionEvents.clearedSpare");
-static_assert(offsetof(Gof2ObjATransitionEvents, singleSlotTimedRule) == 0x60, "Gof2ObjATransitionEvents.singleSlotTimedRule");
+static_assert(offsetof(Gof2ObjATransitionEvents, unused_60) == 0x60, "Gof2ObjATransitionEvents.unused_60");
 static_assert(sizeof(Gof2ObjAFrameEnterEvents) == 0xC4, "Gof2ObjAFrameEnterEvents size");
 static_assert(offsetof(Gof2ObjAFrameEnterEvents, count) == 0x0, "Gof2ObjAFrameEnterEvents.count");
 static_assert(offsetof(Gof2ObjAFrameEnterEvents, nodePool) == 0x4, "Gof2ObjAFrameEnterEvents.nodePool");
 static_assert(offsetof(Gof2ObjAFrameEnterEvents, actions) == 0xA4, "Gof2ObjAFrameEnterEvents.actions");
-static_assert(offsetof(Gof2ObjAFrameEnterEvents, onHitAttackerMods) == 0xAC, "Gof2ObjAFrameEnterEvents.onHitAttackerMods");
-static_assert(offsetof(Gof2ObjAFrameEnterEvents, chanceActions) == 0xB4, "Gof2ObjAFrameEnterEvents.chanceActions");
+static_assert(offsetof(Gof2ObjAFrameEnterEvents, unused_AC) == 0xAC, "Gof2ObjAFrameEnterEvents.unused_AC");
+static_assert(offsetof(Gof2ObjAFrameEnterEvents, unused_B4) == 0xB4, "Gof2ObjAFrameEnterEvents.unused_B4");
 static_assert(offsetof(Gof2ObjAFrameEnterEvents, hitEventActions) == 0xBC, "Gof2ObjAFrameEnterEvents.hitEventActions");
 static_assert(sizeof(Gof2ObjAOverlayRectNode) == 0x1C, "Gof2ObjAOverlayRectNode size");
 static_assert(offsetof(Gof2ObjAOverlayRectNode, next) == 0x0, "Gof2ObjAOverlayRectNode.next");
@@ -1719,9 +1719,9 @@ static_assert(offsetof(Gof2ObjABoundRect, right) == 0x8, "Gof2ObjABoundRect.righ
 static_assert(offsetof(Gof2ObjABoundRect, bottom) == 0xC, "Gof2ObjABoundRect.bottom");
 static_assert(sizeof(Gof2ObjABufferedJump) == 0x10, "Gof2ObjABufferedJump size");
 static_assert(offsetof(Gof2ObjABufferedJump, kind) == 0x0, "Gof2ObjABufferedJump.kind");
-static_assert(offsetof(Gof2ObjABufferedJump, patternOrRule) == 0x4, "Gof2ObjABufferedJump.patternOrRule");
-static_assert(offsetof(Gof2ObjABufferedJump, frame) == 0x8, "Gof2ObjABufferedJump.frame");
-static_assert(offsetof(Gof2ObjABufferedJump, flip) == 0xC, "Gof2ObjABufferedJump.flip");
+static_assert(offsetof(Gof2ObjABufferedJump, unused_04) == 0x4, "Gof2ObjABufferedJump.unused_04");
+static_assert(offsetof(Gof2ObjABufferedJump, unused_08) == 0x8, "Gof2ObjABufferedJump.unused_08");
+static_assert(offsetof(Gof2ObjABufferedJump, unused_0C) == 0xC, "Gof2ObjABufferedJump.unused_0C");
 static_assert(sizeof(Gof2ObjAMoveVec) == 0x30, "Gof2ObjAMoveVec size");
 static_assert(offsetof(Gof2ObjAMoveVec, pctX) == 0x0, "Gof2ObjAMoveVec.pctX");
 static_assert(offsetof(Gof2ObjAMoveVec, pctY) == 0x4, "Gof2ObjAMoveVec.pctY");
@@ -1799,7 +1799,7 @@ static_assert(offsetof(Gof2ObjARgbFx, ramp) == 0x14, "Gof2ObjARgbFx.ramp");
 static_assert(sizeof(Gof2ObjARotFx) == 0x20, "Gof2ObjARotFx size");
 static_assert(offsetof(Gof2ObjARotFx, angle) == 0x0, "Gof2ObjARotFx.angle");
 static_assert(offsetof(Gof2ObjARotFx, update) == 0x4, "Gof2ObjARotFx.update");
-static_assert(offsetof(Gof2ObjARotFx, baseAngle) == 0x8, "Gof2ObjARotFx.baseAngle");
+static_assert(offsetof(Gof2ObjARotFx, unused_08) == 0x8, "Gof2ObjARotFx.unused_08");
 static_assert(offsetof(Gof2ObjARotFx, unused_0C) == 0xC, "Gof2ObjARotFx.unused_0C");
 static_assert(sizeof(Gof2ObjAFlickerGate) == 0x10, "Gof2ObjAFlickerGate size");
 static_assert(offsetof(Gof2ObjAFlickerGate, phase) == 0x0, "Gof2ObjAFlickerGate.phase");
@@ -2021,8 +2021,8 @@ static_assert(offsetof(Gof2Obj, cameraFocus) == 0x1D8, "Gof2Obj.cameraFocus");
 static_assert(offsetof(Gof2Obj, boundRect) == 0x1E8, "Gof2Obj.boundRect");
 static_assert(offsetof(Gof2Obj, destroyRequested) == 0x1F8, "Gof2Obj.destroyRequested");
 static_assert(offsetof(Gof2Obj, perTickScript) == 0x1FC, "Gof2Obj.perTickScript");
-static_assert(offsetof(Gof2Obj, effectCooldownA) == 0x200, "Gof2Obj.effectCooldownA");
-static_assert(offsetof(Gof2Obj, effectCooldownB) == 0x204, "Gof2Obj.effectCooldownB");
+static_assert(offsetof(Gof2Obj, clashCooldownSpecial) == 0x200, "Gof2Obj.clashCooldownSpecial");
+static_assert(offsetof(Gof2Obj, clashCooldownNormal) == 0x204, "Gof2Obj.clashCooldownNormal");
 static_assert(offsetof(Gof2Obj, hitDepthOverridePattern) == 0x208, "Gof2Obj.hitDepthOverridePattern");
 static_assert(offsetof(Gof2Obj, afterimageTrail) == 0x20C, "Gof2Obj.afterimageTrail");
 static_assert(offsetof(Gof2Obj, drawDepthOffset) == 0x210, "Gof2Obj.drawDepthOffset");
@@ -3065,17 +3065,17 @@ static const Han2FieldInfo kGof2ObjATransitionEventsFields[] = {
 	{"overlapRules", 0x34, 8, 1, 4, nullptr, "+0x34 [traced] category 2 (case 2 -> events+13); run by Obj_SpawnFrameEffectRecord 0x4327F0-era overlap pass via ObjEvent_OverlapRuleDispatch 0x43CE30 (event 14, sub_43CC10)"},
 	{"conditionalJumps", 0x3C, 8, 1, 4, nullptr, "+0x3C [traced] category 1 (case 1 -> events+15); sub_4CDDB0 0x4CDDB0 runs `sub_436560(obj+60, ObjEvent_ConditionalRuleDispatch)` (events 200/210)"},
 	{"tickRules", 0x44, 8, 1, 4, nullptr, "+0x44 [traced] category 3 (case 3 -> events+17); Obj_ScriptTick 0x434AD0 runs `sub_436560(this+68, ObjEvent_TickRuleDispatch)` (events 220/255)"},
-	{"forcedJumps", 0x4C, 8, 1, 4, nullptr, "+0x4C [inferred] category 4 (case 4 -> events+19); run from Obj_SetActionAndRunScript 0x431B90 through sub_436560 (callback in ebx); head only traced via the Link switch"},
-	{"endRules", 0x54, 8, 1, 4, nullptr, "+0x54 [inferred] category 7 (case 7 -> events+21); same run site as forcedJumps; head only traced via the Link switch"},
+	{"unused_4C", 0x4C, 8, 1, 4, nullptr, "+0x4C [unused] category 4 (TransitionEventList_Link 0x43DF90 case 4 -> events+19; only script event ids 64 and 212 map to category 4 in g_TransitionEventCategory_G2); linked but NEVER consumed: the only ObjEventList_RunUntilHandled 0x436560 call sites (0x432304/0x43231D/0x43232F/0x43233D Obj_SetActionAndRunScript, 0x433D6B/0x4340E2 Obj_ProcessTurnAround, 0x434E57 Obj_ScriptTick, 0x495B23 sub_495A80, 0x4CDE2D/0x4CDE52 sub_4CDDB0, 0x4CDF81 sub_4CDEE0) pass obj+0x2C/0x34/0x3C/0x44/0x54/0x108/0x120 only, never obj+0x4C; every other [reg+4Ch] hit is Init/Reset/Collect zeroing or non-Obj (old guess name forcedJumps was wrong)"},
+	{"facingKindRules", 0x54, 8, 1, 4, nullptr, "+0x54 [traced] category 7 (case 7 -> events+21; the only id mapped to it is 204 = Obj_ApplyFacingKind); run twice in Obj_SetActionAndRunScript 0x431B90 (0x432304 / 0x43233D, `ObjEventList_RunUntilHandled(&obj->transitionEvents.facingKindRules, Obj_ExecTransitionCmdOp203To205, obj)`) right before/after the frame-enter action list at obj+0x108 depending on Obj_RunFrameScriptLists"},
 	{"clearedSpare", 0x5C, 4, 1, 1, nullptr, "+0x5C [unused] [traced writes only] zeroed by Obj_InitDefaults 0x431000 (+92) and Obj_ResetForCmdBroadcast; no category links into it and no reader exists (all [reg+5Ch] operands in Obj-pointer functions scanned)"},
-	{"singleSlotTimedRule", 0x60, 4, 1, 4, nullptr, "+0x60 [inferred] category 6 (TransitionEventList_Link 0x43DF90 case 6: events[24] = record, single slot); zeroed by Obj_InitDefaults 0x431000 / Obj_ResetForCmdBroadcast; reader only inferred (RBO RboP3 singleSlotTimedRule analog)"},
+	{"unused_60", 0x60, 4, 1, 4, nullptr, "+0x60 [unused] TransitionEventList_Link 0x43DF90 case 6 would store the record here, but g_TransitionEventCategory_G2 (256 bytes @0x5A1B88) contains no category 6 (values used: 0,1,2,3,4,7,255), so the store is unreachable; the only other accesses are zeroing in Obj_InitDefaults 0x431000 / Obj_FreezeInPlaceAndClearBoxes 0x437D3F; no Obj-based [reg+60h] load exists (all [reg+60h] loads are from obj+0x1254 sub-struct, DefStatus or non-Obj) (old guess name singleSlotTimedRule was wrong)"},
 };
 static const Han2FieldInfo kGof2ObjAFrameEnterEventsFields[] = {
 	{"count", 0x0, 4, 1, 1, nullptr, "+0x00 [traced] FrameEnterEventList_Link 0x43E120: refuses at count >= 20; Obj_CollectFrameEnterEvents 0x43E1B0 zeroes it (Obj_RunFrameScriptLists passes obj+100)"},
 	{"nodePool", 0x4, 8, 20, 4, nullptr, "+0x04 [traced] FrameEnterEventList_Link 0x43E120: node k = events[2k+1..2k+2], 20 nodes (count limit)"},
 	{"actions", 0xA4, 8, 1, 4, nullptr, "+0xA4 [traced] category 0 (FrameEnterEventList_Link 0x43E120 case 0 -> events+41 = obj+264); frame-enter actions"},
-	{"onHitAttackerMods", 0xAC, 8, 1, 4, nullptr, "+0xAC [inferred] category 1 (case 1 -> events+43 = obj+272); RBO onHitAttackerMods analog; head traced via the Link switch"},
-	{"chanceActions", 0xB4, 8, 1, 4, nullptr, "+0xB4 [inferred] category 4 (case 4 -> events+45 = obj+280); RBO chanceActions analog; head traced via the Link switch"},
+	{"unused_AC", 0xAC, 8, 1, 4, nullptr, "+0xAC [unused] category 1 (FrameEnterEventList_Link 0x43E120 case 1 -> events+43 = obj+272; only script event id 120 maps to category 1 in g_FrameEnterEventCategory_G2 @0x5A1F88); linked but NEVER consumed: ObjEventList_RunUntilHandled is only called with obj+0x108 and obj+0x120 of the frame-enter lists (Obj_SetActionAndRunScript, sub_4CDEE0); the only Obj-based [reg+110h]/[reg+114h] accesses are Obj_InitDefaults / Obj_FreezeInPlaceAndClearBoxes zeroing (old guess name onHitAttackerMods was wrong)"},
+	{"unused_B4", 0xB4, 8, 1, 4, nullptr, "+0xB4 [unused] category 4 (FrameEnterEventList_Link case 4 -> events+45 = obj+280) but g_FrameEnterEventCategory_G2 maps NO script event id to category 4 (ids: 4->3 (rejected by the switch), 5/6/7/121-123/160-163/201-203 -> 0, 120 -> 1, 200 -> 5, rest 255), so the list is never linked; the only Obj-based [reg+118h]/[reg+11Ch] accesses are Obj_InitDefaults / Obj_FreezeInPlaceAndClearBoxes zeroing (old guess name chanceActions was wrong)"},
 	{"hitEventActions", 0xBC, 8, 1, 4, nullptr, "+0xBC [traced] category 5 (case 5 -> events+47 = obj+288); run in Obj_SetActionAndRunScript 0x431B90-era hit pass: `sub_436560(obj+288, ObjEvent_FrameEnterCat5Dispatch)` (event 50, sub_43B880)"},
 };
 static const Han2FieldInfo kGof2ObjAOverlayRectNodeFields[] = {
@@ -3133,9 +3133,9 @@ static const Han2FieldInfo kGof2ObjABoundRectFields[] = {
 };
 static const Han2FieldInfo kGof2ObjABufferedJumpFields[] = {
 	{"kind", 0x0, 4, 1, 2, "Gof2ObjABufferedJumpKind", "+0x00 [traced] ObjEvent_InputRuleBufferJump 0x4365D0 `if (a1[148] == -1)` latch gate; sets 0/1; Obj_TestRelativePosition 0x436470 / ObjEvent_ConditionalRuleSelectJump set 2"},
-	{"patternOrRule", 0x4, 4, 1, 1, nullptr, "+0x04 [inferred] ObjEvent_InputRuleBufferJump 0x4365D0: a1[149] = rule index (kind 1) or pattern; write-only in the Obj functions scanned (consumer not found)"},
-	{"frame", 0x8, 4, 1, 1, nullptr, "+0x08 [inferred] ObjEvent_InputRuleBufferJump 0x4365D0: a1[150] = target frame; write-only (consumer not found)"},
-	{"flip", 0xC, 4, 1, 1, nullptr, "+0x0C [inferred] ObjEvent_InputRuleBufferJump 0x4365D0: a1[151] = facing to force (-1 unchanged); write-only (consumer not found)"},
+	{"unused_04", 0x4, 4, 1, 1, nullptr, "+0x04 [unused] write-only: stored by ObjEvent_InputRuleBufferJump 0x4365D0 (a1[149..151]) and reset to -1 by ObjEvent_ConditionalRuleSelectJump 0x436280 / Obj_TestRelativePosition 0x436470, but no instruction anywhere in .text reads Obj+0x254 (all [reg+disp] hits for disp 596/0x254 are those writers or non-Obj scene/capture structs; no immediate-offset pointer arithmetic into the block; the DefStatus+596/600/604 loads in Obj_SetActionAndRunScript are unrelated); the buffered kind at +0x00 is only compared by the latch gate, so the latch never feeds an action (old guess name patternOrRule)"},
+	{"unused_08", 0x8, 4, 1, 1, nullptr, "+0x08 [unused] write-only: stored by ObjEvent_InputRuleBufferJump 0x4365D0 (a1[149..151]) and reset to -1 by ObjEvent_ConditionalRuleSelectJump 0x436280 / Obj_TestRelativePosition 0x436470, but no instruction anywhere in .text reads Obj+0x258 (all [reg+disp] hits for disp 600/0x258 are those writers or non-Obj scene/capture structs; no immediate-offset pointer arithmetic into the block; the DefStatus+596/600/604 loads in Obj_SetActionAndRunScript are unrelated); the buffered kind at +0x00 is only compared by the latch gate, so the latch never feeds an action (old guess name frame)"},
+	{"unused_0C", 0xC, 4, 1, 1, nullptr, "+0x0C [unused] write-only: stored by ObjEvent_InputRuleBufferJump 0x4365D0 (a1[149..151]) and reset to -1 by ObjEvent_ConditionalRuleSelectJump 0x436280 / Obj_TestRelativePosition 0x436470, but no instruction anywhere in .text reads Obj+0x25C (all [reg+disp] hits for disp 604/0x25C are those writers or non-Obj scene/capture structs; no immediate-offset pointer arithmetic into the block; the DefStatus+596/600/604 loads in Obj_SetActionAndRunScript are unrelated); the buffered kind at +0x00 is only compared by the latch gate, so the latch never feeds an action (old guess name flip)"},
 };
 static const Han2FieldInfo kGof2ObjAMoveVecFields[] = {
 	{"pctX", 0x0, 4, 1, 1, nullptr, "+0x00 [traced] MoveVec_ApplyToPosition 0x441000 `a4 * pct * vel / 100`; Mover_StartVelocity / Obj_ResetMoveTracks memset then =100"},
@@ -3172,7 +3172,7 @@ static const Han2FieldInfo kGof2ObjAMoverScriptPayloadFields[] = {
 	{"scriptKind", 0x0, 4, 1, 1, nullptr, "+0x00 [traced] MoverScript_Step 0x4414B0 `ScriptVm_CallSyncScript(obj+64600, a5[9], a5[10])`"},
 	{"scriptId", 0x4, 4, 1, 1, nullptr, "+0x04 [traced] a5[10]"},
 	{"ownerObj", 0x8, 4, 1, 4, nullptr, "+0x08 [traced] MoverScript_Step 0x4414B0 a5[11]: object whose position/pattern is handed to the script"},
-	{"skipSetup", 0xC, 4, 1, 1, nullptr, "+0x0C [inferred] MoverScript_Step 0x4414B0 `if (a5[12] == 0)` fill script args; set from a2[2] by MoverScript_Init"},
+	{"skipSetup", 0xC, 4, 1, 1, nullptr, "+0x0C [traced] writer MoverScript_Init 0x441590 (flag 0x100000: payload+8 = a4, payload+12 = script a2[2]); reader MoverScript_Step 0x4414B0 `if (payload+12 == 0)` fills g_ScriptVm_ArgReg0/1 + dword_5E76F0.. with the target object's position/pattern/facing before ScriptVm_CallSyncScript, non-zero skips that setup (overlaps MoveVec.velY in the union)"},
 };
 static const Han2FieldInfo kGof2ObjAMoverPayloadFields[] = {
 	{"velocity", 0x0, 48, 1, 4, nullptr, "+0x00 Mover_StartVelocity 0x4411B0 memset/fill of mover+36 (kind 1)"},
@@ -3230,7 +3230,7 @@ static const Han2FieldInfo kGof2ObjARgbFxFields[] = {
 static const Han2FieldInfo kGof2ObjARotFxFields[] = {
 	{"angle", 0x0, 4, 1, 1, nullptr, "+0x00 [traced] DrawHelper_Draw 0x49EF60 `*(a2+1328)/256`; sub_49C7D0 stores 70*256"},
 	{"update", 0x4, 4, 1, 4, nullptr, "+0x04 [traced] Obj_TickEffectBlocks 0x430BE0 `(*(a1+1332))(a1+1328)`; Fx_NoOpReturn0 by default"},
-	{"baseAngle", 0x8, 4, 1, 1, nullptr, "+0x08 [inferred] sub_49C7D0 0x49C7D0 stores 17920 at +8 together with +0; Obj_InitDefaults zeroes it"},
+	{"unused_08", 0x8, 4, 1, 1, nullptr, "+0x08 [unused] write-only: sub_49C7D0 0x49C7D0 stores 17920 (same value as angle) at rotYFx+8, sub_49C910 / Effect_SpawnHitSpark write rotZFx+8, Obj_InitDefaults 0x431000 zeroes it; no instruction reads Obj+0x538/0x558/0x578 (the other [reg+538h]/[reg+558h]/[reg+578h] hits are scene structs sub_4CA020/sub_4CA360); update fn is always Fx_NoOpReturn0 so nothing integrates it (old guess name baseAngle)"},
 	{"unused_0C", 0xC, 1, 20, 0, nullptr, "+0x0C [unused] no Obj-based access to +12..+31 of any rotation block (scan of [reg+1340..1359], [reg+1372..1391], [reg+1404..1423] hits only non-Obj structs: sub_4CA020 scene, sub_41C800, sub_4AF5C0); the RBO accum/angVel fields do not exist in GOF2 (update fn is always the no-op)"},
 };
 static const Han2FieldInfo kGof2ObjAFlickerGateFields[] = {
@@ -3269,7 +3269,7 @@ static const Han2FieldInfo kGof2ObjAttackBoxSetFields[] = {
 	{"slot", 0x30, 4, 8, 1, nullptr, "+0x30 T BuildFromFrame: frame slot number 0..7 of box[i]"},
 	{"hitLimitFlags", 0x50, 4, 1, 0, nullptr, "+0x50 T BuildFromFrame copies frame.hitLimitFlags (+0x48) on ATKEV_BEGIN"},
 	{"hitLimitCount", 0x54, 4, 1, 0, nullptr, "+0x54 T BuildFromFrame copies frame.hitLimitCount; sub_436280 compares it with +0x58"},
-	{"hitsLandedForLimit", 0x58, 4, 1, 0, nullptr, "+0x58 I only sub_436280 reads it, nothing writes it"},
+	{"hitsLandedForLimit", 0x58, 4, 1, 0, nullptr, "+0x58 T only ObjEvent_ConditionalRuleSelectJump 0x436280 case 1 reads it, nothing writes it"},
 	{"attackEndLatch", 0x5C, 4, 1, 1, nullptr, "+0x5C T vf5 0x449230 and vf6 0x43E2A0 clear it, no reader"},
 	{"unused_60", 0x60, 1, 8, 0, nullptr, "+0x60 U no Kougeki method and no Obj-base operand touches +0x60..+0x67"},
 	{"attackActive", 0x68, 4, 1, 1, nullptr, "+0x68 T BuildFromFrame sets 1 on ATKEV_BEGIN, vf3 0x449220 clears it, no reader"},
@@ -3470,8 +3470,8 @@ static const Han2FieldInfo kGof2ObjFields[] = {
 	{"boundRect", 0x1E8, 16, 1, 4, nullptr, "+0x1e8 [traced] Obj_ConstructPoolSlot 0x435850 `SetRect(this+488,0,0,0,0)`; read as left/top/right/bottom by Obj_UpdateScreenBoundContacts / Obj_ResolveWallContactLatches"},
 	{"destroyRequested", 0x1F8, 4, 1, 1, nullptr, "+0x1f8 [traced] Obj_ScriptTick 0x434AD0 `if (*(this+504)) return 0` -> ObjTree_ScriptTickAndReap frees the object; set to 1 by Obj_RunParentLinkAction 0x435070, Obj_UpdateScreenBoundContacts, Obj_TickTimersRecursive (lifetime end), Obj_ResetForCmdBroadcast"},
 	{"perTickScript", 0x1FC, 4, 1, 4, nullptr, "+0x1fc [traced] Obj_SetPerTickScriptFromRecord 0x43D0F0 stores record+4 (or 0); Obj_ScriptTick 0x434AD0 `ScriptVm_LoadArgsForObj(this, *(this+508))` every tick (RBO perTickScript analog)"},
-	{"effectCooldownA", 0x200, 4, 1, 1, nullptr, "+0x200 [inferred] Obj_TickTimersRecursive 0x49E120 decrements while > 0; set by HitJudge_ApplyHit 0x4983A0 / sub_497230 from DefStatus; gate in sub_49BB70 0x49BB70 (`n[128] == 0`) before spawning a contact effect"},
-	{"effectCooldownB", 0x204, 4, 1, 1, nullptr, "+0x204 [inferred] same as effectCooldownA (`i[129]--`, sub_49BB70 `n[129] == 0`)"},
+	{"clashCooldownSpecial", 0x200, 4, 1, 1, nullptr, "+0x200 [traced] Obj_TickTimersRecursive 0x49E120 `if (v > 0) --`; set on the VICTIM by HitJudge_ApplyHit 0x4983A0 (DefStatus+108), HitJudge_ResolveHitsOnGuardingVictim (DefStatus+100/+108) and Obj_StartClashRecoilPattern13 (DefStatus+116); read by sub_49BB70 0x49BB70 (attack-clash detection run by sub_49C150): a clash by an attacker whose attackKind is G2AT_KIND_SPECIAL is only accepted while this timer is 0, then the object gets reaction state obj+1900, effect 60001 and the clash recoil (old guess name effectCooldownA)"},
+	{"clashCooldownNormal", 0x204, 4, 1, 1, nullptr, "+0x204 [traced] same as clashCooldownSpecial for attackKind G2AT_KIND_NORMAL (set from DefStatus+112/+104/+120, decremented in Obj_TickTimersRecursive, gate `*(n+516) == 0` in sub_49BB70) (old guess name effectCooldownB)"},
 	{"hitDepthOverridePattern", 0x208, 4, 1, 1, nullptr, "+0x208 [traced] HitJudge_ApplyHit 0x4983A0 stores the requested pattern (a1[130] = a1[175]) with a temporary depth; Obj_RestoreDefaultDepthIfActionChanged 0x432D90 resets depth to 190 when the current pattern differs; Obj_InitDefaults -1"},
 	{"afterimageTrail", 0x20C, 4, 1, 4, nullptr, "+0x20c [traced] Battle_ResetPoolAndSpawnFighters 0x4CC770 `*(v19+524) = AfterimageTrail_Init()`; AfterimageTrail_RecordTick 0x440DC0, Draw_ObjTreeLayerWithAfterimages, Obj_TickTimersRecursive (i[131])"},
 	{"drawDepthOffset", 0x210, 4, 1, 1, nullptr, "+0x210 [traced] Obj_ApplyFrameDrawPriority 0x432E30 0x432E30 writes it; Obj_ComputeTotalDepth 0x430570 sums `*(obj+528) + **(obj+536)` over the depthParent chain (RBO drawDepthOffset analog)"},
@@ -3535,7 +3535,7 @@ static const Han2FieldInfo kGof2ObjFields[] = {
 	{"attackBoxSlot", 0x644, 4, 8, 1, nullptr, "+0x644 [traced] BuildFromFrame writes the frame slot number (0..7) of box i next to attackBoxPtr[i]; read by the vtable getters"},
 	{"hitLimitFlags", 0x664, 4, 1, 0, nullptr, "+0x664 [traced] BuildFromFrame on ATKEV_BEGIN copies frame.hitLimitFlags (+0x48); cleared by CAppHanteiKougeki__vf4 0x43E2B0 (never read directly; zero in all frames)"},
 	{"hitLimitCount", 0x668, 4, 1, 0, nullptr, "+0x668 [traced] BuildFromFrame copies frame.hitLimitCount; sub_436280 (transition-rule type 1) compares it with +1644 ([410] vs [411])"},
-	{"hitsLandedForLimit", 0x66C, 4, 1, 0, nullptr, "+0x66c [inferred] only reader is sub_436280 case 1 (`obj[411] < obj[410]` -> rule fails); no writer exists in the exe (all [reg+0x58] stores in the Kougeki vtable methods and no Obj-base store at 1644), so it stays at its zero default"},
+	{"hitsLandedForLimit", 0x66C, 4, 1, 0, nullptr, "+0x66c [traced reads only] only reader is ObjEvent_ConditionalRuleSelectJump 0x436280 case 1 (0x4362F3) (`obj[411] < obj[410]` -> rule fails); no writer exists in the exe (all [reg+0x58] stores in the Kougeki vtable methods and no Obj-base store at 1644), so it stays at its zero default"},
 	{"attackEndLatch", 0x670, 4, 1, 1, nullptr, "+0x670 [traced writer only] CAppHanteiKougeki__vf5 0x449230 and vf6 0x43E2A0 clear it (class +0x5C); no reader found"},
 	{"unused_674", 0x674, 1, 8, 0, nullptr, "+0x674 [unused] class +0x60/+0x64: no Kougeki method touches them and no Obj-base [reg+1652/1656] operand exists outside CharaSelect scene structs (scene hits are different objects)"},
 	{"attackActive", 0x67C, 4, 1, 1, nullptr, "+0x67c [traced writer only] BuildFromFrame sets 1 when frame.attackEventFlags has ATKEV_BEGIN; CAppHanteiKougeki__vf3 0x449220 clears it; no reader found"},
@@ -3594,7 +3594,7 @@ static const Han2FieldInfo kGof2ObjFields[] = {
 	{"launchDamageScaleApplied", 0x7A4, 4, 1, 1, nullptr, "+0x7a4 [traced] sub_495890 (HitJudge_ScaleDamageByComboHits): first damage in states 36/37 is scaled by ControllerManage+336/+340 and the flag set to 1; cleared by Obj_ResetVictimReactionState"},
 	{"airGuardStunChain", 0x7A8, 4, 1, 1, nullptr, "+0x7a8 [traced] HitJudge_ResolveGuardPassAndCrush: ++ each time the guard reaction state is 57 (airborne/high classes), reset to 0 for state 54; sub_43DBE0 halves the speed at ==2 (state 57); HitJudge_ResolveHitsOnGuardingVictim tests ==0/<2"},
 	{"airHitLatch", 0x7AC, 4, 1, 1, nullptr, "+0x7ac [traced] sub_4339F0 (Obj_TestAirRecoverableHit) sets 1 when the victim is airborne, recover-capable and not ignored; Obj_ExecCmdListBetween / HitJudge_ApplyHit use ==1 to show the HUD popup"},
-	{"gaugeBonusGranted", 0x7B0, 4, 1, 1, nullptr, "+0x7b0 [inferred] sub_438A70 script command 39: opposing player gets the ControllerManage+1156..1168 bonuses once (guard on ==0, then ++); cleared by Yarare_ResetHitState"},
+	{"gaugeBonusGranted", 0x7B0, 4, 1, 1, nullptr, "+0x7b0 [traced] Obj_ExecStateOpList 0x438A70 script command 39 (0x438C49): on the opposing player object, `if (gaugeBonusGranted == 0) { add DefStatus+484/+488 bonuses to obj+0xFC0/0xFC4; ++gaugeBonusGranted }` (reader = the guard cmp at 0x438C61, writer = add at 0x438CD9); cleared by Yarare_ResetHitState 0x43E3D0 (`yarare->gaugeBonusGranted = 0`)"},
 	{"juggleHitCount", 0x7B4, 4, 1, 1, nullptr, "+0x7b4 [traced] HitJudge_ApplyHit: ++ while the victim is in launch states 36/38/39 (37 < state <= 39), else 0; sub_495620 subtracts count*ControllerManage+780 (capped by +784) from the launch damage"},
 	{"hitHistoryByAttackerPattern", 0x7B8, 4, 512, 1, nullptr, "+0x7b8 [traced] [2 sides][256 patterns]: Yarare_RegisterHit 0x43E500 / sub_43E590 index 4*(attackerSide*256+attackerPattern)+class200, store 1 and report \"already hit\" for the repeat-move penalty; memset 0x800 in HitJudge_ResolveHitsOnGuardingVictim and Yarare_ResetHitState 0x43E3D0. Extends to Obj+4023 (beyond this range)"},
 	{"armorGauge", 0xFB8, 28, 1, 4, nullptr, "+0xfb8 [traced] see struct; tail of CAppHanteiYarare hit memory (+0x8C8 .. +0x8E3 from Obj+0x6F0, cleared by sub_43E3D0)"},
@@ -3677,7 +3677,7 @@ static const Han2FieldInfo kGof2ObjYarareStateFields[] = {
 	{"launchDamageScaleApplied", 0xB4, 4, 1, 1, nullptr, "+0xB4 (Obj+0x7A4) [traced] sub_495890 (HitJudge_ScaleDamageByComboHits): first damage in states 36/37 is scaled by ControllerManage+336/+340 and the flag set to 1; cleared by Obj_ResetVictimReactionState"},
 	{"airGuardStunChain", 0xB8, 4, 1, 1, nullptr, "+0xB8 (Obj+0x7A8) [traced] HitJudge_ResolveGuardPassAndCrush: ++ each time the guard reaction state is 57 (airborne/high classes), reset to 0 for state 54; sub_43DBE0 halves the speed at ==2 (state 57); HitJudge_ResolveHitsOnGuardingVictim tests ==0/<2"},
 	{"airHitLatch", 0xBC, 4, 1, 1, nullptr, "+0xBC (Obj+0x7AC) [traced] sub_4339F0 (Obj_TestAirRecoverableHit) sets 1 when the victim is airborne, recover-capable and not ignored; Obj_ExecCmdListBetween / HitJudge_ApplyHit use ==1 to show the HUD popup"},
-	{"gaugeBonusGranted", 0xC0, 4, 1, 1, nullptr, "+0xC0 (Obj+0x7B0) [inferred] sub_438A70 script command 39: opposing player gets the ControllerManage+1156..1168 bonuses once (guard on ==0, then ++); cleared by Yarare_ResetHitState"},
+	{"gaugeBonusGranted", 0xC0, 4, 1, 1, nullptr, "+0xC0 (Obj+0x7B0) [traced] Obj_ExecStateOpList 0x438A70 script command 39: opposing player gets the DefStatus+484/+488 gauge bonuses once (reader = guard cmp ==0 at 0x438C61, writer = ++ at 0x438CD9); cleared by Yarare_ResetHitState"},
 	{"juggleHitCount", 0xC4, 4, 1, 1, nullptr, "+0xC4 (Obj+0x7B4) [traced] HitJudge_ApplyHit: ++ while the victim is in launch states 36/38/39 (37 < state <= 39), else 0; sub_495620 subtracts count*ControllerManage+780 (capped by +784) from the launch damage"},
 	{"hitHistoryByAttackerPattern", 0xC8, 4, 512, 1, nullptr, "+0xC8 (Obj+0x7B8) [traced] [2 sides][256 patterns]: Yarare_RegisterHit 0x43E500 / sub_43E590 index 4*(attackerSide*256+attackerPattern)+class200, store 1 and report \"already hit\" for the repeat-move penalty; memset 0x800 in HitJudge_ResolveHitsOnGuardingVictim and Yarare_ResetHitState 0x43E3D0. Extends to Obj+4023 (beyond this range)"},
 	{"armorGauge", 0x8C8, 28, 1, 4, nullptr, "+0x8C8 (Obj+0xFB8) [traced] see struct; tail of CAppHanteiYarare hit memory (+0x8C8 .. +0x8E3 from Obj+0x6F0, cleared by sub_43E3D0)"},
