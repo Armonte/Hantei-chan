@@ -54,6 +54,7 @@ add_executable(${EXE}
 	src/ha4_character.cpp
 	src/han2_character.cpp
 	src/han2_pat.cpp
+	src/han2_pat_write.cpp
 	src/han2_pat_gl.cpp
 	src/han2_browser.cpp
 	src/han2_inspector.cpp
@@ -542,6 +543,8 @@ endif()
 # French-Bread RBO / GOF2 model sources (PAC archive, HAN2RBO container, model loader/writer): linked wherever framedata.cpp is.
 add_executable(han2tool
 	src/han2/han2tool.cpp
+	src/han2_pat.cpp
+	src/han2_pat_write.cpp
 	src/framedata.cpp
 	src/framedata_load.cpp
 	src/framedata_save.cpp

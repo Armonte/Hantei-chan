@@ -27,6 +27,10 @@ ReadFn PacReader(const std::vector<std::shared_ptr<pac::Archive>> &archives);
 // else <stem>.DAT; parts, CG and names always come from <stem>.DAT. `origin` is shown to the user (folder or archive name).
 bool LoadCharacter(CharacterInstance &ch, const std::string &stem, const ReadFn &read, const std::string &origin, std::string *summary, std::string *err);
 
+// Rebuild the container's PAT block from the character's (possibly edited) Parts model before a save.
+// Returns false with *err on failure; *partsChanged tells whether the block differs from the one loaded.
+bool SyncPartsToContainer(CharacterInstance &ch, bool *partsChanged, std::string *err);
+
 } // namespace han2
 
 namespace han2ui {

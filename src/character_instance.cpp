@@ -241,6 +241,10 @@ bool CharacterInstance::save()
 	// Commit any pending edit first: a stacked character's save filters on
 	// Sequence::modified, which the undo commit keeps current.
 	undoManager.flush();
+	if (frameData.isHan2()) {
+		std::string perr;
+		if (!han2::SyncPartsToContainer(*this, nullptr, &perr)) return false;
+	}
 	// Only mark clean if the file actually reached disk.
 	if (!frameData.save(m_topHA6Path.c_str())) {
 		return false;
@@ -254,6 +258,10 @@ bool CharacterInstance::save()
 bool CharacterInstance::saveAs(const std::string& ha6Path)
 {
 	undoManager.flush();
+	if (frameData.isHan2()) {
+		std::string perr;
+		if (!han2::SyncPartsToContainer(*this, nullptr, &perr)) return false;
+	}
 	if (!frameData.save(ha6Path.c_str())) {
 		return false;
 	}
