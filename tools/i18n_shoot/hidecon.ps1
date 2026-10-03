@@ -10,6 +10,6 @@ public class HC { public delegate bool CB(IntPtr h, IntPtr l);
  [DllImport("user32.dll")] public static extern int GetClassName(IntPtr h, StringBuilder s, int n);
  [DllImport("user32.dll")] public static extern uint GetWindowThreadProcessId(IntPtr h, out uint pid);
  public static string Hide(){ string r=""; EnumWindows((h,l)=>{ if(!IsWindowVisible(h)) return true; var t=new StringBuilder(256); GetWindowText(h,t,256); var c=new StringBuilder(128); GetClassName(h,c,128);
-   if(t.ToString().EndsWith("gonptechan.exe")){ ShowWindow(h,0); r+=c+"|"+t+" "; } return true;},IntPtr.Zero); return r; } }
+   if(t.ToString().EndsWith("gonptechan_ja.exe")){ ShowWindow(h,0); r+=c+"|"+t+" "; } return true;},IntPtr.Zero); return r; } }
 '@
 $r=[HC]::Hide(); if($r){ "hid console: $r" } else { "no console window found" }
