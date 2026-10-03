@@ -9,6 +9,8 @@
 #include "mv_script.h"
 #include <string>
 #include <vector>
+#include <functional>
+#include <cstdint>
 
 class CharacterInstance
 {
@@ -24,6 +26,11 @@ public:
 
 	// Load single .ha6 file
 	bool loadHA6(const std::string& ha6Path, bool patch = false);
+
+	// Load a French-Bread RBO / GOF2 character (frames + CG + parts) through a file reader (folder or PAC archives).
+	// saveTarget: file Save writes to (empty = Save As only, e.g. when the files live inside an archive).
+	bool loadHan2(const std::string& stem, const std::function<bool(const std::string&, std::vector<uint8_t>&)>& read,
+	              const std::string& origin, const std::string& saveTarget, std::string& err);
 
 	// Load CG file
 	bool loadCG(const std::string& cgPath);

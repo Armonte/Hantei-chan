@@ -1,6 +1,7 @@
 #include "framedata.h"
 #include "framedata_load.h"
 #include "framedata_ha4.h"
+#include "framedata_han2.h"
 #include <fstream>
 #include <algorithm>
 #include "misc.h"
@@ -37,6 +38,14 @@ bool FrameData::load(const char *filename, bool patch, bool fillOnly) {
 
 	if (!ReadInMem(filename, data, size)) {
 		return 0;
+	}
+
+	// French-Bread RBO / GOF2 HAN2RBO file (detected by content)
+	if (han2::IsHan2(data, size)) {
+		bool ok = !patch && han2::Load(*this, (const uint8_t *)data, size);
+		delete[] data;
+		if (ok && m_han2) m_han2->sourcePath = filename;
+		return ok;
 	}
 
 	// MBAC Hantei4 .DAT (detected by content, not extension)
@@ -241,6 +250,12 @@ bool FrameData::save(const char *filename)
 {
 	if (m_ha4 && !TargetIsHA6(filename))
 		return ha4::SaveFile(*this, filename);
+	if (m_han2) {
+		std::string f = filename ? filename : "";
+		std::string ext = f.size() >= 4 ? f.substr(f.size() - 4) : "";
+		for (auto &c : ext) c = (char)tolower((unsigned char)c);
+		return han2::SaveFile(*this, filename, nullptr, nullptr, ext == ".dt2");
+	}
 	const std::map<unsigned int, Sequence> *stubs =
 		(m_ownFile >= 0 && m_ownFile < (int)m_stubs.size()) ? &m_stubs[m_ownFile] : nullptr;
 	return WriteHA6File(filename, m_sequences, get_sequence_count(), false, &m_origin, m_ownFile, stubs, uniLayerCountForSave());
@@ -290,6 +305,7 @@ void FrameData::Free() {
 	m_loadIndex = -1;
 	m_ownFile = -1;
 	m_ha4.reset();
+	m_han2.reset();
 	dataVersion = NextFrameDataVersion();
 	m_sequences.clear();
 	m_nsequences = 0;

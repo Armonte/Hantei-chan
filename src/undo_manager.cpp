@@ -27,13 +27,15 @@ static_assert(std::is_trivially_copyable<Ha6FrameEnc>::value && std::is_triviall
 	"HA6 encoding blocks must stay trivially copyable for undo diffing");
 static_assert(std::is_trivially_copyable<Ha4FrameRaw>::value && std::is_trivially_copyable<Ha4SeqRaw>::value,
 	"HA4 raw blocks must stay trivially copyable for undo diffing");
+static_assert(std::is_trivially_copyable<Han2FrameRaw>::value && std::is_trivially_copyable<Han2SeqRaw>::value,
+	"HAN2 raw blocks must stay trivially copyable for undo diffing");
 #if defined(__x86_64__) || defined(_M_X64)
 static_assert(sizeof(Layer_Type) == 60, "Layer layout changed: update layerEquals() in undo_manager.cpp, then this size");
 static_assert(sizeof(Frame_AF) == 80, "Frame_AF layout changed: update afEquals() in undo_manager.cpp, then this size");
-static_assert(sizeof(Sequence) == 248 + sizeof(Ha6SeqEnc) + 4, "Sequence layout changed: update SequenceContentEquals() in undo_manager.cpp, then this size");
+static_assert(sizeof(Sequence) == 248 + sizeof(Ha6SeqEnc) + 4 + sizeof(Han2SeqRaw) - 4, "Sequence layout changed: update SequenceContentEquals() in undo_manager.cpp, then this size");
 #endif
 static_assert(sizeof(Frame) == sizeof(Frame_AF) + sizeof(Frame_AS) + sizeof(Frame_AT)
-	+ sizeof(Frame::EF) + sizeof(Frame::IF) + sizeof(BoxList) + sizeof(Ha4FrameRaw) + sizeof(Ha6FrameEnc),
+	+ sizeof(Frame::EF) + sizeof(Frame::IF) + sizeof(BoxList) + sizeof(Ha4FrameRaw) + sizeof(Han2FrameRaw) + sizeof(Ha6FrameEnc),
 	"Frame gained a member: update frameEquals() in undo_manager.cpp");
 
 namespace {
@@ -115,6 +117,20 @@ bool boxesEqual(const BoxList& a, const BoxList& b)
 	return true;
 }
 
+// Han2FrameRaw / Han2SeqRaw are compared member by member (they hold bools, so padding must not matter).
+bool han2FrameRawEquals(const Han2FrameRaw& a, const Han2FrameRaw& b)
+{
+	return a.valid == b.valid && a.frameSize == b.frameSize && a.hadAT == b.hadAT && a.scriptHad == b.scriptHad && a.boxMask == b.boxMask
+		&& std::memcmp(a.rec, b.rec, sizeof(a.rec)) == 0 && std::memcmp(a.at, b.at, sizeof(a.at)) == 0
+		&& std::memcmp(a.script, b.script, sizeof(a.script)) == 0 && std::memcmp(a.box, b.box, sizeof(a.box)) == 0;
+}
+
+bool han2SeqRawEquals(const Han2SeqRaw& a, const Han2SeqRaw& b)
+{
+	return a.valid == b.valid && a.nameValid == b.nameValid && a.patFlags == b.patFlags && a.firstFrame == b.firstFrame
+		&& std::memcmp(a.name, b.name, sizeof(a.name)) == 0;
+}
+
 bool frameEquals(const Frame& a, const Frame& b)
 {
 	return bytesEqual(a.AS, b.AS)
@@ -124,6 +140,7 @@ bool frameEquals(const Frame& a, const Frame& b)
 		&& podVectorEqual(a.IF, b.IF)
 		&& boxesEqual(a.hitboxes, b.hitboxes)
 		&& bytesEqual(a.ha4, b.ha4)    // original MBAC .DAT bytes (ha4_raw.h)
+		&& han2FrameRawEquals(a.han2, b.han2)   // original RBO / GOF2 frame bytes (han2_raw.h)
 		&& bytesEqual(a.ha6, b.ha6);   // HA6 encoding as loaded (ha6_enc.h)
 }
 
@@ -138,6 +155,7 @@ bool UndoManager::SequenceContentEquals(const Sequence& a, const Sequence& b)
 	if (a.usedAFGX != b.usedAFGX || a.usedATV2 != b.usedATV2) return false;
 	if (a.name != b.name || a.codeName != b.codeName) return false;
 	if (!bytesEqual(a.ha4, b.ha4)) return false;   // MBAC pattern header/name bytes
+	if (!han2SeqRawEquals(a.han2, b.han2)) return false;   // RBO / GOF2 pattern entry/name bytes
 	if (!bytesEqual(a.ha6, b.ha6)) return false;   // HA6 raw name buffers (ha6_enc.h)
 	for (size_t i = 0; i < a.frames.size(); ++i) {
 		if (!frameEquals(a.frames[i], b.frames[i])) return false;

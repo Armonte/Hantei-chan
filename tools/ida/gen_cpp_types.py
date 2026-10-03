@@ -11,12 +11,14 @@ import re, sys
 PRIM = {'char': 1, 'unsigned char': 1, 'signed char': 1, '__int8': 1, 'unsigned __int8': 1,
         '__int16': 2, 'unsigned __int16': 2, 'short': 2, 'unsigned short': 2,
         'int': 4, 'unsigned int': 4, '__int32': 4, 'unsigned __int32': 4, 'float': 4,
-        '__int64': 8, 'unsigned __int64': 8}
+        '__int64': 8, 'unsigned __int64': 8,
+        'int8_t': 1, 'uint8_t': 1, 'int16_t': 2, 'uint16_t': 2, 'int32_t': 4, 'uint32_t': 4}
 CT = {'char': 'char', 'unsigned char': 'uint8_t', 'signed char': 'int8_t', '__int8': 'int8_t', 'unsigned __int8': 'uint8_t',
       '__int16': 'int16_t', 'unsigned __int16': 'uint16_t', 'short': 'int16_t', 'unsigned short': 'uint16_t',
       'int': 'int32_t', 'unsigned int': 'uint32_t', '__int32': 'int32_t', 'unsigned __int32': 'uint32_t', 'float': 'float',
-      '__int64': 'int64_t', 'unsigned __int64': 'uint64_t'}
-UND = {'unsigned char': 'uint8_t', 'unsigned int': 'uint32_t', 'int': 'int32_t', 'unsigned __int16': 'uint16_t', '__int16': 'int16_t'}
+      '__int64': 'int64_t', 'unsigned __int64': 'uint64_t',
+      'int8_t': 'int8_t', 'uint8_t': 'uint8_t', 'int16_t': 'int16_t', 'uint16_t': 'uint16_t', 'int32_t': 'int32_t', 'uint32_t': 'uint32_t'}
+UND = {'unsigned char': 'uint8_t', 'unsigned int': 'uint32_t', 'int': 'int32_t', 'unsigned __int16': 'uint16_t', '__int16': 'int16_t', 'int32_t': 'int32_t', 'uint32_t': 'uint32_t', 'uint8_t': 'uint8_t', 'uint16_t': 'uint16_t', 'int8_t': 'int8_t', 'int16_t': 'int16_t'}
 
 text = ''
 for p in sys.argv[2:]:
@@ -78,6 +80,19 @@ for n in order:
     out.append('static_assert(sizeof(%s) == 0x%X, "%s size");' % (n, sizes[n], n))
     for cty, fn, cnt, off, cm, ty, sz in structs[n]:
         out.append('static_assert(offsetof(%s, %s) == 0x%X, "%s.%s");' % (n, fn, off, n, fn))
+out.append('')
+out.append('struct Han2EnumValue { const char *name; int64_t value; };')
+out.append('struct Han2EnumInfo { const char *name; const Han2EnumValue *values; int count; bool flags; };')
+for n, (u, items) in enums.items():
+    out.append('static const Han2EnumValue k%sValues[] = {' % n)
+    for a, b in items: out.append('\t{"%s", (int64_t)(%s)},' % (a, b))
+    out.append('};')
+out.append('static const Han2EnumInfo kHan2Enums[] = {')
+for n, (u, items) in enums.items():
+    vals = [int(b, 0) for a, b in items]
+    isflags = ('Flags' in n) or (all(v == 0 or (v & (v - 1)) == 0 for v in vals) and len([v for v in vals if v]) > 1 and 'Flags' in n)
+    out.append('\t{"%s", k%sValues, %d, %s},' % (n, n, len(items), 'true' if isflags else 'false'))
+out.append('};')
 out.append('')
 # reflection table: kind 0 = unsigned, 1 = signed, 2 = enum, 3 = flags enum
 out.append('struct Han2FieldInfo { const char *name; uint16_t offset; uint8_t size; uint8_t count; uint8_t kind; const char *enumName; const char *comment; };')

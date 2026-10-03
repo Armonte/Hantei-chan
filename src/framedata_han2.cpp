@@ -11,6 +11,7 @@
 #include <cstdio>
 #include <cstring>
 #include <map>
+#include <filesystem>
 
 namespace han2 {
 
@@ -440,11 +441,21 @@ bool Serialize(const FrameData &fd, std::vector<uint8_t> &out, std::string *err,
 }
 
 static std::string g_lastErr;
+static std::vector<std::string> g_lastWarn;
+const std::string &LastSaveError() { return g_lastErr; }
+const std::vector<std::string> &LastSaveWarnings() { return g_lastWarn; }
+
 bool SaveFile(const FrameData &fd, const char *filename, std::string *err, std::vector<std::string> *warnings, bool asDt2)
 {
-	g_lastErr.clear();
+	g_lastErr.clear(); g_lastWarn.clear();
 	std::vector<uint8_t> bytes;
-	bool ok = Serialize(fd, bytes, &g_lastErr, warnings, asDt2);
+	bool ok = Serialize(fd, bytes, &g_lastErr, &g_lastWarn, asDt2);
+	if (warnings) *warnings = g_lastWarn;
+	if (ok) {   // keep the first version of a file we replace
+		std::error_code ec;
+		std::filesystem::path p = std::filesystem::u8path(filename), bak = p; bak += ".bak";
+		if (std::filesystem::exists(p, ec) && !std::filesystem::exists(bak, ec)) std::filesystem::copy_file(p, bak, ec);
+	}
 	if (ok && !WriteFileAtomic(filename, bytes.data(), bytes.size())) { g_lastErr = std::string("could not write ") + filename; ok = false; }
 	if (err) *err = g_lastErr;
 	return ok;

@@ -367,6 +367,7 @@ void MainFrame::DrawViewPanes(CharacterView* view, const std::string& ns)
 		if (view->getRightPane() && view->getRightPane()->isVisible) view->getRightPane()->Draw();
 		if (view->getBoxPane() && view->getBoxPane()->isVisible) view->getBoxPane()->Draw();
 		if (ns.empty()) ha4ui::DrawInspector(character, view->getState());   // MBAC .DAT only
+		if (ns.empty()) han2ui::DrawInspector(character, view->getState());  // RBO / GOF2 only
 	} else {
 		if (view->getPartSetPane() && view->getPartSetPane()->isVisible) view->getPartSetPane()->Draw();
 		if (view->getPartPane() && view->getPartPane()->isVisible) view->getPartPane()->Draw();

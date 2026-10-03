@@ -2,6 +2,8 @@
 #include "ini.h"
 #include "misc.h"
 #include "ha4_character.h"
+#include "han2_character.h"
+#include "framedata_han2.h"
 #include <filesystem>
 #include <sstream>
 #include <iomanip>
@@ -164,6 +166,21 @@ bool CharacterInstance::loadHA6(const std::string& ha6Path, bool patch)
 	m_isModified = false;
 	undoManager.reset();  // document replaced: new baseline, no history
 	loadNotes();
+	return true;
+}
+
+bool CharacterInstance::loadHan2(const std::string& stem,
+	const std::function<bool(const std::string&, std::vector<uint8_t>&)>& read,
+	const std::string& origin, const std::string& saveTarget, std::string& err)
+{
+	std::string summary;
+	if (!han2::LoadCharacter(*this, stem, read, origin, &summary, &err)) return false;
+	m_name = stem;
+	m_ha6Paths.clear();
+	m_topHA6Path = saveTarget;
+	if (!saveTarget.empty()) m_ha6Paths.push_back(saveTarget);
+	m_isModified = false;
+	undoManager.reset();
 	return true;
 }
 

@@ -306,6 +306,109 @@ static_assert(offsetof(RboBoxRect, y1) == 0x2, "RboBoxRect.y1");
 static_assert(offsetof(RboBoxRect, x2) == 0x4, "RboBoxRect.x2");
 static_assert(offsetof(RboBoxRect, y2) == 0x6, "RboBoxRect.y2");
 
+struct Han2EnumValue { const char *name; int64_t value; };
+struct Han2EnumInfo { const char *name; const Han2EnumValue *values; int count; bool flags; };
+static const Han2EnumValue kRboAniFlagValues[] = {
+	{"ANI_END_TO_PATTERN", (int64_t)(0)},
+	{"ANI_NEXT", (int64_t)(1)},
+	{"ANI_JUMP_TO_FRAME", (int64_t)(2)},
+	{"ANI_NEXT_LAND_TO_PATTERN", (int64_t)(3)},
+	{"ANI_JUMP_TO_FRAME_LAND_TO_PATTERN", (int64_t)(4)},
+	{"ANI_LOOP_COUNTED", (int64_t)(5)},
+	{"ANI_STEP_BACK", (int64_t)(6)},
+	{"ANI_NEXT_WHILE_CHANNEL_ACTIVE", (int64_t)(7)},
+	{"ANI_LOOP_COUNTED_TO_LOOP_FRAME", (int64_t)(8)},
+	{"ANI_NEXT_UNTIL_CHANNEL_ENDS", (int64_t)(9)},
+};
+static const Han2EnumValue kRboFlipModeValues[] = {
+	{"FLIP_NONE", (int64_t)(0)},
+	{"FLIP_H", (int64_t)(1)},
+	{"FLIP_V", (int64_t)(2)},
+	{"ROT_90", (int64_t)(3)},
+	{"ROT_180", (int64_t)(4)},
+	{"ROT_270", (int64_t)(5)},
+	{"FLIP_H_ROT_90", (int64_t)(6)},
+	{"FLIP_H_ROT_270", (int64_t)(7)},
+	{"ROT_FREE", (int64_t)(8)},
+	{"FLIP_H_ROT_FREE", (int64_t)(9)},
+};
+static const Han2EnumValue kRboBlendModeValues[] = {
+	{"BLEND_OPAQUE", (int64_t)(0)},
+	{"BLEND_ALPHA", (int64_t)(1)},
+	{"BLEND_ADDITIVE", (int64_t)(2)},
+	{"BLEND_SUBTRACTIVE", (int64_t)(3)},
+};
+static const Han2EnumValue kRboFrameFxFlagsValues[] = {
+	{"FXF_USE_ZOOM", (int64_t)(1)},
+	{"FXF_USE_ALPHA_FADE", (int64_t)(2)},
+};
+static const Han2EnumValue kRboMoveFlagsValues[] = {
+	{"MOVE_CLEAR_VEL_X", (int64_t)(1)},
+	{"MOVE_CLEAR_VEL_Y", (int64_t)(2)},
+	{"MOVE_ADD_X", (int64_t)(4)},
+	{"MOVE_ADD_Y", (int64_t)(8)},
+};
+static const Han2EnumValue kRboStanceClassValues[] = {
+	{"STANCE_NONE", (int64_t)(0)},
+	{"STANCE_GROUND", (int64_t)(1)},
+	{"STANCE_CROUCH", (int64_t)(2)},
+	{"STANCE_AIR", (int64_t)(4)},
+};
+static const Han2EnumValue kRboCancelPermissionValues[] = {
+	{"CANCEL_NONE", (int64_t)(0)},
+	{"CANCEL_ON_INPUT_MATCH", (int64_t)(1)},
+	{"CANCEL_ALWAYS", (int64_t)(2)},
+};
+static const Han2EnumValue kRboAttackEventFlagsValues[] = {
+	{"ATKEV_BEGIN", (int64_t)(1)},
+	{"ATKEV_END", (int64_t)(2)},
+	{"ATKEV_KASANARI_BEGIN", (int64_t)(4)},
+	{"ATKEV_KASANARI_END", (int64_t)(8)},
+	{"ATKEV_KEEP_HIT_MEMORY", (int64_t)(0x10)},
+};
+static const Han2EnumValue kRboHurtMaskFlagsValues[] = {
+	{"HMF_NO_CLASS_8", (int64_t)(0x100)},
+	{"HMF_NO_CLASS_9", (int64_t)(0x200)},
+	{"HMF_NO_CLASS_0", (int64_t)(0x10000)},
+	{"HMF_NO_CLASS_1", (int64_t)(0x20000)},
+	{"HMF_NO_CLASS_2", (int64_t)(0x40000)},
+	{"HMF_NO_CLASS_3", (int64_t)(0x80000)},
+	{"HMF_NO_CLASS_4", (int64_t)(0x100000)},
+	{"HMF_NO_CLASS_5", (int64_t)(0x400000)},
+	{"HMF_NO_CLASS_6", (int64_t)(0x800000)},
+};
+static const Han2EnumValue kRboMotionFlagsValues[] = {
+	{"MOTF_BRAKE_ON_ENTER", (int64_t)(4)},
+};
+static const Han2EnumValue kRboScriptOrderFlagsValues[] = {
+	{"SCRIPTORD_LIST_A_FIRST", (int64_t)(1)},
+};
+static const Han2EnumValue kRboPatternFlagsValues[] = {
+	{"PATF_NONE", (int64_t)(0)},
+	{"PATF_FLAG_2", (int64_t)(2)},
+	{"PATF_ALT_DRAW_MODE", (int64_t)(0x40)},
+	{"PATF_FLAG_80", (int64_t)(0x80)},
+};
+static const Han2EnumValue kRboHan2KindValues[] = {
+	{"HAN2_KIND_FULL_DAT", (int64_t)(0)},
+	{"HAN2_KIND_PATTERN_ONLY_DT2", (int64_t)(3)},
+};
+static const Han2EnumInfo kHan2Enums[] = {
+	{"RboAniFlag", kRboAniFlagValues, 10, false},
+	{"RboFlipMode", kRboFlipModeValues, 10, false},
+	{"RboBlendMode", kRboBlendModeValues, 4, false},
+	{"RboFrameFxFlags", kRboFrameFxFlagsValues, 2, true},
+	{"RboMoveFlags", kRboMoveFlagsValues, 4, true},
+	{"RboStanceClass", kRboStanceClassValues, 4, false},
+	{"RboCancelPermission", kRboCancelPermissionValues, 3, false},
+	{"RboAttackEventFlags", kRboAttackEventFlagsValues, 5, true},
+	{"RboHurtMaskFlags", kRboHurtMaskFlagsValues, 9, true},
+	{"RboMotionFlags", kRboMotionFlagsValues, 1, true},
+	{"RboScriptOrderFlags", kRboScriptOrderFlagsValues, 1, true},
+	{"RboPatternFlags", kRboPatternFlagsValues, 4, true},
+	{"RboHan2Kind", kRboHan2KindValues, 2, false},
+};
+
 struct Han2FieldInfo { const char *name; uint16_t offset; uint8_t size; uint8_t count; uint8_t kind; const char *enumName; const char *comment; };
 static const Han2FieldInfo kRboFrameRecordFields[] = {
 	{"spriteId", 0x0, 2, 1, 1, nullptr, "+0x00 CG image = id-10000 when >=10000, else PAT pose index (Actor_GetFrameSpriteId 0x440B10, Actor_DrawTree 0x4483E0)"},

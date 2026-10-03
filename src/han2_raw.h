@@ -30,6 +30,7 @@ struct Han2FrameRaw
 	uint8_t  script[3][han2::kScriptListBytes]{}; // referenced script-list records (A, B, C)
 	int16_t  box[han2::kMaxBoxSlots][4]{};        // referenced rectangles by box slot (layout order)
 	uint32_t boxMask = 0;                         // bit k set = box slot k was present
+	uint32_t alignPad = 0;                        // keeps sizeof a multiple of 8 (undo_manager.cpp layout assert)
 };
 
 struct Han2SeqRaw
