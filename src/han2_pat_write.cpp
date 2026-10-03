@@ -134,7 +134,7 @@ bool BuildPat(const Parts &parts, const std::vector<uint8_t> &orig, std::vector<
 			if (origPose[p]) memcpy(r, origPose[p] + kPart * k, kPart); else Blank(r);
 			const Dec od = DecodeRec(r);
 			const PartProperty *pr = (ps && k < ps->groups.size() && ps->groups[k].ppId >= 0) ? &ps->groups[k] : nullptr;
-			const bool origUsed = rd32(r + 0x34) != 0 && (uint32_t)rd32(r + 0x28) != 0xFFFF;
+			const bool origUsed = rd32(r + 0x34) != 0 && (uint32_t)rd32(r + 0x28) < (uint32_t)parts.gfxMeta.size();   // other records (clip parts, bogus texture ids) have no model part and are kept verbatim
 			if (!pr) {
 				if (origUsed && ps) Blank(r);          // part removed in the editor (a clip part, which the model never holds, is kept)
 				continue;

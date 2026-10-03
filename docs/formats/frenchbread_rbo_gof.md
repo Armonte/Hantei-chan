@@ -90,3 +90,19 @@ See `docs/formats/ida/rbo_scripts_pat.md` section 3/4. `src/han2_pat.cpp` conver
 pose offset table -> part sets, every 92-byte part record -> a part property plus a (texture, source rect, quad size, origin)
 cutout, textures are B,G,R,A squares of 256 or 512 px. Pose slots with `src_w == 0` or `texture_index == 0xFFFF` (clip rectangle,
 which the engine does not draw) are skipped.
+
+## 5. GOF2 (HAN2RBO sub 2 + PAT v4 + CHP)
+
+Full field tables with IDA evidence: [gof2_frame.md](gof2_frame.md) (404-byte frame, box slot list, invariants, differences from RBO),
+`docs/formats/ida/gof2_frame_types.h` / `gof2_container_types.h` (IDA decl source, generated C++ `src/han2/gof2_types_gen.h`).
+The editor (`framedata_han2.cpp`, `Layout` structs) handles both layouts: 12+9+3 dword pattern-area header, 404-byte frames,
+236-byte attack records (kept verbatim; new attacks start zero-filled), 24 box slots in ascending frame offset, script lists A/B
+(sections 6/7), effect-spawn records (section 8, frame +0x190, 1-based, record 0 dummy), sections 4/5 kept as blobs.
+Verified (`han2tool modelrt`): 68/68 GOF2 .DT2 load through the model and save byte-identical.
+Parts: `<C>00.PAT` / `<C>01.PAT` are v4 (2000 poses, same 92-byte part record); `han2tool patrt`: reader + writer reproduce all 64 shipped
+GOF2 .PAT byte-identical (together with the 208 RBO PAT blocks). Both costume variants cover every pose the .DT2 uses (AMIY: 1163/1163).
+Sprites: `<C>00.CHP` is a bare BMP Cutter3 bank (same CG loader). GOF2 .DT2 has no pattern-name area, so patterns are unnamed.
+Saving: a GOF2 character is saved as .DT2 (pattern area); edited parts/sprites are written next to it as `<stem>NN.PAT` / `<stem>NN.CHP`
+(first version of each file kept as .bak).
+Parts-bug found by the GOF2 run: a part record with an out-of-range texture id (DATE/TOKUGAWA _CHR_SELECT) has no model part and is
+now kept verbatim by the PAT writer.
