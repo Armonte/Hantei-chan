@@ -3,6 +3,7 @@
 #include "han2/mbr_types_gen.h"
 #include "han2/mb_formats.h"
 #include "han2/mb_types_gen.h"
+#include "han2/pb2k1_types_gen.h"
 #include "misc.h"
 #include <cstring>
 
@@ -125,6 +126,27 @@ bool DescribeMb(const std::string &name, const std::vector<uint8_t> &d, TypedFil
 	return false;
 }
 
+bool DescribePb(const std::string &name, const std::vector<uint8_t> &d, TypedFile &f)
+{
+	const std::string e = ExtOf(name);
+	if ((e == ".CT" || e == ".CCT") && d.size() == sizeof(Pb2CtFile)) {
+		f.kind = "Party Breakers command table (<CHAR>_C.CT)"; f.work = d;
+		Add(f, "header", 0, 4, 1, kCountField, 1);
+		Add(f, "commands (100 x 42)", 4, sizeof(Pb2CommandMove), 100, kPb2CommandMoveFields, (int)(sizeof(kPb2CommandMoveFields) / sizeof(kPb2CommandMoveFields[0])),
+		    [](const uint8_t *r, size_t i) { char b[96]; if (r[0] == 0xFF) snprintf(b, sizeof b, "%3zu  (unused)", i); else { std::string seq; for (int k = 0; k < 32 && r[2 + k] != 0xFF; k++) { uint8_t c = r[2 + k]; seq += c < 10 ? char('0' + c) : (char)c; } snprintf(b, sizeof b, "%3zu  pattern %u  %s", i, r[0x22], seq.c_str()); } return std::string(b); });
+		Add(f, "parameters", 4 + 100 * sizeof(Pb2CommandMove), sizeof(Pb2CtHeader), 1, kPb2CtHeaderFields, (int)(sizeof(kPb2CtHeaderFields) / sizeof(kPb2CtHeaderFields[0])));
+		return true;
+	}
+	if (e == ".WMT" && d.size() >= 4 && d.size() == 4 + sizeof(Pb2WmtRecord) * (size_t)*(const uint32_t *)d.data()) {
+		f.kind = "Party Breakers win quotes (.WMT)"; f.work = d;
+		Add(f, "header", 0, 4, 1, kCountField, 1);
+		Add(f, "records", 4, sizeof(Pb2WmtRecord), *(const uint32_t *)d.data(), kPb2WmtRecordFields, (int)(sizeof(kPb2WmtRecordFields) / sizeof(kPb2WmtRecordFields[0])),
+		    [](const uint8_t *r, size_t i) { char b[160]; snprintf(b, sizeof b, "%2zu  vs %s  %.60s", i, r[0] == 0xFF ? "any" : std::to_string(r[0]).c_str(), (const char *)r + 4); return sj2utf8(b); });
+		return true;
+	}
+	return false;
+}
+
 } // namespace
 
 bool DescribeTypedFile(const std::string &name, const std::vector<uint8_t> &stored, TypedFile &out, const std::string &origin)
@@ -136,6 +158,8 @@ bool DescribeTypedFile(const std::string &name, const std::vector<uint8_t> &stor
 		out = TypedFile();
 		if (mb ? DescribeMb(name, stored, out) : DescribeMbr(name, stored, out)) return true;
 	}
+	out = TypedFile();
+	if (DescribePb(name, stored, out)) return true;
 	out = TypedFile();
 	return false;
 }

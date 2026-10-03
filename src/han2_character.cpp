@@ -7,6 +7,7 @@
 #include "han2/gof1_archive.h"
 #include "framedata_gof1.h"
 #include "han2/mb_cg.h"
+#include "framedata_pb2k1.h"
 #include "misc.h"
 
 #include <cctype>
@@ -147,6 +148,22 @@ bool LoadGof1CharacterFile(CharacterInstance &ch, const std::string &path, std::
 		if (PatToParts(cont->parts.data(), cont->parts.size(), ch.parts, &pe)) UploadPartsTextures(ch.parts);
 	}
 	LoadEmbeddedCg(ch, cont->cg);
+	return true;
+}
+
+bool LoadPb2k1CharacterFile(CharacterInstance &ch, const std::string &path, std::string *err)
+{
+	auto fail = [&](const std::string &m) { if (err) *err = m; return false; };
+	std::ifstream f(std::filesystem::u8path(path), std::ios::binary);
+	if (!f) return fail("cannot read " + path);
+	std::vector<uint8_t> d((std::istreambuf_iterator<char>(f)), std::istreambuf_iterator<char>());
+	if (!pb2k1::Decrypt(d)) return fail(path + ": not a Party Breakers character file");
+	std::string e;
+	if (!pb2k1::Load(ch.frameData, d.data(), d.size(), &e)) return fail(path + ": " + e);
+	auto cont = ch.frameData.m_han2;
+	cont->sourcePath = path; cont->gof1Name.clear();
+	std::string be; auto bank = MbCgBank::Parse(cont->cg.data(), cont->cg.size(), &be, kPb2CgLayout);
+	if (bank) ch.cg.loadForeign(bank);
 	return true;
 }
 

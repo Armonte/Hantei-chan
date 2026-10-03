@@ -14,6 +14,8 @@
 #include "../han2/img_file.h"
 #include "../han2/mbr_formats.h"
 #include "../han2/mb_formats.h"
+#include "../han2/pb2k1_types_gen.h"
+#include "../framedata_pb2k1.h"
 #include "../framedata.h"
 #include "../framedata_ha4.h"
 #include "../framedata_gof1.h"
@@ -160,6 +162,60 @@ bool Gof1CharMember(const std::string &label, const std::vector<uint8_t> &stage1
 	return true;
 }
 
+// Party Breakers character (three-section cipher) + embedded sprite bank
+bool Pb2CharMember(const std::string &label, const std::vector<uint8_t> &stored, Section &s)
+{
+	if (!pb2k1::LooksLikeCharacter(stored.data(), stored.size())) return false;
+	std::string err; std::vector<uint8_t> plain = stored;
+	if (!pb2k1::Decrypt(plain)) { Fail(s, label, "decrypt"); return true; }
+	FrameData fd;
+	if (!pb2k1::Load(fd, plain.data(), plain.size(), &err)) { Fail(s, label, "load: " + err); return true; }
+	std::vector<uint8_t> out;
+	if (!pb2k1::Serialize(fd, out, &err)) { Fail(s, label, "save: " + err); return true; }
+	std::vector<uint8_t> enc = out; pb2k1::Encrypt(enc);
+	{
+		std::string ce; auto bank = han2::MbCgBank::Parse(fd.m_han2->cg.data(), fd.m_han2->cg.size(), &ce, han2::kPb2CgLayout);
+		if (!bank) { Fail(s, label, "sprite bank does not parse: " + ce); return true; }
+		std::vector<uint8_t> back; bank->serialize(back);
+		if (back != fd.m_han2->cg) { Fail(s, label, "sprite bank does not serialize identically"); return true; }
+		unsigned drawn = 0;
+		for (unsigned i = 0; i < bank->imageCount(); i++) { int b, t, x1, y1, x2, y2; if (!bank->imageInfo(i, b, t, x1, y1, x2, y2)) continue; std::unique_ptr<ImageData> im(bank->draw(i, false, false, bank->palette(0))); if (!im) { Fail(s, label, "sprite group " + std::to_string(i) + " does not decode"); return true; } drawn++; }
+		s.notes["  PB sprite groups decoded"] += (int)drawn;
+	}
+	if (out == plain && enc == stored) Ok(s, "character .DAT (Party Breakers, three-section cipher)");
+	else { Diff("character DAT", label, out, plain); if (enc != stored) printf("  re-encrypt differs\n"); s.fail++; }
+	return true;
+}
+
+bool Pb2Member(const std::string &label, const std::string &name, const std::vector<uint8_t> &d, Section &s)
+{
+	const std::string e = ExtOf(name); std::string err; std::vector<uint8_t> out;
+	if (Pb2CharMember(label, d, s)) return true;
+	if ((e == ".CT" || e == ".CCT") && d.size() == sizeof(Pb2CtFile)) { Ok(s, "_C.CT / .CCT command table (typed, Pb2CtFile 4232 bytes)"); return true; }
+	if (e == ".CT" || e == ".CCT") {
+		han2::CharSel c; if (!han2::ParseCharSel(d.data(), d.size(), c, &err)) { Fail(s, label, "charsel: " + err); return true; }
+		han2::SerializeCharSel(c, out); if (out == d) Ok(s, "CHARSEL.CT (enciphered character table)"); else Bad(s, "charsel", label, out, d);
+		return true;
+	}
+	if (e == ".WMT") { han2::Wmt w; if (!han2::ParseWmt(d.data(), d.size(), w, &err)) { Fail(s, label, "wmt: " + err); return true; } han2::SerializeWmt(w, out); if (out == d) Ok(s, ".WMT (win quotes, 154-byte records)"); else Bad(s, "wmt", label, out, d); return true; }
+	if (e == ".TXT" && name == "MULTICOM.TXT") {
+		han2::AiLegacy a; if (!han2::ParseAiLegacy(d.data(), d.size(), a, &err)) { Fail(s, label, "ai legacy: " + err); return true; }
+		han2::SerializeAiLegacy(a, out); if (out == d) Ok(s, "MULTICOM.TXT (legacy AI tables)"); else Bad(s, "ai legacy", label, out, d);
+		return true;
+	}
+	if (e == ".B") {
+		han2::PolyObject o; if (!han2::ParsePoly(d.data(), d.size(), o, &err)) { Fail(s, label, "poly: " + err); return true; }
+		han2::SerializePoly(o, out); if (out == d) Ok(s, ".B (polygon object)"); else Bad(s, "poly", label, out, d);
+		return true;
+	}
+	if (e == ".CPF" || (e == ".TXT" && d.size() >= 56048 && name.size() > 7 && ([&] { std::string t = name.substr(name.size() - 7); for (auto &c : t) c = (char)toupper((unsigned char)c); return t == "COM.TXT"; }()))) {
+		han2::AiFile a; if (!han2::ParseAi(d.data(), d.size(), a, &err)) { Fail(s, label, "ai: " + err); return true; }
+		han2::SerializeAi(a, out); if (out == d) Ok(s, "CPU script (.CPF / *COM.TXT)"); else Bad(s, "ai", label, out, d);
+		return true;
+	}
+	return false;
+}
+
 using Handler = bool (*)(const std::string &, const std::string &, const std::vector<uint8_t> &, Section &);
 
 // ---- per title -----------------------------------------------------------------------------------------------------------------------------
@@ -268,7 +324,7 @@ bool FobImgMember(const std::string &label, const std::string &name, const std::
 	return false;
 }
 
-const Title kTitles[] = { { "react", ReactMember }, { "mb", MbMember }, { "dmp", FobImgMember }, { "rosa", FobImgMember } };
+const Title kTitles[] = { { "react", ReactMember }, { "mb", MbMember }, { "pb2k1", Pb2Member }, { "dmp", FobImgMember }, { "rosa", FobImgMember } };
 
 int Run(const Title &t, int argc, char **argv)
 {
@@ -285,7 +341,7 @@ int Run(const Title &t, int argc, char **argv)
 			if (CommonMember(label, name, d, s)) continue;
 			if (t.fn(label, name, d, s)) continue;
 			s.skipped++;
-			if (++s.unmodelled[ExtOf(name) + " (no model)"] <= 1) printf("SKIP %s (%zu bytes)\n", label.c_str(), d.size());
+			if (++s.unmodelled[ExtOf(name) + " (no model)"] <= 1 || getenv("FB_VERBOSE")) printf("SKIP %s (%zu bytes)\n", label.c_str(), d.size());
 		}
 		printf("%-40s pass %d fail %d skipped %d\n", argv[i], s.pass - p0, s.fail - f0, s.skipped - k0);
 	}
@@ -310,23 +366,74 @@ int CmdShift(int argc, char **argv)
 	for (size_t idx = 0; idx < a->entries().size(); idx++) {
 		if (!all && (int)idx != a->find(fbarc::NameFromUtf8(argv[1]))) continue;
 		std::vector<uint8_t> d; if (!a->read(idx, d, &err)) { printf("%s\n", err.c_str()); return 1; }
-		FrameData fd; std::vector<uint8_t> out; bool gof = false;
-		if (ha4::IsHA4(d.data(), d.size())) {
+		FrameData fd; std::vector<uint8_t> out; bool gof = false, pb = false;
+		if (ExtOf(a->entries()[idx].name) == ".DAT" && pb2k1::LooksLikeCharacter(d.data(), d.size())) {
+			pb = true; pb2k1::Decrypt(d);
+			if (!pb2k1::Load(fd, d.data(), d.size(), &err)) { printf("load: %s\n", err.c_str()); return 1; }
+		} else if (ha4::IsHA4(d.data(), d.size())) {
 			if (!ha4::Load(fd, d.data(), d.size(), &err)) { printf("load: %s\n", err.c_str()); return 1; }
 		} else if (d.size() >= 4 && R32(d.data()) == 0x3dfe93d9u && ExtOf(a->entries()[idx].name) == ".DAT") {
 			gof = true; gof1::DecryptDat(d);
 			if (!gof1::Load(fd, d.data(), d.size(), &err)) { printf("load: %s\n", err.c_str()); return 1; }
 		} else { if (!all) { puts("not a character"); return 1; } continue; }
-		if (all && a->entries()[idx].name.find("EFFECT") != std::string::npos) continue;
+		if (all && (a->entries()[idx].name.find("EFFECT") != std::string::npos || a->entries()[idx].name.find("SAMPLE") != std::string::npos)) continue;
 		for (auto &q : fd.m_sequences) for (auto &f : q.frames) for (auto &l : f.AF.layers) { l.offset_x += dx; l.offset_y += dy; }
-		if (gof ? !gof1::Serialize(fd, out, &err) : !ha4::Serialize(fd, out, &err)) { printf("save: %s\n", err.c_str()); return 1; }
+		if (pb ? !pb2k1::Serialize(fd, out, &err) : gof ? !gof1::Serialize(fd, out, &err) : !ha4::Serialize(fd, out, &err)) { printf("save: %s\n", err.c_str()); return 1; }
 		if (gof) gof1::EncryptDat(out);
+		if (pb) pb2k1::Encrypt(out);
 		e.replace[idx] = out; done++;
 	}
 	if (!done) { puts("nothing to edit"); return 1; }
 	if (!a->rebuild(argv[2], e, &err)) { printf("rebuild: %s\n", err.c_str()); return 1; }
 	printf("shifted %d character(s) of %s by (%d,%d), wrote %s\n", done, argv[0], dx, dy, argv[2]);
 	return 0;
+}
+
+// Plain (decrypted) character bytes of any supported character container, plus the end of its pattern area (u32 @0x14 in all of them).
+static bool PlainChar(const std::string &name, std::vector<uint8_t> d, std::vector<uint8_t> &plain, int &kind)
+{
+	if (ExtOf(name) != ".DAT") return false;
+	if (pb2k1::LooksLikeCharacter(d.data(), d.size())) { if (!pb2k1::Decrypt(d)) return false; plain = d; kind = 2; return true; }
+	if (ha4::IsHA4(d.data(), d.size())) { plain = d; kind = 0; return true; }
+	if (d.size() >= 4 && R32(d.data()) == 0x3dfe93d9u) { gof1::DecryptDat(d); plain = d; kind = 1; return true; }
+	return false;
+}
+
+// locality <archive>...: EDIT LOCALITY. Every character is loaded, every sprite layer is moved by one pixel, the model is saved; the result may differ from the
+// original ONLY inside the pattern area (everything from the end of the pattern area on - parts, sprite bank / CG, names - must be byte-identical),
+// by at most 2 bytes per layer (the offset word), and moving back must restore the original exactly.
+int CmdLocality(int argc, char **argv)
+{
+	int pass = 0, fail = 0;
+	for (int i = 0; i < argc; i++) {
+		std::string err; auto a = fbarc::Open(argv[i], &err);
+		if (!a) { printf("FAIL %s: %s\n", argv[i], err.c_str()); fail++; continue; }
+		for (size_t k = 0; k < a->entries().size(); k++) {
+			std::vector<uint8_t> raw, plain; int kind = 0;
+			if (ExtOf(a->entries()[k].name) != ".DAT") continue;
+			if (!a->read(k, raw, &err)) { printf("FAIL %s: %s\n", argv[i], err.c_str()); fail++; continue; }
+			if (!PlainChar(a->entries()[k].name, raw, plain, kind)) continue;
+			const std::string label = std::string(argv[i]) + "::" + a->entries()[k].name;
+			FrameData fd; bool ok = kind == 2 ? pb2k1::Load(fd, plain.data(), plain.size(), &err) : kind == 1 ? gof1::Load(fd, plain.data(), plain.size(), &err) : ha4::Load(fd, plain.data(), plain.size(), &err);
+			if (!ok) { printf("FAIL %s: load %s\n", label.c_str(), err.c_str()); fail++; continue; }
+			size_t layers = 0;
+			for (auto &q : fd.m_sequences) for (auto &f : q.frames) for (auto &l : f.AF.layers) { l.offset_x += 1; layers++; }
+			std::vector<uint8_t> out;
+			ok = kind == 2 ? pb2k1::Serialize(fd, out, &err) : kind == 1 ? gof1::Serialize(fd, out, &err) : ha4::Serialize(fd, out, &err);
+			if (!ok) { printf("FAIL %s: save %s\n", label.c_str(), err.c_str()); fail++; continue; }
+			const uint32_t areaEnd = R32(plain.data() + 0x14);
+			size_t diffs = 0, outside = 0, first = (size_t)-1;
+			if (out.size() != plain.size()) { printf("FAIL %s: size changed %zu -> %zu\n", label.c_str(), plain.size(), out.size()); fail++; continue; }
+			for (size_t b = 0; b < out.size(); b++) if (out[b] != plain[b]) { diffs++; if (first == (size_t)-1) first = b; if (b >= areaEnd) outside++; }
+			for (auto &q : fd.m_sequences) for (auto &f : q.frames) for (auto &l : f.AF.layers) l.offset_x -= 1;
+			std::vector<uint8_t> back;
+			if (kind == 2) pb2k1::Serialize(fd, back, &err); else if (kind == 1) gof1::Serialize(fd, back, &err); else ha4::Serialize(fd, back, &err);
+			if (outside || diffs > 2 * layers || back != plain) { printf("FAIL %s: locality: %zu bytes differ (%zu outside the pattern area, limit %zu), first at 0x%zx, areaEnd 0x%x, moving back %s\n", label.c_str(), diffs, outside, 2 * layers, first, areaEnd, back == plain ? "restores" : "DOES NOT restore"); fail++; }
+			else { pass++; }
+		}
+	}
+	printf("SECTION locality pass %d fail %d skipped 0\n", pass, fail);
+	return fail ? 1 : 0;
 }
 
 // cgpng <archive> <ENTRY> <image> <out.png> [palette]: draws one image of the character's embedded MB strip bank (visual check of the decoder)
@@ -349,6 +456,7 @@ int CmdCgPng(int argc, char **argv)
 int main(int argc, char **argv)
 {
 	CoInitializeEx(nullptr, COINIT_MULTITHREADED);
+	if (argc >= 2 && !strcmp(argv[1], "locality")) return CmdLocality(argc - 2, argv + 2);
 	if (argc >= 2 && !strcmp(argv[1], "cgpng")) return CmdCgPng(argc - 2, argv + 2);
 	if (argc >= 2 && !strcmp(argv[1], "shift")) return CmdShift(argc - 2, argv + 2);
 	if (argc < 2) { puts("usage: fbchartool <title> <archive>...   (fbchartool list)"); return 2; }

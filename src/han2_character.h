@@ -34,6 +34,9 @@ bool LoadGof1Character(CharacterInstance &ch, const std::string &archivePath, co
 // the archive cipher is already undone, the section cipher is undone here. Saving writes the enciphered file (or a .p with the entry replaced).
 bool LoadGof1CharacterFile(CharacterInstance &ch, const std::string &path, std::string *err);
 
+// Party Breakers (2001) character .DAT (three-section cipher), loose or an archive entry extracted by the browser. Saving re-enciphers (or replaces the entry in a new archive).
+bool LoadPb2k1CharacterFile(CharacterInstance &ch, const std::string &path, std::string *err);
+
 // Rebuild the container's PAT block from the character's (possibly edited) Parts model before a save.
 // Returns false with *err on failure; *partsChanged tells whether the block differs from the one loaded.
 bool SyncPartsToContainer(CharacterInstance &ch, bool *partsChanged, std::string *err);

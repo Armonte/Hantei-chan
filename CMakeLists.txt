@@ -68,6 +68,7 @@ add_executable(${EXE}
 	src/han2/mbr_formats.cpp
 	src/han2/mb_formats.cpp
 	src/han2/mb_cg.cpp
+	src/framedata_pb2k1.cpp
 	src/startup_args.cpp
 	src/framestate.cpp
 	src/copy_data.cpp
@@ -615,6 +616,7 @@ add_executable(fbchartool
 	src/han2/mbr_formats.cpp
 	src/han2/mb_formats.cpp
 	src/han2/mb_cg.cpp
+	src/framedata_pb2k1.cpp
 	src/png_writer.cpp
 	src/ha4_parts.cpp
 	src/ha4_convert.cpp

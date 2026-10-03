@@ -34,6 +34,7 @@ public:
 
 	// GOF1 character from a gof_0N.p archive (Save As .DAT / new .p).
 	bool loadGof1File(const std::string& path, std::string& err);
+	bool loadPb2k1File(const std::string& path, std::string& err);
 	bool loadGof1(const std::string& archivePath, const std::string& entryName, std::string& err);
 
 	// Load CG file

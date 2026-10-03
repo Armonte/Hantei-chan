@@ -84,6 +84,20 @@ void MainFrame::openAnyFile(const std::string& path)
 		addRecentFile(path);
 		return;
 	}
+	{   // Party Breakers character .DAT: no magic on disk (three-section cipher), recognised by its decrypted header
+		std::error_code fec; const uintmax_t fsz = fs::file_size(fs::u8path(path), fec);
+		if (!fec && ext == ".dat" && head.size() >= 0x41C && pb2k1::LooksLikeCharacter(head.data(), (size_t)fsz)) {
+			if (findCharacterByPath(path)) { fail(TXT("Already open:")); return; }
+			auto character = std::make_unique<CharacterInstance>();
+			std::string err;
+			if (!character->loadPb2k1File(path, err)) { fail(err); return; }
+			characters.push_back(std::move(character));
+			createViewForCharacter(characters.back().get());
+			markProjectModified();
+			addRecentFile(path);
+			return;
+		}
+	}
 	if (han2::IsHan2(head.data(), head.size()) || pac::LooksLikePac(head.data(), head.size()) ||
 	    starts("BMP Cutter", 10) ||
 	    fbarc::Detect(head.data(), head.size(), ext) == fbarc::Kind::PkFileInfo || fbarc::Detect(head.data(), head.size(), ext) == fbarc::Kind::MbFilePacA ||
