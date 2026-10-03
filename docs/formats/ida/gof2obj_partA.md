@@ -29,10 +29,10 @@ Hex-Rays ctree scan of all 5000 functions for `*(var + k)` / `var[i]` accesses (
 | 1556..1567 | first three dwords of the embedded CAppHanteiKougeki (vtable, primary/secondary counts) | Obj_ConstructPoolSlot; rest belongs to part B |
 
 ## Counts (leaf bytes, anime counted as one traced leaf)
-traced 1408 B (268 leaves), inferred 36 B (9 leaves), unused 124 B (10 leaves) = 1568 bytes.
+traced 1392 B, inferred 0 B, unused 176 B = 1568 bytes (byte-exact, from `tools/ida/count_gof2obj_evidence.py`; run it for the current figures, `--list` names every unused leaf).
 
 Unused proofs (no code reads them; all `[reg+disp]` operands in Obj-pointer functions scanned, other hits belong to non-Obj structs): `transitionEvents.clearedSpare` (+92, zeroed only), `flickerGate` (+1312..1327, zeroed only by Obj_InitDefaults), each rotation block's +12..+31 (RBO accum/angVel fields do not exist in GOF2; update callback is always the no-op), mover header bytes +0..+11 (only address-of uses of obj+712/824/932), `RgbFx.unused_04`.
-Write-only but kept as named inferred fields: `bufferedJump.patternOrRule/frame/flip` (+596..+604, written by rule handlers, no reader found), several RotFx members.
+Resolved 2026-10-03 (all former [inferred] fields): never-consumed or write-only fields are now `unused_<off>`: `transitionEvents.unused_4C` (was forcedJumps: linked, never run), `transitionEvents.unused_60` (was singleSlotTimedRule: category 6 absent from the table), `frameEnterEvents.unused_AC` / `unused_B4` (were onHitAttackerMods / chanceActions), `bufferedJump.unused_04/08/0C` (write-only), RotFx `unused_08` (was baseAngle, write-only). Proven and renamed: `transitionEvents.endRules` -> `facingKindRules`, `clashCooldownSpecial/Normal` (were effectCooldownA/B); `MoverScript payload.skipSetup` is traced (reader MoverScript_Step).
 
 ## Notes / boundaries
 * Part B/C boundaries: part B owns 0x620.. (record pointer +0x620, rest of CAppHanteiKougeki, Kasanari +1744, Yarare +1776). Part C's 2x256 table at 0x7B8..0xFB7 and part B's Yarare hit history lie wholly above this range; no overlap.

@@ -30,7 +30,7 @@ struct Gof2ObjAttackBoxSet {
  int slot[8]; // +0x30 T BuildFromFrame: frame slot number 0..7 of box[i]
  unsigned int hitLimitFlags; // +0x50 T BuildFromFrame copies frame.hitLimitFlags (+0x48) on ATKEV_BEGIN
  unsigned int hitLimitCount; // +0x54 T BuildFromFrame copies frame.hitLimitCount; sub_436280 compares it with +0x58
- unsigned int hitsLandedForLimit; // +0x58 I only sub_436280 reads it, nothing writes it
+ unsigned int hitsLandedForLimit; // +0x58 T only ObjEvent_ConditionalRuleSelectJump 0x436280 case 1 reads it, nothing writes it
  int attackEndLatch; // +0x5C T vf5 0x449230 and vf6 0x43E2A0 clear it, no reader
  unsigned char unused_60[8]; // +0x60 U no Kougeki method and no Obj-base operand touches +0x60..+0x67
  int attackActive; // +0x68 T BuildFromFrame sets 1 on ATKEV_BEGIN, vf3 0x449220 clears it, no reader
