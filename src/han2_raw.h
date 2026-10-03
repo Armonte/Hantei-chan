@@ -14,7 +14,8 @@
 
 namespace han2 {
 constexpr int kMaxFrameBytes = 404;   // GOF2; RBO is 300
-constexpr int kMaxAtBytes = 128;
+constexpr int kMaxAtBytes = 240;
+constexpr int kEffectBytes = 96;
 constexpr int kScriptListBytes = 20;
 constexpr int kMaxBoxSlots = 24;
 }
@@ -28,6 +29,8 @@ struct Han2FrameRaw
 	uint8_t  at[han2::kMaxAtBytes]{};             // referenced AT record
 	uint8_t  scriptHad = 0;                       // bit k set = script list k existed
 	uint8_t  script[3][han2::kScriptListBytes]{}; // referenced script-list records (A, B, C)
+	bool     hadFx = false;                       // GOF2: effect-spawn record (section 8) referenced by frame +0x190
+	uint8_t  fx[han2::kEffectBytes]{};
 	int16_t  box[han2::kMaxBoxSlots][4]{};        // referenced rectangles by box slot (layout order)
 	uint32_t boxMask = 0;                         // bit k set = box slot k was present
 	uint32_t alignPad = 0;                        // keeps sizeof a multiple of 8 (undo_manager.cpp layout assert)

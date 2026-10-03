@@ -120,7 +120,7 @@ bool boxesEqual(const BoxList& a, const BoxList& b)
 // Han2FrameRaw / Han2SeqRaw are compared member by member (they hold bools, so padding must not matter).
 bool han2FrameRawEquals(const Han2FrameRaw& a, const Han2FrameRaw& b)
 {
-	return a.valid == b.valid && a.frameSize == b.frameSize && a.hadAT == b.hadAT && a.scriptHad == b.scriptHad && a.boxMask == b.boxMask
+	return a.valid == b.valid && a.frameSize == b.frameSize && a.hadAT == b.hadAT && a.hadFx == b.hadFx && std::memcmp(a.fx, b.fx, sizeof(a.fx)) == 0 && a.scriptHad == b.scriptHad && a.boxMask == b.boxMask
 		&& std::memcmp(a.rec, b.rec, sizeof(a.rec)) == 0 && std::memcmp(a.at, b.at, sizeof(a.at)) == 0
 		&& std::memcmp(a.script, b.script, sizeof(a.script)) == 0 && std::memcmp(a.box, b.box, sizeof(a.box)) == 0;
 }
