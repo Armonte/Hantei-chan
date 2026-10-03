@@ -20,6 +20,7 @@
 #include <imgui_impl_win32.h>
 #include <windows.h>
 #include <shellapi.h>
+#include "png_writer.h"
 
 #include <glad/glad.h>
 
@@ -334,6 +335,7 @@ int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE, PWSTR pCmdLine, int nCmdShow
 	HWND hwnd = ::CreateWindow(wc.lpszClassName, windowTitle.c_str(), WS_OVERLAPPEDWINDOW,
 		gSettings.posX, gSettings.posY, gSettings.winSizeX, gSettings.winSizeY, NULL, NULL, wc.hInstance, nullptr);
 	mainWindowHandle = hwnd;
+	DragAcceptFiles(hwnd, TRUE);   // drop RBO / GOF2 files (.dt2 .dat .pat .chp .pac .img) on the window
 
 	init = true;
 	if(useIni)
@@ -464,6 +466,17 @@ LRESULT WINAPI WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
 			
 			return 0;
 		}
+	case WM_DROPFILES:
+		{
+			HDROP h = (HDROP)wParam;
+			const UINT n = DragQueryFileW(h, 0xFFFFFFFF, nullptr, 0);
+			for (UINT i = 0; i < n; i++) {
+				wchar_t wp[1024]; DragQueryFileW(h, i, wp, 1024);
+				if (mf) mf->queueDroppedFile(WideToUtf8(wp));
+			}
+			DragFinish(h);
+		}
+		return 0;
 	case WM_MOVE:
 		{
 			RECT rect;
