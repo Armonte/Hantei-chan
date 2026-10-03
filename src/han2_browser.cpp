@@ -64,7 +64,7 @@ std::string TempExtract(const Mounted &m, size_t i)
 	if (!ReadMounted(m, i, b, &err)) return {};
 	std::error_code ec; auto dir = std::filesystem::temp_directory_path(ec) / "hantei_archive" / std::filesystem::u8path(m.shortName);
 	std::filesystem::create_directories(dir, ec);
-	auto out = dir / std::filesystem::u8path(m.f ? m.f->relativePath(i) : m.a->entries[i].name);
+	auto out = dir / std::filesystem::u8path(m.f ? fbarc::NameToUtf8(m.f->relativePath(i)) : m.a->entries[i].name);
 	std::filesystem::create_directories(out.parent_path(), ec);
 	std::ofstream f(out, std::ios::binary);
 	if (!b.empty()) f.write((const char *)b.data(), (std::streamsize)b.size());
@@ -157,7 +157,7 @@ std::string AddArchive(const std::string &path)
 			if (!f) return path + ": " + err;
 			for (auto &m : g_mounted) if (m.f && m.f->path() == path) return {};
 			Mounted m; m.f = std::move(f); m.a = std::make_shared<pac::Archive>(); m.a->path = path;
-			for (size_t i = 0; i < m.f->entries().size(); i++) { pac::Entry pe; pe.name = m.f->relativePath(i); pe.size = (uint32_t)m.f->entries()[i].size; pe.offset = (uint32_t)m.f->entries()[i].offset; m.a->entries.push_back(pe); }
+			for (size_t i = 0; i < m.f->entries().size(); i++) { pac::Entry pe; pe.name = fbarc::NameToUtf8(m.f->relativePath(i)); pe.size = (uint32_t)m.f->entries()[i].size; pe.offset = (uint32_t)m.f->entries()[i].offset; m.a->entries.push_back(pe); }
 			m.shortName = std::filesystem::u8path(path).filename().string() + " (" + fbarc::KindName(m.f->kind()) + ")";
 			g_mounted.push_back(m); g_sel = (int)g_mounted.size() - 1; showBrowser = true;
 			return {};
@@ -246,7 +246,7 @@ bool DrawBrowser(OpenRequest &req, std::string &message)
 				int ok = 0, bad = 0;
 				for (size_t i = 0; i < fa.entries().size(); i++) {
 					std::vector<uint8_t> b; std::string e;
-					auto out = std::filesystem::u8path(dir) / std::filesystem::u8path(fa.relativePath(i)); std::error_code ec;
+					auto out = std::filesystem::u8path(dir) / std::filesystem::u8path(fbarc::NameToUtf8(fa.relativePath(i))); std::error_code ec;
 					std::filesystem::create_directories(out.parent_path(), ec);
 					std::ofstream f(out, std::ios::binary);
 					if (fa.read(i, b, &e) && f && (b.empty() || f.write((const char *)b.data(), (std::streamsize)b.size()))) ok++; else bad++;
@@ -266,8 +266,8 @@ bool DrawBrowser(OpenRequest &req, std::string &message)
 						std::string rel = std::filesystem::relative(it.path(), std::filesystem::u8path(dir), ec).generic_u8string();
 						std::ifstream f(it.path(), std::ios::binary);
 						std::vector<uint8_t> d((std::istreambuf_iterator<char>(f)), std::istreambuf_iterator<char>());
-						int idx = fa.find(rel);
-						if (idx >= 0) { ed.replace[(size_t)idx] = std::move(d); repl++; } else { ed.add.emplace_back(it.path().filename().string(), std::move(d)); added++; }
+						int idx = fa.find(fbarc::NameFromUtf8(rel));
+						if (idx >= 0) { ed.replace[(size_t)idx] = std::move(d); repl++; } else { ed.add.emplace_back(fbarc::NameFromUtf8(it.path().filename().u8string()), std::move(d)); added++; }
 					}
 					std::string e;
 					if (fa.rebuild(out, ed, &e)) { char sb[512]; snprintf(sb, sizeof sb, TXT("wrote %s (%d replaced, %d added)"), out.c_str(), repl, added); g_extractStatus = sb; }

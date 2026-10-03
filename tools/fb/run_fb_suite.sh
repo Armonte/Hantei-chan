@@ -6,12 +6,12 @@ T=${1:-$(dirname "$0")/../../build/fbarctool.exe}
 rc=0
 G=/mnt/c/games; F=/mnt/c/dev/frenchbread
 gather() { # print Windows paths of the shipped archives (explicit globs only, no tree walks)
-	ls $G/MB/AC/*.p $G/MB/MeltyBlood/*.p $G/MB/R/*.p $G/mbaacc/0*.p $G/mbaacc_dev/0*.p $G/mbaacc_tag/0*.p \
+	for f in $G/MB/AC/*.p $G/MB/MeltyBlood/*.p $G/MB/R/*.p $G/mbaacc/0*.p $G/mbaacc_dev/0*.p $G/mbaacc_tag/0*.p \
 	   $G/gof/Data/data0*.dat $G/gof/*.PAC $G/gof2_run/Data/data0*.dat $G/gof1/run/gof_0*.p \
 	   $G/pb/0*.dat $G/rbo/DATA/*.PAC $G/rbo/DATA/*.pac $G/rbo_run/Data/*.PAC \
 	   $F/dmp_1020/DATA/*.PAC $F/drill_milky_punch/files/dMp/dMp/Data/*.PAC $F/aquat1c_dmp/*/DATA/*.PAC "$F/aquat1c_dmp/Drill Milky Punch/DATA"/*.PAC \
 	   "$F/benibara_rendan/files/Rosa Chinensis Four hand/Data"/*.PAC "$F/yamayuri_rendan/files/omake/Rosa Chinensis Four hand/Data"/*.PAC \
-	   $F/yamayuri_rendan/files/data/*.p 2>/dev/null | sed 's|^/mnt/\(.\)/|\U\1\E:/|'
+	   $F/yamayuri_rendan/files/data/*.p; do [ -f "$f" ] && echo "$f"; done | sed 's|^/mnt/\(.\)/|\U\1\E:/|'
 }
 mapfile -t ARCS < <(gather)
 echo "== archives found: ${#ARCS[@]}"
