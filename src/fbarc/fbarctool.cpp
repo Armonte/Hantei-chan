@@ -204,7 +204,8 @@ static int CmdEditTest(int argc, char** argv)
 static int CmdEx3Rt(int argc, char** argv)
 {
 	int pass = 0, fail = 0; std::map<std::string, int> layouts;
-	for (int k = 0; k < argc; k++) {
+	for (int k0 = 0; k0 < argc; k0++) {
+		const int k = k0;
 		std::string err; auto a = Open(argv[k], &err);
 		if (!a) { printf("FAIL %s: %s\n", argv[k], err.c_str()); fail++; continue; }
 		int p0 = pass, f0 = fail;
@@ -217,6 +218,10 @@ static int CmdEx3Rt(int argc, char** argv)
 			std::vector<uint8_t> out; han2::SerializeEx3(x, out);
 			std::vector<uint8_t> bmp; std::string e3;
 			if (!han2::DecodeEx3(x, bmp, &e3) || bmp.size() != x.decodedBytes || bmp.size() < 54 || bmp[0] != 'B' || bmp[1] != 'M') { printf("FAIL %s::%s: decoded payload is not a BMP (%s)\n", argv[k], nm.c_str(), e3.c_str()); fail++; continue; }
+			{
+				std::vector<uint8_t> enc; han2::EncodeEx3(x.header, x.headerSize, bmp.data(), bmp.size(), enc);
+				if (enc != d) { size_t k = 0; while (k < std::min(enc.size(), d.size()) && enc[k] == d[k]) k++; printf("ENCDIFF %s::%s first diff 0x%zx (sizes %zu vs %zu)\n", argv[k0], nm.c_str(), k, enc.size(), d.size()); fail++; continue; }
+			}
 			if (out == d) { pass++; layouts["header " + std::to_string(x.headerSize)]++; } else { printf("DIFF %s::%s\n", argv[k], nm.c_str()); fail++; }
 		}
 		printf("%-60s pass %d fail %d\n", argv[k], pass - p0, fail - f0);
