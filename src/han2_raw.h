@@ -31,6 +31,9 @@ struct Han2FrameRaw
 	uint8_t  script[3][han2::kScriptListBytes]{}; // referenced script-list records (A, B, C)
 	bool     hadFx = false;                       // GOF2: effect-spawn record (section 8) referenced by frame +0x190
 	uint8_t  fx[han2::kEffectBytes]{};
+	uint8_t  gofIf[3][28]{};                      // GOF1: IF records (type + 4 ints), slots 0..2
+	uint8_t  gofEf[4][20]{};                      // GOF1: EF records, slots 0..3
+	uint8_t  gofIfMask = 0, gofEfMask = 0;
 	int16_t  box[han2::kMaxBoxSlots][4]{};        // referenced rectangles by box slot (layout order)
 	uint32_t boxMask = 0;                         // bit k set = box slot k was present
 	uint32_t alignPad = 0;                        // keeps sizeof a multiple of 8 (undo_manager.cpp layout assert)
@@ -42,6 +45,7 @@ struct Han2SeqRaw
 	bool     nameValid = false;
 	uint32_t patFlags = 0;                        // pattern-table entry word +4
 	uint32_t firstFrame = 0;                      // pattern-table entry word +8 (only kept for empty patterns)
+	uint8_t  gofHdr[20]{};                        // GOF1: pattern header (frame count, move info/level, frame size tag, table offsets)
 	uint8_t  name[64]{};                          // raw CP932 name slot
 };
 
