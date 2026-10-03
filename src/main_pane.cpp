@@ -5,6 +5,7 @@
 #include <imgui.h>
 #include "imsearch.h"
 #include "pattern_search.h"
+#include "i18n.h"
 
 MainPane::MainPane(Render* render, FrameData *framedata, FrameState &fs) : DrawWindow(render, framedata, fs),
 decoratedNames(nullptr)
@@ -50,12 +51,12 @@ void MainPane::Draw()
 		{
 			const ImVec4 modifiedColor(1.0f, 0.7f, 0.0f, 1.0f);
 			const ImVec4 idleColor = im::GetStyleColorVec4(ImGuiCol_TextDisabled);
-			im::TextColored(modifiedCount > 0 ? modifiedColor : idleColor, "Modified patterns: %d", modifiedCount);
+			im::TextColored(modifiedCount > 0 ? modifiedColor : idleColor, TXT("Modified patterns: %d"), modifiedCount);
 			auto curSeq = frameData->get_sequence(currState.pattern);
 			if(curSeq && curSeq->modified)
 			{
 				im::SameLine();
-				im::TextColored(modifiedColor, "[Modified]");
+				im::TextColored(modifiedColor, TXT("[Modified]"));
 			}
 		}
 
@@ -67,7 +68,7 @@ void MainPane::Draw()
 		{
 			if(ImSearch::BeginSearch(kPatternSearchFlags))
 			{
-				ImSearch::SearchBar("Search pattern names...");
+				ImSearch::SearchBar(TXT("Search pattern names..."));
 				
 				// Only show searchable items when there's an active search query
 				const char* query = ImSearch::GetUserQuery();
@@ -101,7 +102,7 @@ void MainPane::Draw()
 			}
 		}
 
-		if (im::BeginCombo("Pattern", decoratedNames[currState.pattern].c_str(), ImGuiComboFlags_HeightLargest))
+		if (im::BeginCombo(LBL("Pattern"), decoratedNames[currState.pattern].c_str(), ImGuiComboFlags_HeightLargest))
 		{
 			auto count = frameData->get_sequence_count();
 			// Regenerate all names when dropdown is open to show current modified status
@@ -152,7 +153,7 @@ void MainPane::Draw()
 		}
 		if(im::IsItemHovered())
 		{
-			im::SetTooltip(showPatternSearchBar ? "Hide search bar" : "Show search bar");
+			im::SetTooltip(showPatternSearchBar ? TXT("Hide search bar") : TXT("Show search bar"));
 		}
 		auto seq = frameData->get_sequence(currState.pattern);
 		if(seq)
@@ -195,7 +196,7 @@ void MainPane::Draw()
 				else if(currState.frame > nframes)
 					currState.frame = nframes;
 
-				if(im::Button("Animate"))
+				if(im::Button(LBL("Animate")))
 				{
 					currState.animating = !currState.animating;
 					currState.animeSeq = currState.pattern;
@@ -209,8 +210,8 @@ void MainPane::Draw()
 			}
 			else
 			{
-				im::Text("This pattern has no frames.");
-				if(im::Button("Add frame"))
+				im::Text(TXT("This pattern has no frames."));
+				if(im::Button(LBL("Add frame")))
 				{
 					seq->frames.push_back({});
 					currState.frame = 0;
@@ -231,11 +232,11 @@ void MainPane::Draw()
 				}
 			}
 
-			if (im::TreeNode("Pattern data"))
+			if (im::TreeNode(LBL("Pattern data")))
 			{
 				// Strings are already stored as UTF-8 in memory
 				nameEditBuffer = seq->name;
-				if(im::InputText("Pattern name", &nameEditBuffer))
+				if(im::InputText(LBL("Pattern name"), &nameEditBuffer))
 				{
 					seq->name = nameEditBuffer;
 					frameData->mark_modified(currState.pattern);
@@ -247,16 +248,16 @@ void MainPane::Draw()
 					const std::string key = Ha6Notes::PatternKey(currState.pattern);
 					const std::string* note = frameData->notes.get(key);
 					noteEditBuffer = note ? *note : std::string();
-					if(im::InputTextMultiline("Pattern note", &noteEditBuffer, ImVec2(0, im::GetTextLineHeight() * 3)))
+					if(im::InputTextMultiline(LBL("Pattern note"), &noteEditBuffer, ImVec2(0, im::GetTextLineHeight() * 3)))
 						frameData->notes.set(key, noteEditBuffer);
 				}
 				PatternDisplay(seq, frameData, currState.pattern);
 
-				if(im::Button("Copy pattern")) {
+				if(im::Button(LBL("Copy pattern"))) {
 					currState.copied->pattern = *seq;
 				}
 				im::SameLine(0,20.f);
-				if(im::Button("Paste pattern")) {
+				if(im::Button(LBL("Paste pattern"))) {
 					*seq = currState.copied->pattern;
 					frameData->mark_modified(currState.pattern);
 					markModified();
@@ -264,24 +265,24 @@ void MainPane::Draw()
 					nframes = seq->frames.size() - 1;
 				}
 
-				if(im::Button("Push pattern copy")) {
+				if(im::Button(LBL("Push pattern copy"))) {
 					patCopyStack.push_back(SequenceWId{currState.pattern, *seq});
 				}
 				im::SameLine(0,20.f);
-				if(im::Button("Pop all and paste")) {
+				if(im::Button(LBL("Pop all and paste"))) {
 					PopCopies();
 					RegenerateNames();
 					nframes = seq->frames.size() - 1;
 				}
 				im::SameLine(0,20.f);
-				im::Text("%zu copies", patCopyStack.size());
+				im::Text(TXT("%zu copies"), patCopyStack.size());
 				if(!patCopyStack.empty()) {
 					im::SameLine();
-					if(im::SmallButton("Drop last")) patCopyStack.pop_back();
+					if(im::SmallButton(LBL("Drop last"))) patCopyStack.pop_back();
 					im::SameLine();
-					if(im::SmallButton("Clear")) patCopyStack.clear();
+					if(im::SmallButton(LBL("Clear"))) patCopyStack.clear();
 				}
-				im::TextDisabled("Windows > Pattern manager: multi-select, paste slots, move with references.");
+				im::TextDisabled(TXT("Windows > Pattern manager: multi-select, paste slots, move with references."));
 
 				im::TreePop();
 				im::Separator();
@@ -293,14 +294,14 @@ void MainPane::Draw()
 				// `frame` dangling for the rest of the draw.
 				enum class KeyframeOp { None, Append, Insert, Delete, AppendNextSprite } keyframeOp = KeyframeOp::None;
 				Frame &frame = seq->frames[currState.frame];
-				if(im::TreeNode("State data"))
+				if(im::TreeNode(LBL("State data")))
 				{
 					AsDisplay(&frame.AS, frameData, currState.pattern, [this]() { markModified(); });
-					if(im::Button("Copy AS")) {
+					if(im::Button(LBL("Copy AS"))) {
 						currState.copied->as = frame.AS;
 					}
 					im::SameLine(0,20.f);
-					if(im::Button("Paste AS")) {
+					if(im::Button(LBL("Paste AS"))) {
 						frame.AS = currState.copied->as;
 						frameData->mark_modified(currState.pattern);
 						markModified();
@@ -308,13 +309,13 @@ void MainPane::Draw()
 					im::TreePop();
 					im::Separator();
 				}
-				if (im::TreeNode("Animation data"))
+				if (im::TreeNode(LBL("Animation data")))
 				{
 					AfDisplay(&frame.AF, currState.selectedLayer, frameData, currState.pattern, [this]() { markModified(); });
 					im::TreePop();
 					im::Separator();
 				}
-				if (frame.ha6.nExtra > 0 && im::TreeNode("Other tags (kept as loaded)"))
+				if (frame.ha6.nExtra > 0 && im::TreeNode(LBL("Other tags (kept as loaded)")))
 				{
 					// Tags the UNI2/MBTL loaders read that no editor field covers
 					// (rare: no shipped file uses them). Saved back unchanged.
@@ -339,28 +340,28 @@ void MainPane::Draw()
 					}
 					im::TreePop();
 				}
-				if (im::TreeNode("Tools"))
+				if (im::TreeNode(LBL("Tools")))
 				{
-					im::Checkbox("Make copy current frame", &copyThisFrame);
+					im::Checkbox(LBL("Make copy current frame"), &copyThisFrame);
 					
-					if(im::Button("Append frame"))
+					if(im::Button(LBL("Append frame")))
 						keyframeOp = KeyframeOp::Append;
 
 					im::SameLine(0,20.f);
-					if(im::Button("Insert frame"))
+					if(im::Button(LBL("Insert frame")))
 						keyframeOp = KeyframeOp::Insert;
 
 					im::SameLine(0,20.f);
-					if(im::Button("Delete frame"))
+					if(im::Button(LBL("Delete frame")))
 						keyframeOp = KeyframeOp::Delete;
 
 					im::SameLine(0,20.f);
-					if(im::Button("Copy frame"))
+					if(im::Button(LBL("Copy frame")))
 					{
 						currState.copied->frame = frame;
 					}
 					im::SameLine(0,20.f);
-					if(im::Button("Paste frame"))
+					if(im::Button(LBL("Paste frame")))
 					{
 						frame = currState.copied->frame;
 						frameData->mark_modified(currState.pattern);
@@ -368,7 +369,7 @@ void MainPane::Draw()
 					}
 
 					im::SameLine(0,20.f);
-					if(im::Button("Range tool"))
+					if(im::Button(LBL("Range tool")))
 					{
 						ranges[0] = 0;
 						ranges[1] = 0;
@@ -376,12 +377,12 @@ void MainPane::Draw()
 					}
 
 					// Sprite numbering (issue #45)
-					if(im::Button("Append frame, sprite +1"))
+					if(im::Button(LBL("Append frame, sprite +1")))
 						keyframeOp = KeyframeOp::AppendNextSprite;
 					if(im::IsItemHovered())
-						im::SetTooltip("Append a copy of the last frame with its layer 0 sprite number + 1,\nand select it.");
+						im::SetTooltip(TXT("Append a copy of the last frame with its layer 0 sprite number + 1,\nand select it."));
 					im::SameLine(0,20.f);
-					if(im::Button("Number sprites from here"))
+					if(im::Button(LBL("Number sprites from here")))
 					{
 						if (frame.AF.layers.empty()) frame.AF.layers.push_back({});
 						const int base = frame.AF.layers[0].spriteId;
@@ -397,13 +398,13 @@ void MainPane::Draw()
 						}
 					}
 					if(im::IsItemHovered())
-						im::SetTooltip("Set layer 0 of every later frame to this frame's sprite + 1, + 2, ...");
+						im::SetTooltip(TXT("Set layer 0 of every later frame to this frame's sprite + 1, + 2, ..."));
 
 					im::Separator();
 
 					// Range paste controls
-					im::Text("Range Paste:");
-					im::InputInt2("Frame range", ranges);
+					im::Text(TXT("Range Paste:"));
+					im::InputInt2(LBL("Frame range"), ranges);
 
 					// Clamp ranges
 					const int maxFrame = seq->frames.size() - 1;
@@ -413,8 +414,8 @@ void MainPane::Draw()
 					if(ranges[1] > maxFrame) ranges[1] = maxFrame;
 
 					// Animation Properties
-					im::Text("Animation:");
-					if(im::Button("Paste sprite & duration"))
+					im::Text(TXT("Animation:"));
+					if(im::Button(LBL("Paste sprite & duration")))
 					{
 						// Ensure source frame has at least one layer
 						if (frame.AF.layers.empty()) {
@@ -436,7 +437,7 @@ void MainPane::Draw()
 						markModified();
 					}
 
-					if(im::Button("Paste jump & interpolation"))
+					if(im::Button(LBL("Paste jump & interpolation")))
 					{
 						for(int i = ranges[0]; i <= ranges[1] && i >= 0 && i < seq->frames.size(); i++)
 						{
@@ -450,7 +451,7 @@ void MainPane::Draw()
 						markModified();
 					}
 
-					if(im::Button("Paste priority & loops"))
+					if(im::Button(LBL("Paste priority & loops")))
 					{
 						for(int i = ranges[0]; i <= ranges[1] && i >= 0 && i < seq->frames.size(); i++)
 						{
@@ -465,8 +466,8 @@ void MainPane::Draw()
 					im::Separator();
 
 					// Transform Properties
-					im::Text("Transforms:");
-					if(im::Button("Paste offset (X/Y)"))
+					im::Text(TXT("Transforms:"));
+					if(im::Button(LBL("Paste offset (X/Y)")))
 					{
 						if (frame.AF.layers.empty()) frame.AF.layers.push_back({});
 						const auto& srcLayer = frame.AF.layers[0];
@@ -481,7 +482,7 @@ void MainPane::Draw()
 						markModified();
 					}
 
-					if(im::Button("Paste rotation"))
+					if(im::Button(LBL("Paste rotation")))
 					{
 						if (frame.AF.layers.empty()) frame.AF.layers.push_back({});
 						const auto& srcLayer = frame.AF.layers[0];
@@ -496,7 +497,7 @@ void MainPane::Draw()
 						markModified();
 					}
 
-					if(im::Button("Paste scale"))
+					if(im::Button(LBL("Paste scale")))
 					{
 						if (frame.AF.layers.empty()) frame.AF.layers.push_back({});
 						const auto& srcLayer = frame.AF.layers[0];
@@ -510,7 +511,7 @@ void MainPane::Draw()
 						markModified();
 					}
 
-					if(im::Button("Paste color & blend"))
+					if(im::Button(LBL("Paste color & blend")))
 					{
 						if (frame.AF.layers.empty()) frame.AF.layers.push_back({});
 						const auto& srcLayer = frame.AF.layers[0];
@@ -525,7 +526,7 @@ void MainPane::Draw()
 						markModified();
 					}
 
-					if(im::Button("Paste all transforms"))
+					if(im::Button(LBL("Paste all transforms")))
 					{
 						if (frame.AF.layers.empty()) frame.AF.layers.push_back({});
 						const auto& srcLayer = frame.AF.layers[0];
@@ -549,7 +550,7 @@ void MainPane::Draw()
 					im::Separator();
 
 					// Copy/paste multiple frames
-					if(im::Button("Copy frames in range"))
+					if(im::Button(LBL("Copy frames in range")))
 					{
 						currState.copied->frames.clear();
 						for(int i = ranges[0]; i <= ranges[1] && i >= 0 && i < seq->frames.size(); i++)
@@ -561,7 +562,7 @@ void MainPane::Draw()
 					}
 
 					im::SameLine();
-					if(im::Button("Paste frames at position"))
+					if(im::Button(LBL("Paste frames at position")))
 					{
 						int insertPos = ranges[0];
 						if(insertPos >= 0 && insertPos <= seq->frames.size() && !currState.copied->frames.empty())
@@ -585,9 +586,9 @@ void MainPane::Draw()
 			if(rangeWindow)
 			{
 				im::SetNextWindowSize(ImVec2{400, 300}, ImGuiCond_FirstUseEver);
-				im::Begin("Range tool", &rangeWindow);
+				im::Begin(LBL("Range tool"), &rangeWindow);
 
-				im::InputInt2("Frame range", ranges);
+				im::InputInt2(LBL("Frame range"), ranges);
 
 				// Clamp ranges
 				const int maxFrame = seq->frames.size() - 1;
@@ -604,11 +605,11 @@ void MainPane::Draw()
 			{
 				im::SetNextWindowSize(ImVec2{500, 400}, ImGuiCond_FirstUseEver);
 				im::SetNextWindowPos(im::GetMainViewport()->GetCenter(), ImGuiCond_FirstUseEver, ImVec2(0.5f, 0.5f));
-				if(im::Begin("Search Pattern Names", &showPatternSearch, ImGuiWindowFlags_NoCollapse))
+				if(im::Begin(LBL("Search Pattern Names"), &showPatternSearch, ImGuiWindowFlags_NoCollapse))
 				{
 					if(ImSearch::BeginSearch(kPatternSearchFlags))
 					{
-						ImSearch::SearchBar("Search pattern names...");
+						ImSearch::SearchBar(TXT("Search pattern names..."));
 
 						auto count = frameData->get_sequence_count();
 						for(int n = 0; n < count; n++)
@@ -692,7 +693,7 @@ void MainPane::Draw()
 		}
 	}
 	else
-		im::Text("Load some data first.");
+		im::Text(TXT("Load some data first."));
 
 	//im::Text("Application average %.3f ms/frame (%.1f FPS)", 1000.0f / im::GetIO().Framerate, im::GetIO().Framerate);
 	im::End();

@@ -194,11 +194,11 @@ void MainFrame::DrawUi()
  			ImGui::DockBuilderDockWindow("Box Pane", dock_down_id);
 
 			// PatEditor panes
-			ImGui::DockBuilderDockWindow("PartSet Pane", dock_left_id);
-			ImGui::DockBuilderDockWindow("Part Pane", part_dock);
-			ImGui::DockBuilderDockWindow("Tool Pane", dock_pat_right_id);
-			ImGui::DockBuilderDockWindow("Shape Pane", dock_down_id);
-			ImGui::DockBuilderDockWindow("Texture Pane", texture_dock);
+			ImGui::DockBuilderDockWindow(LBL("PartSet Pane"), dock_left_id);
+			ImGui::DockBuilderDockWindow(LBL("Part Pane"), part_dock);
+			ImGui::DockBuilderDockWindow(LBL("Tool Pane"), dock_pat_right_id);
+			ImGui::DockBuilderDockWindow(LBL("Shape Pane"), dock_down_id);
+			ImGui::DockBuilderDockWindow(LBL("Texture Pane"), texture_dock);
 
 			ImGui::DockBuilderFinish(dockspaceID);
 		}

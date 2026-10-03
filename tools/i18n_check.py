@@ -6,7 +6,14 @@ in the given files (default: the menu/main/right/box set) and verifies each has 
 Warns about duplicate keys across all tables, then lists remaining ImGui::*/im::* calls with a bare English literal."""
 import re, sys, glob, os
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-DEFAULT = ["src/ui/main_menu_impl.h", "src/ui/main_ui_impl.h", "src/main_frame.cpp", "src/right_pane.cpp", "src/box_pane.cpp"]
+def _all_sources():
+    out = []
+    for d, _, fs in os.walk(os.path.join(ROOT, "src")):
+        for f in fs:
+            if f.endswith((".cpp", ".h")) and not f.startswith("i18n_"):
+                out.append(os.path.relpath(os.path.join(d, f), ROOT).replace("\\", "/"))
+    return sorted(out)
+DEFAULT = _all_sources()   # every UI source; pass explicit files to narrow it
 LIT = r'"(?:[^"\\]|\\.)*"'
 SEQ = r'(?:' + LIT + r'(?:\s*' + LIT + r')*)'
 def unescape(s):
@@ -60,7 +67,7 @@ def bare_literals(path):
         if re.match(r'\s*//', line): continue
         for m in re.finditer(r'\b(?:ImGui|im)::(\w+)\(\s*(' + LIT + r')', line):
             lit = unescape(m.group(2)[1:-1]).split('##')[0]
-            if m.group(1) in ('DockBuilderDockWindow', 'GetID', 'PushID', 'DragDropPayload', 'SetDragDropPayload', 'AcceptDragDropPayload'): continue
+            if m.group(1) in ('DockBuilderDockWindow', 'GetID', 'PushID', 'DragDropPayload', 'SetDragDropPayload', 'AcceptDragDropPayload', 'BeginChild', 'BeginTable', 'BeginTabBar', 'BeginPopup', 'OpenPopup', 'BeginPopupContextItem', 'BeginPopupContextWindow', 'InvisibleButton', 'InputScalarN', 'BeginPopupContext'): continue
             if re.search(r'[A-Za-z]{3}', lit) and not lit.startswith('%'): out.append((n, line.strip()[:110]))
     return out
 def main():

@@ -26,7 +26,8 @@ bool BitField(const char* label, unsigned* bits, unsigned* hoverIndex, int showB
 		ImGuiContext* g = ImGui::GetCurrentContext();
 		const ImGuiStyle& style = ImGui::GetStyle();
 		const ImGuiID id = window->GetID(label);
-		const ImVec2 label_size = CalcTextSize(label, 0x0, true);
+		const char* shownLabel = TXT(label);   // the id keeps the English key; only the drawn text is translated
+		const ImVec2 label_size = CalcTextSize(shownLabel, 0x0, true);
 		const ImVec2 smallLabelSize = ImVec2(label_size.x * 0.5f * (showBits <= 16 ? 2 : 1), label_size.y * 0.5f  * (showBits <= 16 ? 2 : 1));
 
 		const float spacingUnit = 2.0f;
@@ -94,7 +95,7 @@ bool BitField(const char* label, unsigned* bits, unsigned* hoverIndex, int showB
 			return false;
 
 		if (label_size.x > 0.0f)
-			RenderText(text_bb.GetTL(), label);
+			RenderText(text_bb.GetTL(), shownLabel);
 
 		window->Flags = oldFlags;
 		return anyPressed;

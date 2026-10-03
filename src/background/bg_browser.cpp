@@ -13,6 +13,7 @@
 #include <iterator>
 #include <map>
 #include <memory>
+#include "../i18n.h"
 
 namespace bg {
 
@@ -108,7 +109,7 @@ std::string BaseLower(const std::string& p) {
 bool EditTextKey(const char* label, std::string cur, std::string& out) {
 	char buf[128];
 	std::snprintf(buf, sizeof(buf), "%s", cur.c_str());
-	ImGui::InputText(label, buf, sizeof(buf));
+	ImGui::InputText(LBL(label), buf, sizeof(buf));
 	if (ImGui::IsItemDeactivatedAfterEdit() && cur != buf) { out = buf; return true; }
 	return false;
 }
@@ -132,45 +133,45 @@ void DrawStageBrowser(StageProject& pr, const std::string& currentDat, const Bro
 	ImGui::PushItemWidth(80);
 	const char* games[] = {"MBAACC", "MBAC"};
 	if (pr.IsOpen()) gameSel = pr.GetGame() == Game::MBAC ? 1 : 0;
-	ImGui::Combo("##game", &gameSel, games, 2);
+	i18n::Combo("##game", &gameSel, games, 2);
 	ImGui::PopItemWidth();
 	ImGui::SameLine();
-	if (ImGui::Button("Browse...")) {
+	if (ImGui::Button(LBL("Browse..."))) {
 		std::string d = BrowseForFolderUtf8(dirBuf);
 		if (!d.empty()) std::snprintf(dirBuf, sizeof(dirBuf), "%s", d.c_str());
 	}
 	ImGui::SameLine();
-	if (ImGui::Button("Open")) {
+	if (ImGui::Button(LBL("Open"))) {
 		ClearStageBrowserCache();
 		if (!pr.Open(dirBuf, gameSel ? Game::MBAC : Game::MBAACC)) g_status = "No stage list found there (MBAACC needs bg\\BgList.ini).";
 		else g_status.clear();
 	}
 	if (!g_status.empty()) ImGui::TextColored(ImVec4(1, 0.5f, 0.4f, 1), "%s", g_status.c_str());
 	if (!pr.IsOpen()) {
-		ImGui::TextDisabled("Open a game's bg folder (or load a stage) to list its stages.");
+		ImGui::TextDisabled(TXT("Open a game's bg folder (or load a stage) to list its stages."));
 		return;
 	}
 
 	// --- save / history ---
 	const bool mbaacc = pr.GetGame() == Game::MBAACC;
-	if (ImGui::Button("Save BgList.ini") && pr.BgList().IsDirty()) pr.BgList().Save(pr.BgList().Path());
+	if (ImGui::Button(LBL("Save BgList.ini")) && pr.BgList().IsDirty()) pr.BgList().Save(pr.BgList().Path());
 	ImGui::SameLine();
-	if (ImGui::Button("Save bgm.txt") && pr.Bgm().IsDirty()) pr.Bgm().Save(pr.Bgm().Path());
+	if (ImGui::Button(LBL("Save bgm.txt")) && pr.Bgm().IsDirty()) pr.Bgm().Save(pr.Bgm().Path());
 	ImGui::SameLine();
 	ImGui::BeginDisabled(!pr.CanUndo());
-	if (ImGui::Button("Undo")) pr.Undo();
+	if (ImGui::Button(LBL("Undo"))) pr.Undo();
 	ImGui::EndDisabled();
 	ImGui::SameLine();
 	ImGui::BeginDisabled(!pr.CanRedo());
-	if (ImGui::Button("Redo")) pr.Redo();
+	if (ImGui::Button(LBL("Redo"))) pr.Redo();
 	ImGui::EndDisabled();
 	ImGui::SameLine();
-	ImGui::TextDisabled("%s%s", pr.BgList().IsDirty() ? "BgList modified  " : "", pr.Bgm().IsDirty() ? "bgm modified" : "");
+	ImGui::TextDisabled("%s%s", pr.BgList().IsDirty() ? TXT("BgList modified  ") : "", pr.Bgm().IsDirty() ? TXT("bgm modified") : "");
 
 	static bool hideUnlisted = false;
-	ImGui::Checkbox("Hide unlisted files", &hideUnlisted);
+	ImGui::Checkbox(LBL("Hide unlisted files"), &hideUnlisted);
 	ImGui::SameLine();
-	ImGui::TextDisabled("PageUp/PageDown in the stage tab: previous/next stage");
+	ImGui::TextDisabled(TXT("PageUp/PageDown in the stage tab: previous/next stage"));
 
 	const auto& ents = pr.Entries();
 	const StageEntry* cur = currentDat.empty() ? nullptr : pr.FindByDat(currentDat);
@@ -181,11 +182,11 @@ void DrawStageBrowser(StageProject& pr, const std::string& currentDat, const Bro
 	                                       ImGuiTableFlags_Resizable, ImVec2(0, listH))) {
 		ImGui::TableSetupScrollFreeze(0, 1);
 		ImGui::TableSetupColumn("Id", ImGuiTableColumnFlags_WidthFixed, 34);
-		ImGui::TableSetupColumn("Preview", ImGuiTableColumnFlags_WidthFixed, 132);
-		ImGui::TableSetupColumn("Name");
-		ImGui::TableSetupColumn("File", ImGuiTableColumnFlags_WidthFixed, 60);
-		ImGui::TableSetupColumn("BGM", ImGuiTableColumnFlags_WidthFixed, 70);
-		ImGui::TableSetupColumn("Flags", ImGuiTableColumnFlags_WidthFixed, 90);
+		ImGui::TableSetupColumn(LBL("Preview"), ImGuiTableColumnFlags_WidthFixed, 132);
+		ImGui::TableSetupColumn(LBL("Name"));
+		ImGui::TableSetupColumn(LBL("File"), ImGuiTableColumnFlags_WidthFixed, 60);
+		ImGui::TableSetupColumn(LBL("BGM"), ImGuiTableColumnFlags_WidthFixed, 70);
+		ImGui::TableSetupColumn(LBL("Flags"), ImGuiTableColumnFlags_WidthFixed, 90);
 		ImGui::TableHeadersRow();
 		for (int i = 0; i < (int)ents.size(); ++i) {
 			const StageEntry& e = ents[i];
@@ -229,24 +230,24 @@ void DrawStageBrowser(StageProject& pr, const std::string& currentDat, const Bro
 	ImGui::Separator();
 	if (const Thumb* t = LoadDds(sel->previewPath)) { ImGui::Image((ImTextureID)(intptr_t)t->id, ImVec2((float)t->w, (float)t->h)); ImGui::SameLine(); }
 	ImGui::BeginGroup();
-	ImGui::Text("Stage %02d  %s", sel->id, sel->datPath.empty() ? "(no .dat: the game drops this entry)" : sel->datPath.c_str());
+	ImGui::Text(TXT("Stage %02d  %s"), sel->id, sel->datPath.empty() ? "(no .dat: the game drops this entry)" : sel->datPath.c_str());
 	if (!sel->bgmComment.empty()) ImGui::TextUnformatted(SjisToUtf8(sel->bgmComment).c_str());
 	if (const Thumb* t = LoadDds(sel->nameEnPath)) ImGui::Image((ImTextureID)(intptr_t)t->id, ImVec2((float)t->w, (float)t->h));
 	ImGui::BeginDisabled(sel->datPath.empty() || !hooks.open);
-	if (ImGui::Button("Open stage")) hooks.open(sel->datPath);
+	if (ImGui::Button(LBL("Open stage"))) hooks.open(sel->datPath);
 	ImGui::EndDisabled();
 	ImGui::SameLine();
 	ImGui::BeginDisabled(!hooks.showInGame || sel->datPath.empty());
-	if (ImGui::Button("Show in game")) {
+	if (ImGui::Button(LBL("Show in game"))) {
 		if (!hooks.showInGame(sel->id, sel->datPath)) g_status = "The game did not accept the stage switch.";
 	}
 	ImGui::EndDisabled();
 	if (!hooks.showInGame && ImGui::IsItemHovered(ImGuiHoveredFlags_AllowWhenDisabled))
-		ImGui::SetTooltip("Needs the Game Link stage switch (PovertyCaster mbaacc/stage-link).");
+		ImGui::SetTooltip(TXT("Needs the Game Link stage switch (PovertyCaster mbaacc/stage-link)."));
 	if (hooks.pickForSetup) {
 		ImGui::SameLine();
 		ImGui::BeginDisabled(sel->datPath.empty());
-		if (ImGui::Button("Use for the Authoring setup")) hooks.pickForSetup(sel->id);
+		if (ImGui::Button(LBL("Use for the Authoring setup"))) hooks.pickForSetup(sel->id);
 		ImGui::EndDisabled();
 	}
 	ImGui::EndGroup();
@@ -255,60 +256,60 @@ void DrawStageBrowser(StageProject& pr, const std::string& currentDat, const Bro
 		char sec[16];
 		std::snprintf(sec, sizeof(sec), "Bg_%03d", sel->id);
 		if (!sel->listed) {
-			ImGui::TextDisabled("No [%s] section: the game cannot select this stage.", sec);
-			if (ImGui::Button("Add to BgList.ini")) pr.AddStage(sel->id, sel->dataFile.empty() ? "bg00" : sel->dataFile);
+			ImGui::TextDisabled(TXT("No [%s] section: the game cannot select this stage."), sec);
+			if (ImGui::Button(LBL("Add to BgList.ini"))) pr.AddStage(sel->id, sel->dataFile.empty() ? "bg00" : sel->dataFile);
 		} else {
-			ImGui::TextDisabled("BgList.ini [%s]", sec);
+			ImGui::TextDisabled(TXT("BgList.ini [%s]"), sec);
 			ImGui::PushItemWidth(160);
 			std::string v;
 			if (EditTextKey("DataFile", sel->dataFile, v)) pr.SetListValue(sel->id, "DataFile", v);
 			bool b = sel->selectable != 0;
-			if (ImGui::Checkbox("IsSelectAble", &b)) pr.SetListValue(sel->id, "IsSelectAble", b ? "1" : "0");
-			if (ImGui::IsItemHovered()) ImGui::SetTooltip("Parsed by the game but never read (MBAA 0x4b4a80).");
+			if (ImGui::Checkbox(LBL("IsSelectAble"), &b)) pr.SetListValue(sel->id, "IsSelectAble", b ? "1" : "0");
+			if (ImGui::IsItemHovered()) ImGui::SetTooltip(TXT("Parsed by the game but never read (MBAA 0x4b4a80)."));
 			ImGui::SameLine();
 			b = sel->giant != 0;
-			if (ImGui::Checkbox("IsGiantStage", &b)) pr.SetListValue(sel->id, "IsGiantStage", b ? "1" : "");
-			if (ImGui::IsItemHovered()) ImGui::SetTooltip("Only effect: the system-effect 2000 quad draws at priority 496 instead of 306\n(in front of the fighters).");
+			if (ImGui::Checkbox(LBL("IsGiantStage"), &b)) pr.SetListValue(sel->id, "IsGiantStage", b ? "1" : "");
+			if (ImGui::IsItemHovered()) ImGui::SetTooltip(TXT("Only effect: the system-effect 2000 quad draws at priority 496 instead of 306\n(in front of the fighters)."));
 			ImGui::SameLine();
 			b = sel->infoFile != 0;
-			if (ImGui::Checkbox("InfoFile", &b)) pr.SetListValue(sel->id, "InfoFile", b ? "1" : "");
-			if (ImGui::IsItemHovered()) ImGui::SetTooltip("Parsed but unused: the game opens <DataFile>Info.txt for every stage.");
+			if (ImGui::Checkbox(LBL("InfoFile"), &b)) pr.SetListValue(sel->id, "InfoFile", b ? "1" : "");
+			if (ImGui::IsItemHovered()) ImGui::SetTooltip(TXT("Parsed but unused: the game opens <DataFile>Info.txt for every stage."));
 			float cv = sel->colorVal;
-			ImGui::DragFloat("StageColorVal", &cv, 0.01f, -1.0f, 2.0f, "%.2f");
+			ImGui::DragFloat(LBL("StageColorVal"), &cv, 0.01f, -1.0f, 2.0f, "%.2f");
 			if (ImGui::IsItemDeactivatedAfterEdit()) {
 				char t[32]; std::snprintf(t, sizeof(t), "%g", cv);
 				pr.SetListValue(sel->id, "StageColorVal", cv == 0.0f ? std::string() : std::string(t));
 			}
-			if (ImGui::IsItemHovered()) ImGui::SetTooltip("fColorHosei of the BgPointBlur post effect (HEAT / BLOOD HEAT):\nthe blurred scene is brightened by 1 + StageColorVal * intensity.");
+			if (ImGui::IsItemHovered()) ImGui::SetTooltip(TXT("fColorHosei of the BgPointBlur post effect (HEAT / BLOOD HEAT):\nthe blurred scene is brightened by 1 + StageColorVal * intensity."));
 			static int moveTo = 0;
 			ImGui::InputInt("##moveto", &moveTo);
 			ImGui::SameLine();
-			if (ImGui::Button("Move to id")) { pr.MoveStage(sel->id, moveTo); g_selected = moveTo; }
-			if (ImGui::IsItemHovered()) ImGui::SetTooltip("Renumbers [Bg_NNN]. Stage select walks ids in order,\nand stage NN plays [BGM_0NN].");
+			if (ImGui::Button(LBL("Move to id"))) { pr.MoveStage(sel->id, moveTo); g_selected = moveTo; }
+			if (ImGui::IsItemHovered()) ImGui::SetTooltip(TXT("Renumbers [Bg_NNN]. Stage select walks ids in order,\nand stage NN plays [BGM_0NN]."));
 			ImGui::SameLine();
-			if (ImGui::Button("Remove entry")) pr.RemoveStage(sel->id);
+			if (ImGui::Button(LBL("Remove entry"))) pr.RemoveStage(sel->id);
 			ImGui::PopItemWidth();
 		}
-		ImGui::TextDisabled("Hardcoded in MBAA.exe (not data):");
-		ImGui::TextDisabled("  %s in Training stage select; %s in other modes and the random pool.",
+		ImGui::TextDisabled(TXT("Hardcoded in MBAA.exe (not data):"));
+		ImGui::TextDisabled(TXT("  %s in Training stage select; %s in other modes and the random pool."),
 		                    sel->excludedTraining ? "hidden" : "shown", sel->excludedOther ? "hidden" : "shown");
-		if (sel->id == 18) ImGui::TextDisabled("  boss battle always uses stage 18.");
+		if (sel->id == 18) ImGui::TextDisabled(TXT("  boss battle always uses stage 18."));
 	} else {
-		ImGui::TextDisabled("MBAC: the stage list is g_StageTable in mbacPC.exe (0x491050), not a data file.");
+		ImGui::TextDisabled(TXT("MBAC: the stage list is g_StageTable in mbacPC.exe (0x491050), not a data file."));
 	}
 
 	// --- BGM ---
 	ImGui::Separator();
 	char bsec[16];
 	std::snprintf(bsec, sizeof(bsec), "BGM_%03d", sel->id);
-	ImGui::TextDisabled("Music: bgm.txt [%s] (stage %d plays BGM %d)", bsec, sel->id, sel->id);
-	if (!pr.Bgm().IsLoaded()) ImGui::TextDisabled("bgm.txt not found");
+	ImGui::TextDisabled(TXT("Music: bgm.txt [%s] (stage %d plays BGM %d)"), bsec, sel->id, sel->id);
+	if (!pr.Bgm().IsLoaded()) ImGui::TextDisabled(TXT("bgm.txt not found"));
 	else {
 		ImGui::PushItemWidth(160);
 		std::string v;
 		if (mbaacc && EditTextKey("File##bgm", sel->bgmFile, v)) pr.SetBgmValue(sel->id, "File", v);
 		bool loop = sel->bgmLoop != 0;
-		if (ImGui::Checkbox("IsLoop", &loop)) pr.SetBgmValue(sel->id, "IsLoop", loop ? "1" : "0");
+		if (ImGui::Checkbox(LBL("IsLoop"), &loop)) pr.SetBgmValue(sel->id, "IsLoop", loop ? "1" : "0");
 		ImGui::SameLine();
 		if (EditTextKey("LoopPos (s)", sel->bgmLoopPos, v)) pr.SetBgmValue(sel->id, "LoopPos", v);
 		ImGui::PopItemWidth();
@@ -318,7 +319,7 @@ void DrawStageBrowser(StageProject& pr, const std::string& currentDat, const Bro
 		if (!g_player) g_player = std::make_unique<BgmPlayer>();
 		const bool playingThis = g_player->playing() && g_player->path() == ogg;
 		ImGui::BeginDisabled(ogg.empty());
-		if (ImGui::Button(playingThis ? "Stop" : "Play")) {
+		if (ImGui::Button(playingThis ? LBL("Stop") : LBL("Play"))) {
 			if (playingThis) g_player->stop();
 			else {
 				std::string err;

@@ -13,6 +13,7 @@
 #include <cstdio>
 #include <cstring>
 #include <vector>
+#include "../i18n.h"
 
 namespace authoring {
 
@@ -159,7 +160,7 @@ void DrawOverlay(HostContext& host, const gamelink::Snapshot& s, const FrameSlot
 		dl->AddLine(ImVec2(p.x, p.y - 6), ImVec2(p.x, p.y + 6), IM_COL32(255, 255, 255, 200));
 		if (g.overlayLabels) {
 			char b[96];
-			std::snprintf(b, sizeof b, "%s %s p%d f%d%s", SlotRoleName(i), file.empty() ? "?" : file.c_str(), a.pattern, a.frame,
+			std::snprintf(b, sizeof b, "%s %s p%d f%d%s", TXT(SlotRoleName(i)), file.empty() ? "?" : file.c_str(), a.pattern, a.frame,
 			              g.overlayBoxes && !fd && !file.empty() ? " (open the tab for boxes)" : "");
 			const ImVec2 tp(p.x - 40, p.y + 8);
 			dl->AddText(ImVec2(tp.x + 1, tp.y + 1), IM_COL32(0, 0, 0, 220), b);
@@ -288,64 +289,64 @@ void DrawGameView(HostContext& host)
 	const ImGuiViewport* vp = ImGui::GetMainViewport();
 	ImGui::SetNextWindowPos(ImVec2(vp->WorkPos.x + 80, vp->WorkPos.y + 80), ImGuiCond_FirstUseEver);
 	ImGui::SetNextWindowSize(ImVec2(std::min(700.0f, vp->WorkSize.x - 100), std::min(640.0f, vp->WorkSize.y - 100)), ImGuiCond_FirstUseEver);
-	if (!ImGui::Begin("Game (MBAACC)###gameview", &showGameView, ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_MenuBar)) {
+	if (!ImGui::Begin(LBL("Game (MBAACC)###gameview"), &showGameView, ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_MenuBar)) {
 		ForwardInput(false, s);
 		ImGui::End();
 		return;
 	}
 	const bool focused = ImGui::IsWindowFocused(ImGuiFocusedFlags_RootAndChildWindows);
 	if (ImGui::BeginMenuBar()) {
-		if (ImGui::BeginMenu("View")) {
-			if (ImGui::MenuItem("Full frame (the game's picture)", nullptr, !g.layeredView)) g.layeredView = false;
-			if (ImGui::MenuItem("Layered: Hantei-chan's stage + the game's characters / HUD", nullptr, g.layeredView)) g.layeredView = true;
+		if (ImGui::BeginMenu(LBL("View"))) {
+			if (ImGui::MenuItem(LBL("Full frame (the game's picture)"), nullptr, !g.layeredView)) g.layeredView = false;
+			if (ImGui::MenuItem(LBL("Layered: Hantei-chan's stage + the game's characters / HUD"), nullptr, g.layeredView)) g.layeredView = true;
 			ImGui::Separator();
-			ImGui::TextDisabled("stage behind the layers");
-			if (ImGui::MenuItem("Hantei-chan's open stage", nullptr, g.stageSource == StageSource::Hantei)) g.stageSource = StageSource::Hantei;
-			if (ImGui::MenuItem("Test pattern stage (mock)", nullptr, g.stageSource == StageSource::TestPattern)) g.stageSource = StageSource::TestPattern;
-			if (ImGui::MenuItem("Black", nullptr, g.stageSource == StageSource::Black)) g.stageSource = StageSource::Black;
+			ImGui::TextDisabled(TXT("stage behind the layers"));
+			if (ImGui::MenuItem(LBL("Hantei-chan's open stage"), nullptr, g.stageSource == StageSource::Hantei)) g.stageSource = StageSource::Hantei;
+			if (ImGui::MenuItem(LBL("Test pattern stage (mock)"), nullptr, g.stageSource == StageSource::TestPattern)) g.stageSource = StageSource::TestPattern;
+			if (ImGui::MenuItem(LBL("Black"), nullptr, g.stageSource == StageSource::Black)) g.stageSource = StageSource::Black;
 			ImGui::Separator();
-			ImGui::MenuItem("Overlay: hitboxes", nullptr, &g.overlayBoxes);
-			ImGui::MenuItem("   hurt boxes", nullptr, &g.overlayHurt);
-			ImGui::MenuItem("   attack boxes", nullptr, &g.overlayAttack);
-			ImGui::MenuItem("   other boxes", nullptr, &g.overlayOther);
-			ImGui::MenuItem("Overlay: pattern / frame labels", nullptr, &g.overlayLabels);
+			ImGui::MenuItem(LBL("Overlay: hitboxes"), nullptr, &g.overlayBoxes);
+			ImGui::MenuItem(LBL("   hurt boxes"), nullptr, &g.overlayHurt);
+			ImGui::MenuItem(LBL("   attack boxes"), nullptr, &g.overlayAttack);
+			ImGui::MenuItem(LBL("   other boxes"), nullptr, &g.overlayOther);
+			ImGui::MenuItem(LBL("Overlay: pattern / frame labels"), nullptr, &g.overlayLabels);
 			ImGui::Separator();
-			ImGui::MenuItem("Crop the sidebars (only the game's 4:3 picture)", nullptr, &g.cropSidebars);
+			ImGui::MenuItem(LBL("Crop the sidebars (only the game's 4:3 picture)"), nullptr, &g.cropSidebars);
 			ImGui::EndMenu();
 		}
-		if (ImGui::BeginMenu("Game")) {
+		if (ImGui::BeginMenu(LBL("Game"))) {
 			const bool can = canShare && !s.SessionLive();
-			if (ImGui::MenuItem("Embed: hide the real window, full frame", nullptr, false, can)) c.SetEmbedded(1);
-			if (ImGui::MenuItem("Embed: layered capture (stage drawn here)", nullptr, false, can)) { g.layeredSeq = c.SetEmbedded(2); g.layeredView = true; }
-			if (ImGui::MenuItem("Undock to real window (show the game's own window)", nullptr, false, canShare)) { c.SetEmbedded(0); g.layeredView = false; }
+			if (ImGui::MenuItem(LBL("Embed: hide the real window, full frame"), nullptr, false, can)) c.SetEmbedded(1);
+			if (ImGui::MenuItem(LBL("Embed: layered capture (stage drawn here)"), nullptr, false, can)) { g.layeredSeq = c.SetEmbedded(2); g.layeredView = true; }
+			if (ImGui::MenuItem(LBL("Undock to real window (show the game's own window)"), nullptr, false, canShare)) { c.SetEmbedded(0); g.layeredView = false; }
 			ImGui::Separator();
-			ImGui::MenuItem("This panel in its own OS window", nullptr, &g.ownWindow);
+			ImGui::MenuItem(LBL("This panel in its own OS window"), nullptr, &g.ownWindow);
 			ImGui::Separator();
 			// §12.3: StageColorVal is applied (the BgList entry); the stage light colour is report-only
-			ImGui::TextDisabled("StageColorVal override (BgPointBlur fColorHosei)");
+			ImGui::TextDisabled(TXT("StageColorVal override (BgPointBlur fColorHosei)"));
 			ImGui::SetNextItemWidth(160);
 			ImGui::SliderInt("x1000##colorval", &g.colorValX1000, 0, 2000);
-			if (ImGui::MenuItem("Apply StageColorVal", nullptr, false, can)) {
+			if (ImGui::MenuItem(LBL("Apply StageColorVal"), nullptr, false, can)) {
 				wire::StageLighting l{};
 				l.stageId = -1;
 				l.stageColorValX1000 = (uint32_t)g.colorValX1000;
 				g.lightingSeq = c.SetStageLighting(l);
 				g.lightingOverride = true;
 			}
-			if (ImGui::MenuItem("Reset stage lighting (the game's own values)", nullptr, false, canShare)) {
+			if (ImGui::MenuItem(LBL("Reset stage lighting (the game's own values)"), nullptr, false, canShare)) {
 				wire::StageLighting l{};
 				l.stageId = -1;
 				l.flags = 1;
 				g.lightingSeq = c.SetStageLighting(l);
 				g.lightingOverride = false;
 			}
-			ImGui::TextDisabled("an override stays until Reset (or a stage change), even after Hantei-chan disconnects;");
-			ImGui::TextDisabled("negative StageColorVal (stage 16 ships -0.05) cannot be sent and reads 0");
-			if (!g.lightingReply.empty()) ImGui::TextDisabled("last: %s", g.lightingReply.c_str());
+			ImGui::TextDisabled(TXT("an override stays until Reset (or a stage change), even after Hantei-chan disconnects;"));
+			ImGui::TextDisabled(TXT("negative StageColorVal (stage 16 ships -0.05) cannot be sent and reads 0"));
+			if (!g.lightingReply.empty()) ImGui::TextDisabled(TXT("last: %s"), g.lightingReply.c_str());
 			ImGui::EndMenu();
 		}
-		if (ImGui::BeginMenu("Input")) {
-			ImGui::MenuItem("Forward keyboard / pad while this panel is focused", nullptr, &g.forwardInput);
+		if (ImGui::BeginMenu(LBL("Input"))) {
+			ImGui::MenuItem(LBL("Forward keyboard / pad while this panel is focused"), nullptr, &g.forwardInput);
 			for (int p = 0; p < 4; ++p) {
 				char l[32];
 				std::snprintf(l, sizeof l, "as player %d", p + 1);
@@ -354,29 +355,29 @@ void DrawGameView(HostContext& host)
 				if (!block.empty() && ImGui::IsItemHovered(ImGuiHoveredFlags_AllowWhenDisabled)) ImGui::SetTooltip("%s", block.c_str());
 			}
 			ImGui::Separator();
-			ImGui::TextDisabled("arrows / WASD, J K L U = A B C D, I = FN1, O = FN2, Enter = Start");
-			ImGui::TextDisabled("pad: d-pad / stick, face buttons = A B C D, RB = FN1, LB = FN2");
+			ImGui::TextDisabled(TXT("arrows / WASD, J K L U = A B C D, I = FN1, O = FN2, Enter = Start"));
+			ImGui::TextDisabled(TXT("pad: d-pad / stick, face buttons = A B C D, RB = FN1, LB = FN2"));
 			ImGui::EndMenu();
 		}
 		ImGui::EndMenuBar();
 	}
 	// ---- the status line ----
 	const FrameRingHeader* rh = g.reader.Ring();
-	if (!s.connected) ImGui::TextDisabled("not linked: launch or attach in the Authoring window");
+	if (!s.connected) ImGui::TextDisabled(TXT("not linked: launch or attach in the Authoring window"));
 	else if (s.haveCaps && !(s.caps.caps & wire::kCapFrameShare))
-		ImGui::TextColored(kColWarn, "this pchost.dll has no frame export (no kCapFrameShare): use the real game window");
-	else if (!g.reader.IsOpen()) ImGui::TextColored(kColWarn, "waiting for the frame ring%s%s", g.openWhy.empty() ? "" : ": ", g.openWhy.c_str());
+		ImGui::TextColored(kColWarn, TXT("this pchost.dll has no frame export (no kCapFrameShare): use the real game window"));
+	else if (!g.reader.IsOpen()) ImGui::TextColored(kColWarn, TXT("waiting for the frame ring%s%s"), g.openWhy.empty() ? "" : ": ", g.openWhy.c_str());
 	else {
-		ImGui::Text("%.0f fps  latency %u ms  frame %u  game %u  skipped %u", g.reader.Fps(), g.reader.LatencyMs(),
+		ImGui::Text(TXT("%.0f fps  latency %u ms  frame %u  game %u  skipped %u"), g.reader.Fps(), g.reader.LatencyMs(),
 		            g.haveFrame ? g.reader.Frame().frameSeq : 0, g.haveFrame ? g.reader.Frame().gameFrame : 0, g.reader.Skipped());
 		ImGui::SameLine();
-		ImGui::TextDisabled("| copy %u us  %s%s%s | %s", rh ? rh->lastCopyUs : 0, rh && (rh->flags & kFlagEmbedded) ? "embedded" : "real window shown",
+		ImGui::TextDisabled(TXT("| copy %u us  %s%s%s | %s"), rh ? rh->lastCopyUs : 0, rh && (rh->flags & kFlagEmbedded) ? "embedded" : "real window shown",
 		                    rh && (rh->flags & kFlagLayered) ? " + layered" : "", rh && !(rh->flags & kFlagProducerAlive) ? " (producer stopped)" : "",
 		                    rh ? rh->producer : "");
 	}
 	if (g.haveFrame) {
 		const FrameCamera& cam = g.reader.Frame().camera;
-		ImGui::TextDisabled("stage %d  StageColorVal %.3f%s  light 0x%08X (report only)%s", cam.stageId, cam.stageColorValX1000 / 1000.0,
+		ImGui::TextDisabled(TXT("stage %d  StageColorVal %.3f%s  light 0x%08X (report only)%s"), cam.stageId, cam.stageColorValX1000 / 1000.0,
 		                    g.lightingOverride ? " (override: until Reset)" : "", cam.stageLightArgb,
 		                    cam.viewW ? "" : "  picture fills the frame");
 	}
@@ -384,10 +385,10 @@ void DrawGameView(HostContext& host)
 	if (!g.status.empty() && g.reader.Ring() && !(g.reader.Ring()->flags & kFlagProducerAlive)) ImGui::TextColored(kColWarn, "%s", g.status.c_str());
 	{
 		const std::string block = PlayerBlock(s, g.player);
-		if (!block.empty() && g.forwardInput) ImGui::TextColored(kColWarn, "input not forwarded: %s", block.c_str());
+		if (!block.empty() && g.forwardInput) ImGui::TextColored(kColWarn, TXT("input not forwarded: %s"), block.c_str());
 	}
-	if (g.capturing) { ImGui::SameLine(); ImGui::TextColored(kColOk, "  INPUT -> P%d", g.player + 1); }
-	else if (focused && g.forwardInput && s.SessionLive()) { ImGui::SameLine(); ImGui::TextColored(kColBad, "  input refused: session"); }
+	if (g.capturing) { ImGui::SameLine(); ImGui::TextColored(kColOk, TXT("  INPUT -> P%d"), g.player + 1); }
+	else if (focused && g.forwardInput && s.SessionLive()) { ImGui::SameLine(); ImGui::TextColored(kColBad, TXT("  input refused: session")); }
 	if (!s.lastInjectReply.empty() && s.lastInjectReply.find("ok") == std::string::npos) ImGui::TextColored(kColBad, "%s", s.lastInjectReply.c_str());
 	// ---- the picture, aspect-correct ----
 	const ImVec2 avail = ImGui::GetContentRegionAvail();
@@ -415,7 +416,7 @@ void DrawGameView(HostContext& host)
 		dl->AddImage(g.full.Im(), origin, end);
 		if (g.layeredView && !layeredAvailable && g.layeredNote.empty()) {
 			ImGui::SetCursorScreenPos(ImVec2(origin.x + 6, origin.y + 6));
-			ImGui::TextColored(kColWarn, "no layers in this frame (Game > Embed: layered capture): showing the full frame");
+			ImGui::TextColored(kColWarn, TXT("no layers in this frame (Game > Embed: layered capture): showing the full frame"));
 		}
 	} else {
 		// back stage -> [super-flash darkening] -> CHARS -> front stage -> HUD, premultiplied
@@ -450,7 +451,7 @@ void DrawGameView(HostContext& host)
 		dl->AddCallback(ImDrawCallback_ResetRenderState, nullptr);
 		if (g.stageSource == StageSource::Hantei && !back) {
 			ImGui::SetCursorScreenPos(ImVec2(origin.x + 6, origin.y + 6));
-			ImGui::TextColored(kColWarn, "no stage open in Hantei-chan: test pattern behind the layers (open the stage tab)");
+			ImGui::TextColored(kColWarn, TXT("no stage open in Hantei-chan: test pattern behind the layers (open the stage tab)"));
 		}
 	}
 	DrawOverlay(host, s, f, origin, scale);

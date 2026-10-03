@@ -1,4 +1,5 @@
 #ifndef EFFECT_AUDIO_H_GUARD
+#include "../../i18n.h"
 #define EFFECT_AUDIO_H_GUARD
 
 // ============================================================================
@@ -15,14 +16,14 @@ static inline void DrawEffectAudio_Type9(Frame_EF& effect, FrameData* frameData,
 	constexpr float width = 75.f;
 
 			im::SetNextItemWidth(width*2);
-			if(im::Combo("Bank", &no,
+			if(i18n::Combo(LBL("Bank"), &no,
 				"0: Universal sounds\000"
 				"1: Character specific\000")) {
 				markModified();
 			}
 
 			im::SetNextItemWidth(width);
-			im::DragInt("Sound ID", &p[0]);
+			im::DragInt(LBL("Sound ID"), &p[0]);
 			if(im::IsItemEdited()) {
 				if (frameData && patternIndex >= 0) frameData->mark_modified(patternIndex);
 			}
@@ -31,7 +32,7 @@ static inline void DrawEffectAudio_Type9(Frame_EF& effect, FrameData* frameData,
 			}
 
 			im::SetNextItemWidth(width);
-			im::DragInt("Probability", &p[1]);
+			im::DragInt(LBL("Probability"), &p[1]);
 			if(im::IsItemEdited()) {
 				if (frameData && patternIndex >= 0) frameData->mark_modified(patternIndex);
 			}
@@ -44,7 +45,7 @@ static inline void DrawEffectAudio_Type9(Frame_EF& effect, FrameData* frameData,
 			}
 
 			im::SetNextItemWidth(width);
-			im::DragInt("Different sounds", &p[2]);
+			im::DragInt(LBL("Different sounds"), &p[2]);
 			if(im::IsItemEdited()) {
 				if (frameData && patternIndex >= 0) frameData->mark_modified(patternIndex);
 			}
@@ -57,7 +58,7 @@ static inline void DrawEffectAudio_Type9(Frame_EF& effect, FrameData* frameData,
 			}
 
 			im::SetNextItemWidth(width);
-			im::DragInt("Unknown (param4)", &p[3]);
+			im::DragInt(LBL("Unknown (param4)"), &p[3]);
 			if(im::IsItemEdited()) {
 				if (frameData && patternIndex >= 0) frameData->mark_modified(patternIndex);
 			}
@@ -70,7 +71,7 @@ static inline void DrawEffectAudio_Type9(Frame_EF& effect, FrameData* frameData,
 			}
 
 			im::SetNextItemWidth(width);
-			im::DragInt("Unknown (param6)", &p[5]);
+			im::DragInt(LBL("Unknown (param6)"), &p[5]);
 			if(im::IsItemEdited()) {
 				if (frameData && patternIndex >= 0) frameData->mark_modified(patternIndex);
 			}
@@ -79,7 +80,7 @@ static inline void DrawEffectAudio_Type9(Frame_EF& effect, FrameData* frameData,
 			}
 
 			im::SetNextItemWidth(width);
-			im::DragInt("Unknown (param7)", &p[6]);
+			im::DragInt(LBL("Unknown (param7)"), &p[6]);
 			if(im::IsItemEdited()) {
 				if (frameData && patternIndex >= 0) frameData->mark_modified(patternIndex);
 			}
@@ -92,7 +93,7 @@ static inline void DrawEffectAudio_Type9(Frame_EF& effect, FrameData* frameData,
 			}
 
 			im::SetNextItemWidth(width);
-			im::DragInt("Unknown (param12)", &p[11]);
+			im::DragInt(LBL("Unknown (param12)"), &p[11]);
 			if(im::IsItemEdited()) {
 				if (frameData && patternIndex >= 0) frameData->mark_modified(patternIndex);
 			}

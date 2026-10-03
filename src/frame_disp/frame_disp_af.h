@@ -4,6 +4,7 @@
 #include "frame_disp_common.h"
 #include "../cg.h"
 #include <cstring> // for memcpy
+#include "../i18n.h"
 
 // ============================================================================
 // Animation Frame (AF) Display  
@@ -55,9 +56,9 @@ inline void AfDisplay(Frame_AF *af, int &selectedLayer, FrameData *frameData = n
 	const Ha6Game game = frameData ? frameData->game() : Ha6Game::MBAACC;
 	im::PushStyleColor(ImGuiCol_Text, ImVec4(0.2f, 0.7f, 1.0f, 1.0f));  // Blue header
 	if (hasMultipleLayers || uni) {
-		im::Text("%s AFGX layers - Layer %d/%d", Ha6GameName(game), selectedLayer + 1, (int)af->layers.size());
+		im::Text(TXT("%s AFGX layers - Layer %d/%d"), Ha6GameName(game), selectedLayer + 1, (int)af->layers.size());
 	} else {
-		im::Text("Single Layer (MBAACC AFGP)");
+		im::Text(TXT("Single Layer (MBAACC AFGP)"));
 	}
 	im::PopStyleColor();
 	if (uni && im::IsItemHovered())
@@ -66,7 +67,7 @@ inline void AfDisplay(Frame_AF *af, int &selectedLayer, FrameData *frameData = n
 			"Unused layers have sprite -1; the game skips them.");
 
 	im::SameLine(0, 20.f);
-	if (im::SmallButton("Add Layer")) {
+	if (im::SmallButton(LBL("Add Layer"))) {
 		// Add new layer with default values
 		Layer_Type newLayer = {};
 		newLayer.spriteId = -1;
@@ -83,7 +84,7 @@ inline void AfDisplay(Frame_AF *af, int &selectedLayer, FrameData *frameData = n
 	// Only show delete button if we have more than 1 layer
 	if (hasMultipleLayers) {
 		im::SameLine();
-		if (im::SmallButton("Delete Layer")) {
+		if (im::SmallButton(LBL("Delete Layer"))) {
 			if (af->layers.size() > 1) {
 				af->layers.erase(af->layers.begin() + selectedLayer);
 				// Clamp selectedLayer after deletion
@@ -117,9 +118,9 @@ inline void AfDisplay(Frame_AF *af, int &selectedLayer, FrameData *frameData = n
 			"0: with object", "1: top (403)", "2: front (338)", "3: just in front", "4: just behind" };
 		int& pl = af->layers[selectedLayer].priority;
 		if (pl >= 0 && pl <= 4) {
-			if (im::Combo("Draw bucket (AFPL)", &pl, kBuckets, IM_ARRAYSIZE(kBuckets)))
+			if (i18n::Combo(LBL("Draw bucket (AFPL)"), &pl, kBuckets, IM_ARRAYSIZE(kBuckets)))
 				markModified();
-		} else if (im::InputInt("Draw bucket (AFPL)", &pl, 0, 0)) {
+		} else if (im::InputInt(LBL("Draw bucket (AFPL)"), &pl, 0, 0)) {
 			markModified();
 		}
 		if (im::IsItemHovered())
@@ -137,15 +138,15 @@ inline void AfDisplay(Frame_AF *af, int &selectedLayer, FrameData *frameData = n
 
 	// Sprite and .pat (per-layer properties)
 	im::SetNextItemWidth(width*3);
-	if(im::InputInt("Sprite", &layer.spriteId)) {
+	if(im::InputInt(LBL("Sprite"), &layer.spriteId)) {
 		markModified();
 	}
 	im::SameLine(0, 20.f);
-	if(im::Checkbox("Use .pat", &layer.usePat)) {
+	if(im::Checkbox(LBL("Use .pat"), &layer.usePat)) {
 		markModified();
 	}
 
-	if(im::SmallButton("Copy animation")) {
+	if(im::SmallButton(LBL("Copy animation"))) {
 		copiedAnimationLayer.spriteId = layer.spriteId;
 		copiedAnimationLayer.usePat = layer.usePat;
 		copiedAnimationFrame.duration = af->duration;
@@ -159,7 +160,7 @@ inline void AfDisplay(Frame_AF *af, int &selectedLayer, FrameData *frameData = n
 	}
 	if(im::IsItemHovered()) Tooltip("Copy sprite, duration, jumps, priority, and loops");
 	im::SameLine();
-	if(im::SmallButton("Paste animation")) {
+	if(im::SmallButton(LBL("Paste animation"))) {
 		layer.spriteId = copiedAnimationLayer.spriteId;
 		layer.usePat = copiedAnimationLayer.usePat;
 		af->duration = copiedAnimationFrame.duration;
@@ -188,7 +189,7 @@ inline void AfDisplay(Frame_AF *af, int &selectedLayer, FrameData *frameData = n
 		case 3: Tooltip("End of loop: Use relative offset"); break;
 	}
 
-	if(im::Combo("Animation", &af->aniType, animationList, IM_ARRAYSIZE(animationList))) {
+	if(i18n::Combo(LBL("Animation"), &af->aniType, animationList, IM_ARRAYSIZE(animationList))) {
 		markModified();
 	}
 
@@ -197,7 +198,7 @@ inline void AfDisplay(Frame_AF *af, int &selectedLayer, FrameData *frameData = n
 		markModified();
 	}
 	im::SameLine(0.f, 20); im::SetNextItemWidth(width);
-	if(im::InputInt("Landing frame", &af->landJump, 0, 0)) {
+	if(im::InputInt(LBL("Landing frame"), &af->landJump, 0, 0)) {
 		markModified();
 	}
 
@@ -211,7 +212,7 @@ inline void AfDisplay(Frame_AF *af, int &selectedLayer, FrameData *frameData = n
 		if(im::IsItemHovered()) Tooltip("Landing frame value to set");
 
 		im::SameLine();
-		if(im::SmallButton("Set All")) {
+		if(im::SmallButton(LBL("Set All"))) {
 			auto seq = frameData->get_sequence(patternIndex);
 			if(seq) {
 				for(int i = 0; i < seq->frames.size(); i++) {
@@ -224,7 +225,7 @@ inline void AfDisplay(Frame_AF *af, int &selectedLayer, FrameData *frameData = n
 		if(im::IsItemHovered()) Tooltip("Apply landing frame to all frames in pattern");
 
 		im::SameLine();
-		if(im::SmallButton("Set Range")) {
+		if(im::SmallButton(LBL("Set Range"))) {
 			im::OpenPopup("LandingFrameRange");
 		}
 		if(im::IsItemHovered()) Tooltip("Apply landing frame to a range of frames");
@@ -241,12 +242,12 @@ inline void AfDisplay(Frame_AF *af, int &selectedLayer, FrameData *frameData = n
 				if(landingFrameRange[0] > maxFrame) landingFrameRange[0] = maxFrame;
 				if(landingFrameRange[1] > maxFrame) landingFrameRange[1] = maxFrame;
 
-				im::Text("Set landing frame for range");
+				im::Text(TXT("Set landing frame for range"));
 				im::Separator();
-				im::InputInt2("Frame range", landingFrameRange);
-				im::InputInt("Landing frame value", &landingFrameToolValue);
+				im::InputInt2(LBL("Frame range"), landingFrameRange);
+				im::InputInt(LBL("Landing frame value"), &landingFrameToolValue);
 
-				if(im::Button("Apply", ImVec2(120, 0))) {
+				if(im::Button(LBL("Apply"), ImVec2(120, 0))) {
 					for(int i = landingFrameRange[0]; i <= landingFrameRange[1] && i >= 0 && i < seq->frames.size(); i++) {
 						seq->frames[i].AF.landJump = landingFrameToolValue;
 					}
@@ -255,7 +256,7 @@ inline void AfDisplay(Frame_AF *af, int &selectedLayer, FrameData *frameData = n
 					im::CloseCurrentPopup();
 				}
 				im::SameLine();
-				if(im::Button("Cancel", ImVec2(120, 0))) {
+				if(im::Button(LBL("Cancel"), ImVec2(120, 0))) {
 					im::CloseCurrentPopup();
 				}
 			}
@@ -264,18 +265,18 @@ inline void AfDisplay(Frame_AF *af, int &selectedLayer, FrameData *frameData = n
 	}
 
 	im::SetNextItemWidth(width);
-	if(im::InputInt("Z-Priority", &af->priority, 0, 0)) {
+	if(im::InputInt(LBL("Z-Priority"), &af->priority, 0, 0)) {
 		markModified();
 	}
 	im::SetNextItemWidth(width);
-	if(im::InputInt("Loop N times", &af->loopCount, 0, 0)) {
+	if(im::InputInt(LBL("Loop N times"), &af->loopCount, 0, 0)) {
 		markModified();
 	}
 	im::SameLine(0,20); im::SetNextItemWidth(width);
-	if(im::InputInt("End of loop", &af->loopEnd, 0, 0)) {
+	if(im::InputInt(LBL("End of loop"), &af->loopEnd, 0, 0)) {
 		markModified();
 	}
-	if(im::InputInt("Duration", &af->duration, 1, 0)) {
+	if(im::InputInt(LBL("Duration"), &af->duration, 1, 0)) {
 		markModified();
 	}
 
@@ -285,7 +286,7 @@ inline void AfDisplay(Frame_AF *af, int &selectedLayer, FrameData *frameData = n
 	static Layer_Type copiedTransformLayer = {};
 	static bool copiedTransformAFRT = false;
 	static int copiedTransformInterpolationType = 0;
-	if(im::SmallButton("Copy transforms")) {
+	if(im::SmallButton(LBL("Copy transforms"))) {
 		copiedTransformLayer.offset_x = layer.offset_x;
 		copiedTransformLayer.offset_y = layer.offset_y;
 		copiedTransformLayer.blend_mode = layer.blend_mode;
@@ -297,7 +298,7 @@ inline void AfDisplay(Frame_AF *af, int &selectedLayer, FrameData *frameData = n
 	}
 	if(im::IsItemHovered()) Tooltip("Copy offset, rotation, scale, color, blend mode, and interpolation");
 	im::SameLine();
-	if(im::SmallButton("Paste transforms")) {
+	if(im::SmallButton(LBL("Paste transforms"))) {
 		layer.offset_x = copiedTransformLayer.offset_x;
 		layer.offset_y = copiedTransformLayer.offset_y;
 		layer.blend_mode = copiedTransformLayer.blend_mode;
@@ -310,7 +311,7 @@ inline void AfDisplay(Frame_AF *af, int &selectedLayer, FrameData *frameData = n
 	}
 	if(im::IsItemHovered()) Tooltip("Paste offset, rotation, scale, color, blend mode, and interpolation");
 
-	if(im::Combo("Interpolation", &af->interpolationType, interpolationList, IM_ARRAYSIZE(interpolationList))) {
+	if(i18n::Combo(LBL("Interpolation"), &af->interpolationType, interpolationList, IM_ARRAYSIZE(interpolationList))) {
 		markModified();
 	}
 
@@ -333,7 +334,7 @@ inline void AfDisplay(Frame_AF *af, int &selectedLayer, FrameData *frameData = n
 	int mode = layer.blend_mode-1;
 	if(mode < 1)
 		mode = 0;
-	if (im::Combo("Blend Mode", &mode, "Normal\0Additive\0Subtractive\0"))
+	if (i18n::Combo(LBL("Blend Mode"), &mode, "Normal\0Additive\0Subtractive\0"))
 	{
 		layer.blend_mode=mode+1;
 		markModified();
@@ -344,36 +345,36 @@ inline void AfDisplay(Frame_AF *af, int &selectedLayer, FrameData *frameData = n
 			"2 = additive (src alpha, one)\n"
 			"3 = subtractive (reverse subtract, src alpha, one)\n"
 			"No AFAL = normal with the alpha forced to 255.");
-	if(im::ColorEdit4("Color", layer.rgba)) {
+	if(im::ColorEdit4(LBL("Color"), layer.rgba)) {
 		markModified();
 	}
 
-	im::DragFloat3("Rot XYZ", layer.rotation, 0.005);
+	im::DragFloat3(LBL("Rot XYZ"), layer.rotation, 0.005);
 	if(im::IsItemDeactivatedAfterEdit()) {
 		markModified();
 	}
-	im::DragFloat2("Scale", layer.scale, 0.1);
+	im::DragFloat2(LBL("Scale"), layer.scale, 0.1);
 	if(im::IsItemDeactivatedAfterEdit()) {
 		markModified();
 	}
 	if (uni) {
 		// UNI2/MBTL store AFRT per layer (Han6_LoadFrameAF, layer +32).
-		if(im::Checkbox("Rotation keeps scale set by EF (AFRT, this layer)", &layer.afrt)) {
+		if(im::Checkbox(LBL("Rotation keeps scale set by EF (AFRT, this layer)"), &layer.afrt)) {
 			markModified();
 		}
-	} else if(im::Checkbox("Rotation keeps scale set by EF", &af->AFRT)) {
+	} else if(im::Checkbox(LBL("Rotation keeps scale set by EF"), &af->AFRT)) {
 		markModified();
 	}
 	if (uni) {
 		im::Separator();
-		im::TextDisabled("Script references (UNI/MBTL)");
+		im::TextDisabled(TXT("Script references (UNI/MBTL)"));
 		im::SetNextItemWidth(width);
-		if (im::InputInt("Frame ID (AFID)", &af->frameId, 0, 0))
+		if (im::InputInt(LBL("Frame ID (AFID)"), &af->frameId, 0, 0))
 			markModified();
 		if (im::IsItemHovered())
 			Tooltip("AFID: frame id the Squirrel move scripts look up (frame +248, int16).");
 		im::SameLine(0, 20.f);
-		if (im::Checkbox("AFJH", &af->afjh))
+		if (im::Checkbox(LBL("AFJH"), &af->afjh))
 			markModified();
 		if (im::IsItemHovered())
 			Tooltip("AFJH: frame flag byte (+262); set on the first frame of most patterns.");
@@ -382,7 +383,7 @@ inline void AfDisplay(Frame_AF *af, int &selectedLayer, FrameData *frameData = n
 		memcpy(pa, af->param, 4);
 		int pai[2] = { pa[0], pa[1] };
 		im::SetNextItemWidth(width * 2.5f);
-		if (im::InputInt2("Params (AFPA)", pai)) {
+		if (im::InputInt2(LBL("Params (AFPA)"), pai)) {
 			pa[0] = (int16_t)pai[0]; pa[1] = (int16_t)pai[1];
 			memcpy(af->param, pa, 4);
 			markModified();
@@ -392,12 +393,12 @@ inline void AfDisplay(Frame_AF *af, int &selectedLayer, FrameData *frameData = n
 	}
 	if(clipboard) {
 		im::SameLine(0,20.f);
-		if(im::Button("Copy AF")) {
+		if(im::Button(LBL("Copy AF"))) {
 			*clipboard = *af;
 		}
 		if(im::IsItemHovered()) Tooltip("Copy all animation data (sprite, timing, transforms, colors)");
 		im::SameLine(0,20.f);
-		if(im::Button("Paste AF")) {
+		if(im::Button(LBL("Paste AF"))) {
 			*af = *clipboard;
 			markModified();
 		}

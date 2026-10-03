@@ -11,6 +11,8 @@
 #include <imgui.h>
 #include <algorithm>
 #include <cctype>
+#include <cstring>
+#include <cstdio>
 #include <filesystem>
 #include <fstream>
 #include <functional>
@@ -83,6 +85,29 @@ void PushLoadReport(const std::string &name, const std::string &summary, const s
 	if (g_reports.size() > 50) g_reports.erase(g_reports.begin());
 	if (failed || !warnings.empty()) showLoadReport = true;   // clean loads stay quiet; the window can be opened from the menu
 }
+// Load-report text is assembled in English by the loaders; translate it piecewise when it is shown.
+static std::string TrReportPiece(const std::string &p)
+{
+	int n = 0; char buf[256];
+	auto endsWith = [&](const char *suf) { size_t l = strlen(suf); return p.size() >= l && p.compare(p.size() - l, l, suf) == 0; };
+	if (endsWith(" CG images") && sscanf(p.c_str(), "%d", &n) == 1) { snprintf(buf, sizeof buf, TXT("%d CG images"), n); return buf; }
+	if (endsWith(" part sets") && sscanf(p.c_str(), "%d", &n) == 1) { snprintf(buf, sizeof buf, TXT("%d part sets"), n); return buf; }
+	for (const char *pre : {"parts: ", "parts could not be converted: "})
+		if (p.compare(0, strlen(pre), pre) == 0) return std::string(TXT(pre)) + p.substr(strlen(pre));
+	return TXT(p.c_str());
+}
+static std::string TrReportSummary(const std::string &s)
+{
+	std::string out, sep = i18n::language == 1 ? "\xe3\x80\x81" : ", ";
+	size_t i = 0;
+	while (i <= s.size()) {
+		size_t j = s.find(", ", i); if (j == std::string::npos) j = s.size();
+		if (!out.empty()) out += sep;
+		out += TrReportPiece(s.substr(i, j - i));
+		i = j + 2;
+	}
+	return out;
+}
 void DrawLoadReport()
 {
 	if (!showLoadReport) return;
@@ -93,8 +118,8 @@ void DrawLoadReport()
 		const LoadEntry &e = g_reports[i];
 		ImGui::PushID(i);
 		ImGui::TextColored(e.failed ? ImVec4(1, .4f, .3f, 1) : (e.warnings.empty() ? ImVec4(.5f, 1, .5f, 1) : ImVec4(1, .8f, .3f, 1)), "%s", e.name.c_str());
-		ImGui::SameLine(); ImGui::TextDisabled("%s", e.summary.c_str());
-		for (auto &w : e.warnings) ImGui::BulletText("%s", w.c_str());
+		ImGui::SameLine(); ImGui::TextDisabled("%s", TrReportSummary(e.summary).c_str());
+		for (auto &w : e.warnings) ImGui::BulletText("%s", TrReportPiece(w).c_str());
 		ImGui::PopID();
 	}
 	ImGui::End();
@@ -142,7 +167,7 @@ bool DrawBrowser(OpenRequest &req, std::string &message)
 	{ const char *lg = i18n::language == 1 ? "EN" : "JP"; if (ImGui::Button(lg)) { i18n::language = 1 - i18n::language; SaveHan2Settings(); } }
 	if (!g_scanned) { g_scanned = true; g_root = FolderNode(); ScanFolder(WorkFolder(), g_root, 0); }
 	ImGui::SameLine();
-	ImGui::TextDisabled("%s", TXT("Later archives in the list override earlier ones when a file name occurs twice (Update01 and the Ex discs patch DATA0x)."));
+	ImGui::PushTextWrapPos(0.0f); ImGui::TextDisabled("%s", TXT("Later archives in the list override earlier ones when a file name occurs twice (Update01 and the Ex discs patch DATA0x).")); ImGui::PopTextWrapPos();
 
 	// archive list
 	ImGui::BeginChild("arcs", ImVec2(230, 0), true);
@@ -234,7 +259,7 @@ bool DrawBrowser(OpenRequest &req, std::string &message)
 			ImGui::EndTable();
 		}
 	} else {
-		ImGui::TextDisabled("%s", TXT("Add a PAC archive (RBO DATA01.PAC ... Ex3Disc.PAC, GOF2 data00.dat ...)."));
+		ImGui::PushTextWrapPos(0.0f); ImGui::TextDisabled("%s", TXT("Add a PAC archive (RBO DATA01.PAC ... Ex3Disc.PAC, GOF2 data00.dat ...).")); ImGui::PopTextWrapPos();
 	}
 	ImGui::EndChild();
 	ImGui::End();

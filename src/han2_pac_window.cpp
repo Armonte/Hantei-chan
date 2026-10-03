@@ -153,7 +153,7 @@ void DrawPacCreate()
 	if (ImGui::Button(LBL("Remove selected"))) g_c.rows.erase(std::remove_if(g_c.rows.begin(), g_c.rows.end(), [](const Row &r) { return r.selected; }), g_c.rows.end());
 	ImGui::SameLine();
 	if (ImGui::Button(LBL("Clear"))) { g_c.rows.clear(); CloseBase(); g_c.basePath.clear(); }
-	ImGui::TextDisabled(TXT("base: %s"), g_c.basePath.empty() ? TXT("(none)") : g_c.basePath.c_str());
+	ImGui::PushTextWrapPos(0.0f); ImGui::TextDisabled(TXT("base: %s"), g_c.basePath.empty() ? TXT("(none)") : g_c.basePath.c_str()); ImGui::PopTextWrapPos();
 	ImGui::SetNextItemWidth(200); ImGui::InputText(LBL("filter"), g_c.filter, sizeof(g_c.filter));
 	if (ImGui::BeginTable("rows", 4, ImGuiTableFlags_ScrollY | ImGuiTableFlags_RowBg | ImGuiTableFlags_Resizable, ImVec2(0, -70))) {
 		ImGui::TableSetupColumn(LBL("name")); ImGui::TableSetupColumn(LBL("size")); ImGui::TableSetupColumn(LBL("source")); ImGui::TableSetupColumn(LBL("note"));
@@ -233,7 +233,7 @@ void DrawFileViewers()
 		char title[256]; snprintf(title, sizeof(title), "%s%s###viewer%d", sj2utf8(v.name).c_str(), v.dirty ? " *" : "", v.id);
 		ImGui::SetNextWindowSize(ImVec2(560, 460), ImGuiCond_FirstUseEver);
 		if (!ImGui::Begin(title, &v.open)) { ImGui::End(); continue; }
-		ImGui::TextDisabled(TXT("%s, %zu bytes"), v.origin.c_str(), v.bytes.size());
+		ImGui::PushTextWrapPos(0.0f); ImGui::TextDisabled(TXT("%s, %zu bytes"), v.origin.c_str(), v.bytes.size()); ImGui::PopTextWrapPos();
 		if (v.kind == Viewer::Image) {
 			ImGui::Text(TXT("IMG v%u, %d x %d, RGBA"), v.img.version, v.img.width, v.img.height);
 			ImGui::SetNextItemWidth(120); ImGui::SliderFloat(LBL("zoom"), &v.zoom, 0.25f, 8.f); ImGui::SameLine(); ImGui::Checkbox(LBL("checkerboard"), &v.checker);

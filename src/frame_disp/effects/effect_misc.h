@@ -2,6 +2,7 @@
 #define EFFECT_MISC_H_GUARD
 
 #include "../bof_extensions.h"
+#include "../../i18n.h"
 
 // ============================================================================
 // Effect Type 6: Various Effects 2 (Miscellaneous)
@@ -90,10 +91,10 @@ static inline void DrawEffectMisc_Type6(Frame_EF& effect, FrameData* frameData, 
 
 			// Sub-type specific parameters
 			if(no == 0 || no == 3) { // After-image or Trailing images
-				im::Text(no == 0 ? "--- After-image (one every 7f) ---" : "--- Trailing images ---");
+				im::Text(no == 0 ? TXT("--- After-image (one every 7f) ---") : TXT("--- Trailing images ---"));
 
 				im::SetNextItemWidth(width*2);
-				if(im::Combo("Blending mode", &p[0],
+				if(i18n::Combo(LBL("Blending mode"), &p[0],
 					"0: Blue (Normal)\000"
 					"1: Red (Normal)\000"
 					"2: Green (Normal)\000"
@@ -111,7 +112,7 @@ static inline void DrawEffectMisc_Type6(Frame_EF& effect, FrameData* frameData, 
 
 				if(no == 3) { // Trailing images only
 					im::SetNextItemWidth(width);
-					im::DragInt("Number of images", &p[1]);
+					im::DragInt(LBL("Number of images"), &p[1]);
 					if(im::IsItemEdited()) {
 				if (frameData && patternIndex >= 0) frameData->mark_modified(patternIndex);
 			}
@@ -120,7 +121,7 @@ static inline void DrawEffectMisc_Type6(Frame_EF& effect, FrameData* frameData, 
 			}
 
 					im::SetNextItemWidth(width);
-					im::DragInt("Frames behind", &p[2]);
+					im::DragInt(LBL("Frames behind"), &p[2]);
 					if(im::IsItemEdited()) {
 				if (frameData && patternIndex >= 0) frameData->mark_modified(patternIndex);
 			}
@@ -134,10 +135,10 @@ static inline void DrawEffectMisc_Type6(Frame_EF& effect, FrameData* frameData, 
 				}
 
 			} else if(no == 1) { // Screen effects
-				im::Text("--- Screen Effects ---");
+				im::Text(TXT("--- Screen Effects ---"));
 
 				im::SetNextItemWidth(width);
-				im::DragInt("Shake duration", &p[0]);
+				im::DragInt(LBL("Shake duration"), &p[0]);
 				if(im::IsItemEdited()) {
 				if (frameData && patternIndex >= 0) frameData->mark_modified(patternIndex);
 			}
@@ -167,13 +168,13 @@ static inline void DrawEffectMisc_Type6(Frame_EF& effect, FrameData* frameData, 
 					}
 				}
 
-				if(im::Combo("Screen effect", &screenIdx, screenEffectNames, IM_ARRAYSIZE(screenEffectNames))) {
+				if(i18n::Combo(LBL("Screen effect"), &screenIdx, screenEffectNames, IM_ARRAYSIZE(screenEffectNames))) {
 					p[1] = screenEffectTypes[screenIdx];
 					markModified();
 				}
 
 				im::SetNextItemWidth(width);
-				im::DragInt("Effect duration", &p[2]);
+				im::DragInt(LBL("Effect duration"), &p[2]);
 				if(im::IsItemEdited()) {
 				if (frameData && patternIndex >= 0) frameData->mark_modified(patternIndex);
 			}
@@ -182,7 +183,7 @@ static inline void DrawEffectMisc_Type6(Frame_EF& effect, FrameData* frameData, 
 			}
 
 				im::SetNextItemWidth(width);
-				im::DragInt("Slowdown duration", &p[3]);
+				im::DragInt(LBL("Slowdown duration"), &p[3]);
 				if(im::IsItemEdited()) {
 				if (frameData && patternIndex >= 0) frameData->mark_modified(patternIndex);
 			}
@@ -191,10 +192,10 @@ static inline void DrawEffectMisc_Type6(Frame_EF& effect, FrameData* frameData, 
 			}
 
 			} else if(no == 2) { // Invulnerability
-				im::Text("--- Invulnerability ---");
+				im::Text(TXT("--- Invulnerability ---"));
 
 				im::SetNextItemWidth(width);
-				im::DragInt("Strike invuln", &p[0]);
+				im::DragInt(LBL("Strike invuln"), &p[0]);
 				if(im::IsItemEdited()) {
 				if (frameData && patternIndex >= 0) frameData->mark_modified(patternIndex);
 			}
@@ -203,7 +204,7 @@ static inline void DrawEffectMisc_Type6(Frame_EF& effect, FrameData* frameData, 
 			}
 
 				im::SetNextItemWidth(width);
-				im::DragInt("Throw invuln", &p[1]);
+				im::DragInt(LBL("Throw invuln"), &p[1]);
 				if(im::IsItemEdited()) {
 				if (frameData && patternIndex >= 0) frameData->mark_modified(patternIndex);
 			}
@@ -212,10 +213,10 @@ static inline void DrawEffectMisc_Type6(Frame_EF& effect, FrameData* frameData, 
 			}
 
 			} else if(no == 4) { // Gauges
-				im::Text("--- Gauges ---");
+				im::Text(TXT("--- Gauges ---"));
 
 				im::SetNextItemWidth(width);
-				im::DragInt("Health change", &p[0]);
+				im::DragInt(LBL("Health change"), &p[0]);
 				if(im::IsItemEdited()) {
 				if (frameData && patternIndex >= 0) frameData->mark_modified(patternIndex);
 			}
@@ -228,7 +229,7 @@ static inline void DrawEffectMisc_Type6(Frame_EF& effect, FrameData* frameData, 
 				}
 
 				im::SetNextItemWidth(width);
-				im::DragInt("Meter change", &p[1]);
+				im::DragInt(LBL("Meter change"), &p[1]);
 				if(im::IsItemEdited()) {
 				if (frameData && patternIndex >= 0) frameData->mark_modified(patternIndex);
 			}
@@ -237,7 +238,7 @@ static inline void DrawEffectMisc_Type6(Frame_EF& effect, FrameData* frameData, 
 			}
 
 				im::SetNextItemWidth(width);
-				im::DragInt("MAX/HEAT time", &p[2]);
+				im::DragInt(LBL("MAX/HEAT time"), &p[2]);
 				if(im::IsItemEdited()) {
 				if (frameData && patternIndex >= 0) frameData->mark_modified(patternIndex);
 			}
@@ -250,7 +251,7 @@ static inline void DrawEffectMisc_Type6(Frame_EF& effect, FrameData* frameData, 
 				}
 
 				im::SetNextItemWidth(width);
-				im::DragInt("Red Health change", &p[3]);
+				im::DragInt(LBL("Red Health change"), &p[3]);
 				if(im::IsItemEdited()) {
 				if (frameData && patternIndex >= 0) frameData->mark_modified(patternIndex);
 			}
@@ -259,10 +260,10 @@ static inline void DrawEffectMisc_Type6(Frame_EF& effect, FrameData* frameData, 
 			}
 
 			} else if(no == 5) { // Turnaround behavior
-				im::Text("--- Turnaround Behavior ---");
+				im::Text(TXT("--- Turnaround Behavior ---"));
 
 				im::SetNextItemWidth(width*2);
-				if(im::Combo("Behavior", &p[0],
+				if(i18n::Combo(LBL("Behavior"), &p[0],
 					"0: Turnaround regardless of input\000"
 					"1: Turn to face opponent\000"
 					"2: Turnaround on 1/4/7 input\000"
@@ -275,10 +276,10 @@ static inline void DrawEffectMisc_Type6(Frame_EF& effect, FrameData* frameData, 
 				}
 
 			} else if(no == 6) { // Set movement vector
-				im::Text("--- Set Movement Vector ---");
+				im::Text(TXT("--- Set Movement Vector ---"));
 
 				im::SetNextItemWidth(width*2);
-				if(im::Combo("Mode (p12)", &p[11],
+				if(i18n::Combo(LBL("Mode (p12)"), &p[11],
 					"0: Velocity/accel on one axis\000"
 					"1: Angle + speed\000"
 					"2: Arc to parent\000")) {
@@ -290,7 +291,7 @@ static inline void DrawEffectMisc_Type6(Frame_EF& effect, FrameData* frameData, 
 					"2: arc to parent (0,p3) in p1 frames with gravity p2");
 
 				im::SetNextItemWidth(width);
-				im::DragInt("Min speed", &p[0]);
+				im::DragInt(LBL("Min speed"), &p[0]);
 				if(im::IsItemEdited()) {
 				if (frameData && patternIndex >= 0) frameData->mark_modified(patternIndex);
 			}
@@ -299,7 +300,7 @@ static inline void DrawEffectMisc_Type6(Frame_EF& effect, FrameData* frameData, 
 			}
 
 				im::SetNextItemWidth(width);
-				im::DragInt("Max speed", &p[1]);
+				im::DragInt(LBL("Max speed"), &p[1]);
 				if(im::IsItemEdited()) {
 				if (frameData && patternIndex >= 0) frameData->mark_modified(patternIndex);
 			}
@@ -308,7 +309,7 @@ static inline void DrawEffectMisc_Type6(Frame_EF& effect, FrameData* frameData, 
 			}
 
 				im::SetNextItemWidth(width);
-				im::DragInt("Min accel", &p[2]);
+				im::DragInt(LBL("Min accel"), &p[2]);
 				if(im::IsItemEdited()) {
 				if (frameData && patternIndex >= 0) frameData->mark_modified(patternIndex);
 			}
@@ -317,7 +318,7 @@ static inline void DrawEffectMisc_Type6(Frame_EF& effect, FrameData* frameData, 
 			}
 
 				im::SetNextItemWidth(width);
-				im::DragInt("Max accel", &p[3]);
+				im::DragInt(LBL("Max accel"), &p[3]);
 				if(im::IsItemEdited()) {
 				if (frameData && patternIndex >= 0) frameData->mark_modified(patternIndex);
 			}
@@ -327,22 +328,22 @@ static inline void DrawEffectMisc_Type6(Frame_EF& effect, FrameData* frameData, 
 
 				if(p[11] == 1) {
 					im::SetNextItemWidth(width);
-					if(im::InputInt("Angle (p5)", &p[4], 0, 0)) markModified();
+					if(im::InputInt(LBL("Angle (p5)"), &p[4], 0, 0)) markModified();
 					im::SameLine(0, 20);
 					im::SetNextItemWidth(width);
-					if(im::InputInt("Random angle (p6)", &p[5], 0, 0)) markModified();
+					if(im::InputInt(LBL("Random angle (p6)"), &p[5], 0, 0)) markModified();
 					im::SetNextItemWidth(width);
-					if(im::InputInt("Decelerate to stop (p7)", &p[6], 0, 0)) markModified();
+					if(im::InputInt(LBL("Decelerate to stop (p7)"), &p[6], 0, 0)) markModified();
 				} else if(p[11] == 0) {
 					im::SetNextItemWidth(width);
-					if(im::Combo("Axis", &p[4], "0: X\0001: Y\000")) {
+					if(i18n::Combo(LBL("Axis"), &p[4], "0: X\0001: Y\000")) {
 						markModified();
 					}
 				}
 
 			} else if(no == 9) { // Set No Input flag
 				im::SetNextItemWidth(width);
-				im::DragInt("Value", &p[0]);
+				im::DragInt(LBL("Value"), &p[0]);
 				if(im::IsItemEdited()) {
 				if (frameData && patternIndex >= 0) frameData->mark_modified(patternIndex);
 			}
@@ -351,15 +352,15 @@ static inline void DrawEffectMisc_Type6(Frame_EF& effect, FrameData* frameData, 
 			}
 
 			} else if(no == 10) { // Status timer (armor/confusion)
-				im::Text("--- Status Timer ---");
+				im::Text(TXT("--- Status Timer ---"));
 
 				im::SetNextItemWidth(width);
-				if(im::Combo("Effect", &p[0], "0: Armor\0001: Confusion\000")) {
+				if(i18n::Combo(LBL("Effect"), &p[0], "0: Armor\0001: Confusion\000")) {
 					markModified();
 				}
 
 				im::SetNextItemWidth(width);
-				im::DragInt("Duration", &p[1]);
+				im::DragInt(LBL("Duration"), &p[1]);
 				if(im::IsItemEdited()) {
 				if (frameData && patternIndex >= 0) frameData->mark_modified(patternIndex);
 			}
@@ -368,10 +369,10 @@ static inline void DrawEffectMisc_Type6(Frame_EF& effect, FrameData* frameData, 
 			}
 
 			} else if(no == 11) { // Super flash
-				im::Text("--- Super Flash ---");
+				im::Text(TXT("--- Super Flash ---"));
 
 				im::SetNextItemWidth(width);
-								im::DragInt("Flash/freeze duration", &p[0]);
+								im::DragInt(LBL("Flash/freeze duration"), &p[0]);
 				if(im::IsItemEdited()) {
 				if (frameData && patternIndex >= 0) frameData->mark_modified(patternIndex);
 			}
@@ -384,7 +385,7 @@ static inline void DrawEffectMisc_Type6(Frame_EF& effect, FrameData* frameData, 
 				}
 
 				im::SetNextItemWidth(width);
-								im::DragInt("Global freeze", &p[1]);
+								im::DragInt(LBL("Global freeze"), &p[1]);
 				if(im::IsItemEdited()) {
 				if (frameData && patternIndex >= 0) frameData->mark_modified(patternIndex);
 			}
@@ -397,10 +398,10 @@ static inline void DrawEffectMisc_Type6(Frame_EF& effect, FrameData* frameData, 
 				}
 
 			} else if(no == 12) { // Various teleports
-				im::Text("--- Teleports ---");
+				im::Text(TXT("--- Teleports ---"));
 
 				im::SetNextItemWidth(width);
-				if(im::Combo("Param12 mode", &p[11],
+				if(i18n::Combo(LBL("Param12 mode"), &p[11],
 					"0: Move self/parent relative\000"
 					"1: Reset camera and absolute pos\000"
 					"2: Move relative to parent/grabbed\000"
@@ -410,7 +411,7 @@ static inline void DrawEffectMisc_Type6(Frame_EF& effect, FrameData* frameData, 
 
 				if(p[11] == 0) {
 					im::SetNextItemWidth(width);
-					if(im::Combo("Param5 mode", &p[4],
+					if(i18n::Combo(LBL("Param5 mode"), &p[4],
 						"0: Move relative to itself/camera\000"
 						"1: Move parent relative to opponent\000"
 						"2: Move parent to self\000")) {
@@ -419,19 +420,19 @@ static inline void DrawEffectMisc_Type6(Frame_EF& effect, FrameData* frameData, 
 
 					if(p[4] == 0) {
 						im::SetNextItemWidth(width);
-						if(im::Combo("Position relative to", &p[2],
+						if(i18n::Combo(LBL("Position relative to"), &p[2],
 							"0: param4\0001: Camera edge and floor\000")) {
 							markModified();
 						}
 
 						im::SetNextItemWidth(width);
-						if(im::Combo("Target", &p[3], "0: Parent\0001: Self\000")) {
+						if(i18n::Combo(LBL("Target"), &p[3], "0: Parent\0001: Self\000")) {
 							markModified();
 						}
 					}
 
 					im::SetNextItemWidth(width);
-					im::DragInt("X offset", &p[0]);
+					im::DragInt(LBL("X offset"), &p[0]);
 					if(im::IsItemEdited()) {
 				if (frameData && patternIndex >= 0) frameData->mark_modified(patternIndex);
 			}
@@ -439,7 +440,7 @@ static inline void DrawEffectMisc_Type6(Frame_EF& effect, FrameData* frameData, 
 				markModified();
 			}
 					im::SetNextItemWidth(width);
-					im::DragInt("Y offset", &p[1]);
+					im::DragInt(LBL("Y offset"), &p[1]);
 					if(im::IsItemEdited()) {
 				if (frameData && patternIndex >= 0) frameData->mark_modified(patternIndex);
 			}
@@ -449,7 +450,7 @@ static inline void DrawEffectMisc_Type6(Frame_EF& effect, FrameData* frameData, 
 
 				} else if(p[11] == 1) {
 					im::SetNextItemWidth(width);
-					im::DragInt("X position", &p[0]);
+					im::DragInt(LBL("X position"), &p[0]);
 					if(im::IsItemEdited()) {
 				if (frameData && patternIndex >= 0) frameData->mark_modified(patternIndex);
 			}
@@ -457,7 +458,7 @@ static inline void DrawEffectMisc_Type6(Frame_EF& effect, FrameData* frameData, 
 				markModified();
 			}
 					im::SetNextItemWidth(width);
-					im::DragInt("Y position", &p[1]);
+					im::DragInt(LBL("Y position"), &p[1]);
 					if(im::IsItemEdited()) {
 				if (frameData && patternIndex >= 0) frameData->mark_modified(patternIndex);
 			}
@@ -466,14 +467,14 @@ static inline void DrawEffectMisc_Type6(Frame_EF& effect, FrameData* frameData, 
 			}
 
 					im::SetNextItemWidth(width);
-					if(im::Combo("X mode", &p[2],
+					if(i18n::Combo(LBL("X mode"), &p[2],
 						"0: Absolute\0001: Relative to facing\000")) {
 						markModified();
 					}
 
 				} else if(p[11] == 2) {
 					im::SetNextItemWidth(width);
-					im::DragInt("X offset", &p[0]);
+					im::DragInt(LBL("X offset"), &p[0]);
 					if(im::IsItemEdited()) {
 				if (frameData && patternIndex >= 0) frameData->mark_modified(patternIndex);
 			}
@@ -481,7 +482,7 @@ static inline void DrawEffectMisc_Type6(Frame_EF& effect, FrameData* frameData, 
 				markModified();
 			}
 					im::SetNextItemWidth(width);
-					im::DragInt("Y offset", &p[1]);
+					im::DragInt(LBL("Y offset"), &p[1]);
 					if(im::IsItemEdited()) {
 				if (frameData && patternIndex >= 0) frameData->mark_modified(patternIndex);
 			}
@@ -491,10 +492,10 @@ static inline void DrawEffectMisc_Type6(Frame_EF& effect, FrameData* frameData, 
 				}
 
 			} else if(no == 14) { // Gauges of character in special box
-				im::Text("--- Gauges (Special Box) ---");
+				im::Text(TXT("--- Gauges (Special Box) ---"));
 
 				im::SetNextItemWidth(width);
-				if(im::Combo("Target", &p[0],
+				if(i18n::Combo(LBL("Target"), &p[0],
 					"0: Enemies only\000"
 					"1: Allies only\000"
 					"2: Both\000")) {
@@ -502,25 +503,25 @@ static inline void DrawEffectMisc_Type6(Frame_EF& effect, FrameData* frameData, 
 				}
 
 				im::SetNextItemWidth(width);
-				if(im::InputInt("Health change", &p[1], 0, 0)) markModified();
+				if(im::InputInt(LBL("Health change"), &p[1], 0, 0)) markModified();
 
 				im::SetNextItemWidth(width);
-				if(im::InputInt("Meter change", &p[2], 0, 0)) markModified();
+				if(im::InputInt(LBL("Meter change"), &p[2], 0, 0)) markModified();
 
 				im::SetNextItemWidth(width);
-				if(im::InputInt("MAX/HEAT time", &p[3], 0, 0)) markModified();
+				if(im::InputInt(LBL("MAX/HEAT time"), &p[3], 0, 0)) markModified();
 
 			} else if(no == 15) { // Start/Stop Music
 				im::SetNextItemWidth(width);
-				if(im::Combo("Music", &p[0], "0: Stop\0001: Start\000")) {
+				if(i18n::Combo(LBL("Music"), &p[0], "0: Stop\0001: Start\000")) {
 					markModified();
 				}
 
 			} else if(no == 16) { // Directional movement
-				im::Text("--- Directional Movement ---");
+				im::Text(TXT("--- Directional Movement ---"));
 
 				im::SetNextItemWidth(width);
-				if(im::Combo("Param12 mode", &p[11],
+				if(i18n::Combo(LBL("Param12 mode"), &p[11],
 					"0: Directional Movement\000"
 					"1: Go to camera relative position\000")) {
 					markModified();
@@ -528,7 +529,7 @@ static inline void DrawEffectMisc_Type6(Frame_EF& effect, FrameData* frameData, 
 
 				if(p[11] == 0) {
 					im::SetNextItemWidth(width);
-					im::DragInt("Base angle", &p[0]);
+					im::DragInt(LBL("Base angle"), &p[0]);
 					if(im::IsItemEdited()) {
 				if (frameData && patternIndex >= 0) frameData->mark_modified(patternIndex);
 			}
@@ -541,7 +542,7 @@ static inline void DrawEffectMisc_Type6(Frame_EF& effect, FrameData* frameData, 
 					}
 
 					im::SetNextItemWidth(width);
-					im::DragInt("Random angle range", &p[1]);
+					im::DragInt(LBL("Random angle range"), &p[1]);
 					if(im::IsItemEdited()) {
 				if (frameData && patternIndex >= 0) frameData->mark_modified(patternIndex);
 			}
@@ -550,7 +551,7 @@ static inline void DrawEffectMisc_Type6(Frame_EF& effect, FrameData* frameData, 
 			}
 
 					im::SetNextItemWidth(width);
-					im::DragInt("Base speed", &p[2]);
+					im::DragInt(LBL("Base speed"), &p[2]);
 					if(im::IsItemEdited()) {
 				if (frameData && patternIndex >= 0) frameData->mark_modified(patternIndex);
 			}
@@ -559,7 +560,7 @@ static inline void DrawEffectMisc_Type6(Frame_EF& effect, FrameData* frameData, 
 			}
 
 					im::SetNextItemWidth(width);
-					im::DragInt("Random speed range", &p[3]);
+					im::DragInt(LBL("Random speed range"), &p[3]);
 					if(im::IsItemEdited()) {
 				if (frameData && patternIndex >= 0) frameData->mark_modified(patternIndex);
 			}
@@ -587,7 +588,7 @@ static inline void DrawEffectMisc_Type6(Frame_EF& effect, FrameData* frameData, 
 			}
 
 					im::SetNextItemWidth(width);
-					im::DragInt("Velocity divisor", &p[2]);
+					im::DragInt(LBL("Velocity divisor"), &p[2]);
 					if(im::IsItemEdited()) {
 				if (frameData && patternIndex >= 0) frameData->mark_modified(patternIndex);
 			}
@@ -601,10 +602,10 @@ static inline void DrawEffectMisc_Type6(Frame_EF& effect, FrameData* frameData, 
 				}
 
 			} else if(no == 19) { // Prorate
-				im::Text("--- Prorate ---");
+				im::Text(TXT("--- Prorate ---"));
 
 				im::SetNextItemWidth(width);
-				im::DragInt("Proration value", &p[0]);
+				im::DragInt(LBL("Proration value"), &p[0]);
 				if(im::IsItemEdited()) {
 				if (frameData && patternIndex >= 0) frameData->mark_modified(patternIndex);
 			}
@@ -616,21 +617,21 @@ static inline void DrawEffectMisc_Type6(Frame_EF& effect, FrameData* frameData, 
 				int prorateType = p[1];
 				// Clamp to valid range for combo
 				if(prorateType < 0 || prorateType > 2) prorateType = 0;
-				if(im::Combo("Type", &prorateType,
+				if(i18n::Combo(LBL("Type"), &prorateType,
 					"0: Set (keeps the lower)\0001: Multiplicative\0002: Subtractive\000")) {
 					p[1] = prorateType;
 					markModified();
 				}
 
 			} else if(no == 22) { // Scale and rotation
-				im::Text("--- Scale and Rotation ---");
+				im::Text(TXT("--- Scale and Rotation ---"));
 
 				im::SetNextItemWidth(width);
-				if(im::InputInt("Value", &p[0], 0, 0)) markModified();
+				if(im::InputInt(LBL("Value"), &p[0], 0, 0)) markModified();
 				im::SameLine(); im::TextDisabled("(?)");
 				if(im::IsItemHovered()) Tooltip("Scale: value/10000. Rotation: 10000 = 360 degrees");
 				im::SetNextItemWidth(width);
-				if(im::InputInt("Random add", &p[1], 0, 0)) markModified();
+				if(im::InputInt(LBL("Random add"), &p[1], 0, 0)) markModified();
 				im::SetNextItemWidth(width*2);
 				int scaleRotTypes[] = {0, 1, 2, 10};
 				const char* scaleRotNames[] = {
@@ -649,13 +650,13 @@ static inline void DrawEffectMisc_Type6(Frame_EF& effect, FrameData* frameData, 
 					}
 				}
 
-								if(im::Combo("Target (p6)", &scaleRotIdx, scaleRotNames, IM_ARRAYSIZE(scaleRotNames))) {
+								if(i18n::Combo(LBL("Target (p6)"), &scaleRotIdx, scaleRotNames, IM_ARRAYSIZE(scaleRotNames))) {
 					p[5] = scaleRotTypes[scaleRotIdx];
 					markModified();
 				}
 
 			} else if(no == 24) { // Guard Quality Change
-				im::Text("--- Guard Quality Change ---");
+				im::Text(TXT("--- Guard Quality Change ---"));
 
 				im::SetNextItemWidth(width*2);
 				int guardActionTypes[] = {0, 1, 5, 6, 7, 10, 11, 15, 20, 21, 22, 23, 25, 30, 31, 32, 35, 42, 43, 44};
@@ -691,16 +692,16 @@ static inline void DrawEffectMisc_Type6(Frame_EF& effect, FrameData* frameData, 
 					}
 				}
 
-				if(im::Combo("Guard action", &guardIdx, guardActionNames, IM_ARRAYSIZE(guardActionNames))) {
+				if(i18n::Combo(LBL("Guard action"), &guardIdx, guardActionNames, IM_ARRAYSIZE(guardActionNames))) {
 					p[0] = guardActionTypes[guardIdx];
 					markModified();
 				}
 
 			} else if(no == 100 || no == 101) { // Increase/Decrease Projectile Variable
-				im::Text(no == 100 ? "--- Increase Proj Var ---" : "--- Decrease Proj Var ---");
+				im::Text(no == 100 ? TXT("--- Increase Proj Var ---") : TXT("--- Decrease Proj Var ---"));
 
 				im::SetNextItemWidth(width);
-				im::DragInt("Param1", &p[0]);
+				im::DragInt(LBL("Param1"), &p[0]);
 				if(im::IsItemEdited()) {
 				if (frameData && patternIndex >= 0) frameData->mark_modified(patternIndex);
 			}
@@ -713,10 +714,10 @@ static inline void DrawEffectMisc_Type6(Frame_EF& effect, FrameData* frameData, 
 				}
 
 			} else if(no == 102 || no == 103) { // Increase/Decrease Dash variable
-				im::Text(no == 102 ? "--- Increase Dash Var ---" : "--- Decrease Dash Var ---");
+				im::Text(no == 102 ? TXT("--- Increase Dash Var ---") : TXT("--- Decrease Dash Var ---"));
 
 				im::SetNextItemWidth(width);
-				im::DragInt("Amount", &p[0]);
+				im::DragInt(LBL("Amount"), &p[0]);
 				if(im::IsItemEdited()) {
 				if (frameData && patternIndex >= 0) frameData->mark_modified(patternIndex);
 			}
@@ -725,11 +726,11 @@ static inline void DrawEffectMisc_Type6(Frame_EF& effect, FrameData* frameData, 
 			}
 
 			} else if(no == 105) { // Change variable
-				im::Text("--- Change Variable ---");
+				im::Text(TXT("--- Change Variable ---"));
 				bof::DrawVar6Presets(p, markModified); // Extended profile only
 
 				im::SetNextItemWidth(width);
-				im::DragInt("Variable ID", &p[0]);
+				im::DragInt(LBL("Variable ID"), &p[0]);
 				if(im::IsItemEdited()) {
 				if (frameData && patternIndex >= 0) frameData->mark_modified(patternIndex);
 			}
@@ -742,7 +743,7 @@ static inline void DrawEffectMisc_Type6(Frame_EF& effect, FrameData* frameData, 
 				}
 
 				im::SetNextItemWidth(width);
-				im::DragInt("Value", &p[1]);
+				im::DragInt(LBL("Value"), &p[1]);
 				if(im::IsItemEdited()) {
 				if (frameData && patternIndex >= 0) frameData->mark_modified(patternIndex);
 			}
@@ -762,13 +763,13 @@ static inline void DrawEffectMisc_Type6(Frame_EF& effect, FrameData* frameData, 
 
 			} else if(no == 154 && bof::DrawEffect154(p, width, markModified)) { // BOF only (Extended profile)
 			} else if(no == 106) { // Make projectile no longer despawn on hit
-				im::Text("Deactivates EFTP1 P3 bit0");
+				im::Text(TXT("Deactivates EFTP1 P3 bit0"));
 
 			} else if(no == 107) { // Change frames into pattern
-				im::Text("--- Change Frames ---");
+				im::Text(TXT("--- Change Frames ---"));
 
 				im::SetNextItemWidth(width);
-				im::DragInt("Value", &p[0]);
+				im::DragInt(LBL("Value"), &p[0]);
 				if(im::IsItemEdited()) {
 				if (frameData && patternIndex >= 0) frameData->mark_modified(patternIndex);
 			}
@@ -777,13 +778,13 @@ static inline void DrawEffectMisc_Type6(Frame_EF& effect, FrameData* frameData, 
 			}
 
 				im::SetNextItemWidth(width);
-				if(im::Combo("Mode", &p[1], "0: Set\0001: Add\000")) {
+				if(i18n::Combo(LBL("Mode"), &p[1], "0: Set\0001: Add\000")) {
 					markModified();
 				}
 
 			} else if(no == 110) { // Count normal as used
 				im::SetNextItemWidth(width);
-				im::DragInt("Pattern - 1", &p[0]);
+				im::DragInt(LBL("Pattern - 1"), &p[0]);
 				if(im::IsItemEdited()) {
 				if (frameData && patternIndex >= 0) frameData->mark_modified(patternIndex);
 			}
@@ -796,15 +797,15 @@ static inline void DrawEffectMisc_Type6(Frame_EF& effect, FrameData* frameData, 
 				}
 
 			} else if(no == 111) { // Store/Load Movement
-				im::Text("--- Store/Load Movement ---");
+				im::Text(TXT("--- Store/Load Movement ---"));
 
 				im::SetNextItemWidth(width);
-				if(im::Combo("Mode", &p[0], "0: Save\0001: Load\000")) {
+				if(i18n::Combo(LBL("Mode"), &p[0], "0: Save\0001: Load\000")) {
 					markModified();
 				}
 
 				im::SetNextItemWidth(width);
-				im::DragInt("Clear movement", &p[1]);
+				im::DragInt(LBL("Clear movement"), &p[1]);
 				if(im::IsItemEdited()) {
 				if (frameData && patternIndex >= 0) frameData->mark_modified(patternIndex);
 			}
@@ -817,7 +818,7 @@ static inline void DrawEffectMisc_Type6(Frame_EF& effect, FrameData* frameData, 
 				}
 
 				im::SetNextItemWidth(width);
-				im::DragInt("Set stored Y accel", &p[2]);
+				im::DragInt(LBL("Set stored Y accel"), &p[2]);
 				if(im::IsItemEdited()) {
 				if (frameData && patternIndex >= 0) frameData->mark_modified(patternIndex);
 			}
@@ -830,10 +831,10 @@ static inline void DrawEffectMisc_Type6(Frame_EF& effect, FrameData* frameData, 
 				}
 
 			} else if(no == 112) { // Change proration
-				im::Text("--- Change Proration ---");
+				im::Text(TXT("--- Change Proration ---"));
 
 				im::SetNextItemWidth(width);
-				im::DragInt("Proration", &p[0]);
+				im::DragInt(LBL("Proration"), &p[0]);
 				if(im::IsItemEdited()) {
 				if (frameData && patternIndex >= 0) frameData->mark_modified(patternIndex);
 			}
@@ -842,22 +843,22 @@ static inline void DrawEffectMisc_Type6(Frame_EF& effect, FrameData* frameData, 
 			}
 
 				im::SetNextItemWidth(width);
-				if(im::Combo("Type", &p[1],
+				if(i18n::Combo(LBL("Type"), &p[1],
 										"0: Set (keeps the lower)\0001: Multiply\0002: Subtract\000")) {
 					markModified();
 				}
 
 			} else if(no == 113) { // Rebeat Penalty
-				im::Text("Rebeat Penalty (22.5%)");
+				im::Text(TXT("Rebeat Penalty (22.5%)"));
 
 			} else if(no == 114) { // Circuit Break
-				im::Text("Circuit Break");
+				im::Text(TXT("Circuit Break"));
 
 			} else if(no == 150) { // Command partner
-				im::Text("--- Command Partner ---");
+				im::Text(TXT("--- Command Partner ---"));
 
 				im::SetNextItemWidth(width);
-				im::DragInt("Partner pattern", &p[0]);
+				im::DragInt(LBL("Partner pattern"), &p[0]);
 				if(im::IsItemEdited()) {
 				if (frameData && patternIndex >= 0) frameData->mark_modified(patternIndex);
 			}
@@ -866,7 +867,7 @@ static inline void DrawEffectMisc_Type6(Frame_EF& effect, FrameData* frameData, 
 			}
 
 				im::SetNextItemWidth(width);
-				if(im::Combo("Condition", &p[1],
+				if(i18n::Combo(LBL("Condition"), &p[1],
 					"0: Always\000"
 					"1: If partner is grounded\000"
 					"2: If partner is airborne\000"
@@ -874,8 +875,8 @@ static inline void DrawEffectMisc_Type6(Frame_EF& effect, FrameData* frameData, 
 					"4: If partner is crouching\000")) {
 					markModified();
 				}
-				im::TextDisabled("Queues the pattern on the non-point member (prio 300) if it can act.");
-				im::TextDisabled("Disabled in TAG/TEAM modes.");
+				im::TextDisabled(TXT("Queues the pattern on the non-point member (prio 300) if it can act."));
+				im::TextDisabled(TXT("Disabled in TAG/TEAM modes."));
 
 			} else if(no == 252) { // Set tag flag
 				const char* const tagFlagValues[] = {
@@ -890,130 +891,130 @@ static inline void DrawEffectMisc_Type6(Frame_EF& effect, FrameData* frameData, 
 				if(im::IsItemHovered()) Tooltip("Owner tagFlag (actor+0x174) = value");
 
 			} else if(no == 253) { // Advance round-end phase
-				im::Text("++g_RoundEndState (advance the round-end phase; IF 28 tests it)");
+				im::Text(TXT("++g_RoundEndState (advance the round-end phase; IF 28 tests it)"));
 
 			} else if(no == 254) { // Set intro done
-				im::Text("Owner +0x1B0 = 1 (intro finished)");
+				im::Text(TXT("Owner +0x1B0 = 1 (intro finished)"));
 
 			} else if(no == 255) { // KO/win animation done
-				im::Text("Owner koFlags |= 0x10 (down/win animation finished)");
+				im::Text(TXT("Owner koFlags |= 0x10 (down/win animation finished)"));
 
 			} else if(no == 7) { // Spawn after-image sprite
-				im::Text("--- Spawn After-image Sprite ---");
-				im::TextDisabled("Effect_CreateAfterImage(p1..p5): a timed copy of the current sprite");
+				im::Text(TXT("--- Spawn After-image Sprite ---"));
+				im::TextDisabled(TXT("Effect_CreateAfterImage(p1..p5): a timed copy of the current sprite"));
 				if(im::InputScalarN("p1..p5 (?)", ImGuiDataType_S32, p, 5, NULL, NULL, "%d", 0)) markModified();
 				im::SameLine(); im::TextDisabled("(?)");
 				if(im::IsItemHovered()) Tooltip("Exact meaning of each param not confirmed.\nLifetime is probably p4 (?)");
 
 			} else if(no == 8) { // Accelerate toward enemy
-				im::Text("--- Accelerate Toward Enemy ---");
+				im::Text(TXT("--- Accelerate Toward Enemy ---"));
 				im::SetNextItemWidth(width);
-				if(im::InputInt("Base frame", &p[0], 0, 0)) markModified();
+				if(im::InputInt(LBL("Base frame"), &p[0], 0, 0)) markModified();
 				im::SameLine(); im::TextDisabled("(?)");
 				if(im::IsItemHovered()) Tooltip("Used only if Angle sectors != 0:\njumps to frame = base + sector of the angle to the enemy");
 				im::SetNextItemWidth(width);
-				if(im::InputInt("Speed", &p[1], 0, 0)) markModified();
+				if(im::InputInt(LBL("Speed"), &p[1], 0, 0)) markModified();
 				im::SameLine(); im::TextDisabled("(?)");
 				if(im::IsItemHovered()) Tooltip("velocity += speed toward the opponent (or nearest enemy point); accel cleared");
 				im::SetNextItemWidth(width);
-				if(im::InputInt("Angle sectors", &p[2], 0, 0)) markModified();
+				if(im::InputInt(LBL("Angle sectors"), &p[2], 0, 0)) markModified();
 
 			} else if(no == 13) { // Color flash / tint
-				im::Text("--- Color Flash / Tint ---");
+				im::Text(TXT("--- Color Flash / Tint ---"));
 				im::SetNextItemWidth(width);
-				if(im::InputInt("Tint mode", &p[0], 0, 0)) markModified();
+				if(im::InputInt(LBL("Tint mode"), &p[0], 0, 0)) markModified();
 				im::SameLine(); im::TextDisabled("(?)");
 				if(im::IsItemHovered()) Tooltip("Same fields the hit flash uses (+0x1F2)");
 				im::SetNextItemWidth(width);
-				if(im::InputInt("Duration", &p[1], 0, 0)) markModified();
+				if(im::InputInt(LBL("Duration"), &p[1], 0, 0)) markModified();
 
 			} else if(no == 17) { // Camera focus / zoom
-				im::Text("--- Camera Focus / Zoom ---");
+				im::Text(TXT("--- Camera Focus / Zoom ---"));
 				im::SetNextItemWidth(width*2);
-				if(im::Combo("Mode (p12)", &p[11], "0: Camera focus\0001: Zoom target\000")) markModified();
+				if(i18n::Combo(LBL("Mode (p12)"), &p[11], "0: Camera focus\0001: Zoom target\000")) markModified();
 				if(p[11] == 0) {
 					im::SetNextItemWidth(width*2);
-					if(im::Combo("Focus", &p[0], "0: Clear focus\0001: Focus on own slot\000")) markModified();
+					if(i18n::Combo(LBL("Focus"), &p[0], "0: Clear focus\0001: Focus on own slot\000")) markModified();
 				} else {
 					im::SetNextItemWidth(width);
-					if(im::InputInt("Flag (?)", &p[0], 0, 0)) markModified();
+					if(im::InputInt(LBL("Flag (?)"), &p[0], 0, 0)) markModified();
 					im::SameLine(); im::TextDisabled("(?)");
 					if(im::IsItemHovered()) Tooltip("Writes byte 0x557D2B (0/1); meaning unknown");
 					im::SetNextItemWidth(width*2);
-					if(im::Combo("Zoom", &p[1], "0: (none)\0001: 1.0\0002: 0.84\000")) markModified();
+					if(i18n::Combo(LBL("Zoom"), &p[1], "0: (none)\0001: 1.0\0002: 0.84\000")) markModified();
 				}
 
 			} else if(no == 18) { // Camera follow slot 0
 				im::SetNextItemWidth(width*2);
-				if(im::Combo("Camera follows P1 slot", &p[0], "0: Yes\0001: No\000")) markModified();
+				if(i18n::Combo(LBL("Camera follows P1 slot"), &p[0], "0: Yes\0001: No\000")) markModified();
 				im::SameLine(); im::TextDisabled("(?)");
 				if(im::IsItemHovered()) Tooltip("Writes g_CameraFollowSlot[0] only (medium confidence)");
 
 			} else if(no == 20) { // Modify guard gauge
-				im::Text("--- Modify Guard Gauge (while guarding) ---");
+				im::Text(TXT("--- Modify Guard Gauge (while guarding) ---"));
 				im::SetNextItemWidth(width);
-				if(im::InputInt("Value 1", &p[0], 0, 0)) markModified();
+				if(im::InputInt(LBL("Value 1"), &p[0], 0, 0)) markModified();
 				im::SetNextItemWidth(width);
-				if(im::InputInt("Value 2", &p[1], 0, 0)) markModified();
+				if(im::InputInt(LBL("Value 2"), &p[1], 0, 0)) markModified();
 				im::SameLine(); im::TextDisabled("(?)");
 				if(im::IsItemHovered()) Tooltip("Character_ModifyGuardGaugeClamped(owner, p2, p1)\nOnly while the owner's guard state is 1");
 				im::SetNextItemWidth(width);
-				if(im::Checkbox("Raw values", (bool*)&p[2])) markModified();
+				if(im::Checkbox(LBL("Raw values"), (bool*)&p[2])) markModified();
 				im::SameLine(); im::TextDisabled("(?)");
 				if(im::IsItemHovered()) Tooltip("Off: values are TypeConfig system-value ids");
 
 			} else if(no == 21) { // Camera zoom preset
 				im::SetNextItemWidth(width*2);
-				if(im::Combo("Zoom preset", &p[0], "0: Zoom 1.0\0001: Zoom 0.84 (snap)\0002: Freeze\000")) markModified();
+				if(i18n::Combo(LBL("Zoom preset"), &p[0], "0: Zoom 1.0\0001: Zoom 0.84 (snap)\0002: Freeze\000")) markModified();
 
 			} else if(no == 23) { // Rotate toward floor point
 				im::SetNextItemWidth(width);
-				if(im::InputInt("Radius", &p[0], 0, 0)) markModified();
+				if(im::InputInt(LBL("Radius"), &p[0], 0, 0)) markModified();
 				im::SameLine(); im::TextDisabled("(?)");
 				if(im::IsItemHovered()) Tooltip("Circle of this radius vs the ground line -> rotation (atan2 * 10000)");
 
 			} else if(no == 50) { // Camera zoom override
-				im::Text("--- Camera Zoom Override ---");
+				im::Text(TXT("--- Camera Zoom Override ---"));
 				im::SetNextItemWidth(width);
 				if(im::InputInt("X", &p[0], 0, 0)) markModified();
 				im::SameLine(0, 20);
 				im::SetNextItemWidth(width);
 				if(im::InputInt("Y", &p[1], 0, 0)) markModified();
 				im::SetNextItemWidth(width);
-				if(im::InputInt("Out frames", &p[2], 0, 0)) markModified();
+				if(im::InputInt(LBL("Out frames"), &p[2], 0, 0)) markModified();
 				im::SetNextItemWidth(width);
-				if(im::InputInt("Zoom (/10000)", &p[3], 0, 0)) markModified();
-				im::TextDisabled("X, Y and Out frames all 0 = override off");
+				if(im::InputInt(LBL("Zoom (/10000)"), &p[3], 0, 0)) markModified();
+				im::TextDisabled(TXT("X, Y and Out frames all 0 = override off"));
 
 			} else if(no == 151) { // Set circuit mode, zero meter
-				im::Text("--- Set Circuit Mode (meter = 0) ---");
+				im::Text(TXT("--- Set Circuit Mode (meter = 0) ---"));
 				im::SetNextItemWidth(width*2);
-				if(im::Combo("Circuit state", &p[0], "0: Normal\0001: HEAT\0002: MAX\0003: BLOOD HEAT\000")) markModified();
+				if(i18n::Combo(LBL("Circuit state"), &p[0], "0: Normal\0001: HEAT\0002: MAX\0003: BLOOD HEAT\000")) markModified();
 				im::SetNextItemWidth(width);
-				if(im::InputInt("Value", &p[1], 0, 0)) markModified();
+				if(im::InputInt(LBL("Value"), &p[1], 0, 0)) markModified();
 				im::SameLine(); im::TextDisabled("(?)");
 				if(im::IsItemHovered()) Tooltip("State 0: meter = value. States 1-3: heat time = value");
 				im::SetNextItemWidth(width);
-				if(im::InputInt("Max duration", &p[2], 0, 0)) markModified();
+				if(im::InputInt(LBL("Max duration"), &p[2], 0, 0)) markModified();
 
 			} else if(no == 152) { // BG fade mode
 				im::SetNextItemWidth(width);
-				if(im::InputInt("BG fade state", &p[0], 0, 0)) markModified();
+				if(im::InputInt(LBL("BG fade state"), &p[0], 0, 0)) markModified();
 				im::SameLine(); im::TextDisabled("(?)");
 				if(im::IsItemHovered()) Tooltip("1/2 -> BG alpha 0, 3 -> 255");
 
 			} else if(no == 153) { // Z priority front
-				im::Text("Z priority (+0x160) = 452. No parameters");
+				im::Text(TXT("Z priority (+0x160) = 452. No parameters"));
 
 			} else if(no == 155) { // Show/hide team partner
-				im::Text("--- Show/Hide Team Partner ---");
+				im::Text(TXT("--- Show/Hide Team Partner ---"));
 				im::SetNextItemWidth(width*2);
-				if(im::Combo("Team", &p[0], "0: Own team\0001: Enemy team\000")) markModified();
+				if(i18n::Combo(LBL("Team"), &p[0], "0: Own team\0001: Enemy team\000")) markModified();
 				im::SetNextItemWidth(width*2);
-				if(im::Combo("Action", &p[1], "0: Hide\0001: Show\0002: Toggle\000")) markModified();
+				if(i18n::Combo(LBL("Action"), &p[1], "0: Hide\0001: Show\0002: Toggle\000")) markModified();
 
 			} else if(no == 200) { // Object tracking mode
-				im::Text("--- Object Tracking Mode ---");
+				im::Text(TXT("--- Object Tracking Mode ---"));
 				const char* const trackModes[] = {
 					"0: None",
 					"1: Face parent",
@@ -1028,13 +1029,13 @@ static inline void DrawEffectMisc_Type6(Frame_EF& effect, FrameData* frameData, 
 
 			} else if(no == 1100) { // Reverse velocity
 				im::SetNextItemWidth(width);
-				if(im::Combo("Axis", &p[0], "0: X\0001: Y\000")) markModified();
+				if(i18n::Combo(LBL("Axis"), &p[0], "0: X\0001: Y\000")) markModified();
 				im::SameLine(); im::TextDisabled("(?)");
 				if(im::IsItemHovered()) Tooltip("Negates velocity and acceleration on that axis");
 
 	} else {
 		// Generic parameters
-		im::Text("Parameters:");
+		im::Text(TXT("Parameters:"));
 		if(im::InputScalarN("##params", ImGuiDataType_S32, p, 6, NULL, NULL, "%d", 0)) {
 			markModified();
 		}

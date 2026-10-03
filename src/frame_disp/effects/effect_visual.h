@@ -1,4 +1,5 @@
 #ifndef EFFECT_VISUAL_H_GUARD
+#include "../../i18n.h"
 #define EFFECT_VISUAL_H_GUARD
 
 // ============================================================================
@@ -18,7 +19,7 @@ static inline void DrawEffectVisual_Type2(Frame_EF& effect, FrameData* frameData
 			// Sub-No table: MBAA_NAME_AUDIT.md 2.2 (Effect2_CreateByNo 0x455620).
 			// 2, 3, 5-25 and 27-49 are no-ops in MBAA.
 			if(effect.type == 10002) {
-				im::TextDisabled("Type 10002: same sub-No table as type 2, run in the late (deferred) pass");
+				im::TextDisabled(TXT("Type 10002: same sub-No table as type 2, run in the late (deferred) pass"));
 			}
 			const char* const subTypes[] = {
 				"0: System fx 5 (20f, attached to owner)",
@@ -41,10 +42,10 @@ static inline void DrawEffectVisual_Type2(Frame_EF& effect, FrameData* frameData
 
 			// Sub-type specific parameters
 			if(no == 50) { // Superflash
-				im::Text("--- Superflash Parameters ---");
+				im::Text(TXT("--- Superflash Parameters ---"));
 
 				im::SetNextItemWidth(width);
-				im::DragInt("Position X", &p[0]);
+				im::DragInt(LBL("Position X"), &p[0]);
 				if(im::IsItemEdited()) {
 				if (frameData && patternIndex >= 0) frameData->mark_modified(patternIndex);
 			}
@@ -53,7 +54,7 @@ static inline void DrawEffectVisual_Type2(Frame_EF& effect, FrameData* frameData
 			}
 				im::SameLine(0, 20);
 				im::SetNextItemWidth(width);
-				im::DragInt("Position Y", &p[1]);
+				im::DragInt(LBL("Position Y"), &p[1]);
 				if(im::IsItemEdited()) {
 				if (frameData && patternIndex >= 0) frameData->mark_modified(patternIndex);
 			}
@@ -62,7 +63,7 @@ static inline void DrawEffectVisual_Type2(Frame_EF& effect, FrameData* frameData
 			}
 
 				im::SetNextItemWidth(width*2);
-				if(im::Combo("Freeze Mode", &p[2],
+				if(i18n::Combo(LBL("Freeze Mode"), &p[2],
 					"0: Freeze self\000"
 					"1: Don't freeze self (freezes projectiles)\000"
 					"2: Don't freeze self or opponent\000"
@@ -71,7 +72,7 @@ static inline void DrawEffectVisual_Type2(Frame_EF& effect, FrameData* frameData
 				}
 
 				im::SetNextItemWidth(width);
-				im::DragInt("Duration", &p[3]);
+				im::DragInt(LBL("Duration"), &p[3]);
 				if(im::IsItemEdited()) {
 				if (frameData && patternIndex >= 0) frameData->mark_modified(patternIndex);
 			}
@@ -82,7 +83,7 @@ static inline void DrawEffectVisual_Type2(Frame_EF& effect, FrameData* frameData
 				if(im::IsItemHovered()) Tooltip("0 = default 30f");
 
 				im::SetNextItemWidth(width*2);
-				if(im::Combo("Portrait", &p[4],
+				if(i18n::Combo(LBL("Portrait"), &p[4],
 					"0: EX portrait\000"
 					"1: AD portrait\000"
 					"255: No portrait\000")) {
@@ -90,7 +91,7 @@ static inline void DrawEffectVisual_Type2(Frame_EF& effect, FrameData* frameData
 				}
 
 				im::SetNextItemWidth(width);
-				im::DragInt("Don't spend meter", &p[8]);
+				im::DragInt(LBL("Don't spend meter"), &p[8]);
 				if(im::IsItemEdited()) {
 				if (frameData && patternIndex >= 0) frameData->mark_modified(patternIndex);
 			}
@@ -99,7 +100,7 @@ static inline void DrawEffectVisual_Type2(Frame_EF& effect, FrameData* frameData
 			}
 
 				im::SetNextItemWidth(width);
-				im::DragInt("Meter gain mult", &p[9]);
+				im::DragInt(LBL("Meter gain mult"), &p[9]);
 				if(im::IsItemEdited()) {
 				if (frameData && patternIndex >= 0) frameData->mark_modified(patternIndex);
 			}
@@ -110,7 +111,7 @@ static inline void DrawEffectVisual_Type2(Frame_EF& effect, FrameData* frameData
 				if(im::IsItemHovered()) Tooltip("256 = 1.0x, requires param9 != 0");
 
 				im::SetNextItemWidth(width);
-				im::DragInt("Mult duration", &p[10]);
+				im::DragInt(LBL("Mult duration"), &p[10]);
 				if(im::IsItemEdited()) {
 				if (frameData && patternIndex >= 0) frameData->mark_modified(patternIndex);
 			}
@@ -122,7 +123,7 @@ static inline void DrawEffectVisual_Type2(Frame_EF& effect, FrameData* frameData
 
 	} else {
 		// Generic parameters for other sub-types
-		im::Text("Parameters:");
+		im::Text(TXT("Parameters:"));
 		if(im::InputScalarN("##params", ImGuiDataType_S32, p, 6, NULL, NULL, "%d", 0)) {
 			markModified();
 		}

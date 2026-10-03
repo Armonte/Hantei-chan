@@ -10,6 +10,7 @@
 #include <cstdio>
 #include <cstring>
 #include <filesystem>
+#include "../i18n.h"
 
 namespace authoring {
 
@@ -82,38 +83,38 @@ void DrawLiveTab(HostContext& host, const gamelink::Snapshot& s, const LinkPolic
 {
 	AuthoringState& a = St();
 	(void)host;
-	if (!s.connected) { ImGui::TextDisabled("Not linked. Launch or Attach in the header."); return; }
+	if (!s.connected) { ImGui::TextDisabled(TXT("Not linked. Launch or Attach in the header.")); return; }
 	// actions
 	ImGui::BeginDisabled(!p.canApplyTuning);
-	if (ImGui::Button("Re-read tuning")) a.applySeq = Link().ApplyTuning(wire::kFlagQueryAfter);
+	if (ImGui::Button(LBL("Re-read tuning"))) a.applySeq = Link().ApplyTuning(wire::kFlagQueryAfter);
 	ImGui::EndDisabled();
 	ImGui::SameLine();
-	if (ImGui::Button("Query tuning now")) Link().QueryTuning(0);
+	if (ImGui::Button(LBL("Query tuning now"))) Link().QueryTuning(0);
 	ImGui::SameLine();
 	ImGui::BeginDisabled(!s.Authoring() || p.sessionLocked);
-	if (ImGui::Button("End authoring")) Link().EndAuthoring();
+	if (ImGui::Button(LBL("End authoring"))) Link().EndAuthoring();
 	ImGui::EndDisabled();
-	if (ImGui::IsItemHovered(ImGuiHoveredFlags_AllowWhenDisabled)) ImGui::SetTooltip("Clear the Authoring VS pins (timer, endless round): the match goes on as a normal offline match.");
+	if (ImGui::IsItemHovered(ImGuiHoveredFlags_AllowWhenDisabled)) ImGui::SetTooltip(TXT("Clear the Authoring VS pins (timer, endless round): the match goes on as a normal offline match."));
 	ImGui::SameLine(0, 30);
-	ImGui::Checkbox("Follow point", &a.follow);
+	ImGui::Checkbox(LBL("Follow point"), &a.follow);
 	ImGui::SameLine();
-	ImGui::RadioButton("P1 team", &a.followTeam, 0);
+	ImGui::RadioButton(LBL("P1 team"), &a.followTeam, 0);
 	ImGui::SameLine();
-	ImGui::RadioButton("P2 team", &a.followTeam, 1);
+	ImGui::RadioButton(LBL("P2 team"), &a.followTeam, 1);
 	ImGui::SameLine();
-	ImGui::Checkbox("switch tabs on a tag", &a.followSwitchTab);
-	if (ImGui::IsItemHovered()) ImGui::SetTooltip("The editor tab follows the team's POINT: its pattern / frame every frame, and the tab itself when the point changes.");
+	ImGui::Checkbox(LBL("switch tabs on a tag"), &a.followSwitchTab);
+	if (ImGui::IsItemHovered()) ImGui::SetTooltip(TXT("The editor tab follows the team's POINT: its pattern / frame every frame, and the tab itself when the point changes."));
 	// state
 	if (s.haveState) {
 		const wire::State& st = s.state;
-		ImGui::Text("scene %u  mode 0x%X  timer %u  reloads %u  %s", st.scene, st.gameModeKind, st.worldTimer, st.reloadCount,
+		ImGui::Text(TXT("scene %u  mode 0x%X  timer %u  reloads %u  %s"), st.scene, st.gameModeKind, st.worldTimer, st.reloadCount,
 		            st.reloadAllowed ? "reload gate open" : "reload gate closed");
 		if (ImGui::BeginTable("##teams", 5, ImGuiTableFlags_Borders | ImGuiTableFlags_SizingFixedFit)) {
-			ImGui::TableSetupColumn("team");
-			ImGui::TableSetupColumn("point");
-			ImGui::TableSetupColumn("pattern / frame");
-			ImGui::TableSetupColumn("reserve");
-			ImGui::TableSetupColumn("tag / assist");
+			ImGui::TableSetupColumn(LBL("team"));
+			ImGui::TableSetupColumn(LBL("point"));
+			ImGui::TableSetupColumn(LBL("pattern / frame"));
+			ImGui::TableSetupColumn(LBL("reserve"));
+			ImGui::TableSetupColumn(LBL("tag / assist"));
 			ImGui::TableHeadersRow();
 			for (int team = 0; team < 2; ++team) {
 				const int pt = st.tagLive ? st.teamActive[team] : team;
@@ -122,53 +123,53 @@ void DrawLiveTab(HostContext& host, const gamelink::Snapshot& s, const LinkPolic
 				ImGui::TableNextColumn();
 				ImGui::Text("P%d", team + 1);
 				ImGui::TableNextColumn();
-				if (pt >= 0 && pt < 4 && st.actors[pt].exists) ImGui::TextColored(kColOk, "slot %d %s %s", pt, st.actors[pt].file, MoonShort(st.actors[pt].moon));
+				if (pt >= 0 && pt < 4 && st.actors[pt].exists) ImGui::TextColored(kColOk, TXT("slot %d %s %s"), pt, st.actors[pt].file, MoonShort(st.actors[pt].moon));
 				else ImGui::TextDisabled("-");
 				ImGui::TableNextColumn();
 				if (pt >= 0 && pt < 4 && st.actors[pt].exists) ImGui::Text("p%d f%d (%d/%d)", st.actors[pt].pattern, st.actors[pt].frame, st.actors[pt].frameTicks, st.actors[pt].patternTicks);
 				ImGui::TableNextColumn();
-				if (rs >= 0 && st.actors[rs].exists) ImGui::TextDisabled("slot %d %s", rs, st.actors[rs].file);
+				if (rs >= 0 && st.actors[rs].exists) ImGui::TextDisabled(TXT("slot %d %s"), rs, st.actors[rs].file);
 				ImGui::TableNextColumn();
 				if (s.haveTag) {
 					const wire::TagTeam& t = s.tag.team[team];
 					ImGui::Text("%s (%d)", TagStateName(t.tagRequest), t.tagRequest);
-					if (t.cooldownLeft > 0) { ImGui::SameLine(); ImGui::TextColored(kColWarn, "cooldown %d", t.cooldownLeft); }
-					if (t.assistPattern) { ImGui::SameLine(); ImGui::TextColored(kColOver, "assist p%d tick %d", t.assistPattern, t.assistTick); }
-					if (t.assistCooldown > 0) { ImGui::SameLine(); ImGui::TextDisabled("assist cd %d", t.assistCooldown); }
-				} else ImGui::TextDisabled(st.teamTagRequest[team] ? "tag in progress" : "-");
+					if (t.cooldownLeft > 0) { ImGui::SameLine(); ImGui::TextColored(kColWarn, TXT("cooldown %d"), t.cooldownLeft); }
+					if (t.assistPattern) { ImGui::SameLine(); ImGui::TextColored(kColOver, TXT("assist p%d tick %d"), t.assistPattern, t.assistTick); }
+					if (t.assistCooldown > 0) { ImGui::SameLine(); ImGui::TextDisabled(TXT("assist cd %d"), t.assistCooldown); }
+				} else ImGui::TextDisabled(st.teamTagRequest[team] ? TXT("tag in progress") : "-");
 			}
 			ImGui::EndTable();
 		}
 	}
 	// the resolved grid
-	if (!s.haveTuning) { ImGui::TextDisabled("no tuning answer yet (rev 1 DLL, or waiting)"); return; }
+	if (!s.haveTuning) { ImGui::TextDisabled(TXT("no tuning answer yet (rev 1 DLL, or waiting)")); return; }
 	const wire::TuningGlobal& g = s.tuning;
 	const char* src[] = { "defaults", "legacy tag_tuning.ini", "sidecars", "host / tape (adopted)" };
-	ImGui::Text("tuning: %s  style '%s'  sha %s  loads %u  warnings %u  char files %u", g.source < 4 ? src[g.source] : "?", g.activeStyle, g.sha,
+	ImGui::Text(TXT("tuning: %s  style '%s'  sha %s  loads %u  warnings %u  char files %u"), g.source < 4 ? TXT(src[g.source]) : "?", g.activeStyle, g.sha,
 	            (unsigned)g.tuningLoads, g.warnings, g.charFiles);
-	if (g.flags & wire::kTunFlagHotReloadPaused) { ImGui::SameLine(); ImGui::TextColored(kColWarn, "hot reload PAUSED (F3)"); }
-	if (g.flags & wire::kTunFlagReadError) { ImGui::SameLine(); ImGui::TextColored(kColBad, "read error: previous values kept"); }
-	if (g.flags & wire::kTunFlagLegacyIgnored) { ImGui::SameLine(); ImGui::TextColored(kColWarn, "tag_tuning.ini ignored (sidecars win): migrate it"); }
-	if (g.flags & wire::kTunFlagParkXRestart) { ImGui::SameLine(); ImGui::TextColored(kColWarn, "parkX changed: restart the game"); }
-	if (g.leverTableHash != LeverTableHash()) ImGui::TextColored(kColBad, "lever table differs: raw numbers, not interpreted");
+	if (g.flags & wire::kTunFlagHotReloadPaused) { ImGui::SameLine(); ImGui::TextColored(kColWarn, TXT("hot reload PAUSED (F3)")); }
+	if (g.flags & wire::kTunFlagReadError) { ImGui::SameLine(); ImGui::TextColored(kColBad, TXT("read error: previous values kept")); }
+	if (g.flags & wire::kTunFlagLegacyIgnored) { ImGui::SameLine(); ImGui::TextColored(kColWarn, TXT("tag_tuning.ini ignored (sidecars win): migrate it")); }
+	if (g.flags & wire::kTunFlagParkXRestart) { ImGui::SameLine(); ImGui::TextColored(kColWarn, TXT("parkX changed: restart the game")); }
+	if (g.leverTableHash != LeverTableHash()) ImGui::TextColored(kColBad, TXT("lever table differs: raw numbers, not interpreted"));
 	const GlobalResolution mine = St().ws.Global();
 	SlotResolution mineSlot[4];
 	for (int k = 0; k < 4; ++k)
 		if (s.haveTuningSlot[k] && s.tuningSlot[k].exists) mineSlot[k] = St().ws.Slot(s.tuningSlot[k].file, s.tuningSlot[k].moon);
 	static bool onlyDiff = false;
-	ImGui::Checkbox("only rows that differ from these files", &onlyDiff);
+	ImGui::Checkbox(LBL("only rows that differ from these files"), &onlyDiff);
 	ImGui::SameLine();
-	ImGui::TextDisabled("red = the game resolved another value than Hantei-chan does from the same files (hover: the provenance)");
+	ImGui::TextDisabled(TXT("red = the game resolved another value than Hantei-chan does from the same files (hover: the provenance)"));
 	if (ImGui::BeginTable("##grid", 6, ImGuiTableFlags_Borders | ImGuiTableFlags_RowBg | ImGuiTableFlags_ScrollY | ImGuiTableFlags_SizingFixedFit,
 	                      ImVec2(0, ImGui::GetContentRegionAvail().y))) {
 		ImGui::TableSetupScrollFreeze(1, 1);
-		ImGui::TableSetupColumn("lever");
-		ImGui::TableSetupColumn("global");
+		ImGui::TableSetupColumn(LBL("lever"));
+		ImGui::TableSetupColumn(LBL("global"));
 		for (int k = 0; k < 4; ++k) {
 			char h[48];
 			const wire::TuningSlot& t = s.tuningSlot[k];
-			if (s.haveTuningSlot[k] && t.exists) std::snprintf(h, sizeof h, "%s %s %s", SlotRoleName(k), t.file, MoonShort(t.moon));
-			else std::snprintf(h, sizeof h, "%s (empty)", SlotRoleName(k));
+			if (s.haveTuningSlot[k] && t.exists) std::snprintf(h, sizeof h, "%s %s %s", TXT(SlotRoleName(k)), t.file, MoonShort(t.moon));
+			else std::snprintf(h, sizeof h, TXT("%s (empty)"), TXT(SlotRoleName(k)));
 			ImGui::TableSetupColumn(h);
 		}
 		ImGui::TableHeadersRow();
@@ -200,7 +201,7 @@ void DrawLiveTab(HostContext& host, const gamelink::Snapshot& s, const LinkPolic
 				}
 				if (ImGui::IsItemHovered()) {
 					const int32_t m = c == 0 ? mine.values[i] : mineSlot[k].values[i];
-					ImGui::SetTooltip("%s: game %s (%s)\nHantei-chan resolves %s from the same files%s", l.key, FormatLeverValue(l, v).c_str(),
+					ImGui::SetTooltip(TXT("%s: game %s (%s)\nHantei-chan resolves %s from the same files%s"), l.key, FormatLeverValue(l, v).c_str(),
 					                  Badges(s, k, i).c_str(), FormatLeverValue(l, m).c_str(),
 					                  diff[c] ? "\n-> DIFFERS: re-read, hot reload paused, a read error or a stale DLL" : "");
 				}
@@ -249,20 +250,20 @@ void DrawLogTab(const gamelink::Snapshot& s)
 	ImGui::SetNextItemWidth(260);
 	ImGui::InputTextWithHint("##filter", "filter (substring, case-insensitive)", a.logFilter, sizeof a.logFilter);
 	ImGui::SameLine();
-	ImGui::Checkbox("tag / authoring lines only", &a.logTagOnly);
+	ImGui::Checkbox(LBL("tag / authoring lines only"), &a.logTagOnly);
 	ImGui::SameLine();
-	ImGui::Checkbox("problems only", &a.logProblemsOnly);
+	ImGui::Checkbox(LBL("problems only"), &a.logProblemsOnly);
 	ImGui::SameLine();
-	ImGui::Checkbox("follow the end", &a.logFollow);
+	ImGui::Checkbox(LBL("follow the end"), &a.logFollow);
 	ImGui::SameLine();
-	if (ImGui::Button("Copy shown")) {
+	if (ImGui::Button(LBL("Copy shown"))) {
 		std::string all;
 		const std::string f = Lower(a.logFilter);
 		for (const std::string& l : a.gameLog)
 			if ((!a.logTagOnly || TagRelated(l)) && (!a.logProblemsOnly || IsProblemLine(l)) && (f.empty() || Lower(l).find(f) != std::string::npos)) all += l + "\n";
 		ImGui::SetClipboardText(all.c_str());
 	}
-	ImGui::TextDisabled("%s\\pchost_authoring.log (%llu bytes)", a.gameDir.c_str(), (unsigned long long)a.gameLogSize);
+	ImGui::TextDisabled(TXT("%s\\pchost_authoring.log (%llu bytes)"), a.gameDir.c_str(), (unsigned long long)a.gameLogSize);
 	const float h = ImGui::GetContentRegionAvail().y * 0.68f;
 	ImGui::BeginChild("##gamelog", ImVec2(0, h), ImGuiChildFlags_Borders, ImGuiWindowFlags_HorizontalScrollbar);
 	const std::string f = Lower(a.logFilter);
@@ -277,7 +278,7 @@ void DrawLogTab(const gamelink::Snapshot& s)
 	if (!shown) ImGui::TextDisabled(a.gameLog.empty() ? "(no log yet: launch the game from this window)" : "(nothing matches the filter)");
 	if (a.logFollow) ImGui::SetScrollHereY(1.0f);
 	ImGui::EndChild();
-	ImGui::TextDisabled("link + launcher");
+	ImGui::TextDisabled(TXT("link + launcher"));
 	ImGui::BeginChild("##linklog", ImVec2(0, 0), ImGuiChildFlags_Borders, ImGuiWindowFlags_HorizontalScrollbar);
 	for (const std::string& l : a.launcher.Log()) if (f.empty() || Lower(l).find(f) != std::string::npos) ImGui::TextUnformatted(l.c_str());
 	for (const std::string& l : Link().RecentLog()) if (f.empty() || Lower(l).find(f) != std::string::npos) ImGui::TextDisabled("%s", l.c_str());

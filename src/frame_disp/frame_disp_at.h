@@ -3,6 +3,7 @@
 
 #include "frame_disp_common.h"
 #include "../cg.h"
+#include "../i18n.h"
 
 // ============================================================================
 // Attack (AT) Display
@@ -92,44 +93,44 @@ inline void AtDisplay(Frame_AT *at, FrameData *frameData = nullptr, int patternI
 	}
 
 	im::SetNextItemWidth(width*2);
-	if(im::Combo("Hitstop", &at->hitStop, hitStopList, IM_ARRAYSIZE(hitStopList))) {
+	if(i18n::Combo(LBL("Hitstop"), &at->hitStop, hitStopList, IM_ARRAYSIZE(hitStopList))) {
 		markModified();
 	}
 	im::SameLine(0.f, 20);
 	im::SetNextItemWidth(width*0.8);
-	if(im::InputInt("Cust HS", &at->hitStopTime, 0,0)) {
+	if(im::InputInt(LBL("Cust HS"), &at->hitStopTime, 0,0)) {
 		markModified();
 	}
 	im::SameLine(0.f, 20);
 	im::SetNextItemWidth(width*0.8);
-	if(im::InputInt("Cust BS", &at->blockStopTime, 0,0)) {
+	if(im::InputInt(LBL("Cust BS"), &at->blockStopTime, 0,0)) {
 		markModified();
 	}
 
 
 	im::SetNextItemWidth(width);
-	if(im::InputInt("Untech time", &at->untechTime, 0,0)) {
+	if(im::InputInt(LBL("Untech time"), &at->untechTime, 0,0)) {
 		markModified();
 	}
 	im::SameLine(0.f, 20); im::SetNextItemWidth(width);
-	if(im::InputInt("Circuit break time", &at->breakTime, 0,0)) {
+	if(im::InputInt(LBL("Circuit break time"), &at->breakTime, 0,0)) {
 		markModified();
 	}
 
 	im::SetNextItemWidth(width);
-	if(im::InputFloat("Extra gravity", &at->extraGravity, 0,0)) {
+	if(im::InputFloat(LBL("Extra gravity"), &at->extraGravity, 0,0)) {
 		markModified();
 	}
 	im::SameLine(0.f, 20);
 	if(uniFormat) {
 		// UNI2/MBTL ATNG is a byte with values up to 65 (not a bool).
 		im::SetNextItemWidth(width);
-		if(im::InputInt("Hitgrab (ATNG)", &at->hitgrab, 0, 0)) {
+		if(im::InputInt(LBL("Hitgrab (ATNG)"), &at->hitgrab, 0, 0)) {
 			markModified();
 		}
 	} else {
 		bool hg = at->hitgrab != 0;
-		if(im::Checkbox("Hitgrab", &hg)) {
+		if(im::Checkbox(LBL("Hitgrab"), &hg)) {
 			at->hitgrab = hg ? 1 : 0;
 			markModified();
 		}
@@ -137,29 +138,29 @@ inline void AtDisplay(Frame_AT *at, FrameData *frameData = nullptr, int patternI
 
 
 	im::SetNextItemWidth(width);
-	if(im::InputInt("Correction %", &at->correction, 0, 0)) {
+	if(im::InputInt(LBL("Correction %"), &at->correction, 0, 0)) {
 		markModified();
 	}
 	im::SameLine(0.f, 20); im::SetNextItemWidth(width*2);
-	if(im::Combo("Type##Correction", &at->correction_type, "Normal\0Multiplicative\0Subtractive\0")) {
+	if(i18n::Combo(LBL("Type##Correction"), &at->correction_type, "Normal\0Multiplicative\0Subtractive\0")) {
 		markModified();
 	}
 
 	im::SetNextItemWidth(width);
-	if(im::InputInt("VS damage", &at->red_damage, 0, 0)) {
+	if(im::InputInt(LBL("VS damage"), &at->red_damage, 0, 0)) {
 		markModified();
 	}
 	im::SameLine(0.f, 20); im::SetNextItemWidth(width);
-	if(im::InputInt("Damage", &at->damage, 0, 0)) {
+	if(im::InputInt(LBL("Damage"), &at->damage, 0, 0)) {
 		markModified();
 	}
 
 	im::SetNextItemWidth(width);
-	if(im::InputInt("Guard damage", &at->guard_damage, 0, 0)) {
+	if(im::InputInt(LBL("Guard damage"), &at->guard_damage, 0, 0)) {
 		markModified();
 	}
 	im::SameLine(0.f, 20); im::SetNextItemWidth(width);
-	if(im::InputInt("Meter gain", &at->meter_gain, 0, 0)) {
+	if(im::InputInt(LBL("Meter gain"), &at->meter_gain, 0, 0)) {
 		markModified();
 	}
 
@@ -167,10 +168,10 @@ inline void AtDisplay(Frame_AT *at, FrameData *frameData = nullptr, int patternI
 	auto comboWidth = (im::GetWindowWidth())/4.f;
 
 	// Guard Vector
-	im::Text("Guard Vector:");
+	im::Text(TXT("Guard Vector:"));
 	im::SameLine(0.f, 20);
 	static bool guardVectorManual = false;
-	if(im::Checkbox("Manual##gv", &guardVectorManual)) {
+	if(im::Checkbox(LBL("Manual##gv"), &guardVectorManual)) {
 	}
 	if(im::IsItemHovered()) {
 		Tooltip("Enable manual vector entry");
@@ -201,7 +202,7 @@ inline void AtDisplay(Frame_AT *at, FrameData *frameData = nullptr, int patternI
 		if(i > 0)
 			im::SameLine();
 		im::PushID(i);
-		if(im::Combo("##GFLAG", &at->gVFlags[i], vectorFlags, IM_ARRAYSIZE(vectorFlags))) {
+		if(i18n::Combo("##GFLAG", &at->gVFlags[i], vectorFlags, IM_ARRAYSIZE(vectorFlags))) {
 		markModified();
 	}
 		im::PopID();
@@ -210,10 +211,10 @@ inline void AtDisplay(Frame_AT *at, FrameData *frameData = nullptr, int patternI
 	im::Separator();
 
 	// Hit Vector
-	im::Text("Hit Vector:");
+	im::Text(TXT("Hit Vector:"));
 	im::SameLine(0.f, 20);
 	static bool hitVectorManual = false;
-	if(im::Checkbox("Manual##hv", &hitVectorManual)) {
+	if(im::Checkbox(LBL("Manual##hv"), &hitVectorManual)) {
 	}
 	if(im::IsItemHovered()) {
 		Tooltip("Enable manual vector entry");
@@ -243,7 +244,7 @@ inline void AtDisplay(Frame_AT *at, FrameData *frameData = nullptr, int patternI
 		if(i > 0)
 			im::SameLine();
 		im::PushID(i);
-		if(im::Combo("##HFLAG", &at->hVFlags[i], vectorFlags, IM_ARRAYSIZE(vectorFlags))) {
+		if(i18n::Combo("##HFLAG", &at->hVFlags[i], vectorFlags, IM_ARRAYSIZE(vectorFlags))) {
 		markModified();
 	}
 		im::PopID();
@@ -251,7 +252,7 @@ inline void AtDisplay(Frame_AT *at, FrameData *frameData = nullptr, int patternI
 	im::Separator();
 
 	im::SetNextItemWidth(150);
-	if(im::Combo("Hit effect", &at->hitEffect, hitEffectList, IM_ARRAYSIZE(hitEffectList))) {
+	if(i18n::Combo(LBL("Hit effect"), &at->hitEffect, hitEffectList, IM_ARRAYSIZE(hitEffectList))) {
 		markModified();
 	}
 	im::SameLine(0, 20.f);
@@ -261,12 +262,12 @@ inline void AtDisplay(Frame_AT *at, FrameData *frameData = nullptr, int patternI
 	}
 
 	im::SetNextItemWidth(70);
-	if(im::InputInt("Sound effect", &at->soundEffect, 0, 0)) {
+	if(im::InputInt(LBL("Sound effect"), &at->soundEffect, 0, 0)) {
 		markModified();
 	}
 	im::SameLine(0, 20.f); im::SetNextItemWidth(120);
 
-	if(im::Combo("Added effect", &at->addedEffect, addedEffectList, IM_ARRAYSIZE(addedEffectList))) {
+	if(i18n::Combo(LBL("Added effect"), &at->addedEffect, addedEffectList, IM_ARRAYSIZE(addedEffectList))) {
 		markModified();
 	}
 
@@ -276,10 +277,10 @@ inline void AtDisplay(Frame_AT *at, FrameData *frameData = nullptr, int patternI
 		// gain" is ATCA; "VS damage" and "Guard damage" exist only in
 		// MBAACC's ATVV and are not saved.
 		im::Separator();
-		im::TextDisabled("UNI/MBTL attack data");
+		im::TextDisabled(TXT("UNI/MBTL attack data"));
 		auto intField = [&](const char* label, int* v, const char* tip) {
 			im::SetNextItemWidth(width);
-			if(im::InputInt(label, v, 0, 0)) markModified();
+			if(im::InputInt(LBL(label), v, 0, 0)) markModified();
 			if(im::IsItemHovered()) Tooltip(tip);
 		};
 		intField("Proration % (ATHH)", &at->damageProration, "ATHH (+48): damage proration for the rest of the combo.\n100 or absent = none.");
@@ -289,7 +290,7 @@ inline void AtDisplay(Frame_AT *at, FrameData *frameData = nullptr, int patternI
 		im::SameLine(0.f, 20);
 		intField("Self stop (ATSA)", &at->addHitStun, "ATSA (+43): hitstop preset for the attacker itself,\nused when hit flag 25 is set (Hit_ResolveHitstop).");
 		im::SetNextItemWidth(width * 3);
-		if(im::InputInt3("Hitstun decay (ATC0)", at->hitStunDecay)) markModified();
+		if(im::InputInt3(LBL("Hitstun decay (ATC0)"), at->hitStunDecay)) markModified();
 		if(im::IsItemHovered())
 			Tooltip("ATC0 (+71, +73, +72): hitstun decay values.\n"
 				"The first defaults to 100 and the third to 50 when 0.");
@@ -302,7 +303,7 @@ inline void AtDisplay(Frame_AT *at, FrameData *frameData = nullptr, int patternI
 		static const char* const kLegacy[] = {"none", "ATS1", "ATS2", "ATS3", "ATS4", "ATS5", "ATS6"};
 		int legacy = (at->hitStopLegacy >= 0 && at->hitStopLegacy <= 6) ? at->hitStopLegacy : 0;
 		im::SetNextItemWidth(width * 1.5f);
-		if(im::Combo("Hitstop (ATSn form)", &legacy, kLegacy, IM_ARRAYSIZE(kLegacy))) {
+		if(i18n::Combo(LBL("Hitstop (ATSn form)"), &legacy, kLegacy, IM_ARRAYSIZE(kLegacy))) {
 			at->hitStopLegacy = legacy;
 			markModified();
 		}

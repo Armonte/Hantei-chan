@@ -2,6 +2,7 @@
 #include <imgui_stdlib.h>
 #include "framedata.h"
 #include "imgui_utils.h"
+#include "i18n.h"
 
 inline void PatternDisplay(Sequence *seq, FrameData *frameData = nullptr, int patternIndex = -1)
 {
@@ -9,7 +10,7 @@ inline void PatternDisplay(Sequence *seq, FrameData *frameData = nullptr, int pa
 	//ImGui::InputText("Code name", &seq->codeName);
 	
 	ImGui::SetNextItemWidth(spacing);
-	if(ImGui::InputInt("PSTS", &seq->psts, 0, 0) && frameData && patternIndex >= 0) {
+	if(ImGui::InputInt(LBL("PSTS"), &seq->psts, 0, 0) && frameData && patternIndex >= 0) {
 		frameData->mark_modified(patternIndex);
 	}
 	ImGui::SameLine(); ImGui::TextDisabled("(?)");
@@ -22,7 +23,7 @@ inline void PatternDisplay(Sequence *seq, FrameData *frameData = nullptr, int pa
 	ImGui::SameLine();
 
 	ImGui::SetNextItemWidth(spacing);
-	if(ImGui::InputInt("Level", &seq->level, 0, 0) && frameData && patternIndex >= 0) {
+	if(ImGui::InputInt(LBL("Level"), &seq->level, 0, 0) && frameData && patternIndex >= 0) {
 		frameData->mark_modified(patternIndex);
 	}
 	ImGui::SameLine(); ImGui::TextDisabled("(?)");
@@ -36,7 +37,7 @@ inline void PatternDisplay(Sequence *seq, FrameData *frameData = nullptr, int pa
 
 	const bool uni = frameData && frameData->usesUniFormat();
 	ImGui::SetNextItemWidth(spacing);
-	if(ImGui::InputInt(uni ? "PFLG" : "Flag", &seq->flag, 0, 0) && frameData && patternIndex >= 0) {
+	if(ImGui::InputInt(uni ? "PFLG" : LBL("Flag"), &seq->flag, 0, 0) && frameData && patternIndex >= 0) {
 		frameData->mark_modified(patternIndex);
 	}
 	ImGui::SameLine(); ImGui::TextDisabled("(?)");
@@ -57,7 +58,7 @@ inline void PatternDisplay(Sequence *seq, FrameData *frameData = nullptr, int pa
 	{
 		// PSTS/PLVL are read and ignored by the UNI2/MBTL loaders.
 		ImGui::SetNextItemWidth(spacing);
-		if(ImGui::InputInt("PUPS", &seq->pups, 0, 0) && frameData && patternIndex >= 0) {
+		if(ImGui::InputInt(LBL("PUPS"), &seq->pups, 0, 0) && frameData && patternIndex >= 0) {
 			if (seq->pups < 0) seq->pups = 0;
 			if (seq->pups > 7) seq->pups = 7;
 			frameData->mark_modified(patternIndex);
@@ -70,7 +71,7 @@ inline void PatternDisplay(Sequence *seq, FrameData *frameData = nullptr, int pa
 		ImGui::SameLine();
 		std::string code = seq->codeName;
 		ImGui::SetNextItemWidth(spacing * 3);
-		if (ImGui::InputText("Code name (PTCN)", &code) && frameData && patternIndex >= 0) {
+		if (ImGui::InputText(LBL("Code name (PTCN)"), &code) && frameData && patternIndex >= 0) {
 			seq->codeName = code;
 			frameData->mark_modified(patternIndex);
 		}

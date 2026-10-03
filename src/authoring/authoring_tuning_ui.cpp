@@ -22,6 +22,7 @@
 #include <cstring>
 #include <filesystem>
 #include <map>
+#include "../i18n.h"
 
 namespace authoring {
 
@@ -37,9 +38,9 @@ tagtune::Layer TargetLayer() { return St().editShipped ? tagtune::Layer::Shipped
 
 std::string ProvText(const Provenance& p)
 {
-	if (p.src == Src::Default) return "default";
-	std::string t = SrcName(p.src);
-	if (p.src != Src::Env && p.src != Src::Css) t += p.layer == tagtune::Layer::Local ? " - local" : " - shipped";
+	if (p.src == Src::Default) return TXT("default");
+	std::string t = TXT(SrcName(p.src));
+	if (p.src != Src::Env && p.src != Src::Css) t += p.layer == tagtune::Layer::Local ? TXT(" - local") : TXT(" - shipped");
 	return t;
 }
 
@@ -81,7 +82,7 @@ bool PatternPicker(const FrameData* fd, int32_t& v, int lo, int hi, float width)
 	ImGui::SetNextItemWidth(width);
 	if (fd && const_cast<FrameData*>(fd)->get_sequence_count() > 0) {
 		if (ImGui::BeginCombo("##pat", v == 0 && lo == 0 ? "0  (unset / table)" : PatternLabel(fd, v).c_str(), ImGuiComboFlags_HeightLarge)) {
-			if (lo <= 0 && ImGui::Selectable("0  (unset / table)", v == 0)) { v = 0; changed = true; }
+			if (lo <= 0 && ImGui::Selectable(LBL("0  (unset / table)"), v == 0)) { v = 0; changed = true; }
 			const int n = std::min<int>((int)const_cast<FrameData*>(fd)->get_sequence_count(), hi + 1);
 			for (int p = 1; p < n; ++p) {
 				auto* seq = const_cast<FrameData*>(fd)->get_sequence(p);
@@ -123,7 +124,7 @@ std::vector<CharView> SetupChars()
 		cv.pickMoon = p.moon;
 		cv.chara = c->chara;
 		cv.slot = slot;
-		cv.label = c->name + " - " + SlotRoleName(slot) + " (" + MoonShort(p.moon) + ")";
+		cv.label = c->name + " - " + TXT(SlotRoleName(slot)) + " (" + MoonShort(p.moon) + ")";
 		v.push_back(cv);
 	}
 	return v;
@@ -144,17 +145,17 @@ void GameCell(const gamelink::Snapshot& s, int lever, int32_t mine, const int32_
 	const Lever& l = kLevers[lever];
 	if (!game) { ImGui::TextDisabled("-"); return; }
 	if (s.haveTuning && wire::MaskBit(s.tuning.envMask, lever)) {
-		ImGui::TextColored(kColWarn, "env %s", FormatLeverValue(l, *game).c_str());
-		if (ImGui::IsItemHovered()) ImGui::SetTooltip("PCHOST_MBAACC_TAG_%s overrides this in the game: edits here have no effect there", l.key);
+		ImGui::TextColored(kColWarn, TXT("env %s"), FormatLeverValue(l, *game).c_str());
+		if (ImGui::IsItemHovered()) ImGui::SetTooltip(TXT("PCHOST_MBAACC_TAG_%s overrides this in the game: edits here have no effect there"), l.key);
 		return;
 	}
 	if (cssMask && wire::MaskBit(cssMask, lever)) {
-		ImGui::TextColored(kColOver, "CSS %s", FormatLeverValue(l, *game).c_str());
-		if (ImGui::IsItemHovered()) ImGui::SetTooltip("the setup's assist choice for this partner replaces the tuning's action (a match setting)");
+		ImGui::TextColored(kColOver, TXT("CSS %s"), FormatLeverValue(l, *game).c_str());
+		if (ImGui::IsItemHovered()) ImGui::SetTooltip(TXT("the setup's assist choice for this partner replaces the tuning's action (a match setting)"));
 		return;
 	}
-	if (*game == mine) { ImGui::TextColored(kColOk, "game ok"); return; }
-	ImGui::TextColored(kColBad, "game %s", FormatLeverValue(l, *game).c_str());
+	if (*game == mine) { ImGui::TextColored(kColOk, TXT("game ok")); return; }
+	ImGui::TextColored(kColBad, TXT("game %s"), FormatLeverValue(l, *game).c_str());
 	if (ImGui::IsItemHovered()) {
 		std::string why = "The game resolved another value. Likely: ";
 		if (l.scope == LeverScope::SimBoot) why += "parkX is boot-time (restart the game)";
@@ -172,11 +173,11 @@ void MbacCell(int lever, EditSink& sink, TagIni& doc, DocKind kind, const std::s
 	const MbacGlobalRef* m = FindMbacGlobal(kLevers[lever].key);
 	if (!m) return;
 	ImGui::SameLine();
-	ImGui::TextColored(kColMbac, "MBAC %s", FormatLeverValue(kLevers[lever], m->value).c_str());
+	ImGui::TextColored(kColMbac, TXT("MBAC %s"), FormatLeverValue(kLevers[lever], m->value).c_str());
 	if (ImGui::IsItemHovered()) ImGui::SetTooltip("%s", m->source);
 	ImGui::SameLine();
 	ImGui::BeginDisabled(!sink.CanEdit());
-	if (ImGui::SmallButton("use MBAC")) {
+	if (ImGui::SmallButton(LBL("use MBAC"))) {
 		sink.Begin(std::string(kLevers[lever].key) + " = MBAC (" + label + ")");
 		SetDocLever(doc, kind, lever, m->value);
 		sink.Edited();
@@ -205,7 +206,7 @@ void LeverRow(int i, SidecarDoc& doc, const Values& resolved, const std::array<P
 		sink.End();
 	}
 	if (ImGui::IsItemHovered(ImGuiHoveredFlags_AllowWhenDisabled))
-		ImGui::SetTooltip("ticked = %s sets this lever; unticked = inherited", doc.id.Label().c_str());
+		ImGui::SetTooltip(TXT("ticked = %s sets this lever; unticked = inherited"), doc.id.Label().c_str());
 	ImGui::SameLine();
 	int32_t v = has ? here : resolved[i];
 	if (!has) ImGui::PushStyleVar(ImGuiStyleVar_Alpha, 0.55f);
@@ -227,7 +228,7 @@ void LeverRow(int i, SidecarDoc& doc, const Values& resolved, const std::array<P
 	if (has && doc.id.layer == tagtune::Layer::Local) {
 		ImGui::SameLine();
 		ImGui::BeginDisabled(!sink.CanEdit());
-		if (ImGui::SmallButton("promote")) {
+		if (ImGui::SmallButton(LBL("promote"))) {
 			sink.Begin(std::string("promote ") + l.key + " (" + label + ")");
 			std::string err;
 			a.ws.PromoteLever(doc.id, i, &err);
@@ -235,9 +236,9 @@ void LeverRow(int i, SidecarDoc& doc, const Values& resolved, const std::array<P
 			sink.End();
 		}
 		ImGui::EndDisabled();
-		if (ImGui::IsItemHovered(ImGuiHoveredFlags_AllowWhenDisabled)) ImGui::SetTooltip("Promote to defaults: move this value into the shipped file");
+		if (ImGui::IsItemHovered(ImGuiHoveredFlags_AllowWhenDisabled)) ImGui::SetTooltip(TXT("Promote to defaults: move this value into the shipped file"));
 	}
-	if (l.scope == LeverScope::SimBoot) { ImGui::SameLine(); ImGui::TextColored(kColWarn, "boot-time: restart the game"); }
+	if (l.scope == LeverScope::SimBoot) { ImGui::SameLine(); ImGui::TextColored(kColWarn, TXT("boot-time: restart the game")); }
 	ImGui::PopID();
 }
 
@@ -247,26 +248,26 @@ void TreeBar(HostContext& host, const gamelink::Snapshot& s, const LinkPolicy& p
 	AuthoringState& a = St();
 	(void)host;
 	EditSink& sink = Sink();
-	if (!a.ws.IsOpen()) { ImGui::TextColored(kColWarn, "Set the game folder (header) to edit its povertycaster\\tag\\ tree."); return; }
+	if (!a.ws.IsOpen()) { ImGui::TextColored(kColWarn, TXT("Set the game folder (header) to edit its povertycaster\\tag\\ tree.")); return; }
 	ImGui::Text("%s", a.ws.Root().c_str());
 	ImGui::SameLine();
-	if (a.ws.Exists()) ImGui::TextColored(kColOk, "sidecars");
-	else ImGui::TextColored(kColWarn, "no sidecar files yet");
-	if (!a.tagRootOverride.empty()) { ImGui::SameLine(); ImGui::TextDisabled("(override)"); }
+	if (a.ws.Exists()) ImGui::TextColored(kColOk, TXT("sidecars"));
+	else ImGui::TextColored(kColWarn, TXT("no sidecar files yet"));
+	if (!a.tagRootOverride.empty()) { ImGui::SameLine(); ImGui::TextDisabled(TXT("(override)")); }
 	ImGui::SameLine();
-	ImGui::TextDisabled("editing: %s", a.editShipped ? "SHIPPED defaults" : "local overlay");
+	ImGui::TextDisabled(TXT("editing: %s"), a.editShipped ? "SHIPPED defaults" : "local overlay");
 	// migrate: a legacy tag_tuning.ini and no local tree
 	const std::string legacy = a.gameDir.empty() ? std::string() : a.gameDir + "\\tag_tuning.ini";
 	bool localExists = false;
 	for (const SidecarDoc* d : a.ws.Docs()) localExists |= d->id.layer == tagtune::Layer::Local && d->onDisk && d->id.kind != DocKind::Hud;
 	if (FileExists(legacy) && !localExists) {
-		ImGui::TextColored(kColWarn, "tag_tuning.ini found and no local overlay:");
+		ImGui::TextColored(kColWarn, TXT("tag_tuning.ini found and no local overlay:"));
 		ImGui::SameLine();
 		static std::string migrateLog;
-		if (ImGui::SmallButton("Migrate (dry run)")) migrateLog = MigrateGameDir(a.gameDir, true, NowText()).log;
+		if (ImGui::SmallButton(LBL("Migrate (dry run)"))) migrateLog = MigrateGameDir(a.gameDir, true, NowText()).log;
 		ImGui::SameLine();
 		ImGui::BeginDisabled(!p.canWriteFiles);
-		if (ImGui::SmallButton("Migrate tag_tuning.ini -> local\\")) {
+		if (ImGui::SmallButton(LBL("Migrate tag_tuning.ini -> local\\"))) {
 			SYSTEMTIME st; GetLocalTime(&st);
 			char date[32];
 			std::snprintf(date, sizeof date, "%04u-%02u-%02u", st.wYear, st.wMonth, st.wDay);
@@ -295,18 +296,18 @@ void TreeBar(HostContext& host, const gamelink::Snapshot& s, const LinkPolicy& p
 		}
 	}
 	ImGui::BeginDisabled(!a.ws.AnyDirty() || !p.canWriteFiles);
-	if (ImGui::Button("Save all")) SaveAndApply("save");
+	if (ImGui::Button(LBL("Save all"))) SaveAndApply("save");
 	ImGui::EndDisabled();
 	ImGui::SameLine();
 	ImGui::SetNextItemWidth(130);
-	if (ImGui::BeginCombo("##revert", "Revert file", ImGuiComboFlags_WidthFitPreview)) {
+	if (ImGui::BeginCombo("##revert", TXT("Revert file"), ImGuiComboFlags_WidthFitPreview)) {
 		for (const SidecarDoc* d : a.ws.Docs())
 			if (d->ini.IsDirty() && ImGui::Selectable(d->id.Label().c_str())) a.ws.Revert(d->id);
-		if (a.ws.DirtyDocs().empty()) ImGui::TextDisabled("nothing unsaved");
+		if (a.ws.DirtyDocs().empty()) ImGui::TextDisabled(TXT("nothing unsaved"));
 		ImGui::EndCombo();
 	}
 	ImGui::SameLine();
-	if (ImGui::BeginCombo("##checkpoint", "Revert to checkpoint", ImGuiComboFlags_WidthFitPreview)) {
+	if (ImGui::BeginCombo("##checkpoint", TXT("Revert to checkpoint"), ImGuiComboFlags_WidthFitPreview)) {
 		for (int k = (int)a.checkpoints.size() - 1; k >= 0; --k) {
 			const Checkpoint& c = a.checkpoints[k];
 			if (ImGui::Selectable((c.time + "  " + c.label + "##cp" + std::to_string(k)).c_str()) && sink.CanEdit()) {
@@ -318,21 +319,21 @@ void TreeBar(HostContext& host, const gamelink::Snapshot& s, const LinkPolicy& p
 		}
 		ImGui::EndCombo();
 	}
-	if (ImGui::IsItemHovered()) ImGui::SetTooltip("Every sidecar file's bytes at window open and at each Load in game / Launch:\nundo a whole experiment in one step (itself undoable).");
+	if (ImGui::IsItemHovered()) ImGui::SetTooltip(TXT("Every sidecar file's bytes at window open and at each Load in game / Launch:\nundo a whole experiment in one step (itself undoable)."));
 	ImGui::SameLine();
 	ImGui::BeginDisabled(!a.history.CanUndo());
-	if (ImGui::Button("Undo")) UndoRedo(false);
+	if (ImGui::Button(LBL("Undo"))) UndoRedo(false);
 	ImGui::EndDisabled();
-	if (ImGui::IsItemHovered(ImGuiHoveredFlags_AllowWhenDisabled) && a.history.CanUndo()) ImGui::SetTooltip("Undo %s (Ctrl+Z)", a.history.UndoLabel().c_str());
+	if (ImGui::IsItemHovered(ImGuiHoveredFlags_AllowWhenDisabled) && a.history.CanUndo()) ImGui::SetTooltip(TXT("Undo %s (Ctrl+Z)"), a.history.UndoLabel().c_str());
 	ImGui::SameLine();
 	ImGui::BeginDisabled(!a.history.CanRedo());
-	if (ImGui::Button("Redo")) UndoRedo(true);
+	if (ImGui::Button(LBL("Redo"))) UndoRedo(true);
 	ImGui::EndDisabled();
-	if (ImGui::IsItemHovered(ImGuiHoveredFlags_AllowWhenDisabled) && a.history.CanRedo()) ImGui::SetTooltip("Redo %s (Ctrl+Y)", a.history.RedoLabel().c_str());
+	if (ImGui::IsItemHovered(ImGuiHoveredFlags_AllowWhenDisabled) && a.history.CanRedo()) ImGui::SetTooltip(TXT("Redo %s (Ctrl+Y)"), a.history.RedoLabel().c_str());
 	ImGui::SameLine();
-	ImGui::Checkbox("Live apply", &a.liveApply);
-	if (ImGui::IsItemHovered()) ImGui::SetTooltip("On: every edit is saved at once and the game re-reads the files (ApplyTuning).");
-	if (!dirty.empty()) { ImGui::SameLine(); ImGui::TextColored(kColWarn, "unsaved: %s", dirty.c_str()); }
+	ImGui::Checkbox(LBL("Live apply"), &a.liveApply);
+	if (ImGui::IsItemHovered()) ImGui::SetTooltip(TXT("On: every edit is saved at once and the game re-reads the files (ApplyTuning)."));
+	if (!dirty.empty()) { ImGui::SameLine(); ImGui::TextColored(kColWarn, TXT("unsaved: %s"), dirty.c_str()); }
 	// A / B
 	ImGui::TextUnformatted("A/B");
 	for (int k = 0; k < 2; ++k) {
@@ -340,7 +341,7 @@ void TreeBar(HostContext& host, const gamelink::Snapshot& s, const LinkPolicy& p
 		ImGui::PushID(k);
 		const bool active = a.abActive == k;
 		if (active) ImGui::PushStyleColor(ImGuiCol_Button, ImVec4(0.2f, 0.45f, 0.2f, 1.0f));
-		const std::string name = std::string(k ? "B" : "A") + (a.ab[k].set ? ": " + a.ab[k].label : ": (empty)");
+		const std::string name = std::string(k ? "B" : "A") + (a.ab[k].set ? ": " + a.ab[k].label : TXT(": (empty)"));
 		ImGui::BeginDisabled(!a.ab[k].set || !sink.CanEdit());
 		if (ImGui::Button(name.c_str())) {
 			sink.Begin(std::string("A/B: load ") + (k ? "B" : "A"));
@@ -352,17 +353,17 @@ void TreeBar(HostContext& host, const gamelink::Snapshot& s, const LinkPolicy& p
 		ImGui::EndDisabled();
 		if (active) ImGui::PopStyleColor();
 		ImGui::SameLine();
-		if (ImGui::SmallButton(k ? "take B" : "take A")) {
+		if (ImGui::SmallButton(k ? LBL("take B") : LBL("take A"))) {
 			a.ab[k] = { true, NowText(), NowText(), a.ws.Take() };
 			a.ab[k].label = std::string(k ? "B" : "A") + " @ " + a.ab[k].time;
 			a.abActive = k;
 		}
-		if (ImGui::IsItemHovered()) ImGui::SetTooltip("Remember every sidecar file as snapshot %s", k ? "B" : "A");
+		if (ImGui::IsItemHovered()) ImGui::SetTooltip(TXT("Remember every sidecar file as snapshot %s"), k ? "B" : "A");
 		ImGui::PopID();
 	}
 	ImGui::SameLine();
 	ImGui::BeginDisabled(!(a.ab[0].set && a.ab[1].set) || !sink.CanEdit());
-	if (ImGui::Button("Swap A <-> B")) {
+	if (ImGui::Button(LBL("Swap A <-> B"))) {
 		const int to = a.abActive == 0 ? 1 : 0;
 		sink.Begin(std::string("A/B: swap to ") + (to ? "B" : "A"));
 		a.ws.Restore(a.ab[to].snap);
@@ -371,7 +372,7 @@ void TreeBar(HostContext& host, const gamelink::Snapshot& s, const LinkPolicy& p
 		sink.End();
 	}
 	ImGui::EndDisabled();
-	if (ImGui::IsItemHovered(ImGuiHoveredFlags_AllowWhenDisabled)) ImGui::SetTooltip("Write the other snapshot's files and re-read them in the game (one undo step)");
+	if (ImGui::IsItemHovered(ImGuiHoveredFlags_AllowWhenDisabled)) ImGui::SetTooltip(TXT("Write the other snapshot's files and re-read them in the game (one undo step)"));
 	// the game's view of the same files
 	if (s.haveTuning) {
 		const GlobalResolution g = a.ws.Global();
@@ -388,10 +389,10 @@ void TreeBar(HostContext& host, const gamelink::Snapshot& s, const LinkPolicy& p
 				    kLevers[i].scope != LeverScope::Harness) ++diffs;
 		}
 		ImGui::SameLine(0, 30);
-		if (!diffs) ImGui::TextColored(kColOk, "game: sha %s  matches these files", s.tuning.sha);
+		if (!diffs) ImGui::TextColored(kColOk, TXT("game: sha %s  matches these files"), s.tuning.sha);
 		else {
-			ImGui::TextColored(kColBad, "game differs (%d lever values)", diffs);
-			if (ImGui::IsItemHovered()) ImGui::SetTooltip("See the Live tab's grid (red cells) for which, and the likely cause.");
+			ImGui::TextColored(kColBad, TXT("game differs (%d lever values)"), diffs);
+			if (ImGui::IsItemHovered()) ImGui::SetTooltip(TXT("See the Live tab's grid (red cells) for which, and the likely cause."));
 		}
 		if (!a.lastApply.empty()) { ImGui::SameLine(); ImGui::TextDisabled("%s", a.lastApply.c_str()); }
 	}
@@ -399,7 +400,7 @@ void TreeBar(HostContext& host, const gamelink::Snapshot& s, const LinkPolicy& p
 	const std::vector<Warning> w = AllSidecarWarnings(a.ws.Set());
 	if (!w.empty()) {
 		ImGui::PushStyleColor(ImGuiCol_Text, kColWarn);
-		const bool open = ImGui::TreeNode("warnings", "%zu warning(s) the game logs (their keys are skipped)", w.size());
+		const bool open = ImGui::TreeNode(LBL("warnings"), "%zu warning(s) the game logs (their keys are skipped)", w.size());
 		ImGui::PopStyleColor();
 		if (open) { for (const Warning& x : w) ImGui::BulletText("%s", x.Text().c_str()); ImGui::TreePop(); }
 	}
@@ -424,7 +425,7 @@ void GlobalView(const gamelink::Snapshot& s)
 	static char newStyle[48] = "";
 	ImGui::SetNextItemWidth(200);
 	ImGui::BeginDisabled(!sink.CanEdit());
-	if (ImGui::BeginCombo("Style", g.style.empty() ? "(none: defaults)" : g.style.c_str())) {
+	if (ImGui::BeginCombo(LBL("Style"), g.style.empty() ? "(none: defaults)" : g.style.c_str())) {
 		for (const std::string& n : SidecarStyleNames(a.ws.Set())) {
 			const BuiltinStyle* b = FindBuiltinStyle(n);
 			if (ImGui::Selectable(n.c_str(), ieq(n, g.style))) {
@@ -439,13 +440,13 @@ void GlobalView(const gamelink::Snapshot& s)
 		ImGui::EndCombo();
 	}
 	ImGui::SameLine();
-	ImGui::Checkbox("picking a style drops [tuning] overrides", &dropOverrides);
+	ImGui::Checkbox(LBL("picking a style drops [tuning] overrides"), &dropOverrides);
 	ImGui::SetNextItemWidth(160);
-	ImGui::InputTextWithHint("##newstyle", "new style name", newStyle, sizeof newStyle);
+	ImGui::InputTextWithHint("##newstyle", TXT("new style name"), newStyle, sizeof newStyle);
 	ImGui::SameLine();
 	const bool nameOk = newStyle[0] && !std::strpbrk(newStyle, "[]=;# \t");
 	ImGui::BeginDisabled(!nameOk);
-	if (ImGui::Button("Save as style")) {
+	if (ImGui::Button(LBL("Save as style"))) {
 		sink.Begin(std::string("save as style ") + newStyle);
 		SaveAsStyle(doc.ini, newStyle, g.values);
 		sink.Edited();
@@ -453,13 +454,13 @@ void GlobalView(const gamelink::Snapshot& s)
 	}
 	ImGui::EndDisabled();
 	ImGui::EndDisabled();
-	if (!g.styleFound) ImGui::TextColored(kColWarn, "active_style '%s' is unknown: the game uses the defaults", g.styleRequested.c_str());
-	ImGui::TextDisabled("ticked = %s sets it in [tuning]. Colour = where the value comes from. Hover a lever for the guide.", doc.id.Label().c_str());
+	if (!g.styleFound) ImGui::TextColored(kColWarn, TXT("active_style '%s' is unknown: the game uses the defaults"), g.styleRequested.c_str());
+	ImGui::TextDisabled(TXT("ticked = %s sets it in [tuning]. Colour = where the value comes from. Hover a lever for the guide."), doc.id.Label().c_str());
 	const char* group = nullptr;
 	for (size_t i = 0; i < kLeverCount; ++i) {
 		const Lever& l = kLevers[i];
 		if (l.scope == LeverScope::CharOnly) continue;
-		if (!group || std::strcmp(group, l.group)) { group = l.group; ImGui::SeparatorText(group); }
+		if (!group || std::strcmp(group, l.group)) { group = l.group; ImGui::SeparatorText(TXT(group)); }
 		LeverRow((int)i, doc, g.values, g.from, "global", s, s.haveTuning ? &s.tuning.values[i] : nullptr, nullptr);
 	}
 }
@@ -470,16 +471,16 @@ void CharacterView(HostContext& host, const gamelink::Snapshot& s, const CharVie
 	AuthoringState& a = St();
 	EditSink& sink = Sink();
 	int layer = a.layer == -2 ? cv.pickMoon : a.layer;
-	ImGui::TextUnformatted("Layer");
+	ImGui::TextUnformatted(TXT("Layer"));
 	ImGui::SameLine();
-	if (ImGui::RadioButton("All moons (chars\\<file>.ini)", layer == -1)) a.layer = layer = -1;
+	if (ImGui::RadioButton(LBL("All moons (chars\\<file>.ini)"), layer == -1)) a.layer = layer = -1;
 	for (int m = 0; m < 3; ++m) {
 		ImGui::SameLine();
 		std::string l = MoonText(m) + (m == cv.pickMoon ? " *" : "");
 		if (ImGui::RadioButton(l.c_str(), layer == m)) a.layer = layer = m;
 	}
 	ImGui::SameLine();
-	ImGui::TextDisabled("(* = the setup's moon)");
+	ImGui::TextDisabled(TXT("(* = the setup's moon)"));
 	const int viewMoon = layer >= 0 ? layer : cv.pickMoon;
 	SidecarDoc& doc = a.ws.Doc(CharDoc(TargetLayer(), cv.file, layer));
 	const SlotResolution r = a.ws.Slot(cv.file, viewMoon);
@@ -487,19 +488,19 @@ void CharacterView(HostContext& host, const gamelink::Snapshot& s, const CharVie
 	const FrameData* fd = host.frameDataFor ? host.frameDataFor(txt) : nullptr;
 	const wire::TuningSlot* gs = GameSlot(s, cv.file, viewMoon);
 	const std::string label = cv.file + (layer >= 0 ? std::string(", ") + MoonName(layer) : std::string(", all moons"));
-	ImGui::Text("%s  -  editing %s%s", CharLabel(cv.file).c_str(), doc.id.Label().c_str(), doc.onDisk ? "" : "  (created on the first edit)");
+	ImGui::Text(TXT("%s  -  editing %s%s"), CharLabel(cv.file).c_str(), doc.id.Label().c_str(), doc.onDisk ? "" : "  (created on the first edit)");
 	ImGui::SameLine();
 	if (fd) ImGui::TextColored(kColOk, "%s_%d.txt open", cv.file.c_str(), viewMoon);
 	else {
 		ImGui::TextColored(kColWarn, "%s_%d.txt not open", cv.file.c_str(), viewMoon);
 		ImGui::SameLine();
-		if (ImGui::SmallButton("open") && host.openCharacter) host.openCharacter(txt, false);
+		if (ImGui::SmallButton(LBL("open")) && host.openCharacter) host.openCharacter(txt, false);
 	}
-	if (!gs && s.haveTuning) { ImGui::SameLine(); ImGui::TextDisabled("(no game slot plays %s %s)", cv.file.c_str(), MoonShort(viewMoon)); }
-	if (layer == -1) ImGui::TextDisabled("All moons: the %s file below wins over these values where it sets them.", MoonText(viewMoon).c_str());
+	if (!gs && s.haveTuning) { ImGui::SameLine(); ImGui::TextDisabled(TXT("(no game slot plays %s %s)"), cv.file.c_str(), MoonShort(viewMoon)); }
+	if (layer == -1) ImGui::TextDisabled(TXT("All moons: the %s file below wins over these values where it sets them."), MoonText(viewMoon).c_str());
 
 	// ---- tag-in / tag-out ----
-	ImGui::SeparatorText("Tag-in / tag-out");
+	ImGui::SeparatorText(TXT("Tag-in / tag-out"));
 	const TeamChangeRow* row = FindTeamChangeRow(cv.file);
 	const MbacCharRef& mref = MbacReferenceFor(a.mbacDir, cv.chara);
 	for (const char* key : { "tagIn", "tagOut" }) {
@@ -530,19 +531,19 @@ void CharacterView(HostContext& host, const gamelink::Snapshot& s, const CharVie
 		const int table = row ? (in ? row->tagIn : row->tagOut) : 0;
 		const int effective = r.values[i] ? r.values[i] : table;
 		ImGui::SameLine();
-		ImGui::TextDisabled("table default %d", table);
+		ImGui::TextDisabled(TXT("table default %d"), table);
 		ImGui::SameLine();
-		if (ImGui::SmallButton("jump") && host.showPattern) host.showPattern(txt, effective, 0, true);
+		if (ImGui::SmallButton(LBL("jump")) && host.showPattern) host.showPattern(txt, effective, 0, true);
 		ImGui::SameLine();
 		GameCell(s, i, r.values[i], gs ? &gs->values[i] : nullptr, gs ? gs->cssMask : nullptr);
 		DrawMoveInline(host, txt, effective, in ? "tag-in" : "tag-out");
 		if (mref.ok) {
 			const int mv = in ? mref.tagIn : mref.tagOut;
 			const MoveSummary& ms = in ? mref.in : mref.out;
-			ImGui::TextColored(kColMbac, "   MBAC %s %d%s%s", key, mv, ms.valid ? ": " : "", ms.valid ? ms.Text().c_str() : "");
+			ImGui::TextColored(kColMbac, TXT("   MBAC %s %d%s%s"), key, mv, ms.valid ? ": " : "", ms.valid ? ms.Text().c_str() : "");
 			ImGui::SameLine();
 			ImGui::BeginDisabled(!sink.CanEdit() || mv <= 0);
-			if (ImGui::SmallButton("use MBAC value")) {
+			if (ImGui::SmallButton(LBL("use MBAC value"))) {
 				sink.Begin(std::string(key) + " = MBAC " + std::to_string(mv) + " (" + label + ")");
 				SetDocLever(doc.ini, doc.id.kind, i, mv);
 				sink.Edited();
@@ -550,18 +551,18 @@ void CharacterView(HostContext& host, const gamelink::Snapshot& s, const CharVie
 			}
 			ImGui::EndDisabled();
 			if (ImGui::IsItemHovered(ImGuiHoveredFlags_AllowWhenDisabled))
-				ImGui::SetTooltip("MBAC's [TeamChangeData] number for %s. The MBAACC HA6 pattern of that number is what plays:\ncompare the two frame-data lines.", mref.stem.c_str());
+				ImGui::SetTooltip(TXT("MBAC's [TeamChangeData] number for %s. The MBAACC HA6 pattern of that number is what plays:\ncompare the two frame-data lines."), mref.stem.c_str());
 		} else if (!mref.error.empty()) {
-			ImGui::TextDisabled("   MBAC: %s", mref.error.c_str());
+			ImGui::TextDisabled(TXT("   MBAC: %s"), mref.error.c_str());
 		}
 		ImGui::PopID();
 	}
 
 	// ---- the assists ----
-	ImGui::SeparatorText("Assists (FN1 + direction)");
+	ImGui::SeparatorText(TXT("Assists (FN1 + direction)"));
 	const std::string ctxt = CommandsTxt(cv.file, viewMoon);
 	const std::vector<CommandInfo>& cmds = CommandsOf(ctxt);
-	ImGui::TextDisabled("commands from %s_%d_c.txt (%zu, read-only)%s", cv.file.c_str(), viewMoon, cmds.size(),
+	ImGui::TextDisabled(TXT("commands from %s_%d_c.txt (%zu, read-only)%s"), cv.file.c_str(), viewMoon, cmds.size(),
 	                    layer == -1 ? " - command ids may differ per moon" : "");
 	if (ImGui::BeginTable("##assists", 5, ImGuiTableFlags_SizingFixedFit | ImGuiTableFlags_RowBg)) {
 		for (int slot = 0; slot < 5; ++slot) {
@@ -584,7 +585,7 @@ void CharacterView(HostContext& host, const gamelink::Snapshot& s, const CharVie
 					sink.End();
 				}
 				ImGui::EndDisabled();
-				if (ImGui::IsItemHovered()) ImGui::SetTooltip("entry: %s", ProvText(r.from[sl.entry]).c_str());
+				if (ImGui::IsItemHovered()) ImGui::SetTooltip(TXT("entry: %s"), ProvText(r.from[sl.entry]).c_str());
 			}
 			// mode in THIS layer
 			ImGui::TableNextColumn();
@@ -596,7 +597,7 @@ void CharacterView(HostContext& host, const gamelink::Snapshot& s, const CharVie
 			const char* modes[] = { "inherit", "pattern", "command", "motion" };
 			ImGui::SetNextItemWidth(90);
 			ImGui::BeginDisabled(!sink.CanEdit());
-			if (ImGui::Combo("##mode", &mode, modes, 4)) {
+			if (i18n::Combo("##mode", &mode, modes, 4)) {
 				sink.Begin(std::string("assist ") + std::to_string(kAssistDirs[slot]) + " " + modes[mode] + " (" + label + ")");
 				ClearDocLever(doc.ini, doc.id.kind, sl.pattern);
 				ClearDocLever(doc.ini, doc.id.kind, sl.command);
@@ -640,7 +641,7 @@ void CharacterView(HostContext& host, const gamelink::Snapshot& s, const CharVie
 					else a.status = std::string("motion '") + buf + "': " + ValidateMotion(buf);
 				}
 			} else {
-				ImGui::TextDisabled("inherits");
+				ImGui::TextDisabled(TXT("inherits"));
 			}
 			ImGui::EndDisabled();
 			// resolved
@@ -650,7 +651,7 @@ void CharacterView(HostContext& host, const gamelink::Snapshot& s, const CharVie
 			ImGui::TextColored(av.problem ? kColBad : kColDim, "%s -> %s entry", av.text.c_str(), kAssistEntryNames[act.entry >= 0 && act.entry < 4 ? act.entry : 0]);
 			if (av.pattern > 0) {
 				ImGui::SameLine();
-				if (ImGui::SmallButton("jump") && host.showPattern) host.showPattern(txt, av.pattern, 0, true);
+				if (ImGui::SmallButton(LBL("jump")) && host.showPattern) host.showPattern(txt, av.pattern, 0, true);
 				ImGui::SameLine();
 				if (fd) {
 					const MoveSummary ms = SummarizePattern(*fd, av.pattern);
@@ -661,14 +662,14 @@ void CharacterView(HostContext& host, const gamelink::Snapshot& s, const CharVie
 		}
 		ImGui::EndTable();
 	}
-	if (gs && (gs->flags & wire::kTunSlotCssAssists)) ImGui::TextColored(kColOver, "the setup's assist choices replace some of these for this partner (CSS)");
+	if (gs && (gs->flags & wire::kTunSlotCssAssists)) ImGui::TextColored(kColOver, TXT("the setup's assist choices replace some of these for this partner (CSS)"));
 
 	// ---- every other perChar lever ----
 	const char* group = nullptr;
 	for (size_t i = 0; i < kLeverCount; ++i) {
 		const Lever& l = kLevers[i];
 		if (!l.perChar || tagui::IsSlotAction(l) || tagui::IsSlotEntry(l) || !std::strcmp(l.key, "tagIn") || !std::strcmp(l.key, "tagOut")) continue;
-		if (!group || std::strcmp(group, l.group)) { group = l.group; ImGui::SeparatorText(group); }
+		if (!group || std::strcmp(group, l.group)) { group = l.group; ImGui::SeparatorText(TXT(group)); }
 		LeverRow((int)i, doc, r.values, r.from, label, s, gs ? &gs->values[i] : nullptr, gs ? gs->cssMask : nullptr);
 	}
 }
@@ -680,13 +681,13 @@ void CharacterView(HostContext& host, const gamelink::Snapshot& s, const CharVie
 void DrawMoveInline(HostContext& host, const std::string& txtPath, int pattern, const char* label)
 {
 	const FrameData* fd = host.frameDataFor ? host.frameDataFor(txtPath) : nullptr;
-	if (!fd) { ImGui::TextDisabled("   %s p%d: open the character to see its frame data", label, pattern); return; }
+	if (!fd) { ImGui::TextDisabled(TXT("   %s p%d: open the character to see its frame data"), label, pattern); return; }
 	static std::map<std::string, MoveSummary> cache;
 	const std::string key = txtPath + "|" + std::to_string(pattern) + "|" + std::to_string(fd->dataVersion);
 	auto it = cache.find(key);
 	if (it == cache.end()) { if (cache.size() > 256) cache.clear(); it = cache.emplace(key, SummarizePattern(*fd, pattern)).first; }
 	const MoveSummary& m = it->second;
-	if (!m.valid) { ImGui::TextColored(kColBad, "   %s p%d: not in the loaded HA6", label, pattern); return; }
+	if (!m.valid) { ImGui::TextColored(kColBad, TXT("   %s p%d: not in the loaded HA6"), label, pattern); return; }
 	ImGui::TextDisabled("   %s p%d %s: %s", label, pattern, m.name.c_str(), m.Text().c_str());
 	// the strip: one cell per tick (scaled to fit), startup grey, active red, recovery blue, invulnerable outlined yellow
 	const float h = ImGui::GetTextLineHeight() * 0.7f;
@@ -708,9 +709,9 @@ void DrawMoveInline(HostContext& host, const std::string& txtPath, int pattern, 
 	ImGui::Dummy(ImVec2(24 + ticks * w, h + 2));
 	if (ImGui::IsItemHovered()) {
 		ImGui::BeginTooltip();
-		ImGui::Text("%s p%d: %d frames, %d ticks%s", label, pattern, m.frames, m.totalTicks, m.loops ? " (loops)" : "");
+		ImGui::Text(TXT("%s p%d: %d frames, %d ticks%s"), label, pattern, m.frames, m.totalTicks, m.loops ? " (loops)" : "");
 		if (!m.note.empty()) ImGui::TextUnformatted(m.note.c_str());
-		ImGui::TextDisabled("grey-green startup, red active, blue recovery, yellow outline = strike invulnerable");
+		ImGui::TextDisabled(TXT("grey-green startup, red active, blue recovery, yellow outline = strike invulnerable"));
 		ImGui::EndTooltip();
 	}
 }
@@ -728,7 +729,7 @@ void DrawTuningTab(HostContext& host, const gamelink::Snapshot& s, const LinkPol
 	if (ImGui::BeginTabBar("##tuningviews", ImGuiTabBarFlags_FittingPolicyScroll)) {
 		auto tab = [&](const std::string& id, const std::string& label) {
 			const ImGuiTabItemFlags fl = a.forceViewFrames > 0 && a.tuningView == id ? ImGuiTabItemFlags_SetSelected : 0;
-			const bool open = ImGui::BeginTabItem((label + "###" + id).c_str(), nullptr, fl);
+			const bool open = ImGui::BeginTabItem((std::string(TXT(label.c_str())) + "###" + id).c_str(), nullptr, fl);
 			if (open && a.forceViewFrames <= 0) a.tuningView = id;
 			return open;
 		};
@@ -749,13 +750,13 @@ void DrawTuningTab(HostContext& host, const gamelink::Snapshot& s, const LinkPol
 			cv.label = (rc ? rc->name : cv.file) + " (other)";
 			if (tab(a.tuningView, cv.label)) { CharacterView(host, s, cv); ImGui::EndTabItem(); }
 		}
-		if (ImGui::TabItemButton("Other...", ImGuiTabItemFlags_Trailing)) ImGui::OpenPopup("##otherchar");
+		if (ImGui::TabItemButton(LBL("Other..."), ImGuiTabItemFlags_Trailing)) ImGui::OpenPopup("##otherchar");
 		if (ImGui::BeginPopup("##otherchar")) {
-			ImGui::TextDisabled("character files in the tree");
+			ImGui::TextDisabled(TXT("character files in the tree"));
 			for (const std::string& f : a.ws.CharFiles())
 				if (ImGui::Selectable(CharLabel(f).c_str())) { a.tuningView = "other:" + f + ":0"; a.forceViewFrames = 2; }
 			ImGui::Separator();
-			ImGui::TextDisabled("any character (a file is created on the first edit)");
+			ImGui::TextDisabled(TXT("any character (a file is created on the first edit)"));
 			for (const RosterChar& rc : a.roster)
 				if (!rc.Duo() && ImGui::Selectable((rc.name + "##r" + std::to_string(rc.chara)).c_str())) { a.tuningView = "other:" + rc.file1 + ":0"; a.forceViewFrames = 2; }
 			ImGui::EndPopup();
