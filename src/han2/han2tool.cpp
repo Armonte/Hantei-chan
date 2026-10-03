@@ -14,6 +14,7 @@
 #include "../cg.h"
 #include "../han2_pat.h"
 #include "../han2_export.h"
+#include "img_file.h"
 #include "../png_writer.h"
 #include "../parts/parts.h"
 
@@ -393,6 +394,54 @@ static int CmdExport(int argc, char **argv)
 	return 0;
 }
 
+static int CmdImgRt(int argc, char **argv)
+{
+	RtStats total;
+	for (int i = 0; i < argc; i++) {
+		RtStats st; std::string err; pac::Archive a;
+		auto one = [&](const std::string &label, const std::vector<uint8_t> &b) {
+			han2::ImgFile img;
+			if (!han2::ParseImg(b.data(), b.size(), img, &err)) { printf("FAIL %s: %s\n", label.c_str(), err.c_str()); st.fail++; return; }
+			std::vector<uint8_t> out; han2::SerializeImg(img, out);
+			if (out == b) st.pass++; else { printf("FAIL %s: differs\n", label.c_str()); st.fail++; }
+		};
+		if (pac::Open(argv[i], a, nullptr)) {
+			for (size_t k = 0; k < a.entries.size(); k++) {
+				if (!EndsWithNoCase(a.entries[k].name, ".IMG")) continue;
+				std::vector<uint8_t> b; if (!pac::ReadEntry(a, k, b, &err)) continue;
+				one(std::string(argv[i]) + "::" + a.entries[k].name, b);
+			}
+		} else { std::vector<uint8_t> b; if (ReadLoose(argv[i], b)) one(argv[i], b); }
+		printf("%-40s pass %d fail %d\n", argv[i], st.pass, st.fail);
+		total.pass += st.pass; total.fail += st.fail;
+	}
+	printf("TOTAL pass %d fail %d\n", total.pass, total.fail);
+	return total.fail ? 1 : 0;
+}
+
+static int CmdPacWrite(int argc, char **argv)
+{
+	if (argc < 2) { puts("pacwrite <in.PAC> <out.PAC>"); return 2; }
+	pac::Archive a; std::string err;
+	if (!pac::Open(argv[0], a, &err)) { printf("open: %s\n", err.c_str()); return 1; }
+	std::vector<pac::WriteSource> src(a.entries.size());
+	for (size_t i = 0; i < src.size(); i++) {
+		src[i].name = a.entries[i].name; src[i].rawName.assign(a.entries[i].rawName, a.entries[i].rawName + pac::kNameLen);
+		src[i].kind = pac::WriteSource::ArchiveEntry; src[i].archive = &a; src[i].index = i;
+	}
+	if (!pac::WriteArchive(argv[1], src, {argv[0]}, &err)) { printf("write: %s\n", err.c_str()); return 1; }
+	std::ifstream x(std::filesystem::u8path(argv[0]), std::ios::binary), y(std::filesystem::u8path(argv[1]), std::ios::binary);
+	std::vector<char> bx(1 << 20), by(1 << 20); uint64_t pos = 0;
+	while (true) {
+		x.read(bx.data(), bx.size()); y.read(by.data(), by.size());
+		if (x.gcount() != y.gcount() || memcmp(bx.data(), by.data(), (size_t)x.gcount())) { printf("DIFF near byte %llu\n", (unsigned long long)pos); return 1; }
+		pos += (uint64_t)x.gcount();
+		if (x.gcount() == 0) break;
+	}
+	printf("OK %s rewritten byte-identical (%llu bytes)\n", argv[1], (unsigned long long)pos);
+	return 0;
+}
+
 int main(int argc, char **argv)
 {
 	CoInitializeEx(nullptr, COINIT_MULTITHREADED);
@@ -408,6 +457,8 @@ int main(int argc, char **argv)
 	if (c == "shift") return CmdShift(argc - 2, argv + 2);
 	if (c == "patrt") return CmdPatRt(argc - 2, argv + 2);
 	if (c == "export") return CmdExport(argc - 2, argv + 2);
+	if (c == "imgrt") return CmdImgRt(argc - 2, argv + 2);
+	if (c == "pacwrite") return CmdPacWrite(argc - 2, argv + 2);
 	if (c == "pacrt") return CmdPacRt(argc - 2, argv + 2);
 	printf("unknown command %s\n", c.c_str());
 	return 2;

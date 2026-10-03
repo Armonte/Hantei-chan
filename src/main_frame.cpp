@@ -17,6 +17,7 @@
 #include "han2_character.h"
 #include "han2_browser.h"
 #include "han2_export.h"
+#include "han2_pac_window.h"
 #include "png_writer.h"
 #include "framedata_han2.h"
 #include "han2/pac_archive.h"

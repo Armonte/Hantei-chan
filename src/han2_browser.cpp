@@ -1,5 +1,6 @@
 #include "han2_browser.h"
 #include "han2/pac_archive.h"
+#include "han2_pac_window.h"
 #include "filedialog.h"
 #include "misc.h"
 
@@ -103,6 +104,10 @@ bool DrawBrowser(OpenRequest &req, std::string &message)
 					for (int k = (int)g_mounted.size() - 1; k >= 0; k--) if (k != g_sel) order.push_back(g_mounted[k].a);
 					req.stem = stem; req.read = han2::PacReader(order); req.origin = g_mounted[g_sel].shortName;
 					open = true;
+				}
+				if (!isChar && ImGui::IsItemHovered() && ImGui::IsMouseDoubleClicked(0)) {
+					std::vector<uint8_t> bytes; std::string rerr;
+					if (pac::ReadEntry(a, i, bytes, &rerr)) OpenFileViewer(e.name, std::move(bytes), g_mounted[g_sel].shortName); else message = rerr;
 				}
 				ImGui::TableSetColumnIndex(1); ImGui::Text("%u", e.size);
 				ImGui::TableSetColumnIndex(2);
