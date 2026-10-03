@@ -4,6 +4,7 @@
 // .CG contains information about sprite mappings from the ENC and PVR tiles.
 
 #include "cg.h"
+#include <algorithm>
 #include "misc.h"
 
 #include <cstdlib>
@@ -188,6 +189,92 @@ void CG::copy_cells(const CG_Image *image,
 	}
 }
 			
+
+// ---- palette quantizer (median cut) for replace_image_rgba ----
+namespace {
+struct QBox { std::vector<unsigned int> px; };   // packed 0xRRGGBB values (with repeats)
+void MedianCut(std::vector<unsigned int> colors, int maxColors, std::vector<unsigned int> &outPal)
+{
+	std::vector<QBox> boxes(1); boxes[0].px = std::move(colors);
+	while ((int)boxes.size() < maxColors) {
+		int pick = -1; size_t bestN = 1;
+		for (size_t i = 0; i < boxes.size(); i++) if (boxes[i].px.size() > bestN) { bestN = boxes[i].px.size(); pick = (int)i; }
+		if (pick < 0) break;
+		QBox &b = boxes[pick];
+		int lo[3] = {255, 255, 255}, hi[3] = {0, 0, 0};
+		for (unsigned int c : b.px) for (int k = 0; k < 3; k++) { int v = (c >> (16 - 8 * k)) & 255; lo[k] = std::min(lo[k], v); hi[k] = std::max(hi[k], v); }
+		int axis = 0; for (int k = 1; k < 3; k++) if (hi[k] - lo[k] > hi[axis] - lo[axis]) axis = k;
+		if (hi[axis] == lo[axis]) { bestN = 0; b.px.resize(1); continue; }
+		const int sh = 16 - 8 * axis;
+		std::sort(b.px.begin(), b.px.end(), [&](unsigned int x, unsigned int y) { return ((x >> sh) & 255) < ((y >> sh) & 255); });
+		QBox nb; size_t half = b.px.size() / 2;
+		nb.px.assign(b.px.begin() + half, b.px.end()); b.px.resize(half);
+		boxes.push_back(std::move(nb));
+	}
+	for (auto &b : boxes) {
+		unsigned long long r = 0, g = 0, bl = 0; for (unsigned int c : b.px) { r += (c >> 16) & 255; g += (c >> 8) & 255; bl += c & 255; }
+		size_t n = std::max<size_t>(1, b.px.size());
+		outPal.push_back(((unsigned)(r / n) << 16) | ((unsigned)(g / n) << 8) | (unsigned)(bl / n));
+	}
+}
+}
+
+bool CG::replace_image_rgba(unsigned int n, const unsigned char *rgba, int w, int h, std::string *err) {
+	auto fail = [&](const std::string &m) { if (err) *err = m; return false; };
+	const CG_Image *image = get_image(n);
+	if (!image || image->type_id == -1) return fail("no such image");
+	if ((image->align_start + image->align_len) > m_nalign) return fail("broken alignment table");
+	const int x1 = image->bounds_x1, y1 = image->bounds_y1, bw = image->bounds_x2 - x1 + 1, bh = image->bounds_y2 - y1 + 1;
+	if (w != bw || h != bh) return fail("size mismatch: image " + std::to_string(n) + " is " + std::to_string(bw) + " x " + std::to_string(bh) + ", the PNG is " + std::to_string(w) + " x " + std::to_string(h));
+	const int ty = image->type_id;
+	if (ty != 1 && ty != 2 && ty != 4) return fail("storage type " + std::to_string(ty) + " cannot be imported (only 1, 2, 4)");
+	if (image->bpp != 32) return fail("only 32-bit banks are supported");
+	char *base = (char *)image->data;
+	std::vector<unsigned char> idx;            // palette index per pixel (types 2, 4)
+	if (ty == 2 || ty == 4) {
+		std::vector<unsigned int> opaque;
+		for (int i = 0; i < w * h; i++) if (rgba[i * 4 + 3] != 0 && (ty == 4 || rgba[i * 4 + 3] >= 128)) opaque.push_back(((unsigned)rgba[i*4] << 16) | ((unsigned)rgba[i*4+1] << 8) | rgba[i*4+2]);
+		std::vector<unsigned int> uniq = opaque; std::sort(uniq.begin(), uniq.end()); uniq.erase(std::unique(uniq.begin(), uniq.end()), uniq.end());
+		std::vector<unsigned int> pal;
+		if ((int)uniq.size() <= 255) pal = uniq; else MedianCut(opaque, 255, pal);
+		unsigned int *pw = (unsigned int *)base;
+		for (int i = 0; i < 256; i++) pw[i] = 0;
+		for (size_t i = 0; i < pal.size(); i++) { unsigned int c = pal[i]; pw[i + 1] = ((c >> 16) & 255) | (c & 0xFF00) | ((c & 255) << 16); }   // memory order R,G,B,x
+		idx.assign((size_t)w * h, 0);
+		for (int i = 0; i < w * h; i++) {
+			if (rgba[i*4+3] == 0 || (ty == 2 && rgba[i*4+3] < 128)) continue;
+			int r = rgba[i*4], g = rgba[i*4+1], b = rgba[i*4+2], best = 0, bd = 1 << 30;
+			for (size_t k = 0; k < pal.size(); k++) {
+				int dr = (int)((pal[k] >> 16) & 255) - r, dg = (int)((pal[k] >> 8) & 255) - g, db = (int)(pal[k] & 255) - b, d = dr*dr + dg*dg + db*db;
+				if (d < bd) { bd = d; best = (int)k; if (d == 0) break; }
+			}
+			idx[i] = (unsigned char)(best + 1);
+		}
+	}
+	unsigned int address = (unsigned int)(base - m_data) + ((ty == 2 || ty == 4) ? 1024 : 0);
+	const CG_Alignment *align = &m_align[image->align_start];
+	for (unsigned int j = 0; j < image->align_len; ++j, ++align) {
+		if (align->copy_flag != 0) continue;
+		const int aw = align->width, ah = align->height;
+		for (int ly = 0; ly < ah; ly++)
+			for (int lx = 0; lx < aw; lx++) {
+				const int cx = align->x + lx - x1, cy = align->y + ly - y1;
+				const bool inside = cx >= 0 && cy >= 0 && cx < w && cy < h;
+				const size_t o = (size_t)ly * aw + lx;
+				if (ty == 1) {
+					unsigned int *dst = (unsigned int *)(m_data + address) + o;
+					if (inside) { const unsigned char *s = rgba + ((size_t)cy * w + cx) * 4; *dst = ((unsigned)s[3] << 24) | ((unsigned)s[0] << 16) | ((unsigned)s[1] << 8) | s[2]; }   // memory B,G,R,A
+				} else {
+					unsigned char *dst = (unsigned char *)(m_data + address) + o;
+					*dst = inside ? idx[(size_t)cy * w + cx] : 0;
+					if (ty == 4) dst[(size_t)aw * ah] = inside ? rgba[((size_t)cy * w + cx) * 4 + 3] : 0;
+				}
+			}
+		address += (unsigned)(aw * ah * (ty == 1 ? 4 : (ty == 4 ? 2 : 1)));
+	}
+	touch();
+	return true;
+}
 
 bool CG::image_is_8bpp(unsigned int n) {
 	const CG_Image *image = get_image(n);

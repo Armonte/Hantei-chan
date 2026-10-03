@@ -12,12 +12,12 @@ Legend: [x] done, [ ] open. "(icaro)" = added by icaroffa 2026. "(ours)" = in ou
 
 ## A. Main window (MainForm)
 - [ ] Working-folder picker + refresh; file tree of the folder (config.pcf remembers it)
-- [ ] Tree shows PAC archives expanded into their entries (PAC detected by extension .pac AND by magic, so GOF2 data0x.dat opens) (ours)
-- [ ] Tree: .DAT/.DT2/.IMG/.FOB/.PAT/.CHP entries recognised; double-click opens in a tab
-- [ ] Tree context menu: Extract file (from archive to disk)
-- [ ] Tabs: close tab, close all tabs, unsaved-change marker `*` on tab title, save-prompt on close/exit
+- [x] Tree shows PAC archives expanded into their entries (PAC detected by extension .pac AND by magic, so GOF2 data0x.dat opens) (ours) [PAC browser lists entries of every mounted archive; magic sniff, so GOF2 data0x.dat opens too]
+- [x] Tree: .DAT/.DT2/.IMG/.FOB/.PAT/.CHP entries recognised; double-click opens in a tab [browser double-click: characters open in the editor, .IMG in the image viewer, .FOB/others in the hex+strings viewer]
+- [x] Tree context menu: Extract file (from archive to disk) [per-entry Extract...]
+- [x] Tabs: close tab, close all tabs, unsaved-change marker `*` on tab title, save-prompt on close/exit [existing Hantei-chan tabs, "*" marker, save prompt]
 - [ ] File > New > IMG, DAT, PAC
-- [ ] File > Open, Save, Save As, Exit
+- [x] File > Open, Save, Save As, Exit [Load RBO / GOF2 character..., Save Character (loose .DT2 or full .DAT), Save As]
 - [ ] Language menu English / Japanese (UI strings; Hantei-chan has its own i18n decision pending)
 - [ ] Warn when working folder is on C: (MainForm_CDriveNotRecommended)  (low value; may be dropped with a note)
 - [ ] Drag and drop files onto views (IMG, sprite sheets, effects)
@@ -25,14 +25,14 @@ Legend: [x] done, [ ] open. "(icaro)" = added by icaroffa 2026. "(ours)" = in ou
 ## B. PAC archives (PAC.cs, CreatePACForm, SavePACForm)
 - [x] Read PAC/data0x.dat (magic 1, XOR 0xE3DF59AC, 68-byte entries, name XOR (i*j*3+61)); 400 MB-class archives mapped, not slurped [han2tool count: all 12 archives; src/han2/pac_archive.cpp]
 - [x] Extract single entry; extract all [PAC browser "Extract..." and han2tool extract; ACOLYTE_F.DAT identical to the lineage sample]
-- [ ] Create PAC dialog: pick base PAC, working-folder tree, add single file, add directory, add selected, remove, list
-- [ ] Name-too-long check (59 bytes CP932)
-- [ ] Save PAC dialog with progress and completion/failure report
-- [ ] (icaro) base PAC copied to a temp file and read from the copy; temp cleaned up
-- [ ] (icaro) refuse saving over the base PAC; refuse empty file list
-- [ ] (icaro) a file with the same name (case-insensitive) REPLACES the entry instead of being ignored; "Select directory" = batch override
-- [ ] (icaro) choosing the root PAC node imports every entry
-- [ ] (icaro) base PAC opened by full path; try/catch and null guards around enumeration
+- [x] Create PAC dialog: pick base PAC, working-folder tree, add single file, add directory, add selected, remove, list [Create / patch a PAC archive window]
+- [x] Name-too-long check (59 bytes CP932) [refused with a message in AddOrReplaceFile / WriteArchive]
+- [x] Save PAC dialog with progress and completion/failure report [progress bar + status line]
+- [x] (icaro) base PAC copied to a temp file and read from the copy; temp cleaned up [src/han2_pac_window.cpp; han2tool pacwrite = byte-identical rewrite, overwrite refused]
+- [x] (icaro) refuse saving over the base PAC; refuse empty file list [src/han2_pac_window.cpp; han2tool pacwrite = byte-identical rewrite, overwrite refused]
+- [x] (icaro) a file with the same name (case-insensitive) REPLACES the entry instead of being ignored; "Select directory" = batch override [src/han2_pac_window.cpp; han2tool pacwrite = byte-identical rewrite, overwrite refused]
+- [x] (icaro) choosing the root PAC node imports every entry [src/han2_pac_window.cpp; han2tool pacwrite = byte-identical rewrite, overwrite refused]
+- [x] (icaro) base PAC opened by full path; try/catch and null guards around enumeration [src/han2_pac_window.cpp; han2tool pacwrite = byte-identical rewrite, overwrite refused]
 - [x] Round-trip: PAC load then save unchanged is byte-identical (test over all PACs) [han2tool pacrt: 12/12 archives byte-identical]
 
 ## C. DAT / DT2 character data (DAT.cs, DATBuilder.cs, DATView)
@@ -45,7 +45,7 @@ Legend: [x] done, [ ] open. "(icaro)" = added by icaroffa 2026. "(ours)" = in ou
 - [ ] Pose list: 1000 poses (2000 for v4), index spinner, prev/next, scroll timer
 - [ ] Pose list: add (AddPoseForm, must be named), remove, rename, drag reorder
 - [ ] Pose context menu: Save pose as image, Set pose base point
-- [ ] Pose canvas: render up to 40 parts with layer order, flips, scale, rotation, ARGB colour; zoom (wheel); pan; draw base point toggle
+- [x] Pose canvas: render up to 40 parts with layer order, flips, scale, rotation, ARGB colour; zoom (wheel); pan; draw base point toggle [CPU compositor (export) and the editor renderer; pose PNGs checked on PORING]
 - [ ] Part list per pose; max 40 parts (message)
 - [ ] Part: add (NewBodyPartForm: sprite sheet + source rect), copy, paste, remove
 - [ ] Part: change colour (ColorAlphaPicker: ARGB), set origin (SetOriginForm), change sprite sheet
@@ -59,17 +59,17 @@ Legend: [x] done, [ ] open. "(icaro)" = added by icaroffa 2026. "(ours)" = in ou
 - [ ] Loading dialog with warnings/errors summary (DATLoading)
 - [ ] (icaro) Name strings normalised at the first NUL (NormalizeDatString)
 - [ ] (icaro) Sprite sheet export checks existence, defaults to .png; null guards; list setup without duplicates
-- [ ] (icaro) Export DAT as JSON + PNG: per pose JSON (40 parts: src/dest rect, origin, layer, draw order, rotation, scale, flip, ARGB, sheet index+name), per pose PNG, animations.json
-- [ ] (icaro) Aligned renders per animation group: shared canvas+anchor, animation.json, strip.png, sheet.png
-- [ ] Animation groups taken from the REAL pattern table (not pose-name heuristic), better than icaro
+- [x] (icaro) Export DAT as JSON + PNG: per pose JSON (40 parts: src/dest rect, origin, layer, draw order, rotation, scale, flip, ARGB, sheet index+name), per pose PNG, animations.json [Export RBO / GOF2 sprites, poses and animations: poses.json with every part field, pose PNGs]
+- [x] (icaro) Aligned renders per animation group: shared canvas+anchor, animation.json, strip.png, sheet.png [patterns/<n>_<name>/f###.png on a shared canvas with a common anchor, animation.json, strip.png, sheet.png]
+- [x] Animation groups taken from the REAL pattern table (not pose-name heuristic), better than icaro [groups = the 256-pattern table, flow simulated with the engine rules (Actor_AdvanceByAniFlag)]
 
 ## D. IMG (IMG.cs, IMGView)
-- [ ] Open .IMG (version 6/7, BGRA with R/B swap), view, zoom
-- [ ] Change texture (drag-drop or menu), extract/save as PNG
+- [x] Open .IMG (version 6/7, BGRA with R/B swap), view, zoom [han2/img_file.cpp; han2tool imgrt 88/88 byte-identical; viewer window with zoom]
+- [x] Change texture (drag-drop or menu), extract/save as PNG [Import PNG (replace pixels), Export PNG, Save IMG, Put into new PAC]
 - [ ] New IMG; Save IMG
 
 ## E. FOB
-- [ ] FOB tab exists in PACNyx but is a stub. Hantei-chan: show raw and, later, decoded command table (CharData_BuildCommandTable 0x43D1D0)
+- [x] FOB tab exists in PACNyx but is a stub. Hantei-chan: show raw and, later, decoded command table (CharData_BuildCommandTable 0x43D1D0) [hex + strings viewer, Export raw]
 
 ## F. Beyond PACNyx (the Hantei-chan goal)
 - [x] Frames, patterns, hitboxes (all box classes), AT/IF/EF edited, not just parts [view only so far (M3); editing: M4]
