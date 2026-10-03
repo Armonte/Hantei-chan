@@ -67,6 +67,9 @@ static void ReadLine(ImGuiContext*, ImGuiSettingsHandler*, void* entry, const ch
 		if (!path.empty()) {
 			gSettings.recentProjects.push_back(path);
 		}
+	} else if (strncmp(line, "RecentFile=", 11) == 0){
+		std::string path = normalizePath(line + 11);
+		if (!path.empty()) gSettings.recentFiles.push_back(path);
 	}
 }
 
@@ -97,6 +100,11 @@ static void Write(ImGuiContext* ctx, ImGuiSettingsHandler* handler, ImGuiTextBuf
 	size_t maxRecent = gSettings.recentProjects.size() > 10 ? 10 : gSettings.recentProjects.size();
 	for (size_t i = 0; i < maxRecent; i++) {
 		buf->appendf("RecentProject=%s\n", gSettings.recentProjects[i].c_str());
+	}
+
+	size_t maxFiles = gSettings.recentFiles.size() > 10 ? 10 : gSettings.recentFiles.size();
+	for (size_t i = 0; i < maxFiles; i++) {
+		buf->appendf("RecentFile=%s\n", gSettings.recentFiles[i].c_str());
 	}
 
 	buf->append("\n");

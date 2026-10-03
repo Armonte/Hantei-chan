@@ -179,7 +179,9 @@ private:
 	void DrawDetachedHosts();
 	std::string SerializeWorkspace() const;
 	void RestoreWorkspace(const std::string& json);
-	void DrawRenderMenu();
+	void DrawViewRenderItems();         // View menu: onion skin, PNG export
+	void DrawDetachedWindowItems();     // Window menu: detach the tab, list / return the detached windows
+	void DrawDetachPreference();        // Edit > Preferences: native detached windows (restart)
 
 	// ---- PNG export (ui/png_export_impl.h) ----------------------------------
 	struct ExportSettings {
@@ -228,6 +230,8 @@ private:
 	// ---- MBAACC package tools (ui/package_tools_impl.h) ----------------------
 	void DrawPackageToolWindows();
 	void DrawHan2Windows();                       // PAC browser (ui/han2_ui_impl.h)
+	void openAnyFile(const std::string& path);    // File > Open...: format decided by header magic, then routed to the existing loader
+	void addRecentFile(const std::string& path);
 	bool openHan2File(const std::string& path);   // RBO / GOF2 .DAT/.DT2 (character) or PAC archive (mounted in the browser)
 	void openPartsEditorForCharacter(CharacterInstance* character);   // PAT editor tab on a loaded character (RBO / GOF2 parts)
 	void exportHan2Character(CharacterInstance* character);   // PNG + JSON sprites, poses and animations

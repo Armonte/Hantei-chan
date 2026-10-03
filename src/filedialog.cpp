@@ -70,6 +70,10 @@ std::string FileDialog(int fileType, bool save, char* defaultName)
 		ofn.lpstrFilter = "RBO / GOF2 pattern file the game prefers (*.dt2)\0*.dt2\0RBO / GOF1 character (*.dat)\0*.dat\0GOF1 archive with this character replaced (*.p)\0*.p\0All\0*.*\0";
 		ofn.lpstrDefExt = "dt2";
 	}
+	else if (fileType == fileType::OPENANY)
+	{
+		ofn.lpstrFilter = "All supported files\0*.ha6;*.txt;*.dat;*.dt2;*.pat;*.chp;*.pac;*.p;*.hproj\0All\0*.*\0";
+	}
 	else if (fileType == fileType::DAT)
 	{
 		ofn.lpstrFilter = "MBAA Stage files (*.dat)\0*.dat\0All\0*.*\0";

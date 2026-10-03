@@ -152,6 +152,8 @@ void MainFrame::ProcessDroppedFiles()
 			han2ui::OpenFileViewer(utf82sj(std::filesystem::u8path(f).filename().string()), std::move(b), "dropped");
 		} else if (ext == ".dt2" || ext == ".dat" || ext == ".pat" || ext == ".chp" || ext == ".pac") {
 			openHan2File(f);
+		} else if (ext == ".ha6" || ext == ".txt" || ext == ".hproj" || ext == ".p") {
+			openAnyFile(f);   // same header-based routing as File > Open...
 		} else if (ext == ".png" || ext == ".bmp") {
 			requestErrorPopup("Dropped image", std::string(TXT("Open the CG sprite window or an IMG viewer first, then use its Import PNG button.\n")) + f);
 		} else {
