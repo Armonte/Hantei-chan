@@ -31,28 +31,28 @@ Magic = the first 4 plain bytes after the archive cipher; several magics per ext
 | Title | Ext | Files | Plain bytes | Level | How / next step |
 |---|---|---|---|---|---|
 | GOF1 | (none) | 6 | 86,282,964 | none | (magic 00000000 d993fe3d) |
-| GOF1 | .B | 36 | 375,956 | none | M4 (magic 4f626a65) |
-| GOF1 | .BMP | 8 | 7,373,248 | none | M4 (magic 424d3810) |
-| GOF1 | .CPF | 4 | 224,192 | none | M4 (magic 00000000 64000000) |
-| GOF1 | .CT | 9 | 38,404 | none | M4 (magic 08000000 0b000000 0c000000 ...) |
+| GOF1 | .B | 36 | 375,956 | byte-exact round trip | opaque, proven by the archive rebuild (magic 4f626a65) |
+| GOF1 | .BMP | 8 | 7,373,248 | none | (magic 424d3810) |
+| GOF1 | .CPF | 4 | 224,192 | byte-exact round trip | opaque, archive rebuild (magic 00000000 64000000) |
+| GOF1 | .CT | 9 | 38,404 | byte-exact round trip | opaque, archive rebuild (magic 08000000 0b000000 0c000000 ...) |
 | GOF1 | .DAT | 51 | 335,907,528 | byte-exact round trip | framedata_gof1 / han2tool gof1rt (magic d993fe3d) |
-| GOF1 | .EX3 | 232 | 25,642,202 | none | LLIF compressed BMP: no reader (M4) (magic 4c4c4946) |
-| GOF1 | .FNT | 1 | 2,289,254 | none | M4 (magic 2b1e1800) |
-| GOF1 | .H | 1 | 452 | none | M4 (magic 46494c45) |
-| GOF1 | .MP3 | 17 | 38,826,424 | read | (magic fffb9204 fffba004) |
+| GOF1 | .EX3 | 232 | 25,642,202 | byte-exact round trip | han2tool ex3 (byte-pair blocks, all tile exactly) (magic 4c4c4946) |
+| GOF1 | .FNT | 1 | 2,289,254 | none | (magic 2b1e1800) |
+| GOF1 | .H | 1 | 452 | none | (magic 46494c45) |
+| GOF1 | .MP3 | 17 | 38,826,424 | none | (magic fffb9204 fffba004) |
 | GOF1 | .PAC | 1 | 46,273,466 | none | (magic 00000000) |
-| GOF1 | .TXT | 30 | 551,611 | edit | (magic 00000000 0d0a2f2f 0f000000 ...) |
-| GOF1 | .WAV | 89 | 3,973,415 | read | (magic 52494646) |
-| GOF1 | .WMT | 8 | 8,502 | none | M4 (magic 05000000 06000000 07000000 ...) |
-| GOF2 | .CHP | 23 | 208,427,492 | edit | BMP Cutter3 sprite bank (cg.cpp); patrt-full (magic 424d5020) |
+| GOF1 | .TXT | 30 | 551,611 | byte-exact round trip | opaque, archive rebuild (magic 00000000 0d0a2f2f 0f000000 ...) |
+| GOF1 | .WAV | 89 | 3,973,415 | none | (magic 52494646) |
+| GOF1 | .WMT | 8 | 8,502 | none | (magic 05000000 06000000 07000000 ...) |
+| GOF2 | .CHP | 23 | 208,427,492 | byte-exact round trip | han2tool chp section (magic 424d5020) |
 | GOF2 | .DAT | 92 | 258,098,798 | byte-exact round trip | HAN2RBO .DAT / data archives (magic 48414e32 d993fe3d) |
 | GOF2 | .DT2 | 68 | 19,491,964 | byte-exact round trip | han2tool (magic 48414e32) |
-| GOF2 | .FNT | 4 | 3,942,240 | none | (magic 000028d2 000088c3 0000c089 ...) |
-| GOF2 | .FOB | 367 | 8,791,430 | edit | fobdis (magic 00000000 01000000 05000000 ...) |
+| GOF2 | .FNT | 4 | 3,942,240 | byte-exact round trip | fnt section (magic 000028d2 000088c3 0000c089 ...) |
+| GOF2 | .FOB | 367 | 8,791,430 | byte-exact round trip | fob section (magic 00000000 01000000 05000000 ...) |
 | GOF2 | .IMG | 685 | 955,702,660 | byte-exact round trip | han2tool imgrt (magic 00000000) |
 | GOF2 | .PAT | 64 | 350,297,760 | byte-exact round trip | han2tool patrt (magic 04000000) |
-| GOF2 | .TXT | 2 | 136 | edit | (magic 2f2a0d0a 31) |
-| GOF2 | .WAV | 5712 | 1,086,623,878 | read | (magic 52494646) |
+| GOF2 | .TXT | 2 | 136 | byte-exact round trip | misc section (magic 2f2a0d0a 31) |
+| GOF2 | .WAV | 5712 | 1,086,623,878 | byte-exact round trip | audio section (magic 52494646) |
 | Lilian Fourhand (+ Rosa omake) | (none) | 1 | 6,163,022 | none | (magic d993fe3d) |
 | Lilian Fourhand (+ Rosa omake) | .BGC | 35 | 97,289,971 | none | FCHIP/FMAP BG (M4) (magic 46434849) |
 | Lilian Fourhand (+ Rosa omake) | .EX3 | 390 | 27,783,739 | none | M4 (magic 4c4c4946) |
@@ -111,15 +111,15 @@ Magic = the first 4 plain bytes after the archive cipher; several magics per ext
 | RBO | .CG | 24 | 3,318,240 | byte-exact round trip | han2tool cgrt (magic 00000000) |
 | RBO | .DAT | 216 | 835,053,298 | byte-exact round trip | HAN2RBO: han2tool roundtrip/modelrt (patrt-full agent owns the rest) (magic 48414e32 d993fe3d) |
 | RBO | .DT2 | 131 | 18,313,220 | byte-exact round trip | same (magic 48414e32) |
-| RBO | .FNT | 8 | 6,532,112 | none | (magic 000028d2 00007859 1e201600 ...) |
-| RBO | .FOB | 527 | 29,093,718 | edit | fobdis (tools/rbo); structured rt owned by patrt-full (magic 00000000 01000000 02000000 ...) |
+| RBO | .FNT | 8 | 6,532,112 | byte-exact round trip | han2tool fnt section (magic 000028d2 00007859 1e201600 ...) |
+| RBO | .FOB | 527 | 29,093,718 | byte-exact round trip | han2tool fob section (fob_file); fobdis disassembler (magic 00000000 01000000 02000000 ...) |
 | RBO | .IMG | 307 | 1,354,401,960 | byte-exact round trip | han2tool imgrt (magic 00000000) |
-| RBO | .REP | 12 | 15,604,656 | read | patrt-full (magic 00000000 01000000) |
-| RBO | .RP2 | 7 | 9,107,000 | none | replay (magic 03000000) |
-| RBO | .RP3 | 7 | 4,571,000 | none | replay (magic 0a000000) |
-| RBO | .RP4 | 7 | 4,571,000 | none | replay (magic 0a000000) |
-| RBO | .TXT | 4 | 9,011 | edit | (magic 2d2d2d2d) |
-| RBO | .WAV | 389 | 426,956,788 | read | (magic 52494646) |
+| RBO | .REP | 12 | 15,604,656 | byte-exact round trip | han2tool rep section (magic 00000000 01000000) |
+| RBO | .RP2 | 7 | 9,107,000 | byte-exact round trip | rep section (magic 03000000) |
+| RBO | .RP3 | 7 | 4,571,000 | byte-exact round trip | rep section (magic 0a000000) |
+| RBO | .RP4 | 7 | 4,571,000 | byte-exact round trip | rep section (magic 0a000000) |
+| RBO | .TXT | 4 | 9,011 | byte-exact round trip | misc section (magic 2d2d2d2d) |
+| RBO | .WAV | 389 | 426,956,788 | byte-exact round trip | han2tool audio section (magic 52494646) |
 | ReAct | (none) | 1 | 6,163,022 | none | (magic d993fe3d) |
 | ReAct | .CPF | 27 | 5,221,476 | none | M4 (magic 00000000 06000000 16000000 ...) |
 | ReAct | .CT | 24 | 209,156 | none | M4 (magic 01000000 06000000 0c000000 ...) |
@@ -141,5 +141,5 @@ Magic = the first 4 plain bytes after the archive cipher; several magics per ext
 
 ## 3. Cell summary
 
-none: 61, read: 22, edit: 14, byte-exact round trip: 11, in-game proven: 0 (title x extension cells in section 2)
+none: 54, read: 17, edit: 8, byte-exact round trip: 29, in-game proven: 0 (title x extension cells in section 2)
 

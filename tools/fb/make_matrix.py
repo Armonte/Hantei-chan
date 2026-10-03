@@ -38,12 +38,13 @@ SUPPORT = {
  ('MBAACC PC 1.07', '.BMP'): ('read', 'CG / palettes'), ('MBAACC PC 1.07', '.DDS'): ('read', 'CG textures'), ('MBAACC PC 1.07', '.PNG'): ('read', ''),
  ('MBAACC PC 1.07', '.OGG'): ('read', 'BGM preview'), ('MBAACC PC 1.07', '.WAV'): ('none', ''),
  ('RBO', '.DAT'): ('rt', 'HAN2RBO: han2tool roundtrip/modelrt (patrt-full agent owns the rest)'), ('RBO', '.DT2'): ('rt', 'same'),
- ('RBO', '.IMG'): ('rt', 'han2tool imgrt'), ('RBO', '.FOB'): ('edit', 'fobdis (tools/rbo); structured rt owned by patrt-full'),
- ('RBO', '.CG'): ('rt', 'han2tool cgrt'), ('RBO', '.REP'): ('read', 'patrt-full'), ('RBO', '.RP2'): ('none', 'replay'), ('RBO', '.RP3'): ('none', 'replay'), ('RBO', '.RP4'): ('none', 'replay'),
- ('RBO', '.FNT'): ('none', ''), ('RBO', '.WAV'): ('read', ''),
- ('GOF2', '.DT2'): ('rt', 'han2tool'), ('GOF2', '.DAT'): ('rt', 'HAN2RBO .DAT / data archives'), ('GOF2', '.PAT'): ('rt', 'han2tool patrt'), ('GOF2', '.CHP'): ('edit', 'BMP Cutter3 sprite bank (cg.cpp); patrt-full'),
- ('GOF2', '.IMG'): ('rt', 'han2tool imgrt'), ('GOF2', '.FOB'): ('edit', 'fobdis'), ('GOF2', '.FNT'): ('none', ''), ('GOF2', '.WAV'): ('read', ''),
- ('GOF1', '.DAT'): ('rt', 'framedata_gof1 / han2tool gof1rt'),
+ ('RBO', '.IMG'): ('rt', 'han2tool imgrt'), ('RBO', '.FOB'): ('rt', 'han2tool fob section (fob_file); fobdis disassembler'),
+ ('RBO', '.CG'): ('rt', 'han2tool cgrt'), ('RBO', '.REP'): ('rt', 'han2tool rep section'), ('RBO', '.RP2'): ('rt', 'rep section'), ('RBO', '.RP3'): ('rt', 'rep section'), ('RBO', '.RP4'): ('rt', 'rep section'),
+ ('RBO', '.FNT'): ('rt', 'han2tool fnt section'), ('RBO', '.WAV'): ('rt', 'han2tool audio section'), ('RBO', '.TXT'): ('rt', 'misc section'),
+ ('GOF2', '.DT2'): ('rt', 'han2tool'), ('GOF2', '.DAT'): ('rt', 'HAN2RBO .DAT / data archives'), ('GOF2', '.PAT'): ('rt', 'han2tool patrt'), ('GOF2', '.CHP'): ('rt', 'han2tool chp section'),
+ ('GOF2', '.IMG'): ('rt', 'han2tool imgrt'), ('GOF2', '.FOB'): ('rt', 'fob section'), ('GOF2', '.FNT'): ('rt', 'fnt section'), ('GOF2', '.WAV'): ('rt', 'audio section'), ('GOF2', '.TXT'): ('rt', 'misc section'),
+ ('GOF1', '.DAT'): ('rt', 'framedata_gof1 / han2tool gof1rt'), ('GOF1', '.EX3'): ('rt', 'han2tool ex3 (byte-pair blocks, all tile exactly)'),
+ ('GOF1', '.B'): ('rt', 'opaque, proven by the archive rebuild'), ('GOF1', '.CPF'): ('rt', 'opaque, archive rebuild'), ('GOF1', '.CT'): ('rt', 'opaque, archive rebuild'), ('GOF1', '.TXT'): ('rt', 'opaque, archive rebuild'),
  ('Melty Blood 2002', '.DAT'): ('none', '備前長船 triple-XOR character, 116-B frames (M3)'),
  ('ReAct', '.DAT'): ('none', 'ReAct character, 216-B frames (M3)'),
  ('PB2K1', '.DAT'): ('none', '時は来た triple-XOR character (M3) + stage .dat'),
@@ -52,12 +53,12 @@ SUPPORT = {
  ('Lilian Fourhand (+ Rosa omake)', '.BGC'): ('none', 'FCHIP/FMAP BG (M4)'), ('Lilian Fourhand (+ Rosa omake)', '.MAP'): ('none', 'M4'), ('Lilian Fourhand (+ Rosa omake)', '.EX3'): ('none', 'M4'),
 }
 DEFAULT = ('none', '')
-for t in ('Melty Blood 2002', 'ReAct', 'PB2K1', 'GOF1'):
+for t in ('Melty Blood 2002', 'ReAct', 'PB2K1'):
     for e in ('.EX3',): SUPPORT.setdefault((t, e), ('none', 'LLIF compressed BMP: no reader (M4)'))
-for t in ('Melty Blood 2002', 'ReAct', 'PB2K1', 'GOF1', 'MBAC (Act Cadenza PC)'):
+for t in ('Melty Blood 2002', 'ReAct', 'PB2K1', 'MBAC (Act Cadenza PC)'):
     for e in ('.CT', '.CPF', '.WMT', '.FNT', '.CCT', '.B', '.BMP', '.H'): SUPPORT.setdefault((t, e), ('none', 'M4'))
     for e in ('.WAV', '.MP3', '.TXT'): SUPPORT.setdefault((t, e), ('read' if e != '.TXT' else 'edit', ''))
-for t in ('RBO', 'GOF2', 'dMp', 'Rosa (2002/2005)', 'Lilian Fourhand (+ Rosa omake)'):
+for t in ('dMp', 'Rosa (2002/2005)', 'Lilian Fourhand (+ Rosa omake)'):
     for e in ('.WAV', '.MP3', '.TXT', '.REP'): SUPPORT.setdefault((t, e), ('read' if e != '.TXT' else 'edit', ''))
 ARCH_LEVEL = 'rt'
 
