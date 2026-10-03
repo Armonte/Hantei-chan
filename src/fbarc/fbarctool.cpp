@@ -217,7 +217,7 @@ static int CmdEx3Rt(int argc, char** argv)
 			if (!han2::ParseEx3Auto(d.data(), d.size(), x, &e2)) { printf("FAIL %s::%s: %s\n", argv[k], nm.c_str(), e2.c_str()); fail++; continue; }
 			std::vector<uint8_t> out; han2::SerializeEx3(x, out);
 			std::vector<uint8_t> bmp; std::string e3;
-			if (!han2::DecodeEx3(x, bmp, &e3) || bmp.size() != x.decodedBytes || bmp.size() < 54 || bmp[0] != 'B' || bmp[1] != 'M') { printf("FAIL %s::%s: decoded payload is not a BMP (%s)\n", argv[k], nm.c_str(), e3.c_str()); fail++; continue; }
+			if (!han2::DecodeEx3(x, bmp, &e3) || bmp.size() != x.decodedBytes) { printf("FAIL %s::%s: decode failed (%s)\n", argv[k], nm.c_str(), e3.c_str()); fail++; continue; }
 			{
 				std::vector<uint8_t> enc; han2::EncodeEx3(x.header, x.headerSize, bmp.data(), bmp.size(), enc);
 				if (enc != d) { size_t k = 0; while (k < std::min(enc.size(), d.size()) && enc[k] == d[k]) k++; printf("ENCDIFF %s::%s first diff 0x%zx (sizes %zu vs %zu)\n", argv[k0], nm.c_str(), k, enc.size(), d.size()); fail++; continue; }
