@@ -331,8 +331,10 @@ static int CmdPatRt(int argc, char **argv)
 	for (int i = 0; i < argc; i++) {
 		RtStats st; std::string err; pac::Archive a;
 		auto one = [&](const std::string &label, const std::vector<uint8_t> &b) {
-			han2::Han2File f; if (!han2::Parse(b.data(), b.size(), f, &err)) { st.skipped++; return; }
-			const auto &blob = f.area[han2::kAreaParts];
+			han2::Han2File f; std::vector<uint8_t> rawpat;
+			if (han2::IsPat(b.data(), b.size())) rawpat = b;                 // a bare GOF2 .PAT
+			else if (!han2::Parse(b.data(), b.size(), f, &err)) { st.skipped++; return; }
+			const auto &blob = rawpat.empty() ? f.area[han2::kAreaParts] : rawpat;
 			if (blob.empty()) { st.skipped++; return; }
 			CG *cgp = new CG(); Parts &parts = *new Parts(cgp);   /* leaked on purpose: ~Parts releases GL objects and the tool has no GL context */
 			bool rok = han2::PatToParts(blob.data(), blob.size(), parts, &err);
@@ -344,9 +346,9 @@ static int CmdPatRt(int argc, char **argv)
 		};
 		if (pac::Open(argv[i], a, nullptr)) {
 			for (size_t k = 0; k < a.entries.size(); k++) {
-				if (!EndsWithNoCase(a.entries[k].name, ".DAT")) continue;
+				if (!EndsWithNoCase(a.entries[k].name, ".DAT") && !EndsWithNoCase(a.entries[k].name, ".PAT")) continue;
 				std::vector<uint8_t> b; if (!pac::ReadEntry(a, k, b, &err)) continue;
-				if (b.size() < 8 || memcmp(b.data(), "HAN2RBO ", 8) != 0) continue;
+				if (!han2::IsPat(b.data(), b.size()) && (b.size() < 8 || memcmp(b.data(), "HAN2RBO ", 8) != 0)) continue;
 				one(std::string(argv[i]) + "::" + a.entries[k].name, b);
 			}
 		} else { std::vector<uint8_t> b; if (ReadLoose(argv[i], b)) one(argv[i], b); }
