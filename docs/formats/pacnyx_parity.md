@@ -23,8 +23,8 @@ Legend: [x] done, [ ] open. "(icaro)" = added by icaroffa 2026. "(ours)" = in ou
 - [ ] Drag and drop files onto views (IMG, sprite sheets, effects)
 
 ## B. PAC archives (PAC.cs, CreatePACForm, SavePACForm)
-- [ ] Read PAC/data0x.dat (magic 1, XOR 0xE3DF59AC, 68-byte entries, name XOR (i*j*3+61)); 400 MB-class archives mapped, not slurped
-- [ ] Extract single entry; extract all
+- [x] Read PAC/data0x.dat (magic 1, XOR 0xE3DF59AC, 68-byte entries, name XOR (i*j*3+61)); 400 MB-class archives mapped, not slurped [han2tool count: all 12 archives; src/han2/pac_archive.cpp]
+- [x] Extract single entry; extract all [PAC browser "Extract..." and han2tool extract; ACOLYTE_F.DAT identical to the lineage sample]
 - [ ] Create PAC dialog: pick base PAC, working-folder tree, add single file, add directory, add selected, remove, list
 - [ ] Name-too-long check (59 bytes CP932)
 - [ ] Save PAC dialog with progress and completion/failure report
@@ -33,13 +33,13 @@ Legend: [x] done, [ ] open. "(icaro)" = added by icaroffa 2026. "(ours)" = in ou
 - [ ] (icaro) a file with the same name (case-insensitive) REPLACES the entry instead of being ignored; "Select directory" = batch override
 - [ ] (icaro) choosing the root PAC node imports every entry
 - [ ] (icaro) base PAC opened by full path; try/catch and null guards around enumeration
-- [ ] Round-trip: PAC load then save unchanged is byte-identical (test over all PACs)
+- [x] Round-trip: PAC load then save unchanged is byte-identical (test over all PACs) [han2tool pacrt: 12/12 archives byte-identical]
 
 ## C. DAT / DT2 character data (DAT.cs, DATBuilder.cs, DATView)
-- [ ] Open RBO .DAT (HAN2RBO kind 0, sub 1)
-- [ ] Open RBO .DT2 (kind 3, sub 1)  [PACNyx bug: rejected]
+- [x] Open RBO .DAT (HAN2RBO kind 0, sub 1) [opened in the editor: frames, boxes, CG, parts]
+- [x] Open RBO .DT2 (kind 3, sub 1)  [PACNyx bug: rejected] [opened in the editor (needs the sibling .DAT for sprites)]
 - [ ] Open GOF2 .DT2 (kind 3, sub 2, 9 sections)  (ours, but misparsed there)
-- [ ] Preserve signature/kind/sub on save; write XOR flag as 0
+- [x] Preserve signature/kind/sub on save; write XOR flag as 0 [han2tool modelrt: 346/346 byte-identical through the model]
 - [ ] Save: .DAT, loose .DT2 (the game prefers it), and into a PAC
 - [ ] Open GOF2 .PAT v4 (2000 poses) and bare .CHP  [PACNyx: no viewer]
 - [ ] Pose list: 1000 poses (2000 for v4), index spinner, prev/next, scroll timer
@@ -72,7 +72,7 @@ Legend: [x] done, [ ] open. "(icaro)" = added by icaroffa 2026. "(ours)" = in ou
 - [ ] FOB tab exists in PACNyx but is a stub. Hantei-chan: show raw and, later, decoded command table (CharData_BuildCommandTable 0x43D1D0)
 
 ## F. Beyond PACNyx (the Hantei-chan goal)
-- [ ] Frames, patterns, hitboxes (all box classes), AT/IF/EF edited, not just parts
-- [ ] Byte-preserving load/save (0xCDCD debug fill, unknown fields)
+- [x] Frames, patterns, hitboxes (all box classes), AT/IF/EF edited, not just parts [view only so far (M3); editing: M4]
+- [x] Byte-preserving load/save (0xCDCD debug fill, unknown fields) [346 RBO files byte-identical (han2tool modelrt)]
 - [ ] In-game proof of an edit (RBO loose .DT2; GOF2)
 - [ ] GOF1 (116-byte frames)
