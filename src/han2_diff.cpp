@@ -3,6 +3,7 @@
 #include "han2/rbo_types_gen.h"
 #include "han2/gof2_types_gen.h"
 #include "han2/rbo_at_gen.h"
+#include "han2/gof2_at_gen.h"
 
 #include <cstdio>
 #include <cstring>
@@ -15,6 +16,7 @@ const Han2EnumInfo *FindEnum(const char *name)
 {
 	for (const auto &e : kRboTypesEnums) if (!strcmp(e.name, name)) return &e;
 	for (const auto &e : kRboAtEnums) if (!strcmp(e.name, name)) return &e;
+	for (const auto &e : kGof2AtEnums) if (!strcmp(e.name, name)) return &e;
 	for (const auto &e : kGof2TypesEnums) if (!strcmp(e.name, name)) return &e;
 	return nullptr;
 }
@@ -74,7 +76,7 @@ bool DiffAgainstOriginal(const FrameData &fd, std::vector<DiffEntry> &out, std::
 			DiffRecord(fa.han2.rec, fb.han2.rec, tbl, ntbl, "", p, (int)k, out);
 			if (fa.han2.hadAT != fb.han2.hadAT) { DiffEntry d; d.pattern = p; d.frame = (int)k; d.what = fb.han2.hadAT ? "attack record added" : "attack record removed"; out.push_back(d); }
 			else if (fb.han2.hadAT && !gof) DiffRecord(fa.han2.at, fb.han2.at, kRboAtRecordFields, (int)(sizeof(kRboAtRecordFields) / sizeof(kRboAtRecordFields[0])), "AT.", p, (int)k, out);
-			else if (fb.han2.hadAT && memcmp(fa.han2.at, fb.han2.at, 236)) { DiffEntry d; d.pattern = p; d.frame = (int)k; d.what = "attack record bytes changed"; out.push_back(d); }
+			else if (fb.han2.hadAT) DiffRecord(fa.han2.at, fb.han2.at, kGof2AtRecordFields, (int)(sizeof(kGof2AtRecordFields) / sizeof(kGof2AtRecordFields[0])), "AT.", p, (int)k, out);
 			for (auto &kv : fb.hitboxes) {
 				auto it = fa.hitboxes.find(kv.first);
 				char buf[160];

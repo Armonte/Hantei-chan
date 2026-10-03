@@ -1,0 +1,6 @@
+GOF2 in-game proof (copy of C:\games\gof with hard-linked archives at C:\dev\hantei-chan\work\gof_game, windowed, started with the
+copy as current directory). Loose pattern files Data\Chara\<name>\<name>.dt2 for all 12 characters (written by `han2tool shift <orig> <out> 0 -120`:
+every frame's sprite offset Y -120, no other change; originals taken from data05/data02 like the game does). The game found and used them
+(loose-first lookup, FileIo_OpenLooseThenPacSlots 0x415CA0).
+Left: baseline (no loose files), Uesugi/Katsuko style demo fight, feet on their shadows. Right: with the edit, characters hover ~120 px above their
+shadows (right panel of m5_gof2_offset_edit_ingame.png). Same stage rendering, same engine, only the .dt2 files differ.
