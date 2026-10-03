@@ -13,7 +13,7 @@ namespace gof1 {
 
 constexpr uint32_t kKey = 0xFA261EFBu;
 
-struct Entry { std::string name; uint32_t size = 0, offset = 0; };
+struct Entry { std::string name; uint8_t rawName[56]{}; uint32_t size = 0, offset = 0; };   // rawName: the decoded 56-byte name slot, leftover bytes after the NUL included (shipped archives keep uninitialised tool memory there; kept so an unchanged archive rebuilds byte for byte)
 struct Archive { std::string path; uint32_t plainFlag = 0; uint64_t fileSize = 0; std::vector<Entry> entries; };
 
 bool LooksLikeArchive(const uint8_t *first8, size_t n);
@@ -25,6 +25,10 @@ int  Find(const Archive &a, const std::string &name);   // case-insensitive, fir
 // Writes a new archive: every entry copied as stored, except `replaceIndex` (>= 0) whose plain data (cipher undone) is given in `replacement`
 // and re-enciphered. Refuses to write over `a.path`.
 bool WriteArchiveReplacing(const Archive &a, int replaceIndex, const std::vector<uint8_t> &replacement, const std::string &outPath, std::string *err);
+
+// Rewrites EVERY entry from its plain bytes (cipher undone by ReadEntry, then re-enciphered) with the archive's own index; for an unmodified archive the
+// result must equal the original file byte for byte (han2tool gof1rt proves it). Refuses to write over `a.path`.
+bool RewriteAllFromPlain(const Archive &a, const std::string &outPath, std::string *err);
 
 // Character .DAT section cipher (symmetric XOR, header / pattern area / parts / CG / names tail use three fixed keys).
 void DecryptDat(std::vector<uint8_t> &d);

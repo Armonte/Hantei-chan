@@ -131,7 +131,7 @@ bool SyncPartsToContainer(CharacterInstance &ch, bool *partsChanged, std::string
 		return true;
 	}
 	std::vector<uint8_t> out;
-	if (!BuildPat(ch.parts, cont->parts, out, err)) return false;
+	if (!BuildPatSection(ch.parts, cont->parts, out, err)) return false;
 	if (out != cont->parts) {
 		if (partsChanged) *partsChanged = true;
 		cont->partsDirty = true;

@@ -56,7 +56,7 @@ bool Open(const std::string &path, Archive &out, std::string *err)
 		uint8_t e[64]; memcpy(e, raw.data() + (size_t)i * 64, 64);
 		for (int j = 0; j < 56; j++) e[j] ^= (uint8_t)((3 * ((int)j * (int)i - 28)) & 0xFF);
 		Entry en; size_t len = 0; while (len < 56 && e[len]) len++;
-		en.name.assign((const char *)e, len);
+		en.name.assign((const char *)e, len); memcpy(en.rawName, e, 56);
 		en.size = rd32(e + 56) ^ kKey; en.offset = rd32(e + 60);
 		if ((uint64_t)en.offset + en.size > out.fileSize) { if (err) *err = "entry " + std::to_string(i) + " runs past the file"; return false; }
 		sum += en.size;
@@ -105,7 +105,7 @@ bool WriteArchiveReplacing(const Archive &a, int ri, const std::vector<uint8_t> 
 		uint32_t off = (uint32_t)head.size();
 		for (size_t i = 0; i < n; i++) {
 			uint8_t *e = head.data() + 8 + i * 64;
-			memcpy(e, a.entries[i].name.data(), a.entries[i].name.size());
+			memcpy(e, a.entries[i].rawName, 56);
 			for (int j = 0; j < 56; j++) e[j] ^= (uint8_t)((3 * ((int)j * (int)i - 28)) & 0xFF);
 			wr32(e + 56, sizes[i] ^ kKey); wr32(e + 60, off); off += sizes[i];
 		}
@@ -133,6 +133,34 @@ bool WriteArchiveReplacing(const Archive &a, int ri, const std::vector<uint8_t> 
 	std::filesystem::remove(P(outPath), ec);
 	std::filesystem::rename(P(tmp), P(outPath), ec);
 	if (ec) return fail("could not move the archive into place: " + ec.message());
+	return true;
+}
+
+bool RewriteAllFromPlain(const Archive &a, const std::string &outPath, std::string *err)
+{
+	auto fail = [&](const std::string &m) { if (err) *err = m; return false; };
+	std::error_code ec;
+	if (std::filesystem::weakly_canonical(P(outPath), ec) == std::filesystem::weakly_canonical(P(a.path), ec)) return fail("refusing to overwrite " + a.path);
+	const size_t n = a.entries.size();
+	std::ofstream f(P(outPath), std::ios::binary);
+	if (!f) return fail("cannot create " + outPath);
+	std::vector<uint8_t> head(8 + n * 64, 0);
+	wr32(head.data(), a.plainFlag); wr32(head.data() + 4, (uint32_t)n ^ kKey);
+	uint32_t off = (uint32_t)head.size();
+	for (size_t i = 0; i < n; i++) {
+		uint8_t *e = head.data() + 8 + i * 64;
+		memcpy(e, a.entries[i].rawName, 56);
+		for (int j = 0; j < 56; j++) e[j] ^= (uint8_t)((3 * ((int)j * (int)i - 28)) & 0xFF);
+		wr32(e + 56, a.entries[i].size ^ kKey); wr32(e + 60, off); off += a.entries[i].size;
+	}
+	f.write((const char *)head.data(), (std::streamsize)head.size());
+	for (size_t i = 0; i < n; i++) {
+		std::vector<uint8_t> d; std::string e2;
+		if (!ReadEntry(a, i, d, &e2)) return fail(e2);
+		if (a.plainFlag == 0) StageOne(d, a.entries[i].name);
+		f.write((const char *)d.data(), (std::streamsize)d.size());
+	}
+	if (!f) return fail("write failed");
 	return true;
 }
 

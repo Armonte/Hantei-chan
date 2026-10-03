@@ -47,6 +47,7 @@ struct CG_Image {
 
 class CG {
 protected:
+	unsigned int	m_basePalette[256] = {};   // normalised copy of the bank palette (the bank bytes are never modified)
 	unsigned int	*origPalette;
 	unsigned int	*palette;
 	char			*paletteData = nullptr;
@@ -150,7 +151,9 @@ public:
 	// Replace the pixels of image n with RGBA (straight alpha) of exactly the image's bounds size. Supports storage types 1 (32-bit),
 	// 2 (256-colour palette, binary alpha) and 4 (palette + alpha plane); palettes are quantized to 255 colours when needed.
 	// Only blocks the image owns are written (blocks that copy another image's cells are left alone). Returns false with *err.
-	bool replace_image_rgba(unsigned int n, const unsigned char *rgba, int w, int h, std::string *err = nullptr);
+	// force=false: pixels identical to what the bank already renders for image n leave the bank untouched (no palette re-ordering, byte-identical);
+	// force=true always re-encodes (used by han2tool cgrt to prove the encoder itself).
+	bool replace_image_rgba(unsigned int n, const unsigned char *rgba, int w, int h, std::string *err = nullptr, bool force = false);
 	// The whole bank as stored (for saving it back into a .DAT).
 	const char *bank_data() const { return m_data; }
 	unsigned int bank_size() const { return m_data_size; }

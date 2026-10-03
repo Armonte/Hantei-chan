@@ -41,6 +41,18 @@ bool IsPat(const uint8_t *blob, size_t size)
 	return v == 2 && size >= 0x8CBC + 3680 && ((uint32_t)rd32(blob + 0x8CB8) <= size);   // GOF1 parts blob: same layout as v3 with magic 2
 }
 
+bool PatSectionToParts(const uint8_t *blob, size_t size, Parts &parts, std::string *err)
+{
+	if (size == 0) { parts.Free(); parts.loaded = false; return true; }
+	return PatToParts(blob, size, parts, err);
+}
+
+bool BuildPatSection(const Parts &parts, const std::vector<uint8_t> &original, std::vector<uint8_t> &out, std::string *err)
+{
+	if (original.empty()) { out.clear(); return true; }   // nothing was loaded, nothing can have been edited
+	return BuildPat(parts, original, out, err);
+}
+
 bool PatToParts(const uint8_t *blob, size_t size, Parts &parts, std::string *err)
 {
 	auto fail = [&](const std::string &m) { if (err) *err = m; return false; };

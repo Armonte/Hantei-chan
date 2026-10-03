@@ -117,3 +117,58 @@ box counts, not indices (this supersedes rbo_scripts_pat.md 1.2). Record layouts
 Attack record flag bits: the Ex executables read two bits rbo.exe never does: `RboAtFlags76 0x80 SELF_ONLY_TARGET` (Hit_TeamTargetTest returns
 attacker == victim) and `RboAtFlags80 0x2000 UNEVADABLE` (Hit_RollEvade returns 0 before the roll). Nine bits stay read by no executable (their
 only possible reader is FOB condition-script bytecode that receives the AT pointer; not checked).
+
+## 7. Round-trip verification (`tools/han2/run_roundtrip.sh`, `han2tool`)
+
+Zero skips. Every byte round-trip section reports `skipped 0`; the counter exists only so the report can state it and no code path increments it.
+Each section visits EVERY entry of EVERY archive given (12 RBO PACs: DATA01 DATA02 Update01 Ex1Disc Ex2Disc Ex3Disc BG01 BG02 BGM SE ETC CG; 6 GOF2
+`data0x.dat`; 4 GOF1 `gof_0x.p`), decides what the entry really is **from its bytes** (never from the extension alone), and either checks it or counts
+it as **n/a** (it belongs to another section). `n/a` is listed in the section line by extension and real type. The script fails on any `fail`, any
+non-zero `skipped`, or a non-zero exit code. Games are read in place (nothing is copied).
+
+Classification (`Classify`, han2tool.cpp), by bytes: `HAN2RBO ` magic = HAN2RBO container; PAT magic 0x01234567 + version 3/4 (2 with the GOF1 size test) =
+bare PAT; `IsImg` = IMG; anything else = opaque. Owners: HAN2RBO -> container, model, pat, cg, animtest; bare PAT -> pat; IMG -> img (also `.CG` entries of
+ETC.PAC, which are IMG files); opaque -> opaque. An entry whose extension names a structured format (`.DAT .DT2 .PAT .IMG`) but whose bytes are not it is a
+FAIL, unless it is in the known-opaque table (one file, below).
+
+Totals of the last run (RBO + GOF2 + GOF1 shipped files, 7,971 non-container entries counted as n/a in the container section):
+
+| Section | What is proven byte-exact | pass | fail | skipped | n/a (owner) |
+|---|---|---|---|---|---|
+| `count` / `pacrt` | entry tables, every PAC rebuilt from its entries (18 archives) | 18 / 18 | 0 | 0 | - |
+| `roundtrip` (container) | HAN2RBO parse -> serialize | 414 | 0 | 0 | 7,971 (not HAN2RBO) |
+| `modelrt` | load into the Hantei-chan model -> save | 414 | 0 | 0 | 7,971 |
+| `patrt` | PAT block -> Parts -> PAT block, and the file with the rebuilt block put back | 478 (7 .DAT + 199 .DT2 empty sections included) | 0 | 0 | 7,907 |
+| `imgrt` | IMG parse -> serialize, all four pixel formats | 928 (924 format 2, 4 format 3) | 0 | 0 | 7,457 |
+| `cgrt` | bank load is a no-op; every image re-imported; bank byte-identical | 414 files (334 empty CG areas included), 5,494 images | 0 | 0 | 7,971 |
+| `opaquert` | raw passthrough of entries with no reader | 6,979 | 0 | 0 | 1,406 |
+| `gof1rt` | GOF1 archive rebuilt from plain entries + 51 character `.DAT` | 55 | 0 | 0 | 442 (opaque, proven by the archive rebuild) |
+
+`animtest` is a BEHAVIOUR check, not a byte round trip: the live stepper (`han2_anim.cpp`) must reproduce `SimulateFlow`'s tick count. Last run:
+5,335 patterns agree, 0 differ. 10,884 patterns are not comparable because their flow does not end by itself: 3,003 reach an ani flag that branches on game
+state (hit, input, ground; `Actor_AdvanceByAniFlag`), 6,998 are unconditional loops (idle/walk cycles), 808 hit the 100,000-tick cap, 75 run off the end.
+Those are not skips of a byte check; there is nothing to compare because no finite reference exists.
+
+### The files that used to be skipped
+
+| File | Old section | What it is | Fix |
+|---|---|---|---|
+| DATA02::ORC_FIRE, DATA02::PRO_C_OBJ, Ex1Disc::FIREWALL, GESUI_OBJ, KAIZOKU_OBJ, Ex2Disc::PYRAMID_FIRE, Ex3Disc::AMATSU (.DAT) | patrt "empty PAT section" | valid HAN2RBO objects with a zero-length PAT area (they borrow another file's parts) | defined round trip: `PatSectionToParts` gives an empty, unloaded model; `BuildPatSection` emits exactly the original (empty) block; the whole file with that block re-serializes identically. Now `pass`, noted as "empty PAT section". The 199 `.DT2` files (pattern-only) follow the same rule |
+| DATA01::DUSTNESS.DAT | container (`not HAN2RBO`), silently ignored by patrt/modelrt | stale misspelt duplicate of DUSTINESS.DAT; 7.998 bits/byte entropy over the whole file, no magic, size 760,162; the game only names DUSTINESS | no reader exists; raw passthrough in `opaquert` (PAC reader bytes == archive file bytes), in the known-opaque table with this reason |
+| CG / IMG "unsupported type / empty" images | cgrt | 53 type-3 images (one colour + 8-bit alpha plane) had no importer; 19 slots have no record | type 3 import added (`CG::replace_image_rgba`: index = alpha); absent slots have nothing to import and their bytes are covered by the whole-bank comparison |
+
+Bugs this strictness exposed (all fixed, all with a test above):
+
+* **IMG format 3 / version 8** (GOF2 `data05`: ACED_11, ACOP_11, PRE_BG00, PRE_BG13) were reported `FAIL not an IMG` by imgrt when run on that archive, and the
+  suite only ever ran imgrt on CG.PAC (88 of 928 files). Header (GOF2.exe `lib::CCGImageRead::ReadImgStream_fmt0to3` 0x4024A0, `GetPixelRGBA` 0x402580):
+  `u32 0 | u32 version 6..8 | u32 format | u32 w | u32 h | pixels`, format 0 = ARGB1555 (2 B), 1 = ARGB4444 (2 B), 2 = R,G,B,A (4 B), 3 = R,G,B (3 B). `ImgFile`
+  keeps the file's own pixels (`native`) for formats other than 2 and writes them back verbatim (0/1 are lossy to RGBA).
+* **CG bank load rewrote the palette** (binary alpha, entry 0 zeroed) inside the bank itself, so any save that synced the bank (`SyncPartsToContainer`) changed
+  bytes from 0x15 on (the first diff) of every bank that has a non-canonical palette (every RBO character bank sampled). The normalised palette now lives in a copy (`CG::m_basePalette`); the bank stays as shipped.
+* **CG re-import of unchanged pixels re-ordered the palette of type 2/4 images.** `replace_image_rgba` now leaves the stored bytes alone when the incoming
+  pixels equal what the bank already renders (`force=true` always re-encodes; cgrt uses it on a scratch bank to prove the encoder).
+* **GOF1 archive index**: the 56-byte name slot keeps uninitialised bytes after the NUL in the shipped `.p` files; a rebuilt archive differed until
+  `gof1::Entry::rawName` kept them (same as `pac::Entry::rawName`).
+* The old suite also never covered ETC/BG/BGM/SE PACs, `.DT2`/bare-PAT in patrt, or GOF1; all are in now.
+
+Known-opaque table (han2tool.cpp `kKnownOpaque`): `DATA01.PAC::DUSTNESS.DAT` only.

@@ -64,7 +64,7 @@ Legend: [x] done, [ ] open. "(icaro)" = added by icaroffa 2026. "(ours)" = in ou
 - [x] Animation groups taken from the REAL pattern table (not pose-name heuristic), better than icaro [groups = the 256-pattern table, flow simulated with the engine rules (Actor_AdvanceByAniFlag)]
 
 ## D. IMG (IMG.cs, IMGView)
-- [x] Open .IMG (version 6/7, BGRA with R/B swap), view, zoom [han2/img_file.cpp; han2tool imgrt 88/88 byte-identical; viewer window with zoom]
+- [x] Open .IMG (version 6..8, formats ARGB1555/ARGB4444/RGBA/RGB24), view, zoom [han2/img_file.cpp; han2tool imgrt 928/928 byte-identical over every shipped archive; viewer window with zoom]
 - [x] Change texture (drag-drop or menu), extract/save as PNG [Import PNG (replace pixels), Export PNG, Save IMG, Put into new PAC]
 - [x] New IMG; Save IMG [via Import]
 

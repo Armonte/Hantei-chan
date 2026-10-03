@@ -219,7 +219,7 @@ void MedianCut(std::vector<unsigned int> colors, int maxColors, std::vector<unsi
 }
 }
 
-bool CG::replace_image_rgba(unsigned int n, const unsigned char *rgba, int w, int h, std::string *err) {
+bool CG::replace_image_rgba(unsigned int n, const unsigned char *rgba, int w, int h, std::string *err, bool force) {
 	auto fail = [&](const std::string &m) { if (err) *err = m; return false; };
 	const CG_Image *image = get_image(n);
 	if (!image || image->type_id == -1) return fail("no such image");
@@ -227,8 +227,19 @@ bool CG::replace_image_rgba(unsigned int n, const unsigned char *rgba, int w, in
 	const int x1 = image->bounds_x1, y1 = image->bounds_y1, bw = image->bounds_x2 - x1 + 1, bh = image->bounds_y2 - y1 + 1;
 	if (w != bw || h != bh) return fail("size mismatch: image " + std::to_string(n) + " is " + std::to_string(bw) + " x " + std::to_string(bh) + ", the PNG is " + std::to_string(w) + " x " + std::to_string(h));
 	const int ty = image->type_id;
-	if (ty != 1 && ty != 2 && ty != 4) return fail("storage type " + std::to_string(ty) + " cannot be imported (only 1, 2, 4)");
+	if (ty != 1 && ty != 2 && ty != 3 && ty != 4) return fail("storage type " + std::to_string(ty) + " cannot be imported (only 1, 2, 3, 4)");
 	if (image->bpp != 32) return fail("only 32-bit banks are supported");
+	if (!force) {   // unchanged pixels: keep the stored bytes (a re-quantised palette would reorder them)
+		if (ImageData *cur = draw_texture(n, false, false)) {
+			bool same = cur->width == w && cur->height == h;
+			for (int i = 0; same && i < w * h; i++) {
+				const unsigned char *a = &cur->pixels[i * 4], *b = &rgba[i * 4];
+				if (a[3] != b[3] || (a[3] && memcmp(a, b, 3) != 0)) same = false;
+			}
+			delete cur;
+			if (same) return true;
+		}
+	}
 	char *base = (char *)image->data;
 	std::vector<unsigned char> idx;            // palette index per pixel (types 2, 4)
 	if (ty == 2 || ty == 4) {
@@ -251,7 +262,8 @@ bool CG::replace_image_rgba(unsigned int n, const unsigned char *rgba, int w, in
 			idx[i] = (unsigned char)(best + 1);
 		}
 	}
-	unsigned int address = (unsigned int)(base - m_data) + ((ty == 2 || ty == 4) ? 1024 : 0);
+	// type 3 = one colour (the first dword of the image) with an 8-bit alpha plane: index i has alpha i, index 0 is transparent
+	unsigned int address = (unsigned int)(base - m_data) + ((ty == 2 || ty == 4) ? 1024 : ty == 3 ? 4 : 0);
 	const CG_Alignment *align = &m_align[image->align_start];
 	for (unsigned int j = 0; j < image->align_len; ++j, ++align) {
 		if (align->copy_flag != 0) continue;
@@ -264,13 +276,16 @@ bool CG::replace_image_rgba(unsigned int n, const unsigned char *rgba, int w, in
 				if (ty == 1) {
 					unsigned int *dst = (unsigned int *)(m_data + address) + o;
 					if (inside) { const unsigned char *s = rgba + ((size_t)cy * w + cx) * 4; *dst = ((unsigned)s[3] << 24) | ((unsigned)s[0] << 16) | ((unsigned)s[1] << 8) | s[2]; }   // memory B,G,R,A
+				} else if (ty == 3) {
+					unsigned char *dst = (unsigned char *)(m_data + address) + o;
+					*dst = inside ? rgba[((size_t)cy * w + cx) * 4 + 3] : 0;
 				} else {
 					unsigned char *dst = (unsigned char *)(m_data + address) + o;
 					*dst = inside ? idx[(size_t)cy * w + cx] : 0;
 					if (ty == 4) dst[(size_t)aw * ah] = inside ? rgba[((size_t)cy * w + cx) * 4 + 3] : 0;
 				}
 			}
-		address += (unsigned)(aw * ah * (ty == 1 ? 4 : (ty == 4 ? 2 : 1)));
+		address += (unsigned)(aw * ah * (ty == 1 ? 4 : (ty == 4 ? 2 : 1)));   // types 2 and 3: one byte per pixel
 	}
 	touch();
 	return true;
@@ -645,8 +660,11 @@ bool CG::loadOwned(char *data, unsigned int size) {
 	// palette data.
 	unsigned int *d = (unsigned int *)(data + 0x10);
 	d += 1; // has palette data?
-	palette = d;
-	origPalette = d;
+	// The bank palette is normalised (binary alpha, entry 0 transparent) in a COPY: the bank bytes stay exactly as shipped, so a bank that is
+	// written back (SyncPartsToContainer) is byte-identical to the one that was loaded.
+	memcpy(m_basePalette, d, sizeof(m_basePalette));
+	palette = m_basePalette;
+	origPalette = m_basePalette;
 	palMax = 1;
 	d += 0x800;	// There are 8 dupe palettes. The game doesn't use them. - always included.
 
