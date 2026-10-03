@@ -5,6 +5,7 @@
 #include "han2/rbo_types_gen.h"
 #include "han2/rbo_at_gen.h"
 #include "han2/gof2_types_gen.h"
+#include "han2/gof2_at_gen.h"
 
 #include "cg.h"
 #include "han2_diff.h"
@@ -29,6 +30,7 @@ static const Han2EnumInfo *FindEnum(const char *name)
 	for (const auto &e : kRboTypesEnums) if (!strcmp(e.name, name)) return &e;
 	for (const auto &e : kRboAtEnums) if (!strcmp(e.name, name)) return &e;
 	for (const auto &e : kGof2TypesEnums) if (!strcmp(e.name, name)) return &e;
+	for (const auto &e : kGof2AtEnums) if (!strcmp(e.name, name)) return &e;
 	return nullptr;
 }
 
@@ -155,7 +157,17 @@ void DrawInspector(CharacterInstance *ch, FrameState &state)
 					han2::RedecodeFrame(f);
 					changed = true;
 				}
-				ImGui::TextDisabled("GOF2 attack record (%s) and effect-spawn record are kept verbatim.", f.han2.hadAT ? "present" : "none");
+				ImGui::SeparatorText("Attack record (AT, 236 bytes)");
+				if (f.han2.hadAT) { if (EditRecord("gat", f.han2.at, kGof2AtRecordFields, (int)(sizeof(kGof2AtRecordFields) / sizeof(kGof2AtRecordFields[0])))) changed = true; }
+				else ImGui::TextDisabled("none: add an attack box to create one (starts zero-filled).");
+				if (f.han2.hadFx) {
+					ImGui::SeparatorText("Effect-spawn record (section 8, 96 bytes)");
+					if (EditRecord("gfx", f.han2.fx, kGof2EffectSpawnRecordFields, (int)(sizeof(kGof2EffectSpawnRecordFields) / sizeof(kGof2EffectSpawnRecordFields[0])))) changed = true;
+				}
+				for (int k = 0; k < 2; k++) if (f.han2.scriptHad >> k & 1) {
+					char hdr[48]; snprintf(hdr, sizeof(hdr), "Script list %c (section %d)", 'A' + k, 6 + k); ImGui::SeparatorText(hdr);
+					if (EditRecord(k == 0 ? "gslA" : "gslB", f.han2.script[k], kGof2ScriptListEntryFields, (int)(sizeof(kGof2ScriptListEntryFields) / sizeof(kGof2ScriptListEntryFields[0])))) changed = true;
+				}
 			} else if (c.sub == 1) {
 				if (EditRecord("frame", f.han2.rec, kRboFrameRecordFields, (int)(sizeof(kRboFrameRecordFields) / sizeof(kRboFrameRecordFields[0])))) {
 					han2::RedecodeFrame(f);
