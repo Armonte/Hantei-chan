@@ -229,7 +229,7 @@ void DrawCgWindow(CharacterInstance *ch)
 	if (!showCgWindow) return;
 	ImGui::SetNextWindowSize(ImVec2(700, 520), ImGuiCond_FirstUseEver);
 	if (!ImGui::Begin("CG sprites (RBO / GOF2 bank)", &showCgWindow)) { ImGui::End(); return; }
-	if (!ch || !ch->frameData.isHan2() || !ch->cg.m_loaded) { ImGui::TextDisabled("The active character has no CG bank."); ImGui::End(); return; }
+	if (!ch || !ch->cg.m_loaded) { ImGui::TextDisabled("The active character has no CG bank."); ImGui::End(); return; }
 	const int n = ch->cg.get_image_count();
 	ImGui::SetNextItemWidth(100); ImGui::InputText("filter", g_cgFilter, sizeof(g_cgFilter)); ImGui::SameLine(); ImGui::TextDisabled("%d images", n);
 	ImGui::BeginChild("list", ImVec2(210, 0), true);

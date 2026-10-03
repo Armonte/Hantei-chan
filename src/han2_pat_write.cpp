@@ -112,6 +112,13 @@ bool BuildPat(const Parts &parts, const std::vector<uint8_t> &orig, std::vector<
 	const size_t imageOff = (size_t)(uint32_t)rd32(orig.data() + imgOffField);
 	if (imageOff < poseBase || imageOff + kImageHead > orig.size()) return fail("bad original PAT block");
 
+	// limits of the format (the engine reads 40 parts per pose and 1000 / 2000 poses)
+	for (size_t p = 0; p < parts.partSets.size(); p++) {
+		size_t used = 0;
+		for (size_t k = 0; k < parts.partSets[p].groups.size(); k++) if (parts.partSets[p].groups[k].ppId >= 0) used = k + 1;
+		if (used > kPartsPerPose) return fail("pose " + std::to_string(p) + " has " + std::to_string(used) + " part slots; the game reads at most 40 per pose");
+		if ((int)p >= nPoses && used) return fail("pose " + std::to_string(p) + " is beyond the " + std::to_string(nPoses) + " poses this PAT version holds");
+	}
 	// original pose blocks by pose index
 	std::vector<const uint8_t *> origPose(nPoses, nullptr);
 	for (int p = 0; p < nPoses; p++) {
