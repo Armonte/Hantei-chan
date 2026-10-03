@@ -58,6 +58,8 @@ add_executable(${EXE}
 	src/han2_export.cpp
 	src/han2_pat_gl.cpp
 	src/han2_browser.cpp
+	src/fbarc/fb_archive.cpp
+	src/fbarc/fb_filepac.cpp
 	src/i18n.cpp
 	src/i18n_layout.cpp
 	src/han2_pac_window.cpp
@@ -581,6 +583,15 @@ target_compile_definitions(han2tool PRIVATE WIN32_LEAN_AND_MEAN HA6GUIVERSION="$
 target_link_libraries(han2tool PRIVATE tinyalloc glad glm OpenGL::GL windowscodecs ole32 uuid)
 if(MINGW)
 	target_link_options(han2tool PRIVATE -static-libgcc -static-libstdc++ -static)
+endif()
+
+# Generalized French-Bread archive layer (PKFileInfo / FilePacHeaderA / PAC v1 / PB) + its command line front end.
+set(FBARC_SOURCES src/fbarc/fb_archive.cpp src/fbarc/fb_filepac.cpp src/han2/pac_archive.cpp src/han2/gof1_archive.cpp)
+add_executable(fbarctool src/fbarc/fbarctool.cpp ${FBARC_SOURCES})
+target_include_directories(fbarctool PRIVATE "." "src")
+target_compile_definitions(fbarctool PRIVATE WIN32_LEAN_AND_MEAN UNICODE _UNICODE)
+if(MINGW)
+	target_link_options(fbarctool PRIVATE -municode -static-libgcc -static-libstdc++ -static)
 endif()
 
 # Unit tests for editor infrastructure (no GL / ImGui). Run from WSL with
