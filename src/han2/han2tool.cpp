@@ -19,6 +19,10 @@
 #include "../framedata_gof1.h"
 #include "gof1_archive.h"
 #include "img_file.h"
+#include "fob_file.h"
+#include "replay_file.h"
+#include "fnt_file.h"
+#include "misc_formats.h"
 #include "../png_writer.h"
 #include "../parts/parts.h"
 
@@ -138,15 +142,34 @@ static bool ReadLoose(const std::string &path, std::vector<uint8_t> &b)
 
 
 // ---- classification used by every round trip section: what a file really is, decided up front by its bytes ----
-enum class Kind { Han2, Pat, Img, Other };
-static Kind Classify(const std::vector<uint8_t> &b)
+enum class Kind { Han2, Pat, Img, Fob, Chp, Rep, Fnt, Wav, Mp3, Bmp, Text, Other };
+static std::string ExtOf(const std::string &n);
+// Magic-bearing formats are recognised by their bytes alone; formats without a magic (FOB, REP, FNT) by their extension, and the section that owns
+// them then FAILS (never skips) when the bytes do not parse. An extension that names such a format is therefore never silently "opaque".
+static Kind Classify(const std::vector<uint8_t> &b, const std::string &name = std::string())
 {
 	if (b.size() >= 8 && memcmp(b.data(), "HAN2RBO ", 8) == 0) return Kind::Han2;
 	if (han2::IsPat(b.data(), b.size())) return Kind::Pat;
 	if (han2::IsImg(b.data(), b.size())) return Kind::Img;
+	const std::string e = ExtOf(name);
+	if (e == ".FOB") return Kind::Fob;
+	if (e == ".CHP" && b.size() >= 11 && memcmp(b.data(), "BMP Cutter", 10) == 0) return Kind::Chp;
+	if (e == ".REP" || e == ".RP2" || e == ".RP3" || e == ".RP4") return Kind::Rep;
+	if (e == ".FNT") return Kind::Fnt;
+	if (b.size() >= 12 && memcmp(b.data(), "RIFF", 4) == 0 && memcmp(b.data() + 8, "WAVE", 4) == 0) return Kind::Wav;
+	if (e == ".MP3") return Kind::Mp3;
+	if (b.size() >= 2 && b[0] == 'B' && b[1] == 'M' && e == ".BMP") return Kind::Bmp;
+	if ((e == ".TXT" || e == ".H") && han2::LooksLikeText(b.data(), b.size())) return Kind::Text;
 	return Kind::Other;
 }
-static const char *KindName(Kind k) { return k == Kind::Han2 ? "HAN2RBO" : k == Kind::Pat ? "bare PAT" : k == Kind::Img ? "IMG" : "opaque"; }
+static const char *KindName(Kind k)
+{
+	switch (k) {
+	case Kind::Han2: return "HAN2RBO"; case Kind::Pat: return "bare PAT"; case Kind::Img: return "IMG"; case Kind::Fob: return "FOB script";
+	case Kind::Chp: return "CHP bank"; case Kind::Rep: return "replay"; case Kind::Fnt: return "bitmap font"; case Kind::Wav: return "RIFF WAVE";
+	case Kind::Mp3: return "MPEG audio"; case Kind::Bmp: return "BMP"; case Kind::Text: return "text"; default: return "opaque";
+	}
+}
 static std::string ExtOf(const std::string &n) { size_t d = n.find_last_of('.'); std::string e = d == std::string::npos ? "" : n.substr(d); for (auto &c : e) if (c >= 'a' && c <= 'z') c -= 32; return e; }
 
 // census <archive>...: every entry by extension and by what its bytes are
@@ -158,7 +181,7 @@ static int CmdCensus(int argc, char **argv)
 		std::map<std::string, int> cnt;
 		for (size_t k = 0; k < a.entries.size(); k++) {
 			std::vector<uint8_t> b; if (!pac::ReadEntry(a, k, b, &err)) { cnt["READ-FAIL"]++; continue; }
-			cnt[ExtOf(a.entries[k].name) + " -> " + KindName(Classify(b))]++;
+			cnt[ExtOf(a.entries[k].name) + " -> " + KindName(Classify(b, a.entries[k].name))]++;
 		}
 		printf("%s (%zu entries)\n", argv[i], a.entries.size());
 		for (auto &kv : cnt) printf("    %-28s %d\n", kv.first.c_str(), kv.second);
@@ -233,7 +256,7 @@ static int CmdRoundtrip(int argc, char **argv)
 {
 	Section s; s.name = "container";
 	ForEachEntry(argc, argv, s, [&](const std::string &label, const std::string &name, const std::vector<uint8_t> &b) {
-		Kind k = Classify(b);
+		Kind k = Classify(b, name);
 		if (k != Kind::Han2) { NaAdd(s, name, k); return; }
 		RoundtripOne(label, b, s);
 	});
@@ -256,7 +279,7 @@ static int CmdModelRt(int argc, char **argv)
 {
 	Section s; s.name = "model";
 	ForEachEntry(argc, argv, s, [&](const std::string &label, const std::string &name, const std::vector<uint8_t> &b) {
-		Kind k = Classify(b);
+		Kind k = Classify(b, name);
 		if (k != Kind::Han2) { NaAdd(s, name, k); return; }
 		ModelRtOne(label, b, s);
 	});
@@ -273,7 +296,7 @@ static int CmdPatRt(int argc, char **argv)
 	// ONE Parts/CG reused for every entry (bounded memory; never destroyed: ~Parts releases GL objects and the tool has no GL context)
 	static CG *cgp = new CG(); static Parts *partsp = new Parts(cgp);
 	ForEachEntry(argc, argv, s, [&](const std::string &label, const std::string &name, const std::vector<uint8_t> &b) {
-		Kind k = Classify(b);
+		Kind k = Classify(b, name);
 		if (k != Kind::Han2 && k != Kind::Pat) { NaAdd(s, name, k); return; }
 		std::string err; han2::Han2File f;
 		const bool bare = k == Kind::Pat;
@@ -300,7 +323,7 @@ static int CmdImgRt(int argc, char **argv)
 {
 	Section s; s.name = "img";
 	ForEachEntry(argc, argv, s, [&](const std::string &label, const std::string &name, const std::vector<uint8_t> &b) {
-		Kind k = Classify(b);
+		Kind k = Classify(b, name);
 		if (k != Kind::Img) { NaAdd(s, name, k); return; }
 		han2::ImgFile img; std::string err;
 		if (!han2::ParseImg(b.data(), b.size(), img, &err)) { printf("FAIL %s: %s\n", label.c_str(), err.c_str()); s.fail++; return; }
@@ -327,7 +350,7 @@ static int CmdOpaqueRt(int argc, char **argv)
 		const int p0 = s.pass, f0 = s.fail;
 		if (!pac::Open(argv[i], a, nullptr)) {   // a loose file is its own bytes: nothing to compare
 			std::vector<uint8_t> b; if (!ReadLoose(argv[i], b)) { printf("FAIL %s: cannot read\n", argv[i]); s.fail++; continue; }
-			Kind k = Classify(b); if (k != Kind::Other) NaAdd(s, argv[i], k); else s.pass++;
+			Kind k = Classify(b, argv[i]); if (k != Kind::Other) NaAdd(s, argv[i], k); else s.pass++;
 			continue;
 		}
 		std::ifstream raw(std::filesystem::u8path(argv[i]), std::ios::binary);
@@ -335,10 +358,10 @@ static int CmdOpaqueRt(int argc, char **argv)
 			const std::string &name = a.entries[k].name; const std::string label = std::string(argv[i]) + "::" + name;
 			std::vector<uint8_t> b;
 			if (!pac::ReadEntry(a, k, b, &err)) { printf("FAIL %s: %s\n", label.c_str(), err.c_str()); s.fail++; continue; }
-			Kind kind = Classify(b);
+			Kind kind = Classify(b, name);
 			if (kind != Kind::Other) { NaAdd(s, name, kind); continue; }
 			const std::string ext = ExtOf(name);
-			const bool structuredExt = ext == ".DAT" || ext == ".DT2" || ext == ".PAT" || ext == ".IMG";
+			const bool structuredExt = ext == ".DAT" || ext == ".DT2" || ext == ".PAT" || ext == ".IMG" || ext == ".CHP" || ext == ".WAV" || ext == ".BMP";
 			const KnownOpaque *known = nullptr;
 			for (auto &ko : kKnownOpaque) { std::string l = label; if (l.size() >= strlen(ko.suffix) && l.compare(l.size() - strlen(ko.suffix), std::string::npos, ko.suffix) == 0) known = &ko; }
 			if (structuredExt && !known) { printf("FAIL %s: extension %s but the bytes are not that format and the file is not in the known-opaque table\n", label.c_str(), ext.c_str()); s.fail++; continue; }
@@ -354,22 +377,9 @@ static int CmdOpaqueRt(int argc, char **argv)
 	return Finish(s);
 }
 
-// cgrt: every character's CG bank (BMP Cutter): (1) loading it must not touch a byte (bank == area); (2) ENCODER proof: on a scratch copy every image's
-// own pixels are force re-encoded (replace_image_rgba force=true) and must render identically (types 1, 2, 3, 4); (3) WRITER proof: on the pristine
-// bank every image's own pixels are re-imported normally (unchanged pixels leave the stored bytes alone) and the whole bank must stay BYTE-IDENTICAL;
-// (4) images the engine cannot draw (type -1: no pixel data / empty bounds / bad table) have nothing to import and are counted by reason; their
-// bytes are covered by the whole-bank comparison in (3).
-static int CmdCgRt(int argc, char **argv)
+static void CgBankCheck(const std::string &label, const std::vector<uint8_t> &cgb, Section &s)
 {
-	Section s; s.name = "cg";
 	static CG *cg = new CG(), *scratch = new CG();
-	ForEachEntry(argc, argv, s, [&](const std::string &label, const std::string &name, const std::vector<uint8_t> &b) {
-		Kind k = Classify(b);
-		if (k != Kind::Han2) { NaAdd(s, name, k); return; }
-		han2::Han2File f; std::string err;
-		if (!han2::Parse(b.data(), b.size(), f, &err)) { printf("FAIL %s: parse: %s\n", label.c_str(), err.c_str()); s.fail++; return; }
-		const auto &cgb = f.area[han2::kAreaCg];
-		if (cgb.empty()) { s.notes["empty CG area " + ExtOf(name) + " (counted in pass: no bank to load; the container round trip proves the empty area)"]++; s.pass++; return; }
 		if (!cg->loadFromMemory(cgb.data(), (unsigned)cgb.size())) { printf("FAIL %s: CG load failed (%zu bytes)\n", label.c_str(), cgb.size()); s.fail++; return; }
 		if (cg->bank_size() != cgb.size() || memcmp(cg->bank_data(), cgb.data(), cgb.size()) != 0) {
 			size_t d = 0; while (d < cgb.size() && d < cg->bank_size() && (uint8_t)cg->bank_data()[d] == cgb[d]) d++;
@@ -403,7 +413,133 @@ static int CmdCgRt(int argc, char **argv)
 			size_t d = 0; while ((uint8_t)cg->bank_data()[d] == cgb[d]) d++;
 			printf("FAIL %s: bank bytes changed after re-importing every image's own pixels (first diff 0x%zx)\n", label.c_str(), d); bad++;
 		}
-		if (bad) s.fail++; else s.pass++;
+	if (bad) s.fail++; else s.pass++;
+}
+
+// cgrt: every character's CG bank (BMP Cutter): (1) loading it must not touch a byte (bank == area); (2) ENCODER proof: on a scratch copy every image's
+// own pixels are force re-encoded (replace_image_rgba force=true) and must render identically (types 1, 2, 3, 4); (3) WRITER proof: on the pristine
+// bank every image's own pixels are re-imported normally (unchanged pixels leave the stored bytes alone) and the whole bank must stay BYTE-IDENTICAL;
+// (4) images the engine cannot draw (type -1: no pixel data / empty bounds / bad table) have nothing to import and are counted by reason; their
+// bytes are covered by the whole-bank comparison in (3).
+static int CmdCgRt(int argc, char **argv)
+{
+	Section s; s.name = "cg";
+	ForEachEntry(argc, argv, s, [&](const std::string &label, const std::string &name, const std::vector<uint8_t> &b) {
+		Kind k = Classify(b, name);
+		if (k != Kind::Han2) { NaAdd(s, name, k); return; }
+		han2::Han2File f; std::string err;
+		if (!han2::Parse(b.data(), b.size(), f, &err)) { printf("FAIL %s: parse: %s\n", label.c_str(), err.c_str()); s.fail++; return; }
+		const auto &cgb = f.area[han2::kAreaCg];
+		if (cgb.empty()) { s.notes["empty CG area " + ExtOf(name) + " (counted in pass: no bank to load; the container round trip proves the empty area)"]++; s.pass++; return; }
+		CgBankCheck(label, cgb, s);
+	});
+	return Finish(s);
+}
+
+// fob: every script file: parse into header + decoded instructions (+ raw spans for code no instruction reaches) -> serialize must be byte-identical.
+// The decoder is the same recursive descent as tools/rbo/fobdis.py; unknown words are decode errors and are reported, never skipped.
+static int CmdFobRt(int argc, char **argv)
+{
+	Section s; s.name = "fob";
+	size_t insns = 0, unreached = 0, raw = 0, overlaps = 0, errs = 0, codeBytes = 0;
+	ForEachEntry(argc, argv, s, [&](const std::string &label, const std::string &name, const std::vector<uint8_t> &b) {
+		Kind k = Classify(b, name);
+		if (k != Kind::Fob) { NaAdd(s, name, k); return; }
+		han2::fob::File f; std::string err;
+		if (!han2::fob::Parse(b.data(), b.size(), f, &err)) { printf("FAIL %s: parse: %s\n", label.c_str(), err.c_str()); s.fail++; return; }
+		std::vector<uint8_t> out; han2::fob::Serialize(f, out, &err);
+		insns += f.nInsns; unreached += f.nUnreachedInsns; raw += f.rawBytes; overlaps += f.overlapsDropped; errs += f.decodeErrors; codeBytes += f.codeSize;
+		if (out == b) s.pass++; else { DiffReport("fob", label, out, b); s.fail++; }
+	});
+	s.notes["instructions reached by control flow (same count as tools/rbo/fobdis.py)"] = (int)insns; s.notes["instructions decoded linearly from unreached gaps"] = (int)unreached; s.notes["code bytes"] = (int)codeBytes; s.notes["code bytes left as raw spans (data that does not decode)"] = (int)raw;
+	s.notes["decode errors (undecodable words met while following flow)"] = (int)errs; s.notes["overlapping instructions dropped"] = (int)overlaps;
+	return Finish(s);
+}
+
+// chp: GOF2 sprite banks (<C>NN.CHP = bare BMP Cutter3 bank): same load / re-import / byte-identical checks as the CG area of a character.
+static int CmdChpRt(int argc, char **argv)
+{
+	Section s; s.name = "chp";
+	ForEachEntry(argc, argv, s, [&](const std::string &label, const std::string &name, const std::vector<uint8_t> &b) {
+		Kind k = Classify(b, name);
+		if (k != Kind::Chp) { NaAdd(s, name, k); return; }
+		CgBankCheck(label, b, s);
+	});
+	return Finish(s);
+}
+
+// rep: replays: parse (decipher header/extra blocks, verify the checksum, split the per-tick inputs) -> serialize (re-encipher, RECOMPUTE the checksum)
+static int CmdRepRt(int argc, char **argv)
+{
+	Section s; s.name = "rep";
+	ForEachEntry(argc, argv, s, [&](const std::string &label, const std::string &name, const std::vector<uint8_t> &b) {
+		Kind k = Classify(b, name);
+		if (k != Kind::Rep) { NaAdd(s, name, k); return; }
+		han2::rep::Replay r; std::string err;
+		if (!han2::rep::Parse(b.data(), b.size(), r, &err)) { printf("FAIL %s: parse: %s\n", label.c_str(), err.c_str()); s.fail++; return; }
+		if (!r.checksumOk) { printf("FAIL %s: stored checksum does not match the deciphered blocks\n", label.c_str()); s.fail++; return; }
+		std::vector<uint8_t> out; han2::rep::Serialize(r, out, &err);
+		if (out != b) { DiffReport("replay", label, out, b); s.fail++; return; }
+		s.pass++; s.notes["version " + std::to_string(r.version) + " (" + ExtOf(name) + ")"]++;
+	});
+	return Finish(s);
+}
+
+// fnt: bitmap fonts (rbo_ex3.exe FontBank_LoadFile sub_43A500): header, index table, glyph bitmaps, half-width section
+static int CmdFntRt(int argc, char **argv)
+{
+	Section s; s.name = "fnt";
+	ForEachEntry(argc, argv, s, [&](const std::string &label, const std::string &name, const std::vector<uint8_t> &b) {
+		Kind k = Classify(b, name);
+		if (k != Kind::Fnt) { NaAdd(s, name, k); return; }
+		han2::fnt::Font f; std::string err;
+		if (!han2::fnt::Parse(b.data(), b.size(), f, &err)) { printf("FAIL %s: parse: %s\n", label.c_str(), err.c_str()); s.fail++; return; }
+		std::vector<uint8_t> out; han2::fnt::Serialize(f, out, &err);
+		if (out != b) { DiffReport("font", label, out, b); s.fail++; return; }
+		s.pass++; s.notes["font " + std::to_string(f.width) + "x" + std::to_string(f.height) + " " + std::to_string(f.bitsPerPixel) + "bpp" + (f.hasHalf ? " + half-width" : "") + (f.tail.empty() ? "" : " + tail")]++;
+		if (!f.tail.empty()) printf("NOTE %s: %zu bytes after the last section kept verbatim\n", label.c_str(), f.tail.size());
+	});
+	return Finish(s);
+}
+
+// audio: RIFF/WAVE files parse into chunks and serialize identically; MPEG files are validated frame by frame (no re-encoder: standard format)
+static int CmdAudioRt(int argc, char **argv)
+{
+	Section s; s.name = "audio";
+	ForEachEntry(argc, argv, s, [&](const std::string &label, const std::string &name, const std::vector<uint8_t> &b) {
+		Kind k = Classify(b, name);
+		if (k == Kind::Wav) {
+			han2::Riff r; std::string err;
+			if (!han2::ParseRiff(b.data(), b.size(), r, &err)) { printf("FAIL %s: %s\n", label.c_str(), err.c_str()); s.fail++; return; }
+			std::vector<uint8_t> out; han2::SerializeRiff(r, out);
+			if (out != b) { DiffReport("riff", label, out, b); s.fail++; return; }
+			if (!r.tail.empty()) s.notes["WAVE with bytes after the last chunk"]++;
+			s.pass++; s.notes["WAVE fmt tag " + std::to_string(r.fmtTag) + " " + std::to_string(r.channels) + "ch " + std::to_string(r.bits) + "bit"]++;
+		} else if (k == Kind::Mp3) {
+			han2::MpegInfo m; std::string err;
+			if (!han2::ValidateMpeg(b.data(), b.size(), m, &err)) { printf("FAIL %s: %s\n", label.c_str(), err.c_str()); s.fail++; return; }
+			s.pass++; s.notes["MPEG audio files (frames validated)"]++; if (m.trailer > 128) s.notes["MPEG with more than 128 bytes after the last frame"]++;
+		} else NaAdd(s, name, k);
+	});
+	return Finish(s);
+}
+
+// misc: .BMP (header + palette + pixel rows) and Shift-JIS text (CRLF line structure)
+static int CmdMiscRt(int argc, char **argv)
+{
+	Section s; s.name = "misc";
+	ForEachEntry(argc, argv, s, [&](const std::string &label, const std::string &name, const std::vector<uint8_t> &b) {
+		Kind k = Classify(b, name);
+		if (k == Kind::Bmp) {
+			han2::Bmp m; std::string err; std::vector<uint8_t> out;
+			if (!han2::ParseBmp(b.data(), b.size(), m, &err)) { printf("FAIL %s: %s\n", label.c_str(), err.c_str()); s.fail++; return; }
+			han2::SerializeBmp(m, out);
+			if (out == b) { s.pass++; s.notes["BMP " + std::to_string(m.bpp) + "bpp"]++; } else { DiffReport("bmp", label, out, b); s.fail++; }
+		} else if (k == Kind::Text) {
+			han2::Text t; std::string err; std::vector<uint8_t> out;
+			han2::ParseText(b.data(), b.size(), t, &err); han2::SerializeText(t, out);
+			if (out == b) { s.pass++; s.notes["text " + ExtOf(name)]++; } else { DiffReport("text", label, out, b); s.fail++; }
+		} else NaAdd(s, name, k);
 	});
 	return Finish(s);
 }
@@ -605,7 +741,7 @@ static int CmdAnimTest(int argc, char **argv)
 	int ok = 0, bad = 0, noTerm = 0;
 	std::map<std::string, int> why;
 	ForEachEntry(argc, argv, s, [&](const std::string &label, const std::string &name, const std::vector<uint8_t> &b) {
-		Kind k = Classify(b);
+		Kind k = Classify(b, name);
 		if (k != Kind::Han2) { NaAdd(s, name, k); return; }
 		FrameData fd; std::string err;
 		if (!han2::Load(fd, b.data(), b.size(), &err)) { printf("FAIL %s: load: %s\n", label.c_str(), err.c_str()); s.fail++; return; }
@@ -632,9 +768,96 @@ static int CmdAnimTest(int argc, char **argv)
 	return Finish(s);
 }
 
-// gof1rt: GOF1 .p archives. (1) the archive rebuilt entry by entry from plain bytes (cipher undone and re-applied, own index re-encoded) must equal the
-// file; (2) every character .DAT: stage-1 + stage-2 decrypt -> model -> save must equal the decrypted file and the re-encrypt must equal the stored bytes.
-// Non-.DAT entries (sound/graphics/data blobs: no structured reader) are raw passthrough, proven byte-exact by (1); they are listed as n/a by extension.
+// ---- GOF1 .p archives (gof_00..03.p), members classified by their bytes; nested archives are walked recursively ----
+// Members with a structured model: character .DAT (magic after stage one d9 93 fe 3d), nested archive, .EX3 (LLIF token round trip), .BMP, .CT (typed command
+// table), .WMT, .FNT, RIFF WAVE, MPEG audio, Shift-JIS text. Members without one are listed with the reason; their bytes are proven by the archive rebuild.
+static uint32_t R32le(const uint8_t *p) { uint32_t v; memcpy(&v, p, 4); return v; }
+
+static void Gof1Dat(const std::string &label, const std::vector<uint8_t> &stage1, Section &s)
+{
+	std::string err; std::vector<uint8_t> plain = stage1; gof1::DecryptDat(plain);
+	FrameData fd;
+	if (!gof1::Load(fd, plain.data(), plain.size(), &err)) { printf("FAIL %s: load: %s\n", label.c_str(), err.c_str()); s.fail++; return; }
+	std::vector<uint8_t> out;
+	if (!gof1::Serialize(fd, out, &err)) { printf("FAIL %s: %s\n", label.c_str(), err.c_str()); s.fail++; return; }
+	std::vector<uint8_t> enc = out; gof1::EncryptDat(enc);
+	if (getenv("PARTS")) { auto cgp = new CG(); Parts &pp = *new Parts(cgp); std::string pe; const auto &blob = fd.m_han2->parts; bool ok = han2::PatToParts(blob.data(), blob.size(), pp, &pe); printf("  %s parts: %s, %zu part sets, %zu cutouts, %zu textures %s\n", label.c_str(), ok ? "ok" : "FAIL", pp.partSets.size(), pp.cutOuts.size(), pp.gfxMeta.size(), pe.c_str()); }
+	if (out == plain && enc == stage1) { s.pass++; s.notes["character .DAT"]++; }
+	else { DiffReport("character DAT", label, out, plain); if (enc != stage1) printf("  re-encrypt differs\n"); s.fail++; }
+}
+
+static const char *Gof1OpaqueWhy(const std::string &name, size_t size)
+{
+	const std::string e = ExtOf(name);
+	if (e == ".B") return ".B polygon object (SysGraphic_LoadFileIntoSlot 0x42B170 reads 'Object' + u16 texture count + 56-byte texture-name slots; the vertex/face data after it is consumed by the renderer and has no reader here)";
+	if (e == ".CPF") return ".CPF (56,048 B, mostly zero; pointer-table loaded, no loader xref in gof.exe, layout unresolved)";
+	if (e == ".CT") return "CHARSEL.CT (1,348 B character-select grid, not a command table; high-entropy, layout unresolved)";
+	if (e == ".TXT") return "binary .TXT (AI/command tables _<CHAR>COM.TXT 59,048 B, MULTICOM.TXT 19,848 B; layout unresolved)";
+	(void)size; return "no structured reader";
+}
+
+static void Gof1Member(const std::string &label, const std::string &name, const std::vector<uint8_t> &d, Section &s, int depth);
+
+static void Gof1Nested(const std::string &label, const std::vector<uint8_t> &d, Section &s, int depth)
+{
+	gof1::MemArchive m; std::string err;
+	if (!gof1::OpenMem(d.data(), d.size(), m, &err)) { printf("FAIL %s: nested archive: %s\n", label.c_str(), err.c_str()); s.fail++; return; }
+	std::vector<uint8_t> idx; gof1::EncodeIndex(m.a, idx);
+	if (idx.size() > d.size() || memcmp(idx.data(), d.data(), idx.size()) != 0) { printf("FAIL %s: nested archive index does not re-encode identically\n", label.c_str()); s.fail++; return; }
+	if (!m.tiles) { printf("FAIL %s: nested archive sizes do not add up to its length\n", label.c_str()); s.fail++; return; }
+	s.pass++; s.notes["nested archive (index re-encoded identically)"]++;
+	for (size_t i = 0; i < m.a.entries.size(); i++) {
+		const std::string sub = label + "/" + m.a.entries[i].name;
+		std::vector<uint8_t> plain;
+		if (!gof1::ReadEntryMem(m, d.data(), i, plain)) { { char hx[16]; snprintf(hx, sizeof hx, "%X", m.a.entries[i].size); s.notes[std::string("nested entry with size 0x") + hx + " (runs past the archive: overlap decoy, no data)"]++; } s.na["nested decoy entry (no data)"]++; continue; }
+		std::vector<uint8_t> back = plain; if (m.a.plainFlag == 0) gof1::CipherEntry(back, m.a.entries[i].name);
+		if (memcmp(back.data(), d.data() + m.dataOffset[i], back.size()) != 0) { printf("FAIL %s: entry cipher does not invert\n", sub.c_str()); s.fail++; continue; }
+		Gof1Member(sub, m.a.entries[i].name, plain, s, depth + 1);
+	}
+}
+
+static void Gof1Member(const std::string &label, const std::string &name, const std::vector<uint8_t> &d, Section &s, int depth)
+{
+	const std::string e = ExtOf(name);
+	std::string err; std::vector<uint8_t> out;
+	if (d.size() >= 4 && R32le(d.data()) == 0x3dfe93d9u) { Gof1Dat(label, d, s); return; }
+	if (d.size() >= 8 && gof1::LooksLikeArchive(d.data(), d.size()) && depth < 3) { Gof1Nested(label, d, s, depth); return; }
+	if (d.size() >= 4 && memcmp(d.data(), "LLIF", 4) == 0) {
+		han2::Ex3 x; if (!han2::ParseEx3(d.data(), d.size(), x, &err)) { printf("FAIL %s: %s\n", label.c_str(), err.c_str()); s.fail++; return; }
+		han2::SerializeEx3(x, out); if (out == d) { s.pass++; s.notes[".EX3 (LLIF byte-pair blocks)"]++; } else { DiffReport("ex3", label, out, d); s.fail++; } return;
+	}
+	if (d.size() >= 12 && memcmp(d.data(), "RIFF", 4) == 0) {
+		han2::Riff r; if (!han2::ParseRiff(d.data(), d.size(), r, &err)) { printf("FAIL %s: %s\n", label.c_str(), err.c_str()); s.fail++; return; }
+		han2::SerializeRiff(r, out); if (out == d) { s.pass++; s.notes[".WAV (RIFF chunks)"]++; } else { DiffReport("riff", label, out, d); s.fail++; } return;
+	}
+	if (e == ".MP3") { han2::MpegInfo m; if (!han2::ValidateMpeg(d.data(), d.size(), m, &err)) { printf("FAIL %s: %s\n", label.c_str(), err.c_str()); s.fail++; } else { s.pass++; s.notes[".MP3 (frames validated)"]++; } return; }
+	if (e == ".BMP") {
+		han2::Bmp b; if (!han2::ParseBmp(d.data(), d.size(), b, &err)) { printf("FAIL %s: %s\n", label.c_str(), err.c_str()); s.fail++; return; }
+		han2::SerializeBmp(b, out); if (out == d) { s.pass++; s.notes[".BMP"]++; } else { DiffReport("bmp", label, out, d); s.fail++; } return;
+	}
+	if (e == ".FNT") {
+		han2::fnt::Font f; if (!han2::fnt::Parse(d.data(), d.size(), f, &err)) { printf("FAIL %s: %s\n", label.c_str(), err.c_str()); s.fail++; return; }
+		han2::fnt::Serialize(f, out, &err); if (out == d) { s.pass++; s.notes[".FNT (bitmap font)"]++; } else { DiffReport("font", label, out, d); s.fail++; } return;
+	}
+	if (e == ".CT" && d.size() == 4632) {
+		han2::Ct c; if (!han2::ParseCt(d.data(), d.size(), c, &err)) { printf("FAIL %s: %s\n", label.c_str(), err.c_str()); s.fail++; return; }
+		han2::SerializeCt(c, out); if (out == d) { s.pass++; s.notes[".CT (command table)"]++; } else { DiffReport("ct", label, out, d); s.fail++; } return;
+	}
+	if (e == ".WMT") {
+		han2::Wmt w; if (!han2::ParseWmt(d.data(), d.size(), w, &err)) { printf("FAIL %s: %s\n", label.c_str(), err.c_str()); s.fail++; return; }
+		han2::SerializeWmt(w, out); if (out == d) { s.pass++; s.notes[".WMT (table)"]++; } else { DiffReport("wmt", label, out, d); s.fail++; } return;
+	}
+	if ((e == ".TXT" || e == ".H") && han2::LooksLikeText(d.data(), d.size())) {
+		han2::Text t; han2::ParseText(d.data(), d.size(), t, &err); han2::SerializeText(t, out);
+		if (out == d) { s.pass++; s.notes["text (Shift-JIS, line structure)"]++; } else { DiffReport("text", label, out, d); s.fail++; } return;
+	}
+	if (e == ".DAT") printf("NOTE %s: .DAT without the character magic (%zu bytes, head %02x%02x%02x%02x)\n", label.c_str(), d.size(), d.size() > 0 ? d[0] : 0, d.size() > 1 ? d[1] : 0, d.size() > 2 ? d[2] : 0, d.size() > 3 ? d[3] : 0);
+	s.na[std::string(e.empty() ? "(no ext)" : e) + " (opaque, proven by the archive rebuild)"]++;
+	s.notes[std::string("opaque: ") + Gof1OpaqueWhy(name, d.size())]++;
+}
+
+// gof1rt: (1) every archive rebuilt entry by entry from plain bytes (cipher undone and re-applied, own index re-encoded) must equal the file;
+// (2) every member by what it is (see above).
 static int CmdGof1Rt(int argc, char **argv)
 {
 	Section s; s.name = "gof1";
@@ -657,18 +880,9 @@ static int CmdGof1Rt(int argc, char **argv)
 			if (same) s.pass++; else s.fail++;
 		}
 		for (size_t k = 0; k < a.entries.size(); k++) {
-			if (!EndsWithNoCase(a.entries[k].name, ".DAT")) { s.na[ExtOf(a.entries[k].name) + " (opaque, proven by the archive rebuild)"]++; continue; }
-			std::vector<uint8_t> stored, plain;
-			if (!gof1::ReadEntry(a, k, stored, &err)) { printf("FAIL %s::%s: %s\n", argv[i], a.entries[k].name.c_str(), err.c_str()); s.fail++; continue; }
-			plain = stored; gof1::DecryptDat(plain);
-			FrameData fd;
-			if (!gof1::Load(fd, plain.data(), plain.size(), &err)) { printf("FAIL %s::%s: load: %s\n", argv[i], a.entries[k].name.c_str(), err.c_str()); s.fail++; continue; }
-			std::vector<uint8_t> out;
-			if (!gof1::Serialize(fd, out, &err)) { printf("FAIL %s: %s\n", a.entries[k].name.c_str(), err.c_str()); s.fail++; continue; }
-			std::vector<uint8_t> enc = out; gof1::EncryptDat(enc);
-			if (k == 0 || getenv("PARTS")) { auto cgp = new CG(); Parts &pp = *new Parts(cgp); std::string pe; const auto &blob = fd.m_han2->parts; bool ok = han2::PatToParts(blob.data(), blob.size(), pp, &pe); printf("  %s parts: %s, %zu part sets, %zu cutouts, %zu textures %s\n", a.entries[k].name.c_str(), ok ? "ok" : "FAIL", pp.partSets.size(), pp.cutOuts.size(), pp.gfxMeta.size(), pe.c_str()); }
-			if (out == plain && enc == stored) s.pass++;
-			else { size_t d = 0; while (d < std::min(out.size(), plain.size()) && out[d] == plain[d]) d++; printf("FAIL %s::%s: first diff 0x%zx (sizes %zu vs %zu)%s\n", argv[i], a.entries[k].name.c_str(), d, out.size(), plain.size(), enc == stored ? "" : " re-encrypt differs"); s.fail++; }
+			std::vector<uint8_t> d;
+			if (!gof1::ReadEntry(a, k, d, &err)) { printf("FAIL %s::%s: %s\n", argv[i], a.entries[k].name.c_str(), err.c_str()); s.fail++; continue; }
+			Gof1Member(std::string(argv[i]) + "::" + a.entries[k].name, a.entries[k].name, d, s, 0);
 		}
 		printf("%-40s pass %d fail %d skipped 0\n", argv[i], s.pass - p0, s.fail - f0);
 	}
@@ -716,6 +930,12 @@ int main(int argc, char **argv)
 	if (c == "animtest") return CmdAnimTest(argc - 2, argv + 2);
 	if (c == "gof1rt") return CmdGof1Rt(argc - 2, argv + 2);
 	if (c == "gof1shift") return CmdGof1Shift(argc - 2, argv + 2);
+	if (c == "fobrt") return CmdFobRt(argc - 2, argv + 2);
+	if (c == "chprt") return CmdChpRt(argc - 2, argv + 2);
+	if (c == "reprt") return CmdRepRt(argc - 2, argv + 2);
+	if (c == "fntrt") return CmdFntRt(argc - 2, argv + 2);
+	if (c == "audiort") return CmdAudioRt(argc - 2, argv + 2);
+	if (c == "miscrt") return CmdMiscRt(argc - 2, argv + 2);
 	if (c == "opaquert") return CmdOpaqueRt(argc - 2, argv + 2);
 	if (c == "census") return CmdCensus(argc - 2, argv + 2);
 	if (c == "pacrt") return CmdPacRt(argc - 2, argv + 2);

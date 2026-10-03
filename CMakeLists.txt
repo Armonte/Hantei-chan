@@ -553,6 +553,10 @@ endif()
 # French-Bread RBO / GOF2 model sources (PAC archive, HAN2RBO container, model loader/writer): linked wherever framedata.cpp is.
 add_executable(han2tool
 	src/han2/han2tool.cpp
+	src/han2/fob_file.cpp
+	src/han2/replay_file.cpp
+	src/han2/fnt_file.cpp
+	src/han2/misc_formats.cpp
 	src/han2_pat.cpp
 	src/han2_pat_write.cpp
 	src/han2_export.cpp
