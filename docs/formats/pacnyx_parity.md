@@ -84,7 +84,7 @@ Legend: [x] done, [ ] open. "(icaro)" = added by icaroffa 2026. "(ours)" = in ou
 - [x] Every frame field named after the IDA struct it was traced from, with enum combos and flag checkboxes (HAN2 inspector)
 - [x] Hitboxes for all six box classes (Kasanari, Yarare, Etc, Sousai, Tobi, Kougeki) shown and edited, not just parts
 - [x] Edits saved as a loose .DT2 the game prefers; proven in the game on a copy (docs/formats/evidence/)
-- [ ] Real animation playback from the pattern table, durations, loops, jumps and script lists (120 Hz), pause/step/loop/onion skin
+- [x] Real animation playback from the pattern table, durations, loops, jumps and script lists , pause/step/loop/onion skin [han2_anim.cpp stepper (same rules as the engine frame advance; han2tool animtest: 112 terminating patterns agree with the independent flow simulation) + Animation player window: play/pause/restart/step frame/step tick, loop, follow pattern jumps, 30-240 Hz logic rate (default 120) and speed, onion skin, clickable timeline with attack and script/effect markers, boxes drawn by the view]
 - [x] Undo/redo for every edit including AT, scripts, sequences [frame/AT/script/box edits go through the editor undo manager (han2 raw records are part of its content compare); CG import has its own undo/redo; parts through the PAT editor]
 - [x] Sprite/CG import and export [CG window; han2tool cgrt]
 - [x] Pose/sheet export (icaroffa's feature) grouped by the real animation sections [han2_export.cpp]

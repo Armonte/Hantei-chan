@@ -200,6 +200,8 @@ void MainFrame::Menu(unsigned int errorPopupId)
 			}
 			if (ImGui::MenuItem("RBO / GOF2 archives (PAC)...", nullptr, han2ui::showBrowser))
 				han2ui::showBrowser = !han2ui::showBrowser;
+			if (ImGui::MenuItem("Animation player (game rules, onion skin)...", nullptr, han2ui::showAnimWindow, hasActive && active->frameData.isHan2()))
+				han2ui::showAnimWindow = !han2ui::showAnimWindow;
 			if (ImGui::MenuItem("Changes against the loaded RBO / GOF2 file (diff)...", nullptr, han2ui::showDiffWindow, hasActive && active->frameData.isHan2()))
 				han2ui::showDiffWindow = !han2ui::showDiffWindow;
 			if (ImGui::MenuItem("CG sprites of this RBO / GOF2 character (export / import)...", nullptr, han2ui::showCgWindow, hasActive && active->cg.m_loaded))

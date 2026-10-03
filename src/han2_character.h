@@ -42,6 +42,9 @@ extern bool showInspector;
 void DrawInspector(CharacterInstance *ch, FrameState &state);
 
 extern bool showCgWindow;
+extern bool showAnimWindow;
+// Game-rate animation player; drives the view's pattern/frame so the editor draws the boxes of the playing frame.
+void DrawAnimWindow(CharacterInstance *ch, FrameState &state, void *onion /* OnionSkinSettings* */);
 extern bool showDiffWindow;
 void DrawDiffWindow(CharacterInstance *ch);
 // CG bank window: list, preview, export / import of the sprites (PNG).
