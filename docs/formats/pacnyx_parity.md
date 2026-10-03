@@ -11,15 +11,15 @@ reimplements the behaviour from the decompiled reference. No code is copied. The
 Legend: [x] done, [ ] open. "(icaro)" = added by icaroffa 2026. "(ours)" = in our modified PACNyx (GOF2 work).
 
 ## A. Main window (MainForm)
-- [ ] Working-folder picker + refresh; file tree of the folder (config.pcf remembers it)
+- [x] Working-folder picker + refresh; file tree of the folder (config.pcf remembers it) [browser: Working folder... / Refresh, recursive tree (depth 4), remembered in han2_settings.ini; evidence/m8_workfolder_tree.png]
 - [x] Tree shows PAC archives expanded into their entries (PAC detected by extension .pac AND by magic, so GOF2 data0x.dat opens) (ours) [PAC browser lists entries of every mounted archive; magic sniff, so GOF2 data0x.dat opens too]
 - [x] Tree: .DAT/.DT2/.IMG/.FOB/.PAT/.CHP entries recognised; double-click opens in a tab [browser double-click: characters open in the editor, .IMG in the image viewer, .FOB/others in the hex+strings viewer]
 - [x] Tree context menu: Extract file (from archive to disk) [per-entry Extract...]
 - [x] Tabs: close tab, close all tabs, unsaved-change marker `*` on tab title, save-prompt on close/exit [existing Hantei-chan tabs, "*" marker, save prompt]
 - [x] File > New > IMG, DAT, PAC [PAC: Create/patch window; IMG: import PNG into a viewer; DAT new: not applicable (edit existing)]
 - [x] File > Open, Save, Save As, Exit [Load RBO / GOF2 character..., Save Character (loose .DT2 or full .DAT), Save As]
-- [ ] Language menu English / Japanese (UI strings; Hantei-chan has its own i18n decision pending)
-- [ ] Warn when working folder is on C: (MainForm_CDriveNotRecommended)  (low value; may be dropped with a note)
+- [x] Language menu English / Japanese [Windows menu > Language, and the EN/JP button in the browser; covers the RBO/GOF2 windows (browser, loading report); persisted in han2_settings.ini]
+- [x] Warn when working folder is on C: (MainForm_CDriveNotRecommended) [warning line in the browser]
 - [x] Drag and drop files onto views (IMG, sprite sheets, effects) [WM_DROPFILES: characters, archives, PAT/CHP open; IMG opens a viewer. Implemented but not exercised by an automated test]
 
 ## B. PAC archives (PAC.cs, CreatePACForm, SavePACForm)
@@ -56,7 +56,7 @@ Legend: [x] done, [ ] open. "(icaro)" = added by icaroffa 2026. "(ours)" = in ou
 - [x] Effects: list of up to 3000, add, remove, rename, change graphic, save as, set effect base point, enable/disable all blocks, calculate blocks [effects are CG images here: CG window (export/import)]
 - [x] Effect canvas with block grid, draw base point / draw blocks toggles [CG window preview]
 - [x] Limits and messages: 1000 poses, 40 parts, 3000 effects [40 parts / 1000-2000 poses enforced by BuildPat with messages]
-- [ ] Loading dialog with warnings/errors summary (DATLoading)
+- [x] Loading dialog with warnings/errors summary (DATLoading) [Loading report window: per-load summary + warnings (no .DAT, no CG, parts failure) and load errors; opens by itself on warnings/errors]
 - [x] (icaro) Name strings normalised at the first NUL (NormalizeDatString) [names cut at the first NUL on load]
 - [x] (icaro) Sprite sheet export checks existence, defaults to .png; null guards; list setup without duplicates [PNG export always .png, empty image reported]
 - [x] (icaro) Export DAT as JSON + PNG: per pose JSON (40 parts: src/dest rect, origin, layer, draw order, rotation, scale, flip, ARGB, sheet index+name), per pose PNG, animations.json [Export RBO / GOF2 sprites, poses and animations: poses.json with every part field, pose PNGs]

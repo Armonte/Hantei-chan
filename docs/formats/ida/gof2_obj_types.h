@@ -21,17 +21,17 @@ struct Gof2Obj {
  int drawDepthOffset; // +0x210 [traced] Obj_ApplyFrameDrawPriority 0x432E30 0x432E30 writes it; Obj_ComputeTotalDepth 0x430570 sums `*(obj+528) + **(obj+536)` over the depthParent chain (RBO drawDepthOffset analog)
  int drawLayer; // +0x214 [traced] Obj_ApplyFrameDrawPriority 0x432E30 cases 35..39 store it; Draw_ObjTreeLayerWithAfterimages 0x49F850 draws objects whose layer equals the pass (RBO drawLayer analog)
  int * drawDepthBasePtr; // +0x218 [traced] Obj_ApplyFrameDrawPriority 0x432E30 / sub_432D90 point it at g_MiscCtx_72EC34[12] or the per-side word 0x65B6C8+4*side; dereferenced in Obj_ComputeTotalDepth
- void * depthParent; // +0x21c [traced] Obj_SumAncestorDepthOffsets 0x430540 walks it; Obj_SpawnFromSpawnRecord 0x437270 sets it to the parent for relative-depth spawns (0x40000); cleared by Obj_RunParentLinkAction mask 0x40 (RBO depthParent analog)
- void * ownerListNext; // +0x220 [traced] ObjPool_LinkIntoOwnerList 0x49FCF0 0x49FCF0 `*(a2+544) = head`; free list also chains through +544 (ObjPool_AllocIntoOwnerList); owner-list walks `i = *(i+544)`
- void * ownerListPrev; // +0x224 [traced] ObjPool_LinkIntoOwnerList 0x49FCF0 `*(a2+548) = prev`; ObjPool_FreeObjAndUnlink 0x49FEA0 0x49FEA0 unlinks via it
- void * prevSibling; // +0x228 [traced] ObjPool_AllocChild 0x49FDD0 0x49FDD0 `*(new+552) = 0; *(old_first+552) = new`
- void * nextSibling; // +0x22c [traced] ObjPool_AllocChild 0x49FDD0 `new+556 = old first child`; child walks `i = i[139]`
- void * parent; // +0x230 [traced] ObjPool_AllocChild 0x49FDD0 `v2[140] = a1`; parent climbs `a1 = a1[140]` throughout (Obj_RaiseHitStopFrames, sub_43C1A0 ...)
- void * firstChild; // +0x234 [traced] ObjPool_AllocChild 0x49FDD0 `*(a1+564) = new`; ObjPool_FreeSiblingChainRecursive 0x49FE60 frees via it
- void * spawner; // +0x238 [traced] Obj_SpawnFromSpawnRecord 0x437270 `*(v4+568) = a1` (creator); ScriptVm_LoadArgsForObj 0x43D110 case 2 reads spawner pos/facing/pattern; sub_42F3A0 script-var base `a1[142]+312` (RBO spawner analog)
- void * firstLinkedTarget; // +0x23c [traced] Obj_ResetOnDetach 0x4390D0 `v2 = a1[143]` walks held targets; Obj_SpawnFrameEffectRecord 0x4327F0 `for (i = obj[143]; i; i = i[145])`; Obj_IsSpecialCancelAllowed tests it
+ struct Gof2Obj * depthParent; // +0x21c [traced] Obj_SumAncestorDepthOffsets 0x430540 walks it; Obj_SpawnFromSpawnRecord 0x437270 sets it to the parent for relative-depth spawns (0x40000); cleared by Obj_RunParentLinkAction mask 0x40 (RBO depthParent analog)
+ struct Gof2Obj * ownerListNext; // +0x220 [traced] ObjPool_LinkIntoOwnerList 0x49FCF0 0x49FCF0 `*(a2+544) = head`; free list also chains through +544 (ObjPool_AllocIntoOwnerList); owner-list walks `i = *(i+544)`
+ struct Gof2Obj * ownerListPrev; // +0x224 [traced] ObjPool_LinkIntoOwnerList 0x49FCF0 `*(a2+548) = prev`; ObjPool_FreeObjAndUnlink 0x49FEA0 0x49FEA0 unlinks via it
+ struct Gof2Obj * prevSibling; // +0x228 [traced] ObjPool_AllocChild 0x49FDD0 0x49FDD0 `*(new+552) = 0; *(old_first+552) = new`
+ struct Gof2Obj * nextSibling; // +0x22c [traced] ObjPool_AllocChild 0x49FDD0 `new+556 = old first child`; child walks `i = i[139]`
+ struct Gof2Obj * parent; // +0x230 [traced] ObjPool_AllocChild 0x49FDD0 `v2[140] = a1`; parent climbs `a1 = a1[140]` throughout (Obj_RaiseHitStopFrames, sub_43C1A0 ...)
+ struct Gof2Obj * firstChild; // +0x234 [traced] ObjPool_AllocChild 0x49FDD0 `*(a1+564) = new`; ObjPool_FreeSiblingChainRecursive 0x49FE60 frees via it
+ struct Gof2Obj * spawner; // +0x238 [traced] Obj_SpawnFromSpawnRecord 0x437270 `*(v4+568) = a1` (creator); ScriptVm_LoadArgsForObj 0x43D110 case 2 reads spawner pos/facing/pattern; sub_42F3A0 script-var base `a1[142]+312` (RBO spawner analog)
+ struct Gof2Obj * firstLinkedTarget; // +0x23c [traced] Obj_ResetOnDetach 0x4390D0 `v2 = a1[143]` walks held targets; Obj_SpawnFrameEffectRecord 0x4327F0 `for (i = obj[143]; i; i = i[145])`; Obj_IsSpecialCancelAllowed tests it
  void * linkHolder; // +0x240 [traced] Obj_ResetOnDetach 0x4390D0 zeroes `*(v2+576)`; ScriptVm_LoadArgsForObj 0x43D110 case 2 reads `*(spawner+576)`; Obj_TickTimersRecursive `i[144]` splits held/non-held passes
- void * nextLinkedTarget; // +0x244 [traced] Obj_SpawnFrameEffectRecord 0x4327F0 `i = i[145]`; Obj_ResetOnDetach `v2 = *(v2+580)`
+ struct Gof2Obj * nextLinkedTarget; // +0x244 [traced] Obj_SpawnFrameEffectRecord 0x4327F0 `i = i[145]`; Obj_ResetOnDetach `v2 = *(v2+580)`
  void * linkContext; // +0x248 [traced] Obj_ScriptTick 0x434AD0 lerps targets with ctx[2]/ctx[3]; Obj_ResetOnDetach 0x4390D0 writes the 248-byte context node (a1[146]); Obj_ReleaseSubNodes 0x4315C0 frees it to g_ObjSlot248Pool
  void * linkNode; // +0x24c [traced] Obj_AttachSlot24CNode 0x431A40 0x431A40; Obj_ResetOnDetach 0x4390D0 `*(*(v2+588)+12..24)`; Obj_ReleaseSubNodes 0x4315C0 frees it to g_ObjSlot24CPool
  struct Gof2ObjABufferedJump bufferedJump; // +0x250 [traced] ObjEvent_InputRuleBufferJump 0x4365D0 0x4365D0, Obj_TestRelativePosition 0x436470 0x436470, ObjEvent_ConditionalRuleSelectJump 0x436280 0x436280; only the kind dword has a reader
@@ -129,7 +129,7 @@ struct Gof2Obj {
  int guardCrushPending; // +0x780 [traced] Victim_MarkGuardCrush sets 1; HitJudge_ResolveGuardPassAndCrush 0x4964D0 turns it into the crush reaction (state 56 on ground, 37 airborne) and clears it; HitJudge_CommitPendingReactions / HitJudge_ResolveHitsOnGuardingVictim test it
  Gof2ObjRecoverFlags recoverFlags; // +0x784 [traced] Victim_SetRecoverBlockFlags 0x43DD00 (3, |=0x10/0x20 when the attack blocks recovery A/B), Victim_EnterReactionState 0x435EA0, sub_499EE0, Obj_SpawnFrameEffectRecord; Obj_CanTechRecover 0x433990 and Yarare_CanTechRecover 0x43E4B0 test (flags&0x22)==2
  Gof2ObjRecoverFlags pendingRecoverFlags; // +0x788 [traced] deferred value of recoverFlags: Obj_ScriptTick copies it to 1924 on landing and clears it; Victim_SetRecoverBlockFlags/Victim_EnterReactionState zero it
- struct Obj * pushbackAttackerRoot; // +0x78c [traced] root attacker object of the reaction, set by HitJudge_ResolveTick 0x4996A0 (by hit type) and HitJudge_ResolveHitsOnGuardingVictim; Obj_ApplyLandingFrameJump 0x430A40 pushes it (+4592 x) when this object is stopped by the screen edge; 0 = none
+ struct Gof2Obj * pushbackAttackerRoot; // +0x78c [traced] root attacker object of the reaction, set by HitJudge_ResolveTick 0x4996A0 (by hit type) and HitJudge_ResolveHitsOnGuardingVictim; Obj_ApplyLandingFrameJump 0x430A40 pushes it (+4592 x) when this object is stopped by the screen edge; 0 = none
  int launchAttackerSide; // +0x790 [traced] attacker side index recorded by Victim_EnterReactionState for launch/sweep states 36..39 (-1 = none, sub_499EE0); Obj_ExecCmdListBetween indexes g_PlayerCharaObj[] with it
  int launchAttackerValid; // +0x794 [traced] 1 when launchAttackerSide is meaningful (states 36..39), 0 otherwise; consumed (-> 0) by sub_495620; tested in Obj_ExecCmdListBetween
  int comboStarted; // +0x798 [traced] set 1 by HitJudge_ApplyHit on the first received hit (and for attacker states 60/62/../78 of the player); HitJudge_ApplyHit/Obj_ExecCmdListBetween read it (`ctl==1 || comboStarted==0`) as the first-hit damage flag; cleared by Yarare_ResetHitState

@@ -762,6 +762,12 @@ void MainFrame::Menu(unsigned int errorPopupId)
 			if (ImGui::MenuItem("Stage Browser", nullptr, m_showStageBrowser)) m_showStageBrowser = !m_showStageBrowser;
 			if (ImGui::MenuItem("HUD preview / colours", nullptr, m_showHud)) m_showHud = !m_showHud;
 			if (ImGui::MenuItem("MBAC (HA4) Inspector", nullptr, ha4ui::showInspector)) ha4ui::showInspector = !ha4ui::showInspector;
+			if (ImGui::MenuItem(han2ui::Tr("RBO / GOF2 loading report", "RBO / GOF2 \xe8\xaa\xad\xe3\x81\xbf\xe8\xbe\xbc\xe3\x81\xbf\xe3\x83\xac\xe3\x83\x9d\xe3\x83\xbc\xe3\x83\x88"), nullptr, han2ui::showLoadReport)) han2ui::showLoadReport = !han2ui::showLoadReport;
+			if (ImGui::BeginMenu("Language / \xe8\xa8\x80\xe8\xaa\x9e (RBO / GOF2 windows)")) {
+				if (ImGui::MenuItem("English", nullptr, han2ui::uiLanguage == 0)) { han2ui::uiLanguage = 0; han2ui::SaveHan2Settings(); }
+				if (ImGui::MenuItem("\xe6\x97\xa5\xe6\x9c\xac\xe8\xaa\x9e", nullptr, han2ui::uiLanguage == 1)) { han2ui::uiLanguage = 1; han2ui::SaveHan2Settings(); }
+				ImGui::EndMenu();
+			}
 			if (ImGui::MenuItem("RBO / GOF2 (HAN2) Inspector", nullptr, han2ui::showInspector)) han2ui::showInspector = !han2ui::showInspector;
 			if (ImGui::MenuItem("Game Link (MBAACC)", nullptr, gamelink::showPanel)) gamelink::showPanel = !gamelink::showPanel;
 			// [authoring] the old Tag / Team entry opens the Authoring workspace on its Tuning tab (§5.1)

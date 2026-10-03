@@ -6,24 +6,52 @@
 #include "png_writer.h"
 #include "misc.h"
 
+#include <windows.h>
 #include <imgui.h>
 #include <algorithm>
 #include <cctype>
 #include <filesystem>
 #include <fstream>
+#include <functional>
 
 namespace han2ui {
 
 bool showBrowser = false;
 
+int uiLanguage = 0;
+bool showLoadReport = false;
+const char *Tr(const char *en, const char *jp) { return uiLanguage == 1 ? jp : en; }
+
 namespace {
+std::string SettingsPath()
+{
+	char buf[512]; DWORD n = GetCurrentDirectoryA(512, buf);
+	return std::string(buf, n) + "\\han2_settings.ini";
+}
+struct LoadEntry { std::string name, summary; std::vector<std::string> warnings; bool failed; };
+std::vector<LoadEntry> g_reports;
+std::string g_workFolder;
+struct FolderNode { std::string name, path; std::vector<FolderNode> dirs; std::vector<std::string> files; };
+FolderNode g_root; bool g_scanned = false;
+void ScanFolder(const std::string &dir, FolderNode &node, int depth)
+{
+	if (dir.empty() || depth > 4) return;
+	node.path = dir;
+	std::error_code ec;
+	for (auto &e : std::filesystem::directory_iterator(std::filesystem::u8path(dir), ec)) {
+		if (e.is_directory(ec)) { FolderNode d; d.name = e.path().filename().u8string(); ScanFolder(e.path().u8string(), d, depth + 1); if (!d.dirs.empty() || !d.files.empty()) node.dirs.push_back(std::move(d)); continue; }
+		if (!e.is_regular_file(ec)) continue;
+		std::string x; for (char ch : e.path().extension().string()) x += (char)tolower((unsigned char)ch);
+		if (x == ".dt2" || x == ".dat" || x == ".pac" || x == ".pat" || x == ".chp" || x == ".img" || x == ".p" || x == ".fob") node.files.push_back(e.path().u8string());
+	}
+	std::sort(node.files.begin(), node.files.end());
+	std::sort(node.dirs.begin(), node.dirs.end(), [](const FolderNode &a, const FolderNode &b) { return a.name < b.name; });
+}
 struct Mounted { std::shared_ptr<pac::Archive> a; std::shared_ptr<gof1::Archive> g; std::string shortName; };
 std::vector<Mounted> g_mounted;
 int g_sel = 0;
 char g_filter[64] = "";
 std::string g_extractStatus;
-std::string g_folder;
-std::vector<std::string> g_folderFiles;
 
 std::string Lower(std::string s) { for (auto &c : s) c = (char)tolower((unsigned char)c); return s; }
 bool EndsWith(const std::string &s, const char *suf)
@@ -31,6 +59,45 @@ bool EndsWith(const std::string &s, const char *suf)
 	std::string l = Lower(s); size_t n = strlen(suf);
 	return l.size() >= n && l.compare(l.size() - n, n, suf) == 0;
 }
+}
+
+void LoadHan2Settings()
+{
+	const std::string p = SettingsPath();
+	uiLanguage = (int)GetPrivateProfileIntA("han2", "Language", 0, p.c_str());
+	char buf[1024]{}; GetPrivateProfileStringA("han2", "WorkFolder", "", buf, sizeof(buf), p.c_str());
+	g_workFolder = buf;
+}
+void SaveHan2Settings()
+{
+	const std::string p = SettingsPath();
+	WritePrivateProfileStringA("han2", "Language", std::to_string(uiLanguage).c_str(), p.c_str());
+	WritePrivateProfileStringA("han2", "WorkFolder", g_workFolder.c_str(), p.c_str());
+}
+const std::string &WorkFolder() { return g_workFolder; }
+void SetWorkFolder(const std::string &dir) { g_workFolder = dir; SaveHan2Settings(); }
+
+void PushLoadReport(const std::string &name, const std::string &summary, const std::vector<std::string> &warnings, bool failed)
+{
+	g_reports.push_back({name, summary, warnings, failed});
+	if (g_reports.size() > 50) g_reports.erase(g_reports.begin());
+	if (failed || !warnings.empty()) showLoadReport = true;   // clean loads stay quiet; the window can be opened from the menu
+}
+void DrawLoadReport()
+{
+	if (!showLoadReport) return;
+	ImGui::SetNextWindowSize(ImVec2(620, 320), ImGuiCond_FirstUseEver);
+	if (!ImGui::Begin(Tr("Loading report", "\xe8\xaa\xad\xe3\x81\xbf\xe8\xbe\xbc\xe3\x81\xbf\xe3\x83\xac\xe3\x83\x9d\xe3\x83\xbc\xe3\x83\x88"), &showLoadReport)) { ImGui::End(); return; }
+	if (ImGui::Button(Tr("Clear", "\xe3\x82\xaf\xe3\x83\xaa\xe3\x82\xa2"))) g_reports.clear();
+	for (int i = (int)g_reports.size() - 1; i >= 0; i--) {
+		const LoadEntry &e = g_reports[i];
+		ImGui::PushID(i);
+		ImGui::TextColored(e.failed ? ImVec4(1, .4f, .3f, 1) : (e.warnings.empty() ? ImVec4(.5f, 1, .5f, 1) : ImVec4(1, .8f, .3f, 1)), "%s", e.name.c_str());
+		ImGui::SameLine(); ImGui::TextDisabled("%s", e.summary.c_str());
+		for (auto &w : e.warnings) ImGui::BulletText("%s", w.c_str());
+		ImGui::PopID();
+	}
+	ImGui::End();
 }
 
 std::string AddArchive(const std::string &path)
@@ -63,12 +130,17 @@ bool DrawBrowser(OpenRequest &req, std::string &message)
 	ImGui::SetNextWindowSize(ImVec2(760, 520), ImGuiCond_FirstUseEver);
 	if (!ImGui::Begin("RBO / GOF2 archives", &showBrowser)) { ImGui::End(); return false; }
 
-	if (ImGui::Button("Add archive...")) {
+	if (ImGui::Button(Tr("Add archive...", "\xe3\x82\xa2\xe3\x83\xbc\xe3\x82\xab\xe3\x82\xa4\xe3\x83\x96\xe8\xbf\xbd\xe5\x8a\xa0..."))) {
 		std::string path = FileDialog(fileType::HAN2, false);
 		if (!path.empty()) message = AddArchive(path);
 	}
 	ImGui::SameLine();
-	if (ImGui::Button("Open folder...")) { std::string d = BrowseForFolderUtf8(""); if (!d.empty()) { g_folder = d; g_folderFiles.clear(); std::error_code ec; for (auto &e : std::filesystem::directory_iterator(std::filesystem::u8path(d), ec)) { if (!e.is_regular_file()) continue; std::string x = Lower(e.path().extension().string()); if (x == ".dt2" || x == ".dat" || x == ".pac" || x == ".pat" || x == ".chp" || x == ".img") g_folderFiles.push_back(e.path().u8string()); } std::sort(g_folderFiles.begin(), g_folderFiles.end()); } }
+	if (ImGui::Button(Tr("Working folder...", "\xe4\xbd\x9c\xe6\xa5\xad\xe3\x83\x95\xe3\x82\xa9\xe3\x83\xab\xe3\x83\x80..."))) { std::string d = BrowseForFolderUtf8(""); if (!d.empty()) { SetWorkFolder(d); g_scanned = false; } }
+	ImGui::SameLine();
+	if (ImGui::Button(Tr("Refresh", "\xe6\x9b\xb4\xe6\x96\xb0"))) g_scanned = false;
+	ImGui::SameLine();
+	{ const char *lg = uiLanguage == 1 ? "EN" : "JP"; if (ImGui::Button(lg)) { uiLanguage = 1 - uiLanguage; SaveHan2Settings(); } }
+	if (!g_scanned) { g_scanned = true; g_root = FolderNode(); ScanFolder(WorkFolder(), g_root, 0); }
 	ImGui::SameLine();
 	ImGui::TextDisabled("Later archives in the list override earlier ones when a file name occurs twice (Update01 and the Ex discs patch DATA0x).");
 
@@ -88,14 +160,21 @@ bool DrawBrowser(OpenRequest &req, std::string &message)
 		ImGui::SameLine();
 		if (ImGui::Button("Unmount")) { g_mounted.erase(g_mounted.begin() + g_sel); g_sel = std::max(0, g_sel - 1); }
 	}
-	if (!g_folderFiles.empty()) {
-		ImGui::Separator(); ImGui::TextDisabled("folder: %s", g_folder.c_str());
-		for (size_t i = 0; i < g_folderFiles.size(); i++) {
-			ImGui::PushID((int)(1000 + i));
-			std::string nm = std::filesystem::u8path(g_folderFiles[i]).filename().string();
-			if (ImGui::Selectable(nm.c_str()) ) { req.stem.clear(); req.read = nullptr; req.origin = g_folderFiles[i]; req.stem = "\x01open"; open = true; }
-			ImGui::PopID();
-		}
+	if (!WorkFolder().empty()) {
+		ImGui::Separator(); ImGui::TextDisabled("%s", WorkFolder().c_str());
+		if (WorkFolder().size() >= 2 && (WorkFolder()[0] == 'C' || WorkFolder()[0] == 'c') && WorkFolder()[1] == ':')
+			ImGui::TextColored(ImVec4(1, .8f, .3f, 1), "%s", Tr("The working folder is on C: (not recommended: Program Files / permission problems).", "\xe4\xbd\x9c\xe6\xa5\xad\xe3\x83\x95\xe3\x82\xa9\xe3\x83\xab\xe3\x83\x80\xe3\x81\x8c C: \xe3\x81\xab\xe3\x81\x82\xe3\x82\x8a\xe3\x81\xbe\xe3\x81\x99 (\xe9\x9d\x9e\xe6\x8e\xa8\xe5\xa5\xa8)"));
+		int uid = 0;
+		std::function<void(const FolderNode &)> draw = [&](const FolderNode &n) {
+			for (auto &d : n.dirs) if (ImGui::TreeNode((d.name + "##" + std::to_string(uid++)).c_str())) { draw(d); ImGui::TreePop(); }
+			for (auto &f : n.files) {
+				ImGui::PushID(uid++);
+				std::string nm = std::filesystem::u8path(f).filename().string();
+				if (ImGui::Selectable(nm.c_str())) { req.stem = "\x01open"; req.read = nullptr; req.origin = f; open = true; }
+				ImGui::PopID();
+			}
+		};
+		draw(g_root);
 	}
 	ImGui::EndChild();
 	ImGui::SameLine();

@@ -6,6 +6,7 @@
 
 #include "han2_character.h"
 #include <string>
+#include <vector>
 
 namespace han2ui {
 
@@ -17,6 +18,19 @@ struct OpenRequest {
 	std::string origin;
 	std::string gof1Archive, gof1Entry;   // set for GOF1 .p entries: archive path + entry name
 };
+
+// UI language of the HAN2 windows (0 English, 1 Japanese); persisted in han2_settings.ini next to the exe.
+extern int uiLanguage;
+const char *Tr(const char *en, const char *jp);
+void LoadHan2Settings();
+void SaveHan2Settings();
+// Loading report: one entry per load attempt with a summary and the warnings / errors found (PACNyx DATLoading equivalent).
+void PushLoadReport(const std::string &name, const std::string &summary, const std::vector<std::string> &warnings, bool failed);
+extern bool showLoadReport;
+void DrawLoadReport();
+// Working folder: remembered between sessions, listed as a tree in the browser.
+const std::string &WorkFolder();
+void SetWorkFolder(const std::string &dir);
 
 // Mount an archive (error text when it is not a PAC).
 std::string AddArchive(const std::string &path);

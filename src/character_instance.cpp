@@ -1,3 +1,4 @@
+#include "han2_browser.h"
 #include "character_instance.h"
 #include "ini.h"
 #include "misc.h"
@@ -174,7 +175,14 @@ bool CharacterInstance::loadHan2(const std::string& stem,
 	const std::string& origin, const std::string& saveTarget, std::string& err)
 {
 	std::string summary;
-	if (!han2::LoadCharacter(*this, stem, read, origin, &summary, &err)) return false;
+	if (!han2::LoadCharacter(*this, stem, read, origin, &summary, &err)) { han2ui::PushLoadReport(stem, "", {err}, true); return false; }
+	{
+		std::vector<std::string> w;
+		if (summary.find("no .DAT") != std::string::npos) w.push_back("no .DAT next to the .DT2: no sprites / parts");
+		if (summary.find("no CG") != std::string::npos) w.push_back("no CG sprite bank found");
+		if (summary.find("parts: ") != std::string::npos) w.push_back("parts could not be converted: " + summary.substr(summary.find("parts: ") + 7));
+		han2ui::PushLoadReport(stem, summary, w, false);
+	}
 	m_name = stem;
 	m_ha6Paths.clear();
 	m_topHA6Path = saveTarget;
