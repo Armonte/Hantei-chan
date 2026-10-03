@@ -83,33 +83,33 @@ static int CmdExtract(int argc, char **argv)
 
 static int CmdPacRt(int argc, char **argv)
 {
+	// Bounded memory: entries stream from the open archive into a temp file (pac::WriteArchive), then both files are compared in chunks.
 	int fails = 0;
 	for (int i = 0; i < argc; i++) {
 		pac::Archive a; std::string err;
 		if (!pac::Open(argv[i], a, &err)) { printf("FAIL %s: %s\n", argv[i], err.c_str()); fails++; continue; }
-		std::vector<pac::NewEntry> ne(a.entries.size());
+		std::vector<pac::WriteSource> src(a.entries.size());
 		for (size_t k = 0; k < a.entries.size(); k++) {
-			ne[k].name = a.entries[k].name;
-			ne[k].rawName.assign(a.entries[k].rawName, a.entries[k].rawName + pac::kNameLen);
-			if (!pac::ReadEntry(a, k, ne[k].data, &err)) { printf("FAIL %s: %s\n", argv[i], err.c_str()); fails++; goto next; }
+			src[k].name = a.entries[k].name;
+			src[k].rawName.assign(a.entries[k].rawName, a.entries[k].rawName + pac::kNameLen);
+			src[k].kind = pac::WriteSource::ArchiveEntry; src[k].archive = &a; src[k].index = k;
 		}
-		{
-			std::vector<uint8_t> out;
-			if (!pac::Build(ne, out, &err)) { printf("FAIL %s: build: %s\n", argv[i], err.c_str()); fails++; continue; }
-			// compare to the original file stream-wise
-			std::ifstream f(std::filesystem::u8path(argv[i]), std::ios::binary);
-			std::vector<uint8_t> orig(out.size());
-			f.read((char *)orig.data(), (std::streamsize)orig.size());
-			bool same = (uint64_t)out.size() == a.fileSize && f.gcount() == (std::streamsize)out.size() && out == orig;
-			if (same) printf("OK   %s byte-identical (%zu entries)\n", argv[i], ne.size());
-			else {
-				size_t k = 0; size_t m = (size_t)f.gcount() < out.size() ? (size_t)f.gcount() : out.size();
-				while (k < m && out[k] == orig[k]) k++;
-				printf("DIFF %s: rebuilt %zu bytes vs %llu, first diff at 0x%zx\n", argv[i], out.size(), (unsigned long long)a.fileSize, k);
-				fails++;
-			}
+		std::error_code ec;
+		const std::string tmp = (std::filesystem::temp_directory_path(ec) / ("han2_pacrt_" + std::to_string(i) + ".bin")).u8string();
+		if (!pac::WriteArchive(tmp, src, {}, &err)) { printf("FAIL %s: build: %s\n", argv[i], err.c_str()); fails++; continue; }
+		std::ifstream fa(std::filesystem::u8path(argv[i]), std::ios::binary), fb(std::filesystem::u8path(tmp), std::ios::binary);
+		const uint64_t sa = std::filesystem::file_size(std::filesystem::u8path(argv[i]), ec), sb = std::filesystem::file_size(std::filesystem::u8path(tmp), ec);
+		std::vector<char> ba(1 << 20), bb(1 << 20);
+		uint64_t pos = 0; bool same = sa == sb; uint64_t firstDiff = 0;
+		while (same && pos < sa) {
+			fa.read(ba.data(), (std::streamsize)ba.size()); fb.read(bb.data(), (std::streamsize)bb.size());
+			size_t n = (size_t)fa.gcount(); if (n != (size_t)fb.gcount()) { same = false; firstDiff = pos; break; }
+			if (memcmp(ba.data(), bb.data(), n) != 0) { size_t k = 0; while (ba[k] == bb[k]) k++; same = false; firstDiff = pos + k; break; }
+			pos += n; if (n == 0) break;
 		}
-	next:;
+		fa.close(); fb.close(); std::filesystem::remove(std::filesystem::u8path(tmp), ec);
+		if (same) printf("OK   %s byte-identical (%zu entries)\n", argv[i], src.size());
+		else { printf("DIFF %s: rebuilt %llu bytes vs %llu, first diff at 0x%llx\n", argv[i], (unsigned long long)sb, (unsigned long long)sa, (unsigned long long)firstDiff); fails++; }
 	}
 	return fails ? 1 : 0;
 }
