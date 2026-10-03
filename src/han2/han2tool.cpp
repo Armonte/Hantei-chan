@@ -341,7 +341,9 @@ static int CmdPatRt(int argc, char **argv)
 			else if (!han2::Parse(b.data(), b.size(), f, &err)) { st.skipped++; return; }
 			const auto &blob = rawpat.empty() ? f.area[han2::kAreaParts] : rawpat;
 			if (blob.empty()) { st.skipped++; return; }
-			CG *cgp = new CG(); Parts &parts = *new Parts(cgp);   /* leaked on purpose: ~Parts releases GL objects and the tool has no GL context */
+			// ONE Parts/CG reused for every entry (bounded memory; never destroyed: ~Parts releases GL objects and the tool has no GL context)
+			static CG *cgp = new CG(); static Parts *partsp = new Parts(cgp);
+			Parts &parts = *partsp; parts.textures.clear(); parts.partSets.clear(); parts.cutOuts.clear(); parts.shapes.clear(); parts.gfxMeta.clear(); parts.loaded = false;
 			bool rok = han2::PatToParts(blob.data(), blob.size(), parts, &err);
 			if (!rok) { printf("FAIL %s: read: %s\n", label.c_str(), err.c_str()); st.fail++; return; }
 			std::vector<uint8_t> out;

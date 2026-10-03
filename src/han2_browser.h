@@ -19,8 +19,8 @@ struct OpenRequest {
 	std::string gof1Archive, gof1Entry;   // set for GOF1 .p entries: archive path + entry name
 };
 
-// UI language of the HAN2 windows (0 English, 1 Japanese); persisted in han2_settings.ini next to the exe.
-extern int uiLanguage;
+// UI language lives in i18n::language (src/i18n.h); persisted in han2_settings.ini next to the exe.
+
 const char *Tr(const char *en, const char *jp);
 void LoadHan2Settings();
 void SaveHan2Settings();
