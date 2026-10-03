@@ -390,9 +390,9 @@ prototypes applied to `SpriteDataSlot_LoadCharacterDat`, `SpriteDataSlot_UploadP
 
 * Actor fields that are only ever written (section 12.4 has the evidence; all re-checked 2026-10-03 with a Hex-Rays ctree scan plus a displacement scan of every instruction, actor-based `+off` and slot-based `+off+4`, indexed forms included):
   value proven, no reader exists (dead stores): `superLevelCrossMark`, `maxLife`, `posXAfterIntegrate`, `startedByCommandId`, `afterimageRestart`;
-  value always constant and no reader, meaning UNPROVEN (neutral names kept): `homingReserved_1C`, `recoverReserved`, `inputReserved_108`, `facingReserved_24C`.
+  value always constant and PROVEN unread (exhaustive proof 2026-10-03, section 12.4), renamed `unused_<hexoff>`: `unused_1C` (was `homingReserved_1C`), `unused_E3` (was `recoverReserved`), `unused_108` (was `inputReserved_108`), `unused_24C` (was `facingReserved_24C`).
   Other write-only or unread fields (not part of this pass): `reservePending`, `hitRecoverFrames`, `scriptFlag105`, `inputHeldFlags`, `requestParam`, `cameraExcludeFlag`, `contactMark` (only `FighterCpuAiStep` reads it).
-* `moveClass`, the `Gof1CommandFlags` bits 0x08 / 0x40 and the `Gof1ObjFlagsA/B` bits are now proven from every reader (section 12.4). Unexercised in the shipped data: `G1CMD_GUARD_CANCEL` (0x40) and `G1CMD_STANCE_AIR` (0x02) never occur in the 8 CT files; the code path is proven, no play-test was done.
+* `moveClass`, the `Gof1CommandFlags` bits 0x08 / 0x40 and the `Gof1ObjFlagsA/B` bits are now proven from every reader (section 12.4). `G1CMD_GUARD_CANCEL` (0x40) and `G1CMD_STANCE_AIR` (0x02) are code-proven and dormant: no entry of any shipped command table sets them (data-proof table in section 12.4, `tools/gof1/gof1_ct_scan.py`); no play-test was done.
   The CT header bytes +1, +4, +6, +7 and `flags` bits 4/5 are constant in the 8 shipped CT files and unread.
 * The second and third section of VECTOR.TXT (a 7 x 5 table at 0x1553030 and the 7 hit-stop levels) are not typed here. The fighter slot is fully covered: 6316 = 4 + 656 (actor) + 28 (CT header) + 4 (command count) + 4600 (100 commands) + 1024 (two input rings).
 
@@ -413,13 +413,13 @@ Fighters are created by `SetupFighterSlot` (was `sub_403A90`) -> `InitFighterSlo
 command table); objects by `InitChildObject` (EF types 1/8, `memset(slot + 4, 0, 0x290)`), `SpawnChildEffectFromParent` (EF 50) and `SpawnEffectFromActorFrame` (ghost trail, `objKind` 31).
 
 Method and evidence: each field is named from the functions that read or write it (tags in the comment column: **T** traced, **I** inferred, **U** no function accesses the byte).
-`unreferenced_*` / `homingReserved_1C` / `lifeInitCopy` style fields were checked three ways: Hex-Rays ctree scan of all 953 functions after typing the pools and the 106 actor/slot functions
+`unreferenced_*` / `unused_*` / `lifeInitCopy` style fields were checked three ways: Hex-Rays ctree scan of all 953 functions after typing the pools and the 106 actor/slot functions
 (member accesses with read/write classification), a displacement scan of every instruction, and the Debug_DrawEntityInfo labels (`TOBI`, `PARAM`, `DASH`, `J/B/CNT`) which confirm `tobiCount`, `paramVar`, `dashCount` and the input rings.
 The 51 `unreferenced_*` bytes of the actor are zero after the spawn `memset` and never touched afterwards; they are listed as explicit fields so that **unmapped = 0**.
 
 | struct | size | unmapped | unused/unreferenced bytes |
 |---|---|---|---|
-| `Gof1Actor` | 656 | 0 | 51 (+ 15 bytes in 9 named fields that are written but never read: `homingReserved_1C`, `superLevelCrossMark`, `maxLife`, `posXAfterIntegrate`, `recoverReserved`, `inputReserved_108`, `facingReserved_24C`, `afterimageRestart`, `startedByCommandId`; see 12.4) |
+| `Gof1Actor` | 656 | 0 | 51 `unreferenced_*` + 4 `unused_1C/E3/108/24C` = 55 (+ 11 bytes in 5 more named fields that are written but never read: `superLevelCrossMark`, `maxLife`, `posXAfterIntegrate`, `afterimageRestart`, `startedByCommandId`; see 12.4) |
 | `Gof1FighterSlot` | 6316 | 0 | 3 |
 | `Gof1ObjectSlot` | 660 | 0 | 3 |
 | `Gof1CtFile` / `Gof1CtHeader` / `Gof1CommandMove` | 4632 / 28 / 46 | 0 | 0 / 6 / 4 |
@@ -621,7 +621,7 @@ that `ObjFighterStateAndHitReaction` passes to `Actor_StartKnockback` (rows 0..5
 | 0x018 | `enum Gof1ObjFlagsB` | `spawnFlagsB` | T: child flags from EF arg3 bits (InitChildObject). Proven bit meanings, see Gof1ObjFlagsB: ChildObject_QueueDraw (1), EffectObjects_UpdateAll (2, 4), Actor_SetHitstopFrames / ObjFighterStateAndHitReaction (8), sub_42D4E0 draw record +0x64 (0x80) |
 | 0x01A | `enum Gof1HomingMode` | `homingMode` | T: EF arg4 low byte (InitChildObject); sub_413940 homing object update |
 | 0x01B | `unsigned char` | `homingBaseAction` | T: EF subType = first of the homing action family (sub_413940 requests base+1..3 with ObjRequestAction) |
-| 0x01C | `unsigned char` | `homingReserved_1C` | U (unproven, neutral name): only written, 0, by InitChildObject next to homingMode/homingBaseAction/homingOffset*; no instruction anywhere reads byte +0x1C of an actor (ctree scan + displacement scan, slot-based +0x20 too). Always 0, so no value to infer a meaning from |
+| 0x01C | `unsigned char` | `unused_1C` | U (unused, proven unread; written 0 only): InitChildObject is the only writer (next to homingMode/homingBaseAction/homingOffset*). Proof 2026-10-03: no instruction anywhere reads it - displacement scan of all 108,891 decoded instructions covering byte +0x1C (actor-based) and +0x20 (slot-based) with every operand size, all non-stack hits reviewed (118 functions, none an actor access except the InitChildObject store); no rep movs / memcpy / compare / hash / replay serialization carries the actor; never loaded from a data file (the actor is memset at spawn). Constant 0 |
 | 0x01D | `unsigned char` | `unreferenced_1D` | U: no access in any function |
 | 0x01E | `unsigned __int16` | `homingTick` | T: counts up while homingTimeout != 0 (sub_413940) |
 | 0x020 | `unsigned __int16` | `homingTimeout` | T: EfType30_SetActorParams sub 0 arg2; sub_413940 ends the homing when homingTick reaches it |
@@ -702,7 +702,7 @@ that `ObjFighterStateAndHitReaction` passes to `Actor_StartKnockback` (rows 0..5
 | 0x0DE | `unsigned char` | `cpuGuardRequest` | T: written by FighterCpuAiStep (random guard decision by difficulty); ObjFighterStateAndHitReaction treats the hit as guardable when set (a human actor never sets it) |
 | 0x0DF | `unsigned char` | `unreferenced_DF[3]` | U: no access in any function |
 | 0x0E2 | `unsigned char` | `recoverMode` | T: wake-up/recovery selector set by ObjFighterStateAndHitReaction (0, 1, 25), Actor_WallBounceReaction, cleared by EfType4 |
-| 0x0E3 | `unsigned char` | `recoverReserved` | U (unproven, neutral name): only ever written 0, in the canAct reset block of ObjRunActionScript (with recoverMode = 1, throwTechAllowed = 1, throwTechSeen = 0) and in ObjFighterStateAndHitReaction (before throwTechAllowed). Never read, constant 0 |
+| 0x0E3 | `unsigned char` | `unused_E3` | U (unused, proven unread; written 0 only): ObjRunActionScript (canAct reset block, bl = 0) and ObjFighterStateAndHitReaction (imm 0). Proof 2026-10-03: the only two instructions with displacement 0xE3 in the exe are those stores; actor+0xE3 is also +0xE7 (stageEdgeSide, a different field) when slot based; the whole-actor copy in InitFighterSlotForRound / FighterSlot_ResetKeepingDataPointers (rep movsd, 0xA4 dwords to a stack save area) restores only named fields; no replay/save serialization of the actor; not data-loaded. Constant 0 |
 | 0x0E4 | `unsigned char` | `bounceCount` | T: wall/ground bounces taken (Actor_WallBounceReaction increments; ObjRunActionScript wraps > 2 to -16) |
 | 0x0E5 | `unsigned char` | `recoveryTimer` | T: frames since the last hit (ObjRunActionScript increments, ObjFighterStateAndHitReaction resets; Actor_TryTechOrCrouchGuardSwitch window < 16) |
 | 0x0E6 | `unsigned char` | `throwTechSeen` | T: set on the grabber by sub_425E10 when a throw tech succeeds; ComboRecord_RegisterHit flags the combo |
@@ -726,7 +726,7 @@ that `ObjFighterStateAndHitReaction` passes to `Actor_StartKnockback` (rows 0..5
 | 0x105 | `unsigned char` | `scriptFlag105` | T: EfType6 op 254 sets 1 (doc SET_FLAG_261); cleared by Battle_InitRoundFighters / Round_IntroStateMachine; no reader in the traced set |
 | 0x106 | `unsigned char` | `koMoveType` | T: (attacker move type & 0x7F) + 1 when the actor is KO by it (ObjFighterStateAndHitReaction); non-zero blocks recovery (Actor_StartKnockback, sub_426BD0) |
 | 0x107 | `unsigned char` | `inputHeldFlags` | T: Actor_DispatchInputByStance sets bit 7 when the direction is neutral and clears it for crouch/air; ObjRunActionScript clears it; no reader in the traced set |
-| 0x108 | `unsigned char` | `inputReserved_108` | U (unproven, neutral name): only ever written 0, in the canAct reset block of ObjRunActionScript (between throwTechSeen and guardRecoveryFlag). Never read, constant 0; +0x10C.. is counter[] and is indexed from 0x10C, so no indexed access reaches +0x108 |
+| 0x108 | `unsigned char` | `unused_108` | U (unused, proven unread; written 0 only): canAct reset block of ObjRunActionScript. Proof 2026-10-03: the displacement scan finds +0x108 only there (the slot-based hit Battle_RoundStateMachine test [slot+0x108], 0x10 is actor +0x104 invulnFlags) and the +0x10C hits are all tobiCount / counter[] indexed accesses from 0x10C; no whole-struct copy, hash or serialization carries it; not data-loaded. Constant 0 |
 | 0x109 | `unsigned char` | `guardRecoveryFlag` | T: 1 after a guard-cancel/early guard (Actor_StartKnockback special case), read by Actor_CanGuardAttack and Actor_TryTechOrCrouchGuardSwitch |
 | 0x10A | `unsigned __int16` | `mashCounter` | T: counts button presses while in hit-stun (Actor_TryTechOrCrouchGuardSwitch); Damage_ScaleByComboAndLife reduces damage by 0.3% each; sub_426BD0 tests it |
 | 0x10C | `signed char` | `tobiCount[10]` | T: ten projectile ("TOBI") counters shown by Debug_DrawEntityInfo as "TOBI %03d"; EfType6 op 100/101 add/subtract (arg0 tens digit = index, units = amount), sub_426BD0 refuses a command when the counter is too low |
@@ -783,7 +783,7 @@ that `ObjFighterStateAndHitReaction` passes to `Actor_StartKnockback` (rows 0..5
 | 0x248 | `__int16` | `pendingFramePriority` | T: priority of the pending frame jump, -1 = none |
 | 0x24A | `unsigned char` | `facingLeft` | T: 0 faces right, 1 faces left (read by ~70 functions: sub_413940, DrawFighterSprite, Actor_ApplyFrameMotionFlags, InitChildObject) |
 | 0x24B | `unsigned char` | `nextFacingLeft` | T: facing to turn to when the action changes (ObjRunActionScript copies it into facingLeft; Actor_WallBounceReaction, EfType6 op 5, sub_413940) |
-| 0x24C | `unsigned char` | `facingReserved_24C` | U (unproven, neutral name): only written, 0xFF, by InitFighterSlotForRound / FighterSlot_ResetKeepingDataPointers, the second of which writes nextFacingLeft = 0xFF (an unset sentinel) right before it. Never read |
+| 0x24C | `unsigned char` | `unused_24C` | U (unused, proven unread; written 0xFF only): InitFighterSlotForRound and FighterSlot_ResetKeepingDataPointers (the latter beside nextFacingLeft = 0xFF). Proof 2026-10-03: the displacement scan finds +0x24C only in those two stores; every +0x250 hit is actor+0x250 landed (a different field) or a draw-record access; no whole-struct copy, hash or serialization carries it (the 0xA4-dword copy in the two init functions is not restored for it); not data-loaded. Constant 0xFF |
 | 0x24D | `unsigned char` | `mirrorHistoryPending` | T: read by UpdateFighterInputHistoryRings and sub_426910: when the facing changed and it is 1 the recorded directions are mirrored (dword_463FB8) and it is cleared |
 | 0x24E | `unsigned char` | `inputActionLatch` | T: set 1 by IF 6/7 input jumps with flag 4 (doc actor+590); ObjRunActionScript steps it 1 -> 2 -> 0; EffectObjects_UpdateAll kills children when the parent shows 2 |
 | 0x24F | `unsigned char` | `actionChangedFlag` | T: sub_4242C0 sets 1 on every action change, Actor_TickWordTimers clears it; children with spawnFlagsA bit 0x20 die when the parent shows 1 |
@@ -899,7 +899,7 @@ All names below were upgraded from branch-shape guesses (I) to proven (T) by dec
 and only class 2 can be started in the super-cancel window (`g_PlayerSuperCancelWindow[130 * teamIndex] != 0`, current frame not actionable, `specialCancel` 0, or 1 without a hit, `hitStage == 0`; it sets `superCancelFlag`).
 In the free-cancel branch (`counterHitSide == 1` without flag 0x08, or `dword_1800390` with a connected attack) class 0 is accepted unless the current action's move level (`Pattern_GetMoveLevel`) is >= 100, classes 1/2 unless it is 0xFF, any other value never.
 Class 0 is also the only class that the CT header flag `G1CT_RESTRICT_REPEAT_MOVES` limits (`commandUsedMask`: each class-0 command once until the actionable reset in `ObjRunActionScript`).
-Data (8 CT files, 98 commands): class 0 = dashes (`0606` / `0404`), command normals (`6+B`, `3+A`, ...) and the script-only helper entries; class 1 = special moves and the two throws (`6+C`, `3+C` in AKIKO); class 2 = the 35 supers, all with `meterCostLevels` 3 and `flags2` bit 0.
+Data (8 CT files, 104 defined commands): class 0 = dashes (`0606` / `0404`), command normals (`6+B`, `3+A`, ...) and the script-only helper entries; class 1 = special moves and the two throws (`6+C`, `3+C` in AKIKO); class 2 = the 35 supers, all with `meterCostLevels` 3 and `flags2` bit 0.
 "Normal" is the neutral reading of "uses normalCancel"; the engine has no string or label for the classes.
 
 #### `Gof1CommandMove.flags` (+0x2C): PROVEN (0x08, 0x40), 0x01/0x02/0x04/0x10/0x20 unchanged
@@ -928,7 +928,7 @@ Readers: `EffectObjects_UpdateAll` (per tick, the parent is `linkedActor`), `Obj
 
 Bits 0x10 / 0x80 of A and 0x10..0x40 of B are never set by `InitChildObject` and not read anywhere.
 
-#### The 9 write-only actor fields
+#### The 9 write-only actor fields (4 of them `unused_<hexoff>`, proven unread)
 
 | field | verdict | evidence |
 |---|---|---|
@@ -937,9 +937,36 @@ Bits 0x10 / 0x80 of A and 0x10..0x40 of B are never set by `InitChildObject` and
 | `posXAtTickEnd` -> `posXAfterIntegrate` (+0x84) | value proven, role: none | `ObjIntegrateMotion` stores `posX` on both exits; the +0x88 reads in `EffectObjects_UpdateAll` / `ObjResolvePushboxCollision` / `ObjIntegrateMotion` are `posXAtTickStart` |
 | `lastCommandId` -> `startedByCommandId` (+0x14D) | value proven, role: none | `ObjRunActionScript` copies `pendingCommandId` (0xFF if none) when it enters the pending pattern |
 | `afterimageRestart` (+0x139) | set condition proven, role: none | `EfType6_ActorOp` op 3 sets 1 when the mode changes; never cleared or read |
-| `homingReserved_1C` (+0x1C) | UNPROVEN | only `InitChildObject` writes 0 beside the other homing fields; no read in ctree, displacement, slot-based (+0x20) or decompiled-text searches |
-| `recoverReserved` (+0xE3) | UNPROVEN | written 0 in the canAct reset block of `ObjRunActionScript` and in `ObjFighterStateAndHitReaction`; always 0; no reader |
-| `inputReserved_108` (+0x108) | UNPROVEN | written 0 in the same reset block only; `counter[]` starts at +0x10C, so no indexed access reaches it |
-| `facingReserved_24C` (+0x24C) | UNPROVEN | written 0xFF by `InitFighterSlotForRound` / `FighterSlot_ResetKeepingDataPointers` (the latter also sets `nextFacingLeft = 0xFF`); no reader |
+| `unused_1C` (+0x1C, was `homingReserved_1C`) | PROVEN unread | only `InitChildObject` writes 0 beside the other homing fields; no reader (exhaustive proof below) |
+| `unused_E3` (+0xE3, was `recoverReserved`) | PROVEN unread | written 0 in the canAct reset block of `ObjRunActionScript` and in `ObjFighterStateAndHitReaction` (the only two instructions with displacement 0xE3 in the exe) |
+| `unused_108` (+0x108, was `inputReserved_108`) | PROVEN unread | written 0 in the same reset block only; `counter[]` starts at +0x10C, so no indexed access reaches it |
+| `unused_24C` (+0x24C, was `facingReserved_24C`) | PROVEN unread | written 0xFF by `InitFighterSlotForRound` / `FighterSlot_ResetKeepingDataPointers` (the latter also sets `nextFacingLeft = 0xFF`) |
 
-Tried for the four unproven fields: ctree member scan of all 953 functions, an instruction-operand scan for the displacement (actor-relative and slot-relative, byte/word/dword and indexed forms), a text scan of every decompiled function in the actor code range, and a check that none of them is reached by a block copy of the actor (the only whole-actor operations are the spawn `memset` and the per-field resets). A live-memory read was not done: the values are constants, so it cannot reveal a meaning. They stay neutral.
+Proof method for the four `unused_*` fields (gof.exe IDB, 2026-10-03, all steps repeated for the actor-based offset and for the slot-based offset = actor offset + 4):
+
+1. Displacement scan: every code head of every executable segment (108,891 decoded instructions, including bytes outside functions) was decoded and every `[reg + disp]` / `[reg + index + disp]` operand whose access `[disp, disp + operand size)` covers the byte was collected, any base register, any operand size (byte/word/dword/float/double/tbyte, so a word or dword read that spans the byte counts).
+   Stack-frame operands (`var_*`, `arg_*`, `[esp+..]`) were separated out and the rest reviewed one by one. Results (actor-based / slot-based): +0xE3 / +0xE7: 2 / 4 hits; +0x108 / +0x10C: 7 / 30 (incl. stack-frame operands, 2 / 17 without); +0x24C / +0x250: 7 / 26 (2 / 19); +0x1C / +0x20: 163 / 191 non-stack hits in 118 functions.
+   Every hit is either a store of the constant (`unused_1C`: `InitChildObject` 0x41485E; `unused_E3`: `ObjRunActionScript` 0x424EB4 with `bl` = 0 since its `xor ebx, ebx` at 0x424CEB, and `ObjFighterStateAndHitReaction` 0x43D110; `unused_108`: `ObjRunActionScript` 0x424EC0; `unused_24C`: 0x433871 and 0x43393C) or a different field/struct:
+   +0xE7 = `stageEdgeSide`, +0x108 (slot based, `Battle_RoundStateMachine` 0x43E229) = `invulnFlags` 0x104, +0x10C.. = `tobiCount` / `counter[]`, +0x250 = `landed`; the 0x1C / 0x20 hits outside the actor functions are renderer, DirectX, CRT, movie and effect structs, and the ones inside actor functions are command records (`Fighter_TryStartCommandMove` `[ebp+1Ch]`), the state frame (`[actor+268h]+1Ch` in `Fighter_TryThrowTech`, `FighterCpuAiStep`, `ObjEnterCurrentAction`), `homingTimeout` (+0x20) and draw-record fields in `Render_QueueFighterSprite`. None reads the byte of an actor.
+2. Whole-struct carriers: all 163 `rep movs*` sites, all 17 `memcpy`/`memset` call sites and all `repe cmps*` sites were checked. The only copies that touch an actor are the 0xA4-dword (656 byte) copy to a stack save area in `InitFighterSlotForRound` / `FighterSlot_ResetKeepingDataPointers`, which is followed by `memset` and a restore of named fields only (none of the four is restored; `unused_24C` is re-stored as 0xFF), the fighter-afterimage ring copy (`PushFighterAfterimage`, source is the ring, not the actor) and `Character_LoadCtFile` (destination is the slot at +0x294 / +0x2B4, beyond the actor). No compare or hash covers an actor.
+3. Serialization: `g_PlayerSlots` / `g_EffectPool` are referenced by 12 / 9 functions; `Replay_BeginRecording` / `Replay_BeginPlayback` / `sub_440280` / `sub_440430` / `sub_445E20` store only character ids, palettes, stage, RNG seed and input records (`g_ReplayBuffer`, 0x4F234 bytes), never actor memory; none of the referencing functions copies actor memory (step 2) and there is no file-write path for it.
+4. Data side: the actor is `memset` to 0 at spawn and filled field by field from the AF/AS records (`Actor_ResolveFrameDataPointers`, `Actor_ApplyFrameMotionFlags`); no loader copies file bytes into an actor (the only file-to-memory copies in this code range are `Character_LoadCtFile`, which targets the slot beyond the actor, and the DAT loaders into `charData`). So the values never come from a data file.
+5. Compiler base-register biasing (`lea reg, [actor + K]`) cannot hide a reader from step 1 for these four fields: the earlier Hex-Rays ctree member scan of all 953 functions after typing the pools (which resolves biased bases) found no read either.
+
+Values never vary (0 / 0 / 0 / 0xFF), so a live-memory read could not reveal a meaning; the fields are renamed `unused_<hexoff>` and kept as explicit members so that unmapped = 0.
+
+#### Dormant command flags: data proof (`tools/gof1/gof1_ct_scan.py`)
+
+`Character_LoadCtFile` builds the file name `<CHAR>_C.CT` and `Load_File_From_Archive` looks it up by plain name in the archive slots only (top-level entries of gof_00..03.p); the runtime never writes `Gof1CommandMove.flags` (ctree scan: every access is a read in `Fighter_TryStartCommandMove`, `Fighter_ScanCommandMoves`, `Actor_RunFrameIfRecord`; `Fighter_MatchCommandSequence` reads `flags2`). So the shipped CT data is the complete set of possible flag values.
+
+| item | result |
+|---|---|
+| archives scanned | 4 (`gof_00.p` 15 entries, `gof_01.p` 29, `gof_02.p` 23, `gof_03.p` 426 = 493 top-level entries) |
+| CT entries | 8 command tables `*_C.CT` (4632 B each, all in `gof_03.p`: AKIKO, AYAKA, AYU, CIEL, DIGIKO, ECOCO, MORI, SATSUKI); `CHARSEL.CT` (1348 B) is the CSS grid, not a command table; no other entry has the CT size |
+| command records examined | 800 (8 x 100 slots, unused 0xFF slots included); 104 defined (13 / 13 / 18 / 12 / 13 / 12 / 12 / 11); `commandCount` equals the defined count and ids equal the slot index in every file |
+| `flags` values (104 defined commands) | `0x05` (ground + crouch) x 80, `0x0D` (+ no-cancel-entry) x 14, `0x25` (+ script-only) x 10; OR over all 800 records = 0x2D |
+| `G1CMD_STANCE_AIR` 0x02 | set in 0 of 800 records (the data uses stance bits 0x01 and 0x04 only) |
+| `G1CMD_GUARD_CANCEL` 0x40 | set in 0 of 800 records |
+| `flags2` values | `0x00` x 27, `0x01` x 62, `0x80` x 12, `0x81` x 3; OR = 0x81 (bit 0x02 `STRICT_SEQUENCE` is also never set) |
+
+Both bits are therefore code-proven (`Fighter_TryStartCommandMove`: 0x02 = the move may start from an air-stance frame, 0x40 = may start as a guard cancel when `guardState > 4`) and dormant in the shipped game. The nested/extra .p archives (`gof_00.p`'s `PAC.PAC`, the AYU.DAT copies in gof_02) are not searched by the engine for `.CT` names. `han2tool gof1rt` only round-trips the character `.DAT` files and does not touch CT data.
