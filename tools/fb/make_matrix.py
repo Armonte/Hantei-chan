@@ -60,6 +60,7 @@ for t in ('Melty Blood 2002', 'ReAct', 'PB2K1', 'MBAC (Act Cadenza PC)'):
     for e in ('.WAV', '.MP3', '.TXT'): SUPPORT.setdefault((t, e), ('read' if e != '.TXT' else 'edit', ''))
 for t in ('dMp', 'Rosa (2002/2005)', 'Lilian Fourhand (+ Rosa omake)'):
     for e in ('.WAV', '.MP3', '.TXT', '.REP'): SUPPORT.setdefault((t, e), ('read' if e != '.TXT' else 'edit', ''))
+for e in ('.WAV', '.MP3', '.BMP', '.FNT', '.H', '.PAC', '.WMT'): SUPPORT.setdefault(('GOF1', e), ('rt', 'opaque / media, proven by the archive rebuild'))
 ARCH_LEVEL = 'rt'
 
 def main():

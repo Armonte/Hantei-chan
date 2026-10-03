@@ -32,18 +32,18 @@ Magic = the first 4 plain bytes after the archive cipher; several magics per ext
 |---|---|---|---|---|---|
 | GOF1 | (none) | 6 | 86,282,964 | none | (magic 00000000 d993fe3d) |
 | GOF1 | .B | 36 | 375,956 | byte-exact round trip | opaque, proven by the archive rebuild (magic 4f626a65) |
-| GOF1 | .BMP | 8 | 7,373,248 | none | (magic 424d3810) |
+| GOF1 | .BMP | 8 | 7,373,248 | byte-exact round trip | opaque / media, proven by the archive rebuild (magic 424d3810) |
 | GOF1 | .CPF | 4 | 224,192 | byte-exact round trip | opaque, archive rebuild (magic 00000000 64000000) |
 | GOF1 | .CT | 9 | 38,404 | byte-exact round trip | opaque, archive rebuild (magic 08000000 0b000000 0c000000 ...) |
 | GOF1 | .DAT | 51 | 335,907,528 | byte-exact round trip | framedata_gof1 / han2tool gof1rt (magic d993fe3d) |
 | GOF1 | .EX3 | 232 | 25,642,202 | byte-exact round trip | han2tool ex3 (byte-pair blocks, all tile exactly) (magic 4c4c4946) |
-| GOF1 | .FNT | 1 | 2,289,254 | none | (magic 2b1e1800) |
-| GOF1 | .H | 1 | 452 | none | (magic 46494c45) |
-| GOF1 | .MP3 | 17 | 38,826,424 | none | (magic fffb9204 fffba004) |
-| GOF1 | .PAC | 1 | 46,273,466 | none | (magic 00000000) |
+| GOF1 | .FNT | 1 | 2,289,254 | byte-exact round trip | opaque / media, proven by the archive rebuild (magic 2b1e1800) |
+| GOF1 | .H | 1 | 452 | byte-exact round trip | opaque / media, proven by the archive rebuild (magic 46494c45) |
+| GOF1 | .MP3 | 17 | 38,826,424 | byte-exact round trip | opaque / media, proven by the archive rebuild (magic fffb9204 fffba004) |
+| GOF1 | .PAC | 1 | 46,273,466 | byte-exact round trip | opaque / media, proven by the archive rebuild (magic 00000000) |
 | GOF1 | .TXT | 30 | 551,611 | byte-exact round trip | opaque, archive rebuild (magic 00000000 0d0a2f2f 0f000000 ...) |
-| GOF1 | .WAV | 89 | 3,973,415 | none | (magic 52494646) |
-| GOF1 | .WMT | 8 | 8,502 | none | (magic 05000000 06000000 07000000 ...) |
+| GOF1 | .WAV | 89 | 3,973,415 | byte-exact round trip | opaque / media, proven by the archive rebuild (magic 52494646) |
+| GOF1 | .WMT | 8 | 8,502 | byte-exact round trip | opaque / media, proven by the archive rebuild (magic 05000000 06000000 07000000 ...) |
 | GOF2 | .CHP | 23 | 208,427,492 | byte-exact round trip | han2tool chp section (magic 424d5020) |
 | GOF2 | .DAT | 92 | 258,098,798 | byte-exact round trip | HAN2RBO .DAT / data archives (magic 48414e32 d993fe3d) |
 | GOF2 | .DT2 | 68 | 19,491,964 | byte-exact round trip | han2tool (magic 48414e32) |
@@ -141,5 +141,5 @@ Magic = the first 4 plain bytes after the archive cipher; several magics per ext
 
 ## 3. Cell summary
 
-none: 54, read: 17, edit: 8, byte-exact round trip: 29, in-game proven: 0 (title x extension cells in section 2)
+none: 47, read: 17, edit: 8, byte-exact round trip: 36, in-game proven: 0 (title x extension cells in section 2)
 
