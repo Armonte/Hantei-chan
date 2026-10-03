@@ -35,6 +35,7 @@ def _split_one_liners(t):   # `struct X { a; b; };` on one line -> one field per
             out.append(line)
     return '\n'.join(out)
 text = _split_one_liners(text)
+text = re.sub(r'^(\s*)[\w\s\*]+?\(\s*\*\s*(\w+)\s*\)\s*\([^)]*\)\s*;', r'\1unsigned int \2;', text, flags=re.M)   # function-pointer FIELDS become 32-bit pointers (typedefs are handled below)
 text = re.sub(r'^\s*struct\s+\w+\s*;\s*$', '', text, flags=re.M)   # forward declarations
 
 enums = {}   # name -> (underlying, [(n,v)])

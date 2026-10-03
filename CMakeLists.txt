@@ -613,6 +613,7 @@ add_executable(fbchartool
 	src/framedata_ha4.cpp ${HAN2_MODEL_SOURCES}
 	src/han2/fnt_file.cpp
 	src/han2/fob_file.cpp
+	src/han2/dmp_fob.cpp
 	src/han2/mbr_formats.cpp
 	src/han2/mb_formats.cpp
 	src/han2/mb_cg.cpp

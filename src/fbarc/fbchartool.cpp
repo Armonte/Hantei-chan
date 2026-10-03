@@ -12,6 +12,8 @@
 #include "../han2/fnt_file.h"
 #include "../han2/fob_file.h"
 #include "../han2/img_file.h"
+#include "../han2/dmp_fob.h"
+#include "../han2/dmp_types_gen.h"
 #include "../han2/mbr_formats.h"
 #include "../han2/mb_formats.h"
 #include "../han2/pb2k1_types_gen.h"
@@ -324,7 +326,34 @@ bool FobImgMember(const std::string &label, const std::string &name, const std::
 	return false;
 }
 
-const Title kTitles[] = { { "react", ReactMember }, { "mb", MbMember }, { "pb2k1", Pb2Member }, { "dmp", FobImgMember }, { "rosa", FobImgMember } };
+// Drill Milky Punch: dMp-dialect scripts, IMG v6 sheets, DEMOnn.DAT replays (docs/formats/dmp.md)
+bool DmpMember(const std::string &label, const std::string &name, const std::vector<uint8_t> &d, Section &s)
+{
+	const std::string e = ExtOf(name); std::string err; std::vector<uint8_t> out;
+	if (e == ".FOB") {
+		han2::dmpfob::File f; if (!han2::dmpfob::Parse(d.data(), d.size(), f, &err)) { Fail(s, label, "dmp fob: " + err); return true; }
+		han2::dmpfob::Serialize(f, out);
+		if (out != d) { Bad(s, "dmp fob", label, out, d); return true; }
+		Ok(s, ".FOB (dMp script bank)"); s.notes["  decoded instructions"] += (int)f.nInsns; s.notes["  raw data bytes"] += (int)f.rawBytes;
+		return true;
+	}
+	if (e == ".IMG") {
+		han2::ImgFile im; if (!han2::ParseImg(d.data(), d.size(), im, &err)) { Fail(s, label, "img: " + err); return true; }
+		han2::SerializeImg(im, out);
+		if (out == d && im.version == 6) Ok(s, ".IMG v6 (raw 16-bit pixels)"); else if (out == d) Ok(s, ".IMG"); else Bad(s, "img", label, out, d);
+		return true;
+	}
+	if (e == ".DAT" && d.size() == sizeof(DmpReplayFile)) {
+		const DmpReplayFile *r = (const DmpReplayFile *)d.data();
+		if (r->frameCount > 108001) { Fail(s, label, "replay frame count out of range"); return true; }
+		for (uint32_t i = r->frameCount; i < 108001; i++) for (int k = 0; k < 6; k++) if (r->frames[i].rawInput[k]) { Fail(s, label, "replay frames beyond frameCount are not zero"); return true; }
+		Ok(s, "DEMOnn.DAT (DmpMatchSetup 68 B + 108001 x 24-byte input rows, typed)");
+		return true;
+	}
+	return false;
+}
+
+const Title kTitles[] = { { "react", ReactMember }, { "mb", MbMember }, { "pb2k1", Pb2Member }, { "dmp", DmpMember }, { "rosa", FobImgMember } };
 
 int Run(const Title &t, int argc, char **argv)
 {
