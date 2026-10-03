@@ -5,7 +5,12 @@
 #include "han2/rbo_types_gen.h"
 #include "han2/rbo_at_gen.h"
 
+#include "cg.h"
+#include "filedialog.h"
+#include "png_writer.h"
+#include <glad/glad.h>
 #include <imgui.h>
+#include <filesystem>
 #include <cstdio>
 #include <cstring>
 #include <string>
@@ -124,6 +129,16 @@ void DrawInspector(CharacterInstance *ch, FrameState &state)
 		int flags = (int)seq->han2.patFlags;
 		ImGui::SetNextItemWidth(120);
 		if (ImGui::InputInt("pattern flags (0x40 = alt draw mode)", &flags, 0, 0, ImGuiInputTextFlags_CharsHexadecimal)) { seq->han2.patFlags = (uint32_t)flags; changed = true; }
+		{
+			std::vector<std::pair<int, int>> visits; std::string note;
+			han2::SimulateFlow(*seq, visits, note);
+			int ticks = 0; for (auto &v : visits) ticks += v.second;
+			ImGui::TextDisabled("game flow: %zu frame entries, %d ticks, %s", visits.size(), ticks, note.c_str());
+			if (ImGui::IsItemHovered()) {
+				std::string t; for (size_t i = 0; i < visits.size() && i < 60; i++) t += std::to_string(visits[i].first) + "(" + std::to_string(visits[i].second) + ") ";
+				ImGui::SetTooltip("frame(ticks) in the order the engine visits them:\n%s", t.c_str());
+			}
+		}
 		if (state.frame >= 0 && state.frame < (int)seq->frames.size()) {
 			Frame &f = seq->frames[state.frame];
 			ImGui::SeparatorText("Frame record");
@@ -168,6 +183,94 @@ void DrawInspector(CharacterInstance *ch, FrameState &state)
 		ch->markModified();
 		ch->frameData.mark_modified(state.pattern);
 	}
+	ImGui::End();
+}
+
+} // namespace han2ui
+
+namespace han2ui {
+
+bool showCgWindow = false;
+
+namespace {
+struct CgPreview { const CharacterInstance *owner = nullptr; int image = -1; unsigned long long gen = 0; GLuint tex = 0; int w = 0, h = 0; int ox = 0, oy = 0; };
+CgPreview g_prev;
+char g_cgFilter[32] = "";
+std::string g_cgMsg;
+int g_cgSel = 0;
+float g_cgZoom = 1.f;
+
+void LoadPreview(CharacterInstance &ch, int image)
+{
+	g_prev.owner = &ch; g_prev.image = image; g_prev.gen = ch.cg.generation();
+	ImageData *im = ch.cg.draw_texture((unsigned)image, false, false);
+	if (!im) { g_prev.w = g_prev.h = 0; return; }
+	if (!g_prev.tex) glGenTextures(1, &g_prev.tex);
+	glBindTexture(GL_TEXTURE_2D, g_prev.tex);
+	glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
+	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, im->width, im->height, 0, GL_RGBA, GL_UNSIGNED_BYTE, im->pixels);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST); glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+	g_prev.w = im->width; g_prev.h = im->height; g_prev.ox = im->offsetX; g_prev.oy = im->offsetY;
+	delete im;
+}
+} // namespace
+
+void DrawCgWindow(CharacterInstance *ch)
+{
+	if (!showCgWindow) return;
+	ImGui::SetNextWindowSize(ImVec2(700, 520), ImGuiCond_FirstUseEver);
+	if (!ImGui::Begin("CG sprites (RBO / GOF2 bank)", &showCgWindow)) { ImGui::End(); return; }
+	if (!ch || !ch->frameData.isHan2() || !ch->cg.m_loaded) { ImGui::TextDisabled("The active character has no CG bank."); ImGui::End(); return; }
+	const int n = ch->cg.get_image_count();
+	ImGui::SetNextItemWidth(100); ImGui::InputText("filter", g_cgFilter, sizeof(g_cgFilter)); ImGui::SameLine(); ImGui::TextDisabled("%d images", n);
+	ImGui::BeginChild("list", ImVec2(210, 0), true);
+	for (int i = 0; i < n; i++) {
+		int bpp, ty, x1, y1, x2, y2;
+		if (!ch->cg.image_info(i, bpp, ty, x1, y1, x2, y2)) continue;
+		char label[96]; snprintf(label, sizeof(label), "%4d  %dx%d  t%d", i, x2 - x1 + 1, y2 - y1 + 1, ty);
+		if (g_cgFilter[0] && !strstr(label, g_cgFilter)) continue;
+		if (ImGui::Selectable(label, g_cgSel == i)) g_cgSel = i;
+	}
+	ImGui::EndChild();
+	ImGui::SameLine();
+	ImGui::BeginGroup();
+	if (g_prev.owner != ch || g_prev.image != g_cgSel || g_prev.gen != ch->cg.generation()) LoadPreview(*ch, g_cgSel);
+	int bpp = 0, ty = 0, x1 = 0, y1 = 0, x2 = 0, y2 = 0; ch->cg.image_info(g_cgSel, bpp, ty, x1, y1, x2, y2);
+	ImGui::Text("image %d: storage type %d, %d-bit, canvas bounds (%d,%d)-(%d,%d)", g_cgSel, ty, bpp, x1, y1, x2, y2);
+	ImGui::SetNextItemWidth(120); ImGui::SliderFloat("zoom", &g_cgZoom, 0.25f, 6.f);
+	if (ImGui::Button("Export PNG...")) {
+		std::string p = FileDialog(-1, true);
+		if (!p.empty()) { if (p.size() < 4 || p.substr(p.size() - 4) != ".png") p += ".png";
+			ImageData *im = ch->cg.draw_texture((unsigned)g_cgSel, false, false); std::string e;
+			g_cgMsg = (im && WritePngRgba(p, im->pixels, im->width, im->height, e)) ? "exported " + p : (e.empty() ? "empty image" : e); delete im; }
+	}
+	ImGui::SameLine();
+	if (ImGui::Button("Import PNG (same size)...")) {
+		std::string p = FileDialog(-1, false);
+		if (!p.empty()) {
+			std::vector<uint8_t> px; int w = 0, h = 0; std::string e;
+			if (!ReadImageRgba(p, px, w, h, e)) g_cgMsg = e;
+			else if (ch->cg.replace_image_rgba((unsigned)g_cgSel, px.data(), w, h, &e)) { ch->markModified(); ch->undoManager.markModified(); g_cgMsg = "imported " + p + " (save as .DAT to keep it)"; }
+			else g_cgMsg = e;
+		}
+	}
+	ImGui::SameLine();
+	if (ImGui::Button("Export all...")) {
+		std::string d = BrowseForFolderUtf8("");
+		if (!d.empty()) { int ok = 0; std::string e; for (int i = 0; i < n; i++) { ImageData *im = ch->cg.draw_texture((unsigned)i, false, false); if (!im) continue; char nm[64]; snprintf(nm, sizeof(nm), "\\cg_%04d.png", i); if (WritePngRgba(d + nm, im->pixels, im->width, im->height, e)) ok++; delete im; } g_cgMsg = "exported " + std::to_string(ok) + " PNGs to " + d; }
+	}
+	if (!g_cgMsg.empty()) ImGui::TextWrapped("%s", g_cgMsg.c_str());
+	ImGui::TextDisabled("CG sprites live in the .DAT: save as .DAT to keep imports. Storage types 1, 2 and 4 can be imported; palettes are quantized to 255 colours.");
+	ImGui::BeginChild("prev", ImVec2(0, 0), true, ImGuiWindowFlags_HorizontalScrollbar);
+	if (g_prev.w > 0) {
+		ImVec2 p0 = ImGui::GetCursorScreenPos(), sz(g_prev.w * g_cgZoom, g_prev.h * g_cgZoom);
+		ImDrawList *dl = ImGui::GetWindowDrawList();
+		for (float y = 0; y < sz.y; y += 16) for (float x = 0; x < sz.x; x += 16)
+			dl->AddRectFilled(ImVec2(p0.x + x, p0.y + y), ImVec2(std::min(p0.x + x + 16, p0.x + sz.x), std::min(p0.y + y + 16, p0.y + sz.y)), (((int)(x / 16) + (int)(y / 16)) & 1) ? IM_COL32(110, 110, 110, 255) : IM_COL32(160, 160, 160, 255));
+		ImGui::Image((ImTextureID)(intptr_t)g_prev.tex, sz);
+	} else ImGui::TextDisabled("(empty image)");
+	ImGui::EndChild();
+	ImGui::EndGroup();
 	ImGui::End();
 }
 

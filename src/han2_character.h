@@ -38,6 +38,10 @@ namespace han2ui {
 extern bool showInspector;
 void DrawInspector(CharacterInstance *ch, FrameState &state);
 
+extern bool showCgWindow;
+// CG bank window: list, preview, export / import of the sprites (PNG).
+void DrawCgWindow(CharacterInstance *ch);
+
 } // namespace han2ui
 
 #endif

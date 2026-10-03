@@ -442,6 +442,37 @@ static int CmdPacWrite(int argc, char **argv)
 	return 0;
 }
 
+// cgrt: re-import every CG image's own pixels; types 1/2/4 must render identically afterwards (type 1 byte-exact)
+static int CmdCgRt(int argc, char **argv)
+{
+	if (argc < 1) return 2;
+	std::vector<uint8_t> b; if (!ReadLoose(argv[0], b)) return 1;
+	han2::Han2File f; std::string err; if (!han2::Parse(b.data(), b.size(), f, &err)) { printf("%s\n", err.c_str()); return 1; }
+	CG *cg = new CG(); const auto &cgb = f.area[han2::kAreaCg]; if (!cg->loadFromMemory(cgb.data(), (unsigned)cgb.size())) return 1;
+	std::vector<char> before(cg->bank_data(), cg->bank_data() + cg->bank_size());
+	int ok = 0, bad = 0, skipped = 0, exact = 0;
+	for (int i = 0; i < cg->get_image_count(); i++) {
+		ImageData *im = cg->draw_texture((unsigned)i, false, false);
+		if (!im) { skipped++; continue; }
+		std::vector<unsigned char> px(im->pixels, im->pixels + (size_t)im->width * im->height * 4);
+		int w = im->width, h = im->height; delete im;
+		std::string e2;
+		if (!cg->replace_image_rgba((unsigned)i, px.data(), w, h, &e2)) { skipped++; continue; }
+		ImageData *im2 = cg->draw_texture((unsigned)i, false, false);
+		bool same = im2 && im2->width == w && im2->height == h;
+		if (same) for (size_t k = 0; k < px.size() && same; k += 4) {
+			// transparent pixels may differ in their colour bytes; compare only alpha-visible content
+			if (px[k + 3] != im2->pixels[k + 3]) same = false;
+			else if (px[k + 3] && memcmp(&px[k], &im2->pixels[k], 3) != 0) same = false;
+		}
+		delete im2;
+		if (same) ok++; else { bad++; if (bad < 6) printf("image %d renders differently after re-import\n", i); }
+	}
+	exact = memcmp(before.data(), cg->bank_data(), before.size()) == 0;
+	printf("%s: %d images re-imported identically, %d differ, %d skipped (unsupported type / empty); bank bytes %s\n", argv[0], ok, bad, skipped, exact ? "byte-identical" : "changed (palette order of type 2/4 images)");
+	return bad ? 1 : 0;
+}
+
 int main(int argc, char **argv)
 {
 	CoInitializeEx(nullptr, COINIT_MULTITHREADED);
@@ -459,6 +490,7 @@ int main(int argc, char **argv)
 	if (c == "export") return CmdExport(argc - 2, argv + 2);
 	if (c == "imgrt") return CmdImgRt(argc - 2, argv + 2);
 	if (c == "pacwrite") return CmdPacWrite(argc - 2, argv + 2);
+	if (c == "cgrt") return CmdCgRt(argc - 2, argv + 2);
 	if (c == "pacrt") return CmdPacRt(argc - 2, argv + 2);
 	printf("unknown command %s\n", c.c_str());
 	return 2;

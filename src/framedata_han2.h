@@ -51,6 +51,9 @@ bool SaveFile(const FrameData &fd, const char *filename, std::string *err = null
 const std::string &LastSaveError();
 const std::vector<std::string> &LastSaveWarnings();
 
+// Follows one pattern's frame flow with the game's rules (Actor_AdvanceByAniFlag): visits = (frame, ticks); endNote says why it stopped.
+void SimulateFlow(const Sequence &seq, std::vector<std::pair<int, int>> &visits, std::string &endNote);
+
 // Re-derive the modelled fields of a frame from its raw bytes (call after editing Han2FrameRaw directly).
 void RedecodeFrame(Frame &F);
 

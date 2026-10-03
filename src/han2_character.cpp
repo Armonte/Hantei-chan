@@ -95,13 +95,20 @@ bool SyncPartsToContainer(CharacterInstance &ch, bool *partsChanged, std::string
 {
 	if (partsChanged) *partsChanged = false;
 	auto cont = ch.frameData.m_han2;
-	if (!cont || cont->parts.empty() || !ch.parts.loaded) return true;
+	if (!cont) return true;
+	if (cont->parts.empty() || !ch.parts.loaded) {
+		if (!cont->cg.empty() && ch.cg.m_loaded && ch.cg.bank_size() == cont->cg.size() && memcmp(ch.cg.bank_data(), cont->cg.data(), cont->cg.size()) != 0) memcpy(cont->cg.data(), ch.cg.bank_data(), cont->cg.size());
+		return true;
+	}
 	std::vector<uint8_t> out;
 	if (!BuildPat(ch.parts, cont->parts, out, err)) return false;
 	if (out != cont->parts) {
 		if (partsChanged) *partsChanged = true;
 		cont->parts.swap(out);
 	}
+	// CG edits (sprite import) change pixel bytes in place; the bank size never changes
+	if (!cont->cg.empty() && ch.cg.m_loaded && ch.cg.bank_size() == cont->cg.size() && memcmp(ch.cg.bank_data(), cont->cg.data(), cont->cg.size()) != 0)
+		memcpy(cont->cg.data(), ch.cg.bank_data(), cont->cg.size());
 	return true;
 }
 

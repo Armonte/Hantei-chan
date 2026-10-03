@@ -147,6 +147,13 @@ public:
 	unsigned long long generation() const { return (m_generation << 3) | (unsigned)(appliedBank & 7); }
 
 	int	get_image_count();
+	// Replace the pixels of image n with RGBA (straight alpha) of exactly the image's bounds size. Supports storage types 1 (32-bit),
+	// 2 (256-colour palette, binary alpha) and 4 (palette + alpha plane); palettes are quantized to 255 colours when needed.
+	// Only blocks the image owns are written (blocks that copy another image's cells are left alone). Returns false with *err.
+	bool replace_image_rgba(unsigned int n, const unsigned char *rgba, int w, int h, std::string *err = nullptr);
+	// The whole bank as stored (for saving it back into a .DAT).
+	const char *bank_data() const { return m_data; }
+	unsigned int bank_size() const { return m_data_size; }
 	// Raw header fields of image n (false if absent / unused). bpp is the
 	// stored depth (8 = palette-indexed); bounds are canvas coordinates.
 	bool image_info(unsigned int n, int &bpp, int &typeId, int &x1, int &y1, int &x2, int &y2);

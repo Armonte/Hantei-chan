@@ -157,33 +157,6 @@ static bool WriteText(const std::string &utf8Path, const std::string &text)
 
 static int16_t RawI16(const Frame &f, int off) { int16_t v = 0; if (f.han2.valid) memcpy(&v, f.han2.rec + off, 2); return v; }
 
-// Follows the frame flow of one pattern the way Actor_AdvanceByAniFlag (RBO 0x43F640) does and returns the visited frames
-// (one entry per frame entry, with the ticks spent). Stops at the end of the pattern, at a state-dependent ani flag, or at a cap.
-static void SimulateFlow(const Sequence &seq, std::vector<std::pair<int, int>> &visits, std::string &endNote)
-{
-	int frame = 0, counter = 0, total = 0;
-	const int n = (int)seq.frames.size();
-	for (int guard = 0; guard < 4000 && frame >= 0 && frame < n; guard++) {
-		const Frame &f = seq.frames[frame];
-		const uint8_t *r = f.han2.rec;
-		int ani = f.han2.valid ? r[0x0B] : 1, jump = f.han2.valid ? r[0x0C] : 0, loopCnt = f.han2.valid ? r[0x12] : 0, loopEnd = f.han2.valid ? r[0x13] : 0;
-		if (loopCnt) counter = loopCnt;
-		int dur = f.AF.duration;
-		visits.push_back({frame, dur});
-		total += dur;
-		if (total > 100000) { endNote = "cap"; return; }
-		switch (ani) {
-		case 0: endNote = "ends: jumps to pattern " + std::to_string(jump); return;
-		case 1: case 3: frame++; break;
-		case 2: case 4: frame = jump; break;
-		case 5: if (counter) { counter--; frame = jump; } else frame = loopEnd; break;
-		default: endNote = "ani flag " + std::to_string(ani) + " depends on runtime state"; return;
-		}
-		if (guard > 3000) { endNote = "does not terminate"; return; }
-	}
-	if (endNote.empty()) endNote = "runs off the end";
-}
-
 bool ExportCharacter(FrameData &fd, CG &cg, Parts &parts, const std::string &outDir, const ExportOptions &opt, ExportReport &rep, std::string *err)
 {
 	auto fail = [&](const std::string &m) { if (err) *err = m; return false; };
