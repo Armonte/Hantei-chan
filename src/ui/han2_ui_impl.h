@@ -81,6 +81,7 @@ void MainFrame::DrawHan2Windows()
 	han2ui::DrawFileViewers();
 	han2ui::DrawCgWindow(getActiveCharacter());
 	han2ui::DrawDiffWindow(getActiveCharacter());
+	if (auto* av = getActiveView()) han2ui::DrawAnimWindow(av->getCharacter(), av->getState(), &av->onion());
 	han2ui::OpenRequest req;
 	static std::string message;
 	if (han2ui::DrawBrowser(req, message)) {

@@ -15,6 +15,7 @@
 #include "../han2_pat.h"
 #include "../han2_export.h"
 #include "../han2_diff.h"
+#include "../han2_anim.h"
 #include "img_file.h"
 #include "../png_writer.h"
 #include "../parts/parts.h"
@@ -490,6 +491,27 @@ static int CmdDiff(int argc, char **argv)
 	return 0;
 }
 
+// animtest: the live stepper must reproduce SimulateFlow's tick count for every pattern (same rules, two implementations)
+static int CmdAnimTest(int argc, char **argv)
+{
+	int ok = 0, bad = 0, open = 0;
+	for (int i = 0; i < argc; i++) {
+		std::vector<uint8_t> b; if (!ReadLoose(argv[i], b)) continue;
+		FrameData fd; std::string err; if (!han2::Load(fd, b.data(), b.size(), &err)) continue;
+		for (int p = 0; p < 256; p++) {
+			if (fd.m_sequences[p].frames.empty()) continue;
+			std::vector<std::pair<int, int>> v; std::string note; han2::SimulateFlow(fd.m_sequences[p], v, note);
+			if (note.rfind("ends", 0) != 0) { open++; continue; }
+			int expect = 0; for (auto &x : v) expect += std::max(1, x.second);   // the engine needs at least one tick per frame
+			han2::AnimState s; han2::AnimStart(fd, s, p); int guard = 0;
+			while (!s.ended && guard++ < 200000) { han2::AnimTick(fd, s, false, false); }
+			if (s.totalTicks == expect) ok++; else { bad++; if (bad < 5) printf("%s pattern %d: stepper %d ticks vs flow %d\n", argv[i], p, s.totalTicks, expect); }
+		}
+	}
+	printf("animtest: %d patterns agree, %d differ, %d skipped (state dependent / non-terminating)\n", ok, bad, open);
+	return bad ? 1 : 0;
+}
+
 int main(int argc, char **argv)
 {
 	CoInitializeEx(nullptr, COINIT_MULTITHREADED);
@@ -509,6 +531,7 @@ int main(int argc, char **argv)
 	if (c == "pacwrite") return CmdPacWrite(argc - 2, argv + 2);
 	if (c == "cgrt") return CmdCgRt(argc - 2, argv + 2);
 	if (c == "diff") return CmdDiff(argc - 2, argv + 2);
+	if (c == "animtest") return CmdAnimTest(argc - 2, argv + 2);
 	if (c == "pacrt") return CmdPacRt(argc - 2, argv + 2);
 	printf("unknown command %s\n", c.c_str());
 	return 2;

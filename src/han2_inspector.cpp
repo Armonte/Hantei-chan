@@ -8,6 +8,9 @@
 
 #include "cg.h"
 #include "han2_diff.h"
+#include "han2_anim.h"
+#include "character_view.h"
+#include <chrono>
 #include "filedialog.h"
 #include "png_writer.h"
 #include <glad/glad.h>
@@ -317,6 +320,89 @@ void DrawDiffWindow(CharacterInstance *ch)
 			ImGui::TableSetColumnIndex(2); ImGui::TextUnformatted(entries[i].what.c_str());
 		}
 		ImGui::EndTable();
+	}
+	ImGui::End();
+}
+
+} // namespace han2ui
+
+namespace han2ui {
+
+bool showAnimWindow = false;
+
+void DrawAnimWindow(CharacterInstance *ch, FrameState &state, void *onionPtr)
+{
+	if (!showAnimWindow) return;
+	OnionSkinSettings &onion = *(OnionSkinSettings *)onionPtr;
+	ImGui::SetNextWindowSize(ImVec2(620, 330), ImGuiCond_FirstUseEver);
+	if (!ImGui::Begin("Animation (game rules)", &showAnimWindow)) { ImGui::End(); return; }
+	if (!ch || !ch->frameData.isHan2()) { ImGui::TextDisabled("The active character is not an RBO / GOF2 file."); ImGui::End(); return; }
+	FrameData &fd = ch->frameData;
+	static han2::AnimState st; static bool playing = false, loop = true, follow = false, init = false; static int rateHz = 120; static float speed = 1.f;
+	static std::chrono::steady_clock::time_point last; static double acc = 0.0;
+	static const CharacterInstance *who = nullptr; static int lastPattern = -1, lastFrame = -1;
+	// follow selection changes made elsewhere (pattern list / frame buttons) while not playing
+	if (!init || who != ch || (!playing && (state.pattern != lastPattern || state.frame != lastFrame))) {
+		han2::AnimStart(fd, st, state.pattern); st.frame = std::max(0, state.frame); init = true; who = ch; playing = false;
+	}
+	Sequence *seq = fd.get_sequence(state.pattern);
+	if (!seq || seq->frames.empty()) { ImGui::TextDisabled("This pattern has no frames."); ImGui::End(); return; }
+	// controls
+	if (ImGui::Button(playing ? "Pause" : "Play")) { playing = !playing; last = std::chrono::steady_clock::now(); acc = 0; if (playing && st.ended) { han2::AnimStart(fd, st, state.pattern); } }
+	ImGui::SameLine();
+	if (ImGui::Button("Restart")) { han2::AnimStart(fd, st, state.pattern); acc = 0; }
+	ImGui::SameLine();
+	if (ImGui::Button("< frame")) { playing = false; han2::AnimStepFrame(fd, st, -1); }
+	ImGui::SameLine();
+	if (ImGui::Button("frame >")) { playing = false; han2::AnimStepFrame(fd, st, +1); }
+	ImGui::SameLine();
+	if (ImGui::Button("+1 tick")) { playing = false; han2::AnimTick(fd, st, follow, loop); }
+	ImGui::SameLine(); ImGui::Checkbox("loop", &loop); ImGui::SameLine(); ImGui::Checkbox("follow pattern jumps", &follow);
+	ImGui::SetNextItemWidth(90);
+	static const int rates[] = { 30, 60, 120, 240 }; static int ri = 2;
+	if (ImGui::BeginCombo("logic rate", (std::to_string(rateHz) + " Hz").c_str())) { for (int i = 0; i < 4; i++) if (ImGui::Selectable((std::to_string(rates[i]) + " Hz").c_str(), rateHz == rates[i])) { rateHz = rates[i]; ri = i; } ImGui::EndCombo(); }
+	ImGui::SameLine(); ImGui::SetNextItemWidth(120); ImGui::SliderFloat("speed", &speed, 0.1f, 4.f, "x%.2f");
+	ImGui::TextDisabled("durations are logic ticks; the rate is the assumed engine tick rate (the game window shows FPS 60 (120))");
+	// advance
+	if (playing) {
+		auto now = std::chrono::steady_clock::now();
+		acc += std::chrono::duration<double>(now - last).count() * rateHz * speed; last = now;
+		int guard = 0;
+		while (acc >= 1.0 && guard++ < 600) { acc -= 1.0; han2::AnimTick(fd, st, follow, loop); if (st.ended) { playing = false; break; } }
+	}
+	if (st.pattern != state.pattern && st.pattern >= 0) state.pattern = st.pattern;
+	state.frame = st.frame; state.currentTick = 0;
+	lastPattern = state.pattern; lastFrame = state.frame;
+	seq = fd.get_sequence(state.pattern);
+	ImGui::Text("pattern %d  frame %d/%zu  tick %d/%d  loop counter %d  elapsed %d ticks (%.2f s)%s", st.pattern, st.frame, seq ? seq->frames.size() : 0,
+	            st.ticksInFrame, seq && st.frame < (int)seq->frames.size() ? seq->frames[st.frame].AF.duration : 0, st.loopCounter, st.totalTicks, st.totalTicks / (double)rateHz, st.ended ? "  [ended]" : "");
+	// onion skin
+	ImGui::Checkbox("onion skin", &onion.enabled);
+	if (onion.enabled) { ImGui::SameLine(); ImGui::SetNextItemWidth(70); ImGui::SliderInt("before", &onion.before, 0, 6); ImGui::SameLine(); ImGui::SetNextItemWidth(70); ImGui::SliderInt("after", &onion.after, 0, 6); ImGui::SameLine(); ImGui::SetNextItemWidth(70); ImGui::SliderInt("spacing", &onion.spacing, 1, 12); ImGui::SameLine(); ImGui::Checkbox("keyframes only", &onion.keyframesOnly); }
+	// timeline: one cell per frame, width proportional to its duration; red = attack boxes, blue = script lists (effects), current outlined
+	if (seq) {
+		ImDrawList *dl = ImGui::GetWindowDrawList();
+		ImVec2 p0 = ImGui::GetCursorScreenPos(); float W = ImGui::GetContentRegionAvail().x - 6, H = 34;
+		int total = 0; for (auto &f : seq->frames) total += std::max(1, f.AF.duration);
+		float x = p0.x;
+		for (size_t i = 0; i < seq->frames.size(); i++) {
+			const Frame &f = seq->frames[i]; float w = W * std::max(1, f.AF.duration) / (float)std::max(1, total);
+			bool atk = f.han2.hadAT, fx = f.han2.scriptHad != 0 || f.han2.hadFx;
+			ImU32 col = atk ? IM_COL32(190, 60, 60, 255) : IM_COL32(90, 110, 90, 255);
+			dl->AddRectFilled(ImVec2(x, p0.y), ImVec2(x + w - 1, p0.y + H), col);
+			if (fx) dl->AddRectFilled(ImVec2(x, p0.y + H - 8), ImVec2(x + w - 1, p0.y + H), IM_COL32(80, 160, 255, 255));
+			if ((int)i == st.frame) {
+				dl->AddRect(ImVec2(x, p0.y), ImVec2(x + w - 1, p0.y + H), IM_COL32(255, 255, 0, 255), 0, 0, 2.f);
+				float fillW = f.AF.duration > 0 ? w * std::min(1.f, st.ticksInFrame / (float)f.AF.duration) : w;
+				dl->AddRectFilled(ImVec2(x, p0.y + H + 2), ImVec2(x + fillW, p0.y + H + 6), IM_COL32(255, 255, 0, 255));
+			}
+			ImGui::SetCursorScreenPos(ImVec2(x, p0.y)); ImGui::InvisibleButton(("fr" + std::to_string(i)).c_str(), ImVec2(std::max(w - 1, 2.f), H));
+			if (ImGui::IsItemClicked()) { playing = false; st.frame = (int)i; st.ticksInFrame = 0; st.ended = false; }
+			if (ImGui::IsItemHovered()) ImGui::SetTooltip("frame %zu: %d ticks%s%s", i, f.AF.duration, atk ? ", attack" : "", fx ? ", script/effect list" : "");
+			x += w;
+		}
+		ImGui::SetCursorScreenPos(ImVec2(p0.x, p0.y + H + 10));
+		ImGui::TextDisabled("timeline: red = attack frame, blue strip = script/effect list, width = duration. Boxes are drawn by the main view for the playing frame.");
 	}
 	ImGui::End();
 }

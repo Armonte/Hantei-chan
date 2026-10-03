@@ -5,6 +5,8 @@
 #include "character_instance.h"
 #include "framedata_han2.h"
 #include "han2_pat.h"
+#include "han2_character.h"
+#include "character_view.h"
 #include "han2/pac_archive.h"
 #include "game_link_panel.h"
 #include "tag_panel.h"
@@ -190,6 +192,7 @@ void MainFrame::ProcessStartupArgs()
 		else if (t == "notes") m_showNotes = true;
 		else if (t == "vars") m_varRefs.open = true;
 		else if (t == "keys") m_showKeyBindings = true;
+		else if (t == "han2anim") { han2ui::showAnimWindow = true; if (auto *v = getActiveView()) v->onion().enabled = true; }
 
 		if (auto *c = getActiveCharacter(); c && gStartup.compare >= 0) {
 			m_compare.enabled = true;
