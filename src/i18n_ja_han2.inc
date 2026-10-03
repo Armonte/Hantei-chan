@@ -1,7 +1,12 @@
 // {"English", "Japanese"}, rows for this area (see i18n.h)
 	{"Loading report", "読み込みレポート"},
 	{"Clear", "クリア"},
-	{"RBO / GOF2 archives", "RBO / GOF2 アーカイブ"},
+	{"French Bread archives", "フレンチブレッド アーカイブ"},
+	{"Extract all...", "すべて抽出..."},
+	{"Rebuild with a folder of replacements...", "置換フォルダでアーカイブを再構築..."},
+	{"could not extract the entry", "エントリを抽出できませんでした"},
+	{"extracted %d files (%d failed)", "%d 個のファイルを抽出しました (失敗 %d)"},
+	{"wrote %s (%d replaced, %d added)", "%s を書き出しました (置換 %d、追加 %d)"},
 	{"Add archive...", "アーカイブ追加..."},
 	{"Working folder...", "作業フォルダ..."},
 	{"Refresh", "更新"},

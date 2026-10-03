@@ -24,6 +24,7 @@
 #include "framedata_han2.h"
 #include "han2/pac_archive.h"
 #include "han2/gof1_archive.h"
+#include "fbarc/fb_archive.h"
 #include "game_link_panel.h"
 #include "tag_panel.h"
 #include "authoring/authoring_window.h"

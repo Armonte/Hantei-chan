@@ -10,6 +10,11 @@ bool MainFrame::openHan2File(const std::string& path)
 		f.read((char*)head.data(), 0x40);
 		head.resize((size_t)f.gcount());
 	}
+	if (const auto fk = fbarc::Detect(head.data(), head.size()); fk == fbarc::Kind::PkFileInfo || fk == fbarc::Kind::MbFilePacA) {
+		std::string err = han2ui::AddArchive(path);
+		if (!err.empty()) requestErrorPopup("Load Error", err);
+		return true;
+	}
 	if (!pac::LooksLikePac(head.data(), head.size()) && gof1::LooksLikeArchive(head.data(), head.size()) && std::filesystem::u8path(path).extension() == ".p") {
 		std::string err = han2ui::AddArchive(path);
 		if (!err.empty()) requestErrorPopup("Load Error", err);
@@ -94,7 +99,7 @@ void MainFrame::DrawHan2Windows()
 	static std::string message;
 	if (han2ui::DrawBrowser(req, message)) {
 		message.clear();
-		if (req.stem == "\x01open") openHan2File(req.origin);
+		if (req.stem == "\x01open") openAnyFile(req.origin);
 		else if (req.stem == "\x01gof1") {
 			auto character = std::make_unique<CharacterInstance>(); std::string err;
 			if (!character->loadGof1(req.gof1Archive, req.gof1Entry, err)) requestErrorPopup("Load Error", err);
