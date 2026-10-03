@@ -25,8 +25,14 @@ bool ValidateMpeg(const uint8_t *p, size_t n, MpegInfo &out, std::string *err);
 // `p1 p2` (a pair); the table ends at index 256; then u16 BE symbol count and that many symbol bytes. Blocks repeat to the end of the file.
 struct Ex3Group { uint8_t c = 0; std::vector<std::pair<uint8_t, int>> entries; };   // second == -1 for an identity entry
 struct Ex3Block { std::vector<Ex3Group> groups; uint16_t count = 0; std::vector<uint8_t> symbols; };
-struct Ex3 { uint8_t header[64]{}; std::vector<Ex3Block> blocks; std::vector<uint8_t> tail; size_t decodedBytes = 0; };
-bool ParseEx3(const uint8_t *p, size_t n, Ex3 &out, std::string *err);
+// The Melty line (PB2K1, Melty Blood, ReAct, Act Cadenza / MBAC) uses the same block coder under three header sizes: the decoded byte count sits in the
+// last u32 of the header (PB / GOF1: size @0x3C data @0x40; MB / ReAct: @0x40 / 0x44; AC: @0x44 / 0x48). Decoded payload is a BMP.
+struct Ex3 { uint8_t header[80]{}; size_t headerSize = 64; std::vector<Ex3Block> blocks; std::vector<uint8_t> tail; size_t decodedBytes = 0; };
+bool ParseEx3(const uint8_t *p, size_t n, Ex3 &out, std::string *err, size_t headerSize = 64);
+// Tries header sizes 64, 68 and 72 and keeps the one whose blocks tile the file and decode to exactly the size word in the header.
+// Expands every block's symbols through its pair table into the decoded bytes (a Windows BMP file).
+bool DecodeEx3(const Ex3 &e, std::vector<uint8_t> &out, std::string *err);
+bool ParseEx3Auto(const uint8_t *p, size_t n, Ex3 &out, std::string *err);
 void SerializeEx3(const Ex3 &e, std::vector<uint8_t> &out);
 
 // ---- Windows BMP -----------------------------------------------------------------------------------------------------------
