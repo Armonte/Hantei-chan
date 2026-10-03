@@ -33,7 +33,7 @@ bool ParseEx3(const uint8_t *p, size_t n, Ex3 &out, std::string *err, size_t hea
 // The encoder: French Bread's EX3 tool is Philip Gage's Byte Pair Encoding (1994) with block size 2000, hash size 4096, no distinct-character limit (256)
 // and pair threshold 7. Re-encoding the decoded BMP reproduces the shipped file bit for bit (docs/formats/fb_ex3_encoder.md; proof: fbarctool ex3enc).
 // `header` is the shipped header (headerSize bytes, including the decoded-size word); the caller updates the size word when the pixels changed.
-struct Ex3EncodeParams { int blockSize = 2000, hashSize = 4096, maxChars = 256, threshold = 7; };
+struct Ex3EncodeParams { int blockSize = 2000, hashSize = 4096, maxChars = 1 << 30, threshold = 7; };
 void EncodeEx3(const uint8_t *header, size_t headerSize, const uint8_t *decoded, size_t n, std::vector<uint8_t> &out, const Ex3EncodeParams &prm = Ex3EncodeParams());
 // Expands every block's symbols through its pair table into the decoded bytes (a Windows BMP file).
 bool DecodeEx3(const Ex3 &e, std::vector<uint8_t> &out, std::string *err);
