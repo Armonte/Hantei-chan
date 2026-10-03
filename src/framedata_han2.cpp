@@ -247,6 +247,11 @@ bool Load(FrameData &fd, const uint8_t *b, size_t size, std::string *err, const 
 	if (maxBox + 1 < nBox) cont->boxTail.assign(boxes.begin() + 8 * (size_t)(maxBox + 1), boxes.end());
 
 	for (auto &s : fd.m_sequences) s.modified = false;
+	{   // keep the pattern area as loaded (small) so the editor can diff against it
+		Han2File d = f; d.kind = 3;
+		for (int i = 1; i < 4; i++) d.area[i].clear();
+		han2::Serialize(d, cont->originalPatternFile, nullptr);
+	}
 	return true;
 }
 

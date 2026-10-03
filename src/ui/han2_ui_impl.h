@@ -55,6 +55,7 @@ void MainFrame::DrawHan2Windows()
 	han2ui::DrawPacCreate();
 	han2ui::DrawFileViewers();
 	han2ui::DrawCgWindow(getActiveCharacter());
+	han2ui::DrawDiffWindow(getActiveCharacter());
 	han2ui::OpenRequest req;
 	static std::string message;
 	if (han2ui::DrawBrowser(req, message)) {

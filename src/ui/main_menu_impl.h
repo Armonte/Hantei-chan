@@ -200,6 +200,8 @@ void MainFrame::Menu(unsigned int errorPopupId)
 			}
 			if (ImGui::MenuItem("RBO / GOF2 archives (PAC)...", nullptr, han2ui::showBrowser))
 				han2ui::showBrowser = !han2ui::showBrowser;
+			if (ImGui::MenuItem("Changes against the loaded RBO / GOF2 file (diff)...", nullptr, han2ui::showDiffWindow, hasActive && active->frameData.isHan2()))
+				han2ui::showDiffWindow = !han2ui::showDiffWindow;
 			if (ImGui::MenuItem("CG sprites of this RBO / GOF2 character (export / import)...", nullptr, han2ui::showCgWindow, hasActive && active->frameData.isHan2()))
 				han2ui::showCgWindow = !han2ui::showCgWindow;
 			if (ImGui::MenuItem("Create / patch a PAC archive...", nullptr, han2ui::showPacCreate))

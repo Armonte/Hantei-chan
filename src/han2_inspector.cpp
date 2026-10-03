@@ -7,6 +7,7 @@
 #include "han2/gof2_types_gen.h"
 
 #include "cg.h"
+#include "han2_diff.h"
 #include "filedialog.h"
 #include "png_writer.h"
 #include <glad/glad.h>
@@ -279,6 +280,35 @@ void DrawCgWindow(CharacterInstance *ch)
 	} else ImGui::TextDisabled("(empty image)");
 	ImGui::EndChild();
 	ImGui::EndGroup();
+	ImGui::End();
+}
+
+} // namespace han2ui
+
+namespace han2ui {
+
+bool showDiffWindow = false;
+
+void DrawDiffWindow(CharacterInstance *ch)
+{
+	if (!showDiffWindow) return;
+	ImGui::SetNextWindowSize(ImVec2(640, 420), ImGuiCond_FirstUseEver);
+	if (!ImGui::Begin("Changes against the loaded file", &showDiffWindow)) { ImGui::End(); return; }
+	if (!ch || !ch->frameData.isHan2()) { ImGui::TextDisabled("The active character is not an RBO / GOF2 file."); ImGui::End(); return; }
+	static std::vector<han2::DiffEntry> entries; static std::string err; static bool ran = false; static const CharacterInstance *who = nullptr;
+	if (ImGui::Button("Compare now") || who != ch) { ran = true; who = ch; err.clear(); han2::DiffAgainstOriginal(ch->frameData, entries, &err); }
+	ImGui::SameLine(); ImGui::TextDisabled("%zu changes", entries.size());
+	if (!err.empty()) ImGui::TextColored(ImVec4(1, .4f, .3f, 1), "%s", err.c_str());
+	if (ran && ImGui::BeginTable("diff", 3, ImGuiTableFlags_ScrollY | ImGuiTableFlags_RowBg | ImGuiTableFlags_Resizable)) {
+		ImGui::TableSetupColumn("pattern"); ImGui::TableSetupColumn("frame"); ImGui::TableSetupColumn("change");
+		ImGui::TableSetupScrollFreeze(0, 1); ImGui::TableHeadersRow();
+		for (size_t i = 0; i < entries.size() && i < 5000; i++) {
+			ImGui::TableNextRow(); ImGui::TableSetColumnIndex(0); ImGui::Text("%d", entries[i].pattern);
+			ImGui::TableSetColumnIndex(1); if (entries[i].frame >= 0) ImGui::Text("%d", entries[i].frame);
+			ImGui::TableSetColumnIndex(2); ImGui::TextUnformatted(entries[i].what.c_str());
+		}
+		ImGui::EndTable();
+	}
 	ImGui::End();
 }
 

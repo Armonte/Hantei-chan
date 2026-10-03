@@ -86,6 +86,6 @@ Legend: [x] done, [ ] open. "(icaro)" = added by icaroffa 2026. "(ours)" = in ou
 - [x] Edits saved as a loose .DT2 the game prefers; proven in the game on a copy (docs/formats/evidence/)
 - [ ] Real animation playback from the pattern table, durations, loops, jumps and script lists (120 Hz), pause/step/loop/onion skin
 - [ ] Undo/redo for every edit including AT, scripts, sequences
-- [ ] Sprite/CG import and export
-- [ ] Pose/sheet export (icaroffa's feature) grouped by the real animation sections
-- [ ] Diff against the original file
+- [x] Sprite/CG import and export [CG window; han2tool cgrt]
+- [x] Pose/sheet export (icaroffa's feature) grouped by the real animation sections [han2_export.cpp]
+- [x] Diff against the original file [han2_diff.cpp: Windows > diff window and han2tool diff; field names from the IDA types; verified on the edittest file: exactly the 5 edits]
