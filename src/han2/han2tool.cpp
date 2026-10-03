@@ -13,9 +13,13 @@
 #include "../framedata_han2.h"
 #include "../cg.h"
 #include "../han2_pat.h"
+#include "../han2_export.h"
+#include "../png_writer.h"
 #include "../parts/parts.h"
 
 #include <cstdio>
+#include <windows.h>
+#include <objbase.h>
 #include <cstring>
 #include <filesystem>
 #include <fstream>
@@ -352,8 +356,46 @@ static int CmdPatRt(int argc, char **argv)
 	return total.fail ? 1 : 0;
 }
 
+// export: sprites, poses and animations of one character as PNG + JSON
+static int CmdExport(int argc, char **argv)
+{
+	if (argc < 2) { puts("export <in.DAT|DT2> <outdir> [--no-cg] [--no-poses] [--no-patterns] [--scale N]"); return 2; }
+	han2::ExportOptions opt;
+	for (int i = 2; i < argc; i++) {
+		std::string a = argv[i];
+		if (a == "--no-cg") opt.cgImages = false; else if (a == "--no-poses") opt.poses = false; else if (a == "--no-patterns") opt.patterns = false;
+		else if (a == "--scale" && i + 1 < argc) opt.scale = atoi(argv[++i]);
+	}
+	std::vector<uint8_t> b;
+	if (!ReadLoose(argv[0], b)) { puts("cannot read"); return 1; }
+	FrameData *fd = new FrameData(); std::string err;
+	std::vector<uint8_t> names;
+	han2::Han2File f; han2::Parse(b.data(), b.size(), f, nullptr);
+	// a .DT2 has no parts / CG: use the sibling .DAT when it exists
+	std::vector<uint8_t> dat = b;
+	if (f.kind == 3) {
+		std::string p = argv[0]; size_t dot = p.find_last_of('.');
+		std::string datp = p.substr(0, dot) + ".DAT";
+		std::vector<uint8_t> d2;
+		if (ReadLoose(datp, d2)) dat = d2; else { datp = p.substr(0, dot) + ".dat"; if (ReadLoose(datp, d2)) dat = d2; }
+	}
+	han2::Han2File df; if (!han2::Parse(dat.data(), dat.size(), df, &err)) { printf("parse: %s\n", err.c_str()); return 1; }
+	const uint8_t *nm = df.area[han2::kAreaNames].size() >= 0x4000 ? df.area[han2::kAreaNames].data() : nullptr;
+	if (!han2::Load(*fd, b.data(), b.size(), &err, nm, nm ? 0x4000 : 0)) { printf("load: %s\n", err.c_str()); return 1; }
+	CG *cg = new CG(); Parts *parts = new Parts(cg);   // leaked on purpose (GL-free tool)
+	const auto &cgb = df.area[han2::kAreaCg];
+	if (!cgb.empty()) cg->loadFromMemory(cgb.data(), (unsigned)cgb.size());
+	const auto &pb = df.area[han2::kAreaParts];
+	if (!pb.empty() && !han2::PatToParts(pb.data(), pb.size(), *parts, &err)) printf("parts: %s\n", err.c_str());
+	han2::ExportReport rep;
+	if (!han2::ExportCharacter(*fd, *cg, *parts, argv[1], opt, rep, &err)) { printf("export: %s\n", err.c_str()); return 1; }
+	printf("exported: %d CG png, %d pose png, %d frame png, %d patterns, %d strips/sheets\n", rep.cgPngs, rep.posePngs, rep.framePngs, rep.patternsWritten, rep.sheets);
+	return 0;
+}
+
 int main(int argc, char **argv)
 {
+	CoInitializeEx(nullptr, COINIT_MULTITHREADED);
 	if (argc < 2) { puts("usage: han2tool ls|count|extract|pacrt ..."); return 2; }
 	std::string c = argv[1];
 	if (c == "ls") return CmdLs(argc - 2, argv + 2);
@@ -365,6 +407,7 @@ int main(int argc, char **argv)
 	if (c == "edittest") return CmdEditTest(argc - 2, argv + 2);
 	if (c == "shift") return CmdShift(argc - 2, argv + 2);
 	if (c == "patrt") return CmdPatRt(argc - 2, argv + 2);
+	if (c == "export") return CmdExport(argc - 2, argv + 2);
 	if (c == "pacrt") return CmdPacRt(argc - 2, argv + 2);
 	printf("unknown command %s\n", c.c_str());
 	return 2;

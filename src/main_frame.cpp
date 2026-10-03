@@ -16,6 +16,8 @@
 #include "ha4_character.h"
 #include "han2_character.h"
 #include "han2_browser.h"
+#include "han2_export.h"
+#include "png_writer.h"
 #include "framedata_han2.h"
 #include "han2/pac_archive.h"
 #include "game_link_panel.h"

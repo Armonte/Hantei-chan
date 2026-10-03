@@ -75,3 +75,18 @@ void MainFrame::openPartsEditorForCharacter(CharacterInstance* character)
 	markProjectModified();
 	needsDockRebuild = true;
 }
+
+void MainFrame::exportHan2Character(CharacterInstance* character)
+{
+	if (!character || !character->frameData.isHan2()) return;
+	std::string folder = BrowseForFolderUtf8("");
+	if (folder.empty()) return;
+	han2::ExportOptions opt;
+	han2::ExportReport rep;
+	std::string err;
+	const bool ok = han2::ExportCharacter(character->frameData, character->cg, character->parts, folder + "\\" + character->getName(), opt, rep, &err);
+	requestErrorPopup(ok ? "RBO / GOF2 export" : "Export Error",
+		ok ? std::to_string(rep.cgPngs) + " CG images, " + std::to_string(rep.posePngs) + " poses, " + std::to_string(rep.framePngs) + " frames in " +
+		     std::to_string(rep.patternsWritten) + " patterns (strip.png / sheet.png / animation.json each, poses.json, animations.json)\nin " + folder + "\\" + character->getName()
+		   : err);
+}

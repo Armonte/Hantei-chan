@@ -55,6 +55,7 @@ add_executable(${EXE}
 	src/han2_character.cpp
 	src/han2_pat.cpp
 	src/han2_pat_write.cpp
+	src/han2_export.cpp
 	src/han2_pat_gl.cpp
 	src/han2_browser.cpp
 	src/han2_inspector.cpp
@@ -545,6 +546,8 @@ add_executable(han2tool
 	src/han2/han2tool.cpp
 	src/han2_pat.cpp
 	src/han2_pat_write.cpp
+	src/han2_export.cpp
+	src/png_writer.cpp
 	src/framedata.cpp
 	src/framedata_load.cpp
 	src/framedata_save.cpp
@@ -566,7 +569,7 @@ add_executable(han2tool
 )
 target_include_directories(han2tool PRIVATE "." "src" "third_party" "${CMAKE_BINARY_DIR}/generated")
 target_compile_definitions(han2tool PRIVATE WIN32_LEAN_AND_MEAN HA6GUIVERSION="${CMAKE_PROJECT_VERSION}" PAT_HEADLESS)
-target_link_libraries(han2tool PRIVATE tinyalloc glad glm OpenGL::GL)
+target_link_libraries(han2tool PRIVATE tinyalloc glad glm OpenGL::GL windowscodecs ole32 uuid)
 if(MINGW)
 	target_link_options(han2tool PRIVATE -static-libgcc -static-libstdc++ -static)
 endif()

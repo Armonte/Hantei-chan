@@ -227,6 +227,7 @@ private:
 	void DrawHan2Windows();                       // PAC browser (ui/han2_ui_impl.h)
 	bool openHan2File(const std::string& path);   // RBO / GOF2 .DAT/.DT2 (character) or PAC archive (mounted in the browser)
 	void openPartsEditorForCharacter(CharacterInstance* character);   // PAT editor tab on a loaded character (RBO / GOF2 parts)
+	void exportHan2Character(CharacterInstance* character);   // PNG + JSON sprites, poses and animations
 	void openHan2Request(const struct han2ui::OpenRequest& req);
 	void DrawPackageToolsMenuItems();
 	preview::TickState m_sceneState, m_onionState;  // reused buffers
