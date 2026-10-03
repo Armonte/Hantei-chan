@@ -118,7 +118,7 @@
 	{"replaced", "置換済み"},
 	{"Save as new PAC...", "新規PACとして保存..."},
 	{"%s, %zu bytes", "%s、%zu バイト"},
-	{"IMG v%u, %d x %d, RGBA", "IMG v%u、%d x %d、RGBA"},
+	{"IMG v%u, %d x %d, %s", "IMG v%u、%d x %d、%s"},
 	{"checkerboard", "市松模様"},
 	{"Import PNG (replace pixels)...", "PNG読み込み (ピクセルを置換)..."},
 	{"replaced by %s", "%s で置換しました"},

@@ -235,7 +235,7 @@ void DrawFileViewers()
 		if (!ImGui::Begin(title, &v.open)) { ImGui::End(); continue; }
 		ImGui::PushTextWrapPos(0.0f); ImGui::TextDisabled(TXT("%s, %zu bytes"), v.origin.c_str(), v.bytes.size()); ImGui::PopTextWrapPos();
 		if (v.kind == Viewer::Image) {
-			ImGui::Text(TXT("IMG v%u, %d x %d, RGBA"), v.img.version, v.img.width, v.img.height);
+			ImGui::Text(TXT("IMG v%u, %d x %d, %s"), v.img.version, v.img.width, v.img.height, v.img.format == 0 ? "ARGB1555" : v.img.format == 1 ? "ARGB4444" : v.img.format == 3 ? "RGB24" : "RGBA");
 			ImGui::SetNextItemWidth(120); ImGui::SliderFloat(LBL("zoom"), &v.zoom, 0.25f, 8.f); ImGui::SameLine(); ImGui::Checkbox(LBL("checkerboard"), &v.checker);
 			if (ImGui::Button(LBL("Export PNG..."))) {
 				std::string p = FileDialog(-1, true); if (!p.empty()) { std::string e; if (p.size() < 4 || Lower(p.substr(p.size() - 4)) != ".png") p += ".png"; v.msg = WritePngRgba(p, v.img.rgba.data(), v.img.width, v.img.height, e) ? Fmt(TXT("exported %s"), p.c_str()) : e; }
@@ -245,7 +245,7 @@ void DrawFileViewers()
 				std::string p = FileDialog(-1, false);
 				if (!p.empty()) {
 					std::vector<uint8_t> px; int w = 0, h = 0; std::string e;
-					if (ReadImageRgba(p, px, w, h, e)) { v.img.rgba = std::move(px); v.img.width = w; v.img.height = h; Upload(v); v.dirty = true; v.msg = Fmt(TXT("replaced by %s"), p.c_str()); }
+					if (ReadImageRgba(p, px, w, h, e)) { v.img.rgba = std::move(px); v.img.native.clear(); v.img.format = 2; v.img.width = w; v.img.height = h; Upload(v); v.dirty = true; v.msg = Fmt(TXT("replaced by %s"), p.c_str()); }
 					else v.msg = e;
 				}
 			}
