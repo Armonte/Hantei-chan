@@ -91,4 +91,18 @@ bool LoadCharacter(CharacterInstance &ch, const std::string &stem, const ReadFn 
 	return true;
 }
 
+bool SyncPartsToContainer(CharacterInstance &ch, bool *partsChanged, std::string *err)
+{
+	if (partsChanged) *partsChanged = false;
+	auto cont = ch.frameData.m_han2;
+	if (!cont || cont->parts.empty() || !ch.parts.loaded) return true;
+	std::vector<uint8_t> out;
+	if (!BuildPat(ch.parts, cont->parts, out, err)) return false;
+	if (out != cont->parts) {
+		if (partsChanged) *partsChanged = true;
+		cont->parts.swap(out);
+	}
+	return true;
+}
+
 } // namespace han2

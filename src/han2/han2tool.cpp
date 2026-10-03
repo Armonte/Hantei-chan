@@ -12,6 +12,8 @@
 #include "han2_container.h"
 #include "../framedata_han2.h"
 #include "../cg.h"
+#include "../han2_pat.h"
+#include "../parts/parts.h"
 
 #include <cstdio>
 #include <cstring>
@@ -20,6 +22,7 @@
 #include <iterator>
 #include <algorithm>
 #include <string>
+#include <memory>
 
 static int CmdLs(int argc, char **argv)
 {
@@ -316,6 +319,39 @@ static int CmdShift(int argc, char **argv)
 	return 0;
 }
 
+// patrt: PAT block -> Parts model -> PAT block must be byte-identical (reader + writer check)
+static int CmdPatRt(int argc, char **argv)
+{
+	RtStats total;
+	for (int i = 0; i < argc; i++) {
+		RtStats st; std::string err; pac::Archive a;
+		auto one = [&](const std::string &label, const std::vector<uint8_t> &b) {
+			han2::Han2File f; if (!han2::Parse(b.data(), b.size(), f, &err)) { st.skipped++; return; }
+			const auto &blob = f.area[han2::kAreaParts];
+			if (blob.empty()) { st.skipped++; return; }
+			CG *cgp = new CG(); Parts &parts = *new Parts(cgp);   /* leaked on purpose: ~Parts releases GL objects and the tool has no GL context */
+			bool rok = han2::PatToParts(blob.data(), blob.size(), parts, &err);
+			if (!rok) { printf("FAIL %s: read: %s\n", label.c_str(), err.c_str()); st.fail++; return; }
+			std::vector<uint8_t> out;
+			if (!han2::BuildPat(parts, blob, out, &err)) { printf("FAIL %s: build: %s\n", label.c_str(), err.c_str()); st.fail++; return; }
+			if (out == blob) st.pass++;
+			else { size_t k = 0, m = std::min(out.size(), blob.size()); while (k < m && out[k] == blob[k]) k++; printf("FAIL %s: size %zu vs %zu, first diff 0x%zx\n", label.c_str(), out.size(), blob.size(), k); st.fail++; }
+		};
+		if (pac::Open(argv[i], a, nullptr)) {
+			for (size_t k = 0; k < a.entries.size(); k++) {
+				if (!EndsWithNoCase(a.entries[k].name, ".DAT")) continue;
+				std::vector<uint8_t> b; if (!pac::ReadEntry(a, k, b, &err)) continue;
+				if (b.size() < 8 || memcmp(b.data(), "HAN2RBO ", 8) != 0) continue;
+				one(std::string(argv[i]) + "::" + a.entries[k].name, b);
+			}
+		} else { std::vector<uint8_t> b; if (ReadLoose(argv[i], b)) one(argv[i], b); }
+		printf("%-40s pass %d fail %d skipped %d\n", argv[i], st.pass, st.fail, st.skipped);
+		total.pass += st.pass; total.fail += st.fail; total.skipped += st.skipped;
+	}
+	printf("TOTAL pass %d fail %d skipped %d\n", total.pass, total.fail, total.skipped);
+	return total.fail ? 1 : 0;
+}
+
 int main(int argc, char **argv)
 {
 	if (argc < 2) { puts("usage: han2tool ls|count|extract|pacrt ..."); return 2; }
@@ -328,6 +364,7 @@ int main(int argc, char **argv)
 	if (c == "cginfo") return CmdCgInfo(argc - 2, argv + 2);
 	if (c == "edittest") return CmdEditTest(argc - 2, argv + 2);
 	if (c == "shift") return CmdShift(argc - 2, argv + 2);
+	if (c == "patrt") return CmdPatRt(argc - 2, argv + 2);
 	if (c == "pacrt") return CmdPacRt(argc - 2, argv + 2);
 	printf("unknown command %s\n", c.c_str());
 	return 2;
