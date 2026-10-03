@@ -14,6 +14,10 @@
 #include "../third_party/json/json.hpp"
 #include "framedata_ha4.h"
 #include "ha4_character.h"
+#include "han2_character.h"
+#include "han2_browser.h"
+#include "framedata_han2.h"
+#include "han2/pac_archive.h"
 #include "game_link_panel.h"
 #include "tag_panel.h"
 #include "authoring/authoring_window.h"
@@ -33,6 +37,7 @@
 #include <cmath>
 #include <cstdlib>
 #include <filesystem>
+#include <fstream>
 
 wchar_t MainFrame::s_swallowChar = 0;
 
@@ -115,6 +120,7 @@ void MainFrame::Draw()
 #include "ui/workspace_hosts_impl.h"
 #include "ui/png_export_impl.h"
 #include "ui/package_tools_impl.h"
+#include "ui/han2_ui_impl.h"
 
 
 // ============================================================================
@@ -511,6 +517,10 @@ bool MainFrame::saveCharacter(CharacterInstance* character)
 	if (!character) return false;
 	if (character->save()) return true;
 	const std::string& path = character->getTopHA6Path();
+	if (character->frameData.isHan2() && !han2::LastSaveError().empty()) {
+		requestErrorPopup("Save Error", "RBO / GOF2 file not saved: " + han2::LastSaveError());
+		return false;
+	}
 	if (character->frameData.isHA4() && !ha4::LastSaveError().empty()) {
 		requestErrorPopup("Save Error", "MBAC .DAT not saved: " + ha4::LastSaveError());
 		return false;

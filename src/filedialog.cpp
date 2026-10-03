@@ -61,6 +61,15 @@ std::string FileDialog(int fileType, bool save, char* defaultName)
 	{
 		ofn.lpstrFilter = "MBAC Act Cadenza character (*.dat)\0*.dat\0Hantei 6 files (*.ha6)\0*.ha6\0All\0*.*\0";
 	}
+	else if (fileType == fileType::HAN2)
+	{
+		ofn.lpstrFilter = "RBO / GOF2 character (*.dt2;*.dat)\0*.dt2;*.dat\0RBO / GOF2 archive (*.pac;data*.dat)\0*.pac;data0*.dat\0All\0*.*\0";
+	}
+	else if (fileType == fileType::HAN2SAVE)
+	{
+		ofn.lpstrFilter = "RBO / GOF2 pattern file the game prefers (*.dt2)\0*.dt2\0RBO / GOF2 full character (*.dat)\0*.dat\0All\0*.*\0";
+		ofn.lpstrDefExt = "dt2";
+	}
 	else if (fileType == fileType::DAT)
 	{
 		ofn.lpstrFilter = "MBAA Stage files (*.dat)\0*.dat\0All\0*.*\0";

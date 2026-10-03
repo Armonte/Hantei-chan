@@ -13,7 +13,9 @@ enum {
 	DDS,
 	DAT,
 	CMDTXT,
-	HA4
+	HA4,
+	HAN2,       // French-Bread RBO / GOF2 character (.dat/.dt2) or PAC archive
+	HAN2SAVE
 };
 }
 

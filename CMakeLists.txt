@@ -26,6 +26,7 @@ include(imgui)
 add_subdirectory(glm)
 add_subdirectory(tinyalloc)
 
+set(HAN2_MODEL_SOURCES src/framedata_han2.cpp src/han2/han2_container.cpp src/han2/pac_archive.cpp)
 add_executable(${EXE}
 	src/main.cpp
 	src/main_frame.cpp
@@ -46,11 +47,16 @@ add_executable(${EXE}
 	src/framedata.cpp
 	src/framedata_load.cpp
 	src/framedata_save.cpp
-	src/framedata_ha4.cpp
+	src/framedata_ha4.cpp ${HAN2_MODEL_SOURCES}
 	src/ha4_parts.cpp
 	src/ha4_parts_gl.cpp
 	src/ha4_convert.cpp
 	src/ha4_character.cpp
+	src/han2_character.cpp
+	src/han2_pat.cpp
+	src/han2_pat_gl.cpp
+	src/han2_browser.cpp
+	src/han2_inspector.cpp
 	src/startup_args.cpp
 	src/framestate.cpp
 	src/copy_data.cpp
@@ -152,7 +158,7 @@ add_executable(roundtrip
 	src/framedata.cpp
 	src/framedata_load.cpp
 	src/framedata_save.cpp
-	src/framedata_ha4.cpp
+	src/framedata_ha4.cpp ${HAN2_MODEL_SOURCES}
 	src/misc.cpp
 	tinyalloc/tinyalloc.c
 )
@@ -169,7 +175,7 @@ add_executable(uni_edit_test
 	src/framedata.cpp
 	src/framedata_load.cpp
 	src/framedata_save.cpp
-	src/framedata_ha4.cpp
+	src/framedata_ha4.cpp ${HAN2_MODEL_SOURCES}
 	src/misc.cpp
 	tinyalloc/tinyalloc.c
 )
@@ -300,7 +306,7 @@ add_executable(game_link_cli
 	src/framedata.cpp
 	src/framedata_load.cpp
 	src/framedata_save.cpp
-	src/framedata_ha4.cpp
+	src/framedata_ha4.cpp ${HAN2_MODEL_SOURCES}
 	src/misc.cpp
 	tinyalloc/tinyalloc.c
 )
@@ -317,7 +323,7 @@ add_executable(ha6_dump
 	src/framedata.cpp
 	src/framedata_load.cpp
 	src/framedata_save.cpp
-	src/framedata_ha4.cpp
+	src/framedata_ha4.cpp ${HAN2_MODEL_SOURCES}
 	src/misc.cpp
 	tinyalloc/tinyalloc.c
 )
@@ -335,7 +341,7 @@ add_executable(preview_sim_tool
 	src/framedata.cpp
 	src/framedata_load.cpp
 	src/framedata_save.cpp
-	src/framedata_ha4.cpp
+	src/framedata_ha4.cpp ${HAN2_MODEL_SOURCES}
 	src/misc.cpp
 	tinyalloc/tinyalloc.c
 )
@@ -428,7 +434,7 @@ add_executable(pattern_search_test
 	src/framedata.cpp
 	src/framedata_load.cpp
 	src/framedata_save.cpp
-	src/framedata_ha4.cpp
+	src/framedata_ha4.cpp ${HAN2_MODEL_SOURCES}
 	src/misc.cpp
 	src/extension_profile.cpp
 	src/imgui_utils.cpp
@@ -467,7 +473,7 @@ add_executable(refs_test
 	src/framedata.cpp
 	src/framedata_load.cpp
 	src/framedata_save.cpp
-	src/framedata_ha4.cpp
+	src/framedata_ha4.cpp ${HAN2_MODEL_SOURCES}
 	src/misc.cpp
 	tinyalloc/tinyalloc.c
 )
@@ -510,7 +516,7 @@ add_executable(ha4tool
 	src/framedata.cpp
 	src/framedata_load.cpp
 	src/framedata_save.cpp
-	src/framedata_ha4.cpp
+	src/framedata_ha4.cpp ${HAN2_MODEL_SOURCES}
 	src/ha4_parts.cpp
 	src/ha4_convert.cpp
 	src/background/bg_pat.cpp
@@ -533,19 +539,13 @@ if(MINGW)
 	target_link_options(ha4tool PRIVATE -static-libgcc -static-libstdc++ -static)
 endif()
 
-# French-Bread RBO / GOF2 archive and character container tool (docs/formats/frenchbread_rbo_gof.md).
-add_library(han2core STATIC
-	src/han2/pac_archive.cpp
-	src/han2/han2_container.cpp
-)
-target_include_directories(han2core PUBLIC "src/han2")
+# French-Bread RBO / GOF2 model sources (PAC archive, HAN2RBO container, model loader/writer): linked wherever framedata.cpp is.
 add_executable(han2tool
 	src/han2/han2tool.cpp
-	src/framedata_han2.cpp
 	src/framedata.cpp
 	src/framedata_load.cpp
 	src/framedata_save.cpp
-	src/framedata_ha4.cpp
+	src/framedata_ha4.cpp ${HAN2_MODEL_SOURCES}
 	src/ha4_parts.cpp
 	src/ha4_convert.cpp
 	src/background/bg_pat.cpp
@@ -563,7 +563,7 @@ add_executable(han2tool
 )
 target_include_directories(han2tool PRIVATE "." "src" "third_party" "${CMAKE_BINARY_DIR}/generated")
 target_compile_definitions(han2tool PRIVATE WIN32_LEAN_AND_MEAN HA6GUIVERSION="${CMAKE_PROJECT_VERSION}" PAT_HEADLESS)
-target_link_libraries(han2tool PRIVATE han2core tinyalloc glad glm OpenGL::GL)
+target_link_libraries(han2tool PRIVATE tinyalloc glad glm OpenGL::GL)
 if(MINGW)
 	target_link_options(han2tool PRIVATE -static-libgcc -static-libstdc++ -static)
 endif()
@@ -597,7 +597,7 @@ set(MBAACC_PACKAGE_SOURCES
 	src/framedata.cpp
 	src/framedata_load.cpp
 	src/framedata_save.cpp
-	src/framedata_ha4.cpp
+	src/framedata_ha4.cpp ${HAN2_MODEL_SOURCES}
 	src/misc.cpp
 	tinyalloc/tinyalloc.c
 )
@@ -706,7 +706,7 @@ endif()
 add_test(NAME authoring_model COMMAND authoring_model_test WORKING_DIRECTORY ${CMAKE_SOURCE_DIR})
 # [authoring] inline frame data (startup / active / recovery) and the MBAC reference values (§8.9).
 add_executable(frame_data_test tests/frame_data_test.cpp src/authoring/frame_summary.cpp src/authoring/mbac_reference.cpp
-	src/framedata.cpp src/framedata_load.cpp src/framedata_save.cpp src/framedata_ha4.cpp src/misc.cpp tinyalloc/tinyalloc.c)
+	src/framedata.cpp src/framedata_load.cpp src/framedata_save.cpp src/framedata_ha4.cpp ${HAN2_MODEL_SOURCES} src/misc.cpp tinyalloc/tinyalloc.c)
 target_include_directories(frame_data_test PRIVATE "src" "." "third_party" "${CMAKE_BINARY_DIR}/generated")
 target_compile_definitions(frame_data_test PRIVATE WIN32_LEAN_AND_MEAN HA6GUIVERSION="${CMAKE_PROJECT_VERSION}")
 target_link_libraries(frame_data_test PRIVATE tinyalloc)

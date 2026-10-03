@@ -48,6 +48,9 @@ bool SaveFile(const FrameData &fd, const char *filename, std::string *err = null
               std::vector<std::string> *warnings = nullptr, bool asDt2 = false);
 
 
+const std::string &LastSaveError();
+const std::vector<std::string> &LastSaveWarnings();
+
 // Re-derive the modelled fields of a frame from its raw bytes (call after editing Han2FrameRaw directly).
 void RedecodeFrame(Frame &F);
 

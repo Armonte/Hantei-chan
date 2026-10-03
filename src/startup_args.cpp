@@ -3,6 +3,8 @@
 #include "authoring/authoring_window.h"
 #include "main_frame.h"
 #include "character_instance.h"
+#include "framedata_han2.h"
+#include "han2/pac_archive.h"
 #include "game_link_panel.h"
 #include "tag_panel.h"
 
@@ -104,6 +106,17 @@ void WritePng(const std::string &path, const uint8_t *rgb, int w, int h)
 
 } // namespace
 
+// true for a French-Bread HAN2RBO character or a PAC archive (content, not extension)
+static bool han2StartupSniff(const std::string &path)
+{
+	FILE *f = fopen(path.c_str(), "rb");
+	if (!f) return false;
+	unsigned char b[0x40]{};
+	size_t n = fread(b, 1, 0x40, f);
+	fclose(f);
+	return han2::IsHan2(b, n) || pac::LooksLikePac(b, n);
+}
+
 void MainFrame::ProcessStartupArgs()
 {
 	int n = ++gStartup.frameCounter;
@@ -130,6 +143,8 @@ void MainFrame::ProcessStartupArgs()
 		for (auto &c : ext) c = (char)tolower((unsigned char)c);
 		if (ext == ".hproj") {
 			loadProjectFromPath(path, false);
+		} else if (ext == ".dt2" || ext == ".pac" || (ext == ".dat" && han2StartupSniff(path))) {
+			openHan2File(path);   // RBO / GOF2 character or PAC archive
 		} else if (ext == ".dat") {
 			loadStageFile(path);   // [stage-link] a bgmake stage (with --game-link: the Stage section's files)
 		} else {

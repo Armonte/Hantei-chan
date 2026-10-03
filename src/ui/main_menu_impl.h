@@ -191,6 +191,16 @@ void MainFrame::Menu(unsigned int errorPopupId)
 				}
 			}
 
+			// French-Bread RBO / GOF2 (.DAT/.DT2) and PAC archives; detected by content
+			if (ImGui::MenuItem("Load RBO / GOF2 character (.DT2/.DAT)..."))
+			{
+				std::string path = FileDialog(fileType::HAN2, false);
+				if (!path.empty() && !openHan2File(path))
+					ImGui::OpenPopup(errorPopupId);
+			}
+			if (ImGui::MenuItem("RBO / GOF2 archives (PAC)...", nullptr, han2ui::showBrowser))
+				han2ui::showBrowser = !han2ui::showBrowser;
+
 			if (ImGui::MenuItem("Export MBAC as HA6...", nullptr, false, hasActive && active->frameData.isHA4()))
 			{
 				std::string &&file = FileDialog(fileType::HA6, true);
@@ -234,7 +244,7 @@ void MainFrame::Menu(unsigned int errorPopupId)
 			if (ImGui::MenuItem("Save Character As...", nullptr, false, hasActive))
 			{
 				if (hasActive) {
-					std::string &&file = FileDialog(fileType::HA6, true);
+					std::string &&file = FileDialog(active->frameData.isHan2() ? fileType::HAN2SAVE : fileType::HA6, true);
 					if(!file.empty())
 					{
 						saveCharacterAs(active, file);
@@ -738,6 +748,7 @@ void MainFrame::Menu(unsigned int errorPopupId)
 			if (ImGui::MenuItem("Stage Browser", nullptr, m_showStageBrowser)) m_showStageBrowser = !m_showStageBrowser;
 			if (ImGui::MenuItem("HUD preview / colours", nullptr, m_showHud)) m_showHud = !m_showHud;
 			if (ImGui::MenuItem("MBAC (HA4) Inspector", nullptr, ha4ui::showInspector)) ha4ui::showInspector = !ha4ui::showInspector;
+			if (ImGui::MenuItem("RBO / GOF2 (HAN2) Inspector", nullptr, han2ui::showInspector)) han2ui::showInspector = !han2ui::showInspector;
 			if (ImGui::MenuItem("Game Link (MBAACC)", nullptr, gamelink::showPanel)) gamelink::showPanel = !gamelink::showPanel;
 			// [authoring] the old Tag / Team entry opens the Authoring workspace on its Tuning tab (§5.1)
 			if (ImGui::MenuItem("Tag / Team (experimental)", nullptr, authoring::showWindow)) authoring::Open("Tuning");
