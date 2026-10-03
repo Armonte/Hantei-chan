@@ -245,7 +245,7 @@ def disassemble(f, fnname=None, out=sys.stdout):
 #         ('arg',i) engine-provided argument i | ('P',base,off) base+off with base in {arg,mem,reg}
 #         ('mem',addr) value loaded through a non-local pointer | ('reg',name) | ('op',name,a,b) | ('T',)
 T = ('T',)
-PBASE = ('arg', 'mem', 'reg', 'nret')            # values that can be the base of a pointer chain
+PBASE = ('arg', 'mem', 'reg', 'nret', 'gvar')            # values that can be the base of a pointer chain
 PADDR = ('P', 'PX') + PBASE                      # address kinds that are not script-local
 PBASE_ALL = ('A', 'AX') + PADDR
 def K(n): return ('K', n & 0xFFFFFFFF)
@@ -281,6 +281,7 @@ def expr(v):
     if t == 'arg': return 'arg%d' % v[1]
     if t == 'reg': return v[1]
     if t == 'nret': return '%s#%d' % (v[1], v[2])
+    if t == 'gvar': return 'gvar@%d' % v[1]
     if t == 'mem': return '[%s]' % expr(v[1])
     if t == 'P': return '%s+0x%X' % (expr(v[1]), v[2]) if v[2] >= 0 else '%s-0x%X' % (expr(v[1]), -v[2])
     if t == 'op': return '(%s %s %s)' % (expr(v[2]), v[1], expr(v[3]))
@@ -316,6 +317,8 @@ class Interp:
         self.fkey = fkey; self.f = f; self.code = f['code']; self.scan = scan; self.budget = budget; self.steps = 0
         self.where = None
         self.memo = {}
+        self.gstores = collections.defaultdict(set)   # code cell -> non-constant values some function stores there
+        self.gnonk = set()
 
     # --- state: (stack tuple, cells tuple-of-items) as python dict copy-on-write via frozen tuples
     def read_mem(self, st, addr):
@@ -325,6 +328,7 @@ class Interp:
             if cell is not None: return cell
             if addr[1] == 'args': return ('arg', addr[2] // 4) if addr[2] % 4 == 0 and addr[2] >= 0 else T
             if addr[1] == 'code':
+                if addr[2] in self.gnonk: return ('gvar', addr[2])
                 if 0 <= addr[2] and addr[2] + 4 <= len(self.code): return K(U32.unpack_from(self.code, addr[2])[0])
                 return T
             return T
@@ -339,6 +343,7 @@ class Interp:
         t = addr[0]
         if t == 'A':
             cells = dict(st[1]); cells[(addr[1], addr[2])] = val
+            if addr[1] == 'code' and (val[0] in PBASE or val[0] in ('P', 'PX', 'T') or has_ptr(val)): self.gstores[addr[2]].add(expr(val))
             if addr[1] == 'args' and addr[2] >= 4 and addr[2] % 4 == 0 and val[0] == 'A' and val[1] == 'code':
                 self.scan.records.append((self.fkey, val[2]))
             return (st[0], cells)
@@ -521,8 +526,11 @@ class Interp:
             if s == 7: return 'end', None
         if c == 3:
             if s in (0,): return 'go', [(nxt, st)]
-            if s == 1:
-                for _ in range(6): pop()
+            if s == 1:                           # *dst = bankCodeBase(bank) + offset : an address inside script code/data
+                pp = [pop() for _ in range(6)]
+                dst = pp[5]; cells = dict(cells)
+                if dst[0] == 'A': cells[(dst[1], dst[2])] = ('AX', 'bank')
+                elif dst[0] == 'AX': cells = {k: (T if k[0] == dst[1] else v) for k, v in cells.items()}
                 return 'go', [(nxt, (tuple(stack), cells))]
             if s in (3, 4):
                 pop(); pop(); return 'go', [(nxt, (tuple(stack), cells))]
@@ -544,7 +552,8 @@ class Interp:
                 key = (nm, pos, expr(val), 'ref' if tag == K(2) else 'val')
                 self.scan.native_ptr[key] += 1; self.scan.native_ptr_where[key].add(self.where)
             if tag == K(2):                      # reference argument: the native may write the cell it points at
-                if val[0] == 'A': cells[(val[1], val[2])] = ('nret', nm, pos)
+                if val[0] == 'A':
+                    for k in range(16): cells[(val[1], val[2] + 4 * k)] = ('nret', nm, pos * 100 + k)   # may fill a struct
                 elif val[0] == 'AX': cells = {k: (T if k[0] == val[1] else v) for k, v in cells.items()}
         if (c, s) in NATIVE_CLOBBERS_ARGS:
             cells.update({('args', 4 * i): T for i in range(16)})
@@ -567,7 +576,12 @@ NATIVE_CLOBBERS_ARGS = {(4, 2), (4, 3)}
 
 
 def scan_fob(fkey, f, scan, only_entries=None, init_cells=None):
+    pre = Interp(fkey, f, Scan())          # pass 1: which code cells ever receive non-constant values
+    for name, pc in entry_points(f):
+        pre.where = name; pre.steps = 0; pre.memo = {}
+        pre.run_function(pc, ((), dict(init_cells or {})))
     it = Interp(fkey, f, scan)
+    it.gnonk = set(pre.gstores); it.gstores = pre.gstores
     ents = entry_points(f)
     seen_pc = set()
     for name, pc in ents:
