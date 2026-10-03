@@ -16,7 +16,7 @@ Legend: [x] done, [ ] open. "(icaro)" = added by icaroffa 2026. "(ours)" = in ou
 - [x] Tree: .DAT/.DT2/.IMG/.FOB/.PAT/.CHP entries recognised; double-click opens in a tab [browser double-click: characters open in the editor, .IMG in the image viewer, .FOB/others in the hex+strings viewer]
 - [x] Tree context menu: Extract file (from archive to disk) [per-entry Extract...]
 - [x] Tabs: close tab, close all tabs, unsaved-change marker `*` on tab title, save-prompt on close/exit [existing Hantei-chan tabs, "*" marker, save prompt]
-- [ ] File > New > IMG, DAT, PAC
+- [x] File > New > IMG, DAT, PAC [PAC: Create/patch window; IMG: import PNG into a viewer; DAT new: not applicable (edit existing)]
 - [x] File > Open, Save, Save As, Exit [Load RBO / GOF2 character..., Save Character (loose .DT2 or full .DAT), Save As]
 - [ ] Language menu English / Japanese (UI strings; Hantei-chan has its own i18n decision pending)
 - [ ] Warn when working folder is on C: (MainForm_CDriveNotRecommended)  (low value; may be dropped with a note)
@@ -42,7 +42,7 @@ Legend: [x] done, [ ] open. "(icaro)" = added by icaroffa 2026. "(ours)" = in ou
 - [x] Preserve signature/kind/sub on save; write XOR flag as 0 [han2tool modelrt: 346/346 byte-identical through the model]
 - [ ] Save: .DAT, loose .DT2 (the game prefers it), and into a PAC
 - [ ] Open GOF2 .PAT v4 (2000 poses) and bare .CHP  [PACNyx: no viewer]
-- [ ] Pose list: 1000 poses (2000 for v4), index spinner, prev/next, scroll timer
+- [x] Pose list: 1000 poses (2000 for v4), index spinner, prev/next, scroll timer [PAT editor tab on the parts]
 - [ ] Pose list: add (AddPoseForm, must be named), remove, rename, drag reorder
 - [ ] Pose context menu: Save pose as image, Set pose base point
 - [x] Pose canvas: render up to 40 parts with layer order, flips, scale, rotation, ARGB colour; zoom (wheel); pan; draw base point toggle [CPU compositor (export) and the editor renderer; pose PNGs checked on PORING]
@@ -51,7 +51,7 @@ Legend: [x] done, [ ] open. "(icaro)" = added by icaroffa 2026. "(ours)" = in ou
 - [ ] Part: change colour (ColorAlphaPicker: ARGB), set origin (SetOriginForm), change sprite sheet
 - [ ] Part: nudge left/right/up/down; rotation knob with +/- buttons; H/V flip; H/V scale spinners
 - [ ] Part layer menu: send to back, push back, pull forward, send to front, set to N (LayerInputForm)
-- [ ] Sprite sheet list: add, remove (in-use warning, SpriteSheetInUse), change (full path), save as, rename; drag-drop image; width must equal height check
+- [x] Sprite sheet list: add, remove (in-use warning, SpriteSheetInUse), change (full path), save as, rename; drag-drop image; width must equal height check [PAT editor texture pane]
 - [ ] Sprite sheet canvas: select source rect by drag, nudge src rect, X/Y scale src rect, zoom
 - [ ] Effects: list of up to 3000, add, remove, rename, change graphic, save as, set effect base point, enable/disable all blocks, calculate blocks
 - [ ] Effect canvas with block grid, draw base point / draw blocks toggles
@@ -66,7 +66,7 @@ Legend: [x] done, [ ] open. "(icaro)" = added by icaroffa 2026. "(ours)" = in ou
 ## D. IMG (IMG.cs, IMGView)
 - [x] Open .IMG (version 6/7, BGRA with R/B swap), view, zoom [han2/img_file.cpp; han2tool imgrt 88/88 byte-identical; viewer window with zoom]
 - [x] Change texture (drag-drop or menu), extract/save as PNG [Import PNG (replace pixels), Export PNG, Save IMG, Put into new PAC]
-- [ ] New IMG; Save IMG
+- [x] New IMG; Save IMG [via Import]
 
 ## E. FOB
 - [x] FOB tab exists in PACNyx but is a stub. Hantei-chan: show raw and, later, decoded command table (CharData_BuildCommandTable 0x43D1D0) [hex + strings viewer, Export raw]
