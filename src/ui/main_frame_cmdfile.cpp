@@ -1,5 +1,6 @@
 // MainFrame glue for the _c.txt command-file editor (cmdfile/).
 
+#include "../i18n.h"
 #include "../main_frame.h"
 #include "../cmdfile/cmd_framedata.h"
 #include "../cmdfile/cmd_io.h"
@@ -32,7 +33,7 @@ void MainFrame::openCommandEditorForActive()
 	if (!active->frameData.m_commandsPath.empty()) { openCommandEditor(active->frameData.m_commandsPath); return; }
 	const auto candidates = cmdfile::CommandFileCandidates(active->getTxtPath());
 	if (candidates.empty()) {
-		requestErrorPopup("Loading Error", "No _c.txt found next to " + active->getTxtPath());
+		requestErrorPopup("Loading Error", std::string(TXT("No _c.txt found next to ")) + active->getTxtPath());
 		return;
 	}
 	loadCommandsForActive(candidates.front());

@@ -122,7 +122,7 @@ void MainFrame::DrawPresetEffectMarkers(FrameState& state, CharacterInstance* ch
 		drawList->AddLine(ImVec2(center.x, center.y - size), ImVec2(center.x, center.y + size), color, thickness);
 		drawList->AddCircleFilled(center, 3.0f, color);
 		if (state.vizSettings.showLabels) {
-			const char* presetName = m.preset >= 0 ? GetPresetEffectName(m.preset) : "Impact FX";
+			const char* presetName = m.preset >= 0 ? GetPresetEffectName(m.preset) : TXT("Impact FX");
 			char label[64];
 			snprintf(label, sizeof(label), "%s [%d]", presetName, m.preset);
 			drawList->AddText(ImVec2(center.x + size + 5, center.y - 8), color, label);
@@ -376,7 +376,7 @@ void MainFrame::DrawMainViewScene(CharacterView* view, int width, int height)
 			const float y0 = vp.y + (bgCamera.camY - 432.0f + bgCamera.panLastY) * z;
 			auto* dl = ImGui::GetBackgroundDrawList();
 			dl->AddRect(ImVec2(x0, y0), ImVec2(x0 + 640.0f * z, y0 + 480.0f * z), IM_COL32(255, 255, 255, 200), 0.0f, 0, 1.5f);
-			dl->AddText(ImVec2(x0 + 4, y0 + 2), IM_COL32(255, 255, 255, 220), "game view");
+			dl->AddText(ImVec2(x0 + 4, y0 + 2), IM_COL32(255, 255, 255, 220), TXT("game view"));
 		}
 		// u4ick's stage boundary rects (MonoForm.cs:431-435). They live at
 		// the LIVE camera position (movingPoint, = bgCamera.panX/panY), at

@@ -1,4 +1,5 @@
 #include "imgui_utils.h"
+#include "i18n.h"
 #include <imgui.h>
 #include <imgui_internal.h>
 
@@ -6,7 +7,7 @@ void Tooltip(const char* desc)
 {
 	ImGui::BeginTooltip();
 	ImGui::PushTextWrapPos(ImGui::GetFontSize() * 35.0f);
-	ImGui::TextUnformatted(desc);
+	ImGui::TextUnformatted(TXT(desc));   // callers may pass English or already-translated text; unknown strings pass through
 	ImGui::PopTextWrapPos();
 	ImGui::EndTooltip();
 }

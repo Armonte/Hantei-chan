@@ -20,7 +20,7 @@
 
 void MainFrame::DrawUi()
 {
-	ImGuiID errorPopupId = ImGui::GetID("Loading Error");
+	ImGuiID errorPopupId = ImGui::GetID(LBL("Loading Error"));
 	shortcuts.beginFrame();
 	SyncWorkspaceSession();
 	UpdateTransport();
@@ -80,16 +80,16 @@ void MainFrame::DrawUi()
 				ImGui::OpenPopup("AddCharacterPopup");
 			}
 			if (ImGui::IsItemHovered()) {
-				ImGui::SetTooltip("Add Character");
+				ImGui::SetTooltip(TXT("Add Character"));
 			}
 
 			if (ImGui::BeginPopup("AddCharacterPopup")) {
-				if (ImGui::MenuItem("Load from .txt...")) {
+				if (ImGui::MenuItem(LBL("Load from .txt..."))) {
 					std::string path = FileDialog(fileType::TXT, false);
 					if (!path.empty()) {
 						// Check for duplicate
 						if (findCharacterByPath(path)) {
-							ImGui::OpenPopup("DuplicateFileError");
+							ImGui::OpenPopup(LBL("DuplicateFileError"));
 						} else {
 							auto character = std::make_unique<CharacterInstance>();
 							if (character->loadFromTxt(path)) {
@@ -100,12 +100,12 @@ void MainFrame::DrawUi()
 						}
 					}
 				}
-				if (ImGui::MenuItem("Load HA6...")) {
+				if (ImGui::MenuItem(LBL("Load HA6..."))) {
 					std::string path = FileDialog(fileType::HA6, false);
 					if (!path.empty()) {
 						// Check for duplicate
 						if (findCharacterByPath(path)) {
-							ImGui::OpenPopup("DuplicateFileError");
+							ImGui::OpenPopup(LBL("DuplicateFileError"));
 						} else {
 							auto character = std::make_unique<CharacterInstance>();
 							if (character->loadHA6(path, false)) {
@@ -116,12 +116,12 @@ void MainFrame::DrawUi()
 						}
 					}
 				}
-				if (ImGui::MenuItem("Load HA6 and Patch...")) {
+				if (ImGui::MenuItem(LBL("Load HA6 and Patch..."))) {
 					std::string path = FileDialog(fileType::HA6, false);
 					if (!path.empty()) {
 						// Check for duplicate
 						if (findCharacterByPath(path)) {
-							ImGui::OpenPopup("DuplicateFileError");
+							ImGui::OpenPopup(LBL("DuplicateFileError"));
 						} else {
 							auto character = std::make_unique<CharacterInstance>();
 							if (character->loadHA6(path, true)) {
@@ -132,13 +132,13 @@ void MainFrame::DrawUi()
 						}
 					}
 				}
-				if (ImGui::MenuItem("Load Pattern (.pat)...")) {
+				if (ImGui::MenuItem(LBL("Load Pattern (.pat)..."))) {
 					std::string path = FileDialog(fileType::PAT, false);
 					if (!path.empty()) {
 						createPatEditorView(path);
 					}
 				}
-				if (ImGui::MenuItem("New Character")) {
+				if (ImGui::MenuItem(LBL("New Character"))) {
 					auto character = std::make_unique<CharacterInstance>();
 					character->frameData.initEmpty();
 					character->setName("Untitled");
@@ -150,12 +150,12 @@ void MainFrame::DrawUi()
 			}
 
 			// Duplicate file error popup
-			if (ImGui::BeginPopupModal("DuplicateFileError", nullptr, ImGuiWindowFlags_AlwaysAutoResize)) {
-				ImGui::Text("Character already loaded!");
-				ImGui::Text("Use right-click on the tab and select 'New View of Character'");
-				ImGui::Text("to open multiple views of the same character.");
+			if (ImGui::BeginPopupModal(LBL("DuplicateFileError"), nullptr, ImGuiWindowFlags_AlwaysAutoResize)) {
+				ImGui::Text(TXT("Character already loaded!"));
+				ImGui::Text(TXT("Use right-click on the tab and select 'New View of Character'"));
+				ImGui::Text(TXT("to open multiple views of the same character."));
 				ImGui::Separator();
-				if (ImGui::Button("OK", ImVec2(120, 0))) {
+				if (ImGui::Button(LBL("OK"), ImVec2(120, 0))) {
 					ImGui::CloseCurrentPopup();
 				}
 				ImGui::EndPopup();
@@ -218,52 +218,52 @@ void MainFrame::DrawUi()
 	// Error popups requested from inside menus/popups are opened here, at the
 	// same ID-stack level as the BeginPopupModal calls below.
 	if (m_pendingErrorPopup) {
-		ImGui::OpenPopup(m_pendingErrorPopup);
+		ImGui::OpenPopup(LBL(m_pendingErrorPopup));
 		m_pendingErrorPopup = nullptr;
 	}
 
 	ImGui::SetNextWindowPos(ImGui::GetMainViewport()->GetCenter(), ImGuiCond_Appearing, ImVec2(0.5f, 0.5f));
-	if (ImGui::BeginPopupModal("Save Error", NULL, ImGuiWindowFlags_AlwaysAutoResize))
+	if (ImGui::BeginPopupModal(LBL("Save Error"), NULL, ImGuiWindowFlags_AlwaysAutoResize))
 	{
-		ImGui::Text("The file could not be saved. The original file on disk was left unchanged\n"
-			"and the character is still marked as modified.\n\n");
+		ImGui::Text(TXT("The file could not be saved. The original file on disk was left unchanged\n"
+			"and the character is still marked as modified.\n\n"));
 		if (!m_errorDetail.empty()) {
 			ImGui::TextUnformatted(m_errorDetail.c_str());
 			ImGui::Text("\n");
 		}
 		ImGui::Separator();
-		if (ImGui::Button("OK", ImVec2(120, 0))) { ImGui::CloseCurrentPopup(); }
+		if (ImGui::Button(LBL("OK"), ImVec2(120, 0))) { ImGui::CloseCurrentPopup(); }
 		ImGui::EndPopup();
 	}
 
 	ImGui::SetNextWindowPos(ImGui::GetMainViewport()->GetCenter(), ImGuiCond_Appearing, ImVec2(0.5f, 0.5f));
-	if (ImGui::BeginPopupModal("Loading Error", NULL, ImGuiWindowFlags_AlwaysAutoResize))
+	if (ImGui::BeginPopupModal(LBL("Loading Error"), NULL, ImGuiWindowFlags_AlwaysAutoResize))
 	{
-		ImGui::Text("There was a problem loading the file.\n"
-			"The file couldn't be accessed or it's not a valid file.\n\n");
+		ImGui::Text(TXT("There was a problem loading the file.\n"
+			"The file couldn't be accessed or it's not a valid file.\n\n"));
 		ImGui::Separator();
-		if (ImGui::Button("OK", ImVec2(120, 0))) { ImGui::CloseCurrentPopup(); }
+		if (ImGui::Button(LBL("OK"), ImVec2(120, 0))) { ImGui::CloseCurrentPopup(); }
 		ImGui::EndPopup();
 	}
 
 	// Unsaved changes dialog - open it if requested
 	if (shouldOpenUnsavedDialog) {
-		ImGui::OpenPopup("Unsaved Changes");
+		ImGui::OpenPopup(LBL("Unsaved Changes"));
 		shouldOpenUnsavedDialog = false;
 	}
 
 	ImGui::SetNextWindowPos(ImGui::GetMainViewport()->GetCenter(), ImGuiCond_Appearing, ImVec2(0.5f, 0.5f));
-	if (ImGui::BeginPopupModal("Unsaved Changes", NULL, ImGuiWindowFlags_AlwaysAutoResize))
+	if (ImGui::BeginPopupModal(LBL("Unsaved Changes"), NULL, ImGuiWindowFlags_AlwaysAutoResize))
 	{
 		if (pendingCloseViewIndex >= 0 && pendingCloseViewIndex < views.size()) {
 			auto* view = views[pendingCloseViewIndex].get();
 			auto* character = view->getCharacter();
 			if (character) {
-				ImGui::Text("Character '%s' has unsaved changes.", character->getName().c_str());
-				ImGui::Text("Do you want to save before closing?\n\n");
+				ImGui::Text(TXT("Character '%s' has unsaved changes."), character->getName().c_str());
+				ImGui::Text(TXT("Do you want to save before closing?\n\n"));
 				ImGui::Separator();
 
-				if (ImGui::Button("Save", ImVec2(120, 0))) {
+				if (ImGui::Button(LBL("Save"), ImVec2(120, 0))) {
 					if (saveCharacter(character)) {
 						closeView(pendingCloseViewIndex);
 					}
@@ -273,13 +273,13 @@ void MainFrame::DrawUi()
 					ImGui::CloseCurrentPopup();
 				}
 				ImGui::SameLine();
-				if (ImGui::Button("Don't Save", ImVec2(120, 0))) {
+				if (ImGui::Button(LBL("Don't Save"), ImVec2(120, 0))) {
 					closeView(pendingCloseViewIndex);
 					pendingCloseViewIndex = -1;
 					ImGui::CloseCurrentPopup();
 				}
 				ImGui::SameLine();
-				if (ImGui::Button("Cancel", ImVec2(120, 0))) {
+				if (ImGui::Button(LBL("Cancel"), ImVec2(120, 0))) {
 					pendingCloseViewIndex = -1;
 					ImGui::CloseCurrentPopup();
 				}
@@ -290,48 +290,48 @@ void MainFrame::DrawUi()
 
 	// Project load error dialog
 	ImGui::SetNextWindowPos(ImGui::GetMainViewport()->GetCenter(), ImGuiCond_Appearing, ImVec2(0.5f, 0.5f));
-	if (ImGui::BeginPopupModal("Project Load Error", NULL, ImGuiWindowFlags_AlwaysAutoResize))
+	if (ImGui::BeginPopupModal(LBL("Project Load Error"), NULL, ImGuiWindowFlags_AlwaysAutoResize))
 	{
-		ImGui::Text("Failed to load project file.\n"
-			"The file may be corrupted or some character files may be missing.\n\n");
+		ImGui::Text(TXT("Failed to load project file.\n"
+			"The file may be corrupted or some character files may be missing.\n\n"));
 		if (!m_errorDetail.empty()) {
 			ImGui::TextUnformatted(m_errorDetail.c_str());
 			ImGui::Text("\n");
 		}
 		ImGui::Separator();
-		if (ImGui::Button("OK", ImVec2(120, 0))) { ImGui::CloseCurrentPopup(); }
+		if (ImGui::Button(LBL("OK"), ImVec2(120, 0))) { ImGui::CloseCurrentPopup(); }
 		ImGui::EndPopup();
 	}
 
 	// Project save error dialog
 	ImGui::SetNextWindowPos(ImGui::GetMainViewport()->GetCenter(), ImGuiCond_Appearing, ImVec2(0.5f, 0.5f));
-	if (ImGui::BeginPopupModal("Project Save Error", NULL, ImGuiWindowFlags_AlwaysAutoResize))
+	if (ImGui::BeginPopupModal(LBL("Project Save Error"), NULL, ImGuiWindowFlags_AlwaysAutoResize))
 	{
-		ImGui::Text("Failed to save project file.\n"
-			"Check that you have write permissions for the selected location.\n\n");
+		ImGui::Text(TXT("Failed to save project file.\n"
+			"Check that you have write permissions for the selected location.\n\n"));
 		if (!m_errorDetail.empty()) {
 			ImGui::TextUnformatted(m_errorDetail.c_str());
 			ImGui::Text("\n");
 		}
 		ImGui::Separator();
-		if (ImGui::Button("OK", ImVec2(120, 0))) { ImGui::CloseCurrentPopup(); }
+		if (ImGui::Button(LBL("OK"), ImVec2(120, 0))) { ImGui::CloseCurrentPopup(); }
 		ImGui::EndPopup();
 	}
 
 	// Unsaved project dialog - open it if requested
 	if (shouldOpenUnsavedProjectDialog) {
-		ImGui::OpenPopup("Unsaved Project");
+		ImGui::OpenPopup(LBL("Unsaved Project"));
 		shouldOpenUnsavedProjectDialog = false;
 	}
 
 	ImGui::SetNextWindowPos(ImGui::GetMainViewport()->GetCenter(), ImGuiCond_Appearing, ImVec2(0.5f, 0.5f));
-	if (ImGui::BeginPopupModal("Unsaved Project", NULL, ImGuiWindowFlags_AlwaysAutoResize))
+	if (ImGui::BeginPopupModal(LBL("Unsaved Project"), NULL, ImGuiWindowFlags_AlwaysAutoResize))
 	{
-		ImGui::Text("The current project has unsaved changes.\n");
-		ImGui::Text("Do you want to save before closing?\n\n");
+		ImGui::Text(TXT("The current project has unsaved changes.\n"));
+		ImGui::Text(TXT("Do you want to save before closing?\n\n"));
 		ImGui::Separator();
 
-		if (ImGui::Button("Save", ImVec2(120, 0))) {
+		if (ImGui::Button(LBL("Save"), ImVec2(120, 0))) {
 			// Save modified characters as well as the project file; the old
 			// code only saved the .hproj and then discarded character edits.
 			bool ok = saveAllModifiedCharacters();
@@ -351,7 +351,7 @@ void MainFrame::DrawUi()
 			m_pendingProjectPath.clear();
 		}
 		ImGui::SameLine();
-		if (ImGui::Button("Don't Save", ImVec2(120, 0))) {
+		if (ImGui::Button(LBL("Don't Save"), ImVec2(120, 0))) {
 			m_pendingProjectClose = false;
 			ImGui::CloseCurrentPopup();
 
@@ -361,7 +361,7 @@ void MainFrame::DrawUi()
 			m_pendingProjectPath.clear();
 		}
 		ImGui::SameLine();
-		if (ImGui::Button("Cancel", ImVec2(120, 0))) {
+		if (ImGui::Button(LBL("Cancel"), ImVec2(120, 0))) {
 			m_pendingProjectClose = false;
 			m_projectCloseAction = ProjectCloseAction::None;
 			m_pendingProjectPath.clear();
@@ -425,7 +425,7 @@ void MainFrame::DrawUi()
 		const ImVec2 mainPos = ImGui::GetMainViewport()->Pos;
 		ImGui::SetNextWindowPos(ImVec2(mainPos.x + 80.0f, mainPos.y + 80.0f), ImGuiCond_FirstUseEver);
 		ImGui::SetNextWindowSize(ImVec2(420.0f, 640.0f), ImGuiCond_FirstUseEver);
-		ImGui::Begin("Background Inspector", nullptr, 0);
+		ImGui::Begin(LBL("Background Inspector"), nullptr, 0);
 		// Editing here is stage editing: route Ctrl+Z/Y/S to the stage.
 		if (ImGui::IsWindowFocused(ImGuiFocusedFlags_RootAndChildWindows))
 			shortcuts.claimFocus(ShortcutContext::stageView, getActiveView() ? getActiveView()->getId() : 0);
@@ -437,14 +437,14 @@ void MainFrame::DrawUi()
 			// limits x to +-(528 - 320/zoom) and y to [-340, 0] (not enforced here).
 			float cam[2] = {bgCamera.camX, bgCamera.camY};
 			ImGui::SetNextItemWidth(160);
-			if (ImGui::DragFloat2("Game camera", cam, 1.0f, -2000.f, 2000.f, "%.0f")) bgCamera.SetGameCam(cam[0], cam[1]);
+			if (ImGui::DragFloat2(LBL("Game camera"), cam, 1.0f, -2000.f, 2000.f, "%.0f")) bgCamera.SetGameCam(cam[0], cam[1]);
 			ImGui::SameLine();
-			if (ImGui::SmallButton("Round start")) bgCamera.SetGameCam(0.0f, 0.0f);
-			if (ImGui::IsItemHovered()) ImGui::SetTooltip("Camera (0, 0): what the game shows at round start.\nParallax layers are placed for this camera.");
+			if (ImGui::SmallButton(LBL("Round start"))) bgCamera.SetGameCam(0.0f, 0.0f);
+			if (ImGui::IsItemHovered()) ImGui::SetTooltip(TXT("Camera (0, 0): what the game shows at round start.\nParallax layers are placed for this camera."));
 		}
-		ImGui::Text("File: %s", currentBgFile->GetFilename().c_str());
+		ImGui::Text(TXT("File: %s"), currentBgFile->GetFilename().c_str());
 		auto& objects = currentBgFile->GetObjects();
-		ImGui::Text("Objects: %zu", objects.size());
+		ImGui::Text(TXT("Objects: %zu"), objects.size());
 
 		// Diagnostic readout — exposes the exact values feeding the GL transform
 		// so we can compare numerically to u4ick's bgmaketool. The expected
@@ -452,7 +452,7 @@ void MainFrame::DrawUi()
 		// where render.x = bgCamera.panLastX (mirrored each frame from the
 		// camera's stable pose).
 		ImGui::Separator();
-		ImGui::TextDisabled("--- Diagnostics ---");
+		ImGui::TextDisabled(TXT("--- Diagnostics ---"));
 		ImGui::Text("bgCamera pan=(%.1f, %.1f) panLast=(%.1f, %.1f) dragging=%d",
 		            bgCamera.panX, bgCamera.panY,
 		            bgCamera.panLastX, bgCamera.panLastY,
@@ -499,7 +499,7 @@ void MainFrame::DrawUi()
 				}
 			}
 		}
-		if (ImGui::Button("Center View on obj[0]") && !objects.empty() && !objects[0].frames.empty()) {
+		if (ImGui::Button(LBL("Center View on obj[0]")) && !objects.empty() && !objects[0].frames.empty()) {
 			// Pan so obj[0]'s sprite top-left lands at viewport center —
 			// simplest possible 'where IS the sprite supposed to be' test.
 			const auto& f0 = objects[0].frames[0];
@@ -511,7 +511,7 @@ void MainFrame::DrawUi()
 			bgCamera.SetPan(newPanX, newPanY);
 			if (auto* v = getActiveView()) v->setStageRenderXY(newPanX, newPanY);
 		}
-		if (ImGui::Button("Reset Pan (0, 0)")) {
+		if (ImGui::Button(LBL("Reset Pan (0, 0)"))) {
 			bgCamera.SetPan(0.0f, 0.0f);
 			if (auto* v = getActiveView()) v->setStageRenderXY(0.0f, 0.0f);
 		}
@@ -527,7 +527,7 @@ void MainFrame::DrawUi()
 		ImGui::SameLine();
 		ImGui::InputFloat("##manualPanY", &manualPanY);
 		ImGui::SameLine();
-		if (ImGui::Button("Apply Pan")) {
+		if (ImGui::Button(LBL("Apply Pan"))) {
 			bgCamera.SetPan(manualPanX, manualPanY);
 			if (auto* v = getActiveView()) v->setStageRenderXY(manualPanX, manualPanY);
 		}
@@ -536,18 +536,18 @@ void MainFrame::DrawUi()
 		ImGui::Separator();
 
 		bool bgPaused = bgRenderer.IsPaused();
-		if (ImGui::Button(bgPaused ? "Play" : "Pause")) bgRenderer.SetPaused(!bgPaused);
+		if (ImGui::Button(bgPaused ? LBL("Play") : LBL("Pause"))) bgRenderer.SetPaused(!bgPaused);
 		ImGui::SameLine();
-		ImGui::TextDisabled("Animation: %s", bgPaused ? "PAUSED" : "Playing");
+		ImGui::TextDisabled(TXT("Animation: %s"), bgPaused ? TXT("PAUSED") : TXT("Playing"));
 		// Animation advancement happens via bgRenderer.Update() in DrawBack;
 		// don't double-tick here.
 
 		bool bgParallax = bgRenderer.IsParallaxEnabled();
-		if (ImGui::Checkbox("Parallax", &bgParallax)) bgRenderer.SetParallaxEnabled(bgParallax);
+		if (ImGui::Checkbox(LBL("Parallax"), &bgParallax)) bgRenderer.SetParallaxEnabled(bgParallax);
 		ImGui::SameLine();
 		bool bgOverlay = bgRenderer.IsShowingDebugOverlay();
-		if (ImGui::Checkbox("Stage rects", &bgOverlay)) bgRenderer.SetShowDebugOverlay(bgOverlay);
-		ImGui::TextDisabled("Left-drag to pan, mouse-wheel to zoom.");
+		if (ImGui::Checkbox(LBL("Stage rects"), &bgOverlay)) bgRenderer.SetShowDebugOverlay(bgOverlay);
+		ImGui::TextDisabled(TXT("Left-drag to pan, mouse-wheel to zoom."));
 
 		ImGui::Separator();
 
@@ -818,7 +818,7 @@ void MainFrame::RightClick(int x_, int y_)
 	// The whole right-drag (start + every drag update) is one undo step,
 	// closed in HandleMouseUp / CancelViewportGestures.
 	if (m_boxDragCharacter) EndBoxDrag();
-	active->undoManager.beginTransaction("Draw box");
+	active->undoManager.beginTransaction(TXT("Draw box"));
 	m_boxDragCharacter = active;
 
 	const auto& cam = view->camera();

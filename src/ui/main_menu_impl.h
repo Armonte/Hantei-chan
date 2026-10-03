@@ -22,24 +22,24 @@ void MainFrame::Menu(unsigned int errorPopupId)
 	if (ImGui::BeginMenuBar())
 	{
 		//ImGui::Separator();
-		if (ImGui::BeginMenu("File"))
+		if (ImGui::BeginMenu(LBL("File")))
 		{
 			auto* active = getActiveCharacter();
 			bool hasActive = (active != nullptr);
 
 			// Project menu items
-			if (ImGui::MenuItem("New Project", shortcuts.registry().label(ShortcutAction::newProject).c_str()))
+			if (ImGui::MenuItem(LBL("New Project"), shortcuts.registry().label(ShortcutAction::newProject).c_str()))
 			{
 				newProject();
 			}
 
-			if (ImGui::MenuItem("Open Project...", shortcuts.registry().label(ShortcutAction::openProject).c_str()))
+			if (ImGui::MenuItem(LBL("Open Project..."), shortcuts.registry().label(ShortcutAction::openProject).c_str()))
 			{
 				openProject();
 			}
 
 			// Recent projects submenu
-			if (ImGui::BeginMenu("Recent Projects", !gSettings.recentProjects.empty()))
+			if (ImGui::BeginMenu(LBL("Recent Projects"), !gSettings.recentProjects.empty()))
 			{
 				for (const auto& recentPath : gSettings.recentProjects) {
 					// Extract filename for display
@@ -60,7 +60,7 @@ void MainFrame::Menu(unsigned int errorPopupId)
 					}
 				}
 				ImGui::Separator();
-				if (ImGui::MenuItem("Clear Recent Projects")) {
+				if (ImGui::MenuItem(LBL("Clear Recent Projects"))) {
 					gSettings.recentProjects.clear();
 				}
 				ImGui::EndMenu();
@@ -69,19 +69,19 @@ void MainFrame::Menu(unsigned int errorPopupId)
 			ImGui::Separator();
 
 			bool hasProject = ProjectManager::HasCurrentProject();
-			if (ImGui::MenuItem("Save Project", hasProject ? shortcuts.registry().label(ShortcutAction::save).c_str() : nullptr, false, hasProject))
+			if (ImGui::MenuItem(LBL("Save Project"), hasProject ? shortcuts.registry().label(ShortcutAction::save).c_str() : nullptr, false, hasProject))
 			{
 				saveProject();
 			}
 
-			if (ImGui::MenuItem("Save Project As...", shortcuts.registry().label(ShortcutAction::saveProjectAs).c_str()))
+			if (ImGui::MenuItem(LBL("Save Project As..."), shortcuts.registry().label(ShortcutAction::saveProjectAs).c_str()))
 			{
 				saveProjectAs();
 			}
 
 			ImGui::Separator();
 
-			if (ImGui::MenuItem("Close Project", nullptr, false, hasProject))
+			if (ImGui::MenuItem(LBL("Close Project"), nullptr, false, hasProject))
 			{
 				closeProject();
 			}
@@ -89,7 +89,7 @@ void MainFrame::Menu(unsigned int errorPopupId)
 			ImGui::Separator();
 
 			// Character menu items
-			if (ImGui::MenuItem("New Character"))
+			if (ImGui::MenuItem(LBL("New Character")))
 			{
 				auto character = std::make_unique<CharacterInstance>();
 				character->frameData.initEmpty();
@@ -99,10 +99,10 @@ void MainFrame::Menu(unsigned int errorPopupId)
 				markProjectModified();
 			}
 
-			if (ImGui::MenuItem("Reopen Closed Tab", shortcuts.registry().label(ShortcutAction::reopenClosedView).c_str(), false, !m_closedTabs.empty()))
+			if (ImGui::MenuItem(LBL("Reopen Closed Tab"), shortcuts.registry().label(ShortcutAction::reopenClosedView).c_str(), false, !m_closedTabs.empty()))
 				reopenClosedTab();
 
-			if (ImGui::MenuItem("Close Character", nullptr, false, hasActive))
+			if (ImGui::MenuItem(LBL("Close Character"), nullptr, false, hasActive))
 			{
 				if (hasActive) {
 					tryCloseView(activeViewIndex);
@@ -111,7 +111,7 @@ void MainFrame::Menu(unsigned int errorPopupId)
 
 			ImGui::Separator();
 
-			if (ImGui::MenuItem("Load from .txt..."))
+			if (ImGui::MenuItem(LBL("Load from .txt...")))
 			{
 				std::string path = FileDialog(fileType::TXT, false);
 				if (!path.empty()) {
@@ -131,7 +131,7 @@ void MainFrame::Menu(unsigned int errorPopupId)
 				}
 			}
 
-			if (ImGui::MenuItem("Load chr HA6 from .txt..."))
+			if (ImGui::MenuItem(LBL("Load chr HA6 from .txt...")))
 			{
 				std::string path = FileDialog(fileType::TXT, false);
 				if (!path.empty()) {
@@ -151,7 +151,7 @@ void MainFrame::Menu(unsigned int errorPopupId)
 				}
 			}
 
-			if (ImGui::MenuItem("Load HA6..."))
+			if (ImGui::MenuItem(LBL("Load HA6...")))
 			{
 				std::string path = FileDialog(fileType::HA6, false);
 				if (!path.empty()) {
@@ -172,7 +172,7 @@ void MainFrame::Menu(unsigned int errorPopupId)
 			}
 
 			// MBAC (Act Cadenza) Hantei4 .DAT; detected by content (see framedata_ha4.h)
-			if (ImGui::MenuItem("Load MBAC .DAT (Act Cadenza)..."))
+			if (ImGui::MenuItem(LBL("Load MBAC .DAT (Act Cadenza)...")))
 			{
 				std::string path = FileDialog(fileType::HA4, false);
 				if (!path.empty()) {
@@ -185,37 +185,37 @@ void MainFrame::Menu(unsigned int errorPopupId)
 							createViewForCharacter(characters.back().get());
 							markProjectModified();
 						} else {
-							requestErrorPopup("Load Error", "Not a Hantei4 (MBAC) or HA6 file:\n" + path);
+							requestErrorPopup("Load Error", std::string(TXT("Not a Hantei4 (MBAC) or HA6 file:")) + "\n" + path);
 						}
 					}
 				}
 			}
 
 			// French-Bread RBO / GOF2 (.DAT/.DT2) and PAC archives; detected by content
-			if (ImGui::MenuItem("Load RBO / GOF2 character (.DT2/.DAT)..."))
+			if (ImGui::MenuItem(LBL("Load RBO / GOF2 character (.DT2/.DAT)...")))
 			{
 				std::string path = FileDialog(fileType::HAN2, false);
 				if (!path.empty() && !openHan2File(path))
 					ImGui::OpenPopup(errorPopupId);
 			}
-			if (ImGui::MenuItem("RBO / GOF2 archives (PAC)...", nullptr, han2ui::showBrowser))
+			if (ImGui::MenuItem(LBL("RBO / GOF2 archives (PAC)..."), nullptr, han2ui::showBrowser))
 				han2ui::showBrowser = !han2ui::showBrowser;
-			if (ImGui::MenuItem("Animation player (game rules, onion skin)...", nullptr, han2ui::showAnimWindow, hasActive && active->frameData.isHan2()))
+			if (ImGui::MenuItem(LBL("Animation player (game rules, onion skin)..."), nullptr, han2ui::showAnimWindow, hasActive && active->frameData.isHan2()))
 				han2ui::showAnimWindow = !han2ui::showAnimWindow;
-			if (ImGui::MenuItem("Changes against the loaded RBO / GOF2 file (diff)...", nullptr, han2ui::showDiffWindow, hasActive && active->frameData.isHan2()))
+			if (ImGui::MenuItem(LBL("Changes against the loaded RBO / GOF2 file (diff)..."), nullptr, han2ui::showDiffWindow, hasActive && active->frameData.isHan2()))
 				han2ui::showDiffWindow = !han2ui::showDiffWindow;
-			if (ImGui::MenuItem("CG sprites of this RBO / GOF2 character (export / import)...", nullptr, han2ui::showCgWindow, hasActive && active->cg.m_loaded))
+			if (ImGui::MenuItem(LBL("CG sprites of this RBO / GOF2 character (export / import)..."), nullptr, han2ui::showCgWindow, hasActive && active->cg.m_loaded))
 				han2ui::showCgWindow = !han2ui::showCgWindow;
-			if (ImGui::MenuItem("Create / patch a PAC archive...", nullptr, han2ui::showPacCreate))
+			if (ImGui::MenuItem(LBL("Create / patch a PAC archive..."), nullptr, han2ui::showPacCreate))
 				han2ui::showPacCreate = !han2ui::showPacCreate;
-			if (ImGui::MenuItem("Export RBO / GOF2 sprites, poses and animations (PNG + JSON)...", nullptr, false, hasActive && active->frameData.isHan2()))
+			if (ImGui::MenuItem(LBL("Export RBO / GOF2 sprites, poses and animations (PNG + JSON)..."), nullptr, false, hasActive && active->frameData.isHan2()))
 				exportHan2Character(active);
-			if (ImGui::MenuItem("Edit parts of this RBO / GOF2 character (PAT editor)", nullptr, false, hasActive && active->frameData.isHan2() && active->parts.loaded))
+			if (ImGui::MenuItem(LBL("Edit parts of this RBO / GOF2 character (PAT editor)"), nullptr, false, hasActive && active->frameData.isHan2() && active->parts.loaded))
 				openPartsEditorForCharacter(active);
 			if (ImGui::IsItemHovered(ImGuiHoveredFlags_AllowWhenDisabled))
-				ImGui::SetTooltip("Parts live in the .DAT: save as .DAT to keep part edits (a .DT2 carries only the pattern area).");
+				ImGui::SetTooltip(TXT("Parts live in the .DAT: save as .DAT to keep part edits (a .DT2 carries only the pattern area)."));
 
-			if (ImGui::MenuItem("Export MBAC as HA6...", nullptr, false, hasActive && active->frameData.isHA4()))
+			if (ImGui::MenuItem(LBL("Export MBAC as HA6..."), nullptr, false, hasActive && active->frameData.isHA4()))
 			{
 				std::string &&file = FileDialog(fileType::HA6, true);
 				if (!file.empty()) {
@@ -225,7 +225,7 @@ void MainFrame::Menu(unsigned int errorPopupId)
 				}
 			}
 
-			if (ImGui::MenuItem("Load HA6 and Patch..."))
+			if (ImGui::MenuItem(LBL("Load HA6 and Patch...")))
 			{
 				std::string path = FileDialog(fileType::HA6, false);
 				if (!path.empty()) {
@@ -248,14 +248,14 @@ void MainFrame::Menu(unsigned int errorPopupId)
 			ImGui::Separator();
 
 			// Ctrl+S saves the active character (and the .hproj when a project is open).
-			if (ImGui::MenuItem("Save Character", shortcuts.registry().label(ShortcutAction::save).c_str(), false, hasActive))
+			if (ImGui::MenuItem(LBL("Save Character"), shortcuts.registry().label(ShortcutAction::save).c_str(), false, hasActive))
 			{
 				if (hasActive) {
 					saveCharacter(active);
 				}
 			}
 
-			if (ImGui::MenuItem("Save Character As...", nullptr, false, hasActive))
+			if (ImGui::MenuItem(LBL("Save Character As..."), nullptr, false, hasActive))
 			{
 				if (hasActive) {
 					std::string &&file = FileDialog(active->frameData.isHan2() ? fileType::HAN2SAVE : fileType::HA6, true);
@@ -266,18 +266,18 @@ void MainFrame::Menu(unsigned int errorPopupId)
 				}
 			}
 
-			if (ImGui::MenuItem("Save Merged Stack As...", nullptr, false, hasActive && active->frameData.ownFile() >= 0))
+			if (ImGui::MenuItem(LBL("Save Merged Stack As..."), nullptr, false, hasActive && active->frameData.ownFile() >= 0))
 			{
 				// Flatten every file of the .txt stack into one HA6 (what Save
 				// used to write into the target file before issue #71).
 				std::string &&file = FileDialog(fileType::HA6, true);
 				if (!file.empty() && !active->frameData.save_merged(file.c_str()))
-					requestErrorPopup("Save Error", "Could not write " + file);
+					requestErrorPopup("Save Error", std::string(TXT("Could not write ")) + file);
 			}
 			if (ImGui::IsItemHovered(ImGuiHoveredFlags_AllowWhenDisabled))
-				ImGui::SetTooltip("Write the merged view of all files in the .txt stack to one HA6.\nSave Character writes only the target file's own patterns plus your edits.");
+				ImGui::SetTooltip(TXT("Write the merged view of all files in the .txt stack to one HA6.\nSave Character writes only the target file's own patterns plus your edits."));
 
-			if (ImGui::MenuItem("Save as MOD...", nullptr, false, hasActive && !active->getTxtPath().empty()))
+			if (ImGui::MenuItem(LBL("Save as MOD..."), nullptr, false, hasActive && !active->getTxtPath().empty()))
 			{
 				if (hasActive) {
 					// Generate MOD filename from top HA6 path
@@ -289,13 +289,13 @@ void MainFrame::Menu(unsigned int errorPopupId)
 						std::string modPath = basePath + "_MOD.HA6";
 
 						if (!active->saveModifiedOnly(modPath)) {
-							requestErrorPopup("Save Error", "Could not write " + modPath);
+							requestErrorPopup("Save Error", std::string(TXT("Could not write ")) + modPath);
 						}
 					}
 				}
 			}
 
-			if (ImGui::MenuItem("Load Commands (_c.txt)...", nullptr, false, hasActive))
+			if (ImGui::MenuItem(LBL("Load Commands (_c.txt)..."), nullptr, false, hasActive))
 			{
 				if (hasActive) {
 					std::string &&file = FileDialog(fileType::TXT);
@@ -305,16 +305,16 @@ void MainFrame::Menu(unsigned int errorPopupId)
 					}
 				}
 			}
-			if (ImGui::MenuItem("Command File Editor (active character)", nullptr, false, hasActive))
+			if (ImGui::MenuItem(LBL("Command File Editor (active character)"), nullptr, false, hasActive))
 				openCommandEditorForActive();
-			if (ImGui::MenuItem("Open Command File..."))
+			if (ImGui::MenuItem(LBL("Open Command File...")))
 			{
 				std::string &&file = FileDialog(fileType::CMDTXT);
 				if (!file.empty()) openCommandEditor(file);
 			}
 
 			ImGui::Separator();
-			if (ImGui::MenuItem("Load CG...", nullptr, false, hasActive))
+			if (ImGui::MenuItem(LBL("Load CG..."), nullptr, false, hasActive))
 			{
 				if (hasActive) {
 					std::string &&file = FileDialog(fileType::CG);
@@ -329,7 +329,7 @@ void MainFrame::Menu(unsigned int errorPopupId)
 				}
 			}
 
-			if (ImGui::MenuItem("Load palette...", nullptr, false, hasActive))
+			if (ImGui::MenuItem(LBL("Load palette..."), nullptr, false, hasActive))
 			{
 				if (hasActive) {
 					std::string &&file = FileDialog(fileType::PAL);
@@ -344,7 +344,7 @@ void MainFrame::Menu(unsigned int errorPopupId)
 				}
 			}
 
-			if (ImGui::MenuItem("Load vector.txt..."))
+			if (ImGui::MenuItem(LBL("Load vector.txt...")))
 			{
 				std::string&& file = FileDialog(fileType::VECTOR);
 				if (!file.empty())
@@ -357,7 +357,7 @@ void MainFrame::Menu(unsigned int errorPopupId)
 				}
 			}
 
-			if (ImGui::MenuItem("Load Parts (.pat)..."))
+			if (ImGui::MenuItem(LBL("Load Parts (.pat)...")))
 			{
 				std::string &&file = FileDialog(fileType::PAT);
 				if(!file.empty())
@@ -385,7 +385,7 @@ void MainFrame::Menu(unsigned int errorPopupId)
 				}
 			}
 
-			if (ImGui::MenuItem("Save Parts (.pat)", nullptr, false, hasActive && active->parts.loaded))
+			if (ImGui::MenuItem(LBL("Save Parts (.pat)"), nullptr, false, hasActive && active->parts.loaded))
 			{
 				if (hasActive) {
 					if(!active->savePAT())
@@ -395,7 +395,7 @@ void MainFrame::Menu(unsigned int errorPopupId)
 				}
 			}
 
-			if (ImGui::MenuItem("Save Parts As...", nullptr, false, hasActive && active->parts.loaded))
+			if (ImGui::MenuItem(LBL("Save Parts As..."), nullptr, false, hasActive && active->parts.loaded))
 			{
 				if (hasActive) {
 					std::string &&file = FileDialog(fileType::PAT, true);
@@ -414,7 +414,7 @@ void MainFrame::Menu(unsigned int errorPopupId)
 			// Effect.ha6 status (per-character, auto-loaded from character folder)
 			if (active && active->effectCharacter) {
 				// Show status when loaded
-				ImGui::TextDisabled("Effect.ha6: Loaded for %s", active->getName().c_str());
+				ImGui::TextDisabled(TXT("Effect.ha6: Loaded for %s"), active->getName().c_str());
 				if (ImGui::IsItemHovered()) {
 					std::string folder = active->effectCharacter->getBaseFolder();
 					int patternCount = active->effectCharacter->frameData.get_sequence_count();
@@ -422,19 +422,19 @@ void MainFrame::Menu(unsigned int errorPopupId)
 
 					// Get first image filename if available
 					const char* cgFileName = (imageCount > 0) ? active->effectCharacter->cg.get_filename(0) : nullptr;
-					std::string cgFile = cgFileName ? cgFileName : "None";
+					std::string cgFile = cgFileName ? cgFileName : TXT("None");
 
 					ImGui::BeginTooltip();
-					ImGui::Text("Effect.ha6 Details for %s:", active->getName().c_str());
+					ImGui::Text(TXT("Effect.ha6 Details for %s:"), active->getName().c_str());
 					ImGui::Separator();
-					ImGui::Text("Folder: %s", folder.c_str());
-					ImGui::Text("CG File: %s", cgFile.c_str());
-					ImGui::Text("Images: %d", imageCount);
-					ImGui::Text("Pattern Count: %d", patternCount);
+					ImGui::Text(TXT("Folder: %s"), folder.c_str());
+					ImGui::Text(TXT("CG File: %s"), cgFile.c_str());
+					ImGui::Text(TXT("Images: %d"), imageCount);
+					ImGui::Text(TXT("Pattern Count: %d"), patternCount);
 					ImGui::EndTooltip();
 				}
 
-				if (ImGui::MenuItem("Reload Effect.ha6")) {
+				if (ImGui::MenuItem(LBL("Reload Effect.ha6"))) {
 					printf("[Effect] Reloading effect.ha6 for %s\n", active->getName().c_str());
 					active->effectCharacter.reset();
 					if (active->loadEffectCharacter()) {
@@ -445,19 +445,19 @@ void MainFrame::Menu(unsigned int errorPopupId)
 				}
 			} else if (active) {
 				// Show status when not loaded for current character
-				ImGui::TextDisabled("Effect.ha6: Not loaded for %s", active->getName().c_str());
+				ImGui::TextDisabled(TXT("Effect.ha6: Not loaded for %s"), active->getName().c_str());
 			} else {
 				// No active character
-				ImGui::TextDisabled("Effect.ha6: No character loaded");
+				ImGui::TextDisabled(TXT("Effect.ha6: No character loaded"));
 			}
 
 			ImGui::Separator();
 			DrawPackageToolsMenuItems();
 			ImGui::Separator();
-			if (ImGui::MenuItem("Exit")) PostQuitMessage(0);
+			if (ImGui::MenuItem(LBL("Exit"))) PostQuitMessage(0);
 			ImGui::EndMenu();
 		}
-		if (ImGui::BeginMenu("Edit"))
+		if (ImGui::BeginMenu(LBL("Edit")))
 		{
 			auto* active = getActiveCharacter();
 			auto* view = getActiveView();
@@ -465,14 +465,15 @@ void MainFrame::Menu(unsigned int errorPopupId)
 			const UndoManager* undo = editable ? &active->undoManager : nullptr;
 			auto stepName = [](const UndoManager::Entry* e) {
 				if (!e) return std::string();
-				std::string name = e->label.empty() ? "Edit" : e->label;
-				name += e->changes.size() == 1
-					? " (pattern " + std::to_string(e->changes.front().index) + ")"
-					: " (" + std::to_string(e->changes.size()) + " patterns)";
+				std::string name = e->label.empty() ? std::string(TXT("Edit")) : e->label;
+				char cnt[96];
+				if (e->changes.size() == 1) snprintf(cnt, sizeof(cnt), TXT(" (pattern %d)"), (int)e->changes.front().index);
+				else snprintf(cnt, sizeof(cnt), TXT(" (%d patterns)"), (int)e->changes.size());
+				name += cnt;
 				return name;
 			};
-			const std::string undoLabel = "Undo " + (undo ? stepName(undo->peekUndo()) : std::string());
-			const std::string redoLabel = "Redo " + (undo ? stepName(undo->peekRedo()) : std::string());
+			const std::string undoLabel = std::string(TXT("Undo ")) + (undo ? stepName(undo->peekUndo()) : std::string());
+			const std::string redoLabel = std::string(TXT("Redo ")) + (undo ? stepName(undo->peekRedo()) : std::string());
 			if (ImGui::MenuItem(undoLabel.c_str(), shortcuts.registry().label(ShortcutAction::undo).c_str(),
 			                    false, undo && undo->canUndo()))
 				PerformUndoRedo(getActiveView(), false);
@@ -480,79 +481,80 @@ void MainFrame::Menu(unsigned int errorPopupId)
 			                    false, undo && undo->canRedo()))
 				PerformUndoRedo(getActiveView(), true);
 			if (undo) {
-				ImGui::TextDisabled("History: %zu undo / %zu redo, ~%zu KiB",
+				ImGui::TextDisabled(TXT("History: %zu undo / %zu redo, ~%zu KiB"),
 					undo->undoCount(), undo->redoCount(), undo->historyBytes() / 1024);
 			}
 			// [authoring] the tuning history (sidecar files): Ctrl+Z / Ctrl+Y reach it while the Authoring window has focus
 			if (authoring::showWindow) {
 				const std::string tu = authoring::UndoLabel(false), tr = authoring::UndoLabel(true);
-				if (ImGui::MenuItem(("Undo tuning: " + (tu.empty() ? std::string("-") : tu)).c_str(), nullptr, false, !tu.empty()))
+				if (ImGui::MenuItem((std::string(TXT("Undo tuning: ")) + (tu.empty() ? std::string("-") : tu)).c_str(), nullptr, false, !tu.empty()))
 					authoring::UndoRedo(false);
-				if (ImGui::MenuItem(("Redo tuning: " + (tr.empty() ? std::string("-") : tr)).c_str(), nullptr, false, !tr.empty()))
+				if (ImGui::MenuItem((std::string(TXT("Redo tuning: ")) + (tr.empty() ? std::string("-") : tr)).c_str(), nullptr, false, !tr.empty()))
 					authoring::UndoRedo(true);
 			}
 			// Stage tabs: object / frame / event / Info.txt edits (bg::File) and
 			// BgList.ini / bgm.txt edits (Stage Browser) share one history.
 			if (view && view->isStageView()) {
 				const std::string su = stageUndoLabel(false), sr = stageUndoLabel(true);
-				if (ImGui::MenuItem(("Undo " + su).c_str(), shortcuts.registry().label(ShortcutAction::undo).c_str(),
+				if (ImGui::MenuItem((std::string(TXT("Undo ")) + su).c_str(), shortcuts.registry().label(ShortcutAction::undo).c_str(),
 				                    false, !su.empty()))
 					stageUndoRedo(false, true);
-				if (ImGui::MenuItem(("Redo " + sr).c_str(), shortcuts.registry().label(ShortcutAction::redo).c_str(),
+				if (ImGui::MenuItem((std::string(TXT("Redo ")) + sr).c_str(), shortcuts.registry().label(ShortcutAction::redo).c_str(),
 				                    false, !sr.empty()))
 					stageUndoRedo(true, true);
-				if (ImGui::MenuItem("Save stage + metadata", shortcuts.registry().label(ShortcutAction::save).c_str(),
+				if (ImGui::MenuItem(LBL("Save stage + metadata"), shortcuts.registry().label(ShortcutAction::save).c_str(),
 				                    false, currentBgFile != nullptr))
 					saveStageAll();
 			}
 			ImGui::Separator();
-			if (ImGui::MenuItem("Keyboard shortcuts...", nullptr, m_showKeyBindings))
+			if (ImGui::MenuItem(LBL("Keyboard shortcuts..."), nullptr, m_showKeyBindings))
 				m_showKeyBindings = !m_showKeyBindings;
 			ImGui::EndMenu();
 		}
-		if (ImGui::BeginMenu("Preferences"))
+		if (ImGui::BeginMenu(LBL("Preferences")))
 		{
 			DrawExtensionProfileMenu();
-			if (ImGui::BeginMenu("Switch preset style"))
+			if (ImGui::BeginMenu(LBL("Switch preset style")))
 			{		
-				if (ImGui::Combo("Style", &style_idx, "Warm\0Dark\0Light\0ImGui\0"))
+				if (ImGui::Combo(LBL("Style"), &style_idx, "Warm\0Dark\0Light\0ImGui\0"))
 				{
 					LoadTheme(style_idx);
 				}
 				ImGui::EndMenu();
 			}
-			if (ImGui::BeginMenu("Background color"))
+			if (ImGui::BeginMenu(LBL("Background color")))
 			{
 				ImGui::ColorEdit3("##clearColor", (float*)&clearColor, ImGuiColorEditFlags_NoInputs);
 				ImGui::EndMenu();
 			}
 			auto* active = getActiveCharacter();
-			if (ImGui::BeginMenu("Game format"))
+			if (ImGui::BeginMenu(LBL("Game format")))
 			{
 				// Which game's HA6 dialect the labels and the writer follow (issues #14, #74).
 				const Ha6Game detected = active ? active->frameData.detectedGame() : Ha6Game::Auto;
-				std::string autoLabel = std::string("Auto (detected: ") + Ha6GameName(detected) + ")";
+				char autoBuf[160]; snprintf(autoBuf, sizeof(autoBuf), TXT("Auto (detected: %s)"), Ha6GameName(detected));
+				std::string autoLabel = autoBuf;
 				if (ImGui::MenuItem(autoLabel.c_str(), nullptr, g_ha6GameOverride == Ha6Game::Auto))
 					g_ha6GameOverride = Ha6Game::Auto;
 				if (ImGui::MenuItem("MBAACC", nullptr, g_ha6GameOverride == Ha6Game::MBAACC))
 					g_ha6GameOverride = Ha6Game::MBAACC;
-				if (ImGui::MenuItem("UNI / UNIST / UNI2 (5 layers)", nullptr, g_ha6GameOverride == Ha6Game::UNI))
+				if (ImGui::MenuItem(LBL("UNI / UNIST / UNI2 (5 layers)"), nullptr, g_ha6GameOverride == Ha6Game::UNI))
 					g_ha6GameOverride = Ha6Game::UNI;
-				if (ImGui::MenuItem("MELTY BLOOD: TYPE LUMINA (3 layers)", nullptr, g_ha6GameOverride == Ha6Game::MBTL))
+				if (ImGui::MenuItem(LBL("MELTY BLOOD: TYPE LUMINA (3 layers)"), nullptr, g_ha6GameOverride == Ha6Game::MBTL))
 					g_ha6GameOverride = Ha6Game::MBTL;
 				ImGui::EndMenu();
 			}
 			if (ImGui::IsItemHovered())
-				ImGui::SetTooltip("Detected from the data: AFGX layer count (5 = UNI, 3 = MBTL),\n"
+				ImGui::SetTooltip(TXT("Detected from the data: AFGX layer count (5 = UNI, 3 = MBTL),\n"
 					"no ATV2/AFGX = MBAACC. Switches field labels (e.g. attack flag 4, #74)\n"
-					"and the format new patterns are saved in.");
-			ImGui::MenuItem("PUPS palette files", nullptr, &render.followPups);
+					"and the format new patterns are saved in."));
+			ImGui::MenuItem(LBL("PUPS palette files"), nullptr, &render.followPups);
 			if (ImGui::IsItemHovered())
-				ImGui::SetTooltip("Draw patterns with PUPS n using <cg>_pn.pal, as the game does (#76).");
-			if (active && active->cg.getPalNumber() > 0 && ImGui::BeginMenu("Palette number"))
+				ImGui::SetTooltip(TXT("Draw patterns with PUPS n using <cg>_pn.pal, as the game does (#76)."));
+			if (active && active->cg.getPalNumber() > 0 && ImGui::BeginMenu(LBL("Palette number")))
 			{
 				ImGui::SetNextItemWidth(80);
-				ImGui::InputInt("Palette", &active->palette);
+				ImGui::InputInt(LBL("Palette"), &active->palette);
 				if(active->palette >= active->cg.getPalNumber())
 					active->palette = active->cg.getPalNumber()-1;
 				else if(active->palette < 0)
@@ -560,33 +562,33 @@ void MainFrame::Menu(unsigned int errorPopupId)
 				if(active->cg.changePaletteNumber(active->palette))
 					render.SwitchImage(-1);
 				if (active->cg.getPalNumber() == 130)
-					ImGui::TextDisabled("130 = 65 colours x 2 sets:\npalette n+65 is colour n's alternate set.");
+					ImGui::TextDisabled(TXT("130 = 65 colours x 2 sets:\npalette n+65 is colour n's alternate set."));
 				if (active->cg.pupsBankCount() > 1) {
-					ImGui::TextDisabled("PUPS files loaded:");
+					ImGui::TextDisabled(TXT("PUPS files loaded:"));
 					for (int b = 0; b < active->cg.pupsBankCount(); ++b)
 						if (active->cg.hasPupsBank(b)) { ImGui::SameLine(); ImGui::TextDisabled(b == 0 ? ".pal" : "_p%d", b); }
 				}
 				ImGui::EndMenu();
 			}
-			if (ImGui::BeginMenu("Zoom level"))
+			if (ImGui::BeginMenu(LBL("Zoom level")))
 			{
 				auto* view = getActiveView();
 				float currentZoom = view ? view->getZoom() : zoom_idx;
 				
 				ImGui::SetNextItemWidth(80);
-				if (ImGui::SliderFloat("Zoom", &currentZoom, 0.25f, 20.0f, "%.2f"))
+				if (ImGui::SliderFloat(LBL("Zoom"), &currentZoom, 0.25f, 20.0f, "%.2f"))
 				{
 					SetZoom(currentZoom);
 				}
 				ImGui::SameLine();
 				ImGui::TextDisabled("(?)");
 				if (ImGui::IsItemHovered())
-					Tooltip("Ctrl + Click to set exact value (per-view setting)");
+					Tooltip(TXT("Ctrl + Click to set exact value (per-view setting)"));
 				ImGui::EndMenu();
 			}
-			if (ImGui::BeginMenu("Filter"))
+			if (ImGui::BeginMenu(LBL("Filter")))
 			{
-				if (ImGui::Checkbox("Bilinear", &smoothRender))
+				if (ImGui::Checkbox(LBL("Bilinear"), &smoothRender))
 				{
 					render.filter = smoothRender;
 					render.SwitchImage(-1);
@@ -595,25 +597,25 @@ void MainFrame::Menu(unsigned int errorPopupId)
 			}
 			ImGui::EndMenu();
 		}
-		if (ImGui::BeginMenu("Stage"))
+		if (ImGui::BeginMenu(LBL("Stage")))
 		{
-			if (ImGui::MenuItem("Load Stage File..."))
+			if (ImGui::MenuItem(LBL("Load Stage File...")))
 			{
 				std::string path = FileDialog(fileType::DAT, false);
 				if (!path.empty())
 					loadStageFile(path);
 			}
-			if (ImGui::MenuItem("Save Stage As...", nullptr, false, currentBgFile != nullptr))
+			if (ImGui::MenuItem(LBL("Save Stage As..."), nullptr, false, currentBgFile != nullptr))
 			{
 				std::string path = FileDialog(fileType::DAT, true);
 				if (!path.empty())
 					currentBgFile->Save(path.c_str());
 			}
-			if (ImGui::MenuItem("Clear Stage", nullptr, false, currentBgFile != nullptr))
+			if (ImGui::MenuItem(LBL("Clear Stage"), nullptr, false, currentBgFile != nullptr))
 				clearStage();
-			if (ImGui::MenuItem("Stage Browser", nullptr, m_showStageBrowser))
+			if (ImGui::MenuItem(LBL("Stage Browser"), nullptr, m_showStageBrowser))
 				m_showStageBrowser = !m_showStageBrowser;
-			if (ImGui::BeginMenu("Open game stage", ensureStageProject())) {
+			if (ImGui::BeginMenu(LBL("Open game stage"), ensureStageProject())) {
 				const bg::StageEntry* cur = currentBgFile ? stageProject.FindByDat(currentBgFile->GetFilename()) : nullptr;
 				for (const auto& e : stageProject.Entries()) {
 					if (e.datPath.empty()) continue;
@@ -621,69 +623,69 @@ void MainFrame::Menu(unsigned int errorPopupId)
 				}
 				ImGui::EndMenu();
 			}
-			if (ImGui::MenuItem("Previous stage", shortcuts.registry().label(ShortcutAction::previousStage).c_str(), false, currentBgFile != nullptr))
+			if (ImGui::MenuItem(LBL("Previous stage"), shortcuts.registry().label(ShortcutAction::previousStage).c_str(), false, currentBgFile != nullptr))
 				stepStage(-1);
-			if (ImGui::MenuItem("Next stage", shortcuts.registry().label(ShortcutAction::nextStage).c_str(), false, currentBgFile != nullptr))
+			if (ImGui::MenuItem(LBL("Next stage"), shortcuts.registry().label(ShortcutAction::nextStage).c_str(), false, currentBgFile != nullptr))
 				stepStage(1);
 			bool authoring = bgRenderer.GetPatPlacement() == bg::Renderer::PatPlacement::Authoring;
-			if (ImGui::Checkbox("PAT placement: Authoring", &authoring)) {
+			if (ImGui::Checkbox(LBL("PAT placement: Authoring"), &authoring)) {
 				bgRenderer.SetPatPlacement(authoring ? bg::Renderer::PatPlacement::Authoring : bg::Renderer::PatPlacement::Game);
 				gSettings.stagePatAuthoring = authoring;
 			}
 			if (ImGui::IsItemHovered())
-				ImGui::SetTooltip("Off (Game-exact): PAT part positions as MBAACC applies them.\n"
+				ImGui::SetTooltip(TXT("Off (Game-exact): PAT part positions as MBAACC applies them.\n"
 				                  "On (Authoring): parts at the PAT canvas origin (320, 320) are drawn unpositioned,\n"
 				                  "as MBAC would; this puts the bg18/bg20/bg47 wind on the grass. MBAACC itself draws\n"
-				                  "that wind below the floor, off screen.");
-			if (ImGui::Checkbox("Clamp camera to the game's limits", &bgCamera.clampToGame)) {
+				                  "that wind below the floor, off screen."));
+			if (ImGui::Checkbox(LBL("Clamp camera to the game's limits"), &bgCamera.clampToGame)) {
 				gSettings.stageClampCamera = bgCamera.clampToGame;
 				if (bgCamera.clampToGame) bgCamera.ClampToGame();
 			}
 			if (ImGui::IsItemHovered())
-				ImGui::SetTooltip("The game camera never goes past x +-208, y -340..0. With this on, panning further\n"
-				                  "moves the view but not the camera, so parallax layers stay where the game shows them.");
-			ImGui::Checkbox("Show game view", &m_showGameViewRect);
+				ImGui::SetTooltip(TXT("The game camera never goes past x +-208, y -340..0. With this on, panning further\n"
+				                  "moves the view but not the camera, so parallax layers stay where the game shows them."));
+			ImGui::Checkbox(LBL("Show game view"), &m_showGameViewRect);
 			if (ImGui::IsItemHovered())
-				ImGui::SetTooltip("Outline of the 640x480 area the game shows at the current game camera.\n"
-				                  "Parallax layers only line up the way the game shows them inside it.");
+				ImGui::SetTooltip(TXT("Outline of the 640x480 area the game shows at the current game camera.\n"
+				                  "Parallax layers only line up the way the game shows them inside it."));
 			bool gameTex = bgRenderer.IsGameTextures();
-			if (ImGui::Checkbox("Game-accurate textures", &gameTex))
+			if (ImGui::Checkbox(LBL("Game-accurate textures"), &gameTex))
 				bgRenderer.SetGameTextures(gameTex);
 			if (ImGui::IsItemHovered())
-				ImGui::SetTooltip("On: textures as the game builds them (DXT5 on stages over the\n"
+				ImGui::SetTooltip(TXT("On: textures as the game builds them (DXT5 on stages over the\n"
 				                  "30000 KB budget via bg_dxt32.exe, pow2 textures, the game's UV insets).\n"
-				                  "Off: the clean CG, for editing.");
+				                  "Off: the clean CG, for editing."));
 
 			ImGui::Separator();
 
 			bool bgEnabled = bgRenderer.IsEnabled();
-			if (ImGui::Checkbox("Enable Stage Rendering", &bgEnabled))
+			if (ImGui::Checkbox(LBL("Enable Stage Rendering"), &bgEnabled))
 				bgRenderer.SetEnabled(bgEnabled);
 
 			bool showDebug = bgRenderer.IsShowingDebugOverlay();
-			if (ImGui::Checkbox("Show Debug Overlay", &showDebug))
+			if (ImGui::Checkbox(LBL("Show Debug Overlay"), &showDebug))
 				bgRenderer.SetShowDebugOverlay(showDebug);
 			if (ImGui::IsItemHovered())
-				ImGui::SetTooltip("Bounding boxes, camera position, screen center");
+				ImGui::SetTooltip(TXT("Bounding boxes, camera position, screen center"));
 
 			bool parallaxEnabled = bgRenderer.IsParallaxEnabled();
-			if (ImGui::Checkbox("Enable Parallax", &parallaxEnabled))
+			if (ImGui::Checkbox(LBL("Enable Parallax"), &parallaxEnabled))
 				bgRenderer.SetParallaxEnabled(parallaxEnabled);
 			if (ImGui::IsItemHovered())
-				ImGui::SetTooltip("Disable to see objects at world positions without parallax effect");
+				ImGui::SetTooltip(TXT("Disable to see objects at world positions without parallax effect"));
 
 			if (currentBgFile && currentBgFile->IsLoaded())
 			{
 				ImGui::Separator();
-				ImGui::TextDisabled("Loaded: %zu objects", currentBgFile->GetObjects().size());
-				ImGui::TextDisabled("Camera: (%.0f, %.0f)", bgCamera.panLastX, bgCamera.panLastY);
+				ImGui::TextDisabled(TXT("Loaded: %zu objects"), currentBgFile->GetObjects().size());
+				ImGui::TextDisabled(TXT("Camera: (%.0f, %.0f)"), bgCamera.panLastX, bgCamera.panLastY);
 			}
 
 			ImGui::EndMenu();
 		}
 		DrawRenderMenu();
 
-		if (ImGui::BeginMenu("Windows"))
+		if (ImGui::BeginMenu(LBL("Windows")))
 		{
 			auto* view = getActiveView();
 			bool hasView = (view != nullptr);
@@ -692,24 +694,24 @@ void MainFrame::Menu(unsigned int errorPopupId)
 			// HA6 Editor panes (only show when not in PAT editor mode)
 			if (!isPatEditor && hasView) {
 				if (view->getMainPane()) {
-					std::string label = view->getMainPane()->isVisible ? "Hide Animation Panel" : "Show Animation Panel";
+					std::string label = view->getMainPane()->isVisible ? TXT("Hide Animation Panel") : TXT("Show Animation Panel");
 					if (ImGui::MenuItem(label.c_str())) {
 						view->getMainPane()->isVisible = !view->getMainPane()->isVisible;
 					}
 					// Pattern search bar toggle
-					std::string searchLabel = view->getMainPane()->showPatternSearchBar ? "Hide Pattern Search Bar" : "Show Pattern Search Bar";
+					std::string searchLabel = view->getMainPane()->showPatternSearchBar ? TXT("Hide Pattern Search Bar") : TXT("Show Pattern Search Bar");
 					if (ImGui::MenuItem(searchLabel.c_str())) {
 						view->getMainPane()->showPatternSearchBar = !view->getMainPane()->showPatternSearchBar;
 					}
 				}
 				if (view->getRightPane()) {
-					std::string label = view->getRightPane()->isVisible ? "Hide Attack Panel" : "Show Attack Panel";
+					std::string label = view->getRightPane()->isVisible ? TXT("Hide Attack Panel") : TXT("Show Attack Panel");
 					if (ImGui::MenuItem(label.c_str())) {
 						view->getRightPane()->isVisible = !view->getRightPane()->isVisible;
 					}
 				}
 				if (view->getBoxPane()) {
-					std::string label = view->getBoxPane()->isVisible ? "Hide Hitbox Panel" : "Show Hitbox Panel";
+					std::string label = view->getBoxPane()->isVisible ? TXT("Hide Hitbox Panel") : TXT("Show Hitbox Panel");
 					if (ImGui::MenuItem(label.c_str())) {
 						view->getBoxPane()->isVisible = !view->getBoxPane()->isVisible;
 					}
@@ -720,31 +722,31 @@ void MainFrame::Menu(unsigned int errorPopupId)
 			// PAT Editor panes (only show when in PAT editor mode)
 			if (isPatEditor && hasView) {
 				if (view->getPartSetPane()) {
-					std::string label = view->getPartSetPane()->isVisible ? "Hide PartSet Panel" : "Show PartSet Panel";
+					std::string label = view->getPartSetPane()->isVisible ? TXT("Hide PartSet Panel") : TXT("Show PartSet Panel");
 					if (ImGui::MenuItem(label.c_str())) {
 						view->getPartSetPane()->isVisible = !view->getPartSetPane()->isVisible;
 					}
 				}
 				if (view->getPartPane()) {
-					std::string label = view->getPartPane()->isVisible ? "Hide Part Panel" : "Show Part Panel";
+					std::string label = view->getPartPane()->isVisible ? TXT("Hide Part Panel") : TXT("Show Part Panel");
 					if (ImGui::MenuItem(label.c_str())) {
 						view->getPartPane()->isVisible = !view->getPartPane()->isVisible;
 					}
 				}
 				if (view->getShapePane()) {
-					std::string label = view->getShapePane()->isVisible ? "Hide Shape Panel" : "Show Shape Panel";
+					std::string label = view->getShapePane()->isVisible ? TXT("Hide Shape Panel") : TXT("Show Shape Panel");
 					if (ImGui::MenuItem(label.c_str())) {
 						view->getShapePane()->isVisible = !view->getShapePane()->isVisible;
 					}
 				}
 				if (view->getTexturePane()) {
-					std::string label = view->getTexturePane()->isVisible ? "Hide Texture Panel" : "Show Texture Panel";
+					std::string label = view->getTexturePane()->isVisible ? TXT("Hide Texture Panel") : TXT("Show Texture Panel");
 					if (ImGui::MenuItem(label.c_str())) {
 						view->getTexturePane()->isVisible = !view->getTexturePane()->isVisible;
 					}
 				}
 				if (view->getToolPane()) {
-					std::string label = view->getToolPane()->isVisible ? "Hide Tool Panel" : "Show Tool Panel";
+					std::string label = view->getToolPane()->isVisible ? TXT("Hide Tool Panel") : TXT("Show Tool Panel");
 					if (ImGui::MenuItem(label.c_str())) {
 						view->getToolPane()->isVisible = !view->getToolPane()->isVisible;
 					}
@@ -753,50 +755,50 @@ void MainFrame::Menu(unsigned int errorPopupId)
 			}
 
 			// Global windows
-			if (ImGui::MenuItem("Vectors Guide")) vectors.drawWindow = !vectors.drawWindow;
-			if (ImGui::MenuItem("Variable references (batch replace)", nullptr, m_varRefs.open)) m_varRefs.open = !m_varRefs.open;
-			if (ImGui::MenuItem("Pattern manager", nullptr, m_patMgr.open)) m_patMgr.open = !m_patMgr.open;
-			if (ImGui::MenuItem("Notes", nullptr, m_showNotes)) m_showNotes = !m_showNotes;
-			if (ImGui::MenuItem("Pattern comparison", nullptr, m_showCompare)) m_showCompare = !m_showCompare;
-			if (ImGui::MenuItem("BGM preview", nullptr, m_showBgm)) m_showBgm = !m_showBgm;
-			if (ImGui::MenuItem("Stage Browser", nullptr, m_showStageBrowser)) m_showStageBrowser = !m_showStageBrowser;
-			if (ImGui::MenuItem("HUD preview / colours", nullptr, m_showHud)) m_showHud = !m_showHud;
-			if (ImGui::MenuItem("MBAC (HA4) Inspector", nullptr, ha4ui::showInspector)) ha4ui::showInspector = !ha4ui::showInspector;
+			if (ImGui::MenuItem(LBL("Vectors Guide"))) vectors.drawWindow = !vectors.drawWindow;
+			if (ImGui::MenuItem(LBL("Variable references (batch replace)"), nullptr, m_varRefs.open)) m_varRefs.open = !m_varRefs.open;
+			if (ImGui::MenuItem(LBL("Pattern manager"), nullptr, m_patMgr.open)) m_patMgr.open = !m_patMgr.open;
+			if (ImGui::MenuItem(LBL("Notes"), nullptr, m_showNotes)) m_showNotes = !m_showNotes;
+			if (ImGui::MenuItem(LBL("Pattern comparison"), nullptr, m_showCompare)) m_showCompare = !m_showCompare;
+			if (ImGui::MenuItem(LBL("BGM preview"), nullptr, m_showBgm)) m_showBgm = !m_showBgm;
+			if (ImGui::MenuItem(LBL("Stage Browser"), nullptr, m_showStageBrowser)) m_showStageBrowser = !m_showStageBrowser;
+			if (ImGui::MenuItem(LBL("HUD preview / colours"), nullptr, m_showHud)) m_showHud = !m_showHud;
+			if (ImGui::MenuItem(LBL("MBAC (HA4) Inspector"), nullptr, ha4ui::showInspector)) ha4ui::showInspector = !ha4ui::showInspector;
 			if (ImGui::MenuItem(han2ui::Tr("RBO / GOF2 loading report", "RBO / GOF2 \xe8\xaa\xad\xe3\x81\xbf\xe8\xbe\xbc\xe3\x81\xbf\xe3\x83\xac\xe3\x83\x9d\xe3\x83\xbc\xe3\x83\x88"), nullptr, han2ui::showLoadReport)) han2ui::showLoadReport = !han2ui::showLoadReport;
-			if (ImGui::BeginMenu("Language / \xe8\xa8\x80\xe8\xaa\x9e (RBO / GOF2 windows)")) {
+			if (ImGui::BeginMenu("Language / \xe8\xa8\x80\xe8\xaa\x9e###Language")) {
 				if (ImGui::MenuItem("English", nullptr, i18n::language == 0)) { i18n::language = 0; han2ui::SaveHan2Settings(); }
 				if (ImGui::MenuItem("\xe6\x97\xa5\xe6\x9c\xac\xe8\xaa\x9e", nullptr, i18n::language == 1)) { i18n::language = 1; han2ui::SaveHan2Settings(); }
 				ImGui::EndMenu();
 			}
-			if (ImGui::MenuItem("RBO / GOF2 (HAN2) Inspector", nullptr, han2ui::showInspector)) han2ui::showInspector = !han2ui::showInspector;
-			if (ImGui::MenuItem("Game Link (MBAACC)", nullptr, gamelink::showPanel)) gamelink::showPanel = !gamelink::showPanel;
+			if (ImGui::MenuItem(LBL("RBO / GOF2 (HAN2) Inspector"), nullptr, han2ui::showInspector)) han2ui::showInspector = !han2ui::showInspector;
+			if (ImGui::MenuItem(LBL("Game Link (MBAACC)"), nullptr, gamelink::showPanel)) gamelink::showPanel = !gamelink::showPanel;
 			// [authoring] the old Tag / Team entry opens the Authoring workspace on its Tuning tab (§5.1)
-			if (ImGui::MenuItem("Tag / Team (experimental)", nullptr, authoring::showWindow)) authoring::Open("Tuning");
+			if (ImGui::MenuItem(LBL("Tag / Team (experimental)"), nullptr, authoring::showWindow)) authoring::Open("Tuning");
 			ImGui::EndMenu();
 		}
 		// [authoring] docs/HANTEI_AUTHORING_MODE.md §8.11: Authoring ships in the public build behind this menu.
-		if (ImGui::BeginMenu("Experimental: Authoring"))
+		if (ImGui::BeginMenu(LBL("Experimental: Authoring")))
 		{
-			if (ImGui::MenuItem("Authoring workspace (MBAACC)", nullptr, authoring::showWindow)) {
+			if (ImGui::MenuItem(LBL("Authoring workspace (MBAACC)"), nullptr, authoring::showWindow)) {
 				if (authoring::showWindow) authoring::showWindow = false; else authoring::Open("Setup");
 			}
 			ImGui::Separator();
-			if (ImGui::MenuItem("Setup: characters, stage, mode")) authoring::Open("Setup");
-			if (ImGui::MenuItem("Saved setups")) authoring::Open("Setups");
-			if (ImGui::MenuItem("Tuning: tag / assists (sidecars)")) authoring::Open("Tuning");
-			if (ImGui::MenuItem("TAG HUD layout")) authoring::Open("HUD");
-			if (ImGui::MenuItem("Live: what the game resolved")) authoring::Open("Live");
-			if (ImGui::MenuItem("Game log")) authoring::Open("Log");
-			if (ImGui::MenuItem("Game view (the game inside Hantei-chan)", nullptr, authoring::showGameView))
+			if (ImGui::MenuItem(LBL("Setup: characters, stage, mode"))) authoring::Open("Setup");
+			if (ImGui::MenuItem(LBL("Saved setups"))) authoring::Open("Setups");
+			if (ImGui::MenuItem(LBL("Tuning: tag / assists (sidecars)"))) authoring::Open("Tuning");
+			if (ImGui::MenuItem(LBL("TAG HUD layout"))) authoring::Open("HUD");
+			if (ImGui::MenuItem(LBL("Live: what the game resolved"))) authoring::Open("Live");
+			if (ImGui::MenuItem(LBL("Game log"))) authoring::Open("Log");
+			if (ImGui::MenuItem(LBL("Game view (the game inside Hantei-chan)"), nullptr, authoring::showGameView))
 				authoring::showGameView = !authoring::showGameView;
 			ImGui::Separator();
-			if (ImGui::MenuItem("Legacy tag_tuning.ini panel", nullptr, tagpanel::showPanel)) tagpanel::showPanel = !tagpanel::showPanel;
-			if (ImGui::MenuItem("Game Link console", nullptr, gamelink::showPanel)) gamelink::showPanel = !gamelink::showPanel;
+			if (ImGui::MenuItem(LBL("Legacy tag_tuning.ini panel"), nullptr, tagpanel::showPanel)) tagpanel::showPanel = !tagpanel::showPanel;
+			if (ImGui::MenuItem(LBL("Game Link console"), nullptr, gamelink::showPanel)) gamelink::showPanel = !gamelink::showPanel;
 			ImGui::EndMenu();
 		}
-		if (ImGui::BeginMenu("Help"))
+		if (ImGui::BeginMenu(LBL("Help")))
 		{
-			if (ImGui::MenuItem("About")) aboutWindow.isVisible = !aboutWindow.isVisible;
+			if (ImGui::MenuItem(LBL("About"))) aboutWindow.isVisible = !aboutWindow.isVisible;
 			ImGui::EndMenu();
 		}
 
@@ -818,13 +820,13 @@ void MainFrame::Menu(unsigned int errorPopupId)
 				std::string txtName = (txtSlash != std::string::npos) ? txtPath.substr(txtSlash + 1) : txtPath;
 				std::string ha6Name = (ha6Slash != std::string::npos) ? topHA6.substr(ha6Slash + 1) : topHA6;
 
-				ImGui::TextDisabled("Loaded: %s", txtName.c_str());
+				ImGui::TextDisabled(TXT("Loaded: %s"), txtName.c_str());
 				ImGui::SameLine();
-				ImGui::TextColored(ImVec4(0.4f, 0.8f, 0.4f, 1.0f), "-> Saves to: %s", ha6Name.c_str());
+				ImGui::TextColored(ImVec4(0.4f, 0.8f, 0.4f, 1.0f), TXT("-> Saves to: %s"), ha6Name.c_str());
 				if (ImGui::IsItemHovered() && active->frameData.ownFile() >= 0) {
-					ImGui::SetTooltip("Saving writes the patterns that came from %s plus every\n"
+					ImGui::SetTooltip(TXT("Saving writes the patterns that came from %s plus every\n"
 					                  "pattern you edited. %d unedited pattern(s) inherited from the\n"
-					                  "other files of %s are left in those files.",
+					                  "other files of %s are left in those files."),
 					                  ha6Name.c_str(), active->frameData.inheritedPatternCount(), txtName.c_str());
 				}
 			}
@@ -832,16 +834,16 @@ void MainFrame::Menu(unsigned int errorPopupId)
 			{
 				size_t slash = topHA6.find_last_of("/\\");
 				std::string filename = (slash != std::string::npos) ? topHA6.substr(slash + 1) : topHA6;
-				ImGui::TextColored(ImVec4(0.4f, 0.8f, 0.4f, 1.0f), "Save to: %s", filename.c_str());
+				ImGui::TextColored(ImVec4(0.4f, 0.8f, 0.4f, 1.0f), TXT("Save to: %s"), filename.c_str());
 			}
 			else
 			{
-				ImGui::TextDisabled("No save target set for %s", active->getName().c_str());
+				ImGui::TextDisabled(TXT("No save target set for %s"), active->getName().c_str());
 			}
 		}
 		else
 		{
-			ImGui::TextDisabled("No character loaded");
+			ImGui::TextDisabled(TXT("No character loaded"));
 		}
 
 		ImGui::EndMenuBar();

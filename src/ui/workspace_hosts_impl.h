@@ -210,9 +210,9 @@ bool MainFrame::DrawViewTabItem(uint64_t hostId, CharacterView* view, size_t pos
 		ImGui::SetDragDropPayload(kViewTabPayload, &id, sizeof(id));
 		ImGui::TextUnformatted(view->getDisplayName().c_str());
 		if (IsDetachableView(view))
-			ImGui::TextDisabled("Drop on a tab bar to move, anywhere else for a new window");
+			ImGui::TextDisabled("%s", TXT("Drop on a tab bar to move, anywhere else for a new window"));
 		else
-			ImGui::TextDisabled("Stage and PAT-editor tabs stay in the main window");
+			ImGui::TextDisabled("%s", TXT("Stage and PAT-editor tabs stay in the main window"));
 		ImGui::EndDragDropSource();
 		if (!m_tabDrag.active) {
 			m_tabDrag.active = true;
@@ -296,20 +296,20 @@ void MainFrame::DrawViewTabContextItems()
 {
 	if (contextMenuViewIndex < 0 || contextMenuViewIndex >= (int)views.size()) return;
 	CharacterView* v = views[contextMenuViewIndex].get();
-	if (ImGui::MenuItem("New View of Character", nullptr, false, v->getCharacter() != nullptr))
+	if (ImGui::MenuItem(LBL("New View of Character"), nullptr, false, v->getCharacter() != nullptr))
 		createViewForCharacter(v->getCharacter());
 	ImGui::Separator();
 	const uint64_t owner = m_session.owner(v->getId()).value_or(WorkspaceSession::MainHost);
 	const bool detachable = IsDetachableView(v);
-	if (ImGui::MenuItem("Move to New Window", shortcuts.registry().label(ShortcutAction::detachView).c_str(), false, detachable)) {
+	if (ImGui::MenuItem(LBL("Move to New Window"), shortcuts.registry().label(ShortcutAction::detachView).c_str(), false, detachable)) {
 		const ImVec2 p = ImGui::GetMainViewport()->Pos;
 		DetachViewToNewHost(v->getId(), ImVec2(p.x + 140.f, p.y + 120.f));
 	}
-	if (owner != WorkspaceSession::MainHost && ImGui::MenuItem("Move to Main Window"))
+	if (owner != WorkspaceSession::MainHost && ImGui::MenuItem(LBL("Move to Main Window")))
 		MoveViewToHost(v->getId(), WorkspaceSession::MainHost, std::nullopt);
 	for (const auto& [hostId, hw] : m_hosts) {
 		if (hostId == owner) continue;
-		const std::string label = "Move to Window " + std::to_string(hostId);
+		const std::string label = std::string(TXT("Move to Window")) + " " + std::to_string(hostId);
 		if (ImGui::MenuItem(label.c_str(), nullptr, false, detachable))
 			MoveViewToHost(v->getId(), hostId, std::nullopt);
 	}
@@ -403,33 +403,33 @@ void MainFrame::FinishPaneUndoFrame()
 void MainFrame::DrawOnionSkinControls(CharacterView* view)
 {
 	if (!view || !view->getCharacter() || view->isStageView() || view->isPatEditor()) {
-		ImGui::TextDisabled("Onion skin needs a character tab.");
+		ImGui::TextDisabled("%s", TXT("Onion skin needs a character tab."));
 		return;
 	}
 	auto& o = view->onion();
 	bool changed = false;
-	changed |= ImGui::Checkbox("Onion skin", &o.enabled);
+	changed |= ImGui::Checkbox(LBL("Onion skin"), &o.enabled);
 	ImGui::SameLine();
 	ImGui::TextDisabled("(%s)", shortcuts.registry().label(ShortcutAction::toggleOnionSkin).c_str());
 	ImGui::SetNextItemWidth(120);
-	changed |= ImGui::SliderInt("Before", &o.before, 0, 16);
+	changed |= ImGui::SliderInt(LBL("Before"), &o.before, 0, 16);
 	ImGui::SetNextItemWidth(120);
-	changed |= ImGui::SliderInt("After", &o.after, 0, 16);
-	changed |= ImGui::Checkbox("Keyframes (root frame entries)", &o.keyframesOnly);
+	changed |= ImGui::SliderInt(LBL("After"), &o.after, 0, 16);
+	changed |= ImGui::Checkbox(LBL("Keyframes (root frame entries)"), &o.keyframesOnly);
 	if (!o.keyframesOnly) {
 		ImGui::SetNextItemWidth(120);
-		changed |= ImGui::SliderInt("Spacing (ticks)", &o.spacing, 1, 60);
+		changed |= ImGui::SliderInt(LBL("Spacing (ticks)"), &o.spacing, 1, 60);
 	}
-	changed |= ImGui::Checkbox("Include spawned actors", &o.includeSpawns);
+	changed |= ImGui::Checkbox(LBL("Include spawned actors"), &o.includeSpawns);
 	ImGui::SetNextItemWidth(120);
-	changed |= ImGui::SliderFloat("Opacity", &o.alpha, 0.05f, 1.f, "%.2f");
+	changed |= ImGui::SliderFloat(LBL("Opacity"), &o.alpha, 0.05f, 1.f, "%.2f");
 	ImGui::SetNextItemWidth(120);
-	changed |= ImGui::SliderFloat("Falloff", &o.falloff, 0.1f, 1.f, "%.2f");
-	changed |= ImGui::ColorEdit3("Past tint", &o.pastTint.x, ImGuiColorEditFlags_NoInputs);
+	changed |= ImGui::SliderFloat(LBL("Falloff"), &o.falloff, 0.1f, 1.f, "%.2f");
+	changed |= ImGui::ColorEdit3(LBL("Past tint"), &o.pastTint.x, ImGuiColorEditFlags_NoInputs);
 	ImGui::SameLine();
-	changed |= ImGui::ColorEdit3("Future tint", &o.futureTint.x, ImGuiColorEditFlags_NoInputs);
+	changed |= ImGui::ColorEdit3(LBL("Future tint"), &o.futureTint.x, ImGuiColorEditFlags_NoInputs);
 	if (o.enabled && m_onionStats.samples > 0)
-		ImGui::TextDisabled("%d samples: %.3f ms simulation, %.3f ms total (CPU)",
+		ImGui::TextDisabled(TXT("%d samples: %.3f ms simulation, %.3f ms total (CPU)"),
 			m_onionStats.samples, m_onionStats.simMs, m_onionStats.totalMs);
 	if (changed) markProjectModified();
 }
@@ -480,7 +480,7 @@ void MainFrame::DrawDetachedViewSurface(uint64_t hostId, CharacterView* view, Im
 	if (character && boxPane) {
 		if (ImGui::IsItemClicked(ImGuiMouseButton_Right)) {
 			if (m_boxDragCharacter) EndBoxDrag();
-			character->undoManager.beginTransaction("Draw box");
+			character->undoManager.beginTransaction(TXT("Draw box"));
 			m_boxDragCharacter = character;
 			m_hostBoxDragView = view->getId();
 			boxPane->BoxStart((int)((io.MousePos.x - origin.x) / cam.zoom), (int)((io.MousePos.y - origin.y) / cam.zoom));
@@ -509,9 +509,9 @@ void MainFrame::DrawDetachedHostToolbar(HostWindow& hw, CharacterView* view)
 	Sequence* seq = character ? character->frameData.get_sequence(st.pattern) : nullptr;
 	const int frames = seq ? (int)seq->frames.size() : 0;
 	ImGui::AlignTextToFramePadding();
-	ImGui::Text("Pattern %d  Frame %d/%d  Tick %d", st.pattern, st.frame, std::max(0, frames - 1), st.currentTick);
+	ImGui::Text(TXT("Pattern %d  Frame %d/%d  Tick %d"), st.pattern, st.frame, std::max(0, frames - 1), st.currentTick);
 	ImGui::SameLine();
-	if (ImGui::SmallButton(st.animating ? "Pause" : "Play")) {
+	if (ImGui::SmallButton(st.animating ? LBL("Pause") : LBL("Play"))) {
 		st.animating = !st.animating;
 		st.animeSeq = st.pattern;
 	}
@@ -522,20 +522,20 @@ void MainFrame::DrawDetachedHostToolbar(HostWindow& hw, CharacterView* view)
 	ImGui::SameLine();
 	ImGui::SetNextItemWidth(90);
 	float z = view->getZoom();
-	if (ImGui::SliderFloat("##zoom", &z, 0.25f, 20.f, "zoom %.2f")) view->setZoom(z);
+	if (ImGui::SliderFloat("##zoom", &z, 0.25f, 20.f, TXT("zoom %.2f"))) view->setZoom(z);
 	ImGui::SameLine();
-	if (ImGui::SmallButton("Center")) { view->camera().panX = 0.f; view->camera().panY = 150.f; }
+	if (ImGui::SmallButton(LBL("Center"))) { view->camera().panX = 0.f; view->camera().panY = 150.f; }
 	ImGui::SameLine();
-	if (ImGui::Checkbox("Onion", &view->onion().enabled)) markProjectModified();
+	if (ImGui::Checkbox(LBL("Onion"), &view->onion().enabled)) markProjectModified();
 	ImGui::SameLine();
 	if (ImGui::SmallButton("...##onion")) ImGui::OpenPopup("OnionPopup");
 	if (ImGui::BeginPopup("OnionPopup")) { DrawOnionSkinControls(view); ImGui::EndPopup(); }
 	ImGui::SameLine();
-	if (ImGui::Checkbox("Panes", &hw.showPanes)) markProjectModified();
+	if (ImGui::Checkbox(LBL("Panes"), &hw.showPanes)) markProjectModified();
 	ImGui::SameLine();
-	if (ImGui::SmallButton("Export PNG...")) { m_exportViewId = view->getId(); m_showExportWindow = true; }
+	if (ImGui::SmallButton(LBL("Export PNG..."))) { m_exportViewId = view->getId(); m_showExportWindow = true; }
 	ImGui::SameLine();
-	if (ImGui::SmallButton("To main window"))
+	if (ImGui::SmallButton(LBL("To main window")))
 		MoveViewToHost(view->getId(), WorkspaceSession::MainHost, std::nullopt);
 }
 
@@ -562,8 +562,8 @@ void MainFrame::DrawDetachedHosts()
 		}
 		ImGui::SetNextWindowSizeConstraints(ImVec2(320, 240), ImVec2(FLT_MAX, FLT_MAX));
 		CharacterView* activeView = findViewById(sh->active);
-		const std::string title = (activeView ? activeView->getDisplayName() : std::string("Window")) +
-			" - Window " + std::to_string(hostId) + "###hantei_host_" + std::to_string(hostId);
+		const std::string title = (activeView ? activeView->getDisplayName() : std::string(TXT("Window"))) +
+			" - " + TXT("Window") + " " + std::to_string(hostId) + "###hantei_host_" + std::to_string(hostId);
 		bool open = true;
 		ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(4, 4));
 		const bool visible = ImGui::Begin(title.c_str(), &open,
@@ -675,24 +675,24 @@ void MainFrame::RenderDetachedViewTargets()
 // "View" menu: onion skin, PNG export and the window workspace.
 void MainFrame::DrawRenderMenu()
 {
-	if (!ImGui::BeginMenu("View")) return;
+	if (!ImGui::BeginMenu(LBL("View"))) return;
 	CharacterView* view = getActiveView();
-	if (ImGui::BeginMenu("Onion skin", view && view->getCharacter() && !view->isPatEditor())) {
+	if (ImGui::BeginMenu(LBL("Onion skin"), view && view->getCharacter() && !view->isPatEditor())) {
 		DrawOnionSkinControls(view);
 		ImGui::EndMenu();
 	}
-	if (ImGui::MenuItem("Export PNG...", shortcuts.registry().label(ShortcutAction::exportSequencePng).c_str(),
+	if (ImGui::MenuItem(LBL("Export PNG..."), shortcuts.registry().label(ShortcutAction::exportSequencePng).c_str(),
 		m_showExportWindow, view && view->getCharacter() != nullptr)) {
 		m_showExportWindow = !m_showExportWindow;
 		if (view) m_exportViewId = view->getId();
 	}
-	if (ImGui::MenuItem("Export current frame", shortcuts.registry().label(ShortcutAction::exportFramePng).c_str(),
+	if (ImGui::MenuItem(LBL("Export current frame"), shortcuts.registry().label(ShortcutAction::exportFramePng).c_str(),
 		false, view && view->getCharacter() != nullptr)) {
 		m_exportViewId = view->getId();
 		m_exportRequest = ExportRequest::quickFrame;
 	}
 	ImGui::Separator();
-	if (ImGui::MenuItem("Move tab to new window", shortcuts.registry().label(ShortcutAction::detachView).c_str(),
+	if (ImGui::MenuItem(LBL("Move tab to new window"), shortcuts.registry().label(ShortcutAction::detachView).c_str(),
 		false, IsDetachableView(view))) {
 		const ImVec2 p = ImGui::GetMainViewport()->Pos;
 		DetachViewToNewHost(view->getId(), ImVec2(p.x + 140.f, p.y + 120.f));
@@ -701,12 +701,12 @@ void MainFrame::DrawRenderMenu()
 		for (const auto& [hostId, hw] : m_hosts) {
 			const WorkspaceSession::Host* h = m_session.host(hostId);
 			CharacterView* v = h ? findViewById(h->active) : nullptr;
-			const std::string label = "Window " + std::to_string(hostId) + ": " +
-				(v ? v->getDisplayName() : std::string("(empty)")) +
+			const std::string label = std::string(TXT("Window")) + " " + std::to_string(hostId) + ": " +
+				(v ? v->getDisplayName() : std::string(TXT("(empty)"))) +
 				(h && h->tabs.size() > 1 ? " +" + std::to_string(h->tabs.size() - 1) : std::string());
 			if (ImGui::MenuItem(label.c_str())) m_focusHostRequest = hostId;
 		}
-		if (ImGui::MenuItem("Return all tabs to the main window")) {
+		if (ImGui::MenuItem(LBL("Return all tabs to the main window"))) {
 			for (uint64_t hostId : m_session.hostIds()) {
 				if (hostId == WorkspaceSession::MainHost) continue;
 				const WorkspaceSession::Host* h = m_session.host(hostId);
@@ -719,14 +719,14 @@ void MainFrame::DrawRenderMenu()
 	}
 	ImGui::Separator();
 	bool detachable = gSettings.detachableWindows;
-	if (ImGui::MenuItem("Native detached windows (restart)", nullptr, &detachable)) {
+	if (ImGui::MenuItem(LBL("Native detached windows (restart)"), nullptr, &detachable)) {
 		gSettings.detachableWindows = detachable;
 		ImGui::MarkIniSettingsDirty();
 	}
 	if (ImGui::IsItemHovered())
-		ImGui::SetTooltip("Detached tabs open as their own OS windows that can move to other monitors.\n"
-			"Off: they stay inside the main window. Takes effect after a restart.%s",
-			WorkspaceViewports::IsEnabled() ? "" : "\n(Currently off.)");
+		ImGui::SetTooltip(TXT("Detached tabs open as their own OS windows that can move to other monitors.\n"
+			"Off: they stay inside the main window. Takes effect after a restart.%s"),
+			WorkspaceViewports::IsEnabled() ? "" : TXT("\n(Currently off.)"));
 	ImGui::EndMenu();
 }
 

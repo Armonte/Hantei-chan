@@ -16,6 +16,8 @@
 #include <chrono>
 #include "filedialog.h"
 #include "png_writer.h"
+#include "i18n.h"
+#include <cstdarg>
 #include <glad/glad.h>
 #include <imgui.h>
 #include <filesystem>
@@ -37,6 +39,11 @@ static const Han2EnumInfo *FindEnum(const char *name)
 	return nullptr;
 }
 
+static std::string Fmt(const char *fmt, ...)
+{
+	char b[1024]; va_list ap; va_start(ap, fmt); vsnprintf(b, sizeof(b), fmt, ap); va_end(ap); return b;
+}
+
 static uint32_t rdu32le(const uint8_t *p) { uint32_t v; memcpy(&v, p, 4); return v; }
 
 static int64_t ReadVal(const uint8_t *p, int size, bool sign)
@@ -50,6 +57,8 @@ static int64_t ReadVal(const uint8_t *p, int size, bool sign)
 }
 static void WriteVal(uint8_t *p, int size, int64_t v) { memcpy(p, &v, size); }   // little endian host
 
+// Field and enum names shown by the generic reflection editor come from the generated spec tables (rbo_*_gen.h etc.) and stay
+// English: they are the spec identifiers. Only the chrome around them (headers, hints, counts) is translated.
 // Edits the fields of one record; returns true when a byte changed.
 static bool EditRecord(const char *id, uint8_t *rec, const Han2FieldInfo *tbl, int n)
 {
@@ -58,7 +67,7 @@ static bool EditRecord(const char *id, uint8_t *rec, const Han2FieldInfo *tbl, i
 	bool showUnused = false;
 	for (int pass = 0; pass < 2; pass++) {
 		if (pass == 1) {
-			if (!ImGui::TreeNode("unused", "Unused / never read fields")) break;
+			if (!ImGui::TreeNode("unused", "%s", TXT("Unused / never read fields"))) break;
 			showUnused = true;
 		}
 		for (int i = 0; i < n; i++) {
@@ -74,9 +83,9 @@ static bool EditRecord(const char *id, uint8_t *rec, const Han2FieldInfo *tbl, i
 				else snprintf(label, sizeof(label), "%s +0x%X", f.name, f.offset);
 				bool sign = f.kind == 1;
 				int64_t v = ReadVal(p, f.size, sign);
-				if (f.kind == 4) { ImGui::TextDisabled("%s (struct)", label); ImGui::PopID(); continue; }
+				if (f.kind == 4) { ImGui::TextDisabled(TXT("%s (struct)"), label); ImGui::PopID(); continue; }
 				if (unused && f.count * f.size > 8) {   // wide zero fill: show as a hex run
-					ImGui::TextDisabled("%s: %u bytes", label, (unsigned)(f.count * f.size));
+					ImGui::TextDisabled(TXT("%s: %u bytes"), label, (unsigned)(f.count * f.size));
 					ImGui::PopID();
 					break;
 				}
@@ -86,7 +95,7 @@ static bool EditRecord(const char *id, uint8_t *rec, const Han2FieldInfo *tbl, i
 					const char *cur = nullptr;
 					for (int e = 0; e < en->count; e++) if (en->values[e].value == v) cur = en->values[e].name;
 					char buf[64];
-					if (!cur) { snprintf(buf, sizeof(buf), "%lld (unnamed)", (long long)v); cur = buf; }
+					if (!cur) { snprintf(buf, sizeof(buf), TXT("%lld (unnamed)"), (long long)v); cur = buf; }
 					if (ImGui::BeginCombo(label, cur)) {
 						for (int e = 0; e < en->count; e++)
 							if (ImGui::Selectable(en->values[e].name, en->values[e].value == v)) { WriteVal(p, f.size, en->values[e].value); changed = true; }
@@ -125,60 +134,60 @@ void DrawInspector(CharacterInstance *ch, FrameState &state)
 	ImGuiViewport *vp = ImGui::GetMainViewport();
 	ImGui::SetNextWindowPos(ImVec2(vp->WorkPos.x + vp->WorkSize.x - 420, vp->WorkPos.y + 60), ImGuiCond_FirstUseEver);
 	ImGui::SetNextWindowSize(ImVec2(400, 560), ImGuiCond_FirstUseEver);
-	if (!ImGui::Begin("RBO / GOF2 (HAN2)", &showInspector)) { ImGui::End(); return; }
+	if (!ImGui::Begin(LBL("RBO / GOF2 (HAN2)"), &showInspector)) { ImGui::End(); return; }
 
 	const Han2Container &c = *ch->frameData.m_han2;
 	ImGui::TextWrapped("%s", c.sourcePath.c_str());
-	ImGui::TextDisabled("%s, %s. parts %zu B, CG %zu B", c.sub == 3 ? "GOF1" : c.sub == 2 ? "GOF2" : "RBO", c.kind == 3 ? ".DT2 (pattern area only)" : ".DAT (full)",
+	ImGui::TextDisabled(TXT("%s, %s. parts %zu B, CG %zu B"), c.sub == 3 ? "GOF1" : c.sub == 2 ? "GOF2" : "RBO", c.kind == 3 ? TXT(".DT2 (pattern area only)") : TXT(".DAT (full)"),
 	                    c.parts.size(), c.cg.size());
-	ImGui::TextDisabled("Save As .DT2 writes the file the game prefers; .DAT writes the full character.");
+	ImGui::TextDisabled("%s", TXT("Save As .DT2 writes the file the game prefers; .DAT writes the full character."));
 
 	bool changed = false;
 	Sequence *seq = ch->frameData.get_sequence(state.pattern);
 	if (seq) {
-		ImGui::SeparatorText("Pattern");
+		ImGui::SeparatorText(TXT("Pattern"));
 		int flags = (int)seq->han2.patFlags;
 		ImGui::SetNextItemWidth(120);
-		if (ImGui::InputInt("pattern flags (0x40 = alt draw mode)", &flags, 0, 0, ImGuiInputTextFlags_CharsHexadecimal)) { seq->han2.patFlags = (uint32_t)flags; changed = true; }
+		if (ImGui::InputInt(LBL("pattern flags (0x40 = alt draw mode)"), &flags, 0, 0, ImGuiInputTextFlags_CharsHexadecimal)) { seq->han2.patFlags = (uint32_t)flags; changed = true; }
 		{
 			std::vector<std::pair<int, int>> visits; std::string note;
 			han2::SimulateFlow(*seq, visits, note);
 			int ticks = 0; for (auto &v : visits) ticks += v.second;
-			ImGui::TextDisabled("game flow: %zu frame entries, %d ticks, %s", visits.size(), ticks, note.c_str());
+			ImGui::TextDisabled(TXT("game flow: %zu frame entries, %d ticks, %s"), visits.size(), ticks, note.c_str());
 			if (ImGui::IsItemHovered()) {
 				std::string t; for (size_t i = 0; i < visits.size() && i < 60; i++) t += std::to_string(visits[i].first) + "(" + std::to_string(visits[i].second) + ") ";
-				ImGui::SetTooltip("frame(ticks) in the order the engine visits them:\n%s", t.c_str());
+				ImGui::SetTooltip(TXT("frame(ticks) in the order the engine visits them:\n%s"), t.c_str());
 			}
 		}
 		if (state.frame >= 0 && state.frame < (int)seq->frames.size()) {
 			Frame &f = seq->frames[state.frame];
-			ImGui::SeparatorText("Frame record");
+			ImGui::SeparatorText(TXT("Frame record"));
 			if (!f.han2.valid) {
-				ImGui::TextDisabled("This frame has no source record yet (it is new); fields appear after the first save and reload.");
+				ImGui::TextDisabled("%s", TXT("This frame has no source record yet (it is new); fields appear after the first save and reload."));
 			} else if (c.sub == 3) {
 				bool ch1 = EditRecord("g1af", f.han2.rec, kGof1AnimFrameFields, (int)(sizeof(kGof1AnimFrameFields) / sizeof(kGof1AnimFrameFields[0])));
-				ImGui::SeparatorText("State (AS)");
+				ImGui::SeparatorText(TXT("State (AS)"));
 				ch1 |= EditRecord("g1as", f.han2.rec + 0x28, kGof1StateFrameFields, (int)(sizeof(kGof1StateFrameFields) / sizeof(kGof1StateFrameFields[0])));
-				ImGui::SeparatorText("Attack record (AT, 26 bytes)");
+				ImGui::SeparatorText(TXT("Attack record (AT, 26 bytes)"));
 				if (f.han2.hadAT) ch1 |= EditRecord("g1at", f.han2.at, kGof1AtRecordFields, (int)(sizeof(kGof1AtRecordFields) / sizeof(kGof1AtRecordFields[0])));
-				else ImGui::TextDisabled("none: add an attack box (slot 8) to create one.");
-				for (int k = 0; k < 3; k++) if (f.han2.gofIfMask >> k & 1) { char h[32]; snprintf(h, sizeof(h), "IF slot %d (28 bytes)", k); ImGui::SeparatorText(h); ch1 |= EditRecord(("g1if" + std::to_string(k)).c_str(), f.han2.gofIf[k], kGof1IfRecordFields, (int)(sizeof(kGof1IfRecordFields) / sizeof(kGof1IfRecordFields[0]))); }
-				for (int k = 0; k < 4; k++) if (f.han2.gofEfMask >> k & 1) { char h[32]; snprintf(h, sizeof(h), "EF slot %d (20 bytes)", k); ImGui::SeparatorText(h); ch1 |= EditRecord(("g1ef" + std::to_string(k)).c_str(), f.han2.gofEf[k], kGof1EfRecordFields, (int)(sizeof(kGof1EfRecordFields) / sizeof(kGof1EfRecordFields[0]))); }
+				else ImGui::TextDisabled("%s", TXT("none: add an attack box (slot 8) to create one."));
+				for (int k = 0; k < 3; k++) if (f.han2.gofIfMask >> k & 1) { char h[96]; snprintf(h, sizeof(h), TXT("IF slot %d (28 bytes)"), k); ImGui::SeparatorText(h); ch1 |= EditRecord(("g1if" + std::to_string(k)).c_str(), f.han2.gofIf[k], kGof1IfRecordFields, (int)(sizeof(kGof1IfRecordFields) / sizeof(kGof1IfRecordFields[0]))); }
+				for (int k = 0; k < 4; k++) if (f.han2.gofEfMask >> k & 1) { char h[96]; snprintf(h, sizeof(h), TXT("EF slot %d (20 bytes)"), k); ImGui::SeparatorText(h); ch1 |= EditRecord(("g1ef" + std::to_string(k)).c_str(), f.han2.gofEf[k], kGof1EfRecordFields, (int)(sizeof(kGof1EfRecordFields) / sizeof(kGof1EfRecordFields[0]))); }
 				if (ch1) { gof1::RedecodeFrame(f); changed = true; }
 			} else if (c.sub == 2) {
 				if (EditRecord("gframe", f.han2.rec, kGof2FrameRecordFields, (int)(sizeof(kGof2FrameRecordFields) / sizeof(kGof2FrameRecordFields[0])))) {
 					han2::RedecodeFrame(f);
 					changed = true;
 				}
-				ImGui::SeparatorText("Attack record (AT, 236 bytes)");
+				ImGui::SeparatorText(TXT("Attack record (AT, 236 bytes)"));
 				if (f.han2.hadAT) { if (EditRecord("gat", f.han2.at, kGof2AtRecordFields, (int)(sizeof(kGof2AtRecordFields) / sizeof(kGof2AtRecordFields[0])))) changed = true; }
-				else ImGui::TextDisabled("none: add an attack box to create one (starts zero-filled).");
+				else ImGui::TextDisabled("%s", TXT("none: add an attack box to create one (starts zero-filled)."));
 				if (f.han2.hadFx) {
-					ImGui::SeparatorText("Effect-spawn record (section 8, 96 bytes)");
+					ImGui::SeparatorText(TXT("Effect-spawn record (section 8, 96 bytes)"));
 					if (EditRecord("gfx", f.han2.fx, kGof2EffectSpawnRecordFields, (int)(sizeof(kGof2EffectSpawnRecordFields) / sizeof(kGof2EffectSpawnRecordFields[0])))) changed = true;
 				}
 				for (int k = 0; k < 2; k++) if (f.han2.scriptHad >> k & 1) {
-					char hdr[48]; snprintf(hdr, sizeof(hdr), "Script list %c (section %d)", 'A' + k, 6 + k); ImGui::SeparatorText(hdr);
+					char hdr[128]; snprintf(hdr, sizeof(hdr), TXT("Script list %c (section %d)"), 'A' + k, 6 + k); ImGui::SeparatorText(hdr);
 					if (EditRecord(k == 0 ? "gslA" : "gslB", f.han2.script[k], kGof2ScriptListEntryFields, (int)(sizeof(kGof2ScriptListEntryFields) / sizeof(kGof2ScriptListEntryFields[0])))) changed = true;
 				}
 			} else if (c.sub == 1) {
@@ -187,21 +196,21 @@ void DrawInspector(CharacterInstance *ch, FrameState &state)
 					changed = true;
 				}
 				// attack data record (120 bytes, pattern-area section 3)
-				ImGui::SeparatorText("Attack record (AT)");
+				ImGui::SeparatorText(TXT("Attack record (AT)"));
 				if (f.han2.hadAT) {
 					if (EditRecord("at", f.han2.at, kRboAtRecordFields, (int)(sizeof(kRboAtRecordFields) / sizeof(kRboAtRecordFields[0])))) {
 						han2::RedecodeFrame(f);
 						changed = true;
 					}
 				} else {
-					ImGui::TextDisabled("none: add an attack box (Atk slot) in the Box Controls to create one.");
+					ImGui::TextDisabled("%s", TXT("none: add an attack box (Atk slot) in the Box Controls to create one."));
 				}
 				// script lists (sections 6 and 7): five script ids, 0 = unused
 				for (int k = 0; k < 2; k++) {
-					char hdr[64]; snprintf(hdr, sizeof(hdr), "Script list %c (section %d)", 'A' + k, 6 + k);
+					char hdr[128]; snprintf(hdr, sizeof(hdr), TXT("Script list %c (section %d)"), 'A' + k, 6 + k);
 					ImGui::SeparatorText(hdr);
 					bool had = (f.han2.scriptHad >> k) & 1;
-					if (ImGui::Checkbox(k == 0 ? "has list A (frame-enter actions)" : "has list B (transition rules)", &had)) {
+					if (ImGui::Checkbox(k == 0 ? LBL("has list A (frame-enter actions)") : LBL("has list B (transition rules)"), &had)) {
 						if (had) f.han2.scriptHad |= (uint8_t)(1 << k); else f.han2.scriptHad &= (uint8_t)~(1 << k);
 						// a frame without a list has index 0; a new list gets a UNIQUE placeholder index so the writer emits its own
 						// record (the writer shares records by original index, a placeholder must never collide with a real one)
@@ -257,10 +266,10 @@ void DrawCgWindow(CharacterInstance *ch)
 {
 	if (!showCgWindow) return;
 	ImGui::SetNextWindowSize(ImVec2(700, 520), ImGuiCond_FirstUseEver);
-	if (!ImGui::Begin("CG sprites (RBO / GOF2 bank)", &showCgWindow)) { ImGui::End(); return; }
-	if (!ch || !ch->cg.m_loaded) { ImGui::TextDisabled("The active character has no CG bank."); ImGui::End(); return; }
+	if (!ImGui::Begin(LBL("CG sprites (RBO / GOF2 bank)"), &showCgWindow)) { ImGui::End(); return; }
+	if (!ch || !ch->cg.m_loaded) { ImGui::TextDisabled("%s", TXT("The active character has no CG bank.")); ImGui::End(); return; }
 	const int n = ch->cg.get_image_count();
-	ImGui::SetNextItemWidth(100); ImGui::InputText("filter", g_cgFilter, sizeof(g_cgFilter)); ImGui::SameLine(); ImGui::TextDisabled("%d images", n);
+	ImGui::SetNextItemWidth(100); ImGui::InputText(LBL("filter"), g_cgFilter, sizeof(g_cgFilter)); ImGui::SameLine(); ImGui::TextDisabled(TXT("%d images"), n);
 	ImGui::BeginChild("list", ImVec2(210, 0), true);
 	for (int i = 0; i < n; i++) {
 		int bpp, ty, x1, y1, x2, y2;
@@ -274,39 +283,39 @@ void DrawCgWindow(CharacterInstance *ch)
 	ImGui::BeginGroup();
 	if (g_prev.owner != ch || g_prev.image != g_cgSel || g_prev.gen != ch->cg.generation()) LoadPreview(*ch, g_cgSel);
 	int bpp = 0, ty = 0, x1 = 0, y1 = 0, x2 = 0, y2 = 0; ch->cg.image_info(g_cgSel, bpp, ty, x1, y1, x2, y2);
-	ImGui::Text("image %d: storage type %d, %d-bit, canvas bounds (%d,%d)-(%d,%d)", g_cgSel, ty, bpp, x1, y1, x2, y2);
-	ImGui::SetNextItemWidth(120); ImGui::SliderFloat("zoom", &g_cgZoom, 0.25f, 6.f);
-	if (ImGui::Button("Export PNG...")) {
+	ImGui::Text(TXT("image %d: storage type %d, %d-bit, canvas bounds (%d,%d)-(%d,%d)"), g_cgSel, ty, bpp, x1, y1, x2, y2);
+	ImGui::SetNextItemWidth(120); ImGui::SliderFloat(LBL("zoom"), &g_cgZoom, 0.25f, 6.f);
+	if (ImGui::Button(LBL("Export PNG..."))) {
 		std::string p = FileDialog(-1, true);
 		if (!p.empty()) { if (p.size() < 4 || p.substr(p.size() - 4) != ".png") p += ".png";
 			ImageData *im = ch->cg.draw_texture((unsigned)g_cgSel, false, false); std::string e;
-			g_cgMsg = (im && WritePngRgba(p, im->pixels, im->width, im->height, e)) ? "exported " + p : (e.empty() ? "empty image" : e); delete im; }
+			g_cgMsg = (im && WritePngRgba(p, im->pixels, im->width, im->height, e)) ? Fmt(TXT("exported %s"), p.c_str()) : (e.empty() ? std::string(TXT("empty image")) : e); delete im; }
 	}
 	ImGui::SameLine();
-	if (ImGui::Button("Import PNG (same size)...")) {
+	if (ImGui::Button(LBL("Import PNG (same size)..."))) {
 		std::string p = FileDialog(-1, false);
 		if (!p.empty()) {
 			std::vector<uint8_t> px; int w = 0, h = 0; std::string e;
 			if (!ReadImageRgba(p, px, w, h, e)) g_cgMsg = e;
-			else if ((g_cgUndo.push_back(std::vector<char>(ch->cg.bank_data(), ch->cg.bank_data() + ch->cg.bank_size())), g_cgRedo.clear(), g_cgUndo.size() > 8 && (g_cgUndo.erase(g_cgUndo.begin()), true), ch->cg.replace_image_rgba((unsigned)g_cgSel, px.data(), w, h, &e))) { ch->markModified(); ch->undoManager.markModified(); g_cgMsg = "imported " + p + " (save as .DAT to keep it)"; }
+			else if ((g_cgUndo.push_back(std::vector<char>(ch->cg.bank_data(), ch->cg.bank_data() + ch->cg.bank_size())), g_cgRedo.clear(), g_cgUndo.size() > 8 && (g_cgUndo.erase(g_cgUndo.begin()), true), ch->cg.replace_image_rgba((unsigned)g_cgSel, px.data(), w, h, &e))) { ch->markModified(); ch->undoManager.markModified(); g_cgMsg = Fmt(TXT("imported %s (save as .DAT to keep it)"), p.c_str()); }
 			else g_cgMsg = e;
 		}
 	}
 	ImGui::SameLine();
 	ImGui::BeginDisabled(g_cgUndo.empty());
-	if (ImGui::Button("Undo import")) { g_cgRedo.push_back(std::vector<char>(ch->cg.bank_data(), ch->cg.bank_data() + ch->cg.bank_size())); ch->cg.restore_bank(g_cgUndo.back().data(), (unsigned)g_cgUndo.back().size()); g_cgUndo.pop_back(); ch->markModified(); g_cgMsg = "import undone"; }
+	if (ImGui::Button(LBL("Undo import"))) { g_cgRedo.push_back(std::vector<char>(ch->cg.bank_data(), ch->cg.bank_data() + ch->cg.bank_size())); ch->cg.restore_bank(g_cgUndo.back().data(), (unsigned)g_cgUndo.back().size()); g_cgUndo.pop_back(); ch->markModified(); g_cgMsg = TXT("import undone"); }
 	ImGui::EndDisabled();
 	ImGui::SameLine();
 	ImGui::BeginDisabled(g_cgRedo.empty());
-	if (ImGui::Button("Redo")) { g_cgUndo.push_back(std::vector<char>(ch->cg.bank_data(), ch->cg.bank_data() + ch->cg.bank_size())); ch->cg.restore_bank(g_cgRedo.back().data(), (unsigned)g_cgRedo.back().size()); g_cgRedo.pop_back(); ch->markModified(); g_cgMsg = "import redone"; }
+	if (ImGui::Button(LBL("Redo"))) { g_cgUndo.push_back(std::vector<char>(ch->cg.bank_data(), ch->cg.bank_data() + ch->cg.bank_size())); ch->cg.restore_bank(g_cgRedo.back().data(), (unsigned)g_cgRedo.back().size()); g_cgRedo.pop_back(); ch->markModified(); g_cgMsg = TXT("import redone"); }
 	ImGui::EndDisabled();
 	ImGui::SameLine();
-	if (ImGui::Button("Export all...")) {
+	if (ImGui::Button(LBL("Export all..."))) {
 		std::string d = BrowseForFolderUtf8("");
-		if (!d.empty()) { int ok = 0; std::string e; for (int i = 0; i < n; i++) { ImageData *im = ch->cg.draw_texture((unsigned)i, false, false); if (!im) continue; char nm[64]; snprintf(nm, sizeof(nm), "\\cg_%04d.png", i); if (WritePngRgba(d + nm, im->pixels, im->width, im->height, e)) ok++; delete im; } g_cgMsg = "exported " + std::to_string(ok) + " PNGs to " + d; }
+		if (!d.empty()) { int ok = 0; std::string e; for (int i = 0; i < n; i++) { ImageData *im = ch->cg.draw_texture((unsigned)i, false, false); if (!im) continue; char nm[64]; snprintf(nm, sizeof(nm), "\\cg_%04d.png", i); if (WritePngRgba(d + nm, im->pixels, im->width, im->height, e)) ok++; delete im; } g_cgMsg = Fmt(TXT("exported %d PNGs to %s"), ok, d.c_str()); }
 	}
 	if (!g_cgMsg.empty()) ImGui::TextWrapped("%s", g_cgMsg.c_str());
-	ImGui::TextDisabled("CG sprites live in the .DAT: save as .DAT to keep imports. Storage types 1, 2 and 4 can be imported; palettes are quantized to 255 colours.");
+	ImGui::TextDisabled("%s", TXT("CG sprites live in the .DAT: save as .DAT to keep imports. Storage types 1, 2 and 4 can be imported; palettes are quantized to 255 colours."));
 	ImGui::BeginChild("prev", ImVec2(0, 0), true, ImGuiWindowFlags_HorizontalScrollbar);
 	if (g_prev.w > 0) {
 		ImVec2 p0 = ImGui::GetCursorScreenPos(), sz(g_prev.w * g_cgZoom, g_prev.h * g_cgZoom);
@@ -314,7 +323,7 @@ void DrawCgWindow(CharacterInstance *ch)
 		for (float y = 0; y < sz.y; y += 16) for (float x = 0; x < sz.x; x += 16)
 			dl->AddRectFilled(ImVec2(p0.x + x, p0.y + y), ImVec2(std::min(p0.x + x + 16, p0.x + sz.x), std::min(p0.y + y + 16, p0.y + sz.y)), (((int)(x / 16) + (int)(y / 16)) & 1) ? IM_COL32(110, 110, 110, 255) : IM_COL32(160, 160, 160, 255));
 		ImGui::Image((ImTextureID)(intptr_t)g_prev.tex, sz);
-	} else ImGui::TextDisabled("(empty image)");
+	} else ImGui::TextDisabled("%s", TXT("(empty image)"));
 	ImGui::EndChild();
 	ImGui::EndGroup();
 	ImGui::End();
@@ -330,14 +339,14 @@ void DrawDiffWindow(CharacterInstance *ch)
 {
 	if (!showDiffWindow) return;
 	ImGui::SetNextWindowSize(ImVec2(640, 420), ImGuiCond_FirstUseEver);
-	if (!ImGui::Begin("Changes against the loaded file", &showDiffWindow)) { ImGui::End(); return; }
-	if (!ch || !ch->frameData.isHan2()) { ImGui::TextDisabled("The active character is not an RBO / GOF2 file."); ImGui::End(); return; }
+	if (!ImGui::Begin(LBL("Changes against the loaded file"), &showDiffWindow)) { ImGui::End(); return; }
+	if (!ch || !ch->frameData.isHan2()) { ImGui::TextDisabled("%s", TXT("The active character is not an RBO / GOF2 file.")); ImGui::End(); return; }
 	static std::vector<han2::DiffEntry> entries; static std::string err; static bool ran = false; static const CharacterInstance *who = nullptr;
-	if (ImGui::Button("Compare now") || who != ch) { ran = true; who = ch; err.clear(); han2::DiffAgainstOriginal(ch->frameData, entries, &err); }
-	ImGui::SameLine(); ImGui::TextDisabled("%zu changes", entries.size());
+	if (ImGui::Button(LBL("Compare now")) || who != ch) { ran = true; who = ch; err.clear(); han2::DiffAgainstOriginal(ch->frameData, entries, &err); }
+	ImGui::SameLine(); ImGui::TextDisabled(TXT("%zu changes"), entries.size());
 	if (!err.empty()) ImGui::TextColored(ImVec4(1, .4f, .3f, 1), "%s", err.c_str());
 	if (ran && ImGui::BeginTable("diff", 3, ImGuiTableFlags_ScrollY | ImGuiTableFlags_RowBg | ImGuiTableFlags_Resizable)) {
-		ImGui::TableSetupColumn("pattern"); ImGui::TableSetupColumn("frame"); ImGui::TableSetupColumn("change");
+		ImGui::TableSetupColumn(LBL("pattern")); ImGui::TableSetupColumn(LBL("frame")); ImGui::TableSetupColumn(LBL("change"));
 		ImGui::TableSetupScrollFreeze(0, 1); ImGui::TableHeadersRow();
 		for (size_t i = 0; i < entries.size() && i < 5000; i++) {
 			ImGui::TableNextRow(); ImGui::TableSetColumnIndex(0); ImGui::Text("%d", entries[i].pattern);
@@ -360,8 +369,8 @@ void DrawAnimWindow(CharacterInstance *ch, FrameState &state, void *onionPtr)
 	if (!showAnimWindow) return;
 	OnionSkinSettings &onion = *(OnionSkinSettings *)onionPtr;
 	ImGui::SetNextWindowSize(ImVec2(620, 330), ImGuiCond_FirstUseEver);
-	if (!ImGui::Begin("Animation (game rules)", &showAnimWindow)) { ImGui::End(); return; }
-	if (!ch || !ch->frameData.isHan2()) { ImGui::TextDisabled("The active character is not an RBO / GOF2 file."); ImGui::End(); return; }
+	if (!ImGui::Begin(LBL("Animation (game rules)"), &showAnimWindow)) { ImGui::End(); return; }
+	if (!ch || !ch->frameData.isHan2()) { ImGui::TextDisabled("%s", TXT("The active character is not an RBO / GOF2 file.")); ImGui::End(); return; }
 	FrameData &fd = ch->frameData;
 	static han2::AnimState st; static bool playing = false, loop = true, follow = false, init = false; static int rateHz = 120; static float speed = 1.f;
 	static std::chrono::steady_clock::time_point last; static double acc = 0.0;
@@ -371,23 +380,23 @@ void DrawAnimWindow(CharacterInstance *ch, FrameState &state, void *onionPtr)
 		han2::AnimStart(fd, st, state.pattern); st.frame = std::max(0, state.frame); init = true; who = ch; playing = false;
 	}
 	Sequence *seq = fd.get_sequence(state.pattern);
-	if (!seq || seq->frames.empty()) { ImGui::TextDisabled("This pattern has no frames."); ImGui::End(); return; }
+	if (!seq || seq->frames.empty()) { ImGui::TextDisabled("%s", TXT("This pattern has no frames.")); ImGui::End(); return; }
 	// controls
-	if (ImGui::Button(playing ? "Pause" : "Play")) { playing = !playing; last = std::chrono::steady_clock::now(); acc = 0; if (playing && st.ended) { han2::AnimStart(fd, st, state.pattern); } }
+	if (ImGui::Button(playing ? LBL("Pause") : LBL("Play"))) { playing = !playing; last = std::chrono::steady_clock::now(); acc = 0; if (playing && st.ended) { han2::AnimStart(fd, st, state.pattern); } }
 	ImGui::SameLine();
-	if (ImGui::Button("Restart")) { han2::AnimStart(fd, st, state.pattern); acc = 0; }
+	if (ImGui::Button(LBL("Restart"))) { han2::AnimStart(fd, st, state.pattern); acc = 0; }
 	ImGui::SameLine();
-	if (ImGui::Button("< frame")) { playing = false; han2::AnimStepFrame(fd, st, -1); }
+	if (ImGui::Button(LBL("< frame"))) { playing = false; han2::AnimStepFrame(fd, st, -1); }
 	ImGui::SameLine();
-	if (ImGui::Button("frame >")) { playing = false; han2::AnimStepFrame(fd, st, +1); }
+	if (ImGui::Button(LBL("frame >"))) { playing = false; han2::AnimStepFrame(fd, st, +1); }
 	ImGui::SameLine();
-	if (ImGui::Button("+1 tick")) { playing = false; han2::AnimTick(fd, st, follow, loop); }
-	ImGui::SameLine(); ImGui::Checkbox("loop", &loop); ImGui::SameLine(); ImGui::Checkbox("follow pattern jumps", &follow);
+	if (ImGui::Button(LBL("+1 tick"))) { playing = false; han2::AnimTick(fd, st, follow, loop); }
+	ImGui::SameLine(); ImGui::Checkbox(LBL("loop"), &loop); ImGui::SameLine(); ImGui::Checkbox(LBL("follow pattern jumps"), &follow);
 	ImGui::SetNextItemWidth(90);
 	static const int rates[] = { 30, 60, 120, 240 }; static int ri = 2;
-	if (ImGui::BeginCombo("logic rate", (std::to_string(rateHz) + " Hz").c_str())) { for (int i = 0; i < 4; i++) if (ImGui::Selectable((std::to_string(rates[i]) + " Hz").c_str(), rateHz == rates[i])) { rateHz = rates[i]; ri = i; } ImGui::EndCombo(); }
-	ImGui::SameLine(); ImGui::SetNextItemWidth(120); ImGui::SliderFloat("speed", &speed, 0.1f, 4.f, "x%.2f");
-	ImGui::TextDisabled("durations are logic ticks; the rate is the assumed engine tick rate (the game window shows FPS 60 (120))");
+	if (ImGui::BeginCombo(LBL("logic rate"), (std::to_string(rateHz) + " Hz").c_str())) { for (int i = 0; i < 4; i++) if (ImGui::Selectable((std::to_string(rates[i]) + " Hz").c_str(), rateHz == rates[i])) { rateHz = rates[i]; ri = i; } ImGui::EndCombo(); }
+	ImGui::SameLine(); ImGui::SetNextItemWidth(120); ImGui::SliderFloat(LBL("speed"), &speed, 0.1f, 4.f, "x%.2f");
+	ImGui::TextDisabled("%s", TXT("durations are logic ticks; the rate is the assumed engine tick rate (the game window shows FPS 60 (120))"));
 	// advance
 	if (playing) {
 		auto now = std::chrono::steady_clock::now();
@@ -399,11 +408,11 @@ void DrawAnimWindow(CharacterInstance *ch, FrameState &state, void *onionPtr)
 	state.frame = st.frame; state.currentTick = 0;
 	lastPattern = state.pattern; lastFrame = state.frame;
 	seq = fd.get_sequence(state.pattern);
-	ImGui::Text("pattern %d  frame %d/%zu  tick %d/%d  loop counter %d  elapsed %d ticks (%.2f s)%s", st.pattern, st.frame, seq ? seq->frames.size() : 0,
-	            st.ticksInFrame, seq && st.frame < (int)seq->frames.size() ? seq->frames[st.frame].AF.duration : 0, st.loopCounter, st.totalTicks, st.totalTicks / (double)rateHz, st.ended ? "  [ended]" : "");
+	ImGui::Text(TXT("pattern %d  frame %d/%zu  tick %d/%d  loop counter %d  elapsed %d ticks (%.2f s)%s"), st.pattern, st.frame, seq ? seq->frames.size() : 0,
+	            st.ticksInFrame, seq && st.frame < (int)seq->frames.size() ? seq->frames[st.frame].AF.duration : 0, st.loopCounter, st.totalTicks, st.totalTicks / (double)rateHz, st.ended ? TXT("  [ended]") : "");
 	// onion skin
-	ImGui::Checkbox("onion skin", &onion.enabled);
-	if (onion.enabled) { ImGui::SameLine(); ImGui::SetNextItemWidth(70); ImGui::SliderInt("before", &onion.before, 0, 6); ImGui::SameLine(); ImGui::SetNextItemWidth(70); ImGui::SliderInt("after", &onion.after, 0, 6); ImGui::SameLine(); ImGui::SetNextItemWidth(70); ImGui::SliderInt("spacing", &onion.spacing, 1, 12); ImGui::SameLine(); ImGui::Checkbox("keyframes only", &onion.keyframesOnly); }
+	ImGui::Checkbox(LBL("onion skin"), &onion.enabled);
+	if (onion.enabled) { ImGui::SameLine(); ImGui::SetNextItemWidth(70); ImGui::SliderInt(LBL("before"), &onion.before, 0, 6); ImGui::SameLine(); ImGui::SetNextItemWidth(70); ImGui::SliderInt(LBL("after"), &onion.after, 0, 6); ImGui::SameLine(); ImGui::SetNextItemWidth(70); ImGui::SliderInt(LBL("spacing"), &onion.spacing, 1, 12); ImGui::SameLine(); ImGui::Checkbox(LBL("keyframes only"), &onion.keyframesOnly); }
 	// timeline: one cell per frame, width proportional to its duration; red = attack boxes, blue = script lists (effects), current outlined
 	if (seq) {
 		ImDrawList *dl = ImGui::GetWindowDrawList();
@@ -423,11 +432,11 @@ void DrawAnimWindow(CharacterInstance *ch, FrameState &state, void *onionPtr)
 			}
 			ImGui::SetCursorScreenPos(ImVec2(x, p0.y)); ImGui::InvisibleButton(("fr" + std::to_string(i)).c_str(), ImVec2(std::max(w - 1, 2.f), H));
 			if (ImGui::IsItemClicked()) { playing = false; st.frame = (int)i; st.ticksInFrame = 0; st.ended = false; }
-			if (ImGui::IsItemHovered()) ImGui::SetTooltip("frame %zu: %d ticks%s%s", i, f.AF.duration, atk ? ", attack" : "", fx ? ", script/effect list" : "");
+			if (ImGui::IsItemHovered()) ImGui::SetTooltip(TXT("frame %zu: %d ticks%s%s"), i, f.AF.duration, atk ? TXT(", attack") : "", fx ? TXT(", script/effect list") : "");
 			x += w;
 		}
 		ImGui::SetCursorScreenPos(ImVec2(p0.x, p0.y + H + 10));
-		ImGui::TextDisabled("timeline: red = attack frame, blue strip = script/effect list, width = duration. Boxes are drawn by the main view for the playing frame.");
+		ImGui::TextDisabled("%s", TXT("timeline: red = attack frame, blue strip = script/effect list, width = duration. Boxes are drawn by the main view for the playing frame."));
 	}
 	ImGui::End();
 }
