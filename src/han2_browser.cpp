@@ -2,6 +2,7 @@
 #include "han2/pac_archive.h"
 #include "han2_pac_window.h"
 #include "filedialog.h"
+#include "png_writer.h"
 #include "misc.h"
 
 #include <imgui.h>
@@ -20,6 +21,8 @@ std::vector<Mounted> g_mounted;
 int g_sel = 0;
 char g_filter[64] = "";
 std::string g_extractStatus;
+std::string g_folder;
+std::vector<std::string> g_folderFiles;
 
 std::string Lower(std::string s) { for (auto &c : s) c = (char)tolower((unsigned char)c); return s; }
 bool EndsWith(const std::string &s, const char *suf)
@@ -55,6 +58,8 @@ bool DrawBrowser(OpenRequest &req, std::string &message)
 		if (!path.empty()) message = AddArchive(path);
 	}
 	ImGui::SameLine();
+	if (ImGui::Button("Open folder...")) { std::string d = BrowseForFolderUtf8(""); if (!d.empty()) { g_folder = d; g_folderFiles.clear(); std::error_code ec; for (auto &e : std::filesystem::directory_iterator(std::filesystem::u8path(d), ec)) { if (!e.is_regular_file()) continue; std::string x = Lower(e.path().extension().string()); if (x == ".dt2" || x == ".dat" || x == ".pac" || x == ".pat" || x == ".chp" || x == ".img") g_folderFiles.push_back(e.path().u8string()); } std::sort(g_folderFiles.begin(), g_folderFiles.end()); } }
+	ImGui::SameLine();
 	ImGui::TextDisabled("Later archives in the list override earlier ones when a file name occurs twice (Update01 and the Ex discs patch DATA0x).");
 
 	// archive list
@@ -72,6 +77,15 @@ bool DrawBrowser(OpenRequest &req, std::string &message)
 		if (ImGui::Button("Down") && g_sel + 1 < (int)g_mounted.size()) { std::swap(g_mounted[g_sel], g_mounted[g_sel + 1]); g_sel++; }
 		ImGui::SameLine();
 		if (ImGui::Button("Unmount")) { g_mounted.erase(g_mounted.begin() + g_sel); g_sel = std::max(0, g_sel - 1); }
+	}
+	if (!g_folderFiles.empty()) {
+		ImGui::Separator(); ImGui::TextDisabled("folder: %s", g_folder.c_str());
+		for (size_t i = 0; i < g_folderFiles.size(); i++) {
+			ImGui::PushID((int)(1000 + i));
+			std::string nm = std::filesystem::u8path(g_folderFiles[i]).filename().string();
+			if (ImGui::Selectable(nm.c_str()) ) { req.stem.clear(); req.read = nullptr; req.origin = g_folderFiles[i]; req.stem = "\x01open"; open = true; }
+			ImGui::PopID();
+		}
 	}
 	ImGui::EndChild();
 	ImGui::SameLine();
