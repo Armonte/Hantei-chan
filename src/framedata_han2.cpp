@@ -39,6 +39,28 @@ static const BoxSlotInfo kRboSlots[] = {
 static const int kRboSlotCount = (int)(sizeof(kRboSlots) / sizeof(kRboSlots[0]));
 const BoxSlotInfo *RboBoxSlots(int &count) { count = kRboSlotCount; return kRboSlots; }
 
+// GOF2: 24 slots in ascending frame offset (docs/formats/ida/gof2_frame.md section 4). Model keys follow the same box numbering as RBO:
+// kasanari 0, hurt 1..6, etc 9,10,13, sousai 11,16,17, tobi 12,18,19, attack 25..32.
+static const BoxSlotInfo kGofSlots[] = {
+	{ 0, 0x110, 0x10C, "kasanari", 0},
+	{ 1, 0x118, 0x114, "hurt", 0}, { 2, 0x11C, 0x114, "hurt", 1}, { 3, 0x120, 0x114, "hurt", 2}, { 4, 0x124, 0x114, "hurt", 3}, { 5, 0x128, 0x114, "hurt", 4}, { 6, 0x12C, 0x114, "hurt", 5},
+	{ 9, 0x140, 0x13C, "etc", 0}, {10, 0x144, 0x13C, "etc", 1}, {13, 0x148, 0x13C, "etc", 2},
+	{11, 0x150, 0x14C, "sousai", 0}, {16, 0x154, 0x14C, "sousai", 1}, {17, 0x158, 0x14C, "sousai", 2},
+	{12, 0x160, 0x15C, "tobi", 0}, {18, 0x164, 0x15C, "tobi", 1}, {19, 0x168, 0x15C, "tobi", 2},
+	{25, 0x170, 0x16C, "attack", 0}, {26, 0x174, 0x16C, "attack", 1}, {27, 0x178, 0x16C, "attack", 2}, {28, 0x17C, 0x16C, "attack", 3},
+	{29, 0x180, 0x16C, "attack", 4}, {30, 0x184, 0x16C, "attack", 5}, {31, 0x188, 0x16C, "attack", 6}, {32, 0x18C, 0x16C, "attack", 7},
+};
+static const int kRboGroups[] = { 0xD0, 0xE0, 0xF4, 0xFC, 0x10C, 0x120 };
+static const int kGofGroups[] = { 0x10C, 0x114, 0x13C, 0x14C, 0x15C, 0x16C };
+
+struct Layout {
+	int sub, frameSize, atSize, nslots, ngroups, fxIdxOff, attackKey0;
+	const BoxSlotInfo *slots; const int *groups;
+};
+static const Layout kRboLayout = { 1, 300, 120, kRboSlotCount, 6, -1, 25, kRboSlots, kRboGroups };
+static const Layout kGofLayout = { 2, 404, 236, (int)(sizeof(kGofSlots) / sizeof(kGofSlots[0])), 6, 0x190, 25, kGofSlots, kGofGroups };
+static const Layout &LayoutFor(uint32_t sub) { return sub == 2 ? kGofLayout : kRboLayout; }
+
 const char *BoxLabel(int k)
 {
 	switch (k) {
@@ -69,6 +91,7 @@ static void DecodeAxis(int clear, int add, int speed, int accel, bool yAxis, uns
 
 static void DecodeFrame(Frame &F, const Han2FrameRaw &R)
 {
+	const Layout &LY = R.frameSize == 404 ? kGofLayout : kRboLayout;
 	RboFrameRecord r; memcpy(&r, R.rec, sizeof(r));
 
 	F.AF.layers.clear();
@@ -110,7 +133,7 @@ static void DecodeFrame(Frame &F, const Han2FrameRaw &R)
 	S.cancelSpecial = r.specialCancel;
 	S.hitsNumber = (int)r.hitLimitCount;
 
-	if (R.hadAT) {
+	if (R.hadAT && LY.sub == 1) {
 		RboAtRecord a; memcpy(&a, R.at, sizeof(a));
 		F.AT.damage = a.base_power;
 		F.AT.guard_damage = a.guard_damage;
@@ -119,11 +142,11 @@ static void DecodeFrame(Frame &F, const Han2FrameRaw &R)
 
 	F.IF.clear(); F.EF.clear();
 	F.hitboxes.clear();
-	for (int k = 0; k < kRboSlotCount; k++) {
+	for (int k = 0; k < LY.nslots; k++) {
 		if (!(R.boxMask & (1u << k))) continue;
 		Hitbox hb{};
 		for (int j = 0; j < 4; j++) hb.xy[j] = R.box[k][j];
-		F.hitboxes[kRboSlots[k].key] = hb;
+		F.hitboxes[LY.slots[k].key] = hb;
 	}
 }
 
@@ -138,15 +161,17 @@ bool Load(FrameData &fd, const uint8_t *b, size_t size, std::string *err, const 
 	Han2File f;
 	std::string perr;
 	if (!Parse(b, size, f, &perr)) return fail(perr);
-	if (f.sub != 1) return fail("GOF2 (sub 2) layout is not supported yet");
+	const Layout &LY = LayoutFor(f.sub);
 
 	const std::vector<uint8_t> &patT = f.sec[0], &frames = f.sec[1], &boxes = f.sec[2], &ats = f.sec[3];
 	if (patT.size() != 256 * 12) return fail("pattern table is not 256 entries");
-	if (frames.size() % 300) return fail("frame section is not a multiple of 300 bytes");
-	if (ats.size() % 120) return fail("AT section is not a multiple of 120 bytes");
+	if (frames.size() % LY.frameSize) return fail("frame section is not a multiple of the frame size");
+	if (ats.size() % LY.atSize) return fail("AT section is not a multiple of the AT record size");
 	if (boxes.size() % 8) return fail("box section is not a multiple of 8 bytes");
 	if (f.sec[6].size() % 20 || f.sec[7].size() % 20) return fail("script list section is not a multiple of 20 bytes");
-	const int nFrames = (int)(frames.size() / 300), nAt = (int)(ats.size() / 120), nBox = (int)(boxes.size() / 8);
+	const int nFrames = (int)(frames.size() / LY.frameSize), nAt = (int)(ats.size() / LY.atSize), nBox = (int)(boxes.size() / 8);
+	const int nFx = LY.sub == 2 ? (int)(f.sec[8].size() / 96) : 0;
+	if (LY.sub == 2 && f.sec[8].size() % 96) return fail("effect section is not a multiple of 96 bytes");
 	const int nSl[2] = { (int)(f.sec[6].size() / 20), (int)(f.sec[7].size() / 20) };
 
 	auto cont = std::make_shared<Han2Container>();
@@ -156,6 +181,7 @@ bool Load(FrameData &fd, const uint8_t *b, size_t size, std::string *err, const 
 	for (int i = 4; i < 9 && i < (int)f.sec.size(); i++) cont->sec[i] = f.sec[i];
 	cont->sec[6].assign(f.sec[6].begin(), f.sec[6].begin() + std::min<size_t>(20, f.sec[6].size()));   // record 0
 	cont->sec[7].assign(f.sec[7].begin(), f.sec[7].begin() + std::min<size_t>(20, f.sec[7].size()));
+	if (LY.sub == 2) cont->sec[8].assign(f.sec[8].begin(), f.sec[8].begin() + std::min<size_t>(96, f.sec[8].size()));
 	cont->parts = f.area[kAreaParts]; cont->cg = f.area[kAreaCg]; cont->names = f.area[kAreaNames];
 	for (int i = 0; i < 4; i++) cont->areaOff[i] = f.areaOff[i];
 	const uint8_t *nameBytes = nullptr;
@@ -187,12 +213,12 @@ bool Load(FrameData &fd, const uint8_t *b, size_t size, std::string *err, const 
 		for (uint32_t k = 0; k < cnt; k++) {
 			Frame &F = seq.frames[k];
 			Han2FrameRaw &R = F.han2;
-			R.valid = true; R.frameSize = 300;
-			memcpy(R.rec, frames.data() + 300 * (size_t)(first + k), 300);
+			R.valid = true; R.frameSize = (uint16_t)LY.frameSize;
+			memcpy(R.rec, frames.data() + (size_t)LY.frameSize * (size_t)(first + k), (size_t)LY.frameSize);
 			RboFrameRecord rec; memcpy(&rec, R.rec, sizeof(rec));
 			if (rec.hasAttack && rec.attackRecordIdx >= 0) {
 				if (rec.attackRecordIdx >= nAt) return fail("AT index out of range");
-				memcpy(R.at, ats.data() + 120 * (size_t)rec.attackRecordIdx, 120);
+				memcpy(R.at, ats.data() + (size_t)LY.atSize * (size_t)rec.attackRecordIdx, (size_t)LY.atSize);
 				R.hadAT = true;
 			}
 			const uint32_t sli[2] = { rec.scriptListIndexA, rec.scriptListIndexB };
@@ -202,8 +228,12 @@ bool Load(FrameData &fd, const uint8_t *b, size_t size, std::string *err, const 
 				memcpy(R.script[s], f.sec[6 + s].data() + 20 * (size_t)sli[s], 20);
 				R.scriptHad |= 1 << s;
 			}
-			for (int s = 0; s < kRboSlotCount; s++) {
-				int bi = rd32(R.rec + kRboSlots[s].idxOffset);
+			if (LY.fxIdxOff >= 0) {
+				uint32_t fi = rdu32(R.rec + LY.fxIdxOff);
+				if (fi) { if ((int)fi >= nFx) return fail("effect record index out of range"); memcpy(R.fx, f.sec[8].data() + 96 * (size_t)fi, 96); R.hadFx = true; }
+			}
+			for (int s = 0; s < LY.nslots; s++) {
+				int bi = rd32(R.rec + LY.slots[s].idxOffset);
 				if (bi < 0) continue;
 				if (bi >= nBox) continue;   // dangling index (EMO / SYSTEMEFFECT): no rectangle; the raw value is kept on save
 				for (int j = 0; j < 4; j++) R.box[s][j] = rd16(boxes.data() + 8 * (size_t)bi + 2 * j);
@@ -256,7 +286,8 @@ namespace {
 struct Tables {
 	std::vector<uint8_t> boxes, at, sl[2];
 	int nBox = 0, nAt = 0, nSl[2] = { 1, 1 };   // script lists start with record 0
-	std::map<int, int> boxMap, slMap[2];        // old identity -> new index
+	std::map<int, int> boxMap, slMap[2], fxMap; // old identity -> new index
+	std::vector<uint8_t> fx; int nFx = 1;
 };
 
 struct Ctx {
@@ -267,20 +298,20 @@ struct Ctx {
 
 static inline uint8_t u8c(int v) { return (uint8_t)v; }
 
-static void EncodeFrame(const Frame &F, Tables &T, uint8_t out[300], Ctx &cx)
+static void EncodeFrame(const Frame &F, Tables &T, uint8_t *out, Ctx &cx, const Layout &LY)
 {
 	const Han2FrameRaw &R = F.han2;
 	const bool raw = R.valid;
-	if (raw) memcpy(out, R.rec, 300);
+	if (raw) memcpy(out, R.rec, LY.frameSize);
 	else {
-		memset(out, 0, 300);
-		for (int s = 0; s < kRboSlotCount; s++) wr32(out + kRboSlots[s].idxOffset, 0xFFFFFFFFu);
+		memset(out, 0, LY.frameSize);
+		for (int s = 0; s < LY.nslots; s++) wr32(out + LY.slots[s].idxOffset, 0xFFFFFFFFu);
 		wr32(out + 0xC8, 0xFFFFFFFFu);
 		out[0x0B] = ANI_NEXT; out[0x34] = STANCE_GROUND;
 	}
 	// what the original bytes decode to; only fields that differ from it are rewritten
 	Han2FrameRaw base = R;
-	if (!raw) { memcpy(base.rec, out, 300); base.valid = true; base.frameSize = 300; base.hadAT = false; base.boxMask = 0; }
+	if (!raw) { memcpy(base.rec, out, LY.frameSize); base.valid = true; base.frameSize = (uint16_t)LY.frameSize; base.hadAT = false; base.boxMask = 0; }
 	Frame ref; DecodeFrame(ref, base);
 	RboFrameRecord *r = (RboFrameRecord *)out;
 
@@ -343,16 +374,16 @@ static void EncodeFrame(const Frame &F, Tables &T, uint8_t out[300], Ctx &cx)
 	// ---- boxes: slot k present when the model holds its key ----
 	int present[16] = {}; // per group count
 	bool attackPresent = false;
-	int newIdx[24]; for (int s = 0; s < kRboSlotCount; s++) newIdx[s] = -1;
-	for (int s = 0; s < kRboSlotCount; s++) {
-		auto it = F.hitboxes.find(kRboSlots[s].key);
+	int newIdx[24]; for (int s = 0; s < LY.nslots; s++) newIdx[s] = -1;
+	for (int s = 0; s < LY.nslots; s++) {
+		auto it = F.hitboxes.find(LY.slots[s].key);
 		if (it == F.hitboxes.end()) {
 			// a dangling original index (points past the box table) has no rectangle in the model; keep it verbatim
-			if (raw && !(R.boxMask & (1u << s))) { int o = rd32(R.rec + kRboSlots[s].idxOffset); if (o >= 0) newIdx[s] = o; }
+			if (raw && !(R.boxMask & (1u << s))) { int o = rd32(R.rec + LY.slots[s].idxOffset); if (o >= 0) newIdx[s] = o; }
 			continue;
 		}
 		int16_t rc[4]; for (int j = 0; j < 4; j++) rc[j] = (int16_t)it->second.xy[j];
-		int oldIdx = raw ? rd32(R.rec + kRboSlots[s].idxOffset) : -1;
+		int oldIdx = raw ? rd32(R.rec + LY.slots[s].idxOffset) : -1;
 		bool same = raw && (R.boxMask & (1u << s)) && oldIdx >= 0 && memcmp(rc, R.box[s], 8) == 0;
 		int idx;
 		if (same) {
@@ -361,28 +392,29 @@ static void EncodeFrame(const Frame &F, Tables &T, uint8_t out[300], Ctx &cx)
 			else { idx = T.nBox++; T.boxMap[oldIdx] = idx; T.boxes.insert(T.boxes.end(), (uint8_t *)rc, (uint8_t *)rc + 8); }
 		} else { idx = T.nBox++; T.boxes.insert(T.boxes.end(), (uint8_t *)rc, (uint8_t *)rc + 8); }
 		newIdx[s] = idx;
-		if (kRboSlots[s].key >= 25) attackPresent = true;
+		if (LY.slots[s].key >= LY.attackKey0) attackPresent = true;
 	}
-	for (int s = 0; s < kRboSlotCount; s++) if (newIdx[s] >= 0 && kRboSlots[s].key >= 25) attackPresent = true;
-	for (int s = 0; s < kRboSlotCount; s++) wr32(out + kRboSlots[s].idxOffset, (uint32_t)newIdx[s]);
+	for (int s = 0; s < LY.nslots; s++) if (newIdx[s] >= 0 && LY.slots[s].key >= LY.attackKey0) attackPresent = true;
+	for (int s = 0; s < LY.nslots; s++) wr32(out + LY.slots[s].idxOffset, (uint32_t)newIdx[s]);
 	{
 		std::map<int, int> cnt;
-		for (int s = 0; s < kRboSlotCount; s++) if (newIdx[s] >= 0) cnt[kRboSlots[s].groupOffset]++;
-		static const int groups[] = { 0xD0, 0xE0, 0xF4, 0xFC, 0x10C, 0x120 };
-		for (int g : groups) wr32(out + g, (uint32_t)cnt[g]);
+		for (int s = 0; s < LY.nslots; s++) if (newIdx[s] >= 0) cnt[LY.slots[s].groupOffset]++;
+		for (int gi = 0; gi < LY.ngroups; gi++) wr32(out + LY.groups[gi], (uint32_t)cnt[LY.groups[gi]]);
 	}
 
 	// ---- AT: present iff an attack box exists (verified: hasAttack == attackBoxCount > 0 in every shipped frame) ----
 	if (attackPresent) {
-		uint8_t a[120];
-		if (R.hadAT) memcpy(a, R.at, 120); else memset(a, 0, 120);
-		RboAtRecord *ar = (RboAtRecord *)a;
-		if (F.AT.damage != ref.AT.damage || !R.hadAT) ar->base_power = F.AT.damage;
-		if (F.AT.guard_damage != ref.AT.guard_damage || !R.hadAT) ar->guard_damage = F.AT.guard_damage;
-		if (F.AT.hitEffect != ref.AT.hitEffect) ar->hit_class = (RboHitClass)F.AT.hitEffect;
+		uint8_t a[han2::kMaxAtBytes];
+		if (R.hadAT) memcpy(a, R.at, LY.atSize); else memset(a, 0, LY.atSize);
+		if (LY.sub == 1) {
+			RboAtRecord *ar = (RboAtRecord *)a;
+			if (F.AT.damage != ref.AT.damage || !R.hadAT) ar->base_power = F.AT.damage;
+			if (F.AT.guard_damage != ref.AT.guard_damage || !R.hadAT) ar->guard_damage = F.AT.guard_damage;
+			if (F.AT.hitEffect != ref.AT.hitEffect) ar->hit_class = (RboHitClass)F.AT.hitEffect;
+		} else if (!R.hadAT) cx.w("new attack: its GOF2 attack record is all zero (edit it in the inspector)");
 		r->hasAttack = 1;
 		r->attackRecordIdx = T.nAt++;
-		T.at.insert(T.at.end(), a, a + 120);
+		T.at.insert(T.at.end(), a, a + LY.atSize);
 	} else { r->hasAttack = 0; r->attackRecordIdx = -1; }
 
 	// ---- script lists (kept verbatim, shared by old identity) ----
@@ -397,6 +429,16 @@ static void EncodeFrame(const Frame &F, Tables &T, uint8_t out[300], Ctx &cx)
 		T.sl[s].insert(T.sl[s].end(), R.script[s], R.script[s] + 20);
 		*dst = (uint32_t)idx;
 	}
+	// ---- GOF2 effect-spawn record (section 8), 1-based first-use numbering ----
+	if (LY.fxIdxOff >= 0) {
+		uint32_t oldFx = raw ? rdu32(R.rec + LY.fxIdxOff) : 0;
+		if (!R.hadFx || oldFx == 0) wr32(out + LY.fxIdxOff, 0);
+		else {
+			auto m = T.fxMap.find((int)oldFx);
+			if (m != T.fxMap.end()) wr32(out + LY.fxIdxOff, (uint32_t)m->second);
+			else { int idx = T.nFx++; T.fxMap[(int)oldFx] = idx; T.fx.insert(T.fx.end(), R.fx, R.fx + 96); wr32(out + LY.fxIdxOff, (uint32_t)idx); }
+		}
+	}
 }
 
 } // namespace
@@ -409,6 +451,7 @@ bool Serialize(const FrameData &fd, std::vector<uint8_t> &out, std::string *err,
 	for (size_t p = kPatterns; p < fd.m_sequences.size(); p++)
 		if (!fd.m_sequences[p].frames.empty()) return fail("pattern " + std::to_string(p) + " has frames, but HAN2RBO has 256 pattern slots");
 
+	const Layout &LY = LayoutFor(cont->sub);
 	Tables T;
 	std::vector<uint8_t> patT(256 * 12, 0), frames;
 	int total = 0;
@@ -421,10 +464,10 @@ bool Serialize(const FrameData &fd, std::vector<uint8_t> &out, std::string *err,
 			if (cnt > 255) return fail("pattern " + std::to_string(p) + " has more than 255 frames (frame numbers are bytes)");
 			first = (uint32_t)total;
 			size_t at = frames.size();
-			frames.resize(at + 300 * (size_t)cnt);
+			frames.resize(at + (size_t)LY.frameSize * (size_t)cnt);
 			for (uint32_t k = 0; k < cnt; k++) {
 				Ctx cx{warnings, p, (int)k};
-				EncodeFrame(seq->frames[k], T, &frames[at + 300 * (size_t)k], cx);
+				EncodeFrame(seq->frames[k], T, &frames[at + (size_t)LY.frameSize * (size_t)k], cx, LY);
 			}
 			total += (int)cnt;
 		}
@@ -437,7 +480,7 @@ bool Serialize(const FrameData &fd, std::vector<uint8_t> &out, std::string *err,
 		return fail("this character was loaded without its .DAT (no parts / CG): save it as .DT2, or open it together with its .DAT");
 	f.sub = cont->sub; f.kind = asDt2 ? 3 : 0; f.xorFlag = 0;
 	f.lead = cont->lead; f.tail = cont->tail;
-	f.sec.assign(8, {});
+	f.sec.assign(LY.sub == 2 ? 9 : 8, {});
 	f.sec[0] = patT; f.sec[1] = frames;
 	f.sec[2] = T.boxes; f.sec[2].insert(f.sec[2].end(), cont->boxTail.begin(), cont->boxTail.end());
 	f.sec[3] = T.at;
@@ -446,6 +489,11 @@ bool Serialize(const FrameData &fd, std::vector<uint8_t> &out, std::string *err,
 		f.sec[6 + s] = cont->sec[6 + s];
 		if (f.sec[6 + s].size() < 20) f.sec[6 + s].assign(20, 0);   // record 0
 		f.sec[6 + s].insert(f.sec[6 + s].end(), T.sl[s].begin(), T.sl[s].end());
+	}
+	if (LY.sub == 2) {
+		f.sec[8] = cont->sec[8];
+		if (f.sec[8].size() < 96) f.sec[8].assign(96, 0);   // record 0
+		f.sec[8].insert(f.sec[8].end(), T.fx.begin(), T.fx.end());
 	}
 	if (!asDt2) { f.area[kAreaParts] = cont->parts; f.area[kAreaCg] = cont->cg; f.area[kAreaNames] = cont->names; }
 	for (int i = 0; i < 4; i++) f.areaOff[i] = cont->areaOff[i];
