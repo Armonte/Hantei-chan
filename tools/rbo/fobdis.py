@@ -67,10 +67,10 @@ class Bad(Exception): pass
 CLASS = {
     0x00: ('DATA', 0x426A20), 0x01: ('STK', 0x427B60), 0x02: ('FLOW', 0x428190), 0x03: ('SYS', 0x428210),
     0x04: ('THREAD', 0x428270), 0x05: ('WAIT', 0x4282D0), 0x06: ('RAND', 0x428350), 0x07: ('FILE', 0x4283A0),
-    0x08: ('BANK', 0x428420), 0x09: ('MEM', 0x428480), 0x0A: ('NOP', 0x428510), 0x0B: ('SOUND', 0x428530),
-    0x0C: ('C0C', 0x4285C0), 0x0D: ('C0D', 0x428600), 0x0E: ('C0E', 0x428680), 0x0F: ('C0F', 0x428780),
-    0x10: ('C10', 0x4287F0), 0x11: ('C11', 0x428850), 0x12: ('C12', 0x4288E0), 0x13: ('C13', 0x428940),
-    0x14: ('C14', 0x428960), 0x15: ('C15', 0x428710), 0x16: ('C16', 0x4289E0), 0x17: ('C17', 0x428A70),
+    0x08: ('BANK', 0x428420), 0x09: ('MEM', 0x428480), 0x0A: ('NOP', 0x428510), 0x0B: ('GFX', 0x428530),
+    0x0C: ('CAMERA2', 0x4285C0), 0x0D: ('EFFECT_CHARSLOT', 0x428600), 0x0E: ('SOUND_CHAN', 0x428680), 0x0F: ('CAMERA', 0x428780),
+    0x10: ('SYSFLOW', 0x4287F0), 0x11: ('ACTOR_OPS', 0x428850), 0x12: ('SCREEN_FADE', 0x4288E0), 0x13: ('ACTOR_FIND', 0x428940),
+    0x14: ('PICTURE', 0x428960), 0x15: ('AUDIO_CHAN', 0x428710), 0x16: ('GAUGE_MISC', 0x4289E0), 0x17: ('SOUND_LOAD', 0x428A70),
     0x18: ('END', 0x428AA0), 0x19: ('HALT', 0x428AA0),
 }
 STK_SUB = {
@@ -88,15 +88,146 @@ ASSIGN_KIND = {0: '=', 0x64: '+=', 0x65: '-=', 0x66: '*=', 0x67: '/=', 0x68: '%=
 
 # native (class,sub) -> (name, handler/helper address).  Arity (stack slots popped, 2 per pushed argument)
 # was measured on the corpus (stack height before each call at statement level; always one value per native).
-try:
-    from fob_natives import NATIVES, ARITY
-except Exception:
-    NATIVES, ARITY = {}, {}
+ARITY = {(3, 1): 6, (6, 0): 4, (9, 10): 4, (11, 0): 0, (11, 1): 2, (11, 2): 4, (11, 3): 14, (11, 4): 2, (11, 5): 12, (11, 6): 4, (11, 7): 14, (11, 8): 2, (11, 9): 6, (11, 10): 0, (11, 11): 6, (12, 0): 6, (12, 1): 6, (12, 2): 4, (13, 0): 4, (13, 1): 4, (13, 2): 4, (13, 4): 0, (13, 7): 4, (13, 8): 4, (14, 0): 6, (14, 1): 6, (14, 2): 4, (14, 3): 8, (14, 4): 2, (14, 5): 2, (14, 6): 2, (14, 9): 2, (14, 10): 4, (15, 0): 2, (15, 1): 2, (15, 2): 2, (15, 3): 2, (15, 4): 10, (15, 5): 0, (15, 6): 6, (16, 0): 4, (16, 1): 6, (16, 2): 4, (16, 3): 4, (16, 4): 2, (16, 5): 4, (16, 6): 8, (17, 0): 10, (17, 1): 10, (17, 2): 12, (17, 3): 12, (17, 4): 18, (17, 5): 12, (17, 6): 4, (17, 7): 4, (17, 8): 8, (17, 9): 6, (17, 10): 6, (17, 11): 10, (17, 13): 8, (18, 0): 0, (18, 1): 2, (18, 2): 6, (18, 3): 6, (18, 4): 2, (18, 5): 2, (19, 0): 10, (20, 0): 2, (20, 1): 4, (20, 2): 2, (20, 3): 12, (20, 4): 6, (20, 5): 0, (20, 7): 0, (20, 8): 2, (21, 1): 6, (21, 2): 10, (21, 3): 4, (22, 0): 4, (22, 1): 4, (22, 2): 10, (22, 3): 10, (22, 4): 4, (22, 5): 0, (23, 0): 4}   # stack slots popped per native (2 per argument), measured on the corpus
+NATIVES = {
+    (0x04, 0x00): (0x429100, 'ScriptNative_Thread_Yield', 'yield one frame (ends the thread slice, pc advances)'),
+    (0x04, 0x01): (0x4253C0, 'ScriptNative_Thread_ExitSelf', 'deactivate the current script thread and yield'),
+    (0x04, 0x02): (0x4253E0, 'ScriptNative_Thread_Spawn', '(file,label) allocate thread, LJumpSub label, run once; thread id -> args[0]'),
+    (0x04, 0x03): (0x4246F0, 'ScriptNative_Thread_KillByNameOrId', '(threadId|-1, name) find thread by name and deactivate it'),
+    (0x05, 0x00): (0x4282D0, 'ScriptNative_Wait_Frames', '(frames) set thread wait counter (60 Hz) and yield'),
+    (0x05, 0x01): (0x4282D0, 'ScriptNative_Wait_SpinNoAdvance', 'yield without advancing pc (re-executes next frame)'),
+    (0x05, 0x02): (0x429100, 'ScriptNative_Thread_Yield', 'same as 4.0'),
+    (0x05, 0x03): (0x4282D0, 'RgbFx_NoOpUpdate', 'no-op'),
+    (0x05, 0x04): (0x4282D0, 'RgbFx_NoOpUpdate', 'no-op'),
+    (0x05, 0x05): (0x425800, 'ScriptNative_Wait_SaveScriptState', 'write the whole VM state (threads, banks) to a file'),
+    (0x05, 0x06): (0x425CD0, 'ScriptNative_Wait_LoadScriptState', 'read the VM state back from a file'),
+    (0x06, 0x00): (0x428350, 'ScriptNative_Rand_Range', '(*out,max) *out = Rng_Range(max)'),
+    (0x06, 0x01): (0x428350, 'ScriptNative_Rand_Range', '(*out,max) *out = Rng_Range(max) (identical to 6.0)'),
+    (0x06, 0x02): (0x45F5C0, 'Rng_SetStreamState', '(value) set RNG stream state'),
+    (0x06, 0x03): (0x45F5B0, 'Rng_GetStreamState', '(*out) read RNG stream state'),
+    (0x07, 0x00): (0x429A20, 'ScriptNative_File_WriteBufferToPath', '(path,buf,count) create file and write'),
+    (0x07, 0x01): (0x429B40, 'ScriptNative_File_ReadVirtualToBuffer', '(path,buf,seek,count) read from pack/virtual file'),
+    (0x07, 0x02): (0x4283A0, 'ScriptNative_File_GetVirtualSize', '(path,*outSize)'),
+    (0x07, 0x03): (0x4283A0, 'ScriptNative_File_Open', '(path,mode,*outHandle)'),
+    (0x07, 0x04): (0x4283A0, 'ScriptNative_File_Read', '(*handle,buf,count)'),
+    (0x07, 0x05): (0x423550, 'File_Write', '(*handle,buf,count)'),
+    (0x07, 0x06): (0x42A050, 'ScriptNative_File_Seek', '(*handle,whence,offset)'),
+    (0x07, 0x07): (0x4283A0, 'ScriptNative_File_Close', '(*handle)'),
+    (0x07, 0x08): (0x4283A0, 'ScriptNative_File_Exists', '(path) errno=0/1'),
+    (0x07, 0x09): (0x4261E0, 'ScriptNative_File_QueryVirtual', '(path,mode,*outA,*outNotFound)'),
+    (0x08, 0x00): (0x424F10, 'ScriptNative_Mem_InitSlots', '(slotCount)'),
+    (0x08, 0x01): (0x424F70, 'ScriptNative_Mem_AllocSlot', '(slot,size,*outPtr)'),
+    (0x08, 0x02): (0x424EC0, 'ScriptNative_Mem_FreeSlot', '(slot|-1)'),
+    (0x08, 0x03): (0x424FF0, 'ScriptNative_Mem_GetSlotPtr', '(slot,*out)'),
+    (0x08, 0x04): (0x425000, 'ScriptNative_Mem_GetSlotSize', '(slot,*out)'),
+    (0x09, 0x00): (0x428480, 'ScriptNative_Mem_Store16', '(*dst16,val)'),
+    (0x09, 0x01): (0x428480, 'ScriptNative_Mem_Copy16', '(*dst16,*src16)'),
+    (0x09, 0x02): (0x428480, 'ScriptNative_Str_Copy', '(dst,src) strcpy'),
+    (0x09, 0x03): (0x428480, 'ScriptNative_Str_CopyN', '(dst,src,n) strncpy'),
+    (0x09, 0x04): (0x428480, 'ScriptNative_Str_Length', '(*out,str)'),
+    (0x09, 0x05): (0x4296E0, 'ScriptNative_String_Compare', '(*out,s1,s2,n) strncmp'),
+    (0x09, 0x06): (0x428480, 'ScriptNative_Str_Find', '(*out,hay,needle) strstr offset or -1'),
+    (0x09, 0x07): (0x428480, 'ScriptNative_Mem_CopyDwords', '(dst,src,count)'),
+    (0x09, 0x08): (0x428480, 'ScriptNative_Mem_FillDwords', '(dst,value,count)'),
+    (0x09, 0x09): (0x42A220, 'ScriptNative_String_FormatNumber', '(flags,value,digits,dest) decimal digit string'),
+    (0x09, 0x0A): (0x426430, 'ScriptNative_Math_SineEase', '(*out,{start,end,t,duration})'),
+    (0x0A, 0x00): (0x428510, 'RgbFx_NoOpUpdate', 'no-op'),
+    (0x0B, 0x00): (0x401730, 'ScriptNative_Gfx_FreeAll', '(mode) free sequence/sprite/image tables'),
+    (0x0B, 0x01): (0x401090, 'ScriptNative_Image_AllocTable', '(count)'),
+    (0x0B, 0x02): (0x4010F0, 'ScriptNative_Image_SetFileName', '(imageIdx,name)'),
+    (0x0B, 0x03): (0x42A5C0, 'ScriptNative_Image_SetRegion', '(imageIdx,a,b,c,d,texW,texH)'),
+    (0x0B, 0x04): (0x4011E0, 'ScriptNative_Sprite_AllocTable', '(count)'),
+    (0x0B, 0x05): (0x401310, 'ScriptNative_Sprite_Define', '(spriteIdx,imageIdx,x,y,w,h)'),
+    (0x0B, 0x06): (0x401440, 'ScriptNative_Seq_AllocFrames', '(seqIdx,frameCount)'),
+    (0x0B, 0x07): (0x42AAE0, 'ScriptNative_Seq_SetFrame', '(seqIdx,frameIdx,v0..v4)'),
+    (0x0B, 0x08): (0x401560, 'ScriptNative_Seq_AllocTable', '(count)'),
+    (0x0B, 0x09): (0x4015C0, 'ScriptNative_Seq_SetProps', '(seqIdx,mask,intArrayRef)'),
+    (0x0B, 0x0A): (0x401750, 'ScriptNative_Image_LoadAllTextures', '()'),
+    (0x0B, 0x0B): (0x4012E0, 'ScriptNative_Sprite_SetColor', '(spriteIdx,mask,intArrayRef)'),
+    (0x0C, 0x00): (0x433000, 'ScriptNative_Camera_Init', '(x,y,zoom)'),
+    (0x0C, 0x01): (0x433050, 'ScriptNative_Camera_SetLimits', '(flags,limitA,limitB)'),
+    (0x0C, 0x02): (0x433070, 'ScriptNative_Camera_Command', '(mode,intArrayRef) sub-command switch'),
+    (0x0D, 0x00): (0x4222B0, 'ScriptNative_Effect_SetSlotScript', '(slot,scriptPtr)'),
+    (0x0D, 0x01): (0x4222E0, 'ScriptNative_Effect_SetSlotActive', '(slot,value)'),
+    (0x0D, 0x02): (0x422300, 'ScriptNative_Effect_GetSlotActive', '(slot|-1,*out)'),
+    (0x0D, 0x03): (0x422930, 'ScriptNative_Effect_AnyPoolInUse', '(a1,*out)'),
+    (0x0D, 0x04): (0x422900, 'ScriptNative_Effect_TickSlots', '()'),
+    (0x0D, 0x05): (0x421E00, 'ScriptNative_CharSlot_ClearMap', '()'),
+    (0x0D, 0x06): (0x421E20, 'ScriptNative_CharSlot_GetId', '(slot,*out)'),
+    (0x0D, 0x07): (0x43D6C0, 'ScriptNative_Char_LoadById', '(charId,*out)'),
+    (0x0D, 0x08): (0x43D720, 'ScriptNative_Char_Unload', '(charId|-1,*out)'),
+    (0x0E, 0x00): (0x45BF00, 'ScriptNative_Sound_LoadSlot', '(channel,slot,filename,0,0)'),
+    (0x0E, 0x01): (0x45BE70, 'ScriptNative_Sound_SetSlotPlayPointer', '(channel,slot,index)'),
+    (0x0E, 0x02): (0x45BEA0, 'ScriptNative_Sound_InitChannelPlayback', '(channel,startSlot)'),
+    (0x0E, 0x03): (0x42B8E0, 'ScriptNative_Sound_ChainSlots', '(channel,from,to,loop)'),
+    (0x0E, 0x04): (0x45BFB0, 'ScriptNative_Sound_PrepareChannel', '(channel)'),
+    (0x0E, 0x05): (0x45BFD0, 'ScriptNative_Sound_PlayLooping', '(channel)'),
+    (0x0E, 0x06): (0x45C0B0, 'ScriptNative_Sound_StopStreamThread', '(channel|<0 all)'),
+    (0x0E, 0x07): (0x45C070, 'ScriptNative_Sound_Pause', '(channel)'),
+    (0x0E, 0x08): (0x45C090, 'ScriptNative_Sound_Resume', '(channel)'),
+    (0x0E, 0x09): (0x45BE20, 'ScriptNative_Sound_ReleaseChannel', '(channel|-1 all)'),
+    (0x0E, 0x0A): (0x45C040, 'ScriptNative_Sound_IsPlaying', '(channel,*out)'),
+    (0x0F, 0x00): (0x42FD70, 'ScriptNative_Camera_SetTarget', '(structRef)'),
+    (0x0F, 0x01): (0x42FE00, 'ScriptNative_Camera_SetEnabled', '(flag)'),
+    (0x0F, 0x02): (0x42FE20, 'ScriptNative_Camera_GetEnabled', '(*out)'),
+    (0x0F, 0x03): (0x42FE30, 'ScriptNative_Camera_SetMode', '(mode)'),
+    (0x0F, 0x04): (0x42C2A0, 'ScriptNative_Camera_SetOffsetEntry', '(index,submode,a3,a4,a5)'),
+    (0x0F, 0x05): (0x42FF20, 'ScriptNative_Camera_Reset', '()'),
+    (0x0F, 0x06): (0x42FD40, 'ScriptNative_Camera_SetParams', '(mask,a2,a3)'),
+    (0x10, 0x00): (0x432710, 'ScriptNative_System_Command', '(subcmd,argptr) misc game-flow switch'),
+    (0x10, 0x01): (0x432870, 'ScriptNative_System_SetMode', '(mode,value,addr)'),
+    (0x10, 0x02): (0x432920, 'ScriptNative_System_Command2', '(subcmd,addr) stage/result flow'),
+    (0x10, 0x03): (0x432A30, 'ScriptNative_System_Command3', '(subcmd,addr)'),
+    (0x10, 0x04): (0x4302B0, 'ScriptNative_System_GetCurrentStageIndex', '(*out)'),
+    (0x10, 0x05): (0x432AA0, 'ScriptNative_System_Command4', '(subcmd,addr)'),
+    (0x11, 0x00): (0x42C8C0, 'ScriptNative_Actors_ExistsMatching', '(poolId,sel44,sel48,excludeByte92,*outBool)'),
+    (0x11, 0x01): (0x42CA40, 'ScriptNative_Actors_CountMatching', '(poolId,sel44,sel48,sel92,*outCount)'),
+    (0x11, 0x02): (0x42CBC0, 'ScriptNative_Actors_SetCommandAndTick', '(poolId,sel44,sel48,sel92,cmdWord,cmdByte)'),
+    (0x11, 0x03): (0x42CDA0, 'ScriptNative_Actors_SetFieldByIndex', '(poolId,sel44,sel48,sel92,fieldIdx,value)'),
+    (0x11, 0x04): (0x42CF80, 'ScriptNative_Actors_SetAutoMoveAndTurn', '(poolId,sel44,sel48,targetX,a5..a8,flags)'),
+    (0x11, 0x05): (0x42D270, 'ScriptNative_Actors_ApplyOp', '(poolId,sel44,sel48,sel92,mode,ptr)'),
+    (0x11, 0x06): (0x43CDC0, 'ScriptNative_Pool_ResetObjectsByFilter', '(poolId,flagsWord)'),
+    (0x11, 0x07): (0x44A6D0, 'ScriptNative_Script_SetTargetFilter', '(op,&args)'),
+    (0x11, 0x08): (0x44A750, 'ScriptCmd_ActorsKillOrSetAi', '(poolId,sel44,sel48,&args)'),
+    (0x11, 0x09): (0x44A010, 'ScriptNative_Actor_Query', '(actor,queryId,&inOut)  query 6/arg 63 passes an AT pointer'),
+    (0x11, 0x0A): (0x44A870, 'ScriptCmd_OverlayControl', '(actor,op,&args)'),
+    (0x11, 0x0B): (0x42D860, 'ScriptNative_Actors_FindFirstMatching', '(poolId,sel44,sel48,sel92,*outActor)'),
+    (0x12, 0x00): (0x4672E0, 'ScriptNative_ScreenFade_Reset', '()'),
+    (0x12, 0x01): (0x467300, 'ScriptNative_ScreenFade_SetEnabled', '(enable)'),
+    (0x12, 0x02): (0x467320, 'ScriptNative_ScreenFade_SetColor', '(r,g,b)'),
+    (0x12, 0x03): (0x467340, 'ScriptNative_ScreenFade_Start', '(startAlpha,endAlpha,frames)'),
+    (0x12, 0x04): (0x467370, 'ScriptNative_ScreenFade_SetLayer', '(layer)'),
+    (0x12, 0x05): (0x467380, 'ScriptNative_ScreenFade_IsDone', '(*out)'),
+    (0x13, 0x00): (0x42DCD0, 'ScriptNative_Actor_FindByDistance', '(mode,ownerList,mask,refActor,*outArr) nearest/farthest actor'),
+    (0x14, 0x00): (0x4675B0, 'ScriptNative_Picture_AllocImageTable', '(count)'),
+    (0x14, 0x01): (0x467610, 'ScriptNative_Picture_SetImagePath', '(idx,path)'),
+    (0x14, 0x02): (0x467690, 'ScriptNative_Picture_AllocPictureTable', '(count)'),
+    (0x14, 0x03): (0x4676F0, 'ScriptNative_Picture_DefinePicture', '(picIdx,imageIdx,x,y,w,h)'),
+    (0x14, 0x04): (0x4677E0, 'ScriptNative_Picture_SetMode', '(picIdx,mode)'),
+    (0x14, 0x05): (0x467930, 'ScriptNative_Picture_LoadAllImages', '()'),
+    (0x14, 0x06): (0x467910, 'ScriptNative_Picture_Free', '(flag)'),
+    (0x14, 0x07): (0x467A40, 'ScriptNative_Picture_StopBanner', '()'),
+    (0x14, 0x08): (0x467B30, 'ScriptNative_Picture_StartBanner', '(picIdx)'),
+    (0x14, 0x09): (0x467BA0, 'ScriptNative_Picture_IsBannerActive', '(*out)'),
+    (0x15, 0x00): (0x42BD00, 'ScriptNative_Audio_AllocChannelTable', '(count)'),
+    (0x15, 0x01): (0x42BD60, 'ScriptNative_Audio_DefineChannel', '(idx,type,targetId)'),
+    (0x15, 0x02): (0x42BE50, 'ScriptNative_Audio_SetChannelLevels', '(idx,a2,a3,a4,a5)'),
+    (0x15, 0x03): (0x42BFE0, 'ScriptNative_Audio_SetChannelState', '(idx,state)'),
+    (0x15, 0x04): (0x42C080, 'ScriptNative_Audio_GetChannelState', '(idx,*out)'),
+    (0x16, 0x00): (0x42E370, 'ScriptNative_Meter_TrySpend', '(amount,*okOut)'),
+    (0x16, 0x01): (0x42E410, 'ScriptNative_Meter_HasAtLeast', '(amount,*out)'),
+    (0x16, 0x02): (0x42E4B0, 'ScriptNative_Actor_SpawnEffectFacingTarget', '(a1,a2,byte92,mode,ptr)'),
+    (0x16, 0x03): (0x42E630, 'ScriptNative_Ui_InitBarElement', '(slot,kind,valuePtr,a4,a5)'),
+    (0x16, 0x04): (0x42E7C0, 'ScriptNative_Game_QueryState', '(mode,&inOut)'),
+    (0x16, 0x05): (0x42E850, 'ScriptNative_Media_StopIfActive', '()'),
+    (0x16, 0x06): (0x42E870, 'ScriptNative_Stub_Pop4', 'pops 4 slots, no effect'),
+    (0x17, 0x00): (0x42E8D0, 'ScriptNative_Sound_LoadFile', '(slot,filename)'),
+}
 
 
 def native_name(c, s):
     n = NATIVES.get((c, s))
-    return n[0] if n else 'N%02X_%02X' % (c, s)
+    return n[1].replace('ScriptNative_', '') if n else 'N%02X_%02X' % (c, s)
 
 
 def decode(code, pc):
@@ -245,7 +376,7 @@ def disassemble(f, fnname=None, out=sys.stdout):
 #         ('arg',i) engine-provided argument i | ('P',base,off) base+off with base in {arg,mem,reg}
 #         ('mem',addr) value loaded through a non-local pointer | ('reg',name) | ('op',name,a,b) | ('T',)
 T = ('T',)
-PBASE = ('arg', 'mem', 'reg', 'nret', 'gvar')            # values that can be the base of a pointer chain
+PBASE = ('arg', 'mem', 'reg', 'nret', 'gvar', 'ldat', 'AT')            # values that can be the base of a pointer chain
 PADDR = ('P', 'PX') + PBASE                      # address kinds that are not script-local
 PBASE_ALL = ('A', 'AX') + PADDR
 def K(n): return ('K', n & 0xFFFFFFFF)
@@ -281,7 +412,9 @@ def expr(v):
     if t == 'arg': return 'arg%d' % v[1]
     if t == 'reg': return v[1]
     if t == 'nret': return '%s#%d' % (v[1], v[2])
-    if t == 'gvar': return 'gvar@%d' % v[1]
+    if t == 'AT': return 'AT'
+    if t == 'gvar': return 'gvar@%s' % v[1]
+    if t == 'ldat': return 'ldat@%s[?]' % v[1]
     if t == 'mem': return '[%s]' % expr(v[1])
     if t == 'P': return '%s+0x%X' % (expr(v[1]), v[2]) if v[2] >= 0 else '%s-0x%X' % (expr(v[1]), -v[2])
     if t == 'op': return '(%s %s %s)' % (expr(v[2]), v[1], expr(v[3]))
@@ -290,7 +423,7 @@ def expr(v):
 
 def has_ptr(v):
     t = v[0]
-    if t in ('arg', 'P', 'mem', 'nret'): return True
+    if t in ('arg', 'P', 'mem', 'nret', 'AT'): return True
     if t == 'op': return has_ptr(v[2]) or has_ptr(v[3])
     return False
 
@@ -306,6 +439,7 @@ class Scan:
         self.native_ptr_where = collections.defaultdict(set)
         self.writes = collections.Counter()
         self.writes_where = collections.defaultdict(set)
+        self.kaddr_reads = 0; self.kaddr_where = set()
         self.unknown_reads = 0; self.unknown_where = set()
         self.unknown_writes = 0
         self.budget_fail = []; self.ljump = collections.Counter(); self.errors = []
@@ -325,17 +459,22 @@ class Interp:
         t = addr[0]
         if t == 'A':
             cell = st[1].get((addr[1], addr[2]))
-            if cell is not None: return cell
+            if cell is not None:
+                if cell == T and addr[1] in ('code', 'args'): return ('gvar', addr[2] if addr[1] == 'code' else 'args%d' % addr[2])
+                return cell
             if addr[1] == 'args': return ('arg', addr[2] // 4) if addr[2] % 4 == 0 and addr[2] >= 0 else T
             if addr[1] == 'code':
                 if addr[2] in self.gnonk: return ('gvar', addr[2])
                 if 0 <= addr[2] and addr[2] + 4 <= len(self.code): return K(U32.unpack_from(self.code, addr[2])[0])
                 return T
             return T
-        if t == 'AX': return T
+        if t == 'AX': return ('ldat', addr[1])      # element of a script-local table
         if t in PADDR:
             self.scan.reads[expr(addr)] += 1; self.scan.reads_where[expr(addr)].add(self.where)
             return ('mem', addr)
+        if t == 'K':          # constant address: a pointer value taken from script-local data (e.g. stage object tables); never an engine pointer
+            self.scan.kaddr_reads += 1; self.scan.kaddr_where.add(self.where)
+            return ('ldat', 'k')
         self.scan.unknown_reads += 1; self.scan.unknown_where.add(self.where)
         return T
 
@@ -551,6 +690,12 @@ class Interp:
             if ptrish or (tag == K(2) and val[0] in PADDR):
                 key = (nm, pos, expr(val), 'ref' if tag == K(2) else 'val')
                 self.scan.native_ptr[key] += 1; self.scan.native_ptr_where[key].add(self.where)
+            if tag == K(2) and val[0] == 'A':     # reference to a script-local struct: pointer-valued fields are handed to the native
+                for k in range(16):
+                    fv = cells.get((val[1], val[2] + 4 * k))
+                    if fv is not None and (fv[0] in ('arg', 'reg', 'P', 'gvar', 'AT') or (fv[0] == 'op' and has_ptr(fv))):
+                        key = (nm, pos, '%s.f%d=%s' % (val[1], k, expr(fv)), 'struct')
+                        self.scan.native_ptr[key] += 1; self.scan.native_ptr_where[key].add(self.where)
             if tag == K(2):                      # reference argument: the native may write the cell it points at
                 if val[0] == 'A':
                     for k in range(16): cells[(val[1], val[2] + 4 * k)] = ('nret', nm, pos * 100 + k)   # may fill a struct
@@ -592,10 +737,54 @@ def scan_fob(fkey, f, scan, only_entries=None, init_cells=None):
     return it
 
 
+# ---------------------------------------------------------------- AT-pointer receivers
+def overlap_records(f):
+    """type-14 (kasanari overlap rule) event records referenced by the script: yield (code offset, [(kind,id,argset)...], [type1 ids])"""
+    out = set()
+    code = f['code']
+    for off in range(0, len(code) - 36, 2):
+        pass
+    return out
+
+
+def condition_triples(f, scan_records):
+    res = []
+    code = f['code']
+    for off in sorted(set(scan_records)):
+        if off + 36 > len(code) or struct.unpack_from('<i', code, off)[0] != 14: continue
+        j = off + 32; trip = []; t1 = []
+        while j + 4 <= len(code):
+            t, = struct.unpack_from('<i', code, j)
+            if t == -1: break
+            if t == 0: trip.append(struct.unpack_from('<iii', code, j + 4)); j += 16
+            elif t == 1: t1.append(struct.unpack_from('<i', code, j + 4)[0]); j += 12
+            else: break
+        res.append((off, trip, t1))
+    return res
+
+
+def at_receivers():
+    """Find every condition script the engine calls with argset 4 (arg1 = attacker's AT pointer) and abstractly run it
+    with arg1 typed 'AT'.  Returns list of (archive/file, kind, id, native pointer-use events, deref reads)."""
+    out = []
+    for p, n, b in all_fobs():
+        f = load_fob(b); sc = Scan(); scan_fob('%s/%s' % (p, n), f, sc)
+        for off, trip, t1 in condition_triples(f, [o for _, o in sc.records]):
+            for k, i, a in trip:
+                if a != 4: continue
+                if k >= len(f['types']) or i >= len(f['types'][k]) or f['types'][k][i] < 0: continue
+                s2 = Scan(); it = Interp('%s/%s' % (p, n), f, s2)
+                it.where = '%s/%s idx%d[%d]' % (p, n, k, i)
+                it.run_function(f['types'][k][i], ((), {('args', 4): ('AT',), ('args', 0): ('arg', 0)}))
+                ev = [(key, v) for key, v in s2.native_ptr.items() if 'AT' in key[2]]
+                out.append((p, n, k, i, ev, sorted(s2.reads)))
+    return out
+
+
 # ---------------------------------------------------------------- CLI
 def main():
     ap = argparse.ArgumentParser()
-    ap.add_argument('--all', action='store_true'); ap.add_argument('--scan', action='store_true')
+    ap.add_argument('--all', action='store_true'); ap.add_argument('--scan', action='store_true'); ap.add_argument('--at', action='store_true')
     ap.add_argument('--dis'); ap.add_argument('func', nargs='?'); ap.add_argument('--json')
     a = ap.parse_args()
     if a.dis:
@@ -606,6 +795,13 @@ def main():
             else: raise SystemExit('not found')
         else: data = open(a.dis, 'rb').read()
         disassemble(load_fob(data), a.func); return
+    if a.at:
+        res = at_receivers(); seen = collections.Counter()
+        for p, n, k, i, ev, rd in res:
+            seen[(n, k, i, tuple(sorted(e[0] for e, _ in ev)), tuple(rd))] += 1
+        for (n, k, i, ev, rd), c in sorted(seen.items()):
+            print('%-22s kind%d id%-4d x%d AT-valued native args: %s ; deref reads: %s' % (n, k, i, c, ev, rd))
+        return
     nf = 0; ninst = 0; nerr = 0; trail = 0
     scan = Scan()
     for p, n, b in all_fobs():
@@ -615,14 +811,14 @@ def main():
         if a.scan: scan_fob('%s/%s' % (p, n), f, scan)
     print('files=%d instructions=%d decode_errors=%d trailing_bytes=%d' % (nf, ninst, nerr, trail))
     if a.scan:
-        print('distinct deref addr exprs:', len(scan.reads), 'unknown reads', scan.unknown_reads, 'budget fails', len(scan.budget_fail), 'errors', len(scan.errors))
+        print('distinct deref addr exprs:', len(scan.reads), 'unknown reads', scan.unknown_reads, 'const-address reads', scan.kaddr_reads, 'budget fails', len(scan.budget_fail), 'errors', len(scan.errors))
         if a.json:
             json.dump(dict(
                 reads={k: [v, sorted(scan.reads_where[k])] for k, v in scan.reads.items()},
                 writes={k: [v, sorted(scan.writes_where[k])] for k, v in scan.writes.items()},
                 ops={'|'.join(k): [v, sorted(scan.ops_where[k])] for k, v in scan.ops.items()},
                 native_ptr={'|'.join(map(str, k)): [v, sorted(scan.native_ptr_where[k])] for k, v in scan.native_ptr.items()},
-                unknown_reads=scan.unknown_reads, unknown_where=sorted(scan.unknown_where), records=scan.records[:0],
+                unknown_reads=scan.unknown_reads, kaddr_reads=scan.kaddr_reads, kaddr_where=sorted(scan.kaddr_where), unknown_where=sorted(scan.unknown_where), records=scan.records[:0],
                 errors=scan.errors[:50]), open(a.json, 'w'), indent=1)
 
 
