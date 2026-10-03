@@ -75,11 +75,12 @@ void MainFrame::openAnyFile(const std::string& path)
 	}
 	if (han2::IsHan2(head.data(), head.size()) || pac::LooksLikePac(head.data(), head.size()) ||
 	    starts("BMP Cutter", 10) ||
+	    fbarc::Detect(head.data(), head.size(), ext) == fbarc::Kind::PkFileInfo || fbarc::Detect(head.data(), head.size(), ext) == fbarc::Kind::MbFilePacA ||
 	    (ext == ".p" && gof1::LooksLikeArchive(head.data(), head.size())) ||
 	    (head.size() >= 8 && head[4] == 0x67 && head[5] == 0x45 && head[6] == 0x23 && head[7] == 0x01 && head[0] >= 2 && head[0] <= 4 && head[1] == 0)) {
 		// RBO / GOF2 / GOF1 character (.DT2/.DAT), PAC archive (opens the archive browser), standalone .PAT, .CHP sprite bank
 		const size_t before = characters.size();
-		const bool isArchive = pac::LooksLikePac(head.data(), head.size()) || ext == ".p";
+		const bool isArchive = pac::LooksLikePac(head.data(), head.size()) || ext == ".p" || fbarc::Detect(head.data(), head.size(), ext) != fbarc::Kind::Unknown;
 		openHan2File(path);
 		if (characters.size() > before || isArchive) addRecentFile(path);
 		return;
@@ -745,7 +746,7 @@ void MainFrame::Menu(unsigned int errorPopupId)
 				ImGui::SetTooltip(TXT("Parts live in the .DAT: save as .DAT to keep part edits (a .DT2 carries only the pattern area)."));
 			if (ImGui::MenuItem(LBL("CG sprites of this RBO / GOF2 character (export / import)..."), nullptr, han2ui::showCgWindow, hasActive && active->cg.m_loaded))
 				han2ui::showCgWindow = !han2ui::showCgWindow;
-			if (ImGui::MenuItem(LBL("RBO / GOF2 archives (PAC)..."), nullptr, han2ui::showBrowser))
+			if (ImGui::MenuItem(LBL("French Bread archives (PAC, .p, .dat)..."), nullptr, han2ui::showBrowser))
 				han2ui::showBrowser = !han2ui::showBrowser;
 			if (ImGui::MenuItem(LBL("Create / patch a PAC archive..."), nullptr, han2ui::showPacCreate))
 				han2ui::showPacCreate = !han2ui::showPacCreate;
