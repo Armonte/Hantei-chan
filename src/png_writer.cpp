@@ -64,6 +64,29 @@ bool CreateDirectoriesUtf8(const std::string& utf8Dir, std::string& error)
 	return true;
 }
 
+bool ReadImageRgba(const std::string& utf8Path, std::vector<uint8_t>& rgba, int& width, int& height, std::string& error)
+{
+	ComScope com;
+	IWICImagingFactory* factory = nullptr;
+	if (FAILED(CoCreateInstance(CLSID_WICImagingFactory, nullptr, CLSCTX_INPROC_SERVER, IID_PPV_ARGS(&factory)))) { error = "Could not create the image factory."; return false; }
+	IWICBitmapDecoder* dec = nullptr; IWICBitmapFrameDecode* frame = nullptr; IWICFormatConverter* conv = nullptr;
+	bool ok = false;
+	do {
+		if (FAILED(factory->CreateDecoderFromFilename(Utf8ToWide(utf8Path).c_str(), nullptr, GENERIC_READ, WICDecodeMetadataCacheOnDemand, &dec))) { error = "Could not open the image: " + utf8Path; break; }
+		if (FAILED(dec->GetFrame(0, &frame))) { error = "The image has no frame."; break; }
+		UINT w = 0, h = 0; frame->GetSize(&w, &h);
+		if (!w || !h) { error = "The image is empty."; break; }
+		if (FAILED(factory->CreateFormatConverter(&conv)) || FAILED(conv->Initialize(frame, GUID_WICPixelFormat32bppBGRA, WICBitmapDitherTypeNone, nullptr, 0.0, WICBitmapPaletteTypeCustom))) { error = "Could not convert the image."; break; }
+		std::vector<uint8_t> bgra((size_t)w * h * 4);
+		if (FAILED(conv->CopyPixels(nullptr, w * 4, (UINT)bgra.size(), bgra.data()))) { error = "Could not read the pixels."; break; }
+		rgba.resize(bgra.size());
+		for (size_t i = 0; i < (size_t)w * h; ++i) { rgba[i*4+0] = bgra[i*4+2]; rgba[i*4+1] = bgra[i*4+1]; rgba[i*4+2] = bgra[i*4+0]; rgba[i*4+3] = bgra[i*4+3]; }
+		width = (int)w; height = (int)h; ok = true;
+	} while (false);
+	ReleaseCom(conv); ReleaseCom(frame); ReleaseCom(dec); ReleaseCom(factory);
+	return ok;
+}
+
 bool WritePngRgba(const std::string& utf8Path, const uint8_t* rgba, int width, int height, std::string& error)
 {
 	if (!rgba || width <= 0 || height <= 0) { error = "The image is empty."; return false; }

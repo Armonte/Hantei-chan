@@ -9,9 +9,13 @@
 
 #include <cstdint>
 #include <string>
+#include <vector>
 
 // rgba: top-down rows, 8-bit straight (non-premultiplied) alpha.
 bool WritePngRgba(const std::string& utf8Path, const uint8_t* rgba, int width, int height, std::string& error);
+
+// Decode any WIC-readable image (PNG, BMP, JPEG, ...) to straight-alpha RGBA, top-down rows.
+bool ReadImageRgba(const std::string& utf8Path, std::vector<uint8_t>& rgba, int& width, int& height, std::string& error);
 
 // UTF-8 <-> UTF-16 / ANSI helpers used by the export UI.
 std::wstring Utf8ToWide(const std::string& s);

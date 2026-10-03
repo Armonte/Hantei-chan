@@ -26,7 +26,7 @@ include(imgui)
 add_subdirectory(glm)
 add_subdirectory(tinyalloc)
 
-set(HAN2_MODEL_SOURCES src/framedata_han2.cpp src/han2/han2_container.cpp src/han2/pac_archive.cpp)
+set(HAN2_MODEL_SOURCES src/framedata_han2.cpp src/han2/han2_container.cpp src/han2/pac_archive.cpp src/han2/img_file.cpp)
 add_executable(${EXE}
 	src/main.cpp
 	src/main_frame.cpp
@@ -58,6 +58,7 @@ add_executable(${EXE}
 	src/han2_export.cpp
 	src/han2_pat_gl.cpp
 	src/han2_browser.cpp
+	src/han2_pac_window.cpp
 	src/han2_inspector.cpp
 	src/startup_args.cpp
 	src/framestate.cpp

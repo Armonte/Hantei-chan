@@ -200,6 +200,8 @@ void MainFrame::Menu(unsigned int errorPopupId)
 			}
 			if (ImGui::MenuItem("RBO / GOF2 archives (PAC)...", nullptr, han2ui::showBrowser))
 				han2ui::showBrowser = !han2ui::showBrowser;
+			if (ImGui::MenuItem("Create / patch a PAC archive...", nullptr, han2ui::showPacCreate))
+				han2ui::showPacCreate = !han2ui::showPacCreate;
 			if (ImGui::MenuItem("Export RBO / GOF2 sprites, poses and animations (PNG + JSON)...", nullptr, false, hasActive && active->frameData.isHan2()))
 				exportHan2Character(active);
 			if (ImGui::MenuItem("Edit parts of this RBO / GOF2 character (PAT editor)", nullptr, false, hasActive && active->frameData.isHan2() && active->parts.loaded))

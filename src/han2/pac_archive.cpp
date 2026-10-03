@@ -1,5 +1,7 @@
 #include "pac_archive.h"
 
+#include <algorithm>
+#include <cctype>
 #include <cstring>
 #include <filesystem>
 #include <fstream>
@@ -111,6 +113,81 @@ bool Build(const std::vector<NewEntry> &entries, std::vector<uint8_t> &out, std:
 		if (!entries[i].data.empty()) memcpy(out.data() + off, entries[i].data.data(), entries[i].data.size());
 		off += (uint32_t)entries[i].data.size();
 	}
+	return true;
+}
+
+static bool SamePath(const std::string &a, const std::string &b)
+{
+	std::error_code ec;
+	auto pa = std::filesystem::weakly_canonical(P(a), ec); auto pb = std::filesystem::weakly_canonical(P(b), ec);
+	std::string x = pa.string(), y = pb.string();
+	for (auto &c : x) c = (char)tolower((unsigned char)c);
+	for (auto &c : y) c = (char)tolower((unsigned char)c);
+	return x == y;
+}
+
+bool WriteArchive(const std::string &outPath, std::vector<WriteSource> &entries, const std::vector<std::string> &refuseIfSame,
+                  std::string *err, void (*progress)(int, int, void *), void *user)
+{
+	auto fail = [&](const std::string &m) { if (err) *err = m; return false; };
+	if (entries.empty()) return fail("the file list is empty");
+	for (auto &r : refuseIfSame) if (SamePath(r, outPath)) return fail("refusing to overwrite " + r + " (choose another output file)");
+	uint64_t total = 8 + (uint64_t)entries.size() * kEntrySize;
+	for (auto &e : entries) {
+		if (e.name.empty() || e.name.size() >= kNameLen) return fail("entry name empty or longer than 59 bytes: " + e.name);
+		if (e.kind == WriteSource::LooseFile) {
+			std::error_code ec; auto sz = std::filesystem::file_size(P(e.path), ec);
+			if (ec) return fail("cannot read " + e.path);
+			e.size = (uint32_t)sz;
+		} else if (e.kind == WriteSource::ArchiveEntry) {
+			if (!e.archive || e.index >= e.archive->entries.size()) return fail("bad archive entry for " + e.name);
+			e.size = e.archive->entries[e.index].size;
+		} else e.size = (uint32_t)e.memory.size();
+		total += e.size;
+	}
+	if (total > 0xFFFFFFFFull) return fail("archive would exceed 4 GB");
+	std::string tmp = outPath + ".tmp";
+	{
+		std::ofstream f(P(tmp), std::ios::binary);
+		if (!f) return fail("cannot create " + tmp);
+		std::vector<uint8_t> head(8 + entries.size() * kEntrySize, 0);
+		wr32(head.data(), 1); wr32(head.data() + 4, (uint32_t)entries.size() ^ kKey);
+		uint32_t off = (uint32_t)head.size();
+		for (size_t i = 0; i < entries.size(); i++) {
+			uint8_t *e = head.data() + 8 + i * kEntrySize;
+			for (size_t j = 0; j < kNameLen; j++) {
+				uint8_t c = j < entries[i].name.size() ? (uint8_t)entries[i].name[j] : 0;
+				if (j >= entries[i].name.size() && entries[i].rawName.size() == kNameLen) c = entries[i].rawName[j];
+				e[j] = c ^ (uint8_t)((i * j * 3 + 61) & 0xFF);
+			}
+			wr32(e + 60, off); wr32(e + 64, entries[i].size ^ kKey);
+			off += entries[i].size;
+		}
+		f.write((const char *)head.data(), (std::streamsize)head.size());
+		std::vector<uint8_t> buf(1 << 20);
+		for (size_t i = 0; i < entries.size(); i++) {
+			auto &e = entries[i];
+			if (e.kind == WriteSource::Memory) { if (!e.memory.empty()) f.write((const char *)e.memory.data(), (std::streamsize)e.memory.size()); }
+			else {
+				std::ifstream in(P(e.kind == WriteSource::LooseFile ? e.path : e.archive->path), std::ios::binary);
+				if (!in) { f.close(); std::filesystem::remove(P(tmp)); return fail("cannot read the source of " + e.name); }
+				if (e.kind == WriteSource::ArchiveEntry) in.seekg((std::streamoff)e.archive->entries[e.index].offset);
+				uint32_t left = e.size;
+				while (left) {
+					uint32_t n = std::min<uint32_t>(left, (uint32_t)buf.size());
+					in.read((char *)buf.data(), n);
+					if ((uint32_t)in.gcount() != n) { f.close(); std::filesystem::remove(P(tmp)); return fail("short read of " + e.name); }
+					f.write((const char *)buf.data(), n); left -= n;
+				}
+			}
+			if (progress) progress((int)i + 1, (int)entries.size(), user);
+		}
+		if (!f) { f.close(); std::filesystem::remove(P(tmp)); return fail("write failed"); }
+	}
+	std::error_code ec;
+	std::filesystem::remove(P(outPath), ec);
+	std::filesystem::rename(P(tmp), P(outPath), ec);
+	if (ec) return fail("could not move the finished archive into place: " + ec.message());
 	return true;
 }
 

@@ -52,6 +52,8 @@ void MainFrame::openHan2Request(const han2ui::OpenRequest& req)
 
 void MainFrame::DrawHan2Windows()
 {
+	han2ui::DrawPacCreate();
+	han2ui::DrawFileViewers();
 	han2ui::OpenRequest req;
 	static std::string message;
 	if (han2ui::DrawBrowser(req, message)) {

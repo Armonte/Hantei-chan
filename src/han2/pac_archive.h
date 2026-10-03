@@ -52,6 +52,21 @@ struct NewEntry { std::string name; std::vector<uint8_t> data; std::vector<uint8
 // Encodes the header and data into one buffer. Fails when a name is longer than 59 bytes.
 bool Build(const std::vector<NewEntry> &entries, std::vector<uint8_t> &out, std::string *err);
 
+// Streaming writer: entries may come from loose files, from entries of an open archive, or from memory. Never overwrites a file in
+// `refuseIfSame`; writes <out>.tmp and renames. Names are checked (max 59 bytes), an empty list is refused.
+struct WriteSource {
+	std::string name;
+	std::vector<uint8_t> rawName;      // original decoded 60-byte name slot (keeps leftover bytes); empty = zero padding
+	enum Kind { Memory, LooseFile, ArchiveEntry } kind = Memory;
+	std::vector<uint8_t> memory;
+	std::string path;                  // LooseFile (UTF-8)
+	const Archive *archive = nullptr;  // ArchiveEntry
+	size_t index = 0;
+	uint32_t size = 0;                 // filled by WriteArchive for Loose / Archive sources
+};
+bool WriteArchive(const std::string &outPath, std::vector<WriteSource> &entries, const std::vector<std::string> &refuseIfSame,
+                  std::string *err, void (*progress)(int done, int total, void *user) = nullptr, void *user = nullptr);
+
 } // namespace pac
 
 #endif
