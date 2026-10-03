@@ -28,7 +28,8 @@ struct TypedFile {
 };
 
 // Recognises a file by name and size/structure; false = not a typed file (the viewer falls back to hex).
-bool DescribeTypedFile(const std::string &nameCp932, const std::vector<uint8_t> &stored, TypedFile &out);
+// `origin` (archive name shown in the browser, may be empty) breaks ties between titles whose files have the same size (Re-ACT vs Melty Blood .CPF).
+bool DescribeTypedFile(const std::string &nameCp932, const std::vector<uint8_t> &stored, TypedFile &out, const std::string &origin = std::string());
 void TypedFileStored(const TypedFile &f, std::vector<uint8_t> &stored);
 
 // Reflection record editor (han2_inspector.cpp): returns true when a byte changed.

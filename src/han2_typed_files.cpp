@@ -1,6 +1,8 @@
 #include "han2_typed_files.h"
 #include "han2/mbr_formats.h"
 #include "han2/mbr_types_gen.h"
+#include "han2/mb_formats.h"
+#include "han2/mb_types_gen.h"
 #include "misc.h"
 #include <cstring>
 
@@ -75,12 +77,66 @@ bool DescribeMbr(const std::string &name, const std::vector<uint8_t> &d, TypedFi
 	return false;
 }
 
+bool DescribeMb(const std::string &name, const std::vector<uint8_t> &d, TypedFile &f)
+{
+	const std::string e = ExtOf(name); std::string err;
+	if ((e == ".CT" || e == ".CT2") && d.size() == sizeof(MbCtFile)) {
+		f.kind = "Melty Blood command table (<CHAR>_C.CT)"; f.work = d;
+		Add(f, "header", 0, 4, 1, kCountField, 1);
+		Add(f, "commands (100 x 44)", 4, sizeof(MbCtCommand), 100, kMbCtCommandFields, (int)(sizeof(kMbCtCommandFields) / sizeof(kMbCtCommandFields[0])),
+		    [](const uint8_t *r, size_t i) { char b[96]; if (r[0] == 0xFF) snprintf(b, sizeof b, "%3zu  (unused)", i); else { std::string seq; for (int k = 0; k < 32 && r[2 + k] != 0xFF; k++) { uint8_t c = r[2 + k]; seq += c < 10 ? char('0' + c) : (char)c; } snprintf(b, sizeof b, "%3zu  pattern %u  %s", i, r[0x22], seq.c_str()); } return std::string(b); });
+		Add(f, "parameters", sizeof(MbCtFile) - sizeof(MbCtHeader), sizeof(MbCtHeader), 1, kMbCtHeaderFields, (int)(sizeof(kMbCtHeaderFields) / sizeof(kMbCtHeaderFields[0])));
+		Add(f, "double-tap entries (6, 2, 4, 8)", sizeof(MbCtFile) - sizeof(MbCtHeader) + 0x1C, sizeof(MbCtEvadeEntry), 4, kMbCtEvadeEntryFields, (int)(sizeof(kMbCtEvadeEntryFields) / sizeof(kMbCtEvadeEntryFields[0])));
+		return true;
+	}
+	if (e == ".CT" && BaseOf(name) == "CHARSEL.CT") {
+		han2::mb::CharSelFile c; if (!han2::mb::ParseCharSel(d.data(), d.size(), c, &err)) return false;
+		f.kind = "Melty Blood character select table (enciphered)";
+		std::vector<uint8_t> plain(d.begin(), d.end()); memcpy(plain.data() + 4, c.entries.data(), c.entries.size() * sizeof(MbCharSelEntry)); f.work = plain;
+		Add(f, "header", 0, 4, 1, kCountField, 1);
+		Add(f, "characters", 4, sizeof(MbCharSelEntry), c.count, kMbCharSelEntryFields, (int)(sizeof(kMbCharSelEntryFields) / sizeof(kMbCharSelEntryFields[0])),
+		    [](const uint8_t *r, size_t i) { char b[96]; snprintf(b, sizeof b, "%2zu  %.30s", i, (const char *)r); return std::string(b); });
+		f.toStored = [](const std::vector<uint8_t> &w, std::vector<uint8_t> &out) {
+			han2::mb::CharSelFile c; c.count = *(const uint32_t *)w.data(); c.entries.resize(c.count); memcpy(c.entries.data(), w.data() + 4, (size_t)c.count * sizeof(MbCharSelEntry)); han2::mb::SerializeCharSel(c, out); };
+		return true;
+	}
+	if (e == ".WMT" && d.size() >= 4 && d.size() == 4 + 156 * (size_t)*(const uint32_t *)d.data()) {
+		const uint32_t n = *(const uint32_t *)d.data();
+		f.kind = "Melty Blood win messages (.WMT)"; f.work = d;
+		Add(f, "header", 0, 4, 1, kCountField, 1);
+		Add(f, "records", 4, sizeof(MbWmtRecord), n, kMbWmtRecordFields, (int)(sizeof(kMbWmtRecordFields) / sizeof(kMbWmtRecordFields[0])),
+		    [](const uint8_t *r, size_t i) { char b[64]; snprintf(b, sizeof b, "%2zu  vs %s", i, r[0] == 0xFF ? "any" : std::to_string(r[0]).c_str()); return std::string(b); });
+		return true;
+	}
+	if (e == ".CPF" && d.size() == sizeof(MbCpfFile)) {
+		f.kind = "Melty Blood CPU script (.CPF)"; f.work = d;
+		Add(f, "guard percent", 0, 4, 1, kBaseSkillField, 1);
+		for (int i = 0; i < 100; i++) {
+			char t[64], g[32]; snprintf(g, sizeof g, "script %d", i);
+			const size_t base = 188 + (size_t)i * sizeof(MbCpfScript);
+			snprintf(t, sizeof t, "script %d: condition", i);
+			Add(f, t, base + 40 * sizeof(MbCpfStep), sizeof(MbCpfCondition), 1, kMbCpfConditionFields, (int)(sizeof(kMbCpfConditionFields) / sizeof(kMbCpfConditionFields[0])), nullptr, g);
+			snprintf(t, sizeof t, "script %d: steps", i);
+			Add(f, t, base, sizeof(MbCpfStep), 40, kMbCpfStepFields, (int)(sizeof(kMbCpfStepFields) / sizeof(kMbCpfStepFields[0])),
+			    [](const uint8_t *r, size_t k) { char b[96]; uint16_t code, dur; uint32_t fl; memcpy(&code, r, 2); memcpy(&dur, r + 2, 2); memcpy(&fl, r + 0x18, 4); snprintf(b, sizeof b, "step %2zu  input %u  dur %u%s", k, code, dur, (fl & 3) ? "  (end)" : ""); return std::string(b); }, g);
+		}
+		return true;
+	}
+	return false;
+}
+
 } // namespace
 
-bool DescribeTypedFile(const std::string &name, const std::vector<uint8_t> &stored, TypedFile &out)
+bool DescribeTypedFile(const std::string &name, const std::vector<uint8_t> &stored, TypedFile &out, const std::string &origin)
 {
 	out = TypedFile();
-	if (DescribeMbr(name, stored, out)) return true;
+	const bool mbFirst = origin.find("data0") != std::string::npos;   // MeltyBlood\data00..03.p
+	for (int pass = 0; pass < 2; pass++) {
+		const bool mb = (pass == 0) == mbFirst;
+		out = TypedFile();
+		if (mb ? DescribeMb(name, stored, out) : DescribeMbr(name, stored, out)) return true;
+	}
+	out = TypedFile();
 	return false;
 }
 

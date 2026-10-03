@@ -85,17 +85,17 @@ Magic = the first 4 plain bytes after the archive cipher; several magics per ext
 | MBAC (Act Cadenza PC) | .PAL | 24 | 1,572,960 | edit | pal_file.cpp (magic 40000000) |
 | MBAC (Act Cadenza PC) | .TXT | 180 | 422,691 | edit | character descriptor / command .txt (M4: byte rt) (magic 0d0a2032 0d0a3235 0d0a4250 ...) |
 | MBAC (Act Cadenza PC) | .WMT | 28 | 120,874 | none | M4 (magic 01000000 07000000 08000000 ...) |
-| Melty Blood 2002 | (none) | 4 | 24,652,088 | none | (magic d993fe3d) |
-| Melty Blood 2002 | .CPF | 20 | 3,867,760 | none | M4 (magic 00000000 1e000000 22000000 ...) |
-| Melty Blood 2002 | .CT | 20 | 87,012 | none | M4 (magic 01000000 03000000 07000000 ...) |
-| Melty Blood 2002 | .CT2 | 1 | 4,232 | none | (magic 10000000) |
-| Melty Blood 2002 | .DAT | 18 | 134,813,472 | none | 備前長船 triple-XOR character, 116-B frames (M3) (magic d993fe3d) |
-| Melty Blood 2002 | .EX3 | 500 | 162,523,386 | none | LLIF compressed BMP: no reader (M4) (magic 4c4c4946) |
-| Melty Blood 2002 | .FNT | 2 | 1,628,516 | none | M4 (magic 2c1e0800 2c1e1200) |
-| Melty Blood 2002 | .MP3 | 30 | 117,455,482 | read | (magic fffa7070 fffa9240 fffa9260 ...) |
-| Melty Blood 2002 | .TXT | 113 | 560,769 | edit | (magic 0d0a0d0a 0d0a2f2f 0d0a4546 ...) |
-| Melty Blood 2002 | .WAV | 1054 | 116,478,659 | read | (magic 52494646) |
-| Melty Blood 2002 | .WMT | 18 | 21,590 | none | M4 (magic 01000000 02000000 03000000 ...) |
+| Melty Blood 2002 | (none) | 4 | 24,652,088 | byte-exact round trip | extensionless archive entries: MB-format characters / data blobs handled by fbchartool mb (magic d993fe3d) |
+| Melty Blood 2002 | .CPF | 20 | 3,867,760 | byte-exact round trip | fbchartool: CPU script typed (mb.md) (magic 00000000 1e000000 22000000 ...) |
+| Melty Blood 2002 | .CT | 20 | 87,012 | byte-exact round trip | fbchartool: _C.CT / older CT variants / CHARSEL.CT typed (docs/formats/mb.md) (magic 01000000 03000000 07000000 ...) |
+| Melty Blood 2002 | .CT2 | 1 | 4,232 | byte-exact round trip | older command table variant, typed (magic 10000000) |
+| Melty Blood 2002 | .DAT | 18 | 134,813,472 | in-game proven | GOF1-family container + embedded MB strip sprite bank (view, per-strip import); fbchartool mb; in-game: all characters layer shift +40 visible (docs/formats/evidence/mb_ingame_*.png; +160 crashes mb.exe) (magic d993fe3d) |
+| Melty Blood 2002 | .EX3 | 500 | 162,523,386 | byte-exact round trip | fbchartool mb: LLIF blocks + bit-exact Gage re-encode (magic 4c4c4946) |
+| Melty Blood 2002 | .FNT | 2 | 1,628,516 | byte-exact round trip | fbchartool: bitmap font (magic 2c1e0800 2c1e1200) |
+| Melty Blood 2002 | .MP3 | 30 | 117,455,482 | byte-exact round trip | fbchartool: frames validated (magic fffa7070 fffa9240 fffa9260 ...) |
+| Melty Blood 2002 | .TXT | 113 | 560,769 | byte-exact round trip | fbchartool: Shift-JIS text (incl. VECTOR.TXT) (magic 0d0a0d0a 0d0a2f2f 0d0a4546 ...) |
+| Melty Blood 2002 | .WAV | 1054 | 116,478,659 | byte-exact round trip | fbchartool: RIFF chunks (magic 52494646) |
+| Melty Blood 2002 | .WMT | 18 | 21,590 | byte-exact round trip | fbchartool: win messages typed (mb.md) (magic 01000000 02000000 03000000 ...) |
 | PB2K1 | .B | 22 | 202,288 | none | M4 (magic 4f626a65) |
 | PB2K1 | .BMP | 20 | 7,823,792 | none | M4 (magic 424d38b4 424d8801) |
 | PB2K1 | .CCT | 13 | 55,016 | none | M4 (magic 14000000 16000000 19000000 ...) |
@@ -141,5 +141,5 @@ Magic = the first 4 plain bytes after the archive cipher; several magics per ext
 
 ## 3. Cell summary
 
-none: 40, read: 15, edit: 7, byte-exact round trip: 45, in-game proven: 1 (title x extension cells in section 2)
+none: 32, read: 13, edit: 6, byte-exact round trip: 55, in-game proven: 2 (title x extension cells in section 2)
 

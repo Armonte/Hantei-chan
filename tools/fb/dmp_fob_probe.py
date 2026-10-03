@@ -77,7 +77,37 @@ def serialize(funcs, code):
     for nm, pc in funcs: o += nm + struct.pack('<I', pc)
     return o + struct.pack('<I', len(code)) + code
 
+def opnames():
+    h = os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', '..', 'docs', 'formats', 'ida', 'dmp_types.h')
+    d = {}
+    try:
+        for m in re.finditer(r'DMPOP_(\w+) = 0x([0-9A-Fa-f]+)', open(h).read()): d[int(m.group(2), 16)] = m.group(1)
+    except OSError: pass
+    return d
+
+def disasm(code, funcs, only=None):
+    names = opnames(); seen, _ = descend(code, funcs)
+    fpc = {pc: nm.split(b'\0')[0].decode('latin1') for nm, pc in funcs}
+    out = []
+    for pc in sorted(seen):
+        if only is not None and pc not in only: continue
+        op = u16(code, pc); n = seen[pc]; f = FORMS[op]
+        if pc in fpc: out.append('%s:' % fpc[pc])
+        a = ''
+        if f == 'data': a = 'n=%d %s' % (u32(code, pc+2), code[pc+6:pc+n].hex())
+        elif f == 'imm': a = '%#x' % u32(code, pc+2)
+        elif f == 'fl': a = 'flags=%#x' % u16(code, pc+2)
+        elif f == 'flk': a = 'flags=%#x kind=%#x' % (u16(code, pc+2), u16(code, pc+4))
+        elif f == 'jcc': a = 'flags=%#x kind=%#x ->%#x' % (u16(code, pc+2), u16(code, pc+4), u32(code, pc+6))
+        elif f == 'sw': a = 'flags=%#x table=%#x' % (u16(code, pc+2), u32(code, pc+4))
+        out.append('  %05x  %-26s %s' % (pc, names.get(op, '%#x' % op), a))
+    return '\n'.join(out)
+
 def main(argv):
+    if argv and argv[0] == '--dis':
+        b = open(argv[1], 'rb').read(); funcs, code, tail = parse(b)
+        print(disasm(code, funcs)); return 0
+
     files = {}
     if argv and argv[0].lower().endswith('.pac'):
         out = subprocess.run(['/home/teo/dev/hantei-chan-wt/fb-formats/build/fbarctool.exe','ls',

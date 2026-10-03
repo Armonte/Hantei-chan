@@ -66,6 +66,8 @@ add_executable(${EXE}
 	src/han2_inspector.cpp
 	src/han2_typed_files.cpp
 	src/han2/mbr_formats.cpp
+	src/han2/mb_formats.cpp
+	src/han2/mb_cg.cpp
 	src/startup_args.cpp
 	src/framestate.cpp
 	src/copy_data.cpp
