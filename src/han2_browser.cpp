@@ -2,6 +2,7 @@
 #include "i18n.h"
 #include "han2/pac_archive.h"
 #include "han2/gof1_archive.h"
+#include "fbarc/fb_archive.h"
 #include "han2_pac_window.h"
 #include "filedialog.h"
 #include "png_writer.h"
@@ -49,7 +50,27 @@ void ScanFolder(const std::string &dir, FolderNode &node, int depth)
 	std::sort(node.files.begin(), node.files.end());
 	std::sort(node.dirs.begin(), node.dirs.end(), [](const FolderNode &a, const FolderNode &b) { return a.name < b.name; });
 }
-struct Mounted { std::shared_ptr<pac::Archive> a; std::shared_ptr<gof1::Archive> g; std::string shortName; };
+struct Mounted { std::shared_ptr<pac::Archive> a; std::shared_ptr<gof1::Archive> g; std::shared_ptr<fbarc::Archive> f; std::string shortName; };
+bool ReadMounted(const Mounted &m, size_t i, std::vector<uint8_t> &out, std::string *err)
+{
+	if (m.f) return m.f->read(i, out, err);
+	if (m.g) return gof1::ReadEntry(*m.g, i, out, err);
+	return pac::ReadEntry(*m.a, i, out, err);
+}
+// Entries of a generalized (PKFileInfo / FilePacHeaderA) archive are shown through a pac::Entry shadow list, like GOF1's.
+std::string TempExtract(const Mounted &m, size_t i)
+{
+	std::vector<uint8_t> b; std::string err;
+	if (!ReadMounted(m, i, b, &err)) return {};
+	std::error_code ec; auto dir = std::filesystem::temp_directory_path(ec) / "hantei_archive" / std::filesystem::u8path(m.shortName);
+	std::filesystem::create_directories(dir, ec);
+	auto out = dir / std::filesystem::u8path(m.f ? fbarc::NameToUtf8(m.f->relativePath(i)) : m.a->entries[i].name);
+	std::filesystem::create_directories(out.parent_path(), ec);
+	std::ofstream f(out, std::ios::binary);
+	if (!b.empty()) f.write((const char *)b.data(), (std::streamsize)b.size());
+	return f ? out.u8string() : std::string();
+}
+
 std::vector<Mounted> g_mounted;
 int g_sel = 0;
 char g_filter[64] = "";
@@ -131,7 +152,16 @@ std::string AddArchive(const std::string &path)
 	std::string err;
 	if (!pac::Open(path, *a, &err)) {
 		auto g = std::make_shared<gof1::Archive>(); std::string e2;
-		if (!gof1::Open(path, *g, &e2)) return path + ": " + err;
+		if (!gof1::Open(path, *g, &e2)) {
+			std::string e3; auto f = fbarc::Open(path, &e3);
+			if (!f) return path + ": " + err;
+			for (auto &m : g_mounted) if (m.f && m.f->path() == path) return {};
+			Mounted m; m.f = std::move(f); m.a = std::make_shared<pac::Archive>(); m.a->path = path;
+			for (size_t i = 0; i < m.f->entries().size(); i++) { pac::Entry pe; pe.name = fbarc::NameToUtf8(m.f->relativePath(i)); pe.size = (uint32_t)m.f->entries()[i].size; pe.offset = (uint32_t)m.f->entries()[i].offset; m.a->entries.push_back(pe); }
+			m.shortName = std::filesystem::u8path(path).filename().string() + " (" + fbarc::KindName(m.f->kind()) + ")";
+			g_mounted.push_back(m); g_sel = (int)g_mounted.size() - 1; showBrowser = true;
+			return {};
+		}
 		for (auto &m : g_mounted) if (m.g && m.g->path == path) return {};
 		Mounted m; m.g = g; m.a = std::make_shared<pac::Archive>(); m.a->path = path;
 		for (auto &e : g->entries) { pac::Entry pe; pe.name = e.name; pe.size = e.size; pe.offset = e.offset; m.a->entries.push_back(pe); }
@@ -153,7 +183,7 @@ bool DrawBrowser(OpenRequest &req, std::string &message)
 	bool open = false;
 	if (!showBrowser) return false;
 	ImGui::SetNextWindowSize(ImVec2(760, 520), ImGuiCond_FirstUseEver);
-	if (!ImGui::Begin(LBL("RBO / GOF2 archives"), &showBrowser)) { ImGui::End(); return false; }
+	if (!ImGui::Begin(LBL("French Bread archives"), &showBrowser)) { ImGui::End(); return false; }
 
 	if (ImGui::Button(LBL("Add archive..."))) {
 		std::string path = FileDialog(fileType::HAN2, false);
@@ -207,6 +237,45 @@ bool DrawBrowser(OpenRequest &req, std::string &message)
 	ImGui::BeginChild("entries");
 	ImGui::SetNextItemWidth(200);
 	ImGui::InputText(LBL("filter"), g_filter, sizeof(g_filter));
+	if (g_sel >= 0 && g_sel < (int)g_mounted.size() && g_mounted[g_sel].f) {
+		fbarc::Archive &fa = *g_mounted[g_sel].f;
+		ImGui::SameLine(); ImGui::TextDisabled("%s", fa.describe().c_str());
+		if (ImGui::SmallButton(LBL("Extract all..."))) {
+			std::string dir = BrowseForFolderUtf8("");
+			if (!dir.empty()) {
+				int ok = 0, bad = 0;
+				for (size_t i = 0; i < fa.entries().size(); i++) {
+					std::vector<uint8_t> b; std::string e;
+					auto out = std::filesystem::u8path(dir) / std::filesystem::u8path(fbarc::NameToUtf8(fa.relativePath(i))); std::error_code ec;
+					std::filesystem::create_directories(out.parent_path(), ec);
+					std::ofstream f(out, std::ios::binary);
+					if (fa.read(i, b, &e) && f && (b.empty() || f.write((const char *)b.data(), (std::streamsize)b.size()))) ok++; else bad++;
+				}
+				char sb[256]; snprintf(sb, sizeof sb, TXT("extracted %d files (%d failed)"), ok, bad); g_extractStatus = sb;
+			}
+		}
+		ImGui::SameLine();
+		if (ImGui::SmallButton(LBL("Rebuild with a folder of replacements..."))) {
+			std::string dir = BrowseForFolderUtf8("");
+			if (!dir.empty()) {
+				std::string out = FileDialog(-1, true, "rebuilt.p");
+				if (!out.empty()) {
+					fbarc::Edit ed; int repl = 0, added = 0; std::error_code ec;
+					for (auto &it : std::filesystem::recursive_directory_iterator(std::filesystem::u8path(dir), ec)) {
+						if (!it.is_regular_file(ec)) continue;
+						std::string rel = std::filesystem::relative(it.path(), std::filesystem::u8path(dir), ec).generic_u8string();
+						std::ifstream f(it.path(), std::ios::binary);
+						std::vector<uint8_t> d((std::istreambuf_iterator<char>(f)), std::istreambuf_iterator<char>());
+						int idx = fa.find(fbarc::NameFromUtf8(rel));
+						if (idx >= 0) { ed.replace[(size_t)idx] = std::move(d); repl++; } else { ed.add.emplace_back(fbarc::NameFromUtf8(it.path().filename().u8string()), std::move(d)); added++; }
+					}
+					std::string e;
+					if (fa.rebuild(out, ed, &e)) { char sb[512]; snprintf(sb, sizeof sb, TXT("wrote %s (%d replaced, %d added)"), out.c_str(), repl, added); g_extractStatus = sb; }
+					else g_extractStatus = e;
+				}
+			}
+		}
+	}
 	if (!message.empty()) ImGui::TextColored(ImVec4(1, .5f, .3f, 1), "%s", message.c_str());
 	if (!g_extractStatus.empty()) ImGui::TextDisabled("%s", g_extractStatus.c_str());
 	if (g_sel >= 0 && g_sel < (int)g_mounted.size()) {
@@ -225,7 +294,11 @@ bool DrawBrowser(OpenRequest &req, std::string &message)
 				const bool isChar = EndsWith(e.name, ".dat") || EndsWith(e.name, ".dt2");
 				ImGui::Selectable(e.name.c_str(), false, ImGuiSelectableFlags_SpanAllColumns | ImGuiSelectableFlags_AllowDoubleClick);
 				if (isChar && ImGui::IsItemHovered() && ImGui::IsMouseDoubleClicked(0)) {
-					if (g_mounted[g_sel].g) { req.stem = "\x01gof1"; req.gof1Archive = g_mounted[g_sel].g->path; req.gof1Entry = e.name; req.origin = g_mounted[g_sel].shortName; open = true; }
+					if (g_mounted[g_sel].f) {
+						std::string tmp = TempExtract(g_mounted[g_sel], i);
+						if (tmp.empty()) message = TXT("could not extract the entry"); else { req.stem = "\x01open"; req.read = nullptr; req.origin = tmp; open = true; }
+					}
+					else if (g_mounted[g_sel].g) { req.stem = "\x01gof1"; req.gof1Archive = g_mounted[g_sel].g->path; req.gof1Entry = e.name; req.origin = g_mounted[g_sel].shortName; open = true; }
 					else {
 					std::string stem = e.name.substr(0, e.name.size() - 4);
 					std::vector<std::shared_ptr<pac::Archive>> order;
@@ -238,7 +311,7 @@ bool DrawBrowser(OpenRequest &req, std::string &message)
 				}
 				if (!isChar && ImGui::IsItemHovered() && ImGui::IsMouseDoubleClicked(0)) {
 					std::vector<uint8_t> bytes; std::string rerr;
-					if (g_mounted[g_sel].g ? gof1::ReadEntry(*g_mounted[g_sel].g, i, bytes, &rerr) : pac::ReadEntry(a, i, bytes, &rerr)) OpenFileViewer(e.name, std::move(bytes), g_mounted[g_sel].shortName); else message = rerr;
+					if (ReadMounted(g_mounted[g_sel], i, bytes, &rerr)) OpenFileViewer(e.name, std::move(bytes), g_mounted[g_sel].shortName); else message = rerr;
 				}
 				ImGui::TableSetColumnIndex(1); ImGui::Text("%u", e.size);
 				ImGui::TableSetColumnIndex(2);
@@ -247,7 +320,7 @@ bool DrawBrowser(OpenRequest &req, std::string &message)
 					std::string out = FileDialog(-1, true, defName);
 					if (!out.empty()) {
 						std::vector<uint8_t> b; std::string err;
-						if (g_mounted[g_sel].g ? gof1::ReadEntry(*g_mounted[g_sel].g, i, b, &err) : pac::ReadEntry(a, i, b, &err)) {
+						if (ReadMounted(g_mounted[g_sel], i, b, &err)) {
 							std::ofstream f(std::filesystem::u8path(out), std::ios::binary);
 							if (f && (b.empty() || f.write((const char *)b.data(), (std::streamsize)b.size()))) { char sb[1024]; snprintf(sb, sizeof(sb), TXT("extracted %s to %s"), e.name.c_str(), out.c_str()); g_extractStatus = sb; }
 							else { char sb[1024]; snprintf(sb, sizeof(sb), TXT("could not write %s"), out.c_str()); g_extractStatus = sb; }

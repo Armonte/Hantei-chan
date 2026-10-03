@@ -16,7 +16,7 @@
 {"Load MBAC .DAT (Act Cadenza)...", "MBAC .DAT (Act Cadenza) を読み込み..."},
 {"Not a Hantei4 (MBAC) or HA6 file:", "Hantei4 (MBAC) または HA6 ファイルではありません:"},
 {"Load RBO / GOF2 character (.DT2/.DAT)...", "RBO / GOF2 キャラクター (.DT2/.DAT) を読み込み..."},
-{"RBO / GOF2 archives (PAC)...", "RBO / GOF2 アーカイブ (PAC)..."},
+{"French Bread archives (PAC, .p, .dat)...", "フレンチブレッド アーカイブ (PAC, .p, .dat)..."},
 {"Animation player (game rules, onion skin)...", "アニメーションプレイヤー (ゲームルール、オニオンスキン)..."},
 {"Changes against the loaded RBO / GOF2 file (diff)...", "読み込んだ RBO / GOF2 ファイルとの変更点 (差分)..."},
 {"CG sprites of this RBO / GOF2 character (export / import)...", "この RBO / GOF2 キャラクターの CG スプライト (書き出し / 読み込み)..."},

@@ -41,7 +41,7 @@ Help:   About
 | File > Export MBAC as HA6... | File > Export > same |
 | File > Export RBO / GOF2 sprites, poses and animations | File > Export > same |
 | File > Exit | File > Exit |
-| File > RBO / GOF2 archives (PAC)... | Tools > RBO / GOF2 archives (PAC)... |
+| File > French Bread archives (PAC, .p, .dat)... | Tools > French Bread archives (PAC, .p, .dat)... |
 | File > Animation player... | Tools > same |
 | File > Changes against the loaded RBO / GOF2 file (diff)... | Tools > same |
 | File > CG sprites of this RBO / GOF2 character... | Tools > same |
