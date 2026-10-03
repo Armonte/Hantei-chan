@@ -127,7 +127,7 @@ it as **n/a** (it belongs to another section). `n/a` is listed in the section li
 non-zero `skipped`, or a non-zero exit code. Games are read in place (nothing is copied).
 
 Classification (`Classify`, han2tool.cpp), by bytes: `HAN2RBO ` magic = HAN2RBO container; PAT magic 0x01234567 + version 3/4 (2 with the GOF1 size test) =
-bare PAT; `IsImg` = IMG; anything else = opaque. Owners: HAN2RBO -> container, model, pat, cg, animtest; bare PAT -> pat; IMG -> img (also `.CG` entries of
+bare PAT; `IsImg` = IMG; anything else = opaque. Further kinds (see the end of this section): FOB script and replay and bitmap font (extension + section-level parse), CHP bank (BMP Cutter magic), RIFF WAVE, MPEG audio, BMP, text. Owners: HAN2RBO -> container, model, pat, cg, animtest; bare PAT -> pat; IMG -> img (also `.CG` entries of
 ETC.PAC, which are IMG files); opaque -> opaque. An entry whose extension names a structured format (`.DAT .DT2 .PAT .IMG`) but whose bytes are not it is a
 FAIL, unless it is in the known-opaque table (one file, below).
 
@@ -141,8 +141,14 @@ Totals of the last run (RBO + GOF2 + GOF1 shipped files, 7,971 non-container ent
 | `patrt` | PAT block -> Parts -> PAT block, and the file with the rebuilt block put back | 478 (7 .DAT + 199 .DT2 empty sections included) | 0 | 0 | 7,907 |
 | `imgrt` | IMG parse -> serialize, all four pixel formats | 928 (924 format 2, 4 format 3) | 0 | 0 | 7,457 |
 | `cgrt` | bank load is a no-op; every image re-imported; bank byte-identical | 414 files (334 empty CG areas included), 5,494 images | 0 | 0 | 7,971 |
-| `opaquert` | raw passthrough of entries with no reader | 6,979 | 0 | 0 | 1,406 |
-| `gof1rt` | GOF1 archive rebuilt from plain entries + 51 character `.DAT` | 55 | 0 | 0 | 442 (opaque, proven by the archive rebuild) |
+| `fobrt` | .FOB script bytecode: file header + decoded instructions (class, sub, typed operands) + raw spans -> serialize | 803 (527 RBO + 276 GOF2) | 0 | 0 | - |
+| `chprt` | GOF2 `.CHP` sprite banks: load is a no-op, every image re-imported, bank byte-identical (same checks as `cgrt`) | 23 (1,315 images) | 0 | 0 | - |
+| `reprt` | replays: decipher, verify checksum, per-tick inputs -> re-encipher, recompute checksum | 33 (6 v0, 6 v1, 7 v3, 14 v10) | 0 | 0 | - |
+| `fntrt` | bitmap fonts: header, index, glyph bitmaps, half-width section | 12 (RBO 8 + GOF2 4) | 0 | 0 | - |
+| `audiort` | RIFF WAVE chunk round trip (6,101 files); MPEG frames validated | 6,101 | 0 | 0 | - |
+| `miscrt` | `.BMP` header/palette/pixels, Shift-JIS text line structure | 6 | 0 | 0 | - |
+| `opaquert` | the one stale file with no reader (raw passthrough) | 1 | 0 | 0 | - |
+| `gof1rt` | 4 archive rebuilds + 3 nested archives (index re-encoded, entry cipher inverted) + members: 71 character `.DAT`, 232 `.EX3`, 89 `.WAV`, 17 `.MP3`, 14 text, 8 `.BMP`, 8 `.CT`, 8 `.WMT`, 1 `.FNT` | 455 | 0 | 0 | 59 members with no reader (36 `.B`, 4 `.CPF`, 1 `CHARSEL.CT`, 17 binary `.TXT`) + 1 overlap decoy entry |
 
 `animtest` is a BEHAVIOUR check, not a byte round trip: the live stepper (`han2_anim.cpp`) must reproduce `SimulateFlow`'s tick count. Last run:
 5,335 patterns agree, 0 differ. 10,884 patterns are not comparable because their flow does not end by itself: 3,003 reach an ani flag that branches on game
@@ -172,3 +178,37 @@ Bugs this strictness exposed (all fixed, all with a test above):
 * The old suite also never covered ETC/BG/BGM/SE PACs, `.DT2`/bare-PAT in patrt, or GOF1; all are in now.
 
 Known-opaque table (han2tool.cpp `kKnownOpaque`): `DATA01.PAC::DUSTNESS.DAT` only.
+
+### Formats that used to be "opaque" and now have a structured round trip
+
+A raw passthrough proves nothing about our readers, so every format we understand got a parser and a writer that rebuilds each byte from fields
+(`src/han2/fob_file`, `replay_file`, `fnt_file`, `misc_formats`; classification: magic where there is one, extension otherwise, and the owning section FAILS
+when the bytes do not parse).
+
+* **.FOB** (`docs/formats/fob_vm.md`): `han2::fob::File` = named entry points, index tables, then the code block as decoded instructions (`Insn`: class, sub,
+  flags/kind/imm/data fields) and raw spans. Decoding is the same recursive descent as `tools/rbo/fobdis.py` (follows fall-through, JCC/JMP/CALL targets,
+  SWITCH tables; stops at END/HALT/ExitSelf/RET*): **1,643,368 instructions over the 527 RBO files, identical to fobdis.py, 0 decode errors, 0 overlaps**;
+  the 276 GOF2 `.FOB` decode with the same tables (0 errors). 1,422,122 further instructions are decoded linearly from code no control flow enters (dead
+  code or code reached by data pointers; flagged `reached = false`), leaving 1,031,876 of 29,308,864 code bytes (3.5 %) as raw spans (data that does not
+  decode: strings, tables, event records). Serialization encodes every instruction from its fields.
+* **.REP / .RP2 / .RP3 / .RP4** (`RboReplayHeader`, rbo_ex3.exe `Replay_WriteFile` 0x438AD0, rbo_ex1 `Replay_WriteFile_v3` 0x437E20, rbo.exe `Replay_WriteFile_v1`
+  0x4339D0; all renamed): `u32 version | header[H] | extra[E] | u32 seed | u32 checksum | u32 tickCount | inputs[216000 ticks x 3 players]`.
+  v1 (.REP) H = 4324, E = 48, inputs u16; v3 (.RP2) H = 4932, E = 52, inputs u16 (0x13C680 bytes); v10 (.RP3/.RP4) H = 4932, E = 52, inputs u8 (0x9E340).
+  ETC.PAC's six DEMOREPLAY `.REP` are version 0 with the v1 layout (no shipped exe accepts version 0; the checksum proves the layout). Header and extra block
+  are enciphered dword by dword with `x = (1021 - 354542487 x) & 0x7FFFFFFF` (two steps per output, `Rng_NextFromState`) seeded by `seed`; the checksum is the sum of
+  the PLAIN dwords XOR the next stream value. The writer re-enciphers and RECOMPUTES the checksum, so a pass proves the cipher and the sum, not a copy. The
+  typed `RboReplayHeader` prefix (flags, game_mode, stage_id, operator_seat, seat_class[3], rng_stream0_seed, session_clear_bracket) is exposed for v3/v10.
+* **.FNT** (`FontBank_LoadFile` 0x43A500 and `FontFace_*` in rbo_ex3.exe.i64): optional `u16 0, u32 halfOffset` prefix; body `u16 nGlyphs, w, h; u8 pixelsPerByte, bitsPerPixel;
+  u16 index[32512]` (Shift-JIS word - 0x8100, 0xFFFF = none), glyph bitmaps `nGlyphs * h * ceil(w / ppb)`, then (prefix files) `u16 halfW, halfH` and 256 half-width glyphs. GOF1 `font.fnt`
+  (gof.exe 0x42C5E0) has 32,511 index entries (glyph data at +65030). Verified on all 12 RBO + GOF2 fonts and the GOF1 font, no bytes left over.
+* **.CHP**: GOF2 sprite banks are bare BMP Cutter3 banks; they run through the `cgrt` checks (`CgBankCheck`).
+* **GOF1 members** (identified in gof.exe.i64): `.EX3` = `Decompress_EX3_File` 0x423C10: 64-byte `LLIF` header, then blocks `[pair-table groups][u16 BE count][symbols]`
+  (byte-pair coding: group byte c > 127 skips c-127 identity entries then defines one, else defines c+1; entry `p1` = identity when equal to its index, else `p1 p2`); modelled as
+  tokens, 232/232 tile their files exactly (55,392 blocks). `.CT` = `u32 count | Gof1CommandMove[100] | Gof1CtHeader` (typed, docs/formats/gof1.md 12.1).
+  `.WMT` = `u32 count | count x 154` (`CharFile_LoadWmt` 0x40D930). `.BMP`, RIFF `.WAV`, MPEG `.MP3` (frames validated, no re-encoder: standard formats), Shift-JIS `.TXT`/`.H`.
+  Nested archives (`PAC.PAC`, `0083`, `933`): index re-encoded and every entry cipher inverted, members checked recursively. The nested `PAC.PAC` has one decoy entry of size
+  0xFFFFFFFF (-1); every LATER entry's stored offset is one byte too small (found at offset + 1, proven by the cipher decoding to the character magic), which is how the
+  three copies behind it (`コピー ～ AYAKA.DAT`, `DIGIKO.DAT`, `コピー ～ LASTDATA2.DAT`) now load.
+* **No reader, and why** (archive-rebuild proof only): `.B` polygon objects (36; `SysGraphic_LoadFileIntoSlot` 0x42B170 reads `Object`, a u16 texture count and 56-byte name slots, the
+  vertex data behind them is consumed by a renderer path not decoded), `.CPF` (4; 56,048 B, no loader xref), `CHARSEL.CT` (1; 1,348 B grid, not a command table), binary `.TXT`
+  (`_<CHAR>COM.TXT` 59,048 B x 8 + variants and `MULTICOM.TXT`; AI/command tables, layout unresolved), and `DATA01::DUSTNESS.DAT` (above).
