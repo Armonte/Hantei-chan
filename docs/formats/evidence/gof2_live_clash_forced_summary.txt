@@ -1,0 +1,36 @@
+# per-trial summary of the forced matrix (cf2/cf3/cf4 runs; the rows after it are the raw logs). latch is always on the ATTACKER side. Written by an inline parser from the raw logs below.
+cf2 trial 1 attacker=side0 pat16 vs defender pat15 lag=0 dx=258 hitstops=n/a first nonzero latch (s0c16,s0c19,s1c16,s1c19)=None
+cf2 trial 2 attacker=side1 pat16 vs defender pat15 lag=0 dx=120 hitstops=n/a first nonzero latch (s0c16,s0c19,s1c16,s1c19)=('0', '0', '1', '0')
+cf2 trial 3 attacker=side0 pat19 vs defender pat18 lag=0 dx=141 hitstops=n/a first nonzero latch (s0c16,s0c19,s1c16,s1c19)=None
+cf2 trial 4 attacker=side1 pat19 vs defender pat18 lag=0 dx=157 hitstops=n/a first nonzero latch (s0c16,s0c19,s1c16,s1c19)=None
+cf2 trial 5 attacker=side0 pat16 vs defender pat0 lag=0 dx=169 hitstops=n/a first nonzero latch (s0c16,s0c19,s1c16,s1c19)=None
+cf2 trial 6 attacker=side1 pat16 vs defender pat0 lag=0 dx=151 hitstops=n/a first nonzero latch (s0c16,s0c19,s1c16,s1c19)=None
+cf2 trial 7 attacker=side0 pat19 vs defender pat0 lag=0 dx=107 hitstops=n/a first nonzero latch (s0c16,s0c19,s1c16,s1c19)=None
+cf3 trial 1 attacker=side0 pat19 vs defender pat18 lag=0 dx=103 hitstops=[30, 30] first nonzero latch (s0c16,s0c19,s1c16,s1c19)=None
+cf3 trial 2 attacker=side1 pat19 vs defender pat18 lag=0 dx=101 hitstops=[0, 0] first nonzero latch (s0c16,s0c19,s1c16,s1c19)=None
+cf3 trial 3 attacker=side0 pat16 vs defender pat0 lag=0 dx=99 hitstops=[30, 30] first nonzero latch (s0c16,s0c19,s1c16,s1c19)=None
+cf4 trial 1 attacker=side0 pat19 vs defender pat18 lag=0 dx=360 hitstops=[0, 0] first nonzero latch (s0c16,s0c19,s1c16,s1c19)=None
+cf4 trial 2 attacker=side1 pat19 vs defender pat18 lag=0 dx=195 hitstops=[19, 3] first nonzero latch (s0c16,s0c19,s1c16,s1c19)=None
+cf4 trial 3 attacker=side0 pat16 vs defender pat0 lag=0 dx=219 hitstops=[30, 30] first nonzero latch (s0c16,s0c19,s1c16,s1c19)=None
+cf4 trial 4 attacker=side1 pat16 vs defender pat0 lag=0 dx=213 hitstops=[24, 24] first nonzero latch (s0c16,s0c19,s1c16,s1c19)=None
+cf4 trial 5 attacker=side0 pat19 vs defender pat0 lag=0 dx=100 hitstops=[30, 38] first nonzero latch (s0c16,s0c19,s1c16,s1c19)=None
+cf4 trial 6 attacker=side1 pat19 vs defender pat0 lag=0 dx=195 hitstops=[117, 40] first nonzero latch (s0c16,s0c19,s1c16,s1c19)=None
+cf4 trial 7 attacker=side0 pat16 vs defender pat16 lag=0 dx=621 hitstops=[0, 0] first nonzero latch (s0c16,s0c19,s1c16,s1c19)=None
+cf4 trial 8 attacker=side1 pat16 vs defender pat16 lag=0 dx=360 hitstops=[40, 107] first nonzero latch (s0c16,s0c19,s1c16,s1c19)=None
+cf4 trial 9 attacker=side0 pat19 vs defender pat19 lag=0 dx=96 hitstops=[40, 40] first nonzero latch (s0c16,s0c19,s1c16,s1c19)=None
+cf4 trial 10 attacker=side1 pat19 vs defender pat19 lag=0 dx=196 hitstops=[30, 38] first nonzero latch (s0c16,s0c19,s1c16,s1c19)=None
+cf4 trial 11 attacker=side0 pat16 vs defender pat19 lag=0 dx=139 hitstops=[30, 24] first nonzero latch (s0c16,s0c19,s1c16,s1c19)=None
+cf4 trial 12 attacker=side1 pat16 vs defender pat19 lag=0 dx=382 hitstops=[30, 30] first nonzero latch (s0c16,s0c19,s1c16,s1c19)=None
+cf4 trial 13 attacker=side0 pat19 vs defender pat16 lag=0 dx=213 hitstops=[50, 40] first nonzero latch (s0c16,s0c19,s1c16,s1c19)=None
+cf4 trial 14 attacker=side1 pat19 vs defender pat16 lag=0 dx=161 hitstops=[30, 24] first nonzero latch (s0c16,s0c19,s1c16,s1c19)=None
+cf4 trial 15 attacker=side0 pat16 vs defender pat18 lag=0 dx=96 hitstops=[30, 97] first nonzero latch (s0c16,s0c19,s1c16,s1c19)=None
+cf4 trial 16 attacker=side1 pat16 vs defender pat18 lag=0 dx=325 hitstops=[0, 0] first nonzero latch (s0c16,s0c19,s1c16,s1c19)=None
+cf4 trial 17 attacker=side0 pat19 vs defender pat15 lag=0 dx=173 hitstops=[52, 40] first nonzero latch (s0c16,s0c19,s1c16,s1c19)=('0', '1', '0', '0')
+cf4 trial 18 attacker=side1 pat19 vs defender pat15 lag=0 dx=360 hitstops=[0, 0] first nonzero latch (s0c16,s0c19,s1c16,s1c19)=None
+cf4 trial 19 attacker=side0 pat16 vs defender pat15 lag=0 dx=202 hitstops=[52, 40] first nonzero latch (s0c16,s0c19,s1c16,s1c19)=('1', '0', '0', '0')
+cf4 trial 20 attacker=side1 pat16 vs defender pat15 lag=0 dx=90 hitstops=[40, 52] first nonzero latch (s0c16,s0c19,s1c16,s1c19)=('0', '0', '1', '0')
+cf4 trial 21 attacker=side0 pat19 vs defender pat18 lag=1 dx=117 hitstops=[52, 36] first nonzero latch (s0c16,s0c19,s1c16,s1c19)=('0', '1', '0', '0')
+cf4 trial 22 attacker=side1 pat19 vs defender pat18 lag=1 dx=90 hitstops=[36, 52] first nonzero latch (s0c16,s0c19,s1c16,s1c19)=('0', '0', '0', '1')
+cf4 trial 23 attacker=side0 pat16 vs defender pat0 lag=1 dx=90 hitstops=[24, 97] first nonzero latch (s0c16,s0c19,s1c16,s1c19)=None
+cf4 trial 24 attacker=side1 pat16 vs defender pat0 lag=1 dx=402 hitstops=[16, 16] first nonzero latch (s0c16,s0c19,s1c16,s1c19)=None
+cf4 trial 25 attacker=side0 pat19 vs defender pat0 lag=1 dx=113 hitstops=[24, 24] first nonzero latch (s0c16,s0c19,s1c16,s1c19)=None

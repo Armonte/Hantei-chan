@@ -62,7 +62,7 @@ void PatToolPane::DrawPopUp() {
 
         ImGui::Separator();
 
-        if (ImGui::Button("OK", ImVec2(120, 40))) {
+        if (ImGui::Button(LBL("OK"), ImVec2(120, 40))) {
 
             ImGui::CloseCurrentPopup();
         }

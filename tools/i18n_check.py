@@ -56,19 +56,22 @@ def load_table():
 def keys_of(path):
     s = open(os.path.join(ROOT, path), encoding='utf-8').read()
     ks = {}
-    for m in re.finditer(r'\b(TXT|LBL)\(\s*(' + SEQ + r')\s*\)', s):
+    for m in re.finditer(r'\b(TXT|LBL|BitField|ShowFrameField|ShowPatternField|PickRow|Tooltip)\(\s*(' + SEQ + r')\s*[,)]', s):
         k = joinlits(m.group(2))
         if m.group(1) == 'LBL' and '##' in k: k = k.split('##')[0]
         ks.setdefault(k, s.count('\n', 0, m.start()) + 1)
     return ks
+HELPERS = ('BitField', 'ShowFrameField', 'Tooltip', 'PickRow', 'HelpMarker', 'ShowFrameFieldInt', 'LabeledInt')
 def bare_literals(path):
     out = []
     for n, line in enumerate(open(os.path.join(ROOT, path), encoding='utf-8'), 1):
         if re.match(r'\s*//', line): continue
-        for m in re.finditer(r'\b(?:ImGui|im)::(\w+)\(\s*(' + LIT + r')', line):
+        for m in re.finditer(r'(?:\b(?:ImGui|im)::|\b)(\w+)\(\s*(' + LIT + r')', line):
             lit = unescape(m.group(2)[1:-1]).split('##')[0]
+            if m.group(1) in HELPERS: continue   # helpers translate internally; their literals are keys (keys_of)
+            if not m.group(0).lstrip().startswith(('ImGui::','im::')): continue
             if m.group(1) in ('DockBuilderDockWindow', 'GetID', 'PushID', 'DragDropPayload', 'SetDragDropPayload', 'AcceptDragDropPayload', 'BeginChild', 'BeginTable', 'BeginTabBar', 'BeginPopup', 'OpenPopup', 'BeginPopupContextItem', 'BeginPopupContextWindow', 'InvisibleButton', 'InputScalarN', 'BeginPopupContext'): continue
-            if re.search(r'[A-Za-z]{3}', lit) and not lit.startswith('%'): out.append((n, line.strip()[:110]))
+            if re.search(r'[A-Za-z]{2}', lit) and not lit.startswith('%'): out.append((n, line.strip()[:110]))
     return out
 def main():
     args = [a for a in sys.argv[1:] if not a.startswith('--')]
