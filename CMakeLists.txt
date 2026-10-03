@@ -533,6 +533,18 @@ if(MINGW)
 	target_link_options(ha4tool PRIVATE -static-libgcc -static-libstdc++ -static)
 endif()
 
+# French-Bread RBO / GOF2 archive and character container tool (docs/formats/frenchbread_rbo_gof.md).
+add_library(han2core STATIC
+	src/han2/pac_archive.cpp
+	src/han2/han2_container.cpp
+)
+target_include_directories(han2core PUBLIC "src/han2")
+add_executable(han2tool src/han2/han2tool.cpp)
+target_link_libraries(han2tool PRIVATE han2core)
+if(MINGW)
+	target_link_options(han2tool PRIVATE -static-libgcc -static-libstdc++ -static)
+endif()
+
 # Unit tests for editor infrastructure (no GL / ImGui). Run from WSL with
 # ./build/<name>_test.exe, or ctest.
 add_executable(shortcut_router_test tests/shortcut_router_test.cpp src/shortcut_router.cpp)
