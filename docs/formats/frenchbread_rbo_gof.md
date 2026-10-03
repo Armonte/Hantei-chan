@@ -106,3 +106,14 @@ Saving: a GOF2 character is saved as .DT2 (pattern area); edited parts/sprites a
 (first version of each file kept as .bak).
 Parts-bug found by the GOF2 run: a part record with an out-of-range texture id (DATE/TOKUGAWA _CHR_SELECT) has no model part and is
 now kept verbatim by the PAT writer.
+
+## 6. Sections 4 and 5 (RBO) and unread flag bits: closed
+
+`docs/formats/ida/sections45_ex.md`: no code in rbo.exe or rbo_ex1/2/3.exe reads pattern-area sections 4 and 5 (flow-sensitive scan over
+2989/3212/3271/3284 functions, with sections 0-3, 6, 7 found in exactly their known consumers as control). Data: sections 4/5 hold one record per
+sousai / tobi box slot (frame +0xD0 x 28 == section 4 size and +0xE0 x 20 == section 5 size in 346/346 files), so the frame +0xD0/+0xE0 fields are
+box counts, not indices (this supersedes rbo_scripts_pat.md 1.2). Record layouts (data-named, 4 fields unused with proof):
+`docs/formats/ida/rbo_sections45_types.h`. The writer keeps both sections verbatim and warns when clash/projectile boxes are added or removed.
+Attack record flag bits: the Ex executables read two bits rbo.exe never does: `RboAtFlags76 0x80 SELF_ONLY_TARGET` (Hit_TeamTargetTest returns
+attacker == victim) and `RboAtFlags80 0x2000 UNEVADABLE` (Hit_RollEvade returns 0 before the roll). Nine bits stay read by no executable (their
+only possible reader is FOB condition-script bytecode that receives the AT pointer; not checked).
