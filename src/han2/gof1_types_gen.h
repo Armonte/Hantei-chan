@@ -193,19 +193,19 @@ enum Gof1RunState : uint8_t {
 	G1RUN_FORCED = 2,
 };
 enum Gof1ObjFlagsA : uint16_t {
-	G1OF_A_FOLLOW_PARENT_STATE = 1,
-	G1OF_A_NO_MIRROR = 2,
-	G1OF_A_FOLLOW_PARENT_EDGE_PUSH = 4,
-	G1OF_A_FREEZE_WITH_PARENT_HITSTOP = 8,
+	G1OF_A_END_WITH_PARENT_STATE = 1,
+	G1OF_A_FORCE_FACE_RIGHT = 2,
+	G1OF_A_INHERIT_PARENT_MOTION = 4,
+	G1OF_A_PART_OF_OWNER_ATTACK = 8,
 	G1OF_A_END_ON_PARENT_ACTION_CHANGE = 0x20,
 	G1OF_A_NO_GROUND_LANDING = 0x40,
 };
 enum Gof1ObjFlagsB : uint16_t {
 	G1OF_B_DRAW_SHADOW = 1,
-	G1OF_B_ADVANCE_WITH_PARENT = 2,
-	G1OF_B_END_WHEN_PARENT_AIRBORNE = 4,
+	G1OF_B_STEP_FRAME_WITH_PARENT = 2,
+	G1OF_B_END_WHEN_PARENT_AIR_OR_GRABBED = 4,
 	G1OF_B_HITSTOP_TO_OWNER = 8,
-	G1OF_B_RENDERER_BIT7 = 0x80,
+	G1OF_B_IGNORE_SCREEN_ZOOM = 0x80,
 };
 enum Gof1DecorFlags : uint16_t {
 	G1DECOR_DEPTH_BUMP = 1,
@@ -260,7 +260,7 @@ enum Gof1InputButtonFlags : uint32_t {
 	G1BTN_F_PRESSED = 0x20000,
 };
 enum Gof1CommandMoveClass : uint8_t {
-	G1MOVE_SYSTEM = 0,
+	G1MOVE_NORMAL = 0,
 	G1MOVE_SPECIAL = 1,
 	G1MOVE_SUPER = 2,
 };
@@ -268,10 +268,10 @@ enum Gof1CommandFlags : uint8_t {
 	G1CMD_STANCE_GROUND = 1,
 	G1CMD_STANCE_AIR = 2,
 	G1CMD_STANCE_CROUCH = 4,
-	G1CMD_IGNORE_CANCEL_RULE = 8,
+	G1CMD_NO_CANCEL_ENTRY = 8,
 	G1CMD_CLEAR_HISTORY_ON_ACTION = 0x10,
 	G1CMD_SCRIPT_ONLY = 0x20,
-	G1CMD_NEEDS_GUARD_CANCEL = 0x40,
+	G1CMD_GUARD_CANCEL = 0x40,
 };
 enum Gof1CommandFlags2 : uint8_t {
 	G1CMD2_USE_RING_B = 1,
@@ -361,7 +361,7 @@ struct Gof1StateFrame {
 	int16_t accelY;  // +0x0E T: added to accelY when addVelY (v1+14)
 	Gof1Stance stance;  // +0x10 T: copied to actor+594 (ObjRunActionScript), air physics test in ObjIntegrateMotion 0x4257D0; Actor_DispatchInputByStance 0x4263E0 builds stance | canAct<<4
 	Gof1CancelPermission normalCancel;  // +0x11 T: Actor_RequestLocomotionFromInput 0x425FC0 (2 always, 1 when the actor has hit/been guarded: a1+205 & 0xF)
-	Gof1CancelPermission specialCancel;  // +0x12 E: no reader in gof.exe (RBO/HA4 read it); 0/1/2 in the data (21 frames use 2)
+	Gof1CancelPermission specialCancel;  // +0x12 T: Fighter_TryStartCommandMove 0x426BD0 (cancel table of class 1/2 command moves; 2 = always, 1 = after hit/guard; also gates the super-cancel window); 0/1/2 in the data (21 frames use 2)
 	uint8_t attackHitCount;  // +0x13 T: loaded into actor+220 on frame entry (ObjEnterCurrentAction v3 = +19); attack boxes are ignored when it is 0 (ObjCheckAttackVsFighters 0x43B070)
 	uint8_t canAct;  // +0x14 T: 1 = actor may act (ObjRunActionScript v23+20 == 1, ObjFighterStateAndHitReaction 0x43BF40); combined with stance in Actor_DispatchInputByStance 0x4263E0
 	uint8_t unused_15[3];  // +0x15 zero in all frames, not read
@@ -494,11 +494,11 @@ struct Gof1Actor {
 	uint8_t unreferenced_13;  // +0x013 U: no access in any function
 	uint8_t loopCounter;  // +0x014 T: AF.loopCount is loaded here (ObjEnterCurrentAction); IF 9/10 set/test it (Actor_RunFrameIfRecord); aniFlag 2/5 consume it (ObjRunActionScript)
 	uint8_t unreferenced_15;  // +0x015 U: no access in any function
-	Gof1ObjFlagsA spawnFlagsA;  // +0x016 T: child flags from EF arg2 (InitChildObject); EffectObjects_UpdateAll, ObjIntegrateMotion (0x40), sub_413FD0 / sub_4144C0 (2), Render_QueueFighterSprite pass them on
-	Gof1ObjFlagsB spawnFlagsB;  // +0x018 T: child flags from EF arg3 (InitChildObject); EffectObjects_UpdateAll (2, 4), Actor_SetHitstopFrames / ObjFighterStateAndHitReaction (8), sub_413FD0 (1 draws a shadow with sub_42E0D0)
+	Gof1ObjFlagsA spawnFlagsA;  // +0x016 T: child flags from EF arg2 bits (InitChildObject). Proven bit meanings, see Gof1ObjFlagsA: EffectObjects_UpdateAll (1, 4, 8, 0x20), ObjIntegrateMotion (0x40), ObjResolvePushboxCollision (8), ChildObject_QueueDraw / Actor_QueueTintedSprite (2); Render_QueueFighterSprite copies it to the draw record, where nothing reads it
+	Gof1ObjFlagsB spawnFlagsB;  // +0x018 T: child flags from EF arg3 bits (InitChildObject). Proven bit meanings, see Gof1ObjFlagsB: ChildObject_QueueDraw (1), EffectObjects_UpdateAll (2, 4), Actor_SetHitstopFrames / ObjFighterStateAndHitReaction (8), sub_42D4E0 draw record +0x64 (0x80)
 	Gof1HomingMode homingMode;  // +0x01A T: EF arg4 low byte (InitChildObject); sub_413940 homing object update
 	uint8_t homingBaseAction;  // +0x01B T: EF subType = first of the homing action family (sub_413940 requests base+1..3 with ObjRequestAction)
-	uint8_t homingReserved_1C;  // +0x01C U: only written (0) by InitChildObject, never read
+	uint8_t homingReserved_1C;  // +0x01C U (unproven, neutral name): only written, 0, by InitChildObject next to homingMode/homingBaseAction/homingOffset*; no instruction anywhere reads byte +0x1C of an actor (ctree scan + displacement scan, slot-based +0x20 too). Always 0, so no value to infer a meaning from
 	uint8_t unreferenced_1D;  // +0x01D U: no access in any function
 	uint16_t homingTick;  // +0x01E T: counts up while homingTimeout != 0 (sub_413940)
 	uint16_t homingTimeout;  // +0x020 T: EfType30_SetActorParams sub 0 arg2; sub_413940 ends the homing when homingTick reaches it
@@ -513,13 +513,13 @@ struct Gof1Actor {
 	uint8_t cpuCommandReady;  // +0x044 T: CPU command request latch: IF 11/25 consume it when controlType == CPU (Actor_RunFrameIfRecord); cleared by ObjRunActionScript
 	uint8_t unreferenced_45[3];  // +0x045 U: no access in any function
 	int32_t superMeter;  // +0x048 T: super meter, 10000 per level, capped 90000 (AddSuperMeter, EfType6 op 4, Actor_SpawnEffectById spends 10000*cost; IF 11 compares f048/10000 with the move cost); preserved across rounds
-	uint8_t superMeterFlash;  // +0x04C T: AddSuperMeter sets 10 when a 30000 threshold is crossed (no reader in the traced set)
+	uint8_t superLevelCrossMark;  // +0x04C T: AddSuperMeter sets it to 10, together with Se_RequestPlay(0x15), when superMeter / 30000 changes (the meter gained a 30000 level boundary). Written ONLY there: nothing decrements, clears or reads it (displacement scan: no byte access to +0x4C or slot +0x50 outside AddSuperMeter), so it is a dead store, not a countdown timer
 	uint8_t unreferenced_4D[3];  // +0x04D U: no access in any function
 	int32_t reserveGauge;  // +0x050 T: third gauge 0..10000: EfType6 op 4 adds arg2 and clamps, sub_4252A0 adds the pending combo gauge, sub_424980 clears it at round start; preserved across rounds by InitFighterSlotForRound
 	uint8_t unreferenced_54[4];  // +0x054 U: no access in any function
 	int32_t reservePending;  // +0x058 T: reserve gauge gain waiting to be banked: sub_4252A0 adds it to reserveGauge (capped 10000) when g_combo_guard_flags[teamIndex] is set and clears it; no writer found in the traced set
 	int32_t life;  // +0x05C T: hit points, 11400 at round start (InitFighterSlotForRound); Damage_*, ObjFighterStateAndHitReaction, EfType5/6 modify it; <= 0 is KO
-	int32_t lifeInitCopy;  // +0x060 U: written with 11400 by InitFighterSlotForRound / FighterSlot_ResetKeepingDataPointers, never read
+	int32_t maxLife;  // +0x060 T: written with 11400 next to life by InitFighterSlotForRound / FighterSlot_ResetKeepingDataPointers. 11400 (0x2C88) is the life cap: EfType6_ActorOp, Hud_DrawBattleInfo and Battle_RoundStateMachine clamp/compare against the literal 0x2C88, never against this field, so the field is a never-read copy of the cap
 	uint8_t unreferenced_64[2];  // +0x064 U: no access in any function
 	uint8_t superMoveState;  // +0x066 T: 2 while a super move is active (sub_4242C0 sets it when superMoveFlag; sub_424980 clears it; ObjFighterStateAndHitReaction halves guard damage by the attacker owner state)
 	uint8_t superMoveFlag;  // +0x067 T: armed by sub_426BD0 when a command move is accepted, consumed by sub_4242C0
@@ -531,7 +531,7 @@ struct Gof1Actor {
 	int32_t posX;  // +0x078 T: world X in 1/128 pixel units (sub_413940, ObjIntegrateMotion, Actor_RunFrameIfRecord, InitChildObject, camera code)
 	int32_t posY;  // +0x07C T: world Y in 1/128 pixel units, 0 = ground, negative = up (ObjIntegrateMotion lands at > 0)
 	uint8_t unreferenced_80[4];  // +0x080 U: no access in any function
-	int32_t posXAtTickEnd;  // +0x084 T: posX copy written at the end of ObjIntegrateMotion; never read
+	int32_t posXAfterIntegrate;  // +0x084 T: posX as it is when ObjIntegrateMotion returns (written on both exits, after the grab carry). Never read: the readers of the neighbouring posXAtTickStart (+0x88: ObjIntegrateMotion, ObjResolvePushboxCollision, EffectObjects_UpdateAll) are the only per-tick position copy that is used
 	int32_t posXAtTickStart;  // +0x088 T: posX before the tick (ObjIntegrateMotion, sub_413940); EffectObjects_UpdateAll and ObjResolvePushboxCollision read it back
 	int32_t posYAtTickStart;  // +0x08C T: posY before the tick (ObjIntegrateMotion, sub_413940, EffectObjects_UpdateAll)
 	int32_t velX;  // +0x090 T: velocity X (Actor_ApplyFrameMotionFlags adds AS.velX, ObjIntegrateMotion integrates it)
@@ -579,7 +579,7 @@ struct Gof1Actor {
 	uint8_t cpuGuardRequest;  // +0x0DE T: written by FighterCpuAiStep (random guard decision by difficulty); ObjFighterStateAndHitReaction treats the hit as guardable when set (a human actor never sets it)
 	uint8_t unreferenced_DF[3];  // +0x0DF U: no access in any function
 	uint8_t recoverMode;  // +0x0E2 T: wake-up/recovery selector set by ObjFighterStateAndHitReaction (0, 1, 25), Actor_WallBounceReaction, cleared by EfType4
-	uint8_t recoverReserved;  // +0x0E3 U: only written (0) by ObjRunActionScript / ObjFighterStateAndHitReaction, never read
+	uint8_t recoverReserved;  // +0x0E3 U (unproven, neutral name): only ever written 0, in the canAct reset block of ObjRunActionScript (with recoverMode = 1, throwTechAllowed = 1, throwTechSeen = 0) and in ObjFighterStateAndHitReaction (before throwTechAllowed). Never read, constant 0
 	uint8_t bounceCount;  // +0x0E4 T: wall/ground bounces taken (Actor_WallBounceReaction increments; ObjRunActionScript wraps > 2 to -16)
 	uint8_t recoveryTimer;  // +0x0E5 T: frames since the last hit (ObjRunActionScript increments, ObjFighterStateAndHitReaction resets; Actor_TryTechOrCrouchGuardSwitch window < 16)
 	uint8_t throwTechSeen;  // +0x0E6 T: set on the grabber by sub_425E10 when a throw tech succeeds; ComboRecord_RegisterHit flags the combo
@@ -603,7 +603,7 @@ struct Gof1Actor {
 	uint8_t scriptFlag105;  // +0x105 T: EfType6 op 254 sets 1 (doc SET_FLAG_261); cleared by Battle_InitRoundFighters / Round_IntroStateMachine; no reader in the traced set
 	uint8_t koMoveType;  // +0x106 T: (attacker move type & 0x7F) + 1 when the actor is KO by it (ObjFighterStateAndHitReaction); non-zero blocks recovery (Actor_StartKnockback, sub_426BD0)
 	uint8_t inputHeldFlags;  // +0x107 T: Actor_DispatchInputByStance sets bit 7 when the direction is neutral and clears it for crouch/air; ObjRunActionScript clears it; no reader in the traced set
-	uint8_t inputReserved_108;  // +0x108 U: only written (0) by ObjRunActionScript, never read
+	uint8_t inputReserved_108;  // +0x108 U (unproven, neutral name): only ever written 0, in the canAct reset block of ObjRunActionScript (between throwTechSeen and guardRecoveryFlag). Never read, constant 0; +0x10C.. is counter[] and is indexed from 0x10C, so no indexed access reaches +0x108
 	uint8_t guardRecoveryFlag;  // +0x109 T: 1 after a guard-cancel/early guard (Actor_StartKnockback special case), read by Actor_CanGuardAttack and Actor_TryTechOrCrouchGuardSwitch
 	uint16_t mashCounter;  // +0x10A T: counts button presses while in hit-stun (Actor_TryTechOrCrouchGuardSwitch); Damage_ScaleByComboAndLife reduces damage by 0.3% each; sub_426BD0 tests it
 	int8_t tobiCount[10];  // +0x10C T: ten projectile ("TOBI") counters shown by Debug_DrawEntityInfo as "TOBI %03d"; EfType6 op 100/101 add/subtract (arg0 tens digit = index, units = amount), sub_426BD0 refuses a command when the counter is too low
@@ -619,13 +619,13 @@ struct Gof1Actor {
 	uint8_t afterimageMode;  // +0x136 T: afterimage config id + 1 (EfType6 op 3); DrawFighterAfterimage switches on it, 0 = off
 	uint8_t afterimageSteps;  // +0x137 T: number of afterimage steps <= 119 (EfType6 op 3 arg1; DrawFighterAfterimage)
 	uint8_t afterimageSpacing;  // +0x138 T: spacing of the steps (EfType6 op 3 arg2; DrawFighterAfterimage)
-	uint8_t afterimageRestart;  // +0x139 T: set to 1 by EfType6 op 3 when the mode changes; no reader in the traced set
+	uint8_t afterimageRestart;  // +0x139 T: EfType6_ActorOp op 3 sets 1 whenever the requested afterimage mode differs from afterimageMode (or it was 0). Written ONLY there: never cleared and never read (DrawFighterAfterimage / PushFighterAfterimage do not touch it), so it is a dead store
 	uint8_t justGuardActive;  // +0x13A T: set when a just-guard (button bit 7 and CT flag 8) absorbs a hit (ObjFighterStateAndHitReaction); Actor_StartKnockback then pushes the attacker back instead
 	uint8_t unreferenced_13B;  // +0x13B U: no access in any function
 	uint16_t locomotionUsedMask;  // +0x13C T: bit n = pattern n (1..9 walk/run/dash/jump) used since the last landing (ObjRunActionScript); Actor_RequestLocomotionFromInput tests bits 1,2,4,0x10,0x20,0x80,0x100
 	uint8_t commandUsedMask[14];  // +0x13E T: bit i = command move i already used in this chain (ObjRunActionScript sets it, sub_426BD0 refuses repeats, sub_43BE80 counts the bits)
 	uint8_t pendingCommandId;  // +0x14C T: command move accepted by sub_426BD0 this tick (0xFF = none); ObjRunActionScript moves it into commandUsedMask
-	uint8_t lastCommandId;  // +0x14D T: previous pendingCommandId (ObjRunActionScript writes it); no reader in the traced set
+	uint8_t startedByCommandId;  // +0x14D T: id of the command move (Gof1CommandMove.commandId) that requested the action just entered: ObjRunActionScript copies pendingCommandId here when it switches to pendingPattern (0xFF when the pending action was not requested by a command move). Written ONLY there, never read
 	int16_t hitsTakenInCombo;  // +0x14E T: consecutive hits taken (ObjFighterStateAndHitReaction increments; ObjRunActionScript indexes byte_463FE0 with it to time recovery)
 	uint16_t attackHitsConnected;  // +0x150 T: hits landed by the current action (ObjCheckAttackVsFighters/Objects increment; IF 17 compares with p1; sub_4242C0 clears)
 	uint8_t evadeDir;  // +0x152 T: 1 forward / 2 back double-tap evade detected by sub_427040; ObjFighterStateAndHitReaction picks the evade-high/low answer from it
@@ -660,7 +660,7 @@ struct Gof1Actor {
 	int16_t pendingFramePriority;  // +0x248 T: priority of the pending frame jump, -1 = none
 	uint8_t facingLeft;  // +0x24A T: 0 faces right, 1 faces left (read by ~70 functions: sub_413940, DrawFighterSprite, Actor_ApplyFrameMotionFlags, InitChildObject)
 	uint8_t nextFacingLeft;  // +0x24B T: facing to turn to when the action changes (ObjRunActionScript copies it into facingLeft; Actor_WallBounceReaction, EfType6 op 5, sub_413940)
-	uint8_t facingReserved_24C;  // +0x24C U: only written (0xFF) by InitFighterSlotForRound / FighterSlot_ResetKeepingDataPointers, never read
+	uint8_t facingReserved_24C;  // +0x24C U (unproven, neutral name): only written, 0xFF, by InitFighterSlotForRound / FighterSlot_ResetKeepingDataPointers, the second of which writes nextFacingLeft = 0xFF (an unset sentinel) right before it. Never read
 	uint8_t mirrorHistoryPending;  // +0x24D T: read by UpdateFighterInputHistoryRings and sub_426910: when the facing changed and it is 1 the recorded directions are mirrored (dword_463FB8) and it is cleared
 	uint8_t inputActionLatch;  // +0x24E T: set 1 by IF 6/7 input jumps with flag 4 (doc actor+590); ObjRunActionScript steps it 1 -> 2 -> 0; EffectObjects_UpdateAll kills children when the parent shows 2
 	uint8_t actionChangedFlag;  // +0x24F T: sub_4242C0 sets 1 on every action change, Actor_TickWordTimers clears it; children with spawnFlagsA bit 0x20 die when the parent shows 1
@@ -701,13 +701,13 @@ struct Gof1CommandMove {
 	uint8_t unreferenced_01;  // +0x001 U: zero in every record of all 8 characters, never accessed
 	uint8_t sequence[32];  // +0x002 T: input token string 0xFF terminated: 0..9 direction, 0x41..0x46 buttons A..F, 0x2B + joiner, 0x54 T hold; parsed backwards from the last token by sub_4266F0 / sub_4267F0 (sub_426910). Bytes 16..31 are cleared by InitFighterSlotForRound
 	uint8_t targetPattern;  // +0x022 T: pattern requested when the command fires (sub_426BD0 -> ObjRequestAction; compared with the current pattern)
-	Gof1CommandMoveClass moveClass;  // +0x023 T: 0 system, 1 special, 2 super: selects the move-level rule in sub_426BD0
+	Gof1CommandMoveClass moveClass;  // +0x023 T: selects the cancel table in Fighter_TryStartCommandMove: 0 uses stateFrame.normalCancel, 1 uses stateFrame.specialCancel, 2 uses specialCancel plus the super-cancel window (g_PlayerSuperCancelWindow, sets superCancelFlag) and the stateFrame.flags2 bit 0 hit gate; class 0 is also the only class subject to the CT flag-1 repeat restriction (commandUsedMask) and the move-level test < 100. Data: 0 = dashes, command normals, script-only helpers; 1 = specials/throws; 2 = supers (cost 3)
 	uint16_t meterCostLevels;  // +0x024 T: super meter levels needed (compared with superMeter / 10000 in IF 11 and sub_426BD0; low byte -> activeMoveMeterCost)
 	uint8_t requestParam;  // +0x026 T: stored in actor requestParam (sub_426BD0)
 	uint8_t unreferenced_27;  // +0x027 U: zero in every record of all 8 characters, never accessed
 	uint16_t counterRequirement;  // +0x028 T: tens digit = counter[] index and units = amount (< 100), or 100+ = global counter bank dword_1864EA0 (sub_426BD0 refuses when not enough)
 	uint8_t unreferenced_2A[2];  // +0x02A U: zero in every record of all 8 characters, never accessed
-	Gof1CommandFlags flags;  // +0x02C T: see Gof1CommandFlags (sub_426BD0 stance/cancel gating, sub_426FC0 skips SCRIPT_ONLY)
+	Gof1CommandFlags flags;  // +0x02C T: see Gof1CommandFlags (all bits read in Fighter_TryStartCommandMove; bit 0x20 by sub_426FC0)
 	Gof1CommandFlags2 flags2;  // +0x02D T: see Gof1CommandFlags2 (sub_426910 ring select / strictness, sub_426BD0 evade moves)
 };
 struct Gof1CtHeader {
@@ -954,13 +954,13 @@ static_assert(offsetof(Gof1Actor, aiScriptStep) == 0x42, "Gof1Actor.aiScriptStep
 static_assert(offsetof(Gof1Actor, cpuCommandReady) == 0x44, "Gof1Actor.cpuCommandReady");
 static_assert(offsetof(Gof1Actor, unreferenced_45) == 0x45, "Gof1Actor.unreferenced_45");
 static_assert(offsetof(Gof1Actor, superMeter) == 0x48, "Gof1Actor.superMeter");
-static_assert(offsetof(Gof1Actor, superMeterFlash) == 0x4C, "Gof1Actor.superMeterFlash");
+static_assert(offsetof(Gof1Actor, superLevelCrossMark) == 0x4C, "Gof1Actor.superLevelCrossMark");
 static_assert(offsetof(Gof1Actor, unreferenced_4D) == 0x4D, "Gof1Actor.unreferenced_4D");
 static_assert(offsetof(Gof1Actor, reserveGauge) == 0x50, "Gof1Actor.reserveGauge");
 static_assert(offsetof(Gof1Actor, unreferenced_54) == 0x54, "Gof1Actor.unreferenced_54");
 static_assert(offsetof(Gof1Actor, reservePending) == 0x58, "Gof1Actor.reservePending");
 static_assert(offsetof(Gof1Actor, life) == 0x5C, "Gof1Actor.life");
-static_assert(offsetof(Gof1Actor, lifeInitCopy) == 0x60, "Gof1Actor.lifeInitCopy");
+static_assert(offsetof(Gof1Actor, maxLife) == 0x60, "Gof1Actor.maxLife");
 static_assert(offsetof(Gof1Actor, unreferenced_64) == 0x64, "Gof1Actor.unreferenced_64");
 static_assert(offsetof(Gof1Actor, superMoveState) == 0x66, "Gof1Actor.superMoveState");
 static_assert(offsetof(Gof1Actor, superMoveFlag) == 0x67, "Gof1Actor.superMoveFlag");
@@ -972,7 +972,7 @@ static_assert(offsetof(Gof1Actor, guardRegenDelay) == 0x74, "Gof1Actor.guardRege
 static_assert(offsetof(Gof1Actor, posX) == 0x78, "Gof1Actor.posX");
 static_assert(offsetof(Gof1Actor, posY) == 0x7C, "Gof1Actor.posY");
 static_assert(offsetof(Gof1Actor, unreferenced_80) == 0x80, "Gof1Actor.unreferenced_80");
-static_assert(offsetof(Gof1Actor, posXAtTickEnd) == 0x84, "Gof1Actor.posXAtTickEnd");
+static_assert(offsetof(Gof1Actor, posXAfterIntegrate) == 0x84, "Gof1Actor.posXAfterIntegrate");
 static_assert(offsetof(Gof1Actor, posXAtTickStart) == 0x88, "Gof1Actor.posXAtTickStart");
 static_assert(offsetof(Gof1Actor, posYAtTickStart) == 0x8C, "Gof1Actor.posYAtTickStart");
 static_assert(offsetof(Gof1Actor, velX) == 0x90, "Gof1Actor.velX");
@@ -1066,7 +1066,7 @@ static_assert(offsetof(Gof1Actor, unreferenced_13B) == 0x13B, "Gof1Actor.unrefer
 static_assert(offsetof(Gof1Actor, locomotionUsedMask) == 0x13C, "Gof1Actor.locomotionUsedMask");
 static_assert(offsetof(Gof1Actor, commandUsedMask) == 0x13E, "Gof1Actor.commandUsedMask");
 static_assert(offsetof(Gof1Actor, pendingCommandId) == 0x14C, "Gof1Actor.pendingCommandId");
-static_assert(offsetof(Gof1Actor, lastCommandId) == 0x14D, "Gof1Actor.lastCommandId");
+static_assert(offsetof(Gof1Actor, startedByCommandId) == 0x14D, "Gof1Actor.startedByCommandId");
 static_assert(offsetof(Gof1Actor, hitsTakenInCombo) == 0x14E, "Gof1Actor.hitsTakenInCombo");
 static_assert(offsetof(Gof1Actor, attackHitsConnected) == 0x150, "Gof1Actor.attackHitsConnected");
 static_assert(offsetof(Gof1Actor, evadeDir) == 0x152, "Gof1Actor.evadeDir");
@@ -1368,19 +1368,19 @@ static const Han2EnumValue kGof1RunStateValues[] = {
 	{"G1RUN_FORCED", (int64_t)(2)},
 };
 static const Han2EnumValue kGof1ObjFlagsAValues[] = {
-	{"G1OF_A_FOLLOW_PARENT_STATE", (int64_t)(1)},
-	{"G1OF_A_NO_MIRROR", (int64_t)(2)},
-	{"G1OF_A_FOLLOW_PARENT_EDGE_PUSH", (int64_t)(4)},
-	{"G1OF_A_FREEZE_WITH_PARENT_HITSTOP", (int64_t)(8)},
+	{"G1OF_A_END_WITH_PARENT_STATE", (int64_t)(1)},
+	{"G1OF_A_FORCE_FACE_RIGHT", (int64_t)(2)},
+	{"G1OF_A_INHERIT_PARENT_MOTION", (int64_t)(4)},
+	{"G1OF_A_PART_OF_OWNER_ATTACK", (int64_t)(8)},
 	{"G1OF_A_END_ON_PARENT_ACTION_CHANGE", (int64_t)(0x20)},
 	{"G1OF_A_NO_GROUND_LANDING", (int64_t)(0x40)},
 };
 static const Han2EnumValue kGof1ObjFlagsBValues[] = {
 	{"G1OF_B_DRAW_SHADOW", (int64_t)(1)},
-	{"G1OF_B_ADVANCE_WITH_PARENT", (int64_t)(2)},
-	{"G1OF_B_END_WHEN_PARENT_AIRBORNE", (int64_t)(4)},
+	{"G1OF_B_STEP_FRAME_WITH_PARENT", (int64_t)(2)},
+	{"G1OF_B_END_WHEN_PARENT_AIR_OR_GRABBED", (int64_t)(4)},
 	{"G1OF_B_HITSTOP_TO_OWNER", (int64_t)(8)},
-	{"G1OF_B_RENDERER_BIT7", (int64_t)(0x80)},
+	{"G1OF_B_IGNORE_SCREEN_ZOOM", (int64_t)(0x80)},
 };
 static const Han2EnumValue kGof1DecorFlagsValues[] = {
 	{"G1DECOR_DEPTH_BUMP", (int64_t)(1)},
@@ -1435,7 +1435,7 @@ static const Han2EnumValue kGof1InputButtonFlagsValues[] = {
 	{"G1BTN_F_PRESSED", (int64_t)(0x20000)},
 };
 static const Han2EnumValue kGof1CommandMoveClassValues[] = {
-	{"G1MOVE_SYSTEM", (int64_t)(0)},
+	{"G1MOVE_NORMAL", (int64_t)(0)},
 	{"G1MOVE_SPECIAL", (int64_t)(1)},
 	{"G1MOVE_SUPER", (int64_t)(2)},
 };
@@ -1443,10 +1443,10 @@ static const Han2EnumValue kGof1CommandFlagsValues[] = {
 	{"G1CMD_STANCE_GROUND", (int64_t)(1)},
 	{"G1CMD_STANCE_AIR", (int64_t)(2)},
 	{"G1CMD_STANCE_CROUCH", (int64_t)(4)},
-	{"G1CMD_IGNORE_CANCEL_RULE", (int64_t)(8)},
+	{"G1CMD_NO_CANCEL_ENTRY", (int64_t)(8)},
 	{"G1CMD_CLEAR_HISTORY_ON_ACTION", (int64_t)(0x10)},
 	{"G1CMD_SCRIPT_ONLY", (int64_t)(0x20)},
-	{"G1CMD_NEEDS_GUARD_CANCEL", (int64_t)(0x40)},
+	{"G1CMD_GUARD_CANCEL", (int64_t)(0x40)},
 };
 static const Han2EnumValue kGof1CommandFlags2Values[] = {
 	{"G1CMD2_USE_RING_B", (int64_t)(1)},
@@ -1570,7 +1570,7 @@ static const Han2FieldInfo kGof1StateFrameFields[] = {
 	{"accelY", 0xE, 2, 1, 1, nullptr, "+0x0E T: added to accelY when addVelY (v1+14)"},
 	{"stance", 0x10, 1, 1, 2, "Gof1Stance", "+0x10 T: copied to actor+594 (ObjRunActionScript), air physics test in ObjIntegrateMotion 0x4257D0; Actor_DispatchInputByStance 0x4263E0 builds stance | canAct<<4"},
 	{"normalCancel", 0x11, 1, 1, 2, "Gof1CancelPermission", "+0x11 T: Actor_RequestLocomotionFromInput 0x425FC0 (2 always, 1 when the actor has hit/been guarded: a1+205 & 0xF)"},
-	{"specialCancel", 0x12, 1, 1, 2, "Gof1CancelPermission", "+0x12 E: no reader in gof.exe (RBO/HA4 read it); 0/1/2 in the data (21 frames use 2)"},
+	{"specialCancel", 0x12, 1, 1, 2, "Gof1CancelPermission", "+0x12 T: Fighter_TryStartCommandMove 0x426BD0 (cancel table of class 1/2 command moves; 2 = always, 1 = after hit/guard; also gates the super-cancel window); 0/1/2 in the data (21 frames use 2)"},
 	{"attackHitCount", 0x13, 1, 1, 0, nullptr, "+0x13 T: loaded into actor+220 on frame entry (ObjEnterCurrentAction v3 = +19); attack boxes are ignored when it is 0 (ObjCheckAttackVsFighters 0x43B070)"},
 	{"canAct", 0x14, 1, 1, 0, nullptr, "+0x14 T: 1 = actor may act (ObjRunActionScript v23+20 == 1, ObjFighterStateAndHitReaction 0x43BF40); combined with stance in Actor_DispatchInputByStance 0x4263E0"},
 	{"unused_15", 0x15, 1, 3, 0, nullptr, "+0x15 zero in all frames, not read"},
@@ -1703,11 +1703,11 @@ static const Han2FieldInfo kGof1ActorFields[] = {
 	{"unreferenced_13", 0x13, 1, 1, 0, nullptr, "+0x013 U: no access in any function"},
 	{"loopCounter", 0x14, 1, 1, 0, nullptr, "+0x014 T: AF.loopCount is loaded here (ObjEnterCurrentAction); IF 9/10 set/test it (Actor_RunFrameIfRecord); aniFlag 2/5 consume it (ObjRunActionScript)"},
 	{"unreferenced_15", 0x15, 1, 1, 0, nullptr, "+0x015 U: no access in any function"},
-	{"spawnFlagsA", 0x16, 2, 1, 2, "Gof1ObjFlagsA", "+0x016 T: child flags from EF arg2 (InitChildObject); EffectObjects_UpdateAll, ObjIntegrateMotion (0x40), sub_413FD0 / sub_4144C0 (2), Render_QueueFighterSprite pass them on"},
-	{"spawnFlagsB", 0x18, 2, 1, 2, "Gof1ObjFlagsB", "+0x018 T: child flags from EF arg3 (InitChildObject); EffectObjects_UpdateAll (2, 4), Actor_SetHitstopFrames / ObjFighterStateAndHitReaction (8), sub_413FD0 (1 draws a shadow with sub_42E0D0)"},
+	{"spawnFlagsA", 0x16, 2, 1, 2, "Gof1ObjFlagsA", "+0x016 T: child flags from EF arg2 bits (InitChildObject). Proven bit meanings, see Gof1ObjFlagsA: EffectObjects_UpdateAll (1, 4, 8, 0x20), ObjIntegrateMotion (0x40), ObjResolvePushboxCollision (8), ChildObject_QueueDraw / Actor_QueueTintedSprite (2); Render_QueueFighterSprite copies it to the draw record, where nothing reads it"},
+	{"spawnFlagsB", 0x18, 2, 1, 2, "Gof1ObjFlagsB", "+0x018 T: child flags from EF arg3 bits (InitChildObject). Proven bit meanings, see Gof1ObjFlagsB: ChildObject_QueueDraw (1), EffectObjects_UpdateAll (2, 4), Actor_SetHitstopFrames / ObjFighterStateAndHitReaction (8), sub_42D4E0 draw record +0x64 (0x80)"},
 	{"homingMode", 0x1A, 1, 1, 2, "Gof1HomingMode", "+0x01A T: EF arg4 low byte (InitChildObject); sub_413940 homing object update"},
 	{"homingBaseAction", 0x1B, 1, 1, 0, nullptr, "+0x01B T: EF subType = first of the homing action family (sub_413940 requests base+1..3 with ObjRequestAction)"},
-	{"homingReserved_1C", 0x1C, 1, 1, 0, nullptr, "+0x01C U: only written (0) by InitChildObject, never read"},
+	{"homingReserved_1C", 0x1C, 1, 1, 0, nullptr, "+0x01C U (unproven, neutral name): only written, 0, by InitChildObject next to homingMode/homingBaseAction/homingOffset*; no instruction anywhere reads byte +0x1C of an actor (ctree scan + displacement scan, slot-based +0x20 too). Always 0, so no value to infer a meaning from"},
 	{"unreferenced_1D", 0x1D, 1, 1, 0, nullptr, "+0x01D U: no access in any function"},
 	{"homingTick", 0x1E, 2, 1, 0, nullptr, "+0x01E T: counts up while homingTimeout != 0 (sub_413940)"},
 	{"homingTimeout", 0x20, 2, 1, 0, nullptr, "+0x020 T: EfType30_SetActorParams sub 0 arg2; sub_413940 ends the homing when homingTick reaches it"},
@@ -1722,13 +1722,13 @@ static const Han2FieldInfo kGof1ActorFields[] = {
 	{"cpuCommandReady", 0x44, 1, 1, 0, nullptr, "+0x044 T: CPU command request latch: IF 11/25 consume it when controlType == CPU (Actor_RunFrameIfRecord); cleared by ObjRunActionScript"},
 	{"unreferenced_45", 0x45, 1, 3, 0, nullptr, "+0x045 U: no access in any function"},
 	{"superMeter", 0x48, 4, 1, 1, nullptr, "+0x048 T: super meter, 10000 per level, capped 90000 (AddSuperMeter, EfType6 op 4, Actor_SpawnEffectById spends 10000*cost; IF 11 compares f048/10000 with the move cost); preserved across rounds"},
-	{"superMeterFlash", 0x4C, 1, 1, 0, nullptr, "+0x04C T: AddSuperMeter sets 10 when a 30000 threshold is crossed (no reader in the traced set)"},
+	{"superLevelCrossMark", 0x4C, 1, 1, 0, nullptr, "+0x04C T: AddSuperMeter sets it to 10, together with Se_RequestPlay(0x15), when superMeter / 30000 changes (the meter gained a 30000 level boundary). Written ONLY there: nothing decrements, clears or reads it (displacement scan: no byte access to +0x4C or slot +0x50 outside AddSuperMeter), so it is a dead store, not a countdown timer"},
 	{"unreferenced_4D", 0x4D, 1, 3, 0, nullptr, "+0x04D U: no access in any function"},
 	{"reserveGauge", 0x50, 4, 1, 1, nullptr, "+0x050 T: third gauge 0..10000: EfType6 op 4 adds arg2 and clamps, sub_4252A0 adds the pending combo gauge, sub_424980 clears it at round start; preserved across rounds by InitFighterSlotForRound"},
 	{"unreferenced_54", 0x54, 1, 4, 0, nullptr, "+0x054 U: no access in any function"},
 	{"reservePending", 0x58, 4, 1, 1, nullptr, "+0x058 T: reserve gauge gain waiting to be banked: sub_4252A0 adds it to reserveGauge (capped 10000) when g_combo_guard_flags[teamIndex] is set and clears it; no writer found in the traced set"},
 	{"life", 0x5C, 4, 1, 1, nullptr, "+0x05C T: hit points, 11400 at round start (InitFighterSlotForRound); Damage_*, ObjFighterStateAndHitReaction, EfType5/6 modify it; <= 0 is KO"},
-	{"lifeInitCopy", 0x60, 4, 1, 1, nullptr, "+0x060 U: written with 11400 by InitFighterSlotForRound / FighterSlot_ResetKeepingDataPointers, never read"},
+	{"maxLife", 0x60, 4, 1, 1, nullptr, "+0x060 T: written with 11400 next to life by InitFighterSlotForRound / FighterSlot_ResetKeepingDataPointers. 11400 (0x2C88) is the life cap: EfType6_ActorOp, Hud_DrawBattleInfo and Battle_RoundStateMachine clamp/compare against the literal 0x2C88, never against this field, so the field is a never-read copy of the cap"},
 	{"unreferenced_64", 0x64, 1, 2, 0, nullptr, "+0x064 U: no access in any function"},
 	{"superMoveState", 0x66, 1, 1, 0, nullptr, "+0x066 T: 2 while a super move is active (sub_4242C0 sets it when superMoveFlag; sub_424980 clears it; ObjFighterStateAndHitReaction halves guard damage by the attacker owner state)"},
 	{"superMoveFlag", 0x67, 1, 1, 0, nullptr, "+0x067 T: armed by sub_426BD0 when a command move is accepted, consumed by sub_4242C0"},
@@ -1740,7 +1740,7 @@ static const Han2FieldInfo kGof1ActorFields[] = {
 	{"posX", 0x78, 4, 1, 1, nullptr, "+0x078 T: world X in 1/128 pixel units (sub_413940, ObjIntegrateMotion, Actor_RunFrameIfRecord, InitChildObject, camera code)"},
 	{"posY", 0x7C, 4, 1, 1, nullptr, "+0x07C T: world Y in 1/128 pixel units, 0 = ground, negative = up (ObjIntegrateMotion lands at > 0)"},
 	{"unreferenced_80", 0x80, 1, 4, 0, nullptr, "+0x080 U: no access in any function"},
-	{"posXAtTickEnd", 0x84, 4, 1, 1, nullptr, "+0x084 T: posX copy written at the end of ObjIntegrateMotion; never read"},
+	{"posXAfterIntegrate", 0x84, 4, 1, 1, nullptr, "+0x084 T: posX as it is when ObjIntegrateMotion returns (written on both exits, after the grab carry). Never read: the readers of the neighbouring posXAtTickStart (+0x88: ObjIntegrateMotion, ObjResolvePushboxCollision, EffectObjects_UpdateAll) are the only per-tick position copy that is used"},
 	{"posXAtTickStart", 0x88, 4, 1, 1, nullptr, "+0x088 T: posX before the tick (ObjIntegrateMotion, sub_413940); EffectObjects_UpdateAll and ObjResolvePushboxCollision read it back"},
 	{"posYAtTickStart", 0x8C, 4, 1, 1, nullptr, "+0x08C T: posY before the tick (ObjIntegrateMotion, sub_413940, EffectObjects_UpdateAll)"},
 	{"velX", 0x90, 4, 1, 1, nullptr, "+0x090 T: velocity X (Actor_ApplyFrameMotionFlags adds AS.velX, ObjIntegrateMotion integrates it)"},
@@ -1788,7 +1788,7 @@ static const Han2FieldInfo kGof1ActorFields[] = {
 	{"cpuGuardRequest", 0xDE, 1, 1, 0, nullptr, "+0x0DE T: written by FighterCpuAiStep (random guard decision by difficulty); ObjFighterStateAndHitReaction treats the hit as guardable when set (a human actor never sets it)"},
 	{"unreferenced_DF", 0xDF, 1, 3, 0, nullptr, "+0x0DF U: no access in any function"},
 	{"recoverMode", 0xE2, 1, 1, 0, nullptr, "+0x0E2 T: wake-up/recovery selector set by ObjFighterStateAndHitReaction (0, 1, 25), Actor_WallBounceReaction, cleared by EfType4"},
-	{"recoverReserved", 0xE3, 1, 1, 0, nullptr, "+0x0E3 U: only written (0) by ObjRunActionScript / ObjFighterStateAndHitReaction, never read"},
+	{"recoverReserved", 0xE3, 1, 1, 0, nullptr, "+0x0E3 U (unproven, neutral name): only ever written 0, in the canAct reset block of ObjRunActionScript (with recoverMode = 1, throwTechAllowed = 1, throwTechSeen = 0) and in ObjFighterStateAndHitReaction (before throwTechAllowed). Never read, constant 0"},
 	{"bounceCount", 0xE4, 1, 1, 0, nullptr, "+0x0E4 T: wall/ground bounces taken (Actor_WallBounceReaction increments; ObjRunActionScript wraps > 2 to -16)"},
 	{"recoveryTimer", 0xE5, 1, 1, 0, nullptr, "+0x0E5 T: frames since the last hit (ObjRunActionScript increments, ObjFighterStateAndHitReaction resets; Actor_TryTechOrCrouchGuardSwitch window < 16)"},
 	{"throwTechSeen", 0xE6, 1, 1, 0, nullptr, "+0x0E6 T: set on the grabber by sub_425E10 when a throw tech succeeds; ComboRecord_RegisterHit flags the combo"},
@@ -1812,7 +1812,7 @@ static const Han2FieldInfo kGof1ActorFields[] = {
 	{"scriptFlag105", 0x105, 1, 1, 0, nullptr, "+0x105 T: EfType6 op 254 sets 1 (doc SET_FLAG_261); cleared by Battle_InitRoundFighters / Round_IntroStateMachine; no reader in the traced set"},
 	{"koMoveType", 0x106, 1, 1, 0, nullptr, "+0x106 T: (attacker move type & 0x7F) + 1 when the actor is KO by it (ObjFighterStateAndHitReaction); non-zero blocks recovery (Actor_StartKnockback, sub_426BD0)"},
 	{"inputHeldFlags", 0x107, 1, 1, 0, nullptr, "+0x107 T: Actor_DispatchInputByStance sets bit 7 when the direction is neutral and clears it for crouch/air; ObjRunActionScript clears it; no reader in the traced set"},
-	{"inputReserved_108", 0x108, 1, 1, 0, nullptr, "+0x108 U: only written (0) by ObjRunActionScript, never read"},
+	{"inputReserved_108", 0x108, 1, 1, 0, nullptr, "+0x108 U (unproven, neutral name): only ever written 0, in the canAct reset block of ObjRunActionScript (between throwTechSeen and guardRecoveryFlag). Never read, constant 0; +0x10C.. is counter[] and is indexed from 0x10C, so no indexed access reaches +0x108"},
 	{"guardRecoveryFlag", 0x109, 1, 1, 0, nullptr, "+0x109 T: 1 after a guard-cancel/early guard (Actor_StartKnockback special case), read by Actor_CanGuardAttack and Actor_TryTechOrCrouchGuardSwitch"},
 	{"mashCounter", 0x10A, 2, 1, 0, nullptr, "+0x10A T: counts button presses while in hit-stun (Actor_TryTechOrCrouchGuardSwitch); Damage_ScaleByComboAndLife reduces damage by 0.3% each; sub_426BD0 tests it"},
 	{"tobiCount", 0x10C, 1, 10, 1, nullptr, "+0x10C T: ten projectile (\"TOBI\") counters shown by Debug_DrawEntityInfo as \"TOBI %03d\"; EfType6 op 100/101 add/subtract (arg0 tens digit = index, units = amount), sub_426BD0 refuses a command when the counter is too low"},
@@ -1828,13 +1828,13 @@ static const Han2FieldInfo kGof1ActorFields[] = {
 	{"afterimageMode", 0x136, 1, 1, 0, nullptr, "+0x136 T: afterimage config id + 1 (EfType6 op 3); DrawFighterAfterimage switches on it, 0 = off"},
 	{"afterimageSteps", 0x137, 1, 1, 0, nullptr, "+0x137 T: number of afterimage steps <= 119 (EfType6 op 3 arg1; DrawFighterAfterimage)"},
 	{"afterimageSpacing", 0x138, 1, 1, 0, nullptr, "+0x138 T: spacing of the steps (EfType6 op 3 arg2; DrawFighterAfterimage)"},
-	{"afterimageRestart", 0x139, 1, 1, 0, nullptr, "+0x139 T: set to 1 by EfType6 op 3 when the mode changes; no reader in the traced set"},
+	{"afterimageRestart", 0x139, 1, 1, 0, nullptr, "+0x139 T: EfType6_ActorOp op 3 sets 1 whenever the requested afterimage mode differs from afterimageMode (or it was 0). Written ONLY there: never cleared and never read (DrawFighterAfterimage / PushFighterAfterimage do not touch it), so it is a dead store"},
 	{"justGuardActive", 0x13A, 1, 1, 0, nullptr, "+0x13A T: set when a just-guard (button bit 7 and CT flag 8) absorbs a hit (ObjFighterStateAndHitReaction); Actor_StartKnockback then pushes the attacker back instead"},
 	{"unreferenced_13B", 0x13B, 1, 1, 0, nullptr, "+0x13B U: no access in any function"},
 	{"locomotionUsedMask", 0x13C, 2, 1, 0, nullptr, "+0x13C T: bit n = pattern n (1..9 walk/run/dash/jump) used since the last landing (ObjRunActionScript); Actor_RequestLocomotionFromInput tests bits 1,2,4,0x10,0x20,0x80,0x100"},
 	{"commandUsedMask", 0x13E, 1, 14, 0, nullptr, "+0x13E T: bit i = command move i already used in this chain (ObjRunActionScript sets it, sub_426BD0 refuses repeats, sub_43BE80 counts the bits)"},
 	{"pendingCommandId", 0x14C, 1, 1, 0, nullptr, "+0x14C T: command move accepted by sub_426BD0 this tick (0xFF = none); ObjRunActionScript moves it into commandUsedMask"},
-	{"lastCommandId", 0x14D, 1, 1, 0, nullptr, "+0x14D T: previous pendingCommandId (ObjRunActionScript writes it); no reader in the traced set"},
+	{"startedByCommandId", 0x14D, 1, 1, 0, nullptr, "+0x14D T: id of the command move (Gof1CommandMove.commandId) that requested the action just entered: ObjRunActionScript copies pendingCommandId here when it switches to pendingPattern (0xFF when the pending action was not requested by a command move). Written ONLY there, never read"},
 	{"hitsTakenInCombo", 0x14E, 2, 1, 1, nullptr, "+0x14E T: consecutive hits taken (ObjFighterStateAndHitReaction increments; ObjRunActionScript indexes byte_463FE0 with it to time recovery)"},
 	{"attackHitsConnected", 0x150, 2, 1, 0, nullptr, "+0x150 T: hits landed by the current action (ObjCheckAttackVsFighters/Objects increment; IF 17 compares with p1; sub_4242C0 clears)"},
 	{"evadeDir", 0x152, 1, 1, 0, nullptr, "+0x152 T: 1 forward / 2 back double-tap evade detected by sub_427040; ObjFighterStateAndHitReaction picks the evade-high/low answer from it"},
@@ -1869,7 +1869,7 @@ static const Han2FieldInfo kGof1ActorFields[] = {
 	{"pendingFramePriority", 0x248, 2, 1, 1, nullptr, "+0x248 T: priority of the pending frame jump, -1 = none"},
 	{"facingLeft", 0x24A, 1, 1, 0, nullptr, "+0x24A T: 0 faces right, 1 faces left (read by ~70 functions: sub_413940, DrawFighterSprite, Actor_ApplyFrameMotionFlags, InitChildObject)"},
 	{"nextFacingLeft", 0x24B, 1, 1, 0, nullptr, "+0x24B T: facing to turn to when the action changes (ObjRunActionScript copies it into facingLeft; Actor_WallBounceReaction, EfType6 op 5, sub_413940)"},
-	{"facingReserved_24C", 0x24C, 1, 1, 0, nullptr, "+0x24C U: only written (0xFF) by InitFighterSlotForRound / FighterSlot_ResetKeepingDataPointers, never read"},
+	{"facingReserved_24C", 0x24C, 1, 1, 0, nullptr, "+0x24C U (unproven, neutral name): only written, 0xFF, by InitFighterSlotForRound / FighterSlot_ResetKeepingDataPointers, the second of which writes nextFacingLeft = 0xFF (an unset sentinel) right before it. Never read"},
 	{"mirrorHistoryPending", 0x24D, 1, 1, 0, nullptr, "+0x24D T: read by UpdateFighterInputHistoryRings and sub_426910: when the facing changed and it is 1 the recorded directions are mirrored (dword_463FB8) and it is cleared"},
 	{"inputActionLatch", 0x24E, 1, 1, 0, nullptr, "+0x24E T: set 1 by IF 6/7 input jumps with flag 4 (doc actor+590); ObjRunActionScript steps it 1 -> 2 -> 0; EffectObjects_UpdateAll kills children when the parent shows 2"},
 	{"actionChangedFlag", 0x24F, 1, 1, 0, nullptr, "+0x24F T: sub_4242C0 sets 1 on every action change, Actor_TickWordTimers clears it; children with spawnFlagsA bit 0x20 die when the parent shows 1"},
@@ -1910,13 +1910,13 @@ static const Han2FieldInfo kGof1CommandMoveFields[] = {
 	{"unreferenced_01", 0x1, 1, 1, 0, nullptr, "+0x001 U: zero in every record of all 8 characters, never accessed"},
 	{"sequence", 0x2, 1, 32, 0, nullptr, "+0x002 T: input token string 0xFF terminated: 0..9 direction, 0x41..0x46 buttons A..F, 0x2B + joiner, 0x54 T hold; parsed backwards from the last token by sub_4266F0 / sub_4267F0 (sub_426910). Bytes 16..31 are cleared by InitFighterSlotForRound"},
 	{"targetPattern", 0x22, 1, 1, 0, nullptr, "+0x022 T: pattern requested when the command fires (sub_426BD0 -> ObjRequestAction; compared with the current pattern)"},
-	{"moveClass", 0x23, 1, 1, 2, "Gof1CommandMoveClass", "+0x023 T: 0 system, 1 special, 2 super: selects the move-level rule in sub_426BD0"},
+	{"moveClass", 0x23, 1, 1, 2, "Gof1CommandMoveClass", "+0x023 T: selects the cancel table in Fighter_TryStartCommandMove: 0 uses stateFrame.normalCancel, 1 uses stateFrame.specialCancel, 2 uses specialCancel plus the super-cancel window (g_PlayerSuperCancelWindow, sets superCancelFlag) and the stateFrame.flags2 bit 0 hit gate; class 0 is also the only class subject to the CT flag-1 repeat restriction (commandUsedMask) and the move-level test < 100. Data: 0 = dashes, command normals, script-only helpers; 1 = specials/throws; 2 = supers (cost 3)"},
 	{"meterCostLevels", 0x24, 2, 1, 0, nullptr, "+0x024 T: super meter levels needed (compared with superMeter / 10000 in IF 11 and sub_426BD0; low byte -> activeMoveMeterCost)"},
 	{"requestParam", 0x26, 1, 1, 0, nullptr, "+0x026 T: stored in actor requestParam (sub_426BD0)"},
 	{"unreferenced_27", 0x27, 1, 1, 0, nullptr, "+0x027 U: zero in every record of all 8 characters, never accessed"},
 	{"counterRequirement", 0x28, 2, 1, 0, nullptr, "+0x028 T: tens digit = counter[] index and units = amount (< 100), or 100+ = global counter bank dword_1864EA0 (sub_426BD0 refuses when not enough)"},
 	{"unreferenced_2A", 0x2A, 1, 2, 0, nullptr, "+0x02A U: zero in every record of all 8 characters, never accessed"},
-	{"flags", 0x2C, 1, 1, 2, "Gof1CommandFlags", "+0x02C T: see Gof1CommandFlags (sub_426BD0 stance/cancel gating, sub_426FC0 skips SCRIPT_ONLY)"},
+	{"flags", 0x2C, 1, 1, 2, "Gof1CommandFlags", "+0x02C T: see Gof1CommandFlags (all bits read in Fighter_TryStartCommandMove; bit 0x20 by sub_426FC0)"},
 	{"flags2", 0x2D, 1, 1, 2, "Gof1CommandFlags2", "+0x02D T: see Gof1CommandFlags2 (sub_426910 ring select / strictness, sub_426BD0 evade moves)"},
 };
 static const Han2FieldInfo kGof1CtHeaderFields[] = {

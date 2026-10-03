@@ -93,7 +93,7 @@ struct Gof1StateFrame {                // frame record +0x28..0x4F (movement, ca
  __int16 accelY;                       // +0x0E T: added to accelY when addVelY (v1+14)
  enum Gof1Stance stance;               // +0x10 T: copied to actor+594 (ObjRunActionScript), air physics test in ObjIntegrateMotion 0x4257D0; Actor_DispatchInputByStance 0x4263E0 builds stance | canAct<<4
  enum Gof1CancelPermission normalCancel; // +0x11 T: Actor_RequestLocomotionFromInput 0x425FC0 (2 always, 1 when the actor has hit/been guarded: a1+205 & 0xF)
- enum Gof1CancelPermission specialCancel; // +0x12 E: no reader in gof.exe (RBO/HA4 read it); 0/1/2 in the data (21 frames use 2)
+ enum Gof1CancelPermission specialCancel; // +0x12 T: Fighter_TryStartCommandMove 0x426BD0 (cancel table of class 1/2 command moves; 2 = always, 1 = after hit/guard; also gates the super-cancel window); 0/1/2 in the data (21 frames use 2)
  unsigned char attackHitCount;         // +0x13 T: loaded into actor+220 on frame entry (ObjEnterCurrentAction v3 = +19); attack boxes are ignored when it is 0 (ObjCheckAttackVsFighters 0x43B070)
  unsigned char canAct;                 // +0x14 T: 1 = actor may act (ObjRunActionScript v23+20 == 1, ObjFighterStateAndHitReaction 0x43BF40); combined with stance in Actor_DispatchInputByStance 0x4263E0
  unsigned char unused_15[3];           // +0x15 zero in all frames, not read
