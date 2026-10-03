@@ -24,5 +24,16 @@ echo "$out" | grep -E "^SECTION" | grep -qv " fail 0 skipped 0$" && { echo "!! e
 EDITS=("$G/MB/AC/03.p" "$G/MB/AC/10.p" "$G/mbaacc/0008.p" "$G/mbaacc/0004.p" "$G/MB/MeltyBlood/data00.p" "$G/MB/R/04.p" "$G/pb/04.dat" "$G/gof1/run/gof_00.p" "$G/rbo/DATA/Update01.PAC")
 EDITS=("${EDITS[@]/#\/mnt\/c/C:}")
 echo "== edited rebuild"; out=$("$T" edittest "${EDITS[@]}" 2>&1) || rc=1; echo "$out" | grep -E "^(FAIL|SECTION)"
+# ---- per-title member round trips (fbchartool): every member of every archive of the title parsed into its model and re-serialized byte-exact.
+# "skipped 0" = every member has a model. Archive paths are Windows style (the tool is a Windows exe).
+C=$(dirname "$T")/fbchartool.exe
+W=${G/\/mnt\/c/C:}
+title() { # title <name> <archives...>
+	local name=$1; shift
+	echo "== title: $name"; out=$("$C" "$name" "$@" 2>&1 | tr -d "\r"); [ ${PIPESTATUS[0]} -ne 0 ] && rc=1
+	echo "$out" | grep -E "^(FAIL|SKIP|SECTION)"
+	echo "$out" | grep -E "^SECTION" | grep -qv " fail 0 skipped 0" && { echo "!! $name: failures or members without a model"; rc=1; }
+}
+title react $W/MB/R/0{0,1,2,3,4,5,6}.p $W/MB/R/10.p
 echo "n/a: $G/gof/Data/{System00,uninst}.dat, $G/pb/pbex.dat are installer / trainer files, not archives (headers carry no archive magic)"
 exit $rc

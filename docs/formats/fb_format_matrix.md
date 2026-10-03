@@ -120,16 +120,16 @@ Magic = the first 4 plain bytes after the archive cipher; several magics per ext
 | RBO | .RP4 | 7 | 4,571,000 | byte-exact round trip | rep section (magic 0a000000) |
 | RBO | .TXT | 4 | 9,011 | byte-exact round trip | misc section (magic 2d2d2d2d) |
 | RBO | .WAV | 389 | 426,956,788 | byte-exact round trip | han2tool audio section (magic 52494646) |
-| ReAct | (none) | 1 | 6,163,022 | none | (magic d993fe3d) |
-| ReAct | .CPF | 27 | 5,221,476 | none | M4 (magic 00000000 06000000 16000000 ...) |
-| ReAct | .CT | 24 | 209,156 | none | M4 (magic 01000000 06000000 0c000000 ...) |
-| ReAct | .DAT | 67 | 653,741,412 | none | ReAct character, 216-B frames (M3) (magic 48616e74 62676d61) |
-| ReAct | .EX3 | 1113 | 124,556,031 | none | LLIF compressed BMP: no reader (M4) (magic 4c4c4946) |
-| ReAct | .FNT | 3 | 3,918,058 | none | M4 (magic 2c1e0800 2c1e1200 2c1e1800) |
-| ReAct | .MP3 | 35 | 72,823,053 | read | (magic fffa7044 fffa9044 fffb9044 ...) |
-| ReAct | .TXT | 8 | 7,658 | edit | (magic 0d0a0d0a 2f2f2083 31303820 ...) |
-| ReAct | .WAV | 2881 | 217,399,246 | read | (magic 52494646) |
-| ReAct | .WMT | 24 | 90,224 | none | M4 (magic 01000000 09000000 0a000000 ...) |
+| ReAct | (none) | 1 | 6,163,022 | byte-exact round trip | MB-format character (stage-2 container, 10.p entry 00): gof1 loader, fbchartool react (magic d993fe3d) |
+| ReAct | .CPF | 27 | 5,221,476 | byte-exact round trip | fbchartool: CPU script typed (mbr.md) (magic 00000000 06000000 16000000 ...) |
+| ReAct | .CT | 24 | 209,156 | byte-exact round trip | fbchartool: _C.CT command table / CHARASELECT.CT typed (docs/formats/mbr.md) (magic 01000000 06000000 0c000000 ...) |
+| ReAct | .DAT | 67 | 653,741,412 | in-game proven | Hantei4 characters (framedata_ha4) + bgmake stages + the MB-format leftover; fbchartool react; in-game: ARC.DAT shift +160 px visible (docs/formats/evidence/react_ingame_*.png) (magic 48616e74 62676d61) |
+| ReAct | .EX3 | 1113 | 124,556,031 | byte-exact round trip | fbchartool: LLIF blocks + bit-exact Gage re-encode (magic 4c4c4946) |
+| ReAct | .FNT | 3 | 3,918,058 | byte-exact round trip | fbchartool: bitmap font (magic 2c1e0800 2c1e1200 2c1e1800) |
+| ReAct | .MP3 | 35 | 72,823,053 | byte-exact round trip | fbchartool: frames validated (magic fffa7044 fffa9044 fffb9044 ...) |
+| ReAct | .TXT | 8 | 7,658 | byte-exact round trip | fbchartool: Shift-JIS text (magic 0d0a0d0a 2f2f2083 31303820 ...) |
+| ReAct | .WAV | 2881 | 217,399,246 | byte-exact round trip | fbchartool: RIFF chunks (magic 52494646) |
+| ReAct | .WMT | 24 | 90,224 | byte-exact round trip | fbchartool: win quotes typed (mbr.md) (magic 01000000 09000000 0a000000 ...) |
 | Rosa (2002/2005) | .FOB | 6 | 66,832 | none | M3 (magic 02000000 04000000 07000000) |
 | Rosa (2002/2005) | .IMG | 100 | 14,243,120 | none | M4 (magic 00000000) |
 | Rosa (2002/2005) | .MP3 | 3 | 3,046,500 | read | (magic fffb9204) |
@@ -141,5 +141,5 @@ Magic = the first 4 plain bytes after the archive cipher; several magics per ext
 
 ## 3. Cell summary
 
-none: 47, read: 17, edit: 8, byte-exact round trip: 36, in-game proven: 0 (title x extension cells in section 2)
+none: 40, read: 15, edit: 7, byte-exact round trip: 45, in-game proven: 1 (title x extension cells in section 2)
 
