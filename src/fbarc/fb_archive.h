@@ -60,6 +60,10 @@ protected:
 	std::vector<Entry> m_entries;
 };
 
+// Entry names are CP932 bytes; these convert to / from UTF-8 for file systems and UI (identity for ASCII, and off Windows).
+std::string NameToUtf8(const std::string& cp932);
+std::string NameFromUtf8(const std::string& utf8);
+
 // Header sniffing (first bytes of the file; `ext` is the lower-case extension with the dot, a tiebreaker only).
 Kind Detect(const uint8_t* head, size_t n, const std::string& ext = std::string());
 // Detects from the file on disk, then opens the entry table.

@@ -245,6 +245,26 @@ public:
 
 } // namespace
 
+#ifdef _WIN32
+#include <windows.h>
+static std::string Conv(const std::string& in, UINT from, UINT to)
+{
+	if (in.empty()) return in;
+	const int wn = MultiByteToWideChar(from, 0, in.data(), (int)in.size(), nullptr, 0);
+	std::wstring w(wn > 0 ? wn : 0, L'\0');
+	if (wn > 0) MultiByteToWideChar(from, 0, in.data(), (int)in.size(), w.data(), wn);
+	const int n = WideCharToMultiByte(to, 0, w.data(), (int)w.size(), nullptr, 0, nullptr, nullptr);
+	std::string o(n > 0 ? n : 0, '\0');
+	if (n > 0) WideCharToMultiByte(to, 0, w.data(), (int)w.size(), o.data(), n, nullptr, nullptr);
+	return o;
+}
+std::string NameToUtf8(const std::string& s) { return Conv(s, 932, CP_UTF8); }
+std::string NameFromUtf8(const std::string& s) { return Conv(s, CP_UTF8, 932); }
+#else
+std::string NameToUtf8(const std::string& s) { return s; }
+std::string NameFromUtf8(const std::string& s) { return s; }
+#endif
+
 const char* KindName(Kind k)
 {
 	switch (k) {

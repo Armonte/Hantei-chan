@@ -20,6 +20,8 @@
 using namespace fbarc;
 namespace fs = std::filesystem;
 
+static std::string ExtOf(const std::string& n) { size_t d = n.rfind('.'); return d == std::string::npos ? std::string() : n.substr(d); }
+
 static int CmdLs(int argc, char** argv)
 {
 	if (argc < 1) return 2;
@@ -27,7 +29,7 @@ static int CmdLs(int argc, char** argv)
 	if (!a) { printf("FAIL %s: %s\n", argv[0], err.c_str()); return 1; }
 	printf("%s\n", a->describe().c_str());
 	for (size_t i = 0; i < a->entries().size(); i++)
-		printf("%6zu %10llu %10llu %s\n", i, (unsigned long long)a->entries()[i].offset, (unsigned long long)a->entries()[i].size, a->relativePath(i).c_str());
+		printf("%6zu %10llu %10llu %s\n", i, (unsigned long long)a->entries()[i].offset, (unsigned long long)a->entries()[i].size, NameToUtf8(a->relativePath(i)).c_str());
 	return 0;
 }
 
@@ -75,7 +77,7 @@ static int CmdExtract(int argc, char** argv)
 		if (!all && a->find(argv[1]) != (int)i) continue;
 		std::vector<uint8_t> d;
 		if (!a->read(i, d, &err)) { printf("FAIL %s: %s\n", a->relativePath(i).c_str(), err.c_str()); bad++; continue; }
-		fs::path out = fs::u8path(argv[2]) / fs::u8path(a->relativePath(i));
+		fs::path out = fs::u8path(argv[2]) / fs::u8path(NameToUtf8(a->relativePath(i)));
 		std::error_code ec; fs::create_directories(out.parent_path(), ec);
 		if (!WriteFile(out, d)) { printf("FAIL write %s\n", out.string().c_str()); bad++; continue; }
 		n++;
@@ -96,9 +98,9 @@ static int CmdPack(int argc, char** argv)
 		std::string rel = fs::relative(it.path(), fs::u8path(argv[1])).generic_u8string();
 		std::ifstream f(it.path(), std::ios::binary);
 		std::vector<uint8_t> d((std::istreambuf_iterator<char>(f)), std::istreambuf_iterator<char>());
-		int idx = a->find(rel);
+		int idx = a->find(NameFromUtf8(rel));
 		if (idx >= 0) { e.replace[(size_t)idx] = std::move(d); repl++; }
-		else { e.add.emplace_back(it.path().filename().string(), std::move(d)); added++; }
+		else { e.add.emplace_back(NameFromUtf8(it.path().filename().u8string()), std::move(d)); added++; }
 	}
 	if (!a->rebuild(argv[2], e, &err)) { printf("FAIL: %s\n", err.c_str()); return 1; }
 	printf("wrote %s (%d replaced, %d added)\n", argv[2], repl, added);
@@ -113,7 +115,7 @@ static int CmdMagics(int argc, char** argv)
 		std::map<std::string, std::map<std::string, int>> h;
 		for (size_t i = 0; i < a->entries().size(); i++) {
 			std::vector<uint8_t> d; a->read(i, d, &err, 8);
-			std::string ext = fs::u8path(a->entries()[i].name).extension().string();
+			std::string ext = ExtOf(a->entries()[i].name);
 			for (auto& c : ext) c = (char)toupper((unsigned char)c);
 			char buf[32] = "";
 			for (size_t j = 0; j < 4 && j < d.size(); j++) { unsigned char c = d[j]; snprintf(buf + strlen(buf), 8, (c >= 32 && c < 127) ? "%c" : "\\x%02x", c); }
@@ -134,7 +136,7 @@ static int CmdCensus(int argc, char** argv)
 		std::map<std::pair<std::string, std::string>, std::pair<uint64_t, uint64_t>> h;
 		for (size_t i = 0; i < a->entries().size(); i++) {
 			std::vector<uint8_t> d; a->read(i, d, &err, 4);
-			std::string ext = fs::u8path(a->entries()[i].name).extension().string();
+			std::string ext = ExtOf(a->entries()[i].name);
 			for (auto& c : ext) c = (char)toupper((unsigned char)c);
 			char buf[16] = ""; for (size_t j = 0; j < 4 && j < d.size(); j++) snprintf(buf + strlen(buf), 4, "%02x", d[j]);
 			auto& g = h[{ext, buf}]; g.first++; g.second += a->entries()[i].size;
