@@ -746,3 +746,243 @@ struct MbrHitEffectPreset {              // 12 bytes; g_HitEffectPresets[15] 0x4
  short unused_0A;                        // +0x0A X: 0 in all entries
 };
 struct MbrDamageRankStep { int score; int damageBelow; };           // g_DamageRankSteps[10] 0x4780A8 (Combo_AddDamageRankScore)
+
+// ============================================================================================
+// 10. Video layer: COM interfaces and the surface / texture slot tables
+// ============================================================================================
+// ---- COM interfaces used by the video layer (DirectDraw7 / Direct3D7). vtable method order from ddraw.h / d3d.h; unlisted methods use ComFn_t.
+typedef int (__stdcall *ComFn_t)(void *self);
+struct IDirect3DDevice7;
+struct IDirectDraw7;
+struct IDirect3D7;
+struct IDirectDrawSurface7;
+struct IDirectDrawClipper;
+typedef unsigned int (__stdcall *IDirect3DDevice7_AddRef_t)(struct IDirect3DDevice7 *self);
+typedef unsigned int (__stdcall *IDirect3DDevice7_Release_t)(struct IDirect3DDevice7 *self);
+typedef int (__stdcall *IDirect3DDevice7_GetCaps_t)(struct IDirect3DDevice7 *self, void *caps);
+typedef int (__stdcall *IDirect3DDevice7_EnumTextureFormats_t)(struct IDirect3DDevice7 *self, void *callback, void *context);
+typedef int (__stdcall *IDirect3DDevice7_BeginScene_t)(struct IDirect3DDevice7 *self);
+typedef int (__stdcall *IDirect3DDevice7_EndScene_t)(struct IDirect3DDevice7 *self);
+typedef int (__stdcall *IDirect3DDevice7_GetDirect3D_t)(struct IDirect3DDevice7 *self, struct IDirect3D7 **outD3D);
+typedef int (__stdcall *IDirect3DDevice7_SetRenderTarget_t)(struct IDirect3DDevice7 *self, struct IDirectDrawSurface7 *surface, unsigned int flags);
+typedef int (__stdcall *IDirect3DDevice7_GetRenderTarget_t)(struct IDirect3DDevice7 *self, struct IDirectDrawSurface7 **outSurface);
+typedef int (__stdcall *IDirect3DDevice7_Clear_t)(struct IDirect3DDevice7 *self, unsigned int count, void *rects, unsigned int flags, unsigned int color, float z, unsigned int stencil);
+typedef int (__stdcall *IDirect3DDevice7_SetTransform_t)(struct IDirect3DDevice7 *self, unsigned int transformType, void *matrix);
+typedef int (__stdcall *IDirect3DDevice7_SetViewport_t)(struct IDirect3DDevice7 *self, void *viewport);
+typedef int (__stdcall *IDirect3DDevice7_SetRenderState_t)(struct IDirect3DDevice7 *self, unsigned int state, unsigned int value);
+typedef int (__stdcall *IDirect3DDevice7_DrawPrimitive_t)(struct IDirect3DDevice7 *self, unsigned int primitiveType, unsigned int vertexFormat, void *vertices, unsigned int vertexCount, unsigned int flags);
+typedef int (__stdcall *IDirect3DDevice7_SetTexture_t)(struct IDirect3DDevice7 *self, unsigned int stage, struct IDirectDrawSurface7 *texture);
+typedef int (__stdcall *IDirect3DDevice7_SetTextureStageState_t)(struct IDirect3DDevice7 *self, unsigned int stage, unsigned int stateType, unsigned int value);
+typedef int (__stdcall *IDirect3DDevice7_ValidateDevice_t)(struct IDirect3DDevice7 *self, unsigned int *passes);
+typedef int (__stdcall *IDirectDraw7_QueryInterface_t)(struct IDirectDraw7 *self, const void *iid, void **outObj);
+typedef unsigned int (__stdcall *IDirectDraw7_AddRef_t)(struct IDirectDraw7 *self);
+typedef unsigned int (__stdcall *IDirectDraw7_Release_t)(struct IDirectDraw7 *self);
+typedef int (__stdcall *IDirectDraw7_CreateClipper_t)(struct IDirectDraw7 *self, unsigned int flags, struct IDirectDrawClipper **outClipper, void *outer);
+typedef int (__stdcall *IDirectDraw7_CreateSurface_t)(struct IDirectDraw7 *self, void *surfaceDesc, struct IDirectDrawSurface7 **outSurface, void *outer);
+typedef int (__stdcall *IDirectDraw7_EnumDisplayModes_t)(struct IDirectDraw7 *self, unsigned int flags, void *desc, void *context, void *callback);
+typedef int (__stdcall *IDirectDraw7_GetCaps_t)(struct IDirectDraw7 *self, void *driverCaps, void *helCaps);
+typedef int (__stdcall *IDirectDraw7_GetDisplayMode_t)(struct IDirectDraw7 *self, void *desc);
+typedef int (__stdcall *IDirectDraw7_RestoreDisplayMode_t)(struct IDirectDraw7 *self);
+typedef int (__stdcall *IDirectDraw7_SetCooperativeLevel_t)(struct IDirectDraw7 *self, void *hWnd, unsigned int flags);
+typedef int (__stdcall *IDirectDraw7_SetDisplayMode_t)(struct IDirectDraw7 *self, unsigned int width, unsigned int height, unsigned int bpp, unsigned int refresh, unsigned int flags);
+typedef int (__stdcall *IDirectDraw7_WaitForVerticalBlank_t)(struct IDirectDraw7 *self, unsigned int flags, void *event);
+typedef int (__stdcall *IDirectDraw7_RestoreAllSurfaces_t)(struct IDirectDraw7 *self);
+typedef unsigned int (__stdcall *IDirect3D7_AddRef_t)(struct IDirect3D7 *self);
+typedef unsigned int (__stdcall *IDirect3D7_Release_t)(struct IDirect3D7 *self);
+typedef int (__stdcall *IDirect3D7_EnumDevices_t)(struct IDirect3D7 *self, void *callback, void *context);
+typedef int (__stdcall *IDirect3D7_CreateDevice_t)(struct IDirect3D7 *self, const void *deviceIid, struct IDirectDrawSurface7 *renderTarget, struct IDirect3DDevice7 **outDevice);
+typedef int (__stdcall *IDirect3D7_EvictManagedTextures_t)(struct IDirect3D7 *self);
+typedef unsigned int (__stdcall *IDirectDrawSurface7_AddRef_t)(struct IDirectDrawSurface7 *self);
+typedef unsigned int (__stdcall *IDirectDrawSurface7_Release_t)(struct IDirectDrawSurface7 *self);
+typedef int (__stdcall *IDirectDrawSurface7_AddAttachedSurface_t)(struct IDirectDrawSurface7 *self, struct IDirectDrawSurface7 *attached);
+typedef int (__stdcall *IDirectDrawSurface7_Blt_t)(struct IDirectDrawSurface7 *self, void *destRect, struct IDirectDrawSurface7 *src, void *srcRect, unsigned int flags, void *bltFx);
+typedef int (__stdcall *IDirectDrawSurface7_BltFast_t)(struct IDirectDrawSurface7 *self, unsigned int x, unsigned int y, struct IDirectDrawSurface7 *src, void *srcRect, unsigned int flags);
+typedef int (__stdcall *IDirectDrawSurface7_Flip_t)(struct IDirectDrawSurface7 *self, struct IDirectDrawSurface7 *target, unsigned int flags);
+typedef int (__stdcall *IDirectDrawSurface7_GetAttachedSurface_t)(struct IDirectDrawSurface7 *self, void *caps, struct IDirectDrawSurface7 **outSurface);
+typedef int (__stdcall *IDirectDrawSurface7_GetCaps_t)(struct IDirectDrawSurface7 *self, void *outCaps);
+typedef int (__stdcall *IDirectDrawSurface7_GetDC_t)(struct IDirectDrawSurface7 *self, void **outHdc);
+typedef int (__stdcall *IDirectDrawSurface7_GetPixelFormat_t)(struct IDirectDrawSurface7 *self, void *outFormat);
+typedef int (__stdcall *IDirectDrawSurface7_GetSurfaceDesc_t)(struct IDirectDrawSurface7 *self, void *outDesc);
+typedef int (__stdcall *IDirectDrawSurface7_IsLost_t)(struct IDirectDrawSurface7 *self);
+typedef int (__stdcall *IDirectDrawSurface7_Lock_t)(struct IDirectDrawSurface7 *self, void *rect, void *desc, unsigned int flags, void *event);
+typedef int (__stdcall *IDirectDrawSurface7_ReleaseDC_t)(struct IDirectDrawSurface7 *self, void *hdc);
+typedef int (__stdcall *IDirectDrawSurface7_Restore_t)(struct IDirectDrawSurface7 *self);
+typedef int (__stdcall *IDirectDrawSurface7_SetClipper_t)(struct IDirectDrawSurface7 *self, struct IDirectDrawClipper *clipper);
+typedef int (__stdcall *IDirectDrawSurface7_SetColorKey_t)(struct IDirectDrawSurface7 *self, unsigned int flags, void *colorKey);
+typedef int (__stdcall *IDirectDrawSurface7_SetPalette_t)(struct IDirectDrawSurface7 *self, void *palette);
+typedef int (__stdcall *IDirectDrawSurface7_Unlock_t)(struct IDirectDrawSurface7 *self, void *rect);
+typedef int (__stdcall *IDirectDrawSurface7_PageLock_t)(struct IDirectDrawSurface7 *self, unsigned int flags);
+typedef int (__stdcall *IDirectDrawSurface7_PageUnlock_t)(struct IDirectDrawSurface7 *self, unsigned int flags);
+typedef int (__stdcall *IDirectDrawSurface7_SetPriority_t)(struct IDirectDrawSurface7 *self, unsigned int priority);
+typedef int (__stdcall *IDirectDrawSurface7_SetLOD_t)(struct IDirectDrawSurface7 *self, unsigned int lod);
+typedef unsigned int (__stdcall *IDirectDrawClipper_Release_t)(struct IDirectDrawClipper *self);
+typedef int (__stdcall *IDirectDrawClipper_SetHWnd_t)(struct IDirectDrawClipper *self, unsigned int flags, void *hWnd);
+struct IDirect3DDevice7Vtbl {                  // 48 methods, 192 bytes
+ ComFn_t QueryInterface;                  // +0x00
+ IDirect3DDevice7_AddRef_t AddRef;                  // +0x04
+ IDirect3DDevice7_Release_t Release;                  // +0x08
+ IDirect3DDevice7_GetCaps_t GetCaps;                  // +0x0C
+ IDirect3DDevice7_EnumTextureFormats_t EnumTextureFormats;                  // +0x10
+ IDirect3DDevice7_BeginScene_t BeginScene;                  // +0x14
+ IDirect3DDevice7_EndScene_t EndScene;                  // +0x18
+ IDirect3DDevice7_GetDirect3D_t GetDirect3D;                  // +0x1C
+ IDirect3DDevice7_SetRenderTarget_t SetRenderTarget;                  // +0x20
+ IDirect3DDevice7_GetRenderTarget_t GetRenderTarget;                  // +0x24
+ IDirect3DDevice7_Clear_t Clear;                  // +0x28
+ IDirect3DDevice7_SetTransform_t SetTransform;                  // +0x2C
+ ComFn_t GetTransform;                  // +0x30
+ IDirect3DDevice7_SetViewport_t SetViewport;                  // +0x34
+ ComFn_t MultiplyTransform;                  // +0x38
+ ComFn_t GetViewport;                  // +0x3C
+ ComFn_t SetMaterial;                  // +0x40
+ ComFn_t GetMaterial;                  // +0x44
+ ComFn_t SetLight;                  // +0x48
+ ComFn_t GetLight;                  // +0x4C
+ IDirect3DDevice7_SetRenderState_t SetRenderState;                  // +0x50
+ ComFn_t GetRenderState;                  // +0x54
+ ComFn_t BeginStateBlock;                  // +0x58
+ ComFn_t EndStateBlock;                  // +0x5C
+ ComFn_t PreLoad;                  // +0x60
+ IDirect3DDevice7_DrawPrimitive_t DrawPrimitive;                  // +0x64
+ ComFn_t DrawIndexedPrimitive;                  // +0x68
+ ComFn_t SetClipStatus;                  // +0x6C
+ ComFn_t GetClipStatus;                  // +0x70
+ ComFn_t DrawPrimitiveStrided;                  // +0x74
+ ComFn_t DrawIndexedPrimitiveStrided;                  // +0x78
+ ComFn_t DrawPrimitiveVB;                  // +0x7C
+ ComFn_t DrawIndexedPrimitiveVB;                  // +0x80
+ ComFn_t ComputeSphereVisibility;                  // +0x84
+ ComFn_t GetTexture;                  // +0x88
+ IDirect3DDevice7_SetTexture_t SetTexture;                  // +0x8C
+ ComFn_t GetTextureStageState;                  // +0x90
+ IDirect3DDevice7_SetTextureStageState_t SetTextureStageState;                  // +0x94
+ IDirect3DDevice7_ValidateDevice_t ValidateDevice;                  // +0x98
+ ComFn_t ApplyStateBlock;                  // +0x9C
+ ComFn_t CaptureStateBlock;                  // +0xA0
+ ComFn_t DeleteStateBlock;                  // +0xA4
+ ComFn_t CreateStateBlock;                  // +0xA8
+ ComFn_t Load;                  // +0xAC
+ ComFn_t LightEnable;                  // +0xB0
+ ComFn_t SetClipPlane;                  // +0xB4
+ ComFn_t GetClipPlane;                  // +0xB8
+ ComFn_t GetInfo;                  // +0xBC
+};
+struct IDirect3DDevice7 {                    // COM object: first dword is the vtable pointer
+ struct IDirect3DDevice7Vtbl *lpVtbl;                  // +0x00
+};
+struct IDirectDraw7Vtbl {                  // 30 methods, 120 bytes
+ IDirectDraw7_QueryInterface_t QueryInterface;                  // +0x00
+ IDirectDraw7_AddRef_t AddRef;                  // +0x04
+ IDirectDraw7_Release_t Release;                  // +0x08
+ ComFn_t Compact;                  // +0x0C
+ IDirectDraw7_CreateClipper_t CreateClipper;                  // +0x10
+ ComFn_t CreatePalette;                  // +0x14
+ IDirectDraw7_CreateSurface_t CreateSurface;                  // +0x18
+ ComFn_t DuplicateSurface;                  // +0x1C
+ IDirectDraw7_EnumDisplayModes_t EnumDisplayModes;                  // +0x20
+ ComFn_t EnumSurfaces;                  // +0x24
+ ComFn_t FlipToGDISurface;                  // +0x28
+ IDirectDraw7_GetCaps_t GetCaps;                  // +0x2C
+ IDirectDraw7_GetDisplayMode_t GetDisplayMode;                  // +0x30
+ ComFn_t GetFourCCCodes;                  // +0x34
+ ComFn_t GetGDISurface;                  // +0x38
+ ComFn_t GetMonitorFrequency;                  // +0x3C
+ ComFn_t GetScanLine;                  // +0x40
+ ComFn_t GetVerticalBlankStatus;                  // +0x44
+ ComFn_t Initialize;                  // +0x48
+ IDirectDraw7_RestoreDisplayMode_t RestoreDisplayMode;                  // +0x4C
+ IDirectDraw7_SetCooperativeLevel_t SetCooperativeLevel;                  // +0x50
+ IDirectDraw7_SetDisplayMode_t SetDisplayMode;                  // +0x54
+ IDirectDraw7_WaitForVerticalBlank_t WaitForVerticalBlank;                  // +0x58
+ ComFn_t GetAvailableVidMem;                  // +0x5C
+ ComFn_t GetSurfaceFromDC;                  // +0x60
+ IDirectDraw7_RestoreAllSurfaces_t RestoreAllSurfaces;                  // +0x64
+ ComFn_t TestCooperativeLevel;                  // +0x68
+ ComFn_t GetDeviceIdentifier;                  // +0x6C
+ ComFn_t StartModeTest;                  // +0x70
+ ComFn_t EvaluateMode;                  // +0x74
+};
+struct IDirectDraw7 {                    // COM object: first dword is the vtable pointer
+ struct IDirectDraw7Vtbl *lpVtbl;                  // +0x00
+};
+struct IDirect3D7Vtbl {                  // 8 methods, 32 bytes
+ ComFn_t QueryInterface;                  // +0x00
+ IDirect3D7_AddRef_t AddRef;                  // +0x04
+ IDirect3D7_Release_t Release;                  // +0x08
+ IDirect3D7_EnumDevices_t EnumDevices;                  // +0x0C
+ IDirect3D7_CreateDevice_t CreateDevice;                  // +0x10
+ ComFn_t CreateVertexBuffer;                  // +0x14
+ ComFn_t EnumZBufferFormats;                  // +0x18
+ IDirect3D7_EvictManagedTextures_t EvictManagedTextures;                  // +0x1C
+};
+struct IDirect3D7 {                    // COM object: first dword is the vtable pointer
+ struct IDirect3D7Vtbl *lpVtbl;                  // +0x00
+};
+struct IDirectDrawSurface7Vtbl {                  // 49 methods, 196 bytes
+ ComFn_t QueryInterface;                  // +0x00
+ IDirectDrawSurface7_AddRef_t AddRef;                  // +0x04
+ IDirectDrawSurface7_Release_t Release;                  // +0x08
+ IDirectDrawSurface7_AddAttachedSurface_t AddAttachedSurface;                  // +0x0C
+ ComFn_t AddOverlayDirtyRect;                  // +0x10
+ IDirectDrawSurface7_Blt_t Blt;                  // +0x14
+ ComFn_t BltBatch;                  // +0x18
+ IDirectDrawSurface7_BltFast_t BltFast;                  // +0x1C
+ ComFn_t DeleteAttachedSurface;                  // +0x20
+ ComFn_t EnumAttachedSurfaces;                  // +0x24
+ ComFn_t EnumOverlayZOrders;                  // +0x28
+ IDirectDrawSurface7_Flip_t Flip;                  // +0x2C
+ IDirectDrawSurface7_GetAttachedSurface_t GetAttachedSurface;                  // +0x30
+ ComFn_t GetBltStatus;                  // +0x34
+ IDirectDrawSurface7_GetCaps_t GetCaps;                  // +0x38
+ ComFn_t GetClipper;                  // +0x3C
+ ComFn_t GetColorKey;                  // +0x40
+ IDirectDrawSurface7_GetDC_t GetDC;                  // +0x44
+ ComFn_t GetFlipStatus;                  // +0x48
+ ComFn_t GetOverlayPosition;                  // +0x4C
+ ComFn_t GetPalette;                  // +0x50
+ IDirectDrawSurface7_GetPixelFormat_t GetPixelFormat;                  // +0x54
+ IDirectDrawSurface7_GetSurfaceDesc_t GetSurfaceDesc;                  // +0x58
+ ComFn_t Initialize;                  // +0x5C
+ IDirectDrawSurface7_IsLost_t IsLost;                  // +0x60
+ IDirectDrawSurface7_Lock_t Lock;                  // +0x64
+ IDirectDrawSurface7_ReleaseDC_t ReleaseDC;                  // +0x68
+ IDirectDrawSurface7_Restore_t Restore;                  // +0x6C
+ IDirectDrawSurface7_SetClipper_t SetClipper;                  // +0x70
+ IDirectDrawSurface7_SetColorKey_t SetColorKey;                  // +0x74
+ ComFn_t SetOverlayPosition;                  // +0x78
+ IDirectDrawSurface7_SetPalette_t SetPalette;                  // +0x7C
+ IDirectDrawSurface7_Unlock_t Unlock;                  // +0x80
+ ComFn_t UpdateOverlay;                  // +0x84
+ ComFn_t UpdateOverlayDisplay;                  // +0x88
+ ComFn_t UpdateOverlayZOrder;                  // +0x8C
+ ComFn_t GetDDInterface;                  // +0x90
+ IDirectDrawSurface7_PageLock_t PageLock;                  // +0x94
+ IDirectDrawSurface7_PageUnlock_t PageUnlock;                  // +0x98
+ ComFn_t SetSurfaceDesc;                  // +0x9C
+ ComFn_t SetPrivateData;                  // +0xA0
+ ComFn_t GetPrivateData;                  // +0xA4
+ ComFn_t FreePrivateData;                  // +0xA8
+ ComFn_t GetUniquenessValue;                  // +0xAC
+ ComFn_t ChangeUniquenessValue;                  // +0xB0
+ IDirectDrawSurface7_SetPriority_t SetPriority;                  // +0xB4
+ ComFn_t GetPriority;                  // +0xB8
+ IDirectDrawSurface7_SetLOD_t SetLOD;                  // +0xBC
+ ComFn_t GetLOD;                  // +0xC0
+};
+struct IDirectDrawSurface7 {                    // COM object: first dword is the vtable pointer
+ struct IDirectDrawSurface7Vtbl *lpVtbl;                  // +0x00
+};
+struct IDirectDrawClipperVtbl {                  // 9 methods, 36 bytes
+ ComFn_t QueryInterface;                  // +0x00
+ ComFn_t AddRef;                  // +0x04
+ IDirectDrawClipper_Release_t Release;                  // +0x08
+ ComFn_t GetClipList;                  // +0x0C
+ ComFn_t GetHWnd;                  // +0x10
+ ComFn_t Initialize;                  // +0x14
+ ComFn_t IsClipListChanged;                  // +0x18
+ ComFn_t SetClipList;                  // +0x1C
+ IDirectDrawClipper_SetHWnd_t SetHWnd;                  // +0x20
+};
+struct IDirectDrawClipper {                    // COM object: first dword is the vtable pointer
+ struct IDirectDrawClipperVtbl *lpVtbl;                  // +0x00
+};

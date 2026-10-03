@@ -611,6 +611,9 @@ add_executable(fbchartool
 	src/han2/fnt_file.cpp
 	src/han2/fob_file.cpp
 	src/han2/mbr_formats.cpp
+	src/han2/mb_formats.cpp
+	src/han2/mb_cg.cpp
+	src/png_writer.cpp
 	src/ha4_parts.cpp
 	src/ha4_convert.cpp
 	src/background/bg_file.cpp
