@@ -3,7 +3,7 @@
 #include "framedata_ha4.h"   // flip-mode helpers shared with the MBAC loader
 #include "han2/han2_container.h"
 #include "han2/rbo_types_gen.h"
-#include "han2/rbo_at_record.h"
+#include "han2/rbo_at_gen.h"
 #include "misc.h"
 
 #include <algorithm>

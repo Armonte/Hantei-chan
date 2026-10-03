@@ -2,6 +2,7 @@
 #pragma once
 #include <cstddef>
 #include <cstdint>
+#include "han2_reflect.h"
 
 enum RboMoverKind : int32_t {
 	RBOMV_CONST_OFFSET = 0,
@@ -1215,8 +1216,6 @@ static_assert(offsetof(RboActor, tickRatePtr) == 0x93C, "RboActor.tickRatePtr");
 static_assert(offsetof(RboActor, skillHookLatch) == 0x940, "RboActor.skillHookLatch");
 static_assert(offsetof(RboActor, enterFlags) == 0x944, "RboActor.enterFlags");
 
-struct Han2EnumValue { const char *name; int64_t value; };
-struct Han2EnumInfo { const char *name; const Han2EnumValue *values; int count; bool flags; };
 static const Han2EnumValue kRboMoverKindValues[] = {
 	{"RBOMV_CONST_OFFSET", (int64_t)(0)},
 	{"RBOMV_VELOCITY", (int64_t)(1)},
@@ -1392,7 +1391,7 @@ static const Han2EnumValue kRboP4ColorFxKindValues[] = {
 	{"CFX_SPAWN_FX_12", (int64_t)(12)},
 	{"CFX_HIT_FLASH", (int64_t)(15)},
 };
-static const Han2EnumInfo kHan2Enums[] = {
+static const Han2EnumInfo kRboActorEnums[] = {
 	{"RboMoverKind", kRboMoverKindValues, 5, false},
 	{"RboObjectKind", kRboObjectKindValues, 3, false},
 	{"RboActorClassFlags", kRboActorClassFlagsValues, 6, true},
@@ -1422,7 +1421,6 @@ static const Han2EnumInfo kHan2Enums[] = {
 	{"RboP4ColorFxKind", kRboP4ColorFxKindValues, 8, false},
 };
 
-struct Han2FieldInfo { const char *name; uint16_t offset; uint8_t size; uint8_t count; uint8_t kind; const char *enumName; const char *comment; };
 static const Han2FieldInfo kRboMoverVecFields[] = {
 	{"velX", 0x0, 4, 1, 1, nullptr, "+0x00 sub_44B5B0 *a3 += a3[2]; Actor_FrameMoveAddSpeed 0x44B3D0 adds frame speedX"},
 	{"velY", 0x4, 4, 1, 1, nullptr, "+0x04 sub_44B5B0 a3[1] += a3[3]"},
