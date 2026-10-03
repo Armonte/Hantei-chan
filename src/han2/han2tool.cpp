@@ -532,6 +532,7 @@ static int CmdGof1Rt(int argc, char **argv)
 			std::vector<uint8_t> out;
 			if (!gof1::Serialize(fd, out, &err)) { printf("FAIL %s: %s\n", a.entries[k].name.c_str(), err.c_str()); fail++; continue; }
 			std::vector<uint8_t> enc = out; gof1::EncryptDat(enc);
+			if (k == 0 || getenv("PARTS")) { auto cgp = new CG(); Parts &pp = *new Parts(cgp); std::string pe; const auto &blob = fd.m_han2->parts; bool ok = han2::PatToParts(blob.data(), blob.size(), pp, &pe); printf("  %s parts: %s, %zu part sets, %zu cutouts, %zu textures %s\n", a.entries[k].name.c_str(), ok ? "ok" : "FAIL", pp.partSets.size(), pp.cutOuts.size(), pp.gfxMeta.size(), pe.c_str()); }
 			if (out == plain && enc == stored) pass++;
 			else { size_t d = 0; while (d < std::min(out.size(), plain.size()) && out[d] == plain[d]) d++; if (!getenv("NODUMP")) { std::ofstream(std::filesystem::u8path("C:/dev/hantei-chan/work/g1_out.bin"), std::ios::binary).write((const char *)out.data(), (std::streamsize)out.size()); std::ofstream(std::filesystem::u8path("C:/dev/hantei-chan/work/g1_plain.bin"), std::ios::binary).write((const char *)plain.data(), (std::streamsize)plain.size()); } printf("FAIL %s::%s: first diff 0x%zx (sizes %zu vs %zu)%s\n", argv[i], a.entries[k].name.c_str(), d, out.size(), plain.size(), enc == stored ? "" : " re-encrypt differs"); fail++; }
 		}

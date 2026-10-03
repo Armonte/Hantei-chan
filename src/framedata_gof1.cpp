@@ -250,4 +250,29 @@ bool Serialize(const FrameData &fd, std::vector<uint8_t> &out, std::string *err,
 	return true;
 }
 
+static std::string g_lastErr;
+const std::string &LastSaveError() { return g_lastErr; }
+
+bool SaveFile(const FrameData &fd, const char *filename, std::string *err)
+{
+	g_lastErr.clear();
+	auto done = [&](bool ok) { if (err) *err = g_lastErr; return ok; };
+	std::vector<uint8_t> plain;
+	if (!Serialize(fd, plain, &g_lastErr)) return done(false);
+	std::string f = filename ? filename : "";
+	std::string ext = f.size() >= 2 ? f.substr(f.size() - 2) : "";
+	for (auto &c : ext) c = (char)tolower((unsigned char)c);
+	if (ext == ".p") {
+		const Han2Container &c = *fd.m_han2;
+		Archive a;
+		if (c.sourcePath.empty() || !Open(c.sourcePath, a, &g_lastErr)) { if (g_lastErr.empty()) g_lastErr = "no source archive to copy"; return done(false); }
+		int idx = Find(a, c.gof1Name);
+		if (idx < 0) { g_lastErr = "entry " + c.gof1Name + " not found in the source archive"; return done(false); }
+		return done(WriteArchiveReplacing(a, idx, plain, f, &g_lastErr));
+	}
+	EncryptDat(plain);
+	if (!WriteFileAtomic(filename, plain.data(), plain.size())) { g_lastErr = std::string("could not write ") + filename; return done(false); }
+	return done(true);
+}
+
 } // namespace gof1

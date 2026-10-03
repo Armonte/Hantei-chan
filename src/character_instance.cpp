@@ -184,6 +184,15 @@ bool CharacterInstance::loadHan2(const std::string& stem,
 	return true;
 }
 
+bool CharacterInstance::loadGof1(const std::string& archivePath, const std::string& entryName, std::string& err)
+{
+	if (!han2::LoadGof1Character(*this, archivePath, entryName, &err)) return false;
+	std::string n = entryName; size_t dot = n.find_last_of('.'); if (dot != std::string::npos) n = n.substr(0, dot);
+	m_name = n; m_ha6Paths.clear(); m_topHA6Path.clear();
+	m_isModified = false; undoManager.reset();
+	return true;
+}
+
 void CharacterInstance::loadNotes()
 {
 	if (m_topHA6Path.empty()) return;

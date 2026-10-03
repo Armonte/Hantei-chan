@@ -1,5 +1,6 @@
 #include "han2_browser.h"
 #include "han2/pac_archive.h"
+#include "han2/gof1_archive.h"
 #include "han2_pac_window.h"
 #include "filedialog.h"
 #include "png_writer.h"
@@ -16,7 +17,7 @@ namespace han2ui {
 bool showBrowser = false;
 
 namespace {
-struct Mounted { std::shared_ptr<pac::Archive> a; std::string shortName; };
+struct Mounted { std::shared_ptr<pac::Archive> a; std::shared_ptr<gof1::Archive> g; std::string shortName; };
 std::vector<Mounted> g_mounted;
 int g_sel = 0;
 char g_filter[64] = "";
@@ -36,7 +37,16 @@ std::string AddArchive(const std::string &path)
 {
 	auto a = std::make_shared<pac::Archive>();
 	std::string err;
-	if (!pac::Open(path, *a, &err)) return path + ": " + err;
+	if (!pac::Open(path, *a, &err)) {
+		auto g = std::make_shared<gof1::Archive>(); std::string e2;
+		if (!gof1::Open(path, *g, &e2)) return path + ": " + err;
+		for (auto &m : g_mounted) if (m.g && m.g->path == path) return {};
+		Mounted m; m.g = g; m.a = std::make_shared<pac::Archive>(); m.a->path = path;
+		for (auto &e : g->entries) { pac::Entry pe; pe.name = e.name; pe.size = e.size; pe.offset = e.offset; m.a->entries.push_back(pe); }
+		m.shortName = std::filesystem::u8path(path).filename().string() + " (GOF1)";
+		g_mounted.push_back(m); g_sel = (int)g_mounted.size() - 1; showBrowser = true;
+		return {};
+	}
 	for (auto &m : g_mounted) if (m.a->path == path) return {};
 	Mounted m; m.a = a;
 	m.shortName = std::filesystem::u8path(path).filename().string();
@@ -111,6 +121,8 @@ bool DrawBrowser(OpenRequest &req, std::string &message)
 				const bool isChar = EndsWith(e.name, ".dat") || EndsWith(e.name, ".dt2");
 				ImGui::Selectable(e.name.c_str(), false, ImGuiSelectableFlags_SpanAllColumns | ImGuiSelectableFlags_AllowDoubleClick);
 				if (isChar && ImGui::IsItemHovered() && ImGui::IsMouseDoubleClicked(0)) {
+					if (g_mounted[g_sel].g) { req.stem = "\x01gof1"; req.gof1Archive = g_mounted[g_sel].g->path; req.gof1Entry = e.name; req.origin = g_mounted[g_sel].shortName; open = true; }
+					else {
 					std::string stem = e.name.substr(0, e.name.size() - 4);
 					std::vector<std::shared_ptr<pac::Archive>> order;
 					// the clicked archive first, then the rest with later mounts winning
@@ -118,10 +130,11 @@ bool DrawBrowser(OpenRequest &req, std::string &message)
 					for (int k = (int)g_mounted.size() - 1; k >= 0; k--) if (k != g_sel) order.push_back(g_mounted[k].a);
 					req.stem = stem; req.read = han2::PacReader(order); req.origin = g_mounted[g_sel].shortName;
 					open = true;
+					}
 				}
 				if (!isChar && ImGui::IsItemHovered() && ImGui::IsMouseDoubleClicked(0)) {
 					std::vector<uint8_t> bytes; std::string rerr;
-					if (pac::ReadEntry(a, i, bytes, &rerr)) OpenFileViewer(e.name, std::move(bytes), g_mounted[g_sel].shortName); else message = rerr;
+					if (g_mounted[g_sel].g ? gof1::ReadEntry(*g_mounted[g_sel].g, i, bytes, &rerr) : pac::ReadEntry(a, i, bytes, &rerr)) OpenFileViewer(e.name, std::move(bytes), g_mounted[g_sel].shortName); else message = rerr;
 				}
 				ImGui::TableSetColumnIndex(1); ImGui::Text("%u", e.size);
 				ImGui::TableSetColumnIndex(2);
@@ -130,7 +143,7 @@ bool DrawBrowser(OpenRequest &req, std::string &message)
 					std::string out = FileDialog(-1, true, defName);
 					if (!out.empty()) {
 						std::vector<uint8_t> b; std::string err;
-						if (pac::ReadEntry(a, i, b, &err)) {
+						if (g_mounted[g_sel].g ? gof1::ReadEntry(*g_mounted[g_sel].g, i, b, &err) : pac::ReadEntry(a, i, b, &err)) {
 							std::ofstream f(std::filesystem::u8path(out), std::ios::binary);
 							if (f && (b.empty() || f.write((const char *)b.data(), (std::streamsize)b.size()))) g_extractStatus = "extracted " + e.name + " to " + out;
 							else g_extractStatus = "could not write " + out;

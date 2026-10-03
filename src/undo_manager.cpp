@@ -32,7 +32,7 @@ static_assert(std::is_trivially_copyable<Han2FrameRaw>::value && std::is_trivial
 #if defined(__x86_64__) || defined(_M_X64)
 static_assert(sizeof(Layer_Type) == 60, "Layer layout changed: update layerEquals() in undo_manager.cpp, then this size");
 static_assert(sizeof(Frame_AF) == 80, "Frame_AF layout changed: update afEquals() in undo_manager.cpp, then this size");
-static_assert(sizeof(Sequence) == 248 + sizeof(Ha6SeqEnc) + 4 + sizeof(Han2SeqRaw) - 4, "Sequence layout changed: update SequenceContentEquals() in undo_manager.cpp, then this size");
+static_assert(sizeof(Sequence) == 248 + sizeof(Ha6SeqEnc) + 4 + sizeof(Han2SeqRaw), "Sequence layout changed: update SequenceContentEquals() in undo_manager.cpp, then this size");
 #endif
 static_assert(sizeof(Frame) == sizeof(Frame_AF) + sizeof(Frame_AS) + sizeof(Frame_AT)
 	+ sizeof(Frame::EF) + sizeof(Frame::IF) + sizeof(BoxList) + sizeof(Ha4FrameRaw) + sizeof(Han2FrameRaw) + sizeof(Ha6FrameEnc),

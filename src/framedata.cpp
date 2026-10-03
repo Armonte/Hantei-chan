@@ -2,6 +2,7 @@
 #include "framedata_load.h"
 #include "framedata_ha4.h"
 #include "framedata_han2.h"
+#include "framedata_gof1.h"
 #include <fstream>
 #include <algorithm>
 #include "misc.h"
@@ -250,6 +251,7 @@ bool FrameData::save(const char *filename)
 {
 	if (m_ha4 && !TargetIsHA6(filename))
 		return ha4::SaveFile(*this, filename);
+	if (m_han2 && m_han2->sub == 3) return gof1::SaveFile(*this, filename);
 	if (m_han2) {
 		std::string f = filename ? filename : "";
 		std::string ext = f.size() >= 4 ? f.substr(f.size() - 4) : "";

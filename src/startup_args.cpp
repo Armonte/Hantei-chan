@@ -155,9 +155,14 @@ void MainFrame::ProcessStartupArgs()
 		size_t dot = path.find_last_of('.');
 		if (dot != std::string::npos) ext = path.substr(dot);
 		for (auto &c : ext) c = (char)tolower((unsigned char)c);
-		if (ext == ".hproj") {
+		const size_t cc = path.find("::");
+		if (cc != std::string::npos) {   // <archive.p>::<ENTRY.DAT>: a GOF1 character straight out of its archive
+			auto character = std::make_unique<CharacterInstance>(); std::string err;
+			if (character->loadGof1(path.substr(0, cc), path.substr(cc + 2), err)) { characters.push_back(std::move(character)); createViewForCharacter(characters.back().get()); }
+			else requestErrorPopup("Load Error", err);
+		} else if (ext == ".hproj") {
 			loadProjectFromPath(path, false);
-		} else if (ext == ".dt2" || ext == ".pac" || ext == ".chp" || (ext == ".pat" && han2StartupSniffPat(path)) || (ext == ".dat" && han2StartupSniff(path))) {
+		} else if (ext == ".dt2" || ext == ".pac" || ext == ".p" || ext == ".chp" || (ext == ".pat" && han2StartupSniffPat(path)) || (ext == ".dat" && han2StartupSniff(path))) {
 			openHan2File(path);   // RBO / GOF2 character or PAC archive
 		} else if (ext == ".dat") {
 			loadStageFile(path);   // [stage-link] a bgmake stage (with --game-link: the Stage section's files)

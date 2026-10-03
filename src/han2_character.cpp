@@ -4,6 +4,8 @@
 #include "han2/han2_container.h"
 #include "han2/pac_archive.h"
 #include "han2_pat.h"
+#include "han2/gof1_archive.h"
+#include "framedata_gof1.h"
 #include "misc.h"
 
 #include <cctype>
@@ -95,6 +97,27 @@ bool LoadCharacter(CharacterInstance &ch, const std::string &stem, const ReadFn 
 		} else s += ", parts: " + perr2;
 	}
 	if (summary) *summary = s;
+	return true;
+}
+
+bool LoadGof1Character(CharacterInstance &ch, const std::string &archivePath, const std::string &entryName, std::string *err)
+{
+	auto fail = [&](const std::string &m) { if (err) *err = m; return false; };
+	gof1::Archive a; std::string e;
+	if (!gof1::Open(archivePath, a, &e)) return fail(e);
+	int idx = gof1::Find(a, entryName);
+	if (idx < 0) return fail(entryName + " is not in " + archivePath);
+	std::vector<uint8_t> d;
+	if (!gof1::ReadEntry(a, (size_t)idx, d, &e)) return fail(e);
+	gof1::DecryptDat(d);
+	if (!gof1::Load(ch.frameData, d.data(), d.size(), &e)) return fail(entryName + ": " + e);
+	auto cont = ch.frameData.m_han2;
+	cont->sourcePath = archivePath; cont->gof1Name = a.entries[(size_t)idx].name;
+	if (!cont->parts.empty()) {
+		std::string pe;
+		if (PatToParts(cont->parts.data(), cont->parts.size(), ch.parts, &pe)) UploadPartsTextures(ch.parts);
+	}
+	if (!cont->cg.empty()) ch.cg.loadFromMemory(cont->cg.data(), (unsigned)cont->cg.size());
 	return true;
 }
 
