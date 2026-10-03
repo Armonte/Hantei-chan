@@ -20,7 +20,7 @@ Legend: [x] done, [ ] open. "(icaro)" = added by icaroffa 2026. "(ours)" = in ou
 - [x] File > Open, Save, Save As, Exit [Load RBO / GOF2 character..., Save Character (loose .DT2 or full .DAT), Save As]
 - [ ] Language menu English / Japanese (UI strings; Hantei-chan has its own i18n decision pending)
 - [ ] Warn when working folder is on C: (MainForm_CDriveNotRecommended)  (low value; may be dropped with a note)
-- [ ] Drag and drop files onto views (IMG, sprite sheets, effects)
+- [x] Drag and drop files onto views (IMG, sprite sheets, effects) [WM_DROPFILES: characters, archives, PAT/CHP open; IMG opens a viewer. Implemented but not exercised by an automated test]
 
 ## B. PAC archives (PAC.cs, CreatePACForm, SavePACForm)
 - [x] Read PAC/data0x.dat (magic 1, XOR 0xE3DF59AC, 68-byte entries, name XOR (i*j*3+61)); 400 MB-class archives mapped, not slurped [han2tool count: all 12 archives; src/han2/pac_archive.cpp]

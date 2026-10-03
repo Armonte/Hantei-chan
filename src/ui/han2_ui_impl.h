@@ -76,6 +76,7 @@ void MainFrame::openHan2Request(const han2ui::OpenRequest& req)
 
 void MainFrame::DrawHan2Windows()
 {
+	ProcessDroppedFiles();
 	han2ui::DrawPacCreate();
 	han2ui::DrawFileViewers();
 	han2ui::DrawCgWindow(getActiveCharacter());
@@ -117,4 +118,25 @@ void MainFrame::exportHan2Character(CharacterInstance* character)
 		ok ? std::to_string(rep.cgPngs) + " CG images, " + std::to_string(rep.posePngs) + " poses, " + std::to_string(rep.framePngs) + " frames in " +
 		     std::to_string(rep.patternsWritten) + " patterns (strip.png / sheet.png / animation.json each, poses.json, animations.json)\nin " + folder + "\\" + character->getName()
 		   : err);
+}
+
+void MainFrame::ProcessDroppedFiles()
+{
+	if (m_droppedFiles.empty()) return;
+	std::vector<std::string> files; files.swap(m_droppedFiles);
+	for (auto& f : files) {
+		std::string ext = std::filesystem::u8path(f).extension().string();
+		for (auto& c : ext) c = (char)tolower((unsigned char)c);
+		if (ext == ".img") {
+			std::ifstream in(std::filesystem::u8path(f), std::ios::binary);
+			std::vector<uint8_t> b((std::istreambuf_iterator<char>(in)), std::istreambuf_iterator<char>());
+			han2ui::OpenFileViewer(utf82sj(std::filesystem::u8path(f).filename().string()), std::move(b), "dropped");
+		} else if (ext == ".dt2" || ext == ".dat" || ext == ".pat" || ext == ".chp" || ext == ".pac") {
+			openHan2File(f);
+		} else if (ext == ".png" || ext == ".bmp") {
+			requestErrorPopup("Dropped image", "Open the CG sprite window or an IMG viewer first, then use its Import PNG button.\n" + f);
+		} else {
+			requestErrorPopup("Dropped file", "Not an RBO / GOF2 file type: " + f);
+		}
+	}
 }
