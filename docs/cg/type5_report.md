@@ -63,3 +63,7 @@ Numbers: Akiha effect set (675 images, the non-type-0 ones): 19.75 MB stored now
 keep type 0 only for hard-alpha sprites that are already type 0, and leave RGB images that cannot be expressed as ramps (photographic / many-hue sprites, effect.cg shared bank) to the
 PovertyCaster runtime shader (c). Type 5 beats type 0 on exactly what DGV lost (soft alpha, 36 % of pixels) and beats RGB-only on being a plain data mod that works on stock MBAACC and
 shrinks the bank. Cost: a global-palette budget (ramps compete with body indices) and no support in cgtool/BMP Cutter (Hantei-chan gets type 5 read/write).
+
+## Status
+
+Parked: user wants no data changes. The bake-to-type-5 path is not being built; this report and the proof stay as research. Direction is runtime-only recolour (PovertyCaster shader), with Hantei-chan as the authoring/preview tool.
