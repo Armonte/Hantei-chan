@@ -2,6 +2,7 @@
 #include "cgm_ops.h"
 #include "../png_writer.h"
 #include "../../third_party/json/json.hpp"
+#include <windows.h>
 #include <algorithm>
 #include <cstdio>
 #include <cstring>
@@ -21,6 +22,13 @@ std::string FileSafeName(const char *n32) {
 	return s;
 }
 
+// stored names are Shift-JIS (CP932)
+static std::string NameUtf8(const char *n32) {
+	const std::string raw(n32, strnlen(n32, 32));
+	const int n = MultiByteToWideChar(932, 0, raw.data(), (int)raw.size(), nullptr, 0);
+	std::wstring w(n > 0 ? n : 0, L'\0'); if (n > 0) MultiByteToWideChar(932, 0, raw.data(), (int)raw.size(), w.data(), n);
+	return WideToUtf8(w);
+}
 static fs::path P(const std::string &u) { return fs::path(Utf8ToWide(u)); }
 static uint64_t PalRgbHash(const uint32_t pal[256]) {   // colours 1..255, alpha ignored: identifies "the palette the indices refer to"
 	uint64_t h = 1469598103934665603ull;
@@ -61,7 +69,7 @@ bool ExportBank(const Bank &bank, const std::string &dir, const std::string &ban
 		const Image &im = bank.images[n];
 		json j; j["id"] = n; j["present"] = im.present;
 		if (!im.present) { man["images"].push_back(j); continue; }
-		j["name"] = std::string(im.name, strnlen(im.name, 32)); j["type"] = im.type; j["bpp"] = im.bpp;
+		j["name"] = NameUtf8(im.name); j["type"] = im.type; j["bpp"] = im.bpp;
 		j["canvas"] = {im.w, im.h}; j["bounds"] = {im.x1, im.y1, im.x2, im.y2};
 		j["blocks"] = (int)im.blocks.size();
 		auto own = bank.owners(n, atlas), dep = bank.dependants(n, atlas);
@@ -100,7 +108,7 @@ bool ExportBank(const Bank &bank, const std::string &dir, const std::string &ban
 	if (!opt.cgtoolLayout) {
 		std::ofstream f(root / "manifest.json", std::ios::binary);
 		if (!f) { res.error = "could not write manifest.json"; return false; }
-		const std::string txt = man.dump(1); f.write(txt.data(), (std::streamsize)txt.size()); res.files++;
+		const std::string txt = man.dump(1, ' ', false, json::error_handler_t::replace); f.write(txt.data(), (std::streamsize)txt.size()); res.files++;
 	}
 	return true;
 }

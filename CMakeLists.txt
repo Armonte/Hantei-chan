@@ -75,6 +75,7 @@ add_executable(${EXE}
 	src/cgm/cgm_ops.cpp
 	src/cgm/cgm_export.cpp
 	src/cgm/cgm_palette.cpp
+	src/cgm/cgm_struct.cpp
 	src/cgm/cgm_usage.cpp
 	src/cgm/cgm_window.cpp
 	src/han2/qoh_img.cpp
@@ -820,10 +821,10 @@ endif()
 add_test(NAME hud_layout COMMAND hud_layout_test WORKING_DIRECTORY ${CMAKE_SOURCE_DIR})
 
 # CG manager core + command line (docs/cg/cg_manager_design.md)
-set(CGM_CORE_SOURCES src/cgm/cgm_bank.cpp src/cgm/cgm_ops.cpp src/cgm/cgm_export.cpp src/cgm/cgm_palette.cpp)
-add_executable(cgmtool src/cgm/cgmtool.cpp ${CGM_CORE_SOURCES} src/cg.cpp src/misc.cpp src/png_writer.cpp tinyalloc/tinyalloc.c)
+set(CGM_CORE_SOURCES src/cgm/cgm_bank.cpp src/cgm/cgm_ops.cpp src/cgm/cgm_export.cpp src/cgm/cgm_palette.cpp src/cgm/cgm_struct.cpp)
+add_executable(cgmtool src/cgm/cgmtool.cpp ${CGM_CORE_SOURCES} src/cgm/cgm_usage.cpp src/framedata.cpp src/framedata_load.cpp src/framedata_save.cpp src/framedata_ha4.cpp ${HAN2_MODEL_SOURCES} src/cg.cpp src/misc.cpp src/png_writer.cpp tinyalloc/tinyalloc.c)
 target_include_directories(cgmtool PRIVATE "." "src" "third_party" "${CMAKE_BINARY_DIR}/generated")
-target_compile_definitions(cgmtool PRIVATE WIN32_LEAN_AND_MEAN)
+target_compile_definitions(cgmtool PRIVATE WIN32_LEAN_AND_MEAN HA6GUIVERSION="${CMAKE_PROJECT_VERSION}")
 target_link_libraries(cgmtool PRIVATE tinyalloc windowscodecs ole32 uuid)
 if(MINGW)
 	target_link_options(cgmtool PRIVATE -static-libgcc -static-libstdc++ -static)

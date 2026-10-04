@@ -32,4 +32,36 @@ int UsageIndex::patternsUsing(int image) const {
 	return c;
 }
 
+int RemapSprites(FrameData &fd, const std::vector<int> &remap, std::vector<ClearedRef> *cleared) {
+	int changed = 0; const int n = fd.get_sequence_count();
+	for (int p = 0; p < n; p++) {
+		Sequence *seq = fd.get_sequence(p); if (!seq) continue;
+		bool touched = false;
+		for (int f = 0; f < (int)seq->frames.size(); f++) {
+			auto &layers = seq->frames[f].AF.layers;
+			for (int l = 0; l < (int)layers.size(); l++) {
+				auto &L = layers[l];
+				if (L.usePat || L.spriteId < 0) continue;
+				const int old = L.spriteId;
+				const int now = old < (int)remap.size() ? remap[old] : old;
+				if (now == old) continue;
+				if (now < 0 && cleared) cleared->push_back({p, f, l, old});
+				L.spriteId = now < 0 ? -1 : now; changed++; touched = true;
+			}
+		}
+		if (touched) fd.mark_modified(p);
+	}
+	return changed;
+}
+
+int RestoreCleared(FrameData &fd, const std::vector<ClearedRef> &cleared) {
+	int n = 0;
+	for (const ClearedRef &c : cleared) {
+		Sequence *seq = fd.get_sequence(c.pattern);
+		if (!seq || c.frame >= (int)seq->frames.size() || c.layer >= (int)seq->frames[c.frame].AF.layers.size()) continue;
+		seq->frames[c.frame].AF.layers[c.layer].spriteId = c.oldId; fd.mark_modified(c.pattern); n++;
+	}
+	return n;
+}
+
 } // namespace cgm

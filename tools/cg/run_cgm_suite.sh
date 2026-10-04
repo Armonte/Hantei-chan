@@ -12,8 +12,12 @@ nice -n 10 "$T" check "${BANKS[@]}" | grep -E "^(FAIL|SECTION)" || rc=1
 [ ${PIPESTATUS[0]} -ne 0 ] && rc=1
 if [ $QUICK -eq 0 ]; then
 	for b in "${BANKS[@]}"; do
-		nice -n 10 "$T" roundtrip "$b" --tmp "$SCR" | grep -E "^FAIL" ; [ ${PIPESTATUS[0]} -ne 0 ] && rc=1
+		out=$(nice -n 10 "$T" roundtrip "$b" --tmp "$SCR" 2>&1); r=$?
+		echo "$out" | grep -E "^FAIL"
+		[ $r -ne 0 ] && { echo "!! roundtrip $b exited $r: $(echo "$out" | tail -2 | tr '\n' ' ')"; rc=1; }
 	done
 	echo "SECTION cgm-roundtrip: ${#BANKS[@]} banks processed (any FAIL lines above)"
 fi
+mapfile -t PALS < <(ls "$DATA"/*.pal | while read -r f; do wslpath -w "$f"; done)
+(cd "$ROOT/build" && nice -n 10 "$T" pal-check "${PALS[@]}" | grep -E "^(FAIL|SECTION)") || rc=1
 exit $rc

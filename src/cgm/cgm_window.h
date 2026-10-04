@@ -70,6 +70,11 @@ private:
 	// make the CG object / character show the edited model; records an undo step when `label` is not empty
 	bool commit(CharacterInstance &ch, const std::string &label, Bank before, const WindowHost &host);
 	bool applyModel(CharacterInstance &ch, const WindowHost &host);
+	// structural edit: the model in `bank` already changed; rewrite the frame references through `remap` (empty = ids unchanged), reload the CG object, record one undo step
+	bool commitStruct(CharacterInstance &ch, const std::string &label, Bank before, const std::vector<int> &remap, const WindowHost &host);
+	int moveTarget = 0, insertAt = -1;
+	struct Pending { int op = 0; int id = -1; bool open = false; } pend;   // op: 1 delete, 2 clear, 3 delete all unused
+	void drawStructure(CharacterInstance &ch, const WindowHost &host);
 	void undoRedo(CharacterInstance &ch, bool redo, const WindowHost &host);
 	void clearThumbs();
 	bool fetch(CharacterInstance &ch, int id, int pal, int pups, std::vector<uint8_t> &px, int &w, int &h);
