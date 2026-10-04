@@ -9,6 +9,9 @@
 #include <cstring>
 
 // S3TC/DXT compression constants
+#ifndef GL_R8
+#define GL_R8 0x8229
+#endif
 #ifndef GL_COMPRESSED_RGBA_S3TC_DXT1_EXT
 #define GL_COMPRESSED_RGBA_S3TC_DXT1_EXT 0x83F1
 #endif
@@ -145,6 +148,18 @@ void Texture::Apply(bool repeat, bool linearFilter)
 	{
 		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
 		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+	}
+
+	isIndexed = image->is8bpp;
+	if (isIndexed) {
+		//8bpp indexed: upload raw indices as R8; the sprite shader resolves the
+		//palette (and does its own bilinear), so sample NEAREST here.
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+		glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
+		glTexImage2D(GL_TEXTURE_2D, 0, GL_R8, image->width, image->height, 0, GL_RED, GL_UNSIGNED_BYTE, image->pixels);
+		glPixelStorei(GL_UNPACK_ALIGNMENT, 4);
+		return;
 	}
 
 	GLenum extType = image->bgr ? GL_BGRA : GL_RGBA;

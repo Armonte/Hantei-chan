@@ -3,6 +3,7 @@
 
 #include "frame_disp_common.h"
 #include "../cg.h"
+#include "../i18n.h"
 
 // ============================================================================
 // Action State (AS) Display
@@ -45,15 +46,15 @@ inline void AsDisplay(Frame_AS *as, FrameData *frameData = nullptr, int patternI
 	}
 
 	im::SetNextItemWidth(width*2);
-	if(im::InputInt2("Speed", as->speed)) {
+	if(im::InputInt2(LBL("Speed"), as->speed)) {
 		markModified();
 	}
-	im::SameLine(0.f, 20); im::SetNextItemWidth(width);
-	if(im::InputInt("Max X speed", &as->maxSpeedX, 0, 0)) {
+	i18n::SameLineFit(i18n::FieldWidth(width, LBL("Max X speed"))); im::SetNextItemWidth(width);
+	if(im::InputInt(LBL("Max X speed"), &as->maxSpeedX, 0, 0)) {
 		markModified();
 	}
 	im::SetNextItemWidth(width*2);
-	if(im::InputInt2("Accel", as->accel)) {
+	if(im::InputInt2(LBL("Accel"), as->accel)) {
 		markModified();
 	}
 	
@@ -87,32 +88,32 @@ inline void AsDisplay(Frame_AS *as, FrameData *frameData = nullptr, int patternI
 	}
 
 	im::SetNextItemWidth(width);
-	if(im::InputInt("Number of hits", &as->hitsNumber, 0, 0)) {
+	if(im::InputInt(LBL("Number of hits"), &as->hitsNumber, 0, 0)) {
 		markModified();
 	}
 	im::SameLine(0,20.f);
-	if(im::Checkbox("Player can move", &as->canMove)) {
+	if(im::Checkbox(LBL("Player can move"), &as->canMove)) {
 		markModified();
 	}
-	if(im::Combo("State", &as->stanceState, stateList, IM_ARRAYSIZE(stateList))) {
+	if(i18n::Combo(LBL("State"), &as->stanceState, stateList, IM_ARRAYSIZE(stateList))) {
 		markModified();
 	}
-	if(im::Combo("Invincibility", &as->invincibility, invulList, IM_ARRAYSIZE(invulList))) {
+	if(i18n::Combo(LBL("Invincibility"), &as->invincibility, invulList, IM_ARRAYSIZE(invulList))) {
 		markModified();
 	}
-	if(im::Combo("Counterhit", &as->counterType, counterList, IM_ARRAYSIZE(counterList))) {
+	if(i18n::Combo(LBL("Counterhit"), &as->counterType, counterList, IM_ARRAYSIZE(counterList))) {
 		markModified();
 	}
-	if(im::Combo("Cancel normal", &as->cancelNormal, cancelList, IM_ARRAYSIZE(cancelList))) {
+	if(i18n::Combo(LBL("Cancel normal"), &as->cancelNormal, cancelList, IM_ARRAYSIZE(cancelList))) {
 		markModified();
 	}
-	if(im::Combo("Cancel special", &as->cancelSpecial, cancelList, IM_ARRAYSIZE(cancelList))) {
+	if(i18n::Combo(LBL("Cancel special"), &as->cancelSpecial, cancelList, IM_ARRAYSIZE(cancelList))) {
 		markModified();
 	}
 	
 
 	im::Separator();
-	if(im::CollapsingHeader("Sine flags")) {
+	if(im::CollapsingHeader(LBL("Sine flags"))) {
 		flagIndex = -1;
 		if(BitField("Flags", &as->sineFlags, &flagIndex, 8)) {
 			markModified();
@@ -122,16 +123,24 @@ inline void AsDisplay(Frame_AS *as, FrameData *frameData = nullptr, int patternI
 			case 0: Tooltip("Use Y"); break;
 			case 4: Tooltip("Use X"); break;
 		}
-		if(im::InputInt4("Sinewave", as->sineParameters)) {
+		if(im::InputInt4(LBL("Sinewave"), as->sineParameters)) {
 			markModified();
 		}
 		im::SameLine();
 		im::TextDisabled("(?)");
 		if(im::IsItemHovered())
 			Tooltip("Sine parameters:\nX dist, Y dist\nX frequency, Y frequency");
-		if(im::InputFloat2("Phases", as->sinePhases)) {
+		if(im::InputFloat2(LBL("Phases"), as->sinePhases)) {
 			markModified();
 		}
+	}
+	if(frameData && frameData->usesUniFormat()) {
+		im::SetNextItemWidth(60);
+		if(im::InputInt(LBL("ASCF"), &as->ascf, 0, 0)) {
+			markModified();
+		}
+		if(im::IsItemHovered())
+			Tooltip("ASCF (UNI2/MBTL, AS +28): one int; used in a few UNI2/MBTL patterns.");
 	}
 }
 

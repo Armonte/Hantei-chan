@@ -51,7 +51,8 @@ unsigned int* PartGfx<>::PgLoad(unsigned int *data, const unsigned int *data_end
             data += 0x20 / 4;
         }
         else if (!memcmp(buf, "PGTP", 4)) {
-            // Texture type (optional tag, not always used)
+            // Texture type hint (MBAACC, single uint32)
+            tex.pgtp = (int)data[0];
             ++data;
         }
         else if (!memcmp(buf, "PGTE", 4)) {
@@ -263,7 +264,8 @@ std::string PartGfx<>::ImportTexture(const char *filename, std::vector<Texture*>
     imageData = new char[imageSize];
     std::copy(data, data + imageSize, imageData);
 
-    // Load into OpenGL texture
+    // Load into OpenGL texture (skipped in headless / no-GL builds).
+#ifndef PAT_HEADLESS
     auto texture = GetTextureFromId(textures);
     if (!texture) {
         texture = new Texture;
@@ -312,6 +314,7 @@ std::string PartGfx<>::ImportTexture(const char *filename, std::vector<Texture*>
 
     textureIndex = textures.back()->id;
     printf("[DDS IMPORT] Final texture ID: %u\n", textureIndex);
+#endif
 
     return ""; // Success
 }
@@ -332,7 +335,7 @@ void PartGfx<>::ExportTexture(const char *filename)
 }
 
 template<>
-void PartGfx<>::CompressDDS(std::ofstream &file, const PartGfx *gfx, std::streampos pgt2A)
+void PartGfx<>::CompressDDS(std::ostream &file, const PartGfx *gfx, std::streampos pgt2A)
 {
     // Custom RLE-like compression
     // Format: 0x00 <value> <count> for runs, or literal bytes
@@ -424,11 +427,11 @@ void PartGfx<>::CompressDDS(std::ofstream &file, const PartGfx *gfx, std::stream
 }
 
 template<>
-void PartGfx<>::Save(std::ofstream &file, const PartGfx *gfx)
+void PartGfx<>::Save(std::ostream &file, const PartGfx *gfx)
 {
     std::streampos pointer;
 
-    // Save name if present
+    // Save name if present (PGNM is shared by MBAACC and UNI formats)
     if (!gfx->name.empty()) {
         file.write("PGNM", 4);
         char buf[32]{};
@@ -438,25 +441,38 @@ void PartGfx<>::Save(std::ofstream &file, const PartGfx *gfx)
         file.write(PTR(buf), 32);
     }
 
-    // Save PGTE (dimensions)
+    // MBAACC PGTX path: legacy uncompressed BGRA texture. Detected by data
+    // pointer being set (UNI PGT2 path sets imageSize/imageData instead).
+    if (gfx->data != nullptr && gfx->imageSize == 0)
+    {
+        if (gfx->pgtp != 0) {
+            file.write("PGTP", 4);
+            file.write(VAL(gfx->pgtp), 4);
+        }
+        file.write("PGTX", 4);
+        file.write(VAL(gfx->w), 4);
+        file.write(VAL(gfx->h), 4);
+        file.write(VAL(gfx->bpp), 4);
+        file.write(gfx->data, gfx->w * gfx->h * (gfx->bpp / 8));
+        return;
+    }
+
+    // UNI PGT2 path.
     file.write("PGTE", 4);
     file.write(VAL(gfx->pgte[0]), 2);
     file.write(VAL(gfx->pgte[1]), 2);
 
-    // Determine type name
     int typeName = 21;
     if (gfx->type == 1)
         typeName = 827611204; // "DXT1" as int32
     else if (gfx->type == 5)
         typeName = 894720068; // "DXT5" as int32
 
-    // Save PGT2 (texture data)
     file.write("PGT2", 4);
     int totalSize = gfx->imageSize;
 
     if (!gfx->noCompress)
     {
-        // Save with compression
         totalSize += 128;
         pointer = file.tellp();
         int pgt2[9]{0,
@@ -467,12 +483,10 @@ void PartGfx<>::Save(std::ofstream &file, const PartGfx *gfx)
                     0, 0};
         file.write(PTR(&pgt2), 9 * 4);
         file.write(VAL(totalSize), 4);
-        // CompressDDS writes both necessary sizes in PGT2
         PartGfx::CompressDDS(file, gfx, pointer);
     }
     else
     {
-        // Save without compression
         totalSize += 128;
         file.write(VAL(totalSize), 4);
         int pgt2[5]{gfx->w,
@@ -489,9 +503,14 @@ void PartGfx<>::Save(std::ofstream &file, const PartGfx *gfx)
 template<>
 bool PartGfx<>::IsModifiedData(const PartGfx *gfx)
 {
-    if (!gfx->name.empty() && gfx->imageSize > 0)
+    if (gfx->name.empty())
+        return false;
+    // UNI PGT2 data (compressed/DDS) — has imageSize set
+    if (gfx->imageSize > 0)
         return true;
-
+    // MBAACC PGTX data — has data pointer + dimensions
+    if (gfx->data != nullptr && gfx->w > 0 && gfx->h > 0)
+        return true;
     return false;
 }
 

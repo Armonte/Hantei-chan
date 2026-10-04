@@ -6,8 +6,11 @@
 #include "cg.h"
 #include "parts/parts.h"
 #include "undo_manager.h"
+#include "mv_script.h"
 #include <string>
 #include <vector>
+#include <functional>
+#include <cstdint>
 
 class CharacterInstance
 {
@@ -23,6 +26,17 @@ public:
 
 	// Load single .ha6 file
 	bool loadHA6(const std::string& ha6Path, bool patch = false);
+
+	// Load a French-Bread RBO / GOF2 character (frames + CG + parts) through a file reader (folder or PAC archives).
+	// saveTarget: file Save writes to (empty = Save As only, e.g. when the files live inside an archive).
+	bool loadHan2(const std::string& stem, const std::function<bool(const std::string&, std::vector<uint8_t>&)>& read,
+	              const std::string& origin, const std::string& saveTarget, std::string& err);
+
+	// GOF1 character from a gof_0N.p archive (Save As .DAT / new .p).
+	bool loadGof1File(const std::string& path, std::string& err);
+	bool loadPb2k1File(const std::string& path, std::string& err);
+	bool loadQohFile(const std::string& path, int version, std::string& err);
+	bool loadGof1(const std::string& archivePath, const std::string& entryName, std::string& err);
 
 	// Load CG file
 	bool loadCG(const std::string& cgPath);
@@ -49,6 +63,10 @@ public:
 	void markModified();
 	void clearModified();
 	bool isModified() const;
+	// Annotations side file (<ha6>.notes.json, issue #58)
+	void loadNotes();
+	bool saveNotes(const std::string& ha6Path);
+	const std::string& notesError() const { return m_notesError; }
 
 	// File paths
 	const std::vector<std::string>& getHA6Paths() const;
@@ -65,11 +83,17 @@ public:
 	CharacterInstance* getEffectCharacter() const;
 	bool loadEffectCharacter();  // Load effect.txt/effect.ha6/effect.pat for this character
 
+	// MBTL move-script spawn index (sibling chrXXX_mv_*.txt files), see mv_script.h
+	const MvScriptIndex& getMvScripts() const { return m_mvScripts; }
+
 	// Data access
 	FrameData frameData;
 	FrameState state;
 	CG cg;
 	Parts parts;
+
+	// Archive this character was opened from in the archive browser (PAC / GOF1 .p path): Save writes back into it (see abrowser::SaveCharacterIntoArchive).
+	std::string archiveHome;
 
 	// Undo/Redo manager
 	UndoManager undoManager;
@@ -84,6 +108,9 @@ public:
 	std::unique_ptr<CharacterInstance> effectCharacter;
 
 private:
+	// Load sibling chrXXX_mv_*.txt move scripts and register for spawn viz
+	void loadMvScripts(const std::string& txtPath);
+
 	std::string m_name;
 	std::string m_txtPath;         // Original .txt file path
 	std::vector<std::string> m_ha6Paths; // All loaded .ha6 files
@@ -91,6 +118,8 @@ private:
 	std::string m_patPath;         // PAT (Parts) file path
 	std::string m_topHA6Path;      // Highest-indexed .ha6 (auto-save target)
 	bool m_isModified = false;
+	MvScriptIndex m_mvScripts;     // MBTL move-script spawns (may be empty)
+	std::string m_notesError;
 };
 
 #endif /* CHARACTER_INSTANCE_H_GUARD */

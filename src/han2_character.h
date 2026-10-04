@@ -1,0 +1,71 @@
+#ifndef HAN2_CHARACTER_H_GUARD
+#define HAN2_CHARACTER_H_GUARD
+
+// Loading a French-Bread character (RBO .DAT/.DT2, GOF2 .DT2+.PAT+.CHP) as a Hantei-chan character:
+// frame data, CG bank, parts. Files come from a ReadFn so they can sit in a folder or inside PAC archives.
+
+#include <cstdint>
+#include <functional>
+#include <memory>
+#include <string>
+#include <vector>
+
+class CharacterInstance;
+struct FrameState;
+namespace pac { struct Archive; }
+
+namespace han2 {
+
+// Reads the file called `name` (case-insensitive, e.g. "ACOLYTE_F.DAT"); false when it does not exist.
+using ReadFn = std::function<bool(const std::string &name, std::vector<uint8_t> &out)>;
+
+// Worker threads (archive browser thumbnails): load without creating GL textures. Per-thread, off by default.
+void SetNoGlUpload(bool on);
+ReadFn DirReader(const std::string &dir);
+// Archives in priority order: the first archive that has the name wins.
+ReadFn PacReader(const std::vector<std::shared_ptr<pac::Archive>> &archives);
+
+// `stem`: character file name without extension. The pattern area comes from <stem>.DT2 when present (as the game does),
+// else <stem>.DAT; parts, CG and names always come from <stem>.DAT. `origin` is shown to the user (folder or archive name).
+bool LoadCharacter(CharacterInstance &ch, const std::string &stem, const ReadFn &read, const std::string &origin, std::string *summary, std::string *err);
+
+// GOF1: load character `entryName` (e.g. AKIKO.DAT) from a gof_0N.p archive: archive cipher + section cipher undone, parts from the old PAT v2 block.
+bool LoadGof1Character(CharacterInstance &ch, const std::string &archivePath, const std::string &entryName, std::string *err);
+
+// Melty Blood (2002) / ReAct leftover / PB2K1-family character .DAT as a loose file (an archive entry extracted by the browser, or a file on disk):
+// the archive cipher is already undone, the section cipher is undone here. Saving writes the enciphered file (or a .p with the entry replaced).
+bool LoadGof1CharacterFile(CharacterInstance &ch, const std::string &path, std::string *err);
+
+// Party Breakers (2001) character .DAT (three-section cipher), loose or an archive entry extracted by the browser. Saving re-enciphers (or replaces the entry in a new archive).
+bool LoadPb2k1CharacterFile(CharacterInstance &ch, const std::string &path, std::string *err);
+
+// Queen of Heart '98 (.dat, plain) / '99 (.chr, enciphered with the file-name stem) character. Saving re-enciphers with the stem of the target name.
+bool LoadQohCharacterFile(CharacterInstance &ch, const std::string &path, int version, std::string *err);
+
+// Rebuild the container's PAT block from the character's (possibly edited) Parts model before a save.
+// Returns false with *err on failure; *partsChanged tells whether the block differs from the one loaded.
+bool SyncPartsToContainer(CharacterInstance &ch, bool *partsChanged, std::string *err);
+
+// GOF2: write the edited <stem>NN.PAT / <stem>NN.CHP next to the .DT2 (only the ones that changed; .bak of the first version kept).
+bool SaveGof2Companions(CharacterInstance &ch, const std::string &dt2Path, std::string *err);
+
+} // namespace han2
+
+namespace han2ui {
+
+extern bool showInspector;
+extern unsigned dockInspectorId, dockAnimId;   // dock nodes (the Right Pane / Box Pane nodes) the HAN2 inspector and the animation player first appear in (0 = float)
+void DrawInspector(CharacterInstance *ch, FrameState &state);
+
+extern bool showCgWindow;
+extern bool showAnimWindow;
+// Game-rate animation player; drives the view's pattern/frame so the editor draws the boxes of the playing frame.
+void DrawAnimWindow(CharacterInstance *ch, FrameState &state, void *onion /* OnionSkinSettings* */);
+extern bool showDiffWindow;
+void DrawDiffWindow(CharacterInstance *ch);
+// CG bank window: list, preview, export / import of the sprites (PNG).
+void DrawCgWindow(CharacterInstance *ch);
+
+} // namespace han2ui
+
+#endif

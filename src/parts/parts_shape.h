@@ -40,7 +40,7 @@ public:
     static unsigned int* VnLoad(unsigned int* data, const unsigned int* data_end, int amount, std::vector<Shape<>>* shapes);
 
     // Saving
-    static void Save(std::ofstream &file, const Shape *shape, bool saveName);
+    static void Save(std::ostream &file, const Shape *shape, bool saveName);
     static bool IsModifiedData(const Shape *shape);
 
     // Utilities

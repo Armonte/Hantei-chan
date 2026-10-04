@@ -1,9 +1,12 @@
+#include <algorithm>
 #include "main_pane.h"
 #include "pattern_disp.h"
 #include "frame_disp.h"
 #include "misc.h"
 #include <imgui.h>
-#include "imsearch.h"	
+#include "imsearch.h"
+#include "pattern_search.h"
+#include "i18n.h"
 
 MainPane::MainPane(Render* render, FrameData *framedata, FrameState &fs) : DrawWindow(render, framedata, fs),
 decoratedNames(nullptr)
@@ -32,7 +35,7 @@ void MainPane::RegenerateNames()
 void MainPane::Draw()
 {
 	namespace im = ImGui;
-	im::Begin("Left Pane",0);
+	im::Begin(windowName("Left Pane").c_str(),0);
 	if(frameData->m_loaded)
 	{
 		// Count and display modified patterns
@@ -44,9 +47,18 @@ void MainPane::Draw()
 				modifiedCount++;
 		}
 
-		if(modifiedCount > 0)
+		// Always one status line, so the widgets below never move when patterns
+		// become modified (users drive the pane with position-based macros, #82).
 		{
-			im::TextColored(ImVec4(1.0f, 0.7f, 0.0f, 1.0f), "Modified patterns: %d", modifiedCount);
+			const ImVec4 modifiedColor(1.0f, 0.7f, 0.0f, 1.0f);
+			const ImVec4 idleColor = im::GetStyleColorVec4(ImGuiCol_TextDisabled);
+			im::TextColored(modifiedCount > 0 ? modifiedColor : idleColor, TXT("Modified patterns: %d"), modifiedCount);
+			auto curSeq = frameData->get_sequence(currState.pattern);
+			if(curSeq && curSeq->modified)
+			{
+				im::SameLine();
+				im::TextColored(modifiedColor, TXT("[Modified]"));
+			}
 		}
 
 		// Update current pattern's decorated name in case it was modified
@@ -55,9 +67,9 @@ void MainPane::Draw()
 		// Pattern search bar (above pattern dropdown)
 		if(showPatternSearchBar)
 		{
-			if(ImSearch::BeginSearch())
+			if(ImSearch::BeginSearch(kPatternSearchFlags))
 			{
-				ImSearch::SearchBar("Search pattern names...");
+				ImSearch::SearchBar(TXT("Search pattern names..."));
 				
 				// Only show searchable items when there's an active search query
 				const char* query = ImSearch::GetUserQuery();
@@ -91,7 +103,13 @@ void MainPane::Draw()
 			}
 		}
 
-		if (im::BeginCombo("Pattern", decoratedNames[currState.pattern].c_str(), ImGuiComboFlags_HeightLargest))
+		{	// the combo takes what the label, the ID field and the search button leave, so a longer (Japanese) label never pushes them out
+			const ImGuiStyle &sty = im::GetStyle();
+			const float others = im::CalcTextSize(LBL("Pattern"), nullptr, true).x + sty.ItemInnerSpacing.x * 2 + 20.f + 45.f
+				+ im::CalcTextSize("ID").x + 10.f + 30.f;
+			im::SetNextItemWidth(std::max(80.f, im::GetContentRegionAvail().x - others));
+		}
+		if (im::BeginCombo(LBL("Pattern"), decoratedNames[currState.pattern].c_str(), ImGuiComboFlags_HeightLargest))
 		{
 			auto count = frameData->get_sequence_count();
 			// Regenerate all names when dropdown is open to show current modified status
@@ -142,7 +160,7 @@ void MainPane::Draw()
 		}
 		if(im::IsItemHovered())
 		{
-			im::SetTooltip(showPatternSearchBar ? "Hide search bar" : "Show search bar");
+			im::SetTooltip(showPatternSearchBar ? TXT("Hide search bar") : TXT("Show search bar"));
 		}
 		auto seq = frameData->get_sequence(currState.pattern);
 		if(seq)
@@ -152,9 +170,14 @@ void MainPane::Draw()
 			{			
 				float spacing = im::GetStyle().ItemInnerSpacing.x;
 				im::SetNextItemWidth(im::GetWindowWidth() - 160.f);
+				// On manual frame navigation, drop any activeSpawns left by a
+				// timeline scrub: the render path prefers activeSpawns when
+				// non-empty, so stale entries kept showing the scrubbed tick's
+				// spawns instead of the newly selected frame's.
 				if (im::SliderInt("##frameSlider", &currState.frame, 0, nframes)) {
 					// Sync ticks when slider changes
 					currState.currentTick = CalculateTickFromFrame(frameData, currState.pattern, currState.frame);
+					currState.activeSpawns.clear();
 				}
 				im::SameLine();
 				im::PushButtonRepeat(true);
@@ -162,12 +185,14 @@ void MainPane::Draw()
 					currState.frame--;
 					// Sync ticks when manually seeking
 					currState.currentTick = CalculateTickFromFrame(frameData, currState.pattern, currState.frame);
+					currState.activeSpawns.clear();
 				}
 				im::SameLine(0.0f, spacing);
 				if(im::ArrowButton("##right", ImGuiDir_Right)) {
 					currState.frame++;
 					// Sync ticks when manually seeking
 					currState.currentTick = CalculateTickFromFrame(frameData, currState.pattern, currState.frame);
+					currState.activeSpawns.clear();
 				}
 				im::PopButtonRepeat();
 				im::SameLine();
@@ -178,7 +203,7 @@ void MainPane::Draw()
 				else if(currState.frame > nframes)
 					currState.frame = nframes;
 
-				if(im::Button("Animate"))
+				if(im::Button(LBL("Animate")))
 				{
 					currState.animating = !currState.animating;
 					currState.animeSeq = currState.pattern;
@@ -192,8 +217,8 @@ void MainPane::Draw()
 			}
 			else
 			{
-				im::Text("This pattern has no frames.");
-				if(im::Button("Add frame"))
+				im::Text(TXT("This pattern has no frames."));
+				if(im::Button(LBL("Add frame")))
 				{
 					seq->frames.push_back({});
 					currState.frame = 0;
@@ -204,31 +229,42 @@ void MainPane::Draw()
 			}
 
 			im::BeginChild("FrameInfo", {0, 0}, false);
-
-			// Show if current pattern is modified
-			if(seq->modified)
+			// Keep this view's scroll position across tab switches (#73; the
+			// Right Pane already does the same).
 			{
-				im::TextColored(ImVec4(1.0f, 0.7f, 0.0f, 1.0f), "[Modified]");
+				static FrameState* lastLeftView = nullptr;
+				if (lastLeftView != &currState) {
+					im::SetScrollY(currState.leftPaneScrollY);
+					lastLeftView = &currState;
+				}
 			}
 
-			if (im::TreeNode("Pattern data"))
+			if (im::TreeNode(LBL("Pattern data")))
 			{
 				// Strings are already stored as UTF-8 in memory
 				nameEditBuffer = seq->name;
-				if(im::InputText("Pattern name", &nameEditBuffer))
+				if(im::InputText(LBL("Pattern name"), &nameEditBuffer))
 				{
 					seq->name = nameEditBuffer;
 					frameData->mark_modified(currState.pattern);
 					markModified();
 					decoratedNames[currState.pattern] = frameData->GetDecoratedName(currState.pattern);
 				}
+				// Pattern note (issue #58), kept beside the HA6, not in it.
+				{
+					const std::string key = Ha6Notes::PatternKey(currState.pattern);
+					const std::string* note = frameData->notes.get(key);
+					noteEditBuffer = note ? *note : std::string();
+					if(im::InputTextMultiline(LBL("Pattern note"), &noteEditBuffer, ImVec2(0, im::GetTextLineHeight() * 3)))
+						frameData->notes.set(key, noteEditBuffer);
+				}
 				PatternDisplay(seq, frameData, currState.pattern);
 
-				if(im::Button("Copy pattern")) {
+				if(im::Button(LBL("Copy pattern"))) {
 					currState.copied->pattern = *seq;
 				}
 				im::SameLine(0,20.f);
-				if(im::Button("Paste pattern")) {
+				if(im::Button(LBL("Paste pattern"))) {
 					*seq = currState.copied->pattern;
 					frameData->mark_modified(currState.pattern);
 					markModified();
@@ -236,32 +272,43 @@ void MainPane::Draw()
 					nframes = seq->frames.size() - 1;
 				}
 
-				if(im::Button("Push pattern copy")) {
+				if(im::Button(LBL("Push pattern copy"))) {
 					patCopyStack.push_back(SequenceWId{currState.pattern, *seq});
 				}
 				im::SameLine(0,20.f);
-				if(im::Button("Pop all and paste")) {
+				if(im::Button(LBL("Pop all and paste"))) {
 					PopCopies();
 					RegenerateNames();
 					nframes = seq->frames.size() - 1;
 				}
 				im::SameLine(0,20.f);
-				im::Text("%zu copies", patCopyStack.size());
+				im::Text(TXT("%zu copies"), patCopyStack.size());
+				if(!patCopyStack.empty()) {
+					im::SameLine();
+					if(im::SmallButton(LBL("Drop last"))) patCopyStack.pop_back();
+					im::SameLine();
+					if(im::SmallButton(LBL("Clear"))) patCopyStack.clear();
+				}
+				i18n::TextDisabledWrapped("%s", TXT("Windows > Pattern manager: multi-select, paste slots, move with references."));
 
 				im::TreePop();
 				im::Separator();
 			}
 			if(nframes >= 0)
 			{
+				// Frame-list mutations are deferred to the end of this block:
+				// inserting/erasing reallocates seq->frames and would leave
+				// `frame` dangling for the rest of the draw.
+				enum class KeyframeOp { None, Append, Insert, Delete, AppendNextSprite } keyframeOp = KeyframeOp::None;
 				Frame &frame = seq->frames[currState.frame];
-				if(im::TreeNode("State data"))
+				if(im::TreeNode(LBL("State data")))
 				{
 					AsDisplay(&frame.AS, frameData, currState.pattern, [this]() { markModified(); });
-					if(im::Button("Copy AS")) {
+					if(im::Button(LBL("Copy AS"))) {
 						currState.copied->as = frame.AS;
 					}
 					im::SameLine(0,20.f);
-					if(im::Button("Paste AS")) {
+					if(im::Button(LBL("Paste AS"))) {
 						frame.AS = currState.copied->as;
 						frameData->mark_modified(currState.pattern);
 						markModified();
@@ -269,73 +316,102 @@ void MainPane::Draw()
 					im::TreePop();
 					im::Separator();
 				}
-				if (im::TreeNode("Animation data"))
+				if (im::TreeNode(LBL("Animation data")))
 				{
 					AfDisplay(&frame.AF, currState.selectedLayer, frameData, currState.pattern, [this]() { markModified(); });
 					im::TreePop();
 					im::Separator();
 				}
-				if (im::TreeNode("Tools"))
+				if (frame.ha6.nExtra > 0 && im::TreeNode(LBL("Other tags (kept as loaded)")))
 				{
-					im::Checkbox("Make copy current frame", &copyThisFrame);
+					// Tags the UNI2/MBTL loaders read that no editor field covers
+					// (rare: no shipped file uses them). Saved back unchanged.
+					static const struct { const char* tag; const char* what; } kInfo[] = {
+						{"AFAN", "layer Z rotation as an int (same slot as AFAZ)"},
+						{"ASV1", "read, ignored"}, {"ASVA", "AS velocity (2 words)"}, {"ASVC", "AS velocity (2 words)"},
+						{"ASAT", "AS +32"}, {"ASKV", "read, ignored"}, {"ASSS", "stance (same field as ASS1/ASS2)"},
+						{"ASDF", "read, ignored"}, {"ASCL", "movement flags (2 words)"}, {"ASSE", "movement flags (2 words)"},
+						{"ASDE", "AS +36"}, {"ASF2", "read, ignored"}, {"ASF3", "read, ignored"},
+						{"ATAB", "AT +66"}, {"ATBG", "AT +70 (guard related, Hit_ResolveHitstop)"}, {"ATGE", "AT +32/+34"},
+						{"ATKZ", "read, ignored"}, {"ATGS", "read, ignored"}, {"ATF2", "read, ignored"},
+						{"HRFF", "box flag byte: box (attack if < 0), value"},
+					};
+					for (int i = 0; i < frame.ha6.nExtra && i < Ha6FrameEnc::kMaxExtra; ++i) {
+						const Ha6ExtraTag& x = frame.ha6.extra[i];
+						std::string line(x.tag, 4);
+						for (int k = 0; k < x.nwords; ++k) line += " " + std::to_string(x.w[k]);
+						const char* what = "";
+						for (const auto& in : kInfo) if (!memcmp(in.tag, x.tag, 4)) what = in.what;
+						im::Text("%s", line.c_str());
+						im::SameLine(); im::TextDisabled("%s", what);
+					}
+					im::TreePop();
+				}
+				if (im::TreeNode(LBL("Tools")))
+				{
+					im::Checkbox(LBL("Make copy current frame"), &copyThisFrame);
 					
-					if(im::Button("Append frame"))
-					{
-						if(copyThisFrame)
-							seq->frames.push_back(frame);
-						else
-							seq->frames.push_back({});
-						frameData->mark_modified(currState.pattern);
-						markModified();
-					}
+					if(im::Button(LBL("Append frame")))
+						keyframeOp = KeyframeOp::Append;
 
-					im::SameLine(0,20.f);
-					if(im::Button("Insert frame"))
-					{
-						if(copyThisFrame)
-							seq->frames.insert(seq->frames.begin()+currState.frame, frame);
-						else
-							seq->frames.insert(seq->frames.begin()+currState.frame, {});
-						frameData->mark_modified(currState.pattern);
-						markModified();
-					}
+					i18n::SameLineFit(i18n::ButtonWidth(LBL("Insert frame")));
+					if(im::Button(LBL("Insert frame")))
+						keyframeOp = KeyframeOp::Insert;
 
-					im::SameLine(0,20.f);
-					if(im::Button("Delete frame"))
-					{
-						seq->frames.erase(seq->frames.begin()+currState.frame);
-						if(currState.frame >= seq->frames.size())
-							currState.frame--;
-						frameData->mark_modified(currState.pattern);
-						markModified();
-					}
+					i18n::SameLineFit(i18n::ButtonWidth(LBL("Delete frame")));
+					if(im::Button(LBL("Delete frame")))
+						keyframeOp = KeyframeOp::Delete;
 
-					im::SameLine(0,20.f);
-					if(im::Button("Copy frame"))
+					i18n::SameLineFit(i18n::ButtonWidth(LBL("Copy frame")));
+					if(im::Button(LBL("Copy frame")))
 					{
 						currState.copied->frame = frame;
 					}
-					im::SameLine(0,20.f);
-					if(im::Button("Paste frame"))
+					i18n::SameLineFit(i18n::ButtonWidth(LBL("Paste frame")));
+					if(im::Button(LBL("Paste frame")))
 					{
 						frame = currState.copied->frame;
 						frameData->mark_modified(currState.pattern);
 						markModified();
 					}
 
-					im::SameLine(0,20.f);
-					if(im::Button("Range tool"))
+					i18n::SameLineFit(i18n::ButtonWidth(LBL("Range tool")));
+					if(im::Button(LBL("Range tool")))
 					{
 						ranges[0] = 0;
 						ranges[1] = 0;
 						rangeWindow = !rangeWindow;
 					}
 
+					// Sprite numbering (issue #45)
+					if(im::Button(LBL("Append frame, sprite +1")))
+						keyframeOp = KeyframeOp::AppendNextSprite;
+					if(im::IsItemHovered())
+						im::SetTooltip(TXT("Append a copy of the last frame with its layer 0 sprite number + 1,\nand select it."));
+					im::SameLine(0,20.f);
+					if(im::Button(LBL("Number sprites from here")))
+					{
+						if (frame.AF.layers.empty()) frame.AF.layers.push_back({});
+						const int base = frame.AF.layers[0].spriteId;
+						if (base >= 0) {
+							for(int i = currState.frame + 1; i < (int)seq->frames.size(); i++)
+							{
+								auto& layers = seq->frames[i].AF.layers;
+								if (layers.empty()) layers.push_back({});
+								layers[0].spriteId = base + (i - currState.frame);
+							}
+							frameData->mark_modified(currState.pattern);
+							markModified();
+						}
+					}
+					if(im::IsItemHovered())
+						im::SetTooltip(TXT("Set layer 0 of every later frame to this frame's sprite + 1, + 2, ..."));
+
 					im::Separator();
 
 					// Range paste controls
-					im::Text("Range Paste:");
-					im::InputInt2("Frame range", ranges);
+					im::Text(TXT("Range Paste:"));
+					im::InputInt2(LBL("Frame range"), ranges);
 
 					// Clamp ranges
 					const int maxFrame = seq->frames.size() - 1;
@@ -345,8 +421,8 @@ void MainPane::Draw()
 					if(ranges[1] > maxFrame) ranges[1] = maxFrame;
 
 					// Animation Properties
-					im::Text("Animation:");
-					if(im::Button("Paste sprite & duration"))
+					im::Text(TXT("Animation:"));
+					if(im::Button(LBL("Paste sprite & duration")))
 					{
 						// Ensure source frame has at least one layer
 						if (frame.AF.layers.empty()) {
@@ -368,7 +444,7 @@ void MainPane::Draw()
 						markModified();
 					}
 
-					if(im::Button("Paste jump & interpolation"))
+					if(im::Button(LBL("Paste jump & interpolation")))
 					{
 						for(int i = ranges[0]; i <= ranges[1] && i >= 0 && i < seq->frames.size(); i++)
 						{
@@ -382,7 +458,7 @@ void MainPane::Draw()
 						markModified();
 					}
 
-					if(im::Button("Paste priority & loops"))
+					if(im::Button(LBL("Paste priority & loops")))
 					{
 						for(int i = ranges[0]; i <= ranges[1] && i >= 0 && i < seq->frames.size(); i++)
 						{
@@ -397,8 +473,8 @@ void MainPane::Draw()
 					im::Separator();
 
 					// Transform Properties
-					im::Text("Transforms:");
-					if(im::Button("Paste offset (X/Y)"))
+					im::Text(TXT("Transforms:"));
+					if(im::Button(LBL("Paste offset (X/Y)")))
 					{
 						if (frame.AF.layers.empty()) frame.AF.layers.push_back({});
 						const auto& srcLayer = frame.AF.layers[0];
@@ -413,7 +489,7 @@ void MainPane::Draw()
 						markModified();
 					}
 
-					if(im::Button("Paste rotation"))
+					if(im::Button(LBL("Paste rotation")))
 					{
 						if (frame.AF.layers.empty()) frame.AF.layers.push_back({});
 						const auto& srcLayer = frame.AF.layers[0];
@@ -428,7 +504,7 @@ void MainPane::Draw()
 						markModified();
 					}
 
-					if(im::Button("Paste scale"))
+					if(im::Button(LBL("Paste scale")))
 					{
 						if (frame.AF.layers.empty()) frame.AF.layers.push_back({});
 						const auto& srcLayer = frame.AF.layers[0];
@@ -442,7 +518,7 @@ void MainPane::Draw()
 						markModified();
 					}
 
-					if(im::Button("Paste color & blend"))
+					if(im::Button(LBL("Paste color & blend")))
 					{
 						if (frame.AF.layers.empty()) frame.AF.layers.push_back({});
 						const auto& srcLayer = frame.AF.layers[0];
@@ -457,7 +533,7 @@ void MainPane::Draw()
 						markModified();
 					}
 
-					if(im::Button("Paste all transforms"))
+					if(im::Button(LBL("Paste all transforms")))
 					{
 						if (frame.AF.layers.empty()) frame.AF.layers.push_back({});
 						const auto& srcLayer = frame.AF.layers[0];
@@ -481,7 +557,7 @@ void MainPane::Draw()
 					im::Separator();
 
 					// Copy/paste multiple frames
-					if(im::Button("Copy frames in range"))
+					if(im::Button(LBL("Copy frames in range")))
 					{
 						currState.copied->frames.clear();
 						for(int i = ranges[0]; i <= ranges[1] && i >= 0 && i < seq->frames.size(); i++)
@@ -493,7 +569,7 @@ void MainPane::Draw()
 					}
 
 					im::SameLine();
-					if(im::Button("Paste frames at position"))
+					if(im::Button(LBL("Paste frames at position")))
 					{
 						int insertPos = ranges[0];
 						if(insertPos >= 0 && insertPos <= seq->frames.size() && !currState.copied->frames.empty())
@@ -517,9 +593,9 @@ void MainPane::Draw()
 			if(rangeWindow)
 			{
 				im::SetNextWindowSize(ImVec2{400, 300}, ImGuiCond_FirstUseEver);
-				im::Begin("Range tool", &rangeWindow);
+				im::Begin(LBL("Range tool"), &rangeWindow);
 
-				im::InputInt2("Frame range", ranges);
+				im::InputInt2(LBL("Frame range"), ranges);
 
 				// Clamp ranges
 				const int maxFrame = seq->frames.size() - 1;
@@ -536,11 +612,11 @@ void MainPane::Draw()
 			{
 				im::SetNextWindowSize(ImVec2{500, 400}, ImGuiCond_FirstUseEver);
 				im::SetNextWindowPos(im::GetMainViewport()->GetCenter(), ImGuiCond_FirstUseEver, ImVec2(0.5f, 0.5f));
-				if(im::Begin("Search Pattern Names", &showPatternSearch, ImGuiWindowFlags_NoCollapse))
+				if(im::Begin(LBL("Search Pattern Names"), &showPatternSearch, ImGuiWindowFlags_NoCollapse))
 				{
-					if(ImSearch::BeginSearch())
+					if(ImSearch::BeginSearch(kPatternSearchFlags))
 					{
-						ImSearch::SearchBar("Search pattern names...");
+						ImSearch::SearchBar(TXT("Search pattern names..."));
 
 						auto count = frameData->get_sequence_count();
 						for(int n = 0; n < count; n++)
@@ -569,12 +645,62 @@ void MainPane::Draw()
 				}
 				im::End();
 			}
+
+			// Apply the deferred keyframe op. `frame` is not used past this
+			// point; the frame index is re-validated after the mutation.
+			if(keyframeOp != KeyframeOp::None)
+			{
+				const int at = currState.frame;
+				switch(keyframeOp)
+				{
+				case KeyframeOp::Append:
+				{
+					Frame newFrame = copyThisFrame ? seq->frames[at] : Frame{};
+					seq->frames.push_back(std::move(newFrame));
+					break;
+				}
+				case KeyframeOp::Insert:
+				{
+					// Copy first: insert(pos, {}) picked the initializer_list
+					// overload and inserted nothing.
+					Frame newFrame = copyThisFrame ? seq->frames[at] : Frame{};
+					seq->frames.insert(seq->frames.begin() + at, std::move(newFrame));
+					break;
+				}
+				case KeyframeOp::Delete:
+					seq->frames.erase(seq->frames.begin() + at);
+					break;
+				case KeyframeOp::AppendNextSprite:
+				{
+					Frame newFrame = seq->frames.back();
+					if (newFrame.AF.layers.empty()) newFrame.AF.layers.push_back({});
+					if (newFrame.AF.layers[0].spriteId >= 0) newFrame.AF.layers[0].spriteId += 1;
+					seq->frames.push_back(std::move(newFrame));
+					currState.frame = (int)seq->frames.size() - 1;
+					break;
+				}
+				default:
+					break;
+				}
+
+				const int count = (int)seq->frames.size();
+				if(currState.frame >= count)
+					currState.frame = count - 1;
+				if(currState.frame < 0)
+					currState.frame = 0;
+				currState.currentTick = count > 0
+					? CalculateTickFromFrame(frameData, currState.pattern, currState.frame) : 0;
+				currState.activeSpawns.clear();
+				frameData->mark_modified(currState.pattern);
+				markModified();
 			}
+			}
+			currState.leftPaneScrollY = im::GetScrollY();
 			im::EndChild();
 		}
 	}
 	else
-		im::Text("Load some data first.");
+		im::Text(TXT("Load some data first."));
 
 	//im::Text("Application average %.3f ms/frame (%.1f FPS)", 1000.0f / im::GetIO().Framerate, im::GetIO().Framerate);
 	im::End();

@@ -7,6 +7,7 @@
 
 #include "../copy_manager.h"
 #include "../imgui_utils.h"
+#include "../i18n.h"
 
 PatShapePane::PatShapePane(Render* render, StateReference *curInstance) : DrawWindow(render, curInstance),
                                                                     shapesDecoratedNames(nullptr)
@@ -50,7 +51,7 @@ const char* const shapeList[] = {
 void PatShapePane::Draw()
 {
     if(isVisible) {
-        ImGui::Begin("Shape Pane", 0);
+        ImGui::Begin(LBL("Shape Pane"), 0);
         auto seq = curInstance->framedata->get_sequence(curInstance->currState->pattern);
         auto pat = curInstance->parts;
         if(curInstance->parts->loaded) {
@@ -69,19 +70,19 @@ void PatShapePane::Draw()
 
 void PatShapePane::DrawPopUp() {
 
-    if (ImGui::BeginPopupModal("Shape Delete"))
+    if (ImGui::BeginPopupModal(LBL("Shape Delete")))
     {
-        ImGui::Text("Are you sure you want to delete this Part?");
+        ImGui::Text(TXT("Are you sure you want to delete this Part?"));
 
         ImGui::Separator();
 
-        if (ImGui::Button("OK", ImVec2(120, 40))) {
+        if (ImGui::Button(LBL("OK"), ImVec2(120, 40))) {
             curInstance->parts->shapes[curInstance->currState->partShape] = {};
             RegenerateShapesNames();
             ImGui::CloseCurrentPopup();
         }
         ImGui::SameLine();
-        if (ImGui::Button("Cancel", ImVec2(120, 40))) {
+        if (ImGui::Button(LBL("Cancel"), ImVec2(120, 40))) {
             ImGui::CloseCurrentPopup();
         }
         ImGui::EndPopup();
@@ -92,18 +93,18 @@ void PatShapePane::DrawShape()
 {
 
         auto nShape = curInstance->parts->shapes.size();
-        if(ImGui::Button("Add Shape")){
+        if(ImGui::Button(LBL("Add Shape"))){
             auto item = &curInstance->parts->shapes.emplace_back();
             item->id = curInstance->parts->shapes.size() - 1;
             RegenerateShapesNames();
             curInstance->currState->partShape = item->id;
         }
         ImGui::SameLine();
-        if(nShape > 0 && ImGui::Button("Delete Shape")){
-            openpopupWithId = "Shape Delete";
+        if(nShape > 0 && ImGui::Button(LBL("Delete Shape"))){
+            openpopupWithId = LBL("Shape Delete");
         }
         if(nShape > 0) {
-            if (ImGui::BeginCombo("Shape", shapesDecoratedNames[curInstance->currState->partShape].c_str(),
+            if (ImGui::BeginCombo(LBL("Shape"), shapesDecoratedNames[curInstance->currState->partShape].c_str(),
                                   ImGuiComboFlags_HeightLargest)) {
 
                 auto count = curInstance->parts->shapes.size();
@@ -123,22 +124,22 @@ void PatShapePane::DrawShape()
             }
             auto shape = &curInstance->parts->shapes[curInstance->currState->partShape];
             if (shape) {
-                if (ImGui::InputText("Shape name", &shape->name)) {
+                if (ImGui::InputText(LBL("Shape name"), &shape->name)) {
                     shapesDecoratedNames[curInstance->currState->partShape] = curInstance->parts->GetShapesDecorateName(curInstance->currState->partShape);
                 }
                 ImGui::NewLine();
-                ImGui::SameLine(ImGui::GetWindowWidth()-200);
-                if(ImGui::Button("Copy Shape")){
+                ImGui::SameLine(i18n::RightPairX(LBL("Copy Shape"), LBL("Paste Shape")));
+                if(ImGui::Button(LBL("Copy Shape"))){
                     shape->CopyTo(&CopyManager::copiedParts->shape);
                 }
                 ImGui::SameLine();
-                if(ImGui::Button("Paste Shape")){
+                if(ImGui::Button(LBL("Paste Shape"))){
                     CopyManager::copiedParts->shape.CopyTo(shape);
                     RegenerateShapesNames();
                 }
                 ImGui::Separator();
 
-                if (ImGui::BeginCombo("ShapeType", shapeList[(int) shape->type - 1],
+                if (ImGui::BeginCombo(LBL("ShapeType"), shapeList[(int) shape->type - 1],
                                       ImGuiComboFlags_HeightLargest)) {
 
                     for (int n = 0; n < 6; n++) {
@@ -159,11 +160,11 @@ void PatShapePane::DrawShape()
                     // no parameters
                 } else {
                     ImGui::SetNextItemWidth(width);
-                    ImGui::DragInt("Radius", &shape->radius, 1, 0, INT32_MAX);
+                    ImGui::DragInt(LBL("Radius"), &shape->radius, 1, 0, INT32_MAX);
                     if (shape->type == ShapeType::RING || shape->type == ShapeType::ARC) {
                         ImGui::SameLine();
                         ImGui::SetNextItemWidth(width);
-                        ImGui::DragInt("Width", &shape->width, 1, 0, INT32_MAX);
+                        ImGui::DragInt(LBL("Width"), &shape->width, 1, 0, INT32_MAX);
                     }
                     if (shape->type != ShapeType::SPHERE) {
                         ImGui::SetNextItemWidth(width);
@@ -172,21 +173,21 @@ void PatShapePane::DrawShape()
                     if (shape->type == ShapeType::RING || shape->type == ShapeType::ARC) {
                         ImGui::SameLine();
                         ImGui::SetNextItemWidth(width);
-                        ImGui::DragInt("DRadius", &shape->dRadius, 1, 0, INT32_MAX);
+                        ImGui::DragInt(LBL("DRadius"), &shape->dRadius, 1, 0, INT32_MAX);
                     }
                     ImGui::SetNextItemWidth(width);
-                    ImGui::DragInt("Vertex", &shape->vertexCount, 1, 0, INT32_MAX);
+                    ImGui::DragInt(LBL("Vertex"), &shape->vertexCount, 1, 0, INT32_MAX);
                     if (shape->type == ShapeType::SPHERE || shape->type == ShapeType::CONE) {
                         ImGui::SameLine();
                         ImGui::SetNextItemWidth(width);
-                        ImGui::DragInt("Vertex 2", &shape->vertexCount2, 1, 0, INT32_MAX);
+                        ImGui::DragInt(LBL("Vertex 2"), &shape->vertexCount2, 1, 0, INT32_MAX);
                     }
                     ImGui::SetNextItemWidth(width);
-                    ImGui::DragInt("Length", &shape->length, 10, 0, INT32_MAX);
+                    ImGui::DragInt(LBL("Length"), &shape->length, 10, 0, INT32_MAX);
                     if (shape->type == ShapeType::SPHERE) {
                         ImGui::SameLine();
                         ImGui::SetNextItemWidth(width);
-                        ImGui::DragInt("Length 2", &shape->length2, 10, 0, INT32_MAX);
+                        ImGui::DragInt(LBL("Length 2"), &shape->length2, 10, 0, INT32_MAX);
                     }
                 }
             }

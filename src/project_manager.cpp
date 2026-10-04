@@ -1,6 +1,7 @@
 #include "project_manager.h"
 #include "character_view.h"
 #include "hud_theme_exporter.h"
+#include "misc.h"
 #include "../third_party/json/json.hpp"
 #include <fstream>
 #include <filesystem>
@@ -26,6 +27,20 @@ void ProjectManager::SetCurrentProjectPath(const std::string& path)
 void ProjectManager::ClearCurrentProjectPath()
 {
 	s_currentProjectPath.clear();
+}
+
+// Point the character's CG at its saved palette number, clamped to what the
+// loaded palette file provides.
+static void ApplySavedPalette(CharacterInstance& character)
+{
+	const int palCount = character.cg.getPalNumber();
+	if (palCount <= 0) {
+		character.palette = 0;
+		return;
+	}
+	if (character.palette < 0) character.palette = 0;
+	if (character.palette >= palCount) character.palette = palCount - 1;
+	character.cg.changePaletteNumber(character.palette);
 }
 
 bool ProjectManager::HasCurrentProject()
@@ -81,6 +96,27 @@ static std::string GetCurrentTimestamp()
 	std::stringstream ss;
 	ss << std::put_time(&tm, "%Y-%m-%dT%H:%M:%S");
 	return ss.str();
+}
+
+// Helper: write the project JSON atomically (temp file + replace), so a
+// failed or interrupted save never leaves a truncated .hproj behind.
+static bool WriteProjectFile(const std::string& path, const json& j)
+{
+	const std::string text = j.dump(2); // Pretty print with 2-space indentation
+	return WriteFileAtomic(path.c_str(), text.data(), text.size());
+}
+
+// Helper: project format major version. Accepts "2.0" strings and numbers;
+// compared numerically ("10.0" > "2.0").
+static int ProjectMajorVersion(const json& j)
+{
+	auto it = j.find("version");
+	if (it == j.end()) return 1;
+	if (it->is_number()) return (int)it->get<double>();
+	if (it->is_string()) {
+		try { return std::stoi(it->get<std::string>()); } catch (...) {}
+	}
+	return 1;
 }
 
 bool ProjectManager::SaveProject(
@@ -149,14 +185,10 @@ bool ProjectManager::SaveProject(
 		uiState["clear_color"] = json::array({clearColor[0], clearColor[1], clearColor[2]});
 		j["ui_state"] = uiState;
 
-		// Write to file
-		std::ofstream file(path);
-		if (!file.is_open()) {
+		// Write to file (atomic replace)
+		if (!WriteProjectFile(path, j)) {
 			return false;
 		}
-
-		file << j.dump(2); // Pretty print with 2-space indentation
-		file.close();
 
 		// Export HUD theme stub alongside the project.
 		ExportHudThemeProfile(std::filesystem::path(path).parent_path());
@@ -216,6 +248,9 @@ bool ProjectManager::LoadProject(
 				character->renderY = charObj.value("render_y", 150);
 				character->zoom = charObj.value("zoom", 3.0f);
 				character->palette = charObj.value("palette", 0);
+				// The stored number alone does nothing: the CG keeps pointing at
+				// palette 0 until changePaletteNumber runs (issue #70).
+				ApplySavedPalette(*character);
 
 				// Restore frame state
 				character->state.pattern = charObj.value("pattern", 0);
@@ -265,7 +300,8 @@ bool ProjectManager::SaveProject(
 	int theme,
 	float zoomLevel,
 	bool smoothRender,
-	const float clearColor[3])
+	const float clearColor[3],
+	const std::string& workspaceJson)
 {
 	try {
 		json j;
@@ -276,8 +312,11 @@ bool ProjectManager::SaveProject(
 		j["created"] = GetCurrentTimestamp();
 		j["modified"] = GetCurrentTimestamp();
 
-		// Characters array
+		// Characters array. savedIndex maps a character to its position in
+		// the written array; unsaved characters are skipped, so this is not
+		// the same as its index in `characters`.
 		json charactersArray = json::array();
+		std::vector<std::pair<const CharacterInstance*, int>> savedIndex;
 		for (const auto& character : characters) {
 			json charObj;
 
@@ -304,6 +343,7 @@ bool ProjectManager::SaveProject(
 			charObj["zoom"] = character->zoom;
 			charObj["palette"] = character->palette;
 
+			savedIndex.emplace_back(character.get(), (int)charactersArray.size());
 			charactersArray.push_back(charObj);
 		}
 		j["characters"] = charactersArray;
@@ -313,19 +353,18 @@ bool ProjectManager::SaveProject(
 		for (const auto& view : views) {
 			json viewObj;
 
-			// Find character index
+			// Find the character's index in the *written* characters array
 			auto* character = view->getCharacter();
-			auto it = std::find_if(characters.begin(), characters.end(),
-				[character](const std::unique_ptr<CharacterInstance>& c) {
-					return c.get() == character;
+			auto it = std::find_if(savedIndex.begin(), savedIndex.end(),
+				[character](const std::pair<const CharacterInstance*, int>& e) {
+					return e.first == character;
 				});
 
-			if (it == characters.end()) {
-				continue; // Skip views with invalid characters
+			if (it == savedIndex.end()) {
+				continue; // Skip views of unsaved/invalid characters
 			}
 
-			int characterIndex = std::distance(characters.begin(), it);
-			viewObj["character_index"] = characterIndex;
+			viewObj["character_index"] = it->second;
 
 			// View state
 			const auto& state = view->getState();
@@ -337,6 +376,20 @@ bool ProjectManager::SaveProject(
 			// View-specific render settings
 			viewObj["zoom"] = view->getZoom();
 			viewObj["is_pat_editor"] = view->isPatEditor();
+			// Per-view camera and onion skin (wave 2). Older builds ignore them.
+			viewObj["id"] = view->getId();
+			viewObj["camera_x"] = view->camera().panX;
+			viewObj["camera_y"] = view->camera().panY;
+			{
+				const auto& o = view->onion();
+				viewObj["onion"] = {
+					{"enabled", o.enabled}, {"before", o.before}, {"after", o.after},
+					{"spacing", o.spacing}, {"keyframes_only", o.keyframesOnly},
+					{"include_spawns", o.includeSpawns}, {"alpha", o.alpha}, {"falloff", o.falloff},
+					{"past_tint", {o.pastTint.r, o.pastTint.g, o.pastTint.b}},
+					{"future_tint", {o.futureTint.r, o.futureTint.g, o.futureTint.b}},
+				};
+			}
 
 			viewsArray.push_back(viewObj);
 		}
@@ -353,14 +406,18 @@ bool ProjectManager::SaveProject(
 		uiState["clear_color"] = json::array({clearColor[0], clearColor[1], clearColor[2]});
 		j["ui_state"] = uiState;
 
-		// Write to file
-		std::ofstream file(path);
-		if (!file.is_open()) {
-			return false;
+		// Detached windows: which tabs each window holds, geometry and pane
+		// layout toggle. Written in the same atomic pass as everything else
+		// (EX rewrote the file a second time with a plain ofstream).
+		if (!workspaceJson.empty()) {
+			json ws = json::parse(workspaceJson, nullptr, false);
+			if (!ws.is_discarded()) j["workspace"] = ws;
 		}
 
-		file << j.dump(2); // Pretty print with 2-space indentation
-		file.close();
+		// Write to file (atomic replace)
+		if (!WriteProjectFile(path, j)) {
+			return false;
+		}
 
 		// Export HUD theme stub alongside the project.
 		ExportHudThemeProfile(std::filesystem::path(path).parent_path());
@@ -372,6 +429,11 @@ bool ProjectManager::SaveProject(
 }
 
 // New view-based LoadProject
+// Transactional: everything is built into local containers and only moved
+// into `characters`/`views` once the file has parsed. Characters that fail to
+// load are reported via outFailedCharacters, and views are bound through a
+// file-index -> loaded-character map, so a skipped character never shifts
+// later views onto the wrong character.
 bool ProjectManager::LoadProject(
 	const std::string& path,
 	std::vector<std::unique_ptr<CharacterInstance>>& characters,
@@ -381,7 +443,9 @@ bool ProjectManager::LoadProject(
 	int* outTheme,
 	float* outZoomLevel,
 	bool* outSmoothRender,
-	float* outClearColor)
+	float* outClearColor,
+	std::vector<std::string>* outFailedCharacters,
+	std::string* outWorkspaceJson)
 {
 	try {
 		std::ifstream file(path);
@@ -393,12 +457,17 @@ bool ProjectManager::LoadProject(
 		file >> j;
 		file.close();
 
-		// Clear existing data
-		characters.clear();
-		views.clear();
+		std::vector<std::unique_ptr<CharacterInstance>> newCharacters;
+		std::vector<std::unique_ptr<CharacterView>> newViews;
+		std::vector<std::string> failed;
+		int newActiveView = -1;
 
-		// Check version
-		std::string version = j.value("version", "1.0");
+		// Check version (numeric major, not a string compare)
+		int majorVersion = ProjectMajorVersion(j);
+
+		// fileToLoaded[i] = pointer to the loaded character for entry i of the
+		// file's "characters" array, or nullptr if it failed to load.
+		std::vector<CharacterInstance*> fileToLoaded;
 
 		// Load characters
 		if (j.contains("characters") && j["characters"].is_array()) {
@@ -418,8 +487,9 @@ bool ProjectManager::LoadProject(
 				}
 
 				if (!loaded) {
-					// TODO: Show missing file dialog
-					continue; // Skip this character for now
+					failed.push_back(absolutePath.empty() ? charObj.value("name", std::string("(unnamed)")) : absolutePath);
+					fileToLoaded.push_back(nullptr);
+					continue;
 				}
 
 				// Restore render state
@@ -427,29 +497,42 @@ bool ProjectManager::LoadProject(
 				character->renderY = charObj.value("render_y", 150);
 				character->zoom = charObj.value("zoom", 3.0f);
 				character->palette = charObj.value("palette", 0);
+				// The stored number alone does nothing: the CG keeps pointing at
+				// palette 0 until changePaletteNumber runs (issue #70).
+				ApplySavedPalette(*character);
 
-				characters.push_back(std::move(character));
+				fileToLoaded.push_back(character.get());
+				newCharacters.push_back(std::move(character));
 			}
 		}
 
 		// Load views (if version 2.0+)
-		if (version >= "2.0" && j.contains("views") && j["views"].is_array()) {
+		if (majorVersion >= 2 && j.contains("views") && j["views"].is_array()) {
 			// Track view numbers per character
-			std::vector<int> viewCounts(characters.size(), 0);
+			std::vector<std::pair<CharacterInstance*, int>> viewCounts;
 
+			int fileViewIndex = -1;
+			int requestedActive = j.value("active_view", 0);
 			for (const auto& viewObj : j["views"]) {
+				++fileViewIndex;
 				int characterIndex = viewObj.value("character_index", -1);
 
-				if (characterIndex < 0 || characterIndex >= characters.size()) {
-					continue; // Skip invalid views
+				if (characterIndex < 0 || characterIndex >= (int)fileToLoaded.size() ||
+				    !fileToLoaded[characterIndex]) {
+					continue; // Invalid index, or its character failed to load
 				}
 
-				auto* character = characters[characterIndex].get();
+				auto* character = fileToLoaded[characterIndex];
 				auto view = std::make_unique<CharacterView>(character, render);
 
 				// Set view number
-				int viewNumber = viewCounts[characterIndex]++;
-				view->setViewNumber(viewNumber);
+				auto vc = std::find_if(viewCounts.begin(), viewCounts.end(),
+					[character](const std::pair<CharacterInstance*, int>& e) { return e.first == character; });
+				if (vc == viewCounts.end()) {
+					viewCounts.emplace_back(character, 0);
+					vc = viewCounts.end() - 1;
+				}
+				view->setViewNumber(vc->second++);
 
 				// Restore view state
 				auto& state = view->getState();
@@ -461,6 +544,35 @@ bool ProjectManager::LoadProject(
 				// Restore view-specific render settings
 				float viewZoom = viewObj.value("zoom", 3.0f);
 				view->setZoom(viewZoom);
+				{
+					// Keep the saved id (detached-window tabs refer to it)
+					// unless the file repeats one.
+					const uint64_t savedId = viewObj.value("id", (uint64_t)0);
+					bool duplicate = false;
+					for (const auto& other : newViews) duplicate |= other->getId() == savedId;
+					if (!duplicate) view->setId(savedId);
+				}
+				// The camera defaults to the character's (pre-wave-2 files).
+				view->camera().panX = viewObj.value("camera_x", (float)character->renderX);
+				view->camera().panY = viewObj.value("camera_y", (float)character->renderY);
+				if (viewObj.contains("onion") && viewObj["onion"].is_object()) {
+					const auto& oj = viewObj["onion"];
+					auto& o = view->onion();
+					o.enabled = oj.value("enabled", o.enabled);
+					o.before = std::clamp(oj.value("before", o.before), 0, 16);
+					o.after = std::clamp(oj.value("after", o.after), 0, 16);
+					o.spacing = std::clamp(oj.value("spacing", o.spacing), 1, 600);
+					o.keyframesOnly = oj.value("keyframes_only", o.keyframesOnly);
+					o.includeSpawns = oj.value("include_spawns", o.includeSpawns);
+					o.alpha = std::clamp(oj.value("alpha", o.alpha), 0.f, 1.f);
+					o.falloff = std::clamp(oj.value("falloff", o.falloff), 0.f, 1.f);
+					auto readTint = [&](const char* key, glm::vec3& out) {
+						if (oj.contains(key) && oj[key].is_array() && oj[key].size() >= 3)
+							out = glm::vec3(oj[key][0].get<float>(), oj[key][1].get<float>(), oj[key][2].get<float>());
+					};
+					readTint("past_tint", o.pastTint);
+					readTint("future_tint", o.futureTint);
+				}
 				
 				// Restore PatEditor mode if applicable
 				bool isPatEditor = viewObj.value("is_pat_editor", false);
@@ -469,20 +581,25 @@ bool ProjectManager::LoadProject(
 					view->refreshPanes(render);
 				}
 
-				views.push_back(std::move(view));
+				// Active view follows the view it named, not its file position
+				if (fileViewIndex == requestedActive) {
+					newActiveView = (int)newViews.size();
+				}
+				newViews.push_back(std::move(view));
 			}
 
-			// Load active view
-			activeViewIndex = j.value("active_view", 0);
-			if (activeViewIndex >= views.size()) {
-				activeViewIndex = views.empty() ? -1 : 0;
+			if (newActiveView < 0 || newActiveView >= (int)newViews.size()) {
+				newActiveView = newViews.empty() ? -1 : 0;
 			}
 		} else {
 			// Legacy format (version 1.0) - create one view per character
 			int legacyActiveIndex = j.value("active_character", 0);
 
-			for (size_t i = 0; i < characters.size(); i++) {
-				auto* character = characters[i].get();
+			for (size_t i = 0; i < fileToLoaded.size(); i++) {
+				auto* character = fileToLoaded[i];
+				if (!character) {
+					continue;
+				}
 				auto view = std::make_unique<CharacterView>(character, render);
 				view->setViewNumber(0);
 
@@ -490,12 +607,14 @@ bool ProjectManager::LoadProject(
 				// We already loaded it into character, but views need their own state
 				// For now, just use defaults - legacy projects won't have multi-view state anyway
 
-				views.push_back(std::move(view));
+				if ((int)i == legacyActiveIndex) {
+					newActiveView = (int)newViews.size();
+				}
+				newViews.push_back(std::move(view));
 			}
 
-			activeViewIndex = legacyActiveIndex;
-			if (activeViewIndex >= views.size()) {
-				activeViewIndex = views.empty() ? -1 : 0;
+			if (newActiveView < 0 || newActiveView >= (int)newViews.size()) {
+				newActiveView = newViews.empty() ? -1 : 0;
 			}
 		}
 
@@ -517,6 +636,19 @@ bool ProjectManager::LoadProject(
 			}
 		}
 
+		// Commit. Views are moved before characters are replaced so the
+		// caller never holds a view whose character was destroyed.
+		views = std::move(newViews);
+		characters = std::move(newCharacters);
+		activeViewIndex = newActiveView;
+		if (outFailedCharacters) {
+			*outFailedCharacters = std::move(failed);
+		}
+		if (outWorkspaceJson) {
+			outWorkspaceJson->clear();
+			if (j.contains("workspace") && j["workspace"].is_object())
+				*outWorkspaceJson = j["workspace"].dump();
+		}
 		return true;
 	} catch (...) {
 		return false;

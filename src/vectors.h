@@ -3,6 +3,7 @@
 
 #include <imgui.h>
 #include <cstdio>
+#include "i18n.h"
 
 struct SubVector
 {
@@ -60,45 +61,49 @@ public:
 		if (!drawWindow)
 			return;
 
-		ImGui::Begin("Vectors Guide", &drawWindow);
+		ImGui::Begin(LBL("Vectors Guide"), &drawWindow);
 
 		if (!loaded)
 		{
-			ImGui::Text("No vector.txt loaded.\nTo load data, go to File > Load vector.txt...");
+			ImGui::Text(TXT("No vector.txt loaded.\nTo load data, go to File > Load vector.txt..."));
+			ImGui::End();
 			return;
 		}
 
 		if (!ImGui::BeginTable("Vector Guide", 26,
 			ImGuiTableFlags_SizingFixedFit | ImGuiTableFlags_RowBg |
 			ImGuiTableFlags_NoHostExtendX))
+		{
+			ImGui::End();
 			return;
+		}
 
 		ImGui::TableSetupColumn("No.");
-		ImGui::TableSetupColumn("VecCnt");
-		ImGui::TableSetupColumn("UkemiTime");
-		ImGui::TableSetupColumn("Prio");
-		ImGui::TableSetupColumn("PrioAni");
-		ImGui::TableSetupColumn("KoCheck");
-		ImGui::TableSetupColumn("VecNum");
-		ImGui::TableSetupColumn("HitAni");
-		ImGui::TableSetupColumn("GuardAni");
-		ImGui::TableSetupColumn("Time");
-		ImGui::TableSetupColumn("VecTime");
-		ImGui::TableSetupColumn("flag");
-		ImGui::TableSetupColumn("X Vel");
-		ImGui::TableSetupColumn("Y Vel");
-		ImGui::TableSetupColumn("X Acc");
-		ImGui::TableSetupColumn("Y Acc");
-		ImGui::TableSetupColumn("VecNum");
-		ImGui::TableSetupColumn("HitAni");
-		ImGui::TableSetupColumn("GuardAni");
-		ImGui::TableSetupColumn("Time");
-		ImGui::TableSetupColumn("VecTime");
-		ImGui::TableSetupColumn("flag");
-		ImGui::TableSetupColumn("X Vel");
-		ImGui::TableSetupColumn("Y Vel");
-		ImGui::TableSetupColumn("X Acc");
-		ImGui::TableSetupColumn("Y Acc");
+		ImGui::TableSetupColumn(LBL("VecCnt"));
+		ImGui::TableSetupColumn(LBL("UkemiTime"));
+		ImGui::TableSetupColumn(LBL("Prio"));
+		ImGui::TableSetupColumn(LBL("PrioAni"));
+		ImGui::TableSetupColumn(LBL("KoCheck"));
+		ImGui::TableSetupColumn(LBL("VecNum"));
+		ImGui::TableSetupColumn(LBL("HitAni"));
+		ImGui::TableSetupColumn(LBL("GuardAni"));
+		ImGui::TableSetupColumn(LBL("Time"));
+		ImGui::TableSetupColumn(LBL("VecTime"));
+		ImGui::TableSetupColumn(LBL("flag"));
+		ImGui::TableSetupColumn(LBL("X Vel"));
+		ImGui::TableSetupColumn(LBL("Y Vel"));
+		ImGui::TableSetupColumn(LBL("X Acc"));
+		ImGui::TableSetupColumn(LBL("Y Acc"));
+		ImGui::TableSetupColumn(LBL("VecNum"));
+		ImGui::TableSetupColumn(LBL("HitAni"));
+		ImGui::TableSetupColumn(LBL("GuardAni"));
+		ImGui::TableSetupColumn(LBL("Time"));
+		ImGui::TableSetupColumn(LBL("VecTime"));
+		ImGui::TableSetupColumn(LBL("flag"));
+		ImGui::TableSetupColumn(LBL("X Vel"));
+		ImGui::TableSetupColumn(LBL("Y Vel"));
+		ImGui::TableSetupColumn(LBL("X Acc"));
+		ImGui::TableSetupColumn(LBL("Y Acc"));
 		ImGui::TableHeadersRow();
 
 		int i = 0;

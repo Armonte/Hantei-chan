@@ -1,0 +1,5 @@
+# gof2_live: (frameNo, attackRecord.guardMask) while attackActive, pattern 16/19, per chara id (live, ReadProcessMemory)
+# static doc table (gof2_ai_move_queries.md sec 4): KANAE 16 f4 mask 6; KANAE 19 f3 mask 7; DATE 16 f5 mask 5  -> all three match
+chara 0 pat 16: [(4, 6)]
+chara 0 pat 19: [(3, 7)]
+chara 1 pat 16: [(5, 5)]

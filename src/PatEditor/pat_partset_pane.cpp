@@ -7,6 +7,7 @@
 
 #include "../copy_manager.h"
 #include "../imgui_utils.h"
+#include "../i18n.h"
 
 PatPartSetPane::PatPartSetPane(Render* render, StateReference *curInstance) : DrawWindow(render, curInstance),
                                                                     partSetDecoratedNames(nullptr),
@@ -105,14 +106,14 @@ const char* const flipList[] = {
 void PatPartSetPane::Draw()
 {
     if(isVisible) {
-        ImGui::Begin("PartSet Pane", 0);
+        ImGui::Begin(LBL("PartSet Pane"), 0);
         auto seq = curInstance->framedata->get_sequence(curInstance->currState->pattern);
         auto pat = curInstance->parts;
         if(curInstance->parts->loaded) {
             DrawPartSet();
             ImGui::End();
         } else {
-            ImGui::Text("Load PAT file first");
+            ImGui::Text(TXT("Load PAT file first"));
         }
         ImGui::End();
 
@@ -125,32 +126,32 @@ void PatPartSetPane::Draw()
 }
 
 void PatPartSetPane::DrawPopUp() {
-    if (ImGui::BeginPopupModal("PartSet Delete"))
+    if (ImGui::BeginPopupModal(LBL("PartSet Delete")))
     {
-        ImGui::Text("Are you sure you want to delete this Part Set?");
+        ImGui::Text(TXT("Are you sure you want to delete this Part Set?"));
 
         ImGui::Separator();
 
-        if (ImGui::Button("OK", ImVec2(120, 40))) {
+        if (ImGui::Button(LBL("OK"), ImVec2(120, 40))) {
             curInstance->parts->partSets[curInstance->currState->partSet] = {};
             RegeneratePartSetNames();
             ImGui::CloseCurrentPopup();
         }
         ImGui::SameLine();
-        if (ImGui::Button("Cancel", ImVec2(120, 40))) {
+        if (ImGui::Button(LBL("Cancel"), ImVec2(120, 40))) {
             ImGui::CloseCurrentPopup();
         }
         ImGui::EndPopup();
     }
 
-    if (ImGui::BeginPopupModal("PartProps Delete"))
+    if (ImGui::BeginPopupModal(LBL("PartProps Delete")))
     {
         auto partSet = &curInstance->parts->partSets[curInstance->currState->partSet];
-        ImGui::Text("Are you sure you want to delete this Part Property?");
+        ImGui::Text(TXT("Are you sure you want to delete this Part Property?"));
 
         ImGui::Separator();
 
-        if (ImGui::Button("Remove from list", ImVec2(120, 40))) {
+        if (ImGui::Button(LBL("Remove from list"), ImVec2(120, 40))) {
             auto props = &partSet->groups;
             props->erase(props->begin()+curInstance->currState->partProp);
             for(int i = 0; i < props->size(); ++i) {
@@ -167,14 +168,14 @@ void PatPartSetPane::DrawPopUp() {
             ImGui::CloseCurrentPopup();
         }
         ImGui::SameLine();
-        if (ImGui::Button("Remove data only", ImVec2(120, 40))) {
+        if (ImGui::Button(LBL("Remove data only"), ImVec2(120, 40))) {
             partSet->groups[curInstance->currState->partProp] = {};
             RegeneratePartPropNames();
             RegeneratePartSetNames();
             ImGui::CloseCurrentPopup();
         }
         ImGui::SameLine();
-        if (ImGui::Button("Cancel", ImVec2(120, 40))) {
+        if (ImGui::Button(LBL("Cancel"), ImVec2(120, 40))) {
             ImGui::CloseCurrentPopup();
         }
         ImGui::EndPopup();
@@ -185,15 +186,15 @@ void PatPartSetPane::DrawPartSet()
 {
 
         auto nPartSet = curInstance->parts->partSets.size();
-        if(ImGui::Button("Add Part Set")){
+        if(ImGui::Button(LBL("Add Part Set"))){
             auto item = &curInstance->parts->partSets.emplace_back();
             item->partId = curInstance->parts->partSets.size() - 1;
             RegeneratePartSetNames();
             curInstance->currState->partSet = item->partId;
         }
         ImGui::SameLine();
-        if(nPartSet > 0 && ImGui::Button("Delete Part Set")){
-            openpopupWithId = "PartSet Delete";
+        if(nPartSet > 0 && ImGui::Button(LBL("Delete Part Set"))){
+            openpopupWithId = LBL("PartSet Delete");
         }
         if(nPartSet > 0) {
             // Safety check partSetDecoratedNames FIRST
@@ -214,7 +215,7 @@ void PatPartSetPane::DrawPartSet()
                 UpdateRenderFrame(0);
             }
             
-            if (ImGui::BeginCombo("Part Set", partSetDecoratedNames[curInstance->currState->partSet].c_str(),
+            if (ImGui::BeginCombo(LBL("Part Set"), partSetDecoratedNames[curInstance->currState->partSet].c_str(),
                                   ImGuiComboFlags_HeightLargest)) {
 
                 auto count = curInstance->parts->partSets.size();
@@ -235,10 +236,10 @@ void PatPartSetPane::DrawPartSet()
             }
             auto partSet = curInstance->parts->GetPartSet(curInstance->currState->partSet);
             if (partSet) {
-                if (ImGui::InputText("Part Set name", &partSet->name)) {
+                if (ImGui::InputText(LBL("Part Set name"), &partSet->name)) {
                     partSetDecoratedNames[curInstance->currState->partSet] = curInstance->parts->GetPartSetDecorateName(curInstance->currState->partSet);
                 }
-                if(ImGui::Checkbox("Highlight selected Part Prop", &activeHighligth))
+                if(ImGui::Checkbox(LBL("Highlight selected Part Prop"), &activeHighligth))
                 {
                     curInstance->parts->partHighlight = activeHighligth ?
                         curInstance->currState->partProp : -1;
@@ -248,18 +249,18 @@ void PatPartSetPane::DrawPartSet()
                 {
                     ImGui::SameLine();
                     ImGui::SetNextItemWidth(width);
-                    if(ImGui::DragFloat("Opacity", &highlightOpacity, 0.01))
+                    if(ImGui::DragFloat(LBL("Opacity"), &highlightOpacity, 0.01))
                     {
                         curInstance->parts->SetHighlightOpacity(highlightOpacity);
                     }
                 }
                 ImGui::NewLine();
-                ImGui::SameLine(ImGui::GetWindowWidth()-210);
-                if(ImGui::Button("Copy Part Set")){
+                ImGui::SameLine(i18n::RightPairX(LBL("Copy Part Set"), LBL("Paste Part Set")));
+                if(ImGui::Button(LBL("Copy Part Set"))){
                     partSet->CopyPartSetTo(&CopyManager::copiedParts->partSet);
                 }
                 ImGui::SameLine();
-                if(ImGui::Button("Paste Part Set")){
+                if(ImGui::Button(LBL("Paste Part Set"))){
                     CopyManager::copiedParts->partSet.CopyPartSetTo(partSet);
                     RegeneratePartPropNames();
                     RegeneratePartSetNames();
@@ -274,9 +275,9 @@ void PatPartSetPane::DrawPartSet()
 void PatPartSetPane::DrawPartProperty(PartSet<>* partSet)
 {
     ImGui::Separator();
-    ImGui::Text("Parts Property Data");
+    ImGui::Text(TXT("Parts Property Data"));
     int nparts = partSet->groups.size() - 1;
-    if(ImGui::Button("Add Prop")){
+    if(ImGui::Button(LBL("Add Prop"))){
         auto item = &partSet->groups.emplace_back();
         item->propId = partSet->groups.size() - 1;
         RegeneratePartPropNames();
@@ -284,7 +285,7 @@ void PatPartSetPane::DrawPartProperty(PartSet<>* partSet)
         curInstance->currState->partProp = item->propId;
     }
     ImGui::SameLine();
-    if(nparts >= 0 && ImGui::Button("Insert Prop")){
+    if(nparts >= 0 && ImGui::Button(LBL("Insert Prop"))){
         auto props = &partSet->groups;
         PartProperty newItem = {};
         auto item = props->insert(props->begin()+curInstance->currState->partProp, newItem);
@@ -300,12 +301,12 @@ void PatPartSetPane::DrawPartProperty(PartSet<>* partSet)
         curInstance->currState->partProp = item->propId;
     }
     ImGui::SameLine();
-    if(nparts >= 0 && ImGui::Button("Delete Prop")){
-        openpopupWithId = "PartProps Delete";
+    if(nparts >= 0 && ImGui::Button(LBL("Delete Prop"))){
+        openpopupWithId = LBL("PartProps Delete");
     }
     if (nparts >= 0)
     {
-        if (ImGui::BeginCombo("Parts",
+        if (ImGui::BeginCombo(LBL("Parts"),
                               partPropsDecoratedNames[curInstance->currState->partProp].c_str(),
                               ImGuiComboFlags_HeightLargest)) {
 
@@ -327,17 +328,17 @@ void PatPartSetPane::DrawPartProperty(PartSet<>* partSet)
                               }
         auto props = &partSet->groups[curInstance->currState->partProp];
         ImGui::NewLine();
-        ImGui::SameLine(ImGui::GetWindowWidth()-230);
-        if(ImGui::Button("Copy Part Prop")){
+        ImGui::SameLine(i18n::RightPairX(LBL("Copy Part Prop"), LBL("Paste Part Prop")));
+        if(ImGui::Button(LBL("Copy Part Prop"))){
             PartSet<>::CopyPropertyTo(&CopyManager::copiedParts->partProperty, props);
         }
         ImGui::SameLine();
-        if(ImGui::Button("Paste Part Prop")){
+        if(ImGui::Button(LBL("Paste Part Prop"))){
             PartSet<>::CopyPropertyTo(props, &CopyManager::copiedParts->partProperty);
             RegeneratePartPropNames();
             RegeneratePartSetNames();
         }
-        if(ImGui::Button("Load Reference Data")){
+        if(ImGui::Button(LBL("Load Reference Data"))){
             auto ppid = props->ppId;
             if(curInstance->parts->cutOuts.size() > ppid && ppid >= 0 )
             {
@@ -355,34 +356,34 @@ void PatPartSetPane::DrawPartProperty(PartSet<>* partSet)
         ImGui::Separator();
 
         int pos[] = {props->x, props->y};
-        if(ImGui::DragInt2("Position", pos, 1))
+        if(ImGui::DragInt2(LBL("Position"), pos, 1))
         {
             props->x = pos[0];
             props->y = pos[1];
         }
         float rotation[] = {props->rotation[1], props->rotation[2], props->rotation[3]};
-        if(ImGui::DragFloat3("Rotation", rotation, 0.01))
+        if(ImGui::DragFloat3(LBL("Rotation"), rotation, 0.01))
         {
             props->rotation[1] = rotation[0];
             props->rotation[2] = rotation[1];
             props->rotation[3] = rotation[2];
         }
         float scale[] = {props->scaleX, props->scaleY};
-        if(ImGui::DragFloat2("Scale", scale, 0.01))
+        if(ImGui::DragFloat2(LBL("Scale"), scale, 0.01))
         {
             props->scaleX = scale[0];
             props->scaleY = scale[1];
         }
         ImGui::SetNextItemWidth(widthInput);
-        if(ImGui::InputInt("Part ID", &props->ppId, 1, 0)) {
+        if(ImGui::InputInt(LBL("Part ID"), &props->ppId, 1, 0)) {
             partPropsDecoratedNames[curInstance->currState->partProp] =
                     curInstance->parts->GetPartPropsDecorateName(curInstance->currState->partSet,curInstance->currState->partProp);
         }
         ImGui::SetNextItemWidth(widthInput);
-        ImGui::DragFloat("Priority", &props->priority, 1.0f, 0.0f, 1000.0f);
-        ImGui::Checkbox("Additive Filter", &props->additive);
+        ImGui::DragFloat(LBL("Priority"), &props->priority, 1.0f, 0.0f, 1000.0f);
+        ImGui::Checkbox(LBL("Additive Filter"), &props->additive);
         ImGui::SameLine();
-        ImGui::Checkbox("Bilinear Filter", &props->filter);
+        ImGui::Checkbox(LBL("Bilinear Filter"), &props->filter);
         // Convert bgra bytes to float for UI, then back
         float rgba_float[4] = {
             props->bgra[2] / 255.f, // R from B position
@@ -390,13 +391,13 @@ void PatPartSetPane::DrawPartProperty(PartSet<>* partSet)
             props->bgra[0] / 255.f, // B from R position  
             props->bgra[3] / 255.f  // A
         };
-        if (ImGui::ColorEdit4("RGBA Color", rgba_float)) {
+        if (ImGui::ColorEdit4(LBL("RGBA Color"), rgba_float)) {
             props->bgra[2] = (unsigned char)(rgba_float[0] * 255.f); // R -> B position
             props->bgra[1] = (unsigned char)(rgba_float[1] * 255.f); // G
             props->bgra[0] = (unsigned char)(rgba_float[2] * 255.f); // B -> R position
             props->bgra[3] = (unsigned char)(rgba_float[3] * 255.f); // A
         }
-        ImGui::ColorEdit4("Add Color", props->addColor);
-        ImGui::Combo("Flip Side", &props->flip, flipList, IM_ARRAYSIZE(flipList));
+        ImGui::ColorEdit4(LBL("Add Color"), props->addColor);
+        i18n::Combo(LBL("Flip Side"), &props->flip, flipList, IM_ARRAYSIZE(flipList));
     }
 }

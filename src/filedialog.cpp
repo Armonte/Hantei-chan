@@ -57,6 +57,36 @@ std::string FileDialog(int fileType, bool save, char* defaultName)
 	{
 		ofn.lpstrFilter = "DDS Texture files (*.dds)\0*.dds\0All\0*.*\0";
 	}
+	else if (fileType == fileType::HA4)
+	{
+		ofn.lpstrFilter = "MBAC Act Cadenza character (*.dat)\0*.dat\0Hantei 6 files (*.ha6)\0*.ha6\0All\0*.*\0";
+	}
+	else if (fileType == fileType::HAN2)
+	{
+		ofn.lpstrFilter = "RBO / GOF2 / GOF1 character, parts, sprites (*.dt2;*.dat;*.pat;*.chp)\0*.dt2;*.dat;*.pat;*.chp\0RBO / GOF2 / GOF1 archive (*.pac;data*.dat;*.p)\0*.pac;data0*.dat;*.p\0All\0*.*\0";
+	}
+	else if (fileType == fileType::HA4SAVE)
+	{
+		ofn.lpstrFilter = "Hantei4 character (MBAC / ReAct) (*.dat)\0*.dat\0Archive with this character replaced (*.p)\0*.p\0Hantei 6 export (*.ha6)\0*.ha6\0All\0*.*\0";
+		ofn.lpstrDefExt = "dat";
+	}
+	else if (fileType == fileType::HAN2SAVE)
+	{
+		ofn.lpstrFilter = "RBO / GOF2 pattern file the game prefers (*.dt2)\0*.dt2\0RBO / GOF1 character (*.dat)\0*.dat\0GOF1 archive with this character replaced (*.p)\0*.p\0All\0*.*\0";
+		ofn.lpstrDefExt = "dt2";
+	}
+	else if (fileType == fileType::OPENANY)
+	{
+		ofn.lpstrFilter = "All supported files\0*.ha6;*.txt;*.dat;*.dt2;*.pat;*.chp;*.pac;*.p;*.hproj\0All\0*.*\0";
+	}
+	else if (fileType == fileType::DAT)
+	{
+		ofn.lpstrFilter = "MBAA Stage files (*.dat)\0*.dat\0All\0*.*\0";
+	}
+	else if (fileType == fileType::CMDTXT)
+	{
+		ofn.lpstrFilter = "Command files (*_c.txt)\0*_c.txt\0Text files (*.txt)\0*.txt\0All\0*.*\0";
+	}
 	else
 	{
 		ofn.lpstrFilter = "All\0*.*\0";
@@ -66,8 +96,11 @@ std::string FileDialog(int fileType, bool save, char* defaultName)
 	ofn.nMaxFileTitle = 0;
 	ofn.lpstrInitialDir = ".";
 
+	// OFN_NOCHANGEDIR: never move the process working directory into the picked folder
+	// (relative paths such as the ImGui ini must keep resolving from the start folder).
+	ofn.Flags = OFN_NOCHANGEDIR;
 	if(!save)
-		ofn.Flags = OFN_PATHMUSTEXIST | OFN_FILEMUSTEXIST;
+		ofn.Flags |= OFN_PATHMUSTEXIST | OFN_FILEMUSTEXIST;
 
 	// Display the Open dialog box. 
 	if(save)

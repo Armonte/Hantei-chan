@@ -17,9 +17,13 @@
 // - Opponent state (types 4, 14)
 // - Damage (type 5)
 // - Misc effects (type 6) - THE BIG ONE with 30+ sub-types!
-// - Actors (type 8)
+// - System effects / round banners (type 7)
+// - Actors (types 8, 108)
 // - Audio (type 9)
-// - Special/unknown (types 257, 1000, 10002)
+// - Object behaviour params (type 30)
+// - Special (types 257, 1000, 10002)
+// Type/param meanings: docs/tag_research/MBAA_NAME_AUDIT.md section 2 (IDA-verified).
+// Param numbering in the docs is 1-based (p1 = p[0]).
 //
 // Each category is in its own file in effects/ directory for better organization
 // ============================================================================
@@ -34,6 +38,7 @@
 #include "effects/effect_actor.h"
 #include "effects/effect_audio.h"
 #include "effects/effect_unknown.h"
+#include "../i18n.h"
 
 // Forward declaration
 static inline void DrawSmartEffectUI(Frame_EF& effect, FrameData* frameData, int patternIndex, std::function<void()> markModified);
@@ -78,8 +83,9 @@ inline void EfDisplay(std::vector<Frame_EF> *efList_, Frame_EF *singleClipboard 
 		// Build header label with effect type
 		int typeValue = efList[i].type;
 		int typeIndex = -1;
-		int knownTypes[] = {0, 1, 2, 3, 4, 5, 6, 8, 9, 11, 14, 101, 111, 257, 1000, 10002};
-		for(int j = 0; j < IM_ARRAYSIZE(knownTypes); j++) {
+		const int* knownTypes = knownEffectTypes;
+		static_assert(IM_ARRAYSIZE(knownEffectTypes) == IM_ARRAYSIZE(effectTypes), "effectTypes/knownEffectTypes mismatch");
+		for(int j = 0; j < IM_ARRAYSIZE(knownEffectTypes); j++) {
 			if(typeValue == knownTypes[j]) {
 				typeIndex = j;
 				break;
@@ -88,9 +94,9 @@ inline void EfDisplay(std::vector<Frame_EF> *efList_, Frame_EF *singleClipboard 
 		
 		char headerLabel[256];
 		if(typeIndex >= 0 && typeIndex < IM_ARRAYSIZE(effectTypes)) {
-			snprintf(headerLabel, sizeof(headerLabel), "Effect %d: %s", i, effectTypes[typeIndex]);
+			snprintf(headerLabel, sizeof(headerLabel), TXT("Effect %d: %s"), i, TXT(effectTypes[typeIndex]));
 		} else {
-			snprintf(headerLabel, sizeof(headerLabel), "Effect %d: Type %d", i, typeValue);
+			snprintf(headerLabel, sizeof(headerLabel), TXT("Effect %d: Type %d"), i, typeValue);
 		}
 		
 		// Track start position of item
@@ -102,7 +108,7 @@ inline void EfDisplay(std::vector<Frame_EF> *efList_, Frame_EF *singleClipboard 
 		}
 		if(im::BeginDragDropSource(ImGuiDragDropFlags_None)) {
 			im::SetDragDropPayload("EFFECT_ITEM", &i, sizeof(int));
-			im::Text("Moving effect %d", i);
+			im::Text(TXT("Moving effect %d"), i);
 			im::EndDragDropSource();
 			dragSourceIndex = i;
 		}
@@ -115,6 +121,7 @@ inline void EfDisplay(std::vector<Frame_EF> *efList_, Frame_EF *singleClipboard 
 		}
 		bool isOpen = im::CollapsingHeader(headerLabel, flags);
 		collapsedStates[i] = !isOpen; // Update stored state
+		if(CurrentRecordNoteHook().draw) CurrentRecordNoteHook().draw(true, i, efList[i].type);
 		
 		if(isOpen) {
 			im::Indent();
@@ -122,29 +129,29 @@ inline void EfDisplay(std::vector<Frame_EF> *efList_, Frame_EF *singleClipboard 
 			// Type dropdown (with fallback for unlisted types)
 			if(typeIndex >= 0) {
 				im::SetNextItemWidth(width*3);
-				if(im::Combo("Type", &typeIndex, effectTypes, IM_ARRAYSIZE(effectTypes))) {
+				if(i18n::Combo(LBL("Type"), &typeIndex, effectTypes, IM_ARRAYSIZE(effectTypes))) {
 					efList[i].type = knownTypes[typeIndex];
 					markModified();
 				}
 			} else {
 				im::SetNextItemWidth(width);
-				if(im::InputInt("Type", &efList[i].type, 0, 0)) {
+				if(im::InputInt(LBL("Type"), &efList[i].type, 0, 0)) {
 					markModified();
 				}
 			}
 
-			im::SameLine(0.f, 20);
+			i18n::SameLineFit(i18n::FieldWidth(im::GetFrameHeight(), LBL("Manual")), 10.f);
 			bool manualMode = manualEditMode[i] != 0;
-			if(im::Checkbox("Manual", &manualMode)) {
+			if(im::Checkbox(LBL("Manual"), &manualMode)) {
 				manualEditMode[i] = manualMode ? 1 : 0;
 			}
 			if(im::IsItemHovered()) {
 				Tooltip("Enable raw parameter editing for undocumented values");
 			}
 
-			im::SameLine(0.f, 20);
+			i18n::SameLineFit(i18n::ButtonWidth(LBL("Delete")), 10.f);
 			ImGui::PushStyleColor(ImGuiCol_Button, ImVec4(1,0,0,0.4));
-			if(im::Button("Delete"))
+			if(im::Button(LBL("Delete")))
 				deleteI = i;
 			ImGui::PopStyleColor();
 
@@ -155,10 +162,10 @@ inline void EfDisplay(std::vector<Frame_EF> *efList_, Frame_EF *singleClipboard 
 			if(manualEditMode[i]) {
 				// Raw parameter editing
 				im::SetNextItemWidth(width);
-				if(im::InputInt("Number", &no, 0, 0)) {
+				if(im::InputInt(LBL("Number"), &no, 0, 0)) {
 					markModified();
 				}
-				im::Text("Raw parameters:");
+				im::Text(TXT("Raw parameters:"));
 				if(im::InputScalarN("##params", ImGuiDataType_S32, p, 6, NULL, NULL, "%d", 0)) {
 					markModified();
 				}
@@ -171,7 +178,7 @@ inline void EfDisplay(std::vector<Frame_EF> *efList_, Frame_EF *singleClipboard 
 			}
 
 			im::SameLine();
-			if(singleClipboard && im::Button("Copy")) {
+			if(singleClipboard && im::Button(LBL("Copy"))) {
 				*singleClipboard = efList[i];
 			}
 			
@@ -284,7 +291,7 @@ inline void EfDisplay(std::vector<Frame_EF> *efList_, Frame_EF *singleClipboard 
 		markModified();
 	}
 
-	if(im::Button("Add effect")) {
+	if(im::Button(LBL("Add effect"))) {
 		efList.push_back({});
 		manualEditMode.push_back(0);
 		collapsedStates.push_back(false); // New items start expanded
@@ -292,17 +299,17 @@ inline void EfDisplay(std::vector<Frame_EF> *efList_, Frame_EF *singleClipboard 
 	}
 
 	if(groupClipboard) {
-		im::SameLine(0,20.f);
-		if(im::Button("Copy all")) {
+		i18n::SameLineFit(i18n::ButtonWidth(LBL("Copy all")), 20.f);
+		if(im::Button(LBL("Copy all"))) {
 			CopyVectorContents<Frame_EF>(*groupClipboard, efList);
 		}
-		im::SameLine(0,20.f);
-		if(im::Button("Paste all")) {
+		i18n::SameLineFit(i18n::ButtonWidth(LBL("Paste all")), 20.f);
+		if(im::Button(LBL("Paste all"))) {
 			CopyVectorContents<Frame_EF>(efList, *groupClipboard);
 			markModified();
 		}
-		im::SameLine(0,20.f);
-		if(im::Button("Add copy")) {
+		i18n::SameLineFit(i18n::ButtonWidth(LBL("Add copy")), 20.f);
+		if(im::Button(LBL("Add copy"))) {
 			if(singleClipboard) {
 				efList.push_back(*singleClipboard);
 				manualEditMode.push_back(0);
@@ -318,10 +325,12 @@ static inline void DrawSmartEffectUI(Frame_EF& effect, FrameData* frameData, int
 	switch(effect.type) {
 		case 1:   // Spawn Pattern
 		case 101: // Spawn Relative Pattern
+		case 1000: // Spawn Pattern once (var-guarded)
 			DrawEffectSpawn_Type1_101(effect, frameData, patternIndex, markModified);
 			break;
 
 		case 2: // Various Effects
+		case 10002: // Various Effects, deferred pass (same sub-No table as EF2)
 			DrawEffectVisual_Type2(effect, frameData, patternIndex, markModified);
 			break;
 
@@ -334,12 +343,12 @@ static inline void DrawSmartEffectUI(Frame_EF& effect, FrameData* frameData, int
 			DrawEffectSpawn_Type11_111(effect, frameData, patternIndex, markModified);
 			break;
 
-		case 4:  // Set Opponent State (no bounce reset)
-		case 14: // Set Opponent State (reset bounces)
+		case 4:  // Set held victim state (no bounce reset)
+		case 14: // Set held victim state (reset bounces)
 			DrawEffectState_Type4_14(effect, frameData, patternIndex, markModified);
 			break;
 
-		case 5: // Damage
+		case 5: // Held victim command
 			DrawEffectDamage_Type5(effect, frameData, patternIndex, markModified);
 			break;
 
@@ -347,7 +356,12 @@ static inline void DrawSmartEffectUI(Frame_EF& effect, FrameData* frameData, int
 			DrawEffectMisc_Type6(effect, frameData, patternIndex, markModified);
 			break;
 
-		case 8: // Spawn Actor (effect.ha6)
+		case 7: // System effect (round call / KO banner)
+			DrawEffectUnknown(effect, frameData, patternIndex, markModified);
+			break;
+
+		case 8:   // Spawn Actor (effect.ha6)
+		case 108: // Same as 8
 			DrawEffectActor_Type8(effect, frameData, patternIndex, markModified);
 			break;
 
@@ -355,9 +369,8 @@ static inline void DrawSmartEffectUI(Frame_EF& effect, FrameData* frameData, int
 			DrawEffectAudio_Type9(effect, frameData, patternIndex, markModified);
 			break;
 
-		case 257:  // Arc typo
-		case 1000: // Spawn and follow
-		case 10002: // Unknown
+		case 30:   // Object behaviour params
+		case 257:  // Not dispatched (Arc typo)
 			DrawEffectUnknown(effect, frameData, patternIndex, markModified);
 			break;
 
@@ -368,10 +381,10 @@ static inline void DrawSmartEffectUI(Frame_EF& effect, FrameData* frameData, int
 			constexpr float width = 75.f;
 			
 			im::SetNextItemWidth(width);
-			if(im::InputInt("Number", &no, 0, 0)) {
+			if(im::InputInt(LBL("Number"), &no, 0, 0)) {
 				markModified();
 			}
-			im::Text("Unknown effect type - raw parameters:");
+			im::Text(TXT("Unknown effect type - raw parameters:"));
 			if(im::InputScalarN("##params", ImGuiDataType_S32, p, 6, NULL, NULL, "%d", 0)) {
 				markModified();
 			}

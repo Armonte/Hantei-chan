@@ -1,0 +1,5 @@
+GOF1 in-game proof (windowed, copy dir work/gof1_game, original install untouched)
+Edited: gof_03.p rewritten by han2tool gof1shift (8 characters AKIKO AYAKA AYU CIEL DIGIKO ECOCO MORI SATSUKI, all frames dy=-90
+via GOF1 model -> gof1::SaveFile -> encrypted .DAT -> new .p, same size 97,603,060).
+m8_gof1_edited_ingame.png: attract-mode battle; Ciel and Digiko drawn well above their ground shadows.
+m8_gof1_baseline_ingame.png: unmodified gof_03.p (random demo matchup), characters stand on their shadows.

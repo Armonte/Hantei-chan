@@ -92,7 +92,7 @@ unsigned int* Shape<>::VnLoad(unsigned int* data, const unsigned int* data_end, 
 }
 
 template<>
-void Shape<>::Save(std::ofstream &file, const Shape<> *shape, bool saveName)
+void Shape<>::Save(std::ostream &file, const Shape<> *shape, bool saveName)
 {
     if(saveName) {
         // Save name (32-byte field)

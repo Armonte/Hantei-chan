@@ -1,4 +1,5 @@
 #ifndef EFFECT_STATE_H_GUARD
+#include "../../i18n.h"
 #define EFFECT_STATE_H_GUARD
 
 // ============================================================================
@@ -20,7 +21,7 @@ static inline void DrawEffectState_Type4_14(Frame_EF& effect, FrameData* frameDa
 			if(frameData) {
 				im::SetNextItemWidth(width*3);
 				std::string currentName = frameData->GetDecoratedName(no);
-				if(im::BeginCombo("Opponent Pattern", currentName.c_str())) {
+				if(im::BeginCombo(LBL("Opponent Pattern"), currentName.c_str())) {
 					for(int i = 0; i < frameData->get_sequence_count(); i++) {
 						bool selected = (no == i);
 						std::string name = frameData->GetDecoratedName(i);
@@ -35,7 +36,7 @@ static inline void DrawEffectState_Type4_14(Frame_EF& effect, FrameData* frameDa
 				}
 			} else {
 				im::SetNextItemWidth(width);
-				if(im::InputInt("Opponent Pattern", &no, 0, 0)) {
+				if(im::InputInt(LBL("Opponent Pattern"), &no, 0, 0)) {
 					markModified();
 				}
 			}
@@ -46,7 +47,7 @@ static inline void DrawEffectState_Type4_14(Frame_EF& effect, FrameData* frameDa
 
 			// Position
 			im::SetNextItemWidth(width);
-			im::DragInt("X pos", &p[0]);
+			im::DragInt(LBL("X pos"), &p[0]);
 			if(im::IsItemEdited()) {
 				if (frameData && patternIndex >= 0) frameData->mark_modified(patternIndex);
 			}
@@ -55,7 +56,7 @@ static inline void DrawEffectState_Type4_14(Frame_EF& effect, FrameData* frameDa
 			}
 			im::SameLine(0, 20);
 			im::SetNextItemWidth(width);
-			im::DragInt("Y pos", &p[1]);
+			im::DragInt(LBL("Y pos"), &p[1]);
 			if(im::IsItemEdited()) {
 				if (frameData && patternIndex >= 0) frameData->mark_modified(patternIndex);
 			}
@@ -66,7 +67,7 @@ static inline void DrawEffectState_Type4_14(Frame_EF& effect, FrameData* frameDa
 			// Type 14 specific
 			if(effect.type == 14) {
 				im::SetNextItemWidth(width);
-				im::DragInt("Rotation", &p[2]);
+				im::DragInt(LBL("Rotation"), &p[2]);
 				if(im::IsItemEdited()) {
 				if (frameData && patternIndex >= 0) frameData->mark_modified(patternIndex);
 			}
@@ -80,7 +81,7 @@ static inline void DrawEffectState_Type4_14(Frame_EF& effect, FrameData* frameDa
 			} else {
 				// Type 4 has unknown param3
 				im::SetNextItemWidth(width);
-				im::DragInt("Unknown", &p[2]);
+				im::DragInt(LBL("Unknown"), &p[2]);
 				if(im::IsItemEdited()) {
 				if (frameData && patternIndex >= 0) frameData->mark_modified(patternIndex);
 			}
@@ -94,7 +95,7 @@ static inline void DrawEffectState_Type4_14(Frame_EF& effect, FrameData* frameDa
 			}
 
 			// Flags
-			if(im::TreeNode("Flags")) {
+			if(im::TreeNode(LBL("Flags"))) {
 				unsigned int flagIdx = -1;
 				if(BitField("##flags", (unsigned int*)&p[3], &flagIdx, 7)) {
 					markModified();
@@ -121,7 +122,7 @@ static inline void DrawEffectState_Type4_14(Frame_EF& effect, FrameData* frameDa
 					case 5: Tooltip("Hard Knockdown"); break;
 				}
 
-				im::Text("Raw value: %d", p[3]);
+				im::Text(TXT("Raw value: %d"), p[3]);
 				im::TreePop();
 			}
 
@@ -137,7 +138,7 @@ static inline void DrawEffectState_Type4_14(Frame_EF& effect, FrameData* frameDa
 
 			// Untech time
 			im::SetNextItemWidth(width);
-			im::DragInt("Untech time", &p[5]);
+			im::DragInt(LBL("Untech time"), &p[5]);
 			if(im::IsItemEdited()) {
 				if (frameData && patternIndex >= 0) frameData->mark_modified(patternIndex);
 			}
@@ -154,12 +155,12 @@ static inline void DrawEffectState_Type4_14(Frame_EF& effect, FrameData* frameDa
 			// Type 14 specific param7
 			if(effect.type == 14) {
 				im::SetNextItemWidth(width);
-				if(im::Combo("Char location", &p[6], "0: Self\0001: Opponent\000")) {
+				if(i18n::Combo(LBL("Char location"), &p[6], "0: Self\0001: Opponent\000")) {
 					markModified();
 				}
 			} else {
 				im::SetNextItemWidth(width);
-				im::DragInt("Unknown", &p[6]);
+				im::DragInt(LBL("Unknown"), &p[6]);
 				if(im::IsItemEdited()) {
 				if (frameData && patternIndex >= 0) frameData->mark_modified(patternIndex);
 			}
@@ -175,7 +176,7 @@ static inline void DrawEffectState_Type4_14(Frame_EF& effect, FrameData* frameDa
 	// Opponent's frame
 	if(effect.type == 4) {
 		im::SetNextItemWidth(width);
-		im::DragInt("Opponent frame", &p[7]);
+		im::DragInt(LBL("Opponent frame"), &p[7]);
 		if(im::IsItemEdited()) {
 		if (frameData && patternIndex >= 0) frameData->mark_modified(patternIndex);
 	}

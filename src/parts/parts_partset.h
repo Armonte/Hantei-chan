@@ -15,6 +15,7 @@ struct PartProperty {
     int propId = -1;
     float priority = 0.f;  // Float to preserve sub-ordering from propId
     float rotation[4]{}; // PRA3: 3D rotation (4 floats)
+    int pras[2]{}; // PRAS: rotation pivot offset, applied between scale and rotation
     int x = 0;
     int y = 0;
     float scaleX = 1.f;
@@ -22,6 +23,13 @@ struct PartProperty {
     int ppId = -1; // CutOut ID. Use this, and if -1, don't save in .pat
     bool additive = false;
     bool filter = false;
+    // Raw PRAL / PRFL bytes. The games read a byte: PRAL 1 = add, 2/3 = other
+    // blend modes (PatFile_ParsePartSet_PST, part +53); "additive" above is
+    // only the render/edit view of it.
+    unsigned char pral = 0;
+    unsigned char prfl = 0;
+    int prpa = 0;          // PRPA (UNI2/MBTL, part +16): one int, kept as loaded
+    bool hasPrpa = false;
     int flip = 0; // 0=none, 1=H, 2=V, 3=both (PRRV)
     unsigned char bgra[4] = { 255, 255, 255, 255 }; // Color tint (BGRA byte order like Eiton)
     float addColor[4] = { 0.f, 0.f, 0.f, 0.f }; // Additive color (PRSP)
@@ -31,6 +39,7 @@ template<template<typename> class Allocator = std::allocator>
 class PartSet {
 public:
     int partId = -1;
+    bool wasLoaded = false; // True if this slot came from a loaded .pat file
     std::basic_string<char, std::char_traits<char>, Allocator<char>> name;
     std::vector<PartProperty> groups; // Part properties in this set
 
@@ -39,7 +48,7 @@ public:
     static unsigned int* PrLoad(unsigned int* data, const unsigned int* data_end, int groupId, int propId, PartSet<>* partSet);
 
     // Saving
-    static void Save(std::ofstream &file, const PartSet *partSet);
+    static void Save(std::ostream &file, const PartSet *partSet, bool mbaacc = false);
     static bool IsModifiedData(const PartSet *partSet);
     static bool IsModifiedPropData(const PartProperty *prop);
 

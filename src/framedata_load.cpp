@@ -1,3 +1,5 @@
+#include <map>
+#include <algorithm>
 #include <cassert>
 #include <iostream>
 #include <cstdint>
@@ -15,7 +17,39 @@ void TestInfo::Print(const void *data, const void *data_end)
 }
 
 //Attack data
-unsigned int *fd_frame_AT_load(unsigned int *data, const unsigned int *data_end, Frame_AT *AT, TempInfo *info)
+// Rare tags read by the UNI2/MBTL loaders that no shipped file uses: keep
+// them verbatim (ha6_enc.h). Returns the number of payload words, or -1.
+static int RareTagWords(const unsigned int *buf)
+{
+	static const struct { const char *tag; int n; } kRare[] = {
+		// AT (Han6_LoadFrameAT): ATAB +66, ATBG +70, ATGE +32/+34; ATKZ/ATGS/ATF2 read and ignored
+		{"ATAB",1},{"ATBG",1},{"ATGE",2},{"ATKZ",1},{"ATGS",1},{"ATF2",1},
+		// AS (Han6_LoadFrameAS)
+		{"ASV1",5},{"ASVA",2},{"ASVC",2},{"ASAT",1},{"ASKV",1},{"ASSS",1},{"ASDF",1},
+		{"ASCL",2},{"ASSE",2},{"ASDE",1},{"ASF2",1},{"ASF3",1},
+		// AF (Han6_LoadFrameAF): AFAN writes the Z rotation slot as an int
+		{"AFAN",1},
+		// frame (Han6_LoadPatternFrames): HRFF <box (attack if < 0)> <flag byte>
+		{"HRFF",2},
+	};
+	for (const auto &r : kRare)
+		if (!memcmp(buf, r.tag, 4)) return r.n;
+	return -1;
+}
+
+static bool KeepRareTag(unsigned int *&data, const unsigned int *buf, uint8_t block, Ha6FrameEnc *enc)
+{
+	int n = RareTagWords(buf);
+	if (n < 0) return false;
+	if (enc && !enc->addExtra((const char*)buf, block, (const int32_t*)data, n)) {
+		char tag[5]{}; memcpy(tag, buf, 4);
+		std::cout << "\tToo many rare tags in one frame, dropped: " << tag << "\n";
+	}
+	data += n;
+	return true;
+}
+
+unsigned int *fd_frame_AT_load(unsigned int *data, const unsigned int *data_end, Frame_AT *AT, TempInfo *info, Ha6FrameEnc *enc)
 {
 	AT->correction = 100;
 	AT->damageProration = 100; // Default: no proration
@@ -29,6 +63,7 @@ unsigned int *fd_frame_AT_load(unsigned int *data, const unsigned int *data_end,
 	while (data < data_end) {
 		unsigned int *buf = data;
 		++data;
+		if (enc) enc->markAT(buf);
 		
 		if (!memcmp(buf, "ATGD", 4)) {
 			//If absent it's UB
@@ -158,8 +193,25 @@ unsigned int *fd_frame_AT_load(unsigned int *data, const unsigned int *data_end,
 			// UNI starter correction
 			AT->starterCorrection = data[0];
 			++data;
+		} else if (!memcmp(buf, "ATS", 3) && ((char*)buf)[3] >= '1' && ((char*)buf)[3] <= '6') {
+			// ATS1..ATS6: compact hit stop preset, same game field as ATSP
+			// (Han6_LoadFrameAT writes +42 for both; a later ATSP wins).
+			AT->hitStopLegacy = ((char*)buf)[3] - '0';
+		} else if (!memcmp(buf, "ATRF", 4)) {
+			// UNI2 tag, unknown semantics (observed 25/100/200). Preserved for save.
+			AT->atrf = data[0];
+			++data;
+		} else if (!memcmp(buf, "ATBC", 4)) {
+			// UNI2 tag, unknown semantics (observed 30). Preserved for save.
+			AT->atbc = data[0];
+			++data;
+		} else if (!memcmp(buf, "ATVD", 4)) {
+			// MBTL tag, unknown semantics (observed 20). Preserved for save.
+			AT->atvd = data[0];
+			++data;
 		} else if (!memcmp(buf, "ATED", 4)) {
 			break;
+		} else if (KeepRareTag(data, buf, HA6X_AT, enc)) {
 		} else {
 			char tag[5]{};
 			memcpy(tag,buf,4);
@@ -173,12 +225,13 @@ unsigned int *fd_frame_AT_load(unsigned int *data, const unsigned int *data_end,
 	return data;
 }
 
-unsigned int *fd_frame_AS_load(unsigned int *data, const unsigned int *data_end, Frame_AS *AS)
+unsigned int *fd_frame_AS_load(unsigned int *data, const unsigned int *data_end, Frame_AS *AS, Ha6FrameEnc *enc)
 {
 
 	while (data < data_end) {
 		unsigned int *buf = data;
 		++data;
+		if (enc) enc->markAS(buf);
 		
 		if (!memcmp(buf, "ASV0", 4)) {
 			AS->movementFlags = data[0];
@@ -260,6 +313,8 @@ unsigned int *fd_frame_AS_load(unsigned int *data, const unsigned int *data_end,
 				std::cout <<"\tUnknown ASYS value: " << data[0] <<"\n";
 			}
 			data++;
+		} else if (!memcmp(buf, "ASF2", 4) || !memcmp(buf, "ASF3", 4)) {
+			KeepRareTag(data, buf, HA6X_AS, enc);
 		} else if (!memcmp(buf, "ASCF", 4)) {
 			// UNI counter/cancel flag
 			AS->ascf = data[0];
@@ -278,6 +333,7 @@ unsigned int *fd_frame_AS_load(unsigned int *data, const unsigned int *data_end,
 			data++;
 		} else if (!memcmp(buf, "ASED", 4)) {
 			break;
+		} else if (KeepRareTag(data, buf, HA6X_AS, enc)) {
 		} else {
 			char tag[5]{};
 			memcpy(tag,buf,4);
@@ -404,10 +460,12 @@ unsigned int *fd_frame_AF_load(unsigned int *data, const unsigned int *data_end,
 	// Track current layer for per-layer properties
 	Layer_Type* currentLayer = nullptr;
 	int currentLayerId = -1;
+	bool sawAFGX = false;
 
 	while (data < data_end) {
 		unsigned int *buf = data;
 		++data;
+		frame->ha6.markAF(buf, sawAFGX ? currentLayerId : -1);
 
 		if (!memcmp(buf, "AFGP", 4)) {
 			// MBAACC format - single layer
@@ -440,6 +498,7 @@ unsigned int *fd_frame_AF_load(unsigned int *data, const unsigned int *data_end,
 			currentLayerId = layerId;
 
 			if(usedAFGX) *usedAFGX = true; // Mark that this sequence uses UNI format
+			sawAFGX = true;
 			data += 3;
 		} else if (!memcmp(buf, "AFOF", 4)) {
 			// Layer offset - only apply to current layer
@@ -565,7 +624,11 @@ unsigned int *fd_frame_AF_load(unsigned int *data, const unsigned int *data_end,
 			++data;
 		} else if (!memcmp(buf, "AFRT", 4)) {
 			//Some fucked up interaction with rotation and scale.
-			frame->AF.AFRT = data[0];
+			//UNI2/MBTL store it per layer (layer +32 in Han6_LoadFrameAF).
+			if (sawAFGX && currentLayer)
+				currentLayer->afrt = data[0];
+			else
+				frame->AF.AFRT = data[0];
 			++data;
 		} else if (!memcmp(buf, "AFID", 4)) {
 			// UNI frame ID for Squirrel script reference
@@ -581,12 +644,12 @@ unsigned int *fd_frame_AF_load(unsigned int *data, const unsigned int *data_end,
 			++data;
 		} else if (!memcmp(buf, "AFED", 4)) {
 			break;
+		} else if (KeepRareTag(data, buf, (uint8_t)(currentLayerId >= 0 ? HA6X_AFLAYER0 + currentLayerId : HA6X_AF), &frame->ha6)) {
 		} else {
-			// Unknown AF tag - silently skip
-			// char tag[5]{};
-			// memcpy(tag,buf,4);
-			// test.Print(data, data_end);
-			// std::cout <<"\tUnknown AF tag: " << tag <<"\n";
+			//Unknown tags are dropped on save — never skip one silently (issues #71/#68).
+			char tag[5]{};
+			memcpy(tag,buf,4);
+			std::cout <<"\tUnknown AF tag: " << tag <<"\n";
 		}
 		//Unhandled: None, unless they're not in vanilla melty files.
 	}
@@ -594,36 +657,41 @@ unsigned int *fd_frame_AF_load(unsigned int *data, const unsigned int *data_end,
 	return data;
 }
 
-unsigned int *fd_frame_load(unsigned int *data, const unsigned int *data_end, Frame *frame, TempInfo *info, bool *usedAFGX = nullptr)
+unsigned int *fd_frame_load(unsigned int *data, const unsigned int *data_end, Frame *frame, TempInfo *info, bool *usedAFGX)
 {
-	int boxesCount = 0;
+	Ha6FrameEnc &enc = frame->ha6;
+	enc.valid = true;
 
 	while (data < data_end) {
 		unsigned int *buf = data;
 		++data;
 		
 		if (!memcmp(buf, "HRNM", 4) || !memcmp(buf, "HRAT", 4)) {
-			// read hitbox or attackbox
+			// read hitbox or attackbox. The game indexes hurt boxes 0..FSNH-1
+			// and attack boxes 0..FSNA-1; in memory attack boxes sit at +25.
 			unsigned int location = data[0];
 			if (!memcmp(buf, "HRAT", 4)) {
 				location += 25;
 			}
 			if (location <= 32 && info->cur_hitbox < info->boxesRefs.size()) {
 				Hitbox *hitbox = info->boxesRefs[info->cur_hitbox] = &frame->hitboxes[location];
+				enc.boxPool[location] = (int16_t)info->cur_hitbox;
+				enc.boxRef[location] = -1;
 				++info->cur_hitbox;
-				boxesCount++;
 
 				memcpy(hitbox->xy, data+1, sizeof(int)*4);
 			}
 			else
-				assert(0);
+			{
+				test.Print(data, data_end);
+				std::cout << "\tBox out of range or over the PDS2 count: " << location << "\n";
+			}
 			
 			data += 5;
 		} else if (!memcmp(buf, "HRNS", 4) || !memcmp(buf, "HRAS", 4)) {
 			// read hitbox reference
 			unsigned int location = data[0];
 			unsigned int source = data[1];
-			boxesCount++;
 			
 			if (!memcmp(buf, "HRAS", 4)) {
 				location += 25;
@@ -633,20 +701,31 @@ unsigned int *fd_frame_load(unsigned int *data, const unsigned int *data_end, Fr
 				info->delayLoadList.push_back({info->cur_frame, location, source});
 			}
 			else
-				assert(0);
+			{
+				test.Print(data, data_end);
+				std::cout << "\tBox reference out of range: " << location << "\n";
+			}
 			
 			data += 2;
 		} else if (!memcmp(buf, "ATST", 4)) {
 			// start attack block
-				data = fd_frame_AT_load(data, data_end, &frame->AT, info);
+			enc.hadAT = true;
+			data = fd_frame_AT_load(data, data_end, &frame->AT, info, &enc);
 			
 		} else if (!memcmp(buf, "ASST", 4)) {
 			// start state block
 			if (info->cur_AS < info->AS.size()) {
 				info->AS[info->cur_AS] = &frame->AS;
+				enc.asPool = (int16_t)info->cur_AS;
+				enc.asRef = -1;
 				++info->cur_AS;
 
-				data = fd_frame_AS_load(data, data_end, &frame->AS);
+				data = fd_frame_AS_load(data, data_end, &frame->AS, &enc);
+			}
+			else
+			{
+				// More ASST blocks than PDS2 announced: still parse it.
+				data = fd_frame_AS_load(data, data_end, &frame->AS, &enc);
 			}
 		} else if (!memcmp(buf, "ASSM", 4)) {
 			// reference state block
@@ -657,6 +736,8 @@ unsigned int *fd_frame_load(unsigned int *data, const unsigned int *data_end, Fr
 			if(value < info->cur_AS)
 			{
 				frame->AS = *info->AS[value];
+				enc.asRef = (int16_t)value;
+				enc.asPool = -1;
 			}
 			else
 			{
@@ -668,33 +749,44 @@ unsigned int *fd_frame_load(unsigned int *data, const unsigned int *data_end, Fr
 			// start animation block
 			data = fd_frame_AF_load(data, data_end, frame, usedAFGX);
 		} else if (!memcmp(buf, "EFST", 4)) {
-			// start effect flags block
-			//int n = data[0];
+			// start effect flags block. data[0] is the slot (the game stores
+			// it at slot[data[0]] of an FSNE-sized array; slots can be sparse).
+			int slot = (int)data[0];
+			if (frame->EF.size() < (size_t)Ha6FrameEnc::kMaxSlots)
+				enc.efSlot[frame->EF.size()] = (int8_t)slot;
 			frame->EF.push_back({});
 			++data;
 			data = fd_frame_EF_load(data, data_end, &frame->EF.back());
+			enc.nEF = (uint8_t)std::min<size_t>(frame->EF.size(), 255);
 
 		} else if (!memcmp(buf, "IFST", 4)) {
 			// start condition block
-			//int n = data[0];
-
+			int slot = (int)data[0];
+			if (frame->IF.size() < (size_t)Ha6FrameEnc::kMaxSlots)
+				enc.ifSlot[frame->IF.size()] = (int8_t)slot;
 			frame->IF.push_back({});
 			++data;
 			data = fd_frame_IF_load(data, data_end, &frame->IF.back());
-		} else if (!memcmp(buf, "FSNA", 4)) {
-			//Max index of used attack boxes + 1
-			++data;
+			enc.nIF = (uint8_t)std::min<size_t>(frame->IF.size(), 255);
 		} else if (!memcmp(buf, "FSNH", 4)) {
-			//Max index of used hantei boxes + 1
+			//Number of hurt box slots (max index + 1)
+			enc.fsn[0] = (int8_t)data[0];
+			++data;
+		} else if (!memcmp(buf, "FSNA", 4)) {
+			//Number of attack box slots (max index + 1)
+			enc.fsn[1] = (int8_t)data[0];
 			++data;
 		} else if (!memcmp(buf, "FSNE", 4)) {
-			//Max index of used effects + 1
+			//Number of effect slots (max index + 1)
+			enc.fsn[2] = (int8_t)data[0];
 			++data;
 		} else if (!memcmp(buf, "FSNI", 4)) {
-			//Max index of used ifs + 1
+			//Number of condition slots (max index + 1)
+			enc.fsn[3] = (int8_t)data[0];
 			++data;
 		} else if (!memcmp(buf, "FEND", 4)) {
 			break;
+		} else if (KeepRareTag(data, buf, HA6X_FRAME, &enc)) {
 		} else {
 			char tag[5]{};
 			memcpy(tag,buf,4);
@@ -708,7 +800,7 @@ unsigned int *fd_frame_load(unsigned int *data, const unsigned int *data_end, Fr
 	return data;
 }
 
-unsigned int *fd_sequence_load(unsigned int *data, const unsigned int *data_end, Sequence *seq, bool utf8)
+unsigned int *fd_sequence_load(unsigned int *data, const unsigned int *data_end, Sequence *seq, bool utf8, bool *sawPDS2)
 {
 
 	TempInfo temp_info;
@@ -720,6 +812,9 @@ unsigned int *fd_sequence_load(unsigned int *data, const unsigned int *data_end,
 	
 	std::string name, codename;
 	int level = 0, psts = 0, flag = 0, pups = 0;
+	seq->ha6 = Ha6SeqEnc{};
+	seq->ha6.valid = true;
+	seq->ha6.utf8Names = utf8;
 	
 	while (data < data_end) {
 		unsigned int *buf = data;
@@ -732,10 +827,14 @@ unsigned int *fd_sequence_load(unsigned int *data, const unsigned int *data_end,
 
 			assert (len < 64);
 			char str[65];
-			memcpy(str, data, len);
-			str[len] = '\0';
+			memcpy(str, data, std::min(len, 64u));
+			str[std::min(len, 64u)] = '\0';
 			
 			codename = str;
+			seq->ha6.hasPTCN = true;
+			seq->ha6.ptcnLen = len;
+			memset(seq->ha6.ptcn, 0, sizeof(seq->ha6.ptcn));
+			memcpy(seq->ha6.ptcn, data, std::min(len, 64u));
 			
 			data = (unsigned int *)(((unsigned char *)data)+len);
 		} else if (!memcmp(buf, "PSTS", 4)) {
@@ -774,8 +873,14 @@ unsigned int *fd_sequence_load(unsigned int *data, const unsigned int *data_end,
 			unsigned int len = data[0];
 			assert (len < 64);
 			char str[65];
-			memcpy(str, data+1, len);
-			str[len] = '\0';
+			memcpy(str, data+1, std::min(len, 64u));
+			str[std::min(len, 64u)] = '\0';
+			// Keep the raw buffer: MBTL/UNI2 names carry stale bytes after
+			// the NUL, which a re-encode would zero (ha6_enc.h).
+			seq->ha6.hasPTT2 = true;
+			seq->ha6.ptt2Len = len;
+			memset(seq->ha6.ptt2, 0, sizeof(seq->ha6.ptt2));
+			memcpy(seq->ha6.ptt2, data+1, std::min(len, 64u));
 
 			// Convert Shift-JIS to UTF-8 for internal use
 			// Modern HA6 files store strings as Shift-JIS
@@ -799,6 +904,10 @@ unsigned int *fd_sequence_load(unsigned int *data, const unsigned int *data_end,
 			// Convert Shift-JIS to UTF-8 if needed (backwards compatibility)
 			if(!utf8)
 				name = sj2utf8(name);
+			seq->ha6.hadPTIT = true;
+			memset(seq->ha6.ptt2, 0, sizeof(seq->ha6.ptt2));
+			memcpy(seq->ha6.ptt2, data, 32);
+			seq->ha6.ptt2Len = 32;
 
 			data += 8;
 		} else if (!memcmp(buf, "PDS2", 4)) {
@@ -814,6 +923,7 @@ unsigned int *fd_sequence_load(unsigned int *data, const unsigned int *data_end,
 			// data[7] = AS count
 			// data[8] = frame count
 			if (data[0] == 32) {
+				if (sawPDS2) *sawPDS2 = true;
 				seq->frames.clear();
 				seq->frames.resize(data[1]);
 
@@ -822,6 +932,7 @@ unsigned int *fd_sequence_load(unsigned int *data, const unsigned int *data_end,
 				temp_info.AS.resize(data[7]);
 
 				nframes = data[1];
+				seq->ha6.pds2Unused = data[6];
 
 				assert(data[8] == data[1]); //Just to make sure.
 
@@ -852,10 +963,42 @@ unsigned int *fd_sequence_load(unsigned int *data, const unsigned int *data_end,
 				assert(0 && "Actual frame number and PDS2 don't match");
 			}
 		} else if (!memcmp(buf, "PEND", 4)) {
+			// A pattern can carry a name (and flags) with no PDS2/frames: UNI
+			// placeholder slots do. Its properties were only stored at PDS2,
+			// so the name was dropped and lost on save (issue #71).
+			if (!seq->initialized) {
+				seq->name = name;
+				seq->codeName = codename;
+				seq->psts = psts;
+				seq->level = level;
+				seq->flag = flag;
+				seq->pups = pups;
+			}
 			for(const auto &delayLoad : temp_info.delayLoadList)
 			{
+				if (delayLoad.frameNo >= seq->frames.size())
+					continue;
 				Frame &frame = seq->frames[delayLoad.frameNo];
+				if (delayLoad.source >= temp_info.boxesRefs.size() || !temp_info.boxesRefs[delayLoad.source])
+				{
+					std::cout << "\tBox reference to a missing box: " << delayLoad.source << "\n";
+					continue;
+				}
 				frame.hitboxes[delayLoad.location] = *temp_info.boxesRefs[delayLoad.source];
+				frame.ha6.boxRef[delayLoad.location] = (int16_t)delayLoad.source;
+				frame.ha6.boxPool[delayLoad.location] = -1;
+			}
+			// Snapshot each frame's boxes so the writer can tell unchanged
+			// boxes (kept exactly as loaded, even when inverted) from edits.
+			for (auto &frame : seq->frames)
+			{
+				frame.ha6.boxMask = 0;
+				for (const auto &b : frame.hitboxes)
+				{
+					if (b.first < 0 || b.first >= Ha6FrameEnc::kMaxBoxes) continue;
+					frame.ha6.boxMask |= 1ull << b.first;
+					memcpy(frame.ha6.boxXY[b.first], b.second.xy, sizeof(b.second.xy));
+				}
 			}
 			test.seqName = "";
 			break;
@@ -874,7 +1017,7 @@ unsigned int *fd_sequence_load(unsigned int *data, const unsigned int *data_end,
 	return data;
 }
 
-unsigned int *fd_main_load(unsigned int *data, const unsigned int *data_end, std::vector<Sequence> &sequences, unsigned int nsequences, bool utf8)
+unsigned int *fd_main_load(unsigned int *data, const unsigned int *data_end, std::vector<Sequence> &sequences, unsigned int nsequences, bool utf8, std::vector<unsigned int> *definedIds, bool fillOnly, std::map<unsigned int, Sequence> *stubs)
 {
 	while (data < data_end) {
 		unsigned int *buf = data;
@@ -887,9 +1030,29 @@ unsigned int *fd_main_load(unsigned int *data, const unsigned int *data_end, std
 			// make sure there's actually something here.
 			if (memcmp(data, "PEND", 4)) {
 				if (seq_id < nsequences) {
-					sequences[seq_id].empty = false;
+					Sequence &slot = sequences[seq_id];
+					const bool hadFrames = slot.initialized;
+					const bool hadContent = hadFrames || !slot.name.empty() || !slot.codeName.empty();
 					test.seqId = seq_id;
-					data = fd_sequence_load(data, data_end, &sequences[seq_id], utf8);
+					// Parse the block on its own, then decide how it lands.
+					Sequence blk;
+					bool sawPDS2 = false;
+					data = fd_sequence_load(data, data_end, &blk, utf8, &sawPDS2);
+					if (fillOnly && hadContent)
+						continue; // fallback file: the slot is already defined
+					if (sawPDS2 || !hadFrames) {
+						// The block replaces the slot. (Overlaying in place kept
+						// the previous file's usedAFGX/usedATV2 flags, so a
+						// pattern could be re-saved in the other file's format.)
+						blk.empty = false;
+						slot = std::move(blk);
+						if (definedIds) definedIds->push_back(seq_id);
+					} else if (stubs) {
+						// Name/flag-only entry over a slot that already has
+						// frames from an earlier file: nothing changes in the
+						// merged view, but the entry belongs to this file.
+						(*stubs)[seq_id] = std::move(blk);
+					}
 				}
 			} else {
 				++data;

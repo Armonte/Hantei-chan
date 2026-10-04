@@ -1,0 +1,11 @@
+# GOF2: double click a character -> animation list, frame strip, playback, boxes, properties
+browse C:\games\gof2_run
+waitidle
+select AMIY.DT2
+waitidle
+open
+wait 160
+pattern 19
+wait 80
+capture C:/dev/hantei-chan/work/ab/shots/07_gof2_character_view.png
+quit

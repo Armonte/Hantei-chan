@@ -1,0 +1,72 @@
+"""RboActor part 4: fields for actor bytes 0x780..0x947 (1920..2375), same tuple format as table F of make_rbo_actor.py.
+Existing named fields inside the range are NOT repeated (hurtBoxSlot +0x780, kasanariBox* +0x7D8..+0x7EB, charContext/patternArea,
+stanceClass/hitClassMask, ticksUntilWrap +0x930, enterFlags +0x944). Types are declared in actor_part4_types.h (parse that first).
+Each comment ends with [traced] (code reading the field was read) or [inferred] (from data/usage pattern)."""
+FIELDS = [
+ (1932, 36, 'struct RboP4ReactionState', 'reaction', 'sub_441940/sub_444C10/sub_444C60/sub_444DF0/sub_444F60/Hit_SetVictimReactionAnim/sub_445550 [traced]'),
+ (1968, 40, 'struct RboP4KasanariTouchState', 'kasanariTouch', 'sub_441260/sub_441280/Actor_UpdateBoxes272State/sub_419840/sub_4198B0/Actor_InputMaskMatches [traced]'),
+ (2036, 4, 'void *', 'inputBuffer', 'player input object: factory sub_4425E0 (sub_45E990), release sub_45E9E0, current input bits +0x10 read by sub_43E1B0 [traced]'),
+ (2040, 4, 'void *', 'vitals', 'per-fighter vitals block: hp +24, max hp +28, guard gauge +32/+36, guard flag +96 (Actor_ApplyFrameStatusFlags, Hit_ApplyHpDamage) [traced]'),
+ (2044, 4, 'void *', 'fighterLoadout', 'per-fighter loadout/stat block (ids +8/+12/+16, stat vector +84 passed to scripts, +100 cancel limit); factory sub_442520/sub_4423F0 [traced]'),
+ (2048, 4, 'void *', 'combatModifiers', 'damage/defence modifier block, base triples +8/+20/+32, derived table +88 (sub_4423F0, sub_4571E0, Hit_ComputeFinalDamage) [traced]'),
+ (2052, 4, 'void *', 'scriptVarBlock', 'script variable table: dword array at +8 indexed by condition ops (sub_418C40, sub_419140, sub_41D200, sub_44E4C0 fills it) [traced]'),
+ (2056, 4, 'void *', 'hudWidget', 'HUD gauge widget allocated by sub_4668E0, freed sub_466880, cloned sub_4668D0 [traced alloc/free, inferred meaning]'),
+ (2060, 4, 'enum RboP4WallContact', 'wallContactFlags', 'sub_43FD50 (edge/ceiling/floor bits), sub_442640 (stage bound bits 1/2), reset sub_441850 [traced]'),
+ (2064, 4, 'int', 'isGuardingPose', 'Actor_ApplyFrameStatusFlags: 1 when pattern in {17,18,19,44,45,46}; read sub_418C40 cond 1, Combat_ResolveGuardContacts [traced]'),
+ (2068, 4, 'int', 'isInHitStunPose', 'Actor_ApplyFrameStatusFlags: 1 when pattern in {23..27,29,30}; read sub_443870, Hit_RollEvade [traced]'),
+ (2080, 12, 'struct RboP4FollowState', 'follow', 'sub_41A650 ops 0..3, sub_440550, sub_4197B0, sub_4198E0; Actor_Init copies +0x820..+0x8A3 from the old actor [traced]'),
+ (2092, 16, 'struct RboP4CameraFocus', 'cameraFocus', 'Camera_FrameActors 0x42FFD0, sub_44A1F0, sub_43FD50 [traced]'),
+ (2108, 36, 'struct RboP4ScreenBound', 'screenBound', 'sub_43FD50 0x43FD50, sub_41A650 ops 4/5/6/17/19 [traced]'),
+ (2144, 64, 'struct RboP4ParentLink', 'parentLink', 'sub_43F460/sub_43F360/sub_43F410/sub_43F2A0/sub_442890/sub_442CC0, sub_41A650 ops 8..16 [traced]'),
+ (2208, 4, 'enum RboP4SetupFlags', 'setupFlags', 'sub_41A650 op 20 (set/and/or/clear); read Actor_EnterFrame, sub_43EBD0, Actor_ApplyEnterBrake, Actor_ApplyFrameMovement, sub_419950, sub_41ACF0, Actor_RunFrameScriptList6/7 [traced]'),
+ (2212, 80, 'struct RboP4ColorFxSlot', 'colorFxSlot[2]', 'Actor_Init (sub_442130 x2), sub_440550, sub_440330, sub_448810, sub_4464D0 [traced]'),
+ (2292, 8, 'struct RboP4ColorFxSlot *', 'colorFxSlotPtr[2]', 'Actor_Init points them at the own slots; sub_41A650 op 24 can point them at parent/root slots; read by sub_4464D0 [traced]'),
+ (2300, 4, 'enum RboP4StatusKindMask', 'activeStatusKindMask', 'sub_4571E0 rebuilds it (bit = status kind 3..14); tested with 0x1E0 in sub_440550/Hit_SetVictimReactionAnim [traced]'),
+ (2304, 4, 'enum RboP4StatusHookMask', 'statusHookMask', 'sub_4571E0; read sub_45B5A0/sub_45B5F0/Hit_ComputeFinalDamage [traced]'),
+ (2308, 4, 'int', 'cancelLockoutTimer', 'sub_41C710 op 25 sets, sub_440550 decrements, sub_418C40 cond 16 blocks while non-zero [traced]'),
+ (2312, 20, 'struct RboP4BufferedMove', 'bufferedMove', 'sub_43E1B0, sub_4209B0, sub_4414B0 [traced reads; arming write not found]'),
+ (2332, 4, 'int *', 'cancelCounters', 'points to 6 per-player use counters (24-byte stride table at 0x2615B60): sub_43D8A0 alloc, sub_43D8B0 clear, sub_43D8C0 limit test [traced]'),
+ (2336, 4, 'void *', 'comboPopup', 'damage/combo number popup object: sub_462930 creates/updates (slot back-pointer at +80), sub_4628E0 frees [traced]'),
+ (2340, 8, 'void *', 'overlayQuadList[2]', 'heads of two linked lists of overlay quads built by sub_41CDA0, drawn by sub_446FE0/Actor_DrawSprite, freed sub_44B340 [traced]'),
+ (2348, 4, 'void *', 'statusEffectList', 'head of status effect node list: sub_456B70/456DB0/456BA0/4569F0 manipulate, sub_456950 frees, sub_4571E0 folds [traced]'),
+ (2356, 4, 'int', 'tickRateBase', 'Actor_Init a8; 256 = normal (sub_44E1A0 clamps 1..256); sub_43F1B0/sub_43F1D0/sub_43F200/sub_4571E0 [traced]'),
+ (2360, 4, 'int', 'tickRate', 'Actor_Init a9; effective rate subtracted from ticksUntilWrap each tick via tickRatePtr (sub_440550) [traced]'),
+ (2364, 4, 'int *', 'tickRatePtr', 'Actor_Init: &tickRate; sub_41C710 op 22 can point it at the parent tickRate [traced]'),
+ (2368, 4, 'unsigned int', 'skillHookLatch', 'bit 1 = skill script slot 0x3D already fired (sub_45A320); inherited from parent by sub_41C710 op 27 [traced]'),
+]
+# leaf-level inventory for the evidence note / counts: (abs_offset, size, name, confidence)
+LEAVES = [
+ (1932,4,'reaction.facingSign','traced'),(1936,4,'reaction.desiredFacingSign','traced'),(1940,4,'reaction.pendingReactionClass','traced'),
+ (1944,4,'reaction.moveDirMultiplier','traced'),(1948,4,'reaction.lastHitClass','traced'),(1952,4,'reaction.hitsTakenCounter','traced'),
+ (1956,4,'reaction.hurtSlotHitMask','traced'),(1960,4,'reaction.downState','traced'),(1964,4,'reaction.downTimer','traced'),
+ (1968,4,'kasanariTouch.active','traced'),(1972,4,'kasanariTouch.hitEventFlags','traced'),(1976,4,'kasanariTouch.hitEventClassMask','traced'),
+ (1980,8,'kasanariTouch.unused_0C','unused'),(1988,4,'kasanariTouch.clearedA','inferred'),(1992,4,'kasanariTouch.clearedB','inferred'),
+ (1996,4,'kasanariTouch.clearedC','inferred'),(2000,4,'kasanariTouch.unused_20','unused'),(2004,4,'kasanariTouch.overlapEventMask','traced'),
+ (2036,4,'inputBuffer','traced'),(2040,4,'vitals','traced'),(2044,4,'fighterLoadout','traced'),(2048,4,'combatModifiers','traced'),
+ (2052,4,'scriptVarBlock','traced'),(2056,4,'hudWidget','inferred'),(2060,4,'wallContactFlags','traced'),(2064,4,'isGuardingPose','traced'),
+ (2068,4,'isInHitStunPose','traced'),
+ (2080,4,'follow.ticksWithParent','inferred'),(2084,4,'follow.isFollower','traced'),(2088,4,'follow.forwardsEvents','traced'),
+ (2092,4,'cameraFocus.mode','traced'),(2096,4,'cameraFocus.x','traced'),(2100,4,'cameraFocus.y','traced'),(2104,4,'cameraFocus.leash','traced'),
+ (2108,4,'screenBound.mode','traced'),(2112,4,'screenBound.flags','traced'),(2116,4,'screenBound.extentA','traced'),(2120,4,'screenBound.extentDown','traced'),
+ (2124,4,'screenBound.extentB','traced'),(2128,4,'screenBound.extentUp','traced'),(2132,4,'screenBound.vertFlags','traced'),
+ (2136,4,'screenBound.ceilingY','traced'),(2140,4,'screenBound.floorY','traced'),
+ (2144,4,'parentLink.onParentFlagAction','traced'),(2148,4,'parentLink.onParentEventAction','traced'),(2152,4,'parentLink.onParentReactionAction','traced'),
+ (2156,4,'parentLink.expiryInhibit','traced'),(2160,4,'parentLink.facingFollow','traced'),(2164,4,'parentLink.flipRelativeXOnFlip','traced'),
+ (2168,4,'parentLink.flipVelocityOnFlip','traced'),(2172,4,'parentLink.lastParentFacing','traced'),(2176,4,'parentLink.fadeFlags','traced'),
+ (2180,4,'parentLink.fadeFrames','traced'),(2184,4,'parentLink.lifetimeFrames','traced'),(2188,4,'parentLink.detachPattern','traced'),
+ (2192,4,'parentLink.detachFrame','traced'),(2196,4,'parentLink.attachedToParent','traced'),(2200,4,'parentLink.hitCreditToParent','traced'),
+ (2204,4,'parentLink.unused_3C','unused'),
+ (2208,4,'setupFlags','traced'),
+]
+for _slot,_base in ((0,2212),(1,2252)):
+    for _o,_s,_n,_c in ((0,4,'timer','traced'),(4,4,'colorStep','inferred'),(8,3,'tintRGB','traced'),(11,3,'addRGB','traced'),(14,2,'unused_0E','unused'),
+                        (16,4,'kind','traced'),(20,4,'framesLeft','traced'),(24,4,'period','traced'),(28,4,'periodCounter','traced'),
+                        (32,4,'cycleLength','inferred'),(36,4,'cycleIndex','inferred')):
+        LEAVES.append((_base+_o,_s,'colorFxSlot[%d].%s'%(_slot,_n),_c))
+LEAVES += [
+ (2292,4,'colorFxSlotPtr[0]','traced'),(2296,4,'colorFxSlotPtr[1]','traced'),(2300,4,'activeStatusKindMask','traced'),(2304,4,'statusHookMask','traced'),
+ (2308,4,'cancelLockoutTimer','traced'),(2312,4,'bufferedMove.armed','inferred'),(2316,4,'bufferedMove.candidateMoves','traced'),
+ (2320,4,'bufferedMove.framesLeft','traced'),(2324,4,'bufferedMove.matchedMove','traced'),(2328,4,'bufferedMove.matchedFacing','traced'),
+ (2332,4,'cancelCounters','traced'),(2336,4,'comboPopup','traced'),(2340,4,'overlayQuadList[0]','traced'),(2344,4,'overlayQuadList[1]','traced'),
+ (2348,4,'statusEffectList','traced'),(2356,4,'tickRateBase','traced'),(2360,4,'tickRate','traced'),(2364,4,'tickRatePtr','traced'),(2368,4,'skillHookLatch','traced'),
+]
