@@ -90,6 +90,7 @@ protected:
 	int				curPalIndex = 0;
 	int				curPups = 0;
 	int				appliedBank = 0;   // bank whose data `palette` points into
+	std::string		palPaths[kPupsBanks];
 	void			freePupsBanks();
 	void			applyPalette();
 
@@ -150,6 +151,10 @@ public:
 	bool loadForeign(std::shared_ptr<CgForeignBank> bank);
 	CgForeignBank *foreign() const { return m_foreign.get(); }
 	bool loadPalette(const char *name);
+	// Re-parse palette bytes (a .pal file image) as bank `bank` (0 = <cg>.pal, 1..7 = PUPS): live palette editing in the CG manager. Keeps the selection.
+	bool setPaletteBytes(int bank, const void *bytes, unsigned size);
+	// Source file of palette bank n as loaded (empty = none).
+	const std::string &palettePath(int bank) const { static const std::string none; return (bank >= 0 && bank < kPupsBanks) ? palPaths[bank] : none; }
 	// Loads <stem>.pal as bank 0 and <stem>_p1.pal .. _p7.pal as banks 1..7.
 	bool loadPupsPalettes(const std::string &stem);
 	// Selects the PUPS bank. A missing bank falls back to bank 0 (the game

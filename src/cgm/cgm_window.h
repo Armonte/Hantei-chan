@@ -4,6 +4,7 @@
 #include "cgm_bank.h"
 #include "cgm_usage.h"
 #include "cgm_undo.h"
+#include "cgm_palette.h"
 #include <functional>
 #include <memory>
 #include <string>
@@ -47,6 +48,21 @@ private:
 	uint64_t filterKey = 0;
 	std::unordered_map<int, Thumb> thumbs;
 	Thumb preview; int previewId = -1; unsigned long long previewGen = ~0ull;
+	// palette tab
+	struct PalState {
+		PalSet set[8]; bool loaded[8] = {}; bool dirty[8] = {};
+		int bank = 0, number = 0, selA = 0, selB = 0;
+		uint32_t clip[256] = {}; int clipLen = 0;
+		uint32_t fill = 0xFF808080u, gradA = 0xFF000000u, gradB = 0xFFFFFFFFu;
+		ColorAdjust adj; bool hsvGradient = false;
+		bool recolorThisOnly = true, recolorSlots = false, recolorImages = true, recolorFiles = true;
+		uint32_t findC = 0xFF000000u, replaceC = 0xFF000000u; int tolerance = 0;
+	} pal;
+	const CharacterInstance *palOwner = nullptr;
+	void loadPalettes(CharacterInstance &ch);
+	void drawPalettes(CharacterInstance &ch, const WindowHost &host);
+	void pushPalette(CharacterInstance &ch, int bank);   // show pal.set[bank] in the CG object (live preview everywhere)
+	void commitPalette(CharacterInstance &ch, const std::string &label, int bank, PalSet before, const WindowHost &host);
 	History hist;
 	std::string status;
 	std::vector<std::string> warnings;

@@ -4,6 +4,7 @@
 #include "cgm_bank.h"
 #include "cgm_export.h"
 #include "cgm_ops.h"
+#include "cgm_palette.h"
 #include "../png_writer.h"
 #include <filesystem>
 #include "../cg.h"
@@ -166,6 +167,81 @@ static int CmdRoundtrip(int argc, char **argv) {
 	return fail ? 1 : 0;
 }
 
+static bool LoadPal(const char *p, cgm::PalSet &ps, std::vector<uint8_t> &raw) {
+	std::string e; if (!ReadFile(p, raw) || !cgm::PalSet::parse(raw.data(), raw.size(), ps, &e)) { printf("error: cannot read palette %s %s\n", p, e.c_str()); return false; }
+	return true;
+}
+
+// pal-check <x.pal>...: parse -> raw bytes identical; every palette exports to .act/.gpl/.png and re-imports with the same colours; neutral adjust is the identity
+static int CmdPalCheck(int argc, char **argv) {
+	int pass = 0, fail = 0, pals = 0;
+	for (int i = 0; i < argc; i++) {
+		cgm::PalSet ps; std::vector<uint8_t> raw;
+		if (!LoadPal(argv[i], ps, raw)) { fail++; continue; }
+		bool bad = false;
+		if (ps.raw != raw) { printf("FAIL %s: raw bytes differ\n", argv[i]); bad = true; }
+		const std::string tmp = (std::filesystem::path(argv[i]).filename().string());
+		for (int n = 0; n < ps.count && !bad; n += std::max(1, ps.count / 3)) {   // first, middle, last-ish palettes
+			uint32_t back[256]; std::string e; pals++;
+			for (const char *ext : {".act", ".gpl", ".png"}) {
+				const std::string f = std::string("cgm_pal_tmp") + ext;
+				if (!cgm::WritePalFileColors(f, ps.pal(n), &e) || !cgm::ReadPalFileColors(f, back, &e)) { printf("FAIL %s palette %d: %s file: %s\n", argv[i], n, ext, e.c_str()); bad = true; break; }
+				for (int k = 0; k < 256; k++) if ((back[k] & 0xFFFFFF) != (ps.pal(n)[k] & 0xFFFFFF)) { printf("FAIL %s palette %d: %s round trip differs at %d\n", argv[i], n, ext, k); bad = true; break; }
+				std::filesystem::remove(f);
+			}
+			cgm::PalSet c2 = ps; cgm::ColorAdjust none; cgm::RecolorScope sc; cgm::RecolorSet(c2, none, sc);
+			if (c2.raw != ps.raw) { printf("FAIL %s: neutral recolour changed bytes\n", argv[i]); bad = true; }
+			cgm::ColorAdjust h; h.hueDeg = 40; cgm::RecolorSet(c2, h, sc); h.hueDeg = -40; cgm::RecolorSet(c2, h, sc);   // there and back: within rounding
+			int worst = 0; for (int k = 1; k < 256; k++) { const uint32_t a = c2.pal(n)[k], b2 = ps.pal(n)[k]; worst = std::max({worst, std::abs((int)cgm::R(a) - cgm::R(b2)), std::abs((int)cgm::G(a) - cgm::G(b2)), std::abs((int)cgm::B(a) - cgm::B(b2))}); }
+			if (worst > 12 && n == 0) { printf("FAIL %s: hue +40/-40 drifted by %d\n", argv[i], worst); bad = true; }
+		}
+		if (bad) fail++; else pass++;
+	}
+	printf("SECTION cgm-palette: pass %d fail %d | palettes checked %d (raw exact, .act/.gpl/.png round trip, neutral recolour identity)\n", pass, fail, pals);
+	return fail ? 1 : 0;
+}
+
+static bool ArgVal(int argc, char **argv, const char *k, std::string &v) { for (int i = 0; i + 1 < argc; i++) if (!strcmp(argv[i], k)) { v = argv[i + 1]; return true; } return false; }
+
+// pal-export <x.pal> <n> <out.act|.gpl|.png|.pal>        pal-import <x.pal> <n> <in> -o <out.pal>
+// pal-recolor <x.pal> [--hue D] [--sat M] [--val M] [--palette N] [--range a-b] -o <out.pal>
+static int CmdPal(const std::string &c, int argc, char **argv) {
+	if (c == "pal-check") return CmdPalCheck(argc, argv);
+	if (argc < 1) { puts("usage: cgmtool pal-info|pal-export|pal-import|pal-recolor|pal-check ..."); return 2; }
+	cgm::PalSet ps; std::vector<uint8_t> raw; if (!LoadPal(argv[0], ps, raw)) return 1;
+	std::string e, v;
+	if (c == "pal-info") { printf("%d palettes, layout %s, %zu bytes\n", ps.count, ps.offsetDw == 1 ? "MBAACC" : "UNI/MBTL", raw.size()); return 0; }
+	if (c == "pal-export" && argc >= 3) { uint32_t p[256]; const int n = atoi(argv[1]); if (n < 0 || n >= ps.count) { puts("no such palette"); return 1; } memcpy(p, ps.pal(n), 1024); if (!cgm::WritePalFileColors(argv[2], p, &e)) { printf("error: %s\n", e.c_str()); return 1; } printf("wrote %s\n", argv[2]); return 0; }
+	std::string out; if (!ArgVal(argc, argv, "-o", out)) { puts("-o <out.pal> is required (the input is never overwritten)"); return 2; }
+	if (c == "pal-import" && argc >= 3) {
+		const int n = atoi(argv[1]); uint32_t p[256]; if (n < 0 || n >= ps.count + 1 || !cgm::ReadPalFileColors(argv[2], p, &e)) { printf("error: %s\n", e.c_str()); return 1; }
+		if (n == ps.count && !ps.addCopy(ps.count - 1, &e)) { printf("error: %s\n", e.c_str()); return 1; }
+		for (int k = 0; k < 256; k++) ps.pal(n)[k] = (ps.pal(n)[k] & 0xFF000000u) | (p[k] & 0xFFFFFFu);
+	} else if (c == "pal-recolor") {
+		cgm::ColorAdjust a; cgm::RecolorScope sc;
+		if (ArgVal(argc, argv, "--hue", v)) a.hueDeg = (float)atof(v.c_str());
+		if (ArgVal(argc, argv, "--sat", v)) a.satMul = (float)atof(v.c_str());
+		if (ArgVal(argc, argv, "--val", v)) a.valMul = (float)atof(v.c_str());
+		if (ArgVal(argc, argv, "--palette", v)) { sc.allPalettes = false; sc.onlyPalette = atoi(v.c_str()); }
+		if (ArgVal(argc, argv, "--range", v)) sscanf(v.c_str(), "%d-%d", &sc.fromIndex, &sc.toIndex);
+		printf("%d palette(s) recoloured\n", cgm::RecolorSet(ps, a, sc));
+	} else { puts("bad arguments"); return 2; }
+	if (!WriteFile(out, ps.raw)) { puts("could not write the output"); return 1; }
+	printf("wrote %s\n", out.c_str()); return 0;
+}
+
+// recolor-bank <bank.cg> [--hue D] [--sat M] [--val M] [--no-slots] [--no-images] -o <out.cg>
+static int CmdRecolorBank(int argc, char **argv) {
+	if (argc < 1) return 2;
+	std::string out, v; if (!ArgVal(argc, argv, "-o", out)) { puts("-o <out.cg> is required"); return 2; }
+	std::vector<uint8_t> b; cgm::Bank bk; std::string err; if (!ParseFile(argv[0], b, bk, err)) { printf("error: %s\n", err.c_str()); return 1; }
+	cgm::ColorAdjust a; if (ArgVal(argc, argv, "--hue", v)) a.hueDeg = (float)atof(v.c_str()); if (ArgVal(argc, argv, "--sat", v)) a.satMul = (float)atof(v.c_str()); if (ArgVal(argc, argv, "--val", v)) a.valMul = (float)atof(v.c_str());
+	bool slots = true, imgs = true; for (int i = 1; i < argc; i++) { if (!strcmp(argv[i], "--no-slots")) slots = false; if (!strcmp(argv[i], "--no-images")) imgs = false; }
+	std::vector<int> ch; const int n = cgm::RecolorBank(bk, a, slots, imgs, &ch);
+	std::vector<uint8_t> o; bk.serialize(o); if (!WriteFile(out, o)) { puts("could not write the output"); return 1; }
+	printf("%d palette(s) changed (%zu image palettes), wrote %s\n", n, ch.size(), out.c_str()); return 0;
+}
+
 int main(int argc, char **argv) {
 	if (argc < 2) { puts("usage: cgmtool check|info|export|import|roundtrip ..."); return 2; }
 	std::string c = argv[1];
@@ -174,5 +250,7 @@ int main(int argc, char **argv) {
 	if (c == "export") return CmdExport(argc - 2, argv + 2);
 	if (c == "import") return CmdImport(argc - 2, argv + 2);
 	if (c == "roundtrip") return CmdRoundtrip(argc - 2, argv + 2);
+	if (c.compare(0, 4, "pal-") == 0) return CmdPal(c, argc - 2, argv + 2);
+	if (c == "recolor-bank") return CmdRecolorBank(argc - 2, argv + 2);
 	puts("unknown command"); return 2;
 }
