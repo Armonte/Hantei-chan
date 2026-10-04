@@ -42,7 +42,7 @@ mean error (94-100 % of pixels within 24/255); 80 (multi-hue) and 90 (single spr
 
 `cgmtool fxr classify|check|shade|apply|dgv` (see `src/cgm/fxr_cli.cpp`). `shade` is the oracle hook: RGBA on stdin -> recoloured RGBA on stdout.
 
-## Colour model v1.1 (runtime dc197266)
+## Colour model v1.1 (runtime c78ec288)
 
 `src/cgm/fxr_spec.hpp` is the runtime's header byte-identical (`tools/fxrecolor/fxr_sync.sh check|pull`): Oklab/OkHSV maths, 16 Oklab ramp
 entries (`kRampN`), `by = lightness|max|luma` (default lightness; the panel's "Drive by"), informative `space = okhsv|oklab`, and `kind = hsv`

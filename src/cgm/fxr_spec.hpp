@@ -43,7 +43,7 @@ constexpr int kMaxSlots = 36;
 
 struct Rgb { float r = 0, g = 0, b = 0; };
 
-enum class Kind : int { LumRamp = 1, Rainbow = 2, Hsv = 3 };
+enum class Kind : int { LumRamp = 1, Rainbow = 2, Hsv = 3, Hsl = 4 };   // Hsv = OkHSV (picker-style), Hsl = OkHSL (lightness-preserving, the default hue/saturation edit)
 enum class ColTok : int { Literal = 0, Accent = 1, AccentDark = 2, AccentLight = 3 };
 
 struct Stop { float pos = 0; ColTok tok = ColTok::Literal; Rgb c; bool hasPos = false; };
@@ -61,6 +61,7 @@ struct Rule {
     int bank = 0;                                // 0 any, 1 character bank, 2 effect.ha6
     int blend = -1;                              // -1 any
     Kind kind = Kind::LumRamp;
+    bool kindSet = false;                        // parser only: `hsv =` without `kind =` selects OkHSL
     int by = 0;                                  // lumramp/rainbow source measure: 0 oklab lightness, 1 max sRGB channel, 2 luma
     float vmin = 0.0f, vmax = 1.0f;
     std::vector<Stop> ramp;
@@ -76,7 +77,7 @@ struct CharRules {
 
 // ---- the shader constants of one resolved rule + slot -------------------------------------------------------
 struct Packed {
-    float mode[4] = {0, 0, 0, 1};   // x: 1 lumramp / 2 rainbow / 3 okhsv, y: by (0 lightness, 1 max, 2 luma), z: vmin, w: 1/(vmax-vmin)
+    float mode[4] = {0, 0, 0, 1};   // x: 1 lumramp / 2 rainbow / 3 okhsv / 4 okhsl, y: by (0 lightness, 1 max, 2 luma), z: vmin, w: 1/(vmax-vmin)
     float hsv[4]  = {0, 1, 1, 0};   // x: hue shift in turns, y: saturation x (chroma x for rainbow), z: value x
     float ramp[kRampN][4] = {};     // OKLAB L, a, b, 1
     bool operator==(const Packed& o) const { return std::memcmp(this, &o, sizeof *this) == 0; }
@@ -187,6 +188,74 @@ inline Rgb okhsvToSrgb(Hsv c) {
 }
 
 
+
+// ---- OkHSL (Ottosson): h in turns, s and l in 0..1, l = Oklab lightness through the toe function. Hue rotation and saturation edits keep L. ----
+inline double gamutIntersection(double a, double b, double L1, double C1, double L0, double cuspL, double cuspC) {
+    double t;
+    if (((L1 - L0) * cuspC - (cuspL - L0) * C1) <= 0.0) t = cuspC * L0 / (C1 * cuspL + cuspC * (L0 - L1));
+    else {
+        t = cuspC * (L0 - 1.0) / (C1 * (cuspL - 1.0) + cuspC * (L0 - L1));
+        const double dL = L1 - L0, dC = C1;
+        const double kl = 0.3963377774 * a + 0.2158037573 * b, km = -0.1055613458 * a - 0.0638541728 * b, ks = -0.0894841775 * a - 1.2914855480 * b;
+        const double ldt = dL + dC * kl, mdt = dL + dC * km, sdt = dL + dC * ks;
+        const double L = L0 * (1.0 - t) + t * L1, C = t * C1;
+        const double l_ = L + C * kl, m_ = L + C * km, s_ = L + C * ks;
+        const double l = l_ * l_ * l_, m = m_ * m_ * m_, s = s_ * s_ * s_;
+        const double l1 = 3.0 * ldt * l_ * l_, m1 = 3.0 * mdt * m_ * m_, s1 = 3.0 * sdt * s_ * s_;
+        const double l2 = 6.0 * ldt * ldt * l_, m2 = 6.0 * mdt * mdt * m_, s2 = 6.0 * sdt * sdt * s_;
+        auto tch = [&](double w0, double w1, double w2) {
+            const double f = w0 * l + w1 * m + w2 * s - 1.0, f1 = w0 * l1 + w1 * m1 + w2 * s1, f2 = w0 * l2 + w1 * m2 + w2 * s2;
+            const double u = f1 / (f1 * f1 - 0.5 * f * f2);
+            return u >= 0.0 ? -f * u : 1e30;
+        };
+        t += std::min(tch(4.0767416621, -3.3077115913, 0.2309699292), std::min(tch(-1.2684380046, 2.6097574011, -0.3413193965), tch(-0.0041960863, -0.7034186147, 1.7076147010)));
+    }
+    return t;
+}
+inline void stMid(double a, double b, double& S, double& T) {
+    S = 0.11516993 + 1.0 / (7.44778970 + 4.15901240 * b + a * (-2.19557347 + 1.75198401 * b + a * (-2.13704948 - 10.02301043 * b + a * (-4.24894561 + 5.38770819 * b + 4.69891013 * a))));
+    T = 0.11239642 + 1.0 / (1.61320320 - 0.68124379 * b + a * (0.40370612 + 0.90148123 * b + a * (-0.27087943 + 0.61223990 * b + a * (0.00299215 - 0.45399568 * b - 0.14661872 * a))));
+}
+// (C_0, C_mid, C_max) at lightness L for hue direction (a_, b_)
+inline void getCs(double L, double a_, double b_, double& C0, double& Cmid, double& Cmax) {
+    double Sm, Tm; cuspST(a_, b_, Sm, Tm);
+    const double Lc = Tm / (Sm + Tm), Cc = Lc * Sm;   // cusp (L, C) back from its ST pair
+    Cmax = gamutIntersection(a_, b_, L, 1.0, L, Lc, Cc);
+    const double k = Cmax / std::min(L * Sm, (1.0 - L) * Tm);
+    double Sd, Td; stMid(a_, b_, Sd, Td);
+    double Ca = L * Sd, Cb = (1.0 - L) * Td;
+    Cmid = 0.9 * k * std::sqrt(std::sqrt(1.0 / (1.0 / (Ca * Ca * Ca * Ca) + 1.0 / (Cb * Cb * Cb * Cb))));
+    Ca = L * 0.4; Cb = (1.0 - L) * 0.8;
+    C0 = std::sqrt(1.0 / (1.0 / (Ca * Ca) + 1.0 / (Cb * Cb)));
+}
+struct Hsl { double h = 0, s = 0, l = 0; };
+inline Hsl srgbToOkhsl(Rgb c) {
+    const Lab lab = srgbToOklab(c);
+    Hsl o;
+    o.l = okToe(lab.L);
+    const double C = std::sqrt(lab.a * lab.a + lab.b * lab.b);
+    if (C < 1e-7 || lab.L < 1e-6 || lab.L > 1.0 - 1e-6) { o.h = 0.5 + 0.5 * std::atan2(-lab.b, -lab.a) / 3.14159265358979; return o; }
+    const double a_ = lab.a / C, b_ = lab.b / C;
+    o.h = 0.5 + 0.5 * std::atan2(-lab.b, -lab.a) / 3.14159265358979;
+    double C0, Cmid, Cmax; getCs(lab.L, a_, b_, C0, Cmid, Cmax);
+    const double mid = 0.8, midInv = 1.25;
+    if (C < Cmid) { const double k1 = mid * C0, k2 = 1.0 - k1 / Cmid; o.s = (C / (k1 + k2 * C)) * mid; }
+    else { const double k0 = Cmid, k1 = (1.0 - mid) * Cmid * Cmid * midInv * midInv / C0, k2 = 1.0 - k1 / (Cmax - Cmid); o.s = mid + (1.0 - mid) * ((C - k0) / (k1 + k2 * (C - k0))); }
+    return o;
+}
+inline Rgb okhslToSrgb(Hsl c) {
+    if (c.l >= 1.0) return { 1.0f, 1.0f, 1.0f };
+    if (c.l <= 0.0) return { 0.0f, 0.0f, 0.0f };
+    const double a_ = std::cos(2.0 * 3.14159265358979 * c.h), b_ = std::sin(2.0 * 3.14159265358979 * c.h);
+    const double L = okToeInv(c.l);
+    double C0, Cmid, Cmax; getCs(L, a_, b_, C0, Cmid, Cmax);
+    const double mid = 0.8, midInv = 1.25;
+    double C;
+    if (c.s < mid) { const double t = midInv * c.s, k1 = mid * C0, k2 = 1.0 - k1 / Cmid; C = t * k1 / (1.0 - k2 * t); }
+    else { const double t = (c.s - mid) / (1.0 - mid), k0 = Cmid, k1 = (1.0 - mid) * Cmid * Cmid * midInv * midInv / C0, k2 = 1.0 - k1 / (Cmax - Cmid); C = k0 + t * k1 / (1.0 - k2 * t); }
+    return oklabToSrgb({ L, C * a_, C * b_ });
+}
+
 inline float luma(Rgb c) { return 0.299f * c.r + 0.587f * c.g + 0.114f * c.b; }
 
 // The ramp as the shader sees it: kRampN OKLAB entries, hat-weighted (== linear interpolation between neighbours, in Oklab).
@@ -228,6 +297,12 @@ inline Rgb applyCpu(const Packed& p, Rgb src) {
         const float tc = std::max(std::sqrt(t.a * t.a + t.b * t.b), 1e-4);
         const float k = C * p.hsv[1] / tc;
         return oklabToSrgb({ sl.L, t.a * k, t.b * k });
+    }
+    if (mode == 4) {
+        Hsl hl = srgbToOkhsl(src);
+        hl.h += p.hsv[0]; hl.h -= std::floor(hl.h);
+        hl.s = std::min(std::max(hl.s * p.hsv[1], 0.0), 1.0); hl.l = std::min(std::max(hl.l * p.hsv[2], 0.0), 1.0);
+        return okhslToSrgb(hl);
     }
     Hsv hv = srgbToOkhsv(src);
     hv.h += p.hsv[0]; hv.h -= std::floor(hv.h);
@@ -444,11 +519,11 @@ inline int parseIni(const std::string& text, CharRules& out, std::string& err) {
         else if (k == "enabled") cur->enabled = std::atoi(v.c_str()) != 0;
         else if (k == "bank") { const std::string l = lower(v); cur->bank = l == "char" ? 1 : l == "effect" ? 2 : 0; ok = l == "char" || l == "effect" || l == "any"; }
         else if (k == "blend") cur->blend = lower(v) == "any" ? -1 : std::atoi(v.c_str());
-        else if (k == "kind") { const std::string l = lower(v); cur->kind = l == "rainbow" ? Kind::Rainbow : l == "hsv" ? Kind::Hsv : Kind::LumRamp; ok = l == "lumramp" || l == "rainbow" || l == "hsv"; }
+        else if (k == "kind") { const std::string l = lower(v); cur->kind = l == "rainbow" ? Kind::Rainbow : l == "hsv" ? Kind::Hsv : l == "hsl" ? Kind::Hsl : Kind::LumRamp; cur->kindSet = true; ok = l == "lumramp" || l == "rainbow" || l == "hsv" || l == "hsl"; }
         else if (k == "by") { const std::string l = lower(v); cur->by = l == "max" ? 1 : l == "luma" ? 2 : 0; ok = l == "lightness" || l == "max" || l == "luma"; }
         else if (k == "space") { const std::string l = lower(v); ok = l == "okhsv" || l == "oklab"; }   // informative: the maths is always Oklab / OkHSV
         else if (k == "vrange") { float a = 0, b = 1; ok = std::sscanf(v.c_str(), "%f%*[, ]%f", &a, &b) == 2; if (ok) { cur->vmin = a; cur->vmax = b; } }
-        else if (k == "hsv") { float a = 0, s = 1, w = 1; ok = std::sscanf(v.c_str(), "%f%*[, ]%f%*[, ]%f", &a, &s, &w) == 3; if (ok) { cur->hueDeg = a; cur->sat = s; cur->val = w; } }
+        else if (k == "hsv") { float a = 0, s = 1, w = 1; ok = std::sscanf(v.c_str(), "%f%*[, ]%f%*[, ]%f", &a, &s, &w) == 3; if (ok) { cur->hueDeg = a; cur->sat = s; cur->val = w; if (!cur->kindSet && cur->ramp.empty()) cur->kind = Kind::Hsl; } }   // a hue/sat edit with no kind = OkHSL
         else if (k == "ramp") ok = parseStops(v, cur->ramp);
         else if (k.rfind("slot.", 0) == 0) {
             const size_t d2 = k.find('.', 5);
@@ -466,7 +541,7 @@ inline int parseIni(const std::string& text, CharRules& out, std::string& err) {
     // drop rules that cannot run
     for (size_t i = out.rules.size(); i-- > 0;) {
         const Rule& r = out.rules[i];
-        if (r.kind != Kind::Hsv && r.ramp.empty()) { err += "rule '" + r.id + "': no ramp, dropped\n"; out.rules.erase(out.rules.begin() + (long)i); }
+        if (r.kind != Kind::Hsv && r.kind != Kind::Hsl && r.ramp.empty()) { err += "rule '" + r.id + "': no ramp, dropped\n"; out.rules.erase(out.rules.begin() + (long)i); }
     }
     return (int)out.rules.size();
 }
@@ -482,9 +557,9 @@ inline std::string writeIni(const CharRules& c) {
         if (!r.slots.empty()) s += "slots = " + joinInts(r.slots) + "\n";
         if (r.bank) s += std::string("bank = ") + (r.bank == 1 ? "char" : "effect") + "\n";
         if (r.blend >= 0) s += "blend = " + std::to_string(r.blend) + "\n";
-        s += std::string("kind = ") + (r.kind == Kind::Rainbow ? "rainbow" : r.kind == Kind::Hsv ? "hsv" : "lumramp") + "\n";
+        s += std::string("kind = ") + (r.kind == Kind::Rainbow ? "rainbow" : r.kind == Kind::Hsv ? "hsv" : r.kind == Kind::Hsl ? "hsl" : "lumramp") + "\n";
         char b[96];
-        if (r.kind != Kind::Hsv) {
+        if (r.kind != Kind::Hsv && r.kind != Kind::Hsl) {
             s += std::string("by = ") + (r.by == 1 ? "max" : r.by == 2 ? "luma" : "lightness") + "\n";
             std::snprintf(b, sizeof b, "vrange = %.3f,%.3f\n", r.vmin, r.vmax); s += b;
             s += "ramp = " + stopsText(r.ramp) + "\n";
