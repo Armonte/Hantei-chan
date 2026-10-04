@@ -209,7 +209,7 @@ static void ImageToolbar(ViewState &v, int w, int h)
 	ImGui::SameLine(); if (ImGui::SmallButton("2x")) { v.fit = false; v.zoom = 2.f; v.panX = v.panY = 0; }
 	ImGui::SameLine(); if (ImGui::SmallButton("4x")) { v.fit = false; v.zoom = 4.f; v.panX = v.panY = 0; }
 	ImGui::SameLine(); ImGui::Checkbox(T("checkerboard", "\xe5\xb8\x82\xe6\x9d\xbe"), &v.checker);
-	ImGui::SameLine(); ImGui::TextDisabled("%d x %d  %.0f%%   (%s)", w, h, v.zoom * 100.f, T("wheel = zoom, drag = pan", "\xe3\x83\x9b\xe3\x82\xa4\xe3\x83\xbc\xe3\x83\xab=\xe6\x8b\xa1\xe5\xa4\xa7 \xe3\x83\x89\xe3\x83\xa9\xe3\x83\x83\xe3\x82\xb0=\xe7\xa7\xbb\xe5\x8b\x95"));
+	ImGui::SameLine(); ImGui::TextDisabled("%.0f%%", v.zoom * 100.f);
 }
 
 static void DrawFacts(const Preview &pv)
@@ -661,7 +661,7 @@ bool Draw(OpenRequest &req)
 	Toolbar(st);
 	if (ImGui::IsWindowFocused(ImGuiFocusedFlags_RootAndChildWindows) && ImGui::GetIO().KeyCtrl && ImGui::IsKeyPressed(ImGuiKey_F, false)) g_focusFilter = true;
 	ImGui::Separator();
-	const float bottom = ImGui::GetFrameHeightWithSpacing() + 2.f;
+	const float bottom = ImGui::GetFrameHeightWithSpacing() + ImGui::GetStyle().WindowPadding.y + 4.f;
 	if (ImGui::BeginTable("##layout", 3, ImGuiTableFlags_Resizable | ImGuiTableFlags_BordersInnerV | ImGuiTableFlags_NoSavedSettings, ImVec2(0, -bottom))) {
 		ImGui::TableSetupColumn("src", ImGuiTableColumnFlags_WidthFixed, 230.f);
 		ImGui::TableSetupColumn("list", ImGuiTableColumnFlags_WidthStretch, 3.f);
@@ -729,6 +729,7 @@ bool ScriptCommand(const std::string &cmd, const std::string &arg, std::string *
 		if (st.viewDirty) RebuildView();
 		SourceP s = FindSource(st.selSource); if (!s) return false;
 		const std::string q = Lower(arg);
+		for (int p = 0; p < (int)st.view.size(); p++) if (Lower(s->items[st.view[p]].name) == q) { SelectOnly(p); return true; }   // an exact name wins over a substring
 		for (int p = 0; p < (int)st.view.size(); p++) if (Lower(s->items[st.view[p]].name).find(q) != std::string::npos) { SelectOnly(p); return true; }
 		say("no entry matching " + arg); return false;
 	}
@@ -741,6 +742,7 @@ bool ScriptCommand(const std::string &cmd, const std::string &arg, std::string *
 		for (auto &k : keys) if (arg == k.first) { g_injKeys.push_back((int)k.second); return true; }
 		say("unknown key"); return false;
 	}
+	if (cmd == "info") { char b[256]; snprintf(b, sizeof b, "sources=%zu sel=%d view=%zu cursor=%d selected=%zu type=%d status=%s", st.sources.size(), st.selSource, st.view.size(), st.cursor, st.sel.size(), st.typeFilter, st.status.c_str()); say(b); return false; }
 	if (cmd == "typeahead") { g_injType += arg; return true; }
 	if (cmd == "frame") { st.bankFrame = atoi(arg.c_str()); return true; }
 	if (cmd == "palette") { st.bankPalette = std::clamp(atoi(arg.c_str()), 0, 7); return true; }

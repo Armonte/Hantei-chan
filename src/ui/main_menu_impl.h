@@ -1041,6 +1041,11 @@ void MainFrame::Menu(unsigned int errorPopupId)
 					                  ha6Name.c_str(), active->frameData.inheritedPatternCount(), txtName.c_str());
 				}
 			}
+			else if (!active->archiveHome.empty())
+			{
+				size_t slash = active->archiveHome.find_last_of("/\\");
+				ImGui::TextColored(ImVec4(0.4f, 0.8f, 0.4f, 1.0f), TXT("Save writes into archive: %s (keeps .bak)"), (slash != std::string::npos ? active->archiveHome.substr(slash + 1) : active->archiveHome).c_str());
+			}
 			else if (!topHA6.empty())
 			{
 				size_t slash = topHA6.find_last_of("/\\");

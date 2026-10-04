@@ -54,6 +54,7 @@ bool SaveGof2Companions(CharacterInstance &ch, const std::string &dt2Path, std::
 namespace han2ui {
 
 extern bool showInspector;
+extern unsigned dockInspectorId, dockAnimId;   // dock nodes (the Right Pane / Box Pane nodes) the HAN2 inspector and the animation player first appear in (0 = float)
 void DrawInspector(CharacterInstance *ch, FrameState &state);
 
 extern bool showCgWindow;

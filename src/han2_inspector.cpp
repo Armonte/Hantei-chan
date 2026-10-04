@@ -34,6 +34,7 @@
 namespace han2ui {
 
 bool showInspector = true;
+unsigned dockInspectorId = 0, dockAnimId = 0;
 
 static const Han2EnumInfo *FindEnum(const char *name)
 {
@@ -173,6 +174,7 @@ void DrawInspector(CharacterInstance *ch, FrameState &state)
 	ImGuiViewport *vp = ImGui::GetMainViewport();
 	ImGui::SetNextWindowPos(ImVec2(vp->WorkPos.x + vp->WorkSize.x - 420, vp->WorkPos.y + 60), ImGuiCond_FirstUseEver);
 	ImGui::SetNextWindowSize(ImVec2(400, 560), ImGuiCond_FirstUseEver);
+	if (dockInspectorId) ImGui::SetNextWindowDockID(dockInspectorId, ImGuiCond_FirstUseEver);
 	if (!ImGui::Begin(LBL("RBO / GOF2 (HAN2)"), &showInspector)) { ImGui::End(); return; }
 
 	const Han2Container &c = *ch->frameData.m_han2;
@@ -428,6 +430,7 @@ void DrawAnimWindow(CharacterInstance *ch, FrameState &state, void *onionPtr)
 	if (!showAnimWindow) return;
 	OnionSkinSettings &onion = *(OnionSkinSettings *)onionPtr;
 	ImGui::SetNextWindowSize(ImVec2(620, 330), ImGuiCond_FirstUseEver);
+	if (dockAnimId) ImGui::SetNextWindowDockID(dockAnimId, ImGuiCond_FirstUseEver);
 	if (!ImGui::Begin(LBL("Animation (game rules)"), &showAnimWindow)) { ImGui::End(); return; }
 	if (!ch || !ch->frameData.isHan2()) { ImGui::TextDisabled("%s", TXT("The active character is not an RBO / GOF2 file.")); ImGui::End(); return; }
 	FrameData &fd = ch->frameData;
