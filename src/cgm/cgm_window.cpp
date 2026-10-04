@@ -2,9 +2,16 @@
 #include "../cg.h"
 #include "../character_instance.h"
 #include "../i18n.h"
+#include "../filedialog.h"
+#include "../png_writer.h"
+#include "cgm_ops.h"
+#include "cgm_export.h"
+#include <filesystem>
+#include <fstream>
 #include <glad/glad.h>
 #include <imgui.h>
 #include <algorithm>
+#include <cstdarg>
 #include <cstdio>
 #include <cstring>
 
@@ -12,6 +19,10 @@
 #define LBL(s) ::i18n::Label(s)
 
 namespace cgm {
+
+static std::string Fmt(const char *fmt, ...) {
+	char buf[1024]; va_list ap; va_start(ap, fmt); vsnprintf(buf, sizeof(buf), fmt, ap); va_end(ap); return buf;
+}
 
 static const char *TypeName(int t) {
 	switch (t) {
@@ -41,6 +52,35 @@ void Window::rebuild(CharacterInstance &ch) {
 		if (Bank::parse((const uint8_t *)ch.cg.bank_data(), ch.cg.bank_size(), *b, &err)) { bank = std::move(b); atlas = bank->buildAtlas(); }
 	}
 	filterKey = ~0ull;
+}
+
+bool Window::applyModel(CharacterInstance &ch, const WindowHost &host) {
+	if (!bank) return false;
+	std::vector<uint8_t> bytes; bank->serialize(bytes);
+	bool ok;
+	if (bytes.size() == ch.cg.bank_size()) ok = ch.cg.restore_bank((const char *)bytes.data(), (unsigned)bytes.size());
+	else ok = ch.cg.replaceBank(bytes.data(), (unsigned)bytes.size());
+	if (!ok) { status = TXT("The edited bank could not be loaded."); return false; }
+	cgGen = ch.cg.generation();   // our own change: keep the model, drop only the pictures
+	clearThumbs(); previewId = -1; filterKey = ~0ull;
+	atlas = bank->buildAtlas();
+	if (host.markEdited) host.markEdited(&ch);
+	return true;
+}
+
+bool Window::commit(CharacterInstance &ch, const std::string &label, Bank before, const WindowHost &host) {
+	Bank after = *bank;
+	if (!applyModel(ch, host)) { *bank = std::move(before); return false; }
+	hist.push(label, std::move(before), std::move(after));
+	return true;
+}
+
+void Window::undoRedo(CharacterInstance &ch, bool redo, const WindowHost &host) {
+	if (!bank || (redo ? !hist.canRedo() : !hist.canUndo())) return;
+	HistoryEntry e = redo ? hist.redo() : hist.undo();
+	*bank = redo ? e.after : e.before;
+	applyModel(ch, host);
+	status = (redo ? std::string(TXT("Redone: ")) : std::string(TXT("Undone: "))) + e.label;
 }
 
 // RGBA of image id with palette `pal` / PUPS bank `pups` (type 0 images follow the palette, the others carry their own colours).
@@ -111,6 +151,64 @@ void Window::draw(CharacterInstance *ch, const WindowHost &host) {
 	ImGui::SameLine(); if (ImGui::SmallButton(LBL("any##cgmpat"))) usedByPattern = -1;
 	ImGui::SameLine(); ImGui::SetNextItemWidth(120); ImGui::SliderInt(LBL("Thumbnail"), &thumbSize, 48, 192);
 
+	const bool editable = bank != nullptr;
+	if (editable) {
+		const ImGuiIO &io = ImGui::GetIO();
+		const bool focused = ImGui::IsWindowFocused(ImGuiFocusedFlags_RootAndChildWindows) && !io.WantTextInput;
+		ImGui::BeginDisabled(!hist.canUndo()); if (ImGui::Button(LBL("Undo")) || (focused && io.KeyCtrl && ImGui::IsKeyPressed(ImGuiKey_Z, false) && !io.KeyShift)) undoRedo(*ch, false, host); ImGui::EndDisabled();
+		ImGui::SameLine(); ImGui::BeginDisabled(!hist.canRedo()); if (ImGui::Button(LBL("Redo")) || (focused && io.KeyCtrl && (ImGui::IsKeyPressed(ImGuiKey_Y, false) || (io.KeyShift && ImGui::IsKeyPressed(ImGuiKey_Z, false))))) undoRedo(*ch, true, host); ImGui::EndDisabled();
+		if (hist.canUndo()) { ImGui::SameLine(); ImGui::TextDisabled("%s", hist.top().label.c_str()); }
+		if (ImGui::Button(LBL("Export all..."))) {
+			const std::string d = BrowseForFolderUtf8("");
+			if (!d.empty()) {
+				ExportResult er; ExportOptions eo; const unsigned *pp = ch->cg.paletteAt(previewPal, previewPups);
+				const std::string nm = ch->getName();
+				status = ExportBank(*bank, d, nm, eo, er, (bank->images.size() && pp) ? pp : nullptr) ? Fmt(TXT("Exported %d images (%d files) to %s"), er.images, er.files, d.c_str()) : er.error;
+				warnings.clear();
+			}
+		}
+		ImGui::SameLine(); ImGui::SetItemTooltip("%s", TXT("Writes manifest.json, rgba/*.png, indexed/*.png and palettes/*.pal. Edit the PNGs, then import the folder: only changed images are re-encoded."));
+		ImGui::SameLine();
+		if (ImGui::Button(LBL("Import folder..."))) {
+			const std::string d = BrowseForFolderUtf8("");
+			if (!d.empty()) {
+				Bank before = *bank; ImportResult ir; warnings.clear();
+				if (!ImportBank(*bank, d, ir)) { *bank = std::move(before); status = ir.error; }
+				else {
+					warnings = ir.warnings;
+					if (ir.changed.empty()) { *bank = std::move(before); status = Fmt(TXT("Nothing changed (%d images unchanged)."), ir.skipped); }
+					else if (commit(*ch, Fmt(TXT("Import folder (%zu images)"), ir.changed.size()), std::move(before), host)) status = Fmt(TXT("Imported %zu changed image(s); %d unchanged. Save the bank to keep it."), ir.changed.size(), ir.skipped);
+				}
+			}
+		}
+		ImGui::SameLine();
+		ImGui::BeginDisabled(selected < 0 || selected >= count);
+		if (ImGui::Button(LBL("Replace selected from PNG..."))) {
+			const std::string p = FileDialog(-1, false);
+			if (!p.empty()) {
+				std::vector<uint8_t> px; int w = 0, h = 0; std::string e; ReplaceReport rep; Bank before = *bank;
+				if (!ReadImageRgba(p, px, w, h, e)) status = e;
+				else if (!ReplaceImage(*bank, selected, px.data(), w, h, &e, &rep)) { *bank = std::move(before); status = e; }
+				else if (!rep.changedPixels && !rep.paletteChanged) { *bank = std::move(before); status = TXT("The PNG renders exactly like the stored image: nothing changed."); }
+				else {
+					warnings.clear();
+					if (rep.lostPixels) warnings.push_back(Fmt(TXT("%d changed pixel(s) sit in cells borrowed from another image and were not written."), rep.lostPixels));
+					if (!rep.alsoChanges.empty()) { std::string o; for (int x : rep.alsoChanges) o += " " + std::to_string(x); warnings.push_back(std::string(TXT("Shared cells: these images change too:")) + o); }
+					if (commit(*ch, Fmt(TXT("Replace image %d"), selected), std::move(before), host)) status = Fmt(TXT("Image %d replaced (%d pixels). Save the bank to keep it."), selected, rep.changedPixels);
+				}
+			}
+		}
+		ImGui::EndDisabled();
+		ImGui::SameLine();
+		if (ImGui::Button(LBL("Save bank as..."))) {
+			char nm[128]; snprintf(nm, sizeof(nm), "%s", "bank.cg");
+			const std::string p = FileDialog(-1, true, nm);
+			if (!p.empty()) { std::vector<uint8_t> bytes; bank->serialize(bytes); std::ofstream f(std::filesystem::u8path(p), std::ios::binary); f.write((const char *)bytes.data(), (std::streamsize)bytes.size()); status = f ? Fmt(TXT("Saved %s"), p.c_str()) : std::string(TXT("Could not write the file.")); }
+		}
+		if (!status.empty()) ImGui::TextWrapped("%s", status.c_str());
+		for (const std::string &w : warnings) ImGui::TextColored(ImVec4(1.f, 0.75f, 0.3f, 1.f), "%s", w.c_str());
+	} else ImGui::TextDisabled("%s", TXT("This bank format is browse-only for now."));
+
 	uint64_t key = 1469598103934665603ull;
 	auto mix = [&](uint64_t v) { key ^= v + 0x9e3779b97f4a7c15ull + (key << 6) + (key >> 2); };
 	for (const char *c = nameFilter; *c; c++) mix((uint8_t)*c);
@@ -141,21 +239,23 @@ void Window::draw(CharacterInstance *ch, const WindowHost &host) {
 	ImGui::TextDisabled(TXT("%d of %d images shown"), (int)shown.size(), count);
 
 	// ---- grid (left) ----
-	ImGui::BeginChild("##cgmgrid", ImVec2(ImGui::GetContentRegionAvail().x * 0.58f, 0), ImGuiChildFlags_Borders | ImGuiChildFlags_ResizeX);
+	ImGui::BeginChild("##cgmgrid", ImVec2(ImGui::GetContentRegionAvail().x * 0.58f, 0), ImGuiChildFlags_Borders);
 	{
 		const float cell = (float)thumbSize + 8.f, availW = ImGui::GetContentRegionAvail().x;
 		const int cols = std::max(1, (int)(availW / cell));
 		const float rowH = cell + ImGui::GetTextLineHeight() + 4.f;
 		const int rows = ((int)shown.size() + cols - 1) / cols;
+		ImGui::PushStyleVar(ImGuiStyleVar_ItemSpacing, ImVec2(0, 0));
 		ImGuiListClipper clip; clip.Begin(rows, rowH);
 		int budget = 10;
 		while (clip.Step()) for (int r = clip.DisplayStart; r < clip.DisplayEnd; r++) for (int c = 0; c < cols; c++) {
-			const int k = r * cols + c; if (k >= (int)shown.size()) break;
+			const int k = r * cols + c;
+			if (c > 0) ImGui::SameLine();
+			if (k >= (int)shown.size()) { ImGui::Dummy(ImVec2(cell, rowH)); continue; }
 			const int id = shown[k];
-			ImGui::SetCursorPos(ImVec2(ImGui::GetCursorStartPos().x + c * cell, ImGui::GetCursorStartPos().y + r * rowH));
 			const ImVec2 p0 = ImGui::GetCursorScreenPos();
 			ImGui::PushID(id);
-			if (ImGui::InvisibleButton("##t", ImVec2(cell - 4, rowH - 2))) selected = id;
+			if (ImGui::InvisibleButton("##t", ImVec2(cell, rowH))) selected = id;
 			const bool hov = ImGui::IsItemHovered();
 			ImDrawList *dl = ImGui::GetWindowDrawList();
 			const ImVec2 a(p0.x + 2, p0.y + 2), b(a.x + thumbSize, a.y + thumbSize);
@@ -169,17 +269,18 @@ void Window::draw(CharacterInstance *ch, const WindowHost &host) {
 				const float s = std::min((float)thumbSize / t.w, (float)thumbSize / t.h);
 				const ImVec2 sz(t.w * s, t.h * s), o(a.x + (thumbSize - sz.x) * 0.5f, a.y + (thumbSize - sz.y) * 0.5f);
 				dl->AddImage((ImTextureID)(intptr_t)t.tex, o, ImVec2(o.x + sz.x, o.y + sz.y));
-			} else if (t.empty) dl->AddText(ImVec2(a.x + 6, a.y + 6), IM_COL32(150, 150, 150, 255), "-");
+			} else if (t.empty) dl->AddText(ImVec2(a.x + 6, a.y + 6), ImGui::GetColorU32(ImGuiCol_TextDisabled), "-");
 			const bool unused = usage.count(id) == 0;
 			dl->AddRect(a, b, id == selected ? IM_COL32(255, 200, 60, 255) : hov ? IM_COL32(180, 200, 255, 255) : unused ? IM_COL32(200, 90, 90, 200) : IM_COL32(110, 110, 120, 255), 0, 0, id == selected ? 2.f : 1.f);
 			char lab[48]; snprintf(lab, sizeof(lab), "%d  x%d", id, usage.count(id));
-			dl->AddText(ImVec2(a.x, b.y + 2), IM_COL32(220, 220, 220, 255), lab);
+			dl->AddText(ImVec2(a.x, b.y + 2), ImGui::GetColorU32(ImGuiCol_Text), lab);
 			if (hov) {
 				int bpp, ty, x1, y1, x2, y2; ch->cg.image_info(id, bpp, ty, x1, y1, x2, y2);
 				ImGui::SetTooltip("%s\n%dx%d  %s\n%s %d", ch->cg.get_filename(id) ? ch->cg.get_filename(id) : "", x2 - x1 + 1, y2 - y1 + 1, TypeName(ty), TXT("used by layers:"), usage.count(id));
 			}
 			ImGui::PopID();
 		}
+		ImGui::PopStyleVar();
 	}
 	ImGui::EndChild();
 	ImGui::SameLine();

@@ -144,6 +144,8 @@ public:
 	bool load(const char *name);
 	// Load a CG image bank from memory (copied), e.g. the CG blob embedded in an MBAC .DAT.
 	bool loadFromMemory(const void *data, unsigned int size);
+	// Replace the bank bytes (any size) but keep the loaded .pal / PUPS palettes and the selected palette number: the CG manager's structural edits.
+	bool replaceBank(const void *data, unsigned int size);
 	// Foreign (non Cutter) bank: see CgForeignBank. Replaces whatever is loaded.
 	bool loadForeign(std::shared_ptr<CgForeignBank> bank);
 	CgForeignBank *foreign() const { return m_foreign.get(); }
