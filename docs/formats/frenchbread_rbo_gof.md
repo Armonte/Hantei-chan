@@ -91,6 +91,9 @@ pose offset table -> part sets, every 92-byte part record -> a part property plu
 cutout, textures are B,G,R,A squares of 256 or 512 px. Pose slots with `src_w == 0` or `texture_index == 0xFFFF` (clip rectangle,
 which the engine does not draw) are skipped.
 
+How a part is placed on screen (pivot = position + origin, clockwise 1/10000-turn rotation about it, ascending layer order, frame flip before offset, zoom) is
+decoded in [fb_part_transform.md](fb_part_transform.md); the GL renderer follows it (`Parts::fbPartModel`) and `tests/fb_part_transform_test.cpp` checks it.
+
 ## 5. GOF2 (HAN2RBO sub 2 + PAT v4 + CHP)
 
 Full field tables with IDA evidence: [gof2_frame.md](gof2_frame.md) (404-byte frame, box slot list, invariants, differences from RBO),
