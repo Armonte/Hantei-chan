@@ -12,6 +12,8 @@
 #include "han2_container.h"
 #include "../framedata_han2.h"
 #include "../cg.h"
+#include "../cgm/cgm_bank.h"
+#include "../cgm/cgm_ops.h"
 #include "../han2_pat.h"
 #include "../han2_export.h"
 #include "../han2_diff.h"
@@ -432,6 +434,50 @@ static int CmdCgRt(int argc, char **argv)
 		const auto &cgb = f.area[han2::kAreaCg];
 		if (cgb.empty()) { s.notes["empty CG area " + ExtOf(name) + " (counted in pass: no bank to load; the container round trip proves the empty area)"]++; s.pass++; return; }
 		CgBankCheck(label, cgb, s);
+	});
+	return Finish(s);
+}
+
+
+// cgm: the CG manager model over every BMP Cutter bank in RBO / GOF2 characters (CG area) and .CHP files: parse -> serialize byte-identical, every image decodes
+// exactly like CG::draw_texture, and a forced re-encode of an image's own pixels through the model (ReplaceImage) renders identically.
+static void CgmBankCheck(const std::string &label, const std::vector<uint8_t> &b, Section &s)
+{
+	cgm::Bank bk; std::string err;
+	if (!cgm::Bank::parse(b.data(), b.size(), bk, &err)) { printf("FAIL %s: cgm parse: %s\n", label.c_str(), err.c_str()); s.fail++; return; }
+	std::vector<uint8_t> o; bk.serialize(o);
+	if (o != b) { size_t d = 0; while (d < o.size() && d < b.size() && o[d] == b[d]) d++; printf("FAIL %s: cgm serialize differs (first diff 0x%zx)\n", label.c_str(), d); s.fail++; return; }
+	CG cg; cg.loadFromMemory(b.data(), (unsigned)b.size()); int bad = 0, drawn = 0;
+	for (size_t n = 0; n < bk.images.size(); n++) {
+		if (!bk.images[n].present || (int)n >= (int)bk.images.size() - bk.hidden) continue;   // hidden: stored past the declared count, the engine never draws them
+		cgm::Rgba r; const bool mine = bk.decode((int)n, r); ImageData *ref = cg.draw_texture((unsigned)n, false, false);
+		if (!!ref != mine) { printf("FAIL %s: image %zu drawable in only one of CG / model\n", label.c_str(), n); bad++; delete ref; continue; }
+		if (!ref) continue;
+		bool same = ref->width == r.w && ref->height == r.h;
+		for (int k = 0; same && k < r.w * r.h; k++) { const uint8_t *a = &ref->pixels[k * 4], *c = &r.px[k * 4]; if (a[3] != c[3] || (a[3] && memcmp(a, c, 3))) same = false; }
+		delete ref; if (!same) { printf("FAIL %s: image %zu renders differently in the model\n", label.c_str(), n); bad++; } else drawn++;
+		if (same && bk.images[n].type >= 1 && bk.images[n].type <= 4 && n % 7 == 0) {   // re-import the image's own pixels: the stored bytes must not move
+			cgm::Bank w = bk; cgm::ReplaceReport rep; std::string e;
+			if (!cgm::ReplaceImage(w, (int)n, r.px.data(), r.w, r.h, &e, &rep)) { printf("FAIL %s: image %zu: ReplaceImage: %s\n", label.c_str(), n, e.c_str()); bad++; }
+			else { std::vector<uint8_t> o2; w.serialize(o2); if (rep.changedPixels == 0 && o2 != b) { printf("FAIL %s: image %zu: re-importing its own pixels changed bytes\n", label.c_str(), n); bad++; } else s.notes["model re-import of an image's own pixels keeps the bytes"]++; }
+		}
+	}
+	s.notes["images decoded identically to CG"] += drawn;
+	if (bad) s.fail++; else s.pass++;
+}
+
+static int CmdCgmRt(int argc, char **argv)
+{
+	Section s; s.name = "cgm";
+	ForEachEntry(argc, argv, s, [&](const std::string &label, const std::string &name, const std::vector<uint8_t> &b) {
+		Kind k = Classify(b, name);
+		if (k == Kind::Chp) { CgmBankCheck(label, b, s); return; }
+		if (k != Kind::Han2) { NaAdd(s, name, k); return; }
+		han2::Han2File f; std::string err;
+		if (!han2::Parse(b.data(), b.size(), f, &err)) { printf("FAIL %s: parse: %s\n", label.c_str(), err.c_str()); s.fail++; return; }
+		const auto &cgb = f.area[han2::kAreaCg];
+		if (cgb.empty()) { s.notes["empty CG area"]++; s.pass++; return; }
+		CgmBankCheck(label, cgb, s);
 	});
 	return Finish(s);
 }
@@ -938,6 +984,7 @@ int main(int argc, char **argv)
 	if (c == "gof1shift") return CmdGof1Shift(argc - 2, argv + 2);
 	if (c == "fobrt") return CmdFobRt(argc - 2, argv + 2);
 	if (c == "chprt") return CmdChpRt(argc - 2, argv + 2);
+	if (c == "cgm") return CmdCgmRt(argc - 2, argv + 2);
 	if (c == "reprt") return CmdRepRt(argc - 2, argv + 2);
 	if (c == "fntrt") return CmdFntRt(argc - 2, argv + 2);
 	if (c == "audiort") return CmdAudioRt(argc - 2, argv + 2);

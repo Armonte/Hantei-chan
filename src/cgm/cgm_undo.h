@@ -3,6 +3,8 @@
 // Undo / redo of CG manager operations. A step is a pair of whole-bank snapshots; Bank copies are cheap because image blobs are shared
 // (std::shared_ptr<const vector>), so only the blobs an operation actually replaced cost memory.
 #include "cgm_bank.h"
+#include "cgm_palette.h"
+#include "cgm_usage.h"
 #include <string>
 #include <vector>
 
@@ -10,16 +12,20 @@ namespace cgm {
 
 struct HistoryEntry {
 	std::string label;
+	bool hasBank = false;
 	Bank before, after;
-	std::vector<int> remap;   // optional: old image id -> new id (-1 = removed), for reference fix-up on undo/redo (M5)
+	int palBank = -1;          // >= 0: a palette file (0 = <cg>.pal, 1..7 = PUPS) changed in this step
+	PalSet palBefore, palAfter;
+	std::vector<int> remap;   // optional: old image id -> new id (-1 = removed): the frame references were rewritten through it
+	std::vector<ClearedRef> cleared;   // references cleared because their image was deleted (restored on undo)
 };
 
 class History {
 public:
 	size_t maxEntries = 64;
-	void push(std::string label, Bank before, Bank after, std::vector<int> remap = {}) {
+	void push(HistoryEntry e) {
 		redo_.clear();
-		done_.push_back({std::move(label), std::move(before), std::move(after), std::move(remap)});
+		done_.push_back(std::move(e));
 		if (done_.size() > maxEntries) done_.erase(done_.begin());
 	}
 	bool canUndo() const { return !done_.empty(); }

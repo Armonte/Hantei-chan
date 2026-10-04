@@ -6,6 +6,9 @@
 #include "../png_writer.h"
 #include "cgm_ops.h"
 #include "cgm_export.h"
+#include "cgm_struct.h"
+#include "cgm_io.h"
+#include "../character_instance.h"
 #include <filesystem>
 #include <fstream>
 #include <glad/glad.h>
@@ -69,17 +72,36 @@ bool Window::applyModel(CharacterInstance &ch, const WindowHost &host) {
 }
 
 bool Window::commit(CharacterInstance &ch, const std::string &label, Bank before, const WindowHost &host) {
-	Bank after = *bank;
+	HistoryEntry e; e.label = label; e.hasBank = true; e.after = *bank;
 	if (!applyModel(ch, host)) { *bank = std::move(before); return false; }
-	hist.push(label, std::move(before), std::move(after));
+	e.before = std::move(before);
+	hist.push(std::move(e));
+	return true;
+}
+
+bool Window::commitStruct(CharacterInstance &ch, const std::string &label, Bank before, const std::vector<int> &remap, const WindowHost &host) {
+	HistoryEntry e; e.label = label; e.hasBank = true; e.after = *bank; e.remap = remap;
+	if (!remap.empty()) RemapSprites(ch.frameData, remap, &e.cleared);
+	if (!applyModel(ch, host)) { *bank = std::move(before); if (!remap.empty()) { RemapSprites(ch.frameData, InvertRemap(remap, e.after.images.size())); RestoreCleared(ch.frameData, e.cleared); } return false; }
+	usage.version = ~0ull;   // references changed
+	e.before = std::move(before);
+	hist.push(std::move(e));
 	return true;
 }
 
 void Window::undoRedo(CharacterInstance &ch, bool redo, const WindowHost &host) {
 	if (!bank || (redo ? !hist.canRedo() : !hist.canUndo())) return;
 	HistoryEntry e = redo ? hist.redo() : hist.undo();
-	*bank = redo ? e.after : e.before;
-	applyModel(ch, host);
+	if (e.hasBank) {
+		*bank = redo ? e.after : e.before;
+		if (!e.remap.empty()) {   // put the frame references back the way they were
+			std::vector<ClearedRef> again;
+			if (redo) RemapSprites(ch.frameData, e.remap, &again);
+			else { RemapSprites(ch.frameData, InvertRemap(e.remap, e.after.images.size())); RestoreCleared(ch.frameData, e.cleared); }
+		}
+		applyModel(ch, host);
+	}
+	if (e.palBank >= 0) { pal.set[e.palBank] = redo ? e.palAfter : e.palBefore; pal.dirty[e.palBank] = true; pushPalette(ch, e.palBank); if (host.markEdited) host.markEdited(&ch); }
 	status = (redo ? std::string(TXT("Redone: ")) : std::string(TXT("Undone: "))) + e.label;
 }
 
@@ -128,6 +150,269 @@ static void Checker(ImDrawList *dl, ImVec2 a, ImVec2 b) {
 		dl->AddRectFilled(ImVec2(x, y), ImVec2(std::min(x + s, b.x), std::min(y + s, b.y)), IM_COL32(78, 78, 84, 255));
 }
 
+// ---------------------------------------------------------------------------------------------------------------------------------------
+// Palettes tab
+// ---------------------------------------------------------------------------------------------------------------------------------------
+void Window::loadPalettes(CharacterInstance &ch) {
+	palOwner = &ch; pal = PalState();
+	for (int b = 0; b < 8; b++) {
+		const std::string &path = ch.cg.palettePath(b);
+		if (path.empty()) continue;
+		std::ifstream f(std::filesystem::u8path(path), std::ios::binary);
+		if (!f) f.open(std::filesystem::path(Utf8ToWide(path)), std::ios::binary);
+		if (!f) continue;
+		std::vector<uint8_t> raw((std::istreambuf_iterator<char>(f)), std::istreambuf_iterator<char>());
+		pal.loaded[b] = PalSet::parse(raw.data(), raw.size(), pal.set[b], nullptr);
+	}
+	pal.bank = pal.loaded[0] ? 0 : -1;   // -1: the bank's own slots
+}
+
+void Window::pushPalette(CharacterInstance &ch, int b) {
+	if (b < 0 || b >= 8 || !pal.loaded[b]) return;
+	ch.cg.setPaletteBytes(b, pal.set[b].raw.data(), (unsigned)pal.set[b].raw.size());
+	cgGen = ch.cg.generation(); clearThumbs(); previewId = -1; filterKey = ~0ull;
+}
+
+void Window::commitPalette(CharacterInstance &ch, const std::string &label, int b, PalSet before, const WindowHost &) {
+	HistoryEntry e; e.label = label; e.palBank = b; e.palBefore = std::move(before); e.palAfter = pal.set[b];
+	hist.push(std::move(e)); pal.dirty[b] = true; pushPalette(ch, b);
+}
+
+static ImVec4 Col4(uint32_t c) { return ImVec4(cgm::R(c) / 255.f, cgm::G(c) / 255.f, cgm::B(c) / 255.f, 1.f); }
+static uint32_t FromCol(const float c[3]) { return cgm::Rgb((uint8_t)std::lround(std::clamp(c[0], 0.f, 1.f) * 255), (uint8_t)std::lround(std::clamp(c[1], 0.f, 1.f) * 255), (uint8_t)std::lround(std::clamp(c[2], 0.f, 1.f) * 255)); }
+
+void Window::drawPalettes(CharacterInstance &ch, const WindowHost &host) {
+	if (palOwner != &ch) loadPalettes(ch);
+	auto &P = pal;
+	// ---- source ----
+	std::vector<std::string> names; std::vector<int> ids;   // id -1 = bank slots, 0..7 = palette file bank
+	if (bank) { names.push_back(TXT("Bank slots (inside the .cg)")); ids.push_back(-1); }
+	for (int b = 0; b < 8; b++) if (P.loaded[b]) { names.push_back(std::filesystem::path(ch.cg.palettePath(b)).filename().string() + (P.dirty[b] ? " *" : "")); ids.push_back(b); }
+	if (names.empty()) { ImGui::TextDisabled("%s", TXT("This character has no palette file and its bank is not editable.")); return; }
+	int cur = 0; for (size_t i = 0; i < ids.size(); i++) if (ids[i] == P.bank) cur = (int)i;
+	ImGui::SetNextItemWidth(260);
+	if (ImGui::BeginCombo(LBL("Palette source"), names[cur].c_str())) { for (size_t i = 0; i < ids.size(); i++) if (ImGui::Selectable(names[i].c_str(), (int)i == cur)) { P.bank = ids[i]; P.number = 0; } ImGui::EndCombo(); }
+	const bool isFile = P.bank >= 0;
+	const int total = isFile ? P.set[P.bank].count : 8;
+	P.number = std::clamp(P.number, 0, std::max(0, total - 1));
+	ImGui::SameLine(); ImGui::SetNextItemWidth(110);
+	if (ImGui::InputInt(LBL("Palette number"), &P.number, 1, 8)) { P.number = std::clamp(P.number, 0, total - 1); if (isFile) { previewPal = P.number; previewPups = P.bank; } clearThumbs(); previewId = -1; }
+	ImGui::SameLine(); ImGui::TextDisabled(TXT("of %d"), total);
+	if (isFile) { ImGui::SameLine(); if (ImGui::Button(LBL("Show in main view"))) { ch.palette = P.number; ch.cg.changePaletteNumber(P.number); } }
+
+	// Run an edit on the current palette: `fn` changes the 256 colours; the step is recorded for undo and shown everywhere at once.
+	auto edit = [&](const std::string &label, auto &&fn, bool record = true) -> bool {
+		if (isFile) {
+			PalSet before = P.set[P.bank]; fn(P.set[P.bank].pal(P.number));
+			if (P.set[P.bank].raw == before.raw) return false;
+			if (record) commitPalette(ch, label, P.bank, std::move(before), host); else { P.dirty[P.bank] = true; pushPalette(ch, P.bank); }
+			return true;
+		}
+		Bank before = *bank; uint32_t a[256]; memcpy(a, bank->palettes.data() + 0x400 * P.number, 1024); fn(a);
+		if (!memcmp(a, bank->palettes.data() + 0x400 * P.number, 1024)) return false;
+		bank->setPaletteSlot(P.number, a); commit(ch, label, std::move(before), host); return true;
+	};
+	uint32_t *colors = isFile ? P.set[P.bank].pal(P.number) : (uint32_t *)(bank->palettes.data() + 0x400 * P.number);
+
+	// ---- swatches ----
+	const float cell = 20.f; ImVec2 g0 = ImGui::GetCursorScreenPos();
+	ImGui::InvisibleButton("##swatches", ImVec2(cell * 16, cell * 16));
+	{
+		ImDrawList *dl = ImGui::GetWindowDrawList();
+		const int lo = std::min(P.selA, P.selB), hi = std::max(P.selA, P.selB);
+		const bool preview = !P.adj.neutral();
+		for (int i = 0; i < 256; i++) {
+			const ImVec2 a(g0.x + (i % 16) * cell, g0.y + (i / 16) * cell), b(a.x + cell - 1, a.y + cell - 1);
+			uint32_t c = colors[i]; if (preview && i >= lo && i <= hi) c = cgm::Adjust(c, P.adj);
+			dl->AddRectFilled(a, b, ImGui::ColorConvertFloat4ToU32(Col4(c)));
+			if (i >= lo && i <= hi) dl->AddRect(a, b, IM_COL32(255, 200, 60, 255), 0, 0, 2.f);
+		}
+		if (ImGui::IsItemHovered()) {
+			const ImVec2 m = ImGui::GetMousePos(); const int cx = (int)((m.x - g0.x) / cell), cy = (int)((m.y - g0.y) / cell), i = std::clamp(cy, 0, 15) * 16 + std::clamp(cx, 0, 15);
+			if (ImGui::IsMouseClicked(0)) { if (ImGui::GetIO().KeyShift) P.selB = i; else P.selA = P.selB = i; }
+			else if (ImGui::IsMouseDragging(0)) P.selB = i;
+			ImGui::SetTooltip("%d  #%02X%02X%02X", i, cgm::R(colors[i]), cgm::G(colors[i]), cgm::B(colors[i]));
+		}
+	}
+	ImGui::SameLine(0, 16);
+	ImGui::BeginGroup();
+	const int lo = std::min(P.selA, P.selB), hi = std::max(P.selA, P.selB);
+	ImGui::Text(TXT("Selected: %d - %d"), lo, hi);
+	{   // single colour
+		float c[3] = {cgm::R(colors[lo]) / 255.f, cgm::G(colors[lo]) / 255.f, cgm::B(colors[lo]) / 255.f};
+		static PalSet liveBefore; static Bank liveBankBefore; static bool live = false;
+		if (ImGui::ColorEdit3(LBL("Colour"), c, ImGuiColorEditFlags_DisplayRGB | ImGuiColorEditFlags_Uint8)) {
+			if (!live) { live = true; if (isFile) liveBefore = P.set[P.bank]; else liveBankBefore = *bank; }
+			const uint32_t n = FromCol(c);
+			if (isFile) { colors[lo] = (colors[lo] & 0xFF000000u) | (n & 0xFFFFFFu); P.dirty[P.bank] = true; pushPalette(ch, P.bank); }
+			else colors[lo] = (colors[lo] & 0xFF000000u) | (n & 0xFFFFFFu);
+		}
+		if (live && ImGui::IsItemDeactivated()) {
+			live = false;
+			if (isFile) { if (P.set[P.bank].raw != liveBefore.raw) commitPalette(ch, Fmt(TXT("Edit colour %d"), lo), P.bank, std::move(liveBefore), host); }
+			else if (memcmp(bank->palettes.data(), liveBankBefore.palettes.data(), 0x2000)) commit(ch, Fmt(TXT("Edit colour %d"), lo), std::move(liveBankBefore), host);
+		}
+	}
+	ImGui::SeparatorText(TXT("Selection"));
+	{   // fill / gradient
+		float f[3] = {cgm::R(P.fill) / 255.f, cgm::G(P.fill) / 255.f, cgm::B(P.fill) / 255.f};
+		ImGui::SetNextItemWidth(150); if (ImGui::ColorEdit3("##fill", f, ImGuiColorEditFlags_NoInputs)) P.fill = FromCol(f);
+		ImGui::SameLine(); if (ImGui::Button(LBL("Fill selection"))) edit(Fmt(TXT("Fill %d-%d"), lo, hi), [&](uint32_t *p) { FillRange(p, lo, hi, P.fill); });
+		ImGui::SameLine(); if (ImGui::Button(LBL("Gradient first -> last"))) edit(Fmt(TXT("Gradient %d-%d"), lo, hi), [&](uint32_t *p) { Gradient(p, lo, hi, p[lo], p[hi], P.hsvGradient); });
+		ImGui::SameLine(); ImGui::Checkbox(LBL("via HSV"), &P.hsvGradient);
+		if (ImGui::Button(LBL("Reverse"))) edit(Fmt(TXT("Reverse %d-%d"), lo, hi), [&](uint32_t *p) { ReverseRange(p, lo, hi); });
+		ImGui::SameLine(); if (ImGui::Button(LBL("Copy range"))) { P.clipLen = hi - lo + 1; memcpy(P.clip, colors + lo, sizeof(uint32_t) * P.clipLen); }
+		ImGui::SameLine(); ImGui::BeginDisabled(P.clipLen == 0);
+		if (ImGui::Button(LBL("Paste at selection"))) edit(Fmt(TXT("Paste at %d"), lo), [&](uint32_t *p) { CopyRange(P.clip, 0, P.clipLen - 1, p, lo); });
+		ImGui::EndDisabled();
+	}
+	{   // hue / saturation / value of the selection, live
+		static PalSet baseSet; static Bank baseBank; static bool active = false; static uint32_t baseColors[256];
+		bool changed = false, started = false, finished = false;
+		auto sl = [&](const char *l, float *v, float mn, float mx, const char *fmt) { ImGui::SetNextItemWidth(220); changed |= ImGui::SliderFloat(l, v, mn, mx, fmt); started |= ImGui::IsItemActivated(); finished |= ImGui::IsItemDeactivated(); };
+		sl(LBL("Hue shift"), &P.adj.hueDeg, -180.f, 180.f, "%.0f deg"); sl(LBL("Saturation x"), &P.adj.satMul, 0.f, 2.f, "%.2f"); sl(LBL("Brightness x"), &P.adj.valMul, 0.f, 2.f, "%.2f");
+		if (started && !active) { active = true; memcpy(baseColors, colors, 1024); if (isFile) baseSet = P.set[P.bank]; else baseBank = *bank; }
+		if (changed && active && isFile) { memcpy(colors, baseColors, 1024); AdjustRange(colors, lo, hi, P.adj); P.dirty[P.bank] = true; pushPalette(ch, P.bank); }
+		if (finished && active) {
+			active = false;
+			if (isFile) { PalSet after = P.set[P.bank]; if (after.raw != baseSet.raw) commitPalette(ch, TXT("Adjust colours"), P.bank, baseSet, host); }
+			else { uint32_t a[256]; memcpy(a, baseColors, 1024); AdjustRange(a, lo, hi, P.adj); *bank = baseBank; bank->setPaletteSlot(P.number, a); commit(ch, TXT("Adjust colours"), baseBank, host); }
+			P.adj = ColorAdjust();
+		}
+		if (ImGui::SmallButton(LBL("Reset sliders"))) P.adj = ColorAdjust();
+	}
+	ImGui::SeparatorText(TXT("Find and replace colour"));
+	{
+		float f[3] = {cgm::R(P.findC) / 255.f, cgm::G(P.findC) / 255.f, cgm::B(P.findC) / 255.f}, r[3] = {cgm::R(P.replaceC) / 255.f, cgm::G(P.replaceC) / 255.f, cgm::B(P.replaceC) / 255.f};
+		if (ImGui::ColorEdit3("##find", f, ImGuiColorEditFlags_NoInputs)) P.findC = FromCol(f);
+		ImGui::SameLine(); ImGui::TextUnformatted("->"); ImGui::SameLine();
+		if (ImGui::ColorEdit3("##repl", r, ImGuiColorEditFlags_NoInputs)) P.replaceC = FromCol(r);
+		ImGui::SameLine(); ImGui::SetNextItemWidth(70); ImGui::InputInt(LBL("Tolerance"), &P.tolerance, 0, 0); P.tolerance = std::clamp(P.tolerance, 0, 255);
+		ImGui::SameLine(); if (ImGui::Button(LBL("Replace in this palette"))) edit(TXT("Replace colour"), [&](uint32_t *p) { ReplaceColor(p, P.findC, P.replaceC, P.tolerance); });
+	}
+	ImGui::EndGroup();
+
+	// ---- palette files ----
+	ImGui::SeparatorText(TXT("Palettes of this file"));
+	if (isFile) {
+		PalSet &ps = P.set[P.bank];
+		auto fileEdit = [&](const std::string &label, auto &&fn) { PalSet before = ps; std::string e; if (fn(e) && ps.raw != before.raw) { commitPalette(ch, label, P.bank, std::move(before), host); status.clear(); } else if (!e.empty()) status = e; };
+		if (ImGui::Button(LBL("Duplicate"))) fileEdit(TXT("Duplicate palette"), [&](std::string &e) { if (!ps.addCopy(P.number, &e)) return false; P.number = ps.count - 1; return true; });
+		ImGui::SameLine(); if (ImGui::Button(LBL("Delete"))) fileEdit(TXT("Delete palette"), [&](std::string &e) { if (!ps.remove(P.number, &e)) return false; P.number = std::min(P.number, ps.count - 1); return true; });
+		ImGui::SameLine(); if (ImGui::Button(LBL("Move up")) && P.number > 0) fileEdit(TXT("Move palette"), [&](std::string &) { ps.movePalette(P.number, P.number - 1); P.number--; return true; });
+		ImGui::SameLine(); if (ImGui::Button(LBL("Move down")) && P.number + 1 < ps.count) fileEdit(TXT("Move palette"), [&](std::string &) { ps.movePalette(P.number, P.number + 1); P.number++; return true; });
+		ImGui::SameLine(); if (ImGui::Button(LBL("Save .pal as..."))) {
+			char nm[128]; snprintf(nm, sizeof(nm), "%s", std::filesystem::path(ch.cg.palettePath(P.bank)).filename().string().c_str());
+			const std::string path = FileDialog(-1, true, nm);
+			if (!path.empty()) { std::ofstream f(std::filesystem::u8path(path), std::ios::binary); f.write((const char *)ps.raw.data(), (std::streamsize)ps.raw.size()); status = f ? Fmt(TXT("Saved %s"), path.c_str()) : std::string(TXT("Could not write the file.")); }
+		}
+	}
+	if (ImGui::Button(LBL("Import colours..."))) {
+		const std::string path = FileDialog(-1, false);
+		if (!path.empty()) { uint32_t in[256]; std::string e; if (!ReadPalFileColors(path, in, &e)) status = e; else edit(TXT("Import palette"), [&](uint32_t *p) { for (int i = 0; i < 256; i++) p[i] = (p[i] & 0xFF000000u) | (in[i] & 0xFFFFFFu); }); }
+	}
+	ImGui::SameLine(); if (ImGui::Button(LBL("Export colours..."))) {
+		char nm[128]; snprintf(nm, sizeof(nm), "palette_%d.act", P.number);
+		const std::string path = FileDialog(-1, true, nm);
+		if (!path.empty()) { std::string e; status = WritePalFileColors(path, colors, &e) ? Fmt(TXT("Saved %s"), path.c_str()) : e; }
+	}
+	ImGui::SameLine(); ImGui::SetItemTooltip("%s", TXT("The file extension picks the format: .act, .gpl (GIMP), .png (16x16 strip) or .pal."));
+
+	// ---- whole-bank recolour ----
+	ImGui::SeparatorText(TXT("Recolour the whole character"));
+	ImGui::TextDisabled("%s", TXT("Uses the hue / saturation / brightness sliders above."));
+	ImGui::Checkbox(LBL("Only the current palette number"), &P.recolorThisOnly); ImGui::SameLine();
+	ImGui::Checkbox(LBL("Palette file(s)"), &P.recolorFiles);
+	ImGui::Checkbox(LBL("Bank slots"), &P.recolorSlots); ImGui::SameLine();
+	ImGui::Checkbox(LBL("Sprites' own palettes (types 2, 3, 4)"), &P.recolorImages);
+	ImGui::BeginDisabled(P.adj.neutral());
+	if (ImGui::Button(LBL("Apply recolour"))) {
+		HistoryEntry e; e.label = TXT("Recolour"); const int fb = isFile ? P.bank : (P.loaded[0] ? 0 : -1); std::string msg;
+		int touched = 0;
+		if (P.recolorFiles && fb >= 0) { e.palBank = fb; e.palBefore = P.set[fb]; RecolorScope sc; sc.allPalettes = !P.recolorThisOnly; sc.onlyPalette = P.number; touched += RecolorSet(P.set[fb], P.adj, sc); e.palAfter = P.set[fb]; }
+		if (bank && (P.recolorSlots || P.recolorImages)) { e.hasBank = true; e.before = *bank; touched += RecolorBank(*bank, P.adj, P.recolorSlots, P.recolorImages); e.after = *bank; }
+		if (e.hasBank) { if (!applyModel(ch, host)) { *bank = e.before; e.hasBank = false; } }
+		if (e.palBank >= 0) { P.dirty[e.palBank] = true; pushPalette(ch, e.palBank); }
+		if (e.hasBank || e.palBank >= 0) { hist.push(std::move(e)); status = Fmt(TXT("Recoloured %d palette(s). Undo restores them."), touched); P.adj = ColorAdjust(); }
+	}
+	ImGui::EndDisabled();
+	if (!status.empty()) ImGui::TextWrapped("%s", status.c_str());
+}
+
+void Window::drawStructure(CharacterInstance &ch, const WindowHost &host) {
+	const int count = (int)bank->images.size();
+	const bool have = selected >= 0 && selected < count;
+	if (!ImGui::TreeNode(LBL("Add / remove / reorder"))) return;
+	// add
+	if (ImGui::Button(LBL("Add image from PNG..."))) {
+		const std::string p = FileDialog(-1, false);
+		if (!p.empty()) {
+			std::vector<uint8_t> px; int w = 0, h = 0; std::string e; Bank before = *bank; std::vector<int> remap; int id = -1; NewImageSpec sp;
+			sp.name = std::filesystem::path(Utf8ToWide(p)).stem().string() + ".bmp";
+			if (!ReadImageRgba(p, px, w, h, e)) status = e;
+			else if (!AddImage(*bank, insertAt >= 0 ? insertAt : (have ? selected + 1 : -1), sp, px.data(), w, h, remap, &id, &e)) { *bank = std::move(before); status = e; }
+			else if (commitStruct(ch, Fmt(TXT("Add image %d"), id), std::move(before), remap, host)) { selected = id; status = Fmt(TXT("Added image %d (storage type %d). Ids after it moved up by one; frame references were updated."), id, bank->images[id].type); }
+		}
+	}
+	ImGui::SameLine(); ImGui::SetNextItemWidth(70); ImGui::InputInt(LBL("at id"), &insertAt, 0, 0); ImGui::SameLine(); ImGui::SetItemTooltip("%s", TXT("Id the new image takes (-1: after the selected image). Later ids move up and every frame reference follows."));
+	ImGui::BeginDisabled(!have);
+	if (ImGui::Button(LBL("Duplicate"))) {
+		Bank before = *bank; std::vector<int> remap; int id = -1; std::string e;
+		if (!DuplicateImage(*bank, selected, selected + 1, remap, &id, &e)) { *bank = std::move(before); status = e; }
+		else if (commitStruct(ch, Fmt(TXT("Duplicate image %d"), selected), std::move(before), remap, host)) { selected = id; status = Fmt(TXT("Duplicated as image %d."), id); }
+	}
+	ImGui::SameLine(); if (ImGui::Button(LBL("Make independent"))) {
+		Bank before = *bank; std::string e;
+		if (!UnshareImage(*bank, selected, &e)) { *bank = std::move(before); status = e; } else commitStruct(ch, Fmt(TXT("Make image %d independent"), selected), std::move(before), {}, host);
+	}
+	ImGui::SameLine(); ImGui::SetItemTooltip("%s", TXT("Gives the image its own copy of every cell it borrows from another image."));
+	ImGui::SameLine(); if (ImGui::Button(LBL("Clear (keep id)"))) { pend = {2, selected, true}; }
+	ImGui::SameLine(); if (ImGui::Button(LBL("Delete (renumber)"))) { pend = {1, selected, true}; }
+	ImGui::SetNextItemWidth(70); ImGui::InputInt(LBL("Move to id"), &moveTarget, 0, 0); ImGui::SameLine();
+	if (ImGui::Button(LBL("Move"))) {
+		Bank before = *bank; std::vector<int> remap; std::string e; moveTarget = std::clamp(moveTarget, 0, count - 1);
+		if (!MoveImage(*bank, selected, moveTarget, remap, &e)) { *bank = std::move(before); status = e; }
+		else if (commitStruct(ch, Fmt(TXT("Move image %d to %d"), selected, moveTarget), std::move(before), remap, host)) { selected = moveTarget; status = TXT("Moved. Every frame reference follows the images."); }
+	}
+	ImGui::EndDisabled();
+	if (ImGui::Button(LBL("Delete all unused..."))) { pend = {3, -1, true}; }
+	ImGui::SameLine(); if (ImGui::Button(LBL("Trim empty atlas pages"))) { Bank before = *bank; if (TrimPages(*bank)) commitStruct(ch, TXT("Trim atlas pages"), std::move(before), {}, host); else { *bank = std::move(before); status = TXT("No empty pages at the end."); } }
+	ImGui::TreePop();
+
+	// confirmation with the impact of the operation
+	if (pend.open) ImGui::OpenPopup("##cgmconfirm");
+	if (ImGui::BeginPopupModal("##cgmconfirm", nullptr, ImGuiWindowFlags_AlwaysAutoResize)) {
+		auto at = bank->buildAtlas();
+		std::vector<int> targets; if (pend.op == 3) { for (int i = 0; i < count; i++) if (bank->images[i].present && usage.count(i) == 0 && bank->images[i].drawable() && bank->dependants(i, at).empty()) targets.push_back(i); } else targets.push_back(pend.id);
+		int refs = 0; for (int t : targets) refs += usage.count(t);
+		std::vector<int> deps; if (pend.op != 3 && !targets.empty()) deps = bank->dependants(targets[0], at);
+		ImGui::Text(pend.op == 1 ? TXT("Delete image %d and renumber the ones after it?") : pend.op == 2 ? TXT("Replace image %d by an empty placeholder (ids stay)?") : TXT("Delete %d unused image(s) and renumber the rest?"), pend.op == 3 ? (int)targets.size() : pend.id);
+		if (refs) ImGui::TextColored(ImVec4(1.f, 0.6f, 0.2f, 1.f), TXT("%d layer(s) in the frames use it. Their reference will be cleared (set to no sprite)."), refs);
+		if (!deps.empty()) { std::string s; for (int d : deps) s += " " + std::to_string(d); ImGui::TextColored(ImVec4(1.f, 0.6f, 0.2f, 1.f), "%s%s", TXT("Images that borrow its cells:"), s.c_str()); ImGui::TextWrapped("%s", pend.op == 1 ? TXT("They are made independent first (pixels unchanged).") : TXT("Clear is refused while other images borrow its cells: use Delete, which makes them independent first.")); }
+		if (refs == 0 && deps.empty()) ImGui::TextDisabled("%s", TXT("Nothing references it."));
+		ImGui::TextDisabled("%s", TXT("Game code that is not in this character (menus, other characters) cannot be checked."));
+		const bool refuse = pend.op == 2 && !deps.empty();
+		ImGui::BeginDisabled(refuse);
+		if (ImGui::Button(LBL("Do it"))) {
+			Bank before = *bank; std::vector<int> remap; std::string e; bool ok = true;
+			if (pend.op == 1) ok = DeleteImage(*bank, pend.id, true, remap, &e);
+			else if (pend.op == 2) { ok = ClearImage(*bank, pend.id, &e); }
+			else {   // delete from the back so earlier ids stay valid; one combined remap
+				remap = IdentityRemap((size_t)count);
+				std::vector<int> cur = IdentityRemap((size_t)count);
+				for (int k = (int)targets.size() - 1; k >= 0 && ok; k--) { std::vector<int> r; const int idNow = cur[targets[k]]; ok = DeleteImage(*bank, idNow, true, r, &e); if (ok) for (int &c : cur) if (c >= 0) c = r[c]; }
+				remap = cur;
+			}
+			if (!ok) { *bank = std::move(before); status = e; }
+			else if (commitStruct(ch, pend.op == 1 ? Fmt(TXT("Delete image %d"), pend.id) : pend.op == 2 ? Fmt(TXT("Clear image %d"), pend.id) : Fmt(TXT("Delete %d unused images"), (int)targets.size()), std::move(before), remap, host)) { status = TXT("Done. Frame references were updated."); if (selected >= (int)bank->images.size()) selected = -1; }
+			pend.open = false; ImGui::CloseCurrentPopup();
+		}
+		ImGui::EndDisabled();
+		ImGui::SameLine(); if (ImGui::Button(LBL("Cancel"))) { pend.open = false; ImGui::CloseCurrentPopup(); }
+		ImGui::EndPopup();
+	}
+}
+
 void Window::draw(CharacterInstance *ch, const WindowHost &host) {
 	if (!open) return;
 	ImGui::SetNextWindowSize(ImVec2(1000, 640), ImGuiCond_FirstUseEver);
@@ -136,20 +421,6 @@ void Window::draw(CharacterInstance *ch, const WindowHost &host) {
 	if (owner != ch || cgGen != ch->cg.generation()) rebuild(*ch);
 	if (usage.stale(ch->frameData) || (int)usage.byImage.size() < ch->cg.get_image_count()) { usage.build(ch->frameData, ch->cg.get_image_count()); filterKey = ~0ull; }
 	const int count = ch->cg.get_image_count();
-
-	// ---- filters ----
-	ImGui::SetNextItemWidth(160); ImGui::InputTextWithHint("##cgmname", TXT("Filter by id or name"), nameFilter, sizeof(nameFilter));
-	ImGui::SameLine(); ImGui::Checkbox(LBL("Unused"), &onlyUnused); if (onlyUnused) onlyUsed = false;
-	ImGui::SameLine(); ImGui::Checkbox(LBL("Used"), &onlyUsed); if (onlyUsed) onlyUnused = false;
-	ImGui::SameLine(); ImGui::Checkbox(LBL("Shares cells"), &onlyShared);
-	static const char *kTypes[] = {"Any type", "Type 0", "Type 1", "Type 2", "Type 3", "Type 4", "Type -1"};
-	int tsel = typeFilter == -2 ? 0 : typeFilter == -1 ? 6 : typeFilter + 1;
-	ImGui::SetNextItemWidth(100); if (i18n::Combo("##cgmtype", &tsel, kTypes, 7)) typeFilter = tsel == 0 ? -2 : tsel == 6 ? -1 : tsel - 1;
-	ImGui::SameLine(); ImGui::SetNextItemWidth(70); ImGui::InputInt(LBL("Min side"), &minSize, 0, 0);
-	ImGui::SameLine(); ImGui::SetNextItemWidth(70); ImGui::InputInt(LBL("Max side"), &maxSize, 0, 0);
-	ImGui::SetNextItemWidth(70); ImGui::InputInt(LBL("Used by pattern"), &usedByPattern, 0, 0);
-	ImGui::SameLine(); if (ImGui::SmallButton(LBL("any##cgmpat"))) usedByPattern = -1;
-	ImGui::SameLine(); ImGui::SetNextItemWidth(120); ImGui::SliderInt(LBL("Thumbnail"), &thumbSize, 48, 192);
 
 	const bool editable = bank != nullptr;
 	if (editable) {
@@ -207,7 +478,60 @@ void Window::draw(CharacterInstance *ch, const WindowHost &host) {
 		}
 		if (!status.empty()) ImGui::TextWrapped("%s", status.c_str());
 		for (const std::string &w : warnings) ImGui::TextColored(ImVec4(1.f, 0.75f, 0.3f, 1.f), "%s", w.c_str());
-	} else ImGui::TextDisabled("%s", TXT("This bank format is browse-only for now."));
+	} else {
+		// every other bank format (strip / tile banks): batch export and import and single-image replace go through the CG object; no undo, no structural edits
+		CgIO io(ch->cg);
+		if (ImGui::Button(LBL("Export all..."))) {
+			const std::string d = BrowseForFolderUtf8("");
+			if (!d.empty()) { ExportResult er; ExportOptions eo; status = ExportBank(io, d, ch->getName(), eo, er) ? Fmt(TXT("Exported %d images (%d files) to %s"), er.images, er.files, d.c_str()) : er.error; warnings.clear(); }
+		}
+		ImGui::SameLine();
+		if (ImGui::Button(LBL("Import folder..."))) {
+			const std::string d = BrowseForFolderUtf8("");
+			if (!d.empty()) {
+				ImportResult ir; warnings.clear();
+				if (!ImportBank(io, d, ir)) status = ir.error;
+				else { warnings = ir.warnings; if (!ir.changed.empty() && host.markEdited) host.markEdited(ch); status = Fmt(TXT("Imported %zu changed image(s); %d unchanged. This format has no undo here: save the bank to keep it."), ir.changed.size(), ir.skipped); clearThumbs(); previewId = -1; filterKey = ~0ull; cgGen = ch->cg.generation(); }
+			}
+		}
+		ImGui::SameLine();
+		ImGui::BeginDisabled(selected < 0 || selected >= count);
+		if (ImGui::Button(LBL("Replace selected from PNG..."))) {
+			const std::string p = FileDialog(-1, false);
+			if (!p.empty()) {
+				std::vector<uint8_t> px; int w = 0, h = 0; std::string e; ReplaceReport rep;
+				if (!ReadImageRgba(p, px, w, h, e)) status = e;
+				else if (!io.replace(selected, px.data(), w, h, &e, &rep, nullptr)) status = e;
+				else { status = rep.changedPixels ? Fmt(TXT("Image %d replaced (%d pixels). Save the bank to keep it."), selected, rep.changedPixels) : std::string(TXT("The PNG renders exactly like the stored image: nothing changed.")); if (rep.changedPixels && host.markEdited) host.markEdited(ch); clearThumbs(); previewId = -1; cgGen = ch->cg.generation(); }
+			}
+		}
+		ImGui::EndDisabled();
+		ImGui::SameLine();
+		if (ImGui::Button(LBL("Save bank as...")) && ch->cg.foreign()) {
+			char nm[128]; snprintf(nm, sizeof(nm), "%s", "bank.bin");
+			const std::string p = FileDialog(-1, true, nm);
+			if (!p.empty()) { std::vector<uint8_t> bytes; ch->cg.foreign()->serialize(bytes); std::ofstream f(std::filesystem::u8path(p), std::ios::binary); f.write((const char *)bytes.data(), (std::streamsize)bytes.size()); status = f ? Fmt(TXT("Saved %s"), p.c_str()) : std::string(TXT("Could not write the file.")); }
+		}
+		ImGui::TextDisabled("%s", TXT("This bank format: browse, batch export / import and image replace. Structural edits and palette editing are for BMP Cutter banks."));
+		if (!status.empty()) ImGui::TextWrapped("%s", status.c_str());
+		for (const std::string &w : warnings) ImGui::TextColored(ImVec4(1.f, 0.75f, 0.3f, 1.f), "%s", w.c_str());
+	}
+
+	if (ImGui::BeginTabBar("##cgmtabs")) {
+	if (ImGui::BeginTabItem(LBL("Browser"))) {
+	// ---- filters ----
+	ImGui::SetNextItemWidth(160); ImGui::InputTextWithHint("##cgmname", TXT("Filter by id or name"), nameFilter, sizeof(nameFilter));
+	ImGui::SameLine(); ImGui::Checkbox(LBL("Unused"), &onlyUnused); if (onlyUnused) onlyUsed = false;
+	ImGui::SameLine(); ImGui::Checkbox(LBL("Used"), &onlyUsed); if (onlyUsed) onlyUnused = false;
+	ImGui::SameLine(); ImGui::Checkbox(LBL("Shares cells"), &onlyShared);
+	static const char *kTypes[] = {"Any type", "Type 0", "Type 1", "Type 2", "Type 3", "Type 4", "Type -1"};
+	int tsel = typeFilter == -2 ? 0 : typeFilter == -1 ? 6 : typeFilter + 1;
+	ImGui::SetNextItemWidth(100); if (i18n::Combo("##cgmtype", &tsel, kTypes, 7)) typeFilter = tsel == 0 ? -2 : tsel == 6 ? -1 : tsel - 1;
+	ImGui::SameLine(); ImGui::SetNextItemWidth(70); ImGui::InputInt(LBL("Min side"), &minSize, 0, 0);
+	ImGui::SameLine(); ImGui::SetNextItemWidth(70); ImGui::InputInt(LBL("Max side"), &maxSize, 0, 0);
+	ImGui::SetNextItemWidth(70); ImGui::InputInt(LBL("Used by pattern"), &usedByPattern, 0, 0);
+	ImGui::SameLine(); if (ImGui::SmallButton(LBL("any##cgmpat"))) usedByPattern = -1;
+	ImGui::SameLine(); ImGui::SetNextItemWidth(120); ImGui::SliderInt(LBL("Thumbnail"), &thumbSize, 48, 192);
 
 	uint64_t key = 1469598103934665603ull;
 	auto mix = [&](uint64_t v) { key ^= v + 0x9e3779b97f4a7c15ull + (key << 6) + (key >> 2); };
@@ -314,6 +638,7 @@ void Window::draw(CharacterInstance *ch, const WindowHost &host) {
 			std::vector<uint8_t> px; int w = 0, h = 0;
 			if (ok && fetch(*ch, selected, previewPal, previewPups, px, w, h)) upload(preview, px, w, h, 0, false); else { preview.w = preview.h = 0; }
 		}
+		if (bank && !ch->frameData.isHan2() && !ch->frameData.isHA4()) drawStructure(*ch, host);
 		ImGui::SeparatorText(TXT("Used by"));
 		if (selected < (int)usage.byImage.size() && !usage.byImage[selected].empty()) {
 			ImGui::BeginChild("##cgmuse", ImVec2(0, 110), ImGuiChildFlags_Borders);
@@ -333,6 +658,14 @@ void Window::draw(CharacterInstance *ch, const WindowHost &host) {
 		ImGui::EndChild();
 	} else ImGui::TextDisabled("%s", TXT("Click an image in the grid."));
 	ImGui::EndChild();
+	ImGui::EndTabItem();
+	}
+	if (ImGui::BeginTabItem(LBL("Palettes"))) {
+		drawPalettes(*ch, host);
+		ImGui::EndTabItem();
+	}
+	ImGui::EndTabBar();
+	}
 	ImGui::End();
 }
 
