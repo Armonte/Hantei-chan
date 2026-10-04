@@ -120,8 +120,8 @@ void CG::copy_cells(const CG_Image *image,
 					src += cellw;
 					dest += width;
 				}
-			} else if (image->type_id == 4) {
-				// two pass: first 8bit palettized, second 8bit alpha
+			} else if (image->type_id == 4 || image->type_id == 5) {
+				// two pass: first 8bit palettized (type 4: the image's own palette, type 5: the bank / character palette), second 8bit alpha
 				unsigned int *ldest = (unsigned int *)dest;
 				unsigned char *src = ((unsigned char *)m_data) + cell->start + cell->offset;
 				int cellw = cell->width;
@@ -471,7 +471,7 @@ void CG::build_image_table() {
 				cell_n += cpr;
 			}
 			
-			if (image->type_id == 4) {
+			if (image->type_id == 4 || image->type_id == 5) {
 				mult = 2;
 			}
 			

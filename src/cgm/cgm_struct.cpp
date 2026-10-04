@@ -35,7 +35,7 @@ struct Grid {   // free/used atlas cells
 	}
 };
 
-size_t PerPixel(int type) { return type == 1 ? 4 : type == 4 ? 2 : 1; }
+size_t PerPixel(int type) { return type == 1 ? 4 : (type == 4 || type == 5) ? 2 : 1; }
 size_t Prefix(int type, int bpp) { return bpp == 32 ? (type == 2 || type == 4 ? 1024 : type == 3 ? 4 : 0) : 0; }
 
 void Finish(Bank &bank) { bank.recomputeLayout(); }
@@ -120,7 +120,7 @@ bool UnshareImage(Bank &bank, int n, std::string *err) {
 	if (!any) return true;
 	const int type = im.type;
 	std::vector<uint8_t> idx, alpha; uint32_t pal[256]; Rgba rgba;
-	if (type == 0 || type == 2 || type == 4) { if (!bank.decodeIndexed(n, idx, pal, &alpha)) return fail("cannot read the image"); }
+	if (type == 0 || type == 2 || type == 4 || type == 5) { if (!bank.decodeIndexed(n, idx, pal, &alpha)) return fail("cannot read the image"); }
 	if (!bank.decode(n, rgba)) return fail("cannot read the image");
 	const int W = im.boundsW(), H = im.boundsH(), cu = bank.cellUnit();
 	Grid grid(bank);
@@ -146,7 +146,7 @@ bool UnshareImage(Bank &bank, int n, std::string *err) {
 			const size_t o = offs[k] + ((size_t)ly * b.w + lx) * (type == 1 ? 4 : 1), pix = (size_t)cy * W + cx;
 			if (type == 1) { uint8_t v[4] = {0, 0, 0, 0}; if (inside) { v[0] = rgba.px[pix * 4 + 2]; v[1] = rgba.px[pix * 4 + 1]; v[2] = rgba.px[pix * 4]; v[3] = rgba.px[pix * 4 + 3]; } memcpy(&out[o], v, 4); }
 			else if (type == 3) out[o] = inside ? rgba.px[pix * 4 + 3] : 0;
-			else { out[o] = inside ? idx[pix] : 0; if (type == 4) out[o + (size_t)b.w * b.h] = inside ? alpha[pix] : 0; }
+			else { out[o] = inside ? idx[pix] : 0; if (type == 4 || type == 5) out[o + (size_t)b.w * b.h] = inside ? alpha[pix] : 0; }
 		}
 	}
 	im.blob = std::make_shared<const std::vector<uint8_t>>(std::move(out));
