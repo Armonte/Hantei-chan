@@ -55,7 +55,7 @@ bool MainFrame::openHan2File(const std::string& path)
 	}
 	if (findCharacterByPath(path)) { requestErrorPopup("Load Error", std::string(TXT("Already open: ")) + path); return true; }
 	std::filesystem::path p = std::filesystem::u8path(path);
-	han2ui::OpenRequest req;
+	abrowser::OpenRequest req;
 	req.stem = p.stem().string();
 	req.read = han2::DirReader(p.parent_path().string());
 	req.origin = p.parent_path().string();
@@ -71,17 +71,39 @@ bool MainFrame::openHan2File(const std::string& path)
 	return true;
 }
 
-void MainFrame::openHan2Request(const han2ui::OpenRequest& req)
+void MainFrame::openBrowserRequest(const abrowser::OpenRequest& req)
 {
-	auto character = std::make_unique<CharacterInstance>();
+	using abrowser::OpenRequest;
 	std::string err;
-	if (!character->loadHan2(req.stem, req.read, std::string(TXT("archive ")) + req.origin, std::string(), err)) {
-		requestErrorPopup("Load Error", err);
-		return;
+	auto adopt = [&](std::unique_ptr<CharacterInstance> character, const std::string& home) {
+		character->archiveHome = home;
+		const bool han2 = character->frameData.isHan2();
+		characters.push_back(std::move(character));
+		createViewForCharacter(characters.back().get());
+		markProjectModified();
+		if (han2) han2ui::showAnimWindow = true;   // playback controls next to the pattern list
+	};
+	switch (req.kind) {
+	case OpenRequest::Han2Stem: {
+		auto character = std::make_unique<CharacterInstance>();
+		if (!character->loadHan2(req.stem, req.read, std::string(TXT("archive ")) + req.origin, std::string(), err)) { requestErrorPopup("Load Error", err); return; }
+		adopt(std::move(character), req.archivePath);
+		break;
 	}
-	characters.push_back(std::move(character));
-	createViewForCharacter(characters.back().get());
-	markProjectModified();
+	case OpenRequest::Gof1Entry: {
+		auto character = std::make_unique<CharacterInstance>();
+		if (!character->loadGof1(req.archivePath, req.entryName, err)) { requestErrorPopup("Load Error", err); return; }
+		adopt(std::move(character), req.archivePath);
+		break;
+	}
+	case OpenRequest::LooseFile: {
+		const size_t before = characters.size();
+		openAnyFile(req.path);
+		if (characters.size() > before && characters.back()->frameData.isHan2()) han2ui::showAnimWindow = true;
+		break;
+	}
+	default: break;
+	}
 }
 
 void MainFrame::DrawHan2Windows()
@@ -95,18 +117,8 @@ void MainFrame::DrawHan2Windows()
 	han2ui::DrawCgWindow(getActiveCharacter());
 	han2ui::DrawDiffWindow(getActiveCharacter());
 	if (auto* av = getActiveView()) han2ui::DrawAnimWindow(av->getCharacter(), av->getState(), &av->onion());
-	han2ui::OpenRequest req;
-	static std::string message;
-	if (han2ui::DrawBrowser(req, message)) {
-		message.clear();
-		if (req.stem == "\x01open") openAnyFile(req.origin);
-		else if (req.stem == "\x01gof1") {
-			auto character = std::make_unique<CharacterInstance>(); std::string err;
-			if (!character->loadGof1(req.gof1Archive, req.gof1Entry, err)) requestErrorPopup("Load Error", err);
-			else { characters.push_back(std::move(character)); createViewForCharacter(characters.back().get()); markProjectModified(); }
-		}
-		else openHan2Request(req);
-	}
+	abrowser::OpenRequest req;
+	if (abrowser::Draw(req)) openBrowserRequest(req);
 }
 
 void MainFrame::openPartsEditorForCharacter(CharacterInstance* character)

@@ -162,6 +162,21 @@ void MainFrame::Menu(unsigned int errorPopupId)
 			bool hasActive = (active != nullptr);
 			bool hasProject = ProjectManager::HasCurrentProject();
 
+			// Game folders first: the archive browser (characters with thumbnails, previews, double click to edit)
+			if (ImGui::BeginMenu(han2ui::Tr("Open Game Folder", "\xe3\x82\xb2\xe3\x83\xbc\xe3\x83\xa0\xe3\x83\x95\xe3\x82\xa9\xe3\x83\xab\xe3\x83\x80\xe3\x82\x92\xe9\x96\x8b\xe3\x81\x8f")))
+			{
+				if (ImGui::MenuItem("Glove on Fight 2 (GOF2)...")) abrowser::OpenGameFolderDialog(abrowser::Game::GOF2);
+				if (ImGui::MenuItem("Glove on Fight (GOF1)...")) abrowser::OpenGameFolderDialog(abrowser::Game::GOF1);
+				if (ImGui::MenuItem("Ragnarok Battle Offline (RBO)...")) abrowser::OpenGameFolderDialog(abrowser::Game::RBO);
+				if (ImGui::MenuItem("Melty Blood Actress Again CC (MBAACC)...")) abrowser::OpenGameFolderDialog(abrowser::Game::MBAACC);
+				ImGui::Separator();
+				if (ImGui::MenuItem(han2ui::Tr("Detect the game automatically...", "\xe8\x87\xaa\xe5\x8b\x95\xe5\x88\xa4\xe5\x88\xa5...")))
+					abrowser::OpenGameFolderDialog(abrowser::Game::None);
+				ImGui::EndMenu();
+			}
+			if (ImGui::MenuItem(han2ui::Tr("Archive Browser", "\xe3\x82\xa2\xe3\x83\xbc\xe3\x82\xab\xe3\x82\xa4\xe3\x83\x96\xe3\x83\x96\xe3\x83\xa9\xe3\x82\xa6\xe3\x82\xb6"), "Ctrl+B", abrowser::show))
+				abrowser::show = !abrowser::show;
+			ImGui::Separator();
 			// One smart Open: the format is detected from the header (see openAnyFile)
 			if (ImGui::MenuItem(LBL("Open...")))
 			{
@@ -789,8 +804,8 @@ void MainFrame::Menu(unsigned int errorPopupId)
 			if (ImGui::MenuItem(LBL("CG manager"), nullptr, m_cgm.open, hasActive && active->cg.m_loaded)) m_cgm.open = !m_cgm.open;
 			if (ImGui::MenuItem(LBL("CG sprites of this RBO / GOF2 character (export / import)..."), nullptr, han2ui::showCgWindow, hasActive && active->cg.m_loaded))
 				han2ui::showCgWindow = !han2ui::showCgWindow;
-			if (ImGui::MenuItem(LBL("French Bread archives (PAC, .p, .dat)..."), nullptr, han2ui::showBrowser))
-				han2ui::showBrowser = !han2ui::showBrowser;
+			if (ImGui::MenuItem(han2ui::Tr("Archive Browser", "\xe3\x82\xa2\xe3\x83\xbc\xe3\x82\xab\xe3\x82\xa4\xe3\x83\x96\xe3\x83\x96\xe3\x83\xa9\xe3\x82\xa6\xe3\x82\xb6"), "Ctrl+B", abrowser::show))
+				abrowser::show = !abrowser::show;
 			if (ImGui::MenuItem(LBL("Create / patch a PAC archive..."), nullptr, han2ui::showPacCreate))
 				han2ui::showPacCreate = !han2ui::showPacCreate;
 			ImGui::Separator();

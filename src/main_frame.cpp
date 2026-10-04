@@ -16,6 +16,7 @@
 #include "ha4_character.h"
 #include "han2_character.h"
 #include "han2_browser.h"
+#include "archive_browser.h"
 #include "i18n.h"
 #include "han2_export.h"
 #include "han2_pac_window.h"
@@ -539,7 +540,23 @@ static const bool s_archiveSaveHookInstalled = (g_saveEntryIntoArchive = SaveEnt
 bool MainFrame::saveCharacter(CharacterInstance* character)
 {
 	if (!character) return false;
-	if (character->save()) return true;
+	// Opened from an archive in the archive browser: Save writes back into that archive (first .bak kept), byte-exact through the format writers.
+	if (!character->archiveHome.empty()) {
+		std::string err;
+		if (abrowser::SaveCharacterIntoArchive(*character, character->archiveHome, &err)) {
+			character->clearModified(); character->undoManager.markClean();
+			han2ui::PushLoadReport(character->getName(), std::string(TXT("saved into ")) + character->archiveHome + TXT(" (backup: .bak next to it)"), {}, false);
+			return true;
+		}
+		requestErrorPopup("Save Error", std::string(TXT("Could not write back into the archive ")) + character->archiveHome + ": " + err);
+		return false;
+	}
+	if (character->save()) {
+		// a managed working copy of an archive entry (opened through the browser): write it back into the archive too
+		std::string err; bool had = false;
+		if (!abrowser::SaveEntryBytesIntoArchive(character->getTopHA6Path(), &err, &had) && had) { requestErrorPopup("Save Error", std::string(TXT("Saved the working copy, but could not write back into the archive: ")) + err); return false; }
+		return true;
+	}
 	const std::string& path = character->getTopHA6Path();
 	if (character->frameData.isHan2() && !han2::LastSaveError().empty()) {
 		requestErrorPopup("Save Error", std::string(TXT("RBO / GOF2 file not saved: ")) + han2::LastSaveError());

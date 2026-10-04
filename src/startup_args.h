@@ -26,6 +26,8 @@
 //   --post-key <vk>      frame 12: post WM_KEYDOWN <vk> to the first detached window
 //                        (checks shortcut routing through the HWND subclass)
 //   --stats <file>       frames 10-19: average scene render / onion-skin cost (CPU ms)
+//   --ui-script <file>   run a scripted UI session: one command per line (# = comment): wait N | waitidle | capture <png> | quit | openany <path> |
+//                        pattern N | frame N | zoomview N | and every abrowser::ScriptCommand (browse, source, filter, type, select, open, key, ...)
 //   --quit               quit after the actions even without --capture
 //   --tool tag           open the Tag / Team window (experimental); --tool gamelink opens the Game Link window
 //   --tag-ini <path>     the tag_tuning.ini it edits (default: next to the linked MBAA.exe)
@@ -60,6 +62,7 @@ struct StartupArgs {
 	bool tagApply = false;                 // --tag-apply
 	authoring::StartupOptions authoring;   // --authoring-* ([authoring])
 	std::string capture;
+	std::string uiScript;   // --ui-script <file>: scripted UI actions (archive browser, captures) without any real mouse / keyboard; see startup_args.cpp
 	int gameLinkSlot = 0;   // --game-link (1-4); 0 = off
 	int frameCounter = 0;
 

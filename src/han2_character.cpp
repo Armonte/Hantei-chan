@@ -33,6 +33,10 @@ static bool LoadEmbeddedCg(CharacterInstance &ch, const std::vector<uint8_t> &cg
 
 static std::string Lower(std::string s) { for (auto &c : s) c = (char)tolower((unsigned char)c); return s; }
 
+static thread_local bool g_noGl = false;
+void SetNoGlUpload(bool on) { g_noGl = on; }
+static void MaybeUploadParts(Parts &p) { if (!g_noGl) UploadPartsTextures(p); }
+
 ReadFn DirReader(const std::string &dir)
 {
 	return [dir](const std::string &name, std::vector<uint8_t> &out) {
@@ -106,7 +110,7 @@ bool LoadCharacter(CharacterInstance &ch, const std::string &stem, const ReadFn 
 	if (!cont->parts.empty()) {
 		std::string perr2;
 		if (PatToParts(cont->parts.data(), cont->parts.size(), ch.parts, &perr2)) {
-			UploadPartsTextures(ch.parts);
+			MaybeUploadParts(ch.parts);
 			s += ", " + std::to_string(ch.parts.partSets.size()) + " part sets";
 		} else s += ", parts: " + perr2;
 	}
@@ -129,7 +133,7 @@ bool LoadGof1Character(CharacterInstance &ch, const std::string &archivePath, co
 	cont->sourcePath = archivePath; cont->gof1Name = a.entries[(size_t)idx].name;
 	if (!cont->parts.empty()) {
 		std::string pe;
-		if (PatToParts(cont->parts.data(), cont->parts.size(), ch.parts, &pe)) UploadPartsTextures(ch.parts);
+		if (PatToParts(cont->parts.data(), cont->parts.size(), ch.parts, &pe)) MaybeUploadParts(ch.parts);
 	}
 	LoadEmbeddedCg(ch, cont->cg);
 	return true;
@@ -148,7 +152,7 @@ bool LoadGof1CharacterFile(CharacterInstance &ch, const std::string &path, std::
 	cont->sourcePath = path; cont->gof1Name.clear();
 	if (!cont->parts.empty()) {
 		std::string pe;
-		if (PatToParts(cont->parts.data(), cont->parts.size(), ch.parts, &pe)) UploadPartsTextures(ch.parts);
+		if (PatToParts(cont->parts.data(), cont->parts.size(), ch.parts, &pe)) MaybeUploadParts(ch.parts);
 	}
 	LoadEmbeddedCg(ch, cont->cg);
 	return true;
