@@ -110,6 +110,17 @@ void Bank::serialize(std::vector<uint8_t> &o) const {
 	memcpy(&o[tailPos + 8], &total, 4);
 }
 
+bool Bank::blobSpan(int n, size_t &start, size_t &end) const {
+	size_t pos = kFirstImage;
+	for (int i = 0; i < (int)images.size(); i++) {
+		if (!images[i].present) continue;
+		const size_t sz = images[i].blob ? images[i].blob->size() : 0;
+		if (i == n) { start = pos + 72; end = start + sz; return true; }
+		pos += 72 + sz;
+	}
+	return false;
+}
+
 void Bank::palette(int slot, uint32_t out[256]) const {
 	memcpy(out, palettes.data() + 0x400 * (slot & 7), 1024);
 	for (int i = 0; i < 256; i++) out[i] = (out[i] & 0xFFFFFF) | ((out[i] >> 24) ? 0xFF000000u : 0);
