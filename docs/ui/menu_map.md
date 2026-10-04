@@ -102,3 +102,7 @@ Test hook: `--open-any a|b|c` runs the same routine at startup.
 - `--open-any` on 6 loose Hantei4 .DATs from `C:\games\MB\R\01` (AKAAKIHA, AKIHA, AOKO, ARC, CIEL, HISUI) and 2 from the MBAC install tree `C:\games\MB\AC\install\MBACPC\02_extracted` (KOHAKU, LEN): all route to the MBAC (HA4) loader and render (`docs/ui/evidence/mbac_open_any_8_characters.png`; the MBAC (HA4) inspector is open in each).
 - The MBAC `.p` archives in `C:\games\MB\AC` start with `PKFileInfo`, not `FilePacHeaderA`: neither `mbaaccpackage pack-list` nor `p_extractor.py` reads them, so the "extracted" files above are the ones already extracted in the install tree.
 - Native dialog: File > Open... opened the Windows dialog; the path was entered and the dialog's own Open button pressed (by window message, because keystrokes did not reach the dialog); MIYAKO.DAT loaded as MBAC (`native_dialog_open_result.png`).
+
+## Archive browser (2026-10-04)
+File > Open Game Folder > GOF2 / GOF1 / RBO / MBAACC / auto-detect, File > Archive Browser (Ctrl+B) and Tools > Archive Browser replace "Tools > French Bread archives (PAC, .p, .dat)...". Window > Animations (list with thumbnails) toggles the animation list.
+Archives and game folders (Open..., drag and drop, the start screen, `--ui-script browse <path>`) all open the one browser; see `docs/ux/archive_audit_2026-10-04.md`.

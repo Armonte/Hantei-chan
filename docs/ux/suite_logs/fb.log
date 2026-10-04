@@ -1,0 +1,26 @@
+== archives found: 118
+== census
+== byte-exact rebuild (no edits)
+SECTION fbrt: pass 118 fail 0 skipped 0
+== EX3 Gage re-encode (decode -> encode must be bit-exact)
+SECTION ex3: pass 5580 fail 0 skipped 0
+== edited rebuild
+SECTION fbedit: pass 9 fail 0 skipped 0
+== title: react
+SECTION react     pass 4183 fail 0 skipped 0
+== title: mb
+SECTION mb        pass 1780 fail 0 skipped 0
+== title: pb2k1
+SECTION pb2k1     pass 1081 fail 0 skipped 0
+== title: dmp
+SECTION dmp       pass 1526 fail 0 skipped 0
+== title: rosa
+SECTION rosa      pass 236 fail 0 skipped 0
+== title: qoh99
+SECTION qoh99     pass 620 fail 0 skipped 0
+== title: qoh98
+SECTION qoh98     pass 697 fail 0 skipped 0
+== edit locality (every character of ReAct, MB, PB2K1, GOF1)
+SECTION locality pass 108 fail 0 skipped 0
+n/a: /mnt/c/games/gof/Data/{System00,uninst}.dat, /mnt/c/games/pb/pbex.dat are installer / trainer files, not archives (headers carry no archive magic)
+rc=0
