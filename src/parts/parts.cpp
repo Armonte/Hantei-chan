@@ -1,4 +1,5 @@
 #include "parts.h"
+#include "part_transform.h"
 #include "../misc.h"
 #include "../cg.h"
 
@@ -253,6 +254,7 @@ void Parts::Free()
     shapes.clear();
     gfxMeta.clear();
     loaded = false;
+    fbPartModel = false;
 }
 
 void Parts::initEmpty()
@@ -509,11 +511,7 @@ void Parts::Draw(int pattern, int nextPattern, float interpolationFactor,
 
     // Sort groups by priority (higher priority = draw first)
     auto copyGroups = partSets[pattern].groups;
-    // Note: No reverse() needed - stable_sort with rbegin/rend handles ordering
-    std::stable_sort(copyGroups.rbegin(), copyGroups.rend(),
-        [](const PartProperty &a, const PartProperty &b) {
-            return a.priority < b.priority;
-    });
+    partxf::SortForDraw(fbPartModel, copyGroups);
 
     constexpr float tau = glm::pi<float>() * 2.f;
 
@@ -611,7 +609,9 @@ void Parts::Draw(int pattern, int nextPattern, float interpolationFactor,
             currentShape = shapes[cutout.shapeIndex];
         }
 
-        glm::vec2 offset = glm::vec2(part.x, part.y);
+        // FB parts store the quad's top-left; the engine pivots scale and rotation about it + the cut-out
+        // origin (see part_transform.h). The quad below is drawn at -xy, so the matrix origin is the pivot.
+        glm::vec2 offset = partxf::Pivot(fbPartModel, (float)part.x, (float)part.y, cutout);
         glm::vec3 rotation = glm::vec3(part.rotation[1], part.rotation[2], part.rotation[3]);
         glm::vec2 scale = glm::vec2(part.scaleX, part.scaleY);
         
@@ -658,8 +658,9 @@ void Parts::Draw(int pattern, int nextPattern, float interpolationFactor,
                 if (nextCutout.shapeIndex < shapes.size()) {
                     Shape nextShape = shapes[nextCutout.shapeIndex];
 
-                    offset[0] = mix(offset[0], (*nextPart).x);
-                    offset[1] = mix(offset[1], (*nextPart).y);
+                    glm::vec2 nextOffset = partxf::Pivot(fbPartModel, (float)(*nextPart).x, (float)(*nextPart).y, nextCutout);
+                    offset[0] = mix(offset[0], nextOffset.x);
+                    offset[1] = mix(offset[1], nextOffset.y);
                     rotation[0] = mixRotation(rotation[0], (*nextPart).rotation[1]);
                     rotation[1] = mixRotation(rotation[1], (*nextPart).rotation[2]);
                     rotation[2] = mixRotation(rotation[2], (*nextPart).rotation[3]);
@@ -693,19 +694,10 @@ void Parts::Draw(int pattern, int nextPattern, float interpolationFactor,
         // geometry already uses. The old -Y/-X signs (inherited from Eiton)
         // mirrored any part with out-of-plane rotation (issue: chr019 pat 102
         // arcs "totally misoriented").
-        glm::mat4 view = glm::mat4(1.f);
-        view = glm::translate(view, glm::vec3(offset[0], offset[1], 0.f));
-        view = glm::rotate(view, rotation[1] * tau, glm::vec3(0.0, 1.f, 0.f));
-        view = glm::rotate(view, rotation[0] * tau, glm::vec3(1.0, 0.f, 0.f));
-        view = glm::rotate(view, rotation[2] * tau, glm::vec3(0.0, 0.f, 1.f));
-        // PRAS pivot: shifts the part before rotation (rotates with the part),
-        // unscaled — matches the game's transform order.
-        if (part.pras[0] || part.pras[1])
-            view = glm::translate(view, glm::vec3(part.pras[0], part.pras[1], 0.f));
+        glm::mat4 view = partxf::PartMatrix(offset, rotation, glm::vec2(part.pras[0], part.pras[1]), scale);
         
         setFlip(part.flip);
         
-        view = glm::scale(view, glm::vec3(scale[0], scale[1], 1.f));
         setMatrix(view);
 
         // Disable depth test for proper alpha blending of 2D sprites

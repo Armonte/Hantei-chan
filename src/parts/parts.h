@@ -38,6 +38,12 @@ public:
     // tag variants back instead of the canonical UNI ones (PANA, PPNA, PPWH,
     // PPXY, PPCL, PPVT, PPGR, PGT2), preserving byte-1:1 with the original.
     bool useMBAACCFormat = false;
+    // French-Bread HAN2RBO / GOF PAT (RBO, GOF2, GOF1): a part's position is its
+    // top-left corner, the cut-out's xy is the pivot OFFSET from that corner
+    // (scale and rotation about top-left + xy), and parts draw in ascending layer
+    // order (last = on top). See docs/formats/fb_part_transform.md. Everything
+    // else (MBAA / UNI / MBTL) keeps position = pivot and descending priority.
+    bool fbPartModel = false;
 
     // Records as loaded, in file order, with a fingerprint of the model they
     // decoded to. Save() writes a record's original bytes while its model is

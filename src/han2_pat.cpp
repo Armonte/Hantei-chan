@@ -75,6 +75,7 @@ bool PatToParts(const uint8_t *blob, size_t size, Parts &parts, std::string *err
 	parts.data = nullptr;
 	parts.filePath.clear();
 	parts.useMBAACCFormat = true;
+	parts.fbPartModel = true;   // pivot = position + cut-out origin, ascending layer order (GL renderer)
 
 	int texCount = 0, texRes[kMaxTextures]{}; size_t texOff[kMaxTextures]{};
 	size_t total = 0;

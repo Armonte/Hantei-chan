@@ -1007,16 +1007,28 @@ void Render::DrawPatLayerItem(const RenderLayer& layer, Parts* origParts)
 	// Matrix callback with the layer transform. Order matches the game's
 	// PatPart_BuildTransformMatrix and our CG path: pivot at entity+spawn
 	// position, scale, Z/Y/X rotation, then the AFOF offset in rotated space.
-	auto setMatrix = [this, &layer](glm::mat4 partMatrix) {
+	const bool fbModel = layerParts->fbPartModel;
+	auto setMatrix = [this, &layer, fbModel](glm::mat4 partMatrix) {
 		constexpr float tau = glm::pi<float>()*2.f;
 		glm::mat4 rview = projection;
 		rview = glm::scale(rview, glm::vec3(scale, scale, 1.f));
 		rview = glm::translate(rview, glm::vec3(x, y, 0));
 		rview = glm::scale(rview, glm::vec3(layer.scaleX, layer.scaleY, 1.f));
-		rview = glm::rotate(rview, layer.rotZ*tau, glm::vec3(0.f, 0.f, 1.f));
-		rview = glm::rotate(rview, layer.rotY*tau, glm::vec3(0.f, 1.f, 0.f));
-		rview = glm::rotate(rview, layer.rotX*tau, glm::vec3(1.f, 0.f, 0.f));
-		rview = glm::translate(rview, glm::vec3(offsetX, offsetY, 0));
+		if (fbModel) {
+			// French-Bread engines (RBO Camera_BuildSpriteWorldMatrix 0x441CD0, GOF2 sub_43F850):
+			// pose -> frame flip rotation (Z, then X, then Y, about the actor anchor)
+			// -> frame draw offset -> zoom -> actor position. The flip is applied BEFORE the
+			// offset, so a mirrored frame does not mirror its own offset.
+			rview = glm::translate(rview, glm::vec3(offsetX, offsetY, 0));
+			rview = glm::rotate(rview, layer.rotY*tau, glm::vec3(0.f, 1.f, 0.f));
+			rview = glm::rotate(rview, layer.rotX*tau, glm::vec3(1.f, 0.f, 0.f));
+			rview = glm::rotate(rview, layer.rotZ*tau, glm::vec3(0.f, 0.f, 1.f));
+		} else {
+			rview = glm::rotate(rview, layer.rotZ*tau, glm::vec3(0.f, 0.f, 1.f));
+			rview = glm::rotate(rview, layer.rotY*tau, glm::vec3(0.f, 1.f, 0.f));
+			rview = glm::rotate(rview, layer.rotX*tau, glm::vec3(1.f, 0.f, 0.f));
+			rview = glm::translate(rview, glm::vec3(offsetX, offsetY, 0));
+		}
 		rview = glm::translate(rview, glm::vec3(0, 0, 1024.f));
 		rview *= invOrtho;
 		SetMatrixPersp(lProjectionParts, partMatrix, rview);
