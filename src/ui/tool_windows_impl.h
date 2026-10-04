@@ -932,3 +932,13 @@ void MainFrame::drawHudWindow()
 }
 
 #endif /* UI_TOOL_WINDOWS_IMPL_H_GUARD */
+
+// CG manager (docs/cg/cg_manager_design.md): browse / search / edit the active character's sprite bank.
+void MainFrame::drawCgManagerWindow()
+{
+	if (!m_cgm.open) return;
+	cgm::WindowHost host;
+	host.navigate = [this](int pattern, int frame) { navigateActiveView(pattern, frame); };
+	host.markEdited = [this](CharacterInstance* c) { markToolEdit(c); };
+	m_cgm.draw(getToolCharacter(), host);
+}

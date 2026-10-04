@@ -71,6 +71,9 @@ add_executable(${EXE}
 	src/han2/mb_formats.cpp
 	src/han2/mb_cg.cpp
 	src/han2/qoh_cg.cpp
+	src/cgm/cgm_bank.cpp
+	src/cgm/cgm_usage.cpp
+	src/cgm/cgm_window.cpp
 	src/han2/qoh_img.cpp
 	src/han2/rosa_img.cpp
 	src/startup_args.cpp

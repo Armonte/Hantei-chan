@@ -17,6 +17,11 @@ bool WritePngRgba(const std::string& utf8Path, const uint8_t* rgba, int width, i
 // Decode any WIC-readable image (PNG, BMP, JPEG, ...) to straight-alpha RGBA, top-down rows.
 bool ReadImageRgba(const std::string& utf8Path, std::vector<uint8_t>& rgba, int& width, int& height, std::string& error);
 
+// 8-bit palette PNG (PLTE + tRNS). pal = 256 entries, memory order R,G,B,A (value 0xAABBGGRR); alpha goes to tRNS.
+bool WritePngIndexed(const std::string& utf8Path, const uint8_t* indices, int width, int height, const uint32_t pal[256], std::string& error);
+// Reads a palette-indexed image (1/2/4/8 bpp) as 8-bit indices + 256-entry palette (same memory order). false + error when it is not indexed.
+bool ReadImageIndexed(const std::string& utf8Path, std::vector<uint8_t>& indices, uint32_t pal[256], int& width, int& height, std::string& error);
+
 // UTF-8 <-> UTF-16 / ANSI helpers used by the export UI.
 std::wstring Utf8ToWide(const std::string& s);
 std::string WideToUtf8(const std::wstring& s);

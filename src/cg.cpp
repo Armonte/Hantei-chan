@@ -532,6 +532,15 @@ static bool ParsePalette(const char *name, char *&out, int &count, int &offset)
 	return true;
 }
 
+const unsigned int *CG::paletteAt(int number, int pups) const
+{
+	if (number < 0) return nullptr;
+	if (m_foreign) return number < m_foreign->paletteCount() ? m_foreign->palette(number) : nullptr;
+	if (pups > 0 && pups < kPupsBanks && pupsData[pups] && number < pupsMax[pups]) return (unsigned int *)pupsData[pups] + pupsOffset[pups] + number * 0x100;
+	if (paletteData && number < palMax) return (unsigned int *)paletteData + paletteOffset + number * 0x100;
+	return number == 0 && m_loaded ? m_basePalette : nullptr;
+}
+
 bool CG::loadPalette(const char *name) {
 	touch();
 	if (paletteData) {

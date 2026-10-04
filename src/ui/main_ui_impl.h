@@ -418,6 +418,7 @@ void MainFrame::DrawUi()
 	drawAuthoring();
 	drawVarRefsWindow();
 	drawPatternManagerWindow();
+	drawCgManagerWindow();
 	drawNotesWindow();
 	drawKeyBindingsWindow();
 	drawCompareWindow();

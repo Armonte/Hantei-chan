@@ -87,6 +87,67 @@ bool ReadImageRgba(const std::string& utf8Path, std::vector<uint8_t>& rgba, int&
 	return ok;
 }
 
+bool ReadImageIndexed(const std::string& utf8Path, std::vector<uint8_t>& indices, uint32_t pal[256], int& width, int& height, std::string& error)
+{
+	ComScope com;
+	IWICImagingFactory* factory = nullptr;
+	if (FAILED(CoCreateInstance(CLSID_WICImagingFactory, nullptr, CLSCTX_INPROC_SERVER, IID_PPV_ARGS(&factory)))) { error = "Could not create the image factory."; return false; }
+	IWICBitmapDecoder* dec = nullptr; IWICBitmapFrameDecode* frame = nullptr; IWICPalette* wp = nullptr; IWICFormatConverter* conv = nullptr;
+	bool ok = false;
+	do {
+		if (FAILED(factory->CreateDecoderFromFilename(Utf8ToWide(utf8Path).c_str(), nullptr, GENERIC_READ, WICDecodeMetadataCacheOnDemand, &dec))) { error = "Could not open the image: " + utf8Path; break; }
+		if (FAILED(dec->GetFrame(0, &frame))) { error = "The image has no frame."; break; }
+		WICPixelFormatGUID pf; frame->GetPixelFormat(&pf);
+		if (!IsEqualGUID(pf, GUID_WICPixelFormat8bppIndexed) && !IsEqualGUID(pf, GUID_WICPixelFormat4bppIndexed) && !IsEqualGUID(pf, GUID_WICPixelFormat2bppIndexed) && !IsEqualGUID(pf, GUID_WICPixelFormat1bppIndexed)) { error = "not a palette image"; break; }
+		UINT w = 0, h = 0; frame->GetSize(&w, &h);
+		if (!w || !h) { error = "The image is empty."; break; }
+		if (FAILED(factory->CreatePalette(&wp)) || FAILED(frame->CopyPalette(wp))) { error = "Could not read the palette."; break; }
+		UINT n = 0; wp->GetColorCount(&n);
+		WICColor cols[256] = {}; UINT got = 0; wp->GetColors(n > 256 ? 256 : n, cols, &got);
+		for (int i = 0; i < 256; i++) { const WICColor c = (UINT)i < got ? cols[i] : 0; pal[i] = (c & 0xFF00FF00u) | ((c & 0xFF) << 16) | ((c >> 16) & 0xFF); }
+		if (FAILED(factory->CreateFormatConverter(&conv)) || FAILED(conv->Initialize(frame, GUID_WICPixelFormat8bppIndexed, WICBitmapDitherTypeNone, wp, 0.0, WICBitmapPaletteTypeCustom))) { error = "Could not convert the image."; break; }
+		indices.resize((size_t)w * h);
+		if (FAILED(conv->CopyPixels(nullptr, w, (UINT)indices.size(), indices.data()))) { error = "Could not read the pixels."; break; }
+		width = (int)w; height = (int)h; ok = true;
+	} while (false);
+	ReleaseCom(conv); ReleaseCom(wp); ReleaseCom(frame); ReleaseCom(dec); ReleaseCom(factory);
+	return ok;
+}
+
+bool WritePngIndexed(const std::string& utf8Path, const uint8_t* indices, int width, int height, const uint32_t pal[256], std::string& error)
+{
+	if (!indices || width <= 0 || height <= 0) { error = "The image is empty."; return false; }
+	const std::wstring finalPath = Utf8ToWide(utf8Path);
+	const std::wstring tempPath = finalPath + L".tmp";
+	static thread_local ComScope com;
+	static thread_local IWICImagingFactory* factory = nullptr;
+	HRESULT hr = S_OK;
+	if (!factory) hr = CoCreateInstance(CLSID_WICImagingFactory, nullptr, CLSCTX_INPROC_SERVER, IID_IWICImagingFactory, reinterpret_cast<void**>(&factory));
+	IWICStream* stream = nullptr; IWICBitmapEncoder* encoder = nullptr; IWICBitmapFrameEncode* frame = nullptr; IPropertyBag2* properties = nullptr; IWICPalette* wp = nullptr;
+	if (SUCCEEDED(hr)) hr = factory->CreateStream(&stream);
+	if (SUCCEEDED(hr)) hr = stream->InitializeFromFilename(tempPath.c_str(), GENERIC_WRITE);
+	if (SUCCEEDED(hr)) hr = factory->CreateEncoder(GUID_ContainerFormatPng, nullptr, &encoder);
+	if (SUCCEEDED(hr)) hr = encoder->Initialize(stream, WICBitmapEncoderNoCache);
+	if (SUCCEEDED(hr)) hr = encoder->CreateNewFrame(&frame, &properties);
+	if (SUCCEEDED(hr)) hr = frame->Initialize(properties);
+	if (SUCCEEDED(hr)) hr = frame->SetSize((UINT)width, (UINT)height);
+	WICPixelFormatGUID format = GUID_WICPixelFormat8bppIndexed;
+	if (SUCCEEDED(hr)) hr = frame->SetPixelFormat(&format);
+	if (SUCCEEDED(hr) && !IsEqualGUID(format, GUID_WICPixelFormat8bppIndexed)) hr = E_FAIL;
+	WICColor cols[256];
+	for (int i = 0; i < 256; i++) { const uint32_t c = pal[i]; cols[i] = (c & 0xFF00FF00u) | ((c & 0xFF) << 16) | ((c >> 16) & 0xFF); }
+	if (SUCCEEDED(hr)) hr = factory->CreatePalette(&wp);
+	if (SUCCEEDED(hr)) hr = wp->InitializeCustom(cols, 256);
+	if (SUCCEEDED(hr)) hr = frame->SetPalette(wp);
+	if (SUCCEEDED(hr)) hr = frame->WritePixels((UINT)height, (UINT)width, (UINT)((size_t)width * height), const_cast<uint8_t*>(indices));
+	if (SUCCEEDED(hr)) hr = frame->Commit();
+	if (SUCCEEDED(hr)) hr = encoder->Commit();
+	ReleaseCom(wp); ReleaseCom(properties); ReleaseCom(frame); ReleaseCom(encoder); ReleaseCom(stream);
+	if (FAILED(hr)) { DeleteFileW(tempPath.c_str()); char buf[64]; snprintf(buf, sizeof(buf), " (HRESULT 0x%08lX)", (unsigned long)hr); error = "Windows Imaging Component could not write " + utf8Path + buf; return false; }
+	if (!MoveFileExW(tempPath.c_str(), finalPath.c_str(), MOVEFILE_REPLACE_EXISTING)) { DeleteFileW(tempPath.c_str()); error = "Could not write " + utf8Path; return false; }
+	return true;
+}
+
 bool WritePngRgba(const std::string& utf8Path, const uint8_t* rgba, int width, int height, std::string& error)
 {
 	if (!rgba || width <= 0 || height <= 0) { error = "The image is empty."; return false; }

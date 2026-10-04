@@ -203,6 +203,7 @@ void MainFrame::ProcessStartupArgs()
 		else if (t == "bgm") m_showBgm = true;
 		else if (t == "compare") m_showCompare = true;
 		else if (t == "patterns") m_patMgr.open = true;
+		else if (t == "cgm") m_cgm.open = true;
 		else if (t == "notes") m_showNotes = true;
 		else if (t == "vars") m_varRefs.open = true;
 		else if (t == "keys") m_showKeyBindings = true;
