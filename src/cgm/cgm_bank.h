@@ -26,7 +26,7 @@ using Blob = std::shared_ptr<const std::vector<uint8_t>>;
 struct Image {
 	bool present = false;
 	char name[32] = {};
-	int32_t type = 0, w = 0, h = 0, bpp = 0;   // storage type (0 8-bit, 1 BGRA, 2 pal+idx, 3 colour+alpha, 4 pal+idx+alpha, -1 undrawable)
+	int32_t type = 0, w = 0, h = 0, bpp = 0;   // storage type (0 8-bit, 1 BGRA, 2 pal+idx, 3 colour+alpha, 4 pal+idx+alpha, 5 idx+alpha on the bank palette (engine-supported, no shipped bank), -1 undrawable)
 	int32_t x1 = 0, y1 = 0, x2 = 0, y2 = 0;    // canvas bounds, inclusive
 	std::vector<Block> blocks;
 	Blob blob;                                  // data after the 72-byte header (shared between snapshots)

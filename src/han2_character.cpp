@@ -196,7 +196,7 @@ bool SyncPartsToContainer(CharacterInstance &ch, bool *partsChanged, std::string
 		ch.cg.foreign()->clearDirty();
 	}
 	if (cont->parts.empty() || !ch.parts.loaded) {
-		if (!cont->cg.empty() && ch.cg.m_loaded && ch.cg.bank_size() == cont->cg.size() && memcmp(ch.cg.bank_data(), cont->cg.data(), cont->cg.size()) != 0) { memcpy(cont->cg.data(), ch.cg.bank_data(), cont->cg.size()); cont->cgDirty = true; }
+		if (!cont->cg.empty() && ch.cg.m_loaded && !ch.cg.foreign() && (ch.cg.bank_size() != cont->cg.size() || memcmp(ch.cg.bank_data(), cont->cg.data(), cont->cg.size()) != 0)) { cont->cg.assign((const uint8_t *)ch.cg.bank_data(), (const uint8_t *)ch.cg.bank_data() + ch.cg.bank_size()); cont->cgDirty = true; }   // the CG manager may add / remove images: the area is rewritten at its new size
 		return true;
 	}
 	std::vector<uint8_t> out;
@@ -207,8 +207,8 @@ bool SyncPartsToContainer(CharacterInstance &ch, bool *partsChanged, std::string
 		cont->parts.swap(out);
 	}
 	// CG edits (sprite import) change pixel bytes in place; the bank size never changes
-	if (!cont->cg.empty() && ch.cg.m_loaded && ch.cg.bank_size() == cont->cg.size() && memcmp(ch.cg.bank_data(), cont->cg.data(), cont->cg.size()) != 0)
-	{ memcpy(cont->cg.data(), ch.cg.bank_data(), cont->cg.size()); cont->cgDirty = true; }
+	if (!cont->cg.empty() && ch.cg.m_loaded && !ch.cg.foreign() && (ch.cg.bank_size() != cont->cg.size() || memcmp(ch.cg.bank_data(), cont->cg.data(), cont->cg.size()) != 0))
+	{ cont->cg.assign((const uint8_t *)ch.cg.bank_data(), (const uint8_t *)ch.cg.bank_data() + ch.cg.bank_size()); cont->cgDirty = true; }
 	return true;
 }
 

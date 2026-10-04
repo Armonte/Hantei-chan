@@ -1,5 +1,7 @@
 #include "han2_browser.h"
 #include "character_instance.h"
+#include "framedata_ha4.h"
+#include <cstring>
 #include "ini.h"
 #include "misc.h"
 #include "ha4_character.h"
@@ -276,6 +278,16 @@ bool CharacterInstance::loadPAT(const std::string& patPath)
 	return true;
 }
 
+// MBAC .DAT: the CG blob is embedded; sprite edits made in the CG manager (any size: the container recomputes its offsets on save) go back into it.
+static void SyncHa4Cg(CharacterInstance& ch)
+{
+	if (!ch.frameData.isHA4() || !ch.cg.m_loaded || ch.cg.foreign()) return;
+	auto& blob = ch.frameData.m_ha4->cg;
+	if (blob.empty()) return;
+	if (blob.size() != ch.cg.bank_size() || memcmp(blob.data(), ch.cg.bank_data(), blob.size()) != 0)
+		blob.assign((const uint8_t*)ch.cg.bank_data(), (const uint8_t*)ch.cg.bank_data() + ch.cg.bank_size());
+}
+
 bool CharacterInstance::save()
 {
 	if (m_topHA6Path.empty()) {
@@ -285,6 +297,7 @@ bool CharacterInstance::save()
 	// Commit any pending edit first: a stacked character's save filters on
 	// Sequence::modified, which the undo commit keeps current.
 	undoManager.flush();
+	SyncHa4Cg(*this);
 	if (frameData.isHan2()) {
 		std::string perr;
 		if (!han2::SyncPartsToContainer(*this, nullptr, &perr)) return false;
@@ -303,6 +316,7 @@ bool CharacterInstance::save()
 bool CharacterInstance::saveAs(const std::string& ha6Path)
 {
 	undoManager.flush();
+	SyncHa4Cg(*this);
 	if (frameData.isHan2()) {
 		std::string perr;
 		if (!han2::SyncPartsToContainer(*this, nullptr, &perr)) return false;

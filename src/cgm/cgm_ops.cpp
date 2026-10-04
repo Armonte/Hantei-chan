@@ -55,8 +55,9 @@ bool ReplaceImage(Bank &bank, int n, const uint8_t *rgba, int w, int h, std::str
 	if (!im.drawable()) return fail("image " + std::to_string(n) + " has no pixels (type " + std::to_string(im.type) + ")");
 	if (w != im.boundsW() || h != im.boundsH()) return fail("size mismatch: image " + std::to_string(n) + " is " + std::to_string(im.boundsW()) + " x " + std::to_string(im.boundsH()) + ", the new image is " + std::to_string(w) + " x " + std::to_string(h));
 	const int ty = im.type;
+	if (ty == 5) return fail("storage type 5 (index + alpha planes on the bank palette) is read-only here: it is shown and kept byte-exact, not authored");
 	if (ty < 0 || ty > 4) return fail("storage type " + std::to_string(ty) + " cannot be imported");
-	if ((ty == 0 && im.bpp != 8 && im.bpp != 32) || (ty != 0 && im.bpp != 32)) return fail("unsupported bit depth");
+	if (((ty == 0 || ty == 5) && im.bpp != 8 && im.bpp != 32) || (ty != 0 && ty != 5 && im.bpp != 32)) return fail("unsupported bit depth");
 	if (ty == 0 && indices && (int)indices->size() != w * h) return fail("index plane has the wrong size");
 	ReplaceReport local; ReplaceReport &R = rep ? *rep : local; R = ReplaceReport();
 	auto atlas = bank.buildAtlas();
@@ -65,17 +66,17 @@ bool ReplaceImage(Bank &bank, int n, const uint8_t *rgba, int w, int h, std::str
 	// current state (indices, palette) of this image
 	std::vector<uint8_t> curIdx, curAlpha; uint32_t curPal[256] = {};
 	Rgba curRgba; bank.decode(n, curRgba);
-	if (ty == 0 || ty == 2 || ty == 4) bank.decodeIndexed(n, curIdx, curPal, &curAlpha);
+	if (ty == 0 || ty == 2 || ty == 4 || ty == 5) bank.decodeIndexed(n, curIdx, curPal, &curAlpha);
 
 	std::vector<uint8_t> newBlob(*im.blob);
 	std::vector<uint8_t> idx((size_t)w * h, 0);
 	uint32_t newPal[256]; memcpy(newPal, curPal, sizeof(newPal));
-	if (ty == 0) {
+	if (ty == 0 || ty == 5) {
 		bank.palette(0, newPal);
 		for (int i = 0; i < w * h; i++) {
 			const uint8_t *s = &rgba[i * 4];
 			if (indices) { idx[i] = (*indices)[i]; continue; }
-			if (s[3] < 128) { idx[i] = 0; continue; }
+			if (ty == 5 ? s[3] == 0 : s[3] < 128) { idx[i] = (ty == 5 && !curIdx.empty()) ? curIdx[i] : 0; continue; }   // type 5 keeps alpha in its own plane: the index of a hidden pixel is left alone
 			if (!curIdx.empty() && curIdx[i] && curRgba.px[i * 4 + 3] && memcmp(&curRgba.px[i * 4], s, 3) == 0) { idx[i] = curIdx[i]; continue; }   // unchanged: keep its stored index
 			int best = 1, bd = 1 << 30;
 			for (int k = 1; k < 256; k++) {
@@ -154,7 +155,7 @@ bool ReplaceImage(Bank &bank, int n, const uint8_t *rgba, int w, int h, std::str
 			} else {
 				const uint8_t v = inside ? idx[pix] : (*im.blob)[o];
 				if (newBlob[o] != v) { newBlob[o] = v; R.changedPixels++; }
-				if (ty == 4) {
+				if (ty == 4 || ty == 5) {
 					const size_t ao = o + (size_t)b.w * b.h; if (ao < newBlob.size()) {
 						const uint8_t a = inside ? rgba[pix * 4 + 3] : (*im.blob)[ao];
 						if (newBlob[ao] != a) { newBlob[ao] = a; R.changedPixels++; }
