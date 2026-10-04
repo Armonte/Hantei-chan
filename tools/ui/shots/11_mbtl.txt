@@ -1,0 +1,19 @@
+# MBTL: Steam install -> table read from MBTL.exe -> characters (data/chrNNN/chrNNN.ha6) with thumbnails; one previewed, then opened in the editor
+browse C:\Program Files (x86)\Steam\steamapps\common\MELTY BLOOD TYPE LUMINA
+waitidle
+filter /chr0
+grid on
+waitidle
+wait 120
+waitidle
+select data/chr000/chr000.ha6
+waitidle
+wait 60
+capture C:/dev/hantei-chan/work/ab/shots/11_mbtl_browser.png
+open
+wait 200
+pattern 0
+zoomview 0.5
+wait 120
+capture C:/dev/hantei-chan/work/ab/shots/12_mbtl_character_view.png
+quit

@@ -159,6 +159,7 @@ static void RunUiScript(MainFrame &mf, HDC dc, const std::function<void(const st
 		if (cmd == "openany") { openAny(arg); continue; }
 		if (cmd == "pattern") { setView(0, atoi(arg.c_str())); continue; }
 		if (cmd == "savechar") { const bool ok = saveActive(); FILE *lf = fopen((gStartup.uiScript + ".log").c_str(), "a"); if (lf) { fprintf(lf, "savechar -> %s\n", ok ? "ok" : "FAILED"); fclose(lf); } waitFrames = 20; return; }
+		if (cmd == "zoomview") { setView(2, (int)(atof(arg.c_str()) * 100.0 + 0.5)); continue; }
 		if (cmd == "viewframe") { setView(1, atoi(arg.c_str())); continue; }
 		if (cmd == "capture") {
 			RECT r; GetClientRect(WindowFromDC(dc), &r);
@@ -186,7 +187,7 @@ void MainFrame::ProcessStartupArgs()
 	int n = ++gStartup.frameCounter;
 	if (!gStartup.uiScript.empty() && n > 3)
 		RunUiScript(*this, context->dc, [this](const std::string &p) { openAnyFile(p); },
-			[this](int what, int v) { if (auto *vw = getActiveView()) { if (what == 0) vw->getState().pattern = v; else vw->getState().frame = v; } },
+			[this](int what, int v) { if (auto *vw = getActiveView()) { if (what == 0) vw->getState().pattern = v; else if (what == 2) vw->setZoom(v / 100.f); else vw->getState().frame = v; } },
 			[this]() { return getActiveCharacter() ? saveCharacter(getActiveCharacter()) : false; });
 	// [tag-panel] after --open (frame 2), so the pickers see the loaded character; works without --open too
 	// [authoring] --tool authoring (and --tool tag without --tag-ini: the old panel's entry now opens Authoring > Tuning)

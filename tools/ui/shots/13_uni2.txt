@@ -1,0 +1,19 @@
+# UNI2: Steam install -> d\ index files -> characters (data/chrNNN/chrNNN.ha6) with thumbnails; one opened in the editor
+browse C:\Program Files (x86)\Steam\steamapps\common\UNDER NIGHT IN-BIRTH II Sys Celes
+waitidle
+filter /chr0
+grid on
+waitidle
+wait 120
+waitidle
+select data/chr000/chr000.ha6
+waitidle
+wait 60
+capture C:/dev/hantei-chan/work/ab/shots/13_uni2_browser.png
+open
+wait 200
+pattern 0
+zoomview 0.5
+wait 120
+capture C:/dev/hantei-chan/work/ab/shots/14_uni2_character_view.png
+quit

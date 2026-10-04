@@ -1,0 +1,17 @@
+# DFCI: loose data\<Name>_0\ folders -> characters with thumbnails; one opened in the editor
+browse C:\games\unib
+waitidle
+grid on
+wait 120
+waitidle
+select Aka_0/Aka.HA6
+waitidle
+wait 60
+capture C:/dev/hantei-chan/work/ab/shots/15_dfci_browser.png
+open
+wait 200
+pattern 0
+zoomview 0.5
+wait 120
+capture C:/dev/hantei-chan/work/ab/shots/16_dfci_character_view.png
+quit
