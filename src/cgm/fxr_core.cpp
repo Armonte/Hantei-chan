@@ -58,10 +58,8 @@ void ClassifyEffects(const Bank &bank, const UsageIndex &usage, FrameData &fd, F
 }
 
 void ToRuntimePalette(const uint32_t *p, uint32_t out[256]) {
-	for (int i = 0; i < 256; i++) {
-		const uint32_t c = p ? p[i] : 0;
-		out[i] = (c & 0xFF00FF00u) | ((c & 0xFF) << 16) | ((c >> 16) & 0xFF);
-	}
+	// The runtime now reads the palette as the engine keeps it (ABGR dwords = memory R,G,B,A), the same as Hantei-chan: a plain copy.
+	for (int i = 0; i < 256; i++) out[i] = p ? p[i] : 0;
 }
 
 fx::Rgb AccentFor(const fx::Rule &r, const uint32_t *slotPalMem, int slot) {

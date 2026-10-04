@@ -145,9 +145,11 @@ inline Rgb applyCpu(const Packed& p, Rgb src) {
 }
 
 // ---- accent: the owner slot's body colour, AUTO from the character palette --------------------------------------
-// pal = 256 dwords 0xAARRGGBB (the layout the game keeps at CG+0x10). With explicit indices the first valid one wins; with none the most
+// pal = 256 dwords 0xAABBGGRR (memory R,G,B,A: the layout the game keeps at CG+0x10). With explicit indices the first valid one wins; with none the most
 // vivid entry (saturation x value, ignoring near-grey and near-black) is taken. Deterministic, pure.
-inline Rgb dwordRgb(uint32_t d) { return { ((d >> 16) & 255) / 255.0f, ((d >> 8) & 255) / 255.0f, (d & 255) / 255.0f }; }
+// The engine keeps the palette as memory bytes R,G,B,A, i.e. the little-endian dword is 0xAABBGGRR (verified in game: Akiha slot 0 entry 1
+// reads 01D0E0F8 = skin f8e0d0).
+inline Rgb dwordRgb(uint32_t d) { return { (d & 255) / 255.0f, ((d >> 8) & 255) / 255.0f, ((d >> 16) & 255) / 255.0f }; }
 inline Rgb autoAccent(const uint32_t* pal, const std::vector<int>& idx, bool* found = nullptr) {
     if (found) *found = false;
     if (!pal) return { 0.8f, 0.2f, 0.2f };
@@ -159,6 +161,8 @@ inline Rgb autoAccent(const uint32_t* pal, const std::vector<int>& idx, bool* fo
         const Rgb c = dwordRgb(pal[i]);
         float h, s, v; rgb2hsv(c, h, s, v);
         if (v < 0.35f || s < 0.35f) continue;
+        if (c.g > 0.98f && c.r < 0.02f && c.b < 0.02f) continue;   // pure #00ff00: the marker colour of UNUSED entries (Akiha's are all green)
+        if (c.r > 0.98f && c.g < 0.02f && c.b > 0.98f) continue;   // pure magenta: same convention
         const float sc = s * v;
         if (sc > best + 1e-6f) { best = sc; bc = c; if (found) *found = true; }
     }
