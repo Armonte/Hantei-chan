@@ -159,7 +159,7 @@ std::vector<int> Bank::owners(int n, const std::unordered_map<uint32_t, int> &at
 	std::vector<int> r; const int cu = cellUnit();
 	for (const Block &b : images[n].blocks) if (b.copy)
 		for (int cy = b.sy / cu; cy < (b.sy + b.h) / cu; cy++) for (int cx = b.sx / cu; cx < (b.sx + b.w) / cu; cx++) {
-			auto it = atlas.find(cellKey(b.page, cx, cy)); if (it != atlas.end() && std::find(r.begin(), r.end(), it->second) == r.end()) r.push_back(it->second);
+			auto it = atlas.find(cellKey(b.page, cx, cy)); if (it != atlas.end() && it->second != n && std::find(r.begin(), r.end(), it->second) == r.end()) r.push_back(it->second);
 		}
 	return r;
 }
