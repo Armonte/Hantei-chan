@@ -35,6 +35,7 @@ static const char *TypeName(int t) {
 	case 2: return TXT("2: own palette, binary alpha");
 	case 3: return TXT("3: one colour + alpha plane");
 	case 4: return TXT("4: own palette + alpha plane");
+	case 5: return TXT("5: bank palette + alpha plane");
 	case -1: return TXT("-1: no pixels (not drawn)");
 	}
 	return TXT("unknown");
@@ -416,7 +417,7 @@ void Window::drawStructure(CharacterInstance &ch, const WindowHost &host) {
 
 void Window::draw(CharacterInstance *ch, const WindowHost &host) {
 	if (!open) return;
-	ImGui::SetNextWindowSize(ImVec2(1000, 640), ImGuiCond_FirstUseEver);
+	ImGui::SetNextWindowSize(ImVec2(1200, 820), ImGuiCond_FirstUseEver);
 	if (!ImGui::Begin(LBL("CG manager"), &open)) { ImGui::End(); return; }
 	if (!ch || !ch->cg.m_loaded) { ImGui::TextDisabled("%s", TXT("The active character has no CG bank.")); ImGui::End(); return; }
 	if (owner != ch || cgGen != ch->cg.generation()) rebuild(*ch);
@@ -471,6 +472,19 @@ void Window::draw(CharacterInstance *ch, const WindowHost &host) {
 			}
 		}
 		ImGui::EndDisabled();
+		if (!ch->getCGPath().empty()) {
+			ImGui::SameLine();
+			if (ImGui::Button(LBL("Save to the character's .cg"))) {
+				const std::filesystem::path target(Utf8ToWide(AnsiToUtf8(ch->getCGPath())));
+				std::error_code ec; std::vector<uint8_t> bytes; bank->serialize(bytes);
+				std::filesystem::path bak = target; bak += L".bak";
+				if (!std::filesystem::exists(bak, ec)) std::filesystem::copy_file(target, bak, ec);   // the first save keeps the original beside it
+				std::filesystem::path tmp = target; tmp += L".tmp";
+				{ std::ofstream f(tmp, std::ios::binary); f.write((const char *)bytes.data(), (std::streamsize)bytes.size()); }
+				std::filesystem::rename(tmp, target, ec);
+				status = ec ? std::string(TXT("Could not write the file.")) : Fmt(TXT("Saved %s (the original is kept as .bak)"), ch->getCGPath().c_str());
+			}
+		}
 		ImGui::SameLine();
 		if (ImGui::Button(LBL("Save bank as..."))) {
 			char nm[128]; snprintf(nm, sizeof(nm), "%s", "bank.cg");
@@ -525,9 +539,9 @@ void Window::draw(CharacterInstance *ch, const WindowHost &host) {
 	ImGui::SameLine(); ImGui::Checkbox(LBL("Unused"), &onlyUnused); if (onlyUnused) onlyUsed = false;
 	ImGui::SameLine(); ImGui::Checkbox(LBL("Used"), &onlyUsed); if (onlyUsed) onlyUnused = false;
 	ImGui::SameLine(); ImGui::Checkbox(LBL("Shares cells"), &onlyShared);
-	static const char *kTypes[] = {"Any type", "Type 0", "Type 1", "Type 2", "Type 3", "Type 4", "Type -1"};
-	int tsel = typeFilter == -2 ? 0 : typeFilter == -1 ? 6 : typeFilter + 1;
-	ImGui::SetNextItemWidth(100); if (i18n::Combo("##cgmtype", &tsel, kTypes, 7)) typeFilter = tsel == 0 ? -2 : tsel == 6 ? -1 : tsel - 1;
+	static const char *kTypes[] = {"Any type", "Type 0", "Type 1", "Type 2", "Type 3", "Type 4", "Type 5", "Type -1"};
+	int tsel = typeFilter == -2 ? 0 : typeFilter == -1 ? 7 : typeFilter + 1;
+	ImGui::SetNextItemWidth(100); if (i18n::Combo("##cgmtype", &tsel, kTypes, 8)) typeFilter = tsel == 0 ? -2 : tsel == 7 ? -1 : tsel - 1;
 	ImGui::SameLine(); ImGui::SetNextItemWidth(70); ImGui::InputInt(LBL("Min side"), &minSize, 0, 0);
 	ImGui::SameLine(); ImGui::SetNextItemWidth(70); ImGui::InputInt(LBL("Max side"), &maxSize, 0, 0);
 	ImGui::SetNextItemWidth(70); ImGui::InputInt(LBL("Used by pattern"), &usedByPattern, 0, 0);
@@ -639,7 +653,7 @@ void Window::draw(CharacterInstance *ch, const WindowHost &host) {
 			std::vector<uint8_t> px; int w = 0, h = 0;
 			if (ok && fetch(*ch, selected, previewPal, previewPups, px, w, h)) upload(preview, px, w, h, 0, false); else { preview.w = preview.h = 0; }
 		}
-		if (bank && !ch->frameData.isHan2() && !ch->frameData.isHA4()) drawStructure(*ch, host);
+		if (bank) drawStructure(*ch, host);
 		ImGui::SeparatorText(TXT("Used by"));
 		if (selected < (int)usage.byImage.size() && !usage.byImage[selected].empty()) {
 			ImGui::BeginChild("##cgmuse", ImVec2(0, 110), ImGuiChildFlags_Borders);
