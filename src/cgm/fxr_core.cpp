@@ -89,7 +89,7 @@ std::vector<AccentCandidate> SuggestAccentIndices(const std::vector<uint32_t> &h
 			if (!p) continue;
 			const uint32_t c = p[i];
 			const float ch[3] = { (c & 255) / 255.f, ((c >> 8) & 255) / 255.f, ((c >> 16) & 255) / 255.f };
-			float h, s, v; fx::rgb2hsv({ ch[0], ch[1], ch[2] }, h, s, v);
+			const fx::Hsv hv = fx::srgbToOkhsv({ ch[0], ch[1], ch[2] }); const float s = (float)hv.s, v = (float)hv.v;
 			vivid += (v < 0.35f || s < 0.35f) ? 0.f : s * v; n++;
 			for (int k = 0; k < 3; k++) { mean[k] += ch[k]; sq[k] += ch[k] * ch[k]; }
 		}
@@ -134,7 +134,6 @@ bool RecolorImage(const Bank &bank, int image, const fx::Rule *rule, int slot, c
 	if (!rule || type == 0) return true;
 	uint32_t rpal[256]; ToRuntimePalette(slotPalMem, rpal);
 	fx::Packed p; fx::pack(*rule, slot, slotPalMem ? rpal : nullptr, p);
-	if (rule->kind != fx::Kind::Hsv) {}
 	for (size_t i = 0; i + 3 < out.px.size(); i += 4) {
 		if (!out.px[i + 3]) continue;
 		const fx::Rgb c = fx::applyCpu(p, { out.px[i] / 255.0f, out.px[i + 1] / 255.0f, out.px[i + 2] / 255.0f });

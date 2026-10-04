@@ -63,7 +63,7 @@ int FindRuleIndex(const fx::CharRules &c, const std::string &id);
 std::string UniqueRuleId(const fx::CharRules &c, const std::string &base);
 // Moves `patterns` into rule `ruleIdx`: removed from the explicit pattern lists of every other rule, added to this one.
 void AssignPatterns(fx::CharRules &c, int ruleIdx, const std::vector<int> &patterns);
-fx::Rule DefaultRule(const std::string &id);   // lumramp by max, black accent.dark accent accent.light white
+fx::Rule DefaultRule(const std::string &id);   // lumramp by Oklab lightness (the runtime default), black accent.dark accent accent.light white
 
 // Rule-set <-> text through the runtime's own parser/writer. load returns the number of rules kept; `err` collects parser messages.
 int LoadRules(const std::string &text, fx::CharRules &out, std::string &err);

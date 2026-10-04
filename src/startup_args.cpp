@@ -134,6 +134,7 @@ static bool han2StartupSniffPat(const std::string &path)
 void MainFrame::ProcessStartupArgs()
 {
 	int n = ++gStartup.frameCounter;
+	if (n == 3 && !gStartup.cg.empty()) { if (auto *c = getActiveCharacter()) c->loadCG(gStartup.cg); }
 	// [tag-panel] after --open (frame 2), so the pickers see the loaded character; works without --open too
 	// [authoring] --tool authoring (and --tool tag without --tag-ini: the old panel's entry now opens Authoring > Tuning)
 	const bool authoringTool = gStartup.tool == "authoring" || (gStartup.tool == "tag" && gStartup.tagIni.empty());
