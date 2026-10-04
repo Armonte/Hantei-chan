@@ -127,3 +127,5 @@
 {"Clear image %d", "画像 %d を空にする"},
 {"Delete %d unused images", "未使用の画像 %d 枚を削除"},
 {"Done. Frame references were updated.", "完了しました。フレーム参照を更新しました。"},
+{"Imported %zu changed image(s); %d unchanged. This format has no undo here: save the bank to keep it.", "変更された %zu 枚を読み込みました(%d 枚は変更なし)。この形式ではここでの元に戻すはありません。保存してください。"},
+{"This bank format: browse, batch export / import and image replace. Structural edits and palette editing are for BMP Cutter banks.", "この形式のバンク: 閲覧、一括書き出し/読み込み、画像の置換に対応。構造の編集とパレット編集はBMP Cutterバンク向けです。"},

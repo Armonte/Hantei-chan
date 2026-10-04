@@ -7,6 +7,7 @@
 #include "cgm_ops.h"
 #include "cgm_export.h"
 #include "cgm_struct.h"
+#include "cgm_io.h"
 #include "../character_instance.h"
 #include <filesystem>
 #include <fstream>
@@ -477,7 +478,44 @@ void Window::draw(CharacterInstance *ch, const WindowHost &host) {
 		}
 		if (!status.empty()) ImGui::TextWrapped("%s", status.c_str());
 		for (const std::string &w : warnings) ImGui::TextColored(ImVec4(1.f, 0.75f, 0.3f, 1.f), "%s", w.c_str());
-	} else ImGui::TextDisabled("%s", TXT("This bank format is browse-only for now."));
+	} else {
+		// every other bank format (strip / tile banks): batch export and import and single-image replace go through the CG object; no undo, no structural edits
+		CgIO io(ch->cg);
+		if (ImGui::Button(LBL("Export all..."))) {
+			const std::string d = BrowseForFolderUtf8("");
+			if (!d.empty()) { ExportResult er; ExportOptions eo; status = ExportBank(io, d, ch->getName(), eo, er) ? Fmt(TXT("Exported %d images (%d files) to %s"), er.images, er.files, d.c_str()) : er.error; warnings.clear(); }
+		}
+		ImGui::SameLine();
+		if (ImGui::Button(LBL("Import folder..."))) {
+			const std::string d = BrowseForFolderUtf8("");
+			if (!d.empty()) {
+				ImportResult ir; warnings.clear();
+				if (!ImportBank(io, d, ir)) status = ir.error;
+				else { warnings = ir.warnings; if (!ir.changed.empty() && host.markEdited) host.markEdited(ch); status = Fmt(TXT("Imported %zu changed image(s); %d unchanged. This format has no undo here: save the bank to keep it."), ir.changed.size(), ir.skipped); clearThumbs(); previewId = -1; filterKey = ~0ull; cgGen = ch->cg.generation(); }
+			}
+		}
+		ImGui::SameLine();
+		ImGui::BeginDisabled(selected < 0 || selected >= count);
+		if (ImGui::Button(LBL("Replace selected from PNG..."))) {
+			const std::string p = FileDialog(-1, false);
+			if (!p.empty()) {
+				std::vector<uint8_t> px; int w = 0, h = 0; std::string e; ReplaceReport rep;
+				if (!ReadImageRgba(p, px, w, h, e)) status = e;
+				else if (!io.replace(selected, px.data(), w, h, &e, &rep, nullptr)) status = e;
+				else { status = rep.changedPixels ? Fmt(TXT("Image %d replaced (%d pixels). Save the bank to keep it."), selected, rep.changedPixels) : std::string(TXT("The PNG renders exactly like the stored image: nothing changed.")); if (rep.changedPixels && host.markEdited) host.markEdited(ch); clearThumbs(); previewId = -1; cgGen = ch->cg.generation(); }
+			}
+		}
+		ImGui::EndDisabled();
+		ImGui::SameLine();
+		if (ImGui::Button(LBL("Save bank as...")) && ch->cg.foreign()) {
+			char nm[128]; snprintf(nm, sizeof(nm), "%s", "bank.bin");
+			const std::string p = FileDialog(-1, true, nm);
+			if (!p.empty()) { std::vector<uint8_t> bytes; ch->cg.foreign()->serialize(bytes); std::ofstream f(std::filesystem::u8path(p), std::ios::binary); f.write((const char *)bytes.data(), (std::streamsize)bytes.size()); status = f ? Fmt(TXT("Saved %s"), p.c_str()) : std::string(TXT("Could not write the file.")); }
+		}
+		ImGui::TextDisabled("%s", TXT("This bank format: browse, batch export / import and image replace. Structural edits and palette editing are for BMP Cutter banks."));
+		if (!status.empty()) ImGui::TextWrapped("%s", status.c_str());
+		for (const std::string &w : warnings) ImGui::TextColored(ImVec4(1.f, 0.75f, 0.3f, 1.f), "%s", w.c_str());
+	}
 
 	if (ImGui::BeginTabBar("##cgmtabs")) {
 	if (ImGui::BeginTabItem(LBL("Browser"))) {
