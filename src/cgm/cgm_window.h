@@ -5,6 +5,7 @@
 #include "cgm_usage.h"
 #include "cgm_undo.h"
 #include "cgm_palette.h"
+#include "fxr_panel.h"
 #include <functional>
 #include <memory>
 #include <string>
@@ -63,6 +64,7 @@ private:
 	void drawPalettes(CharacterInstance &ch, const WindowHost &host);
 	void pushPalette(CharacterInstance &ch, int bank);   // show pal.set[bank] in the CG object (live preview everywhere)
 	void commitPalette(CharacterInstance &ch, const std::string &label, int bank, PalSet before, const WindowHost &host);
+	FxPanel fxr;                    // "Effect recolor" tab (fxr_panel.cpp)
 	History hist;
 	std::string status;
 	std::vector<std::string> warnings;
