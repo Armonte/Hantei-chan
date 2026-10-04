@@ -26,7 +26,7 @@ include(imgui)
 add_subdirectory(glm)
 add_subdirectory(tinyalloc)
 
-set(HAN2_MODEL_SOURCES src/framedata_han2.cpp src/han2/han2_container.cpp src/han2/pac_archive.cpp src/han2/img_file.cpp src/han2/misc_formats.cpp src/han2_diff.cpp src/han2_anim.cpp src/framedata_gof1.cpp src/han2/gof1_archive.cpp)
+set(HAN2_MODEL_SOURCES src/framedata_han2.cpp src/han2/han2_container.cpp src/han2/pac_archive.cpp src/han2/img_file.cpp src/han2/misc_formats.cpp src/han2_diff.cpp src/han2_anim.cpp src/framedata_gof1.cpp src/han2/gof1_archive.cpp src/framedata_pb2k1.cpp src/framedata_qoh.cpp src/han2/qoh_dat.cpp)
 add_executable(${EXE}
 	src/main.cpp
 	src/main_frame.cpp
@@ -70,7 +70,9 @@ add_executable(${EXE}
 	src/han2/mbr_formats.cpp
 	src/han2/mb_formats.cpp
 	src/han2/mb_cg.cpp
-	src/framedata_pb2k1.cpp
+	src/han2/qoh_cg.cpp
+	src/han2/qoh_img.cpp
+	src/han2/rosa_img.cpp
 	src/startup_args.cpp
 	src/framestate.cpp
 	src/copy_data.cpp
@@ -619,7 +621,9 @@ add_executable(fbchartool
 	src/han2/mbr_formats.cpp
 	src/han2/mb_formats.cpp
 	src/han2/mb_cg.cpp
-	src/framedata_pb2k1.cpp
+	src/han2/qoh_cg.cpp
+	src/han2/qoh_img.cpp
+	src/han2/rosa_img.cpp
 	src/png_writer.cpp
 	src/ha4_parts.cpp
 	src/ha4_convert.cpp
@@ -640,10 +644,10 @@ add_executable(fbchartool
 	tinyalloc/tinyalloc.c
 )
 target_include_directories(fbchartool PRIVATE "." "src" "third_party" "${CMAKE_BINARY_DIR}/generated")
-target_compile_definitions(fbchartool PRIVATE WIN32_LEAN_AND_MEAN HA6GUIVERSION="${CMAKE_PROJECT_VERSION}" PAT_HEADLESS)
+target_compile_definitions(fbchartool PRIVATE UNICODE _UNICODE WIN32_LEAN_AND_MEAN HA6GUIVERSION="${CMAKE_PROJECT_VERSION}" PAT_HEADLESS)
 target_link_libraries(fbchartool PRIVATE tinyalloc glad glm OpenGL::GL windowscodecs ole32 uuid)
 if(MINGW)
-	target_link_options(fbchartool PRIVATE -static-libgcc -static-libstdc++ -static)
+	target_link_options(fbchartool PRIVATE -municode -static-libgcc -static-libstdc++ -static)
 endif()
 
 # Unit tests for editor infrastructure (no GL / ImGui). Run from WSL with

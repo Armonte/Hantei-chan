@@ -362,3 +362,25 @@ What was done, in order of confidence:
 * **Constants and tables**: 72 float / double literals named by value (`kFloat_0p5`), DirectX GUIDs named by identity (`IID_IDirectDraw7`, `IID_IGraphBuilder`, `GUID_SysKeyboard`, ...), 26 compiler switch index maps named `<Function>_SwitchCaseMap_<addr>`, the PE import hint/name table named `ImportHintName_<API>` / `ImportLookupEntry_<API>`, short string literals `kStr_*`.
 * **Mechanical names (1253 globals)**: every remaining referenced data item was renamed `g_<Subsystem>_<FirstReferencingFunction>_<Kind>_<ADDR>` (kind = Byte / Word / Dword / Float / Ptr / Bytes / Dwords) and typed as that scalar or byte array. These carry no meaning beyond the subsystem and one referencing function (the first function in name order, which is not always the main user); they exist so that nothing is auto-named and nothing is untyped. About 70 of them were then given real names (texture format selection config `g_Cfg_TextureFormat*`, `g_SysFxCurrentEffect`, `g_SysFxFadePercent`, `g_SysFxElapsedTicks`, `g_LastDDrawErrorText`, ...). The subsystems with most mechanical names: menus / story / title (380), video (283), MP3 decoder (189), CRT (176), input (98), sound (38), effects (78).
 * Not done: array extents / struct layouts for the MP3 decoder state, the sound buffer tables, the menu / story state, the D3D device enumeration records (`dword_5570E8[97*n]` style, 388-byte records), the render command ring (`Render_ExecuteCommandList` 20 KB), the CRT heap tables. They are typed as scalars or byte arrays under mechanical names.
+
+### 16.1 Semantic pass (second sweep, parked)
+
+State when the pass was stopped: of the 1253 mechanical placeholder globals, **902 remain** (351 renamed to real names and typed). Remaining by subsystem tag: Menu 348, Mp3 170, Crt 165, Other 72, Input 70, Video 46, Sound 14, Sys 10, Fx 7. Zero `sub_`/`dword_`/`byte_`/`word_`/`unk_`/`off_` names exist; the 902 are the `g_<Subsystem>_<Function>_<Kind>_<ADDR>` fallback names.
+
+Completed with real names and types:
+* Video/Direct3D: device enum list (`g_D3dDeviceEntries[5]` of `MbrD3dDeviceEntry`, `MbrD3dDeviceDesc7`), z-buffer formats, TL vertex buffer (`MbrTlVertex2[20000]`), index buffer, batch counters, render-command pointers per command type, display-mode and present/pacing state, DDBLTFX scratch blocks, clip rectangles, `MbrPixelChannelInfo` instances (2072 bytes each; 9 instances), FPS counters, clippers/palette.
+* Render queue: `g_RenderListHeads[1050]` (12-byte heads), primitive pools named after the PS1-style budget messages in `CheckPrimitiveBudgetOverflow`: `g_PolyGt4Pool[6000]` (164 B nodes), `g_PolyGt3Pool[1000]` (92 B), `g_LineGPool[3500]` (56 B), `g_SprXPool[500]` (64 B) with their counters.
+* Background: `g_BgInstances[2000]` of `MbrBgInstance` (44 bytes), BGMake section pointers (`g_pBgMakeLayerData`, `g_pBgMakeSectionB/C`), fade factor.
+* SysEffects scratch statics (`g_SysFx*`, `g_SysEffectSpawn*`).
+* DirectInput: keyboard/mouse/joystick device pointers. Functions renamed (they were misnamed): `InitJoystick1/AcquireJoystick1` = `DInput_InitKeyboardDevice/DInput_AcquireKeyboard`, `InitJoystick2/AcquireJoystick2` = mouse, `DirectSound_ReleaseAll` = `DInput_ReleaseAll`.
+* DirectShow state, DirectSound stream state, sound-effect slot table `g_pSeSlotBuffers[1624]`.
+* Shift-JIS message strings (`kStrJp_*`).
+
+Corrections: `g_CharacterSlotsEnd_Plus*` are loop-end sentinels (`&g_CharacterSlots[4]` + field offset), not variables. The one real object in that range is `g_PixelChannelInfoPageBlit` (7D0110, 2072 bytes, written by `Texture_BlitImageToPage`); the sentinel names inside it were removed.
+
+Resume points (not done):
+* Config/save block: `Config_SetDefaults` clears 0x63240 bytes starting at `g_Opt_CpuDifficulty` (0x9DE2C0); `Config_SaveToFiles` writes 0x4F50 bytes from there to cfg.cfg plus checksums and a 0x5E2F0 byte block at 0x9E3210, scrambled with the C `rand()` stream (seed stored after the checksums). The 0x2C-byte `g_video_fullscreen` block goes to app.cfg. Names for the roughly 70 `Input_*` and 150 `Menu_*` placeholders in 0x9DE2D1..0x9E3210 and 0xA4xxxx belong to this layout (button maps, win records, volumes, texture-format flags).
+* Replay setup block 0x8898C8..0x889969 (Replay_CaptureCurrentSetup/BeginRecording/ApplyLoadedSetup), practice replay list 0x9C8E08..0x9CA320, scene state of ContinueScene/WinScreen/VsDemo (0x689900..0x68CC88).
+* `Other`-tagged leftovers: MP3 tables (`window`, `imdct*`, `fdct*`, `hybrid` constants), `DataArchives_OpenAll` archive records (0x9DD6D4.. are `MbrPkArchive` x6), `CharaSelect` ct table 0x9DD0E0 (600 bytes = 100 `MbrCharEntry`-sized rows? unverified).
+* Mp3 (170) and Crt (165) placeholders: library internals, to be named by library role.
+* Loop-end sentinels still named by tag (e.g. 0x4991E0 done; `Sys_App_ShutdownReleaseAll_Byte_69F78C/69F8CC`, `Menu_CharSelectScene_Update_*_78FE48..`): name them `<array>End` once the array is typed.

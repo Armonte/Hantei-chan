@@ -9,6 +9,9 @@
 #include "han2/gof1_types_gen.h"
 #include "han2/mbr_types_gen.h"
 #include "han2/pb2k1_types_gen.h"
+#include "han2/qoh98_types_gen.h"
+#include "han2/qoh99_types_gen.h"
+#include "framedata_qoh.h"
 #include "framedata_pb2k1.h"
 
 #include "cg.h"
@@ -41,6 +44,8 @@ static const Han2EnumInfo *FindEnum(const char *name)
 	for (const auto &e : kGof1TypesEnums) if (!strcmp(e.name, name)) return &e;
 	for (const auto &e : kMbrTypesEnums) if (!strcmp(e.name, name)) return &e;
 	for (const auto &e : kPb2k1TypesEnums) if (!strcmp(e.name, name)) return &e;
+	for (const auto &e : kQoh98TypesEnums) if (!strcmp(e.name, name)) return &e;
+	for (const auto &e : kQoh99TypesEnums) if (!strcmp(e.name, name)) return &e;
 	return nullptr;
 }
 
@@ -172,7 +177,7 @@ void DrawInspector(CharacterInstance *ch, FrameState &state)
 
 	const Han2Container &c = *ch->frameData.m_han2;
 	ImGui::TextWrapped("%s", c.sourcePath.c_str());
-	ImGui::TextDisabled(TXT("%s, %s. parts %zu B, CG %zu B"), c.sub == 4 ? "Party Breakers" : c.sub == 3 ? "GOF1 / MB" : c.sub == 2 ? "GOF2" : "RBO", c.kind == 3 ? TXT(".DT2 (pattern area only)") : TXT(".DAT (full)"),
+	ImGui::TextDisabled(TXT("%s, %s. parts %zu B, CG %zu B"), c.sub == 5 ? (c.kind == 99 ? "Queen of Heart 99" : "Queen of Heart 98") : c.sub == 4 ? "Party Breakers" : c.sub == 3 ? "GOF1 / MB" : c.sub == 2 ? "GOF2" : "RBO", c.kind == 3 ? TXT(".DT2 (pattern area only)") : TXT(".DAT (full)"),
 	                    c.parts.size(), c.cg.size());
 	ImGui::PushTextWrapPos(0.0f); ImGui::TextDisabled("%s", TXT("Save As .DT2 writes the file the game prefers; .DAT writes the full character.")); ImGui::PopTextWrapPos();
 
@@ -218,6 +223,16 @@ void DrawInspector(CharacterInstance *ch, FrameState &state)
 				for (int k = 0; k < 3; k++) if (f.han2.gofIfMask >> k & 1) { char h[96]; snprintf(h, sizeof(h), TXT("IF slot %d (20 bytes)"), k); ImGui::SeparatorText(h); ch4 |= EditRecord(("p2if" + std::to_string(k)).c_str(), f.han2.gofIf[k], kPb2IfRecordFields, (int)(sizeof(kPb2IfRecordFields) / sizeof(kPb2IfRecordFields[0]))); }
 				for (int k = 0; k < 4; k++) if (f.han2.gofEfMask >> k & 1) { char h[96]; snprintf(h, sizeof(h), TXT("EF slot %d (12 bytes)"), k); ImGui::SeparatorText(h); ch4 |= EditRecord(("p2ef" + std::to_string(k)).c_str(), f.han2.gofEf[k], kPb2EfRecordFields, (int)(sizeof(kPb2EfRecordFields) / sizeof(kPb2EfRecordFields[0]))); }
 				if (ch4) { pb2k1::RedecodeFrame(f); changed = true; }
+			} else if (c.sub == 5) {   // Queen of Heart '98 / '99: the frame (sprite) record and the attack records; boxes are edited in the box pane
+				const bool v99 = c.kind == 99;
+				bool ch5 = v99 ? EditRecord("qf", f.han2.rec, kQohFrameFields, (int)(sizeof(kQohFrameFields) / sizeof(kQohFrameFields[0])))
+				               : EditRecord("qf", f.han2.rec, kQoh98SpriteFields, (int)(sizeof(kQoh98SpriteFields) / sizeof(kQoh98SpriteFields[0])));
+				for (int j = 0; j < 8; j++) if (f.han2.boxMask >> (16 + j) & 1) {
+					char h[96]; snprintf(h, sizeof(h), TXT("Attack record %d (24 bytes)"), j); ImGui::SeparatorText(h);
+					ch5 |= v99 ? EditRecord(("qa" + std::to_string(j)).c_str(), f.han2.rec + 168 + 24 * j, kQohAttackFields, (int)(sizeof(kQohAttackFields) / sizeof(kQohAttackFields[0])))
+					           : EditRecord(("qa" + std::to_string(j)).c_str(), f.han2.rec + 168 + 24 * j, kQoh98HitBoxFields, (int)(sizeof(kQoh98HitBoxFields) / sizeof(kQoh98HitBoxFields[0])));
+				}
+				if (ch5) { qoh::RedecodeFrame(f, (int)c.kind); changed = true; }
 			} else if (c.sub == 2) {
 				if (EditRecord("gframe", f.han2.rec, kGof2FrameRecordFields, (int)(sizeof(kGof2FrameRecordFields) / sizeof(kGof2FrameRecordFields[0])))) {
 					han2::RedecodeFrame(f);

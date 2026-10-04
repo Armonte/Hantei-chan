@@ -37,6 +37,9 @@ bool LoadGof1CharacterFile(CharacterInstance &ch, const std::string &path, std::
 // Party Breakers (2001) character .DAT (three-section cipher), loose or an archive entry extracted by the browser. Saving re-enciphers (or replaces the entry in a new archive).
 bool LoadPb2k1CharacterFile(CharacterInstance &ch, const std::string &path, std::string *err);
 
+// Queen of Heart '98 (.dat, plain) / '99 (.chr, enciphered with the file-name stem) character. Saving re-enciphers with the stem of the target name.
+bool LoadQohCharacterFile(CharacterInstance &ch, const std::string &path, int version, std::string *err);
+
 // Rebuild the container's PAT block from the character's (possibly edited) Parts model before a save.
 // Returns false with *err on failure; *partsChanged tells whether the block differs from the one loaded.
 bool SyncPartsToContainer(CharacterInstance &ch, bool *partsChanged, std::string *err);

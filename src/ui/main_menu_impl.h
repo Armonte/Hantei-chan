@@ -98,6 +98,23 @@ void MainFrame::openAnyFile(const std::string& path)
 			return;
 		}
 	}
+	{   // Queen of Heart characters: '99 .chr (name-keyed cipher, recognised by decrypting the name block) and '98 .dat (exact size accounting, no magic)
+		std::error_code fec; const uintmax_t fsz = fs::file_size(fs::u8path(path), fec);
+		int qv = 0;
+		if (!fec && ext == ".chr") { std::vector<uint8_t> t(head); if (head.size() >= 16) { const std::string stem = han2::qoh::StemOfPath(path); bool nameOk = !stem.empty(); static const uint8_t prim[17] = { 0x92,0x4f,0x89,0xba,0x8d,0xf7,0x20,0x90,0xbc,0x91,0xba,0x82,0xbf,0x82,0xc8,0x82,0xdd }; for (int i = 0; i < 16 && nameOk; i++) nameOk = (uint8_t)(head[i] ^ prim[i % 17]) == (uint8_t)stem[i % stem.size()]; if (nameOk) qv = han2::qoh::V99; } }
+		else if (!fec && ext == ".dat" && fsz > 28 + 1024 && fsz < (200u << 20)) { std::ifstream qf(fs::u8path(path), std::ios::binary); std::vector<uint8_t> all((std::istreambuf_iterator<char>(qf)), std::istreambuf_iterator<char>()); if (han2::qoh::LooksLike98(all.data(), all.size())) qv = han2::qoh::V98; }
+		if (qv) {
+			if (findCharacterByPath(path)) { fail(TXT("Already open:")); return; }
+			auto character = std::make_unique<CharacterInstance>();
+			std::string err;
+			if (!character->loadQohFile(path, qv, err)) { fail(err); return; }
+			characters.push_back(std::move(character));
+			createViewForCharacter(characters.back().get());
+			markProjectModified();
+			addRecentFile(path);
+			return;
+		}
+	}
 	if (han2::IsHan2(head.data(), head.size()) || pac::LooksLikePac(head.data(), head.size()) ||
 	    starts("BMP Cutter", 10) ||
 	    fbarc::Detect(head.data(), head.size(), ext) == fbarc::Kind::PkFileInfo || fbarc::Detect(head.data(), head.size(), ext) == fbarc::Kind::MbFilePacA ||

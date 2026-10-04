@@ -130,10 +130,10 @@ Magic = the first 4 plain bytes after the archive cipher; several magics per ext
 | ReAct | .TXT | 8 | 7,658 | byte-exact round trip | fbchartool: Shift-JIS text (magic 0d0a0d0a 2f2f2083 31303820 ...) |
 | ReAct | .WAV | 2881 | 217,399,246 | byte-exact round trip | fbchartool: RIFF chunks (magic 52494646) |
 | ReAct | .WMT | 24 | 90,224 | byte-exact round trip | fbchartool: win quotes typed (mbr.md) (magic 01000000 09000000 0a000000 ...) |
-| Rosa (2002/2005) | .FOB | 6 | 66,832 | none | M3 (magic 02000000 04000000 07000000) |
-| Rosa (2002/2005) | .IMG | 100 | 14,243,120 | none | M4 (magic 00000000) |
-| Rosa (2002/2005) | .MP3 | 3 | 3,046,500 | read | (magic fffb9204) |
-| Rosa (2002/2005) | .WAV | 9 | 116,792 | read | (magic 52494646) |
+| Rosa (2002/2005) | .FOB | 6 | 66,832 | byte-exact round trip | fbchartool rosa: Rosa script bank (dMp VM, opcodes shifted by one), byte-exact, 24k instructions decoded (magic 02000000 04000000 07000000) |
+| Rosa (2002/2005) | .IMG | 100 | 14,243,120 | byte-exact round trip | fbchartool rosa: v4 enciphered with the file stem / v1 plain, byte-exact (docs/formats/rosa.md) (magic 00000000) |
+| Rosa (2002/2005) | .MP3 | 3 | 3,046,500 | byte-exact round trip | fbchartool rosa: frames validated (magic fffb9204) |
+| Rosa (2002/2005) | .WAV | 9 | 116,792 | byte-exact round trip | fbchartool rosa: RIFF chunks (magic 52494646) |
 | dMp | .DAT | 6 | 15,552,624 | byte-exact round trip | fbchartool dmp: DEMOnn.DAT replays typed (DmpMatchSetup + 108001 input rows) (magic 00000000) |
 | dMp | .FOB | 58 | 2,446,428 | byte-exact round trip | fbchartool dmp: han2::dmpfob: dMp dialect, 376,668 instructions decoded, byte-exact (docs/formats/dmp.md) (magic 01000000 03000000 04000000 ...) |
 | dMp | .IMG | 68 | 83,625,808 | byte-exact round trip | fbchartool dmp: raw 16-bit sheets, exact A1R5G5B5 / A4R4G4B4 re-encode (magic 00000000) |
@@ -141,5 +141,5 @@ Magic = the first 4 plain bytes after the archive cipher; several magics per ext
 
 ## 3. Cell summary
 
-none: 20, read: 10, edit: 5, byte-exact round trip: 70, in-game proven: 3 (title x extension cells in section 2)
+none: 18, read: 8, edit: 5, byte-exact round trip: 74, in-game proven: 3 (title x extension cells in section 2)
 

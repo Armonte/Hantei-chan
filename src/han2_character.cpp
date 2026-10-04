@@ -8,6 +8,8 @@
 #include "framedata_gof1.h"
 #include "han2/mb_cg.h"
 #include "framedata_pb2k1.h"
+#include "framedata_qoh.h"
+#include "han2/qoh_cg.h"
 #include "misc.h"
 
 #include <cctype>
@@ -18,6 +20,7 @@
 namespace fs = std::filesystem;
 
 namespace han2 {
+namespace qoh = han2::qoh;
 
 // Sprite bank embedded in a GOF1-family character: BMP Cutter bank (GOF1 / GOF2 style) or the Melty Blood strip bank.
 static bool LoadEmbeddedCg(CharacterInstance &ch, const std::vector<uint8_t> &cg)
@@ -163,6 +166,21 @@ bool LoadPb2k1CharacterFile(CharacterInstance &ch, const std::string &path, std:
 	auto cont = ch.frameData.m_han2;
 	cont->sourcePath = path; cont->gof1Name.clear();
 	std::string be; auto bank = MbCgBank::Parse(cont->cg.data(), cont->cg.size(), &be, kPb2CgLayout);
+	if (bank) ch.cg.loadForeign(bank);
+	return true;
+}
+
+bool LoadQohCharacterFile(CharacterInstance &ch, const std::string &path, int version, std::string *err)
+{
+	auto fail = [&](const std::string &m) { if (err) *err = m; return false; };
+	std::ifstream f(std::filesystem::u8path(path), std::ios::binary);
+	if (!f) return fail("cannot read " + path);
+	std::vector<uint8_t> d((std::istreambuf_iterator<char>(f)), std::istreambuf_iterator<char>());
+	std::string e;
+	if (version == qoh::V99 && !qoh::Decrypt99(d, qoh::StemOfPath(path), &e)) return fail(path + ": " + e);
+	if (!::qoh::Load(ch.frameData, d.data(), d.size(), version, &e)) return fail(path + ": " + e);
+	auto cont = ch.frameData.m_han2; cont->sourcePath = path; cont->gof1Name.clear();
+	auto bank = QohCgBank::Parse(cont->cg.data(), cont->cg.size(), version, &e);
 	if (bank) ch.cg.loadForeign(bank);
 	return true;
 }
