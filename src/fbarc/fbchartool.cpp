@@ -340,6 +340,13 @@ bool DmpMember(const std::string &label, const std::string &name, const std::vec
 	if (e == ".IMG") {
 		han2::ImgFile im; if (!han2::ParseImg(d.data(), d.size(), im, &err)) { Fail(s, label, "img: " + err); return true; }
 		han2::SerializeImg(im, out);
+		if (im.version == 6 && im.format == 0) {   // dMp: both D3D formats the callers use must re-encode every pixel word exactly (the editor's quantiser)
+			for (int f16 = 0; f16 < 2; f16++) {
+				std::vector<uint8_t> rgba, words; han2::DecodePixels16(im.native.data(), (size_t)im.width * im.height, f16, rgba); han2::EncodePixels16(rgba.data(), (size_t)im.width * im.height, f16, words);
+				if (words != im.native) { Fail(s, label, f16 ? "A4R4G4B4 re-encode differs" : "A1R5G5B5 re-encode differs"); return true; }
+			}
+			s.notes["  16-bit pixel re-encode exact (A1R5G5B5 and A4R4G4B4)"]++;
+		}
 		if (out == d && im.version == 6) Ok(s, ".IMG v6 (raw 16-bit pixels)"); else if (out == d) Ok(s, ".IMG"); else Bad(s, "img", label, out, d);
 		return true;
 	}

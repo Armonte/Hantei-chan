@@ -1,5 +1,7 @@
 #include "han2_pac_window.h"
 #include "han2_typed_files.h"
+#include <map>
+#include "han2/dmp_fob.h"
 #include "han2/pac_archive.h"
 #include "han2/img_file.h"
 #include "han2/misc_formats.h"
@@ -191,7 +193,9 @@ struct Viewer {
 	int id = 0; bool open = true;
 	std::string name, origin;           // name: CP932
 	std::vector<uint8_t> bytes;
-	enum Kind { Hex, Image, Poly, Typed } kind = Hex;
+	enum Kind { Hex, Image, Poly, Typed, Fob } kind = Hex;
+	int px16 = 0;                       // 16-bit sheets: 0 = A1R5G5B5, 1 = A4R4G4B4 (the caller of the game's loader decides, dMp files do not name it)
+	han2::dmpfob::File fob; std::string fobFilter;
 	TypedFile typed; std::vector<int> typedSel; std::string typedFilter;
 	han2::PolyObject poly; float polyYaw = 0.f, polyPitch = 0.f, polyZoom = 1.f;
 	han2::ImgFile img; GLuint tex = 0; float zoom = 1.f; bool checker = true; bool dirty = false; std::string msg;
@@ -226,7 +230,8 @@ void OpenFileViewer(const std::string &name, std::vector<uint8_t> bytes, const s
 {
 	auto v = std::make_unique<Viewer>();
 	v->id = g_nextView++; v->name = name; v->origin = origin; v->bytes = std::move(bytes);
-	if (han2::IsImg(v->bytes.data(), v->bytes.size()) && han2::ParseImg(v->bytes.data(), v->bytes.size(), v->img, nullptr)) { v->kind = Viewer::Image; Upload(*v); }
+	if (han2::IsImg(v->bytes.data(), v->bytes.size()) && han2::ParseImg(v->bytes.data(), v->bytes.size(), v->img, nullptr)) { v->kind = Viewer::Image; v->px16 = v->img.format == 1 ? 1 : 0; Upload(*v); }
+	else if (name.size() > 4 && Lower(name.substr(name.size() - 4)) == ".fob" && han2::dmpfob::Parse(v->bytes.data(), v->bytes.size(), v->fob, nullptr) && v->fob.nInsns > 0) v->kind = Viewer::Fob;
 	else if (name.size() > 2 && (name.compare(name.size() - 2, 2, ".B") == 0 || name.compare(name.size() - 2, 2, ".b") == 0) && han2::ParsePoly(v->bytes.data(), v->bytes.size(), v->poly, nullptr)) v->kind = Viewer::Poly;
 	else if (DescribeTypedFile(name, v->bytes, v->typed, origin)) { v->kind = Viewer::Typed; v->typedSel.assign(v->typed.regions.size(), 0); }
 	else CollectStrings(*v);
@@ -244,6 +249,11 @@ void DrawFileViewers()
 		if (v.kind == Viewer::Image) {
 			ImGui::Text(TXT("IMG v%u, %d x %d, %s"), v.img.version, v.img.width, v.img.height, v.img.format == 0 ? "ARGB1555" : v.img.format == 1 ? "ARGB4444" : v.img.format == 3 ? "RGB24" : "RGBA");
 			ImGui::SetNextItemWidth(120); ImGui::SliderFloat(LBL("zoom"), &v.zoom, 0.25f, 8.f); ImGui::SameLine(); ImGui::Checkbox(LBL("checkerboard"), &v.checker);
+			if (!v.img.native.empty() && v.img.format <= 1) {
+				ImGui::SameLine(); ImGui::SetNextItemWidth(150);
+				const char *fm[2] = { "A1R5G5B5", "A4R4G4B4" };
+				if (ImGui::Combo(LBL("16-bit pixel format"), &v.px16, fm, 2)) { han2::DecodePixels16(v.img.native.data(), (size_t)v.img.width * v.img.height, v.px16, v.img.rgba); Upload(v); }
+			}
 			if (ImGui::Button(LBL("Export PNG..."))) {
 				std::string p = FileDialog(-1, true); if (!p.empty()) { std::string e; if (p.size() < 4 || Lower(p.substr(p.size() - 4)) != ".png") p += ".png"; v.msg = WritePngRgba(p, v.img.rgba.data(), v.img.width, v.img.height, e) ? Fmt(TXT("exported %s"), p.c_str()) : e; }
 			}
@@ -252,7 +262,14 @@ void DrawFileViewers()
 				std::string p = FileDialog(-1, false);
 				if (!p.empty()) {
 					std::vector<uint8_t> px; int w = 0, h = 0; std::string e;
-					if (ReadImageRgba(p, px, w, h, e)) { v.img.rgba = std::move(px); v.img.native.clear(); v.img.format = 2; v.img.width = w; v.img.height = h; Upload(v); v.dirty = true; v.msg = Fmt(TXT("replaced by %s"), p.c_str()); }
+					if (ReadImageRgba(p, px, w, h, e)) {
+						const bool keep16 = !v.img.native.empty() && v.img.format <= 1;   // 16-bit sheets stay 16-bit (the game reads raw words): quantise with the chosen pixel format
+						if (keep16 && (w != v.img.width || h != v.img.height)) v.msg = TXT("size mismatch: a 16-bit sheet keeps its dimensions (texture size and script rows depend on them)");
+						else {
+							if (keep16) { han2::EncodePixels16(px.data(), (size_t)w * h, v.px16, v.img.native); han2::DecodePixels16(v.img.native.data(), (size_t)w * h, v.px16, v.img.rgba); }
+							else { v.img.rgba = std::move(px); v.img.native.clear(); v.img.format = 2; v.img.width = w; v.img.height = h; }
+							Upload(v); v.dirty = true; v.msg = Fmt(TXT("replaced by %s"), p.c_str());
+						} }
 					else v.msg = e;
 				}
 			}
@@ -290,6 +307,34 @@ void DrawFileViewers()
 				bool ok = true; ImVec2 pt[4]; for (int k = 0; k < f.nIndices; k++) { if (f.index[k] >= v.poly.verts.size()) { ok = false; break; } pt[k] = proj(v.poly.verts[f.index[k]]); }
 				if (!ok) continue;
 				for (int k = 0; k < f.nIndices; k++) dl->AddLine(pt[k], pt[(k + 1) % f.nIndices], f.texture < v.poly.slots.size() && v.poly.slots[f.texture].name[0] ? IM_COL32(120, 220, 255, 255) : IM_COL32(230, 230, 230, 255));
+			}
+			ImGui::EndChild();
+		} else if (v.kind == Viewer::Fob) {
+			ImGui::Text(TXT("dMp script bank: %zu functions, %zu instructions, %zu bytes of data"), v.fob.funcs.size(), v.fob.nInsns, v.fob.rawBytes);
+			if (ImGui::Button(LBL("Save..."))) {
+				std::string p = FileDialog(-1, true, (char *)"");
+				if (!p.empty()) { std::vector<uint8_t> out; han2::dmpfob::Serialize(v.fob, out); std::ofstream f(fs::u8path(p), std::ios::binary); f.write((const char *)out.data(), (std::streamsize)out.size()); v.msg = f ? Fmt(TXT("saved %s"), p.c_str()) : Fmt(TXT("could not write %s"), p.c_str()); if (f) v.dirty = false; }
+			}
+			ImGui::SameLine();
+			if (ImGui::Button(LBL("Put into new PAC"))) { std::vector<uint8_t> out; han2::dmpfob::Serialize(v.fob, out); PacCreateAddMemory(v.name, std::move(out)); }
+			ImGui::SameLine();
+			if (ImGui::Button(LBL("Export disassembly..."))) { std::string p = FileDialog(-1, true, (char *)"script.txt"); if (!p.empty()) { std::string t = han2::dmpfob::Disassemble(v.fob); std::ofstream f(fs::u8path(p), std::ios::binary); f.write(t.data(), (std::streamsize)t.size()); } }
+			ImGui::SetNextItemWidth(200); char fb[64]; snprintf(fb, sizeof fb, "%s", v.fobFilter.c_str()); if (ImGui::InputText(LBL("filter (op name)"), fb, sizeof fb)) v.fobFilter = fb;
+			ImGui::TextDisabled("%s", TXT("PUSH_IMM / PUSH_CODE_ADDR operands are editable (constants of the script); structure edits are not offered, unedited banks save byte-identical."));
+			ImGui::BeginChild("fob", ImVec2(0, 0), true);
+			std::map<uint32_t, std::string> labels; for (auto &fe : v.fob.funcs) labels[fe.pc] = std::string((const char *)fe.name, strnlen((const char *)fe.name, 32));
+			for (size_t i = 0; i < v.fob.items.size(); i++) {
+				auto &it = v.fob.items[i];
+				auto lb = labels.find(it.pc); if (lb != labels.end()) ImGui::TextColored(ImVec4(.5f, .9f, 1, 1), "%s:", lb->second.c_str());
+				if (!it.isInsn) { ImGui::TextDisabled("  %05x  .data %zu bytes", it.pc, it.raw.size()); continue; }
+				const char *nm = han2::dmpfob::OpName(it.insn.op); std::string name = nm[0] ? nm : "op" + std::to_string(it.insn.op);
+				if (!v.fobFilter.empty() && name.find(v.fobFilter) == std::string::npos) continue;
+				ImGui::PushID((int)i);
+				ImGui::Text("  %05x  %-24s", it.pc, name.c_str());
+				if (it.insn.op == 0x03 || it.insn.op == 0x2F) { ImGui::SameLine(); int iv = (int)it.insn.imm; ImGui::SetNextItemWidth(110); if (ImGui::InputInt("##imm", &iv, 0, 0)) { it.insn.imm = (uint32_t)iv; v.dirty = true; } }
+				else if (it.insn.op == 0x04 || it.insn.op == 0x1A || it.insn.op == 0x1B || it.insn.op == 0x26 || it.insn.op == 0x51) { ImGui::SameLine(); ImGui::Text("%#x", it.insn.imm); }
+				else if (it.insn.op == 0x19) { ImGui::SameLine(); ImGui::Text("kind=%#x -> %#x", it.insn.kind, it.insn.imm); }
+				ImGui::PopID();
 			}
 			ImGui::EndChild();
 		} else if (v.kind == Viewer::Typed) {

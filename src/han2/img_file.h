@@ -19,6 +19,11 @@ struct ImgFile {
 	std::vector<uint8_t> native; // the file's own pixel bytes when format != 2 (written back verbatim: formats 0/1 are lossy to RGBA)
 };
 
+// 16-bit pixel words as the game's callers interpret them (D3DFMT_A1R5G5B5 = 0, D3DFMT_A4R4G4B4 = 1). dMp IMG v6 files do not name the format (the caller decides),
+// RBO/GOF2 IMG name it in the header. Encode is the exact inverse of Decode for every 16-bit word (so an untouched sheet re-encodes bit for bit).
+void DecodePixels16(const uint8_t *words, size_t pixels, int fmt16, std::vector<uint8_t> &rgba);
+void EncodePixels16(const uint8_t *rgba, size_t pixels, int fmt16, std::vector<uint8_t> &words);
+
 bool IsImg(const uint8_t *p, size_t n);
 bool ParseImg(const uint8_t *p, size_t n, ImgFile &out, std::string *err);
 void SerializeImg(const ImgFile &img, std::vector<uint8_t> &out);

@@ -65,6 +65,7 @@ add_executable(${EXE}
 	src/han2_pac_window.cpp
 	src/han2_inspector.cpp
 	src/han2_typed_files.cpp
+	src/han2/dmp_fob.cpp
 	src/han2/mbr_formats.cpp
 	src/han2/mb_formats.cpp
 	src/han2/mb_cg.cpp
