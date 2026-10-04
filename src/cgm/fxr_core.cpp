@@ -1,6 +1,7 @@
 #include "fxr_core.h"
 #include "../framedata.h"
 #include <algorithm>
+#include <cmath>
 #include <cstring>
 #include <map>
 #include <set>
@@ -67,6 +68,41 @@ fx::Rgb AccentFor(const fx::Rule &r, const uint32_t *slotPalMem, int slot) {
 	if (const fx::SlotOv *ov = fx::findOv(r, slot)) if (ov->hasAccent) return ov->accent;
 	uint32_t pal[256]; ToRuntimePalette(slotPalMem, pal);
 	return fx::autoAccent(slotPalMem ? pal : nullptr, r.accentIdx);
+}
+
+void BodyIndexHistogram(const Bank &bank, std::vector<uint32_t> &h) {
+	h.assign(256, 0);
+	for (size_t n = 0; n < bank.images.size(); n++) {
+		if (!bank.images[n].present || bank.images[n].type != 0) continue;
+		std::vector<uint8_t> idx; uint32_t pal[256];
+		if (!bank.decodeIndexed((int)n, idx, pal)) continue;
+		for (uint8_t i : idx) h[i]++;
+	}
+	h[0] = 0;
+}
+
+std::vector<AccentCandidate> SuggestAccentIndices(const std::vector<uint32_t> &hist, const std::vector<const uint32_t *> &slotPals, int maxN) {
+	std::vector<AccentCandidate> out;
+	if (hist.size() < 256 || slotPals.empty()) return out;
+	for (int i = 1; i < 256; i++) {
+		if (!hist[i]) continue;
+		float vivid = 0, mean[3] = {}, sq[3] = {}; int n = 0;
+		for (const uint32_t *p : slotPals) {
+			if (!p) continue;
+			const uint32_t c = p[i];
+			const float ch[3] = { (c & 255) / 255.f, ((c >> 8) & 255) / 255.f, ((c >> 16) & 255) / 255.f };
+			float h, s, v; fx::rgb2hsv({ ch[0], ch[1], ch[2] }, h, s, v);
+			vivid += (v < 0.35f || s < 0.35f) ? 0.f : s * v; n++;
+			for (int k = 0; k < 3; k++) { mean[k] += ch[k]; sq[k] += ch[k] * ch[k]; }
+		}
+		if (!n || vivid <= 0) continue;
+		float var = 0; for (int k = 0; k < 3; k++) { const float m = mean[k] / (float)n; var += sq[k] / (float)n - m * m; }
+		// vivid in the slots, actually changes between slots (an accent that never differs recolours nothing), and really used by the body
+		out.push_back({ i, (vivid / (float)n) * (0.05f + std::sqrt(std::max(var, 0.f))) * std::log(1.f + (float)hist[i]) });
+	}
+	std::sort(out.begin(), out.end(), [](const AccentCandidate &a, const AccentCandidate &b) { return a.score > b.score; });
+	if ((int)out.size() > maxN) out.resize((size_t)maxN);
+	return out;
 }
 
 const fx::Rule *RuleFor(const fx::CharRules &c, int pattern, int sprite, int slot, int blend) {
