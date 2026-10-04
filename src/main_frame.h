@@ -1,6 +1,7 @@
 #ifndef MAINFRAME_H_GUARD
 #define MAINFRAME_H_GUARD
-namespace han2ui { struct OpenRequest; }
+namespace abrowser { struct OpenRequest; }
+namespace abrowser { struct OpenRequest; }
 #include "background/bg_browser.h"
 #include <functional>
 #include "var_refs.h"
@@ -236,7 +237,7 @@ private:
 	bool openHan2File(const std::string& path);   // RBO / GOF2 .DAT/.DT2 (character) or PAC archive (mounted in the browser)
 	void openPartsEditorForCharacter(CharacterInstance* character);   // PAT editor tab on a loaded character (RBO / GOF2 parts)
 	void exportHan2Character(CharacterInstance* character);   // PNG + JSON sprites, poses and animations
-	void openHan2Request(const struct han2ui::OpenRequest& req);
+	void openBrowserRequest(const struct abrowser::OpenRequest& req);
 	void DrawPackageToolsMenuItems();
 	preview::TickState m_sceneState, m_onionState;  // reused buffers
 	struct OnionStats { int samples = 0; double simMs = 0.0, totalMs = 0.0; } m_onionStats;

@@ -1,0 +1,10 @@
+SECTION cgm-bank: pass 72 fail 0 | images 48199 (undrawable 3593), decode==CG 44606, differ 0 | type-1:3593 type0:29647 type1:7411 type2:3833 type3:1369 type4:2346
+SECTION cgm-roundtrip: 72 banks processed (any FAIL lines above)
+SECTION cgm-struct: 72 banks processed (any FAIL lines above)
+SECTION cgm-refs: pass | 1122 images used by 4388 layers, undo of every remap restores the references
+SECTION cgm-refs: pass | 752 images used by 2664 layers, undo of every remap restores the references
+SECTION cgm-refs: pass | 1057 images used by 4773 layers, undo of every remap restores the references
+SECTION cgm-refs: pass | 623 images used by 1116 layers, undo of every remap restores the references
+SECTION cgio pass 1 fail 0 skipped 0
+nice: ‘build/cgmtool.exe’: No such file or directory
+rc=1

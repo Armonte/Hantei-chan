@@ -6,6 +6,7 @@
 // with one correction: animations are the game's real pattern table (frame order, durations, jumps, loops), not pose-name groups.
 // Rendering is a plain CPU compositor so it works headless (han2tool export) and in the editor.
 
+#include <cstdint>
 #include <string>
 #include <vector>
 
@@ -30,6 +31,12 @@ struct ExportReport {
 
 // outDir is created. fd must be a loaded HAN2 character; cg / parts may be empty (their outputs are skipped).
 bool ExportCharacter(FrameData &fd, CG &cg, Parts &parts, const std::string &outDir, const ExportOptions &opt, ExportReport &rep, std::string *err);
+
+// Thumbnail of one frame (any dialect: RBO / GOF2 poses and CG images, GOF1 / HA6 / HA4 CG layers) for the archive browser: composited on the CPU
+// (no GL, safe on a worker thread), cropped to the visible pixels and box-filtered to fit maxSide x maxSide. false when the frame draws nothing.
+bool RenderFrameThumb(FrameData &fd, CG &cg, Parts &parts, int pattern, int frame, int maxSide, std::vector<uint8_t> &rgba, int &w, int &h);
+// First pattern / frame that draws something (idle pose); -1 when there is none.
+bool FindIdleFrame(FrameData &fd, int &pattern, int &frame);
 
 } // namespace han2
 

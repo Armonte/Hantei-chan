@@ -1,5 +1,6 @@
 // "RBO / GOF2 (HAN2)" inspector: every field of the current frame record, named after the IDA struct it is generated from.
 #include "han2_character.h"
+#include "han2_thumbs.h"
 #include "character_instance.h"
 #include "framedata_han2.h"
 #include "han2/rbo_types_gen.h"
@@ -34,6 +35,7 @@
 namespace han2ui {
 
 bool showInspector = true;
+unsigned dockInspectorId = 0, dockAnimId = 0;
 
 static const Han2EnumInfo *FindEnum(const char *name)
 {
@@ -173,6 +175,7 @@ void DrawInspector(CharacterInstance *ch, FrameState &state)
 	ImGuiViewport *vp = ImGui::GetMainViewport();
 	ImGui::SetNextWindowPos(ImVec2(vp->WorkPos.x + vp->WorkSize.x - 420, vp->WorkPos.y + 60), ImGuiCond_FirstUseEver);
 	ImGui::SetNextWindowSize(ImVec2(400, 560), ImGuiCond_FirstUseEver);
+	if (dockInspectorId) ImGui::SetNextWindowDockID(dockInspectorId, ImGuiCond_FirstUseEver);
 	if (!ImGui::Begin(LBL("RBO / GOF2 (HAN2)"), &showInspector)) { ImGui::End(); return; }
 
 	const Han2Container &c = *ch->frameData.m_han2;
@@ -428,6 +431,8 @@ void DrawAnimWindow(CharacterInstance *ch, FrameState &state, void *onionPtr)
 	if (!showAnimWindow) return;
 	OnionSkinSettings &onion = *(OnionSkinSettings *)onionPtr;
 	ImGui::SetNextWindowSize(ImVec2(620, 330), ImGuiCond_FirstUseEver);
+	if (dockAnimId) ImGui::SetNextWindowDockID(dockAnimId, ImGuiCond_FirstUseEver);
+	{ static int calls = 0; if (++calls == 6) ImGui::SetNextWindowFocus(); }   // first appearance: bring the playback controls forward (a tab next to the box controls)
 	if (!ImGui::Begin(LBL("Animation (game rules)"), &showAnimWindow)) { ImGui::End(); return; }
 	if (!ch || !ch->frameData.isHan2()) { ImGui::TextDisabled("%s", TXT("The active character is not an RBO / GOF2 file.")); ImGui::End(); return; }
 	FrameData &fd = ch->frameData;
@@ -455,6 +460,32 @@ void DrawAnimWindow(CharacterInstance *ch, FrameState &state, void *onionPtr)
 	static const int rates[] = { 30, 60, 120, 240 }; static int ri = 2;
 	if (ImGui::BeginCombo(LBL("logic rate"), (std::to_string(rateHz) + " Hz").c_str())) { for (int i = 0; i < 4; i++) if (ImGui::Selectable((std::to_string(rates[i]) + " Hz").c_str(), rateHz == rates[i])) { rateHz = rates[i]; ri = i; } ImGui::EndCombo(); }
 	ImGui::SameLine(); ImGui::SetNextItemWidth(120); ImGui::SliderFloat(LBL("speed"), &speed, 0.1f, 4.f, "x%.2f");
+	if (seq) {
+		// frame strip: one card per frame with its picture, index and duration; click selects, the playing frame is outlined
+		ImGui::BeginChild("##framestrip", ImVec2(0, 92), true, ImGuiWindowFlags_HorizontalScrollbar);
+		{
+			ImDrawList *sdl = ImGui::GetWindowDrawList();
+			for (size_t i = 0; i < seq->frames.size(); i++) {
+				ImGui::PushID((int)i);
+				const ImVec2 q = ImGui::GetCursorScreenPos();
+				ImGui::InvisibleButton("##card", ImVec2(60, 60));
+				if (ImGui::IsItemClicked()) { playing = false; st.frame = (int)i; st.ticksInFrame = 0; st.ended = false; }
+				const bool cur = (int)i == st.frame;
+				sdl->AddRectFilled(q, ImVec2(q.x + 60, q.y + 60), ImGui::GetColorU32(cur ? ImGuiCol_Header : ImGuiCol_FrameBg), 3.f);
+				if (cur) sdl->AddRect(q, ImVec2(q.x + 60, q.y + 60), IM_COL32(230, 180, 0, 255), 3.f, 0, 2.f);
+				unsigned tex; int tw, th;
+				if (ImGui::IsRectVisible(q, ImVec2(q.x + 60, q.y + 60)) && FrameThumb(*ch, state.pattern, (int)i, tex, tw, th)) {
+					const float z = std::min(54.f / tw, 40.f / th); const ImVec2 sz(tw * z, th * z); const ImVec2 a(q.x + (60 - sz.x) * 0.5f, q.y + 2 + (40 - sz.y) * 0.5f);
+					sdl->AddImage((ImTextureID)(intptr_t)tex, a, ImVec2(a.x + sz.x, a.y + sz.y));
+				}
+				char l[32]; snprintf(l, sizeof l, "%zu  %dt", i, seq->frames[i].AF.duration);
+				sdl->AddText(ImVec2(q.x + 3, q.y + 44), ImGui::GetColorU32(ImGuiCol_Text), l);
+				ImGui::PopID();
+				ImGui::SameLine();
+			}
+		}
+		ImGui::EndChild();
+	}
 	ImGui::PushTextWrapPos(0.0f); ImGui::TextDisabled("%s", TXT("durations are logic ticks; the rate is the assumed engine tick rate (the game window shows FPS 60 (120))")); ImGui::PopTextWrapPos();
 	// advance
 	if (playing) {

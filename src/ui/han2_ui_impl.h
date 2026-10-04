@@ -55,7 +55,7 @@ bool MainFrame::openHan2File(const std::string& path)
 	}
 	if (findCharacterByPath(path)) { requestErrorPopup("Load Error", std::string(TXT("Already open: ")) + path); return true; }
 	std::filesystem::path p = std::filesystem::u8path(path);
-	han2ui::OpenRequest req;
+	abrowser::OpenRequest req;
 	req.stem = p.stem().string();
 	req.read = han2::DirReader(p.parent_path().string());
 	req.origin = p.parent_path().string();
@@ -71,17 +71,53 @@ bool MainFrame::openHan2File(const std::string& path)
 	return true;
 }
 
-void MainFrame::openHan2Request(const han2ui::OpenRequest& req)
+void MainFrame::openBrowserRequest(const abrowser::OpenRequest& req)
 {
-	auto character = std::make_unique<CharacterInstance>();
+	using abrowser::OpenRequest;
 	std::string err;
-	if (!character->loadHan2(req.stem, req.read, std::string(TXT("archive ")) + req.origin, std::string(), err)) {
-		requestErrorPopup("Load Error", err);
-		return;
+	auto adopt = [&](std::unique_ptr<CharacterInstance> character, const std::string& home) {
+		character->archiveHome = home;
+		const bool han2 = character->frameData.isHan2();
+		characters.push_back(std::move(character));
+		createViewForCharacter(characters.back().get());
+		markProjectModified();
+		if (han2) { han2ui::showAnimWindow = true; han2ui::showAnimList = true; if (auto* v = getActiveView()) v->setZoom(1.25f); }   // playback controls docked next to the box controls; sprites are bigger than HA6 ones
+	};
+	switch (req.kind) {
+	case OpenRequest::Han2Stem: {
+		auto character = std::make_unique<CharacterInstance>();
+		if (!character->loadHan2(req.stem, req.read, std::string(TXT("archive ")) + req.origin, std::string(), err)) { requestErrorPopup("Load Error", err); return; }
+		adopt(std::move(character), req.archivePath);
+		break;
 	}
-	characters.push_back(std::move(character));
-	createViewForCharacter(characters.back().get());
-	markProjectModified();
+	case OpenRequest::Gof1Entry: {
+		auto character = std::make_unique<CharacterInstance>();
+		if (!character->loadGof1(req.archivePath, req.entryName, err)) { requestErrorPopup("Load Error", err); return; }
+		adopt(std::move(character), req.archivePath);
+		break;
+	}
+	case OpenRequest::LooseFile: {
+		const size_t before = characters.size();
+		std::string path = req.path;
+		{   // a loose MBAACC / UNI .HA6: its <stem>.txt lists the whole stack (HA6 files, sprite bank, palettes); opening only the .HA6 would show no sprites
+			std::filesystem::path pp = std::filesystem::u8path(path);
+			std::string e = pp.extension().string(); for (auto& c : e) c = (char)tolower((unsigned char)c);
+			if (e == ".ha6") {
+				std::filesystem::path txt = pp; txt.replace_extension(".txt");
+				std::error_code ec;
+				if (std::filesystem::exists(txt, ec)) {
+					char probe[64]{};
+					GetPrivateProfileStringA("DataFile", "FileNum", "", probe, sizeof probe, txt.u8string().c_str());
+					if (probe[0]) path = txt.u8string();
+				}
+			}
+		}
+		openAnyFile(path);
+		if (characters.size() > before && characters.back()->frameData.isHan2()) han2ui::showAnimWindow = true;
+		break;
+	}
+	default: break;
+	}
 }
 
 void MainFrame::DrawHan2Windows()
@@ -89,24 +125,29 @@ void MainFrame::DrawHan2Windows()
 	static bool settingsLoaded = false;
 	if (!settingsLoaded) { settingsLoaded = true; han2ui::LoadHan2Settings(); }
 	ProcessDroppedFiles();
+	if (ImGuiWindow* w = ImGui::FindWindowByName("Box Pane")) han2ui::dockAnimId = w->DockId;
+	if (ImGuiWindow* w = ImGui::FindWindowByName("Right Pane")) han2ui::dockInspectorId = w->DockId;
+	{   // first HAN2 character of a session: the animation list takes the upper half of the Left Pane's dock node (a split, not a tab: both stay visible)
+		static bool animListDocked = false;
+		if (han2ui::showAnimList && !animListDocked) {
+			if (ImGuiWindow* lp = ImGui::FindWindowByName("Left Pane")) if (lp->DockId && ImGui::DockBuilderGetNode(lp->DockId)) {
+				ImGuiID rest = lp->DockId, top = 0;
+				top = ImGui::DockBuilderSplitNode(rest, ImGuiDir_Up, 0.48f, nullptr, &rest);
+				ImGui::DockBuilderDockWindow("Animations###animlist", top);
+				ImGui::DockBuilderFinish(top);
+				animListDocked = true;
+			}
+		}
+	}
+	han2ui::BeginThumbFrame();
 	han2ui::DrawLoadReport();
 	han2ui::DrawPacCreate();
 	han2ui::DrawFileViewers();
 	han2ui::DrawCgWindow(getActiveCharacter());
 	han2ui::DrawDiffWindow(getActiveCharacter());
-	if (auto* av = getActiveView()) han2ui::DrawAnimWindow(av->getCharacter(), av->getState(), &av->onion());
-	han2ui::OpenRequest req;
-	static std::string message;
-	if (han2ui::DrawBrowser(req, message)) {
-		message.clear();
-		if (req.stem == "\x01open") openAnyFile(req.origin);
-		else if (req.stem == "\x01gof1") {
-			auto character = std::make_unique<CharacterInstance>(); std::string err;
-			if (!character->loadGof1(req.gof1Archive, req.gof1Entry, err)) requestErrorPopup("Load Error", err);
-			else { characters.push_back(std::move(character)); createViewForCharacter(characters.back().get()); markProjectModified(); }
-		}
-		else openHan2Request(req);
-	}
+	if (auto* av = getActiveView()) { han2ui::DrawAnimWindow(av->getCharacter(), av->getState(), &av->onion()); han2ui::DrawAnimListWindow(av->getCharacter(), av->getState()); }
+	abrowser::OpenRequest req;
+	if (abrowser::Draw(req)) openBrowserRequest(req);
 }
 
 void MainFrame::openPartsEditorForCharacter(CharacterInstance* character)

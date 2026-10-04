@@ -274,7 +274,8 @@ bool SaveFile(const FrameData &fd, const char *filename, std::string *err)
 		if (c.sourcePath.empty() || !Open(c.sourcePath, a, &g_lastErr)) { if (g_lastErr.empty()) g_lastErr = "no source archive to copy"; return done(false); }
 		int idx = Find(a, c.gof1Name);
 		if (idx < 0) { g_lastErr = "entry " + c.gof1Name + " not found in the source archive"; return done(false); }
-		return done(WriteArchiveReplacing(a, idx, plain, f, &g_lastErr));
+		std::vector<uint8_t> stored = plain; EncryptDat(stored);   // archive entries keep the character section cipher (stage two); only the archive cipher is re-applied by the writer
+		return done(WriteArchiveReplacing(a, idx, stored, f, &g_lastErr));
 	}
 	EncryptDat(plain);
 	if (!WriteFileAtomic(filename, plain.data(), plain.size())) { g_lastErr = std::string("could not write ") + filename; return done(false); }

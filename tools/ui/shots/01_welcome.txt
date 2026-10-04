@@ -1,0 +1,7 @@
+# start screen: game buttons + recent folders (run after the browser has been used once so the recent list is filled)
+browse C:\games\gof2_run
+waitidle
+show off
+wait 40
+capture C:/dev/hantei-chan/work/ab/shots/01_welcome.png
+quit
