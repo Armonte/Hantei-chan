@@ -5,7 +5,7 @@
 HERE="$(cd "$(dirname "$0")" && pwd)"; ROOT="$(cd "$HERE/../.." && pwd)"
 T="${1:-$ROOT/build/cgmtool.exe}"; QUICK=0; [ "$2" = "--quick" ] && QUICK=1
 DATA="${CGM_DATA:-/mnt/c/games/mbaacc/data}"
-SCR="$(wslpath -w "$ROOT/build")\\cgm_rt"
+SCR="${CGM_TMP:-C:\\dev\\hantei-chan\\work\\cgm_rt}"
 mapfile -t BANKS < <(ls "$DATA"/*.cg | while read -r f; do wslpath -w "$f"; done)
 rc=0
 nice -n 10 "$T" check "${BANKS[@]}" | grep -E "^(FAIL|SECTION)" || rc=1
