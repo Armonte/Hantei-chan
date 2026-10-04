@@ -652,7 +652,7 @@ void Window::draw(CharacterInstance *ch, const WindowHost &host) {
 			std::vector<uint8_t> px; int w = 0, h = 0;
 			if (ok && fetch(*ch, selected, previewPal, previewPups, px, w, h)) upload(preview, px, w, h, 0, false); else { preview.w = preview.h = 0; }
 		}
-		if (bank && !ch->frameData.isHan2()) drawStructure(*ch, host);
+		if (bank) drawStructure(*ch, host);
 		ImGui::SeparatorText(TXT("Used by"));
 		if (selected < (int)usage.byImage.size() && !usage.byImage[selected].empty()) {
 			ImGui::BeginChild("##cgmuse", ImVec2(0, 110), ImGuiChildFlags_Borders);

@@ -133,3 +133,16 @@ A hard-linked copy of the install (`cp -al`, game dir untouched) with `data/sion
 `docs/cg/evidence/ingame_before_sion_vs_tatari.png` (stock) vs `ingame_after_recolour_and_replaced_sprites.png`: Sion is green (palette 0 recoloured)
 and carries the injected stripe on every replaced sprite. The match picks Sion vs Tatari (no character knob), so Sion stands in for Akiha; the Akiha
 files (`akiha.cg` 12 replaced images, `akiha.pal`) were produced the same way.
+
+## 8. Format coverage (M6) and limits
+
+| format | browse / usage | export / import | palettes | add / remove / reorder |
+|---|---|---|---|---|
+| MBAACC `.cg` (+ `.pal`, PUPS) | yes | yes (byte-exact unchanged) | yes (file + bank slots) | yes, frame references fixed up |
+| MBAC `.DAT` (HA4, embedded CG) | yes | yes | yes | yes; the embedded blob is rewritten on save |
+| RBO / GOF2 CG area and `.CHP` | yes | yes | bank slots | yes; the CG area is rewritten at its new size on save (HAN2RBO) |
+| MB / PB2K1 strip banks, QoH tiles (foreign) | yes | yes (via the CG object) | view only | no (fixed layout); replace-image only, no undo here |
+| storage type 5 (index + alpha planes, slot palette) | read / view / byte-exact | decode only | - | refused for authoring (user decision: recolour is runtime-only) |
+
+Known limits: references from outside the character (menu code using `csel_*.cg`, other characters' effect spawns) are not visible to the usage index;
+the character's pattern undo and the CG manager's undo are separate stacks (undo a structural CG step from the CG manager window).
