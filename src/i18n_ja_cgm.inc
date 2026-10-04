@@ -131,3 +131,5 @@
 {"This bank format: browse, batch export / import and image replace. Structural edits and palette editing are for BMP Cutter banks.", "この形式のバンク: 閲覧、一括書き出し/読み込み、画像の置換に対応。構造の編集とパレット編集はBMP Cutterバンク向けです。"},
 {"5: bank palette + alpha plane", "5: バンクパレット + アルファプレーン"},
 {"Type 5", "タイプ5"},
+{"Save to the character's .cg", "キャラクターの.cgに保存"},
+{"Saved %s (the original is kept as .bak)", "%s を保存しました(元のファイルは.bakとして保持)"},
