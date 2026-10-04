@@ -14,6 +14,8 @@ public:
 	std::vector<std::string> files;     // data files (full paths)
 	std::vector<uint16_t> fileOf;       // per entry
 	std::string desc;
+	std::vector<Entry>& ent() { return m_entries; }
+	void setPath(const std::string& p) { m_path = p; }
 	Kind kind() const override { return Kind::Uni2D; }
 	bool read(size_t i, std::vector<uint8_t>& plain, std::string* err, size_t maxBytes) const override
 	{
@@ -65,7 +67,7 @@ static bool ReadUni2Index(const std::filesystem::path& ip, const std::filesystem
 		while (!e.dir.empty() && e.dir.front() == '/') e.dir.erase(0, 1);
 		while (!e.dir.empty() && e.dir.back() == '/') e.dir.pop_back();
 		e.name = ents[j].name; e.offset = ents[j].off; e.size = (uint64_t)ents[j].csz;
-		a.m_entries.push_back(std::move(e)); a.fileOf.push_back(fi);
+		a.ent().push_back(std::move(e)); a.fileOf.push_back(fi);
 	}
 	return true;
 }
@@ -115,6 +117,8 @@ class MbtlArchive : public Archive {
 public:
 	std::string root;
 	std::vector<std::string> archOf;    // per entry: data file name
+	std::vector<Entry>& ent() { return m_entries; }
+	void setPath(const std::string& p) { m_path = p; }
 	Kind kind() const override { return Kind::MbtlBin; }
 	bool read(size_t i, std::vector<uint8_t>& plain, std::string* err, size_t maxBytes) const override
 	{
@@ -186,7 +190,7 @@ std::unique_ptr<Archive> OpenUni2Data(const std::string& dPath, std::string* err
 {
 	namespace fs = std::filesystem;
 	auto a = std::make_unique<Uni2Archive>();
-	a->m_path = dPath;
+	a->setPath(dPath);
 	std::error_code ec;
 	const fs::path dir = P(dPath);
 	if (!fs::is_directory(dir, ec)) { if (err) *err = dPath + ": not a folder"; return nullptr; }
@@ -196,7 +200,7 @@ std::unique_ptr<Archive> OpenUni2Data(const std::string& dPath, std::string* err
 	int n = 0;
 	for (auto& p : idx) if (ReadUni2Index(p, dir, *a)) n++;
 	if (!n) { if (err) *err = dPath + ": no UNI2 index files"; return nullptr; }
-	a->desc = std::to_string(n) + " index files, " + std::to_string(a->m_entries.size()) + " entries, stored raw";
+	a->desc = std::to_string(n) + " index files, " + std::to_string(a->ent().size()) + " entries, stored raw";
 	return a;
 }
 
@@ -237,7 +241,7 @@ std::unique_ptr<Archive> OpenMbtlExe(const std::string& exePath, std::string* er
 	}
 	if (szPos < 0 || (size_t)szPos + 4 * names.size() > exe.size()) { if (err) *err = "size table not found in " + exePath; return nullptr; }
 	auto a = std::make_unique<MbtlArchive>();
-	a->m_path = exePath;
+	a->setPath(exePath);
 	a->root = P(exePath).parent_path().u8string();
 	std::map<std::string, uint64_t> run;
 	std::error_code ec;
@@ -257,7 +261,7 @@ std::unique_ptr<Archive> OpenMbtlExe(const std::string& exePath, std::string* er
 		Entry e;
 		const size_t sl = nm.find_last_of('/');
 		e.dir = nm.substr(0, sl); e.name = nm.substr(sl + 1); e.offset = off; e.size = (uint64_t)sz;
-		a->m_entries.push_back(std::move(e)); a->archOf.push_back(an);
+		a->ent().push_back(std::move(e)); a->archOf.push_back(an);
 	}
 	return a;
 }

@@ -165,10 +165,7 @@ void MainFrame::Menu(unsigned int errorPopupId)
 			// Game folders first: the archive browser (characters with thumbnails, previews, double click to edit)
 			if (ImGui::BeginMenu(han2ui::Tr("Open Game Folder", "\xe3\x82\xb2\xe3\x83\xbc\xe3\x83\xa0\xe3\x83\x95\xe3\x82\xa9\xe3\x83\xab\xe3\x83\x80\xe3\x82\x92\xe9\x96\x8b\xe3\x81\x8f")))
 			{
-				if (ImGui::MenuItem("Glove on Fight 2 (GOF2)...")) abrowser::OpenGameFolderDialog(abrowser::Game::GOF2);
-				if (ImGui::MenuItem("Glove on Fight (GOF1)...")) abrowser::OpenGameFolderDialog(abrowser::Game::GOF1);
-				if (ImGui::MenuItem("Ragnarok Battle Offline (RBO)...")) abrowser::OpenGameFolderDialog(abrowser::Game::RBO);
-				if (ImGui::MenuItem("Melty Blood Actress Again CC (MBAACC)...")) abrowser::OpenGameFolderDialog(abrowser::Game::MBAACC);
+				for (const abrowser::GameDef& d : abrowser::Games()) if (ImGui::MenuItem((std::string(d.name) + "...").c_str())) abrowser::OpenGameFolderDialog(d.id);
 				ImGui::Separator();
 				if (ImGui::MenuItem(han2ui::Tr("Detect the game automatically...", "\xe8\x87\xaa\xe5\x8b\x95\xe5\x88\xa4\xe5\x88\xa5...")))
 					abrowser::OpenGameFolderDialog(abrowser::Game::None);
