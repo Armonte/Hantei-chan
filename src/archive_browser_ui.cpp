@@ -45,12 +45,13 @@ void FreeTex(unsigned &t) { if (t) { GLuint g = t; glDeleteTextures(1, &g); t = 
 
 bool g_pinned = false;          // keep the window open after opening something
 bool g_gridMode = false;
+bool g_iconLarge = false;   // list rows: 20 px icons (default) or 40 px
 bool g_focusFilter = false;
 bool g_listFocused = false;
 std::vector<int> g_injKeys;     // scripted key presses (ImGuiKey values), consumed by the list handler
 std::string g_injType;          // scripted type-to-search text
 OpenRequest g_pending; bool g_havePending = false;
-const char *kTypeNames[] = { "Characters", "Character data", "Images", "Sprite banks", "Parts", "Scripts / data", "Audio", "Text", "Palettes", "3D models", "Archives", "Other" };
+const char *kTypeNames[] = { "Characters", "Character data", "Images", "Sprite banks", "Parts", "Scripts / data", "Audio", "Text", "Palettes", "3D models", "Archives", "Other", "Shared / effect data" };
 }
 
 void ApplyPreview(std::shared_ptr<Preview> pv)
@@ -88,7 +89,8 @@ Thumb *ThumbFor(int sourceIdx, int itemIdx, bool request)
 	SourceP s = FindSource(sourceIdx);
 	if (!s || itemIdx < 0 || itemIdx >= (int)s->items.size()) return nullptr;
 	auto it = st.thumbCache.find(ThumbKey(*s, s->items[itemIdx]));
-	if (it == st.thumbCache.end() || it->second.state == 0) { if (request && st.thumbsPending < 24) RequestThumb(sourceIdx, itemIdx); return nullptr; }
+	if (it == st.thumbCache.end() || it->second.state == 0) { if (request && st.thumbsPending < 48) RequestThumb(sourceIdx, itemIdx); return nullptr; }
+	if (it->second.state == 1 && it->second.wanted) it->second.wanted->store(g_uiFrame.load());
 	if (it->second.state != 2) return nullptr;
 	it->second.used = ++st.useClock;
 	return &it->second;
@@ -109,7 +111,8 @@ static void RebuildView()
 		st.view.push_back(i);
 	}
 	const auto &items = s->items;
-	auto cmpName = [&](uint32_t a, uint32_t b) { return Lower(items[a].name) < Lower(items[b].name); };
+	auto sortKey = [&](uint32_t i) { std::string k = Lower(items[i].name); for (auto &c : k) if (c == '_') c = '~'; return k; };   // _talk / _temp / _csel sort after the plain names
+	auto cmpName = [&](uint32_t a, uint32_t b) { return sortKey(a) < sortKey(b); };
 	if (st.sortCol == 0) std::stable_sort(st.view.begin(), st.view.end(), [&](uint32_t a, uint32_t b) { return st.sortDesc ? cmpName(b, a) : cmpName(a, b); });
 	else if (st.sortCol == 1) std::stable_sort(st.view.begin(), st.view.end(), [&](uint32_t a, uint32_t b) { return st.sortDesc ? (int)items[a].type > (int)items[b].type : (int)items[a].type < (int)items[b].type; });
 	else std::stable_sort(st.view.begin(), st.view.end(), [&](uint32_t a, uint32_t b) { return st.sortDesc ? items[a].size > items[b].size : items[a].size < items[b].size; });
@@ -363,6 +366,7 @@ static ImU32 TypeColorRaw(Type t)
 	switch (t) {
 	case Type::Character: return IM_COL32(255, 200, 90, 255);
 	case Type::CharData: return IM_COL32(200, 160, 90, 255);
+	case Type::Shared: return IM_COL32(170, 150, 210, 255);
 	case Type::Image: return IM_COL32(120, 200, 255, 255);
 	case Type::CgBank: return IM_COL32(150, 220, 160, 255);
 	case Type::Parts: return IM_COL32(220, 160, 255, 255);
@@ -370,6 +374,22 @@ static ImU32 TypeColorRaw(Type t)
 	case Type::Audio: return IM_COL32(180, 180, 255, 255);
 	default: return IM_COL32(190, 190, 195, 255);
 	}
+}
+static ImU32 TypeColor(Type t);
+static const char *TypeBadge(Type t)
+{
+	switch (t) {
+	case Type::Character: return "CH"; case Type::CharData: return "cd"; case Type::Shared: return "SH"; case Type::Image: return "IM"; case Type::CgBank: return "CG";
+	case Type::Parts: return "PT"; case Type::Script: return "FB"; case Type::Audio: return "AU"; case Type::Text: return "TX"; case Type::Palette: return "PL";
+	case Type::Model: return "3D"; case Type::Archive: return "AR"; default: return "--";
+	}
+}
+static void DrawBadge(ImDrawList *dl, ImVec2 p, float size, Type t)
+{
+	const ImU32 c = ImGui::GetColorU32(ImGuiCol_TextDisabled);
+	dl->AddRect(p, ImVec2(p.x + size, p.y + size), c, 3.f);
+	const ImVec2 ts = ImGui::CalcTextSize(TypeBadge(t));
+	dl->AddText(ImVec2(p.x + (size - ts.x) * 0.5f, p.y + (size - ts.y) * 0.5f), TypeColor(t), TypeBadge(t));
 }
 static ImU32 TypeColor(Type t) { return t == Type::Other || t == Type::Text || t == Type::Script ? ImGui::GetColorU32(ImGuiCol_TextDisabled) : Adj(TypeColorRaw(t)); }
 
@@ -456,21 +476,23 @@ static void DrawList(State &st, OpenRequest &req, bool &open)
 	if (st.viewDirty) RebuildView();
 	const int n = (int)st.view.size();
 	const bool thumbs = st.thumbs;
-	const float rowH = thumbs ? 42.f : ImGui::GetTextLineHeightWithSpacing() + 2.f;
+	const float rowH = thumbs ? (g_iconLarge ? 42.f : 24.f) : ImGui::GetTextLineHeightWithSpacing() + 2.f;
+	const float icon = rowH - 4.f;
 	int cols = 1;
 	if (g_gridMode) {
 		const float cw = 128.f, ch = 148.f;
-		cols = std::max(1, (int)(ImGui::GetContentRegionAvail().x / cw));
+		cols = std::max(1, (int)((ImGui::GetContentRegionAvail().x - ImGui::GetStyle().ScrollbarSize) / cw));
 		ImGui::BeginChild("##grid", ImVec2(0, 0), false);
 		const int rows = (n + cols - 1) / cols;
 		if (st.scrollToCursor && st.cursor >= 0) { const float y = (float)(st.cursor / cols) * ch; if (y < ImGui::GetScrollY()) ImGui::SetScrollY(y); else if (y + ch > ImGui::GetScrollY() + ImGui::GetWindowHeight()) ImGui::SetScrollY(y + ch - ImGui::GetWindowHeight()); st.scrollToCursor = false; }
 		ImGuiListClipper clip; clip.Begin(rows, ch);
-		while (clip.Step()) for (int r = clip.DisplayStart; r < clip.DisplayEnd; r++)
+		while (clip.Step()) for (int r = clip.DisplayStart; r < clip.DisplayEnd; r++) {
+			const ImVec2 rowPos = ImGui::GetCursorScreenPos();   // every tile of the row is placed from here; the cursor moves down one row at the end (a tile's own button must not advance it)
 			for (int c = 0; c < cols; c++) {
 				const int pos = r * cols + c; if (pos >= n) break;
 				const Item &it = s->items[st.view[pos]];
 				ImGui::PushID(pos);
-				const ImVec2 p = ImVec2(ImGui::GetWindowPos().x + c * cw + 4 - ImGui::GetScrollX(), ImGui::GetCursorScreenPos().y);
+				const ImVec2 p = ImVec2(rowPos.x + c * cw, rowPos.y);
 				ImGui::SetCursorScreenPos(p);
 				const bool selected = st.sel.count(st.view[pos]) > 0;
 				ImGui::InvisibleButton("##card", ImVec2(cw - 6, ch - 6));
@@ -483,7 +505,7 @@ static void DrawList(State &st, OpenRequest &req, bool &open)
 				dl->AddRect(p, ImVec2(p.x + cw - 6, p.y + ch - 6), ImGui::GetColorU32(selected ? ImGuiCol_HeaderActive : ImGuiCol_Border), 4.f);
 				Thumb *t = ThumbFor(st.selSource, (int)st.view[pos], true);
 				if (t) { const float z = std::min(100.f / t->w, 100.f / t->h); const ImVec2 sz(t->w * z, t->h * z); const ImVec2 q(p.x + (cw - 6 - sz.x) * 0.5f, p.y + 6 + (100 - sz.y) * 0.5f); dl->AddImage((ImTextureID)(intptr_t)t->tex, q, ImVec2(q.x + sz.x, q.y + sz.y)); }
-				else dl->AddText(ImVec2(p.x + 44, p.y + 44), ImGui::GetColorU32(ImGuiCol_TextDisabled), it.type == Type::Archive ? "[PAC]" : "...");
+				else DrawBadge(dl, ImVec2(p.x + (cw - 6 - 48) * 0.5f, p.y + 30), 48, it.type);
 				std::string nm = it.name; const size_t sl = nm.find_last_of('/'); if (sl != std::string::npos) nm = nm.substr(sl + 1);
 				dl->PushClipRect(p, ImVec2(p.x + cw - 8, p.y + ch - 6), true);
 				dl->AddText(ImVec2(p.x + 6, p.y + 110), TypeColor(it.type), nm.c_str());
@@ -491,8 +513,10 @@ static void DrawList(State &st, OpenRequest &req, bool &open)
 				dl->PopClipRect();
 				if (hov) ImGui::SetTooltip("%s", ItemPathText(*s, it).c_str());
 				ImGui::PopID();
-				if (c == cols - 1 || pos == n - 1) {}
 			}
+			ImGui::SetCursorScreenPos(rowPos);
+			ImGui::Dummy(ImVec2(cols * cw, ch));
+		}
 		ImGui::EndChild();
 		ItemContextMenu(st, req, open);
 		return;
@@ -531,8 +555,9 @@ static void DrawList(State &st, OpenRequest &req, bool &open)
 		float tx = p.x + 2;
 		if (thumbs) {
 			Thumb *t = ThumbFor(st.selSource, (int)idx, true);
-			if (t) { const float z = std::min(38.f / t->w, 38.f / t->h); const ImVec2 sz(t->w * z, t->h * z); const ImVec2 q(p.x + 2 + (38 - sz.x) * 0.5f, p.y + 2 + (38 - sz.y) * 0.5f); dl->AddImage((ImTextureID)(intptr_t)t->tex, q, ImVec2(q.x + sz.x, q.y + sz.y)); }
-			tx += 44;
+			if (t) { const float z = std::min(icon / t->w, icon / t->h); const ImVec2 sz(t->w * z, t->h * z); const ImVec2 q(p.x + 2 + (icon - sz.x) * 0.5f, p.y + 2 + (icon - sz.y) * 0.5f); dl->AddImage((ImTextureID)(intptr_t)t->tex, q, ImVec2(q.x + sz.x, q.y + sz.y)); }
+			else DrawBadge(dl, ImVec2(p.x + 2, p.y + 2), icon, it.type);
+			tx += icon + 6;
 		}
 		dl->AddText(ImVec2(tx, p.y + (rowH - ImGui::GetTextLineHeight()) * 0.5f), ImGui::GetColorU32(ImGuiCol_Text), it.name.c_str());
 		ImGui::TableSetColumnIndex(1);
@@ -631,12 +656,13 @@ static void Toolbar(State &st)
 	const char *cur = st.typeFilter < 0 ? T("All types", "\xe3\x81\x99\xe3\x81\xb9\xe3\x81\xa6") : kTypeNames[st.typeFilter];
 	if (ImGui::BeginCombo("##typefilter", cur)) {
 		if (ImGui::Selectable(T("All types", "\xe3\x81\x99\xe3\x81\xb9\xe3\x81\xa6"), st.typeFilter < 0)) { st.typeFilter = -1; st.viewDirty = true; }
-		for (int t = 0; t < 12; t++) if (ImGui::Selectable(kTypeNames[t], st.typeFilter == t)) { st.typeFilter = t; st.viewDirty = true; }
+		for (int t = 0; t < 13; t++) if (ImGui::Selectable(kTypeNames[t], st.typeFilter == t)) { st.typeFilter = t; st.viewDirty = true; }
 		ImGui::EndCombo();
 	}
 	ImGui::SameLine();
 	if (ImGui::Checkbox(T("Thumbnails", "\xe3\x82\xb5\xe3\x83\xa0\xe3\x83\x8d\xe3\x82\xa4\xe3\x83\xab"), &st.thumbs)) SaveSettings();
 	ImGui::SameLine();
+	if (!g_gridMode) { ImGui::SameLine(); if (ImGui::Button(g_iconLarge ? T("Icons: large", "\xe3\x82\xa2\xe3\x82\xa4\xe3\x82\xb3\xe3\x83\xb3: \xe5\xa4\xa7") : T("Icons: small", "\xe3\x82\xa2\xe3\x82\xa4\xe3\x82\xb3\xe3\x83\xb3: \xe5\xb0\x8f"))) g_iconLarge = !g_iconLarge; ImGui::SameLine(); }
 	if (ImGui::Button(g_gridMode ? T("List", "\xe3\x83\xaa\xe3\x82\xb9\xe3\x83\x88") : T("Grid", "\xe3\x82\xb0\xe3\x83\xaa\xe3\x83\x83\xe3\x83\x89"))) g_gridMode = !g_gridMode;
 	ImGui::SameLine();
 	ImGui::Checkbox(T("Stay open", "\xe9\x96\x8b\xe3\x81\x84\xe3\x81\x9f\xe3\x81\xbe\xe3\x81\xbe"), &g_pinned);
@@ -647,6 +673,7 @@ static void Toolbar(State &st)
 
 bool Draw(OpenRequest &req)
 {
+	g_uiFrame++;
 	PumpMain();
 	State &st = S();
 	LoadSettings();
@@ -720,7 +747,7 @@ bool ScriptCommand(const std::string &cmd, const std::string &arg, std::string *
 	if (cmd == "filter") { snprintf(st.filter, sizeof st.filter, "%s", arg.c_str()); st.viewDirty = true; return true; }
 	if (cmd == "type") {
 		if (arg == "all") st.typeFilter = -1;
-		else { st.typeFilter = -2; for (int t = 0; t < 12; t++) if (Lower(kTypeNames[t]).find(Lower(arg)) == 0) st.typeFilter = t; if (st.typeFilter == -2) { st.typeFilter = -1; say("unknown type"); return false; } }
+		else { st.typeFilter = -2; for (int t = 0; t < 13; t++) if (Lower(kTypeNames[t]).find(Lower(arg)) == 0) st.typeFilter = t; if (st.typeFilter == -2) { st.typeFilter = -1; say("unknown type"); return false; } }
 		st.viewDirty = true; return true;
 	}
 	if (cmd == "select") {
@@ -746,6 +773,7 @@ bool ScriptCommand(const std::string &cmd, const std::string &arg, std::string *
 	if (cmd == "palette") { st.bankPalette = std::clamp(atoi(arg.c_str()), 0, 7); return true; }
 	if (cmd == "zoom") { if (arg == "fit") st.view2.fit = true; else { st.view2.fit = false; st.view2.zoom = (float)atof(arg.c_str()); st.view2.panX = st.view2.panY = 0; } return true; }
 	if (cmd == "thumbs") { st.thumbs = arg != "off"; return true; }
+	if (cmd == "icons") { g_iconLarge = arg == "large"; return true; }
 	if (cmd == "grid") { g_gridMode = arg != "off"; return true; }
 	if (cmd == "pin") { g_pinned = arg != "off"; return true; }
 	if (cmd == "show") { show = arg != "off"; return true; }

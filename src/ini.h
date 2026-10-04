@@ -2,6 +2,7 @@
 #define INI_H_GUARD
 #include "framedata.h"
 #include "cg.h"
+#include <functional>
 #include <vector>
 #include <string>
 
@@ -33,6 +34,9 @@ extern struct Settings
 } gSettings;
 
 bool LoadFromIni(FrameData *framedata, CG *cg, const std::string& iniPath, std::string* outTopHA6Path = nullptr, Parts* parts = nullptr, std::string* outPATPath = nullptr);
+// Thumbnail loader (archive browser): the HA6 stack of a project .txt and the sprite bank, nothing else (no .pat parts, no scripts, no effect library). With `readCg` the bank
+// bytes come from the caller (an archive entry named like the txt's BmpcutFile File00, plain bytes) instead of from <folder>\<File00>; palettes (<cg stem>.pal, _p1..7) are read from disk.
+bool LoadStackLight(FrameData *framedata, CG *cg, const std::string& iniPath, const std::function<bool(const std::string &cgName, std::vector<uint8_t> &bytes)> &readCg = nullptr);
 bool LoadChrHA6FromIni(FrameData *framedata, CG *cg, const std::string& iniPath, std::string* outTopHA6Path = nullptr, Parts* parts = nullptr, std::string* outPATPath = nullptr);
 bool AddHA6ToTxt(const std::string& txtPath, const std::string& ha6Filename);
 void InitIni();

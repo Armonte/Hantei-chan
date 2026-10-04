@@ -1,0 +1,17 @@
+# mbtl: grid view then list view of the character list (all visible thumbnails loaded before each capture)
+browse C:\Program Files (x86)\Steam\steamapps\common\MELTY BLOOD TYPE LUMINA
+waitidle
+grid on
+wait 20
+waitidle
+wait 20
+capture C:/dev/hantei-chan/work/ab/shots/mbtl_grid.png
+grid off
+wait 20
+waitidle
+wait 20
+capture C:/dev/hantei-chan/work/ab/shots/mbtl_list.png
+icons large
+wait 20
+capture C:/dev/hantei-chan/work/ab/shots/mbtl_list_large.png
+quit
