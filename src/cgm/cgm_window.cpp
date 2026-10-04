@@ -664,6 +664,10 @@ void Window::draw(CharacterInstance *ch, const WindowHost &host) {
 		drawPalettes(*ch, host);
 		ImGui::EndTabItem();
 	}
+	if (ImGui::BeginTabItem(LBL("Effect recolor"))) {
+		fxr.draw(*ch, bank.get(), usage, host.navigate);
+		ImGui::EndTabItem();
+	}
 	ImGui::EndTabBar();
 	}
 	ImGui::End();

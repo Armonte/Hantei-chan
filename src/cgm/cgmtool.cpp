@@ -404,6 +404,8 @@ static int CmdRefsCheck(int argc, char **argv) {
 	return bad ? 1 : 0;
 }
 
+int FxrMain(int argc, char **argv);   // fxr_cli.cpp
+
 int main(int argc, char **argv) {
 	if (argc < 2) { puts("usage: cgmtool check|info|export|import|roundtrip ..."); return 2; }
 	std::string c = argv[1];
@@ -415,6 +417,7 @@ int main(int argc, char **argv) {
 	if (c.compare(0, 4, "pal-") == 0) return CmdPal(c, argc - 2, argv + 2);
 	if (c == "struct-check") return CmdStructCheck(argc - 2, argv + 2);
 	if (c == "refs-check") return CmdRefsCheck(argc - 2, argv + 2);
+	if (c == "fxr") return FxrMain(argc - 2, argv + 2);
 	if (c == "recolor-bank") return CmdRecolorBank(argc - 2, argv + 2);
 	puts("unknown command"); return 2;
 }
