@@ -17,6 +17,17 @@ if [ $QUICK -eq 0 ]; then
 		[ $r -ne 0 ] && { echo "!! roundtrip $b exited $r: $(echo "$out" | tail -2 | tr '\n' ' ')"; rc=1; }
 	done
 	echo "SECTION cgm-roundtrip: ${#BANKS[@]} banks processed (any FAIL lines above)"
+	for b in "${BANKS[@]}"; do
+		out=$(nice -n 10 "$T" struct-check "$b" 2>&1); r=$?
+		echo "$out" | grep -E "^FAIL"
+		[ $r -ne 0 ] && { echo "!! struct-check $b exited $r"; rc=1; }
+	done
+	echo "SECTION cgm-struct: ${#BANKS[@]} banks processed (any FAIL lines above)"
+	for c in akiha neco hisui effect; do
+		out=$(nice -n 10 "$T" refs-check "$(wslpath -w "$DATA/$c.HA6")" "$(wslpath -w "$DATA/$c.cg")" 2>&1); r=$?
+		echo "$out" | grep -E "^(FAIL|SECTION)"
+		[ $r -ne 0 ] && { echo "!! refs-check $c exited $r"; rc=1; }
+	done
 fi
 mapfile -t PALS < <(ls "$DATA"/*.pal | while read -r f; do wslpath -w "$f"; done)
 (cd "$ROOT/build" && nice -n 10 "$T" pal-check "${PALS[@]}" | grep -E "^(FAIL|SECTION)") || rc=1

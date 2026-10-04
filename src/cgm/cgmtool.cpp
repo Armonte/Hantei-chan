@@ -308,8 +308,8 @@ static int CmdStructCheck(int argc, char **argv) {
 			if (!EngineAgrees(w, why) && mode == 0 && at < 0) { F("engine disagrees after add: " + why); break; }
 			for (int k = 0; k < N && !bad; k += std::max(1, N / 40)) if (!SameDecoded(bk, k, w, remap[k])) { F("image " + std::to_string(k) + " changed by AddImage"); }
 			std::vector<int> r2; if (!cgm::DeleteImage(w, id, false, r2, &err)) { F("DeleteImage: " + err); break; }
-			{ int mp = -1; for (const cgm::Image &im : w.images) for (const cgm::Block &bl : im.blocks) mp = std::max<int>(mp, bl.page); if ((uint32_t)(mp + 1) <= bk.H[0]) w.H[0] = bk.H[0]; }   // pages added for the image are given back
-			if (!sameBytes(w)) { F("add -> delete is not byte-identical"); break; }
+			{ int mp = -1, mp0 = -1; for (const cgm::Image &im : w.images) for (const cgm::Block &bl : im.blocks) mp = std::max<int>(mp, bl.page); for (const cgm::Image &im : bk.images) for (const cgm::Block &bl : im.blocks) mp0 = std::max<int>(mp0, bl.page); if (mp <= mp0) w.H[0] = bk.H[0]; }   // pages added for the image are given back
+			if (!sameBytes(w)) { size_t d = 0; while (d < out.size() && d < b.size() && out[d] == b[d]) d++; F("add -> delete is not byte-identical (first diff 0x" + std::to_string(d) + ", sizes " + std::to_string(out.size()) + " vs " + std::to_string(b.size()) + ", mode " + std::to_string(mode) + " at " + std::to_string(at) + ")"); break; }
 		}
 		// 2. move / permute and back
 		if (!bad && N > 4) {
@@ -380,22 +380,22 @@ static int CmdRefsCheck(int argc, char **argv) {
 	{   // permute
 		std::mt19937 rng(7); std::vector<int> order = cgm::IdentityRemap(bk.images.size()); std::shuffle(order.begin(), order.end(), rng);
 		cgm::Bank w = bk; std::vector<int> remap; if (!cgm::Permute(w, order, remap, &err)) F(err);
-		else { cgm::RemapSprites(fd, remap); check(w, "random permutation", remap); cgm::RemapSprites(fd, cgm::InvertRemap(remap, bk.images.size())); }
+		else { cgm::RemapSprites(fd, remap); check(w, "random permutation", remap); cgm::RemapSprites(fd, cgm::InvertRemap(remap, w.images.size())); }
 	}
 	{   // insert at the front
 		cgm::Bank w = bk; std::vector<int> remap; int id; auto spr = Sprite(32, 32, 0); cgm::NewImageSpec sp;
-		if (!cgm::AddImage(w, 0, sp, spr.data(), 32, 32, remap, &id, &err)) F(err); else { cgm::RemapSprites(fd, remap); check(w, "insert at 0", remap); cgm::RemapSprites(fd, cgm::InvertRemap(remap, bk.images.size())); }
+		if (!cgm::AddImage(w, 0, sp, spr.data(), 32, 32, remap, &id, &err)) F(err); else { cgm::RemapSprites(fd, remap); check(w, "insert at 0", remap); cgm::RemapSprites(fd, cgm::InvertRemap(remap, w.images.size())); }
 	}
 	{   // delete an unused image in the middle
 		int victim = -1; for (size_t n = bk.images.size() / 2; n < bk.images.size() && victim < 0; n++) if (u0.byImage[n].empty() && bk.images[n].drawable()) victim = (int)n;
-		if (victim >= 0) { cgm::Bank w = bk; std::vector<int> remap; if (!cgm::DeleteImage(w, victim, true, remap, &err)) F(err); else { cgm::RemapSprites(fd, remap); check(w, "delete unused image", remap); cgm::RemapSprites(fd, cgm::InvertRemap(remap, bk.images.size())); } }
+		if (victim >= 0) { cgm::Bank w = bk; std::vector<int> remap; if (!cgm::DeleteImage(w, victim, true, remap, &err)) F(err); else { cgm::RemapSprites(fd, remap); check(w, "delete unused image", remap); cgm::RemapSprites(fd, cgm::InvertRemap(remap, w.images.size())); } }
 	}
 	{   // delete a used image: references are cleared and recorded, restoring puts them back
 		int victim = -1; for (size_t n = 0; n < u0.byImage.size() && victim < 0; n++) if (!u0.byImage[n].empty()) victim = (int)n;
 		cgm::Bank w = bk; std::vector<int> remap; std::vector<cgm::ClearedRef> cl;
 		if (victim >= 0 && cgm::DeleteImage(w, victim, true, remap, &err)) {
 			const int n1 = cgm::RemapSprites(fd, remap, &cl); if (cl.size() != u0.byImage[victim].size()) F("cleared reference count differs from the usage count");
-			cgm::RemapSprites(fd, cgm::InvertRemap(remap, bk.images.size())); cgm::RestoreCleared(fd, cl); (void)n1;
+			cgm::RemapSprites(fd, cgm::InvertRemap(remap, w.images.size())); cgm::RestoreCleared(fd, cl); (void)n1;
 		}
 	}
 	cgm::UsageIndex u2; u2.build(fd, (int)bk.images.size()); int diff = 0; for (size_t n = 0; n < u2.byImage.size() && n < u0.byImage.size(); n++) diff += u2.byImage[n].size() != u0.byImage[n].size();
