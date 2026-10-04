@@ -38,7 +38,7 @@ struct FxClassification {
 
 void ClassifyEffects(const Bank &bank, const UsageIndex &usage, FrameData &fd, FxClassification &out);
 
-// Palette conversion: Hantei palettes are memory RGBA (0xAABBGGRR); the runtime's autoAccent() wants 0xAARRGGBB.
+// Palette hand-over to autoAccent(): both sides use the engine layout (0xAABBGGRR = memory R,G,B,A); kept as a function so the contract lives in one place.
 void ToRuntimePalette(const uint32_t *rgbaMem, uint32_t out[256]);
 fx::Rgb AccentFor(const fx::Rule &r, const uint32_t *slotPalMem, int slot);   // override if present, else auto from the palette
 

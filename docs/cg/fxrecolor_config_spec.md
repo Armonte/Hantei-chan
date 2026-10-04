@@ -24,16 +24,12 @@ are the runtime's own code, not a re-implementation.
   own colours); an *effect pattern* draws at least one such sprite. Score = share of its layers that are fixed-colour; shared sprites are flagged (per-pattern rules).
 * Per-pattern granularity is the `patterns` list of a rule (+ `sprites`); `AssignPatterns` moves patterns between rules and disables a rule whose list it emptied
   (an empty list would mean "any").
-* The slot palette: Hantei-chan stores palettes as memory RGBA (`0xAABBGGRR`); `ToRuntimePalette` converts to the `0xAARRGGBB` that `autoAccent` documents.
-  **Open question for the runtime:** `MbaaccSim_FxRecolor.cpp` copies `CG+0x10` raw into the same `autoAccent` input. The engine's mode-2/0 upload reads that
-  palette as bytes R,G,B,A (`CG_UploadCellPalettized` writes `BYTE2` first = B), i.e. memory RGBA too, so unless something converts it first the runtime's accent has
-  R and B swapped. Verify with a known skin colour (Akiha slot 0 entry 1 = f8e0d0).
+* The slot palette: both sides use the engine layout (`0xAABBGGRR`, memory R,G,B,A). The runtime fixed an R/B swap in `dwordRgb` (runtime ccba554f); `ToRuntimePalette` is now a copy.
 
 **Runtime auto accent scans unused palette entries.** `autoAccent()` with no `accent_idx` looks at all 255 entries; Akiha's palette keeps unused
 indices at pure green, which it then picks (the editor showed #00ff00 for slot 0). The editor's auto-suggest therefore writes `accent_idx = N`, where N is
 the body palette index (used by type-0 sprites) that is vivid across slots *and* differs between them (`SuggestAccentIndices`); each slot's accent is then the
-colour that slot gives index N. New rules get this index by default. Suggest a runtime-side guard too (ignore indices no body sprite uses) so rules without
-`accent_idx` do not pick junk.
+colour that slot gives index N. New rules get this index by default. The runtime has since skipped the pure green / magenta marker colours; the explicit index stays the better choice.
 
 ## Starter ruleset
 
