@@ -29,6 +29,9 @@
 #include "../han2/gof1_archive.h"
 #include "../background/bg_file.h"
 #include "../cg.h"
+#include "../cgm/cgm_io.h"
+#include "../cgm/cgm_export.h"
+#include <filesystem>
 #include "../png_writer.h"
 #include <windows.h>
 #include <objbase.h>
@@ -660,11 +663,53 @@ int CmdCgPng(int argc, char **argv)
 	return 0;
 }
 
+
+// cgio <archive> <ENTRY> <tmp-dir>: the CG manager's batch export / import over a foreign (MB strip) bank: export all, import unchanged -> identical bank bytes;
+// then change a few pixels of one image's PNG, import -> exactly that image re-encoded and rendering the edit.
+int CmdCgIo(int argc, char **argv)
+{
+	if (argc < 3) { puts("cgio <archive> <ENTRY> <tmp-dir>"); return 2; }
+	std::string err; auto a = fbarc::Open(argv[0], &err); if (!a) { printf("%s\n", err.c_str()); return 1; }
+	if (!strcmp(argv[1], "?")) { for (size_t i = 0; i < a->entries().size(); i++) puts(a->relativePath(i).c_str()); return 0; }
+	const int idx = a->find(fbarc::NameFromUtf8(argv[1])); if (idx < 0) { puts("entry not found"); return 1; }
+	std::vector<uint8_t> d; if (!a->read((size_t)idx, d, &err)) { printf("%s\n", err.c_str()); return 1; }
+	gof1::DecryptDat(d); FrameData fd; if (!gof1::Load(fd, d.data(), d.size(), &err)) { printf("load: %s\n", err.c_str()); return 1; }
+	std::shared_ptr<han2::MbCgBank> bank = han2::MbCgBank::Parse(fd.m_han2->cg.data(), fd.m_han2->cg.size(), &err); if (!bank) { printf("cg: %s\n", err.c_str()); return 1; }
+	std::vector<uint8_t> orig; bank->serialize(orig);
+	CG cg; cg.loadForeign(bank); cgm::CgIO io(cg);
+	const std::string dir = std::string(argv[2]) + "\\cgio"; std::filesystem::remove_all(dir);
+	cgm::ExportResult er; cgm::ExportOptions eo;
+	if (!cgm::ExportBank(io, dir, argv[1], eo, er)) { printf("FAIL export: %s\n", er.error.c_str()); return 1; }
+	cgm::ImportResult ir; if (!cgm::ImportBank(io, dir, ir)) { printf("FAIL import: %s\n", ir.error.c_str()); return 1; }
+	std::vector<uint8_t> after; bank->serialize(after);
+	bool bad = false;
+	if (!ir.changed.empty() || after != orig) { printf("FAIL unchanged export -> import altered the bank (%zu re-encoded)\n", ir.changed.size()); bad = true; }
+	int pick = -1; cgm::Rgba r; int p1 = -1, p2 = -1;
+	for (int n = 0; n < io.slots() && pick < 0; n++) { cgm::ImgInfo ii; io.info(n, ii); if (!ii.drawable || !io.decode(n, r, nullptr)) continue;
+		for (int i = 0; i < r.w * r.h && p1 < 0; i++) if (r.px[i * 4 + 3]) for (int k = i + 1; k < r.w * r.h; k++) if (r.px[k * 4 + 3] && memcmp(&r.px[i * 4], &r.px[k * 4], 3)) { p1 = i; p2 = k; break; }
+		if (p1 >= 0) pick = n; }
+	if (pick >= 0) {
+		memcpy(&r.px[p1 * 4], &r.px[p2 * 4], 3);
+		std::filesystem::remove_all(dir); cgm::ExportOptions o1 = eo; o1.onlyIds = {pick}; o1.indexed = false; cgm::ExportResult e2;
+		cgm::ExportBank(io, dir, argv[1], o1, e2);
+		std::string png; for (auto &e : std::filesystem::directory_iterator(std::filesystem::path(dir) / "rgba")) png = e.path().string();
+		std::string we; WritePngRgba(png, r.px.data(), r.w, r.h, we);
+		cgm::ImportResult i2; cgm::ImportBank(io, dir, i2);
+		cgm::Rgba now; io.decode(pick, now, nullptr);
+		if (i2.changed.size() != 1 || i2.changed[0] != pick || now.px != r.px) { printf("FAIL edit of image %d: changed=%zu renders-edit=%d\n", pick, i2.changed.size(), (int)(now.px == r.px)); bad = true; }
+		else printf("OK  edited image %d re-encoded alone and renders the edit\n", pick);
+	}
+	std::filesystem::remove_all(dir);
+	printf("SECTION cgio pass %d fail %d skipped 0\n", bad ? 0 : 1, bad ? 1 : 0);
+	return bad ? 1 : 0;
+}
+
 static int Main8(int argc, char **argv)
 {
 	CoInitializeEx(nullptr, COINIT_MULTITHREADED);
 	if (argc >= 2 && !strcmp(argv[1], "locality")) return CmdLocality(argc - 2, argv + 2);
 	if (argc >= 2 && !strcmp(argv[1], "cgpng")) return CmdCgPng(argc - 2, argv + 2);
+	if (argc >= 2 && !strcmp(argv[1], "cgio")) return CmdCgIo(argc - 2, argv + 2);
 	if (argc >= 2 && !strcmp(argv[1], "shift")) return CmdShift(argc - 2, argv + 2);
 	if (argc < 2) { puts("usage: fbchartool <title> <archive>...   (fbchartool list)"); return 2; }
 	if (!strcmp(argv[1], "list")) { for (auto &t : kTitles) puts(t.key); return 0; }

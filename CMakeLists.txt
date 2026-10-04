@@ -620,6 +620,10 @@ endif()
 # Per-title byte-exact round trip of every archive member (tools/fb/run_fb_suite.sh).
 add_executable(fbchartool
 	src/fbarc/fbchartool.cpp
+	src/cgm/cgm_bank.cpp
+	src/cgm/cgm_ops.cpp
+	src/cgm/cgm_export.cpp
+	src/cgm/cgm_io.cpp
 	${FBARC_SOURCES}
 	src/framedata.cpp
 	src/framedata_load.cpp
