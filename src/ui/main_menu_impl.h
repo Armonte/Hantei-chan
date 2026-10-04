@@ -997,6 +997,7 @@ void MainFrame::Menu(unsigned int errorPopupId)
 				ImGui::Separator();
 			}
 			if (ImGui::MenuItem(LBL("MBAC (HA4) Inspector"), nullptr, ha4ui::showInspector)) ha4ui::showInspector = !ha4ui::showInspector;
+			if (ImGui::MenuItem(han2ui::Tr("Animations (list with thumbnails)", "\xe3\x82\xa2\xe3\x83\x8b\xe3\x83\xa1\xe3\x83\xbc\xe3\x82\xb7\xe3\x83\xa7\xe3\x83\xb3\xe4\xb8\x80\xe8\xa6\xa7"), nullptr, han2ui::showAnimList)) han2ui::showAnimList = !han2ui::showAnimList;
 			if (ImGui::MenuItem(LBL("RBO / GOF2 (HAN2) Inspector"), nullptr, han2ui::showInspector)) han2ui::showInspector = !han2ui::showInspector;
 			if (ImGui::MenuItem(han2ui::Tr("RBO / GOF2 loading report", "RBO / GOF2 \xe8\xaa\xad\xe3\x81\xbf\xe8\xbe\xbc\xe3\x81\xbf\xe3\x83\xac\xe3\x83\x9d\xe3\x83\xbc\xe3\x83\x88"), nullptr, han2ui::showLoadReport)) han2ui::showLoadReport = !han2ui::showLoadReport;
 			ImGui::Separator();
