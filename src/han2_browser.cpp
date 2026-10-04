@@ -4,6 +4,7 @@
 #include "han2/gof1_archive.h"
 #include "fbarc/fb_archive.h"
 #include "han2_pac_window.h"
+#include "archive_browser.h"
 #include "filedialog.h"
 #include "png_writer.h"
 #include "misc.h"
@@ -20,8 +21,6 @@
 
 namespace han2ui {
 
-bool showBrowser = false;
-
 bool showLoadReport = false;
 const char *Tr(const char *en, const char *jp) { return i18n::language == 1 ? jp : en; }
 
@@ -35,49 +34,9 @@ struct LoadEntry { std::string name, summary; std::vector<std::string> warnings;
 std::vector<LoadEntry> g_reports;
 std::string g_workFolder;
 std::string g_gameDir;
-struct FolderNode { std::string name, path; std::vector<FolderNode> dirs; std::vector<std::string> files; };
-FolderNode g_root; bool g_scanned = false;
-void ScanFolder(const std::string &dir, FolderNode &node, int depth)
-{
-	if (dir.empty() || depth > 4) return;
-	node.path = dir;
-	std::error_code ec;
-	for (auto &e : std::filesystem::directory_iterator(std::filesystem::u8path(dir), ec)) {
-		if (e.is_directory(ec)) { FolderNode d; d.name = e.path().filename().u8string(); ScanFolder(e.path().u8string(), d, depth + 1); if (!d.dirs.empty() || !d.files.empty()) node.dirs.push_back(std::move(d)); continue; }
-		if (!e.is_regular_file(ec)) continue;
-		std::string x; for (char ch : e.path().extension().string()) x += (char)tolower((unsigned char)ch);
-		if (x == ".dt2" || x == ".dat" || x == ".pac" || x == ".pat" || x == ".chp" || x == ".img" || x == ".p" || x == ".fob") node.files.push_back(e.path().u8string());
-	}
-	std::sort(node.files.begin(), node.files.end());
-	std::sort(node.dirs.begin(), node.dirs.end(), [](const FolderNode &a, const FolderNode &b) { return a.name < b.name; });
-}
-struct Mounted { std::shared_ptr<pac::Archive> a; std::shared_ptr<gof1::Archive> g; std::shared_ptr<fbarc::Archive> f; std::string shortName; };
-bool ReadMounted(const Mounted &m, size_t i, std::vector<uint8_t> &out, std::string *err)
-{
-	if (m.f) return m.f->read(i, out, err);
-	if (m.g) return gof1::ReadEntry(*m.g, i, out, err);
-	return pac::ReadEntry(*m.a, i, out, err);
-}
-// Entries of a generalized (PKFileInfo / FilePacHeaderA) archive are shown through a pac::Entry shadow list, like GOF1's.
-std::string TempExtract(const Mounted &m, size_t i)
-{
-	std::vector<uint8_t> b; std::string err;
-	if (!ReadMounted(m, i, b, &err)) return {};
-	std::error_code ec; auto dir = std::filesystem::temp_directory_path(ec) / "hantei_archive" / std::filesystem::u8path(m.shortName);
-	std::filesystem::create_directories(dir, ec);
-	auto out = dir / std::filesystem::u8path(m.f ? fbarc::NameToUtf8(m.f->relativePath(i)) : m.a->entries[i].name);
-	std::filesystem::create_directories(out.parent_path(), ec);
-	std::ofstream f(out, std::ios::binary);
-	if (!b.empty()) f.write((const char *)b.data(), (std::streamsize)b.size());
-	if (m.f) fbarc::SetOrigin(out.u8string(), fbarc::Origin{ m.f->path(), fbarc::NameToUtf8(m.f->relativePath(i)) });
-	return f ? out.u8string() : std::string();
 }
 
-std::vector<Mounted> g_mounted;
-int g_sel = 0;
-char g_filter[64] = "";
-std::string g_extractStatus;
-
+namespace {
 std::string Lower(std::string s) { for (auto &c : s) c = (char)tolower((unsigned char)c); return s; }
 bool EndsWith(const std::string &s, const char *suf)
 {
@@ -153,197 +112,6 @@ void DrawLoadReport()
 	ImGui::End();
 }
 
-std::string AddArchive(const std::string &path)
-{
-	auto a = std::make_shared<pac::Archive>();
-	std::string err;
-	if (!pac::Open(path, *a, &err)) {
-		auto g = std::make_shared<gof1::Archive>(); std::string e2;
-		if (!gof1::Open(path, *g, &e2)) {
-			std::string e3; auto f = fbarc::Open(path, &e3);
-			if (!f) return path + ": " + err;
-			for (auto &m : g_mounted) if (m.f && m.f->path() == path) return {};
-			Mounted m; m.f = std::move(f); m.a = std::make_shared<pac::Archive>(); m.a->path = path;
-			for (size_t i = 0; i < m.f->entries().size(); i++) { pac::Entry pe; pe.name = fbarc::NameToUtf8(m.f->relativePath(i)); pe.size = (uint32_t)m.f->entries()[i].size; pe.offset = (uint32_t)m.f->entries()[i].offset; m.a->entries.push_back(pe); }
-			m.shortName = std::filesystem::u8path(path).filename().string() + " (" + fbarc::KindName(m.f->kind()) + ")";
-			g_mounted.push_back(m); g_sel = (int)g_mounted.size() - 1; showBrowser = true;
-			return {};
-		}
-		for (auto &m : g_mounted) if (m.g && m.g->path == path) return {};
-		Mounted m; m.g = g; m.a = std::make_shared<pac::Archive>(); m.a->path = path;
-		for (auto &e : g->entries) { pac::Entry pe; pe.name = e.name; pe.size = e.size; pe.offset = e.offset; m.a->entries.push_back(pe); }
-		m.shortName = std::filesystem::u8path(path).filename().string() + " (GOF1)";
-		g_mounted.push_back(m); g_sel = (int)g_mounted.size() - 1; showBrowser = true;
-		return {};
-	}
-	for (auto &m : g_mounted) if (m.a->path == path) return {};
-	Mounted m; m.a = a;
-	m.shortName = std::filesystem::u8path(path).filename().string();
-	g_mounted.push_back(m);
-	g_sel = (int)g_mounted.size() - 1;
-	showBrowser = true;
-	return {};
-}
-
-bool DrawBrowser(OpenRequest &req, std::string &message)
-{
-	bool open = false;
-	if (!showBrowser) return false;
-	ImGui::SetNextWindowSize(ImVec2(760, 520), ImGuiCond_FirstUseEver);
-	if (!ImGui::Begin(LBL("French Bread archives"), &showBrowser)) { ImGui::End(); return false; }
-
-	if (ImGui::Button(LBL("Add archive..."))) {
-		std::string path = FileDialog(fileType::HAN2, false);
-		if (!path.empty()) message = AddArchive(path);
-	}
-	ImGui::SameLine();
-	if (ImGui::Button(LBL("Working folder..."))) { std::string d = BrowseForFolderUtf8(""); if (!d.empty()) { SetWorkFolder(d); g_scanned = false; } }
-	ImGui::SameLine();
-	if (ImGui::Button(LBL("Refresh"))) g_scanned = false;
-	ImGui::SameLine();
-	{ const char *lg = i18n::language == 1 ? "EN" : "JP"; if (ImGui::Button(lg)) { i18n::language = 1 - i18n::language; SaveHan2Settings(); } }
-	if (!g_scanned) { g_scanned = true; g_root = FolderNode(); ScanFolder(WorkFolder(), g_root, 0); }
-	ImGui::SameLine();
-	ImGui::PushTextWrapPos(0.0f); ImGui::TextDisabled("%s", TXT("Later archives in the list override earlier ones when a file name occurs twice (Update01 and the Ex discs patch DATA0x).")); ImGui::PopTextWrapPos();
-
-	// archive list
-	ImGui::BeginChild("arcs", ImVec2(230, 0), true);
-	for (int i = 0; i < (int)g_mounted.size(); i++) {
-		ImGui::PushID(i);
-		char lbl[160]; snprintf(lbl, sizeof(lbl), "%d. %s (%zu)", i + 1, g_mounted[i].shortName.c_str(), g_mounted[i].a->entries.size());
-		if (ImGui::Selectable(lbl, g_sel == i)) g_sel = i;
-		if (ImGui::IsItemHovered()) ImGui::SetTooltip("%s", g_mounted[i].a->path.c_str());
-		ImGui::PopID();
-	}
-	if (!g_mounted.empty() && g_sel >= 0 && g_sel < (int)g_mounted.size()) {
-		if (ImGui::Button(LBL("Up")) && g_sel > 0) { std::swap(g_mounted[g_sel], g_mounted[g_sel - 1]); g_sel--; }
-		ImGui::SameLine();
-		if (ImGui::Button(LBL("Down")) && g_sel + 1 < (int)g_mounted.size()) { std::swap(g_mounted[g_sel], g_mounted[g_sel + 1]); g_sel++; }
-		ImGui::SameLine();
-		if (ImGui::Button(LBL("Unmount"))) { g_mounted.erase(g_mounted.begin() + g_sel); g_sel = std::max(0, g_sel - 1); }
-	}
-	if (!WorkFolder().empty()) {
-		ImGui::Separator(); ImGui::TextDisabled("%s", WorkFolder().c_str());
-		if (WorkFolder().size() >= 2 && (WorkFolder()[0] == 'C' || WorkFolder()[0] == 'c') && WorkFolder()[1] == ':')
-			ImGui::TextColored(ImVec4(1, .8f, .3f, 1), "%s", TXT("The working folder is on C: (not recommended: Program Files / permission problems)."));
-		int uid = 0;
-		std::function<void(const FolderNode &)> draw = [&](const FolderNode &n) {
-			for (auto &d : n.dirs) if (ImGui::TreeNode((d.name + "##" + std::to_string(uid++)).c_str())) { draw(d); ImGui::TreePop(); }
-			for (auto &f : n.files) {
-				ImGui::PushID(uid++);
-				std::string nm = std::filesystem::u8path(f).filename().string();
-				if (ImGui::Selectable(nm.c_str())) { req.stem = "\x01open"; req.read = nullptr; req.origin = f; open = true; }
-				ImGui::PopID();
-			}
-		};
-		draw(g_root);
-	}
-	ImGui::EndChild();
-	ImGui::SameLine();
-
-	ImGui::BeginChild("entries");
-	ImGui::SetNextItemWidth(200);
-	ImGui::InputText(LBL("filter"), g_filter, sizeof(g_filter));
-	if (g_sel >= 0 && g_sel < (int)g_mounted.size() && g_mounted[g_sel].f) {
-		fbarc::Archive &fa = *g_mounted[g_sel].f;
-		ImGui::SameLine(); ImGui::TextDisabled("%s", fa.describe().c_str());
-		if (ImGui::SmallButton(LBL("Extract all..."))) {
-			std::string dir = BrowseForFolderUtf8("");
-			if (!dir.empty()) {
-				int ok = 0, bad = 0;
-				for (size_t i = 0; i < fa.entries().size(); i++) {
-					std::vector<uint8_t> b; std::string e;
-					auto out = std::filesystem::u8path(dir) / std::filesystem::u8path(fbarc::NameToUtf8(fa.relativePath(i))); std::error_code ec;
-					std::filesystem::create_directories(out.parent_path(), ec);
-					std::ofstream f(out, std::ios::binary);
-					if (fa.read(i, b, &e) && f && (b.empty() || f.write((const char *)b.data(), (std::streamsize)b.size()))) ok++; else bad++;
-				}
-				char sb[256]; snprintf(sb, sizeof sb, TXT("extracted %d files (%d failed)"), ok, bad); g_extractStatus = sb;
-			}
-		}
-		ImGui::SameLine();
-		if (ImGui::SmallButton(LBL("Rebuild with a folder of replacements..."))) {
-			std::string dir = BrowseForFolderUtf8("");
-			if (!dir.empty()) {
-				std::string out = FileDialog(-1, true, "rebuilt.p");
-				if (!out.empty()) {
-					fbarc::Edit ed; int repl = 0, added = 0; std::error_code ec;
-					for (auto &it : std::filesystem::recursive_directory_iterator(std::filesystem::u8path(dir), ec)) {
-						if (!it.is_regular_file(ec)) continue;
-						std::string rel = std::filesystem::relative(it.path(), std::filesystem::u8path(dir), ec).generic_u8string();
-						std::ifstream f(it.path(), std::ios::binary);
-						std::vector<uint8_t> d((std::istreambuf_iterator<char>(f)), std::istreambuf_iterator<char>());
-						int idx = fa.find(fbarc::NameFromUtf8(rel));
-						if (idx >= 0) { ed.replace[(size_t)idx] = std::move(d); repl++; } else { ed.add.emplace_back(fbarc::NameFromUtf8(it.path().filename().u8string()), std::move(d)); added++; }
-					}
-					std::string e;
-					if (fa.rebuild(out, ed, &e)) { char sb[512]; snprintf(sb, sizeof sb, TXT("wrote %s (%d replaced, %d added)"), out.c_str(), repl, added); g_extractStatus = sb; }
-					else g_extractStatus = e;
-				}
-			}
-		}
-	}
-	if (!message.empty()) ImGui::TextColored(ImVec4(1, .5f, .3f, 1), "%s", message.c_str());
-	if (!g_extractStatus.empty()) ImGui::TextDisabled("%s", g_extractStatus.c_str());
-	if (g_sel >= 0 && g_sel < (int)g_mounted.size()) {
-		pac::Archive &a = *g_mounted[g_sel].a;
-		if (ImGui::BeginTable("ents", 3, ImGuiTableFlags_ScrollY | ImGuiTableFlags_RowBg | ImGuiTableFlags_Resizable)) {
-			ImGui::TableSetupColumn(LBL("name")); ImGui::TableSetupColumn(LBL("size")); ImGui::TableSetupColumn(LBL("action"));
-			ImGui::TableSetupScrollFreeze(0, 1);
-			ImGui::TableHeadersRow();
-			std::string flt = Lower(g_filter);
-			for (size_t i = 0; i < a.entries.size(); i++) {
-				const pac::Entry &e = a.entries[i];
-				if (!flt.empty() && Lower(e.name).find(flt) == std::string::npos) continue;
-				ImGui::TableNextRow();
-				ImGui::TableSetColumnIndex(0);
-				ImGui::PushID((int)i);
-				const bool isChar = EndsWith(e.name, ".dat") || EndsWith(e.name, ".dt2");
-				ImGui::Selectable(e.name.c_str(), false, ImGuiSelectableFlags_SpanAllColumns | ImGuiSelectableFlags_AllowDoubleClick);
-				if (isChar && ImGui::IsItemHovered() && ImGui::IsMouseDoubleClicked(0)) {
-					if (g_mounted[g_sel].f) {
-						std::string tmp = TempExtract(g_mounted[g_sel], i);
-						if (tmp.empty()) message = TXT("could not extract the entry"); else { req.stem = "\x01open"; req.read = nullptr; req.origin = tmp; open = true; }
-					}
-					else if (g_mounted[g_sel].g) { req.stem = "\x01gof1"; req.gof1Archive = g_mounted[g_sel].g->path; req.gof1Entry = e.name; req.origin = g_mounted[g_sel].shortName; open = true; }
-					else {
-					std::string stem = e.name.substr(0, e.name.size() - 4);
-					std::vector<std::shared_ptr<pac::Archive>> order;
-					// the clicked archive first, then the rest with later mounts winning
-					order.push_back(g_mounted[g_sel].a);
-					for (int k = (int)g_mounted.size() - 1; k >= 0; k--) if (k != g_sel) order.push_back(g_mounted[k].a);
-					req.stem = stem; req.read = han2::PacReader(order); req.origin = g_mounted[g_sel].shortName;
-					open = true;
-					}
-				}
-				if (!isChar && ImGui::IsItemHovered() && ImGui::IsMouseDoubleClicked(0)) {
-					std::vector<uint8_t> bytes; std::string rerr;
-					if (ReadMounted(g_mounted[g_sel], i, bytes, &rerr)) OpenFileViewer(e.name, std::move(bytes), g_mounted[g_sel].shortName, g_mounted[g_sel].f ? g_mounted[g_sel].f->path() : g_mounted[g_sel].a->path); else message = rerr;
-				}
-				ImGui::TableSetColumnIndex(1); ImGui::Text("%u", e.size);
-				ImGui::TableSetColumnIndex(2);
-				if (ImGui::SmallButton(LBL("Extract..."))) {
-					char defName[260]{}; snprintf(defName, sizeof(defName), "%s", e.name.c_str());
-					std::string out = FileDialog(-1, true, defName);
-					if (!out.empty()) {
-						std::vector<uint8_t> b; std::string err;
-						if (ReadMounted(g_mounted[g_sel], i, b, &err)) {
-							std::ofstream f(std::filesystem::u8path(out), std::ios::binary);
-							if (f && (b.empty() || f.write((const char *)b.data(), (std::streamsize)b.size()))) { char sb[1024]; snprintf(sb, sizeof(sb), TXT("extracted %s to %s"), e.name.c_str(), out.c_str()); g_extractStatus = sb; }
-							else { char sb[1024]; snprintf(sb, sizeof(sb), TXT("could not write %s"), out.c_str()); g_extractStatus = sb; }
-						} else g_extractStatus = err;
-					}
-				}
-				ImGui::PopID();
-			}
-			ImGui::EndTable();
-		}
-	} else {
-		ImGui::PushTextWrapPos(0.0f); ImGui::TextDisabled("%s", TXT("Add a PAC archive (RBO DATA01.PAC ... Ex3Disc.PAC, GOF2 data00.dat ...).")); ImGui::PopTextWrapPos();
-	}
-	ImGui::EndChild();
-	ImGui::End();
-	return open;
-}
+std::string AddArchive(const std::string &path) { return abrowser::OpenPath(path); }
 
 } // namespace han2ui

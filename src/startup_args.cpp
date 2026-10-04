@@ -1,5 +1,6 @@
 // MainFrame startup actions (--open / --capture); see startup_args.h.
 #include "startup_args.h"
+#include "archive_browser.h"
 #include "authoring/authoring_window.h"
 #include "main_frame.h"
 #include "character_instance.h"
@@ -14,6 +15,8 @@
 #include <glad/glad.h>
 #include <windows.h>
 #include <fstream>
+#include <functional>
+#include <filesystem>
 #include <vector>
 #include <cstdint>
 #include <cctype>
@@ -52,6 +55,7 @@ bool ParseWave2StartupArg(const char* arg, const wchar_t* next, int& i)
 		gStartup.onionBefore = b; gStartup.onionAfter = a; gStartup.onionSpacing = sp; gStartup.onionKeyframes = k != 0;
 		return true;
 	}
+	if (!strcmp(arg, "--ui-script")) { gStartup.uiScript = value(CP_UTF8); return true; }
 	if (!strcmp(arg, "--capture-view")) { gStartup.captureView = value(CP_UTF8); return true; }
 	if (!strcmp(arg, "--capture-windows")) { gStartup.captureWindows = value(CP_UTF8); return true; }
 	if (!strcmp(arg, "--export-png")) { gStartup.exportDir = value(CP_UTF8); return true; }
@@ -131,9 +135,57 @@ static bool han2StartupSniffPat(const std::string &path)
 	return han2::IsPat(b, n);
 }
 
+// Scripted UI session (--ui-script): runs between render and swap, so `capture` sees exactly what this frame drew.
+static void RunUiScript(MainFrame &mf, HDC dc, const std::function<void(const std::string &)> &openAny, const std::function<void(int, int)> &setView)
+{
+	static std::vector<std::string> lines; static size_t pc = 0; static int waitFrames = 0, idleWaited = 0; static bool loaded = false, waitIdle = false, done = false;
+	if (done || gStartup.uiScript.empty()) return;
+	if (!loaded) {
+		loaded = true;
+		std::ifstream f(std::filesystem::u8path(gStartup.uiScript));
+		std::string l;
+		while (std::getline(f, l)) { while (!l.empty() && (l.back() == '\r' || l.back() == ' ')) l.pop_back(); if (!l.empty() && l[0] != '#') lines.push_back(l); }
+		if (lines.empty()) { done = true; PostQuitMessage(0); return; }
+	}
+	if (waitFrames > 0) { waitFrames--; return; }
+	if (waitIdle) { if (abrowser::Busy() && ++idleWaited < 1800) return; waitIdle = false; idleWaited = 0; waitFrames = 6; return; }   // a few frames for the uploaded textures to draw
+	while (pc < lines.size()) {
+		const std::string line = lines[pc++];
+		const size_t sp = line.find(' ');
+		const std::string cmd = line.substr(0, sp), arg = sp == std::string::npos ? "" : line.substr(sp + 1);
+		if (cmd == "wait") { waitFrames = atoi(arg.c_str()); return; }
+		if (cmd == "waitidle") { waitIdle = true; return; }
+		if (cmd == "quit") { done = true; PostQuitMessage(0); return; }
+		if (cmd == "openany") { openAny(arg); continue; }
+		if (cmd == "pattern") { setView(0, atoi(arg.c_str())); continue; }
+		if (cmd == "viewframe") { setView(1, atoi(arg.c_str())); continue; }
+		if (cmd == "capture") {
+			RECT r; GetClientRect(WindowFromDC(dc), &r);
+			int w = r.right - r.left, h = r.bottom - r.top;
+			std::vector<uint8_t> rgba((size_t)w * h * 4), rgb((size_t)w * h * 3);
+			glReadBuffer(GL_BACK); glPixelStorei(GL_PACK_ALIGNMENT, 1);
+			glReadPixels(0, 0, w, h, GL_RGBA, GL_UNSIGNED_BYTE, rgba.data());
+			for (int y = 0; y < h; y++) for (int x = 0; x < w; x++) for (int k = 0; k < 3; k++) rgb[((size_t)(h - 1 - y) * w + x) * 3 + k] = rgba[((size_t)y * w + x) * 4 + k];
+			std::error_code ec; std::filesystem::create_directories(std::filesystem::u8path(arg).parent_path(), ec);
+			WritePng(arg, rgb.data(), w, h);
+			continue;
+		}
+		std::string msg;
+		if (!abrowser::ScriptCommand(cmd, arg, &msg)) {
+			FILE *lf = fopen((gStartup.uiScript + ".log").c_str(), "a");
+			if (lf) { fprintf(lf, "script line %zu '%s' failed: %s\n", pc, line.c_str(), msg.c_str()); fclose(lf); }
+		}
+		if (cmd == "browse" || cmd == "source" || cmd == "select" || cmd == "type" || cmd == "filter" || cmd == "open" || cmd == "key") { waitFrames = 3; return; }   // let the UI process it
+	}
+	done = true; PostQuitMessage(0);
+}
+
 void MainFrame::ProcessStartupArgs()
 {
 	int n = ++gStartup.frameCounter;
+	if (!gStartup.uiScript.empty() && n > 3)
+		RunUiScript(*this, context->dc, [this](const std::string &p) { openAnyFile(p); },
+			[this](int what, int v) { if (auto *vw = getActiveView()) { if (what == 0) vw->getState().pattern = v; else vw->getState().frame = v; } });
 	// [tag-panel] after --open (frame 2), so the pickers see the loaded character; works without --open too
 	// [authoring] --tool authoring (and --tool tag without --tag-ini: the old panel's entry now opens Authoring > Tuning)
 	const bool authoringTool = gStartup.tool == "authoring" || (gStartup.tool == "tag" && gStartup.tagIni.empty());

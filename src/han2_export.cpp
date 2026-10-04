@@ -279,4 +279,53 @@ bool ExportCharacter(FrameData &fd, CG &cg, Parts &parts, const std::string &out
 	return true;
 }
 
+
+bool FindIdleFrame(FrameData &fd, int &pattern, int &frame)
+{
+	for (int p = 0; p < (int)fd.m_sequences.size() && p < 64; p++) {
+		const Sequence &sq = fd.m_sequences[p];
+		for (int k = 0; k < (int)sq.frames.size() && k < 4; k++) {
+			const Frame &f = sq.frames[k];
+			if (f.han2.valid) { if ((int)RawI16(f, 0) >= 0) { pattern = p; frame = k; return true; } }
+			else for (const auto &l : f.AF.layers) if (l.spriteId >= 0) { pattern = p; frame = k; return true; }
+		}
+	}
+	return false;
+}
+
+bool RenderFrameThumb(FrameData &fd, CG &cg, Parts &parts, int pattern, int frame, int maxSide, std::vector<uint8_t> &rgba, int &w, int &h)
+{
+	if (pattern < 0 || pattern >= (int)fd.m_sequences.size()) return false;
+	const Sequence &sq = fd.m_sequences[pattern];
+	if (frame < 0 || frame >= (int)sq.frames.size()) return false;
+	const Frame &f = sq.frames[frame];
+	const int W = 640, H = 640, cx = 320, cy = 480;
+	Canvas cv(W, H);
+	if (f.han2.valid) {
+		const int spr = (int)RawI16(f, 0), ox = RawI16(f, 2), oy = RawI16(f, 4);
+		if (spr >= 10000) DrawCgImage(cv, cg, spr - 10000, cx + ox, cy + oy, 1);
+		else if (spr >= 0) DrawPose(cv, parts, spr, cx + ox, cy + oy, 1);
+	} else {
+		for (const auto &l : f.AF.layers) {
+			if (l.spriteId < 0 || l.usePat) continue;
+			DrawCgImage(cv, cg, l.spriteId, cx + l.offset_x, cy + l.offset_y, 1);
+		}
+	}
+	int x0 = W, y0 = H, x1 = -1, y1 = -1;
+	for (int y = 0; y < H; y++) for (int x = 0; x < W; x++) if (cv.px[((size_t)y * W + x) * 4 + 3]) { x0 = std::min(x0, x); x1 = std::max(x1, x); y0 = std::min(y0, y); y1 = std::max(y1, y); }
+	if (x1 < 0) return false;
+	const int cw = x1 - x0 + 1, ch = y1 - y0 + 1;
+	const float sc = std::min(1.f, (float)maxSide / (float)std::max(cw, ch));
+	w = std::max(1, (int)(cw * sc)); h = std::max(1, (int)(ch * sc));
+	rgba.assign((size_t)w * h * 4, 0);
+	for (int y = 0; y < h; y++) for (int x = 0; x < w; x++) {   // box filter over the source footprint of each output pixel (premultiplied average)
+		const int sx0 = x0 + (int)(x / sc), sx1 = std::max(sx0 + 1, x0 + (int)((x + 1) / sc)), sy0 = y0 + (int)(y / sc), sy1 = std::max(sy0 + 1, y0 + (int)((y + 1) / sc));
+		float r = 0, g = 0, b = 0, a = 0; int n = 0;
+		for (int yy = sy0; yy < sy1 && yy < H; yy++) for (int xx = sx0; xx < sx1 && xx < W; xx++) { const uint8_t *s = &cv.px[((size_t)yy * W + xx) * 4]; float al = s[3] / 255.f; r += s[0] * al; g += s[1] * al; b += s[2] * al; a += al; n++; }
+		uint8_t *d = &rgba[((size_t)y * w + x) * 4];
+		if (n && a > 0.f) { d[0] = (uint8_t)(r / a); d[1] = (uint8_t)(g / a); d[2] = (uint8_t)(b / a); d[3] = (uint8_t)std::min(255.f, a / n * 255.f); }
+	}
+	return true;
+}
+
 } // namespace han2

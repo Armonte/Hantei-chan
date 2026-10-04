@@ -210,6 +210,13 @@ void MainFrame::DrawUi()
 		); 
 	ImGui::End();
 
+	// Ctrl+B toggles the archive browser; with nothing open the welcome screen offers the game folders and recent items
+	if (ImGui::GetIO().KeyCtrl && !ImGui::GetIO().WantTextInput && ImGui::IsKeyPressed(ImGuiKey_B, false)) abrowser::show = !abrowser::show;
+	if (views.empty() && !abrowser::show) {
+		const std::string f = abrowser::DrawWelcome(gSettings.recentFiles);
+		if (!f.empty()) openAnyFile(f);
+	}
+
 	// Project actions (new/open/recent/close) requested from menus, shortcuts
 	// or the unsaved-changes dialog run here, outside any menu or popup, so
 	// they never tear down views/characters mid-draw.
