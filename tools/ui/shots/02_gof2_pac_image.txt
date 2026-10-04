@@ -1,0 +1,11 @@
+# GOF2: an image entry of data0x.dat previewed in place (zoom / pan / checkerboard), no extraction
+browse C:\games\gof2_run
+waitidle
+type all
+filter .img
+waitidle
+select 00_LOSE.IMG
+waitidle
+wait 30
+capture C:/dev/hantei-chan/work/ab/shots/02_gof2_pac_image.png
+quit

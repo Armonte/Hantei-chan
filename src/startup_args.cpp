@@ -136,7 +136,7 @@ static bool han2StartupSniffPat(const std::string &path)
 }
 
 // Scripted UI session (--ui-script): runs between render and swap, so `capture` sees exactly what this frame drew.
-static void RunUiScript(MainFrame &mf, HDC dc, const std::function<void(const std::string &)> &openAny, const std::function<void(int, int)> &setView)
+static void RunUiScript(MainFrame &mf, HDC dc, const std::function<void(const std::string &)> &openAny, const std::function<void(int, int)> &setView, const std::function<bool()> &saveActive)
 {
 	static std::vector<std::string> lines; static size_t pc = 0; static int waitFrames = 0, idleWaited = 0; static bool loaded = false, waitIdle = false, done = false;
 	if (done || gStartup.uiScript.empty()) return;
@@ -158,6 +158,7 @@ static void RunUiScript(MainFrame &mf, HDC dc, const std::function<void(const st
 		if (cmd == "quit") { done = true; PostQuitMessage(0); return; }
 		if (cmd == "openany") { openAny(arg); continue; }
 		if (cmd == "pattern") { setView(0, atoi(arg.c_str())); continue; }
+		if (cmd == "savechar") { const bool ok = saveActive(); FILE *lf = fopen((gStartup.uiScript + ".log").c_str(), "a"); if (lf) { fprintf(lf, "savechar -> %s\n", ok ? "ok" : "FAILED"); fclose(lf); } waitFrames = 20; return; }
 		if (cmd == "viewframe") { setView(1, atoi(arg.c_str())); continue; }
 		if (cmd == "capture") {
 			RECT r; GetClientRect(WindowFromDC(dc), &r);
@@ -185,7 +186,8 @@ void MainFrame::ProcessStartupArgs()
 	int n = ++gStartup.frameCounter;
 	if (!gStartup.uiScript.empty() && n > 3)
 		RunUiScript(*this, context->dc, [this](const std::string &p) { openAnyFile(p); },
-			[this](int what, int v) { if (auto *vw = getActiveView()) { if (what == 0) vw->getState().pattern = v; else vw->getState().frame = v; } });
+			[this](int what, int v) { if (auto *vw = getActiveView()) { if (what == 0) vw->getState().pattern = v; else vw->getState().frame = v; } },
+			[this]() { return getActiveCharacter() ? saveCharacter(getActiveCharacter()) : false; });
 	// [tag-panel] after --open (frame 2), so the pickers see the loaded character; works without --open too
 	// [authoring] --tool authoring (and --tool tag without --tag-ini: the old panel's entry now opens Authoring > Tuning)
 	const bool authoringTool = gStartup.tool == "authoring" || (gStartup.tool == "tag" && gStartup.tagIni.empty());

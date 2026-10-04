@@ -1,0 +1,10 @@
+browse C:\games\rbo_run
+waitidle
+select ACOLYTE_F.DT2
+waitidle
+open
+wait 160
+pattern 3
+wait 80
+capture C:/dev/hantei-chan/work/ab/shots/09_rbo_character_view.png
+quit
