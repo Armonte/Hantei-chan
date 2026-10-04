@@ -52,3 +52,5 @@
 {"Effect recolor", "エフェクト再配色"},
 {"Load", "読み込み"},
 {"New", "新規"},
+{"Suggest accent index from the body", "本体から最適なアクセント番号を提案"},
+{"Picks the body palette index (used by type 0 sprites) that is most vivid across the slots, so each slot's accent is the colour that slot gives that index.", "スロット全体で最も鮮やかな本体パレット番号(タイプ0スプライトが使用)を選びます。各スロットのアクセントは、そのスロットがその番号に与える色になります。"},

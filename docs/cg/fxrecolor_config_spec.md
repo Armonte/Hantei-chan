@@ -29,6 +29,12 @@ are the runtime's own code, not a re-implementation.
   palette as bytes R,G,B,A (`CG_UploadCellPalettized` writes `BYTE2` first = B), i.e. memory RGBA too, so unless something converts it first the runtime's accent has
   R and B swapped. Verify with a known skin colour (Akiha slot 0 entry 1 = f8e0d0).
 
+**Runtime auto accent scans unused palette entries.** `autoAccent()` with no `accent_idx` looks at all 255 entries; Akiha's palette keeps unused
+indices at pure green, which it then picks (the editor showed #00ff00 for slot 0). The editor's auto-suggest therefore writes `accent_idx = N`, where N is
+the body palette index (used by type-0 sprites) that is vivid across slots *and* differs between them (`SuggestAccentIndices`); each slot's accent is then the
+colour that slot gives index N. New rules get this index by default. Suggest a runtime-side guard too (ignore indices no body sprite uses) so rules without
+`accent_idx` do not pick junk.
+
 ## Starter ruleset
 
 `docs/cg/effect_recolor_data/dgv_akiha.ini`: DGV's nine Akiha colour groups (folders 00 01 02 10 20 21 30 80 90 of his "Better Akiha v2" project) as `lumramp`

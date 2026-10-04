@@ -5,6 +5,8 @@
 #include <algorithm>
 #include <cstdarg>
 #include <cstdio>
+#include <cstdlib>
+#include <cstring>
 #include <filesystem>
 #include <fstream>
 #include <glad/glad.h>
@@ -46,7 +48,22 @@ void FxPanel::reset(CharacterInstance &ch, const Bank *bank, const UsageIndex &u
 	cls = FxClassification();
 	if (bank) ClassifyEffects(*bank, usage, ch.frameData, cls);
 	nSlots = 0; while (nSlots < 64 && ch.cg.paletteAt(nSlots, 0)) nSlots++;
+	bodyHist.clear(); accentCands.clear();
+	if (bank) {
+		BodyIndexHistogram(*bank, bodyHist);
+		std::vector<const uint32_t *> pals; for (int s = 0; s < nSlots; s++) pals.push_back(ch.cg.paletteAt(s, 0));
+		accentCands = SuggestAccentIndices(bodyHist, pals, 6);
+	}
 	if (path.empty()) path = defaultPath(ch);
+	static bool demo = std::getenv("HANTEI_FXR_DEMO") != nullptr;   // screenshot / test hook: DGV ruleset loaded, first ruled pattern selected
+	if (demo && bank && rules.rules.empty()) {
+		LoadRules(DgvAkihaIni(), rules, parserMsgs); ruleSel = 0;
+		for (const FxPatternRow &p : cls.patterns) if (RuleOfPattern(rules, p, 0)) { sel = p.pattern; break; }
+		if (!strcmp(std::getenv("HANTEI_FXR_DEMO"), "accent") && sel >= 0) {   // a per-pattern accent rule on top of the DGV groups
+			fx::Rule nr = DefaultRule("demo_accent"); if (!accentCands.empty()) nr.accentIdx = { accentCands[0].index };
+			nr.patterns = { sel }; rules.rules.insert(rules.rules.begin(), nr); ruleSel = 0;
+		}
+	}
 }
 
 FxPanel::Tex &FxPanel::preview(CharacterInstance &ch, const Bank &bank, int image, const fx::Rule *rule, int slot) {
@@ -154,6 +171,15 @@ void FxPanel::drawRuleEditor(CharacterInstance &ch, const Bank *bank) {
 	ImGui::SetNextItemWidth(160);
 	if (ImGui::InputText(LBL("Accent palette indices"), ab, sizeof ab)) r.accentIdx = fx::parseInts(ab);
 	ImGui::SetItemTooltip("%s", TXT("Empty = the most vivid colour of the slot's palette. Otherwise the first listed index is the accent."));
+	if (ImGui::Button(LBL("Suggest accent index from the body")) && !accentCands.empty()) r.accentIdx = { accentCands[0].index };
+	ImGui::SetItemTooltip("%s", TXT("Picks the body palette index (used by type 0 sprites) that is most vivid across the slots, so each slot's accent is the colour that slot gives that index."));
+	for (const AccentCandidate &c : accentCands) {
+		ImGui::SameLine(); const uint32_t *pp = slotPal(ch, slotSel); const uint32_t col = pp ? pp[c.index] : 0;
+		ImGui::PushID(c.index);
+		if (ImGui::ColorButton("##cand", ImVec4((col & 255) / 255.f, ((col >> 8) & 255) / 255.f, ((col >> 16) & 255) / 255.f, 1), 0, ImVec2(18, 18))) r.accentIdx = { c.index };
+		ImGui::SetItemTooltip("index %d", c.index);
+		ImGui::PopID();
+	}
 	if (ImGui::Button(LBL("Write auto accents of all slots as overrides"))) {
 		for (int s = 0; s < nSlots; s++) {
 			fx::SlotOv *o = nullptr; for (auto &x : r.ov) if (x.slot == s) o = &x;
@@ -272,7 +298,7 @@ void FxPanel::draw(CharacterInstance &ch, const Bank *bank, const UsageIndex &us
 	ImGui::BeginChild("##fxl", ImVec2(leftW, 0), ImGuiChildFlags_Borders);
 	// rules list
 	ImGui::SeparatorText(TXT("Rules (first match wins, file order)"));
-	if (ImGui::SmallButton(LBL("New"))) { rules.rules.insert(rules.rules.begin(), DefaultRule(UniqueRuleId(rules, "rule"))); ruleSel = 0; freeTex(); }
+	if (ImGui::SmallButton(LBL("New"))) { { fx::Rule nr = DefaultRule(UniqueRuleId(rules, "rule")); if (!accentCands.empty()) nr.accentIdx = { accentCands[0].index }; rules.rules.insert(rules.rules.begin(), nr); } ruleSel = 0; freeTex(); }
 	ImGui::SameLine(); ImGui::BeginDisabled(ruleSel < 0);
 	if (ImGui::SmallButton(LBL("Duplicate")) && ruleSel >= 0) { fx::Rule d = rules.rules[ruleSel]; d.id = UniqueRuleId(rules, d.id + "_copy"); rules.rules.insert(rules.rules.begin() + ruleSel + 1, d); ruleSel++; }
 	ImGui::SameLine(); if (ImGui::SmallButton(LBL("Delete")) && ruleSel >= 0) { rules.rules.erase(rules.rules.begin() + ruleSel); ruleSel = std::min(ruleSel, (int)rules.rules.size() - 1); freeTex(); }
@@ -338,7 +364,7 @@ void FxPanel::draw(CharacterInstance &ch, const Bank *bank, const UsageIndex &us
 		ImGui::EndDisabled();
 		ImGui::SameLine(); ImGui::BeginDisabled(picked.empty());
 		if (ImGui::Button(LBL("New rule from ticked"))) {
-			fx::Rule nr = DefaultRule(UniqueRuleId(rules, "rule")); rules.rules.insert(rules.rules.begin(), nr); AssignPatterns(rules, 0, picked); ruleSel = 0; freeTex();
+			fx::Rule nr = DefaultRule(UniqueRuleId(rules, "rule")); if (!accentCands.empty()) nr.accentIdx = { accentCands[0].index }; rules.rules.insert(rules.rules.begin(), nr); AssignPatterns(rules, 0, picked); ruleSel = 0; freeTex();
 		}
 		ImGui::EndDisabled();
 	}

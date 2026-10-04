@@ -42,6 +42,13 @@ void ClassifyEffects(const Bank &bank, const UsageIndex &usage, FrameData &fd, F
 void ToRuntimePalette(const uint32_t *rgbaMem, uint32_t out[256]);
 fx::Rgb AccentFor(const fx::Rule &r, const uint32_t *slotPalMem, int slot);   // override if present, else auto from the palette
 
+// Auto-suggest the accent: which palette indices of the BODY (type 0 sprites, the only entries the character's colours live in) are vivid in the
+// slots. The runtime's own auto accent scans all 255 entries, which also sees the unused entries (often pure green); naming the index in the rule
+// (`accent_idx = N`) makes every slot's accent "the colour that slot gives the outfit's accent index".
+void BodyIndexHistogram(const Bank &bank, std::vector<uint32_t> &counts256);
+struct AccentCandidate { int index = 0; float score = 0; };
+std::vector<AccentCandidate> SuggestAccentIndices(const std::vector<uint32_t> &hist, const std::vector<const uint32_t *> &slotPalsMem, int maxN = 5);
+
 // The rule the runtime would pick for `pattern` drawing `sprite` in `slot` (first match wins), null = untouched.
 const fx::Rule *RuleFor(const fx::CharRules &c, int pattern, int sprite, int slot, int blend = 1);
 // The rule that colours most of a pattern's fixed sprites, with how many of them it covers (for the grid column).

@@ -26,6 +26,7 @@ private:
 	fx::CharRules rules, saved;      // saved = the last loaded/saved state (diff report)
 	std::string path, status, parserMsgs;
 	int nSlots = 0;
+	std::vector<uint32_t> bodyHist; std::vector<AccentCandidate> accentCands;   // body index usage / suggested accent indices (lazy)
 	// view state
 	char nameFilter[48] = {};
 	int minScore = 0; bool onlyUnassigned = false, onlyShared = false, onlyUnruled = false;
