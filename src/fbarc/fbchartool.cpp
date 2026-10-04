@@ -14,6 +14,11 @@
 #include "../han2/img_file.h"
 #include "../han2/dmp_fob.h"
 #include "../han2/dmp_types_gen.h"
+#include "../han2/qoh_dat.h"
+#include "../han2/qoh_cg.h"
+#include "../han2/qoh_img.h"
+#include "../han2/rosa_img.h"
+#include "../framedata_qoh.h"
 #include "../han2/mbr_formats.h"
 #include "../han2/mb_formats.h"
 #include "../han2/pb2k1_types_gen.h"
@@ -29,6 +34,7 @@
 #include <objbase.h>
 #include "../han2/mb_cg.h"
 
+#include <algorithm>
 #include <cstdio>
 #include <memory>
 #include <cstring>
@@ -397,25 +403,152 @@ bool Pb2BgmMember(const std::string &label, const std::string &name, const std::
 	return false;
 }
 
-const Title kTitles[] = { { "react", ReactMember }, { "mb", MbMember }, { "pb2k1", Pb2Member, Pb2BgmMember }, { "dmp", DmpMember }, { "rosa", FobImgMember } };
+// ---- Queen of Heart '98 / '99 (docs/formats/qoh98.md, qoh99.md) -----------------------------------------------------------------------------------------------
+bool QohChar(const std::string &label, int version, const std::vector<uint8_t> &stored, const std::string &stem, Section &s)
+{
+	std::string err; std::vector<uint8_t> plain = stored;
+	if (version == han2::qoh::V99 && !han2::qoh::Decrypt99(plain, stem, &err)) { Fail(s, label, "decrypt: " + err); return true; }
+	FrameData fd;
+	if (!qoh::Load(fd, plain.data(), plain.size(), version, &err)) { Fail(s, label, "load: " + err); return true; }
+	std::vector<uint8_t> out;
+	if (!qoh::Serialize(fd, out, &err)) { Fail(s, label, "save: " + err); return true; }
+	std::vector<uint8_t> enc = out; if (version == han2::qoh::V99) han2::qoh::Encrypt99(enc, stem);
+	auto bank = han2::QohCgBank::Parse(fd.m_han2->cg.data(), fd.m_han2->cg.size(), version, &err);
+	if (!bank) { Fail(s, label, "sprite bank: " + err); return true; }
+	unsigned drawn = 0;
+	for (unsigned i = 0; i < bank->imageCount(); i++) { int b, t, x1, y1, x2, y2; if (!bank->imageInfo(i, b, t, x1, y1, x2, y2)) continue; std::unique_ptr<ImageData> im(bank->draw(i, false, false, bank->palette(0))); if (!im) { Fail(s, label, "image " + std::to_string(i) + " does not decode"); return true; } drawn++; }
+	s.notes["  QoH sprite images decoded"] += (int)drawn;
+	if (out == plain && enc == stored) Ok(s, version == han2::qoh::V99 ? "character .chr (QoH99, name-keyed cipher)" : "character .dat (QoH98)");
+	else { Diff("character", label, out, plain); if (enc != stored) printf("  re-encrypt differs\n"); s.fail++; }
+	return true;
+}
+
+bool Qoh99Member(const std::string &label, const std::string &name, const std::vector<uint8_t> &d, Section &s)
+{
+	const std::string e = ExtOf(name); std::string err; std::vector<uint8_t> out;
+	if (e == ".CHR") return QohChar(label, han2::qoh::V99, d, han2::qoh::StemOfPath(name), s);
+	if (e == ".FOB") {
+		han2::dmpfob::File f; if (!han2::dmpfob::Parse(d.data(), d.size(), f, &err, han2::dmpfob::Dialect::Qoh99)) { Fail(s, label, "fob: " + err); return true; }
+		han2::dmpfob::Serialize(f, out);
+		if (out != d) { Bad(s, "qoh99 fob", label, out, d); return true; }
+		Ok(s, ".Fob (CPU script bank, QoH99 VM)"); s.notes["  decoded instructions"] += (int)f.nInsns; s.notes["  raw (switch table / data) bytes"] += (int)f.rawBytes;
+		return true;
+	}
+	if (e == ".IMG") {
+		han2::QohImg im; if (!han2::ParseQohImg(d.data(), d.size(), im, &err)) { Fail(s, label, "img: " + err); return true; }
+		han2::SerializeQohImg(im, out); if (out == d) Ok(s, ".Img (palettised / 24-bit bitmap)"); else Bad(s, "qoh img", label, out, d);
+		return true;
+	}
+	return false;
+}
+
+bool Qoh98Member(const std::string &label, const std::string &name, const std::vector<uint8_t> &d, Section &s)
+{
+	const std::string e = ExtOf(name); std::string err; std::vector<uint8_t> out;
+	if (e == ".DAT" && han2::qoh::LooksLike98(d.data(), d.size())) return QohChar(label, han2::qoh::V98, d, "", s);
+	if (e == ".TIM") {   // PlayStation TIM as the game reads it (Tim_LoadTo256x256Dib): magic, flags, CLUT block size, CLUT, image block, pixels; bytes kept verbatim after validation
+		if (d.size() < 0x20) { Fail(s, label, "tim too short"); return true; }
+		const uint32_t flags = R32(d.data() + 4), bnum = R32(d.data() + 8);
+		if ((flags & 7) > 1 || bnum < 12 || (uint64_t)8 + bnum + 12 + 1 > d.size()) { Fail(s, label, "tim header does not describe a 4/8-bit image"); return true; }
+		Ok(s, ".TIM (PlayStation TIM, 4/8-bit + CLUT, validated)"); return true;
+	}
+	if (e == ".BMP") {   // the shipped bitmaps start with 00 instead of BM; bfSize must equal the file size, 8-bit DIB
+		if (d.size() < 54 || R32(d.data() + 2) != d.size() || R32(d.data() + 14) != 40) { Fail(s, label, "bmp header does not match"); return true; }
+		Ok(s, ".BMP (DIB, magic bytes not checked by the game)"); return true;
+	}
+	if (e == ".MID") {
+		size_t q = 0; int chunks = 0;
+		while (q + 8 <= d.size()) { const uint32_t len = (uint32_t)d[q + 4] << 24 | d[q + 5] << 16 | d[q + 6] << 8 | d[q + 7]; if (!(memcmp(&d[q], "MThd", 4) == 0 || memcmp(&d[q], "MTrk", 4) == 0)) break; q += 8 + (size_t)len; chunks++; }
+		if (q != d.size() || chunks < 2) { Fail(s, label, "midi chunks do not tile the file"); return true; }
+		Ok(s, ".MID (standard MIDI file chunks tile the file)"); return true;
+	}
+	if (e == ".TXT") {   // command.txt: Shift-JIS text with // comments
+		han2::Text t; han2::ParseText(d.data(), d.size(), t, &err); han2::SerializeText(t, out);
+		if (out == d) Ok(s, "text (Shift-JIS, line structure)"); else Bad(s, "text", label, out, d);
+		return true;
+	}
+	return false;
+}
+
+// Rosa Chinensis Four hand: dMp-family scripts with the Rosa opcode numbering, enciphered v4 / plain v1 .IMG (docs/formats/rosa.md)
+bool RosaMember(const std::string &label, const std::string &name, const std::vector<uint8_t> &d, Section &s)
+{
+	const std::string e = ExtOf(name); std::string err; std::vector<uint8_t> out;
+	if (e == ".FOB") {
+		han2::dmpfob::File f; if (!han2::dmpfob::Parse(d.data(), d.size(), f, &err, han2::dmpfob::Dialect::Rosa)) { Fail(s, label, "rosa fob: " + err); return true; }
+		han2::dmpfob::Serialize(f, out);
+		if (out != d) { Bad(s, "rosa fob", label, out, d); return true; }
+		Ok(s, ".FOB (Rosa script bank)"); s.notes["  decoded instructions"] += (int)f.nInsns; s.notes["  raw data bytes"] += (int)f.rawBytes;
+		return true;
+	}
+	if (e == ".IMG") {
+		const std::string stem = han2::RosaStemOfName(name);
+		han2::RosaImg im; if (!han2::ParseRosaImg(d.data(), d.size(), stem, im, &err)) { Fail(s, label, "rosa img: " + err); return true; }
+		han2::SerializeRosaImg(im, stem, out);
+		if (out == d) Ok(s, im.version == 4 ? ".IMG v4 (enciphered with the file stem, 44-byte header)" : ".IMG v1 (plain, 28-byte header)"); else Bad(s, "rosa img", label, out, d);
+		return true;
+	}
+	return false;
+}
+
+const Title kTitles[] = { { "react", ReactMember }, { "mb", MbMember }, { "pb2k1", Pb2Member, Pb2BgmMember }, { "qoh99", Qoh99Member }, { "qoh98", Qoh98Member, Qoh98Member }, { "dmp", DmpMember }, { "rosa", RosaMember } };
+
+// Loose-file titles (QoH '98 / '99 ship as plain files): an argument "dir:<folder>" is walked recursively, every file is a member; a plain file argument is one member.
+// Folders named like the debris of netplay test runs are skipped (desync_*, ckdump, arena_*, _archive ...), nothing else is filtered: a file nobody models counts as skipped.
+bool SkipDir(const std::string &n)
+{
+	std::string l = n; for (auto &c : l) c = (char)tolower((unsigned char)c);
+	return l.rfind("desync", 0) == 0 || l == "ckdump" || l.rfind("arena", 0) == 0 || l == "_archive" || l == "replaypc" || l == "screenshots" || l == "shaders" || l.rfind("ctrl_", 0) == 0 || l == "zzz_tmpneocor" || l == "__pycache__";
+}
 
 int Run(const Title &t, int argc, char **argv)
 {
 	Section s; s.name = t.key;
+	auto member = [&](const std::string &argLabel, const std::string &name, std::vector<uint8_t> &d) {
+		const std::string label = argLabel + "::" + name;
+		if (t.pre && t.pre(label, name, d, s)) return;
+		if (CommonMember(label, name, d, s)) return;
+		if (t.fn(label, name, d, s)) return;
+		s.skipped++;
+		if (++s.unmodelled[ExtOf(name) + " (no model)"] <= 1 || getenv("FB_VERBOSE")) printf("SKIP %s (%zu bytes)\n", label.c_str(), d.size());
+	};
 	for (int i = 0; i < argc; i++) {
-		std::string err; auto a = fbarc::Open(argv[i], &err);
-		if (!a) { printf("FAIL %s: %s\n", argv[i], err.c_str()); s.fail++; continue; }
+		const std::string arg = argv[i];
 		const int p0 = s.pass, f0 = s.fail, k0 = s.skipped;
-		for (size_t k = 0; k < a->entries().size(); k++) {
-			const std::string name = fbarc::NameToUtf8(a->relativePath(k));
-			const std::string label = std::string(argv[i]) + "::" + name;
-			std::vector<uint8_t> d;
-			if (!a->read(k, d, &err)) { Fail(s, label, err); continue; }
-			if (t.pre && t.pre(label, name, d, s)) continue;
-			if (CommonMember(label, name, d, s)) continue;
-			if (t.fn(label, name, d, s)) continue;
-			s.skipped++;
-			if (++s.unmodelled[ExtOf(name) + " (no model)"] <= 1 || getenv("FB_VERBOSE")) printf("SKIP %s (%zu bytes)\n", label.c_str(), d.size());
+		if (arg.rfind("dir:", 0) == 0) {
+			std::error_code ec; std::string dirArg = arg.substr(4), extList;   // "dir:<folder>?ext=chr,fob,img" keeps only those extensions
+			if (size_t q = dirArg.find("?ext="); q != std::string::npos) { extList = "," + dirArg.substr(q + 5) + ","; dirArg.resize(q); }
+			const fs::path root = fs::u8path(dirArg);
+			std::vector<fs::path> files;
+			for (auto it = fs::recursive_directory_iterator(root, ec); !ec && it != fs::recursive_directory_iterator(); it.increment(ec)) {
+				if (it->is_directory(ec)) { if (SkipDir(it->path().filename().u8string())) it.disable_recursion_pending(); continue; }
+				if (it->is_regular_file(ec)) {
+					if (!extList.empty()) { std::string x = it->path().extension().string(); for (auto &c : x) c = (char)tolower((unsigned char)c); if (x.empty() || extList.find("," + x.substr(1) + ",") == std::string::npos) continue; }
+					files.push_back(it->path());
+				}
+			}
+			std::sort(files.begin(), files.end());
+			const std::string base = root.generic_u8string();
+			for (auto &f : files) {
+				std::ifstream in(f, std::ios::binary); std::vector<uint8_t> d((std::istreambuf_iterator<char>(in)), std::istreambuf_iterator<char>());
+				std::string rel = f.generic_u8string(); if (rel.compare(0, base.size(), base) == 0) rel = rel.substr(base.size() + (base.empty() || base.back() == '/' ? 0 : 1));
+				member(arg, rel, d);
+			}
+		} else {
+			std::string err; auto a = fbarc::Open(arg, &err);
+			if (!a) {
+				std::ifstream in(fs::u8path(arg), std::ios::binary);
+				if (!in) { printf("FAIL %s: %s\n", arg.c_str(), err.c_str()); s.fail++; continue; }
+				std::vector<uint8_t> d((std::istreambuf_iterator<char>(in)), std::istreambuf_iterator<char>());
+				member(arg, fs::u8path(arg).filename().u8string(), d);
+			} else {
+				for (size_t k = 0; k < a->entries().size(); k++) {
+					const std::string name = fbarc::NameToUtf8(a->relativePath(k));
+					std::vector<uint8_t> d;
+					if (!a->read(k, d, &err)) { Fail(s, arg + "::" + name, err); continue; }
+					member(arg, name, d);
+				}
+			}
 		}
 		printf("%-40s pass %d fail %d skipped %d\n", argv[i], s.pass - p0, s.fail - f0, s.skipped - k0);
 	}
@@ -527,7 +660,7 @@ int CmdCgPng(int argc, char **argv)
 	return 0;
 }
 
-int main(int argc, char **argv)
+static int Main8(int argc, char **argv)
 {
 	CoInitializeEx(nullptr, COINIT_MULTITHREADED);
 	if (argc >= 2 && !strcmp(argv[1], "locality")) return CmdLocality(argc - 2, argv + 2);
@@ -538,4 +671,18 @@ int main(int argc, char **argv)
 	for (auto &t : kTitles) if (!strcmp(argv[1], t.key)) return Run(t, argc - 2, argv + 2);
 	printf("unknown title %s\n", argv[1]);
 	return 2;
+}
+
+// Windows: arguments arrive as UTF-16 (Japanese file names such as Rosa's sound PAC) and are converted to UTF-8 for the rest of the tool.
+int wmain(int argc, wchar_t **wargv)
+{
+	std::vector<std::string> store; std::vector<char *> argv;
+	for (int i = 0; i < argc; i++) {
+		const int n = WideCharToMultiByte(CP_UTF8, 0, wargv[i], -1, nullptr, 0, nullptr, nullptr);
+		std::string u(n > 0 ? (size_t)n - 1 : 0, '\0'); if (n > 1) WideCharToMultiByte(CP_UTF8, 0, wargv[i], -1, &u[0], n, nullptr, nullptr);
+		store.push_back(u);
+	}
+	for (auto &x : store) argv.push_back(&x[0]);
+	argv.push_back(nullptr);
+	return Main8(argc, argv.data());
 }

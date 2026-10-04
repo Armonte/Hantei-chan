@@ -3,6 +3,7 @@
 #include "framedata_ha4.h"
 #include "framedata_han2.h"
 #include "framedata_pb2k1.h"
+#include "framedata_qoh.h"
 #include "framedata_gof1.h"
 #include <fstream>
 #include <algorithm>
@@ -254,6 +255,7 @@ bool FrameData::save(const char *filename)
 		return ha4::SaveFile(*this, filename);
 	if (m_han2 && m_han2->sub == 3) return gof1::SaveFile(*this, filename);
 	if (m_han2 && m_han2->sub == 4) return pb2k1::SaveFile(*this, filename);
+	if (m_han2 && m_han2->sub == 5) return qoh::SaveFile(*this, filename);
 	if (m_han2) {
 		std::string f = filename ? filename : "";
 		std::string ext = f.size() >= 4 ? f.substr(f.size() - 4) : "";

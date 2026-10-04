@@ -154,3 +154,6 @@
 	{"loose path in the game folder", "ゲームフォルダ内のルーズファイルのパス"},
 	{"Reload in running game", "実行中のゲームに再読み込み"},
 	{"Writes the edited file under the game folder (the game opens loose files before its archives) and asks the game, running offline under PovertyCaster, to re-read it.", "編集したファイルをゲームフォルダに書き込み (ゲームはアーカイブより先にルーズファイルを開きます)、PovertyCaster のオフラインで動作中のゲームに再読み込みを要求します。"},
+	{"Attack record %d (24 bytes)", "攻撃レコード %d (24バイト)"},
+	{"%s image, %d x %d, %u-bit%s", "%s 画像、%d x %d、%u ビット%s"},
+	{"size mismatch: the image keeps its dimensions", "サイズ不一致: 画像は寸法を変更できません"},

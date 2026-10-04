@@ -77,6 +77,8 @@ for e in ('.EX3', '.CT', '.CCT', '.CPF', '.WMT', '.FNT', '.B', '.BMP', '.H', '.M
 SUPPORT[('PB2K1', '.DAT')] = ('proof', 'Party Breakers characters (three-section cipher, framedata_pb2k1) + PB strip sprite bank (view, per-strip import) + BGM blobs; in-game: all characters layer shift +40 visible (docs/formats/evidence/pb2k1_ingame_*.png)')
 for e, how in (('.FOB', 'han2::dmpfob: dMp dialect, 376,668 instructions decoded, byte-exact (docs/formats/dmp.md)'), ('.IMG', 'raw 16-bit sheets, exact A1R5G5B5 / A4R4G4B4 re-encode'), ('.DAT', 'DEMOnn.DAT replays typed (DmpMatchSetup + 108001 input rows)'), ('.WAV', 'RIFF chunks')):
     SUPPORT[('dMp', e)] = ('rt', 'fbchartool dmp: ' + how)
+for e, how in (('.FOB', 'Rosa script bank (dMp VM, opcodes shifted by one), byte-exact, 24k instructions decoded'), ('.IMG', 'v4 enciphered with the file stem / v1 plain, byte-exact (docs/formats/rosa.md)'), ('.WAV', 'RIFF chunks'), ('.MP3', 'frames validated')):
+    SUPPORT[('Rosa (2002/2005)', e)] = ('rt', 'fbchartool rosa: ' + how)
 ARCH_LEVEL = 'rt'
 
 def main():

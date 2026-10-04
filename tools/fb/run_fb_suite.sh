@@ -39,6 +39,11 @@ title mb $W/MB/MeltyBlood/data0{0,1,2,3}.p
 title pb2k1 $W/pb/0{0,1,2,3,4}.dat $W/pb/0{0,1,2}p.dat
 FD=${F/\/mnt\/c/C:}
 title dmp $FD/dmp_1020/DATA/GAMEDATA.PAC $FD/dmp_1020/DATA/SOUNDDATA.PAC $FD/drill_milky_punch/files/dMp/dMp/Data/{GameData,SoundData}.PAC "$FD/aquat1c_dmp/Drill Milky Punch/DATA"/{GAMEDATA,SOUNDDATA}.PAC $FD/aquat1c_dmp/{game_template,soak_game,soak_game2,soak_game3}/DATA/{GAMEDATA,SOUNDDATA}.PAC
+mapfile -t ROSA < <(for f in "$F"/benibara_rendan/files/"Rosa Chinensis Four hand"/Data/*.PAC "$F"/yamayuri_rendan/files/omake/"Rosa Chinensis Four hand"/Data/*.PAC; do [ -f "$f" ] && echo "$f" | sed 's|^/mnt/c/|C:/|'; done)
+title rosa "${ROSA[@]}"
+QD=(); for d in "$G"/qoh/*/; do b=$(basename "$d"); case "$b" in desync*|ckdump|arena*|_archive|ReplayPC|Screenshots|Shaders|ctrl_*|zzz_*|Manual) ;; *) QD+=("dir:$W/qoh/$b?ext=chr,fob,img");; esac; done
+title qoh99 "${QD[@]}"
+title qoh98 "dir:$W/qoh98?ext=dat,tim,bmp,mid,txt,wav"
 # ---- edit locality: an offset-only edit of every character must change nothing outside the pattern area and at most 2 bytes per layer, and moving back must restore the file
 echo "== edit locality (every character of ReAct, MB, PB2K1, GOF1)"; out=$("$C" locality $W/MB/R/01.p $W/MB/MeltyBlood/data03.p $W/pb/01.dat $W/pb/01p.dat $W/pb/02p.dat $W/gof1/run/gof_0{0,1,2,3}.p 2>&1 | tr -d "\r"); [ ${PIPESTATUS[0]} -ne 0 ] && rc=1
 echo "$out" | grep -E "^(FAIL|SECTION)"

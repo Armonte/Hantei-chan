@@ -11,6 +11,9 @@
 
 namespace han2 { namespace dmpfob {
 
+// The two French-Bread-family script VMs of the 1999-2003 games share one container and one decoder; only the opcode tables differ.
+enum class Dialect { Dmp, Qoh99, Rosa };   // Rosa = dMp numbering with dMp's YIELD (0x20) removed: opcodes from 0x20 on are one lower (docs/formats/rosa.md 3.2)
+
 struct FuncEntry { uint8_t name[32]; uint32_t pc = 0; };   // the whole 32-byte slot kept verbatim (bytes after the NUL are stale writer junk)
 
 struct Insn {
@@ -27,12 +30,13 @@ struct File {
 	std::vector<Item> items;            // tiles the whole code block in pc order
 	std::vector<uint8_t> tail;          // bytes after the code block (none in any shipped file)
 	size_t nInsns = 0, rawBytes = 0;
+	Dialect dialect = Dialect::Dmp;
 };
 
-const char *OpName(uint16_t op);        // DMPOP_* name or "" when unknown
-bool Parse(const uint8_t *p, size_t n, File &out, std::string *err);
+const char *OpName(uint16_t op, Dialect d = Dialect::Dmp);        // DMPOP_* name or "" when unknown
+bool Parse(const uint8_t *p, size_t n, File &out, std::string *err, Dialect d = Dialect::Dmp);
 void Serialize(const File &f, std::vector<uint8_t> &out);
-std::string Disassemble(const File &f); // one line per instruction with function labels
+std::string Disassemble(const File &f);   // uses f.dialect // one line per instruction with function labels
 
 }} // namespace
 #endif

@@ -6,6 +6,8 @@
 #include <map>
 #include <functional>
 #include "han2/dmp_fob.h"
+#include "han2/qoh_img.h"
+#include "han2/rosa_img.h"
 #include "han2/pac_archive.h"
 #include "han2/img_file.h"
 #include "han2/misc_formats.h"
@@ -197,7 +199,8 @@ struct Viewer {
 	int id = 0; bool open = true;
 	std::string name, origin;           // name: CP932
 	std::vector<uint8_t> bytes;
-	enum Kind { Hex, Image, Poly, Typed, Fob } kind = Hex;
+	enum Kind { Hex, Image, Poly, Typed, Fob, QohPic, RosaPic } kind = Hex;
+	han2::QohImg qimg; han2::RosaImg rimg; std::string stem;
 	std::string archivePath; char loosePath[260] = ""; bool looseGuessed = false;
 	int px16 = 0;                       // 16-bit sheets: 0 = A1R5G5B5, 1 = A4R4G4B4 (the caller of the game's loader decides, dMp files do not name it)
 	han2::dmpfob::File fob; std::string fobFilter;
@@ -264,7 +267,14 @@ void OpenFileViewer(const std::string &name, std::vector<uint8_t> bytes, const s
 	auto v = std::make_unique<Viewer>(); v->archivePath = archivePath;
 	v->id = g_nextView++; v->name = name; v->origin = origin; v->bytes = std::move(bytes);
 	if (han2::IsImg(v->bytes.data(), v->bytes.size()) && han2::ParseImg(v->bytes.data(), v->bytes.size(), v->img, nullptr)) { v->kind = Viewer::Image; v->px16 = v->img.format == 1 ? 1 : 0; Upload(*v); }
-	else if (name.size() > 4 && Lower(name.substr(name.size() - 4)) == ".fob" && han2::dmpfob::Parse(v->bytes.data(), v->bytes.size(), v->fob, nullptr) && v->fob.nInsns > 0) v->kind = Viewer::Fob;
+	else if (name.size() > 4 && Lower(name.substr(name.size() - 4)) == ".img" && han2::ParseQohImg(v->bytes.data(), v->bytes.size(), v->qimg, nullptr)) { v->kind = Viewer::QohPic; v->img.width = (int)v->qimg.width; v->img.height = (int)v->qimg.height; v->img.rgba = v->qimg.rgba; v->img.format = 2; Upload(*v); }
+	else if (name.size() > 4 && Lower(name.substr(name.size() - 4)) == ".img" && han2::ParseRosaImg(v->bytes.data(), v->bytes.size(), han2::RosaStemOfName(name), v->rimg, nullptr)) { v->kind = Viewer::RosaPic; v->stem = han2::RosaStemOfName(name); v->img.width = (int)v->rimg.width; v->img.height = (int)v->rimg.height; v->img.rgba = v->rimg.rgba; v->img.format = 2; Upload(*v); }
+	else if (name.size() > 4 && Lower(name.substr(name.size() - 4)) == ".fob" && [&] {
+		// the script VMs of the family share the container; the dialect with the better decode coverage wins (dMp vs QoH '99)
+		han2::dmpfob::File a, b; const bool oa = han2::dmpfob::Parse(v->bytes.data(), v->bytes.size(), a, nullptr, han2::dmpfob::Dialect::Dmp), ob = han2::dmpfob::Parse(v->bytes.data(), v->bytes.size(), b, nullptr, han2::dmpfob::Dialect::Qoh99);
+		if (oa && (!ob || a.rawBytes <= b.rawBytes) && a.nInsns > 0) { v->fob = std::move(a); return true; }
+		if (ob && b.nInsns > 0) { v->fob = std::move(b); return true; }
+		return false; }()) v->kind = Viewer::Fob;
 	else if (name.size() > 2 && (name.compare(name.size() - 2, 2, ".B") == 0 || name.compare(name.size() - 2, 2, ".b") == 0) && han2::ParsePoly(v->bytes.data(), v->bytes.size(), v->poly, nullptr)) v->kind = Viewer::Poly;
 	else if (DescribeTypedFile(name, v->bytes, v->typed, origin)) { v->kind = Viewer::Typed; v->typedSel.assign(v->typed.regions.size(), 0); }
 	else CollectStrings(*v);
@@ -343,6 +353,35 @@ void DrawFileViewers()
 				for (int k = 0; k < f.nIndices; k++) dl->AddLine(pt[k], pt[(k + 1) % f.nIndices], f.texture < v.poly.slots.size() && v.poly.slots[f.texture].name[0] ? IM_COL32(120, 220, 255, 255) : IM_COL32(230, 230, 230, 255));
 			}
 			ImGui::EndChild();
+		} else if (v.kind == Viewer::QohPic || v.kind == Viewer::RosaPic) {
+			const bool qp = v.kind == Viewer::QohPic;
+			ImGui::Text(TXT("%s image, %d x %d, %u-bit%s"), qp ? "Queen of Heart" : "Rosa", v.img.width, v.img.height, qp ? v.qimg.bpp : v.rimg.bpp, qp ? "" : (v.rimg.version == 4 ? " (v4, enciphered)" : " (v1)"));
+			ImGui::SetNextItemWidth(120); ImGui::SliderFloat(LBL("zoom"), &v.zoom, 0.25f, 8.f); ImGui::SameLine(); ImGui::Checkbox(LBL("checkerboard"), &v.checker);
+			if (ImGui::Button(LBL("Export PNG..."))) { std::string p = FileDialog(-1, true); if (!p.empty()) { std::string e; if (p.size() < 4 || Lower(p.substr(p.size() - 4)) != ".png") p += ".png"; v.msg = WritePngRgba(p, v.img.rgba.data(), v.img.width, v.img.height, e) ? Fmt(TXT("exported %s"), p.c_str()) : e; } }
+			ImGui::SameLine();
+			if (ImGui::Button(LBL("Import PNG (replace pixels)..."))) {
+				std::string p = FileDialog(-1, false);
+				if (!p.empty()) {
+					std::vector<uint8_t> px; int w = 0, h = 0; std::string e;
+					if (ReadImageRgba(p, px, w, h, e)) {
+						bool ok = true;
+						if (qp) { ok = han2::QohImgSetRgba(v.qimg, px.data(), w, h, &e); if (ok) v.img.rgba = v.qimg.rgba; }
+						else if ((uint32_t)w != v.rimg.width || (uint32_t)h != v.rimg.height) { ok = false; e = TXT("size mismatch: the image keeps its dimensions"); }
+						else { han2::RosaImg &r = v.rimg; for (uint32_t y = 0; y < r.height && ok; y++) for (uint32_t x = 0; x < r.width; x++) { const uint8_t *c = &px[((size_t)y * w + x) * 4]; uint8_t *row = r.pixels.data() + r.rowBytes() * y; if (r.bpp == 24) { row[3 * x] = c[2]; row[3 * x + 1] = c[1]; row[3 * x + 2] = c[0]; } else if (r.bpp == 8) { int best = 0, bd = 1 << 30; for (uint32_t i = 0; i < r.paletteCount; i++) { int dr = (int)r.palette[4 * i + 2] - c[0], dg = (int)r.palette[4 * i + 1] - c[1], db = (int)r.palette[4 * i] - c[2]; int d = dr * dr + dg * dg + db * db; if (d < bd) { bd = d; best = (int)i; } } row[x] = (uint8_t)best; } } v.img.rgba = px; r.rgba = px; }
+						if (ok) { Upload(v); v.dirty = true; v.msg = Fmt(TXT("replaced by %s"), p.c_str()); } else v.msg = e;
+					} else v.msg = e;
+				}
+			}
+			ImGui::SameLine();
+			if (ImGui::Button(LBL("Save..."))) { std::string p = FileDialog(-1, true); if (!p.empty()) { std::vector<uint8_t> out; if (qp) han2::SerializeQohImg(v.qimg, out); else han2::SerializeRosaImg(v.rimg, han2::RosaStemOfName(p), out); std::ofstream f(fs::u8path(p), std::ios::binary); f.write((const char *)out.data(), (std::streamsize)out.size()); v.msg = f ? Fmt(TXT("saved %s"), p.c_str()) : Fmt(TXT("could not write %s"), p.c_str()); if (f) v.dirty = false; } }
+			ImGui::SameLine();
+			if (ImGui::Button(LBL("Put into new PAC"))) { std::vector<uint8_t> out; if (qp) han2::SerializeQohImg(v.qimg, out); else han2::SerializeRosaImg(v.rimg, v.stem, out); PacCreateAddMemory(v.name, std::move(out)); }
+			DrawLiveReloadRow(v, [&](std::vector<uint8_t> &o) { if (qp) han2::SerializeQohImg(v.qimg, o); else han2::SerializeRosaImg(v.rimg, v.stem, o); });
+			ImGui::BeginChild("img", ImVec2(0, 0), true, ImGuiWindowFlags_HorizontalScrollbar);
+			ImVec2 sz(v.img.width * v.zoom, v.img.height * v.zoom), p0 = ImGui::GetCursorScreenPos();
+			if (v.checker) { ImDrawList *dl = ImGui::GetWindowDrawList(); for (float y = 0; y < sz.y; y += 16) for (float x = 0; x < sz.x; x += 16) dl->AddRectFilled(ImVec2(p0.x + x, p0.y + y), ImVec2(std::min(p0.x + x + 16, p0.x + sz.x), std::min(p0.y + y + 16, p0.y + sz.y)), (((int)(x / 16) + (int)(y / 16)) & 1) ? IM_COL32(110, 110, 110, 255) : IM_COL32(160, 160, 160, 255)); }
+			ImGui::Image((ImTextureID)(intptr_t)v.tex, sz);
+			ImGui::EndChild();
 		} else if (v.kind == Viewer::Fob) {
 			ImGui::Text(TXT("dMp script bank: %zu functions, %zu instructions, %zu bytes of data"), v.fob.funcs.size(), v.fob.nInsns, v.fob.rawBytes);
 			if (ImGui::Button(LBL("Save..."))) {
@@ -362,13 +401,13 @@ void DrawFileViewers()
 				auto &it = v.fob.items[i];
 				auto lb = labels.find(it.pc); if (lb != labels.end()) ImGui::TextColored(ImVec4(.5f, .9f, 1, 1), "%s:", lb->second.c_str());
 				if (!it.isInsn) { ImGui::TextDisabled("  %05x  .data %zu bytes", it.pc, it.raw.size()); continue; }
-				const char *nm = han2::dmpfob::OpName(it.insn.op); std::string name = nm[0] ? nm : "op" + std::to_string(it.insn.op);
+				const char *nm = han2::dmpfob::OpName(it.insn.op, v.fob.dialect); std::string name = nm[0] ? nm : "op" + std::to_string(it.insn.op);
 				if (!v.fobFilter.empty() && name.find(v.fobFilter) == std::string::npos) continue;
 				ImGui::PushID((int)i);
 				ImGui::Text("  %05x  %-24s", it.pc, name.c_str());
-				if (it.insn.op == 0x03 || it.insn.op == 0x2F) { ImGui::SameLine(); int iv = (int)it.insn.imm; ImGui::SetNextItemWidth(110); if (ImGui::InputInt("##imm", &iv, 0, 0)) { it.insn.imm = (uint32_t)iv; v.dirty = true; } }
-				else if (it.insn.op == 0x04 || it.insn.op == 0x1A || it.insn.op == 0x1B || it.insn.op == 0x26 || it.insn.op == 0x51) { ImGui::SameLine(); ImGui::Text("%#x", it.insn.imm); }
-				else if (it.insn.op == 0x19) { ImGui::SameLine(); ImGui::Text("kind=%#x -> %#x", it.insn.kind, it.insn.imm); }
+				if (it.insn.op == (v.fob.dialect == han2::dmpfob::Dialect::Qoh99 ? 0x1A : 0x03)) { ImGui::SameLine(); int iv = (int)it.insn.imm; ImGui::SetNextItemWidth(110); if (ImGui::InputInt("##imm", &iv, 0, 0)) { it.insn.imm = (uint32_t)iv; v.dirty = true; } }
+				else if (!nm[0] ? false : (it.insn.op != 0x19 && it.insn.op != 0x2D && (std::string(nm).find("JMP") != std::string::npos || std::string(nm).find("CALL") != std::string::npos || std::string(nm).find("ADDR") != std::string::npos || std::string(nm) == "LINE" || std::string(nm) == "PUSH_CODE_ADDR"))) { ImGui::SameLine(); ImGui::Text("%#x", it.insn.imm); }
+				else if (it.insn.op == 0x19 || it.insn.op == 0x2D) { ImGui::SameLine(); ImGui::Text("kind=%#x -> %#x", it.insn.kind, it.insn.imm); }
 				ImGui::PopID();
 			}
 			ImGui::EndChild();

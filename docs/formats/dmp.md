@@ -182,6 +182,18 @@ pass their own constants (U). `Tex_ConvertAndFill` (0x408180) handles the generi
 Texture dimensions equal the file's (1024x1024, 1024x512, 512x512, 256x256, 16x16 in the shipped set). Reader versions 0..2/3..4 (palette / BMP-like) are not exercised by shipped files (U).
 The existing `ParseImg` therefore reads dMp IMG correctly if "format 0 = ARGB1555" is only a default: dMp does not name the format in the file.
 
+### 3.1 IMG versions 3 and 4 (legacy reader `Img_ReadV3to4` 0x4079F0) - fully decoded from the Rosa Chinensis Four hand data (see `docs/formats/rosa.md` section 2)
+Not used by any dMp file (the key pointer `dword_1D80770` is never written in DMP.EXE, so the reader is dead code there) but the format is fully known:
+```
++0x00 u32 0 | +0x04 u32 3 or 4 | +0x08 u8 nameSeed[16] = (UPPER(file stem) repeated to 16 bytes) XOR key[j % 9]
++0x18 five u32 fields, each enciphered separately: flag, paletteCount, bitsPerPixel (4/8/16/24), width, height
++0x2C palette[paletteCount] x 4 (B,G,R,0)   +...  pixels[height * rowBytes]   (one cipher call each; rows top-down, 4-byte aligned: Img_RowBytes 0x407850)
+key = 8C 4B 92 4A 20 89 C2 97 F7 (from rosa_fh.exe 0x432458; DMP.EXE has no key)
+decrypt: t = stem[i % len(stem)] ^ (((i >> 3) + ~(8*i)) & 0xFF) ^ c[i]; out[i] = (t - key[i % 9] - 109) & 0xFF   (index restarts at 0 per call; stem = upper-cased basename without extension, max 16)
+```
+Python proof (decode + re-encode byte-exact for all 100 Rosa IMG, 2005 plain v1 round trip): `tools/fb/rosa_verify.py`. Versions 0..2 (`Img_ReadV0to2` 0x4078D0) are the same layout without the cipher and with a 28-byte header `0, version, flag, paletteCount, bpp, width, height`.
+Corrections found while decoding Rosa: `DmpPackArchive` +0x10 / +0x14 are `hMapping` / `mappedView` (not unused/dataBase); the script op called "ENTITY_CALL_COLLIDE" (0x62, slot +0x24 of the actor) is a generic actor command handler (`commandHandler`, +0x28 in Rosa), not necessarily collision.
+
 ## 4. DEMO.DAT / Replay (T, D)
 `TitleMenu_AttractMode` (0x439600): after 600 idle frames sets `g_ReplayFilePath` to `.\Data\Demo01..06.dat` (`g_DemoPaths`) and calls `Replay_LoadFile` (0x41BF10: `File_OpenLooseOrPack`,
 read 68 B into `g_MatchSetup`, read 2,592,036 B into `g_ReplayHeader`.., `g_ReplayPlayback = 1`, cursor = 0). Recording: `Replay_LatchFrameInputs` (0x41BD90) stores `g_FrameInput[0..5]` (= `Input_GetRawWord(seat)`)
