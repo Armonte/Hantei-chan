@@ -110,13 +110,13 @@ void FxPanel::selfTest(const std::string &dir) {
 	fx::Rule &nr = rules.rules[0];
 	chk(nr.patterns.size() == 3 && nr.by == 0 && nr.kind == fx::Kind::LumRamp, "new rule: 3 patterns, lumramp by lightness");
 	nr.by = 1; nr.kind = fx::Kind::Rainbow; nr.vmin = 0.1f; nr.vmax = 0.9f;
-	fx::Rule hs = DefaultRule("selftest_hsv"); hs.kind = fx::Kind::Hsv; hs.hueDeg = 40; hs.sat = 1.2f; hs.val = 0.9f; hs.sprites = { 1, 2 };
+	fx::Rule hs = DefaultRule("selftest_hsl"); hs.kind = fx::Kind::Hsl; hs.hueDeg = 40; hs.sat = 1.2f; hs.val = 0.9f; hs.sprites = { 1, 2 };
 	rules.rules.push_back(hs);
 	chk(saveFile(), "save with new rules");
 	fx::CharRules back; std::string err, txt; ReadText(path, txt); LoadRules(txt, back, err);
 	chk(err.empty() && back.rules.size() == nDgv + 2, "reload: rules kept, no parser messages " + err);
 	chk(back.rules[0].by == 1 && back.rules[0].kind == fx::Kind::Rainbow && back.rules[0].patterns == nr.patterns, "new rule fields survive (by=max, rainbow, patterns)");
-	chk(back.rules[nDgv + 1].kind == fx::Kind::Hsv && std::fabs(back.rules[nDgv + 1].hueDeg - 40) < 1e-3f, "hsv rule survives");
+	chk(back.rules[nDgv + 1].kind == fx::Kind::Hsl && std::fabs(back.rules[nDgv + 1].hueDeg - 40) < 1e-3f, "OkHSL rule survives");
 	// assign: move one of the new rule's patterns into a DGV rule; it must leave rule 0
 	const int moved = nr.patterns[0]; AssignPatterns(rules, 1, { moved });
 	chk(std::find(rules.rules[0].patterns.begin(), rules.rules[0].patterns.end(), moved) == rules.rules[0].patterns.end()
@@ -213,16 +213,17 @@ void FxPanel::drawRuleEditor(CharacterInstance &ch, const Bank *bank) {
 	char idb[64]; snprintf(idb, sizeof idb, "%s", r.id.c_str());
 	ImGui::SetNextItemWidth(160); if (ImGui::InputText(LBL("Rule id"), idb, sizeof idb) && idb[0]) r.id = idb;
 	ImGui::SameLine(); ImGui::Checkbox(LBL("Enabled"), &r.enabled);
-	int kind = r.kind == fx::Kind::LumRamp ? 0 : r.kind == fx::Kind::Rainbow ? 1 : 2;
-	static const char *kKind[] = { "Luminance -> ramp", "Rainbow (hue -> ramp)", "HSV shift" };
+	int kind = r.kind == fx::Kind::LumRamp ? 0 : r.kind == fx::Kind::Rainbow ? 1 : r.kind == fx::Kind::Hsl ? 2 : 3;
+	static const char *kKind[] = { "Luminance -> ramp", "Rainbow (hue -> ramp)", "HSL shift (OkHSL, default)", "HSV shift (OkHSV)" };
 	ImGui::SetNextItemWidth(200);
-	if (ImGui::Combo(LBL("Mapping"), &kind, kKind, 3)) r.kind = kind == 0 ? fx::Kind::LumRamp : kind == 1 ? fx::Kind::Rainbow : fx::Kind::Hsv;
+	if (ImGui::Combo(LBL("Mapping"), &kind, kKind, 4)) r.kind = kind == 0 ? fx::Kind::LumRamp : kind == 1 ? fx::Kind::Rainbow : kind == 2 ? fx::Kind::Hsl : fx::Kind::Hsv;
 	int bank_ = r.bank; static const char *kBank[] = { "any", "character bank", "effect.ha6" };
 	ImGui::SetNextItemWidth(140); if (ImGui::Combo(LBL("Bank"), &bank_, kBank, 3)) r.bank = bank_;
 	ImGui::SameLine(); int bl = r.blend; ImGui::SetNextItemWidth(70); if (ImGui::InputInt(LBL("Blend (-1 any)"), &bl, 0, 0)) r.blend = std::max(-1, bl);
-	if (r.kind == fx::Kind::Hsv) {
-		ImGui::TextDisabled("%s", TXT("OkHSV edit: perceptual hue, saturation and value.")); ImGui::SliderFloat(LBL("Hue shift"), &r.hueDeg, -180.f, 180.f, "%.0f deg");
-		ImGui::SliderFloat(LBL("Saturation x"), &r.sat, 0.f, 2.f); ImGui::SliderFloat(LBL("Value x"), &r.val, 0.f, 2.f);
+	if (r.kind == fx::Kind::Hsv || r.kind == fx::Kind::Hsl) {
+		const bool hsl = r.kind == fx::Kind::Hsl;
+		ImGui::TextDisabled("%s", hsl ? TXT("OkHSL edit: hue and saturation change, perceived lightness is kept (lightness x = 1).") : TXT("OkHSV edit (picker style): V is not perceptual lightness.")); ImGui::SliderFloat(LBL("Hue shift"), &r.hueDeg, -180.f, 180.f, "%.0f deg");
+		ImGui::SliderFloat(LBL("Saturation x"), &r.sat, 0.f, 2.f); ImGui::SliderFloat(hsl ? LBL("Lightness x") : LBL("Value x"), &r.val, 0.f, 2.f);
 	} else {
 		static const char *kBy[] = { "Oklab lightness (default)", "Max channel", "Luma" };
 		int by = std::clamp(r.by, 0, 2); ImGui::SetNextItemWidth(200);
