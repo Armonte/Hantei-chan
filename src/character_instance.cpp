@@ -180,7 +180,7 @@ bool CharacterInstance::loadHan2(const std::string& stem,
 	if (!han2::LoadCharacter(*this, stem, read, origin, &summary, &err)) { han2ui::PushLoadReport(stem, "", {err}, true); return false; }
 	{
 		std::vector<std::string> w;
-		if (summary.find("no .DAT") != std::string::npos) w.push_back("no .DAT next to the .DT2: no sprites / parts");
+		if (summary.find("no .DAT") != std::string::npos && !(frameData.m_han2 && frameData.m_han2->sub == 2)) w.push_back("no .DAT next to the .DT2: no sprites / parts");   // GOF2 keeps parts and sprites in <stem>NN.PAT / .CHP
 		if (summary.find("no CG") != std::string::npos) w.push_back("no CG sprite bank found");
 		if (summary.find("parts: ") != std::string::npos) w.push_back("parts could not be converted: " + summary.substr(summary.find("parts: ") + 7));
 		han2ui::PushLoadReport(stem, summary, w, false);

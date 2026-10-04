@@ -81,7 +81,7 @@ Type TypeOfName(const std::string &name, Game ctx, bool inArchive)
 {
 	const std::string e = ExtOf(name);
 	if (e == ".dt2" || e == ".ha6" || e == ".chr") return Type::Character;
-	if (e == ".dat") return (ctx == Game::MBAACC && !inArchive) ? Type::Other : Type::Character;
+	if (e == ".dat") return ctx == Game::MBAACC ? Type::Other : Type::Character;   // MBAACC .DAT files are stages / backgrounds; its characters are .HA6
 	if (e == ".img" || e == ".ex3" || e == ".bmp" || e == ".png" || e == ".jpg" || e == ".jpeg" || e == ".tga" || e == ".gif" || e == ".dds") return Type::Image;
 	if (e == ".cg" || e == ".chp") return Type::CgBank;
 	if (e == ".pat") return Type::Parts;
@@ -383,6 +383,22 @@ static void ScanFolderInto(Source &s, const std::string &root, bool recursive)
 	};
 	walk(base, 0);
 	std::sort(s.items.begin(), s.items.end(), [](const Item &a, const Item &b) { return Lower(a.name) < Lower(b.name); });
+	{   // <stem>_0.HA6 / _1 / _r ... are the version / mirror files of <stem>.HA6: they are character data, not characters of their own
+		std::set<std::string> stems;
+		for (auto &it : s.items) if (ExtOf(it.name) == ".ha6") stems.insert(Lower(it.name.substr(0, it.name.size() - 4)));
+		for (auto &it : s.items) {
+			if (ExtOf(it.name) != ".ha6") continue;
+			std::string st = Lower(it.name.substr(0, it.name.size() - 4));
+			bool variant = false;
+			for (;;) {
+				if (st.size() > 2 && st.compare(st.size() - 2, 2, "_r") == 0) st.resize(st.size() - 2);
+				else if (st.size() > 2 && st[st.size() - 2] == '_' && isdigit((unsigned char)st.back())) st.resize(st.size() - 2);
+				else break;
+				variant = true;
+			}
+			if (variant && stems.count(st)) it.type = Type::CharData;
+		}
+	}
 	for (size_t i = 0; i < s.items.size(); i++) s.items[i].index = (uint32_t)i;
 	char d[200]; snprintf(d, sizeof d, "Folder, %zu files", s.items.size()); s.describe = d;
 }
@@ -509,7 +525,7 @@ std::string OpenPath(const std::string &path)
 		g->merged = std::make_shared<Source>();
 		g->merged->kind = Source::Merged; g->merged->label = "All archives (game view)"; g->merged->game = gi.game; g->merged->group = g->id; g->merged->state = Source::Ready;
 		g->folder = std::make_shared<Source>();
-		g->folder->kind = Source::Folder; g->folder->label = (gi.game == Game::MBAACC ? "Character files: " : "Loose files: ") + (gi.dataDir.empty() ? p.filename().u8string() : P8(gi.dataDir).filename().u8string());
+		g->folder->kind = Source::Folder; g->folder->label = (gi.game == Game::MBAACC ? "Characters: " : "Files in ") + (gi.dataDir.empty() ? p.filename().u8string() : P8(gi.dataDir).filename().u8string());
 		g->folder->path = gi.dataDir.empty() ? path : gi.dataDir; g->folder->game = gi.game; g->folder->group = g->id;
 		const bool haveArchives = !gi.archives.empty();
 		if (haveArchives) st.sources.push_back(g->merged);
@@ -524,7 +540,7 @@ std::string OpenPath(const std::string &path)
 			PostMain([wf] { auto s = wf.lock(); if (s) { s->state = Source::Ready; S().viewDirty = true; } });
 		});
 		for (auto &a : gi.archives) MountArchive(a, g->id, false);
-		st.selSource = haveArchives ? mergedIdx : folderIdx;
+		st.selSource = (haveArchives && gi.game != Game::MBAACC) ? mergedIdx : folderIdx;   // MBAACC characters are loose .HA6 files: start on the folder
 		st.viewDirty = true; st.sel.clear(); st.cursor = st.anchor = -1;
 		if (haveArchives && gi.game != Game::Generic) st.typeFilter = (int)Type::Character; else st.typeFilter = -1;
 		st.filter[0] = 0;
