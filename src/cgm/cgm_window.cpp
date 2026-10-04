@@ -416,7 +416,7 @@ void Window::drawStructure(CharacterInstance &ch, const WindowHost &host) {
 
 void Window::draw(CharacterInstance *ch, const WindowHost &host) {
 	if (!open) return;
-	ImGui::SetNextWindowSize(ImVec2(1000, 640), ImGuiCond_FirstUseEver);
+	ImGui::SetNextWindowSize(ImVec2(1200, 820), ImGuiCond_FirstUseEver);
 	if (!ImGui::Begin(LBL("CG manager"), &open)) { ImGui::End(); return; }
 	if (!ch || !ch->cg.m_loaded) { ImGui::TextDisabled("%s", TXT("The active character has no CG bank.")); ImGui::End(); return; }
 	if (owner != ch || cgGen != ch->cg.generation()) rebuild(*ch);
@@ -471,6 +471,19 @@ void Window::draw(CharacterInstance *ch, const WindowHost &host) {
 			}
 		}
 		ImGui::EndDisabled();
+		if (!ch->getCGPath().empty()) {
+			ImGui::SameLine();
+			if (ImGui::Button(LBL("Save to the character's .cg"))) {
+				const std::filesystem::path target(Utf8ToWide(AnsiToUtf8(ch->getCGPath())));
+				std::error_code ec; std::vector<uint8_t> bytes; bank->serialize(bytes);
+				std::filesystem::path bak = target; bak += L".bak";
+				if (!std::filesystem::exists(bak, ec)) std::filesystem::copy_file(target, bak, ec);   // the first save keeps the original beside it
+				std::filesystem::path tmp = target; tmp += L".tmp";
+				{ std::ofstream f(tmp, std::ios::binary); f.write((const char *)bytes.data(), (std::streamsize)bytes.size()); }
+				std::filesystem::rename(tmp, target, ec);
+				status = ec ? std::string(TXT("Could not write the file.")) : Fmt(TXT("Saved %s (the original is kept as .bak)"), ch->getCGPath().c_str());
+			}
+		}
 		ImGui::SameLine();
 		if (ImGui::Button(LBL("Save bank as..."))) {
 			char nm[128]; snprintf(nm, sizeof(nm), "%s", "bank.cg");
