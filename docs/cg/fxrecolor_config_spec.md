@@ -41,3 +41,11 @@ mean error (94-100 % of pixels within 24/255); 80 (multi-hue) and 90 (single spr
 ## CLI
 
 `cgmtool fxr classify|check|shade|apply|dgv` (see `src/cgm/fxr_cli.cpp`). `shade` is the oracle hook: RGBA on stdin -> recoloured RGBA on stdout.
+
+## Colour model v1.1 (runtime dc197266)
+
+`src/cgm/fxr_spec.hpp` is the runtime's header byte-identical (`tools/fxrecolor/fxr_sync.sh check|pull`): Oklab/OkHSV maths, 16 Oklab ramp
+entries (`kRampN`), `by = lightness|max|luma` (default lightness; the panel's "Drive by"), informative `space = okhsv|oklab`, and `kind = hsv`
+is an OkHSV edit. The DGV Akiha ruleset was refit for it (`dgv_groups.py`: ramps fitted in Oklab, 16 stops, by chosen per group).
+Self-test without touching the real mouse/keyboard: `gonptechan.exe --open <char.HA6> --cg <char.cg> --fxr-selftest <dir> --capture <png>` drives
+load/save/assign/new-rule through the panel's own methods, writes `<dir>/fxr_selftest.txt` and the app's own capture of the tab.

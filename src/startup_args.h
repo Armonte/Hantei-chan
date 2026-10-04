@@ -10,6 +10,7 @@
 //   --no-pups            ignore PUPS (draw with <cg>.pal only)
 //   --compare N          overlay pattern N of the same character (pattern comparison)
 //   --tool NAME          open a tool window: hud, bgm, compare, patterns, notes, vars, keys
+//   --cg <file>          load a CG bank into the opened character
 //   --capture <png>      after a few frames, save the window to <png> and quit
 //                        (used for automated render checks, e.g. MBAC sprites)
 // Wave 2 render checks (docs/HANTEI_WAVE2.md §7):
@@ -60,6 +61,7 @@ struct StartupArgs {
 	bool tagApply = false;                 // --tag-apply
 	authoring::StartupOptions authoring;   // --authoring-* ([authoring])
 	std::string capture;
+	std::string cg;              // --cg <file>: load this CG bank into the active character (frame 3)
 	int gameLinkSlot = 0;   // --game-link (1-4); 0 = off
 	int frameCounter = 0;
 

@@ -55,6 +55,7 @@ void FxPanel::reset(CharacterInstance &ch, const Bank *bank, const UsageIndex &u
 		accentCands = SuggestAccentIndices(bodyHist, pals, 6);
 	}
 	if (path.empty()) path = defaultPath(ch);
+	if (const char *st = std::getenv("HANTEI_FXR_SELFTEST")) { static bool done = false; if (bank && !done) { done = true; selfTest(st); return; } }
 	static bool demo = std::getenv("HANTEI_FXR_DEMO") != nullptr;   // screenshot / test hook: DGV ruleset loaded, first ruled pattern selected
 	if (demo && bank && rules.rules.empty()) {
 		LoadRules(DgvAkihaIni(), rules, parserMsgs); ruleSel = 0;
@@ -64,6 +65,72 @@ void FxPanel::reset(CharacterInstance &ch, const Bank *bank, const UsageIndex &u
 			nr.patterns = { sel }; rules.rules.insert(rules.rules.begin(), nr); ruleSel = 0;
 		}
 	}
+}
+
+bool FxPanel::loadFile() {
+	std::string t;
+	if (!ReadText(path, t)) { status = TXT("Cannot read that file."); return false; }
+	parserMsgs.clear(); const int n = LoadRules(t, rules, parserMsgs); saved = rules; status = Fmt(TXT("Loaded %d rules"), n); ruleSel = rules.rules.empty() ? -1 : 0; freeTex();
+	return true;
+}
+bool FxPanel::saveFile() {
+	std::error_code ec; std::filesystem::create_directories(std::filesystem::u8path(path).parent_path(), ec);
+	std::ofstream f(std::filesystem::u8path(path), std::ios::binary);
+	if (!f) { status = TXT("Cannot write that file."); return false; }
+	const std::string t = SaveRules(rules); f.write(t.data(), (std::streamsize)t.size()); status = Fmt(TXT("Saved %zu rules to %s"), rules.rules.size(), path.c_str()); saved = rules;
+	return true;
+}
+void FxPanel::newRuleFromTicked() {
+	fx::Rule nr = DefaultRule(UniqueRuleId(rules, "rule")); if (!accentCands.empty()) nr.accentIdx = { accentCands[0].index };
+	rules.rules.insert(rules.rules.begin(), nr); AssignPatterns(rules, 0, picked); ruleSel = 0; freeTex();
+}
+
+// --fxr-selftest <dir>: drives load / save / assign / new-rule through the same methods the buttons call (no input events), checks the
+// results and writes <dir>/fxr_selftest.txt. The caller takes the picture with the app's own --capture.
+void FxPanel::selfTest(const std::string &dir) {
+	namespace fs = std::filesystem;
+	std::string rep; int fails = 0;
+	auto chk = [&](bool ok, const std::string &what) { rep += std::string(ok ? "PASS " : "FAIL ") + what + "\n"; fails += !ok; };
+	std::error_code ec; fs::create_directories(fs::u8path(dir), ec);
+	path = (fs::u8path(dir) / "selftest.ini").u8string();
+	rules = fx::CharRules(); picked.clear();
+	LoadRules(DgvAkihaIni(), rules, parserMsgs);
+	const size_t nDgv = rules.rules.size();
+	chk(nDgv == 9, "DGV ruleset parses to 9 rules (got " + std::to_string(nDgv) + ")");
+	bool ramps16 = true; for (auto &r : rules.rules) ramps16 &= r.ramp.size() == (size_t)fx::kRampN;
+	chk(ramps16, "every DGV ramp has kRampN=16 stops");
+	chk(parserMsgs.empty(), "no parser messages: " + parserMsgs);
+	chk(saveFile(), "save");
+	const std::string saved1 = SaveRules(rules);
+	rules = fx::CharRules(); chk(loadFile(), "load"); chk(rules.rules.size() == nDgv && SaveRules(rules) == saved1, "load/save round trip is text-identical");
+	// new rule from ticked patterns, with the new fields
+	for (const FxPatternRow &p : cls.patterns) { if (picked.size() >= 3) break; picked.push_back(p.pattern); }
+	chk(picked.size() == 3, "ticked 3 patterns");
+	newRuleFromTicked();
+	fx::Rule &nr = rules.rules[0];
+	chk(nr.patterns.size() == 3 && nr.by == 0 && nr.kind == fx::Kind::LumRamp, "new rule: 3 patterns, lumramp by lightness");
+	nr.by = 1; nr.kind = fx::Kind::Rainbow; nr.vmin = 0.1f; nr.vmax = 0.9f;
+	fx::Rule hs = DefaultRule("selftest_hsv"); hs.kind = fx::Kind::Hsv; hs.hueDeg = 40; hs.sat = 1.2f; hs.val = 0.9f; hs.sprites = { 1, 2 };
+	rules.rules.push_back(hs);
+	chk(saveFile(), "save with new rules");
+	fx::CharRules back; std::string err, txt; ReadText(path, txt); LoadRules(txt, back, err);
+	chk(err.empty() && back.rules.size() == nDgv + 2, "reload: rules kept, no parser messages " + err);
+	chk(back.rules[0].by == 1 && back.rules[0].kind == fx::Kind::Rainbow && back.rules[0].patterns == nr.patterns, "new rule fields survive (by=max, rainbow, patterns)");
+	chk(back.rules[nDgv + 1].kind == fx::Kind::Hsv && std::fabs(back.rules[nDgv + 1].hueDeg - 40) < 1e-3f, "hsv rule survives");
+	// assign: move one of the new rule's patterns into a DGV rule; it must leave rule 0
+	const int moved = nr.patterns[0]; AssignPatterns(rules, 1, { moved });
+	chk(std::find(rules.rules[0].patterns.begin(), rules.rules[0].patterns.end(), moved) == rules.rules[0].patterns.end()
+		&& std::find(rules.rules[1].patterns.begin(), rules.rules[1].patterns.end(), moved) != rules.rules[1].patterns.end(), "assign moves a pattern between rules");
+	chk(!DiffRules(back, rules).empty(), "diff reports the assignment");
+	// shader maths: a black..white ramp by lightness maps mid grey to mid-ish grey, and RecolorImage keeps alpha
+	fx::Packed pk; fx::pack(DefaultRule("t"), 0, nullptr, pk);
+	const fx::Rgb lo = fx::applyCpu(pk, { 0, 0, 0 }), hi = fx::applyCpu(pk, { 1, 1, 1 });
+	chk(lo.r < 0.02f && hi.r > 0.98f, "default ramp maps black to black and white to white");
+	rep += "status: " + status + "\n";
+	rules = back; ruleSel = 0; saved = back; freeTex();   // leave the saved state on screen for the capture
+	if (!cls.patterns.empty()) { sel = cls.patterns[0].pattern; }
+	rep += fails ? "SECTION fxr-selftest: FAIL\n" : "SECTION fxr-selftest: pass\n";
+	std::ofstream(fs::u8path(dir) / "fxr_selftest.txt", std::ios::binary) << rep;
 }
 
 FxPanel::Tex &FxPanel::preview(CharacterInstance &ch, const Bank &bank, int image, const fx::Rule *rule, int slot) {
@@ -108,11 +175,11 @@ void FxPanel::drawStops(std::vector<fx::Stop> &stops, fx::Rgb accent, const char
 	const ImVec2 p0 = ImGui::GetCursorScreenPos(); const float W = ImGui::GetContentRegionAvail().x - 8, H = 16;
 	ImGui::Dummy(ImVec2(W, H));
 	ImDrawList *dl = ImGui::GetWindowDrawList();
+	ImU32 col[fx::kRampN];
+	for (int k = 0; k < fx::kRampN; k++) { const fx::Rgb c = fx::oklabToSrgb({ r[k][0], r[k][1], r[k][2] }); col[k] = ImGui::ColorConvertFloat4ToU32(ImVec4(c.r, c.g, c.b, 1)); }   // entries are Oklab
 	for (int k = 0; k + 1 < fx::kRampN; k++) {
 		const float x0 = p0.x + W * k / (fx::kRampN - 1), x1 = p0.x + W * (k + 1) / (fx::kRampN - 1);
-		dl->AddRectFilledMultiColor(ImVec2(x0, p0.y), ImVec2(x1, p0.y + H),
-			ImGui::ColorConvertFloat4ToU32(ImVec4(r[k][0], r[k][1], r[k][2], 1)), ImGui::ColorConvertFloat4ToU32(ImVec4(r[k + 1][0], r[k + 1][1], r[k + 1][2], 1)),
-			ImGui::ColorConvertFloat4ToU32(ImVec4(r[k + 1][0], r[k + 1][1], r[k + 1][2], 1)), ImGui::ColorConvertFloat4ToU32(ImVec4(r[k][0], r[k][1], r[k][2], 1)));
+		dl->AddRectFilledMultiColor(ImVec2(x0, p0.y), ImVec2(x1, p0.y + H), col[k], col[k + 1], col[k + 1], col[k]);
 	}
 	int del = -1;
 	static const char *kTok[] = { "colour", "accent", "accent.dark", "accent.light" };
@@ -123,7 +190,7 @@ void FxPanel::drawStops(std::vector<fx::Stop> &stops, fx::Rgb accent, const char
 		ImGui::SetNextItemWidth(104); if (ImGui::Combo("##tok", &tk, kTok, 4)) s.tok = (fx::ColTok)tk;
 		ImGui::SameLine();
 		if (s.tok == fx::ColTok::Literal) { float c[3] = { s.c.r, s.c.g, s.c.b }; if (ImGui::ColorEdit3("##c", c, ImGuiColorEditFlags_NoInputs)) s.c = { c[0], c[1], c[2] }; }
-		else { const fx::Rgb rc = fx::resolveStop(s, accent); ImGui::ColorButton("##a", V4(rc), ImGuiColorEditFlags_NoTooltip, ImVec2(20, 20)); }
+		else { const fx::Rgb rc = fx::oklabToSrgb(fx::resolveStop(s, accent)); ImGui::ColorButton("##a", V4(rc), ImGuiColorEditFlags_NoTooltip, ImVec2(20, 20)); }
 		ImGui::SameLine(); ImGui::Checkbox("@", &s.hasPos);
 		if (s.hasPos) { ImGui::SameLine(); ImGui::SetNextItemWidth(90); ImGui::SliderFloat("##p", &s.pos, 0.f, 1.f, "%.2f"); }
 		ImGui::SameLine(); if (ImGui::SmallButton("x") && stops.size() > 1) del = (int)i;
@@ -134,7 +201,7 @@ void FxPanel::drawStops(std::vector<fx::Stop> &stops, fx::Rgb accent, const char
 	if (ImGui::SmallButton(LBL("+ stop"))) { fx::Stop s; s.tok = fx::ColTok::Accent; stops.insert(stops.end() - (stops.size() > 1 ? 1 : 0), s); }
 	ImGui::SameLine(); if (ImGui::SmallButton(LBL("Preset: dark-accent-white"))) fx::parseStops("#000000 accent.dark accent accent.light #ffffff", stops);
 	ImGui::SameLine(); if (ImGui::SmallButton(LBL("Preset: black-accent"))) fx::parseStops("#000000 accent", stops);
-	ImGui::SameLine(); if (ImGui::SmallButton(LBL("Preset: rainbow"))) { stops.clear(); for (int k = 0; k < fx::kRampN; k++) { fx::Stop s; s.c = fx::hsv2rgb((float)k / fx::kRampN, 1, 1); stops.push_back(s); } }
+	ImGui::SameLine(); if (ImGui::SmallButton(LBL("Preset: rainbow"))) { stops.clear(); for (int k = 0; k < fx::kRampN; k++) { fx::Stop s; s.c = fx::okhsvToSrgb({ (double)k / fx::kRampN, 0.9, 0.95 }); stops.push_back(s); } }
 	ImGui::PopID();
 }
 
@@ -154,14 +221,16 @@ void FxPanel::drawRuleEditor(CharacterInstance &ch, const Bank *bank) {
 	ImGui::SetNextItemWidth(140); if (ImGui::Combo(LBL("Bank"), &bank_, kBank, 3)) r.bank = bank_;
 	ImGui::SameLine(); int bl = r.blend; ImGui::SetNextItemWidth(70); if (ImGui::InputInt(LBL("Blend (-1 any)"), &bl, 0, 0)) r.blend = std::max(-1, bl);
 	if (r.kind == fx::Kind::Hsv) {
-		ImGui::SliderFloat(LBL("Hue shift"), &r.hueDeg, -180.f, 180.f, "%.0f deg");
+		ImGui::TextDisabled("%s", TXT("OkHSV edit: perceptual hue, saturation and value.")); ImGui::SliderFloat(LBL("Hue shift"), &r.hueDeg, -180.f, 180.f, "%.0f deg");
 		ImGui::SliderFloat(LBL("Saturation x"), &r.sat, 0.f, 2.f); ImGui::SliderFloat(LBL("Value x"), &r.val, 0.f, 2.f);
 	} else {
-		bool luma = r.byLuma; if (ImGui::Checkbox(LBL("Drive by luma (default: max channel)"), &luma)) r.byLuma = luma;
+		static const char *kBy[] = { "Oklab lightness (default)", "Max channel", "Luma" };
+		int by = std::clamp(r.by, 0, 2); ImGui::SetNextItemWidth(200);
+		if (ImGui::Combo(LBL("Drive by"), &by, kBy, 3)) r.by = by;
 		if (r.kind == fx::Kind::LumRamp) {
 			ImGui::SetNextItemWidth(220); float vr[2] = { r.vmin, r.vmax };
 			if (ImGui::DragFloat2(LBL("Source range"), vr, 0.005f, 0.f, 1.f, "%.3f")) { r.vmin = std::clamp(vr[0], 0.f, 0.99f); r.vmax = std::clamp(vr[1], r.vmin + 0.01f, 1.f); }
-		} else ImGui::TextDisabled("%s", TXT("Rainbow: entry k of the ramp (8 slots) colours hue k/8; value is kept."));
+		} else ImGui::TextDisabled("%s", TXT("Rainbow: entry k of the ramp (16 slots) colours OkLCh hue k/16; lightness and chroma are kept."));
 		ImGui::SeparatorText(TXT("Ramp"));
 		drawStops(r.ramp, acc, "rampp");
 	}
@@ -273,17 +342,8 @@ void FxPanel::draw(CharacterInstance &ch, const Bank *bank, const UsageIndex &us
 		char pb[512]; snprintf(pb, sizeof pb, "%s", path.c_str());
 		ImGui::SetNextItemWidth(ImGui::GetContentRegionAvail().x - 420);
 		if (ImGui::InputText("##fxpath", pb, sizeof pb)) path = pb;
-		ImGui::SameLine(); if (ImGui::Button(LBL("Load"))) {
-			std::string t;
-			if (ReadText(path, t)) { parserMsgs.clear(); const int n = LoadRules(t, rules, parserMsgs); saved = rules; status = Fmt(TXT("Loaded %d rules"), n); ruleSel = rules.rules.empty() ? -1 : 0; freeTex(); }
-			else status = TXT("Cannot read that file.");
-		}
-		ImGui::SameLine(); if (ImGui::Button(LBL("Save"))) {
-			std::error_code ec; std::filesystem::create_directories(std::filesystem::u8path(path).parent_path(), ec);
-			std::ofstream f(std::filesystem::u8path(path), std::ios::binary);
-			if (f) { const std::string t = SaveRules(rules); f.write(t.data(), (std::streamsize)t.size()); status = Fmt(TXT("Saved %zu rules to %s"), rules.rules.size(), path.c_str()); saved = rules; }
-			else status = TXT("Cannot write that file.");
-		}
+		ImGui::SameLine(); if (ImGui::Button(LBL("Load"))) loadFile();
+		ImGui::SameLine(); if (ImGui::Button(LBL("Save"))) saveFile();
 		ImGui::SameLine(); if (ImGui::Button(LBL("Import DGV Akiha ruleset"))) {
 			parserMsgs.clear(); const int n = LoadRules(DgvAkihaIni(), rules, parserMsgs); status = Fmt(TXT("Imported %d DGV groups (Akiha only: sprite ids are Akiha's)"), n); ruleSel = rules.rules.empty() ? -1 : 0; freeTex();
 		}
@@ -363,9 +423,7 @@ void FxPanel::draw(CharacterInstance &ch, const Bank *bank, const UsageIndex &us
 		if (ImGui::Button(LBL("Assign ticked patterns to the selected rule"))) { AssignPatterns(rules, ruleSel, picked); freeTex(); status = Fmt(TXT("Assigned %zu patterns to %s"), picked.size(), rules.rules[ruleSel].id.c_str()); }
 		ImGui::EndDisabled();
 		ImGui::SameLine(); ImGui::BeginDisabled(picked.empty());
-		if (ImGui::Button(LBL("New rule from ticked"))) {
-			fx::Rule nr = DefaultRule(UniqueRuleId(rules, "rule")); if (!accentCands.empty()) nr.accentIdx = { accentCands[0].index }; rules.rules.insert(rules.rules.begin(), nr); AssignPatterns(rules, 0, picked); ruleSel = 0; freeTex();
-		}
+		if (ImGui::Button(LBL("New rule from ticked"))) newRuleFromTicked();
 		ImGui::EndDisabled();
 	}
 	ImGui::EndChild();

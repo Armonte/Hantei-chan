@@ -38,6 +38,7 @@ private:
 	// preview cache
 	std::unordered_map<std::string, Tex> tex;
 	void freeTex();
+	bool loadFile(); bool saveFile(); void newRuleFromTicked(); void selfTest(const std::string &dir);
 	void reset(CharacterInstance &ch, const Bank *bank, const UsageIndex &usage);
 	std::string defaultPath(CharacterInstance &ch) const;
 	const unsigned *slotPal(CharacterInstance &ch, int slot) const;
