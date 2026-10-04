@@ -149,3 +149,8 @@
 	{"Export disassembly...", "逆アセンブルを書き出し..."},
 	{"filter (op name)", "フィルタ (命令名)"},
 	{"PUSH_IMM / PUSH_CODE_ADDR operands are editable (constants of the script); structure edits are not offered, unedited banks save byte-identical.", "PUSH_IMM / PUSH_CODE_ADDR のオペランド (スクリプトの定数) を編集できます。構造の編集はできません。未編集のバンクはバイト単位で同一に保存されます。"},
+	{"game folder", "ゲームフォルダ"},
+	{"Browse game folder...", "ゲームフォルダを選択..."},
+	{"loose path in the game folder", "ゲームフォルダ内のルーズファイルのパス"},
+	{"Reload in running game", "実行中のゲームに再読み込み"},
+	{"Writes the edited file under the game folder (the game opens loose files before its archives) and asks the game, running offline under PovertyCaster, to re-read it.", "編集したファイルをゲームフォルダに書き込み (ゲームはアーカイブより先にルーズファイルを開きます)、PovertyCaster のオフラインで動作中のゲームに再読み込みを要求します。"},

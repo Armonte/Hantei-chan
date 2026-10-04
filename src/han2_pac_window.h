@@ -16,7 +16,8 @@ void DrawPacCreate();
 // Queue a replacement in the creator (used by the viewers' "put into PAC list").
 void PacCreateAddMemory(const std::string &cp932Name, std::vector<uint8_t> data);
 
-void OpenFileViewer(const std::string &cp932Name, std::vector<uint8_t> bytes, const std::string &origin);
+// `archivePath` (optional): the archive the entry came from, used to guess the loose path the game opens it from (live reload).
+void OpenFileViewer(const std::string &cp932Name, std::vector<uint8_t> bytes, const std::string &origin, const std::string &archivePath = std::string());
 void DrawFileViewers();
 
 } // namespace han2ui

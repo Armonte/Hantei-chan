@@ -1,6 +1,10 @@
 #include "han2_pac_window.h"
 #include "han2_typed_files.h"
+#include "han2_browser.h"
+#include "live_reload.h"
+#include "fbarc/fb_archive.h"
 #include <map>
+#include <functional>
 #include "han2/dmp_fob.h"
 #include "han2/pac_archive.h"
 #include "han2/img_file.h"
@@ -194,6 +198,7 @@ struct Viewer {
 	std::string name, origin;           // name: CP932
 	std::vector<uint8_t> bytes;
 	enum Kind { Hex, Image, Poly, Typed, Fob } kind = Hex;
+	std::string archivePath; char loosePath[260] = ""; bool looseGuessed = false;
 	int px16 = 0;                       // 16-bit sheets: 0 = A1R5G5B5, 1 = A4R4G4B4 (the caller of the game's loader decides, dMp files do not name it)
 	han2::dmpfob::File fob; std::string fobFilter;
 	TypedFile typed; std::vector<int> typedSel; std::string typedFilter;
@@ -203,6 +208,34 @@ struct Viewer {
 };
 std::vector<std::unique_ptr<Viewer>> g_views;
 int g_nextView = 1;
+
+// Live reload row: game folder, the loose path the game opens this asset from (guessed from the script strings of the same archive), and the button.
+void DrawLiveReloadRow(Viewer &v, const std::function<void(std::vector<uint8_t> &)> &makeBytes)
+{
+	if (!v.looseGuessed) {
+		v.looseGuessed = true;
+		const std::string base = v.name.substr(v.name.find_last_of("/\\") == std::string::npos ? 0 : v.name.find_last_of("/\\") + 1);
+		if (!v.archivePath.empty()) {
+			std::string err; auto a = fbarc::Open(v.archivePath, &err);
+			if (a) {
+				std::vector<std::vector<uint8_t>> fobs;
+				for (size_t i = 0; i < a->entries().size(); i++) { std::string n = a->entries()[i].name; for (auto &c : n) c = (char)tolower((unsigned char)c); if (n.size() > 4 && n.compare(n.size() - 4, 4, ".fob") == 0) { std::vector<uint8_t> b; if (a->read(i, b, &err)) fobs.push_back(std::move(b)); } }
+				std::string g = livereload::GuessLoosePath(base, fobs);
+				snprintf(v.loosePath, sizeof v.loosePath, "%s", g.c_str());
+			}
+		}
+		if (!v.loosePath[0]) snprintf(v.loosePath, sizeof v.loosePath, "data/%s", base.c_str());
+	}
+	ImGui::Separator();
+	static char gameDir[512]; static bool init = false;
+	if (!init) { init = true; snprintf(gameDir, sizeof gameDir, "%s", LiveReloadGameDir().c_str()); }
+	ImGui::SetNextItemWidth(260); if (ImGui::InputText(LBL("game folder"), gameDir, sizeof gameDir)) SetLiveReloadGameDir(gameDir);
+	ImGui::SameLine(); if (ImGui::Button(LBL("Browse game folder..."))) { std::string d = BrowseForFolderUtf8(""); if (!d.empty()) { snprintf(gameDir, sizeof gameDir, "%s", d.c_str()); SetLiveReloadGameDir(d); } }
+	ImGui::SetNextItemWidth(260); ImGui::InputText(LBL("loose path in the game folder"), v.loosePath, sizeof v.loosePath);
+	ImGui::SameLine();
+	if (ImGui::Button(LBL("Reload in running game"))) { std::vector<uint8_t> bytesToSend; makeBytes(bytesToSend); livereload::Result r = livereload::Reload(gameDir, v.loosePath, bytesToSend); v.msg = r.status; }
+	if (ImGui::IsItemHovered()) ImGui::SetTooltip("%s", TXT("Writes the edited file under the game folder (the game opens loose files before its archives) and asks the game, running offline under PovertyCaster, to re-read it."));
+}
 
 void Upload(Viewer &v)
 {
@@ -226,9 +259,9 @@ void CollectStrings(Viewer &v)
 
 } // namespace
 
-void OpenFileViewer(const std::string &name, std::vector<uint8_t> bytes, const std::string &origin)
+void OpenFileViewer(const std::string &name, std::vector<uint8_t> bytes, const std::string &origin, const std::string &archivePath)
 {
-	auto v = std::make_unique<Viewer>();
+	auto v = std::make_unique<Viewer>(); v->archivePath = archivePath;
 	v->id = g_nextView++; v->name = name; v->origin = origin; v->bytes = std::move(bytes);
 	if (han2::IsImg(v->bytes.data(), v->bytes.size()) && han2::ParseImg(v->bytes.data(), v->bytes.size(), v->img, nullptr)) { v->kind = Viewer::Image; v->px16 = v->img.format == 1 ? 1 : 0; Upload(*v); }
 	else if (name.size() > 4 && Lower(name.substr(name.size() - 4)) == ".fob" && han2::dmpfob::Parse(v->bytes.data(), v->bytes.size(), v->fob, nullptr) && v->fob.nInsns > 0) v->kind = Viewer::Fob;
@@ -280,6 +313,7 @@ void DrawFileViewers()
 			}
 			ImGui::SameLine();
 			if (ImGui::Button(LBL("Put into new PAC"))) { std::vector<uint8_t> out; han2::SerializeImg(v.img, out); PacCreateAddMemory(v.name, std::move(out)); }
+			DrawLiveReloadRow(v, [&](std::vector<uint8_t> &o) { han2::SerializeImg(v.img, o); });
 			ImGui::BeginChild("img", ImVec2(0, 0), true, ImGuiWindowFlags_HorizontalScrollbar);
 			ImVec2 sz(v.img.width * v.zoom, v.img.height * v.zoom), p0 = ImGui::GetCursorScreenPos();
 			if (v.checker) {
@@ -321,6 +355,7 @@ void DrawFileViewers()
 			if (ImGui::Button(LBL("Export disassembly..."))) { std::string p = FileDialog(-1, true, (char *)"script.txt"); if (!p.empty()) { std::string t = han2::dmpfob::Disassemble(v.fob); std::ofstream f(fs::u8path(p), std::ios::binary); f.write(t.data(), (std::streamsize)t.size()); } }
 			ImGui::SetNextItemWidth(200); char fb[64]; snprintf(fb, sizeof fb, "%s", v.fobFilter.c_str()); if (ImGui::InputText(LBL("filter (op name)"), fb, sizeof fb)) v.fobFilter = fb;
 			ImGui::TextDisabled("%s", TXT("PUSH_IMM / PUSH_CODE_ADDR operands are editable (constants of the script); structure edits are not offered, unedited banks save byte-identical."));
+			DrawLiveReloadRow(v, [&](std::vector<uint8_t> &o) { han2::dmpfob::Serialize(v.fob, o); });
 			ImGui::BeginChild("fob", ImVec2(0, 0), true);
 			std::map<uint32_t, std::string> labels; for (auto &fe : v.fob.funcs) labels[fe.pc] = std::string((const char *)fe.name, strnlen((const char *)fe.name, 32));
 			for (size_t i = 0; i < v.fob.items.size(); i++) {

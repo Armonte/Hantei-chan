@@ -34,6 +34,7 @@ std::string SettingsPath()
 struct LoadEntry { std::string name, summary; std::vector<std::string> warnings; bool failed; };
 std::vector<LoadEntry> g_reports;
 std::string g_workFolder;
+std::string g_gameDir;
 struct FolderNode { std::string name, path; std::vector<FolderNode> dirs; std::vector<std::string> files; };
 FolderNode g_root; bool g_scanned = false;
 void ScanFolder(const std::string &dir, FolderNode &node, int depth)
@@ -91,14 +92,19 @@ void LoadHan2Settings()
 	i18n::language = (int)GetPrivateProfileIntA("han2", "Language", 0, p.c_str());
 	char buf[1024]{}; GetPrivateProfileStringA("han2", "WorkFolder", "", buf, sizeof(buf), p.c_str());
 	g_workFolder = buf;
+	char gb[1024]{}; GetPrivateProfileStringA("han2", "LiveReloadGameDir", "", gb, sizeof(gb), p.c_str());
+	g_gameDir = gb;
 }
 void SaveHan2Settings()
 {
 	const std::string p = SettingsPath();
 	WritePrivateProfileStringA("han2", "Language", std::to_string(i18n::language).c_str(), p.c_str());
 	WritePrivateProfileStringA("han2", "WorkFolder", g_workFolder.c_str(), p.c_str());
+	WritePrivateProfileStringA("han2", "LiveReloadGameDir", g_gameDir.c_str(), p.c_str());
 }
 const std::string &WorkFolder() { return g_workFolder; }
+const std::string &LiveReloadGameDir() { return g_gameDir; }
+void SetLiveReloadGameDir(const std::string &dir) { g_gameDir = dir; SaveHan2Settings(); }
 void SetWorkFolder(const std::string &dir) { g_workFolder = dir; SaveHan2Settings(); }
 
 void PushLoadReport(const std::string &name, const std::string &summary, const std::vector<std::string> &warnings, bool failed)
@@ -312,7 +318,7 @@ bool DrawBrowser(OpenRequest &req, std::string &message)
 				}
 				if (!isChar && ImGui::IsItemHovered() && ImGui::IsMouseDoubleClicked(0)) {
 					std::vector<uint8_t> bytes; std::string rerr;
-					if (ReadMounted(g_mounted[g_sel], i, bytes, &rerr)) OpenFileViewer(e.name, std::move(bytes), g_mounted[g_sel].shortName); else message = rerr;
+					if (ReadMounted(g_mounted[g_sel], i, bytes, &rerr)) OpenFileViewer(e.name, std::move(bytes), g_mounted[g_sel].shortName, g_mounted[g_sel].f ? g_mounted[g_sel].f->path() : g_mounted[g_sel].a->path); else message = rerr;
 				}
 				ImGui::TableSetColumnIndex(1); ImGui::Text("%u", e.size);
 				ImGui::TableSetColumnIndex(2);
