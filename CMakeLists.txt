@@ -494,6 +494,31 @@ if(MINGW)
 	target_link_options(shared_clipboard_test PRIVATE -static-libgcc -static-libstdc++ -static)
 endif()
 add_test(NAME shared_clipboard COMMAND shared_clipboard_test)
+# fb_part_transform_test: RBO / GOF2 / GOF1 part placement (pivot, rotation, draw order) against the engine's own
+# arithmetic, decoded in IDA (docs/formats/fb_part_transform.md). Synthetic poses always; real .DAT files by argument.
+add_executable(fb_part_transform_test
+	tests/fb_part_transform_test.cpp
+	src/han2_pat.cpp
+	src/han2_pat_write.cpp
+	src/parts/parts.cpp
+	src/parts/parts_part.cpp
+	src/parts/parts_partset.cpp
+	src/parts/parts_shape.cpp
+	src/parts/parts_texture.cpp
+	src/cg.cpp
+	src/texture.cpp
+	src/vao.cpp
+	src/shader.cpp
+	src/misc.cpp
+	tinyalloc/tinyalloc.c
+)
+target_include_directories(fb_part_transform_test PRIVATE "." "src" "third_party" "${CMAKE_BINARY_DIR}/generated")
+target_compile_definitions(fb_part_transform_test PRIVATE WIN32_LEAN_AND_MEAN HA6GUIVERSION="${CMAKE_PROJECT_VERSION}" PAT_HEADLESS)
+target_link_libraries(fb_part_transform_test PRIVATE tinyalloc glad glm OpenGL::GL)
+if(MINGW)
+	target_link_options(fb_part_transform_test PRIVATE -static-libgcc -static-libstdc++ -static)
+endif()
+add_test(NAME fb_part_transform COMMAND fb_part_transform_test)
 # refs_test: variable / pattern reference tools (issues #75, #44).
 add_executable(refs_test
 	tests/refs_test.cpp
