@@ -480,3 +480,92 @@ Types: `docs/formats/ida/pb2k1_types.h` loaded with `parse_decls` (30 structs, 2
 `PB_Obj*` (action script, frame pointers, motion, boxes, hit passes, hit reaction, knockback, grabs, input dispatch, evade / tech, reserve / guard gauge), `PB_Slot*` (command table / sequence matching / CPU script loading), `PB_EfType*_*` (EF handlers), `PB_Damage_*`, `PB_Cpu*`,
 `PB_SetupFighterSlot*`, `PB_InitFighterSlotForRound`, `PB_ResetFighterSlotKeepingDataPointers`, `PB_BindCharacterData`, `PB_LoadWinQuoteTable`, `PB_PickWinQuote`, `PB_LoadVectorTxt`, `CSS_LoadCharselCtGrid`, `PB_LoadArchiveFileToBuffer`,
 `PB_BlitPalettedToSurface`, `PB_Create/Lock/UnlockTextureSurface`; the cipher / loader functions carry function comments.
+
+## 16. G-format archives (02/03/04.dat) and the scrambled MP3
+
+Result: the "G" files are **not** movies, graphics bundles or a new cipher/compression. They are ordinary PB archives that hold a second copy of the background music (MPEG-1 layer III), wrapped in two layers of the
+same position-keyed XOR the game uses everywhere (cipher N below). **The game never opens them as archives**; it only reads one dword at a fixed offset of each file as an anti-tamper probe. The `bg` / `grp` files the game
+asks for (`.\bg\bg%02dinfo.txt`, `.\grp\...`) come from `01.dat` / `01p.dat` / `02p.dat` through `Find_File_In_PB_Archives` (EX3 / BMP / TXT entries); `02/03/04.dat` contain no such files. The old notes
+`PB_GFORMAT_*.md` (first-run extraction, "G-format decryption routine", "BG / GRP folders are created from 030G") are wrong on all counts.
+Proof: `tools/fb/pb2k1_g_verify.py` (reads the raw files, decodes all 55 members and the scrambled `03.MP3`, validates every MP3 frame chain, rebuilds every archive and compares byte-exact; 88 checks, ALL PASS).
+
+### 16.1 What the game does with the files (T)
+
+`PB_MainInitAndFrameLoop` 0x433D30 is the only code that touches `.\02.dat` (`g_str_path_02_dat` 0x461B10), `.\03.dat` (0x461AE8) and `.\04.dat` (0x461ADC) (`File_Open` 0x4241C0, `File_Get_Size` 0x4242B0,
+`File_Seek` 0x424290, `File_Read` 0x424220, `File_Close` 0x424280; debug lines `2fread`, `2size`, `2fok` via `PB_DebugLogLine` 0x40FA50). Each probe requires the file size to be **>= 100000000 (0x5F5E100)**, seeks to
+a constant offset, reads 4 bytes and compares them with a constant; any mismatch calls `_exit(0)`. The seven probes (comments set at each compare in the IDB):
+
+| when | file | offset | expected dword | compare site | lies in (D) |
+|---|---|---|---|---|---|
+| boot | 02.dat | 0x5729228 | 0x6E498477 (checked twice) | 0x433E0E / 0x433E82 | blob `03.DAT`, member `08.MP3` +864959 |
+| boot | 03.dat | 0x701176D | 0xAEA6CC1D | 0x433EE1 | blob `02.DAT`, member `96.MP3` +197487 |
+| boot | 04.dat | 0x4885162 | 0x0FDEBD8F | 0x433F3E | blob `04.DAT`, member `03.MP3` +2019018 |
+| boot | 00.dat | 0x4B017DC | 0xB7AD489C | 0x434270 | entry `05.MP3` +690832 |
+| menu scene | 02.dat | 0x57291B8 | 0x6EDBA133 | 0x434391 | blob `03.DAT`, member `08.MP3` +864847 |
+| character-select scene | 04.dat | 0x645D543 | 0x7A947954 | 0x434483 | blob `04.DAT`, member `10.MP3` +3186438 |
+| battle scene (first tick) | 00.dat | 0x718014D | 0x27A138C2 | 0x4344F7 | entry `91.MP3` +858312 |
+
+All seven hold on the shipped files (D, checked by the verifier on the raw bytes). The probed offsets lie inside MP3 member bodies (all past the first 9696 bytes of the member, so unaffected by cipher N); a re-encoded file
+must therefore keep every member payload byte-identical. The probes are the reason the three files are padded to > 100 MB.
+
+BGM playback (`PB_LoadAndStartBgm` 0x43CF20, track number -> `.\bgm\%02d.mp3`, `g_str_fmt_bgm_mp3`): looks the name up in `g_BgmArchiveSlots[0..4]` (`PB_Archive_Find_File_Get_Offset` 0x423F80; only slots 3 = `00p.dat`
+and 4 = `00.dat` are opened, the first archive with the name wins) and streams the MP3 **directly from a read-only file mapping of the archive at the entry offset** (`PB_BgmStream_OpenMp3FromArchiveMapping` 0x4120F0 ->
+`PB_OpenStreamingWaveOrMp3` 0x4121C0, `g_BgmStream` 0x1850288). There is no descrambling step: BGM entries must be stored plain, which `00.dat` / `00p.dat` do (`BGM.TXT` / `LIST.TXT` in `00.dat` hold the loop table,
+`PB_LoadBgmLoopTable` 0x43CD40). Mode `g_bgm_source_mode == 0` plays `.\bgm\%02d.wav` from disk instead. The scrambled MP3s of this section are therefore never played.
+
+### 16.2 Cipher N (the only cipher in these files)
+
+`N(name)`: for `p` in `[0, min(len, 9696))`: `b[p] ^= (p + upper(name)[p % len(name)]) & 0xFF`, `name` = the entry name as stored (CP932, already upper case, e.g. `02.DAT`, `03.MP3`). This is the stream of
+`PB_Archive_XOR_Decrypt_With_Filename` 0x424000 (the block loop in the code is the same as `p % len(name)`), identical to stage 1 of the character files (section 2); XOR, so encode == decode, and two layers commute.
+Bytes at offset >= 9696 are never touched.
+
+### 16.3 Layout
+
+```
+outer file (02.dat / 03.dat / 04.dat)          Pb2ArchiveFileHeader (8) | Pb2ArchiveDiskEntry[count] (64 each) | payloads back to back, no gap, no trailer
+  payload "02.DAT" / "03.DAT" / "04.DAT"       = N(own name) applied to the INNER archive bytes
+  payload "03.MP3" (04.dat only)               = N("03.MP3") applied to a plain MP3
+inner archive (after N(blob name))             same Pb2ArchiveFileHeader (plainFlag 0) | entries | payloads
+  member NN.MP3                                = N("NN.MP3") applied to a plain MP3
+```
+
+* Header: `u32 plainFlag` (02.dat 1, 03.dat 0, 04.dat 1, inner archives 0; the game's loader would skip the name cipher when it is non-zero, but the payloads are enciphered regardless, so the flag is meaningless for these files),
+  `u32 count ^ 0xFA261EFB`.
+* Entry (64 bytes, `Pb2ArchiveDiskEntry`): `name[56]` with byte j of entry i stored as `b ^ ((3 * (j * i - 28)) & 0xFF)` (the bytes after the NUL terminator are **stale editor memory, not zero**, and are part of the file),
+  `u32 size ^ 0xFA261EFB`, `u32 offset` (absolute from the start of the archive the entry lives in; the first payload starts at `8 + 64 * count`).
+* Payloads are contiguous in directory order (D: every outer file and every inner archive tiles exactly: `end == file size`).
+* The ASCII "G" magic is not a magic: the first four bytes of a blob are the enciphered zero `plainFlag` of the inner archive, `bytes((i + name[i]) & 0xFF for i in range(4))`: `02.DAT` -> `30 33 30 47` = `030G`, `03.DAT` -> `040G`,
+  `04.DAT` -> `050G` (`'G'` = `'D'` + 3). Applying `N(name)` turns them into `00 00 00 00`, followed by `count ^ 0xFA261EFB` (`EF 1E 26 FA` = 20 for `02.DAT`).
+
+Decode: `blob = N(name)(outer payload)`; parse the inner archive; `mp3 = N(member name)(member payload)`. Encode: member payload = `N(member name)(mp3)`; inner archive = header + entries (names re-enciphered, stale pad bytes preserved) + payloads;
+outer payload = `N(blob name)(inner archive)`; outer archive = header + entries + payloads. The verifier does exactly this and compares with the original bytes (118233540 / 125910362 / 122215677 bytes for 02 / 03 / 04.dat, and every blob).
+
+### 16.4 Contents (D)
+
+Outer archives: `02.dat` = {`02.DAT` 64265755 B @136, `03.DAT` 53967649 B @64265891}; `03.dat` = {`04.DAT` 61644471 B @136, `02.DAT` 64265755 B @61644607}; `04.dat` = {`03.MP3` 6603357 B @200, `03.DAT` 53967649 B @6603557,
+`04.DAT` 61644471 B @60571206}. The three blobs are byte-identical wherever they appear (same `02.DAT` in 02.dat and 03.dat, same `03.DAT` in 02.dat and 04.dat, same `04.DAT` in 03.dat and 04.dat).
+
+Inner archives (members in directory order; sizes in bytes of the plain MP3):
+
+| blob | members |
+|---|---|
+| `02.DAT` (20) | 98 (90622), 02 (6234503), 03 (6603357), 04 (4147334), 05 (4377192), 06 (5156984), 07 (3819229), 08 (4914040), 09 (4168709), 10 (3805842), 11 (4398518), 12 (4676466), 90 (905528), 91 (1981871), 92 (177556), 93 (129491), 95 (81421), 96 (1307708), 97 (71389), 01 (7216707) |
+| `03.DAT` (17) | 97, 02, 03, 05, 06, 07, 08, 10, 11, 12, 90, 92, 93, 95, 96, 01, 98 (same sizes as above) |
+| `04.DAT` (18) | 01, 02, 03, 04, 05, 07, 08, 09, 10, 11, 12, 90, 91, 92, 93, 95, 97, 99 (3934158) |
+
+(each name is `NN.MP3`). All 55 members decode to valid MPEG-1 layer III streams (first bytes `FF FB`, 170 .. 13813 frames, ends with one truncated last frame of < 1045 bytes; the same chain length as the 00.dat files).
+Most members are byte-identical to entries of `00.dat` (`02` = `008.MP3`, `03` = `009.MP3` = `003.MP3`, `04` = `004`, `05` = `005`, `06` = `006`, `07` = `007`, `01` = `001`, `91` .. `98` = `91.MP3` .. `98.MP3`); members
+`08`, `09`, `10`, `11`, `12`, `90`, `96`, `99` of the blobs differ from the 00.dat entries of the same name (other sizes / bytes; the relation, e.g. other recordings, is U).
+
+### 16.5 The scrambled `03.MP3` (04.dat entry 0)
+
+`04.dat` entry 0 (`03.MP3`, 6603357 bytes, `CF CF 90 54 54 38 ...`) is the plain MP3 with **cipher N("03.MP3")** applied to its first 9696 bytes; the other 6593661 bytes are plain (6593736 of 6603357 bytes equal `00.dat/003.MP3`; the first
+9696 differ in 9621 positions). Decoded it is byte-identical to `00.dat` `003.MP3` and `009.MP3` (and to member `03.MP3` of every blob) and has 12639 frames. Why the stored bytes are `CF CF 90 54`: first plain bytes `FF FB A0 04` XOR
+`30 34 30 50` (`p + '0','3','.','M','P','3'`). The game never plays it (it is not in `g_BgmArchiveSlots`); fbarctool does not decode it because the archive flag is 1.
+
+### 16.6 IDB changes for this section
+
+Renamed + typed: `PB_LoadAndStartBgm` 0x43CF20 (was `sub_43CF20`), `PB_Archive_Find_File_Get_Offset` 0x423F80, `PB_BgmStream_OpenMp3FromArchiveMapping` 0x4120F0 (`__thiscall`), `PB_BgmStream_OpenWavFile` 0x411A10, `PB_BgmStream_Close` 0x412840,
+`PB_GetCurrentBgmTrack` 0x43D020; globals `g_str_path_00p_dat` .. `g_str_path_04_dat`, `g_str_log_2size` / `2fread` / `2fok`, `g_str_path_bgm_txt`, `g_str_fmt_bgm_wav` / `g_str_fmt_bgm_mp3`, `g_BgmStream` 0x1850288,
+`g_bgm_load_in_progress`, `g_bgm_loaded`, `g_bgm_source_mode`, `g_bgm_current_track` (int); comments on the seven probe compares and on `PB_LoadAndStartBgm`. Types added to `pb2k1_types.h`: `Pb2ArchiveFileHeader` (8),
+`Pb2ArchiveDiskEntry` (64), `Pb2BootIntegrityProbe` (8) (documentation types, not applied to a global).

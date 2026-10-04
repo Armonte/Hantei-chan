@@ -96,18 +96,18 @@ Magic = the first 4 plain bytes after the archive cipher; several magics per ext
 | Melty Blood 2002 | .TXT | 113 | 560,769 | byte-exact round trip | fbchartool: Shift-JIS text (incl. VECTOR.TXT) (magic 0d0a0d0a 0d0a2f2f 0d0a4546 ...) |
 | Melty Blood 2002 | .WAV | 1054 | 116,478,659 | byte-exact round trip | fbchartool: RIFF chunks (magic 52494646) |
 | Melty Blood 2002 | .WMT | 18 | 21,590 | byte-exact round trip | fbchartool: win messages typed (mb.md) (magic 01000000 02000000 03000000 ...) |
-| PB2K1 | .B | 22 | 202,288 | none | M4 (magic 4f626a65) |
-| PB2K1 | .BMP | 20 | 7,823,792 | none | M4 (magic 424d38b4 424d8801) |
-| PB2K1 | .CCT | 13 | 55,016 | none | M4 (magic 14000000 16000000 19000000 ...) |
-| PB2K1 | .CPF | 4 | 224,192 | none | M4 (magic 00000000 64000000) |
-| PB2K1 | .CT | 23 | 91,540 | none | M4 (magic 0d000000 0e000000 15000000 ...) |
-| PB2K1 | .DAT | 22 | 388,360,440 | none | 時は来た triple-XOR character (M3) + stage .dat (magic 00000000 30333047 30343047 ...) |
-| PB2K1 | .EX3 | 723 | 80,508,926 | none | LLIF compressed BMP: no reader (M4) (magic 4c4c4946) |
-| PB2K1 | .FNT | 1 | 2,289,254 | none | M4 (magic 2b1e1800) |
-| PB2K1 | .MP3 | 36 | 146,256,645 | read | (magic cfcf9054 fffb9204 fffb9264 ...) |
-| PB2K1 | .TXT | 65 | 1,101,718 | edit | (magic 0d0a0d0a 0d0a3930 0f000000 ...) |
-| PB2K1 | .WAV | 132 | 4,932,369 | read | (magic 52494646) |
-| PB2K1 | .WMT | 20 | 29,956 | none | M4 (magic 04000000 07000000 08000000 ...) |
+| PB2K1 | .B | 22 | 202,288 | byte-exact round trip | fbchartool pb2k1: typed / modelled member (docs/formats/pb2k1.md); BGM blobs 02/03/04.dat = inner archives under the name cipher (section 16) (magic 4f626a65) |
+| PB2K1 | .BMP | 20 | 7,823,792 | byte-exact round trip | fbchartool pb2k1: typed / modelled member (docs/formats/pb2k1.md); BGM blobs 02/03/04.dat = inner archives under the name cipher (section 16) (magic 424d38b4 424d8801) |
+| PB2K1 | .CCT | 13 | 55,016 | byte-exact round trip | fbchartool pb2k1: typed / modelled member (docs/formats/pb2k1.md); BGM blobs 02/03/04.dat = inner archives under the name cipher (section 16) (magic 14000000 16000000 19000000 ...) |
+| PB2K1 | .CPF | 4 | 224,192 | byte-exact round trip | fbchartool pb2k1: typed / modelled member (docs/formats/pb2k1.md); BGM blobs 02/03/04.dat = inner archives under the name cipher (section 16) (magic 00000000 64000000) |
+| PB2K1 | .CT | 23 | 91,540 | byte-exact round trip | fbchartool pb2k1: typed / modelled member (docs/formats/pb2k1.md); BGM blobs 02/03/04.dat = inner archives under the name cipher (section 16) (magic 0d000000 0e000000 15000000 ...) |
+| PB2K1 | .DAT | 22 | 388,360,440 | in-game proven | Party Breakers characters (three-section cipher, framedata_pb2k1) + PB strip sprite bank (view, per-strip import) + BGM blobs; in-game: all characters layer shift +40 visible (docs/formats/evidence/pb2k1_ingame_*.png) (magic 00000000 30333047 30343047 ...) |
+| PB2K1 | .EX3 | 723 | 80,508,926 | byte-exact round trip | fbchartool pb2k1: typed / modelled member (docs/formats/pb2k1.md); BGM blobs 02/03/04.dat = inner archives under the name cipher (section 16) (magic 4c4c4946) |
+| PB2K1 | .FNT | 1 | 2,289,254 | byte-exact round trip | fbchartool pb2k1: typed / modelled member (docs/formats/pb2k1.md); BGM blobs 02/03/04.dat = inner archives under the name cipher (section 16) (magic 2b1e1800) |
+| PB2K1 | .MP3 | 36 | 146,256,645 | byte-exact round trip | fbchartool pb2k1: typed / modelled member (docs/formats/pb2k1.md); BGM blobs 02/03/04.dat = inner archives under the name cipher (section 16) (magic cfcf9054 fffb9204 fffb9264 ...) |
+| PB2K1 | .TXT | 65 | 1,101,718 | byte-exact round trip | fbchartool pb2k1: typed / modelled member (docs/formats/pb2k1.md); BGM blobs 02/03/04.dat = inner archives under the name cipher (section 16) (magic 0d0a0d0a 0d0a3930 0f000000 ...) |
+| PB2K1 | .WAV | 132 | 4,932,369 | byte-exact round trip | fbchartool pb2k1: typed / modelled member (docs/formats/pb2k1.md); BGM blobs 02/03/04.dat = inner archives under the name cipher (section 16) (magic 52494646) |
+| PB2K1 | .WMT | 20 | 29,956 | byte-exact round trip | fbchartool pb2k1: typed / modelled member (docs/formats/pb2k1.md); BGM blobs 02/03/04.dat = inner archives under the name cipher (section 16) (magic 04000000 07000000 08000000 ...) |
 | RBO | .CG | 24 | 3,318,240 | byte-exact round trip | han2tool cgrt (magic 00000000) |
 | RBO | .DAT | 216 | 835,053,298 | byte-exact round trip | HAN2RBO: han2tool roundtrip/modelrt (patrt-full agent owns the rest) (magic 48414e32 d993fe3d) |
 | RBO | .DT2 | 131 | 18,313,220 | byte-exact round trip | same (magic 48414e32) |
@@ -134,12 +134,12 @@ Magic = the first 4 plain bytes after the archive cipher; several magics per ext
 | Rosa (2002/2005) | .IMG | 100 | 14,243,120 | none | M4 (magic 00000000) |
 | Rosa (2002/2005) | .MP3 | 3 | 3,046,500 | read | (magic fffb9204) |
 | Rosa (2002/2005) | .WAV | 9 | 116,792 | read | (magic 52494646) |
-| dMp | .DAT | 6 | 15,552,624 | none | proto-RBO data (M3) (magic 00000000) |
-| dMp | .FOB | 58 | 2,446,428 | none | FOB script VM (fobdis.py exists; M3/M4) (magic 01000000 03000000 04000000 ...) |
-| dMp | .IMG | 68 | 83,625,808 | none | obfuscated IMG sheets (M4) (magic 00000000) |
-| dMp | .WAV | 86 | 44,484,410 | read | (magic 52494646) |
+| dMp | .DAT | 6 | 15,552,624 | byte-exact round trip | fbchartool dmp: DEMOnn.DAT replays typed (DmpMatchSetup + 108001 input rows) (magic 00000000) |
+| dMp | .FOB | 58 | 2,446,428 | byte-exact round trip | fbchartool dmp: han2::dmpfob: dMp dialect, 376,668 instructions decoded, byte-exact (docs/formats/dmp.md) (magic 01000000 03000000 04000000 ...) |
+| dMp | .IMG | 68 | 83,625,808 | byte-exact round trip | fbchartool dmp: raw 16-bit sheets, exact A1R5G5B5 / A4R4G4B4 re-encode (magic 00000000) |
+| dMp | .WAV | 86 | 44,484,410 | byte-exact round trip | fbchartool dmp: RIFF chunks (magic 52494646) |
 
 ## 3. Cell summary
 
-none: 32, read: 13, edit: 6, byte-exact round trip: 55, in-game proven: 2 (title x extension cells in section 2)
+none: 20, read: 10, edit: 5, byte-exact round trip: 70, in-game proven: 3 (title x extension cells in section 2)
 
