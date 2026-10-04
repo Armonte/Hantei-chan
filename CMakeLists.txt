@@ -834,3 +834,10 @@ target_link_libraries(cgmtool PRIVATE tinyalloc windowscodecs ole32 uuid)
 if(MINGW)
 	target_link_options(cgmtool PRIVATE -static-libgcc -static-libstdc++ -static)
 endif()
+
+# Effect recolour authoring (docs/cg/fxrecolor_config_spec.md): ruleset text round trip through the runtime's own parser/writer.
+add_test(NAME fxr_ini COMMAND cgmtool fxr check docs/cg/effect_recolor_data/dgv_akiha.ini WORKING_DIRECTORY ${CMAKE_SOURCE_DIR})
+# DGV regression oracle: needs his project (external, /home/teo/dev/refs/dgv_better_akiha/extracted) and python3 + numpy + PIL; skipped when absent.
+if(EXISTS "/home/teo/dev/refs/dgv_better_akiha/extracted/Better Akiha v2")
+	add_test(NAME fxr_dgv_oracle COMMAND python3 tools/fxrecolor/dgv_oracle.py "/home/teo/dev/refs/dgv_better_akiha/extracted/Better Akiha v2" $<TARGET_FILE:cgmtool> docs/cg/effect_recolor_data/dgv_akiha.ini 4 WORKING_DIRECTORY ${CMAKE_SOURCE_DIR})
+endif()
