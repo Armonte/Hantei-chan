@@ -29,6 +29,10 @@ if [ $QUICK -eq 0 ]; then
 		[ $r -ne 0 ] && { echo "!! refs-check $c exited $r"; rc=1; }
 	done
 fi
+FBC="$ROOT/build/fbchartool.exe"
+if [ -x "$FBC" ] && [ $QUICK -eq 0 ]; then   # foreign (MB strip) bank through the same batch export/import (BankIO over the CG object)
+	(nice -n 10 "$FBC" cgio 'C:/games/MB/MeltyBlood/data03.p' AKIHA.DAT "$SCR" | grep -E "^(FAIL|SECTION)") || rc=1
+fi
 mapfile -t PALS < <(ls "$DATA"/*.pal | while read -r f; do wslpath -w "$f"; done)
 (cd "$ROOT/build" && nice -n 10 "$T" pal-check "${PALS[@]}" | grep -E "^(FAIL|SECTION)") || rc=1
 exit $rc
