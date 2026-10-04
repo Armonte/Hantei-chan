@@ -124,3 +124,12 @@ cgmtool recolor-bank <bank.cg> --hue D --sat M --val M -o <out.cg>
 ```
 Suites: `tools/cg/run_cgm_suite.sh` (MBAACC `data/*.cg` and `*.pal`: sections cgm-bank, cgm-roundtrip, cgm-palette, cgm-struct, cgm-refs) and
 `tools/han2/run_roundtrip.sh` section `cgm` (every RBO / GOF2 CG area and CHP: model parse/serialize, decode == CG, re-import keeps bytes).
+
+## 7. In-game proof (MBAACC, 2026-10-03)
+
+A hard-linked copy of the install (`cp -al`, game dir untouched) with `data/sion.cg` and `data/sion.pal` written as NEW files by `cgmtool`
+(`export` -> edit 500 PNGs with a stripe -> `import -o`; `pal-recolor --hue 120 --palette 0`), run windowed through PovertyCaster
+(`pc_inject.exe MBAA.exe pchost.dll`, `PCHOST_AI_INPUT=1` = CPU vs CPU), screenshots by `tools/pc_shot.sh`, process killed by PID.
+`docs/cg/evidence/ingame_before_sion_vs_tatari.png` (stock) vs `ingame_after_recolour_and_replaced_sprites.png`: Sion is green (palette 0 recoloured)
+and carries the injected stripe on every replaced sprite. The match picks Sion vs Tatari (no character knob), so Sion stands in for Akiha; the Akiha
+files (`akiha.cg` 12 replaced images, `akiha.pal`) were produced the same way.
