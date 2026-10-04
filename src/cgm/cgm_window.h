@@ -3,6 +3,7 @@
 // Tools > CG manager: browse / search the whole sprite bank of the active character (thumbnail grid, usage, filters, preview).
 #include "cgm_bank.h"
 #include "cgm_usage.h"
+#include "cgm_undo.h"
 #include <functional>
 #include <memory>
 #include <string>
@@ -46,7 +47,14 @@ private:
 	uint64_t filterKey = 0;
 	std::unordered_map<int, Thumb> thumbs;
 	Thumb preview; int previewId = -1; unsigned long long previewGen = ~0ull;
+	History hist;
+	std::string status;
+	std::vector<std::string> warnings;
 	void rebuild(CharacterInstance &ch);
+	// make the CG object / character show the edited model; records an undo step when `label` is not empty
+	bool commit(CharacterInstance &ch, const std::string &label, Bank before, const WindowHost &host);
+	bool applyModel(CharacterInstance &ch, const WindowHost &host);
+	void undoRedo(CharacterInstance &ch, bool redo, const WindowHost &host);
 	void clearThumbs();
 	bool fetch(CharacterInstance &ch, int id, int pal, int pups, std::vector<uint8_t> &px, int &w, int &h);
 	void upload(Thumb &t, const std::vector<uint8_t> &px, int w, int h, int maxSide, bool linear);

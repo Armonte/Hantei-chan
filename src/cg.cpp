@@ -666,6 +666,21 @@ bool CG::loadFromMemory(const void *src, unsigned int size) {
 	return loadOwned(data, size);
 }
 
+bool CG::replaceBank(const void *src, unsigned size) {
+	if (m_foreign || !m_loaded) return false;
+	char *data = new char[size ? size : 1];
+	memcpy(data, src, size);
+	const int keepMax = palMax, keepIdx = curPalIndex, keepPups = curPups;
+	char *keepPal = paletteData; const int keepOff = paletteOffset;
+	if (m_data) delete[] m_data;
+	if (pages) delete[] pages;
+	pages = nullptr; m_data = nullptr; m_loaded = 0;
+	if (!loadOwned(data, size)) { return false; }   // frees data on failure; the caller keeps its model
+	if (keepPal) { paletteData = keepPal; paletteOffset = keepOff; palMax = keepMax; curPalIndex = keepIdx; curPups = keepPups; origPalette = m_basePalette; applyPalette(); }
+	touch();
+	return true;
+}
+
 // Takes ownership of `data` (new[]). Shared by load() and loadFromMemory().
 // "BMP Cutter2" (MBAC GAKIHA.DAT) has the same table layout.
 bool CG::loadOwned(char *data, unsigned int size) {
