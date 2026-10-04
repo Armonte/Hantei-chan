@@ -72,6 +72,11 @@ for e, how in (('.EX3', 'fbchartool mb: LLIF blocks + bit-exact Gage re-encode')
     SUPPORT[('Melty Blood 2002', e)] = ('rt', how)
 SUPPORT[('Melty Blood 2002', '.DAT')] = ('proof', 'GOF1-family container + embedded MB strip sprite bank (view, per-strip import); fbchartool mb; in-game: all characters layer shift +40 visible (docs/formats/evidence/mb_ingame_*.png; +160 crashes mb.exe)')
 SUPPORT[('Melty Blood 2002', '')] = ('rt', 'extensionless archive entries: MB-format characters / data blobs handled by fbchartool mb')
+for e in ('.EX3', '.CT', '.CCT', '.CPF', '.WMT', '.FNT', '.B', '.BMP', '.H', '.MP3', '.WAV', '.TXT', ''):
+    SUPPORT[('PB2K1', e)] = ('rt', 'fbchartool pb2k1: typed / modelled member (docs/formats/pb2k1.md); BGM blobs 02/03/04.dat = inner archives under the name cipher (section 16)')
+SUPPORT[('PB2K1', '.DAT')] = ('proof', 'Party Breakers characters (three-section cipher, framedata_pb2k1) + PB strip sprite bank (view, per-strip import) + BGM blobs; in-game: all characters layer shift +40 visible (docs/formats/evidence/pb2k1_ingame_*.png)')
+for e, how in (('.FOB', 'han2::dmpfob: dMp dialect, 376,668 instructions decoded, byte-exact (docs/formats/dmp.md)'), ('.IMG', 'raw 16-bit sheets, exact A1R5G5B5 / A4R4G4B4 re-encode'), ('.DAT', 'DEMOnn.DAT replays typed (DmpMatchSetup + 108001 input rows)'), ('.WAV', 'RIFF chunks')):
+    SUPPORT[('dMp', e)] = ('rt', 'fbchartool dmp: ' + how)
 ARCH_LEVEL = 'rt'
 
 def main():

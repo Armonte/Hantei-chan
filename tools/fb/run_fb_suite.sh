@@ -36,6 +36,9 @@ title() { # title <name> <archives...>
 }
 title react $W/MB/R/0{0,1,2,3,4,5,6}.p $W/MB/R/10.p
 title mb $W/MB/MeltyBlood/data0{0,1,2,3}.p
+title pb2k1 $W/pb/0{0,1,2,3,4}.dat $W/pb/0{0,1,2}p.dat
+FD=${F/\/mnt\/c/C:}
+title dmp $FD/dmp_1020/DATA/GAMEDATA.PAC $FD/dmp_1020/DATA/SOUNDDATA.PAC $FD/drill_milky_punch/files/dMp/dMp/Data/{GameData,SoundData}.PAC "$FD/aquat1c_dmp/Drill Milky Punch/DATA"/{GAMEDATA,SOUNDDATA}.PAC $FD/aquat1c_dmp/{game_template,soak_game,soak_game2,soak_game3}/DATA/{GAMEDATA,SOUNDDATA}.PAC
 # ---- edit locality: an offset-only edit of every character must change nothing outside the pattern area and at most 2 bytes per layer, and moving back must restore the file
 echo "== edit locality (every character of ReAct, MB, PB2K1, GOF1)"; out=$("$C" locality $W/MB/R/01.p $W/MB/MeltyBlood/data03.p $W/pb/01.dat $W/pb/01p.dat $W/pb/02p.dat $W/gof1/run/gof_0{0,1,2,3}.p 2>&1 | tr -d "\r"); [ ${PIPESTATUS[0]} -ne 0 ] && rc=1
 echo "$out" | grep -E "^(FAIL|SECTION)"

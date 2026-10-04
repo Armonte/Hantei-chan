@@ -259,7 +259,7 @@ bool ReactMember(const std::string &label, const std::string &name, const std::v
 	return false;
 }
 
-struct Title { const char *key; Handler fn; };
+struct Title { const char *key; Handler fn; Handler pre = nullptr; };   // pre: tried before the members every title shares
 // Melty Blood 2002 satellites (docs/formats/mb.md)
 bool MbSatellite(const std::string &label, const std::string &name, const std::vector<uint8_t> &d, Section &s)
 {
@@ -360,7 +360,44 @@ bool DmpMember(const std::string &label, const std::string &name, const std::vec
 	return false;
 }
 
-const Title kTitles[] = { { "react", ReactMember }, { "mb", MbMember }, { "pb2k1", Pb2Member }, { "dmp", DmpMember }, { "rosa", FobImgMember } };
+// Party Breakers BGM archives (docs/formats/pb2k1.md section 16): 02/03/04.dat entries are inner PB archives enciphered with the entry name (cipher N over the first 9696 bytes),
+// whose members are MP3 files enciphered the same way; 04.dat also holds a scrambled 03.MP3. The game only probes dwords inside them (boot integrity checks).
+bool Pb2BgmMember(const std::string &label, const std::string &name, const std::vector<uint8_t> &d, Section &s)
+{
+	const std::string e = ExtOf(name); std::string err;
+	if (e == ".MP3" && d.size() >= 4 && !(d[0] == 0xFF && (d[1] & 0xE0) == 0xE0) && !Has(d, "ID3")) {
+		std::vector<uint8_t> p = d; gof1::CipherEntry(p, name);
+		han2::MpegInfo m; if (!han2::ValidateMpeg(p.data(), p.size(), m, &err)) { Fail(s, label, "scrambled mp3 does not decode to MPEG: " + err); return true; }
+		std::vector<uint8_t> back = p; gof1::CipherEntry(back, name);
+		if (back != d) { Bad(s, "scrambled mp3", label, back, d); return true; }
+		Ok(s, ".MP3 scrambled with the name cipher (decodes to valid MPEG, re-enciphers exactly)");
+		return true;
+	}
+	if (e == ".DAT" && d.size() > 1000000 && name.size() == 6 && isdigit((unsigned char)name[0]) && isdigit((unsigned char)name[1]) && !pb2k1::LooksLikeCharacter(d.data(), d.size())) {
+		std::vector<uint8_t> blob = d; bool applied = true;
+		gof1::CipherEntry(blob, name);
+		if (!(blob.size() >= 8 && gof1::LooksLikeArchive(blob.data(), blob.size()))) { blob = d; applied = false; }   // 03.dat (plainFlag 0): the archive layer already undid the name cipher
+		gof1::MemArchive m;
+		if (blob.size() < 8 || !gof1::LooksLikeArchive(blob.data(), blob.size()) || !gof1::OpenMem(blob.data(), blob.size(), m, &err)) { Fail(s, label, "BGM blob is not an inner PB archive after the name cipher"); return true; }
+		std::vector<uint8_t> idx; gof1::EncodeIndex(m.a, idx);
+		if (idx.size() > blob.size() || memcmp(idx.data(), blob.data(), idx.size()) != 0) { Fail(s, label, "inner archive index does not re-encode identically"); return true; }
+		if (!m.tiles) { Fail(s, label, "inner archive sizes do not add up"); return true; }
+		for (size_t i = 0; i < m.a.entries.size(); i++) {
+			std::vector<uint8_t> plain; if (!gof1::ReadEntryMem(m, blob.data(), i, plain)) { Fail(s, label + "/" + m.a.entries[i].name, "unreadable member"); continue; }
+			std::vector<uint8_t> back = plain; if (m.a.plainFlag == 0) gof1::CipherEntry(back, m.a.entries[i].name);
+			if (memcmp(back.data(), blob.data() + m.dataOffset[i], back.size()) != 0) { Fail(s, label + "/" + m.a.entries[i].name, "member cipher does not invert"); continue; }
+			han2::MpegInfo mi; if (!han2::ValidateMpeg(plain.data(), plain.size(), mi, &err)) { Fail(s, label + "/" + m.a.entries[i].name, "member is not MPEG: " + err); continue; }
+			s.notes["  BGM members decoded to valid MPEG"]++;
+		}
+		std::vector<uint8_t> back = blob; if (applied) gof1::CipherEntry(back, name);
+		if (back != d) { Bad(s, "bgm blob", label, back, d); return true; }
+		Ok(s, "BGM blob (inner PB archive under the name cipher, MP3 members under theirs)");
+		return true;
+	}
+	return false;
+}
+
+const Title kTitles[] = { { "react", ReactMember }, { "mb", MbMember }, { "pb2k1", Pb2Member, Pb2BgmMember }, { "dmp", DmpMember }, { "rosa", FobImgMember } };
 
 int Run(const Title &t, int argc, char **argv)
 {
@@ -374,6 +411,7 @@ int Run(const Title &t, int argc, char **argv)
 			const std::string label = std::string(argv[i]) + "::" + name;
 			std::vector<uint8_t> d;
 			if (!a->read(k, d, &err)) { Fail(s, label, err); continue; }
+			if (t.pre && t.pre(label, name, d, s)) continue;
 			if (CommonMember(label, name, d, s)) continue;
 			if (t.fn(label, name, d, s)) continue;
 			s.skipped++;
