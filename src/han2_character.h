@@ -19,6 +19,8 @@ namespace han2 {
 // Reads the file called `name` (case-insensitive, e.g. "ACOLYTE_F.DAT"); false when it does not exist.
 using ReadFn = std::function<bool(const std::string &name, std::vector<uint8_t> &out)>;
 
+// Worker threads (archive browser thumbnails): load without creating GL textures. Per-thread, off by default.
+void SetNoGlUpload(bool on);
 ReadFn DirReader(const std::string &dir);
 // Archives in priority order: the first archive that has the name wins.
 ReadFn PacReader(const std::vector<std::shared_ptr<pac::Archive>> &archives);
@@ -52,6 +54,7 @@ bool SaveGof2Companions(CharacterInstance &ch, const std::string &dt2Path, std::
 namespace han2ui {
 
 extern bool showInspector;
+extern unsigned dockInspectorId, dockAnimId;   // dock nodes (the Right Pane / Box Pane nodes) the HAN2 inspector and the animation player first appear in (0 = float)
 void DrawInspector(CharacterInstance *ch, FrameState &state);
 
 extern bool showCgWindow;

@@ -92,6 +92,9 @@ public:
 	CG cg;
 	Parts parts;
 
+	// Archive this character was opened from in the archive browser (PAC / GOF1 .p path): Save writes back into it (see abrowser::SaveCharacterIntoArchive).
+	std::string archiveHome;
+
 	// Undo/Redo manager
 	UndoManager undoManager;
 

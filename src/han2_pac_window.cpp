@@ -1,6 +1,7 @@
 #include "han2_pac_window.h"
 #include "han2_typed_files.h"
 #include "han2_browser.h"
+#include "archive_browser.h"
 #include "live_reload.h"
 #include "fbarc/fb_archive.h"
 #include <map>
@@ -201,7 +202,7 @@ struct Viewer {
 	std::vector<uint8_t> bytes;
 	enum Kind { Hex, Image, Poly, Typed, Fob, QohPic, RosaPic } kind = Hex;
 	han2::QohImg qimg; han2::RosaImg rimg; std::string stem;
-	std::string archivePath; char loosePath[260] = ""; bool looseGuessed = false;
+	std::string archivePath, entryKey; char loosePath[260] = ""; bool looseGuessed = false;
 	int px16 = 0;                       // 16-bit sheets: 0 = A1R5G5B5, 1 = A4R4G4B4 (the caller of the game's loader decides, dMp files do not name it)
 	han2::dmpfob::File fob; std::string fobFilter;
 	TypedFile typed; std::vector<int> typedSel; std::string typedFilter;
@@ -262,9 +263,9 @@ void CollectStrings(Viewer &v)
 
 } // namespace
 
-void OpenFileViewer(const std::string &name, std::vector<uint8_t> bytes, const std::string &origin, const std::string &archivePath)
+void OpenFileViewer(const std::string &name, std::vector<uint8_t> bytes, const std::string &origin, const std::string &archivePath, const std::string &entryKey)
 {
-	auto v = std::make_unique<Viewer>(); v->archivePath = archivePath;
+	auto v = std::make_unique<Viewer>(); v->archivePath = archivePath; v->entryKey = entryKey;
 	v->id = g_nextView++; v->name = name; v->origin = origin; v->bytes = std::move(bytes);
 	if (han2::IsImg(v->bytes.data(), v->bytes.size()) && han2::ParseImg(v->bytes.data(), v->bytes.size(), v->img, nullptr)) { v->kind = Viewer::Image; v->px16 = v->img.format == 1 ? 1 : 0; Upload(*v); }
 	else if (name.size() > 4 && Lower(name.substr(name.size() - 4)) == ".img" && han2::ParseQohImg(v->bytes.data(), v->bytes.size(), v->qimg, nullptr)) { v->kind = Viewer::QohPic; v->img.width = (int)v->qimg.width; v->img.height = (int)v->qimg.height; v->img.rgba = v->qimg.rgba; v->img.format = 2; Upload(*v); }
@@ -465,6 +466,27 @@ void DrawFileViewers()
 			}
 			if (shown < v.bytes.size()) ImGui::TextDisabled(TXT("... %zu more bytes (use Export raw)"), v.bytes.size() - shown);
 			ImGui::EndChild();
+		}
+		if (!v.archivePath.empty() && !v.entryKey.empty() && (v.kind == Viewer::Image || v.kind == Viewer::QohPic || v.kind == Viewer::RosaPic || v.kind == Viewer::Fob || v.kind == Viewer::Typed)) {
+			// write the edited entry straight back into the archive it was opened from (the first .bak of the archive is kept)
+			ImGui::Separator();
+			if (!v.dirty) ImGui::BeginDisabled();
+			if (ImGui::Button(Tr("Save into the archive (keeps a .bak)", "\xe3\x82\xa2\xe3\x83\xbc\xe3\x82\xab\xe3\x82\xa4\xe3\x83\x96\xe3\x81\xab\xe4\xbf\x9d\xe5\xad\x98 (.bak \xe3\x82\x92\xe6\xae\x8b\xe3\x81\x99)"))) {
+				std::vector<uint8_t> out;
+				switch (v.kind) {
+				case Viewer::Image: han2::SerializeImg(v.img, out); break;
+				case Viewer::QohPic: han2::SerializeQohImg(v.qimg, out); break;
+				case Viewer::RosaPic: han2::SerializeRosaImg(v.rimg, v.stem, out); break;
+				case Viewer::Fob: han2::dmpfob::Serialize(v.fob, out); break;
+				case Viewer::Typed: TypedFileStored(v.typed, out); break;
+				default: break;
+				}
+				std::string e;
+				if (abrowser::ReplaceEntries(v.archivePath, { abrowser::EntryEdit{ v.entryKey, std::move(out) } }, &e)) { v.dirty = false; v.msg = Fmt(TXT("saved into %s (backup: %s.bak)"), v.archivePath.c_str(), v.archivePath.c_str()); }
+				else v.msg = e;
+			}
+			if (!v.dirty) ImGui::EndDisabled();
+			if (ImGui::IsItemHovered(ImGuiHoveredFlags_AllowWhenDisabled)) ImGui::SetTooltip("%s", Tr("Enabled once the entry has been edited.", "\xe7\xb7\xa8\xe9\x9b\x86\xe3\x81\x97\xe3\x81\xa6\xe3\x81\x8b\xe3\x82\x89\xe6\x9c\x89\xe5\x8a\xb9\xe3\x81\xab\xe3\x81\xaa\xe3\x82\x8a\xe3\x81\xbe\xe3\x81\x99\xe3\x80\x82"));
 		}
 		if (!v.msg.empty()) ImGui::TextWrapped("%s", v.msg.c_str());
 		ImGui::End();

@@ -10,15 +10,6 @@
 
 namespace han2ui {
 
-extern bool showBrowser;
-
-struct OpenRequest {
-	std::string stem;           // character file name without extension
-	han2::ReadFn read;          // reads files from the mounted archives (later entries in the mount list override earlier ones)
-	std::string origin;
-	std::string gof1Archive, gof1Entry;   // set for GOF1 .p entries: archive path + entry name
-};
-
 // UI language lives in i18n::language (src/i18n.h); persisted in han2_settings.ini next to the exe.
 
 const char *Tr(const char *en, const char *jp);
@@ -36,10 +27,8 @@ void SetWorkFolder(const std::string &dir);
 const std::string &LiveReloadGameDir();
 void SetLiveReloadGameDir(const std::string &dir);
 
-// Mount an archive (error text when it is not a PAC).
+// Mount an archive or a game folder in the archive browser (src/archive_browser.h). Returns an error text or empty.
 std::string AddArchive(const std::string &path);
-// Draws the window; returns true when the user asked to open a character.
-bool DrawBrowser(OpenRequest &req, std::string &message);
 
 } // namespace han2ui
 

@@ -1,0 +1,10 @@
+browse C:\games\gof1\run
+waitidle
+select AKIKO.DAT
+waitidle
+open
+wait 160
+pattern 2
+wait 80
+capture C:/dev/hantei-chan/work/ab/shots/08_gof1_character_view.png
+quit
