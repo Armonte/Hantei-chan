@@ -34,6 +34,7 @@ static const char *TypeName(int t) {
 	case 2: return TXT("2: own palette, binary alpha");
 	case 3: return TXT("3: one colour + alpha plane");
 	case 4: return TXT("4: own palette + alpha plane");
+	case 5: return TXT("5: bank palette + alpha plane");
 	case -1: return TXT("-1: no pixels (not drawn)");
 	}
 	return TXT("unknown");
@@ -524,9 +525,9 @@ void Window::draw(CharacterInstance *ch, const WindowHost &host) {
 	ImGui::SameLine(); ImGui::Checkbox(LBL("Unused"), &onlyUnused); if (onlyUnused) onlyUsed = false;
 	ImGui::SameLine(); ImGui::Checkbox(LBL("Used"), &onlyUsed); if (onlyUsed) onlyUnused = false;
 	ImGui::SameLine(); ImGui::Checkbox(LBL("Shares cells"), &onlyShared);
-	static const char *kTypes[] = {"Any type", "Type 0", "Type 1", "Type 2", "Type 3", "Type 4", "Type -1"};
-	int tsel = typeFilter == -2 ? 0 : typeFilter == -1 ? 6 : typeFilter + 1;
-	ImGui::SetNextItemWidth(100); if (i18n::Combo("##cgmtype", &tsel, kTypes, 7)) typeFilter = tsel == 0 ? -2 : tsel == 6 ? -1 : tsel - 1;
+	static const char *kTypes[] = {"Any type", "Type 0", "Type 1", "Type 2", "Type 3", "Type 4", "Type 5", "Type -1"};
+	int tsel = typeFilter == -2 ? 0 : typeFilter == -1 ? 7 : typeFilter + 1;
+	ImGui::SetNextItemWidth(100); if (i18n::Combo("##cgmtype", &tsel, kTypes, 8)) typeFilter = tsel == 0 ? -2 : tsel == 7 ? -1 : tsel - 1;
 	ImGui::SameLine(); ImGui::SetNextItemWidth(70); ImGui::InputInt(LBL("Min side"), &minSize, 0, 0);
 	ImGui::SameLine(); ImGui::SetNextItemWidth(70); ImGui::InputInt(LBL("Max side"), &maxSize, 0, 0);
 	ImGui::SetNextItemWidth(70); ImGui::InputInt(LBL("Used by pattern"), &usedByPattern, 0, 0);

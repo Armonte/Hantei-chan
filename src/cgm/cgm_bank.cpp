@@ -13,7 +13,7 @@ static void Wr16(std::vector<uint8_t> &o, int16_t v) { const uint8_t *p = (const
 
 static const size_t kHdrDw = 0x2014, kIdxOff = 0x2044, kTail = kIdxOff + 4 * kMaxImages, kFirstImage = 0x4f30;
 
-static size_t BytesPerPixel(int type) { return type == 1 ? 4 : type == 4 ? 2 : 1; }   // per owned block pixel (type 4: index + alpha plane)
+static size_t BytesPerPixel(int type) { return type == 1 ? 4 : (type == 4 || type == 5) ? 2 : 1; }   // per owned block pixel (type 4: index + alpha plane)
 static size_t PrefixBytes(int type, int bpp) { return bpp == 32 ? (type == 2 || type == 4 ? 1024 : type == 3 ? 4 : 0) : 0; }
 
 void Bank::recomputeLayout() {
@@ -226,7 +226,7 @@ static bool DecodeImpl(const Bank &bk, int n, std::vector<uint32_t> *rgbaOut, st
 				uint32_t v;
 				if (src->type == 3) { v = pal[i0]; }   // plane value is alpha: handled below
 				else v = pal[i0];
-				if (src->type == 4) {
+				if (src->type == 4 || src->type == 5) {
 					const size_t ao = o + (size_t)sb->w * sb->h;
 					const uint8_t a = ao < sbl.size() ? sbl[ao] : 0;
 					v = (pal[i0] & 0xFFFFFF) | ((uint32_t)a << 24);
