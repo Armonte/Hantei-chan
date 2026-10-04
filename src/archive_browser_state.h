@@ -18,6 +18,7 @@
 #include <vector>
 
 namespace cgm { struct Bank; }
+class CharacterInstance;
 
 namespace abrowser {
 
@@ -148,6 +149,10 @@ std::string ThumbKey(const Source &s, const Item &it);
 // UI-thread appliers (archive_browser_ui.cpp): create the GL textures
 void ApplyPreview(std::shared_ptr<Preview> pv);
 void ApplyThumb(const std::string &key, std::shared_ptr<std::vector<uint8_t>> rgba, int w, int h);
+
+// unpacking a character stack of a read-only / foreign archive as a working copy (returns the file to open: the txt, else the .ha6); loading any character file by content
+std::string Materialize(const SourceP &owner, const Item &it, std::string *err);
+bool LoadCharacterFile(CharacterInstance &ch, const std::string &path, std::string *fmt, std::string *err);
 
 // opening / extraction
 bool BuildOpenRequest(int sourceIdx, int itemIdx, OpenRequest &req, std::string &msg);

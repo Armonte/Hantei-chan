@@ -1,5 +1,6 @@
 // Archive browser: the ImGui window (sources, listing with thumbnails, inline preview) and the welcome screen.
 #include "archive_browser_state.h"
+#include "game_table.h"
 #include "cgm/cgm_bank.h"
 #include "filedialog.h"
 #include "han2_browser.h"
@@ -607,10 +608,7 @@ static void Toolbar(State &st)
 	if (ImGui::BeginPopup("##gamemenu")) {
 		if (ImGui::MenuItem(T("Detect the game automatically...", "\xe8\x87\xaa\xe5\x8b\x95\xe5\x88\xa4\xe5\x88\xa5..."))) FolderDialog(Game::None);
 		ImGui::Separator();
-		if (ImGui::MenuItem("Glove on Fight 2 (data0x.dat)...")) FolderDialog(Game::GOF2);
-		if (ImGui::MenuItem("Glove on Fight (gof_0x.p)...")) FolderDialog(Game::GOF1);
-		if (ImGui::MenuItem("Ragnarok Battle Offline (*.PAC)...")) FolderDialog(Game::RBO);
-		if (ImGui::MenuItem("Melty Blood Actress Again CC...")) FolderDialog(Game::MBAACC);
+		for (const GameDef &d : Games()) if (ImGui::MenuItem((std::string(d.name) + "...").c_str())) FolderDialog(d.id);
 		ImGui::EndPopup();
 	}
 	ImGui::SameLine();
@@ -755,53 +753,90 @@ bool ScriptCommand(const std::string &cmd, const std::string &arg, std::string *
 }
 
 // ---- welcome screen ---------------------------------------------------------------------------------------------------------------------------------
+// Driven by the game table (game_table.cpp): one row per title, grouped by family. A row's folder comes from the install scan (remembered folder, Steam
+// libraries, common paths); "Locate..." picks one by hand and remembers it.
+static void OpenGameRow(const GameDef &d)
+{
+	State &st = S();
+	const Install &in = InstallOf(d.id);
+	if (!in.path.empty()) { std::string e = OpenPath(in.path); if (!e.empty()) st.status = e; else RememberDir(d.id, in.path); }
+	else FolderDialog(d.id);
+}
+
 std::string DrawWelcome(const std::vector<std::string> &recentFiles)
 {
 	std::string openFile;
 	State &st = S();
 	LoadSettings();
+	RescanInstalls();
 	const ImGuiViewport *vp = ImGui::GetMainViewport();
-	const ImVec2 sz(std::min(760.f, vp->WorkSize.x - 40.f), std::min(520.f, vp->WorkSize.y - 40.f));
-	ImGui::SetNextWindowPos(ImVec2(vp->WorkPos.x + (vp->WorkSize.x - sz.x) * 0.5f, vp->WorkPos.y + (vp->WorkSize.y - sz.y) * 0.45f));
+	const ImVec2 sz(std::min(1300.f, vp->WorkSize.x - 40.f), std::min(980.f, vp->WorkSize.y - 12.f));
+	ImGui::SetNextWindowPos(ImVec2(vp->WorkPos.x + (vp->WorkSize.x - sz.x) * 0.5f, vp->WorkPos.y + (vp->WorkSize.y - sz.y) * 0.5f));
 	ImGui::SetNextWindowSize(sz);
-	ImGui::SetNextWindowBgAlpha(0.96f);
+	ImGui::SetNextWindowBgAlpha(0.97f);
 	if (!ImGui::Begin("##welcome", nullptr, ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoDocking | ImGuiWindowFlags_NoSavedSettings)) { ImGui::End(); return {}; }
 	ImGui::SetWindowFontScale(1.5f); ImGui::TextUnformatted("Hantei-chan"); ImGui::SetWindowFontScale(1.f);
-	ImGui::TextDisabled("%s", T("Pick a game folder: its archives are mounted, characters are listed with thumbnails, a double click opens one.", "\xe3\x82\xb2\xe3\x83\xbc\xe3\x83\xa0\xe3\x81\xae\xe3\x83\x95\xe3\x82\xa9\xe3\x83\xab\xe3\x83\x80\xe3\x82\x92\xe9\x81\xb8\xe3\x81\xb6\xe3\x81\xa8\xe3\x82\xa2\xe3\x83\xbc\xe3\x82\xab\xe3\x82\xa4\xe3\x83\x96\xe3\x82\x92\xe9\x96\x8b\xe3\x81\x8d\xe3\x80\x81\xe3\x82\xad\xe3\x83\xa3\xe3\x83\xa9\xe3\x82\x92\xe4\xb8\x80\xe8\xa6\xa7\xe8\xa1\xa8\xe7\xa4\xba\xe3\x81\x97\xe3\x81\xbe\xe3\x81\x99\xe3\x80\x82"));
+	ImGui::TextDisabled("%s", T("Every French-Bread game this editor reads. Open one: its archives are mounted, characters are listed with thumbnails, a double click opens a character.",
+	                            "対応しているフレンチ・ブレッド作品の一覧です。開くとアーカイブをマウントしてキャラクターをサムネイル付きで表示し、ダブルクリックで編集できます。"));
 	ImGui::Separator();
-	struct G { Game g; const char *label; const char *sub; };
-	static const G games[] = { { Game::GOF2, "Open GOF2", "Glove on Fight 2" }, { Game::GOF1, "Open GOF1", "Glove on Fight" }, { Game::RBO, "Open RBO", "Ragnarok Battle Offline" }, { Game::MBAACC, "Open MBAACC", "Melty Blood Actress Again CC" } };
-	const std::string ini = [] { char c[512]; DWORD n = GetCurrentDirectoryA(512, c); return std::string(c, n) + "\\han2_settings.ini"; }();
-	for (int i = 0; i < 4; i++) {
-		if (i) ImGui::SameLine();
-		char key[48]; snprintf(key, sizeof key, "Dir_%d", (int)games[i].g);
-		char b[1024]{}; GetPrivateProfileStringA("browser", key, "", b, sizeof b, ini.c_str());
-		ImGui::BeginGroup();
-		ImGui::PushStyleVar(ImGuiStyleVar_FramePadding, ImVec2(12, 14));
-		if (ImGui::Button(games[i].label, ImVec2(172, 0))) {
-			if (b[0] && fs::exists(fs::u8path(b))) { std::string e = OpenPath(b); if (!e.empty()) st.status = e; }   // a remembered folder: one click
-			else FolderDialog(games[i].g);
+	const bool scanned = ScanDone();
+	const float footer = 5 * ImGui::GetFrameHeightWithSpacing() + 6;
+	ImGui::BeginChild("##games", ImVec2(0, -footer), false);
+	static const Family order[] = { Family::Hantei6Modern, Family::Hantei6, Family::Hantei4, Family::Han2, Family::Gof1Pb, Family::QoH };
+	int rowId = 0;
+	for (Family fam : order) {
+		bool any = false;
+		for (const GameDef &d : Games()) if (d.family == fam) any = true;
+		if (!any) continue;
+		ImGui::SeparatorText(FamilyName(fam, false));
+		if (ImGui::BeginTable((std::string("##t") + std::to_string((int)fam)).c_str(), 3, ImGuiTableFlags_SizingFixedFit | ImGuiTableFlags_NoSavedSettings)) {
+			ImGui::TableSetupColumn("a", ImGuiTableColumnFlags_WidthFixed, 170); ImGui::TableSetupColumn("b", ImGuiTableColumnFlags_WidthFixed, 400); ImGui::TableSetupColumn("c", ImGuiTableColumnFlags_WidthStretch);
+			for (const GameDef &d : Games()) {
+				if (d.family != fam) continue;
+				ImGui::TableNextRow();
+				ImGui::PushID(rowId++);
+				ImGui::TableSetColumnIndex(0);
+				ImGui::PushStyleVar(ImGuiStyleVar_FramePadding, ImVec2(10, 3));
+				if (ImGui::Button((std::string(T("Open ", "開く ")) + d.shortName).c_str(), ImVec2(160, 0))) OpenGameRow(d);
+				ImGui::PopStyleVar();
+				ImGui::TableSetColumnIndex(1);
+				ImGui::AlignTextToFramePadding();
+				ImGui::TextUnformatted(T(d.name, d.nameJa));
+				if (d.support == Support::FilesOnly) { ImGui::SameLine(); ImGui::TextColored(ImVec4(.75f, .45f, 0, 1), "%s", T("[files only]", "[ファイル閲覧のみ]")); if (ImGui::IsItemHovered()) ImGui::SetTooltip("%s", d.note); }
+				else if (d.support == Support::CharactersLoose) { ImGui::SameLine(); ImGui::TextDisabled("%s", T("[loose files]", "[ルーズファイル]")); }
+				ImGui::TableSetColumnIndex(2);
+				ImGui::AlignTextToFramePadding();
+				const Install &in = InstallOf(d.id);
+				if (!in.path.empty()) {
+					ImGui::TextColored(ImVec4(.05f, .45f, .1f, 1), "%s", in.path.c_str());
+					if (ImGui::IsItemHovered()) ImGui::SetTooltip("%s: %s", T("found via", "検出方法"), in.how.c_str());
+					ImGui::SameLine();
+					if (ImGui::SmallButton(T("change...", "変更..."))) FolderDialog(d.id);
+				} else if (!scanned) ImGui::TextDisabled("%s", T("looking for the install...", "インストール先を検索中..."));
+				else {
+					ImGui::TextColored(ImVec4(.8f, .35f, 0, 1), "%s", T("not found", "見つかりません"));
+					ImGui::SameLine();
+					if (ImGui::SmallButton(T("Locate...", "場所を指定..."))) FolderDialog(d.id);
+				}
+				ImGui::PopID();
+			}
+			ImGui::EndTable();
 		}
-		ImGui::PopStyleVar();
-		ImGui::TextDisabled("%s", games[i].sub);
-		if (b[0]) { if (ImGui::SmallButton((std::string(T("change folder", "\xe3\x83\x95\xe3\x82\xa9\xe3\x83\xab\xe3\x83\x80\xe5\xa4\x89\xe6\x9b\xb4")) + "##" + std::to_string(i)).c_str())) FolderDialog(games[i].g); if (ImGui::IsItemHovered()) ImGui::SetTooltip("%s", b); }
-		ImGui::EndGroup();
 	}
-	ImGui::Spacing();
-	if (ImGui::Button(T("Open any game folder (auto-detect)...", "\xe3\x82\xb2\xe3\x83\xbc\xe3\x83\xa0\xe3\x83\x95\xe3\x82\xa9\xe3\x83\xab\xe3\x83\x80\xe3\x82\x92\xe9\x96\x8b\xe3\x81\x8f (\xe8\x87\xaa\xe5\x8b\x95\xe5\x88\xa4\xe5\x88\xa5)..."))) FolderDialog(Game::None);
+	ImGui::EndChild();
+	ImGui::Separator();
+	if (ImGui::Button(T("Open any game folder (auto-detect)...", "ゲームフォルダを開く (自動判別)..."))) FolderDialog(Game::None);
 	ImGui::SameLine();
-	if (ImGui::Button(T("Open archive (.PAC .p .dat)...", "\xe3\x82\xa2\xe3\x83\xbc\xe3\x82\xab\xe3\x82\xa4\xe3\x83\x96\xe3\x82\x92\xe9\x96\x8b\xe3\x81\x8f..."))) OpenArchiveDialog();
+	if (ImGui::Button(T("Open archive (.PAC .p .dat)...", "アーカイブを開く..."))) OpenArchiveDialog();
 	ImGui::SameLine();
-	if (ImGui::Button(T("Open a character file...", "\xe3\x82\xad\xe3\x83\xa3\xe3\x83\xa9\xe3\x83\x95\xe3\x82\xa1\xe3\x82\xa4\xe3\x83\xab\xe3\x82\x92\xe9\x96\x8b\xe3\x81\x8f..."))) { std::string p = FileDialog(fileType::OPENANY, false); if (!p.empty()) openFile = p; }
-	ImGui::Spacing(); ImGui::Separator();
-	ImGui::TextDisabled("%s", T("Recent game folders and archives", "\xe6\x9c\x80\xe8\xbf\x91\xe3\x81\xae\xe3\x83\x95\xe3\x82\xa9\xe3\x83\xab\xe3\x83\x80/\xe3\x82\xa2\xe3\x83\xbc\xe3\x82\xab\xe3\x82\xa4\xe3\x83\x96"));
+	if (ImGui::Button(T("Open a character file...", "キャラクターファイルを開く..."))) { std::string p = FileDialog(fileType::OPENANY, false); if (!p.empty()) openFile = p; }
+	ImGui::TextDisabled("%s", T("Recent game folders and archives", "最近のフォルダ/アーカイブ"));
 	if (st.recent.empty()) ImGui::TextDisabled("  -");
-	for (size_t i = 0; i < st.recent.size() && i < 6; i++) if (ImGui::Selectable((st.recent[i] + "##rb" + std::to_string(i)).c_str())) { std::string e = OpenPath(st.recent[i]); if (!e.empty()) st.status = e; }
-	ImGui::Spacing();
-	ImGui::TextDisabled("%s", T("Recent files", "\xe6\x9c\x80\xe8\xbf\x91\xe3\x81\xae\xe3\x83\x95\xe3\x82\xa1\xe3\x82\xa4\xe3\x83\xab"));
+	for (size_t i = 0; i < st.recent.size() && i < 2; i++) if (ImGui::Selectable((st.recent[i] + "##rb" + std::to_string(i)).c_str())) { std::string e = OpenPath(st.recent[i]); if (!e.empty()) st.status = e; }
+	ImGui::TextDisabled("%s", T("Recent files", "最近のファイル"));
 	if (recentFiles.empty()) ImGui::TextDisabled("  -");
-	for (size_t i = 0; i < recentFiles.size() && i < 6; i++) if (ImGui::Selectable((recentFiles[i] + "##rf" + std::to_string(i)).c_str())) openFile = recentFiles[i];
-	if (!st.status.empty()) { ImGui::Spacing(); ImGui::TextColored(ImVec4(1, .7f, .3f, 1), "%s", st.status.c_str()); }
+	for (size_t i = 0; i < recentFiles.size() && i < 1; i++) if (ImGui::Selectable((recentFiles[i] + "##rf" + std::to_string(i)).c_str())) openFile = recentFiles[i];
+	if (!st.status.empty()) ImGui::TextColored(ImVec4(1, .7f, .3f, 1), "%s", st.status.c_str());
 	ImGui::End();
 	return openFile;
 }
