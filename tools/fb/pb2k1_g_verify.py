@@ -40,19 +40,18 @@ def parse(buf):
             e[j] ^= (3 * (j * i - 28)) & 0xFF
         nm = bytes(e[:56])
         end = nm.index(b'\0')
-        if any(nm[end:]):
-            raise SystemExit('entry name padding is not zero')
-        ents.append((nm[:end].decode('cp932'), struct.unpack_from('<I', e, 56)[0] ^ KEY, struct.unpack_from('<I', e, 60)[0]))
+        # the bytes after the NUL terminator are stale editor memory (not zero); the decoded model keeps the whole 56-byte field
+        ents.append((nm[:end].decode('cp932'), struct.unpack_from('<I', e, 56)[0] ^ KEY, struct.unpack_from('<I', e, 60)[0], nm))
     return flag, ents
 
 
 def build(flag, members):
-    """members = [(name, payload bytes)] -> archive bytes (directory + back-to-back payloads)."""
+    """members = [(56-byte name field, payload bytes)] -> archive bytes (directory + back-to-back payloads)."""
     n = len(members)
     head = bytearray(struct.pack('<II', flag, n ^ KEY))
     off = 8 + 64 * n
     for i, (nm, data) in enumerate(members):
-        e = bytearray(nm.encode('cp932').ljust(56, b'\0'))
+        e = bytearray(nm)
         for j in range(56):
             e[j] ^= (3 * (j * i - 28)) & 0xFF
         head += e + struct.pack('<II', len(data) ^ KEY, off)
@@ -102,7 +101,7 @@ def main():
 
     ref00 = {}
     flag0, e00 = parse(raw['00.dat'])
-    for nm, sz, off in e00:
+    for nm, sz, off, _ in e00:
         ref00[hashlib.sha1(raw['00.dat'][off:off + sz]).digest()] = nm
 
     blobs = {}
@@ -110,9 +109,9 @@ def main():
         buf = raw[f]
         flag, ents = parse(buf)
         # outer archive tiles exactly and re-builds byte-exact from its decoded members
-        members = [(nm, buf[off:off + sz]) for nm, sz, off in ents]
+        members = [(nf, buf[off:off + sz]) for nm, sz, off, nf in ents]
         check(build(flag, members) == buf, '%s outer archive: flag %d, %d entries, rebuild == original (%d bytes)' % (f, flag, len(ents), len(buf)))
-        for nm, data in members:
+        for (nm, sz, off, nf), (_, data) in zip(ents, members):
             if nm.endswith('.DAT'):
                 dec = cipher(data, nm)
                 check(dec[:4] == b'\0\0\0\0' and data[:4] == bytes((i + ord(nm[i])) & 255 for i in range(4)), '  %s/%s magic %r = enciphered zero flag' % (f, nm, data[:4]))
@@ -130,21 +129,21 @@ def main():
     total = 0
     for nm, (data, dec) in sorted(blobs.items()):
         flag, ents = parse(dec)
-        check(flag == 0 and ents and ents[0][2] == 8 + 64 * len(ents) and sum(s for _, s, _ in ents) + 8 + 64 * len(ents) == len(dec),
+        check(flag == 0 and ents and ents[0][2] == 8 + 64 * len(ents) and sum(e[1] for e in ents) + 8 + 64 * len(ents) == len(dec),
               'blob %s: inner archive flag %d, %d members, tiles the %d bytes exactly' % (nm, flag, len(ents), len(dec)))
         members = []
-        for mn, sz, off in ents:
+        for mn, sz, off, nf in ents:
             raw_m = dec[off:off + sz]
             plain = cipher(raw_m, mn)
             fr, cov = mp3_walk(plain)
             same = ref00.get(hashlib.sha1(plain).digest())
-            good = fr > 100 and cov >= len(plain) - 128 and plain[:2] in (b'\xff\xfb', b'\xff\xfa')
-            check(good, '  %s/%s: %d bytes, %d frames, %d trailing bytes%s' % (nm, mn, sz, fr, len(plain) - cov, ', identical to 00.dat ' + same if same else ''))
-            members.append((mn, raw_m))
+            good = fr > 100 and cov > len(plain) - 1045 and plain[:2] in (b'\xff\xfb', b'\xff\xfa')
+            check(good, '  %s/%s: %d bytes, %d frames, %d trailing bytes (one truncated last frame)%s' % (nm, mn, sz, fr, len(plain) - cov, ', identical to 00.dat ' + same if same else ''))
+            members.append((mn, raw_m, nf))
             total += 1
         # encode(decode(x)) == x for the whole blob: rebuild the inner archive from decoded members, re-apply both cipher layers
-        plain_members = [(mn, cipher(d, mn)) for mn, d in members]
-        rebuilt = build(0, [(mn, cipher(p, mn)) for mn, p in plain_members])
+        plain_members = [(mn, cipher(d, mn), nf) for mn, d, nf in members]
+        rebuilt = build(0, [(nf, cipher(p, mn)) for mn, p, nf in plain_members])
         check(cipher(rebuilt, nm) == data, 'blob %s: encode(decode(x)) == x over the full %d bytes (member cipher + blob cipher)' % (nm, len(data)))
     print('members decoded: %d' % total)
     print('ALL PASS' if ok else 'FAILED')

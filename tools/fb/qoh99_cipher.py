@@ -1,83 +1,117 @@
 #!/usr/bin/env python3
-"""QoH'99 .chr cipher (LoadAndDecryptCharacterFile 0x42C3A0 in qoh99_dec.exe).
+"""Queen of Heart '99 .chr cipher (LoadAndDecryptCharacterFile 0x42C3A0 / ValidateAndDecryptFileHeader 0x42C1F0 in qoh99_dec.exe).
 
-File = 16-byte name block | 4-byte tag | 24-byte counts | body sections.
-Name block: name_stem ^ PRIM (cycling) ; the plaintext stem (upper-cased, e.g. "CORIN") is the stream key.
-Every other region (tag, counts, and each of the 7 body sections) is decoded independently, index i
-restarting at 0 at the start of each region:
-    p[i] = ((c[i] ^ K[i % len(K)] ^ ((~(8*i) + (i>>3)) & 0xFF)) - PRIM[i % N] - 109) & 0xFF
-Inverse (exact, it is a bijection per byte):
-    c[i] = ((p[i] + PRIM[i % N] + 109) & 0xFF) ^ K[i % len(K)] ^ ((~(8*i) + (i>>3)) & 0xFF)
+File layout (all regions are enciphered independently):
+    16   name block   stem of the file name, upper-case, XOR PRIM (cycling); NOT zero padded: the bytes after the stem repeat the stem
+    4    tag          revision stamp
+    24   counts       six u32 c0..c5
+    body regions in this order: boxes 8*c4, actions 24*c2, images 12*c0, palette 1024, tiles 260*c1, frames 64*c3, attacks 24*c5
+
+Key material
+    PRIM       17 bytes. Image bytes of g_primary_xor_key (0x4A3834) are bf62a497a0da0dbd91bc97af92afe5aff0.
+               InitializeEncryptionKeys (0x48CFA0) rewrites them at start-up:  key[j] ^= b0; key[j] ^= 'S' for j in 0..16, key[17] = 0, where b0 is
+               the first of 256 bytes read at file offset 32725477 of the (encrypted) config file.  b0 = 0x7E for the shipped game
+               (solved from the shipped files: it is the only value that makes every name block decode to its own file name).
+    stem key   upper-case stem of the file name ("CORIN" for .\\Corin\\Corin.Chr): CharUpperA of the path tail without directory and extension.
+
+Per-region decode (i restarts at 0 for every region, the stem index restarts too):
+    p[i] = ((c[i] ^ stem[i % len(stem)] ^ ((~(8*i) + (i >> 3)) & 0xFF)) - PRIM[i % 17] - 109) & 0xFF
+    (the loader wraps the PRIM index when g_secondary_xor_key[j] == 0; g_secondary_xor_key = g_primary_xor_key + 1, so the period is 17)
+Per-region encode (exact inverse, the map is a bijection per byte):
+    c[i] = (((p[i] + PRIM[i % 17] + 109) & 0xFF) ^ stem[i % len(stem)] ^ ((~(8*i) + (i >> 3)) & 0xFF))
+The name block is stored as stem XOR PRIM repeated to 16 bytes ("CORINCORINCORINC" before the XOR) and is NOT part of the stream.
 """
-import struct, sys, os
+import glob
+import os
+import struct
+import sys
 
-PRIM_STATIC = bytes.fromhex("bf62a497a0da0dbd91bc97af92afe5aff0")  # g_primary_xor_key image bytes at 0x4A3834 (17 used)
-# InitializeEncryptionKeys (0x48CFA0) at startup: reads 256 bytes at file offset 32725477 of the encrypted config
-# (g_encrypted_config_path), b0 = first byte; for j<17: key[j] ^= b0; then key[j] ^= 'S' (first byte of "SZUKI MASAMI");
-# key[17] = 0.  Solved from the shipped files: b0 = 0x7E (constant for every file).
-KEY_B0 = 0x7E
-PRIM = bytes(b ^ KEY_B0 ^ 0x53 for b in PRIM_STATIC)
+PRIM_STATIC = bytes.fromhex("bf62a497a0da0dbd91bc97af92afe5aff0")  # image of g_primary_xor_key (17 bytes used)
+KEY_B0 = 0x7E                                                      # first byte read by InitializeEncryptionKeys, see module docstring
+PRIM = bytes(b ^ KEY_B0 ^ 0x53 for b in PRIM_STATIC)               # runtime key (924f89ba8df72090bc91ba82bf82c882dd)
 N = len(PRIM)
+HEADER_SIZE = 44
+
+# body regions in file order: (name, count index into c0..c5 or None for the fixed palette, element size)
+SECTIONS = [
+    ("boxes", 4, 8),
+    ("actions", 2, 24),
+    ("images", 0, 12),
+    ("palette", None, 1024),
+    ("tiles", 1, 260),
+    ("frames", 3, 64),
+    ("attacks", 5, 24),
+]
+
 
 def _mask(n):
     return bytes(((~(8 * i)) + (i >> 3)) & 0xFF for i in range(n))
 
-def key_from_name_block(block16):
-    """Heuristic (the game takes the stem from the file path): smallest period of the decoded 16 bytes."""
+
+def stem_key_from_path(path):
+    base = os.path.basename(path.replace("\\", "/"))
+    stem = base[:base.rfind(".")] if "." in base else base
+    return stem.encode("ascii").upper()
+
+
+def stem_key_from_name_block(block16):
+    """Recover the stem from the name block alone (smallest period of the decoded 16 bytes). Heuristic, the game uses the path."""
     raw = bytes(b ^ PRIM[i % N] for i, b in enumerate(block16[:16]))
-    for p in range(1, 17):
-        if all(raw[i] == raw[i % p] for i in range(16)) and p < 16:
+    for p in range(1, 16):
+        if all(raw[i] == raw[i % p] for i in range(16)):
             return raw[:p]
     return raw
 
-def key_from_path(path):
-    stem = os.path.basename(path)
-    stem = stem[:stem.rfind(".")] if "." in stem else stem
-    return stem.encode("ascii").upper()
+
+def encode_name_block(stem):
+    """Name block bytes for a stem (stem repeated to 16 bytes, XOR PRIM)."""
+    rep = (stem * 16)[:16]
+    return bytes(b ^ PRIM[i % N] for i, b in enumerate(rep))
+
 
 def dec_region(buf, key):
-    n = len(buf); m = _mask(n)
-    return bytes((((buf[i] ^ key[i % len(key)] ^ m[i]) - PRIM[i % N] - 109) & 0xFF) for i in range(n))
+    m = _mask(len(buf))
+    return bytes((((buf[i] ^ key[i % len(key)] ^ m[i]) - PRIM[i % N] - 109) & 0xFF) for i in range(len(buf)))
+
 
 def enc_region(buf, key):
-    n = len(buf); m = _mask(n)
-    return bytes((((buf[i] + PRIM[i % N] + 109) & 0xFF) ^ key[i % len(key)] ^ m[i]) for i in range(n))
+    m = _mask(len(buf))
+    return bytes((((buf[i] + PRIM[i % N] + 109) & 0xFF) ^ key[i % len(key)] ^ m[i]) for i in range(len(buf)))
 
-def enc_name_block(stem_exact16):
-    return bytes(b ^ PRIM[i % N] for i, b in enumerate(stem_exact16))
 
-# body section order on disk (count index in c[0..5], element size)
-# counts c0..c5 -> runtime a1[3],a1[1],a1[5],a1[7],a1[9],a1[11]
-SECTIONS = [  # name, count idx, elem size, decrypt order
-    ("anim",    4, 8),    # 8*c4
-    ("table24", 2, 24),   # 24*c2
-    ("image",   0, 12),   # 12*c0
-    ("palette", None, 1024),
-    ("tiles",   1, 260),  # 260*c1
-    ("sprite",  3, 64),   # 64*c3
-    ("hurt",    5, 24),   # 24*c5
-]
+def split_regions(plain):
+    """(counts, {name: bytes}, trailing) for a decoded file; raises ValueError when the sizes do not add up exactly."""
+    c = struct.unpack("<6I", plain[20:44])
+    pos = HEADER_SIZE
+    secs = {}
+    for name, ci, es in SECTIONS:
+        n = es if ci is None else es * c[ci]
+        if pos + n > len(plain):
+            raise ValueError("section %s overruns the file" % name)
+        secs[name] = plain[pos:pos + n]
+        pos += n
+    return c, secs, plain[pos:]
 
-def decrypt_chr(data, key=None):
-    """Return (plain_bytes_same_layout, key). Plain layout identical to file layout (name block kept raw)."""
-    if key is None:
-        key = key_from_name_block(data[:16])
+
+def decrypt_chr(data, key):
+    """Decode a whole .chr. Output keeps the file layout (name block stays as stored); region order unchanged."""
     tag = dec_region(data[16:20], key)
     counts = dec_region(data[20:44], key)
     c = struct.unpack("<6I", counts)
     out = bytearray(data[:16]) + tag + counts
-    pos = 44
+    pos = HEADER_SIZE
     for name, ci, es in SECTIONS:
         n = es if ci is None else es * c[ci]
         out += dec_region(data[pos:pos + n], key)
         pos += n
-    out += data[pos:]  # trailing (should be empty)
-    return bytes(out), key
+    out += data[pos:]
+    return bytes(out)
+
 
 def encrypt_chr(plain, key):
     c = struct.unpack("<6I", plain[20:44])
     out = bytearray(plain[:16]) + enc_region(plain[16:20], key) + enc_region(plain[20:44], key)
-    pos = 44
+    pos = HEADER_SIZE
     for name, ci, es in SECTIONS:
         n = es if ci is None else es * c[ci]
         out += enc_region(plain[pos:pos + n], key)
@@ -85,15 +119,34 @@ def encrypt_chr(plain, key):
     out += plain[pos:]
     return bytes(out)
 
-if __name__ == "__main__":
-    import glob
+
+def find_files(root, ext):
+    """Files with extension ext (case-insensitive) one directory below root (the shipped layout: <root>/<character>/<name>.chr)."""
+    out = []
+    for d in sorted(os.listdir(root)):
+        p = os.path.join(root, d)
+        if os.path.isdir(p) and not d.startswith("_"):
+            for f in sorted(os.listdir(p)):
+                if f.lower().endswith(ext):
+                    out.append(os.path.join(p, f))
+    return out
+
+
+def main():
     root = sys.argv[1] if len(sys.argv) > 1 else "/mnt/c/games/qoh"
     ok = True
-    for f in sorted(glob.glob(root + "/*/*.chr")):
+    files = find_files(root, ".chr")
+    for f in files:
         d = open(f, "rb").read()
-        kp = key_from_path(f)
-        p, k = decrypt_chr(d, kp)
-        rt = encrypt_chr(p, k)
-        print(os.path.basename(f), len(d), "key", k, "header-heuristic-match", key_from_name_block(d) == kp, "roundtrip", rt == d)
-        ok &= rt == d
-    print("ALL ROUNDTRIP", ok)
+        key = stem_key_from_path(f)
+        plain = decrypt_chr(d, key)
+        rt = encrypt_chr(plain, key)
+        nb = d[:16] == encode_name_block(key)
+        print("%-14s %8d key=%-9s nameblock=%s roundtrip=%s" % (os.path.basename(f), len(d), key.decode(), nb, rt == d))
+        ok &= (rt == d) and nb
+    print("files=%d ALL_OK=%s" % (len(files), ok))
+    return 0 if ok else 1
+
+
+if __name__ == "__main__":
+    sys.exit(main())

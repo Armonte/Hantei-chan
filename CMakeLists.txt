@@ -65,6 +65,7 @@ add_executable(${EXE}
 	src/han2_pac_window.cpp
 	src/han2_inspector.cpp
 	src/han2_typed_files.cpp
+	src/live_reload.cpp
 	src/han2/dmp_fob.cpp
 	src/han2/mbr_formats.cpp
 	src/han2/mb_formats.cpp
@@ -653,6 +654,15 @@ if(MINGW)
 	target_link_options(shortcut_router_test PRIVATE -static-libgcc -static-libstdc++ -static)
 endif()
 add_test(NAME shortcut_router COMMAND shortcut_router_test)
+add_executable(live_reload_test tests/live_reload_test.cpp src/live_reload.cpp src/misc.cpp tinyalloc/tinyalloc.c)
+target_include_directories(live_reload_test PRIVATE "." "src" "third_party")
+target_compile_definitions(live_reload_test PRIVATE WIN32_LEAN_AND_MEAN)
+target_link_libraries(live_reload_test PRIVATE tinyalloc)
+if(MINGW)
+	target_link_options(live_reload_test PRIVATE -static-libgcc -static-libstdc++ -static)
+endif()
+add_test(NAME live_reload COMMAND live_reload_test)
+
 add_executable(undo_manager_test tests/undo_manager_test.cpp src/undo_manager.cpp)
 target_include_directories(undo_manager_test PRIVATE "src")
 if(MINGW)

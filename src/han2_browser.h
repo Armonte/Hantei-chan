@@ -32,6 +32,10 @@ void DrawLoadReport();
 const std::string &WorkFolder();
 void SetWorkFolder(const std::string &dir);
 
+// Live reload (docs/formats/dmp_live_reload.md): the game folder PovertyCaster runs, remembered between sessions.
+const std::string &LiveReloadGameDir();
+void SetLiveReloadGameDir(const std::string &dir);
+
 // Mount an archive (error text when it is not a PAC).
 std::string AddArchive(const std::string &path);
 // Draws the window; returns true when the user asked to open a character.

@@ -61,6 +61,21 @@ struct Pb2ArchiveHandle {   // 28 bytes; g_DataArchiveSlots[10] 0x17E9FE0 (slot 
  struct Pb2ArchiveEntry * entries; // +0x18 T: GlobalAlloc(64 * entryCount) decoded index
 };
 
+// 1c. On-disk archive forms and the boot integrity probes (docs/formats/pb2k1.md section 16). Documentation types: not applied to a global (the runtime forms above are).
+struct Pb2ArchiveFileHeader {   // 8 bytes at archive offset 0; the 64-byte Pb2ArchiveDiskEntry records follow, then the payloads back to back (D: no gaps, no trailer in 02 / 03 / 04.dat)
+ unsigned int plainFlag; // +0x00 T D: 0 = payload heads are enciphered with the entry name (game side), non-zero = plain; the shipped 02.dat / 04.dat carry 1, 03.dat carries 0, and their payloads are enciphered either way
+ unsigned int entryCountXorKey; // +0x04 T D: count ^ 0xFA261EFB
+};
+struct Pb2ArchiveDiskEntry {   // 64 bytes
+ unsigned char nameField[56]; // +0x00 T D: CP932 name, NUL terminated, upper case; byte j of entry i is stored as b ^ ((3 * (j * i - 28)) & 0xFF). The bytes after the NUL are stale editor memory (non-zero in 02 / 03 / 04.dat) and must be kept for a byte-exact rebuild
+ unsigned int sizeXorKey; // +0x38 T D: payload size ^ 0xFA261EFB
+ unsigned int offset; // +0x3C T D: absolute file offset of the payload
+};
+struct Pb2BootIntegrityProbe {   // 8 bytes; 7 probes, immediates in the code, see the table in section 16
+ unsigned int fileOffset; // +0x00 T: absolute offset read with File_Seek / File_Read (4 bytes) in PB_MainInitAndFrameLoop
+ unsigned int expectedDword; // +0x04 T D: the dword the file must hold there, else _exit(0); every probed file must also be >= 100000000 bytes (0x5F5E100)
+};
+
 // ============================================================================================
 // ============================================================================================
 // 2. Character .DAT: header, patterns, frames, tables (stage-2 cipher: docs/formats/pb2k1.md section 2)
