@@ -35,6 +35,7 @@ namespace han2ui { struct OpenRequest; }
 #include <memory>
 #include <map>
 #include <optional>
+#include "cgm/cgm_window.h"
 
 struct ImRect;
 
@@ -401,6 +402,8 @@ private:
 		uint64_t refsVersion = 0;
 	} m_patMgr;
 	void drawPatternManagerWindow();
+	cgm::Window m_cgm;
+	void drawCgManagerWindow();
 	bool m_showNotes = false;
 	bool m_showKeyBindings = false;
 	bool m_showCompare = false;

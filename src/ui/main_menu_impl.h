@@ -786,6 +786,7 @@ void MainFrame::Menu(unsigned int errorPopupId)
 				openPartsEditorForCharacter(active);
 			if (ImGui::IsItemHovered(ImGuiHoveredFlags_AllowWhenDisabled))
 				ImGui::SetTooltip(TXT("Parts live in the .DAT: save as .DAT to keep part edits (a .DT2 carries only the pattern area)."));
+			if (ImGui::MenuItem(LBL("CG manager"), nullptr, m_cgm.open, hasActive && active->cg.m_loaded)) m_cgm.open = !m_cgm.open;
 			if (ImGui::MenuItem(LBL("CG sprites of this RBO / GOF2 character (export / import)..."), nullptr, han2ui::showCgWindow, hasActive && active->cg.m_loaded))
 				han2ui::showCgWindow = !han2ui::showCgWindow;
 			if (ImGui::MenuItem(LBL("French Bread archives (PAC, .p, .dat)..."), nullptr, han2ui::showBrowser))
