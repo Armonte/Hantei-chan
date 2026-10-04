@@ -90,3 +90,37 @@ Edit menu hooks when the window is focused; the existing `g_cgUndo` whole-bank s
 
 M1 docs (this) -> M2 `cgm_bank` + usage + browser -> M3 export/import + CLI (+suite) -> M4 palette tools -> M5 structural ops + fix-up (+suite)
 -> M6 adapters for HA4 CG, RBO/GOF2 CHP/CG, MB/PB2K1 strips, EX3, QoH.
+
+## 6. Status (as built) and the command line
+
+Built in `src/cgm/` (core, no GL/ImGui) + `src/ui`-free window `cgm_window.cpp` (Tools > CG manager):
+
+| file | role |
+|---|---|
+| `cgm_bank` | byte-exact model of a BMP Cutter bank (parse/serialize, decode, atlas, owners/dependants); keeps hidden images past the declared count |
+| `cgm_ops` | `ReplaceImage`: types 0/1/2/3/4, keeps stored indices and palette slots of unchanged pixels (edit locality) |
+| `cgm_struct` | add / insert / delete / move / permute / clear / unshare / duplicate, atlas allocation |
+| `cgm_export`, `cgm_io` | folder export/import over `BankIO` (BMP Cutter model, or any bank through the CG object) |
+| `cgm_palette` | `.pal` sets, colour ops, whole-bank recolour, `.act`/`.gpl`/`.png`/`.pal` files |
+| `cgm_usage` | usage index image -> patterns/frames/layers; `RemapSprites` reference fix-up (+ restore for undo) |
+| `cgm_undo` | step history (shared-blob snapshots) |
+
+Folder layout written by Export all: `manifest.json` (per image: id, name, type, bpp, canvas, bounds, blocks, owners/dependants, FNV-1a hash of the decoded RGBA,
+file names; bank-level: `indexPaletteHash`), `rgba/NNNN_name.png`, `indexed/NNNN_name.png` (types 0 and 2: 8-bit PNG with the bank/own palette and tRNS),
+`palettes/bank_slotN.pal`. Import re-encodes only images whose pixels differ from the recorded hash (indexed PNG first: exact indices when it still uses the exported palette).
+
+`cgmtool.exe` (built by `build.sh`):
+
+```
+cgmtool check <bank.cg>...                 parse -> serialize byte-exact, decode == CG::draw_texture
+cgmtool info <bank.cg>
+cgmtool export <bank.cg> <dir> [--no-rgba] [--no-indexed] [--cgtool]    (--cgtool: <name>_ID_<n>.png canvas-sized, no manifest)
+cgmtool import <bank.cg> <dir> -o <out.cg>                              (writes a NEW file; the input is never overwritten)
+cgmtool roundtrip <bank.cg>... [--tmp dir] export all -> import unchanged -> identical; edit-locality (one image changed -> only its blob changes)
+cgmtool struct-check <bank.cg>...          add/insert/delete/move/permute/clear/unshare/duplicate proofs, engine loader agrees
+cgmtool refs-check <char.HA6> <bank.cg>    frame references still show the same pictures after permute/insert/delete; undo restores them
+cgmtool pal-info|pal-export|pal-import|pal-recolor|pal-check ...
+cgmtool recolor-bank <bank.cg> --hue D --sat M --val M -o <out.cg>
+```
+Suites: `tools/cg/run_cgm_suite.sh` (MBAACC `data/*.cg` and `*.pal`: sections cgm-bank, cgm-roundtrip, cgm-palette, cgm-struct, cgm-refs) and
+`tools/han2/run_roundtrip.sh` section `cgm` (every RBO / GOF2 CG area and CHP: model parse/serialize, decode == CG, re-import keeps bytes).

@@ -1,7 +1,8 @@
 #include "cgm_export.h"
-#include "cgm_ops.h"
+#include "cgm_io.h"
 #include "../png_writer.h"
 #include "../../third_party/json/json.hpp"
+#include <windows.h>
 #include <algorithm>
 #include <cstdio>
 #include <cstring>
@@ -21,6 +22,13 @@ std::string FileSafeName(const char *n32) {
 	return s;
 }
 
+// stored names are Shift-JIS (CP932)
+static std::string NameUtf8(const char *n32) {
+	const std::string raw(n32, strnlen(n32, 32));
+	const int n = MultiByteToWideChar(932, 0, raw.data(), (int)raw.size(), nullptr, 0);
+	std::wstring w(n > 0 ? n : 0, L'\0'); if (n > 0) MultiByteToWideChar(932, 0, raw.data(), (int)raw.size(), w.data(), n);
+	return WideToUtf8(w);
+}
 static fs::path P(const std::string &u) { return fs::path(Utf8ToWide(u)); }
 static uint64_t PalRgbHash(const uint32_t pal[256]) {   // colours 1..255, alpha ignored: identifies "the palette the indices refer to"
 	uint64_t h = 1469598103934665603ull;
@@ -34,42 +42,40 @@ static void WritePal(const std::string &path, const uint32_t pal[256], bool &ok)
 	uint32_t n = 1; f.write((const char *)&n, 4); f.write((const char *)pal, 1024);   // MBAACC .pal: count + 256 x RGBA
 }
 
-bool ExportBank(const Bank &bank, const std::string &dir, const std::string &bankName, const ExportOptions &opt, ExportResult &res, const uint32_t *extPal) {
+bool ExportBank(const BankIO &bank, const std::string &dir, const std::string &bankName, const ExportOptions &opt, ExportResult &res, const uint32_t *extPal) {
 	std::string err;
 	if (!CreateDirectoriesUtf8(dir, err)) { res.error = err; return false; }
 	const fs::path root = P(dir);
 	if (opt.rgba && !opt.cgtoolLayout) fs::create_directories(root / "rgba");
 	if (opt.indexed && !opt.cgtoolLayout) fs::create_directories(root / "indexed");
 	json man; man["format"] = "hantei-cg-manifest"; man["version"] = 1; man["bank"] = bankName;
-	man["cellUnit"] = bank.cellUnit(); man["pages"] = bank.pages(); man["imageSlots"] = (int)bank.images.size();
-	uint32_t palUse[256]; if (extPal) memcpy(palUse, extPal, 1024); else bank.palette(0, palUse);
+	man["imageSlots"] = bank.slots();
+	uint32_t palUse[256]; if (extPal) memcpy(palUse, extPal, 1024); else bank.defaultPalette(palUse);
 	man["indexPaletteHash"] = HashHex(PalRgbHash(palUse));
 	man["palettes"] = json::array();
 	if (opt.palettes && !opt.cgtoolLayout) {
 		fs::create_directories(root / "palettes");
-		for (int s = 0; s < 8; s++) {
-			uint32_t p[256]; memcpy(p, bank.palettes.data() + 0x400 * s, 1024);
+		for (int s = 0; s < bank.paletteSlots(); s++) {
+			uint32_t p[256]; bank.slotPalette(s, p);
 			bool ok = true; const std::string rel = "palettes/bank_slot" + std::to_string(s) + ".pal";
 			WritePal(dir + "/" + rel, p, ok);
 			if (!ok) { res.error = "could not write " + rel; return false; }
 			man["palettes"].push_back({{"slot", s}, {"file", rel}}); res.files++;
 		}
 	}
-	auto atlas = bank.buildAtlas();
 	man["images"] = json::array();
-	for (int n = 0; n < (int)bank.images.size(); n++) {
-		const Image &im = bank.images[n];
+	for (int n = 0; n < bank.slots(); n++) {
+		ImgInfo im; bank.info(n, im);
 		json j; j["id"] = n; j["present"] = im.present;
 		if (!im.present) { man["images"].push_back(j); continue; }
-		j["name"] = std::string(im.name, strnlen(im.name, 32)); j["type"] = im.type; j["bpp"] = im.bpp;
+		j["name"] = NameUtf8(im.name); j["type"] = im.type; j["bpp"] = im.bpp;
 		j["canvas"] = {im.w, im.h}; j["bounds"] = {im.x1, im.y1, im.x2, im.y2};
-		j["blocks"] = (int)im.blocks.size();
-		auto own = bank.owners(n, atlas), dep = bank.dependants(n, atlas);
-		if (!own.empty()) j["drawsCellsOf"] = own;
-		if (!dep.empty()) j["cellsDrawnBy"] = dep;
+		j["blocks"] = im.blocks;
+		if (!im.owners.empty()) j["drawsCellsOf"] = im.owners;
+		if (!im.dependants.empty()) j["cellsDrawnBy"] = im.dependants;
 		Rgba r;
 		const bool wanted = opt.onlyIds.empty() || std::find(opt.onlyIds.begin(), opt.onlyIds.end(), n) != opt.onlyIds.end();
-		if (im.drawable() && bank.decode(n, r, extPal)) {
+		if (im.drawable && bank.decode(n, r, extPal)) {
 			j["hash"] = HashHex(HashRgba(r.px.data(), r.px.size()));
 			const std::string base = Name4(n) + "_" + FileSafeName(im.name);
 			if (opt.cgtoolLayout) {
@@ -85,9 +91,9 @@ bool ExportBank(const Bank &bank, const std::string &dir, const std::string &ban
 				if (!WritePngRgba(dir + "/" + rel, r.px.data(), r.w, r.h, err)) { res.error = err; return false; }
 				j["rgba"] = rel; res.files++;
 			}
-			if (opt.indexed && wanted && (im.type == 0 || im.type == 2)) {
+			if (opt.indexed && wanted && bank.indexable(n)) {
 				std::vector<uint8_t> idx; uint32_t pal[256];
-				if (bank.decodeIndexed(n, idx, pal, nullptr, extPal)) {
+				if (bank.decodeIndexed(n, idx, pal, extPal)) {
 					const std::string rel = "indexed/" + base + ".png";
 					if (!WritePngIndexed(dir + "/" + rel, idx.data(), r.w, r.h, pal, err)) { res.error = err; return false; }
 					j["indexed"] = rel; res.files++;
@@ -100,22 +106,22 @@ bool ExportBank(const Bank &bank, const std::string &dir, const std::string &ban
 	if (!opt.cgtoolLayout) {
 		std::ofstream f(root / "manifest.json", std::ios::binary);
 		if (!f) { res.error = "could not write manifest.json"; return false; }
-		const std::string txt = man.dump(1); f.write(txt.data(), (std::streamsize)txt.size()); res.files++;
+		const std::string txt = man.dump(1, ' ', false, json::error_handler_t::replace); f.write(txt.data(), (std::streamsize)txt.size()); res.files++;
 	}
 	return true;
 }
 
-bool ImportBank(Bank &bank, const std::string &dir, ImportResult &res) {
+bool ImportBank(BankIO &bank, const std::string &dir, ImportResult &res) {
 	const fs::path root = P(dir);
 	json man;
 	try { std::ifstream f(root / "manifest.json", std::ios::binary); if (!f) { res.error = "no manifest.json in " + dir; return false; } f >> man; }
 	catch (const std::exception &e) { res.error = std::string("manifest.json: ") + e.what(); return false; }
 	if (man.value("format", "") != "hantei-cg-manifest") { res.error = "not a CG manager manifest"; return false; }
-	if (man.value("imageSlots", -1) != (int)bank.images.size()) { res.error = "the manifest was made from a bank with a different image count"; return false; }
+	if (man.value("imageSlots", -1) != bank.slots()) { res.error = "the manifest was made from a bank with a different image count"; return false; }
 	for (const json &j : man["images"]) {
 		const int n = j.value("id", -1);
-		if (n < 0 || n >= (int)bank.images.size() || !j.value("present", false) || !j.contains("hash")) continue;
-		const Image &im = bank.images[n];
+		if (n < 0 || n >= bank.slots() || !j.value("present", false) || !j.contains("hash")) continue;
+		ImgInfo im; bank.info(n, im);
 		if (!im.present || im.type != j.value("type", -99)) { res.warnings.push_back("image " + std::to_string(n) + ": type changed since the export, skipped"); continue; }
 		const std::string was = j["hash"];
 		std::vector<uint8_t> px; int w = 0, h = 0; std::string err, src;
@@ -144,7 +150,7 @@ bool ImportBank(Bank &bank, const std::string &dir, ImportResult &res) {
 		}
 		if (px.empty()) { res.skipped++; continue; }
 		std::string e; ReplaceReport rep;
-		if (!ReplaceImage(bank, n, px.data(), w, h, &e, &rep, haveIdx ? &chosenIdx : nullptr)) { res.warnings.push_back("image " + std::to_string(n) + ": " + e); continue; }
+		if (!bank.replace(n, px.data(), w, h, &e, &rep, haveIdx ? &chosenIdx : nullptr)) { res.warnings.push_back("image " + std::to_string(n) + ": " + e); continue; }
 		if (rep.changedPixels || rep.paletteChanged) res.changed.push_back(n); else res.skipped++;
 		if (rep.lostPixels) { std::string o; for (int x : rep.borrowedFrom) o += " " + std::to_string(x); res.warnings.push_back("image " + std::to_string(n) + ": " + std::to_string(rep.lostPixels) + " changed pixel(s) sit in cells borrowed from image(s)" + o + " and were not written (edit the owner)"); }
 		if (!rep.alsoChanges.empty()) { std::string o; for (int x : rep.alsoChanges) o += " " + std::to_string(x); res.warnings.push_back("image " + std::to_string(n) + ": cells are shared, image(s)" + o + " change too"); }
@@ -153,3 +159,10 @@ bool ImportBank(Bank &bank, const std::string &dir, ImportResult &res) {
 }
 
 } // namespace cgm
+
+namespace cgm {
+bool ExportBank(const Bank &bank, const std::string &dir, const std::string &bankName, const ExportOptions &opt, ExportResult &res, const uint32_t *extPal) {
+	BmpCutterIO io(const_cast<Bank &>(bank)); return ExportBank(static_cast<const BankIO &>(io), dir, bankName, opt, res, extPal);
+}
+bool ImportBank(Bank &bank, const std::string &dir, ImportResult &res) { BmpCutterIO io(bank); return ImportBank(static_cast<BankIO &>(io), dir, res); }
+}

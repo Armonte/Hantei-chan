@@ -1,5 +1,6 @@
 #include "cgm_bank.h"
 #include <algorithm>
+#include <cstdio>
 #include <cstring>
 
 namespace cgm {
@@ -25,7 +26,7 @@ void Bank::recomputeLayout() {
 	}
 	uint32_t na = 0;
 	for (const Image &im : images) na += (uint32_t)im.blocks.size();
-	H[2] = na; H[3] = (uint32_t)images.size();
+	H[2] = na; H[3] = (uint32_t)(images.size() - hidden);
 }
 
 bool Bank::parse(const uint8_t *d, size_t size, Bank &out, std::string *err) {
@@ -41,10 +42,12 @@ bool Bank::parse(const uint8_t *d, size_t size, Bank &out, std::string *err) {
 	out.tailMid = Rd32(d + kTail + 4);
 	if (Rd32(d + kTail + 8) != size) return fail("size field in the tail does not match the file size");
 	if (ao > size || (size - ao) != (size_t)nalign * 24) return fail("alignment table does not end the file");
-	for (uint32_t i = nimg; i < (uint32_t)kMaxImages; i++) if (Rd32(d + kIdxOff + 4 * i) != kAbsent) return fail("index entry beyond the image count");
-	out.images.resize(nimg);
+	uint32_t total = nimg;   // entries past the declared count that still hold an offset are kept as hidden images
+	for (uint32_t i = nimg; i < (uint32_t)kMaxImages; i++) if (Rd32(d + kIdxOff + 4 * i) != kAbsent) total = i + 1;
+	out.hidden = (int)(total - nimg);
+	out.images.resize(total);
 	std::vector<std::pair<uint32_t, uint32_t>> order;   // (offset, index)
-	for (uint32_t i = 0; i < nimg; i++) { uint32_t o = Rd32(d + kIdxOff + 4 * i); if (o != kAbsent) order.push_back({o, i}); }
+	for (uint32_t i = 0; i < total; i++) { uint32_t o = Rd32(d + kIdxOff + 4 * i); if (o != kAbsent) order.push_back({o, i}); }
 	for (size_t k = 0; k < order.size(); k++) {
 		if (k && order[k].first <= order[k - 1].first) return fail("image offsets are not strictly increasing");
 	}
@@ -84,7 +87,7 @@ void Bank::serialize(std::vector<uint8_t> &o) const {
 	o.insert(o.end(), head.begin(), head.end());
 	o.insert(o.end(), palettes.begin(), palettes.end());
 	uint32_t na = 0; for (const Image &im : images) na += (uint32_t)im.blocks.size();
-	for (int i = 0; i < 12; i++) Wr32(o, i == 2 ? na : i == 3 ? (uint32_t)images.size() : H[i]);
+	for (int i = 0; i < 12; i++) Wr32(o, i == 2 ? na : i == 3 ? (uint32_t)(images.size() - hidden) : H[i]);
 	const size_t idxPos = o.size();
 	for (int i = 0; i < kMaxImages; i++) Wr32(o, kAbsent);
 	const size_t tailPos = o.size();

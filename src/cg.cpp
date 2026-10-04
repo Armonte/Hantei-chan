@@ -490,11 +490,18 @@ int CG::getPalNumber()
 // UNI/MBTL "FFFF, split, 0, count" header + count*256 BGRA (130 palettes =
 // 65 colours x 2 sets; see docs/HANTEI_UNI_MBTL.md). Alpha is made binary and
 // index 0 transparent for display.
+static bool ParsePaletteBuffer(char *data, unsigned int size, char *&out, int &count, int &offset);
 static bool ParsePalette(const char *name, char *&out, int &count, int &offset)
 {
 	unsigned int size;
 	char *data = nullptr;
-	if (!ReadInMem(name, data, size) || size < 4) {
+	if (!ReadInMem(name, data, size)) { delete[] data; return false; }
+	return ParsePaletteBuffer(data, size, out, count, offset);
+}
+// Takes ownership of `data` (new[]).
+static bool ParsePaletteBuffer(char *data, unsigned int size, char *&out, int &count, int &offset)
+{
+	if (size < 4) {
 		delete[] data;
 		return false;
 	}
@@ -559,6 +566,26 @@ bool CG::loadPalette(const char *name) {
 	curPups = 0;
 	appliedBank = 0;
 	palette = (unsigned int *)paletteData + paletteOffset;
+	palPaths[0] = name;
+	return true;
+}
+
+bool CG::setPaletteBytes(int bank, const void *bytes, unsigned size)
+{
+	if (bank < 0 || bank >= kPupsBanks) return false;
+	char *copy = new char[size ? size : 1]; memcpy(copy, bytes, size);
+	char *data = nullptr; int count = 0, offset = 0;
+	if (!ParsePaletteBuffer(copy, size, data, count, offset)) return false;
+	if (bank == 0) {
+		delete[] paletteData; paletteData = data; palMax = count; paletteOffset = offset;
+	} else {
+		delete[] pupsData[bank]; pupsData[bank] = data; pupsMax[bank] = count; pupsOffset[bank] = offset;
+	}
+	if (curPalIndex >= std::max(1, palMax)) curPalIndex = 0;
+	appliedBank = -1;       // force applyPalette to re-point
+	applyPalette();
+	if (appliedBank < 0) appliedBank = 0;
+	touch();
 	return true;
 }
 
@@ -569,6 +596,7 @@ void CG::freePupsBanks()
 		delete[] pupsData[i];
 		pupsData[i] = nullptr;
 		pupsMax[i] = 0;
+		palPaths[i].clear();
 	}
 }
 
@@ -581,7 +609,7 @@ bool CG::loadPupsPalettes(const std::string &stem)
 		if (!std::filesystem::exists(p)) continue;
 		char *data = nullptr; int count = 0, offset = 0;
 		if (ParsePalette(p.c_str(), data, count, offset)) {
-			pupsData[i] = data; pupsMax[i] = count; pupsOffset[i] = offset;
+			pupsData[i] = data; pupsMax[i] = count; pupsOffset[i] = offset; palPaths[i] = p;
 		}
 	}
 	touch();   // bank contents changed
