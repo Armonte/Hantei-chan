@@ -68,6 +68,8 @@ struct Bank {
 	std::vector<int> dependants(int n, const std::unordered_map<uint32_t, int> &atlas) const;
 	std::vector<int> owners(int n, const std::unordered_map<uint32_t, int> &atlas) const;
 
+	// Byte range [start,end) of image n's data blob in the serialized bank.
+	bool blobSpan(int n, size_t &start, size_t &end) const;
 	void recomputeLayout();   // blocks' dataOff + H2/H3
 };
 
