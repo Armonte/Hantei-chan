@@ -44,6 +44,7 @@ struct Bank {
 	uint32_t H[12] = {};                        // H0 = pages-1, H1, H2 = nAlign (derived), H3 = nImages (derived), H4 = cell unit, ...
 	uint32_t tailMid = 0;                       // the zero dword between align offset and file size
 	std::vector<Image> images;                  // size == H3
+	int hidden = 0;                             // images stored past the declared count H3 (the engine never reaches them; one RBO bank has one)
 	bool alignSequential = true;                // blocks of image n directly follow those of image n-1 (verified on load)
 
 	int cellUnit() const { return (H[4] >= 1 && H[4] < 16) ? (int)H[4] : 16; }

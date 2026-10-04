@@ -74,6 +74,7 @@ add_executable(${EXE}
 	src/cgm/cgm_bank.cpp
 	src/cgm/cgm_ops.cpp
 	src/cgm/cgm_export.cpp
+	src/cgm/cgm_io.cpp
 	src/cgm/cgm_palette.cpp
 	src/cgm/cgm_struct.cpp
 	src/cgm/cgm_usage.cpp
@@ -571,6 +572,8 @@ endif()
 # French-Bread RBO / GOF2 model sources (PAC archive, HAN2RBO container, model loader/writer): linked wherever framedata.cpp is.
 add_executable(han2tool
 	src/han2/han2tool.cpp
+	src/cgm/cgm_bank.cpp
+	src/cgm/cgm_ops.cpp
 	src/han2/fob_file.cpp
 	src/han2/replay_file.cpp
 	src/han2/fnt_file.cpp
@@ -821,7 +824,7 @@ endif()
 add_test(NAME hud_layout COMMAND hud_layout_test WORKING_DIRECTORY ${CMAKE_SOURCE_DIR})
 
 # CG manager core + command line (docs/cg/cg_manager_design.md)
-set(CGM_CORE_SOURCES src/cgm/cgm_bank.cpp src/cgm/cgm_ops.cpp src/cgm/cgm_export.cpp src/cgm/cgm_palette.cpp src/cgm/cgm_struct.cpp)
+set(CGM_CORE_SOURCES src/cgm/cgm_bank.cpp src/cgm/cgm_ops.cpp src/cgm/cgm_export.cpp src/cgm/cgm_io.cpp src/cgm/cgm_palette.cpp src/cgm/cgm_struct.cpp)
 add_executable(cgmtool src/cgm/cgmtool.cpp ${CGM_CORE_SOURCES} src/cgm/cgm_usage.cpp src/framedata.cpp src/framedata_load.cpp src/framedata_save.cpp src/framedata_ha4.cpp ${HAN2_MODEL_SOURCES} src/cg.cpp src/misc.cpp src/png_writer.cpp tinyalloc/tinyalloc.c)
 target_include_directories(cgmtool PRIVATE "." "src" "third_party" "${CMAKE_BINARY_DIR}/generated")
 target_compile_definitions(cgmtool PRIVATE WIN32_LEAN_AND_MEAN HA6GUIVERSION="${CMAKE_PROJECT_VERSION}")

@@ -7,6 +7,7 @@
 #include <vector>
 
 namespace cgm {
+class BankIO;
 
 struct ExportOptions {
 	bool rgba = true;            // rgba/NNNN_name.png (straight alpha, bounds sized)
@@ -27,6 +28,9 @@ struct ImportResult {
 	std::string error;
 };
 bool ImportBank(Bank &bank, const std::string &dir, ImportResult &res);
+// the same over any bank format (BankIO, cgm_io.h)
+bool ExportBank(const BankIO &bank, const std::string &dir, const std::string &bankName, const ExportOptions &opt, ExportResult &res, const uint32_t *extPal = nullptr);
+bool ImportBank(BankIO &bank, const std::string &dir, ImportResult &res);
 
 std::string HashHex(uint64_t h);
 std::string FileSafeName(const char *name32);

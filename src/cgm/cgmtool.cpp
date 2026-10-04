@@ -39,7 +39,7 @@ static int CmdCheck(int argc, char **argv) {
 		int bad = 0;
 		for (size_t n = 0; n < bk.images.size(); n++) {
 			const cgm::Image &im = bk.images[n];
-			if (!im.present) continue;
+			if (!im.present || (int)n >= (int)bk.images.size() - bk.hidden) continue;
 			imgs++; types[im.type]++;
 			cgm::Rgba r; bool mine = bk.decode((int)n, r);
 			ImageData *ref = cg.draw_texture((unsigned)n, false, false);
