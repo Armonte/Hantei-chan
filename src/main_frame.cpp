@@ -20,6 +20,8 @@
 #include "i18n.h"
 #include "han2_export.h"
 #include "han2_pac_window.h"
+#include "han2_thumbs.h"
+#include "han2_thumbs.h"
 #include "han2_pat.h"
 #include "png_writer.h"
 #include "framedata_han2.h"

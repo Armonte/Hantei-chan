@@ -60,6 +60,7 @@ add_executable(${EXE}
 	src/han2_browser.cpp
 	src/archive_browser.cpp
 	src/archive_browser_ui.cpp
+	src/han2_thumbs.cpp
 	src/fbarc/fb_archive.cpp
 	src/fbarc/fb_filepac.cpp
 	src/i18n.cpp

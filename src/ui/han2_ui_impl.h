@@ -81,7 +81,7 @@ void MainFrame::openBrowserRequest(const abrowser::OpenRequest& req)
 		characters.push_back(std::move(character));
 		createViewForCharacter(characters.back().get());
 		markProjectModified();
-		if (han2) { han2ui::showAnimWindow = true; if (auto* v = getActiveView()) v->setZoom(1.25f); }   // playback controls docked next to the box controls; sprites are bigger than HA6 ones
+		if (han2) { han2ui::showAnimWindow = true; han2ui::showAnimList = true; if (auto* v = getActiveView()) v->setZoom(1.25f); }   // playback controls docked next to the box controls; sprites are bigger than HA6 ones
 	};
 	switch (req.kind) {
 	case OpenRequest::Han2Stem: {
@@ -127,12 +127,25 @@ void MainFrame::DrawHan2Windows()
 	ProcessDroppedFiles();
 	if (ImGuiWindow* w = ImGui::FindWindowByName("Box Pane")) han2ui::dockAnimId = w->DockId;
 	if (ImGuiWindow* w = ImGui::FindWindowByName("Right Pane")) han2ui::dockInspectorId = w->DockId;
+	{   // first HAN2 character of a session: the animation list takes the upper half of the Left Pane's dock node (a split, not a tab: both stay visible)
+		static bool animListDocked = false;
+		if (han2ui::showAnimList && !animListDocked) {
+			if (ImGuiWindow* lp = ImGui::FindWindowByName("Left Pane")) if (lp->DockId && ImGui::DockBuilderGetNode(lp->DockId)) {
+				ImGuiID rest = lp->DockId, top = 0;
+				top = ImGui::DockBuilderSplitNode(rest, ImGuiDir_Up, 0.48f, nullptr, &rest);
+				ImGui::DockBuilderDockWindow("Animations###animlist", top);
+				ImGui::DockBuilderFinish(top);
+				animListDocked = true;
+			}
+		}
+	}
+	han2ui::BeginThumbFrame();
 	han2ui::DrawLoadReport();
 	han2ui::DrawPacCreate();
 	han2ui::DrawFileViewers();
 	han2ui::DrawCgWindow(getActiveCharacter());
 	han2ui::DrawDiffWindow(getActiveCharacter());
-	if (auto* av = getActiveView()) han2ui::DrawAnimWindow(av->getCharacter(), av->getState(), &av->onion());
+	if (auto* av = getActiveView()) { han2ui::DrawAnimWindow(av->getCharacter(), av->getState(), &av->onion()); han2ui::DrawAnimListWindow(av->getCharacter(), av->getState()); }
 	abrowser::OpenRequest req;
 	if (abrowser::Draw(req)) openBrowserRequest(req);
 }
