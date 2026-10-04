@@ -4,6 +4,7 @@
 // (std::shared_ptr<const vector>), so only the blobs an operation actually replaced cost memory.
 #include "cgm_bank.h"
 #include "cgm_palette.h"
+#include "cgm_usage.h"
 #include <string>
 #include <vector>
 
@@ -15,7 +16,8 @@ struct HistoryEntry {
 	Bank before, after;
 	int palBank = -1;          // >= 0: a palette file (0 = <cg>.pal, 1..7 = PUPS) changed in this step
 	PalSet palBefore, palAfter;
-	std::vector<int> remap;   // optional: old image id -> new id (-1 = removed), for reference fix-up on undo/redo (M5)
+	std::vector<int> remap;   // optional: old image id -> new id (-1 = removed): the frame references were rewritten through it
+	std::vector<ClearedRef> cleared;   // references cleared because their image was deleted (restored on undo)
 };
 
 class History {

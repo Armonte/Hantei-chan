@@ -19,5 +19,13 @@ struct UsageIndex {
 	bool stale(const FrameData &fd) const;
 };
 
+struct ClearedRef { int pattern, frame, layer, oldId; };
+
+// Rewrites every CG image reference (layers without usePat) through `remap` (old id -> new id, -1 = the image is gone: the reference is
+// cleared to -1 and recorded in `cleared`). Marks the touched patterns modified. Returns the number of references changed.
+int RemapSprites(FrameData &fd, const std::vector<int> &remap, std::vector<ClearedRef> *cleared = nullptr);
+// Puts cleared references back (undo of a delete).
+int RestoreCleared(FrameData &fd, const std::vector<ClearedRef> &cleared);
+
 } // namespace cgm
 #endif

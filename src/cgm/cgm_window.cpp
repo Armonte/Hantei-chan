@@ -6,6 +6,8 @@
 #include "../png_writer.h"
 #include "cgm_ops.h"
 #include "cgm_export.h"
+#include "cgm_struct.h"
+#include "../character_instance.h"
 #include <filesystem>
 #include <fstream>
 #include <glad/glad.h>
@@ -76,10 +78,28 @@ bool Window::commit(CharacterInstance &ch, const std::string &label, Bank before
 	return true;
 }
 
+bool Window::commitStruct(CharacterInstance &ch, const std::string &label, Bank before, const std::vector<int> &remap, const WindowHost &host) {
+	HistoryEntry e; e.label = label; e.hasBank = true; e.after = *bank; e.remap = remap;
+	if (!remap.empty()) RemapSprites(ch.frameData, remap, &e.cleared);
+	if (!applyModel(ch, host)) { *bank = std::move(before); if (!remap.empty()) { RemapSprites(ch.frameData, InvertRemap(remap, e.after.images.size())); RestoreCleared(ch.frameData, e.cleared); } return false; }
+	usage.version = ~0ull;   // references changed
+	e.before = std::move(before);
+	hist.push(std::move(e));
+	return true;
+}
+
 void Window::undoRedo(CharacterInstance &ch, bool redo, const WindowHost &host) {
 	if (!bank || (redo ? !hist.canRedo() : !hist.canUndo())) return;
 	HistoryEntry e = redo ? hist.redo() : hist.undo();
-	if (e.hasBank) { *bank = redo ? e.after : e.before; applyModel(ch, host); }
+	if (e.hasBank) {
+		*bank = redo ? e.after : e.before;
+		if (!e.remap.empty()) {   // put the frame references back the way they were
+			std::vector<ClearedRef> again;
+			if (redo) RemapSprites(ch.frameData, e.remap, &again);
+			else { RemapSprites(ch.frameData, InvertRemap(e.remap, e.after.images.size())); RestoreCleared(ch.frameData, e.cleared); }
+		}
+		applyModel(ch, host);
+	}
 	if (e.palBank >= 0) { pal.set[e.palBank] = redo ? e.palAfter : e.palBefore; pal.dirty[e.palBank] = true; pushPalette(ch, e.palBank); if (host.markEdited) host.markEdited(&ch); }
 	status = (redo ? std::string(TXT("Redone: ")) : std::string(TXT("Undone: "))) + e.label;
 }
@@ -318,6 +338,80 @@ void Window::drawPalettes(CharacterInstance &ch, const WindowHost &host) {
 	if (!status.empty()) ImGui::TextWrapped("%s", status.c_str());
 }
 
+void Window::drawStructure(CharacterInstance &ch, const WindowHost &host) {
+	const int count = (int)bank->images.size();
+	const bool have = selected >= 0 && selected < count;
+	if (!ImGui::TreeNode(LBL("Add / remove / reorder"))) return;
+	// add
+	if (ImGui::Button(LBL("Add image from PNG..."))) {
+		const std::string p = FileDialog(-1, false);
+		if (!p.empty()) {
+			std::vector<uint8_t> px; int w = 0, h = 0; std::string e; Bank before = *bank; std::vector<int> remap; int id = -1; NewImageSpec sp;
+			sp.name = std::filesystem::path(Utf8ToWide(p)).stem().string() + ".bmp";
+			if (!ReadImageRgba(p, px, w, h, e)) status = e;
+			else if (!AddImage(*bank, insertAt >= 0 ? insertAt : (have ? selected + 1 : -1), sp, px.data(), w, h, remap, &id, &e)) { *bank = std::move(before); status = e; }
+			else if (commitStruct(ch, Fmt(TXT("Add image %d"), id), std::move(before), remap, host)) { selected = id; status = Fmt(TXT("Added image %d (storage type %d). Ids after it moved up by one; frame references were updated."), id, bank->images[id].type); }
+		}
+	}
+	ImGui::SameLine(); ImGui::SetNextItemWidth(70); ImGui::InputInt(LBL("at id"), &insertAt, 0, 0); ImGui::SameLine(); ImGui::SetItemTooltip("%s", TXT("Id the new image takes (-1: after the selected image). Later ids move up and every frame reference follows."));
+	ImGui::BeginDisabled(!have);
+	if (ImGui::Button(LBL("Duplicate"))) {
+		Bank before = *bank; std::vector<int> remap; int id = -1; std::string e;
+		if (!DuplicateImage(*bank, selected, selected + 1, remap, &id, &e)) { *bank = std::move(before); status = e; }
+		else if (commitStruct(ch, Fmt(TXT("Duplicate image %d"), selected), std::move(before), remap, host)) { selected = id; status = Fmt(TXT("Duplicated as image %d."), id); }
+	}
+	ImGui::SameLine(); if (ImGui::Button(LBL("Make independent"))) {
+		Bank before = *bank; std::string e;
+		if (!UnshareImage(*bank, selected, &e)) { *bank = std::move(before); status = e; } else commitStruct(ch, Fmt(TXT("Make image %d independent"), selected), std::move(before), {}, host);
+	}
+	ImGui::SameLine(); ImGui::SetItemTooltip("%s", TXT("Gives the image its own copy of every cell it borrows from another image."));
+	ImGui::SameLine(); if (ImGui::Button(LBL("Clear (keep id)"))) { pend = {2, selected, true}; }
+	ImGui::SameLine(); if (ImGui::Button(LBL("Delete (renumber)"))) { pend = {1, selected, true}; }
+	ImGui::SetNextItemWidth(70); ImGui::InputInt(LBL("Move to id"), &moveTarget, 0, 0); ImGui::SameLine();
+	if (ImGui::Button(LBL("Move"))) {
+		Bank before = *bank; std::vector<int> remap; std::string e; moveTarget = std::clamp(moveTarget, 0, count - 1);
+		if (!MoveImage(*bank, selected, moveTarget, remap, &e)) { *bank = std::move(before); status = e; }
+		else if (commitStruct(ch, Fmt(TXT("Move image %d to %d"), selected, moveTarget), std::move(before), remap, host)) { selected = moveTarget; status = TXT("Moved. Every frame reference follows the images."); }
+	}
+	ImGui::EndDisabled();
+	if (ImGui::Button(LBL("Delete all unused..."))) { pend = {3, -1, true}; }
+	ImGui::SameLine(); if (ImGui::Button(LBL("Trim empty atlas pages"))) { Bank before = *bank; if (TrimPages(*bank)) commitStruct(ch, TXT("Trim atlas pages"), std::move(before), {}, host); else { *bank = std::move(before); status = TXT("No empty pages at the end."); } }
+	ImGui::TreePop();
+
+	// confirmation with the impact of the operation
+	if (pend.open) ImGui::OpenPopup("##cgmconfirm");
+	if (ImGui::BeginPopupModal("##cgmconfirm", nullptr, ImGuiWindowFlags_AlwaysAutoResize)) {
+		auto at = bank->buildAtlas();
+		std::vector<int> targets; if (pend.op == 3) { for (int i = 0; i < count; i++) if (bank->images[i].present && usage.count(i) == 0 && bank->images[i].drawable() && bank->dependants(i, at).empty()) targets.push_back(i); } else targets.push_back(pend.id);
+		int refs = 0; for (int t : targets) refs += usage.count(t);
+		std::vector<int> deps; if (pend.op != 3 && !targets.empty()) deps = bank->dependants(targets[0], at);
+		ImGui::Text(pend.op == 1 ? TXT("Delete image %d and renumber the ones after it?") : pend.op == 2 ? TXT("Replace image %d by an empty placeholder (ids stay)?") : TXT("Delete %d unused image(s) and renumber the rest?"), pend.op == 3 ? (int)targets.size() : pend.id);
+		if (refs) ImGui::TextColored(ImVec4(1.f, 0.6f, 0.2f, 1.f), TXT("%d layer(s) in the frames use it. Their reference will be cleared (set to no sprite)."), refs);
+		if (!deps.empty()) { std::string s; for (int d : deps) s += " " + std::to_string(d); ImGui::TextColored(ImVec4(1.f, 0.6f, 0.2f, 1.f), "%s%s", TXT("Images that borrow its cells:"), s.c_str()); ImGui::TextWrapped("%s", pend.op == 1 ? TXT("They are made independent first (pixels unchanged).") : TXT("Clear is refused while other images borrow its cells: use Delete, which makes them independent first.")); }
+		if (refs == 0 && deps.empty()) ImGui::TextDisabled("%s", TXT("Nothing references it."));
+		ImGui::TextDisabled("%s", TXT("Game code that is not in this character (menus, other characters) cannot be checked."));
+		const bool refuse = pend.op == 2 && !deps.empty();
+		ImGui::BeginDisabled(refuse);
+		if (ImGui::Button(LBL("Do it"))) {
+			Bank before = *bank; std::vector<int> remap; std::string e; bool ok = true;
+			if (pend.op == 1) ok = DeleteImage(*bank, pend.id, true, remap, &e);
+			else if (pend.op == 2) { ok = ClearImage(*bank, pend.id, &e); }
+			else {   // delete from the back so earlier ids stay valid; one combined remap
+				remap = IdentityRemap((size_t)count);
+				std::vector<int> cur = IdentityRemap((size_t)count);
+				for (int k = (int)targets.size() - 1; k >= 0 && ok; k--) { std::vector<int> r; const int idNow = cur[targets[k]]; ok = DeleteImage(*bank, idNow, true, r, &e); if (ok) for (int &c : cur) if (c >= 0) c = r[c]; }
+				remap = cur;
+			}
+			if (!ok) { *bank = std::move(before); status = e; }
+			else if (commitStruct(ch, pend.op == 1 ? Fmt(TXT("Delete image %d"), pend.id) : pend.op == 2 ? Fmt(TXT("Clear image %d"), pend.id) : Fmt(TXT("Delete %d unused images"), (int)targets.size()), std::move(before), remap, host)) { status = TXT("Done. Frame references were updated."); if (selected >= (int)bank->images.size()) selected = -1; }
+			pend.open = false; ImGui::CloseCurrentPopup();
+		}
+		ImGui::EndDisabled();
+		ImGui::SameLine(); if (ImGui::Button(LBL("Cancel"))) { pend.open = false; ImGui::CloseCurrentPopup(); }
+		ImGui::EndPopup();
+	}
+}
+
 void Window::draw(CharacterInstance *ch, const WindowHost &host) {
 	if (!open) return;
 	ImGui::SetNextWindowSize(ImVec2(1000, 640), ImGuiCond_FirstUseEver);
@@ -506,6 +600,7 @@ void Window::draw(CharacterInstance *ch, const WindowHost &host) {
 			std::vector<uint8_t> px; int w = 0, h = 0;
 			if (ok && fetch(*ch, selected, previewPal, previewPups, px, w, h)) upload(preview, px, w, h, 0, false); else { preview.w = preview.h = 0; }
 		}
+		if (bank && !ch->frameData.isHan2() && !ch->frameData.isHA4()) drawStructure(*ch, host);
 		ImGui::SeparatorText(TXT("Used by"));
 		if (selected < (int)usage.byImage.size() && !usage.byImage[selected].empty()) {
 			ImGui::BeginChild("##cgmuse", ImVec2(0, 110), ImGuiChildFlags_Borders);
