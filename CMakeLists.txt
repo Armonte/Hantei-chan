@@ -63,6 +63,7 @@ add_executable(${EXE}
 	src/han2_thumbs.cpp
 	src/fbarc/fb_archive.cpp
 	src/fbarc/fb_filepac.cpp
+	src/fbarc/fb_modern.cpp
 	src/i18n.cpp
 	src/i18n_layout.cpp
 	src/han2_pac_window.cpp
@@ -636,7 +637,7 @@ if(MINGW)
 endif()
 
 # Generalized French-Bread archive layer (PKFileInfo / FilePacHeaderA / PAC v1 / PB) + its command line front end.
-set(FBARC_SOURCES src/fbarc/fb_archive.cpp src/fbarc/fb_filepac.cpp src/han2/pac_archive.cpp src/han2/gof1_archive.cpp src/han2/misc_formats.cpp)
+set(FBARC_SOURCES src/fbarc/fb_archive.cpp src/fbarc/fb_filepac.cpp src/fbarc/fb_modern.cpp src/han2/pac_archive.cpp src/han2/gof1_archive.cpp src/han2/misc_formats.cpp)
 add_executable(fbarctool src/fbarc/fbarctool.cpp ${FBARC_SOURCES})
 target_include_directories(fbarctool PRIVATE "." "src")
 target_compile_definitions(fbarctool PRIVATE WIN32_LEAN_AND_MEAN UNICODE _UNICODE)
