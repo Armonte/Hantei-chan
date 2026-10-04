@@ -7,6 +7,27 @@ static uint32_t rd32(const uint8_t *p) { uint32_t v; memcpy(&v, p, 4); return v;
 
 static int BytesPerPixel(uint32_t format) { return format == 0 || format == 1 ? 2 : format == 2 ? 4 : format == 3 ? 3 : 0; }
 
+void DecodePixels16(const uint8_t *s, size_t px, int fmt16, std::vector<uint8_t> &rgba)
+{
+	rgba.resize(px * 4);
+	for (size_t i = 0; i < px; i++) {
+		uint8_t *d = &rgba[i * 4]; unsigned v = s[i * 2] | (s[i * 2 + 1] << 8);
+		if (fmt16 == 0) { d[0] = (uint8_t)(255 * ((v >> 10) & 31) / 31); d[1] = (uint8_t)(255 * ((v >> 5) & 31) / 31); d[2] = (uint8_t)(255 * (v & 31) / 31); d[3] = (v >> 15) ? 255 : 0; }
+		else { d[0] = (uint8_t)(255 * ((v >> 8) & 15) / 15); d[1] = (uint8_t)(255 * ((v >> 4) & 15) / 15); d[2] = (uint8_t)(255 * (v & 15) / 15); d[3] = (uint8_t)(255 * (v >> 12) / 15); }
+	}
+}
+
+void EncodePixels16(const uint8_t *rgba, size_t px, int fmt16, std::vector<uint8_t> &words)
+{
+	words.resize(px * 2);
+	for (size_t i = 0; i < px; i++) {
+		const uint8_t *c = rgba + i * 4; unsigned v;
+		if (fmt16 == 0) v = ((c[3] >= 128 ? 1u : 0u) << 15) | (((c[0] * 31 + 127) / 255) << 10) | (((c[1] * 31 + 127) / 255) << 5) | ((c[2] * 31 + 127) / 255);
+		else v = (((c[3] * 15 + 127) / 255) << 12) | (((c[0] * 15 + 127) / 255) << 8) | (((c[1] * 15 + 127) / 255) << 4) | ((c[2] * 15 + 127) / 255);
+		words[i * 2] = (uint8_t)v; words[i * 2 + 1] = (uint8_t)(v >> 8);
+	}
+}
+
 bool IsImg(const uint8_t *p, size_t n)
 {
 	if (n < 20 || rd32(p) != 0) return false;
