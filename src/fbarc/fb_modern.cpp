@@ -3,6 +3,8 @@
 //   * MBTL (MELTY BLOOD: TYPE LUMINA) data000..019.bin : no table inside the archives, the table is compiled into MBTL.exe; every entry is XOR-enciphered.
 // Layouts and the cipher: Hantei_Docs/update_2026_09/UNI2_MBTL_DATA.md (verified there against the games' own code). Neither archive is ever written.
 #include "fb_internal.h"
+#include <map>
+#include <mutex>
 
 namespace fbarc {
 namespace {
@@ -117,6 +119,15 @@ class MbtlArchive : public Archive {
 public:
 	std::string root;
 	std::vector<std::string> archOf;    // per entry: data file name
+	std::string stage;                  // HC_MBTL_ARCHIVE_DIR override (empty = none)
+	// file of an archive: the override folder's copy when present, else the install's
+	std::string DataFile(const std::string& name) const
+	{
+		namespace fs = std::filesystem;
+		std::error_code ec;
+		if (!stage.empty() && fs::exists(P(stage) / name, ec)) return (P(stage) / name).u8string();
+		return root + "/" + name;
+	}
 	std::vector<Entry>& ent() { return m_entries; }
 	void setPath(const std::string& p) { m_path = p; }
 	Kind kind() const override { return Kind::MbtlBin; }
@@ -124,7 +135,7 @@ public:
 	{
 		if (i >= m_entries.size()) { if (err) *err = "bad entry"; return false; }
 		const Entry& e = m_entries[i];
-		const std::string fp = root + "/" + archOf[i];
+		const std::string fp = DataFile(archOf[i]);
 		std::ifstream f(P(fp), std::ios::binary);
 		if (!f) { if (err) *err = "cannot open " + fp; return false; }
 		const size_t take = (size_t)std::min<uint64_t>(e.size, maxBytes);
@@ -136,7 +147,7 @@ public:
 		return true;
 	}
 	bool rebuild(const std::string&, const Edit&, std::string* err) const override { if (err) *err = "MBTL archives are read-only here (edit the working copy, or use the game's __Mods / fu folder)"; return false; }
-	std::string describe() const override { return "table read from MBTL.exe, per-entry XOR cipher, " + std::to_string(m_entries.size()) + " entries"; }
+	std::string describe() const override { return "table read from MBTL.exe" + std::string(stage.empty() ? "" : " (archives also read from HC_MBTL_ARCHIVE_DIR)") + ", per-entry XOR cipher, " + std::to_string(m_entries.size()) + " entries"; }
 };
 
 struct Pe {
@@ -207,8 +218,12 @@ std::unique_ptr<Archive> OpenUni2Data(const std::string& dPath, std::string* err
 std::unique_ptr<Archive> OpenMbtlExe(const std::string& exePath, std::string* err)
 {
 	namespace fs = std::filesystem;
-	std::ifstream f(P(exePath), std::ios::binary);
-	if (!f) { if (err) *err = "cannot open " + exePath; return nullptr; }
+	// HC_MBTL_ARCHIVE_DIR: read the data*.bin files from this folder first (a relocated copy, or the archives of an install that Steam is replacing:
+	// mid-update the install lacks data008.bin and the staged one in steamapps\downloading\<appid>\ may not match this exe's table: caller's risk).
+	std::string stageDir, useExe = exePath;
+	if (const char* ov = getenv("HC_MBTL_ARCHIVE_DIR")) stageDir = ov;
+	std::ifstream f(P(useExe), std::ios::binary);
+	if (!f) { if (err) *err = "cannot open " + useExe; return nullptr; }
 	std::vector<uint8_t> exe((std::istreambuf_iterator<char>(f)), std::istreambuf_iterator<char>());
 	Pe pe;
 	if (!pe.init(exe)) { if (err) *err = exePath + ": not a PE file"; return nullptr; }
@@ -243,6 +258,7 @@ std::unique_ptr<Archive> OpenMbtlExe(const std::string& exePath, std::string* er
 	auto a = std::make_unique<MbtlArchive>();
 	a->setPath(exePath);
 	a->root = P(exePath).parent_path().u8string();
+	a->stage = stageDir;
 	std::map<std::string, uint64_t> run;
 	std::error_code ec;
 	for (size_t i = 0; i < names.size(); i++) {
@@ -253,7 +269,8 @@ std::unique_ptr<Archive> OpenMbtlExe(const std::string& exePath, std::string* er
 		uint64_t off = run[top];
 		std::string an = arch ? arch : "";
 		if (arch && (top == "BattleRes" || top == "grpdat")) {
-			const uint64_t base = (uint64_t)fs::file_size(P(a->root) / arch, ec);
+			const fs::path bp = !stageDir.empty() && fs::exists(P(stageDir) / arch, ec) ? P(stageDir) / arch : P(a->root) / arch;
+			const uint64_t base = (uint64_t)fs::file_size(bp, ec);
 			if (!ec && off >= base) { an = top == "BattleRes" ? "data018.bin" : "data019.bin"; off -= base; }
 		}
 		run[top] += sz > 0 ? (uint64_t)sz : 0;
