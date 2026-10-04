@@ -273,6 +273,8 @@ const char* KindName(Kind k)
 	case Kind::RboPac: return "PAC v1 (RBO / GOF2, key E3DF59AC)";
 	case Kind::MbOldP: return "PAC v0 (Melty Blood PC .p, key E3DF59AC)";
 	case Kind::Gof1Pb: return "PB / GOF1 archive (key FA261EFB)";
+	case Kind::Uni2D: return "UNI2 d/ index + data files";
+	case Kind::MbtlBin: return "MBTL data*.bin (table in MBTL.exe, XOR cipher)";
 	default: return "unknown";
 	}
 }
@@ -321,6 +323,13 @@ std::unique_ptr<Archive> OpenAs(Kind k, const std::string& path, std::string* er
 
 std::unique_ptr<Archive> Open(const std::string& path, std::string* err)
 {
+	{
+		std::error_code dec;
+		if (std::filesystem::is_directory(P(path), dec)) return OpenUni2Data(path, err);
+		std::string fn = P(path).filename().string();
+		for (auto& c : fn) c = (char)tolower((unsigned char)c);
+		if (fn == "mbtl.exe") return OpenMbtlExe(path, err);
+	}
 	uint8_t head[64]{};
 	size_t n = 0;
 	{

@@ -21,7 +21,7 @@
 
 namespace fbarc {
 
-enum class Kind { Unknown, PkFileInfo, MbFilePacA, RboPac, MbOldP, Gof1Pb };
+enum class Kind { Unknown, PkFileInfo, MbFilePacA, RboPac, MbOldP, Gof1Pb, Uni2D, MbtlBin };
 const char* KindName(Kind k);
 
 struct Entry {
@@ -66,6 +66,10 @@ std::string NameFromUtf8(const std::string& utf8);
 
 // Header sniffing (first bytes of the file; `ext` is the lower-case extension with the dot, a tiebreaker only).
 Kind Detect(const uint8_t* head, size_t n, const std::string& ext = std::string());
+// Modern titles without a PAC-style header (read-only, fb_modern.cpp): UNI2's <install>\d folder of obfuscated index + data files, and MBTL's data000..019.bin
+// (the table is compiled into MBTL.exe: pass the exe). Open() routes a folder to the first and a file named MBTL.exe to the second.
+std::unique_ptr<Archive> OpenUni2Data(const std::string& dFolderUtf8, std::string* err);
+std::unique_ptr<Archive> OpenMbtlExe(const std::string& exeUtf8, std::string* err);
 // Detects from the file on disk, then opens the entry table.
 std::unique_ptr<Archive> Open(const std::string& utf8Path, std::string* err);
 // Opens as a specific kind.
