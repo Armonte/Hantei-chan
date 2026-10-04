@@ -191,7 +191,7 @@ static const char* ArchOfTop(const std::string& top)
 		{ "___English", "data000.bin" }, { "___Korean", "data001.bin" }, { "___Region", "data002.bin" }, { "___S_Chinese", "data003.bin" }, { "___T_Chinese", "data004.bin" },
 		{ "BattleRes", "data005.bin" }, { "bg", "data006.bin" }, { "Bgm", "data007.bin" }, { "data", "data008.bin" }, { "DLC", "data009.bin" }, { "grpdat", "data010.bin" },
 		{ "script", "data011.bin" }, { "se", "data012.bin" }, { "Shader", "data013.bin" }, { "System", "data014.bin" }, { "___French", "data015.bin" },
-		{ "___Portuguese", "data016.bin" }, { "___Spanish", "data017.bin" } };
+		{ "___Portuguese", "data016.bin" }, { "___Spanish", "data017.bin" }, { "titleBanner", "data020.bin" } };
 	for (auto& e : m) if (top == e.t) return e.a;
 	return nullptr;
 }
@@ -256,6 +256,22 @@ std::unique_ptr<Archive> OpenMbtlExe(const std::string& exePath, std::string* er
 		}
 	}
 	if (szPos < 0 || (size_t)szPos + 4 * names.size() > exe.size()) { if (err) *err = "size table not found in " + exePath; return nullptr; }
+	{   // size table start: right after the archive-name array in the 2025 build, one dword later in newer ones; pick the start where folder totals equal the archive file sizes
+		namespace fs2 = std::filesystem;
+		std::error_code ec;
+		std::map<std::string, int64_t> fsz;
+		for (auto& nm : names) { const std::string top = nm.substr(0, nm.find('/')); const char* ar = ArchOfTop(top); if (ar && !fsz.count(top) && top != "BattleRes" && top != "grpdat") { const auto sz = fs2::file_size(P(exePath).parent_path() / ar, ec); fsz[top] = ec ? -1 : (int64_t)sz; } }
+		int64_t best = szPos, bestScore = INT64_MAX;
+		for (int sh = 0; sh <= 8; sh += 4) {
+			if ((size_t)szPos + sh + 4 * names.size() > exe.size()) break;
+			std::map<std::string, int64_t> sum;
+			for (size_t i = 0; i < names.size(); i++) { int32_t v; memcpy(&v, &exe[(size_t)szPos + sh + 4 * i], 4); sum[names[i].substr(0, names[i].find('/'))] += v; }
+			int64_t score = 0; int cnt = 0;
+			for (auto& kv : fsz) if (kv.second >= 0) { score += std::llabs(sum[kv.first] - kv.second); cnt++; }
+			if (cnt && score < bestScore) { bestScore = score; best = szPos + sh; }
+		}
+		szPos = best;
+	}
 	auto a = std::make_unique<MbtlArchive>();
 	a->setPath(exePath);
 	a->root = P(exePath).parent_path().u8string();
