@@ -22,7 +22,7 @@ class CharacterInstance;
 
 namespace abrowser {
 
-enum class Type { Character, CharData, Image, CgBank, Parts, Script, Audio, Text, Palette, Model, Archive, Other };
+enum class Type { Character, CharData, Image, CgBank, Parts, Script, Audio, Text, Palette, Model, Archive, Other, Shared };
 const char *TypeName(Type t);
 Type TypeOfName(const std::string &utf8Name, Game ctx, bool inArchive);
 
@@ -80,7 +80,8 @@ struct Preview {
 	std::string stage;                             // what the worker is doing (Loading)
 };
 
-struct Thumb { unsigned tex = 0; int w = 0, h = 0; int state = 0; /*0 none 1 pending 2 ready 3 failed*/ uint64_t used = 0; };
+struct Thumb { unsigned tex = 0; int w = 0, h = 0; int state = 0; /*0 none 1 pending 2 ready 3 failed*/ uint64_t used = 0; std::shared_ptr<std::atomic<uint64_t>> wanted; /*UI frame this tile was last on screen: queued work for scrolled-away tiles is dropped*/ };
+extern std::atomic<uint64_t> g_uiFrame;
 
 struct ViewState { float zoom = 1.f; float panX = 0, panY = 0; bool fit = true; bool checker = true; };
 
@@ -151,7 +152,8 @@ void ApplyPreview(std::shared_ptr<Preview> pv);
 void ApplyThumb(const std::string &key, std::shared_ptr<std::vector<uint8_t>> rgba, int w, int h);
 
 // unpacking a character stack of a read-only / foreign archive as a working copy (returns the file to open: the txt, else the .ha6); loading any character file by content
-std::string Materialize(const SourceP &owner, const Item &it, std::string *err);
+// light = only what a thumbnail needs (txt, .ha6, .pal); *cgIndex = the item of the project's sprite bank (read it straight from the archive)
+std::string Materialize(const SourceP &owner, const Item &it, std::string *err, bool light = false, int *cgIndex = nullptr);
 bool LoadCharacterFile(CharacterInstance &ch, const std::string &path, std::string *fmt, std::string *err);
 
 // opening / extraction

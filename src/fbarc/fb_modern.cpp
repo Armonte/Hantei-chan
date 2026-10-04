@@ -248,9 +248,10 @@ std::unique_ptr<Archive> OpenMbtlExe(const std::string& exePath, std::string* er
 		if (dv > 0) {
 			const uint32_t ptr = (uint32_t)dv;
 			for (size_t q = Find(exe, &ptr, 4); q != (size_t)-1; q = Find(exe, &ptr, 4, q + 4)) {
-				bool ok = q + 80 <= exe.size();
-				for (int i = 0; i < 20 && ok; i++) { uint32_t v; memcpy(&v, &exe[q + 4 * i], 4); const int64_t fo = pe.v2f(v); ok = fo >= 0 && (size_t)fo + 4 <= exe.size() && memcmp(&exe[(size_t)fo], "data", 4) == 0; }
-				if (ok) { szPos = (int64_t)q + 80; break; }
+				// the array of archive names: as many consecutive pointers to "dataNNN" as there are (20 in the 2025 build, 21 once data020.bin exists); the size table follows it
+				int n = 0;
+				for (; q + 4 * (size_t)(n + 1) <= exe.size() && n < 64; n++) { uint32_t v; memcpy(&v, &exe[q + 4 * n], 4); const int64_t fo = pe.v2f(v); if (fo < 0 || (size_t)fo + 4 > exe.size() || memcmp(&exe[(size_t)fo], "data", 4) != 0) break; }
+				if (n >= 20) { szPos = (int64_t)q + 4 * n; break; }
 			}
 		}
 	}

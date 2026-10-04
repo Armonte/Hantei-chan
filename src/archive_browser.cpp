@@ -1,6 +1,8 @@
 // Archive browser: model, worker thread, decoders, write-back. The ImGui side is archive_browser_ui.cpp.
 #include "archive_browser_state.h"
 #include "game_table.h"
+#include "tlog.h"
+#include "ini.h"
 #include "framedata_pb2k1.h"
 #include "han2/qoh_dat.h"
 #include "cgm/cgm_bank.h"
@@ -61,6 +63,7 @@ const char *TypeName(Type t)
 	switch (t) {
 	case Type::Character: return "Character";
 	case Type::CharData: return "Character data";
+	case Type::Shared: return "Shared / effect data";
 	case Type::Image: return "Image";
 	case Type::CgBank: return "Sprite bank";
 	case Type::Parts: return "Parts";
@@ -79,7 +82,7 @@ Type TypeOfName(const std::string &name, Game ctx, bool inArchive)
 	if (e == ".ha6" && (ctx == Game::UNI2 || ctx == Game::MBTL || ctx == Game::DFCI || ctx == Game::UNIST || ctx == Game::UNI)) {
 		// modern layout: <Name>/<Name>.HA6 is the character; _temp / BaseData / effect are shared pattern libraries, _csel / _coloredit are menu-only sets
 		const std::string l = Lower(name), b = Lower(StemOf(name));
-		if (b[0] == '_' || b == "basedata" || b.rfind("effect", 0) == 0 || l.find("/_csel/") != std::string::npos || l.find("/_coloredit/") != std::string::npos || l.rfind("_csel/", 0) == 0) return Type::CharData;
+		if (b[0] == '_' || b == "basedata" || b.rfind("effect", 0) == 0 || (b.size() > 2 && b.compare(b.size() - 2, 2, "_s") == 0) || l.find("/_csel/") != std::string::npos || l.find("/_coloredit/") != std::string::npos || l.rfind("_csel/", 0) == 0) return Type::Shared;   // <Name>_s.HA6 = the character's shared / effect set
 		return Type::Character;
 	}
 	if (e == ".dt2" || e == ".ha6" || e == ".chr") return Type::Character;
@@ -97,44 +100,48 @@ Type TypeOfName(const std::string &name, Game ctx, bool inArchive)
 }
 
 // ---- worker thread ----------------------------------------------------------------------------------------------------------------------------------
+std::atomic<uint64_t> g_uiFrame{0};
 namespace {
+// Three worker threads share two queues: previews / archive mounts (hi) first, then thumbnails, newest request first (what is on screen now).
 struct Worker {
 	std::mutex mx;
 	std::condition_variable cv;
 	std::deque<std::function<void()>> hi, lo;
 	std::deque<std::function<void()>> results;
-	std::thread th;
-	bool stop = false;
+	bool started = false, stop = false;
 	std::atomic<int> active{0};
 	void start()
 	{
-		if (th.joinable()) return;
-		th = std::thread([this] {
-			han2::SetNoGlUpload(true);   // thumbnails load characters without creating GL textures
-			for (;;) {
-				std::function<void()> f;
-				{
-					std::unique_lock<std::mutex> lk(mx);
-					cv.wait(lk, [this] { return stop || !hi.empty() || !lo.empty(); });
-					if (stop) return;
-					if (!hi.empty()) { f = std::move(hi.front()); hi.pop_front(); }
-					else { f = std::move(lo.back()); lo.pop_back(); }   // newest thumbnail request first: what is on screen now
-					active++;
+		if (started) return;
+		started = true;
+		for (int i = 0; i < 3; i++) {
+			std::thread th([this] {
+				han2::SetNoGlUpload(true);   // thumbnails load characters without creating GL textures
+				for (;;) {
+					std::function<void()> f;
+					{
+						std::unique_lock<std::mutex> lk(mx);
+						cv.wait(lk, [this] { return stop || !hi.empty() || !lo.empty(); });
+						if (stop) return;
+						if (!hi.empty()) { f = std::move(hi.front()); hi.pop_front(); }
+						else { f = std::move(lo.back()); lo.pop_back(); }
+						active++;
+					}
+					try { f(); } catch (...) {}
+					active--;
 				}
-				try { f(); } catch (...) {}
-				active--;
-			}
-		});
-		th.detach();
+			});
+			th.detach();
+		}
 	}
 };
-Worker &W() { static Worker *w = new Worker(); return *w; }   // leaked on purpose: the detached worker may outlive static destruction
+Worker &W() { static Worker *w = new Worker(); return *w; }   // leaked on purpose: the detached workers may outlive static destruction
 }
 
 void PostJob(std::function<void()> f, bool low)
 {
-	Worker &w = W(); w.start();
-	{ std::lock_guard<std::mutex> lk(w.mx); (low ? w.lo : w.hi).push_back(std::move(f)); }
+	Worker &w = W();
+	{ std::lock_guard<std::mutex> lk(w.mx); w.start(); (low ? w.lo : w.hi).push_back(std::move(f)); }
 	w.cv.notify_one();
 }
 void PostMain(std::function<void()> f) { Worker &w = W(); std::lock_guard<std::mutex> lk(w.mx); w.results.push_back(std::move(f)); }
@@ -151,7 +158,7 @@ bool WorkerBusy()
 {
 	Worker &w = W();
 	std::lock_guard<std::mutex> lk(w.mx);
-	return w.active > 0 || !w.hi.empty() || !w.results.empty();
+	return w.active > 0 || !w.hi.empty() || !w.lo.empty() || !w.results.empty();
 }
 bool Busy()
 {
@@ -518,7 +525,9 @@ void MountArchive(const std::string &path, int group, bool select)
 	std::weak_ptr<Source> ws = s;
 	PostJob([ws, group] {
 		auto s = ws.lock(); if (!s || s->closed) return;
+		const auto _t0 = tlog::Now();
 		FillArchiveSource(*s);
+		tlog::Log("index %s: %.1f ms, %zu entries", s->label.c_str(), tlog::Ms(_t0, tlog::Now()), s->items.size());
 		const bool ok = s->state != Source::Failed;
 		PostMain([ws, group, ok] {
 			auto s = ws.lock(); if (!s) return;
@@ -763,7 +772,7 @@ static std::string NormRel(std::string p)
 	std::string o; for (size_t k = 0; k < parts.size(); k++) o += (k ? "/" : "") + parts[k];
 	return o;
 }
-std::string Materialize(const SourceP &o, const Item &it, std::string *err)
+std::string Materialize(const SourceP &o, const Item &it, std::string *err, bool light, int *cgIndex)
 {
 	if (!o || o->kind != Source::Fb || !o->fb) { if (err) *err = "not an archive entry"; return {}; }
 	std::unordered_map<std::string, size_t> byName;
@@ -806,7 +815,9 @@ std::string Materialize(const SourceP &o, const Item &it, std::string *err)
 		for (int i = 0; i < 40; i++) { char k[16]; snprintf(k, sizeof k, "File%02d", i); ref("DataFile", k); snprintf(k, sizeof k, "File%03d", i); ref("DataFile", k); }
 		ref("DataFile", "File");
 		for (int i = 0; i < 8; i++) { char k[16]; snprintf(k, sizeof k, "File%02d", i); ref("BmpcutFile", k); ref("PAniFile", k); }
+		if (cgIndex) { GetPrivateProfileStringA("BmpcutFile", "File00", "", b, sizeof b, tp.c_str()); *cgIndex = -1; if (b[0]) { auto f2 = byName.find(Lower(NormRel((DirOf(txtName).empty() ? "" : DirOf(txtName) + "/") + b))); if (f2 != byName.end()) *cgIndex = (int)f2->second; } }
 	}
+	if (light) for (auto itw = want.begin(); itw != want.end();) { const std::string x = ExtOf(o->items[*itw].name); if (x == ".ha6" || x == ".pal" || o->items[*itw].name == txtName) ++itw; else itw = want.erase(itw); }
 	for (size_t i : want) if (!copyOne(i)) return {};
 	const auto mi = byName.find(Lower(it.name));
 	return (root / P8(!txtName.empty() ? txtName : o->items[mi->second].name)).u8string();
@@ -853,6 +864,33 @@ bool LoadCharacterFile(CharacterInstance &ch, const std::string &path, std::stri
 	return false;
 }
 
+// Fast path for thumbnails and previews of a txt-stack character: the HA6 stack and the sprite bank, nothing else (no .pat parts: the idle frame of every shipped
+// stack is drawn from the bank). Archive entries are read straight into memory; only the small .txt / .ha6 / .pal files are staged on disk.
+static bool LoadThumbStack(CharacterInstance &ch, const CharJob &j, std::string *fmt, std::string *err)
+{
+	std::string txt;
+	int cgi = -1;
+	std::function<bool(const std::string &, std::vector<uint8_t> &)> readCg;
+	if (j.kind == CharJob::Stack) {
+		txt = Materialize(j.owner, j.item, err, true, &cgi);
+		if (txt.empty()) return false;
+		if (!(ExtOf(j.item.name) == ".ha6" && ExtOf(txt) == ".txt")) return false;
+		readCg = [&](const std::string &, std::vector<uint8_t> &b) { try { return cgi >= 0 && ReadItem(*j.owner, j.owner->items[cgi], b, nullptr); } catch (const std::exception &e) { tlog::Log("readCg exception %s", e.what()); return false; } };
+	} else {
+		const fs::path base = P8(j.path); std::error_code ec;
+		if (ExtOf(j.path) != ".ha6") return false;
+		for (const char *c : { "_0.txt", ".txt" }) {
+			const fs::path t = base.parent_path() / P8(base.stem().u8string() + c); char probe[16]{};
+			if (fs::exists(t, ec)) { GetPrivateProfileStringA("DataFile", "FileNum", "", probe, sizeof probe, t.u8string().c_str()); if (probe[0]) { txt = t.u8string(); break; } }
+		}
+		if (txt.empty()) return false;
+	}
+	std::string name; { std::string t = txt; std::replace(t.begin(), t.end(), '/', '\\'); name = BaseName(t); }
+	if (!LoadStackLight(&ch.frameData, &ch.cg, txt, readCg)) { if (err) *err = "could not load the character stack " + name; return false; }
+	if (fmt) *fmt = "Hantei6 character, txt stack (" + name + ")";
+	return true;
+}
+
 static bool BuildCharacterPreview(const CharJob &j, int maxSide, Preview &pv)
 {
 	CharacterInstance ch;
@@ -868,10 +906,13 @@ static bool BuildCharacterPreview(const CharJob &j, int maxSide, Preview &pv)
 		break;
 	case CharJob::Stack:
 	case CharJob::Loose: {
+		std::string fmt0;
+		if (LoadThumbStack(ch, j, &fmt0, &err)) { pv.facts.push_back({ "Format", fmt0 }); break; }
+		err.clear();
 		std::string path = j.path;
-		if (j.kind == CharJob::Stack) { path = Materialize(j.owner, j.item, &err); if (path.empty()) { pv.text = err; return false; } }
+		if (j.kind == CharJob::Stack) { tlog::Scope _t("materialize"); path = Materialize(j.owner, j.item, &err); if (path.empty()) { pv.text = err; return false; } }
 		std::string fmt;
-		if (!LoadCharacterFile(ch, path, &fmt, &err)) { pv.text = err; return false; }
+		{ tlog::Scope _t("LoadCharacterFile(total)"); if (!LoadCharacterFile(ch, path, &fmt, &err)) { pv.text = err; return false; } }
 		pv.facts.push_back({ "Format", fmt });
 		break;
 	}
@@ -879,6 +920,7 @@ static bool BuildCharacterPreview(const CharJob &j, int maxSide, Preview &pv)
 	AddCharFacts(ch, pv);
 	int pat = 0, fr = 0;
 	std::vector<uint8_t> px; int w = 0, h = 0;
+	tlog::Scope _tr("render thumb");
 	if (han2::FindIdleFrame(ch.frameData, pat, fr) && han2::RenderFrameThumb(ch.frameData, ch.cg, ch.parts, pat, fr, maxSide, px, w, h)) {
 		pv.rgba = std::move(px); pv.w = w; pv.h = h; pv.isCharacter = true;
 		pv.facts.push_back({ "Thumbnail", "pattern " + Num(pat) + ", frame " + Num(fr) });
@@ -1029,12 +1071,59 @@ std::string ThumbKey(const Source &s, const Item &it)
 	return o.path + "|" + std::to_string(idx) + "|" + it.name;
 }
 
-static void ThumbJob(SourceP src, Item item, CharJob cj, bool charOk, std::string key)
+// ---- persistent thumbnail cache -------------------------------------------------------------------------------------------------------------------------
+// %LOCALAPPDATA%\Hantei-chan\thumbcache\<hash>.thm : "THM1", u16 w, u16 h, RGBA. Key = archive path + entry + size + the source file's mtime (+ a format version).
+static fs::path CacheDir()
+{
+	static fs::path d = [] { const char *e = getenv("LOCALAPPDATA"); std::error_code ec; fs::path p = e ? fs::path(e) / "Hantei-chan" / "thumbcache" : fs::temp_directory_path(ec) / "hantei_thumbcache"; fs::create_directories(p, ec); return p; }();
+	return d;
+}
+static std::string CacheFile(const Source &src, const Item &item)
+{
+	uint32_t idx; const Source &o = Owner(src, item, idx);
+	std::error_code ec;
+	const std::string srcPath = o.kind == Source::Folder ? item.key : o.path;
+	const auto mt = fs::last_write_time(P8(srcPath), ec).time_since_epoch().count();
+	std::string k = Lower(srcPath) + "|" + item.name + "|" + std::to_string(item.size) + "|" + std::to_string((long long)mt) + "|v3";
+	uint64_t h = 1469598103934665603ull; for (unsigned char c : k) { h ^= c; h *= 1099511628211ull; }
+	char b[40]; snprintf(b, sizeof b, "%016llx.thm", (unsigned long long)h);
+	return (CacheDir() / b).u8string();
+}
+static bool CacheLoad(const std::string &file, std::vector<uint8_t> &px, int &w, int &h)
+{
+	std::ifstream f(P8(file), std::ios::binary);
+	uint8_t hd[8]; if (!f.read((char *)hd, 8) || memcmp(hd, "THM1", 4)) return false;
+	w = hd[4] | (hd[5] << 8); h = hd[6] | (hd[7] << 8);
+	if (w <= 0 || h <= 0 || w > 512 || h > 512) return false;
+	px.resize((size_t)w * h * 4);
+	return (bool)f.read((char *)px.data(), (std::streamsize)px.size());
+}
+static void CacheStore(const std::string &file, const std::vector<uint8_t> &px, int w, int h)
+{
+	std::ofstream f(P8(file + ".tmp"), std::ios::binary);
+	const uint8_t hd[8] = { 'T', 'H', 'M', '1', (uint8_t)(w & 255), (uint8_t)(w >> 8), (uint8_t)(h & 255), (uint8_t)(h >> 8) };
+	f.write((const char *)hd, 8); f.write((const char *)px.data(), (std::streamsize)px.size()); f.close();
+	std::error_code ec; fs::rename(P8(file + ".tmp"), P8(file), ec);
+}
+
+static void ThumbJob(SourceP src, Item item, CharJob cj, bool charOk, std::string key, std::shared_ptr<std::atomic<uint64_t>> wanted)
 {
 	auto fail = [&] { PostMain([key] { auto &c = S().thumbCache[key]; c.state = 3; S().thumbsPending = std::max(0, S().thumbsPending - 1); }); };
 	if (src->closed) { fail(); return; }
+	if (g_uiFrame.load() > wanted->load() + 4) {   // scrolled away before it started: drop it, it is requested again when it comes back
+		PostMain([key] { auto &c = S().thumbCache[key]; if (c.state == 1) c.state = 0; S().thumbsPending = std::max(0, S().thumbsPending - 1); });
+		return;
+	}
+	const auto t0 = tlog::Now();
 	std::vector<uint8_t> px; int w = 0, h = 0;
 	std::string err;
+	const std::string cacheFile = CacheFile(*src, item);
+	if (CacheLoad(cacheFile, px, w, h)) {
+		auto data = std::make_shared<std::vector<uint8_t>>(std::move(px));
+		tlog::Log("thumb %s: cache hit %.1f ms", item.name.c_str(), tlog::Ms(t0, tlog::Now()));
+		PostMain([key, data, w, h] { ApplyThumb(key, data, w, h); });
+		return;
+	}
 	if ((item.type == Type::Character || item.type == Type::CharData) && charOk) {
 		Preview pv;
 		if (!BuildCharacterPreview(cj, 96, pv) || pv.w <= 0) { fail(); return; }
@@ -1056,6 +1145,8 @@ static void ThumbJob(SourceP src, Item item, CharJob cj, bool charOk, std::strin
 		}
 		if (!done) { fail(); return; }
 	} else { fail(); return; }
+	CacheStore(cacheFile, px, w, h);
+	tlog::Log("thumb %s: decoded %.1f ms", item.name.c_str(), tlog::Ms(t0, tlog::Now()));
 	auto data = std::make_shared<std::vector<uint8_t>>(std::move(px));
 	PostMain([key, data, w, h] { ApplyThumb(key, data, w, h); });
 }
@@ -1069,11 +1160,13 @@ void RequestThumb(int sourceIdx, int itemIdx)
 	const std::string key = ThumbKey(*s, item);
 	Thumb &t = st.thumbCache[key];
 	if (t.state != 0) return;
-	if (!(item.type == Type::Character || item.type == Type::CharData || item.type == Type::Image || item.type == Type::CgBank)) { t.state = 3; return; }
+	if (!(item.type == Type::Character || item.type == Type::CharData || item.type == Type::Image || item.type == Type::CgBank)) { t.state = 3; return; }   // Shared / effect data and the rest get a type badge, not a thumbnail
 	t.state = 1; st.thumbsPending++;
+	t.wanted = std::make_shared<std::atomic<uint64_t>>(g_uiFrame.load());
+	auto wanted = t.wanted;
 	CharJob cj; bool charOk = false;
 	if (item.type == Type::Character || item.type == Type::CharData) charOk = MakeCharJob(s, item, cj);
-	PostJob([s, item, cj, charOk, key] { ThumbJob(s, item, cj, charOk, key); }, true);
+	PostJob([s, item, cj, charOk, key, wanted] { ThumbJob(s, item, cj, charOk, key, wanted); }, true);
 }
 
 // ---- opening ----------------------------------------------------------------------------------------------------------------------------------------
