@@ -47,7 +47,10 @@ unsigned int *fd_sequence_load(unsigned int *data, const unsigned int *data_end,
 // character's own patterns).
 // stubs (optional) receives name/flag-only entries that land on a slot that
 // already has frames from an earlier file.
-unsigned int *fd_main_load(unsigned int *data, const unsigned int *data_end, std::vector<Sequence> &sequences, unsigned int nsequences, bool utf8, std::vector<unsigned int> *definedIds = nullptr, bool fillOnly = false, std::map<unsigned int, Sequence> *stubs = nullptr);
+unsigned int *fd_main_load(unsigned int *data, const unsigned int *data_end, std::vector<Sequence> &sequences, unsigned int nsequences, bool utf8, std::vector<unsigned int> *definedIds = nullptr, bool fillOnly = false, std::map<unsigned int, Sequence> *stubs = nullptr,
+	std::map<unsigned int, Sequence> *templates = nullptr);
+// templates (with fillOnly): PFLG&1 blocks of a fallback file (BaseData) for
+// slots that already have frames. The game merges those (D17).
 
 
 

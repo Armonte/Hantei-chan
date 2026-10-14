@@ -6,7 +6,7 @@
 //   --pattern N / --frame N   select pattern / frame in the opened view
 //   --palette N          palette number
 //   --zoom F             view zoom
-//   --game auto|mbaacc|uni|mbtl   HA6 dialect override (View > Game format)
+//   --game auto|mbaacc|uni2|unist|unib|mbtl   default HA6 dialect for files with no per-file choice (View > Game format)
 //   --no-pups            ignore PUPS (draw with <cg>.pal only)
 //   --compare N          overlay pattern N of the same character (pattern comparison)
 //   --tool NAME          open a tool window: hud, bgm, compare, patterns, notes, vars, keys
@@ -28,7 +28,8 @@
 //                        (checks shortcut routing through the HWND subclass)
 //   --stats <file>       frames 10-19: average scene render / onion-skin cost (CPU ms)
 //   --ui-script <file>   run a scripted UI session: one command per line (# = comment): wait N | waitidle | capture <png> | quit | openany <path> |
-//                        pattern N | frame N | zoomview N | and every abrowser::ScriptCommand (browse, source, filter, type, select, open, key, ...)
+//                        pattern N | frame N | zoomview N | copypattern N | pastepattern N | gameformat G | layer N | switchview N |
+//                        and every abrowser::ScriptCommand (browse, source, filter, type, select, open, key, ...)
 //   --quit               quit after the actions even without --capture
 //   --tool tag           open the Tag / Team window (experimental); --tool gamelink opens the Game Link window
 //   --tag-ini <path>     the tag_tuning.ini it edits (default: next to the linked MBAA.exe)

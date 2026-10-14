@@ -2,6 +2,7 @@
 #define FRAME_DISP_AT_H_GUARD
 
 #include "frame_disp_common.h"
+#include "../uni_vector_table.h"
 #include "../cg.h"
 #include "../i18n.h"
 
@@ -112,16 +113,22 @@ inline void AtDisplay(Frame_AT *at, FrameData *frameData = nullptr, int patternI
 	if(im::InputInt(LBL("Untech time"), &at->untechTime, 0,0)) {
 		markModified();
 	}
-	i18n::SameLineFit(i18n::FieldWidth(width, LBL("Circuit break time"))); im::SetNextItemWidth(width);
-	if(im::InputInt(LBL("Circuit break time"), &at->breakTime, 0,0)) {
-		markModified();
-	}
+	// D14: ATBT (circuit break time) and ATUH (extra gravity) are MBAACC
+	// tags. UNI2/MBTL never read ATBT (no case in Han6_LoadFrameAT, uni2.exe
+	// 0x4C6CB0 / MBTL 0x4A8CE0) and read ATUH into a local that is dropped,
+	// so the UNI writer doesn't emit them: the fields are hidden there.
+	if(!uniFormat) {
+		i18n::SameLineFit(i18n::FieldWidth(width, LBL("Circuit break time"))); im::SetNextItemWidth(width);
+		if(im::InputInt(LBL("Circuit break time"), &at->breakTime, 0,0)) {
+			markModified();
+		}
 
-	im::SetNextItemWidth(width);
-	if(im::InputFloat(LBL("Extra gravity"), &at->extraGravity, 0,0)) {
-		markModified();
+		im::SetNextItemWidth(width);
+		if(im::InputFloat(LBL("Extra gravity"), &at->extraGravity, 0,0)) {
+			markModified();
+		}
+		im::SameLine(0.f, 20);
 	}
-	im::SameLine(0.f, 20);
 	if(uniFormat) {
 		// UNI2/MBTL ATNG is a byte with values up to 65 (not a bool).
 		im::SetNextItemWidth(width);
@@ -160,26 +167,41 @@ inline void AtDisplay(Frame_AT *at, FrameData *frameData = nullptr, int patternI
 		markModified();
 	}
 
-	im::SetNextItemWidth(width);
-	if(im::InputInt(LBL("VS damage"), &at->red_damage, 0, 0)) {
-		markModified();
+	// D14: UNI2/MBTL keep only the high words of ATVV (damage +60, meter
+	// +64); the low words (MBAACC VS damage, guard damage) are never read and
+	// the UNI writer saves ATAT/ATCA. Those two fields are hidden there.
+	if(!uniFormat) {
+		im::SetNextItemWidth(width);
+		if(im::InputInt(LBL("VS damage"), &at->red_damage, 0, 0)) {
+			markModified();
+		}
+		im::SameLine(0.f, 20);
 	}
-	im::SameLine(0.f, 20); im::SetNextItemWidth(width);
+	im::SetNextItemWidth(width);
 	if(im::InputInt(LBL("Damage"), &at->damage, 0, 0)) {
 		markModified();
 	}
 
-	im::SetNextItemWidth(width);
-	if(im::InputInt(LBL("Guard damage"), &at->guard_damage, 0, 0)) {
-		markModified();
+	if(!uniFormat) {
+		im::SetNextItemWidth(width);
+		if(im::InputInt(LBL("Guard damage"), &at->guard_damage, 0, 0)) {
+			markModified();
+		}
+		im::SameLine(0.f, 20);
+	} else {
+		im::SameLine(0.f, 20);
 	}
-	im::SameLine(0.f, 20); im::SetNextItemWidth(width);
+	im::SetNextItemWidth(width);
 	if(im::InputInt(LBL("Meter gain"), &at->meter_gain, 0, 0)) {
 		markModified();
+	}
+	if(uniFormat) {
+		i18n::TextDisabledWrapped("%s", TXT("VS damage, guard damage, circuit break time and extra gravity are MBAACC-only: this game does not read them."));
 	}
 
 	im::Separator();
 	auto comboWidth = (im::GetWindowWidth())/4.f;
+	const univec::Names* uniVectors = uniFormat && frameData ? univec::ForFile(frameData->m_sourcePath) : nullptr;
 
 	// Guard Vector
 	im::Text(TXT("Guard Vector:"));
@@ -202,7 +224,17 @@ inline void AtDisplay(Frame_AT *at, FrameData *frameData = nullptr, int patternI
 		for(int i = 0; i < 3; i++)
 		{
 			im::PushID(100+i);
-			if(ShowComboWithManual(vectorLabels[i], &at->guardVector[i], hitVectorList, IM_ARRAYSIZE(hitVectorList), width*4, width)) {
+			if(uniFormat) {
+				// UNI2/MBTL: ids index data/VectorTable.txt, not MBAACC's list.
+				im::SetNextItemWidth(width);
+				if(im::InputInt(LBL(vectorLabels[i]), &at->guardVector[i], 0, 0)) markModified();
+				im::SameLine();
+				const std::string* nm = nullptr;
+				if(uniVectors) { auto it = uniVectors->find(at->guardVector[i]); if(it != uniVectors->end()) nm = &it->second; }
+				if(nm) im::TextDisabled("%s", nm->c_str());
+				else if(uniVectors) im::TextDisabled("%s", TXT("(not in VectorTable.txt)"));
+				else im::TextDisabled("%s", TXT("(VectorTable.txt not found)"));
+			} else if(ShowComboWithManual(vectorLabels[i], &at->guardVector[i], hitVectorList, IM_ARRAYSIZE(hitVectorList), width*4, width)) {
 			markModified();
 		}
 			im::PopID();
@@ -244,7 +276,17 @@ inline void AtDisplay(Frame_AT *at, FrameData *frameData = nullptr, int patternI
 		for(int i = 0; i < 3; i++)
 		{
 			im::PushID(200+i);
-			if(ShowComboWithManual(vectorLabels[i], &at->hitVector[i], hitVectorList, IM_ARRAYSIZE(hitVectorList), width*4, width)) {
+			if(uniFormat) {
+				// UNI2/MBTL: ids index data/VectorTable.txt, not MBAACC's list.
+				im::SetNextItemWidth(width);
+				if(im::InputInt(LBL(vectorLabels[i]), &at->hitVector[i], 0, 0)) markModified();
+				im::SameLine();
+				const std::string* nm = nullptr;
+				if(uniVectors) { auto it = uniVectors->find(at->hitVector[i]); if(it != uniVectors->end()) nm = &it->second; }
+				if(nm) im::TextDisabled("%s", nm->c_str());
+				else if(uniVectors) im::TextDisabled("%s", TXT("(not in VectorTable.txt)"));
+				else im::TextDisabled("%s", TXT("(VectorTable.txt not found)"));
+			} else if(ShowComboWithManual(vectorLabels[i], &at->hitVector[i], hitVectorList, IM_ARRAYSIZE(hitVectorList), width*4, width)) {
 			markModified();
 		}
 			im::PopID();

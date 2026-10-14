@@ -232,9 +232,14 @@ struct Frame_EF {
 	int		parameters[12];
 };
 
+// UNI2/MBTL read up to 10 IFPR parameters (IF record 0x2C = type + 10 ints;
+// Han6_LoadFrameIF uni2.exe 0x4C7490 skips any beyond the 10th). MBAACC
+// files use at most 9. Keep this in step with kMaxIfParams.
+constexpr int kMaxIfParams = 10;
+constexpr int kMaxEfParams = 12;
 struct Frame_IF {
 	int		type;
-	int		parameters[9]; //Max used value is 9. I don't know if parameters beyond have any effect..
+	int		parameters[kMaxIfParams];
 };
 
 // Helper function for copying vector contents (for EF/IF copy operations)
@@ -394,13 +399,50 @@ struct Command {
 struct Ha4Container; // framedata_ha4.h
 struct Han2Container; // framedata_han2.h
 
-// Which game's HA6 dialect a character uses. Detected from the data
-// (AFGX layer count: 5 = UNI/UNIST/UNI2, 3 = MBTL; ATV2/AFGX absent =
-// MBAACC) and overridable from the UI (View > Game format).
-enum class Ha6Game { Auto = 0, MBAACC = 1, UNI = 2, MBTL = 3 };
+// Which game's HA6 dialect a character uses. Detected per file when it is
+// loaded (DetectHa6Game) and overridable per file (View > Game format).
+// UNI = UNI2 (5 AFGX layers). UNIB (UNDER NIGHT IN-BIRTH, 3 layers) and MBTL
+// (3 layers) share the layer count; UNIB is told apart by PSTS/PLVL, the
+// MBTL-only AFJH/ATHH/ATC0 tags and the file naming. UNIST is never
+// auto-detected (no data checked); it saves like UNI2.
+enum class Ha6Game { Auto = 0, MBAACC = 1, UNI = 2, MBTL = 3, UNIB = 4, UNIST = 5 };
 const char* Ha6GameName(Ha6Game g);
-// Global manual override (Auto = use detection).
+bool Ha6GameIsUni(Ha6Game g);          // any AFGX/ATV2 dialect
+int Ha6GameLayerCount(Ha6Game g);      // AFGX layers the game reads (1 for MBAACC)
+// Command-line default (--game). Applies to files with no per-file override.
 extern Ha6Game g_ha6GameOverride;
+
+template<template<typename> class A> struct Sequence_T;
+// Detects the dialect of loaded HA6 data. `path` (any file of the stack) only
+// breaks the 3-layer UNIB/MBTL tie when no tag decides it.
+Ha6Game DetectHa6Game(const std::vector<Sequence_T<std::allocator>>& seqs, const std::string& path);
+
+// What converting pasted data to a file's dialect changed (D13).
+struct Ha6ConvertReport {
+	Ha6Game to = Ha6Game::Auto;
+	bool adopted = false;          // the file was empty: it took the pasted dialect instead
+	int patterns = 0;              // patterns converted
+	int frames = 0;                // frames that changed
+	int layersDropped = 0;         // AFGX layers past the game's count (or past layer 0 for MBAACC)
+	int spriteLayersDropped = 0;   //   ... of which had a sprite
+	int mbaaccFieldsCleared = 0;   // frames that lost MBAACC-only AT fields (VS/guard damage, circuit break, extra gravity)
+	int uniFieldsCleared = 0;      // frames that lost UNI/MBTL-only fields (AFID, AFPA, AFJH, AFPL, ASCF, UNI AT tags)
+	bool changed() const { return patterns || frames || adopted; }
+	void add(const Ha6ConvertReport& o) {
+		patterns += o.patterns; frames += o.frames; layersDropped += o.layersDropped;
+		spriteLayersDropped += o.spriteLayersDropped; mbaaccFieldsCleared += o.mbaaccFieldsCleared;
+		uniFieldsCleared += o.uniFieldsCleared; adopted |= o.adopted; if (o.to != Ha6Game::Auto) to = o.to;
+	}
+};
+
+// BaseData PFLG&1 template merge (D17), as Han6_MergeTemplatePattern_PFLG
+// (uni2.exe 0x4C4B40, MBTL.exe 0x4A6A00) does it: the result keeps the
+// template's frames (count, timing, AS, AT, EF, IF); for each frame up to the
+// smaller count it takes the character's per-layer usePat/sprite/AFOF and
+// hurt boxes, and its attack boxes on frames where the template has an AT
+// block. The pattern flags become the character's.
+Sequence_T<std::allocator> MergeTemplatePattern(const Sequence_T<std::allocator>& tmpl,
+	const Sequence_T<std::allocator>& chr, int layerCount);
 
 class FrameData {
 private:
@@ -441,8 +483,14 @@ public:
 	// already defined by an earlier file (written back to that file on save).
 	std::vector<std::map<unsigned int, Sequence>> m_stubs;
 	int m_loadIndex = -1;
-	mutable Ha6Game m_gameCache = Ha6Game::Auto;
-	mutable uint64_t m_gameCacheVersion = 0;
+	// Dialect detected when the data was loaded (D13: pasting never changes
+	// it) and the per-file override (View > Game format).
+	mutable Ha6Game m_detected = Ha6Game::Auto;
+	Ha6Game m_gameOverride = Ha6Game::Auto;
+	std::string m_sourcePath;     // first file loaded (detection naming hints)
+	// BaseData PFLG&1 templates that a fill-only file had for slots this
+	// character already defines (the game merges them, D17).
+	std::map<unsigned int, Sequence_T<std::allocator>> m_templates;
 	int m_ownFile = -1;
 	void setOwnFile(int fileIndex) { m_ownFile = fileIndex; }
 	// Save target of a project .txt's [DataFile] list: the highest-indexed
@@ -472,6 +520,17 @@ public:
 	//Detected dialect (ignores the override) and the effective one.
 	Ha6Game detectedGame() const;
 	Ha6Game game() const;
+	void setGameOverride(Ha6Game g) { m_gameOverride = g; }
+	Ha6Game gameOverride() const { return m_gameOverride; }
+	//True when no pattern has frames yet (a new file adopts pasted data's dialect).
+	bool hasNoFrames() const;
+	//D13: make pasted data valid for this file's dialect instead of letting it
+	//switch the whole file. Returns what changed (for the paste notice).
+	Ha6ConvertReport conformPasted(Sequence_T<std::allocator>& seq);
+	Ha6ConvertReport conformPasted(Frame_T<std::allocator>& frame);
+	Ha6ConvertReport conformPastedAT(Frame_AT& at) const;
+	//D17: the BaseData template the game merges into pattern n (null if none).
+	const Sequence_T<std::allocator>* templateFor(int n) const;
 	//Number of AFGX layers the game draws (UNI2 5, MBTL 3; 1 for MBAACC).
 	int gameLayerCount() const;
 	//AFGX layer count the writer pads new UNI frames to (0 = MBAACC writer).
@@ -487,6 +546,18 @@ public:
 	FrameData();
 	~FrameData();
 };
+
+// D16: layer-aware frame tools (UI-free, unit tested).
+enum class LayerPaste { SpriteDuration, Offset, Rotation, Scale, ColorBlend, AllTransforms };
+// Copies `what` from layer `layer` of `src` (layer < 0: every layer src has)
+// to the same layer id of frames first..last of `seq`, creating missing
+// layers (sprite -1) up to that id. Rotation also copies the layer's AFRT and
+// the frame AFRT (MBAACC keeps AFRT per frame, UNI2/MBTL per layer).
+void PasteLayerRange(Sequence& seq, const Frame& src, int first, int last, int layer, LayerPaste what);
+// Deletes layer idx. UNI files keep the other layers' ids (and so their draw
+// order): a middle layer is cleared to sprite -1 and only a trailing layer is
+// removed. Returns the layer to select afterwards.
+int DeleteLayerKeepIds(Frame_AF& af, int idx, bool uni);
 
 // uniLayerCount > 0: the file is UNI/MBTL (that many AFGX layers); patterns
 // without format flags (new ones) are then written in that dialect too.

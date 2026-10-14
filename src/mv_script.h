@@ -1,7 +1,7 @@
 #ifndef MV_SCRIPT_H_GUARD
 #define MV_SCRIPT_H_GUARD
 
-// Parser for MBTL Squirrel move scripts (chrXXX_mv_N.txt).
+// Parser for MBTL/UNI2 Squirrel move scripts (chrXXX_mv_N.txt) and UNIB ones (Xxx_0_mv.txt).
 // MBTL moves spawn effect/projectile patterns from these scripts (CreateFireBall,
 // BMvEff.CreateObject, ThrowParam, ...) instead of ha6 EF effect data, so the
 // spawn visualization misses them. This module does a best-effort line-level
@@ -56,7 +56,7 @@ struct MvScriptSpawn {
 
 class MvScriptIndex {
 public:
-	// Finds and parses sibling chrXXX_mv_*.txt files next to the character txt
+	// Finds and parses sibling chrXXX_mv_*.txt (MBTL/UNI2) or Xxx_N_mv.txt (UNIB) files next to the character txt
 	// (e.g. ".../chr019_0.txt" -> ".../chr019_mv_0.txt"). Returns true if at
 	// least one script file was parsed.
 	bool loadForCharacter(const std::string& txtPath);

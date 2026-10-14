@@ -1,6 +1,7 @@
 #include "box_pane.h"
 #include "i18n.h"
 #include "mv_script.h"
+#include "paste_notice.h"
 #include <algorithm>
 #include <imgui.h>
 #include <imgui_internal.h>
@@ -632,8 +633,8 @@ void BoxPane::DrawSpawnTimeline()
 				frameData->mark_modified(currState.pattern);
 				markModified();
 			};
-			if (im::MenuItem(LBL("Paste before"))) { Frame f; f = currState.copied->frame; insertCopy(i, f); }
-			if (im::MenuItem(LBL("Paste after"))) { Frame f; f = currState.copied->frame; insertCopy(i + 1, f); }
+			if (im::MenuItem(LBL("Paste before"))) { Frame f; f = currState.copied->frame; currState.pasteNotice = FormatConvertNotice(frameData->conformPasted(f)); insertCopy(i, f); }
+			if (im::MenuItem(LBL("Paste after"))) { Frame f; f = currState.copied->frame; currState.pasteNotice = FormatConvertNotice(frameData->conformPasted(f)); insertCopy(i + 1, f); }
 			if (im::MenuItem(LBL("Duplicate"))) { Frame f = mainSeq->frames[i]; insertCopy(i + 1, f); }
 			if (im::MenuItem(LBL("Delete"), nullptr, false, mainFrameCount > 1)) {
 				mainSeq->frames.erase(mainSeq->frames.begin() + i);

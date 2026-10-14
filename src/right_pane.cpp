@@ -2,6 +2,7 @@
 #include "right_pane.h"
 #include "i18n.h"
 #include "frame_disp.h"
+#include "paste_notice.h"
 #include <imgui.h>
 
 void DrawRecordNote(Ha6Notes& notes, const std::string& key);
@@ -29,6 +30,11 @@ void RightPane::Draw()
 		if(nframes >= 0)
 		{
 			Frame &frame = seq->frames[currState.frame];
+			// D17: a BaseData template supplies AT/EF/IF in game.
+			const bool templateLocked = frameData->templateFor(currState.pattern) != nullptr;
+			if (templateLocked)
+				ImGui::TextColored(ImVec4(1.0f, 0.55f, 0.35f, 1.0f), "%s", TXT("BaseData template: attack data, effects and conditions come from the template in game."));
+			ImGui::BeginDisabled(templateLocked);
 			// The attack record (ATST) is written only for frames that have an
 			// attack box; everything else is "null" attack data to the game, no
 			// matter what the fields below say. Show which one this frame is (#79).
@@ -36,6 +42,7 @@ void RightPane::Draw()
 			const char* atLabel = atSaved ? LBL("Attack data###AttackData")
 			                              : LBL("Attack data (null: no attack box)###AttackData");
 			if (!atSaved) ImGui::PushStyleColor(ImGuiCol_Text, ImGui::GetStyleColorVec4(ImGuiCol_TextDisabled));
+			if (currState.scriptOpenTrees) ImGui::SetNextItemOpen(true);
 			const bool atOpen = ImGui::TreeNode(atLabel);
 			if (!atSaved) ImGui::PopStyleColor();
 			if (ImGui::IsItemHovered())
@@ -53,6 +60,7 @@ void RightPane::Draw()
 				ImGui::SameLine(0,20.f);
 				if(ImGui::Button(LBL("Paste AT"))) {
 					frame.AT = currState.copied->at;
+					currState.pasteNotice = FormatConvertNotice(frameData->conformPastedAT(frame.AT));
 					frameData->mark_modified(currState.pattern);
 					markModified();
 				}
@@ -87,6 +95,7 @@ void RightPane::Draw()
 				ImGui::Separator();
 			}
 			CurrentRecordNoteHook().draw = nullptr;
+			ImGui::EndDisabled(); // templateLocked
 
 			// Spawned Patterns Visualization
 			if(ImGui::TreeNode(LBL("Spawned Patterns Visualization")))

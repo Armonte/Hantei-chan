@@ -1,0 +1,9 @@
+# D17 template banner (UNI2 chr000 pattern 300 is backed by BaseData's PFLG template)
+openany C:\dev\hantei-chan\gamedata\uni2\data\chr000\chr000_0.txt
+waitidle
+wait 30
+opentrees 1
+pattern 300
+wait 30
+capture C:\dev\hantei-chan\wt\s3-uni-dataloss\docs\audit_2026_10_14\evidence\s3\s3_template_banner.png
+quit

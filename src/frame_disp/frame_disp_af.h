@@ -19,8 +19,10 @@
 // - Interpolation
 // ============================================================================
 
-inline void AfDisplay(Frame_AF *af, int &selectedLayer, FrameData *frameData = nullptr, int patternIndex = -1, std::function<void()> onModified = nullptr, Frame_AF *clipboard = nullptr)
+inline void AfDisplay(Frame_AF *af, int &selectedLayer, FrameData *frameData = nullptr, int patternIndex = -1, std::function<void()> onModified = nullptr, Frame_AF *clipboard = nullptr, bool templateLocked = false)
 {
+	// templateLocked (D17): a BaseData template supplies everything but each
+	// layer's sprite, .pat flag and offset in game, so the rest is greyed out.
 	// Helper lambda to mark both frameData and character as modified
 	auto markModified = [&]() {
 		if (frameData && patternIndex >= 0) {
@@ -67,7 +69,15 @@ inline void AfDisplay(Frame_AF *af, int &selectedLayer, FrameData *frameData = n
 			"Unused layers have sprite -1; the game skips them.");
 
 	im::SameLine(0, 20.f);
-	if (im::SmallButton(LBL("Add Layer"))) {
+	// D16: the game reads 5 AFGX layers (UNI2) or 3 (MBTL/UNIB); more are ignored.
+	const int layerCap = uni && frameData ? frameData->gameLayerCount() : 0;
+	const bool atCap = layerCap > 0 && (int)af->layers.size() >= layerCap;
+	im::BeginDisabled(atCap);
+	const bool addLayer = im::SmallButton(LBL("Add Layer"));
+	im::EndDisabled();
+	if (atCap && im::IsItemHovered(ImGuiHoveredFlags_AllowWhenDisabled))
+		im::SetTooltip(TXT("%s reads %d layers; more would be ignored."), Ha6GameName(game), layerCap);
+	if (addLayer) {
 		// Add new layer with default values
 		Layer_Type newLayer = {};
 		newLayer.spriteId = -1;
@@ -86,15 +96,15 @@ inline void AfDisplay(Frame_AF *af, int &selectedLayer, FrameData *frameData = n
 		im::SameLine();
 		if (im::SmallButton(LBL("Delete Layer"))) {
 			if (af->layers.size() > 1) {
-				af->layers.erase(af->layers.begin() + selectedLayer);
-				// Clamp selectedLayer after deletion
-				if (selectedLayer >= (int)af->layers.size()) {
-					selectedLayer = af->layers.size() - 1;
-				}
+				// D16: in UNI files the other layers keep their ids (and draw order).
+				selectedLayer = DeleteLayerKeepIds(*af, selectedLayer, uni);
 				markModified();
 			}
 		}
-		if (im::IsItemHovered()) Tooltip("Delete current layer (reverts to AFGP if only 1 layer remains)");
+		if (im::IsItemHovered()) {
+			if (uni) Tooltip("Clear the current layer (sprite -1). Only the last layer is removed, so the other layers keep their ids.");
+			else Tooltip("Delete current layer (reverts to AFGP if only 1 layer remains)");
+		}
 	}
 
 	// Layer selector dropdown (only show if we have multiple layers)
@@ -159,6 +169,7 @@ inline void AfDisplay(Frame_AF *af, int &selectedLayer, FrameData *frameData = n
 	}
 	if(im::IsItemHovered()) Tooltip("Copy sprite, duration, jumps, priority, and loops");
 	im::SameLine();
+	im::BeginDisabled(templateLocked);
 	if(im::SmallButton(LBL("Paste animation"))) {
 		layer.spriteId = copiedAnimationLayer.spriteId;
 		layer.usePat = copiedAnimationLayer.usePat;
@@ -278,6 +289,7 @@ inline void AfDisplay(Frame_AF *af, int &selectedLayer, FrameData *frameData = n
 	if(im::InputInt(LBL("Duration"), &af->duration, 1, 0)) {
 		markModified();
 	}
+	im::EndDisabled(); // templateLocked (timing)
 
 	im::Separator();
 
@@ -285,6 +297,7 @@ inline void AfDisplay(Frame_AF *af, int &selectedLayer, FrameData *frameData = n
 	static Layer_Type copiedTransformLayer = {};
 	static bool copiedTransformAFRT = false;
 	static int copiedTransformInterpolationType = 0;
+	im::BeginDisabled(templateLocked);
 	if(im::SmallButton(LBL("Copy transforms"))) {
 		copiedTransformLayer.offset_x = layer.offset_x;
 		copiedTransformLayer.offset_y = layer.offset_y;
@@ -292,7 +305,8 @@ inline void AfDisplay(Frame_AF *af, int &selectedLayer, FrameData *frameData = n
 		memcpy(copiedTransformLayer.rgba, layer.rgba, sizeof(layer.rgba));
 		memcpy(copiedTransformLayer.rotation, layer.rotation, sizeof(layer.rotation));
 		memcpy(copiedTransformLayer.scale, layer.scale, sizeof(layer.scale));
-		copiedTransformAFRT = af->AFRT;
+		// D16: UNI2/MBTL keep AFRT per layer, MBAACC per frame.
+		copiedTransformAFRT = uni ? layer.afrt : af->AFRT;
 		copiedTransformInterpolationType = af->interpolationType;
 	}
 	if(im::IsItemHovered()) Tooltip("Copy offset, rotation, scale, color, blend mode, and interpolation");
@@ -304,7 +318,7 @@ inline void AfDisplay(Frame_AF *af, int &selectedLayer, FrameData *frameData = n
 		memcpy(layer.rgba, copiedTransformLayer.rgba, sizeof(layer.rgba));
 		memcpy(layer.rotation, copiedTransformLayer.rotation, sizeof(layer.rotation));
 		memcpy(layer.scale, copiedTransformLayer.scale, sizeof(layer.scale));
-		af->AFRT = copiedTransformAFRT;
+		if (uni) layer.afrt = copiedTransformAFRT; else af->AFRT = copiedTransformAFRT;
 		af->interpolationType = copiedTransformInterpolationType;
 		markModified();
 	}
@@ -313,6 +327,7 @@ inline void AfDisplay(Frame_AF *af, int &selectedLayer, FrameData *frameData = n
 	if(i18n::Combo(LBL("Interpolation"), &af->interpolationType, interpolationList, IM_ARRAYSIZE(interpolationList))) {
 		markModified();
 	}
+	im::EndDisabled(); // templateLocked
 
 	im::SetNextItemWidth(width);
 	im::DragInt("X", &layer.offset_x);
@@ -326,6 +341,7 @@ inline void AfDisplay(Frame_AF *af, int &selectedLayer, FrameData *frameData = n
 		markModified();
 	}
 
+	im::BeginDisabled(templateLocked);
 	// TODO(blend numbering): hantei4/MBAC uses 0 none, 1 multiply, 2 add, 3 subtract
 	// (HANTEI4_EF_IF_LABELS.md section 3). Neither MBAA_NAME_AUDIT.md nor IDA has confirmed
 	// the MBAA renderer's numbering yet, so the stored values (1 Normal, 2 Additive,
@@ -403,6 +419,7 @@ inline void AfDisplay(Frame_AF *af, int &selectedLayer, FrameData *frameData = n
 		}
 		if(im::IsItemHovered()) Tooltip("Paste all animation data (sprite, timing, transforms, colors)");
 	}
+	im::EndDisabled(); // templateLocked
 
 }
 

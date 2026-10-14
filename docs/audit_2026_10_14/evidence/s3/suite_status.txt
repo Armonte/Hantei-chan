@@ -1,0 +1,4 @@
+build=0
+ctest=8
+ha6_regress=0
+uni_regress=stopped for handoff (run1 = full run on in-flux corpus)

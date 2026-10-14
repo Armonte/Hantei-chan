@@ -146,14 +146,20 @@ std::vector<int> PlanSlots(FrameData& fd, int count, int start, Placement how,
 }
 
 int PastePatterns(FrameData& fd, const std::vector<Sequence>& patterns,
-                  const std::vector<int>& sourceIds, const std::vector<int>& slots, bool remapRefs)
+                  const std::vector<int>& sourceIds, const std::vector<int>& slots, bool remapRefs,
+                  Ha6ConvertReport* conv)
 {
 	std::map<int, int> targetMap, ownerOld;
 	std::vector<int> scope;
 	for (size_t i = 0; i < patterns.size() && i < slots.size(); ++i) {
 		Sequence* dst = fd.get_sequence(slots[i]);
 		if (!dst) continue;
-		*dst = patterns[i];
+		// D13: convert to the file's format before it lands (an empty file
+		// adopts the first pasted pattern's format instead).
+		Sequence pasted = patterns[i];
+		const Ha6ConvertReport r = fd.conformPasted(pasted);
+		if (conv) conv->add(r);
+		*dst = std::move(pasted);
 		dst->empty = false;
 		fd.mark_modified(slots[i]);
 		scope.push_back(slots[i]);

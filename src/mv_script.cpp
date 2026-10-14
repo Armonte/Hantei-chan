@@ -275,6 +275,12 @@ bool MvScriptIndex::loadForCharacter(const std::string &txtPath)
 		if (std::filesystem::exists(candidate, ec) && loadScriptFile(candidate))
 			any = true;
 	}
+	if (!any) {
+		// UNIB: "Hyd_0.txt" -> "Hyd_0_mv.txt" (D18).
+		std::string candidate = dir + "/" + stem + "_mv.txt";
+		if (std::filesystem::exists(candidate, ec) && loadScriptFile(candidate))
+			any = true;
+	}
 
 	if (!any) {
 		// Fallback: any sibling "<base>_mv_*.txt"

@@ -215,7 +215,9 @@ inline void IfDisplay(std::vector<Frame_IF> *ifList_, Frame_IF *singleClipboard 
 		if(manualEditMode[i]) {
 			im::Text(TXT("Raw parameters:"));
 			if(im::InputScalarN("##params", ImGuiDataType_S32, p, 6, NULL, NULL, "%d", 0)) markModified();
-			if(im::InputScalarN("##params2", ImGuiDataType_S32, p+6, 3, NULL, NULL, "%d", 0)) markModified();
+			// UNI2/MBTL read 10 parameters (Han6_LoadFrameIF); MBAACC files use 9.
+			const int nRaw2 = (frameData && frameData->usesUniFormat()) ? kMaxIfParams - 6 : 3;
+			if(im::InputScalarN("##params2", ImGuiDataType_S32, p+6, nRaw2, NULL, NULL, "%d", 0)) markModified();
 		} else {
 		// Otherwise show smart UI based on type
 		switch(ifList[i].type) {

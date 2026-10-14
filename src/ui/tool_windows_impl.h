@@ -245,10 +245,13 @@ void MainFrame::drawPatternManagerWindow()
 	if (ImGui::Button(LBL("Paste"))) {
 		std::vector<Sequence> pats(clip->patterns.size());
 		for (size_t i = 0; i < pats.size(); ++i) pats[i] = clip->patterns[i];
-		const int refs = patrefs::PastePatterns(fd, pats, clipIds, pasteSlots, w.remapPaste);
+		Ha6ConvertReport conv;
+		const int refs = patrefs::PastePatterns(fd, pats, clipIds, pasteSlots, w.remapPaste, &conv);
 		markToolEdit(character);
 		w.refsFor = -1;
 		w.status = TwFmt(TXT("Pasted %zu pattern(s), %d reference(s) remapped. One undo step."), (size_t)(pats.size() - pasteDropped), refs);
+		const std::string convNotice = FormatConvertNotice(conv);
+		if (!convNotice.empty()) { w.status += " " + convNotice; view->getState().pasteNotice = convNotice; }
 		for (int s : pasteSlots) if (s >= 0) { navigateActiveView(s, 0); break; }
 	}
 	ImGui::EndDisabled();

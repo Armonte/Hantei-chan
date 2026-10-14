@@ -26,6 +26,8 @@
 #include "project_manager.h"
 #include <imgui.h>
 #include "workspace_viewports.h"
+#include "paste_notice.h"
+#include "copy_data.h"
 
 StartupArgs gStartup;
 
@@ -136,7 +138,8 @@ static bool han2StartupSniffPat(const std::string &path)
 }
 
 // Scripted UI session (--ui-script): runs between render and swap, so `capture` sees exactly what this frame drew.
-static void RunUiScript(MainFrame &mf, HDC dc, const std::function<void(const std::string &)> &openAny, const std::function<void(int, int)> &setView, const std::function<bool()> &saveActive)
+static void RunUiScript(MainFrame &mf, HDC dc, const std::function<void(const std::string &)> &openAny, const std::function<void(int, int)> &setView, const std::function<bool()> &saveActive,
+                        const std::function<bool(const std::string &, const std::string &)> &editCmd)
 {
 	static std::vector<std::string> lines; static size_t pc = 0; static int waitFrames = 0, idleWaited = 0; static bool loaded = false, waitIdle = false, done = false;
 	if (done || gStartup.uiScript.empty()) return;
@@ -161,6 +164,12 @@ static void RunUiScript(MainFrame &mf, HDC dc, const std::function<void(const st
 		if (cmd == "savechar") { const bool ok = saveActive(); FILE *lf = fopen((gStartup.uiScript + ".log").c_str(), "a"); if (lf) { fprintf(lf, "savechar -> %s\n", ok ? "ok" : "FAILED"); fclose(lf); } waitFrames = 20; return; }
 		if (cmd == "zoomview") { setView(2, (int)(atof(arg.c_str()) * 100.0 + 0.5)); continue; }
 		if (cmd == "viewframe") { setView(1, atoi(arg.c_str())); continue; }
+		// Edits through the same model calls as the UI (S3 evidence): copypattern N | pastepattern N |
+		// gameformat auto|mbaacc|uni2|unist|unib|mbtl | layer N | switchview N | opentrees 0/1 | tint R G B
+		if (cmd == "copypattern" || cmd == "pastepattern" || cmd == "gameformat" || cmd == "layer" || cmd == "switchview" || cmd == "opentrees" || cmd == "tint") {
+			if (!editCmd(cmd, arg)) { FILE *lf = fopen((gStartup.uiScript + ".log").c_str(), "a"); if (lf) { fprintf(lf, "script line %zu '%s' failed\n", pc, line.c_str()); fclose(lf); } }
+			waitFrames = 3; return;
+		}
 		if (cmd == "capture") {
 			RECT r; GetClientRect(WindowFromDC(dc), &r);
 			int w = r.right - r.left, h = r.bottom - r.top;
@@ -193,7 +202,42 @@ void MainFrame::ProcessStartupArgs()
 	if (!gStartup.uiScript.empty() && n > 3)
 		RunUiScript(*this, context->dc, [this](const std::string &p) { openAnyFile(p); },
 			[this](int what, int v) { if (auto *vw = getActiveView()) { if (what == 0) vw->getState().pattern = v; else if (what == 2) vw->setZoom(v / 100.f); else vw->getState().frame = v; } },
-			[this]() { return getActiveCharacter() ? saveCharacter(getActiveCharacter()) : false; });
+			[this]() { return getActiveCharacter() ? saveCharacter(getActiveCharacter()) : false; },
+			[this](const std::string &cmd, const std::string &arg) -> bool {
+				if (cmd == "switchview") { const int i = atoi(arg.c_str()); if (i < 0 || i >= (int)views.size()) return false; setActiveView(i); return true; }
+				CharacterView *vw = getActiveView();
+				CharacterInstance *ch = getActiveCharacter();
+				if (!vw || !ch) return false;
+				FrameState &st = vw->getState();
+				FrameData &fd = ch->frameData;
+				if (cmd == "layer") { st.selectedLayer = atoi(arg.c_str()); return true; }
+				if (cmd == "opentrees") { st.scriptOpenTrees = arg != "0"; return true; }
+				if (cmd == "tint") {
+					// tint R G B (0..1): AFRG of every layer with a sprite in the current pattern
+					float c[3] = {1, 1, 1};
+					if (sscanf(arg.c_str(), "%f %f %f", &c[0], &c[1], &c[2]) != 3) return false;
+					Sequence *cur = fd.get_sequence(st.pattern);
+					if (!cur) return false;
+					for (auto &f : cur->frames) for (auto &l : f.AF.layers) if (l.spriteId >= 0) { l.rgba[0] = c[0]; l.rgba[1] = c[1]; l.rgba[2] = c[2]; }
+					fd.mark_modified(st.pattern);
+					return true;
+				}
+				if (cmd == "gameformat") {
+					const std::string &g = arg;
+					fd.setGameOverride(g == "mbaacc" ? Ha6Game::MBAACC : g == "uni2" ? Ha6Game::UNI : g == "mbtl" ? Ha6Game::MBTL
+						: g == "unib" ? Ha6Game::UNIB : g == "unist" ? Ha6Game::UNIST : Ha6Game::Auto);
+					return true;
+				}
+				Sequence *seq = fd.get_sequence(atoi(arg.c_str()));
+				if (!seq || !st.copied) return false;
+				if (cmd == "copypattern") { st.copied->pattern = *seq; return true; }
+				Sequence pasted; pasted = st.copied->pattern;
+				st.pasteNotice = FormatConvertNotice(fd.conformPasted(pasted));
+				*seq = std::move(pasted);
+				fd.mark_modified(atoi(arg.c_str()));
+				st.pattern = atoi(arg.c_str()); st.frame = 0;
+				return true;
+			});
 	if (n == 3 && !gStartup.cg.empty()) { if (auto *c = getActiveCharacter()) c->loadCG(gStartup.cg); }
 	// [tag-panel] after --open (frame 2), so the pickers see the loaded character; works without --open too
 	// [authoring] --tool authoring (and --tool tag without --tag-ini: the old panel's entry now opens Authoring > Tuning)
@@ -256,8 +300,8 @@ void MainFrame::ProcessStartupArgs()
 			SetZoom(gStartup.zoom);
 		if (!gStartup.game.empty()) {
 			const std::string &g = gStartup.game;
-			g_ha6GameOverride = g == "mbaacc" ? Ha6Game::MBAACC : g == "uni" ? Ha6Game::UNI
-				: g == "mbtl" ? Ha6Game::MBTL : Ha6Game::Auto;
+			g_ha6GameOverride = g == "mbaacc" ? Ha6Game::MBAACC : (g == "uni" || g == "uni2") ? Ha6Game::UNI
+				: g == "mbtl" ? Ha6Game::MBTL : g == "unib" ? Ha6Game::UNIB : g == "unist" ? Ha6Game::UNIST : Ha6Game::Auto;
 		}
 		const std::string& t = gStartup.tool;
 		if (t == "hud") m_showHud = true;
