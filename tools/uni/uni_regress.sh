@@ -3,11 +3,11 @@
 #
 #   tools/uni/uni_regress.sh            (build first: ./build.sh)
 #
-# 1. HA6: all 262 UNI2/MBTL files byte-identical after load -> save
+# 1. HA6: every UNI2/MBTL file (262 in the 2026-09 corpus, 311 with BattleRes/grpdat) byte-identical after load -> save
 #    (roundtrip.exe --bytes), and field-identical with the loaded encoding
 #    dropped (--fresh; MBTL chr016's inverted boxes then count as "edited" and
 #    get normalised, so it is the one expected rc5 there).
-# 2. PAT: all 135 UNI2/MBTL .pat byte-identical (+ --fresh field check),
+# 2. PAT: every UNI2/MBTL .pat (135 in 2026-09, 907 with BattleRes/grpdat) byte-identical (+ --fresh field check),
 #    MBAACC .pat byte-identical.
 # 3. PAL: every UNI2/MBTL (130-palette) and MBAACC .pal byte-identical.
 # 4. #71 saved edits: load a project .txt stack, edit one pattern, save: only
@@ -25,6 +25,8 @@ MBAC_DAT="${MBAC_DAT_DIR:-/mnt/c/games/MB/AC/install/MBACPC/02_extracted}"
 wp() { wslpath -w "$1"; }
 fail=0
 note() { echo "== $*"; }
+# The summary line must be a single "rc0=N" (every file passed) with N at least the 2026-09 corpus size.
+all_rc0() { local line; line=$(echo "$1" | head -1); echo "$line" | grep -qE ": rc0=[0-9]+$" && [ "${line##*rc0=}" -ge "$2" ]; }
 check() { # label cmd... ; fails on nonzero exit
 	local label="$1"; shift
 	if "$@"; then :; else echo "FAIL: $label"; fail=1; fi
@@ -32,15 +34,15 @@ check() { # label cmd... ; fails on nonzero exit
 
 note "1. UNI2/MBTL HA6"
 out=$("$ROOT/tools/uni/rt_all.sh" "$G"); echo "$out"
-echo "$out" | head -1 | grep -q "rc0=262$" || { echo "FAIL: HA6 bytes"; fail=1; }
+all_rc0 "$out" 262 || { echo "FAIL: HA6 bytes"; fail=1; }
 out=$("$ROOT/tools/uni/rt_all.sh" --fresh "$G"); echo "$out" | head -1
 echo "$out" | grep "^rc=" | grep -v "^rc=7\|chr016/chr016.ha6" && { echo "FAIL: HA6 fresh"; fail=1; }
 
 note "2. PAT"
 out=$("$ROOT/tools/uni/pat_rt_all.sh" "$G"); echo "$out"
-echo "$out" | head -1 | grep -q "rc0=135$" || { echo "FAIL: PAT bytes"; fail=1; }
+all_rc0 "$out" 135 || { echo "FAIL: PAT bytes"; fail=1; }
 out=$("$ROOT/tools/uni/pat_rt_all.sh" --fresh "$G"); echo "$out"
-echo "$out" | head -1 | grep -q "rc0=135$" || { echo "FAIL: PAT fresh"; fail=1; }
+all_rc0 "$out" 135 || { echo "FAIL: PAT fresh"; fail=1; }
 n=0; bad=0
 for f in "$MBAACC"/*.pat; do [ -f "$f" ] || continue; n=$((n+1)); "$B/pat_roundtrip.exe" --bytes "$(wp "$f")" "$(wp "$B/mbaacc_rt.pat")" </dev/null >/dev/null 2>&1 || bad=$((bad+1)); done
 echo "MBAACC .pat byte round trip: $n files, $bad differ"; [ $bad -eq 0 ] || fail=1
