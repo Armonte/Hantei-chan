@@ -1,0 +1,14 @@
+pral2_chr025_p133f1          old->new mean |d| 10.47, 42.00% pixels changed
+flipH_chr000_p96f1           old->new mean |d| 2.46, 4.95% pixels changed
+flipV_chr000_p383f1          old->new mean |d| 0.87, 3.44% pixels changed
+flipHV_chr019_p153           old->new mean |d| 0.68, 1.44% pixels changed
+afhk_pat_chr000_p72_t2       old->new mean |d| 10.27, 20.29% pixels changed
+afhk_pat_chr019_p62_t7       old->new mean |d| 19.50, 43.23% pixels changed
+afhk_cg_chr020_p435_t27      old->new mean |d| 18.38, 21.85% pixels changed
+pups_chr027_p449             old->new mean |d| 0.00, 0.00% pixels changed
+rect_chr024_p76              old->new mean |d| 18.24, 27.00% pixels changed
+pras_chr020_p5f2             old->new mean |d| 0.00, 0.00% pixels changed
+afhk_cg_chr020_p437_t2       old->new mean |d| 14.32, 14.44% pixels changed
+mbtl_pral2_chr004_p420f4     old->new mean |d| 4.05, 0.18% pixels changed
+mbtl_flipV_chr001_p157f2     old->new mean |d| 1.38, 4.71% pixels changed
+mbtl_pups_chr011_p309        old->new mean |d| 0.00, 0.00% pixels changed
