@@ -106,8 +106,13 @@ void MainFrame::Draw()
 	ImGui_ImplOpenGL3_NewFrame();
 	ImGui_ImplWin32_NewFrame();
 	ImGui::NewFrame();
+	// imgui 1.92.9 made numeric fields apply typed values only on deactivation. Hantei-chan relies on
+	// live edits (preview while typing, keyframe step from a focused field #61), and a deferred apply
+	// would land in whatever frame the field shows when focus is lost, so keep the old behaviour.
+	ImGui::PushItemFlag(ImGuiItemFlags_LiveEditOnInputScalar, true);
 	DrawUi();
 	DrawBack();
+	ImGui::PopItemFlag();
 	ImGui::Render();
 
 	ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());

@@ -111,7 +111,9 @@ void DrawFrame(Pane& pane)
 {
 	ImGui::GetIO().DeltaTime = 1.0f / 60.0f;
 	ImGui::NewFrame();
+	ImGui::PushItemFlag(ImGuiItemFlags_LiveEditOnInputScalar, true); // as MainFrame::Draw
 	pane.Draw();
+	ImGui::PopItemFlag();
 	ImGui::Render();
 	CheckDrawData();
 }
@@ -248,11 +250,13 @@ int main(int argc, char** argv)
 		for (int pass = 0; pass < 4; ++pass) {
 			ImGui::GetIO().DeltaTime = 1.0f / 60.0f;
 			ImGui::NewFrame();
+			ImGui::PushItemFlag(ImGuiItemFlags_LiveEditOnInputScalar, true); // as MainFrame::Draw
 			ImGui::SetNextWindowSize(ImVec2(700, 700), ImGuiCond_Always);
 			ImGui::Begin("Right Pane");
 			if (pass >= 2) ImGui::SetNextItemOpen(true);
 			IfDisplay(&ifs, nullptr, haveFd ? &fd : nullptr, 0, [&]() { ++modified; });
 			ImGui::End();
+			ImGui::PopItemFlag();
 			ImGui::Render();
 			CheckDrawData();
 		}
@@ -262,6 +266,7 @@ int main(int argc, char** argv)
 			int value = 5;
 			for (int pass = 0; pass < 3; ++pass) {
 				ImGui::NewFrame();
+				ImGui::PushItemFlag(ImGuiItemFlags_LiveEditOnInputScalar, true); // as MainFrame::Draw
 				ImGui::Begin("Picker");
 				ImGui::InputInt("v", &value);
 				ImGui::PushID("Owner pattern");
@@ -270,6 +275,7 @@ int main(int argc, char** argv)
 				static const PatternPickerExtra extra[] = {{256, "Owner is standing"}};
 				PatternPickerButton("Owner pattern", &value, &fd, extra, 1);
 				ImGui::End();
+				ImGui::PopItemFlag();
 				ImGui::Render();
 				CheckDrawData();
 			}
@@ -284,11 +290,13 @@ int main(int argc, char** argv)
 		auto frame = [&](std::function<void()> before = nullptr) {
 			ImGui::GetIO().DeltaTime = 1.0f / 60.0f;
 			ImGui::NewFrame();
+			ImGui::PushItemFlag(ImGuiItemFlags_LiveEditOnInputScalar, true); // as MainFrame::Draw
 			if (before) before();
 			ImGui::SetNextWindowPos(ImVec2(0, 0), ImGuiCond_Always);
 			ImGui::Begin("Box Pane");
 			ImGui::InputInt("X", &values[cur], 0, 0);
 			ImGui::End();
+			ImGui::PopItemFlag();
 			ImGui::Render();
 		};
 		ImGuiIO& io = ImGui::GetIO();
