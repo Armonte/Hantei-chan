@@ -617,9 +617,11 @@ void MainFrame::RenderUpdate()
 
 		// Set Parts rendering pattern indices (partSet IDs)
 		if (layer.usePat) {
-			render.curPattern = layer.spriteId;  // spriteId is the partSet index when usePat=true
-			render.curNextPattern = layer.spriteId;  // Same for now (no interpolation)
-			render.curInterp = 0.0f;
+			// spriteId is the partSet index when usePat=true. The layered scene draw (DrawLayers) applies
+			// AFHK per layer; this legacy single-surface state never interpolates.
+			render.curPattern = layer.spriteId;
+			render.curNextPattern = -1;
+			render.curInterp = 1.0f;
 		}
 
 		// Generate geometry for PatEditor or standard views
@@ -639,14 +641,6 @@ void MainFrame::RenderUpdate()
 		}
 		render.offsetX = (layer.offset_x)*1;
 		render.offsetY = (layer.offset_y)*1;
-		
-		// Debug layer color for PAT rendering
-		static bool debugLayerColor = true;
-		if (debugLayerColor && layer.usePat) {
-			printf("[RenderUpdate] layer.rgba for PAT: (%.3f, %.3f, %.3f, %.3f)\n",
-				layer.rgba[0], layer.rgba[1], layer.rgba[2], layer.rgba[3]);
-			debugLayerColor = false;
-		}
 		
 		render.SetImageColor(const_cast<float*>(layer.rgba));
 		render.rotX = layer.rotation[0];

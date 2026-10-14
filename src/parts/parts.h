@@ -10,6 +10,7 @@
 #include "parts_shape.h"
 #include "parts_part.h"
 #include "parts_partset.h"
+#include "part_render_math.h"
 #include <vector>
 #include <cstdint>
 #include <string>
@@ -72,13 +73,23 @@ public:
     bool Save(const char* filename);
     unsigned int* MainLoad(unsigned int* data, const unsigned int* data_end);
 
-    // Rendering
-    void Draw(int pattern, int nextPattern, float interpolationFactor,
+    // Rendering. One part set, drawn the way uni2.exe's PatPartSet_Draw_PrimQueue 0x4BFFB0 does it
+    // (rules in part_render_math.h).
+    struct DrawParams {
+        int pattern = 0;          // part set
+        int nextPattern = -1;     // AFHK: part set of the next frame's same layer (-1 = none)
+        float curWeight = 1.f;    // AFHK: weight of the current frame (1 = no interpolation)
+        bool paletteTint = true;  // PPPA tint: the game applies it in the character shader path only
+        bool applyPras = true;    // PRAS: UNI2 applies it, MBTL does not read it
+    };
+    // setAddColor gets the PRSP specular colour as RGBA 0..1 (added to the output, alpha included).
+    void Draw(const DrawParams& params,
         std::function<void(glm::mat4)> setMatrix,
-        std::function<void(float, float, float)> setAddColor,
-        std::function<void(char)> setFlip,
+        std::function<void(const float*)> setAddColor,
         float color[4]);
     void DrawPart(int id, bool useLinearFilter = false);
+    // PRAL blend a part draws with (the editor's on/off "additive" plus the raw byte).
+    static partrender::PartBlend PartBlendOf(const PartProperty& part);
 
     // Accessors
     PartSet<>* GetPartSet(unsigned int n);

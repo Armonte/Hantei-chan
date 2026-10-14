@@ -1,0 +1,1 @@
+quill v10.0.0 (header-only), copied from https://github.com/odygrd/quill tag v10.0.0 include/ + LICENSE
