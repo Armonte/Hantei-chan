@@ -151,10 +151,13 @@ bool Parts::Load(const char* name)
         textures.push_back(new Texture);
         if (gfx.s3tc)
         {
-            if (gfx.type == 21)
+            if (gfx.type == 21 || gfx.type == 22)
             {
-                // Uncompressed BGRA (type 21 uses BGRA format)
-                textures.back()->LoadDirect((char*)gfx.s3tc, gfx.w, gfx.h, true);
+                // Uncompressed BGRA (21 = A8R8G8B8; 22 = X8R8G8B8, whose 4th byte is not alpha: drawn opaque)
+                std::vector<char> opaque;
+                char *src = (char*)gfx.s3tc;
+                if (gfx.type == 22) { opaque.assign(src, src + (size_t)gfx.w * gfx.h * 4); for (size_t k = 3; k < opaque.size(); k += 4) opaque[k] = (char)255; src = opaque.data(); }
+                textures.back()->LoadDirect(src, gfx.w, gfx.h, true);
                 // Default to GL_NEAREST; filtering will be applied per-part based on PRFL flag
                 textures.back()->Apply(false, false);  // repeat=false, linearFilter=false
             }

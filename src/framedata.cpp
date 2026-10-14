@@ -67,6 +67,7 @@ bool FrameData::load(const char *filename, bool patch, bool fillOnly) {
 
 		return 0;
 	}
+	if (g_ha6SpriteRefSink) g_ha6SpriteRefSink->base = data;
 
 	// Check for legacy UTF-8 flag (old Hantei-chan set byte 31 to 0xFF for UTF-8 files)
 	// Modern files always use Shift-JIS and don't set this flag

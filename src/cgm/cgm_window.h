@@ -5,6 +5,7 @@
 #include "cgm_usage.h"
 #include "cgm_undo.h"
 #include "cgm_palette.h"
+#include "cgm_project.h"
 #include "fxr_panel.h"
 #include <functional>
 #include <memory>
@@ -19,6 +20,7 @@ namespace cgm {
 struct WindowHost {
 	std::function<void(int pattern, int frame)> navigate;   // show a pattern / frame in the active view
 	std::function<void(CharacterInstance *)> markEdited;    // the character changed (dirty flag + undo step)
+	std::function<bool(CharacterInstance *)> saveCharacter; // File > Save of that character (its own HA6 file)
 };
 
 class Window {
@@ -26,6 +28,15 @@ public:
 	bool open = false;
 	void draw(CharacterInstance *ch, const WindowHost &host);
 	~Window();
+	// One save for the bank and the frame data (shared-bank safety): true when the bank in the manager renumbers images
+	// against the .cg on disk, so saving the character alone would ship ids the bank on disk does not have.
+	bool pendingIdChanges(const CharacterInstance *ch) const;
+	// Writes the .cg (original kept as .bak) and rewrites the references of every other project file that draws it
+	// (cgm_project.h). The loaded character's own file is left to its own save. Returns false on an error; `report` says what was written.
+	bool saveBankFiles(CharacterInstance &ch, std::string &report);
+	// --ui-script "cgm <cmd> <arg>": open | tab <name> | press <English button label> | path <file or folder for the next dialog> |
+	// select <id> | set <field> <n> | status (logs the status line). False = logged (status, or an error in msg).
+	bool script(const std::string &cmd, const std::string &arg, std::string *msg);
 
 private:
 	struct Thumb { unsigned tex = 0; int w = 0, h = 0; unsigned long long gen = 0; bool empty = false; };
@@ -64,6 +75,18 @@ private:
 	void drawPalettes(CharacterInstance &ch, const WindowHost &host);
 	void pushPalette(CharacterInstance &ch, int bank);   // show pal.set[bank] in the CG object (live preview everywhere)
 	void commitPalette(CharacterInstance &ch, const std::string &label, int bank, PalSet before, const WindowHost &host);
+	// every project that draws the bank on disk (MBAACC moons + b_ files, MBTL variants, ...)
+	BankUsers users; std::string usersFor;
+	std::vector<char> skipMark;            // per stack file of the loaded character: rewritten on disk with the bank (not baked into the own file)
+	std::vector<uint32_t> diskUids;        // image identities of the .cg as on disk (RemapSince gives old -> current ids)
+	ProjectUsage diskUsage; bool diskUsageValid = false; std::vector<int> diskUsageMap;   // diskUsageMap: current id -> disk id
+	void scanProjects(CharacterInstance &ch);
+	int projectCount(int currentId);       // layers drawing it in every project on disk, through the pending renumbering (-1 = not counted yet)
+	void countProjectUsage();
+	bool cutter2Note = false;
+	// palette tab extras
+	int importFrom = 0, palLayout = 0, ccChara = -1, ccFirst = 37, ccFrom = 0, ccTo = 0; bool ccFullPal = false; int newPups = 1;
+	int resizeAnchor = 0;                  // replace with another size: 0 bottom-centre, 1 top-left
 	FxPanel fxr;                    // "Effect recolor" tab (fxr_panel.cpp)
 	History hist;
 	std::string status;

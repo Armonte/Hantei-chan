@@ -44,6 +44,45 @@ void PalSet::movePalette(int from, int to) {
 	memcpy(pal(to), tmp.data(), 1024);
 }
 
+void PalSet::movePair(int from, int to) {
+	if (!paired()) { movePalette(from, to); return; }
+	const int h = half(); from = colourOf(from); to = colourOf(to);
+	if (from == to || to < 0 || to >= h) return;
+	movePalette(from, to); movePalette(from + h, to + h);
+}
+void PalSet::swapPair(int a, int b) {
+	if (!paired()) { swapPalettes(a, b); return; }
+	const int h = half(); a = colourOf(a); b = colourOf(b);
+	swapPalettes(a, b); swapPalettes(a + h, b + h);
+}
+PalSet PalSet::makeMbaacc(int n, const uint32_t *fill) {
+	PalSet o; o.offsetDw = 1; o.count = n; o.raw.assign(4 + (size_t)n * 1024, 0);
+	memcpy(o.raw.data(), &n, 4);
+	for (int i = 0; i < n; i++) memcpy(o.pal(i), fill, 1024);
+	return o;
+}
+PalSet PalSet::converted(bool toUni) const {
+	PalSet o;
+	if (toUni) {
+		const int colours = 65, n = 130;
+		o.offsetDw = 4; o.count = n; o.raw.assign(16 + (size_t)n * 1024, 0);
+		const uint32_t hdr[4] = {0xFFFFu, 1u, 0u, (uint32_t)n}; memcpy(o.raw.data(), hdr, 16);
+		for (int c = 0; c < colours; c++) {
+			const int src = count ? std::min(colourOf(c), count - 1) : -1;
+			if (src >= 0) memcpy(o.pal(c), pal(src), 1024);
+			// the alternate set: the pair's second half; a flat file of 130+ palettes (a UNI file saved in the MBAACC layout) keeps
+			// its own c + 65, so UNI -> MBAACC -> UNI is lossless; a short MBAACC file repeats the colour
+			const int alt = paired() && c < half() ? c + half() : (!paired() && count >= 2 * colours ? c + colours : src);
+			if (alt >= 0) memcpy(o.pal(c + colours), pal(alt), 1024);
+		}
+		return o;
+	}
+	o.offsetDw = 1; o.count = count; o.raw.assign(4 + (size_t)count * 1024, 0);
+	memcpy(o.raw.data(), &o.count, 4);
+	for (int i = 0; i < count; i++) memcpy(o.pal(i), pal(i), 1024);
+	return o;
+}
+
 Hsv ToHsv(uint32_t c) {
 	const float r = R(c) / 255.f, g = G(c) / 255.f, b = B(c) / 255.f, mx = std::max({r, g, b}), mn = std::min({r, g, b}), d = mx - mn;
 	Hsv o; o.v = mx; o.s = mx > 0 ? d / mx : 0;
@@ -130,7 +169,16 @@ int RecolorBank(Bank &bank, const ColorAdjust &adj, bool slots, bool imagePalett
 // ---- files ----
 static std::string Lower(std::string s) { for (char &c : s) c = (char)tolower((unsigned char)c); return s; }
 
-bool ReadPalFileColors(const std::string &path, uint32_t out[256], std::string *err) {
+int PalFileCount(const std::string &path) {
+	const std::string ext = Lower(std::filesystem::path(path).extension().string());
+	if (ext != ".pal") return 1;
+	std::ifstream f(P(path), std::ios::binary); if (!f) return 0;
+	std::vector<uint8_t> b((std::istreambuf_iterator<char>(f)), std::istreambuf_iterator<char>());
+	if (b.size() >= 24 && !memcmp(b.data(), "RIFF", 4)) return 1;
+	PalSet s; return PalSet::parse(b.data(), b.size(), s, nullptr) ? std::max(1, s.count) : (b.size() == 1024 ? 1 : 0);
+}
+
+bool ReadPalFileColors(const std::string &path, uint32_t out[256], std::string *err, int index) {
 	auto fail = [&](const std::string &m) { if (err) *err = m; return false; };
 	const std::string ext = Lower(std::filesystem::path(path).extension().string());
 	if (ext == ".png") {
@@ -161,12 +209,15 @@ bool ReadPalFileColors(const std::string &path, uint32_t out[256], std::string *
 		return true;
 	}
 	PalSet s; std::string e;
-	if (PalSet::parse(b.data(), b.size(), s, &e) && s.count >= 1) { memcpy(out, s.pal(0), 1024); return true; }
+	if (PalSet::parse(b.data(), b.size(), s, &e) && s.count >= 1) {
+		if (index < 0 || index >= s.count) return fail("the file holds palettes 0.." + std::to_string(s.count - 1) + ", not " + std::to_string(index));
+		memcpy(out, s.pal(index), 1024); return true;
+	}
 	if (b.size() == 1024) { memcpy(out, b.data(), 1024); return true; }
 	return fail("unrecognised palette file");
 }
 
-bool WritePalFileColors(const std::string &path, const uint32_t pal[256], std::string *err) {
+bool WritePalFileColors(const std::string &path, const uint32_t pal[256], std::string *err, PalLayout layout) {
 	auto fail = [&](const std::string &m) { if (err) *err = m; return false; };
 	const std::string ext = Lower(std::filesystem::path(path).extension().string());
 	if (ext == ".png") {
@@ -180,8 +231,37 @@ bool WritePalFileColors(const std::string &path, const uint32_t pal[256], std::s
 		return (bool)f;
 	}
 	if (ext == ".act") { for (int i = 0; i < 256; i++) { const char c[3] = {(char)R(pal[i]), (char)G(pal[i]), (char)B(pal[i])}; f.write(c, 3); } return (bool)f; }
-	const uint32_t one = 1; f.write((const char *)&one, 4); f.write((const char *)pal, 1024);   // .pal: MBAACC layout with one palette
+	if (layout == PalLayout::Uni) { const uint32_t hdr[4] = {0xFFFFu, 0u, 0u, 1u}; f.write((const char *)hdr, 16); }   // UNI header, split 0: one plain palette
+	else { const uint32_t one = 1; f.write((const char *)&one, 4); }   // MBAACC layout with one palette
+	f.write((const char *)pal, 1024);
 	return (bool)f;
+}
+
+bool WritePalSet(const std::string &path, const PalSet &set, bool backup, std::string *err) {
+	namespace fs = std::filesystem; std::error_code ec;
+	const fs::path t = P(path); fs::path bak = t; bak += L".bak"; fs::path tmp = t; tmp += L".tmp";
+	if (backup && fs::exists(t, ec) && !fs::exists(bak, ec)) fs::copy_file(t, bak, ec);
+	{ std::ofstream f(tmp, std::ios::binary); if (!f) { if (err) *err = "cannot write " + path; return false; } f.write((const char *)set.raw.data(), (std::streamsize)set.raw.size()); if (!f) { if (err) *err = "cannot write " + path; return false; } }
+	fs::rename(tmp, t, ec);
+	if (ec) { if (err) *err = "cannot replace " + path + ": " + ec.message(); return false; }
+	return true;
+}
+
+std::string PupsPath(const std::string &path, int n) {
+	std::string stem = path; const size_t dot = stem.find_last_of('.'), sl = stem.find_last_of("\\/");
+	if (dot != std::string::npos && (sl == std::string::npos || dot > sl)) stem = stem.substr(0, dot);
+	// a PUPS bank path given: strip its _pN
+	if (stem.size() > 3 && stem[stem.size() - 3] == '_' && (stem[stem.size() - 2] == 'p' || stem[stem.size() - 2] == 'P') && isdigit((unsigned char)stem.back())) stem.resize(stem.size() - 3);
+	return n <= 0 ? stem + ".pal" : stem + "_p" + std::to_string(n) + ".pal";
+}
+
+bool CreatePupsBank(const std::string &cgPath, int n, const PalSet &base, std::string *outPath, std::string *err) {
+	if (n < 1 || n > 7) { if (err) *err = "PUPS banks are numbered 1 to 7"; return false; }
+	const std::string p = PupsPath(cgPath, n);
+	std::error_code ec;
+	if (std::filesystem::exists(P(p), ec)) { if (err) *err = p + " already exists"; return false; }
+	if (outPath) *outPath = p;
+	return WritePalSet(p, base, false, err);
 }
 
 } // namespace cgm

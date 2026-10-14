@@ -39,12 +39,57 @@ inline uint32_t Unpack(unsigned c) { return ((c >> 16) & 255) | (c & 0xFF00) | (
 bool SameRendering(const Bank &bank, int n, const uint8_t *rgba, int w, int h) {
 	Rgba cur;
 	if (!bank.decode(n, cur) || cur.w != w || cur.h != h) return false;
-	const bool bin = bank.images[n].type == 2 || bank.images[n].type == 0;
+	const bool bin = bank.cutter2 || bank.images[n].type == 2 || bank.images[n].type == 0;
 	for (int i = 0; i < w * h; i++) {
 		const uint8_t *a = &cur.px[i * 4], *b = &rgba[i * 4];
 		uint8_t ba = b[3]; if (bin) ba = ba >= 128 ? 255 : 0;
 		if (a[3] != ba || (a[3] && memcmp(a, b, 3) != 0)) return false;
 	}
+	return true;
+}
+
+static int NearestIndex(const uint32_t pal[256], const uint8_t *s) {
+	int best = 1, bd = 1 << 30;
+	for (int k = 1; k < 256; k++) {
+		if (!(pal[k] >> 24)) continue;
+		const int dr = (int)(pal[k] & 255) - s[0], dg = (int)((pal[k] >> 8) & 255) - s[1], db = (int)((pal[k] >> 16) & 255) - s[2], d = dr * dr + dg * dg + db * db;
+		if (d < bd) { bd = d; best = k; if (!d) break; }
+	}
+	return best;
+}
+
+// "BMP Cutter2": the pixels live on the pre-baked pages (8-bit, bank palette); the image's blocks say where.
+static bool ReplaceCutter2(Bank &bank, int n, const uint8_t *rgba, int w, int h, std::string *err, ReplaceReport *rep, const std::vector<uint8_t> *indices) {
+	Image &im = bank.images[n];
+	if (indices && (int)indices->size() != w * h) { if (err) *err = "index plane has the wrong size"; return false; }
+	ReplaceReport local; ReplaceReport &R = rep ? *rep : local; R = ReplaceReport();
+	std::vector<uint8_t> curIdx; uint32_t curPal[256]; Rgba curRgba;
+	bank.decode(n, curRgba); bank.decodeIndexed(n, curIdx, curPal);
+	uint32_t pal[256]; bank.palette(0, pal);
+	std::vector<std::vector<uint8_t>> edited(bank.bakedPages.size()); std::vector<char> touched(bank.bakedPages.size(), 0);
+	for (const Block &b : im.blocks) {
+		if (b.page < 0) continue;
+		while ((int)bank.bakedPages.size() <= b.page) { bank.bakedPages.push_back(std::make_shared<const std::vector<uint8_t>>(65536, (uint8_t)0)); edited.emplace_back(); touched.push_back(0); }
+		if (!touched[b.page]) { edited[b.page] = *bank.bakedPages[b.page]; touched[b.page] = 1; }
+		std::vector<uint8_t> &pg = edited[b.page];
+		for (int ly = 0; ly < b.h; ly++) for (int lx = 0; lx < b.w; lx++) {
+			const int cx = b.x + lx - im.x1, cy = b.y + ly - im.y1, px = b.sx + lx, py = b.sy + ly;
+			if (px < 0 || py < 0 || px > 255 || py > 255) continue;
+			const bool inside = cx >= 0 && cy >= 0 && cx < w && cy < h;
+			uint8_t v = 0;
+			if (inside) {
+				const size_t i = (size_t)cy * w + cx; const uint8_t *s = &rgba[i * 4];
+				if (indices) v = (*indices)[i];
+				else if (s[3] < 128) v = 0;
+				else if (!curIdx.empty() && curIdx[i] && curRgba.px[i * 4 + 3] && memcmp(&curRgba.px[i * 4], s, 3) == 0) v = curIdx[i];
+				else v = (uint8_t)NearestIndex(pal, s);
+			} else v = pg[(size_t)py * 256 + px];
+			uint8_t &dst = pg[(size_t)py * 256 + px];
+			if (dst != v) { dst = v; R.changedPixels++; }
+		}
+	}
+	for (size_t p = 0; p < bank.bakedPages.size(); p++) if (touched[p] && edited[p] != *bank.bakedPages[p]) bank.bakedPages[p] = std::make_shared<const std::vector<uint8_t>>(std::move(edited[p]));
+	bank.recomputeLayout();
 	return true;
 }
 
@@ -54,6 +99,7 @@ bool ReplaceImage(Bank &bank, int n, const uint8_t *rgba, int w, int h, std::str
 	Image &im = bank.images[n];
 	if (!im.drawable()) return fail("image " + std::to_string(n) + " has no pixels (type " + std::to_string(im.type) + ")");
 	if (w != im.boundsW() || h != im.boundsH()) return fail("size mismatch: image " + std::to_string(n) + " is " + std::to_string(im.boundsW()) + " x " + std::to_string(im.boundsH()) + ", the new image is " + std::to_string(w) + " x " + std::to_string(h));
+	if (bank.cutter2) return ReplaceCutter2(bank, n, rgba, w, h, err, rep, indices);
 	const int ty = im.type;
 	if (ty == 5) return fail("storage type 5 (index + alpha planes on the bank palette) is read-only here: it is shown and kept byte-exact, not authored");
 	if (ty < 0 || ty > 4) return fail("storage type " + std::to_string(ty) + " cannot be imported");

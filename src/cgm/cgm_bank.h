@@ -30,6 +30,8 @@ struct Image {
 	int32_t x1 = 0, y1 = 0, x2 = 0, y2 = 0;    // canvas bounds, inclusive
 	std::vector<Block> blocks;
 	Blob blob;                                  // data after the 72-byte header (shared between snapshots)
+	uint16_t alHigh = 0;                        // BMP Cutter2: high word of the align-count dword (the engines read a WORD; kept byte-exact)
+	uint32_t uid = 0;                           // identity across edits (not stored): structural ops keep it, new images get a fresh one
 	int boundsW() const { return x2 - x1 + 1; }
 	int boundsH() const { return y2 - y1 + 1; }
 	bool drawable() const { return present && type != -1 && x2 >= x1 && y2 >= y1; }
@@ -46,6 +48,10 @@ struct Bank {
 	std::vector<Image> images;                  // size == H3
 	int hidden = 0;                             // images stored past the declared count H3 (the engine never reaches them; one RBO bank has one)
 	bool alignSequential = true;                // blocks of image n directly follow those of image n-1 (verified on load)
+	// "BMP Cutter2" (MBAC / ReAct GAKIHA): images carry no pixel data; every block points into pre-baked 256 x 256 8-bit pages
+	// stored after the alignment table (tailMid = their offset, H1 = their count). Every image draws on the bank palette.
+	bool cutter2 = false;
+	std::vector<Blob> bakedPages;                 // Cutter2 only: 65,536 bytes each
 
 	int cellUnit() const { return (H[4] >= 1 && H[4] < 16) ? (int)H[4] : 16; }
 	int pages() const { return (int)H[0] + 1; }
@@ -73,6 +79,11 @@ struct Bank {
 	bool blobSpan(int n, size_t &start, size_t &end) const;
 	void recomputeLayout();   // blocks' dataOff + H2/H3
 };
+
+uint32_t NewImageUid();
+std::vector<uint32_t> ImageUids(const Bank &b);
+// old id -> current id for the images listed in `then` (uids of a former state, e.g. the bank on disk); -1 = gone
+std::vector<int> RemapSince(const std::vector<uint32_t> &then, const Bank &now);
 
 uint64_t HashRgba(const uint8_t *px, size_t n);   // FNV-1a 64 over straight RGBA with transparent pixels' RGB zeroed
 

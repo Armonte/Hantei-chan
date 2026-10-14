@@ -86,6 +86,9 @@ add_executable(${EXE}
 	src/cgm/cgm_palette.cpp
 	src/cgm/cgm_struct.cpp
 	src/cgm/cgm_usage.cpp
+	src/cgm/cgm_project.cpp
+	src/cgm/cgm_folder.cpp
+	src/cgm/cgm_ccpal.cpp
 	src/cgm/fxr_core.cpp
 	src/cgm/fxr_panel.cpp
 	src/cgm/cgm_window.cpp
@@ -127,6 +130,7 @@ add_executable(${EXE}
 	src/parts/parts_part.cpp
 	src/parts/parts_shape.cpp
 	src/parts/parts_texture.cpp
+	src/parts/pat_texconv.cpp
 	src/parts/parts.cpp
 	src/app_log.cpp
 	# Background (stage) system — ported from bgmk branch.
@@ -313,6 +317,30 @@ endif()
 # Standalone PAT round-trip validator. Links the editor's parts code with
 # glad/OpenGL stubs (glad calls no-op without a current context, which is
 # fine for the load/save paths we exercise).
+# pattex: .pat part textures <-> PNG / DDS (src/parts/pat_texconv.h), and a full-corpus decode/encode check
+add_executable(pattex
+	src/pattex.cpp
+	src/parts/parts.cpp
+	src/parts/parts_part.cpp
+	src/parts/parts_partset.cpp
+	src/parts/parts_shape.cpp
+	src/parts/parts_texture.cpp
+	src/parts/pat_texconv.cpp
+	src/png_writer.cpp
+	src/cg.cpp
+	src/texture.cpp
+	src/vao.cpp
+	src/shader.cpp
+	src/misc.cpp
+	tinyalloc/tinyalloc.c
+)
+target_include_directories(pattex PRIVATE "." "third_party" "${CMAKE_BINARY_DIR}/generated")
+target_compile_definitions(pattex PRIVATE WIN32_LEAN_AND_MEAN HA6GUIVERSION="${CMAKE_PROJECT_VERSION}" PAT_HEADLESS)
+target_link_libraries(pattex PRIVATE tinyalloc glad glm OpenGL::GL windowscodecs ole32 uuid)
+if(MINGW)
+	target_link_options(pattex PRIVATE -static-libgcc -static-libstdc++ -static)
+endif()
+
 add_executable(pat_roundtrip
 	src/pat_roundtrip.cpp
 	src/parts/parts.cpp
@@ -938,8 +966,8 @@ endif()
 add_test(NAME hud_layout COMMAND hud_layout_test WORKING_DIRECTORY ${CMAKE_SOURCE_DIR})
 
 # CG manager core + command line (docs/cg/cg_manager_design.md)
-set(CGM_CORE_SOURCES src/cgm/cgm_bank.cpp src/cgm/cgm_ops.cpp src/cgm/cgm_export.cpp src/cgm/cgm_io.cpp src/cgm/cgm_palette.cpp src/cgm/cgm_struct.cpp)
-add_executable(cgmtool src/cgm/cgmtool.cpp src/cgm/fxr_cli.cpp src/cgm/fxr_core.cpp ${CGM_CORE_SOURCES} src/cgm/cgm_usage.cpp src/framedata.cpp src/framedata_load.cpp src/framedata_save.cpp src/framedata_ha4.cpp ${HAN2_MODEL_SOURCES} src/cg.cpp src/misc.cpp src/png_writer.cpp tinyalloc/tinyalloc.c)
+set(CGM_CORE_SOURCES src/cgm/cgm_bank.cpp src/cgm/cgm_ops.cpp src/cgm/cgm_export.cpp src/cgm/cgm_io.cpp src/cgm/cgm_palette.cpp src/cgm/cgm_struct.cpp src/cgm/cgm_folder.cpp src/cgm/cgm_ccpal.cpp)
+add_executable(cgmtool src/cgm/cgmtool.cpp src/cgm/cgmtool_ops.cpp src/cgm/fxr_cli.cpp src/cgm/fxr_core.cpp ${CGM_CORE_SOURCES} src/cgm/cgm_usage.cpp src/cgm/cgm_project.cpp src/framedata.cpp src/framedata_load.cpp src/framedata_save.cpp src/framedata_ha4.cpp ${HAN2_MODEL_SOURCES} src/cg.cpp src/misc.cpp src/png_writer.cpp tinyalloc/tinyalloc.c)
 target_include_directories(cgmtool PRIVATE "." "src" "third_party" "${CMAKE_BINARY_DIR}/generated")
 target_compile_definitions(cgmtool PRIVATE WIN32_LEAN_AND_MEAN HA6GUIVERSION="${CMAKE_PROJECT_VERSION}")
 target_link_libraries(cgmtool PRIVATE tinyalloc windowscodecs ole32 uuid)
@@ -949,6 +977,41 @@ endif()
 
 # Effect recolour authoring (docs/cg/fxrecolor_config_spec.md): ruleset text round trip through the runtime's own parser/writer.
 add_test(NAME fxr_ini COMMAND cgmtool fxr check docs/cg/effect_recolor_data/dgv_akiha.ini WORKING_DIRECTORY ${CMAKE_SOURCE_DIR})
+# Shared-bank safety and cgtool workflows on real game data (skipped when the data is absent): an insert / move / delete
+# rewrites the references of EVERY project that draws the bank (MBAACC moons + b_akiha, MBTL variants), shared files stay
+# untouched, the inverse gives every file back byte-identical; cgtool folder import / sync / build / resized replace.
+# The configure step runs in WSL (cmake is Linux, the tests are Windows exes): check the data through /mnt/c as well.
+function(fb_data_exists out winpath)
+	string(SUBSTRING "${winpath}" 0 1 _d)
+	string(TOLOWER "${_d}" _d)
+	string(SUBSTRING "${winpath}" 2 -1 _rest)
+	if(EXISTS "${winpath}" OR EXISTS "/mnt/${_d}${_rest}")
+		set(${out} TRUE PARENT_SCOPE)
+	else()
+		set(${out} FALSE PARENT_SCOPE)
+	endif()
+endfunction()
+fb_data_exists(_has "C:/games/mbaacc/data/akiha.cg")
+if(_has)
+	add_test(NAME cgm_project_refs_mbaacc COMMAND cgmtool project-refs-check C:/games/mbaacc/data/akiha.cg --tmp cgm_t1)
+	add_test(NAME cgm_folder_mbaacc COMMAND cgmtool folder-check C:/games/mbaacc/data/neco.cg --tmp cgm_t2)
+	add_test(NAME cgm_cc_palettes COMMAND cgmtool cc-check C:/games/mbaacc/data/arc.pal C:/games/mbaacc/data/akiha.pal)
+endif()
+fb_data_exists(_has "C:/dev/hantei-chan/gamedata/mbtl/data/chr000/chr000.cg")
+if(_has)
+	add_test(NAME cgm_project_refs_mbtl COMMAND cgmtool project-refs-check C:/dev/hantei-chan/gamedata/mbtl/data/chr000/chr000.cg --tmp cgm_t3)
+	add_test(NAME cgm_palette_uni_mbtl COMMAND cgmtool pal-check-uni C:/dev/hantei-chan/gamedata/mbtl/data/chr000/chr000.pal)
+endif()
+fb_data_exists(_has "C:/dev/hantei-chan/gamedata/mbtl/BattleRes/talk/st_pat/chr012/chr012_ed00.pat")
+if(_has)
+	add_test(NAME pat_textures_x8 COMMAND pattex check C:/dev/hantei-chan/gamedata/mbtl/BattleRes/talk/st_pat/chr012/chr012_ed00.pat)
+endif()
+fb_data_exists(_has "C:/dev/hantei-chan/gamedata/mbac/02/GAKIHA.DAT")
+if(_has)   # BMP Cutter2 (pre-baked pages) read from the .DAT: byte-exact, decode == CG, structure, edit locality
+	add_test(NAME cgm_cutter2_gakiha COMMAND cgmtool check C:/dev/hantei-chan/gamedata/mbac/02/GAKIHA.DAT)
+	add_test(NAME cgm_cutter2_gakiha_struct COMMAND cgmtool struct-check C:/dev/hantei-chan/gamedata/mbac/02/GAKIHA.DAT)
+	add_test(NAME cgm_cutter2_gakiha_rt COMMAND cgmtool roundtrip C:/dev/hantei-chan/gamedata/mbac/02/GAKIHA.DAT --tmp cgm_t4)
+endif()
 # DGV regression oracle: needs his project (external, /home/teo/dev/refs/dgv_better_akiha/extracted) and python3 + numpy + PIL; skipped when absent.
 if(EXISTS "/home/teo/dev/refs/dgv_better_akiha/extracted/Better Akiha v2")
 	add_test(NAME fxr_dgv_oracle COMMAND python3 tools/fxrecolor/dgv_oracle.py "/home/teo/dev/refs/dgv_better_akiha/extracted/Better Akiha v2" $<TARGET_FILE:cgmtool> docs/cg/effect_recolor_data/dgv_akiha.ini 4 WORKING_DIRECTORY ${CMAKE_SOURCE_DIR})

@@ -1,0 +1,16 @@
+SECTION cgm-folder: pass | chr019.cg: 1062 drawable; cgtool export -> plain import / sync identical; sync delete+add+rename; build from folder 1062/1062 images identical; resized replace anchored
+rc=0  folder-check C:/dev/hantei-chan/gamedata/mbtl/data/chr019/chr019.cg
+SECTION cgm-folder: pass | chr017.cg: 1016 drawable; cgtool export -> plain import / sync identical; sync delete+add+rename; build from folder 1016/1016 images identical; resized replace anchored
+rc=0  folder-check C:/dev/hantei-chan/gamedata/mbtl/data/chr017/chr017.cg
+SECTION cgm-folder: pass | chr016.cg: 832 drawable; cgtool export -> plain import / sync identical; sync delete+add+rename; build from folder 832/832 images identical; resized replace anchored
+rc=0  folder-check C:/dev/hantei-chan/gamedata/mbtl/data/chr016/chr016.cg
+SECTION cgm-folder: pass | chr012.cg: 1248 drawable; cgtool export -> plain import / sync identical; sync delete+add+rename; build from folder 1248/1248 images identical; resized replace anchored
+rc=0  folder-check C:/dev/hantei-chan/gamedata/mbtl/data/chr012/chr012.cg
+SECTION cgm-struct: pass 1 fail 0 | structural operations proven 10 (add/insert/delete round trip byte-identical, permute + inverse, move, unshare, delete owner, clear, duplicate; engine loader agrees)
+rc=0  struct-check C:/dev/hantei-chan/gamedata/mbac/02/NERO.DAT
+SECTION cgm-folder: pass | chr021.cg: 640 drawable; cgtool export -> plain import / sync identical; sync delete+add+rename; build from folder 640/640 images identical; resized replace anchored
+rc=0  folder-check C:/dev/hantei-chan/gamedata/mbtl/data/chr021/chr021.cg
+SECTION cgm-folder: pass | chr020.cg: 681 drawable; cgtool export -> plain import / sync identical; sync delete+add+rename; build from folder 681/681 images identical; resized replace anchored
+rc=0  folder-check C:/dev/hantei-chan/gamedata/mbtl/data/chr020/chr020.cg
+SECTION cgm-folder: pass | chr022.cg: 722 drawable; cgtool export -> plain import / sync identical; sync delete+add+rename; build from folder 722/722 images identical; resized replace anchored
+rc=0  folder-check C:/dev/hantei-chan/gamedata/mbtl/data/chr022/chr022.cg

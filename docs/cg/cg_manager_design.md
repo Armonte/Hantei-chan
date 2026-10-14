@@ -146,3 +146,57 @@ files (`akiha.cg` 12 replaced images, `akiha.pal`) were produced the same way.
 
 Known limits: references from outside the character (menu code using `csel_*.cg`, other characters' effect spawns) are not visible to the usage index;
 the character's pattern undo and the CG manager's undo are separate stacks (undo a structural CG step from the CG manager window).
+
+## 9. Shared banks, one save, cgtool workflows, Cutter2, UNI2 palettes, CC palettes (S4+S5, 2026-10-14)
+
+Gaps from `docs/audit_2026_10_14/CG_MANAGER_PARITY.md` section 3, closed on `feat/s45-cg-palettes`.
+
+**Shared banks (`cgm_project`).** `FindBankUsers(<bank>)` reads every `.txt` of the bank's folder; the ones whose
+`[BmpcutFile] File00` is the bank are its projects, and their `[DataFile]` entries its HA6 files. MBAACC `akiha.cg`:
+5 projects (`akiha.txt`, `akiha_0/1/2.txt`, `b_akiha_8.txt`), 9 files. MBTL `chr000.cg`: 4 projects, 5 files. A file that
+another bank's project also lists, or that lives outside the folder (`../BaseData.HA6`), is *shared* and never rewritten
+(its sprite ids mean other pictures with other banks). An HA6 named `<bank>_*.ha6` that no project lists (UNIB `Hyd_s.HA6`)
+is a user too. `RemapUserFiles` rewrites the sprite ids of every non-shared file **in place**: the HA6 loader records the
+file offset of every AFGP/AFGX id (`g_ha6SpriteRefSink`), so every other byte stays as shipped (FrameData's own save is
+not byte-exact for MBAACC files). "Delete all unused" and the Unused filter count usage over every project
+(`CountProjectUsage`): loading Crescent alone calls 125 akiha images unused that other moons or `b_akiha` draw.
+
+**One save.** Images carry a `uid` that survives every structural op and undo; the window keeps the uids of the bank as
+on disk, so `RemapSince(diskUids, bank)` is the renumbering still to be written. *Save bank, its projects and this
+character* writes the `.cg` (.bak once), rewrites every other project file and saves the character. Saving the character
+from the File menu while ids are pending does the same (notice popup), so the frame data never ships ids the bank on disk
+does not have. In memory, patterns that came from a rewritten stack file are remapped without being marked modified
+(`RemapSprites(..., skipMark)`), so they are not baked into the own file (issue #71); patterns from shared files are.
+
+**cgtool workflows (`cgm_folder`, `cgmtool`).**
+
+| cgtool | ours |
+|---|---|
+| make a bank from a folder | `cgmtool build <dir> -o new.cg [--pal f.pal[:N]]`; GUI *New bank from PNG folder...*; ids from `_ID_<n>` / a leading number / file order, gaps become empty placeholders, indexed PNGs on the bank palette stored 8-bit with their indices |
+| re-import a cgtool folder | `import-plain`; GUI *Import folder...* without `manifest.json`; a canvas-sized picture of another size is re-cut at its content box |
+| add / remove / reorder by folder | `cgmtool sync <bank> <dir>`; GUI *Sync structure from folder...*: deleted file = delete, new file = add, `12.5#name_ID_40.png` (or `order.txt`) = move |
+| replace with another size | `ReplaceImageResized`: new blocks on free cells, old cells given up, id/name/type kept; anchor bottom-centre or top-left, or the PNG's own position when canvas-sized |
+| `-pal` on extract | `cgmtool export ... --pal x.pal[:N]`; GUI export uses the preview palette |
+| scripted structure | `cgmtool insert / delete / move / delete-unused / replace / sync` with `-o out.cg` or `--in-place [--refs]` (refs = every project) |
+
+**BMP Cutter2 (MBAC/ReAct GAKIHA).** Images have no pixel data; every block reads one of the pre-baked 256x256 8-bit
+pages stored after the alignment table (tail word 2 = their offset, `H1` = their count); the align count is a WORD whose
+high word is junk and kept. Modelled in `cgm::Bank` (`cutter2`, `bakedPages`) for byte-exact load, decode, replace,
+structural edits, undo and *Save bank as*; `CG` renders it the same way. MBAC never draws it: `ProcessCGData` (mbacPC
+0x43E390) returns unless the dword at +0x10 is 1, and GAKIHA's is 0.
+
+**Palettes (E19).** `PalSet::paired()` (UNI2/MBTL split files): move/swap act on c and c+65 together, the window names
+the main/alternate set; *New PUPS bank _pN.pal* (copy of the base set); import of any palette index (`file.pal:37`);
+export of one palette in the UNI layout (`FFFF,0,0,1`) and of a whole set converted between layouts; in-place *Save .pal*
+with .bak. UNI2/MBTL saves only reach the game through loose override folders; the window says so.
+
+**CC custom palettes (`cgm_ccpal`, DESIGN.md section 4 of docs/cc_select_patch).** `<game>\palettes\<charID>_<palNum>.png`
+(indexed, PLTE = the palette, read back exactly as PovertyCaster's `parsePngPalette`), palNum 1..252; optional
+`data\X.pal` + `data\_csel\X.pal` grown to the last slot (filler = palette 0 with entry 0 cleared). The selector layout
+hook is `CcPlaceOf(palNum)` (bank = tab of 36, page/row of the 6x6 carousel). `cgmtool cc-export`, `cc-swatch`, `cc-check`.
+
+**PAT textures (`src/parts/pat_texconv`, `pattex`).** Decode / encode of DXT1, DXT5, A8R8G8B8 (21) and X8R8G8B8 (22,
+found in MBTL `talk/st_pat/chr012/chr012_ed00.pat`), PNG import/export; UNI2/MBTL sides must be multiples of 128,
+MBAACC PGTX stays 32-bit. The PAT editor UI is stream S2's.
+
+Proof commands: `tools/cg/run_cgm_suite.sh` (sections above) and the ctest entries `cgm_*`, `pat_textures_x8`.

@@ -66,8 +66,9 @@ bool AddImage(Bank &bank, int at, const NewImageSpec &spec, const uint8_t *rgba,
 		for (int i = 0; i < W * H; i++) { const uint8_t a = px[i * 4 + 3]; if (!a) continue; if (a != 255) soft = true; cols.insert(((uint32_t)px[i * 4] << 16) | ((uint32_t)px[i * 4 + 1] << 8) | px[i * 4 + 2]); }
 		type = cols.size() > 255 ? 1 : soft ? 4 : 2;
 	}
+	if (bank.cutter2) type = 0;   // Cutter2: every image is 8-bit on the pre-baked pages
 	if (type != 0 && type != 1 && type != 2 && type != 4) return fail("storage type " + std::to_string(type) + " cannot be created");
-	Image im; im.present = true;
+	Image im; im.present = true; im.uid = NewImageUid();
 	strncpy(im.name, spec.name.c_str(), 31); im.name[31] = 0;
 	im.type = type; im.bpp = type == 0 ? 8 : 32;
 	im.w = std::max(spec.canvasW, W); im.h = std::max(spec.canvasH, H);
@@ -90,6 +91,7 @@ bool AddImage(Bank &bank, int at, const NewImageSpec &spec, const uint8_t *rgba,
 		im.blocks.push_back(b); cx += run;
 	}
 	size_t sz = Prefix(type, im.bpp); for (const Block &b : im.blocks) sz += (size_t)b.w * b.h * PerPixel(type);
+	if (bank.cutter2) sz = 0;
 	im.blob = std::make_shared<const std::vector<uint8_t>>(sz, (uint8_t)0);
 	remap = ShiftRemap(bank.images.size(), at, 1);
 	bank.images.insert(bank.images.begin() + at, std::move(im));
@@ -107,7 +109,7 @@ bool ClearImage(Bank &bank, int n, std::string *err) {
 	if (!dep.empty()) { std::string s; for (int d : dep) s += " " + std::to_string(d); return fail("image(s)" + s + " borrow cells of this image; make them independent first"); }
 	Image &im = bank.images[n];
 	im.type = -1; im.bpp = 32; im.x1 = im.y1 = im.x2 = im.y2 = 0; im.blocks.clear();
-	im.blob = std::make_shared<const std::vector<uint8_t>>(4, (uint8_t)0);
+	im.blob = std::make_shared<const std::vector<uint8_t>>(bank.cutter2 ? 0 : 4, (uint8_t)0);
 	Finish(bank); return true;
 }
 
@@ -191,8 +193,17 @@ bool DuplicateImage(Bank &bank, int n, int at, std::vector<int> &remap, int *new
 	if ((int)bank.images.size() >= kMaxImages - 1) return fail("the bank already holds the maximum number of images");
 	if (at < 0 || at > (int)bank.images.size()) at = (int)bank.images.size();
 	Grid grid(bank); const int cu = bank.cellUnit();   // the original's cells are marked; the copy gets fresh ones
-	Image c = bank.images[n];
-	for (Block &b : c.blocks) if (!b.copy) { int page, sx, sy; grid.alloc(b.w / cu, b.h / cu, page, sx, sy); b.page = (int16_t)page; b.sx = (int16_t)(sx * cu); b.sy = (int16_t)(sy * cu); }
+	Image c = bank.images[n]; c.uid = NewImageUid();
+	for (Block &b : c.blocks) if (!b.copy) {
+		const Block from = b;
+		int page, sx, sy; grid.alloc(b.w / cu, b.h / cu, page, sx, sy); b.page = (int16_t)page; b.sx = (int16_t)(sx * cu); b.sy = (int16_t)(sy * cu);
+		if (bank.cutter2 && from.page >= 0 && from.page < (int)bank.bakedPages.size()) {   // the copy's pixels go on its own page cells
+			while ((int)bank.bakedPages.size() <= page) bank.bakedPages.push_back(std::make_shared<const std::vector<uint8_t>>(65536, (uint8_t)0));
+			std::vector<uint8_t> dst(*bank.bakedPages[page]); const std::vector<uint8_t> &src = *bank.bakedPages[from.page];
+			for (int y = 0; y < b.h && from.sy + y < 256 && b.sy + y < 256; y++) for (int x = 0; x < b.w && from.sx + x < 256 && b.sx + x < 256; x++) dst[(size_t)(b.sy + y) * 256 + b.sx + x] = src[(size_t)(from.sy + y) * 256 + from.sx + x];
+			bank.bakedPages[page] = std::make_shared<const std::vector<uint8_t>>(std::move(dst));
+		}
+	}
 	remap = ShiftRemap(bank.images.size(), at, 1);
 	bank.images.insert(bank.images.begin() + at, std::move(c));
 	SetPages(bank, grid); Finish(bank);
@@ -205,6 +216,48 @@ bool TrimPages(Bank &bank) {
 	const uint32_t want = (uint32_t)(mp + 1);
 	if (want >= bank.H[0]) return false;
 	bank.H[0] = want; return true;
+}
+
+} // namespace cgm
+
+namespace cgm {
+
+bool ReplaceImageResized(Bank &bank, int n, const uint8_t *rgba, int w, int h, int x1, int y1, std::vector<int> *unshared, std::string *err) {
+	auto fail = [&](const std::string &m) { if (err) *err = m; return false; };
+	if (n < 0 || n >= (int)bank.images.size() || !bank.images[n].present) return fail("no such image");
+	if (w <= 0 || h <= 0) return fail("empty image");
+	if (x1 < 0 || y1 < 0) return fail("the new sprite would start left of / above its canvas");
+	const Image old = bank.images[n];
+	const int cu = bank.cellUnit();
+	// AddImage places sprites on whole cells: pad the PNG so its top-left lands on (x1, y1) exactly
+	const int ax = x1 / cu * cu, ay = y1 / cu * cu, px = x1 - ax, py = y1 - ay;
+	const int W = w + px, H = h + py;
+	std::vector<uint8_t> buf((size_t)W * H * 4, 0);
+	for (int y = 0; y < h; y++) memcpy(&buf[((size_t)(y + py) * W + px) * 4], &rgba[(size_t)y * w * 4], (size_t)w * 4);
+	// images that borrow the old image's cells get their own copy first (the old cells are given up)
+	auto atlas = bank.buildAtlas(); auto dep = bank.dependants(n, atlas);
+	for (int d : dep) { if (!UnshareImage(bank, d, err)) return false; if (unshared) unshared->push_back(d); }
+	NewImageSpec sp; sp.name = std::string(old.name, strnlen(old.name, 32));
+	sp.type = (old.type == 0 || old.type == 1 || old.type == 2 || old.type == 4) ? old.type : -99;
+	if (sp.type == 0 && !bank.cutter2) sp.type = 0;
+	const int Wc = (W + cu - 1) / cu * cu, Hc = (H + cu - 1) / cu * cu;
+	sp.canvasW = std::max(old.w, ax + Wc); sp.canvasH = std::max(old.h, ay + Hc); sp.x1 = ax; sp.y1 = ay;
+	std::vector<int> remap; int id = -1;
+	// the old image's cells are free for the new pixels: take it out of the bank while allocating
+	Bank work = bank; work.images[n].blocks.clear(); work.images[n].type = -1; work.recomputeLayout();
+	if (!AddImage(work, -1, sp, buf.data(), W, H, remap, &id, err)) return false;
+	Image nw = std::move(work.images[id]); work.images.pop_back();
+	nw.uid = old.uid; memcpy(nw.name, old.name, 32);
+	work.images[n] = std::move(nw);
+	work.recomputeLayout();
+	bank = std::move(work);
+	return true;
+}
+
+bool TrimToContent(const uint8_t *rgba, int w, int h, int &x0, int &y0, int &x1, int &y1) {
+	x0 = w; y0 = h; x1 = -1; y1 = -1;
+	for (int y = 0; y < h; y++) for (int x = 0; x < w; x++) if (rgba[((size_t)y * w + x) * 4 + 3]) { x0 = std::min(x0, x); y0 = std::min(y0, y); x1 = std::max(x1, x); y1 = std::max(y1, y); }
+	return x1 >= 0;
 }
 
 } // namespace cgm
