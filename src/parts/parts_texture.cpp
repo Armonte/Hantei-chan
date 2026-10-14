@@ -73,8 +73,9 @@ unsigned int* PartGfx<>::PgLoad(unsigned int *data, const unsigned int *data_end
             data += 3;
 
             // Detect texture type
-            if (*data == 21) {
-                tex.type = 21; // Uncompressed RGB
+            if (*data == 21 || *data == 22) {
+                // D3DFORMAT: 21 A8R8G8B8, 22 X8R8G8B8 (MBTL talk/st_pat/chr012/chr012_ed00.pat; the 4th byte is not alpha)
+                tex.type = (int)*data;
             }
             else if (!memcmp(data, "DXT1", 4)) {
                 tex.type = 1; // DXT1 (BC1)
@@ -384,7 +385,7 @@ std::string PartGfx<>::ImportTexture(const char *filename, std::vector<Texture*>
     // Detect texture type from DDS header
     auto typeBuf = &d[21];
     if (d[21] == 0) {
-        type = 21; // RGB
+        type = (d[20] & 0x40) && !(d[20] & 0x1) && d[26] == 0 ? 22 : 21; // RGB: no alpha bit and no alpha mask = X8R8G8B8
     }
     else if (!memcmp(typeBuf, "DXT1", 4)) {
         type = 1; // DXT1
@@ -415,7 +416,7 @@ std::string PartGfx<>::ImportTexture(const char *filename, std::vector<Texture*>
         textures.push_back(texture);
     }
 
-    if (type == 21)
+    if (type == 21 || type == 22)   // 22 = X8R8G8B8: uploaded like 21; the alpha byte is ignored when drawn
     {
         // Uncompressed RGB/BGRA
         texture->LoadDirect((char*)s3tc, w, h, true);  // BGRA format
@@ -606,7 +607,7 @@ void PartGfx<>::Save(std::ostream &file, const PartGfx *gfx)
     file.write(VAL(gfx->pgte[0]), 2);
     file.write(VAL(gfx->pgte[1]), 2);
 
-    int typeName = 21;
+    int typeName = gfx->type == 22 ? 22 : 21;
     if (gfx->type == 1)
         typeName = 827611204; // "DXT1" as int32
     else if (gfx->type == 5)

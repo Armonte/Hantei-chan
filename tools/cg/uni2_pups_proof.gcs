@@ -1,0 +1,46 @@
+# UNI2 in-game proof of a NEW PUPS palette bank (S5 / E19): training, P1 = P2 = Hyde (chr000), colour 0, frozen on the stand.
+# tools/cg/uni2_pups_proof.sh runs it twice: vanilla, then with <UNI2>\<loader override>\data\chr000\{chr000.ha6, chr000_p1.pal} (pending a loader: UNI2 1.42 ignores ___St)
+# (make_uni2_pups_proof.py: pattern 0 gets PUPS 1, chr000_p1.pal = the CG manager's new bank with red/blue swapped).
+# The navigation is tools/gamecap/games/uni2_to_training.gcs (no menu input: the game's own boot-into-training path), copied
+# with longer boot timeouts. -D OUT=<png>
+include uni2.gcs
+let P1CHR 0
+let P2CHR 0
+launch
+wait_window 90000
+place
+
+# boot logos (2) -> save load (10) -> title (3). If Steam's language differs from the saved
+# language the game goes to scene 41 (language select) instead and this wait times out.
+wait_mem u32 g_SceneId == SCENE_TITLE 420000   # 120 s in the shared script; a loaded machine boots at ~23 fps
+wait_mem u32 g_TitleState == 3 60000
+
+freeze
+poke u32 g_MenuPlayerSide 0
+poke u32 g_TitleBootMode 2          # Title_HandleMenuSelection: -> result 8 + CSS_EnableQuickSelect()
+poke u32 g_TitleResult 8
+poke u32 g_TitleState4Timer 0
+poke u32 g_TitleStateTimer 0
+poke u32 g_TitleState 4             # Title_UpdateStateMachine case 4: after 16 frames -> Title_HandleMenuSelection
+step_until u32 g_SceneId == SCENE_CHARASELECT 600
+assert_mem u32 g_GameMode == MODE_TRAINING
+assert_mem u8 g_CSS_QuickSelect == 1
+
+# CSS: state 0 -> 7 immediately (quick select), 7 -> 8 once both portraits are loaded.
+step_until u32 g_CSS_State == 8 1800
+poke u32 g_CSS_LastChara ${P1CHR}
+poke u32 g_CSS_LastChara+4 ${P2CHR}
+poke u32 g_CSS_LastColor 0
+poke u32 g_CSS_LastColor+4 0
+step_until u32 g_SceneId == SCENE_BATTLELOAD 600
+unfreeze
+
+wait_mem u32 g_SceneId == SCENE_BATTLE 300000
+wait_mem u8 P1+OBJ_ACTIVE != 0 30000
+# the shared script then waits 120 presented frames and freezes; here the frame counter stopped once the battle drew
+# (2026-10-14 17:53, both Hydes on screen), so: settle by wall time and PrintWindow this game's own window
+wait_ms 5000
+assert_mem u8 P1+OBJ_CHARANO == ${P1CHR}
+peek u32 P1+OBJ_PAT p1_pattern
+capture_window ${OUT}
+quit

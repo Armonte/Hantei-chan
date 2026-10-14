@@ -29,6 +29,14 @@ bool Permute(Bank &bank, const std::vector<int> &newOrder, std::vector<int> &rem
 bool UnshareImage(Bank &bank, int n, std::string *err);
 // Duplicate image n as a new, fully independent image at `at`.
 bool DuplicateImage(Bank &bank, int n, int at, std::vector<int> &remap, int *newId, std::string *err);
+// Replace image n by pixels of ANOTHER size (cgtool's re-crop): the sprite is re-cut into new blocks on free atlas cells, its old cells
+// are given up, and its bounds start at (x1, y1) on the canvas (the canvas grows when the sprite would leave it). Id, name and storage
+// type are kept, so every frame reference keeps pointing at it and the frame offsets stay right as long as (x1, y1) does: callers keep
+// the anchor (e.g. the bottom-centre of the old bounds) or take it from a canvas-sized PNG. Images that borrowed the old cells are
+// made independent first (listed in `unshared`).
+bool ReplaceImageResized(Bank &bank, int n, const uint8_t *rgba, int w, int h, int x1, int y1, std::vector<int> *unshared, std::string *err);
+// Bounding box of the non-transparent pixels (false = fully transparent).
+bool TrimToContent(const uint8_t *rgba, int w, int h, int &x0, int &y0, int &x1, int &y1);
 // Drop atlas pages nobody uses at the end (H0 = used pages).
 bool TrimPages(Bank &bank);
 // Ids that no remap would change are the identity: helpers.

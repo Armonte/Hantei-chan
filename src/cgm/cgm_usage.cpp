@@ -32,7 +32,7 @@ int UsageIndex::patternsUsing(int image) const {
 	return c;
 }
 
-int RemapSprites(FrameData &fd, const std::vector<int> &remap, std::vector<ClearedRef> *cleared) {
+int RemapSprites(FrameData &fd, const std::vector<int> &remap, std::vector<ClearedRef> *cleared, const std::vector<char> *skipMark) {
 	int changed = 0; const int n = fd.get_sequence_count();
 	for (int p = 0; p < n; p++) {
 		Sequence *seq = fd.get_sequence(p); if (!seq) continue;
@@ -49,17 +49,23 @@ int RemapSprites(FrameData &fd, const std::vector<int> &remap, std::vector<Clear
 				L.spriteId = now < 0 ? -1 : now; changed++; touched = true;
 			}
 		}
-		if (touched) fd.mark_modified(p);
+		if (touched) {
+			const int o = p < (int)fd.m_origin.size() ? fd.m_origin[p] : -1;
+			if (skipMark && !seq->modified && o >= 0 && o < (int)skipMark->size() && (*skipMark)[o]) fd.mark_modified(-1);   // new data version only
+			else fd.mark_modified(p);
+		}
 	}
 	return changed;
 }
 
-int RestoreCleared(FrameData &fd, const std::vector<ClearedRef> &cleared) {
+int RestoreCleared(FrameData &fd, const std::vector<ClearedRef> &cleared, const std::vector<char> *skipMark) {
 	int n = 0;
 	for (const ClearedRef &c : cleared) {
 		Sequence *seq = fd.get_sequence(c.pattern);
 		if (!seq || c.frame >= (int)seq->frames.size() || c.layer >= (int)seq->frames[c.frame].AF.layers.size()) continue;
-		seq->frames[c.frame].AF.layers[c.layer].spriteId = c.oldId; fd.mark_modified(c.pattern); n++;
+		seq->frames[c.frame].AF.layers[c.layer].spriteId = c.oldId; n++;
+		const int o = c.pattern < (int)fd.m_origin.size() ? fd.m_origin[c.pattern] : -1;
+		if (skipMark && !seq->modified && o >= 0 && o < (int)skipMark->size() && (*skipMark)[o]) fd.mark_modified(-1); else fd.mark_modified(c.pattern);
 	}
 	return n;
 }

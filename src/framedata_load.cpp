@@ -425,6 +425,8 @@ unsigned int *fd_frame_IF_load(unsigned int *data, const unsigned int *data_end,
 	return data;
 }
 
+thread_local Ha6SpriteRefSink *g_ha6SpriteRefSink = nullptr;
+
 unsigned int *fd_frame_AF_load(unsigned int *data, const unsigned int *data_end, Frame *frame, bool *usedAFGX)
 {
 	// Track current layer for per-layer properties
@@ -448,6 +450,7 @@ unsigned int *fd_frame_AF_load(unsigned int *data, const unsigned int *data_end,
 			int *dt = (int *)data;
 			currentLayer->usePat = dt[0];
 			currentLayer->spriteId = dt[1];
+			if (g_ha6SpriteRefSink && g_ha6SpriteRefSink->base) g_ha6SpriteRefSink->refs.push_back({(uint32_t)((const char *)&dt[1] - g_ha6SpriteRefSink->base), dt[0]});
 			data += 2;
 		} else if (!memcmp(buf, "AFGX", 4)) {
 			// UNI multi-layer format
@@ -455,6 +458,7 @@ unsigned int *fd_frame_AF_load(unsigned int *data, const unsigned int *data_end,
 			int layerId = dt[0];
 			int usePat = dt[1];
 			int spriteId = dt[2];
+			if (g_ha6SpriteRefSink && g_ha6SpriteRefSink->base) g_ha6SpriteRefSink->refs.push_back({(uint32_t)((const char *)&dt[2] - g_ha6SpriteRefSink->base), usePat});
 
 			// Ensure layers vector has enough space
 			if (layerId >= (int)frame->AF.layers.size()) {

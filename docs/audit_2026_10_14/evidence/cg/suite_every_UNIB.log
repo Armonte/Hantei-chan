@@ -1,0 +1,157 @@
+=== UNIB
+SECTION cgm-bank: pass 30 fail 0 | images 10298 (undrawable 3), decode==CG 10295, differ 0 | type-1:3 type0:10295
+SECTION cgm-palette: pass 30 fail 0 | palettes checked 120 (raw exact, .act/.gpl/.png round trip, neutral recolour identity)
+=== parallel sections: 120 jobs, 12 workers
+[UNIB] SECTION cgm-roundtrip: pass 1 fail 0 | export->import unchanged identical; locality edits 1 ok 1
+[UNIB] SECTION cgm-struct: pass 1 fail 0 | structural operations proven 10 (add/insert/delete round trip byte-identical, permute + inverse, move, unshare, delete owner, clear, duplicate; engine loader agrees)
+[UNIB] SECTION cgm-roundtrip: pass 1 fail 0 | export->import unchanged identical; locality edits 1 ok 1
+[UNIB] SECTION cgm-struct: pass 1 fail 0 | structural operations proven 10 (add/insert/delete round trip byte-identical, permute + inverse, move, unshare, delete owner, clear, duplicate; engine loader agrees)
+[UNIB] SECTION cgm-roundtrip: pass 1 fail 0 | export->import unchanged identical; locality edits 1 ok 1
+[UNIB] SECTION cgm-struct: pass 1 fail 0 | structural operations proven 10 (add/insert/delete round trip byte-identical, permute + inverse, move, unshare, delete owner, clear, duplicate; engine loader agrees)
+[UNIB] SECTION cgm-roundtrip: pass 1 fail 0 | export->import unchanged identical; locality edits 1 ok 1
+[UNIB] SECTION cgm-struct: pass 1 fail 0 | structural operations proven 10 (add/insert/delete round trip byte-identical, permute + inverse, move, unshare, delete owner, clear, duplicate; engine loader agrees)
+[UNIB] SECTION cgm-roundtrip: pass 1 fail 0 | export->import unchanged identical; locality edits 1 ok 1
+[UNIB] SECTION cgm-struct: pass 1 fail 0 | structural operations proven 10 (add/insert/delete round trip byte-identical, permute + inverse, move, unshare, delete owner, clear, duplicate; engine loader agrees)
+[UNIB] SECTION cgm-roundtrip: pass 1 fail 0 | export->import unchanged identical; locality edits 1 ok 1
+[UNIB] SECTION cgm-struct: pass 1 fail 0 | structural operations proven 10 (add/insert/delete round trip byte-identical, permute + inverse, move, unshare, delete owner, clear, duplicate; engine loader agrees)
+[UNIB] SECTION cgm-roundtrip: pass 1 fail 0 | export->import unchanged identical; locality edits 1 ok 1
+[UNIB] SECTION cgm-struct: pass 1 fail 0 | structural operations proven 10 (add/insert/delete round trip byte-identical, permute + inverse, move, unshare, delete owner, clear, duplicate; engine loader agrees)
+[UNIB] SECTION cgm-roundtrip: pass 1 fail 0 | export->import unchanged identical; locality edits 1 ok 1
+[UNIB] SECTION cgm-struct: pass 1 fail 0 | structural operations proven 10 (add/insert/delete round trip byte-identical, permute + inverse, move, unshare, delete owner, clear, duplicate; engine loader agrees)
+[UNIB] SECTION cgm-roundtrip: pass 1 fail 0 | export->import unchanged identical; locality edits 1 ok 1
+[UNIB] SECTION cgm-struct: pass 1 fail 0 | structural operations proven 10 (add/insert/delete round trip byte-identical, permute + inverse, move, unshare, delete owner, clear, duplicate; engine loader agrees)
+[UNIB] SECTION cgm-roundtrip: pass 1 fail 0 | export->import unchanged identical; locality edits 1 ok 1
+[UNIB] SECTION cgm-struct: pass 1 fail 0 | structural operations proven 10 (add/insert/delete round trip byte-identical, permute + inverse, move, unshare, delete owner, clear, duplicate; engine loader agrees)
+[UNIB] SECTION cgm-roundtrip: pass 1 fail 0 | export->import unchanged identical; locality edits 1 ok 1
+[UNIB] SECTION cgm-struct: pass 1 fail 0 | structural operations proven 10 (add/insert/delete round trip byte-identical, permute + inverse, move, unshare, delete owner, clear, duplicate; engine loader agrees)
+[UNIB] SECTION cgm-roundtrip: pass 1 fail 0 | export->import unchanged identical; locality edits 1 ok 1
+[UNIB] SECTION cgm-struct: pass 1 fail 0 | structural operations proven 10 (add/insert/delete round trip byte-identical, permute + inverse, move, unshare, delete owner, clear, duplicate; engine loader agrees)
+[UNIB] SECTION cgm-roundtrip: pass 1 fail 0 | export->import unchanged identical; locality edits 1 ok 1
+[UNIB] SECTION cgm-struct: pass 1 fail 0 | structural operations proven 10 (add/insert/delete round trip byte-identical, permute + inverse, move, unshare, delete owner, clear, duplicate; engine loader agrees)
+[UNIB] SECTION cgm-roundtrip: pass 1 fail 0 | export->import unchanged identical; locality edits 1 ok 1
+[UNIB] SECTION cgm-struct: pass 1 fail 0 | structural operations proven 10 (add/insert/delete round trip byte-identical, permute + inverse, move, unshare, delete owner, clear, duplicate; engine loader agrees)
+[UNIB] SECTION cgm-roundtrip: pass 1 fail 0 | export->import unchanged identical; locality edits 1 ok 1
+[UNIB] SECTION cgm-struct: pass 1 fail 0 | structural operations proven 10 (add/insert/delete round trip byte-identical, permute + inverse, move, unshare, delete owner, clear, duplicate; engine loader agrees)
+[UNIB] SECTION cgm-roundtrip: pass 1 fail 0 | export->import unchanged identical; locality edits 1 ok 1
+[UNIB] SECTION cgm-struct: pass 1 fail 0 | structural operations proven 10 (add/insert/delete round trip byte-identical, permute + inverse, move, unshare, delete owner, clear, duplicate; engine loader agrees)
+[UNIB] SECTION cgm-roundtrip: pass 1 fail 0 | export->import unchanged identical; locality edits 1 ok 1
+[UNIB] SECTION cgm-struct: pass 1 fail 0 | structural operations proven 10 (add/insert/delete round trip byte-identical, permute + inverse, move, unshare, delete owner, clear, duplicate; engine loader agrees)
+[UNIB] SECTION cgm-roundtrip: pass 1 fail 0 | export->import unchanged identical; locality edits 1 ok 1
+[UNIB] SECTION cgm-struct: pass 1 fail 0 | structural operations proven 10 (add/insert/delete round trip byte-identical, permute + inverse, move, unshare, delete owner, clear, duplicate; engine loader agrees)
+[UNIB] SECTION cgm-roundtrip: pass 1 fail 0 | export->import unchanged identical; locality edits 1 ok 1
+[UNIB] SECTION cgm-struct: pass 1 fail 0 | structural operations proven 10 (add/insert/delete round trip byte-identical, permute + inverse, move, unshare, delete owner, clear, duplicate; engine loader agrees)
+[UNIB] SECTION cgm-roundtrip: pass 1 fail 0 | export->import unchanged identical; locality edits 1 ok 1
+[UNIB] SECTION cgm-struct: pass 1 fail 0 | structural operations proven 10 (add/insert/delete round trip byte-identical, permute + inverse, move, unshare, delete owner, clear, duplicate; engine loader agrees)
+[UNIB] SECTION cgm-roundtrip: pass 1 fail 0 | export->import unchanged identical; locality edits 1 ok 1
+[UNIB] SECTION cgm-struct: pass 1 fail 0 | structural operations proven 10 (add/insert/delete round trip byte-identical, permute + inverse, move, unshare, delete owner, clear, duplicate; engine loader agrees)
+[UNIB] SECTION cgm-roundtrip: pass 1 fail 0 | export->import unchanged identical; locality edits 1 ok 1
+[UNIB] SECTION cgm-struct: pass 1 fail 0 | structural operations proven 10 (add/insert/delete round trip byte-identical, permute + inverse, move, unshare, delete owner, clear, duplicate; engine loader agrees)
+[UNIB] SECTION cgm-roundtrip: pass 1 fail 0 | export->import unchanged identical; locality edits 1 ok 1
+[UNIB] SECTION cgm-struct: pass 1 fail 0 | structural operations proven 10 (add/insert/delete round trip byte-identical, permute + inverse, move, unshare, delete owner, clear, duplicate; engine loader agrees)
+[UNIB] SECTION cgm-roundtrip: pass 1 fail 0 | export->import unchanged identical; locality edits 1 ok 1
+[UNIB] SECTION cgm-struct: pass 1 fail 0 | structural operations proven 8 (add/insert/delete round trip byte-identical, permute + inverse, move, unshare, delete owner, clear, duplicate; engine loader agrees)
+[UNIB] SECTION cgm-roundtrip: pass 1 fail 0 | export->import unchanged identical; locality edits 1 ok 1
+[UNIB] SECTION cgm-struct: pass 1 fail 0 | structural operations proven 8 (add/insert/delete round trip byte-identical, permute + inverse, move, unshare, delete owner, clear, duplicate; engine loader agrees)
+[UNIB] SECTION cgm-roundtrip: pass 1 fail 0 | export->import unchanged identical; locality edits 1 ok 1
+[UNIB] SECTION cgm-struct: pass 1 fail 0 | structural operations proven 10 (add/insert/delete round trip byte-identical, permute + inverse, move, unshare, delete owner, clear, duplicate; engine loader agrees)
+[UNIB] SECTION cgm-roundtrip: pass 1 fail 0 | export->import unchanged identical; locality edits 1 ok 1
+[UNIB] SECTION cgm-struct: pass 1 fail 0 | structural operations proven 10 (add/insert/delete round trip byte-identical, permute + inverse, move, unshare, delete owner, clear, duplicate; engine loader agrees)
+[UNIB] SECTION cgm-roundtrip: pass 1 fail 0 | export->import unchanged identical; locality edits 1 ok 1
+[UNIB] SECTION cgm-struct: pass 1 fail 0 | structural operations proven 10 (add/insert/delete round trip byte-identical, permute + inverse, move, unshare, delete owner, clear, duplicate; engine loader agrees)
+[UNIB] SECTION cgm-roundtrip: pass 1 fail 0 | export->import unchanged identical; locality edits 1 ok 1
+[UNIB] SECTION cgm-struct: pass 1 fail 0 | structural operations proven 10 (add/insert/delete round trip byte-identical, permute + inverse, move, unshare, delete owner, clear, duplicate; engine loader agrees)
+[UNIB] SECTION cgm-roundtrip: pass 1 fail 0 | export->import unchanged identical; locality edits 1 ok 1
+[UNIB] SECTION cgm-struct: pass 1 fail 0 | structural operations proven 10 (add/insert/delete round trip byte-identical, permute + inverse, move, unshare, delete owner, clear, duplicate; engine loader agrees)
+[UNIB] SECTION cgm-project-refs: pass | Aka.cg: 1 projects, 3 files (2 rewritable), 776 layer refs: 775 same picture, 1 cleared (deleted image 14); 1 files rewritten; inverse byte-identical 2/2
+[UNIB] FAIL D:\Games\unib\data\Car_0\Car.cg: layer not remapped in C:\dev\hantei-chan\work\cgm_suite\j62\data\Car_0/Car.HA6
+[UNIB] SECTION cgm-project-refs: FAIL | Car.cg: 1 projects, 4 files (3 rewritable), 2684 layer refs: 1143 same picture, 1 cleared (deleted image 60); 3 files rewritten; inverse byte-identical 2/2
+!! [UNIB] project-refs-check D:\Games\unib\data\Car_0\Car.cg exited 1
+[UNIB] FAIL D:\Games\unib\data\Elt_0\Elt.cg: layer not remapped in C:\dev\hantei-chan\work\cgm_suite\j63\data\Elt_0\Elt_s.HA6
+[UNIB] SECTION cgm-project-refs: FAIL | Elt.cg: 1 projects, 4 files (3 rewritable), 2142 layer refs: 2092 same picture, 1 cleared (deleted image 26); 3 files rewritten; inverse byte-identical 2/2
+!! [UNIB] project-refs-check D:\Games\unib\data\Elt_0\Elt.cg exited 1
+[UNIB] SECTION cgm-project-refs: pass | Gor.cg: 1 projects, 4 files (3 rewritable), 2672 layer refs: 2671 same picture, 1 cleared (deleted image 50); 3 files rewritten; inverse byte-identical 3/3
+[UNIB] FAIL D:\Games\unib\data\Hil_0\Hil.cg: layer not remapped in C:\dev\hantei-chan\work\cgm_suite\j65\data\Hil_0/Hil.HA6
+[UNIB] SECTION cgm-project-refs: FAIL | Hil.cg: 1 projects, 4 files (3 rewritable), 3447 layer refs: 2288 same picture, 1 cleared (deleted image 77); 3 files rewritten; inverse byte-identical 3/3
+!! [UNIB] project-refs-check D:\Games\unib\data\Hil_0\Hil.cg exited 1
+[UNIB] SECTION cgm-project-refs: pass | Hyd.cg: 1 projects, 5 files (4 rewritable), 1813 layer refs: 1812 same picture, 1 cleared (deleted image 26); 3 files rewritten; inverse byte-identical 4/4
+[UNIB] FAIL D:\Games\unib\data\Lin_0\Lin.cg: layer not remapped in C:\dev\hantei-chan\work\cgm_suite\j67\data\Lin_0\Lin_s.HA6
+[UNIB] SECTION cgm-project-refs: FAIL | Lin.cg: 1 projects, 4 files (3 rewritable), 2671 layer refs: 2664 same picture, 1 cleared (deleted image 50); 3 files rewritten; inverse byte-identical 2/2
+!! [UNIB] project-refs-check D:\Games\unib\data\Lin_0\Lin.cg exited 1
+[UNIB] FAIL D:\Games\unib\data\Mer_0\Mer.cg: layer not remapped in C:\dev\hantei-chan\work\cgm_suite\j68\data\Mer_0\Mer_s.HA6
+[UNIB] SECTION cgm-project-refs: FAIL | Mer.cg: 1 projects, 4 files (3 rewritable), 3992 layer refs: 3772 same picture, 1 cleared (deleted image 22); 3 files rewritten; inverse byte-identical 3/3
+!! [UNIB] project-refs-check D:\Games\unib\data\Mer_0\Mer.cg exited 1
+[UNIB] SECTION cgm-project-refs: pass | Mik.cg: 1 projects, 3 files (2 rewritable), 1080 layer refs: 1079 same picture, 1 cleared (deleted image 1); 2 files rewritten; inverse byte-identical 2/2
+[UNIB] SECTION cgm-project-refs: pass | Nan.cg: 1 projects, 3 files (2 rewritable), 774 layer refs: 773 same picture, 1 cleared (deleted image 0); 2 files rewritten; inverse byte-identical 2/2
+[UNIB] SECTION cgm-project-refs: pass | Ori.cg: 1 projects, 4 files (3 rewritable), 3641 layer refs: 3640 same picture, 1 cleared (deleted image 32); 3 files rewritten; inverse byte-identical 3/3
+[UNIB] FAIL D:\Games\unib\data\Set_0\Set.cg: layer not remapped in C:\dev\hantei-chan\work\cgm_suite\j72\data\Set_0\Set_s.HA6
+[UNIB] SECTION cgm-project-refs: FAIL | Set.cg: 1 projects, 4 files (3 rewritable), 2740 layer refs: 2723 same picture, 1 cleared (deleted image 22); 3 files rewritten; inverse byte-identical 2/2
+!! [UNIB] project-refs-check D:\Games\unib\data\Set_0\Set.cg exited 1
+[UNIB] FAIL D:\Games\unib\data\Vat_0\Vat.cg: layer not remapped in C:\dev\hantei-chan\work\cgm_suite\j73\data\Vat_0\Vat_s.HA6
+[UNIB] SECTION cgm-project-refs: FAIL | Vat.cg: 1 projects, 4 files (3 rewritable), 2883 layer refs: 2841 same picture, 1 cleared (deleted image 1); 3 files rewritten; inverse byte-identical 2/2
+!! [UNIB] project-refs-check D:\Games\unib\data\Vat_0\Vat.cg exited 1
+[UNIB] FAIL D:\Games\unib\data\Wal_0\Wal.cg: layer not remapped in C:\dev\hantei-chan\work\cgm_suite\j74\data\Wal_0/_temp.HA6
+[UNIB] SECTION cgm-project-refs: FAIL | Wal.cg: 1 projects, 4 files (3 rewritable), 3568 layer refs: 282 same picture, 0 cleared (deleted image 12); 3 files rewritten; inverse byte-identical 2/2
+!! [UNIB] project-refs-check D:\Games\unib\data\Wal_0\Wal.cg exited 1
+[UNIB] FAIL D:\Games\unib\data\Yuz_0\Yuz.cg: layer not remapped in C:\dev\hantei-chan\work\cgm_suite\j75\data\Yuz_0\Yuz_s.HA6
+[UNIB] SECTION cgm-project-refs: FAIL | Yuz.cg: 1 projects, 4 files (3 rewritable), 2915 layer refs: 2818 same picture, 1 cleared (deleted image 62); 3 files rewritten; inverse byte-identical 3/3
+!! [UNIB] project-refs-check D:\Games\unib\data\Yuz_0\Yuz.cg exited 1
+[UNIB] SECTION cgm-project-refs: pass | csel_Aka.cg: 1 projects, 1 files (1 rewritable), 1 layer refs: 0 same picture, 1 cleared (deleted image 0); 1 files rewritten; inverse byte-identical 0/0
+[UNIB] SECTION cgm-project-refs: pass | csel_Car.cg: 1 projects, 1 files (1 rewritable), 15 layer refs: 14 same picture, 1 cleared (deleted image 0); 1 files rewritten; inverse byte-identical 0/0
+[UNIB] SECTION cgm-project-refs: pass | csel_Elt.cg: 1 projects, 1 files (1 rewritable), 14 layer refs: 13 same picture, 1 cleared (deleted image 0); 1 files rewritten; inverse byte-identical 0/0
+[UNIB] SECTION cgm-project-refs: pass | csel_Gor.cg: 1 projects, 1 files (1 rewritable), 14 layer refs: 13 same picture, 1 cleared (deleted image 0); 1 files rewritten; inverse byte-identical 0/0
+[UNIB] SECTION cgm-project-refs: pass | csel_Hil.cg: 1 projects, 1 files (1 rewritable), 10 layer refs: 9 same picture, 1 cleared (deleted image 0); 1 files rewritten; inverse byte-identical 0/0
+[UNIB] SECTION cgm-project-refs: pass | csel_Hyd.cg: 1 projects, 1 files (1 rewritable), 18 layer refs: 17 same picture, 1 cleared (deleted image 0); 1 files rewritten; inverse byte-identical 0/0
+[UNIB] SECTION cgm-project-refs: pass | csel_Lin.cg: 1 projects, 1 files (1 rewritable), 15 layer refs: 14 same picture, 1 cleared (deleted image 0); 1 files rewritten; inverse byte-identical 0/0
+[UNIB] SECTION cgm-project-refs: pass | csel_Mer.cg: 1 projects, 1 files (1 rewritable), 18 layer refs: 17 same picture, 1 cleared (deleted image 0); 1 files rewritten; inverse byte-identical 0/0
+[UNIB] FAIL D:\Games\unib\data\_csel\csel_Mik.cg: MoveImage: image position out of range
+[UNIB] SECTION cgm-project-refs: FAIL | csel_Mik.cg: 1 projects, 1 files (1 rewritable), 1 layer refs: 0 same picture, 1 cleared (deleted image 0); 1 files rewritten; inverse byte-identical 0/0
+!! [UNIB] project-refs-check D:\Games\unib\data\_csel\csel_Mik.cg exited 1
+[UNIB] FAIL D:\Games\unib\data\_csel\csel_Nan.cg: MoveImage: image position out of range
+[UNIB] SECTION cgm-project-refs: FAIL | csel_Nan.cg: 1 projects, 1 files (1 rewritable), 1 layer refs: 0 same picture, 1 cleared (deleted image 0); 1 files rewritten; inverse byte-identical 0/0
+!! [UNIB] project-refs-check D:\Games\unib\data\_csel\csel_Nan.cg exited 1
+[UNIB] SECTION cgm-project-refs: pass | csel_Ori.cg: 1 projects, 1 files (1 rewritable), 25 layer refs: 24 same picture, 1 cleared (deleted image 0); 1 files rewritten; inverse byte-identical 0/0
+[UNIB] SECTION cgm-project-refs: pass | csel_Set.cg: 1 projects, 1 files (1 rewritable), 11 layer refs: 10 same picture, 1 cleared (deleted image 0); 1 files rewritten; inverse byte-identical 0/0
+[UNIB] SECTION cgm-project-refs: pass | csel_Vat.cg: 1 projects, 1 files (1 rewritable), 11 layer refs: 10 same picture, 1 cleared (deleted image 0); 1 files rewritten; inverse byte-identical 0/0
+[UNIB] SECTION cgm-project-refs: pass | csel_Wal.cg: 1 projects, 1 files (1 rewritable), 12 layer refs: 11 same picture, 1 cleared (deleted image 0); 1 files rewritten; inverse byte-identical 0/0
+[UNIB] SECTION cgm-project-refs: pass | csel_Yuz.cg: 1 projects, 1 files (1 rewritable), 46 layer refs: 45 same picture, 1 cleared (deleted image 0); 1 files rewritten; inverse byte-identical 0/0
+[UNIB] SECTION cgm-folder: pass | Aka.cg: 495 drawable; cgtool export -> plain import / sync identical; sync delete+add+rename; build from folder 495/495 images identical; resized replace anchored
+[UNIB] SECTION cgm-folder: pass | Car.cg: 664 drawable; cgtool export -> plain import / sync identical; sync delete+add+rename; build from folder 664/664 images identical; resized replace anchored
+[UNIB] SECTION cgm-folder: pass | Elt.cg: 611 drawable; cgtool export -> plain import / sync identical; sync delete+add+rename; build from folder 611/611 images identical; resized replace anchored
+[UNIB] SECTION cgm-folder: pass | Gor.cg: 791 drawable; cgtool export -> plain import / sync identical; sync delete+add+rename; build from folder 791/791 images identical; resized replace anchored
+[UNIB] SECTION cgm-folder: pass | Hil.cg: 782 drawable; cgtool export -> plain import / sync identical; sync delete+add+rename; build from folder 782/782 images identical; resized replace anchored
+[UNIB] SECTION cgm-folder: pass | Hyd.cg: 677 drawable; cgtool export -> plain import / sync identical; sync delete+add+rename; build from folder 677/677 images identical; resized replace anchored
+[UNIB] SECTION cgm-folder: pass | Lin.cg: 703 drawable; cgtool export -> plain import / sync identical; sync delete+add+rename; build from folder 703/703 images identical; resized replace anchored
+[UNIB] SECTION cgm-folder: pass | Mer.cg: 784 drawable; cgtool export -> plain import / sync identical; sync delete+add+rename; build from folder 784/784 images identical; resized replace anchored
+[UNIB] SECTION cgm-folder: pass | Mik.cg: 706 drawable; cgtool export -> plain import / sync identical; sync delete+add+rename; build from folder 706/706 images identical; resized replace anchored
+[UNIB] SECTION cgm-folder: pass | Nan.cg: 391 drawable; cgtool export -> plain import / sync identical; sync delete+add+rename; build from folder 391/391 images identical; resized replace anchored
+[UNIB] SECTION cgm-folder: pass | Ori.cg: 792 drawable; cgtool export -> plain import / sync identical; sync delete+add+rename; build from folder 792/792 images identical; resized replace anchored
+[UNIB] SECTION cgm-folder: pass | Set.cg: 615 drawable; cgtool export -> plain import / sync identical; sync delete+add+rename; build from folder 615/615 images identical; resized replace anchored
+[UNIB] SECTION cgm-folder: pass | Vat.cg: 740 drawable; cgtool export -> plain import / sync identical; sync delete+add+rename; build from folder 740/740 images identical; resized replace anchored
+[UNIB] SECTION cgm-folder: pass | Wal.cg: 634 drawable; cgtool export -> plain import / sync identical; sync delete+add+rename; build from folder 634/634 images identical; resized replace anchored
+[UNIB] SECTION cgm-folder: pass | Yuz.cg: 681 drawable; cgtool export -> plain import / sync identical; sync delete+add+rename; build from folder 681/681 images identical; resized replace anchored
+[UNIB] SECTION cgm-folder: pass | csel_Aka.cg: 27 drawable; cgtool export -> plain import / sync identical; sync delete+add+rename; build from folder 27/27 images identical; resized replace anchored
+[UNIB] SECTION cgm-folder: pass | csel_Car.cg: 15 drawable; cgtool export -> plain import / sync identical; sync delete+add+rename; build from folder 15/15 images identical; resized replace anchored
+[UNIB] SECTION cgm-folder: pass | csel_Elt.cg: 14 drawable; cgtool export -> plain import / sync identical; sync delete+add+rename; build from folder 14/14 images identical; resized replace anchored
+[UNIB] SECTION cgm-folder: pass | csel_Gor.cg: 14 drawable; cgtool export -> plain import / sync identical; sync delete+add+rename; build from folder 14/14 images identical; resized replace anchored
+[UNIB] SECTION cgm-folder: pass | csel_Hil.cg: 10 drawable; cgtool export -> plain import / sync identical; sync delete+add+rename; build from folder 10/10 images identical; resized replace anchored
+[UNIB] SECTION cgm-folder: pass | csel_Hyd.cg: 18 drawable; cgtool export -> plain import / sync identical; sync delete+add+rename; build from folder 18/18 images identical; resized replace anchored
+[UNIB] SECTION cgm-folder: pass | csel_Lin.cg: 15 drawable; cgtool export -> plain import / sync identical; sync delete+add+rename; build from folder 15/15 images identical; resized replace anchored
+[UNIB] SECTION cgm-folder: pass | csel_Mer.cg: 18 drawable; cgtool export -> plain import / sync identical; sync delete+add+rename; build from folder 18/18 images identical; resized replace anchored
+[UNIB] FAIL D:\Games\unib\data\_csel\csel_Mik.cg: sync: expected 1 removed and 1 added, got 0 / 1
+[UNIB] FAIL D:\Games\unib\data\_csel\csel_Mik.cg: the new file 2.5#new_sprite.png is image 2, expected 4 (after 0, 1 (moved in), 2 and 3)
+[UNIB] SECTION cgm-folder: FAIL | csel_Mik.cg: 2 drawable; cgtool export -> plain import / sync identical; sync delete+add+rename; build from folder 2/2 images identical; resized replace anchored
+!! [UNIB] folder-check D:\Games\unib\data\_csel\csel_Mik.cg exited 1
+[UNIB] FAIL D:\Games\unib\data\_csel\csel_Nan.cg: sync: expected 1 removed and 1 added, got 0 / 1
+[UNIB] FAIL D:\Games\unib\data\_csel\csel_Nan.cg: the new file 2.5#new_sprite.png is image 1, expected 4 (after 0, 1 (moved in), 2 and 3)
+[UNIB] SECTION cgm-folder: FAIL | csel_Nan.cg: 1 drawable; cgtool export -> plain import / sync identical; sync delete+add+rename; build from folder 1/1 images identical; resized replace anchored
+!! [UNIB] folder-check D:\Games\unib\data\_csel\csel_Nan.cg exited 1
+[UNIB] SECTION cgm-folder: pass | csel_Ori.cg: 25 drawable; cgtool export -> plain import / sync identical; sync delete+add+rename; build from folder 25/25 images identical; resized replace anchored
+[UNIB] SECTION cgm-folder: pass | csel_Set.cg: 11 drawable; cgtool export -> plain import / sync identical; sync delete+add+rename; build from folder 11/11 images identical; resized replace anchored
+[UNIB] SECTION cgm-folder: pass | csel_Vat.cg: 11 drawable; cgtool export -> plain import / sync identical; sync delete+add+rename; build from folder 11/11 images identical; resized replace anchored
+[UNIB] SECTION cgm-folder: pass | csel_Wal.cg: 12 drawable; cgtool export -> plain import / sync identical; sync delete+add+rename; build from folder 12/12 images identical; resized replace anchored
+[UNIB] SECTION cgm-folder: pass | csel_Yuz.cg: 36 drawable; cgtool export -> plain import / sync identical; sync delete+add+rename; build from folder 36/36 images identical; resized replace anchored
+SECTION cgio pass 1 fail 0 skipped 0
+
+real	8m49.718s
+user	0m2.268s
+sys	0m9.616s

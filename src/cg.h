@@ -103,6 +103,13 @@ protected:
 
 	const CG_Alignment		*m_align;
 	unsigned int			m_nalign;
+	// "BMP Cutter2" (MBAC / ReAct GAKIHA): the align count is a WORD (high word kept as stored), images carry no pixels and
+	// every block reads the pre-baked 256 x 256 8-bit pages at m_pageBase (bank palette). MBAC itself skips such a bank: its
+	// CG builder (ProcessCGData, mbacPC 0x43E390) returns unless the dword at +0x10 is 1, and GAKIHA's is 0.
+	bool					m_cutter2 = false;
+	unsigned int			m_pageBase = 0;
+	unsigned int alen(const CG_Image *i) const { return m_cutter2 ? (i->align_len & 0xFFFFu) : i->align_len; }
+	int etype(const CG_Image *i) const { return m_cutter2 ? 0 : i->type_id; }
 
 	struct ImageCell {
 		unsigned int		start;
@@ -154,6 +161,7 @@ public:
 	// Re-parse palette bytes (a .pal file image) as bank `bank` (0 = <cg>.pal, 1..7 = PUPS): live palette editing in the CG manager. Keeps the selection.
 	bool setPaletteBytes(int bank, const void *bytes, unsigned size);
 	// Source file of palette bank n as loaded (empty = none).
+	void setPalettePath(int bank, const std::string &path) { if (bank >= 0 && bank < kPupsBanks) palPaths[bank] = path; }   // a bank file created by the CG manager
 	const std::string &palettePath(int bank) const { static const std::string none; return (bank >= 0 && bank < kPupsBanks) ? palPaths[bank] : none; }
 	// Loads <stem>.pal as bank 0 and <stem>_p1.pal .. _p7.pal as banks 1..7.
 	bool loadPupsPalettes(const std::string &stem);

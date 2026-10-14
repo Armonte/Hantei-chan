@@ -2,6 +2,7 @@
 #include <algorithm>
 #include <cstdio>
 #include <cstring>
+#include <atomic>
 
 namespace cgm {
 
@@ -16,6 +17,15 @@ static const size_t kHdrDw = 0x2014, kIdxOff = 0x2044, kTail = kIdxOff + 4 * kMa
 static size_t BytesPerPixel(int type) { return type == 1 ? 4 : (type == 4 || type == 5) ? 2 : 1; }   // per owned block pixel (type 4: index + alpha plane)
 static size_t PrefixBytes(int type, int bpp) { return bpp == 32 ? (type == 2 || type == 4 ? 1024 : type == 3 ? 4 : 0) : 0; }
 
+uint32_t NewImageUid() { static std::atomic<uint32_t> n{1}; return n++; }
+std::vector<uint32_t> ImageUids(const Bank &b) { std::vector<uint32_t> v; v.reserve(b.images.size()); for (const Image &im : b.images) v.push_back(im.uid); return v; }
+std::vector<int> RemapSince(const std::vector<uint32_t> &then, const Bank &now) {
+	std::unordered_map<uint32_t, int> at; for (size_t i = 0; i < now.images.size(); i++) at[now.images[i].uid] = (int)i;
+	std::vector<int> r(then.size(), -1);
+	for (size_t i = 0; i < then.size(); i++) { auto it = at.find(then[i]); if (it != at.end()) r[i] = it->second; }
+	return r;
+}
+
 void Bank::recomputeLayout() {
 	for (Image &im : images) {
 		uint32_t off = (uint32_t)PrefixBytes(im.type, im.bpp);
@@ -27,6 +37,7 @@ void Bank::recomputeLayout() {
 	uint32_t na = 0;
 	for (const Image &im : images) na += (uint32_t)im.blocks.size();
 	H[2] = na; H[3] = (uint32_t)(images.size() - hidden);
+	if (cutter2 && H[1] < bakedPages.size()) { H[1] = (uint32_t)bakedPages.size(); if (H[0] < H[1]) H[0] = H[1]; }   // only grows: a parsed bank keeps its header words
 }
 
 bool Bank::parse(const uint8_t *d, size_t size, Bank &out, std::string *err) {
@@ -34,6 +45,7 @@ bool Bank::parse(const uint8_t *d, size_t size, Bank &out, std::string *err) {
 	out = Bank();
 	if (size < kFirstImage || (memcmp(d, "BMP Cutter3", 11) && memcmp(d, "BMP Cutter2", 11))) return fail("not a BMP Cutter bank");
 	memcpy(out.head.data(), d, 0x14);
+	out.cutter2 = !memcmp(d, "BMP Cutter2", 11);
 	memcpy(out.palettes.data(), d + 0x14, 0x2000);
 	for (int i = 0; i < 12; i++) out.H[i] = Rd32(d + kHdrDw + 4 * i);
 	const uint32_t nimg = out.H[3], nalign = out.H[2];
@@ -41,11 +53,18 @@ bool Bank::parse(const uint8_t *d, size_t size, Bank &out, std::string *err) {
 	const uint32_t ao = Rd32(d + kTail);
 	out.tailMid = Rd32(d + kTail + 4);
 	if (Rd32(d + kTail + 8) != size) return fail("size field in the tail does not match the file size");
-	if (ao > size || (size - ao) != (size_t)nalign * 24) return fail("alignment table does not end the file");
+	size_t alignEnd = size;
+	if (out.cutter2) {   // pre-baked pages follow the alignment table
+		alignEnd = (size_t)ao + (size_t)nalign * 24;
+		if (ao > size || alignEnd != out.tailMid || out.tailMid > size || (size - out.tailMid) % 65536) return fail("Cutter2 bank: the pre-baked pages do not follow the alignment table");
+		for (size_t o = out.tailMid; o < size; o += 65536) out.bakedPages.push_back(std::make_shared<const std::vector<uint8_t>>(d + o, d + o + 65536));
+	}
+	if (ao > size || (alignEnd - ao) != (size_t)nalign * 24) return fail("alignment table does not end the file");
 	uint32_t total = nimg;   // entries past the declared count that still hold an offset are kept as hidden images
 	for (uint32_t i = nimg; i < (uint32_t)kMaxImages; i++) if (Rd32(d + kIdxOff + 4 * i) != kAbsent) total = i + 1;
 	out.hidden = (int)(total - nimg);
 	out.images.resize(total);
+	for (Image &im : out.images) im.uid = NewImageUid();
 	std::vector<std::pair<uint32_t, uint32_t>> order;   // (offset, index)
 	for (uint32_t i = 0; i < total; i++) { uint32_t o = Rd32(d + kIdxOff + 4 * i); if (o != kAbsent) order.push_back({o, i}); }
 	for (size_t k = 0; k < order.size(); k++) {
@@ -62,7 +81,10 @@ bool Bank::parse(const uint8_t *d, size_t size, Bank &out, std::string *err) {
 		memcpy(im.name, d + o, 32);
 		im.type = Rd32s(d + o + 32); im.w = Rd32s(d + o + 36); im.h = Rd32s(d + o + 40); im.bpp = Rd32s(d + o + 44);
 		im.x1 = Rd32s(d + o + 48); im.y1 = Rd32s(d + o + 52); im.x2 = Rd32s(d + o + 56); im.y2 = Rd32s(d + o + 60);
-		const uint32_t as = Rd32(d + o + 64), al = Rd32(d + o + 68);
+		const uint32_t as = Rd32(d + o + 64), alRaw = Rd32(d + o + 68);
+		const uint32_t al = out.cutter2 ? (alRaw & 0xFFFF) : alRaw;
+		if (out.cutter2) im.alHigh = (uint16_t)(alRaw >> 16);
+
 		if ((uint64_t)as + al > nalign) return fail("image " + std::to_string(idx) + ": alignment range outside the table");
 		if (as != runAlign) out.alignSequential = false;
 		runAlign = as + al;
@@ -100,7 +122,7 @@ void Bank::serialize(std::vector<uint8_t> &o) const {
 		Wr32(o, (uint32_t)im.type); Wr32(o, (uint32_t)im.w); Wr32(o, (uint32_t)im.h); Wr32(o, (uint32_t)im.bpp);
 		Wr32(o, (uint32_t)im.x1); Wr32(o, (uint32_t)im.y1); Wr32(o, (uint32_t)im.x2); Wr32(o, (uint32_t)im.y2);
 		uint32_t as = 0; for (size_t k = 0; k < i; k++) as += (uint32_t)images[k].blocks.size();
-		Wr32(o, as); Wr32(o, (uint32_t)im.blocks.size());
+		Wr32(o, as); Wr32(o, cutter2 ? (((uint32_t)im.alHigh << 16) | ((uint32_t)im.blocks.size() & 0xFFFF)) : (uint32_t)im.blocks.size());
 		if (im.blob) o.insert(o.end(), im.blob->begin(), im.blob->end());
 	}
 	const uint32_t ao = (uint32_t)o.size();
@@ -108,6 +130,10 @@ void Bank::serialize(std::vector<uint8_t> &o) const {
 	for (const Image &im : images) for (const Block &b : im.blocks) {
 		Wr32(o, (uint32_t)b.x); Wr32(o, (uint32_t)b.y); Wr32(o, (uint32_t)b.w); Wr32(o, (uint32_t)b.h);
 		Wr16(o, b.sx); Wr16(o, b.sy); Wr16(o, b.page); Wr16(o, b.copy);
+	}
+	if (cutter2) {
+		const uint32_t po = (uint32_t)o.size(); memcpy(&o[tailPos + 4], &po, 4);
+		for (const Blob &pg : bakedPages) { if (pg && pg->size() == 65536) o.insert(o.end(), pg->begin(), pg->end()); else o.insert(o.end(), 65536, 0); }
 	}
 	const uint32_t total = (uint32_t)o.size();
 	memcpy(&o[tailPos + 8], &total, 4);
@@ -173,12 +199,15 @@ struct CellRef { const Image *im = nullptr; const Block *blk = nullptr; };
 static bool DecodeImpl(const Bank &bk, int n, std::vector<uint32_t> *rgbaOut, std::vector<uint8_t> *idxOut, std::vector<uint8_t> *alphaOut, const uint32_t *pal0, uint32_t *palOut) {
 	if (n < 0 || n >= (int)bk.images.size()) return false;
 	const Image &im = bk.images[n];
-	if (!im.drawable() || !im.blob) return false;
+	if (!im.drawable() || (!im.blob && !bk.cutter2)) return false;
 	const int W = im.boundsW(), H = im.boundsH(), cu = bk.cellUnit();
 	if ((int64_t)W * H > (1 << 24)) return false;
 	uint32_t pal[256];
-	const uint8_t *blob = im.blob->data(); const size_t bsz = im.blob->size();
-	if (im.bpp == 32 && im.type == 3) {
+	static const std::vector<uint8_t> kNone;
+	const std::vector<uint8_t> &blobv = im.blob ? *im.blob : kNone;
+	const uint8_t *blob = blobv.data(); const size_t bsz = blobv.size();
+	if (bk.cutter2) { if (pal0) memcpy(pal, pal0, 1024); else bk.palette(0, pal); }
+	else if (im.bpp == 32 && im.type == 3) {
 		if (bsz < 4) return false;
 		uint32_t col; memcpy(&col, blob, 4); col &= 0xFFFFFF;
 		pal[0] = 0; for (int i = 1; i < 256; i++) pal[i] = ((uint32_t)i << 24) | col;
@@ -197,9 +226,18 @@ static bool DecodeImpl(const Bank &bk, int n, std::vector<uint32_t> *rgbaOut, st
 	bool haveAtlas = false;
 	const bool alphaPlane = im.type == 4, bgra = im.type == 1;
 	for (const Block &b : im.blocks) {
+		const std::vector<uint8_t> *page = nullptr;
+		if (bk.cutter2) { if (b.page < 0 || b.page >= (int)bk.bakedPages.size() || !bk.bakedPages[b.page]) continue; page = bk.bakedPages[b.page].get(); }
 		for (int ly = 0; ly < b.h; ly++) for (int lx = 0; lx < b.w; lx++) {
 			const int cx_ = b.x + lx - im.x1, cy_ = b.y + ly - im.y1;
 			if (cx_ < 0 || cy_ < 0 || cx_ >= W || cy_ >= H) continue;
+			if (page) {   // Cutter2: the block's cells on the pre-baked page, bank palette
+				const int px = b.sx + lx, py = b.sy + ly; if (px < 0 || py < 0 || px > 255 || py > 255) continue;
+				const uint8_t i0 = (*page)[(size_t)py * 256 + px]; const size_t pix = (size_t)cy_ * W + cx_;
+				if (rgbaOut) (*rgbaOut)[pix] = pal[i0];
+				if (idxOut) (*idxOut)[pix] = i0;
+				continue;
+			}
 			// find the data of this pixel
 			const Image *src = &im; const Block *sb = &b; int sx = lx, sy = ly;
 			if (b.copy) {
@@ -253,7 +291,7 @@ bool Bank::decode(int n, Rgba &out, const uint32_t *pal) const {
 bool Bank::decodeIndexed(int n, std::vector<uint8_t> &idx, uint32_t pal[256], std::vector<uint8_t> *alpha8, const uint32_t *bankPal) const {
 	if (n < 0 || n >= (int)images.size()) return false;
 	const Image &im = images[n];
-	if (!im.drawable() || im.type == 1 || im.type == 3) return false;
+	if (!im.drawable() || (!cutter2 && (im.type == 1 || im.type == 3))) return false;
 	std::vector<uint8_t> a;
 	if (!DecodeImpl(*this, n, nullptr, &idx, &a, bankPal, pal)) return false;
 	if (alpha8) *alpha8 = std::move(a);

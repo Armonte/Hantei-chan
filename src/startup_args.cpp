@@ -139,7 +139,8 @@ static bool han2StartupSniffPat(const std::string &path)
 
 // Scripted UI session (--ui-script): runs between render and swap, so `capture` sees exactly what this frame drew.
 static void RunUiScript(MainFrame &mf, HDC dc, const std::function<void(const std::string &)> &openAny, const std::function<void(int, int)> &setView, const std::function<bool()> &saveActive,
-                        const std::function<bool(const std::string &, const std::string &)> &editCmd)
+                        const std::function<bool(const std::string &, const std::string &)> &editCmd,
+	const std::function<bool(const std::string &, const std::string &, std::string *)> &cgmScript)
 {
 	static std::vector<std::string> lines; static size_t pc = 0; static int waitFrames = 0, idleWaited = 0; static bool loaded = false, waitIdle = false, done = false;
 	if (done || gStartup.uiScript.empty()) return;
@@ -169,6 +170,13 @@ static void RunUiScript(MainFrame &mf, HDC dc, const std::function<void(const st
 		if (cmd == "copypattern" || cmd == "pastepattern" || cmd == "gameformat" || cmd == "layer" || cmd == "switchview" || cmd == "opentrees" || cmd == "tint") {
 			if (!editCmd(cmd, arg)) { FILE *lf = fopen((gStartup.uiScript + ".log").c_str(), "a"); if (lf) { fprintf(lf, "script line %zu '%s' failed\n", pc, line.c_str()); fclose(lf); } }
 			waitFrames = 3; return;
+		}
+		if (cmd == "cgm") {   // cgm <open|tab|press|path|select|set|status> [arg]: the CG manager window (cgm_window.h Window::script)
+			const size_t s2 = arg.find(' ');
+			std::string msg; const bool ok = cgmScript(arg.substr(0, s2), s2 == std::string::npos ? "" : arg.substr(s2 + 1), &msg);
+			if (!ok) { FILE *lf = fopen((gStartup.uiScript + ".log").c_str(), "a"); if (lf) { fprintf(lf, "line %zu '%s': %s\n", pc, line.c_str(), msg.c_str()); fclose(lf); } }
+			if (arg.compare(0, 5, "press") == 0) { waitFrames = 4; return; }
+			continue;
 		}
 		if (cmd == "capture") {
 			RECT r; GetClientRect(WindowFromDC(dc), &r);
@@ -237,7 +245,8 @@ void MainFrame::ProcessStartupArgs()
 				fd.mark_modified(atoi(arg.c_str()));
 				st.pattern = atoi(arg.c_str()); st.frame = 0;
 				return true;
-			});
+			},
+			[this](const std::string &c, const std::string &a, std::string *m) { return m_cgm.script(c, a, m); });
 	if (n == 3 && !gStartup.cg.empty()) { if (auto *c = getActiveCharacter()) c->loadCG(gStartup.cg); }
 	// [tag-panel] after --open (frame 2), so the pickers see the loaded character; works without --open too
 	// [authoring] --tool authoring (and --tool tag without --tag-ini: the old panel's entry now opens Authoring > Tuning)

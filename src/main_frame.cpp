@@ -523,6 +523,14 @@ bool MainFrame::saveCharacter(CharacterInstance* character)
 		return false;
 	}
 	if (character->save()) {
+		// One save for the bank and the frame data: the CG manager renumbered images, so the frame data just written refers to
+		// the edited bank. Write the .cg and every other project file that draws it too, or they would ship mismatched ids.
+		if (m_cgm.pendingIdChanges(character)) {
+			std::string rep;
+			const bool ok = m_cgm.saveBankFiles(*character, rep);
+			requestErrorPopup(ok ? "Notice" : "Save Error", std::string(TXT("The CG manager renumbered images, so the bank was saved with the character:")) + "\n" + rep);
+			if (!ok) return false;
+		}
 		// a managed working copy of an archive entry (opened through the browser): write it back into the archive too
 		std::string err; bool had = false;
 		if (!abrowser::SaveEntryBytesIntoArchive(character->getTopHA6Path(), &err, &had) && had) { requestErrorPopup("Save Error", std::string(TXT("Saved the working copy, but could not write back into the archive: ")) + err); return false; }

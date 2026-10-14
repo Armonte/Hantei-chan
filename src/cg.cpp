@@ -47,7 +47,7 @@ bool CG::image_info(unsigned int n, int &bpp, int &typeId, int &x1, int &y1, int
 	if (m_foreign) return n < m_foreign->imageCount() && m_foreign->imageInfo(n, bpp, typeId, x1, y1, x2, y2);
 	const CG_Image *image = get_image(n);
 	if (!image || image->type_id == -1) return false;
-	bpp = (int)image->bpp; typeId = image->type_id;
+	bpp = (int)image->bpp; typeId = etype(image);
 	x1 = image->bounds_x1; y1 = image->bounds_y1; x2 = image->bounds_x2; y2 = image->bounds_y2;
 	return true;
 }
@@ -57,9 +57,9 @@ bool CG::image_cells(unsigned int n, std::vector<CellRect> &out) {
 	if (m_foreign) return n < m_foreign->imageCount() && m_foreign->imageCells(n, out);
 	const CG_Image *image = get_image(n);
 	if (!image || image->type_id == -1) return false;
-	if ((image->align_start + image->align_len) > m_nalign) return false;
+	if ((image->align_start + alen(image)) > m_nalign) return false;
 	const CG_Alignment *a = &m_align[image->align_start];
-	for (unsigned int i = 0; i < image->align_len; ++i, ++a)
+	for (unsigned int i = 0; i < alen(image); ++i, ++a)
 		out.push_back({a->x, a->y, a->width, a->height});
 	return true;
 }
@@ -120,7 +120,7 @@ void CG::copy_cells(const CG_Image *image,
 					src += cellw;
 					dest += width;
 				}
-			} else if (image->type_id == 4 || image->type_id == 5) {
+			} else if (etype(image) == 4 || etype(image) == 5) {
 				// two pass: first 8bit palettized (type 4: the image's own palette, type 5: the bank / character palette), second 8bit alpha
 				unsigned int *ldest = (unsigned int *)dest;
 				unsigned char *src = ((unsigned char *)m_data) + cell->start + cell->offset;
@@ -151,7 +151,7 @@ void CG::copy_cells(const CG_Image *image,
 					src += cellw;
 					ldest += width;
 				}
-			} else if (image->type_id == 1) {
+			} else if (etype(image) == 1) {
 				// 32bpp bgr -> rgb
 				unsigned int *ldest = (unsigned int *)dest;
 				unsigned int *src = (unsigned int *)(m_data + cell->start + cell->offset);
@@ -228,7 +228,7 @@ bool CG::replace_image_rgba(unsigned int n, const unsigned char *rgba, int w, in
 	if (m_foreign) { (void)force; bool ok = m_foreign->replaceImage(n, rgba, w, h, curPalIndex, err); if (ok) touch(); return ok; }
 	const CG_Image *image = get_image(n);
 	if (!image || image->type_id == -1) return fail("no such image");
-	if ((image->align_start + image->align_len) > m_nalign) return fail("broken alignment table");
+	if ((image->align_start + alen(image)) > m_nalign) return fail("broken alignment table");
 	const int x1 = image->bounds_x1, y1 = image->bounds_y1, bw = image->bounds_x2 - x1 + 1, bh = image->bounds_y2 - y1 + 1;
 	if (w != bw || h != bh) return fail("size mismatch: image " + std::to_string(n) + " is " + std::to_string(bw) + " x " + std::to_string(bh) + ", the PNG is " + std::to_string(w) + " x " + std::to_string(h));
 	const int ty = image->type_id;
@@ -270,7 +270,7 @@ bool CG::replace_image_rgba(unsigned int n, const unsigned char *rgba, int w, in
 	// type 3 = one colour (the first dword of the image) with an 8-bit alpha plane: index i has alpha i, index 0 is transparent
 	unsigned int address = (unsigned int)(base - m_data) + ((ty == 2 || ty == 4) ? 1024 : ty == 3 ? 4 : 0);
 	const CG_Alignment *align = &m_align[image->align_start];
-	for (unsigned int j = 0; j < image->align_len; ++j, ++align) {
+	for (unsigned int j = 0; j < alen(image); ++j, ++align) {
 		if (align->copy_flag != 0) continue;
 		const int aw = align->width, ah = align->height;
 		for (int ly = 0; ly < ah; ly++)
@@ -313,7 +313,7 @@ ImageData *CG::draw_texture(unsigned int n, bool to_pow2_flg, bool draw_8bpp) {
 		return 0; //The game doesn't draw them either.
 	}
 
-	if ((image->align_start + image->align_len) > m_nalign) {
+	if ((image->align_start + alen(image)) > m_nalign) {
 		return 0;
 	}
 	
@@ -379,7 +379,7 @@ ImageData *CG::draw_texture(unsigned int n, bool to_pow2_flg, bool draw_8bpp) {
 	}
 	
 	align = &m_align[image->align_start];
-	for (unsigned int i = 0; i < image->align_len; ++i, ++align) {
+	for (unsigned int i = 0; i < alen(image); ++i, ++align) {
 		copy_cells(image, align, pixels, x1, y1, width, height, needsCustom ? custom_palette : palette, is_8bpp);
 	}
 	
@@ -415,7 +415,7 @@ void CG::build_image_table() {
 		if(image->type_id == -1)
 			continue;
 		
-		if ((image->align_start + image->align_len) > m_nalign) {
+		if ((image->align_start + alen(image)) > m_nalign) {
 			continue;
 		}
 
@@ -430,7 +430,7 @@ void CG::build_image_table() {
 			}
 		}
 
-		for (unsigned int j = 0; j < image->align_len; ++j, ++align) {
+		for (unsigned int j = 0; j < alen(image); ++j, ++align) {
 			if (align->copy_flag != 0) {
 				continue;
 			}
@@ -458,6 +458,20 @@ void CG::build_image_table() {
 				mult = 4;
 			}
 			
+			if (m_cutter2) {   // cells read the pre-baked page in place (row stride 256)
+				if ((unsigned)align->source_image >= (unsigned)page_count || m_pageBase + (align->source_image + 1u) * 65536u > m_data_size) continue;
+				for (int a = 0; a < h; ++a) {
+					ImageCell *cell = &im->cell[cell_n];
+					for (int b = 0; b < w; ++b, ++cell) {
+						cell->start = m_pageBase + align->source_image * 65536u + align->source_y * 256u + align->source_x;
+						cell->width = 256; cell->height = align->height;
+						cell->offset = b * cu + a * cu * 256;
+						cell->type_id = 0; cell->bpp = 8;
+					}
+					cell_n += cpr;
+				}
+				continue;
+			}
 			for (int a = 0; a < h; ++a) {
 				ImageCell *cell = &im->cell[cell_n];
 				for (int b = 0; b < w; ++b, ++cell) {
@@ -754,6 +768,8 @@ bool CG::loadOwned(char *data, unsigned int size) {
 		cpr = 256 / cu;
 	}
 	m_nalign = *(d+2);
+	m_cutter2 = !memcmp(data, "BMP Cutter2", 11);
+	m_pageBase = m_cutter2 ? d[12 + 3001] : 0;   // tail: align offset, page offset, file size
 
 	unsigned int *indices = d + 12;
 	unsigned int image_count = d[3];

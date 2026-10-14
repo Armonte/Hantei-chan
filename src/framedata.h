@@ -444,6 +444,11 @@ struct Ha6ConvertReport {
 Sequence_T<std::allocator> MergeTemplatePattern(const Sequence_T<std::allocator>& tmpl,
 	const Sequence_T<std::allocator>& chr, int layerCount);
 
+// Byte positions of the CG sprite ids (AFGP / AFGX) of an HA6 file, recorded while it loads when a sink is installed:
+// the CG manager rewrites ids in place so every other byte of the file stays as shipped (cgm/cgm_project.cpp).
+struct Ha6SpriteRefSink { const char *base = nullptr; std::vector<std::pair<uint32_t, int>> refs; };   // (file offset of the id, usePat)
+extern thread_local Ha6SpriteRefSink *g_ha6SpriteRefSink;
+
 class FrameData {
 private:
 	unsigned int	m_nsequences;

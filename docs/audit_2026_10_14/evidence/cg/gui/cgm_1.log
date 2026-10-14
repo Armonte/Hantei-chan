@@ -1,0 +1,69 @@
+[Font] Noto Sans JP loaded with symbol support
+[Font] Japanese font loaded with symbol support and set as default
+[Font] Glyph ranges size: 4663
+[Font] First few glyph ranges: 0x0020 0x00FF 0x2000 0x206F 0x2190 0x21FF 0x25A0 0x26FF 0x3000 0x30FF 0x31F0 0x31FF 0x4E00 0x4E01 0x4E03 0x4E03 0x4E07 0x4E0B 0x4E0D 0x4E0E 
+[LoadCompressed] SUCCESS: 2048x2048 type=5 DXT5 texture (GL ID=3, size=4194304)
+[LoadCompressed] SUCCESS: 2048x2048 type=5 DXT5 texture (GL ID=4, size=4194304)
+[LoadCompressed] SUCCESS: 2048x1024 type=5 DXT5 texture (GL ID=5, size=2097152)
+[LoadCompressed] SUCCESS: 1024x2048 type=5 DXT5 texture (GL ID=6, size=2097152)
+[LoadCompressed] SUCCESS: 2048x1024 type=1 DXT1 texture (GL ID=7, size=1048576)
+[LoadCompressed] SUCCESS: 2048x1024 type=1 DXT1 texture (GL ID=8, size=1048576)
+[LoadCompressed] SUCCESS: 2048x1024 type=1 DXT1 texture (GL ID=9, size=1048576)
+[LoadCompressed] SUCCESS: 2048x1024 type=1 DXT1 texture (GL ID=10, size=1048576)
+[LoadCompressed] SUCCESS: 2048x1024 type=1 DXT1 texture (GL ID=11, size=1048576)
+[LoadCompressed] SUCCESS: 2048x1024 type=1 DXT1 texture (GL ID=12, size=1048576)
+[LoadCompressed] SUCCESS: 2048x1024 type=1 DXT1 texture (GL ID=13, size=1048576)
+[LoadCompressed] SUCCESS: 2048x1024 type=1 DXT1 texture (GL ID=14, size=1048576)
+[LoadCompressed] SUCCESS: 2048x1024 type=1 DXT1 texture (GL ID=15, size=1048576)
+[LoadCompressed] SUCCESS: 2048x1024 type=1 DXT1 texture (GL ID=16, size=1048576)
+[LoadCompressed] SUCCESS: 2048x1024 type=1 DXT1 texture (GL ID=17, size=1048576)
+[LoadCompressed] SUCCESS: 2048x1024 type=1 DXT1 texture (GL ID=18, size=1048576)
+[LoadCompressed] SUCCESS: 2048x1024 type=1 DXT1 texture (GL ID=19, size=1048576)
+[LoadCompressed] SUCCESS: 2048x1024 type=1 DXT1 texture (GL ID=20, size=1048576)
+[LoadCompressed] SUCCESS: 2048x1024 type=1 DXT1 texture (GL ID=21, size=1048576)
+[LoadCompressed] SUCCESS: 2048x1024 type=1 DXT1 texture (GL ID=22, size=1048576)
+[LoadCompressed] SUCCESS: 2048x1024 type=1 DXT1 texture (GL ID=23, size=1048576)
+[LoadCompressed] SUCCESS: 2048x1024 type=1 DXT1 texture (GL ID=24, size=1048576)
+[LoadCompressed] SUCCESS: 2048x1024 type=1 DXT1 texture (GL ID=25, size=1048576)
+[LoadCompressed] SUCCESS: 2048x1024 type=1 DXT1 texture (GL ID=26, size=1048576)
+[LoadCompressed] SUCCESS: 2048x1024 type=1 DXT1 texture (GL ID=27, size=1048576)
+[LoadCompressed] SUCCESS: 2048x1024 type=1 DXT1 texture (GL ID=28, size=1048576)
+[LoadCompressed] SUCCESS: 2048x1024 type=1 DXT1 texture (GL ID=29, size=1048576)
+[LoadCompressed] SUCCESS: 2048x1024 type=1 DXT1 texture (GL ID=30, size=1048576)
+[LoadCompressed] SUCCESS: 2048x1024 type=1 DXT1 texture (GL ID=31, size=1048576)
+[LoadCompressed] SUCCESS: 2048x1024 type=1 DXT1 texture (GL ID=32, size=1048576)
+[LoadCompressed] SUCCESS: 2048x1024 type=1 DXT1 texture (GL ID=33, size=1048576)
+[LoadCompressed] SUCCESS: 2048x1024 type=1 DXT1 texture (GL ID=34, size=1048576)
+[LoadCompressed] SUCCESS: 2048x1024 type=1 DXT1 texture (GL ID=35, size=1048576)
+[LoadCompressed] SUCCESS: 512x1024 type=5 DXT5 texture (GL ID=36, size=524288)
+[LoadCompressed] SUCCESS: 1024x1024 type=5 DXT5 texture (GL ID=37, size=1048576)
+[LoadCompressed] SUCCESS: 2048x2048 type=5 DXT5 texture (GL ID=38, size=4194304)
+[Parts] Auto-loading palette: C:/dev/hantei-chan/work/ab_s45/fx/mbtl/data/chr000\chr000.pal
+[Parts] Palette loaded successfully
+[MvScript] chr000_0: 13 script spawn(s) parsed from move scripts
+exit 0
+line 12 'cgm status': status: Added image 0 (storage type 2). Ids after it moved up by one; frame references were updated.
+line 18 'cgm status': status: Moved. Every frame reference follows the images.
+line 26 'cgm status': status: Done. Frame references were updated.
+line 29 'cgm status': status: Saved C:/dev/hantei-chan/work/ab_s45/fx/mbtl/data/chr000\chr000.cg (the original is kept as .bak)
+References: 96 rewritten (1 cleared) in 3 other project file(s); 0 file(s) already matched.
+  C:/dev/hantei-chan/work/ab_s45/fx/mbtl/data/chr000/_temp.ha6
+  C:/dev/hantei-chan/work/ab_s45/fx/mbtl/data/chr000/chr000_9.ha6
+  C:/dev/hantei-chan/work/ab_s45/fx/mbtl/data/chr000/chr000_7.ha6
+1 shared file(s) (BaseData) are not rewritten: their patterns are saved into this character's own file.
+--- files changed / added by the run (sha1 before vs after):
+< 2226b0db562ac445f349e993ce5f5172cfc7fe7d  ./mbtl/data/chr000/_temp.ha6
+> bb9f76c6519415093cd947571d20bdde02d9b8cd  ./mbtl/data/chr000/_temp.ha6
+> 2226b0db562ac445f349e993ce5f5172cfc7fe7d  ./mbtl/data/chr000/_temp.ha6.bak
+< 3f306417d80ae80432217ad97f91e382808c8314  ./mbtl/data/chr000/chr000.cg
+< b0aebdc6055b4fbf672c9694fca58bb13ef2a667  ./mbtl/data/chr000/chr000.ha6
+> 67b370b68a4bdf4e9114fc56f678ef0cfb8ede1c  ./mbtl/data/chr000/chr000.cg
+> 3f306417d80ae80432217ad97f91e382808c8314  ./mbtl/data/chr000/chr000.cg.bak
+> 5b38b99718de07f3ec63057684a059240730b286  ./mbtl/data/chr000/chr000.ha6
+< dbce03ff5f71481baa14de1c8e9368d3f62ba331  ./mbtl/data/chr000/chr000_7.ha6
+> 6c1f49f431af68b4aedf3648d56bdac8b31b3327  ./mbtl/data/chr000/chr000_7.ha6
+> dbce03ff5f71481baa14de1c8e9368d3f62ba331  ./mbtl/data/chr000/chr000_7.ha6.bak
+< dbce03ff5f71481baa14de1c8e9368d3f62ba331  ./mbtl/data/chr000/chr000_9.ha6
+> 6c1f49f431af68b4aedf3648d56bdac8b31b3327  ./mbtl/data/chr000/chr000_9.ha6
+> dbce03ff5f71481baa14de1c8e9368d3f62ba331  ./mbtl/data/chr000/chr000_9.ha6.bak
+SECTION cgm-refs-compare: pass | 4 file pair(s): 2537 layers same picture, 3 cleared, 0 past the bank kept, 0 differ

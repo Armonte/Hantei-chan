@@ -8,6 +8,7 @@
 #include "cgm_struct.h"
 #include "cgm_usage.h"
 #include "../framedata.h"
+#include "../framedata_ha4.h"
 #include <random>
 #include "../png_writer.h"
 #include <filesystem>
@@ -20,17 +21,21 @@
 #include <string>
 #include <vector>
 
-static bool ReadFile(const char *p, std::vector<uint8_t> &b) {
+bool ReadFile(const char *p, std::vector<uint8_t> &b) {
 	std::ifstream f(p, std::ios::binary); if (!f) return false;
 	b.assign(std::istreambuf_iterator<char>(f), std::istreambuf_iterator<char>()); return true;
 }
 
 static int CmdCheck(int argc, char **argv) {
-	int pass = 0, fail = 0; size_t imgs = 0, undrawn = 0, cmpOk = 0, cmpBad = 0;
+	int pass = 0, fail = 0, skipped = 0; size_t imgs = 0, undrawn = 0, cmpOk = 0, cmpBad = 0;
 	std::map<int, int> types;
 	for (int i = 0; i < argc; i++) {
 		std::vector<uint8_t> b; std::string err;
 		if (!ReadFile(argv[i], b)) { printf("FAIL %s: cannot read\n", argv[i]); fail++; continue; }
+		if (b.size() > 11 && memcmp(b.data(), "BMP Cutter", 10)) {   // an MBAC / ReAct .DAT: its embedded CG (a DAT without one is skipped)
+			FrameData fd;
+			if (fd.load(argv[i]) && fd.isHA4()) { if (fd.m_ha4->cg.empty()) { skipped++; continue; } b.assign(fd.m_ha4->cg.begin(), fd.m_ha4->cg.end()); }
+		}
 		cgm::Bank bk;
 		if (!cgm::Bank::parse(b.data(), b.size(), bk, &err)) { printf("FAIL %s: parse: %s\n", argv[i], err.c_str()); fail++; continue; }
 		std::vector<uint8_t> o; bk.serialize(o);
@@ -55,7 +60,7 @@ static int CmdCheck(int argc, char **argv) {
 		}
 		if (bad) fail++; else pass++;
 	}
-	printf("SECTION cgm-bank: pass %d fail %d | images %zu (undrawable %zu), decode==CG %zu, differ %zu |", pass, fail, imgs, undrawn, cmpOk, cmpBad);
+	printf("SECTION cgm-bank: pass %d fail %d%s | images %zu (undrawable %zu), decode==CG %zu, differ %zu |", pass, fail, skipped ? (" (" + std::to_string(skipped) + " .DAT without a CG skipped)").c_str() : "", imgs, undrawn, cmpOk, cmpBad);
 	for (auto &t : types) printf(" type%d:%d", t.first, t.second);
 	printf("\n");
 	return fail ? 1 : 0;
@@ -74,23 +79,33 @@ static int CmdInfo(int argc, char **argv) {
 	return 0;
 }
 
-static bool WriteFile(const std::string &p, const std::vector<uint8_t> &b) {
+bool WriteFile(const std::string &p, const std::vector<uint8_t> &b) {
 	std::ofstream f(std::filesystem::path(Utf8ToWide(p)), std::ios::binary); if (!f) return false;
 	f.write((const char *)b.data(), (std::streamsize)b.size()); return (bool)f;
 }
-static bool ParseFile(const std::string &p, std::vector<uint8_t> &b, cgm::Bank &bk, std::string &err) {
+bool ParseFile(const std::string &p, std::vector<uint8_t> &b, cgm::Bank &bk, std::string &err) {
 	if (!ReadFile(p.c_str(), b)) { err = "cannot read " + p; return false; }
+	if (b.size() > 11 && memcmp(b.data(), "BMP Cutter", 10)) {   // an MBAC / ReAct .DAT (HA4): its embedded CG blob, read-only
+		FrameData fd;
+		if (fd.load(p.c_str()) && fd.isHA4() && !fd.m_ha4->cg.empty()) b.assign(fd.m_ha4->cg.begin(), fd.m_ha4->cg.end());
+	}
 	return cgm::Bank::parse(b.data(), b.size(), bk, &err);
 }
 
 // cgmtool export <bank> <dir> [--no-rgba] [--no-indexed] [--cgtool]
 static int CmdExport(int argc, char **argv) {
-	if (argc < 2) { puts("usage: cgmtool export <bank.cg> <outdir> [--no-rgba] [--no-indexed] [--cgtool]"); return 2; }
-	cgm::ExportOptions o; for (int i = 2; i < argc; i++) { std::string a = argv[i]; if (a == "--no-rgba") o.rgba = false; else if (a == "--no-indexed") o.indexed = false; else if (a == "--cgtool") o.cgtoolLayout = true; }
+	if (argc < 2) { puts("usage: cgmtool export <bank.cg> <outdir> [--no-rgba] [--no-indexed] [--cgtool] [--pal <file.pal>[:N]]"); return 2; }
+	cgm::ExportOptions o; std::string palArg; for (int i = 2; i < argc; i++) { std::string a = argv[i]; if (a == "--no-rgba") o.rgba = false; else if (a == "--no-indexed") o.indexed = false; else if (a == "--cgtool") o.cgtoolLayout = true; else if (a == "--pal" && i + 1 < argc) palArg = argv[++i]; }
 	std::vector<uint8_t> b; cgm::Bank bk; std::string err;
 	if (!ParseFile(argv[0], b, bk, err)) { printf("error: %s\n", err.c_str()); return 1; }
 	cgm::ExportResult r; std::string nm = std::filesystem::path(argv[0]).filename().string();
-	if (!cgm::ExportBank(bk, argv[1], nm, o, r)) { printf("error: %s\n", r.error.c_str()); return 1; }
+	uint32_t ext[256]; bool haveExt = false;
+	if (!palArg.empty()) {   // --pal file.pal[:N]: type 0 images drawn with palette N of an external file (cgtool -pal)
+		std::string f = palArg; int n = 0; const size_t c = f.rfind(':'); if (c != std::string::npos && c > 1 && isdigit((unsigned char)f[c + 1])) { n = atoi(f.c_str() + c + 1); f.resize(c); }
+		std::string e; if (!cgm::ReadPalFileColors(f, ext, &e, n)) { printf("error: %s\n", e.c_str()); return 1; }
+		for (int i = 0; i < 256; i++) ext[i] = (ext[i] & 0xFFFFFFu) | 0xFF000000u; ext[0] = 0; haveExt = true;
+	}
+	if (!cgm::ExportBank(bk, argv[1], nm, o, r, haveExt ? ext : nullptr)) { printf("error: %s\n", r.error.c_str()); return 1; }
 	printf("exported %d images, %d files to %s\n", r.images, r.files, argv[1]); return 0;
 }
 
@@ -157,6 +172,7 @@ static int CmdRoundtrip(int argc, char **argv) {
 			edits++;
 			std::vector<uint8_t> o; b3.serialize(o);
 			size_t s0 = 0, e0 = 0; bk.blobSpan(n, s0, e0);
+			if (bk.cutter2) { s0 = bk.tailMid; e0 = b.size(); }   // Cutter2: the pixels live on the pre-baked pages
 			bool ok = o.size() == b.size() && ir.changed.size() == 1 && ir.changed[0] == n;
 			size_t firstOut = 0, nDiff = 0;
 			for (size_t k = 0; ok && k < b.size(); k++) if (o[k] != b[k]) { nDiff++; if (k < s0 || k >= e0) { ok = false; firstOut = k; } }
@@ -206,7 +222,7 @@ static int CmdPalCheck(int argc, char **argv) {
 	return fail ? 1 : 0;
 }
 
-static bool ArgVal(int argc, char **argv, const char *k, std::string &v) { for (int i = 0; i + 1 < argc; i++) if (!strcmp(argv[i], k)) { v = argv[i + 1]; return true; } return false; }
+bool ArgVal(int argc, char **argv, const char *k, std::string &v) { for (int i = 0; i + 1 < argc; i++) if (!strcmp(argv[i], k)) { v = argv[i + 1]; return true; } return false; }
 
 // pal-export <x.pal> <n> <out.act|.gpl|.png|.pal>        pal-import <x.pal> <n> <in> -o <out.pal>
 // pal-recolor <x.pal> [--hue D] [--sat M] [--val M] [--palette N] [--range a-b] -o <out.pal>
@@ -219,7 +235,9 @@ static int CmdPal(const std::string &c, int argc, char **argv) {
 	if (c == "pal-export" && argc >= 3) { uint32_t p[256]; const int n = atoi(argv[1]); if (n < 0 || n >= ps.count) { puts("no such palette"); return 1; } memcpy(p, ps.pal(n), 1024); if (!cgm::WritePalFileColors(argv[2], p, &e)) { printf("error: %s\n", e.c_str()); return 1; } printf("wrote %s\n", argv[2]); return 0; }
 	std::string out; if (!ArgVal(argc, argv, "-o", out)) { puts("-o <out.pal> is required (the input is never overwritten)"); return 2; }
 	if (c == "pal-import" && argc >= 3) {
-		const int n = atoi(argv[1]); uint32_t p[256]; if (n < 0 || n >= ps.count + 1 || !cgm::ReadPalFileColors(argv[2], p, &e)) { printf("error: %s\n", e.c_str()); return 1; }
+		// <in> may name one palette of a set: chr010.pal:37
+		std::string in = argv[2]; int srcIdx = 0; { const size_t k = in.rfind(':'); if (k != std::string::npos && k > 1 && isdigit((unsigned char)in[k + 1])) { srcIdx = atoi(in.c_str() + k + 1); in.resize(k); } }
+		const int n = atoi(argv[1]); uint32_t p[256]; if (n < 0 || n >= ps.count + 1 || !cgm::ReadPalFileColors(in, p, &e, srcIdx)) { printf("error: %s\n", e.c_str()); return 1; }
 		if (n == ps.count && !ps.addCopy(ps.count - 1, &e)) { printf("error: %s\n", e.c_str()); return 1; }
 		for (int k = 0; k < 256; k++) ps.pal(n)[k] = (ps.pal(n)[k] & 0xFF000000u) | (p[k] & 0xFFFFFFu);
 	} else if (c == "pal-recolor") {
@@ -248,7 +266,7 @@ static int CmdRecolorBank(int argc, char **argv) {
 }
 
 // ---- structural edits ----
-static std::vector<uint8_t> Sprite(int w, int h, int mode) {   // mode 0: few colours, binary alpha; 1: few colours + soft alpha; 2: many colours
+std::vector<uint8_t> Sprite(int w, int h, int mode) {   // mode 0: few colours, binary alpha; 1: few colours + soft alpha; 2: many colours
 	std::vector<uint8_t> px((size_t)w * h * 4, 0);
 	for (int y = 0; y < h; y++) for (int x = 0; x < w; x++) {
 		const int dx = x - w / 2, dy = y - h / 2; if (dx * dx * 4 / (w * w) + dy * dy * 4 / (h * h) > 1) continue;
@@ -258,20 +276,30 @@ static std::vector<uint8_t> Sprite(int w, int h, int mode) {   // mode 0: few co
 	}
 	return px;
 }
-static bool SameDecoded(const cgm::Bank &a, int ia, const cgm::Bank &b, int ib) {
+// binary alpha, colours taken from the bank palette: stored exactly by every storage type (8-bit on the bank palette included)
+std::vector<uint8_t> PalSprite(const cgm::Bank &bk, int w, int h) {
+	uint32_t bp[256]; bk.palette(0, bp); std::vector<uint8_t> px((size_t)w * h * 4, 0);
+	for (int y = 0; y < h; y++) for (int x = 0; x < w; x++) {
+		const int dx = x - w / 2, dy = y - h / 2; if (dx * dx * 4 / (w * w) + dy * dy * 4 / (h * h) > 1) continue;
+		int k = 1 + ((x / 7 + y / 5) % 30); while (k < 255 && !(bp[k] >> 24)) k++;
+		memcpy(&px[((size_t)y * w + x) * 4], &bp[k], 3); px[((size_t)y * w + x) * 4 + 3] = 255;
+	}
+	return px;
+}
+bool SameDecoded(const cgm::Bank &a, int ia, const cgm::Bank &b, int ib) {
 	cgm::Rgba x, y; const bool dx = a.decode(ia, x), dy = b.decode(ib, y);
 	if (dx != dy) return false; if (!dx) return true;
 	if (x.w != y.w || x.h != y.h) return false;
 	for (int i = 0; i < x.w * x.h; i++) { const uint8_t *p = &x.px[i * 4], *q = &y.px[i * 4]; if (p[3] != q[3] || (p[3] && memcmp(p, q, 3))) return false; }
 	return true;
 }
-static bool AtlasUnique(const cgm::Bank &b) {
+bool AtlasUnique(const cgm::Bank &b) {
 	std::map<uint32_t, int> own; const int cu = b.cellUnit();
 	for (size_t n = 0; n < b.images.size(); n++) for (const cgm::Block &bl : b.images[n].blocks) if (!bl.copy)
 		for (int cy = bl.sy / cu; cy < (bl.sy + bl.h) / cu; cy++) for (int cx = bl.sx / cu; cx < (bl.sx + bl.w) / cu; cx++) if (!own.emplace(cgm::Bank::cellKey(bl.page, cx, cy), (int)n).second) return false;
 	return true;
 }
-static bool EngineAgrees(const cgm::Bank &b, std::string &why) {   // the original engine loader (CG) must draw every image like the model
+bool EngineAgrees(const cgm::Bank &b, std::string &why) {   // the original engine loader (CG) must draw every image like the model
 	std::vector<uint8_t> o; b.serialize(o); CG cg; if (!cg.loadFromMemory(o.data(), (unsigned)o.size())) { why = "CG refuses the bank"; return false; }
 	for (size_t n = 0; n < b.images.size(); n++) {
 		cgm::Rgba r; const bool mine = b.decode((int)n, r); ImageData *ref = cg.draw_texture((unsigned)n, false, false);
@@ -297,11 +325,11 @@ static int CmdStructCheck(int argc, char **argv) {
 		// 1. add (three storage kinds) + delete == original; insert in the middle + delete == original
 		for (int mode = 0; mode < 3 && !bad; mode++) for (int at : {-1, N / 3}) {
 			cgm::Bank w = bk; std::vector<int> remap; int id = -1; cgm::NewImageSpec sp; sp.name = "test_new.bmp";
-			auto spr = Sprite(45 + mode * 9, 70 - mode * 4, mode); ops++;
+			auto spr = bk.cutter2 ? PalSprite(bk, 45 + mode * 9, 70 - mode * 4) : Sprite(45 + mode * 9, 70 - mode * 4, mode); ops++;
 			if (!cgm::AddImage(w, at, sp, spr.data(), 45 + mode * 9, 70 - mode * 4, remap, &id, &err)) { F("AddImage: " + err); break; }
 			if (!rt(w)) { F("added bank does not re-parse"); break; }
 			if (!AtlasUnique(w)) { F("added image overlaps atlas cells"); break; }
-			const int wantType = mode == 0 ? 2 : mode == 1 ? 4 : 1; if (w.images[id].type != wantType) { F("AddImage chose type " + std::to_string(w.images[id].type) + ", expected " + std::to_string(wantType)); break; }
+			const int wantType = bk.cutter2 ? 0 : mode == 0 ? 2 : mode == 1 ? 4 : 1; if (w.images[id].type != wantType) { F("AddImage chose type " + std::to_string(w.images[id].type) + ", expected " + std::to_string(wantType)); break; }
 			cgm::Rgba got; w.decode(id, got); bool pix = got.w >= 45; // the sprite is padded to whole cells; compare its own area
 			for (int y = 0; pix && y < 70 - mode * 4; y++) for (int x = 0; x < 45 + mode * 9; x++) { const uint8_t *a = &got.px[((size_t)y * got.w + x) * 4], *c = &spr[((size_t)y * (45 + mode * 9) + x) * 4]; uint8_t ca = c[3]; if (mode == 0) ca = ca >= 128 ? 255 : 0; if (a[3] != ca || (ca && memcmp(a, c, 3))) { pix = false; break; } }
 			if (!pix) { F("added image does not render as the PNG (mode " + std::to_string(mode) + ")"); break; }
@@ -309,6 +337,7 @@ static int CmdStructCheck(int argc, char **argv) {
 			for (int k = 0; k < N && !bad; k += std::max(1, N / 40)) if (!SameDecoded(bk, k, w, remap[k])) { F("image " + std::to_string(k) + " changed by AddImage"); }
 			std::vector<int> r2; if (!cgm::DeleteImage(w, id, false, r2, &err)) { F("DeleteImage: " + err); break; }
 			{ int mp = -1, mp0 = -1; for (const cgm::Image &im : w.images) for (const cgm::Block &bl : im.blocks) mp = std::max<int>(mp, bl.page); for (const cgm::Image &im : bk.images) for (const cgm::Block &bl : im.blocks) mp0 = std::max<int>(mp0, bl.page); if (mp <= mp0) w.H[0] = bk.H[0]; }   // pages added for the image are given back
+			if (w.cutter2) { w.bakedPages = bk.bakedPages; w.H[0] = bk.H[0]; w.H[1] = bk.H[1]; }   // Cutter2: the added pixels stay on the (now unreferenced) page cells
 			if (!sameBytes(w)) { size_t d = 0; while (d < out.size() && d < b.size() && out[d] == b[d]) d++; F("add -> delete is not byte-identical (first diff 0x" + std::to_string(d) + ", sizes " + std::to_string(out.size()) + " vs " + std::to_string(b.size()) + ", mode " + std::to_string(mode) + " at " + std::to_string(at) + ")"); break; }
 		}
 		// 2. move / permute and back
@@ -405,10 +434,12 @@ static int CmdRefsCheck(int argc, char **argv) {
 }
 
 int FxrMain(int argc, char **argv);   // fxr_cli.cpp
+int OpsMain(const std::string &c, int argc, char **argv);   // cgmtool_ops.cpp: structural edits, folders, projects, palettes, CC export
 
 int main(int argc, char **argv) {
 	if (argc < 2) { puts("usage: cgmtool check|info|export|import|roundtrip ..."); return 2; }
 	std::string c = argv[1];
+	{ const int r = OpsMain(c, argc - 2, argv + 2); if (r != -1) return r; }
 	if (c == "check") return CmdCheck(argc - 2, argv + 2);
 	if (c == "info") return CmdInfo(argc - 2, argv + 2);
 	if (c == "export") return CmdExport(argc - 2, argv + 2);
