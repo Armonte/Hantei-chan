@@ -17,6 +17,7 @@
 #include <glad/glad.h>
 #include <imgui.h>
 #include <algorithm>
+#include <cmath>
 #include <cstdarg>
 #include <cstdio>
 #include <cstdlib>
@@ -586,6 +587,93 @@ void Window::drawStructure(CharacterInstance &ch, const WindowHost &host) {
 	}
 }
 
+void Window::drawEffect(CharacterInstance &ch, const WindowHost &host) {
+	if (!bank || selected < 0 || selected >= (int)bank->images.size()) return;
+	Image &im = bank->images[selected];
+	ImGui::SeparatorText(TXT("Effect (PACNyx)"));
+	// rename
+	if (renameFor != selected) { renameFor = selected; memset(renameBuf, 0, sizeof renameBuf); memcpy(renameBuf, im.name, strnlen(im.name, 31)); }
+	ImGui::SetNextItemWidth(180); ImGui::InputText(LBL("Name##eff"), renameBuf, sizeof renameBuf);
+	ImGui::SameLine();
+	if (ImGui::Button(LBL("Rename"))) {
+		Bank before = *bank; std::string e;
+		if (RenameImage(*bank, selected, renameBuf, &e)) { if (commit(ch, Fmt(TXT("Rename image %d"), selected), std::move(before), host)) status = Fmt(TXT("image %d renamed"), selected); }
+		else { status = e; *bank = std::move(before); }
+	}
+	if (!im.drawable()) return;
+	// base point: the canvas origin is the anchor the engine places the sprite with; moving the sprite moves it against that point
+	ImGui::AlignTextToFramePadding();
+	ImGui::Text(TXT("Sprite at (%d,%d) from its base point (canvas %d x %d)"), im.x1, im.y1, im.w, im.h);
+	ImGui::SameLine();
+	int d[2] = {0, 0};
+	ImGui::PushButtonRepeat(true);
+	if (ImGui::ArrowButton("##el", ImGuiDir_Left)) d[0] = -1;
+	ImGui::SameLine(); if (ImGui::ArrowButton("##er", ImGuiDir_Right)) d[0] = 1;
+	ImGui::SameLine(); if (ImGui::ArrowButton("##eu", ImGuiDir_Up)) d[1] = -1;
+	ImGui::SameLine(); if (ImGui::ArrowButton("##ed", ImGuiDir_Down)) d[1] = 1;
+	ImGui::PopButtonRepeat();
+	if (d[0] || d[1]) {
+		const int k = ImGui::GetIO().KeyShift ? bank->cellUnit() : 1;
+		Bank before = *bank; std::string e;
+		if (OffsetImage(*bank, selected, d[0] * k, d[1] * k, &e)) commit(ch, Fmt(TXT("Move image %d on its canvas"), selected), std::move(before), host);
+		else { status = e; *bank = std::move(before); }
+		blk.id = -1;
+	}
+	// block grid
+	if (blk.id != selected || blk.gen != cgGen) {
+		blk = BlockEdit{}; blk.show = true;
+		Rgba r;
+		if (bank->decode(selected, r)) { blk.id = selected; blk.gen = cgGen; blk.px = std::move(r.px); blk.w = r.w; blk.h = r.h; blk.mask = CellMask(*bank, selected, blk.cols, blk.rows, blk.ox, blk.oy); }
+	}
+	if (blk.id != selected) return;
+	int on = 0; for (uint8_t m : blk.mask) on += m;
+	ImGui::Text(TXT("Blocks: %d of %d cells stored (%d px cells)"), on, (int)blk.mask.size(), bank->cellUnit());
+	ImGui::SameLine(); ImGui::Checkbox(LBL("Draw blocks"), &blk.show);
+	if (ImGui::Button(LBL("Enable all"))) { std::fill(blk.mask.begin(), blk.mask.end(), 1); blk.pending = true; }
+	ImGui::SameLine(); if (ImGui::Button(LBL("Disable all"))) { std::fill(blk.mask.begin(), blk.mask.end(), 0); blk.pending = true; }
+	ImGui::SameLine();
+	if (ImGui::Button(LBL("Recalculate from alpha"))) {   // every cell that has a visible pixel, nothing else
+		Bank before = *bank; std::string e;
+		if (ReblockImage(*bank, selected, blk.px.data(), blk.w, blk.h, nullptr, &e)) commit(ch, Fmt(TXT("Recalculate blocks of image %d"), selected), std::move(before), host);
+		else { status = e; *bank = std::move(before); }
+		blk.id = -1;
+	}
+	ImGui::BeginDisabled(!blk.pending);
+	ImGui::SameLine();
+	if (ImGui::Button(LBL("Apply blocks"))) {
+		Bank before = *bank; std::string e;
+		if (ReblockImage(*bank, selected, blk.px.data(), blk.w, blk.h, &blk.mask, &e)) commit(ch, Fmt(TXT("Block edit of image %d"), selected), std::move(before), host);
+		else { status = e; *bank = std::move(before); }
+		blk.id = -1;
+	}
+	ImGui::EndDisabled();
+	ImGui::PushTextWrapPos(0.0f);
+	ImGui::TextDisabled("%s", TXT("Click a cell in the preview to switch it on / off, then Apply. A cell that is switched off is not stored (transparent); a cell without visible pixels is never stored."));
+	ImGui::PopTextWrapPos();
+}
+
+void Window::drawBlockOverlay(const ImVec2 &p0, float z, int x1, int y1) {
+	ImDrawList *dl = ImGui::GetWindowDrawList();
+	const int cu = bank->cellUnit();
+	for (int cy = 0; cy < blk.rows; cy++) for (int cx = 0; cx < blk.cols; cx++) {
+		const float ax = p0.x + (blk.ox + cx * cu - x1) * z, ay = p0.y + (blk.oy + cy * cu - y1) * z;
+		const ImVec2 a(ax, ay), b(ax + cu * z, ay + cu * z);
+		if (blk.mask[(size_t)cy * blk.cols + cx]) dl->AddRect(a, b, IM_COL32(60, 220, 90, 200));
+		else { dl->AddRectFilled(a, b, IM_COL32(220, 60, 60, 60)); dl->AddRect(a, b, IM_COL32(220, 60, 60, 160)); }
+	}
+}
+
+void Window::clickBlock(const ImVec2 &p0, float z, int x1, int y1) {
+	const ImVec2 m = ImGui::GetIO().MousePos;
+	const int cu = bank->cellUnit();
+	const int px = (int)std::floor((m.x - p0.x) / z) + x1 - blk.ox, py = (int)std::floor((m.y - p0.y) / z) + y1 - blk.oy;
+	if (px < 0 || py < 0) return;
+	const int cx = px / cu, cy = py / cu;
+	if (cx >= blk.cols || cy >= blk.rows) return;
+	uint8_t &c = blk.mask[(size_t)cy * blk.cols + cx];
+	c = c ? 0 : 1; blk.pending = true;
+}
+
 void Window::draw(CharacterInstance *ch, const WindowHost &host) {
 	if (!open) return;
 	ImGui::SetNextWindowSize(ImVec2(1200, 820), ImGuiCond_FirstUseEver);
@@ -905,6 +993,7 @@ void Window::draw(CharacterInstance *ch, const WindowHost &host) {
 			if (ok && fetch(*ch, selected, previewPal, previewPups, px, w, h)) upload(preview, px, w, h, 0, false); else { preview.w = preview.h = 0; }
 		}
 		if (bank) drawStructure(*ch, host);
+		if (bank) drawEffect(*ch, host);
 		ImGui::SeparatorText(TXT("Used by"));
 		if (selected < (int)usage.byImage.size() && !usage.byImage[selected].empty()) {
 			ImGui::BeginChild("##cgmuse", ImVec2(0, 110), ImGuiChildFlags_Borders);
@@ -920,6 +1009,10 @@ void Window::draw(CharacterInstance *ch, const WindowHost &host) {
 			ImGui::Dummy(sz);
 			Checker(ImGui::GetWindowDrawList(), p0, ImVec2(p0.x + sz.x, p0.y + sz.y));
 			ImGui::GetWindowDrawList()->AddImage((ImTextureID)(intptr_t)preview.tex, p0, ImVec2(p0.x + sz.x, p0.y + sz.y));
+			if (bank && blk.id == selected && blk.show) {
+				drawBlockOverlay(p0, zoom, x1, y1);
+				if (ImGui::IsItemClicked(ImGuiMouseButton_Left)) clickBlock(p0, zoom, x1, y1);
+			}
 		}
 		ImGui::EndChild();
 	} else ImGui::TextDisabled("%s", TXT("Click an image in the grid."));

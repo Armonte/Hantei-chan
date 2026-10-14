@@ -18,6 +18,7 @@ const Row kRows[] = {
 #include "i18n_ja_han2.inc"
 #include "i18n_ja_ui2.inc"
 #include "i18n_ja_cgm.inc"
+#include "i18n_ja_pacnyx.inc"
 #include "i18n_ja_patsafety.inc"
 #include "i18n_ja_fxr.inc"
 };

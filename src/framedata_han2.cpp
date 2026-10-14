@@ -448,6 +448,53 @@ static void EncodeFrame(const Frame &F, Tables &T, uint8_t *out, Ctx &cx, const 
 
 } // namespace
 
+// Pattern names live in the .DAT's 256 x 64 name area: write the model's names over it (unchanged names keep their exact bytes).
+void RefreshNamesArea(const FrameData &fd, std::vector<uint8_t> &area)
+{
+	if (area.size() < (size_t)kNamesSize) return;
+	for (int p = 0; p < kPatterns && p < (int)fd.m_sequences.size(); p++) {
+		const Sequence &seq = fd.m_sequences[p];
+		uint8_t *dst = &area[64 * p];
+		if (seq.han2.nameValid) {
+			char nbuf[65]{}; memcpy(nbuf, seq.han2.name, 64);
+			if (sj2utf8(std::string(nbuf)) == seq.name) { memcpy(dst, seq.han2.name, 64); continue; }
+		}
+		std::string sj = utf82sj(seq.name);
+		size_t n = std::min<size_t>(sj.size(), 63), i = 0;
+		while (i < n) {
+			unsigned char c = (unsigned char)sj[i];
+			size_t w = ((c >= 0x81 && c <= 0x9F) || (c >= 0xE0 && c <= 0xFC)) ? 2 : 1;
+			if (i + w > n) break;
+			i += w;
+		}
+		memset(dst, 0, 64); memcpy(dst, sj.data(), i);
+	}
+}
+
+bool NamesChanged(const FrameData &fd)
+{
+	const Han2Container *cont = fd.m_han2.get();
+	if (!cont || cont->names.size() < (size_t)kNamesSize) return false;
+	std::vector<uint8_t> area = cont->names;
+	RefreshNamesArea(fd, area);
+	return area != cont->names;
+}
+
+bool BuildDatCompanion(const FrameData &fd, std::vector<uint8_t> &out, bool &needed, std::string *err)
+{
+	needed = false;
+	const Han2Container *cont = fd.m_han2.get();
+	if (!cont || cont->sub != 1) return true;                                  // GOF2 keeps parts / sprites in .PAT / .CHP; GOF1 is one file
+	const bool names = NamesChanged(fd);
+	if (!cont->partsDirty && !cont->cgDirty && !names) return true;
+	if (cont->parts.empty() && cont->cg.empty() && cont->names.empty()) {
+		if (err) *err = "the parts / sprites / pattern names of this character live in its .DAT, which was not loaded: open the character together with its .DAT to save these edits";
+		return false;
+	}
+	needed = true;
+	return Serialize(fd, out, err, nullptr, false);
+}
+
 bool Serialize(const FrameData &fd, std::vector<uint8_t> &out, std::string *err, std::vector<std::string> *warnings, bool asDt2)
 {
 	auto fail = [&](const std::string &m) { if (err) *err = m; return false; };
@@ -487,10 +534,14 @@ bool Serialize(const FrameData &fd, std::vector<uint8_t> &out, std::string *err,
 			warnings->push_back("clash/projectile boxes were added or removed: pattern-area sections 4/5 (one record per such box) were kept as loaded and no longer match the box count");
 	}
 	Han2File f;
-	memcpy(f.header, cont->header, 0x40);
+	const bool ownDt2 = asDt2 && cont->hasDt2Header;
+	memcpy(f.header, ownDt2 ? cont->dt2Header : cont->header, 0x40);
 	if (!asDt2 && cont->kind == 3 && cont->parts.empty() && cont->cg.empty())
 		return fail("this character was loaded without its .DAT (no parts / CG): save it as .DT2, or open it together with its .DAT");
 	f.sub = cont->sub; f.kind = asDt2 ? 3 : 0; f.xorFlag = 0;
+	// the header may come from the other file of the pair (a .DT2 loaded with its .DAT keeps the .DAT's header for a full save):
+	// the kind dword (+0x08) must say what is written
+	{ const uint32_t k = f.kind; memcpy(f.header + 0x08, &k, 4); }
 	f.lead = cont->lead; f.tail = cont->tail;
 	f.sec.assign(LY.sub == 2 ? 9 : 8, {});
 	f.sec[0] = patT; f.sec[1] = frames;
@@ -508,27 +559,9 @@ bool Serialize(const FrameData &fd, std::vector<uint8_t> &out, std::string *err,
 		f.sec[8].insert(f.sec[8].end(), T.fx.begin(), T.fx.end());
 	}
 	if (!asDt2) { f.area[kAreaParts] = cont->parts; f.area[kAreaCg] = cont->cg; f.area[kAreaNames] = cont->names; }
-	for (int i = 0; i < 4; i++) f.areaOff[i] = cont->areaOff[i];
+	for (int i = 0; i < 4; i++) f.areaOff[i] = ownDt2 ? cont->dt2AreaOff[i] : cont->areaOff[i];
 	// names: refresh edited pattern names
-	if (!asDt2 && f.area[kAreaNames].size() >= (size_t)kNamesSize) {
-		for (int p = 0; p < kPatterns && p < (int)fd.m_sequences.size(); p++) {
-			const Sequence &seq = fd.m_sequences[p];
-			uint8_t *dst = &f.area[kAreaNames][64 * p];
-			if (seq.han2.nameValid) {
-				char nbuf[65]{}; memcpy(nbuf, seq.han2.name, 64);
-				if (sj2utf8(std::string(nbuf)) == seq.name) { memcpy(dst, seq.han2.name, 64); continue; }
-			}
-			std::string sj = utf82sj(seq.name);
-			size_t n = std::min<size_t>(sj.size(), 63), i = 0;
-			while (i < n) {
-				unsigned char c = (unsigned char)sj[i];
-				size_t w = ((c >= 0x81 && c <= 0x9F) || (c >= 0xE0 && c <= 0xFC)) ? 2 : 1;
-				if (i + w > n) break;
-				i += w;
-			}
-			memset(dst, 0, 64); memcpy(dst, sj.data(), i);
-		}
-	}
+	if (!asDt2) RefreshNamesArea(fd, f.area[kAreaNames]);
 	std::string serr;
 	if (!han2::Serialize(f, out, &serr)) return fail(serr);
 	return true;

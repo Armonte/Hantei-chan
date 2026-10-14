@@ -67,8 +67,16 @@ public:
 	void HandleMouseWheel(bool isIncrease, int mouseX, int mouseY);
 
 	void RightClick(int x, int y);
+	void UpdateSheetSelection(class CharacterView* view);   // French-Bread PAT editor: sheet rectangle from the right-drag
 	void LoadSettings();
 	void queueDroppedFile(const std::string& utf8Path) { m_droppedFiles.push_back(utf8Path); }
+	// Where the files were dropped (screen and main-window client coordinates): image drops go to the window under that point.
+	void setDropPoint(float screenX, float screenY, float clientX, float clientY) { m_dropScreen[0] = screenX; m_dropScreen[1] = screenY; m_dropClient[0] = clientX; m_dropClient[1] = clientY; m_haveDropPoint = true; }
+	float m_dropScreen[2]{}, m_dropClient[2]{};
+	bool m_haveDropPoint = false;
+	std::string RouteDroppedImage(const std::string& utf8Path);
+	// --ui-script commands of the PACNyx-parity features (ui/pacnyx_script_impl.h); false = not one of them
+	bool PacnyxScriptCommand(const std::string& cmd, const std::string& arg, std::string* msg);
 	void ProcessDroppedFiles();
 	std::vector<std::string> m_droppedFiles;
 	void ProcessStartupArgs();   // --open / --capture (startup_args.cpp)
@@ -236,7 +244,7 @@ private:
 	void addRecentFile(const std::string& path);
 	bool openHan2File(const std::string& path);   // RBO / GOF2 .DAT/.DT2 (character) or PAC archive (mounted in the browser)
 	void openPartsEditorForCharacter(CharacterInstance* character);   // PAT editor tab on a loaded character (RBO / GOF2 parts)
-	void exportHan2Character(CharacterInstance* character);   // PNG + JSON sprites, poses and animations
+	void exportHan2Character(CharacterInstance* character, bool icaroffaLayout = false);   // PNG + JSON sprites, poses and animations (ours, or icaroffa's 2026 layout)
 	void openBrowserRequest(const struct abrowser::OpenRequest& req);
 	void DrawPackageToolsMenuItems();
 	preview::TickState m_sceneState, m_onionState;  // reused buffers
@@ -259,6 +267,8 @@ private:
 
 	// View close confirmation
 	int pendingCloseViewIndex = -1;
+	bool m_closeAllPending = false;   // tab menu "Close all tabs": keeps closing (with the save prompt) until no tab is left or Cancel
+	void ContinueCloseAll();
 	bool shouldOpenUnsavedDialog = false;
 
 	// Right-click context menu

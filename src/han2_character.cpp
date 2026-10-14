@@ -89,6 +89,7 @@ bool LoadCharacter(CharacterInstance &ch, const std::string &stem, const ReadFn 
 	if (datParsed) {
 		cont->datPath = origin + "/" + stem + ".DAT";
 		if (haveDt2) {   // frames from the DT2: resources and the offsets of a later full save come from the DAT
+			cont->hasDt2Header = true; memcpy(cont->dt2Header, cont->header, 0x40); memcpy(cont->dt2AreaOff, cont->areaOff, sizeof cont->areaOff);
 			cont->parts = datFile.area[kAreaParts]; cont->cg = datFile.area[kAreaCg]; cont->names = datFile.area[kAreaNames];
 			for (int i = 0; i < 4; i++) cont->areaOff[i] = datFile.areaOff[i];
 			memcpy(cont->header, datFile.header, 0x40);
@@ -214,6 +215,37 @@ bool SyncPartsToContainer(CharacterInstance &ch, bool *partsChanged, std::string
 	if (!cont->cg.empty() && ch.cg.m_loaded && !ch.cg.foreign() && (ch.cg.bank_size() != cont->cg.size() || memcmp(ch.cg.bank_data(), cont->cg.data(), cont->cg.size()) != 0))
 	{ cont->cg.assign((const uint8_t *)ch.cg.bank_data(), (const uint8_t *)ch.cg.bank_data() + ch.cg.bank_size()); cont->cgDirty = true; }
 	return true;
+}
+
+bool SaveCompanions(CharacterInstance &ch, const std::string &savedPath, std::string *err)
+{
+	auto cont = ch.frameData.m_han2;
+	if (!cont) return true;
+	if (cont->sub == 1) {   // RBO saved as a .DT2: parts / CG / names edits go into <stem>.DAT next to it
+		std::string ext = std::filesystem::u8path(savedPath).extension().string();
+		for (auto &c : ext) c = (char)tolower((unsigned char)c);
+		if (ext != ".dt2") { MarkDatCompanionWritten(ch); return true; }   // a full .DAT carries everything
+		std::vector<uint8_t> dat; bool needed = false;
+		if (!BuildDatCompanion(ch.frameData, dat, needed, err)) return false;
+		if (!needed) return true;
+		std::filesystem::path p = std::filesystem::u8path(savedPath);
+		p.replace_extension(".DAT");
+		std::error_code ec;
+		std::filesystem::path bak = p; bak += ".bak";
+		if (std::filesystem::exists(p, ec) && !std::filesystem::exists(bak, ec)) std::filesystem::copy_file(p, bak, ec);
+		if (!WriteFileAtomic(p.u8string().c_str(), dat.data(), dat.size())) { if (err) *err = "could not write " + p.u8string(); return false; }
+		MarkDatCompanionWritten(ch);
+		return true;
+	}
+	return SaveGof2Companions(ch, savedPath, err);
+}
+
+void MarkDatCompanionWritten(CharacterInstance &ch)
+{
+	auto cont = ch.frameData.m_han2;
+	if (!cont) return;
+	cont->partsDirty = cont->cgDirty = false;
+	RefreshNamesArea(ch.frameData, cont->names);   // the reference name area is now what was written
 }
 
 bool SaveGof2Companions(CharacterInstance &ch, const std::string &dt2Path, std::string *err)

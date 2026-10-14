@@ -146,6 +146,43 @@ std::string Num(float v) { char b[32]; snprintf(b, sizeof(b), "%g", v); return b
 
 } // namespace
 
+static int16_t RawI16(const Frame &f, int off);
+
+namespace {
+// One frame of a pattern on a canvas whose game anchor is (cx, cy): its pose or CG image at the frame offset, flip mode 1 mirrored.
+void RenderFrameOn(Canvas &cv, const Frame &f, CG &cg, const Parts &parts, int cx, int cy, int sc)
+{
+	const int spr = f.han2.valid ? (int)RawI16(f, 0) : -1, ox = RawI16(f, 2), oy = RawI16(f, 4);
+	if (spr >= 10000) DrawCgImage(cv, cg, spr - 10000, cx + ox * sc, cy + oy * sc, sc);
+	else if (spr >= 0) DrawPose(cv, parts, spr, cx + ox * sc, cy + oy * sc, sc);
+	if (f.han2.valid && f.han2.rec[8] == 1) {   // flip mode 1 = mirror about the anchor
+		Canvas m(cv.w, cv.h);
+		for (int y = 0; y < cv.h; y++) for (int x = 0; x < cv.w; x++) { int sx2 = 2 * cx - 1 - x; if (sx2 >= 0 && sx2 < cv.w) memcpy(&m.px[((size_t)y * cv.w + x) * 4], &cv.px[((size_t)y * cv.w + sx2) * 4], 4); }
+		cv = m;
+	}
+}
+
+// Visible extent of a set of frames around the anchor (left, up, right, down in pixels at scale 1); false when nothing is drawn.
+template <class Fn> bool FitExtent(Fn drawAt, int &l, int &u, int &r, int &d)
+{
+	const int W = 2048, H = 2048, cx = 1024, cy = 1536;
+	Canvas cv(W, H);
+	drawAt(cv, cx, cy);
+	int x0 = W, y0 = H, x1 = -1, y1 = -1;
+	for (int y = 0; y < H; y++) for (int x = 0; x < W; x++) if (cv.px[((size_t)y * W + x) * 4 + 3]) { x0 = std::min(x0, x); x1 = std::max(x1, x); y0 = std::min(y0, y); y1 = std::max(y1, y); }
+	if (x1 < 0) return false;
+	l = std::max(l, cx - x0); r = std::max(r, x1 + 1 - cx); u = std::max(u, cy - y0); d = std::max(d, y1 + 1 - cy);
+	return true;
+}
+
+std::string SafeFile(const std::string &utf8)
+{
+	std::string o;
+	for (unsigned char c : utf8) o += (c < 0x20 || strchr("<>:\"/\\|?*", c)) ? '_' : (char)c;
+	return o.empty() ? "pose" : o;
+}
+} // namespace
+
 static bool WriteText(const std::string &utf8Path, const std::string &text)
 {
 	FILE *f = _wfopen(Utf8ToWide(utf8Path).c_str(), L"wb");
@@ -157,13 +194,23 @@ static bool WriteText(const std::string &utf8Path, const std::string &text)
 
 static int16_t RawI16(const Frame &f, int off) { int16_t v = 0; if (f.han2.valid) memcpy(&v, f.han2.rec + off, 2); return v; }
 
+static bool ExportIcaroffa(FrameData &fd, CG &cg, Parts &parts, const std::string &outDir, const ExportOptions &opt, ExportReport &rep, std::string *err);
+
 bool ExportCharacter(FrameData &fd, CG &cg, Parts &parts, const std::string &outDir, const ExportOptions &opt, ExportReport &rep, std::string *err)
 {
 	auto fail = [&](const std::string &m) { if (err) *err = m; return false; };
 	std::string e;
 	if (!CreateDirectoriesUtf8(outDir, e)) return fail(e);
+	if (opt.icaroffaLayout) return ExportIcaroffa(fd, cg, parts, outDir, opt, rep, err);
 	const int sc = std::max(1, opt.scale);
 	char nm[96];
+	// every PNG goes through here: a failed write is counted and the first message kept (never dropped silently)
+	auto Png = [&](const std::string &path, const Canvas &cv, std::string &) {
+		std::string we;
+		if (WritePngRgba(path, cv.px.data(), cv.w, cv.h, we)) return true;
+		if (!rep.writeErrors++) rep.notes.push_back(we);
+		return false;
+	};
 
 	// ---- CG images ----
 	if (opt.cgImages && cg.get_image_count() > 0) {
@@ -194,11 +241,17 @@ bool ExportCharacter(FrameData &fd, CG &cg, Parts &parts, const std::string &out
 			const auto &ps = parts.partSets[p];
 			bool any = false; for (auto &g : ps.groups) if (g.ppId >= 0) any = true;
 			if (!any) continue;
-			Canvas cv(opt.canvasW * sc, opt.canvasH * sc);
-			DrawPose(cv, parts, p, opt.originX * sc, opt.originY * sc, sc);
+			int cw = opt.canvasW, ch = opt.canvasH, ax = opt.originX, ay = opt.originY;
+			if (cw <= 0) {   // fit this pose (+ margin) around its base point
+				int l = 0, u = 0, r = 0, d = 0;
+				if (!FitExtent([&](Canvas &c, int x, int y) { DrawPose(c, parts, p, x, y, 1); }, l, u, r, d)) continue;
+				cw = l + r + 2 * opt.margin; ch = u + d + 2 * opt.margin; ax = opt.margin + l; ay = opt.margin + u;
+			}
+			Canvas cv(cw * sc, ch * sc);
+			DrawPose(cv, parts, p, ax * sc, ay * sc, sc);
 			snprintf(nm, sizeof(nm), "poses/pose_%04d.png", p);
 			if (Png(outDir + "/" + nm, cv, e)) rep.posePngs++;
-			js << (first ? "" : ",\n") << "  {\"pose\":" << p << ",\"name\":\"" << JsonEsc(ps.name) << "\",\"file\":\"" << nm << "\",\"parts\":[";
+			js << (first ? "" : ",\n") << "  {\"pose\":" << p << ",\"name\":\"" << JsonEsc(ps.name) << "\",\"file\":\"" << nm << "\",\"width\":" << cw * sc << ",\"height\":" << ch * sc << ",\"anchorX\":" << ax * sc << ",\"anchorY\":" << ay * sc << ",\"parts\":[";
 			bool pf = true;
 			for (size_t k = 0; k < ps.groups.size(); k++) {
 				const auto &g = ps.groups[k];
@@ -220,27 +273,30 @@ bool ExportCharacter(FrameData &fd, CG &cg, Parts &parts, const std::string &out
 	// ---- patterns: the game's own animations ----
 	if (opt.patterns) {
 		CreateDirectoriesUtf8(outDir + "/patterns", e);
-		std::ostringstream all; all << "{\n \"source\":\"pattern table of the character file (frame order, durations, jumps, loops); not pose-name groups\",\n \"canvas\":{\"width\":"
-			<< opt.canvasW << ",\"height\":" << opt.canvasH << ",\"originX\":" << opt.originX << ",\"originY\":" << opt.originY << ",\"scale\":" << sc << "},\n \"patterns\":[\n"; bool firstP = true;
+		std::ostringstream all; all << "{\n \"source\":\"pattern table of the character file (frame order, durations, jumps, loops); not pose-name groups\",\n \"canvas\":"
+			<< (opt.canvasW > 0 ? "{\"width\":" + std::to_string(opt.canvasW) + ",\"height\":" + std::to_string(opt.canvasH) + ",\"originX\":" + std::to_string(opt.originX) + ",\"originY\":" + std::to_string(opt.originY) + "}"
+			                    : std::string("\"per pattern: sized to fit every frame, see frameWidth / frameHeight / anchorCanvasX / anchorCanvasY in its animation.json\""))
+			<< ",\n \"scale\":" << sc << ",\n \"patterns\":[\n"; bool firstP = true;
 		for (int p = 0; p < (int)fd.m_sequences.size(); p++) {
 			Sequence &seq = fd.m_sequences[p];
 			if (seq.frames.empty()) continue;
 			char dir[160]; snprintf(dir, sizeof(dir), "patterns/p%03d_%s", p, SafeName(seq.name).c_str());
 			CreateDirectoriesUtf8(outDir + "/" + dir, e);
 			std::vector<Canvas> frames;
-			std::ostringstream js; js << "{\"pattern\":" << p << ",\"name\":\"" << JsonEsc(seq.name) << "\",\"flags\":" << seq.han2.patFlags << ",\"frames\":[";
+			// one canvas for the whole pattern: fixed (opt.canvasW) or fitted to every frame + margin (icaroffa's aligned renders)
+			int cw = opt.canvasW, chh = opt.canvasH, ax = opt.originX, ay = opt.originY;
+			if (cw <= 0) {
+				int l = 0, u = 0, r = 0, d = 0;
+				for (const Frame &f : seq.frames) FitExtent([&](Canvas &c, int x, int y) { RenderFrameOn(c, f, cg, parts, x, y, 1); }, l, u, r, d);
+				cw = std::max(64, l + r + 2 * opt.margin); chh = std::max(64, u + d + 2 * opt.margin); ax = opt.margin + l; ay = opt.margin + u;
+			}
+			std::ostringstream js; js << "{\"pattern\":" << p << ",\"name\":\"" << JsonEsc(seq.name) << "\",\"flags\":" << seq.han2.patFlags
+				<< ",\"frameWidth\":" << cw * sc << ",\"frameHeight\":" << chh * sc << ",\"anchorCanvasX\":" << ax * sc << ",\"anchorCanvasY\":" << ay * sc << ",\"frameCount\":" << seq.frames.size() << ",\"frames\":[";
 			for (size_t k = 0; k < seq.frames.size(); k++) {
 				const Frame &f = seq.frames[k];
-				Canvas cv(opt.canvasW * sc, opt.canvasH * sc);
+				Canvas cv(cw * sc, chh * sc);
 				int spr = f.han2.valid ? (int)RawI16(f, 0) : -1, ox = RawI16(f, 2), oy = RawI16(f, 4);
-				const int cx = opt.originX * sc, cy = opt.originY * sc;
-				if (spr >= 10000) DrawCgImage(cv, cg, spr - 10000, cx + ox * sc, cy + oy * sc, sc);
-				else if (spr >= 0) { Canvas tmp(cv.w, cv.h); DrawPose(tmp, parts, spr, cx + ox * sc, cy + oy * sc, sc); cv = tmp; }
-				if (f.han2.valid && f.han2.rec[8] == 1) {   // flip mode 1 = mirror about the anchor
-					Canvas m(cv.w, cv.h);
-					for (int y = 0; y < cv.h; y++) for (int x = 0; x < cv.w; x++) { int sx2 = 2 * cx - 1 - x; if (sx2 >= 0 && sx2 < cv.w) memcpy(&m.px[((size_t)y * cv.w + x) * 4], &cv.px[((size_t)y * cv.w + sx2) * 4], 4); }
-					cv = m;
-				}
+				RenderFrameOn(cv, f, cg, parts, ax * sc, ay * sc, sc);
 				snprintf(nm, sizeof(nm), "%s/f%03zu.png", dir, k);
 				if (Png(outDir + "/" + nm, cv, e)) rep.framePngs++;
 				js << (k ? "," : "") << "\n  {\"index\":" << k << ",\"file\":\"" << nm << "\",\"sprite\":{\"kind\":\"" << (spr >= 10000 ? "cg" : "pose") << "\",\"id\":" << (spr >= 10000 ? spr - 10000 : spr)
@@ -263,10 +319,12 @@ bool ExportCharacter(FrameData &fd, CG &cg, Parts &parts, const std::string &out
 			all << (firstP ? "" : ",\n") << "  {\"pattern\":" << p << ",\"name\":\"" << JsonEsc(seq.name) << "\",\"dir\":\"" << dir << "\",\"frames\":" << seq.frames.size() << ",\"totalTicks\":" << ticks << "}";
 			firstP = false;
 			// strip.png (all frames side by side) and sheet.png (grid, 8 columns)
-			const int fw = opt.canvasW * sc, fh = opt.canvasH * sc, n = (int)frames.size();
-			Canvas strip(fw * n, fh);
-			for (int k = 0; k < n; k++) for (int y = 0; y < fh; y++) memcpy(&strip.px[((size_t)y * strip.w + (size_t)k * fw) * 4], &frames[k].px[(size_t)y * fw * 4], (size_t)fw * 4);
-			if (strip.w <= 16384 && Png(outDir + "/" + dir + "/strip.png", strip, e)) rep.sheets++;
+			const int fw = cw * sc, fh = chh * sc, n = (int)frames.size();
+			if ((size_t)fw * n <= 16384) {
+				Canvas strip(fw * n, fh);
+				for (int k = 0; k < n; k++) for (int y = 0; y < fh; y++) memcpy(&strip.px[((size_t)y * strip.w + (size_t)k * fw) * 4], &frames[k].px[(size_t)y * fw * 4], (size_t)fw * 4);
+				if (Png(outDir + "/" + dir + "/strip.png", strip, e)) rep.sheets++;
+			} else rep.notes.push_back(std::string(dir) + ": strip.png would be wider than 16384 px; sheet.png holds the same frames in rows");
 			const int cols = std::min(n, 8), rows = (n + cols - 1) / cols;
 			Canvas sheet(fw * cols, fh * rows);
 			for (int k = 0; k < n; k++) for (int y = 0; y < fh; y++) memcpy(&sheet.px[((size_t)((k / cols) * fh + y) * sheet.w + (size_t)(k % cols) * fw) * 4], &frames[k].px[(size_t)y * fw * 4], (size_t)fw * 4);
@@ -279,6 +337,23 @@ bool ExportCharacter(FrameData &fd, CG &cg, Parts &parts, const std::string &out
 	return true;
 }
 
+
+bool RenderPoseRgba(const Parts &parts, int pose, std::vector<uint8_t> &rgba, int &w, int &h, int &anchorX, int &anchorY, int pad)
+{
+	const int W = 2048, H = 2048, cx = 1024, cy = 1536;
+	Canvas cv(W, H);
+	DrawPose(cv, parts, pose, cx, cy, 1);
+	int x0 = W, y0 = H, x1 = -1, y1 = -1;
+	for (int y = 0; y < H; y++) for (int x = 0; x < W; x++) if (cv.px[((size_t)y * W + x) * 4 + 3]) { x0 = std::min(x0, x); x1 = std::max(x1, x); y0 = std::min(y0, y); y1 = std::max(y1, y); }
+	if (x1 < 0) return false;
+	pad = std::max(0, pad);
+	x0 = std::max(0, x0 - pad); y0 = std::max(0, y0 - pad); x1 = std::min(W - 1, x1 + pad); y1 = std::min(H - 1, y1 + pad);
+	w = x1 - x0 + 1; h = y1 - y0 + 1;
+	rgba.resize((size_t)w * h * 4);
+	for (int y = 0; y < h; y++) memcpy(&rgba[(size_t)y * w * 4], &cv.px[((size_t)(y0 + y) * W + x0) * 4], (size_t)w * 4);
+	anchorX = cx - x0; anchorY = cy - y0;
+	return true;
+}
 
 bool FindIdleFrame(FrameData &fd, int &pattern, int &frame)
 {
@@ -328,4 +403,148 @@ bool RenderFrameThumb(FrameData &fd, CG &cg, Parts &parts, int pattern, int fram
 	return true;
 }
 
+// ---- icaroffa / PACNyx+ 2026 layout (key names and folders of his "Export DAT as JSON + PNG"; behaviour reimplemented, no code copied) ----
+// manifest.json, poses/<name>.json (40 slots: index, isEmpty, spriteSheetIndex, spriteSheetName, srcRect, destRect, origin, layer, drawOrder,
+// rotation (degrees), xScale, yScale, flip, flipValue, color{a,r,g,b}), renders/<name>.png, renders/<group>/NNN_<name>.png,
+// renders_aligned/<group>/{NNN_<name>.png, animation.json, strip.png, sheet.png}, animations.json.
+// Differences, all documented in docs/formats/pacnyx_parity.md: groups are the game's patterns (frames in game order, CG-image frames included),
+// "poseIndex" is the pose slot the frames reference, and duplicate pose names get "_<slot>" so no file is overwritten.
+static bool ExportIcaroffa(FrameData &fd, CG &cg, Parts &parts, const std::string &outDir, const ExportOptions &opt, ExportReport &rep, std::string *err)
+{
+	std::string e;
+	for (const char *d : { "/poses", "/renders", "/renders_aligned" }) if (!CreateDirectoriesUtf8(outDir + d, e)) { if (err) *err = e; return false; }
+	auto png = [&](const std::string &path, const uint8_t *px, int w, int h) {
+		std::string we;
+		if (WritePngRgba(path, px, w, h, we)) return true;
+		if (!rep.writeErrors++) rep.notes.push_back(we);
+		return false;
+	};
+	auto put = [&](const std::string &path, const std::string &text) { if (!WriteText(path, text)) { if (!rep.writeErrors++) rep.notes.push_back("could not write " + path); } };
+	static const char *const flipName[4] = { "None", "Horizontal", "Vertical", "HorizontalAndVertical" };
+	// file name per pose
+	std::map<int, std::string> poseFile;
+	std::map<std::string, int> taken;
+	for (int p = 0; p < (int)parts.partSets.size(); p++) {
+		const auto &ps = parts.partSets[p];
+		bool any = false; for (auto &g : ps.groups) if (g.ppId >= 0) any = true;
+		if (!any && ps.name.empty()) continue;
+		std::string f = SafeFile(ps.name.empty() ? "pose" + std::to_string(p) : ps.name);
+		if (taken.count(f)) f += "_" + std::to_string(p);
+		taken[f] = p; poseFile[p] = f;
+	}
+	// manifest + poses/*.json + renders/*.png
+	std::ostringstream man;
+	man << "{\n  \"format\": \"rbo-dat-export\",\n  \"version\": 1,\n  \"maxBodyParts\": 40,\n  \"spriteSheets\": [\n";
+	for (size_t i = 0; i < parts.gfxMeta.size(); i++) {
+		const auto &g = parts.gfxMeta[i];
+		man << "    { \"index\": " << i << ", \"name\": \"" << JsonEsc(g.name) << "\"";
+		if (g.data) man << ", \"width\": " << g.w << ", \"height\": " << g.h;
+		man << " }" << (i + 1 < parts.gfxMeta.size() ? "," : "") << "\n";
+	}
+	man << "  ],\n  \"poses\": [\n";
+	size_t nDone = 0;
+	for (auto &kv : poseFile) {
+		const int p = kv.first; const std::string &f = kv.second;
+		const auto &ps = parts.partSets[p];
+		// draw order: icaroffa numbers parts by descending layer; ours draws ascending (layer << 8) + slot, last on top
+		std::vector<std::pair<int, int>> order;
+		for (size_t k = 0; k < ps.groups.size() && k < 40; k++) if (ps.groups[k].ppId >= 0) order.push_back({ (int)floorf(ps.groups[k].priority + 1e-4f) * 256 + (int)k, (int)k });
+		std::sort(order.begin(), order.end());
+		std::map<int, int> drawOrder; for (size_t i = 0; i < order.size(); i++) drawOrder[order[i].second] = (int)i;
+		std::ostringstream js;
+		js << "{\n  \"poseName\": \"" << JsonEsc(ps.name) << "\",\n  \"poseIndex\": " << p << ",\n  \"partCount\": 40,\n  \"parts\": [\n";
+		for (int k = 0; k < 40; k++) {
+			const PartProperty *g = k < (int)ps.groups.size() && ps.groups[k].ppId >= 0 && ps.groups[k].ppId < (int)parts.cutOuts.size() ? &ps.groups[k] : nullptr;
+			js << "    {\n      \"index\": " << k << ",\n      \"isEmpty\": " << (g ? "false," : "true") << "\n";
+			if (g) {
+				const auto &co = parts.cutOuts[g->ppId];
+				const int res = co.texture >= 0 && co.texture < (int)parts.gfxMeta.size() && parts.gfxMeta[co.texture].w > 0 ? parts.gfxMeta[co.texture].w : 256;
+				auto px = [&](int units) { return (int)(units * (res / 256.0)); };   // source rect units are 1/256 of the sheet
+				js << "      \"spriteSheetIndex\": " << co.texture << ",\n      \"spriteSheetName\": \"" << JsonEsc(co.texture >= 0 && co.texture < (int)parts.gfxMeta.size() ? parts.gfxMeta[co.texture].name : std::string()) << "\",\n"
+				   << "      \"srcRect\": { \"x\": " << px(co.uv[0]) << ", \"y\": " << px(co.uv[1]) << ", \"width\": " << px(co.uv[2]) << ", \"height\": " << px(co.uv[3]) << " },\n"
+				   << "      \"destRect\": { \"x\": " << g->x << ", \"y\": " << g->y << ", \"width\": " << co.wh[0] << ", \"height\": " << co.wh[1] << " },\n"
+				   << "      \"origin\": { \"x\": " << co.xy[0] << ", \"y\": " << co.xy[1] << " },\n"
+				   << "      \"layer\": " << (int)floorf(g->priority + 1e-4f) << ",\n      \"drawOrder\": " << drawOrder[k] << ",\n"
+				   << "      \"rotation\": " << Num(g->rotation[3] * 360.f) << ",\n      \"xScale\": " << Num(g->scaleX) << ",\n      \"yScale\": " << Num(g->scaleY) << ",\n"
+				   << "      \"flip\": \"" << flipName[g->flip & 3] << "\",\n      \"flipValue\": " << (g->flip & 3) << ",\n"
+				   << "      \"color\": { \"a\": " << (int)g->bgra[3] << ", \"r\": " << (int)g->bgra[2] << ", \"g\": " << (int)g->bgra[1] << ", \"b\": " << (int)g->bgra[0] << " }\n";
+			}
+			js << "    }" << (k < 39 ? "," : "") << "\n";
+		}
+		js << "  ]\n}\n";
+		put(outDir + "/poses/" + f + ".json", js.str());
+		std::vector<uint8_t> px; int w = 0, h = 0, ax = 0, ay = 0;
+		if (RenderPoseRgba(parts, p, px, w, h, ax, ay, 1) && png(outDir + "/renders/" + f + ".png", px.data(), w, h)) rep.posePngs++;
+		man << "    {\n      \"index\": " << p << ",\n      \"name\": \"" << JsonEsc(ps.name) << "\",\n      \"file\": \"poses/" << JsonEsc(f) << ".json\",\n      \"render\": \"renders/" << JsonEsc(f) << ".png\"\n    }"
+		    << (++nDone < poseFile.size() ? "," : "") << "\n";
+	}
+	man << "  ]\n}\n";
+	put(outDir + "/manifest.json", man.str());
+
+	// groups = patterns: renders/<group>/NNN_<pose>.png, renders_aligned/<group>/ + animation.json / strip.png / sheet.png, animations.json
+	std::ostringstream an; an << "{\n  \"animations\": [\n"; bool firstA = true;
+	for (int p = 0; p < (int)fd.m_sequences.size(); p++) {
+		Sequence &seq = fd.m_sequences[p];
+		if (seq.frames.empty()) continue;
+		char gname[160]; snprintf(gname, sizeof gname, "%03d_%s", p, SafeFile(seq.name.empty() ? "pattern" : seq.name).c_str());
+		const std::string raw = outDir + "/renders/" + gname, ali = outDir + "/renders_aligned/" + gname;
+		CreateDirectoriesUtf8(raw, e); CreateDirectoriesUtf8(ali, e);
+		int l = 0, u = 0, r = 0, d = 0;
+		for (const Frame &f : seq.frames) FitExtent([&](Canvas &c, int x, int y) { RenderFrameOn(c, f, cg, parts, x, y, 1); }, l, u, r, d);
+		const int M = opt.margin, fw = std::max(64, l + r + 2 * M), fh = std::max(64, u + d + 2 * M), ax = M + l, ay = M + u;
+		std::ostringstream aj;
+		aj << "{\n  \"name\": \"" << JsonEsc(seq.name) << "\",\n  \"frameWidth\": " << fw << ",\n  \"frameHeight\": " << fh << ",\n  \"anchorCanvasX\": " << ax << ",\n  \"anchorCanvasY\": " << ay
+		   << ",\n  \"frameCount\": " << seq.frames.size() << ",\n  \"frames\": [\n";
+		an << (firstA ? "" : ",\n") << "    {\n      \"name\": \"" << JsonEsc(seq.name.empty() ? std::string(gname) : seq.name) << "\",\n      \"frames\": [\n"; firstA = false;
+		std::vector<Canvas> cvs;
+		for (size_t k = 0; k < seq.frames.size(); k++) {
+			const Frame &f = seq.frames[k];
+			const int spr = f.han2.valid ? (int)RawI16(f, 0) : -1;
+			std::string label = spr >= 10000 ? "cg" + std::to_string(spr - 10000) : spr >= 0 && poseFile.count(spr) ? poseFile[spr] : "empty";
+			char fn[200]; snprintf(fn, sizeof fn, "%03zu_%s.png", k, label.c_str());
+			Canvas cv(fw, fh);
+			RenderFrameOn(cv, f, cg, parts, ax, ay, 1);
+			if (png(ali + "/" + fn, cv.px.data(), cv.w, cv.h)) rep.framePngs++;
+			{   // the same frame cropped (icaroffa's renders/<group>/ holds the pose pictures)
+				int x0 = cv.w, y0 = cv.h, x1 = -1, y1 = -1;
+				for (int y = 0; y < cv.h; y++) for (int x = 0; x < cv.w; x++) if (cv.px[((size_t)y * cv.w + x) * 4 + 3]) { x0 = std::min(x0, x); x1 = std::max(x1, x); y0 = std::min(y0, y); y1 = std::max(y1, y); }
+				if (x1 >= 0) { Canvas c2(x1 - x0 + 1, y1 - y0 + 1); for (int y = 0; y < c2.h; y++) memcpy(&c2.px[(size_t)y * c2.w * 4], &cv.px[((size_t)(y0 + y) * cv.w + x0) * 4], (size_t)c2.w * 4); png(raw + "/" + fn, c2.px.data(), c2.w, c2.h); }
+			}
+			aj << "    {\n      \"index\": " << k << ",\n      \"poseIndex\": " << (spr >= 0 && spr < 10000 ? spr : -1) << ",\n      \"poseName\": \"" << JsonEsc(spr >= 0 && spr < 10000 && spr < (int)parts.partSets.size() ? parts.partSets[spr].name : label)
+			   << "\",\n      \"file\": \"" << fn << "\",\n      \"durationTicks\": " << f.AF.duration << "\n    }" << (k + 1 < seq.frames.size() ? "," : "") << "\n";
+			an << "        {\n          \"index\": " << (spr >= 0 && spr < 10000 ? spr : -1) << ",\n          \"name\": \"" << JsonEsc(label) << "\",\n          \"json\": \"" << (spr >= 0 && spr < 10000 && poseFile.count(spr) ? "poses/" + JsonEsc(label) + ".json" : std::string())
+			   << "\",\n          \"render\": \"renders/" << gname << "/" << fn << "\"\n        }" << (k + 1 < seq.frames.size() ? "," : "") << "\n";
+			cvs.push_back(std::move(cv));
+		}
+		aj << "  ]\n}\n";
+		an << "      ]\n    }";
+		put(ali + "/animation.json", aj.str());
+		const int n = (int)cvs.size();
+		if ((size_t)fw * n <= 16384) {
+			Canvas strip(fw * n, fh);
+			for (int k = 0; k < n; k++) for (int y = 0; y < fh; y++) memcpy(&strip.px[((size_t)y * strip.w + (size_t)k * fw) * 4], &cvs[k].px[(size_t)y * fw * 4], (size_t)fw * 4);
+			if (png(ali + "/strip.png", strip.px.data(), strip.w, strip.h)) rep.sheets++;
+		} else rep.notes.push_back(std::string(gname) + ": strip.png would be wider than 16384 px; sheet.png holds the same frames");
+		const int cols = (int)std::ceil(std::sqrt((double)n)), rows = (n + cols - 1) / cols;   // icaroffa's grid: ceil(sqrt(n)) columns
+		Canvas sheet(fw * cols, fh * rows);
+		for (int k = 0; k < n; k++) for (int y = 0; y < fh; y++) memcpy(&sheet.px[((size_t)((k / cols) * fh + y) * sheet.w + (size_t)(k % cols) * fw) * 4], &cvs[k].px[(size_t)y * fw * 4], (size_t)fw * 4);
+		if (png(ali + "/sheet.png", sheet.px.data(), sheet.w, sheet.h)) rep.sheets++;
+		rep.patternsWritten++;
+	}
+	an << "\n  ]\n}\n";
+	put(outDir + "/animations.json", an.str());
+	if (opt.cgImages && cg.get_image_count() > 0) {   // not in icaroffa's export (RBO effects); kept so nothing is lost
+		CreateDirectoriesUtf8(outDir + "/cg", e);
+		for (int i = 0; i < cg.get_image_count(); i++) {
+			ImageData *im = cg.draw_texture((unsigned)i, false, false);
+			if (!im) continue;
+			char nm[64]; snprintf(nm, sizeof nm, "/cg/cg_%04d.png", i);
+			if (png(outDir + nm, im->pixels, im->width, im->height)) rep.cgPngs++;
+			delete im;
+		}
+	}
+	return true;
+}
+
 } // namespace han2
+

@@ -272,6 +272,7 @@ void MainFrame::DrawUi()
 		ImGui::EndPopup();
 	}
 
+	ContinueCloseAll();
 	// Unsaved changes dialog - open it if requested
 	if (shouldOpenUnsavedDialog) {
 		ImGui::OpenPopup(LBL("Unsaved Changes"));
@@ -292,7 +293,7 @@ void MainFrame::DrawUi()
 				if (ImGui::Button(LBL("Save"), ImVec2(120, 0))) {
 					if (saveCharacter(character)) {
 						closeView(pendingCloseViewIndex);
-					}
+					} else m_closeAllPending = false;
 					// On failure the view stays open and the Save Error popup
 					// (queued by saveCharacter) takes over from this one.
 					pendingCloseViewIndex = -1;
@@ -307,6 +308,7 @@ void MainFrame::DrawUi()
 				ImGui::SameLine();
 				if (ImGui::Button(LBL("Cancel"), ImVec2(120, 0))) {
 					pendingCloseViewIndex = -1;
+					m_closeAllPending = false;
 					ImGui::CloseCurrentPopup();
 				}
 			}
@@ -614,6 +616,29 @@ void MainFrame::RenderUpdate()
 
 	auto& state = view->getState();
 	Sequence *seq;
+	// PAT editor on an RBO / GOF2 character: the pose comes from the editor state. The character's own frames are never
+	// used (or rewritten) to pick what the editor shows: they are real game data that gets saved.
+	if (view->isPatEditor() && active->frameData.isHan2() && active->parts.loaded) {
+		const int nSets = (int)active->parts.partSets.size();
+		if (state.partSet < 0 || state.partSet >= nSets) state.partSet = 0;
+		state.animating = false;   // a pose editor has no playback (the sheet / UV views are skipped while animating)
+		render.GenerateHitboxVertices(BoxList{});   // drop the boxes the character tab left in the shared geometry
+		const int pose = state.renderMode != RenderMode::DEFAULT ? 0 : state.partSet;
+		state.spriteId = pose;
+		render.usePat = nSets > 0;
+		render.curPattern = render.curNextPattern = pose;
+		render.curInterp = 0.0f;
+		render.GeneratePartCenterVertices();   // base point axes + selected part's cross (DEFAULT view); the sheet selection is a box layer
+		static Layer_Type plain;
+		render.offsetX = render.offsetY = 0;
+		render.SetImageColor(plain.rgba);
+		render.rotX = render.rotY = render.rotZ = 0;
+		render.AFRT = false;
+		render.scaleX = render.scaleY = 1;
+		render.blendingMode = Render::normal;
+		if (nSets == 0) render.DontDraw();
+		return;
+	}
 	AdvanceViewPlayback(view);
 	if((seq = active->frameData.get_sequence(state.pattern)) &&
 		seq->frames.size() > 0)
@@ -774,8 +799,30 @@ void MainFrame::HandleMouseDown(bool dragRight, bool dragLeft)
 		bgCamera.BeginDrag();
 }
 
+// Sheet pixel rectangle from the drag (the sheet view draws the sheet with its top-left on the view origin, 1 world unit = 1 pixel).
+void MainFrame::UpdateSheetSelection(CharacterView* view)
+{
+	auto* ch = view ? view->getCharacter() : nullptr;
+	if (!ch) return;
+	auto& st = view->getState();
+	const int sheet = st.renderMode == RenderMode::UV_SETTING_VIEW && ch->parts.GetCutOut(st.partCutOut) ? ch->parts.GetCutOut(st.partCutOut)->texture : st.partGraph;
+	const auto* g = ch->parts.GetPartGfx(sheet);
+	if (!g || g->w <= 0) { st.sheetSelValid = false; return; }
+	auto toPx = [&](float wx, float wy, int& px, int& py) {
+		px = std::clamp((int)std::floor(wx), 0, g->w);
+		py = std::clamp((int)std::floor(wy), 0, g->h);
+	};
+	int x0, y0, x1, y1;
+	toPx(st.sheetSelAnchor[0], st.sheetSelAnchor[1], x0, y0);
+	toPx(st.sheetSelCur[0], st.sheetSelCur[1], x1, y1);
+	st.sheetSel[0] = std::min(x0, x1); st.sheetSel[1] = std::min(y0, y1);
+	st.sheetSel[2] = std::abs(x1 - x0); st.sheetSel[3] = std::abs(y1 - y0);
+	st.sheetSelValid = st.sheetSel[2] > 0 && st.sheetSel[3] > 0;
+}
+
 void MainFrame::HandleMouseUp(bool dragRight, bool dragLeft)
 {
+	if (dragRight) if (auto* v = getActiveView()) v->getState().sheetSelecting = false;
 	if (dragRight && m_uvDrag.active) EndUvDrag(false);
 	if (dragRight && m_boxDragCharacter) EndBoxDrag();
 	if (dragLeft && m_posDrag.active) EndPositionDrag(false);
@@ -820,6 +867,13 @@ void MainFrame::HandleMouseDrag(int x_, int y_, bool dragRight, bool dragLeft)
 		return;
 	}
 
+	if (dragRight && view->getState().sheetSelecting) {
+		const float z = view->getZoom() > 0.f ? view->getZoom() : 1.f;
+		view->getState().sheetSelCur[0] += x_ / z;
+		view->getState().sheetSelCur[1] += y_ / z;
+		UpdateSheetSelection(view);
+		return;
+	}
 	if(dragRight)
 	{
 		const float z = view->getZoom() > 0.f ? view->getZoom() : 1.f;
@@ -849,11 +903,23 @@ void MainFrame::RightClick(int x_, int y_)
 	auto* active = getActiveCharacter();
 	if (!active) return;
 
+	// French-Bread PAT editor showing a sprite sheet: right-drag selects a source rectangle on the sheet (no box drawing)
+	if (view->isPatEditor() && active->parts.fbPartModel && view->getState().renderMode != RenderMode::DEFAULT) {
+		auto& st = view->getState();
+		const auto& cam0 = view->camera();
+		st.sheetSelecting = true;
+		st.sheetSelAnchor[0] = st.sheetSelCur[0] = (x_ - cam0.panX - clientRect.x/2)/cam0.zoom;
+		st.sheetSelAnchor[1] = st.sheetSelCur[1] = (y_ - cam0.panY - clientRect.y/2)/cam0.zoom;
+		UpdateSheetSelection(view);
+		return;
+	}
 	// PAT tab (sosfiro main_frame.cpp RightClick): the UV view edits the selected cut-out's UV rectangle; the
 	// right button never draws a hitbox into the placeholder frame.
-	if (view->isPatEditor() && !active->parts.fbPartModel) {
+	// French-Bread parts have no UV rectangle outside the sheet view, so their PAT tab ignores the right button there.
+	if (view->isPatEditor()) {
 		const auto& c = view->camera();
-		BeginUvDrag(view, (x_ - c.panX - clientRect.x/2)/c.zoom, (y_ - c.panY - clientRect.y/2)/c.zoom);
+		if (!active->parts.fbPartModel)
+			BeginUvDrag(view, (x_ - c.panX - clientRect.x/2)/c.zoom, (y_ - c.panY - clientRect.y/2)/c.zoom);
 		return;
 	}
 

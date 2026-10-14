@@ -6,6 +6,7 @@
 #include "framestate.h"
 #include "cg.h"
 #include "parts/parts.h"
+#include <functional>
 #include <string>
 
 // StateReference holds pointers to all data needed for PatEditor panes
@@ -22,6 +23,10 @@ public:
 	std::string* currentPatFilePath;
 	Parts* parts;
 	RenderMode* renderMode;
+	// Set by CharacterView: marks the view's pattern in the character's undo manager so the next commit runs even when no
+	// mouse gesture ends it (drops, scripts). Parts edits themselves are diffed by the parts undo channel.
+	std::function<void()> onEdited;
+	void markEdited() const { if (onEdited) onEdited(); }
 };
 
 #endif /* STATE_REFERENCE_H_GUARD */

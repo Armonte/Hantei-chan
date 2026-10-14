@@ -1,0 +1,14 @@
+# unit tests, build c5610fd (2026-10-14 18:11), load: 9.17 23.13 29.77
+== han2_parts_edit_test
+han2_parts_edit_test: 71 checks, 0 failures
+exit 0
+== undo_manager_test
+  baseline capture 37.02 ms, full-document diff+commit 11.383 ms/step, history 4977 KiB
+UNDO_MANAGER_TEST_PASS
+exit 0
+== fb_part_transform_test
+fb_part_transform_test: 19 checks, 0 failed
+exit 0
+== part_render_math_test
+part_render_math_test: 60 checks, 0 failed
+exit 0

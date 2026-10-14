@@ -157,6 +157,7 @@ void CharacterView::refreshPanes(Render* render)
 		m_stateRef.currentPatFilePath = nullptr;
 		m_stateRef.parts = &m_character->parts;
 		m_stateRef.renderMode = &m_state.renderMode;
+		m_stateRef.onEdited = [this] { m_character->undoManager.markModified(m_state.pattern); };
 		
 		// Update Parts references for PatEditor support
 		m_character->parts.updatePatEditorReferences(&m_state, &m_state.renderMode);

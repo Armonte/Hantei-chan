@@ -256,6 +256,8 @@ void Parts::Free()
     gfxMeta.clear();
     loaded = false;
     fbPartModel = false;
+    fbMaxPoses = 0;
+    ownedPixels.clear();
 }
 
 void Parts::initEmpty()

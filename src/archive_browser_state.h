@@ -136,6 +136,13 @@ const Source &Owner(const Source &s, const Item &it, uint32_t &ownerIndex);   //
 void MountArchive(const std::string &utf8Path, int group, bool select);
 void ReloadArchive(const std::string &utf8Path);
 void CloseSource(int idx);
+// Re-read the selected game: rescan its folder, re-read every mounted archive, mount archives that appeared in the folder.
+void RefreshSource(int idx);
+// Manual archive priority (later wins): move archive source idx one place up (-1) or down (+1) inside its game. Returns the new index.
+int MoveArchive(int idx, int delta);
+bool CanMoveArchive(int idx, int delta);
+// The game root of source idx is a folder Windows protects (Program Files / Windows): writes may fail or be redirected.
+bool UnderProtectedFolder(int idx);
 void RebuildMerged(Group &g);
 void SaveSettings();
 void LoadSettings();

@@ -165,6 +165,14 @@ static void RunUiScript(MainFrame &mf, HDC dc, const std::function<void(const st
 		if (cmd == "savechar") { const bool ok = saveActive(); FILE *lf = fopen((gStartup.uiScript + ".log").c_str(), "a"); if (lf) { fprintf(lf, "savechar -> %s\n", ok ? "ok" : "FAILED"); fclose(lf); } waitFrames = 20; return; }
 		if (cmd == "zoomview") { setView(2, (int)(atof(arg.c_str()) * 100.0 + 0.5)); continue; }
 		if (cmd == "viewframe") { setView(1, atoi(arg.c_str())); continue; }
+		{   // PACNyx-parity commands (ui/pacnyx_script_impl.h) first: `layer` in an RBO / GOF2 PAT editor tab is the part layer
+			std::string pmsg;
+			if (mf.PacnyxScriptCommand(cmd, arg, &pmsg)) {   // PAT editor / CG / export commands: result line in the log, a few frames to settle
+				FILE *lf = fopen((gStartup.uiScript + ".log").c_str(), "a");
+				if (lf) { fprintf(lf, "%s %s -> %s\n", cmd.c_str(), arg.c_str(), pmsg.empty() ? "ok" : pmsg.c_str()); fclose(lf); }
+				waitFrames = 4; return;
+			}
+		}
 		// Edits through the same model calls as the UI (S3 evidence): copypattern N | pastepattern N |
 		// gameformat auto|mbaacc|uni2|unist|unib|mbtl | layer N | switchview N | opentrees 0/1 | tint R G B
 		if (cmd == "copypattern" || cmd == "pastepattern" || cmd == "gameformat" || cmd == "layer" || cmd == "switchview" || cmd == "opentrees" || cmd == "tint") {

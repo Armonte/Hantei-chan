@@ -79,6 +79,13 @@ void PatToolPane::DrawPopUp() {
 
 void PatToolPane::DrawTool()
 {
+    // RBO / GOF2 character: its pattern list is real game data (this test animation swaps pattern 0 in and out).
+    if (curInstance->framedata->isHan2()) {
+        ImGui::PushTextWrapPos(0.0f);
+        ImGui::TextDisabled("%s", TXT("RBO / GOF2: play the character's real patterns in Tools > Animation player."));
+        ImGui::PopTextWrapPos();
+        return;
+    }
     if (!curInstance->currState->animationSequence.frames.empty())
     {
         int nframes = curInstance->currState->animationSequence.frames.size() - 1;

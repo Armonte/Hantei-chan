@@ -148,7 +148,28 @@ bool WritePngIndexed(const std::string& utf8Path, const uint8_t* indices, int wi
 	return true;
 }
 
+static bool WriteWicRgba(const std::string& utf8Path, const uint8_t* rgba, int width, int height, std::string& error, const GUID& container);
+
 bool WritePngRgba(const std::string& utf8Path, const uint8_t* rgba, int width, int height, std::string& error)
+{
+	return WriteWicRgba(utf8Path, rgba, width, height, error, GUID_ContainerFormatPng);
+}
+
+bool WriteImageRgba(const std::string& utf8Path, const uint8_t* rgba, int width, int height, std::string& error)
+{
+	std::string ext;
+	const size_t dot = utf8Path.find_last_of('.');
+	if (dot != std::string::npos && utf8Path.find_first_of("/\\", dot) == std::string::npos) ext = utf8Path.substr(dot + 1);
+	for (auto& c : ext) c = (char)tolower((unsigned char)c);
+	if (ext == "bmp") return WriteWicRgba(utf8Path, rgba, width, height, error, GUID_ContainerFormatBmp);
+	if (ext == "jpg" || ext == "jpeg") return WriteWicRgba(utf8Path, rgba, width, height, error, GUID_ContainerFormatJpeg);
+	if (ext == "tif" || ext == "tiff") return WriteWicRgba(utf8Path, rgba, width, height, error, GUID_ContainerFormatTiff);
+	if (ext.empty() || ext == "png") return WriteWicRgba(utf8Path, rgba, width, height, error, GUID_ContainerFormatPng);
+	error = "Unsupported image type ." + ext + " (use .png, .bmp, .jpg or .tif).";
+	return false;
+}
+
+static bool WriteWicRgba(const std::string& utf8Path, const uint8_t* rgba, int width, int height, std::string& error, const GUID& container)
 {
 	if (!rgba || width <= 0 || height <= 0) { error = "The image is empty."; return false; }
 
@@ -178,15 +199,21 @@ bool WritePngRgba(const std::string& utf8Path, const uint8_t* rgba, int width, i
 	IPropertyBag2* properties = nullptr;
 	if (SUCCEEDED(hr)) hr = factory->CreateStream(&stream);
 	if (SUCCEEDED(hr)) hr = stream->InitializeFromFilename(tempPath.c_str(), GENERIC_WRITE);
-	if (SUCCEEDED(hr)) hr = factory->CreateEncoder(GUID_ContainerFormatPng, nullptr, &encoder);
+	if (SUCCEEDED(hr)) hr = factory->CreateEncoder(container, nullptr, &encoder);
 	if (SUCCEEDED(hr)) hr = encoder->Initialize(stream, WICBitmapEncoderNoCache);
 	if (SUCCEEDED(hr)) hr = encoder->CreateNewFrame(&frame, &properties);
 	if (SUCCEEDED(hr)) hr = frame->Initialize(properties);
 	if (SUCCEEDED(hr)) hr = frame->SetSize((UINT)width, (UINT)height);
 	WICPixelFormatGUID format = GUID_WICPixelFormat32bppBGRA;
 	if (SUCCEEDED(hr)) hr = frame->SetPixelFormat(&format);
-	if (SUCCEEDED(hr) && !IsEqualGUID(format, GUID_WICPixelFormat32bppBGRA)) hr = E_FAIL;
-	if (SUCCEEDED(hr)) hr = frame->WritePixels((UINT)height, (UINT)width * 4, (UINT)bgra.size(), bgra.data());
+	if (SUCCEEDED(hr) && IsEqualGUID(format, GUID_WICPixelFormat24bppBGR)) {   // JPEG / BMP without alpha: drop the alpha byte
+		std::vector<uint8_t> bgr((size_t)width * height * 3);
+		for (size_t i = 0; i < (size_t)width * height; ++i) { bgr[i * 3] = bgra[i * 4]; bgr[i * 3 + 1] = bgra[i * 4 + 1]; bgr[i * 3 + 2] = bgra[i * 4 + 2]; }
+		hr = frame->WritePixels((UINT)height, (UINT)width * 3, (UINT)bgr.size(), bgr.data());
+	} else {
+		if (SUCCEEDED(hr) && !IsEqualGUID(format, GUID_WICPixelFormat32bppBGRA) && !IsEqualGUID(format, GUID_WICPixelFormat32bppBGR)) hr = E_FAIL;
+		if (SUCCEEDED(hr)) hr = frame->WritePixels((UINT)height, (UINT)width * 4, (UINT)bgra.size(), bgra.data());
+	}
 	if (SUCCEEDED(hr)) hr = frame->Commit();
 	if (SUCCEEDED(hr)) hr = encoder->Commit();
 	ReleaseCom(properties);
@@ -203,7 +230,7 @@ bool WritePngRgba(const std::string& utf8Path, const uint8_t* rgba, int width, i
 	}
 	if (!MoveFileExW(tempPath.c_str(), finalPath.c_str(), MOVEFILE_REPLACE_EXISTING | MOVEFILE_WRITE_THROUGH)) {
 		DeleteFileW(tempPath.c_str());
-		error = "Could not move the finished PNG into place: " + utf8Path;
+		error = "Could not move the finished image into place: " + utf8Path;
 		return false;
 	}
 	return true;

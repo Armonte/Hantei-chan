@@ -14,6 +14,7 @@
 #include "../cg.h"
 #include "../cgm/cgm_bank.h"
 #include "../cgm/cgm_ops.h"
+#include "../cgm/cgm_struct.h"
 #include "../han2_pat.h"
 #include "../han2_export.h"
 #include "../han2_diff.h"
@@ -704,12 +705,14 @@ static int CmdShift(int argc, char **argv)
 // export: sprites, poses and animations of one character as PNG + JSON
 static int CmdExport(int argc, char **argv)
 {
-	if (argc < 2) { puts("export <in.DAT|DT2> <outdir> [--no-cg] [--no-poses] [--no-patterns] [--scale N]"); return 2; }
+	if (argc < 2) { puts("export <in.DAT|DT2> <outdir> [--no-cg] [--no-poses] [--no-patterns] [--scale N] [--icaroffa] [--canvas W H]"); return 2; }
 	han2::ExportOptions opt;
 	for (int i = 2; i < argc; i++) {
 		std::string a = argv[i];
 		if (a == "--no-cg") opt.cgImages = false; else if (a == "--no-poses") opt.poses = false; else if (a == "--no-patterns") opt.patterns = false;
 		else if (a == "--scale" && i + 1 < argc) opt.scale = atoi(argv[++i]);
+		else if (a == "--icaroffa") opt.icaroffaLayout = true;
+		else if (a == "--canvas" && i + 2 < argc) { opt.canvasW = atoi(argv[++i]); opt.canvasH = atoi(argv[++i]); }
 	}
 	std::vector<uint8_t> b;
 	if (!ReadLoose(argv[0], b)) { puts("cannot read"); return 1; }
@@ -734,10 +737,208 @@ static int CmdExport(int argc, char **argv)
 	if (!pb.empty() && !han2::PatToParts(pb.data(), pb.size(), *parts, &err)) printf("parts: %s\n", err.c_str());
 	han2::ExportReport rep;
 	if (!han2::ExportCharacter(*fd, *cg, *parts, argv[1], opt, rep, &err)) { printf("export: %s\n", err.c_str()); return 1; }
-	printf("exported: %d CG png, %d pose png, %d frame png, %d patterns, %d strips/sheets\n", rep.cgPngs, rep.posePngs, rep.framePngs, rep.patternsWritten, rep.sheets);
-	return 0;
+	printf("exported: %d CG png, %d pose png, %d frame png, %d patterns, %d strips/sheets, %d write errors\n", rep.cgPngs, rep.posePngs, rep.framePngs, rep.patternsWritten, rep.sheets, rep.writeErrors);
+	for (auto &n : rep.notes) printf("NOTE %s\n", n.c_str());
+	return rep.writeErrors ? 1 : 0;
 }
 
+
+// dt2companion <archive>...: BUG2/BUG7 regression (docs/formats/pacnyx_parity.md). For every RBO character that has both a .DT2 and a .DAT in the
+// given archives (later archive wins, as the game mounts them), load it the way the editor does (frames from the .DT2; parts, CG and names from the
+// .DAT), then check the .DT2 save path:
+//   a) no edit: no .DAT companion is needed and the .DT2 re-serializes byte-identically;
+//   b) a pattern rename + a part moved (PAT model -> BuildPat) + a CG byte changed: BuildDatCompanion must produce a .DAT whose name area,
+//      parts area and CG area carry the edits, whose pattern area equals the .DT2's frames, and the .DT2 itself must stay byte-identical;
+//   c) the same edits without a loaded .DAT must be refused (not silently dropped).
+static int CmdDt2Companion(int argc, char **argv)
+{
+	Section s; s.name = "dt2comp";
+	std::map<std::string, std::vector<uint8_t>> dt2, dat;   // stem -> bytes (later archive wins)
+	for (int i = 0; i < argc; i++) {
+		pac::Archive a; std::string err;
+		if (!pac::Open(argv[i], a, &err)) { printf("FAIL %s: %s\n", argv[i], err.c_str()); s.fail++; continue; }
+		for (size_t k = 0; k < a.entries.size(); k++) {
+			const std::string n = a.entries[k].name, e = ExtOf(n);
+			if (e != ".DT2" && e != ".DAT") continue;
+			std::vector<uint8_t> b; if (!pac::ReadEntry(a, k, b, &err)) continue;
+			if (b.size() < 8 || memcmp(b.data(), "HAN2RBO ", 8)) continue;
+			std::string stem = n.substr(0, n.size() - 4); for (auto &c : stem) if (c >= 'a' && c <= 'z') c -= 32;
+			(e == ".DT2" ? dt2 : dat)[stem] = std::move(b);
+		}
+	}
+	static CG *cg = new CG(); static Parts *parts = new Parts(cg);   // never destroyed (GL-free tool)
+	int edited = 0;
+	for (auto &kv : dt2) {
+		const std::string &stem = kv.first;
+		auto it = dat.find(stem);
+		if (it == dat.end()) continue;
+		han2::Han2File dt, df; std::string err;
+		if (!han2::Parse(kv.second.data(), kv.second.size(), dt, &err) || dt.sub != 1) continue;   // RBO only (GOF2 keeps parts in .PAT)
+		if (!han2::Parse(it->second.data(), it->second.size(), df, &err)) { printf("FAIL %s.DAT: parse: %s\n", stem.c_str(), err.c_str()); s.fail++; continue; }
+		auto load = [&](FrameData &fd, bool withDat) {
+			const uint8_t *nm = withDat && df.area[han2::kAreaNames].size() >= (size_t)han2::kNamesSize ? df.area[han2::kAreaNames].data() : nullptr;
+			if (!han2::Load(fd, kv.second.data(), kv.second.size(), &err, nm, nm ? (size_t)han2::kNamesSize : 0)) return false;
+			if (withDat) {   // same as han2::LoadCharacter
+				auto c = fd.m_han2;
+				c->hasDt2Header = true; memcpy(c->dt2Header, c->header, 0x40); memcpy(c->dt2AreaOff, c->areaOff, sizeof c->areaOff);
+				c->parts = df.area[han2::kAreaParts]; c->cg = df.area[han2::kAreaCg]; c->names = df.area[han2::kAreaNames];
+				for (int a = 0; a < 4; a++) c->areaOff[a] = df.areaOff[a];
+				memcpy(c->header, df.header, 0x40);
+			}
+			return true;
+		};
+		FrameData *fd = new FrameData();
+		if (!load(*fd, true)) { printf("FAIL %s: load: %s\n", stem.c_str(), err.c_str()); s.fail++; continue; }
+		// a) no edit
+		std::vector<uint8_t> comp, out; bool needed = true;
+		if (!han2::BuildDatCompanion(*fd, comp, needed, &err) || needed) { printf("FAIL %s: unedited character asks for a .DAT companion (%s)\n", stem.c_str(), err.c_str()); s.fail++; continue; }
+		if (!han2::Serialize(*fd, out, &err, nullptr, true) || out != kv.second) { DiffReport("unedited .DT2", stem, out, kv.second); s.fail++; continue; }
+		// b) edits in the three .DAT-only areas
+		auto c = fd->m_han2;
+		int renamed = -1;
+		for (int p = 0; p < han2::kPatterns && p < (int)fd->m_sequences.size(); p++) if (!fd->m_sequences[p].frames.empty()) { renamed = p; break; }
+		if (renamed >= 0) fd->m_sequences[renamed].name = "HANTEI_RENAMED";
+		bool partsEdited = false;
+		if (!c->parts.empty() && han2::PatToParts(c->parts.data(), c->parts.size(), *parts, &err)) {
+			for (auto &ps : parts->partSets) { for (auto &g : ps.groups) if (g.ppId >= 0) { g.x += 3; partsEdited = true; break; } if (partsEdited) break; }
+			std::vector<uint8_t> np;
+			if (partsEdited && han2::BuildPat(*parts, c->parts, np, &err) && np != c->parts) { c->parts.swap(np); c->partsDirty = true; } else partsEdited = false;
+		}
+		bool cgEdited = false;
+		if (c->cg.size() > 0x5000) { c->cg[c->cg.size() - 1] ^= 0x5A; c->cgDirty = true; cgEdited = true; }
+		std::vector<uint8_t> newParts = c->parts, newCg = c->cg;
+		if (!han2::BuildDatCompanion(*fd, comp, needed, &err) || !needed) { printf("FAIL %s: edits but no .DAT companion (%s)\n", stem.c_str(), err.c_str()); s.fail++; continue; }
+		han2::Han2File cf;
+		if (!han2::Parse(comp.data(), comp.size(), cf, &err) || cf.kind != 0) { printf("FAIL %s: companion is not a full .DAT (%s)\n", stem.c_str(), err.c_str()); s.fail++; continue; }
+		bool ok = true;
+		if (cf.area[han2::kAreaParts] != newParts) { printf("FAIL %s: parts edit missing from the .DAT\n", stem.c_str()); ok = false; }
+		if (cf.area[han2::kAreaCg] != newCg) { printf("FAIL %s: CG edit missing from the .DAT\n", stem.c_str()); ok = false; }
+		if (renamed >= 0) {
+			char nb[65]{}; memcpy(nb, cf.area[han2::kAreaNames].data() + 64 * renamed, 64);
+			if (std::string(nb) != "HANTEI_RENAMED") { printf("FAIL %s: pattern %d rename missing from the .DAT name area\n", stem.c_str(), renamed); ok = false; }
+		}
+		// the companion's frames are the .DT2's frames
+		FrameData *re = new FrameData();
+		std::vector<uint8_t> reDt2;
+		// (the header differs: the companion carries the .DAT's area offsets; the pattern area after it must be the same bytes)
+		if (!han2::Load(*re, comp.data(), comp.size(), &err) || !han2::Serialize(*re, reDt2, &err, nullptr, true) || reDt2.size() != kv.second.size()
+			|| memcmp(reDt2.data() + 0x40, kv.second.data() + 0x40, reDt2.size() - 0x40)) { DiffReport("companion .DAT pattern area vs .DT2", stem, reDt2, kv.second); ok = false; }
+		if (!han2::Serialize(*fd, out, &err, nullptr, true) || out != kv.second) { printf("FAIL %s: .DT2 changed by .DAT-only edits\n", stem.c_str()); ok = false; }
+		// c) no .DAT loaded: refused
+		FrameData *bare = new FrameData();
+		if (load(*bare, false)) {
+			bare->m_sequences[renamed >= 0 ? renamed : 0].name = "HANTEI_RENAMED";
+			bare->m_han2->partsDirty = true;
+			std::vector<uint8_t> x; bool nd = false; std::string e2;
+			if (han2::BuildDatCompanion(*bare, x, nd, &e2)) { printf("FAIL %s: edits without a .DAT were not refused\n", stem.c_str()); ok = false; }
+		}
+		if (ok) { s.pass++; if (partsEdited && cgEdited && renamed >= 0) edited++; } else s.fail++;
+	}
+	s.notes["characters with parts + CG + rename all checked"] = edited;
+	return Finish(s);
+}
+
+// effectedit <archive>...: PACNyx effect edits on every CG bank (RBO .DAT CG area, GOF2 .CHP): on one drawable image per bank with
+// blocks and no dependants: rename survives serialize/parse; moving it on its canvas and back is byte-identical; rebuilding its blocks with
+// every cell kept renders the same pixels; switching one stored cell off makes exactly that cell transparent and keeps the rest.
+static int CmdEffectEdit(int argc, char **argv)
+{
+	Section s; s.name = "effect";
+	ForEachEntry(argc, argv, s, [&](const std::string &label, const std::string &name, const std::vector<uint8_t> &b) {
+		Kind k = Classify(b, name);
+		std::vector<uint8_t> bank;
+		if (k == Kind::Chp) bank = b;
+		else if (k == Kind::Han2) { han2::Han2File f; if (!han2::Parse(b.data(), b.size(), f, nullptr)) { s.fail++; return; } bank = f.area[han2::kAreaCg]; }
+		else { NaAdd(s, name, k); return; }
+		if (bank.empty()) { s.notes["no CG bank"]++; s.pass++; return; }
+		cgm::Bank bk; std::string err;
+		if (!cgm::Bank::parse(bank.data(), bank.size(), bk, &err)) { s.notes["bank not parsed by the CG manager (opaque)"]++; s.pass++; return; }
+		auto atlas = bk.buildAtlas();
+		int n = -1;
+		for (int i = 0; i < (int)bk.images.size() && n < 0; i++) {
+			const auto &im = bk.images[i];
+			if (!im.drawable() || im.blocks.size() < 2 || im.type == 3 || im.type == 5 || !bk.dependants(i, atlas).empty() || !bk.owners(i, atlas).empty()) continue;
+			n = i;
+		}
+		if (n < 0) { s.notes["no suitable image"]++; s.pass++; return; }
+		bool ok = true;
+		auto fail = [&](const char *what) { const auto &q = bk.images[n]; printf("FAIL %s image %d (%d,%d)-(%d,%d) canvas %dx%d: %s %s\n", label.c_str(), n, q.x1, q.y1, q.x2, q.y2, q.w, q.h, what, err.c_str()); ok = false; };
+		// rename
+		cgm::Bank a = bk;
+		if (!cgm::RenameImage(a, n, "HANTEI_FX", &err)) fail("rename");
+		std::vector<uint8_t> ser; a.serialize(ser); cgm::Bank a2;
+		if (ok && (!cgm::Bank::parse(ser.data(), ser.size(), a2, &err) || std::string(a2.images[n].name) != "HANTEI_FX")) fail("rename lost");
+		// base point: move and move back -> identical bytes
+		cgm::Bank m = bk; std::vector<uint8_t> s0, s1; bk.serialize(s0);
+		const auto &mi = m.images[n];
+		(void)mi;
+		const int dx = 3, dy = -2;
+		if (ok && (!cgm::OffsetImage(m, n, dx, dy, &err) || !cgm::OffsetImage(m, n, -dx, -dy, &err))) fail("offset");
+		if (mi.x1 < 0 || mi.y1 < 0) s.notes["images with anchor-relative negative bounds"]++;
+		if (ok) { m.serialize(s1); if (s1 != s0) fail("offset round trip not byte-identical"); }
+		cgm::Rgba ref; bk.decode(n, ref);
+		// rebuild with every cell kept: same pixels
+		cgm::Bank r = bk; int cols, rows, ox, oy; auto mask = cgm::CellMask(r, n, cols, rows, ox, oy);
+		if (ok && !cgm::ReblockImage(r, n, ref.px.data(), ref.w, ref.h, &mask, &err)) fail("reblock");
+		cgm::Rgba got;
+		auto sameAt = [&](const cgm::Rgba &x, const cgm::Image &imx, int px, int py) {   // canvas coordinates
+			const int lx = px - imx.x1, ly = py - imx.y1;
+			if (lx < 0 || ly < 0 || lx >= x.w || ly >= x.h) return (const uint8_t *)nullptr;
+			return &x.px[((size_t)ly * x.w + lx) * 4];
+		};
+		auto alphaAt = [&](const cgm::Rgba &x, const cgm::Image &imx, int px, int py) { auto p = sameAt(x, imx, px, py); return p ? p[3] : (uint8_t)0; };
+		const auto &im0 = bk.images[n];
+		if (ok && r.decode(n, got)) {
+			for (int y = im0.y1; y <= im0.y2 && ok; y++) for (int x = im0.x1; x <= im0.x2; x++) {
+				const uint8_t *p = sameAt(ref, im0, x, y), *q = sameAt(got, r.images[n], x, y);
+				if (!p || !q || (p[3] != q[3]) || (p[3] && memcmp(p, q, 3))) { fail("rebuilt pixels differ"); break; }
+			}
+		}
+		// switch the first stored cell off
+		int off = -1; for (size_t i = 0; i < mask.size(); i++) if (mask[i]) { off = (int)i; break; }
+		cgm::Bank c = bk;
+		if (ok && off >= 0) {
+			auto m2 = mask; m2[(size_t)off] = 0;
+			if (!cgm::ReblockImage(c, n, ref.px.data(), ref.w, ref.h, &m2, &err) || !c.decode(n, got)) fail("cell off");
+			else {
+				const int cu = bk.cellUnit(), cx0 = ox + (off % cols) * cu, cy0 = oy + (off / cols) * cu;
+				for (int y = im0.y1; y <= im0.y2 && ok; y++) for (int x = im0.x1; x <= im0.x2; x++) {
+					const bool inCell = x >= cx0 && x < cx0 + cu && y >= cy0 && y < cy0 + cu;
+					const uint8_t want = inCell ? 0 : alphaAt(ref, im0, x, y);
+					if (alphaAt(got, c.images[n], x, y) != want) { fail(inCell ? "cell still drawn" : "other cell changed"); break; }
+				}
+			}
+		}
+		if (ok) s.pass++; else s.fail++;
+	});
+	return Finish(s);
+}
+
+// partsinfo <file.DAT|.PAT> [pose...]: what the parts area holds (sheets, pose names, parts per pose), to check a saved file
+static int CmdPartsInfo(int argc, char **argv)
+{
+	if (argc < 1) { puts("partsinfo <file.DAT|.PAT> [pose...]"); return 2; }
+	std::vector<uint8_t> b; if (!ReadLoose(argv[0], b)) { puts("cannot read"); return 1; }
+	std::vector<uint8_t> pat = b; std::string err;
+	han2::Han2File f;
+	if (!han2::IsPat(b.data(), b.size())) { if (!han2::Parse(b.data(), b.size(), f, &err)) { printf("parse: %s\n", err.c_str()); return 1; } pat = f.area[han2::kAreaParts]; printf("HAN2RBO kind %u sub %u, parts %zu bytes, CG %zu bytes\n", f.kind, f.sub, f.area[han2::kAreaParts].size(), f.area[han2::kAreaCg].size()); }
+	static Parts *parts = new Parts(nullptr);
+	if (!han2::PatToParts(pat.data(), pat.size(), *parts, &err)) { printf("parts: %s\n", err.c_str()); return 1; }
+	int poses = 0; for (auto &ps : parts->partSets) { for (auto &g : ps.groups) if (g.ppId >= 0) { poses++; break; } }
+	printf("sheets %zu:", parts->gfxMeta.size());
+	for (auto &g : parts->gfxMeta) printf(" %dx%d", g.w, g.h);
+	uint64_t h = 1469598103934665603ull;
+	if (!parts->gfxMeta.empty() && parts->gfxMeta.back().data) for (int i = 0; i < parts->gfxMeta.back().w * parts->gfxMeta.back().h * 4; i++) { h ^= (uint8_t)parts->gfxMeta.back().data[i]; h *= 1099511628211ull; }
+	printf("\nlast sheet pixel hash %016llx\npose slots %zu, poses with parts %d\n", (unsigned long long)h, parts->partSets.size(), poses);
+	for (int i = 1; i < argc; i++) {
+		int p = atoi(argv[i]); if (p < 0 || p >= (int)parts->partSets.size()) { printf("pose %d: none\n", p); continue; }
+		const auto &ps = parts->partSets[p]; int n = 0; for (auto &g : ps.groups) if (g.ppId >= 0) n++;
+		printf("pose %d '%s': %d parts", p, ps.name.c_str(), n);
+		for (size_t k = 0; k < ps.groups.size(); k++) if (ps.groups[k].ppId >= 0) { const auto &g = ps.groups[k]; const auto &co = parts->cutOuts[g.ppId]; printf(" [%zu sheet %d (%d,%d) L%d rot %.4f]", k, co.texture, g.x, g.y, (int)floorf(g.priority + 1e-4f), g.rotation[3]); }
+		printf("\n");
+	}
+	return 0;
+}
 
 static int CmdPacWrite(int argc, char **argv)
 {
@@ -977,6 +1178,9 @@ int main(int argc, char **argv)
 	if (c == "export") return CmdExport(argc - 2, argv + 2);
 	if (c == "imgrt") return CmdImgRt(argc - 2, argv + 2);
 	if (c == "pacwrite") return CmdPacWrite(argc - 2, argv + 2);
+	if (c == "dt2companion") return CmdDt2Companion(argc - 2, argv + 2);
+	if (c == "effectedit") return CmdEffectEdit(argc - 2, argv + 2);
+	if (c == "partsinfo") return CmdPartsInfo(argc - 2, argv + 2);
 	if (c == "cgrt") return CmdCgRt(argc - 2, argv + 2);
 	if (c == "diff") return CmdDiff(argc - 2, argv + 2);
 	if (c == "animtest") return CmdAnimTest(argc - 2, argv + 2);

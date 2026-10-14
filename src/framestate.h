@@ -161,6 +161,12 @@ struct FrameState
 	int partShape = 0;         // Current shape index
 	int partGraph = 0;         // Current texture index
 	int framePatEditor = 0;    // Current frame in PatEditor animation tool
+	// French-Bread PAT editor: rectangle selected on the sprite sheet with the mouse (sheet pixels: x, y, w, h)
+	int sheetSel[4]{};
+	bool sheetSelValid = false;
+	bool sheetSelecting = false;
+	float sheetSelAnchor[2]{}, sheetSelCur[2]{};   // world coordinates of the drag
+	bool showPoseBasePoint = true;                  // draw the pose base point cross
 	Sequence_T<std::allocator> animationSequence;  // Animation sequence for PatEditor preview
 	Sequence_T<std::allocator> previewSequence;     // Backup of original sequence before preview
 

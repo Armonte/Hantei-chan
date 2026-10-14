@@ -483,6 +483,9 @@ LRESULT WINAPI WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
 	case WM_DROPFILES:
 		{
 			HDROP h = (HDROP)wParam;
+			POINT pt{}; DragQueryPoint(h, &pt);
+			POINT sp = pt; ClientToScreen(hWnd, &sp);
+			if (mf) mf->setDropPoint((float)sp.x, (float)sp.y, (float)pt.x, (float)pt.y);
 			const UINT n = DragQueryFileW(h, 0xFFFFFFFF, nullptr, 0);
 			for (UINT i = 0; i < n; i++) {
 				wchar_t wp[1024]; DragQueryFileW(h, i, wp, 1024);

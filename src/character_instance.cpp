@@ -7,6 +7,7 @@
 #include "ha4_character.h"
 #include "han2_character.h"
 #include "framedata_han2.h"
+#include "han2_pat.h"
 #include <filesystem>
 #include <sstream>
 #include <iomanip>
@@ -18,6 +19,10 @@ CharacterInstance::CharacterInstance()
 	// Undo tracks the whole pattern list; the baseline is captured lazily on
 	// the first UI frame after (re)load.
 	undoManager.attach(&frameData.m_sequences);
+	// French-Bread parts are saved with the character (SyncPartsToContainer), so their edits are part of its history.
+	partsUndo.enabled = [this] { return parts.fbPartModel && frameData.isHan2(); };
+	partsUndo.onSheetsRestored = [this] { han2::UploadPartsTextures(parts); };
+	undoManager.addChannel(&partsUndo);
 	state.pattern = 0;
 	state.frame = 0;
 	state.spriteId = -1;
@@ -292,6 +297,7 @@ static void SyncHa4Cg(CharacterInstance& ch)
 
 bool CharacterInstance::save()
 {
+	m_lastSaveError.clear();
 	if (m_topHA6Path.empty()) {
 		return false;
 	}
@@ -302,13 +308,13 @@ bool CharacterInstance::save()
 	SyncHa4Cg(*this);
 	if (frameData.isHan2()) {
 		std::string perr;
-		if (!han2::SyncPartsToContainer(*this, nullptr, &perr)) return false;
+		if (!han2::SyncPartsToContainer(*this, nullptr, &perr)) { m_lastSaveError = "parts: " + perr; return false; }
 	}
 	// Only mark clean if the file actually reached disk.
 	if (!frameData.save(m_topHA6Path.c_str())) {
 		return false;
 	}
-	if (frameData.isHan2()) { std::string perr; han2::SaveGof2Companions(*this, m_topHA6Path, &perr); }
+	if (frameData.isHan2()) { std::string perr; if (!han2::SaveCompanions(*this, m_topHA6Path, &perr)) { m_lastSaveError = perr; return false; } }
 	saveNotes(m_topHA6Path);
 	m_isModified = false;
 	undoManager.markClean();  // undoing back to this revision clears dirty
@@ -317,16 +323,17 @@ bool CharacterInstance::save()
 
 bool CharacterInstance::saveAs(const std::string& ha6Path)
 {
+	m_lastSaveError.clear();
 	undoManager.flush();
 	SyncHa4Cg(*this);
 	if (frameData.isHan2()) {
 		std::string perr;
-		if (!han2::SyncPartsToContainer(*this, nullptr, &perr)) return false;
+		if (!han2::SyncPartsToContainer(*this, nullptr, &perr)) { m_lastSaveError = "parts: " + perr; return false; }
 	}
 	if (!frameData.save(ha6Path.c_str())) {
 		return false;
 	}
-	if (frameData.isHan2()) { std::string perr; han2::SaveGof2Companions(*this, ha6Path, &perr); }
+	if (frameData.isHan2()) { std::string perr; if (!han2::SaveCompanions(*this, ha6Path, &perr)) { m_lastSaveError = perr; return false; } }
 	frameData.notes.dirty = frameData.notes.dirty || !frameData.notes.notes.empty();
 	saveNotes(ha6Path);
 	m_topHA6Path = ha6Path;

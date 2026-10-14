@@ -141,6 +141,7 @@ void MainFrame::Draw()
 #include "ui/png_export_impl.h"
 #include "ui/package_tools_impl.h"
 #include "ui/han2_ui_impl.h"
+#include "ui/pacnyx_script_impl.h"
 
 
 // ============================================================================
@@ -537,6 +538,10 @@ bool MainFrame::saveCharacter(CharacterInstance* character)
 		return true;
 	}
 	const std::string& path = character->getTopHA6Path();
+	if (!character->lastSaveError().empty()) {   // format limit (40 parts / pose, pose count, sheet size) or a companion file
+		requestErrorPopup("Save Error", std::string(TXT("Not saved: ")) + character->lastSaveError());
+		return false;
+	}
 	if (character->frameData.isHan2() && !han2::LastSaveError().empty()) {
 		requestErrorPopup("Save Error", std::string(TXT("RBO / GOF2 file not saved: ")) + han2::LastSaveError());
 		return false;
@@ -557,6 +562,8 @@ bool MainFrame::saveCharacterAs(CharacterInstance* character, const std::string&
 	if (character->isPatDocument()) return savePatOf(character, path);
 	backupBeforeSave(path, false);
 	if (character->saveAs(path)) return true;
+	if (!character->lastSaveError().empty()) { requestErrorPopup("Save Error", std::string(TXT("Not saved: ")) + character->lastSaveError()); return false; }
+	if (character->frameData.isHan2() && !han2::LastSaveError().empty()) { requestErrorPopup("Save Error", std::string(TXT("RBO / GOF2 file not saved: ")) + han2::LastSaveError()); return false; }
 	requestErrorPopup("Save Error", std::string(TXT("Could not write ")) + path);
 	return false;
 }

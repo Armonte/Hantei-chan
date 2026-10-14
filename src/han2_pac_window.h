@@ -19,6 +19,10 @@ void PacCreateAddMemory(const std::string &cp932Name, std::vector<uint8_t> data)
 // `archivePath` (optional): the archive the entry came from, used to guess the loose path the game opens it from (live reload).
 void OpenFileViewer(const std::string &cp932Name, std::vector<uint8_t> bytes, const std::string &origin, const std::string &archivePath = std::string(), const std::string &entryKey = std::string());
 void DrawFileViewers();
+// New .IMG from a PNG / BMP / JPEG (PACNyx File > New > IMG): opens an IMG viewer holding it (version 7, RGBA; both can be changed there).
+std::string NewImgFromImage(const std::string &utf8Path);
+// An image file dropped on IMG viewer `viewerId` (the number after "###viewer" in its window id): replaces its pixels. "" = done, else the reason.
+std::string DropImageOnViewer(int viewerId, const std::string &utf8Path);
 
 } // namespace han2ui
 

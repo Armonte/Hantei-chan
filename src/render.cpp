@@ -767,12 +767,14 @@ bool Render::GeneratePartCenterVertices()
 
 	// Lines buffer format: 4 grid lines + 4 origin marker lines
 	// Each line: x1, y1, z, r, g, b, x2, y2, z, r, g, b (but stored as individual vertices)
+	// the axes through 0,0 are the pose base point (actor anchor); French-Bread editor can hide them (PACNyx "Draw base point")
+	const float axis = m_parts->currState->showPoseBasePoint || !m_parts->fbPartModel ? 10000.f : 0.f;
 	float lines[] = {
 		// Grid lines (horizontal and vertical through 0,0)
-		-10000, 0, -1,   1,1,1,
-		10000, 0, -1,    1,1,1,
-		0, 10000, -1,    1,1,1,
-		0, -10000, -1,   1,1,1,
+		-axis, 0, -1,   1,1,1,
+		axis, 0, -1,    1,1,1,
+		0, axis, -1,    1,1,1,
+		0, -axis, -1,   1,1,1,
 
 		// Origin marker (plus sign at part origin)
 		propX - lineSize, propY, 1,    color[0], color[1], color[2],  // Left arm
@@ -805,6 +807,14 @@ bool Render::GenerateUVRectangleVertices()
 	// Get the selected cutout to draw its UV bounds
 	int cutOutIndex = m_parts->currState->partCutOut;
 	auto* cutOut = m_parts->GetCutOut(cutOutIndex);
+	// French-Bread sheet view: the rectangle selected with the mouse wins (on the sheet being shown)
+	CutOut<> selRect;
+	if (m_parts->fbPartModel && m_parts->currState->sheetSelValid) {
+		const auto& st = *m_parts->currState;
+		selRect.texture = st.renderMode == RenderMode::UV_SETTING_VIEW && cutOut ? cutOut->texture : st.partGraph;
+		for (int i = 0; i < 4; i++) selRect.uv[i] = st.sheetSel[i];
+		cutOut = &selRect;
+	}
 	if (!cutOut) {
 		return false;
 	}
@@ -817,12 +827,13 @@ bool Render::GenerateUVRectangleVertices()
 
 	// PPUV is in 1/256 of the texture whatever its size (Parts::Draw divides by 256), so a pixel is uv * w / 256.
 	// (This used uv / uvBpp: right for 256-pixel textures only, and a division by zero for MBAACC PGTX textures,
-	// whose uvBpp is 0.)
+	// whose uvBpp is 0.) French-Bread source rects are 1/256 units as well; the mouse sheet selection is already pixels.
 	if (gfx->w <= 0 || gfx->h <= 0) {
 		return false;
 	}
-	const float sx = gfx->w / 256.0f;
-	const float sy = gfx->h / 256.0f;
+	const bool pixelRect = cutOut == &selRect;
+	const float sx = pixelRect ? 1.0f : gfx->w / 256.0f;
+	const float sy = pixelRect ? 1.0f : gfx->h / 256.0f;
 
 	float x1 = cutOut->uv[0] * sx;  // Left edge
 	float y1 = cutOut->uv[1] * sy;  // Top edge

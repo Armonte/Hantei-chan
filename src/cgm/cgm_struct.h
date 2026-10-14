@@ -39,6 +39,20 @@ bool ReplaceImageResized(Bank &bank, int n, const uint8_t *rgba, int w, int h, i
 bool TrimToContent(const uint8_t *rgba, int w, int h, int &x0, int &y0, int &x1, int &y1);
 // Drop atlas pages nobody uses at the end (H0 = used pages).
 bool TrimPages(Bank &bank);
+// ---- PACNyx "effect" edits (an effect = one image of the bank) ----
+// Stored name (<= 31 bytes, as written in the image header).
+bool RenameImage(Bank &bank, int n, const std::string &name, std::string *err);
+// Move the sprite on its canvas by (dx, dy) pixels: the bounds and every block move, the canvas stays. The canvas origin is the
+// engine's anchor, so this is PACNyx's "set effect base point" seen from the other side. Refused when the sprite would leave the canvas.
+bool OffsetImage(Bank &bank, int n, int dx, int dy, std::string *err);
+// Block grid of image n: one cell (cellUnit() px) per entry, row-major, over the bounds rectangle extended left / up to the cell grid.
+// 1 = the cell is stored (a block covers it). originX/Y = canvas position of cell (0,0).
+std::vector<uint8_t> CellMask(const Bank &bank, int n, int &cols, int &rows, int &originX, int &originY);
+// Rebuild image n's blocks from bounds-size RGBA: cells with keep == 0 are dropped (transparent), and every fully transparent cell
+// is left out (PACNyx "calculate blocks"). Name, type (3 becomes auto), canvas and position are kept; the id does not change.
+// keep: cols x rows from CellMask (null = keep every cell that has pixels).
+bool ReblockImage(Bank &bank, int n, const uint8_t *rgba, int w, int h, const std::vector<uint8_t> *keep, std::string *err);
+
 // Ids that no remap would change are the identity: helpers.
 std::vector<int> IdentityRemap(size_t n);
 std::vector<int> InvertRemap(const std::vector<int> &remap, size_t newCount);   // for undo of a permutation / insert (removed ids have no inverse)

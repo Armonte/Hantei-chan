@@ -218,6 +218,82 @@ bool TrimPages(Bank &bank) {
 	bank.H[0] = want; return true;
 }
 
+bool RenameImage(Bank &bank, int n, const std::string &name, std::string *err) {
+	auto fail = [&](const std::string &m) { if (err) *err = m; return false; };
+	if (n < 0 || n >= (int)bank.images.size() || !bank.images[n].present) return fail("no such image");
+	if (name.empty()) return fail("the name is empty");
+	if (name.size() > 31) return fail("the name is longer than 31 bytes");
+	memset(bank.images[n].name, 0, sizeof bank.images[n].name);
+	memcpy(bank.images[n].name, name.data(), name.size());
+	return true;
+}
+
+bool OffsetImage(Bank &bank, int n, int dx, int dy, std::string *err) {
+	auto fail = [&](const std::string &m) { if (err) *err = m; return false; };
+	if (n < 0 || n >= (int)bank.images.size()) return fail("no such image");
+	Image &im = bank.images[n];
+	if (!im.drawable()) return fail("this image has no pixels");
+	// bounds are relative to the image's anchor (shipped RBO sprites have negative x1 / y1, e.g. GOLEM (-80,-64)-(79,47) on a 512 canvas),
+	// so the canvas is not a clip rectangle; only keep the sprite within two canvas sizes of the anchor (a full-canvas sprite may still move)
+	const int lim = 2 * std::max(std::max(im.w, im.h), 1024);
+	if (std::abs(im.x1 + dx) > lim || std::abs(im.x2 + dx) > lim || std::abs(im.y1 + dy) > lim || std::abs(im.y2 + dy) > lim) return fail("the sprite would move more than " + std::to_string(lim) + " px from its base point");
+	im.x1 += dx; im.x2 += dx; im.y1 += dy; im.y2 += dy;
+	for (Block &b : im.blocks) { b.x += dx; b.y += dy; }
+	Finish(bank);
+	return true;
+}
+
+std::vector<uint8_t> CellMask(const Bank &bank, int n, int &cols, int &rows, int &originX, int &originY) {
+	cols = rows = 0; originX = originY = 0;
+	if (n < 0 || n >= (int)bank.images.size() || !bank.images[n].drawable()) return {};
+	const Image &im = bank.images[n];
+	const int cu = bank.cellUnit();
+	originX = im.x1 - ((im.x1 % cu) + cu) % cu; originY = im.y1 - ((im.y1 % cu) + cu) % cu;
+	cols = (im.x2 + 1 - originX + cu - 1) / cu; rows = (im.y2 + 1 - originY + cu - 1) / cu;
+	std::vector<uint8_t> m((size_t)cols * rows, 0);
+	for (const Block &b : im.blocks)
+		for (int y = b.y; y < b.y + b.h; y += cu) for (int x = b.x; x < b.x + b.w; x += cu) {
+			const int cx = (x - originX) / cu, cy = (y - originY) / cu;
+			if (cx >= 0 && cy >= 0 && cx < cols && cy < rows) m[(size_t)cy * cols + cx] = 1;
+		}
+	return m;
+}
+
+bool ReblockImage(Bank &bank, int n, const uint8_t *rgba, int w, int h, const std::vector<uint8_t> *keep, std::string *err) {
+	auto fail = [&](const std::string &m) { if (err) *err = m; return false; };
+	if (n < 0 || n >= (int)bank.images.size() || !bank.images[n].drawable()) return fail("this image has no pixels");
+	const Image old = bank.images[n];
+	if (w != old.boundsW() || h != old.boundsH()) return fail("the pixels must have the image's size");
+	int cols, rows, ox, oy;
+	const auto cur = CellMask(bank, n, cols, rows, ox, oy);
+	if (keep && keep->size() != cur.size()) return fail("the block mask does not match the image");
+	const int cu = bank.cellUnit(), padL = old.x1 - ox, padT = old.y1 - oy;
+	// pixels on the cell grid (padded left / up so cell edges stay where they were), dropped cells cleared
+	const int W = cols * cu, H = rows * cu;
+	std::vector<uint8_t> px((size_t)W * H * 4, 0);
+	for (int y = 0; y < h; y++) memcpy(&px[((size_t)(y + padT) * W + padL) * 4], rgba + (size_t)y * w * 4, (size_t)w * 4);
+	if (keep) for (int cy = 0; cy < rows; cy++) for (int cx = 0; cx < cols; cx++) if (!(*keep)[(size_t)cy * cols + cx])
+		for (int y = 0; y < cu; y++) memset(&px[((size_t)(cy * cu + y) * W + cx * cu) * 4], 0, (size_t)cu * 4);
+	NewImageSpec spec;
+	spec.name = std::string(old.name, strnlen(old.name, 32));
+	spec.type = old.type == 3 || old.type == 5 ? -99 : old.type;
+	// AddImage places sprites inside [0, canvas): build it shifted into positive space on a large enough canvas, then shift it back
+	// (bounds are anchor-relative and may be negative, see OffsetImage) and restore the canvas size
+	const int kx = ox < 0 ? ((-ox + cu - 1) / cu) * cu : 0, ky = oy < 0 ? ((-oy + cu - 1) / cu) * cu : 0;
+	spec.canvasW = std::max(old.w, ox + kx + W); spec.canvasH = std::max(old.h, oy + ky + H); spec.x1 = ox + kx; spec.y1 = oy + ky;
+	std::vector<int> r1, r2; int id = -1;
+	Bank backup = bank;
+	if (!AddImage(bank, n, spec, px.data(), W, H, r1, &id, err)) { bank = std::move(backup); return false; }
+	{
+		Image &ni = bank.images[n];
+		ni.x1 -= kx; ni.x2 -= kx; ni.y1 -= ky; ni.y2 -= ky;
+		for (Block &b : ni.blocks) { b.x -= kx; b.y -= ky; }
+		ni.w = old.w; ni.h = old.h;
+	}
+	if (!DeleteImage(bank, n + 1, true, r2, err)) { bank = std::move(backup); return false; }
+	return true;
+}
+
 } // namespace cgm
 
 namespace cgm {

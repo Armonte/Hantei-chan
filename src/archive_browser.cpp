@@ -583,6 +583,79 @@ void CloseSource(int idx)
 	st.prev = Preview(); st.prevSource = st.prevItem = -1; st.thumbCache.clear();
 }
 
+void RefreshSource(int idx)
+{
+	State &st = S();
+	SourceP s = FindSource(idx);
+	if (!s) return;
+	auto g = GroupById(s->group);
+	if (!g) { if (s->IsArchive()) ReloadArchive(s->path); return; }
+	if (g->folder) {
+		std::weak_ptr<Source> wf = g->folder;
+		const std::string root = g->folder->path;
+		const bool recursive = g->info.game == Game::Generic;
+		g->folder->state = Source::Loading;
+		PostJob([wf, root, recursive] {
+			auto f = wf.lock(); if (!f) return;
+			auto fresh = std::make_shared<Source>(); fresh->path = f->path; fresh->game = f->game;
+			ScanFolderInto(*fresh, root, recursive);
+			PostMain([wf, fresh] { auto f = wf.lock(); if (!f) return; f->items = std::move(fresh->items); f->describe = fresh->describe; f->state = Source::Ready; S().viewDirty = true; });
+		});
+	}
+	for (auto &a : g->archives) ReloadArchive(a->path);
+	if (g->folder && !g->info.root.empty()) {   // archives that appeared since the folder was opened (kept after the current, user-ordered ones)
+		const GameInfo gi = DetectGame(g->info.root);
+		for (auto &a : gi.archives) {
+			bool have = false;
+			for (auto &m : g->archives) if (Lower(m->path) == Lower(a)) have = true;
+			if (!have) MountArchive(a, g->id, false);
+		}
+	}
+	st.status = "Refreshed";
+}
+
+bool CanMoveArchive(int idx, int delta)
+{
+	SourceP s = FindSource(idx);
+	if (!s || !s->IsArchive()) return false;
+	auto g = GroupById(s->group);
+	if (!g) return false;
+	auto it = std::find(g->archives.begin(), g->archives.end(), s);
+	if (it == g->archives.end()) return false;
+	const long pos = it - g->archives.begin() + delta;
+	return pos >= 0 && pos < (long)g->archives.size();
+}
+
+int MoveArchive(int idx, int delta)
+{
+	State &st = S();
+	if (!CanMoveArchive(idx, delta)) return idx;
+	SourceP s = FindSource(idx);
+	auto g = GroupById(s->group);
+	auto it = std::find(g->archives.begin(), g->archives.end(), s);
+	const size_t pos = (size_t)(it - g->archives.begin());
+	SourceP other = g->archives[pos + delta];
+	std::swap(g->archives[pos], g->archives[pos + delta]);
+	// the Sources list shows the archives in priority order too: swap the two rows
+	auto a = std::find(st.sources.begin(), st.sources.end(), s), b = std::find(st.sources.begin(), st.sources.end(), other);
+	int newIdx = idx;
+	if (a != st.sources.end() && b != st.sources.end()) { std::iter_swap(a, b); newIdx = (int)(b - st.sources.begin()); }
+	RebuildMerged(*g);
+	st.selSource = newIdx; st.viewDirty = true;
+	return newIdx;
+}
+
+bool UnderProtectedFolder(int idx)
+{
+	SourceP s = FindSource(idx);
+	if (!s) return false;
+	std::string root = s->path;
+	if (auto g = GroupById(s->group)) if (!g->info.root.empty()) root = g->info.root;
+	const std::string l = Lower(root);
+	auto starts = [&](const char *p) { return l.rfind(p, 0) == 0; };
+	return starts("c:\\program files") || starts("c:/program files") || starts("c:\\windows") || starts("c:/windows");
+}
+
 std::string OpenPath(const std::string &path)
 {
 	State &st = S();
@@ -1304,6 +1377,20 @@ bool SwapRebuiltArchive(const std::string &archivePath, const std::string &rebui
 	return true;
 }
 
+// The mounted PAC of the same game group as `archivePath` that holds `sjName`, highest priority first ("" = none mounted).
+static std::string ArchiveHoldingEntry(const std::string &archivePath, const std::string &sjName)
+{
+	int group = -1;
+	for (auto &s : S().sources) if (s && s->kind == Source::Pac && s->path == archivePath) group = s->group;
+	auto g = GroupById(group);
+	if (!g) return std::string();
+	for (int k = (int)g->archives.size() - 1; k >= 0; k--) {
+		auto &a = g->archives[k];
+		if (a && a->pac && pac::Find(*a->pac, sjName) >= 0) return a->path;
+	}
+	return std::string();
+}
+
 bool SaveCharacterIntoArchive(CharacterInstance &ch, const std::string &archivePath, std::string *err)
 {
 	auto fail = [&](const std::string &m) { if (err) *err = m; return false; };
@@ -1328,7 +1415,22 @@ bool SaveCharacterIntoArchive(CharacterInstance &ch, const std::string &archiveP
 	const fs::path out = dir / P8(stem + (srcExt.empty() ? ".DT2" : std::string(srcExt == ".dt2" ? ".DT2" : ".DAT")));
 	if (!ch.frameData.save(out.u8string().c_str())) return fail(han2::LastSaveError().empty() ? "could not serialise the character" : han2::LastSaveError());
 	std::string cerr2;
-	han2::SaveGof2Companions(ch, out.u8string(), &cerr2);
+	if (!han2::SaveGof2Companions(ch, out.u8string(), &cerr2)) { fs::remove_all(dir, ec); return fail(cerr2.empty() ? "could not write the .PAT / .CHP" : cerr2); }
+	// RBO saved as .DT2: parts / CG / names edits live in <stem>.DAT. It is replaced in the archive that holds it (often a
+	// lower-priority one than the .DT2's: DATA0x.PAC vs Update01.PAC), else added next to the .DT2.
+	std::vector<uint8_t> datBytes; bool datNeeded = false; std::string datArchive;
+	if (cont->sub == 1 && Lower(out.extension().string()) == ".dt2") {
+		if (!han2::BuildDatCompanion(ch.frameData, datBytes, datNeeded, &cerr2)) { fs::remove_all(dir, ec); return fail(cerr2); }
+		if (datNeeded) {
+			datArchive = ArchiveHoldingEntry(archivePath, utf82sj(stem + ".DAT"));
+			if (datArchive.empty() || datArchive == archivePath) {
+				datArchive.clear();
+				std::ofstream f(dir / P8(stem + ".DAT"), std::ios::binary);
+				f.write((const char *)datBytes.data(), (std::streamsize)datBytes.size());
+				if (!f) { fs::remove_all(dir, ec); return fail("could not stage " + stem + ".DAT"); }
+			}
+		}
+	}
 	std::vector<EntryEdit> edits;
 	for (auto &e : fs::directory_iterator(dir, ec)) {
 		if (!e.is_regular_file(ec)) continue;
@@ -1341,6 +1443,12 @@ bool SaveCharacterIntoArchive(CharacterInstance &ch, const std::string &archiveP
 	fs::remove_all(dir, ec);
 	if (edits.empty()) return fail("nothing to write");
 	if (!ReplaceEntries(archivePath, edits, err)) return false;
+	if (!datArchive.empty()) {
+		std::string e2;
+		if (!ReplaceEntries(datArchive, { EntryEdit{ utf82sj(stem + ".DAT"), std::move(datBytes) } }, &e2))
+			return fail("the .DT2 was written, but the parts / sprites / names could not be written into " + datArchive + ": " + e2);
+	}
+	if (datNeeded || (cont->sub == 1 && Lower(out.extension().string()) == ".dat")) han2::MarkDatCompanionWritten(ch);
 	return true;
 }
 

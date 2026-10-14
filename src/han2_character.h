@@ -48,6 +48,12 @@ bool SyncPartsToContainer(CharacterInstance &ch, bool *partsChanged, std::string
 
 // GOF2: write the edited <stem>NN.PAT / <stem>NN.CHP next to the .DT2 (only the ones that changed; .bak of the first version kept).
 bool SaveGof2Companions(CharacterInstance &ch, const std::string &dt2Path, std::string *err);
+// After the main file was written to `savedPath`: GOF2 companions (above), or for an RBO character saved as a .DT2 the
+// <stem>.DAT next to it when its parts, CG or pattern names were edited (a .DT2 carries none of them; see BuildDatCompanion).
+// false + *err when the companion could not be written: the edits are NOT saved and the character must stay dirty.
+bool SaveCompanions(CharacterInstance &ch, const std::string &savedPath, std::string *err);
+// The .DAT now holds the model's parts / CG / names (written by SaveCompanions or into an archive): clear their dirty state.
+void MarkDatCompanionWritten(CharacterInstance &ch);
 
 } // namespace han2
 
@@ -65,6 +71,8 @@ extern bool showDiffWindow;
 void DrawDiffWindow(CharacterInstance *ch);
 // CG bank window: list, preview, export / import of the sprites (PNG).
 void DrawCgWindow(CharacterInstance *ch);
+// An image file dropped on the CG window: replaces the selected CG image ("" = done, else the reason).
+std::string DropImageOnCgWindow(CharacterInstance *ch, const std::string &utf8Path);
 
 } // namespace han2ui
 

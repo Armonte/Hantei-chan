@@ -33,4 +33,21 @@ run "misc: BMP, text"                          miscrt "${RARCS[@]}" "${GARCS[@]}
 run "opaque: entries without a reader"         opaquert "${RARCS[@]}" "${GARCS[@]}"
 run "gof1: GOF1 archives + character .DAT"     gof1rt "${G1ARCS[@]}"
 run "animtest (behaviour check, not bytes)"    animtest "${RARCS[@]}" "${GARCS[@]}"
+# RBO characters whose frames come from a .DT2: parts / CG / name edits must reach the .DAT (BUG2/BUG7, docs/formats/pacnyx_parity.md)
+run "dt2companion: .DT2 save keeps .DAT edits" dt2companion "$RBO\\DATA01.PAC" "$RBO\\DATA02.PAC" "$RBO\\Update01.PAC" "$RBO\\Ex1Disc.PAC" "$RBO\\Ex2Disc.PAC" "$RBO\\Ex3Disc.pac"
+run "effectedit: CG rename / base point / blocks" effectedit "${RARCS[@]}" "${GARCS[@]}"
+# PAC writer used by the Create / patch window (icaroffa's temp-copy flow): every archive rewritten from its own entries must be byte-identical.
+# Output goes to a scratch folder next to the tool and is deleted after each archive.
+PW_DIR="$(dirname "$T")/pacwrite_tmp"; mkdir -p "$PW_DIR"
+PW_WIN=$(wslpath -w "$PW_DIR" 2>/dev/null || echo "$PW_DIR")
+echo "== pacwrite: rewrite every archive through the PAC writer"
+pw_pass=0; pw_fail=0
+for a in "${RARCS[@]}" "${GARCS[@]}"; do
+	out="$PW_WIN\\pacwrite_out.bin"
+	line=$("$T" pacwrite "$a" "$out" 2>&1); r=$?
+	echo "    $a: $line"
+	if [ $r -eq 0 ]; then pw_pass=$((pw_pass+1)); else pw_fail=$((pw_fail+1)); rc=1; fi
+	rm -f "$PW_DIR/pacwrite_out.bin"
+done
+echo "SECTION pacwrite  pass $pw_pass fail $pw_fail skipped 0 "
 exit $rc

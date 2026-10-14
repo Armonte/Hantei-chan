@@ -292,12 +292,23 @@ void MainFrame::ApplyPendingTabActions()
 }
 
 // Context-menu items shared by every tab bar (inside BeginPopup).
+void MainFrame::ContinueCloseAll()
+{
+	if (!m_closeAllPending || pendingCloseViewIndex >= 0 || shouldOpenUnsavedDialog) return;
+	while (!views.empty()) {
+		if (!tryCloseView((int)views.size() - 1)) return;   // the save prompt for that character is open; resumed after it
+	}
+	m_closeAllPending = false;
+}
+
 void MainFrame::DrawViewTabContextItems()
 {
 	if (contextMenuViewIndex < 0 || contextMenuViewIndex >= (int)views.size()) return;
 	CharacterView* v = views[contextMenuViewIndex].get();
 	if (ImGui::MenuItem(LBL("New View of Character"), nullptr, false, v->getCharacter() != nullptr))
 		createViewForCharacter(v->getCharacter());
+	if (ImGui::MenuItem(LBL("Close all tabs"), nullptr, false, !views.empty()))
+		m_closeAllPending = true;   // ContinueCloseAll asks about each unsaved character in turn
 	ImGui::Separator();
 	const uint64_t owner = m_session.owner(v->getId()).value_or(WorkspaceSession::MainHost);
 	const bool detachable = IsDetachableView(v);
@@ -487,8 +498,17 @@ void MainFrame::DrawDetachedViewSurface(uint64_t hostId, CharacterView* view, Im
 	// the cut-out's UV rectangle instead.
 	CharacterInstance* character = view->getCharacter();
 	BoxPane* boxPane = view->getBoxPane();
-	if (character && view->isPatEditor()) {
-		if (ImGui::IsItemClicked(drawButton)) {
+	const bool sheetView = character && view->isPatEditor() && character->parts.fbPartModel && view->getState().renderMode != RenderMode::DEFAULT;
+	if (character && sheetView) {   // French-Bread sprite sheet shown: the draw button selects a sheet rectangle (as in the main window)
+		auto& st = view->getState();
+		const float wx = (io.MousePos.x - origin.x) / cam.zoom, wy = (io.MousePos.y - origin.y) / cam.zoom;
+		if (ImGui::IsItemClicked(drawButton)) { st.sheetSelecting = true; st.sheetSelAnchor[0] = st.sheetSelCur[0] = wx; st.sheetSelAnchor[1] = st.sheetSelCur[1] = wy; UpdateSheetSelection(view); }
+		else if (st.sheetSelecting && ImGui::IsMouseDown(drawButton)) { st.sheetSelCur[0] = wx; st.sheetSelCur[1] = wy; UpdateSheetSelection(view); }
+		else st.sheetSelecting = false;
+	} else if (character && view->isPatEditor()) {
+		// French-Bread parts have no UV rectangle outside the sheet view; the button never draws a hitbox in a PAT tab
+		if (character->parts.fbPartModel) {
+		} else if (ImGui::IsItemClicked(drawButton)) {
 			BeginUvDrag(view, (io.MousePos.x - origin.x) / cam.zoom, (io.MousePos.y - origin.y) / cam.zoom);
 		} else if (m_uvDrag.active && m_uvDrag.viewId == view->getId() && ImGui::IsMouseDown(drawButton)) {
 			if (io.MouseDelta.x != 0.f || io.MouseDelta.y != 0.f) UvDragBy(io.MouseDelta.x / cam.zoom, io.MouseDelta.y / cam.zoom);

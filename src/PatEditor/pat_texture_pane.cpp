@@ -8,6 +8,16 @@
 #include "../copy_manager.h"
 #include "../imgui_utils.h"
 #include "../i18n.h"
+#include "../han2_parts_edit.h"
+#include "../han2_pat.h"
+#include "../png_writer.h"
+#include <filesystem>
+#include <cstdarg>
+
+static std::string Fmt(const char *fmt, ...)
+{
+    char b[1024]; va_list ap; va_start(ap, fmt); vsnprintf(b, sizeof(b), fmt, ap); va_end(ap); return b;
+}
 
 PatTexturePane::PatTexturePane(Render* render, StateReference *curInstance) : DrawWindow(render, curInstance),
                                                                     textureDecoratedNames(nullptr)
@@ -108,8 +118,109 @@ void PatTexturePane::DrawPopUp() {
     }
 }
 
+std::string PatTexturePane::ImportSheetFile(const std::string &path, bool replaceSelected)
+{
+    auto *parts = curInstance->parts;
+    std::vector<uint8_t> px; int w = 0, h = 0; std::string e;
+    if (!ReadImageRgba(path, px, w, h, e)) return e;
+    int slot = replaceSelected ? curInstance->currState->partGraph : (int)parts->gfxMeta.size();
+    if (!replaceSelected) {   // reuse an empty slot first, so sheet ids stay low
+        for (size_t i = 0; i < parts->gfxMeta.size(); i++) if (!parts->gfxMeta[i].data) { slot = (int)i; break; }
+    }
+    if (!han2::edit::ImportSheetRgba(*parts, slot, px.data(), w, h, &e)) return e;
+    han2::UploadPartsTextures(*parts);
+    curInstance->markEdited();   // also reached from a file drop / ui-script, where no mouse gesture ends the undo step
+    curInstance->currState->partGraph = slot;
+    RegenerateTexturesNames();
+    const int users = han2::edit::SheetUsers(*parts, slot);
+    std::string msg = Fmt(TXT("sheet %d: %s (%d x %d)"), slot, std::filesystem::u8path(path).filename().u8string().c_str(), w, h);
+    if (replaceSelected && users) msg += Fmt(TXT(" - %d parts draw from this sheet"), users);
+    return msg;
+}
+
+void PatTexturePane::DrawFbSheets()
+{
+    auto *parts = curInstance->parts;
+    int &sel = curInstance->currState->partGraph;
+    const int n = (int)parts->gfxMeta.size();
+    if (sel < 0 || sel >= n) sel = n > 0 ? 0 : -1;
+    if (!textureDecoratedNames && n > 0) RegenerateTexturesNames();
+
+    ImGui::BeginDisabled(n >= han2::edit::kMaxSheets);
+    if (ImGui::Button(LBL("Add sheet from image..."))) {
+        std::string f = FileDialog(fileType::IMAGE);
+        if (!f.empty()) fbMessage = ImportSheetFile(AnsiToUtf8(f), false);
+    }
+    ImGui::EndDisabled();
+    if (n > 0 && sel >= 0) {
+        ImGui::SameLine();
+        if (ImGui::Button(LBL("Replace with image..."))) {
+            std::string f = FileDialog(fileType::IMAGE);
+            if (!f.empty()) fbMessage = ImportSheetFile(AnsiToUtf8(f), true);
+        }
+        ImGui::SameLine();
+        if (ImGui::Button(LBL("Remove sheet"))) {
+            std::vector<int> poses;
+            const int users = han2::edit::SheetUsers(*parts, sel, &poses);
+            if (users) { fbConfirmRemove = true; fbMessage = Fmt(TXT("Sheet %d is used by %d parts in %d poses. Remove anyway?"), sel, users, (int)poses.size()); }
+            else { std::string e; if (han2::edit::RemoveSheet(*parts, sel, false, &e)) { han2::UploadPartsTextures(*parts); RegenerateTexturesNames(); fbMessage = Fmt(TXT("sheet %d removed"), sel); curInstance->markEdited(); } else fbMessage = e; }
+        }
+        if (fbConfirmRemove) {
+            ImGui::TextColored(ImVec4(1, .6f, .3f, 1), "%s", fbMessage.c_str());
+            if (ImGui::Button(LBL("Remove (parts keep pointing at the empty sheet)"))) {
+                std::string e; han2::edit::RemoveSheet(*parts, sel, true, &e);
+                han2::UploadPartsTextures(*parts); RegenerateTexturesNames();
+                fbConfirmRemove = false; fbMessage = Fmt(TXT("sheet %d removed"), sel); curInstance->markEdited();
+            }
+            ImGui::SameLine();
+            if (ImGui::Button(LBL("Cancel"))) { fbConfirmRemove = false; fbMessage.clear(); }
+        }
+    }
+    if (n == 0) { ImGui::TextDisabled("%s", TXT("This PAT has no sprite sheets.")); if (!fbMessage.empty()) ImGui::TextWrapped("%s", fbMessage.c_str()); return; }
+
+    if (ImGui::BeginCombo(LBL("Sprite sheet"), textureDecoratedNames ? textureDecoratedNames[sel].c_str() : "", ImGuiComboFlags_HeightLargest)) {
+        for (int i = 0; i < n; i++) {
+            const auto &g = parts->gfxMeta[i];
+            std::string label = std::to_string(i) + ": " + (g.data ? g.name + "  " + std::to_string(g.w) + "x" + std::to_string(g.h) : std::string(TXT("(empty)")));
+            if (ImGui::Selectable(label.c_str(), sel == i)) sel = i;
+            if (sel == i) ImGui::SetItemDefaultFocus();
+        }
+        ImGui::EndCombo();
+    }
+    auto &g = parts->gfxMeta[sel];
+    if (ImGui::Button(*curInstance->renderMode == RenderMode::TEXTURE_VIEW ? LBL("Hide Texture Render") : LBL("Show Texture Render")))
+        *curInstance->renderMode = *curInstance->renderMode == RenderMode::TEXTURE_VIEW ? RenderMode::DEFAULT : RenderMode::TEXTURE_VIEW;
+    ImGui::SameLine();
+    ImGui::BeginDisabled(!g.data);
+    if (ImGui::Button(LBL("Export image..."))) {
+        // icaroffa 2026: export from the sheet in memory, .png by default, also .bmp / .jpg / .tif; failures are reported
+        std::vector<uint8_t> px; int w = 0, h = 0;
+        if (!han2::edit::SheetRgba(*parts, sel, px, w, h)) fbMessage = TXT("This sheet has no image to export.");
+        else {
+            char def[260]; snprintf(def, sizeof def, "%s.png", g.name.empty() ? ("sheet" + std::to_string(sel)).c_str() : g.name.c_str());
+            std::string f = FileDialog(fileType::IMAGESAVE, true, def);
+            if (!f.empty()) {
+                std::string e;
+                f = AnsiToUtf8(f);
+                fbMessage = WriteImageRgba(f, px.data(), w, h, e) ? Fmt(TXT("exported %s"), f.c_str()) : e;
+            }
+        }
+    }
+    ImGui::EndDisabled();
+    if (g.data) {
+        std::vector<int> poses;
+        const int users = han2::edit::SheetUsers(*parts, sel, &poses);
+        ImGui::Text(TXT("%d x %d, 32-bit; used by %d parts in %d poses"), g.w, g.h, users, (int)poses.size());
+    } else ImGui::TextDisabled("%s", TXT("(empty slot)"));
+    ImGui::PushTextWrapPos(0.0f);
+    ImGui::TextDisabled("%s", TXT("Sheets must be square (width = height). Drop a PNG on the editor to add it as a sheet. Save writes the sheets into the .DAT (GOF2: the .PAT)."));
+    if (!fbMessage.empty() && !fbConfirmRemove) ImGui::TextWrapped("%s", fbMessage.c_str());
+    ImGui::PopTextWrapPos();
+}
+
 void PatTexturePane::DrawTexture()
 {
+        if (curInstance->parts->fbPartModel) { DrawFbSheets(); return; }
 
         auto nTexture = curInstance->parts->gfxMeta.size();
         if(ImGui::Button(LBL("Add Texture"))){
@@ -153,7 +264,9 @@ void PatTexturePane::DrawTexture()
                         RenderMode::DEFAULT : RenderMode::TEXTURE_VIEW;
                     
 
-                    auto& frame = curInstance->currState->animationSequence.frames.at(curInstance->currState->frame);
+                    auto& anim = curInstance->currState->animationSequence.frames;   // the tool pane's test animation (empty for RBO / GOF2)
+                    if (curInstance->currState->frame >= 0 && curInstance->currState->frame < (int)anim.size()) {
+                    auto& frame = anim[curInstance->currState->frame];
                     // Ensure frame has at least one layer
                     if (frame.AF.layers.empty()) {
                         frame.AF.layers.push_back({});
@@ -166,6 +279,7 @@ void PatTexturePane::DrawTexture()
                     else
                     {
                         frame.AF.layers[0].spriteId = curInstance->currState->partSet;
+                    }
                     }
                 }
                 ImGui::Checkbox(LBL("No compression on pat file"), &gfx->noCompress);

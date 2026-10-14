@@ -14,6 +14,7 @@
 #include <vector>
 
 class CharacterInstance;
+struct ImVec2;
 
 namespace cgm {
 
@@ -27,6 +28,7 @@ class Window {
 public:
 	bool open = false;
 	void draw(CharacterInstance *ch, const WindowHost &host);
+	void select(int id) { selected = id; }   // scripted sessions (--ui-script cgmselect)
 	~Window();
 	// One save for the bank and the frame data (shared-bank safety): true when the bank in the manager renumbers images
 	// against the .cg on disk, so saving the character alone would ship ids the bank on disk does not have.
@@ -100,6 +102,12 @@ private:
 	int moveTarget = 0, insertAt = -1;
 	struct Pending { int op = 0; int id = -1; bool open = false; } pend;   // op: 1 delete, 2 clear, 3 delete all unused
 	void drawStructure(CharacterInstance &ch, const WindowHost &host);
+	// PACNyx effect editing: rename, base point (sprite position on its canvas), block grid (click-toggle cells, all on / off, recalculate)
+	struct BlockEdit { int id = -1; unsigned long long gen = ~0ull; std::vector<uint8_t> mask, px; int cols = 0, rows = 0, ox = 0, oy = 0, w = 0, h = 0; bool pending = false; bool show = true; } blk;
+	char renameBuf[32] = {}; int renameFor = -1;
+	void drawEffect(CharacterInstance &ch, const WindowHost &host);
+	void drawBlockOverlay(const ImVec2 &p0, float zoom, int x1, int y1);
+	void clickBlock(const ImVec2 &p0, float zoom, int x1, int y1);
 	void undoRedo(CharacterInstance &ch, bool redo, const WindowHost &host);
 	void clearThumbs();
 	bool fetch(CharacterInstance &ch, int id, int pal, int pups, std::vector<uint8_t> &px, int &w, int &h);
