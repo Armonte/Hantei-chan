@@ -1,4 +1,5 @@
 #include "ini.h"
+#include "tlog.h"
 #include "parts/parts.h"
 #include "misc.h"
 #include "extension_profile.h"
@@ -166,11 +167,11 @@ static void LoadCgAndPat(CG *cg, const std::string& folder, const std::string& i
 		std::string fullpath = folder + "\\" + cgFile;
 		auto extensionPos = fullpath.find_last_of(".");
 		auto stem = fullpath.substr(0, extensionPos);
-		cg->load(fullpath.c_str());
+		{ tlog::Scope _t("cg.load"); cg->load(fullpath.c_str()); }
 		// <cg>.pal is PUPS palette file 0; <cg>_p1.._p7.pal are files 1..7
 		// (CharaPalette_LoadPalAndPupsVariants, MBTL.exe 0x5934B0). A pattern's
 		// PUPS value picks the file (issue #76).
-		cg->loadPupsPalettes(stem);
+		{ tlog::Scope _t("cg.pups"); cg->loadPupsPalettes(stem); }
 	}
 
 	// Load .pat file if available (for UNIST/DFCI/MBTL/UNI2 characters)
@@ -183,7 +184,8 @@ static void LoadCgAndPat(CG *cg, const std::string& folder, const std::string& i
 		if(patFile[0] != '\0')
 		{
 			std::string fullpath = folder + "\\" + patFile;
-			if(parts->Load(fullpath.c_str()))
+			bool _ok; { tlog::Scope _t("parts.load"); _ok = parts->Load(fullpath.c_str()); }
+			if(_ok)
 			{
 				if(outPATPath)
 					*outPATPath = fullpath;
@@ -224,7 +226,8 @@ bool LoadFromIni(FrameData *framedata, CG *cg, const std::string& iniPath, std::
 	{
 		std::string fullpath = folder + "\\" + ha6Names[i];
 		const bool fallback = i > target;
-		if(!framedata->load(fullpath.c_str(), i > 0, fallback))
+		bool _fl; { tlog::Scope _t("framedata.load"); _fl = framedata->load(fullpath.c_str(), i > 0, fallback); }
+		if(!_fl)
 			return false;
 	}
 
@@ -237,6 +240,41 @@ bool LoadFromIni(FrameData *framedata, CG *cg, const std::string& iniPath, std::
 		*outTopHA6Path = topHA6File;
 
 	LoadCgAndPat(cg, folder, iniPath, parts, outPATPath);
+	return true;
+}
+
+bool LoadStackLight(FrameData *framedata, CG *cg, const std::string& iniPath, const std::function<bool(const std::string &, std::vector<uint8_t> &)> &readCg)
+{
+	std::vector<std::string> ha6Names = ReadDataFileList(iniPath);
+	if(ha6Names.empty())
+		return false;
+	const int fileNum = (int)ha6Names.size();
+	const std::string folder = iniPath.substr(0, iniPath.find_last_of("\\/"));
+	const int target = FrameData::StackSaveTarget(ha6Names);
+	for(int i = 0; i < fileNum; i++)
+	{
+		bool ok; { tlog::Scope _t("framedata.load"); ok = framedata->load((folder + "\\" + ha6Names[i]).c_str(), i > 0, i > target); }
+		if(!ok)
+			return false;
+	}
+	if(fileNum > 1)
+		framedata->setOwnFile(target);
+	char cgFile[256]{};
+	GetPrivateProfileStringA("BmpcutFile", "File00", nullptr, cgFile, 256, iniPath.c_str());
+	tlog::Log("stack %s cg='%s' hasReader=%d", iniPath.c_str(), cgFile, readCg ? 1 : 0);
+	if(cg && cgFile[0])
+	{
+		const std::string full = folder + "\\" + cgFile;
+		bool ok = false;
+		if(readCg)
+		{
+			std::vector<uint8_t> bytes;
+			{ tlog::Scope _t("cg.read"); ok = readCg(cgFile, bytes); }
+			if(ok) { tlog::Scope _t("cg.loadFromMemory"); ok = cg->loadFromMemory(bytes.data(), (unsigned)bytes.size()); }
+		}
+		else { tlog::Scope _t("cg.load"); ok = cg->load(full.c_str()); }
+		if(ok) { tlog::Scope _t("cg.pups"); cg->loadPupsPalettes(full.substr(0, full.find_last_of("."))); }
+	}
 	return true;
 }
 

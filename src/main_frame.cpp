@@ -17,6 +17,7 @@
 #include "han2_character.h"
 #include "han2_browser.h"
 #include "archive_browser.h"
+#include "game_table.h"
 #include "i18n.h"
 #include "han2_export.h"
 #include "han2_pac_window.h"

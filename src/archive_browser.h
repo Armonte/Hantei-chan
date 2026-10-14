@@ -17,7 +17,7 @@ class CharacterInstance;
 
 namespace abrowser {
 
-enum class Game { None, RBO, GOF2, GOF1, MBAACC, MB, PB2K1, Generic };
+enum class Game { None, RBO, GOF2, GOF1, MBAACC, MB, PB2K1, Generic, UNI2, MBTL, DFCI, UNIST, UNI, MBAC, REACT, QOH99, QOH98, ROSA, LILIAN, DMP };
 const char *GameName(Game g);
 
 struct GameInfo {
