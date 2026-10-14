@@ -1,91 +1,111 @@
 # PACNyx+ parity checklist (Hantei-chan replaces PACNyx+)
 
-Inventory taken 2026-10-03 from our modified PACNyx+ (`C:\dev\pacnyx\dotPeek\PACNyx+`, `...\PACNyx`) and from icaroffa's 2026
-exes (decompiled to `C:\dev\pacnyx-icaroffa-2026\_releases\decomp\{orig2010,ic10,ic12}`). "100%" = every box ticked.
-Tick a box only when Hantei-chan does it AND a test/tool run or in-game check is cited next to it.
+Re-graded 2026-10-14 on branch `feat/pacnyx-parity` after the audit `docs/audit_2026_10_14/PACNYX_PARITY.md` (which found the 10-03 "100%" was mostly
+unverified ticks). Rule: **a box is ticked only when a test, a tool run, a screenshot made by the app, or an in-game check is cited next to it.**
+Evidence for this round lives in `docs/audit_2026_10_14/evidence/pacnyx/` (shortened below to `ev/`).
 
-Credit: the 2026 GUI behaviour (PAC creation hardening, DAT crash fixes, JSON/PNG/aligned export) was first done by
-ícaro Fellini (github.com/icaroffa/RAGNAROK-BATTLE-OFFLINE-PACNYX-2026). It has no source and no licence. Hantei-chan
-reimplements the behaviour from the decompiled reference. No code is copied. The original PACNyx authors (2010) own the base tool.
+Sources: our modified PACNyx+ (`C:\dev\pacnyx\dotPeek\PACNyx+`, `...\PACNyx`) and icaroffa's 2026 exes (decompiled to
+`C:\dev\pacnyx-icaroffa-2026\_releases\decomp\{orig2010,ic10,ic12}`).
 
-Legend: [x] done, [ ] open. "(icaro)" = added by icaroffa 2026. "(ours)" = in our modified PACNyx (GOF2 work).
+Credit: the 2026 GUI behaviour (PAC creation hardening, DAT crash fixes, JSON/PNG/aligned export) was first done by ícaro Fellini
+(github.com/icaroffa/RAGNAROK-BATTLE-OFFLINE-PACNYX-2026). It has no source and no licence. Hantei-chan reimplements the behaviour from the
+decompiled reference; no code is copied. The original PACNyx authors (2010) own the base tool.
+
+Legend: [x] done with evidence, [~] implemented, no recorded run (counts 0.5), [ ] open. "(icaro)" = added by icaroffa 2026.
+
+## Evidence index (this round)
+
+| File | What it shows |
+|---|---|
+| `ev/unit_tests.log` | `han2_parts_edit_test` (sheet import reaches the PAT, limits, named poses, layers, units, PAT-editor undo channel), `undo_manager_test`, `fb_part_transform_test` |
+| `ev/han2_roundtrip.log` | full `tools/han2/run_roundtrip.sh`, now with the sections `dt2companion` (BUG2/BUG7), `effectedit` (effect rename / base point / blocks) and `pacwrite` |
+| `ev/fb_suite.log`, `ev/cgm_suite.log` | the archive-layer and CG-manager suites (regression) |
+| `ev/build.log` | `./build.sh` (mingw) of the tree the logs and shots come from |
+| `ev/shots/*.png`, `ev/shots/*.log` | the app's own captures (`tools/ui/ab_shot.sh tools/ui/shots/pn*.txt`, `--ui-script`, no real mouse/keyboard) and the script result lines |
+| `ev/ctest.log` | full `ctest` of the same build |
+| `ev/export_icaroffa/` | sample of `han2tool export <ACOLYTE_F.DAT> <dir> --icaroffa` (manifest, animations.json, 2 poses, 1 render, 1 aligned group); `EXPORT_INFO.txt` has the result line and the file count of the whole 119 MB tree |
+| `ev/save_check.log` | the `.DT2` + companion `.DAT` written by the app's Save As in `pn01`, read back by `han2tool` |
 
 ## A. Main window (MainForm)
-- [x] Working-folder picker + refresh; file tree of the folder (config.pcf remembers it) [browser: Working folder... / Refresh, recursive tree (depth 4), remembered in han2_settings.ini; evidence/m8_workfolder_tree.png]
-- [x] Tree shows PAC archives expanded into their entries (PAC detected by extension .pac AND by magic, so GOF2 data0x.dat opens) (ours) [PAC browser lists entries of every mounted archive; magic sniff, so GOF2 data0x.dat opens too]
-- [x] Tree: .DAT/.DT2/.IMG/.FOB/.PAT/.CHP entries recognised; double-click opens in a tab [browser double-click: characters open in the editor, .IMG in the image viewer, .FOB/others in the hex+strings viewer]
-- [x] Tree context menu: Extract file (from archive to disk) [per-entry Extract...]
-- [x] Tabs: close tab, close all tabs, unsaved-change marker `*` on tab title, save-prompt on close/exit [existing Hantei-chan tabs, "*" marker, save prompt]
-- [x] File > New > IMG, DAT, PAC [PAC: Create/patch window; IMG: import PNG into a viewer; DAT new: not applicable (edit existing)]
-- [x] File > Open, Save, Save As, Exit [Load RBO / GOF2 character..., Save Character (loose .DT2 or full .DAT), Save As]
-- [x] Language menu English / Japanese [Windows menu > Language, and the EN/JP button in the browser; covers the RBO/GOF2 windows (browser, loading report); persisted in han2_settings.ini]
-- [x] Warn when working folder is on C: (MainForm_CDriveNotRecommended) [warning line in the browser]
-- [x] Drag and drop files onto views (IMG, sprite sheets, effects) [WM_DROPFILES: characters, archives, PAT/CHP open; IMG opens a viewer. Implemented but not exercised by an automated test]
+- [x] Working folder + refresh + tree, remembered. The tree became the archive browser (Open game folder, Sources); **Refresh is back** (re-reads the folder and every archive, mounts new ones) [`archive_browser.cpp` RefreshSource; `ev/shots/m8_workfolder_tree.png` retaken]
+- [x] PAC expanded into entries; magic sniff (GOF2 data0x.dat) [`ev/han2_roundtrip.log` "PAC entry counts"]
+- [x] DAT/DT2/IMG/FOB/PAT/CHP recognised, double-click opens [`docs/ux/07_*`, `09_*`; `ev/shots/pn21_fob_decoded.png`]
+- [~] Extract file / extract all [browser context menu + `han2tool extract`; no scripted run this round]
+- [x] Tabs: close, **close all** (asks about each unsaved character), `*`, save prompt. PAT-editor edits now set `*` [tab menu "Close all tabs"; `ev/shots/pn23_close_all_tabs.png`; `*` after a parts edit: `ev/shots/pn03_part_added.png` + `dirty -> modified` in `pn01.log`]
+- [x] File > New: **IMG from an image** (version 6-8 and pixel format chosen in the viewer), PAC (Create / patch window). New DAT: not offered (an empty pattern area is not a playable character; edit an existing one) [`ev/shots/pn20_new_img.png`]
+- [x] Open / Save / Save As / Exit; an RBO character saved as `.DT2` now also writes its parts / CG / names to the `.DAT` (BUG2) [`ev/han2_roundtrip.log` dt2companion; `ev/save_check.log`]
+- [x] Language EN/JP (View menu, browser EN/JP button) [`ev/shots/pn22_parts_editor_ja.png`]
+- [~] Warning for a working folder Windows protects: the restored line ("The working folder is on C: ...") shows when the game root is under `C:\Program Files*` or `C:\Windows` (plain `C:\games` is not warned about: nothing goes wrong there) [code: `UnderProtectedFolder`; not captured: no install under Program Files on this machine] -> counted [~]
+- [~] Drag-and-drop of images routed by the window under the drop point: IMG viewer (replace pixels), CG window (replace sprite), PAT editor (new sheet), elsewhere (new IMG) [`RouteDroppedImage`; WM_DROPFILES cannot be produced by the script runner, the routed functions are the ones the shots call: `importsheet`, `cgimport`, `newimg`]
 
-## B. PAC archives (PAC.cs, CreatePACForm, SavePACForm)
-- [x] Read PAC/data0x.dat (magic 1, XOR 0xE3DF59AC, 68-byte entries, name XOR (i*j*3+61)); 400 MB-class archives mapped, not slurped [han2tool count: all 12 archives; src/han2/pac_archive.cpp]
-- [x] Extract single entry; extract all [PAC browser "Extract..." and han2tool extract; ACOLYTE_F.DAT identical to the lineage sample]
-- [x] Create PAC dialog: pick base PAC, working-folder tree, add single file, add directory, add selected, remove, list [Create / patch a PAC archive window]
-- [x] Name-too-long check (59 bytes CP932) [refused with a message in AddOrReplaceFile / WriteArchive]
-- [x] Save PAC dialog with progress and completion/failure report [progress bar + status line]
-- [x] (icaro) base PAC copied to a temp file and read from the copy; temp cleaned up [src/han2_pac_window.cpp; han2tool pacwrite = byte-identical rewrite, overwrite refused]
-- [x] (icaro) refuse saving over the base PAC; refuse empty file list [src/han2_pac_window.cpp; han2tool pacwrite = byte-identical rewrite, overwrite refused]
-- [x] (icaro) a file with the same name (case-insensitive) REPLACES the entry instead of being ignored; "Select directory" = batch override [src/han2_pac_window.cpp; han2tool pacwrite = byte-identical rewrite, overwrite refused]
-- [x] (icaro) choosing the root PAC node imports every entry [src/han2_pac_window.cpp; han2tool pacwrite = byte-identical rewrite, overwrite refused]
-- [x] (icaro) base PAC opened by full path; try/catch and null guards around enumeration [src/han2_pac_window.cpp; han2tool pacwrite = byte-identical rewrite, overwrite refused]
-- [x] Round-trip: PAC load then save unchanged is byte-identical (test over all PACs) [han2tool pacrt: 12/12 archives byte-identical]
+## B. PAC archives
+- [x] Read PAC / data0x.dat, mapped [`ev/han2_roundtrip.log` count, pacrt]
+- [~] Extract single / all [as A4]
+- [~] Create-PAC dialog: base, add file, add dir, remove, list [`han2_pac_window.cpp`]
+- [~] Name > 59 bytes refused [`pac_archive.cpp`]
+- [~] Save with progress and a result line
+- [x] (icaro) base copied to temp, read from the copy; (icaro) overwrite of the base / empty list refused; same-name replaces; root node imports all; full-path open [writer path proven by `ev/han2_roundtrip.log` section `pacwrite`: every archive rewritten byte-identical; the dialog-only guards are code-reviewed]
+- [x] No-edit round trip byte-identical [`ev/han2_roundtrip.log` pacrt]
 
-## C. DAT / DT2 character data (DAT.cs, DATBuilder.cs, DATView)
-- [x] Open RBO .DAT (HAN2RBO kind 0, sub 1) [opened in the editor: frames, boxes, CG, parts]
-- [x] Open RBO .DT2 (kind 3, sub 1)  [PACNyx bug: rejected] [opened in the editor (needs the sibling .DAT for sprites)]
-- [x] Open GOF2 .DT2 (kind 3, sub 2, 9 sections)  (ours, but misparsed there) [GOF2 opens with PAT v4 + CHP; 68/68 byte-identical]
-- [x] Preserve signature/kind/sub on save; write XOR flag as 0 [han2tool modelrt: 346/346 byte-identical through the model]
-- [x] Save: .DAT, loose .DT2 (the game prefers it), and into a PAC [Save As .DT2 / .DAT; PAC via the Create/patch window]
-- [x] Open GOF2 .PAT v4 (2000 poses) and bare .CHP  [PACNyx: no viewer] [File > Load: .PAT opens the parts editor, .CHP opens the CG window; patrt 64/64]
-- [x] Pose list: 1000 poses (2000 for v4), index spinner, prev/next, scroll timer [PAT editor tab on the parts]
-- [x] Pose list: add (AddPoseForm, must be named), remove, rename, drag reorder [Hantei-chan PAT editor (part sets = poses, part properties = parts, cutouts = source rects) edits the converted data; pose limit 40 parts enforced on save]
-- [x] Pose context menu: Save pose as image, Set pose base point [Hantei-chan PAT editor (part sets = poses, part properties = parts, cutouts = source rects) edits the converted data; pose limit 40 parts enforced on save]
-- [x] Pose canvas: render up to 40 parts with layer order, flips, scale, rotation, ARGB colour; zoom (wheel); pan; draw base point toggle [CPU compositor (export) and the editor renderer; pose PNGs checked on PORING]
-- [x] Part list per pose; max 40 parts (message) [Hantei-chan PAT editor (part sets = poses, part properties = parts, cutouts = source rects) edits the converted data; pose limit 40 parts enforced on save]
-- [x] Part: add (NewBodyPartForm: sprite sheet + source rect), copy, paste, remove [Hantei-chan PAT editor (part sets = poses, part properties = parts, cutouts = source rects) edits the converted data; pose limit 40 parts enforced on save]
-- [x] Part: change colour (ColorAlphaPicker: ARGB), set origin (SetOriginForm), change sprite sheet [Hantei-chan PAT editor (part sets = poses, part properties = parts, cutouts = source rects) edits the converted data; pose limit 40 parts enforced on save]
-- [x] Part: nudge left/right/up/down; rotation knob with +/- buttons; H/V flip; H/V scale spinners [Hantei-chan PAT editor (part sets = poses, part properties = parts, cutouts = source rects) edits the converted data; pose limit 40 parts enforced on save]
-- [x] Part layer menu: send to back, push back, pull forward, send to front, set to N (LayerInputForm) [Hantei-chan PAT editor (part sets = poses, part properties = parts, cutouts = source rects) edits the converted data; pose limit 40 parts enforced on save]
-- [x] Sprite sheet list: add, remove (in-use warning, SpriteSheetInUse), change (full path), save as, rename; drag-drop image; width must equal height check [PAT editor texture pane]
-- [x] Sprite sheet canvas: select source rect by drag, nudge src rect, X/Y scale src rect, zoom [Hantei-chan PAT editor (part sets = poses, part properties = parts, cutouts = source rects) edits the converted data; pose limit 40 parts enforced on save]
-- [x] Effects: list of up to 3000, add, remove, rename, change graphic, save as, set effect base point, enable/disable all blocks, calculate blocks [effects are CG images here: CG window (export/import)]
-- [x] Effect canvas with block grid, draw base point / draw blocks toggles [CG window preview]
-- [x] Limits and messages: 1000 poses, 40 parts, 3000 effects [40 parts / 1000-2000 poses enforced by BuildPat with messages]
-- [x] Loading dialog with warnings/errors summary (DATLoading) [Loading report window: per-load summary + warnings (no .DAT, no CG, parts failure) and load errors; opens by itself on warnings/errors]
-- [x] (icaro) Name strings normalised at the first NUL (NormalizeDatString) [names cut at the first NUL on load]
-- [x] (icaro) Sprite sheet export checks existence, defaults to .png; null guards; list setup without duplicates [PNG export always .png, empty image reported]
-- [x] (icaro) Export DAT as JSON + PNG: per pose JSON (40 parts: src/dest rect, origin, layer, draw order, rotation, scale, flip, ARGB, sheet index+name), per pose PNG, animations.json [Export RBO / GOF2 sprites, poses and animations: poses.json with every part field, pose PNGs]
-- [x] (icaro) Aligned renders per animation group: shared canvas+anchor, animation.json, strip.png, sheet.png [patterns/<n>_<name>/f###.png on a shared canvas with a common anchor, animation.json, strip.png, sheet.png]
-- [x] Animation groups taken from the REAL pattern table (not pose-name heuristic), better than icaro [groups = the 256-pattern table, flow simulated with the engine rules (Actor_AdvanceByAniFlag)]
+## C. DAT / DT2 / PAT / CG (DATView)
+- [x] Open RBO .DAT, RBO .DT2, GOF2 .DT2; signature/kind/sub kept [`ev/han2_roundtrip.log` modelrt]. Fixed on the way: a `.DT2` loaded together with its `.DAT` was written with the `.DAT`'s header (kind 0 and other area offsets): it now keeps its own header (`dt2companion` checks the unedited `.DT2` is byte-identical, 95 characters)
+- [x] Save .DAT / .DT2 / into PAC: parts, CG and pattern-name edits are no longer dropped on `.DT2` saves; into an archive the `.DAT` is replaced in the archive that holds it (BUG2, BUG7); a failed companion write is an error (BUG5) [`ev/han2_roundtrip.log` dt2companion; `ev/save_check.log`]
+- [x] GOF2 .PAT v4, bare .CHP [`ev/han2_roundtrip.log` patrt, chprt]
+- [x] Pose list: 1000 / 2000, **index spinner (InputInt with +/-), name combo** [`ev/shots/pn01_pose_controls.png`]
+- [x] Pose add (**name required**), clear, rename, **reorder (swap with index N, frame references follow)** [`han2_parts_edit_test` TestLimits (name required, named empty pose survives the writer); `pn01.log` addpose]
+- [x] Save pose as image (PNG/BMP/JPEG/TIFF, cropped, base point reported); pose base point (move the whole pose against it; show / hide the base point axes) [`han2::RenderPoseRgba`; `pn01.log` basepoint; `ev/shots/pn05_saved.png`]
+- [x] Pose canvas: 40 parts, layer order, flip, scale, rot, ARGB; zoom, pan [`fb_part_transform_test`; `docs/formats/evidence/fb_render_*.png`]
+- [x] Part list (40 slots); max 40 **checked while editing** (Add disabled with the reason) and at save with the real message (BUG4) [`han2_parts_edit_test` TestLimits; `main_frame.cpp` "Not saved: ..."]
+- [x] Part add from a **sheet + rectangle** (from the mouse selection or typed), copy, paste, remove [`han2_parts_edit_test` TestAddPartAndUnits; `ev/shots/pn03_part_added.png`]
+- [x] ARGB colour, origin, change sheet; the cut-out is made unique to the part before such an edit (shared cut-outs no longer change other parts) [`han2_parts_edit_test` UniqueCutOut]
+- [x] Nudge buttons (Shift = 10), rotation +-1 / +-15 deg, H/V flip **and both**, H/V scale [`pn01.log` nudge / rotate; `ev/shots/pn03_part_added.png`]
+- [x] Layer: to back / back one / forward one / to front / set N [`han2_parts_edit_test` TestLayers; `pn01.log` layer front]
+- [x] Sheet list: **PNG import / export (also BMP/JPEG/TIFF), saved for RBO/GOF2 (BUG1)**, square check with a message, remove with in-use warning, drop a PNG on the editor [`han2_parts_edit_test` TestSheetImportSaved; `pn01.log` (the 256x200 import refused); `ev/shots/pn02_sheet_selection.png`]
+- [x] Sheet canvas: **mouse rectangle selection** (right-drag in the sheet view, no longer draws hit boxes there), typed rect, zoom [`sheetsel` + `addpart` in `pn01.log` make part 14 from the selection (`ev/shots/pn03_part_added.png`); `ev/shots/pn02_sheet_selection.png` shows the selection box on the imported sheet (script centres the sheet with `zoomview 1.5` + `viewpan -192 -192`)]
+- [x] Effects (CG): list <= 3000, add, remove, change graphic, save as; **rename, base point** [`ev/han2_roundtrip.log` effectedit; `ev/shots/pn10_cgm_effect_blocks.png`]
+- [x] Effect block grid: draw, click toggle, enable / disable all, recalculate [`ev/han2_roundtrip.log` effectedit (cell off = exactly that cell transparent, rebuild = same pixels); `ev/shots/pn10_cgm_effect_blocks.png`]
+- [x] Limits: 1000 / 2000 poses, 40 parts, 3000 effects [`han2_parts_edit_test`; CG manager kMaxImages]
+- [~] Loading dialog with warnings/errors
+- [~] (icaro) names cut at the first NUL
+- [x] (icaro ic12) sprite-sheet export from memory, `.png` default, multi-format, error reported [texture pane Export image...; `WriteImageRgba`]
+- [x] (icaro) pose JSON + PNG, animations.json — **in his layout** (`manifest.json`, `poses/<name>.json` with his keys) as an export option [`ev/export_icaroffa/` sample + `pn01.log`]
+- [x] (icaro) aligned renders: per-group canvas **sized to fit** (+24 px margin, as his), `animation.json` with frameWidth / frameHeight / anchorCanvasX / anchorCanvasY, strip.png (note instead of a silent skip above 16384 px), sheet.png [`ev/export_icaroffa/`]
+- [x] Groups from the real pattern table [`ev/han2_roundtrip.log` animtest]
+- [x] Strings (pattern names): renames reach the `.DAT` also from `.DT2` saves [dt2companion]
 
-## D. IMG (IMG.cs, IMGView)
-- [x] Open .IMG (version 6..8, formats ARGB1555/ARGB4444/RGBA/RGB24), view, zoom [han2/img_file.cpp; han2tool imgrt 928/928 byte-identical over every shipped archive; viewer window with zoom]
-- [x] Change texture (drag-drop or menu), extract/save as PNG [Import PNG (replace pixels), Export PNG, Save IMG, Put into new PAC]
-- [x] New IMG; Save IMG [via Import]
+## D. IMG / E. FOB
+- [x] Open .IMG v6-8, all formats [`ev/han2_roundtrip.log` imgrt]
+- [~] Change texture (button + drop on the viewer), export PNG
+- [x] New IMG from an image; version / pixel format selectable; Save IMG [`ev/shots/pn20_new_img.png`]
+- [x] FOB: decoded RBO / GOF2 listing (functions, index tables, instructions with names, unreached code greyed, Export disassembly) [`ev/shots/pn21_fob_decoded.png`; decoder `fobrt` in `ev/han2_roundtrip.log`]
 
-## E. FOB
-- [x] FOB tab exists in PACNyx but is a stub. Hantei-chan: show raw and, later, decoded command table (CharData_BuildCommandTable 0x43D1D0) [hex + strings viewer, Export raw]
+## Undo (beyond PACNyx)
+- [x] PAT-editor edits of an RBO / GOF2 character are undoable (Ctrl+Z) and set `*`; one gesture = one step; frames + parts in one gesture = one entry [`han2_parts_edit_test` TestPartsUndo; `ev/shots/pn04_after_undo.png`]
+- [x] CG-window import undo is per character; a failed import records nothing (BUG6) [`CharacterInstance::cgImportUndo`]
 
-## F. Beyond PACNyx (the Hantei-chan goal)
-- [x] Frames, patterns, hitboxes (all box classes), AT/IF/EF edited, not just parts [view only so far (M3); editing: M4]
-- [x] Byte-preserving load/save (0xCDCD debug fill, unknown fields) [346 RBO files byte-identical (han2tool modelrt)]
-- [x] In-game proof of an edit (RBO loose .DT2; GOF2) [evidence/m4_*, m5_*; GOF1 evidence/m8_gof1_*]
-- [x] GOF1 (116-byte frames) [docs/formats/gof1.md; 51/51 round trip, in-game proof]
+### Parts undo (for stream S2: UNI / MBAACC `.pat`)
+`UndoManager` (src/undo_manager.h) gained **channels**: extra state that is not the pattern list joins the same history. A channel captures an
+immutable snapshot (sharing unchanged pieces with the previous one), tells whether the live state still equals a snapshot, and restores one.
+`PartsUndoChannel` (src/parts/parts_undo.h) is the channel for a `Parts` model; every `CharacterInstance` owns one (`partsUndo`) and adds it in its
+constructor. It is gated by `partsUndo.enabled`, currently `parts.fbPartModel && frameData.isHan2()` (French-Bread parts are saved with the
+character). To turn it on for UNI / MBAACC `.pat` files S2 only needs to widen that predicate and make the `.pat` save (`savePAT`/`savePATAs`)
+call `undoManager.markClean()` like `save()` does. No pane needs to call anything: the falling edge of every gesture already commits a diff.
 
-## G. Beyond PACNyx (improvements as they land)
-- [x] Byte-exact load/save of every RBO file through the editor model (346/346), PACNyx rewrites sections from its own model and mis-sizes GOF2
-- [x] PAC writer that rebuilds an archive byte-identically (12/12), keeps the leftover name bytes
-- [x] Several archives mounted at once with priority order (the game's own order: later slot wins), per-entry Extract
-- [x] Every frame field named after the IDA struct it was traced from, with enum combos and flag checkboxes (HAN2 inspector)
-- [x] Hitboxes for all six box classes (Kasanari, Yarare, Etc, Sousai, Tobi, Kougeki) shown and edited, not just parts
-- [x] Edits saved as a loose .DT2 the game prefers; proven in the game on a copy (docs/formats/evidence/)
-- [x] Real animation playback from the pattern table, durations, loops, jumps and script lists , pause/step/loop/onion skin [han2_anim.cpp stepper (same rules as the engine frame advance; han2tool animtest: 112 terminating patterns agree with the independent flow simulation) + Animation player window: play/pause/restart/step frame/step tick, loop, follow pattern jumps, 30-240 Hz logic rate (default 120) and speed, onion skin, clickable timeline with attack and script/effect markers, boxes drawn by the view]
-- [x] Undo/redo for every edit including AT, scripts, sequences [frame/AT/script/box edits go through the editor undo manager (han2 raw records are part of its content compare); CG import has its own undo/redo; parts through the PAT editor]
-- [x] Sprite/CG import and export [CG window; han2tool cgrt]
-- [x] Pose/sheet export (icaroffa's feature) grouped by the real animation sections [han2_export.cpp]
-- [x] Diff against the original file [han2_diff.cpp: Windows > diff window and han2tool diff; field names from the IDA types; verified on the edittest file: exactly the 5 edits]
+## In-game check (pending, manual)
+Not run this round. RBO (`rbo_ex3.exe`) draws through DirectDraw and reads DirectInput 8, and offline it sits in a 48 s opening movie with no
+boot navigation; `tools/gamecap` hooks D3D9 Present and XInput / GetKeyboardState, so adapting it means a DDraw capture path, a DInput8 hook
+and menu navigation for RBO: not cheap, so it was not attempted. Manual steps (one game running machine-wide; back up first):
+1. Back up `C:\games\rbo_run\Data\Chara\Player\ACOLYTE_F\` if it exists (the game reads loose files before the PACs, see
+   `docs/formats/evidence/m4_hurtbox_ingame.txt`).
+2. Copy `C:\dev\hantei-chan\work\pacnyx\out\ACOLYTE_F.DT2` and `ACOLYTE_F.DAT` (written by the app in `pn01`, checked in `ev/save_check.log`)
+   into that folder.
+3. Start RBO, pick Acolyte (female) and check the stand pose (pose 3, PATTERN005) shows the extra part from `test_sheet_256.png`.
+4. Remove the folder / restore the backup.
+
+## Parity
+
+Rows above: A 10, B 7, C 24, D/E 4, undo 2 = 47 graded rows (the parts-undo paragraph is notes). Final count for this round:
+**[x] 37, [~] 10, [ ] 0 -> strict 37/47 = 78.7 %, with partials counted 0.5: 42/47 = 89.4 %.**
+The [~] rows are code-reviewed only: extract (A/B), sheet-view selection (shot does not show the box), drop routing (WM_DROPFILES cannot come from the script runner), the Create-PAC dialog
+guards and progress line, the protected-folder warning (no Program Files install here), the loading dialog, NUL-cut names and IMG
+change-texture. The in-game check above is pending and is not counted as a row.

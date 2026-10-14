@@ -13,6 +13,8 @@
 
 // rgba: top-down rows, 8-bit straight (non-premultiplied) alpha.
 bool WritePngRgba(const std::string& utf8Path, const uint8_t* rgba, int width, int height, std::string& error);
+// Same, container picked from the extension: .png (default), .bmp, .jpg/.jpeg, .tif/.tiff (formats without alpha drop it).
+bool WriteImageRgba(const std::string& utf8Path, const uint8_t* rgba, int width, int height, std::string& error);
 
 // Decode any WIC-readable image (PNG, BMP, JPEG, ...) to straight-alpha RGBA, top-down rows.
 bool ReadImageRgba(const std::string& utf8Path, std::vector<uint8_t>& rgba, int& width, int& height, std::string& error);

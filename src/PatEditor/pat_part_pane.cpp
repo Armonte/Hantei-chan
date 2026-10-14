@@ -180,6 +180,7 @@ void PatPartPane::DrawPartCutOut()
                     *curInstance->renderMode = *curInstance->renderMode == RenderMode::UV_SETTING_VIEW ?
                         RenderMode::DEFAULT : RenderMode::UV_SETTING_VIEW;
 
+                    if (!curInstance->framedata->isHan2()) {   // RBO / GOF2: the view follows the editor state, frames stay untouched
                     auto& frame = curInstance->framedata->get_sequence(0)->frames.at(0);
                     // Ensure frame has at least one layer
                     if (frame.AF.layers.empty()) {
@@ -193,6 +194,7 @@ void PatPartPane::DrawPartCutOut()
                     else
                     {
                         frame.AF.layers[0].spriteId = curInstance->currState->partSet;
+                    }
                     }
                 }
                 ImGui::Separator();

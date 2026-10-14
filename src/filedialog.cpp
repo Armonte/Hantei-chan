@@ -79,6 +79,15 @@ std::string FileDialog(int fileType, bool save, char* defaultName)
 	{
 		ofn.lpstrFilter = "All supported files\0*.ha6;*.txt;*.dat;*.dt2;*.pat;*.chp;*.pac;*.p;*.hproj\0All\0*.*\0";
 	}
+	else if (fileType == fileType::IMAGE)
+	{
+		ofn.lpstrFilter = "Images (*.png;*.bmp;*.jpg;*.tif)\0*.png;*.bmp;*.jpg;*.jpeg;*.tif;*.tiff\0PNG (*.png)\0*.png\0All\0*.*\0";
+	}
+	else if (fileType == fileType::IMAGESAVE)
+	{
+		ofn.lpstrFilter = "PNG (*.png)\0*.png\0BMP (*.bmp)\0*.bmp\0JPEG (*.jpg)\0*.jpg\0TIFF (*.tif)\0*.tif\0All\0*.*\0";
+		ofn.lpstrDefExt = "png";
+	}
 	else if (fileType == fileType::DAT)
 	{
 		ofn.lpstrFilter = "MBAA Stage files (*.dat)\0*.dat\0All\0*.*\0";

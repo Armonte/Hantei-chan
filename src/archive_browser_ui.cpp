@@ -576,6 +576,30 @@ static void DrawList(State &st, OpenRequest &req, bool &open)
 static void DrawSources(State &st)
 {
 	int closeIdx = -1;
+	{   // Refresh, manual archive priority (the game mounts later archives over earlier ones), unmount
+		const int sel = st.selSource;
+		SourceP cur = FindSource(sel);
+		if (ImGui::SmallButton(T("Refresh", "\xe6\x9b\xb4\xe6\x96\xb0"))) RefreshSource(sel >= 0 ? sel : 0);
+		if (ImGui::IsItemHovered()) ImGui::SetTooltip("%s", T("Re-read the folder and every archive of this game (files changed on disk)", "\xe3\x81\x93\xe3\x81\xae\xe3\x82\xb2\xe3\x83\xbc\xe3\x83\xa0\xe3\x81\xae\xe3\x83\x95\xe3\x82\xa9\xe3\x83\xab\xe3\x83\x80\xe3\x81\xa8\xe3\x82\xa2\xe3\x83\xbc\xe3\x82\xab\xe3\x82\xa4\xe3\x83\x96\xe3\x82\x92\xe8\xaa\xad\xe3\x81\xbf\xe7\x9b\xb4\xe3\x81\x99"));
+		ImGui::SameLine();
+		ImGui::BeginDisabled(!CanMoveArchive(sel, -1));
+		if (ImGui::SmallButton(T("Up", "\xe4\xb8\x8a\xe3\x81\xb8"))) MoveArchive(sel, -1);
+		ImGui::EndDisabled();
+		ImGui::SameLine();
+		ImGui::BeginDisabled(!CanMoveArchive(sel, +1));
+		if (ImGui::SmallButton(T("Down", "\xe4\xb8\x8b\xe3\x81\xb8"))) MoveArchive(sel, +1);
+		ImGui::EndDisabled();
+		if (ImGui::IsItemHovered(ImGuiHoveredFlags_AllowWhenDisabled)) ImGui::SetTooltip("%s", T("Archive priority: a later archive overrides an earlier one (as the game mounts them)", "\xe3\x82\xa2\xe3\x83\xbc\xe3\x82\xab\xe3\x82\xa4\xe3\x83\x96\xe3\x81\xae\xe5\x84\xaa\xe5\x85\x88\xe9\xa0\x86: \xe5\xbe\x8c\xe3\x81\xae\xe3\x82\xa2\xe3\x83\xbc\xe3\x82\xab\xe3\x82\xa4\xe3\x83\x96\xe3\x81\x8c\xe5\x89\x8d\xe3\x81\xae\xe3\x82\x82\xe3\x81\xae\xe3\x82\x92\xe4\xb8\x8a\xe6\x9b\xb8\xe3\x81\x8d\xe3\x81\x97\xe3\x81\xbe\xe3\x81\x99 (\xe3\x82\xb2\xe3\x83\xbc\xe3\x83\xa0\xe3\x81\xa8\xe5\x90\x8c\xe3\x81\x98)"));
+		ImGui::SameLine();
+		ImGui::BeginDisabled(!cur || !cur->IsArchive());
+		if (ImGui::SmallButton(T("Unmount", "\xe5\x8f\x96\xe3\x82\x8a\xe5\xa4\x96\xe3\x81\x99"))) closeIdx = sel;
+		ImGui::EndDisabled();
+		if (sel >= 0 && UnderProtectedFolder(sel)) {
+			ImGui::PushTextWrapPos(0.0f);
+			ImGui::TextColored(ImVec4(1.f, .65f, .3f, 1.f), "%s", TXT("The working folder is on C: (not recommended: Program Files / permission problems)."));
+			ImGui::PopTextWrapPos();
+		}
+	}
 	for (int i = 0; i < (int)st.sources.size(); i++) {
 		const SourceP &s = st.sources[i];
 		ImGui::PushID(i);

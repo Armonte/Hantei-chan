@@ -362,6 +362,27 @@ void MainFrame::DrawCharacterScene(CharacterView* view, const Render::PassParams
 		render.DrawGridLines();
 	}
 
+	// PAT editor of an RBO / GOF2 character: one pose (or the sprite sheet), never the character's frames or their boxes. The sheet
+	// selection (and in the UV view the selected cut-out) is shown as a box in sheet pixels: the sheet is drawn with its top-left at the origin.
+	if (view->isPatEditor() && active->frameData.isHan2() && active->parts.loaded) {
+		render.ClearLayers();
+		RenderLayer layer;
+		layer.spriteId = state.renderMode != RenderMode::DEFAULT ? 0 : state.partSet;
+		layer.usePat = true; layer.sourceParts = &active->parts; layer.sourceCG = &active->cg;
+		if (state.renderMode != RenderMode::DEFAULT) {
+			const int sheet = state.renderMode == RenderMode::UV_SETTING_VIEW && active->parts.GetCutOut(state.partCutOut) ? active->parts.GetCutOut(state.partCutOut)->texture : state.partGraph;
+			const auto* g = active->parts.GetPartGfx(sheet);
+			if (state.sheetSelValid) layer.hitboxes[25] = Hitbox{{state.sheetSel[0], state.sheetSel[1], state.sheetSel[0] + state.sheetSel[2], state.sheetSel[1] + state.sheetSel[3]}};
+			if (state.renderMode == RenderMode::UV_SETTING_VIEW && g && g->w > 0)
+				if (const auto* co = active->parts.GetCutOut(state.partCutOut)) {
+					auto px = [&](int u, int size) { return (int)std::lround(u * size / 256.0); };
+					layer.hitboxes[1] = Hitbox{{px(co->uv[0], g->w), px(co->uv[1], g->h), px(co->uv[0] + co->uv[2], g->w), px(co->uv[1] + co->uv[3], g->h)}};
+				}
+		}
+		render.AddLayer(layer);
+		render.DrawLayers();
+		return;
+	}
 	Sequence* mainSeq = active->frameData.get_sequence(state.pattern);
 	if (!mainSeq || mainSeq->frames.empty()) return;
 	// Self-heal a stale frame index (pattern shrunk by undo/reload while the

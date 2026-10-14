@@ -154,6 +154,7 @@ void MainFrame::DrawHan2Windows()
 void MainFrame::openPartsEditorForCharacter(CharacterInstance* character)
 {
 	if (!character || !character->parts.loaded) return;
+	if (character->frameData.isHan2()) { han2ui::showAnimWindow = false; han2ui::showAnimList = false; }   // pattern playback windows would cover the PAT panes
 	render.SetParts(&character->parts);
 	auto view = std::make_unique<CharacterView>(character, &render);
 	view->setPatEditor(true);
@@ -167,23 +168,53 @@ void MainFrame::openPartsEditorForCharacter(CharacterInstance* character)
 	needsDockRebuild = true;
 }
 
-void MainFrame::exportHan2Character(CharacterInstance* character)
+void MainFrame::exportHan2Character(CharacterInstance* character, bool icaroffaLayout)
 {
 	if (!character || !character->frameData.isHan2()) return;
 	std::string folder = BrowseForFolderUtf8("");
 	if (folder.empty()) return;
 	han2::ExportOptions opt;
+	opt.icaroffaLayout = icaroffaLayout;
 	han2::ExportReport rep;
 	std::string err;
 	const bool ok = han2::ExportCharacter(character->frameData, character->cg, character->parts, folder + "\\" + character->getName(), opt, rep, &err);
 	requestErrorPopup(ok ? "RBO / GOF2 export" : "Export Error",
 		ok ? [&] {
 			char b[1024];
-			snprintf(b, sizeof(b), TXT("%d CG images, %d poses, %d frames in %d patterns (strip.png / sheet.png / animation.json each, poses.json, animations.json)\nin %s"),
+			snprintf(b, sizeof(b), icaroffaLayout ? TXT("%d CG images, %d poses, %d frames in %d patterns (manifest.json, poses/, renders/, renders_aligned/, animations.json)\nin %s")
+			                                      : TXT("%d CG images, %d poses, %d frames in %d patterns (strip.png / sheet.png / animation.json each, poses.json, animations.json)\nin %s"),
 			         (int)rep.cgPngs, (int)rep.posePngs, (int)rep.framePngs, (int)rep.patternsWritten, (folder + "\\" + character->getName()).c_str());
-			return std::string(b);
+			std::string out = b;
+			if (rep.writeErrors) out += "\n" + std::string(TXT("Files that could not be written: ")) + std::to_string(rep.writeErrors) + (rep.notes.empty() ? "" : " (" + rep.notes[0] + ")");
+			return out;
 		}()
 		   : err);
+}
+
+// An image dropped on the editor goes to the window under the drop point (PACNyx: drop on the IMG view, the sprite-sheet list, the effect):
+// an IMG viewer -> replace its pixels; the CG sprite window -> replace the selected sprite; the PAT editor of an RBO / GOF2 character ->
+// a new sprite sheet; anywhere else -> a new IMG. Returns a message for the user ("" = nothing to report).
+std::string MainFrame::RouteDroppedImage(const std::string& f)
+{
+	ImGuiWindow* hovered = nullptr;
+	if (m_haveDropPoint) {
+		const bool vp = (ImGui::GetIO().ConfigFlags & ImGuiConfigFlags_ViewportsEnable) != 0;
+		const ImVec2 pos = vp ? ImVec2(m_dropScreen[0], m_dropScreen[1]) : ImVec2(m_dropClient[0], m_dropClient[1]);
+		ImGui::FindHoveredWindowEx(pos, true, &hovered, nullptr);
+	}
+	const std::string name = hovered && hovered->RootWindow ? hovered->RootWindow->Name : std::string();
+	if (const size_t k = name.find("###viewer"); k != std::string::npos)
+		return han2ui::DropImageOnViewer(atoi(name.c_str() + k + 9), f);
+	auto* view = getActiveView();
+	auto* ch = view ? view->getCharacter() : nullptr;
+	if (name.find("CG sprites (RBO / GOF2 bank)") != std::string::npos || (name.empty() && han2ui::showCgWindow && ch && ch->cg.m_loaded && !(view && view->isPatEditor())))
+		return han2ui::DropImageOnCgWindow(ch, f);
+	if (view && view->isPatEditor() && ch && ch->parts.fbPartModel && view->getTexturePane()) {
+		const std::string msg = view->getTexturePane()->ImportSheetFile(f, false);
+		han2ui::PushLoadReport(ch->getName(), msg, {}, false);
+		return std::string();
+	}
+	return han2ui::NewImgFromImage(f);
 }
 
 void MainFrame::ProcessDroppedFiles()
@@ -201,8 +232,9 @@ void MainFrame::ProcessDroppedFiles()
 			openHan2File(f);
 		} else if (ext == ".ha6" || ext == ".txt" || ext == ".hproj" || ext == ".p") {
 			openAnyFile(f);   // same header-based routing as File > Open...
-		} else if (ext == ".png" || ext == ".bmp") {
-			requestErrorPopup("Dropped image", std::string(TXT("Open the CG sprite window or an IMG viewer first, then use its Import PNG button.\n")) + f);
+		} else if (ext == ".png" || ext == ".bmp" || ext == ".jpg" || ext == ".jpeg" || ext == ".tif" || ext == ".tiff") {
+			const std::string msg = RouteDroppedImage(f);
+			if (!msg.empty()) requestErrorPopup("Dropped image", msg);
 		} else {
 			requestErrorPopup("Dropped file", std::string(TXT("Not an RBO / GOF2 file type: ")) + f);
 		}

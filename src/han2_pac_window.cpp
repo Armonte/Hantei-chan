@@ -7,6 +7,7 @@
 #include <map>
 #include <functional>
 #include "han2/dmp_fob.h"
+#include "han2/fob_file.h"
 #include "han2/qoh_img.h"
 #include "han2/rosa_img.h"
 #include "han2/pac_archive.h"
@@ -200,7 +201,8 @@ struct Viewer {
 	int id = 0; bool open = true;
 	std::string name, origin;           // name: CP932
 	std::vector<uint8_t> bytes;
-	enum Kind { Hex, Image, Poly, Typed, Fob, QohPic, RosaPic } kind = Hex;
+	enum Kind { Hex, Image, Poly, Typed, Fob, QohPic, RosaPic, RboFob } kind = Hex;
+	han2::fob::File rfob;   // RBO / GOF2 script bank (RboFob), decoded view (docs/formats/fob_vm.md)
 	han2::QohImg qimg; han2::RosaImg rimg; std::string stem;
 	std::string archivePath, entryKey; char loosePath[260] = ""; bool looseGuessed = false;
 	int px16 = 0;                       // 16-bit sheets: 0 = A1R5G5B5, 1 = A4R4G4B4 (the caller of the game's loader decides, dMp files do not name it)
@@ -263,6 +265,57 @@ void CollectStrings(Viewer &v)
 
 } // namespace
 
+// Replace an IMG viewer's pixels by an image file (Import button and drag-and-drop).
+static void ReplacePixels(Viewer &v, const std::string &p)
+{
+	std::vector<uint8_t> px; int w = 0, h = 0; std::string e;
+	if (!ReadImageRgba(p, px, w, h, e)) { v.msg = e; return; }
+	const bool keep16 = !v.img.native.empty() && v.img.format <= 1;   // 16-bit sheets stay 16-bit (the game reads raw words): quantise with the chosen pixel format
+	if (keep16 && (w != v.img.width || h != v.img.height)) { v.msg = TXT("size mismatch: a 16-bit sheet keeps its dimensions (texture size and script rows depend on them)"); return; }
+	if (keep16) { han2::EncodePixels16(px.data(), (size_t)w * h, v.px16, v.img.native); han2::DecodePixels16(v.img.native.data(), (size_t)w * h, v.px16, v.img.rgba); }
+	else if (v.img.format == 3) {   // RGB24 sheets keep their format
+		v.img.rgba = std::move(px); v.img.width = w; v.img.height = h;
+		v.img.native.resize((size_t)w * h * 3);
+		for (size_t i = 0; i < (size_t)w * h; i++) { v.img.native[i * 3] = v.img.rgba[i * 4]; v.img.native[i * 3 + 1] = v.img.rgba[i * 4 + 1]; v.img.native[i * 3 + 2] = v.img.rgba[i * 4 + 2]; v.img.rgba[i * 4 + 3] = 255; }
+	}
+	else { v.img.rgba = std::move(px); v.img.native.clear(); v.img.format = 2; v.img.width = w; v.img.height = h; }
+	Upload(v); v.dirty = true; v.msg = Fmt(TXT("replaced by %s"), p.c_str());
+}
+
+// Re-encode an IMG in another pixel format (0 ARGB1555, 1 ARGB4444, 2 RGBA, 3 RGB24) from its decoded pixels.
+static void ConvertImg(Viewer &v, int format)
+{
+	const size_t n = (size_t)v.img.width * v.img.height;
+	v.img.format = (uint32_t)format;
+	if (format == 2) v.img.native.clear();
+	else if (format == 3) { v.img.native.resize(n * 3); for (size_t i = 0; i < n; i++) { v.img.native[i * 3] = v.img.rgba[i * 4]; v.img.native[i * 3 + 1] = v.img.rgba[i * 4 + 1]; v.img.native[i * 3 + 2] = v.img.rgba[i * 4 + 2]; v.img.rgba[i * 4 + 3] = 255; } }
+	else { v.px16 = format; han2::EncodePixels16(v.img.rgba.data(), n, format, v.img.native); han2::DecodePixels16(v.img.native.data(), n, format, v.img.rgba); }
+	Upload(v); v.dirty = true;
+}
+
+std::string NewImgFromImage(const std::string &utf8Path)
+{
+	std::vector<uint8_t> px; int w = 0, h = 0; std::string e;
+	if (!ReadImageRgba(utf8Path, px, w, h, e)) return e;
+	han2::ImgFile img; img.version = 7; img.format = 2; img.width = w; img.height = h; img.rgba = std::move(px);
+	std::vector<uint8_t> bytes; han2::SerializeImg(img, bytes);
+	std::string name = fs::u8path(utf8Path).stem().u8string() + ".IMG";
+	OpenFileViewer(utf82sj(name), std::move(bytes), TXT("new image"));
+	g_views.back()->dirty = true;
+	g_views.back()->msg = Fmt(TXT("new IMG v7 RGBA from %s; pick the version / pixel format, then Save IMG..."), utf8Path.c_str());
+	return std::string();
+}
+
+std::string DropImageOnViewer(int viewerId, const std::string &utf8Path)
+{
+	for (auto &v : g_views) if (v->id == viewerId) {
+		if (v->kind != Viewer::Image) return TXT("This viewer does not hold an IMG.");
+		ReplacePixels(*v, utf8Path);
+		return std::string();
+	}
+	return TXT("no such viewer");
+}
+
 void OpenFileViewer(const std::string &name, std::vector<uint8_t> bytes, const std::string &origin, const std::string &archivePath, const std::string &entryKey)
 {
 	auto v = std::make_unique<Viewer>(); v->archivePath = archivePath; v->entryKey = entryKey;
@@ -270,6 +323,13 @@ void OpenFileViewer(const std::string &name, std::vector<uint8_t> bytes, const s
 	if (han2::IsImg(v->bytes.data(), v->bytes.size()) && han2::ParseImg(v->bytes.data(), v->bytes.size(), v->img, nullptr)) { v->kind = Viewer::Image; v->px16 = v->img.format == 1 ? 1 : 0; Upload(*v); }
 	else if (name.size() > 4 && Lower(name.substr(name.size() - 4)) == ".img" && han2::ParseQohImg(v->bytes.data(), v->bytes.size(), v->qimg, nullptr)) { v->kind = Viewer::QohPic; v->img.width = (int)v->qimg.width; v->img.height = (int)v->qimg.height; v->img.rgba = v->qimg.rgba; v->img.format = 2; Upload(*v); }
 	else if (name.size() > 4 && Lower(name.substr(name.size() - 4)) == ".img" && han2::ParseRosaImg(v->bytes.data(), v->bytes.size(), han2::RosaStemOfName(name), v->rimg, nullptr)) { v->kind = Viewer::RosaPic; v->stem = han2::RosaStemOfName(name); v->img.width = (int)v->rimg.width; v->img.height = (int)v->rimg.height; v->img.rgba = v->rimg.rgba; v->img.format = 2; Upload(*v); }
+	else if (name.size() > 4 && Lower(name.substr(name.size() - 4)) == ".fob" && [&] {
+		// RBO / GOF2 bytecode first: taken when it decodes the whole file without an error and covers at least as much code as the dMp / QoH decode
+		han2::fob::File r; std::string e;
+		if (!han2::fob::Parse(v->bytes.data(), v->bytes.size(), r, &e) || r.decodeErrors || !r.nInsns) return false;
+		han2::dmpfob::File a; const bool oa = han2::dmpfob::Parse(v->bytes.data(), v->bytes.size(), a, nullptr, han2::dmpfob::Dialect::Dmp);
+		if (oa && a.nInsns > 0 && a.rawBytes < r.rawBytes) return false;
+		v->rfob = std::move(r); return true; }()) v->kind = Viewer::RboFob;
 	else if (name.size() > 4 && Lower(name.substr(name.size() - 4)) == ".fob" && [&] {
 		// the script VMs of the family share the container; the dialect with the better decode coverage wins (dMp vs QoH '99)
 		han2::dmpfob::File a, b; const bool oa = han2::dmpfob::Parse(v->bytes.data(), v->bytes.size(), a, nullptr, han2::dmpfob::Dialect::Dmp), ob = han2::dmpfob::Parse(v->bytes.data(), v->bytes.size(), b, nullptr, han2::dmpfob::Dialect::Qoh99);
@@ -293,6 +353,13 @@ void DrawFileViewers()
 		if (v.kind == Viewer::Image) {
 			ImGui::Text(TXT("IMG v%u, %d x %d, %s"), v.img.version, v.img.width, v.img.height, v.img.format == 0 ? "ARGB1555" : v.img.format == 1 ? "ARGB4444" : v.img.format == 3 ? "RGB24" : "RGBA");
 			ImGui::SetNextItemWidth(120); ImGui::SliderFloat(LBL("zoom"), &v.zoom, 0.25f, 8.f); ImGui::SameLine(); ImGui::Checkbox(LBL("checkerboard"), &v.checker);
+			{
+				int ver = (int)v.img.version; ImGui::SameLine(); ImGui::SetNextItemWidth(90);
+				if (ImGui::InputInt(LBL("IMG version"), &ver, 1, 1)) { v.img.version = (uint32_t)std::clamp(ver, 6, 8); v.dirty = true; }
+				int fmtSel = (int)v.img.format; ImGui::SameLine(); ImGui::SetNextItemWidth(130);
+				const char *fmts[4] = { "ARGB1555", "ARGB4444", "RGBA", "RGB24" };
+				if (ImGui::Combo(LBL("store as"), &fmtSel, fmts, 4) && fmtSel != (int)v.img.format) ConvertImg(v, fmtSel);
+			}
 			if (!v.img.native.empty() && v.img.format <= 1) {
 				ImGui::SameLine(); ImGui::SetNextItemWidth(150);
 				const char *fm[2] = { "A1R5G5B5", "A4R4G4B4" };
@@ -303,19 +370,8 @@ void DrawFileViewers()
 			}
 			ImGui::SameLine();
 			if (ImGui::Button(LBL("Import PNG (replace pixels)..."))) {
-				std::string p = FileDialog(-1, false);
-				if (!p.empty()) {
-					std::vector<uint8_t> px; int w = 0, h = 0; std::string e;
-					if (ReadImageRgba(p, px, w, h, e)) {
-						const bool keep16 = !v.img.native.empty() && v.img.format <= 1;   // 16-bit sheets stay 16-bit (the game reads raw words): quantise with the chosen pixel format
-						if (keep16 && (w != v.img.width || h != v.img.height)) v.msg = TXT("size mismatch: a 16-bit sheet keeps its dimensions (texture size and script rows depend on them)");
-						else {
-							if (keep16) { han2::EncodePixels16(px.data(), (size_t)w * h, v.px16, v.img.native); han2::DecodePixels16(v.img.native.data(), (size_t)w * h, v.px16, v.img.rgba); }
-							else { v.img.rgba = std::move(px); v.img.native.clear(); v.img.format = 2; v.img.width = w; v.img.height = h; }
-							Upload(v); v.dirty = true; v.msg = Fmt(TXT("replaced by %s"), p.c_str());
-						} }
-					else v.msg = e;
-				}
+				std::string p = FileDialog(fileType::IMAGE, false);
+				if (!p.empty()) ReplacePixels(v, AnsiToUtf8(p));
 			}
 			ImGui::SameLine();
 			if (ImGui::Button(LBL("Save IMG..."))) {
@@ -411,6 +467,55 @@ void DrawFileViewers()
 				else if (it.insn.op == 0x19 || it.insn.op == 0x2D) { ImGui::SameLine(); ImGui::Text("kind=%#x -> %#x", it.insn.kind, it.insn.imm); }
 				ImGui::PopID();
 			}
+			ImGui::EndChild();
+		} else if (v.kind == Viewer::RboFob) {
+			// read-only decoded listing (the bytes are not changed here; the raw entry can still be exported)
+			ImGui::Text(TXT("RBO / GOF2 script bank: %zu functions, %zu index tables, %zu instructions (+%zu unreached), %zu data bytes"),
+				v.rfob.funcs.size(), v.rfob.indexTables.size(), v.rfob.nInsns, v.rfob.nUnreachedInsns, v.rfob.rawBytes);
+			if (ImGui::Button(LBL("Export raw..."))) { std::string p = FileDialog(-1, true); if (!p.empty()) { std::ofstream f(fs::u8path(p), std::ios::binary); f.write((const char *)v.bytes.data(), (std::streamsize)v.bytes.size()); v.msg = f ? Fmt(TXT("saved %s"), p.c_str()) : Fmt(TXT("could not write %s"), p.c_str()); } }
+			ImGui::SameLine();
+			if (ImGui::Button(LBL("Export disassembly..."))) {
+				std::string p = FileDialog(-1, true, (char *)"script.txt");
+				if (!p.empty()) {
+					std::string t;
+					std::map<uint32_t, std::string> lab; for (auto &fe : v.rfob.funcs) lab[fe.pc] = std::string((const char *)fe.name, strnlen((const char *)fe.name, 32));
+					for (auto &it : v.rfob.items) {
+						auto lb = lab.find(it.pc); if (lb != lab.end()) t += lb->second + ":\n";
+						char ln[200]; if (it.isInsn) snprintf(ln, sizeof ln, "  %05x  %s%s\n", it.pc, han2::fob::Mnemonic(it.insn).c_str(), it.reached ? "" : "   ; unreached"); else snprintf(ln, sizeof ln, "  %05x  .data %zu bytes\n", it.pc, it.raw.size());
+						t += ln;
+					}
+					std::ofstream f(fs::u8path(p), std::ios::binary); f.write(t.data(), (std::streamsize)t.size()); v.msg = f ? Fmt(TXT("saved %s"), p.c_str()) : Fmt(TXT("could not write %s"), p.c_str());
+				}
+			}
+			ImGui::SetNextItemWidth(200); char fb[64]; snprintf(fb, sizeof fb, "%s", v.fobFilter.c_str()); if (ImGui::InputText(LBL("filter (op name)"), fb, sizeof fb)) v.fobFilter = fb;
+			if (!v.rfob.indexTables.empty() && ImGui::TreeNode(TXT("Index tables (frame enter / transition / condition / system hook)"))) {
+				for (size_t t = 0; t < v.rfob.indexTables.size(); t++) {
+					std::string row = Fmt("%zu:", t); int shown = 0;
+					for (size_t k = 0; k < v.rfob.indexTables[t].size() && shown < 64; k++) if (v.rfob.indexTables[t][k] >= 0) { row += Fmt(" [%zu]=0x%x", k, v.rfob.indexTables[t][k]); shown++; }
+					ImGui::TextWrapped("%s", row.c_str());
+				}
+				ImGui::TreePop();
+			}
+			ImGui::BeginChild("rfob", ImVec2(0, 0), true);
+			std::map<uint32_t, std::string> labels; for (auto &fe : v.rfob.funcs) labels[fe.pc] = std::string((const char *)fe.name, strnlen((const char *)fe.name, 32));
+			ImGuiListClipper clip;
+			std::vector<int> rows; rows.reserve(v.rfob.items.size());
+			for (size_t i = 0; i < v.rfob.items.size(); i++) {
+				const auto &it = v.rfob.items[i];
+				if (!v.fobFilter.empty() && (!it.isInsn || han2::fob::Mnemonic(it.insn).find(v.fobFilter) == std::string::npos)) continue;
+				rows.push_back((int)i);
+			}
+			clip.Begin((int)rows.size());
+			while (clip.Step())
+				for (int r = clip.DisplayStart; r < clip.DisplayEnd; r++) {
+					const auto &it = v.rfob.items[(size_t)rows[(size_t)r]];
+					auto lb = labels.find(it.pc);
+					const std::string lab = lb != labels.end() ? sj2utf8(lb->second) + ":" : std::string();
+					if (!it.isInsn) { ImGui::TextDisabled("  %05x  .data %zu bytes  %s", it.pc, it.raw.size(), lab.c_str()); continue; }
+					if (!lab.empty()) { ImGui::TextColored(ImVec4(.5f, .9f, 1, 1), "%s", lab.c_str()); ImGui::SameLine(); }
+					if (it.reached) ImGui::Text("  %05x  %s", it.pc, han2::fob::Mnemonic(it.insn).c_str());
+					else ImGui::TextDisabled("  %05x  %s", it.pc, han2::fob::Mnemonic(it.insn).c_str());
+				}
 			ImGui::EndChild();
 		} else if (v.kind == Viewer::Typed) {
 			ImGui::Text("%s", v.typed.kind.c_str());

@@ -58,6 +58,8 @@ add_executable(${EXE}
 	src/han2_character.cpp
 	src/han2_pat.cpp
 	src/han2_pat_write.cpp
+	src/han2_parts_edit.cpp
+	src/parts/parts_undo.cpp
 	src/han2_export.cpp
 	src/han2_pat_gl.cpp
 	src/han2_browser.cpp
@@ -75,6 +77,7 @@ add_executable(${EXE}
 	src/han2_typed_files.cpp
 	src/live_reload.cpp
 	src/han2/dmp_fob.cpp
+	src/han2/fob_file.cpp
 	src/han2/mbr_formats.cpp
 	src/han2/mb_formats.cpp
 	src/han2/mb_cg.cpp
@@ -122,6 +125,7 @@ add_executable(${EXE}
 	src/file_backup.cpp
 	src/shortcut_router.cpp
 	src/PatEditor/pat_partset_pane.cpp
+	src/PatEditor/pat_partset_fb.cpp
 	src/PatEditor/pat_part_pane.cpp
 	src/PatEditor/pat_shape_pane.cpp
 	src/PatEditor/pat_texture_pane.cpp
@@ -321,6 +325,7 @@ endif()
 add_executable(pattex
 	src/pattex.cpp
 	src/parts/parts.cpp
+	src/app_log.cpp
 	src/parts/parts_part.cpp
 	src/parts/parts_partset.cpp
 	src/parts/parts_shape.cpp
@@ -584,6 +589,34 @@ if(MINGW)
 	target_link_options(fb_part_transform_test PRIVATE -static-libgcc -static-libstdc++ -static)
 endif()
 add_test(NAME fb_part_transform COMMAND fb_part_transform_test)
+# han2_parts_edit_test: PACNyx-parity edits of French-Bread parts (sheet import reaches the PAT, limits, layers, PAT-editor undo channel).
+add_executable(han2_parts_edit_test
+	tests/han2_parts_edit_test.cpp
+	src/app_log.cpp
+	src/han2_pat.cpp
+	src/han2_pat_write.cpp
+	src/han2_parts_edit.cpp
+	src/parts/parts_undo.cpp
+	src/undo_manager.cpp
+	src/parts/parts.cpp
+	src/parts/parts_part.cpp
+	src/parts/parts_partset.cpp
+	src/parts/parts_shape.cpp
+	src/parts/parts_texture.cpp
+	src/cg.cpp
+	src/texture.cpp
+	src/vao.cpp
+	src/shader.cpp
+	src/misc.cpp
+	tinyalloc/tinyalloc.c
+)
+target_include_directories(han2_parts_edit_test PRIVATE "." "src" "third_party" "${CMAKE_BINARY_DIR}/generated")
+target_compile_definitions(han2_parts_edit_test PRIVATE WIN32_LEAN_AND_MEAN HA6GUIVERSION="${CMAKE_PROJECT_VERSION}" PAT_HEADLESS)
+target_link_libraries(han2_parts_edit_test PRIVATE tinyalloc glad glm OpenGL::GL)
+if(MINGW)
+	target_link_options(han2_parts_edit_test PRIVATE -static-libgcc -static-libstdc++ -static)
+endif()
+add_test(NAME han2_parts_edit COMMAND han2_parts_edit_test)
 # part_render_math_test: .pat blend (PRAL), UV flip (PRRV) and AFHK interpolation rules against the game's
 # arithmetic (uni2.exe / MBAA.exe, see src/parts/part_render_math.h). Header-only, no data needed.
 add_executable(part_render_math_test tests/part_render_math_test.cpp)
@@ -673,11 +706,13 @@ add_executable(han2tool
 	src/han2/han2tool.cpp
 	src/cgm/cgm_bank.cpp
 	src/cgm/cgm_ops.cpp
+	src/cgm/cgm_struct.cpp
 	src/han2/fob_file.cpp
 	src/han2/replay_file.cpp
 	src/han2/fnt_file.cpp
 	src/han2_pat.cpp
 	src/han2_pat_write.cpp
+	src/han2_parts_edit.cpp
 	src/han2_export.cpp
 	src/png_writer.cpp
 	src/framedata.cpp

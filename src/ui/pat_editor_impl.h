@@ -546,7 +546,7 @@ bool MainFrame::PatScriptCommand(const std::string& cmd, const std::string& arg,
 	if (cmd == "patopen") { createPatEditorView(arg); return true; }
 	if (cmd == "newpat") { createNewPatView(arg == "mbaacc"); return true; }
 	if (cmd == "prefswindow") { m_showPatPrefs = arg != "off"; return true; }
-	if (cmd == "panview" && view) { float x = 0, y = 0; sscanf(arg.c_str(), "%f %f", &x, &y); view->camera().panX = x; view->camera().panY = y; return true; }
+	if ((cmd == "panview" || cmd == "viewpan") && view) { float x = 0, y = 0; sscanf(arg.c_str(), "%f %f", &x, &y); view->camera().panX = x; view->camera().panY = y; return true; }
 	if (cmd == "lang") { i18n::language = arg == "ja" ? 1 : 0; return true; }   // UI language for the shot (not saved)
 	if (cmd == "shortcut") {
 		for (int a = 0; a < (int)ShortcutAction::count; a++)

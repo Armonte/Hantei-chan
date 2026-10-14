@@ -304,7 +304,6 @@ namespace {
 struct CgPreview { const CharacterInstance *owner = nullptr; int image = -1; unsigned long long gen = 0; GLuint tex = 0; int w = 0, h = 0; int ox = 0, oy = 0; };
 CgPreview g_prev;
 char g_cgFilter[32] = "";
-std::vector<std::vector<char>> g_cgUndo, g_cgRedo;   // whole-bank snapshots (max 8)
 std::string g_cgMsg;
 int g_cgSel = 0;
 float g_cgZoom = 1.f;
@@ -323,6 +322,27 @@ void LoadPreview(CharacterInstance &ch, int image)
 	delete im;
 }
 } // namespace
+
+// Replace the selected CG image by an image file (Import button and drag-and-drop on the window).
+static void ImportCgFile(CharacterInstance &ch, const std::string &p)
+{
+	std::vector<uint8_t> px; int w = 0, h = 0; std::string e;
+	if (!ReadImageRgba(p, px, w, h, e)) { g_cgMsg = e; return; }
+	// snapshot first, keep it only when the import succeeded (undo stacks are per character)
+	std::vector<char> before(ch.cg.bank_data(), ch.cg.bank_data() + ch.cg.bank_size());
+	if (ch.cg.replace_image_rgba((unsigned)g_cgSel, px.data(), w, h, &e)) {
+		ch.cgImportUndo.push_back(std::move(before)); ch.cgImportRedo.clear();
+		if (ch.cgImportUndo.size() > 8) ch.cgImportUndo.erase(ch.cgImportUndo.begin());
+		ch.markModified(); ch.undoManager.markModified(); g_cgMsg = Fmt(TXT("imported %s (Save writes it into the .DAT / .CHP)"), p.c_str());
+	} else g_cgMsg = e;
+}
+
+std::string DropImageOnCgWindow(CharacterInstance *ch, const std::string &utf8Path)
+{
+	if (!ch || !ch->cg.m_loaded) return TXT("The active character has no CG bank.");
+	ImportCgFile(*ch, utf8Path);
+	return std::string();
+}
 
 void DrawCgWindow(CharacterInstance *ch)
 {
@@ -355,21 +375,16 @@ void DrawCgWindow(CharacterInstance *ch)
 	}
 	i18n::SameLineFit(i18n::ButtonWidth(LBL("Import PNG (same size)...")));
 	if (ImGui::Button(LBL("Import PNG (same size)..."))) {
-		std::string p = FileDialog(-1, false);
-		if (!p.empty()) {
-			std::vector<uint8_t> px; int w = 0, h = 0; std::string e;
-			if (!ReadImageRgba(p, px, w, h, e)) g_cgMsg = e;
-			else if ((g_cgUndo.push_back(std::vector<char>(ch->cg.bank_data(), ch->cg.bank_data() + ch->cg.bank_size())), g_cgRedo.clear(), g_cgUndo.size() > 8 && (g_cgUndo.erase(g_cgUndo.begin()), true), ch->cg.replace_image_rgba((unsigned)g_cgSel, px.data(), w, h, &e))) { ch->markModified(); ch->undoManager.markModified(); g_cgMsg = Fmt(TXT("imported %s (save as .DAT to keep it)"), p.c_str()); }
-			else g_cgMsg = e;
-		}
+		std::string p = FileDialog(fileType::IMAGE, false);
+		if (!p.empty()) ImportCgFile(*ch, AnsiToUtf8(p));
 	}
 	i18n::SameLineFit(i18n::ButtonWidth(LBL("Undo import")));
-	ImGui::BeginDisabled(g_cgUndo.empty());
-	if (ImGui::Button(LBL("Undo import"))) { g_cgRedo.push_back(std::vector<char>(ch->cg.bank_data(), ch->cg.bank_data() + ch->cg.bank_size())); ch->cg.restore_bank(g_cgUndo.back().data(), (unsigned)g_cgUndo.back().size()); g_cgUndo.pop_back(); ch->markModified(); g_cgMsg = TXT("import undone"); }
+	ImGui::BeginDisabled(ch->cgImportUndo.empty());
+	if (ImGui::Button(LBL("Undo import"))) { auto &U = ch->cgImportUndo; ch->cgImportRedo.push_back(std::vector<char>(ch->cg.bank_data(), ch->cg.bank_data() + ch->cg.bank_size())); ch->cg.restore_bank(U.back().data(), (unsigned)U.back().size()); U.pop_back(); ch->markModified(); g_cgMsg = TXT("import undone"); }
 	ImGui::EndDisabled();
 	i18n::SameLineFit(i18n::ButtonWidth(LBL("Redo")));
-	ImGui::BeginDisabled(g_cgRedo.empty());
-	if (ImGui::Button(LBL("Redo"))) { g_cgUndo.push_back(std::vector<char>(ch->cg.bank_data(), ch->cg.bank_data() + ch->cg.bank_size())); ch->cg.restore_bank(g_cgRedo.back().data(), (unsigned)g_cgRedo.back().size()); g_cgRedo.pop_back(); ch->markModified(); g_cgMsg = TXT("import redone"); }
+	ImGui::BeginDisabled(ch->cgImportRedo.empty());
+	if (ImGui::Button(LBL("Redo"))) { auto &R = ch->cgImportRedo; ch->cgImportUndo.push_back(std::vector<char>(ch->cg.bank_data(), ch->cg.bank_data() + ch->cg.bank_size())); ch->cg.restore_bank(R.back().data(), (unsigned)R.back().size()); R.pop_back(); ch->markModified(); g_cgMsg = TXT("import redone"); }
 	ImGui::EndDisabled();
 	i18n::SameLineFit(i18n::ButtonWidth(LBL("Export all...")));
 	if (ImGui::Button(LBL("Export all..."))) {
@@ -377,7 +392,7 @@ void DrawCgWindow(CharacterInstance *ch)
 		if (!d.empty()) { int ok = 0; std::string e; for (int i = 0; i < n; i++) { ImageData *im = ch->cg.draw_texture((unsigned)i, false, false); if (!im) continue; char nm[64]; snprintf(nm, sizeof(nm), "\\cg_%04d.png", i); if (WritePngRgba(d + nm, im->pixels, im->width, im->height, e)) ok++; delete im; } g_cgMsg = Fmt(TXT("exported %d PNGs to %s"), ok, d.c_str()); }
 	}
 	if (!g_cgMsg.empty()) ImGui::TextWrapped("%s", g_cgMsg.c_str());
-	ImGui::PushTextWrapPos(0.0f); ImGui::TextDisabled("%s", TXT("CG sprites live in the .DAT: save as .DAT to keep imports. Storage types 1, 2 and 4 can be imported; palettes are quantized to 255 colours.")); ImGui::PopTextWrapPos();
+	ImGui::PushTextWrapPos(0.0f); ImGui::TextDisabled("%s", TXT("CG sprites live in the .DAT (GOF2: the .CHP); Save writes them there, also when the frames are saved as a .DT2. Storage types 1, 2 and 4 can be imported; palettes are quantized to 255 colours.")); ImGui::PopTextWrapPos();
 	ImGui::BeginChild("prev", ImVec2(0, 0), true, ImGuiWindowFlags_HorizontalScrollbar);
 	if (g_prev.w > 0) {
 		ImVec2 p0 = ImGui::GetCursorScreenPos(), sz(g_prev.w * g_cgZoom, g_prev.h * g_cgZoom);

@@ -133,6 +133,7 @@ bool BuildPat(const Parts &parts, const std::vector<uint8_t> &orig, std::vector<
 		const PartSet<> *ps = p < (int)parts.partSets.size() ? &parts.partSets[p] : nullptr;
 		bool modelHas = false;
 		if (ps) for (auto &g : ps->groups) if (g.ppId >= 0) modelHas = true;
+		if (ps && !ps->wasLoaded && !ps->name.empty()) modelHas = true;   // a pose added (named) in the editor is written even before it has parts
 		if (!origPose[p] && !modelHas) continue;
 		if (origPose[p] && ps && !ps->wasLoaded && !modelHas) { /* original pose the model cleared: keep it blank */ }
 		present[p] = true;
@@ -164,9 +165,13 @@ bool BuildPat(const Parts &parts, const std::vector<uint8_t> &orig, std::vector<
 			tex[i].assign(orig.begin() + imageOff + off, orig.begin() + imageOff + off + bytes);
 		}
 	}
+	if (parts.gfxMeta.size() > (size_t)kMaxTex) return fail("the PAT holds at most 50 sprite sheets");
 	for (size_t i = 0; i < parts.gfxMeta.size() && i < (size_t)kMaxTex; i++) {
 		const auto &g = parts.gfxMeta[i];
-		if (!g.data || g.w <= 0 || g.w != g.h) continue;
+		if (!g.data && g.w == 0 && g.h == 0) { tex[i].clear(); continue; }   // sheet removed in the editor (an unused slot is empty in both)
+		if (!g.data || g.w <= 0) continue;
+		if (g.w != g.h) return fail("sprite sheet " + std::to_string(i) + " is not square (" + std::to_string(g.w) + " x " + std::to_string(g.h) + "); the PAT stores square textures only");
+		if (g.bpp != 32) return fail("sprite sheet " + std::to_string(i) + " is not a 32-bit image; import it as PNG");
 		size_t bytes = (size_t)g.w * g.h * 4;
 		if (tex[i].empty()) {                           // new texture slot
 			tex[i].assign((const uint8_t *)g.data, (const uint8_t *)g.data + bytes);

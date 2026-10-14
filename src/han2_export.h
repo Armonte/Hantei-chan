@@ -20,12 +20,18 @@ struct ExportOptions {
 	bool cgImages = true;        // every CG image as cg/cg_<n>.png
 	bool poses = true;           // every PAT pose as poses/pose_<n>.png + poses.json
 	bool patterns = true;        // every pattern: frames/<pattern>/f<k>.png (aligned), animation.json, strip.png, sheet.png
-	int canvasW = 512, canvasH = 512, originX = 256, originY = 448;   // aligned canvas (game anchor = bottom centre)
+	// aligned canvas (game anchor = bottom centre). canvasW == 0: sized per pattern to fit every frame (+ margin), as icaroffa does
+	int canvasW = 0, canvasH = 0, originX = 256, originY = 448;
+	int margin = 24;
 	int scale = 1;
+	// icaroffa / PACNyx+ 2026 layout instead of ours: manifest.json, poses/<name>.json (his key names), renders/, renders_aligned/<group>/
+	// (animation.json with frameWidth / frameHeight / anchorCanvasX / anchorCanvasY, strip.png, sheet.png), animations.json.
+	// Groups are the game's pattern table (his build guessed them from pose names).
+	bool icaroffaLayout = false;
 };
 
 struct ExportReport {
-	int cgPngs = 0, posePngs = 0, framePngs = 0, patternsWritten = 0, sheets = 0;
+	int cgPngs = 0, posePngs = 0, framePngs = 0, patternsWritten = 0, sheets = 0, writeErrors = 0;
 	std::vector<std::string> notes;
 };
 
@@ -35,6 +41,9 @@ bool ExportCharacter(FrameData &fd, CG &cg, Parts &parts, const std::string &out
 // Thumbnail of one frame (any dialect: RBO / GOF2 poses and CG images, GOF1 / HA6 / HA4 CG layers) for the archive browser: composited on the CPU
 // (no GL, safe on a worker thread), cropped to the visible pixels and box-filtered to fit maxSide x maxSide. false when the frame draws nothing.
 bool RenderFrameThumb(FrameData &fd, CG &cg, Parts &parts, int pattern, int frame, int maxSide, std::vector<uint8_t> &rgba, int &w, int &h);
+// One pose composited on the CPU and cropped to its visible pixels (PACNyx "Save pose as image"). anchorX/Y = where the pose base point
+// (the actor anchor) lies in the image; it may be outside it. `pad` transparent pixels around. false when the pose draws nothing.
+bool RenderPoseRgba(const Parts &parts, int pose, std::vector<uint8_t> &rgba, int &w, int &h, int &anchorX, int &anchorY, int pad = 0);
 // First pattern / frame that draws something (idle pose); -1 when there is none.
 bool FindIdleFrame(FrameData &fd, int &pattern, int &frame);
 

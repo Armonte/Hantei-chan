@@ -14,6 +14,9 @@ public:
 	void Draw();
     void DrawPartSet();
     void DrawPartProperty(PartSet<>* partSet);
+    // French-Bread characters (parts->fbPartModel): PACNyx-style pose / part controls (pat_partset_fb.cpp)
+    void DrawFbPoses();
+    void DrawFbParts(PartSet<>& ps);
     void DrawPopUp();
     void RegeneratePartSetNames();
     void RegeneratePartPropNames();
@@ -28,6 +31,10 @@ private:
     std::string customPopUpMessage;
     std::string *partSetDecoratedNames;
     std::string *partPropsDecoratedNames;
+    // French-Bread pose / part editing state
+    std::string fbNewPoseName, fbMessage;
+    int fbMoveTarget = 0, fbLayerValue = 0, fbAddSheet = 0, fbAddRect[4]{0, 0, 32, 32};
+    bool fbRemapFrames = true, fbAddOpen = false;
     int partSetNamesCount = -1;            // entries in partSetDecoratedNames
     int partPropNamesCount = -1;           // entries in partPropsDecoratedNames
     int partPropNamesSet = -1;             // part set they were made for

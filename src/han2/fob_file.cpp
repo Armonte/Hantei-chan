@@ -170,3 +170,51 @@ bool Serialize(const File &f, std::vector<uint8_t> &o, std::string *err)
 }
 
 }} // namespace
+
+namespace han2 { namespace fob {
+
+const char *ClassName(uint16_t c)
+{
+	static const char *const n[] = { "DATA", "STK", "FLOW", "SYS", "THREAD", "WAIT", "RAND", "FILE", "BANK", "MEM", "NOP", "GFX", "CAMERA2",
+		"EFFECT_CHARSLOT", "SOUND_CHAN", "CAMERA", "SYSFLOW", "ACTOR_OPS", "SCREEN_FADE", "ACTOR_FIND", "PICTURE", "AUDIO_CHAN", "GAUGE_MISC", "SOUND_LOAD", "END", "HALT" };
+	return c < sizeof(n) / sizeof(n[0]) ? n[c] : "?";
+}
+
+std::string Mnemonic(const Insn &i)
+{
+	char b[160];
+	static const char *const stk[] = { "PUSH_IMM", "PUSH_CODE_ADDR", "PUSH_SCRATCH_ADDR", "PUSH_ARGS_ADDR", "PUSH_CTX0", "PUSH_CTX1", "PUSH_CTX2", "PUSH_CTX3", "PUSH_CTX4",
+		"POP", "STORE", "ADD", "SUB", "MUL", "DIV", "MOD", "SHL", "SHR", "AND", "OR", "NOT", "XOR", "LNOT", "LAND", "LOR", "CMP", "SWAP", "LOAD" };
+	static const char *const flow[] = { "JCC", "SWITCH", "JMP", "CALL", "LJUMPSUB", "RET", "RET_FAR", "RET_VALUE" };
+	static const char *const sys[] = { "LINE", "RESOLVE_BANK_ADDR", "DEBUG_PRINT", "GET_ERRNO", "SET_ERRNO", "FORMAT_PRINT" };
+	static const char *const cmp[] = { "eq", "ne", "le", "ge", "lt", "gt" };
+	static const char *const jcc[] = { "==0", "!=0", "<=0", ">=0", "<0", ">0" };
+	switch (i.cls) {
+	case kClsEnd: return "END";
+	case kClsHalt: return "HALT";
+	case kClsData: snprintf(b, sizeof b, "DATA.%u n=%u", i.sub, i.imm); return b;
+	case kClsStk: {
+		const char *nm = i.sub < 28 ? stk[i.sub] : "?";
+		if (i.sub == 0) snprintf(b, sizeof b, "STK.%s %d", nm, (int32_t)i.imm);
+		else if (i.sub == 1) snprintf(b, sizeof b, "STK.%s 0x%x", nm, i.imm);
+		else if (i.sub == 0x19) snprintf(b, sizeof b, "STK.CMP %s flags=%u", i.kind < 6 ? cmp[i.kind] : "?", i.flags);
+		else if (i.sub == 0x0A) snprintf(b, sizeof b, "STK.STORE kind=0x%x flags=%u", i.kind, i.flags);
+		else if (i.sub >= 0x0B && i.sub != 0x1A) snprintf(b, sizeof b, "STK.%s flags=%u", nm, i.flags);
+		else snprintf(b, sizeof b, "STK.%s", nm);
+		return b; }
+	case kClsFlow: {
+		const char *nm = i.sub < 8 ? flow[i.sub] : "?";
+		if (i.sub == 0) snprintf(b, sizeof b, "FLOW.JCC %s -> 0x%x", i.kind < 6 ? jcc[i.kind] : "?", i.imm);
+		else if (i.sub == 1) snprintf(b, sizeof b, "FLOW.SWITCH table 0x%x", i.imm);
+		else if (i.sub == 2 || i.sub == 3) snprintf(b, sizeof b, "FLOW.%s 0x%x", nm, i.imm);
+		else snprintf(b, sizeof b, "FLOW.%s", nm);
+		return b; }
+	case kClsSys: {
+		const char *nm = i.sub < 6 ? sys[i.sub] : "?";
+		if (i.sub == 0 || i.sub == 2 || i.sub == 5) snprintf(b, sizeof b, "SYS.%s %u", nm, i.imm); else snprintf(b, sizeof b, "SYS.%s", nm);
+		return b; }
+	default: snprintf(b, sizeof b, "%s.0x%02x", ClassName(i.cls), i.sub); return b;
+	}
+}
+
+}} // namespace

@@ -529,6 +529,8 @@ void MainFrame::Menu(unsigned int errorPopupId)
 
 				if (ImGui::MenuItem(LBL("Export RBO / GOF2 sprites, poses and animations (PNG + JSON)..."), nullptr, false, hasActive && active->frameData.isHan2()))
 					exportHan2Character(active);
+				if (ImGui::MenuItem(LBL("Export RBO / GOF2 as JSON + PNG (icaroffa / PACNyx 2026 layout)..."), nullptr, false, hasActive && active->frameData.isHan2()))
+					exportHan2Character(active, true);
 				ImGui::EndMenu();
 			}
 
@@ -606,6 +608,14 @@ void MainFrame::Menu(unsigned int errorPopupId)
 				createViewForCharacter(characters.back().get());
 				markProjectModified();
 			}
+
+			if (ImGui::MenuItem(LBL("New RBO / GOF2 IMG from image...")))
+			{
+				std::string f = FileDialog(fileType::IMAGE, false);
+				if (!f.empty()) { std::string e = han2ui::NewImgFromImage(AnsiToUtf8(f)); if (!e.empty()) requestErrorPopup("Load Error", e); }
+			}
+			if (ImGui::MenuItem(LBL("New RBO / GOF2 PAC archive...")))
+				han2ui::showPacCreate = true;
 
 			if (ImGui::MenuItem(LBL("Reopen Closed Tab"), shortcuts.registry().label(ShortcutAction::reopenClosedView).c_str(), false, !m_closedTabs.empty()))
 				reopenClosedTab();
@@ -809,7 +819,7 @@ void MainFrame::Menu(unsigned int errorPopupId)
 			if (ImGui::MenuItem(LBL("Edit parts of this RBO / GOF2 character (PAT editor)"), nullptr, false, hasActive && active->frameData.isHan2() && active->parts.loaded))
 				openPartsEditorForCharacter(active);
 			if (ImGui::IsItemHovered(ImGuiHoveredFlags_AllowWhenDisabled))
-				ImGui::SetTooltip(TXT("Parts live in the .DAT: save as .DAT to keep part edits (a .DT2 carries only the pattern area)."));
+				ImGui::SetTooltip(TXT("Save writes part edits into the .DAT (GOF2: the .PAT), also when the frames are saved as a .DT2."));
 			if (ImGui::MenuItem(LBL("CG manager"), nullptr, m_cgm.open, hasActive && active->cg.m_loaded)) m_cgm.open = !m_cgm.open;
 			if (ImGui::MenuItem(LBL("CG sprites of this RBO / GOF2 character (export / import)..."), nullptr, han2ui::showCgWindow, hasActive && active->cg.m_loaded))
 				han2ui::showCgWindow = !han2ui::showCgWindow;

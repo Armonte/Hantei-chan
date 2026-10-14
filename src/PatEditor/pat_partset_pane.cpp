@@ -99,6 +99,12 @@ void PatPartSetPane::UpdateRenderFrame(int effectId, bool dontChangeProp)
     if(changed && !dontChangeProp)
         curInstance->currState->partProp = 0;
     if(curInstance->currState->animating) return;
+    if (curInstance->framedata->isHan2()) {   // the view draws currState->partSet; the character's frames are game data
+        if (!dontChangeProp) curInstance->currState->partProp = 0;
+        curInstance->parts->partHighlight = activeHighligth ? curInstance->currState->partProp : -1;
+        curInstance->parts->SetHighlightOpacity(highlightOpacity);
+        return;
+    }
 
     auto& frame = curInstance->framedata->get_sequence(0)->frames.at(0);
     // Ensure frame has at least one layer
@@ -151,7 +157,8 @@ void PatPartSetPane::Draw()
         ImGui::Begin(LBL("PartSet Pane"), 0);
         if(curInstance->parts->loaded) {
             SyncNames();
-            DrawPartSet();
+            if (curInstance->parts->fbPartModel) DrawFbPoses();
+            else DrawPartSet();
         } else {
             ImGui::Text(TXT("Load PAT file first"));
         }

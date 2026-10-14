@@ -1,0 +1,45 @@
+{
+  "name": "立ち",
+  "frameWidth": 185,
+  "frameHeight": 227,
+  "anchorCanvasX": 102,
+  "anchorCanvasY": 198,
+  "frameCount": 5,
+  "frames": [
+    {
+      "index": 0,
+      "poseIndex": 4,
+      "poseName": "STAND2",
+      "file": "000_STAND2.png",
+      "durationTicks": 3
+    },
+    {
+      "index": 1,
+      "poseIndex": 5,
+      "poseName": "PATTERN007",
+      "file": "001_PATTERN007.png",
+      "durationTicks": 3
+    },
+    {
+      "index": 2,
+      "poseIndex": 6,
+      "poseName": "PATTERN008",
+      "file": "002_PATTERN008.png",
+      "durationTicks": 12
+    },
+    {
+      "index": 3,
+      "poseIndex": 7,
+      "poseName": "PATTERN009",
+      "file": "003_PATTERN009.png",
+      "durationTicks": 20
+    },
+    {
+      "index": 4,
+      "poseIndex": 4,
+      "poseName": "STAND2",
+      "file": "004_STAND2.png",
+      "durationTicks": 3
+    }
+  ]
+}

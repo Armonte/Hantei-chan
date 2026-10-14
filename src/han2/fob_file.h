@@ -41,6 +41,9 @@ bool DecodeInsn(const uint8_t *code, size_t size, uint32_t pc, Insn &out, uint32
 void EncodeInsn(const Insn &in, std::vector<uint8_t> &out);
 
 bool Parse(const uint8_t *p, size_t n, File &out, std::string *err);
+// One instruction as text: "STK.PUSH_IMM 12", "FLOW.JCC ==0 -> 0x1a4", "ACTOR_OPS.0x09" (names from docs/formats/fob_vm.md 3).
+std::string Mnemonic(const Insn &i);
+const char *ClassName(uint16_t cls);
 bool Serialize(const File &f, std::vector<uint8_t> &out, std::string *err);
 
 }} // namespace

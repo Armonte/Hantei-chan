@@ -15,6 +15,7 @@
 #include <cstdint>
 #include <string>
 #include <functional>
+#include <memory>
 #include <glm/mat4x4.hpp>
 
 class Parts {
@@ -45,6 +46,13 @@ public:
     // order (last = on top). See docs/formats/fb_part_transform.md. Everything
     // else (MBAA / UNI / MBTL) keeps position = pivot and descending priority.
     bool fbPartModel = false;
+    // French-Bread PAT: number of pose slots of the loaded block (1000 for v2/v3, 2000 for GOF2 v4); 0 = not a French-Bread PAT.
+    int fbMaxPoses = 0;
+
+    // Pixel buffers owned by this model (sprite sheets imported in the editor). Append-only until Free(), so a
+    // PartGfx::data pointer kept by an undo snapshot stays valid for the life of the loaded character.
+    std::vector<std::unique_ptr<char[]>> ownedPixels;
+    char* AdoptPixels(size_t bytes) { ownedPixels.emplace_back(new char[bytes ? bytes : 1]); return ownedPixels.back().get(); }
 
     // Records as loaded, in file order, with a fingerprint of the model they
     // decoded to. Save() writes a record's original bytes while its model is
