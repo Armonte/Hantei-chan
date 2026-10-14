@@ -31,17 +31,17 @@ jobs:
 
     - name: Package artifacts
       run: |
-        mkdir -p artifacts
-        cp build/gonptechan.exe artifacts/
-        if (Test-Path config) { cp -r config artifacts/ }
-        if (Test-Path res) { cp -r res artifacts/ }
+        New-Item -ItemType Directory -Force ci_package | Out-Null
+        cp build/gonptechan.exe ci_package/
+        if (Test-Path config) { cp -r config ci_package/ }
+        if (Test-Path res) { cp -r res ci_package/ }
       shell: pwsh
 
     - name: Upload artifacts
       uses: actions/upload-artifact@v4
       with:
-        name: hantei-chan-${{ github.ref_name }}-windows-x64
-        path: artifacts/
+        name: hantei-chan-${{ github.run_number }}-${{ github.sha }}-windows-x64
+        path: ci_package/
         retention-days: 30
 
   build-linux-cross:
@@ -71,14 +71,14 @@ jobs:
 
     - name: Package artifacts
       run: |
-        mkdir -p artifacts
-        cp build/gonptechan.exe artifacts/
-        [ -d config ] && cp -r config artifacts/ || true
-        [ -d res ] && cp -r res artifacts/ || true
+        mkdir -p ci_package
+        cp build/gonptechan.exe ci_package/
+        [ -d config ] && cp -r config ci_package/ || true
+        [ -d res ] && cp -r res ci_package/ || true
 
     - name: Upload artifacts
       uses: actions/upload-artifact@v4
       with:
-        name: hantei-chan-${{ github.ref_name }}-linux-mingw-build
-        path: artifacts/
+        name: hantei-chan-${{ github.run_number }}-${{ github.sha }}-linux-mingw-build
+        path: ci_package/
         retention-days: 30
