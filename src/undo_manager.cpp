@@ -190,6 +190,7 @@ void UndoManager::attach(std::vector<Sequence>* document)
 
 void UndoManager::reset()
 {
+	for (auto& c : m_channels) { c.shadow.reset(); c.wasActive = false; }
 	m_hasBaseline = false;
 	m_shadow.clear();
 	m_loaded.clear();
@@ -200,6 +201,9 @@ void UndoManager::reset()
 	m_nextId = 1;
 	m_dirty = false;
 	m_prevGesture = false;
+	m_marked.clear();
+	m_fullScan = false;
+	if (m_dirtyFeed) m_dirtyFeed->clear();
 	m_txDepth = 0;
 	m_txLabel.clear();
 	m_stepFocusLatched = false;
@@ -214,8 +218,63 @@ bool UndoManager::ensureBaseline()
 	for (const auto& seq : *m_doc)
 		m_shadow.push_back(std::make_shared<const Sequence>(seq));
 	m_loaded = m_shadow;
+	captureChannelBaseline();
 	m_hasBaseline = true;
 	return true;
+}
+
+// ---------------------------------------------------------------------------
+// Channels
+// ---------------------------------------------------------------------------
+
+int UndoManager::addChannel(UndoChannel* channel)
+{
+	for (size_t i = 0; i < m_channels.size(); ++i)
+		if (m_channels[i].ch == channel) return (int)i;
+	ChannelSlot slot;
+	slot.ch = channel;
+	if (m_hasBaseline && channel && channel->active()) { slot.shadow = channel->capture(nullptr); slot.wasActive = true; }
+	m_channels.push_back(std::move(slot));
+	return (int)m_channels.size() - 1;
+}
+
+void UndoManager::removeChannel(UndoChannel* channel)
+{
+	for (auto& c : m_channels)
+		if (c.ch == channel) { c.ch = nullptr; c.shadow.reset(); }
+	// entries keep their deltas but an emptied slot is never restored
+}
+
+void UndoManager::captureChannelBaseline()
+{
+	for (auto& c : m_channels) {
+		c.wasActive = c.ch && c.ch->active();
+		c.shadow = c.wasActive ? c.ch->capture(nullptr) : nullptr;
+	}
+}
+
+std::vector<UndoManager::ChannelDelta> UndoManager::diffChannels()
+{
+	std::vector<ChannelDelta> out;
+	for (size_t i = 0; i < m_channels.size(); ++i) {
+		auto& c = m_channels[i];
+		if (!c.ch) continue;
+		const bool act = c.ch->active();
+		if (!act) { c.wasActive = false; c.shadow.reset(); continue; }
+		if (!c.wasActive || !c.shadow) {
+			// became active (e.g. a parts model was loaded after the baseline): its first state is a baseline, not an edit
+			c.shadow = c.ch->capture(nullptr);
+			c.wasActive = true;
+			continue;
+		}
+		if (c.ch->equalsLive(c.shadow)) continue;
+		ChannelDelta d;
+		d.channel = (int)i;
+		d.before = c.shadow;
+		d.after = c.ch->capture(c.shadow);
+		out.push_back(std::move(d));
+	}
+	return out;
 }
 
 void UndoManager::clear()
@@ -241,12 +300,78 @@ void UndoManager::noteFocus(int pattern, int frame)
 
 void UndoManager::markModified()
 {
+	markModified(-1);
+	m_fullScan = true;
+}
+
+void UndoManager::markModified(int index)
+{
 	if (!m_stepFocusLatched) {
 		m_stepFocusPattern = m_focusPattern;
 		m_stepFocusFrame = m_focusFrame;
 		m_stepFocusLatched = true;
 	}
+	if (index >= 0) m_marked.push_back(index);
 	m_dirty = true;
+}
+
+namespace { constexpr size_t kDriftSlice = 24; }
+
+bool UndoManager::wantsFullScan() const
+{
+	// Nothing says where the edit is (no mark, no feed entry, no focus): look everywhere.
+	const bool fed = m_dirtyFeed && !m_dirtyFeed->empty();
+	if (m_dirtyFeed && m_dirtyFeed->size() >= 4096) return true;   // FrameData::kUndoDirtyFeedCap: the feed overflowed
+	return m_fullScan || (m_marked.empty() && !fed && m_focusPattern < 0 && m_stepFocusPattern < 0);
+}
+
+std::vector<int> UndoManager::incrementalScanSet()
+{
+	std::vector<int> idx = m_marked;
+	if (m_dirtyFeed) idx.insert(idx.end(), m_dirtyFeed->begin(), m_dirtyFeed->end());
+	if (m_focusPattern >= 0) idx.push_back(m_focusPattern);
+	if (m_stepFocusPattern >= 0) idx.push_back(m_stepFocusPattern);
+	const size_t n = std::min(m_doc ? m_doc->size() : 0, m_shadow.size());
+	for (size_t k = 0; k < kDriftSlice && k < n; k++) {
+		if (m_driftCursor >= n) m_driftCursor = 0;
+		idx.push_back((int)m_driftCursor++);
+	}
+	return idx;
+}
+
+std::vector<UndoManager::PatternDelta> UndoManager::diffIndices(std::vector<int> indices) const
+{
+	std::vector<PatternDelta> out;
+	if (!m_doc) return out;
+	const size_t live = m_doc->size();
+	const size_t shadow = m_shadow.size();
+	const size_t common = std::min(live, shadow);
+	std::sort(indices.begin(), indices.end());
+	indices.erase(std::unique(indices.begin(), indices.end()), indices.end());
+	for (int i : indices) {
+		if (i < 0 || (size_t)i >= common) continue;
+		const Sequence& cur = (*m_doc)[i];
+		const SeqPtr& old = m_shadow[i];
+		if (old && SequenceContentEquals(cur, *old)) continue;
+		PatternDelta d;
+		d.index = i;
+		d.before = old;
+		d.after = std::make_shared<const Sequence>(cur);
+		out.push_back(std::move(d));
+	}
+	for (size_t i = common; i < live; ++i) {
+		PatternDelta d;
+		d.index = (int)i;
+		d.after = std::make_shared<const Sequence>((*m_doc)[i]);
+		out.push_back(std::move(d));
+	}
+	for (size_t i = common; i < shadow; ++i) {
+		PatternDelta d;
+		d.index = (int)i;
+		d.before = m_shadow[i];
+		out.push_back(std::move(d));
+	}
+	return out;
 }
 
 void UndoManager::beginTransaction(const char* label)
@@ -254,7 +379,7 @@ void UndoManager::beginTransaction(const char* label)
 	ensureBaseline();
 	if (m_txDepth == 0) {
 		// Anything edited before the gesture is its own step.
-		if (m_dirty) commitInternal(nullptr);
+		if (m_dirty) commitPending(nullptr);
 		m_txLabel = label ? label : "";
 		m_stepFocusPattern = m_focusPattern;
 		m_stepFocusFrame = m_focusFrame;
@@ -269,7 +394,7 @@ bool UndoManager::commitTransaction()
 	if (--m_txDepth > 0) return false;
 	std::string label;
 	label.swap(m_txLabel);
-	return commitInternal(label.empty() ? nullptr : label.c_str());
+	return commitPending(label.empty() ? nullptr : label.c_str());
 }
 
 void UndoManager::cancelTransaction()
@@ -282,7 +407,8 @@ void UndoManager::cancelTransaction()
 		pending.changes = diff();
 		pending.countBefore = m_shadow.size();
 		pending.countAfter = m_doc->size();
-		if (!pending.changes.empty() || pending.countBefore != pending.countAfter)
+		pending.channels = diffChannels();
+		if (!pending.changes.empty() || pending.countBefore != pending.countAfter || !pending.channels.empty())
 			applySide(pending, false);
 	}
 	m_dirty = false;
@@ -305,13 +431,13 @@ bool UndoManager::endFrame(bool gestureActive)
 		return false;
 	if (!m_dirty && !fallingEdge)
 		return false;
-	return commitInternal(nullptr);
+	return commitPending(nullptr);
 }
 
 bool UndoManager::flush(const char* label)
 {
 	if (!ensureBaseline()) return false;
-	return commitInternal(label);
+	return commitInternal(label, true);   // save / explicit flush: the whole document
 }
 
 std::vector<UndoManager::PatternDelta> UndoManager::diff() const
@@ -346,19 +472,26 @@ std::vector<UndoManager::PatternDelta> UndoManager::diff() const
 	return out;
 }
 
-bool UndoManager::commitInternal(const char* label)
+bool UndoManager::commitInternal(const char* label, bool fullScan)
 {
 	m_dirty = false;
 	const bool latched = m_stepFocusLatched;
 	m_stepFocusLatched = false;
+	std::vector<int> scan;
+	if (!fullScan && m_doc && m_hasBaseline) scan = incrementalScanSet();
+	m_marked.clear();
+	m_fullScan = false;
+	if (m_dirtyFeed) m_dirtyFeed->clear();
 	if (!m_doc || !m_hasBaseline) return false;
 
 	Entry e;
-	e.changes = diff();
+	e.changes = fullScan ? diff() : diffIndices(std::move(scan));
 	e.countBefore = m_shadow.size();
 	e.countAfter = m_doc->size();
-	if (e.changes.empty() && e.countBefore == e.countAfter)
+	e.channels = diffChannels();
+	if (e.changes.empty() && e.countBefore == e.countAfter && e.channels.empty())
 		return false;
+	for (const auto& d : e.channels) m_channels[(size_t)d.channel].shadow = d.after;
 
 	e.id = m_nextId++;
 	if (label) e.label = label;
@@ -429,6 +562,15 @@ void UndoManager::applySide(const Entry& e, bool toAfter)
 	m_shadow.resize(n);
 	for (const auto& d : e.changes)
 		if (d.index >= 0 && (size_t)d.index < n) updateModifiedFlag(d.index);
+	for (const auto& d : e.channels) {
+		if (d.channel < 0 || (size_t)d.channel >= m_channels.size()) continue;
+		auto& c = m_channels[(size_t)d.channel];
+		if (!c.ch) continue;
+		const auto& snap = toAfter ? d.after : d.before;
+		c.ch->restore(snap);
+		c.shadow = snap;
+		c.wasActive = true;
+	}
 }
 
 // ---------------------------------------------------------------------------
@@ -441,7 +583,7 @@ void UndoManager::settlePending()
 		// A notified edit whose gesture has not ended yet (e.g. Ctrl+Z pressed
 		// before the release frame) becomes its own step, so it is what gets
 		// undone.
-		commitInternal(nullptr);
+		commitPending(nullptr);
 		return;
 	}
 	// Unnotified drift that no gesture boundary has picked up yet is not a
@@ -450,9 +592,10 @@ void UndoManager::settlePending()
 	for (auto& d : diff()) {
 		if ((size_t)d.index < m_shadow.size() && d.after) m_shadow[d.index] = d.after;
 	}
+	for (auto& d : diffChannels()) m_channels[(size_t)d.channel].shadow = d.after;
 	if (m_doc && m_shadow.size() != m_doc->size()) {
 		// Pattern-list size drift is always recorded.
-		commitInternal(nullptr);
+		commitInternal(nullptr, true);
 	}
 	m_stepFocusLatched = false;
 }
@@ -496,7 +639,7 @@ uint64_t UndoManager::currentRevision() const
 void UndoManager::markClean()
 {
 	if (ensureBaseline())
-		commitInternal(nullptr);
+		commitInternal(nullptr, true);
 	m_savedRevision = currentRevision();
 }
 
@@ -510,5 +653,12 @@ size_t UndoManager::historyBytes() const
 	};
 	for (const auto& e : m_undo) for (const auto& d : e.changes) { count(d.before); count(d.after); }
 	for (const auto& e : m_redo) for (const auto& d : e.changes) { count(d.before); count(d.after); }
+	std::unordered_set<const void*> seenSnaps;
+	auto countSnap = [&](const ChannelDelta& d, const UndoChannel::Snap& p) {
+		if (p && d.channel >= 0 && (size_t)d.channel < m_channels.size() && m_channels[(size_t)d.channel].ch && seenSnaps.insert(p.get()).second)
+			bytes += m_channels[(size_t)d.channel].ch->approxBytes(p);
+	};
+	for (const auto& e : m_undo) for (const auto& d : e.channels) { countSnap(d, d.before); countSnap(d, d.after); }
+	for (const auto& e : m_redo) for (const auto& d : e.channels) { countSnap(d, d.before); countSnap(d, d.after); }
 	return bytes;
 }

@@ -45,7 +45,15 @@ bool MainFrame::HandleKeys(uint64_t vkey, bool isRepeat, bool imguiWantsKeyboard
 	if (GetKeyState(VK_SHIFT) & 0x8000) chord.modifiers |= shortcutShift;
 	if (GetKeyState(VK_MENU) & 0x8000) chord.modifiers |= shortcutAlt;
 
-	const ShortcutBinding* binding = shortcuts.resolve(chord, imguiTextInput, isRepeat);
+	// A NUMERIC field being typed in (InputInt/InputFloat, Ctrl+click on a drag): Q / E may step keyframes from it
+	// (issue #61); a text field (names) keeps every letter.
+	bool numericField = false;
+	if (imguiTextInput && ImGui::GetCurrentContext()) {
+		if (const ImGuiInputTextState* ts = ImGui::GetInputTextState(ImGui::GetActiveID()))
+			numericField = (ts->Flags & (ImGuiInputTextFlags_CharsDecimal | ImGuiInputTextFlags_CharsScientific |
+			                             ImGuiInputTextFlags_CharsHexadecimal)) != 0;
+	}
+	const ShortcutBinding* binding = shortcuts.resolve(chord, shortcuts.input(imguiTextInput, numericField, isRepeat));
 	if (!binding)
 		return false;
 
@@ -60,7 +68,8 @@ bool MainFrame::HandleKeys(uint64_t vkey, bool isRepeat, bool imguiWantsKeyboard
 	if (imguiTextInput && (binding->action == ShortcutAction::nextKeyframe ||
 	                       binding->action == ShortcutAction::previousKeyframe)) {
 		m_textNavDir = binding->action == ShortcutAction::nextKeyframe ? 1 : -1;
-		s_swallowChar = vkey == VK_MULTIPLY ? L'*' : vkey == VK_DIVIDE ? L'/' : 0;
+		s_swallowChar = vkey == VK_MULTIPLY ? L'*' : vkey == VK_DIVIDE ? L'/'
+			: (vkey >= 'A' && vkey <= 'Z') ? (wchar_t)(vkey - 'A' + L'a') : 0;
 		return true;
 	}
 	return RunShortcut(binding->action);
@@ -90,7 +99,7 @@ bool MainFrame::RunShortcut(ShortcutAction action)
 		auto* active = view ? view->getCharacter() : nullptr;
 		// A character with no file yet is skipped when a project is open (the
 		// project save still runs); without a project the error explains it.
-		if (active && (!active->getTopHA6Path().empty() || !ProjectManager::HasCurrentProject())) {
+		if (active && (!active->getTopHA6Path().empty() || active->isPatDocument() || !ProjectManager::HasCurrentProject())) {
 			saveCharacter(active);
 			did = true;
 		}
@@ -201,7 +210,36 @@ bool MainFrame::RunShortcut(ShortcutAction action)
 			EndPositionDrag(true);
 			return true;
 		}
+		if (m_uvDrag.active) {
+			EndUvDrag(true);
+			return true;
+		}
 		return false;
+
+	// View toggles (sosfiro F / L / H)
+	case ShortcutAction::toggleHideUi:
+		m_hideUi = !m_hideUi;
+		return true;
+	case ShortcutAction::toggleAxis:
+		m_showAxis = !m_showAxis;
+		return true;
+	case ShortcutAction::toggleBoxes:
+		m_showBoxes = !m_showBoxes;
+		return true;
+	case ShortcutAction::togglePartHighlight:
+		if (!view || !view->isPatEditor() || !view->getPartSetPane()) return false;
+		view->getPartSetPane()->UpdateHighligth(!view->getPartSetPane()->activeHighligth);
+		gSettings.patHighlight = view->getPartSetPane()->activeHighligth;
+		ImGui::MarkIniSettingsDirty();
+		return true;
+	case ShortcutAction::toggleTextureView:
+		if (!view || !view->isPatEditor()) return false;
+		TogglePatRenderMode(view, RenderMode::TEXTURE_VIEW);
+		return true;
+	case ShortcutAction::toggleUvView:
+		if (!view || !view->isPatEditor()) return false;
+		TogglePatRenderMode(view, RenderMode::UV_SETTING_VIEW);
+		return true;
 
 	case ShortcutAction::toggleOnionSkin:
 		if (!view || !view->getCharacter() || view->isPatEditor()) return false;
@@ -237,7 +275,8 @@ bool MainFrame::RunShortcut(ShortcutAction action)
 // Ctrl+arrows: move the selected layer of the current keyframe (AF offset X/Y).
 bool MainFrame::NudgeLayer(CharacterView* view, int dx, int dy)
 {
-	if (!view || view->isStageView() || view->isPatEditor()) return false;
+	if (!view || view->isStageView()) return false;
+	if (view->isPatEditor()) return PatNudge(view, dx, dy);   // PAT tab: the selected part (sosfiro Ctrl+arrows)
 	CharacterInstance* character = view->getCharacter();
 	if (!character) return false;
 	auto& st = view->getState();
@@ -275,6 +314,7 @@ bool MainFrame::PerformUndoRedo(CharacterView* view, bool redo)
 
 	// Close any viewport gesture first so it is a complete step.
 	if (m_boxDragCharacter) EndBoxDrag();
+	if (m_uvDrag.active) EndUvDrag(false);
 
 	auto& undo = active->undoManager;
 	const UndoManager::Entry* entry = redo ? undo.redo() : undo.undo();
@@ -675,6 +715,8 @@ void MainFrame::CancelViewportGestures()
 {
 	if (m_boxDragCharacter) EndBoxDrag();
 	if (m_posDrag.active) EndPositionDrag(true);
+	if (m_uvDrag.active) EndUvDrag(false);
+	shortcuts.setMouseDrag(false);
 }
 
 #endif /* UI_EDITOR_TOOLS_IMPL_H_GUARD */

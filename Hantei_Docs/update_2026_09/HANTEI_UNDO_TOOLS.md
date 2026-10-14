@@ -285,3 +285,78 @@ None of these files were changed:
 - **Pattern-list size changes** are represented in entries, but `FrameData::m_nsequences` is not updated by undo. Only load changes the size today.
 - **Other characters in the project** only commit on explicit transactions or the next undo/save. Edits only come from the active view, so this is theoretical.
 - **Remappable bindings:** `setChord` and `conflicts` exist, but there is no settings UI or persistence yet.
+
+## 10. PAT editor: undo channel, dirty state, backups and shortcuts (S2, 2026-10-14)
+
+### One mechanism for PAT and French-Bread parts
+
+`UndoManager` gained **channels** (`UndoChannel` in `src/undo_manager.h`). This came from stream S6 (feat/pacnyx-parity, `PartsUndoChannel` in `src/parts/parts_undo.{h,cpp}`); S2 takes those files unchanged so the two branches merge cleanly.
+
+- A channel snapshots extra character state as an immutable object. Unchanged pieces are shared between consecutive snapshots: one shared copy per part set, and the cut-out, shape and texture lists.
+- Each commit asks every active channel whether the live state still equals its shadow. A changed channel adds a `(before, after)` pair to the entry. Undo and redo restore through the channel.
+- `Entry::channels` sits next to `Entry::changes`. An entry can carry only channel deltas: the Edit menu then labels it "(parts)".
+
+Who uses it:
+
+| Character | Channel | Enabled when |
+|---|---|---|
+| RBO / GOF2 (parts saved inside the character file) | `CharacterInstance::partsUndo` (S6) | `parts.fbPartModel && frameData.isHan2()` |
+| PAT document (a PAT tab on a .pat, or File > New PAT) | `CharacterInstance::patDocumentUndo()` (S2), created by `makePatDocument()` | parts loaded |
+
+A PAT document's one-pattern placeholder holds view state only: the part set on screen and the test animation. `makePatDocument()` therefore attaches the undo manager to an **empty** pattern list (`m_patUndoDoc`). Only the parts channel records steps, and switching part sets, playing the animator or changing the render mode never dirties the tab. The two channels are never active on the same character.
+
+### Dirty state and saving
+
+- Gestures commit as for HA6 edits (`FinishPaneUndoFrame`), so the tab '*' follows `isClean()`.
+- Undoing back to the saved revision clears it.
+- Closing the last view of a modified PAT document opens the unsaved-changes prompt.
+- `MainFrame::saveCharacter` / `saveCharacterAs` route PAT documents to `savePatOf`. That covers Ctrl+S, the close prompt and Save all. `savePatOf` then:
+  1. backs up the old file;
+  2. saves atomically (`Parts::Save` builds the file in memory and calls `WriteFileAtomic`);
+  3. calls `savePATAs()`, which marks the document clean;
+  4. reloads the same .pat in every other tab that draws it (`reloadPatInOtherTabs`).
+- A PAT tab with unsaved edits of its own is not reloaded.
+- A New PAT with no path asks where to save.
+
+### Auto backup (`src/file_backup.{h,cpp}`)
+
+- `BackupBeforeSave(target, opts)` copies the file a save is about to overwrite to `<folder>/<name>.<YYYYMMDD-HHMMSS>-NN.bak`. It then deletes the oldest backups of that file beyond `keep`.
+- The default folder is `backup` next to the file. A relative folder is resolved from the file's folder.
+- Every editor save calls it: menu Save, Ctrl+S, the close prompt, Save all and Save As.
+- Settings live in the ini (`BackupHa6`, `BackupPat`, `BackupKeep`, `BackupFolder`), under Edit > Preferences > Auto backup.
+- A failed backup is reported and the save still happens.
+
+### Shortcut additions
+
+- `ShortcutBinding` has two new flags:
+  - `duringNumericInput`: fires while a numeric field is being typed in, never in a text field.
+  - `duringMouseDrag`: fires while a view drag runs. Only Esc has it.
+- `ShortcutInput` carries the input state to `resolve()`. The router's `setMouseDrag()` is set by `main.cpp` while a pan, box or UV drag is held, which blocks shortcuts until the drop (sosfiro parity).
+- New rows are appended after the original table, so existing `Key=<action>#<n>` overrides keep their rows.
+
+| Chord | Action | Reach |
+|---|---|---|
+| Q / E | Previous / next keyframe, also from a number field (#61) | editor tabs |
+| Up/Down, Left/Right (PAT tab) | Part set / part | editor tabs (`AdvancePattern` / `AdvanceFrame` branch) |
+| Ctrl(+Shift)+arrows (PAT tab) | Move the part 1 (10) px; in the UV view, the UV rectangle | PAT editor |
+| F | Hide / show the panels | editor tabs |
+| L (PAT) / G (character) | Axis lines | per context |
+| H | Hitboxes (character) / selected-part highlight (PAT) | per context |
+| T / U | Texture view / UV view | PAT editor |
+| Shift+P / Ctrl+P | PNG export, now also from a PAT tab | PAT editor |
+| Esc | Cancel the UV drag | PAT editor |
+
+Mouse buttons (#9) are set in Edit > Preferences > Mouse buttons and saved as `MouseButtons=pan,draw`. They apply to the main window and to detached windows.
+
+### Tests
+
+- `tests/pat_safety_test.cpp` (ctest `pat_safety`, plus `pat_safety_gamedata` with real UNI2, MBTL and MBAACC files) covers:
+  - backup naming and rotation;
+  - folder options;
+  - atomic save against a locked target;
+  - dirty state;
+  - undo and redo of part, UV, texture and structural edits;
+  - the empty-list baseline;
+  - DDS import and export for MBAACC (PGTX) and UNI;
+  - real-file round trips through edit, save and undo.
+- `tests/shortcut_router_test.cpp` covers Q/E in numeric fields, the PAT rows, the toggles, drag blocking and override slot stability.

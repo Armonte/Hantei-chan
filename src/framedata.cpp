@@ -443,6 +443,7 @@ void FrameData::mark_modified(int sequence_index)
 	dataVersion = NextFrameDataVersion();
 	if(sequence_index >= 0 && sequence_index < (int)m_sequences.size()) {
 		m_sequences[sequence_index].modified = true;
+		if(undoDirtyFeed.size() < kUndoDirtyFeedCap) undoDirtyFeed.push_back(sequence_index);
 	}
 }
 

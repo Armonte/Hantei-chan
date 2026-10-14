@@ -18,15 +18,17 @@ void PatShapePane::RegenerateShapesNames()
 {
     delete[] shapesDecoratedNames;
 
+    shapesNamesCount = -1;
     if(curInstance->parts && curInstance->parts->loaded)
     {
         int count = static_cast<int>(curInstance->parts->shapes.size());
-        shapesDecoratedNames = new std::string[count];
+        shapesDecoratedNames = new std::string[count > 0 ? count : 1];
 
         for(int i = 0; i < count; i++)
         {
             shapesDecoratedNames[i] = curInstance->parts->GetShapesDecorateName(i);
         }
+        shapesNamesCount = count;
     }
     else
         shapesDecoratedNames = nullptr;
@@ -52,13 +54,15 @@ void PatShapePane::Draw()
 {
     if(isVisible) {
         ImGui::Begin(LBL("Shape Pane"), 0);
-        auto seq = curInstance->framedata->get_sequence(curInstance->currState->pattern);
-        auto pat = curInstance->parts;
         if(curInstance->parts->loaded) {
+            if(shapesNamesCount != (int)curInstance->parts->shapes.size() || !shapesDecoratedNames)
+                RegenerateShapesNames();
+            int& sel = curInstance->currState->partShape;
+            const int n = (int)curInstance->parts->shapes.size();
+            if(sel < 0 || sel >= n) sel = 0;
             DrawShape();
-            ImGui::End();
         }
-        ImGui::End();
+        ImGui::End();   // one End per Begin
 
         if (!openpopupWithId.empty()) {
             ImGui::OpenPopup(openpopupWithId.c_str());
@@ -77,7 +81,11 @@ void PatShapePane::DrawPopUp() {
         ImGui::Separator();
 
         if (ImGui::Button(LBL("OK"), ImVec2(120, 40))) {
-            curInstance->parts->shapes[curInstance->currState->partShape] = {};
+            if (auto* sh = curInstance->parts->GetShape(curInstance->currState->partShape)) {
+                const int id = sh->id;
+                *sh = {};
+                sh->id = id;
+            }
             RegenerateShapesNames();
             ImGui::CloseCurrentPopup();
         }
@@ -139,11 +147,12 @@ void PatShapePane::DrawShape()
                 }
                 ImGui::Separator();
 
-                if (ImGui::BeginCombo(LBL("ShapeType"), shapeList[(int) shape->type - 1],
+                const int typeIndex = (int) shape->type - 1;
+                if (ImGui::BeginCombo(LBL("ShapeType"), typeIndex >= 0 && typeIndex < 6 ? shapeList[typeIndex] : "?",
                                       ImGuiComboFlags_HeightLargest)) {
 
                     for (int n = 0; n < 6; n++) {
-                        const bool is_selected = (curInstance->currState->partShape == n);
+                        const bool is_selected = (typeIndex == n);
                         if (ImGui::Selectable(shapeList[n], is_selected)) {
                             shape->type = (ShapeType) (n + 1);
                         }

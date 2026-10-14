@@ -7,6 +7,8 @@
 #include "parts/parts.h"
 #include "undo_manager.h"
 #include "mv_script.h"
+#include "parts/parts_undo.h"
+#include <memory>
 #include <string>
 #include <vector>
 #include <functional>
@@ -107,6 +109,17 @@ public:
 	// Per-character effect (effect.ha6/effect.pat loaded from character's folder)
 	std::unique_ptr<CharacterInstance> effectCharacter;
 
+	// PAT document (a PAT editor tab opened on a .pat file, or File > New PAT): the character only carries the parts
+	// model. Its one-frame pattern list is view state (the part set on screen, the test animation), so the undo manager
+	// tracks the parts model instead (parts/parts_undo.h): PAT edits are undoable, set the tab '*' and prompt on close,
+	// and Save writes the .pat. French-Bread characters keep their parts in the character file and use the
+	// character's own parts channel instead.
+	bool isPatDocument() const { return m_patDocument; }
+	void makePatDocument();
+	PartsUndoChannel* patDocumentUndo() const { return m_patDocUndo.get(); }
+	// New PAT: an empty parts model in the UNI / MBTL layout or the MBAACC one (no VEST shapes, MBAACC tags). No file yet.
+	void newPatDocument(bool mbaaccFormat);
+
 private:
 	// Load sibling chrXXX_mv_*.txt move scripts and register for spawn viz
 	void loadMvScripts(const std::string& txtPath);
@@ -120,6 +133,9 @@ private:
 	bool m_isModified = false;
 	MvScriptIndex m_mvScripts;     // MBTL move-script spawns (may be empty)
 	std::string m_notesError;
+	bool m_patDocument = false;
+	std::vector<Sequence> m_patUndoDoc;              // empty pattern list the undo manager diffs in a PAT document
+	std::unique_ptr<PartsUndoChannel> m_patDocUndo;  // declared after undoManager: destroyed first
 };
 
 #endif /* CHARACTER_INSTANCE_H_GUARD */

@@ -4,23 +4,47 @@
 #include "../main_frame.h"
 #include <imgui.h>
 #include <imgui_stdlib.h>
+#include <imgui_internal.h>
 #include <cmath>
 
 #include "../copy_manager.h"
 #include "../imgui_utils.h"
 #include "../i18n.h"
+#include "../ini.h"
 
 PatPartSetPane::PatPartSetPane(Render* render, StateReference *curInstance) : DrawWindow(render, curInstance),
                                                                     partSetDecoratedNames(nullptr),
                                                                     partPropsDecoratedNames(nullptr)
 {
+    // Highlight on/off and its opacity are preferences (saved in the ini), not per tab.
+    activeHighligth = gSettings.patHighlight;
+    highlightOpacity = gSettings.patHighlightOpacity;
+}
 
+void PatPartSetPane::SaveHighlightSettings()
+{
+    gSettings.patHighlight = activeHighligth;
+    gSettings.patHighlightOpacity = highlightOpacity;
+    ImGui::MarkIniSettingsDirty();
+}
+
+void PatPartSetPane::SyncNames()
+{
+    if(!curInstance->parts || !curInstance->parts->loaded) return;
+    const int sets = (int)curInstance->parts->partSets.size();
+    if(partSetNamesCount != sets || !partSetDecoratedNames)
+        RegeneratePartSetNames();
+    const auto* ps = curInstance->parts->GetPartSet(curInstance->currState->partSet);
+    const int props = ps ? (int)ps->groups.size() : 0;
+    if(partPropNamesSet != curInstance->currState->partSet || partPropNamesCount != props)
+        RegeneratePartPropNames();
 }
 
 void PatPartSetPane::RegeneratePartSetNames()
 {
     delete[] partSetDecoratedNames;
 
+    partSetNamesCount = -1;
     if(curInstance->parts && curInstance->parts->loaded)
     {
         int count = static_cast<int>(curInstance->parts->partSets.size());
@@ -30,6 +54,7 @@ void PatPartSetPane::RegeneratePartSetNames()
         {
             partSetDecoratedNames[i] = curInstance->parts->GetPartSetDecorateName(i);
         }
+        partSetNamesCount = count;
     }
     else
         partSetDecoratedNames = nullptr;
@@ -39,15 +64,21 @@ void PatPartSetPane::RegeneratePartPropNames()
 {
     delete[] partPropsDecoratedNames;
 
-    if(curInstance->parts && curInstance->parts->loaded)
+    partPropNamesCount = -1;
+    partPropNamesSet = -1;
+    // The selected part set can be stale after undo / reload / a deleted part set: never index past the list.
+    auto* partSet = curInstance->parts && curInstance->parts->loaded ? curInstance->parts->GetPartSet(curInstance->currState->partSet) : nullptr;
+    if(partSet)
     {
-        int count = static_cast<int>(curInstance->parts->partSets[curInstance->currState->partSet].groups.size());
-        partPropsDecoratedNames = new std::string[count];
+        int count = static_cast<int>(partSet->groups.size());
+        partPropsDecoratedNames = new std::string[count > 0 ? count : 1];
 
         for(int i = 0; i < count; i++)
         {
             partPropsDecoratedNames[i] = curInstance->parts->GetPartPropsDecorateName(curInstance->currState->partSet, i);
         }
+        partPropNamesCount = count;
+        partPropNamesSet = curInstance->currState->partSet;
     }
     else
         partPropsDecoratedNames = nullptr;
@@ -56,13 +87,17 @@ void PatPartSetPane::RegeneratePartPropNames()
 void PatPartSetPane::UpdateRenderFrame(int effectId, bool dontChangeProp)
 {
     // Bounds check effectId
-    if (effectId < 0 || effectId >= curInstance->parts->partSets.size()) {
-        printf("[UpdateRenderFrame] ERROR: Invalid effectId %d (partSets.size=%zu)\n", 
-            effectId, curInstance->parts->partSets.size());
+    if (effectId < 0 || effectId >= (int)curInstance->parts->partSets.size()) {
         return;
     }
     
+    const bool changed = curInstance->currState->partSet != effectId;
     curInstance->currState->partSet = effectId;
+    // A different part set has different parts: the selected part resets in EVERY render mode (sosfiro reset it in
+    // the default view only, so UV / texture mode kept an index past the new set's list: TODO "UV render + part set
+    // change crashes").
+    if(changed && !dontChangeProp)
+        curInstance->currState->partProp = 0;
     if(curInstance->currState->animating) return;
 
     auto& frame = curInstance->framedata->get_sequence(0)->frames.at(0);
@@ -78,21 +113,18 @@ void PatPartSetPane::UpdateRenderFrame(int effectId, bool dontChangeProp)
     else
     {
         frame.AF.layers[0].spriteId = effectId;
-        if(!dontChangeProp)
-        {
-            curInstance->currState->partProp = 0;
-        }
     }
-    curInstance->parts->partHighlight = activeHighligth ?
-        curInstance->currState->partProp : -1;
-    curInstance->parts->SetHighlightOpacity(highlightOpacity);
+    RegeneratePartPropNames();
+    UpdateHighligth(activeHighligth);
 }
 
+// The renderer compares the highlight with each part's propId (Parts::Draw): use the selected part's propId, not its
+// list index (they differ after Insert Prop / a file with gaps: TODO "adding a prop breaks the highlight id").
 void PatPartSetPane::UpdateHighligth(bool state)
 {
     activeHighligth = state;
-    curInstance->parts->partHighlight = activeHighligth ?
-            curInstance->currState->partProp : -1;
+    const auto* prop = curInstance->parts->GetPartProp(curInstance->currState->partSet, curInstance->currState->partProp);
+    curInstance->parts->partHighlight = activeHighligth && prop ? prop->propId : -1;
     curInstance->parts->SetHighlightOpacity(highlightOpacity);
 }
 
@@ -117,15 +149,13 @@ void PatPartSetPane::Draw()
 {
     if(isVisible) {
         ImGui::Begin(LBL("PartSet Pane"), 0);
-        auto seq = curInstance->framedata->get_sequence(curInstance->currState->pattern);
-        auto pat = curInstance->parts;
         if(curInstance->parts->loaded) {
+            SyncNames();
             DrawPartSet();
-            ImGui::End();
         } else {
             ImGui::Text(TXT("Load PAT file first"));
         }
-        ImGui::End();
+        ImGui::End();   // one End per Begin (the old code called it twice when a PAT was loaded)
 
         if (!openpopupWithId.empty()) {
             ImGui::OpenPopup(openpopupWithId.c_str());
@@ -143,8 +173,15 @@ void PatPartSetPane::DrawPopUp() {
         ImGui::Separator();
 
         if (ImGui::Button(LBL("OK"), ImVec2(120, 40))) {
-            curInstance->parts->partSets[curInstance->currState->partSet] = {};
+            if (auto* ps = curInstance->parts->GetPartSet(curInstance->currState->partSet)) {
+                const int id = ps->partId;
+                *ps = {};
+                ps->partId = id;   // the slot keeps its id (the file is indexed by it)
+            }
+            curInstance->currState->partProp = 0;
             RegeneratePartSetNames();
+            RegeneratePartPropNames();
+            UpdateHighligth(activeHighligth);
             ImGui::CloseCurrentPopup();
         }
         ImGui::SameLine();
@@ -156,32 +193,39 @@ void PatPartSetPane::DrawPopUp() {
 
     if (ImGui::BeginPopupModal(LBL("PartProps Delete")))
     {
-        auto partSet = &curInstance->parts->partSets[curInstance->currState->partSet];
+        auto partSet = curInstance->parts->GetPartSet(curInstance->currState->partSet);
         ImGui::Text(TXT("Are you sure you want to delete this Part Property?"));
 
         ImGui::Separator();
 
+        const int sel = curInstance->currState->partProp;
+        const bool valid = partSet && sel >= 0 && sel < (int)partSet->groups.size();
         if (ImGui::Button(LBL("Remove from list"), ImVec2(120, 40))) {
-            auto props = &partSet->groups;
-            props->erase(props->begin()+curInstance->currState->partProp);
-            for(int i = 0; i < props->size(); ++i) {
-                auto prop = &props->at(i);
-                if(prop->propId >= curInstance->currState->partProp) {
-                    prop->propId = i;
+            if (valid) {
+                auto props = &partSet->groups;
+                props->erase(props->begin()+sel);
+                for(int i = 0; i < (int)props->size(); ++i) {
+                    auto prop = &props->at(i);
+                    if(prop->propId >= sel) {
+                        prop->propId = i;
+                    }
                 }
-            }
-            if(!props->empty()) {
+                curInstance->currState->partProp = 0;
                 RegeneratePartPropNames();
                 RegeneratePartSetNames();
-                curInstance->currState->partProp = 0;
+                UpdateHighligth(activeHighligth);
             }
             ImGui::CloseCurrentPopup();
         }
         ImGui::SameLine();
         if (ImGui::Button(LBL("Remove data only"), ImVec2(120, 40))) {
-            partSet->groups[curInstance->currState->partProp] = {};
-            RegeneratePartPropNames();
-            RegeneratePartSetNames();
+            if (valid) {
+                const int id = partSet->groups[sel].propId;
+                partSet->groups[sel] = {};
+                partSet->groups[sel].propId = id;
+                RegeneratePartPropNames();
+                RegeneratePartSetNames();
+            }
             ImGui::CloseCurrentPopup();
         }
         ImGui::SameLine();
@@ -200,30 +244,23 @@ void PatPartSetPane::DrawPartSet()
             auto item = &curInstance->parts->partSets.emplace_back();
             item->partId = curInstance->parts->partSets.size() - 1;
             RegeneratePartSetNames();
-            curInstance->currState->partSet = item->partId;
+            // Show the new (empty) set and refresh the part list and highlight with it (TODO "render not reset after
+            // adding a part set", "highlight applied to every prop after adding a part set").
+            UpdateRenderFrame(item->partId);
         }
         ImGui::SameLine();
         if(nPartSet > 0 && ImGui::Button(LBL("Delete Part Set"))){
             openpopupWithId = LBL("PartSet Delete");
         }
         if(nPartSet > 0) {
-            // Safety check partSetDecoratedNames FIRST
-            if (!partSetDecoratedNames) {
-                printf("[PatPartSetPane] ERROR: partSetDecoratedNames is null, regenerating\n");
-                RegeneratePartSetNames();
-                if (!partSetDecoratedNames) {
-                    printf("[PatPartSetPane] FATAL: Failed to generate partSetDecoratedNames\n");
-                    return;  // Can't proceed without names
-                }
-            }
-            
             // Bounds check currentPartSet
-            if (curInstance->currState->partSet < 0 || curInstance->currState->partSet >= nPartSet) {
-                printf("[PatPartSetPane] WARNING: partSet %d out of range [0, %d), resetting to 0\n",
-                    curInstance->currState->partSet, (int)nPartSet);
+            if (curInstance->currState->partSet < 0 || curInstance->currState->partSet >= (int)nPartSet) {
                 curInstance->currState->partSet = 0;
                 UpdateRenderFrame(0);
             }
+            SyncNames();
+            if (!partSetDecoratedNames || partSetNamesCount != (int)curInstance->parts->partSets.size())
+                return;  // Can't proceed without names
             
             if (ImGui::BeginCombo(LBL("Part Set"), partSetDecoratedNames[curInstance->currState->partSet].c_str(),
                                   ImGuiComboFlags_HeightLargest)) {
@@ -232,9 +269,7 @@ void PatPartSetPane::DrawPartSet()
                 for (int n = 0; n < count; n++) {
                     const bool is_selected = (curInstance->currState->partSet == n);
                     if (ImGui::Selectable(partSetDecoratedNames[n].c_str(), is_selected)) {
-                        printf("[PatPartSetPane] Switching to PartSet %d\n", n);
                         UpdateRenderFrame(n);
-                        RegeneratePartPropNames();
                     }
 
                     // Set the initial focus when opening the combo (scrolling + keyboard navigation focus)
@@ -251,17 +286,19 @@ void PatPartSetPane::DrawPartSet()
                 }
                 if(ImGui::Checkbox(LBL("Highlight selected Part Prop"), &activeHighligth))
                 {
-                    curInstance->parts->partHighlight = activeHighligth ?
-                        curInstance->currState->partProp : -1;
-                    curInstance->parts->SetHighlightOpacity(highlightOpacity);
+                    UpdateHighligth(activeHighligth);
+                    SaveHighlightSettings();
                 }
+                if(ImGui::IsItemHovered())
+                    ImGui::SetTooltip("%s", TXT("H toggles it in the view. The other parts are drawn at the opacity on the right."));
                 if(activeHighligth)
                 {
                     ImGui::SameLine();
                     ImGui::SetNextItemWidth(width);
-                    if(ImGui::DragFloat(LBL("Opacity"), &highlightOpacity, 0.01))
+                    if(ImGui::DragFloat(LBL("Opacity"), &highlightOpacity, 0.01f, 0.f, 1.f))
                     {
                         curInstance->parts->SetHighlightOpacity(highlightOpacity);
+                        SaveHighlightSettings();
                     }
                 }
                 ImGui::NewLine();
@@ -272,8 +309,11 @@ void PatPartSetPane::DrawPartSet()
                 ImGui::SameLine();
                 if(ImGui::Button(LBL("Paste Part Set"))){
                     CopyManager::copiedParts->partSet.CopyPartSetTo(partSet);
+                    if (curInstance->currState->partProp >= (int)partSet->groups.size())
+                        curInstance->currState->partProp = 0;
                     RegeneratePartPropNames();
                     RegeneratePartSetNames();
+                    UpdateHighligth(activeHighligth);
                 }
                 DrawPartProperty(partSet);
             }
@@ -290,9 +330,10 @@ void PatPartSetPane::DrawPartProperty(PartSet<>* partSet)
     if(ImGui::Button(LBL("Add Prop"))){
         auto item = &partSet->groups.emplace_back();
         item->propId = partSet->groups.size() - 1;
+        curInstance->currState->partProp = (int)partSet->groups.size() - 1;
         RegeneratePartPropNames();
         RegeneratePartSetNames();
-        curInstance->currState->partProp = item->propId;
+        UpdateHighligth(activeHighligth);
     }
     ImGui::SameLine();
     if(nparts >= 0 && ImGui::Button(LBL("Insert Prop"))){
@@ -308,13 +349,17 @@ void PatPartSetPane::DrawPartProperty(PartSet<>* partSet)
         item->propId = curInstance->currState->partProp;
         RegeneratePartPropNames();
         RegeneratePartSetNames();
-        curInstance->currState->partProp = item->propId;
+        UpdateHighligth(activeHighligth);
     }
     ImGui::SameLine();
     if(nparts >= 0 && ImGui::Button(LBL("Delete Prop"))){
         openpopupWithId = LBL("PartProps Delete");
     }
-    if (nparts >= 0)
+    if (curInstance->currState->partProp < 0 || curInstance->currState->partProp > nparts)
+        curInstance->currState->partProp = 0;
+    if (nparts >= 0 && (!partPropsDecoratedNames || partPropNamesCount != nparts + 1))
+        RegeneratePartPropNames();
+    if (nparts >= 0 && partPropsDecoratedNames)
     {
         if (ImGui::BeginCombo(LBL("Parts"),
                               partPropsDecoratedNames[curInstance->currState->partProp].c_str(),
@@ -325,8 +370,7 @@ void PatPartSetPane::DrawPartProperty(PartSet<>* partSet)
                 const bool is_selected = (curInstance->currState->partProp == n);
                 if (ImGui::Selectable(partPropsDecoratedNames[n].c_str(), is_selected)) {
                     curInstance->currState->partProp = n;
-                    curInstance->parts->partHighlight = activeHighligth ?
-                        curInstance->currState->partProp : -1;
+                    UpdateHighligth(activeHighligth);
                 }
 
                 // Set the initial focus when opening the combo (scrolling + keyboard navigation focus)
@@ -344,9 +388,13 @@ void PatPartSetPane::DrawPartProperty(PartSet<>* partSet)
         }
         ImGui::SameLine();
         if(ImGui::Button(LBL("Paste Part Prop"))){
+            // The pasted prop keeps this slot's id (a copied id would make two parts answer to one highlight).
+            const int keepId = props->propId;
             PartSet<>::CopyPropertyTo(props, &CopyManager::copiedParts->partProperty);
+            props->propId = keepId;
             RegeneratePartPropNames();
             RegeneratePartSetNames();
+            UpdateHighligth(activeHighligth);
         }
         if(ImGui::Button(LBL("Load Reference Data"))){
             auto ppid = props->ppId;

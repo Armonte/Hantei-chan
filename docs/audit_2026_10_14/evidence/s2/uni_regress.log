@@ -1,0 +1,45 @@
+== 1. UNI2/MBTL HA6
+HA6 round trip (): rc0=262
+HA6 round trip (--fresh): rc7=261 rc5=1
+== 2. PAT
+PAT round trip (--bytes): rc0=180
+PAT round trip (--fresh): rc5=1 rc0=179
+rc=5 mbtl/BattleRes/talk/st_pat/chr012/chr012_ed00.pat :: 	Unknown texture type in PGT2       partSets=31 cutOuts=39 shapes=7 gfxMeta=5 
+FAIL: PAT fresh
+MBAACC .pat byte round trip: 19 files, 0 differ
+== 3. PAL
+DIFF /mnt/c/dev/hantei-chan/gamedata/mbtl/data/_csel/chr020.pal: save failed
+PAL round trip: 272 files, 1 differ
+  MBAACC palettes=64: 80
+  UNI/MBTL palettes=130: 191
+  save failed: 1
+FAIL: PAL
+== 4. #71 saved edits (only the edited pattern changes)
+  chr000_0.txt -> chr000.ha6, edit p100: 1 pattern(s) differ: 100
+  chr027_0.txt -> chr027.ha6, edit p128: 1 pattern(s) differ: 128
+  chr000_0.txt -> chr000.ha6, edit p0: 1 pattern(s) differ: 0
+  chr001_7.txt -> chr001_7.ha6, edit p17: 1 pattern(s) differ: 17
+  chr016_0.txt -> chr016.ha6, edit p6: 1 pattern(s) differ: 6
+== 5. HA6 stacks and MBAACC/UNIB round trips
+MBAACC single round trip: rc0=305
+MBAACC stacked save == own-file save: ok=117 bad=0 (inherited patterns kept out: 36362)
+UNI single round trip: rc0=61
+UNI stacked save == own-file save: ok=16 bad=0 (inherited patterns kept out: 475)
+UNI2 stacked save == own-file save: ok=29 bad=0 (inherited patterns kept out: 230)
+MBTL stacked save == own-file save: ok=60 bad=0 (inherited patterns kept out: 9884)
+HA6_REGRESS_PASS
+== 6. MBAC, stages, command files, unit tests
+OK   WARC.DAT                16789832 bytes  171 patterns  3142 frames
+OK   WLEN.DAT                33698812 bytes  182 patterns  2959 frames
+roundtrip: 50/50 byte-identical
+  bg57.dat: SIM seed=1234 ticks=600 live[min=21 max=27] hash=a3d18f38d060847c
+  bg58.dat: SIM seed=1234 ticks=600 live[min=20 max=25] hash=ffc4bb7433b94155
+  bg59.dat: SIM seed=1234 ticks=600 live[min=75 max=76] hash=e86a28ab2a2e3712
+roundtrip: 56 ok, 0 failed | sim(600 ticks): 56 ok, 0 failed | determinism/rng failures: 0 | edit failures: 0
+unit tests done
+UNI_REGRESS_FAIL
+
+# PAL rerun alone afterwards (the chr020 'save failed' was transient: ctest ran in parallel):
+PAL round trip: 272 files, 0 differ
+  MBAACC palettes=64: 80
+  UNI/MBTL palettes=130: 192

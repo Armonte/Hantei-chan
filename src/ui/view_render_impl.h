@@ -472,13 +472,18 @@ void MainFrame::DrawMainViewScene(CharacterView* view, int width, int height)
 	// A loaded stage only renders in its own stage tab; for character tabs
 	// the background renderer is disabled and these passes are no-ops.
 	bgRenderer.Render(bgCamera, width, height, bg::Pass::Back);
-	DrawCharacterScene(view, pass, SceneOptions{});
+	SceneOptions opt;
+	opt.grid = m_showAxis;     // L (PAT tab) / G
+	opt.boxes = m_showBoxes;   // H (character tab)
+	DrawCharacterScene(view, pass, opt);
 	bgRenderer.Render(bgCamera, width, height, bg::Pass::Front);
 
+	const ImVec2 screenOrigin(ImGui::GetMainViewport()->Pos.x + pass.originX, ImGui::GetMainViewport()->Pos.y + pass.originY);
 	if (view->getCharacter())
 		DrawPresetEffectMarkers(view->getState(), view->getCharacter(), ImGui::GetBackgroundDrawList(),
-			ImVec2(ImGui::GetMainViewport()->Pos.x + pass.originX, ImGui::GetMainViewport()->Pos.y + pass.originY),
-			pass.zoom);
+			screenOrigin, pass.zoom);
+	if (view->isPatEditor())
+		DrawPatSelectionOutline(view, ImGui::GetBackgroundDrawList(), screenOrigin, pass.zoom);
 }
 
 void MainFrame::DrawBack()

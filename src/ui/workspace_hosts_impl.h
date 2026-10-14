@@ -362,6 +362,9 @@ void MainFrame::DrawViewPanes(CharacterView* view, const std::string& ns)
 	if (view->getRightPane()) view->getRightPane()->setWindowNamespace(ns);
 	if (view->getBoxPane()) view->getBoxPane()->setWindowNamespace(ns);
 
+	if (view->isPatEditor()) SyncPatView(view);
+	// F hides the editor panels of the main window (sosfiro); detached windows keep theirs.
+	if (m_hideUi && ns.empty()) return;
 	if (!view->isPatEditor()) {
 		if (view->getMainPane() && view->getMainPane()->isVisible) view->getMainPane()->Draw();
 		if (view->getRightPane() && view->getRightPane()->isVisible) view->getRightPane()->Draw();
@@ -456,6 +459,9 @@ void MainFrame::DrawDetachedViewSurface(uint64_t hostId, CharacterView* view, Im
 	const ImGuiIO& io = ImGui::GetIO();
 	auto& cam = view->camera();
 	const ImVec2 origin(mn.x + cam.panX + w / 2.f, mn.y + cam.panY + h / 2.f);
+	// A pan / box / UV drag on this surface blocks shortcuts like one in the main view (main.cpp).
+	if (ImGui::IsItemActive() || (m_uvDrag.active && m_uvDrag.viewId == view->getId()) || m_hostBoxDragView == view->getId())
+		m_detachedDragThisFrame = true;
 
 	if (ImGui::IsItemHovered() && io.MouseWheel != 0.f) {
 		// Zoom around the cursor: keep the world point under it fixed.
@@ -466,25 +472,37 @@ void MainFrame::DrawDetachedViewSurface(uint64_t hostId, CharacterView* view, Im
 		cam.panX = io.MousePos.x - wx * z1 - mn.x - w / 2.f;
 		cam.panY = io.MousePos.y - wy * z1 - mn.y - h / 2.f;
 	}
-	if (ImGui::IsItemActive() && ImGui::IsMouseDragging(ImGuiMouseButton_Left, 0.f)) {
+	// Mouse buttons (issue #9, Preferences > Mouse buttons): ImGui numbers them like the setting (0 L, 1 R, 2 M).
+	const int panButton = gSettings.mousePanButton, drawButton = gSettings.mouseDrawButton;
+	if (ImGui::IsItemActive() && ImGui::IsMouseDragging(panButton, 0.f)) {
 		cam.panX += io.MouseDelta.x;
 		cam.panY += io.MouseDelta.y;
 	}
-	if (ImGui::IsItemActive() && ImGui::IsMouseDragging(ImGuiMouseButton_Middle, 0.f)) {
+	if (drawButton != ImGuiMouseButton_Middle && panButton != ImGuiMouseButton_Middle &&
+	    ImGui::IsItemActive() && ImGui::IsMouseDragging(ImGuiMouseButton_Middle, 0.f)) {
 		cam.panX += io.MouseDelta.x;
 		cam.panY += io.MouseDelta.y;
 	}
-	// Right drag draws the selected box, one undo step (as in the main window).
+	// Draw-button drag draws the selected box, one undo step (as in the main window); in a PAT tab's UV view it edits
+	// the cut-out's UV rectangle instead.
 	CharacterInstance* character = view->getCharacter();
 	BoxPane* boxPane = view->getBoxPane();
-	if (character && boxPane) {
-		if (ImGui::IsItemClicked(ImGuiMouseButton_Right)) {
+	if (character && view->isPatEditor()) {
+		if (ImGui::IsItemClicked(drawButton)) {
+			BeginUvDrag(view, (io.MousePos.x - origin.x) / cam.zoom, (io.MousePos.y - origin.y) / cam.zoom);
+		} else if (m_uvDrag.active && m_uvDrag.viewId == view->getId() && ImGui::IsMouseDown(drawButton)) {
+			if (io.MouseDelta.x != 0.f || io.MouseDelta.y != 0.f) UvDragBy(io.MouseDelta.x / cam.zoom, io.MouseDelta.y / cam.zoom);
+		} else if (m_uvDrag.active && m_uvDrag.viewId == view->getId()) {
+			EndUvDrag(false);
+		}
+	} else if (character && boxPane) {
+		if (ImGui::IsItemClicked(drawButton)) {
 			if (m_boxDragCharacter) EndBoxDrag();
 			character->undoManager.beginTransaction(TXT("Draw box"));
 			m_boxDragCharacter = character;
 			m_hostBoxDragView = view->getId();
 			boxPane->BoxStart((int)((io.MousePos.x - origin.x) / cam.zoom), (int)((io.MousePos.y - origin.y) / cam.zoom));
-		} else if (m_hostBoxDragView == view->getId() && ImGui::IsMouseDown(ImGuiMouseButton_Right)) {
+		} else if (m_hostBoxDragView == view->getId() && ImGui::IsMouseDown(drawButton)) {
 			if (io.MouseDelta.x != 0.f || io.MouseDelta.y != 0.f)
 				boxPane->BoxDragWorld(io.MouseDelta.x / cam.zoom, io.MouseDelta.y / cam.zoom);
 		} else if (m_hostBoxDragView == view->getId()) {
@@ -542,6 +560,8 @@ void MainFrame::DrawDetachedHostToolbar(HostWindow& hw, CharacterView* view)
 void MainFrame::DrawDetachedHosts()
 {
 	m_focusedHostId = WorkspaceSession::MainHost;
+	m_detachedDragThisFrame = false;
+	struct DragSync { MainFrame* mf; ~DragSync() { mf->SetDetachedMouseDrag(mf->m_detachedDragThisFrame); } } dragSync{this};
 	std::vector<uint64_t> ids;
 	for (const auto& entry : m_hosts) ids.push_back(entry.first);
 
@@ -815,7 +835,7 @@ static bool DetachedWindowKeyHook(HWND, UINT msg, WPARAM wParam, LPARAM lParam)
 	if (msg == WM_CHAR) {
 		// Same rule as the main WndProc: drop the character of a key that
 		// already acted as a shortcut while a text field had focus.
-		if (MainFrame::s_swallowChar && (wchar_t)wParam == MainFrame::s_swallowChar) {
+		if (MainFrame::s_swallowChar && (wchar_t)towlower((wint_t)wParam) == MainFrame::s_swallowChar) {
 			MainFrame::s_swallowChar = 0;
 			return true;
 		}

@@ -71,7 +71,7 @@ ShortcutRegistry::ShortcutRegistry()
 		{A::stepTickBackward, "Step one tick back",           {'J', shortcutShift}, R::focusedContext, C::characterView, false, true},
 		{A::stepTickForward,  "Step one tick forward",        {'L', shortcutShift}, R::focusedContext, C::characterView, false, true},
 
-		{A::cancelGesture,    "Cancel drag",                  {vkEscape, 0},        R::focusedContext, C::characterView, false, false},
+		{A::cancelGesture,    "Cancel drag",                  {vkEscape, 0},        R::focusedContext, C::characterView, false, false, false, true},
 
 		{A::toggleOnionSkin,  "Toggle onion skin",            {'O', 0},             R::focusedContext, C::characterView, false, false},
 		// P alone toggles the spawn preview (issue #61), so the quick frame
@@ -81,6 +81,32 @@ ShortcutRegistry::ShortcutRegistry()
 		{A::detachView,       "Move tab to a new window",     {'D', ctrlShift},     R::editorViews,    C::none,           false, false},
 		{A::previousStage,    "Previous stage",               {vkPrior, 0},         R::focusedContext, C::stageView,      false, false},
 		{A::nextStage,        "Next stage",                   {vkNext, 0},          R::focusedContext, C::stageView,      false, false},
+
+		// Rows added after the original table (an action's override slot = its row order, so existing
+		// "Key=<action>#<n>" settings keep pointing at the same rows).
+		// Q / E step keyframes like Num/ / Num* (issue #61), also while a NUMBER is being typed (never in a name field).
+		{A::previousKeyframe, "Previous keyframe",            {'Q', 0},             R::editorViews,    C::none,           false, true, true},
+		{A::nextKeyframe,     "Next keyframe",                {'E', 0},             R::editorViews,    C::none,           false, true, true},
+		// PAT tab: Up/Down = part set, Left/Right/Q/E = part (the navigation rows above), Ctrl+arrows move the part.
+		{A::nudgeLayerLeft,   "Move part left 1px",           {vkLeft, ctrl},       R::focusedContext, C::patEditor,      false, true},
+		{A::nudgeLayerRight,  "Move part right 1px",          {vkRight, ctrl},      R::focusedContext, C::patEditor,      false, true},
+		{A::nudgeLayerUp,     "Move part up 1px",             {vkUp, ctrl},         R::focusedContext, C::patEditor,      false, true},
+		{A::nudgeLayerDown,   "Move part down 1px",           {vkDown, ctrl},       R::focusedContext, C::patEditor,      false, true},
+		{A::nudgeLayerLeftFast,  "Move part left 10px",       {vkLeft, ctrlShift},  R::focusedContext, C::patEditor,      false, true},
+		{A::nudgeLayerRightFast, "Move part right 10px",      {vkRight, ctrlShift}, R::focusedContext, C::patEditor,      false, true},
+		{A::nudgeLayerUpFast,    "Move part up 10px",         {vkUp, ctrlShift},    R::focusedContext, C::patEditor,      false, true},
+		{A::nudgeLayerDownFast,  "Move part down 10px",       {vkDown, ctrlShift},  R::focusedContext, C::patEditor,      false, true},
+		{A::cancelGesture,    "Cancel drag",                  {vkEscape, 0},        R::focusedContext, C::patEditor,      false, false, false, true},
+		{A::exportFramePng,   "Export current frame (PNG)",   {'P', shortcutShift}, R::focusedContext, C::patEditor,      false, false},
+		{A::exportSequencePng,"Export pattern (PNG sequence)",{'P', ctrl},          R::focusedContext, C::patEditor,      false, false},
+		// View toggles (sosfiro F / L / H; L is Play forward in a character tab, so the axis is G there)
+		{A::toggleHideUi,     "Hide / show the panels",       {'F', 0},             R::editorViews,    C::none,           false, false},
+		{A::toggleAxis,       "Show / hide the axis lines",   {'L', 0},             R::focusedContext, C::patEditor,      false, false},
+		{A::toggleAxis,       "Show / hide the axis lines",   {'G', 0},             R::focusedContext, C::characterView, false, false},
+		{A::toggleBoxes,      "Show / hide the hitboxes",     {'H', 0},             R::focusedContext, C::characterView, false, false},
+		{A::togglePartHighlight, "Highlight the selected part", {'H', 0},           R::focusedContext, C::patEditor,      false, false},
+		{A::toggleTextureView,"Texture view",                 {'T', 0},             R::focusedContext, C::patEditor,      false, false},
+		{A::toggleUvView,     "UV view",                      {'U', 0},             R::focusedContext, C::patEditor,      false, false},
 	}
 {
 	for (const auto& b : m_bindings) m_defaults.push_back(b.chord);
@@ -119,12 +145,21 @@ bool ShortcutRegistry::reaches(const ShortcutBinding& b, ShortcutContext focused
 const ShortcutBinding* ShortcutRegistry::resolve(ShortcutChord chord, ShortcutContext focused,
                                                  bool textInputActive, bool isRepeat) const
 {
+	ShortcutInput in;
+	in.textInput = textInputActive;
+	in.repeat = isRepeat;
+	return resolve(chord, focused, in);
+}
+
+const ShortcutBinding* ShortcutRegistry::resolve(ShortcutChord chord, ShortcutContext focused, const ShortcutInput& in) const
+{
 	if (chord.key == 0) return nullptr;
 	for (const auto& b : m_bindings) {
 		if (!(b.chord == chord)) continue;
 		if (!reaches(b, focused)) continue;
-		if (textInputActive && !b.duringTextInput) continue;
-		if (isRepeat && !b.repeat) continue;
+		if (in.textInput && !b.duringTextInput && !(b.duringNumericInput && in.numericInput)) continue;
+		if (in.repeat && !b.repeat) continue;
+		if (in.mouseDrag && !b.duringMouseDrag) continue;
 		return &b;
 	}
 	return nullptr;
@@ -266,6 +301,12 @@ const char* ShortcutRegistry::ActionId(ShortcutAction action)
 	case A::detachView: return "detachView";
 	case A::previousStage: return "previousStage";
 	case A::nextStage: return "nextStage";
+	case A::toggleHideUi: return "toggleHideUi";
+	case A::toggleAxis: return "toggleAxis";
+	case A::toggleBoxes: return "toggleBoxes";
+	case A::togglePartHighlight: return "togglePartHighlight";
+	case A::toggleTextureView: return "toggleTextureView";
+	case A::toggleUvView: return "toggleUvView";
 	default: return "";
 	}
 }

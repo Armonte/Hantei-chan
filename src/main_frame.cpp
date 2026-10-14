@@ -46,6 +46,8 @@
 #include <glm/vec3.hpp>
 #include <glm/gtc/matrix_transform.hpp>
 
+#include "file_backup.h"
+#include "parts/part_transform.h"
 #include <algorithm>
 #include <cmath>
 #include <cstdlib>
@@ -156,6 +158,11 @@ void MainFrame::Draw()
 // ============================================================================
 #include "ui/editor_tools_impl.h"
 #include "ui/tool_windows_impl.h"
+
+// ============================================================================
+// PAT editor: auto backup, PAT documents, UV drag, navigation, layer tools
+// ============================================================================
+#include "ui/pat_editor_impl.h"
 
 
 void MainFrame::WarmStyle()
@@ -378,55 +385,7 @@ bool MainFrame::reopenClosedTab()
 	return false;
 }
 
-void MainFrame::createPatEditorView(const std::string& patPath)
-{
-	// Create a dummy character for PAT editing
-	auto character = std::make_unique<CharacterInstance>();
-	character->frameData.initEmpty();
-
-	// Extract filename from path for display name
-	size_t lastSlash = patPath.find_last_of("/\\");
-	std::string filename = (lastSlash != std::string::npos) ? patPath.substr(lastSlash + 1) : patPath;
-	character->setName(filename);
-
-	// Create dummy frame with usePat layer
-	auto seq = character->frameData.get_sequence(0);
-	if (seq) {
-		auto frame = &seq->frames.emplace_back();
-		// Ensure frame has at least one layer
-		if (frame->AF.layers.empty()) {
-			frame->AF.layers.push_back({});
-		}
-		frame->AF.layers[0].usePat = true;
-		frame->AF.layers[0].spriteId = 0;  // Initialize to first partSet for .pat rendering
-	}
-
-	// Load the PAT file
-	if (!character->loadPAT(patPath)) {
-		// Failed to load - don't create the view
-		return;
-	}
-
-	// Set up Parts rendering
-	render.SetParts(&character->parts);
-
-	// Add character to list and create PatEditor view
-	characters.push_back(std::move(character));
-	auto view = std::make_unique<CharacterView>(characters.back().get(), &render);
-	view->setPatEditor(true);
-	view->setViewNumber(0);
-
-	// Refresh panes AFTER setting isPatEditor flag to create PatEditor panes
-	// This will automatically hide HA6 editor panes and show PAT editor panes
-	view->refreshPanes(&render);
-
-	views.push_back(std::move(view));
-	setActiveView(views.size() - 1);
-	markProjectModified();
-
-	// Force dock layout rebuild to show PatEditor panes
-	needsDockRebuild = true;
-}
+// createPatEditorView: ui/pat_editor_impl.h (PAT documents)
 
 int MainFrame::countViewsForCharacter(CharacterInstance* character)
 {
@@ -548,6 +507,9 @@ static const bool s_archiveSaveHookInstalled = (g_saveEntryIntoArchive = SaveEnt
 bool MainFrame::saveCharacter(CharacterInstance* character)
 {
 	if (!character) return false;
+	// A PAT tab's document is its .pat (the placeholder pattern list is never saved).
+	if (character->isPatDocument()) return savePatOf(character, std::string());
+	if (character->archiveHome.empty()) backupBeforeSave(character->getTopHA6Path(), false);
 	// Opened from an archive in the archive browser: Save writes back into that archive (first .bak kept), byte-exact through the format writers.
 	if (!character->archiveHome.empty()) {
 		std::string err;
@@ -583,6 +545,8 @@ bool MainFrame::saveCharacter(CharacterInstance* character)
 bool MainFrame::saveCharacterAs(CharacterInstance* character, const std::string& path)
 {
 	if (!character) return false;
+	if (character->isPatDocument()) return savePatOf(character, path);
+	backupBeforeSave(path, false);
 	if (character->saveAs(path)) return true;
 	requestErrorPopup("Save Error", std::string(TXT("Could not write ")) + path);
 	return false;

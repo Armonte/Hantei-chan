@@ -20,12 +20,18 @@ public:
     void UpdateRenderFrame(int effectId, bool dontChangeProp = false);
     void UpdateHighligth(bool state);
     bool activeHighligth = false;
+    // Regenerate the name caches when the model no longer matches them (undo, reload, another view's edit).
+    void SyncNames();
 
 private:
     std::string openpopupWithId;
     std::string customPopUpMessage;
     std::string *partSetDecoratedNames;
     std::string *partPropsDecoratedNames;
+    int partSetNamesCount = -1;            // entries in partSetDecoratedNames
+    int partPropNamesCount = -1;           // entries in partPropsDecoratedNames
+    int partPropNamesSet = -1;             // part set they were made for
+    void SaveHighlightSettings();
 
 };
 

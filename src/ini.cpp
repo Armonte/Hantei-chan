@@ -58,6 +58,42 @@ static void ReadLine(ImGuiContext*, ImGuiSettingsHandler*, void* entry, const ch
 		gSettings.stageClampCamera = i != 0;
 	} else if (sscanf(line, "StageGame=%i", &i) == 1){
 		gSettings.stageGame = i;
+	} else if (sscanf(line, "BackupHa6=%i", &i) == 1){
+		gSettings.backupHa6 = i != 0;
+	} else if (sscanf(line, "BackupPat=%i", &i) == 1){
+		gSettings.backupPat = i != 0;
+	} else if (sscanf(line, "BackupKeep=%i", &i) == 1){
+		gSettings.backupKeep = i < 0 ? 0 : i;
+	} else if (strncmp(line, "BackupFolder=", 13) == 0){
+		gSettings.backupFolder = line + 13;
+	} else if (strncmp(line, "Panels=", 7) == 0){
+		// Panels=anim,attack,box,partset,part,shape,texture,tool (0/1)
+		int v[8]{1, 1, 1, 1, 1, 1, 1, 1};
+		sscanf(line + 7, "%d,%d,%d,%d,%d,%d,%d,%d", &v[0], &v[1], &v[2], &v[3], &v[4], &v[5], &v[6], &v[7]);
+		bool* dst[8] = {&gSettings.showAnimPane, &gSettings.showAttackPane, &gSettings.showBoxPane, &gSettings.showPatPartSetPane,
+		                &gSettings.showPatPartPane, &gSettings.showPatShapePane, &gSettings.showPatTexturePane, &gSettings.showPatToolPane};
+		for (int k = 0; k < 8; k++) *dst[k] = v[k] != 0;
+	} else if (sscanf(line, "PatHighlight=%i,%f", &i, &j) == 2){
+		gSettings.patHighlight = i != 0;
+		gSettings.patHighlightOpacity = j;
+	} else if (sscanf(line, "PatOutlineSelected=%i", &i) == 1){
+		gSettings.patOutlineSelected = i != 0;
+	} else if (strncmp(line, "PatColor", 8) == 0){
+		// PatColorUv= / PatColorCenter= / PatColorSelected=r,g,b,a
+		float c[4];
+		float* dst = !strncmp(line, "PatColorUv=", 11) ? gSettings.patUvRectColor
+			: !strncmp(line, "PatColorCenter=", 15) ? gSettings.patCenterColor
+			: !strncmp(line, "PatColorSelected=", 17) ? gSettings.patSelectedColor : nullptr;
+		const char* eq = strchr(line, '=');
+		if (dst && eq && sscanf(eq + 1, "%f,%f,%f,%f", &c[0], &c[1], &c[2], &c[3]) == 4)
+			for (int k = 0; k < 4; k++) dst[k] = c[k];
+	} else if (strncmp(line, "MouseButtons=", 13) == 0){
+		// pan button, draw button (0 left, 1 right, 2 middle); they must differ
+		int pan = 0, draw = 1;
+		if (sscanf(line + 13, "%d,%d", &pan, &draw) == 2 && pan >= 0 && pan <= 2 && draw >= 0 && draw <= 2 && pan != draw) {
+			gSettings.mousePanButton = pan;
+			gSettings.mouseDrawButton = draw;
+		}
 	} else if (strncmp(line, "StageGameDir=", 13) == 0){
 		gSettings.stageGameDir = line + 13;
 	} else if (strncmp(line, "Key=", 4) == 0){
@@ -94,6 +130,19 @@ static void Write(ImGuiContext* ctx, ImGuiSettingsHandler* handler, ImGuiTextBuf
 	buf->appendf("StageGame=%i\n", gSettings.stageGame);
 	buf->appendf("StagePatAuthoring=%i\n", gSettings.stagePatAuthoring ? 1 : 0);
 	buf->appendf("StageClampCamera=%i\n", gSettings.stageClampCamera ? 1 : 0);
+	buf->appendf("BackupHa6=%i\n", gSettings.backupHa6 ? 1 : 0);
+	buf->appendf("BackupPat=%i\n", gSettings.backupPat ? 1 : 0);
+	buf->appendf("BackupKeep=%i\n", gSettings.backupKeep);
+	if (!gSettings.backupFolder.empty()) buf->appendf("BackupFolder=%s\n", gSettings.backupFolder.c_str());
+	buf->appendf("Panels=%d,%d,%d,%d,%d,%d,%d,%d\n", gSettings.showAnimPane, gSettings.showAttackPane, gSettings.showBoxPane,
+		gSettings.showPatPartSetPane, gSettings.showPatPartPane, gSettings.showPatShapePane, gSettings.showPatTexturePane, gSettings.showPatToolPane);
+	buf->appendf("PatHighlight=%i,%f\n", gSettings.patHighlight ? 1 : 0, gSettings.patHighlightOpacity);
+	buf->appendf("PatOutlineSelected=%i\n", gSettings.patOutlineSelected ? 1 : 0);
+	const float* uv = gSettings.patUvRectColor; const float* ce = gSettings.patCenterColor; const float* se = gSettings.patSelectedColor;
+	buf->appendf("PatColorUv=%f,%f,%f,%f\n", uv[0], uv[1], uv[2], uv[3]);
+	buf->appendf("PatColorCenter=%f,%f,%f,%f\n", ce[0], ce[1], ce[2], ce[3]);
+	buf->appendf("PatColorSelected=%f,%f,%f,%f\n", se[0], se[1], se[2], se[3]);
+	buf->appendf("MouseButtons=%i,%i\n", gSettings.mousePanButton, gSettings.mouseDrawButton);
 	for (const auto& k : gSettings.keyBindings)
 		buf->appendf("%s\n", k.c_str());
 

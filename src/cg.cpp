@@ -816,6 +816,7 @@ void CG::free() {
 	}
 	palMax = 0;
 	paletteData = nullptr;
+	palette = nullptr;   // pointed into paletteData / the foreign bank freed above
 	m_data = nullptr;
 	m_data_size = 0;
 	

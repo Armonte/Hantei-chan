@@ -6,6 +6,8 @@
 #include <algorithm>
 #include <cstdio>
 #include <cstring>
+#include <cstdint>
+#include <windows.h>
 
 std::set<int> numberSet;
 int maxCount;
@@ -270,6 +272,75 @@ static void testUnmarkedDriftDoesNotBlockUndo()
 	CHECK(!u.canUndo());
 }
 
+// Thread CPU time in ms (GetThreadTimes): other processes (parallel builds) do not count, unlike wall time.
+static double ThreadCpuMs()
+{
+	FILETIME c, e, k, u;
+	GetThreadTimes(GetCurrentThread(), &c, &e, &k, &u);
+	auto ms = [](const FILETIME& f) { return (double)(((uint64_t)f.dwHighDateTime << 32) | f.dwLowDateTime) / 10000.0; };
+	return ms(k) + ms(u);
+}
+
+// Incremental commits: a marked pattern is found whatever the focus, unmarked drift elsewhere is picked up by the
+// rotating slice within a few commits, and a markModified() without index still compares everything.
+static void testIncrementalCommits()
+{
+	auto doc = makeDoc(200, 2);
+	UndoManager u;
+	u.attach(&doc);
+	u.ensureBaseline();
+	u.noteFocus(3, 0);
+	// Indexed mark far from the focus.
+	doc[150].frames[0].AF.duration = 42;
+	u.markModified(150);
+	u.endFrame(false);
+	CHECK(u.undoCount() == 1 && u.peekUndo() && u.peekUndo()->changes.size() == 1 && u.peekUndo()->changes[0].index == 150);
+	// Edit sink (FrameData::mark_modified feeds it).
+	std::vector<int> feed;
+	u.setDirtyFeed(&feed);
+	doc[77].name = "fed";
+	feed.push_back(77);
+	u.markModified(3);
+	u.endFrame(false);
+	CHECK(u.undoCount() == 2 && u.peekUndo() && u.peekUndo()->changes.size() == 1 && u.peekUndo()->changes[0].index == 77);
+	CHECK(feed.empty());
+	// Unmarked edit on the focus pattern: caught at the gesture end.
+	u.endFrame(true);
+	doc[3].frames[1].AF.duration = 5;
+	u.endFrame(false);
+	CHECK(u.undoCount() == 3 && u.peekUndo()->changes[0].index == 3);
+	// Generic markModified(): cross-pattern edits anywhere, one step.
+	doc[10].name = "a"; doc[190].name = "b";
+	u.markModified();
+	u.endFrame(false);
+	CHECK(u.undoCount() == 4 && u.peekUndo()->changes.size() == 2);
+	// Unmarked drift elsewhere is never lost: the slice reaches it within 200 / slice commits.
+	doc[120].frames[0].AF.duration = 9;
+	int steps = 0;
+	bool seen = false;
+	for (int k = 0; k < 20 && !seen; k++) {
+		doc[3].frames[0].AF.duration = 100 + k;
+		u.markModified(3);
+		u.endFrame(false);
+		steps++;
+		for (const auto& d : u.peekUndo()->changes) if (d.index == 120) seen = true;
+	}
+	CHECK(seen && steps <= 10);
+	// Undo / redo restore the incremental steps exactly.
+	while (u.canUndo()) u.undo();
+	CHECK(doc[150].frames[0].AF.duration == 3 && doc[77].name == "pattern 77" && doc[190].name == "pattern 190");
+	CHECK(doc[120].frames[0].AF.duration == 3);
+	// Pattern-list growth is recorded by an incremental commit too.
+	u.noteFocus(0, 0);
+	doc.push_back(Sequence{});
+	doc.back().name = "new";
+	u.markModified(0);
+	u.endFrame(false);
+	CHECK(u.peekUndo() && u.peekUndo()->countAfter == 201);
+	u.undo();
+	CHECK(doc.size() == 200);
+}
+
 static void testMemorySharingAndSpeed()
 {
 	// Roughly a large MBAACC character: 1000 slots, ~700 used, 12 frames each.
@@ -283,24 +354,42 @@ static void testMemorySharingAndSpeed()
 	auto t0 = std::chrono::steady_clock::now();
 	u.ensureBaseline();
 	auto t1 = std::chrono::steady_clock::now();
-	// Best of 5 batches of 20 steps: the budget is about the code, and the fastest batch is the one
-	// least disturbed by other load on the machine (parallel builds made the plain average flaky).
-	double bestBatchMs = 1e9;
+	// Best of 5 batches of 20 steps, in THREAD CPU time (GetThreadTimes): the budget is about the code; wall time
+	// also counted parallel builds. The edit is reported like the editor does (markModified(pattern)).
+	double bestBatchMs = 1e9, bestWallMs = 1e9;
 	for (int b = 0, i = 0; b < 5; ++b) {
+		const double c0 = ThreadCpuMs();
 		auto bt0 = std::chrono::steady_clock::now();
-		for (int k = 0; k < 20; ++k, ++i)
-			uiFrame(u, false, [&] { doc[i % 5].frames[0].AF.duration = 10 + i; });
-		bestBatchMs = std::min(bestBatchMs, std::chrono::duration<double, std::milli>(std::chrono::steady_clock::now() - bt0).count());
+		for (int k = 0; k < 20; ++k, ++i) {
+			u.noteFocus(i % 5, 0);
+			doc[i % 5].frames[0].AF.duration = 10 + i;
+			u.markModified(i % 5);
+			u.endFrame(false);
+		}
+		bestWallMs = std::min(bestWallMs, std::chrono::duration<double, std::milli>(std::chrono::steady_clock::now() - bt0).count());
+		bestBatchMs = std::min(bestBatchMs, ThreadCpuMs() - c0);
 	}
 	CHECK(u.undoCount() == 100);
 	const size_t perPattern = UndoManager::ApproxSequenceBytes(doc[0]);
 	// 100 single-pattern steps hold about 100 extra pattern copies, not 100 documents.
 	CHECK(u.historyBytes() <= perPattern * 110);
+	const size_t historyKiB = u.historyBytes() / 1024;
+	// For comparison: the old cost, a step that compares the whole document (markModified() without index).
+	double fullBestMs = 1e9;
+	for (int b = 0, i = 0; b < 5; ++b) {
+		const double c0 = ThreadCpuMs();
+		for (int k = 0; k < 20; ++k, ++i)
+			uiFrame(u, false, [&] { doc[i % 5].frames[0].AF.duration = 500 + i; });
+		fullBestMs = std::min(fullBestMs, ThreadCpuMs() - c0);
+	}
+
 	const double baselineMs = std::chrono::duration<double, std::milli>(t1 - t0).count();
 	const double commitMs = bestBatchMs / 20.0;
-	std::printf("  baseline capture %.2f ms, full-document diff+commit %.3f ms/step, history %zu KiB\n",
-		baselineMs, commitMs, u.historyBytes() / 1024);
-	CHECK(commitMs < 16.0);
+	std::printf("  baseline capture %.2f ms, incremental commit %.3f ms/step CPU (%.3f wall), full-document commit %.3f ms/step CPU, history %zu KiB\n",
+		baselineMs, commitMs, bestWallMs / 20.0, fullBestMs / 20.0, historyKiB);
+	// GetThreadTimes ticks in ~15.6 ms quanta, so a fast batch reads 0 or one tick (0.78 ms/step): the budget still
+	// fails a regression to the old full-document cost (several ms per step).
+	CHECK(commitMs < 4.0);
 }
 
 int main()
@@ -316,6 +405,7 @@ int main()
 	testNoOpEditIsNotRecorded();
 	testDisplayNormalisationIsNotAnEdit();
 	testUnmarkedDriftDoesNotBlockUndo();
+	testIncrementalCommits();
 	testMemorySharingAndSpeed();
 	if (g_failures) {
 		std::fprintf(stderr, "undo_manager_test: %d failure(s)\n", g_failures);

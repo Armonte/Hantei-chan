@@ -222,6 +222,9 @@ public:
 	void GenerateHitboxVertices(const BoxList &hitboxes);
 	bool GeneratePartCenterVertices();  // Draw origin cross for selected part in PatEditor
 	bool GenerateUVRectangleVertices();  // Draw UV bounds rectangle for selected cutout in TEXTURE_VIEW
+	// PAT editor overlay colours (Edit > Preferences > PAT editor, saved in the ini)
+	float patCenterColor[3]{1.0f, 0.5f, 1.0f};
+	float patUvRectColor[3]{0.0f, 1.0f, 1.0f};
 	void SetCg(CG *cg);
 	void SetParts(Parts *parts);
 	void SwitchImage(int id);

@@ -2,6 +2,7 @@
 #include "shortcut_router.h"
 
 #include <cstdio>
+#include <string>
 
 static int g_failures = 0;
 #define CHECK(cond) do { if (!(cond)) { std::fprintf(stderr, "FAIL %s:%d: %s\n", __FILE__, __LINE__, #cond); ++g_failures; } } while (0)
@@ -73,7 +74,8 @@ int main()
 	// Issue #30/#61 bindings.
 	CHECK(act(reg.resolve({0x25, shortcutCtrl}, ShortcutContext::characterView, false, true)) == ShortcutAction::nudgeLayerLeft);
 	CHECK(act(reg.resolve({0x28, shortcutCtrl | shortcutShift}, ShortcutContext::characterView, false, false)) == ShortcutAction::nudgeLayerDownFast);
-	CHECK(reg.resolve({0x25, shortcutCtrl}, ShortcutContext::patEditor, false, false) == nullptr);
+	// S2: Ctrl+arrows also move the selected part in a PAT tab (separate rows, same action)
+	CHECK(act(reg.resolve({0x25, shortcutCtrl}, ShortcutContext::patEditor, false, false)) == ShortcutAction::nudgeLayerLeft);
 	CHECK(act(reg.resolve({0x28, 0}, ShortcutContext::characterView, false, false)) == ShortcutAction::nextPattern);
 	CHECK(act(reg.resolve({'P', 0}, ShortcutContext::characterView, false, false)) == ShortcutAction::toggleSpawnPreview);
 	CHECK(reg.resolve({'P', 0}, ShortcutContext::characterView, true, false) == nullptr);
@@ -142,6 +144,69 @@ int main()
 	router.beginFrame(); router.claimFocus(ShortcutContext::commands); router.endFrame();
 	CHECK(router.dispatchToContext(ShortcutAction::undo) && handled == 1);
 	CHECK(!router.dispatchToContext(ShortcutAction::redo));
+
+	// ---- S2 additions (PAT editor parity, issues #9 / #61) ----
+	{
+		ShortcutRegistry r;
+		CHECK(r.conflicts().empty());
+		using C = ShortcutContext;
+		ShortcutInput none;
+		ShortcutInput number; number.textInput = true; number.numericInput = true;
+		ShortcutInput text; text.textInput = true;
+		ShortcutInput drag; drag.mouseDrag = true;
+		// #61 Q / E: keyframe step in any document tab, also while typing a NUMBER, never while typing a name.
+		CHECK(act(r.resolve({'Q', 0}, C::characterView, none)) == ShortcutAction::previousKeyframe);
+		CHECK(act(r.resolve({'E', 0}, C::characterView, none)) == ShortcutAction::nextKeyframe);
+		CHECK(act(r.resolve({'E', 0}, C::patEditor, number)) == ShortcutAction::nextKeyframe);
+		CHECK(r.resolve({'E', 0}, C::characterView, text) == nullptr);
+		CHECK(r.resolve({'Q', 0}, C::commands, none) == nullptr);
+		// Num* / Num/ keep firing in any field (they were duringTextInput before).
+		CHECK(act(r.resolve({0x6A, 0}, C::characterView, text)) == ShortcutAction::nextKeyframe);
+		// Old two-flag resolve() never treats a field as numeric.
+		CHECK(r.resolve({'E', 0}, C::characterView, true, false) == nullptr);
+		// PAT tab: arrows navigate (part set / part), Ctrl+arrows move the part, Esc cancels a UV drag.
+		CHECK(act(r.resolve({0x26, 0}, C::patEditor, none)) == ShortcutAction::previousPattern);
+		CHECK(act(r.resolve({0x27, 0}, C::patEditor, none)) == ShortcutAction::nextKeyframe);
+		CHECK(act(r.resolve({0x25, shortcutCtrl}, C::patEditor, none)) == ShortcutAction::nudgeLayerLeft);
+		CHECK(act(r.resolve({0x28, shortcutCtrl | shortcutShift}, C::patEditor, none)) == ShortcutAction::nudgeLayerDownFast);
+		CHECK(act(r.resolve({0x1B, 0}, C::patEditor, none)) == ShortcutAction::cancelGesture);
+		CHECK(act(r.resolve({'P', shortcutShift}, C::patEditor, none)) == ShortcutAction::exportFramePng);
+		// F / L / H: L is play forward in a character tab, the axis toggle in a PAT tab (G in a character tab).
+		CHECK(act(r.resolve({'F', 0}, C::characterView, none)) == ShortcutAction::toggleHideUi);
+		CHECK(act(r.resolve({'F', 0}, C::stageView, none)) == ShortcutAction::toggleHideUi);
+		CHECK(act(r.resolve({'L', 0}, C::characterView, none)) == ShortcutAction::playForward);
+		CHECK(act(r.resolve({'L', 0}, C::patEditor, none)) == ShortcutAction::toggleAxis);
+		CHECK(act(r.resolve({'G', 0}, C::characterView, none)) == ShortcutAction::toggleAxis);
+		CHECK(act(r.resolve({'H', 0}, C::characterView, none)) == ShortcutAction::toggleBoxes);
+		CHECK(act(r.resolve({'H', 0}, C::patEditor, none)) == ShortcutAction::togglePartHighlight);
+		CHECK(act(r.resolve({'T', 0}, C::patEditor, none)) == ShortcutAction::toggleTextureView);
+		CHECK(act(r.resolve({'U', 0}, C::patEditor, none)) == ShortcutAction::toggleUvView);
+		CHECK(r.resolve({'T', 0}, C::characterView, none) == nullptr);
+		// Shortcuts wait while a mouse drag runs; only Esc (cancel the drag) gets through.
+		CHECK(r.resolve({0x28, 0}, C::characterView, drag) == nullptr);
+		CHECK(r.resolve({'Z', shortcutCtrl}, C::patEditor, drag) == nullptr);
+		CHECK(r.resolve({'S', shortcutCtrl}, C::characterView, drag) == nullptr);
+		CHECK(act(r.resolve({0x1B, 0}, C::characterView, drag)) == ShortcutAction::cancelGesture);
+		ShortcutRouter rr;
+		rr.beginFrame(); rr.claimFocus(C::characterView); rr.endFrame();
+		CHECK(act(rr.resolve({0x28, 0}, false, false)) == ShortcutAction::nextPattern);
+		rr.setMouseDrag(true);
+		CHECK(rr.resolve({0x28, 0}, false, false) == nullptr);
+		CHECK(rr.resolve({0x28, 0}, rr.input(false, false, false)) == nullptr);
+		rr.setMouseDrag(false);
+		CHECK(act(rr.resolve({'E', 0}, rr.input(true, true, false))) == ShortcutAction::nextKeyframe);
+		CHECK(rr.resolve({'E', 0}, rr.input(true, false, false)) == nullptr);
+		// Added rows come after the original table, so an existing override keeps its row: Key=nudgeLayerLeft#0
+		// is still the character-tab row, #1 is the new PAT-tab row.
+		ShortcutRegistry r4;
+		r4.applyOverride("Key=nudgeLayerLeft#0=74,1");   // Ctrl+J
+		CHECK(act(r4.resolve({'J', shortcutCtrl}, C::characterView, none)) == ShortcutAction::nudgeLayerLeft);
+		CHECK(act(r4.resolve({0x25, shortcutCtrl}, C::patEditor, none)) == ShortcutAction::nudgeLayerLeft);
+		r4.applyOverride("Key=nextKeyframe#2=82,0");     // the E row -> R
+		CHECK(act(r4.resolve({'R', 0}, C::patEditor, none)) == ShortcutAction::nextKeyframe);
+		CHECK(r4.resolve({'E', 0}, C::patEditor, none) == nullptr);
+		CHECK(ShortcutRegistry::ActionId(ShortcutAction::togglePartHighlight) == std::string("togglePartHighlight"));
+	}
 
 	if (g_failures) {
 		std::fprintf(stderr, "shortcut_router_test: %d failure(s)\n", g_failures);

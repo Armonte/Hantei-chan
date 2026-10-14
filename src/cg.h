@@ -73,8 +73,8 @@ class CG {
 protected:
 	std::shared_ptr<CgForeignBank> m_foreign;
 	unsigned int	m_basePalette[256] = {};   // normalised copy of the bank palette (the bank bytes are never modified)
-	unsigned int	*origPalette;
-	unsigned int	*palette;
+	unsigned int	*origPalette = nullptr;
+	unsigned int	*palette = nullptr;   // never left uninitialised: a CG with no palette (a PAT tab) reads it for colour slots
 	char			*paletteData = nullptr;
 	int				palMax = 0;
 	int				paletteOffset = 0;
