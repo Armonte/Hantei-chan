@@ -189,6 +189,7 @@ void MainFrame::ProcessStartupArgs()
 		RunUiScript(*this, context->dc, [this](const std::string &p) { openAnyFile(p); },
 			[this](int what, int v) { if (auto *vw = getActiveView()) { if (what == 0) vw->getState().pattern = v; else if (what == 2) vw->setZoom(v / 100.f); else vw->getState().frame = v; } },
 			[this]() { return getActiveCharacter() ? saveCharacter(getActiveCharacter()) : false; });
+	if (n == 3 && !gStartup.cg.empty()) { if (auto *c = getActiveCharacter()) c->loadCG(gStartup.cg); }
 	// [tag-panel] after --open (frame 2), so the pickers see the loaded character; works without --open too
 	// [authoring] --tool authoring (and --tool tag without --tag-ini: the old panel's entry now opens Authoring > Tuning)
 	const bool authoringTool = gStartup.tool == "authoring" || (gStartup.tool == "tag" && gStartup.tagIni.empty());
