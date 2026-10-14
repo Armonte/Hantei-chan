@@ -65,12 +65,17 @@ void DecodeFlip(int mode, int rot, float r[3]);
 void EncodeFlip(const float r[3], int &mode, int &rot);
 
 // Box coordinate conversion (HA6 = model space). Parts frames (sprite < 10000)
-// use double-resolution coordinates: mbacPC Actor_BoxToWorldRect 0x440750.
+// use double-resolution coordinates around (320,448): mbacPC Actor_BoxToWorldRect
+// 0x440750, MBAA Hitbox_TransformCoordinatesToWorld 0x4196E0 (usePat boxes <<7).
 void BoxToModel(const int16_t in[4], bool partsFrame, int out[4]);
 void BoxFromModel(const int in[4], bool partsFrame, int16_t out[4]);
 
-// EF types whose p0/p1 are frame-space positions stored with a (+128,+224) bias.
+// EF types whose p0/p1 are frame-space positions stored with an origin bias.
 bool EfHasPositionBias(int type);
+// EF params (p0..p11, flags p2/p3 untouched) raw HA4 <-> HA6 model, by type, spawner frame
+// kind (parts = sprite 0..9999) and position flags; rules and IDA refs in framedata_ha4.cpp.
+void EfParamsToModel(int type, bool partsFrame, const int in[12], int out[12]);
+void EfParamsFromModel(int type, bool partsFrame, const int in[12], int out[12]);
 
 } // namespace ha4
 

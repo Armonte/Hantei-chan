@@ -139,6 +139,7 @@ void DrawOverlay(HostContext& host, const gamelink::Snapshot& s, const FrameSlot
 			auto* seq = const_cast<FrameData*>(fd)->get_sequence(a.pattern);
 			if (seq && a.frame >= 0 && a.frame < (int)seq->frames.size()) {
 				const int selected = host.selectedBoxFor ? host.selectedBoxFor(txt) : -1;
+				const float bz = zoom * fd->boxDisplayScale(seq->frames[a.frame]);   // usePat frames: <<7 in MBAA
 				for (const auto& kv : seq->frames[a.frame].hitboxes) {
 					const int id = kv.first;
 					const bool hurt = id >= 1 && id <= 8, attack = id >= 25;
@@ -146,8 +147,8 @@ void DrawOverlay(HostContext& host, const gamelink::Snapshot& s, const FrameSlot
 					const int* xy = kv.second.xy;
 					float x1 = (float)xy[0], x2 = (float)xy[2];
 					if (a.facing) { x1 = -x1; x2 = -x2; }
-					const ImVec2 r0(p.x + std::min(x1, x2) * zoom * scale, p.y + std::min(xy[1], xy[3]) * zoom * scale);
-					const ImVec2 r1(p.x + std::max(x1, x2) * zoom * scale, p.y + std::max(xy[1], xy[3]) * zoom * scale);
+					const ImVec2 r0(p.x + std::min(x1, x2) * bz * scale, p.y + std::min(xy[1], xy[3]) * bz * scale);
+					const ImVec2 r1(p.x + std::max(x1, x2) * bz * scale, p.y + std::max(xy[1], xy[3]) * bz * scale);
 					const ImU32 col = id == selected ? IM_COL32(255, 230, 40, 255)
 					                : attack ? IM_COL32(255, 60, 60, 230) : hurt ? IM_COL32(60, 230, 90, 200) : IM_COL32(80, 140, 255, 200);
 					dl->AddRectFilled(r0, r1, (col & 0x00FFFFFFu) | (id == selected ? 0x50000000u : 0x28000000u));

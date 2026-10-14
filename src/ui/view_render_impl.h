@@ -36,6 +36,7 @@ struct ActorStyle {
 	bool spawned = false;
 	int flagset1 = 0, flagset2 = 0;
 	int layer0Sprite = INT_MIN;          // editor override for layer 0's sprite
+	bool patBoxesHalf = false;           // FrameData::patBoxesHalfScale() of the actor's data
 	// AFHK: where the actor is inside its frame. `seq` + `frameIndex` locate the frame the game interpolates
 	// toward; ticksInFrame is 0 on the frame's first tick (no visible blend yet).
 	const Sequence* seq = nullptr;
@@ -119,6 +120,7 @@ static void AddFrameLayers(Render& render, Frame& frame, CG* cg, Parts* parts, c
 		layer.tintColor = glm::vec4(rgba.r * s.tint.r, rgba.g * s.tint.g, rgba.b * s.tint.b, 1.0f);
 		layer.isSpawned = s.spawned;
 		if (li == 0 && s.boxes) layer.hitboxes = frame.hitboxes;
+		if (li == 0 && s.patBoxesHalf && L.usePat) layer.boxScale = 0.5f;
 		layer.sourceCG = cg;
 		layer.usePat = L.usePat;
 		layer.sourceParts = parts;
@@ -210,6 +212,7 @@ void MainFrame::AddSimulatedActorLayers(CharacterView* view, const preview::Tick
 	rootStyle.boxes = boxes;
 	rootStyle.alphaMul = alphaMul;
 	rootStyle.pups = mainSeq->pups;
+	rootStyle.patBoxesHalf = active->frameData.patBoxesHalfScale();
 	if (sampleTint) rootStyle.tint = *sampleTint;
 	viewrender::AddFrameLayers(render, mainFrame, &active->cg, &active->parts, rootStyle);
 
@@ -262,6 +265,7 @@ void MainFrame::AddSimulatedActorLayers(CharacterView* view, const preview::Tick
 		s.loopCounter = actor.loopCounter;
 		s.flagset1 = actor.flagset1;
 		s.flagset2 = actor.flagset2;
+		s.patBoxesHalf = sourceFrameData->patBoxesHalfScale();
 		viewrender::AddFrameLayers(render, spawnedSeq->frames[actor.frame], sourceCG, sourceParts, s);
 	}
 }

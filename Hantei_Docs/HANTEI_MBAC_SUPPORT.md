@@ -137,11 +137,11 @@ produce warnings, listed under "Last save" in the inspector:
 | AT +0x38/+0x39/+0x3A | `addedEffect`, `hitgrab`, `hitStop` | ATKK/ATNG/ATSP | |
 | AT +0x3B/+0x3C | `correction` (0 → 100), `correction_type` | ATHS/ATHT | |
 | AT +0x40 | `otherFlags` | ATF1 | |
-| AT +0x48/+0x4A/+0x4C/+0x4E | `damage`, `meter_gain`, `red_damage`, `guard_damage` | ATVV (d0 = +0x4C, d1 = +0x48, d2 = +0x4E, d3 = +0x4A) | |
+| AT +0x48/+0x4A/+0x4C/+0x4E | `damage`, `meter_gain`, `red_damage`, `guard_damage` | ATVV (d0 = +0x4C, d1 = +0x48, d2 = +0x4E, d3 = +0x4A) | The model keeps +0x4E (lossless round trip). The HA6 export writes d2 = 0 by default: mbacPC never reads +0x4E, and MBAA reads ATVV[2] as guard-gauge damage (§4 rule 9, M3). |
 | AT +0x50 | `breakTime` | ATBT | |
 | IF slot (type, params[12]) | `Frame_IF` type + params 0..8 | IFTP/IFPR | Params 9..11 are always 0; kept raw. |
-| EF slot (type, No, p[8] i32, q[4] i16) | `Frame_EF` type, number, params 0..7 + 8..11 | EFTP/EFNO/EFPR | Types 1,2,3,4,8,11: p0−128, p1−224. |
-| box slots idx[24..48] / idx[49..56] | `hitboxes[0..24]` / `[25..32]` | HRNM / HRAT | CG frame: (x−128, y−224). Parts frame: ((x>>1)−160, (y>>1)−224) (mbacPC `Actor_BoxToWorldRect` 0x440750). |
+| EF slot (type, No, p[8] i32, q[4] i16) | `Frame_EF` type, number, params 0..7 + 8..11 | EFTP/EFNO/EFPR | p0/p1 by spawner frame kind and flags (`ha4::EfParamsToModel`, §4 rule 10). EF 2/3/4: CG frame (p0−128, p1−224), parts frame (p0−320, p1−448). EF 1/8/11: the same frame rule, except p3&0x200 absolute (no bias), p2&0x10 screen (x−128, parts x−256; y unbiased), p3&0x100 target (x unbiased), p2 bit 7 absolute y (y unbiased; parts y/2). |
+| box slots idx[24..48] / idx[49..56] | `hitboxes[0..24]` / `[25..32]` | HRNM / HRAT | CG frame: (x−128, y−224). Parts frame: (x−320, y−448), the HA6 value (mbacPC `Actor_BoxToWorldRect` 0x440750 = (x−320)<<7; MBAA `Hitbox_TransformCoordinatesToWorld` 0x4196E0 shifts usePat-frame boxes <<7). The editor draws usePat-frame boxes at 0.5 for MBAACC/MBAC data (`FrameData::boxDisplayScale`), the same as the game. Before S8 the model held ((x>>1)−160, (y>>1)−224), which is half size in CC (M1). |
 | idx[1..7], idx[57], AS/AF pads | raw | — | |
 
 HA6-only fields get defaults on load and are not stored in HA4:
@@ -195,7 +195,58 @@ The HA6 export is the normal Hantei-chan HA6 writer applied to the mapped model,
 8. **EFFECT.DAT** converts like any other file (`effect.ha6/.cg/.pat/.txt`). EF 8 targets keep their pattern
    numbers.
 
-CLI: `ha4tool convert <A.DAT> <B.DAT>... -o <outdir> [--name base]`. GUI: File → *Export MBAC as HA6...*
+9. **Behaviour fixes (S8, `PrepareForHA6`; audit `docs/mbac_moon/CONVERTER_FIDELITY.md` M1–M12).** The HA6
+   export changes values that would mean something else in MBAA. Each one is logged as a report line.
+
+   | Id | Rule | Off switch |
+   |---|---|---|
+   | M1 | Parts-frame boxes are written as (x−320, y−448). That is already the model value (§3). | — |
+   | M2/M9 | EF 1/2/3/4/8/11 positions follow the spawner frame kind and the EF flags (§3, `ha4::EfParamsToModel`). There is no blanket "keep raw 0" rule: the zeros FB kept are the absolute/screen/target modes. | — |
+   | M3 | ATVV[2] (CC guard-gauge damage) = 0. mbacPC never reads AT +0x4E, so MBAC attacks do no guard-gauge damage. `--gg-from-cc DIR [--cc-name N]` copies ATVV[2] from the same CC pattern/frame (`N.HA6`, `_r`, `_0`, `_0_r`, merged), else 0. | `--gg-raw` (old verbatim copy) |
+   | M7 | Victim reaction patterns: 900/903/906 ← 23, 901/904/907 ← 24, 902/905/908 ← 25, 351 ← 26, 354 ← 26 (`ha4conv::SystemPatternRules`). Only for character data (17 and 23–26 present), and only when the target slot is empty. | `--no-system-patterns` |
+   | M8 | IF 51 shield: p0 = −1 becomes the release frame of the pattern's next IF 51 record (else any other). A non-zero p2 (an MBAC **frame**) becomes the AF jump pattern of that frame (MBAA queues p2 as a **pattern**). The report prints the MBAC EX windows for `[Type_N] ExShieldTime_*`. | `--no-shield-remap` |
+   | M12 | EF 1/8/11 p2 bits ≥ 0x100 are cleared. mbacPC reads only the low byte; MBAA gives 0x100/0x200/0x400/0x800 meanings. | `--keep-ef-p2-bits` |
+
+10. **EF positions** (IDA: mbacPC `Actor_FrameOffsetToWorld` 0x423AB0, `EffectObject_InitFromParent` 0x423140;
+    MBAA `Effect_InitializeComplex` 0x454900, `Effect3_SpawnPresetEffect` 0x4553D0). Both engines shift parts-frame
+    (usePat) spawner offsets by <<7 and CG-frame offsets by <<8, so the HA6 value is raw − bias:
+
+    | EF | Mode | x bias | y |
+    |---|---|---|---|
+    | 2/3/4 | — | CG 128, parts 320 | CG −224, parts −448 |
+    | 1/8/11 | p3 & 0x200 absolute | 0 | 0 |
+    | 1/8/11 | p2 & 0x10 screen | CG 128, parts 256 (with p3 & 0x100: 0 / −64) | 0 |
+    | 1/8/11 | p3 & 0x100 target | 0 | frame rule |
+    | 1/8/11 | otherwise | CG 128, parts 320 | frame rule |
+    | 1/8/11 | p2 bit 7 absolute y | (as above) | CG raw, parts raw/2 |
+
+11. **System patterns ≥ 256 come from layering.** MBAC data has 256 slots; CC characters carry about 52 system
+    patterns above that, which the engine and the global `data\vector.txt` jump to. The converter adds only the
+    reaction set of rule 9 (M7). Everything else comes from CC's own files, listed **first** in the moon list
+    `<file>_N.txt`, with the converted MBAC file **last** so its patterns 0–255 win:
+
+    ```
+    [DataFile]
+    File00=<c>.HA6      ; CC base: 260-263 heat/circuit spark, 271/272 air throw, 275 GC bunker,
+    File01=<c>_r.HA6    ;   280-283 guard crush (engine-coded, Character_TickSystemReaction),
+    File02=<c>_0.HA6    ;   300-333 reactions/guards/downs/techs (BoundList targets), 350/352/353
+    File03=<c>_0_r.HA6  ; _0 is required: some system patterns live there (Sion 322/325)
+    File04=<mbac>.ha6   ; converted MBAC data, last
+    ```
+
+    | Range | Source | Notes |
+    |---|---|---|
+    | 0–255 | converted MBAC file | overrides CC's 0–255. Known leak: MBAC data spawns into a few slots only CC defines (akaakiha 130, akiha 129/130, hisui 206, shiki 175–179), so CC's pattern plays there. The converter does not handle this yet (FEASIBILITY §3). An empty pattern (`PSTR n PEND`, `mbac_moon_blank_patterns.py`) does the opposite: it lets the lower CC layer supply slot n, which is how the moon-3 prototype fell back to CC's shield patterns. |
+    | 260–283 | CC files | heat, circuit spark, air throw, GC bunker, guard crush |
+    | 300–333 | CC files | reactions, guards, downs, techs |
+    | 350, 352, 353 | CC files | |
+    | 351, 354, 900–908 | converter (M7) | Pass `--no-system-patterns` when layering, so CC's own versions are used. A standalone character (a boss such as G_CHAOS, one file in `_9.txt`) keeps the converter's copies. |
+
+    The engine resolves patterns per slot across the list (a later file replaces a slot), so CC's frames for these
+    ranges are used unchanged. Full write-up: `docs/mbac_moon/FEASIBILITY.md` §3 (Layering).
+
+CLI: `ha4tool convert <A.DAT> <B.DAT>... -o <outdir> [--name base] [--no-system-patterns] [--no-shield-remap]
+[--keep-ef-p2-bits] [--gg-raw | --gg-from-cc <CC data dir> [--cc-name <name>]]`. GUI: File → *Export MBAC as HA6...*
 (pick the `.ha6` name; the other files are written next to it). *Save Character As* with a `.ha6` name
 converts only the frame data.
 
@@ -229,12 +280,16 @@ All outputs are in `tools/ha4/results/`.
 | Converted HA6 in the editor (`roundtrip.exe`: load → save → reload) | **50/50, 0 field diffs**, no loader warnings |
 | Converted HA6 parsed by `ha6lib.py` | 50 files, 4446 patterns, 67721 frames |
 | **Golden:** tag-in/out patterns vs shipped MBAACC HA6 (all fields except CG sprite id) | **44/44 identical** |
+| **Behaviour (S8)** `ha4_golden.py` section 3: M1 reference boxes (G_CHAOS p0/p100, GAKIHA), M7 reaction set, M8 IF 51, M3 ATVV[2]; ctest `ha4_golden` | **0 failures** (golden still 44/44 after the EF flag-mode rule) |
+| `ha4_convert_test` (ctest `ha4_convert`): unit rules + G_CHAOS Arc Drive box (−130,−425,384,6) + SION end to end | **98/98** |
+| Residual-error audit of the converted roster (`gamedata/tools/scripts/mbac_moon_convverify.py roster roster_v2`) | M1 0/1159, M2 0/90 (+0/5857 CG), M3 0/4556, M7 0 missing, M8 0/222, M12 0/4230 (before: 1159, 90+192, 1362, 264, 69+3, 12) |
 | Field agreement vs MBAACC over 3178 same-length patterns / 49701 frames | AF 95.8–100%, AS 99.3–99.9%, EF 97.1%, IF 97.2%, AT 93.9%, boxes 89.9% (the rest are MBAACC balance/art edits) |
 | Converted `.pat` vs MBAACC `.pat` (`pat_compare.py`) | arc: 2443/2462 fields equal (19 are PRAN 0.036 vs MBAACC 0.0359); len and warc: 100%; hisui/kohaku/neco/nechaos differ only in PRFL (MBAACC turned on filtering); m_hisui/v_sion/effect were reworked in MBAACC |
 | Rendering (screenshots via `--capture`) | AKIHA p0 (CG + `.PAL`), ARC p195 (parts), GAKIHA (Cutter2 CG + large parts), SION via `.hproj` (palette 7), converted `arc.txt` |
 
 Golden-test notes:
 - ha6lib ignores the `AFY` shorthand, so `ha4_golden.py` decodes AFY itself (m_hisui p241 uses AFY3).
+- Section 1 uses CG frames, so the S8 parts-frame changes do not affect it. Section 3 checks those changes.
 - Boxes are compared by area: kishima p241 has an inverted box that MBAACC kept inverted, while Hantei-chan's HA6
   writer normalizes it. The game swaps inverted corners itself, so the difference has no effect.
 

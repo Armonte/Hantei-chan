@@ -506,6 +506,13 @@ public:
 	int inheritedPatternCount() const;
 
 	void initEmpty(unsigned int count = 1000);
+	// Grow the pattern table to at least `count` slots (never shrinks).
+	void ensureSequenceCount(unsigned int count) {
+		if (count <= m_nsequences) return;
+		m_nsequences = count;
+		m_sequences.resize(count);
+		if (m_origin.size() < count) m_origin.resize(count, -1);
+	}
 	// patch: overlay onto what is loaded. fillOnly (with patch): only fill
 	// slots that have no content yet (fallback files, e.g. UNI BaseData).
 	bool load(const char *filename, bool patch = false, bool fillOnly = false);
@@ -538,6 +545,14 @@ public:
 	const Sequence_T<std::allocator>* templateFor(int n) const;
 	//Number of AFGX layers the game draws (UNI2 5, MBTL 3; 1 for MBAACC).
 	int gameLayerCount() const;
+	//Boxes on a usePat (parts) frame are in half-pixel units in MBAACC/MBAC:
+	//MBAA Hitbox_TransformCoordinatesToWorld 0x4196E0 shifts them <<7 instead
+	//of <<8 (mbacPC Actor_BoxToWorldRect 0x440750 the same), so they draw at
+	//0.5 in CG-pixel space. 1.0 for CG frames and for UNI/MBTL/HAN2 data.
+	bool patBoxesHalfScale() const { return !m_han2 && !usesUniFormat(); }
+	float boxDisplayScale(const Frame &f) const {
+		return (patBoxesHalfScale() && !f.AF.layers.empty() && f.AF.layers[0].usePat) ? 0.5f : 1.f;
+	}
 	//AFGX layer count the writer pads new UNI frames to (0 = MBAACC writer).
 	int uniLayerCountForSave() const;
 

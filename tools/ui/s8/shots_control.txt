@@ -1,0 +1,19 @@
+openany C:\dev\hantei-chan\gamedata\mbac_to_cc\roster_v2\g_chaos\g_chaos.txt
+wait 60
+pattern 0
+viewframe 0
+zoomview 1
+wait 30
+pattern 100
+viewframe 10
+zoomview 1
+wait 60
+capture //wsl.localhost/Ubuntu-24.04/tmp/claude-1000/-mnt-c-dev-hantei-chan/e6dc87ad-5472-4611-98a4-02847aa36410/scratchpad/s8_probe_a.png
+openany C:\dev\hantei-chan\gamedata\mbac_to_cc\roster\g_chaos\g_chaos.txt
+wait 60
+pattern 100
+viewframe 10
+zoomview 1
+wait 60
+capture //wsl.localhost/Ubuntu-24.04/tmp/claude-1000/-mnt-c-dev-hantei-chan/e6dc87ad-5472-4611-98a4-02847aa36410/scratchpad/s8_probe_b.png
+quit

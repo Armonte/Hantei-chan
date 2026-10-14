@@ -70,6 +70,9 @@ struct RenderLayer {
 	// Pattern comparison overlay (issue #63): draw this layer's boxes as
 	// outlines only, so they read apart from the main pattern's filled boxes.
 	bool boxesOutlineOnly = false;
+	// Box coordinates -> CG pixels: 0.5 on MBAACC/MBAC usePat frames
+	// (FrameData::boxDisplayScale), 1 elsewhere.
+	float boxScale = 1.0f;
 
 	RenderLayer() :
 		spriteId(-1), spawnOffsetX(0), spawnOffsetY(0),

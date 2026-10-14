@@ -3,6 +3,7 @@
 #include "mv_script.h"
 #include "paste_notice.h"
 #include <algorithm>
+#include <cmath>
 #include <imgui.h>
 #include <imgui_internal.h>
 
@@ -119,9 +120,12 @@ void BoxPane::BoxStart(int x, int y)
 		auto &frames = seq->frames;
 		if(frames.size()>0 && currState.frame >= 0 && currState.frame < (int)frames.size())
 		{
+			// The view is in CG pixels; boxes on MBAACC/MBAC usePat frames are in half pixels.
+			const float bs = frameData->boxDisplayScale(frames[currState.frame]);
+			dragScale = bs;
 			Hitbox &box = frames[currState.frame].hitboxes[currentBox];
-			box.xy[0] = box.xy[2] = x;
-			box.xy[1] = box.xy[3] = y;
+			box.xy[0] = box.xy[2] = (int)std::lround(x / bs);
+			box.xy[1] = box.xy[3] = (int)std::lround(y / bs);
 
 			dragxy[0] = box.xy[0];
 			dragxy[1] = box.xy[1];
@@ -145,8 +149,8 @@ void BoxPane::BoxDragWorld(float dx, float dy)
 		if(frames.size()>0 && currState.frame >= 0 && currState.frame < (int)frames.size())
 		{
 			Hitbox &box = frames[currState.frame].hitboxes[currentBox];
-			dragxy[0] += dx;
-			dragxy[1] += dy;
+			dragxy[0] += dx / dragScale;
+			dragxy[1] += dy / dragScale;
 
 			box.xy[2] = dragxy[0];
 			box.xy[3] = dragxy[1];

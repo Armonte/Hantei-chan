@@ -3,7 +3,8 @@
 //   ha4tool roundtrip <file.DAT>...        load -> save must be byte-identical
 //   ha4tool reencode  <file.DAT>...        drop the original bytes, encode from the
 //                                          model only, reload, compare the models
-//   ha4tool convert   <file.DAT>... -o DIR [--name N]
+//   ha4tool convert   <file.DAT>... -o DIR [--name N] [--no-system-patterns] [--no-shield-remap]
+//                     [--gg-from-cc CCDATA [--cc-name C] | --gg-raw] [--keep-ef-p2-bits]
 //                                          MBAC -> MBAACC-style HA6 (+ .cg, .pat, .pal, .txt)
 //   ha4tool edittest  <file.DAT>...        apply editor-style edits, save, reload, compare
 //   ha4tool dump      <file.DAT> [pattern] print a pattern summary
@@ -240,14 +241,21 @@ static int CmdConvert(int argc, char **argv)
 {
 	std::vector<std::string> inputs;
 	std::string outDir = ".", name;
+	ha4conv::Options base;
 	for (int i = 0; i < argc; i++) {
 		if (!strcmp(argv[i], "-o") && i + 1 < argc) outDir = argv[++i];
 		else if (!strcmp(argv[i], "--name") && i + 1 < argc) name = argv[++i];
+		else if (!strcmp(argv[i], "--no-system-patterns")) base.systemPatterns = false;
+		else if (!strcmp(argv[i], "--no-shield-remap")) base.shieldRemap = false;
+		else if (!strcmp(argv[i], "--keep-ef-p2-bits")) base.efClearCcOnlyBits = false;
+		else if (!strcmp(argv[i], "--gg-raw")) base.guardDamage = ha4conv::GuardDamage::Raw;
+		else if (!strcmp(argv[i], "--gg-from-cc") && i + 1 < argc) { base.guardDamage = ha4conv::GuardDamage::FromCC; base.ccDataDir = argv[++i]; }
+		else if (!strcmp(argv[i], "--cc-name") && i + 1 < argc) base.ccName = argv[++i];
 		else inputs.push_back(argv[i]);
 	}
 	int fails = 0;
 	for (auto &in : inputs) {
-		ha4conv::Options opt;
+		ha4conv::Options opt = base;
 		opt.outDir = outDir;
 		opt.baseName = inputs.size() == 1 ? name : std::string();
 		ha4conv::Report rep;

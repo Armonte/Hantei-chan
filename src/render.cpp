@@ -1191,6 +1191,7 @@ void Render::DrawLayers()
 		glm::mat4 view = glm::mat4(1.f);
 		view = glm::scale(view, glm::vec3(scale, scale, 1.f));
 		view = glm::translate(view, glm::vec3(x, y, 0.f));
+		view = glm::scale(view, glm::vec3(layer.boxScale, layer.boxScale, 1.f));
 		SetModelView(std::move(view));
 		sSimple.Use();
 		SetMatrix(lProjectionS);
