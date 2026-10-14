@@ -103,12 +103,13 @@ void MainFrame::openBrowserRequest(const abrowser::OpenRequest& req)
 			std::filesystem::path pp = std::filesystem::u8path(path);
 			std::string e = pp.extension().string(); for (auto& c : e) c = (char)tolower((unsigned char)c);
 			if (e == ".ha6") {
-				std::filesystem::path txt = pp; txt.replace_extension(".txt");
-				std::error_code ec;
-				if (std::filesystem::exists(txt, ec)) {
+				for (const char* suf : { ".txt", "_0.txt" }) {   // MBAACC: <stem>.txt; UNI / DFCI / MBTL: <stem>_0.txt (or the DFCI folder's <Name>_0.txt)
+					std::filesystem::path txt = pp.parent_path() / std::filesystem::u8path(pp.stem().u8string() + suf);
+					std::error_code ec;
+					if (!std::filesystem::exists(txt, ec)) continue;
 					char probe[64]{};
 					GetPrivateProfileStringA("DataFile", "FileNum", "", probe, sizeof probe, txt.u8string().c_str());
-					if (probe[0]) path = txt.u8string();
+					if (probe[0]) { path = txt.u8string(); break; }
 				}
 			}
 		}

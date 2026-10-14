@@ -1,5 +1,10 @@
 // Archive browser: model, worker thread, decoders, write-back. The ImGui side is archive_browser_ui.cpp.
 #include "archive_browser_state.h"
+#include "game_table.h"
+#include "tlog.h"
+#include "ini.h"
+#include "framedata_pb2k1.h"
+#include "han2/qoh_dat.h"
 #include "cgm/cgm_bank.h"
 #include "character_instance.h"
 #include "framedata_ha4.h"
@@ -49,22 +54,16 @@ static fs::path P8(const std::string &u8) { return fs::u8path(u8); }
 
 const char *GameName(Game g)
 {
-	switch (g) {
-	case Game::RBO: return "Ragnarok Battle Offline";
-	case Game::GOF2: return "Glove on Fight 2";
-	case Game::GOF1: return "Glove on Fight";
-	case Game::MBAACC: return "Melty Blood Actress Again Current Code";
-	case Game::MB: return "Melty Blood";
-	case Game::PB2K1: return "Party Breakers";
-	case Game::Generic: return "Folder";
-	default: return "";
-	}
+	if (g == Game::Generic) return "Folder";
+	const GameDef *d = FindGame(g);
+	return d ? d->name : "";
 }
 const char *TypeName(Type t)
 {
 	switch (t) {
 	case Type::Character: return "Character";
 	case Type::CharData: return "Character data";
+	case Type::Shared: return "Shared / effect data";
 	case Type::Image: return "Image";
 	case Type::CgBank: return "Sprite bank";
 	case Type::Parts: return "Parts";
@@ -80,6 +79,12 @@ const char *TypeName(Type t)
 Type TypeOfName(const std::string &name, Game ctx, bool inArchive)
 {
 	const std::string e = ExtOf(name);
+	if (e == ".ha6" && (ctx == Game::UNI2 || ctx == Game::MBTL || ctx == Game::DFCI || ctx == Game::UNIST || ctx == Game::UNI)) {
+		// modern layout: <Name>/<Name>.HA6 is the character; _temp / BaseData / effect are shared pattern libraries, _csel / _coloredit are menu-only sets
+		const std::string l = Lower(name), b = Lower(StemOf(name));
+		if (b[0] == '_' || b == "basedata" || b.rfind("effect", 0) == 0 || (b.size() > 2 && b.compare(b.size() - 2, 2, "_s") == 0) || l.find("/_csel/") != std::string::npos || l.find("/_coloredit/") != std::string::npos || l.rfind("_csel/", 0) == 0) return Type::Shared;   // <Name>_s.HA6 = the character's shared / effect set
+		return Type::Character;
+	}
 	if (e == ".dt2" || e == ".ha6" || e == ".chr") return Type::Character;
 	if (e == ".dat") return ctx == Game::MBAACC ? Type::Other : Type::Character;   // MBAACC .DAT files are stages / backgrounds; its characters are .HA6
 	if (e == ".img" || e == ".ex3" || e == ".bmp" || e == ".png" || e == ".jpg" || e == ".jpeg" || e == ".tga" || e == ".gif" || e == ".dds") return Type::Image;
@@ -95,44 +100,48 @@ Type TypeOfName(const std::string &name, Game ctx, bool inArchive)
 }
 
 // ---- worker thread ----------------------------------------------------------------------------------------------------------------------------------
+std::atomic<uint64_t> g_uiFrame{0};
 namespace {
+// Three worker threads share two queues: previews / archive mounts (hi) first, then thumbnails, newest request first (what is on screen now).
 struct Worker {
 	std::mutex mx;
 	std::condition_variable cv;
 	std::deque<std::function<void()>> hi, lo;
 	std::deque<std::function<void()>> results;
-	std::thread th;
-	bool stop = false;
+	bool started = false, stop = false;
 	std::atomic<int> active{0};
 	void start()
 	{
-		if (th.joinable()) return;
-		th = std::thread([this] {
-			han2::SetNoGlUpload(true);   // thumbnails load characters without creating GL textures
-			for (;;) {
-				std::function<void()> f;
-				{
-					std::unique_lock<std::mutex> lk(mx);
-					cv.wait(lk, [this] { return stop || !hi.empty() || !lo.empty(); });
-					if (stop) return;
-					if (!hi.empty()) { f = std::move(hi.front()); hi.pop_front(); }
-					else { f = std::move(lo.back()); lo.pop_back(); }   // newest thumbnail request first: what is on screen now
-					active++;
+		if (started) return;
+		started = true;
+		for (int i = 0; i < 3; i++) {
+			std::thread th([this] {
+				han2::SetNoGlUpload(true);   // thumbnails load characters without creating GL textures
+				for (;;) {
+					std::function<void()> f;
+					{
+						std::unique_lock<std::mutex> lk(mx);
+						cv.wait(lk, [this] { return stop || !hi.empty() || !lo.empty(); });
+						if (stop) return;
+						if (!hi.empty()) { f = std::move(hi.front()); hi.pop_front(); }
+						else { f = std::move(lo.back()); lo.pop_back(); }
+						active++;
+					}
+					try { f(); } catch (...) {}
+					active--;
 				}
-				try { f(); } catch (...) {}
-				active--;
-			}
-		});
-		th.detach();
+			});
+			th.detach();
+		}
 	}
 };
-Worker &W() { static Worker *w = new Worker(); return *w; }   // leaked on purpose: the detached worker may outlive static destruction
+Worker &W() { static Worker *w = new Worker(); return *w; }   // leaked on purpose: the detached workers may outlive static destruction
 }
 
 void PostJob(std::function<void()> f, bool low)
 {
-	Worker &w = W(); w.start();
-	{ std::lock_guard<std::mutex> lk(w.mx); (low ? w.lo : w.hi).push_back(std::move(f)); }
+	Worker &w = W();
+	{ std::lock_guard<std::mutex> lk(w.mx); w.start(); (low ? w.lo : w.hi).push_back(std::move(f)); }
 	w.cv.notify_one();
 }
 void PostMain(std::function<void()> f) { Worker &w = W(); std::lock_guard<std::mutex> lk(w.mx); w.results.push_back(std::move(f)); }
@@ -149,7 +158,7 @@ bool WorkerBusy()
 {
 	Worker &w = W();
 	std::lock_guard<std::mutex> lk(w.mx);
-	return w.active > 0 || !w.hi.empty() || !w.results.empty();
+	return w.active > 0 || !w.hi.empty() || !w.lo.empty() || !w.results.empty();
 }
 bool Busy()
 {
@@ -224,6 +233,8 @@ static int ArchiveRank(const std::string &lowerName)
 	return 3;
 }
 
+static bool IsDigits2P(const std::string &n) { return n.size() == 4 && isdigit((unsigned char)n[0]) && isdigit((unsigned char)n[1]) && n.compare(2, 2, ".p") == 0; }
+
 GameInfo DetectGame(const std::string &dir)
 {
 	GameInfo gi; gi.root = dir;
@@ -236,9 +247,10 @@ GameInfo DetectGame(const std::string &dir)
 		const std::string n = Lower(e.path().filename().string());
 		if (n == "data" || n == "run" || n == "install") cands.push_back(e.path());
 	}
-	struct Hit { fs::path dir; std::vector<fs::path> archives; };
 	bool exeGof1 = false, exeGof2 = false, exeMbaa = false, haveHa6 = false, havePac = false, haveData0N = false, haveGofP = false, haveMbP = false, havePbDat = false;
-	fs::path ha6Dir, dataDirCand;
+	bool exeMbtl = false, exeUni2 = false, exeRing = false, exeUnist = false, exeUni = false, exeLilian = false, exeQoh99 = false, exeQoh98 = false, exeDmp = false, exeRosa = false;
+	bool havePk = false, haveDigitP = false, haveChr = false, haveGamedataPac = false, haveBaseData = false;
+	fs::path ha6Dir, dataDirCand, mbtlExe;
 	std::vector<std::pair<std::string, fs::path>> allArchives;   // lower name, path
 	for (auto &c : cands) {
 		for (auto &e : fs::directory_iterator(c, ec)) {
@@ -248,6 +260,18 @@ GameInfo DetectGame(const std::string &dir)
 			if (n == "gof.exe") exeGof1 = true;
 			if (n == "gof2.exe") exeGof2 = true;
 			if (n == "mbaa.exe") exeMbaa = true;
+			if (n == "mbtl.exe") { exeMbtl = true; mbtlExe = e.path(); }
+			if (n == "uni2.exe") exeUni2 = true;
+			if (n == "ringgame.exe") exeRing = true;
+			if (n.rfind("unist", 0) == 0 && x == ".exe") exeUnist = true;
+			if ((n == "uni.exe" || n == "unib.exe" || n == "uniclr.exe" || n == "uni_clr.exe") && x == ".exe") exeUni = true;
+			if (n == "lilianfourhand.exe") exeLilian = true;
+			if (n.rfind("qoh99", 0) == 0 && x == ".exe") exeQoh99 = true;
+			if (n == "qoh98.exe") exeQoh98 = true;
+			if (n == "dmp.exe") exeDmp = true;
+			if (n == "rosa_fh.exe") exeRosa = true;
+			if (n == "gamedata.pac") haveGamedataPac = true;
+			if (n == "basedata.ha6") haveBaseData = true;
 			if (x == ".ha6") { haveHa6 = true; if (ha6Dir.empty()) ha6Dir = c; }
 			if (x == ".pac" && SniffArchive(e.path(), x)) { havePac = true; allArchives.emplace_back(n, e.path()); if (dataDirCand.empty()) dataDirCand = c; }
 			else if (x == ".dat" && n.size() == 10 && n.rfind("data0", 0) == 0 && SniffArchive(e.path(), x)) { haveData0N = true; allArchives.emplace_back(n, e.path()); if (dataDirCand.empty()) dataDirCand = c; }
@@ -255,14 +279,43 @@ GameInfo DetectGame(const std::string &dir)
 				allArchives.emplace_back(n, e.path());
 				if (n.rfind("gof_0", 0) == 0) { haveGofP = true; dataDirCand = c; }
 				else if (n.rfind("data0", 0) == 0) haveMbP = true;
+				else if (IsDigits2P(n)) {
+					haveDigitP = true;
+					std::ifstream f(e.path(), std::ios::binary); uint8_t h[16]{}; f.read((char *)h, 16);
+					if (!memcmp(h, "PKFileInfo", 10)) havePk = true;
+				}
 			} else if (x == ".dat" && n.size() >= 6 && isdigit((unsigned char)n[0]) && SniffArchive(e.path(), x)) { havePbDat = true; allArchives.emplace_back(n, e.path()); }
 		}
 	}
+	// loose per-character folders (Queen of Heart): <name>\<name>.chr one level down
+	if (!exeQoh99 && !exeQoh98) {
+		int n = 0;
+		for (auto &e : fs::directory_iterator(P8(dir), ec)) {
+			std::error_code e2; if (!e.is_directory(e2)) continue;
+			for (auto &f : fs::directory_iterator(e.path(), ec)) if (Lower(f.path().extension().string()) == ".chr") { n++; break; }
+			if (n >= 2) break;
+		}
+		haveChr = n >= 2;
+	}
+	const bool uni2D = fs::is_directory(P8(dir) / "d", ec) && (exeUni2 || fs::exists(P8(dir) / "d" / "hexeojmpimrjs", ec));
+	const bool modernLoose = haveBaseData && fs::is_directory(P8(dir) / "data", ec) && !exeMbaa && !exeMbtl && !uni2D;
 	Game g = Game::None;
-	if (haveGofP || exeGof1) g = Game::GOF1;
+	if (exeMbtl) g = Game::MBTL;
+	else if (uni2D) g = Game::UNI2;
+	else if (exeRing) g = Game::DFCI;
+	else if (exeUnist && modernLoose) g = Game::UNIST;
+	else if (modernLoose && !haveGofP) g = Game::UNI;
+	else if (haveGofP || exeGof1) g = Game::GOF1;
 	else if (haveData0N || exeGof2) g = Game::GOF2;
+	else if (exeLilian) g = Game::LILIAN;
+	else if (exeRosa) g = Game::ROSA;
+	else if (exeDmp || haveGamedataPac) g = Game::DMP;
 	else if (havePac) g = Game::RBO;
+	else if (exeQoh98) g = Game::QOH98;
+	else if (exeQoh99 || haveChr) g = Game::QOH99;
 	else if (exeMbaa || haveHa6) g = Game::MBAACC;
+	else if (havePk) g = Game::MBAC;
+	else if (haveDigitP) g = Game::REACT;
 	else if (haveMbP) g = Game::MB;
 	else if (havePbDat) g = Game::PB2K1;
 	else if (!allArchives.empty()) g = Game::Generic;
@@ -271,7 +324,10 @@ GameInfo DetectGame(const std::string &dir)
 	std::sort(allArchives.begin(), allArchives.end(), [](const auto &a, const auto &b) { int ra = ArchiveRank(a.first), rb = ArchiveRank(b.first); return ra != rb ? ra < rb : a.first < b.first; });
 	std::set<std::string> seen;
 	for (auto &a : allArchives) if (seen.insert(Lower(a.second.generic_u8string())).second) gi.archives.push_back(a.second.u8string());
+	if (g == Game::MBTL) gi.archives = { mbtlExe.u8string() };
+	if (g == Game::UNI2) gi.archives = { (P8(dir) / "d").u8string() };
 	if (g == Game::MBAACC) gi.dataDir = !ha6Dir.empty() ? ha6Dir.u8string() : (fs::is_directory(P8(dir) / "data", ec) ? (P8(dir) / "data").u8string() : dir);
+	else if (g == Game::DFCI || g == Game::UNI || g == Game::UNIST) gi.dataDir = (P8(dir) / "data").u8string();
 	else gi.dataDir = !dataDirCand.empty() ? dataDirCand.u8string() : dir;
 	return gi;
 }
@@ -325,6 +381,22 @@ std::string ItemPathText(const Source &s, const Item &it)
 static void FillArchiveSource(Source &s)
 {
 	std::string err, e2, e3;
+	{   // UNI2's d\ folder and MBTL.exe (its table) are archives without a PAC header
+		std::error_code dec;
+		const std::string fn = Lower(BaseName(s.path));
+		if (fs::is_directory(P8(s.path), dec) || fn == "mbtl.exe") {
+			std::shared_ptr<fbarc::Archive> fa = fbarc::Open(s.path, &e3);
+			if (!fa) { s.error = e3; s.state = Source::Failed; return; }
+			s.kind = Source::Fb; s.fb = fa;
+			s.describe = std::string(fbarc::KindName(fa->kind())) + ", " + std::to_string(fa->entries().size()) + " entries; " + fa->describe();
+			s.items.reserve(fa->entries().size());
+			for (size_t i = 0; i < fa->entries().size(); i++) {
+				Item it; it.key = fa->relativePath(i); it.name = it.key; it.size = fa->entries()[i].size; it.index = (uint32_t)i;
+				it.type = TypeOfName(it.name, s.game, true); s.items.push_back(std::move(it));
+			}
+			return;
+		}
+	}
 	auto pa = std::make_shared<pac::Archive>();
 	if (pac::Open(s.path, *pa, &err)) {
 		s.kind = Source::Pac; s.pac = pa;
@@ -453,7 +525,9 @@ void MountArchive(const std::string &path, int group, bool select)
 	std::weak_ptr<Source> ws = s;
 	PostJob([ws, group] {
 		auto s = ws.lock(); if (!s || s->closed) return;
+		const auto _t0 = tlog::Now();
 		FillArchiveSource(*s);
+		tlog::Log("index %s: %.1f ms, %zu entries", s->label.c_str(), tlog::Ms(_t0, tlog::Now()), s->items.size());
 		const bool ok = s->state != Source::Failed;
 		PostMain([ws, group, ok] {
 			auto s = ws.lock(); if (!s) return;
@@ -525,7 +599,7 @@ std::string OpenPath(const std::string &path)
 		g->merged = std::make_shared<Source>();
 		g->merged->kind = Source::Merged; g->merged->label = "All archives (game view)"; g->merged->game = gi.game; g->merged->group = g->id; g->merged->state = Source::Ready;
 		g->folder = std::make_shared<Source>();
-		g->folder->kind = Source::Folder; g->folder->label = (gi.game == Game::MBAACC ? "Characters: " : "Files in ") + (gi.dataDir.empty() ? p.filename().u8string() : P8(gi.dataDir).filename().u8string());
+		g->folder->kind = Source::Folder; g->folder->label = (gi.game == Game::MBAACC || gi.game == Game::DFCI || gi.game == Game::UNI || gi.game == Game::UNIST || gi.game == Game::QOH99 || gi.game == Game::QOH98 ? "Characters: " : "Files in ") + (gi.dataDir.empty() ? p.filename().u8string() : P8(gi.dataDir).filename().u8string());
 		g->folder->path = gi.dataDir.empty() ? path : gi.dataDir; g->folder->game = gi.game; g->folder->group = g->id;
 		const bool haveArchives = !gi.archives.empty();
 		if (haveArchives) st.sources.push_back(g->merged);
@@ -533,7 +607,8 @@ std::string OpenPath(const std::string &path)
 		const int folderIdx = (int)st.sources.size() - 1, mergedIdx = haveArchives ? folderIdx - 1 : -1;
 		std::weak_ptr<Source> wf = g->folder;
 		const std::string scanRoot = g->folder->path;
-		const bool recursive = gi.game == Game::Generic;
+		const bool recursive = gi.game == Game::Generic || gi.game == Game::DFCI || gi.game == Game::UNI || gi.game == Game::UNIST || gi.game == Game::QOH99 || gi.game == Game::QOH98 ||
+		                       gi.game == Game::ROSA || gi.game == Game::LILIAN || gi.game == Game::DMP;
 		PostJob([wf, scanRoot, recursive] {
 			auto s = wf.lock(); if (!s) return;
 			ScanFolderInto(*s, scanRoot, recursive);
@@ -542,7 +617,8 @@ std::string OpenPath(const std::string &path)
 		for (auto &a : gi.archives) MountArchive(a, g->id, false);
 		st.selSource = (haveArchives && gi.game != Game::MBAACC) ? mergedIdx : folderIdx;   // MBAACC characters are loose .HA6 files: start on the folder
 		st.viewDirty = true; st.sel.clear(); st.cursor = st.anchor = -1;
-		if (haveArchives && gi.game != Game::Generic) st.typeFilter = (int)Type::Character; else st.typeFilter = -1;
+		const bool charGame = gi.game == Game::DFCI || gi.game == Game::UNI || gi.game == Game::UNIST || gi.game == Game::QOH99 || gi.game == Game::QOH98;
+		if ((haveArchives && gi.game != Game::Generic) || charGame) st.typeFilter = (int)Type::Character; else st.typeFilter = -1;
 		st.filter[0] = 0;
 		show = true;
 		RememberBrowsed(path);
@@ -665,8 +741,9 @@ static void Downscale(const std::vector<uint8_t> &src, int sw, int sh, int maxSi
 
 // ---- character preview ------------------------------------------------------------------------------------------------------------------------------
 struct CharJob {
-	enum Kind { Han2Stem, Gof1, Loose } kind = Loose;
+	enum Kind { Han2Stem, Gof1, Loose, Stack } kind = Loose;
 	han2::ReadFn read; std::string stem, archivePath, entry, path, origin;
+	SourceP owner; Item item;   // Stack: an entry of a (non-PAC) archive that is first unpacked as a working copy
 };
 
 static void AddCharFacts(CharacterInstance &ch, Preview &pv)
@@ -683,6 +760,137 @@ static void AddCharFacts(CharacterInstance &ch, Preview &pv)
 	if (!names.empty()) pv.facts.push_back({ "First patterns", names });
 }
 
+// ---- unpacking one character of a non-PAC archive (UNI2 / MBTL / MBAACC .p / MBAC / ...) as a working copy -------------------------------------------------
+// A modern character is a STACK of files (txt project -> _temp.ha6, chrNNN.ha6, ../BaseData.HA6, .cg, .pal, .pat): copy the entries of the character's folder that
+// belong to it plus the shared ones the txt names, into %TEMP%\hantei_archive\<game>_<archive>\<same relative paths>. Returns the file to open (the txt, else the .ha6).
+static std::string DirOf(const std::string &rel) { size_t s = rel.find_last_of('/'); return s == std::string::npos ? std::string() : rel.substr(0, s); }
+static std::string NormRel(std::string p)
+{
+	for (auto &c : p) if (c == '\\') c = '/';
+	std::vector<std::string> parts; size_t i = 0;
+	while (i <= p.size()) { size_t j = p.find('/', i); if (j == std::string::npos) j = p.size(); std::string seg = p.substr(i, j - i); if (seg == "..") { if (!parts.empty()) parts.pop_back(); } else if (!seg.empty() && seg != ".") parts.push_back(seg); i = j + 1; }
+	std::string o; for (size_t k = 0; k < parts.size(); k++) o += (k ? "/" : "") + parts[k];
+	return o;
+}
+std::string Materialize(const SourceP &o, const Item &it, std::string *err, bool light, int *cgIndex)
+{
+	if (!o || o->kind != Source::Fb || !o->fb) { if (err) *err = "not an archive entry"; return {}; }
+	std::unordered_map<std::string, size_t> byName;
+	for (size_t i = 0; i < o->items.size(); i++) byName[Lower(o->items[i].name)] = i;
+	const std::string dir = DirOf(it.name), stem = Lower(StemOf(it.name));
+	std::set<size_t> want;
+	auto addNamed = [&](const std::string &rel) { auto f = byName.find(Lower(NormRel(rel))); if (f != byName.end()) want.insert(f->second); };
+	for (size_t i = 0; i < o->items.size(); i++) {   // everything of this character in its folder, the shared _temp set, and the parent's BaseData / effect libraries
+		const std::string n = Lower(o->items[i].name), d = DirOf(n), b = Lower(BaseName(n));
+		if (d == Lower(dir)) {
+			if (b.rfind(stem, 0) == 0 && b.size() > stem.size() && (b[stem.size()] == '.' || b[stem.size()] == '_')) want.insert(i);
+			else if (b.rfind("_temp", 0) == 0 || b.rfind("basedata", 0) == 0) want.insert(i);
+		} else if (d == Lower(DirOf(dir)) && (b.rfind("basedata", 0) == 0 || b.rfind("effect", 0) == 0 || b.rfind("sys_effect", 0) == 0)) want.insert(i);
+	}
+	addNamed(it.name);
+	// the txt project names the rest (File%02d / BmpcutFile / PAniFile), relative to its own folder
+	std::string txtName;
+	for (const char *cand : { "_0.txt", ".txt" }) { std::string t = (dir.empty() ? "" : dir + "/") + StemOf(it.name) + cand; if (byName.count(Lower(t))) { txtName = t; break; } }
+	std::error_code ec;
+	const std::string game = std::string(GameName(o->game)) + "_" + Lower(o->label);
+	fs::path root = fs::temp_directory_path(ec) / "hantei_archive";
+	{ std::string g2; for (char c : game) g2 += (isalnum((unsigned char)c) ? c : '_'); root /= g2; }
+	auto copyOne = [&](size_t i) -> bool {
+		const Item &e = o->items[i];
+		const fs::path out = root / P8(e.name);
+		fs::create_directories(out.parent_path(), ec);
+		if (fs::exists(out, ec) && fs::file_size(out, ec) == e.size) return true;
+		std::vector<uint8_t> b; std::string er;
+		if (!ReadItem(*o, e, b, &er)) { if (err) *err = er; return false; }
+		std::ofstream f(out, std::ios::binary);
+		if (!b.empty()) f.write((const char *)b.data(), (std::streamsize)b.size());
+		return (bool)f;
+	};
+	if (!txtName.empty()) {   // parse the txt first (copy it, then read its [DataFile] etc. with the INI API)
+		auto f = byName.find(Lower(txtName)); want.insert(f->second);
+		if (!copyOne(f->second)) return {};
+		const std::string tp = (root / P8(txtName)).u8string();
+		char b[512];
+		auto ref = [&](const char *sec, const char *key) { GetPrivateProfileStringA(sec, key, "", b, sizeof b, tp.c_str()); if (b[0]) addNamed((DirOf(txtName).empty() ? "" : DirOf(txtName) + "/") + b); };
+		for (int i = 0; i < 40; i++) { char k[16]; snprintf(k, sizeof k, "File%02d", i); ref("DataFile", k); snprintf(k, sizeof k, "File%03d", i); ref("DataFile", k); }
+		ref("DataFile", "File");
+		for (int i = 0; i < 8; i++) { char k[16]; snprintf(k, sizeof k, "File%02d", i); ref("BmpcutFile", k); ref("PAniFile", k); }
+		if (cgIndex) { GetPrivateProfileStringA("BmpcutFile", "File00", "", b, sizeof b, tp.c_str()); *cgIndex = -1; if (b[0]) { auto f2 = byName.find(Lower(NormRel((DirOf(txtName).empty() ? "" : DirOf(txtName) + "/") + b))); if (f2 != byName.end()) *cgIndex = (int)f2->second; } }
+	}
+	if (light) for (auto itw = want.begin(); itw != want.end();) { const std::string x = ExtOf(o->items[*itw].name); if (x == ".ha6" || x == ".pal" || o->items[*itw].name == txtName) ++itw; else itw = want.erase(itw); }
+	for (size_t i : want) if (!copyOne(i)) return {};
+	const auto mi = byName.find(Lower(it.name));
+	return (root / P8(!txtName.empty() ? txtName : o->items[mi->second].name)).u8string();
+}
+
+// Loads one character file of any family the editor reads, by content (the same routing File > Open uses). `fmt` = what it was recognised as.
+bool LoadCharacterFile(CharacterInstance &ch, const std::string &path, std::string *fmt, std::string *err)
+{
+	std::vector<uint8_t> head(4096);
+	{ std::ifstream f(P8(path), std::ios::binary); f.read((char *)head.data(), (std::streamsize)head.size()); head.resize((size_t)f.gcount()); }
+	if (head.empty()) { *err = "cannot read " + path; return false; }
+	const std::string ext = ExtOf(path);
+	auto starts = [&](const char *m, size_t n) { return head.size() >= n && memcmp(head.data(), m, n) == 0; };
+	std::error_code ec;
+	if (ext == ".ha6" || ext == ".dat" || ext == ".txt") {
+		fs::path txt = P8(path);
+		if (ext == ".ha6") {   // the sprites / palettes live in the character's txt stack: <stem>_0.txt or <stem>.txt
+			const fs::path base = P8(path); const std::string stem = base.stem().u8string();
+			for (const char *c : { "_0.txt", ".txt" }) {
+				fs::path t = base.parent_path() / P8(stem + c);
+				char probe[32]{};
+				if (fs::exists(t, ec)) { GetPrivateProfileStringA("DataFile", "FileNum", "", probe, sizeof probe, t.u8string().c_str()); if (probe[0]) { if (ch.loadFromTxt(t.u8string())) { if (fmt) *fmt = std::string("Hantei6 character, txt stack (") + t.filename().u8string() + ")"; return true; } } }
+			}
+		}
+		if (ext == ".txt") { if (ch.loadFromTxt(path)) { if (fmt) *fmt = "Hantei6 character, txt stack"; return true; } *err = "not a character project .txt"; return false; }
+	}
+	if (starts("Hantei6DataFile", 15) || starts("Hantei4\0", 8)) {
+		if (!ch.loadHA6(path, false)) { *err = "Not a Hantei4 / HA6 character file"; return false; }
+		if (fmt) *fmt = ch.frameData.isHA4() ? "MBAC / ReAct (Hantei4) character .DAT" : "Hantei6 character (.HA6)";
+		const fs::path pp = P8(path);
+		for (auto &e : fs::directory_iterator(pp.parent_path(), ec))
+			if (Lower(e.path().stem().string()) == Lower(pp.stem().string()) && Lower(e.path().extension().string()) == ".cg") { ch.loadCG(e.path().u8string()); break; }
+		return true;
+	}
+	if (starts("\xd9\x93\xfe\x3d", 4)) { if (!ch.loadGof1File(path, *err)) return false; if (fmt) *fmt = "Melty Blood / GOF1-family character .DAT"; return true; }
+	std::error_code fe; const uintmax_t fsz = fs::file_size(P8(path), fe);
+	if (!fe && ext == ".dat" && head.size() >= 0x41C && pb2k1::LooksLikeCharacter(head.data(), (size_t)fsz)) { if (!ch.loadPb2k1File(path, *err)) return false; if (fmt) *fmt = "Party Breakers character .DAT"; return true; }
+	if (!fe && ext == ".chr") { if (!ch.loadQohFile(path, han2::qoh::V99, *err)) return false; if (fmt) *fmt = "Queen of Heart '99 character (.chr)"; return true; }
+	if (!fe && ext == ".dat" && fsz > 28 + 1024 && fsz < (200u << 20)) {
+		std::ifstream qf(P8(path), std::ios::binary); std::vector<uint8_t> all((std::istreambuf_iterator<char>(qf)), std::istreambuf_iterator<char>());
+		if (han2::qoh::LooksLike98(all.data(), all.size())) { if (!ch.loadQohFile(path, han2::qoh::V98, *err)) return false; if (fmt) *fmt = "Queen of Heart '98 character (.dat)"; return true; }
+	}
+	*err = "This file is not a character this editor can load.";
+	return false;
+}
+
+// Fast path for thumbnails and previews of a txt-stack character: the HA6 stack and the sprite bank, nothing else (no .pat parts: the idle frame of every shipped
+// stack is drawn from the bank). Archive entries are read straight into memory; only the small .txt / .ha6 / .pal files are staged on disk.
+static bool LoadThumbStack(CharacterInstance &ch, const CharJob &j, std::string *fmt, std::string *err)
+{
+	std::string txt;
+	int cgi = -1;
+	std::function<bool(const std::string &, std::vector<uint8_t> &)> readCg;
+	if (j.kind == CharJob::Stack) {
+		txt = Materialize(j.owner, j.item, err, true, &cgi);
+		if (txt.empty()) return false;
+		if (!(ExtOf(j.item.name) == ".ha6" && ExtOf(txt) == ".txt")) return false;
+		readCg = [&](const std::string &, std::vector<uint8_t> &b) { try { return cgi >= 0 && ReadItem(*j.owner, j.owner->items[cgi], b, nullptr); } catch (const std::exception &e) { tlog::Log("readCg exception %s", e.what()); return false; } };
+	} else {
+		const fs::path base = P8(j.path); std::error_code ec;
+		if (ExtOf(j.path) != ".ha6") return false;
+		for (const char *c : { "_0.txt", ".txt" }) {
+			const fs::path t = base.parent_path() / P8(base.stem().u8string() + c); char probe[16]{};
+			if (fs::exists(t, ec)) { GetPrivateProfileStringA("DataFile", "FileNum", "", probe, sizeof probe, t.u8string().c_str()); if (probe[0]) { txt = t.u8string(); break; } }
+		}
+		if (txt.empty()) return false;
+	}
+	std::string name; { std::string t = txt; std::replace(t.begin(), t.end(), '/', '\\'); name = BaseName(t); }
+	if (!LoadStackLight(&ch.frameData, &ch.cg, txt, readCg)) { if (err) *err = "could not load the character stack " + name; return false; }
+	if (fmt) *fmt = "Hantei6 character, txt stack (" + name + ")";
+	return true;
+}
+
 static bool BuildCharacterPreview(const CharJob &j, int maxSide, Preview &pv)
 {
 	CharacterInstance ch;
@@ -696,22 +904,23 @@ static bool BuildCharacterPreview(const CharJob &j, int maxSide, Preview &pv)
 		if (!han2::LoadGof1Character(ch, j.archivePath, j.entry, &err)) { pv.text = err; return false; }
 		pv.facts.push_back({ "Format", "Glove on Fight (GOF1 character .DAT)" });
 		break;
+	case CharJob::Stack:
 	case CharJob::Loose: {
-		std::vector<uint8_t> head(16);
-		{ std::ifstream f(P8(j.path), std::ios::binary); f.read((char *)head.data(), 16); head.resize((size_t)f.gcount()); }
-		if (!ch.loadHA6(j.path, false)) { pv.text = "Not a Hantei4 / HA6 character file"; return false; }
-		pv.facts.push_back({ "Format", ch.frameData.isHA4() ? "MBAC (Hantei4) character .DAT" : "Hantei6 character (.HA6)" });
-		// the sprite bank of the character sits next to it: <stem>.cg
-		const fs::path pp = P8(j.path);
-		std::error_code ec;
-		for (auto &e : fs::directory_iterator(pp.parent_path(), ec))
-			if (Lower(e.path().stem().string()) == Lower(pp.stem().string()) && Lower(e.path().extension().string()) == ".cg") { ch.loadCG(e.path().u8string()); break; }
+		std::string fmt0;
+		if (LoadThumbStack(ch, j, &fmt0, &err)) { pv.facts.push_back({ "Format", fmt0 }); break; }
+		err.clear();
+		std::string path = j.path;
+		if (j.kind == CharJob::Stack) { tlog::Scope _t("materialize"); path = Materialize(j.owner, j.item, &err); if (path.empty()) { pv.text = err; return false; } }
+		std::string fmt;
+		{ tlog::Scope _t("LoadCharacterFile(total)"); if (!LoadCharacterFile(ch, path, &fmt, &err)) { pv.text = err; return false; } }
+		pv.facts.push_back({ "Format", fmt });
 		break;
 	}
 	}
 	AddCharFacts(ch, pv);
 	int pat = 0, fr = 0;
 	std::vector<uint8_t> px; int w = 0, h = 0;
+	tlog::Scope _tr("render thumb");
 	if (han2::FindIdleFrame(ch.frameData, pat, fr) && han2::RenderFrameThumb(ch.frameData, ch.cg, ch.parts, pat, fr, maxSide, px, w, h)) {
 		pv.rgba = std::move(px); pv.w = w; pv.h = h; pv.isCharacter = true;
 		pv.facts.push_back({ "Thumbnail", "pattern " + Num(pat) + ", frame " + Num(fr) });
@@ -720,11 +929,19 @@ static bool BuildCharacterPreview(const CharJob &j, int maxSide, Preview &pv)
 }
 
 // Builds the CharJob for an item (UI thread: touches S()).
-static bool MakeCharJob(const Source &s, const Item &it, CharJob &j)
+static bool MakeCharJob(const SourceP &sp, const Item &it, CharJob &j)
 {
+	const Source &s = *sp;
 	uint32_t idx; const Source &o = Owner(s, it, idx);
 	const std::string ext = ExtOf(it.name);
 	State &st = S();
+	if (o.kind == Source::Fb) {
+		if (!(ext == ".ha6" || ext == ".dat" || ext == ".chr")) return false;
+		SourceP own = sp->kind == Source::Merged && it.member < sp->members.size() ? sp->members[it.member] : sp;
+		Item copy = it; copy.index = idx;
+		j.kind = CharJob::Stack; j.owner = own; j.item = copy; j.origin = o.label;
+		return true;
+	}
 	if (o.kind == Source::Pac) {
 		std::vector<std::shared_ptr<pac::Archive>> order{ o.pac };
 		if (auto g = GroupById(o.group)) for (int k = (int)g->archives.size() - 1; k >= 0; k--) if (g->archives[k].get() != &o && g->archives[k]->pac) order.push_back(g->archives[k]->pac);
@@ -732,7 +949,7 @@ static bool MakeCharJob(const Source &s, const Item &it, CharJob &j)
 		(void)st; return ext == ".dt2" || ext == ".dat";
 	}
 	if (o.kind == Source::Gof1) { j.kind = CharJob::Gof1; j.archivePath = o.g1->path; j.entry = it.key; return ext == ".dat"; }
-	if (o.kind == Source::Folder) { j.kind = CharJob::Loose; j.path = it.key; return ext == ".ha6" || ext == ".dat"; }
+	if (o.kind == Source::Folder) { j.kind = CharJob::Loose; j.path = it.key; return ext == ".ha6" || ext == ".dat" || ext == ".chr"; }
 	return false;
 }
 
@@ -840,7 +1057,7 @@ void RequestPreview(int sourceIdx, int itemIdx)
 	st.prev = Preview(); st.prev.kind = Preview::Loading; st.prev.title = item.name; st.prev.serial = ++st.prevSerial;
 	st.bankFrame = -1; st.bankTexFrame = -2; st.view2.fit = true;
 	CharJob cj; bool charOk = false;
-	if (item.type == Type::Character || item.type == Type::CharData) charOk = MakeCharJob(*s, item, cj);
+	if (item.type == Type::Character || item.type == Type::CharData) charOk = MakeCharJob(s, item, cj);
 	const uint64_t serial = st.prevSerial;
 	PostJob([s, item, cj, charOk, serial] { DecodePreviewJob(s, item, cj, charOk, serial); });
 }
@@ -854,12 +1071,59 @@ std::string ThumbKey(const Source &s, const Item &it)
 	return o.path + "|" + std::to_string(idx) + "|" + it.name;
 }
 
-static void ThumbJob(SourceP src, Item item, CharJob cj, bool charOk, std::string key)
+// ---- persistent thumbnail cache -------------------------------------------------------------------------------------------------------------------------
+// %LOCALAPPDATA%\Hantei-chan\thumbcache\<hash>.thm : "THM1", u16 w, u16 h, RGBA. Key = archive path + entry + size + the source file's mtime (+ a format version).
+static fs::path CacheDir()
+{
+	static fs::path d = [] { const char *e = getenv("LOCALAPPDATA"); std::error_code ec; fs::path p = e ? fs::path(e) / "Hantei-chan" / "thumbcache" : fs::temp_directory_path(ec) / "hantei_thumbcache"; fs::create_directories(p, ec); return p; }();
+	return d;
+}
+static std::string CacheFile(const Source &src, const Item &item)
+{
+	uint32_t idx; const Source &o = Owner(src, item, idx);
+	std::error_code ec;
+	const std::string srcPath = o.kind == Source::Folder ? item.key : o.path;
+	const auto mt = fs::last_write_time(P8(srcPath), ec).time_since_epoch().count();
+	std::string k = Lower(srcPath) + "|" + item.name + "|" + std::to_string(item.size) + "|" + std::to_string((long long)mt) + "|v3";
+	uint64_t h = 1469598103934665603ull; for (unsigned char c : k) { h ^= c; h *= 1099511628211ull; }
+	char b[40]; snprintf(b, sizeof b, "%016llx.thm", (unsigned long long)h);
+	return (CacheDir() / b).u8string();
+}
+static bool CacheLoad(const std::string &file, std::vector<uint8_t> &px, int &w, int &h)
+{
+	std::ifstream f(P8(file), std::ios::binary);
+	uint8_t hd[8]; if (!f.read((char *)hd, 8) || memcmp(hd, "THM1", 4)) return false;
+	w = hd[4] | (hd[5] << 8); h = hd[6] | (hd[7] << 8);
+	if (w <= 0 || h <= 0 || w > 512 || h > 512) return false;
+	px.resize((size_t)w * h * 4);
+	return (bool)f.read((char *)px.data(), (std::streamsize)px.size());
+}
+static void CacheStore(const std::string &file, const std::vector<uint8_t> &px, int w, int h)
+{
+	std::ofstream f(P8(file + ".tmp"), std::ios::binary);
+	const uint8_t hd[8] = { 'T', 'H', 'M', '1', (uint8_t)(w & 255), (uint8_t)(w >> 8), (uint8_t)(h & 255), (uint8_t)(h >> 8) };
+	f.write((const char *)hd, 8); f.write((const char *)px.data(), (std::streamsize)px.size()); f.close();
+	std::error_code ec; fs::rename(P8(file + ".tmp"), P8(file), ec);
+}
+
+static void ThumbJob(SourceP src, Item item, CharJob cj, bool charOk, std::string key, std::shared_ptr<std::atomic<uint64_t>> wanted)
 {
 	auto fail = [&] { PostMain([key] { auto &c = S().thumbCache[key]; c.state = 3; S().thumbsPending = std::max(0, S().thumbsPending - 1); }); };
 	if (src->closed) { fail(); return; }
+	if (g_uiFrame.load() > wanted->load() + 4) {   // scrolled away before it started: drop it, it is requested again when it comes back
+		PostMain([key] { auto &c = S().thumbCache[key]; if (c.state == 1) c.state = 0; S().thumbsPending = std::max(0, S().thumbsPending - 1); });
+		return;
+	}
+	const auto t0 = tlog::Now();
 	std::vector<uint8_t> px; int w = 0, h = 0;
 	std::string err;
+	const std::string cacheFile = CacheFile(*src, item);
+	if (CacheLoad(cacheFile, px, w, h)) {
+		auto data = std::make_shared<std::vector<uint8_t>>(std::move(px));
+		tlog::Log("thumb %s: cache hit %.1f ms", item.name.c_str(), tlog::Ms(t0, tlog::Now()));
+		PostMain([key, data, w, h] { ApplyThumb(key, data, w, h); });
+		return;
+	}
 	if ((item.type == Type::Character || item.type == Type::CharData) && charOk) {
 		Preview pv;
 		if (!BuildCharacterPreview(cj, 96, pv) || pv.w <= 0) { fail(); return; }
@@ -881,6 +1145,8 @@ static void ThumbJob(SourceP src, Item item, CharJob cj, bool charOk, std::strin
 		}
 		if (!done) { fail(); return; }
 	} else { fail(); return; }
+	CacheStore(cacheFile, px, w, h);
+	tlog::Log("thumb %s: decoded %.1f ms", item.name.c_str(), tlog::Ms(t0, tlog::Now()));
 	auto data = std::make_shared<std::vector<uint8_t>>(std::move(px));
 	PostMain([key, data, w, h] { ApplyThumb(key, data, w, h); });
 }
@@ -894,11 +1160,13 @@ void RequestThumb(int sourceIdx, int itemIdx)
 	const std::string key = ThumbKey(*s, item);
 	Thumb &t = st.thumbCache[key];
 	if (t.state != 0) return;
-	if (!(item.type == Type::Character || item.type == Type::CharData || item.type == Type::Image || item.type == Type::CgBank)) { t.state = 3; return; }
+	if (!(item.type == Type::Character || item.type == Type::CharData || item.type == Type::Image || item.type == Type::CgBank)) { t.state = 3; return; }   // Shared / effect data and the rest get a type badge, not a thumbnail
 	t.state = 1; st.thumbsPending++;
+	t.wanted = std::make_shared<std::atomic<uint64_t>>(g_uiFrame.load());
+	auto wanted = t.wanted;
 	CharJob cj; bool charOk = false;
-	if (item.type == Type::Character || item.type == Type::CharData) charOk = MakeCharJob(*s, item, cj);
-	PostJob([s, item, cj, charOk, key] { ThumbJob(s, item, cj, charOk, key); }, true);
+	if (item.type == Type::Character || item.type == Type::CharData) charOk = MakeCharJob(s, item, cj);
+	PostJob([s, item, cj, charOk, key, wanted] { ThumbJob(s, item, cj, charOk, key, wanted); }, true);
 }
 
 // ---- opening ----------------------------------------------------------------------------------------------------------------------------------------
@@ -916,7 +1184,7 @@ static std::string ManagedCopy(const Source &o, const Item &it, std::string *err
 	if (!f) { if (err) *err = "could not write " + out.u8string(); return {}; }
 	f.close();
 	// remember the origin so Save writes back into the archive (fbarc understands every archive kind of this browser)
-	fbarc::SetOrigin(out.u8string(), fbarc::Origin{ o.path, it.name });
+	if (!(o.fb && (o.fb->kind() == fbarc::Kind::Uni2D || o.fb->kind() == fbarc::Kind::MbtlBin))) fbarc::SetOrigin(out.u8string(), fbarc::Origin{ o.path, it.name });   // those archives are read-only: Save keeps the copy
 	return out.u8string();
 }
 
@@ -934,7 +1202,7 @@ bool BuildOpenRequest(int sourceIdx, int itemIdx, OpenRequest &req, std::string 
 	if (o.kind == Source::Folder) { req.kind = OpenRequest::LooseFile; req.path = it.key; return true; }
 	const std::string ext = ExtOf(it.name);
 	if ((it.type == Type::Character || it.type == Type::CharData) && o.kind == Source::Pac && (ext == ".dt2" || ext == ".dat")) {
-		CharJob cj; MakeCharJob(*s, it, cj);
+		CharJob cj; MakeCharJob(s, it, cj);
 		req.kind = OpenRequest::Han2Stem; req.stem = cj.stem; req.read = cj.read; req.origin = o.label; req.archivePath = o.path;
 		return true;
 	}
@@ -944,6 +1212,15 @@ bool BuildOpenRequest(int sourceIdx, int itemIdx, OpenRequest &req, std::string 
 	}
 	(void)st;
 	std::string err;
+	if (o.kind == Source::Fb && o.fb && it.type == Type::Character && ExtOf(it.name) == ".ha6") {   // a character stack: unpack it as a working copy and open its txt
+		SourceP own = s->kind == Source::Merged && it.member < s->members.size() ? s->members[it.member] : s;
+		Item copy = it; copy.index = idx;
+		const std::string tp = Materialize(own, copy, &err);
+		if (tp.empty()) { msg = err.empty() ? "could not unpack the character" : err; return false; }
+		req.kind = OpenRequest::LooseFile; req.path = tp; req.origin = o.label;
+		msg = "Working copy of " + it.name + " (the archive is read-only here)";
+		return true;
+	}
 	const std::string p = ManagedCopy(o, it, &err);
 	if (p.empty()) { msg = err.empty() ? "could not read the entry" : err; return false; }
 	req.kind = OpenRequest::LooseFile; req.path = p; req.archivePath = o.path; req.entryName = it.key; req.origin = o.label;
