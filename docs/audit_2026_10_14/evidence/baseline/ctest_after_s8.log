@@ -1,0 +1,82 @@
+Internal ctest changing into directory: /mnt/c/dev/hantei-chan/wt/parity/build
+Test project /mnt/c/dev/hantei-chan/wt/parity/build
+      Start  1: uni_dataloss
+ 1/38 Test  #1: uni_dataloss .....................   Passed    1.75 sec
+      Start  2: cmdfile
+ 2/38 Test  #2: cmdfile ..........................   Passed    0.19 sec
+      Start  3: cmdfile_ui_smoke
+ 3/38 Test  #3: cmdfile_ui_smoke .................   Passed    0.09 sec
+      Start  4: pattern_search
+ 4/38 Test  #4: pattern_search ...................   Passed    0.08 sec
+      Start  5: shared_clipboard
+ 5/38 Test  #5: shared_clipboard .................   Passed    0.08 sec
+      Start  6: fb_part_transform
+ 6/38 Test  #6: fb_part_transform ................   Passed    0.05 sec
+      Start  7: han2_parts_edit
+ 7/38 Test  #7: han2_parts_edit ..................   Passed    0.06 sec
+      Start  8: part_render_math
+ 8/38 Test  #8: part_render_math .................   Passed    0.05 sec
+      Start  9: refs
+ 9/38 Test  #9: refs .............................   Passed    0.09 sec
+      Start 10: bgm
+10/38 Test #10: bgm ..............................   Passed    0.05 sec
+      Start 11: hud
+11/38 Test #11: hud ..............................   Passed    0.05 sec
+      Start 12: ha4_convert
+12/38 Test #12: ha4_convert ......................   Passed    0.16 sec
+      Start 13: ha4_golden
+13/38 Test #13: ha4_golden .......................   Passed   37.22 sec
+      Start 14: shortcut_router
+14/38 Test #14: shortcut_router ..................   Passed    0.07 sec
+      Start 15: live_reload
+15/38 Test #15: live_reload ......................   Passed    0.42 sec
+      Start 16: undo_manager
+16/38 Test #16: undo_manager .....................   Passed    1.46 sec
+      Start 17: pat_safety
+17/38 Test #17: pat_safety .......................   Passed    0.20 sec
+      Start 18: pat_safety_gamedata
+18/38 Test #18: pat_safety_gamedata ..............   Passed    4.11 sec
+      Start 19: workspace_session
+19/38 Test #19: workspace_session ................   Passed    0.09 sec
+      Start 20: package_tools
+20/38 Test #20: package_tools ....................   Passed    0.25 sec
+      Start 21: game_link
+21/38 Test #21: game_link ........................   Passed    6.17 sec
+      Start 22: game_view
+22/38 Test #22: game_view ........................   Passed    6.64 sec
+      Start 23: tag_tuning
+23/38 Test #23: tag_tuning .......................   Passed    0.07 sec
+      Start 24: tag_sidecar
+24/38 Test #24: tag_sidecar ......................   Passed    0.66 sec
+      Start 25: authoring_model
+25/38 Test #25: authoring_model ..................   Passed    0.07 sec
+      Start 26: frame_data
+26/38 Test #26: frame_data .......................   Passed    1.01 sec
+      Start 27: hud_layout
+27/38 Test #27: hud_layout .......................   Passed    0.05 sec
+      Start 28: fxr_ini
+28/38 Test #28: fxr_ini ..........................   Passed    0.08 sec
+      Start 29: cgm_project_refs_mbaacc
+29/38 Test #29: cgm_project_refs_mbaacc ..........   Passed   51.46 sec
+      Start 30: cgm_folder_mbaacc
+30/38 Test #30: cgm_folder_mbaacc ................   Passed   24.25 sec
+      Start 31: cgm_cc_palettes
+31/38 Test #31: cgm_cc_palettes ..................   Passed    0.08 sec
+      Start 32: cgm_project_refs_mbtl
+32/38 Test #32: cgm_project_refs_mbtl ............   Passed    2.05 sec
+      Start 33: cgm_palette_uni_mbtl
+33/38 Test #33: cgm_palette_uni_mbtl .............   Passed    0.05 sec
+      Start 34: pat_textures_x8
+34/38 Test #34: pat_textures_x8 ..................   Passed    2.35 sec
+      Start 35: cgm_cutter2_gakiha
+35/38 Test #35: cgm_cutter2_gakiha ...............   Passed    0.10 sec
+      Start 36: cgm_cutter2_gakiha_struct
+36/38 Test #36: cgm_cutter2_gakiha_struct ........   Passed    0.21 sec
+      Start 37: cgm_cutter2_gakiha_rt
+37/38 Test #37: cgm_cutter2_gakiha_rt ............   Passed    0.43 sec
+      Start 38: fxr_dgv_oracle
+38/38 Test #38: fxr_dgv_oracle ...................   Passed    2.86 sec
+
+100% tests passed, 0 tests failed out of 38
+
+Total Test time (real) = 145.96 sec
