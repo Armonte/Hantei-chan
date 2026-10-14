@@ -41,7 +41,7 @@ const char* const flipList[] = {
 };
 const char* const shapeList[] = {
         "Plane",
-        "Unk2",
+        "Rect",
         "Ring",
         "Arc",
         "Sphere",
@@ -156,8 +156,20 @@ void PatShapePane::DrawShape()
                     ImGui::EndCombo();
                 }
 
-                if (shape->type == ShapeType::PLANE || shape->type == ShapeType::UNK2) {
+                if (shape->type == ShapeType::PLANE) {
                     // no parameters
+                } else if (shape->type == ShapeType::RECT) {
+                    // CPAniPrimRender_Rect: corners (x, y) .. (x + w, y + h); w/h lerp under AFHK.
+                    ImGui::SetNextItemWidth(width);
+                    ImGui::DragInt(LBL("Rect X"), &shape->rectX);
+                    ImGui::SameLine();
+                    ImGui::SetNextItemWidth(width);
+                    ImGui::DragInt(LBL("Rect Y"), &shape->rectY);
+                    ImGui::SetNextItemWidth(width);
+                    ImGui::DragInt(LBL("Rect W"), &shape->rectW);
+                    ImGui::SameLine();
+                    ImGui::SetNextItemWidth(width);
+                    ImGui::DragInt(LBL("Rect H"), &shape->rectH);
                 } else {
                     ImGui::SetNextItemWidth(width);
                     ImGui::DragInt(LBL("Radius"), &shape->radius, 1, 0, INT32_MAX);

@@ -12,6 +12,7 @@
 #include <sstream>
 
 #include "hitbox.h"
+#include "app_log.h"
 #include "parts/parts.h"
 #include "enums.h"  // For RenderMode enum
 #include "background/bg_renderer.h"
@@ -109,7 +110,8 @@ void main()
 };
 )";
 
-// Parts shader with flip support, additive color, and vertex color tinting
+// Parts shader: vertex colour (layer x PRCL x palette slot), plus the PRSP specular colour added as RGBA like the
+// game's PS_CharaPtDrawV (out = tex * diffuse; out += spec). PRRV flips are baked into the UVs (Parts::Draw).
 const char* partsSrcVert = R"(
 #version 330 core
 layout (location = 0) in vec3 Position;
@@ -120,16 +122,10 @@ out vec2 Frag_UV;
 out vec4 Frag_Color;
 
 uniform mat4 ProjMtx;
-uniform int flip;
 
 void main()
 {
-    // Choose between s,t or p,q based on flip
-    if (flip != 0) {
-        Frag_UV = UV.pq;
-    } else {
-        Frag_UV = UV.st;
-    }
+    Frag_UV = UV.st;
     Frag_Color = Color;
     gl_Position = ProjMtx * vec4(Position, 1);
 }
@@ -138,7 +134,7 @@ void main()
 const char* partsSrcFrag = R"(
 #version 330 core
 uniform sampler2D Texture;
-uniform vec3 addColor;
+uniform vec4 addColor;
 
 in vec2 Frag_UV;
 in vec4 Frag_Color;
@@ -147,8 +143,8 @@ out vec4 FragColor;
 void main()
 {
     vec4 col = texture(Texture, Frag_UV);
-    col.rgba *= Frag_Color;  // Apply vertex color tint (BGRA color from part)
-    col.rgb += addColor;     // Apply additive color
+    col *= Frag_Color;  // diffuse
+    col += addColor;    // specular (PRSP), alpha included
     FragColor = col;
 }
 )";
@@ -200,7 +196,6 @@ blendingMode(normal)
 	lProjectionT = sTextured.GetLoc("ProjMtx");
 	lIndexedT = sTextured.GetLoc("indexed");
 	lProjectionParts = sPartShader.GetLoc("ProjMtx");
-	lFlipParts = sPartShader.GetLoc("flip");
 	lAddColorParts = sPartShader.GetLoc("addColor");
 
 	//Palette texture lives on unit 1; the sampler binding never changes.
@@ -326,19 +321,6 @@ void Render::Draw()
 	vGeometry.Bind();
 	vGeometry.Draw(geoParts[LINES], 0, GL_LINES);
 
-	// Check if we should use Parts rendering
-	// Debug: Only print when renderMode changes
-	static int lastRenderMode = -1;
-	static int debugDrawCount = 0;
-	if (debugDrawCount < 5 && m_parts && m_parts->renderMode && *m_parts->renderMode != lastRenderMode) {
-		printf("[Render::Draw] usePat=%d, m_parts=%p, loaded=%d\n",
-			usePat, (void*)m_parts, m_parts ? m_parts->loaded : -1);
-		printf("  renderMode=%d (0=DEFAULT, 1=TEXTURE_VIEW, 2=UV_SETTING)\n",
-			(int)*m_parts->renderMode);
-		lastRenderMode = *m_parts->renderMode;
-		debugDrawCount++;
-	}
-
 	if (usePat && m_parts && m_parts->loaded)
 	{
 
@@ -365,24 +347,21 @@ void Render::Draw()
 			SetMatrixPersp(lProjectionParts, partMatrix, rview);
 		};
 
-		// Callback to set additive color
-		auto setAddColor = [this](float r, float g, float b) {
-			glUniform3f(lAddColorParts, r, g, b);
+		auto setAddColor = [this](const float* rgba) {
+			glUniform4fv(lAddColorParts, 1, rgba);
 		};
 
-		// Callback to set flip mode
-		auto setFlip = [this](char flip) {
-			glUniform1i(lFlipParts, (int)flip);
-		};
-
-		// Draw Parts with interpolation (wrapped in try-catch for crash diagnosis)
+		Parts::DrawParams dp;
+		dp.pattern = curPattern;
+		dp.nextPattern = curNextPattern;
+		dp.curWeight = curInterp;
 		try {
-			m_parts->Draw(curPattern, curNextPattern, curInterp, setMatrix, setAddColor, setFlip, colorRgba);
+			m_parts->Draw(dp, setMatrix, setAddColor, colorRgba);
 		} catch (const std::exception& e) {
-			printf("[Render] EXCEPTION in Parts::Draw: %s\n", e.what());
+			HC_LOG_ERROR("[Render] exception in Parts::Draw: {}", e.what());
 			return;
 		} catch (...) {
-			printf("[Render] UNKNOWN EXCEPTION in Parts::Draw\n");
+			HC_LOG_ERROR("[Render] unknown exception in Parts::Draw");
 			return;
 		}
 
@@ -1034,12 +1013,8 @@ void Render::DrawPatLayerItem(const RenderLayer& layer, Parts* origParts)
 		SetMatrixPersp(lProjectionParts, partMatrix, rview);
 	};
 
-	auto setAddColor = [this](float r, float g, float b) {
-		glUniform3f(lAddColorParts, r, g, b);
-	};
-
-	auto setFlip = [this](char flip) {
-		glUniform1i(lFlipParts, (int)flip);
+	auto setAddColor = [this](const float* rgba) {
+		glUniform4fv(lAddColorParts, 1, rgba);
 	};
 
 	float layerColor[4] = {
@@ -1049,7 +1024,19 @@ void Render::DrawPatLayerItem(const RenderLayer& layer, Parts* origParts)
 		layer.alpha
 	};
 
-	m_parts->Draw(layer.spriteId, layer.spriteId, 0.0f, setMatrix, setAddColor, setFlip, layerColor);
+	// PPPA tint uses the palette file of this layer's own pattern (PUPS), not whatever bank the previous
+	// CG layer left selected.
+	CG* tintCg = m_parts->cg;
+	if (tintCg && followPups && tintCg->setPupsBank(layer.pups) && tintCg == cg)
+		curImageId = -1;
+
+	Parts::DrawParams dp;
+	dp.pattern = layer.spriteId;
+	dp.nextPattern = layer.nextSpriteId;
+	dp.curWeight = layer.curWeight;
+	dp.paletteTint = layer.patPaletteTint;
+	dp.applyPras = layer.patApplyPras;
+	m_parts->Draw(dp, setMatrix, setAddColor, layerColor);
 
 	// Leave a clean slate: unbind buffers/textures/shader, swallow PAT GL errors.
 	glBindBuffer(GL_ARRAY_BUFFER, 0);
@@ -1288,16 +1275,16 @@ void Render::DrawBgPattern(Parts* parts, int pattern,
 		rview *= invOrtho;
 		SetMatrixPersp(lProjectionParts, partMatrix, rview);
 	};
-	auto setAddColor = [this](float r, float g, float b) {
-		glUniform3f(lAddColorParts, r, g, b);
-	};
-	auto setFlip = [this](char flip) {
-		glUniform1i(lFlipParts, (int)flip);
+	auto setAddColor = [this](const float* rgba) {
+		glUniform4fv(lAddColorParts, 1, rgba);
 	};
 
 	float color[4] = { 1.f, 1.f, 1.f, alpha };
+	Parts::DrawParams dp;
+	dp.pattern = pattern;
+	dp.paletteTint = false;   // stage objects never go through the character shader
 	try {
-		parts->Draw(pattern, pattern, 0.0f, setMatrix, setAddColor, setFlip, color);
+		parts->Draw(dp, setMatrix, setAddColor, color);
 	} catch (...) {
 		// Parts::Draw already guards bad indices; swallow anything else so
 		// one bad pattern can't kill the whole stage draw.

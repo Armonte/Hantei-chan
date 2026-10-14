@@ -60,6 +60,13 @@ struct RenderLayer {
 
 	// PUPS of the pattern this layer belongs to: selects <cg>_pN.pal (issue #76).
 	int pups = 0;
+	// AFHK (PAT layers): part set of the next frame's same layer and the current frame's weight
+	// (1 = no interpolation). CG layers get their lerped colour/scale/rotation in the fields above.
+	int nextSpriteId = -1;
+	float curWeight = 1.f;
+	// PAT layers: PPPA palette tint (character parts only) and PRAS (MBTL ignores it).
+	bool patPaletteTint = true;
+	bool patApplyPras = true;
 	// Pattern comparison overlay (issue #63): draw this layer's boxes as
 	// outlines only, so they read apart from the main pattern's filled boxes.
 	bool boxesOutlineOnly = false;
@@ -102,7 +109,7 @@ private:
 
 	int lProjectionS, lProjectionT, lProjectionParts;
 	int lAlphaS;
-	int lFlipParts, lAddColorParts;
+	int lAddColorParts;
 	int lIndexedT = -1;              //sTextured 'indexed' mode uniform
 	unsigned int paletteTexId = 0;   //256x1 palette texture on unit 1
 	Shader sSimple;
@@ -182,8 +189,8 @@ public:
 	// Parts rendering state (public for PatEditor)
 	bool usePat = false;
 	int curPattern = 0;
-	int curNextPattern = 0;
-	float curInterp = 0.0f;
+	int curNextPattern = -1;
+	float curInterp = 1.0f;   // AFHK weight of the current frame (1 = no interpolation)
 	
 	Render();
 	~Render();
