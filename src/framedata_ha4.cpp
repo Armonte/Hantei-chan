@@ -52,12 +52,59 @@ bool EfHasPositionBias(int type)
 	return type == 1 || type == 2 || type == 3 || type == 4 || type == 8 || type == 11;
 }
 
+// Per-axis HA4 -> HA6 position rule of one EF record (converter fidelity M2/M9, IDA):
+//  mbacPC Actor_FrameOffsetToWorld 0x423AB0 (EF 2/3/4): CG frame (p-128)<<8, (p-224)<<8;
+//    parts frame (sprite < 10000) (p-320)<<7, (p-448)<<7.
+//  mbacPC EffectObject_InitFromParent 0x423140 (EF 1/8/11), flags p2 (low byte only) / p3:
+//    p3 & 0x200 absolute: x (p0-128)<<8, y p1<<8, nothing else applies;
+//    p2 & 0x10 screen: x cam + (p0-128)<<8 (parts (p0-256)<<7), y cam + p1<<s;
+//    else p3 & 0x100 target-relative: x (p0 + dist)<<s (no bias);
+//    else the frame rule above; finally p2 bit 7 (byte sign) absolute y: p1<<s.
+//  MBAA Effect_InitializeComplex 0x454900 / Effect3_SpawnPresetEffect 0x4553D0: the same
+//    modes with s = 7 when the spawner frame is usePat, else 8, and no bias: absolute
+//    (p3 0x200) is (p0-128)<<8, p1<<8 as in MBAC; p2 bit 7 absolute y is p1<<8 for both kinds.
+// So the HA6 value is raw - bias, except parts-frame absolute-y (p2 bit 7), which is raw/2.
+struct EfAxisRule { int bias; bool half; };
+static void EfPosRules(int type, bool partsFrame, int p2, int p3, EfAxisRule &rx, EfAxisRule &ry)
+{
+	rx = ry = {0, false};
+	const int bx = partsFrame ? 320 : 128, by = partsFrame ? 448 : 224;
+	if (type == 2 || type == 3 || type == 4) { rx.bias = bx; ry.bias = by; return; }
+	if (!(type == 1 || type == 8 || type == 11)) return;
+	if (p3 & 0x200) return;                                   // absolute: both engines subtract 128 themselves
+	if (p2 & 0x10) rx.bias = (p3 & 0x100) ? (partsFrame ? -64 : 0) : (partsFrame ? 256 : 128);
+	else if (!(p3 & 0x100)) rx.bias = bx;
+	if (p2 & 0x80) ry.half = partsFrame;                      // absolute y
+	else if (!(p2 & 0x10)) ry.bias = by;
+}
+
+void EfParamsToModel(int type, bool partsFrame, const int in[12], int out[12])
+{
+	for (int i = 0; i < 12; i++) out[i] = in[i];
+	EfAxisRule rx, ry;
+	EfPosRules(type, partsFrame, in[2], in[3], rx, ry);
+	out[0] = rx.half ? (in[0] >> 1) : in[0] - rx.bias;
+	out[1] = ry.half ? (in[1] >> 1) : in[1] - ry.bias;
+}
+
+void EfParamsFromModel(int type, bool partsFrame, const int in[12], int out[12])
+{
+	for (int i = 0; i < 12; i++) out[i] = in[i];
+	EfAxisRule rx, ry;
+	EfPosRules(type, partsFrame, in[2], in[3], rx, ry);
+	out[0] = rx.half ? in[0] * 2 : in[0] + rx.bias;
+	out[1] = ry.half ? in[1] * 2 : in[1] + ry.bias;
+}
+
 void BoxToModel(const int16_t in[4], bool partsFrame, int out[4])
 {
 	if (partsFrame) {
-		// Actor_BoxToWorldRect: x' = (x>>1) - 32, y' = y>>1, then the CG bias (128,224).
-		out[0] = (in[0] >> 1) - 160; out[1] = (in[1] >> 1) - 224;
-		out[2] = (in[2] >> 1) - 160; out[3] = (in[3] >> 1) - 224;
+		// Parts frames are double resolution around (320,448): mbacPC Actor_BoxToWorldRect
+		// 0x440750 (((x>>1)-32)<<8 from the (128,224) origin = (x-320)<<7), and MBAA
+		// Hitbox_TransformCoordinatesToWorld 0x4196E0 shifts usePat-frame boxes <<7 (CG <<8).
+		// So the HA6 value is (x-320, y-448); the editor draws it at 0.5 (boxDisplayScale).
+		out[0] = in[0] - 320; out[1] = in[1] - 448;
+		out[2] = in[2] - 320; out[3] = in[3] - 448;
 	} else {
 		out[0] = in[0] - 128; out[1] = in[1] - 224;
 		out[2] = in[2] - 128; out[3] = in[3] - 224;
@@ -67,8 +114,8 @@ void BoxToModel(const int16_t in[4], bool partsFrame, int out[4])
 void BoxFromModel(const int in[4], bool partsFrame, int16_t out[4])
 {
 	if (partsFrame) {
-		out[0] = (int16_t)((in[0] + 160) * 2); out[1] = (int16_t)((in[1] + 224) * 2);
-		out[2] = (int16_t)((in[2] + 160) * 2); out[3] = (int16_t)((in[3] + 224) * 2);
+		out[0] = (int16_t)(in[0] + 320); out[1] = (int16_t)(in[1] + 448);
+		out[2] = (int16_t)(in[2] + 320); out[3] = (int16_t)(in[3] + 448);
 	} else {
 		out[0] = (int16_t)(in[0] + 128); out[1] = (int16_t)(in[1] + 224);
 		out[2] = (int16_t)(in[2] + 128); out[3] = (int16_t)(in[3] + 224);
@@ -249,9 +296,10 @@ static void DecodeFrame(Frame &F, const Ha4FrameRaw &R)
 		Frame_EF e{};
 		e.type = rd16(r);
 		e.number = rd16(r + 2);
-		for (int i = 0; i < 8; i++) e.parameters[i] = rd32(r + 4 + 4*i);
-		for (int i = 0; i < 4; i++) e.parameters[8 + i] = rd16(r + 0x24 + 2*i);
-		if (EfHasPositionBias(e.type)) { e.parameters[0] -= 128; e.parameters[1] -= 224; }
+		int rp[12];
+		for (int i = 0; i < 8; i++) rp[i] = rd32(r + 4 + 4*i);
+		for (int i = 0; i < 4; i++) rp[8 + i] = rd16(r + 0x24 + 2*i);
+		EfParamsToModel(e.type, spr >= 0 && spr < 10000, rp, e.parameters);
 		F.EF.push_back(e);
 	}
 
@@ -592,11 +640,15 @@ static bool EncodeFrame(const Frame &F, PatternTables &T, uint8_t out[216], Ctx 
 		int slot = efSlots[i];
 		if (efReuse) memcpy(r.data(), R.efr[slot], 52);
 		int p[12];
-		memcpy(p, e.parameters, sizeof(p));
-		if (EfHasPositionBias(e.type)) { p[0] += 128; p[1] += 224; }
+		EfParamsFromModel(e.type, partsOut && spr >= 0, e.parameters, p);
 		bool same = efReuse && rd16(r.data()) == e.type && rd16(r.data() + 2) == e.number;
-		for (int j = 0; j < 8 && same; j++) same = rd32(r.data() + 4 + 4*j) == p[j];
-		for (int j = 0; j < 4 && same; j++) same = rd16(r.data() + 0x24 + 2*j) == p[8 + j];
+		if (same) {   // keep the original bytes when they still decode to the model (lossy rules, garbage)
+			int rp[12], dec[12];
+			for (int j = 0; j < 8; j++) rp[j] = rd32(r.data() + 4 + 4*j);
+			for (int j = 0; j < 4; j++) rp[8 + j] = rd16(r.data() + 0x24 + 2*j);
+			EfParamsToModel(e.type, partsOut && spr >= 0, rp, dec);
+			same = !memcmp(dec, e.parameters, sizeof(dec));
+		}
 		if (!same) {
 			wr16(r.data(), e.type);
 			wr16(r.data() + 2, e.number);

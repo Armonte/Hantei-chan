@@ -186,6 +186,7 @@ static void RunUiScript(MainFrame &mf, HDC dc, const std::function<void(const st
 			if (arg.compare(0, 5, "press") == 0) { waitFrames = 4; return; }
 			continue;
 		}
+		if (cmd == "framenodes") { extern int gUiScriptOpenFrameNodes; gUiScriptOpenFrameNodes = atoi(arg.c_str()); continue; }
 		if (cmd == "capture") {
 			RECT r; GetClientRect(WindowFromDC(dc), &r);
 			int w = r.right - r.left, h = r.bottom - r.top;

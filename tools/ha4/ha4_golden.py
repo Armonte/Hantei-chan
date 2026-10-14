@@ -7,6 +7,14 @@
    excluded: MBAACC re-cut the CG, so ids are not stable).
 2. Every pattern with the same number and frame count in both games: per-field
    agreement rates (MBAACC edited many moves, so this is a statistic, not a pass/fail).
+   ATVV is also split per value: [0] red / [1] damage / [3] meter keep MBAC's numbers,
+   [2] (CC guard-gauge damage) is 0 by policy (CONVERTER_FIDELITY.md M3).
+3. Behaviour checks (pass/fail; the fixes of docs/mbac_moon/CONVERTER_FIDELITY.md, which
+   sections 1-2 could not see because they compare CG frames and accept verbatim copies):
+   M1 parts-frame boxes at HA6 scale (G_CHAOS / GAKIHA reference boxes, (x-320, y-448)),
+   M7 reaction patterns 900-908 / 351 / 354 in every character file,
+   M8 no IF 51 with p0 < 0, and every non-zero p2 names a pattern with frames,
+   M3 ATVV[2] = 0 on every attack frame.
 
 usage: ha4_golden.py <converted_dir> [mbaacc_data_dir]
 Needs docs/tag_research/tools/ha6lib.py (path below).
@@ -133,7 +141,83 @@ def main():
     print("| field | agree | % |\n|---|---|---|")
     for k in sorted(total):
         print("| %s | %d/%d | %.1f |" % (k, agree[k], total[k], 100.0 * agree[k] / total[k]))
-    return 0 if bad == 0 else 1
+    print("\n### ATVV per value (same frames as above, attack frames present in both)\n")
+    vv_ok = [0] * 4; vv_n = 0
+    for ch in TAG:
+        c = ha6lib.parse_ha6(os.path.join(conv, ch + ".ha6"))
+        try: m, _ = ha6lib.merged_character(aacc, ch, 0)
+        except Exception: continue
+        for p, pa in c.items():
+            pb = m.get(p)
+            if not pb or len(pb.frames) != len(pa.frames): continue
+            for fa, fb in zip(pa.frames, pb.frames):
+                va, vb = (fa.AT or {}).get("ATVV"), (fb.AT or {}).get("ATVV")
+                if va is None or vb is None: continue
+                vv_n += 1
+                for k in range(4): vv_ok[k] += va[k] == vb[k]
+    for k, nm in enumerate(("red damage", "damage", "guard damage (M3 policy: 0)", "meter")):
+        print("ATVV[%d] %-28s %d/%d %.1f%%" % (k, nm, vv_ok[k], vv_n, 100.0 * vv_ok[k] / max(1, vv_n)))
+
+    beh = behaviour(conv)
+    print("\nbehaviour: %d failures" % beh)
+    return 0 if bad == 0 and beh == 0 else 1
+
+
+# Reference boxes from the raw MBAC .DAT (CONVERTER_FIDELITY.md M1): (char, pattern, frame, box, HA6 value).
+REF_BOXES = [("g_chaos", 100, 10, 25, (-130, -425, 384, 6)),   # raw (190,23,704,454), Arc Drive
+             ("g_chaos", 0, 0, 0, (-48, -259, 36, -1)),         # raw (272,189,356,447), push box
+             ("g_chaos", 0, 0, 2, (-119, -518, 125, -271)),     # raw (201,-70,445,177), hurt box
+             ("gakiha", 0, 0, 1, (4, -297, 116, -148))]         # raw (324,151,436,300)
+SYSTEM = list(range(900, 909)) + [351, 354]
+
+def behaviour(conv):
+    fails = 0
+    def bad(msg):
+        nonlocal fails
+        fails += 1
+        if fails <= 40: print("BAD " + msg)
+    print("\n## 3. Behaviour checks (CONVERTER_FIDELITY.md)\n")
+    cache = {}
+    def load(ch):
+        if ch not in cache:
+            f = os.path.join(conv, ch + ".ha6")
+            cache[ch] = ha6lib.parse_ha6(f) if os.path.exists(f) else None
+        return cache[ch]
+    n = 0
+    for ch, p, fr, box, want in REF_BOXES:
+        m = load(ch)
+        if m is None: continue
+        got = m[p].frames[fr].boxes.get(box) if p in m and fr < len(m[p].frames) else None
+        n += 1
+        norm = lambda b: (min(b[0], b[2]), min(b[1], b[3]), max(b[0], b[2]), max(b[1], b[3]))
+        if got is None or norm(got) != norm(want):
+            bad("M1 %s p%d f%d box %d = %s, want %s" % (ch, p, fr, box, got, want))
+    print("M1 reference parts-frame boxes checked: %d" % n)
+    chars = if51 = atk = 0
+    for f in sorted(os.listdir(conv)):
+        if not f.endswith(".ha6"): continue
+        ch = f[:-4]; m = load(ch)
+        have = {k for k, v in m.items() if v.frames}
+        if {17, 23, 24, 25, 26} <= have:
+            chars += 1
+            miss = [s for s in SYSTEM if s not in have]
+            if miss: bad("M7 %s missing reaction patterns %s" % (ch, miss))
+        for p, pa in m.items():
+            for i, fr in enumerate(pa.frames):
+                for t, prm in fr.IF:
+                    if t != 51: continue
+                    if51 += 1
+                    prm = list(prm) + [0, 0, 0]
+                    if prm[0] < 0: bad("M8 %s p%d f%d IF51 p0 %d" % (ch, p, i, prm[0]))
+                    if prm[2] and prm[2] not in have: bad("M8 %s p%d f%d IF51 p2 %d is not a pattern" % (ch, p, i, prm[2]))
+                if fr.AT and any(k >= 25 for k in fr.boxes):
+                    atk += 1
+                    vv = fr.AT.get("ATVV")
+                    if vv and vv[2] != 0: bad("M3 %s p%d f%d ATVV[2] = %d" % (ch, p, i, vv[2]))
+    print("M7 characters with the reaction set checked: %d" % chars)
+    print("M8 IF 51 records checked: %d" % if51)
+    print("M3 attack frames checked: %d" % atk)
+    return fails
 
 if __name__ == "__main__":
     sys.exit(main())

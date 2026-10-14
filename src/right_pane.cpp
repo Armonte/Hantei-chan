@@ -5,6 +5,11 @@
 #include "paste_notice.h"
 #include <imgui.h>
 
+// --ui-script `framenodes MASK` (1 Attack data, 2 Effects, 4 Conditions; 0 = normal): hold those nodes
+// open so a scripted capture shows the frame's AT/EF/IF records (startup_args.cpp). Never set by normal use.
+int gUiScriptOpenFrameNodes = 0;
+static void ScriptOpenNode(int bit) { if (gUiScriptOpenFrameNodes & bit) ImGui::SetNextItemOpen(true, ImGuiCond_Always); }
+
 void DrawRecordNote(Ha6Notes& notes, const std::string& key);
 
 void RightPane::Draw()
@@ -43,6 +48,7 @@ void RightPane::Draw()
 			                              : LBL("Attack data (null: no attack box)###AttackData");
 			if (!atSaved) ImGui::PushStyleColor(ImGuiCol_Text, ImGui::GetStyleColorVec4(ImGuiCol_TextDisabled));
 			if (currState.scriptOpenTrees) ImGui::SetNextItemOpen(true);
+			ScriptOpenNode(1);
 			const bool atOpen = ImGui::TreeNode(atLabel);
 			if (!atSaved) ImGui::PopStyleColor();
 			if (ImGui::IsItemHovered())
@@ -82,12 +88,14 @@ void RightPane::Draw()
 			CurrentRecordNoteHook().draw = [this, notePattern, noteFrame](bool isEffect, int index, int type) {
 				DrawRecordNote(frameData->notes, Ha6Notes::RecordKey(notePattern, noteFrame, isEffect, index, type));
 			};
+			ScriptOpenNode(2);
 			if(ImGui::TreeNode(LBL("Effects")))
 			{
 				EfDisplay(&frame.EF, &currState.copied->efSingle, frameData, currState.pattern, [this]() { markModified(); }, &currState.copied->efGroup);
 				ImGui::TreePop();
 				ImGui::Separator();
 			}
+			ScriptOpenNode(4);
 			if(ImGui::TreeNode(LBL("Conditions")))
 			{
 				IfDisplay(&frame.IF, &currState.copied->ifSingle, frameData, currState.pattern, [this]() { markModified(); }, &currState.copied->ifGroup);

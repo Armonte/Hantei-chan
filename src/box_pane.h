@@ -31,6 +31,7 @@ private:
 	bool showManualControls;
 
 	float dragxy[2];
+	float dragScale = 1.f;   // FrameData::boxDisplayScale of the frame the drag started on
 
 	// Timeline (issue #10)
 	float timelineZoom = 1.0f;

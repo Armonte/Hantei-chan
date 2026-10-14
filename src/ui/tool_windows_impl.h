@@ -548,6 +548,7 @@ void MainFrame::AddCompareLayers(CharacterView* view, CharacterInstance* active)
 			}
 		}
 		layer.boxesOutlineOnly = true;
+		if (li == 0) layer.boxScale = c.character->frameData.boxDisplayScale(fr);
 		layer.sourceCG = &c.character->cg;
 		layer.usePat = L.usePat;
 		layer.sourceParts = &c.character->parts;

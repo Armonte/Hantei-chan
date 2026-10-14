@@ -701,6 +701,47 @@ if(MINGW)
 	target_link_options(ha4tool PRIVATE -static-libgcc -static-libstdc++ -static)
 endif()
 
+# MBAC -> HA6 converter behaviour fixes (docs/mbac_moon/CONVERTER_FIDELITY.md M1-M12): unit checks always,
+# G_CHAOS/SION end-to-end when the MBAC .DAT folder exists (HA4CONV_DAT_DIR, else gamedata/mbac/02).
+add_executable(ha4_convert_test
+	tests/ha4_convert_test.cpp
+	src/framedata.cpp
+	src/framedata_load.cpp
+	src/framedata_save.cpp
+	src/framedata_ha4.cpp ${HAN2_MODEL_SOURCES}
+	src/ha4_parts.cpp
+	src/ha4_convert.cpp
+	src/background/bg_pat.cpp
+	src/parts/parts.cpp
+	src/app_log.cpp
+	src/parts/parts_part.cpp
+	src/parts/parts_partset.cpp
+	src/parts/parts_shape.cpp
+	src/parts/parts_texture.cpp
+	src/cg.cpp
+	src/texture.cpp
+	src/vao.cpp
+	src/shader.cpp
+	src/misc.cpp
+	tinyalloc/tinyalloc.c
+)
+target_include_directories(ha4_convert_test PRIVATE "." "src" "third_party" "${CMAKE_BINARY_DIR}/generated")
+target_compile_definitions(ha4_convert_test PRIVATE WIN32_LEAN_AND_MEAN HA6GUIVERSION="${CMAKE_PROJECT_VERSION}" PAT_HEADLESS)
+target_link_libraries(ha4_convert_test PRIVATE tinyalloc glad glm OpenGL::GL)
+if(MINGW)
+	target_link_options(ha4_convert_test PRIVATE -static-libgcc -static-libstdc++ -static)
+endif()
+add_test(NAME ha4_convert COMMAND ha4_convert_test WORKING_DIRECTORY ${CMAKE_SOURCE_DIR})
+# Golden + behaviour checks over the whole converted roster (tools/ha4/ha4_golden.py): converts every MBAC .DAT
+# with ha4tool, then compares tag patterns with shipped MBAACC and checks box scale / reaction patterns / IF 51 / ATVV.
+# Needs python3, the MBAC .DAT folder and MBAACC data; skipped (not registered) when they are missing.
+set(HA4_GOLDEN_DAT "/mnt/c/dev/hantei-chan/gamedata/mbac/02")
+set(HA4_GOLDEN_CC "/mnt/c/games/mbaacc/data")
+if(EXISTS "${HA4_GOLDEN_DAT}/G_CHAOS.DAT" AND EXISTS "${HA4_GOLDEN_CC}")
+	add_test(NAME ha4_golden COMMAND bash tools/ha4/ha4_golden_ctest.sh $<TARGET_FILE:ha4tool> "${HA4_GOLDEN_DAT}" "${HA4_GOLDEN_CC}" "${CMAKE_BINARY_DIR}/ha4_golden_out"
+		WORKING_DIRECTORY ${CMAKE_SOURCE_DIR})
+endif()
+
 # French-Bread RBO / GOF2 model sources (PAC archive, HAN2RBO container, model loader/writer): linked wherever framedata.cpp is.
 add_executable(han2tool
 	src/han2/han2tool.cpp
