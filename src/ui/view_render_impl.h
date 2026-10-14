@@ -19,7 +19,7 @@
 
 #include <chrono>
 #include <climits>
-#include "parts/part_render_math.h"
+#include "../parts/part_render_math.h"
 
 namespace viewrender {
 
