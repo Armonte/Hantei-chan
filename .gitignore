@@ -12,6 +12,6 @@
 .claude/settings.local.json
 
 # Generated version info
-generated/test_files/
+test_files/
 HUD_THEME_STATUS.md
 generated/
