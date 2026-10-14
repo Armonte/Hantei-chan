@@ -7,7 +7,7 @@ D="$(cd "$(dirname "$0")/../../.." && pwd)"; H=/mnt/c/dev/hantei-chan
 OLD="${1:-$H/builds/gonptechan_2026-10-04.exe}"; NEW="${2:-$D/build/gonptechan.exe}"
 W=$H/work/s1; OUT="$D/docs/audit_2026_10_14/evidence/compare/editor"; mkdir -p "$W/old" "$W/new" "$OUT"
 cp "$OLD" "$W/old/gonptechan.exe"; cp "$NEW" "$W/new/gonptechan.exe"
-G='C:\dev\hantei-chan\gamedata\uni2\data'
+G='C:\dev\hantei-chan\gamedata'
 grep -v "^#" "$(dirname "$0")/cases.txt" | grep -E "${CASES:-.}" | while IFS='|' read -r name txt pat fr tick zoom note; do
 	name=$(echo $name); txt=$(echo $txt | tr / '\\'); pat=$(echo $pat); fr=$(echo $fr); tick=$(echo $tick); zoom=$(echo $zoom)
 	[ -z "$name" ] && continue
