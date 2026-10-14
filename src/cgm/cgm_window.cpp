@@ -16,6 +16,7 @@
 #include <algorithm>
 #include <cstdarg>
 #include <cstdio>
+#include <cstdlib>
 #include <cstring>
 
 #define TXT(s) ::i18n::Tr(s)
@@ -676,6 +677,13 @@ void Window::draw(CharacterInstance *ch, const WindowHost &host) {
 	}
 	if (ImGui::BeginTabItem(LBL("Palettes"))) {
 		drawPalettes(*ch, host);
+		ImGui::EndTabItem();
+	}
+	static const bool fxrFirst = std::getenv("HANTEI_CGM_TAB") && !strcmp(std::getenv("HANTEI_CGM_TAB"), "fxr");   // screenshot / test hook
+	static bool fxrSelectOnce = fxrFirst;
+	if (ImGui::BeginTabItem(LBL("Effect recolor"), nullptr, fxrSelectOnce ? ImGuiTabItemFlags_SetSelected : 0)) {
+		fxrSelectOnce = false;
+		fxr.draw(*ch, bank.get(), usage, host.navigate);
 		ImGui::EndTabItem();
 	}
 	ImGui::EndTabBar();

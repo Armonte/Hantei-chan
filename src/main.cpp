@@ -225,7 +225,18 @@ int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE, PWSTR pCmdLine, int nCmdShow
 			LocalFree(argV);
 			return 0;
 		}
-		else if(i+1<argC && (!strcmp(arg, "--open") || !strcmp(arg, "--open-any") || !strcmp(arg, "--capture") || !strcmp(arg, "--pattern")
+		else if(i+1<argC && !strcmp(arg, "--fxr-selftest"))
+		{
+			// Effect recolour tab self-test: programmatic load/save/assign/new-rule + report, see fxr_panel.cpp. Pair with --capture <png>.
+			std::wstring w(argV[i+1]);
+			std::string v(WideCharToMultiByte(CP_UTF8, 0, w.c_str(), -1, nullptr, 0, nullptr, nullptr), 0);
+			WideCharToMultiByte(CP_UTF8, 0, w.c_str(), -1, v.data(), (int)v.size(), nullptr, nullptr);
+			if(!v.empty() && v.back() == 0) v.pop_back();
+			_putenv_s("HANTEI_FXR_SELFTEST", v.c_str()); _putenv_s("HANTEI_CGM_TAB", "fxr");
+			gStartup.tool = "cgm";
+			i++;
+		}
+		else if(i+1<argC && (!strcmp(arg, "--open") || !strcmp(arg, "--open-any") || !strcmp(arg, "--capture") || !strcmp(arg, "--cg") || !strcmp(arg, "--pattern")
 		                     || !strcmp(arg, "--frame") || !strcmp(arg, "--palette") || !strcmp(arg, "--game-link")
 		                     || !strcmp(arg, "--zoom") || !strcmp(arg, "--game")
 		                     || !strcmp(arg, "--compare") || !strcmp(arg, "--tool") || !strcmp(arg, "--tag-ini")
@@ -241,6 +252,7 @@ int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE, PWSTR pCmdLine, int nCmdShow
 			if(!strcmp(arg, "--open")) gStartup.open = v;
 			else if(!strcmp(arg, "--open-any")) gStartup.openAny = v;
 			else if(!strcmp(arg, "--capture")) gStartup.capture = v;
+			else if(!strcmp(arg, "--cg")) gStartup.cg = v;
 			else if(!strcmp(arg, "--pattern")) gStartup.pattern = atoi(v.c_str());
 			else if(!strcmp(arg, "--frame")) gStartup.frame = atoi(v.c_str());
 			else if(!strcmp(arg, "--game-link")) gStartup.gameLinkSlot = atoi(v.c_str());
