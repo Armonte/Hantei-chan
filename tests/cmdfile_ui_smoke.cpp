@@ -43,7 +43,9 @@ int main(int argc, char** argv)
 			for (int frame = 0; frame < 4; ++frame) {
 				io.DeltaTime = 1.0f / 60.0f;
 				ImGui::NewFrame();
+				ImGui::PushItemFlag(ImGuiItemFlags_LiveEditOnInputScalar, true); // as MainFrame::Draw
 				editor.draw([&](const std::string&, const cmdfile::Document&) { ++changes; });
+				ImGui::PopItemFlag();
 				ImGui::Render();
 			}
 		}
