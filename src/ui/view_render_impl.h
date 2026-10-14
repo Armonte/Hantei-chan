@@ -19,6 +19,7 @@
 
 #include <chrono>
 #include <climits>
+#include "parts/part_render_math.h"
 
 namespace viewrender {
 
@@ -35,15 +36,40 @@ struct ActorStyle {
 	bool spawned = false;
 	int flagset1 = 0, flagset2 = 0;
 	int layer0Sprite = INT_MIN;          // editor override for layer 0's sprite
+	// AFHK: where the actor is inside its frame. `seq` + `frameIndex` locate the frame the game interpolates
+	// toward; ticksInFrame is 0 on the frame's first tick (no visible blend yet).
+	const Sequence* seq = nullptr;
+	int frameIndex = -1;
+	int ticksInFrame = 0;
+	int loopCounter = 0;
+	bool uniDialect = false;             // UNI/UNI2/MBTL colour lerp rules (else MBAACC)
+	bool mbtl = false;                   // MBTL does not read PRAS
 };
+
+// AFHK target of `frameIndex` in `seq` and the current frame's weight (1 = no interpolation).
+static const Frame* InterpTarget(const ActorStyle& s, const Frame& frame, float& curWeight)
+{
+	curWeight = 1.f;
+	const auto& af = frame.AF;
+	if (!s.seq || s.frameIndex < 0 || af.interpolationType < 1 || af.interpolationType > 5) return nullptr;
+	const int next = partrender::NextFrameIndex(s.frameIndex, af.aniType, af.aniFlag, af.jump, af.loopEnd, s.loopCounter);
+	if (next == s.frameIndex || next < 0 || next >= (int)s.seq->frames.size()) return nullptr;
+	curWeight = partrender::CurrentWeight(af.interpolationType, s.ticksInFrame, af.duration);
+	return curWeight < 1.f ? &s.seq->frames[next] : nullptr;
+}
 
 // Push every AF layer of `frame` (UNI multi-layer AFGX) as render layers.
 static void AddFrameLayers(Render& render, Frame& frame, CG* cg, Parts* parts, const ActorStyle& s)
 {
 	if (frame.AF.layers.empty())
 		frame.AF.layers.push_back({});   // MBAACC frames have one implicit layer
+	float t = 1.f;
+	const Frame* nextFrame = InterpTarget(s, frame, t);
 	for (size_t li = 0; li < frame.AF.layers.size(); ++li) {
 		const auto& L = frame.AF.layers[li];
+		// The same layer of the next frame (AFHK); its offset is never interpolated, only colour,
+		// scale and rotation (Han6Draw_BuildLayerMatrix_LerpScaleRot / Han6Draw_DrawLayer).
+		const Layer<>* N = (nextFrame && li < nextFrame->AF.layers.size()) ? &nextFrame->AF.layers[li] : nullptr;
 		RenderLayer layer;
 		layer.spriteId = (li == 0 && s.layer0Sprite != INT_MIN) ? s.layer0Sprite : L.spriteId;
 		layer.spawnOffsetX = (int)std::lround(s.offsetX);
@@ -55,6 +81,27 @@ static void AddFrameLayers(Render& render, Frame& frame, CG* cg, Parts* parts, c
 		layer.rotX = L.rotation[0];
 		layer.rotY = L.rotation[1];
 		layer.rotZ = L.rotation[2];
+		// The editor saves "no AFAL mode but alpha < 1" as mode 1 (framedata_save.cpp), so that is what the
+		// game will see; a layer with no AFAL at all draws at full alpha.
+		const int curMode = L.blend_mode ? L.blend_mode : (L.rgba[3] != 1.f ? 1 : 0);
+		partrender::LayerRgba rgba{L.rgba[0], L.rgba[1], L.rgba[2], L.rgba[3]};
+		if (N) {
+			layer.scaleX = partrender::Lerp(L.scale[0], N->scale[0], t);
+			layer.scaleY = partrender::Lerp(L.scale[1], N->scale[1], t);
+			layer.rotX = partrender::LerpTurns(L.rotation[0], N->rotation[0], t);
+			layer.rotY = partrender::LerpTurns(L.rotation[1], N->rotation[1], t);
+			layer.rotZ = partrender::LerpTurns(L.rotation[2], N->rotation[2], t);
+			const int nextMode = N->blend_mode ? N->blend_mode : (N->rgba[3] != 1.f ? 1 : 0);
+			rgba = partrender::LerpLayerColor(rgba, curMode, {N->rgba[0], N->rgba[1], N->rgba[2], N->rgba[3]},
+				nextMode, t, s.uniDialect);
+			// PAT layer: the next frame's same layer must also be a PAT layer to pair part sets.
+			if (L.usePat && N->usePat) {
+				layer.nextSpriteId = N->spriteId;
+				layer.curWeight = t;
+			}
+		} else {
+			rgba.a = curMode ? L.rgba[3] : 1.f;
+		}
 		// UNI2/MBTL keep AFRT per layer (Han6_LoadFrameAF, layer +32).
 		layer.AFRT = frame.AF.AFRT || L.afrt;
 		// Actor matrix F * R(angle) (MbaaTransform::ActorMatrix): the renderer
@@ -67,13 +114,14 @@ static void AddFrameLayers(Render& render, Frame& frame, CG* cg, Parts* parts, c
 		// AFPL 0 = object + 256 keeps MBAACC's relative order).
 		layer.zPriority = LayerDrawBucket(L.priority, s.zPriority == INT_MIN ? frame.AF.priority : s.zPriority);
 		layer.pups = s.pups;
-		layer.alpha = L.rgba[3] * s.alphaMul;
-		layer.tintColor = glm::vec4(L.rgba[0] * s.tint.r, L.rgba[1] * s.tint.g, L.rgba[2] * s.tint.b, 1.0f);
+		layer.alpha = rgba.a * s.alphaMul;
+		layer.tintColor = glm::vec4(rgba.r * s.tint.r, rgba.g * s.tint.g, rgba.b * s.tint.b, 1.0f);
 		layer.isSpawned = s.spawned;
 		if (li == 0 && s.boxes) layer.hitboxes = frame.hitboxes;
 		layer.sourceCG = cg;
 		layer.usePat = L.usePat;
 		layer.sourceParts = parts;
+		layer.patApplyPras = !s.mbtl;
 		layer.spawnFlagset1 = s.flagset1;
 		layer.spawnFlagset2 = s.flagset2;
 		render.AddLayer(layer);
@@ -144,7 +192,19 @@ void MainFrame::AddSimulatedActorLayers(CharacterView* view, const preview::Tick
 	rootFrameIndex = std::clamp(rootFrameIndex, 0, (int)mainSeq->frames.size() - 1);
 	Frame& mainFrame = mainSeq->frames[rootFrameIndex];
 
+	const bool uniDialect = active->frameData.usesUniFormat();
+	const bool mbtl = active->frameData.game() == Ha6Game::MBTL;
 	viewrender::ActorStyle rootStyle;
+	rootStyle.uniDialect = uniDialect;
+	rootStyle.mbtl = mbtl;
+	rootStyle.seq = mainSeq;
+	rootStyle.frameIndex = rootFrameIndex;
+	// AFHK progress: only when the simulated root is in the frame being shown (playback, timeline ticks);
+	// a frame picked in the editor shows its first tick.
+	if (const preview::SimActor* r = ts.root(); r && r->pattern == state.pattern && r->frame == rootFrameIndex) {
+		rootStyle.ticksInFrame = r->frameTimer;
+		rootStyle.loopCounter = r->loopCounter;
+	}
 	rootStyle.layer0Sprite = layer0Sprite;
 	rootStyle.boxes = boxes;
 	rootStyle.alphaMul = alphaMul;
@@ -193,6 +253,12 @@ void MainFrame::AddSimulatedActorLayers(CharacterView* view, const preview::Tick
 		s.boxes = boxes;
 		s.spawned = true;
 		s.pups = spawnedSeq->pups;
+		s.uniDialect = uniDialect;
+		s.mbtl = mbtl;
+		s.seq = spawnedSeq;
+		s.frameIndex = actor.frame;
+		s.ticksInFrame = actor.frameTimer;
+		s.loopCounter = actor.loopCounter;
 		s.flagset1 = actor.flagset1;
 		s.flagset2 = actor.flagset2;
 		viewrender::AddFrameLayers(render, spawnedSeq->frames[actor.frame], sourceCG, sourceParts, s);
