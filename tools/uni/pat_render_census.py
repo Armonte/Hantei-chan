@@ -36,7 +36,7 @@ def parse_pat(b):
                         pt = b[p:p+4].decode('latin1'); p += 4
                         if pt == 'PRED': break
                         if pt in ('PRAL', 'PRRV', 'PRFL'): pr[pt] = b[p]
-                        elif pt == 'PRSP': pr[pt] = b[p:p+4]
+                        elif pt in ('PRSP', 'PRCL'): pr[pt] = b[p:p+4]
                         elif pt in ('PRAS', 'PRXY'): pr[pt] = (i32(b, p), i32(b, p+4))
                         elif pt in ('PRID', 'PRPR', 'PRPA'): pr[pt] = i32(b, p)
                         p += SUB[pt]
@@ -79,6 +79,8 @@ def parse_pat(b):
 
 def features(prop, cuts, shapes):
     f = set()
+    if 'PRCL' in prop and prop['PRCL'][3] == 0 and not (prop.get('PRSP') and prop['PRSP'][3]):
+        return f  # invisible (the game skips parts with diffuse alpha 0)
     if prop.get('PRAL') == 2: f.add('PRAL2')
     if prop.get('PRAL') == 3: f.add('PRAL3')
     rv = prop.get('PRRV', 0)
