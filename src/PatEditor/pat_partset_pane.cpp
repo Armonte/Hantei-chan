@@ -4,6 +4,7 @@
 #include "../main_frame.h"
 #include <imgui.h>
 #include <imgui_stdlib.h>
+#include <cmath>
 
 #include "../copy_manager.h"
 #include "../imgui_utils.h"
@@ -97,10 +98,19 @@ void PatPartSetPane::UpdateHighligth(bool state)
 
 constexpr float width = 75.f;
 constexpr float widthInput = 150.f;
+// PRRV is a UV mirror bitmask (uni2.exe PatPart_GetCutoutUVWithFlip 0x413C50): 1 = H, 2 = V, 3 = both.
 const char* const flipList[] = {
         "None",
         "Flip Horizontally",
         "Flip Vertically",
+        "Flip Both",
+};
+// PRAL byte (PatPart_SetBlendFilterGlobals_PRAL_PRFL 0x413840).
+const char* const blendList[] = {
+        "Normal",
+        "Additive",
+        "Subtractive",
+        "Blur mask (normal)",
 };
 
 void PatPartSetPane::Draw()
@@ -368,6 +378,15 @@ void PatPartSetPane::DrawPartProperty(PartSet<>* partSet)
             props->rotation[2] = rotation[1];
             props->rotation[3] = rotation[2];
         }
+        if(ImGui::IsItemHovered())
+            Tooltip("PRA3 X, Y, Z in turns (1 = 360 degrees).");
+        ImGui::SetNextItemWidth(widthInput);
+        ImGui::DragFloat(LBL("PRA3 [0]"), &props->rotation[0], 0.01f);
+        if(ImGui::IsItemHovered())
+            Tooltip("First PRA3 value. Kept in the file; the games' part matrix does not read it.");
+        ImGui::DragInt2(LBL("Pivot (PRAS)"), props->pras, 1);
+        if(ImGui::IsItemHovered())
+            Tooltip("PRAS: offset applied between scale and rotation (UNI2). MBTL does not read it.");
         float scale[] = {props->scaleX, props->scaleY};
         if(ImGui::DragFloat2(LBL("Scale"), scale, 0.01))
         {
@@ -379,11 +398,45 @@ void PatPartSetPane::DrawPartProperty(PartSet<>* partSet)
             partPropsDecoratedNames[curInstance->currState->partProp] =
                     curInstance->parts->GetPartPropsDecorateName(curInstance->currState->partSet,curInstance->currState->partProp);
         }
-        ImGui::SetNextItemWidth(widthInput);
-        ImGui::DragFloat(LBL("Priority"), &props->priority, 1.0f, 0.0f, 1000.0f);
-        ImGui::Checkbox(LBL("Additive Filter"), &props->additive);
+        // PRPR is an int; the model keeps the slot / 1000 as a draw-order tiebreak, which is not shown.
+        {
+            const float frac = props->priority - std::floor(props->priority);
+            int prio = (int)std::floor(props->priority);
+            ImGui::SetNextItemWidth(widthInput);
+            if(ImGui::InputInt(LBL("Priority"), &prio, 1, 10))
+                props->priority = (float)prio + frac;
+            if(ImGui::IsItemHovered())
+                Tooltip("PRPR. Higher draws first (further back); negative values are allowed.");
+        }
+        {
+            int blend = props->additive ? (props->pral ? props->pral : 1) : 0;
+            const bool known = blend >= 0 && blend < IM_ARRAYSIZE(blendList);
+            ImGui::SetNextItemWidth(widthInput);
+            if(ImGui::BeginCombo(LBL("Blend (PRAL)"), known ? blendList[blend] : "Other")) {
+                for(int n = 0; n < IM_ARRAYSIZE(blendList); n++) {
+                    if(ImGui::Selectable(blendList[n], n == blend)) {
+                        props->pral = (unsigned char)n;
+                        props->additive = n != 0;
+                    }
+                }
+                ImGui::EndCombo();
+            }
+            if(ImGui::IsItemHovered())
+                Tooltip("PRAL: 1 = additive, 2 = subtractive (reverse subtract), 3 = drawn normally and used\n"
+                        "by the game as the mask of a screen blur (the blur is not previewed).");
+        }
         ImGui::SameLine();
         ImGui::Checkbox(LBL("Bilinear Filter"), &props->filter);
+        {
+            int prpa = props->prpa;
+            ImGui::SetNextItemWidth(widthInput);
+            if(ImGui::InputInt(LBL("PRPA"), &prpa, 1, 10)) {
+                props->prpa = prpa;
+                props->hasPrpa = true;
+            }
+            if(ImGui::IsItemHovered())
+                Tooltip("PRPA (UNI2/MBTL, part +16). Kept as loaded; no draw use found in the games.");
+        }
         // Convert bgra bytes to float for UI, then back
         float rgba_float[4] = {
             props->bgra[2] / 255.f, // R from B position
@@ -398,6 +451,8 @@ void PatPartSetPane::DrawPartProperty(PartSet<>* partSet)
             props->bgra[3] = (unsigned char)(rgba_float[3] * 255.f); // A
         }
         ImGui::ColorEdit4(LBL("Add Color"), props->addColor);
+        if(ImGui::IsItemHovered())
+            Tooltip("PRSP specular colour, added to the part's output (alpha included).");
         i18n::Combo(LBL("Flip Side"), &props->flip, flipList, IM_ARRAYSIZE(flipList));
     }
 }
