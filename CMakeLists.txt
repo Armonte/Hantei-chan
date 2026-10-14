@@ -27,6 +27,9 @@ add_subdirectory(glm)
 add_subdirectory(tinyalloc)
 
 set(HAN2_MODEL_SOURCES src/framedata_han2.cpp src/han2/han2_container.cpp src/han2/pac_archive.cpp src/han2/img_file.cpp src/han2/misc_formats.cpp src/han2_diff.cpp src/han2_anim.cpp src/framedata_gof1.cpp src/han2/gof1_archive.cpp src/framedata_pb2k1.cpp src/framedata_qoh.cpp src/han2/qoh_dat.cpp)
+# quill (header-only async logger, third_party/quill): src/app_log.h
+include_directories(SYSTEM "${CMAKE_SOURCE_DIR}/third_party/quill/include")
+
 add_executable(${EXE}
 	src/main.cpp
 	src/main_frame.cpp
@@ -123,6 +126,7 @@ add_executable(${EXE}
 	src/parts/parts_shape.cpp
 	src/parts/parts_texture.cpp
 	src/parts/parts.cpp
+	src/app_log.cpp
 	# Background (stage) system — ported from bgmk branch.
 	src/background/bg_file.cpp
 	src/background/bg_renderer.cpp
@@ -254,6 +258,7 @@ add_executable(bg_render
 	src/background/bg_renderer.cpp
 	src/background/bg_gametex.cpp
 	src/parts/parts.cpp
+	src/app_log.cpp
 	src/parts/parts_part.cpp
 	src/parts/parts_partset.cpp
 	src/parts/parts_shape.cpp
@@ -289,6 +294,7 @@ endif()
 add_executable(pat_roundtrip
 	src/pat_roundtrip.cpp
 	src/parts/parts.cpp
+	src/app_log.cpp
 	src/parts/parts_part.cpp
 	src/parts/parts_partset.cpp
 	src/parts/parts_shape.cpp
@@ -387,6 +393,7 @@ endif()
 add_executable(pat_dump
 	src/pat_dump.cpp
 	src/parts/parts.cpp
+	src/app_log.cpp
 	src/parts/parts_part.cpp
 	src/parts/parts_partset.cpp
 	src/parts/parts_shape.cpp
@@ -508,6 +515,7 @@ add_executable(fb_part_transform_test
 	src/han2_pat.cpp
 	src/han2_pat_write.cpp
 	src/parts/parts.cpp
+	src/app_log.cpp
 	src/parts/parts_part.cpp
 	src/parts/parts_partset.cpp
 	src/parts/parts_shape.cpp
@@ -526,6 +534,14 @@ if(MINGW)
 	target_link_options(fb_part_transform_test PRIVATE -static-libgcc -static-libstdc++ -static)
 endif()
 add_test(NAME fb_part_transform COMMAND fb_part_transform_test)
+# part_render_math_test: .pat blend (PRAL), UV flip (PRRV) and AFHK interpolation rules against the game's
+# arithmetic (uni2.exe / MBAA.exe, see src/parts/part_render_math.h). Header-only, no data needed.
+add_executable(part_render_math_test tests/part_render_math_test.cpp)
+target_include_directories(part_render_math_test PRIVATE "src")
+if(MINGW)
+	target_link_options(part_render_math_test PRIVATE -static-libgcc -static-libstdc++ -static)
+endif()
+add_test(NAME part_render_math COMMAND part_render_math_test)
 # refs_test: variable / pattern reference tools (issues #75, #44).
 add_executable(refs_test
 	tests/refs_test.cpp
@@ -583,6 +599,7 @@ add_executable(ha4tool
 	src/ha4_convert.cpp
 	src/background/bg_pat.cpp
 	src/parts/parts.cpp
+	src/app_log.cpp
 	src/parts/parts_part.cpp
 	src/parts/parts_partset.cpp
 	src/parts/parts_shape.cpp
@@ -621,6 +638,7 @@ add_executable(han2tool
 	src/ha4_convert.cpp
 	src/background/bg_pat.cpp
 	src/parts/parts.cpp
+	src/app_log.cpp
 	src/parts/parts_part.cpp
 	src/parts/parts_partset.cpp
 	src/parts/parts_shape.cpp
@@ -678,6 +696,7 @@ add_executable(fbchartool
 	src/background/bg_info.cpp
 	src/background/bg_project.cpp
 	src/parts/parts.cpp
+	src/app_log.cpp
 	src/parts/parts_part.cpp
 	src/parts/parts_partset.cpp
 	src/parts/parts_shape.cpp

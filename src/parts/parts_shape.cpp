@@ -14,9 +14,15 @@ unsigned int* Shape<>::VeLoad(unsigned int* data, const unsigned int* data_end, 
         {
             // Plane
             case ShapeType::PLANE:
-            // Type 2 - unknown, treated like plane
-            case ShapeType::UNK2:
                 // No additional parameters
+                break;
+
+            // Rect: its own w, h, x, y
+            case ShapeType::RECT:
+                sh.rectW = data[3];
+                sh.rectH = data[4];
+                sh.rectX = data[5];
+                sh.rectY = data[6];
                 break;
 
             // Ring, Arc
@@ -112,6 +118,13 @@ void Shape<>::Save(std::ostream &file, const Shape<> *shape, bool saveName)
 
         switch(shape->type)
         {
+            case ShapeType::RECT:
+                params[3] = shape->rectW;
+                params[4] = shape->rectH;
+                params[5] = shape->rectX;
+                params[6] = shape->rectY;
+                break;
+
             case ShapeType::RING:
             case ShapeType::ARC:
                 params[3] = shape->radius;
@@ -155,6 +168,11 @@ bool Shape<>::IsModifiedData(const Shape<> *shape)
 
     switch(shape->type)
     {
+        case ShapeType::RECT:
+            if(shape->rectW != 0 || shape->rectH != 0 || shape->rectX != 0 || shape->rectY != 0)
+                return true;
+            break;
+
         case ShapeType::RING:
         case ShapeType::ARC:
             if(shape->radius != 0 ||
@@ -204,4 +222,8 @@ void Shape<>::CopyTo(Shape<>* shape)
     shape->dRadius = dRadius;
     shape->width = width;
     shape->dz = dz;
+    shape->rectW = rectW;
+    shape->rectH = rectH;
+    shape->rectX = rectX;
+    shape->rectY = rectY;
 }

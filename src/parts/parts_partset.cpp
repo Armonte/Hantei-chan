@@ -1,6 +1,7 @@
 #include "parts_partset.h"
 #include <fstream>
 #include <cstring>
+#include <cmath>
 
 template<>
 unsigned int* PartSet<>::P_Load(unsigned int* data, const unsigned int* data_end, int id, PartSet<>* partSet)
@@ -192,6 +193,8 @@ bool PartSet<std::allocator>::IsModifiedPropData(const PartProperty *prop)
         return true;
     if(prop->flip != 0)
         return true;
+    if(prop->pras[0] != 0 || prop->pras[1] != 0 || prop->hasPrpa)
+        return true;
     if(prop->bgra[0] != 255 ||
         prop->bgra[1] != 255 ||
         prop->bgra[2] != 255 ||
@@ -224,6 +227,12 @@ void PartSet<std::allocator>::CopyPropertyTo(PartProperty *propDst, PartProperty
     propDst->ppId = propSrc->ppId;
     propDst->flip = propSrc->flip;
     propDst->filter = propSrc->filter;
+    propDst->pral = propSrc->pral;
+    propDst->prfl = propSrc->prfl;
+    propDst->pras[0] = propSrc->pras[0];
+    propDst->pras[1] = propSrc->pras[1];
+    propDst->prpa = propSrc->prpa;
+    propDst->hasPrpa = propSrc->hasPrpa;
 }
 
 template<>
@@ -353,7 +362,8 @@ void PartSet<>::Save(std::ostream &file, const PartSet *partSet, bool mbaacc)
 
         // PRPR is an int32 in the file; we store priority as float to embed a
         // (propId / 1000) sub-priority for sort tiebreaks. Truncate on save.
-        int priorityInt = (int)prop->priority;
+        // floor, not truncation: -2 + slot/1000 must stay -2.
+        int priorityInt = (int)std::floor(prop->priority);
         if(priorityInt != 0)
         {
             file.write("PRPR", 4);
