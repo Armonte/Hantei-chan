@@ -1,0 +1,30 @@
+# S3 in-game check: UNI2 Hyde (chr000) vs Linne (chr001) in training, P1 frozen on pattern 0 (standing).
+# Run once WITH <UNI2>\___St\data\chr000\chr000.ha6 (TAG=override) and once without it (TAG=vanilla).
+# Run with: tools/gamecap/build/gamecap.exe -D TAG=override <this file>   (gamecap's games/ dir is on the include path)
+include uni2.gcs
+let TAG override
+let P1CHR 0
+let P2CHR 1
+include uni2_to_training.gcs
+set DIR C:\dev\hantei-chan\wt\s3-uni-dataloss\docs\audit_2026_10_14\evidence\s3\ingame
+
+# training start: P1 is already standing (pattern 0); capture as-is
+peek u32 P1+OBJ_PAT start_pat
+capture ${DIR}\${TAG}_training_start.png
+
+# force standing p0 f0 at game tick 1
+set PAT 0
+set FRAME 0
+set GTICK 1
+set OUT ${DIR}\${TAG}_p0_f0.png
+set OUT_META ${DIR}\${TAG}_p0_f0.meta.txt
+include uni2_force_pattern.gcs
+
+# control: a non-p0 pattern must stay untinted (p96, used by S1 flipH)
+set PAT 96
+set FRAME 1
+set GTICK 1
+set OUT ${DIR}\${TAG}_p96_f1.png
+set OUT_META ${DIR}\${TAG}_p96_f1.meta.txt
+include uni2_force_pattern.gcs
+quit

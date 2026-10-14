@@ -747,26 +747,36 @@ void MainFrame::Menu(unsigned int errorPopupId)
 			ImGui::MenuItem(LBL("PUPS palette files"), nullptr, &render.followPups);
 			if (ImGui::IsItemHovered())
 				ImGui::SetTooltip(TXT("Draw patterns with PUPS n using <cg>_pn.pal, as the game does (#76)."));
-			if (ImGui::BeginMenu(LBL("Game format")))
+			if (ImGui::BeginMenu(LBL("Game format"), active != nullptr))
 			{
-				// Which game's HA6 dialect the labels and the writer follow (issues #14, #74).
-				const Ha6Game detected = active ? active->frameData.detectedGame() : Ha6Game::Auto;
+				// Which game's HA6 dialect this file's labels and writer follow
+				// (issues #14, #74). Per file (D13): other tabs keep theirs.
+				FrameData& fd = active->frameData;
+				const Ha6Game detected = fd.detectedGame();
+				const Ha6Game cur = fd.gameOverride();
 				char autoBuf[160]; snprintf(autoBuf, sizeof(autoBuf), TXT("Auto (detected: %s)"), Ha6GameName(detected));
-				std::string autoLabel = autoBuf;
-				if (ImGui::MenuItem(autoLabel.c_str(), nullptr, g_ha6GameOverride == Ha6Game::Auto))
-					g_ha6GameOverride = Ha6Game::Auto;
-				if (ImGui::MenuItem("MBAACC", nullptr, g_ha6GameOverride == Ha6Game::MBAACC))
-					g_ha6GameOverride = Ha6Game::MBAACC;
-				if (ImGui::MenuItem(LBL("UNI / UNIST / UNI2 (5 layers)"), nullptr, g_ha6GameOverride == Ha6Game::UNI))
-					g_ha6GameOverride = Ha6Game::UNI;
-				if (ImGui::MenuItem(LBL("MELTY BLOOD: TYPE LUMINA (3 layers)"), nullptr, g_ha6GameOverride == Ha6Game::MBTL))
-					g_ha6GameOverride = Ha6Game::MBTL;
+				std::string autoLabel = std::string(autoBuf) + "###gfAuto";
+				if (ImGui::MenuItem(autoLabel.c_str(), nullptr, cur == Ha6Game::Auto))
+					fd.setGameOverride(Ha6Game::Auto);
+				if (ImGui::MenuItem("MBAACC", nullptr, cur == Ha6Game::MBAACC))
+					fd.setGameOverride(Ha6Game::MBAACC);
+				if (ImGui::MenuItem(LBL("UNDER NIGHT IN-BIRTH / UNIB (3 layers)"), nullptr, cur == Ha6Game::UNIB))
+					fd.setGameOverride(Ha6Game::UNIB);
+				if (ImGui::MenuItem(LBL("UNIST (5 layers, not verified)"), nullptr, cur == Ha6Game::UNIST))
+					fd.setGameOverride(Ha6Game::UNIST);
+				if (ImGui::MenuItem(LBL("UNI2 (5 layers)"), nullptr, cur == Ha6Game::UNI))
+					fd.setGameOverride(Ha6Game::UNI);
+				if (ImGui::MenuItem(LBL("MELTY BLOOD: TYPE LUMINA (3 layers)"), nullptr, cur == Ha6Game::MBTL))
+					fd.setGameOverride(Ha6Game::MBTL);
+				if (g_ha6GameOverride != Ha6Game::Auto)
+					ImGui::TextDisabled(TXT("Command line --game: %s (files without their own choice)"), Ha6GameName(g_ha6GameOverride));
 				ImGui::EndMenu();
 			}
 			if (ImGui::IsItemHovered())
-				ImGui::SetTooltip(TXT("Detected from the data: AFGX layer count (5 = UNI, 3 = MBTL),\n"
-					"no ATV2/AFGX = MBAACC. Switches field labels (e.g. attack flag 4, #74)\n"
-					"and the format new patterns are saved in."));
+				ImGui::SetTooltip(TXT("For the active file only. Detected when it is loaded: AFGX layer count\n"
+					"(5 = UNI2, 3 = MBTL or UNIB, told apart by tags and file names),\n"
+					"no ATV2/AFGX = MBAACC. Pasting never changes it: pasted data is converted.\n"
+					"Switches field labels and the format the file is saved in."));
 			if (ImGui::BeginMenu("Language / \xe8\xa8\x80\xe8\xaa\x9e###Language")) {
 				if (ImGui::MenuItem("English", nullptr, i18n::language == 0)) { i18n::language = 0; han2ui::SaveHan2Settings(); }
 				if (ImGui::MenuItem("\xe6\x97\xa5\xe6\x9c\xac\xe8\xaa\x9e", nullptr, i18n::language == 1)) { i18n::language = 1; han2ui::SaveHan2Settings(); }

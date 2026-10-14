@@ -7,6 +7,7 @@
 #include "imsearch.h"
 #include "pattern_search.h"
 #include "i18n.h"
+#include "paste_notice.h"
 
 MainPane::MainPane(Render* render, FrameData *framedata, FrameState &fs) : DrawWindow(render, framedata, fs),
 decoratedNames(nullptr)
@@ -265,7 +266,11 @@ void MainPane::Draw()
 				}
 				im::SameLine(0,20.f);
 				if(im::Button(LBL("Paste pattern"))) {
-					*seq = currState.copied->pattern;
+					Sequence pasted;
+					pasted = currState.copied->pattern;
+					// Convert before it lands: an empty file adopts the pasted format instead.
+					currState.pasteNotice = FormatConvertNotice(frameData->conformPasted(pasted));
+					*seq = std::move(pasted);
 					frameData->mark_modified(currState.pattern);
 					markModified();
 					decoratedNames[currState.pattern] = frameData->GetDecoratedName(currState.pattern);
@@ -301,8 +306,31 @@ void MainPane::Draw()
 				// `frame` dangling for the rest of the draw.
 				enum class KeyframeOp { None, Append, Insert, Delete, AppendNextSprite } keyframeOp = KeyframeOp::None;
 				Frame &frame = seq->frames[currState.frame];
+				// D13: what the last paste converted.
+				if(!currState.pasteNotice.empty())
+				{
+					im::PushStyleColor(ImGuiCol_Text, ImVec4(0.85f, 0.45f, 0.0f, 1.0f));
+					im::TextWrapped("%s", currState.pasteNotice.c_str());
+					im::PopStyleColor();
+					if(im::SmallButton(LBL("Dismiss##pasteNotice"))) currState.pasteNotice.clear();
+				}
+				// D17: a BaseData PFLG template backs this pattern in game.
+				const Sequence* tmpl = frameData->templateFor(currState.pattern);
+				if(tmpl)
+				{
+					auto ticks = [](const Sequence& q) { int t = 0; for (const auto& f : q.frames) t += std::max(1, f.AF.duration); return t; };
+					im::PushStyleColor(ImGuiCol_Text, ImVec4(1.0f, 0.55f, 0.35f, 1.0f));
+					im::TextWrapped("%s", TXT("BaseData template pattern: in game the frame count, timing, state (AS), attack (AT), effects, conditions and layer transforms come from BaseData. Only each layer's sprite, .pat flag and offset, the hurt boxes, and the attack boxes on frames where the template attacks, come from this file. Those other fields are greyed out."));
+					im::PopStyleColor();
+					im::TextDisabled(TXT("Template: %d frame(s), %d tick(s). This pattern: %d frame(s), %d tick(s)."),
+						(int)tmpl->frames.size(), ticks(*tmpl), (int)seq->frames.size(), ticks(*seq));
+					if(currState.frame >= (int)tmpl->frames.size())
+						im::TextColored(ImVec4(1.0f, 0.4f, 0.4f, 1.0f), "%s", TXT("This frame is past the template's last frame: the game never shows it."));
+				}
+				if (currState.scriptOpenTrees) im::SetNextItemOpen(true);
 				if(im::TreeNode(LBL("State data")))
 				{
+					im::BeginDisabled(tmpl != nullptr);
 					AsDisplay(&frame.AS, frameData, currState.pattern, [this]() { markModified(); });
 					if(im::Button(LBL("Copy AS"))) {
 						currState.copied->as = frame.AS;
@@ -313,12 +341,14 @@ void MainPane::Draw()
 						frameData->mark_modified(currState.pattern);
 						markModified();
 					}
+					im::EndDisabled();
 					im::TreePop();
 					im::Separator();
 				}
+				if (currState.scriptOpenTrees) im::SetNextItemOpen(true);
 				if (im::TreeNode(LBL("Animation data")))
 				{
-					AfDisplay(&frame.AF, currState.selectedLayer, frameData, currState.pattern, [this]() { markModified(); });
+					AfDisplay(&frame.AF, currState.selectedLayer, frameData, currState.pattern, [this]() { markModified(); }, nullptr, tmpl != nullptr);
 					im::TreePop();
 					im::Separator();
 				}
@@ -371,6 +401,7 @@ void MainPane::Draw()
 					if(im::Button(LBL("Paste frame")))
 					{
 						frame = currState.copied->frame;
+						currState.pasteNotice = FormatConvertNotice(frameData->conformPasted(frame));
 						frameData->mark_modified(currState.pattern);
 						markModified();
 					}
@@ -392,20 +423,21 @@ void MainPane::Draw()
 					if(im::Button(LBL("Number sprites from here")))
 					{
 						if (frame.AF.layers.empty()) frame.AF.layers.push_back({});
-						const int base = frame.AF.layers[0].spriteId;
+						const int L = std::clamp(currState.selectedLayer, 0, (int)frame.AF.layers.size() - 1);
+						const int base = frame.AF.layers[L].spriteId;
 						if (base >= 0) {
 							for(int i = currState.frame + 1; i < (int)seq->frames.size(); i++)
 							{
 								auto& layers = seq->frames[i].AF.layers;
-								if (layers.empty()) layers.push_back({});
-								layers[0].spriteId = base + (i - currState.frame);
+								if ((int)layers.size() <= L) { Layer_Type e; e.spriteId = -1; layers.resize(L + 1, e); }
+								layers[L].spriteId = base + (i - currState.frame);
 							}
 							frameData->mark_modified(currState.pattern);
 							markModified();
 						}
 					}
 					if(im::IsItemHovered())
-						im::SetTooltip(TXT("Set layer 0 of every later frame to this frame's sprite + 1, + 2, ..."));
+						im::SetTooltip(TXT("Set the selected layer of every later frame to this frame's sprite + 1, + 2, ..."));
 
 					im::Separator();
 
@@ -420,29 +452,30 @@ void MainPane::Draw()
 					if(ranges[0] > maxFrame) ranges[0] = maxFrame;
 					if(ranges[1] > maxFrame) ranges[1] = maxFrame;
 
+					// D16: the layer tools act on the selected layer (MBTL keeps the
+					// body on layer 1) or on every layer of this frame.
+					const int rangeLayer = std::clamp(currState.selectedLayer, 0, std::max(0, (int)frame.AF.layers.size() - 1));
+					{
+						char lb[96];
+						snprintf(lb, sizeof lb, TXT("Selected layer (%d)"), rangeLayer);
+						im::Text(TXT("Layer tools apply to:"));
+						im::SameLine();
+						if (im::RadioButton(lb, !currState.rangeAllLayers)) currState.rangeAllLayers = false;
+						im::SameLine();
+						if (im::RadioButton(LBL("All layers"), currState.rangeAllLayers)) currState.rangeAllLayers = true;
+					}
+					auto pasteLayers = [&](LayerPaste what) {
+						if (frame.AF.layers.empty()) frame.AF.layers.push_back({});
+						const Frame src = frame; // the range may include this frame
+						PasteLayerRange(*seq, src, ranges[0], ranges[1], currState.rangeAllLayers ? -1 : rangeLayer, what);
+						frameData->mark_modified(currState.pattern);
+						markModified();
+					};
+
 					// Animation Properties
 					im::Text(TXT("Animation:"));
 					if(im::Button(LBL("Paste sprite & duration")))
-					{
-						// Ensure source frame has at least one layer
-						if (frame.AF.layers.empty()) {
-							frame.AF.layers.push_back({});
-						}
-						const auto& srcLayer = frame.AF.layers[0];
-
-						for(int i = ranges[0]; i <= ranges[1] && i >= 0 && i < seq->frames.size(); i++)
-						{
-							// Ensure destination frame has at least one layer
-							if (seq->frames[i].AF.layers.empty()) {
-								seq->frames[i].AF.layers.push_back({});
-							}
-							seq->frames[i].AF.layers[0].spriteId = srcLayer.spriteId;
-							seq->frames[i].AF.layers[0].usePat = srcLayer.usePat;
-							seq->frames[i].AF.duration = frame.AF.duration;
-						}
-						frameData->mark_modified(currState.pattern);
-						markModified();
-					}
+						pasteLayers(LayerPaste::SpriteDuration);
 
 					if(im::Button(LBL("Paste jump & interpolation")))
 					{
@@ -475,84 +508,15 @@ void MainPane::Draw()
 					// Transform Properties
 					im::Text(TXT("Transforms:"));
 					if(im::Button(LBL("Paste offset (X/Y)")))
-					{
-						if (frame.AF.layers.empty()) frame.AF.layers.push_back({});
-						const auto& srcLayer = frame.AF.layers[0];
-
-						for(int i = ranges[0]; i <= ranges[1] && i >= 0 && i < seq->frames.size(); i++)
-						{
-							if (seq->frames[i].AF.layers.empty()) seq->frames[i].AF.layers.push_back({});
-							seq->frames[i].AF.layers[0].offset_x = srcLayer.offset_x;
-							seq->frames[i].AF.layers[0].offset_y = srcLayer.offset_y;
-						}
-						frameData->mark_modified(currState.pattern);
-						markModified();
-					}
-
+						pasteLayers(LayerPaste::Offset);
 					if(im::Button(LBL("Paste rotation")))
-					{
-						if (frame.AF.layers.empty()) frame.AF.layers.push_back({});
-						const auto& srcLayer = frame.AF.layers[0];
-
-						for(int i = ranges[0]; i <= ranges[1] && i >= 0 && i < seq->frames.size(); i++)
-						{
-							if (seq->frames[i].AF.layers.empty()) seq->frames[i].AF.layers.push_back({});
-							memcpy(seq->frames[i].AF.layers[0].rotation, srcLayer.rotation, sizeof(float)*3);
-							seq->frames[i].AF.AFRT = frame.AF.AFRT;
-						}
-						frameData->mark_modified(currState.pattern);
-						markModified();
-					}
-
+						pasteLayers(LayerPaste::Rotation);
 					if(im::Button(LBL("Paste scale")))
-					{
-						if (frame.AF.layers.empty()) frame.AF.layers.push_back({});
-						const auto& srcLayer = frame.AF.layers[0];
-
-						for(int i = ranges[0]; i <= ranges[1] && i >= 0 && i < seq->frames.size(); i++)
-						{
-							if (seq->frames[i].AF.layers.empty()) seq->frames[i].AF.layers.push_back({});
-							memcpy(seq->frames[i].AF.layers[0].scale, srcLayer.scale, sizeof(float)*2);
-						}
-						frameData->mark_modified(currState.pattern);
-						markModified();
-					}
-
+						pasteLayers(LayerPaste::Scale);
 					if(im::Button(LBL("Paste color & blend")))
-					{
-						if (frame.AF.layers.empty()) frame.AF.layers.push_back({});
-						const auto& srcLayer = frame.AF.layers[0];
-
-						for(int i = ranges[0]; i <= ranges[1] && i >= 0 && i < seq->frames.size(); i++)
-						{
-							if (seq->frames[i].AF.layers.empty()) seq->frames[i].AF.layers.push_back({});
-							memcpy(seq->frames[i].AF.layers[0].rgba, srcLayer.rgba, sizeof(float)*4);
-							seq->frames[i].AF.layers[0].blend_mode = srcLayer.blend_mode;
-						}
-						frameData->mark_modified(currState.pattern);
-						markModified();
-					}
-
+						pasteLayers(LayerPaste::ColorBlend);
 					if(im::Button(LBL("Paste all transforms")))
-					{
-						if (frame.AF.layers.empty()) frame.AF.layers.push_back({});
-						const auto& srcLayer = frame.AF.layers[0];
-
-						for(int i = ranges[0]; i <= ranges[1] && i >= 0 && i < seq->frames.size(); i++)
-						{
-							if (seq->frames[i].AF.layers.empty()) seq->frames[i].AF.layers.push_back({});
-							seq->frames[i].AF.layers[0].offset_x = srcLayer.offset_x;
-							seq->frames[i].AF.layers[0].offset_y = srcLayer.offset_y;
-							memcpy(seq->frames[i].AF.layers[0].rotation, srcLayer.rotation, sizeof(float)*3);
-							memcpy(seq->frames[i].AF.layers[0].scale, srcLayer.scale, sizeof(float)*2);
-							memcpy(seq->frames[i].AF.layers[0].rgba, srcLayer.rgba, sizeof(float)*4);
-							seq->frames[i].AF.layers[0].blend_mode = srcLayer.blend_mode;
-							seq->frames[i].AF.AFRT = frame.AF.AFRT;
-							seq->frames[i].AF.priority = frame.AF.priority;
-						}
-						frameData->mark_modified(currState.pattern);
-						markModified();
-					}
+						pasteLayers(LayerPaste::AllTransforms);
 
 					im::Separator();
 
@@ -575,11 +539,14 @@ void MainPane::Draw()
 						if(insertPos >= 0 && insertPos <= seq->frames.size() && !currState.copied->frames.empty())
 						{
 							// Manually copy frames with cross-allocator assignment
+							Ha6ConvertReport conv;
 							for (size_t i = 0; i < currState.copied->frames.size(); i++) {
 								Frame temp;
 								temp = currState.copied->frames[i];
+								conv.add(frameData->conformPasted(temp));
 								seq->frames.insert(seq->frames.begin() + insertPos + i, temp);
 							}
+							currState.pasteNotice = FormatConvertNotice(conv);
 							frameData->mark_modified(currState.pattern);
 							markModified();
 						}

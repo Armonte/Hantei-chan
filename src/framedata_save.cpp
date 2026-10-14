@@ -515,7 +515,7 @@ void WriteEF(std::ostream &file, const std::vector<Frame_EF> &ef)
 
 void WriteIF(std::ostream &file, const std::vector<Frame_IF> &ifs)
 {
-	constexpr int maxParam = 9;
+	constexpr int maxParam = kMaxIfParams;
 	for(size_t i = 0; i < ifs.size(); i++)
 	{
 		int paramN = 0;
@@ -1149,7 +1149,7 @@ static void WriteSequenceUni(std::ostream &file, const Sequence *seq, int layerC
 		for (size_t i = 0; i < fr.IF.size(); ++i) {
 			const Frame_IF &iff = fr.IF[i];
 			int paramN = 0;
-			for (int j = 0; j < 9; ++j) if (iff.parameters[j]) paramN = j + 1;
+			for (int j = 0; j < kMaxIfParams; ++j) if (iff.parameters[j]) paramN = j + 1;
 			w.tagi("IFST", ifSame ? enc.ifSlot[i] : (int)i);
 			w.tagi("IFTP", iff.type);
 			if (paramN) { w.tagi("IFPR", paramN); file.write((const char*)iff.parameters, 4 * paramN); }

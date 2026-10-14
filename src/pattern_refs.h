@@ -57,7 +57,8 @@ bool IsEmptySlot(FrameData& fd, int pattern);
 // patterns that point at another pasted pattern follow it to its new slot,
 // and relative spawns keep their absolute target. Returns references changed.
 int PastePatterns(FrameData& fd, const std::vector<Sequence_T<std::allocator>>& patterns,
-                  const std::vector<int>& sourceIds, const std::vector<int>& slots, bool remapRefs);
+                  const std::vector<int>& sourceIds, const std::vector<int>& slots, bool remapRefs,
+                  Ha6ConvertReport* conv = nullptr);
 
 // Move patterns `from[i]` -> `to[i]` inside one character. Source slots that
 // are not also destinations are cleared. With remapRefs every reference in

@@ -1,0 +1,40 @@
+# S3 in-game check, memory variant. UNI2 1.42 does NOT let a loose ___St\ file override a packed file
+# (OpenFileViaSearchPaths 0x4B9720: after the loose open, ArchiveIndex_OpenEntryByName still runs on the
+# unprefixed name at 0x4B9971 and the archive wins). So this run leaves the install untouched and writes, in the
+# launched game's RAM only, the same AFRG value the edited chr000.ha6 carries for Hyde p0 f0 layer 0 (255,77,77).
+# Layout (Han6_LoadFrame 0x4C5090 -> Han6_LoadFrameAF 0x4C6060): AF block = frame+4, layer stride 48,
+# AFRG = layer+12..14 bytes. Frame pointer = P1+OBJ_FRAMEDATA.
+include uni2.gcs
+let P1CHR 0
+let P2CHR 1
+include uni2_to_training.gcs
+set DIR C:\dev\hantei-chan\wt\s3-uni-dataloss\docs\audit_2026_10_14\evidence\s3\ingame
+
+set PAT 0
+set FRAME 0
+set GTICK 1
+set OUT ${DIR}\mem_vanilla_p0_f0.png
+set OUT_META ${DIR}\mem_vanilla_p0_f0.meta.txt
+include uni2_force_pattern.gcs
+peek u8 [P1+OBJ_FRAMEDATA]+0x10 afrg_r_before
+peek u8 [P1+OBJ_FRAMEDATA]+0x11 afrg_g_before
+peek u8 [P1+OBJ_FRAMEDATA]+0x12 afrg_b_before
+
+poke u8 [P1+OBJ_FRAMEDATA]+0x10 255
+poke u8 [P1+OBJ_FRAMEDATA]+0x11 77
+poke u8 [P1+OBJ_FRAMEDATA]+0x12 77
+set OUT ${DIR}\mem_tinted_p0_f0.png
+set OUT_META ${DIR}\mem_tinted_p0_f0.meta.txt
+include uni2_force_pattern.gcs
+peek u8 [P1+OBJ_FRAMEDATA]+0x10 afrg_r_after
+peek u8 [P1+OBJ_FRAMEDATA]+0x11 afrg_g_after
+peek u8 [P1+OBJ_FRAMEDATA]+0x12 afrg_b_after
+
+# control: another pattern stays untinted
+set PAT 96
+set FRAME 1
+set GTICK 1
+set OUT ${DIR}\mem_tinted_p96_f1.png
+set OUT_META ${DIR}\mem_tinted_p96_f1.meta.txt
+include uni2_force_pattern.gcs
+quit

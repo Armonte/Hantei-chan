@@ -1,0 +1,7 @@
+MBAACC single round trip: rc0=305
+MBAACC stacked save == own-file save: ok=117 bad=0 (inherited patterns kept out: 36362)
+UNI single round trip: rc0=61
+UNI stacked save == own-file save: ok=16 bad=0 (inherited patterns kept out: 475)
+UNI2 stacked save == own-file save: ok=29 bad=0 (inherited patterns kept out: 230)
+MBTL stacked save == own-file save: ok=60 bad=0 (inherited patterns kept out: 9884)
+HA6_REGRESS_PASS

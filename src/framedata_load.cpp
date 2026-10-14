@@ -367,28 +367,13 @@ unsigned int *fd_frame_EF_load(unsigned int *data, const unsigned int *data_end,
 			EF->number = data[0];
 			++data;
 		} else if (!memcmp(buf, "EFPR", 4)) {
-			int count = data[0];
-			if (count <= 12) {
-				for (int i = 0; i < count; ++i) {
-					EF->parameters[i] = data[i+1];
-				}
-				/* if(EF->type == 1 )
-				{
-					if(maxCount < count)
-						 maxCount = count;
-					numberSet.insert(EF->parameters[1]);
-					test.Print(data, data_end);
-					std::cout <<"\tEFTP " << EF->type <<" NO "<<EF->number<<" Params:";
-					for (int i = 0; i < count; ++i) {
-						std::cout <<" "<<EF->parameters[i];
-					}
-					std::cout<<"\n";
-				} */
-			} else {
-				test.Print(data, data_end);
-				std::cout <<"\tUnhandled number of EF parameters: " << count <<"\n";
-			}
-			data += count + 1;
+			// The game keeps the first 12 (EF record: type, no, 12 params,
+			// uni2.exe 0x4C4E70); extras are skipped, not all dropped.
+			const int count = (int)data[0];
+			for (int i = 0; i < count && i < kMaxEfParams && data + 1 + i < data_end; ++i)
+				EF->parameters[i] = data[i+1];
+			if (count > 0) data += count;
+			++data;
 		} else if (!memcmp(buf, "EFED", 4)) {
 			break;
 		} else {
@@ -406,7 +391,7 @@ unsigned int *fd_frame_IF_load(unsigned int *data, const unsigned int *data_end,
 {
 	// Initialize all parameters to 0 to prevent garbage data
 	IF->type = 0;
-	for (int i = 0; i < 9; ++i) {
+	for (int i = 0; i < kMaxIfParams; ++i) {
 		IF->parameters[i] = 0;
 	}
 
@@ -420,28 +405,13 @@ unsigned int *fd_frame_IF_load(unsigned int *data, const unsigned int *data_end,
 			
 			++data;
 		} else if (!memcmp(buf, "IFPR", 4)) {
-			int count = data[0];
-			if (count <= 9) {
-				for (int i = 0; i < count; ++i) {
-					IF->parameters[i] = data[i+1];
-				}
-				/* if(IF->type == 3 && count > 2)
-				{
-					if(maxCount < count)
-						 maxCount = count;
-					numberSet.insert(IF->parameters[4]);
-					test.Print(data, data_end);
-					std::cout <<"\tIFTP " << IF->type <<" Params:";
-					for (int i = 0; i < count; ++i) {
-						std::cout <<" "<<IF->parameters[i];
-					}
-					std::cout<<"\n";
-				} */
-			} else {
-				test.Print(data, data_end);
-				std::cout <<"\tUnhandled number of IF parameters: " << count <<"\n";
-			}
-			data += count + 1;
+			// The game keeps the first 10 and skips the rest
+			// (Han6_LoadFrameIF, uni2.exe 0x4C7490); so do we (D15).
+			const int count = (int)data[0];
+			for (int i = 0; i < count && i < kMaxIfParams && data + 1 + i < data_end; ++i)
+				IF->parameters[i] = data[i+1];
+			if (count > 0) data += count;
+			++data;
 		} else if (!memcmp(buf, "IFED", 4)) {
 			break;
 		} else {
@@ -1017,7 +987,7 @@ unsigned int *fd_sequence_load(unsigned int *data, const unsigned int *data_end,
 	return data;
 }
 
-unsigned int *fd_main_load(unsigned int *data, const unsigned int *data_end, std::vector<Sequence> &sequences, unsigned int nsequences, bool utf8, std::vector<unsigned int> *definedIds, bool fillOnly, std::map<unsigned int, Sequence> *stubs)
+unsigned int *fd_main_load(unsigned int *data, const unsigned int *data_end, std::vector<Sequence> &sequences, unsigned int nsequences, bool utf8, std::vector<unsigned int> *definedIds, bool fillOnly, std::map<unsigned int, Sequence> *stubs, std::map<unsigned int, Sequence> *templates)
 {
 	while (data < data_end) {
 		unsigned int *buf = data;
@@ -1038,8 +1008,13 @@ unsigned int *fd_main_load(unsigned int *data, const unsigned int *data_end, std
 					Sequence blk;
 					bool sawPDS2 = false;
 					data = fd_sequence_load(data, data_end, &blk, utf8, &sawPDS2);
-					if (fillOnly && hadContent)
-						continue; // fallback file: the slot is already defined
+					if (fillOnly && hadContent) {
+						// fallback file: the slot is already defined. A BaseData
+						// template still shapes it in game (D17): keep it aside.
+						if (templates && hadFrames && (blk.flag & 1) && !blk.frames.empty())
+							(*templates)[seq_id] = std::move(blk);
+						continue;
+					}
 					if (sawPDS2 || !hadFrames) {
 						// The block replaces the slot. (Overlaying in place kept
 						// the previous file's usedAFGX/usedATV2 flags, so a
