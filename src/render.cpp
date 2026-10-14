@@ -762,8 +762,8 @@ bool Render::GeneratePartCenterVertices()
 	float propY = partProp->y;
 	float lineSize = 50.0f;  // Length of the cross arms in pixels
 
-	// Color for the origin marker (pink/magenta by default)
-	float color[3] = {1.0f, 0.5f, 1.0f};
+	// Color for the origin marker (pink/magenta by default; Preferences > PAT editor)
+	const float* color = patCenterColor;
 
 	// Lines buffer format: 4 grid lines + 4 origin marker lines
 	// Each line: x1, y1, z, r, g, b, x2, y2, z, r, g, b (but stored as individual vertices)
@@ -815,27 +815,25 @@ bool Render::GenerateUVRectangleVertices()
 		return false;
 	}
 
-	// Calculate pixel coordinates from UV coordinates
-	// UV coordinates are in texture space (0-255), we need to convert to pixel space
-	float uvBppX = gfx->uvBpp[0];  // UV units per pixel X
-	float uvBppY = gfx->uvBpp[1];  // UV units per pixel Y
+	// PPUV is in 1/256 of the texture whatever its size (Parts::Draw divides by 256), so a pixel is uv * w / 256.
+	// (This used uv / uvBpp: right for 256-pixel textures only, and a division by zero for MBAACC PGTX textures,
+	// whose uvBpp is 0.)
+	if (gfx->w <= 0 || gfx->h <= 0) {
+		return false;
+	}
+	const float sx = gfx->w / 256.0f;
+	const float sy = gfx->h / 256.0f;
 
-	float x1 = cutOut->uv[0] / uvBppX;  // Left edge
-	float y1 = cutOut->uv[1] / uvBppY;  // Top edge
-	float x2 = (cutOut->uv[0] + cutOut->uv[2]) / uvBppX;  // Right edge
-	float y2 = (cutOut->uv[1] + cutOut->uv[3]) / uvBppY;  // Bottom edge
+	float x1 = cutOut->uv[0] * sx;  // Left edge
+	float y1 = cutOut->uv[1] * sy;  // Top edge
+	float x2 = (cutOut->uv[0] + cutOut->uv[2]) * sx;  // Right edge
+	float y2 = (cutOut->uv[1] + cutOut->uv[3]) * sy;  // Bottom edge
 
-	// Offset to center the rectangle on the texture
-	float offsetX = -gfx->w / 2.0f;
-	float offsetY = -gfx->h / 2.0f;
+	// The texture / UV view draws the sheet from the view origin (Parts::Draw: one part at (0, 0), quad 0..w, 0..h),
+	// so sheet pixels are world coordinates. (The old -w/2, -h/2 offset put the rectangle off the sheet.)
 
-	x1 += offsetX;
-	x2 += offsetX;
-	y1 += offsetY;
-	y2 += offsetY;
-
-	// Color for the UV rectangle outline (cyan/blue)
-	constexpr float uvRectColor[] = {0.0f, 1.0f, 1.0f};  // Cyan
+	// Color for the UV rectangle outline (cyan by default; Preferences > PAT editor)
+	const float* uvRectColor = patUvRectColor;
 	constexpr float zOrder = 100.0f;  // Draw on top
 
 	// Triangle vertex indices for a quad

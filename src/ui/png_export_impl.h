@@ -324,8 +324,18 @@ void MainFrame::PrepareExportSettings(CharacterView* view)
 	if (!view || !view->getCharacter()) return;
 	if (m_export.folder.empty()) m_export.folder = DefaultExportFolder(view);
 	char base[256];
-	snprintf(base, sizeof(base), "%s_p%03d", AnsiToUtf8(view->getCharacter()->getName()).c_str(),
-		view->getState().pattern);
+	CharacterInstance* ch = view->getCharacter();
+	if (ch->isPatDocument()) {
+		// A PAT tab shows a part set, not a pattern: "<pat>_ps<NNN>[_<part set name>]".
+		const int ps = view->getState().partSet;
+		std::string psName;
+		if (ps >= 0 && ps < (int)ch->parts.partSets.size())
+			psName = std::string(ch->parts.partSets[ps].name.c_str());
+		snprintf(base, sizeof(base), "%s_ps%03d%s%s", AnsiToUtf8(ch->getName()).c_str(), ps,
+			psName.empty() ? "" : "_", AnsiToUtf8(psName).c_str());
+	} else {
+		snprintf(base, sizeof(base), "%s_p%03d", AnsiToUtf8(ch->getName()).c_str(), view->getState().pattern);
+	}
 	if (m_exportBaseAuto || m_export.baseName.empty()) { m_export.baseName = base; m_exportBaseAuto = true; }
 }
 

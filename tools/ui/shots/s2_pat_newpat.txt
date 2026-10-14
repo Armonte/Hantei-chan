@@ -1,0 +1,10 @@
+# S2 evidence: File > New PAT (UNI layout) and the "Saving and PAT editor settings" window (auto backup prefs).
+newpat uni
+wait 60
+capture C:/dev/hantei-chan/work/ab/shots/s2_07_new_pat.png
+patinfo
+prefswindow on
+wait 30
+capture C:/dev/hantei-chan/work/ab/shots/s2_08_prefs_backup.png
+prefswindow off
+quit

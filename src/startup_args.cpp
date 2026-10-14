@@ -173,6 +173,11 @@ static void RunUiScript(MainFrame &mf, HDC dc, const std::function<void(const st
 			continue;
 		}
 		std::string msg;
+		if (mf.PatScriptCommand(cmd, arg, &msg)) {   // PAT editor commands (ui/pat_editor_impl.h)
+			if (!msg.empty()) { FILE *lf = fopen((gStartup.uiScript + ".log").c_str(), "a"); if (lf) { fprintf(lf, "%s\n", msg.c_str()); fclose(lf); } }
+			waitFrames = 3;
+			return;
+		}
 		if (!abrowser::ScriptCommand(cmd, arg, &msg)) {
 			FILE *lf = fopen((gStartup.uiScript + ".log").c_str(), "a");
 			if (lf) { fprintf(lf, "script line %zu '%s' failed: %s\n", pc, line.c_str(), msg.c_str()); fclose(lf); }

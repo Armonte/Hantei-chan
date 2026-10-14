@@ -413,6 +413,10 @@ public:
 	// Changes (to a process-unique value) on load/free and in mark_modified().
 	// Caches keyed on pattern data (e.g. the preview simulator) compare it.
 	uint64_t	dataVersion = 0;
+	// Patterns passed to mark_modified() since the undo manager's last commit (its dirty feed, undo_manager.h).
+	// Capped: a full feed makes the next commit compare the whole document.
+	std::vector<int> undoDirtyFeed;
+	static constexpr size_t kUndoDirtyFeedCap = 4096;
 	std::vector<Command> m_commands;
 	std::string m_commandsPath;     // _c.txt the command table came from (empty = none)
 

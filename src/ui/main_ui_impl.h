@@ -84,6 +84,8 @@ void MainFrame::DrawUi()
 			}
 
 			if (ImGui::BeginPopup("AddCharacterPopup")) {
+				// The new tab's editor (sosfiro's "Select Editor": HA6 or PAT file)
+				ImGui::SeparatorText(TXT("HA6 editor"));
 				if (ImGui::MenuItem(LBL("Load from .txt..."))) {
 					std::string path = FileDialog(fileType::TXT, false);
 					if (!path.empty()) {
@@ -132,12 +134,6 @@ void MainFrame::DrawUi()
 						}
 					}
 				}
-				if (ImGui::MenuItem(LBL("Load Pattern (.pat)..."))) {
-					std::string path = FileDialog(fileType::PAT, false);
-					if (!path.empty()) {
-						createPatEditorView(path);
-					}
-				}
 				if (ImGui::MenuItem(LBL("New Character"))) {
 					auto character = std::make_unique<CharacterInstance>();
 					character->frameData.initEmpty();
@@ -146,6 +142,14 @@ void MainFrame::DrawUi()
 					createViewForCharacter(characters.back().get());
 					markProjectModified();
 				}
+				ImGui::SeparatorText(TXT("PAT editor"));
+				if (ImGui::MenuItem(LBL("Open .pat file..."))) {
+					std::string path = FileDialog(fileType::PAT, false);
+					if (!path.empty()) {
+						createPatEditorView(path);
+					}
+				}
+				if (ImGui::MenuItem(LBL("New PAT..."))) m_openNewPat = true;
 				ImGui::EndPopup();
 			}
 
@@ -416,6 +420,18 @@ void MainFrame::DrawUi()
 	FinishTabDrag();
 	FinishPaneUndoFrame();
 	DrawRenderToolWindows();
+	DrawNewPatPopup();
+	DrawPatPreferencesWindow();
+	if (m_hideUi) {
+		// F hid the editor panels: say how to get them back.
+		const ImGuiViewport* vp = ImGui::GetMainViewport();
+		ImGui::SetNextWindowPos(ImVec2(vp->WorkPos.x + 12, vp->WorkPos.y + vp->WorkSize.y - 12), ImGuiCond_Always, ImVec2(0, 1));
+		ImGui::SetNextWindowBgAlpha(0.6f);
+		ImGui::Begin("##hidden_ui_hint", nullptr, ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_AlwaysAutoResize |
+			ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_NoFocusOnAppearing | ImGuiWindowFlags_NoNav | ImGuiWindowFlags_NoDocking);
+		ImGui::TextDisabled(TXT("Panels hidden: press %s to show them"), shortcuts.registry().label(ShortcutAction::toggleHideUi).c_str());
+		ImGui::End();
+	}
 
 	aboutWindow.Draw();
 	vectors.Draw();
@@ -711,6 +727,7 @@ void MainFrame::AdvancePattern(CharacterView* view, int dir)
 {
 	auto* active = view ? view->getCharacter() : nullptr;
 	if (!view || !active) return;
+	if (view->isPatEditor()) { PatNavigate(view, dir, 0); return; }   // PAT tab: Up / Down = part set
 
 	auto& state = view->getState();
 	state.pattern += dir;
@@ -726,6 +743,7 @@ void MainFrame::AdvanceFrame(CharacterView* view, int dir)
 {
 	auto* active = view ? view->getCharacter() : nullptr;
 	if (!view || !active) return;
+	if (view->isPatEditor()) { PatNavigate(view, 0, dir); return; }   // PAT tab: Left / Right = part
 
 	auto& state = view->getState();
 	auto seq = active->frameData.get_sequence(state.pattern);
@@ -758,6 +776,7 @@ void MainFrame::HandleMouseDown(bool dragRight, bool dragLeft)
 
 void MainFrame::HandleMouseUp(bool dragRight, bool dragLeft)
 {
+	if (dragRight && m_uvDrag.active) EndUvDrag(false);
 	if (dragRight && m_boxDragCharacter) EndBoxDrag();
 	if (dragLeft && m_posDrag.active) EndPositionDrag(false);
 	auto* view = getActiveView();
@@ -804,6 +823,7 @@ void MainFrame::HandleMouseDrag(int x_, int y_, bool dragRight, bool dragLeft)
 	if(dragRight)
 	{
 		const float z = view->getZoom() > 0.f ? view->getZoom() : 1.f;
+		if (view->isPatEditor()) { UvDragBy(x_ / z, y_ / z); return; }   // never a hitbox in a PAT tab
 		if (view->getBoxPane()) view->getBoxPane()->BoxDragWorld(x_ / z, y_ / z);
 	}
 	else if(dragLeft)
@@ -828,6 +848,14 @@ void MainFrame::RightClick(int x_, int y_)
 
 	auto* active = getActiveCharacter();
 	if (!active) return;
+
+	// PAT tab (sosfiro main_frame.cpp RightClick): the UV view edits the selected cut-out's UV rectangle; the
+	// right button never draws a hitbox into the placeholder frame.
+	if (view->isPatEditor() && !active->parts.fbPartModel) {
+		const auto& c = view->camera();
+		BeginUvDrag(view, (x_ - c.panX - clientRect.x/2)/c.zoom, (y_ - c.panY - clientRect.y/2)/c.zoom);
+		return;
+	}
 
 	auto* boxPane = view->getBoxPane();
 	if (!boxPane) return;

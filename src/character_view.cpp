@@ -1,4 +1,5 @@
 #include "character_view.h"
+#include "ini.h"
 #include "render.h"
 
 namespace {
@@ -110,10 +111,17 @@ void CharacterView::refreshPanes(Render* render)
 	m_boxPane = std::make_unique<BoxPane>(render, &m_character->frameData, m_state);
 
 	// Set modification callbacks to mark the character (not the view) as modified
+	// Pane widgets edit the view's pattern: an indexed mark keeps the commit to that pattern (cross-pattern pane
+	// operations also call FrameData::mark_modified(), which feeds the undo manager).
 	auto modifyCallback = [this]() {
 		m_character->markModified();
-		m_character->undoManager.markModified();
+		m_character->undoManager.markModified(m_state.pattern);
 	};
+
+	// Panel visibility of new tabs follows the Window menu (saved in the ini).
+	if (m_mainPane) m_mainPane->isVisible = gSettings.showAnimPane;
+	if (m_rightPane) m_rightPane->isVisible = gSettings.showAttackPane;
+	if (m_boxPane) m_boxPane->isVisible = gSettings.showBoxPane;
 
 	if (m_mainPane) {
 		m_mainPane->onModified = modifyCallback;
@@ -159,6 +167,12 @@ void CharacterView::refreshPanes(Render* render)
 		m_shapePane = std::make_unique<PatShapePane>(render, &m_stateRef);
 		m_texturePane = std::make_unique<PatTexturePane>(render, &m_stateRef);
 		m_toolPane = std::make_unique<PatToolPane>(render, &m_stateRef);
+
+		m_partsetPane->isVisible = gSettings.showPatPartSetPane;
+		m_partPane->isVisible = gSettings.showPatPartPane;
+		m_shapePane->isVisible = gSettings.showPatShapePane;
+		m_texturePane->isVisible = gSettings.showPatTexturePane;
+		m_toolPane->isVisible = gSettings.showPatToolPane;
 
 		// Regenerate names for all PatEditor panes
 		if (m_partsetPane) {

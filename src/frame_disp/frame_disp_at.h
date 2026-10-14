@@ -128,6 +128,20 @@ inline void AtDisplay(Frame_AT *at, FrameData *frameData = nullptr, int patternI
 		if(im::InputInt(LBL("Hitgrab (ATNG)"), &at->hitgrab, 0, 0)) {
 			markModified();
 		}
+		// The low bits as flags (sosfiro's labels); hover a box for its meaning.
+		unsigned hgBits = (unsigned)at->hitgrab;
+		unsigned hgIndex = -1;
+		if(BitField("Hitgrab flags", &hgBits, &hgIndex, 8)) {
+			at->hitgrab = (int)hgBits;
+			markModified();
+		}
+		switch (hgIndex)
+		{
+			case 0: Tooltip("Hitgrab: enabled"); break;
+			case 1: Tooltip("Hitgrab: target collision box"); break;
+			case 2: Tooltip("Hitgrab: target origin"); break;
+			case 3: Tooltip("Hitgrab: ignore the target's invulnerability timer"); break;
+		}
 	} else {
 		bool hg = at->hitgrab != 0;
 		if(im::Checkbox(LBL("Hitgrab"), &hg)) {
@@ -268,6 +282,12 @@ inline void AtDisplay(Frame_AT *at, FrameData *frameData = nullptr, int patternI
 	im::SameLine(0, 20.f); im::SetNextItemWidth(120);
 
 	if(i18n::Combo(LBL("Added effect"), &at->addedEffect, addedEffectList, IM_ARRAYSIZE(addedEffectList))) {
+		markModified();
+	}
+	// Any ID, also ones the list does not name (sosfiro: raw added effect ID)
+	im::SameLine(0, 20.f);
+	im::SetNextItemWidth(70);
+	if(im::InputInt("ID##Added effect", &at->addedEffect, 0, 0)) {
 		markModified();
 	}
 

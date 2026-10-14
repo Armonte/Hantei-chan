@@ -203,8 +203,105 @@ Texture* PartGfx<>::GetTextureFromId(std::vector<Texture*> textures)
     return nullptr;
 }
 
+namespace {
+
+// One BC1 colour block (DXT1 / the colour half of DXT5) -> 16 BGRA pixels.
+void DecodeBc1Colors(const uint8_t* blk, uint8_t out[16][4], bool dxt1Alpha)
+{
+    const uint16_t c0 = blk[0] | (blk[1] << 8), c1 = blk[2] | (blk[3] << 8);
+    uint8_t pal[4][4];   // b, g, r, a
+    auto expand = [](uint16_t c, uint8_t* o) {
+        o[2] = (uint8_t)(((c >> 11) & 31) * 255 / 31);
+        o[1] = (uint8_t)(((c >> 5) & 63) * 255 / 63);
+        o[0] = (uint8_t)((c & 31) * 255 / 31);
+        o[3] = 255;
+    };
+    expand(c0, pal[0]);
+    expand(c1, pal[1]);
+    for (int k = 0; k < 3; k++) {
+        if (c0 > c1 || !dxt1Alpha) {
+            pal[2][k] = (uint8_t)((2 * pal[0][k] + pal[1][k]) / 3);
+            pal[3][k] = (uint8_t)((pal[0][k] + 2 * pal[1][k]) / 3);
+        } else {
+            pal[2][k] = (uint8_t)((pal[0][k] + pal[1][k]) / 2);
+            pal[3][k] = 0;
+        }
+    }
+    pal[2][3] = 255;
+    pal[3][3] = (c0 > c1 || !dxt1Alpha) ? 255 : 0;
+    const uint32_t idx = blk[4] | (blk[5] << 8) | (blk[6] << 16) | ((uint32_t)blk[7] << 24);
+    for (int i = 0; i < 16; i++) memcpy(out[i], pal[(idx >> (2 * i)) & 3], 4);
+}
+
+// The alpha half of a DXT5 block.
+void DecodeBc3Alpha(const uint8_t* blk, uint8_t out[16][4])
+{
+    uint8_t a[8];
+    a[0] = blk[0];
+    a[1] = blk[1];
+    if (a[0] > a[1]) for (int i = 1; i < 7; i++) a[i + 1] = (uint8_t)(((7 - i) * a[0] + i * a[1]) / 7);
+    else {
+        for (int i = 1; i < 5; i++) a[i + 1] = (uint8_t)(((5 - i) * a[0] + i * a[1]) / 5);
+        a[6] = 0;
+        a[7] = 255;
+    }
+    uint64_t bits = 0;
+    for (int i = 0; i < 6; i++) bits |= (uint64_t)blk[2 + i] << (8 * i);
+    for (int i = 0; i < 16; i++) out[i][3] = a[(bits >> (3 * i)) & 7];
+}
+
+int MaskShift(uint32_t m) { int s = 0; if (!m) return 0; while (!(m & 1)) { m >>= 1; s++; } return s; }
+
+} // namespace
+
 template<>
-std::string PartGfx<>::ImportTexture(const char *filename, std::vector<Texture*> textures)
+std::string PartGfx<>::DecodeDds(const char* file, size_t size, std::vector<uint8_t>& bgra, int& w, int& h)
+{
+    if (size < 128 || memcmp(file, "DDS ", 4) != 0) return "Not a DDS file";
+    const uint32_t* d = (const uint32_t*)file;
+    // DDS_HEADER: size, flags, HEIGHT, WIDTH, ... pixel format at +76 (d[19]): size, flags, fourCC, bit count, masks
+    h = (int)d[3];
+    w = (int)d[4];
+    if (w <= 0 || h <= 0 || w > 8192 || h > 8192) return "The DDS size is not supported";
+    const uint32_t pfFlags = d[20];
+    const uint8_t* px = (const uint8_t*)file + 128;
+    const size_t avail = size - 128;
+    bgra.assign((size_t)w * h * 4, 0);
+    if (pfFlags & 4) {   // DDPF_FOURCC
+        const bool dxt1 = !memcmp(&d[21], "DXT1", 4), dxt5 = !memcmp(&d[21], "DXT5", 4);
+        if (!dxt1 && !dxt5) return "DDS compression must be DXT1 or DXT5 (or uncompressed 32-bit)";
+        const int bw = (w + 3) / 4, bh = (h + 3) / 4, bsz = dxt1 ? 8 : 16;
+        if (avail < (size_t)bw * bh * bsz) return "The DDS file is truncated";
+        for (int by = 0; by < bh; by++)
+            for (int bx = 0; bx < bw; bx++) {
+                const uint8_t* blk = px + ((size_t)by * bw + bx) * bsz;
+                uint8_t out[16][4];
+                DecodeBc1Colors(dxt5 ? blk + 8 : blk, out, dxt1);
+                if (dxt5) DecodeBc3Alpha(blk, out);
+                for (int i = 0; i < 16; i++) {
+                    const int x = bx * 4 + (i & 3), y = by * 4 + (i >> 2);
+                    if (x < w && y < h) memcpy(&bgra[((size_t)y * w + x) * 4], out[i], 4);
+                }
+            }
+        return "";
+    }
+    if (d[22] != 32) return "Uncompressed DDS must be 32-bit";
+    if (avail < (size_t)w * h * 4) return "The DDS file is truncated";
+    const uint32_t rm = d[23], gm = d[24], bm = d[25], am = (pfFlags & 1) ? d[26] : 0;
+    const int rs = MaskShift(rm), gs = MaskShift(gm), bs = MaskShift(bm), as = MaskShift(am);
+    for (size_t i = 0; i < (size_t)w * h; i++) {
+        uint32_t v;
+        memcpy(&v, px + i * 4, 4);
+        bgra[i * 4 + 0] = (uint8_t)((v & bm) >> bs);
+        bgra[i * 4 + 1] = (uint8_t)((v & gm) >> gs);
+        bgra[i * 4 + 2] = (uint8_t)((v & rm) >> rs);
+        bgra[i * 4 + 3] = am ? (uint8_t)((v & am) >> as) : 255;
+    }
+    return "";
+}
+
+template<>
+std::string PartGfx<>::ImportTexture(const char *filename, std::vector<Texture*>& textures, bool mbaaccFormat)
 {
     std::string path = filename;
     char* data;
@@ -212,16 +309,61 @@ std::string PartGfx<>::ImportTexture(const char *filename, std::vector<Texture*>
 
     if (!ReadInMem(filename, data, size))
         return "Unable to read data in memory";
+    if (size < 128 || memcmp(data, "DDS ", 4) != 0)
+    {
+        delete[] data;
+        return "Not a DDS file";
+    }
 
     unsigned int* d = (unsigned int*)(data);
+    // DDS_HEADER order is height, then width (d[3], d[4]); the old code read them the other way round, which only
+    // worked for square textures.
+    const int ddsW = (int)d[4], ddsH = (int)d[3];
 
-    // Validate dimensions (must be divisible by 256)
-    if (d[3] % 256 != 0 || d[3] <= 0)
+    if (mbaaccFormat)
+    {
+        // MBAA.exe reads PGTX only (32-bit BGRA rows). Decode whatever the DDS holds into that.
+        std::vector<uint8_t> px;
+        int dw = 0, dh = 0;
+        std::string err = DecodeDds(data, size, px, dw, dh);
+        delete[] data;
+        if (!err.empty()) return err;
+        if (name.empty())
+            name = path.substr(path.find_last_of("/\\") + 1);
+        w = dw;
+        h = dh;
+        bpp = 32;
+        uvBpp[0] = w / 256;
+        uvBpp[1] = h / 256;
+        // Never freed: an undo snapshot may still point at the previous pixels, and this buffer may be the next one.
+        char* pixels = new char[px.size()];
+        memcpy(pixels, px.data(), px.size());
+        this->data = pixels;
+        type = 0;
+        s3tc = nullptr;
+        imageData = nullptr;
+        imageSize = 0;
+        memset(ddsHeader, 0, sizeof ddsHeader);
+#ifndef PAT_HEADLESS
+        Texture* texture = GetTextureFromId(textures);
+        if (!texture) {
+            texture = new Texture;
+            textures.push_back(texture);
+        }
+        texture->LoadDirect(this->data, w, h, true);
+        texture->Apply(false, false);
+        textureIndex = texture->id;
+#endif
+        return "";
+    }
+
+    // UNI / MBTL (PGT2): sizes must be a multiple of 256 (UV is in 1/256 of the texture)
+    if (ddsW % 256 != 0 || ddsW <= 0)
     {
         delete[] data;
         return "Width of the texture to import is not divisible by 256";
     }
-    if (d[4] % 256 != 0 || d[4] <= 0)
+    if (ddsH % 256 != 0 || ddsH <= 0)
     {
         delete[] data;
         return "Height of the texture to import is not divisible by 256";
@@ -232,8 +374,8 @@ std::string PartGfx<>::ImportTexture(const char *filename, std::vector<Texture*>
         name = path.substr(path.find_last_of("/\\") + 1);
 
     // Set dimensions
-    w = d[3];
-    h = d[4];
+    w = ddsW;
+    h = ddsH;
     uvBpp[0] = w / 256;
     uvBpp[1] = h / 256;
     pgte[0] = w;
@@ -250,88 +392,90 @@ std::string PartGfx<>::ImportTexture(const char *filename, std::vector<Texture*>
     else if (!memcmp(typeBuf, "DXT5", 4)) {
         type = 5; // DXT5
     }
+    else {
+        delete[] data;
+        return "DDS compression must be DXT1 or DXT5 (or uncompressed)";
+    }
 
     // Copy DDS header
-    char* header = new char[124];
-    std::copy(data + 4, data + 128, header);
-    std::memcpy(ddsHeader, header, 124);
-    delete[] header;
+    std::memcpy(ddsHeader, data + 4, 124);
 
     // Copy image data
-    data += 128;
-    s3tc = (unsigned char*)data;
+    s3tc = (unsigned char*)(data + 128);
     imageSize = size - 128;
     imageData = new char[imageSize];
-    std::copy(data, data + imageSize, imageData);
+    std::copy(data + 128, data + 128 + imageSize, imageData);
+    this->data = nullptr;   // a PGT2 texture (a stale PGTX pointer would make Save write PGTX)
 
     // Load into OpenGL texture (skipped in headless / no-GL builds).
 #ifndef PAT_HEADLESS
-    auto texture = GetTextureFromId(textures);
+    Texture* texture = GetTextureFromId(textures);
     if (!texture) {
         texture = new Texture;
         textures.push_back(texture);
     }
 
-    printf("[DDS IMPORT] Loading texture: w=%d, h=%d, type=%d, s3tc=%p\n", w, h, type, s3tc);
-
-    if (s3tc)
+    if (type == 21)
     {
-        if (type == 21)
-        {
-            // Uncompressed RGB/BGRA
-            printf("[DDS IMPORT] Loading uncompressed RGB/BGRA texture\n");
-            textures.back()->LoadDirect((char*)s3tc, w, h, true);  // BGRA format
-            // Default to GL_NEAREST; filtering will be applied per-part based on PRFL flag
-            textures.back()->Apply(false, false);  // repeat=false, linearFilter=false
-        }
-        else
-        {
-            // Compressed (DXT1 or DXT5)
-            size_t compressedSize;
-            if (type == 5)
-                compressedSize = w * h; // DXT5
-            else if (type == 1)
-                compressedSize = (w * h) * 3 / 6; // DXT1
-            else
-                assert(0 && "Unknown compression type");
-
-            printf("[DDS IMPORT] Loading compressed DXT%d texture, size=%zu\n", (type == 1 ? 1 : 5), compressedSize);
-            textures.back()->LoadCompressed((char*)s3tc, w, h, compressedSize, type);
-            // LoadCompressed creates texture internally, set default filtering
-            // Actual filtering will be applied per-part based on PRFL flag in DrawPart()
-            glBindTexture(GL_TEXTURE_2D, textures.back()->id);
-            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-        }
+        // Uncompressed RGB/BGRA
+        texture->LoadDirect((char*)s3tc, w, h, true);  // BGRA format
+        // Default to GL_NEAREST; filtering will be applied per-part based on PRFL flag
+        texture->Apply(false, false);  // repeat=false, linearFilter=false
     }
     else
     {
-        printf("[DDS IMPORT] Loading fallback uncompressed texture\n");
-        textures.back()->LoadDirect(data, w, h, true);  // BGRA format
-        // Default to GL_NEAREST; filtering will be applied per-part based on PRFL flag
-        textures.back()->Apply(false, false);  // repeat=false, linearFilter=false
+        // Compressed (DXT1 or DXT5)
+        size_t compressedSize = type == 5 ? (size_t)w * h : (size_t)w * h / 2;
+        texture->LoadCompressed((char*)s3tc, w, h, compressedSize, type);
+        // LoadCompressed creates texture internally, set default filtering
+        // Actual filtering will be applied per-part based on PRFL flag in DrawPart()
+        glBindTexture(GL_TEXTURE_2D, texture->id);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
     }
 
-    textureIndex = textures.back()->id;
-    printf("[DDS IMPORT] Final texture ID: %u\n", textureIndex);
+    textureIndex = texture->id;
 #endif
 
     return ""; // Success
 }
 
 template<>
-void PartGfx<>::ExportTexture(const char *filename)
+std::string PartGfx<>::ExportTexture(const char *filename) const
 {
-    std::ofstream file(filename, std::ios_base::out | std::ios_base::binary | std::ios_base::trunc);
-    if (!file.is_open())
-        return;
-
-    // Write DDS file: magic + header + image data
-    file.write("DDS\x20", 4);
-    file.write(PTR(ddsHeader), 124);
-    file.write(imageData, imageSize);
-
-    file.close();
+    std::string out;
+    if (data != nullptr && imageSize == 0 && w > 0 && h > 0)
+    {
+        // MBAACC PGTX: 32-bit BGRA rows -> an uncompressed A8R8G8B8 DDS (sosfiro wrote an empty header and no pixels).
+        DDS_HEADER hd{};
+        hd.size = 124;
+        hd.flags = 0x1 | 0x2 | 0x4 | 0x8 | 0x1000;   // CAPS | HEIGHT | WIDTH | PITCH | PIXELFORMAT
+        hd.height = (uint32_t)h;
+        hd.width = (uint32_t)w;
+        hd.pitchOrLinearSize = (uint32_t)w * 4;
+        hd.ddspf.size = 32;
+        hd.ddspf.flags = 0x40 | 0x1;                  // RGB | ALPHAPIXELS
+        hd.ddspf.RGBBitCount = 32;
+        hd.ddspf.RBitMask = 0x00FF0000;
+        hd.ddspf.GBitMask = 0x0000FF00;
+        hd.ddspf.BBitMask = 0x000000FF;
+        hd.ddspf.ABitMask = 0xFF000000;
+        hd.caps = 0x1000;                             // TEXTURE
+        out.append("DDS ", 4);
+        out.append((const char*)&hd, sizeof hd);
+        out.append(data, (size_t)w * h * 4);
+    }
+    else if (imageData != nullptr && imageSize > 0)
+    {
+        out.append("DDS ", 4);
+        out.append(ddsHeader, 124);
+        out.append(imageData, imageSize);
+    }
+    else
+        return "This texture has no image data";
+    if (!WriteFileAtomic(filename, out.data(), out.size()))
+        return std::string("Could not write ") + filename;
+    return "";
 }
 
 template<>

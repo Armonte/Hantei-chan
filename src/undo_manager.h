@@ -43,15 +43,51 @@
 //                          document back to the pre-transaction state.
 //  * flush()             - commit now (undo/redo/save call this first).
 //
+// Cost
+// ----
+// A commit used to compare every pattern with its shadow (12-19 ms per step on
+// a 700-pattern character under load). Now only a markModified() without an
+// index, flush() (save), markClean(), undo/redo and cancelTransaction() compare
+// the whole document. Every other commit compares the patterns marked with
+// markModified(index) or reported through the dirty feed
+// (FrameData::mark_modified), the focus pattern, any pattern-list size change
+// and a rotating slice of kDriftSlice other patterns. The slice catches edits
+// that notified nobody within a few steps, without a per-frame full scan.
+//
 // Dirty state
 // -----------
 // Each committed entry has a unique revision id. markClean() records the
 // current revision; isClean() is true exactly when undo/redo has brought the
 // document back to that revision. Sequence::modified ("changed since load",
 // used by Save-as-MOD) is recomputed for restored patterns from the shadow.
+// Extra state of a character that is not part of the pattern list (the parts model of the PAT editor, ...) can join the
+// same history through a channel. A channel snapshots its state as an immutable object; the manager keeps the committed
+// snapshot as the channel's shadow, asks the channel whether the live state still equals it at every commit, and stores
+// (before, after) snapshot pairs in the entry. Undo / redo restore a snapshot through the channel.
+// Snapshots are opaque to the manager; a channel may share unchanged pieces between consecutive snapshots (capture()
+// gets the previous one) so memory grows with what changed, as for patterns.
+// Used by: src/parts/parts_undo.h (PAT editor parts model; French-Bread characters).
+class UndoChannel {
+public:
+	using Snap = std::shared_ptr<const void>;
+	virtual ~UndoChannel() = default;
+	virtual const char* name() const = 0;
+	// Is the channel tracking anything right now? An inactive channel is skipped (no snapshot, no compare).
+	virtual bool active() const { return true; }
+	virtual Snap capture(const Snap& previous) = 0;
+	virtual bool equalsLive(const Snap& s) const = 0;
+	virtual void restore(const Snap& s) = 0;
+	virtual size_t approxBytes(const Snap&) const { return 0; }
+};
+
 class UndoManager {
 public:
 	using SeqPtr = std::shared_ptr<const Sequence>;
+
+	struct ChannelDelta {
+		int channel = -1;
+		UndoChannel::Snap before, after;
+	};
 
 	struct PatternDelta {
 		int index = -1;
@@ -67,6 +103,7 @@ public:
 		size_t countAfter = 0;    // pattern-list size after the step
 		int focusPattern = -1;    // where the edit was made (for navigation)
 		int focusFrame = -1;
+		std::vector<ChannelDelta> channels;   // channel state changed by this step
 	};
 
 	UndoManager() = default;
@@ -82,6 +119,12 @@ public:
 	// (load / patch load / new). The next ensureBaseline() re-snapshots.
 	void reset();
 
+	// Add a channel (kept across reset(); its shadow is re-captured with the baseline). Returns its index.
+	// The channel must outlive the manager or be removed first.
+	int addChannel(UndoChannel* channel);
+	void removeChannel(UndoChannel* channel);
+	size_t channelCount() const { return m_channels.size(); }
+
 	// Capture the baseline if it does not exist yet. Returns false if no
 	// document is attached.
 	bool ensureBaseline();
@@ -92,7 +135,14 @@ public:
 	void noteFocus(int pattern, int frame);
 
 	// ---- Grouping ---------------------------------------------------------
+	// Something was edited somewhere: the next commit compares the WHOLE document (cross-pattern pastes, tools).
 	void markModified();
+	// Pattern `index` was edited: the next commit compares only the marked patterns, the focus pattern and a small
+	// rotating slice of the rest (see "Cost" above), so a step costs what it changed, not the document size.
+	void markModified(int index);
+	// Edit sink: FrameData::mark_modified() appends pattern indices here; every commit consumes them like
+	// markModified(index). Null = none.
+	void setDirtyFeed(std::vector<int>* feed) { m_dirtyFeed = feed; }
 	void beginTransaction(const char* label = nullptr);
 	// Returns true if the outermost commit produced an undo entry.
 	bool commitTransaction();
@@ -143,9 +193,16 @@ public:
 	static size_t ApproxSequenceBytes(const Sequence& s);
 
 private:
-	bool commitInternal(const char* label);
+	bool commitInternal(const char* label, bool fullScan);
+	bool commitPending(const char* label) { return commitInternal(label, wantsFullScan()); }
+	bool wantsFullScan() const;
 	void settlePending();
 	std::vector<PatternDelta> diff() const;
+	// Only `indices` (any order, duplicates allowed) plus the list-size change.
+	std::vector<PatternDelta> diffIndices(std::vector<int> indices) const;
+	std::vector<int> incrementalScanSet();
+	std::vector<ChannelDelta> diffChannels();
+	void captureChannelBaseline();
 	void applySide(const Entry& e, bool toAfter);
 	void pushEntry(Entry&& e);
 	void trim();
@@ -155,6 +212,9 @@ private:
 	bool m_hasBaseline = false;
 	std::vector<SeqPtr> m_shadow;   // committed state
 	std::vector<SeqPtr> m_loaded;   // state at baseline capture (for Sequence::modified)
+
+	struct ChannelSlot { UndoChannel* ch = nullptr; UndoChannel::Snap shadow; bool wasActive = false; };
+	std::vector<ChannelSlot> m_channels;
 
 	std::vector<Entry> m_undo;
 	std::vector<Entry> m_redo;
@@ -169,6 +229,11 @@ private:
 	int m_txDepth = 0;
 	std::string m_txLabel;
 
+	// Incremental commits (markModified(index) / the dirty feed)
+	std::vector<int> m_marked;          // patterns marked since the last commit
+	bool m_fullScan = false;            // markModified() without an index since the last commit
+	std::vector<int>* m_dirtyFeed = nullptr;
+	size_t m_driftCursor = 0;           // round-robin position of the unmarked-drift slice
 	int m_focusPattern = -1, m_focusFrame = -1;
 	int m_stepFocusPattern = -1, m_stepFocusFrame = -1;
 	bool m_stepFocusLatched = false;

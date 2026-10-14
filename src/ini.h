@@ -31,6 +31,27 @@ extern struct Settings
 	int stageGame = 0;                       // 0 MBAACC, 1 MBAC
 	bool stagePatAuthoring = true;           // PAT placement: Authoring (default) / Game-exact
 	bool stageClampCamera = true;            // keep the stage view's game camera inside the game's limits
+
+	// Edit > Preferences > Auto backup: copy the file a save is about to overwrite (file_backup.h)
+	bool backupHa6 = true;                   // character files (HA6, .DAT, ...)
+	bool backupPat = true;                   // .pat files
+	int backupKeep = 10;                     // backups kept per file (0 = all)
+	std::string backupFolder;                // empty = "backup" next to the file; relative = from the file's folder
+
+	// Editor panels shown in new tabs (Window menu), saved on exit
+	bool showAnimPane = true, showAttackPane = true, showBoxPane = true;
+	bool showPatPartSetPane = true, showPatPartPane = true, showPatShapePane = true, showPatTexturePane = true, showPatToolPane = true;
+	// PAT editor: highlight of the selected part (the others are drawn at highlightOpacity) and overlay colours
+	bool patHighlight = false;
+	float patHighlightOpacity = 0.3f;
+	float patUvRectColor[4]{0.f, 1.f, 1.f, 1.f};     // UV / texture view: the selected cut-out's rectangle
+	float patCenterColor[4]{1.f, 0.5f, 1.f, 1.f};    // part centre cross
+	float patSelectedColor[4]{0.2f, 1.f, 0.4f, 1.f}; // outline of the selected part
+	bool patOutlineSelected = true;
+
+	// Mouse buttons of the view (issue #9): 0 left, 1 right, 2 middle
+	int mousePanButton = 0;                  // drag pans the view
+	int mouseDrawButton = 1;                 // drag draws a box (UV rectangle in a PAT tab)
 } gSettings;
 
 bool LoadFromIni(FrameData *framedata, CG *cg, const std::string& iniPath, std::string* outTopHA6Path = nullptr, Parts* parts = nullptr, std::string* outPATPath = nullptr);

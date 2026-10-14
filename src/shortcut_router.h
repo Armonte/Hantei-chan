@@ -77,6 +77,15 @@ enum class ShortcutAction : uint8_t {
 	// Stage tab: previous / next stage of the game's stage list
 	previousStage,
 	nextStage,
+	// View toggles (sosfiro parity): F hides the editor panels, L / G the axis lines, H the hitboxes
+	// (character tab) or the selected-part highlight (PAT tab)
+	toggleHideUi,
+	toggleAxis,
+	toggleBoxes,
+	togglePartHighlight,
+	// PAT editor render modes (sosfiro T / U)
+	toggleTextureView,
+	toggleUvView,
 	count
 };
 
@@ -108,6 +117,16 @@ struct ShortcutBinding {
 	ShortcutContext context;      // used when reach == focusedContext
 	bool duringTextInput = false; // may fire while a text field owns the keyboard
 	bool repeat = false;          // accepts OS auto-repeat
+	bool duringNumericInput = false; // may fire while a NUMERIC field is being typed in (issue #61 Q / E), never in a text field
+	bool duringMouseDrag = false;    // may fire while a mouse drag runs in the view (Esc); everything else waits for the drop
+};
+
+// What owns the keyboard / mouse when a key arrives.
+struct ShortcutInput {
+	bool textInput = false;      // an ImGui text or scalar field is being typed in
+	bool numericInput = false;   // ... and it is a numeric (scalar) field
+	bool repeat = false;         // OS auto-repeat
+	bool mouseDrag = false;      // a pan / box / UV drag is in progress in a view
 };
 
 class ShortcutRegistry {
@@ -124,6 +143,7 @@ public:
 	// Resolve a key press. Returns the first matching binding or nullptr.
 	const ShortcutBinding* resolve(ShortcutChord chord, ShortcutContext focused,
 	                               bool textInputActive, bool isRepeat) const;
+	const ShortcutBinding* resolve(ShortcutChord chord, ShortcutContext focused, const ShortcutInput& input) const;
 
 	// Pairs of actions whose chords collide in an overlapping context.
 	std::vector<std::pair<ShortcutAction, ShortcutAction>> conflicts() const;
@@ -180,8 +200,27 @@ public:
 	const ShortcutRegistry& registry() const { return m_registry; }
 
 	const ShortcutBinding* resolve(ShortcutChord chord, bool textInputActive, bool isRepeat) const {
-		return m_registry.resolve(chord, m_focused, textInputActive, isRepeat);
+		ShortcutInput in;
+		in.textInput = textInputActive;
+		in.repeat = isRepeat;
+		in.mouseDrag = m_mouseDrag;
+		return m_registry.resolve(chord, m_focused, in);
 	}
+	ShortcutInput input(bool textInputActive, bool numericInput, bool isRepeat) const {
+		ShortcutInput in;
+		in.textInput = textInputActive;
+		in.numericInput = textInputActive && numericInput;
+		in.repeat = isRepeat;
+		in.mouseDrag = m_mouseDrag;
+		return in;
+	}
+	const ShortcutBinding* resolve(ShortcutChord chord, const ShortcutInput& in) const {
+		return m_registry.resolve(chord, m_focused, in);
+	}
+	// A mouse drag in a view (pan, box / UV rectangle) blocks shortcuts until the button is released (sosfiro
+	// main.cpp `!dragActive`): a key pressed mid-drag must not switch the pattern or tab the drag is editing.
+	void setMouseDrag(bool active) { m_mouseDrag = active; }
+	bool mouseDrag() const { return m_mouseDrag; }
 
 private:
 	ShortcutRegistry m_registry;
@@ -189,6 +228,7 @@ private:
 	ShortcutContext m_focused = ShortcutContext::none;
 	uint64_t m_claimViewId = 0;
 	uint64_t m_focusedViewId = 0;
+	bool m_mouseDrag = false;
 	std::vector<std::pair<ShortcutContext, Handler>> m_handlers;
 };
 

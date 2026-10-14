@@ -21,6 +21,8 @@ CharacterInstance::CharacterInstance()
 	state.pattern = 0;
 	state.frame = 0;
 	state.spriteId = -1;
+	// FrameData::mark_modified() tells the undo manager which patterns changed (incremental commits).
+	undoManager.setDirtyFeed(&frameData.undoDirtyFeed);
 }
 
 CharacterInstance::~CharacterInstance()
@@ -362,17 +364,44 @@ bool CharacterInstance::savePAT()
 	if (m_patPath.empty()) {
 		return false;
 	}
-
-	return parts.Save(m_patPath.c_str());
+	return savePATAs(m_patPath);
 }
 
 bool CharacterInstance::savePATAs(const std::string& patPath)
 {
-	if (parts.Save(patPath.c_str())) {
-		m_patPath = patPath;
-		return true;
+	if (m_patDocument) undoManager.flush();   // the pending edit belongs to the revision being saved
+	if (!parts.Save(patPath.c_str()))
+		return false;
+	m_patPath = patPath;
+	if (m_patDocument) {
+		parts.filePath = patPath;
+		m_isModified = false;
+		undoManager.markClean();   // undoing back to this revision clears the '*'
 	}
-	return false;
+	return true;
+}
+
+void CharacterInstance::makePatDocument()
+{
+	if (m_patDocument) return;
+	m_patDocument = true;
+	// The one-frame placeholder pattern is not document data: diff an empty list instead, so only the parts channel
+	// records steps.
+	undoManager.attach(&m_patUndoDoc);
+	m_patDocUndo = std::make_unique<PartsUndoChannel>(&parts);
+	undoManager.addChannel(m_patDocUndo.get());
+	undoManager.reset();
+}
+
+void CharacterInstance::newPatDocument(bool mbaaccFormat)
+{
+	parts.initEmpty();
+	parts.useMBAACCFormat = mbaaccFormat;
+	if (mbaaccFormat) parts.shapes.clear();   // MBAACC .pat files have no VEST block (every part is a plane)
+	parts.filePath.clear();
+	m_patPath.clear();
+	makePatDocument();
+	undoManager.reset();
 }
 
 void CharacterInstance::setName(const std::string& name)

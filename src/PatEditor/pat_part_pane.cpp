@@ -3,6 +3,7 @@
 #include "../filedialog.h"
 #include "../main_frame.h"
 #include <imgui.h>
+#include <algorithm>
 #include <imgui_stdlib.h>
 
 #include "../copy_manager.h"
@@ -19,15 +20,17 @@ void PatPartPane::RegeneratePartCutOutsNames()
 {
     delete[] cutOutsDecoratedNames;
 
+    cutOutsNamesCount = -1;
     if(curInstance->parts && curInstance->parts->loaded)
     {
         int count = static_cast<int>(curInstance->parts->cutOuts.size());
-        cutOutsDecoratedNames = new std::string[count];
+        cutOutsDecoratedNames = new std::string[count > 0 ? count : 1];
 
         for(int i = 0; i < count; i++)
         {
             cutOutsDecoratedNames[i] = curInstance->parts->GetPartCutOutsDecorateName(i);
         }
+        cutOutsNamesCount = count;
     }
     else
         cutOutsDecoratedNames = nullptr;
@@ -40,13 +43,12 @@ void PatPartPane::Draw()
 {
     if(isVisible) {
         ImGui::Begin(LBL("Part Pane"), 0);
-        auto seq = curInstance->framedata->get_sequence(curInstance->currState->pattern);
-        auto pat = curInstance->parts;
         if(curInstance->parts->loaded) {
+            if(cutOutsNamesCount != (int)curInstance->parts->cutOuts.size() || !cutOutsDecoratedNames)
+                RegeneratePartCutOutsNames();
             DrawPartCutOut();
-            ImGui::End();
         }
-        ImGui::End();
+        ImGui::End();   // one End per Begin
 
         if (!openpopupWithId.empty()) {
             ImGui::OpenPopup(openpopupWithId.c_str());
@@ -65,7 +67,12 @@ void PatPartPane::DrawPopUp() {
         ImGui::Separator();
 
         if (ImGui::Button(LBL("OK"), ImVec2(120, 40))) {
-            curInstance->parts->cutOuts[curInstance->currState->partCutOut] = {};
+            if (auto* co = curInstance->parts->GetCutOut(curInstance->currState->partCutOut)) {
+                const int id = co->id;
+                *co = {};
+                co->id = id;
+            }
+            RegeneratePartCutOutsNames();
             partsetPane->RegeneratePartSetNames();
             partsetPane->RegeneratePartPropNames();
             ImGui::CloseCurrentPopup();
@@ -103,7 +110,9 @@ void PatPartPane::DrawPartCutOut()
             openpopupWithId = LBL("Part Delete");
         }
 
-        if (ImGui::BeginCombo(LBL("Part"), cutOutsDecoratedNames[curInstance->currState->partCutOut].c_str(),
+        if (curInstance->currState->partCutOut < 0 || curInstance->currState->partCutOut >= (int)npartData)
+            curInstance->currState->partCutOut = 0;
+        if (npartData > 0 && ImGui::BeginCombo(LBL("Part"), cutOutsDecoratedNames[curInstance->currState->partCutOut].c_str(),
                               ImGuiComboFlags_HeightLargest)) {
 
             auto count = curInstance->parts->cutOuts.size();
@@ -149,16 +158,22 @@ void PatPartPane::DrawPartCutOut()
                 }
                 ImGui::Separator();
                 ImGui::Text(TXT("UV Settings"));
+                // PPUV = x, y, w, h in 1/256 of the texture: uv[0] is the LEFT edge, uv[1] the TOP edge (sosfiro's labels
+                // were swapped, its TODO list: "UV Top should be X and Left should be Y").
                 ImGui::SetNextItemWidth(width);
-                ImGui::DragInt(LBL("Top"), &cutOut->uv[0], 1);
+                ImGui::DragInt(LBL("Left"), &cutOut->uv[0], 1);
                 ImGui::SameLine();
                 ImGui::SetNextItemWidth(width);
                 ImGui::DragInt(LBL("Width"), &cutOut->uv[2], 1);
                 ImGui::SetNextItemWidth(width);
-                ImGui::DragInt(LBL("Left"), &cutOut->uv[1], 1);
+                ImGui::DragInt(LBL("Top"), &cutOut->uv[1], 1);
                 ImGui::SameLine();
                 ImGui::SetNextItemWidth(width);
                 ImGui::DragInt(LBL("Height"), &cutOut->uv[3], 1);
+                ImGui::SameLine();
+                ImGui::TextDisabled("(?)");
+                if(ImGui::IsItemHovered())
+                    ImGui::SetTooltip("%s", TXT("In the UV view, drag with the right mouse button over the texture to set the rectangle."));
                 if(ImGui::Button(*curInstance->renderMode == RenderMode::UV_SETTING_VIEW ?
                     LBL("Hide UV Render") : LBL("Show UV Render")))
                 {
@@ -216,29 +231,34 @@ void PatPartPane::DrawPartCutOut()
                 auto gfx = curInstance->parts->GetPartGfx(cutOut->texture);
                 if(ImGui::Button(LBL("Set WH with UV")))
                 {
-                    if(gfx != nullptr)
+                    // UV is in 1/256 of the texture whatever its size (Parts::Draw divides by 256), so the size in
+                    // pixels is uv * w / 256. uvBpp (w / 256) is 0 for MBAACC PGTX textures.
+                    if(gfx != nullptr && gfx->w > 0 && gfx->h > 0)
                     {
-                        cutOut->wh[0] = cutOut->uv[2] * gfx->uvBpp[0];
-                        cutOut->wh[1] = cutOut->uv[3] * gfx->uvBpp[1];
+                        cutOut->wh[0] = cutOut->uv[2] * gfx->w / 256;
+                        cutOut->wh[1] = cutOut->uv[3] * gfx->h / 256;
                     }
                 }
 
+                // The 3 x 3 anchor grid (values are computed per click; the old code allocated nine int arrays every
+                // frame and never freed them: sosfiro's "weird memory leak while animating").
                 ImGui::Text(TXT("Set Center Position with WH"));
-                SetButtonCenterCalc(labelTL, new int[]{0,0}, cutOut);
+                const int w = cutOut->wh[0], h = cutOut->wh[1];
+                SetButtonCenterCalc(labelTL, 0, 0, cutOut);
                 ImGui::SameLine();
-                SetButtonCenterCalc(labelTC, new int[]{cutOut->wh[0] / 2,0}, cutOut);
+                SetButtonCenterCalc(labelTC, w / 2, 0, cutOut);
                 ImGui::SameLine();
-                SetButtonCenterCalc(labelTR, new int[]{cutOut->wh[0],0}, cutOut);
-                SetButtonCenterCalc(labelCL, new int[]{0,cutOut->wh[1] / 2}, cutOut);
+                SetButtonCenterCalc(labelTR, w, 0, cutOut);
+                SetButtonCenterCalc(labelCL, 0, h / 2, cutOut);
                 ImGui::SameLine();
-                SetButtonCenterCalc(labelCenter, new int[]{cutOut->wh[0] / 2,cutOut->wh[1] / 2}, cutOut);
+                SetButtonCenterCalc(labelCenter, w / 2, h / 2, cutOut);
                 ImGui::SameLine();
-                SetButtonCenterCalc(labelCR, new int[]{cutOut->wh[0],cutOut->wh[1] / 2}, cutOut);
-                SetButtonCenterCalc(labelBL, new int[]{0,cutOut->wh[1]}, cutOut);
+                SetButtonCenterCalc(labelCR, w, h / 2, cutOut);
+                SetButtonCenterCalc(labelBL, 0, h, cutOut);
                 ImGui::SameLine();
-                SetButtonCenterCalc(labelBC, new int[]{cutOut->wh[0] / 2,cutOut->wh[1]}, cutOut);
+                SetButtonCenterCalc(labelBC, w / 2, h, cutOut);
                 ImGui::SameLine();
-                SetButtonCenterCalc(labelBR, new int[]{cutOut->wh[0],cutOut->wh[1]}, cutOut);
+                SetButtonCenterCalc(labelBR, w, h, cutOut);
 
                 ImGui::Checkbox(LBL("Show unknown params"), &isUnkParams);
                 if(isUnkParams)
@@ -264,49 +284,46 @@ void PatPartPane::DrawPartCutOut()
         }
 }
 
-void PatPartPane::SetButtonCenterCalc(std::string label, int xy[], CutOut<>* cutOut)
+void PatPartPane::SetButtonCenterCalc(const char* label, int x, int y, CutOut<>* cutOut)
 {
-    if(ImGui::Button(label.c_str()))
+    if(ImGui::Button(label))
     {
-        cutOut->xy[0] = xy[0];
-        cutOut->xy[1] = xy[1];
+        cutOut->xy[0] = x;
+        cutOut->xy[1] = y;
     }
 }
 
-void PatPartPane::BoxStart(int x, int y)
+bool PatPartPane::BoxStart(float px, float py)
 {
-    if(!curInstance->parts->loaded || *curInstance->renderMode != RenderMode::UV_SETTING_VIEW) return;
+    if(!curInstance->parts->loaded || *curInstance->renderMode != RenderMode::UV_SETTING_VIEW) return false;
     auto cutOut = curInstance->parts->GetCutOut(curInstance->currState->partCutOut);
-    if(cutOut == nullptr) return;
+    if(cutOut == nullptr) return false;
     auto gfx = curInstance->parts->GetPartGfx(cutOut->texture);
-    if(gfx == nullptr) return;
+    if(gfx == nullptr || gfx->w <= 0 || gfx->h <= 0) return false;
 
-    cutOut->uv[0] = x / gfx->uvBpp[0];
-    cutOut->uv[2] = 0;
-    cutOut->uv[1] = y / gfx->uvBpp[1];
-    cutOut->uv[3] = 0;
-
-    dragxy[0] = x;
-    dragxy[1] = y;
+    dragxy[0] = px;
+    dragxy[1] = py;
+    BoxDrag(px, py);
+    return true;
 }
 
-void PatPartPane::BoxDrag(int x, int y)
+// Sheet pixels -> PPUV (1/256 of the texture), snapped to whole UV units, kept inside the texture.
+void PatPartPane::BoxDrag(float px, float py)
 {
     if(!curInstance->parts->loaded || *curInstance->renderMode != RenderMode::UV_SETTING_VIEW) return;
     auto cutOut = curInstance->parts->GetCutOut(curInstance->currState->partCutOut);
     if(cutOut == nullptr) return;
     auto gfx = curInstance->parts->GetPartGfx(cutOut->texture);
-    if(gfx == nullptr) return;
+    if(gfx == nullptr || gfx->w <= 0 || gfx->h <= 0) return;
 
-    dragxy[0] += x/render->scale;
-    dragxy[1] += y/render->scale;
-
-    int newWidth = dragxy[0] / gfx->uvBpp[0] - cutOut->uv[0];
-    int newHeight = dragxy[1] / gfx->uvBpp[1] - cutOut->uv[1];
-
-    if(newWidth < 0 || newHeight < 0) return;
-    //if((int)dragxy[0] % gfx->uvBpp[0] != 0 || (int)dragxy[1] % gfx->uvBpp[1] != 0 ) return;
-
-    cutOut->uv[2] = newWidth;
-    cutOut->uv[3] = newHeight;
+    auto toUv = [](float pixel, int size) {
+        const float u = pixel * 256.f / (float)size;
+        return u < 0.f ? 0 : u > 256.f ? 256 : (int)(u + 0.5f);
+    };
+    const int x0 = toUv(std::min(dragxy[0], px), gfx->w), x1 = toUv(std::max(dragxy[0], px), gfx->w);
+    const int y0 = toUv(std::min(dragxy[1], py), gfx->h), y1 = toUv(std::max(dragxy[1], py), gfx->h);
+    cutOut->uv[0] = x0;
+    cutOut->uv[1] = y0;
+    cutOut->uv[2] = x1 - x0;
+    cutOut->uv[3] = y1 - y0;
 }

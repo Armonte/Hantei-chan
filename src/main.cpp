@@ -36,7 +36,8 @@ ImVec2 clientRect;
 
 HWND mainWindowHandle;
 ContextGl *context = nullptr;
-static bool dragLeft = false, dragRight = false;
+static bool dragLeft = false, dragRight = false;   // pan / draw drags in progress
+static int dragButtonLeft = 0, dragButtonRight = 1; // the physical button (0 L, 1 R, 2 M) holding each
 static POINT mousePos;
 static bool justActivated = false;  // Track if window just became active
 bool init = false;
@@ -411,7 +412,7 @@ LRESULT WINAPI WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
 {
 	// A key that already ran a shortcut while a text field was focused (Num*
 	// / Num/ keyframe step) must not also type its character.
-	if (msg == WM_CHAR && MainFrame::s_swallowChar && (wchar_t)wParam == MainFrame::s_swallowChar) {
+	if (msg == WM_CHAR && MainFrame::s_swallowChar && (wchar_t)towlower((wint_t)wParam) == MainFrame::s_swallowChar) {
 		MainFrame::s_swallowChar = 0;
 		return 0;
 	}
@@ -530,53 +531,63 @@ LRESULT WINAPI WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
 		break;
 	case WM_CANCELMODE:
 		if(mf) mf->CancelViewportGestures();
+		dragLeft = dragRight = false;
 		break;
-	case WM_RBUTTONDOWN:
-		// Don't allow drag if window just became active - prevents dragging when clicking back into window
-		if(!ImGui::GetIO().WantCaptureMouse && !justActivated)
-		{
-			dragRight = true;
-			GetCursorPos(&mousePos);
-			ScreenToClient(hWnd, &mousePos);
-			SetCapture(hWnd);
-			mf->RightClick(mousePos.x, mousePos.y);
-
-			return 0;
-		}
-		justActivated = false;  // Clear flag after first click
-		break;
-	case WM_RBUTTONUP:
-		if(dragRight)
-		{
-			if(!dragLeft)
-				ReleaseCapture();
-			dragRight = false;
-			if (mf) mf->HandleMouseUp(true, false);
-			return 0;
-		}
-		break;
+	// View mouse buttons. Which physical button pans and which draws (boxes, the PAT UV rectangle) is a preference
+	// (issue #9, Edit > Preferences > Mouse buttons); internally the roles keep their old names: dragLeft = pan,
+	// dragRight = draw. The middle button pans when it is not the draw button.
 	case WM_LBUTTONDOWN:
-		// Don't allow drag if window just became active - prevents dragging when clicking back into window
-		if(!ImGui::GetIO().WantCaptureMouse && !justActivated)
+	case WM_RBUTTONDOWN:
+	case WM_MBUTTONDOWN:
 		{
-			dragLeft = true;
-			GetCursorPos(&mousePos);
-			ScreenToClient(hWnd, &mousePos);
-			SetCapture(hWnd);
-			if (mf) mf->HandleMouseDown(false, true);
-			if (mf) mf->LeftClick(mousePos.x, mousePos.y);
-			return 0;
+			const int button = msg == WM_LBUTTONDOWN ? 0 : msg == WM_RBUTTONDOWN ? 1 : 2;
+			const bool draw = button == gSettings.mouseDrawButton;
+			const bool pan = button == gSettings.mousePanButton || (button == 2 && !draw);
+			// Don't allow drag if window just became active - prevents dragging when clicking back into window
+			if((pan || draw) && !ImGui::GetIO().WantCaptureMouse && !justActivated && !(draw ? dragRight : dragLeft))
+			{
+				GetCursorPos(&mousePos);
+				ScreenToClient(hWnd, &mousePos);
+				SetCapture(hWnd);
+				if (draw) {
+					dragRight = true;
+					dragButtonRight = button;
+					if (mf) mf->RightClick(mousePos.x, mousePos.y);
+				} else {
+					dragLeft = true;
+					dragButtonLeft = button;
+					if (mf) mf->HandleMouseDown(false, true);
+					if (mf) mf->LeftClick(mousePos.x, mousePos.y);
+				}
+				if (mf) mf->SetMouseDragActive(true);
+				return 0;
+			}
+			justActivated = false;  // Clear flag after first click
 		}
-		justActivated = false;  // Clear flag after first click
 		break;
 	case WM_LBUTTONUP:
-		if(dragLeft)
+	case WM_RBUTTONUP:
+	case WM_MBUTTONUP:
 		{
-			if(!dragRight)
-				ReleaseCapture();
-			dragLeft = false;
-			if (mf) mf->HandleMouseUp(false, true);
-			return 0;
+			const int button = msg == WM_LBUTTONUP ? 0 : msg == WM_RBUTTONUP ? 1 : 2;
+			if(dragRight && button == dragButtonRight)
+			{
+				if(!dragLeft)
+					ReleaseCapture();
+				dragRight = false;
+				if (mf) mf->HandleMouseUp(true, false);
+				if (mf) mf->SetMouseDragActive(dragLeft);
+				return 0;
+			}
+			if(dragLeft && button == dragButtonLeft)
+			{
+				if(!dragRight)
+					ReleaseCapture();
+				dragLeft = false;
+				if (mf) mf->HandleMouseUp(false, true);
+				if (mf) mf->SetMouseDragActive(dragRight);
+				return 0;
+			}
 		}
 		break;
 	case WM_MOUSEMOVE:
@@ -619,6 +630,7 @@ LRESULT WINAPI WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
 				ReleaseCapture();
 				dragLeft = false;
 				dragRight = false;
+				if (mf) mf->SetMouseDragActive(false);
 			}
 		}
 		break;

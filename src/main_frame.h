@@ -502,6 +502,55 @@ private:
 	void DrawPositionTool();
 	void PositionDragBy(int dx, int dy);
 	void EndPositionDrag(bool cancel);
+
+	// ---- PAT editor: file safety and editing (ui/pat_editor_impl.h) ---------
+	void backupBeforeSave(const std::string& path, bool pat);   // Preferences > Auto backup
+	// Save a character's .pat (path empty = its own; a New PAT asks where), then reload it in the other tabs.
+	bool savePatOf(CharacterInstance* character, const std::string& path);
+	void reloadPatInOtherTabs(CharacterInstance* saver, const std::string& path);
+	void addPatDocumentView(std::unique_ptr<CharacterInstance> character);
+	void createNewPatView(bool mbaaccFormat);
+	void refreshPatPanes(CharacterInstance* character);          // names + selection after undo / reload
+	void SyncPatView(CharacterView* view);                       // per frame, before the PAT panes draw
+	bool PatNavigate(CharacterView* view, int dSet, int dProp);
+	bool PatNudge(CharacterView* view, int dx, int dy);
+	void TogglePatRenderMode(CharacterView* view, RenderMode mode);
+	// Right-drag in a PAT tab's UV view edits the selected cut-out's UV rectangle (one undo step).
+	struct UvDrag {
+		bool active = false;
+		CharacterInstance* character = nullptr;
+		uint64_t viewId = 0;
+		float wx = 0.f, wy = 0.f;   // world position of the cursor
+	} m_uvDrag;
+	bool BeginUvDrag(CharacterView* view, float wx, float wy);   // true = the press belongs to the PAT tab
+	void UvDragBy(float dwx, float dwy);
+	void EndUvDrag(bool cancel);
+	void DrawPatSelectionOutline(CharacterView* view, ImDrawList* dl, ImVec2 origin, float zoom);
+	void DrawPatPreferences();
+	void DrawBackupPrefsItems();
+	void DrawPatColourPrefsItems();
+	void DrawMousePrefsItems();
+	void DrawPatPreferencesWindow();
+	bool m_showPatPrefs = false;
+	void DrawNewPatPopup();
+	void DrawLayerToolsMenu();
+	bool m_openNewPat = false;
+	float m_layerScaleFactor = 1.0f;
+	// F / L (G) / H view toggles
+	bool m_hideUi = false;
+	bool m_showAxis = true;
+	bool m_showBoxes = true;
+public:
+	// --ui-script commands of the PAT editor (startup_args.cpp); false = not one of them. *msg goes to the log.
+	bool PatScriptCommand(const std::string& cmd, const std::string& arg, std::string* msg);
+	// main.cpp: a pan / box / UV drag runs in the main view (shortcuts wait for the drop). Detached windows report
+	// theirs from DrawDetachedHosts each frame; the router blocks while either is active.
+	void SetMouseDragActive(bool active) { m_mainMouseDrag = active; shortcuts.setMouseDrag(m_mainMouseDrag || m_detachedMouseDrag); }
+	void SetDetachedMouseDrag(bool active) { m_detachedMouseDrag = active; shortcuts.setMouseDrag(m_mainMouseDrag || m_detachedMouseDrag); }
+private:
+	bool m_mainMouseDrag = false;
+	bool m_detachedMouseDrag = false;
+	bool m_detachedDragThisFrame = false;   // set by DrawDetachedViewSurface while its surface holds a mouse button
 };
 
 

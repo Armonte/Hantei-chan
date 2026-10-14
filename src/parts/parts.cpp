@@ -511,7 +511,10 @@ void Parts::Draw(const DrawParams& params,
         return;
     }
 
-    if (partSets[pattern].groups.empty()) {
+    // The texture / UV views draw one full-texture part (below) whatever the part set holds: the PAT tab shows part
+    // set 0 there, which is often empty (UNI2 chr000), and the view stayed blank.
+    const bool sheetView = renderMode && currState && *renderMode != DEFAULT && !currState->animating;
+    if (partSets[pattern].groups.empty() && !sheetView) {
         return;
     }
 
@@ -881,9 +884,9 @@ bool Parts::Save(const char* filename)
     }
     if(!hasData) return false;
 
-    std::ofstream file(filename, std::ios_base::out | std::ios_base::binary | std::ios_base::trunc);
-    if (!file.is_open())
-        return false;
+    // Built in memory and written with WriteFileAtomic (temp file + rename, as the HA6 save): a failed or interrupted
+    // save leaves the previous .pat untouched.
+    std::ostringstream file(std::ios_base::out | std::ios_base::binary);
 
     // Write header (as loaded when possible)
     if (rawHeader.size() == 0x24) {
@@ -967,8 +970,8 @@ bool Parts::Save(const char* filename)
         if (!doneC[i] && CutOut<>::IsModifiedData(&cutOuts[i])) {
             const std::string e = encode('C', i); file.write(e.data(), e.size());
         }
-    // MBAACC files have no VEST block; don't add an empty one.
-    if (!doneV && (rawRecords.empty() || !shapes.empty())) {
+    // MBAACC files have no VEST block (MBAA.exe has no shapes); don't add one, also not to a New PAT in that layout.
+    if (!doneV && !useMBAACCFormat && (rawRecords.empty() || !shapes.empty())) {
         const std::string e = encode('V', 0); file.write(e.data(), e.size());
     }
     for (uint32_t i = 0; i < gfxMeta.size(); i++)
@@ -977,8 +980,8 @@ bool Parts::Save(const char* filename)
         }
 
     file.write("_END", 4);
-    file.close();
-    return true;
+    const std::string bytes = file.str();
+    return WriteFileAtomic(filename, bytes.data(), bytes.size());
 }
 
 void Parts::SetHighlightOpacity(float opacity)

@@ -115,6 +115,8 @@ add_executable(${EXE}
 	src/preset_effects.cpp
 	src/copy_manager.cpp
 	src/undo_manager.cpp
+	src/parts/parts_undo.cpp
+	src/file_backup.cpp
 	src/shortcut_router.cpp
 	src/PatEditor/pat_partset_pane.cpp
 	src/PatEditor/pat_part_pane.cpp
@@ -738,6 +740,43 @@ if(MINGW)
 	target_link_options(undo_manager_test PRIVATE -static-libgcc -static-libstdc++ -static)
 endif()
 add_test(NAME undo_manager COMMAND undo_manager_test)
+# pat_safety_test: PAT editor file safety (S2): auto-backup rotation, atomic .pat save, the PAT document's dirty flag
+# and undo through the parts undo channel (src/parts/parts_undo.h). Uses a gamedata .pat when one is passed.
+add_executable(pat_safety_test
+	tests/pat_safety_test.cpp
+	src/file_backup.cpp
+	src/parts/parts_undo.cpp
+	src/undo_manager.cpp
+	src/parts/parts.cpp
+	src/app_log.cpp
+	src/parts/parts_part.cpp
+	src/parts/parts_partset.cpp
+	src/parts/parts_shape.cpp
+	src/parts/parts_texture.cpp
+	src/cg.cpp
+	src/texture.cpp
+	src/vao.cpp
+	src/shader.cpp
+	src/misc.cpp
+	tinyalloc/tinyalloc.c
+)
+target_include_directories(pat_safety_test PRIVATE "." "src" "third_party" "${CMAKE_BINARY_DIR}/generated")
+target_compile_definitions(pat_safety_test PRIVATE WIN32_LEAN_AND_MEAN HA6GUIVERSION="${CMAKE_PROJECT_VERSION}" PAT_HEADLESS)
+target_link_libraries(pat_safety_test PRIVATE tinyalloc glad glm OpenGL::GL)
+if(MINGW)
+	target_link_options(pat_safety_test PRIVATE -static-libgcc -static-libstdc++ -static)
+endif()
+add_test(NAME pat_safety COMMAND pat_safety_test WORKING_DIRECTORY ${CMAKE_SOURCE_DIR})
+# Real UNI2 / MBTL / MBAACC files when the local game data is there (never committed; docs/audit_2026_10_14 plan, Phase 0).
+set(PAT_SAFETY_SAMPLES "")
+foreach(_s "dev/hantei-chan/gamedata/uni2/data/chr000/chr000.pat" "dev/hantei-chan/gamedata/mbtl/data/chr000/chr000.pat" "games/mbaacc_tag/data/arc.pat")
+	if(EXISTS "/mnt/c/${_s}")
+		list(APPEND PAT_SAFETY_SAMPLES "C:/${_s}")
+	endif()
+endforeach()
+if(PAT_SAFETY_SAMPLES)
+	add_test(NAME pat_safety_gamedata COMMAND pat_safety_test ${PAT_SAFETY_SAMPLES} WORKING_DIRECTORY ${CMAKE_SOURCE_DIR})
+endif()
 add_executable(workspace_session_test tests/workspace_session_test.cpp src/workspace_session.cpp)
 target_include_directories(workspace_session_test PRIVATE "src")
 if(MINGW)

@@ -19,15 +19,17 @@ void PatTexturePane::RegenerateTexturesNames()
 {
     delete[] textureDecoratedNames;
 
+    textureNamesCount = -1;
     if(curInstance->parts && curInstance->parts->loaded)
     {
         int count = static_cast<int>(curInstance->parts->gfxMeta.size());
-        textureDecoratedNames = new std::string[count];
+        textureDecoratedNames = new std::string[count > 0 ? count : 1];
 
         for(int i = 0; i < count; i++)
         {
             textureDecoratedNames[i] = curInstance->parts->GetTexturesDecorateName(i);
         }
+        textureNamesCount = count;
     }
     else
         textureDecoratedNames = nullptr;
@@ -53,13 +55,14 @@ void PatTexturePane::Draw()
 {
     if(isVisible) {
         ImGui::Begin(LBL("Texture Pane"), 0);
-        auto seq = curInstance->framedata->get_sequence(curInstance->currState->pattern);
-        auto pat = curInstance->parts;
         if(curInstance->parts->loaded) {
+            if(textureNamesCount != (int)curInstance->parts->gfxMeta.size() || !textureDecoratedNames)
+                RegenerateTexturesNames();
+            int& sel = curInstance->currState->partGraph;
+            if(sel < 0 || sel >= (int)curInstance->parts->gfxMeta.size()) sel = 0;
             DrawTexture();
-            ImGui::End();
         }
-        ImGui::End();
+        ImGui::End();   // one End per Begin
 
         if (!openpopupWithId.empty()) {
             ImGui::OpenPopup(openpopupWithId.c_str());
@@ -77,7 +80,11 @@ void PatTexturePane::DrawPopUp() {
         ImGui::Separator();
 
         if (ImGui::Button(LBL("OK"), ImVec2(120, 40))) {
-            curInstance->parts->gfxMeta[curInstance->currState->partGraph] = {};
+            if (auto* g = curInstance->parts->GetPartGfx(curInstance->currState->partGraph)) {
+                const int id = g->id;
+                *g = {};
+                g->id = id;
+            }
             RegenerateTexturesNames();
             ImGui::CloseCurrentPopup();
         }
@@ -141,14 +148,10 @@ void PatTexturePane::DrawTexture()
                 if(ImGui::Button(*curInstance->renderMode == RenderMode::TEXTURE_VIEW ?
                     LBL("Hide Texture Render") : LBL("Show Texture Render")))
                 {
-                    printf("[TEXTURE_VIEW BUTTON] Clicked! Current mode: %d\n", (int)*curInstance->renderMode);
                     
                     *curInstance->renderMode = *curInstance->renderMode == RenderMode::TEXTURE_VIEW ?
                         RenderMode::DEFAULT : RenderMode::TEXTURE_VIEW;
                     
-                    printf("[TEXTURE_VIEW BUTTON] New mode: %d\n", (int)*curInstance->renderMode);
-                    printf("[TEXTURE_VIEW BUTTON] Parts renderMode pointer: %p\n", (void*)curInstance->parts->renderMode);
-                    printf("[TEXTURE_VIEW BUTTON] Parts currState pointer: %p\n", (void*)curInstance->parts->currState);
 
                     auto& frame = curInstance->currState->animationSequence.frames.at(curInstance->currState->frame);
                     // Ensure frame has at least one layer
@@ -159,12 +162,10 @@ void PatTexturePane::DrawTexture()
                     if(*curInstance->renderMode != RenderMode::DEFAULT)
                     {
                         frame.AF.layers[0].spriteId = 0;
-                        printf("[TEXTURE_VIEW BUTTON] Set spriteId to 0 for texture view\n");
                     }
                     else
                     {
                         frame.AF.layers[0].spriteId = curInstance->currState->partSet;
-                        printf("[TEXTURE_VIEW BUTTON] Set spriteId to %d for default view\n", curInstance->currState->partSet);
                     }
                 }
                 ImGui::Checkbox(LBL("No compression on pat file"), &gfx->noCompress);
@@ -175,7 +176,8 @@ void PatTexturePane::DrawTexture()
                 if (ImGui::Button(LBL("Import Texture"))) {
                     std::string &&file = FileDialog(fileType::DDS);
                     if (!file.empty()) {
-                        std::string message = curInstance->parts->gfxMeta[curInstance->currState->partGraph].ImportTexture(file.c_str(), curInstance->parts->textures);
+                        // MBAACC .pat files get PGTX (32-bit BGRA), the only texture record MBAA.exe reads.
+                        std::string message = curInstance->parts->gfxMeta[curInstance->currState->partGraph].ImportTexture(file.c_str(), curInstance->parts->textures, curInstance->parts->useMBAACCFormat);
                         if (message.empty()) {
                             textureDecoratedNames[curInstance->currState->partGraph] = curInstance->parts->GetTexturesDecorateName(
                                     curInstance->currState->partGraph);
@@ -199,13 +201,19 @@ void PatTexturePane::DrawTexture()
                 ImGui::SameLine();
                 ImGui::TextDisabled("(?)");
                 if(ImGui::IsItemHovered())
-                    Tooltip("Textures on import need to be divisible of 128\non width and height.\nAlso DDS need to be: DXT1, DXT5 or Uncompressed.");
+                    ImGui::SetTooltip("%s", curInstance->parts->useMBAACCFormat
+                        ? TXT("MBAACC .pat: the DDS (DXT1, DXT5 or 32-bit) is stored as 32-bit BGRA (PGTX), the format MBAA.exe reads.")
+                        : TXT("UNI / MBTL .pat: width and height must be multiples of 256.\nThe DDS must be DXT1, DXT5 or uncompressed 32-bit."));
                 ImGui::SameLine(0, 20.f);
                 if (ImGui::Button(LBL("Export Texture"))) {
                     std::string filename(gfx->name);
                     std::string &&file = FileDialog(fileType::DDS, true, const_cast<char *>(filename.c_str()));
                     if (!file.empty()) {
-                        gfx->ExportTexture(file.c_str());
+                        std::string err = gfx->ExportTexture(file.c_str());
+                        if (!err.empty()) {
+                            openpopupWithId = LBL("Import Texture Error");
+                            customPopUpMessage = err;
+                        }
                     }
                 }
                 ImGui::NewLine();

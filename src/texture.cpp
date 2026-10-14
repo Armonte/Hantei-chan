@@ -1,3 +1,4 @@
+#include "app_log.h"
 #include "texture.h"
 #include "cg.h"
 #include <glad/glad.h>
@@ -100,12 +101,8 @@ void Texture::LoadCompressed(char* data, int width, int height, size_t compresse
 	// Check for OpenGL errors after compressed texture upload
 	GLenum err = glGetError();
 	if (err != GL_NO_ERROR) {
-		printf("[LoadCompressed] GL ERROR 0x%X uploading %dx%d type=%d compressed texture (size=%zu)\n",
-			err, width, height, type, compressedSize);
-		printf("[LoadCompressed] Format=0x%X, data=%p\n", format, data);
-	} else {
-		printf("[LoadCompressed] SUCCESS: %dx%d type=%d DXT%d texture (GL ID=%u, size=%zu)\n",
-			width, height, type, (type == 1 ? 1 : 5), id, compressedSize);
+		HC_LOG_ERROR("[LoadCompressed] GL error {:#x} uploading {}x{} type={} compressed texture (size={}, format={:#x})",
+			(unsigned)err, width, height, type, compressedSize, (unsigned)format);
 	}
 
 	// Create minimal ImageData for compatibility

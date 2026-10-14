@@ -21,6 +21,7 @@ private:
     std::string openpopupWithId;
     std::string customPopUpMessage;
     std::string *textureDecoratedNames;
+    int textureNamesCount = -1;
 };
 
 #endif /* PATTEXTUREPANEASDASD_H_GUARD */

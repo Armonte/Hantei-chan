@@ -392,6 +392,13 @@ void MainFrame::Menu(unsigned int errorPopupId)
 						}
 					}
 				}
+				if (ImGui::MenuItem(LBL("Open .pat in a PAT editor tab...")))
+				{
+					std::string &&file = FileDialog(fileType::PAT);
+					if (!file.empty()) createPatEditorView(file);
+				}
+				if (ImGui::MenuItem(LBL("New PAT...")))
+					m_openNewPat = true;
 
 				ImGui::Separator();
 
@@ -489,27 +496,19 @@ void MainFrame::Menu(unsigned int errorPopupId)
 
 			ImGui::Separator();
 
-			if (ImGui::MenuItem(LBL("Save Parts (.pat)"), nullptr, false, hasActive && active->parts.loaded))
+			// Through savePatOf: auto backup, atomic write, dirty state of a PAT tab, reload in the other tabs.
+			if (ImGui::MenuItem(LBL("Save Parts (.pat)"), active && active->isPatDocument() ? shortcuts.registry().label(ShortcutAction::save).c_str() : nullptr,
+			                    false, hasActive && active->parts.loaded && !active->parts.fbPartModel))
 			{
-				if (hasActive) {
-					if(!active->savePAT())
-					{
-						ImGui::OpenPopup(errorPopupId);
-					}
-				}
+				if (hasActive) savePatOf(active, std::string());
 			}
 
-			if (ImGui::MenuItem(LBL("Save Parts As..."), nullptr, false, hasActive && active->parts.loaded))
+			if (ImGui::MenuItem(LBL("Save Parts As..."), nullptr, false, hasActive && active->parts.loaded && !active->parts.fbPartModel))
 			{
 				if (hasActive) {
 					std::string &&file = FileDialog(fileType::PAT, true);
 					if(!file.empty())
-					{
-						if(!active->savePATAs(file))
-						{
-							ImGui::OpenPopup(errorPopupId);
-						}
-					}
+						savePatOf(active, file);
 				}
 			}
 
@@ -632,7 +631,8 @@ void MainFrame::Menu(unsigned int errorPopupId)
 				if (!e) return std::string();
 				std::string name = e->label.empty() ? std::string(TXT("Edit")) : e->label;
 				char cnt[96];
-				if (e->changes.size() == 1) snprintf(cnt, sizeof(cnt), TXT(" (pattern %d)"), (int)e->changes.front().index);
+				if (e->changes.empty() && !e->channels.empty()) snprintf(cnt, sizeof(cnt), "%s", TXT(" (parts)"));
+				else if (e->changes.size() == 1) snprintf(cnt, sizeof(cnt), TXT(" (pattern %d)"), (int)e->changes.front().index);
 				else snprintf(cnt, sizeof(cnt), TXT(" (%d patterns)"), (int)e->changes.size());
 				name += cnt;
 				return name;
@@ -686,6 +686,8 @@ void MainFrame::Menu(unsigned int errorPopupId)
 					ImGui::EndMenu();
 				}
 				DrawDetachPreference();
+				ImGui::Separator();
+				DrawPatPreferences();
 				ImGui::EndMenu();
 			}
 			ImGui::EndMenu();
@@ -805,6 +807,8 @@ void MainFrame::Menu(unsigned int errorPopupId)
 				abrowser::show = !abrowser::show;
 			if (ImGui::MenuItem(LBL("Create / patch a PAC archive..."), nullptr, han2ui::showPacCreate))
 				han2ui::showPacCreate = !han2ui::showPacCreate;
+			ImGui::Separator();
+			DrawLayerToolsMenu();
 			ImGui::Separator();
 			DrawPackageToolsMenuItems();
 			ImGui::EndMenu();
@@ -937,6 +941,8 @@ void MainFrame::Menu(unsigned int errorPopupId)
 					std::string label = view->getMainPane()->isVisible ? TXT("Hide Animation Panel") : TXT("Show Animation Panel");
 					if (ImGui::MenuItem(label.c_str())) {
 						view->getMainPane()->isVisible = !view->getMainPane()->isVisible;
+						gSettings.showAnimPane = view->getMainPane()->isVisible;   // new tabs open with it too (saved)
+						ImGui::MarkIniSettingsDirty();
 					}
 					// Pattern search bar toggle
 					std::string searchLabel = view->getMainPane()->showPatternSearchBar ? TXT("Hide Pattern Search Bar") : TXT("Show Pattern Search Bar");
@@ -948,12 +954,16 @@ void MainFrame::Menu(unsigned int errorPopupId)
 					std::string label = view->getRightPane()->isVisible ? TXT("Hide Attack Panel") : TXT("Show Attack Panel");
 					if (ImGui::MenuItem(label.c_str())) {
 						view->getRightPane()->isVisible = !view->getRightPane()->isVisible;
+						gSettings.showAttackPane = view->getRightPane()->isVisible;   // new tabs open with it too (saved)
+						ImGui::MarkIniSettingsDirty();
 					}
 				}
 				if (view->getBoxPane()) {
 					std::string label = view->getBoxPane()->isVisible ? TXT("Hide Hitbox Panel") : TXT("Show Hitbox Panel");
 					if (ImGui::MenuItem(label.c_str())) {
 						view->getBoxPane()->isVisible = !view->getBoxPane()->isVisible;
+						gSettings.showBoxPane = view->getBoxPane()->isVisible;   // new tabs open with it too (saved)
+						ImGui::MarkIniSettingsDirty();
 					}
 				}
 				ImGui::Separator();
@@ -965,30 +975,40 @@ void MainFrame::Menu(unsigned int errorPopupId)
 					std::string label = view->getPartSetPane()->isVisible ? TXT("Hide PartSet Panel") : TXT("Show PartSet Panel");
 					if (ImGui::MenuItem(label.c_str())) {
 						view->getPartSetPane()->isVisible = !view->getPartSetPane()->isVisible;
+						gSettings.showPatPartSetPane = view->getPartSetPane()->isVisible;   // new tabs open with it too (saved)
+						ImGui::MarkIniSettingsDirty();
 					}
 				}
 				if (view->getPartPane()) {
 					std::string label = view->getPartPane()->isVisible ? TXT("Hide Part Panel") : TXT("Show Part Panel");
 					if (ImGui::MenuItem(label.c_str())) {
 						view->getPartPane()->isVisible = !view->getPartPane()->isVisible;
+						gSettings.showPatPartPane = view->getPartPane()->isVisible;   // new tabs open with it too (saved)
+						ImGui::MarkIniSettingsDirty();
 					}
 				}
 				if (view->getShapePane()) {
 					std::string label = view->getShapePane()->isVisible ? TXT("Hide Shape Panel") : TXT("Show Shape Panel");
 					if (ImGui::MenuItem(label.c_str())) {
 						view->getShapePane()->isVisible = !view->getShapePane()->isVisible;
+						gSettings.showPatShapePane = view->getShapePane()->isVisible;   // new tabs open with it too (saved)
+						ImGui::MarkIniSettingsDirty();
 					}
 				}
 				if (view->getTexturePane()) {
 					std::string label = view->getTexturePane()->isVisible ? TXT("Hide Texture Panel") : TXT("Show Texture Panel");
 					if (ImGui::MenuItem(label.c_str())) {
 						view->getTexturePane()->isVisible = !view->getTexturePane()->isVisible;
+						gSettings.showPatTexturePane = view->getTexturePane()->isVisible;   // new tabs open with it too (saved)
+						ImGui::MarkIniSettingsDirty();
 					}
 				}
 				if (view->getToolPane()) {
 					std::string label = view->getToolPane()->isVisible ? TXT("Hide Tool Panel") : TXT("Show Tool Panel");
 					if (ImGui::MenuItem(label.c_str())) {
 						view->getToolPane()->isVisible = !view->getToolPane()->isVisible;
+						gSettings.showPatToolPane = view->getToolPane()->isVisible;   // new tabs open with it too (saved)
+						ImGui::MarkIniSettingsDirty();
 					}
 				}
 				ImGui::Separator();
@@ -1038,6 +1058,13 @@ void MainFrame::Menu(unsigned int errorPopupId)
 					                  "other files of %s are left in those files."),
 					                  ha6Name.c_str(), active->frameData.inheritedPatternCount(), txtName.c_str());
 				}
+			}
+			else if (active->isPatDocument())
+			{
+				const std::string& pat = active->getPATPath();
+				const size_t slash = pat.find_last_of("/\\");
+				if (pat.empty()) ImGui::TextDisabled("%s", TXT("New PAT: Save asks where to write it"));
+				else ImGui::TextColored(ImVec4(0.4f, 0.8f, 0.4f, 1.0f), TXT("Save to: %s"), (slash != std::string::npos ? pat.substr(slash + 1) : pat).c_str());
 			}
 			else if (!active->archiveHome.empty())
 			{

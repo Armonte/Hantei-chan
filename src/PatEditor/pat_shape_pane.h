@@ -22,6 +22,7 @@ private:
     std::string openpopupWithId;
     std::string customPopUpMessage;
     std::string *shapesDecoratedNames;
+    int shapesNamesCount = -1;
 };
 
 #endif /* PATSHAPEPANEASDASD_H_GUARD */

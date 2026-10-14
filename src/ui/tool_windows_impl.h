@@ -421,7 +421,11 @@ void MainFrame::drawKeyBindingsWindow()
 			ImGui::TableNextRow();
 			ImGui::TableNextColumn();
 			ImGui::TextUnformatted(TXT(b.name));
-			if (b.reach == ShortcutReach::focusedContext) { ImGui::SameLine(); ImGui::TextDisabled("%s", TXT("(character view)")); }
+			if (b.reach == ShortcutReach::focusedContext) {
+				ImGui::SameLine();
+				ImGui::TextDisabled("%s", b.context == ShortcutContext::patEditor ? TXT("(PAT editor)")
+					: b.context == ShortcutContext::stageView ? TXT("(stage tab)") : TXT("(character view)"));
+			}
 			ImGui::TableNextColumn();
 			const bool capturing = m_keyCapture == (int)i;
 			std::string label = capturing ? TXT("press a key...") : ShortcutRegistry::ChordLabel(b.chord);
