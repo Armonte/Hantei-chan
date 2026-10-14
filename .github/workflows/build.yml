@@ -18,15 +18,6 @@ jobs:
       with:
         submodules: recursive
 
-    - name: Update imgui submodule to latest docking
-      run: |
-        cd imgui
-        $COMMIT = (git ls-remote https://github.com/ocornut/imgui.git refs/heads/docking | ForEach-Object { $_.Split()[0] })
-        git fetch https://github.com/ocornut/imgui.git $COMMIT
-        git checkout -f $COMMIT
-        cd ..
-      shell: pwsh
-
     - name: Setup CMake
       uses: jwlawson/actions-setup-cmake@v2
       with:
@@ -63,14 +54,6 @@ jobs:
       uses: actions/checkout@v4
       with:
         submodules: recursive
-
-    - name: Update imgui submodule to latest docking
-      run: |
-        cd imgui
-        COMMIT=$(git ls-remote https://github.com/ocornut/imgui.git refs/heads/docking | cut -f1)
-        git fetch https://github.com/ocornut/imgui.git $COMMIT
-        git checkout -f $COMMIT
-        cd ..
 
     - name: Install dependencies
       run: |
