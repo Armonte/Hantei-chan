@@ -1,0 +1,58 @@
+Internal ctest changing into directory: /mnt/c/dev/hantei-chan/wt/parity/build
+Test project /mnt/c/dev/hantei-chan/wt/parity/build
+      Start  1: uni_dataloss
+ 1/26 Test  #1: uni_dataloss .....................   Passed    4.32 sec
+      Start  2: cmdfile
+ 2/26 Test  #2: cmdfile ..........................   Passed    0.21 sec
+      Start  3: cmdfile_ui_smoke
+ 3/26 Test  #3: cmdfile_ui_smoke .................   Passed    0.12 sec
+      Start  4: pattern_search
+ 4/26 Test  #4: pattern_search ...................   Passed    0.11 sec
+      Start  5: shared_clipboard
+ 5/26 Test  #5: shared_clipboard .................   Passed    0.11 sec
+      Start  6: fb_part_transform
+ 6/26 Test  #6: fb_part_transform ................   Passed    0.07 sec
+      Start  7: part_render_math
+ 7/26 Test  #7: part_render_math .................   Passed    0.06 sec
+      Start  8: refs
+ 8/26 Test  #8: refs .............................   Passed    0.07 sec
+      Start  9: bgm
+ 9/26 Test  #9: bgm ..............................   Passed    0.07 sec
+      Start 10: hud
+10/26 Test #10: hud ..............................   Passed    0.07 sec
+      Start 11: shortcut_router
+11/26 Test #11: shortcut_router ..................   Passed    0.06 sec
+      Start 12: live_reload
+12/26 Test #12: live_reload ......................   Passed    0.41 sec
+      Start 13: undo_manager
+13/26 Test #13: undo_manager .....................   Passed    1.60 sec
+      Start 14: pat_safety
+14/26 Test #14: pat_safety .......................   Passed    0.18 sec
+      Start 15: pat_safety_gamedata
+15/26 Test #15: pat_safety_gamedata ..............   Passed    2.69 sec
+      Start 16: workspace_session
+16/26 Test #16: workspace_session ................   Passed    0.10 sec
+      Start 17: package_tools
+17/26 Test #17: package_tools ....................   Passed    0.24 sec
+      Start 18: game_link
+18/26 Test #18: game_link ........................   Passed    4.61 sec
+      Start 19: game_view
+19/26 Test #19: game_view ........................   Passed    6.55 sec
+      Start 20: tag_tuning
+20/26 Test #20: tag_tuning .......................   Passed    0.10 sec
+      Start 21: tag_sidecar
+21/26 Test #21: tag_sidecar ......................   Passed    0.43 sec
+      Start 22: authoring_model
+22/26 Test #22: authoring_model ..................   Passed    0.09 sec
+      Start 23: frame_data
+23/26 Test #23: frame_data .......................   Passed    2.13 sec
+      Start 24: hud_layout
+24/26 Test #24: hud_layout .......................   Passed    0.07 sec
+      Start 25: fxr_ini
+25/26 Test #25: fxr_ini ..........................   Passed    0.11 sec
+      Start 26: fxr_dgv_oracle
+26/26 Test #26: fxr_dgv_oracle ...................   Passed    3.61 sec
+
+100% tests passed, 0 tests failed out of 26
+
+Total Test time (real) =  28.99 sec
