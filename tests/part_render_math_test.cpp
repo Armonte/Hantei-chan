@@ -81,6 +81,36 @@ static void TestNextFrame()
 	CHECK(NextFrameIndex(3, 2, 2, 1, 6, 2) == 1);            // loop still running
 	CHECK(NextFrameIndex(3, 2, 2, 1, 6, 1) == 6);            // last pass -> loop end
 	CHECK(NextFrameIndex(3, 2, 2 | 8, 1, 2, 1) == 5);        // relative loop end
+	// MBAA (AnimState_ProcessTransition 0x419C00) picks the loop end at counter 0, UNI2/MBTL at 1.
+	CHECK(LoopEndCounter(true) == 1 && LoopEndCounter(false) == 0);
+	CHECK(NextFrameIndex(3, 2, 2, 1, 6, 0, LoopEndCounter(false)) == 6);
+	CHECK(NextFrameIndex(3, 2, 2, 1, 6, 1, LoopEndCounter(false)) == 1);
+	CHECK(NextFrameIndex(3, 2, 2, 1, 6, 1, LoopEndCounter(true)) == 6);
+}
+
+// patscale (2026-10-14): G_CHAOS p100 (MBAC -> CC, AFHK 1 on every frame) was reported drawing its parts 1.6x / 6x
+// larger after S1. It is not: the shots compared different view zooms. These pin the two rules that could have
+// done it, so they cannot regress.
+static void TestFirstFrameAndMbaaDialect()
+{
+	// First tick of a frame (and a frame picked in the editor, ticksInFrame 0): no blend at all, any curve and
+	// duration, so the next part set is never read.
+	for (int type = 0; type <= 6; ++type)
+		for (int dur = 0; dur <= 10; ++dur)
+			CHECK(CurrentWeight(type, 0, dur) == 1.f);
+	// A stale or garbage tick count (state left over from another pattern right after load) clamps: the weight
+	// stays in [0, 1], so a lerp never extrapolates past either frame's scale.
+	for (int ticks : {-5, 3, 100, 1 << 30}) {
+		const float w = CurrentWeight(1, ticks, 2);
+		CHECK(w >= 0.f && w <= 1.f);
+		const float s = Lerp(2.f, 2.06f, w);   // PRZM of part set 89 -> 90
+		CHECK(s >= 2.f && s <= 2.06f);
+	}
+	// PRAS: UNI2 applies it; MBTL ignores it; MBAA has no PRAS tag (File_ParsePPTPChunks 0x404220) and its
+	// part matrix is scale * rotZ * translate (PatPart_BuildTransformMatrix 0x405C70).
+	CHECK(PartUsesPras(true, false));
+	CHECK(!PartUsesPras(true, true));
+	CHECK(!PartUsesPras(false, false));
 }
 
 static void TestLerps()
@@ -120,6 +150,7 @@ int main()
 	TestEase();
 	TestNextFrame();
 	TestLerps();
+	TestFirstFrameAndMbaaDialect();
 	std::printf("part_render_math_test: %d checks, %d failed\n", g_checks, g_fail);
 	return g_fail ? 1 : 0;
 }

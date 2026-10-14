@@ -52,7 +52,8 @@ static const Frame* InterpTarget(const ActorStyle& s, const Frame& frame, float&
 	curWeight = 1.f;
 	const auto& af = frame.AF;
 	if (!s.seq || s.frameIndex < 0 || af.interpolationType < 1 || af.interpolationType > 5) return nullptr;
-	const int next = partrender::NextFrameIndex(s.frameIndex, af.aniType, af.aniFlag, af.jump, af.loopEnd, s.loopCounter);
+	const int next = partrender::NextFrameIndex(s.frameIndex, af.aniType, af.aniFlag, af.jump, af.loopEnd, s.loopCounter,
+		partrender::LoopEndCounter(s.uniDialect));
 	if (next == s.frameIndex || next < 0 || next >= (int)s.seq->frames.size()) return nullptr;
 	curWeight = partrender::CurrentWeight(af.interpolationType, s.ticksInFrame, af.duration);
 	return curWeight < 1.f ? &s.seq->frames[next] : nullptr;
@@ -121,7 +122,7 @@ static void AddFrameLayers(Render& render, Frame& frame, CG* cg, Parts* parts, c
 		layer.sourceCG = cg;
 		layer.usePat = L.usePat;
 		layer.sourceParts = parts;
-		layer.patApplyPras = !s.mbtl;
+		layer.patApplyPras = partrender::PartUsesPras(s.uniDialect, s.mbtl);
 		layer.spawnFlagset1 = s.flagset1;
 		layer.spawnFlagset2 = s.flagset2;
 		render.AddLayer(layer);

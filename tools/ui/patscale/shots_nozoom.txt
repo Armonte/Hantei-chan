@@ -1,0 +1,16 @@
+# patscale repro: G_CHAOS p100 f10 (Arc Drive), scripted only (no desktop input). Captures land in the ab scratch folder.
+openany C:\dev\hantei-chan\gamedata\mbac_to_cc\roster\g_chaos\g_chaos.txt
+wait 2
+pattern 100
+viewframe 10
+wait 1
+capture C:/dev/hantei-chan/work/ab/p100_f10_load.png
+wait 30
+capture C:/dev/hantei-chan/work/ab/p100_f10_t30.png
+wait 30
+capture C:/dev/hantei-chan/work/ab/p100_f10_t60.png
+pattern 0
+viewframe 0
+wait 30
+capture C:/dev/hantei-chan/work/ab/p0_f0.png
+quit
