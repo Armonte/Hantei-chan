@@ -74,19 +74,30 @@ inline float CurrentWeight(int afhk, int ticksInFrame, int duration)
 	return EaseAfhk(afhk, 1.f - p);
 }
 
+// The loop counter value at which the interpolation target is the loop end (AFFE bit 2). UNI2/MBTL
+// (AnimState_FillDrawInterpCtx) test 1; MBAA (AnimState_ProcessTransition 0x419C00) tests 0.
+inline int LoopEndCounter(bool uniDialect) { return uniDialect ? 1 : 0; }
+
 // The frame the game interpolates toward (same pattern): AFFL 1 = next frame; 2 = jump, or the loop-end target
-// on the last loop pass (AFFE bit 2 with the loop counter at 1); AFFE bits 4/8 make jump/loop-end relative.
-// Anything else (end of pattern, hold) interpolates toward the frame itself, i.e. not at all.
-inline int NextFrameIndex(int frame, int aniType, unsigned aniFlag, int jump, int loopEnd, int loopCounter)
+// on the last loop pass (AFFE bit 2 with the loop counter at `loopEndAt`, see LoopEndCounter); AFFE bits 4/8 make
+// jump/loop-end relative. Anything else (end of pattern, hold) interpolates toward the frame itself, i.e. not at all.
+inline int NextFrameIndex(int frame, int aniType, unsigned aniFlag, int jump, int loopEnd, int loopCounter,
+	int loopEndAt = 1)
 {
 	if (aniType == 1) return frame + 1;
 	if (aniType == 2) {
-		if ((aniFlag & 2) && loopCounter == 1)
+		if ((aniFlag & 2) && loopCounter == loopEndAt)
 			return (aniFlag & 8) ? frame + loopEnd : loopEnd;
 		return (aniFlag & 4) ? frame + jump : jump;
 	}
 	return frame;
 }
+
+// PRAS (part pivot offset between scale and rotation): uni2.exe PatPart_BuildTransformMatrix 0x4C0EC0 applies it.
+// MBTL does not read it, and MBAA.exe has no PRAS tag at all: its .pat parser (File_ParsePPTPChunks 0x404220) knows
+// only PRXY/PRZM/PRAN/..., and its part matrix (PatPart_BuildTransformMatrix 0x405C70) is scale * rotZ * translate.
+// So an MBAACC-dialect character ignores a PRAS that a converted or UNI-made .pat carries.
+inline bool PartUsesPras(bool uniDialect, bool mbtl) { return uniDialect && !mbtl; }
 
 inline float Lerp(float cur, float next, float t) { return cur + (next - cur) * (1.f - t); }
 

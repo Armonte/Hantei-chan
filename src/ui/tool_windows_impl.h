@@ -551,6 +551,8 @@ void MainFrame::AddCompareLayers(CharacterView* view, CharacterInstance* active)
 		layer.sourceCG = &c.character->cg;
 		layer.usePat = L.usePat;
 		layer.sourceParts = &c.character->parts;
+		layer.patApplyPras = partrender::PartUsesPras(c.character->frameData.usesUniFormat(),
+			c.character->frameData.game() == Ha6Game::MBTL);
 		render.AddLayer(layer);
 	}
 }

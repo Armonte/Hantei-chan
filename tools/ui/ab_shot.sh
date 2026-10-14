@@ -5,7 +5,7 @@ D="$(cd "$(dirname "$0")/../.." && pwd)"
 # One scratch folder per worktree (AB_WORK overrides): parallel streams used to overwrite each other's exe and script in work/ab.
 W="${AB_WORK:-/mnt/c/dev/hantei-chan/work/ab_$(basename "$D")}"
 mkdir -p "$W"
-cp "$D/build/gonptechan.exe" "$W/gonptechan.exe"
+cp "${AB_EXE:-$D/build/gonptechan.exe}" "$W/gonptechan.exe"   # AB_EXE: run another build (e.g. a before/after pair)
 # shot scripts name their captures under C:/dev/hantei-chan/work/ab/; point them at this worktree's folder
 WW="$(wslpath -m "$W")"
 sed "s#C:/dev/hantei-chan/work/ab/#$WW/#g" "$1" > "$W/script.txt"
