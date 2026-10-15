@@ -1,4 +1,6 @@
 #include "main_frame.h"
+#include "startup_args.h"
+#include "render_target.h"
 
 #include "main.h"
 #include "filedialog.h"
@@ -90,9 +92,9 @@ context(context_)
 
 MainFrame::~MainFrame()
 {
-	authoring::SaveSettings();
+	if (!gStartup.headless) authoring::SaveSettings();   // --headless leaves the user's settings alone
 	clearStage();
-	ImGui::SaveIniSettingsToDisk(ImGui::GetCurrentContext()->IO.IniFilename);
+	ImGui::SaveIniSettingsToDisk(ImGui::GetCurrentContext()->IO.IniFilename);   // null under --headless: no write
 }
 
 void MainFrame::LoadSettings()
@@ -105,6 +107,17 @@ void MainFrame::LoadSettings()
 
 void MainFrame::Draw()
 {
+	// --headless: the whole frame (view blit + ImGui) goes to an offscreen target sized like the hidden window's
+	// client area, so captures never read a back buffer whose pixels the hidden window does not own.
+	static RenderTarget s_headlessFrame;
+	if (gStartup.headless) {
+		const int fw = std::max(1, (int)clientRect.x), fh = std::max(1, (int)clientRect.y);
+		if (s_headlessFrame.ensure(fw, fh, false)) {
+			RenderTarget::setDefaultFramebuffer(s_headlessFrame.framebuffer());
+			glBindFramebuffer(GL_FRAMEBUFFER, s_headlessFrame.framebuffer());
+			glReadBuffer(GL_COLOR_ATTACHMENT0);
+		}
+	}
 	ImGui_ImplOpenGL3_NewFrame();
 	ImGui_ImplWin32_NewFrame();
 	ImGui::NewFrame();
@@ -124,7 +137,8 @@ void MainFrame::Draw()
 	// context, each with its own DC; the main window is current again after.
 	WorkspaceViewports::RenderSecondaryWindows();
 
-	SwapBuffers(context->dc);
+	if (gStartup.headless) glBindFramebuffer(GL_FRAMEBUFFER, 0);   // nothing is presented
+	else SwapBuffers(context->dc);
 
 	gSettings.theme = style_idx;
 	gSettings.zoomLevel = zoom_idx;

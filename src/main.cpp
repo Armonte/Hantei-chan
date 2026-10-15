@@ -21,6 +21,7 @@
 #include <windows.h>
 #include <shellapi.h>
 #include "png_writer.h"
+#include "app_log.h"
 
 #include <glad/glad.h>
 
@@ -141,7 +142,7 @@ void LoadJapaneseFonts(ImGuiIO& io)
 					config.FontDataOwnedByAtlas = false;
 					japaneseFont = io.Fonts->AddFontFromMemoryTTF(notoFont, SizeofResource(hModule, res), gSettings.fontSize, &config, rangesToUse);
 					if(japaneseFont) {
-						printf("[Font] Noto Sans JP loaded with symbol support\n");
+						HC_LOG_INFO("[Font] Noto Sans JP loaded with symbol support");
 					}
 				}
 			}
@@ -154,7 +155,7 @@ void LoadJapaneseFonts(ImGuiIO& io)
 		strcpy(winFolder+appendAt, "\\Fonts\\meiryo.ttc");
 		japaneseFont = io.Fonts->AddFontFromFileTTF(winFolder, gSettings.fontSize, &config, rangesToUse);
 		if(japaneseFont) {
-			printf("[Font] Meiryo loaded with symbol support (Noto not available)\n");
+			HC_LOG_INFO("[Font] Meiryo loaded with symbol support (Noto not available)");
 			
 			// Try to merge Noto for missing glyphs if available
 			if(hModule) {
@@ -168,7 +169,7 @@ void LoadJapaneseFonts(ImGuiIO& io)
 							mergeConfig.MergeMode = true;
 							mergeConfig.FontDataOwnedByAtlas = false;
 							io.Fonts->AddFontFromMemoryTTF(notoFont, SizeofResource(hModule, res), gSettings.fontSize, &mergeConfig, rangesToUse);
-							printf("[Font] Noto merged into Meiryo for missing glyphs\n");
+							HC_LOG_INFO("[Font] Noto merged into Meiryo for missing glyphs");
 						}
 					}
 				}
@@ -179,21 +180,14 @@ void LoadJapaneseFonts(ImGuiIO& io)
 	// Set the Japanese font as the default font if it loaded successfully
 	if(japaneseFont) {
 		io.FontDefault = japaneseFont;
-		printf("[Font] Japanese font loaded with symbol support and set as default\n");
+		HC_LOG_INFO("[Font] Japanese font loaded with symbol support and set as default");
 		
 		// Debug: Check if specific glyphs are available
 		// Note: This check happens before Build(), so we can't verify glyphs yet
 		// But we can verify the ranges were set correctly
-		printf("[Font] Glyph ranges size: %d\n", g_fontGlyphRanges.Size);
-		if(g_fontGlyphRanges.Size > 0) {
-			printf("[Font] First few glyph ranges: ");
-			for(int i = 0; i < g_fontGlyphRanges.Size && i < 20; i++) {
-				printf("0x%04X ", g_fontGlyphRanges[i]);
-			}
-			printf("\n");
-		}
+		HC_LOG_INFO("[Font] Glyph ranges size: {}", g_fontGlyphRanges.Size);
 	} else {
-		printf("[Font] WARNING: Failed to load Japanese font! Japanese characters may not display correctly.\n");
+		HC_LOG_WARN("[Font] Failed to load Japanese font; Japanese characters may not display correctly");
 	}
 }
 
@@ -346,18 +340,32 @@ int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE, PWSTR pCmdLine, int nCmdShow
 	::RegisterClassEx(&wc);
 	// Build version string with build number and git hash
 	std::wstring windowTitle = L"gonptéchan v" VERSION_WITH_COMMIT_W;
-	HWND hwnd = ::CreateWindow(wc.lpszClassName, windowTitle.c_str(), WS_OVERLAPPEDWINDOW,
+	// --headless: the same window and GL context, created hidden and never shown (a tool window, so no taskbar
+	// entry either). Views render into their FBOs and MainFrame::Draw sends the frame to an offscreen target.
+	HWND hwnd = ::CreateWindowEx(gStartup.headless ? (WS_EX_TOOLWINDOW | WS_EX_NOACTIVATE) : 0, wc.lpszClassName, windowTitle.c_str(), WS_OVERLAPPEDWINDOW,
 		gSettings.posX, gSettings.posY, gSettings.winSizeX, gSettings.winSizeY, NULL, NULL, wc.hInstance, nullptr);
 	mainWindowHandle = hwnd;
-	DragAcceptFiles(hwnd, TRUE);   // drop RBO / GOF2 files (.dt2 .dat .pat .chp .pac .img) on the window
-
+	if (!hwnd) return 3;
 	init = true;
-	if(useIni)
-		ShowWindow(hwnd, gSettings.maximized ? SW_SHOWMAXIMIZED : SW_NORMAL);
+	if (gStartup.headless)
+	{
+		// No WM_SIZE arrives for a window that is never shown: take the client size (= the visible window's at
+		// the same ini size) directly.
+		RECT rc{};
+		GetClientRect(hwnd, &rc);
+		clientRect = ImVec2((float)rc.right, (float)rc.bottom);
+		if (MainFrame* mf = (MainFrame*)GetWindowLongPtr(hwnd, GWLP_USERDATA))
+			mf->UpdateBackProj(clientRect.x, clientRect.y);
+	}
 	else
-		ShowWindow(hwnd, nCmdShow);
-		
-	UpdateWindow(hwnd);
+	{
+		DragAcceptFiles(hwnd, TRUE);   // drop RBO / GOF2 files (.dt2 .dat .pat .chp .pac .img) on the window
+		if(useIni)
+			ShowWindow(hwnd, gSettings.maximized ? SW_SHOWMAXIMIZED : SW_NORMAL);
+		else
+			ShowWindow(hwnd, nCmdShow);
+		UpdateWindow(hwnd);
+	}
 
 	MSG msg = {};
 	bool done = false;
@@ -383,7 +391,7 @@ int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE, PWSTR pCmdLine, int nCmdShow
 		steady_clock::time_point currentTime = steady_clock::now();
 		duration<double> elapsed = duration_cast<duration<double>>(currentTime - lastFrameTime);
 		
-		if (elapsed.count() >= targetFrameTime)
+		if (gStartup.headless || elapsed.count() >= targetFrameTime)   // headless: no frame pacing
 		{
 			MainFrame* mf = (MainFrame*)GetWindowLongPtr(hwnd, GWLP_USERDATA);
 			if(mf)
@@ -403,7 +411,7 @@ int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE, PWSTR pCmdLine, int nCmdShow
 	UnregisterClass(wc.lpszClassName, wc.hInstance);
 
 	LocalFree(argV);
-	return 0;
+	return gStartup.exitCode;
 }
 
 // Forward declare message handler from imgui_impl_win32.cpp
@@ -438,12 +446,14 @@ LRESULT WINAPI WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
 			io.ConfigFlags |= ImGuiConfigFlags_DockingEnable;
 			io.IniFilename = iniLocation;
 			InitIni();
+			if (gStartup.headless)
+				io.IniFilename = nullptr;   // settings and layout are read, never written back
 			// Multi-viewport: detached tabs become native windows that can
 			// live on other monitors (docs/HANTEI_WAVE2.md §5). It used to be
 			// off because the Background Inspector opened at a fixed desktop
 			// position behind the main window; that window is now placed
 			// relative to the main viewport. Restart-bound preference.
-			if (gSettings.detachableWindows)
+			if (gSettings.detachableWindows && !gStartup.headless)   // headless: no extra OS windows
 				io.ConfigFlags |= ImGuiConfigFlags_ViewportsEnable;
 			// Native windows only move from their title bar, so dragging in a
 			// detached view pans it instead of moving the window.

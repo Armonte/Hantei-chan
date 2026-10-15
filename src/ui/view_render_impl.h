@@ -20,6 +20,7 @@
 #include <chrono>
 #include <climits>
 #include "../parts/part_render_math.h"
+#include "../startup_args.h"
 
 namespace viewrender {
 
@@ -68,6 +69,7 @@ static void AddFrameLayers(Render& render, Frame& frame, CG* cg, Parts* parts, c
 	float t = 1.f;
 	const Frame* nextFrame = InterpTarget(s, frame, t);
 	for (size_t li = 0; li < frame.AF.layers.size(); ++li) {
+		if (li < 32 && !((gStartup.layerMask >> li) & 1u)) continue;   // --layer / batch `layer` filter
 		const auto& L = frame.AF.layers[li];
 		// The same layer of the next frame (AFHK); its offset is never interpolated, only colour,
 		// scale and rotation (Han6Draw_BuildLayerMatrix_LerpScaleRot / Han6Draw_DrawLayer).
@@ -563,14 +565,16 @@ void MainFrame::DrawBack()
 	// smoothly instead of snapping (no-op while dragging or settled).
 	bgCamera.Settle();
 
-	const int width = std::max(1, (int)clientRect.x);
-	const int height = std::max(1, (int)clientRect.y);
+	// --size WxH (headless export / batch `size`) renders the view at that size whatever the window is.
+	const int width = std::max(1, gStartup.sizeW > 0 ? gStartup.sizeW : (int)clientRect.x);
+	const int height = std::max(1, gStartup.sizeH > 0 ? gStartup.sizeH : (int)clientRect.y);
+	const float* bgColor = gStartup.hasBg ? gStartup.bg : clearColor;   // --bg: shot colour, never saved
 	CharacterView* view = getActiveView();
 	RenderTarget* target = view ? &view->renderTarget() : nullptr;
 	if (target && target->ensure(width, height, false)) {
 		{
 			ScopedTargetBinding bind(*target);
-			bind.clear(clearColor[0], clearColor[1], clearColor[2], 1.f, true);
+			bind.clear(bgColor[0], bgColor[1], bgColor[2], 1.f, true);
 			const auto t0 = std::chrono::steady_clock::now();
 			DrawMainViewScene(view, width, height);
 			m_lastSceneMs = viewrender::MsSince(t0);

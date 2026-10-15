@@ -101,6 +101,10 @@ bool RenderTarget::readRgba(std::vector<uint8_t>& out) const
 	return true;
 }
 
+static unsigned s_defaultFbo = 0;
+void RenderTarget::setDefaultFramebuffer(unsigned fbo) { s_defaultFbo = fbo; }
+unsigned RenderTarget::defaultFramebuffer() { return s_defaultFbo; }
+
 void RenderTarget::blitToDefault(int dstWidth, int dstHeight) const
 {
 	if (!m_fbo) return;
@@ -110,7 +114,7 @@ void RenderTarget::blitToDefault(int dstWidth, int dstHeight) const
 	const GLboolean scissor = glIsEnabled(GL_SCISSOR_TEST);
 	glDisable(GL_SCISSOR_TEST);
 	glBindFramebuffer(GL_READ_FRAMEBUFFER, m_fbo);
-	glBindFramebuffer(GL_DRAW_FRAMEBUFFER, 0);
+	glBindFramebuffer(GL_DRAW_FRAMEBUFFER, s_defaultFbo);
 	glBlitFramebuffer(0, 0, m_width, m_height, 0, 0, dstWidth, dstHeight, GL_COLOR_BUFFER_BIT, GL_NEAREST);
 	glBindFramebuffer(GL_DRAW_FRAMEBUFFER, prevDraw);
 	glBindFramebuffer(GL_READ_FRAMEBUFFER, prevRead);

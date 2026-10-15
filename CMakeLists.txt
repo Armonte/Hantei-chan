@@ -1060,6 +1060,8 @@ if(MINGW)
 endif()
 add_test(NAME pcmod COMMAND pcmod_test tests/fixtures/pcmod WORKING_DIRECTORY ${CMAKE_SOURCE_DIR})
 add_test(NAME pcmod_cli COMMAND bash tools/pcmod/pcmod_cli_ctest.sh $<TARGET_FILE:pcmodtool> tests/fixtures/pcmod "${CMAKE_BINARY_DIR}/pcmod_cli_out" WORKING_DIRECTORY ${CMAKE_SOURCE_DIR})
+# --headless view export (hidden window, FBO readback): PNG size + checksum stability, batch == single shot
+add_test(NAME headless_export COMMAND bash tools/ui/headless_ctest.sh $<TARGET_FILE:gonptechan> tests/fixtures/headless/chr000.ha6 "${CMAKE_BINARY_DIR}/headless_out" WORKING_DIRECTORY ${CMAKE_SOURCE_DIR})
 
 # CG manager core + command line (docs/cg/cg_manager_design.md)
 set(CGM_CORE_SOURCES src/cgm/cgm_bank.cpp src/cgm/cgm_ops.cpp src/cgm/cgm_export.cpp src/cgm/cgm_io.cpp src/cgm/cgm_palette.cpp src/cgm/cgm_struct.cpp src/cgm/cgm_folder.cpp src/cgm/cgm_ccpal.cpp)

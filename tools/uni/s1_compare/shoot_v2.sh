@@ -3,6 +3,8 @@
 # camera at rest = 1 game px per sprite px, so --zoom 1), boxes ON, for every case in cases.txt (CASES=regex).
 # Writes $OUT/<case>_ours.png (default docs/audit_2026_10_14/evidence/compare/v2/ours in the main checkout).
 set -u
+# Hidden window + offscreen render by default (--headless); AB_VISIBLE=1 shows the window as before.
+HL=(--headless); [ -n "${AB_VISIBLE:-}" ] && HL=()
 D="$(cd "$(dirname "$0")/../../.." && pwd)"; H=/mnt/c/dev/hantei-chan
 NEW="${1:-$D/build/gonptechan.exe}"
 W=$H/work/s1v2${WORK_SUFFIX:-}; OUT="${OUT:-$H/docs/audit_2026_10_14/evidence/compare/v2/ours}"; mkdir -p "$W" "$OUT"
@@ -15,7 +17,7 @@ grep -v "^#" "$(dirname "$0")/${CASEFILE:-cases.txt}" | grep -E "${CASES:-.}" | 
 	args=(--open "$G\\$txt" --pattern "$pat" --frame "$fr" --zoom 1 ${EXTRA_ARGS:-})
 	[ "$tick" != "-1" ] && args+=(--tick "$tick")
 	rm -f "$W/$name.png"
-	(cd "$W" && timeout 120 ./gonptechan.exe "${args[@]}" --capture-view "$(wslpath -w "$W")\\$name.png" </dev/null >/dev/null 2>&1)
+	(cd "$W" && timeout 120 ./gonptechan.exe "${HL[@]}" "${args[@]}" --capture-view "$(wslpath -w "$W")\\$name.png" </dev/null >/dev/null 2>&1)
 	cp "$W/$name.png" "$OUT/${name}_ours.png" 2>/dev/null || echo "no shot: $name"
 	echo "$name done"
 done
