@@ -78,3 +78,26 @@ Pixel check: `tools/pat/pat_renumber_shots.sh` copies three UNI2 csel projects (
 one copy with `pattool renumber`, and shoots every PAT frame of pattern 0 of both copies with
 `gonptechan.exe --headless --batch`. All shots must be identical. As a negative control, the renumbered .pat with the
 original HA6 must draw something different.
+
+## Appending part sets from another .pat
+
+```
+pattool append-from <dst.pat> <src.pat> -o <out.pat> --map <map.tsv> [--sets 1,5,7-9]
+pattool append-check <dst.pat> <src.pat> --tmp <dir> [--sets ...]
+```
+
+`append-from` (src/parts/pat_append.h) copies source part sets (default: every non-empty one) to the end of the
+destination, with the cut-outs, shapes and textures they draw, every inner reference (ppId, cut-out texture and
+shapeIndex) renumbered. The new part sets get ids >= the destination's part set count, in ascending source order;
+`map.tsv` lists `src_partset_id<TAB>new_id`, for remapping the HA6 frames that drew the source ids (pattool does not
+rewrite HA6 files here). The destination keeps every id and writes its own records with their original bytes. A source
+cut-out / shape / texture identical to one in the destination is reused. Textures are re-encoded for the destination:
+MBAACC gets 32-bit PGTX (PGTP = width when the destination's textures carry it; ActCadenza files from `ha4tool convert`
+have none), UNI2 / MBTL get lossless A8R8G8B8 PGT2. MBAACC has no shapes: a non-plane source shape is reported.
+
+Use: the ActCadenza moon-3 set of MBAACC, whose HA6 frames draw ActCadenza part set ids while `<c>_3.txt` loads
+MBAACC's `<c>.pat`.
+
+`append-check` saves to `<dir>/out.pat`, reloads it, and checks that every destination record is byte-identical and
+that each appended part set has the same parts, cut-outs, shapes and texture pixels as in the source. ctest:
+`pat_append_*` (arc, warc, hisui subset into MBAACC; an MBAACC .pat into a UNI2 csel .pat).
