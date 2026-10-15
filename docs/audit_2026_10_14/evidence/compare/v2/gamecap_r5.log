@@ -1,0 +1,229 @@
+=== v2r5_chr019.gcs
+gamecap C:\dev\hantei-chan\tools\gamecap\cases\v2r5_chr019.gcs
+backup: C:\Program Files (x86)\Steam\steamapps\common\UNDER NIGHT IN-BIRTH II Sys Celes\UNI2-IM/UNI2_IM.ini -> (new file, will be deleted)
+launched uni2.exe pid 32460 (suspended)
+agent attached: module base 0x00e60000, hooks 0x39
+window 016a09d4 at 802,158 1296x759
+placed window at -640,307
+pipe \\.\pipe\uni2-im-harness: stage 1 -> ok 1 -> 1
+frozen at frame 2333
+poke g_MenuPlayerSide @0x01405940 <- 0
+poke g_TitleBootMode @0x01404a88 <- 2
+poke g_TitleResult @0x0144fff4 <- 8
+poke g_TitleState4Timer @0x0144fffc <- 0
+poke g_TitleStateTimer @0x0144ffe4 <- 0
+poke g_TitleState @0x0144ffe0 <- 4
+step_until met after 16 frame(s) (value 24)
+step_until met after 2 frame(s) (value 8)
+poke g_CSS_LastChara @0x01404324 <- 19
+poke g_CSS_LastChara+4 @0x01404328 <- 0
+poke g_CSS_LastColor @0x015d6bd0 <- 0
+poke g_CSS_LastColor+4 @0x015d6bd4 <- 0
+step_until met after 8 frame(s) (value 15)
+status: frame 2436 frozen 0 freeze 0 budget 0 hooks 0x3f cmd 0/0
+status: frame 2544 frozen 0 freeze 0 budget 0 hooks 0x3f cmd 0/0
+frozen at frame 2665
+peek p1_x @0x01ac52e4 = -40960 (0xffffffffffff6000)
+peek p2_x @0x01ac5ea4 = 40960 (0xa000)
+peek p1_facing @0x01ac58c4 = 0 (0x0)
+peek p1_pattern @0x01ac529c = 0 (0x0)
+echo: uni2 training ready: P1 chr19 vs P2 chr0 (frozen)
+pipe \\.\pipe\uni2-im-harness: keys F5 -> ok 1
+call 0x00f9c2e0 -> 0x00000000
+pipe \\.\pipe\uni2-im-harness: keys F6,F6 -> ok 2
+meta -> C:\dev\hantei-chan\tools\gamecap\captures\v2\ctrl_chr019_p0_r5_game.json
+pipe \\.\pipe\uni2-im-harness: grab C:\dev\hantei-chan\tools\gamecap\captures\v2\ctrl_chr019_p0_r5_game.png -> ok 1280x720 C:\dev\hantei-chan\tools\gamecap\captures\v2\ctrl_chr019_p0_r5_game.png
+pipe \\.\pipe\uni2-im-harness: hidefighters on -> ok on
+pipe \\.\pipe\uni2-im-harness: keys F6 -> ok 1
+pipe \\.\pipe\uni2-im-harness: grab C:\dev\hantei-chan\tools\gamecap\captures\v2\ctrl_chr019_p0_r5_game_plate.png -> ok 1280x720 C:\dev\hantei-chan\tools\gamecap\captures\v2\ctrl_chr019_p0_r5_game_plate.png
+pipe \\.\pipe\uni2-im-harness: hidefighters off -> ok off
+pipe \\.\pipe\uni2-im-harness: keys F5 -> ok 1
+frozen at frame 2838
+pipe \\.\pipe\uni2-im-harness: keys F5 -> ok 1
+peek tick_paused_a @0x01ac52b0 = 3 (0x3)
+peek tick_paused_b @0x01ac52b0 = 3 (0x3)
+call 0x00f9c2e0 -> 0x00000000
+peek pat_after_set @0x01ac529c = 153 (0x99)
+peek frame_after_set @0x01ac52a0 = 0 (0x0)
+peek tick_after_set @0x01ac52b0 = 0 (0x0)
+pipe \\.\pipe\uni2-im-harness: keys F6 -> ok 1
+peek pat_s1 @0x01ac529c = 153 (0x99)
+peek frame_s1 @0x01ac52a0 = 0 (0x0)
+peek tick_s1 @0x01ac52b0 = 1 (0x1)
+meta -> C:\dev\hantei-chan\tools\gamecap\captures\v2\flipHV_chr019_p153_r5_game.json
+pipe \\.\pipe\uni2-im-harness: grab C:\dev\hantei-chan\tools\gamecap\captures\v2\flipHV_chr019_p153_r5_game.png -> ok 1280x720 C:\dev\hantei-chan\tools\gamecap\captures\v2\flipHV_chr019_p153_r5_game.png
+pipe \\.\pipe\uni2-im-harness: keys F2 -> ok 1
+pipe \\.\pipe\uni2-im-harness: grab C:\dev\hantei-chan\tools\gamecap\captures\v2\flipHV_chr019_p153_r5_game_im.png -> ok 1280x720 C:\dev\hantei-chan\tools\gamecap\captures\v2\flipHV_chr019_p153_r5_game_im.png
+peek tick_end @0x01ac52b0 = 1 (0x1)
+pipe \\.\pipe\uni2-im-harness: keys F2 -> ok 1
+pipe \\.\pipe\uni2-im-harness: hidefighters on -> ok on
+pipe \\.\pipe\uni2-im-harness: keys F6 -> ok 1
+pipe \\.\pipe\uni2-im-harness: grab C:\dev\hantei-chan\tools\gamecap\captures\v2\flipHV_chr019_p153_r5_game_plate.png -> ok 1280x720 C:\dev\hantei-chan\tools\gamecap\captures\v2\flipHV_chr019_p153_r5_game_plate.png
+pipe \\.\pipe\uni2-im-harness: hidefighters off -> ok off
+pipe \\.\pipe\uni2-im-harness: keys F5 -> ok 1
+frozen at frame 3064
+quit (quit): terminating pid 32460
+removed C:\Program Files (x86)\Steam\steamapps\common\UNDER NIGHT IN-BIRTH II Sys Celes\UNI2-IM/UNI2_IM.ini
+script finished: 406 commands, 0 capture(s)
+failures: 0
+=== v2r5_chr027.gcs
+gamecap C:\dev\hantei-chan\tools\gamecap\cases\v2r5_chr027.gcs
+backup: C:\Program Files (x86)\Steam\steamapps\common\UNDER NIGHT IN-BIRTH II Sys Celes\UNI2-IM/UNI2_IM.ini -> (new file, will be deleted)
+launched uni2.exe pid 63644 (suspended)
+agent attached: module base 0x00e60000, hooks 0x39
+window 00cc2b74 at 802,158 1296x759
+placed window at -640,307
+pipe \\.\pipe\uni2-im-harness: stage 1 -> ok 1 -> 1
+frozen at frame 1066
+poke g_MenuPlayerSide @0x01405940 <- 0
+poke g_TitleBootMode @0x01404a88 <- 2
+poke g_TitleResult @0x0144fff4 <- 8
+poke g_TitleState4Timer @0x0144fffc <- 0
+poke g_TitleStateTimer @0x0144ffe4 <- 0
+poke g_TitleState @0x0144ffe0 <- 4
+step_until met after 16 frame(s) (value 24)
+step_until met after 2 frame(s) (value 8)
+poke g_CSS_LastChara @0x01404324 <- 27
+poke g_CSS_LastChara+4 @0x01404328 <- 0
+poke g_CSS_LastColor @0x015d6bd0 <- 0
+poke g_CSS_LastColor+4 @0x015d6bd4 <- 0
+step_until met after 8 frame(s) (value 15)
+status: frame 1168 frozen 0 freeze 0 budget 0 hooks 0x3f cmd 0/0
+status: frame 1280 frozen 0 freeze 0 budget 0 hooks 0x3f cmd 0/0
+frozen at frame 1401
+peek p1_x @0x01ac52e4 = -40960 (0xffffffffffff6000)
+peek p2_x @0x01ac5ea4 = 40960 (0xa000)
+peek p1_facing @0x01ac58c4 = 0 (0x0)
+peek p1_pattern @0x01ac529c = 0 (0x0)
+echo: uni2 training ready: P1 chr27 vs P2 chr0 (frozen)
+pipe \\.\pipe\uni2-im-harness: keys F5 -> ok 1
+call 0x00f9c2e0 -> 0x00000000
+pipe \\.\pipe\uni2-im-harness: keys F6,F6 -> ok 2
+meta -> C:\dev\hantei-chan\tools\gamecap\captures\v2\ctrl_chr027_p0_r5_game.json
+pipe \\.\pipe\uni2-im-harness: grab C:\dev\hantei-chan\tools\gamecap\captures\v2\ctrl_chr027_p0_r5_game.png -> ok 1280x720 C:\dev\hantei-chan\tools\gamecap\captures\v2\ctrl_chr027_p0_r5_game.png
+pipe \\.\pipe\uni2-im-harness: hidefighters on -> ok on
+pipe \\.\pipe\uni2-im-harness: keys F6 -> ok 1
+pipe \\.\pipe\uni2-im-harness: grab C:\dev\hantei-chan\tools\gamecap\captures\v2\ctrl_chr027_p0_r5_game_plate.png -> ok 1280x720 C:\dev\hantei-chan\tools\gamecap\captures\v2\ctrl_chr027_p0_r5_game_plate.png
+pipe \\.\pipe\uni2-im-harness: hidefighters off -> ok off
+pipe \\.\pipe\uni2-im-harness: keys F5 -> ok 1
+frozen at frame 1575
+pipe \\.\pipe\uni2-im-harness: keys F5 -> ok 1
+peek tick_paused_a @0x01ac52b0 = 7 (0x7)
+peek tick_paused_b @0x01ac52b0 = 7 (0x7)
+call 0x00f9c2e0 -> 0x00000000
+peek pat_after_set @0x01ac529c = 449 (0x1c1)
+peek frame_after_set @0x01ac52a0 = 4 (0x4)
+peek tick_after_set @0x01ac52b0 = 0 (0x0)
+pipe \\.\pipe\uni2-im-harness: keys F6 -> ok 1
+peek pat_s1 @0x01ac529c = 449 (0x1c1)
+peek frame_s1 @0x01ac52a0 = 4 (0x4)
+peek tick_s1 @0x01ac52b0 = 1 (0x1)
+meta -> C:\dev\hantei-chan\tools\gamecap\captures\v2\pups_chr027_p449f4_r5_game.json
+pipe \\.\pipe\uni2-im-harness: grab C:\dev\hantei-chan\tools\gamecap\captures\v2\pups_chr027_p449f4_r5_game.png -> ok 1280x720 C:\dev\hantei-chan\tools\gamecap\captures\v2\pups_chr027_p449f4_r5_game.png
+pipe \\.\pipe\uni2-im-harness: keys F2 -> ok 1
+pipe \\.\pipe\uni2-im-harness: grab C:\dev\hantei-chan\tools\gamecap\captures\v2\pups_chr027_p449f4_r5_game_im.png -> ok 1280x720 C:\dev\hantei-chan\tools\gamecap\captures\v2\pups_chr027_p449f4_r5_game_im.png
+peek tick_end @0x01ac52b0 = 1 (0x1)
+pipe \\.\pipe\uni2-im-harness: keys F2 -> ok 1
+pipe \\.\pipe\uni2-im-harness: hidefighters on -> ok on
+pipe \\.\pipe\uni2-im-harness: keys F6 -> ok 1
+pipe \\.\pipe\uni2-im-harness: grab C:\dev\hantei-chan\tools\gamecap\captures\v2\pups_chr027_p449f4_r5_game_plate.png -> ok 1280x720 C:\dev\hantei-chan\tools\gamecap\captures\v2\pups_chr027_p449f4_r5_game_plate.png
+pipe \\.\pipe\uni2-im-harness: hidefighters off -> ok off
+pipe \\.\pipe\uni2-im-harness: keys F5 -> ok 1
+frozen at frame 1804
+pipe \\.\pipe\uni2-im-harness: keys F5 -> ok 1
+peek tick_paused_a @0x01ac52b0 = 1 (0x1)
+peek tick_paused_b @0x01ac52b0 = 1 (0x1)
+call 0x00f9c2e0 -> 0x00000000
+peek pat_after_set @0x01ac529c = 449 (0x1c1)
+peek frame_after_set @0x01ac52a0 = 6 (0x6)
+peek tick_after_set @0x01ac52b0 = 0 (0x0)
+pipe \\.\pipe\uni2-im-harness: keys F6 -> ok 1
+peek pat_s1 @0x01ac529c = 449 (0x1c1)
+peek frame_s1 @0x01ac52a0 = 6 (0x6)
+peek tick_s1 @0x01ac52b0 = 1 (0x1)
+meta -> C:\dev\hantei-chan\tools\gamecap\captures\v2\pups_chr027_p449f6_r5_game.json
+pipe \\.\pipe\uni2-im-harness: grab C:\dev\hantei-chan\tools\gamecap\captures\v2\pups_chr027_p449f6_r5_game.png -> ok 1280x720 C:\dev\hantei-chan\tools\gamecap\captures\v2\pups_chr027_p449f6_r5_game.png
+pipe \\.\pipe\uni2-im-harness: keys F2 -> ok 1
+pipe \\.\pipe\uni2-im-harness: grab C:\dev\hantei-chan\tools\gamecap\captures\v2\pups_chr027_p449f6_r5_game_im.png -> ok 1280x720 C:\dev\hantei-chan\tools\gamecap\captures\v2\pups_chr027_p449f6_r5_game_im.png
+peek tick_end @0x01ac52b0 = 1 (0x1)
+pipe \\.\pipe\uni2-im-harness: keys F2 -> ok 1
+pipe \\.\pipe\uni2-im-harness: hidefighters on -> ok on
+pipe \\.\pipe\uni2-im-harness: keys F6 -> ok 1
+pipe \\.\pipe\uni2-im-harness: grab C:\dev\hantei-chan\tools\gamecap\captures\v2\pups_chr027_p449f6_r5_game_plate.png -> ok 1280x720 C:\dev\hantei-chan\tools\gamecap\captures\v2\pups_chr027_p449f6_r5_game_plate.png
+pipe \\.\pipe\uni2-im-harness: hidefighters off -> ok off
+pipe \\.\pipe\uni2-im-harness: keys F5 -> ok 1
+frozen at frame 2018
+quit (quit): terminating pid 63644
+removed C:\Program Files (x86)\Steam\steamapps\common\UNDER NIGHT IN-BIRTH II Sys Celes\UNI2-IM/UNI2_IM.ini
+script finished: 549 commands, 0 capture(s)
+failures: 0
+=== v2r5_mbtl_chr001.gcs
+gamecap C:\dev\hantei-chan\tools\gamecap\cases\v2r5_mbtl_chr001.gcs
+backup: C:\Program Files (x86)\Steam\steamapps\common\MELTY BLOOD TYPE LUMINA\MBTL-IM/MBTL_IM.ini -> (new file, will be deleted)
+backup: C:\Program Files (x86)\Steam\steamapps\common\MELTY BLOOD TYPE LUMINA\winsave/48034167/_App.ini -> C:\dev\hantei-chan\game_mod_backup\gamecap\mbtl_20261015_032254\file01__App.ini
+launched MBTL.exe pid 15876 (suspended)
+agent attached: module base 0x00cb0000, hooks 0x39
+window 007f065e at 0,0 136x39
+placed window at -640,307
+poke cur_player_side @0x012dfd70 <- 0
+poke side_input_dev @0x0133dbd4 <- 0
+poke side_input_dev+4 @0x0133dbd8 <- 1
+poke side_input_flag @0x0133dbdc <- 0
+poke side_input_flag+4 @0x0133dbe0 <- 0
+call 0x01053ed0 -> 0x00000008
+tap_until met after 16 tap(s)
+peek p1_chara_no @0x019a9345 = 1 (0x1)
+peek p2_chara_no @0x019a9f89 = 1 (0x1)
+peek p1_pdata_chara @0x0157430c = 1 (0x1)
+peek p1_pattern @0x019a935c = 0 (0x0)
+echo: MBTL training ready: P1 1 vs P2 1
+frozen at frame 2712
+peek tick_paused_a @0x019a9370 = 6 (0x6)
+peek tick_paused_b @0x019a9370 = 6 (0x6)
+call 0x00dc0800 -> 0x00000000
+peek pat_after_set @0x019a935c = 238 (0xee)
+peek frame_after_set @0x019a9360 = 10 (0xa)
+peek tick_after_set @0x019a9370 = 0 (0x0)
+peek pat_s @0x019a935c = 238 (0xee)
+peek frame_s @0x019a9360 = 10 (0xa)
+peek tick_s @0x019a9370 = 1 (0x1)
+meta -> C:\dev\hantei-chan\tools\gamecap\captures\v2\nobloom\mbtl_patctrl_chr001_p238f10_game.json
+captured window C:\dev\hantei-chan\tools\gamecap\captures\v2\nobloom\mbtl_patctrl_chr001_p238f10_game.png
+captured C:\dev\hantei-chan\tools\gamecap\captures\v2\nobloom\mbtl_patctrl_chr001_p238f10_game_bb.png (1280x720 fmt 22)
+captured window C:\dev\hantei-chan\tools\gamecap\captures\v2\nobloom\mbtl_patctrl_chr001_p238f10_game_im.png
+captured C:\dev\hantei-chan\tools\gamecap\captures\v2\nobloom\mbtl_patctrl_chr001_p238f10_game_plate_b0.png (1280x720 fmt 22)
+peek tick_plate_b @0x019a9370 = 2 (0x2)
+captured C:\dev\hantei-chan\tools\gamecap\captures\v2\nobloom\mbtl_patctrl_chr001_p238f10_game_plate_bb.png (1280x720 fmt 22)
+captured window C:\dev\hantei-chan\tools\gamecap\captures\v2\nobloom\mbtl_patctrl_chr001_p238f10_game_plate.png
+poke p1+OBJ_ALPHA_OVR_ON @0x019a9994 <- 0
+poke p2+OBJ_ALPHA_OVR_ON @0x019aa5d8 <- 0
+poke p1+OBJ_ALPHA_OVR @0x019a9988 <- 255
+poke p2+OBJ_ALPHA_OVR @0x019aa5cc <- 255
+frozen at frame 2906
+peek tick_paused_a @0x019a9370 = 3 (0x3)
+peek tick_paused_b @0x019a9370 = 3 (0x3)
+call 0x00dc0800 -> 0x00000000
+peek pat_after_set @0x019a935c = 277 (0x115)
+peek frame_after_set @0x019a9360 = 0 (0x0)
+peek tick_after_set @0x019a9370 = 0 (0x0)
+peek pat_s @0x019a935c = 277 (0x115)
+peek frame_s @0x019a9360 = 0 (0x0)
+peek tick_s @0x019a9370 = 1 (0x1)
+meta -> C:\dev\hantei-chan\tools\gamecap\captures\v2\nobloom\mbtl_patctrl_chr001_p277f0_game.json
+captured window C:\dev\hantei-chan\tools\gamecap\captures\v2\nobloom\mbtl_patctrl_chr001_p277f0_game.png
+captured C:\dev\hantei-chan\tools\gamecap\captures\v2\nobloom\mbtl_patctrl_chr001_p277f0_game_bb.png (1280x720 fmt 22)
+captured window C:\dev\hantei-chan\tools\gamecap\captures\v2\nobloom\mbtl_patctrl_chr001_p277f0_game_im.png
+captured C:\dev\hantei-chan\tools\gamecap\captures\v2\nobloom\mbtl_patctrl_chr001_p277f0_game_plate_b0.png (1280x720 fmt 22)
+peek tick_plate_b @0x019a9370 = 2 (0x2)
+captured C:\dev\hantei-chan\tools\gamecap\captures\v2\nobloom\mbtl_patctrl_chr001_p277f0_game_plate_bb.png (1280x720 fmt 22)
+captured window C:\dev\hantei-chan\tools\gamecap\captures\v2\nobloom\mbtl_patctrl_chr001_p277f0_game_plate.png
+poke p1+OBJ_ALPHA_OVR_ON @0x019a9994 <- 0
+poke p2+OBJ_ALPHA_OVR_ON @0x019aa5d8 <- 0
+poke p1+OBJ_ALPHA_OVR @0x019a9988 <- 255
+poke p2+OBJ_ALPHA_OVR @0x019aa5cc <- 255
+frozen at frame 3098
+quit (quit): terminating pid 15876
+removed C:\Program Files (x86)\Steam\steamapps\common\MELTY BLOOD TYPE LUMINA\MBTL-IM/MBTL_IM.ini
+restored C:\Program Files (x86)\Steam\steamapps\common\MELTY BLOOD TYPE LUMINA\winsave/48034167/_App.ini
+script finished: 420 commands, 12 capture(s)
+failures: 0

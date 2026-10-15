@@ -1,0 +1,40 @@
+{
+ "case": "mbtl_patctrl_chr001_p238f10",
+ "game": "mbtl_patctrl_chr001_p238f10_nb",
+ "plate": "/mnt/c/dev/hantei-chan/tools/gamecap/captures/v2/mbtl_patctrl_chr001_p238f10_nb_game_plate.png",
+ "light": [
+  [
+   1.0,
+   0.0
+  ],
+  [
+   1.0,
+   0.0
+  ],
+  [
+   1.0,
+   0.0
+  ]
+ ],
+ "raw": [
+  4.548553862203805,
+  11.05112641531458
+ ],
+ "lit": [
+  4.548553862203805,
+  11.05112641531458
+ ],
+ "band": [
+  2.74650799397397,
+  7.817789191082059
+ ],
+ "band_px": 1,
+ "grad": null,
+ "glow": null,
+ "glow_ring": null,
+ "px": 34268,
+ "refine": [
+  0,
+  0
+ ]
+}

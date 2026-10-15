@@ -160,3 +160,29 @@ Columns: residual is mean |d| / % px with |d| > 24; band is the ±1 px tolerance
   - MBTL-IM BloomStrength only drives the separate `Stage_ScreenBloomPass` 0x4EEDA0.
   - Check script: `mbtl_stage_light_check.py`.
 - ctest 41/41 (`ctest_r4.log`). uni_regress: `uni_regress_r4.log`.
+
+## Round 5 / render-match4 (2026-10-15, fix/render-match4): the four open cases
+Numbers come from `tools/uni/s1_compare/v2_round5.sh` (log `round5.log`, JSON in `r5_json/`). New game captures:
+`gamecap_scripts/v2r5_chr019.gcs`, `v2r5_chr027.gcs`, `v2r5_mbtl_chr001.gcs` (per-process, UNI2-IM / MBTL-IM
+pause/step, same-session plates; run log `gamecap_r5.log`). New editor views (one `--headless --batch` process,
+`CASES=... shoot_batch.sh`) are the new rows at the end of `cases_control.txt`. No C++ change this round.
+
+| case | residual | band ±1 | own control floor (plain / band) | status |
+|---|---|---|---|---|
+| flipHV_chr019_p153 (`_r5`, same-session plate) | **7.37 / 22.0%** (was 9.23 / 27.4%) | **2.35 / 5.0%** (was 3.85 / 10.3%) | ctrl_chr019 r5 3.08 / 7.3% (1.28 / 2.5%) | floor in % with the band (5.0% < 7.3%); plain mean still 2x. See below |
+| flipHV_chr019_p153_z1 (zoom 1 shot, no resample) | 9.20 / 29.5% (102k px: the whole streak fan, partly off-view at 1.5) | 3.24 / 9.3% | ctrl_chr019_p0_z1 1.17 / 2.0% (1.15 / 2.0%) | open: streak edges |
+| rect_chr024_p76 | thin metric unchanged: profile identical, centre d 0.00, width 6 = 6, top +1 row | - | ctrl_chr024 1.71 / 0.4% | open: 1 top row (no proven cause; see handoff) |
+| **mbtl_patctrl_chr001_p238f10** (new .pat-only control, set 275) | 4.55 / 11.1% | 2.75 / 7.8% | (is a floor) | control |
+| **mbtl_patctrl_chr001_p277f0** (new .pat-only control, set 211) | 4.83 / 13.7% | 2.21 / 6.3% | (is a floor) | control |
+| mbtl_flipV_chr001_p157f2 | 4.03 / 13.5% | 2.20 / 4.7% | .pat-only control 4.55-4.83 / 11.1-13.7% (2.21-2.75 / 6.3-7.8%) | **floor** (at or below both .pat-only controls, plain and band) |
+| **pups_chr027_p449f4** (`_r5`; CG 869 + .pat 839, cutout 427 PPPA 254 visible) | **4.17 / 14.5%** (no gradient: 13.48 / 99.5%) | 3.15 / 11.9% | ctrl_chr027 r5 4.67 / 10.2% (2.29 / 3.1%) | **floor** on the mean; +4% px over the floor at the additive PRAL 1 .pat edge |
+| pups_chr027_p449f6 (`_r5`; CG 870 twice, one AFZM-zoomed alpha 128, + .pat 840 on two layers) | 6.16 / 22.0% | 4.39 / 11.1% | 4.67 / 10.2% (2.29 / 3.1%) | above: the zoomed alpha-128 CG copy (afhk_cg-type sub-pixel edge) |
+
+- **flipHV.** Most of the round-4 residual was the plate. `v2_light_chr019_027.gcs` grabbed it after unpausing,
+  with P1's body still on screen under the streaks. The new same-session plate takes the case to 7.37 / 22.0% (band
+  2.35 / 5.0%). The rest sits on the edges of the six PRFL 1 (linear) streak parts of set 45 (PRZM up to 2 x 5).
+  The game edges are stair-stepped, the editor edges smooth. A zoom-1 shot does not remove it, so it is not the
+  1.5x resample. Not modelled.
+- **MBTL flipV.** It now has a .pat-only floor of its own and sits at it.
+- **pups chr027.** p449 f0 draws nothing on either side (set 690 is off-view). Frame 4 puts the PUPS-bank PPPA part
+  on screen, and the case matches its control on the mean. It needs the stage gradient for its CG layer.

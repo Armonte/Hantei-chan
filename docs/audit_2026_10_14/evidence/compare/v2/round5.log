@@ -1,0 +1,33 @@
+== ctrl_chr019_r5: v2_model.py ctrl_chr019_p0 --game-name ctrl_chr019_p0_r5 --grad-ctrl ctrl_chr019_p0,ctrl_chr019_p0_r5 --light 1,0;1,0;1,0
+stage chara gradient (base, height) per RGB from ctrl_chr019_p0_r5: [(8.4, 15.1), (8.8, 3.7), (11.2, 14.3)]
+ctrl_chr019_p0: raw 15.47 / 93.9%  lit 3.08 / 7.3%  band+-1 1.28 / 2.5%  (61067 px, refine +0,-1)  free fit k,c = (1.01,14), (1.00,10), (0.98,19)
+== flipHV_r5: v2_model.py flipHV_chr019_p153 --game-name flipHV_chr019_p153_r5 --light 1,0;1,0;1,0
+flipHV_chr019_p153: raw 7.37 / 22.0%  lit 7.37 / 22.0%  band+-1 2.35 / 5.0%  (72853 px, refine +0,+1)  free fit k,c = (1.03,-4), (1.02,-3), (1.02,-1)
+== ctrl_chr019_r5_z1: v2_model.py ctrl_chr019_p0_z1 --game-name ctrl_chr019_p0_r5 --grad-ctrl ctrl_chr019_p0_z1,ctrl_chr019_p0_r5 --light 1,0;1,0;1,0
+stage chara gradient (base, height) per RGB from ctrl_chr019_p0_r5: [(8.2, 15.6), (8.7, 3.9), (11.4, 14.0)]
+ctrl_chr019_p0_z1: raw 14.31 / 94.5%  lit 1.17 / 2.0%  band+-1 1.15 / 2.0%  (60665 px, refine +0,+0)  free fit k,c = (1.01,15), (1.00,11), (0.98,19)
+== flipHV_r5_z1: v2_model.py flipHV_chr019_p153_z1 --game-name flipHV_chr019_p153_r5 --light 1,0;1,0;1,0
+flipHV_chr019_p153_z1: raw 9.20 / 29.5%  lit 9.20 / 29.5%  band+-1 3.24 / 9.3%  (102263 px, refine +0,+0)  free fit k,c = (0.97,4), (0.97,4), (0.98,2)
+== rect thin
+centre (R-weighted, px from origin): game -0.10 editor -0.10  d +0.00
+width (px with R > 5): game 6 editor 6  d +0
+top endpoint (row from origin): game -1 editor +0  d +1
+R integral across the line: game 240.4 editor 240.4  ratio 1.000
+R profile mean |d| over the line columns: 0.00
+== mbtl_patctrl_p238: v2_model.py mbtl_patctrl_chr001_p238f10 --game-name mbtl_patctrl_chr001_p238f10_nb --light 1,0;1,0;1,0
+mbtl_patctrl_chr001_p238f10: raw 4.55 / 11.1%  lit 4.55 / 11.1%  band+-1 2.75 / 7.8%  (34268 px, refine +0,+0)  free fit k,c = (0.89,26), (0.90,21), (0.88,18)
+== mbtl_patctrl_p277: v2_model.py mbtl_patctrl_chr001_p277f0 --game-name mbtl_patctrl_chr001_p277f0_nb --light 1,0;1,0;1,0
+mbtl_patctrl_chr001_p277f0: raw 4.83 / 13.7%  lit 4.83 / 13.7%  band+-1 2.21 / 6.3%  (9997 px, refine -1,+0)  free fit k,c = (0.99,2), (1.01,-0), (0.98,2)
+== mbtl_flipV: v2_model.py mbtl_flipV_chr001_p157f2 --game-name mbtl_flipV_chr001_p157f2_nb --light 1,0;1,0;1,0
+mbtl_flipV_chr001_p157f2: raw 4.03 / 13.5%  lit 4.03 / 13.5%  band+-1 2.20 / 4.7%  (35344 px, refine +0,+0)  free fit k,c = (0.95,14), (1.02,-1), (1.04,-11)
+== ctrl_chr027_r5: v2_model.py ctrl_chr027_p0 --game-name ctrl_chr027_p0_r5 --grad-ctrl ctrl_chr027_p0,ctrl_chr027_p0_r5 --light 1,0;1,0;1,0
+stage chara gradient (base, height) per RGB from ctrl_chr027_p0_r5: [(10.6, 9.1), (11.1, 1.1), (13.0, 13.4)]
+ctrl_chr027_p0: raw 16.74 / 97.5%  lit 4.67 / 10.2%  band+-1 2.29 / 3.1%  (27689 px, refine +0,-1)  free fit k,c = (0.97,19), (1.03,9), (1.01,19)
+== pups_f4: v2_model.py pups_chr027_p449f4 --game-name pups_chr027_p449f4_r5 --grad-ctrl ctrl_chr027_p0,ctrl_chr027_p0_r5 --light 1,0;1,0;1,0
+stage chara gradient (base, height) per RGB from ctrl_chr027_p0_r5: [(10.6, 9.1), (11.1, 1.1), (13.0, 13.4)]
+pups_chr027_p449f4: raw 13.48 / 99.5%  lit 4.17 / 14.5%  band+-1 3.15 / 11.9%  (61171 px, refine +0,+0)  free fit k,c = (1.06,6), (1.06,5), (1.05,10)
+== pups_f6: v2_model.py pups_chr027_p449f6 --game-name pups_chr027_p449f6_r5 --grad-ctrl ctrl_chr027_p0,ctrl_chr027_p0_r5 --light 1,0;1,0;1,0
+stage chara gradient (base, height) per RGB from ctrl_chr027_p0_r5: [(10.6, 9.1), (11.1, 1.1), (13.0, 13.4)]
+pups_chr027_p449f6: raw 12.26 / 88.5%  lit 6.16 / 22.0%  band+-1 4.39 / 11.1%  (61113 px, refine +1,+0)  free fit k,c = (1.00,9), (1.02,9), (1.04,11)
+== pups_f4_nograd: v2_model.py pups_chr027_p449f4 --game-name pups_chr027_p449f4_r5 --light 1,0;1,0;1,0
+pups_chr027_p449f4: raw 13.48 / 99.5%  lit 13.48 / 99.5%  band+-1 12.40 / 96.5%  (61171 px, refine +0,+0)  free fit k,c = (1.06,6), (1.06,5), (1.05,10)
