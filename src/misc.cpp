@@ -171,8 +171,24 @@ bool WriteFileAtomic(const char *filename, const void *data, size_t size)
 	if(!CloseHandle(file))
 		ok = false;
 
-	if(ok && !MoveFileExA(tmp.c_str(), filename, MOVEFILE_REPLACE_EXISTING | MOVEFILE_WRITE_THROUGH))
+	// A just-written target is often held for a moment by antivirus / the indexer, which makes the
+	// replace fail with a sharing, lock or access error; retry for up to ~1 s before giving up.
+	if(ok)
+	{
 		ok = false;
+		for(int attempt = 0; attempt < 40; ++attempt)
+		{
+			if(MoveFileExA(tmp.c_str(), filename, MOVEFILE_REPLACE_EXISTING | MOVEFILE_WRITE_THROUGH))
+			{
+				ok = true;
+				break;
+			}
+			DWORD err = GetLastError();
+			if(err != ERROR_SHARING_VIOLATION && err != ERROR_LOCK_VIOLATION && err != ERROR_ACCESS_DENIED)
+				break;
+			Sleep(25);
+		}
+	}
 
 	if(!ok)
 		DeleteFileA(tmp.c_str());
