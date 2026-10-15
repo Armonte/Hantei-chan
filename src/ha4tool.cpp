@@ -5,6 +5,10 @@
 //                                          model only, reload, compare the models
 //   ha4tool convert   <file.DAT>... -o DIR [--name N] [--no-system-patterns] [--no-shield-remap]
 //                     [--gg-from-cc CCDATA [--cc-name C] | --gg-raw] [--keep-ef-p2-bits]
+//                     [--ac-version 1.03A|1.00] [--ac-patch DIR] [--ac-base DIR]   (CT for guts; 06.p / 02.p dirs)
+//                     [--mbaacc-data DIR [--no-leak-noop] [--noop-pattern N]]   (spawn-leak no-ops)
+//                     [--giant-flag 1|2 --giant-donor MBAACC.HA6] [--no-cmd] [--no-shield-sidecar]
+//                     [--sidecar-section FILE1]
 //                                          MBAC -> MBAACC-style HA6 (+ .cg, .pat, .pal, .txt)
 //   ha4tool edittest  <file.DAT>...        apply editor-style edits, save, reload, compare
 //   ha4tool dump      <file.DAT> [pattern] print a pattern summary
@@ -21,6 +25,7 @@
 #include <string>
 #include <vector>
 #include <cmath>
+#include <cstdlib>
 
 static bool ReadAll(const char *path, std::vector<uint8_t> &out)
 {
@@ -251,6 +256,19 @@ static int CmdConvert(int argc, char **argv)
 		else if (!strcmp(argv[i], "--gg-raw")) base.guardDamage = ha4conv::GuardDamage::Raw;
 		else if (!strcmp(argv[i], "--gg-from-cc") && i + 1 < argc) { base.guardDamage = ha4conv::GuardDamage::FromCC; base.ccDataDir = argv[++i]; }
 		else if (!strcmp(argv[i], "--cc-name") && i + 1 < argc) base.ccName = argv[++i];
+		else if (!strcmp(argv[i], "--ac-version") && i + 1 < argc) {
+			if (!ha4conv::ParseAcVersion(argv[++i], base.acVersion)) { printf("bad --ac-version %s (1.03A or 1.00)\n", argv[i]); return 2; }
+		}
+		else if (!strcmp(argv[i], "--ac-patch") && i + 1 < argc) base.acPatchDir = argv[++i];
+		else if (!strcmp(argv[i], "--ac-base") && i + 1 < argc) base.acBaseDir = argv[++i];
+		else if (!strcmp(argv[i], "--mbaacc-data") && i + 1 < argc) base.mbaaccDataDir = argv[++i];
+		else if (!strcmp(argv[i], "--no-leak-noop")) base.leakNoop = false;
+		else if (!strcmp(argv[i], "--noop-pattern") && i + 1 < argc) base.noopPattern = atoi(argv[++i]);
+		else if (!strcmp(argv[i], "--giant-flag") && i + 1 < argc) base.giantFlag = atoi(argv[++i]);
+		else if (!strcmp(argv[i], "--giant-donor") && i + 1 < argc) base.giantDonorHa6 = argv[++i];
+		else if (!strcmp(argv[i], "--no-cmd")) base.writeCmd = false;
+		else if (!strcmp(argv[i], "--no-shield-sidecar")) base.writeShieldSidecar = false;
+		else if (!strcmp(argv[i], "--sidecar-section") && i + 1 < argc) base.sidecarSection = argv[++i];
 		else inputs.push_back(argv[i]);
 	}
 	int fails = 0;
@@ -260,7 +278,7 @@ static int CmdConvert(int argc, char **argv)
 		opt.baseName = inputs.size() == 1 ? name : std::string();
 		ha4conv::Report rep;
 		bool ok = ha4conv::ConvertFile(in, opt, rep);
-		printf("%s %s\n", ok ? "OK  " : "FAIL", BaseName(in).c_str());
+		printf("%s %s (ActCadenza %s)\n", ok ? "OK  " : "FAIL", BaseName(in).c_str(), ha4conv::AcVersionName(opt.acVersion));
 		for (auto &l : rep.lines) printf("     %s\n", l.c_str());
 		if (!ok) fails++;
 	}
