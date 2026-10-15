@@ -533,6 +533,7 @@ void MainFrame::Menu(unsigned int errorPopupId)
 					exportHan2Character(active, true);
 				ImGui::Separator();
 				pcmodui::MenuItem(active ? AnsiToUtf8(active->getTxtPath()) : std::string());
+				hmodui::MenuItem();
 				ImGui::EndMenu();
 			}
 

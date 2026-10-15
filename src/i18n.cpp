@@ -24,6 +24,9 @@ const Row kRows[] = {
 #include "i18n_ja_fxr.inc"
 #include "i18n_ja_pcmod.inc"
 #include "i18n_ja_gamelabels.inc"
+#include "i18n_ja_modproject.inc"
+#include "i18n_ja_patfix.inc"
+#include "i18n_ja_stage3d.inc"
 };
 std::unordered_map<std::string, const char *> &Table()
 {

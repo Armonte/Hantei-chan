@@ -13,6 +13,7 @@
 #include "game_link_panel.h"
 #include "tag_panel.h"
 #include "pcmod/pcmod_export_ui.h"
+#include "modproject/hmod_ui.h"
 
 #include <glad/glad.h>
 #include <windows.h>
@@ -274,6 +275,12 @@ static void RunUiScript(MainFrame &mf, HDC dc, const std::function<void(const st
 		if (stage3dview::ScriptCommand(cmd, arg, &msg)) {   // stage3d open|frame|cam|set|capture|status (stage3d/s3d_view.h)
 			FILE *lf = fopen((gStartup.uiScript + ".log").c_str(), "a");
 			if (lf) { fprintf(lf, "%s %s -> %s\n", cmd.c_str(), arg.c_str(), msg.c_str()); fclose(lf); }
+			waitFrames = 3;
+			return;
+		}
+		if (hmodui::ScriptCommand(cmd, arg, &msg)) {   // hmod <open|new|gamedir|index|status|check|export> (modproject/hmod_ui.h)
+			FILE *lf = fopen((gStartup.uiScript + ".log").c_str(), "a");
+			if (lf) { fprintf(lf, "%s %s -> %s\n", cmd.c_str(), arg.c_str(), msg.empty() ? "ok" : msg.c_str()); fclose(lf); }
 			waitFrames = 3;
 			return;
 		}

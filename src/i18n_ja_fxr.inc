@@ -55,8 +55,6 @@
 {"Assign ticked patterns to the selected rule", "チェックしたパターンを選択中のルールに割り当てる"},
 {"Assigned %zu patterns to %s", "%zu 個のパターンを %s に割り当てました"},
 {"New rule from ticked", "チェックからルールを新規作成"},
-{"Hue shift", "色相シフト"},
-{"Saturation x", "彩度 x"},
 {"Effect recolor", "エフェクト再配色"},
 {"Load", "読み込み"},
 {"New", "新規"},
