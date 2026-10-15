@@ -32,6 +32,9 @@ public:
 	bool focused() const { return m_focused; }
 	void requestSave() { m_saveRequested = true; }
 	bool hasUnsavedChanges() const;
+	// --ui-script driver (`sq <sub> [arg]`): open <root>, file <rel>, goto <line> [col], search <text>, usages <word>,
+	// complete [owner], tab <0|1|2>, problems, fix <n>, type <text>. Result text in *msg.
+	bool scriptCommand(const std::string& sub, const std::string& arg, std::string* msg);
 
 	// A pattern reference found under the mouse in a script (P4): a pattern number (pat=N, start_pat=N,
 	// SetPattern(N), def_PAT_* constants), a PTCN code name (pat="StdC_End", SetPattern("...")), or a frame
