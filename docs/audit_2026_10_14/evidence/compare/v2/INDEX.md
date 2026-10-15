@@ -209,3 +209,13 @@ pause/step, same-session plates; run log `gamecap_r5.log`). New editor views (on
 - **Process note (2026-10-15).** A `sed` with `\|` (alternation in GNU sed) emptied `cases_control.txt` in the
   working copy for a while. Without the case rows every zoom fell back to 1, and the controls read 16–64. It was
   restored from git; nothing with the empty file was committed.
+- **Edge-tie bias 1/64 → 0.005 px (render-match6).** The bias must exceed the 1/256 px snap, and 1/64 also broke the
+  ties. But it moved every world pixel, and the rotated point-sampled CG of afhk_cg_chr020_p435_t27 picked other
+  texels along its edges.
+  - Measured with fresh editor shots: 0 → 2.06 / 2.1% (rect top row wrong), 0.004 → 2.22, 0.005 → 2.22 (rect top row
+    exact), 1/64 → 2.56 / 2.5%.
+  - Now 2.22 / 2.2% (band 2.01 / 2.0%) against its 1.29 floor.
+  - The CG UV start was also re-checked on this case: 0.25 texel (the game's `CgLayer_DrawWithCharaShader` value) is
+    best (0 → 7.27, 0.5 → 7.79, 0.75 → 12.84).
+  - Edge sharpness matches, so both sides are point-sampled. The remaining ~0.9 is which texel a rotated edge pixel
+    lands on.

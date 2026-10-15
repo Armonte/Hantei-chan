@@ -187,7 +187,10 @@ inline glm::mat4 PartPerspective(float w, float h)
 // D3D9 way: a top edge on a centre then sits just above it (pixel in), and a bottom edge on a centre also sits just
 // above it (pixel out). x needs nothing: left-in / right-out is the same in both APIs.
 constexpr float kD3d9PixelCentreShiftPx = 0.5f;
-constexpr float kGlEdgeTieBiasPx = 1.f / 64.f;
+// 0.005 px (render-match6): just above the 1/256 px snap. 1/64 also broke the ties, but every world pixel moved by it and the
+// rotated point-sampled CG of afhk_cg_chr020_p435 picked other texels along its edges (2.56 vs 2.22 at 0.005, 2.06 at 0;
+// rect_chr024_p76's top row is exact at 0.005 and at 1/64, wrong at 0).
+constexpr float kGlEdgeTieBiasPx = 0.005f;
 
 inline glm::mat4 D3d9PixelCentreNdc(float w, float h)
 {
