@@ -9,6 +9,8 @@
 #include <functional>
 #include <memory>
 #include <string>
+#include <utility>
+#include <vector>
 
 namespace sqedit {
 
@@ -43,6 +45,11 @@ public:
 	// describe returns the hover text ("" = unknown); open jumps to it in the HA6 editor (Ctrl+click).
 	std::function<std::string(const std::string& scriptDirUtf8, const PatRef&)> describeRef;
 	std::function<void(const std::string& scriptDirUtf8, const PatRef&)> openRef;
+	// Problem text for a reference ("" = fine or cannot tell): missing pattern / code name / frame id, a pattern with
+	// no frames, one whose last frame is "Next" with nothing after it, or a frame jumping past the pattern's end.
+	std::function<std::string(const std::string& scriptDirUtf8, const PatRef&)> checkRef;
+	// Pattern names / code names of the character a script folder belongs to that contain `query`: (label, ref).
+	std::function<std::vector<std::pair<std::string, PatRef>>(const std::string& scriptDirUtf8, const std::string& query)> searchHa6;
 
 private:
 	struct Impl;

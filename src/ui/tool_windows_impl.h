@@ -142,6 +142,54 @@ void MainFrame::wireScriptPanel()
 		const int p = resolve(ch, r, &frame, nullptr);
 		if (p >= 0) navigateActiveView(p, frame);
 	};
+	// Problems pane: a script reference the loaded HA6 cannot satisfy, or a pattern whose end can break the move
+	// (modder reports: a bad pattern end state can crash depending on the action). Only for a loaded character's own folder.
+	scriptPanel->checkRef = [this, resolve](const std::string& dir, const Ref& r) -> std::string {
+		namespace fs = std::filesystem;
+		const fs::path d = fs::u8path(dir);
+		std::error_code ec;
+		if (!fs::exists(d / (d.filename().u8string() + "_0.txt"), ec)) return "";
+		CharacterInstance* ch = characterForScriptDir(dir, false);
+		if (!ch) return "";
+		int frame = 0;
+		const int p = resolve(ch, r, &frame, nullptr);
+		if (p < 0) {
+			if (r.afid >= 0) return "frame id (AFID) " + std::to_string(r.afid) + " is not in any pattern of the loaded HA6";
+			if (!r.code.empty()) return "pattern code name \"" + r.code + "\" is not in the loaded HA6";
+			return "pattern " + std::to_string(r.pattern) + " does not exist in the loaded HA6";
+		}
+		if (r.afid >= 0) return "";
+		const Sequence* s = ch->frameData.get_sequence(p);
+		const std::string what = "pattern " + std::to_string(p) + " (" + std::string(s->name.c_str()) + ")";
+		if (s->frames.empty()) return what + " is empty: the move has nothing to play";
+		const int n = (int)s->frames.size();
+		const auto& last = s->frames.back().AF;
+		if (last.aniType == 1) return what + " ends on a Next frame with nothing after it: give the last frame an End or Jump";
+		for (int f = 0; f < n; f++) {
+			const auto& af = s->frames[f].AF;
+			if (af.aniType == 2 && (af.aniFlag & ~1u) == 0 && (af.jump < 0 || af.jump >= n))
+				return what + " frame " + std::to_string(f) + " jumps to frame " + std::to_string(af.jump) + ", past the last frame (" + std::to_string(n - 1) + ")";
+		}
+		return "";
+	};
+	scriptPanel->searchHa6 = [this](const std::string& dir, const std::string& query) {
+		std::vector<std::pair<std::string, Ref>> out;
+		CharacterInstance* ch = characterForScriptDir(dir, false);
+		if (!ch || query.empty()) return out;
+		auto lower = [](std::string s) { for (auto& c : s) c = (char)tolower((unsigned char)c); return s; };
+		const std::string q = lower(query);
+		FrameData& fd = ch->frameData;
+		for (int i = 0; i < fd.get_sequence_count() && out.size() < 500; i++) {
+			const Sequence* s = fd.get_sequence(i);
+			if (!s) continue;
+			const std::string name = s->name.c_str(), code = s->codeName.c_str();
+			if (lower(name).find(q) == std::string::npos && lower(code).find(q) == std::string::npos) continue;
+			Ref r;
+			r.pattern = i;
+			out.push_back({std::to_string(i) + "  " + name + (code.empty() ? "" : "  [" + code + "]"), r});
+		}
+		return out;
+	};
 }
 
 void MainFrame::drawVarRefsWindow()
