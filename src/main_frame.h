@@ -27,6 +27,7 @@ namespace abrowser { struct OpenRequest; }
 #include "background/bg_types.h"
 #include "cmdfile/cmd_editor_ui.h"
 #include "squirrel/script_panel.h"
+#include "authoring/sysconst_ui.h"
 #include "shortcut_router.h"
 #include "workspace_session.h"
 #include "workspace_viewports.h"
@@ -376,6 +377,7 @@ private:
 	void drawCommandEditor();
 	// Squirrel Script panel (ui/main_frame_script.cpp, squirrel/script_panel.h).
 	std::unique_ptr<sqedit::ScriptPanel> scriptPanel;
+	sysconst::Window sysConstWindow; // Tools > System constants (_type.txt / vector.txt)
 	// Script -> HA6 links (Squirrel P4): the character a script folder belongs to (opening its _0.txt when
 	// asked), and the hover text / navigation for a pattern reference found in a script.
 	CharacterInstance* characterForScriptDir(const std::string& dirUtf8, bool openIfNeeded);
