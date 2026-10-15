@@ -13,6 +13,10 @@ KIND = {
     'Sqrat_TableBase_SetValueInt': 'const',
 }
 VAR_PREFIX = 'Sqrat_Class_Var'
+
+def role(callee):
+    """Binder role: games built by an older compiler keep one template instance per signature, named <role>_<ADDR> in the IDB (DFCI)."""
+    return re.sub(r'_[0-9A-F]{5,8}$', '', callee)
 BIND = 'Sqrat_RootTable_BindTable'
 
 def objvar(arg):
@@ -34,7 +38,7 @@ def asm_attribute(rf, v, W):
         if callee == BIND:
             kind = 'table'
         else:
-            kind = KIND.get(callee) or ('var' if callee.startswith(VAR_PREFIX) else None)
+            kind = KIND.get(role(callee)) or ('var' if callee.startswith(VAR_PREFIX) else None)
         if not kind:
             continue
         owner = None
@@ -70,8 +74,17 @@ def asm_attribute(rf, v, W):
         out.append(e)
     return out
 
+def cast_strings(d):
+    """(int)\"name\" arguments (older Hex-Rays output for BindTable) count as string literals."""
+    for v in d['regfuncs'].values():
+        for c in v['calls']:
+            for a in c['args']:
+                m = re.fullmatch(r'\(int\)"((?:[^"\\]|\\.)*)"', a.get('raw', ''))
+                if m and 'str' not in a: a['str'] = m.group(1)
+
 def main(raw, out_json, out_md):
-    d = json.load(open(raw, encoding='utf-8'))
+    d = json.load(open(raw, encoding="utf-8"))
+    cast_strings(d)
     W = d.get('wrappers', {})
     entries = []
     for rf, v in d['regfuncs'].items():
@@ -98,7 +111,7 @@ def main(raw, out_json, out_md):
                 pending = keep
                 entries.append({'kind': 'table', 'name': name, 'table': '', 'regfunc': rf, '_obj': None})
                 continue
-            kind = KIND.get(callee) or ('var' if callee.startswith(VAR_PREFIX) else None)
+            kind = KIND.get(role(callee)) or ('var' if callee.startswith(VAR_PREFIX) else None)
             if not kind:
                 continue
             e = {'kind': kind, 'name': name, 'table': None, 'regfunc': rf, '_obj': obj}

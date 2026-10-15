@@ -1,0 +1,7088 @@
+[
+ {
+  "kind": "func",
+  "name": "GetParam",
+  "table": "SeFunc",
+  "regfunc": "0x737ff0",
+  "ea": "0x738093",
+  "native": "sub_736DF0",
+  "wrapper": "sub_736DF0",
+  "ret": "int",
+  "args": [
+   "int"
+  ],
+  "qualified_table": "SeFunc"
+ },
+ {
+  "kind": "table",
+  "name": "SeFunc",
+  "table": "",
+  "regfunc": "0x737ff0",
+  "ea": "0x7380bd"
+ },
+ {
+  "kind": "var",
+  "name": "Winner",
+  "table": "CStatus",
+  "regfunc": "0x7cb910",
+  "ea": "0x7cb96e",
+  "offset": "24",
+  "vartype": "Sqrat_Class_VarA_46D470",
+  "qualified_table": "tSceneWinDemo.CStatus"
+ },
+ {
+  "kind": "var",
+  "name": "WinnerNum",
+  "table": "CStatus",
+  "regfunc": "0x7cb910",
+  "ea": "0x7cb97d",
+  "offset": "52",
+  "vartype": "Sqrat_Class_VarA_46D4D0",
+  "qualified_table": "tSceneWinDemo.CStatus"
+ },
+ {
+  "kind": "var",
+  "name": "Player",
+  "table": "CStatus",
+  "regfunc": "0x7cb910",
+  "ea": "0x7cb98c",
+  "offset": "12",
+  "vartype": "Sqrat_Class_VarA_46D4D0",
+  "qualified_table": "tSceneWinDemo.CStatus"
+ },
+ {
+  "kind": "var",
+  "name": "Stage",
+  "table": "CStatus",
+  "regfunc": "0x7cb910",
+  "ea": "0x7cb99b",
+  "offset": "4",
+  "vartype": "Sqrat_Class_VarA_46D4D0",
+  "qualified_table": "tSceneWinDemo.CStatus"
+ },
+ {
+  "kind": "var",
+  "name": "NextStage",
+  "table": "CStatus",
+  "regfunc": "0x7cb910",
+  "ea": "0x7cb9aa",
+  "offset": "8",
+  "vartype": "Sqrat_Class_VarA_46D4D0",
+  "qualified_table": "tSceneWinDemo.CStatus"
+ },
+ {
+  "kind": "var",
+  "name": "WinStreak",
+  "table": "CStatus",
+  "regfunc": "0x7cb910",
+  "ea": "0x7cb9b9",
+  "offset": "20",
+  "vartype": "Sqrat_Class_VarA_46D4D0",
+  "qualified_table": "tSceneWinDemo.CStatus"
+ },
+ {
+  "kind": "table",
+  "name": "CStatus",
+  "table": "tSceneWinDemo",
+  "regfunc": "0x7cb910",
+  "ea": "0x7cb9ca"
+ },
+ {
+  "kind": "func",
+  "name": "GetStatus",
+  "table": "tSceneWinDemo",
+  "regfunc": "0x7cb910",
+  "ea": "0x7cb9e8",
+  "native": "sub_7CB710",
+  "wrapper": "sub_7CB710",
+  "ret": "void",
+  "args": [],
+  "qualified_table": "tSceneWinDemo"
+ },
+ {
+  "kind": "table",
+  "name": "tSceneWinDemo",
+  "table": "",
+  "regfunc": "0x7cb910",
+  "ea": "0x7cba12"
+ },
+ {
+  "kind": "var",
+  "name": "Player1",
+  "table": "CPlayerSt",
+  "regfunc": "0x7ce9b0",
+  "ea": "0x7cea0e",
+  "offset": "8",
+  "vartype": "Sqrat_Class_VarB_46C5B0",
+  "qualified_table": "tSceneVS.CPlayerSt"
+ },
+ {
+  "kind": "var",
+  "name": "Player2",
+  "table": "CPlayerSt",
+  "regfunc": "0x7ce9b0",
+  "ea": "0x7cea1d",
+  "offset": "92",
+  "vartype": "Sqrat_Class_VarB_46C5B0",
+  "qualified_table": "tSceneVS.CPlayerSt"
+ },
+ {
+  "kind": "var",
+  "name": "Player1s",
+  "table": "CPlayerSt",
+  "regfunc": "0x7ce9b0",
+  "ea": "0x7cea2c",
+  "offset": "36",
+  "vartype": "Sqrat_Class_VarB_46C5B0",
+  "qualified_table": "tSceneVS.CPlayerSt"
+ },
+ {
+  "kind": "var",
+  "name": "Player2s",
+  "table": "CPlayerSt",
+  "regfunc": "0x7ce9b0",
+  "ea": "0x7cea3b",
+  "offset": "120",
+  "vartype": "Sqrat_Class_VarB_46C5B0",
+  "qualified_table": "tSceneVS.CPlayerSt"
+ },
+ {
+  "kind": "var",
+  "name": "Player1ss",
+  "table": "CPlayerSt",
+  "regfunc": "0x7ce9b0",
+  "ea": "0x7cea4a",
+  "offset": "64",
+  "vartype": "Sqrat_Class_VarB_46C5B0",
+  "qualified_table": "tSceneVS.CPlayerSt"
+ },
+ {
+  "kind": "var",
+  "name": "Player2ss",
+  "table": "CPlayerSt",
+  "regfunc": "0x7ce9b0",
+  "ea": "0x7cea5c",
+  "offset": "148",
+  "vartype": "Sqrat_Class_VarB_46C5B0",
+  "qualified_table": "tSceneVS.CPlayerSt"
+ },
+ {
+  "kind": "var",
+  "name": "bBoard",
+  "table": "CPlayerSt",
+  "regfunc": "0x7ce9b0",
+  "ea": "0x7cea6e",
+  "offset": "176",
+  "vartype": "Sqrat_Class_VarA_46C610",
+  "qualified_table": "tSceneVS.CPlayerSt"
+ },
+ {
+  "kind": "table",
+  "name": "CPlayerSt",
+  "table": "tSceneVS",
+  "regfunc": "0x7ce9b0",
+  "ea": "0x7cea7f"
+ },
+ {
+  "kind": "func",
+  "name": "GetStatus",
+  "table": "tSceneVS",
+  "regfunc": "0x7ce9b0",
+  "ea": "0x7cea9d",
+  "native": "sub_7CE930",
+  "wrapper": "sub_7CE930",
+  "ret": "int",
+  "args": [],
+  "qualified_table": "tSceneVS"
+ },
+ {
+  "kind": "table",
+  "name": "tSceneVS",
+  "table": "",
+  "regfunc": "0x7ce9b0",
+  "ea": "0x7ceac7"
+ },
+ {
+  "kind": "func",
+  "name": "write",
+  "table": "debuglog",
+  "regfunc": "0x80e480",
+  "ea": "0x80e4da",
+  "native": "sub_80DC80",
+  "wrapper": "sub_80DC80",
+  "ret": "void",
+  "args": [],
+  "qualified_table": "debuglog"
+ },
+ {
+  "kind": "func",
+  "name": "write_r",
+  "table": "debuglog",
+  "regfunc": "0x80e480",
+  "ea": "0x80e4ec",
+  "native": "sub_80DC70",
+  "wrapper": "sub_80DC70",
+  "ret": "void",
+  "args": [],
+  "qualified_table": "debuglog"
+ },
+ {
+  "kind": "func",
+  "name": "open",
+  "table": "_LogsFile",
+  "regfunc": "0x80e480",
+  "ea": "0x80e515",
+  "native": "sub_45D940",
+  "wrapper": "sub_45D940",
+  "ret": "void",
+  "args": [
+   "int"
+  ],
+  "qualified_table": "debuglog._LogsFile"
+ },
+ {
+  "kind": "func",
+  "name": "opennew",
+  "table": "_LogsFile",
+  "regfunc": "0x80e480",
+  "ea": "0x80e527",
+  "native": "sub_45D940",
+  "wrapper": "sub_45D940",
+  "ret": "void",
+  "args": [
+   "int"
+  ],
+  "qualified_table": "debuglog._LogsFile"
+ },
+ {
+  "kind": "func",
+  "name": "write",
+  "table": "_LogsFile",
+  "regfunc": "0x80e480",
+  "ea": "0x80e539",
+  "native": "sub_45D940",
+  "wrapper": "sub_45D940",
+  "ret": "void",
+  "args": [
+   "int"
+  ],
+  "qualified_table": "debuglog._LogsFile"
+ },
+ {
+  "kind": "func",
+  "name": "write_r",
+  "table": "_LogsFile",
+  "regfunc": "0x80e480",
+  "ea": "0x80e54b",
+  "native": "sub_45D940",
+  "wrapper": "sub_45D940",
+  "ret": "void",
+  "args": [
+   "int"
+  ],
+  "qualified_table": "debuglog._LogsFile"
+ },
+ {
+  "kind": "func",
+  "name": "writeD",
+  "table": "_LogsFile",
+  "regfunc": "0x80e480",
+  "ea": "0x80e55d",
+  "native": "sub_45D940",
+  "wrapper": "sub_45D940",
+  "ret": "void",
+  "args": [
+   "int"
+  ],
+  "qualified_table": "debuglog._LogsFile"
+ },
+ {
+  "kind": "func",
+  "name": "writeD_r",
+  "table": "_LogsFile",
+  "regfunc": "0x80e480",
+  "ea": "0x80e56f",
+  "native": "sub_45D940",
+  "wrapper": "sub_45D940",
+  "ret": "void",
+  "args": [
+   "int"
+  ],
+  "qualified_table": "debuglog._LogsFile"
+ },
+ {
+  "kind": "func",
+  "name": "close",
+  "table": "_LogsFile",
+  "regfunc": "0x80e480",
+  "ea": "0x80e581",
+  "native": "sub_4787A0",
+  "wrapper": "sub_4787A0",
+  "ret": "void",
+  "args": [],
+  "qualified_table": "debuglog._LogsFile"
+ },
+ {
+  "kind": "table",
+  "name": "_LogsFile",
+  "table": "debuglog",
+  "regfunc": "0x80e480",
+  "ea": "0x80e592"
+ },
+ {
+  "kind": "table",
+  "name": "debuglog",
+  "table": "",
+  "regfunc": "0x80e480",
+  "ea": "0x80e5d7"
+ },
+ {
+  "kind": "func",
+  "name": "setprio",
+  "table": "debugfont",
+  "regfunc": "0x80e480",
+  "ea": "0x80e61f",
+  "native": "sub_80DC60",
+  "wrapper": "sub_80DC60",
+  "ret": "int",
+  "args": [
+   "int"
+  ],
+  "qualified_table": "debugfont"
+ },
+ {
+  "kind": "func",
+  "name": "setcolor",
+  "table": "debugfont",
+  "regfunc": "0x80e480",
+  "ea": "0x80e631",
+  "native": "sub_80DC50",
+  "wrapper": "sub_80DC50",
+  "ret": "int",
+  "args": [
+   "int"
+  ],
+  "qualified_table": "debugfont"
+ },
+ {
+  "kind": "func",
+  "name": "draw",
+  "table": "debugfont",
+  "regfunc": "0x80e480",
+  "ea": "0x80e643",
+  "native": "sub_80DC40",
+  "wrapper": "sub_80DC40",
+  "ret": "void",
+  "args": [],
+  "qualified_table": "debugfont"
+ },
+ {
+  "kind": "table",
+  "name": "debugfont",
+  "table": "",
+  "regfunc": "0x80e480",
+  "ea": "0x80e67c"
+ },
+ {
+  "kind": "func",
+  "name": "setprio",
+  "table": "debugfontL",
+  "regfunc": "0x80e480",
+  "ea": "0x80e6c4",
+  "native": "sub_80DC30",
+  "wrapper": "sub_80DC30",
+  "ret": "int",
+  "args": [
+   "int"
+  ],
+  "qualified_table": "debugfontL"
+ },
+ {
+  "kind": "func",
+  "name": "setcolor",
+  "table": "debugfontL",
+  "regfunc": "0x80e480",
+  "ea": "0x80e6d6",
+  "native": "sub_80DC20",
+  "wrapper": "sub_80DC20",
+  "ret": "int",
+  "args": [
+   "int"
+  ],
+  "qualified_table": "debugfontL"
+ },
+ {
+  "kind": "func",
+  "name": "draw",
+  "table": "debugfontL",
+  "regfunc": "0x80e480",
+  "ea": "0x80e6e8",
+  "native": "sub_80DC10",
+  "wrapper": "sub_80DC10",
+  "ret": "void",
+  "args": [],
+  "qualified_table": "debugfontL"
+ },
+ {
+  "kind": "func",
+  "name": "draw_message",
+  "table": "debugfontL",
+  "regfunc": "0x80e480",
+  "ea": "0x80e6fa",
+  "native": "sub_80DC00",
+  "wrapper": "sub_80DC00",
+  "ret": "void",
+  "args": [],
+  "qualified_table": "debugfontL"
+ },
+ {
+  "kind": "table",
+  "name": "debugfontL",
+  "table": "",
+  "regfunc": "0x80e480",
+  "ea": "0x80e733"
+ },
+ {
+  "kind": "func",
+  "name": "GetHP",
+  "table": "BCMDTbl",
+  "regfunc": "0x80e480",
+  "ea": "0x80e77b",
+  "native": "sub_454BE0",
+  "wrapper": "sub_454BE0",
+  "ret": "int",
+  "args": [],
+  "qualified_table": "BCMDTbl"
+ },
+ {
+  "kind": "func",
+  "name": "GetHPRatio",
+  "table": "BCMDTbl",
+  "regfunc": "0x80e480",
+  "ea": "0x80e78d",
+  "native": "sub_454C10",
+  "wrapper": "sub_454C10",
+  "ret": "int",
+  "args": [],
+  "qualified_table": "BCMDTbl"
+ },
+ {
+  "kind": "func",
+  "name": "GetComboGauge",
+  "table": "BCMDTbl",
+  "regfunc": "0x80e480",
+  "ea": "0x80e79f",
+  "native": "sub_454C90",
+  "wrapper": "sub_454C90",
+  "ret": "int",
+  "args": [],
+  "qualified_table": "BCMDTbl"
+ },
+ {
+  "kind": "func",
+  "name": "GetComboGaugeEx",
+  "table": "BCMDTbl",
+  "regfunc": "0x80e480",
+  "ea": "0x80e7b1",
+  "native": "sub_454CC0",
+  "wrapper": "sub_454CC0",
+  "ret": "int",
+  "args": [],
+  "qualified_table": "BCMDTbl"
+ },
+ {
+  "kind": "func",
+  "name": "CheckPosState",
+  "table": "BCMDTbl",
+  "regfunc": "0x80e480",
+  "ea": "0x80e7c3",
+  "native": "sub_454D80",
+  "wrapper": "sub_454D80",
+  "ret": "int",
+  "args": [
+   "int"
+  ],
+  "qualified_table": "BCMDTbl"
+ },
+ {
+  "kind": "func",
+  "name": "IsMoveAble",
+  "table": "BCMDTbl",
+  "regfunc": "0x80e480",
+  "ea": "0x80e7d5",
+  "native": "sub_454D50",
+  "wrapper": "sub_454D50",
+  "ret": "int",
+  "args": [],
+  "qualified_table": "BCMDTbl"
+ },
+ {
+  "kind": "func",
+  "name": "IsAddCommand",
+  "table": "BCMDTbl",
+  "regfunc": "0x80e480",
+  "ea": "0x80e7e7",
+  "native": "sub_454E40",
+  "wrapper": "sub_454E40",
+  "ret": "int",
+  "args": [],
+  "qualified_table": "BCMDTbl"
+ },
+ {
+  "kind": "func",
+  "name": "CheckPattern",
+  "table": "BCMDTbl",
+  "regfunc": "0x80e480",
+  "ea": "0x80e7f9",
+  "native": "sub_454E70",
+  "wrapper": "sub_454E70",
+  "ret": "int",
+  "args": [
+   "instance"
+  ],
+  "qualified_table": "BCMDTbl"
+ },
+ {
+  "kind": "func",
+  "name": "GetFrameID",
+  "table": "BCMDTbl",
+  "regfunc": "0x80e480",
+  "ea": "0x80e80b",
+  "native": "sub_44CB30",
+  "wrapper": "sub_44CB30",
+  "ret": "int",
+  "args": [],
+  "qualified_table": "BCMDTbl"
+ },
+ {
+  "kind": "func",
+  "name": "CheckFireballLimit",
+  "table": "BCMDTbl",
+  "regfunc": "0x80e480",
+  "ea": "0x80e81d",
+  "native": "sub_4550A0",
+  "wrapper": "sub_4550A0",
+  "ret": "int",
+  "args": [
+   "int"
+  ],
+  "qualified_table": "BCMDTbl"
+ },
+ {
+  "kind": "func",
+  "name": "CheckState",
+  "table": "BCMDTbl",
+  "regfunc": "0x80e480",
+  "ea": "0x80e82f",
+  "native": "sub_80E0A0",
+  "wrapper": "sub_80E0A0",
+  "ret": "int",
+  "args": [
+   "int"
+  ],
+  "qualified_table": "BCMDTbl"
+ },
+ {
+  "kind": "func",
+  "name": "CheckCancelFlag",
+  "table": "BCMDTbl",
+  "regfunc": "0x80e480",
+  "ea": "0x80e841",
+  "native": "sub_4551C0",
+  "wrapper": "sub_4551C0",
+  "ret": "int",
+  "args": [
+   "int"
+  ],
+  "qualified_table": "BCMDTbl"
+ },
+ {
+  "kind": "func",
+  "name": "CheckCancel",
+  "table": "BCMDTbl",
+  "regfunc": "0x80e480",
+  "ea": "0x80e853",
+  "native": "sub_4551F0",
+  "wrapper": "sub_4551F0",
+  "ret": "int",
+  "args": [
+   "int"
+  ],
+  "qualified_table": "BCMDTbl"
+ },
+ {
+  "kind": "func",
+  "name": "CheckDash",
+  "table": "BCMDTbl",
+  "regfunc": "0x80e480",
+  "ea": "0x80e865",
+  "native": "sub_455220",
+  "wrapper": "sub_455220",
+  "ret": "int",
+  "args": [
+   "int",
+   "int"
+  ],
+  "qualified_table": "BCMDTbl"
+ },
+ {
+  "kind": "func",
+  "name": "CheckAirJump",
+  "table": "BCMDTbl",
+  "regfunc": "0x80e480",
+  "ea": "0x80e877",
+  "native": "sub_455290",
+  "wrapper": "sub_455290",
+  "ret": "int",
+  "args": [
+   "int"
+  ],
+  "qualified_table": "BCMDTbl"
+ },
+ {
+  "kind": "func",
+  "name": "CheckComboLimit",
+  "table": "BCMDTbl",
+  "regfunc": "0x80e480",
+  "ea": "0x80e889",
+  "native": "sub_455120",
+  "wrapper": "sub_455120",
+  "ret": "int",
+  "args": [
+   "int"
+  ],
+  "qualified_table": "BCMDTbl"
+ },
+ {
+  "kind": "func",
+  "name": "GetComboLimitLevel",
+  "table": "BCMDTbl",
+  "regfunc": "0x80e480",
+  "ea": "0x80e89b",
+  "native": "sub_455170",
+  "wrapper": "sub_455170",
+  "ret": "int",
+  "args": [],
+  "qualified_table": "BCMDTbl"
+ },
+ {
+  "kind": "func",
+  "name": "CheckUserParam",
+  "table": "BCMDTbl",
+  "regfunc": "0x80e480",
+  "ea": "0x80e8ad",
+  "native": "sub_4550E0",
+  "wrapper": "sub_4550E0",
+  "ret": "int",
+  "args": [
+   "int"
+  ],
+  "qualified_table": "BCMDTbl"
+ },
+ {
+  "kind": "func",
+  "name": "CheckSeedCost",
+  "table": "BCMDTbl",
+  "regfunc": "0x80e480",
+  "ea": "0x80e8bf",
+  "native": "sub_80DBF0",
+  "wrapper": "sub_80DBF0",
+  "ret": "int",
+  "args": [],
+  "qualified_table": "BCMDTbl"
+ },
+ {
+  "kind": "func",
+  "name": "CheckMoveName",
+  "table": "BCMDTbl",
+  "regfunc": "0x80e480",
+  "ea": "0x80e8d1",
+  "native": "sub_80E120",
+  "wrapper": "sub_80E120",
+  "ret": "int",
+  "args": [
+   "int"
+  ],
+  "qualified_table": "BCMDTbl"
+ },
+ {
+  "kind": "func",
+  "name": "SetSpUseBufferTmp",
+  "table": "BCMDTbl",
+  "regfunc": "0x80e480",
+  "ea": "0x80e8e3",
+  "native": "sub_4552F0",
+  "wrapper": "sub_4552F0",
+  "ret": "int",
+  "args": [
+   "int"
+  ],
+  "qualified_table": "BCMDTbl"
+ },
+ {
+  "kind": "func",
+  "name": "GetCmdInfo",
+  "table": "BCMDTbl",
+  "regfunc": "0x80e480",
+  "ea": "0x80e8f5",
+  "native": "sub_455400",
+  "wrapper": "sub_455400",
+  "ret": "int",
+  "args": [],
+  "qualified_table": "BCMDTbl"
+ },
+ {
+  "kind": "func",
+  "name": "GetCmdInfoEx",
+  "table": "BCMDTbl",
+  "regfunc": "0x80e480",
+  "ea": "0x80e907",
+  "native": "sub_455410",
+  "wrapper": "sub_455410",
+  "ret": "int",
+  "args": [
+   "int"
+  ],
+  "qualified_table": "BCMDTbl"
+ },
+ {
+  "kind": "func",
+  "name": "GetSuccessButton",
+  "table": "BCMDTbl",
+  "regfunc": "0x80e480",
+  "ea": "0x80e919",
+  "native": "sub_455430",
+  "wrapper": "sub_455430",
+  "ret": "int",
+  "args": [],
+  "qualified_table": "BCMDTbl"
+ },
+ {
+  "kind": "func",
+  "name": "GetSuccessButtonPos",
+  "table": "BCMDTbl",
+  "regfunc": "0x80e480",
+  "ea": "0x80e92b",
+  "native": "sub_455440",
+  "wrapper": "sub_455440",
+  "ret": "int",
+  "args": [],
+  "qualified_table": "BCMDTbl"
+ },
+ {
+  "kind": "func",
+  "name": "GetLastButton",
+  "table": "CmdInfo",
+  "regfunc": "0x80e480",
+  "ea": "0x80e95a",
+  "native": "sub_454900",
+  "wrapper": "sub_454900",
+  "ret": "int",
+  "args": [
+   "int"
+  ],
+  "qualified_table": "BCMDTbl.CmdInfo"
+ },
+ {
+  "kind": "func",
+  "name": "GetCancel",
+  "table": "CmdInfo",
+  "regfunc": "0x80e480",
+  "ea": "0x80e96f",
+  "native": "sub_81D3B0",
+  "wrapper": "sub_81D3B0",
+  "ret": "int",
+  "args": [
+   "int"
+  ],
+  "qualified_table": "BCMDTbl.CmdInfo"
+ },
+ {
+  "kind": "func",
+  "name": "GetCancelFlag",
+  "table": "CmdInfo",
+  "regfunc": "0x80e480",
+  "ea": "0x80e984",
+  "native": "sub_454920",
+  "wrapper": "sub_454920",
+  "ret": "int",
+  "args": [
+   "int"
+  ],
+  "qualified_table": "BCMDTbl.CmdInfo"
+ },
+ {
+  "kind": "func",
+  "name": "GetFrame",
+  "table": "CmdInfo",
+  "regfunc": "0x80e480",
+  "ea": "0x80e999",
+  "qualified_table": "BCMDTbl.CmdInfo"
+ },
+ {
+  "kind": "func",
+  "name": "GetNum",
+  "table": "CmdInfo",
+  "regfunc": "0x80e480",
+  "ea": "0x80e9ae",
+  "native": "sub_4548E0",
+  "wrapper": "sub_4548E0",
+  "ret": "int",
+  "args": [
+   "int"
+  ],
+  "qualified_table": "BCMDTbl.CmdInfo"
+ },
+ {
+  "kind": "table",
+  "name": "CmdInfo",
+  "table": "BCMDTbl",
+  "regfunc": "0x80e480",
+  "ea": "0x80e9c2"
+ },
+ {
+  "kind": "table",
+  "name": "BCMDTbl",
+  "table": "",
+  "regfunc": "0x80e480",
+  "ea": "0x80ea0a"
+ },
+ {
+  "kind": "table",
+  "name": "BCMDConst",
+  "table": "",
+  "regfunc": "0x80e480",
+  "ea": "0x80eb69"
+ },
+ {
+  "kind": "func",
+  "name": "CheckCharaAlive",
+  "table": "CBtlInfo",
+  "regfunc": "0x80f6c0",
+  "ea": "0x80f70c",
+  "native": "sub_80F580",
+  "wrapper": "sub_80F580",
+  "ret": "int",
+  "args": [
+   "int"
+  ],
+  "qualified_table": "CBtlInfo"
+ },
+ {
+  "kind": "func",
+  "name": "CheckCharaAlive_str",
+  "table": "CBtlInfo",
+  "regfunc": "0x80f6c0",
+  "ea": "0x80f71e",
+  "native": "sub_80F680",
+  "wrapper": "sub_80F680",
+  "ret": "int",
+  "args": [
+   "int"
+  ],
+  "qualified_table": "CBtlInfo"
+ },
+ {
+  "kind": "table",
+  "name": "CBtlInfo",
+  "table": "",
+  "regfunc": "0x80f6c0",
+  "ea": "0x80f72f"
+ },
+ {
+  "kind": "func",
+  "name": "IsVitaMode",
+  "table": "(root/unbound:sub_80FBF0)",
+  "regfunc": "0x80fbf0",
+  "ea": "0x80fc4b",
+  "native": "sub_4043D0",
+  "wrapper": "sub_4043D0",
+  "ret": "int",
+  "args": []
+ },
+ {
+  "kind": "func",
+  "name": "GetBoundStatus",
+  "table": "BtlMvStd",
+  "regfunc": "0x80fbf0",
+  "ea": "0x80fc84",
+  "native": "sub_449D70",
+  "wrapper": "sub_449D70",
+  "ret": "instance",
+  "args": [
+   "instance"
+  ],
+  "qualified_table": "BtlMvStd"
+ },
+ {
+  "kind": "func",
+  "name": "SetBoundStatus",
+  "table": "BtlMvStd",
+  "regfunc": "0x80fbf0",
+  "ea": "0x80fc96",
+  "native": "sub_449F60",
+  "wrapper": "sub_449F60",
+  "ret": "int",
+  "args": [],
+  "qualified_table": "BtlMvStd"
+ },
+ {
+  "kind": "func",
+  "name": "SetBoundFinalize",
+  "table": "BtlMvStd",
+  "regfunc": "0x80fbf0",
+  "ea": "0x80fca8",
+  "native": "sub_449FD0",
+  "wrapper": "sub_449FD0",
+  "ret": "int",
+  "args": [],
+  "qualified_table": "BtlMvStd"
+ },
+ {
+  "kind": "func",
+  "name": "ClearBound",
+  "table": "BtlMvStd",
+  "regfunc": "0x80fbf0",
+  "ea": "0x80fcba",
+  "native": "sub_44A080",
+  "wrapper": "sub_44A080",
+  "ret": "int",
+  "args": [],
+  "qualified_table": "BtlMvStd"
+ },
+ {
+  "kind": "func",
+  "name": "EndBoundProc",
+  "table": "BtlMvStd",
+  "regfunc": "0x80fbf0",
+  "ea": "0x80fccc",
+  "native": "sub_44A0C0",
+  "wrapper": "sub_44A0C0",
+  "ret": "int",
+  "args": [],
+  "qualified_table": "BtlMvStd"
+ },
+ {
+  "kind": "func",
+  "name": "SetGuardStatus",
+  "table": "BtlMvStd",
+  "regfunc": "0x80fbf0",
+  "ea": "0x80fcde",
+  "native": "sub_44A120",
+  "wrapper": "sub_44A120",
+  "ret": "int",
+  "args": [],
+  "qualified_table": "BtlMvStd"
+ },
+ {
+  "kind": "func",
+  "name": "SetGuardFinalize",
+  "table": "BtlMvStd",
+  "regfunc": "0x80fbf0",
+  "ea": "0x80fcf0",
+  "native": "sub_44A180",
+  "wrapper": "sub_44A180",
+  "ret": "int",
+  "args": [],
+  "qualified_table": "BtlMvStd"
+ },
+ {
+  "kind": "func",
+  "name": "ClearGuard",
+  "table": "BtlMvStd",
+  "regfunc": "0x80fbf0",
+  "ea": "0x80fd02",
+  "native": "sub_44A230",
+  "wrapper": "sub_44A230",
+  "ret": "int",
+  "args": [],
+  "qualified_table": "BtlMvStd"
+ },
+ {
+  "kind": "func",
+  "name": "IsFileAlive",
+  "table": "BtlMvStd",
+  "regfunc": "0x80fbf0",
+  "ea": "0x80fd14",
+  "native": "sub_44A2C0",
+  "wrapper": "sub_44A2C0",
+  "ret": "int",
+  "args": [
+   "int"
+  ],
+  "qualified_table": "BtlMvStd"
+ },
+ {
+  "kind": "func",
+  "name": "CheckHan6Data",
+  "table": "BtlMvStd",
+  "regfunc": "0x80fbf0",
+  "ea": "0x80fd26",
+  "native": "sub_4043D0",
+  "wrapper": "sub_4043D0",
+  "ret": "int",
+  "args": [],
+  "qualified_table": "BtlMvStd"
+ },
+ {
+  "kind": "var",
+  "name": "isDone",
+  "table": "MvBoundStatus",
+  "regfunc": "0x80fbf0",
+  "ea": "0x80fd4c",
+  "offset": "0",
+  "vartype": "Sqrat_Class_VarC_452F30",
+  "qualified_table": "BtlMvStd.MvBoundStatus"
+ },
+ {
+  "kind": "var",
+  "name": "isCapture",
+  "table": "MvBoundStatus",
+  "regfunc": "0x80fbf0",
+  "ea": "0x80fd5b",
+  "offset": "2",
+  "vartype": "Sqrat_Class_VarC_452F30",
+  "qualified_table": "BtlMvStd.MvBoundStatus"
+ },
+ {
+  "kind": "var",
+  "name": "isBound",
+  "table": "MvBoundStatus",
+  "regfunc": "0x80fbf0",
+  "ea": "0x80fd6a",
+  "offset": "4",
+  "vartype": "Sqrat_Class_VarC_452F30",
+  "qualified_table": "BtlMvStd.MvBoundStatus"
+ },
+ {
+  "kind": "var",
+  "name": "isBoundNext",
+  "table": "MvBoundStatus",
+  "regfunc": "0x80fbf0",
+  "ea": "0x80fd79",
+  "offset": "6",
+  "vartype": "Sqrat_Class_VarC_452F30",
+  "qualified_table": "BtlMvStd.MvBoundStatus"
+ },
+ {
+  "kind": "var",
+  "name": "Num",
+  "table": "MvBoundStatus",
+  "regfunc": "0x80fbf0",
+  "ea": "0x80fd88",
+  "offset": "10",
+  "vartype": "Sqrat_Class_VarC_452F30",
+  "qualified_table": "BtlMvStd.MvBoundStatus"
+ },
+ {
+  "kind": "var",
+  "name": "VecCount",
+  "table": "MvBoundStatus",
+  "regfunc": "0x80fbf0",
+  "ea": "0x80fd97",
+  "offset": "12",
+  "vartype": "Sqrat_Class_VarC_452F30",
+  "qualified_table": "BtlMvStd.MvBoundStatus"
+ },
+ {
+  "kind": "var",
+  "name": "WallCount",
+  "table": "MvBoundStatus",
+  "regfunc": "0x80fbf0",
+  "ea": "0x80fda6",
+  "offset": "18",
+  "vartype": "Sqrat_Class_VarC_452F30",
+  "qualified_table": "BtlMvStd.MvBoundStatus"
+ },
+ {
+  "kind": "var",
+  "name": "Name",
+  "table": "MvBoundStatus",
+  "regfunc": "0x80fbf0",
+  "ea": "0x80fdb5",
+  "offset": "20",
+  "vartype": "Sqrat_Class_VarA_452F90",
+  "qualified_table": "BtlMvStd.MvBoundStatus"
+ },
+ {
+  "kind": "var",
+  "name": "Power",
+  "table": "MvBoundStatus",
+  "regfunc": "0x80fbf0",
+  "ea": "0x80fdc4",
+  "offset": "24",
+  "vartype": "Sqrat_Class_VarC_452F30",
+  "qualified_table": "BtlMvStd.MvBoundStatus"
+ },
+ {
+  "kind": "var",
+  "name": "AirUkemi",
+  "table": "MvBoundStatus",
+  "regfunc": "0x80fbf0",
+  "ea": "0x80fdd3",
+  "offset": "16",
+  "vartype": "Sqrat_Class_VarC_452F30",
+  "qualified_table": "BtlMvStd.MvBoundStatus"
+ },
+ {
+  "kind": "var",
+  "name": "VecMuki",
+  "table": "MvBoundStatus",
+  "regfunc": "0x80fbf0",
+  "ea": "0x80fde2",
+  "offset": "14",
+  "vartype": "Sqrat_Class_VarC_452F30",
+  "qualified_table": "BtlMvStd.MvBoundStatus"
+ },
+ {
+  "kind": "var",
+  "name": "BoundTime",
+  "table": "MvBoundStatus",
+  "regfunc": "0x80fbf0",
+  "ea": "0x80fdf1",
+  "offset": "26",
+  "vartype": "Sqrat_Class_VarC_452F30",
+  "qualified_table": "BtlMvStd.MvBoundStatus"
+ },
+ {
+  "kind": "var",
+  "name": "BoundTimeAll",
+  "table": "MvBoundStatus",
+  "regfunc": "0x80fbf0",
+  "ea": "0x80fe00",
+  "offset": "28",
+  "vartype": "Sqrat_Class_VarC_452F30",
+  "qualified_table": "BtlMvStd.MvBoundStatus"
+ },
+ {
+  "kind": "func",
+  "name": "IsDown",
+  "table": "MvBoundStatus",
+  "regfunc": "0x80fbf0",
+  "ea": "0x80fe12",
+  "native": "sub_449A70",
+  "wrapper": "sub_449A70",
+  "ret": "int",
+  "args": [],
+  "qualified_table": "BtlMvStd.MvBoundStatus"
+ },
+ {
+  "kind": "table",
+  "name": "MvBoundStatus",
+  "table": "BtlMvStd",
+  "regfunc": "0x80fbf0",
+  "ea": "0x80fe23"
+ },
+ {
+  "kind": "table",
+  "name": "BtlMvStd",
+  "table": "",
+  "regfunc": "0x80fbf0",
+  "ea": "0x80fe59"
+ },
+ {
+  "kind": "func",
+  "name": "GetPlayerSide",
+  "table": "BMvTbl",
+  "regfunc": "0x80fea0",
+  "ea": "0x80fefa",
+  "native": "sub_44B9D0",
+  "wrapper": "sub_44B9D0",
+  "ret": "int",
+  "args": [],
+  "qualified_table": "BMvTbl"
+ },
+ {
+  "kind": "func",
+  "name": "SetPattern",
+  "table": "BMvTbl",
+  "regfunc": "0x80fea0",
+  "ea": "0x80ff0c",
+  "native": "sub_44A450",
+  "wrapper": "sub_44A450",
+  "ret": "int",
+  "args": [
+   "instance"
+  ],
+  "qualified_table": "BMvTbl"
+ },
+ {
+  "kind": "func",
+  "name": "SetMuki",
+  "table": "BMvTbl",
+  "regfunc": "0x80fea0",
+  "ea": "0x80ff1e",
+  "native": "sub_44BA90",
+  "wrapper": "sub_44BA90",
+  "ret": "int",
+  "args": [
+   "int"
+  ],
+  "qualified_table": "BMvTbl"
+ },
+ {
+  "kind": "func",
+  "name": "GetMuki",
+  "table": "BMvTbl",
+  "regfunc": "0x80fea0",
+  "ea": "0x80ff30",
+  "native": "sub_44BB10",
+  "wrapper": "sub_44BB10",
+  "ret": "int",
+  "args": [],
+  "qualified_table": "BMvTbl"
+ },
+ {
+  "kind": "func",
+  "name": "CheckFurimuki",
+  "table": "BMvTbl",
+  "regfunc": "0x80fea0",
+  "ea": "0x80ff42",
+  "native": "sub_44BB60",
+  "wrapper": "sub_44BB60",
+  "ret": "int",
+  "args": [],
+  "qualified_table": "BMvTbl"
+ },
+ {
+  "kind": "func",
+  "name": "VGuard_CheckKeep",
+  "table": "BMvTbl",
+  "regfunc": "0x80fea0",
+  "ea": "0x80ff54",
+  "native": "sub_44BBB0",
+  "wrapper": "sub_44BBB0",
+  "ret": "int",
+  "args": [],
+  "qualified_table": "BMvTbl"
+ },
+ {
+  "kind": "func",
+  "name": "VGuard_Time",
+  "table": "BMvTbl",
+  "regfunc": "0x80fea0",
+  "ea": "0x80ff66",
+  "native": "sub_44BBF0",
+  "wrapper": "sub_44BBF0",
+  "ret": "int",
+  "args": [
+   "int"
+  ],
+  "qualified_table": "BMvTbl"
+ },
+ {
+  "kind": "func",
+  "name": "CheckStickHold",
+  "table": "BMvTbl",
+  "regfunc": "0x80fea0",
+  "ea": "0x80ff78",
+  "native": "sub_44BC30",
+  "wrapper": "sub_44BC30",
+  "ret": "int",
+  "args": [
+   "int"
+  ],
+  "qualified_table": "BMvTbl"
+ },
+ {
+  "kind": "func",
+  "name": "CheckButtonHold",
+  "table": "BMvTbl",
+  "regfunc": "0x80fea0",
+  "ea": "0x80ff8a",
+  "native": "sub_44BD60",
+  "wrapper": "sub_44BD60",
+  "ret": "int",
+  "args": [
+   "int"
+  ],
+  "qualified_table": "BMvTbl"
+ },
+ {
+  "kind": "func",
+  "name": "GetStickHold",
+  "table": "BMvTbl",
+  "regfunc": "0x80fea0",
+  "ea": "0x80ff9c",
+  "native": "sub_44BCB0",
+  "wrapper": "sub_44BCB0",
+  "ret": "int",
+  "args": [],
+  "qualified_table": "BMvTbl"
+ },
+ {
+  "kind": "func",
+  "name": "GetButtonHold",
+  "table": "BMvTbl",
+  "regfunc": "0x80fea0",
+  "ea": "0x80ffae",
+  "native": "sub_44BD00",
+  "wrapper": "sub_44BD00",
+  "ret": "int",
+  "args": [],
+  "qualified_table": "BMvTbl"
+ },
+ {
+  "kind": "func",
+  "name": "IsStartTrigger",
+  "table": "BMvTbl",
+  "regfunc": "0x80fea0",
+  "ea": "0x80ffc0",
+  "native": "sub_44BDE0",
+  "wrapper": "sub_44BDE0",
+  "ret": "int",
+  "args": [],
+  "qualified_table": "BMvTbl"
+ },
+ {
+  "kind": "func",
+  "name": "SetNextMoveTable",
+  "table": "BMvTbl",
+  "regfunc": "0x80fea0",
+  "ea": "0x80ffd2",
+  "native": "sub_44BE50",
+  "wrapper": "sub_44BE50",
+  "ret": "instance",
+  "args": [
+   "int"
+  ],
+  "qualified_table": "BMvTbl"
+ },
+ {
+  "kind": "func",
+  "name": "SetDeleteMoveTable",
+  "table": "BMvTbl",
+  "regfunc": "0x80fea0",
+  "ea": "0x80ffe4",
+  "native": "sub_44BEF0",
+  "wrapper": "sub_44BEF0",
+  "ret": "int",
+  "args": [],
+  "qualified_table": "BMvTbl"
+ },
+ {
+  "kind": "func",
+  "name": "SetFinalize",
+  "table": "BMvTbl",
+  "regfunc": "0x80fea0",
+  "ea": "0x80fff6",
+  "native": "sub_44BF10",
+  "wrapper": "sub_44BF10",
+  "ret": "instance",
+  "args": [
+   "int"
+  ],
+  "qualified_table": "BMvTbl"
+ },
+ {
+  "kind": "func",
+  "name": "SetFinalizeCode",
+  "table": "BMvTbl",
+  "regfunc": "0x80fea0",
+  "ea": "0x810008",
+  "native": "sub_44BF50",
+  "wrapper": "sub_44BF50",
+  "ret": "instance",
+  "args": [
+   "int"
+  ],
+  "qualified_table": "BMvTbl"
+ },
+ {
+  "kind": "func",
+  "name": "GetFinalizeCode",
+  "table": "BMvTbl",
+  "regfunc": "0x80fea0",
+  "ea": "0x81001a",
+  "native": "sub_44BF90",
+  "wrapper": "sub_44BF90",
+  "ret": "int",
+  "args": [],
+  "qualified_table": "BMvTbl"
+ },
+ {
+  "kind": "func",
+  "name": "FromFinalize",
+  "table": "BMvTbl",
+  "regfunc": "0x80fea0",
+  "ea": "0x81002c",
+  "native": "sub_44BFD0",
+  "wrapper": "sub_44BFD0",
+  "ret": "int",
+  "args": [],
+  "qualified_table": "BMvTbl"
+ },
+ {
+  "kind": "func",
+  "name": "SetMoveCode",
+  "table": "BMvTbl",
+  "regfunc": "0x80fea0",
+  "ea": "0x81003e",
+  "native": "sub_44C090",
+  "wrapper": "sub_44C090",
+  "ret": "int",
+  "args": [
+   "int"
+  ],
+  "qualified_table": "BMvTbl"
+ },
+ {
+  "kind": "func",
+  "name": "GetMoveCode",
+  "table": "BMvTbl",
+  "regfunc": "0x80fea0",
+  "ea": "0x810050",
+  "native": "sub_44C0B0",
+  "wrapper": "sub_44C0B0",
+  "ret": "int",
+  "args": [],
+  "qualified_table": "BMvTbl"
+ },
+ {
+  "kind": "func",
+  "name": "SetMoveCodeEx",
+  "table": "BMvTbl",
+  "regfunc": "0x80fea0",
+  "ea": "0x810062",
+  "native": "sub_44C010",
+  "wrapper": "sub_44C010",
+  "ret": "instance",
+  "args": [
+   "int",
+   "int"
+  ],
+  "qualified_table": "BMvTbl"
+ },
+ {
+  "kind": "func",
+  "name": "GetMoveCodeEx",
+  "table": "BMvTbl",
+  "regfunc": "0x80fea0",
+  "ea": "0x810074",
+  "native": "sub_44C050",
+  "wrapper": "sub_44C050",
+  "ret": "int",
+  "args": [
+   "int"
+  ],
+  "qualified_table": "BMvTbl"
+ },
+ {
+  "kind": "func",
+  "name": "GetCmdParam",
+  "table": "BMvTbl",
+  "regfunc": "0x80fea0",
+  "ea": "0x810086",
+  "native": "sub_44C0C0",
+  "wrapper": "sub_44C0C0",
+  "ret": "int",
+  "args": [],
+  "qualified_table": "BMvTbl"
+ },
+ {
+  "kind": "func",
+  "name": "GetCmdNumber",
+  "table": "BMvTbl",
+  "regfunc": "0x80fea0",
+  "ea": "0x810098",
+  "native": "sub_44C100",
+  "wrapper": "sub_44C100",
+  "ret": "int",
+  "args": [],
+  "qualified_table": "BMvTbl"
+ },
+ {
+  "kind": "func",
+  "name": "ChangeMv_GetMoveCodeEx",
+  "table": "BMvTbl",
+  "regfunc": "0x80fea0",
+  "ea": "0x8100aa",
+  "native": "sub_44C140",
+  "wrapper": "sub_44C140",
+  "ret": "int",
+  "args": [
+   "int"
+  ],
+  "qualified_table": "BMvTbl"
+ },
+ {
+  "kind": "func",
+  "name": "GetSP",
+  "table": "BMvTbl",
+  "regfunc": "0x80fea0",
+  "ea": "0x8100ce",
+  "native": "sub_44C220",
+  "wrapper": "sub_44C220",
+  "ret": "int",
+  "args": [
+   "int"
+  ],
+  "qualified_table": "BMvTbl"
+ },
+ {
+  "kind": "func",
+  "name": "SetSP",
+  "table": "BMvTbl",
+  "regfunc": "0x80fea0",
+  "ea": "0x8100e0",
+  "native": "sub_44C250",
+  "wrapper": "sub_44C250",
+  "ret": "int",
+  "args": [
+   "int",
+   "int"
+  ],
+  "qualified_table": "BMvTbl"
+ },
+ {
+  "kind": "func",
+  "name": "AddSP",
+  "table": "BMvTbl",
+  "regfunc": "0x80fea0",
+  "ea": "0x8100f2",
+  "native": "sub_44C280",
+  "wrapper": "sub_44C280",
+  "ret": "int",
+  "args": [
+   "int",
+   "int"
+  ],
+  "qualified_table": "BMvTbl"
+ },
+ {
+  "kind": "func",
+  "name": "GetPP",
+  "table": "BMvTbl",
+  "regfunc": "0x80fea0",
+  "ea": "0x810104",
+  "native": "sub_44C2D0",
+  "wrapper": "sub_44C2D0",
+  "ret": "int",
+  "args": [
+   "int"
+  ],
+  "qualified_table": "BMvTbl"
+ },
+ {
+  "kind": "func",
+  "name": "SetPP",
+  "table": "BMvTbl",
+  "regfunc": "0x80fea0",
+  "ea": "0x810116",
+  "native": "sub_44C330",
+  "wrapper": "sub_44C330",
+  "ret": "instance",
+  "args": [
+   "int",
+   "int"
+  ],
+  "qualified_table": "BMvTbl"
+ },
+ {
+  "kind": "func",
+  "name": "AddPP",
+  "table": "BMvTbl",
+  "regfunc": "0x80fea0",
+  "ea": "0x810128",
+  "native": "sub_44C390",
+  "wrapper": "sub_44C390",
+  "ret": "int",
+  "args": [
+   "int",
+   "int"
+  ],
+  "qualified_table": "BMvTbl"
+ },
+ {
+  "kind": "func",
+  "name": "GetLP",
+  "table": "BMvTbl",
+  "regfunc": "0x80fea0",
+  "ea": "0x81013a",
+  "native": "sub_44C400",
+  "wrapper": "sub_44C400",
+  "ret": "int",
+  "args": [
+   "int"
+  ],
+  "qualified_table": "BMvTbl"
+ },
+ {
+  "kind": "func",
+  "name": "SetLP",
+  "table": "BMvTbl",
+  "regfunc": "0x80fea0",
+  "ea": "0x81014c",
+  "native": "sub_44C440",
+  "wrapper": "sub_44C440",
+  "ret": "int",
+  "args": [
+   "int",
+   "int"
+  ],
+  "qualified_table": "BMvTbl"
+ },
+ {
+  "kind": "func",
+  "name": "AddLP",
+  "table": "BMvTbl",
+  "regfunc": "0x80fea0",
+  "ea": "0x81015e",
+  "native": "sub_44C480",
+  "wrapper": "sub_44C480",
+  "ret": "int",
+  "args": [
+   "int",
+   "int"
+  ],
+  "qualified_table": "BMvTbl"
+ },
+ {
+  "kind": "func",
+  "name": "SetComboLimit",
+  "table": "BMvTbl",
+  "regfunc": "0x80fea0",
+  "ea": "0x810170",
+  "native": "sub_44C4D0",
+  "wrapper": "sub_44C4D0",
+  "ret": "instance",
+  "args": [
+   "int"
+  ],
+  "qualified_table": "BMvTbl"
+ },
+ {
+  "kind": "func",
+  "name": "SetWallCount",
+  "table": "BMvTbl",
+  "regfunc": "0x80fea0",
+  "ea": "0x810182",
+  "native": "sub_44C520",
+  "wrapper": "sub_44C520",
+  "ret": "int",
+  "args": [
+   "int"
+  ],
+  "qualified_table": "BMvTbl"
+ },
+ {
+  "kind": "func",
+  "name": "AddAirCount",
+  "table": "BMvTbl",
+  "regfunc": "0x80fea0",
+  "ea": "0x810194",
+  "native": "sub_44C580",
+  "wrapper": "sub_44C580",
+  "ret": "int",
+  "args": [
+   "int",
+   "int"
+  ],
+  "qualified_table": "BMvTbl"
+ },
+ {
+  "kind": "func",
+  "name": "SetAirJumpOK",
+  "table": "BMvTbl",
+  "regfunc": "0x80fea0",
+  "ea": "0x8101a6",
+  "native": "sub_44C610",
+  "wrapper": "sub_44C610",
+  "ret": "int",
+  "args": [
+   "int"
+  ],
+  "qualified_table": "BMvTbl"
+ },
+ {
+  "kind": "func",
+  "name": "AddAirJumpCount",
+  "table": "BMvTbl",
+  "regfunc": "0x80fea0",
+  "ea": "0x8101b8",
+  "native": "sub_44C640",
+  "wrapper": "sub_44C640",
+  "ret": "int",
+  "args": [
+   "int"
+  ],
+  "qualified_table": "BMvTbl"
+ },
+ {
+  "kind": "func",
+  "name": "TobiParam_Func",
+  "table": "BMvTbl",
+  "regfunc": "0x80fea0",
+  "ea": "0x8101ca",
+  "native": "sub_44C660",
+  "wrapper": "sub_44C660",
+  "ret": "int",
+  "args": [
+   "int"
+  ],
+  "qualified_table": "BMvTbl"
+ },
+ {
+  "kind": "func",
+  "name": "TobiParamEndFlag_Func",
+  "table": "BMvTbl",
+  "regfunc": "0x80fea0",
+  "ea": "0x8101dc",
+  "native": "sub_44C790",
+  "wrapper": "sub_44C790",
+  "ret": "int",
+  "args": [
+   "int"
+  ],
+  "qualified_table": "BMvTbl"
+ },
+ {
+  "kind": "func",
+  "name": "CheckPosState",
+  "table": "BMvTbl",
+  "regfunc": "0x80fea0",
+  "ea": "0x8101ee",
+  "native": "sub_44C890",
+  "wrapper": "sub_44C890",
+  "ret": "int",
+  "args": [
+   "int"
+  ],
+  "qualified_table": "BMvTbl"
+ },
+ {
+  "kind": "func",
+  "name": "CheckPattern",
+  "table": "BMvTbl",
+  "regfunc": "0x80fea0",
+  "ea": "0x810200",
+  "native": "sub_44C9F0",
+  "wrapper": "sub_44C9F0",
+  "ret": "int",
+  "args": [
+   "int"
+  ],
+  "qualified_table": "BMvTbl"
+ },
+ {
+  "kind": "func",
+  "name": "GetFrameParam",
+  "table": "BMvTbl",
+  "regfunc": "0x80fea0",
+  "ea": "0x810212",
+  "native": "sub_44CB70",
+  "wrapper": "sub_44CB70",
+  "ret": "int",
+  "args": [
+   "int"
+  ],
+  "qualified_table": "BMvTbl"
+ },
+ {
+  "kind": "func",
+  "name": "GetFrameID",
+  "table": "BMvTbl",
+  "regfunc": "0x80fea0",
+  "ea": "0x810224",
+  "native": "sub_44CB30",
+  "wrapper": "sub_44CB30",
+  "ret": "int",
+  "args": [],
+  "qualified_table": "BMvTbl"
+ },
+ {
+  "kind": "func",
+  "name": "JumpFrameID",
+  "table": "BMvTbl",
+  "regfunc": "0x80fea0",
+  "ea": "0x810236",
+  "native": "sub_44D5D0",
+  "wrapper": "sub_44D5D0",
+  "ret": "int",
+  "args": [
+   "int"
+  ],
+  "qualified_table": "BMvTbl"
+ },
+ {
+  "kind": "func",
+  "name": "Frame_Proc",
+  "table": "BMvTbl",
+  "regfunc": "0x80fea0",
+  "ea": "0x810248",
+  "native": "sub_44D630",
+  "wrapper": "sub_44D630",
+  "ret": "int",
+  "args": [
+   "int",
+   "int"
+  ],
+  "qualified_table": "BMvTbl"
+ },
+ {
+  "kind": "func",
+  "name": "SetPrio",
+  "table": "BMvTbl",
+  "regfunc": "0x80fea0",
+  "ea": "0x81025a",
+  "native": "sub_44CBC0",
+  "wrapper": "sub_44CBC0",
+  "ret": "instance",
+  "args": [
+   "int"
+  ],
+  "qualified_table": "BMvTbl"
+ },
+ {
+  "kind": "func",
+  "name": "SetSpPrio",
+  "table": "BMvTbl",
+  "regfunc": "0x80fea0",
+  "ea": "0x81026c",
+  "native": "sub_44CC00",
+  "wrapper": "sub_44CC00",
+  "ret": "instance",
+  "args": [
+   "int"
+  ],
+  "qualified_table": "BMvTbl"
+ },
+ {
+  "kind": "func",
+  "name": "SetCommandLongDelay",
+  "table": "BMvTbl",
+  "regfunc": "0x80fea0",
+  "ea": "0x81027e",
+  "native": "sub_44CCB0",
+  "wrapper": "sub_44CCB0",
+  "ret": "int",
+  "args": [
+   "int"
+  ],
+  "qualified_table": "BMvTbl"
+ },
+ {
+  "kind": "func",
+  "name": "CheckCommand",
+  "table": "BMvTbl",
+  "regfunc": "0x80fea0",
+  "ea": "0x810290",
+  "native": "sub_44CE50",
+  "wrapper": "sub_44CE50",
+  "ret": "int",
+  "args": [
+   "int"
+  ],
+  "qualified_table": "BMvTbl"
+ },
+ {
+  "kind": "func",
+  "name": "CheckCommandString",
+  "table": "BMvTbl",
+  "regfunc": "0x80fea0",
+  "ea": "0x8102a2",
+  "native": "sub_44D010",
+  "wrapper": "sub_44D010",
+  "ret": "int",
+  "args": [
+   "int"
+  ],
+  "qualified_table": "BMvTbl"
+ },
+ {
+  "kind": "func",
+  "name": "ClearCommand",
+  "table": "BMvTbl",
+  "regfunc": "0x80fea0",
+  "ea": "0x8102b4",
+  "native": "sub_44D290",
+  "wrapper": "sub_44D290",
+  "ret": "int",
+  "args": [],
+  "qualified_table": "BMvTbl"
+ },
+ {
+  "kind": "func",
+  "name": "SetCommandFailTime",
+  "table": "BMvTbl",
+  "regfunc": "0x80fea0",
+  "ea": "0x8102c6",
+  "native": "sub_44D2D0",
+  "wrapper": "sub_44D2D0",
+  "ret": "int",
+  "args": [
+   "int"
+  ],
+  "qualified_table": "BMvTbl"
+ },
+ {
+  "kind": "func",
+  "name": "CheckCommandFailTime",
+  "table": "BMvTbl",
+  "regfunc": "0x80fea0",
+  "ea": "0x8102d8",
+  "native": "sub_44D480",
+  "wrapper": "sub_44D480",
+  "ret": "int",
+  "args": [],
+  "qualified_table": "BMvTbl"
+ },
+ {
+  "kind": "func",
+  "name": "GetMvStatus",
+  "table": "BMvTbl",
+  "regfunc": "0x80fea0",
+  "ea": "0x8102ea",
+  "native": "sub_44B370",
+  "wrapper": "sub_44B370",
+  "ret": "instance",
+  "args": [
+   "instance"
+  ],
+  "qualified_table": "BMvTbl"
+ },
+ {
+  "kind": "func",
+  "name": "CheckMvUniqueID",
+  "table": "BMvTbl",
+  "regfunc": "0x80fea0",
+  "ea": "0x8102fc",
+  "native": "sub_44B580",
+  "wrapper": "sub_44B580",
+  "ret": "int",
+  "args": [
+   "int"
+  ],
+  "qualified_table": "BMvTbl"
+ },
+ {
+  "kind": "func",
+  "name": "SetMvHitStatus",
+  "table": "BMvTbl",
+  "regfunc": "0x80fea0",
+  "ea": "0x810320",
+  "native": "sub_44B840",
+  "wrapper": "sub_44B840",
+  "ret": "int",
+  "args": [
+   "instance"
+  ],
+  "qualified_table": "BMvTbl"
+ },
+ {
+  "kind": "func",
+  "name": "GetMvHitStatus",
+  "table": "BMvTbl",
+  "regfunc": "0x80fea0",
+  "ea": "0x810332",
+  "native": "sub_44B6C0",
+  "wrapper": "sub_44B6C0",
+  "ret": "int",
+  "args": [
+   "int"
+  ],
+  "qualified_table": "BMvTbl"
+ },
+ {
+  "kind": "func",
+  "name": "ClearHitStatus",
+  "table": "BMvTbl",
+  "regfunc": "0x80fea0",
+  "ea": "0x810344",
+  "native": "sub_44B950",
+  "wrapper": "sub_44B950",
+  "ret": "int",
+  "args": [],
+  "qualified_table": "BMvTbl"
+ },
+ {
+  "kind": "func",
+  "name": "ClearHitInterrupt",
+  "table": "BMvTbl",
+  "regfunc": "0x80fea0",
+  "ea": "0x810356",
+  "native": "sub_44B980",
+  "wrapper": "sub_44B980",
+  "ret": "int",
+  "args": [],
+  "qualified_table": "BMvTbl"
+ },
+ {
+  "kind": "func",
+  "name": "SetHitStop",
+  "table": "BMvTbl",
+  "regfunc": "0x80fea0",
+  "ea": "0x810368",
+  "native": "sub_44B900",
+  "wrapper": "sub_44B900",
+  "ret": "int",
+  "args": [
+   "int",
+   "int"
+  ],
+  "qualified_table": "BMvTbl"
+ },
+ {
+  "kind": "func",
+  "name": "SetVector",
+  "table": "BMvTbl",
+  "regfunc": "0x80fea0",
+  "ea": "0x81037a",
+  "native": "sub_44A7A0",
+  "wrapper": "sub_44A7A0",
+  "ret": "int",
+  "args": [
+   "int"
+  ],
+  "qualified_table": "BMvTbl"
+ },
+ {
+  "kind": "func",
+  "name": "GetVector",
+  "table": "BMvTbl",
+  "regfunc": "0x80fea0",
+  "ea": "0x81038c",
+  "native": "sub_44A990",
+  "wrapper": "sub_44A990",
+  "ret": "instance",
+  "args": [
+   "instance"
+  ],
+  "qualified_table": "BMvTbl"
+ },
+ {
+  "kind": "func",
+  "name": "SetVector_CCharaVector",
+  "table": "BMvTbl",
+  "regfunc": "0x80fea0",
+  "ea": "0x81039e",
+  "native": "sub_44A930",
+  "wrapper": "sub_44A930",
+  "ret": "int",
+  "args": [
+   "int",
+   "int",
+   "int",
+   "int",
+   "int"
+  ],
+  "qualified_table": "BMvTbl"
+ },
+ {
+  "kind": "func",
+  "name": "SetVector_MaxX",
+  "table": "BMvTbl",
+  "regfunc": "0x80fea0",
+  "ea": "0x8103b0",
+  "native": "sub_44A8D0",
+  "wrapper": "sub_44A8D0",
+  "ret": "int",
+  "args": [
+   "int"
+  ],
+  "qualified_table": "BMvTbl"
+ },
+ {
+  "kind": "func",
+  "name": "GetPosition",
+  "table": "BMvTbl",
+  "regfunc": "0x80fea0",
+  "ea": "0x8103c2",
+  "native": "sub_44AC00",
+  "wrapper": "sub_44AC00",
+  "ret": "instance",
+  "args": [
+   "instance",
+   "int"
+  ],
+  "qualified_table": "BMvTbl"
+ },
+ {
+  "kind": "func",
+  "name": "SetPosition",
+  "table": "BMvTbl",
+  "regfunc": "0x80fea0",
+  "ea": "0x8103d4",
+  "native": "sub_44AD70",
+  "wrapper": "sub_44AD70",
+  "ret": "int",
+  "args": [
+   "int"
+  ],
+  "qualified_table": "BMvTbl"
+ },
+ {
+  "kind": "func",
+  "name": "MoveStartPosition",
+  "table": "BMvTbl",
+  "regfunc": "0x80fea0",
+  "ea": "0x8103e6",
+  "native": "sub_44AF80",
+  "wrapper": "sub_44AF80",
+  "ret": "int",
+  "args": [],
+  "qualified_table": "BMvTbl"
+ },
+ {
+  "kind": "func",
+  "name": "GetScreenPosition",
+  "table": "BMvTbl",
+  "regfunc": "0x80fea0",
+  "ea": "0x8103f8",
+  "native": "sub_44ACD0",
+  "wrapper": "sub_44ACD0",
+  "ret": "instance",
+  "args": [
+   "instance"
+  ],
+  "qualified_table": "BMvTbl"
+ },
+ {
+  "kind": "func",
+  "name": "SetAngle",
+  "table": "BMvTbl",
+  "regfunc": "0x80fea0",
+  "ea": "0x81040a",
+  "native": "sub_44AFD0",
+  "wrapper": "sub_44AFD0",
+  "ret": "int",
+  "args": [
+   "int"
+  ],
+  "qualified_table": "BMvTbl"
+ },
+ {
+  "kind": "func",
+  "name": "GetAngle",
+  "table": "BMvTbl",
+  "regfunc": "0x80fea0",
+  "ea": "0x81041c",
+  "native": "sub_44B240",
+  "wrapper": "sub_44B240",
+  "ret": "int",
+  "args": [],
+  "qualified_table": "BMvTbl"
+ },
+ {
+  "kind": "func",
+  "name": "SetScale",
+  "table": "BMvTbl",
+  "regfunc": "0x80fea0",
+  "ea": "0x81042e",
+  "native": "sub_44B270",
+  "wrapper": "sub_44B270",
+  "ret": "instance",
+  "args": [
+   "int"
+  ],
+  "qualified_table": "BMvTbl"
+ },
+ {
+  "kind": "func",
+  "name": "GetScale",
+  "table": "BMvTbl",
+  "regfunc": "0x80fea0",
+  "ea": "0x810440",
+  "native": "sub_44B2F0",
+  "wrapper": "sub_44B2F0",
+  "ret": "instance",
+  "args": [
+   "instance"
+  ],
+  "qualified_table": "BMvTbl"
+ },
+ {
+  "kind": "func",
+  "name": "TalkScript_IsDone",
+  "table": "BMvTbl",
+  "regfunc": "0x80fea0",
+  "ea": "0x810452",
+  "native": "sub_44D670",
+  "wrapper": "sub_44D670",
+  "ret": "int",
+  "args": [],
+  "qualified_table": "BMvTbl"
+ },
+ {
+  "kind": "func",
+  "name": "GetMvRoundStatus",
+  "table": "BMvTbl",
+  "regfunc": "0x80fea0",
+  "ea": "0x810464",
+  "native": "sub_44D730",
+  "wrapper": "sub_44D730",
+  "ret": "instance",
+  "args": [
+   "instance"
+  ],
+  "qualified_table": "BMvTbl"
+ },
+ {
+  "kind": "func",
+  "name": "GetMvStageStatus",
+  "table": "BMvTbl",
+  "regfunc": "0x80fea0",
+  "ea": "0x810476",
+  "native": "sub_44D690",
+  "wrapper": "sub_44D690",
+  "ret": "int",
+  "args": [
+   "int"
+  ],
+  "qualified_table": "BMvTbl"
+ },
+ {
+  "kind": "func",
+  "name": "SetRoundEnd",
+  "table": "BMvTbl",
+  "regfunc": "0x80fea0",
+  "ea": "0x810488",
+  "native": "sub_44D930",
+  "wrapper": "sub_44D930",
+  "ret": "int",
+  "args": [],
+  "qualified_table": "BMvTbl"
+ },
+ {
+  "kind": "func",
+  "name": "SetRoundStart",
+  "table": "BMvTbl",
+  "regfunc": "0x80fea0",
+  "ea": "0x81049a",
+  "native": "sub_44D980",
+  "wrapper": "sub_44D980",
+  "ret": "int",
+  "args": [],
+  "qualified_table": "BMvTbl"
+ },
+ {
+  "kind": "func",
+  "name": "SetRoundStartType",
+  "table": "BMvTbl",
+  "regfunc": "0x80fea0",
+  "ea": "0x8104ac",
+  "native": "sub_44D9D0",
+  "wrapper": "sub_44D9D0",
+  "ret": "instance",
+  "args": [
+   "int"
+  ],
+  "qualified_table": "BMvTbl"
+ },
+ {
+  "kind": "func",
+  "name": "SetMoveableFlag",
+  "table": "BMvTbl",
+  "regfunc": "0x80fea0",
+  "ea": "0x8104be",
+  "native": "sub_44DC00",
+  "wrapper": "sub_44DC00",
+  "ret": "int",
+  "args": [
+   "int"
+  ],
+  "qualified_table": "BMvTbl"
+ },
+ {
+  "kind": "func",
+  "name": "SetMoveableFlagEx",
+  "table": "BMvTbl",
+  "regfunc": "0x80fea0",
+  "ea": "0x8104d0",
+  "native": "sub_44DCA0",
+  "wrapper": "sub_44DCA0",
+  "ret": "int",
+  "args": [
+   "int"
+  ],
+  "qualified_table": "BMvTbl"
+ },
+ {
+  "kind": "func",
+  "name": "SetAsFlag",
+  "table": "BMvTbl",
+  "regfunc": "0x80fea0",
+  "ea": "0x8104e2",
+  "native": "sub_44DEC0",
+  "wrapper": "sub_44DEC0",
+  "ret": "int",
+  "args": [
+   "int"
+  ],
+  "qualified_table": "BMvTbl"
+ },
+ {
+  "kind": "func",
+  "name": "SetAsStatusFlag",
+  "table": "BMvTbl",
+  "regfunc": "0x80fea0",
+  "ea": "0x8104f4",
+  "native": "sub_44DD70",
+  "wrapper": "sub_44DD70",
+  "ret": "int",
+  "args": [
+   "int"
+  ],
+  "qualified_table": "BMvTbl"
+ },
+ {
+  "kind": "func",
+  "name": "SetAsPosStatusFlag",
+  "table": "BMvTbl",
+  "regfunc": "0x80fea0",
+  "ea": "0x810506",
+  "native": "sub_44DE30",
+  "wrapper": "sub_44DE30",
+  "ret": "int",
+  "args": [
+   "int"
+  ],
+  "qualified_table": "BMvTbl"
+ },
+ {
+  "kind": "func",
+  "name": "SetAtkGuardFlag",
+  "table": "BMvTbl",
+  "regfunc": "0x80fea0",
+  "ea": "0x810518",
+  "native": "sub_44DF50",
+  "wrapper": "sub_44DF50",
+  "ret": "int",
+  "args": [
+   "int"
+  ],
+  "qualified_table": "BMvTbl"
+ },
+ {
+  "kind": "func",
+  "name": "SetAtkCatchFlag",
+  "table": "BMvTbl",
+  "regfunc": "0x80fea0",
+  "ea": "0x81052a",
+  "native": "sub_44E060",
+  "wrapper": "sub_44E060",
+  "ret": "int",
+  "args": [
+   "int"
+  ],
+  "qualified_table": "BMvTbl"
+ },
+ {
+  "kind": "func",
+  "name": "CalcHitValue",
+  "table": "BMvTbl",
+  "regfunc": "0x80fea0",
+  "ea": "0x81053c",
+  "native": "sub_44DFE0",
+  "wrapper": "sub_44DFE0",
+  "ret": "int",
+  "args": [
+   "int"
+  ],
+  "qualified_table": "BMvTbl"
+ },
+ {
+  "kind": "func",
+  "name": "GetRecoverStatus",
+  "table": "BMvTbl",
+  "regfunc": "0x80fea0",
+  "ea": "0x81054e",
+  "native": "sub_44D8E0",
+  "wrapper": "sub_44D8E0",
+  "ret": "int",
+  "args": [
+   "int"
+  ],
+  "qualified_table": "BMvTbl"
+ },
+ {
+  "kind": "func",
+  "name": "PcGauge_Set",
+  "table": "BMvTbl",
+  "regfunc": "0x80fea0",
+  "ea": "0x810560",
+  "native": "dfci_cmdmvtable_load_sq",
+  "wrapper": "dfci_cmdmvtable_load_sq",
+  "ret": "int",
+  "args": [
+   "int"
+  ],
+  "qualified_table": "BMvTbl"
+ },
+ {
+  "kind": "func",
+  "name": "BoundCorrect_Calc",
+  "table": "BMvTbl",
+  "regfunc": "0x80fea0",
+  "ea": "0x810572",
+  "native": "sub_44E300",
+  "wrapper": "sub_44E300",
+  "ret": "int",
+  "args": [
+   "int"
+  ],
+  "qualified_table": "BMvTbl"
+ },
+ {
+  "kind": "func",
+  "name": "ComboPoint_Calc",
+  "table": "BMvTbl",
+  "regfunc": "0x80fea0",
+  "ea": "0x810584",
+  "native": "sub_44E3E0",
+  "wrapper": "sub_44E3E0",
+  "ret": "int",
+  "args": [
+   "int"
+  ],
+  "qualified_table": "BMvTbl"
+ },
+ {
+  "kind": "func",
+  "name": "UseSkill_Check",
+  "table": "BMvTbl",
+  "regfunc": "0x80fea0",
+  "ea": "0x810596",
+  "native": "sub_44E4A0",
+  "wrapper": "sub_44E4A0",
+  "ret": "int",
+  "args": [
+   "int"
+  ],
+  "qualified_table": "BMvTbl"
+ },
+ {
+  "kind": "func",
+  "name": "HitPat_Check",
+  "table": "BMvTbl",
+  "regfunc": "0x80fea0",
+  "ea": "0x8105a8",
+  "native": "sub_44E530",
+  "wrapper": "sub_44E530",
+  "ret": "int",
+  "args": [
+   "int"
+  ],
+  "qualified_table": "BMvTbl"
+ },
+ {
+  "kind": "func",
+  "name": "SetHitCheckFlag",
+  "table": "BMvTbl",
+  "regfunc": "0x80fea0",
+  "ea": "0x8105ba",
+  "native": "sub_44E5F0",
+  "wrapper": "sub_44E5F0",
+  "ret": "int",
+  "args": [
+   "int"
+  ],
+  "qualified_table": "BMvTbl"
+ },
+ {
+  "kind": "func",
+  "name": "GetHitCheckFlag",
+  "table": "BMvTbl",
+  "regfunc": "0x80fea0",
+  "ea": "0x8105cc",
+  "native": "sub_44E6A0",
+  "wrapper": "sub_44E6A0",
+  "ret": "int",
+  "args": [
+   "int"
+  ],
+  "qualified_table": "BMvTbl"
+ },
+ {
+  "kind": "func",
+  "name": "SetNoHoseiFlag",
+  "table": "BMvTbl",
+  "regfunc": "0x80fea0",
+  "ea": "0x8105de",
+  "native": "sub_44E6F0",
+  "wrapper": "sub_44E6F0",
+  "ret": "int",
+  "args": [
+   "int"
+  ],
+  "qualified_table": "BMvTbl"
+ },
+ {
+  "kind": "func",
+  "name": "SetNoUkemiTimeLimitFlag",
+  "table": "BMvTbl",
+  "regfunc": "0x80fea0",
+  "ea": "0x8105f0",
+  "native": "sub_44E780",
+  "wrapper": "sub_44E780",
+  "ret": "int",
+  "args": [
+   "int"
+  ],
+  "qualified_table": "BMvTbl"
+ },
+ {
+  "kind": "func",
+  "name": "SetSuperArmorFlag",
+  "table": "BMvTbl",
+  "regfunc": "0x80fea0",
+  "ea": "0x810602",
+  "native": "sub_44E810",
+  "wrapper": "sub_44E810",
+  "ret": "int",
+  "args": [
+   "int"
+  ],
+  "qualified_table": "BMvTbl"
+ },
+ {
+  "kind": "func",
+  "name": "SetVirtualGuardFlag",
+  "table": "BMvTbl",
+  "regfunc": "0x80fea0",
+  "ea": "0x810614",
+  "native": "sub_44E8A0",
+  "wrapper": "sub_44E8A0",
+  "ret": "int",
+  "args": [
+   "int"
+  ],
+  "qualified_table": "BMvTbl"
+ },
+ {
+  "kind": "func",
+  "name": "SetCaptureHitFlag",
+  "table": "BMvTbl",
+  "regfunc": "0x80fea0",
+  "ea": "0x810626",
+  "native": "sub_44E930",
+  "wrapper": "sub_44E930",
+  "ret": "int",
+  "args": [
+   "int"
+  ],
+  "qualified_table": "BMvTbl"
+ },
+ {
+  "kind": "func",
+  "name": "AddComboRate",
+  "table": "BMvTbl",
+  "regfunc": "0x80fea0",
+  "ea": "0x810638",
+  "native": "sub_44E9C0",
+  "wrapper": "sub_44E9C0",
+  "ret": "int",
+  "args": [],
+  "qualified_table": "BMvTbl"
+ },
+ {
+  "kind": "func",
+  "name": "AddComboCount",
+  "table": "BMvTbl",
+  "regfunc": "0x80fea0",
+  "ea": "0x81064a",
+  "native": "sub_44EA40",
+  "wrapper": "sub_44EA40",
+  "ret": "int",
+  "args": [
+   "int"
+  ],
+  "qualified_table": "BMvTbl"
+ },
+ {
+  "kind": "func",
+  "name": "SetHan6LayerMask",
+  "table": "BMvTbl",
+  "regfunc": "0x80fea0",
+  "ea": "0x81065c",
+  "native": "sub_44EAC0",
+  "wrapper": "sub_44EAC0",
+  "ret": "int",
+  "args": [
+   "int"
+  ],
+  "qualified_table": "BMvTbl"
+ },
+ {
+  "kind": "func",
+  "name": "CheckBlast_IsNGStatus",
+  "table": "BMvTbl",
+  "regfunc": "0x80fea0",
+  "ea": "0x81066e",
+  "native": "sub_44EB90",
+  "wrapper": "sub_44EB90",
+  "ret": "int",
+  "args": [],
+  "qualified_table": "BMvTbl"
+ },
+ {
+  "kind": "func",
+  "name": "CheckBlast_BoundInit",
+  "table": "BMvTbl",
+  "regfunc": "0x80fea0",
+  "ea": "0x810680",
+  "native": "sub_44EBD0",
+  "wrapper": "sub_44EBD0",
+  "ret": "int",
+  "args": [],
+  "qualified_table": "BMvTbl"
+ },
+ {
+  "kind": "func",
+  "name": "DamageFlag_Func",
+  "table": "BMvTbl",
+  "regfunc": "0x80fea0",
+  "ea": "0x810692",
+  "native": "sub_44EC10",
+  "wrapper": "sub_44EC10",
+  "ret": "int",
+  "args": [
+   "int",
+   "int"
+  ],
+  "qualified_table": "BMvTbl"
+ },
+ {
+  "kind": "func",
+  "name": "DamageFlag_IsBound",
+  "table": "BMvTbl",
+  "regfunc": "0x80fea0",
+  "ea": "0x8106a4",
+  "native": "sub_44EC50",
+  "wrapper": "sub_44EC50",
+  "ret": "int",
+  "args": [],
+  "qualified_table": "BMvTbl"
+ },
+ {
+  "kind": "func",
+  "name": "GetSelectColor",
+  "table": "BMvTbl",
+  "regfunc": "0x80fea0",
+  "ea": "0x8106b6",
+  "native": "sub_44BA10",
+  "wrapper": "sub_44BA10",
+  "ret": "int",
+  "args": [],
+  "qualified_table": "BMvTbl"
+ },
+ {
+  "kind": "func",
+  "name": "GetCharaNo",
+  "table": "BMvTbl",
+  "regfunc": "0x80fea0",
+  "ea": "0x8106c8",
+  "native": "sub_44BA50",
+  "wrapper": "sub_44BA50",
+  "ret": "int",
+  "args": [],
+  "qualified_table": "BMvTbl"
+ },
+ {
+  "kind": "func",
+  "name": "IsCpu",
+  "table": "BMvTbl",
+  "regfunc": "0x80fea0",
+  "ea": "0x8106da",
+  "qualified_table": "BMvTbl"
+ },
+ {
+  "kind": "func",
+  "name": "GetCpuLevel_Sub",
+  "table": "BMvTbl",
+  "regfunc": "0x80fea0",
+  "ea": "0x8106ec",
+  "qualified_table": "BMvTbl"
+ },
+ {
+  "kind": "func",
+  "name": "Achievement_Unlock",
+  "table": "BMvTbl",
+  "regfunc": "0x80fea0",
+  "ea": "0x8106fe",
+  "native": "sub_44EC90",
+  "wrapper": "sub_44EC90",
+  "ret": "instance",
+  "args": [
+   "int"
+  ],
+  "qualified_table": "BMvTbl"
+ },
+ {
+  "kind": "method",
+  "name": "x",
+  "table": "CCharaVector",
+  "regfunc": "0x80fea0",
+  "ea": "0x810724",
+  "qualified_table": "BMvTbl.CCharaVector"
+ },
+ {
+  "kind": "method",
+  "name": "y",
+  "table": "CCharaVector",
+  "regfunc": "0x80fea0",
+  "ea": "0x810733",
+  "qualified_table": "BMvTbl.CCharaVector"
+ },
+ {
+  "kind": "method",
+  "name": "addx",
+  "table": "CCharaVector",
+  "regfunc": "0x80fea0",
+  "ea": "0x810742",
+  "qualified_table": "BMvTbl.CCharaVector"
+ },
+ {
+  "kind": "method",
+  "name": "addy",
+  "table": "CCharaVector",
+  "regfunc": "0x80fea0",
+  "ea": "0x810751",
+  "qualified_table": "BMvTbl.CCharaVector"
+ },
+ {
+  "kind": "table",
+  "name": "CCharaVector",
+  "table": "BMvTbl",
+  "regfunc": "0x80fea0",
+  "ea": "0x810762"
+ },
+ {
+  "kind": "var",
+  "name": "x",
+  "table": "CCharaPosition",
+  "regfunc": "0x80fea0",
+  "ea": "0x810794",
+  "offset": "0",
+  "vartype": "Sqrat_Class_VarA_453360",
+  "qualified_table": "BMvTbl.CCharaPosition"
+ },
+ {
+  "kind": "var",
+  "name": "y",
+  "table": "CCharaPosition",
+  "regfunc": "0x80fea0",
+  "ea": "0x8107a3",
+  "offset": "4",
+  "vartype": "Sqrat_Class_VarA_453360",
+  "qualified_table": "BMvTbl.CCharaPosition"
+ },
+ {
+  "kind": "table",
+  "name": "CCharaPosition",
+  "table": "BMvTbl",
+  "regfunc": "0x80fea0",
+  "ea": "0x8107b4"
+ },
+ {
+  "kind": "method",
+  "name": "sx",
+  "table": "CCharaRect",
+  "regfunc": "0x80fea0",
+  "ea": "0x8107ec",
+  "qualified_table": "BMvTbl.CCharaRect"
+ },
+ {
+  "kind": "method",
+  "name": "sy",
+  "table": "CCharaRect",
+  "regfunc": "0x80fea0",
+  "ea": "0x8107fe",
+  "qualified_table": "BMvTbl.CCharaRect"
+ },
+ {
+  "kind": "method",
+  "name": "ex",
+  "table": "CCharaRect",
+  "regfunc": "0x80fea0",
+  "ea": "0x810810",
+  "qualified_table": "BMvTbl.CCharaRect"
+ },
+ {
+  "kind": "method",
+  "name": "ey",
+  "table": "CCharaRect",
+  "regfunc": "0x80fea0",
+  "ea": "0x810822",
+  "qualified_table": "BMvTbl.CCharaRect"
+ },
+ {
+  "kind": "table",
+  "name": "CCharaRect",
+  "table": "BMvTbl",
+  "regfunc": "0x80fea0",
+  "ea": "0x810836"
+ },
+ {
+  "kind": "method",
+  "name": "x0",
+  "table": "CCharaPoint4",
+  "regfunc": "0x80fea0",
+  "ea": "0x810871",
+  "qualified_table": "BMvTbl.CCharaPoint4"
+ },
+ {
+  "kind": "method",
+  "name": "y0",
+  "table": "CCharaPoint4",
+  "regfunc": "0x80fea0",
+  "ea": "0x810883",
+  "qualified_table": "BMvTbl.CCharaPoint4"
+ },
+ {
+  "kind": "method",
+  "name": "x1",
+  "table": "CCharaPoint4",
+  "regfunc": "0x80fea0",
+  "ea": "0x810895",
+  "qualified_table": "BMvTbl.CCharaPoint4"
+ },
+ {
+  "kind": "method",
+  "name": "y1",
+  "table": "CCharaPoint4",
+  "regfunc": "0x80fea0",
+  "ea": "0x8108a7",
+  "qualified_table": "BMvTbl.CCharaPoint4"
+ },
+ {
+  "kind": "method",
+  "name": "x2",
+  "table": "CCharaPoint4",
+  "regfunc": "0x80fea0",
+  "ea": "0x8108b9",
+  "qualified_table": "BMvTbl.CCharaPoint4"
+ },
+ {
+  "kind": "method",
+  "name": "y2",
+  "table": "CCharaPoint4",
+  "regfunc": "0x80fea0",
+  "ea": "0x8108cb",
+  "qualified_table": "BMvTbl.CCharaPoint4"
+ },
+ {
+  "kind": "method",
+  "name": "x3",
+  "table": "CCharaPoint4",
+  "regfunc": "0x80fea0",
+  "ea": "0x8108dd",
+  "qualified_table": "BMvTbl.CCharaPoint4"
+ },
+ {
+  "kind": "method",
+  "name": "y3",
+  "table": "CCharaPoint4",
+  "regfunc": "0x80fea0",
+  "ea": "0x8108ef",
+  "qualified_table": "BMvTbl.CCharaPoint4"
+ },
+ {
+  "kind": "table",
+  "name": "CCharaPoint4",
+  "table": "BMvTbl",
+  "regfunc": "0x80fea0",
+  "ea": "0x810903"
+ },
+ {
+  "kind": "method",
+  "name": "CharaNo",
+  "table": "MvStatus",
+  "regfunc": "0x80fea0",
+  "ea": "0x81093e",
+  "qualified_table": "BMvTbl.MvStatus"
+ },
+ {
+  "kind": "method",
+  "name": "CallCount",
+  "table": "MvStatus",
+  "regfunc": "0x80fea0",
+  "ea": "0x810950",
+  "qualified_table": "BMvTbl.MvStatus"
+ },
+ {
+  "kind": "method",
+  "name": "FrameCallCount",
+  "table": "MvStatus",
+  "regfunc": "0x80fea0",
+  "ea": "0x810962",
+  "qualified_table": "BMvTbl.MvStatus"
+ },
+ {
+  "kind": "method",
+  "name": "isUpdate",
+  "table": "MvStatus",
+  "regfunc": "0x80fea0",
+  "ea": "0x810974",
+  "qualified_table": "BMvTbl.MvStatus"
+ },
+ {
+  "kind": "var",
+  "name": "MvCount",
+  "table": "MvStatus",
+  "regfunc": "0x80fea0",
+  "ea": "0x810986",
+  "offset": "8",
+  "vartype": "Sqrat_Class_VarA_4534E0",
+  "qualified_table": "BMvTbl.MvStatus"
+ },
+ {
+  "kind": "var",
+  "name": "MvCountFrame",
+  "table": "MvStatus",
+  "regfunc": "0x80fea0",
+  "ea": "0x810998",
+  "offset": "12",
+  "vartype": "Sqrat_Class_VarA_4534E0",
+  "qualified_table": "BMvTbl.MvStatus"
+ },
+ {
+  "kind": "method",
+  "name": "isFrameUpdate",
+  "table": "MvStatus",
+  "regfunc": "0x80fea0",
+  "ea": "0x8109aa",
+  "qualified_table": "BMvTbl.MvStatus"
+ },
+ {
+  "kind": "method",
+  "name": "isLanding",
+  "table": "MvStatus",
+  "regfunc": "0x80fea0",
+  "ea": "0x8109bc",
+  "qualified_table": "BMvTbl.MvStatus"
+ },
+ {
+  "kind": "method",
+  "name": "DataPattern",
+  "table": "MvStatus",
+  "regfunc": "0x80fea0",
+  "ea": "0x8109ce",
+  "qualified_table": "BMvTbl.MvStatus"
+ },
+ {
+  "kind": "method",
+  "name": "DataFrame",
+  "table": "MvStatus",
+  "regfunc": "0x80fea0",
+  "ea": "0x8109e0",
+  "qualified_table": "BMvTbl.MvStatus"
+ },
+ {
+  "kind": "method",
+  "name": "DataDelayVal",
+  "table": "MvStatus",
+  "regfunc": "0x80fea0",
+  "ea": "0x8109f2",
+  "qualified_table": "BMvTbl.MvStatus"
+ },
+ {
+  "kind": "method",
+  "name": "DataDelay",
+  "table": "MvStatus",
+  "regfunc": "0x80fea0",
+  "ea": "0x810a04",
+  "qualified_table": "BMvTbl.MvStatus"
+ },
+ {
+  "kind": "method",
+  "name": "flags",
+  "table": "MvStatus",
+  "regfunc": "0x80fea0",
+  "ea": "0x810a16",
+  "qualified_table": "BMvTbl.MvStatus"
+ },
+ {
+  "kind": "method",
+  "name": "FrameID",
+  "table": "MvStatus",
+  "regfunc": "0x80fea0",
+  "ea": "0x810a28",
+  "qualified_table": "BMvTbl.MvStatus"
+ },
+ {
+  "kind": "method",
+  "name": "Param0",
+  "table": "MvStatus",
+  "regfunc": "0x80fea0",
+  "ea": "0x810a3a",
+  "qualified_table": "BMvTbl.MvStatus"
+ },
+ {
+  "kind": "method",
+  "name": "Param1",
+  "table": "MvStatus",
+  "regfunc": "0x80fea0",
+  "ea": "0x810a4c",
+  "qualified_table": "BMvTbl.MvStatus"
+ },
+ {
+  "kind": "method",
+  "name": "Param2",
+  "table": "MvStatus",
+  "regfunc": "0x80fea0",
+  "ea": "0x810a5e",
+  "qualified_table": "BMvTbl.MvStatus"
+ },
+ {
+  "kind": "method",
+  "name": "Param3",
+  "table": "MvStatus",
+  "regfunc": "0x80fea0",
+  "ea": "0x810a70",
+  "qualified_table": "BMvTbl.MvStatus"
+ },
+ {
+  "kind": "table",
+  "name": "MvStatus",
+  "table": "BMvTbl",
+  "regfunc": "0x80fea0",
+  "ea": "0x810a84"
+ },
+ {
+  "kind": "method",
+  "name": "FrameID",
+  "table": "MvFrameStatus",
+  "regfunc": "0x80fea0",
+  "ea": "0x810abf",
+  "qualified_table": "BMvTbl.MvFrameStatus"
+ },
+ {
+  "kind": "method",
+  "name": "Param0",
+  "table": "MvFrameStatus",
+  "regfunc": "0x80fea0",
+  "ea": "0x810ad1",
+  "qualified_table": "BMvTbl.MvFrameStatus"
+ },
+ {
+  "kind": "method",
+  "name": "Param1",
+  "table": "MvFrameStatus",
+  "regfunc": "0x80fea0",
+  "ea": "0x810ae3",
+  "qualified_table": "BMvTbl.MvFrameStatus"
+ },
+ {
+  "kind": "method",
+  "name": "Param2",
+  "table": "MvFrameStatus",
+  "regfunc": "0x80fea0",
+  "ea": "0x810af5",
+  "qualified_table": "BMvTbl.MvFrameStatus"
+ },
+ {
+  "kind": "method",
+  "name": "Param3",
+  "table": "MvFrameStatus",
+  "regfunc": "0x80fea0",
+  "ea": "0x810b07",
+  "qualified_table": "BMvTbl.MvFrameStatus"
+ },
+ {
+  "kind": "table",
+  "name": "MvFrameStatus",
+  "table": "BMvTbl",
+  "regfunc": "0x80fea0",
+  "ea": "0x810b1b"
+ },
+ {
+  "kind": "method",
+  "name": "Type",
+  "table": "MvHitStatus",
+  "regfunc": "0x80fea0",
+  "ea": "0x810b56",
+  "qualified_table": "BMvTbl.MvHitStatus"
+ },
+ {
+  "kind": "method",
+  "name": "PosState",
+  "table": "MvHitStatus",
+  "regfunc": "0x80fea0",
+  "ea": "0x810b68",
+  "qualified_table": "BMvTbl.MvHitStatus"
+ },
+ {
+  "kind": "method",
+  "name": "isDown",
+  "table": "MvHitStatus",
+  "regfunc": "0x80fea0",
+  "ea": "0x810b7a",
+  "qualified_table": "BMvTbl.MvHitStatus"
+ },
+ {
+  "kind": "method",
+  "name": "isFirstUpdate",
+  "table": "MvHitStatus",
+  "regfunc": "0x80fea0",
+  "ea": "0x810b8c",
+  "qualified_table": "BMvTbl.MvHitStatus"
+ },
+ {
+  "kind": "method",
+  "name": "isCatchFlag",
+  "table": "MvHitStatus",
+  "regfunc": "0x80fea0",
+  "ea": "0x810b9e",
+  "qualified_table": "BMvTbl.MvHitStatus"
+ },
+ {
+  "kind": "method",
+  "name": "isMoveable",
+  "table": "MvHitStatus",
+  "regfunc": "0x80fea0",
+  "ea": "0x810bb0",
+  "qualified_table": "BMvTbl.MvHitStatus"
+ },
+ {
+  "kind": "method",
+  "name": "Count",
+  "table": "MvHitStatus",
+  "regfunc": "0x80fea0",
+  "ea": "0x810bc2",
+  "qualified_table": "BMvTbl.MvHitStatus"
+ },
+ {
+  "kind": "func",
+  "name": "IsDown",
+  "table": "MvHitStatus",
+  "regfunc": "0x80fea0",
+  "ea": "0x810bd7",
+  "native": "sub_42AD10",
+  "wrapper": "sub_42AD10",
+  "ret": "int",
+  "args": [],
+  "qualified_table": "BMvTbl.MvHitStatus"
+ },
+ {
+  "kind": "table",
+  "name": "MvHitStatus",
+  "table": "BMvTbl",
+  "regfunc": "0x80fea0",
+  "ea": "0x810beb"
+ },
+ {
+  "kind": "method",
+  "name": "type",
+  "table": "MvHitImpactInfo",
+  "regfunc": "0x80fea0",
+  "ea": "0x810c26",
+  "qualified_table": "BMvTbl.MvHitImpactInfo"
+ },
+ {
+  "kind": "method",
+  "name": "d_state",
+  "table": "MvHitImpactInfo",
+  "regfunc": "0x80fea0",
+  "ea": "0x810c38",
+  "qualified_table": "BMvTbl.MvHitImpactInfo"
+ },
+ {
+  "kind": "method",
+  "name": "atk_guard",
+  "table": "MvHitImpactInfo",
+  "regfunc": "0x80fea0",
+  "ea": "0x810c4a",
+  "qualified_table": "BMvTbl.MvHitImpactInfo"
+ },
+ {
+  "kind": "method",
+  "name": "atk_throw",
+  "table": "MvHitImpactInfo",
+  "regfunc": "0x80fea0",
+  "ea": "0x810c5c",
+  "qualified_table": "BMvTbl.MvHitImpactInfo"
+ },
+ {
+  "kind": "method",
+  "name": "def_guard",
+  "table": "MvHitImpactInfo",
+  "regfunc": "0x80fea0",
+  "ea": "0x810c6e",
+  "qualified_table": "BMvTbl.MvHitImpactInfo"
+ },
+ {
+  "kind": "method",
+  "name": "grd_break",
+  "table": "MvHitImpactInfo",
+  "regfunc": "0x80fea0",
+  "ea": "0x810c80",
+  "qualified_table": "BMvTbl.MvHitImpactInfo"
+ },
+ {
+  "kind": "method",
+  "name": "counterhit",
+  "table": "MvHitImpactInfo",
+  "regfunc": "0x80fea0",
+  "ea": "0x810c92",
+  "qualified_table": "BMvTbl.MvHitImpactInfo"
+ },
+ {
+  "kind": "var",
+  "name": "flags",
+  "table": "MvHitImpactInfo",
+  "regfunc": "0x80fea0",
+  "ea": "0x810ca4",
+  "offset": "16",
+  "vartype": "Sqrat_Class_VarA_4536A0",
+  "qualified_table": "BMvTbl.MvHitImpactInfo"
+ },
+ {
+  "kind": "table",
+  "name": "MvHitImpactInfo",
+  "table": "BMvTbl",
+  "regfunc": "0x80fea0",
+  "ea": "0x810cb8"
+ },
+ {
+  "kind": "method",
+  "name": "type",
+  "table": "MvInterruptInfo",
+  "regfunc": "0x80fea0",
+  "ea": "0x810cf3",
+  "qualified_table": "BMvTbl.MvInterruptInfo"
+ },
+ {
+  "kind": "method",
+  "name": "Param0",
+  "table": "MvInterruptInfo",
+  "regfunc": "0x80fea0",
+  "ea": "0x810d05",
+  "qualified_table": "BMvTbl.MvInterruptInfo"
+ },
+ {
+  "kind": "method",
+  "name": "Param1",
+  "table": "MvInterruptInfo",
+  "regfunc": "0x80fea0",
+  "ea": "0x810d17",
+  "qualified_table": "BMvTbl.MvInterruptInfo"
+ },
+ {
+  "kind": "method",
+  "name": "Param2",
+  "table": "MvInterruptInfo",
+  "regfunc": "0x80fea0",
+  "ea": "0x810d29",
+  "qualified_table": "BMvTbl.MvInterruptInfo"
+ },
+ {
+  "kind": "method",
+  "name": "Param3",
+  "table": "MvInterruptInfo",
+  "regfunc": "0x80fea0",
+  "ea": "0x810d3b",
+  "qualified_table": "BMvTbl.MvInterruptInfo"
+ },
+ {
+  "kind": "method",
+  "name": "Param4",
+  "table": "MvInterruptInfo",
+  "regfunc": "0x80fea0",
+  "ea": "0x810d4d",
+  "qualified_table": "BMvTbl.MvInterruptInfo"
+ },
+ {
+  "kind": "table",
+  "name": "MvInterruptInfo",
+  "table": "BMvTbl",
+  "regfunc": "0x80fea0",
+  "ea": "0x810d61"
+ },
+ {
+  "kind": "var",
+  "name": "Type",
+  "table": "MvRecoverStatus",
+  "regfunc": "0x80fea0",
+  "ea": "0x810d9c",
+  "offset": "0",
+  "vartype": "Sqrat_Class_VarA_453760",
+  "qualified_table": "BMvTbl.MvRecoverStatus"
+ },
+ {
+  "kind": "var",
+  "name": "Stick",
+  "table": "MvRecoverStatus",
+  "regfunc": "0x80fea0",
+  "ea": "0x810dae",
+  "offset": "4",
+  "vartype": "Sqrat_Class_VarA_453760",
+  "qualified_table": "BMvTbl.MvRecoverStatus"
+ },
+ {
+  "kind": "table",
+  "name": "MvRecoverStatus",
+  "table": "BMvTbl",
+  "regfunc": "0x80fea0",
+  "ea": "0x810dc2"
+ },
+ {
+  "kind": "method",
+  "name": "Time",
+  "table": "MvRoundStatus",
+  "regfunc": "0x80fea0",
+  "ea": "0x810dfd",
+  "qualified_table": "BMvTbl.MvRoundStatus"
+ },
+ {
+  "kind": "method",
+  "name": "TimeUpdate",
+  "table": "MvRoundStatus",
+  "regfunc": "0x80fea0",
+  "ea": "0x810e0f",
+  "qualified_table": "BMvTbl.MvRoundStatus"
+ },
+ {
+  "kind": "method",
+  "name": "Round",
+  "table": "MvRoundStatus",
+  "regfunc": "0x80fea0",
+  "ea": "0x810e21",
+  "qualified_table": "BMvTbl.MvRoundStatus"
+ },
+ {
+  "kind": "method",
+  "name": "WinType",
+  "table": "MvRoundStatus",
+  "regfunc": "0x80fea0",
+  "ea": "0x810e33",
+  "qualified_table": "BMvTbl.MvRoundStatus"
+ },
+ {
+  "kind": "method",
+  "name": "isKo",
+  "table": "MvRoundStatus",
+  "regfunc": "0x80fea0",
+  "ea": "0x810e45",
+  "qualified_table": "BMvTbl.MvRoundStatus"
+ },
+ {
+  "kind": "method",
+  "name": "isMyKo",
+  "table": "MvRoundStatus",
+  "regfunc": "0x80fea0",
+  "ea": "0x810e57",
+  "qualified_table": "BMvTbl.MvRoundStatus"
+ },
+ {
+  "kind": "method",
+  "name": "isWinRound",
+  "table": "MvRoundStatus",
+  "regfunc": "0x80fea0",
+  "ea": "0x810e69",
+  "qualified_table": "BMvTbl.MvRoundStatus"
+ },
+ {
+  "kind": "method",
+  "name": "isLoseRound",
+  "table": "MvRoundStatus",
+  "regfunc": "0x80fea0",
+  "ea": "0x810e7b",
+  "qualified_table": "BMvTbl.MvRoundStatus"
+ },
+ {
+  "kind": "method",
+  "name": "isFinalRound",
+  "table": "MvRoundStatus",
+  "regfunc": "0x80fea0",
+  "ea": "0x810e8d",
+  "qualified_table": "BMvTbl.MvRoundStatus"
+ },
+ {
+  "kind": "method",
+  "name": "CharaMoveMode",
+  "table": "MvRoundStatus",
+  "regfunc": "0x80fea0",
+  "ea": "0x810e9f",
+  "qualified_table": "BMvTbl.MvRoundStatus"
+ },
+ {
+  "kind": "table",
+  "name": "MvRoundStatus",
+  "table": "BMvTbl",
+  "regfunc": "0x80fea0",
+  "ea": "0x810eb3"
+ },
+ {
+  "kind": "func",
+  "name": "IsStoryBattle",
+  "table": "MvStageStatus",
+  "regfunc": "0x80fea0",
+  "ea": "0x810ef1",
+  "native": "sub_80F500",
+  "wrapper": "sub_80F500",
+  "ret": "int",
+  "args": [],
+  "qualified_table": "BMvTbl.MvStageStatus"
+ },
+ {
+  "kind": "func",
+  "name": "GetCpuChara",
+  "table": "MvStageStatus",
+  "regfunc": "0x80fea0",
+  "ea": "0x810f06",
+  "native": "sub_80F4D0",
+  "wrapper": "sub_80F4D0",
+  "ret": "int",
+  "args": [],
+  "qualified_table": "BMvTbl.MvStageStatus"
+ },
+ {
+  "kind": "func",
+  "name": "GetPcChara",
+  "table": "MvStageStatus",
+  "regfunc": "0x80fea0",
+  "ea": "0x810f1b",
+  "native": "sub_80F4B0",
+  "wrapper": "sub_80F4B0",
+  "ret": "int",
+  "args": [],
+  "qualified_table": "BMvTbl.MvStageStatus"
+ },
+ {
+  "kind": "func",
+  "name": "GetStartSide",
+  "table": "MvStageStatus",
+  "regfunc": "0x80fea0",
+  "ea": "0x810f30",
+  "native": "sub_4324D0",
+  "wrapper": "sub_4324D0",
+  "ret": "int",
+  "args": [],
+  "qualified_table": "BMvTbl.MvStageStatus"
+ },
+ {
+  "kind": "table",
+  "name": "MvStageStatus",
+  "table": "BMvTbl",
+  "regfunc": "0x80fea0",
+  "ea": "0x810f44"
+ },
+ {
+  "kind": "table",
+  "name": "BMvTbl",
+  "table": "",
+  "regfunc": "0x80fea0",
+  "ea": "0x810f9c"
+ },
+ {
+  "kind": "table",
+  "name": "BMvConst",
+  "table": "",
+  "regfunc": "0x80fea0",
+  "ea": "0x811890"
+ },
+ {
+  "kind": "func",
+  "name": "StdCall",
+  "table": "BMvIf",
+  "regfunc": "0x80fea0",
+  "ea": "0x8118c6",
+  "native": "sub_44DA20",
+  "wrapper": "sub_44DA20",
+  "ret": "int",
+  "args": [
+   "int"
+  ],
+  "qualified_table": "BMvIf"
+ },
+ {
+  "kind": "table",
+  "name": "BMvIf",
+  "table": "",
+  "regfunc": "0x80fea0",
+  "ea": "0x8118ff"
+ },
+ {
+  "kind": "func",
+  "name": "SE_Play",
+  "table": "BSound",
+  "regfunc": "0x8119d0",
+  "ea": "0x811a27",
+  "native": "sub_4490D0",
+  "wrapper": "sub_4490D0",
+  "ret": "instance",
+  "args": [
+   "int"
+  ],
+  "qualified_table": "BSound"
+ },
+ {
+  "kind": "func",
+  "name": "SE_Stop",
+  "table": "BSound",
+  "regfunc": "0x8119d0",
+  "ea": "0x811a39",
+  "qualified_table": "BSound"
+ },
+ {
+  "kind": "func",
+  "name": "BGM_Mute",
+  "table": "BSound",
+  "regfunc": "0x8119d0",
+  "ea": "0x811a4b",
+  "native": "sub_449340",
+  "wrapper": "sub_449340",
+  "ret": "void",
+  "args": [],
+  "qualified_table": "BSound"
+ },
+ {
+  "kind": "func",
+  "name": "BGM_SetNum",
+  "table": "BSound",
+  "regfunc": "0x8119d0",
+  "ea": "0x811a5d",
+  "native": "sub_449350",
+  "wrapper": "sub_449350",
+  "ret": "int",
+  "args": [
+   "int"
+  ],
+  "qualified_table": "BSound"
+ },
+ {
+  "kind": "table",
+  "name": "BSound",
+  "table": "",
+  "regfunc": "0x8119d0",
+  "ea": "0x811a87"
+ },
+ {
+  "kind": "table",
+  "name": "BMvSoundConst",
+  "table": "",
+  "regfunc": "0x8119d0",
+  "ea": "0x811aff"
+ },
+ {
+  "kind": "func",
+  "name": "ReStart",
+  "table": "ProcTimer",
+  "regfunc": "0x811c70",
+  "ea": "0x811cf0",
+  "native": "sub_448D30",
+  "wrapper": "sub_448D30",
+  "ret": "int",
+  "args": [],
+  "qualified_table": "BMvDeb.ProcTimer"
+ },
+ {
+  "kind": "func",
+  "name": "SetName",
+  "table": "ProcTimer",
+  "regfunc": "0x811c70",
+  "ea": "0x811d02",
+  "native": "sub_448390",
+  "wrapper": "sub_448390",
+  "ret": "int",
+  "args": [
+   "int"
+  ],
+  "qualified_table": "BMvDeb.ProcTimer"
+ },
+ {
+  "kind": "method",
+  "name": "GetTime",
+  "table": "ProcTimer",
+  "regfunc": "0x811c70",
+  "ea": "0x811d14",
+  "native": "sub_448450",
+  "wrapper": "sub_448450",
+  "ret": "float",
+  "args": [],
+  "qualified_table": "BMvDeb.ProcTimer"
+ },
+ {
+  "kind": "func",
+  "name": "PrintTime_Int",
+  "table": "ProcTimer",
+  "regfunc": "0x811c70",
+  "ea": "0x811d26",
+  "native": "sub_811B50",
+  "wrapper": "sub_811B50",
+  "ret": "void",
+  "args": [],
+  "qualified_table": "BMvDeb.ProcTimer"
+ },
+ {
+  "kind": "method",
+  "name": "GetNowTime",
+  "table": "ProcTimer",
+  "regfunc": "0x811c70",
+  "ea": "0x811d38",
+  "native": "sub_448D50",
+  "wrapper": "sub_448D50",
+  "ret": "int",
+  "args": [],
+  "qualified_table": "BMvDeb.ProcTimer"
+ },
+ {
+  "kind": "func",
+  "name": "PrintNowTime_Int",
+  "table": "ProcTimer",
+  "regfunc": "0x811c70",
+  "ea": "0x811d4a",
+  "native": "sub_811B60",
+  "wrapper": "sub_811B60",
+  "ret": "void",
+  "args": [],
+  "qualified_table": "BMvDeb.ProcTimer"
+ },
+ {
+  "kind": "func",
+  "name": "EndPrint_Off",
+  "table": "ProcTimer",
+  "regfunc": "0x811c70",
+  "ea": "0x811d5c",
+  "native": "sub_4485A0",
+  "wrapper": "sub_4485A0",
+  "ret": "instance",
+  "args": [],
+  "qualified_table": "BMvDeb.ProcTimer"
+ },
+ {
+  "kind": "table",
+  "name": "ProcTimer",
+  "table": "BMvDeb",
+  "regfunc": "0x811c70",
+  "ea": "0x811d6d"
+ },
+ {
+  "kind": "table",
+  "name": "BMvDeb",
+  "table": "",
+  "regfunc": "0x811c70",
+  "ea": "0x811da3"
+ },
+ {
+  "kind": "func",
+  "name": "Reset",
+  "table": "CCheckRect",
+  "regfunc": "0x812410",
+  "ea": "0x81245c",
+  "native": "sub_811E60",
+  "wrapper": "sub_811E60",
+  "ret": "instance",
+  "args": [],
+  "qualified_table": "CCheckRect"
+ },
+ {
+  "kind": "func",
+  "name": "SetPlayer",
+  "table": "CCheckRect",
+  "regfunc": "0x812410",
+  "ea": "0x81246e",
+  "native": "sub_812270",
+  "wrapper": "sub_812270",
+  "ret": "instance",
+  "args": [],
+  "qualified_table": "CCheckRect"
+ },
+ {
+  "kind": "method",
+  "name": "SetSrc",
+  "table": "CCheckRect",
+  "regfunc": "0x812410",
+  "ea": "0x812480",
+  "native": "sub_811FB0",
+  "wrapper": "sub_811FB0",
+  "ret": "instance",
+  "args": [
+   "int"
+  ],
+  "qualified_table": "CCheckRect"
+ },
+ {
+  "kind": "method",
+  "name": "SetDst",
+  "table": "CCheckRect",
+  "regfunc": "0x812410",
+  "ea": "0x812492",
+  "native": "sub_811F10",
+  "wrapper": "sub_811F10",
+  "ret": "instance",
+  "args": [
+   "int"
+  ],
+  "qualified_table": "CCheckRect"
+ },
+ {
+  "kind": "func",
+  "name": "SetFlags",
+  "table": "CCheckRect",
+  "regfunc": "0x812410",
+  "ea": "0x8124a4",
+  "native": "sub_41CAB0",
+  "wrapper": "sub_41CAB0",
+  "ret": "instance",
+  "args": [
+   "int"
+  ],
+  "qualified_table": "CCheckRect"
+ },
+ {
+  "kind": "func",
+  "name": "Check",
+  "table": "CCheckRect",
+  "regfunc": "0x812410",
+  "ea": "0x8124b6",
+  "native": "sub_812060",
+  "wrapper": "sub_812060",
+  "ret": "int",
+  "args": [],
+  "qualified_table": "CCheckRect"
+ },
+ {
+  "kind": "method",
+  "name": "GetCharaData",
+  "table": "CCheckRect",
+  "regfunc": "0x812410",
+  "ea": "0x8124c8",
+  "native": "sub_811E10",
+  "wrapper": "sub_811E10",
+  "ret": "instance",
+  "args": [
+   "instance"
+  ],
+  "qualified_table": "CCheckRect"
+ },
+ {
+  "kind": "table",
+  "name": "CCheckRect",
+  "table": "",
+  "regfunc": "0x812410",
+  "ea": "0x8124d9"
+ },
+ {
+  "kind": "func",
+  "name": "Random",
+  "table": "BMvEff",
+  "regfunc": "0x812800",
+  "ea": "0x812857",
+  "native": "sub_442FE0",
+  "wrapper": "sub_442FE0",
+  "ret": "int",
+  "args": [],
+  "qualified_table": "BMvEff"
+ },
+ {
+  "kind": "func",
+  "name": "Random_F",
+  "table": "BMvEff",
+  "regfunc": "0x812800",
+  "ea": "0x812869",
+  "native": "sub_442FF0",
+  "wrapper": "sub_442FF0",
+  "ret": "?",
+  "args": [],
+  "qualified_table": "BMvEff"
+ },
+ {
+  "kind": "func",
+  "name": "Random_Limit",
+  "table": "BMvEff",
+  "regfunc": "0x812800",
+  "ea": "0x81287b",
+  "native": "sub_443010",
+  "wrapper": "sub_443010",
+  "ret": "int",
+  "args": [
+   "int"
+  ],
+  "qualified_table": "BMvEff"
+ },
+ {
+  "kind": "func",
+  "name": "Random_FAbs",
+  "table": "BMvEff",
+  "regfunc": "0x812800",
+  "ea": "0x81288d",
+  "native": "sub_443030",
+  "wrapper": "sub_443030",
+  "ret": "float",
+  "args": [
+   "int"
+  ],
+  "qualified_table": "BMvEff"
+ },
+ {
+  "kind": "func",
+  "name": "Random_PointRect",
+  "table": "BMvEff",
+  "regfunc": "0x812800",
+  "ea": "0x81289f",
+  "native": "sub_443120",
+  "wrapper": "sub_443120",
+  "ret": "instance",
+  "args": [
+   "instance",
+   "int"
+  ],
+  "qualified_table": "BMvEff"
+ },
+ {
+  "kind": "func",
+  "name": "Random_PointRad",
+  "table": "BMvEff",
+  "regfunc": "0x812800",
+  "ea": "0x8128b1",
+  "native": "sub_443060",
+  "wrapper": "sub_443060",
+  "ret": "?",
+  "args": [],
+  "qualified_table": "BMvEff"
+ },
+ {
+  "kind": "func",
+  "name": "StdCall",
+  "table": "BMvEff",
+  "regfunc": "0x812800",
+  "ea": "0x8128c3",
+  "native": "sub_440120",
+  "wrapper": "sub_440120",
+  "ret": "int",
+  "args": [
+   "int"
+  ],
+  "qualified_table": "BMvEff"
+ },
+ {
+  "kind": "func",
+  "name": "ThrowRelease",
+  "table": "BMvEff",
+  "regfunc": "0x812800",
+  "ea": "0x8128d5",
+  "native": "sub_440B10",
+  "wrapper": "sub_440B10",
+  "ret": "int",
+  "args": [
+   "int"
+  ],
+  "qualified_table": "BMvEff"
+ },
+ {
+  "kind": "func",
+  "name": "ThrowParam",
+  "table": "BMvEff",
+  "regfunc": "0x812800",
+  "ea": "0x8128e7",
+  "native": "sub_4403B0",
+  "wrapper": "sub_4403B0",
+  "ret": "int",
+  "args": [
+   "int"
+  ],
+  "qualified_table": "BMvEff"
+ },
+ {
+  "kind": "func",
+  "name": "ThrowChara_SetJoint",
+  "table": "BMvEff",
+  "regfunc": "0x812800",
+  "ea": "0x8128f9",
+  "native": "sub_4407D0",
+  "wrapper": "sub_4407D0",
+  "ret": "int",
+  "args": [
+   "int"
+  ],
+  "qualified_table": "BMvEff"
+ },
+ {
+  "kind": "func",
+  "name": "ThrowChara_SetCamera",
+  "table": "BMvEff",
+  "regfunc": "0x812800",
+  "ea": "0x81290b",
+  "native": "sub_4408A0",
+  "wrapper": "sub_4408A0",
+  "ret": "int",
+  "args": [
+   "int"
+  ],
+  "qualified_table": "BMvEff"
+ },
+ {
+  "kind": "func",
+  "name": "ThrowChara_Transfer",
+  "table": "BMvEff",
+  "regfunc": "0x812800",
+  "ea": "0x81291d",
+  "native": "sub_4409E0",
+  "wrapper": "sub_4409E0",
+  "ret": "int",
+  "args": [
+   "int"
+  ],
+  "qualified_table": "BMvEff"
+ },
+ {
+  "kind": "func",
+  "name": "CapturePlayer",
+  "table": "BMvEff",
+  "regfunc": "0x812800",
+  "ea": "0x81292f",
+  "native": "sub_440D50",
+  "wrapper": "sub_440D50",
+  "ret": "int",
+  "args": [
+   "int"
+  ],
+  "qualified_table": "BMvEff"
+ },
+ {
+  "kind": "func",
+  "name": "GetFrameIDNum",
+  "table": "BMvEff",
+  "regfunc": "0x812800",
+  "ea": "0x812941",
+  "native": "sub_441840",
+  "wrapper": "sub_441840",
+  "ret": "int",
+  "args": [
+   "int"
+  ],
+  "qualified_table": "BMvEff"
+ },
+ {
+  "kind": "func",
+  "name": "GetPatternNum",
+  "table": "BMvEff",
+  "regfunc": "0x812800",
+  "ea": "0x812953",
+  "native": "sub_441770",
+  "wrapper": "sub_441770",
+  "ret": "int",
+  "args": [
+   "int"
+  ],
+  "qualified_table": "BMvEff"
+ },
+ {
+  "kind": "func",
+  "name": "CreateObject",
+  "table": "BMvEff",
+  "regfunc": "0x812800",
+  "ea": "0x812965",
+  "native": "sub_441490",
+  "wrapper": "sub_441490",
+  "ret": "instance",
+  "args": [
+   "instance",
+   "int"
+  ],
+  "qualified_table": "BMvEff"
+ },
+ {
+  "kind": "func",
+  "name": "SetObjectFlags",
+  "table": "BMvEff",
+  "regfunc": "0x812800",
+  "ea": "0x812977",
+  "native": "sub_441880",
+  "wrapper": "sub_441880",
+  "ret": "int",
+  "args": [
+   "int"
+  ],
+  "qualified_table": "BMvEff"
+ },
+ {
+  "kind": "func",
+  "name": "SetObjectRender",
+  "table": "BMvEff",
+  "regfunc": "0x812800",
+  "ea": "0x812989",
+  "native": "sub_441C80",
+  "wrapper": "sub_441C80",
+  "ret": "void",
+  "args": [
+   "int"
+  ],
+  "qualified_table": "BMvEff"
+ },
+ {
+  "kind": "func",
+  "name": "EraseObjectFlags",
+  "table": "BMvEff",
+  "regfunc": "0x812800",
+  "ea": "0x81299b",
+  "native": "sub_4418F0",
+  "wrapper": "sub_4418F0",
+  "ret": "int",
+  "args": [
+   "int"
+  ],
+  "qualified_table": "BMvEff"
+ },
+ {
+  "kind": "func",
+  "name": "ObjProcFlags_Set",
+  "table": "BMvEff",
+  "regfunc": "0x812800",
+  "ea": "0x8129ad",
+  "native": "sub_441960",
+  "wrapper": "sub_441960",
+  "ret": "int",
+  "args": [
+   "int"
+  ],
+  "qualified_table": "BMvEff"
+ },
+ {
+  "kind": "func",
+  "name": "ObjProcFlags_Erase",
+  "table": "BMvEff",
+  "regfunc": "0x812800",
+  "ea": "0x8129bf",
+  "native": "sub_4419E0",
+  "wrapper": "sub_4419E0",
+  "ret": "int",
+  "args": [
+   "int"
+  ],
+  "qualified_table": "BMvEff"
+ },
+ {
+  "kind": "func",
+  "name": "ObjType_Set",
+  "table": "BMvEff",
+  "regfunc": "0x812800",
+  "ea": "0x8129d1",
+  "native": "sub_441A60",
+  "wrapper": "sub_441A60",
+  "ret": "int",
+  "args": [
+   "int"
+  ],
+  "qualified_table": "BMvEff"
+ },
+ {
+  "kind": "func",
+  "name": "SetCamera_Quake",
+  "table": "BMvEff",
+  "regfunc": "0x812800",
+  "ea": "0x8129e3",
+  "native": "sub_441D60",
+  "wrapper": "sub_441D60",
+  "ret": "int",
+  "args": [
+   "int"
+  ],
+  "qualified_table": "BMvEff"
+ },
+ {
+  "kind": "func",
+  "name": "SetCamera_Focus",
+  "table": "BMvEff",
+  "regfunc": "0x812800",
+  "ea": "0x8129f5",
+  "native": "sub_441E00",
+  "wrapper": "sub_441E00",
+  "ret": "int",
+  "args": [
+   "int"
+  ],
+  "qualified_table": "BMvEff"
+ },
+ {
+  "kind": "func",
+  "name": "SetCamera_FocusKeep",
+  "table": "BMvEff",
+  "regfunc": "0x812800",
+  "ea": "0x812a07",
+  "native": "sub_442090",
+  "wrapper": "sub_442090",
+  "ret": "instance",
+  "args": [
+   "int"
+  ],
+  "qualified_table": "BMvEff"
+ },
+ {
+  "kind": "func",
+  "name": "SetCamera_Clipping",
+  "table": "BMvEff",
+  "regfunc": "0x812800",
+  "ea": "0x812a19",
+  "native": "sub_4420B0",
+  "wrapper": "sub_4420B0",
+  "ret": "instance",
+  "args": [
+   "int"
+  ],
+  "qualified_table": "BMvEff"
+ },
+ {
+  "kind": "func",
+  "name": "SetCamera_UpdateFlag",
+  "table": "BMvEff",
+  "regfunc": "0x812800",
+  "ea": "0x812a2b",
+  "native": "sub_4420D0",
+  "wrapper": "sub_4420D0",
+  "ret": "int",
+  "args": [
+   "int",
+   "int"
+  ],
+  "qualified_table": "BMvEff"
+ },
+ {
+  "kind": "func",
+  "name": "ResetCamera",
+  "table": "BMvEff",
+  "regfunc": "0x812800",
+  "ea": "0x812a3d",
+  "native": "sub_4420F0",
+  "wrapper": "sub_4420F0",
+  "ret": "int",
+  "args": [],
+  "qualified_table": "BMvEff"
+ },
+ {
+  "kind": "func",
+  "name": "UpdateCamera",
+  "table": "BMvEff",
+  "regfunc": "0x812800",
+  "ea": "0x812a4f",
+  "native": "sub_442100",
+  "wrapper": "sub_442100",
+  "ret": "int",
+  "args": [],
+  "qualified_table": "BMvEff"
+ },
+ {
+  "kind": "func",
+  "name": "ResetViewCamera",
+  "table": "BMvEff",
+  "regfunc": "0x812800",
+  "ea": "0x812a61",
+  "native": "sub_442110",
+  "wrapper": "sub_442110",
+  "ret": "int",
+  "args": [],
+  "qualified_table": "BMvEff"
+ },
+ {
+  "kind": "func",
+  "name": "CameraShift_Set",
+  "table": "BMvEff",
+  "regfunc": "0x812800",
+  "ea": "0x812a73",
+  "native": "sub_442160",
+  "wrapper": "sub_442160",
+  "ret": "instance",
+  "args": [
+   "int"
+  ],
+  "qualified_table": "BMvEff"
+ },
+ {
+  "kind": "func",
+  "name": "CameraShift_Clear",
+  "table": "BMvEff",
+  "regfunc": "0x812800",
+  "ea": "0x812a85",
+  "native": "sub_442220",
+  "wrapper": "sub_442220",
+  "ret": "int",
+  "args": [],
+  "qualified_table": "BMvEff"
+ },
+ {
+  "kind": "func",
+  "name": "SetStopTime",
+  "table": "BMvEff",
+  "regfunc": "0x812800",
+  "ea": "0x812a97",
+  "native": "sub_442260",
+  "wrapper": "sub_442260",
+  "ret": "int",
+  "args": [
+   "int"
+  ],
+  "qualified_table": "BMvEff"
+ },
+ {
+  "kind": "func",
+  "name": "ForceKO",
+  "table": "BMvEff",
+  "regfunc": "0x812800",
+  "ea": "0x812aa9",
+  "native": "sub_442390",
+  "wrapper": "sub_442390",
+  "ret": "int",
+  "args": [],
+  "qualified_table": "BMvEff"
+ },
+ {
+  "kind": "func",
+  "name": "GetKOMode",
+  "table": "BMvEff",
+  "regfunc": "0x812800",
+  "ea": "0x812abb",
+  "native": "sub_442420",
+  "wrapper": "sub_442420",
+  "ret": "int",
+  "args": [],
+  "qualified_table": "BMvEff"
+ },
+ {
+  "kind": "func",
+  "name": "GetKOFadeOutTime",
+  "table": "BMvEff",
+  "regfunc": "0x812800",
+  "ea": "0x812acd",
+  "native": "sub_442460",
+  "wrapper": "sub_442460",
+  "ret": "int",
+  "args": [],
+  "qualified_table": "BMvEff"
+ },
+ {
+  "kind": "func",
+  "name": "IsKOSkip",
+  "table": "BMvEff",
+  "regfunc": "0x812800",
+  "ea": "0x812adf",
+  "native": "sub_442480",
+  "wrapper": "sub_442480",
+  "ret": "int",
+  "args": [],
+  "qualified_table": "BMvEff"
+ },
+ {
+  "kind": "func",
+  "name": "SetNoDamageFlag",
+  "table": "BMvEff",
+  "regfunc": "0x812800",
+  "ea": "0x812af1",
+  "native": "sub_4424A0",
+  "wrapper": "sub_4424A0",
+  "ret": "int",
+  "args": [
+   "int"
+  ],
+  "qualified_table": "BMvEff"
+ },
+ {
+  "kind": "func",
+  "name": "SetHpGauge",
+  "table": "BMvEff",
+  "regfunc": "0x812800",
+  "ea": "0x812b03",
+  "native": "dfci_sq_native_sethpgauge",
+  "wrapper": "dfci_sq_native_sethpgauge",
+  "ret": "int",
+  "args": [
+   "int"
+  ],
+  "qualified_table": "BMvEff"
+ },
+ {
+  "kind": "func",
+  "name": "SetSpGauge",
+  "table": "BMvEff",
+  "regfunc": "0x812800",
+  "ea": "0x812b15",
+  "native": "sub_442810",
+  "wrapper": "sub_442810",
+  "ret": "int",
+  "args": [
+   "int"
+  ],
+  "qualified_table": "BMvEff"
+ },
+ {
+  "kind": "func",
+  "name": "SpGauge_SetLimit",
+  "table": "BMvEff",
+  "regfunc": "0x812800",
+  "ea": "0x812b27",
+  "native": "sub_442900",
+  "wrapper": "sub_442900",
+  "ret": "int",
+  "args": [
+   "int"
+  ],
+  "qualified_table": "BMvEff"
+ },
+ {
+  "kind": "func",
+  "name": "SpGauge_SetLimitCombo",
+  "table": "BMvEff",
+  "regfunc": "0x812800",
+  "ea": "0x812b39",
+  "native": "sub_442970",
+  "wrapper": "sub_442970",
+  "ret": "int",
+  "args": [
+   "int"
+  ],
+  "qualified_table": "BMvEff"
+ },
+ {
+  "kind": "func",
+  "name": "SpGauge_GetValue",
+  "table": "BMvEff",
+  "regfunc": "0x812800",
+  "ea": "0x812b4b",
+  "native": "sub_812350",
+  "wrapper": "sub_812350",
+  "ret": "int",
+  "args": [
+   "int"
+  ],
+  "qualified_table": "BMvEff"
+ },
+ {
+  "kind": "func",
+  "name": "SpGauge_GetPlusCorrect_ComboTimePos",
+  "table": "BMvEff",
+  "regfunc": "0x812800",
+  "ea": "0x812b5d",
+  "native": "sub_442A00",
+  "wrapper": "sub_442A00",
+  "ret": "int",
+  "args": [],
+  "qualified_table": "BMvEff"
+ },
+ {
+  "kind": "func",
+  "name": "SetExist",
+  "table": "BMvEff",
+  "regfunc": "0x812800",
+  "ea": "0x812b6f",
+  "native": "sub_441AE0",
+  "wrapper": "sub_441AE0",
+  "ret": "instance",
+  "args": [
+   "int"
+  ],
+  "qualified_table": "BMvEff"
+ },
+ {
+  "kind": "func",
+  "name": "SetPaletteSlot",
+  "table": "BMvEff",
+  "regfunc": "0x812800",
+  "ea": "0x812b81",
+  "native": "sub_441BB0",
+  "wrapper": "sub_441BB0",
+  "ret": "instance",
+  "args": [
+   "int",
+   "int"
+  ],
+  "qualified_table": "BMvEff"
+ },
+ {
+  "kind": "func",
+  "name": "GetPaletteSlot",
+  "table": "BMvEff",
+  "regfunc": "0x812800",
+  "ea": "0x812b93",
+  "native": "sub_441C50",
+  "wrapper": "sub_441C50",
+  "ret": "int",
+  "args": [],
+  "qualified_table": "BMvEff"
+ },
+ {
+  "kind": "func",
+  "name": "SetOtherPalette",
+  "table": "BMvEff",
+  "regfunc": "0x812800",
+  "ea": "0x812ba5",
+  "native": "sub_441C00",
+  "wrapper": "sub_441C00",
+  "ret": "instance",
+  "args": [
+   "int",
+   "int"
+  ],
+  "qualified_table": "BMvEff"
+ },
+ {
+  "kind": "func",
+  "name": "GetPointStatus",
+  "table": "BMvEff",
+  "regfunc": "0x812800",
+  "ea": "0x812bb7",
+  "native": "sub_442B00",
+  "wrapper": "sub_442B00",
+  "ret": "instance",
+  "args": [
+   "instance",
+   "int"
+  ],
+  "qualified_table": "BMvEff"
+ },
+ {
+  "kind": "func",
+  "name": "GetVector_FromAngle",
+  "table": "BMvEff",
+  "regfunc": "0x812800",
+  "ea": "0x812bc9",
+  "native": "sub_442E40",
+  "wrapper": "sub_442E40",
+  "ret": "instance",
+  "args": [
+   "instance",
+   "int"
+  ],
+  "qualified_table": "BMvEff"
+ },
+ {
+  "kind": "func",
+  "name": "GetAngle_FromVector",
+  "table": "BMvEff",
+  "regfunc": "0x812800",
+  "ea": "0x812bdb",
+  "native": "sub_442F20",
+  "wrapper": "sub_442F20",
+  "ret": "instance",
+  "args": [
+   "instance",
+   "int"
+  ],
+  "qualified_table": "BMvEff"
+ },
+ {
+  "kind": "func",
+  "name": "SetBoundSt",
+  "table": "BMvEff",
+  "regfunc": "0x812800",
+  "ea": "0x812bed",
+  "native": "sub_440E40",
+  "wrapper": "sub_440E40",
+  "ret": "int",
+  "args": [
+   "int"
+  ],
+  "qualified_table": "BMvEff"
+ },
+ {
+  "kind": "func",
+  "name": "CheckHantei",
+  "table": "BMvEff",
+  "regfunc": "0x812800",
+  "ea": "0x812bff",
+  "native": "sub_440F50",
+  "wrapper": "sub_440F50",
+  "ret": "instance",
+  "args": [
+   "instance",
+   "int"
+  ],
+  "qualified_table": "BMvEff"
+ },
+ {
+  "kind": "func",
+  "name": "GetHanteiRect",
+  "table": "BMvEff",
+  "regfunc": "0x812800",
+  "ea": "0x812c11",
+  "native": "sub_441200",
+  "wrapper": "sub_441200",
+  "ret": "instance",
+  "args": [
+   "instance",
+   "int"
+  ],
+  "qualified_table": "BMvEff"
+ },
+ {
+  "kind": "func",
+  "name": "IsAttackRect",
+  "table": "BMvEff",
+  "regfunc": "0x812800",
+  "ea": "0x812c23",
+  "native": "sub_441420",
+  "wrapper": "sub_441420",
+  "ret": "int",
+  "args": [],
+  "qualified_table": "BMvEff"
+ },
+ {
+  "kind": "func",
+  "name": "GetCameraPosition",
+  "table": "BMvEff",
+  "regfunc": "0x812800",
+  "ea": "0x812c35",
+  "native": "sub_443260",
+  "wrapper": "sub_443260",
+  "ret": "instance",
+  "args": [
+   "instance",
+   "int"
+  ],
+  "qualified_table": "BMvEff"
+ },
+ {
+  "kind": "func",
+  "name": "GetCameraRect",
+  "table": "BMvEff",
+  "regfunc": "0x812800",
+  "ea": "0x812c47",
+  "native": "sub_4433C0",
+  "wrapper": "sub_4433C0",
+  "ret": "instance",
+  "args": [
+   "instance",
+   "int"
+  ],
+  "qualified_table": "BMvEff"
+ },
+ {
+  "kind": "func",
+  "name": "SetPlayerTimer",
+  "table": "BMvEff",
+  "regfunc": "0x812800",
+  "ea": "0x812c59",
+  "native": "sub_4435A0",
+  "wrapper": "sub_4435A0",
+  "ret": "int",
+  "args": [
+   "int"
+  ],
+  "qualified_table": "BMvEff"
+ },
+ {
+  "kind": "func",
+  "name": "GetPlayerMuteki",
+  "table": "BMvEff",
+  "regfunc": "0x812800",
+  "ea": "0x812c6b",
+  "native": "sub_4436B0",
+  "wrapper": "sub_4436B0",
+  "ret": "int",
+  "args": [
+   "int"
+  ],
+  "qualified_table": "BMvEff"
+ },
+ {
+  "kind": "func",
+  "name": "AddAttackHitNum",
+  "table": "BMvEff",
+  "regfunc": "0x812800",
+  "ea": "0x812c7d",
+  "native": "sub_443740",
+  "wrapper": "sub_443740",
+  "ret": "int",
+  "args": [
+   "int"
+  ],
+  "qualified_table": "BMvEff"
+ },
+ {
+  "kind": "func",
+  "name": "ClearAttackHitNum",
+  "table": "BMvEff",
+  "regfunc": "0x812800",
+  "ea": "0x812c8f",
+  "native": "sub_443820",
+  "wrapper": "sub_443820",
+  "ret": "int",
+  "args": [],
+  "qualified_table": "BMvEff"
+ },
+ {
+  "kind": "func",
+  "name": "GetAttackHitPos",
+  "table": "BMvEff",
+  "regfunc": "0x812800",
+  "ea": "0x812ca1",
+  "native": "sub_4437A0",
+  "wrapper": "sub_4437A0",
+  "ret": "instance",
+  "args": [
+   "instance"
+  ],
+  "qualified_table": "BMvEff"
+ },
+ {
+  "kind": "func",
+  "name": "Liberate_OK",
+  "table": "BMvEff",
+  "regfunc": "0x812800",
+  "ea": "0x812cb3",
+  "native": "sub_443860",
+  "wrapper": "sub_443860",
+  "ret": "int",
+  "args": [],
+  "qualified_table": "BMvEff"
+ },
+ {
+  "kind": "func",
+  "name": "Liberate_Set",
+  "table": "BMvEff",
+  "regfunc": "0x812800",
+  "ea": "0x812cc5",
+  "native": "sub_4438C0",
+  "wrapper": "sub_4438C0",
+  "ret": "int",
+  "args": [],
+  "qualified_table": "BMvEff"
+ },
+ {
+  "kind": "func",
+  "name": "Liberate_Get",
+  "table": "BMvEff",
+  "regfunc": "0x812800",
+  "ea": "0x812cd7",
+  "native": "sub_443970",
+  "wrapper": "sub_443970",
+  "ret": "int",
+  "args": [],
+  "qualified_table": "BMvEff"
+ },
+ {
+  "kind": "func",
+  "name": "Liberate_Calc",
+  "table": "BMvEff",
+  "regfunc": "0x812800",
+  "ea": "0x812ce9",
+  "native": "sub_4439D0",
+  "wrapper": "sub_4439D0",
+  "ret": "int",
+  "args": [
+   "int"
+  ],
+  "qualified_table": "BMvEff"
+ },
+ {
+  "kind": "func",
+  "name": "Liberate_End",
+  "table": "BMvEff",
+  "regfunc": "0x812800",
+  "ea": "0x812cfb",
+  "native": "sub_443940",
+  "wrapper": "sub_443940",
+  "ret": "int",
+  "args": [],
+  "qualified_table": "BMvEff"
+ },
+ {
+  "kind": "func",
+  "name": "GRD_UseStock",
+  "table": "BMvEff",
+  "regfunc": "0x812800",
+  "ea": "0x812d0d",
+  "native": "sub_443A80",
+  "wrapper": "sub_443A80",
+  "ret": "int",
+  "args": [],
+  "qualified_table": "BMvEff"
+ },
+ {
+  "kind": "func",
+  "name": "GRD_CheckStock",
+  "table": "BMvEff",
+  "regfunc": "0x812800",
+  "ea": "0x812d1f",
+  "native": "sub_443A60",
+  "wrapper": "sub_443A60",
+  "ret": "int",
+  "args": [],
+  "qualified_table": "BMvEff"
+ },
+ {
+  "kind": "func",
+  "name": "GRD_GetJudgeResult",
+  "table": "BMvEff",
+  "regfunc": "0x812800",
+  "ea": "0x812d31",
+  "native": "sub_443A60",
+  "wrapper": "sub_443A60",
+  "ret": "int",
+  "args": [],
+  "qualified_table": "BMvEff"
+ },
+ {
+  "kind": "func",
+  "name": "GRD_SetBreak",
+  "table": "BMvEff",
+  "regfunc": "0x812800",
+  "ea": "0x812d43",
+  "native": "sub_449340",
+  "wrapper": "sub_449340",
+  "ret": "void",
+  "args": [],
+  "qualified_table": "BMvEff"
+ },
+ {
+  "kind": "func",
+  "name": "GRD_GetBreak",
+  "table": "BMvEff",
+  "regfunc": "0x812800",
+  "ea": "0x812d55",
+  "native": "sub_443A60",
+  "wrapper": "sub_443A60",
+  "ret": "int",
+  "args": [],
+  "qualified_table": "BMvEff"
+ },
+ {
+  "kind": "func",
+  "name": "GRD_CorrectBreakTime",
+  "table": "BMvEff",
+  "regfunc": "0x812800",
+  "ea": "0x812d67",
+  "native": "sub_449340",
+  "wrapper": "sub_449340",
+  "ret": "void",
+  "args": [],
+  "qualified_table": "BMvEff"
+ },
+ {
+  "kind": "func",
+  "name": "GRD_ClearBreak",
+  "table": "BMvEff",
+  "regfunc": "0x812800",
+  "ea": "0x812d79",
+  "native": "sub_443A60",
+  "wrapper": "sub_443A60",
+  "ret": "int",
+  "args": [],
+  "qualified_table": "BMvEff"
+ },
+ {
+  "kind": "func",
+  "name": "GRD_SetConvertBreak",
+  "table": "BMvEff",
+  "regfunc": "0x812800",
+  "ea": "0x812d8b",
+  "native": "sub_443A60",
+  "wrapper": "sub_443A60",
+  "ret": "int",
+  "args": [],
+  "qualified_table": "BMvEff"
+ },
+ {
+  "kind": "func",
+  "name": "GRD_GetConvertCount",
+  "table": "BMvEff",
+  "regfunc": "0x812800",
+  "ea": "0x812d9d",
+  "native": "sub_4043D0",
+  "wrapper": "sub_4043D0",
+  "ret": "int",
+  "args": [],
+  "qualified_table": "BMvEff"
+ },
+ {
+  "kind": "func",
+  "name": "GRD_AddValue",
+  "table": "BMvEff",
+  "regfunc": "0x812800",
+  "ea": "0x812daf",
+  "native": "sub_443A80",
+  "wrapper": "sub_443A80",
+  "ret": "int",
+  "args": [],
+  "qualified_table": "BMvEff"
+ },
+ {
+  "kind": "func",
+  "name": "GuardSP_Set",
+  "table": "BMvEff",
+  "regfunc": "0x812800",
+  "ea": "0x812dc1",
+  "native": "sub_443C60",
+  "wrapper": "sub_443C60",
+  "ret": "int",
+  "args": [
+   "int"
+  ],
+  "qualified_table": "BMvEff"
+ },
+ {
+  "kind": "func",
+  "name": "GuardSP_Get",
+  "table": "BMvEff",
+  "regfunc": "0x812800",
+  "ea": "0x812dd3",
+  "native": "sub_443CD0",
+  "wrapper": "sub_443CD0",
+  "ret": "int",
+  "args": [],
+  "qualified_table": "BMvEff"
+ },
+ {
+  "kind": "func",
+  "name": "GuardSP_Success",
+  "table": "BMvEff",
+  "regfunc": "0x812800",
+  "ea": "0x812de5",
+  "native": "sub_443D10",
+  "wrapper": "sub_443D10",
+  "ret": "int",
+  "args": [],
+  "qualified_table": "BMvEff"
+ },
+ {
+  "kind": "func",
+  "name": "AttackInfoString_Set",
+  "table": "BMvEff",
+  "regfunc": "0x812800",
+  "ea": "0x812df7",
+  "native": "sub_443D50",
+  "wrapper": "sub_443D50",
+  "ret": "instance",
+  "args": [
+   "int"
+  ],
+  "qualified_table": "BMvEff"
+ },
+ {
+  "kind": "func",
+  "name": "FadeProc_Set",
+  "table": "BMvEff",
+  "regfunc": "0x812800",
+  "ea": "0x812e09",
+  "native": "dfci_script_cmd_stage_flash",
+  "wrapper": "dfci_script_cmd_stage_flash",
+  "ret": "int",
+  "args": [
+   "int"
+  ],
+  "qualified_table": "BMvEff"
+ },
+ {
+  "kind": "func",
+  "name": "FadeProc_Erase",
+  "table": "BMvEff",
+  "regfunc": "0x812800",
+  "ea": "0x812e1b",
+  "native": "dfci_script_cmd_stage_flash_type",
+  "wrapper": "dfci_script_cmd_stage_flash_type",
+  "ret": "int",
+  "args": [
+   "int"
+  ],
+  "qualified_table": "BMvEff"
+ },
+ {
+  "kind": "func",
+  "name": "CutInProc_Set",
+  "table": "BMvEff",
+  "regfunc": "0x812800",
+  "ea": "0x812e2d",
+  "native": "dfci_script_cmd_stage_flash_time",
+  "wrapper": "dfci_script_cmd_stage_flash_time",
+  "ret": "int",
+  "args": [
+   "int"
+  ],
+  "qualified_table": "BMvEff"
+ },
+ {
+  "kind": "func",
+  "name": "CutInProc_Erase",
+  "table": "BMvEff",
+  "regfunc": "0x812800",
+  "ea": "0x812e3f",
+  "native": "sub_444320",
+  "wrapper": "sub_444320",
+  "ret": "int",
+  "args": [],
+  "qualified_table": "BMvEff"
+ },
+ {
+  "kind": "func",
+  "name": "SetCharaFlash",
+  "table": "BMvEff",
+  "regfunc": "0x812800",
+  "ea": "0x812e51",
+  "native": "sub_444360",
+  "wrapper": "sub_444360",
+  "ret": "int",
+  "args": [
+   "int"
+  ],
+  "qualified_table": "BMvEff"
+ },
+ {
+  "kind": "func",
+  "name": "SetCharaColor",
+  "table": "BMvEff",
+  "regfunc": "0x812800",
+  "ea": "0x812e63",
+  "native": "sub_444430",
+  "wrapper": "sub_444430",
+  "ret": "int",
+  "args": [
+   "int"
+  ],
+  "qualified_table": "BMvEff"
+ },
+ {
+  "kind": "func",
+  "name": "SetStageCharaLight",
+  "table": "BMvEff",
+  "regfunc": "0x812800",
+  "ea": "0x812e75",
+  "native": "sub_444500",
+  "wrapper": "sub_444500",
+  "ret": "int",
+  "args": [
+   "int"
+  ],
+  "qualified_table": "BMvEff"
+ },
+ {
+  "kind": "func",
+  "name": "SetCharaDrawType",
+  "table": "BMvEff",
+  "regfunc": "0x812800",
+  "ea": "0x812e87",
+  "native": "sub_444560",
+  "wrapper": "sub_444560",
+  "ret": "int",
+  "args": [
+   "int"
+  ],
+  "qualified_table": "BMvEff"
+ },
+ {
+  "kind": "func",
+  "name": "PcAfterImage_Set",
+  "table": "BMvEff",
+  "regfunc": "0x812800",
+  "ea": "0x812e99",
+  "native": "sub_4445C0",
+  "wrapper": "sub_4445C0",
+  "ret": "int",
+  "args": [
+   "int"
+  ],
+  "qualified_table": "BMvEff"
+ },
+ {
+  "kind": "func",
+  "name": "PcAfterImage_Clear",
+  "table": "BMvEff",
+  "regfunc": "0x812800",
+  "ea": "0x812eab",
+  "native": "sub_4446E0",
+  "wrapper": "sub_4446E0",
+  "ret": "int",
+  "args": [],
+  "qualified_table": "BMvEff"
+ },
+ {
+  "kind": "func",
+  "name": "PcAuraEffect_Set",
+  "table": "BMvEff",
+  "regfunc": "0x812800",
+  "ea": "0x812ebd",
+  "native": "sub_444730",
+  "wrapper": "sub_444730",
+  "ret": "int",
+  "args": [
+   "int"
+  ],
+  "qualified_table": "BMvEff"
+ },
+ {
+  "kind": "func",
+  "name": "PcAuraEffect_Clear",
+  "table": "BMvEff",
+  "regfunc": "0x812800",
+  "ea": "0x812ecf",
+  "native": "sub_444A50",
+  "wrapper": "sub_444A50",
+  "ret": "int",
+  "args": [],
+  "qualified_table": "BMvEff"
+ },
+ {
+  "kind": "func",
+  "name": "Slowmotion_Set",
+  "table": "BMvEff",
+  "regfunc": "0x812800",
+  "ea": "0x812ee1",
+  "native": "sub_444AB0",
+  "wrapper": "sub_444AB0",
+  "ret": "int",
+  "args": [
+   "int"
+  ],
+  "qualified_table": "BMvEff"
+ },
+ {
+  "kind": "func",
+  "name": "LinePrim_Set",
+  "table": "BMvEff",
+  "regfunc": "0x812800",
+  "ea": "0x812ef3",
+  "native": "dfci_btlsq_effobject_load",
+  "wrapper": "dfci_btlsq_effobject_load",
+  "ret": "int",
+  "args": [
+   "int"
+  ],
+  "qualified_table": "BMvEff"
+ },
+ {
+  "kind": "func",
+  "name": "LinePrim_SetTypeParam",
+  "table": "BMvEff",
+  "regfunc": "0x812800",
+  "ea": "0x812f05",
+  "native": "sub_444E80",
+  "wrapper": "sub_444E80",
+  "ret": "int",
+  "args": [
+   "int"
+  ],
+  "qualified_table": "BMvEff"
+ },
+ {
+  "kind": "func",
+  "name": "Cockpit_SetView",
+  "table": "BMvEff",
+  "regfunc": "0x812800",
+  "ea": "0x812f17",
+  "native": "sub_445090",
+  "wrapper": "sub_445090",
+  "ret": "int",
+  "args": [
+   "int"
+  ],
+  "qualified_table": "BMvEff"
+ },
+ {
+  "kind": "func",
+  "name": "ComboView_Clear",
+  "table": "BMvEff",
+  "regfunc": "0x812800",
+  "ea": "0x812f29",
+  "native": "sub_445120",
+  "wrapper": "sub_445120",
+  "ret": "int",
+  "args": [],
+  "qualified_table": "BMvEff"
+ },
+ {
+  "kind": "func",
+  "name": "ComboView_Set",
+  "table": "BMvEff",
+  "regfunc": "0x812800",
+  "ea": "0x812f3b",
+  "native": "sub_445170",
+  "wrapper": "sub_445170",
+  "ret": "int",
+  "args": [
+   "int"
+  ],
+  "qualified_table": "BMvEff"
+ },
+ {
+  "kind": "func",
+  "name": "ChangeStartCorrectTiming",
+  "table": "BMvEff",
+  "regfunc": "0x812800",
+  "ea": "0x812f4d",
+  "native": "sub_445210",
+  "wrapper": "sub_445210",
+  "ret": "int",
+  "args": [],
+  "qualified_table": "BMvEff"
+ },
+ {
+  "kind": "func",
+  "name": "ChangeStartCorrectTimingPlus",
+  "table": "BMvEff",
+  "regfunc": "0x812800",
+  "ea": "0x812f5f",
+  "native": "sub_445270",
+  "wrapper": "sub_445270",
+  "ret": "int",
+  "args": [],
+  "qualified_table": "BMvEff"
+ },
+ {
+  "kind": "func",
+  "name": "BGM_Set",
+  "table": "BMvEff",
+  "regfunc": "0x812800",
+  "ea": "0x812f71",
+  "native": "sub_4452B0",
+  "wrapper": "sub_4452B0",
+  "ret": "void",
+  "args": [
+   "int"
+  ],
+  "qualified_table": "BMvEff"
+ },
+ {
+  "kind": "func",
+  "name": "BG_GetNum",
+  "table": "BMvEff",
+  "regfunc": "0x812800",
+  "ea": "0x812f83",
+  "native": "sub_445310",
+  "wrapper": "sub_445310",
+  "ret": "int",
+  "args": [],
+  "qualified_table": "BMvEff"
+ },
+ {
+  "kind": "func",
+  "name": "AddSkillCount",
+  "table": "BMvEff",
+  "regfunc": "0x812800",
+  "ea": "0x812f95",
+  "native": "sub_443A90",
+  "wrapper": "sub_443A90",
+  "ret": "int",
+  "args": [
+   "int"
+  ],
+  "qualified_table": "BMvEff"
+ },
+ {
+  "kind": "func",
+  "name": "GetEntranceCallCount",
+  "table": "BMvEff",
+  "regfunc": "0x812800",
+  "ea": "0x812fa7",
+  "native": "sub_445330",
+  "wrapper": "sub_445330",
+  "ret": "int",
+  "args": [],
+  "qualified_table": "BMvEff"
+ },
+ {
+  "kind": "func",
+  "name": "IsReplayEntrance",
+  "table": "BMvEff",
+  "regfunc": "0x812800",
+  "ea": "0x812fb9",
+  "native": "sub_445350",
+  "wrapper": "sub_445350",
+  "ret": "int",
+  "args": [],
+  "qualified_table": "BMvEff"
+ },
+ {
+  "kind": "func",
+  "name": "GetMyObjectCount",
+  "table": "BMvEff",
+  "regfunc": "0x812800",
+  "ea": "0x812fcb",
+  "native": "sub_445370",
+  "wrapper": "sub_445370",
+  "ret": "int",
+  "args": [],
+  "qualified_table": "BMvEff"
+ },
+ {
+  "kind": "func",
+  "name": "SetGuardPlusFlag",
+  "table": "BMvEff",
+  "regfunc": "0x812800",
+  "ea": "0x812fdd",
+  "native": "sub_4453B0",
+  "wrapper": "sub_4453B0",
+  "ret": "instance",
+  "args": [
+   "int"
+  ],
+  "qualified_table": "BMvEff"
+ },
+ {
+  "kind": "func",
+  "name": "Chara_SetMessage",
+  "table": "BMvEff",
+  "regfunc": "0x812800",
+  "ea": "0x812fef",
+  "native": "sub_445580",
+  "wrapper": "sub_445580",
+  "ret": "int",
+  "args": [
+   "int",
+   "int",
+   "int",
+   "int",
+   "int"
+  ],
+  "qualified_table": "BMvEff"
+ },
+ {
+  "kind": "func",
+  "name": "Chara_SetMessagePC",
+  "table": "BMvEff",
+  "regfunc": "0x812800",
+  "ea": "0x813001",
+  "native": "sub_4455E0",
+  "wrapper": "sub_4455E0",
+  "ret": "int",
+  "args": [
+   "int",
+   "int",
+   "int",
+   "int",
+   "int"
+  ],
+  "qualified_table": "BMvEff"
+ },
+ {
+  "kind": "func",
+  "name": "Chara_SetMessageDelay",
+  "table": "BMvEff",
+  "regfunc": "0x812800",
+  "ea": "0x813013",
+  "native": "sub_445640",
+  "wrapper": "sub_445640",
+  "ret": "instance",
+  "args": [
+   "int"
+  ],
+  "qualified_table": "BMvEff"
+ },
+ {
+  "kind": "func",
+  "name": "Chara_JoinMessage",
+  "table": "BMvEff",
+  "regfunc": "0x812800",
+  "ea": "0x813025",
+  "native": "sub_4456A0",
+  "wrapper": "sub_4456A0",
+  "ret": "int",
+  "args": [
+   "int"
+  ],
+  "qualified_table": "BMvEff"
+ },
+ {
+  "kind": "func",
+  "name": "Chara_ClearMessageAll",
+  "table": "BMvEff",
+  "regfunc": "0x812800",
+  "ea": "0x813037",
+  "native": "sub_445720",
+  "wrapper": "sub_445720",
+  "ret": "int",
+  "args": [],
+  "qualified_table": "BMvEff"
+ },
+ {
+  "kind": "func",
+  "name": "SetAllKeyCheck",
+  "table": "BMvEff",
+  "regfunc": "0x812800",
+  "ea": "0x813049",
+  "native": "sub_445790",
+  "wrapper": "sub_445790",
+  "ret": "int",
+  "args": [
+   "int"
+  ],
+  "qualified_table": "BMvEff"
+ },
+ {
+  "kind": "var",
+  "name": "distance",
+  "table": "CPointStatus",
+  "regfunc": "0x812800",
+  "ea": "0x81306f",
+  "offset": "0",
+  "vartype": "Sqrat_Class_VarD_446CE0",
+  "qualified_table": "BMvEff.CPointStatus"
+ },
+ {
+  "kind": "var",
+  "name": "distance_x",
+  "table": "CPointStatus",
+  "regfunc": "0x812800",
+  "ea": "0x81307e",
+  "offset": "4",
+  "vartype": "Sqrat_Class_VarD_446CE0",
+  "qualified_table": "BMvEff.CPointStatus"
+ },
+ {
+  "kind": "var",
+  "name": "distance_y",
+  "table": "CPointStatus",
+  "regfunc": "0x812800",
+  "ea": "0x81308d",
+  "offset": "8",
+  "vartype": "Sqrat_Class_VarD_446CE0",
+  "qualified_table": "BMvEff.CPointStatus"
+ },
+ {
+  "kind": "var",
+  "name": "pos_x",
+  "table": "CPointStatus",
+  "regfunc": "0x812800",
+  "ea": "0x81309c",
+  "offset": "12",
+  "vartype": "Sqrat_Class_VarD_446CE0",
+  "qualified_table": "BMvEff.CPointStatus"
+ },
+ {
+  "kind": "var",
+  "name": "pos_y",
+  "table": "CPointStatus",
+  "regfunc": "0x812800",
+  "ea": "0x8130ab",
+  "offset": "16",
+  "vartype": "Sqrat_Class_VarD_446CE0",
+  "qualified_table": "BMvEff.CPointStatus"
+ },
+ {
+  "kind": "var",
+  "name": "angle",
+  "table": "CPointStatus",
+  "regfunc": "0x812800",
+  "ea": "0x8130ba",
+  "offset": "20",
+  "vartype": "Sqrat_Class_VarA_446D40",
+  "qualified_table": "BMvEff.CPointStatus"
+ },
+ {
+  "kind": "table",
+  "name": "CPointStatus",
+  "table": "BMvEff",
+  "regfunc": "0x812800",
+  "ea": "0x8130cb"
+ },
+ {
+  "kind": "table",
+  "name": "BMvEff",
+  "table": "",
+  "regfunc": "0x812800",
+  "ea": "0x813111"
+ },
+ {
+  "kind": "table",
+  "name": "BMvConst",
+  "table": "",
+  "regfunc": "0x812800",
+  "ea": "0x813702"
+ },
+ {
+  "kind": "func",
+  "name": "Kirifuda_Add",
+  "table": "tDDC",
+  "regfunc": "0x813920",
+  "ea": "0x813977",
+  "native": "sub_43D8D0",
+  "wrapper": "sub_43D8D0",
+  "ret": "int",
+  "args": [
+   "int"
+  ],
+  "qualified_table": "tDDC"
+ },
+ {
+  "kind": "func",
+  "name": "Kirifuda_AddEx",
+  "table": "tDDC",
+  "regfunc": "0x813920",
+  "ea": "0x813989",
+  "native": "sub_43D940",
+  "wrapper": "sub_43D940",
+  "ret": "int",
+  "args": [
+   "int"
+  ],
+  "qualified_table": "tDDC"
+ },
+ {
+  "kind": "func",
+  "name": "Kirifuda_GetValue",
+  "table": "tDDC",
+  "regfunc": "0x813920",
+  "ea": "0x81399b",
+  "native": "sub_43DD60",
+  "wrapper": "sub_43DD60",
+  "ret": "int",
+  "args": [],
+  "qualified_table": "tDDC"
+ },
+ {
+  "kind": "func",
+  "name": "Kirifuda_GetValueEx",
+  "table": "tDDC",
+  "regfunc": "0x813920",
+  "ea": "0x8139ad",
+  "native": "sub_43DDB0",
+  "wrapper": "sub_43DDB0",
+  "ret": "int",
+  "args": [],
+  "qualified_table": "tDDC"
+ },
+ {
+  "kind": "func",
+  "name": "Kirifuda_GetMax",
+  "table": "tDDC",
+  "regfunc": "0x813920",
+  "ea": "0x8139bf",
+  "native": "sub_43DE10",
+  "wrapper": "sub_43DE10",
+  "ret": "int",
+  "args": [],
+  "qualified_table": "tDDC"
+ },
+ {
+  "kind": "func",
+  "name": "Kirifuda_TimeAdd",
+  "table": "tDDC",
+  "regfunc": "0x813920",
+  "ea": "0x8139d1",
+  "native": "sub_43DA10",
+  "wrapper": "sub_43DA10",
+  "ret": "int",
+  "args": [
+   "int",
+   "int"
+  ],
+  "qualified_table": "tDDC"
+ },
+ {
+  "kind": "func",
+  "name": "Kirifuda_CheckTime",
+  "table": "tDDC",
+  "regfunc": "0x813920",
+  "ea": "0x8139e3",
+  "native": "sub_43DB80",
+  "wrapper": "sub_43DB80",
+  "ret": "int",
+  "args": [],
+  "qualified_table": "tDDC"
+ },
+ {
+  "kind": "func",
+  "name": "Kirifuda_CheckStatus",
+  "table": "tDDC",
+  "regfunc": "0x813920",
+  "ea": "0x8139f5",
+  "native": "sub_43DBD0",
+  "wrapper": "sub_43DBD0",
+  "ret": "int",
+  "args": [],
+  "qualified_table": "tDDC"
+ },
+ {
+  "kind": "func",
+  "name": "Kirifuda_SetTimeValue",
+  "table": "tDDC",
+  "regfunc": "0x813920",
+  "ea": "0x813a07",
+  "native": "sub_43DC20",
+  "wrapper": "sub_43DC20",
+  "ret": "string",
+  "args": [
+   "int",
+   "int"
+  ],
+  "qualified_table": "tDDC"
+ },
+ {
+  "kind": "func",
+  "name": "Kirifuda_GetTime",
+  "table": "tDDC",
+  "regfunc": "0x813920",
+  "ea": "0x813a19",
+  "native": "sub_43DC70",
+  "wrapper": "sub_43DC70",
+  "ret": "int",
+  "args": [],
+  "qualified_table": "tDDC"
+ },
+ {
+  "kind": "func",
+  "name": "Kirifuda_SetInstallCount",
+  "table": "tDDC",
+  "regfunc": "0x813920",
+  "ea": "0x813a2b",
+  "native": "sub_43DCC0",
+  "wrapper": "sub_43DCC0",
+  "ret": "string",
+  "args": [
+   "int"
+  ],
+  "qualified_table": "tDDC"
+ },
+ {
+  "kind": "func",
+  "name": "Kirifuda_TimeDamageMinus",
+  "table": "tDDC",
+  "regfunc": "0x813920",
+  "ea": "0x813a3d",
+  "native": "sub_43DD10",
+  "wrapper": "sub_43DD10",
+  "ret": "string",
+  "args": [
+   "int"
+  ],
+  "qualified_table": "tDDC"
+ },
+ {
+  "kind": "func",
+  "name": "Kirifuda_FinalizeProc",
+  "table": "tDDC",
+  "regfunc": "0x813920",
+  "ea": "0x813a4f",
+  "native": "sub_43DAB0",
+  "wrapper": "sub_43DAB0",
+  "ret": "int",
+  "args": [],
+  "qualified_table": "tDDC"
+ },
+ {
+  "kind": "func",
+  "name": "Kirifuda_TimeClear",
+  "table": "tDDC",
+  "regfunc": "0x813920",
+  "ea": "0x813a61",
+  "native": "sub_43DB30",
+  "wrapper": "sub_43DB30",
+  "ret": "int",
+  "args": [],
+  "qualified_table": "tDDC"
+ },
+ {
+  "kind": "func",
+  "name": "Kirifuda_SubMax",
+  "table": "tDDC",
+  "regfunc": "0x813920",
+  "ea": "0x813a73",
+  "native": "sub_43D9B0",
+  "wrapper": "sub_43D9B0",
+  "ret": "int",
+  "args": [],
+  "qualified_table": "tDDC"
+ },
+ {
+  "kind": "func",
+  "name": "KirifudaWatch_SetEndPalette",
+  "table": "tDDC",
+  "regfunc": "0x813920",
+  "ea": "0x813a85",
+  "native": "sub_43DE60",
+  "wrapper": "sub_43DE60",
+  "ret": "string",
+  "args": [
+   "int",
+   "int"
+  ],
+  "qualified_table": "tDDC"
+ },
+ {
+  "kind": "func",
+  "name": "KirifudaWatch_SetParam",
+  "table": "tDDC",
+  "regfunc": "0x813920",
+  "ea": "0x813a97",
+  "native": "sub_43DEB0",
+  "wrapper": "sub_43DEB0",
+  "ret": "string",
+  "args": [
+   "int",
+   "int"
+  ],
+  "qualified_table": "tDDC"
+ },
+ {
+  "kind": "func",
+  "name": "KirifudaWatch_GetParam",
+  "table": "tDDC",
+  "regfunc": "0x813920",
+  "ea": "0x813aa9",
+  "native": "sub_43DF00",
+  "wrapper": "sub_43DF00",
+  "ret": "int",
+  "args": [
+   "int"
+  ],
+  "qualified_table": "tDDC"
+ },
+ {
+  "kind": "func",
+  "name": "Blast_AddPoint",
+  "table": "tDDC",
+  "regfunc": "0x813920",
+  "ea": "0x813abb",
+  "native": "sub_43DF50",
+  "wrapper": "sub_43DF50",
+  "ret": "string",
+  "args": [
+   "int"
+  ],
+  "qualified_table": "tDDC"
+ },
+ {
+  "kind": "func",
+  "name": "Blast_IsUsableMode",
+  "table": "tDDC",
+  "regfunc": "0x813920",
+  "ea": "0x813acd",
+  "native": "sub_43DFB0",
+  "wrapper": "sub_43DFB0",
+  "ret": "int",
+  "args": [],
+  "qualified_table": "tDDC"
+ },
+ {
+  "kind": "func",
+  "name": "Blast_IsUse",
+  "table": "tDDC",
+  "regfunc": "0x813920",
+  "ea": "0x813adf",
+  "native": "sub_43E010",
+  "wrapper": "sub_43E010",
+  "ret": "int",
+  "args": [],
+  "qualified_table": "tDDC"
+ },
+ {
+  "kind": "func",
+  "name": "Blast_Use",
+  "table": "tDDC",
+  "regfunc": "0x813920",
+  "ea": "0x813af1",
+  "native": "sub_43E070",
+  "wrapper": "sub_43E070",
+  "ret": "int",
+  "args": [
+   "int"
+  ],
+  "qualified_table": "tDDC"
+ },
+ {
+  "kind": "func",
+  "name": "Blast_UseEx",
+  "table": "tDDC",
+  "regfunc": "0x813920",
+  "ea": "0x813b03",
+  "native": "sub_43E0E0",
+  "wrapper": "sub_43E0E0",
+  "ret": "int",
+  "args": [
+   "int"
+  ],
+  "qualified_table": "tDDC"
+ },
+ {
+  "kind": "func",
+  "name": "Blast_SetParam",
+  "table": "tDDC",
+  "regfunc": "0x813920",
+  "ea": "0x813b15",
+  "native": "sub_43E2E0",
+  "wrapper": "sub_43E2E0",
+  "ret": "int",
+  "args": [
+   "int"
+  ],
+  "qualified_table": "tDDC"
+ },
+ {
+  "kind": "func",
+  "name": "Blast_SetFailed",
+  "table": "tDDC",
+  "regfunc": "0x813920",
+  "ea": "0x813b27",
+  "native": "sub_43E3D0",
+  "wrapper": "sub_43E3D0",
+  "ret": "int",
+  "args": [
+   "int"
+  ],
+  "qualified_table": "tDDC"
+ },
+ {
+  "kind": "func",
+  "name": "Blast_GetUseMode",
+  "table": "tDDC",
+  "regfunc": "0x813920",
+  "ea": "0x813b39",
+  "native": "sub_43E150",
+  "wrapper": "sub_43E150",
+  "ret": "int",
+  "args": [],
+  "qualified_table": "tDDC"
+ },
+ {
+  "kind": "func",
+  "name": "Blast_CheckClimaxMode",
+  "table": "tDDC",
+  "regfunc": "0x813920",
+  "ea": "0x813b4b",
+  "native": "sub_43E1C0",
+  "wrapper": "sub_43E1C0",
+  "ret": "int",
+  "args": [],
+  "qualified_table": "tDDC"
+ },
+ {
+  "kind": "func",
+  "name": "Blast_EndClimaxMode",
+  "table": "tDDC",
+  "regfunc": "0x813920",
+  "ea": "0x813b5d",
+  "native": "sub_43E270",
+  "wrapper": "sub_43E270",
+  "ret": "int",
+  "args": [],
+  "qualified_table": "tDDC"
+ },
+ {
+  "kind": "func",
+  "name": "Blast_SetClimaxTime",
+  "table": "tDDC",
+  "regfunc": "0x813920",
+  "ea": "0x813b6f",
+  "native": "sub_43E210",
+  "wrapper": "sub_43E210",
+  "ret": "int",
+  "args": [
+   "int",
+   "int"
+  ],
+  "qualified_table": "tDDC"
+ },
+ {
+  "kind": "func",
+  "name": "Blast_AddPowerTime",
+  "table": "tDDC",
+  "regfunc": "0x813920",
+  "ea": "0x813b81",
+  "native": "sub_43E440",
+  "wrapper": "sub_43E440",
+  "ret": "string",
+  "args": [
+   "int"
+  ],
+  "qualified_table": "tDDC"
+ },
+ {
+  "kind": "func",
+  "name": "Support_IsUse",
+  "table": "tDDC",
+  "regfunc": "0x813920",
+  "ea": "0x813b93",
+  "native": "sub_43E490",
+  "wrapper": "sub_43E490",
+  "ret": "int",
+  "args": [],
+  "qualified_table": "tDDC"
+ },
+ {
+  "kind": "func",
+  "name": "Support_Use",
+  "table": "tDDC",
+  "regfunc": "0x813920",
+  "ea": "0x813ba5",
+  "native": "sub_43E4F0",
+  "wrapper": "sub_43E4F0",
+  "ret": "int",
+  "args": [],
+  "qualified_table": "tDDC"
+ },
+ {
+  "kind": "func",
+  "name": "Support_SetFailed",
+  "table": "tDDC",
+  "regfunc": "0x813920",
+  "ea": "0x813bb7",
+  "native": "sub_43E590",
+  "wrapper": "sub_43E590",
+  "ret": "int",
+  "args": [
+   "int"
+  ],
+  "qualified_table": "tDDC"
+ },
+ {
+  "kind": "func",
+  "name": "Support_StartRecast",
+  "table": "tDDC",
+  "regfunc": "0x813920",
+  "ea": "0x813bc9",
+  "native": "sub_43E5F0",
+  "wrapper": "sub_43E5F0",
+  "ret": "int",
+  "args": [
+   "int"
+  ],
+  "qualified_table": "tDDC"
+ },
+ {
+  "kind": "func",
+  "name": "Support_SetPowerupRecastMax",
+  "table": "tDDC",
+  "regfunc": "0x813920",
+  "ea": "0x813bdb",
+  "native": "sub_43E6A0",
+  "wrapper": "sub_43E6A0",
+  "ret": "string",
+  "args": [
+   "int"
+  ],
+  "qualified_table": "tDDC"
+ },
+ {
+  "kind": "func",
+  "name": "Support_GetCallCount",
+  "table": "tDDC",
+  "regfunc": "0x813920",
+  "ea": "0x813bed",
+  "native": "sub_43E6F0",
+  "wrapper": "sub_43E6F0",
+  "ret": "int",
+  "args": [],
+  "qualified_table": "tDDC"
+ },
+ {
+  "kind": "func",
+  "name": "Support_GetRecastMode",
+  "table": "tDDC",
+  "regfunc": "0x813920",
+  "ea": "0x813bff",
+  "native": "sub_43E650",
+  "wrapper": "sub_43E650",
+  "ret": "int",
+  "args": [],
+  "qualified_table": "tDDC"
+ },
+ {
+  "kind": "func",
+  "name": "Support_AddRecastValue",
+  "table": "tDDC",
+  "regfunc": "0x813920",
+  "ea": "0x813c11",
+  "native": "sub_43E7A0",
+  "wrapper": "sub_43E7A0",
+  "ret": "int",
+  "args": [
+   "int"
+  ],
+  "qualified_table": "tDDC"
+ },
+ {
+  "kind": "func",
+  "name": "Support_SetRecastCost",
+  "table": "tDDC",
+  "regfunc": "0x813920",
+  "ea": "0x813c23",
+  "native": "sub_43E740",
+  "wrapper": "sub_43E740",
+  "ret": "int",
+  "args": [
+   "int"
+  ],
+  "qualified_table": "tDDC"
+ },
+ {
+  "kind": "func",
+  "name": "Support_GetRecastCost",
+  "table": "tDDC",
+  "regfunc": "0x813920",
+  "ea": "0x813c35",
+  "native": "sub_43E800",
+  "wrapper": "sub_43E800",
+  "ret": "int",
+  "args": [],
+  "qualified_table": "tDDC"
+ },
+ {
+  "kind": "func",
+  "name": "Support_GetType",
+  "table": "tDDC",
+  "regfunc": "0x813920",
+  "ea": "0x813c47",
+  "native": "sub_43E8F0",
+  "wrapper": "sub_43E8F0",
+  "ret": "int",
+  "args": [],
+  "qualified_table": "tDDC"
+ },
+ {
+  "kind": "func",
+  "name": "Support_GetCharaNo",
+  "table": "tDDC",
+  "regfunc": "0x813920",
+  "ea": "0x813c59",
+  "native": "sub_43E8A0",
+  "wrapper": "sub_43E8A0",
+  "ret": "int",
+  "args": [],
+  "qualified_table": "tDDC"
+ },
+ {
+  "kind": "func",
+  "name": "Support_GetSelectColor",
+  "table": "tDDC",
+  "regfunc": "0x813920",
+  "ea": "0x813c6b",
+  "native": "sub_43E850",
+  "wrapper": "sub_43E850",
+  "ret": "int",
+  "args": [],
+  "qualified_table": "tDDC"
+ },
+ {
+  "kind": "func",
+  "name": "Support_SetMessage",
+  "table": "tDDC",
+  "regfunc": "0x813920",
+  "ea": "0x813c7d",
+  "native": "sub_43E980",
+  "wrapper": "sub_43E980",
+  "ret": "int",
+  "args": [
+   "int",
+   "int",
+   "int"
+  ],
+  "qualified_table": "tDDC"
+ },
+ {
+  "kind": "func",
+  "name": "ExJem_Attack",
+  "table": "tDDC",
+  "regfunc": "0x813920",
+  "ea": "0x813c8f",
+  "native": "sub_43EAF0",
+  "wrapper": "sub_43EAF0",
+  "ret": "instance",
+  "args": [
+   "int",
+   "int"
+  ],
+  "qualified_table": "tDDC"
+ },
+ {
+  "kind": "func",
+  "name": "Jem_AddCount",
+  "table": "tDDC",
+  "regfunc": "0x813920",
+  "ea": "0x813ca1",
+  "native": "sub_43EB50",
+  "wrapper": "sub_43EB50",
+  "ret": "instance",
+  "args": [
+   "int"
+  ],
+  "qualified_table": "tDDC"
+ },
+ {
+  "kind": "func",
+  "name": "Jem_GetRunFlag",
+  "table": "tDDC",
+  "regfunc": "0x813920",
+  "ea": "0x813cb3",
+  "native": "sub_43EBA0",
+  "wrapper": "sub_43EBA0",
+  "ret": "int",
+  "args": [
+   "int"
+  ],
+  "qualified_table": "tDDC"
+ },
+ {
+  "kind": "func",
+  "name": "Jem_IsWorking",
+  "table": "tDDC",
+  "regfunc": "0x813920",
+  "ea": "0x813cc5",
+  "native": "sub_43EC10",
+  "wrapper": "sub_43EC10",
+  "ret": "int",
+  "args": [
+   "int"
+  ],
+  "qualified_table": "tDDC"
+ },
+ {
+  "kind": "func",
+  "name": "Jem_IsWorkingEff",
+  "table": "tDDC",
+  "regfunc": "0x813920",
+  "ea": "0x813cd7",
+  "native": "sub_43EC80",
+  "wrapper": "sub_43EC80",
+  "ret": "int",
+  "args": [
+   "int"
+  ],
+  "qualified_table": "tDDC"
+ },
+ {
+  "kind": "func",
+  "name": "Jem_WorkingPlus",
+  "table": "tDDC",
+  "regfunc": "0x813920",
+  "ea": "0x813ce9",
+  "native": "sub_43ECE0",
+  "wrapper": "sub_43ECE0",
+  "ret": "instance",
+  "args": [
+   "int",
+   "int"
+  ],
+  "qualified_table": "tDDC"
+ },
+ {
+  "kind": "func",
+  "name": "Jem_SetMessage",
+  "table": "tDDC",
+  "regfunc": "0x813920",
+  "ea": "0x813cfb",
+  "native": "sub_43EF30",
+  "wrapper": "sub_43EF30",
+  "ret": "int",
+  "args": [
+   "int",
+   "int"
+  ],
+  "qualified_table": "tDDC"
+ },
+ {
+  "kind": "func",
+  "name": "Jem_SetMessageEx",
+  "table": "tDDC",
+  "regfunc": "0x813920",
+  "ea": "0x813d0d",
+  "native": "sub_43EEE0",
+  "wrapper": "sub_43EEE0",
+  "ret": "int",
+  "args": [
+   "int",
+   "int",
+   "int",
+   "int"
+  ],
+  "qualified_table": "tDDC"
+ },
+ {
+  "kind": "func",
+  "name": "HP_Add",
+  "table": "tDDC",
+  "regfunc": "0x813920",
+  "ea": "0x813d1f",
+  "native": "sub_43EF80",
+  "wrapper": "sub_43EF80",
+  "ret": "int",
+  "args": [
+   "int"
+  ],
+  "qualified_table": "tDDC"
+ },
+ {
+  "kind": "func",
+  "name": "HP_SourceDamMode",
+  "table": "tDDC",
+  "regfunc": "0x813920",
+  "ea": "0x813d31",
+  "native": "sub_43F040",
+  "wrapper": "sub_43F040",
+  "ret": "int",
+  "args": [
+   "int"
+  ],
+  "qualified_table": "tDDC"
+ },
+ {
+  "kind": "func",
+  "name": "SkillCountPlus",
+  "table": "tDDC",
+  "regfunc": "0x813920",
+  "ea": "0x813d43",
+  "native": "sub_43F0D0",
+  "wrapper": "sub_43F0D0",
+  "ret": "instance",
+  "args": [
+   "int"
+  ],
+  "qualified_table": "tDDC"
+ },
+ {
+  "kind": "func",
+  "name": "AchievementSousai",
+  "table": "tDDC",
+  "regfunc": "0x813920",
+  "ea": "0x813d55",
+  "native": "sub_43F110",
+  "wrapper": "sub_43F110",
+  "ret": "int",
+  "args": [],
+  "qualified_table": "tDDC"
+ },
+ {
+  "kind": "func",
+  "name": "PowerUpSys_GetCount",
+  "table": "tDDC",
+  "regfunc": "0x813920",
+  "ea": "0x813d67",
+  "native": "sub_43F1D0",
+  "wrapper": "sub_43F1D0",
+  "ret": "int",
+  "args": [
+   "int"
+  ],
+  "qualified_table": "tDDC"
+ },
+ {
+  "kind": "func",
+  "name": "PowerUpSys_GetLast",
+  "table": "tDDC",
+  "regfunc": "0x813920",
+  "ea": "0x813d79",
+  "native": "sub_43F120",
+  "wrapper": "sub_43F120",
+  "ret": "int",
+  "args": [],
+  "qualified_table": "tDDC"
+ },
+ {
+  "kind": "func",
+  "name": "PowerUpSys_IsDouble",
+  "table": "tDDC",
+  "regfunc": "0x813920",
+  "ea": "0x813d8b",
+  "native": "sub_43F170",
+  "wrapper": "sub_43F170",
+  "ret": "int",
+  "args": [
+   "int"
+  ],
+  "qualified_table": "tDDC"
+ },
+ {
+  "kind": "func",
+  "name": "SubSp_GetChara",
+  "table": "tDDC",
+  "regfunc": "0x813920",
+  "ea": "0x813d9d",
+  "native": "sub_43F230",
+  "wrapper": "sub_43F230",
+  "ret": "int",
+  "args": [],
+  "qualified_table": "tDDC"
+ },
+ {
+  "kind": "func",
+  "name": "SubSp_GetType",
+  "table": "tDDC",
+  "regfunc": "0x813920",
+  "ea": "0x813daf",
+  "native": "sub_43F280",
+  "wrapper": "sub_43F280",
+  "ret": "int",
+  "args": [],
+  "qualified_table": "tDDC"
+ },
+ {
+  "kind": "func",
+  "name": "GetMiyukiPalNum",
+  "table": "tDDC",
+  "regfunc": "0x813920",
+  "ea": "0x813dc1",
+  "native": "sub_8138B0",
+  "wrapper": "sub_8138B0",
+  "ret": "int",
+  "args": [],
+  "qualified_table": "tDDC"
+ },
+ {
+  "kind": "table",
+  "name": "tDDC",
+  "table": "",
+  "regfunc": "0x813920",
+  "ea": "0x813deb"
+ },
+ {
+  "kind": "table",
+  "name": "BMvConst",
+  "table": "",
+  "regfunc": "0x813920",
+  "ea": "0x813f9e"
+ },
+ {
+  "kind": "func",
+  "name": "Move_Jump",
+  "table": "BCom",
+  "regfunc": "0x893db0",
+  "ea": "0x893e11",
+  "native": "sub_42EC20",
+  "wrapper": "sub_42EC20",
+  "ret": "int",
+  "args": [
+   "int"
+  ],
+  "qualified_table": "BCom"
+ },
+ {
+  "kind": "func",
+  "name": "Move_Next",
+  "table": "BCom",
+  "regfunc": "0x893db0",
+  "ea": "0x893e23",
+  "native": "sub_42ECB0",
+  "wrapper": "sub_42ECB0",
+  "ret": "int",
+  "args": [],
+  "qualified_table": "BCom"
+ },
+ {
+  "kind": "func",
+  "name": "Move_End",
+  "table": "BCom",
+  "regfunc": "0x893db0",
+  "ea": "0x893e35",
+  "native": "sub_42ECF0",
+  "wrapper": "sub_42ECF0",
+  "ret": "int",
+  "args": [
+   "int"
+  ],
+  "qualified_table": "BCom"
+ },
+ {
+  "kind": "func",
+  "name": "GetELenX",
+  "table": "UpdateSt",
+  "regfunc": "0x893db0",
+  "ea": "0x893edc",
+  "qualified_table": "BCom.UpdateSt"
+ },
+ {
+  "kind": "func",
+  "name": "GetELenY",
+  "table": "UpdateSt",
+  "regfunc": "0x893db0",
+  "ea": "0x893eee",
+  "qualified_table": "BCom.UpdateSt"
+ },
+ {
+  "kind": "table",
+  "name": "UpdateSt",
+  "table": "BCom",
+  "regfunc": "0x893db0",
+  "ea": "0x893fb3"
+ },
+ {
+  "kind": "table",
+  "name": "BMvCoreConst",
+  "table": "",
+  "regfunc": "0x893db0",
+  "ea": "0x894262"
+ },
+ {
+  "kind": "table",
+  "name": "BCom",
+  "table": "",
+  "regfunc": "0x893db0",
+  "ea": "0x8942b0"
+ },
+ {
+  "kind": "func",
+  "name": "GetMyCharaData",
+  "table": "BMvCore",
+  "regfunc": "0x895e30",
+  "ea": "0x895e87",
+  "native": "sub_43BD80",
+  "wrapper": "sub_43BD80",
+  "ret": "instance",
+  "args": [
+   "instance"
+  ],
+  "qualified_table": "BMvCore"
+ },
+ {
+  "kind": "func",
+  "name": "GetCaptureCharaData",
+  "table": "BMvCore",
+  "regfunc": "0x895e30",
+  "ea": "0x895e99",
+  "native": "sub_43BDE0",
+  "wrapper": "sub_43BDE0",
+  "ret": "instance",
+  "args": [
+   "instance"
+  ],
+  "qualified_table": "BMvCore"
+ },
+ {
+  "kind": "func",
+  "name": "GetParentCharaData",
+  "table": "BMvCore",
+  "regfunc": "0x895e30",
+  "ea": "0x895eab",
+  "native": "sub_43BE50",
+  "wrapper": "sub_43BE50",
+  "ret": "instance",
+  "args": [
+   "instance"
+  ],
+  "qualified_table": "BMvCore"
+ },
+ {
+  "kind": "func",
+  "name": "GetPlayerCharaData",
+  "table": "BMvCore",
+  "regfunc": "0x895e30",
+  "ea": "0x895ebd",
+  "native": "sub_43BEC0",
+  "wrapper": "sub_43BEC0",
+  "ret": "instance",
+  "args": [
+   "instance"
+  ],
+  "qualified_table": "BMvCore"
+ },
+ {
+  "kind": "func",
+  "name": "GetNearEnemyCharaData",
+  "table": "BMvCore",
+  "regfunc": "0x895e30",
+  "ea": "0x895ecf",
+  "native": "sub_43BF30",
+  "wrapper": "sub_43BF30",
+  "ret": "instance",
+  "args": [
+   "instance"
+  ],
+  "qualified_table": "BMvCore"
+ },
+ {
+  "kind": "func",
+  "name": "GetEnemyCharaData",
+  "table": "BMvCore",
+  "regfunc": "0x895e30",
+  "ea": "0x895ee1",
+  "native": "sub_43BFA0",
+  "wrapper": "sub_43BFA0",
+  "ret": "instance",
+  "args": [
+   "instance",
+   "int"
+  ],
+  "qualified_table": "BMvCore"
+ },
+ {
+  "kind": "func",
+  "name": "GetLastDamageCharaData",
+  "table": "BMvCore",
+  "regfunc": "0x895e30",
+  "ea": "0x895ef3",
+  "native": "sub_43C210",
+  "wrapper": "sub_43C210",
+  "ret": "instance",
+  "args": [
+   "instance",
+   "int"
+  ],
+  "qualified_table": "BMvCore"
+ },
+ {
+  "kind": "func",
+  "name": "SetLastDamageCharaData",
+  "table": "BMvCore",
+  "regfunc": "0x895e30",
+  "ea": "0x895f05",
+  "native": "sub_43C1D0",
+  "wrapper": "sub_43C1D0",
+  "ret": "instance",
+  "args": [
+   "int"
+  ],
+  "qualified_table": "BMvCore"
+ },
+ {
+  "kind": "func",
+  "name": "GetLastHitCharaData",
+  "table": "BMvCore",
+  "regfunc": "0x895e30",
+  "ea": "0x895f17",
+  "native": "sub_43C2A0",
+  "wrapper": "sub_43C2A0",
+  "ret": "instance",
+  "args": [
+   "instance",
+   "int"
+  ],
+  "qualified_table": "BMvCore"
+ },
+ {
+  "kind": "func",
+  "name": "GetLastCatchCharaData",
+  "table": "BMvCore",
+  "regfunc": "0x895e30",
+  "ea": "0x895f29",
+  "native": "sub_43C330",
+  "wrapper": "sub_43C330",
+  "ret": "instance",
+  "args": [
+   "instance",
+   "int"
+  ],
+  "qualified_table": "BMvCore"
+ },
+ {
+  "kind": "func",
+  "name": "GetSupportCharaData",
+  "table": "BMvCore",
+  "regfunc": "0x895e30",
+  "ea": "0x895f3b",
+  "native": "sub_43C3C0",
+  "wrapper": "sub_43C3C0",
+  "ret": "instance",
+  "args": [
+   "instance"
+  ],
+  "qualified_table": "BMvCore"
+ },
+ {
+  "kind": "func",
+  "name": "GetMainCharaData",
+  "table": "BMvCore",
+  "regfunc": "0x895e30",
+  "ea": "0x895f4d",
+  "native": "sub_43C440",
+  "wrapper": "sub_43C440",
+  "ret": "instance",
+  "args": [
+   "instance"
+  ],
+  "qualified_table": "BMvCore"
+ },
+ {
+  "kind": "func",
+  "name": "GetNearEnemySupportData",
+  "table": "BMvCore",
+  "regfunc": "0x895e30",
+  "ea": "0x895f5f",
+  "native": "sub_43C070",
+  "wrapper": "sub_43C070",
+  "ret": "instance",
+  "args": [
+   "instance"
+  ],
+  "qualified_table": "BMvCore"
+ },
+ {
+  "kind": "func",
+  "name": "GetEnemySupportData",
+  "table": "BMvCore",
+  "regfunc": "0x895e30",
+  "ea": "0x895f71",
+  "native": "sub_43C0F0",
+  "wrapper": "sub_43C0F0",
+  "ret": "instance",
+  "args": [
+   "instance",
+   "int"
+  ],
+  "qualified_table": "BMvCore"
+ },
+ {
+  "kind": "func",
+  "name": "CallEntryBCCachePreTransfer",
+  "table": "BMvCore",
+  "regfunc": "0x895e30",
+  "ea": "0x895f83",
+  "native": "sub_443A80",
+  "wrapper": "sub_443A80",
+  "ret": "int",
+  "args": [],
+  "qualified_table": "BMvCore"
+ },
+ {
+  "kind": "func",
+  "name": "PushCharaData",
+  "table": "BMvCore",
+  "regfunc": "0x895e30",
+  "ea": "0x895f95",
+  "native": "sub_43C4C0",
+  "wrapper": "sub_43C4C0",
+  "ret": "int",
+  "args": [
+   "instance"
+  ],
+  "qualified_table": "BMvCore"
+ },
+ {
+  "kind": "func",
+  "name": "PopCharaData",
+  "table": "BMvCore",
+  "regfunc": "0x895e30",
+  "ea": "0x895fa7",
+  "native": "sub_43C520",
+  "wrapper": "sub_43C520",
+  "ret": "int",
+  "args": [],
+  "qualified_table": "BMvCore"
+ },
+ {
+  "kind": "var",
+  "name": "IsDone",
+  "table": "CCharaData",
+  "regfunc": "0x895e30",
+  "ea": "0x895fcd",
+  "offset": "0",
+  "vartype": "Sqrat_Class_VarA_43CFB0",
+  "qualified_table": "BMvCore.CCharaData"
+ },
+ {
+  "kind": "func",
+  "name": "push",
+  "table": "CCharaData",
+  "regfunc": "0x895e30",
+  "ea": "0x895fdf",
+  "native": "sub_43C530",
+  "wrapper": "sub_43C530",
+  "ret": "int",
+  "args": [],
+  "qualified_table": "BMvCore.CCharaData"
+ },
+ {
+  "kind": "func",
+  "name": "isdone",
+  "table": "CCharaData",
+  "regfunc": "0x895e30",
+  "ea": "0x896003",
+  "qualified_table": "BMvCore.CCharaData"
+ },
+ {
+  "kind": "func",
+  "name": "isPlayer",
+  "table": "CCharaData",
+  "regfunc": "0x895e30",
+  "ea": "0x896015",
+  "native": "sub_43C570",
+  "wrapper": "sub_43C570",
+  "ret": "int",
+  "args": [],
+  "qualified_table": "BMvCore.CCharaData"
+ },
+ {
+  "kind": "var",
+  "name": "data",
+  "table": "CCharaData",
+  "regfunc": "0x895e30",
+  "ea": "0x896024",
+  "offset": "4",
+  "vartype": "Sqrat_Class_VarA_43D010",
+  "qualified_table": "BMvCore.CCharaData"
+ },
+ {
+  "kind": "table",
+  "name": "CCharaData",
+  "table": "BMvCore",
+  "regfunc": "0x895e30",
+  "ea": "0x896035"
+ },
+ {
+  "kind": "func",
+  "name": "SetFirst",
+  "table": "CFindObject",
+  "regfunc": "0x895e30",
+  "ea": "0x89606a",
+  "native": "sub_43BD10",
+  "wrapper": "sub_43BD10",
+  "ret": "int",
+  "args": [],
+  "qualified_table": "BMvCore.CFindObject"
+ },
+ {
+  "kind": "table",
+  "name": "CFindObject",
+  "table": "BMvCore",
+  "regfunc": "0x895e30",
+  "ea": "0x89608d"
+ },
+ {
+  "kind": "table",
+  "name": "BMvCore",
+  "table": "",
+  "regfunc": "0x895e30",
+  "ea": "0x8960c3"
+ },
+ {
+  "kind": "func",
+  "name": "Load",
+  "table": "CDat",
+  "regfunc": "0x896220",
+  "ea": "0x896284",
+  "native": "sub_8948A0",
+  "wrapper": "sub_8948A0",
+  "ret": "int",
+  "args": [
+   "int"
+  ],
+  "qualified_table": "tPAni.CDat"
+ },
+ {
+  "kind": "method",
+  "name": "SetPosition",
+  "table": "CDat",
+  "regfunc": "0x896220",
+  "ea": "0x896296",
+  "native": "sub_4191F0",
+  "wrapper": "sub_4191F0",
+  "ret": "int",
+  "args": [
+   "int",
+   "int"
+  ],
+  "qualified_table": "tPAni.CDat"
+ },
+ {
+  "kind": "table",
+  "name": "CDat",
+  "table": "tPAni",
+  "regfunc": "0x896220",
+  "ea": "0x8962a7"
+ },
+ {
+  "kind": "method",
+  "name": "SetCDat",
+  "table": "CAnime",
+  "regfunc": "0x896220",
+  "ea": "0x8962dc",
+  "native": "sub_45B120",
+  "wrapper": "sub_45B120",
+  "ret": "instance",
+  "args": [
+   "int"
+  ],
+  "qualified_table": "tPAni.CAnime"
+ },
+ {
+  "kind": "method",
+  "name": "AddFrame",
+  "table": "CAnime",
+  "regfunc": "0x896220",
+  "ea": "0x8962ee",
+  "native": "sub_80AD70",
+  "wrapper": "sub_80AD70",
+  "ret": "int",
+  "args": [
+   "int",
+   "float"
+  ],
+  "qualified_table": "tPAni.CAnime"
+ },
+ {
+  "kind": "method",
+  "name": "AddFrameEx",
+  "table": "CAnime",
+  "regfunc": "0x896220",
+  "ea": "0x896300",
+  "native": "sub_80ACC0",
+  "wrapper": "sub_80ACC0",
+  "ret": "int",
+  "args": [
+   "int",
+   "float",
+   "int"
+  ],
+  "qualified_table": "tPAni.CAnime"
+ },
+ {
+  "kind": "func",
+  "name": "AddJump",
+  "table": "CAnime",
+  "regfunc": "0x896220",
+  "ea": "0x896312",
+  "native": "sub_80ACA0",
+  "wrapper": "sub_80ACA0",
+  "ret": "int",
+  "args": [
+   "int"
+  ],
+  "qualified_table": "tPAni.CAnime"
+ },
+ {
+  "kind": "method",
+  "name": "AddModeJump",
+  "table": "CAnime",
+  "regfunc": "0x896220",
+  "ea": "0x896324",
+  "native": "sub_80AB00",
+  "wrapper": "sub_80AB00",
+  "ret": "int",
+  "args": [
+   "int",
+   "int",
+   "int"
+  ],
+  "qualified_table": "tPAni.CAnime"
+ },
+ {
+  "kind": "func",
+  "name": "AddTagJump",
+  "table": "CAnime",
+  "regfunc": "0x896220",
+  "ea": "0x896336",
+  "native": "sub_80AC80",
+  "wrapper": "sub_80AC80",
+  "ret": "int",
+  "args": [
+   "int"
+  ],
+  "qualified_table": "tPAni.CAnime"
+ },
+ {
+  "kind": "method",
+  "name": "AddModeTagJump",
+  "table": "CAnime",
+  "regfunc": "0x896220",
+  "ea": "0x896348",
+  "native": "sub_80AA60",
+  "wrapper": "sub_80AA60",
+  "ret": "int",
+  "args": [
+   "int",
+   "int",
+   "int"
+  ],
+  "qualified_table": "tPAni.CAnime"
+ },
+ {
+  "kind": "func",
+  "name": "AddTag",
+  "table": "CAnime",
+  "regfunc": "0x896220",
+  "ea": "0x89635a",
+  "native": "sub_80ABE0",
+  "wrapper": "sub_80ABE0",
+  "ret": "int",
+  "args": [
+   "int"
+  ],
+  "qualified_table": "tPAni.CAnime"
+ },
+ {
+  "kind": "func",
+  "name": "AddSe",
+  "table": "CAnime",
+  "regfunc": "0x896220",
+  "ea": "0x89636c",
+  "native": "sub_80A990",
+  "wrapper": "sub_80A990",
+  "ret": "int",
+  "args": [
+   "int"
+  ],
+  "qualified_table": "tPAni.CAnime"
+ },
+ {
+  "kind": "func",
+  "name": "AddModeTag",
+  "table": "CAnime",
+  "regfunc": "0x896220",
+  "ea": "0x89637e",
+  "native": "sub_80A920",
+  "wrapper": "sub_80A920",
+  "ret": "int",
+  "args": [
+   "int"
+  ],
+  "qualified_table": "tPAni.CAnime"
+ },
+ {
+  "kind": "func",
+  "name": "AddEnd",
+  "table": "CAnime",
+  "regfunc": "0x896220",
+  "ea": "0x896390",
+  "native": "sub_80A8B0",
+  "wrapper": "sub_80A8B0",
+  "ret": "int",
+  "args": [
+   "int"
+  ],
+  "qualified_table": "tPAni.CAnime"
+ },
+ {
+  "kind": "func",
+  "name": "SetPrio",
+  "table": "CAnime",
+  "regfunc": "0x896220",
+  "ea": "0x8963a2",
+  "qualified_table": "tPAni.CAnime"
+ },
+ {
+  "kind": "func",
+  "name": "SetMode",
+  "table": "CAnime",
+  "regfunc": "0x896220",
+  "ea": "0x8963b4",
+  "native": "sub_41CAD0",
+  "wrapper": "sub_41CAD0",
+  "ret": "instance",
+  "args": [
+   "int"
+  ],
+  "qualified_table": "tPAni.CAnime"
+ },
+ {
+  "kind": "func",
+  "name": "GetMode",
+  "table": "CAnime",
+  "regfunc": "0x896220",
+  "ea": "0x8963c6",
+  "native": "sub_42DE90",
+  "wrapper": "sub_42DE90",
+  "ret": "int",
+  "args": [],
+  "qualified_table": "tPAni.CAnime"
+ },
+ {
+  "kind": "func",
+  "name": "AddMode",
+  "table": "CAnime",
+  "regfunc": "0x896220",
+  "ea": "0x8963d8",
+  "native": "sub_4591D0",
+  "wrapper": "sub_4591D0",
+  "ret": "instance",
+  "args": [
+   "int"
+  ],
+  "qualified_table": "tPAni.CAnime"
+ },
+ {
+  "kind": "func",
+  "name": "Jump",
+  "table": "CAnime",
+  "regfunc": "0x896220",
+  "ea": "0x8963ea",
+  "native": "sub_80A7F0",
+  "wrapper": "sub_80A7F0",
+  "ret": "int",
+  "args": [
+   "int"
+  ],
+  "qualified_table": "tPAni.CAnime"
+ },
+ {
+  "kind": "func",
+  "name": "TagJump",
+  "table": "CAnime",
+  "regfunc": "0x896220",
+  "ea": "0x8963fc",
+  "native": "sub_80B100",
+  "wrapper": "sub_80B100",
+  "ret": "int",
+  "args": [
+   "int"
+  ],
+  "qualified_table": "tPAni.CAnime"
+ },
+ {
+  "kind": "func",
+  "name": "Reset",
+  "table": "CAnime",
+  "regfunc": "0x896220",
+  "ea": "0x89640e",
+  "native": "sub_419340",
+  "wrapper": "sub_419340",
+  "ret": "int",
+  "args": [],
+  "qualified_table": "tPAni.CAnime"
+ },
+ {
+  "kind": "func",
+  "name": "ResetFrameTime",
+  "table": "CAnime",
+  "regfunc": "0x896220",
+  "ea": "0x896420",
+  "native": "sub_4193B0",
+  "wrapper": "sub_4193B0",
+  "ret": "float",
+  "args": [],
+  "qualified_table": "tPAni.CAnime"
+ },
+ {
+  "kind": "func",
+  "name": "IsNull",
+  "table": "CAnime",
+  "regfunc": "0x896220",
+  "ea": "0x896432",
+  "native": "sub_4591B0",
+  "wrapper": "sub_4591B0",
+  "ret": "int",
+  "args": [],
+  "qualified_table": "tPAni.CAnime"
+ },
+ {
+  "kind": "func",
+  "name": "SetView",
+  "table": "CAnime",
+  "regfunc": "0x896220",
+  "ea": "0x896444",
+  "native": "sub_41CAB0",
+  "wrapper": "sub_41CAB0",
+  "ret": "instance",
+  "args": [
+   "int"
+  ],
+  "qualified_table": "tPAni.CAnime"
+ },
+ {
+  "kind": "func",
+  "name": "GetView",
+  "table": "CAnime",
+  "regfunc": "0x896220",
+  "ea": "0x896456",
+  "native": "sub_42DE70",
+  "wrapper": "sub_42DE70",
+  "ret": "int",
+  "args": [],
+  "qualified_table": "tPAni.CAnime"
+ },
+ {
+  "kind": "func",
+  "name": "ClearFrame",
+  "table": "CAnime",
+  "regfunc": "0x896220",
+  "ea": "0x896468",
+  "native": "sub_80A3B0",
+  "wrapper": "sub_80A3B0",
+  "ret": "int",
+  "args": [],
+  "qualified_table": "tPAni.CAnime"
+ },
+ {
+  "kind": "method",
+  "name": "SetStartWait",
+  "table": "CAnime",
+  "regfunc": "0x896220",
+  "ea": "0x89647a",
+  "native": "sub_430DA0",
+  "wrapper": "sub_430DA0",
+  "ret": "float",
+  "args": [
+   "float"
+  ],
+  "qualified_table": "tPAni.CAnime"
+ },
+ {
+  "kind": "method",
+  "name": "SetPosition",
+  "table": "CAnime",
+  "regfunc": "0x896220",
+  "ea": "0x89648c",
+  "native": "sub_80A240",
+  "wrapper": "sub_80A240",
+  "ret": "int",
+  "args": [
+   "int",
+   "int"
+  ],
+  "qualified_table": "tPAni.CAnime"
+ },
+ {
+  "kind": "table",
+  "name": "CAnime",
+  "table": "tPAni",
+  "regfunc": "0x896220",
+  "ea": "0x89649d"
+ },
+ {
+  "kind": "func",
+  "name": "Render",
+  "table": "CAniManager",
+  "regfunc": "0x896220",
+  "ea": "0x8964e4",
+  "native": "sub_419560",
+  "wrapper": "sub_419560",
+  "ret": "int",
+  "args": [],
+  "qualified_table": "tPAni.CAniManager"
+ },
+ {
+  "kind": "func",
+  "name": "Update",
+  "table": "CAniManager",
+  "regfunc": "0x896220",
+  "ea": "0x8964f6",
+  "native": "sub_4194F0",
+  "wrapper": "sub_4194F0",
+  "ret": "int",
+  "args": [],
+  "qualified_table": "tPAni.CAniManager"
+ },
+ {
+  "kind": "func",
+  "name": "Reset",
+  "table": "CAniManager",
+  "regfunc": "0x896220",
+  "ea": "0x896508",
+  "native": "sub_80A350",
+  "wrapper": "sub_80A350",
+  "ret": "int",
+  "args": [],
+  "qualified_table": "tPAni.CAniManager"
+ },
+ {
+  "kind": "func",
+  "name": "Finalize",
+  "table": "CAniManager",
+  "regfunc": "0x896220",
+  "ea": "0x89651a",
+  "qualified_table": "tPAni.CAniManager"
+ },
+ {
+  "kind": "func",
+  "name": "SetMode",
+  "table": "CAniManager",
+  "regfunc": "0x896220",
+  "ea": "0x89652c",
+  "native": "sub_419770",
+  "wrapper": "sub_419770",
+  "ret": "int",
+  "args": [
+   "int"
+  ],
+  "qualified_table": "tPAni.CAniManager"
+ },
+ {
+  "kind": "func",
+  "name": "GetCAnime",
+  "table": "CAniManager",
+  "regfunc": "0x896220",
+  "ea": "0x89653e",
+  "native": "sub_459200",
+  "wrapper": "sub_459200",
+  "ret": "instance",
+  "args": [
+   "int"
+  ],
+  "qualified_table": "tPAni.CAniManager"
+ },
+ {
+  "kind": "table",
+  "name": "CAniManager",
+  "table": "tPAni",
+  "regfunc": "0x896220",
+  "ea": "0x89654f"
+ },
+ {
+  "kind": "table",
+  "name": "tPAni",
+  "table": "",
+  "regfunc": "0x896220",
+  "ea": "0x896594"
+ },
+ {
+  "kind": "table",
+  "name": "tPAniConst",
+  "table": "",
+  "regfunc": "0x896220",
+  "ea": "0x896696"
+ }
+]
