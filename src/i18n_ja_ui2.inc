@@ -635,6 +635,7 @@
 	{"Pattern data", "パターンデータ"},
 	{"Pattern name", "パターン名"},
 	{"Pattern note", "パターンメモ"},
+	{"Used by scripts", "このパターンを使うスクリプト"},
 	{"Copy pattern", "パターンをコピー"},
 	{"Paste pattern", "パターンを貼り付け"},
 	{"Push pattern copy", "パターンのコピーをプッシュ"},

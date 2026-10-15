@@ -1,5 +1,6 @@
 #ifndef MAINPANE_H_GUARD
 #define MAINPANE_H_GUARD
+#include <functional>
 #include "draw_window.h"
 #include "framedata.h"
 #include "render.h"
@@ -11,6 +12,8 @@ class MainPane : public DrawWindow
 {
 public:
 	MainPane(Render* render, FrameData *frameData, FrameState &fs);
+	// Drawn under the pattern fields: the script lines that use this pattern (set by the main frame with the Script panel).
+	static inline std::function<void(FrameData*, int pattern)> drawScriptRefs;
 	void Draw();
 
 	void RegenerateNames();

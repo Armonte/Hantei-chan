@@ -32,6 +32,12 @@ public:
 	bool focused() const { return m_focused; }
 	void requestSave() { m_saveRequested = true; }
 	bool hasUnsavedChanges() const;
+	// Reverse links (HA6 -> scripts): script lines in a character folder that name `pattern` (number, def_PAT_ const)
+	// or its PTCN `code`. Empty when no game root is open or the folder is outside it. Cached until the index changes.
+	struct ScriptRef { std::string file; int line; std::string text; };
+	std::vector<ScriptRef> refsToPattern(const std::string& charDirUtf8, int pattern, const std::string& code);
+	// Shows the panel at a game-relative file and 0-based line (false if the open file has unsaved changes).
+	bool showAt(const std::string& rel, int line);
 	// --ui-script driver (`sq <sub> [arg]`): open <root>, file <rel>, goto <line> [col], search <text>, usages <word>,
 	// complete [owner], tab <0|1|2>, problems, fix <n>, type <text>. Result text in *msg.
 	bool scriptCommand(const std::string& sub, const std::string& arg, std::string* msg);

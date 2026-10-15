@@ -1,0 +1,11 @@
+openany C:/dev/hantei-chan/work/sqtest/uni2/data/chr001/chr001_0.txt
+wait 30
+sq open C:/dev/hantei-chan/work/sqtest/uni2
+sq refs data/chr001 445 CancelDash
+sq refs data/chr001 290 X
+sq hide
+opentrees 1
+pattern 445
+wait 20
+capture C:/dev/hantei-chan/work/ab/sq_refs.png
+quit

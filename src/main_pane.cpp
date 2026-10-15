@@ -260,6 +260,7 @@ void MainPane::Draw()
 						frameData->notes.set(key, noteEditBuffer);
 				}
 				PatternDisplay(seq, frameData, currState.pattern);
+				if (drawScriptRefs) drawScriptRefs(frameData, currState.pattern);
 
 				if(im::Button(LBL("Copy pattern"))) {
 					currState.copied->pattern = *seq;
