@@ -272,6 +272,14 @@ static void TestActCadenzaData()
 		CHECK(o.find("test = 177, 178") != std::string::npos);
 		CHECK(o.find("Ground = 62,0") != std::string::npos && o.find("Air = 63,0") != std::string::npos);
 		CHECK(o.find("AirJumpNum = 1") != std::string::npos);
+		CHECK(o.find("CancelHighJumpPat") == std::string::npos);   // no pattern 41: key left out
+		// ActCadenza launcher jump cancel -> 41: MBAACC needs CancelHighJumpPat (SUPERJUMP.md)
+		CHECK(ha4conv::EmitCommandFile(tp, &st, "test CT", op, &log, 41));
+		d = nullptr; n = 0;
+		CHECK(ReadInMem(op.c_str(), d, n));
+		std::string o2(d ? d : "", n); delete[] d;
+		CHECK(o2.find("\r\nCancelHighJumpPat = 41 ") != std::string::npos);
+		CHECK(o2.find("[Status]") < o2.find("CancelHighJumpPat"));
 	}
 	fs::remove_all(tmp, ec);
 

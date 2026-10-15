@@ -57,8 +57,11 @@ bool ReadCtStatus(const std::string &path, CtStatus &out, std::string *err = nul
 // sections, as gamedata/tools/scripts/mbac_moon_cmd_audit.py emit) with [Status] taken from the CT:
 // AirJumpNum, Guard = the 4 guts floats f1..f4, Flags from status bit 7. `ct` may be null (TXT only,
 // then Guard = TXT f1..f4). Mismatches between the TXT trailer and the CT are logged.
+// highJumpPat >= 0 adds `CancelHighJumpPat = <n>`: ActCadenza sends a jump cancel of a launcher hit
+// (AT flag 0x10) to pattern 41 (mbacPC Character_ProcessPlayerInput 0x439200); MBAACC only reads this key
+// (0x466A17, 8 only), else its 8 gives the normal pattern 36. docs/actcadenza_parity/SUPERJUMP.md.
 bool EmitCommandFile(const std::string &txtPath, const CtStatus *ct, const std::string &ctLabel,
-                     const std::string &outPath, std::vector<std::string> *log);
+                     const std::string &outPath, std::vector<std::string> *log, int highJumpPat = -1);
 
 // The MBAACC common EX-shield window for moon 3 ([Type_3], decision S8): stand / crouch / air.
 constexpr int kExShieldCommon[3] = {6, 6, 8};

@@ -269,7 +269,7 @@ static bool IsBits8(const std::string &w)
 }
 
 bool EmitCommandFile(const std::string &txtPath, const CtStatus *ct, const std::string &ctLabel,
-                     const std::string &outPath, std::vector<std::string> *log)
+                     const std::string &outPath, std::vector<std::string> *log, int highJumpPat)
 {
 	char *raw = nullptr; unsigned int rn = 0;
 	if (!ReadInMem(txtPath.c_str(), raw, rn)) { if (log) log->push_back("cmd: cannot read " + txtPath); return false; }
@@ -342,6 +342,9 @@ bool EmitCommandFile(const std::string &txtPath, const CtStatus *ct, const std::
 		for (int q = 0; q < 4; q++) gl += (q ? ", " : "") + FmtF(g[q] == 0.f ? 1.f : g[q]);
 		out.push_back(gl);
 		if (bit7) out.push_back("Flags = 1 // ActCadenza status bit7 (Sion: bullet display, = MBAACC sion Flags=1)");
+		if (highJumpPat >= 0)
+			out.push_back("CancelHighJumpPat = " + std::to_string(highJumpPat) +
+			              " // ActCadenza launcher (AT flag 0x10) jump cancel -> high jump 41 (mbacPC 0x439200); MBAACC reads it for 8 only");
 		out.push_back("");
 		if (log) {
 			std::string l = "guts (" + src + "): ";
@@ -630,7 +633,8 @@ bool Convert(const FrameData &src, const std::string &datPath, const Options &op
 		}
 		if (!txt.empty()) {
 			rep.cmdPath = (out / (base + "_cc_c.txt")).string();
-			if (!EmitCommandFile(txt, haveCt ? &ct : nullptr, label, rep.cmdPath, &rep.lines)) return false;
+			int highJump = HasFrames(fd, 41) ? 41 : -1;
+			if (!EmitCommandFile(txt, haveCt ? &ct : nullptr, label, rep.cmdPath, &rep.lines, highJump)) return false;
 		} else if (haveCt) {
 			std::string l = "cmd: no _C.TXT (CT command records are not decoded), not written; CT guts (" + label + "):";
 			for (int q = 0; q < 4; q++) l += " " + FmtF(ct.guts(q));
