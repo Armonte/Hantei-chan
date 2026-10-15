@@ -810,6 +810,16 @@ void MainFrame::Menu(unsigned int errorPopupId)
 			if (ImGui::MenuItem(LBL("Pattern manager"), nullptr, m_patMgr.open)) m_patMgr.open = !m_patMgr.open;
 			if (ImGui::MenuItem(LBL("Pattern comparison"), nullptr, m_showCompare)) m_showCompare = !m_showCompare;
 			if (ImGui::MenuItem(LBL("Variable references (batch replace)"), nullptr, m_varRefs.open)) m_varRefs.open = !m_varRefs.open;
+			if (ImGui::MenuItem(LBL("System constants (_type.txt / vector.txt)"), nullptr, sysConstWindow.open)) {
+				if (!sysConstWindow.open) {
+					// Start in the active character's folder when it has the files; otherwise the window asks.
+					CharacterInstance* ch = getToolCharacter();
+					const std::string from = ch ? (!ch->getTxtPath().empty() ? ch->getTxtPath() : ch->getTopHA6Path()) : "";
+					std::string err;
+					if (from.empty() || !sysConstWindow.openFolder(std::filesystem::u8path(from).parent_path().u8string(), &err))
+						sysConstWindow.open = true;
+				} else sysConstWindow.open = false;
+			}
 			ImGui::Separator();
 			if (ImGui::MenuItem(LBL("Command File Editor (active character)"), nullptr, false, hasActive))
 				openCommandEditorForActive();

@@ -443,6 +443,30 @@ void MainFrame::DrawUi()
 	drawTagPanel();
 	drawAuthoring();
 	drawVarRefsWindow();
+	if (!sysConstWindow.vectorUses) {
+		// Counts per hit-vector id over every open character's frames, rebuilt at most once a second.
+		auto cache = std::make_shared<std::pair<int, std::vector<int>>>(-1000, std::vector<int>());
+		sysConstWindow.vectorUses = [this, cache](int id) {
+			if (ImGui::GetFrameCount() - cache->first >= 60) {
+				cache->first = ImGui::GetFrameCount();
+				auto& uses = cache->second;
+				uses.assign(1024, 0);
+				for (auto& c : characters) {
+					FrameData& fd = c->frameData;
+					for (int p = 0; p < fd.get_sequence_count(); p++) {
+						const Sequence* seq = fd.get_sequence(p);
+						if (!seq) continue;
+						for (const auto& f : seq->frames)
+							for (int k = 0; k < 3; k++)
+								for (int v : {f.AT.hitVector[k], f.AT.guardVector[k]})
+									if (v >= 0 && v < (int)uses.size()) uses[v]++;
+					}
+				}
+			}
+			return id >= 0 && id < (int)cache->second.size() ? cache->second[id] : 0;
+		};
+	}
+	sysConstWindow.draw();
 	drawPatternManagerWindow();
 	drawCgManagerWindow();
 	stage3dview::Draw();
