@@ -1,0 +1,40 @@
+{
+ "case": "mbtl_flipV_chr001_p157f2",
+ "game": "mbtl_flipV_chr001_p157f2_nb",
+ "plate": "/mnt/c/dev/hantei-chan/tools/gamecap/captures/v2/mbtl_flipV_chr001_p157f2_nb_game_plate.png",
+ "light": [
+  [
+   1.07,
+   2.0
+  ],
+  [
+   1.04,
+   3.0
+  ],
+  [
+   1.05,
+   5.0
+  ]
+ ],
+ "raw": [
+  11.681174807955928,
+  46.79719330013581
+ ],
+ "lit": [
+  9.510180900809441,
+  40.80466274332277
+ ],
+ "band": [
+  5.237121206596492,
+  22.167836124943413
+ ],
+ "band_px": 1,
+ "grad": null,
+ "glow": null,
+ "glow_ring": null,
+ "px": 35344,
+ "refine": [
+  0,
+  0
+ ]
+}

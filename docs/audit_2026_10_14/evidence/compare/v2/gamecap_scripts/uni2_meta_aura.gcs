@@ -7,4 +7,15 @@ meta f32 [P1+0x8C0]+0x40 aura_rgb 3
 meta f32 [P1+0x8C0]+0x60 aura_strength
 meta i32 [P1+0x8C0]+0x4 aura_timer
 meta u16 P1+0x2F4 flash_timer
+# render-match2: the aura glow pass (CharaAura_DrawGlow 0x59D910, active while aura_type >= 0, independent of
+# aura_rgb): blend mode (+0xC, 1 -> additive), the colour/colorB ARGB floats (+0x1C/+0x2C), power (+0x4C = blur
+# shift), the pulsed glow ARGB (+0x50) and its draw priority (+0x54). The glowing object is [aura+0].
+meta i32 [P1+0x8C0]+0xC aura_blend
+meta f32 [P1+0x8C0]+0x1C aura_color 4
+meta f32 [P1+0x8C0]+0x2C aura_colorB 4
+meta f32 [P1+0x8C0]+0x4C aura_power
+meta u32 [P1+0x8C0]+0x50 aura_glow_argb
+meta i32 [P1+0x8C0]+0x54 aura_glow_prio
+meta f32 [P1+0x8C0]+0x18 aura_power_base
+meta u32 [P1+0x8C0]+0x0 aura_obj
 include uni2_meta.gcs

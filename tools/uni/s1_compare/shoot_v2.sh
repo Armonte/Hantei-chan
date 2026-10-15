@@ -11,7 +11,7 @@ G='C:\dev\hantei-chan\gamedata'
 grep -v "^#" "$(dirname "$0")/${CASEFILE:-cases.txt}" | grep -E "${CASES:-.}" | while IFS='|' read -r name txt pat fr tick zoom note; do
 	name=$(echo $name); txt=$(echo $txt | tr / '\\'); pat=$(echo $pat); fr=$(echo $fr); tick=$(echo $tick)
 	[ -z "$name" ] && continue
-	printf "[Other settings][]\nposX=0\nposY=0\nsizeX=1700\nsizeY=1100\n" > "$W/hanteichan.ini"
+	printf "[Other settings][]\nposX=-2000\nposY=0\nsizeX=1700\nsizeY=1100\n" > "$W/hanteichan.ini"
 	args=(--open "$G\\$txt" --pattern "$pat" --frame "$fr" --zoom 1 ${EXTRA_ARGS:-})
 	[ "$tick" != "-1" ] && args+=(--tick "$tick")
 	rm -f "$W/$name.png"

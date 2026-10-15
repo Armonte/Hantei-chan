@@ -168,5 +168,28 @@ inline glm::mat4 PartPerspective(float w, float h)
 	return glm::scale(m, glm::vec3(1.f, 1.f, -1.f));
 }
 
+// ---- D3D9 pixel-centre rule -----------------------------------------------------------------------------------
+// UNI2 1.42, MBTL 25646393 and MBAA all draw through D3D9 with no half-pixel correction anywhere in the part, CG or
+// camera chain (uni2 PatPart_GetGlobalPerspective640x480 0x4C1860, CDxCamera_ctor 0x4AAE30, CgLayer_DrawWithCharaShader
+// 0x4BE140, shader VS_CharaPtDrawV / VS_CharaDrawV; MBTL 0x4A3DE0 / CDxCamera_ctor 0x48C220; MBAA
+// Camera_UpdateMatrices 0x44BE95). In D3D9 the centre of pixel k is window coordinate k; in GL it is k + 0.5. The same
+// geometry therefore covers the same pixels in both, but every pixel samples its texture half a pixel further left and
+// up in the game. Translating the whole drawn image by +0.5 px (right, and down in window y) in the editor reproduces
+// the game's samples exactly: a 6-px rect at x = 0 then samples u = k / 6 at pixel k (pixel 3 = the texture centre,
+// a 1-px core on the origin pixel) instead of (k + 0.5) / 6 (a 2-px core half a pixel right). Window y is down, so
+// the NDC shift is (+1/w, -1/h). Applied to game-drawn sprites and parts only, not to editor overlays.
+constexpr float kD3d9PixelCentreShiftPx = 0.5f;
+
+inline glm::mat4 D3d9PixelCentreNdc(float w, float h)
+{
+	return glm::translate(glm::mat4(1.f), glm::vec3(2.f * kD3d9PixelCentreShiftPx / w, -2.f * kD3d9PixelCentreShiftPx / h, 0.f));
+}
+
+// CG layer UVs (uni2 CgLayer_DrawWithCharaShader 0x4BE140): u runs from 0.25 texel to w texels across the w-px quad
+// (and v likewise), so a point-sampled 1:1 sprite under the D3D9 rule samples 0.25 texel into each texel, never on
+// a texel boundary. Returned as the start of the [start, 1] normalised UV range of a `texels`-wide image.
+constexpr float kCgUvStartTexel = 0.25f;
+inline float CgUvStart(int texels) { return texels > 0 ? kCgUvStartTexel / (float)texels : 0.f; }
+
 } // namespace partrender
 #endif

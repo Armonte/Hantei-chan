@@ -52,7 +52,7 @@ def diff(a, b):
 
 
 EDITOR_CLEAR = np.array([83, 104, 47])  # the editor's clear colour in --capture-view shots
-EDITOR_ORIGIN = (631.0, 580.0)          # where shoot.sh's 1264x861 capture puts the world origin
+EDITOR_ORIGIN = (632.0, 580.0)          # where shoot.sh's 1264x861 capture puts the world origin
 
 
 def content_mask(im):
@@ -156,8 +156,10 @@ def game_transform(meta):
 # The shoot scripts fix the editor window, zoom and pan, so the world origin of a shot depends only on its size
 # (measured from the axes on every shot that shows them). A view filled by a full-screen part hides the axes, and the
 # edge of such a part was being taken for an axis (pups_chr027 -> (841, 0), mbtl_pral2_chr004 -> (0, 143)).
-KNOWN_ORIGINS = {(1264, 861): (631.0, 580.0),    # shoot.sh / shoot_bw*.sh: 1280x900 window
-                 (1684, 1061): (841.0, 680.0)}   # shoot_v2.sh: 1700x1100 window, zoom 1
+# render-match2 round 3: the editor's world view follows the D3D9 pixel-centre rule (+0.5 px), so the origin is
+# the pixel whose centre is the origin coordinate; the vertical axis moved one column right (631 -> 632 before acca786).
+KNOWN_ORIGINS = {(1264, 861): (632.0, 580.0),    # shoot.sh / shoot_bw*.sh: 1280x900 window
+                 (1684, 1061): (842.0, 680.0)}   # shoot_v2.sh: 1700x1100 window, zoom 1
 
 
 def editor_origin(im):
@@ -223,6 +225,10 @@ def grid_mask(K, Wh):
     return m
 
 
+AXIS_FIX = False  # v2_model sets it: correct the editor's additive axis lines instead of dropping them
+REFINE = 10       # +- px of the alignment search (0 = trust the camera geometry)
+BAND = 0          # +- px tolerance band for the extra band residual
+ROW_ADD = None    # f(channel, game rows (n,1), P1 origin) -> add per row: the stage's chara gradient
 LIGHT = None  # [(k, c)] * 3, set from --light (fit on the idle controls of the pinned stage)
 
 
@@ -244,15 +250,30 @@ def game_vs_model(game, plate, ek, ew, zoom, meta, org):
     recorded camera transform; the region is the editor's sprite footprint (Q != 1 or P != 0)."""
     K = np.asarray(ek.convert('RGB')).astype(np.float64); Wh = np.asarray(ew.convert('RGB')).astype(np.float64)
     grid = grid_mask(K, Wh)
-    P = K; Q = (Wh - K) / 255.0
+    P = K.copy(); Q = (Wh - K) / 255.0
+    ox, oy = int(round(org[0])), int(round(org[1]))
+    if AXIS_FIX:
+        # The editor's world axes are 1-px additive grey lines drawn under the sprite (K = A, W = 255 where nothing
+        # else is drawn). Where a sprite crosses them (thin parts on the origin: rect_chr024_p76's line runs down the
+        # y axis), P carries Q*A of axis: take it out and keep those pixels in the footprint instead of dropping the
+        # whole column/row (the old behaviour, which removed the line's core).
+        for horiz in (False, True):
+            for o in ((oy,) if horiz else (ox,)):
+                if not (0 <= o < (K.shape[0] if horiz else K.shape[1])): continue
+                line_k = K[o, :] if horiz else K[:, o]; line_w = Wh[o, :] if horiz else Wh[:, o]
+                bare = (np.abs(line_w - 255).max(1) == 0) & (np.ptp(line_k, axis=1) == 0) & (line_k[:, 0] > 0)
+                if bare.mean() < 0.5: continue  # not an axis line in this shot
+                A = float(np.median(line_k[bare, 0]))
+                if horiz: P[o, :] -= (Q[o, :] * A); grid[o, :] = False
+                else: P[:, o] -= (Q[:, o] * A); grid[:, o] = False
+        P = np.clip(P, 0, 255)
     foot = ((np.abs(Q - 1).max(2) > 0.02) | (P.max(2) > 4)) & ~grid
     # translucent grid lines (not identical on both backdrops) still run across the whole view
     foot[:, foot.mean(0) > 0.9] = False
     foot[foot.mean(1) > 0.9, :] = False
-    # and the 1-px axis lines through the origin
-    ox, oy = int(round(org[0])), int(round(org[1]))
-    foot[:, max(0, ox - 1):ox + 2] &= ~(foot[:, max(0, ox - 1):ox + 2].mean(0) > 0.5)[None, :]
-    foot[max(0, oy - 1):oy + 2, :] &= ~(foot[max(0, oy - 1):oy + 2, :].mean(1) > 0.5)[:, None]
+    if not AXIS_FIX:  # and the 1-px axis lines through the origin
+        foot[:, max(0, ox - 1):ox + 2] &= ~(foot[:, max(0, ox - 1):ox + 2].mean(0) > 0.5)[None, :]
+        foot[max(0, oy - 1):oy + 2, :] &= ~(foot[max(0, oy - 1):oy + 2, :].mean(1) > 0.5)[:, None]
     ys, xs = np.nonzero(foot)
     if len(xs) == 0: return None
     pad = 8
@@ -273,8 +294,8 @@ def game_vs_model(game, plate, ek, ew, zoom, meta, org):
     Fg = np.asarray(Image.fromarray(foot[y0e:y1e, x0e:x1e].astype(np.uint8) * 255).resize((gw, gh), Image.NEAREST)) > 127
     G = np.asarray(game.convert('RGB')).astype(np.float64); B = np.asarray(plate.convert('RGB')).astype(np.float64)
     best = None
-    for dy in range(-10, 11):
-        for dx in range(-10, 11):
+    for dy in range(-REFINE, REFINE + 1):
+        for dx in range(-REFINE, REFINE + 1):
             X = int(round(gx0)) + dx; Y = int(round(gy0)) + dy
             xa, ya = max(0, X), max(0, Y); xb, yb = min(G.shape[1], X + gw), min(G.shape[0], Y + gh)
             if xb - xa < 4 or yb - ya < 4: continue
@@ -300,13 +321,31 @@ def game_vs_model(game, plate, ek, ew, zoom, meta, org):
         fit.append((float(coef[0]), float(coef[1])))
     game_vs_model.last_fit = fit
     game_vs_model.last_arrays = (Gs, Bs, Ps, Qs, m)
+    game_vs_model.last_window = (xa, ya, xb, yb, gorg)
     light = LIGHT if LIGHT is not None else [(1.0, 0.0)] * 3
     lpred = np.empty_like(pred)
+    rows = np.arange(ya, yb, dtype=np.float64)[:, None]
     for c in range(3):
-        lpred[..., c] = Ps[..., c] * light[c][0] + (1 - Qs[..., c]) * light[c][1] + Qs[..., c] * Bs[..., c]
+        add = light[c][1]
+        if ROW_ADD is not None: add = add + ROW_ADD(c, rows, gorg)  # per-row stage chara colour (BgColor specular)
+        lpred[..., c] = Ps[..., c] * light[c][0] + (1 - Qs[..., c]) * add + Qs[..., c] * Bs[..., c]
     lpred = np.clip(lpred, 0, 255)
     ld = np.abs(Gs - lpred)
     lmean = ld[m].mean(); lchanged = ((ld.sum(2) > 24) & m).sum() * 100.0 / m.sum()
+    # tolerance band: per pixel, the best of the prediction shifted by up to +-BAND px (distance-transform style
+    # tolerance for thin geometry, where a sub-pixel edge or AA difference otherwise dominates the mean)
+    if BAND > 0:
+        Gp = Gs; bd = np.full(Gs.shape[:2], np.inf); bdc = None
+        for sy in range(-BAND, BAND + 1):
+            for sx in range(-BAND, BAND + 1):
+                sh_ = np.roll(np.roll(lpred, sy, 0), sx, 1)
+                dd = np.abs(Gp - sh_); ds = dd.sum(2)
+                take = ds < bd
+                bd = np.where(take, ds, bd)
+                bdc = dd if bdc is None else np.where(take[..., None], dd, bdc)
+        game_vs_model.last_band = (float(bdc[m].mean()), float(((bd > 24) & m).sum() * 100.0 / m.sum()))
+    else:
+        game_vs_model.last_band = None
     game_vs_model.last_light = (light, lmean, lchanged, Image.fromarray(lpred.astype(np.uint8)),
                                 Image.fromarray(np.clip(ld * 4 * m[:, :, None], 0, 255).astype(np.uint8)))
     changed = ((d.sum(2) > 24) & m).sum() * 100.0 / m.sum()

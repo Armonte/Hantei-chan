@@ -4,3 +4,6 @@ ctrl_chr000_p0f0 | uni2/data/chr000/chr000_0.txt | 0 | 0 | -1 | 1 | control: Hyd
 mbtl_ctrl_chr001_p0f0 | mbtl/data/chr001/chr001_0.txt | 0 | 0 | -1 | 1 | control: MBTL Hisui idle, plain sprite (v2, MBTL-IM pause)
 ctrl_chr019_p0 | uni2/data/chr019/chr019_0.txt | 0 | 0 | -1 | 1.5 | v2 control: chr019 idle, plain sprite (aura lit / unlit runs)
 ctrl_chr027_p0 | uni2/data/chr027/chr027_0.txt | 0 | 0 | -1 | 1.5 | v2 control: chr027 idle, plain sprite (aura lit / unlit runs)
+ctrl_chr020_p0 | uni2/data/chr020/chr020_0.txt | 0 | 0 | -1 | 1 | render-match2 control: chr020 idle, plain sprite (aura lit / unlit runs, CG cases' floor)
+ctrl_chr024_p0 | uni2/data/chr024/chr024_0.txt | 0 | 0 | -1 | 1 | render-match2 control: chr024 idle (rect case's floor)
+rect_chr024_p76_z1 | uni2/data/chr024/chr024_0.txt | 76 | 0 | -1 | 1 | render-match2: rect line at the game's zoom 1 (thin geometry: no 1.5x resample)
