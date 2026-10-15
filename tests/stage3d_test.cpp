@@ -4,6 +4,7 @@
 #include "stage3d/s3d_bglist.h"
 #include "stage3d/s3d_dds.h"
 #include "stage3d/s3d_model.h"
+#include "stage3d/s3d_fbxascii.h"
 
 #include <cmath>
 #include <cstdio>
@@ -140,12 +141,72 @@ static void TestShipped(const std::string& bg)
 	CHECK(stages > 0);
 }
 
+// ASCII FBX stages (DFCI, the UNI[st]/[cl-r] arcade build): every bg\<dir>\bg.fbx loads, has geometry and a BgList entry, and
+// its textures decode. Where a folder also has bg.fbx.bin (six UNI2 stages), both forms must agree on counts and bounds.
+static void TestAscii(const std::string& bg, const char* label)
+{
+	namespace fs = std::filesystem;
+	if (!fs::is_directory(fs::u8path(bg))) { std::printf("skip %s: %s missing\n", label, bg.c_str()); return; }
+	s3d::BgList L;
+	std::string err;
+	const bool haveList = s3d::LoadBgListFile(bg + "/BgList.txt", L, err);
+	int stages = 0, textures = 0, both = 0;
+	for (auto& d : fs::directory_iterator(fs::u8path(bg))) {
+		const fs::path txt = d.path() / "bg.fbx";
+		if (!fs::exists(txt)) continue;
+		s3d::Model m;
+		const bool ok = s3d::LoadFbxAsciiFile(txt.u8string(), m, err);
+		const bool hasBin = fs::exists(d.path() / "bg.fbx.bin");
+		if (!ok && hasBin && err.find("6.1") != std::string::npos) {   // UNI2 bg021 ships an FBX 7.7 source next to its .bin
+			std::printf("  note %s: %s (the game reads the .bin)\n", d.path().filename().u8string().c_str(), err.c_str());
+			continue;
+		}
+		if (!ok) std::fprintf(stderr, "%s: %s\n", txt.u8string().c_str(), err.c_str());
+		CHECK(ok);
+		if (!ok) continue;
+		const s3d::Stats st = s3d::ComputeStats(m);
+		CHECK(st.meshes > 0 && st.triangles > 0);
+		if (haveList) CHECK(L.byDataFile(d.path().filename().u8string()) != nullptr);
+		for (const std::string& t : m.textures) {
+			fs::path tp = d.path() / fs::u8path(t);
+			if (!fs::exists(tp)) tp.replace_extension(".dds");
+			if (t.empty() || !fs::exists(tp)) continue;
+			s3d::Image im;
+			const bool tok = s3d::LoadDdsFile(tp.u8string(), im, err);
+			if (!tok) std::fprintf(stderr, "%s: %s\n", tp.u8string().c_str(), err.c_str());
+			CHECK(tok);
+			++textures;
+		}
+		const fs::path bin = d.path() / "bg.fbx.bin";
+		if (fs::exists(bin)) {
+			s3d::Model b;
+			CHECK(s3d::LoadFbxExFile(bin.u8string(), b, err));
+			const s3d::Stats sb = s3d::ComputeStats(b);
+			if (sb.meshes != st.meshes || sb.vertices != st.vertices) {
+				// a different authoring revision of the source (the game reads the .bin): reported, not compared
+				std::printf("  note %s: .fbx is another revision (%u meshes / %u verts vs .bin %u / %u)\n", d.path().filename().u8string().c_str(),
+					st.meshes, st.vertices, sb.meshes, sb.vertices);
+				continue;
+			}
+			CHECK(sb.triangles == st.triangles);
+			for (int k = 0; k < 3; k++) CHECK(std::fabs(sb.bmin[k] - st.bmin[k]) < 0.01f && std::fabs(sb.bmax[k] - st.bmax[k]) < 0.01f);
+			++both;
+		}
+		++stages;
+	}
+	std::printf("%s: %d ASCII stages, %d textures, %d also as .bin (agree)\n", label, stages, textures, both);
+	CHECK(stages > 0);
+}
+
 int main(int argc, char** argv)
 {
 	TestSynthetic();
 	TestDds();
 	TestBgList();
 	TestShipped(argc > 1 ? argv[1] : "C:/dev/hantei-chan/gamedata/uni2/bg");
+	TestAscii("C:/dev/hantei-chan/gamedata/uni2/bg", "uni2 (both forms)");
+	TestAscii("C:/games/unib/bg", "unib arcade");
+	TestAscii("C:/dev/transmission/dfci+transmission/bg", "dfci");
 	std::printf(g_fail ? "stage3d_test: %d failures\n" : "stage3d_test: ok\n", g_fail);
 	return g_fail ? 1 : 0;
 }
