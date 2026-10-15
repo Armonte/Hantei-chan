@@ -1,0 +1,40 @@
+{
+ "case": "pral2_chr025_p133f1",
+ "game": "pral2_chr025_p133f1",
+ "plate": "/mnt/c/dev/hantei-chan/tools/gamecap/captures/s1_compare/game/pral2_chr025_p133f1_game_plate.png",
+ "light": [
+  [
+   1.0,
+   0.0
+  ],
+  [
+   1.0,
+   19.571428571428573
+  ],
+  [
+   1.0,
+   29.641025641025642
+  ]
+ ],
+ "raw": [
+  3.3103059485285984,
+  5.0912711583139725
+ ],
+ "lit": [
+  2.716332239927754,
+  4.454032525721872
+ ],
+ "band": [
+  2.2468268585761955,
+  3.916362429472287
+ ],
+ "band_px": 1,
+ "grad": null,
+ "glow": null,
+ "glow_ring": null,
+ "px": 15065,
+ "refine": [
+  0,
+  0
+ ]
+}

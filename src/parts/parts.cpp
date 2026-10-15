@@ -688,14 +688,19 @@ void Parts::Draw(const DrawParams& params,
         // (PS_CharaPtDrawV: out.rgb *= palette[PPPA].rgb). Slot 0 = no tint: MBAA's PAT loader
         // (File_ParsePPTPChunks 0x404220) has no colour-slot tag, and palette entry 0 is the transparent
         // key colour (tinting by it turned white material blue, EX report: Linne pattern 135).
+        // The tint reads the base <cg>.pal of the selected colour even while the pattern's PUPS bank is in
+        // effect (partrender::PartTintPalette; MBTL chr011 pattern 309 halo, slot 248).
         float newColor[4];
         memcpy(newColor, color, sizeof(float) * 4);
-        if (params.paletteTint && cutout.colorSlot > 0 && cg) {
-            unsigned int palColor = cg->getColorFromPal(cutout.colorSlot);
+        if (params.paletteTint && cutout.colorSlot > 0 && cutout.colorSlot < 256 && cg) {
+            const unsigned *tintPal = partrender::PartTintPalette(cg->paletteAt(cg->paletteNumber(), 0), cg->getPalettePtr());
+            unsigned int palColor = tintPal ? tintPal[cutout.colorSlot] : 0;
             if (palColor) {
-                newColor[0] *= (palColor & 0xFF) / 255.f;
-                newColor[1] *= ((palColor >> 8) & 0xFF) / 255.f;
-                newColor[2] *= ((palColor >> 16) & 0xFF) / 255.f;
+                float rgb[3];
+                partrender::PaletteEntryRgb(palColor, rgb);
+                newColor[0] *= rgb[0];
+                newColor[1] *= rgb[1];
+                newColor[2] *= rgb[2];
             }
         }
         newColor[0] *= bgra[2] / 255.f; // R

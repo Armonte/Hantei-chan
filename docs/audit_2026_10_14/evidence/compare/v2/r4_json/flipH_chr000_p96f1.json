@@ -1,0 +1,40 @@
+{
+ "case": "flipH_chr000_p96f1",
+ "game": "flipH_chr000_p96f1",
+ "plate": "/mnt/c/dev/hantei-chan/tools/gamecap/captures/s1_compare/game/flipH_chr000_p96f1_game_plate.png",
+ "light": [
+  [
+   1.0,
+   0.0
+  ],
+  [
+   1.0,
+   20.0
+  ],
+  [
+   1.0,
+   33.0
+  ]
+ ],
+ "raw": [
+  14.472343505851004,
+  81.80188388120675
+ ],
+ "lit": [
+  0.8372736608695439,
+  1.1050535627690996
+ ],
+ "band": [
+  0.34825456811190625,
+  0.02792023629336821
+ ],
+ "band_px": 1,
+ "grad": null,
+ "glow": null,
+ "glow_ring": null,
+ "px": 68051,
+ "refine": [
+  1,
+  1
+ ]
+}

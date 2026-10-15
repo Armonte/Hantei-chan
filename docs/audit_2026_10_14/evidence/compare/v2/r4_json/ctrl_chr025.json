@@ -1,0 +1,40 @@
+{
+ "case": "ctrl_chr025_p0f0",
+ "game": "ctrl_chr025_p0f0",
+ "plate": "/mnt/c/dev/hantei-chan/tools/gamecap/captures/s1_compare/control/ctrl_chr025_p0f0_game_plate.png",
+ "light": [
+  [
+   1.0,
+   17.0
+  ],
+  [
+   1.0,
+   50.0
+  ],
+  [
+   1.0,
+   86.0
+  ]
+ ],
+ "raw": [
+  49.00523634448462,
+  95.98614445018383
+ ],
+ "lit": [
+  2.4778848004213385,
+  0.7140469751754732
+ ],
+ "band": [
+  2.474036036583513,
+  0.6684695086749112
+ ],
+ "band_px": 1,
+ "grad": null,
+ "glow": null,
+ "glow_ring": null,
+ "px": 32911,
+ "refine": [
+  0,
+  0
+ ]
+}
