@@ -11,6 +11,7 @@
 #include "han2/pac_archive.h"
 #include "game_link_panel.h"
 #include "tag_panel.h"
+#include "pcmod/pcmod_export_ui.h"
 
 #include <glad/glad.h>
 #include <windows.h>
@@ -202,6 +203,12 @@ static void RunUiScript(MainFrame &mf, HDC dc, const std::function<void(const st
 		std::string msg;
 		if (mf.PatScriptCommand(cmd, arg, &msg)) {   // PAT editor commands (ui/pat_editor_impl.h)
 			if (!msg.empty()) { FILE *lf = fopen((gStartup.uiScript + ".log").c_str(), "a"); if (lf) { fprintf(lf, "%s\n", msg.c_str()); fclose(lf); } }
+			waitFrames = 3;
+			return;
+		}
+		if (pcmodui::ScriptCommand(cmd, arg, &msg)) {   // pcmod <open|add|addfolder|set|export|status> (pcmod/pcmod_export_ui.h)
+			FILE *lf = fopen((gStartup.uiScript + ".log").c_str(), "a");
+			if (lf) { fprintf(lf, "%s %s -> %s\n", cmd.c_str(), arg.c_str(), msg.empty() ? "ok" : msg.c_str()); fclose(lf); }
 			waitFrames = 3;
 			return;
 		}

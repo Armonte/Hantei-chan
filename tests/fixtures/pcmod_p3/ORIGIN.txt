@@ -1,0 +1,4 @@
+P3_PACKAGE_FILES.tsv: copied unchanged from docs/actcadenza_parity/ (the ActCadenza moon-3 package, 75 files, id actcadenza
+1.0.3, class sim). tests/pcmod_test.cpp rebuilds the manifest from it and pins:
+  package digest  7721d18a3b3f8984582ca65a27ceea41992d6c9db48958a4ea6503750c4b2fe9
+  package sim     d6d72ad9295f0354dcabcfeffe06d06d2b031a07488460fd87c329e040026ef8  (74 files: the one data\*.pal is cosmetic)

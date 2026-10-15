@@ -136,6 +136,7 @@ void MainFrame::Draw()
 // Per-view scene rendering (render targets, onion skin, detached views, PNG
 // export) - see ui/view_render_impl.h and docs/HANTEI_WAVE2.md
 // ============================================================================
+#include "pcmod/pcmod_export_ui.h"
 #include "ui/view_render_impl.h"
 #include "ui/workspace_hosts_impl.h"
 #include "ui/png_export_impl.h"

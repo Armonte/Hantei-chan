@@ -10,6 +10,7 @@
 // character's .txt descriptor and never writes without a review step.
 
 #include "../mbaacc_package.h"
+#include "../pcmod/pcmod_export_ui.h"
 
 namespace pkgui {
 struct State {
@@ -60,12 +61,15 @@ void MainFrame::DrawPackageToolsMenuItems()
 	}
 	if (!hasDescriptor && ImGui::IsItemHovered(ImGuiHoveredFlags_AllowWhenDisabled))
 		ImGui::SetTooltip("%s", TXT("Needs a character opened from its .txt descriptor."));
+	ImGui::Separator();
+	pcmodui::MenuItem(descriptor);   // PovertyCaster pcmod package (works without a character: add files / a folder)
 	ImGui::TextDisabled("%s", TXT("Also: mbaaccpackage.exe (validate, repair-crlf,\nconsolidate, extract, pack-list, pack-extract)"));
 	ImGui::EndMenu();
 }
 
 void MainFrame::DrawPackageToolWindows()
 {
+	pcmodui::Draw();
 	auto& g = pkgui::g;
 	const ImVec2 mainPos = ImGui::GetMainViewport()->Pos;
 	if (g.showReport) {
