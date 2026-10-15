@@ -173,6 +173,8 @@ public:
 	int pupsBankCount() const;
 	bool changePaletteNumber(int number);
 	int getPalNumber();
+	// Palette number (colour) currently selected, independent of the PUPS bank.
+	int paletteNumber() const { return curPalIndex; }
 	// 256 entries (0xAABBGGRR, entry 0 transparent) of palette `number` in PUPS bank `pups` (0 = the bank / .pal), or null when it does not exist.
 	// Does not change the current palette (the CG manager previews with it).
 	const unsigned int *paletteAt(int number, int pups = 0) const;

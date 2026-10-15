@@ -191,5 +191,23 @@ inline glm::mat4 D3d9PixelCentreNdc(float w, float h)
 constexpr float kCgUvStartTexel = 0.25f;
 inline float CgUvStart(int texels) { return texels > 0 ? kCgUvStartTexel / (float)texels : 0.f; }
 
+// PPPA colour-slot tint palette. MBTL (build 25646393) PatPart_SetupDraw_ShaderWorldMtx 0x411C10 sets
+// g_fPtLastColor = drawParams+0x2C[PPPA] bytes 0..2 / 255 (alpha unused). Han6Object_Draw 0x597070 points that at
+// CCharaDataSet+0x118, a 256-colour copy that CharaDataSet_ApplyColorBuildPalTexAndTintCopy 0x593030 takes from
+// palette element slot 0: the base <cg>.pal of the selected colour. A pattern's PUPS only moves the sprite's
+// palette texture row (fPalPlusV), so the tint never reads <cg>_pN.pal. Returns the palette to tint from: bank 0
+// when the character has one, else the palette in effect.
+inline const unsigned *PartTintPalette(const unsigned *bank0Palette, const unsigned *currentPalette)
+{
+	return bank0Palette ? bank0Palette : currentPalette;
+}
+// RGB multipliers of a palette entry as the game reads it (memory bytes 0, 1, 2 = R, G, B).
+inline void PaletteEntryRgb(unsigned entry, float rgb[3])
+{
+	rgb[0] = (float)(entry & 0xFF) / 255.f;
+	rgb[1] = (float)((entry >> 8) & 0xFF) / 255.f;
+	rgb[2] = (float)((entry >> 16) & 0xFF) / 255.f;
+}
+
 } // namespace partrender
 #endif

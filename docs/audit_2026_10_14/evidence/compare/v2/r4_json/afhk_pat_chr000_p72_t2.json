@@ -1,0 +1,40 @@
+{
+ "case": "afhk_pat_chr000_p72_t2",
+ "game": "afhk_pat_chr000_p72_t2",
+ "plate": "/mnt/c/dev/hantei-chan/tools/gamecap/captures/s1_compare/game/afhk_pat_chr000_p72_t2_game_plate.png",
+ "light": [
+  [
+   1.0,
+   0.4392523364485981
+  ],
+  [
+   1.0,
+   21.22222222222222
+  ],
+  [
+   1.0,
+   35.370370370370374
+  ]
+ ],
+ "raw": [
+  11.223950039808917,
+  68.20906706631698
+ ],
+ "lit": [
+  3.068890387489433,
+  9.142000749344323
+ ],
+ "band": [
+  1.5544526668334553,
+  2.0044960659423006
+ ],
+ "band_px": 1,
+ "grad": null,
+ "glow": null,
+ "glow_ring": null,
+ "px": 5338,
+ "refine": [
+  0,
+  0
+ ]
+}

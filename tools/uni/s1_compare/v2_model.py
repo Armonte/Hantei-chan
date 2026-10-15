@@ -46,6 +46,20 @@ def aura_fit(game, pl, ek, ew, zoom, meta, org):
     return c
 
 
+GREY = None  # --grey: the backdrop level of the <name>_new_g.png shots (shoot_batch.sh: 64)
+
+
+def load_w(bw, name):
+    """The white-backdrop term of E = P + Q * backdrop. With --grey it is extrapolated from the 64-grey shot,
+    W = K + (E_g - K) * 255 / 64, as a float array: an additive part clips on white (K + 255 > 255), which made
+    Q < 1 and under-predicted every additive pixel over a bright backdrop (pras_chr020_p5f2's .pat layer)."""
+    if GREY:
+        K = np.asarray(Image.open(os.path.join(bw, name + '_new_k.png')).convert('RGB')).astype(np.float64)
+        Eg = np.asarray(Image.open(os.path.join(bw, name + '_new_g.png')).convert('RGB')).astype(np.float64)
+        return K + (Eg - K) * 255.0 / GREY
+    return Image.open(os.path.join(bw, name + '_new_w.png'))
+
+
 def zoom_of(name):
     """Editor zoom of a case or control shot (cases.txt, cases_control.txt)."""
     for f in ('cases.txt', 'cases_control.txt'):
@@ -59,16 +73,17 @@ def zoom_of(name):
 GRAD_H = 400.0  # g_fCharaBgStandardPixelHeight: the per-stage/per-chara table (uni2 1.42 0xC58C24) or 400 (Stage_BuildCharaBgColorParams 0x5C44E0)
 
 
-def grad_fit(ctrl, ctrl_game, bw, gd):
+def grad_fit(ctrl, ctrl_game, bw, gd, plate_fallback=None):
     """The stage's chara colour gradient (uni2 1.42 TecCharaDrawBgColorSpecular_V pass, Shader/sh_chara.txt
     PS_CharaDrawBgColorSpecularV: specular += base + height * clamp(h / g_fCharaBgStandardPixelHeight, 0, 1), h = sprite
     px above the object origin; base/height = the stage's chara-colour curves sampled at the object's x,
     Stage_SampleCharaBgSpecular 0x518130). Calibrated on the same session's idle control (its own aura add taken
     out), then applied unchanged to the case: (base, height) per channel."""
     game = Image.open(os.path.join(gd, ctrl_game + '_game.png')).convert('RGB')
-    pl = Image.open(os.path.join(gd, ctrl_game + '_game_plate.png')).convert('RGB')
+    pp = os.path.join(gd, ctrl_game + '_game_plate.png')
+    pl = Image.open(pp if os.path.exists(pp) else plate_fallback).convert('RGB')  # chr019/chr027 runs: one shared plate
     meta = json.load(open(os.path.join(gd, ctrl_game + '_game.json')))
-    ek = Image.open(os.path.join(bw, ctrl + '_new_k.png')); ew = Image.open(os.path.join(bw, ctrl + '_new_w.png'))
+    ek = Image.open(os.path.join(bw, ctrl + '_new_k.png')); ew = load_w(bw, ctrl)
     zoom = zoom_of(ctrl)
     keep = sh.LIGHT, sh.ROW_ADD; sh.LIGHT = None; sh.ROW_ADD = None
     sh.game_vs_model(game, pl, ek, ew, zoom, meta, sh.editor_origin(ek))
@@ -121,6 +136,63 @@ def aura_glow(sil, meta, mode='sq'):
     return np.clip(up, 0, 1) * ga, rgb
 
 
+def layer_weight(bw, cg, pat, full, org):
+    """Gradient weight of a frame that mixes CG layers (stage chara gradient, CgLayer_DrawWithCharaShader) and .pat
+    layers (Han6Draw pat path, no gradient), from per-layer editor shots (shoot_batch.sh --layer passes). Each layer
+    is E_L = P_L + Q_L * backdrop; drawn in order, the frame is E = P_top + Q_top * (P_bot + Q_bot * backdrop). The CG
+    output gets + g * (1 - Q_cg) before it is blended, so the weight of g in the frame is (1 - Q_cg) when the CG
+    layer is on top and Q_pat * (1 - Q_cg) when the .pat layer is drawn over it. The order is the one whose
+    composite reproduces the editor's own all-layer shot. Returns (weight H x W x 3, order, composite error)."""
+    def pq(n):
+        K = np.asarray(Image.open(os.path.join(bw, n + '_new_k.png')).convert('RGB')).astype(np.float64)
+        w = load_w(bw, n)
+        Wh = w if isinstance(w, np.ndarray) else np.asarray(w.convert('RGB')).astype(np.float64)
+        return K, (Wh - K) / 255.0
+    Pc, Qc = pq(cg); Pp, Qp = pq(pat); Pf, Qf = pq(full)
+    ox, oy = int(round(org[0])), int(round(org[1]))
+    # the editor's additive axis lines are in every shot: compare off the axes only
+    off = np.ones(Pf.shape[:2], bool); off[:, ox] = False; off[oy, :] = False
+    e_cg_top = np.abs(Pc + Qc * Pp - Pf)[off].mean()
+    e_pat_top = np.abs(Pp + Qp * Pc - Pf)[off].mean()
+    w = 1 - Qc
+    if e_pat_top < e_cg_top: w = Qp * w
+    w[:, ox] = 0; w[oy, :] = 0  # axis pixels: not CG coverage
+    return np.clip(w, 0, 1), ('pat over CG' if e_pat_top < e_cg_top else 'CG over pat'), min(e_cg_top, e_pat_top)
+
+
+def mbtl_light(stage, std_h, xpos):
+    """MBTL CG character shading (IDA MBTL 25646393, renamed and saved): Han6Draw_DrawFrameLayers_2to0 0x4A0750 draws
+    each CG layer three times through Han6Draw_SubmitCgSprite_ParentMtx 0x4A0C40 (Shader/sh_chara.txt):
+      TecCharaDrawBgColor_V      normal blend:  pal * vcol * (base + height * t)
+      ...Specular_V              additive:      spec_base + spec_height * t
+      ...Bokashi_V               additive:      bokashi_alpha * mean_9x9(pow(pal * vcol, 4))   (g_Power 4, g_Blightness 1)
+    t = clamp(px above the feet / StdH, 0, 1), StdH from bg/bg_chara_height.csv (chr001: 330). base / height = the
+    bottom row and top - bottom of bg/<stage>/stage_color.img at the object's strip column 2048 + (x >> 7)
+    (Stage_SampleCharaBgStrip 0x4EFD50), likewise stage_specular.img; bokashi alpha = stage_bokashi_alpha.img byte 0.
+    This replaces the fitted k > 1: the brightening is the bokashi pow(tex, 4) add (MBTL-IM BloomStrength only
+    drives the separate screen bloom, Stage_ScreenBloomPass 0x4EEDA0)."""
+    def strip(name):
+        b = open('/mnt/c/dev/hantei-chan/gamedata/mbtl/bg/%s/%s' % (stage, name), 'rb').read()
+        w = int.from_bytes(b[12:16], 'little'); h = int.from_bytes(b[16:20], 'little')
+        return np.frombuffer(b[20:20 + w * h * 4], np.uint8).reshape(h, w, 4).astype(np.float64)
+    xi = 2048 + (int(xpos) >> 7)
+    col = strip('stage_color.img')[:, xi]; spc = strip('stage_specular.img')[:, xi]
+    bk = strip('stage_bokashi_alpha.img')[0, xi, 0] / 255.0
+    from numpy.lib.stride_tricks import sliding_window_view
+    def boxmean(a, r=4): return sliding_window_view(np.pad(a, r), (2 * r + 1, 2 * r + 1)).mean((-1, -2))
+    def fn(P, Q, B, rows, gorg):
+        t = np.clip((gorg[1] - rows) / std_h, 0, 1)
+        op = 1 - Q.mean(2); opm = op > 0.5; cnt = boxmean(opm.astype(np.float64))
+        out = np.empty_like(P)
+        for c in range(3):
+            C = col[1, c] / 255 + (col[0, c] - col[1, c]) / 255 * t; S = spc[1, c] + (spc[0, c] - spc[1, c]) * t
+            e = P[..., c] / np.maximum(op, 1e-3) / 255
+            p4 = boxmean(np.where(opm, np.clip(e, 0, 1) ** 4, 0)) / np.maximum(cnt, 1e-6)
+            out[..., c] = P[..., c] * C + op * S + Q[..., c] * B[..., c] + bk * p4 * 255 * np.where(opm, 1, cnt)
+        return out
+    return fn
+
+
 def main():
     a = sys.argv[1:]
     bw = arg(a, '--bw', os.path.join(D, 'docs/audit_2026_10_14/evidence/compare/v2/editor_bw'))
@@ -140,7 +212,11 @@ def main():
     sh.AXIS_FIX = '--no-axis-fix' not in a
     if '--no-axis-fix' in a: a.remove('--no-axis-fix')
     jout = arg(a, '--json')
+    global GREY
+    if '--grey' in a: a.remove('--grey'); GREY = 64.0
     gctrl = arg(a, '--grad-ctrl')  # CTRLCASE,CTRLGAME: calibrate the stage chara gradient on that control
+    layers = arg(a, '--layers')  # CGSHOT,PATSHOT: per-layer editor shots; the gradient goes on the CG layers only
+    ml = arg(a, '--mbtl-light')  # STAGE,STDH: the MBTL BgColor three-pass shading (mbtl_light)
     gmode = arg(a, '--glow')  # 'lin' / 'sq': model the aura (GRD Vorpal) glow pass from the sidecar (aura_glow_argb)
     case = a[0]
     zoom = float(zarg) if zarg else zoom_of(case)
@@ -148,7 +224,7 @@ def main():
     game = Image.open(os.path.join(gd, gn + '_game.png')).convert('RGB')
     meta = json.load(open(os.path.join(gd, gn + '_game.json')))
     plate = plate or os.path.join(gd, gn + '_game_plate.png')
-    ek = Image.open(os.path.join(bw, case + '_new_k.png')); ew = Image.open(os.path.join(bw, case + '_new_w.png'))
+    ek = Image.open(os.path.join(bw, case + '_new_k.png')); ew = load_w(bw, case)
     org = sh.editor_origin(ek)
     if ls: light = [tuple(map(float, x.split(','))) for x in ls.split(';')]
     elif 'aura_rgb' in meta: light = [(1.0, float(c)) for c in aura_add(meta)]
@@ -157,9 +233,13 @@ def main():
     grad = None
     if gctrl:
         cc, cg = gctrl.split(',')
-        grad = grad_fit(cc, cg, bw, gd)
+        grad = grad_fit(cc, cg, bw, gd, plate)
         sh.ROW_ADD = lambda c, rows, gorg: grad[c][0] + grad[c][1] * np.clip((gorg[1] - rows) / GRAD_H, 0, 1)
         print('stage chara gradient (base, height) per RGB from %s:' % cg, [tuple(round(v, 1) for v in g) for g in grad])
+        if layers:
+            lc, lp = layers.split(',')
+            sh.ROW_ADD_W, order, err = layer_weight(bw, lc, lp, case, org)
+            print('per-layer gradient: CG %s, .pat %s, %s (layer composite vs all-layer shot: mean |d| %.3f)' % (lc, lp, order, err))
     sh.LIGHT = None
     r = sh.game_vs_model(game, pl, ek, ew, zoom, meta, org)
     if r is None: print(case, 'no footprint'); return
@@ -190,6 +270,9 @@ def main():
         light = [(1.0, max(0.0, f)) for f in aura_fit(game, pl, ek, ew, zoom, meta, org)]
     if fitl: light = fit  # free least-squares (k, c): the floor for CG sprites, whose shader adds its own stage colour
     sh.LIGHT = light
+    if ml:
+        st, sth = ml.split(','); sh.LIGHT_FN = mbtl_light(st, float(sth), meta.get('p1_x', 0))
+        sh.LIGHT = [(1.0, 0.0)] * 3; light = 'mbtl %s StdH %s' % (st, sth)
     r = sh.game_vs_model(game, pl, ek, ew, zoom, meta, org)
     _, lmean, lch, lpred, ldiff = sh.game_vs_model.last_light
     print('light (k, c) per RGB:', light)

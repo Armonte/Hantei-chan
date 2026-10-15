@@ -1,0 +1,27 @@
+{
+ "case": "mbtl_ctrl_chr001_p0f0",
+ "game": "mbtl_ctrl_chr001_p0f0_nb",
+ "plate": "/mnt/c/dev/hantei-chan/tools/gamecap/captures/v2/mbtl_ctrl_chr001_p0f0_nb_game_plate.png",
+ "light": "mbtl bg007 StdH 330",
+ "raw": [
+  13.02315600830032,
+  70.72014714204867
+ ],
+ "lit": [
+  0.2704709129549607,
+  0.0
+ ],
+ "band": [
+  0.24115024780838068,
+  0.0
+ ],
+ "band_px": 1,
+ "grad": null,
+ "glow": null,
+ "glow_ring": null,
+ "px": 28272,
+ "refine": [
+  0,
+  0
+ ]
+}

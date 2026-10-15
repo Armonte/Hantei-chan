@@ -106,3 +106,57 @@ Captures: `cases/v2_light_chr020.gcs`, `v2_light_chr024.gcs` (UNI2, plate = one 
 because a paused UNI2-IM replays the frozen frame), `v2p_mbtl_*.gcs` (MBTL, plate = P1/P2 draw-alpha override held 0
 for one MBTL-IM step; MBTL-IM's own "Hide the characters" key did not follow the toggle reliably under gamecap).
 Game captures: `tools/gamecap/run.sh cases/v2_light_*.gcs`. Copies are in `gamecap_scripts/`, sidecars in `game_meta/`.
+
+## Round 4 / render-match3 (2026-10-15, fix/render-match3): final table
+All editor views came from one hidden `--headless --batch` process (`tools/uni/s1_compare/shoot_batch.sh`, 72 shots).
+The batch output was byte-identical to the old per-process shots before the C++ change. Every number comes from
+`tools/uni/s1_compare/v2_round4.sh`; the log is `round4.log` and the per-run JSON is in `r4_json/`.
+
+Method changes:
+- **`--grey`**: the second backdrop is now 64 grey instead of white. An additive part clips on white, which gave
+  Q < 1 and under-predicted every additive pixel over a bright plate. That was most of pras.
+- **`--mbtl-light`**: the real MBTL CG shading model (below) replaces the fitted k > 1.
+- **`--layers`**: per-layer CG / .pat gradient weight.
+- UNI2 controls: chr024, chr019 and chr027 now each carry their stage gradient, calibrated on themselves.
+
+Columns: residual is mean |d| / % px with |d| > 24; band is the ±1 px tolerance residual.
+
+| case | residual | band ±1 | own control floor (plain / band) | status |
+|---|---|---|---|---|
+| flipHV_chr019_p153 | 9.23 / 27.4% | 3.85 / 10.3% | ctrl_chr019 unlit 3.39 / 8.1% (1.64 / 3.4%) | above the floor. The residual is the brown band reported in the first pass; not investigated this round |
+| pups_chr027_p449 | no editor footprint | - | ctrl_chr027 4.48 / 9.7% | floor: neither side draws anything visible (layer 0 already selects bank 1) |
+| mbtl_pral2_chr004_p420f4 | full frame 1.23 / 0.9% (rect 200,100,1080,600) | - | full-frame | floor |
+| pral2_chr025_p133f1 | 2.72 / 4.5% | 2.25 / 3.9% | ctrl_chr025 2.48 / 0.7% | floor (plain, at the % level only with the band) |
+| flipH_chr000_p96f1 | 0.84 / 1.1% | 0.35 / 0.0% | ctrl_chr000 2.66 / 4.1% | floor |
+| flipV_chr000_p383f1 | 1.66 / 2.6% | 0.96 / 0.6% | 2.66 / 4.1% | floor |
+| afhk_pat_chr000_p72_t2 | 3.07 / 9.1% | 1.55 / 2.0% | 2.66 / 4.1% | floor with the band |
+| afhk_pat_chr019_p62_t7 | 1.61 / 3.1% | 0.79 / 0.8% | ctrl_chr019 3.39 / 8.1% | floor |
+| afhk_cg_chr020_p435_t27 | 2.06 / 2.1% | 2.01 / 2.0% | ctrl_chr020 r3 1.29 / 0.6% (1.27 / 0.6%) | ~floor: +0.8 mean, a sub-pixel edge on the AFAZ-rotated point-sampled CG |
+| afhk_cg_chr020_p437_t2 | 2.31 / 4.4% (glow ring 6.99 / 19.0%) | 2.30 / 4.4% | 1.29 / 0.6% | ~floor. The ring holds the game's drop shadow, a game-only pass |
+| **pras_chr020_p5f2** | **4.29 / 8.5%** (was 7.15 / 24.6%) | **1.63 / 1.4%** (was 3.86 / 13.5%) | 1.29 / 0.6% (1.27 / 0.6%) | floor with the band. The per-layer split (CG over .pat) gives 4.33 / 8.7%, no better. The fix was `--grey`: the .pat layer is additive (PRAL 1, slot 237) and its add clipped on white |
+| rect_chr024_p76 | thin metric: profile identical (mean abs d 0.00), centre d 0.00, width 6 = 6, top +1 row | pixel metric (492 px) 11.85 / 62.0%, band 5.64 / 25.6% | ctrl_chr024 1.71 / 0.4% | x fixed; one top row open (handoff) |
+| **mbtl_ctrl_chr001_p0f0** | **0.27 / 0.0%** with the IDA model (was 7.30 / 31.0% with the fitted k, c) | 0.24 / 0.0% | (is the floor) | control |
+| mbtl_flipV_chr001_p157f2 | 4.03 / 13.5% | 2.20 / 4.7% | 0.27 / 0.0% (sprite control; this frame is .pat only) | above the sprite floor. It is AA on a 35k px translucent arc; at the old pat floor with the band |
+| **mbtl_pups_chr011_p309** | **0.91 / 1.9%** (was 27.78 / 61.7%) | 0.36 / 0.4% | 0.27 / 0.0% | **fixed**: the PPPA tint now reads the base palette (editor fix, below) |
+
+- **MBTL PUPS halo, an editor bug, now fixed.**
+  - IDA MBTL 25646393, renamed and saved: `PatPart_SetupDraw_ShaderWorldMtx` 0x411C10 sets
+    g_fPtLastColor = drawParams+0x2C[PPPA].rgb / 255. Alpha is unused.
+  - `Han6Object_Draw` 0x597070 points that at `CCharaDataSet+0x118`.
+  - `CharaDataSet_ApplyColorBuildPalTexAndTintCopy` 0x593030 fills that copy from palette slot 0, which is the base
+    `.pal` of the selected colour.
+  - PUPS only moves the sprite's palette texture row. The editor tinted from the PUPS bank (`chr011_p1.pal`[248] =
+    (54, 54, 63)); the game uses `chr011.pal`[248] = (193, 188, 255).
+  - Fix: `partrender::PartTintPalette` in `src/parts/parts.cpp`. Unit check: `TestPppaTintPalette`.
+- **MBTL light, the real formula** (IDA MBTL, renamed and saved). `Han6Draw_DrawFrameLayers_2to0` 0x4A0750 draws each
+  CG layer three times through `Han6Draw_SubmitCgSprite_ParentMtx` 0x4A0C40 (MBTL `Shader/sh_chara.txt`):
+  1. colour pass, normal blend: pal·vcol·(base + height·t)
+  2. specular pass, additive: spec_base + spec_height·t
+  3. bokashi pass, additive: bokashi_alpha · mean9x9(pow(pal·vcol, 4))
+  - t = clamp(px above the feet / StdH, 0, 1), with StdH 330 for chr001 (`bg/bg_chara_height.csv`).
+  - The strips are read at column 2048 + (x >> 7) of `bg/bg007/stage_color.img`, `stage_specular.img` and
+    `stage_bokashi_alpha.img` (alpha 0.40).
+  - k > 1 is the pow(tex, 4) bokashi add. It is not a gain or a gamma.
+  - MBTL-IM BloomStrength only drives the separate `Stage_ScreenBloomPass` 0x4EEDA0.
+  - Check script: `mbtl_stage_light_check.py`.
+- ctest 41/41 (`ctest_r4.log`). uni_regress: `uni_regress_r4.log`.

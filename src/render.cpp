@@ -1033,8 +1033,8 @@ void Render::DrawPatLayerItem(const RenderLayer& layer, Parts* origParts)
 		layer.alpha
 	};
 
-	// PPPA tint uses the palette file of this layer's own pattern (PUPS), not whatever bank the previous
-	// CG layer left selected.
+	// Select this layer's own PUPS bank (not whatever the previous CG layer left). The PPPA tint itself always
+	// reads bank 0 (<cg>.pal) of the selected colour, as the game does (partrender::PartTintPalette).
 	CG* tintCg = m_parts->cg;
 	if (tintCg && followPups && tintCg->setPupsBank(layer.pups) && tintCg == cg)
 		curImageId = -1;

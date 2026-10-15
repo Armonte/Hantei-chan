@@ -229,6 +229,9 @@ AXIS_FIX = False  # v2_model sets it: correct the editor's additive axis lines i
 REFINE = 10       # +- px of the alignment search (0 = trust the camera geometry)
 BAND = 0          # +- px tolerance band for the extra band residual
 ROW_ADD = None    # f(channel, game rows (n,1), P1 origin) -> add per row: the stage's chara gradient
+LIGHT_FN = None   # f(P, Q, plate, game rows, P1 origin) -> prediction: replaces the (k, c) light (v2_model --mbtl-light)
+ROW_ADD_W = None  # editor-space (H, W, 3) weight of ROW_ADD per pixel (default 1 - Q: the whole sprite). Mixed CG +
+                  # .pat frames: only the CG layers get the gradient (v2_model.py --layers), see layer_weight there
 LIGHT = None  # [(k, c)] * 3, set from --light (fit on the idle controls of the pinned stage)
 
 
@@ -248,8 +251,10 @@ def game_vs_model(game, plate, ek, ew, zoom, meta, org):
     The gamecap plate is the same game frame with the fighters hidden (UNI2-IM harness), i.e. the backdrop the
     game blended onto, so the game pixel should be P + Q*plate. Everything is mapped into game pixels by the
     recorded camera transform; the region is the editor's sprite footprint (Q != 1 or P != 0)."""
-    K = np.asarray(ek.convert('RGB')).astype(np.float64); Wh = np.asarray(ew.convert('RGB')).astype(np.float64)
-    grid = grid_mask(K, Wh)
+    K = np.asarray(ek.convert('RGB')).astype(np.float64)
+    # ew: an image, or an (H, W, 3) float array = the white-backdrop shot extrapolated from a grey one (v2_model --grey)
+    Wh = ew.astype(np.float64) if isinstance(ew, np.ndarray) else np.asarray(ew.convert('RGB')).astype(np.float64)
+    grid = grid_mask(K, np.clip(Wh, 0, 255))
     P = K.copy(); Q = (Wh - K) / 255.0
     ox, oy = int(round(org[0])), int(round(org[1]))
     if AXIS_FIX:
@@ -291,6 +296,7 @@ def game_vs_model(game, plate, ek, ew, zoom, meta, org):
             out.append(np.asarray(im.resize((gw, gh), Image.BILINEAR if sc >= 1 else Image.BOX)))
         return np.stack(out, 2)
     Pg = to_game(P); Qg = to_game(Q)
+    Wg = to_game(ROW_ADD_W) if ROW_ADD_W is not None else None
     Fg = np.asarray(Image.fromarray(foot[y0e:y1e, x0e:x1e].astype(np.uint8) * 255).resize((gw, gh), Image.NEAREST)) > 127
     G = np.asarray(game.convert('RGB')).astype(np.float64); B = np.asarray(plate.convert('RGB')).astype(np.float64)
     best = None
@@ -327,8 +333,11 @@ def game_vs_model(game, plate, ek, ew, zoom, meta, org):
     rows = np.arange(ya, yb, dtype=np.float64)[:, None]
     for c in range(3):
         add = light[c][1]
-        if ROW_ADD is not None: add = add + ROW_ADD(c, rows, gorg)  # per-row stage chara colour (BgColor specular)
         lpred[..., c] = Ps[..., c] * light[c][0] + (1 - Qs[..., c]) * add + Qs[..., c] * Bs[..., c]
+        if ROW_ADD is not None:  # per-row stage chara colour (BgColor specular), on the CG layers' coverage
+            w = (1 - Qs[..., c]) if Wg is None else Wg[sl][..., c]
+            lpred[..., c] += w * ROW_ADD(c, rows, gorg)
+    if LIGHT_FN is not None: lpred = LIGHT_FN(Ps, Qs, Bs, rows, gorg)  # a full per-pixel shading model (MBTL)
     lpred = np.clip(lpred, 0, 255)
     ld = np.abs(Gs - lpred)
     lmean = ld[m].mean(); lchanged = ((ld.sum(2) > 24) & m).sum() * 100.0 / m.sum()

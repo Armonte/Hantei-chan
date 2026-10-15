@@ -248,8 +248,26 @@ static void TestD3d9PixelCentre()
 	}
 }
 
+static void TestPppaTintPalette()
+{
+	// MBTL chr011 pattern 309 (PUPS 1), part set 318 prop 14: PPPA 248. Palette 0 slot 248 is bytes C1 BC FF FF in
+	// chr011.pal and 36 36 3F FF in chr011_p1.pal. The game tints with chr011.pal (CCharaDataSet+0x118).
+	unsigned bank0[256] = {}, pups1[256] = {};
+	bank0[248] = 0xFFFFBCC1u;
+	pups1[248] = 0xFF3F3636u;
+	const unsigned *pal = PartTintPalette(bank0, pups1);
+	CHECK(pal == bank0);
+	float rgb[3];
+	PaletteEntryRgb(pal[248], rgb);
+	CHECK(Near(rgb[0], 193.f / 255.f) && Near(rgb[1], 188.f / 255.f) && Near(rgb[2], 1.f));
+	// No base .pal loaded: the palette in effect.
+	CHECK(PartTintPalette(nullptr, pups1) == pups1);
+	CHECK(PartTintPalette(nullptr, nullptr) == nullptr);
+}
+
 int main()
 {
+	TestPppaTintPalette();
 	TestPartPerspective();
 	TestD3d9PixelCentre();
 	TestBlend();
