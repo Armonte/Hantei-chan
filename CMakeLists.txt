@@ -30,6 +30,9 @@ set(HAN2_MODEL_SOURCES src/framedata_han2.cpp src/han2/han2_container.cpp src/ha
 # quill (header-only async logger, third_party/quill): src/app_log.h
 include_directories(SYSTEM "${CMAKE_SOURCE_DIR}/third_party/quill/include")
 
+# PovertyCaster pcmod packages (docs/modmanager/pcmod-manifest_schema1.md): manifest, digests, zip, pack/verify. Pure C++.
+set(PCMOD_SOURCES src/pcmod/pcmod_sha256.cpp src/pcmod/pcmod_manifest.cpp src/pcmod/pcmod_zip.cpp src/pcmod/pcmod_package.cpp)
+
 add_executable(${EXE}
 	src/main.cpp
 	src/main_frame.cpp
@@ -43,6 +46,7 @@ add_executable(${EXE}
 	src/workspace_viewports.cpp
 	src/mbaacc_pack.cpp
 	src/mbaacc_package.cpp
+	${PCMOD_SOURCES} src/pcmod/pcmod_vanilla.cpp src/pcmod/pcmod_export_ui.cpp
 	src/vao.cpp
 	src/shader.cpp
 	src/texture.cpp
@@ -1040,6 +1044,21 @@ if(MINGW)
 	target_link_options(hud_layout_test PRIVATE -static-libgcc -static-libstdc++ -static)
 endif()
 add_test(NAME hud_layout COMMAND hud_layout_test WORKING_DIRECTORY ${CMAKE_SOURCE_DIR})
+
+# pcmod exporter CLI + tests (Hantei_Docs/pcmod_export.md). The fixture and its three pinned digests come from PovertyCaster.
+add_executable(pcmodtool src/pcmod/pcmodtool.cpp ${PCMOD_SOURCES} src/pcmod/pcmod_vanilla.cpp src/mbaacc_pack.cpp)
+target_include_directories(pcmodtool PRIVATE "." "src" "src/pcmod" "third_party")
+target_compile_definitions(pcmodtool PRIVATE WIN32_LEAN_AND_MEAN UNICODE _UNICODE)
+if(MINGW)
+	target_link_options(pcmodtool PRIVATE -municode -static-libgcc -static-libstdc++ -static)
+endif()
+add_executable(pcmod_test tests/pcmod_test.cpp ${PCMOD_SOURCES})
+target_include_directories(pcmod_test PRIVATE "." "src" "third_party")
+if(MINGW)
+	target_link_options(pcmod_test PRIVATE -static-libgcc -static-libstdc++ -static)
+endif()
+add_test(NAME pcmod COMMAND pcmod_test tests/fixtures/pcmod WORKING_DIRECTORY ${CMAKE_SOURCE_DIR})
+add_test(NAME pcmod_cli COMMAND bash tools/pcmod/pcmod_cli_ctest.sh $<TARGET_FILE:pcmodtool> tests/fixtures/pcmod "${CMAKE_BINARY_DIR}/pcmod_cli_out" WORKING_DIRECTORY ${CMAKE_SOURCE_DIR})
 
 # CG manager core + command line (docs/cg/cg_manager_design.md)
 set(CGM_CORE_SOURCES src/cgm/cgm_bank.cpp src/cgm/cgm_ops.cpp src/cgm/cgm_export.cpp src/cgm/cgm_io.cpp src/cgm/cgm_palette.cpp src/cgm/cgm_struct.cpp src/cgm/cgm_folder.cpp src/cgm/cgm_ccpal.cpp)

@@ -1,0 +1,20 @@
+{
+  "schema": 1,
+  "id": "pcmod-fixture",
+  "version": "1.2.3",
+  "name": "PovertyCaster pcmod fixture",
+  "author": "PovertyCaster",
+  "description": "Pins the schema-1 digests. Do not edit: tests/pcmod_manifest and Hantei-chan's exporter check against it.",
+  "game": "mbaacc",
+  "class": "sim",
+  "priority": 100,
+  "exe": ["0000000000000000000000000000000000000000000000000000000000000001"],
+  "requires": [],
+  "conflicts": [],
+  "overrides": [],
+  "files": [
+    { "path": "data/SION_3.txt", "sha256": "2c26b46b68ffc68ff99b453c1d30413413422d706483bfa0f98a5e886266e7ae", "size": 3 },
+    { "path": "DATA\\_type.txt", "sha256": "fcde2b2edba56bf408601fb721fe9b5c338d10ee429ea04fae5511b68fbf8fb9", "size": 3 },
+    { "path": "grp\\Gauge_AA\\gauge00.png", "sha256": "baa5a0964d3320fbc0c6a922140453c8513ea24ab8fd0577034804a967248096", "size": 3 }
+  ]
+}

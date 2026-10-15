@@ -531,6 +531,8 @@ void MainFrame::Menu(unsigned int errorPopupId)
 					exportHan2Character(active);
 				if (ImGui::MenuItem(LBL("Export RBO / GOF2 as JSON + PNG (icaroffa / PACNyx 2026 layout)..."), nullptr, false, hasActive && active->frameData.isHan2()))
 					exportHan2Character(active, true);
+				ImGui::Separator();
+				pcmodui::MenuItem(active ? AnsiToUtf8(active->getTxtPath()) : std::string());
 				ImGui::EndMenu();
 			}
 
