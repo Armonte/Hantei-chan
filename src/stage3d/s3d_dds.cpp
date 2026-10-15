@@ -1,4 +1,5 @@
 #include "s3d_dds.h"
+#include "s3d_model.h"
 
 #include <cstring>
 #include <filesystem>
@@ -127,6 +128,11 @@ bool LoadDdsFile(const std::string& utf8Path, Image& out, std::string& err)
 	std::ifstream f(std::filesystem::u8path(utf8Path), std::ios::binary);
 	if (!f) { err = "cannot open " + utf8Path; return false; }
 	std::vector<uint8_t> buf((std::istreambuf_iterator<char>(f)), std::istreambuf_iterator<char>());
+	if (buf.size() >= 4 && memcmp(buf.data(), "DDS ", 4) != 0) {   // UNIEL: RC4-enciphered DDS
+		std::vector<uint8_t> plain = buf;
+		UnielCrypt(plain.data(), plain.size());
+		if (plain.size() >= 4 && memcmp(plain.data(), "DDS ", 4) == 0) return DecodeDds(plain.data(), plain.size(), out, err);
+	}
 	return DecodeDds(buf.data(), buf.size(), out, err);
 }
 
