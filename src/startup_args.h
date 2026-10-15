@@ -31,6 +31,16 @@
 //                        pattern N | frame N | viewframe N | zoomview N | framenodes MASK (hold open: 1 Attack data, 2 Effects, 4 Conditions) | copypattern N | pastepattern N | gameformat G | layer N | switchview N |
 //                        and every abrowser::ScriptCommand (browse, source, filter, type, select, open, key, ...)
 //   --quit               quit after the actions even without --capture
+// Headless render / export (Hantei_Docs startup args doc, "Headless export"):
+//   --headless           hidden window + GL context (never shown, no taskbar entry, no ini written, no detached
+//                        OS windows); the view renders into its FBO; exit code 0 = every PNG written
+//   --size WxH           the view's render target size (default: the window's client size)
+//   --export-png <x.png> a path ending in .png is a single view shot (= --capture-view); otherwise a folder (above)
+//   --center X,Y         world point at the view centre   --bg R,G,B (0-255) view clear colour
+//   --layer L[,L..]      draw only these AF layers (UNI multi-layer AFGX; MBAACC frames have layer 0)
+//   --batch <file>       one shot per line, `;`-separated: open X; pattern N; frame N; tick N; zoom Z;
+//                        center X,Y; bg R,G,B; size WxH; layer L; boxes 0|1; spawns 0|1; export out.png
+//                        (settings carry over to the next line; `open` of an already open file reuses its view)
 //   --tool tag           open the Tag / Team window (experimental); --tool gamelink opens the Game Link window
 //   --tag-ini <path>     the tag_tuning.ini it edits (default: next to the linked MBAA.exe)
 //   --tag-char <file>    the [char.<file>] it shows   --tag-tab Global|Character|Assists|Live|Raw
@@ -90,6 +100,15 @@ struct StartupArgs {
 	double sceneMs = 0, onionSimMs = 0, onionTotalMs = 0;
 	int statFrames = 0, onionSamples = 0;
 	bool quit = false;
+
+	// Headless render / export (startup_args.cpp RunBatch)
+	bool headless = false;
+	int exitCode = 0;
+	int sizeW = 0, sizeH = 0;         // --size: view render target size override (0 = client size)
+	bool hasCenter = false; float centerX = 0.f, centerY = 0.f;
+	bool hasBg = false; float bg[3] = {0, 0, 0};
+	unsigned layerMask = ~0u;          // --layer: AF layers drawn (bit per layer index)
+	std::string batch;                 // --batch <file> (UTF-8)
 };
 
 // Parses one wave-2 option; advances i past its value. False if not ours.

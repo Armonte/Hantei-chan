@@ -29,6 +29,9 @@
 #include "workspace_viewports.h"
 #include "paste_notice.h"
 #include "copy_data.h"
+#include "app_log.h"
+#include "render_target.h"
+#include <map>
 
 StartupArgs gStartup;
 
@@ -42,6 +45,38 @@ static std::string WideArg(const wchar_t* w, unsigned codePage)
 	return v;
 }
 
+// --size WxH | --center X,Y | --bg R,G,B (0-255) | --layer L[,L..]; shared by the command line and --batch lines.
+static bool ParseSizeArg(const std::string &v)
+{
+	int w = 0, h = 0;
+	if (sscanf(v.c_str(), "%dx%d", &w, &h) != 2 || w < 1 || h < 1 || w > 8192 || h > 8192) return false;
+	gStartup.sizeW = w; gStartup.sizeH = h; return true;
+}
+static bool ParseCenterArg(const std::string &v)
+{
+	float x = 0, y = 0;
+	if (sscanf(v.c_str(), "%f,%f", &x, &y) != 2) return false;
+	gStartup.hasCenter = true; gStartup.centerX = x; gStartup.centerY = y; return true;
+}
+static bool ParseBgArg(const std::string &v)
+{
+	int r = 0, g = 0, b = 0;
+	if (sscanf(v.c_str(), "%d,%d,%d", &r, &g, &b) != 3) return false;
+	gStartup.hasBg = true; gStartup.bg[0] = r / 255.f; gStartup.bg[1] = g / 255.f; gStartup.bg[2] = b / 255.f; return true;
+}
+static bool ParseLayerArg(const std::string &v)
+{
+	if (v.empty() || v == "all") { gStartup.layerMask = ~0u; return true; }
+	unsigned m = 0;
+	for (const char *p = v.c_str(); *p;) {
+		char *e = nullptr; const long l = strtol(p, &e, 10);
+		if (e == p || l < 0 || l > 31) return false;
+		m |= 1u << l; p = *e == ',' ? e + 1 : e;
+		if (*e && *e != ',') return false;
+	}
+	gStartup.layerMask = m; return true;
+}
+
 bool ParseWave2StartupArg(const char* arg, const wchar_t* next, int& i)
 {
 	auto value = [&](unsigned cp) { ++i; return WideArg(next, cp); };
@@ -51,7 +86,13 @@ bool ParseWave2StartupArg(const char* arg, const wchar_t* next, int& i)
 	if (!strcmp(arg, "--export-nospawns")) { gStartup.exportSpawns = false; return true; }
 	if (!strcmp(arg, "--hide-boxes")) { gStartup.hideBoxes = true; return true; }
 	if (!strcmp(arg, "--hide-spawns")) { gStartup.hideSpawns = true; return true; }
+	if (!strcmp(arg, "--headless")) { gStartup.headless = true; return true; }
 	if (!next) return false;
+	if (!strcmp(arg, "--size")) { const std::string v = value(CP_ACP); return ParseSizeArg(v), true; }
+	if (!strcmp(arg, "--center")) { const std::string v = value(CP_ACP); return ParseCenterArg(v), true; }
+	if (!strcmp(arg, "--bg")) { const std::string v = value(CP_ACP); return ParseBgArg(v), true; }
+	if (!strcmp(arg, "--layer")) { const std::string v = value(CP_ACP); return ParseLayerArg(v), true; }
+	if (!strcmp(arg, "--batch")) { gStartup.batch = value(CP_UTF8); return true; }
 	if (!strcmp(arg, "--tick")) { gStartup.tick = atoi(value(CP_ACP).c_str()); return true; }
 	if (!strcmp(arg, "--onion")) {
 		const std::string v = value(CP_ACP);
@@ -63,7 +104,12 @@ bool ParseWave2StartupArg(const char* arg, const wchar_t* next, int& i)
 	if (!strcmp(arg, "--ui-script")) { gStartup.uiScript = value(CP_UTF8); return true; }
 	if (!strcmp(arg, "--capture-view")) { gStartup.captureView = value(CP_UTF8); return true; }
 	if (!strcmp(arg, "--capture-windows")) { gStartup.captureWindows = value(CP_UTF8); return true; }
-	if (!strcmp(arg, "--export-png")) { gStartup.exportDir = value(CP_UTF8); return true; }
+	if (!strcmp(arg, "--export-png")) {   // <x.png>: one view shot (= --capture-view); anything else: the export folder
+		std::string v = value(CP_UTF8);
+		std::string lower = v; for (auto &c : lower) c = (char)tolower((unsigned char)c);
+		if (lower.size() > 4 && lower.compare(lower.size() - 4, 4, ".png") == 0) gStartup.captureView = v; else gStartup.exportDir = v;
+		return true;
+	}
 	if (!strcmp(arg, "--export-range")) { gStartup.exportRange = value(CP_ACP); return true; }
 	if (!strcmp(arg, "--export-scale")) { gStartup.exportScale = atoi(value(CP_ACP).c_str()); return true; }
 	if (!strcmp(arg, "--export-bg")) { gStartup.exportTransparent = value(CP_ACP) != "editor"; return true; }
@@ -140,6 +186,22 @@ static bool han2StartupSniffPat(const std::string &path)
 	return han2::IsPat(b, n);
 }
 
+// The view's own render target as drawn this frame (DrawBack), alpha forced opaque. Reads the FBO, never a back
+// buffer, so it works the same with the window hidden (--headless).
+static bool WriteViewTargetPng(CharacterView *v, const std::string &path)
+{
+	if (!v) { HC_LOG_ERROR("view shot {}: no view open", path); return false; }
+	std::vector<uint8_t> px;
+	if (!v->renderTarget().readRgba(px)) { HC_LOG_ERROR("view shot {}: render target read failed", path); return false; }
+	for (size_t k = 3; k < px.size(); k += 4) px[k] = 255;
+	std::error_code ec; std::filesystem::create_directories(std::filesystem::u8path(path).parent_path(), ec);
+	std::string err;
+	if (!WritePngRgba(path, px.data(), v->renderTarget().width(), v->renderTarget().height(), err)) {
+		HC_LOG_ERROR("view shot {}: {}", path, err); return false;
+	}
+	return true;
+}
+
 // Scripted UI session (--ui-script): runs between render and swap, so `capture` sees exactly what this frame drew.
 static void RunUiScript(MainFrame &mf, HDC dc, const std::function<void(const std::string &)> &openAny, const std::function<void(int, int)> &setView, const std::function<bool()> &saveActive,
                         const std::function<bool(const std::string &, const std::string &)> &editCmd,
@@ -152,7 +214,7 @@ static void RunUiScript(MainFrame &mf, HDC dc, const std::function<void(const st
 		std::ifstream f(std::filesystem::u8path(gStartup.uiScript));
 		std::string l;
 		while (std::getline(f, l)) { while (!l.empty() && (l.back() == '\r' || l.back() == ' ')) l.pop_back(); if (!l.empty() && l[0] != '#') lines.push_back(l); }
-		if (lines.empty()) { done = true; PostQuitMessage(0); return; }
+		if (lines.empty()) { done = true; gStartup.exitCode = 2; PostQuitMessage(2); return; }
 	}
 	if (waitFrames > 0) { waitFrames--; return; }
 	if (waitIdle) { if (abrowser::Busy() && ++idleWaited < 1800) return; waitIdle = false; idleWaited = 0; waitFrames = 6; return; }   // a few frames for the uploaded textures to draw
@@ -162,7 +224,7 @@ static void RunUiScript(MainFrame &mf, HDC dc, const std::function<void(const st
 		const std::string cmd = line.substr(0, sp), arg = sp == std::string::npos ? "" : line.substr(sp + 1);
 		if (cmd == "wait") { waitFrames = atoi(arg.c_str()); return; }
 		if (cmd == "waitidle") { waitIdle = true; return; }
-		if (cmd == "quit") { done = true; PostQuitMessage(0); return; }
+		if (cmd == "quit") { done = true; PostQuitMessage(gStartup.exitCode); return; }
 		if (cmd == "openany") { openAny(arg); continue; }
 		if (cmd == "pattern") { setView(0, atoi(arg.c_str())); continue; }
 		if (cmd == "savechar") { const bool ok = saveActive(); FILE *lf = fopen((gStartup.uiScript + ".log").c_str(), "a"); if (lf) { fprintf(lf, "savechar -> %s\n", ok ? "ok" : "FAILED"); fclose(lf); } waitFrames = 20; return; }
@@ -178,6 +240,7 @@ static void RunUiScript(MainFrame &mf, HDC dc, const std::function<void(const st
 		}
 		// Edits through the same model calls as the UI (S3 evidence): copypattern N | pastepattern N |
 		// gameformat auto|mbaacc|uni2|unist|unib|mbtl | layer N | switchview N | opentrees 0/1 | tint R G B
+		if (cmd == "captureview") { if (!editCmd(cmd, arg)) gStartup.exitCode = 1; continue; }   // the active view's FBO (works under --headless)
 		if (cmd == "copypattern" || cmd == "pastepattern" || cmd == "gameformat" || cmd == "layer" || cmd == "switchview" || cmd == "opentrees" || cmd == "tint") {
 			if (!editCmd(cmd, arg)) { FILE *lf = fopen((gStartup.uiScript + ".log").c_str(), "a"); if (lf) { fprintf(lf, "script line %zu '%s' failed\n", pc, line.c_str()); fclose(lf); } }
 			waitFrames = 3; return;
@@ -194,7 +257,7 @@ static void RunUiScript(MainFrame &mf, HDC dc, const std::function<void(const st
 			RECT r; GetClientRect(WindowFromDC(dc), &r);
 			int w = r.right - r.left, h = r.bottom - r.top;
 			std::vector<uint8_t> rgba((size_t)w * h * 4), rgb((size_t)w * h * 3);
-			glReadBuffer(GL_BACK); glPixelStorei(GL_PACK_ALIGNMENT, 1);
+			glReadBuffer(gStartup.headless ? GL_COLOR_ATTACHMENT0 : GL_BACK); glPixelStorei(GL_PACK_ALIGNMENT, 1);   // headless: MainFrame::Draw's frame target
 			glReadPixels(0, 0, w, h, GL_RGBA, GL_UNSIGNED_BYTE, rgba.data());
 			for (int y = 0; y < h; y++) for (int x = 0; x < w; x++) for (int k = 0; k < 3; k++) rgb[((size_t)(h - 1 - y) * w + x) * 3 + k] = rgba[((size_t)y * w + x) * 4 + k];
 			std::error_code ec; std::filesystem::create_directories(std::filesystem::u8path(arg).parent_path(), ec);
@@ -219,7 +282,7 @@ static void RunUiScript(MainFrame &mf, HDC dc, const std::function<void(const st
 		}
 		if (cmd == "browse" || cmd == "source" || cmd == "select" || cmd == "type" || cmd == "filter" || cmd == "open" || cmd == "key") { waitFrames = 3; return; }   // let the UI process it
 	}
-	done = true; PostQuitMessage(0);
+	done = true; PostQuitMessage(gStartup.exitCode);
 }
 
 void MainFrame::ProcessStartupArgs()
@@ -231,6 +294,7 @@ void MainFrame::ProcessStartupArgs()
 			[this]() { return getActiveCharacter() ? saveCharacter(getActiveCharacter()) : false; },
 			[this](const std::string &cmd, const std::string &arg) -> bool {
 				if (cmd == "switchview") { const int i = atoi(arg.c_str()); if (i < 0 || i >= (int)views.size()) return false; setActiveView(i); return true; }
+				if (cmd == "captureview") return WriteViewTargetPng(getActiveView(), arg);
 				CharacterView *vw = getActiveView();
 				CharacterInstance *ch = getActiveCharacter();
 				if (!vw || !ch) return false;
@@ -291,8 +355,10 @@ void MainFrame::ProcessStartupArgs()
 			from = bar + 1;
 		}
 	}
-	if (n == 2 && !gStartup.open.empty()) {
-		std::string path = gStartup.open, ext;
+	// Open one file the way --open does (type by extension / content). True if a new view came up.
+	auto openPath = [this](const std::string &path) -> bool {
+		const size_t viewsBefore = views.size();
+		std::string ext;
 		size_t dot = path.find_last_of('.');
 		if (dot != std::string::npos) ext = path.substr(dot);
 		for (auto &c : ext) c = (char)tolower((unsigned char)c);
@@ -317,6 +383,29 @@ void MainFrame::ProcessStartupArgs()
 				requestErrorPopup("Load Error", std::string(TXT("Could not open ")) + path);
 			}
 		}
+		return views.size() > viewsBefore;
+	};
+	// --tick / batch `tick`: the root frame follows the simulated flow at that tick.
+	auto applyTick = [](CharacterView *v, int tick) {
+		if (!v || !v->getCharacter() || tick < 0) return;
+		auto &st = v->getState();
+		CharacterInstance *c = v->getCharacter();
+		FrameData *fx = c->effectCharacter ? &c->effectCharacter->frameData : nullptr;
+		auto &sim = st.BindPreviewSim(&c->frameData, fx);
+		sim.ensureSimulatedTo(tick);
+		st.currentTick = std::min(tick, sim.horizon());
+		const auto &track = sim.rootFrameTrack();
+		if (st.currentTick < (int)track.size()) st.frame = track[st.currentTick];
+	};
+	// --center X,Y: that world point at the middle of the view (Render::BeginPass: screen = origin + world * zoom).
+	auto applyCenter = [](CharacterView *v) {
+		if (!v || !gStartup.hasCenter || v->isStageView()) return;
+		ViewCamera &cam = v->camera();
+		cam.panX = -gStartup.centerX * cam.zoom;
+		cam.panY = -gStartup.centerY * cam.zoom;
+	};
+	if (n == 2 && !gStartup.open.empty()) {
+		openPath(gStartup.open);
 		if (auto *v = getActiveView()) {
 			if (gStartup.pattern >= 0) v->getState().pattern = gStartup.pattern;
 			if (gStartup.frame >= 0) v->getState().frame = gStartup.frame;
@@ -353,16 +442,8 @@ void MainFrame::ProcessStartupArgs()
 		}
 		if (auto *v = getActiveView(); v && v->getCharacter()) {
 			auto &st = v->getState();
-			if (gStartup.tick >= 0) {
-				// The root frame follows the simulated flow at that tick.
-				CharacterInstance *c = v->getCharacter();
-				FrameData *fx = c->effectCharacter ? &c->effectCharacter->frameData : nullptr;
-				auto &sim = st.BindPreviewSim(&c->frameData, fx);
-				sim.ensureSimulatedTo(gStartup.tick);
-				st.currentTick = std::min(gStartup.tick, sim.horizon());
-				const auto &track = sim.rootFrameTrack();
-				if (st.currentTick < (int)track.size()) st.frame = track[st.currentTick];
-			}
+			if (gStartup.tick >= 0) applyTick(v, gStartup.tick);
+			applyCenter(v);
 			if (gStartup.onionBefore >= 0) {
 				auto &o = v->onion();
 				o.enabled = true;
@@ -371,7 +452,7 @@ void MainFrame::ProcessStartupArgs()
 				o.spacing = std::max(1, gStartup.onionSpacing);
 				o.keyframesOnly = gStartup.onionKeyframes;
 			}
-			if (gStartup.detach) {
+			if (gStartup.detach && !gStartup.headless) {   // headless: no OS windows besides the hidden main one
 				const ImVec2 p = ImGui::GetMainViewport()->Pos;
 				DetachViewToNewHost(v->getId(), ImVec2(p.x + 200.f, p.y + 150.f));
 				m_startupViewId = v->getId();
@@ -438,16 +519,8 @@ void MainFrame::ProcessStartupArgs()
 			fclose(f);
 		}
 	}
-	if (!gStartup.captureView.empty() && n == 20) {
-		if (CharacterView *v = findViewById(m_startupViewId)) {
-			std::vector<uint8_t> px;
-			std::string err;
-			if (v->renderTarget().readRgba(px)) {
-				for (size_t k = 3; k < px.size(); k += 4) px[k] = 255;
-				WritePngRgba(gStartup.captureView, px.data(), v->renderTarget().width(), v->renderTarget().height(), err);
-			}
-		}
-	}
+	if (!gStartup.captureView.empty() && n == 20 && !WriteViewTargetPng(findViewById(m_startupViewId), gStartup.captureView))
+		gStartup.exitCode = 1;
 	if (!gStartup.captureWindows.empty() && n == 20) {
 		// Every detached (platform) window's back buffer, read just before
 		// it is presented this frame (after this function returns).
@@ -465,15 +538,98 @@ void MainFrame::ProcessStartupArgs()
 	const bool anyWave2 = !gStartup.captureView.empty() || !gStartup.saveProject.empty() ||
 		!gStartup.captureWindows.empty() || !gStartup.stats.empty() ||
 		!gStartup.exportDir.empty() || gStartup.quit;
-	if (gStartup.capture.empty() && anyWave2 && n == 22)
-		PostQuitMessage(0);
+	if (gStartup.capture.empty() && anyWave2 && n == 22 && gStartup.batch.empty())
+		PostQuitMessage(gStartup.exitCode);
+	// --batch <file>: one shot per line, commands split by ';' (see startup_args.h). Settings carry over between
+	// lines; each `export` waits a few frames (more after an open) so the view has drawn the new state, then writes
+	// the view's render target. Exit code: 0 all shots written, 1 a shot failed, 2 the batch could not be read.
+	if (!gStartup.batch.empty() && n >= 3) {
+		static std::vector<std::string> lines;
+		static size_t pc = 0;
+		static int settle = -1;
+		static std::string pendingOut;
+		static bool loaded = false, done = false;
+		static std::map<std::string, uint64_t> openedViews;   // path -> view id: a repeated `open` reuses the view
+		auto finish = [](int code) { done = true; if (code > gStartup.exitCode) gStartup.exitCode = code; PostQuitMessage(gStartup.exitCode); };
+		if (!done && !loaded) {
+			loaded = true;
+			std::ifstream f(std::filesystem::u8path(gStartup.batch));
+			std::string l;
+			while (std::getline(f, l)) {
+				while (!l.empty() && (l.back() == '\r' || l.back() == ' ' || l.back() == '\t')) l.pop_back();
+				size_t st = l.find_first_not_of(" \t");
+				if (st != std::string::npos && l[st] != '#') lines.push_back(l.substr(st));
+			}
+			if (lines.empty()) { HC_LOG_ERROR("--batch {}: no lines", gStartup.batch); finish(2); }
+		}
+		if (!done && settle > 0) settle--;
+		else if (!done && settle == 0) {
+			if (!WriteViewTargetPng(getActiveView(), pendingOut)) gStartup.exitCode = 1;
+			settle = -1;
+		}
+		while (!done && settle < 0 && pc < lines.size()) {
+			const std::string line = lines[pc++];
+			bool opened = false;
+			std::string exportPath;
+			size_t from = 0;
+			while (from <= line.size()) {
+				size_t semi = line.find(';', from);
+				if (semi == std::string::npos) semi = line.size();
+				std::string c = line.substr(from, semi - from);
+				from = semi + 1;
+				const size_t b0 = c.find_first_not_of(" \t");
+				if (b0 == std::string::npos) continue;
+				c = c.substr(b0);
+				while (!c.empty() && (c.back() == ' ' || c.back() == '\t')) c.pop_back();
+				const size_t sp = c.find_first_of(" \t");
+				const std::string key = c.substr(0, sp);
+				std::string val = sp == std::string::npos ? "" : c.substr(c.find_first_not_of(" \t", sp));
+				if (val.size() >= 2 && val.front() == '"' && val.back() == '"') val = val.substr(1, val.size() - 2);
+				bool ok = true;
+				CharacterView *v = getActiveView();
+				if (key == "open") {
+					auto it = openedViews.find(val);
+					int idx = -1;
+					if (it != openedViews.end())
+						for (size_t k = 0; k < views.size(); k++) if (views[k]->getId() == it->second) idx = (int)k;
+					if (idx >= 0) setActiveView(idx);
+					else if (openPath(val)) {
+						opened = true;
+						if (CharacterView *nv = getActiveView()) {
+							openedViews[val] = nv->getId();
+							if (gStartup.hideSpawns) { nv->getState().vizSettings.showSpawnedPatterns = false; nv->getState().forceSpawnTreeRebuild = true; }
+						}
+					} else ok = false;
+				}
+				else if (key == "pattern" && v) { v->getState().pattern = atoi(val.c_str()); v->getState().frame = 0; }
+				else if (key == "frame" && v) v->getState().frame = atoi(val.c_str());
+				else if (key == "tick") applyTick(v, atoi(val.c_str()));
+				else if (key == "zoom") { const float z = (float)atof(val.c_str()); if (z > 0.f) SetZoom(z); else ok = false; }
+				else if (key == "center") ok = ParseCenterArg(val);
+				else if (key == "bg") ok = ParseBgArg(val);
+				else if (key == "size") ok = ParseSizeArg(val);
+				else if (key == "layer") ok = ParseLayerArg(val);
+				else if (key == "boxes") m_showBoxes = val != "0";
+				else if (key == "spawns") {
+					gStartup.hideSpawns = val == "0";
+					for (auto &vw : views) { vw->getState().vizSettings.showSpawnedPatterns = !gStartup.hideSpawns; vw->getState().forceSpawnTreeRebuild = true; }
+				}
+				else if (key == "export") exportPath = val;
+				else ok = false;
+				if (!ok) { HC_LOG_ERROR("--batch line {} '{}': '{}' failed", pc, line, c); gStartup.exitCode = 1; }
+			}
+			applyCenter(getActiveView());
+			if (!exportPath.empty()) { pendingOut = exportPath; settle = opened ? 18 : 3; }
+		}
+		if (!done && settle < 0 && pc >= lines.size()) finish(0);
+	}
 	if (n == 2 && gStartup.gameLinkSlot >= 1 && gStartup.gameLinkSlot <= 4)
 		gamelink::StartFollowing(gStartup.gameLinkSlot - 1);
 	if (!gStartup.capture.empty() && n == ((gStartup.gameLinkSlot || gStartup.tagLink || gStartup.authoring.link) ? 240 : 20)) {
 		RECT r; GetClientRect(WindowFromDC(context->dc), &r);
 		int w = r.right - r.left, h = r.bottom - r.top;
 		std::vector<uint8_t> rgba((size_t)w * h * 4), rgb((size_t)w * h * 3);
-		glReadBuffer(GL_BACK);
+		glReadBuffer(gStartup.headless ? GL_COLOR_ATTACHMENT0 : GL_BACK);
 		glPixelStorei(GL_PACK_ALIGNMENT, 1);
 		glReadPixels(0, 0, w, h, GL_RGBA, GL_UNSIGNED_BYTE, rgba.data());
 		for (int y = 0; y < h; y++)

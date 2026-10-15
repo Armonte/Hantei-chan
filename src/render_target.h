@@ -44,6 +44,12 @@ public:
 	// Copy the whole target to the default framebuffer at (0,0).
 	void blitToDefault(int dstWidth, int dstHeight) const;
 
+	// The framebuffer blitToDefault writes to: 0 (the window) normally; under
+	// --headless the hidden window's frame is an offscreen target instead, so
+	// nothing depends on the window being visible.
+	static void setDefaultFramebuffer(unsigned fbo);
+	static unsigned defaultFramebuffer();
+
 	// Number of live targets (diagnostics).
 	static int liveCount();
 

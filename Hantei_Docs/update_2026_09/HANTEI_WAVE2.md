@@ -280,6 +280,53 @@ Everything runs headless through WSL interop; wine is not used. There are new st
 - `--post-key vk`
 - `--quit`
 
+### 7.0 Headless export (`--headless`, `--batch`)
+
+Scripted shots no longer need a visible window. `--headless` creates the same Win32 window and GL context but never shows
+it (a tool window: no taskbar entry, no activation). The view renders into its own FBO as usual, and the rest of the
+frame (the view blit and ImGui) goes to an offscreen frame target instead of the back buffer, so every capture reads an
+FBO. Nothing is presented, the frame limiter is off, the ini is read but never written, no detached OS windows are made
+(`--detach` is ignored), and nothing is printed (log: `hanteichan.log`, quill). Exit code: 0 = every PNG written,
+1 = a shot or batch command failed, 2 = the batch file is missing or empty.
+
+| Option | Meaning |
+|---|---|
+| `--headless` | hidden window, offscreen frame |
+| `--export-png <x.png>` | a path ending in `.png` is one view shot (same as `--capture-view`); a folder keeps the old multi-frame export |
+| `--size WxH` | view render target size (default: the window client size from the ini, as the visible run) |
+| `--center X,Y` | world point at the view centre |
+| `--bg R,G,B` | view clear colour, 0-255 (not saved) |
+| `--layer L[,L..]` | draw only these AF layers (`all` = every layer) |
+| `--batch <file>` | many shots in one process (below) |
+
+Together with `--open`, `--pattern`, `--frame`, `--tick`, `--zoom`, `--hide-boxes` and `--hide-spawns`.
+
+```
+gonptechan.exe --headless --open chr000_0.txt --pattern 96 --frame 1 --zoom 1.5 --export-png C:\shots\p96.png
+gonptechan.exe --headless --batch shots.txt
+```
+
+Batch file: one shot per line, commands separated by `;`, `#` starts a comment. Settings carry over to the next line,
+and an `open` of a file that is already open reuses its view (no reload).
+
+```
+open C:\dev\hantei-chan\gamedata\uni2\data\chr000\chr000_0.txt; pattern 96; frame 1; zoom 1.5; export C:\shots\a.png
+pattern 383; frame 1; export C:\shots\b.png
+pattern 72; frame 0; tick 2; boxes 0; spawns 0; export C:\shots\c.png
+```
+
+Commands: `open X`, `pattern N` (frame 0), `frame N`, `tick N`, `zoom Z`, `center X,Y`, `bg R,G,B`, `size WxH`,
+`layer L[,L..]`, `boxes 0|1`, `spawns 0|1`, `export out.png`. An export waits 18 frames after an `open` and 3 frames
+otherwise.
+
+`--ui-script` runs honour `--headless` too: `capture <png>` reads the offscreen frame (the whole UI, same size as the
+window), and the new `captureview <png>` writes the active view's FBO.
+
+The compare scripts (`tools/ui/ab_shot.sh`, `tools/ui/patscale/shoot.sh`, `tools/uni/s1_compare/shoot*.sh`) pass
+`--headless` by default; `AB_VISIBLE=1` shows the window as before. ctest `headless_export`
+(`tools/ui/headless_ctest.sh`) checks the PNG size, that two runs are byte-identical, that a batch shot matches the
+single shot, and the exit code for a missing batch.
+
 ### 7.1 Regressions
 
 `tools/wave2_regress.sh`; output in `wave2_captures/regression_results.txt`.
