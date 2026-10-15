@@ -4,9 +4,11 @@
 //   hmodtool asset <dir> <id> <category> [--origin <kind>] [--target <glob>]... [--depends <id>]...
 //   hmodtool package <dir> <id> --assets <id|glob>[,...] [--version x.y.z] [--class sim|cosmetic]
 //   hmodtool import <dir> <asset> <file> [<game-relative path>]   copy a working file into the asset
+//   hmodtool import-install <dir> <id> <install> [--vanilla-dir <dir>]  a modded install's changed loose files as assets
 //   hmodtool status <dir> --game-dir <install>                  change tracking against the vanilla index
 //   hmodtool export <dir> --game-dir <install> [--package <id>] [--out <dir>] [--known <pkgdir>]... [--no-zip] [--dry-run] [--mods]
 #include "hmod_export.h"
+#include "hmod_import.h"
 
 #include <windows.h>
 #include <cstdio>
@@ -36,6 +38,7 @@ static int Usage()
 		"  hmodtool asset <dir> <id> <category> [--origin <kind>] [--target <glob>]... [--depends <id>]...\n"
 		"  hmodtool package <dir> <id> --assets <id|glob>[,...] [--version x.y.z] [--class sim|cosmetic]\n"
 		"  hmodtool import <dir> <asset> <file> [<game-relative path>]\n"
+		"  hmodtool import-install <dir> <id> <install> [--vanilla-dir <unmodded install>]\n"
 		"  hmodtool status <dir> --game-dir <install>\n"
 		"  hmodtool export <dir> --game-dir <install> [--package <id>] [--out <dir>] [--known <pkgdir>]... [--no-zip] [--dry-run] [--mods]\n");
 	return 2;
@@ -64,6 +67,32 @@ int wmain(int argc, wchar_t** argv)
 		auto prog = [](size_t d, size_t t, const std::string& l) { if (d % 2048 == 0) Err(l + " " + std::to_string(d) + "/" + std::to_string(t) + "\n"); return true; };
 		if (!v.BuildCached(a[0], a[1], cache, err, prog)) { Err("index failed: " + err + "\n"); return 1; }
 		Out("indexed " + std::to_string(v.size()) + " files, packset " + v.packset8() + "\nwrote " + cache + "\n");
+		return 0;
+	}
+	if (cmd == "import-install" && a.size() >= 3) {
+		// <dir> <id> <install> [--vanilla-dir <unmodded install>]: the index comes from the install's own archives
+		// unless they were modified too.
+		std::string vdir = a[2];
+		for (size_t i = 3; i < a.size(); ++i) {
+			std::string v;
+			if (Opt(a, i, "--vanilla-dir", v)) vdir = v;
+			else return Usage();
+		}
+		Project p;
+		if (!Load(a[0], p, err) && !Create(a[0], a[1], "mbaacc", p, err)) { Err(err + "\n"); return 1; }
+		VanillaIndex v;
+		if (!v.LoadCached("mbaacc", vdir, err)) {
+			std::string cache;
+			Err("building the vanilla index of " + vdir + "\n");
+			if (!v.BuildCached("mbaacc", vdir, cache, err)) { Err("index failed: " + err + "\n"); return 1; }
+		}
+		ImportInstallResult r;
+		if (!ImportInstall(p, a[2], v, r, err)) { Err(err + "\n"); return 1; }
+		if (!Save(p, err)) { Err(err + "\n"); return 1; }
+		for (const auto& n : r.notes) Out("note  " + n + "\n");
+		for (const auto& [id, n] : r.perAsset) Out("asset " + id + ": " + std::to_string(n) + " file(s)\n");
+		Out("scanned " + std::to_string(r.scanned) + ", imported " + std::to_string(r.imported) + ", unchanged " + std::to_string(r.unchanged) +
+			", re-encoded " + std::to_string(r.reencoded) + ", clutter " + std::to_string(r.clutter) + ", skipped " + std::to_string(r.skipped) + "\n");
 		return 0;
 	}
 	if (cmd == "new" && a.size() == 3) {
