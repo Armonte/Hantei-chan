@@ -12,6 +12,10 @@
 //  - keyboard: part set / part navigation, Ctrl+arrow nudges, H / T / U
 //  - Tools: Fill missing layers, Scale all layers
 
+#include "../parts/pat_renumber.h"
+#include "../app_log.h"
+#include "../png_writer.h"
+
 static BackupOptions BackupOptionsFor(bool pat)
 {
 	BackupOptions o;
@@ -39,6 +43,14 @@ static std::string Utf8ToAcp(const std::string& s)
 	std::string a(an, 0);
 	WideCharToMultiByte(CP_ACP, 0, w.data(), wn, &a[0], an, nullptr, nullptr);
 	return a;
+}
+
+static std::string AcpToUtf8Rn(const std::string& s)
+{
+	if (s.empty()) return s;
+	const int n = MultiByteToWideChar(CP_ACP, 0, s.data(), (int)s.size(), nullptr, 0);
+	std::wstring w(n, 0); MultiByteToWideChar(CP_ACP, 0, s.data(), (int)s.size(), &w[0], n);
+	return WideToUtf8(w);
 }
 
 static std::string FileNameOf(const std::string& p)
@@ -104,10 +116,48 @@ bool MainFrame::savePatOf(CharacterInstance* character, const std::string& path)
 		target = FileDialog(fileType::PAT, true);
 		if (target.empty()) return false;
 	}
+	// Part set renumbering (pat_renumber.h): the .pat and every HA6 that draws it are written together.
+	const int rnExtent = 0;
+	std::vector<int> rnRemap = patrn::PendingDiskRemap(character->parts, rnExtent);
+	patrn::Users rnUsers;
+	const bool renumbered = !patrn::IsIdentity(rnRemap);
+	if (renumbered) {
+		if (normalizePath(target) != normalizePath(character->getPATPath().empty() ? character->parts.filePath : character->getPATPath())) {
+			requestErrorPopup("Save Error", TXT("The part sets were renumbered: save the .pat to its own file (Save, not Save As), so the HA6 files that draw it are rewritten with it."));
+			return false;
+		}
+		const std::string u8 = AcpToUtf8Rn(target);
+		rnUsers = patrn::FindUsers(u8);
+		rnRemap = patrn::PendingDiskRemap(character->parts, patrn::MaxRef(rnUsers) + 1);
+		const patrn::Plan plan = patrn::MakePlan(rnUsers, rnRemap);
+		std::string msg;
+		for (auto& r : plan.refusals) msg += r + "\n";
+		// an HA6 that is open in another tab would be saved later with the old ids
+		auto openIn = [&](CharacterInstance* c) {
+			if (!c || c == character) return;
+			for (auto& h : c->getHA6Paths()) for (auto& f : rnUsers.files)
+				if (!f.shared && normalizePath(AcpToUtf8Rn(h)) == normalizePath(f.path)) msg += f.path + TXT(" is open in a tab: close it first (its frames would be saved with the old part set ids)") + std::string("\n");
+		};
+		for (auto& c : characters) { openIn(c.get()); openIn(c->effectCharacter.get()); }   // effect.ha6 draws sys_effect.pat
+		if (!msg.empty()) {
+			requestErrorPopup("Save Error", std::string(TXT("Not saved: the renumbered part sets cannot be written safely:")) + "\n" + msg);
+			return false;
+		}
+	}
 	backupBeforeSave(target, true);
 	if (!character->savePATAs(target)) {
 		requestErrorPopup("Save Error", std::string(TXT("Could not write the .pat (it may be locked by another program, or the PAT has no data yet): ")) + target);
 		return false;
+	}
+	if (renumbered) {
+		struct Ctx { MainFrame* self; } ctx{this};
+		const patrn::WriteResult w = patrn::WriteUsers(rnUsers, rnRemap,
+			[](const std::string& u8, void* c) { static_cast<Ctx*>(c)->self->backupBeforeSave(Utf8ToAcp(u8), false); }, &ctx);
+		std::string rep = std::to_string(w.refs) + TXT(" part set references rewritten in:") + "\n";
+		for (auto& f : w.written) rep += "  " + f + "\n";
+		for (auto& e : w.errors) rep += std::string(TXT("Error: ")) + e + "\n";
+		HC_LOG_INFO("[PatRenumber] saved {}: {} references in {} files, {} errors", target, w.refs, w.written.size(), w.errors.size());
+		requestErrorPopup(w.errors.empty() ? "Notice" : "Save Error", rep);
 	}
 	if (character->isPatDocument()) character->setName(FileNameOf(target));
 	reloadPatInOtherTabs(character, target);

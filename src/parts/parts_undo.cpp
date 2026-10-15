@@ -26,7 +26,7 @@ bool PropEq(const PartProperty& a, const PartProperty& b)
 
 bool SetEq(const PartSet<>& a, const PartSet<>& b)
 {
-	if (a.partId != b.partId || a.wasLoaded != b.wasLoaded || a.name != b.name || a.groups.size() != b.groups.size()) return false;
+	if (a.partId != b.partId || a.origId != b.origId || a.wasLoaded != b.wasLoaded || a.name != b.name || a.groups.size() != b.groups.size()) return false;
 	for (size_t i = 0; i < a.groups.size(); i++) if (!PropEq(a.groups[i], b.groups[i])) return false;
 	return true;
 }

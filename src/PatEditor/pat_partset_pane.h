@@ -39,6 +39,14 @@ private:
     int partPropNamesCount = -1;           // entries in partPropsDecoratedNames
     int partPropNamesSet = -1;             // part set they were made for
     void SaveHighlightSettings();
+    // Part set renumbering (pat_renumber.cpp / pat_partset_renumber.cpp)
+    void DrawRenumber();
+    void DrawRenumberPopup();
+    int rnFrom = 0, rnTo = 0, rnTarget = 0, rnCount = 1, rnKind = 0;
+    bool rnScanned = false, rnPreviewOpen = false;
+    std::string rnScannedPath, rnMessage, rnPreview;
+    bool rnPreviewOk = false;
+    void *rnUsers = nullptr;   // patrn::Users (owned)
 
 };
 

@@ -66,6 +66,11 @@ public:
     };
     std::vector<RawRecord> rawRecords;
     std::string rawHeader;  // 0x20-byte header + "_STR"
+    // Part set renumbering: id each loaded slot (origId) has in the .pat on disk, -1 = not on disk. Identity after
+    // Load; Save updates it. Not undo state (it describes the file, not the model).
+    std::vector<int> diskIdOfOrig;
+    // origId -> current slot index (-1 = gone), from the live model.
+    std::vector<int> CurrentIndexOfOrig() const;
     uint64_t Fingerprint(char kind, uint32_t id) const;
 
     // PatEditor highlighting

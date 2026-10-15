@@ -52,6 +52,7 @@ unsigned int* Parts::MainLoad(unsigned int* data, const unsigned int* data_end)
             while(partSets.size() <= p_id) {
                 auto p = &partSets.emplace_back();
                 p->partId = partSets.size() - 1;
+                p->origId = p->partId;   // holes too: renumbering moves them like any slot
             }
             PartSet<>* partSet = &partSets[p_id];
             partSet->wasLoaded = true;
@@ -135,6 +136,8 @@ bool Parts::Load(const char* name)
     MainLoad(d + 1, d_end);
     for (auto& r : rawRecords)
         r.fp = Fingerprint(r.kind, r.id);
+    diskIdOfOrig.resize(partSets.size());
+    for (size_t i = 0; i < partSets.size(); i++) diskIdOfOrig[i] = (int)i;
     
     // Count non-empty part sets
     int nonEmptyPartSets = 0;
@@ -258,6 +261,7 @@ void Parts::Free()
     fbPartModel = false;
     fbMaxPoses = 0;
     ownedPixels.clear();
+    diskIdOfOrig.clear();
 }
 
 void Parts::initEmpty()
@@ -280,6 +284,18 @@ void Parts::updatePatEditorReferences(FrameState* state, RenderMode* mode)
 {
     currState = state;
     renderMode = mode;
+}
+
+std::vector<int> Parts::CurrentIndexOfOrig() const
+{
+    std::vector<int> cur(diskIdOfOrig.size(), -1);
+    for (size_t j = 0; j < partSets.size(); j++) {
+        const int o = partSets[j].origId;
+        if (o < 0) continue;
+        if (o >= (int)cur.size()) cur.resize(o + 1, -1);
+        cur[o] = (int)j;
+    }
+    return cur;
 }
 
 // Accessor methods
@@ -958,22 +974,60 @@ bool Parts::Save(const char* filename)
         }
     };
 
+    // Part sets: a loaded slot finds its record through origId. When renumbering moved slots (pat_renumber.h), every
+    // part set record is written as one ascending block where the first one was, a moved record with its original
+    // bytes and only the P_ST id changed.
+    const std::vector<int> curOfOrig = CurrentIndexOfOrig();
+    bool renumbered = false;
+    for (size_t o = 0; o < curOfOrig.size(); o++) if (curOfOrig[o] != (int)o) renumbered = true;
+    for (size_t j = 0; j < partSets.size(); j++) if (partSets[j].origId < 0 && PartSet<>::IsModifiedData(&partSets[j])) renumbered = true;
+    std::vector<int> rawOfOrig;
+    for (size_t k = 0; k < rawRecords.size(); k++)
+        if (rawRecords[k].kind == 'P') {
+            if (rawOfOrig.size() <= rawRecords[k].id) rawOfOrig.resize(rawRecords[k].id + 1, -1);
+            if (rawOfOrig[rawRecords[k].id] < 0) rawOfOrig[rawRecords[k].id] = (int)k;
+        }
+    auto rawOf = [&](size_t j) { const int o = partSets[j].origId; return o >= 0 && o < (int)rawOfOrig.size() ? rawOfOrig[o] : -1; };
+
     // Loaded records in their original order: original bytes while the
     // model is unchanged, re-encoded otherwise.
     std::vector<uint8_t> doneP(partSets.size()), doneC(cutOuts.size()), doneG(gfxMeta.size());
-    bool doneV = false;
+    bool doneV = false, blockP = false;
     for (const auto& r : rawRecords) {
-        if (!exists(r.kind, r.id)) continue;
+        uint32_t rid = r.id;
+        if (r.kind == 'P') {
+            const int j = r.id < curOfOrig.size() ? curOfOrig[r.id] : -1;
+            if (j < 0) continue;   // deleted by renumbering
+            if (renumbered) {
+                if (blockP) continue;
+                blockP = true;
+                for (size_t k = 0; k < partSets.size(); k++) {
+                    const int ri = rawOf(k);
+                    if (ri < 0 && !PartSet<>::IsModifiedData(&partSets[k])) continue;
+                    doneP[k] = 1;
+                    if (ri >= 0 && Fingerprint('P', (uint32_t)k) == rawRecords[ri].fp) {
+                        std::string raw = rawRecords[ri].raw; const uint32_t id = (uint32_t)k;
+                        memcpy(&raw[4], &id, 4);
+                        file.write(raw.data(), raw.size());
+                    } else {
+                        const std::string e = encode('P', (uint32_t)k); file.write(e.data(), e.size());
+                    }
+                }
+                continue;
+            }
+            rid = (uint32_t)j;   // == r.id: not renumbered
+        }
+        if (!exists(r.kind, rid)) continue;
         switch (r.kind) {
-        case 'P': if (doneP[r.id]) continue; doneP[r.id] = 1; break;
-        case 'C': if (doneC[r.id]) continue; doneC[r.id] = 1; break;
-        case 'G': if (doneG[r.id]) continue; doneG[r.id] = 1; break;
+        case 'P': if (doneP[rid]) continue; doneP[rid] = 1; break;
+        case 'C': if (doneC[rid]) continue; doneC[rid] = 1; break;
+        case 'G': if (doneG[rid]) continue; doneG[rid] = 1; break;
         case 'V': if (doneV) continue; doneV = true; break;
         }
-        if (Fingerprint(r.kind, r.id) == r.fp)
+        if (Fingerprint(r.kind, rid) == r.fp)
             file.write(r.raw.data(), r.raw.size());
         else {
-            const std::string e = encode(r.kind, r.id);
+            const std::string e = encode(r.kind, rid);
             file.write(e.data(), e.size());
         }
     }
@@ -998,7 +1052,9 @@ bool Parts::Save(const char* filename)
 
     file.write("_END", 4);
     const std::string bytes = file.str();
-    return WriteFileAtomic(filename, bytes.data(), bytes.size());
+    if (!WriteFileAtomic(filename, bytes.data(), bytes.size())) return false;
+    for (size_t o = 0; o < diskIdOfOrig.size(); o++) diskIdOfOrig[o] = o < curOfOrig.size() ? curOfOrig[o] : -1;
+    return true;
 }
 
 void Parts::SetHighlightOpacity(float opacity)

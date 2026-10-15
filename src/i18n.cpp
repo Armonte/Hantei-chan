@@ -20,6 +20,7 @@ const Row kRows[] = {
 #include "i18n_ja_cgm.inc"
 #include "i18n_ja_pacnyx.inc"
 #include "i18n_ja_patsafety.inc"
+#include "i18n_ja_patrenumber.inc"
 #include "i18n_ja_fxr.inc"
 #include "i18n_ja_pcmod.inc"
 };
