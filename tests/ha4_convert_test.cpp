@@ -7,11 +7,13 @@
 #include "framedata.h"
 #include "framedata_ha4.h"
 #include "ha4_convert.h"
+#include "misc.h"
 #include <glad/glad.h>
 
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>
+#include <algorithm>
 #include <filesystem>
 #include <string>
 
@@ -221,6 +223,176 @@ static void TestData()
 	std::printf("  data: G_CHAOS + SION checked (%s)\n", dir.c_str());
 }
 
+
+// --- S8b: ActCadenza CT guts, command file, spawn-leak no-ops, giant reactions ---
+static std::vector<uint8_t> MakeCt(size_t n, const float f[5], int air, int t0, int t1)
+{
+	std::vector<uint8_t> d(n, 0);
+	d[ha4conv::CtStatus::kStatusOff] = (uint8_t)air;
+	d[ha4conv::CtStatus::kStatusOff + 5] = 0x39;
+	std::memcpy(&d[ha4conv::CtStatus::kFloatOff], f, 5 * sizeof(float));
+	int32_t t[2] = {t0, t1};
+	std::memcpy(&d[ha4conv::CtStatus::kTeamOff], t, sizeof t);
+	return d;
+}
+
+static void TestActCadenzaData()
+{
+	namespace fs = std::filesystem;
+	// CT: guts are f1..f4 (CT+0x2270..), f0 is never read.
+	const float f[5] = {1.0f, 0.92f, 0.85f, 0.8f, 0.75f};
+	auto ct = MakeCt(ha4conv::CtStatus::kSize, f, 1, 177, 178);
+	ha4conv::CtStatus st;
+	CHECK(ha4conv::ParseCtStatus(ct.data(), ct.size(), st));
+	CHECK(st.guts(0) == 0.92f && st.guts(3) == 0.75f && st.airJumps() == 1 && st.team[0] == 177 && st.team[1] == 178);
+	auto old = MakeCt(8908, f, 1, 0, 0);   // GAKIHA / F_CIEL
+	CHECK(ha4conv::ParseCtStatus(old.data(), old.size(), st) && st.guts(1) == 0.85f);
+	CHECK(!ha4conv::ParseCtStatus(ct.data(), 100, st));
+	ha4conv::AcVersion v;
+	CHECK(ha4conv::ParseAcVersion("1.03A", v) && v == ha4conv::AcVersion::V103A);
+	CHECK(ha4conv::ParseAcVersion("1.00", v) && v == ha4conv::AcVersion::V100);
+	CHECK(!ha4conv::ParseAcVersion("2.0", v));
+
+	// Command file: [Status] from the CT, not from the TXT row.
+	fs::path tmp = fs::temp_directory_path() / "ha4_convert_test_s8b";
+	std::error_code ec;
+	fs::create_directories(tmp, ec);
+	{
+		std::string txt = "// cmd\r\n 5 41236C 20000101 00000001 219 65535 0 0 0\r\nEND\r\n[TeamChangeData]\r\n177 178\r\n62 0\r\n63 0\r\n"
+		                  "1 9 0 1 00111001 1.0 0.9 0.85 0.8 0.8\r\nEND\r\n0 55 0 0 0 0 7 16\r\n";
+		std::string tp = (tmp / "X_C.TXT").string(), op = (tmp / "x_cc_c.txt").string();
+		WriteFileAtomic(tp.c_str(), txt.data(), txt.size());
+		ha4conv::ParseCtStatus(ct.data(), ct.size(), st);
+		std::vector<std::string> log;
+		CHECK(ha4conv::EmitCommandFile(tp, &st, "test CT", op, &log));
+		char *d = nullptr; unsigned n = 0;
+		CHECK(ReadInMem(op.c_str(), d, n));
+		std::string o(d ? d : "", n); delete[] d;
+		CHECK(o.find("Guard = 0.92, 0.85, 0.8, 0.75") != std::string::npos);
+		CHECK(o.find("test = 177, 178") != std::string::npos);
+		CHECK(o.find("Ground = 62,0") != std::string::npos && o.find("Air = 63,0") != std::string::npos);
+		CHECK(o.find("AirJumpNum = 1") != std::string::npos);
+	}
+	fs::remove_all(tmp, ec);
+
+	// Spawn leaks: target empty here, present in the MBAACC stack -> no-op; others untouched.
+	{
+		FrameData fd; fd.initEmpty(256);
+		fd.m_sequences[0] = MakeSeq(2, "stand");
+		fd.m_sequences[50] = MakeSeq(1, "own effect");
+		Sequence sp = MakeSeq(2, "spawner");
+		Frame_EF e{}; e.type = 1;
+		e.number = 129; sp.frames[0].EF.push_back(e);   // leak
+		e.number = 50;  sp.frames[0].EF.push_back(e);   // resolves in the ActCadenza data
+		e.number = 77;  sp.frames[1].EF.push_back(e);   // dangling in both: spawns nothing anywhere
+		fd.m_sequences[195] = sp;
+		FrameData cc; cc.initEmpty(1000);
+		cc.m_sequences[129] = MakeSeq(3, "MBAACC bird");
+		cc.m_sequences[990] = MakeSeq(1, "taken");      // forces the next free slot
+		std::vector<std::pair<int, int>> leaks;
+		int noop = ha4conv::RewriteSpawnLeaks(fd, cc, 990, &leaks, nullptr);
+		CHECK(noop == 989);
+		CHECK(leaks.size() == 1 && leaks[0].first == 195 && leaks[0].second == 129);
+		CHECK(fd.m_sequences[195].frames[0].EF[0].number == 989);
+		CHECK(fd.m_sequences[195].frames[0].EF[1].number == 50);
+		CHECK(fd.m_sequences[195].frames[1].EF[0].number == 77);
+		Sequence *n = fd.get_sequence(989);
+		CHECK(n && n->frames.size() == 1 && n->frames[0].AF.aniType == 0 && n->frames[0].AF.layers[0].spriteId == -1);
+		FrameData clean; clean.initEmpty(256); clean.m_sequences[1] = MakeSeq(1, "x");
+		CHECK(ha4conv::RewriteSpawnLeaks(clean, cc, 990, nullptr, nullptr) == -1);
+	}
+	// Giant reactions (GiantFlag 2 like MBAACC G_AKIHA; 1 like HERMES).
+	{
+		FrameData fd; fd.initEmpty(256);
+		fd.m_sequences[0] = MakeSeq(3, "stand");
+		fd.m_sequences[23] = MakeSeq(2, "head");
+		Sequence body = MakeSeq(5, "body");
+		body.frames[0].AF.layers[0].spriteId = 16; body.frames[0].AF.layers[0].usePat = true;
+		body.frames[0].hitboxes[1] = Hitbox{{-100, -400, 100, 0}};
+		fd.m_sequences[24] = body;
+		FrameData donor; donor.initEmpty(400);
+		for (int p : {23, 24, 25, 26, 44, 45, 350}) {
+			Sequence d = MakeSeq(p == 44 ? 9 : 4, "donor");
+			for (auto &fr : d.frames) { fr.AF.layers[0].spriteId = 250; fr.hitboxes[1] = Hitbox{{-1, -1, 1, 1}}; }
+			Frame_EF e{}; e.type = 1; e.number = 123; d.frames[0].EF.push_back(e);   // donor-only effect
+			donor.m_sequences[p] = d;
+		}
+		FrameData g1 = fd;
+		auto added = ha4conv::AddGiantReactions(fd, donor, 2, nullptr);
+		for (int p : {25, 26, 44, 45, 350, 900, 905, 908, 351, 354}) CHECK(fd.get_sequence(p) && !fd.get_sequence(p)->frames.empty());
+		CHECK(fd.get_sequence(23)->frames.size() == 2);   // own slots are kept
+		Sequence *ko = fd.get_sequence(44);
+		CHECK(ko && ko->frames.size() == 9 && ko->frames[0].AF.layers[0].spriteId == 16 && ko->frames[0].AF.layers[0].usePat);
+		CHECK(ko && ko->frames[0].EF.empty() && ko->frames[0].hitboxes.count(1) && ko->frames[0].hitboxes[1].xy[0] == -100);
+		CHECK(std::find(added.begin(), added.end(), 44) != added.end());
+		auto a1 = ha4conv::AddGiantReactions(g1, donor, 1, nullptr);
+		CHECK(a1.size() == 2 && g1.get_sequence(44) && !g1.get_sequence(44)->frames.empty());
+		CHECK(!g1.get_sequence(900) || g1.get_sequence(900)->frames.empty());
+	}
+}
+
+static std::string PatchDir()
+{
+	if (const char *e = std::getenv("HA4CONV_AC_PATCH_DIR")) return e;
+	for (const char *d : {"C:/dev/hantei-chan/gamedata/mbac_v11_english/06", "/mnt/c/dev/hantei-chan/gamedata/mbac_v11_english/06"})
+		if (std::filesystem::exists(std::string(d) + "/AKIHA_C.CT")) return d;
+	return {};
+}
+
+static std::string MbaaccDir()
+{
+	if (const char *e = std::getenv("HA4CONV_MBAACC_DIR")) return e;
+	for (const char *d : {"C:/dev/hantei-chan/gamedata/mbaacc_ref/vanilla_0002", "/mnt/c/dev/hantei-chan/gamedata/mbaacc_ref/vanilla_0002"})
+		if (std::filesystem::exists(std::string(d) + "/g_akiha.HA6")) return d;
+	return {};
+}
+
+// Real data: AKIHA guts from the 1.03A CT (0.9 -> 0.92 at full HP), 129/130 leaks; GAKIHA giant slots.
+static void TestActCadenzaRealData()
+{
+	std::string dir = DatDir(), patch = PatchDir(), cc = MbaaccDir();
+	if (dir.empty() || patch.empty() || cc.empty()) { std::printf("  actcadenza data: SKIP (no .DAT / 06.p / MBAACC folder)\n"); return; }
+	namespace fs = std::filesystem;
+	fs::path tmp = fs::temp_directory_path() / "ha4_convert_test_s8b_data";
+	std::error_code ec;
+	fs::create_directories(tmp, ec);
+	for (auto ver : {ha4conv::AcVersion::V103A, ha4conv::AcVersion::V100}) {
+		ha4conv::Options o; o.outDir = tmp.string(); o.writeCG = o.writePat = o.writePal = o.writeTxt = false;
+		o.acVersion = ver; o.acPatchDir = patch; o.mbaaccDataDir = cc;
+		ha4conv::Report rep;
+		CHECK(ha4conv::ConvertFile(dir + "/AKIHA.DAT", o, rep));
+		CHECK(rep.guts[0] == (ver == ha4conv::AcVersion::V103A ? 0.92f : 0.9f));
+		CHECK(rep.guts[1] == 0.85f);
+		CHECK(rep.noopUsed == 990);
+		bool l129 = false, l130 = false;
+		for (auto &l : rep.leaks) { l129 |= l.second == 129; l130 |= l.second == 130; }
+		CHECK(l129 && l130);
+		CHECK(rep.exShield[0] == 6 && rep.exShield[1] == 6 && rep.exShield[2] == 10);
+		CHECK(!rep.sidecarPath.empty() && fs::exists(rep.sidecarPath));
+		FrameData h;
+		CHECK(h.load(rep.ha6Path.c_str()));
+		int bad = 0;
+		for (int p = 0; p < h.get_sequence_count(); p++) {
+			Sequence *s = h.get_sequence(p);
+			if (s) for (auto &f : s->frames) for (auto &e : f.EF) if (e.type == 1 && (e.number == 129 || e.number == 130)) bad++;
+		}
+		CHECK(bad == 0);
+		CHECK(h.get_sequence(990) && h.get_sequence(990)->frames.size() == 1);
+	}
+	{
+		ha4conv::Options o; o.outDir = tmp.string(); o.writeCG = o.writePat = o.writePal = o.writeTxt = false;
+		o.giantFlag = 2; o.giantDonorHa6 = cc + "/g_akiha.HA6"; o.acPatchDir = patch;
+		ha4conv::Report rep;
+		CHECK(ha4conv::ConvertFile(dir + "/GAKIHA.DAT", o, rep));
+		CHECK(rep.guts[0] == 0.55f);
+		FrameData h;
+		CHECK(h.load(rep.ha6Path.c_str()));
+		for (int p : {23, 24, 25, 26, 44, 45, 900, 908, 351, 354}) CHECK(h.get_sequence(p) && !h.get_sequence(p)->frames.empty());
+	}
+	fs::remove_all(tmp, ec);
+	std::printf("  actcadenza data: AKIHA 1.03A/1.00 + GAKIHA checked\n");
+}
+
 static void APIENTRY NoGlDeleteBuffers(GLsizei, const GLuint *) {}
 
 int main()
@@ -230,6 +402,8 @@ int main()
 	TestEfPositions();
 	TestPrepare();
 	TestData();
+	TestActCadenzaData();
+	TestActCadenzaRealData();
 	std::printf("ha4_convert_test: %d checks, %d failed\n", g_checks, g_fail);
 	return g_fail ? 1 : 0;
 }

@@ -236,17 +236,33 @@ The HA6 export is the normal Hantei-chan HA6 writer applied to the mapped model,
 
     | Range | Source | Notes |
     |---|---|---|
-    | 0–255 | converted MBAC file | overrides CC's 0–255. Known leak: MBAC data spawns into a few slots only CC defines (akaakiha 130, akiha 129/130, hisui 206, shiki 175–179), so CC's pattern plays there. The converter does not handle this yet (FEASIBILITY §3). An empty pattern (`PSTR n PEND`, `mbac_moon_blank_patterns.py`) does the opposite: it lets the lower CC layer supply slot n, which is how the moon-3 prototype fell back to CC's shield patterns. |
+    | 0–255 | converted MBAC file | overrides CC's 0–255. Spawn leaks: MBAC data spawns into a few slots only CC defines (akaakiha 130, akiha 129/130, hisui 206, shiki 175–179; a whole-roster scan found no others), so CC's pattern would play there. Since S8b, `--mbaacc-data DIR` retargets them to a 1-frame invisible no-op (rule 12). An empty pattern (`PSTR n PEND`, `mbac_moon_blank_patterns.py`) does the opposite: it lets the lower CC layer supply slot n, which is how the moon-3 prototype fell back to CC's shield patterns. |
     | 260–283 | CC files | heat, circuit spark, air throw, GC bunker, guard crush |
     | 300–333 | CC files | reactions, guards, downs, techs |
     | 350, 352, 353 | CC files | |
-    | 351, 354, 900–908 | converter (M7) | Pass `--no-system-patterns` when layering, so CC's own versions are used. A standalone character (a boss such as G_CHAOS, one file in `_9.txt`) keeps the converter's copies. |
+    | 351, 354, 900–908 | converter (M7) | The ActCadenza moon-3 set (S8b) **keeps** the converter's copies: they replay ActCadenza's own 23/24/25/26 reactions, which is what ActCadenza shows for every hit strength (decision D3, exact ActCadenza numbers). Pass `--no-system-patterns` for a set that should use MBAACC's own 900–908 instead. A standalone character (a boss such as G_CHAOS, one file in `_9.txt`) keeps the converter's copies. |
 
     The engine resolves patterns per slot across the list (a later file replaces a slot), so CC's frames for these
     ranges are used unchanged. Full write-up: `docs/mbac_moon/FEASIBILITY.md` §3 (Layering).
 
+12. **ActCadenza parity data (S8b; reference ActCadenza Ver.1.03A, decision D1).**
+
+    | Rule | What | Switch |
+    |---|---|---|
+    | Guts | ActCadenza reads the compiled `<CHR>_C.CT`, never `_C.TXT` (`Slot_LoadCommandCT` 1.00 0x435B40 / 1.03A 0x4362C0 copies CT+0x2264..0x22D4 to slot+0x304). `Damage_ComputeProrated` 0x451660 (1.03A `Damage_Calculate` 0x452C00) reads the guts float for HP quarter q at slot+0x310+4q = **CT+0x2270+4q = `_C.TXT` status floats f1..f4**; f0 (CT+0x226C) is never read; 0.0 means 1.0. `<c>_cc_c.txt` `[Status] Guard` is f1..f4 from the CT of the chosen version, `AirJumpNum`/`Flags`/`[TeamChangeData]` from the CT as well (cross-checked against the TXT, mismatches logged). The pre-S8b emitter wrote f0..f3, one HP quarter off, for every character. | `--ac-version 1.03A` (default) / `1.00`; `--ac-patch DIR` = the extracted 06.p (`tools/ha4/actcadenza_pk_extract.py`); `--ac-base DIR` = the 02.p folder for siblings of an overlay .DAT; `--no-cmd` |
+    | 1.03A data | 06.p overrides 12 CTs (AKIHA, ARC, KISHIMA, MIYAKO, M_HISUI, NANAYA, NECHAOS, NECO, NERO, SHIKI, V_SION, WARAKIA), `VECTOR.TXT` and `G_CHAOS.DAT` (parts texture only). A CT absent from 06.p is unchanged and read from 02.p. GAKIHA/F_CIEL CTs are 8908 B (older layout, same status offsets). | — |
+    | Spawn leaks | An EF1 whose target is empty in the ActCadenza data but present in the MBAACC stack (`<c>.HA6`, `_r`, `_0`, `_0_r`) is retargeted to a reserved 1-frame invisible pattern (aniType 0, like MBAACC's own empty effects 216/217), 990 or the next lower slot empty in both. ActCadenza spawned nothing there. Logged per character. | `--mbaacc-data DIR`, `--no-leak-noop`, `--noop-pattern N` |
+    | Giants | MBAA `Victim_ApplyPendingHits` 0x470FC0 (@0x471F09): a KO hit on GiantFlag 1/2 forces reaction 44/45; otherwise GiantFlag 1 never reacts and GiantFlag 2 takes the vector table's HitAni (900–908, ...). `--giant-flag 2 --giant-donor g_akiha.HA6` copies each missing MBAACC G_AKIHA slot (23–30, 44, 45, 350) with the donor's timing/AS/IF and the character's own hit pose (pattern 24 sprite layers + hurt boxes; unresolved donor EF spawns dropped), then adds 900–908/351/354 from the now complete 23–26. `--giant-flag 1 --giant-donor Hermes.HA6` only checks/fills 44/45. | `--giant-flag`, `--giant-donor` |
+    | Shield | The IF51 EX windows (rule 9, M8) other than the common `[Type_3]` 6/6/8 go to `<c>_actcadenza_moon.ini` (`[FILE1] ExShieldTime_* = N`, only the keys that differ). Format: `docs/actcadenza_parity/ACTCADENZA_MOON_SIDECAR.md` (outside the repo). | `--no-shield-sidecar`, `--sidecar-section` |
+
+    Roster: `tools/ha4/convert_roster_actcadenza.sh` → `gamedata/mbac_to_cc/roster_v3/`. Moon-3 set and package list:
+    `tools/ha4/make_actcadenza_moon3.py` → `gamedata/mbac_to_cc/actcadenza_moon3/data/` and
+    `docs/actcadenza_parity/P3_PACKAGE_FILES.tsv`. Audit: `tools/ha4/mbac_moon_convverify.py` rows G1/G2/L1/S1.
+
 CLI: `ha4tool convert <A.DAT> <B.DAT>... -o <outdir> [--name base] [--no-system-patterns] [--no-shield-remap]
-[--keep-ef-p2-bits] [--gg-raw | --gg-from-cc <CC data dir> [--cc-name <name>]]`. GUI: File → *Export MBAC as HA6...*
+[--keep-ef-p2-bits] [--gg-raw | --gg-from-cc <CC data dir> [--cc-name <name>]] [--ac-version 1.03A|1.00]
+[--ac-patch DIR] [--ac-base DIR] [--mbaacc-data DIR [--no-leak-noop] [--noop-pattern N]]
+[--giant-flag 1|2 --giant-donor HA6] [--no-cmd] [--no-shield-sidecar] [--sidecar-section FILE1]`. GUI: File → *Export MBAC as HA6...*
 (pick the `.ha6` name; the other files are written next to it). *Save Character As* with a `.ha6` name
 converts only the frame data.
 
