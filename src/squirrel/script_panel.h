@@ -31,6 +31,19 @@ public:
 	void requestSave() { m_saveRequested = true; }
 	bool hasUnsavedChanges() const;
 
+	// A pattern reference found under the mouse in a script (P4): a pattern number (pat=N, start_pat=N,
+	// SetPattern(N), def_PAT_* constants), a PTCN code name (pat="StdC_End", SetPattern("...")), or a frame
+	// id (JumpFrameID(N), case N under GetUpdateFrameID) that matches AFID.
+	struct PatRef {
+		int pattern = -1;
+		std::string code;
+		int afid = -1;
+	};
+	// Set by the main frame. scriptDir is the folder of the open script (data/chrNNN for character files).
+	// describe returns the hover text ("" = unknown); open jumps to it in the HA6 editor (Ctrl+click).
+	std::function<std::string(const std::string& scriptDirUtf8, const PatRef&)> describeRef;
+	std::function<void(const std::string& scriptDirUtf8, const PatRef&)> openRef;
+
 private:
 	struct Impl;
 	std::unique_ptr<Impl> m;

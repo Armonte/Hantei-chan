@@ -1,4 +1,4 @@
-// 3D stage view controls and the fxr ramp override table.
+// 3D stage view controls, the fxr ramp override table, Squirrel script links.
 {"cam x (px)", "カメラ X (px)"},
 {"cam y (px)", "カメラ Y (px)"},
 {"FOV override", "FOV 上書き"},
@@ -12,3 +12,6 @@
 {"override", "上書き"},
 {"ramp", "ランプ"},
 {"edit", "編集"},
+// Squirrel script -> HA6 links.
+{"also in patterns", "他のパターン"},
+{"not found in the loaded HA6 stack", "読み込んだ HA6 にありません"},

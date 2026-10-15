@@ -376,6 +376,10 @@ private:
 	void drawCommandEditor();
 	// Squirrel Script panel (ui/main_frame_script.cpp, squirrel/script_panel.h).
 	std::unique_ptr<sqedit::ScriptPanel> scriptPanel;
+	// Script -> HA6 links (Squirrel P4): the character a script folder belongs to (opening its _0.txt when
+	// asked), and the hover text / navigation for a pattern reference found in a script.
+	CharacterInstance* characterForScriptDir(const std::string& dirUtf8, bool openIfNeeded);
+	void wireScriptPanel();
 	bool m_scriptShortcutsRegistered = false;
 	void drawScriptPanel();
 	void drawGameLink();   // Game Link window (ui/main_frame_gamelink.cpp)
