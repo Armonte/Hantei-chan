@@ -11,6 +11,7 @@
 
 #include "../mbaacc_package.h"
 #include "../pcmod/pcmod_export_ui.h"
+#include "../modproject/hmod_ui.h"
 
 namespace pkgui {
 struct State {
@@ -70,6 +71,7 @@ void MainFrame::DrawPackageToolsMenuItems()
 void MainFrame::DrawPackageToolWindows()
 {
 	pcmodui::Draw();
+	hmodui::Draw();
 	auto& g = pkgui::g;
 	const ImVec2 mainPos = ImGui::GetMainViewport()->Pos;
 	if (g.showReport) {

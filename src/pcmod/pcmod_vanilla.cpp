@@ -46,10 +46,11 @@ bool VanillaIndex::Load(const std::string& dir)
 const char* VanillaIndex::Where(const std::string& normPath) const
 {
 	if (!loaded) return "";
-	if (packed.count(normPath)) return "packed";
-	std::string native = normPath;
+	// A loose file in the game folder is what the game reads first, so it wins over the same path inside a .p archive:
+	// report "loose" even when the archive also holds the path (p_arc.* is both).
 	std::error_code ec;
-	if (fs::is_regular_file(fs::u8path(gameDir) / fs::u8path(native), ec)) return "loose";
+	if (fs::is_regular_file(fs::u8path(gameDir) / fs::u8path(normPath), ec)) return "loose";
+	if (packed.count(normPath)) return "packed";
 	return "";
 }
 

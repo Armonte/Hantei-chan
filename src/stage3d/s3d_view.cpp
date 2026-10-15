@@ -6,6 +6,7 @@
 #include "s3d_model.h"
 
 #include "../app_log.h"
+#include "../i18n.h"
 #include "../png_writer.h"
 #include "../render_target.h"
 
@@ -448,17 +449,17 @@ void Draw()
 		ImGui::Text("%s %s | %u nodes, %u meshes (%u additive, %u animated), %u tris | FOV %.1f, scale %.3g, pos %.3g %.3g %.3g, fog %s %.0f..%.0f",
 			s.loadedName.c_str(), s.nameUtf8.c_str(), s.stats.nodes, s.stats.meshes, s.stats.additive, s.stats.animated, s.stats.triangles, s.params.fov,
 			s.params.scale[0], s.params.position[0], s.params.position[1], s.params.position[2], s.params.fog ? "on" : "off", s.params.fogStart, s.params.fogEnd);
-		ImGui::SetNextItemWidth(120); ImGui::DragFloat("cam x (px)", &s.camX, 1.f); ImGui::SameLine();
-		ImGui::SetNextItemWidth(120); ImGui::DragFloat("cam y (px)", &s.camY, 1.f); ImGui::SameLine();
-		ImGui::SetNextItemWidth(120); ImGui::DragFloat("zoom", &s.zoom, 0.005f, 0.2f, 4.f); ImGui::SameLine();
-		ImGui::SetNextItemWidth(120); ImGui::DragFloat("FOV override", &s.fovOverride, 0.1f, 0.f, 120.f); ImGui::SameLine();
-		ImGui::Checkbox("fog", &s.fog); ImGui::SameLine();
-		ImGui::SetNextItemWidth(140); ImGui::Combo("cull", &s.cull, "none\0clockwise\0counter-clockwise\0");
-		ImGui::SetNextItemWidth(120); ImGui::DragFloat("lift", &s.lift, 0.005f, -1.f, 1.f); ImGui::SameLine();
-		ImGui::SetNextItemWidth(120); ImGui::DragFloat("contrast", &s.contrast, 0.005f, 0.f, 4.f); ImGui::SameLine();
-		if (ImGui::Checkbox("play", &s.play)) { s.playStart = Now(); s.playStartFrame = s.frame; }
+		ImGui::SetNextItemWidth(120); ImGui::DragFloat(LBL("cam x (px)"), &s.camX, 1.f); ImGui::SameLine();
+		ImGui::SetNextItemWidth(120); ImGui::DragFloat(LBL("cam y (px)"), &s.camY, 1.f); ImGui::SameLine();
+		ImGui::SetNextItemWidth(120); ImGui::DragFloat(LBL("zoom"), &s.zoom, 0.005f, 0.2f, 4.f); ImGui::SameLine();
+		ImGui::SetNextItemWidth(120); ImGui::DragFloat(LBL("FOV override"), &s.fovOverride, 0.1f, 0.f, 120.f); ImGui::SameLine();
+		ImGui::Checkbox(LBL("fog"), &s.fog); ImGui::SameLine();
+		ImGui::SetNextItemWidth(140); ImGui::Combo(LBL("cull"), &s.cull, "none\0clockwise\0counter-clockwise\0");
+		ImGui::SetNextItemWidth(120); ImGui::DragFloat(LBL("lift"), &s.lift, 0.005f, -1.f, 1.f); ImGui::SameLine();
+		ImGui::SetNextItemWidth(120); ImGui::DragFloat(LBL("contrast"), &s.contrast, 0.005f, 0.f, 4.f); ImGui::SameLine();
+		if (ImGui::Checkbox(LBL("play"), &s.play)) { s.playStart = Now(); s.playStartFrame = s.frame; }
 		ImGui::SameLine();
-		ImGui::SetNextItemWidth(160); ImGui::DragInt("frame (30 fps)", &s.frame, 1.f, 0, 100000);
+		ImGui::SetNextItemWidth(160); ImGui::DragInt(LBL("frame (30 fps)"), &s.frame, 1.f, 0, 100000);
 		if (s.play) s.frame = s.playStartFrame + int((Now() - s.playStart) * 30.0);
 		Render(s);
 		const ImVec2 avail = ImGui::GetContentRegionAvail();

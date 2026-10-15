@@ -152,6 +152,7 @@ void MainFrame::Draw()
 // export) - see ui/view_render_impl.h and docs/HANTEI_WAVE2.md
 // ============================================================================
 #include "pcmod/pcmod_export_ui.h"
+#include "modproject/hmod_ui.h"
 #include "ui/view_render_impl.h"
 #include "ui/workspace_hosts_impl.h"
 #include "ui/png_export_impl.h"

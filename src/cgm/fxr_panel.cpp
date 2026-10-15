@@ -259,7 +259,7 @@ void FxPanel::drawRuleEditor(CharacterInstance &ch, const Bank *bank) {
 	}
 	ImGui::SameLine(); if (ImGui::Button(LBL("Clear all overrides"))) r.ov.clear();
 	if (ImGui::BeginTable("##ov", 4, ImGuiTableFlags_RowBg | ImGuiTableFlags_ScrollY | ImGuiTableFlags_SizingFixedFit, ImVec2(0, 150))) {
-		ImGui::TableSetupColumn("slot"); ImGui::TableSetupColumn("auto"); ImGui::TableSetupColumn("override"); ImGui::TableSetupColumn("ramp");
+		ImGui::TableSetupColumn(TXT("slot")); ImGui::TableSetupColumn(TXT("auto")); ImGui::TableSetupColumn(TXT("override")); ImGui::TableSetupColumn(TXT("ramp"));
 		ImGui::TableHeadersRow();
 		for (int s = 0; s < nSlots; s++) {
 			ImGui::TableNextRow(); ImGui::PushID(s);
@@ -279,7 +279,7 @@ void FxPanel::drawRuleEditor(CharacterInstance &ch, const Bank *bank) {
 				if (!o) { r.ov.emplace_back(); o = &r.ov.back(); o->slot = s; }
 				o->hasRamp = hr; if (hr) o->ramp = r.ramp; rampSlotEdit = hr ? s : -1;
 			}
-			if (hr) { ImGui::SameLine(); if (ImGui::SmallButton("edit")) rampSlotEdit = s; }
+			if (hr) { ImGui::SameLine(); if (ImGui::SmallButton(LBL("edit"))) rampSlotEdit = s; }
 			ImGui::PopID();
 		}
 		ImGui::EndTable();

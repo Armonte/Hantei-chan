@@ -34,6 +34,9 @@ include_directories(SYSTEM "${CMAKE_SOURCE_DIR}/third_party/quill/include")
 # 3D stage view (docs/stage3d/SCOPE.md): fbxex model, DDS, BgList. The GL view (s3d_view.cpp) is editor-only.
 set(STAGE3D_SOURCES src/stage3d/s3d_model.cpp src/stage3d/s3d_dds.cpp src/stage3d/s3d_bglist.cpp)
 set(PCMOD_SOURCES src/pcmod/pcmod_sha256.cpp src/pcmod/pcmod_manifest.cpp src/pcmod/pcmod_zip.cpp src/pcmod/pcmod_package.cpp)
+# Mod projects (docs/modmanager/AUTHORING_DESIGN.md): hmod.json, vanilla hash index, change tracking, conflict check, exporters.
+set(HMOD_SOURCES src/modproject/hmod_ha6.cpp src/modproject/hmod_vanilla.cpp src/modproject/hmod_project.cpp src/modproject/hmod_track.cpp
+	src/modproject/hmod_conflict.cpp src/modproject/hmod_export.cpp)
 
 add_executable(${EXE}
 	src/main.cpp
@@ -48,7 +51,7 @@ add_executable(${EXE}
 	src/workspace_viewports.cpp
 	src/mbaacc_pack.cpp
 	src/mbaacc_package.cpp
-	${PCMOD_SOURCES} src/pcmod/pcmod_vanilla.cpp src/pcmod/pcmod_export_ui.cpp
+	${PCMOD_SOURCES} src/pcmod/pcmod_vanilla.cpp src/pcmod/pcmod_export_ui.cpp ${HMOD_SOURCES} src/modproject/hmod_ui.cpp
 	${STAGE3D_SOURCES} src/stage3d/s3d_view.cpp
 	src/vao.cpp
 	src/shader.cpp
@@ -1088,6 +1091,18 @@ if(MINGW)
 endif()
 add_test(NAME pcmod COMMAND pcmod_test tests/fixtures/pcmod WORKING_DIRECTORY ${CMAKE_SOURCE_DIR})
 add_test(NAME pcmod_cli COMMAND bash tools/pcmod/pcmod_cli_ctest.sh $<TARGET_FILE:pcmodtool> tests/fixtures/pcmod "${CMAKE_BINARY_DIR}/pcmod_cli_out" WORKING_DIRECTORY ${CMAKE_SOURCE_DIR})
+# hmodtool is the mod-project CLI, hmod_test the unit test (synthetic folders).
+add_executable(hmodtool src/modproject/hmodtool.cpp ${HMOD_SOURCES} ${PCMOD_SOURCES} src/pcmod/pcmod_vanilla.cpp src/mbaacc_pack.cpp ${FBARC_SOURCES})
+target_include_directories(hmodtool PRIVATE "." "src" "src/pcmod" "third_party")
+target_compile_definitions(hmodtool PRIVATE WIN32_LEAN_AND_MEAN UNICODE _UNICODE)
+add_executable(hmod_test tests/hmod_test.cpp ${HMOD_SOURCES} ${PCMOD_SOURCES} src/pcmod/pcmod_vanilla.cpp src/mbaacc_pack.cpp ${FBARC_SOURCES})
+target_include_directories(hmod_test PRIVATE "." "src" "src/pcmod" "third_party")
+target_compile_definitions(hmod_test PRIVATE WIN32_LEAN_AND_MEAN UNICODE _UNICODE)
+if(MINGW)
+	target_link_options(hmodtool PRIVATE -municode -static-libgcc -static-libstdc++ -static)
+	target_link_options(hmod_test PRIVATE -static-libgcc -static-libstdc++ -static)
+endif()
+add_test(NAME hmod COMMAND hmod_test build/hmod_test_out WORKING_DIRECTORY ${CMAKE_SOURCE_DIR})
 # --headless view export (hidden window, FBO readback): PNG size + checksum stability, batch == single shot
 add_test(NAME headless_export COMMAND bash tools/ui/headless_ctest.sh $<TARGET_FILE:gonptechan> tests/fixtures/headless/chr000.ha6 "${CMAKE_BINARY_DIR}/headless_out" WORKING_DIRECTORY ${CMAKE_SOURCE_DIR})
 
