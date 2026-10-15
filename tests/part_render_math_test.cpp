@@ -227,14 +227,23 @@ static void TestD3d9PixelCentre()
 	};
 	const glm::vec2 o = toWindow(600.f, 700.f);
 	CHECK(Near(o.x, 600.5f, 1e-3f));
-	CHECK(Near(o.y, 700.5f, 1e-3f));
+	CHECK(Near(o.y, 700.5f - kGlEdgeTieBiasPx, 1e-3f));
+	CHECK(Near(o.y, EditorWindowYForGameY(700.f), 1e-3f));
+	// rect_chr024_p76 edge tie: the game's line top is at window y 639.0 (g_mWorld read live, snapped to 1/256 px), on
+	// pixel 639's centre; D3D9 (top-left rule) draws row 639. In the editor the mapped top edge must sit strictly
+	// above GL centre 639.5 (by more than one 1/256 px snap step), so row 639 is covered whatever GL's tie rule. A
+	// bottom edge on a centre likewise sits above it, so D3D9's dropped bottom row stays dropped.
+	const float top = toWindow(320.f, 639.f).y;
+	CHECK(top < 639.5f - 1.f / 256.f);
+	CHECK(top > 639.f);   // still inside pixel 639: nothing else moves
+	CHECK(toWindow(320.f, 640.0f).y < 640.5f - 1.f / 256.f);
 	// rect_chr024_p76: a 6-px linear rect from the origin pixel X. GL pixel k (centre k + 0.5) maps back to geometry
 	// k - X, so it samples u = (k - X) / 6: pixel X + 3 samples the texture centre (the game's 1-px core on the
 	// origin pixel), and pixel X samples the edge. Without the shift it would be (k - X + 0.5) / 6 (2-px core).
 	const float X = 600.f;
 	for (int k = 0; k < 6; ++k) {
 		const float centreGl = X + k + 0.5f;
-		const float geom = centreGl - (o.x - 600.f);   // undo the shift
+		const float geom = centreGl - (o.x - 600.f);   // undo the shift (x has no tie bias)
 		CHECK(Near((geom - X) / 6.f, k / 6.f, 1e-4f));
 	}
 	// CG layer UVs start 0.25 texel in (CgLayer_DrawWithCharaShader 0x4BE140)

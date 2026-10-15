@@ -1,0 +1,44 @@
+# render-match5 (2026-10-15): rect_chr024_p76 matrices. Same flow as v2_uni2_chr024 / uni2_v2_case.gcs, then, while
+# UNI2-IM is paused on the case frame (the game replays the frozen frame, so the shader command queue still holds
+# the last real frame), dump the ShaderCmd queue: records (24 B: type, 64, 1, 64, D3DX handle, data offset) at
+# 0xA03750 (end offset g_ShaderCmdRecEnd 0xA02FF8) and the float data at 0xA23750 (end g_ShaderCmdDataEnd 0xA03624).
+# g_mWorld / g_mView / g_mProj are queued by PatPart_SetupWorldMatrixAndShader 0x415230 and
+# Han6Draw_DrawPatLayerParts_3D 0x4BFAEC through ShaderCmd_QueueSetMatrixParam 0x4156F0.
+include ../games/uni2.gcs
+sym g_ShaderCmdRecEnd   0xA02FF8
+sym g_ShaderCmdDataEnd  0xA03624
+sym g_ShaderCmdRecs     0xA03750
+sym g_ShaderCmdData     0xA23750
+let P1CHR 24
+let P2CHR 0
+include ../games/uni2_to_training.gcs
+set OUTD C:\dev\hantei-chan\tools\gamecap\captures\v2
+set CASE rect_chr024_p76_r6
+set PAT 76
+set SETFRAME 0
+set FRAME 0
+set GTICK 1
+set STEPKEYS F6
+unfreeze
+wait_frames 10
+pipe \\.\pipe\uni2-im-harness "keys F5" ok
+wait_frames 10
+call Object_SetPatternFrame ecx=P1 edx=${PAT} ${SETFRAME}
+wait_frames 3
+pipe \\.\pipe\uni2-im-harness "keys ${STEPKEYS}" ok
+wait_frames 6
+assert_mem u32 P1+OBJ_PAT == ${PAT}
+assert_mem u32 P1+OBJ_FRAME == ${FRAME}
+assert_mem i32 P1+OBJ_TICK == ${GTICK}
+pipe \\.\pipe\uni2-im-harness "grab ${OUTD}\${CASE}_game.png" ok
+peek u32 g_ShaderCmdRecEnd rec_end
+peek u32 g_ShaderCmdDataEnd data_end
+meta u32 g_ShaderCmdRecEnd rec_end
+meta u32 g_ShaderCmdDataEnd data_end
+meta u32 g_ShaderCmdRecs recs 6144
+meta f32 g_ShaderCmdData data 16384
+set OUT_META ${OUTD}\${CASE}_mtx.json
+include ../games/uni2_meta.gcs
+pipe \\.\pipe\uni2-im-harness "keys F5" ok
+wait_frames 4
+quit
