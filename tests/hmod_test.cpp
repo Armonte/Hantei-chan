@@ -4,6 +4,7 @@
 #include "modproject/hmod_conflict.h"
 #include "modproject/hmod_export.h"
 #include "modproject/hmod_ha6.h"
+#include "modproject/hmod_import.h"
 #include "modproject/hmod_project.h"
 #include "modproject/hmod_track.h"
 #include "pcmod/pcmod_package.h"
@@ -435,6 +436,49 @@ static int Run(int argc, char** argv)
 		// MBAACC project cannot use the IM export and vice versa
 		CHECK(!ExportIm(p, o, &uv).ok);
 		CHECK(!ExportPcmod(q, o, &uv).ok);
+	}
+
+	// ---- install import: a modded install's loose files against the vanilla index ----
+	{
+		std::string id, cat, why;
+		ClassifyInstallPath("data\\m_hisui_m_0_c.txt", id, cat, why);
+		CHECK_EQ(id, "char-m_hisui_m");
+		ClassifyInstallPath("data\\s_akiha_1p.ha6", id, cat, why);
+		CHECK_EQ(id, "char-s_akiha");
+		ClassifyInstallPath("data\\p_arc_d_selist.txt", id, cat, why);
+		CHECK_EQ(id, "char-p_arc_d");
+		ClassifyInstallPath("data\\vector.txt", id, cat, why);
+		CHECK(id == "system-constants" && cat == "system.constants");
+		ClassifyInstallPath("data\\arc.wmt", id, cat, why);
+		CHECK(id.empty() && why.find("write-only") != std::string::npos);
+		ClassifyInstallPath("story\\battle\\arc_win.txt", id, cat, why);
+		CHECK_EQ(id, "story");
+
+		const fs::path inst = out / "modded";
+		Put(inst / "MBAA.exe", "MZ");
+		Put(inst / "data" / "akiha_1_r.HA6", Ha6({{300, "jab", Frame(9)}, {301, "stub", ""}}));                 // changed slot
+		Put(inst / "data" / "akiha_1.HA6", Ha6({{300, "jab", Frame(5, true), true}, {301, "stub", ""}, {302, "x", Frame(3)}}));   // re-encoded only
+		Put(inst / "data" / "same.txt", "same\r\n");                                                            // unchanged
+		Put(inst / "data" / "_type.txt", "ShieldKeepTime = 45\r\nGG_MaxVal = 8000\r\n");                   // changed
+		Put(inst / "data" / "eddie_0.txt", "[DataFile]\r\n");                                                 // added
+		Put(inst / "data" / "eddie.wmt", "x");                                                                 // skipped
+		Put(inst / "data" / "hantei4.inf", "x");                                                               // clutter
+		Put(inst / "se" / "battle_se" / "Eddie_B000.wav", "RIFF");                                             // added
+		Put(inst / "Tools" / "trainer.exe", "MZ");                                                             // not scanned
+		Project q = MakeProject(out / "proj_import", "mbaacc");
+		ImportInstallResult r;
+		std::string err;
+		CHECK(ImportInstall(q, inst.u8string(), van, r, err));
+		if (!err.empty()) std::printf("  import: %s\n", err.c_str());
+		CHECK(r.imported == 4 && r.reencoded == 1 && r.unchanged == 1 && r.clutter == 1 && r.skipped == 1);
+		CHECK(r.perAsset["char-akiha"] == 1 && r.perAsset["char-eddie"] == 1 && r.perAsset["system-constants"] == 1 && r.perAsset["audio-se"] == 1);
+		CHECK(q.FindAsset("char-akiha") && q.FindAsset("char-akiha")->origin.kind == "install-import" && q.FindAsset("char-akiha")->targets.size() == 1);
+		CHECK(!fs::exists(out / "proj_import" / "assets" / "char-akiha" / "data" / "akiha_1.HA6"));
+		CHECK(fs::exists(out / "proj_import" / "assets" / "char-akiha" / "data" / "akiha_1_r.HA6"));
+		CHECK(q.sources.size() == 1 && q.sources[0].kind == "install-import");
+		CHECK_EQ(Validate(q), "");
+		Project bad = MakeProject(out / "proj_import_uni", "uni2");
+		CHECK(!ImportInstall(bad, inst.u8string(), van, r, err));
 	}
 
 	if (g_failures) { std::printf("%d failure(s)\n", g_failures); return 1; }

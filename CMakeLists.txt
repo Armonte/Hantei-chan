@@ -36,7 +36,7 @@ set(STAGE3D_SOURCES src/stage3d/s3d_model.cpp src/stage3d/s3d_dds.cpp src/stage3
 set(PCMOD_SOURCES src/pcmod/pcmod_sha256.cpp src/pcmod/pcmod_manifest.cpp src/pcmod/pcmod_zip.cpp src/pcmod/pcmod_package.cpp)
 # Mod projects (docs/modmanager/AUTHORING_DESIGN.md): hmod.json, vanilla hash index, change tracking, conflict check, exporters.
 set(HMOD_SOURCES src/modproject/hmod_ha6.cpp src/modproject/hmod_vanilla.cpp src/modproject/hmod_project.cpp src/modproject/hmod_track.cpp
-	src/modproject/hmod_conflict.cpp src/modproject/hmod_export.cpp)
+	src/modproject/hmod_conflict.cpp src/modproject/hmod_export.cpp src/modproject/hmod_import.cpp)
 
 add_executable(${EXE}
 	src/main.cpp
