@@ -37,3 +37,6 @@
 {"Vanilla index:", "標準ファイルのインデックス:"},
 {"not built (files are treated as changed)", "未作成 (ファイルは変更扱い)"},
 {"Status", "状態"},
+{"Import a modded install...", "MOD 入りのインストールを取り込む..."},
+{"Imported %zu file(s) into %zu asset(s); %zu unchanged, %zu re-encoded, %zu skipped.", "%zu 個のファイルを %zu 個のアセットに取り込みました。変更なし %zu、再エンコードのみ %zu、対象外 %zu。"},
+{"Pick a modded MBAACC install: every loose file that differs from the vanilla index (or is new) is copied into this project, one asset per character plus system, roster, story, sound, music, stage and graphics assets. The install is only read.", "MOD 入りの MBAACC インストールを選んでください。バニラ索引と異なる (または新しい) 展開ファイルをすべてこのプロジェクトにコピーします。キャラクターごとに1アセット、ほかにシステム・名簿・ストーリー・効果音・音楽・ステージ・画像のアセットを作ります。インストールは読み取るだけです。"},

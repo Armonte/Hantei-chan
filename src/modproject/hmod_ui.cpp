@@ -1,6 +1,7 @@
 // See hmod_ui.h.
 #include "hmod_ui.h"
 #include "hmod_export.h"
+#include "hmod_import.h"
 
 #include "../app_log.h"
 #include "../filedialog.h"
@@ -253,6 +254,26 @@ void Draw()
 	}
 	ImGui::TextColored(g.vanReady ? ColGood() : ColWarn(), "%s %s", TXT("Vanilla index:"), g.vanMsg.empty() ? TXT("not built (files are treated as changed)") : g.vanMsg.c_str());
 	if (ImGui::IsItemHovered()) ImGui::SetTooltip("%s", TXT("Hashes every file of the game's archives once (minutes on a slow disk). The index is cached and shared by all projects."));
+	ImGui::BeginDisabled(!g.vanReady || p.game != "mbaacc");
+	if (ImGui::Button(LBL("Import a modded install..."))) {
+		// The vanilla index above is the baseline: its loose files that differ (or are new) become install-import assets.
+		const std::string d = BrowseForFolderUtf8(g.gameDir);
+		if (!d.empty()) {
+			ImportInstallResult r;
+			std::string err;
+			if (ImportInstall(p, d, g.van, r, err) && Save(p, err)) {
+				char buf[256];
+				snprintf(buf, sizeof buf, TXT("Imported %zu file(s) into %zu asset(s); %zu unchanged, %zu re-encoded, %zu skipped."),
+					r.imported, r.perAsset.size(), r.unchanged, r.reencoded, r.skipped);
+				g.status = buf;
+				for (const auto& n : r.notes) HC_LOG_INFO("[hmod] import: {}", n);
+				g.trackedDirty = true;
+			} else g.status = err;
+		}
+	}
+	ImGui::EndDisabled();
+	if (ImGui::IsItemHovered(ImGuiHoveredFlags_AllowWhenDisabled))
+		ImGui::SetTooltip("%s", TXT("Pick a modded MBAACC install: every loose file that differs from the vanilla index (or is new) is copied into this project, one asset per character plus system, roster, story, sound, music, stage and graphics assets. The install is only read."));
 
 	// ---- assets ----
 	ImGui::Separator();
