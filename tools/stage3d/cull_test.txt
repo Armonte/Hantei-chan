@@ -1,0 +1,11 @@
+wait 10
+stage3d open C:/dev/hantei-chan/gamedata/uni2/bg bg001
+wait 5
+stage3d set cull 1
+stage3d capture C:/dev/hantei-chan/work/ab/s3d_cull1.png
+stage3d set cull 2
+stage3d capture C:/dev/hantei-chan/work/ab/s3d_cull2.png
+stage3d set cull 0
+stage3d set zmirror 0
+stage3d capture C:/dev/hantei-chan/work/ab/s3d_nomirror.png
+quit
