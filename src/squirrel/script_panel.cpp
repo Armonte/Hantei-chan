@@ -1,6 +1,7 @@
 #include "script_panel.h"
 
 #include "script_document.h"
+#include "script_index.h"
 #include "script_vm.h"
 
 #include "../app_log.h"
@@ -182,6 +183,18 @@ std::string Signature(const std::string& name, const ApiSym& a)
 	return s + ") -> " + (a.ret.empty() ? "?" : a.ret);
 }
 
+using PatRef = ScriptPanel::PatRef;
+
+// What each engine table is for (modder notes, BootySama 2026-10-15); script tables are labelled from the index.
+const char* EngineTableNote(const std::string& t)
+{
+	if (t == "BMvCore") return "engine: core battle data (both players, stage and other essentials)";
+	if (t == "BMvTbl") return "engine: the current move's data (read, compare and set values for MVs, stage status)";
+	if (t == "BMvEff") return "engine: effects and their special flags";
+	if (t == "BCMDTbl") return "engine: command input checks";
+	return "engine native (from the game executable)";
+}
+
 struct ScriptPanel::Impl {
 	TextEditor editor;
 	ScriptDocument doc;
@@ -198,6 +211,23 @@ struct ScriptPanel::Impl {
 	bool forceNextSave = false;
 	std::deque<std::string> log;
 	ScriptPanel* owner = nullptr;
+	// Project index (search, definitions, usages, member completion, move checks) and the bottom panes.
+	ScriptIndex index;
+	std::map<std::string, std::vector<std::pair<std::string, const ApiSym*>>> apiByTable;   // engine natives per table
+	std::vector<ScriptProblem> problems;
+	double lastEditTime = -1.0;
+	int bottomTab = 0;            // 0 log, 1 problems, 2 search
+	bool selectBottomTab = false;
+	char searchBuf[256] = {};
+	SearchOptions searchOpt;
+	std::vector<ScriptHit> hits;
+	std::vector<std::pair<std::string, PatRef>> ha6Hits;
+	std::string hitsTitle;
+	bool focusSearch = false;
+	std::vector<const ScriptDef*> defChoices;   // go-to-definition with several targets
+	bool openDefChoices = false;
+	std::vector<ScriptProblem> pendingMissing;  // save prompt: referenced moves that do not exist
+	bool askMissingMoves = false, skipMovePromptOnce = false;
 	// Outline (P5): command entries of a _cmd_ table, t.Mv_* move blocks, functions. Rebuilt on change.
 	struct OutlineItem {
 		std::string name, command, move; // command: the command = [...] list; move: UpdateTable name
@@ -310,13 +340,36 @@ struct ScriptPanel::Impl {
 				for (const auto& x : e["args"]) if (x.is_string()) a.args.push_back(x.get<std::string>());
 			api[e["name"].get<std::string>()].push_back(std::move(a));
 		}
+		apiByTable.clear();
+		for (const auto& [n, v] : api)
+			for (const auto& a : v) apiByTable[a.table].push_back({n, &a});
 	}
 
-	// Candidates: API natives, Squirrel keywords, and names this file declares (function/local/class/const).
+	// Candidates after "Table.": the engine natives of that table plus the script members the index knows.
+	// Otherwise: API natives, table names, project globals, Squirrel keywords and names this file declares.
+	std::string acOwner;
+	std::map<std::string, std::string> acTag;   // word -> "[engine] sig" / "[script] file:line"
 	void collectWords()
 	{
 		std::set<std::string> w;
-		for (const auto& [k, v] : api) w.insert(k);
+		acTag.clear();
+		if (!acOwner.empty()) {
+			const auto tb = apiByTable.find(acOwner);
+			if (tb != apiByTable.end())
+				for (const auto& [n, a] : tb->second) { w.insert(n); acTag[n] = "[engine] " + Signature(n, *a); }
+			for (const ScriptDef* d : index.members(acOwner)) {
+				if (!w.insert(d->name).second && acTag.count(d->name)) continue;
+				acTag[d->name] = "[script] " + d->name + (d->kind == ScriptDef::Function ? "(" + d->params + ")" : "") + "  " + d->file + ":" + std::to_string(d->line + 1);
+			}
+			acWords.assign(w.begin(), w.end());
+			return;
+		}
+		for (const auto& [k, v] : api) { w.insert(k); acTag[k] = "[engine] " + Signature(k, v.front()); }
+		for (const auto& [t, v] : apiByTable) if (!t.empty() && t[0] != '(') { w.insert(t); acTag[t] = "[engine] " + std::string(EngineTableNote(t)); }
+		for (const ScriptDef& d : index.defs()) {
+			if (!d.owner.empty() && d.kind != ScriptDef::MoveTable) continue;
+			if (w.insert(d.name).second) acTag[d.name] = "[script] " + d.file + ":" + std::to_string(d.line + 1);
+		}
 		for (const char* k : {"base", "break", "case", "catch", "class", "clone", "const", "continue", "default", "delegate", "delete", "else",
 				 "enum", "extends", "for", "foreach", "function", "if", "in", "instanceof", "local", "null", "resume", "return", "static",
 				 "switch", "this", "throw", "try", "typeof", "while", "yield", "true", "false"})
@@ -409,12 +462,47 @@ struct ScriptPanel::Impl {
 			if (owner->openRef && ImGui::IsMouseClicked(ImGuiMouseButton_Left) && ImGui::GetIO().KeyCtrl) owner->openRef(dir, ref);
 			return;
 		}
-		const auto it = api.find(editor.GetWordAtMousePos(mp));
-		if (it == api.end()) return;
+		const TextEditor::DocPos pos = editor.GetDocPosAtMousePos(mp);
+		const std::string line = editor.GetLineText(pos.line);
+		std::string word, own;
+		WordAt(line, ByteCol(line, pos.index), word, own);
+		if (word.empty() || std::isdigit(static_cast<unsigned char>(word[0]))) return;
+		const bool ctrlClick = ImGui::IsMouseClicked(ImGuiMouseButton_Left) && ImGui::GetIO().KeyCtrl;
+		// Engine side: natives of the table it is called through (or any table when unqualified), and the tables themselves.
+		std::vector<std::string> engine;
+		const auto it = api.find(word);
+		if (it != api.end())
+			for (const auto& a : it->second) if (own.empty() || a.table == own) engine.push_back(Signature(word, a));
+		const bool isTable = apiByTable.count(word) && own.empty();
+		const auto defs = defsFor(word, own);
+		if (engine.empty() && !isTable && defs.empty()) return;
 		ImGui::BeginTooltip();
-		for (const auto& a : it->second) ImGui::TextUnformatted(Signature(it->first, a).c_str());
-		ImGui::TextDisabled("%s", (game + " native, from the IDB API table").c_str());
+		ImGui::PushTextWrapPos(ImGui::GetFontSize() * 40);
+		if (isTable) {
+			ImGui::TextColored(ImVec4(0.55f, 0.8f, 1, 1), "[engine]"); ImGui::SameLine();
+			ImGui::Text("%s: %s (%zu natives)", word.c_str(), EngineTableNote(word), apiByTable.at(word).size());
+		}
+		for (const auto& e : engine) {
+			ImGui::TextColored(ImVec4(0.55f, 0.8f, 1, 1), "[engine]"); ImGui::SameLine();
+			ImGui::TextUnformatted(e.c_str());
+		}
+		if (!engine.empty()) ImGui::TextDisabled("%s", (game + " native in the game executable (" + EngineTableNote(own.empty() ? it->second.front().table : own) + ")").c_str());
+		int shown = 0;
+		for (const ScriptDef* d : defs) {
+			if (shown++ == 4) { ImGui::TextDisabled("... %zu more definitions", defs.size() - 4); break; }
+			ImGui::TextColored(ImVec4(0.6f, 0.95f, 0.6f, 1), "[script]"); ImGui::SameLine();
+			std::string head = (d->owner.empty() ? "" : d->owner + ".") + d->name;
+			if (d->kind == ScriptDef::Function) head += "(" + d->params + ")";
+			if (d->kind == ScriptDef::Const) head += " = " + d->value;
+			if (d->kind == ScriptDef::CmdEntry && !d->value.empty()) head += " -> " + d->value;
+			ImGui::TextUnformatted(head.c_str());
+			ImGui::TextDisabled("  %s:%d", d->file.c_str(), d->line + 1);
+			if (!d->doc.empty()) ImGui::TextUnformatted(d->doc.c_str());
+		}
+		if (!defs.empty()) ImGui::TextDisabled("Ctrl+click / F12: go to definition, Shift+F12: find usages");
+		ImGui::PopTextWrapPos();
 		ImGui::EndTooltip();
+		if (ctrlClick && !defs.empty()) goToDefinition(word, own);
 	}
 
 	void drawCompletion(bool focused)
@@ -431,12 +519,19 @@ struct ScriptPanel::Impl {
 			}
 			snprintf(acFilter, sizeof acFilter, "%s", prefix.c_str());
 			acSel = 0;
+			{
+				const std::string line = editor.GetLineText(acStart.line);
+				std::string word, own;
+				const size_t b = ByteCol(line, acStart.index);
+				acOwner.clear();
+				if (b >= 2 && line[b - 1] == '.') { WordAt(line, b - 1, word, own); acOwner = word; }
+			}
 			collectWords();
 			const ImVec2 at = editor.DocPos2ScreenPos(acEnd);
 			ImGui::SetNextWindowPos(ImVec2(at.x, at.y + editor.GetLineHeight()));
 			ImGui::OpenPopup("##sqcomplete");
 		}
-		ImGui::SetNextWindowSizeConstraints(ImVec2(280, 0), ImVec2(520, 320));
+		ImGui::SetNextWindowSizeConstraints(ImVec2(420, 0), ImVec2(900, 340));
 		if (!ImGui::BeginPopup("##sqcomplete")) return;
 		if (ImGui::IsWindowAppearing()) ImGui::SetKeyboardFocusHere();
 		ImGui::SetNextItemWidth(-1);
@@ -456,9 +551,12 @@ struct ScriptPanel::Impl {
 			chosen = hits[std::clamp(acSel, 0, static_cast<int>(hits.size()) - 1)];
 		ImGui::BeginChild("##aclist", ImVec2(0, std::min(10, static_cast<int>(hits.size())) * ImGui::GetTextLineHeightWithSpacing() + 4));
 		for (int i = 0; i < static_cast<int>(hits.size()) && i < 400; i++) {
-			const auto a = api.find(*hits[i]);
-			const std::string label = a == api.end() ? *hits[i] : Signature(*hits[i], a->second.front());
-			if (ImGui::Selectable(label.c_str(), i == acSel)) chosen = hits[i];
+			const auto t = acTag.find(*hits[i]);
+			if (ImGui::Selectable(hits[i]->c_str(), i == acSel)) chosen = hits[i];
+			if (t != acTag.end()) {
+				ImGui::SameLine(160);
+				ImGui::TextColored(t->second.rfind("[engine]", 0) == 0 ? ImVec4(0.55f, 0.8f, 1, 1) : ImVec4(0.6f, 0.95f, 0.6f, 1), "%s", t->second.c_str());
+			}
 			if (i == acSel && (ImGui::IsKeyPressed(ImGuiKey_DownArrow) || ImGui::IsKeyPressed(ImGuiKey_UpArrow))) ImGui::SetScrollHereY();
 		}
 		ImGui::EndChild();
@@ -469,6 +567,397 @@ struct ScriptPanel::Impl {
 		}
 		if (ImGui::IsKeyPressed(ImGuiKey_Escape)) ImGui::CloseCurrentPopup();
 		ImGui::EndPopup();
+	}
+
+	static std::string CharDirOf(const std::string& rel)
+	{
+		if (rel.rfind("data/", 0) != 0) return "";
+		const size_t sl = rel.find('/', 5);
+		return sl == std::string::npos ? "" : rel.substr(0, sl);
+	}
+	std::string scriptDir() const { return ToU8((U8(root) / U8(currentRel)).parent_path()); }
+
+	bool openAt(const std::string& rel, int line, int col)
+	{
+		if (rel != currentRel) {
+			if (dirty) { setStatus("unsaved changes in " + currentRel + ": save first", true); return false; }
+			std::string err;
+			if (!owner->openFile(ToU8(U8(root) / U8(rel)), &err)) { setStatus(err, true); return false; }
+		}
+		editor.SetCursor(TextEditor::DocPos(static_cast<size_t>(line), static_cast<size_t>(std::max(0, col))));
+		editor.ScrollToLine(static_cast<size_t>(line), TextEditor::Scroll::alignMiddle);
+		return true;
+	}
+
+	// Every pattern / code-name / frame-id reference in the current file, for the HA6 checks.
+	std::vector<std::pair<int, PatRef>> scanRefs() const
+	{
+		std::vector<std::pair<int, PatRef>> out;
+		static const std::regex num(R"((?:\bpat|\bstart_pat|\bDataPattern|SetPattern)\s*[=(]\s*(\d+))");
+		static const std::regex code(R"((?:\bpat|\bstart_pat|\bDataPattern|SetPattern)\s*[=(]\s*"([^"]+)")");
+		static const std::regex afid(R"((?:JumpFrameID\s*\(\s*|\bcase\s+)(\d+))");
+		static const std::regex defpat(R"(\b(def_PAT_\w+))");
+		const size_t n = editor.GetLineCount();
+		for (size_t i = 0; i < n; ++i) {
+			std::string l = editor.GetLineText(i);
+			const size_t c = l.find("//");
+			if (c != std::string::npos) l.resize(c);
+			for (std::sregex_iterator it(l.begin(), l.end(), num), e; it != e; ++it) { PatRef r; r.pattern = std::stoi((*it)[1].str()); out.push_back({(int)i, r}); }
+			for (std::sregex_iterator it(l.begin(), l.end(), code), e; it != e; ++it) { PatRef r; r.code = (*it)[1].str(); out.push_back({(int)i, r}); }
+			for (std::sregex_iterator it(l.begin(), l.end(), afid), e; it != e; ++it) { PatRef r; r.afid = std::stoi((*it)[1].str()); out.push_back({(int)i, r}); }
+			for (std::sregex_iterator it(l.begin(), l.end(), defpat), e; it != e; ++it) {
+				const auto k = consts.find((*it)[1].str());
+				if (k != consts.end()) { PatRef r; r.pattern = k->second; out.push_back({(int)i, r}); }
+			}
+		}
+		return out;
+	}
+
+	// Re-index the open file from the editor and rebuild the problem list (move checks for its character folder,
+	// unknown engine calls, HA6 reference checks against the loaded character).
+	void recheck()
+	{
+		if (currentRel.empty()) return;
+		index.updateFile(currentRel, editor.GetText());
+		problems.clear();
+		const std::string cdir = CharDirOf(currentRel);
+		if (!cdir.empty()) problems = index.checkMoves(cdir);
+		static const std::regex call(R"(\b([A-Z]\w*)\.([A-Za-z_]\w*)\s*\()");
+		const size_t n = editor.GetLineCount();
+		for (size_t i = 0; i < n; ++i) {
+			std::string l = editor.GetLineText(i);
+			const size_t c = l.find("//");
+			if (c != std::string::npos) l.resize(c);
+			for (std::sregex_iterator it(l.begin(), l.end(), call), e; it != e; ++it) {
+				const std::string t = (*it)[1].str(), f = (*it)[2].str();
+				const auto tb = apiByTable.find(t);
+				if (tb == apiByTable.end()) continue;   // not an engine table
+				bool known = std::any_of(tb->second.begin(), tb->second.end(), [&](const auto& x) { return x.first == f; });
+				if (!known) for (const ScriptDef* d : index.members(t)) if (d->name == f) known = true;
+				if (known) continue;
+				ScriptProblem p;
+				p.file = currentRel; p.line = (int)i; p.col = (int)it->position(2);
+				p.message = t + " has no native " + f + " in the " + game + " API table (engine side): the call fails at run time.";
+				problems.push_back(p);
+			}
+		}
+		if (owner && owner->checkRef) {
+			std::set<std::string> seen;
+			for (const auto& [line, ref] : scanRefs()) {
+				const std::string msg = owner->checkRef(scriptDir(), ref);
+				if (msg.empty() || !seen.insert(std::to_string(line) + msg).second) continue;
+				ScriptProblem p;
+				p.file = currentRel; p.line = line; p.message = msg;
+				problems.push_back(p);
+			}
+		}
+		std::stable_sort(problems.begin(), problems.end(), [&](const ScriptProblem& a, const ScriptProblem& b) {
+			const bool ah = a.file == currentRel, bh = b.file == currentRel;
+			return ah != bh ? ah : (a.file != b.file ? a.file < b.file : a.line < b.line);
+		});
+		editor.ClearMarkers();
+		for (const auto& p : problems)
+			if (p.file == currentRel) editor.AddMarker(static_cast<size_t>(p.line), IM_COL32(230, 170, 40, 255), IM_COL32(110, 80, 0, 70), p.message, p.message);
+	}
+
+	// Writes the blank move table `name` into `fixFile` (the open editor when it is that file, so it can be undone).
+	bool addMoveStub(const std::string& name, const std::string& fixFile)
+	{
+		if (fixFile == currentRel) {
+			int line = 0;
+			const std::string text = editor.GetText();
+			ScriptIndex::InsertMoveTableStub(text, name, &line);
+			const std::string var = [&] {
+				static const std::regex mk(R"(MakeMoveTable\s*\(\s*([A-Za-z_]\w*))");
+				std::smatch m;
+				return std::regex_search(text, m, mk) ? m[1].str() : std::string("t");
+			}();
+			editor.SetCursor(TextEditor::DocPos(static_cast<size_t>(line), 0));
+			editor.ReplaceTextInCurrentCursor(var + "." + name + " <-\n{\n}\n\n");
+			dirty = true;
+			say("added a blank move table " + name + " to " + fixFile + " (unsaved)");
+			return true;
+		}
+		const fs::path path = U8(root) / U8(fixFile);
+		std::string bytes;
+		if (!ReadBytes(path, bytes)) { setStatus("cannot read " + fixFile, true); return false; }
+		ScriptDocument d;
+		d.loadBytes(bytes);
+		const std::string updated = ScriptIndex::InsertMoveTableStub(d.utf8Text(), name);
+		std::string out, backup, err;
+		std::vector<EncodeError> errs;
+		if (!d.encode(SplitLines(updated), out, &errs)) { setStatus("cannot encode " + fixFile, true); return false; }
+		if (!WriteBackup(path, bytes, &backup) || !WriteAtomic(path, out, &err)) { setStatus("cannot write " + fixFile, true); return false; }
+		index.updateFile(fixFile, updated);
+		say("added a blank move table " + name + " to " + fixFile + " (saved, backup kept)");
+		return true;
+	}
+
+	// The identifier under the cursor / mouse, and the table it is reached through ("BMvTbl" in BMvTbl.GetPosition).
+	static void WordAt(const std::string& line, size_t at, std::string& word, std::string& owner)
+	{
+		word.clear(); owner.clear();
+		auto isw = [](char c) { return std::isalnum(static_cast<unsigned char>(c)) || c == '_'; };
+		if (at > line.size()) return;
+		size_t b = at, e = at;
+		while (b > 0 && isw(line[b - 1])) b--;
+		while (e < line.size() && isw(line[e])) e++;
+		word = line.substr(b, e - b);
+		if (b >= 2 && line[b - 1] == '.') {
+			size_t ob = b - 1;
+			while (ob > 0 && isw(line[ob - 1])) ob--;
+			owner = line.substr(ob, b - 1 - ob);
+		}
+	}
+	static size_t ByteCol(const std::string& line, size_t cp)
+	{
+		size_t at = 0;
+		for (size_t c = 0; at < line.size() && c < cp; c++) {
+			at++;
+			while (at < line.size() && (static_cast<unsigned char>(line[at]) & 0xC0) == 0x80) at++;
+		}
+		return at;
+	}
+
+	std::vector<const ScriptDef*> defsFor(const std::string& word, const std::string& ownerName) const
+	{
+		std::vector<const ScriptDef*> all = index.find(word), pick;
+		if (!ownerName.empty())
+			for (const ScriptDef* d : all) if (d->owner == ownerName || d->owner.size() > ownerName.size() && d->owner.compare(d->owner.size() - ownerName.size(), ownerName.size(), ownerName) == 0) pick.push_back(d);
+		return pick.empty() ? all : pick;
+	}
+
+	void goToDefinition(const std::string& word, const std::string& ownerName)
+	{
+		const auto defs = defsFor(word, ownerName);
+		if (defs.empty()) {
+			const bool engine = api.count(word) != 0;
+			setStatus(engine ? word + " is an engine native (in the game executable, no script source)" : "no definition of " + word + " in the scripts", !engine);
+			return;
+		}
+		if (defs.size() == 1) { openAt(defs[0]->file, defs[0]->line, defs[0]->col); return; }
+		defChoices = defs;
+		openDefChoices = true;
+	}
+
+	void findUsages(const std::string& word)
+	{
+		hits = index.usages(word);
+		ha6Hits.clear();
+		hitsTitle = std::to_string(hits.size()) + " usage(s) of " + word;
+		bottomTab = 2;
+		selectBottomTab = true;
+	}
+
+	void runSearch()
+	{
+		hits = index.search(searchBuf, searchOpt);
+		ha6Hits.clear();
+		if (owner && owner->searchHa6 && searchBuf[0] && !currentRel.empty()) ha6Hits = owner->searchHa6(scriptDir(), searchBuf);
+		hitsTitle = std::to_string(hits.size()) + " script hit(s)" + (ha6Hits.empty() ? "" : ", " + std::to_string(ha6Hits.size()) + " pattern(s)") + " for \"" + searchBuf + "\"";
+	}
+
+	// Signature help: inside an unclosed call on the cursor line, show its parameters with the current one highlighted.
+	void drawSignatureHelp(bool focused)
+	{
+		if (!focused || ImGui::IsPopupOpen("##sqcomplete")) return;
+		const TextEditor::DocPos cur = editor.GetMainCursorPosition();
+		const std::string line = editor.GetLineText(cur.line);
+		size_t at = ByteCol(line, cur.index);
+		int depth = 0, arg = 0;
+		size_t open = std::string::npos;
+		bool str = false;
+		for (size_t i = at; i-- > 0;) {
+			const char c = line[i];
+			if (c == '"') { str = !str; continue; }
+			if (str) continue;
+			if (c == ')' || c == ']' || c == '}') depth++;
+			else if (c == '(' || c == '[' || c == '{') {
+				if (depth == 0) { if (c == '(') open = i; break; }
+				depth--;
+			} else if (c == ',' && depth == 0) arg++;
+		}
+		if (open == std::string::npos || open == 0) return;
+		std::string word, own;
+		size_t e = open;
+		while (e > 0 && line[e - 1] == ' ') e--;
+		if (e == 0) return;
+		WordAt(line, e - 1, word, own);
+		if (word.empty() || word == "if" || word == "while" || word == "for" || word == "foreach" || word == "switch" || word == "function") return;
+		std::vector<std::string> params;
+		std::string head, where;
+		bool engine = false;
+		const auto tb = apiByTable.find(own);
+		const ApiSym* native = nullptr;
+		if (tb != apiByTable.end()) for (const auto& [n, a] : tb->second) if (n == word) native = a;
+		if (!native && own.empty() && api.count(word)) native = &api.at(word).front();
+		if (native) {
+			engine = true;
+			params = native->args;
+			head = (native->table.empty() || native->table[0] == '(' ? "" : native->table + ".") + word;
+			where = "-> " + (native->ret.empty() ? std::string("?") : native->ret);
+		} else {
+			const auto defs = defsFor(word, own);
+			const ScriptDef* d = nullptr;
+			for (const ScriptDef* x : defs) if (x->kind == ScriptDef::Function) { d = x; break; }
+			if (!d) return;
+			head = (d->owner.empty() ? "" : d->owner + ".") + d->name;
+			where = d->file + ":" + std::to_string(d->line + 1);
+			std::string cur2;
+			int dd = 0;
+			for (char c : d->params) {
+				if (c == '(' || c == '{' || c == '[') dd++;
+				if (c == ')' || c == '}' || c == ']') dd--;
+				if (c == ',' && dd == 0) { params.push_back(cur2); cur2.clear(); continue; }
+				cur2 += c;
+			}
+			if (!cur2.empty() || !params.empty()) params.push_back(cur2);
+			for (auto& p : params) { while (!p.empty() && p[0] == ' ') p.erase(0, 1); while (!p.empty() && p.back() == ' ') p.pop_back(); }
+		}
+		const ImVec2 pos = editor.DocPos2ScreenPos(cur);
+		ImGui::SetNextWindowPos(ImVec2(pos.x, pos.y - editor.GetLineHeight() * 2.2f));
+		ImGui::BeginTooltip();
+		ImGui::TextColored(engine ? ImVec4(0.55f, 0.8f, 1, 1) : ImVec4(0.6f, 0.95f, 0.6f, 1), "%s", engine ? "[engine]" : "[script]");
+		ImGui::SameLine();
+		ImGui::TextUnformatted((head + "(").c_str());
+		for (size_t i = 0; i < params.size(); ++i) {
+			ImGui::SameLine(0, 0);
+			const std::string t = params[i] + (i + 1 < params.size() ? ", " : "");
+			if ((int)i == arg) ImGui::TextColored(ImVec4(1, 0.85f, 0.3f, 1), "%s", t.c_str());
+			else ImGui::TextUnformatted(t.c_str());
+		}
+		ImGui::SameLine(0, 0);
+		ImGui::TextUnformatted(")");
+		ImGui::SameLine();
+		ImGui::TextDisabled("%s", where.c_str());
+		ImGui::EndTooltip();
+	}
+
+	void drawBottom()
+	{
+		ImGui::BeginChild("##bottom", ImVec2(0, 0), ImGuiChildFlags_Borders);
+		if (ImGui::BeginTabBar("##btabs")) {
+			auto tab = [&](const char* label, int id) {
+				const bool sel = selectBottomTab && bottomTab == id;
+				const bool open = ImGui::BeginTabItem(label, nullptr, sel ? ImGuiTabItemFlags_SetSelected : 0);
+				if (open) bottomTab = id;
+				return open;
+			};
+			if (tab("Log", 0)) {
+				ImGui::BeginChild("##log");
+				for (const auto& l : log) ImGui::TextUnformatted(l.c_str());
+				if (ImGui::GetScrollY() >= ImGui::GetScrollMaxY()) ImGui::SetScrollHereY(1.0f);
+				ImGui::EndChild();
+				ImGui::EndTabItem();
+			}
+			const std::string pl = "Problems (" + std::to_string(problems.size()) + ")###problems";
+			if (tab(pl.c_str(), 1)) { drawProblems(); ImGui::EndTabItem(); }
+			if (tab("Search###search", 2)) { drawSearch(); ImGui::EndTabItem(); }
+			ImGui::EndTabBar();
+		}
+		selectBottomTab = false;
+		ImGui::EndChild();
+	}
+
+	void drawProblems()
+	{
+		if (problems.empty()) { ImGui::TextDisabled(currentRel.empty() ? "Open a script." : "No problems found in this character's scripts."); return; }
+		ImGui::BeginChild("##plist");
+		for (size_t i = 0; i < problems.size(); ++i) {
+			const ScriptProblem& p = problems[i];
+			ImGui::PushID(static_cast<int>(i));
+			if (p.fix == ScriptProblem::CreateMoveTable) {
+				if (ImGui::SmallButton("Add blank state")) {
+					const ScriptProblem copy = p;
+					if (addMoveStub(copy.fixArg, copy.fixFile)) recheck();
+					ImGui::PopID();
+					break;
+				}
+				if (ImGui::IsItemHovered()) ImGui::SetTooltip("Writes an empty %s <- { } into %s, named exactly as referenced.", p.fixArg.c_str(), p.fixFile.c_str());
+				ImGui::SameLine();
+			}
+			const std::string label = p.file + ":" + std::to_string(p.line + 1) + "  " + p.message;
+			ImGui::PushStyleColor(ImGuiCol_Text, p.severity == ScriptProblem::Error ? ImVec4(1, 0.45f, 0.4f, 1) : ImVec4(1, 0.8f, 0.4f, 1));
+			if (ImGui::Selectable(label.c_str())) openAt(p.file, p.line, p.col);
+			ImGui::PopStyleColor();
+			ImGui::PopID();
+		}
+		ImGui::EndChild();
+	}
+
+	void drawSearch()
+	{
+		if (focusSearch) { ImGui::SetKeyboardFocusHere(); focusSearch = false; }
+		ImGui::SetNextItemWidth(320);
+		bool go = ImGui::InputTextWithHint("##q", "search all scripts + pattern names (Enter)", searchBuf, sizeof searchBuf, ImGuiInputTextFlags_EnterReturnsTrue);
+		ImGui::SameLine(); go |= ImGui::Checkbox("Regex", &searchOpt.regex);
+		ImGui::SameLine(); go |= ImGui::Checkbox("Whole word", &searchOpt.wholeWord);
+		ImGui::SameLine(); go |= ImGui::Checkbox("Match case", &searchOpt.matchCase);
+		ImGui::SameLine(); go |= ImGui::Checkbox("Skip comments", &searchOpt.codeOnly);
+		if (go && searchBuf[0]) runSearch();
+		if (!hitsTitle.empty()) { ImGui::SameLine(); ImGui::TextDisabled("%s", hitsTitle.c_str()); }
+		ImGui::BeginChild("##hits");
+		for (size_t i = 0; i < ha6Hits.size(); ++i) {
+			ImGui::PushID(static_cast<int>(100000 + i));
+			if (ImGui::Selectable(("[HA6] " + ha6Hits[i].first).c_str()) && owner->openRef) owner->openRef(scriptDir(), ha6Hits[i].second);
+			ImGui::PopID();
+		}
+		for (size_t i = 0; i < hits.size(); ++i) {
+			const ScriptHit& h = hits[i];
+			ImGui::PushID(static_cast<int>(i));
+			std::string t = h.text;
+			while (!t.empty() && (t[0] == ' ' || t[0] == '\t')) t.erase(0, 1);
+			if (ImGui::Selectable((h.file + ":" + std::to_string(h.line + 1) + "  " + t).c_str())) openAt(h.file, h.line, h.col);
+			ImGui::PopID();
+		}
+		ImGui::EndChild();
+	}
+
+	void drawPopups()
+	{
+		if (openDefChoices) { ImGui::OpenPopup("Definitions##sq"); openDefChoices = false; }
+		if (ImGui::BeginPopup("Definitions##sq")) {
+			for (size_t i = 0; i < defChoices.size(); ++i) {
+				const ScriptDef* d = defChoices[i];
+				ImGui::PushID(static_cast<int>(i));
+				if (ImGui::Selectable(((d->owner.empty() ? "" : d->owner + ".") + d->name + "   " + d->file + ":" + std::to_string(d->line + 1)).c_str())) {
+					const ScriptDef copy = *d;
+					ImGui::CloseCurrentPopup();
+					openAt(copy.file, copy.line, copy.col);
+				}
+				ImGui::PopID();
+			}
+			ImGui::EndPopup();
+		}
+		if (askMissingMoves) { ImGui::OpenPopup("Missing moves##sq"); askMissingMoves = false; }
+		ImGui::SetNextWindowSizeConstraints(ImVec2(460, 0), ImVec2(900, 600));
+		if (ImGui::BeginPopupModal("Missing moves##sq", nullptr, ImGuiWindowFlags_AlwaysAutoResize)) {
+			ImGui::TextUnformatted("These moves are referenced but not found in the character's mv file:");
+			for (const auto& p : pendingMissing) {
+				ImGui::BulletText("%s  (line %d)", p.fixArg.c_str(), p.line + 1);
+				const std::string near = index.nearestMove(p.fixArg, CharDirOf(p.file));
+				if (!near.empty() && near != p.fixArg) { ImGui::SameLine(); ImGui::TextDisabled("did you mean %s?", near.c_str()); }
+			}
+			ImGui::Spacing();
+			ImGui::PushTextWrapPos(ImGui::GetFontSize() * 34);
+			ImGui::TextDisabled("Save them as blank states in the mv file? A missing move can reset the character to neutral, or spawn copies of the character on button presses.");
+			ImGui::PopTextWrapPos();
+			const std::string fixFile = pendingMissing.empty() ? std::string() : pendingMissing.front().fixFile;
+			ImGui::BeginDisabled(fixFile.empty());
+			if (ImGui::Button("Add blank states and save")) {
+				const auto todo = pendingMissing;
+				for (const auto& p : todo) addMoveStub(p.fixArg, p.fixFile);
+				skipMovePromptOnce = true;
+				owner->requestSave();
+				ImGui::CloseCurrentPopup();
+			}
+			ImGui::EndDisabled();
+			ImGui::SameLine();
+			if (ImGui::Button("Save without adding")) { skipMovePromptOnce = true; owner->requestSave(); ImGui::CloseCurrentPopup(); }
+			ImGui::SameLine();
+			if (ImGui::Button("Cancel")) { forceNextSave = false; ImGui::CloseCurrentPopup(); }
+			ImGui::EndPopup();
+		}
 	}
 
 	void say(const std::string& s)
@@ -505,7 +994,7 @@ ScriptPanel::ScriptPanel() : m(std::make_unique<Impl>())
 	m->editor.SetLanguage(SquirrelLanguage());
 	m->editor.SetLineFoldingEnabled(true);
 	m->owner = this;
-	m->editor.SetChangeCallback([this] { m->dirty = true; m->outlineDirty = true; });
+	m->editor.SetChangeCallback([this] { m->dirty = true; m->outlineDirty = true; m->lastEditTime = ImGui::GetTime(); });
 }
 
 ScriptPanel::~ScriptPanel() = default;
@@ -531,11 +1020,13 @@ bool ScriptPanel::openGameRoot(const std::string& rootUtf8, const std::string& p
 		for (auto it = fs::recursive_directory_iterator(r / sub, ec); it != fs::recursive_directory_iterator(); it.increment(ec)) {
 			if (ec) break;
 			if (!it->is_regular_file(ec) || it->path().extension() != ".txt") continue;
-			const std::string rel = fs::relative(it->path(), r, ec).generic_u8string();
+			const std::string rel = it->path().lexically_relative(r).generic_u8string();
 			if (IsSquirrelScript(rel)) m->files.push_back(rel);
 		}
 	}
 	std::sort(m->files.begin(), m->files.end());
+	m->index.build(rootUtf8, m->files);
+	m->problems.clear();
 	std::string vmErr;
 	m->vmReady = m->vm.open(ToU8(r), m->apiPath, [this](const std::string& s) { m->say(s); }, &vmErr);
 	if (!m->vmReady) m->vm.open(ToU8(r), "", [this](const std::string& s) { m->say(s); }, &vmErr);
@@ -559,7 +1050,10 @@ bool ScriptPanel::openFile(const std::string& pathUtf8, std::string* error)
 	m->dirty = false;
 	m->offerSaveAnyway = false;
 	std::error_code ec;
-	m->currentRel = m->root.empty() ? pathUtf8 : fs::relative(U8(pathUtf8), U8(m->root), ec).generic_u8string();
+	(void)ec;
+	m->currentRel = m->root.empty() ? pathUtf8 : U8(pathUtf8).lexically_normal().lexically_relative(U8(m->root).lexically_normal()).generic_u8string();
+	m->lastEditTime = -1.0;
+	m->recheck();
 	m->setStatus("opened " + m->currentRel + " (" + std::to_string(bytes.size()) + " bytes, " + std::to_string(m->doc.lineCount()) + " lines)", false);
 	return true;
 }
@@ -584,9 +1078,10 @@ void ScriptPanel::draw()
 	ImGui::SameLine();
 	ImGui::BeginDisabled(m->root.empty());
 	ImGui::SetNextItemWidth(110);
-	const char* games[] = {"(auto)", "uni2", "mbtl"};
-	int gi = m->game == "uni2" ? 1 : m->game == "mbtl" ? 2 : 0;
-	if (ImGui::Combo("Profile", &gi, games, 3)) {
+	const char* games[] = {"(auto)", "uni2", "mbtl", "dfci", "unib"};
+	int gi = 0;
+	for (int i = 1; i < 5; i++) if (m->game == games[i]) gi = i;
+	if (ImGui::Combo("Profile", &gi, games, 5)) {
 		std::string err;
 		openGameRoot(m->root, gi ? games[gi] : "", &err);
 	}
@@ -614,7 +1109,7 @@ void ScriptPanel::draw()
 		ImGui::TextColored(m->statusError ? ImVec4(1, 0.45f, 0.4f, 1) : ImVec4(0.6f, 0.9f, 0.6f, 1), "%s", m->status.c_str());
 	}
 
-	const float listW = 260.0f, logH = 110.0f;
+	const float listW = 260.0f, logH = 190.0f;
 	ImGui::BeginChild("##files", ImVec2(listW, -logH), ImGuiChildFlags_Borders | ImGuiChildFlags_ResizeX);
 	ImGui::SetNextItemWidth(-1);
 	char buf[128];
@@ -638,6 +1133,17 @@ void ScriptPanel::draw()
 		m->editor.Render("##sqtext", ImVec2(-1, -1));
 		m->drawHover();
 		m->drawCompletion(m_focused);
+		m->drawSignatureHelp(m_focused);
+		if (m_focused && !ImGui::IsPopupOpen("##sqcomplete") && (ImGui::IsKeyPressed(ImGuiKey_F12, false))) {
+			const TextEditor::DocPos cur = m->editor.GetMainCursorPosition();
+			const std::string line = m->editor.GetLineText(cur.line);
+			std::string word, own;
+			Impl::WordAt(line, Impl::ByteCol(line, cur.index), word, own);
+			if (!word.empty()) {
+				if (ImGui::GetIO().KeyShift) m->findUsages(word);
+				else m->goToDefinition(word, own);
+			}
+		}
 	} else ImGui::TextDisabled("Open a game folder (the one holding script/ and data/), then pick a script.");
 	ImGui::EndChild();
 	if (outlineW > 0) {
@@ -646,18 +1152,32 @@ void ScriptPanel::draw()
 		m->drawOutline();
 		ImGui::EndChild();
 	}
-	ImGui::BeginChild("##log", ImVec2(0, 0), ImGuiChildFlags_Borders);
-	for (const auto& l : m->log) ImGui::TextUnformatted(l.c_str());
-	if (ImGui::GetScrollY() >= ImGui::GetScrollMaxY()) ImGui::SetScrollHereY(1.0f);
-	ImGui::EndChild();
+	m->drawBottom();
+	m->drawPopups();
+	if (m->lastEditTime >= 0 && ImGui::GetTime() - m->lastEditTime > 0.6) { m->lastEditTime = -1.0; m->recheck(); }
 
 	if (m_focused && ImGui::IsKeyDown(ImGuiMod_Ctrl) && ImGui::IsKeyPressed(ImGuiKey_S, false)) m_saveRequested = true;
+	if (m_focused && ImGui::IsKeyDown(ImGuiMod_Ctrl) && ImGui::IsKeyDown(ImGuiMod_Shift) && ImGui::IsKeyPressed(ImGuiKey_F, false)) {
+		m->bottomTab = 2; m->selectBottomTab = true; m->focusSearch = true;
+	}
 	ImGui::End();
 
 	if (!m_saveRequested || m->currentRel.empty()) { m_saveRequested = false; return; }
 	const bool force = m->forceNextSave;
 	m->forceNextSave = false;
 	m_saveRequested = false;
+
+	// 0. Moves this file switches to that do not exist: warn and offer blank states (never block the save).
+	if (!m->skipMovePromptOnce) {
+		m->recheck();
+		m->pendingMissing.clear();
+		for (const auto& p : m->problems)
+			if (p.fix == ScriptProblem::CreateMoveTable && p.file == m->currentRel &&
+				std::none_of(m->pendingMissing.begin(), m->pendingMissing.end(), [&](const ScriptProblem& q) { return q.fixArg == p.fixArg; }))
+				m->pendingMissing.push_back(p);
+		if (!m->pendingMissing.empty()) { m->askMissingMoves = true; m->forceNextSave = force; return; }
+	}
+	m->skipMovePromptOnce = false;
 
 	// 1. CP932 encode (strict; untouched lines keep their original bytes).
 	std::string bytes;
