@@ -67,9 +67,12 @@ inline float EaseAfhk(int type, float x)
 }
 
 // Current-frame weight `ticksInFrame` ticks into a frame of `duration` ticks (0 on the frame's first tick).
-inline float CurrentWeight(int afhk, int ticksInFrame, int duration)
+// MBAACC (`mbaaDialect`): AnimState_ProcessTransition 0x419C00 computes x = 1 - tick / AFD only when AFD != 0.
+// An AFD-0 frame keeps the caller's zeroed x, so its weight is EaseAfhk(type, 0) = 0 for every curve.
+inline float CurrentWeight(int afhk, int ticksInFrame, int duration, bool mbaaDialect = false)
 {
 	if (afhk < 1 || afhk > 5) return 1.f;
+	if (mbaaDialect && duration <= 0) return EaseAfhk(afhk, 0.f);
 	const float p = std::clamp((float)ticksInFrame / (float)std::max(1, duration), 0.f, 1.f);
 	return EaseAfhk(afhk, 1.f - p);
 }
@@ -98,6 +101,13 @@ inline int NextFrameIndex(int frame, int aniType, unsigned aniFlag, int jump, in
 // only PRXY/PRZM/PRAN/..., and its part matrix (PatPart_BuildTransformMatrix 0x405C70) is scale * rotZ * translate.
 // So an MBAACC-dialect character ignores a PRAS that a converted or UNI-made .pat carries.
 inline bool PartUsesPras(bool uniDialect, bool mbtl) { return uniDialect && !mbtl; }
+
+// Whether a part's transform (position, scale, rotation, PRAS) lerps toward the next part set at current weight t.
+// UNI2 1.42 (PatPart_BuildTransformMatrix 0x4C10E0) and MBTL (0x4A39A0) skip the lerp only at t == 1, so t == 0
+// draws the next part set's transform. MBAA.exe (PatPart_BuildTransformMatrix 0x405C70) also skips it at t == 0
+// and draws the current part's transform. Part colour has no such skip in any of them (MBAA
+// Palette_InterpolateARGB 0x4058C0), and the AF layer lerp neither (MBAA Animation_BuildTransformMatrix 0x407080).
+inline bool PartLerpsTransform(float t, bool uniDialect) { return t < 1.f && (uniDialect || t != 0.f); }
 
 inline float Lerp(float cur, float next, float t) { return cur + (next - cur) * (1.f - t); }
 

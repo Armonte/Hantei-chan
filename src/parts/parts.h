@@ -89,6 +89,7 @@ public:
         float curWeight = 1.f;    // AFHK: weight of the current frame (1 = no interpolation)
         bool paletteTint = true;  // PPPA tint: the game applies it in the character shader path only
         bool applyPras = true;    // PRAS: UNI2 applies it, MBTL does not read it
+        bool uniDialect = true;   // AFHK weight 0: MBAACC keeps the current part transform (PartLerpsTransform)
     };
     // setAddColor gets the PRSP specular colour as RGBA 0..1 (added to the output, alpha included).
     void Draw(const DrawParams& params,

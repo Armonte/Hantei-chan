@@ -1045,6 +1045,7 @@ void Render::DrawPatLayerItem(const RenderLayer& layer, Parts* origParts)
 	dp.curWeight = layer.curWeight;
 	dp.paletteTint = layer.patPaletteTint;
 	dp.applyPras = layer.patApplyPras;
+	dp.uniDialect = layer.patUniDialect;
 	m_parts->Draw(dp, setMatrix, setAddColor, layerColor);
 
 	// Leave a clean slate: unbind buffers/textures/shader, swallow PAT GL errors.

@@ -67,6 +67,9 @@ struct RenderLayer {
 	// PAT layers: PPPA palette tint (character parts only) and PRAS (MBTL ignores it).
 	bool patPaletteTint = true;
 	bool patApplyPras = true;
+	// AFHK weight 0: UNI2/MBTL lerp the part transform fully to the next part set, MBAACC keeps the current
+	// one (partrender::PartLerpsTransform).
+	bool patUniDialect = true;
 	// Pattern comparison overlay (issue #63): draw this layer's boxes as
 	// outlines only, so they read apart from the main pattern's filled boxes.
 	bool boxesOutlineOnly = false;
