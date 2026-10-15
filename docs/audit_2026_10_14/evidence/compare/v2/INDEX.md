@@ -219,3 +219,28 @@ pause/step, same-session plates; run log `gamecap_r5.log`). New editor views (on
     best (0 → 7.27, 0.5 → 7.79, 0.75 → 12.84).
   - Edge sharpness matches, so both sides are point-sampled. The remaining ~0.9 is which texel a rotated edge pixel
     lands on.
+
+## Round 6 / render-match6 (2026-10-15): part perspective FOV
+- **Cause.** `kPartFovY` was 1.3045008 rad. Both games pass 0x3FA78D36 = 1.3089969 rad (75°) to
+  D3DXMatrixPerspectiveFovLH (uni2 0x4C1860, MBTL 0x4A3DE0), which puts the part eye at 1024 × cot(37.5°) = 1334.5 px
+  instead of 1340.7. Deep 3D-rotated parts land up to ~0.7 px off at their far ends (the flipHV tip offset above).
+- **Fix.** `src/parts/part_render_math.h`; the test pins PartEyeDistance() = 1334.50. The UNI2 IDB comment was
+  corrected and saved.
+- **Re-measured.** Fresh editor shots, same game captures and commands as rounds 4/5:
+
+| case | before | after |
+|---|---|---|
+| flipHV_chr019_p153 | 7.37 / 22.0% (band 2.35 / 5.0%) | **6.32 / 18.5%** (band 2.53 / 6.7%) |
+| flipHV_chr019_p153_z1 | 9.20 / 29.5% | 8.85 / 28.6% |
+| mbtl_flipV_chr001_p157f2 | 4.03 / 13.5% | **3.57 / 11.3%** |
+| pups_chr027_p449f4 | 4.17 / 14.5% | **3.81 / 12.9%** |
+| pups_chr027_p449f6 | 6.16 / 22.0% | 6.06 / 21.8% |
+| flipH_chr000_p96f1 | 0.84 / 1.1% | 0.76 / 0.5% |
+| flipV_chr000_p383f1 | 1.66 / 2.6% | 1.61 / 2.3% |
+| afhk_pat_chr000_p72_t2 | 3.07 / 9.1% | 3.29 / 10.4% (band 1.58 / 2.1%) |
+| afhk_pat_chr019_p62_t7 | 1.61 / 3.1% | 1.65 / 3.3% |
+| pral2_chr025_p133f1 | 2.72 / 4.5% | 2.75 / 4.7% |
+
+- **flipHV** is now within 2× of its 3.10 / 7.4% control on the mean, and under it in % with the band. The rest is the
+  fan content described in the round 6 notes.
+- **The three small increases are within each case's band floor.** Their shots also carry the tie-bias change above.

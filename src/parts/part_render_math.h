@@ -150,12 +150,15 @@ inline LayerRgba LerpLayerColor(const LayerRgba &cur, int curMode, const LayerRg
 
 // ---- Part-space perspective ----------------------------------------------------------------------------------
 // Every .pat part goes through uni2 1.42 PatPart_GetGlobalPerspective640x480 0x4C1860 (PatPart_BuildTransformMatrix
-// with a5 == 0): Scale(1/640, 1/480, 1/1024) * LookAtLH(eye (0,0,-cot), at 0, up +y) * PerspectiveFovLH(1.3045008,
+// with a5 == 0): Scale(1/640, 1/480, 1/1024) * LookAtLH(eye (0,0,-cot), at 0, up +y) * PerspectiveFovLH(1.3089969 (75 deg),
 // aspect 1, 0.01, 1000) * Scale(640, 480, 1). A part at z = 0 maps 1:1 to pixels; elsewhere it scales by
-// E / (E + z) with E = 1024 * cot(fov/2) ~ 1340.7 px. LEFT-HANDED: positive part z is FARTHER (smaller). The
+// E / (E + z) with E = 1024 * cot(fov/2) ~ 1334.5 px. LEFT-HANDED: positive part z is FARTHER (smaller). The
 // editor draws with a GL frustum looking down -z, so z is mirrored. `w`, `h` = the editor view in pixels; the
 // result maps the part origin to NDC (-1, 1) (the view's top-left, moved by the caller's pre-transform).
-constexpr float kPartFovY = 1.3045008f;   // radians, uni2.exe 0x4C1860
+// 0x3FA78D36 = 1.3089969 rad = 75 degrees (uni2 0x4C1860 and MBTL 0x4A3DE0 pass the same constant to
+// D3DXMatrixPerspectiveFovLH). 1.3045008 was a misread; it put the eye at 1340.7 px instead of 1334.5 and moved the
+// tips of deep 3D-rotated parts by ~0.7 px (flipHV_chr019_p153, render-match6).
+constexpr float kPartFovY = 1.3089969f;   // radians
 inline float PartEyeDistance() { return 1024.f / std::tan(kPartFovY * 0.5f); }
 
 inline glm::mat4 PartPerspective(float w, float h)

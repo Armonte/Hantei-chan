@@ -199,7 +199,7 @@ static glm::vec2 EditorPartProject(glm::vec3 p, float w, float h)
 
 static void TestPartPerspective()
 {
-	CHECK(Near(PartEyeDistance(), 1340.73f, 0.05f));   // 1024 * cot(1.3045008 / 2)
+	CHECK(Near(PartEyeDistance(), 1334.50f, 0.05f));   // 1024 * cot(75 deg / 2), uni2 0x4C1860 / MBTL 0x4A3DE0
 	const float w = 1264.f, h = 861.f;
 	const glm::vec3 pts[] = {{0, 0, 0}, {100, -50, 0}, {200, 300, 400}, {-150, 80, -300}, {50, 50, 900}, {-400, -700, 250}};
 	for (const glm::vec3 &p : pts) {
