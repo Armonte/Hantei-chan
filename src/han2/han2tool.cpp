@@ -964,6 +964,56 @@ static int CmdPacWrite(int argc, char **argv)
 }
 
 
+// pacselftest <scratch dir>: the Create-PAC dialog's path end to end on synthetic files (no game needed): a PAC built from loose
+// files with the progress callback, re-opened, every entry extracted and compared, a name over 59 bytes refused, and the
+// refuse-if-same guard (never overwrite an archive that is also a source).
+static void PacProgress(int done, int total, void *user) { int *last = (int *)user; if (done != *last) printf("  progress %d/%d\n", done, total); *last = done; }
+static int CmdPacSelfTest(int argc, char **argv)
+{
+	if (argc < 1) { puts("pacselftest <scratch dir>"); return 2; }
+	namespace fs = std::filesystem;
+	const fs::path d = fs::u8path(argv[0]);
+	std::error_code ec;
+	fs::remove_all(d, ec);
+	fs::create_directories(d / "in", ec);
+	const std::vector<std::pair<std::string, std::string>> files = {{"CHR01.DAT", std::string(4000, 'a')}, {"SE001.WAV", "RIFF....WAVEfmt "}, {"EMPTY.TXT", ""}};
+	std::vector<pac::WriteSource> src;
+	for (const auto &f : files) {
+		{ std::ofstream o(d / "in" / f.first, std::ios::binary); o << f.second; }
+		pac::WriteSource w; w.name = f.first; w.kind = pac::WriteSource::LooseFile; w.path = (d / "in" / f.first).u8string();
+		src.push_back(w);
+	}
+	int bad = 0, last = -1;
+	std::string err;
+	const std::string out = (d / "NEW.PAC").u8string();
+	if (!pac::WriteArchive(out, src, {}, &err, PacProgress, &last)) { printf("FAIL create: %s\n", err.c_str()); return 1; }
+	pac::Archive a;
+	if (!pac::Open(out, a, &err)) { printf("FAIL reopen: %s\n", err.c_str()); return 1; }
+	printf("created %s: %zu entries\n", out.c_str(), a.entries.size());
+	if (a.entries.size() != files.size()) { puts("FAIL entry count"); bad++; }
+	for (const auto &f : files) {
+		const int i = pac::Find(a, f.first);
+		std::vector<uint8_t> b;
+		if (i < 0 || !pac::ReadEntry(a, (size_t)i, b, &err)) { printf("FAIL extract %s\n", f.first.c_str()); bad++; continue; }
+		if (std::string(b.begin(), b.end()) != f.second) { printf("FAIL bytes of %s\n", f.first.c_str()); bad++; continue; }
+		{ std::ofstream o(d / ("x_" + f.first), std::ios::binary); o.write((const char *)b.data(), (std::streamsize)b.size()); }
+		printf("extracted %s (%zu bytes) identical\n", f.first.c_str(), b.size());
+	}
+	std::vector<pac::WriteSource> longName(1);
+	longName[0].name = std::string(60, 'N'); longName[0].memory = {1, 2, 3};
+	if (pac::WriteArchive((d / "LONG.PAC").u8string(), longName, {}, &err)) { puts("FAIL 60-byte name accepted"); bad++; }
+	else printf("refused as expected: %s\n", err.c_str());
+	longName[0].name = std::string(59, 'N');
+	if (!pac::WriteArchive((d / "OK59.PAC").u8string(), longName, {}, &err)) { printf("FAIL 59-byte name refused: %s\n", err.c_str()); bad++; }
+	else puts("59-byte name accepted");
+	std::vector<pac::WriteSource> self(1);
+	self[0].name = "X"; self[0].kind = pac::WriteSource::ArchiveEntry; self[0].archive = &a; self[0].index = 0;
+	if (pac::WriteArchive(out, self, {out}, &err)) { puts("FAIL overwrote its own source archive"); bad++; }
+	else printf("refused as expected: %s\n", err.c_str());
+	printf("PACSELFTEST %s (%d problems)\n", bad ? "FAIL" : "OK", bad);
+	return bad ? 1 : 0;
+}
+
 static int CmdDiff(int argc, char **argv)
 {
 	if (argc < 2) { puts("diff <a.DAT|DT2> <b.DAT|DT2>   (field level: what b changes against a)"); return 2; }
@@ -1178,6 +1228,7 @@ int main(int argc, char **argv)
 	if (c == "export") return CmdExport(argc - 2, argv + 2);
 	if (c == "imgrt") return CmdImgRt(argc - 2, argv + 2);
 	if (c == "pacwrite") return CmdPacWrite(argc - 2, argv + 2);
+	if (c == "pacselftest") return CmdPacSelfTest(argc - 2, argv + 2);
 	if (c == "dt2companion") return CmdDt2Companion(argc - 2, argv + 2);
 	if (c == "effectedit") return CmdEffectEdit(argc - 2, argv + 2);
 	if (c == "partsinfo") return CmdPartsInfo(argc - 2, argv + 2);
