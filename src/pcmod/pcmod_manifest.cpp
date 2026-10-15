@@ -139,8 +139,23 @@ static bool EndsWith(const std::string& s, const char* suffix)
 	return s.size() >= n && s.compare(s.size() - n, n, suffix) == 0;
 }
 
+bool IsGameWrittenPath(const std::string& normPath)
+{
+	// MBAA.exe ResultMenu_LoadWinQuoteData writes data\<chara>.wmt from story\battle\*_win.txt ("%s%s.wmt", 0x538D60,
+	// one xref: a write) and nothing reads it. Shipping it would only put an unread file into the sim digest.
+	return StartsWith(normPath, "data\\") && EndsWith(normPath, ".wmt");
+}
+
+std::string RefusedPathReason(const std::string& normPath)
+{
+	if (IsGameWrittenPath(normPath)) return "written by the game, never read (the win quotes come from story\\battle\\*_win.txt)";
+	if (ClassifyPath(normPath) == PathClass::Refused) return "not under a root a package may ship (unclassified game path)";
+	return {};
+}
+
 PathClass ClassifyPath(const std::string& normPath)
 {
+	if (IsGameWrittenPath(normPath)) return PathClass::Refused;
 	// MBAACC packs are one top-level folder each (0000.p bg ... 0007.p story); a loose folder of the same name overrides it.
 	// data\ is the simulation, except palettes and charaselect art (rollback-inert, mbaacc_synctest 2025-09-25).
 	if (StartsWith(normPath, "data\\"))
@@ -184,6 +199,8 @@ std::string Validate(const Manifest& m)
 	}
 	for (const std::string& c : m.conflicts) if (!ValidId(c)) return "conflicts: bad id '" + c + "'";
 	for (const std::string& c : m.overrides) if (!ValidId(c)) return "overrides: bad id '" + c + "'";
+	if (m.modes.size() > kMaxModes) return "modes: at most 8";
+	for (const std::string& md : m.modes) if (!ValidId(md)) return "modes: bad id '" + md + "'";
 	if (m.files.empty() || m.files.size() > kMaxFiles) return "files: 1..4096 entries";
 	std::set<std::string> seen;
 	bool anySim = false;
@@ -193,7 +210,7 @@ std::string Validate(const Manifest& m)
 		std::string norm, why;
 		if (!NormalisePath(f.path, norm, why)) return at + ": " + why;
 		const PathClass pc = ClassifyPath(norm);
-		if (pc == PathClass::Refused) return at + ": not under a root a package may ship (unclassified game path)";
+		if (pc == PathClass::Refused) return at + ": " + RefusedPathReason(norm);
 		if (pc == PathClass::Sim && m.cls == PackageClass::Cosmetic) return at + ": a sim path; a cosmetic package may not ship it (make it \"sim\")";
 		if (pc == PathClass::Sim) anySim = true;
 		if (!IsLowerHex64(f.sha256)) return at + ": sha256 must be 64 lowercase hex";
@@ -296,6 +313,10 @@ bool ParseManifest(const std::string& text, Manifest& out, std::string& error)
 				}
 			} else if (k == "conflicts") out.conflicts = NeedIdList(v, "conflicts");
 			else if (k == "overrides") out.overrides = NeedIdList(v, "overrides");
+			else if (k == "modes") {
+				out.modes = NeedIdList(v, "modes");
+				if (out.modes.size() > kMaxModes) throw Refuse{"modes: at most 8"};
+			}
 			else if (k == "files") {
 				if (!v.is_array()) throw Refuse{"files: not an array"};
 				for (const json& e : v) {
@@ -375,6 +396,7 @@ std::string WriteManifest(const Manifest& m)
 	o += "],\n";
 	o += "  \"conflicts\": " + list(m.conflicts) + ",\n";
 	o += "  \"overrides\": " + list(m.overrides) + ",\n";
+	if (!m.modes.empty()) o += "  \"modes\": " + list(m.modes) + ",\n";
 	o += "  \"files\": [\n";
 	// Files are written in digest order so two exports of the same content are byte-identical.
 	std::vector<const FileEntry*> fs;
@@ -427,6 +449,34 @@ Digest PackageSimDigest(const Manifest& m)
 	return DigestFiles("pcmod-sim-1\n" + m.id + "\n" + m.version + "\n", m, true);
 }
 std::string PackageSimDigestHex(const Manifest& m) { return ToHex(PackageSimDigest(m)); }
+
+bool CountsForMode(const std::vector<std::string>& modes, const std::string& mode)
+{
+	return mode.empty() || modes.empty() || std::find(modes.begin(), modes.end(), mode) != modes.end();
+}
+
+std::vector<std::string> SplitModes(const std::string& text)
+{
+	std::vector<std::string> out;
+	std::string cur;
+	auto flush = [&]() {
+		if (!cur.empty() && std::find(out.begin(), out.end(), cur) == out.end()) out.push_back(cur);
+		cur.clear();
+	};
+	for (char c : text) {
+		if (c == ',' || c == ' ' || c == '\t' || c == ';') flush();
+		else cur += c;
+	}
+	flush();
+	return out;
+}
+
+std::string JoinModes(const std::vector<std::string>& modes)
+{
+	std::string s;
+	for (size_t i = 0; i < modes.size(); ++i) s += (i ? "," : "") + modes[i];
+	return s;
+}
 
 std::string SessionDigestHex(const std::string& exeSha256Hex, std::vector<SessionEntry> pkgs)
 {

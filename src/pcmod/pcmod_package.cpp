@@ -302,9 +302,10 @@ bool ReadModIni(const std::string& packageDir, bool& enabled, int& priority)
 }
 
 // ---------------------------------------------------------------------------------------------------------------------
-SessionResult ResolveSession(const std::string& exeSha256Hex, const std::vector<std::string>& packageDirs)
+SessionResult ResolveSession(const std::string& exeSha256Hex, const std::vector<std::string>& packageDirs, const std::string& mode)
 {
 	SessionResult s;
+	s.mode = mode;
 	struct Pkg { std::string dir; Manifest m; int priority = 0; std::string simDigest; bool broken = false; };
 	std::vector<Pkg> enabled;
 	for (const std::string& d : packageDirs) {
@@ -361,8 +362,14 @@ SessionResult ResolveSession(const std::string& exeSha256Hex, const std::vector<
 			else s.notes.push_back(k + ": " + p->m.id + " overridden by " + w->m.id);
 		}
 	}
-	for (const Pkg* p : order)
-		if (p->m.cls == PackageClass::Sim) s.simOrder.push_back({p->m.id, p->m.version, p->priority, p->simDigest});
+	for (const Pkg* p : order) {
+		if (p->m.cls != PackageClass::Sim) continue;
+		if (!CountsForMode(p->m.modes, mode)) {
+			s.notes.push_back(p->m.id + " " + p->m.version + ": not in the '" + mode + "' set (modes " + JoinModes(p->m.modes) + ")");
+			continue;
+		}
+		s.simOrder.push_back({p->m.id, p->m.version, p->priority, p->simDigest});
+	}
 	if (!s.errors.empty()) return s;
 	s.digestHex = SessionDigestHex(exeSha256Hex, s.simOrder);
 	s.ok = true;
