@@ -142,6 +142,10 @@ std::string GuessGame(const std::string& rootUtf8)
 	std::error_code ec;
 	if (fs::exists(r / "MBTL.exe", ec) || low.find("mbtl") != std::string::npos || low.find("melty blood type lumina") != std::string::npos) return "mbtl";
 	if (fs::exists(r / "uni2.exe", ec) || low.find("uni2") != std::string::npos) return "uni2";
+	// The arcade builds both run RingGame.exe; their JVS config tools tell them apart (JConfigFC = Fighting Climax Ignition,
+	// JConfigUN = UNDER NIGHT IN-BIRTH [st]/[cl-r]).
+	if (fs::exists(r / "JConfigFC.exe", ec) || low.find("dfci") != std::string::npos || low.find("fighting climax") != std::string::npos) return "dfci";
+	if (fs::exists(r / "JConfigUN.exe", ec) || low.find("unib") != std::string::npos) return "unib";
 	return "";
 }
 

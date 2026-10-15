@@ -162,7 +162,12 @@ The unresolved ones are:
   `Sqrat_RegisterClass` became `Sqrat_RootTable_BindTable`, `Sqrat_PushString` became `sq_pushstring`, and
   `Sqrat_PopStack`, `Sqrat_PushInteger` and `Sqrat_PushValue` became their `sq_*` names. 67 `SqratWrap_*`
   wrappers were renamed.
-- Not yet named: the UNIB and DFCI IDBs (phase 1).
+- **DFCI** (`Fighting Climax Ignition [SDCS]\RingGame.exe.i64`, saved 2026-10-15): an older MSVC kept one Sqrat template
+  instance per bound signature (no shared `Sqrat_TableBase_BindFunc` + wrapper pointer). 80 binder instances named
+  `<role>_<ADDR>` by call shape: `Sqrat_TableBase_BindFunc_*`, `Sqrat_Class_BindMethod_*` (the native is `__thiscall`),
+  `Sqrat_Class_Var{A..D}_*`, `Sqrat_TableBase_SetValueInt_*`, plus `Sqrat_RootTable_BindTable`. Argument types come from
+  each native's own prototype (the native is passed directly). Table: `api/dfci_api.json` (594 entries in 43 tables:
+  BMvTbl 125, BMvEff 115, tDDC 62, BCMDTbl 26, CAnime 25, BMvCore 19, ...). Script: `tools/squirrel/ida_extract_sqrat_dfci.py`.
 
 ### 1.7 How scripts link to HA6
 - **Move scripts (`_mv_`)** are tables `t.Mv_<Name> <- { DataPattern = N, Init_After, FrameUpdate_After, … }`.

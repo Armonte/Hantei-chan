@@ -200,6 +200,16 @@ SQInteger Native_Stub(HSQUIRRELVM v)
 	const SQChar* fv = "void|?";
 	sq_getstring(v, sq_gettop(v), &fv);
 	const std::string tag = fv, r = tag.substr(0, tag.find('|'));
+	// File-existence probes answer truthfully (read-only, inside the game root, like __dofile__): the bootstrap branches on
+	// them (DFCI Battle_Init loads btl_Define_LocalDebug.txt only when BtlMvStd.IsFileAlive says it is there).
+	if (tag.size() >= 12 && tag.compare(tag.size() - 12, 12, ".IsFileAlive") == 0) {
+		const SQChar* path = nullptr;
+		fs::path p;
+		std::error_code ec;
+		const bool alive = SQ_SUCCEEDED(sq_getstring(v, 2, &path)) && ResolveInRoot(Ctx(v)->root, path, p) && fs::exists(p, ec);
+		sq_pushinteger(v, alive ? 1 : 0);
+		return 1;
+	}
 	if (r == "int" || r == "bool") { sq_pushinteger(v, 0); return 1; }
 	if (r == "float") { sq_pushfloat(v, 0.0f); return 1; }
 	if (r == "string") { sq_pushstring(v, "", 0); return 1; }

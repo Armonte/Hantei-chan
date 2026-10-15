@@ -1,6 +1,6 @@
 # Native Squirrel API (generated from the IDB, do not edit)
 
-Source: `dfci_raw.json`. Counts: func 422, method 80, table 51, var 41.
+Source: `dfci_raw.json`. Counts: const 323, func 422, method 80, table 51, var 41.
 
 Types are inferred from the Sqrat wrapper (`sq_get*`/`sq_push*` calls); `value` = pushes a non-primitive, `string` may also accept an int via Sqrat::Object.
 
@@ -98,6 +98,22 @@ Types are inferred from the Sqrat wrapper (`sq_get*`/`sq_push*` calls); `value` 
 - `int GetCancelFlag(int)` func native `sub_454920` wrapper `sub_454920`
 - `? GetFrame()` func native `None` wrapper `None`
 - `int GetNum(int)` func native `sub_4548E0` wrapper `sub_4548E0`
+
+## BCMDConst (13)
+
+- const `_PosState_Stand = 1`
+- const `_PosState_Air = 2`
+- const `_PosState_Crouch = 4`
+- const `_PosState_Ground = 5`
+- const `_PosState_Always = 7`
+- const `_SkillType_None = 0`
+- const `_SkillType_Normal = 1`
+- const `_SkillType_Special = 2`
+- const `_SkillType_ExSpecial = 6`
+- const `_SkillType_Ex = 4`
+- const `_SkillType_ChainShift = 8`
+- const `_State_Guard = 1`
+- const `_State_GuardCancel = 2`
 
 ## CBtlInfo (2)
 
@@ -369,6 +385,268 @@ Types are inferred from the Sqrat wrapper (`sq_get*`/`sq_push*` calls); `value` 
 - `int GetPcChara()` func native `sub_80F4B0` wrapper `sub_80F4B0`
 - `int GetStartSide()` func native `sub_4324D0` wrapper `sub_4324D0`
 
+## BMvConst (259)
+
+- const `_isDebugModeExe = 0`
+- const `_PlatformType = 0`
+- const `_PlatformAPM = 1`
+- const `_DevWindows = 1`
+- const `_DevPS3 = 0`
+- const `_DevVITA = 0`
+- const `_DevPS4 = 0`
+- const `_PosState_Stand = 1`
+- const `_PosState_Air = 2`
+- const `_PosState_Crouch = 4`
+- const `_PosState_Ground = 5`
+- const `_PosState_Always = 7`
+- const `_PrioType_ = 7`
+- const `_HitType_Hit = 3`
+- const `_HitType_Damage = 2`
+- const `_HitType_Guard = 1`
+- const `_Direction_Auto = -1`
+- const `_Direction_Left = 0`
+- const `_Direction_Right = 1`
+- const `_Direction_Reverse = 10`
+- const `_Position_CaptureChara = 1`
+- const `_Position_CaptureShift = 2`
+- const `_Position_ToolShift = 2`
+- const `_Position_ChangeMuki = 4`
+- const `_Position_Add = 8`
+- const `_Position_NoMoveChild = 16`
+- const `_Angle_AngleAdd = 1`
+- const `_Angle_PositionAdd = 2`
+- const `_VecFlag_Add = 1`
+- const `_VecFlag_NoMuki = 2`
+- const `_Vector_Normal = 0`
+- const `_Vector_Bound = 0`
+- const `_Vector_Div = 0`
+- const `_Vector_Keep = 0`
+- const `_Vector_DivKeep = 0`
+- const `_ValSet = 0`
+- const `_ValGet = 1`
+- const `_ValAdd = 2`
+- const `_ValClear = 3`
+- const `_ValErase = 4`
+- const `_ValCheck = 5`
+- const `_InterruptType_Ko_Atk = 0`
+- const `_InterruptType_Ko_Def = 1`
+- const `_InterruptType_Judge = 2`
+- const `_InterruptType_DrawMotion = 3`
+- const `_InterruptType_WinMotion = 4`
+- const `_InterruptType_LoseMotion = 5`
+- const `_InterruptType_SupportCharge = 6`
+- const `_InterruptType_Jem = 7`
+- const `_InterruptType_BlastCharge = 8`
+- const `_ImpactFlag_IsBound = 1`
+- const `_ImpactFlag_IsGuard = 2`
+- const `_ImpactFlag_IsCounter = 128`
+- const `_ImpactFlag_IsDangerHP = 64`
+- const `_CancelFlag_None = 0`
+- const `_CancelFlag_Hit = 1`
+- const `_CancelFlag_Always = 2`
+- const `_CancelFlag_Damage = 3`
+- const `_CancelFlag_Invalid = 255`
+- const `_ClearFlag_ChangeFrame = 2`
+- const `_ClearFlag_ChangePattern = 4`
+- const `_ClearFlag_ChangeMv = 1`
+- const `_ClearFlag_ComboEnd = 64`
+- const `_AsFlag_ExCancel = 1`
+- const `_AsFlag_ChainShift = 2`
+- const `_AsFlag_GuardRev = 4`
+- const `_AsFlag_Guard_Stand = 16`
+- const `_AsFlag_Guard_Air = 32`
+- const `_AsFlag_Guard_Crouch = 64`
+- const `_CharaPrio_None = 0`
+- const `_CharaPrio_Near = 1`
+- const `_CharaPrio_Far = 2`
+- const `_CharaPrio_Near_Layer_0 = 3`
+- const `_CharaPrio_Near_Layer_1 = 4`
+- const `_CharaPrio_Near_Layer_2 = 5`
+- const `_CharaPrio_Near_Layer_3 = 6`
+- const `_CharaPrio_Near_Layer_4 = 7`
+- const `_CharaPrio_Near_Layer_5 = 8`
+- const `_CharaPrio_Near_Layer_6 = 9`
+- const `_CharaPrio_Near_Layer_7 = 10`
+- const `_CharaPrio_Near_Layer_8 = 11`
+- const `_CharaPrio_Near_Layer_9 = 12`
+- const `_CharaPrio_Far_Layer_0 = 13`
+- const `_CharaPrio_Far_Layer_1 = 14`
+- const `_CharaPrio_Far_Layer_2 = 15`
+- const `_CharaPrio_Far_Layer_3 = 16`
+- const `_CharaPrio_Far_Layer_4 = 17`
+- const `_CharaPrio_Far_Layer_5 = 18`
+- const `_CharaPrio_Far_Layer_6 = 19`
+- const `_CharaPrio_Far_Layer_7 = 20`
+- const `_CharaPrio_Far_Layer_8 = 21`
+- const `_CharaPrio_Far_Layer_9 = 22`
+- const `_CharaPrio_Parent_P1 = 23`
+- const `_CharaPrio_Parent_M1 = 24`
+- const `_CharaPrio_Parent_BG = 25`
+- const `_CharaPrio_Near_P1 = 26`
+- const `_CharaPrio_GaugeCombo_P1 = 27`
+- const `_CharaPrio_GaugeHP_P1 = 28`
+- const `_CatchFlag_AtkStandGuard = 1`
+- const `_CatchFlag_AtkAirGuard = 2`
+- const `_CatchFlag_AtkCrouchGuard = 4`
+- const `_CatchFlag_AtkNoGuard = 8`
+- const `_CatchFlag_AtkNoGuardThrow = 16`
+- const `_CatchFlag_StateStand = 32`
+- const `_CatchFlag_StateAir = 64`
+- const `_CatchFlag_StateCrouch = 128`
+- const `_CatchFlag_AtkAllGuard = 7`
+- const `_CatchSuccess_HitSub = 1`
+- const `_CatchSuccess_HitSub_Enemy = 2`
+- const `_CatchSuccess_HitSub_None = 4`
+- const `_CatchSuccess_FlagHit_Enemy = 8`
+- const `_CharaMoveMode_Enable = 0`
+- const `_CharaMoveMode_Limit = 1`
+- const `_CharaMoveMode_Disable = 2`
+- const `_PCGaugeType_Eltnum = 2`
+- const `_MvStFlag_CounterAtk = 1`
+- const `_MvStFlag_CounterDef = 2`
+- const `_MvStFlag_DangerHPAtk = 8`
+- const `_MvStFlag_DangerHPDef = 4`
+- const `_HitCheckFlag_Head = 1`
+- const `_HitCheckFlag_Body = 2`
+- const `_HitCheckFlag_Legs = 4`
+- const `_HitCheckFlag_FireBall = 8`
+- const `_HitCheckFlag_Throw = 16`
+- const `_CaptureHitFlag_Parent = 1`
+- const `_eAchievement_SHA = 0`
+- const `_eAchievement_ASU = 1`
+- const `_eAchievement_MIS = 2`
+- const `_eAchievement_KRN = 3`
+- const `_eAchievement_HIW = 4`
+- const `_eAchievement_KUR = 5`
+- const `_eAchievement_TMK = 6`
+- const `_eAchievement_TGR = 7`
+- const `_eAchievement_SBM = 8`
+- const `_eAchievement_STM = 9`
+- const `_eAchievement_EMI = 10`
+- const `_eAchievement_QEN = 11`
+- const `_eAchievement_ONI = 12`
+- const `_eAchievement_KRK = 13`
+- const `_eAchievement_YAK = 14`
+- const `_eAchievement_SLV = 15`
+- const `_eAchievement_DENDENKIN_MAIN = 17`
+- const `_eAchievement_DENDENKIN_SUPPORT = 18`
+- const `_eAchievement_DENDENKIN_BLAST = 19`
+- const `_eAchievement_BLUE_KIRIFUDA = 20`
+- const `_ObjFlags_ParentMove = 4`
+- const `_ObjFlags_EraseParentDamage = 1`
+- const `_ObjFlags_NoRender = 0`
+- const `_ObjFlags_NoRenderBlackOut = 0`
+- const `_ObjFlags_NoRenderOrder = 0`
+- const `_ObjFlags_NoRenderOrderPlus = 0`
+- const `_ObjFlags_EraseParentPatChange = 32`
+- const `_ObjFlags_PatChangeNoLanding = 0`
+- const `_ObjFlags_MoveTimeStopAll = 0`
+- const `_ObjFlags_ParentMuki = 0`
+- const `_ObjFlags_MukiXPosMove = 0`
+- const `_ObjFlags_RenderShadow = 0`
+- const `_ObjFlags_FromParentStop = 8`
+- const `_ObjFlags_ToParentStop = 0`
+- const `_ObjFlags_ToParentHitBack = 0`
+- const `_ObjFlags_ToParentHitStatus = 0`
+- const `_ObjFlags_NoCamera = 0`
+- const `_ObjFlags_NoGround = 64`
+- const `_ObjProcFlags_EraseParentNull = 1`
+- const `_ObjProcFlags_EraseChangeParentMv = 2`
+- const `_ObjProcFlag_UnEraseDamageEx = 4`
+- const `_ObjProcFlag_EraseParentDelete = 8`
+- const `_ObjType_FireBall = 2`
+- const `_ObjType_Blade = 3`
+- const `_Exist_NoCamera = 1`
+- const `_Exist_NoWall = 2`
+- const `_Exist_NoHantei = 0`
+- const `_Exist_NoKasanariHantei = 0`
+- const `_Exist_NoKuraiHantei = 0`
+- const `_Exist_NoAttackHantei = 0`
+- const `_Exist_NoEtcHantei = 0`
+- const `_ExistMode_Set = 0`
+- const `_ExistMode_Add = 1`
+- const `_ExistMode_Erase = 2`
+- const `_ExistMode_Reverse = 3`
+- const `_Hantei_Kasanari = 0`
+- const `_Hantei_Kurai = 1`
+- const `_Hantei_Etc = 2`
+- const `_Hantei_Attack = 3`
+- const `_HC_EnemyPc = 1`
+- const `_HC_EnemyObj = 2`
+- const `_HC_FavourPc = 4`
+- const `_HC_FavourObj = 8`
+- const `_HC_WithoutNoHanteiFlagObj = 16`
+- const `_CamUpdateFlag_NoX = 1`
+- const `_CamUpdateFlag_NoY = 2`
+- const `_Hantei_Error = 79`
+- const `_HanteiFlag_Tool = 1`
+- const `_HanteiFlag_Offset = 2`
+- const `_HanteiFlag_NoMukiChange = 4`
+- const `_SpGauge_UseAll = -1`
+- const `_SpGauge_UseBuffer = -2`
+- const `_GetPos_TrueCamera = 1`
+- const `_GetPos_ViewCamera = 2`
+- const `_GetPos_DispCamera = 4`
+- const `_GetPos_Offset = 0`
+- const `_GetPos_TypeWall = 0`
+- const `_GetPos_TypeScreen = 0`
+- const `_GetPos_NoMuki = 0`
+- const `_GetPos_ToolOffset = 0`
+- const `_SpGaugeMode_Normal = 0`
+- const `_SpGaugeMode_Liberate = 1`
+- const `_SpGaugeMode_OverLiberate = 2`
+- const `_ThrowRelease_NoGroundRecover = 16`
+- const `_ThrowRelease_NoWallRecover = 32`
+- const `_ThrowRelease_NoAttackHit = 64`
+- const `_ThrowRelease_ReverseVec = 2`
+- const `_ThrowRelease_NoVec = 1`
+- const `_ThrowRelease_NoVecTimeHosei = 0`
+- const `_ThrowRelease_NoBurst = 0`
+- const `_SkillCount_Assult = 0`
+- const `_SkillCount_ChainShift = 1`
+- const `_SkillCount_VeilOff = 2`
+- const `_SkillCount_Sp = 3`
+- const `_SkillCount_SpEx = 4`
+- const `_SkillCount_SpIFW = 5`
+- const `_SkillCount_SpIFWX = 6`
+- const `_SkillCount_Throw = 7`
+- const `_SkillCount_ThrowRecover = 8`
+- const `_GuardFlag_GuardStand = 1`
+- const `_GuardFlag_GuardAir = 2`
+- const `_GuardFlag_GuardCrouch = 4`
+- const `_GuardFlag_ShieldStand = 1`
+- const `_GuardFlag_ShieldAir = 2`
+- const `_GuardFlag_ShieldCrouch = 4`
+- const `_DataType_Me = 0`
+- const `_DataType_Player = 1`
+- const `_DataType_Parent = 2`
+- const `_KOMode_ToEndWait = 204`
+- const `_KOMode_ToEndWait_Fade = 205`
+- const `_JemCheckType_Reversal = 100`
+- const `_JemCheckType_Ex = 100`
+- const `_JemCheckType_ExSkillUse = 9`
+- const `_JemEffType_AttackUP = 1`
+- const `_JemEffType_DefenceUP = 2`
+- const `_JemEffType_SupportPlus = 4`
+- const `_JemEffType_ReflectionGuardBreak = 5`
+- const `_JemEffType_AtkDefUP = 6`
+- const `_TimeEffect_Attack = 0`
+- const `_TimeEffect_Defense = 1`
+- const `_TimeEffect_ComboGaugeRegain = 2`
+- const `_SkillCount_Support = 1`
+- const `_SkillCount_Guard = 2`
+- const `_SkillCount_ThrowRecover = 3`
+- const `_SkillCount_Kirifuda = 4`
+- const `_SkillCount_Blast = 5`
+- const `_SkillCount_ExSp = 6`
+- const `_SkillCount_CliSp = 7`
+- const `_SkillCount_ImpactSkill = 8`
+- const `_SkillCount_RefGuard = 9`
+- const `_SkillCount_Damage = 10`
+- const `_SupportRecast_Ready = 0`
+- const `_SupportRecast_Stop = 1`
+- const `_SupportRecast_Charge = 2`
+
 ## BMvIf (1)
 
 - `int StdCall(int)` func native `sub_44DA20` wrapper `sub_44DA20`
@@ -379,6 +657,12 @@ Types are inferred from the Sqrat wrapper (`sq_get*`/`sq_push*` calls); `value` 
 - `? SE_Stop()` func native `None` wrapper `None`
 - `void BGM_Mute()` func native `sub_449340` wrapper `sub_449340`
 - `int BGM_SetNum(int)` func native `sub_449350` wrapper `sub_449350`
+
+## BMvSoundConst (3)
+
+- const `_SeType_All = -2`
+- const `_SeType_Normal = -1`
+- const `_SeType_Player = 0`
 
 ## ProcTimer (7)
 
@@ -602,6 +886,46 @@ Types are inferred from the Sqrat wrapper (`sq_get*`/`sq_push*` calls); `value` 
 - `? GetELenX()` func native `None` wrapper `None`
 - `? GetELenY()` func native `None` wrapper `None`
 
+## BMvCoreConst (37)
+
+- const `_eComMoveFlag_MoveEnd = 1`
+- const `_eComMoveFlag_ThroughEnd = 2`
+- const `_eComMoveFlag_HitNext = 4`
+- const `_eComMoveFlag_DamageNext = 8`
+- const `_eComMoveFlag_HitObjNext = 16`
+- const `_eComMoveFlag_DamageObjNext = 32`
+- const `_eComMoveFlag_HitEnd = 64`
+- const `_eComMoveFlag_DamageEnd = 128`
+- const `_eComMoveFlag_AirNext = 0`
+- const `_eComMoveFlag_GroundNext = 0`
+- const `_eComMoveFlag_MoveableNext = 0`
+- const `_eComMoveFlag_MovedisableNext = 0`
+- const `_eComMoveFlag_AirEnd = 0`
+- const `_eComMoveFlag_GroundEnd = 0`
+- const `_eComMoveFlag_MoveableEnd = 0`
+- const `_eComMoveFlag_MovedisableEnd = 0`
+- const `_eComMoveFlag_NmCancelEnd = 0`
+- const `_eComMoveFlag_SpCancelEnd = 0`
+- const `_eComMoveFlag_CancelEnd = 0`
+- const `_eComMoveFlag_NmCancelNext = 0`
+- const `_eComMoveFlag_SpCancelNext = 0`
+- const `_eComMoveFlag_CancelNext = 0`
+- const `_eComMoveFlag_StickHold = 0`
+- const `_eComMoveFlag_ButtonHold = 0`
+- const `_eComSkillType_Interrupt = 1`
+- const `_eComSkillType_NoInterrupt = 2`
+- const `_eComButton_A = 1`
+- const `_eComButton_B = 2`
+- const `_eComButton_C = 4`
+- const `_eComButton_D = 8`
+- const `_eComState_MoveAble = 1`
+- const `_eComState_Guard = 2`
+- const `_eComState_Damage = 4`
+- const `_eComState_Grapped = 8`
+- const `_eComState_Bound = 6`
+- const `_eComState_Chance = 128`
+- const `_eComState_Attack = 0`
+
 ## BMvCore (17)
 
 - `instance GetMyCharaData(instance)` func native `sub_43BD80` wrapper `sub_43BD80`
@@ -675,4 +999,18 @@ Types are inferred from the Sqrat wrapper (`sq_get*`/`sq_push*` calls); `value` 
 - `? Finalize()` func native `None` wrapper `None`
 - `int SetMode(int)` func native `sub_419770` wrapper `sub_419770`
 - `instance GetCAnime(int)` func native `sub_459200` wrapper `sub_459200`
+
+## tPAniConst (11)
+
+- const `_PAniFlag_JpEqual = 1`
+- const `_PAniFlag_JpGrater = 2`
+- const `_PAniFlag_JpLess = 3`
+- const `_PAniFrame_IpNormal = 0`
+- const `_PAniFrame_IpAccel = 1`
+- const `_PAniFrame_IpDecel = 2`
+- const `_PAniFrame_IpAccelEx = 3`
+- const `_PAniFrame_IpDecelEx = 4`
+- const `_PAniFrame_IpAtoD = 5`
+- const `_PAniFrame_IpDtoA = 6`
+- const `_PAniFrame_IpNone = 7`
 

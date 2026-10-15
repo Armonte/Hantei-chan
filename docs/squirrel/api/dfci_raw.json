@@ -79,7 +79,8 @@
   "Sqrat_TableBase_BindFunc_45A680",
   "Sqrat_TableBase_BindFunc_45A6C0",
   "Sqrat_TableBase_BindFunc_46C670",
-  "Sqrat_TableBase_BindFunc_46D530"
+  "Sqrat_TableBase_BindFunc_46D530",
+  "Sqrat_TableBase_SetValueInt_42E7D0"
  ],
  "regfuncs": {
   "0x737ff0": {
@@ -108,8 +109,7 @@
       },
       {
        "raw": "(int)\"SeFunc\"",
-       "fn": null,
-       "str": "SeFunc"
+       "fn": null
       },
       {
        "raw": "(int)v11",
@@ -218,8 +218,7 @@
       },
       {
        "raw": "(int)\"CStatus\"",
-       "fn": null,
-       "str": "CStatus"
+       "fn": null
       },
       {
        "raw": "(int)v6",
@@ -253,8 +252,7 @@
       },
       {
        "raw": "(int)\"tSceneWinDemo\"",
-       "fn": null,
-       "str": "tSceneWinDemo"
+       "fn": null
       },
       {
        "raw": "(int)v7",
@@ -377,8 +375,7 @@
       },
       {
        "raw": "(int)\"CPlayerSt\"",
-       "fn": null,
-       "str": "CPlayerSt"
+       "fn": null
       },
       {
        "raw": "(int)v6",
@@ -412,8 +409,7 @@
       },
       {
        "raw": "(int)\"tSceneVS\"",
-       "fn": null,
-       "str": "tSceneVS"
+       "fn": null
       },
       {
        "raw": "(int)v7",
@@ -564,8 +560,7 @@
       },
       {
        "raw": "(int)\"_LogsFile\"",
-       "fn": null,
-       "str": "_LogsFile"
+       "fn": null
       },
       {
        "raw": "(int)v24",
@@ -585,8 +580,7 @@
       },
       {
        "raw": "(int)\"debuglog\"",
-       "fn": null,
-       "str": "debuglog"
+       "fn": null
       },
       {
        "raw": "(int)v25",
@@ -648,8 +642,7 @@
       },
       {
        "raw": "(int)\"debugfont\"",
-       "fn": null,
-       "str": "debugfont"
+       "fn": null
       },
       {
        "raw": "(int)v23",
@@ -725,8 +718,7 @@
       },
       {
        "raw": "(int)\"debugfontL\"",
-       "fn": null,
-       "str": "debugfontL"
+       "fn": null
       },
       {
        "raw": "(int)v22",
@@ -844,8 +836,7 @@
       },
       {
        "raw": "(int)\"CheckPattern\"",
-       "fn": null,
-       "str": "CheckPattern"
+       "fn": null
       },
       {
        "raw": "(int)sub_454E70",
@@ -1018,8 +1009,7 @@
       },
       {
        "raw": "(int)\"CheckMoveName\"",
-       "fn": null,
-       "str": "CheckMoveName"
+       "fn": null
       },
       {
        "raw": "(int)sub_80E120",
@@ -1038,8 +1028,7 @@
       },
       {
        "raw": "(int)\"SetSpUseBufferTmp\"",
-       "fn": null,
-       "str": "SetSpUseBufferTmp"
+       "fn": null
       },
       {
        "raw": "(int)sub_4552F0",
@@ -1184,8 +1173,7 @@
       },
       {
        "raw": "(int)\"CmdInfo\"",
-       "fn": null,
-       "str": "CmdInfo"
+       "fn": null
       },
       {
        "raw": "(int)v20",
@@ -1205,8 +1193,7 @@
       },
       {
        "raw": "(int)\"BCMDTbl\"",
-       "fn": null,
-       "str": "BCMDTbl"
+       "fn": null
       },
       {
        "raw": "(int)v21",
@@ -1218,6 +1205,253 @@
      "ecx": "[ebp+var_124]"
     },
     {
+     "callee": "Sqrat_TableBase_SetValueInt_42E7D0",
+     "args": [
+      {
+       "raw": "v19",
+       "fn": null
+      },
+      {
+       "raw": "(int)\"_PosState_Stand\"",
+       "fn": null
+      },
+      {
+       "raw": "1",
+       "fn": null
+      }
+     ],
+     "ea": "0x80ea55",
+     "ecx": "[ebp+var_A0]"
+    },
+    {
+     "callee": "Sqrat_TableBase_SetValueInt_42E7D0",
+     "args": [
+      {
+       "raw": "v19",
+       "fn": null
+      },
+      {
+       "raw": "(int)\"_PosState_Air\"",
+       "fn": null
+      },
+      {
+       "raw": "2",
+       "fn": null
+      }
+     ],
+     "ea": "0x80ea67",
+     "ecx": "[ebp+var_A0]"
+    },
+    {
+     "callee": "Sqrat_TableBase_SetValueInt_42E7D0",
+     "args": [
+      {
+       "raw": "v19",
+       "fn": null
+      },
+      {
+       "raw": "(int)\"_PosState_Crouch\"",
+       "fn": null
+      },
+      {
+       "raw": "4",
+       "fn": null
+      }
+     ],
+     "ea": "0x80ea79",
+     "ecx": "[ebp+var_A0]"
+    },
+    {
+     "callee": "Sqrat_TableBase_SetValueInt_42E7D0",
+     "args": [
+      {
+       "raw": "v19",
+       "fn": null
+      },
+      {
+       "raw": "(int)\"_PosState_Ground\"",
+       "fn": null
+      },
+      {
+       "raw": "5",
+       "fn": null
+      }
+     ],
+     "ea": "0x80ea8b",
+     "ecx": "[ebp+var_A0]"
+    },
+    {
+     "callee": "Sqrat_TableBase_SetValueInt_42E7D0",
+     "args": [
+      {
+       "raw": "v19",
+       "fn": null
+      },
+      {
+       "raw": "(int)\"_PosState_Always\"",
+       "fn": null
+      },
+      {
+       "raw": "7",
+       "fn": null
+      }
+     ],
+     "ea": "0x80ea9d",
+     "ecx": "[ebp+var_A0]"
+    },
+    {
+     "callee": "Sqrat_TableBase_SetValueInt_42E7D0",
+     "args": [
+      {
+       "raw": "v19",
+       "fn": null
+      },
+      {
+       "raw": "(int)\"_SkillType_None\"",
+       "fn": null
+      },
+      {
+       "raw": "0",
+       "fn": null
+      }
+     ],
+     "ea": "0x80eaaf",
+     "ecx": "[ebp+var_A0]"
+    },
+    {
+     "callee": "Sqrat_TableBase_SetValueInt_42E7D0",
+     "args": [
+      {
+       "raw": "v19",
+       "fn": null
+      },
+      {
+       "raw": "(int)\"_SkillType_Normal\"",
+       "fn": null
+      },
+      {
+       "raw": "1",
+       "fn": null
+      }
+     ],
+     "ea": "0x80eac1",
+     "ecx": "[ebp+var_A0]"
+    },
+    {
+     "callee": "Sqrat_TableBase_SetValueInt_42E7D0",
+     "args": [
+      {
+       "raw": "v19",
+       "fn": null
+      },
+      {
+       "raw": "(int)\"_SkillType_Special\"",
+       "fn": null
+      },
+      {
+       "raw": "2",
+       "fn": null
+      }
+     ],
+     "ea": "0x80ead3",
+     "ecx": "[ebp+var_A0]"
+    },
+    {
+     "callee": "Sqrat_TableBase_SetValueInt_42E7D0",
+     "args": [
+      {
+       "raw": "v19",
+       "fn": null
+      },
+      {
+       "raw": "(int)\"_SkillType_ExSpecial\"",
+       "fn": null
+      },
+      {
+       "raw": "6",
+       "fn": null
+      }
+     ],
+     "ea": "0x80eae5",
+     "ecx": "[ebp+var_A0]"
+    },
+    {
+     "callee": "Sqrat_TableBase_SetValueInt_42E7D0",
+     "args": [
+      {
+       "raw": "v19",
+       "fn": null
+      },
+      {
+       "raw": "(int)\"_SkillType_Ex\"",
+       "fn": null
+      },
+      {
+       "raw": "4",
+       "fn": null
+      }
+     ],
+     "ea": "0x80eaf7",
+     "ecx": "[ebp+var_A0]"
+    },
+    {
+     "callee": "Sqrat_TableBase_SetValueInt_42E7D0",
+     "args": [
+      {
+       "raw": "v19",
+       "fn": null
+      },
+      {
+       "raw": "(int)\"_SkillType_ChainShift\"",
+       "fn": null
+      },
+      {
+       "raw": "8",
+       "fn": null
+      }
+     ],
+     "ea": "0x80eb09",
+     "ecx": "[ebp+var_A0]"
+    },
+    {
+     "callee": "Sqrat_TableBase_SetValueInt_42E7D0",
+     "args": [
+      {
+       "raw": "v19",
+       "fn": null
+      },
+      {
+       "raw": "(int)\"_State_Guard\"",
+       "fn": null
+      },
+      {
+       "raw": "1",
+       "fn": null
+      }
+     ],
+     "ea": "0x80eb1b",
+     "ecx": "[ebp+var_A0]"
+    },
+    {
+     "callee": "Sqrat_TableBase_SetValueInt_42E7D0",
+     "args": [
+      {
+       "raw": "v19",
+       "fn": null
+      },
+      {
+       "raw": "(int)\"_State_GuardCancel\"",
+       "fn": null
+      },
+      {
+       "raw": "2",
+       "fn": null
+      }
+     ],
+     "ea": "0x80eb2d",
+     "ecx": "[ebp+var_A0]"
+    },
+    {
      "callee": "Sqrat_RootTable_BindTable",
      "args": [
       {
@@ -1226,8 +1460,7 @@
       },
       {
        "raw": "(int)\"BCMDConst\"",
-       "fn": null,
-       "str": "BCMDConst"
+       "fn": null
       },
       {
        "raw": "(int)v19",
@@ -1280,8 +1513,7 @@
       },
       {
        "raw": "(int)\"CBtlInfo\"",
-       "fn": null,
-       "str": "CBtlInfo"
+       "fn": null
       },
       {
        "raw": "(int)v4",
@@ -1446,8 +1678,7 @@
       },
       {
        "raw": "(int)\"CheckHan6Data\"",
-       "fn": null,
-       "str": "CheckHan6Data"
+       "fn": null
       },
       {
        "raw": "(int)sub_4043D0",
@@ -1662,8 +1893,7 @@
       },
       {
        "raw": "(int)\"MvBoundStatus\"",
-       "fn": null,
-       "str": "MvBoundStatus"
+       "fn": null
       },
       {
        "raw": "(int)v7",
@@ -1683,8 +1913,7 @@
       },
       {
        "raw": "(int)\"BtlMvStd\"",
-       "fn": null,
-       "str": "BtlMvStd"
+       "fn": null
       },
       {
        "raw": "(int)v8",
@@ -1723,8 +1952,7 @@
       },
       {
        "raw": "(int)\"SetPattern\"",
-       "fn": null,
-       "str": "SetPattern"
+       "fn": null
       },
       {
        "raw": "(int)sub_44A450",
@@ -2261,8 +2489,7 @@
       },
       {
        "raw": "(int)\"TobiParam_Func\"",
-       "fn": null,
-       "str": "TobiParam_Func"
+       "fn": null
       },
       {
        "raw": "(int)sub_44C660",
@@ -2281,8 +2508,7 @@
       },
       {
        "raw": "(int)\"TobiParamEndFlag_Func\"",
-       "fn": null,
-       "str": "TobiParamEndFlag_Func"
+       "fn": null
       },
       {
        "raw": "(int)sub_44C790",
@@ -2315,8 +2541,7 @@
       },
       {
        "raw": "(int)\"CheckPattern\"",
-       "fn": null,
-       "str": "CheckPattern"
+       "fn": null
       },
       {
        "raw": "(int)sub_44C9F0",
@@ -2433,8 +2658,7 @@
       },
       {
        "raw": "(int)\"CheckCommand\"",
-       "fn": null,
-       "str": "CheckCommand"
+       "fn": null
       },
       {
        "raw": "(int)sub_44CE50",
@@ -2453,8 +2677,7 @@
       },
       {
        "raw": "(int)\"CheckCommandString\"",
-       "fn": null,
-       "str": "CheckCommandString"
+       "fn": null
       },
       {
        "raw": "(int)sub_44D010",
@@ -2487,8 +2710,7 @@
       },
       {
        "raw": "(int)\"SetCommandFailTime\"",
-       "fn": null,
-       "str": "SetCommandFailTime"
+       "fn": null
       },
       {
        "raw": "(int)sub_44D2D0",
@@ -2507,8 +2729,7 @@
       },
       {
        "raw": "(int)\"CheckCommandFailTime\"",
-       "fn": null,
-       "str": "CheckCommandFailTime"
+       "fn": null
       },
       {
        "raw": "(int)sub_44D480",
@@ -2541,8 +2762,7 @@
       },
       {
        "raw": "(int)\"CheckMvUniqueID\"",
-       "fn": null,
-       "str": "CheckMvUniqueID"
+       "fn": null
       },
       {
        "raw": "(int)sub_44B580",
@@ -2631,8 +2851,7 @@
       },
       {
        "raw": "(int)\"SetVector\"",
-       "fn": null,
-       "str": "SetVector"
+       "fn": null
       },
       {
        "raw": "(int)sub_44A7A0",
@@ -2707,8 +2926,7 @@
       },
       {
        "raw": "(int)\"SetPosition\"",
-       "fn": null,
-       "str": "SetPosition"
+       "fn": null
       },
       {
        "raw": "(int)sub_44AD70",
@@ -2755,8 +2973,7 @@
       },
       {
        "raw": "(int)\"SetAngle\"",
-       "fn": null,
-       "str": "SetAngle"
+       "fn": null
       },
       {
        "raw": "(int)sub_44AFD0",
@@ -2901,8 +3118,7 @@
       },
       {
        "raw": "(int)\"SetMoveableFlag\"",
-       "fn": null,
-       "str": "SetMoveableFlag"
+       "fn": null
       },
       {
        "raw": "(int)sub_44DC00",
@@ -2921,8 +3137,7 @@
       },
       {
        "raw": "(int)\"SetMoveableFlagEx\"",
-       "fn": null,
-       "str": "SetMoveableFlagEx"
+       "fn": null
       },
       {
        "raw": "(int)sub_44DCA0",
@@ -2941,8 +3156,7 @@
       },
       {
        "raw": "(int)\"SetAsFlag\"",
-       "fn": null,
-       "str": "SetAsFlag"
+       "fn": null
       },
       {
        "raw": "(int)sub_44DEC0",
@@ -2961,8 +3175,7 @@
       },
       {
        "raw": "(int)\"SetAsStatusFlag\"",
-       "fn": null,
-       "str": "SetAsStatusFlag"
+       "fn": null
       },
       {
        "raw": "(int)sub_44DD70",
@@ -2981,8 +3194,7 @@
       },
       {
        "raw": "(int)\"SetAsPosStatusFlag\"",
-       "fn": null,
-       "str": "SetAsPosStatusFlag"
+       "fn": null
       },
       {
        "raw": "(int)sub_44DE30",
@@ -3001,8 +3213,7 @@
       },
       {
        "raw": "(int)\"SetAtkGuardFlag\"",
-       "fn": null,
-       "str": "SetAtkGuardFlag"
+       "fn": null
       },
       {
        "raw": "(int)sub_44DF50",
@@ -3021,8 +3232,7 @@
       },
       {
        "raw": "(int)\"SetAtkCatchFlag\"",
-       "fn": null,
-       "str": "SetAtkCatchFlag"
+       "fn": null
       },
       {
        "raw": "(int)sub_44E060",
@@ -3069,8 +3279,7 @@
       },
       {
        "raw": "(int)\"PcGauge_Set\"",
-       "fn": null,
-       "str": "PcGauge_Set"
+       "fn": null
       },
       {
        "raw": "(int)dfci_cmdmvtable_load_sq",
@@ -3089,8 +3298,7 @@
       },
       {
        "raw": "(int)\"BoundCorrect_Calc\"",
-       "fn": null,
-       "str": "BoundCorrect_Calc"
+       "fn": null
       },
       {
        "raw": "(int)sub_44E300",
@@ -3109,8 +3317,7 @@
       },
       {
        "raw": "(int)\"ComboPoint_Calc\"",
-       "fn": null,
-       "str": "ComboPoint_Calc"
+       "fn": null
       },
       {
        "raw": "(int)sub_44E3E0",
@@ -3129,8 +3336,7 @@
       },
       {
        "raw": "(int)\"UseSkill_Check\"",
-       "fn": null,
-       "str": "UseSkill_Check"
+       "fn": null
       },
       {
        "raw": "(int)sub_44E4A0",
@@ -3149,8 +3355,7 @@
       },
       {
        "raw": "(int)\"HitPat_Check\"",
-       "fn": null,
-       "str": "HitPat_Check"
+       "fn": null
       },
       {
        "raw": "(int)sub_44E530",
@@ -3169,8 +3374,7 @@
       },
       {
        "raw": "(int)\"SetHitCheckFlag\"",
-       "fn": null,
-       "str": "SetHitCheckFlag"
+       "fn": null
       },
       {
        "raw": "(int)sub_44E5F0",
@@ -3203,8 +3407,7 @@
       },
       {
        "raw": "(int)\"SetNoHoseiFlag\"",
-       "fn": null,
-       "str": "SetNoHoseiFlag"
+       "fn": null
       },
       {
        "raw": "(int)sub_44E6F0",
@@ -3223,8 +3426,7 @@
       },
       {
        "raw": "(int)\"SetNoUkemiTimeLimitFlag\"",
-       "fn": null,
-       "str": "SetNoUkemiTimeLimitFlag"
+       "fn": null
       },
       {
        "raw": "(int)sub_44E780",
@@ -3243,8 +3445,7 @@
       },
       {
        "raw": "(int)\"SetSuperArmorFlag\"",
-       "fn": null,
-       "str": "SetSuperArmorFlag"
+       "fn": null
       },
       {
        "raw": "(int)sub_44E810",
@@ -3263,8 +3464,7 @@
       },
       {
        "raw": "(int)\"SetVirtualGuardFlag\"",
-       "fn": null,
-       "str": "SetVirtualGuardFlag"
+       "fn": null
       },
       {
        "raw": "(int)sub_44E8A0",
@@ -3283,8 +3483,7 @@
       },
       {
        "raw": "(int)\"SetCaptureHitFlag\"",
-       "fn": null,
-       "str": "SetCaptureHitFlag"
+       "fn": null
       },
       {
        "raw": "(int)sub_44E930",
@@ -3331,8 +3530,7 @@
       },
       {
        "raw": "(int)\"SetHan6LayerMask\"",
-       "fn": null,
-       "str": "SetHan6LayerMask"
+       "fn": null
       },
       {
        "raw": "(int)sub_44EAC0",
@@ -3351,8 +3549,7 @@
       },
       {
        "raw": "(int)\"CheckBlast_IsNGStatus\"",
-       "fn": null,
-       "str": "CheckBlast_IsNGStatus"
+       "fn": null
       },
       {
        "raw": "(int)sub_44EB90",
@@ -3371,8 +3568,7 @@
       },
       {
        "raw": "(int)\"CheckBlast_BoundInit\"",
-       "fn": null,
-       "str": "CheckBlast_BoundInit"
+       "fn": null
       },
       {
        "raw": "(int)sub_44EBD0",
@@ -3405,8 +3601,7 @@
       },
       {
        "raw": "(int)\"DamageFlag_IsBound\"",
-       "fn": null,
-       "str": "DamageFlag_IsBound"
+       "fn": null
       },
       {
        "raw": "(int)sub_44EC50",
@@ -3551,8 +3746,7 @@
       },
       {
        "raw": "(int)\"CCharaVector\"",
-       "fn": null,
-       "str": "CCharaVector"
+       "fn": null
       },
       {
        "raw": "(int)v34",
@@ -3600,8 +3794,7 @@
       },
       {
        "raw": "(int)\"CCharaPosition\"",
-       "fn": null,
-       "str": "CCharaPosition"
+       "fn": null
       },
       {
        "raw": "(int)v33",
@@ -3677,8 +3870,7 @@
       },
       {
        "raw": "(int)\"CCharaRect\"",
-       "fn": null,
-       "str": "CCharaRect"
+       "fn": null
       },
       {
        "raw": "(int)v32",
@@ -3810,8 +4002,7 @@
       },
       {
        "raw": "(int)\"CCharaPoint4\"",
-       "fn": null,
-       "str": "CCharaPoint4"
+       "fn": null
       },
       {
        "raw": "(int)v31",
@@ -4083,8 +4274,7 @@
       },
       {
        "raw": "(int)\"MvStatus\"",
-       "fn": null,
-       "str": "MvStatus"
+       "fn": null
       },
       {
        "raw": "(int)v30",
@@ -4174,8 +4364,7 @@
       },
       {
        "raw": "(int)\"MvFrameStatus\"",
-       "fn": null,
-       "str": "MvFrameStatus"
+       "fn": null
       },
       {
        "raw": "(int)v29",
@@ -4307,8 +4496,7 @@
       },
       {
        "raw": "(int)\"MvHitStatus\"",
-       "fn": null,
-       "str": "MvHitStatus"
+       "fn": null
       },
       {
        "raw": "(int)v28",
@@ -4440,8 +4628,7 @@
       },
       {
        "raw": "(int)\"MvHitImpactInfo\"",
-       "fn": null,
-       "str": "MvHitImpactInfo"
+       "fn": null
       },
       {
        "raw": "(int)v27",
@@ -4545,8 +4732,7 @@
       },
       {
        "raw": "(int)\"MvInterruptInfo\"",
-       "fn": null,
-       "str": "MvInterruptInfo"
+       "fn": null
       },
       {
        "raw": "(int)v26",
@@ -4594,8 +4780,7 @@
       },
       {
        "raw": "(int)\"MvRecoverStatus\"",
-       "fn": null,
-       "str": "MvRecoverStatus"
+       "fn": null
       },
       {
        "raw": "(int)v25",
@@ -4755,8 +4940,7 @@
       },
       {
        "raw": "(int)\"MvRoundStatus\"",
-       "fn": null,
-       "str": "MvRoundStatus"
+       "fn": null
       },
       {
        "raw": "(int)v24",
@@ -4832,8 +5016,7 @@
       },
       {
        "raw": "(int)\"MvStageStatus\"",
-       "fn": null,
-       "str": "MvStageStatus"
+       "fn": null
       },
       {
        "raw": "(int)v23",
@@ -4853,8 +5036,7 @@
       },
       {
        "raw": "(int)\"BMvTbl\"",
-       "fn": null,
-       "str": "BMvTbl"
+       "fn": null
       },
       {
        "raw": "(int)v35",
@@ -4866,6 +5048,2761 @@
      "ecx": "[ebp+var_1B0]"
     },
     {
+     "callee": "Sqrat_TableBase_SetValueInt_42E7D0",
+     "args": [
+      {
+       "raw": "v36",
+       "fn": null
+      },
+      {
+       "raw": "(int)\"_isDebugModeExe\"",
+       "fn": null
+      },
+      {
+       "raw": "0",
+       "fn": null
+      }
+     ],
+     "ea": "0x810fcf",
+     "ecx": "[ebp+var_34]"
+    },
+    {
+     "callee": "Sqrat_TableBase_SetValueInt_42E7D0",
+     "args": [
+      {
+       "raw": "v36",
+       "fn": null
+      },
+      {
+       "raw": "(int)\"_PlatformType\"",
+       "fn": null
+      },
+      {
+       "raw": "0",
+       "fn": null
+      }
+     ],
+     "ea": "0x810fde",
+     "ecx": "[ebp+var_34]"
+    },
+    {
+     "callee": "Sqrat_TableBase_SetValueInt_42E7D0",
+     "args": [
+      {
+       "raw": "v36",
+       "fn": null
+      },
+      {
+       "raw": "(int)\"_PlatformAPM\"",
+       "fn": null
+      },
+      {
+       "raw": "1",
+       "fn": null
+      }
+     ],
+     "ea": "0x810fed",
+     "ecx": "[ebp+var_34]"
+    },
+    {
+     "callee": "Sqrat_TableBase_SetValueInt_42E7D0",
+     "args": [
+      {
+       "raw": "v36",
+       "fn": null
+      },
+      {
+       "raw": "(int)\"_DevWindows\"",
+       "fn": null
+      },
+      {
+       "raw": "1",
+       "fn": null
+      }
+     ],
+     "ea": "0x810ffc",
+     "ecx": "[ebp+var_34]"
+    },
+    {
+     "callee": "Sqrat_TableBase_SetValueInt_42E7D0",
+     "args": [
+      {
+       "raw": "v36",
+       "fn": null
+      },
+      {
+       "raw": "(int)\"_DevPS3\"",
+       "fn": null
+      },
+      {
+       "raw": "0",
+       "fn": null
+      }
+     ],
+     "ea": "0x81100b",
+     "ecx": "[ebp+var_34]"
+    },
+    {
+     "callee": "Sqrat_TableBase_SetValueInt_42E7D0",
+     "args": [
+      {
+       "raw": "v36",
+       "fn": null
+      },
+      {
+       "raw": "(int)\"_DevVITA\"",
+       "fn": null
+      },
+      {
+       "raw": "0",
+       "fn": null
+      }
+     ],
+     "ea": "0x81101a",
+     "ecx": "[ebp+var_34]"
+    },
+    {
+     "callee": "Sqrat_TableBase_SetValueInt_42E7D0",
+     "args": [
+      {
+       "raw": "v36",
+       "fn": null
+      },
+      {
+       "raw": "(int)\"_DevPS4\"",
+       "fn": null
+      },
+      {
+       "raw": "0",
+       "fn": null
+      }
+     ],
+     "ea": "0x811029",
+     "ecx": "[ebp+var_34]"
+    },
+    {
+     "callee": "Sqrat_TableBase_SetValueInt_42E7D0",
+     "args": [
+      {
+       "raw": "v36",
+       "fn": null
+      },
+      {
+       "raw": "(int)\"_PosState_Stand\"",
+       "fn": null
+      },
+      {
+       "raw": "1",
+       "fn": null
+      }
+     ],
+     "ea": "0x811038",
+     "ecx": "[ebp+var_34]"
+    },
+    {
+     "callee": "Sqrat_TableBase_SetValueInt_42E7D0",
+     "args": [
+      {
+       "raw": "v36",
+       "fn": null
+      },
+      {
+       "raw": "(int)\"_PosState_Air\"",
+       "fn": null
+      },
+      {
+       "raw": "2",
+       "fn": null
+      }
+     ],
+     "ea": "0x811047",
+     "ecx": "[ebp+var_34]"
+    },
+    {
+     "callee": "Sqrat_TableBase_SetValueInt_42E7D0",
+     "args": [
+      {
+       "raw": "v36",
+       "fn": null
+      },
+      {
+       "raw": "(int)\"_PosState_Crouch\"",
+       "fn": null
+      },
+      {
+       "raw": "4",
+       "fn": null
+      }
+     ],
+     "ea": "0x811056",
+     "ecx": "[ebp+var_34]"
+    },
+    {
+     "callee": "Sqrat_TableBase_SetValueInt_42E7D0",
+     "args": [
+      {
+       "raw": "v36",
+       "fn": null
+      },
+      {
+       "raw": "(int)\"_PosState_Ground\"",
+       "fn": null
+      },
+      {
+       "raw": "5",
+       "fn": null
+      }
+     ],
+     "ea": "0x811065",
+     "ecx": "[ebp+var_34]"
+    },
+    {
+     "callee": "Sqrat_TableBase_SetValueInt_42E7D0",
+     "args": [
+      {
+       "raw": "v36",
+       "fn": null
+      },
+      {
+       "raw": "(int)\"_PosState_Always\"",
+       "fn": null
+      },
+      {
+       "raw": "7",
+       "fn": null
+      }
+     ],
+     "ea": "0x811074",
+     "ecx": "[ebp+var_34]"
+    },
+    {
+     "callee": "Sqrat_TableBase_SetValueInt_42E7D0",
+     "args": [
+      {
+       "raw": "v36",
+       "fn": null
+      },
+      {
+       "raw": "(int)\"_PrioType_\"",
+       "fn": null
+      },
+      {
+       "raw": "7",
+       "fn": null
+      }
+     ],
+     "ea": "0x811083",
+     "ecx": "[ebp+var_34]"
+    },
+    {
+     "callee": "Sqrat_TableBase_SetValueInt_42E7D0",
+     "args": [
+      {
+       "raw": "v36",
+       "fn": null
+      },
+      {
+       "raw": "(int)\"_HitType_Hit\"",
+       "fn": null
+      },
+      {
+       "raw": "3",
+       "fn": null
+      }
+     ],
+     "ea": "0x811092",
+     "ecx": "[ebp+var_34]"
+    },
+    {
+     "callee": "Sqrat_TableBase_SetValueInt_42E7D0",
+     "args": [
+      {
+       "raw": "v36",
+       "fn": null
+      },
+      {
+       "raw": "(int)\"_HitType_Damage\"",
+       "fn": null
+      },
+      {
+       "raw": "2",
+       "fn": null
+      }
+     ],
+     "ea": "0x8110a1",
+     "ecx": "[ebp+var_34]"
+    },
+    {
+     "callee": "Sqrat_TableBase_SetValueInt_42E7D0",
+     "args": [
+      {
+       "raw": "v36",
+       "fn": null
+      },
+      {
+       "raw": "(int)\"_HitType_Guard\"",
+       "fn": null
+      },
+      {
+       "raw": "1",
+       "fn": null
+      }
+     ],
+     "ea": "0x8110b0",
+     "ecx": "[ebp+var_34]"
+    },
+    {
+     "callee": "Sqrat_TableBase_SetValueInt_42E7D0",
+     "args": [
+      {
+       "raw": "v36",
+       "fn": null
+      },
+      {
+       "raw": "(int)\"_Direction_Auto\"",
+       "fn": null
+      },
+      {
+       "raw": "-1",
+       "fn": null
+      }
+     ],
+     "ea": "0x8110bf",
+     "ecx": "[ebp+var_34]"
+    },
+    {
+     "callee": "Sqrat_TableBase_SetValueInt_42E7D0",
+     "args": [
+      {
+       "raw": "v36",
+       "fn": null
+      },
+      {
+       "raw": "(int)\"_Direction_Left\"",
+       "fn": null
+      },
+      {
+       "raw": "0",
+       "fn": null
+      }
+     ],
+     "ea": "0x8110ce",
+     "ecx": "[ebp+var_34]"
+    },
+    {
+     "callee": "Sqrat_TableBase_SetValueInt_42E7D0",
+     "args": [
+      {
+       "raw": "v36",
+       "fn": null
+      },
+      {
+       "raw": "(int)\"_Direction_Right\"",
+       "fn": null
+      },
+      {
+       "raw": "1",
+       "fn": null
+      }
+     ],
+     "ea": "0x8110dd",
+     "ecx": "[ebp+var_34]"
+    },
+    {
+     "callee": "Sqrat_TableBase_SetValueInt_42E7D0",
+     "args": [
+      {
+       "raw": "v36",
+       "fn": null
+      },
+      {
+       "raw": "(int)\"_Direction_Reverse\"",
+       "fn": null
+      },
+      {
+       "raw": "10",
+       "fn": null
+      }
+     ],
+     "ea": "0x8110ec",
+     "ecx": "[ebp+var_34]"
+    },
+    {
+     "callee": "Sqrat_TableBase_SetValueInt_42E7D0",
+     "args": [
+      {
+       "raw": "v36",
+       "fn": null
+      },
+      {
+       "raw": "(int)\"_Position_CaptureChara\"",
+       "fn": null
+      },
+      {
+       "raw": "1",
+       "fn": null
+      }
+     ],
+     "ea": "0x8110fb",
+     "ecx": "[ebp+var_34]"
+    },
+    {
+     "callee": "Sqrat_TableBase_SetValueInt_42E7D0",
+     "args": [
+      {
+       "raw": "v36",
+       "fn": null
+      },
+      {
+       "raw": "(int)\"_Position_CaptureShift\"",
+       "fn": null
+      },
+      {
+       "raw": "2",
+       "fn": null
+      }
+     ],
+     "ea": "0x81110a",
+     "ecx": "[ebp+var_34]"
+    },
+    {
+     "callee": "Sqrat_TableBase_SetValueInt_42E7D0",
+     "args": [
+      {
+       "raw": "v36",
+       "fn": null
+      },
+      {
+       "raw": "(int)\"_Position_ToolShift\"",
+       "fn": null
+      },
+      {
+       "raw": "2",
+       "fn": null
+      }
+     ],
+     "ea": "0x811119",
+     "ecx": "[ebp+var_34]"
+    },
+    {
+     "callee": "Sqrat_TableBase_SetValueInt_42E7D0",
+     "args": [
+      {
+       "raw": "v36",
+       "fn": null
+      },
+      {
+       "raw": "(int)\"_Position_ChangeMuki\"",
+       "fn": null
+      },
+      {
+       "raw": "4",
+       "fn": null
+      }
+     ],
+     "ea": "0x811128",
+     "ecx": "[ebp+var_34]"
+    },
+    {
+     "callee": "Sqrat_TableBase_SetValueInt_42E7D0",
+     "args": [
+      {
+       "raw": "v36",
+       "fn": null
+      },
+      {
+       "raw": "(int)\"_Position_Add\"",
+       "fn": null
+      },
+      {
+       "raw": "8",
+       "fn": null
+      }
+     ],
+     "ea": "0x811137",
+     "ecx": "[ebp+var_34]"
+    },
+    {
+     "callee": "Sqrat_TableBase_SetValueInt_42E7D0",
+     "args": [
+      {
+       "raw": "v36",
+       "fn": null
+      },
+      {
+       "raw": "(int)\"_Position_NoMoveChild\"",
+       "fn": null
+      },
+      {
+       "raw": "16",
+       "fn": null
+      }
+     ],
+     "ea": "0x811146",
+     "ecx": "[ebp+var_34]"
+    },
+    {
+     "callee": "Sqrat_TableBase_SetValueInt_42E7D0",
+     "args": [
+      {
+       "raw": "v36",
+       "fn": null
+      },
+      {
+       "raw": "(int)\"_Angle_AngleAdd\"",
+       "fn": null
+      },
+      {
+       "raw": "1",
+       "fn": null
+      }
+     ],
+     "ea": "0x811155",
+     "ecx": "[ebp+var_34]"
+    },
+    {
+     "callee": "Sqrat_TableBase_SetValueInt_42E7D0",
+     "args": [
+      {
+       "raw": "v36",
+       "fn": null
+      },
+      {
+       "raw": "(int)\"_Angle_PositionAdd\"",
+       "fn": null
+      },
+      {
+       "raw": "2",
+       "fn": null
+      }
+     ],
+     "ea": "0x811164",
+     "ecx": "[ebp+var_34]"
+    },
+    {
+     "callee": "Sqrat_TableBase_SetValueInt_42E7D0",
+     "args": [
+      {
+       "raw": "v36",
+       "fn": null
+      },
+      {
+       "raw": "(int)\"_VecFlag_Add\"",
+       "fn": null
+      },
+      {
+       "raw": "1",
+       "fn": null
+      }
+     ],
+     "ea": "0x811173",
+     "ecx": "[ebp+var_34]"
+    },
+    {
+     "callee": "Sqrat_TableBase_SetValueInt_42E7D0",
+     "args": [
+      {
+       "raw": "v36",
+       "fn": null
+      },
+      {
+       "raw": "(int)\"_VecFlag_NoMuki\"",
+       "fn": null
+      },
+      {
+       "raw": "2",
+       "fn": null
+      }
+     ],
+     "ea": "0x811182",
+     "ecx": "[ebp+var_34]"
+    },
+    {
+     "callee": "Sqrat_TableBase_SetValueInt_42E7D0",
+     "args": [
+      {
+       "raw": "v36",
+       "fn": null
+      },
+      {
+       "raw": "(int)\"_Vector_Normal\"",
+       "fn": null
+      },
+      {
+       "raw": "0",
+       "fn": null
+      }
+     ],
+     "ea": "0x811194",
+     "ecx": "[ebp+var_34]"
+    },
+    {
+     "callee": "Sqrat_TableBase_SetValueInt_42E7D0",
+     "args": [
+      {
+       "raw": "v36",
+       "fn": null
+      },
+      {
+       "raw": "(int)\"_Vector_Bound\"",
+       "fn": null
+      },
+      {
+       "raw": "0",
+       "fn": null
+      }
+     ],
+     "ea": "0x8111a6",
+     "ecx": "[ebp+var_34]"
+    },
+    {
+     "callee": "Sqrat_TableBase_SetValueInt_42E7D0",
+     "args": [
+      {
+       "raw": "v36",
+       "fn": null
+      },
+      {
+       "raw": "(int)\"_Vector_Div\"",
+       "fn": null
+      },
+      {
+       "raw": "0",
+       "fn": null
+      }
+     ],
+     "ea": "0x8111b8",
+     "ecx": "[ebp+var_34]"
+    },
+    {
+     "callee": "Sqrat_TableBase_SetValueInt_42E7D0",
+     "args": [
+      {
+       "raw": "v36",
+       "fn": null
+      },
+      {
+       "raw": "(int)\"_Vector_Keep\"",
+       "fn": null
+      },
+      {
+       "raw": "0",
+       "fn": null
+      }
+     ],
+     "ea": "0x8111ca",
+     "ecx": "[ebp+var_34]"
+    },
+    {
+     "callee": "Sqrat_TableBase_SetValueInt_42E7D0",
+     "args": [
+      {
+       "raw": "v36",
+       "fn": null
+      },
+      {
+       "raw": "(int)\"_Vector_DivKeep\"",
+       "fn": null
+      },
+      {
+       "raw": "0",
+       "fn": null
+      }
+     ],
+     "ea": "0x8111dc",
+     "ecx": "[ebp+var_34]"
+    },
+    {
+     "callee": "Sqrat_TableBase_SetValueInt_42E7D0",
+     "args": [
+      {
+       "raw": "v36",
+       "fn": null
+      },
+      {
+       "raw": "(int)\"_ValSet\"",
+       "fn": null
+      },
+      {
+       "raw": "0",
+       "fn": null
+      }
+     ],
+     "ea": "0x8111eb",
+     "ecx": "[ebp+var_34]"
+    },
+    {
+     "callee": "Sqrat_TableBase_SetValueInt_42E7D0",
+     "args": [
+      {
+       "raw": "v36",
+       "fn": null
+      },
+      {
+       "raw": "(int)\"_ValGet\"",
+       "fn": null
+      },
+      {
+       "raw": "1",
+       "fn": null
+      }
+     ],
+     "ea": "0x8111fa",
+     "ecx": "[ebp+var_34]"
+    },
+    {
+     "callee": "Sqrat_TableBase_SetValueInt_42E7D0",
+     "args": [
+      {
+       "raw": "v36",
+       "fn": null
+      },
+      {
+       "raw": "(int)\"_ValAdd\"",
+       "fn": null
+      },
+      {
+       "raw": "2",
+       "fn": null
+      }
+     ],
+     "ea": "0x811209",
+     "ecx": "[ebp+var_34]"
+    },
+    {
+     "callee": "Sqrat_TableBase_SetValueInt_42E7D0",
+     "args": [
+      {
+       "raw": "v36",
+       "fn": null
+      },
+      {
+       "raw": "(int)\"_ValClear\"",
+       "fn": null
+      },
+      {
+       "raw": "3",
+       "fn": null
+      }
+     ],
+     "ea": "0x811218",
+     "ecx": "[ebp+var_34]"
+    },
+    {
+     "callee": "Sqrat_TableBase_SetValueInt_42E7D0",
+     "args": [
+      {
+       "raw": "v36",
+       "fn": null
+      },
+      {
+       "raw": "(int)\"_ValErase\"",
+       "fn": null
+      },
+      {
+       "raw": "4",
+       "fn": null
+      }
+     ],
+     "ea": "0x811227",
+     "ecx": "[ebp+var_34]"
+    },
+    {
+     "callee": "Sqrat_TableBase_SetValueInt_42E7D0",
+     "args": [
+      {
+       "raw": "v36",
+       "fn": null
+      },
+      {
+       "raw": "(int)\"_ValCheck\"",
+       "fn": null
+      },
+      {
+       "raw": "5",
+       "fn": null
+      }
+     ],
+     "ea": "0x811236",
+     "ecx": "[ebp+var_34]"
+    },
+    {
+     "callee": "Sqrat_TableBase_SetValueInt_42E7D0",
+     "args": [
+      {
+       "raw": "v36",
+       "fn": null
+      },
+      {
+       "raw": "(int)\"_InterruptType_Ko_Atk\"",
+       "fn": null
+      },
+      {
+       "raw": "0",
+       "fn": null
+      }
+     ],
+     "ea": "0x811245",
+     "ecx": "[ebp+var_34]"
+    },
+    {
+     "callee": "Sqrat_TableBase_SetValueInt_42E7D0",
+     "args": [
+      {
+       "raw": "v36",
+       "fn": null
+      },
+      {
+       "raw": "(int)\"_InterruptType_Ko_Def\"",
+       "fn": null
+      },
+      {
+       "raw": "1",
+       "fn": null
+      }
+     ],
+     "ea": "0x811254",
+     "ecx": "[ebp+var_34]"
+    },
+    {
+     "callee": "Sqrat_TableBase_SetValueInt_42E7D0",
+     "args": [
+      {
+       "raw": "v36",
+       "fn": null
+      },
+      {
+       "raw": "(int)\"_InterruptType_Judge\"",
+       "fn": null
+      },
+      {
+       "raw": "2",
+       "fn": null
+      }
+     ],
+     "ea": "0x811263",
+     "ecx": "[ebp+var_34]"
+    },
+    {
+     "callee": "Sqrat_TableBase_SetValueInt_42E7D0",
+     "args": [
+      {
+       "raw": "v36",
+       "fn": null
+      },
+      {
+       "raw": "(int)\"_InterruptType_DrawMotion\"",
+       "fn": null
+      },
+      {
+       "raw": "3",
+       "fn": null
+      }
+     ],
+     "ea": "0x811272",
+     "ecx": "[ebp+var_34]"
+    },
+    {
+     "callee": "Sqrat_TableBase_SetValueInt_42E7D0",
+     "args": [
+      {
+       "raw": "v36",
+       "fn": null
+      },
+      {
+       "raw": "(int)\"_InterruptType_WinMotion\"",
+       "fn": null
+      },
+      {
+       "raw": "4",
+       "fn": null
+      }
+     ],
+     "ea": "0x811281",
+     "ecx": "[ebp+var_34]"
+    },
+    {
+     "callee": "Sqrat_TableBase_SetValueInt_42E7D0",
+     "args": [
+      {
+       "raw": "v36",
+       "fn": null
+      },
+      {
+       "raw": "(int)\"_InterruptType_LoseMotion\"",
+       "fn": null
+      },
+      {
+       "raw": "5",
+       "fn": null
+      }
+     ],
+     "ea": "0x811290",
+     "ecx": "[ebp+var_34]"
+    },
+    {
+     "callee": "Sqrat_TableBase_SetValueInt_42E7D0",
+     "args": [
+      {
+       "raw": "v36",
+       "fn": null
+      },
+      {
+       "raw": "(int)\"_InterruptType_SupportCharge\"",
+       "fn": null
+      },
+      {
+       "raw": "6",
+       "fn": null
+      }
+     ],
+     "ea": "0x81129f",
+     "ecx": "[ebp+var_34]"
+    },
+    {
+     "callee": "Sqrat_TableBase_SetValueInt_42E7D0",
+     "args": [
+      {
+       "raw": "v36",
+       "fn": null
+      },
+      {
+       "raw": "(int)\"_InterruptType_Jem\"",
+       "fn": null
+      },
+      {
+       "raw": "7",
+       "fn": null
+      }
+     ],
+     "ea": "0x8112ae",
+     "ecx": "[ebp+var_34]"
+    },
+    {
+     "callee": "Sqrat_TableBase_SetValueInt_42E7D0",
+     "args": [
+      {
+       "raw": "v36",
+       "fn": null
+      },
+      {
+       "raw": "(int)\"_InterruptType_BlastCharge\"",
+       "fn": null
+      },
+      {
+       "raw": "8",
+       "fn": null
+      }
+     ],
+     "ea": "0x8112bd",
+     "ecx": "[ebp+var_34]"
+    },
+    {
+     "callee": "Sqrat_TableBase_SetValueInt_42E7D0",
+     "args": [
+      {
+       "raw": "v36",
+       "fn": null
+      },
+      {
+       "raw": "(int)\"_ImpactFlag_IsBound\"",
+       "fn": null
+      },
+      {
+       "raw": "1",
+       "fn": null
+      }
+     ],
+     "ea": "0x8112cc",
+     "ecx": "[ebp+var_34]"
+    },
+    {
+     "callee": "Sqrat_TableBase_SetValueInt_42E7D0",
+     "args": [
+      {
+       "raw": "v36",
+       "fn": null
+      },
+      {
+       "raw": "(int)\"_ImpactFlag_IsGuard\"",
+       "fn": null
+      },
+      {
+       "raw": "2",
+       "fn": null
+      }
+     ],
+     "ea": "0x8112db",
+     "ecx": "[ebp+var_34]"
+    },
+    {
+     "callee": "Sqrat_TableBase_SetValueInt_42E7D0",
+     "args": [
+      {
+       "raw": "v36",
+       "fn": null
+      },
+      {
+       "raw": "(int)\"_ImpactFlag_IsCounter\"",
+       "fn": null
+      },
+      {
+       "raw": "128",
+       "fn": null
+      }
+     ],
+     "ea": "0x8112ed",
+     "ecx": "[ebp+var_34]"
+    },
+    {
+     "callee": "Sqrat_TableBase_SetValueInt_42E7D0",
+     "args": [
+      {
+       "raw": "v36",
+       "fn": null
+      },
+      {
+       "raw": "(int)\"_ImpactFlag_IsDangerHP\"",
+       "fn": null
+      },
+      {
+       "raw": "64",
+       "fn": null
+      }
+     ],
+     "ea": "0x8112fc",
+     "ecx": "[ebp+var_34]"
+    },
+    {
+     "callee": "Sqrat_TableBase_SetValueInt_42E7D0",
+     "args": [
+      {
+       "raw": "v36",
+       "fn": null
+      },
+      {
+       "raw": "(int)\"_CancelFlag_None\"",
+       "fn": null
+      },
+      {
+       "raw": "0",
+       "fn": null
+      }
+     ],
+     "ea": "0x81130b",
+     "ecx": "[ebp+var_34]"
+    },
+    {
+     "callee": "Sqrat_TableBase_SetValueInt_42E7D0",
+     "args": [
+      {
+       "raw": "v36",
+       "fn": null
+      },
+      {
+       "raw": "(int)\"_CancelFlag_Hit\"",
+       "fn": null
+      },
+      {
+       "raw": "1",
+       "fn": null
+      }
+     ],
+     "ea": "0x81131a",
+     "ecx": "[ebp+var_34]"
+    },
+    {
+     "callee": "Sqrat_TableBase_SetValueInt_42E7D0",
+     "args": [
+      {
+       "raw": "v36",
+       "fn": null
+      },
+      {
+       "raw": "(int)\"_CancelFlag_Always\"",
+       "fn": null
+      },
+      {
+       "raw": "2",
+       "fn": null
+      }
+     ],
+     "ea": "0x811329",
+     "ecx": "[ebp+var_34]"
+    },
+    {
+     "callee": "Sqrat_TableBase_SetValueInt_42E7D0",
+     "args": [
+      {
+       "raw": "v36",
+       "fn": null
+      },
+      {
+       "raw": "(int)\"_CancelFlag_Damage\"",
+       "fn": null
+      },
+      {
+       "raw": "3",
+       "fn": null
+      }
+     ],
+     "ea": "0x811338",
+     "ecx": "[ebp+var_34]"
+    },
+    {
+     "callee": "Sqrat_TableBase_SetValueInt_42E7D0",
+     "args": [
+      {
+       "raw": "v36",
+       "fn": null
+      },
+      {
+       "raw": "(int)\"_CancelFlag_Invalid\"",
+       "fn": null
+      },
+      {
+       "raw": "255",
+       "fn": null
+      }
+     ],
+     "ea": "0x81134a",
+     "ecx": "[ebp+var_34]"
+    },
+    {
+     "callee": "Sqrat_TableBase_SetValueInt_42E7D0",
+     "args": [
+      {
+       "raw": "v36",
+       "fn": null
+      },
+      {
+       "raw": "(int)\"_ClearFlag_ChangeFrame\"",
+       "fn": null
+      },
+      {
+       "raw": "2",
+       "fn": null
+      }
+     ],
+     "ea": "0x811359",
+     "ecx": "[ebp+var_34]"
+    },
+    {
+     "callee": "Sqrat_TableBase_SetValueInt_42E7D0",
+     "args": [
+      {
+       "raw": "v36",
+       "fn": null
+      },
+      {
+       "raw": "(int)\"_ClearFlag_ChangePattern\"",
+       "fn": null
+      },
+      {
+       "raw": "4",
+       "fn": null
+      }
+     ],
+     "ea": "0x811368",
+     "ecx": "[ebp+var_34]"
+    },
+    {
+     "callee": "Sqrat_TableBase_SetValueInt_42E7D0",
+     "args": [
+      {
+       "raw": "v36",
+       "fn": null
+      },
+      {
+       "raw": "(int)\"_ClearFlag_ChangeMv\"",
+       "fn": null
+      },
+      {
+       "raw": "1",
+       "fn": null
+      }
+     ],
+     "ea": "0x811377",
+     "ecx": "[ebp+var_34]"
+    },
+    {
+     "callee": "Sqrat_TableBase_SetValueInt_42E7D0",
+     "args": [
+      {
+       "raw": "v36",
+       "fn": null
+      },
+      {
+       "raw": "(int)\"_ClearFlag_ComboEnd\"",
+       "fn": null
+      },
+      {
+       "raw": "64",
+       "fn": null
+      }
+     ],
+     "ea": "0x811386",
+     "ecx": "[ebp+var_34]"
+    },
+    {
+     "callee": "Sqrat_TableBase_SetValueInt_42E7D0",
+     "args": [
+      {
+       "raw": "v36",
+       "fn": null
+      },
+      {
+       "raw": "(int)\"_AsFlag_ExCancel\"",
+       "fn": null
+      },
+      {
+       "raw": "1",
+       "fn": null
+      }
+     ],
+     "ea": "0x811395",
+     "ecx": "[ebp+var_34]"
+    },
+    {
+     "callee": "Sqrat_TableBase_SetValueInt_42E7D0",
+     "args": [
+      {
+       "raw": "v36",
+       "fn": null
+      },
+      {
+       "raw": "(int)\"_AsFlag_ChainShift\"",
+       "fn": null
+      },
+      {
+       "raw": "2",
+       "fn": null
+      }
+     ],
+     "ea": "0x8113a4",
+     "ecx": "[ebp+var_34]"
+    },
+    {
+     "callee": "Sqrat_TableBase_SetValueInt_42E7D0",
+     "args": [
+      {
+       "raw": "v36",
+       "fn": null
+      },
+      {
+       "raw": "(int)\"_AsFlag_GuardRev\"",
+       "fn": null
+      },
+      {
+       "raw": "4",
+       "fn": null
+      }
+     ],
+     "ea": "0x8113b3",
+     "ecx": "[ebp+var_34]"
+    },
+    {
+     "callee": "Sqrat_TableBase_SetValueInt_42E7D0",
+     "args": [
+      {
+       "raw": "v36",
+       "fn": null
+      },
+      {
+       "raw": "(int)\"_AsFlag_Guard_Stand\"",
+       "fn": null
+      },
+      {
+       "raw": "16",
+       "fn": null
+      }
+     ],
+     "ea": "0x8113c2",
+     "ecx": "[ebp+var_34]"
+    },
+    {
+     "callee": "Sqrat_TableBase_SetValueInt_42E7D0",
+     "args": [
+      {
+       "raw": "v36",
+       "fn": null
+      },
+      {
+       "raw": "(int)\"_AsFlag_Guard_Air\"",
+       "fn": null
+      },
+      {
+       "raw": "32",
+       "fn": null
+      }
+     ],
+     "ea": "0x8113d1",
+     "ecx": "[ebp+var_34]"
+    },
+    {
+     "callee": "Sqrat_TableBase_SetValueInt_42E7D0",
+     "args": [
+      {
+       "raw": "v36",
+       "fn": null
+      },
+      {
+       "raw": "(int)\"_AsFlag_Guard_Crouch\"",
+       "fn": null
+      },
+      {
+       "raw": "64",
+       "fn": null
+      }
+     ],
+     "ea": "0x8113e0",
+     "ecx": "[ebp+var_34]"
+    },
+    {
+     "callee": "Sqrat_TableBase_SetValueInt_42E7D0",
+     "args": [
+      {
+       "raw": "v36",
+       "fn": null
+      },
+      {
+       "raw": "(int)\"_CharaPrio_None\"",
+       "fn": null
+      },
+      {
+       "raw": "0",
+       "fn": null
+      }
+     ],
+     "ea": "0x8113ef",
+     "ecx": "[ebp+var_34]"
+    },
+    {
+     "callee": "Sqrat_TableBase_SetValueInt_42E7D0",
+     "args": [
+      {
+       "raw": "v36",
+       "fn": null
+      },
+      {
+       "raw": "(int)\"_CharaPrio_Near\"",
+       "fn": null
+      },
+      {
+       "raw": "1",
+       "fn": null
+      }
+     ],
+     "ea": "0x8113fe",
+     "ecx": "[ebp+var_34]"
+    },
+    {
+     "callee": "Sqrat_TableBase_SetValueInt_42E7D0",
+     "args": [
+      {
+       "raw": "v36",
+       "fn": null
+      },
+      {
+       "raw": "(int)\"_CharaPrio_Far\"",
+       "fn": null
+      },
+      {
+       "raw": "2",
+       "fn": null
+      }
+     ],
+     "ea": "0x81140d",
+     "ecx": "[ebp+var_34]"
+    },
+    {
+     "callee": "Sqrat_TableBase_SetValueInt_42E7D0",
+     "args": [
+      {
+       "raw": "v36",
+       "fn": null
+      },
+      {
+       "raw": "(int)\"_CharaPrio_Near_Layer_0\"",
+       "fn": null
+      },
+      {
+       "raw": "3",
+       "fn": null
+      }
+     ],
+     "ea": "0x81141c",
+     "ecx": "[ebp+var_34]"
+    },
+    {
+     "callee": "Sqrat_TableBase_SetValueInt_42E7D0",
+     "args": [
+      {
+       "raw": "v36",
+       "fn": null
+      },
+      {
+       "raw": "(int)\"_CharaPrio_Near_Layer_1\"",
+       "fn": null
+      },
+      {
+       "raw": "4",
+       "fn": null
+      }
+     ],
+     "ea": "0x81142b",
+     "ecx": "[ebp+var_34]"
+    },
+    {
+     "callee": "Sqrat_TableBase_SetValueInt_42E7D0",
+     "args": [
+      {
+       "raw": "v36",
+       "fn": null
+      },
+      {
+       "raw": "(int)\"_CharaPrio_Near_Layer_2\"",
+       "fn": null
+      },
+      {
+       "raw": "5",
+       "fn": null
+      }
+     ],
+     "ea": "0x81143a",
+     "ecx": "[ebp+var_34]"
+    },
+    {
+     "callee": "Sqrat_TableBase_SetValueInt_42E7D0",
+     "args": [
+      {
+       "raw": "v36",
+       "fn": null
+      },
+      {
+       "raw": "(int)\"_CharaPrio_Near_Layer_3\"",
+       "fn": null
+      },
+      {
+       "raw": "6",
+       "fn": null
+      }
+     ],
+     "ea": "0x811449",
+     "ecx": "[ebp+var_34]"
+    },
+    {
+     "callee": "Sqrat_TableBase_SetValueInt_42E7D0",
+     "args": [
+      {
+       "raw": "v36",
+       "fn": null
+      },
+      {
+       "raw": "(int)\"_CharaPrio_Near_Layer_4\"",
+       "fn": null
+      },
+      {
+       "raw": "7",
+       "fn": null
+      }
+     ],
+     "ea": "0x811458",
+     "ecx": "[ebp+var_34]"
+    },
+    {
+     "callee": "Sqrat_TableBase_SetValueInt_42E7D0",
+     "args": [
+      {
+       "raw": "v36",
+       "fn": null
+      },
+      {
+       "raw": "(int)\"_CharaPrio_Near_Layer_5\"",
+       "fn": null
+      },
+      {
+       "raw": "8",
+       "fn": null
+      }
+     ],
+     "ea": "0x811467",
+     "ecx": "[ebp+var_34]"
+    },
+    {
+     "callee": "Sqrat_TableBase_SetValueInt_42E7D0",
+     "args": [
+      {
+       "raw": "v36",
+       "fn": null
+      },
+      {
+       "raw": "(int)\"_CharaPrio_Near_Layer_6\"",
+       "fn": null
+      },
+      {
+       "raw": "9",
+       "fn": null
+      }
+     ],
+     "ea": "0x811476",
+     "ecx": "[ebp+var_34]"
+    },
+    {
+     "callee": "Sqrat_TableBase_SetValueInt_42E7D0",
+     "args": [
+      {
+       "raw": "v36",
+       "fn": null
+      },
+      {
+       "raw": "(int)\"_CharaPrio_Near_Layer_7\"",
+       "fn": null
+      },
+      {
+       "raw": "10",
+       "fn": null
+      }
+     ],
+     "ea": "0x811485",
+     "ecx": "[ebp+var_34]"
+    },
+    {
+     "callee": "Sqrat_TableBase_SetValueInt_42E7D0",
+     "args": [
+      {
+       "raw": "v36",
+       "fn": null
+      },
+      {
+       "raw": "(int)\"_CharaPrio_Near_Layer_8\"",
+       "fn": null
+      },
+      {
+       "raw": "11",
+       "fn": null
+      }
+     ],
+     "ea": "0x811494",
+     "ecx": "[ebp+var_34]"
+    },
+    {
+     "callee": "Sqrat_TableBase_SetValueInt_42E7D0",
+     "args": [
+      {
+       "raw": "v36",
+       "fn": null
+      },
+      {
+       "raw": "(int)\"_CharaPrio_Near_Layer_9\"",
+       "fn": null
+      },
+      {
+       "raw": "12",
+       "fn": null
+      }
+     ],
+     "ea": "0x8114a3",
+     "ecx": "[ebp+var_34]"
+    },
+    {
+     "callee": "Sqrat_TableBase_SetValueInt_42E7D0",
+     "args": [
+      {
+       "raw": "v36",
+       "fn": null
+      },
+      {
+       "raw": "(int)\"_CharaPrio_Far_Layer_0\"",
+       "fn": null
+      },
+      {
+       "raw": "13",
+       "fn": null
+      }
+     ],
+     "ea": "0x8114b2",
+     "ecx": "[ebp+var_34]"
+    },
+    {
+     "callee": "Sqrat_TableBase_SetValueInt_42E7D0",
+     "args": [
+      {
+       "raw": "v36",
+       "fn": null
+      },
+      {
+       "raw": "(int)\"_CharaPrio_Far_Layer_1\"",
+       "fn": null
+      },
+      {
+       "raw": "14",
+       "fn": null
+      }
+     ],
+     "ea": "0x8114c1",
+     "ecx": "[ebp+var_34]"
+    },
+    {
+     "callee": "Sqrat_TableBase_SetValueInt_42E7D0",
+     "args": [
+      {
+       "raw": "v36",
+       "fn": null
+      },
+      {
+       "raw": "(int)\"_CharaPrio_Far_Layer_2\"",
+       "fn": null
+      },
+      {
+       "raw": "15",
+       "fn": null
+      }
+     ],
+     "ea": "0x8114d0",
+     "ecx": "[ebp+var_34]"
+    },
+    {
+     "callee": "Sqrat_TableBase_SetValueInt_42E7D0",
+     "args": [
+      {
+       "raw": "v36",
+       "fn": null
+      },
+      {
+       "raw": "(int)\"_CharaPrio_Far_Layer_3\"",
+       "fn": null
+      },
+      {
+       "raw": "16",
+       "fn": null
+      }
+     ],
+     "ea": "0x8114df",
+     "ecx": "[ebp+var_34]"
+    },
+    {
+     "callee": "Sqrat_TableBase_SetValueInt_42E7D0",
+     "args": [
+      {
+       "raw": "v36",
+       "fn": null
+      },
+      {
+       "raw": "(int)\"_CharaPrio_Far_Layer_4\"",
+       "fn": null
+      },
+      {
+       "raw": "17",
+       "fn": null
+      }
+     ],
+     "ea": "0x8114ee",
+     "ecx": "[ebp+var_34]"
+    },
+    {
+     "callee": "Sqrat_TableBase_SetValueInt_42E7D0",
+     "args": [
+      {
+       "raw": "v36",
+       "fn": null
+      },
+      {
+       "raw": "(int)\"_CharaPrio_Far_Layer_5\"",
+       "fn": null
+      },
+      {
+       "raw": "18",
+       "fn": null
+      }
+     ],
+     "ea": "0x8114fd",
+     "ecx": "[ebp+var_34]"
+    },
+    {
+     "callee": "Sqrat_TableBase_SetValueInt_42E7D0",
+     "args": [
+      {
+       "raw": "v36",
+       "fn": null
+      },
+      {
+       "raw": "(int)\"_CharaPrio_Far_Layer_6\"",
+       "fn": null
+      },
+      {
+       "raw": "19",
+       "fn": null
+      }
+     ],
+     "ea": "0x81150c",
+     "ecx": "[ebp+var_34]"
+    },
+    {
+     "callee": "Sqrat_TableBase_SetValueInt_42E7D0",
+     "args": [
+      {
+       "raw": "v36",
+       "fn": null
+      },
+      {
+       "raw": "(int)\"_CharaPrio_Far_Layer_7\"",
+       "fn": null
+      },
+      {
+       "raw": "20",
+       "fn": null
+      }
+     ],
+     "ea": "0x81151b",
+     "ecx": "[ebp+var_34]"
+    },
+    {
+     "callee": "Sqrat_TableBase_SetValueInt_42E7D0",
+     "args": [
+      {
+       "raw": "v36",
+       "fn": null
+      },
+      {
+       "raw": "(int)\"_CharaPrio_Far_Layer_8\"",
+       "fn": null
+      },
+      {
+       "raw": "21",
+       "fn": null
+      }
+     ],
+     "ea": "0x81152a",
+     "ecx": "[ebp+var_34]"
+    },
+    {
+     "callee": "Sqrat_TableBase_SetValueInt_42E7D0",
+     "args": [
+      {
+       "raw": "v36",
+       "fn": null
+      },
+      {
+       "raw": "(int)\"_CharaPrio_Far_Layer_9\"",
+       "fn": null
+      },
+      {
+       "raw": "22",
+       "fn": null
+      }
+     ],
+     "ea": "0x811539",
+     "ecx": "[ebp+var_34]"
+    },
+    {
+     "callee": "Sqrat_TableBase_SetValueInt_42E7D0",
+     "args": [
+      {
+       "raw": "v36",
+       "fn": null
+      },
+      {
+       "raw": "(int)\"_CharaPrio_Parent_P1\"",
+       "fn": null
+      },
+      {
+       "raw": "23",
+       "fn": null
+      }
+     ],
+     "ea": "0x811548",
+     "ecx": "[ebp+var_34]"
+    },
+    {
+     "callee": "Sqrat_TableBase_SetValueInt_42E7D0",
+     "args": [
+      {
+       "raw": "v36",
+       "fn": null
+      },
+      {
+       "raw": "(int)\"_CharaPrio_Parent_M1\"",
+       "fn": null
+      },
+      {
+       "raw": "24",
+       "fn": null
+      }
+     ],
+     "ea": "0x811557",
+     "ecx": "[ebp+var_34]"
+    },
+    {
+     "callee": "Sqrat_TableBase_SetValueInt_42E7D0",
+     "args": [
+      {
+       "raw": "v36",
+       "fn": null
+      },
+      {
+       "raw": "(int)\"_CharaPrio_Parent_BG\"",
+       "fn": null
+      },
+      {
+       "raw": "25",
+       "fn": null
+      }
+     ],
+     "ea": "0x811566",
+     "ecx": "[ebp+var_34]"
+    },
+    {
+     "callee": "Sqrat_TableBase_SetValueInt_42E7D0",
+     "args": [
+      {
+       "raw": "v36",
+       "fn": null
+      },
+      {
+       "raw": "(int)\"_CharaPrio_Near_P1\"",
+       "fn": null
+      },
+      {
+       "raw": "26",
+       "fn": null
+      }
+     ],
+     "ea": "0x811575",
+     "ecx": "[ebp+var_34]"
+    },
+    {
+     "callee": "Sqrat_TableBase_SetValueInt_42E7D0",
+     "args": [
+      {
+       "raw": "v36",
+       "fn": null
+      },
+      {
+       "raw": "(int)\"_CharaPrio_GaugeCombo_P1\"",
+       "fn": null
+      },
+      {
+       "raw": "27",
+       "fn": null
+      }
+     ],
+     "ea": "0x811584",
+     "ecx": "[ebp+var_34]"
+    },
+    {
+     "callee": "Sqrat_TableBase_SetValueInt_42E7D0",
+     "args": [
+      {
+       "raw": "v36",
+       "fn": null
+      },
+      {
+       "raw": "(int)\"_CharaPrio_GaugeHP_P1\"",
+       "fn": null
+      },
+      {
+       "raw": "28",
+       "fn": null
+      }
+     ],
+     "ea": "0x811593",
+     "ecx": "[ebp+var_34]"
+    },
+    {
+     "callee": "Sqrat_TableBase_SetValueInt_42E7D0",
+     "args": [
+      {
+       "raw": "v36",
+       "fn": null
+      },
+      {
+       "raw": "(int)\"_CatchFlag_AtkStandGuard\"",
+       "fn": null
+      },
+      {
+       "raw": "1",
+       "fn": null
+      }
+     ],
+     "ea": "0x8115a2",
+     "ecx": "[ebp+var_34]"
+    },
+    {
+     "callee": "Sqrat_TableBase_SetValueInt_42E7D0",
+     "args": [
+      {
+       "raw": "v36",
+       "fn": null
+      },
+      {
+       "raw": "(int)\"_CatchFlag_AtkAirGuard\"",
+       "fn": null
+      },
+      {
+       "raw": "2",
+       "fn": null
+      }
+     ],
+     "ea": "0x8115b1",
+     "ecx": "[ebp+var_34]"
+    },
+    {
+     "callee": "Sqrat_TableBase_SetValueInt_42E7D0",
+     "args": [
+      {
+       "raw": "v36",
+       "fn": null
+      },
+      {
+       "raw": "(int)\"_CatchFlag_AtkCrouchGuard\"",
+       "fn": null
+      },
+      {
+       "raw": "4",
+       "fn": null
+      }
+     ],
+     "ea": "0x8115c0",
+     "ecx": "[ebp+var_34]"
+    },
+    {
+     "callee": "Sqrat_TableBase_SetValueInt_42E7D0",
+     "args": [
+      {
+       "raw": "v36",
+       "fn": null
+      },
+      {
+       "raw": "(int)\"_CatchFlag_AtkNoGuard\"",
+       "fn": null
+      },
+      {
+       "raw": "8",
+       "fn": null
+      }
+     ],
+     "ea": "0x8115cf",
+     "ecx": "[ebp+var_34]"
+    },
+    {
+     "callee": "Sqrat_TableBase_SetValueInt_42E7D0",
+     "args": [
+      {
+       "raw": "v36",
+       "fn": null
+      },
+      {
+       "raw": "(int)\"_CatchFlag_AtkNoGuardThrow\"",
+       "fn": null
+      },
+      {
+       "raw": "16",
+       "fn": null
+      }
+     ],
+     "ea": "0x8115de",
+     "ecx": "[ebp+var_34]"
+    },
+    {
+     "callee": "Sqrat_TableBase_SetValueInt_42E7D0",
+     "args": [
+      {
+       "raw": "v36",
+       "fn": null
+      },
+      {
+       "raw": "(int)\"_CatchFlag_StateStand\"",
+       "fn": null
+      },
+      {
+       "raw": "32",
+       "fn": null
+      }
+     ],
+     "ea": "0x8115ed",
+     "ecx": "[ebp+var_34]"
+    },
+    {
+     "callee": "Sqrat_TableBase_SetValueInt_42E7D0",
+     "args": [
+      {
+       "raw": "v36",
+       "fn": null
+      },
+      {
+       "raw": "(int)\"_CatchFlag_StateAir\"",
+       "fn": null
+      },
+      {
+       "raw": "64",
+       "fn": null
+      }
+     ],
+     "ea": "0x8115fc",
+     "ecx": "[ebp+var_34]"
+    },
+    {
+     "callee": "Sqrat_TableBase_SetValueInt_42E7D0",
+     "args": [
+      {
+       "raw": "v36",
+       "fn": null
+      },
+      {
+       "raw": "(int)\"_CatchFlag_StateCrouch\"",
+       "fn": null
+      },
+      {
+       "raw": "128",
+       "fn": null
+      }
+     ],
+     "ea": "0x81160e",
+     "ecx": "[ebp+var_34]"
+    },
+    {
+     "callee": "Sqrat_TableBase_SetValueInt_42E7D0",
+     "args": [
+      {
+       "raw": "v36",
+       "fn": null
+      },
+      {
+       "raw": "(int)\"_CatchFlag_AtkAllGuard\"",
+       "fn": null
+      },
+      {
+       "raw": "7",
+       "fn": null
+      }
+     ],
+     "ea": "0x81161d",
+     "ecx": "[ebp+var_34]"
+    },
+    {
+     "callee": "Sqrat_TableBase_SetValueInt_42E7D0",
+     "args": [
+      {
+       "raw": "v36",
+       "fn": null
+      },
+      {
+       "raw": "(int)\"_CatchSuccess_HitSub\"",
+       "fn": null
+      },
+      {
+       "raw": "1",
+       "fn": null
+      }
+     ],
+     "ea": "0x81162c",
+     "ecx": "[ebp+var_34]"
+    },
+    {
+     "callee": "Sqrat_TableBase_SetValueInt_42E7D0",
+     "args": [
+      {
+       "raw": "v36",
+       "fn": null
+      },
+      {
+       "raw": "(int)\"_CatchSuccess_HitSub_Enemy\"",
+       "fn": null
+      },
+      {
+       "raw": "2",
+       "fn": null
+      }
+     ],
+     "ea": "0x81163b",
+     "ecx": "[ebp+var_34]"
+    },
+    {
+     "callee": "Sqrat_TableBase_SetValueInt_42E7D0",
+     "args": [
+      {
+       "raw": "v36",
+       "fn": null
+      },
+      {
+       "raw": "(int)\"_CatchSuccess_HitSub_None\"",
+       "fn": null
+      },
+      {
+       "raw": "4",
+       "fn": null
+      }
+     ],
+     "ea": "0x81164a",
+     "ecx": "[ebp+var_34]"
+    },
+    {
+     "callee": "Sqrat_TableBase_SetValueInt_42E7D0",
+     "args": [
+      {
+       "raw": "v36",
+       "fn": null
+      },
+      {
+       "raw": "(int)\"_CatchSuccess_FlagHit_Enemy\"",
+       "fn": null
+      },
+      {
+       "raw": "8",
+       "fn": null
+      }
+     ],
+     "ea": "0x811659",
+     "ecx": "[ebp+var_34]"
+    },
+    {
+     "callee": "Sqrat_TableBase_SetValueInt_42E7D0",
+     "args": [
+      {
+       "raw": "v36",
+       "fn": null
+      },
+      {
+       "raw": "(int)\"_CharaMoveMode_Enable\"",
+       "fn": null
+      },
+      {
+       "raw": "0",
+       "fn": null
+      }
+     ],
+     "ea": "0x811668",
+     "ecx": "[ebp+var_34]"
+    },
+    {
+     "callee": "Sqrat_TableBase_SetValueInt_42E7D0",
+     "args": [
+      {
+       "raw": "v36",
+       "fn": null
+      },
+      {
+       "raw": "(int)\"_CharaMoveMode_Limit\"",
+       "fn": null
+      },
+      {
+       "raw": "1",
+       "fn": null
+      }
+     ],
+     "ea": "0x811677",
+     "ecx": "[ebp+var_34]"
+    },
+    {
+     "callee": "Sqrat_TableBase_SetValueInt_42E7D0",
+     "args": [
+      {
+       "raw": "v36",
+       "fn": null
+      },
+      {
+       "raw": "(int)\"_CharaMoveMode_Disable\"",
+       "fn": null
+      },
+      {
+       "raw": "2",
+       "fn": null
+      }
+     ],
+     "ea": "0x811686",
+     "ecx": "[ebp+var_34]"
+    },
+    {
+     "callee": "Sqrat_TableBase_SetValueInt_42E7D0",
+     "args": [
+      {
+       "raw": "v36",
+       "fn": null
+      },
+      {
+       "raw": "(int)\"_PCGaugeType_Eltnum\"",
+       "fn": null
+      },
+      {
+       "raw": "2",
+       "fn": null
+      }
+     ],
+     "ea": "0x811695",
+     "ecx": "[ebp+var_34]"
+    },
+    {
+     "callee": "Sqrat_TableBase_SetValueInt_42E7D0",
+     "args": [
+      {
+       "raw": "v36",
+       "fn": null
+      },
+      {
+       "raw": "(int)\"_MvStFlag_CounterAtk\"",
+       "fn": null
+      },
+      {
+       "raw": "1",
+       "fn": null
+      }
+     ],
+     "ea": "0x8116a4",
+     "ecx": "[ebp+var_34]"
+    },
+    {
+     "callee": "Sqrat_TableBase_SetValueInt_42E7D0",
+     "args": [
+      {
+       "raw": "v36",
+       "fn": null
+      },
+      {
+       "raw": "(int)\"_MvStFlag_CounterDef\"",
+       "fn": null
+      },
+      {
+       "raw": "2",
+       "fn": null
+      }
+     ],
+     "ea": "0x8116b3",
+     "ecx": "[ebp+var_34]"
+    },
+    {
+     "callee": "Sqrat_TableBase_SetValueInt_42E7D0",
+     "args": [
+      {
+       "raw": "v36",
+       "fn": null
+      },
+      {
+       "raw": "(int)\"_MvStFlag_DangerHPAtk\"",
+       "fn": null
+      },
+      {
+       "raw": "8",
+       "fn": null
+      }
+     ],
+     "ea": "0x8116c2",
+     "ecx": "[ebp+var_34]"
+    },
+    {
+     "callee": "Sqrat_TableBase_SetValueInt_42E7D0",
+     "args": [
+      {
+       "raw": "v36",
+       "fn": null
+      },
+      {
+       "raw": "(int)\"_MvStFlag_DangerHPDef\"",
+       "fn": null
+      },
+      {
+       "raw": "4",
+       "fn": null
+      }
+     ],
+     "ea": "0x8116d1",
+     "ecx": "[ebp+var_34]"
+    },
+    {
+     "callee": "Sqrat_TableBase_SetValueInt_42E7D0",
+     "args": [
+      {
+       "raw": "v36",
+       "fn": null
+      },
+      {
+       "raw": "(int)\"_HitCheckFlag_Head\"",
+       "fn": null
+      },
+      {
+       "raw": "1",
+       "fn": null
+      }
+     ],
+     "ea": "0x8116e0",
+     "ecx": "[ebp+var_34]"
+    },
+    {
+     "callee": "Sqrat_TableBase_SetValueInt_42E7D0",
+     "args": [
+      {
+       "raw": "v36",
+       "fn": null
+      },
+      {
+       "raw": "(int)\"_HitCheckFlag_Body\"",
+       "fn": null
+      },
+      {
+       "raw": "2",
+       "fn": null
+      }
+     ],
+     "ea": "0x8116ef",
+     "ecx": "[ebp+var_34]"
+    },
+    {
+     "callee": "Sqrat_TableBase_SetValueInt_42E7D0",
+     "args": [
+      {
+       "raw": "v36",
+       "fn": null
+      },
+      {
+       "raw": "(int)\"_HitCheckFlag_Legs\"",
+       "fn": null
+      },
+      {
+       "raw": "4",
+       "fn": null
+      }
+     ],
+     "ea": "0x8116fe",
+     "ecx": "[ebp+var_34]"
+    },
+    {
+     "callee": "Sqrat_TableBase_SetValueInt_42E7D0",
+     "args": [
+      {
+       "raw": "v36",
+       "fn": null
+      },
+      {
+       "raw": "(int)\"_HitCheckFlag_FireBall\"",
+       "fn": null
+      },
+      {
+       "raw": "8",
+       "fn": null
+      }
+     ],
+     "ea": "0x81170d",
+     "ecx": "[ebp+var_34]"
+    },
+    {
+     "callee": "Sqrat_TableBase_SetValueInt_42E7D0",
+     "args": [
+      {
+       "raw": "v36",
+       "fn": null
+      },
+      {
+       "raw": "(int)\"_HitCheckFlag_Throw\"",
+       "fn": null
+      },
+      {
+       "raw": "16",
+       "fn": null
+      }
+     ],
+     "ea": "0x81171c",
+     "ecx": "[ebp+var_34]"
+    },
+    {
+     "callee": "Sqrat_TableBase_SetValueInt_42E7D0",
+     "args": [
+      {
+       "raw": "v36",
+       "fn": null
+      },
+      {
+       "raw": "(int)\"_CaptureHitFlag_Parent\"",
+       "fn": null
+      },
+      {
+       "raw": "1",
+       "fn": null
+      }
+     ],
+     "ea": "0x81172b",
+     "ecx": "[ebp+var_34]"
+    },
+    {
+     "callee": "Sqrat_TableBase_SetValueInt_42E7D0",
+     "args": [
+      {
+       "raw": "v36",
+       "fn": null
+      },
+      {
+       "raw": "(int)\"_eAchievement_SHA\"",
+       "fn": null
+      },
+      {
+       "raw": "0",
+       "fn": null
+      }
+     ],
+     "ea": "0x81173a",
+     "ecx": "[ebp+var_34]"
+    },
+    {
+     "callee": "Sqrat_TableBase_SetValueInt_42E7D0",
+     "args": [
+      {
+       "raw": "v36",
+       "fn": null
+      },
+      {
+       "raw": "(int)\"_eAchievement_ASU\"",
+       "fn": null
+      },
+      {
+       "raw": "1",
+       "fn": null
+      }
+     ],
+     "ea": "0x811749",
+     "ecx": "[ebp+var_34]"
+    },
+    {
+     "callee": "Sqrat_TableBase_SetValueInt_42E7D0",
+     "args": [
+      {
+       "raw": "v36",
+       "fn": null
+      },
+      {
+       "raw": "(int)\"_eAchievement_MIS\"",
+       "fn": null
+      },
+      {
+       "raw": "2",
+       "fn": null
+      }
+     ],
+     "ea": "0x811758",
+     "ecx": "[ebp+var_34]"
+    },
+    {
+     "callee": "Sqrat_TableBase_SetValueInt_42E7D0",
+     "args": [
+      {
+       "raw": "v36",
+       "fn": null
+      },
+      {
+       "raw": "(int)\"_eAchievement_KRN\"",
+       "fn": null
+      },
+      {
+       "raw": "3",
+       "fn": null
+      }
+     ],
+     "ea": "0x811767",
+     "ecx": "[ebp+var_34]"
+    },
+    {
+     "callee": "Sqrat_TableBase_SetValueInt_42E7D0",
+     "args": [
+      {
+       "raw": "v36",
+       "fn": null
+      },
+      {
+       "raw": "(int)\"_eAchievement_HIW\"",
+       "fn": null
+      },
+      {
+       "raw": "4",
+       "fn": null
+      }
+     ],
+     "ea": "0x811776",
+     "ecx": "[ebp+var_34]"
+    },
+    {
+     "callee": "Sqrat_TableBase_SetValueInt_42E7D0",
+     "args": [
+      {
+       "raw": "v36",
+       "fn": null
+      },
+      {
+       "raw": "(int)\"_eAchievement_KUR\"",
+       "fn": null
+      },
+      {
+       "raw": "5",
+       "fn": null
+      }
+     ],
+     "ea": "0x811785",
+     "ecx": "[ebp+var_34]"
+    },
+    {
+     "callee": "Sqrat_TableBase_SetValueInt_42E7D0",
+     "args": [
+      {
+       "raw": "v36",
+       "fn": null
+      },
+      {
+       "raw": "(int)\"_eAchievement_TMK\"",
+       "fn": null
+      },
+      {
+       "raw": "6",
+       "fn": null
+      }
+     ],
+     "ea": "0x811794",
+     "ecx": "[ebp+var_34]"
+    },
+    {
+     "callee": "Sqrat_TableBase_SetValueInt_42E7D0",
+     "args": [
+      {
+       "raw": "v36",
+       "fn": null
+      },
+      {
+       "raw": "(int)\"_eAchievement_TGR\"",
+       "fn": null
+      },
+      {
+       "raw": "7",
+       "fn": null
+      }
+     ],
+     "ea": "0x8117a3",
+     "ecx": "[ebp+var_34]"
+    },
+    {
+     "callee": "Sqrat_TableBase_SetValueInt_42E7D0",
+     "args": [
+      {
+       "raw": "v36",
+       "fn": null
+      },
+      {
+       "raw": "(int)\"_eAchievement_SBM\"",
+       "fn": null
+      },
+      {
+       "raw": "8",
+       "fn": null
+      }
+     ],
+     "ea": "0x8117b2",
+     "ecx": "[ebp+var_34]"
+    },
+    {
+     "callee": "Sqrat_TableBase_SetValueInt_42E7D0",
+     "args": [
+      {
+       "raw": "v36",
+       "fn": null
+      },
+      {
+       "raw": "(int)\"_eAchievement_STM\"",
+       "fn": null
+      },
+      {
+       "raw": "9",
+       "fn": null
+      }
+     ],
+     "ea": "0x8117c1",
+     "ecx": "[ebp+var_34]"
+    },
+    {
+     "callee": "Sqrat_TableBase_SetValueInt_42E7D0",
+     "args": [
+      {
+       "raw": "v36",
+       "fn": null
+      },
+      {
+       "raw": "(int)\"_eAchievement_EMI\"",
+       "fn": null
+      },
+      {
+       "raw": "10",
+       "fn": null
+      }
+     ],
+     "ea": "0x8117d0",
+     "ecx": "[ebp+var_34]"
+    },
+    {
+     "callee": "Sqrat_TableBase_SetValueInt_42E7D0",
+     "args": [
+      {
+       "raw": "v36",
+       "fn": null
+      },
+      {
+       "raw": "(int)\"_eAchievement_QEN\"",
+       "fn": null
+      },
+      {
+       "raw": "11",
+       "fn": null
+      }
+     ],
+     "ea": "0x8117df",
+     "ecx": "[ebp+var_34]"
+    },
+    {
+     "callee": "Sqrat_TableBase_SetValueInt_42E7D0",
+     "args": [
+      {
+       "raw": "v36",
+       "fn": null
+      },
+      {
+       "raw": "(int)\"_eAchievement_ONI\"",
+       "fn": null
+      },
+      {
+       "raw": "12",
+       "fn": null
+      }
+     ],
+     "ea": "0x8117ee",
+     "ecx": "[ebp+var_34]"
+    },
+    {
+     "callee": "Sqrat_TableBase_SetValueInt_42E7D0",
+     "args": [
+      {
+       "raw": "v36",
+       "fn": null
+      },
+      {
+       "raw": "(int)\"_eAchievement_KRK\"",
+       "fn": null
+      },
+      {
+       "raw": "13",
+       "fn": null
+      }
+     ],
+     "ea": "0x8117fd",
+     "ecx": "[ebp+var_34]"
+    },
+    {
+     "callee": "Sqrat_TableBase_SetValueInt_42E7D0",
+     "args": [
+      {
+       "raw": "v36",
+       "fn": null
+      },
+      {
+       "raw": "(int)\"_eAchievement_YAK\"",
+       "fn": null
+      },
+      {
+       "raw": "14",
+       "fn": null
+      }
+     ],
+     "ea": "0x81180c",
+     "ecx": "[ebp+var_34]"
+    },
+    {
+     "callee": "Sqrat_TableBase_SetValueInt_42E7D0",
+     "args": [
+      {
+       "raw": "v36",
+       "fn": null
+      },
+      {
+       "raw": "(int)\"_eAchievement_SLV\"",
+       "fn": null
+      },
+      {
+       "raw": "15",
+       "fn": null
+      }
+     ],
+     "ea": "0x81181b",
+     "ecx": "[ebp+var_34]"
+    },
+    {
+     "callee": "Sqrat_TableBase_SetValueInt_42E7D0",
+     "args": [
+      {
+       "raw": "v36",
+       "fn": null
+      },
+      {
+       "raw": "(int)\"_eAchievement_DENDENKIN_MAIN\"",
+       "fn": null
+      },
+      {
+       "raw": "17",
+       "fn": null
+      }
+     ],
+     "ea": "0x81182a",
+     "ecx": "[ebp+var_34]"
+    },
+    {
+     "callee": "Sqrat_TableBase_SetValueInt_42E7D0",
+     "args": [
+      {
+       "raw": "v36",
+       "fn": null
+      },
+      {
+       "raw": "(int)\"_eAchievement_DENDENKIN_SUPPORT\"",
+       "fn": null
+      },
+      {
+       "raw": "18",
+       "fn": null
+      }
+     ],
+     "ea": "0x811839",
+     "ecx": "[ebp+var_34]"
+    },
+    {
+     "callee": "Sqrat_TableBase_SetValueInt_42E7D0",
+     "args": [
+      {
+       "raw": "v36",
+       "fn": null
+      },
+      {
+       "raw": "(int)\"_eAchievement_DENDENKIN_BLAST\"",
+       "fn": null
+      },
+      {
+       "raw": "19",
+       "fn": null
+      }
+     ],
+     "ea": "0x811848",
+     "ecx": "[ebp+var_34]"
+    },
+    {
+     "callee": "Sqrat_TableBase_SetValueInt_42E7D0",
+     "args": [
+      {
+       "raw": "v36",
+       "fn": null
+      },
+      {
+       "raw": "(int)\"_eAchievement_BLUE_KIRIFUDA\"",
+       "fn": null
+      },
+      {
+       "raw": "20",
+       "fn": null
+      }
+     ],
+     "ea": "0x811857",
+     "ecx": "[ebp+var_34]"
+    },
+    {
      "callee": "Sqrat_RootTable_BindTable",
      "args": [
       {
@@ -4874,8 +7811,7 @@
       },
       {
        "raw": "(int)\"BMvConst\"",
-       "fn": null,
-       "str": "BMvConst"
+       "fn": null
       },
       {
        "raw": "(int)v36",
@@ -4895,8 +7831,7 @@
       },
       {
        "raw": "(int)\"StdCall\"",
-       "fn": null,
-       "str": "StdCall"
+       "fn": null
       },
       {
        "raw": "(int)sub_44DA20",
@@ -4915,8 +7850,7 @@
       },
       {
        "raw": "(int)\"BMvIf\"",
-       "fn": null,
-       "str": "BMvIf"
+       "fn": null
       },
       {
        "raw": "(int)v37",
@@ -4997,8 +7931,7 @@
       },
       {
        "raw": "(int)\"BSound\"",
-       "fn": null,
-       "str": "BSound"
+       "fn": null
       },
       {
        "raw": "(int)v8",
@@ -5010,6 +7943,63 @@
      "ecx": "[ebp+var_68]"
     },
     {
+     "callee": "Sqrat_TableBase_SetValueInt_42E7D0",
+     "args": [
+      {
+       "raw": "v9",
+       "fn": null
+      },
+      {
+       "raw": "(int)\"_SeType_All\"",
+       "fn": null
+      },
+      {
+       "raw": "-2",
+       "fn": null
+      }
+     ],
+     "ea": "0x811ab7",
+     "ecx": "[ebp+var_20]"
+    },
+    {
+     "callee": "Sqrat_TableBase_SetValueInt_42E7D0",
+     "args": [
+      {
+       "raw": "v9",
+       "fn": null
+      },
+      {
+       "raw": "(int)\"_SeType_Normal\"",
+       "fn": null
+      },
+      {
+       "raw": "-1",
+       "fn": null
+      }
+     ],
+     "ea": "0x811ac6",
+     "ecx": "[ebp+var_20]"
+    },
+    {
+     "callee": "Sqrat_TableBase_SetValueInt_42E7D0",
+     "args": [
+      {
+       "raw": "v9",
+       "fn": null
+      },
+      {
+       "raw": "(int)\"_SeType_Player\"",
+       "fn": null
+      },
+      {
+       "raw": "0",
+       "fn": null
+      }
+     ],
+     "ea": "0x811ad5",
+     "ecx": "[ebp+var_20]"
+    },
+    {
      "callee": "Sqrat_RootTable_BindTable",
      "args": [
       {
@@ -5018,8 +8008,7 @@
       },
       {
        "raw": "(int)\"BMvSoundConst\"",
-       "fn": null,
-       "str": "BMvSoundConst"
+       "fn": null
       },
       {
        "raw": "(int)v9",
@@ -5142,8 +8131,7 @@
       },
       {
        "raw": "(int)\"ProcTimer\"",
-       "fn": null,
-       "str": "ProcTimer"
+       "fn": null
       },
       {
        "raw": "(int)v6",
@@ -5163,8 +8151,7 @@
       },
       {
        "raw": "(int)\"BMvDeb\"",
-       "fn": null,
-       "str": "BMvDeb"
+       "fn": null
       },
       {
        "raw": "(int)v7",
@@ -5287,8 +8274,7 @@
       },
       {
        "raw": "(int)\"CCheckRect\"",
-       "fn": null,
-       "str": "CCheckRect"
+       "fn": null
       },
       {
        "raw": "(int)v4",
@@ -5397,8 +8383,7 @@
       },
       {
        "raw": "(int)\"StdCall\"",
-       "fn": null,
-       "str": "StdCall"
+       "fn": null
       },
       {
        "raw": "(int)sub_440120",
@@ -5417,8 +8402,7 @@
       },
       {
        "raw": "(int)\"ThrowRelease\"",
-       "fn": null,
-       "str": "ThrowRelease"
+       "fn": null
       },
       {
        "raw": "(int)sub_440B10",
@@ -5437,8 +8421,7 @@
       },
       {
        "raw": "(int)\"ThrowParam\"",
-       "fn": null,
-       "str": "ThrowParam"
+       "fn": null
       },
       {
        "raw": "(int)sub_4403B0",
@@ -5485,8 +8468,7 @@
       },
       {
        "raw": "(int)\"ThrowChara_Transfer\"",
-       "fn": null,
-       "str": "ThrowChara_Transfer"
+       "fn": null
       },
       {
        "raw": "(int)sub_4409E0",
@@ -5505,8 +8487,7 @@
       },
       {
        "raw": "(int)\"CapturePlayer\"",
-       "fn": null,
-       "str": "CapturePlayer"
+       "fn": null
       },
       {
        "raw": "(int)sub_440D50",
@@ -5539,8 +8520,7 @@
       },
       {
        "raw": "(int)\"GetPatternNum\"",
-       "fn": null,
-       "str": "GetPatternNum"
+       "fn": null
       },
       {
        "raw": "(int)sub_441770",
@@ -5573,8 +8553,7 @@
       },
       {
        "raw": "(int)\"SetObjectFlags\"",
-       "fn": null,
-       "str": "SetObjectFlags"
+       "fn": null
       },
       {
        "raw": "(int)sub_441880",
@@ -5607,8 +8586,7 @@
       },
       {
        "raw": "(int)\"EraseObjectFlags\"",
-       "fn": null,
-       "str": "EraseObjectFlags"
+       "fn": null
       },
       {
        "raw": "(int)sub_4418F0",
@@ -5627,8 +8605,7 @@
       },
       {
        "raw": "(int)\"ObjProcFlags_Set\"",
-       "fn": null,
-       "str": "ObjProcFlags_Set"
+       "fn": null
       },
       {
        "raw": "(int)sub_441960",
@@ -5647,8 +8624,7 @@
       },
       {
        "raw": "(int)\"ObjProcFlags_Erase\"",
-       "fn": null,
-       "str": "ObjProcFlags_Erase"
+       "fn": null
       },
       {
        "raw": "(int)sub_4419E0",
@@ -5667,8 +8643,7 @@
       },
       {
        "raw": "(int)\"ObjType_Set\"",
-       "fn": null,
-       "str": "ObjType_Set"
+       "fn": null
       },
       {
        "raw": "(int)sub_441A60",
@@ -5687,8 +8662,7 @@
       },
       {
        "raw": "(int)\"SetCamera_Quake\"",
-       "fn": null,
-       "str": "SetCamera_Quake"
+       "fn": null
       },
       {
        "raw": "(int)sub_441D60",
@@ -5707,8 +8681,7 @@
       },
       {
        "raw": "(int)\"SetCamera_Focus\"",
-       "fn": null,
-       "str": "SetCamera_Focus"
+       "fn": null
       },
       {
        "raw": "(int)sub_441E00",
@@ -5839,8 +8812,7 @@
       },
       {
        "raw": "(int)\"SetStopTime\"",
-       "fn": null,
-       "str": "SetStopTime"
+       "fn": null
       },
       {
        "raw": "(int)sub_442260",
@@ -5929,8 +8901,7 @@
       },
       {
        "raw": "(int)\"SetHpGauge\"",
-       "fn": null,
-       "str": "SetHpGauge"
+       "fn": null
       },
       {
        "raw": "(int)dfci_sq_native_sethpgauge",
@@ -5949,8 +8920,7 @@
       },
       {
        "raw": "(int)\"SetSpGauge\"",
-       "fn": null,
-       "str": "SetSpGauge"
+       "fn": null
       },
       {
        "raw": "(int)sub_442810",
@@ -5969,8 +8939,7 @@
       },
       {
        "raw": "(int)\"SpGauge_SetLimit\"",
-       "fn": null,
-       "str": "SpGauge_SetLimit"
+       "fn": null
       },
       {
        "raw": "(int)sub_442900",
@@ -5989,8 +8958,7 @@
       },
       {
        "raw": "(int)\"SpGauge_SetLimitCombo\"",
-       "fn": null,
-       "str": "SpGauge_SetLimitCombo"
+       "fn": null
       },
       {
        "raw": "(int)sub_442970",
@@ -6135,8 +9103,7 @@
       },
       {
        "raw": "(int)\"SetBoundSt\"",
-       "fn": null,
-       "str": "SetBoundSt"
+       "fn": null
       },
       {
        "raw": "(int)sub_440E40",
@@ -6225,8 +9192,7 @@
       },
       {
        "raw": "(int)\"SetPlayerTimer\"",
-       "fn": null,
-       "str": "SetPlayerTimer"
+       "fn": null
       },
       {
        "raw": "(int)sub_4435A0",
@@ -6343,8 +9309,7 @@
       },
       {
        "raw": "(int)\"Liberate_Calc\"",
-       "fn": null,
-       "str": "Liberate_Calc"
+       "fn": null
       },
       {
        "raw": "(int)sub_4439D0",
@@ -6377,8 +9342,7 @@
       },
       {
        "raw": "(int)\"GRD_UseStock\"",
-       "fn": null,
-       "str": "GRD_UseStock"
+       "fn": null
       },
       {
        "raw": "(int)sub_443A80",
@@ -6397,8 +9361,7 @@
       },
       {
        "raw": "(int)\"GRD_CheckStock\"",
-       "fn": null,
-       "str": "GRD_CheckStock"
+       "fn": null
       },
       {
        "raw": "(int)sub_443A60",
@@ -6487,8 +9450,7 @@
       },
       {
        "raw": "(int)\"GRD_SetConvertBreak\"",
-       "fn": null,
-       "str": "GRD_SetConvertBreak"
+       "fn": null
       },
       {
        "raw": "(int)sub_443A60",
@@ -6521,8 +9483,7 @@
       },
       {
        "raw": "(int)\"GRD_AddValue\"",
-       "fn": null,
-       "str": "GRD_AddValue"
+       "fn": null
       },
       {
        "raw": "(int)sub_443A80",
@@ -6541,8 +9502,7 @@
       },
       {
        "raw": "(int)\"GuardSP_Set\"",
-       "fn": null,
-       "str": "GuardSP_Set"
+       "fn": null
       },
       {
        "raw": "(int)sub_443C60",
@@ -6603,8 +9563,7 @@
       },
       {
        "raw": "(int)\"FadeProc_Set\"",
-       "fn": null,
-       "str": "FadeProc_Set"
+       "fn": null
       },
       {
        "raw": "(int)dfci_script_cmd_stage_flash",
@@ -6623,8 +9582,7 @@
       },
       {
        "raw": "(int)\"FadeProc_Erase\"",
-       "fn": null,
-       "str": "FadeProc_Erase"
+       "fn": null
       },
       {
        "raw": "(int)dfci_script_cmd_stage_flash_type",
@@ -6643,8 +9601,7 @@
       },
       {
        "raw": "(int)\"CutInProc_Set\"",
-       "fn": null,
-       "str": "CutInProc_Set"
+       "fn": null
       },
       {
        "raw": "(int)dfci_script_cmd_stage_flash_time",
@@ -6663,8 +9620,7 @@
       },
       {
        "raw": "(int)\"CutInProc_Erase\"",
-       "fn": null,
-       "str": "CutInProc_Erase"
+       "fn": null
       },
       {
        "raw": "(int)sub_444320",
@@ -6683,8 +9639,7 @@
       },
       {
        "raw": "(int)\"SetCharaFlash\"",
-       "fn": null,
-       "str": "SetCharaFlash"
+       "fn": null
       },
       {
        "raw": "(int)sub_444360",
@@ -6703,8 +9658,7 @@
       },
       {
        "raw": "(int)\"SetCharaColor\"",
-       "fn": null,
-       "str": "SetCharaColor"
+       "fn": null
       },
       {
        "raw": "(int)sub_444430",
@@ -6723,8 +9677,7 @@
       },
       {
        "raw": "(int)\"SetStageCharaLight\"",
-       "fn": null,
-       "str": "SetStageCharaLight"
+       "fn": null
       },
       {
        "raw": "(int)sub_444500",
@@ -6743,8 +9696,7 @@
       },
       {
        "raw": "(int)\"SetCharaDrawType\"",
-       "fn": null,
-       "str": "SetCharaDrawType"
+       "fn": null
       },
       {
        "raw": "(int)sub_444560",
@@ -6763,8 +9715,7 @@
       },
       {
        "raw": "(int)\"PcAfterImage_Set\"",
-       "fn": null,
-       "str": "PcAfterImage_Set"
+       "fn": null
       },
       {
        "raw": "(int)sub_4445C0",
@@ -6797,8 +9748,7 @@
       },
       {
        "raw": "(int)\"PcAuraEffect_Set\"",
-       "fn": null,
-       "str": "PcAuraEffect_Set"
+       "fn": null
       },
       {
        "raw": "(int)sub_444730",
@@ -6831,8 +9781,7 @@
       },
       {
        "raw": "(int)\"Slowmotion_Set\"",
-       "fn": null,
-       "str": "Slowmotion_Set"
+       "fn": null
       },
       {
        "raw": "(int)sub_444AB0",
@@ -6851,8 +9800,7 @@
       },
       {
        "raw": "(int)\"LinePrim_Set\"",
-       "fn": null,
-       "str": "LinePrim_Set"
+       "fn": null
       },
       {
        "raw": "(int)dfci_btlsq_effobject_load",
@@ -6871,8 +9819,7 @@
       },
       {
        "raw": "(int)\"LinePrim_SetTypeParam\"",
-       "fn": null,
-       "str": "LinePrim_SetTypeParam"
+       "fn": null
       },
       {
        "raw": "(int)sub_444E80",
@@ -6891,8 +9838,7 @@
       },
       {
        "raw": "(int)\"Cockpit_SetView\"",
-       "fn": null,
-       "str": "Cockpit_SetView"
+       "fn": null
       },
       {
        "raw": "(int)sub_445090",
@@ -6925,8 +9871,7 @@
       },
       {
        "raw": "(int)\"ComboView_Set\"",
-       "fn": null,
-       "str": "ComboView_Set"
+       "fn": null
       },
       {
        "raw": "(int)sub_445170",
@@ -7239,8 +10184,7 @@
       },
       {
        "raw": "(int)\"CPointStatus\"",
-       "fn": null,
-       "str": "CPointStatus"
+       "fn": null
       },
       {
        "raw": "(int)v9",
@@ -7260,8 +10204,7 @@
       },
       {
        "raw": "(int)\"BMvEff\"",
-       "fn": null,
-       "str": "BMvEff"
+       "fn": null
       },
       {
        "raw": "(int)v10",
@@ -7273,6 +10216,1716 @@
      "ecx": "[ebp+var_80]"
     },
     {
+     "callee": "Sqrat_TableBase_SetValueInt_42E7D0",
+     "args": [
+      {
+       "raw": "v11",
+       "fn": null
+      },
+      {
+       "raw": "(int)\"_ObjFlags_ParentMove\"",
+       "fn": null
+      },
+      {
+       "raw": "4",
+       "fn": null
+      }
+     ],
+     "ea": "0x813141",
+     "ecx": "[ebp+var_20]"
+    },
+    {
+     "callee": "Sqrat_TableBase_SetValueInt_42E7D0",
+     "args": [
+      {
+       "raw": "v11",
+       "fn": null
+      },
+      {
+       "raw": "(int)\"_ObjFlags_EraseParentDamage\"",
+       "fn": null
+      },
+      {
+       "raw": "1",
+       "fn": null
+      }
+     ],
+     "ea": "0x813150",
+     "ecx": "[ebp+var_20]"
+    },
+    {
+     "callee": "Sqrat_TableBase_SetValueInt_42E7D0",
+     "args": [
+      {
+       "raw": "v11",
+       "fn": null
+      },
+      {
+       "raw": "(int)\"_ObjFlags_NoRender\"",
+       "fn": null
+      },
+      {
+       "raw": "0",
+       "fn": null
+      }
+     ],
+     "ea": "0x813162",
+     "ecx": "[ebp+var_20]"
+    },
+    {
+     "callee": "Sqrat_TableBase_SetValueInt_42E7D0",
+     "args": [
+      {
+       "raw": "v11",
+       "fn": null
+      },
+      {
+       "raw": "(int)\"_ObjFlags_NoRenderBlackOut\"",
+       "fn": null
+      },
+      {
+       "raw": "0",
+       "fn": null
+      }
+     ],
+     "ea": "0x813174",
+     "ecx": "[ebp+var_20]"
+    },
+    {
+     "callee": "Sqrat_TableBase_SetValueInt_42E7D0",
+     "args": [
+      {
+       "raw": "v11",
+       "fn": null
+      },
+      {
+       "raw": "(int)\"_ObjFlags_NoRenderOrder\"",
+       "fn": null
+      },
+      {
+       "raw": "0",
+       "fn": null
+      }
+     ],
+     "ea": "0x813186",
+     "ecx": "[ebp+var_20]"
+    },
+    {
+     "callee": "Sqrat_TableBase_SetValueInt_42E7D0",
+     "args": [
+      {
+       "raw": "v11",
+       "fn": null
+      },
+      {
+       "raw": "(int)\"_ObjFlags_NoRenderOrderPlus\"",
+       "fn": null
+      },
+      {
+       "raw": "0",
+       "fn": null
+      }
+     ],
+     "ea": "0x813198",
+     "ecx": "[ebp+var_20]"
+    },
+    {
+     "callee": "Sqrat_TableBase_SetValueInt_42E7D0",
+     "args": [
+      {
+       "raw": "v11",
+       "fn": null
+      },
+      {
+       "raw": "(int)\"_ObjFlags_EraseParentPatChange\"",
+       "fn": null
+      },
+      {
+       "raw": "32",
+       "fn": null
+      }
+     ],
+     "ea": "0x8131a7",
+     "ecx": "[ebp+var_20]"
+    },
+    {
+     "callee": "Sqrat_TableBase_SetValueInt_42E7D0",
+     "args": [
+      {
+       "raw": "v11",
+       "fn": null
+      },
+      {
+       "raw": "(int)\"_ObjFlags_PatChangeNoLanding\"",
+       "fn": null
+      },
+      {
+       "raw": "0",
+       "fn": null
+      }
+     ],
+     "ea": "0x8131b9",
+     "ecx": "[ebp+var_20]"
+    },
+    {
+     "callee": "Sqrat_TableBase_SetValueInt_42E7D0",
+     "args": [
+      {
+       "raw": "v11",
+       "fn": null
+      },
+      {
+       "raw": "(int)\"_ObjFlags_MoveTimeStopAll\"",
+       "fn": null
+      },
+      {
+       "raw": "0",
+       "fn": null
+      }
+     ],
+     "ea": "0x8131cb",
+     "ecx": "[ebp+var_20]"
+    },
+    {
+     "callee": "Sqrat_TableBase_SetValueInt_42E7D0",
+     "args": [
+      {
+       "raw": "v11",
+       "fn": null
+      },
+      {
+       "raw": "(int)\"_ObjFlags_ParentMuki\"",
+       "fn": null
+      },
+      {
+       "raw": "0",
+       "fn": null
+      }
+     ],
+     "ea": "0x8131dd",
+     "ecx": "[ebp+var_20]"
+    },
+    {
+     "callee": "Sqrat_TableBase_SetValueInt_42E7D0",
+     "args": [
+      {
+       "raw": "v11",
+       "fn": null
+      },
+      {
+       "raw": "(int)\"_ObjFlags_MukiXPosMove\"",
+       "fn": null
+      },
+      {
+       "raw": "0",
+       "fn": null
+      }
+     ],
+     "ea": "0x8131ef",
+     "ecx": "[ebp+var_20]"
+    },
+    {
+     "callee": "Sqrat_TableBase_SetValueInt_42E7D0",
+     "args": [
+      {
+       "raw": "v11",
+       "fn": null
+      },
+      {
+       "raw": "(int)\"_ObjFlags_RenderShadow\"",
+       "fn": null
+      },
+      {
+       "raw": "0",
+       "fn": null
+      }
+     ],
+     "ea": "0x813201",
+     "ecx": "[ebp+var_20]"
+    },
+    {
+     "callee": "Sqrat_TableBase_SetValueInt_42E7D0",
+     "args": [
+      {
+       "raw": "v11",
+       "fn": null
+      },
+      {
+       "raw": "(int)\"_ObjFlags_FromParentStop\"",
+       "fn": null
+      },
+      {
+       "raw": "8",
+       "fn": null
+      }
+     ],
+     "ea": "0x813210",
+     "ecx": "[ebp+var_20]"
+    },
+    {
+     "callee": "Sqrat_TableBase_SetValueInt_42E7D0",
+     "args": [
+      {
+       "raw": "v11",
+       "fn": null
+      },
+      {
+       "raw": "(int)\"_ObjFlags_ToParentStop\"",
+       "fn": null
+      },
+      {
+       "raw": "0",
+       "fn": null
+      }
+     ],
+     "ea": "0x813222",
+     "ecx": "[ebp+var_20]"
+    },
+    {
+     "callee": "Sqrat_TableBase_SetValueInt_42E7D0",
+     "args": [
+      {
+       "raw": "v11",
+       "fn": null
+      },
+      {
+       "raw": "(int)\"_ObjFlags_ToParentHitBack\"",
+       "fn": null
+      },
+      {
+       "raw": "0",
+       "fn": null
+      }
+     ],
+     "ea": "0x813234",
+     "ecx": "[ebp+var_20]"
+    },
+    {
+     "callee": "Sqrat_TableBase_SetValueInt_42E7D0",
+     "args": [
+      {
+       "raw": "v11",
+       "fn": null
+      },
+      {
+       "raw": "(int)\"_ObjFlags_ToParentHitStatus\"",
+       "fn": null
+      },
+      {
+       "raw": "0",
+       "fn": null
+      }
+     ],
+     "ea": "0x813246",
+     "ecx": "[ebp+var_20]"
+    },
+    {
+     "callee": "Sqrat_TableBase_SetValueInt_42E7D0",
+     "args": [
+      {
+       "raw": "v11",
+       "fn": null
+      },
+      {
+       "raw": "(int)\"_ObjFlags_NoCamera\"",
+       "fn": null
+      },
+      {
+       "raw": "0",
+       "fn": null
+      }
+     ],
+     "ea": "0x813258",
+     "ecx": "[ebp+var_20]"
+    },
+    {
+     "callee": "Sqrat_TableBase_SetValueInt_42E7D0",
+     "args": [
+      {
+       "raw": "v11",
+       "fn": null
+      },
+      {
+       "raw": "(int)\"_ObjFlags_NoGround\"",
+       "fn": null
+      },
+      {
+       "raw": "64",
+       "fn": null
+      }
+     ],
+     "ea": "0x813267",
+     "ecx": "[ebp+var_20]"
+    },
+    {
+     "callee": "Sqrat_TableBase_SetValueInt_42E7D0",
+     "args": [
+      {
+       "raw": "v11",
+       "fn": null
+      },
+      {
+       "raw": "(int)\"_ObjProcFlags_EraseParentNull\"",
+       "fn": null
+      },
+      {
+       "raw": "1",
+       "fn": null
+      }
+     ],
+     "ea": "0x813276",
+     "ecx": "[ebp+var_20]"
+    },
+    {
+     "callee": "Sqrat_TableBase_SetValueInt_42E7D0",
+     "args": [
+      {
+       "raw": "v11",
+       "fn": null
+      },
+      {
+       "raw": "(int)\"_ObjProcFlags_EraseChangeParentMv\"",
+       "fn": null
+      },
+      {
+       "raw": "2",
+       "fn": null
+      }
+     ],
+     "ea": "0x813285",
+     "ecx": "[ebp+var_20]"
+    },
+    {
+     "callee": "Sqrat_TableBase_SetValueInt_42E7D0",
+     "args": [
+      {
+       "raw": "v11",
+       "fn": null
+      },
+      {
+       "raw": "(int)\"_ObjProcFlag_UnEraseDamageEx\"",
+       "fn": null
+      },
+      {
+       "raw": "4",
+       "fn": null
+      }
+     ],
+     "ea": "0x813294",
+     "ecx": "[ebp+var_20]"
+    },
+    {
+     "callee": "Sqrat_TableBase_SetValueInt_42E7D0",
+     "args": [
+      {
+       "raw": "v11",
+       "fn": null
+      },
+      {
+       "raw": "(int)\"_ObjProcFlag_EraseParentDelete\"",
+       "fn": null
+      },
+      {
+       "raw": "8",
+       "fn": null
+      }
+     ],
+     "ea": "0x8132a3",
+     "ecx": "[ebp+var_20]"
+    },
+    {
+     "callee": "Sqrat_TableBase_SetValueInt_42E7D0",
+     "args": [
+      {
+       "raw": "v11",
+       "fn": null
+      },
+      {
+       "raw": "(int)\"_ObjType_FireBall\"",
+       "fn": null
+      },
+      {
+       "raw": "2",
+       "fn": null
+      }
+     ],
+     "ea": "0x8132b2",
+     "ecx": "[ebp+var_20]"
+    },
+    {
+     "callee": "Sqrat_TableBase_SetValueInt_42E7D0",
+     "args": [
+      {
+       "raw": "v11",
+       "fn": null
+      },
+      {
+       "raw": "(int)\"_ObjType_Blade\"",
+       "fn": null
+      },
+      {
+       "raw": "3",
+       "fn": null
+      }
+     ],
+     "ea": "0x8132c1",
+     "ecx": "[ebp+var_20]"
+    },
+    {
+     "callee": "Sqrat_TableBase_SetValueInt_42E7D0",
+     "args": [
+      {
+       "raw": "v11",
+       "fn": null
+      },
+      {
+       "raw": "(int)\"_Exist_NoCamera\"",
+       "fn": null
+      },
+      {
+       "raw": "1",
+       "fn": null
+      }
+     ],
+     "ea": "0x8132d0",
+     "ecx": "[ebp+var_20]"
+    },
+    {
+     "callee": "Sqrat_TableBase_SetValueInt_42E7D0",
+     "args": [
+      {
+       "raw": "v11",
+       "fn": null
+      },
+      {
+       "raw": "(int)\"_Exist_NoWall\"",
+       "fn": null
+      },
+      {
+       "raw": "2",
+       "fn": null
+      }
+     ],
+     "ea": "0x8132df",
+     "ecx": "[ebp+var_20]"
+    },
+    {
+     "callee": "Sqrat_TableBase_SetValueInt_42E7D0",
+     "args": [
+      {
+       "raw": "v11",
+       "fn": null
+      },
+      {
+       "raw": "(int)\"_Exist_NoHantei\"",
+       "fn": null
+      },
+      {
+       "raw": "0",
+       "fn": null
+      }
+     ],
+     "ea": "0x8132f1",
+     "ecx": "[ebp+var_20]"
+    },
+    {
+     "callee": "Sqrat_TableBase_SetValueInt_42E7D0",
+     "args": [
+      {
+       "raw": "v11",
+       "fn": null
+      },
+      {
+       "raw": "(int)\"_Exist_NoKasanariHantei\"",
+       "fn": null
+      },
+      {
+       "raw": "0",
+       "fn": null
+      }
+     ],
+     "ea": "0x813303",
+     "ecx": "[ebp+var_20]"
+    },
+    {
+     "callee": "Sqrat_TableBase_SetValueInt_42E7D0",
+     "args": [
+      {
+       "raw": "v11",
+       "fn": null
+      },
+      {
+       "raw": "(int)\"_Exist_NoKuraiHantei\"",
+       "fn": null
+      },
+      {
+       "raw": "0",
+       "fn": null
+      }
+     ],
+     "ea": "0x813315",
+     "ecx": "[ebp+var_20]"
+    },
+    {
+     "callee": "Sqrat_TableBase_SetValueInt_42E7D0",
+     "args": [
+      {
+       "raw": "v11",
+       "fn": null
+      },
+      {
+       "raw": "(int)\"_Exist_NoAttackHantei\"",
+       "fn": null
+      },
+      {
+       "raw": "0",
+       "fn": null
+      }
+     ],
+     "ea": "0x813327",
+     "ecx": "[ebp+var_20]"
+    },
+    {
+     "callee": "Sqrat_TableBase_SetValueInt_42E7D0",
+     "args": [
+      {
+       "raw": "v11",
+       "fn": null
+      },
+      {
+       "raw": "(int)\"_Exist_NoEtcHantei\"",
+       "fn": null
+      },
+      {
+       "raw": "0",
+       "fn": null
+      }
+     ],
+     "ea": "0x813339",
+     "ecx": "[ebp+var_20]"
+    },
+    {
+     "callee": "Sqrat_TableBase_SetValueInt_42E7D0",
+     "args": [
+      {
+       "raw": "v11",
+       "fn": null
+      },
+      {
+       "raw": "(int)\"_ExistMode_Set\"",
+       "fn": null
+      },
+      {
+       "raw": "0",
+       "fn": null
+      }
+     ],
+     "ea": "0x813348",
+     "ecx": "[ebp+var_20]"
+    },
+    {
+     "callee": "Sqrat_TableBase_SetValueInt_42E7D0",
+     "args": [
+      {
+       "raw": "v11",
+       "fn": null
+      },
+      {
+       "raw": "(int)\"_ExistMode_Add\"",
+       "fn": null
+      },
+      {
+       "raw": "1",
+       "fn": null
+      }
+     ],
+     "ea": "0x813357",
+     "ecx": "[ebp+var_20]"
+    },
+    {
+     "callee": "Sqrat_TableBase_SetValueInt_42E7D0",
+     "args": [
+      {
+       "raw": "v11",
+       "fn": null
+      },
+      {
+       "raw": "(int)\"_ExistMode_Erase\"",
+       "fn": null
+      },
+      {
+       "raw": "2",
+       "fn": null
+      }
+     ],
+     "ea": "0x813366",
+     "ecx": "[ebp+var_20]"
+    },
+    {
+     "callee": "Sqrat_TableBase_SetValueInt_42E7D0",
+     "args": [
+      {
+       "raw": "v11",
+       "fn": null
+      },
+      {
+       "raw": "(int)\"_ExistMode_Reverse\"",
+       "fn": null
+      },
+      {
+       "raw": "3",
+       "fn": null
+      }
+     ],
+     "ea": "0x813375",
+     "ecx": "[ebp+var_20]"
+    },
+    {
+     "callee": "Sqrat_TableBase_SetValueInt_42E7D0",
+     "args": [
+      {
+       "raw": "v11",
+       "fn": null
+      },
+      {
+       "raw": "(int)\"_Hantei_Kasanari\"",
+       "fn": null
+      },
+      {
+       "raw": "0",
+       "fn": null
+      }
+     ],
+     "ea": "0x813384",
+     "ecx": "[ebp+var_20]"
+    },
+    {
+     "callee": "Sqrat_TableBase_SetValueInt_42E7D0",
+     "args": [
+      {
+       "raw": "v11",
+       "fn": null
+      },
+      {
+       "raw": "(int)\"_Hantei_Kurai\"",
+       "fn": null
+      },
+      {
+       "raw": "1",
+       "fn": null
+      }
+     ],
+     "ea": "0x813393",
+     "ecx": "[ebp+var_20]"
+    },
+    {
+     "callee": "Sqrat_TableBase_SetValueInt_42E7D0",
+     "args": [
+      {
+       "raw": "v11",
+       "fn": null
+      },
+      {
+       "raw": "(int)\"_Hantei_Etc\"",
+       "fn": null
+      },
+      {
+       "raw": "2",
+       "fn": null
+      }
+     ],
+     "ea": "0x8133a2",
+     "ecx": "[ebp+var_20]"
+    },
+    {
+     "callee": "Sqrat_TableBase_SetValueInt_42E7D0",
+     "args": [
+      {
+       "raw": "v11",
+       "fn": null
+      },
+      {
+       "raw": "(int)\"_Hantei_Attack\"",
+       "fn": null
+      },
+      {
+       "raw": "3",
+       "fn": null
+      }
+     ],
+     "ea": "0x8133b1",
+     "ecx": "[ebp+var_20]"
+    },
+    {
+     "callee": "Sqrat_TableBase_SetValueInt_42E7D0",
+     "args": [
+      {
+       "raw": "v11",
+       "fn": null
+      },
+      {
+       "raw": "(int)\"_HC_EnemyPc\"",
+       "fn": null
+      },
+      {
+       "raw": "1",
+       "fn": null
+      }
+     ],
+     "ea": "0x8133c0",
+     "ecx": "[ebp+var_20]"
+    },
+    {
+     "callee": "Sqrat_TableBase_SetValueInt_42E7D0",
+     "args": [
+      {
+       "raw": "v11",
+       "fn": null
+      },
+      {
+       "raw": "(int)\"_HC_EnemyObj\"",
+       "fn": null
+      },
+      {
+       "raw": "2",
+       "fn": null
+      }
+     ],
+     "ea": "0x8133cf",
+     "ecx": "[ebp+var_20]"
+    },
+    {
+     "callee": "Sqrat_TableBase_SetValueInt_42E7D0",
+     "args": [
+      {
+       "raw": "v11",
+       "fn": null
+      },
+      {
+       "raw": "(int)\"_HC_FavourPc\"",
+       "fn": null
+      },
+      {
+       "raw": "4",
+       "fn": null
+      }
+     ],
+     "ea": "0x8133de",
+     "ecx": "[ebp+var_20]"
+    },
+    {
+     "callee": "Sqrat_TableBase_SetValueInt_42E7D0",
+     "args": [
+      {
+       "raw": "v11",
+       "fn": null
+      },
+      {
+       "raw": "(int)\"_HC_FavourObj\"",
+       "fn": null
+      },
+      {
+       "raw": "8",
+       "fn": null
+      }
+     ],
+     "ea": "0x8133ed",
+     "ecx": "[ebp+var_20]"
+    },
+    {
+     "callee": "Sqrat_TableBase_SetValueInt_42E7D0",
+     "args": [
+      {
+       "raw": "v11",
+       "fn": null
+      },
+      {
+       "raw": "(int)\"_HC_WithoutNoHanteiFlagObj\"",
+       "fn": null
+      },
+      {
+       "raw": "16",
+       "fn": null
+      }
+     ],
+     "ea": "0x8133fc",
+     "ecx": "[ebp+var_20]"
+    },
+    {
+     "callee": "Sqrat_TableBase_SetValueInt_42E7D0",
+     "args": [
+      {
+       "raw": "v11",
+       "fn": null
+      },
+      {
+       "raw": "(int)\"_CamUpdateFlag_NoX\"",
+       "fn": null
+      },
+      {
+       "raw": "1",
+       "fn": null
+      }
+     ],
+     "ea": "0x81340b",
+     "ecx": "[ebp+var_20]"
+    },
+    {
+     "callee": "Sqrat_TableBase_SetValueInt_42E7D0",
+     "args": [
+      {
+       "raw": "v11",
+       "fn": null
+      },
+      {
+       "raw": "(int)\"_CamUpdateFlag_NoY\"",
+       "fn": null
+      },
+      {
+       "raw": "2",
+       "fn": null
+      }
+     ],
+     "ea": "0x81341a",
+     "ecx": "[ebp+var_20]"
+    },
+    {
+     "callee": "Sqrat_TableBase_SetValueInt_42E7D0",
+     "args": [
+      {
+       "raw": "v11",
+       "fn": null
+      },
+      {
+       "raw": "(int)\"_Hantei_Error\"",
+       "fn": null
+      },
+      {
+       "raw": "79",
+       "fn": null
+      }
+     ],
+     "ea": "0x81342c",
+     "ecx": "[ebp+var_20]"
+    },
+    {
+     "callee": "Sqrat_TableBase_SetValueInt_42E7D0",
+     "args": [
+      {
+       "raw": "v11",
+       "fn": null
+      },
+      {
+       "raw": "(int)\"_HanteiFlag_Tool\"",
+       "fn": null
+      },
+      {
+       "raw": "1",
+       "fn": null
+      }
+     ],
+     "ea": "0x81343b",
+     "ecx": "[ebp+var_20]"
+    },
+    {
+     "callee": "Sqrat_TableBase_SetValueInt_42E7D0",
+     "args": [
+      {
+       "raw": "v11",
+       "fn": null
+      },
+      {
+       "raw": "(int)\"_HanteiFlag_Offset\"",
+       "fn": null
+      },
+      {
+       "raw": "2",
+       "fn": null
+      }
+     ],
+     "ea": "0x81344a",
+     "ecx": "[ebp+var_20]"
+    },
+    {
+     "callee": "Sqrat_TableBase_SetValueInt_42E7D0",
+     "args": [
+      {
+       "raw": "v11",
+       "fn": null
+      },
+      {
+       "raw": "(int)\"_HanteiFlag_NoMukiChange\"",
+       "fn": null
+      },
+      {
+       "raw": "4",
+       "fn": null
+      }
+     ],
+     "ea": "0x813459",
+     "ecx": "[ebp+var_20]"
+    },
+    {
+     "callee": "Sqrat_TableBase_SetValueInt_42E7D0",
+     "args": [
+      {
+       "raw": "v11",
+       "fn": null
+      },
+      {
+       "raw": "(int)\"_SpGauge_UseAll\"",
+       "fn": null
+      },
+      {
+       "raw": "-1",
+       "fn": null
+      }
+     ],
+     "ea": "0x813468",
+     "ecx": "[ebp+var_20]"
+    },
+    {
+     "callee": "Sqrat_TableBase_SetValueInt_42E7D0",
+     "args": [
+      {
+       "raw": "v11",
+       "fn": null
+      },
+      {
+       "raw": "(int)\"_SpGauge_UseBuffer\"",
+       "fn": null
+      },
+      {
+       "raw": "-2",
+       "fn": null
+      }
+     ],
+     "ea": "0x813477",
+     "ecx": "[ebp+var_20]"
+    },
+    {
+     "callee": "Sqrat_TableBase_SetValueInt_42E7D0",
+     "args": [
+      {
+       "raw": "v11",
+       "fn": null
+      },
+      {
+       "raw": "(int)\"_GetPos_TrueCamera\"",
+       "fn": null
+      },
+      {
+       "raw": "1",
+       "fn": null
+      }
+     ],
+     "ea": "0x813486",
+     "ecx": "[ebp+var_20]"
+    },
+    {
+     "callee": "Sqrat_TableBase_SetValueInt_42E7D0",
+     "args": [
+      {
+       "raw": "v11",
+       "fn": null
+      },
+      {
+       "raw": "(int)\"_GetPos_ViewCamera\"",
+       "fn": null
+      },
+      {
+       "raw": "2",
+       "fn": null
+      }
+     ],
+     "ea": "0x813495",
+     "ecx": "[ebp+var_20]"
+    },
+    {
+     "callee": "Sqrat_TableBase_SetValueInt_42E7D0",
+     "args": [
+      {
+       "raw": "v11",
+       "fn": null
+      },
+      {
+       "raw": "(int)\"_GetPos_DispCamera\"",
+       "fn": null
+      },
+      {
+       "raw": "4",
+       "fn": null
+      }
+     ],
+     "ea": "0x8134a4",
+     "ecx": "[ebp+var_20]"
+    },
+    {
+     "callee": "Sqrat_TableBase_SetValueInt_42E7D0",
+     "args": [
+      {
+       "raw": "v11",
+       "fn": null
+      },
+      {
+       "raw": "(int)\"_GetPos_Offset\"",
+       "fn": null
+      },
+      {
+       "raw": "0",
+       "fn": null
+      }
+     ],
+     "ea": "0x8134b6",
+     "ecx": "[ebp+var_20]"
+    },
+    {
+     "callee": "Sqrat_TableBase_SetValueInt_42E7D0",
+     "args": [
+      {
+       "raw": "v11",
+       "fn": null
+      },
+      {
+       "raw": "(int)\"_GetPos_TypeWall\"",
+       "fn": null
+      },
+      {
+       "raw": "0",
+       "fn": null
+      }
+     ],
+     "ea": "0x8134c8",
+     "ecx": "[ebp+var_20]"
+    },
+    {
+     "callee": "Sqrat_TableBase_SetValueInt_42E7D0",
+     "args": [
+      {
+       "raw": "v11",
+       "fn": null
+      },
+      {
+       "raw": "(int)\"_GetPos_TypeScreen\"",
+       "fn": null
+      },
+      {
+       "raw": "0",
+       "fn": null
+      }
+     ],
+     "ea": "0x8134da",
+     "ecx": "[ebp+var_20]"
+    },
+    {
+     "callee": "Sqrat_TableBase_SetValueInt_42E7D0",
+     "args": [
+      {
+       "raw": "v11",
+       "fn": null
+      },
+      {
+       "raw": "(int)\"_GetPos_NoMuki\"",
+       "fn": null
+      },
+      {
+       "raw": "0",
+       "fn": null
+      }
+     ],
+     "ea": "0x8134ec",
+     "ecx": "[ebp+var_20]"
+    },
+    {
+     "callee": "Sqrat_TableBase_SetValueInt_42E7D0",
+     "args": [
+      {
+       "raw": "v11",
+       "fn": null
+      },
+      {
+       "raw": "(int)\"_GetPos_ToolOffset\"",
+       "fn": null
+      },
+      {
+       "raw": "0",
+       "fn": null
+      }
+     ],
+     "ea": "0x8134fe",
+     "ecx": "[ebp+var_20]"
+    },
+    {
+     "callee": "Sqrat_TableBase_SetValueInt_42E7D0",
+     "args": [
+      {
+       "raw": "v11",
+       "fn": null
+      },
+      {
+       "raw": "(int)\"_SpGaugeMode_Normal\"",
+       "fn": null
+      },
+      {
+       "raw": "0",
+       "fn": null
+      }
+     ],
+     "ea": "0x81350d",
+     "ecx": "[ebp+var_20]"
+    },
+    {
+     "callee": "Sqrat_TableBase_SetValueInt_42E7D0",
+     "args": [
+      {
+       "raw": "v11",
+       "fn": null
+      },
+      {
+       "raw": "(int)\"_SpGaugeMode_Liberate\"",
+       "fn": null
+      },
+      {
+       "raw": "1",
+       "fn": null
+      }
+     ],
+     "ea": "0x81351c",
+     "ecx": "[ebp+var_20]"
+    },
+    {
+     "callee": "Sqrat_TableBase_SetValueInt_42E7D0",
+     "args": [
+      {
+       "raw": "v11",
+       "fn": null
+      },
+      {
+       "raw": "(int)\"_SpGaugeMode_OverLiberate\"",
+       "fn": null
+      },
+      {
+       "raw": "2",
+       "fn": null
+      }
+     ],
+     "ea": "0x81352b",
+     "ecx": "[ebp+var_20]"
+    },
+    {
+     "callee": "Sqrat_TableBase_SetValueInt_42E7D0",
+     "args": [
+      {
+       "raw": "v11",
+       "fn": null
+      },
+      {
+       "raw": "(int)\"_ThrowRelease_NoGroundRecover\"",
+       "fn": null
+      },
+      {
+       "raw": "16",
+       "fn": null
+      }
+     ],
+     "ea": "0x81353a",
+     "ecx": "[ebp+var_20]"
+    },
+    {
+     "callee": "Sqrat_TableBase_SetValueInt_42E7D0",
+     "args": [
+      {
+       "raw": "v11",
+       "fn": null
+      },
+      {
+       "raw": "(int)\"_ThrowRelease_NoWallRecover\"",
+       "fn": null
+      },
+      {
+       "raw": "32",
+       "fn": null
+      }
+     ],
+     "ea": "0x813549",
+     "ecx": "[ebp+var_20]"
+    },
+    {
+     "callee": "Sqrat_TableBase_SetValueInt_42E7D0",
+     "args": [
+      {
+       "raw": "v11",
+       "fn": null
+      },
+      {
+       "raw": "(int)\"_ThrowRelease_NoAttackHit\"",
+       "fn": null
+      },
+      {
+       "raw": "64",
+       "fn": null
+      }
+     ],
+     "ea": "0x813558",
+     "ecx": "[ebp+var_20]"
+    },
+    {
+     "callee": "Sqrat_TableBase_SetValueInt_42E7D0",
+     "args": [
+      {
+       "raw": "v11",
+       "fn": null
+      },
+      {
+       "raw": "(int)\"_ThrowRelease_ReverseVec\"",
+       "fn": null
+      },
+      {
+       "raw": "2",
+       "fn": null
+      }
+     ],
+     "ea": "0x813567",
+     "ecx": "[ebp+var_20]"
+    },
+    {
+     "callee": "Sqrat_TableBase_SetValueInt_42E7D0",
+     "args": [
+      {
+       "raw": "v11",
+       "fn": null
+      },
+      {
+       "raw": "(int)\"_ThrowRelease_NoVec\"",
+       "fn": null
+      },
+      {
+       "raw": "1",
+       "fn": null
+      }
+     ],
+     "ea": "0x813576",
+     "ecx": "[ebp+var_20]"
+    },
+    {
+     "callee": "Sqrat_TableBase_SetValueInt_42E7D0",
+     "args": [
+      {
+       "raw": "v11",
+       "fn": null
+      },
+      {
+       "raw": "(int)\"_ThrowRelease_NoVecTimeHosei\"",
+       "fn": null
+      },
+      {
+       "raw": "0",
+       "fn": null
+      }
+     ],
+     "ea": "0x813588",
+     "ecx": "[ebp+var_20]"
+    },
+    {
+     "callee": "Sqrat_TableBase_SetValueInt_42E7D0",
+     "args": [
+      {
+       "raw": "v11",
+       "fn": null
+      },
+      {
+       "raw": "(int)\"_ThrowRelease_NoBurst\"",
+       "fn": null
+      },
+      {
+       "raw": "0",
+       "fn": null
+      }
+     ],
+     "ea": "0x81359a",
+     "ecx": "[ebp+var_20]"
+    },
+    {
+     "callee": "Sqrat_TableBase_SetValueInt_42E7D0",
+     "args": [
+      {
+       "raw": "v11",
+       "fn": null
+      },
+      {
+       "raw": "(int)\"_SkillCount_Assult\"",
+       "fn": null
+      },
+      {
+       "raw": "0",
+       "fn": null
+      }
+     ],
+     "ea": "0x8135a9",
+     "ecx": "[ebp+var_20]"
+    },
+    {
+     "callee": "Sqrat_TableBase_SetValueInt_42E7D0",
+     "args": [
+      {
+       "raw": "v11",
+       "fn": null
+      },
+      {
+       "raw": "(int)\"_SkillCount_ChainShift\"",
+       "fn": null
+      },
+      {
+       "raw": "1",
+       "fn": null
+      }
+     ],
+     "ea": "0x8135b8",
+     "ecx": "[ebp+var_20]"
+    },
+    {
+     "callee": "Sqrat_TableBase_SetValueInt_42E7D0",
+     "args": [
+      {
+       "raw": "v11",
+       "fn": null
+      },
+      {
+       "raw": "(int)\"_SkillCount_VeilOff\"",
+       "fn": null
+      },
+      {
+       "raw": "2",
+       "fn": null
+      }
+     ],
+     "ea": "0x8135c7",
+     "ecx": "[ebp+var_20]"
+    },
+    {
+     "callee": "Sqrat_TableBase_SetValueInt_42E7D0",
+     "args": [
+      {
+       "raw": "v11",
+       "fn": null
+      },
+      {
+       "raw": "(int)\"_SkillCount_Sp\"",
+       "fn": null
+      },
+      {
+       "raw": "3",
+       "fn": null
+      }
+     ],
+     "ea": "0x8135d6",
+     "ecx": "[ebp+var_20]"
+    },
+    {
+     "callee": "Sqrat_TableBase_SetValueInt_42E7D0",
+     "args": [
+      {
+       "raw": "v11",
+       "fn": null
+      },
+      {
+       "raw": "(int)\"_SkillCount_SpEx\"",
+       "fn": null
+      },
+      {
+       "raw": "4",
+       "fn": null
+      }
+     ],
+     "ea": "0x8135e5",
+     "ecx": "[ebp+var_20]"
+    },
+    {
+     "callee": "Sqrat_TableBase_SetValueInt_42E7D0",
+     "args": [
+      {
+       "raw": "v11",
+       "fn": null
+      },
+      {
+       "raw": "(int)\"_SkillCount_SpIFW\"",
+       "fn": null
+      },
+      {
+       "raw": "5",
+       "fn": null
+      }
+     ],
+     "ea": "0x8135f4",
+     "ecx": "[ebp+var_20]"
+    },
+    {
+     "callee": "Sqrat_TableBase_SetValueInt_42E7D0",
+     "args": [
+      {
+       "raw": "v11",
+       "fn": null
+      },
+      {
+       "raw": "(int)\"_SkillCount_SpIFWX\"",
+       "fn": null
+      },
+      {
+       "raw": "6",
+       "fn": null
+      }
+     ],
+     "ea": "0x813603",
+     "ecx": "[ebp+var_20]"
+    },
+    {
+     "callee": "Sqrat_TableBase_SetValueInt_42E7D0",
+     "args": [
+      {
+       "raw": "v11",
+       "fn": null
+      },
+      {
+       "raw": "(int)\"_SkillCount_Throw\"",
+       "fn": null
+      },
+      {
+       "raw": "7",
+       "fn": null
+      }
+     ],
+     "ea": "0x813612",
+     "ecx": "[ebp+var_20]"
+    },
+    {
+     "callee": "Sqrat_TableBase_SetValueInt_42E7D0",
+     "args": [
+      {
+       "raw": "v11",
+       "fn": null
+      },
+      {
+       "raw": "(int)\"_SkillCount_ThrowRecover\"",
+       "fn": null
+      },
+      {
+       "raw": "8",
+       "fn": null
+      }
+     ],
+     "ea": "0x813621",
+     "ecx": "[ebp+var_20]"
+    },
+    {
+     "callee": "Sqrat_TableBase_SetValueInt_42E7D0",
+     "args": [
+      {
+       "raw": "v11",
+       "fn": null
+      },
+      {
+       "raw": "(int)\"_GuardFlag_GuardStand\"",
+       "fn": null
+      },
+      {
+       "raw": "1",
+       "fn": null
+      }
+     ],
+     "ea": "0x813630",
+     "ecx": "[ebp+var_20]"
+    },
+    {
+     "callee": "Sqrat_TableBase_SetValueInt_42E7D0",
+     "args": [
+      {
+       "raw": "v11",
+       "fn": null
+      },
+      {
+       "raw": "(int)\"_GuardFlag_GuardAir\"",
+       "fn": null
+      },
+      {
+       "raw": "2",
+       "fn": null
+      }
+     ],
+     "ea": "0x81363f",
+     "ecx": "[ebp+var_20]"
+    },
+    {
+     "callee": "Sqrat_TableBase_SetValueInt_42E7D0",
+     "args": [
+      {
+       "raw": "v11",
+       "fn": null
+      },
+      {
+       "raw": "(int)\"_GuardFlag_GuardCrouch\"",
+       "fn": null
+      },
+      {
+       "raw": "4",
+       "fn": null
+      }
+     ],
+     "ea": "0x81364e",
+     "ecx": "[ebp+var_20]"
+    },
+    {
+     "callee": "Sqrat_TableBase_SetValueInt_42E7D0",
+     "args": [
+      {
+       "raw": "v11",
+       "fn": null
+      },
+      {
+       "raw": "(int)\"_GuardFlag_ShieldStand\"",
+       "fn": null
+      },
+      {
+       "raw": "1",
+       "fn": null
+      }
+     ],
+     "ea": "0x81365d",
+     "ecx": "[ebp+var_20]"
+    },
+    {
+     "callee": "Sqrat_TableBase_SetValueInt_42E7D0",
+     "args": [
+      {
+       "raw": "v11",
+       "fn": null
+      },
+      {
+       "raw": "(int)\"_GuardFlag_ShieldAir\"",
+       "fn": null
+      },
+      {
+       "raw": "2",
+       "fn": null
+      }
+     ],
+     "ea": "0x81366c",
+     "ecx": "[ebp+var_20]"
+    },
+    {
+     "callee": "Sqrat_TableBase_SetValueInt_42E7D0",
+     "args": [
+      {
+       "raw": "v11",
+       "fn": null
+      },
+      {
+       "raw": "(int)\"_GuardFlag_ShieldCrouch\"",
+       "fn": null
+      },
+      {
+       "raw": "4",
+       "fn": null
+      }
+     ],
+     "ea": "0x81367b",
+     "ecx": "[ebp+var_20]"
+    },
+    {
+     "callee": "Sqrat_TableBase_SetValueInt_42E7D0",
+     "args": [
+      {
+       "raw": "v11",
+       "fn": null
+      },
+      {
+       "raw": "(int)\"_DataType_Me\"",
+       "fn": null
+      },
+      {
+       "raw": "0",
+       "fn": null
+      }
+     ],
+     "ea": "0x81368a",
+     "ecx": "[ebp+var_20]"
+    },
+    {
+     "callee": "Sqrat_TableBase_SetValueInt_42E7D0",
+     "args": [
+      {
+       "raw": "v11",
+       "fn": null
+      },
+      {
+       "raw": "(int)\"_DataType_Player\"",
+       "fn": null
+      },
+      {
+       "raw": "1",
+       "fn": null
+      }
+     ],
+     "ea": "0x813699",
+     "ecx": "[ebp+var_20]"
+    },
+    {
+     "callee": "Sqrat_TableBase_SetValueInt_42E7D0",
+     "args": [
+      {
+       "raw": "v11",
+       "fn": null
+      },
+      {
+       "raw": "(int)\"_DataType_Parent\"",
+       "fn": null
+      },
+      {
+       "raw": "2",
+       "fn": null
+      }
+     ],
+     "ea": "0x8136a8",
+     "ecx": "[ebp+var_20]"
+    },
+    {
+     "callee": "Sqrat_TableBase_SetValueInt_42E7D0",
+     "args": [
+      {
+       "raw": "v11",
+       "fn": null
+      },
+      {
+       "raw": "(int)\"_KOMode_ToEndWait\"",
+       "fn": null
+      },
+      {
+       "raw": "204",
+       "fn": null
+      }
+     ],
+     "ea": "0x8136ba",
+     "ecx": "[ebp+var_20]"
+    },
+    {
+     "callee": "Sqrat_TableBase_SetValueInt_42E7D0",
+     "args": [
+      {
+       "raw": "v11",
+       "fn": null
+      },
+      {
+       "raw": "(int)\"_KOMode_ToEndWait_Fade\"",
+       "fn": null
+      },
+      {
+       "raw": "205",
+       "fn": null
+      }
+     ],
+     "ea": "0x8136cc",
+     "ecx": "[ebp+var_20]"
+    },
+    {
      "callee": "Sqrat_RootTable_BindTable",
      "args": [
       {
@@ -7281,8 +11934,7 @@
       },
       {
        "raw": "(int)\"BMvConst\"",
-       "fn": null,
-       "str": "BMvConst"
+       "fn": null
       },
       {
        "raw": "(int)v11",
@@ -7629,8 +12281,7 @@
       },
       {
        "raw": "(int)\"Blast_SetParam\"",
-       "fn": null,
-       "str": "Blast_SetParam"
+       "fn": null
       },
       {
        "raw": "(int)sub_43E2E0",
@@ -8041,8 +12692,7 @@
       },
       {
        "raw": "(int)\"HP_Add\"",
-       "fn": null,
-       "str": "HP_Add"
+       "fn": null
       },
       {
        "raw": "(int)sub_43EF80",
@@ -8061,8 +12711,7 @@
       },
       {
        "raw": "(int)\"HP_SourceDamMode\"",
-       "fn": null,
-       "str": "HP_SourceDamMode"
+       "fn": null
       },
       {
        "raw": "(int)sub_43F040",
@@ -8193,8 +12842,7 @@
       },
       {
        "raw": "(int)\"tDDC\"",
-       "fn": null,
-       "str": "tDDC"
+       "fn": null
       },
       {
        "raw": "(int)v8",
@@ -8206,6 +12854,462 @@
      "ecx": "[ebp+var_68]"
     },
     {
+     "callee": "Sqrat_TableBase_SetValueInt_42E7D0",
+     "args": [
+      {
+       "raw": "v9",
+       "fn": null
+      },
+      {
+       "raw": "(int)\"_JemCheckType_Reversal\"",
+       "fn": null
+      },
+      {
+       "raw": "100",
+       "fn": null
+      }
+     ],
+     "ea": "0x813e1b",
+     "ecx": "[ebp+var_20]"
+    },
+    {
+     "callee": "Sqrat_TableBase_SetValueInt_42E7D0",
+     "args": [
+      {
+       "raw": "v9",
+       "fn": null
+      },
+      {
+       "raw": "(int)\"_JemCheckType_Ex\"",
+       "fn": null
+      },
+      {
+       "raw": "100",
+       "fn": null
+      }
+     ],
+     "ea": "0x813e2a",
+     "ecx": "[ebp+var_20]"
+    },
+    {
+     "callee": "Sqrat_TableBase_SetValueInt_42E7D0",
+     "args": [
+      {
+       "raw": "v9",
+       "fn": null
+      },
+      {
+       "raw": "(int)\"_JemCheckType_ExSkillUse\"",
+       "fn": null
+      },
+      {
+       "raw": "9",
+       "fn": null
+      }
+     ],
+     "ea": "0x813e39",
+     "ecx": "[ebp+var_20]"
+    },
+    {
+     "callee": "Sqrat_TableBase_SetValueInt_42E7D0",
+     "args": [
+      {
+       "raw": "v9",
+       "fn": null
+      },
+      {
+       "raw": "(int)\"_JemEffType_AttackUP\"",
+       "fn": null
+      },
+      {
+       "raw": "1",
+       "fn": null
+      }
+     ],
+     "ea": "0x813e48",
+     "ecx": "[ebp+var_20]"
+    },
+    {
+     "callee": "Sqrat_TableBase_SetValueInt_42E7D0",
+     "args": [
+      {
+       "raw": "v9",
+       "fn": null
+      },
+      {
+       "raw": "(int)\"_JemEffType_DefenceUP\"",
+       "fn": null
+      },
+      {
+       "raw": "2",
+       "fn": null
+      }
+     ],
+     "ea": "0x813e57",
+     "ecx": "[ebp+var_20]"
+    },
+    {
+     "callee": "Sqrat_TableBase_SetValueInt_42E7D0",
+     "args": [
+      {
+       "raw": "v9",
+       "fn": null
+      },
+      {
+       "raw": "(int)\"_JemEffType_SupportPlus\"",
+       "fn": null
+      },
+      {
+       "raw": "4",
+       "fn": null
+      }
+     ],
+     "ea": "0x813e66",
+     "ecx": "[ebp+var_20]"
+    },
+    {
+     "callee": "Sqrat_TableBase_SetValueInt_42E7D0",
+     "args": [
+      {
+       "raw": "v9",
+       "fn": null
+      },
+      {
+       "raw": "(int)\"_JemEffType_ReflectionGuardBreak\"",
+       "fn": null
+      },
+      {
+       "raw": "5",
+       "fn": null
+      }
+     ],
+     "ea": "0x813e75",
+     "ecx": "[ebp+var_20]"
+    },
+    {
+     "callee": "Sqrat_TableBase_SetValueInt_42E7D0",
+     "args": [
+      {
+       "raw": "v9",
+       "fn": null
+      },
+      {
+       "raw": "(int)\"_JemEffType_AtkDefUP\"",
+       "fn": null
+      },
+      {
+       "raw": "6",
+       "fn": null
+      }
+     ],
+     "ea": "0x813e84",
+     "ecx": "[ebp+var_20]"
+    },
+    {
+     "callee": "Sqrat_TableBase_SetValueInt_42E7D0",
+     "args": [
+      {
+       "raw": "v9",
+       "fn": null
+      },
+      {
+       "raw": "(int)\"_TimeEffect_Attack\"",
+       "fn": null
+      },
+      {
+       "raw": "0",
+       "fn": null
+      }
+     ],
+     "ea": "0x813e93",
+     "ecx": "[ebp+var_20]"
+    },
+    {
+     "callee": "Sqrat_TableBase_SetValueInt_42E7D0",
+     "args": [
+      {
+       "raw": "v9",
+       "fn": null
+      },
+      {
+       "raw": "(int)\"_TimeEffect_Defense\"",
+       "fn": null
+      },
+      {
+       "raw": "1",
+       "fn": null
+      }
+     ],
+     "ea": "0x813ea2",
+     "ecx": "[ebp+var_20]"
+    },
+    {
+     "callee": "Sqrat_TableBase_SetValueInt_42E7D0",
+     "args": [
+      {
+       "raw": "v9",
+       "fn": null
+      },
+      {
+       "raw": "(int)\"_TimeEffect_ComboGaugeRegain\"",
+       "fn": null
+      },
+      {
+       "raw": "2",
+       "fn": null
+      }
+     ],
+     "ea": "0x813eb1",
+     "ecx": "[ebp+var_20]"
+    },
+    {
+     "callee": "Sqrat_TableBase_SetValueInt_42E7D0",
+     "args": [
+      {
+       "raw": "v9",
+       "fn": null
+      },
+      {
+       "raw": "(int)\"_SkillCount_Support\"",
+       "fn": null
+      },
+      {
+       "raw": "1",
+       "fn": null
+      }
+     ],
+     "ea": "0x813ec0",
+     "ecx": "[ebp+var_20]"
+    },
+    {
+     "callee": "Sqrat_TableBase_SetValueInt_42E7D0",
+     "args": [
+      {
+       "raw": "v9",
+       "fn": null
+      },
+      {
+       "raw": "(int)\"_SkillCount_Guard\"",
+       "fn": null
+      },
+      {
+       "raw": "2",
+       "fn": null
+      }
+     ],
+     "ea": "0x813ecf",
+     "ecx": "[ebp+var_20]"
+    },
+    {
+     "callee": "Sqrat_TableBase_SetValueInt_42E7D0",
+     "args": [
+      {
+       "raw": "v9",
+       "fn": null
+      },
+      {
+       "raw": "(int)\"_SkillCount_ThrowRecover\"",
+       "fn": null
+      },
+      {
+       "raw": "3",
+       "fn": null
+      }
+     ],
+     "ea": "0x813ede",
+     "ecx": "[ebp+var_20]"
+    },
+    {
+     "callee": "Sqrat_TableBase_SetValueInt_42E7D0",
+     "args": [
+      {
+       "raw": "v9",
+       "fn": null
+      },
+      {
+       "raw": "(int)\"_SkillCount_Kirifuda\"",
+       "fn": null
+      },
+      {
+       "raw": "4",
+       "fn": null
+      }
+     ],
+     "ea": "0x813eed",
+     "ecx": "[ebp+var_20]"
+    },
+    {
+     "callee": "Sqrat_TableBase_SetValueInt_42E7D0",
+     "args": [
+      {
+       "raw": "v9",
+       "fn": null
+      },
+      {
+       "raw": "(int)\"_SkillCount_Blast\"",
+       "fn": null
+      },
+      {
+       "raw": "5",
+       "fn": null
+      }
+     ],
+     "ea": "0x813efc",
+     "ecx": "[ebp+var_20]"
+    },
+    {
+     "callee": "Sqrat_TableBase_SetValueInt_42E7D0",
+     "args": [
+      {
+       "raw": "v9",
+       "fn": null
+      },
+      {
+       "raw": "(int)\"_SkillCount_ExSp\"",
+       "fn": null
+      },
+      {
+       "raw": "6",
+       "fn": null
+      }
+     ],
+     "ea": "0x813f0b",
+     "ecx": "[ebp+var_20]"
+    },
+    {
+     "callee": "Sqrat_TableBase_SetValueInt_42E7D0",
+     "args": [
+      {
+       "raw": "v9",
+       "fn": null
+      },
+      {
+       "raw": "(int)\"_SkillCount_CliSp\"",
+       "fn": null
+      },
+      {
+       "raw": "7",
+       "fn": null
+      }
+     ],
+     "ea": "0x813f1a",
+     "ecx": "[ebp+var_20]"
+    },
+    {
+     "callee": "Sqrat_TableBase_SetValueInt_42E7D0",
+     "args": [
+      {
+       "raw": "v9",
+       "fn": null
+      },
+      {
+       "raw": "(int)\"_SkillCount_ImpactSkill\"",
+       "fn": null
+      },
+      {
+       "raw": "8",
+       "fn": null
+      }
+     ],
+     "ea": "0x813f29",
+     "ecx": "[ebp+var_20]"
+    },
+    {
+     "callee": "Sqrat_TableBase_SetValueInt_42E7D0",
+     "args": [
+      {
+       "raw": "v9",
+       "fn": null
+      },
+      {
+       "raw": "(int)\"_SkillCount_RefGuard\"",
+       "fn": null
+      },
+      {
+       "raw": "9",
+       "fn": null
+      }
+     ],
+     "ea": "0x813f38",
+     "ecx": "[ebp+var_20]"
+    },
+    {
+     "callee": "Sqrat_TableBase_SetValueInt_42E7D0",
+     "args": [
+      {
+       "raw": "v9",
+       "fn": null
+      },
+      {
+       "raw": "(int)\"_SkillCount_Damage\"",
+       "fn": null
+      },
+      {
+       "raw": "10",
+       "fn": null
+      }
+     ],
+     "ea": "0x813f47",
+     "ecx": "[ebp+var_20]"
+    },
+    {
+     "callee": "Sqrat_TableBase_SetValueInt_42E7D0",
+     "args": [
+      {
+       "raw": "v9",
+       "fn": null
+      },
+      {
+       "raw": "(int)\"_SupportRecast_Ready\"",
+       "fn": null
+      },
+      {
+       "raw": "0",
+       "fn": null
+      }
+     ],
+     "ea": "0x813f56",
+     "ecx": "[ebp+var_20]"
+    },
+    {
+     "callee": "Sqrat_TableBase_SetValueInt_42E7D0",
+     "args": [
+      {
+       "raw": "v9",
+       "fn": null
+      },
+      {
+       "raw": "(int)\"_SupportRecast_Stop\"",
+       "fn": null
+      },
+      {
+       "raw": "1",
+       "fn": null
+      }
+     ],
+     "ea": "0x813f65",
+     "ecx": "[ebp+var_20]"
+    },
+    {
+     "callee": "Sqrat_TableBase_SetValueInt_42E7D0",
+     "args": [
+      {
+       "raw": "v9",
+       "fn": null
+      },
+      {
+       "raw": "(int)\"_SupportRecast_Charge\"",
+       "fn": null
+      },
+      {
+       "raw": "2",
+       "fn": null
+      }
+     ],
+     "ea": "0x813f74",
+     "ecx": "[ebp+var_20]"
+    },
+    {
      "callee": "Sqrat_RootTable_BindTable",
      "args": [
       {
@@ -8214,8 +13318,7 @@
       },
       {
        "raw": "(int)\"BMvConst\"",
-       "fn": null,
-       "str": "BMvConst"
+       "fn": null
       },
       {
        "raw": "(int)v9",
@@ -8240,8 +13343,7 @@
       },
       {
        "raw": "(int)\"Move_Jump\"",
-       "fn": null,
-       "str": "Move_Jump"
+       "fn": null
       },
       {
        "raw": "(int)sub_42EC20",
@@ -8274,8 +13376,7 @@
       },
       {
        "raw": "(int)\"Move_End\"",
-       "fn": null,
-       "str": "Move_End"
+       "fn": null
       },
       {
        "raw": "(int)sub_42ECF0",
@@ -8322,8 +13423,7 @@
       },
       {
        "raw": "(int)\"UpdateSt\"",
-       "fn": null,
-       "str": "UpdateSt"
+       "fn": null
       },
       {
        "raw": "(int)v10",
@@ -8335,6 +13435,709 @@
      "ecx": "[ebp+var_20]"
     },
     {
+     "callee": "Sqrat_TableBase_SetValueInt_42E7D0",
+     "args": [
+      {
+       "raw": "v9",
+       "fn": null
+      },
+      {
+       "raw": "(int)\"_eComMoveFlag_MoveEnd\"",
+       "fn": null
+      },
+      {
+       "raw": "1",
+       "fn": null
+      }
+     ],
+     "ea": "0x893fe3",
+     "ecx": "[ebp+var_4C]"
+    },
+    {
+     "callee": "Sqrat_TableBase_SetValueInt_42E7D0",
+     "args": [
+      {
+       "raw": "v9",
+       "fn": null
+      },
+      {
+       "raw": "(int)\"_eComMoveFlag_ThroughEnd\"",
+       "fn": null
+      },
+      {
+       "raw": "2",
+       "fn": null
+      }
+     ],
+     "ea": "0x893ff2",
+     "ecx": "[ebp+var_4C]"
+    },
+    {
+     "callee": "Sqrat_TableBase_SetValueInt_42E7D0",
+     "args": [
+      {
+       "raw": "v9",
+       "fn": null
+      },
+      {
+       "raw": "(int)\"_eComMoveFlag_HitNext\"",
+       "fn": null
+      },
+      {
+       "raw": "4",
+       "fn": null
+      }
+     ],
+     "ea": "0x894001",
+     "ecx": "[ebp+var_4C]"
+    },
+    {
+     "callee": "Sqrat_TableBase_SetValueInt_42E7D0",
+     "args": [
+      {
+       "raw": "v9",
+       "fn": null
+      },
+      {
+       "raw": "(int)\"_eComMoveFlag_DamageNext\"",
+       "fn": null
+      },
+      {
+       "raw": "8",
+       "fn": null
+      }
+     ],
+     "ea": "0x894010",
+     "ecx": "[ebp+var_4C]"
+    },
+    {
+     "callee": "Sqrat_TableBase_SetValueInt_42E7D0",
+     "args": [
+      {
+       "raw": "v9",
+       "fn": null
+      },
+      {
+       "raw": "(int)\"_eComMoveFlag_HitObjNext\"",
+       "fn": null
+      },
+      {
+       "raw": "16",
+       "fn": null
+      }
+     ],
+     "ea": "0x89401f",
+     "ecx": "[ebp+var_4C]"
+    },
+    {
+     "callee": "Sqrat_TableBase_SetValueInt_42E7D0",
+     "args": [
+      {
+       "raw": "v9",
+       "fn": null
+      },
+      {
+       "raw": "(int)\"_eComMoveFlag_DamageObjNext\"",
+       "fn": null
+      },
+      {
+       "raw": "32",
+       "fn": null
+      }
+     ],
+     "ea": "0x89402e",
+     "ecx": "[ebp+var_4C]"
+    },
+    {
+     "callee": "Sqrat_TableBase_SetValueInt_42E7D0",
+     "args": [
+      {
+       "raw": "v9",
+       "fn": null
+      },
+      {
+       "raw": "(int)\"_eComMoveFlag_HitEnd\"",
+       "fn": null
+      },
+      {
+       "raw": "64",
+       "fn": null
+      }
+     ],
+     "ea": "0x89403d",
+     "ecx": "[ebp+var_4C]"
+    },
+    {
+     "callee": "Sqrat_TableBase_SetValueInt_42E7D0",
+     "args": [
+      {
+       "raw": "v9",
+       "fn": null
+      },
+      {
+       "raw": "(int)\"_eComMoveFlag_DamageEnd\"",
+       "fn": null
+      },
+      {
+       "raw": "128",
+       "fn": null
+      }
+     ],
+     "ea": "0x89404f",
+     "ecx": "[ebp+var_4C]"
+    },
+    {
+     "callee": "Sqrat_TableBase_SetValueInt_42E7D0",
+     "args": [
+      {
+       "raw": "v9",
+       "fn": null
+      },
+      {
+       "raw": "(int)\"_eComMoveFlag_AirNext\"",
+       "fn": null
+      },
+      {
+       "raw": "0",
+       "fn": null
+      }
+     ],
+     "ea": "0x894061",
+     "ecx": "[ebp+var_4C]"
+    },
+    {
+     "callee": "Sqrat_TableBase_SetValueInt_42E7D0",
+     "args": [
+      {
+       "raw": "v9",
+       "fn": null
+      },
+      {
+       "raw": "(int)\"_eComMoveFlag_GroundNext\"",
+       "fn": null
+      },
+      {
+       "raw": "0",
+       "fn": null
+      }
+     ],
+     "ea": "0x894073",
+     "ecx": "[ebp+var_4C]"
+    },
+    {
+     "callee": "Sqrat_TableBase_SetValueInt_42E7D0",
+     "args": [
+      {
+       "raw": "v9",
+       "fn": null
+      },
+      {
+       "raw": "(int)\"_eComMoveFlag_MoveableNext\"",
+       "fn": null
+      },
+      {
+       "raw": "0",
+       "fn": null
+      }
+     ],
+     "ea": "0x894085",
+     "ecx": "[ebp+var_4C]"
+    },
+    {
+     "callee": "Sqrat_TableBase_SetValueInt_42E7D0",
+     "args": [
+      {
+       "raw": "v9",
+       "fn": null
+      },
+      {
+       "raw": "(int)\"_eComMoveFlag_MovedisableNext\"",
+       "fn": null
+      },
+      {
+       "raw": "0",
+       "fn": null
+      }
+     ],
+     "ea": "0x894097",
+     "ecx": "[ebp+var_4C]"
+    },
+    {
+     "callee": "Sqrat_TableBase_SetValueInt_42E7D0",
+     "args": [
+      {
+       "raw": "v9",
+       "fn": null
+      },
+      {
+       "raw": "(int)\"_eComMoveFlag_AirEnd\"",
+       "fn": null
+      },
+      {
+       "raw": "0",
+       "fn": null
+      }
+     ],
+     "ea": "0x8940a9",
+     "ecx": "[ebp+var_4C]"
+    },
+    {
+     "callee": "Sqrat_TableBase_SetValueInt_42E7D0",
+     "args": [
+      {
+       "raw": "v9",
+       "fn": null
+      },
+      {
+       "raw": "(int)\"_eComMoveFlag_GroundEnd\"",
+       "fn": null
+      },
+      {
+       "raw": "0",
+       "fn": null
+      }
+     ],
+     "ea": "0x8940bb",
+     "ecx": "[ebp+var_4C]"
+    },
+    {
+     "callee": "Sqrat_TableBase_SetValueInt_42E7D0",
+     "args": [
+      {
+       "raw": "v9",
+       "fn": null
+      },
+      {
+       "raw": "(int)\"_eComMoveFlag_MoveableEnd\"",
+       "fn": null
+      },
+      {
+       "raw": "0",
+       "fn": null
+      }
+     ],
+     "ea": "0x8940cd",
+     "ecx": "[ebp+var_4C]"
+    },
+    {
+     "callee": "Sqrat_TableBase_SetValueInt_42E7D0",
+     "args": [
+      {
+       "raw": "v9",
+       "fn": null
+      },
+      {
+       "raw": "(int)\"_eComMoveFlag_MovedisableEnd\"",
+       "fn": null
+      },
+      {
+       "raw": "0",
+       "fn": null
+      }
+     ],
+     "ea": "0x8940df",
+     "ecx": "[ebp+var_4C]"
+    },
+    {
+     "callee": "Sqrat_TableBase_SetValueInt_42E7D0",
+     "args": [
+      {
+       "raw": "v9",
+       "fn": null
+      },
+      {
+       "raw": "(int)\"_eComMoveFlag_NmCancelEnd\"",
+       "fn": null
+      },
+      {
+       "raw": "0",
+       "fn": null
+      }
+     ],
+     "ea": "0x8940f1",
+     "ecx": "[ebp+var_4C]"
+    },
+    {
+     "callee": "Sqrat_TableBase_SetValueInt_42E7D0",
+     "args": [
+      {
+       "raw": "v9",
+       "fn": null
+      },
+      {
+       "raw": "(int)\"_eComMoveFlag_SpCancelEnd\"",
+       "fn": null
+      },
+      {
+       "raw": "0",
+       "fn": null
+      }
+     ],
+     "ea": "0x894103",
+     "ecx": "[ebp+var_4C]"
+    },
+    {
+     "callee": "Sqrat_TableBase_SetValueInt_42E7D0",
+     "args": [
+      {
+       "raw": "v9",
+       "fn": null
+      },
+      {
+       "raw": "(int)\"_eComMoveFlag_CancelEnd\"",
+       "fn": null
+      },
+      {
+       "raw": "0",
+       "fn": null
+      }
+     ],
+     "ea": "0x894115",
+     "ecx": "[ebp+var_4C]"
+    },
+    {
+     "callee": "Sqrat_TableBase_SetValueInt_42E7D0",
+     "args": [
+      {
+       "raw": "v9",
+       "fn": null
+      },
+      {
+       "raw": "(int)\"_eComMoveFlag_NmCancelNext\"",
+       "fn": null
+      },
+      {
+       "raw": "0",
+       "fn": null
+      }
+     ],
+     "ea": "0x894127",
+     "ecx": "[ebp+var_4C]"
+    },
+    {
+     "callee": "Sqrat_TableBase_SetValueInt_42E7D0",
+     "args": [
+      {
+       "raw": "v9",
+       "fn": null
+      },
+      {
+       "raw": "(int)\"_eComMoveFlag_SpCancelNext\"",
+       "fn": null
+      },
+      {
+       "raw": "0",
+       "fn": null
+      }
+     ],
+     "ea": "0x894139",
+     "ecx": "[ebp+var_4C]"
+    },
+    {
+     "callee": "Sqrat_TableBase_SetValueInt_42E7D0",
+     "args": [
+      {
+       "raw": "v9",
+       "fn": null
+      },
+      {
+       "raw": "(int)\"_eComMoveFlag_CancelNext\"",
+       "fn": null
+      },
+      {
+       "raw": "0",
+       "fn": null
+      }
+     ],
+     "ea": "0x89414b",
+     "ecx": "[ebp+var_4C]"
+    },
+    {
+     "callee": "Sqrat_TableBase_SetValueInt_42E7D0",
+     "args": [
+      {
+       "raw": "v9",
+       "fn": null
+      },
+      {
+       "raw": "(int)\"_eComMoveFlag_StickHold\"",
+       "fn": null
+      },
+      {
+       "raw": "0",
+       "fn": null
+      }
+     ],
+     "ea": "0x89415d",
+     "ecx": "[ebp+var_4C]"
+    },
+    {
+     "callee": "Sqrat_TableBase_SetValueInt_42E7D0",
+     "args": [
+      {
+       "raw": "v9",
+       "fn": null
+      },
+      {
+       "raw": "(int)\"_eComMoveFlag_ButtonHold\"",
+       "fn": null
+      },
+      {
+       "raw": "0",
+       "fn": null
+      }
+     ],
+     "ea": "0x89416f",
+     "ecx": "[ebp+var_4C]"
+    },
+    {
+     "callee": "Sqrat_TableBase_SetValueInt_42E7D0",
+     "args": [
+      {
+       "raw": "v9",
+       "fn": null
+      },
+      {
+       "raw": "(int)\"_eComSkillType_Interrupt\"",
+       "fn": null
+      },
+      {
+       "raw": "1",
+       "fn": null
+      }
+     ],
+     "ea": "0x89417e",
+     "ecx": "[ebp+var_4C]"
+    },
+    {
+     "callee": "Sqrat_TableBase_SetValueInt_42E7D0",
+     "args": [
+      {
+       "raw": "v9",
+       "fn": null
+      },
+      {
+       "raw": "(int)\"_eComSkillType_NoInterrupt\"",
+       "fn": null
+      },
+      {
+       "raw": "2",
+       "fn": null
+      }
+     ],
+     "ea": "0x89418d",
+     "ecx": "[ebp+var_4C]"
+    },
+    {
+     "callee": "Sqrat_TableBase_SetValueInt_42E7D0",
+     "args": [
+      {
+       "raw": "v9",
+       "fn": null
+      },
+      {
+       "raw": "(int)\"_eComButton_A\"",
+       "fn": null
+      },
+      {
+       "raw": "1",
+       "fn": null
+      }
+     ],
+     "ea": "0x89419c",
+     "ecx": "[ebp+var_4C]"
+    },
+    {
+     "callee": "Sqrat_TableBase_SetValueInt_42E7D0",
+     "args": [
+      {
+       "raw": "v9",
+       "fn": null
+      },
+      {
+       "raw": "(int)\"_eComButton_B\"",
+       "fn": null
+      },
+      {
+       "raw": "2",
+       "fn": null
+      }
+     ],
+     "ea": "0x8941ab",
+     "ecx": "[ebp+var_4C]"
+    },
+    {
+     "callee": "Sqrat_TableBase_SetValueInt_42E7D0",
+     "args": [
+      {
+       "raw": "v9",
+       "fn": null
+      },
+      {
+       "raw": "(int)\"_eComButton_C\"",
+       "fn": null
+      },
+      {
+       "raw": "4",
+       "fn": null
+      }
+     ],
+     "ea": "0x8941ba",
+     "ecx": "[ebp+var_4C]"
+    },
+    {
+     "callee": "Sqrat_TableBase_SetValueInt_42E7D0",
+     "args": [
+      {
+       "raw": "v9",
+       "fn": null
+      },
+      {
+       "raw": "(int)\"_eComButton_D\"",
+       "fn": null
+      },
+      {
+       "raw": "8",
+       "fn": null
+      }
+     ],
+     "ea": "0x8941c9",
+     "ecx": "[ebp+var_4C]"
+    },
+    {
+     "callee": "Sqrat_TableBase_SetValueInt_42E7D0",
+     "args": [
+      {
+       "raw": "v9",
+       "fn": null
+      },
+      {
+       "raw": "(int)\"_eComState_MoveAble\"",
+       "fn": null
+      },
+      {
+       "raw": "1",
+       "fn": null
+      }
+     ],
+     "ea": "0x8941d8",
+     "ecx": "[ebp+var_4C]"
+    },
+    {
+     "callee": "Sqrat_TableBase_SetValueInt_42E7D0",
+     "args": [
+      {
+       "raw": "v9",
+       "fn": null
+      },
+      {
+       "raw": "(int)\"_eComState_Guard\"",
+       "fn": null
+      },
+      {
+       "raw": "2",
+       "fn": null
+      }
+     ],
+     "ea": "0x8941e7",
+     "ecx": "[ebp+var_4C]"
+    },
+    {
+     "callee": "Sqrat_TableBase_SetValueInt_42E7D0",
+     "args": [
+      {
+       "raw": "v9",
+       "fn": null
+      },
+      {
+       "raw": "(int)\"_eComState_Damage\"",
+       "fn": null
+      },
+      {
+       "raw": "4",
+       "fn": null
+      }
+     ],
+     "ea": "0x8941f6",
+     "ecx": "[ebp+var_4C]"
+    },
+    {
+     "callee": "Sqrat_TableBase_SetValueInt_42E7D0",
+     "args": [
+      {
+       "raw": "v9",
+       "fn": null
+      },
+      {
+       "raw": "(int)\"_eComState_Grapped\"",
+       "fn": null
+      },
+      {
+       "raw": "8",
+       "fn": null
+      }
+     ],
+     "ea": "0x894205",
+     "ecx": "[ebp+var_4C]"
+    },
+    {
+     "callee": "Sqrat_TableBase_SetValueInt_42E7D0",
+     "args": [
+      {
+       "raw": "v9",
+       "fn": null
+      },
+      {
+       "raw": "(int)\"_eComState_Bound\"",
+       "fn": null
+      },
+      {
+       "raw": "6",
+       "fn": null
+      }
+     ],
+     "ea": "0x894214",
+     "ecx": "[ebp+var_4C]"
+    },
+    {
+     "callee": "Sqrat_TableBase_SetValueInt_42E7D0",
+     "args": [
+      {
+       "raw": "v9",
+       "fn": null
+      },
+      {
+       "raw": "(int)\"_eComState_Chance\"",
+       "fn": null
+      },
+      {
+       "raw": "128",
+       "fn": null
+      }
+     ],
+     "ea": "0x894226",
+     "ecx": "[ebp+var_4C]"
+    },
+    {
+     "callee": "Sqrat_TableBase_SetValueInt_42E7D0",
+     "args": [
+      {
+       "raw": "v9",
+       "fn": null
+      },
+      {
+       "raw": "(int)\"_eComState_Attack\"",
+       "fn": null
+      },
+      {
+       "raw": "0",
+       "fn": null
+      }
+     ],
+     "ea": "0x894238",
+     "ecx": "[ebp+var_4C]"
+    },
+    {
      "callee": "Sqrat_RootTable_BindTable",
      "args": [
       {
@@ -8343,8 +14146,7 @@
       },
       {
        "raw": "(int)\"BMvCoreConst\"",
-       "fn": null,
-       "str": "BMvCoreConst"
+       "fn": null
       },
       {
        "raw": "(int)v9",
@@ -8364,8 +14166,7 @@
       },
       {
        "raw": "(int)\"BCom\"",
-       "fn": null,
-       "str": "BCom"
+       "fn": null
       },
       {
        "raw": "(int)v11",
@@ -8790,8 +14591,7 @@
       },
       {
        "raw": "(int)\"CDat\"",
-       "fn": null,
-       "str": "CDat"
+       "fn": null
       },
       {
        "raw": "(int)v13",
@@ -9161,8 +14961,7 @@
       },
       {
        "raw": "(int)\"CAnime\"",
-       "fn": null,
-       "str": "CAnime"
+       "fn": null
       },
       {
        "raw": "(int)v12",
@@ -9266,8 +15065,7 @@
       },
       {
        "raw": "(int)\"CAniManager\"",
-       "fn": null,
-       "str": "CAniManager"
+       "fn": null
       },
       {
        "raw": "(int)v11",
@@ -9287,8 +15085,7 @@
       },
       {
        "raw": "(int)\"tPAni\"",
-       "fn": null,
-       "str": "tPAni"
+       "fn": null
       },
       {
        "raw": "(int)v14",
@@ -9300,6 +15097,215 @@
      "ecx": "[ebp+var_AC]"
     },
     {
+     "callee": "Sqrat_TableBase_SetValueInt_42E7D0",
+     "args": [
+      {
+       "raw": "v15",
+       "fn": null
+      },
+      {
+       "raw": "(int)\"_PAniFlag_JpEqual\"",
+       "fn": null
+      },
+      {
+       "raw": "1",
+       "fn": null
+      }
+     ],
+     "ea": "0x8965c7",
+     "ecx": "[ebp+var_20]"
+    },
+    {
+     "callee": "Sqrat_TableBase_SetValueInt_42E7D0",
+     "args": [
+      {
+       "raw": "v15",
+       "fn": null
+      },
+      {
+       "raw": "(int)\"_PAniFlag_JpGrater\"",
+       "fn": null
+      },
+      {
+       "raw": "2",
+       "fn": null
+      }
+     ],
+     "ea": "0x8965d6",
+     "ecx": "[ebp+var_20]"
+    },
+    {
+     "callee": "Sqrat_TableBase_SetValueInt_42E7D0",
+     "args": [
+      {
+       "raw": "v15",
+       "fn": null
+      },
+      {
+       "raw": "(int)\"_PAniFlag_JpLess\"",
+       "fn": null
+      },
+      {
+       "raw": "3",
+       "fn": null
+      }
+     ],
+     "ea": "0x8965e5",
+     "ecx": "[ebp+var_20]"
+    },
+    {
+     "callee": "Sqrat_TableBase_SetValueInt_42E7D0",
+     "args": [
+      {
+       "raw": "v15",
+       "fn": null
+      },
+      {
+       "raw": "(int)\"_PAniFrame_IpNormal\"",
+       "fn": null
+      },
+      {
+       "raw": "0",
+       "fn": null
+      }
+     ],
+     "ea": "0x8965f4",
+     "ecx": "[ebp+var_20]"
+    },
+    {
+     "callee": "Sqrat_TableBase_SetValueInt_42E7D0",
+     "args": [
+      {
+       "raw": "v15",
+       "fn": null
+      },
+      {
+       "raw": "(int)\"_PAniFrame_IpAccel\"",
+       "fn": null
+      },
+      {
+       "raw": "1",
+       "fn": null
+      }
+     ],
+     "ea": "0x896603",
+     "ecx": "[ebp+var_20]"
+    },
+    {
+     "callee": "Sqrat_TableBase_SetValueInt_42E7D0",
+     "args": [
+      {
+       "raw": "v15",
+       "fn": null
+      },
+      {
+       "raw": "(int)\"_PAniFrame_IpDecel\"",
+       "fn": null
+      },
+      {
+       "raw": "2",
+       "fn": null
+      }
+     ],
+     "ea": "0x896612",
+     "ecx": "[ebp+var_20]"
+    },
+    {
+     "callee": "Sqrat_TableBase_SetValueInt_42E7D0",
+     "args": [
+      {
+       "raw": "v15",
+       "fn": null
+      },
+      {
+       "raw": "(int)\"_PAniFrame_IpAccelEx\"",
+       "fn": null
+      },
+      {
+       "raw": "3",
+       "fn": null
+      }
+     ],
+     "ea": "0x896621",
+     "ecx": "[ebp+var_20]"
+    },
+    {
+     "callee": "Sqrat_TableBase_SetValueInt_42E7D0",
+     "args": [
+      {
+       "raw": "v15",
+       "fn": null
+      },
+      {
+       "raw": "(int)\"_PAniFrame_IpDecelEx\"",
+       "fn": null
+      },
+      {
+       "raw": "4",
+       "fn": null
+      }
+     ],
+     "ea": "0x896630",
+     "ecx": "[ebp+var_20]"
+    },
+    {
+     "callee": "Sqrat_TableBase_SetValueInt_42E7D0",
+     "args": [
+      {
+       "raw": "v15",
+       "fn": null
+      },
+      {
+       "raw": "(int)\"_PAniFrame_IpAtoD\"",
+       "fn": null
+      },
+      {
+       "raw": "5",
+       "fn": null
+      }
+     ],
+     "ea": "0x89663f",
+     "ecx": "[ebp+var_20]"
+    },
+    {
+     "callee": "Sqrat_TableBase_SetValueInt_42E7D0",
+     "args": [
+      {
+       "raw": "v15",
+       "fn": null
+      },
+      {
+       "raw": "(int)\"_PAniFrame_IpDtoA\"",
+       "fn": null
+      },
+      {
+       "raw": "6",
+       "fn": null
+      }
+     ],
+     "ea": "0x89664e",
+     "ecx": "[ebp+var_20]"
+    },
+    {
+     "callee": "Sqrat_TableBase_SetValueInt_42E7D0",
+     "args": [
+      {
+       "raw": "v15",
+       "fn": null
+      },
+      {
+       "raw": "(int)\"_PAniFrame_IpNone\"",
+       "fn": null
+      },
+      {
+       "raw": "7",
+       "fn": null
+      }
+     ],
+     "ea": "0x89665d",
+     "ecx": "[ebp+var_20]"
+    },
+    {
      "callee": "Sqrat_RootTable_BindTable",
      "args": [
       {
@@ -9308,8 +15314,7 @@
       },
       {
        "raw": "(int)\"tPAniConst\"",
-       "fn": null,
-       "str": "tPAniConst"
+       "fn": null
       },
       {
        "raw": "(int)v15",
