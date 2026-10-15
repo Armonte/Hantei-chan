@@ -244,3 +244,28 @@ pause/step, same-session plates; run log `gamecap_r5.log`). New editor views (on
 - **flipHV** is now within 2× of its 3.10 / 7.4% control on the mean, and under it in % with the band. The rest is the
   fan content described in the round 6 notes.
 - **The three small increases are within each case's band floor.** Their shots also carry the tie-bias change above.
+
+## Round 6b (2026-10-15): part UV bias
+- **Cause.** All three games add a fixed bias to each part quad's UVs, (uv / 256) + bias per corner: uni2
+  PatPart_DrawPlaneQuad 0x4BFCB0 and sub_4C0430, MBTL 0x4A2710 / 0x4A2DD0, MBAA PatPart_RenderQuad.
+  - Start-side biases: u0 = 0x3951B717 (2.0e-4), v0 = 0x394C78EA (1.95e-4). End side: 0.
+  - Only on an AMD adapter (VendorId 0x1002: uni2 sub_4B0480, MBTL sub_491E00) does the game switch to u0 = 0,
+    u1 = −2.0e-4.
+  - Read live on the capture machine (NVIDIA RTX 3070 Ti): gamecap `uni2_uvbias_peek.gcs`, `mbtl_uvbias_peek.gcs`.
+  - The editor applied none of it. On stretched streaks that is a pixel-sized shift of the texture.
+- **Fix.** `partrender::PartUvBiasU/V`, applied to plane and rect quads. The editor's other shapes map u/v onto their
+  own axes, and biasing them moved MBTL flipV from 3.57 to 5.48, so they stay unbiased.
+
+| case | round 6 | round 6b |
+|---|---|---|
+| flipHV_chr019_p153 | 6.32 / 18.5% | 6.17 / 17.7% (band 2.74 / 7.2%) |
+| flipHV_chr019_p153_z1 | 8.85 / 28.6% | **5.74 / 15.8%** (band 2.45 / 7.5%) |
+| flipH_chr000_p96f1 | 0.76 / 0.5% | **0.26 / 0.1%** |
+| afhk_pat_chr000_p72_t2 | 3.29 / 10.4% | **2.71 / 7.6%** |
+| afhk_pat_chr019_p62_t7 | 1.65 / 3.3% | 1.48 / 2.9% |
+| mbtl_flipV_chr001_p157f2 | 3.57 / 11.3% | 3.55 / 11.3% |
+| flipV_chr000_p383f1 | 1.61 / 2.3% | 1.62 / 2.7% |
+| pral2_chr025_p133f1 | 2.75 / 4.7% | 2.72 / 4.4% |
+
+- **flipHV at zoom 1** improved 9.20 → 5.74 over rounds 6 and 6b, but is still above ctrl_chr019_p0_z1 (1.17 / 2.0%).
+  At zoom 1.5 it is 6.17 against a 3.10 control. Still open.

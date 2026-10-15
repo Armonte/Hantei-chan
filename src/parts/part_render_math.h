@@ -48,6 +48,22 @@ inline UvRect FlipUv(int u, int v, int w, int h, int prrv)
 	return r;
 }
 
+// ---- Part UV bias ----------------------------------------------------------------------------------------------
+// Every part quad's UVs are (uv / 256) + a bias at each end (uni2 PatPart_DrawPlaneQuad 0x4BFCB0 + sub_4C0430 shapes,
+// MBTL 0xA1CB7C / 0xA1CB78, MBAA PatPart_RenderQuad 0x54C970 / 0x54C974). The start-side biases are initialised to
+// u0 = 0x3951B717 (2.0e-4) and v0 = 0x394C78EA (1.95e-4), the end-side ones to 0; only on an AMD adapter (VendorId
+// 0x1002, uni2 sub_4B0480) does the game swap them to u0 = 0, u1 = -2.0e-4. The non-AMD values were read live from
+// uni2 1.42 on the capture machine (NVIDIA, gamecap uni2_uvbias_peek.gcs). On a texture of a few thousand texels this
+// moves the sampled texels by ~0.4 texel, which a 4-5x stretched streak turns into a pixel-sized shift (render-match6).
+constexpr float kPartUvBiasU0 = 1.99999995e-4f;   // 0x3951B717
+constexpr float kPartUvBiasV0 = 1.94999995e-4f;   // 0x394C78EA
+constexpr float kPartUvBiasU1 = 0.f, kPartUvBiasV1 = 0.f;
+// Bias at fraction f (0 = the quad's first UV, 1 = its last) along u / v. Applied to plane and rect quads, whose
+// corners match the games' corner layout; the editor's other shapes map u/v onto their own axes, and biasing them
+// moved MBTL flipV p157 from 3.57 to 5.48, so they stay unbiased.
+inline float PartUvBiasU(float f) { return kPartUvBiasU0 + (kPartUvBiasU1 - kPartUvBiasU0) * f; }
+inline float PartUvBiasV(float f) { return kPartUvBiasV0 + (kPartUvBiasV1 - kPartUvBiasV0) * f; }
+
 // ---- AFHK ------------------------------------------------------------------------------------------------------
 // Curve applied to x = 1 - progress (1 on the frame's first tick). The result t is the CURRENT frame's weight:
 // value = cur + (next - cur) * (1 - t). 1 linear, 2 slow->fast, 3 fast->slow, 4 and 5 the two S-curves; any

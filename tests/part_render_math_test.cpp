@@ -1,3 +1,4 @@
+#include <cstring>
 // .pat / AF layer render rules (headless, no GL): PRAL blend modes, PRRV UV flips, AFHK curves, next-frame
 // choice, angle and colour lerps. Expected values are worked from the game code quoted in
 // src/parts/part_render_math.h (uni2.exe; MBAA.exe for the shared AFHK table).
@@ -199,7 +200,12 @@ static glm::vec2 EditorPartProject(glm::vec3 p, float w, float h)
 
 static void TestPartPerspective()
 {
-	CHECK(Near(PartEyeDistance(), 1334.50f, 0.05f));   // 1024 * cot(75 deg / 2), uni2 0x4C1860 / MBTL 0x4A3DE0
+	CHECK(Near(PartEyeDistance(), 1334.50f, 0.05f));
+	// part UV bias: the non-AMD values read live from uni2 1.42 and MBTL 25646393 (start side only)
+	{ float f; uint32_t b = 0x3951B717u; memcpy(&f, &b, 4); CHECK(Near(kPartUvBiasU0, f, 1e-9f)); }
+	{ float f; uint32_t b = 0x394C78EAu; memcpy(&f, &b, 4); CHECK(Near(kPartUvBiasV0, f, 1e-9f)); }
+	CHECK(PartUvBiasU(1.f) == 0.f && PartUvBiasV(1.f) == 0.f);
+   // 1024 * cot(75 deg / 2), uni2 0x4C1860 / MBTL 0x4A3DE0
 	const float w = 1264.f, h = 861.f;
 	const glm::vec3 pts[] = {{0, 0, 0}, {100, -50, 0}, {200, 300, 400}, {-150, 80, -300}, {50, 50, 900}, {-400, -700, 250}};
 	for (const glm::vec3 &p : pts) {

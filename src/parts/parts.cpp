@@ -733,6 +733,9 @@ void Parts::Draw(const DrawParams& params,
         const UvRect uvr = FlipUv(cutout.uv[0], cutout.uv[1], cutout.uv[2], cutout.uv[3], rawTextureView ? 0 : part.flip);
         auto uvS = [&](float f) { return (uvr.u + uvr.w * f) / uvUnit; };
         auto uvT = [&](float f) { return (uvr.v + uvr.h * f) / uvUnit; };
+        // Plane / rect quads carry the games' per-corner UV bias (partrender::PartUvBiasU/V); not in the raw texture view.
+        auto uvSq = [&](float f) { return uvS(f) + (rawTextureView ? 0.f : partrender::PartUvBiasU(f)); };
+        auto uvTq = [&](float f) { return uvT(f) + (rawTextureView ? 0.f : partrender::PartUvBiasV(f)); };
 
         std::vector<float> vertexData;
 
@@ -746,8 +749,8 @@ void Parts::Draw(const DrawParams& params,
                 point[i].x = -cutout.xy[0] + cutout.wh[0] * tX[i];
                 point[i].y = -cutout.xy[1] + cutout.wh[1] * tY[i];
                 point[i].z = 0;
-                point[i].s = point[i].p = uvS((float)tX[i]);
-                point[i].t = point[i].q = uvT((float)tY[i]);
+                point[i].s = point[i].p = uvSq((float)tX[i]);
+                point[i].t = point[i].q = uvTq((float)tY[i]);
             }
             partVertices.Prepare(6 * 7 * sizeof(float), &point[0]);
             break;
@@ -761,8 +764,8 @@ void Parts::Draw(const DrawParams& params,
                 point[i].x = (float)(outShape.rectX + outShape.rectW * tX[i]);
                 point[i].y = (float)(outShape.rectY + outShape.rectH * tY[i]);
                 point[i].z = 0;
-                point[i].s = point[i].p = uvS((float)tX[i]);
-                point[i].t = point[i].q = uvT((float)tY[i]);
+                point[i].s = point[i].p = uvSq((float)tX[i]);
+                point[i].t = point[i].q = uvTq((float)tY[i]);
             }
             partVertices.Prepare(6 * 7 * sizeof(float), &point[0]);
             break;
