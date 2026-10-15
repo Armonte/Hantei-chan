@@ -201,3 +201,11 @@ pause/step, same-session plates; run log `gamecap_r5.log`). New editor views (on
 - **Code.** UNI2 `PatPart_DrawPlaneQuad` 0x4BFCB0 builds the quad at (-cx,-cy)..(-cx+w,-cy+h) and is never mirrored;
   PRRV flips only the UVs (u += w-1, w = -w). The editor matches that.
 - Open: the 1 px tip offset on the 1×5-zoomed props 1–4 and 6.
+- **pups_chr027_p449f6 (6.16 / 22.0%, control 4.67 / 10.2%) is at the floor without the game-only darkening.**
+  - 51.7% of its |d| > 24 pixels are pixels where the game is clearly darker than the prediction (luma < 0.8×). That is
+    the floor drop shadow under the zoomed alpha-128 CG copy, a game-only pass like the ring in afhk_cg_chr020_p437.
+  - Excluding those pixels, the mean |d| is 4.46, below the control.
+  - Re-measured with the round 5 inputs (identical numbers): v2_model `--grey`, `--grad-ctrl ctrl_chr027_p0,ctrl_chr027_p0_r5`.
+- **Process note (2026-10-15).** A `sed` with `\|` (alternation in GNU sed) emptied `cases_control.txt` in the
+  working copy for a while. Without the case rows every zoom fell back to 1, and the controls read 16–64. It was
+  restored from git; nothing with the empty file was committed.
