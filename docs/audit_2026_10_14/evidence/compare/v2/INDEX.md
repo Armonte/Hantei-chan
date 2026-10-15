@@ -186,3 +186,18 @@ pause/step, same-session plates; run log `gamecap_r5.log`). New editor views (on
 - **MBTL flipV.** It now has a .pat-only floor of its own and sits at it.
 - **pups chr027.** p449 f0 draws nothing on either side (set 690 is off-view). Frame 4 puts the PUPS-bank PPPA part
   on screen, and the case matches its control on the mean. It needs the stage gradient for its CG layer.
+
+## Round 6 notes (2026-10-15): flipHV, ruled-out causes
+- **Not AFHK.** p153 frame 0 has interp on, toward part set 46, which shortens the streaks and fades props 2/6/8.
+  The game capture is in-frame tick 1. The editor's case tick counts from 0 (game tick 28 = editor 27; game frame-1
+  tick 5 = editor 7), so editor tick 0 is the match, and that is what the case renders. Re-shot at editor tick 1 the
+  residual goes 7.37 → 16.86 (zoom 1: 9.20 → 21.12), which confirms the game shows no lerp at its tick 1
+  (progress (tick-1)/duration = 0).
+- **Not the type-4 ribbon.** Prop 8 (shape 91, flip 3) is tessellated from `vtx` in both the editor and the game
+  (`parts.cpp` type 4 branch).
+- **Where the residual is.** Per 60 px cell at zoom 1, the lower streak tips improve from 9.8 → 2.8 and 7.2 → 1.7
+  mean when the editor is shifted 1 px vertically, so those are placed 1 px off. The upper fan keeps 11–19 at any
+  shift: different thin-streak content, not a placement error.
+- **Code.** UNI2 `PatPart_DrawPlaneQuad` 0x4BFCB0 builds the quad at (-cx,-cy)..(-cx+w,-cy+h) and is never mirrored;
+  PRRV flips only the UVs (u += w-1, w = -w). The editor matches that.
+- Open: the 1 px tip offset on the 1×5-zoomed props 1–4 and 6.
