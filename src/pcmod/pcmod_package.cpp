@@ -185,16 +185,9 @@ VerifyResult VerifyDirectory(const std::string& dir, bool requireFolderName)
 	if (folder.empty()) folder = Str(fs::absolute(root, ec).lexically_normal().parent_path().filename());
 	if (requireFolderName && folder != m.id) v.errors.push_back("folder name '" + folder + "' differs from id '" + m.id + "'");
 
-	std::set<std::string> listed;
-	for (const FileEntry& f : m.files) {
-		listed.insert(f.key());
-		const fs::path p = root / RelToNative(f.path);
-		if (fs::is_symlink(p, ec)) { v.errors.push_back(f.path + ": reparse point (never served)"); continue; }
-		std::vector<uint8_t> b;
-		if (!ReadAll(Str(p), b)) { v.errors.push_back(f.path + ": missing"); continue; }
-		if (b.size() != f.size) { v.errors.push_back(f.path + ": size " + std::to_string(b.size()) + ", manifest says " + std::to_string(f.size)); continue; }
-		if (Sha256Hex(b.data(), b.size()) != f.sha256) v.errors.push_back(f.path + ": sha256 differs from the manifest");
-	}
+	// Index the files on disk by their normalised lowercase path first: the spec compares paths lowercase,
+	// so a manifest's "DATA\\_type.txt" must find data/_type.txt on case-sensitive filesystems too.
+	std::map<std::string, fs::path> onDisk;
 	for (fs::recursive_directory_iterator it(root, ec), end; !ec && it != end; it.increment(ec)) {
 		if (it->is_symlink(ec)) { v.warnings.push_back(Str(it->path()) + ": reparse point inside the package (never served)"); continue; }
 		if (!it->is_regular_file(ec)) continue;
@@ -203,8 +196,21 @@ VerifyResult VerifyDirectory(const std::string& dir, bool requireFolderName)
 		const std::string low = Lower(rel);
 		if (low == "pcmod.json" || low == "mod.ini") continue;
 		std::string norm, why;
-		if (!NormalisePath(rel, norm, why) || !listed.count(norm)) v.warnings.push_back(rel + ": not listed in pcmod.json (never served)");
+		if (NormalisePath(rel, norm, why)) onDisk.emplace(norm, it->path());
+		else v.warnings.push_back(rel + ": not listed in pcmod.json (never served)");
 	}
+	std::set<std::string> listed;
+	for (const FileEntry& f : m.files) {
+		listed.insert(f.key());
+		const auto hit = onDisk.find(f.key());
+		if (hit == onDisk.end()) { v.errors.push_back(f.path + ": missing"); continue; }
+		std::vector<uint8_t> b;
+		if (!ReadAll(Str(hit->second), b)) { v.errors.push_back(f.path + ": unreadable"); continue; }
+		if (b.size() != f.size) { v.errors.push_back(f.path + ": size " + std::to_string(b.size()) + ", manifest says " + std::to_string(f.size)); continue; }
+		if (Sha256Hex(b.data(), b.size()) != f.sha256) v.errors.push_back(f.path + ": sha256 differs from the manifest");
+	}
+	for (const auto& [norm, path] : onDisk)
+		if (!listed.count(norm)) v.warnings.push_back(Str(path.lexically_relative(root)) + ": not listed in pcmod.json (never served)");
 	v.ok = v.errors.empty();
 	return v;
 }
