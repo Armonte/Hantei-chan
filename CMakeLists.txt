@@ -1111,6 +1111,7 @@ if(MINGW)
 	target_link_options(sysconst_test PRIVATE -static-libgcc -static-libstdc++ -static)
 endif()
 add_test(NAME bg_textini COMMAND bg_test --textini-test)
+add_test(NAME stagecard COMMAND pattool stagecard-selftest)
 add_test(NAME han2_pacselftest COMMAND han2tool pacselftest build/pacselftest_out WORKING_DIRECTORY ${CMAKE_SOURCE_DIR})
 add_test(NAME sysconst COMMAND sysconst_test build/sysconst_test_out C:/dev/hantei-chan/gamedata/mbaacc_ref/vanilla_0002 C:/games/mbaacc/story/battle WORKING_DIRECTORY ${CMAKE_SOURCE_DIR})
 # --headless view export (hidden window, FBO readback): PNG size + checksum stability, batch == single shot
@@ -1231,7 +1232,7 @@ set_tests_properties(squirrel_doc_roundtrip PROPERTIES SKIP_RETURN_CODE 77)
 
 # Part set renumbering (src/parts/pat_renumber.h, Hantei_Docs/pat_renumber.md): the PAT editor's part set list and pattool.
 target_sources(${EXE} PRIVATE src/parts/pat_renumber.cpp src/PatEditor/pat_partset_renumber.cpp)
-add_executable(pattool src/pattool.cpp src/parts/pat_renumber.cpp src/parts/pat_append.cpp src/parts/pat_texconv.cpp src/parts/parts_undo.cpp src/undo_manager.cpp src/file_backup.cpp
+add_executable(pattool src/pattool.cpp src/background/stage_card.cpp src/parts/pat_renumber.cpp src/parts/pat_append.cpp src/parts/pat_texconv.cpp src/parts/parts_undo.cpp src/undo_manager.cpp src/file_backup.cpp
 	src/parts/parts.cpp src/app_log.cpp src/parts/parts_part.cpp src/parts/parts_partset.cpp src/parts/parts_shape.cpp src/parts/parts_texture.cpp
 	src/cgm/cgm_project.cpp src/cgm/cgm_usage.cpp src/framedata.cpp src/framedata_load.cpp src/framedata_save.cpp src/framedata_ha4.cpp ${HAN2_MODEL_SOURCES}
 	src/cg.cpp src/texture.cpp src/vao.cpp src/shader.cpp src/misc.cpp src/png_writer.cpp tinyalloc/tinyalloc.c)
