@@ -26,6 +26,8 @@ public:
 	// Set by CharacterView: marks the view's pattern in the character's undo manager so the next commit runs even when no
 	// mouse gesture ends it (drops, scripts). Parts edits themselves are diffed by the parts undo channel.
 	std::function<void()> onEdited;
+	// The view edits a PAT document (its own undo history, Save writes the .pat): part set renumbering is offered there.
+	std::function<bool()> isPatDocument;
 	void markEdited() const { if (onEdited) onEdited(); }
 };
 

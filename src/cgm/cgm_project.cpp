@@ -77,7 +77,10 @@ bool ParseProjectTxt(const std::string &path, ProjectTxt &out) {
 	if (out.dataFiles.empty()) return false;
 	auto bc = ini.find("bmpcutfile");
 	if (bc != ini.end() && bc->second.count("file00") && atoi(bc->second.count("filenum") ? bc->second.at("filenum").c_str() : "0") >= 1) out.bank = Cp932ToUtf8(bc->second.at("file00"));
+	auto pa = ini.find("panifile");
+	if (pa != ini.end() && pa->second.count("file00") && atoi(pa->second.count("filenum") ? pa->second.at("filenum").c_str() : "0") >= 1) out.pat = Cp932ToUtf8(pa->second.at("file00"));
 	const std::string dir = DirOf(path);
+	if (!out.pat.empty()) out.patPath = Join(dir, out.pat);
 	for (const std::string &d : out.dataFiles) out.dataPaths.push_back(d.empty() ? std::string() : Join(dir, d));
 	if (!out.bank.empty()) out.bankPath = Join(dir, out.bank);
 	return true;

@@ -40,6 +40,9 @@ class PartSet {
 public:
     int partId = -1;
     bool wasLoaded = false; // True if this slot came from a loaded .pat file
+    // Id this slot had in the loaded file (-1 = created in the editor). Part set renumbering (pat_renumber.h) moves
+    // slots; Parts::Save writes a moved slot's original record bytes with only its P_ST id changed.
+    int origId = -1;
     std::basic_string<char, std::char_traits<char>, Allocator<char>> name;
     std::vector<PartProperty> groups; // Part properties in this set
 

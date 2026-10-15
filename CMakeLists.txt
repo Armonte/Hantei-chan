@@ -1175,3 +1175,28 @@ add_test(NAME squirrel_doc COMMAND squirrel_doc_test WORKING_DIRECTORY ${CMAKE_S
 # Every shipped .txt of each extracted game must round-trip byte-identical (skipped when absent).
 add_test(NAME squirrel_doc_roundtrip COMMAND squirrel_doc_test --games ${SQTOOL_GAMEDATA_DIR}/mbtl ${SQTOOL_GAMEDATA_DIR}/uni2 D:/Games/unib WORKING_DIRECTORY ${CMAKE_SOURCE_DIR})
 set_tests_properties(squirrel_doc_roundtrip PROPERTIES SKIP_RETURN_CODE 77)
+
+# Part set renumbering (src/parts/pat_renumber.h, Hantei_Docs/pat_renumber.md): the PAT editor's part set list and pattool.
+target_sources(${EXE} PRIVATE src/parts/pat_renumber.cpp src/PatEditor/pat_partset_renumber.cpp)
+add_executable(pattool src/pattool.cpp src/parts/pat_renumber.cpp src/parts/parts_undo.cpp src/undo_manager.cpp src/file_backup.cpp
+	src/parts/parts.cpp src/app_log.cpp src/parts/parts_part.cpp src/parts/parts_partset.cpp src/parts/parts_shape.cpp src/parts/parts_texture.cpp
+	src/cgm/cgm_project.cpp src/cgm/cgm_usage.cpp src/framedata.cpp src/framedata_load.cpp src/framedata_save.cpp src/framedata_ha4.cpp ${HAN2_MODEL_SOURCES}
+	src/cg.cpp src/texture.cpp src/vao.cpp src/shader.cpp src/misc.cpp src/png_writer.cpp tinyalloc/tinyalloc.c)
+target_include_directories(pattool PRIVATE "." "src" "third_party" "${CMAKE_BINARY_DIR}/generated")
+target_compile_definitions(pattool PRIVATE WIN32_LEAN_AND_MEAN HA6GUIVERSION="${CMAKE_PROJECT_VERSION}" PAT_HEADLESS)
+target_link_libraries(pattool PRIVATE tinyalloc glad glm OpenGL::GL windowscodecs ole32 uuid)
+if(MINGW)
+	target_link_options(pattool PRIVATE -static-libgcc -static-libstdc++ -static)
+endif()
+fb_data_exists(_has "C:/dev/hantei-chan/gamedata/uni2/data/_csel/csel_chr007.pat")
+if(_has)
+	# UNI2 csel .pat files and their HA6 users: move / insert / delete / place / swap draw the same part set at every reference
+	add_test(NAME pat_renumber_csel007_move COMMAND pattool check C:/dev/hantei-chan/gamedata/uni2/data/_csel/csel_chr007.pat --tmp pat_rn1 --move 1-11:40 --insert 5:3)
+	add_test(NAME pat_renumber_csel023_ops COMMAND pattool check C:/dev/hantei-chan/gamedata/uni2/data/_csel/csel_chr023.pat --tmp pat_rn2 --insert 3:10 --swap 13:15 --move 100-120:3)
+	add_test(NAME pat_renumber_csel018_ops COMMAND pattool check C:/dev/hantei-chan/gamedata/uni2/data/_csel/csel_chr018.pat --tmp pat_rn3 --move 20-25:0 --insert 30:2 --place 2-4:60 --swap 7:9)
+	# deleting / clearing a part set a frame draws is refused; deleting unreferenced empty ids closes up
+	add_test(NAME pat_renumber_csel018_refuse COMMAND pattool check C:/dev/hantei-chan/gamedata/uni2/data/_csel/csel_chr018.pat --tmp pat_rn5 --delete 2-4 --expect-refused)
+	add_test(NAME pat_renumber_csel007_delete COMMAND pattool check C:/dev/hantei-chan/gamedata/uni2/data/_csel/csel_chr007.pat --tmp pat_rn6 --insert 2:5 --delete 2-6 --clear 700-720)
+	add_test(NAME pat_renumber_effect COMMAND pattool check C:/dev/hantei-chan/gamedata/uni2/data/sys_effect.pat --tmp pat_rn4 --insert 0:2)
+	set_tests_properties(pat_renumber_csel007_move pat_renumber_csel023_ops pat_renumber_csel018_ops pat_renumber_csel018_refuse pat_renumber_csel007_delete pat_renumber_effect PROPERTIES WORKING_DIRECTORY ${CMAKE_BINARY_DIR})
+endif()

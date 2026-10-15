@@ -23,6 +23,7 @@ struct ProjectTxt {
 	std::string bank;                 // [BmpcutFile] File00 ("" = none)
 	std::vector<std::string> dataPaths;   // resolved UTF-8 paths of dataFiles
 	std::string bankPath;             // resolved UTF-8 path of bank
+	std::string pat, patPath;         // [PAniFile] File00 as written / resolved ("" = none)
 };
 // Parses a project .txt ([DataFile] FileNum N + File%02d / File%03d, or a single File=; [BmpcutFile] File00). False when the
 // file is not a project (no [DataFile] list), e.g. MBTL command scripts or _c.txt command tables.

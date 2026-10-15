@@ -169,6 +169,7 @@ void PatPartSetPane::Draw()
             openpopupWithId = "";
         }
         DrawPopUp();
+        DrawRenumberPopup();
     }
 }
 
@@ -181,9 +182,11 @@ void PatPartSetPane::DrawPopUp() {
 
         if (ImGui::Button(LBL("OK"), ImVec2(120, 40))) {
             if (auto* ps = curInstance->parts->GetPartSet(curInstance->currState->partSet)) {
-                const int id = ps->partId;
+                const int id = ps->partId, orig = ps->origId;
+                const bool loaded = ps->wasLoaded;
                 *ps = {};
                 ps->partId = id;   // the slot keeps its id (the file is indexed by it)
+                ps->origId = orig; ps->wasLoaded = loaded;   // and its record: written as an empty stub
             }
             curInstance->currState->partProp = 0;
             RegeneratePartSetNames();
@@ -322,6 +325,7 @@ void PatPartSetPane::DrawPartSet()
                     RegeneratePartSetNames();
                     UpdateHighligth(activeHighligth);
                 }
+                DrawRenumber();
                 DrawPartProperty(partSet);
             }
         }
