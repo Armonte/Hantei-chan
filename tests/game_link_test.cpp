@@ -46,7 +46,7 @@ std::string CopyFixture()
 	// file by file (mingw's recursive fs::copy into an existing directory is unreliable)
 	const fs::path src = fs::u8path("tests/fixtures/authoring/tag");
 	for (const auto& e : fs::recursive_directory_iterator(src, ec)) {
-		const fs::path to = dst / fs::relative(e.path(), src, ec);
+		const fs::path to = dst / e.path().lexically_relative(src);   // no canonicalisation: works from a UNC working folder
 		if (e.is_directory(ec)) fs::create_directories(to, ec);
 		else { fs::create_directories(to.parent_path(), ec); fs::copy_file(e.path(), to, fs::copy_options::overwrite_existing, ec); }
 		if (ec) std::printf("fixture copy: %s: %s\n", e.path().u8string().c_str(), ec.message().c_str());
