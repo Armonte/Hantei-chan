@@ -3,6 +3,7 @@
 #include <algorithm>
 #include <cstring>
 #include <filesystem>
+#include <cmath>
 #include <fstream>
 
 namespace s3d {
@@ -132,7 +133,98 @@ bool LoadFbxExFile(const std::string& utf8Path, Model& out, std::string& err)
 	std::ifstream f(std::filesystem::u8path(utf8Path), std::ios::binary);
 	if (!f) { err = "cannot open " + utf8Path; return false; }
 	std::vector<uint8_t> buf((std::istreambuf_iterator<char>(f)), std::istreambuf_iterator<char>());
+	if (buf.size() >= 5 && memcmp(buf.data(), "fbxex", 5) != 0) {
+		std::vector<uint8_t> plain = buf;
+		UnielCrypt(plain.data(), plain.size());
+		if (plain.size() >= 5 && memcmp(plain.data(), "fbxex", 5) == 0) {   // UNIEL
+			if (!ParseFbxEx(plain.data(), plain.size(), out, err)) return false;
+			RebaseBakedWorldTracks(out);
+			return true;
+		}
+	}
 	return ParseFbxEx(buf.data(), buf.size(), out, err);
+}
+
+void UnielCrypt(uint8_t* data, size_t size)
+{
+	static const uint8_t kKey[16] = {0xd3, 0x04, 0xf5, 0x27, 0xf3, 0x2e, 0x29, 0x9c, 0x96, 0xf6, 0xfe, 0x4f, 0x47, 0xdd, 0xf4, 0xa9};
+	uint8_t st[256];
+	for (int i = 0; i < 256; ++i) st[i] = uint8_t(i);
+	uint8_t j = 0;
+	for (int i = 0; i < 256; ++i) {
+		j = uint8_t(j + st[i] + kKey[i % 16]);
+		std::swap(st[i], st[j]);
+	}
+	uint8_t a = 0, b = 0;
+	for (size_t n = 0; n < size; ++n) {
+		a = uint8_t(a + 1);
+		b = uint8_t(b + st[a]);
+		std::swap(st[a], st[b]);
+		data[n] ^= st[uint8_t(st[a] + st[b])];
+	}
+}
+
+namespace {
+bool Invert(const Mat4& m, Mat4& out)
+{
+	// general 4x4 inverse (cofactors), row-major
+	const float* a = m.data();
+	float inv[16];
+	inv[0] = a[5]*a[10]*a[15] - a[5]*a[11]*a[14] - a[9]*a[6]*a[15] + a[9]*a[7]*a[14] + a[13]*a[6]*a[11] - a[13]*a[7]*a[10];
+	inv[4] = -a[4]*a[10]*a[15] + a[4]*a[11]*a[14] + a[8]*a[6]*a[15] - a[8]*a[7]*a[14] - a[12]*a[6]*a[11] + a[12]*a[7]*a[10];
+	inv[8] = a[4]*a[9]*a[15] - a[4]*a[11]*a[13] - a[8]*a[5]*a[15] + a[8]*a[7]*a[13] + a[12]*a[5]*a[11] - a[12]*a[7]*a[9];
+	inv[12] = -a[4]*a[9]*a[14] + a[4]*a[10]*a[13] + a[8]*a[5]*a[14] - a[8]*a[6]*a[13] - a[12]*a[5]*a[10] + a[12]*a[6]*a[9];
+	inv[1] = -a[1]*a[10]*a[15] + a[1]*a[11]*a[14] + a[9]*a[2]*a[15] - a[9]*a[3]*a[14] - a[13]*a[2]*a[11] + a[13]*a[3]*a[10];
+	inv[5] = a[0]*a[10]*a[15] - a[0]*a[11]*a[14] - a[8]*a[2]*a[15] + a[8]*a[3]*a[14] + a[12]*a[2]*a[11] - a[12]*a[3]*a[10];
+	inv[9] = -a[0]*a[9]*a[15] + a[0]*a[11]*a[13] + a[8]*a[1]*a[15] - a[8]*a[3]*a[13] - a[12]*a[1]*a[11] + a[12]*a[3]*a[9];
+	inv[13] = a[0]*a[9]*a[14] - a[0]*a[10]*a[13] - a[8]*a[1]*a[14] + a[8]*a[2]*a[13] + a[12]*a[1]*a[10] - a[12]*a[2]*a[9];
+	inv[2] = a[1]*a[6]*a[15] - a[1]*a[7]*a[14] - a[5]*a[2]*a[15] + a[5]*a[3]*a[14] + a[13]*a[2]*a[7] - a[13]*a[3]*a[6];
+	inv[6] = -a[0]*a[6]*a[15] + a[0]*a[7]*a[14] + a[4]*a[2]*a[15] - a[4]*a[3]*a[14] - a[12]*a[2]*a[7] + a[12]*a[3]*a[6];
+	inv[10] = a[0]*a[5]*a[15] - a[0]*a[7]*a[13] - a[4]*a[1]*a[15] + a[4]*a[3]*a[13] + a[12]*a[1]*a[7] - a[12]*a[3]*a[5];
+	inv[14] = -a[0]*a[5]*a[14] + a[0]*a[6]*a[13] + a[4]*a[1]*a[14] - a[4]*a[2]*a[13] - a[12]*a[1]*a[6] + a[12]*a[2]*a[5];
+	inv[3] = -a[1]*a[6]*a[11] + a[1]*a[7]*a[10] + a[5]*a[2]*a[11] - a[5]*a[3]*a[10] - a[9]*a[2]*a[7] + a[9]*a[3]*a[6];
+	inv[7] = a[0]*a[6]*a[11] - a[0]*a[7]*a[10] - a[4]*a[2]*a[11] + a[4]*a[3]*a[10] + a[8]*a[2]*a[7] - a[8]*a[3]*a[6];
+	inv[11] = -a[0]*a[5]*a[11] + a[0]*a[7]*a[9] + a[4]*a[1]*a[11] - a[4]*a[3]*a[9] - a[8]*a[1]*a[7] + a[8]*a[3]*a[5];
+	inv[15] = a[0]*a[5]*a[10] - a[0]*a[6]*a[9] - a[4]*a[1]*a[10] + a[4]*a[2]*a[9] + a[8]*a[1]*a[6] - a[8]*a[2]*a[5];
+	const float det = a[0]*inv[0] + a[1]*inv[4] + a[2]*inv[8] + a[3]*inv[12];
+	if (std::fabs(det) < 1e-12f) return false;
+	for (int i = 0; i < 16; ++i) out[i] = inv[i] / det;
+	return true;
+}
+bool Same(const Mat4& a, const Mat4& b)
+{
+	for (int i = 0; i < 16; ++i) if (std::fabs(a[i] - b[i]) > 1e-4f * std::max(1.f, std::fabs(b[i]))) return false;
+	return true;
+}
+}  // namespace
+
+int RebaseBakedWorldTracks(Model& m)
+{
+	if (m.tracks.size() != m.nodes.size()) return 0;
+	int meshes = 0;
+	for (size_t i = 0; i < m.nodes.size(); ++i) {
+		if (m.nodes[i].type != 1) continue;
+		++meshes;
+		if (m.tracks[i].empty() || !Same(m.tracks[i][0], m.nodes[i].world)) return 0;   // not baked world matrices
+	}
+	if (!meshes) return 0;
+	const std::vector<std::vector<Mat4>> world = m.tracks;   // parents are read from the original (world) tracks
+	int changed = 0;
+	for (size_t i = 0; i < m.nodes.size(); ++i) {
+		const int p = m.nodes[i].parent;
+		if (p <= 0 || world[p].empty()) continue;
+		bool moved = false;
+		for (size_t f = 0; f < world[i].size(); ++f) {
+			Mat4 inv;
+			if (!Invert(world[p][std::min(f, world[p].size() - 1)], inv)) continue;
+			const Mat4 local = MatMul(world[i][f], inv);   // world = local * parentWorld (row vectors)
+			if (Same(local, world[i][f])) continue;
+			m.tracks[i][f] = local;
+			moved = true;
+		}
+		changed += moved;
+	}
+	return changed;
 }
 
 Mat4 MatIdentity()

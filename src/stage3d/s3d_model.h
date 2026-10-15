@@ -62,7 +62,16 @@ struct Model {
 
 // Never throws, never reads out of bounds. false + err on malformed input.
 bool ParseFbxEx(const uint8_t* data, size_t size, Model& out, std::string& err);
-bool LoadFbxExFile(const std::string& utf8Path, Model& out, std::string& err);
+bool LoadFbxExFile(const std::string& utf8Path, Model& out, std::string& err);   // UNIEL: decrypts + rebases (below)
+
+// UNDER NIGHT IN-BIRTH Exe:Late[cl-r] ships bg.fbx.bin and its DDS files RC4-enciphered with one fixed 16-byte key
+// (the key and the "world matrices baked into the tracks" finding are from Zanaylo's UNI2-Improvement-Mod, credited in
+// docs/stage3d/SCOPE.md). RC4 is symmetric: the same call enciphers and deciphers.
+void UnielCrypt(uint8_t* data, size_t size);
+// UNIEL tracks hold each node's WORLD matrix per frame. When every mesh node's first frame equals its stored world
+// matrix, the tracks are rebased onto their parents (local = world * inverse(parent world), per frame, the parent's
+// last frame held). Nodes directly under the root are left alone. Returns the number of nodes changed.
+int RebaseBakedWorldTracks(Model& m);
 
 Mat4 MatIdentity();
 Mat4 MatMul(const Mat4& a, const Mat4& b);   // row-vector: a first, then b

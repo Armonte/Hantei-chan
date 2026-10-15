@@ -10,6 +10,7 @@
 #include <cstdio>
 #include <cstring>
 #include <filesystem>
+#include <fstream>
 #include <string>
 #include <vector>
 
@@ -141,6 +142,79 @@ static void TestShipped(const std::string& bg)
 	CHECK(stages > 0);
 }
 
+// UNIEL: RC4-enciphered bg.fbx.bin / DDS load like plain ones; baked world-matrix tracks are rebased onto their parents.
+static s3d::Mat4 Trs(float tx, float ty, float rz, float sc)
+{
+	s3d::Mat4 m = s3d::MatIdentity();
+	const float c = std::cos(rz) * sc, s = std::sin(rz) * sc;
+	m[0] = c; m[1] = s; m[4] = -s; m[5] = c; m[10] = sc; m[12] = tx; m[13] = ty;
+	return m;
+}
+static void TestUniel()
+{
+	namespace fs = std::filesystem;
+	std::string err;
+	// cipher: symmetric, and the loaders take either form
+	auto plain = Synthetic();
+	auto enc = plain;
+	s3d::UnielCrypt(enc.data(), enc.size());
+	CHECK(enc != plain);
+	auto back = enc;
+	s3d::UnielCrypt(back.data(), back.size());
+	CHECK(back == plain);
+	const fs::path tmp = fs::temp_directory_path() / "hc_stage3d_uniel";
+	fs::create_directories(tmp);
+	{ std::ofstream o(tmp / "bg.fbx.bin", std::ios::binary); o.write((const char*)enc.data(), (std::streamsize)enc.size()); }
+	s3d::Model a, b;
+	CHECK(s3d::LoadFbxExFile((tmp / "bg.fbx.bin").u8string(), a, err));
+	CHECK(s3d::ParseFbxEx(plain.data(), plain.size(), b, err));
+	CHECK(a.nodes.size() == b.nodes.size() && a.textures == b.textures);
+	const fs::path dds = fs::u8path("C:/dev/hantei-chan/gamedata/uni2/bg/bg001");
+	if (fs::is_directory(dds)) {
+		for (auto& e : fs::directory_iterator(dds)) {
+			if (e.path().extension() != ".dds") continue;
+			std::ifstream f(e.path(), std::ios::binary);
+			std::vector<uint8_t> d((std::istreambuf_iterator<char>(f)), {});
+			s3d::UnielCrypt(d.data(), d.size());
+			{ std::ofstream o(tmp / "t.dds", std::ios::binary); o.write((const char*)d.data(), (std::streamsize)d.size()); }
+			s3d::Image x, y;
+			CHECK(s3d::LoadDdsFile((tmp / "t.dds").u8string(), x, err));
+			CHECK(s3d::LoadDdsFile(e.path().u8string(), y, err));
+			CHECK(x.width == y.width && x.height == y.height && x.rgba == y.rgba);
+			break;
+		}
+	}
+	fs::remove_all(tmp);
+	// rebase: root 0 -> 1 -> 2 -> 3, all meshes, 4 frames of local animation, stored as world matrices
+	s3d::Model m;
+	m.nodes.resize(4);
+	for (int i = 1; i < 4; ++i) { m.nodes[i].type = 1; m.nodes[i].parent = i - 1; }
+	m.nodes[0].firstChild = 1; m.nodes[1].firstChild = 2; m.nodes[2].firstChild = 3;
+	std::vector<std::vector<s3d::Mat4>> local(4);
+	local[0] = {s3d::MatIdentity()};
+	for (int i = 1; i < 4; ++i)
+		for (int f = 0; f < 4; ++f) local[i].push_back(Trs(1.f * i + 0.25f * f, 0.5f * f - i, 0.3f * i + 0.1f * f, 1.f + 0.05f * i));
+	m.tracks.assign(4, {});
+	m.tracks[0] = local[0];
+	for (int i = 1; i < 4; ++i)
+		for (int f = 0; f < 4; ++f) m.tracks[i].push_back(i == 1 ? local[i][f] : s3d::MatMul(local[i][f], m.tracks[i - 1][f]));
+	for (int i = 1; i < 4; ++i) m.nodes[i].world = m.tracks[i][0];
+	const auto worldTracks = m.tracks;
+	CHECK(s3d::RebaseBakedWorldTracks(m) == 2);   // nodes 2 and 3; node 1 sits under the root
+	for (int i = 1; i < 4; ++i)
+		for (int f = 0; f < 4; ++f)
+			for (int k = 0; k < 16; ++k) CHECK(std::fabs(m.tracks[i][f][k] - local[i][f][k]) < 1e-4f);
+	std::vector<s3d::Mat4> w;
+	for (int f = 0; f < 4; ++f) {
+		s3d::EvaluateWorld(m, uint64_t(f), w);
+		for (int i = 1; i < 4; ++i) for (int k = 0; k < 16; ++k) CHECK(std::fabs(w[i][k] - worldTracks[i][f][k]) < 1e-3f);
+	}
+	// local tracks (not baked) are left alone
+	s3d::Model n = m;
+	CHECK(s3d::RebaseBakedWorldTracks(n) == 0);
+	std::printf("uniel: cipher round trip, enciphered fbxex + dds load, world->local rebase ok\n");
+}
+
 // ASCII FBX stages (DFCI, the UNI[st]/[cl-r] arcade build): every bg\<dir>\bg.fbx loads, has geometry and a BgList entry, and
 // its textures decode. Where a folder also has bg.fbx.bin (six UNI2 stages), both forms must agree on counts and bounds.
 static void TestAscii(const std::string& bg, const char* label)
@@ -203,6 +277,7 @@ int main(int argc, char** argv)
 	TestSynthetic();
 	TestDds();
 	TestBgList();
+	TestUniel();
 	TestShipped(argc > 1 ? argv[1] : "C:/dev/hantei-chan/gamedata/uni2/bg");
 	TestAscii("C:/dev/hantei-chan/gamedata/uni2/bg", "uni2 (both forms)");
 	TestAscii("C:/games/unib/bg", "unib arcade");
