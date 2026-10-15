@@ -215,7 +215,7 @@ struct ScriptPanel::Impl {
 		static const std::regex slot(R"(^\s*(?:[A-Za-z_]\w*\.)+([A-Za-z_]\w*)\s*<-)");
 		static const std::regex func(R"(^\s*function\s+([A-Za-z_][\w:.]*)\s*\()");
 		static const std::regex cmd(R"(\bcommand\s*=\s*\[([^\]]*)\])");
-		static const std::regex mv(R"(\bname\s*=\s*"(Mv_\w+)")");
+		static const std::regex mv(R"re(\bname\s*=\s*"(Mv_\w+)")re");
 		OutlineItem* open = nullptr;
 		int openDepth = -1;
 		for (size_t i = 0; i < n; i++) {
