@@ -143,6 +143,37 @@ static void TestLerps()
 	CHECK(Near(o.r, 0.5f) && o.a == 1.f);
 }
 
+// AFHK weight 0. MBAA.exe: an AFD-0 frame never sets x (AnimState_ProcessTransition 0x419C00), so the weight is
+// 0 for every curve; the part transform then keeps the current part (PatPart_BuildTransformMatrix 0x405C70) while
+// UNI2 1.42 / MBTL lerp it fully to the next part set. Every game skips the part lerp at weight 1.
+static void TestWeightZero()
+{
+	for (int type = 1; type <= 5; ++type) {
+		CHECK(CurrentWeight(type, 0, 0, true) == 0.f);   // MBAACC, AFD 0
+		CHECK(CurrentWeight(type, 3, 0, true) == 0.f);   // any tick count
+		CHECK(CurrentWeight(type, 0, 0, false) == 1.f);  // UNI2/MBTL, AFD 0: unchanged (first tick, no blend)
+		CHECK(CurrentWeight(type, 0, 4, true) == 1.f);   // MBAACC with AFD != 0: same as before
+		CHECK(CurrentWeight(type, 2, 4, true) == CurrentWeight(type, 2, 4, false));
+	}
+	CHECK(CurrentWeight(0, 0, 0, true) == 1.f && CurrentWeight(6, 0, 0, true) == 1.f);   // no AFHK
+
+	// Part transform lerp gate.
+	CHECK(!PartLerpsTransform(0.f, false));   // MBAACC: weight 0 -> current part
+	CHECK(PartLerpsTransform(0.f, true));     // UNI2/MBTL: weight 0 -> next part
+	CHECK(!PartLerpsTransform(1.f, false) && !PartLerpsTransform(1.f, true));
+	CHECK(PartLerpsTransform(0.5f, false) && PartLerpsTransform(0.5f, true));
+	CHECK(PartLerpsTransform(1e-6f, false));
+
+	// What a weight-0 part draws, per game (the renderer applies Lerp only when the gate is open).
+	const float cur = 2.f, next = 3.f;
+	auto drawn = [&](float t, bool uni) { return PartLerpsTransform(t, uni) ? Lerp(cur, next, t) : cur; };
+	CHECK(drawn(0.f, false) == cur);
+	CHECK(drawn(0.f, true) == next);
+	CHECK(Near(drawn(0.5f, false), 2.5f) && Near(drawn(0.5f, true), 2.5f));
+	// Layer values (scale/rotation/colour) have no weight-0 skip in any game: weight 0 is the next frame's.
+	CHECK(Lerp(cur, next, 0.f) == next && LerpTurns(0.1f, 0.2f, 0.f) == 0.2f);
+}
+
 int main()
 {
 	TestBlend();
@@ -151,6 +182,7 @@ int main()
 	TestNextFrame();
 	TestLerps();
 	TestFirstFrameAndMbaaDialect();
+	TestWeightZero();
 	std::printf("part_render_math_test: %d checks, %d failed\n", g_checks, g_fail);
 	return g_fail ? 1 : 0;
 }

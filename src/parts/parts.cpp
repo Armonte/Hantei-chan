@@ -633,16 +633,19 @@ void Parts::Draw(const DrawParams& params,
             if (np.ppId >= 0 && np.ppId < (int)cutOuts.size()) {
                 const auto& nextCutout = cutOuts[np.ppId];
                 const glm::vec2 nextOffset = partxf::Pivot(fbPartModel, (float)np.x, (float)np.y, nextCutout);
-                offset.x = Lerp(offset.x, nextOffset.x, t);
-                offset.y = Lerp(offset.y, nextOffset.y, t);
-                rotation[0] = LerpTurns(rotation[0], np.rotation[1], t);
-                rotation[1] = LerpTurns(rotation[1], np.rotation[2], t);
-                rotation[2] = LerpTurns(rotation[2], np.rotation[3], t);
-                scale.x = Lerp(scale.x, np.scaleX, t);
-                scale.y = Lerp(scale.y, np.scaleY, t);
-                if (params.applyPras) {
-                    pras.x = Lerp(pras.x, (float)np.pras[0], t);
-                    pras.y = Lerp(pras.y, (float)np.pras[1], t);
+                // MBAA.exe skips the transform lerp at weight 0 and draws the current part (PartLerpsTransform).
+                if (partrender::PartLerpsTransform(t, params.uniDialect)) {
+                    offset.x = Lerp(offset.x, nextOffset.x, t);
+                    offset.y = Lerp(offset.y, nextOffset.y, t);
+                    rotation[0] = LerpTurns(rotation[0], np.rotation[1], t);
+                    rotation[1] = LerpTurns(rotation[1], np.rotation[2], t);
+                    rotation[2] = LerpTurns(rotation[2], np.rotation[3], t);
+                    scale.x = Lerp(scale.x, np.scaleX, t);
+                    scale.y = Lerp(scale.y, np.scaleY, t);
+                    if (params.applyPras) {
+                        pras.x = Lerp(pras.x, (float)np.pras[0], t);
+                        pras.y = Lerp(pras.y, (float)np.pras[1], t);
+                    }
                 }
                 for (int c = 0; c < 4; c++)
                     bgra[c] = LerpByte(bgra[c], np.bgra[c], t);

@@ -627,7 +627,7 @@ void MainFrame::RenderUpdate()
 		state.spriteId = pose;
 		render.usePat = nSets > 0;
 		render.curPattern = render.curNextPattern = pose;
-		render.curInterp = 0.0f;
+		render.curInterp = 1.0f;   // next == current: no AFHK blend (1 = no interpolation)
 		render.GeneratePartCenterVertices();   // base point axes + selected part's cross (DEFAULT view); the sheet selection is a box layer
 		static Layer_Type plain;
 		render.offsetX = render.offsetY = 0;
