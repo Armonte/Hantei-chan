@@ -178,12 +178,27 @@ inline glm::mat4 PartPerspective(float w, float h)
 // the game's samples exactly: a 6-px rect at x = 0 then samples u = k / 6 at pixel k (pixel 3 = the texture centre,
 // a 1-px core on the origin pixel) instead of (k + 0.5) / 6 (a 2-px core half a pixel right). Window y is down, so
 // the NDC shift is (+1/w, -1/h). Applied to game-drawn sprites and parts only, not to editor overlays.
+//
+// Edge ties (render-match5, rect_chr024_p76): an edge that lies exactly on a pixel centre is a tie. D3D9's top-left rule
+// keeps the pixel under a TOP edge and drops it under a BOTTOM edge. GL draws y-up, so the same hardware rule lands
+// on the other edge: GL dropped the top row of the line, which the game draws (its g_mWorld puts the line's top at
+// window y 639.0000047, read live via gamecap v2r6_rect_mtx.gcs, which the rasteriser snaps to 639.0). Moving the image up
+// by kGlEdgeTieBiasPx (more than the 1/256 px sub-pixel snap, far below anything visible) breaks every y tie the
+// D3D9 way: a top edge on a centre then sits just above it (pixel in), and a bottom edge on a centre also sits just
+// above it (pixel out). x needs nothing: left-in / right-out is the same in both APIs.
 constexpr float kD3d9PixelCentreShiftPx = 0.5f;
+constexpr float kGlEdgeTieBiasPx = 1.f / 64.f;
 
 inline glm::mat4 D3d9PixelCentreNdc(float w, float h)
 {
-	return glm::translate(glm::mat4(1.f), glm::vec3(2.f * kD3d9PixelCentreShiftPx / w, -2.f * kD3d9PixelCentreShiftPx / h, 0.f));
+	return glm::translate(glm::mat4(1.f), glm::vec3(2.f * kD3d9PixelCentreShiftPx / w,
+		-2.f * (kD3d9PixelCentreShiftPx - kGlEdgeTieBiasPx) / h, 0.f));
 }
+
+// Window y (y-down) at which the editor's game projection puts game window y `y`: the D3D9 pixel-centre shift minus
+// the edge-tie bias. A pixel is covered by a top edge at yEdge when its centre (k + 0.5) is at or below the mapped
+// edge; this mirrors D3D9's top-left rule for edges on pixel centres.
+inline float EditorWindowYForGameY(float y) { return y + kD3d9PixelCentreShiftPx - kGlEdgeTieBiasPx; }
 
 // CG layer UVs (uni2 CgLayer_DrawWithCharaShader 0x4BE140): u runs from 0.25 texel to w texels across the w-px quad
 // (and v likewise), so a point-sampled 1:1 sprite under the D3D9 rule samples 0.25 texel into each texel, never on
