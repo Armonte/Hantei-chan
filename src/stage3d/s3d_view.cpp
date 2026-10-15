@@ -4,6 +4,7 @@
 #include "s3d_bglist.h"
 #include "s3d_dds.h"
 #include "s3d_model.h"
+#include "s3d_fbxascii.h"
 
 #include "../app_log.h"
 #include "../i18n.h"
@@ -187,8 +188,10 @@ bool Load(State& s, const std::string& bgDir, const std::string& dataFile)
 	s.params = e ? s3d::ParamsFrom(*e) : s3d::StageParams{};
 	s.nameUtf8 = e ? AnsiToUtf8(e->str("Name")) : std::string();
 	const std::string dir = bgDir + "/" + dataFile;
-	if (!s3d::LoadFbxExFile(dir + "/bg.fbx.bin", s.model, err)) {
-		s.error = dir + "/bg.fbx.bin: " + err;
+	std::string used;
+	// bg.fbx.bin (UNI2, MBTL) or the ASCII bg.fbx (DFCI, the UNI[st]/[cl-r] arcade build)
+	if (!s3d::LoadStageModel(dir, s.model, used, err)) {
+		s.error = dir + ": " + err;
 		HC_LOG_ERROR("stage3d: {}", s.error);
 		return false;
 	}
