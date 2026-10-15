@@ -1,0 +1,25 @@
+<!-- source: https://mizuumi.wiki/w/User:Pixloen/FPANModding/UnpackMBTL (MediaWiki API, 2026-10-15) -->
+=== Unpacking the game ===
+
+Download HxD for this tutorial.
+
+First, download the [https://github.com/Ekey/MBTL.BIN.Tool/releases MBTL BIN Tool]. Extract the zip and locate to the folder that contains <code>MBTL.Unpacker.bat</code>, <code>MBTL.Unpacker.exe</code> and the <code>0.10.2.0</code> folder. Copy and paste these items into the MBTL directory, which will be this in most cases <code>C:\Program Files (x86)\Steam\steamapps\common\MELTY BLOOD TYPE LUMINA</code>. Once you have done that, download the [https://www.mediafire.com/file/qphp76tvujvoiv9/cache_1_26_25.zip/file updated Cache files] needed, and replace the ones that you placed in the MBTL directory earlier. Now, in order to unpack the game, right-click on <code>MBTL.Unpacker.bat</code>, <code>Right Click -> Edit</code>. Add the folder path of the MBTL Directory and the folder path of the unpacked files separated with <code>""</code> respectively. (Example shown below)
+
+Example → <code>MBTL.Unpacker "C:\Program Files (x86)\Steam\steamapps\common\MELTY BLOOD TYPE LUMINA" "C:\Program Files (x86)\Steam\steamapps\common\MELTY BLOOD TYPE LUMINA\Unpacked_new"</code>
+
+If everything is done correctly up to this point, double click on the <code>MBTL.Unpacker.bat</code> file and watch your game start unpacking (This will take a few minutes to complete)
+{{Disclaimer MFPG
+|border-color=#FF60B0
+|bg-color=
+|image=MBTL_data_icon.png
+|text='''If you check files in Notepad and it comes up with random Chinese characters...'''<br/>It means the cache is outdated. ''The current cache works for Update 1.46.''
+}}
+
+=== Making your first mod ===
+Now it is time to get the DLL files needed in order for mods to load, as well as some extra files needed for Palette Color modding if needed. First, download [https://www.dropbox.com/sh/hl5jess09wvb3dg/AACTncgEljy9MPmNai0ItJVGa?dl=0 FateUpdate.exe] (courtesy of the MBTL Palette Gallery Discord server) and place this anywhere. Run the .EXE and a prompt should show asking where you want to extract the files. Use the tab to navigate to your MBTL directory mentioned above and click '''Extract'''.
+[[File:FateUpdate.exe prompt.png|frame|right|This is what the prompt should look like. Click the "..." button to select a directory.]]
+To check if this worked successfully, we can make a test mod which changes the Singleplayer description at the bottom of the Main Menu. First, create a folder named <code>str_jp</code> in <code>MBTL Directory → System</code>. Then, get this file from your directory of Unpacked Files → <code>___English\System\str_jp\MainMenuCSText</code>, and check that opening the file is in English characters. Copy and paste it in that new folder created earlier, then open this file using HxD installed earlier. Change the text listed in <code>""</code> to anything you want (you can use Insert key to switch from overwrite to insert mode). After that save the file and run the game. Hover over to the Singleplayer section and check if the text is changed.
+[[File:MBTL Singleplayer Description Edit Example.png|700px|thumb|left|We've made our first MBTL mod!]]
+
+===Removing or Changing Mods===
+placeholder

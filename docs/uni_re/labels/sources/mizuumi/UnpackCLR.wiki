@@ -1,0 +1,30 @@
+<!-- source: https://mizuumi.wiki/w/User:Pixloen/FPANModding/UnpackCLR (MediaWiki API, 2026-10-15) -->
+===Unpacking the game===
+Download the [https://github.com/ucuckic/unist-unpacker/releases/tag/4 UNIST Unpacker], and place it inside the <code>steamapps\common\UNDER NIGHT In-Birth Exe Late[st]\d</code> folder. Then, press '''CTRL+A''' to select all the files within the d folder and unselect ''unistunpacker.exe'' Now with all the files selected, you can drag them <code>Click and Hold LMB</code> onto unistunpacker.exe. Once you've done that, a command prompt will open and the unpacker will unpack all the game files in UNICLR. This may take some time, so leave the command prompt in the background. Once it's finished the command prompt will close on it's own, and a new folder '''output''' will appear containing all the unpacked files.
+
+=== Setting up a Language Folder ===
+{{Disclaimer MFPG
+|border-color=#FF60B0
+|bg-color=
+|image=UNI2_faq_icon.png
+|text='''What's a Language Folder For?'''<br/>Each in-game language loads it's own set of files from it's own folder, including non-localization files. <br/>By using this property, we can have multiple mods on and change between them using the in-game language option.
+}}
+First, go into the output folder and '''pick one of the languages'''. Copy that language folder into the game's '''root folder''', which is where UNIst.exe is. This will be the basis for your mods. Once copied, go back into the output folder and select all '''NON-Language''' folders using <code>SHIFT+LMB</code>, and with the root folder in a seperate window, drag all the folders to the new language folder you've made. Alternatively you can also press <code>CTRL+C</code> to copy, then <code>CTRL+V</code> inside the new language folder. '''If you want to keep the localization files intact, when prompted DO NOT replace files, or re-copy the language files once more.
+[[File:PIXL_language.png|600px|border|right|Example setup using the __English language, which is most common.]]
+
+=== Changing or Disabling Mods ===
+Once you've copied the game files over, you've successfully setup a language folder! This will be used as your modding environment. If you want to load in a different set of mods, or disable mods, you can do any of the following:
+*Move the specific language folder out of the game root folder, such as into a separate "mod backup" folder.
+*Rename the language folder so that the game doesn't recognize a language name. You can rename it back to restore the mods.
+*Change the language using the in-game options menu. Depending on the mod, this may require a restart of the game for changes to fully take effect.
+
+All of these actions make the game load in different mod files, or fallback files (which is just normal ''UNICLR''). ''This is important if you want to continue playing netplay with those that do not have mods, for example.''
+
+=== How do I know that this is working? ===
+
+We can setup a simple check mod to verify that we've setup everything correctly. Enter your language folder and navigate to <code>System\str_jp\DLC.csv</code>. Opening this file with Notepad or any other text editor should show the text <code>Checking downloadable contents...,</code>, which is the first text that appears when booting up the game. Simply replace this text with anything you want, making sure to keep the comma at the end. Once you've done that, simply open the game to check whether the text updated.
+
+[[File:PIXL_clrhello.png|left|thumb|Hello world! We've made our first UNICLR mod!]]
+
+
+[[Category: Modding French Bread Games]]

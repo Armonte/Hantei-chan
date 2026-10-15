@@ -39,6 +39,7 @@
 #include "effects/effect_audio.h"
 #include "effects/effect_unknown.h"
 #include "../i18n.h"
+#include "game_label_ui.h"
 
 // Forward declaration
 static inline void DrawSmartEffectUI(Frame_EF& effect, FrameData* frameData, int patternIndex, std::function<void()> markModified);
@@ -92,8 +93,13 @@ inline void EfDisplay(std::vector<Frame_EF> *efList_, Frame_EF *singleClipboard 
 			}
 		}
 		
+		// UNI2/UNIB/UNIST/MBTL: that game's table (game_labels.h), never MBAACC's.
+		const Ha6Game labelGame = frameData ? frameData->game() : Ha6Game::MBAACC;
+		const bool ownLabels = GameHasOwnLabels(labelGame);
 		char headerLabel[256];
-		if(typeIndex >= 0 && typeIndex < IM_ARRAYSIZE(effectTypes)) {
+		if(ownLabels) {
+			snprintf(headerLabel, sizeof(headerLabel), TXT("Effect %d: %s"), i, GameLabelUiTitle(labelGame, GameLabelKind::EF, typeValue).c_str());
+		} else if(typeIndex >= 0 && typeIndex < IM_ARRAYSIZE(effectTypes)) {
 			snprintf(headerLabel, sizeof(headerLabel), TXT("Effect %d: %s"), i, TXT(effectTypes[typeIndex]));
 		} else {
 			snprintf(headerLabel, sizeof(headerLabel), TXT("Effect %d: Type %d"), i, typeValue);
@@ -127,7 +133,13 @@ inline void EfDisplay(std::vector<Frame_EF> *efList_, Frame_EF *singleClipboard 
 			im::Indent();
 			
 			// Type dropdown (with fallback for unlisted types)
-			if(typeIndex >= 0) {
+			if(ownLabels) {
+				im::SetNextItemWidth(width);
+				if(im::InputInt(LBL("Type"), &efList[i].type, 0, 0)) {
+					markModified();
+				}
+				im::SameLine(); im::TextDisabled("%s", GameLabelUiTitle(labelGame, GameLabelKind::EF, efList[i].type).c_str());
+			} else if(typeIndex >= 0) {
 				im::SetNextItemWidth(width*3);
 				if(i18n::Combo(LBL("Type"), &typeIndex, effectTypes, IM_ARRAYSIZE(effectTypes))) {
 					efList[i].type = knownTypes[typeIndex];
@@ -174,7 +186,10 @@ inline void EfDisplay(std::vector<Frame_EF> *efList_, Frame_EF *singleClipboard 
 				}
 			} else {
 				// Smart UI based on effect type
-				DrawSmartEffectUI(efList[i], frameData, patternIndex, markModified);
+				if(ownLabels)
+					DrawGameEffectUI(efList[i], frameData, labelGame, markModified);
+				else
+					DrawSmartEffectUI(efList[i], frameData, patternIndex, markModified);
 			}
 
 			im::SameLine();

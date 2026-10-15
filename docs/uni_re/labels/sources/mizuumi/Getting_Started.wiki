@@ -1,0 +1,77 @@
+<!-- source: https://mizuumi.wiki/w/User:Pixloen/FPANModding/Getting_Started (MediaWiki API, 2026-10-15) -->
+{{DISPLAYTITLE:Getting Started}}
+{{PIXL BeginNav}}
+{{Disclaimer MFPG
+|border-color=#FF60B0
+|bg-color=
+|image=MBTL_data_icon.png
+|text='''Huhuhu... This page is intended to explain how to setup a modding environment.'''<br/>Check out the [[User:Pixloen/FPANModding#Guides_&_Tutorials|Guides & Tutorials]] section if you want to start making new mods!
+}}
+==Getting the Game Files==
+The '''steamapps''' folder at the location of your game’s executable is where all mods are made. You can find it by going in your <code>Steam Library > Right clicking Under Night or Melty Blood > Properties > Local Files > Browse Local Files</code>. Once you've done that, we can start by unpacking the game files!
+
+=== Setup Methods ===
+All the tools needed for mods can also be found at [[User:Pixloen/FPANModding/Links_and_Resources|Links & Resources]]. Different games require different methods.
+<tabber>
+|-|UNICLR=
+{{:User:Pixloen/FPANModding/UnpackCLR}}
+|-|UNI2=
+{{:User:Pixloen/FPANModding/UnpackUNI2}}
+|-|MBTL=
+{{:User:Pixloen/FPANModding/UnpackMBTL}}
+</tabber>
+==What To Do Next==
+Congratulations on setting up your first mod! It's recommended to download the tools at [[User:Pixloen/FPANModding/Links_and_Resources|Links & Resources]] and check out some of the [[User:Pixloen/sandbox#Guides_&_Tutorials|Guides & Tutorials]]. Modding a fighting game is a complex and sometimes time-consuming task, so make sure to take your time with it and figure out everything as you need to. 
+
+===Ok, What's Something Simple?===
+
+*[[User:Pixloen/FPANModding/Audio|BGM & Audio]] mods and [[User:Pixloen/FPANModding/Palettes|palette]] mods are the easiest mod types to make.
+*Learn how to navigate [[User:Pixloen/FPANModding/Hanteichan|Hantei-chan]] and figure out how to modify and add moves.
+**Try messing around with character scripts to really make moves unique, and get an understanding of existing character's code.
+***Once you've done that you can start making your own character scripts and work your way to making new or modified characters!
+*Or try making some story mods by editing *[[User:Pixloen/FPANModding/Cutscenes|cutscenes]].
+
+=== What's Possible With Mods? ===
+
+A short summary of everything you can edit or create in the French Bread engine:
+
+# Create and edit characters, including custom scripts and names
+# Create and edit universal game mechanics through script edits
+# Create or edit universal knockback or pushblock (vectors)
+# Mod custom colors, music or sound effects
+# Edit the character or stage shaders for cool effects
+# Custom combo trials and tutorials
+# Edit UI through .pat editing
+
+What can't be done
+
+# Importing 3D models to be used in stages
+# Upscaling some .dds textures used in game (Cockpit, UI)
+
+== FAQ ==
+
+===Can modding games get me banned from netplay?===
+'''No.''' French Bread isn't rich enough to afford moderation on their games and mods can be used on netplay. Mods that don't alter gameplay or scripts can even be used with normal users, such as visual or sound mods. At most mods may cause desync issues, or the Netplay ID used by the game may not match the current version.
+
+===Where can I find a list of all the d files?===
+[https://wiki.gbl.gg/w/User:Pixloen/FPANModding/File_Structure#UNI2-0 Here.]
+
+===Has anyone made X mod yet?===
+Probably not. 
+
+===Where can I find assets?===
+Each folder from the rip is one big category. In general:
+*'''Battleres''' contains all story data. (Portraits, CG, Dialogue Scripts, 2D Backgrounds)
+*'''BG''' contains all stage background data. 
+*'''Bgm''' contains all music data. 
+*'''Data''' contains all battle character data. 
+*'''Grpdat''' contains all menu and UI graphics data. 
+*'''Movie''' contains all opening and credits video data. 
+*'''Script''' contains the universal battle scripts data. 
+*'''SE''' contains all the sound effects. 
+*'''Shader''' contains shader data. 
+*'''System''' contains all system-level data. (What character IDs are, Text, etc.) 
+
+==Navigation==
+{{Navbox-MFPG}}
+[[Category:Modding French Bread Games]]

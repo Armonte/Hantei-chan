@@ -1,0 +1,77 @@
+<!-- source: https://mizuumi.wiki/w/User:Pixloen/FPANModding/FileUNI2 (MediaWiki API, 2026-10-15) -->
+<pre>
+
+D file list
+
+oMtaqooqotvvonnpwmq - ./___English/ index
+Ywjfsooxawfaoxgode - ./___German/ index
+olotkxLluoootokrin - ./___French/ index
+ojombmooogjopfjJugb - ./___Italian/ index
+oagyeLboblhoyoitxbg - ./___Spanish/ index
+eohGonbwaokebajjok - ./___Korean/ index
+oooFoOtuzqeqoruxquzra - ./___T_Chinese/ index
+ooxoosCsoxporpsooyvcM - ./___S_Chinese/ index
+
+VycozuyzchnLimfnf3y (BattleResfileinfou3) - ./Battleres/ index
+fyLym4ozcfychziVunn (BattleResfileinfo4u) - ./Battleres/talk/st_face index part 1
+Pshszb7ogFztcohwstw (BattleResfileinfoa7) - ./Battleres/talk/st_face index part 2
+
+fmjisrkojmp (bgkfileinfo)- ./bg/ index
+bswPtcotwzua - (Bgmfileinfoa) ./Bgm/ index
+
+hexeojmpimrjs (datafileinfok) - ./data/ index
+IQHoknqjnskt (DLCfileinfoj) - ./DLC/ index
+
+lzwp1onbeaejbkCh - (Grpdatfileinfos1) ./grpdat/ index
+7osxauxctdVgeupi - (Grpdatfileinfo7z) ./grpdat/Gallery index
+IgMotvl9rxojuzko - (GrpdatfileintoC9) ./grpdat/Gallery/talk/ index
+
+
+cfopiyiGczyzhc - ./Movie index
+kluioyxovozlort (scriptfileinfo) ./script/ index
+
+iz3Nadozdgaj - (Sefileinfot3) ./se/ index
+bswGtcotwzs5 (Sefileinfoa5) - ./se/battle_se index
+rhmekdhnoed (sefileinfop) - ./se/normal_se_list.txt index
+
+phkUh1ogqngk (Sefileinfom1) - ./se/talk index part 1
+wnrBoxoorun9 (Sefileinfo9) - ./se/talk index part 2
+
+veIxqtuhovybuyd (Shaderfileinfoy) - ./shader/ index
+rcwWiiqjmxpmojs (systemfileinfok) - ./system/ index
+</pre>
+
+
+
+==Language==
+
+==BattleRes==
+
+==BG==
+
+==BGM==
+
+==Data==
+<code>D Index File: hexeojmpimrjs (datakfileinfo)</code>
+{| class="wikitable" style="width: 50%;"
+|-
+! File Name !! Filepath !! D File !! Description
+|-
+| VectorTable.txt || <code>data\VectorTable.txt</code> || ehex ||Contains all vector data.
+|}
+
+==DLC==
+
+==Grpdat==
+
+==Movie==
+
+==Script==
+
+==Shader==
+
+==SE==
+
+==System==
+
+[[Category: Modding French Bread Games]]

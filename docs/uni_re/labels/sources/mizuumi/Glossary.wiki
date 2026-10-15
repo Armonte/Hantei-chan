@@ -1,0 +1,19 @@
+<!-- source: https://mizuumi.wiki/w/User:Pixloen/FPANModding/Glossary (MediaWiki API, 2026-10-15) -->
+{{DISPLAYTITLE:Glossary}}
+{{PIXL BeginNav}}
+
+==Structure Terms==
+
+==Data Terms==
+=== AF Param ===
+Animation Frame Parameters. These are numbers assigned to HA6 frames, usually for playing character voicelines.
+=== CommandTable / cmd ===
+A script table that stores a list of commands for a character. Also includes conditionals and auto-combo construction.
+=== MoveTable / mv ===
+A script table that handle the manipulation of character states, and stuff like spawning objects/projectiles or cutscenes.
+=== DefineTable / define ===
+Handles the constants of the game namely the defsys settings, pattern numbers used for states(stdA,stdB,VO,etc..), and command priorities.
+
+==.Pat Terms==
+
+{{Navbox-MFPG}}

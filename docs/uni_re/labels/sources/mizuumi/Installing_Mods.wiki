@@ -1,0 +1,14 @@
+<!-- source: https://mizuumi.wiki/w/User:Pixloen/FPANModding/Installing_Mods (MediaWiki API, 2026-10-15) -->
+{{DISPLAYTITLE:Installing Mods}}
+{{PIXL BeginNav}}
+{{Disclaimer MFPG
+|border-color=#FF60B0
+|bg-color=
+|image=MBTL_faq_icon.png
+|text='''Do we even need this page???'''<br/>placeholder... sorry!!
+}}
+
+
+==Navigation==
+{{Navbox-MFPG}}
+[[Category:Modding French Bread Games]]

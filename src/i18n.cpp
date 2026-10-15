@@ -23,6 +23,7 @@ const Row kRows[] = {
 #include "i18n_ja_patrenumber.inc"
 #include "i18n_ja_fxr.inc"
 #include "i18n_ja_pcmod.inc"
+#include "i18n_ja_gamelabels.inc"
 };
 std::unordered_map<std::string, const char *> &Table()
 {

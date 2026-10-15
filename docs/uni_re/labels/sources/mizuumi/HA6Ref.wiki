@@ -1,0 +1,198 @@
+<!-- source: https://mizuumi.wiki/w/User:Pixloen/FPANModding/HA6Ref (MediaWiki API, 2026-10-15) -->
+== What are these patterns for??? ==
+
+Patterns in Hantei-Kun files are basically the way to hold animation and state data. Think animations in mugen but with more buttons to mess with things and slightly less text. [https://wiki.gbl.gg/w/User:Pixloen/FPANModding/HA6 Go to the HA6 page for more info about the file itself.]
+
+There are preset states for a lot of patterns, this page is basically here to just document what they are (ilbeit written poorly).
+
+Note: All these preset states can be altered to different allocations in the Define.Txt file. Generally though you should keep them the same but you can also add your own preset pattern numbers if you intend to create a general state. (Also define will just tell you what number the patterns are for def patterns.
+
+== Universal States ==
+
+000 - Standing Animation. Frame ID 512 is where taunt starts
+
+001-003 - Standing normals A, B and C respectively.
+
+004-006 - Crouching normals A, B and C respectively.
+
+007-009 - Aerial normals A, B and C respectively.
+
+010-011 - Walking forwards and backwards respectively. If AF Param 0 is set to 10 it will call a footstep sound effect (not in dfci). Frame ID 256 is the frame that will be jumped to when you're done walking.
+
+012-014 - Enter crouch, crouching, and leaving crouch respectively.
+
+015-016 - Standing and crouching turn.
+
+017-019 - Standing, crouching and aerial blocking respectively.
+
+020-023 - Falling and Landing. Latter two are used for being unable to cancel into another move. Not explicitly set for these, more so a standard state used for whatever reason.
+
+027 - GUKemi_0 (Aerial wakeup?)
+
+030-033 - GUkemi_N, B, 0, and 4 respectively. More wakeup states? 033 is the only one of the 4 in dfci. All 4 are either unused or replaced by another state in mbtl.
+
+035-037 - Forward, neutral, and backwards pre-jump respectively. In uni its the entire jump animation, not just pre-jump.
+
+038-040 - Forward, neutral, and backwards jump respectively. In uni these are only used for double jump animations.
+
+043 - Forward dashing animation. Uni uses 045 for both this one and 044 combined
+
+044 - End of forward dash. Basically the little stop animation before going back to standing
+
+046 - Backwards dashing animation. Sometimes if the devs felt like it and the back dash went aerial, it'll land to 047.
+
+050-051 - Round start animations. Since the system changed in mbtl, these are unused there.
+
+052-053 - Round win and match win animations respectively. Since the system changed in mbtl, these are unsused there. In uni, be sure to call effect type 6 with number 255 to call the winner screen.
+
+055-057 - Throw startup, wait time, and attack respectively. Wait time is the time the opponent is able to tech. Since throw is 4C/6C in dfci, 055 goes unused there.
+
+==Hitstun States For Uni and Dfci==
+'''Note: these names are a bit stupid but I tried my best to describe them. They may be a bit inaccurate, best way to know is to look for yourself.'''
+
+290-291 - HKD backwards and forwards respectively. Dfci only uses 290
+
+292 - HKD forward but the frame length is slightly longer. (Unused?)
+
+293 - Wakeup from backwards HKD.
+
+300-302 - Hitstun for head, gut, and crouching with the least amount of time in the animation.
+
+303-305 - Hitstun for head, gut, and crouching with the second least amount of time in the animation.
+
+306-308 - Hitstun for head, gut, and crouching with the most amount of time in the animation.
+
+320, 324, and 330 - All uppercut falling animations, only difference is 324 doesn't have the moving up part of the animation.
+
+350-352 - Landing from aerial hitstun states.
+
+==Uni exclusive states==
+
+060 - Guard Thrust
+
+067-069 - Assault (6D) states. 067 is when opponent is close, 068 is when they're far or it's an aerial assault, and 069 is landing from assault.
+
+248 - Time out animation.
+
+260 - Veil Off.
+
+261 - Concentration.
+
+262 - Chain Link.
+
+312-313 - Grounded and aerial trip hitstun states.
+
+326 - Another trip state(?)
+
+327-328 - Crumple animations. 327 is the on knees part, 328 is the falling on face part.
+
+333-334 - Diagonal and vertical spin hitstun states.
+
+348 - Wall bound animation. Used for bouncing off a wall and also Orie's IWEX
+
+402-403 - Dashing B and C attacks.
+
+412 - Grab tech animation.
+
+997 - Ex skill cutin.
+
+998 - IW cutin.
+
+999 - IWEX cutin.
+
+==Dfci exclusive states==
+'''Note: most dfci states arent tied to a specific pattern number, but instead have a specific code name. I'll put those down instead when needed'''
+
+060 - Grab tech animation.
+
+CallSupport, CallSupportEnd - Calling support animation. CallSupportEnd is recovery.
+
+Sousai4, Sousai4_Add - 4AB animation. Sousai4 is the overhead and Sousai4_Add is the follow up.
+
+BurstWait, BurstLoop, BurstFall - Burst animations. BurstWait is startup, BurstLoop is active, BurstFall is recovery.
+
+Kirifuda - Trump Card animation.
+
+Sousai - 5AB animation.
+
+Sousai2 - 2AB animation.
+
+334-336 - Vertical, horizontal, and grounded spin hitstun animation.
+
+341 - Turning into a basketball.
+
+342-343 - Being a silly little basketball.
+
+344 - Leaving basketball.
+
+==Mbtl exclusive states==
+
+54 - Time up lose animation
+
+60 - Throw Tech animation
+
+61 - Air Throw Tech animation
+
+75 - Heat startup animation
+
+76 - Heat release animation
+
+77 - Heat end animation (Air state)
+
+78 - Heat end animation (On the ground)
+
+80 - Standing Shield
+
+81 - Crouching Shield
+
+82 - Air Shield
+
+87 - Air Dash Forward
+
+88 - Air Backdash
+
+91 - Animation that occurs after a launcher move hits to transition you from the ground to the air (EG: 3C)
+
+94-98 - Shield follow-up interactions
+
+131 - Rapid Beat launcher move OR 3C (Yes they both use the same pattern)
+
+139 - Animation that plays after landing on the ground from Air Grab whiff (Some characters do not have this)
+
+140-143 - Air Throw startup, wait time, attack, and landing respectively
+
+147-148 - Moon Drive animation on the ground and air respectively
+
+149 - Gauge charging animation
+
+150-151 - Last Arc activation and pre-hit animations respectively (When you press ABCD)
+
+310 - Arc Drive [Each character's Arc Drive starting patterns will be different, like Mash's one starts at 350. 
+Refer to '''41236SP''' when locating for a character's Arc Drive pattern]
+
+351 - Last Arc actual(?) animation [When the Last Arc pre-hit animation connects based on Pattern 151. Refer to '''LastArc_Hit''' when locating for a character's Last Arc pattern]
+
+900-949 - Character intro stuff, varies from character to character
+
+950-969 - Character win animation stuff, varies from character to character
+
+970 - No clue what this is
+
+989-990 - No clue what this is
+
+991 - Launcher cut-in
+
+992 - Cut-in for your character when '''you''' perform a Moon Drive
+
+993 - Cut-in for your character when '''enemy''' performs a Moon Drive
+
+994 - Cut-in for the Awakened state (When you are one point from losing the game, and the animations plays on Round Start)
+
+995 - Heat Cut-in
+
+997 - EX Cut-in
+
+998 - Arc Drive '''OR''' Last Arc pre-hit connecting Cut-in (Refer to Pattern 151)
+
+{{Navbox-MFPG}}
+[[Category:Modding French Bread Games]]
