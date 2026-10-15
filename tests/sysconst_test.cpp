@@ -72,7 +72,7 @@ static void Vanilla(const fs::path& dir, const fs::path& out)
 	TypeFile t;
 	CHECK(t.load(type.u8string()));
 	CHECK(t.sections().size() >= 5);
-	CHECK(t.find("Type_0", "Value_005") != nullptr);
+	CHECK(t.find("System", "Value_005") != nullptr && t.find("Type_0", "MagicCircuitMax") != nullptr);
 	fs::create_directories(out);
 	CHECK(t.save((out / "_type.txt").u8string()));
 	CHECK(Get(out / "_type.txt") == Get(type));

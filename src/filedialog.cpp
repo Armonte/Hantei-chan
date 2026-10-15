@@ -92,6 +92,10 @@ std::string FileDialog(int fileType, bool save, char* defaultName)
 	{
 		ofn.lpstrFilter = "MBAA Stage files (*.dat)\0*.dat\0All\0*.*\0";
 	}
+	else if (fileType == fileType::WAV)
+	{
+		ofn.lpstrFilter = "WAVE sound (*.wav)\0*.wav\0All\0*.*\0";
+	}
 	else if (fileType == fileType::CMDTXT)
 	{
 		ofn.lpstrFilter = "Command files (*_c.txt)\0*_c.txt\0Text files (*.txt)\0*.txt\0All\0*.*\0";
