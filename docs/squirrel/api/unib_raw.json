@@ -1,0 +1,10119 @@
+{
+ "binders": [
+  "Sqrat_Class_BindMethod_44FF60",
+  "Sqrat_Class_BindMethod_44FFA0",
+  "Sqrat_Class_BindMethod_459C30",
+  "Sqrat_Class_BindMethod_469320",
+  "Sqrat_Class_BindMethod_469360",
+  "Sqrat_Class_BindMethod_469460",
+  "Sqrat_Class_BindMethod_469560",
+  "Sqrat_Class_BindMethod_4695A0",
+  "Sqrat_Class_VarA_44F080",
+  "Sqrat_Class_VarA_4537B0",
+  "Sqrat_Class_VarA_453810",
+  "Sqrat_Class_VarA_459EF0",
+  "Sqrat_Class_VarA_459F50",
+  "Sqrat_Class_VarA_463080",
+  "Sqrat_Class_VarA_4630E0",
+  "Sqrat_Class_VarA_463440",
+  "Sqrat_Class_VarA_4634A0",
+  "Sqrat_Class_VarA_463500",
+  "Sqrat_Class_VarA_463560",
+  "Sqrat_Class_VarA_4635C0",
+  "Sqrat_Class_VarA_463620",
+  "Sqrat_Class_VarA_463680",
+  "Sqrat_Class_VarA_4636E0",
+  "Sqrat_Class_VarA_463740",
+  "Sqrat_Class_VarA_4637A0",
+  "Sqrat_Class_VarA_463800",
+  "Sqrat_Class_VarA_463860",
+  "Sqrat_Class_VarA_46AB70",
+  "Sqrat_Class_VarA_46B6F0",
+  "Sqrat_Class_VarA_46B750",
+  "Sqrat_RootTable_BindTable",
+  "Sqrat_TableBase_BindFunc_44FEA0",
+  "Sqrat_TableBase_BindFunc_44FEE0",
+  "Sqrat_TableBase_BindFunc_44FF20",
+  "Sqrat_TableBase_BindFunc_453670",
+  "Sqrat_TableBase_BindFunc_4536B0",
+  "Sqrat_TableBase_BindFunc_4536F0",
+  "Sqrat_TableBase_BindFunc_453730",
+  "Sqrat_TableBase_BindFunc_453770",
+  "Sqrat_TableBase_BindFunc_459C70",
+  "Sqrat_TableBase_BindFunc_459CB0",
+  "Sqrat_TableBase_BindFunc_459CF0",
+  "Sqrat_TableBase_BindFunc_459D30",
+  "Sqrat_TableBase_BindFunc_459D70",
+  "Sqrat_TableBase_BindFunc_459DB0",
+  "Sqrat_TableBase_BindFunc_459DF0",
+  "Sqrat_TableBase_BindFunc_459E30",
+  "Sqrat_TableBase_BindFunc_459E70",
+  "Sqrat_TableBase_BindFunc_459EB0",
+  "Sqrat_TableBase_BindFunc_463040",
+  "Sqrat_TableBase_BindFunc_4631C0",
+  "Sqrat_TableBase_BindFunc_463200",
+  "Sqrat_TableBase_BindFunc_463240",
+  "Sqrat_TableBase_BindFunc_463280",
+  "Sqrat_TableBase_BindFunc_4632C0",
+  "Sqrat_TableBase_BindFunc_463300",
+  "Sqrat_TableBase_BindFunc_463340",
+  "Sqrat_TableBase_BindFunc_463380",
+  "Sqrat_TableBase_BindFunc_4633C0",
+  "Sqrat_TableBase_BindFunc_463400",
+  "Sqrat_TableBase_BindFunc_4693E0",
+  "Sqrat_TableBase_BindFunc_469420",
+  "Sqrat_TableBase_BindFunc_4694A0",
+  "Sqrat_TableBase_BindFunc_4694E0",
+  "Sqrat_TableBase_BindFunc_469520",
+  "Sqrat_TableBase_BindFunc_469620",
+  "Sqrat_TableBase_BindFunc_469660",
+  "Sqrat_TableBase_BindFunc_46ABD0",
+  "Sqrat_TableBase_BindFunc_46B7B0"
+ ],
+ "regfuncs": {
+  "0x72d530": {
+   "name": "sub_72D530",
+   "calls": [
+    {
+     "callee": "Sqrat_Class_VarA_46B6F0",
+     "args": [
+      {
+       "str": "Winner"
+      },
+      {
+       "raw": "16",
+       "fn": null
+      }
+     ],
+     "ea": "0x72d596",
+     "ecx": "[ebp+var_3C]"
+    },
+    {
+     "callee": "Sqrat_Class_VarA_46B750",
+     "args": [
+      {
+       "str": "WinnerNum"
+      },
+      {
+       "raw": "44",
+       "fn": null
+      }
+     ],
+     "ea": "0x72d5a5",
+     "ecx": "[ebp+var_3C]"
+    },
+    {
+     "callee": "Sqrat_Class_VarA_46B750",
+     "args": [
+      {
+       "str": "Player"
+      },
+      {
+       "raw": "8",
+       "fn": null
+      }
+     ],
+     "ea": "0x72d5b4",
+     "ecx": "[ebp+var_3C]"
+    },
+    {
+     "callee": "Sqrat_Class_VarA_46B750",
+     "args": [
+      {
+       "str": "Stage"
+      },
+      {
+       "raw": "0",
+       "fn": null
+      }
+     ],
+     "ea": "0x72d5c3",
+     "ecx": "[ebp+var_3C]"
+    },
+    {
+     "callee": "Sqrat_Class_VarA_46B750",
+     "args": [
+      {
+       "str": "NextStage"
+      },
+      {
+       "raw": "4",
+       "fn": null
+      }
+     ],
+     "ea": "0x72d5d2",
+     "ecx": "[ebp+var_3C]"
+    },
+    {
+     "callee": "Sqrat_RootTable_BindTable",
+     "args": [
+      {
+       "str": "CStatus"
+      },
+      {
+       "raw": "(int)v4",
+       "fn": null
+      }
+     ],
+     "ea": "0x72d5e3",
+     "bind_obj": "[ebp+var_3C]",
+     "ecx": "[ebp+var_24]"
+    },
+    {
+     "callee": "Sqrat_TableBase_BindFunc_46B7B0",
+     "args": [
+      {
+       "str": "GetStatus"
+      },
+      {
+       "raw": "(int)sub_72D3A0",
+       "fn": "sub_72D3A0"
+      }
+     ],
+     "ea": "0x72d601",
+     "ecx": "[ebp+var_24]"
+    },
+    {
+     "callee": "Sqrat_RootTable_BindTable",
+     "args": [
+      {
+       "str": "tSceneWinDemo"
+      },
+      {
+       "raw": "(int)v5",
+       "fn": null
+      }
+     ],
+     "ea": "0x72d62b",
+     "bind_obj": "[ebp+var_24]",
+     "ecx": "[ebp+var_58]"
+    }
+   ]
+  },
+  "0x72df60": {
+   "name": "sub_72DF60",
+   "calls": [
+    {
+     "callee": "Sqrat_Class_VarA_46AB70",
+     "args": [
+      {
+       "str": "Player1"
+      },
+      {
+       "raw": "8",
+       "fn": null
+      }
+     ],
+     "ea": "0x72dfc6",
+     "ecx": "[ebp+var_3C]"
+    },
+    {
+     "callee": "Sqrat_Class_VarA_46AB70",
+     "args": [
+      {
+       "str": "Player2"
+      },
+      {
+       "raw": "36",
+       "fn": null
+      }
+     ],
+     "ea": "0x72dfd5",
+     "ecx": "[ebp+var_3C]"
+    },
+    {
+     "callee": "Sqrat_RootTable_BindTable",
+     "args": [
+      {
+       "str": "CPlayerSt"
+      },
+      {
+       "raw": "(int)v4",
+       "fn": null
+      }
+     ],
+     "ea": "0x72dfe6",
+     "bind_obj": "[ebp+var_3C]",
+     "ecx": "[ebp+var_24]"
+    },
+    {
+     "callee": "Sqrat_TableBase_BindFunc_46ABD0",
+     "args": [
+      {
+       "str": "GetStatus"
+      },
+      {
+       "raw": "(int)sub_72DF00",
+       "fn": "sub_72DF00"
+      }
+     ],
+     "ea": "0x72e004",
+     "ecx": "[ebp+var_24]"
+    },
+    {
+     "callee": "Sqrat_RootTable_BindTable",
+     "args": [
+      {
+       "str": "tSceneVS"
+      },
+      {
+       "raw": "(int)v5",
+       "fn": null
+      }
+     ],
+     "ea": "0x72e02e",
+     "bind_obj": "[ebp+var_24]",
+     "ecx": "[ebp+var_58]"
+    }
+   ]
+  },
+  "0x730270": {
+   "name": "sub_730270",
+   "calls": [
+    {
+     "callee": "Sqrat_TableBase_BindFunc_463200",
+     "args": [
+      {
+       "str": "write"
+      },
+      {
+       "raw": "(int)sub_72FF90",
+       "fn": "sub_72FF90"
+      }
+     ],
+     "ea": "0x7302ca",
+     "ecx": "[ebp+var_20]"
+    },
+    {
+     "callee": "Sqrat_TableBase_BindFunc_463200",
+     "args": [
+      {
+       "str": "write_r"
+      },
+      {
+       "raw": "(int)sub_72FF80",
+       "fn": "sub_72FF80"
+      }
+     ],
+     "ea": "0x7302dc",
+     "ecx": "[ebp+var_20]"
+    },
+    {
+     "callee": "Sqrat_RootTable_BindTable",
+     "args": [
+      {
+       "str": "debuglog"
+      },
+      {
+       "raw": "(int)v10",
+       "fn": null
+      }
+     ],
+     "ea": "0x730312",
+     "bind_obj": "[ebp+var_20]",
+     "ecx": "[ebp+var_8C]"
+    },
+    {
+     "callee": "Sqrat_TableBase_BindFunc_463240",
+     "args": [
+      {
+       "str": "GetHP"
+      },
+      {
+       "raw": "(int)sub_464A20",
+       "fn": "sub_464A20"
+      }
+     ],
+     "ea": "0x730357",
+     "ecx": "[ebp+var_34]"
+    },
+    {
+     "callee": "Sqrat_TableBase_BindFunc_463240",
+     "args": [
+      {
+       "str": "GetHPRatio"
+      },
+      {
+       "raw": "(int)sub_464A50",
+       "fn": "sub_464A50"
+      }
+     ],
+     "ea": "0x730369",
+     "ecx": "[ebp+var_34]"
+    },
+    {
+     "callee": "Sqrat_TableBase_BindFunc_463240",
+     "args": [
+      {
+       "str": "GetComboGauge"
+      },
+      {
+       "raw": "(int)sub_464AD0",
+       "fn": "sub_464AD0"
+      }
+     ],
+     "ea": "0x73037b",
+     "ecx": "[ebp+var_34]"
+    },
+    {
+     "callee": "Sqrat_TableBase_BindFunc_4631C0",
+     "args": [
+      {
+       "str": "CheckPosState"
+      },
+      {
+       "raw": "(int)sub_45E780",
+       "fn": "sub_45E780"
+      }
+     ],
+     "ea": "0x73038d",
+     "ecx": "[ebp+var_34]"
+    },
+    {
+     "callee": "Sqrat_TableBase_BindFunc_463240",
+     "args": [
+      {
+       "str": "IsMoveAble"
+      },
+      {
+       "raw": "(int)sub_464B00",
+       "fn": "sub_464B00"
+      }
+     ],
+     "ea": "0x73039f",
+     "ecx": "[ebp+var_34]"
+    },
+    {
+     "callee": "Sqrat_TableBase_BindFunc_463240",
+     "args": [
+      {
+       "str": "IsAddCommand"
+      },
+      {
+       "raw": "(int)sub_464B30",
+       "fn": "sub_464B30"
+      }
+     ],
+     "ea": "0x7303b1",
+     "ecx": "[ebp+var_34]"
+    },
+    {
+     "callee": "Sqrat_TableBase_BindFunc_44FEA0",
+     "args": [
+      {
+       "str": "CheckPattern"
+      },
+      {
+       "raw": "(int)sub_464B60",
+       "fn": "sub_464B60"
+      }
+     ],
+     "ea": "0x7303c3",
+     "ecx": "[ebp+var_34]"
+    },
+    {
+     "callee": "Sqrat_TableBase_BindFunc_463240",
+     "args": [
+      {
+       "str": "GetFrameID"
+      },
+      {
+       "raw": "(int)sub_45EA40",
+       "fn": "sub_45EA40"
+      }
+     ],
+     "ea": "0x7303d5",
+     "ecx": "[ebp+var_34]"
+    },
+    {
+     "callee": "Sqrat_TableBase_BindFunc_4631C0",
+     "args": [
+      {
+       "str": "CheckFireballLimit"
+      },
+      {
+       "raw": "(int)sub_464D90",
+       "fn": "sub_464D90"
+      }
+     ],
+     "ea": "0x7303e7",
+     "ecx": "[ebp+var_34]"
+    },
+    {
+     "callee": "Sqrat_TableBase_BindFunc_4631C0",
+     "args": [
+      {
+       "str": "CheckState"
+      },
+      {
+       "raw": "(int)sub_730030",
+       "fn": "sub_730030"
+      }
+     ],
+     "ea": "0x7303f9",
+     "ecx": "[ebp+var_34]"
+    },
+    {
+     "callee": "Sqrat_TableBase_BindFunc_4631C0",
+     "args": [
+      {
+       "str": "CheckCancel"
+      },
+      {
+       "raw": "(int)sub_464E60",
+       "fn": "sub_464E60"
+      }
+     ],
+     "ea": "0x73040b",
+     "ecx": "[ebp+var_34]"
+    },
+    {
+     "callee": "Sqrat_TableBase_BindFunc_463280",
+     "args": [
+      {
+       "str": "CheckDash"
+      },
+      {
+       "raw": "(int)sub_464E90",
+       "fn": "sub_464E90"
+      }
+     ],
+     "ea": "0x73041d",
+     "ecx": "[ebp+var_34]"
+    },
+    {
+     "callee": "Sqrat_TableBase_BindFunc_4631C0",
+     "args": [
+      {
+       "str": "CheckAirJump"
+      },
+      {
+       "raw": "(int)sub_464F20",
+       "fn": "sub_464F20"
+      }
+     ],
+     "ea": "0x73042f",
+     "ecx": "[ebp+var_34]"
+    },
+    {
+     "callee": "Sqrat_TableBase_BindFunc_4631C0",
+     "args": [
+      {
+       "str": "CheckComboLimit"
+      },
+      {
+       "raw": "(int)sub_464E10",
+       "fn": "sub_464E10"
+      }
+     ],
+     "ea": "0x730441",
+     "ecx": "[ebp+var_34]"
+    },
+    {
+     "callee": "Sqrat_TableBase_BindFunc_4631C0",
+     "args": [
+      {
+       "str": "CheckUserParam"
+      },
+      {
+       "raw": "(int)sub_464DD0",
+       "fn": "sub_464DD0"
+      }
+     ],
+     "ea": "0x730453",
+     "ecx": "[ebp+var_34]"
+    },
+    {
+     "callee": "Sqrat_TableBase_BindFunc_4631C0",
+     "args": [
+      {
+       "str": "CheckSeedCost"
+      },
+      {
+       "raw": "(int)sub_72FF70",
+       "fn": "sub_72FF70"
+      }
+     ],
+     "ea": "0x730465",
+     "ecx": "[ebp+var_34]"
+    },
+    {
+     "callee": "Sqrat_TableBase_BindFunc_44FEA0",
+     "args": [
+      {
+       "str": "CheckMoveName"
+      },
+      {
+       "raw": "(int)sub_7300B0",
+       "fn": "sub_7300B0"
+      }
+     ],
+     "ea": "0x730477",
+     "ecx": "[ebp+var_34]"
+    },
+    {
+     "callee": "Sqrat_TableBase_BindFunc_44FEA0",
+     "args": [
+      {
+       "str": "SetSpUseBufferTmp"
+      },
+      {
+       "raw": "(int)sub_4593B0",
+       "fn": "sub_4593B0"
+      }
+     ],
+     "ea": "0x730489",
+     "ecx": "[ebp+var_34]"
+    },
+    {
+     "callee": "Sqrat_RootTable_BindTable",
+     "args": [
+      {
+       "str": "BCMDTbl"
+      },
+      {
+       "raw": "(int)v9",
+       "fn": null
+      }
+     ],
+     "ea": "0x7304bf",
+     "bind_obj": "[ebp+var_34]",
+     "ecx": "[ebp+var_94]"
+    },
+    {
+     "callee": "Sqrat_Class_VarA_44F080",
+     "args": [
+      {
+       "str": "_PosState_Stand"
+      },
+      {
+       "raw": "1",
+       "fn": null
+      }
+     ],
+     "ea": "0x730501",
+     "ecx": "[ebp+var_48]"
+    },
+    {
+     "callee": "Sqrat_Class_VarA_44F080",
+     "args": [
+      {
+       "str": "_PosState_Air"
+      },
+      {
+       "raw": "2",
+       "fn": null
+      }
+     ],
+     "ea": "0x730510",
+     "ecx": "[ebp+var_48]"
+    },
+    {
+     "callee": "Sqrat_Class_VarA_44F080",
+     "args": [
+      {
+       "str": "_PosState_Crouch"
+      },
+      {
+       "raw": "4",
+       "fn": null
+      }
+     ],
+     "ea": "0x73051f",
+     "ecx": "[ebp+var_48]"
+    },
+    {
+     "callee": "Sqrat_Class_VarA_44F080",
+     "args": [
+      {
+       "str": "_PosState_Ground"
+      },
+      {
+       "raw": "5",
+       "fn": null
+      }
+     ],
+     "ea": "0x73052e",
+     "ecx": "[ebp+var_48]"
+    },
+    {
+     "callee": "Sqrat_Class_VarA_44F080",
+     "args": [
+      {
+       "str": "_PosState_Always"
+      },
+      {
+       "raw": "7",
+       "fn": null
+      }
+     ],
+     "ea": "0x73053d",
+     "ecx": "[ebp+var_48]"
+    },
+    {
+     "callee": "Sqrat_Class_VarA_44F080",
+     "args": [
+      {
+       "str": "_SkillType_None"
+      },
+      {
+       "raw": "0",
+       "fn": null
+      }
+     ],
+     "ea": "0x73054c",
+     "ecx": "[ebp+var_48]"
+    },
+    {
+     "callee": "Sqrat_Class_VarA_44F080",
+     "args": [
+      {
+       "str": "_SkillType_Normal"
+      },
+      {
+       "raw": "1",
+       "fn": null
+      }
+     ],
+     "ea": "0x73055b",
+     "ecx": "[ebp+var_48]"
+    },
+    {
+     "callee": "Sqrat_Class_VarA_44F080",
+     "args": [
+      {
+       "str": "_SkillType_Special"
+      },
+      {
+       "raw": "2",
+       "fn": null
+      }
+     ],
+     "ea": "0x73056a",
+     "ecx": "[ebp+var_48]"
+    },
+    {
+     "callee": "Sqrat_Class_VarA_44F080",
+     "args": [
+      {
+       "str": "_SkillType_ExSpecial"
+      },
+      {
+       "raw": "6",
+       "fn": null
+      }
+     ],
+     "ea": "0x730579",
+     "ecx": "[ebp+var_48]"
+    },
+    {
+     "callee": "Sqrat_Class_VarA_44F080",
+     "args": [
+      {
+       "str": "_SkillType_Ex"
+      },
+      {
+       "raw": "4",
+       "fn": null
+      }
+     ],
+     "ea": "0x730588",
+     "ecx": "[ebp+var_48]"
+    },
+    {
+     "callee": "Sqrat_Class_VarA_44F080",
+     "args": [
+      {
+       "str": "_SkillType_ChainShift"
+      },
+      {
+       "raw": "8",
+       "fn": null
+      }
+     ],
+     "ea": "0x730597",
+     "ecx": "[ebp+var_48]"
+    },
+    {
+     "callee": "Sqrat_Class_VarA_44F080",
+     "args": [
+      {
+       "str": "_State_Guard"
+      },
+      {
+       "raw": "1",
+       "fn": null
+      }
+     ],
+     "ea": "0x7305a6",
+     "ecx": "[ebp+var_48]"
+    },
+    {
+     "callee": "Sqrat_Class_VarA_44F080",
+     "args": [
+      {
+       "str": "_State_GuardCancel"
+      },
+      {
+       "raw": "2",
+       "fn": null
+      }
+     ],
+     "ea": "0x7305b5",
+     "ecx": "[ebp+var_48]"
+    },
+    {
+     "callee": "Sqrat_RootTable_BindTable",
+     "args": [
+      {
+       "str": "BCMDConst"
+      },
+      {
+       "raw": "(int)v8",
+       "fn": null
+      }
+     ],
+     "ea": "0x7305ee",
+     "bind_obj": "[ebp+var_48]",
+     "ecx": "[ebp+var_9C]"
+    }
+   ]
+  },
+  "0x731610": {
+   "name": "sub_731610",
+   "calls": [
+    {
+     "callee": "Sqrat_TableBase_BindFunc_463040",
+     "args": [
+      {
+       "str": "GetBoundStatus"
+      },
+      {
+       "raw": "(int)sub_45C3F0",
+       "fn": "sub_45C3F0"
+      }
+     ],
+     "ea": "0x731667",
+     "ecx": "[ebp+var_20]"
+    },
+    {
+     "callee": "Sqrat_TableBase_BindFunc_463240",
+     "args": [
+      {
+       "str": "SetBoundStatus"
+      },
+      {
+       "raw": "(int)sub_45C5C0",
+       "fn": "sub_45C5C0"
+      }
+     ],
+     "ea": "0x731679",
+     "ecx": "[ebp+var_20]"
+    },
+    {
+     "callee": "Sqrat_TableBase_BindFunc_463240",
+     "args": [
+      {
+       "str": "SetBoundFinalize"
+      },
+      {
+       "raw": "(int)sub_45C630",
+       "fn": "sub_45C630"
+      }
+     ],
+     "ea": "0x73168b",
+     "ecx": "[ebp+var_20]"
+    },
+    {
+     "callee": "Sqrat_TableBase_BindFunc_463240",
+     "args": [
+      {
+       "str": "ClearBound"
+      },
+      {
+       "raw": "(int)sub_45C6E0",
+       "fn": "sub_45C6E0"
+      }
+     ],
+     "ea": "0x73169d",
+     "ecx": "[ebp+var_20]"
+    },
+    {
+     "callee": "Sqrat_TableBase_BindFunc_463240",
+     "args": [
+      {
+       "str": "SetGuardStatus"
+      },
+      {
+       "raw": "(int)sub_45C720",
+       "fn": "sub_45C720"
+      }
+     ],
+     "ea": "0x7316af",
+     "ecx": "[ebp+var_20]"
+    },
+    {
+     "callee": "Sqrat_TableBase_BindFunc_463240",
+     "args": [
+      {
+       "str": "SetGuardFinalize"
+      },
+      {
+       "raw": "(int)sub_45C780",
+       "fn": "sub_45C780"
+      }
+     ],
+     "ea": "0x7316c1",
+     "ecx": "[ebp+var_20]"
+    },
+    {
+     "callee": "Sqrat_TableBase_BindFunc_463240",
+     "args": [
+      {
+       "str": "ClearGuard"
+      },
+      {
+       "raw": "(int)sub_45C830",
+       "fn": "sub_45C830"
+      }
+     ],
+     "ea": "0x7316d3",
+     "ecx": "[ebp+var_20]"
+    },
+    {
+     "callee": "Sqrat_Class_VarA_463080",
+     "args": [
+      {
+       "str": "isDone"
+      },
+      {
+       "raw": "0",
+       "fn": null
+      }
+     ],
+     "ea": "0x7316f9",
+     "ecx": "[ebp+var_38]"
+    },
+    {
+     "callee": "Sqrat_Class_VarA_463080",
+     "args": [
+      {
+       "str": "isCapture"
+      },
+      {
+       "raw": "2",
+       "fn": null
+      }
+     ],
+     "ea": "0x731708",
+     "ecx": "[ebp+var_38]"
+    },
+    {
+     "callee": "Sqrat_Class_VarA_463080",
+     "args": [
+      {
+       "str": "isBound"
+      },
+      {
+       "raw": "4",
+       "fn": null
+      }
+     ],
+     "ea": "0x731717",
+     "ecx": "[ebp+var_38]"
+    },
+    {
+     "callee": "Sqrat_Class_VarA_463080",
+     "args": [
+      {
+       "str": "VecCount"
+      },
+      {
+       "raw": "8",
+       "fn": null
+      }
+     ],
+     "ea": "0x731735",
+     "ecx": "[ebp+var_38]"
+    },
+    {
+     "callee": "Sqrat_Class_VarA_463080",
+     "args": [
+      {
+       "str": "WallCount"
+      },
+      {
+       "raw": "14",
+       "fn": null
+      }
+     ],
+     "ea": "0x731744",
+     "ecx": "[ebp+var_38]"
+    },
+    {
+     "callee": "Sqrat_Class_VarA_4630E0",
+     "args": [
+      {
+       "str": "Name"
+      },
+      {
+       "raw": "16",
+       "fn": null
+      }
+     ],
+     "ea": "0x731753",
+     "ecx": "[ebp+var_38]"
+    },
+    {
+     "callee": "Sqrat_Class_VarA_463080",
+     "args": [
+      {
+       "str": "Power"
+      },
+      {
+       "raw": "20",
+       "fn": null
+      }
+     ],
+     "ea": "0x731762",
+     "ecx": "[ebp+var_38]"
+    },
+    {
+     "callee": "Sqrat_Class_VarA_463080",
+     "args": [
+      {
+       "str": "AirUkemi"
+      },
+      {
+       "raw": "12",
+       "fn": null
+      }
+     ],
+     "ea": "0x731771",
+     "ecx": "[ebp+var_38]"
+    },
+    {
+     "callee": "Sqrat_Class_VarA_463080",
+     "args": [
+      {
+       "str": "VecMuki"
+      },
+      {
+       "raw": "10",
+       "fn": null
+      }
+     ],
+     "ea": "0x731780",
+     "ecx": "[ebp+var_38]"
+    },
+    {
+     "callee": "Sqrat_RootTable_BindTable",
+     "args": [
+      {
+       "str": "CCharaVector"
+      },
+      {
+       "raw": "(int)v5",
+       "fn": null
+      }
+     ],
+     "ea": "0x731791",
+     "bind_obj": "[ebp+var_38]",
+     "ecx": "[ebp+var_20]"
+    },
+    {
+     "callee": "Sqrat_RootTable_BindTable",
+     "args": [
+      {
+       "str": "BtlMvStd"
+      },
+      {
+       "raw": "(int)v6",
+       "fn": null
+      }
+     ],
+     "ea": "0x7317c7",
+     "bind_obj": "[ebp+var_20]",
+     "ecx": "[ebp+var_58]"
+    }
+   ]
+  },
+  "0x731800": {
+   "name": "sub_731800",
+   "calls": [
+    {
+     "callee": "Sqrat_TableBase_BindFunc_463240",
+     "args": [
+      {
+       "str": "GetPlayerSide"
+      },
+      {
+       "raw": "(int)sub_45DC90",
+       "fn": "sub_45DC90"
+      }
+     ],
+     "ea": "0x73185a",
+     "ecx": "[ebp+var_48]"
+    },
+    {
+     "callee": "Sqrat_TableBase_BindFunc_44FEA0",
+     "args": [
+      {
+       "str": "SetPattern"
+      },
+      {
+       "raw": "(int)sub_45CA30",
+       "fn": "sub_45CA30"
+      }
+     ],
+     "ea": "0x73186c",
+     "ecx": "[ebp+var_48]"
+    },
+    {
+     "callee": "Sqrat_TableBase_BindFunc_459D30",
+     "args": [
+      {
+       "str": "SetMuki"
+      },
+      {
+       "raw": "(int)sub_45DCD0",
+       "fn": "sub_45DCD0"
+      }
+     ],
+     "ea": "0x73187e",
+     "ecx": "[ebp+var_48]"
+    },
+    {
+     "callee": "Sqrat_TableBase_BindFunc_463240",
+     "args": [
+      {
+       "str": "GetMuki"
+      },
+      {
+       "raw": "(int)sub_45DD50",
+       "fn": "sub_45DD50"
+      }
+     ],
+     "ea": "0x731890",
+     "ecx": "[ebp+var_48]"
+    },
+    {
+     "callee": "Sqrat_TableBase_BindFunc_463240",
+     "args": [
+      {
+       "str": "CheckFurimuki"
+      },
+      {
+       "raw": "(int)sub_45DDA0",
+       "fn": "sub_45DDA0"
+      }
+     ],
+     "ea": "0x7318a2",
+     "ecx": "[ebp+var_48]"
+    },
+    {
+     "callee": "Sqrat_TableBase_BindFunc_463240",
+     "args": [
+      {
+       "str": "VGuard_CheckKeep"
+      },
+      {
+       "raw": "(int)sub_45DDF0",
+       "fn": "sub_45DDF0"
+      }
+     ],
+     "ea": "0x7318b4",
+     "ecx": "[ebp+var_48]"
+    },
+    {
+     "callee": "Sqrat_TableBase_BindFunc_4631C0",
+     "args": [
+      {
+       "str": "VGuard_Time"
+      },
+      {
+       "raw": "(int)sub_45DE30",
+       "fn": "sub_45DE30"
+      }
+     ],
+     "ea": "0x7318c6",
+     "ecx": "[ebp+var_48]"
+    },
+    {
+     "callee": "Sqrat_TableBase_BindFunc_4631C0",
+     "args": [
+      {
+       "str": "CheckStickHold"
+      },
+      {
+       "raw": "(int)sub_45DE70",
+       "fn": "sub_45DE70"
+      }
+     ],
+     "ea": "0x7318d8",
+     "ecx": "[ebp+var_48]"
+    },
+    {
+     "callee": "Sqrat_TableBase_BindFunc_4631C0",
+     "args": [
+      {
+       "str": "CheckButtonHold"
+      },
+      {
+       "raw": "(int)sub_45DEF0",
+       "fn": "sub_45DEF0"
+      }
+     ],
+     "ea": "0x7318ea",
+     "ecx": "[ebp+var_48]"
+    },
+    {
+     "callee": "Sqrat_TableBase_BindFunc_463240",
+     "args": [
+      {
+       "str": "IsStartTrigger"
+      },
+      {
+       "raw": "(int)sub_45DF70",
+       "fn": "sub_45DF70"
+      }
+     ],
+     "ea": "0x7318fc",
+     "ecx": "[ebp+var_48]"
+    },
+    {
+     "callee": "Sqrat_TableBase_BindFunc_463200",
+     "args": [
+      {
+       "str": "SetNextMoveTable"
+      },
+      {
+       "raw": "(int)sub_45DFE0",
+       "fn": "sub_45DFE0"
+      }
+     ],
+     "ea": "0x73190e",
+     "ecx": "[ebp+var_48]"
+    },
+    {
+     "callee": "Sqrat_TableBase_BindFunc_459D70",
+     "args": [
+      {
+       "str": "SetDeleteMoveTable"
+      },
+      {
+       "raw": "(int)&sub_45E080",
+       "fn": "sub_45E080"
+      }
+     ],
+     "ea": "0x731920",
+     "ecx": "[ebp+var_48]"
+    },
+    {
+     "callee": "Sqrat_TableBase_BindFunc_459D30",
+     "args": [
+      {
+       "str": "SetFinalize"
+      },
+      {
+       "raw": "(int)sub_45E0A0",
+       "fn": "sub_45E0A0"
+      }
+     ],
+     "ea": "0x731932",
+     "ecx": "[ebp+var_48]"
+    },
+    {
+     "callee": "Sqrat_TableBase_BindFunc_459D30",
+     "args": [
+      {
+       "str": "SetFinalizeCode"
+      },
+      {
+       "raw": "(int)sub_45E0E0",
+       "fn": "sub_45E0E0"
+      }
+     ],
+     "ea": "0x731944",
+     "ecx": "[ebp+var_48]"
+    },
+    {
+     "callee": "Sqrat_TableBase_BindFunc_463240",
+     "args": [
+      {
+       "str": "GetFinalizeCode"
+      },
+      {
+       "raw": "(int)sub_45E120",
+       "fn": "sub_45E120"
+      }
+     ],
+     "ea": "0x731956",
+     "ecx": "[ebp+var_48]"
+    },
+    {
+     "callee": "Sqrat_TableBase_BindFunc_463240",
+     "args": [
+      {
+       "str": "FromFinalize"
+      },
+      {
+       "raw": "(int)sub_45E160",
+       "fn": "sub_45E160"
+      }
+     ],
+     "ea": "0x731968",
+     "ecx": "[ebp+var_48]"
+    },
+    {
+     "callee": "Sqrat_TableBase_BindFunc_459D30",
+     "args": [
+      {
+       "str": "SetMoveCode"
+      },
+      {
+       "raw": "(int)sub_45E1A0",
+       "fn": "sub_45E1A0"
+      }
+     ],
+     "ea": "0x73197a",
+     "ecx": "[ebp+var_48]"
+    },
+    {
+     "callee": "Sqrat_TableBase_BindFunc_463240",
+     "args": [
+      {
+       "str": "GetMoveCode"
+      },
+      {
+       "raw": "(int)sub_45E1E0",
+       "fn": "sub_45E1E0"
+      }
+     ],
+     "ea": "0x73198c",
+     "ecx": "[ebp+var_48]"
+    },
+    {
+     "callee": "Sqrat_TableBase_BindFunc_4631C0",
+     "args": [
+      {
+       "str": "GetPP"
+      },
+      {
+       "raw": "(int)sub_45E220",
+       "fn": "sub_45E220"
+      }
+     ],
+     "ea": "0x73199e",
+     "ecx": "[ebp+var_48]"
+    },
+    {
+     "callee": "Sqrat_TableBase_BindFunc_459EB0",
+     "args": [
+      {
+       "str": "SetPP"
+      },
+      {
+       "raw": "(int)sub_45E280",
+       "fn": "sub_45E280"
+      }
+     ],
+     "ea": "0x7319b0",
+     "ecx": "[ebp+var_48]"
+    },
+    {
+     "callee": "Sqrat_TableBase_BindFunc_463280",
+     "args": [
+      {
+       "str": "AddPP"
+      },
+      {
+       "raw": "(int)sub_45E2E0",
+       "fn": "sub_45E2E0"
+      }
+     ],
+     "ea": "0x7319c2",
+     "ecx": "[ebp+var_48]"
+    },
+    {
+     "callee": "Sqrat_TableBase_BindFunc_4631C0",
+     "args": [
+      {
+       "str": "GetLP"
+      },
+      {
+       "raw": "(int)sub_45E350",
+       "fn": "sub_45E350"
+      }
+     ],
+     "ea": "0x7319d4",
+     "ecx": "[ebp+var_48]"
+    },
+    {
+     "callee": "Sqrat_TableBase_BindFunc_459EB0",
+     "args": [
+      {
+       "str": "SetLP"
+      },
+      {
+       "raw": "(int)sub_45E390",
+       "fn": "sub_45E390"
+      }
+     ],
+     "ea": "0x7319e6",
+     "ecx": "[ebp+var_48]"
+    },
+    {
+     "callee": "Sqrat_TableBase_BindFunc_463280",
+     "args": [
+      {
+       "str": "AddLP"
+      },
+      {
+       "raw": "(int)sub_45E3D0",
+       "fn": "sub_45E3D0"
+      }
+     ],
+     "ea": "0x7319f8",
+     "ecx": "[ebp+var_48]"
+    },
+    {
+     "callee": "Sqrat_TableBase_BindFunc_459D30",
+     "args": [
+      {
+       "str": "SetComboLimit"
+      },
+      {
+       "raw": "(int)sub_45E420",
+       "fn": "sub_45E420"
+      }
+     ],
+     "ea": "0x731a0a",
+     "ecx": "[ebp+var_48]"
+    },
+    {
+     "callee": "Sqrat_TableBase_BindFunc_459D30",
+     "args": [
+      {
+       "str": "SetWallCount"
+      },
+      {
+       "raw": "(int)sub_45E470",
+       "fn": "sub_45E470"
+      }
+     ],
+     "ea": "0x731a1c",
+     "ecx": "[ebp+var_48]"
+    },
+    {
+     "callee": "Sqrat_TableBase_BindFunc_459D30",
+     "args": [
+      {
+       "str": "SetAirJumpOK"
+      },
+      {
+       "raw": "(int)sub_45E4B0",
+       "fn": "sub_45E4B0"
+      }
+     ],
+     "ea": "0x731a2e",
+     "ecx": "[ebp+var_48]"
+    },
+    {
+     "callee": "Sqrat_TableBase_BindFunc_4631C0",
+     "args": [
+      {
+       "str": "AddAirJumpCount"
+      },
+      {
+       "raw": "(int)sub_45E4E0",
+       "fn": "sub_45E4E0"
+      }
+     ],
+     "ea": "0x731a40",
+     "ecx": "[ebp+var_48]"
+    },
+    {
+     "callee": "Sqrat_TableBase_BindFunc_44FEA0",
+     "args": [
+      {
+       "str": "TobiParam_Func"
+      },
+      {
+       "raw": "(int)sub_45E550",
+       "fn": "sub_45E550"
+      }
+     ],
+     "ea": "0x731a52",
+     "ecx": "[ebp+var_48]"
+    },
+    {
+     "callee": "Sqrat_TableBase_BindFunc_44FEA0",
+     "args": [
+      {
+       "str": "TobiParamEndFlag_Func"
+      },
+      {
+       "raw": "(int)sub_45E680",
+       "fn": "sub_45E680"
+      }
+     ],
+     "ea": "0x731a64",
+     "ecx": "[ebp+var_48]"
+    },
+    {
+     "callee": "Sqrat_TableBase_BindFunc_4631C0",
+     "args": [
+      {
+       "str": "CheckPosState"
+      },
+      {
+       "raw": "(int)sub_45E780",
+       "fn": "sub_45E780"
+      }
+     ],
+     "ea": "0x731a76",
+     "ecx": "[ebp+var_48]"
+    },
+    {
+     "callee": "Sqrat_TableBase_BindFunc_44FEA0",
+     "args": [
+      {
+       "str": "CheckPattern"
+      },
+      {
+       "raw": "(int)sub_45E900",
+       "fn": "sub_45E900"
+      }
+     ],
+     "ea": "0x731a88",
+     "ecx": "[ebp+var_48]"
+    },
+    {
+     "callee": "Sqrat_TableBase_BindFunc_4631C0",
+     "args": [
+      {
+       "str": "GetFrameParam"
+      },
+      {
+       "raw": "(int)sub_45EA80",
+       "fn": "sub_45EA80"
+      }
+     ],
+     "ea": "0x731a9a",
+     "ecx": "[ebp+var_48]"
+    },
+    {
+     "callee": "Sqrat_TableBase_BindFunc_463240",
+     "args": [
+      {
+       "str": "GetFrameID"
+      },
+      {
+       "raw": "(int)sub_45EA40",
+       "fn": "sub_45EA40"
+      }
+     ],
+     "ea": "0x731aac",
+     "ecx": "[ebp+var_48]"
+    },
+    {
+     "callee": "Sqrat_TableBase_BindFunc_4631C0",
+     "args": [
+      {
+       "str": "JumpFrameID"
+      },
+      {
+       "raw": "(int)sub_45F0F0",
+       "fn": "sub_45F0F0"
+      }
+     ],
+     "ea": "0x731abe",
+     "ecx": "[ebp+var_48]"
+    },
+    {
+     "callee": "Sqrat_TableBase_BindFunc_463280",
+     "args": [
+      {
+       "str": "Frame_Proc"
+      },
+      {
+       "raw": "(int)sub_45F150",
+       "fn": "sub_45F150"
+      }
+     ],
+     "ea": "0x731ad0",
+     "ecx": "[ebp+var_48]"
+    },
+    {
+     "callee": "Sqrat_TableBase_BindFunc_459D30",
+     "args": [
+      {
+       "str": "SetPrio"
+      },
+      {
+       "raw": "(int)sub_45EAD0",
+       "fn": "sub_45EAD0"
+      }
+     ],
+     "ea": "0x731ae2",
+     "ecx": "[ebp+var_48]"
+    },
+    {
+     "callee": "Sqrat_TableBase_BindFunc_459D30",
+     "args": [
+      {
+       "str": "SetCommandLongDelay"
+      },
+      {
+       "raw": "(int)sub_45EB10",
+       "fn": "sub_45EB10"
+      }
+     ],
+     "ea": "0x731af4",
+     "ecx": "[ebp+var_48]"
+    },
+    {
+     "callee": "Sqrat_TableBase_BindFunc_44FEA0",
+     "args": [
+      {
+       "str": "CheckCommand"
+      },
+      {
+       "raw": "(int)sub_45EC20",
+       "fn": "sub_45EC20"
+      }
+     ],
+     "ea": "0x731b06",
+     "ecx": "[ebp+var_48]"
+    },
+    {
+     "callee": "Sqrat_TableBase_BindFunc_44FEA0",
+     "args": [
+      {
+       "str": "CheckCommandString"
+      },
+      {
+       "raw": "(int)sub_45EDE0",
+       "fn": "sub_45EDE0"
+      }
+     ],
+     "ea": "0x731b18",
+     "ecx": "[ebp+var_48]"
+    },
+    {
+     "callee": "Sqrat_TableBase_BindFunc_463240",
+     "args": [
+      {
+       "str": "ClearCommand"
+      },
+      {
+       "raw": "(int)sub_45F030",
+       "fn": "sub_45F030"
+      }
+     ],
+     "ea": "0x731b2a",
+     "ecx": "[ebp+var_48]"
+    },
+    {
+     "callee": "Sqrat_TableBase_BindFunc_4632C0",
+     "args": [
+      {
+       "str": "GetMvStatus"
+      },
+      {
+       "raw": "(int)sub_45D900",
+       "fn": "sub_45D900"
+      }
+     ],
+     "ea": "0x731b3c",
+     "ecx": "[ebp+var_48]"
+    },
+    {
+     "callee": "Sqrat_TableBase_BindFunc_44FEE0",
+     "args": [
+      {
+       "str": "GetMvName"
+      },
+      {
+       "raw": "(int)sub_45DAA0",
+       "fn": "sub_45DAA0"
+      }
+     ],
+     "ea": "0x731b4e",
+     "ecx": "[ebp+var_48]"
+    },
+    {
+     "callee": "Sqrat_TableBase_BindFunc_463300",
+     "args": [
+      {
+       "str": "SetMvHitStatus"
+      },
+      {
+       "raw": "(int)sub_45DC10",
+       "fn": "sub_45DC10"
+      }
+     ],
+     "ea": "0x731b60",
+     "ecx": "[ebp+var_48]"
+    },
+    {
+     "callee": "Sqrat_TableBase_BindFunc_463340",
+     "args": [
+      {
+       "str": "GetMvHitStatus"
+      },
+      {
+       "raw": "(int)sub_45DAF0",
+       "fn": "sub_45DAF0"
+      }
+     ],
+     "ea": "0x731b72",
+     "ecx": "[ebp+var_48]"
+    },
+    {
+     "callee": "Sqrat_TableBase_BindFunc_459D70",
+     "args": [
+      {
+       "str": "ClearHitStatus"
+      },
+      {
+       "raw": "(int)sub_45DC60",
+       "fn": "sub_45DC60"
+      }
+     ],
+     "ea": "0x731b84",
+     "ecx": "[ebp+var_48]"
+    },
+    {
+     "callee": "Sqrat_TableBase_BindFunc_44FEA0",
+     "args": [
+      {
+       "str": "SetVector"
+      },
+      {
+       "raw": "(int)sub_45CD80",
+       "fn": "sub_45CD80"
+      }
+     ],
+     "ea": "0x731b96",
+     "ecx": "[ebp+var_48]"
+    },
+    {
+     "callee": "Sqrat_TableBase_BindFunc_459DF0",
+     "args": [
+      {
+       "str": "GetVector"
+      },
+      {
+       "raw": "(int)sub_45CF70",
+       "fn": "sub_45CF70"
+      }
+     ],
+     "ea": "0x731ba8",
+     "ecx": "[ebp+var_48]"
+    },
+    {
+     "callee": "Sqrat_TableBase_BindFunc_463380",
+     "args": [
+      {
+       "str": "SetVector_CCharaVector"
+      },
+      {
+       "raw": "(int)sub_45CF10",
+       "fn": "sub_45CF10"
+      }
+     ],
+     "ea": "0x731bba",
+     "ecx": "[ebp+var_48]"
+    },
+    {
+     "callee": "Sqrat_TableBase_BindFunc_459D30",
+     "args": [
+      {
+       "str": "SetVector_MaxX"
+      },
+      {
+       "raw": "(int)sub_45CEB0",
+       "fn": "sub_45CEB0"
+      }
+     ],
+     "ea": "0x731bcc",
+     "ecx": "[ebp+var_48]"
+    },
+    {
+     "callee": "Sqrat_TableBase_BindFunc_459CF0",
+     "args": [
+      {
+       "str": "SetSpPrio"
+      },
+      {
+       "raw": "(int)sub_45D2B0",
+       "fn": "sub_45D2B0"
+      }
+     ],
+     "ea": "0x731bde",
+     "ecx": "[ebp+var_48]"
+    },
+    {
+     "callee": "Sqrat_TableBase_BindFunc_459CB0",
+     "args": [
+      {
+       "str": "GetPosition"
+      },
+      {
+       "raw": "(int)sub_45D1E0",
+       "fn": "sub_45D1E0"
+      }
+     ],
+     "ea": "0x731bf0",
+     "ecx": "[ebp+var_48]"
+    },
+    {
+     "callee": "Sqrat_TableBase_BindFunc_44FEA0",
+     "args": [
+      {
+       "str": "SetPosition"
+      },
+      {
+       "raw": "(int)sub_45D350",
+       "fn": "sub_45D350"
+      }
+     ],
+     "ea": "0x731c02",
+     "ecx": "[ebp+var_48]"
+    },
+    {
+     "callee": "Sqrat_TableBase_BindFunc_44FEA0",
+     "args": [
+      {
+       "str": "SetAngle"
+      },
+      {
+       "raw": "(int)sub_45D560",
+       "fn": "sub_45D560"
+      }
+     ],
+     "ea": "0x731c14",
+     "ecx": "[ebp+var_48]"
+    },
+    {
+     "callee": "Sqrat_TableBase_BindFunc_463240",
+     "args": [
+      {
+       "str": "GetAngle"
+      },
+      {
+       "raw": "(int)sub_45D7D0",
+       "fn": "sub_45D7D0"
+      }
+     ],
+     "ea": "0x731c26",
+     "ecx": "[ebp+var_48]"
+    },
+    {
+     "callee": "Sqrat_TableBase_BindFunc_459CF0",
+     "args": [
+      {
+       "str": "SetScale"
+      },
+      {
+       "raw": "(int)sub_45D800",
+       "fn": "sub_45D800"
+      }
+     ],
+     "ea": "0x731c38",
+     "ecx": "[ebp+var_48]"
+    },
+    {
+     "callee": "Sqrat_TableBase_BindFunc_459E70",
+     "args": [
+      {
+       "str": "GetScale"
+      },
+      {
+       "raw": "(int)sub_45D880",
+       "fn": "sub_45D880"
+      }
+     ],
+     "ea": "0x731c4a",
+     "ecx": "[ebp+var_48]"
+    },
+    {
+     "callee": "Sqrat_TableBase_BindFunc_463240",
+     "args": [
+      {
+       "str": "TalkScript_IsDone"
+      },
+      {
+       "raw": "(int)sub_45F190",
+       "fn": "sub_45F190"
+      }
+     ],
+     "ea": "0x731c5c",
+     "ecx": "[ebp+var_48]"
+    },
+    {
+     "callee": "Sqrat_TableBase_BindFunc_4633C0",
+     "args": [
+      {
+       "str": "GetMvRoundStatus"
+      },
+      {
+       "raw": "(int)sub_45F1A0",
+       "fn": "sub_45F1A0"
+      }
+     ],
+     "ea": "0x731c6e",
+     "ecx": "[ebp+var_48]"
+    },
+    {
+     "callee": "Sqrat_TableBase_BindFunc_459D70",
+     "args": [
+      {
+       "str": "SetRoundEnd"
+      },
+      {
+       "raw": "(int)sub_45F380",
+       "fn": "sub_45F380"
+      }
+     ],
+     "ea": "0x731c80",
+     "ecx": "[ebp+var_48]"
+    },
+    {
+     "callee": "Sqrat_TableBase_BindFunc_459D70",
+     "args": [
+      {
+       "str": "SetRoundStart"
+      },
+      {
+       "raw": "(int)sub_45F3D0",
+       "fn": "sub_45F3D0"
+      }
+     ],
+     "ea": "0x731c92",
+     "ecx": "[ebp+var_48]"
+    },
+    {
+     "callee": "Sqrat_TableBase_BindFunc_44FEA0",
+     "args": [
+      {
+       "str": "SetMoveableFlag"
+      },
+      {
+       "raw": "(int)sub_45F600",
+       "fn": "sub_45F600"
+      }
+     ],
+     "ea": "0x731ca4",
+     "ecx": "[ebp+var_48]"
+    },
+    {
+     "callee": "Sqrat_TableBase_BindFunc_44FEA0",
+     "args": [
+      {
+       "str": "SetAsFlag"
+      },
+      {
+       "raw": "(int)sub_45F750",
+       "fn": "sub_45F750"
+      }
+     ],
+     "ea": "0x731cb6",
+     "ecx": "[ebp+var_48]"
+    },
+    {
+     "callee": "Sqrat_TableBase_BindFunc_44FEA0",
+     "args": [
+      {
+       "str": "SetAsStatusFlag"
+      },
+      {
+       "raw": "(int)sub_45F690",
+       "fn": "sub_45F690"
+      }
+     ],
+     "ea": "0x731cc8",
+     "ecx": "[ebp+var_48]"
+    },
+    {
+     "callee": "Sqrat_TableBase_BindFunc_44FEA0",
+     "args": [
+      {
+       "str": "SetAtkCatchFlag"
+      },
+      {
+       "raw": "(int)sub_45F860",
+       "fn": "sub_45F860"
+      }
+     ],
+     "ea": "0x731cda",
+     "ecx": "[ebp+var_48]"
+    },
+    {
+     "callee": "Sqrat_TableBase_BindFunc_4631C0",
+     "args": [
+      {
+       "str": "CalcHitValue"
+      },
+      {
+       "raw": "(int)sub_45F7E0",
+       "fn": "sub_45F7E0"
+      }
+     ],
+     "ea": "0x731cec",
+     "ecx": "[ebp+var_48]"
+    },
+    {
+     "callee": "Sqrat_TableBase_BindFunc_463400",
+     "args": [
+      {
+       "str": "GetRecoverStatus"
+      },
+      {
+       "raw": "(int)sub_45F330",
+       "fn": "sub_45F330"
+      }
+     ],
+     "ea": "0x731cfe",
+     "ecx": "[ebp+var_48]"
+    },
+    {
+     "callee": "Sqrat_TableBase_BindFunc_44FEA0",
+     "args": [
+      {
+       "str": "PcGauge_Set"
+      },
+      {
+       "raw": "(int)sub_45F940",
+       "fn": "sub_45F940"
+      }
+     ],
+     "ea": "0x731d10",
+     "ecx": "[ebp+var_48]"
+    },
+    {
+     "callee": "Sqrat_TableBase_BindFunc_44FEA0",
+     "args": [
+      {
+       "str": "BoundCorrect_Calc"
+      },
+      {
+       "raw": "(int)sub_45FAD0",
+       "fn": "sub_45FAD0"
+      }
+     ],
+     "ea": "0x731d22",
+     "ecx": "[ebp+var_48]"
+    },
+    {
+     "callee": "Sqrat_Class_VarA_463440",
+     "args": [
+      {
+       "str": "x"
+      },
+      {
+       "raw": "0",
+       "fn": null
+      }
+     ],
+     "ea": "0x731d48",
+     "ecx": "[ebp+var_60]"
+    },
+    {
+     "callee": "Sqrat_Class_VarA_463440",
+     "args": [
+      {
+       "str": "y"
+      },
+      {
+       "raw": "4",
+       "fn": null
+      }
+     ],
+     "ea": "0x731d57",
+     "ecx": "[ebp+var_60]"
+    },
+    {
+     "callee": "Sqrat_Class_VarA_463440",
+     "args": [
+      {
+       "str": "addx"
+      },
+      {
+       "raw": "8",
+       "fn": null
+      }
+     ],
+     "ea": "0x731d66",
+     "ecx": "[ebp+var_60]"
+    },
+    {
+     "callee": "Sqrat_Class_VarA_463440",
+     "args": [
+      {
+       "str": "addy"
+      },
+      {
+       "raw": "12",
+       "fn": null
+      }
+     ],
+     "ea": "0x731d75",
+     "ecx": "[ebp+var_60]"
+    },
+    {
+     "callee": "Sqrat_RootTable_BindTable",
+     "args": [
+      {
+       "str": "CCharaVector"
+      },
+      {
+       "raw": "(int)v27",
+       "fn": null
+      }
+     ],
+     "ea": "0x731d86",
+     "bind_obj": "[ebp+var_60]",
+     "ecx": "[ebp+var_48]"
+    },
+    {
+     "callee": "Sqrat_Class_VarA_4634A0",
+     "args": [
+      {
+       "str": "x"
+      },
+      {
+       "raw": "0",
+       "fn": null
+      }
+     ],
+     "ea": "0x731db8",
+     "ecx": "[ebp+var_78]"
+    },
+    {
+     "callee": "Sqrat_Class_VarA_4634A0",
+     "args": [
+      {
+       "str": "y"
+      },
+      {
+       "raw": "4",
+       "fn": null
+      }
+     ],
+     "ea": "0x731dc7",
+     "ecx": "[ebp+var_78]"
+    },
+    {
+     "callee": "Sqrat_RootTable_BindTable",
+     "args": [
+      {
+       "str": "CCharaPosition"
+      },
+      {
+       "raw": "(int)v26",
+       "fn": null
+      }
+     ],
+     "ea": "0x731dd8",
+     "bind_obj": "[ebp+var_78]",
+     "ecx": "[ebp+var_48]"
+    },
+    {
+     "callee": "Sqrat_Class_VarA_463500",
+     "args": [
+      {
+       "str": "sx"
+      },
+      {
+       "raw": "0",
+       "fn": null
+      }
+     ],
+     "ea": "0x731e10",
+     "ecx": "[ebp+var_90]"
+    },
+    {
+     "callee": "Sqrat_Class_VarA_463500",
+     "args": [
+      {
+       "str": "sy"
+      },
+      {
+       "raw": "4",
+       "fn": null
+      }
+     ],
+     "ea": "0x731e22",
+     "ecx": "[ebp+var_90]"
+    },
+    {
+     "callee": "Sqrat_Class_VarA_463500",
+     "args": [
+      {
+       "str": "ex"
+      },
+      {
+       "raw": "8",
+       "fn": null
+      }
+     ],
+     "ea": "0x731e34",
+     "ecx": "[ebp+var_90]"
+    },
+    {
+     "callee": "Sqrat_Class_VarA_463500",
+     "args": [
+      {
+       "str": "ey"
+      },
+      {
+       "raw": "12",
+       "fn": null
+      }
+     ],
+     "ea": "0x731e46",
+     "ecx": "[ebp+var_90]"
+    },
+    {
+     "callee": "Sqrat_RootTable_BindTable",
+     "args": [
+      {
+       "str": "CCharaRect"
+      },
+      {
+       "raw": "(int)v25",
+       "fn": null
+      }
+     ],
+     "ea": "0x731e5a",
+     "bind_obj": "[ebp+var_90]",
+     "ecx": "[ebp+var_48]"
+    },
+    {
+     "callee": "Sqrat_Class_VarA_463560",
+     "args": [
+      {
+       "str": "x0"
+      },
+      {
+       "raw": "0",
+       "fn": null
+      }
+     ],
+     "ea": "0x731e95",
+     "ecx": "[ebp+var_A8]"
+    },
+    {
+     "callee": "Sqrat_Class_VarA_463560",
+     "args": [
+      {
+       "str": "y0"
+      },
+      {
+       "raw": "4",
+       "fn": null
+      }
+     ],
+     "ea": "0x731ea7",
+     "ecx": "[ebp+var_A8]"
+    },
+    {
+     "callee": "Sqrat_Class_VarA_463560",
+     "args": [
+      {
+       "str": "x1"
+      },
+      {
+       "raw": "8",
+       "fn": null
+      }
+     ],
+     "ea": "0x731eb9",
+     "ecx": "[ebp+var_A8]"
+    },
+    {
+     "callee": "Sqrat_Class_VarA_463560",
+     "args": [
+      {
+       "str": "y1"
+      },
+      {
+       "raw": "12",
+       "fn": null
+      }
+     ],
+     "ea": "0x731ecb",
+     "ecx": "[ebp+var_A8]"
+    },
+    {
+     "callee": "Sqrat_Class_VarA_463560",
+     "args": [
+      {
+       "str": "x2"
+      },
+      {
+       "raw": "16",
+       "fn": null
+      }
+     ],
+     "ea": "0x731edd",
+     "ecx": "[ebp+var_A8]"
+    },
+    {
+     "callee": "Sqrat_Class_VarA_463560",
+     "args": [
+      {
+       "str": "y2"
+      },
+      {
+       "raw": "20",
+       "fn": null
+      }
+     ],
+     "ea": "0x731eef",
+     "ecx": "[ebp+var_A8]"
+    },
+    {
+     "callee": "Sqrat_Class_VarA_463560",
+     "args": [
+      {
+       "str": "x3"
+      },
+      {
+       "raw": "24",
+       "fn": null
+      }
+     ],
+     "ea": "0x731f01",
+     "ecx": "[ebp+var_A8]"
+    },
+    {
+     "callee": "Sqrat_Class_VarA_463560",
+     "args": [
+      {
+       "str": "y3"
+      },
+      {
+       "raw": "28",
+       "fn": null
+      }
+     ],
+     "ea": "0x731f13",
+     "ecx": "[ebp+var_A8]"
+    },
+    {
+     "callee": "Sqrat_RootTable_BindTable",
+     "args": [
+      {
+       "str": "CCharaPoint4"
+      },
+      {
+       "raw": "(int)v24",
+       "fn": null
+      }
+     ],
+     "ea": "0x731f27",
+     "bind_obj": "[ebp+var_A8]",
+     "ecx": "[ebp+var_48]"
+    },
+    {
+     "callee": "Sqrat_Class_VarA_4635C0",
+     "args": [
+      {
+       "str": "CharaNo"
+      },
+      {
+       "raw": "0",
+       "fn": null
+      }
+     ],
+     "ea": "0x731f62",
+     "ecx": "[ebp+var_C0]"
+    },
+    {
+     "callee": "Sqrat_Class_VarA_4635C0",
+     "args": [
+      {
+       "str": "isUpdate"
+      },
+      {
+       "raw": "8",
+       "fn": null
+      }
+     ],
+     "ea": "0x731f74",
+     "ecx": "[ebp+var_C0]"
+    },
+    {
+     "callee": "Sqrat_Class_VarA_463620",
+     "args": [
+      {
+       "str": "MvCount"
+      },
+      {
+       "raw": "4",
+       "fn": null
+      }
+     ],
+     "ea": "0x731f86",
+     "ecx": "[ebp+var_C0]"
+    },
+    {
+     "callee": "Sqrat_Class_VarA_4635C0",
+     "args": [
+      {
+       "str": "FrameID"
+      },
+      {
+       "raw": "16",
+       "fn": null
+      }
+     ],
+     "ea": "0x731f98",
+     "ecx": "[ebp+var_C0]"
+    },
+    {
+     "callee": "Sqrat_Class_VarA_4635C0",
+     "args": [
+      {
+       "str": "isFrameUpdate"
+      },
+      {
+       "raw": "10",
+       "fn": null
+      }
+     ],
+     "ea": "0x731faa",
+     "ecx": "[ebp+var_C0]"
+    },
+    {
+     "callee": "Sqrat_Class_VarA_4635C0",
+     "args": [
+      {
+       "str": "isLanding"
+      },
+      {
+       "raw": "18",
+       "fn": null
+      }
+     ],
+     "ea": "0x731fbc",
+     "ecx": "[ebp+var_C0]"
+    },
+    {
+     "callee": "Sqrat_Class_VarA_4635C0",
+     "args": [
+      {
+       "str": "DataPattern"
+      },
+      {
+       "raw": "12",
+       "fn": null
+      }
+     ],
+     "ea": "0x731fce",
+     "ecx": "[ebp+var_C0]"
+    },
+    {
+     "callee": "Sqrat_Class_VarA_4635C0",
+     "args": [
+      {
+       "str": "DataFrame"
+      },
+      {
+       "raw": "14",
+       "fn": null
+      }
+     ],
+     "ea": "0x731fe0",
+     "ecx": "[ebp+var_C0]"
+    },
+    {
+     "callee": "Sqrat_Class_VarA_4635C0",
+     "args": [
+      {
+       "str": "DataDelayVal"
+      },
+      {
+       "raw": "20",
+       "fn": null
+      }
+     ],
+     "ea": "0x731ff2",
+     "ecx": "[ebp+var_C0]"
+    },
+    {
+     "callee": "Sqrat_Class_VarA_4635C0",
+     "args": [
+      {
+       "str": "flags"
+      },
+      {
+       "raw": "22",
+       "fn": null
+      }
+     ],
+     "ea": "0x732004",
+     "ecx": "[ebp+var_C0]"
+    },
+    {
+     "callee": "Sqrat_Class_VarA_4635C0",
+     "args": [
+      {
+       "str": "Param0"
+      },
+      {
+       "raw": "24",
+       "fn": null
+      }
+     ],
+     "ea": "0x732016",
+     "ecx": "[ebp+var_C0]"
+    },
+    {
+     "callee": "Sqrat_Class_VarA_4635C0",
+     "args": [
+      {
+       "str": "Param1"
+      },
+      {
+       "raw": "26",
+       "fn": null
+      }
+     ],
+     "ea": "0x732028",
+     "ecx": "[ebp+var_C0]"
+    },
+    {
+     "callee": "Sqrat_Class_VarA_4635C0",
+     "args": [
+      {
+       "str": "Param2"
+      },
+      {
+       "raw": "28",
+       "fn": null
+      }
+     ],
+     "ea": "0x73203a",
+     "ecx": "[ebp+var_C0]"
+    },
+    {
+     "callee": "Sqrat_Class_VarA_4635C0",
+     "args": [
+      {
+       "str": "Param3"
+      },
+      {
+       "raw": "30",
+       "fn": null
+      }
+     ],
+     "ea": "0x73204c",
+     "ecx": "[ebp+var_C0]"
+    },
+    {
+     "callee": "Sqrat_RootTable_BindTable",
+     "args": [
+      {
+       "str": "MvStatus"
+      },
+      {
+       "raw": "(int)v23",
+       "fn": null
+      }
+     ],
+     "ea": "0x732060",
+     "bind_obj": "[ebp+var_C0]",
+     "ecx": "[ebp+var_48]"
+    },
+    {
+     "callee": "Sqrat_Class_VarA_463680",
+     "args": [
+      {
+       "str": "Type"
+      },
+      {
+       "raw": "0",
+       "fn": null
+      }
+     ],
+     "ea": "0x73209b",
+     "ecx": "[ebp+var_D8]"
+    },
+    {
+     "callee": "Sqrat_Class_VarA_463680",
+     "args": [
+      {
+       "str": "PosState"
+      },
+      {
+       "raw": "2",
+       "fn": null
+      }
+     ],
+     "ea": "0x7320ad",
+     "ecx": "[ebp+var_D8]"
+    },
+    {
+     "callee": "Sqrat_Class_VarA_463680",
+     "args": [
+      {
+       "str": "isDown"
+      },
+      {
+       "raw": "4",
+       "fn": null
+      }
+     ],
+     "ea": "0x7320bf",
+     "ecx": "[ebp+var_D8]"
+    },
+    {
+     "callee": "Sqrat_Class_VarA_463680",
+     "args": [
+      {
+       "str": "isFirstUpdate"
+      },
+      {
+       "raw": "8",
+       "fn": null
+      }
+     ],
+     "ea": "0x7320d1",
+     "ecx": "[ebp+var_D8]"
+    },
+    {
+     "callee": "Sqrat_Class_VarA_463680",
+     "args": [
+      {
+       "str": "Count"
+      },
+      {
+       "raw": "6",
+       "fn": null
+      }
+     ],
+     "ea": "0x7320e3",
+     "ecx": "[ebp+var_D8]"
+    },
+    {
+     "callee": "Sqrat_RootTable_BindTable",
+     "args": [
+      {
+       "str": "MvHitStatus"
+      },
+      {
+       "raw": "(int)v22",
+       "fn": null
+      }
+     ],
+     "ea": "0x7320f7",
+     "bind_obj": "[ebp+var_D8]",
+     "ecx": "[ebp+var_48]"
+    },
+    {
+     "callee": "Sqrat_Class_VarA_4636E0",
+     "args": [
+      {
+       "str": "type"
+      },
+      {
+       "raw": "0",
+       "fn": null
+      }
+     ],
+     "ea": "0x732132",
+     "ecx": "[ebp+var_F0]"
+    },
+    {
+     "callee": "Sqrat_Class_VarA_4636E0",
+     "args": [
+      {
+       "str": "d_state"
+      },
+      {
+       "raw": "2",
+       "fn": null
+      }
+     ],
+     "ea": "0x732144",
+     "ecx": "[ebp+var_F0]"
+    },
+    {
+     "callee": "Sqrat_Class_VarA_4636E0",
+     "args": [
+      {
+       "str": "atk_guard"
+      },
+      {
+       "raw": "4",
+       "fn": null
+      }
+     ],
+     "ea": "0x732156",
+     "ecx": "[ebp+var_F0]"
+    },
+    {
+     "callee": "Sqrat_Class_VarA_4636E0",
+     "args": [
+      {
+       "str": "atk_throw"
+      },
+      {
+       "raw": "6",
+       "fn": null
+      }
+     ],
+     "ea": "0x732168",
+     "ecx": "[ebp+var_F0]"
+    },
+    {
+     "callee": "Sqrat_Class_VarA_4636E0",
+     "args": [
+      {
+       "str": "def_guard"
+      },
+      {
+       "raw": "8",
+       "fn": null
+      }
+     ],
+     "ea": "0x73217a",
+     "ecx": "[ebp+var_F0]"
+    },
+    {
+     "callee": "Sqrat_Class_VarA_4636E0",
+     "args": [
+      {
+       "str": "grd_break"
+      },
+      {
+       "raw": "10",
+       "fn": null
+      }
+     ],
+     "ea": "0x73218c",
+     "ecx": "[ebp+var_F0]"
+    },
+    {
+     "callee": "Sqrat_Class_VarA_4636E0",
+     "args": [
+      {
+       "str": "counterhit"
+      },
+      {
+       "raw": "12",
+       "fn": null
+      }
+     ],
+     "ea": "0x73219e",
+     "ecx": "[ebp+var_F0]"
+    },
+    {
+     "callee": "Sqrat_Class_VarA_463740",
+     "args": [
+      {
+       "str": "flags"
+      },
+      {
+       "raw": "16",
+       "fn": null
+      }
+     ],
+     "ea": "0x7321b0",
+     "ecx": "[ebp+var_F0]"
+    },
+    {
+     "callee": "Sqrat_RootTable_BindTable",
+     "args": [
+      {
+       "str": "MvHitImpactInfo"
+      },
+      {
+       "raw": "(int)v21",
+       "fn": null
+      }
+     ],
+     "ea": "0x7321c4",
+     "bind_obj": "[ebp+var_F0]",
+     "ecx": "[ebp+var_48]"
+    },
+    {
+     "callee": "Sqrat_Class_VarA_4637A0",
+     "args": [
+      {
+       "str": "type"
+      },
+      {
+       "raw": "0",
+       "fn": null
+      }
+     ],
+     "ea": "0x7321ff",
+     "ecx": "[ebp+var_108]"
+    },
+    {
+     "callee": "Sqrat_RootTable_BindTable",
+     "args": [
+      {
+       "str": "MvInterruptInfo"
+      },
+      {
+       "raw": "(int)v20",
+       "fn": null
+      }
+     ],
+     "ea": "0x732213",
+     "bind_obj": "[ebp+var_108]",
+     "ecx": "[ebp+var_48]"
+    },
+    {
+     "callee": "Sqrat_Class_VarA_463800",
+     "args": [
+      {
+       "str": "Type"
+      },
+      {
+       "raw": "0",
+       "fn": null
+      }
+     ],
+     "ea": "0x73224e",
+     "ecx": "[ebp+var_120]"
+    },
+    {
+     "callee": "Sqrat_RootTable_BindTable",
+     "args": [
+      {
+       "str": "MvRecoverStatus"
+      },
+      {
+       "raw": "(int)v19",
+       "fn": null
+      }
+     ],
+     "ea": "0x732262",
+     "bind_obj": "[ebp+var_120]",
+     "ecx": "[ebp+var_48]"
+    },
+    {
+     "callee": "Sqrat_Class_VarA_463860",
+     "args": [
+      {
+       "str": "Time"
+      },
+      {
+       "raw": "10",
+       "fn": null
+      }
+     ],
+     "ea": "0x73229d",
+     "ecx": "[ebp+var_138]"
+    },
+    {
+     "callee": "Sqrat_Class_VarA_463860",
+     "args": [
+      {
+       "str": "TimeUpdate"
+      },
+      {
+       "raw": "12",
+       "fn": null
+      }
+     ],
+     "ea": "0x7322af",
+     "ecx": "[ebp+var_138]"
+    },
+    {
+     "callee": "Sqrat_Class_VarA_463860",
+     "args": [
+      {
+       "str": "Round"
+      },
+      {
+       "raw": "14",
+       "fn": null
+      }
+     ],
+     "ea": "0x7322c1",
+     "ecx": "[ebp+var_138]"
+    },
+    {
+     "callee": "Sqrat_Class_VarA_463860",
+     "args": [
+      {
+       "str": "WinType"
+      },
+      {
+       "raw": "16",
+       "fn": null
+      }
+     ],
+     "ea": "0x7322d3",
+     "ecx": "[ebp+var_138]"
+    },
+    {
+     "callee": "Sqrat_Class_VarA_463860",
+     "args": [
+      {
+       "str": "isKo"
+      },
+      {
+       "raw": "0",
+       "fn": null
+      }
+     ],
+     "ea": "0x7322e5",
+     "ecx": "[ebp+var_138]"
+    },
+    {
+     "callee": "Sqrat_Class_VarA_463860",
+     "args": [
+      {
+       "str": "isMyKo"
+      },
+      {
+       "raw": "2",
+       "fn": null
+      }
+     ],
+     "ea": "0x7322f7",
+     "ecx": "[ebp+var_138]"
+    },
+    {
+     "callee": "Sqrat_Class_VarA_463860",
+     "args": [
+      {
+       "str": "isWinRound"
+      },
+      {
+       "raw": "4",
+       "fn": null
+      }
+     ],
+     "ea": "0x732309",
+     "ecx": "[ebp+var_138]"
+    },
+    {
+     "callee": "Sqrat_Class_VarA_463860",
+     "args": [
+      {
+       "str": "isLoseRound"
+      },
+      {
+       "raw": "6",
+       "fn": null
+      }
+     ],
+     "ea": "0x73231b",
+     "ecx": "[ebp+var_138]"
+    },
+    {
+     "callee": "Sqrat_Class_VarA_463860",
+     "args": [
+      {
+       "str": "isFinalRound"
+      },
+      {
+       "raw": "8",
+       "fn": null
+      }
+     ],
+     "ea": "0x73232d",
+     "ecx": "[ebp+var_138]"
+    },
+    {
+     "callee": "Sqrat_Class_VarA_463860",
+     "args": [
+      {
+       "str": "CharaMoveMode"
+      },
+      {
+       "raw": "18",
+       "fn": null
+      }
+     ],
+     "ea": "0x73233f",
+     "ecx": "[ebp+var_138]"
+    },
+    {
+     "callee": "Sqrat_RootTable_BindTable",
+     "args": [
+      {
+       "str": "MvRoundStatus"
+      },
+      {
+       "raw": "(int)v18",
+       "fn": null
+      }
+     ],
+     "ea": "0x732353",
+     "bind_obj": "[ebp+var_138]",
+     "ecx": "[ebp+var_48]"
+    },
+    {
+     "callee": "Sqrat_RootTable_BindTable",
+     "args": [
+      {
+       "str": "BMvTbl"
+      },
+      {
+       "raw": "(int)v28",
+       "fn": null
+      }
+     ],
+     "ea": "0x73239b",
+     "bind_obj": "[ebp+var_48]",
+     "ecx": "[ebp+var_180]"
+    },
+    {
+     "callee": "Sqrat_Class_VarA_44F080",
+     "args": [
+      {
+       "str": "_isDebugModeExe"
+      },
+      {
+       "raw": "0",
+       "fn": null
+      }
+     ],
+     "ea": "0x7323ce",
+     "ecx": "[ebp+var_34]"
+    },
+    {
+     "callee": "Sqrat_Class_VarA_44F080",
+     "args": [
+      {
+       "str": "_PosState_Stand"
+      },
+      {
+       "raw": "1",
+       "fn": null
+      }
+     ],
+     "ea": "0x7323dd",
+     "ecx": "[ebp+var_34]"
+    },
+    {
+     "callee": "Sqrat_Class_VarA_44F080",
+     "args": [
+      {
+       "str": "_PosState_Air"
+      },
+      {
+       "raw": "2",
+       "fn": null
+      }
+     ],
+     "ea": "0x7323ec",
+     "ecx": "[ebp+var_34]"
+    },
+    {
+     "callee": "Sqrat_Class_VarA_44F080",
+     "args": [
+      {
+       "str": "_PosState_Crouch"
+      },
+      {
+       "raw": "4",
+       "fn": null
+      }
+     ],
+     "ea": "0x7323fb",
+     "ecx": "[ebp+var_34]"
+    },
+    {
+     "callee": "Sqrat_Class_VarA_44F080",
+     "args": [
+      {
+       "str": "_PosState_Ground"
+      },
+      {
+       "raw": "5",
+       "fn": null
+      }
+     ],
+     "ea": "0x73240a",
+     "ecx": "[ebp+var_34]"
+    },
+    {
+     "callee": "Sqrat_Class_VarA_44F080",
+     "args": [
+      {
+       "str": "_PosState_Always"
+      },
+      {
+       "raw": "7",
+       "fn": null
+      }
+     ],
+     "ea": "0x732419",
+     "ecx": "[ebp+var_34]"
+    },
+    {
+     "callee": "Sqrat_Class_VarA_44F080",
+     "args": [
+      {
+       "str": "_PrioType_"
+      },
+      {
+       "raw": "7",
+       "fn": null
+      }
+     ],
+     "ea": "0x732428",
+     "ecx": "[ebp+var_34]"
+    },
+    {
+     "callee": "Sqrat_Class_VarA_44F080",
+     "args": [
+      {
+       "str": "_HitType_Hit"
+      },
+      {
+       "raw": "3",
+       "fn": null
+      }
+     ],
+     "ea": "0x732437",
+     "ecx": "[ebp+var_34]"
+    },
+    {
+     "callee": "Sqrat_Class_VarA_44F080",
+     "args": [
+      {
+       "str": "_HitType_Damage"
+      },
+      {
+       "raw": "2",
+       "fn": null
+      }
+     ],
+     "ea": "0x732446",
+     "ecx": "[ebp+var_34]"
+    },
+    {
+     "callee": "Sqrat_Class_VarA_44F080",
+     "args": [
+      {
+       "str": "_HitType_Guard"
+      },
+      {
+       "raw": "1",
+       "fn": null
+      }
+     ],
+     "ea": "0x732455",
+     "ecx": "[ebp+var_34]"
+    },
+    {
+     "callee": "Sqrat_Class_VarA_44F080",
+     "args": [
+      {
+       "str": "_Direction_Auto"
+      },
+      {
+       "raw": "-1",
+       "fn": null
+      }
+     ],
+     "ea": "0x732464",
+     "ecx": "[ebp+var_34]"
+    },
+    {
+     "callee": "Sqrat_Class_VarA_44F080",
+     "args": [
+      {
+       "str": "_Direction_Left"
+      },
+      {
+       "raw": "0",
+       "fn": null
+      }
+     ],
+     "ea": "0x732473",
+     "ecx": "[ebp+var_34]"
+    },
+    {
+     "callee": "Sqrat_Class_VarA_44F080",
+     "args": [
+      {
+       "str": "_Direction_Right"
+      },
+      {
+       "raw": "1",
+       "fn": null
+      }
+     ],
+     "ea": "0x732482",
+     "ecx": "[ebp+var_34]"
+    },
+    {
+     "callee": "Sqrat_Class_VarA_44F080",
+     "args": [
+      {
+       "str": "_Direction_Reverse"
+      },
+      {
+       "raw": "10",
+       "fn": null
+      }
+     ],
+     "ea": "0x732491",
+     "ecx": "[ebp+var_34]"
+    },
+    {
+     "callee": "Sqrat_Class_VarA_44F080",
+     "args": [
+      {
+       "str": "_Position_CaptureChara"
+      },
+      {
+       "raw": "1",
+       "fn": null
+      }
+     ],
+     "ea": "0x7324a0",
+     "ecx": "[ebp+var_34]"
+    },
+    {
+     "callee": "Sqrat_Class_VarA_44F080",
+     "args": [
+      {
+       "str": "_Position_CaptureShift"
+      },
+      {
+       "raw": "2",
+       "fn": null
+      }
+     ],
+     "ea": "0x7324af",
+     "ecx": "[ebp+var_34]"
+    },
+    {
+     "callee": "Sqrat_Class_VarA_44F080",
+     "args": [
+      {
+       "str": "_Position_ToolShift"
+      },
+      {
+       "raw": "2",
+       "fn": null
+      }
+     ],
+     "ea": "0x7324be",
+     "ecx": "[ebp+var_34]"
+    },
+    {
+     "callee": "Sqrat_Class_VarA_44F080",
+     "args": [
+      {
+       "str": "_Position_ChangeMuki"
+      },
+      {
+       "raw": "4",
+       "fn": null
+      }
+     ],
+     "ea": "0x7324cd",
+     "ecx": "[ebp+var_34]"
+    },
+    {
+     "callee": "Sqrat_Class_VarA_44F080",
+     "args": [
+      {
+       "str": "_Position_Add"
+      },
+      {
+       "raw": "8",
+       "fn": null
+      }
+     ],
+     "ea": "0x7324dc",
+     "ecx": "[ebp+var_34]"
+    },
+    {
+     "callee": "Sqrat_Class_VarA_44F080",
+     "args": [
+      {
+       "str": "_Position_NoMoveChild"
+      },
+      {
+       "raw": "16",
+       "fn": null
+      }
+     ],
+     "ea": "0x7324eb",
+     "ecx": "[ebp+var_34]"
+    },
+    {
+     "callee": "Sqrat_Class_VarA_44F080",
+     "args": [
+      {
+       "str": "_Angle_AngleAdd"
+      },
+      {
+       "raw": "1",
+       "fn": null
+      }
+     ],
+     "ea": "0x7324fa",
+     "ecx": "[ebp+var_34]"
+    },
+    {
+     "callee": "Sqrat_Class_VarA_44F080",
+     "args": [
+      {
+       "str": "_Angle_PositionAdd"
+      },
+      {
+       "raw": "2",
+       "fn": null
+      }
+     ],
+     "ea": "0x732509",
+     "ecx": "[ebp+var_34]"
+    },
+    {
+     "callee": "Sqrat_Class_VarA_44F080",
+     "args": [
+      {
+       "str": "_VecFlag_Add"
+      },
+      {
+       "raw": "1",
+       "fn": null
+      }
+     ],
+     "ea": "0x732518",
+     "ecx": "[ebp+var_34]"
+    },
+    {
+     "callee": "Sqrat_Class_VarA_44F080",
+     "args": [
+      {
+       "str": "_VecFlag_NoMuki"
+      },
+      {
+       "raw": "2",
+       "fn": null
+      }
+     ],
+     "ea": "0x732527",
+     "ecx": "[ebp+var_34]"
+    },
+    {
+     "callee": "Sqrat_Class_VarA_44F080",
+     "args": [
+      {
+       "str": "_Vector_Normal"
+      },
+      {
+       "raw": "0x80000000",
+       "fn": null
+      }
+     ],
+     "ea": "0x732539",
+     "ecx": "[ebp+var_34]"
+    },
+    {
+     "callee": "Sqrat_Class_VarA_44F080",
+     "args": [
+      {
+       "str": "_Vector_Bound"
+      },
+      {
+       "raw": "0x40000000",
+       "fn": null
+      }
+     ],
+     "ea": "0x73254b",
+     "ecx": "[ebp+var_34]"
+    },
+    {
+     "callee": "Sqrat_Class_VarA_44F080",
+     "args": [
+      {
+       "str": "_Vector_Div"
+      },
+      {
+       "raw": "0x20000000",
+       "fn": null
+      }
+     ],
+     "ea": "0x73255d",
+     "ecx": "[ebp+var_34]"
+    },
+    {
+     "callee": "Sqrat_Class_VarA_44F080",
+     "args": [
+      {
+       "str": "_Vector_Keep"
+      },
+      {
+       "raw": "0x10000000",
+       "fn": null
+      }
+     ],
+     "ea": "0x73256f",
+     "ecx": "[ebp+var_34]"
+    },
+    {
+     "callee": "Sqrat_Class_VarA_44F080",
+     "args": [
+      {
+       "str": "_Vector_DivKeep"
+      },
+      {
+       "raw": "0x8000000",
+       "fn": null
+      }
+     ],
+     "ea": "0x732581",
+     "ecx": "[ebp+var_34]"
+    },
+    {
+     "callee": "Sqrat_Class_VarA_44F080",
+     "args": [
+      {
+       "str": "_ValSet"
+      },
+      {
+       "raw": "0",
+       "fn": null
+      }
+     ],
+     "ea": "0x732590",
+     "ecx": "[ebp+var_34]"
+    },
+    {
+     "callee": "Sqrat_Class_VarA_44F080",
+     "args": [
+      {
+       "str": "_ValGet"
+      },
+      {
+       "raw": "1",
+       "fn": null
+      }
+     ],
+     "ea": "0x73259f",
+     "ecx": "[ebp+var_34]"
+    },
+    {
+     "callee": "Sqrat_Class_VarA_44F080",
+     "args": [
+      {
+       "str": "_ValAdd"
+      },
+      {
+       "raw": "2",
+       "fn": null
+      }
+     ],
+     "ea": "0x7325ae",
+     "ecx": "[ebp+var_34]"
+    },
+    {
+     "callee": "Sqrat_Class_VarA_44F080",
+     "args": [
+      {
+       "str": "_ValClear"
+      },
+      {
+       "raw": "3",
+       "fn": null
+      }
+     ],
+     "ea": "0x7325bd",
+     "ecx": "[ebp+var_34]"
+    },
+    {
+     "callee": "Sqrat_Class_VarA_44F080",
+     "args": [
+      {
+       "str": "_InterruptType_Ko_Atk"
+      },
+      {
+       "raw": "0",
+       "fn": null
+      }
+     ],
+     "ea": "0x7325cc",
+     "ecx": "[ebp+var_34]"
+    },
+    {
+     "callee": "Sqrat_Class_VarA_44F080",
+     "args": [
+      {
+       "str": "_InterruptType_Ko_Def"
+      },
+      {
+       "raw": "1",
+       "fn": null
+      }
+     ],
+     "ea": "0x7325db",
+     "ecx": "[ebp+var_34]"
+    },
+    {
+     "callee": "Sqrat_Class_VarA_44F080",
+     "args": [
+      {
+       "str": "_InterruptType_Judge"
+      },
+      {
+       "raw": "2",
+       "fn": null
+      }
+     ],
+     "ea": "0x7325ea",
+     "ecx": "[ebp+var_34]"
+    },
+    {
+     "callee": "Sqrat_Class_VarA_44F080",
+     "args": [
+      {
+       "str": "_ImpactFlag_IsBound"
+      },
+      {
+       "raw": "1",
+       "fn": null
+      }
+     ],
+     "ea": "0x7325f9",
+     "ecx": "[ebp+var_34]"
+    },
+    {
+     "callee": "Sqrat_Class_VarA_44F080",
+     "args": [
+      {
+       "str": "_ImpactFlag_IsGuard"
+      },
+      {
+       "raw": "2",
+       "fn": null
+      }
+     ],
+     "ea": "0x732608",
+     "ecx": "[ebp+var_34]"
+    },
+    {
+     "callee": "Sqrat_Class_VarA_44F080",
+     "args": [
+      {
+       "str": "_ImpactFlag_IsCounter"
+      },
+      {
+       "raw": "128",
+       "fn": null
+      }
+     ],
+     "ea": "0x73261a",
+     "ecx": "[ebp+var_34]"
+    },
+    {
+     "callee": "Sqrat_Class_VarA_44F080",
+     "args": [
+      {
+       "str": "_ImpactFlag_IsDangerHP"
+      },
+      {
+       "raw": "64",
+       "fn": null
+      }
+     ],
+     "ea": "0x732629",
+     "ecx": "[ebp+var_34]"
+    },
+    {
+     "callee": "Sqrat_Class_VarA_44F080",
+     "args": [
+      {
+       "str": "_CancelFlag_None"
+      },
+      {
+       "raw": "0",
+       "fn": null
+      }
+     ],
+     "ea": "0x732638",
+     "ecx": "[ebp+var_34]"
+    },
+    {
+     "callee": "Sqrat_Class_VarA_44F080",
+     "args": [
+      {
+       "str": "_CancelFlag_Hit"
+      },
+      {
+       "raw": "1",
+       "fn": null
+      }
+     ],
+     "ea": "0x732647",
+     "ecx": "[ebp+var_34]"
+    },
+    {
+     "callee": "Sqrat_Class_VarA_44F080",
+     "args": [
+      {
+       "str": "_CancelFlag_Always"
+      },
+      {
+       "raw": "2",
+       "fn": null
+      }
+     ],
+     "ea": "0x732656",
+     "ecx": "[ebp+var_34]"
+    },
+    {
+     "callee": "Sqrat_Class_VarA_44F080",
+     "args": [
+      {
+       "str": "_CancelFlag_Damage"
+      },
+      {
+       "raw": "3",
+       "fn": null
+      }
+     ],
+     "ea": "0x732665",
+     "ecx": "[ebp+var_34]"
+    },
+    {
+     "callee": "Sqrat_Class_VarA_44F080",
+     "args": [
+      {
+       "str": "_CancelFlag_Invalid"
+      },
+      {
+       "raw": "255",
+       "fn": null
+      }
+     ],
+     "ea": "0x732677",
+     "ecx": "[ebp+var_34]"
+    },
+    {
+     "callee": "Sqrat_Class_VarA_44F080",
+     "args": [
+      {
+       "str": "_ClearFlag_ChangeFrame"
+      },
+      {
+       "raw": "2",
+       "fn": null
+      }
+     ],
+     "ea": "0x732686",
+     "ecx": "[ebp+var_34]"
+    },
+    {
+     "callee": "Sqrat_Class_VarA_44F080",
+     "args": [
+      {
+       "str": "_ClearFlag_ChangePattern"
+      },
+      {
+       "raw": "4",
+       "fn": null
+      }
+     ],
+     "ea": "0x732695",
+     "ecx": "[ebp+var_34]"
+    },
+    {
+     "callee": "Sqrat_Class_VarA_44F080",
+     "args": [
+      {
+       "str": "_ClearFlag_ChangeMv"
+      },
+      {
+       "raw": "1",
+       "fn": null
+      }
+     ],
+     "ea": "0x7326a4",
+     "ecx": "[ebp+var_34]"
+    },
+    {
+     "callee": "Sqrat_Class_VarA_44F080",
+     "args": [
+      {
+       "str": "_AsFlag_ExCancel"
+      },
+      {
+       "raw": "1",
+       "fn": null
+      }
+     ],
+     "ea": "0x7326b3",
+     "ecx": "[ebp+var_34]"
+    },
+    {
+     "callee": "Sqrat_Class_VarA_44F080",
+     "args": [
+      {
+       "str": "_AsFlag_ChainShift"
+      },
+      {
+       "raw": "2",
+       "fn": null
+      }
+     ],
+     "ea": "0x7326c2",
+     "ecx": "[ebp+var_34]"
+    },
+    {
+     "callee": "Sqrat_Class_VarA_44F080",
+     "args": [
+      {
+       "str": "_AsFlag_GuardRev"
+      },
+      {
+       "raw": "4",
+       "fn": null
+      }
+     ],
+     "ea": "0x7326d1",
+     "ecx": "[ebp+var_34]"
+    },
+    {
+     "callee": "Sqrat_Class_VarA_44F080",
+     "args": [
+      {
+       "str": "_AsFlag_Guard_Stand"
+      },
+      {
+       "raw": "16",
+       "fn": null
+      }
+     ],
+     "ea": "0x7326e0",
+     "ecx": "[ebp+var_34]"
+    },
+    {
+     "callee": "Sqrat_Class_VarA_44F080",
+     "args": [
+      {
+       "str": "_AsFlag_Guard_Air"
+      },
+      {
+       "raw": "32",
+       "fn": null
+      }
+     ],
+     "ea": "0x7326ef",
+     "ecx": "[ebp+var_34]"
+    },
+    {
+     "callee": "Sqrat_Class_VarA_44F080",
+     "args": [
+      {
+       "str": "_AsFlag_Guard_Crouch"
+      },
+      {
+       "raw": "64",
+       "fn": null
+      }
+     ],
+     "ea": "0x7326fe",
+     "ecx": "[ebp+var_34]"
+    },
+    {
+     "callee": "Sqrat_Class_VarA_44F080",
+     "args": [
+      {
+       "str": "_CharaPrio_None"
+      },
+      {
+       "raw": "0",
+       "fn": null
+      }
+     ],
+     "ea": "0x73270d",
+     "ecx": "[ebp+var_34]"
+    },
+    {
+     "callee": "Sqrat_Class_VarA_44F080",
+     "args": [
+      {
+       "str": "_CharaPrio_Near"
+      },
+      {
+       "raw": "1",
+       "fn": null
+      }
+     ],
+     "ea": "0x73271c",
+     "ecx": "[ebp+var_34]"
+    },
+    {
+     "callee": "Sqrat_Class_VarA_44F080",
+     "args": [
+      {
+       "str": "_CharaPrio_Far"
+      },
+      {
+       "raw": "2",
+       "fn": null
+      }
+     ],
+     "ea": "0x73272b",
+     "ecx": "[ebp+var_34]"
+    },
+    {
+     "callee": "Sqrat_Class_VarA_44F080",
+     "args": [
+      {
+       "str": "_CharaPrio_Near_Layer_0"
+      },
+      {
+       "raw": "3",
+       "fn": null
+      }
+     ],
+     "ea": "0x73273a",
+     "ecx": "[ebp+var_34]"
+    },
+    {
+     "callee": "Sqrat_Class_VarA_44F080",
+     "args": [
+      {
+       "str": "_CharaPrio_Near_Layer_1"
+      },
+      {
+       "raw": "4",
+       "fn": null
+      }
+     ],
+     "ea": "0x732749",
+     "ecx": "[ebp+var_34]"
+    },
+    {
+     "callee": "Sqrat_Class_VarA_44F080",
+     "args": [
+      {
+       "str": "_CharaPrio_Near_Layer_2"
+      },
+      {
+       "raw": "5",
+       "fn": null
+      }
+     ],
+     "ea": "0x732758",
+     "ecx": "[ebp+var_34]"
+    },
+    {
+     "callee": "Sqrat_Class_VarA_44F080",
+     "args": [
+      {
+       "str": "_CharaPrio_Near_Layer_3"
+      },
+      {
+       "raw": "6",
+       "fn": null
+      }
+     ],
+     "ea": "0x732767",
+     "ecx": "[ebp+var_34]"
+    },
+    {
+     "callee": "Sqrat_Class_VarA_44F080",
+     "args": [
+      {
+       "str": "_CharaPrio_Near_Layer_4"
+      },
+      {
+       "raw": "7",
+       "fn": null
+      }
+     ],
+     "ea": "0x732776",
+     "ecx": "[ebp+var_34]"
+    },
+    {
+     "callee": "Sqrat_Class_VarA_44F080",
+     "args": [
+      {
+       "str": "_CharaPrio_Near_Layer_5"
+      },
+      {
+       "raw": "8",
+       "fn": null
+      }
+     ],
+     "ea": "0x732785",
+     "ecx": "[ebp+var_34]"
+    },
+    {
+     "callee": "Sqrat_Class_VarA_44F080",
+     "args": [
+      {
+       "str": "_CharaPrio_Near_Layer_6"
+      },
+      {
+       "raw": "9",
+       "fn": null
+      }
+     ],
+     "ea": "0x732794",
+     "ecx": "[ebp+var_34]"
+    },
+    {
+     "callee": "Sqrat_Class_VarA_44F080",
+     "args": [
+      {
+       "str": "_CharaPrio_Near_Layer_7"
+      },
+      {
+       "raw": "10",
+       "fn": null
+      }
+     ],
+     "ea": "0x7327a3",
+     "ecx": "[ebp+var_34]"
+    },
+    {
+     "callee": "Sqrat_Class_VarA_44F080",
+     "args": [
+      {
+       "str": "_CharaPrio_Near_Layer_8"
+      },
+      {
+       "raw": "11",
+       "fn": null
+      }
+     ],
+     "ea": "0x7327b2",
+     "ecx": "[ebp+var_34]"
+    },
+    {
+     "callee": "Sqrat_Class_VarA_44F080",
+     "args": [
+      {
+       "str": "_CharaPrio_Near_Layer_9"
+      },
+      {
+       "raw": "12",
+       "fn": null
+      }
+     ],
+     "ea": "0x7327c1",
+     "ecx": "[ebp+var_34]"
+    },
+    {
+     "callee": "Sqrat_Class_VarA_44F080",
+     "args": [
+      {
+       "str": "_CharaPrio_Far_Layer_0"
+      },
+      {
+       "raw": "13",
+       "fn": null
+      }
+     ],
+     "ea": "0x7327d0",
+     "ecx": "[ebp+var_34]"
+    },
+    {
+     "callee": "Sqrat_Class_VarA_44F080",
+     "args": [
+      {
+       "str": "_CharaPrio_Far_Layer_1"
+      },
+      {
+       "raw": "14",
+       "fn": null
+      }
+     ],
+     "ea": "0x7327df",
+     "ecx": "[ebp+var_34]"
+    },
+    {
+     "callee": "Sqrat_Class_VarA_44F080",
+     "args": [
+      {
+       "str": "_CharaPrio_Far_Layer_2"
+      },
+      {
+       "raw": "15",
+       "fn": null
+      }
+     ],
+     "ea": "0x7327ee",
+     "ecx": "[ebp+var_34]"
+    },
+    {
+     "callee": "Sqrat_Class_VarA_44F080",
+     "args": [
+      {
+       "str": "_CharaPrio_Far_Layer_3"
+      },
+      {
+       "raw": "16",
+       "fn": null
+      }
+     ],
+     "ea": "0x7327fd",
+     "ecx": "[ebp+var_34]"
+    },
+    {
+     "callee": "Sqrat_Class_VarA_44F080",
+     "args": [
+      {
+       "str": "_CharaPrio_Far_Layer_4"
+      },
+      {
+       "raw": "17",
+       "fn": null
+      }
+     ],
+     "ea": "0x73280c",
+     "ecx": "[ebp+var_34]"
+    },
+    {
+     "callee": "Sqrat_Class_VarA_44F080",
+     "args": [
+      {
+       "str": "_CharaPrio_Far_Layer_5"
+      },
+      {
+       "raw": "18",
+       "fn": null
+      }
+     ],
+     "ea": "0x73281b",
+     "ecx": "[ebp+var_34]"
+    },
+    {
+     "callee": "Sqrat_Class_VarA_44F080",
+     "args": [
+      {
+       "str": "_CharaPrio_Far_Layer_6"
+      },
+      {
+       "raw": "19",
+       "fn": null
+      }
+     ],
+     "ea": "0x73282a",
+     "ecx": "[ebp+var_34]"
+    },
+    {
+     "callee": "Sqrat_Class_VarA_44F080",
+     "args": [
+      {
+       "str": "_CharaPrio_Far_Layer_7"
+      },
+      {
+       "raw": "20",
+       "fn": null
+      }
+     ],
+     "ea": "0x732839",
+     "ecx": "[ebp+var_34]"
+    },
+    {
+     "callee": "Sqrat_Class_VarA_44F080",
+     "args": [
+      {
+       "str": "_CharaPrio_Far_Layer_8"
+      },
+      {
+       "raw": "21",
+       "fn": null
+      }
+     ],
+     "ea": "0x732848",
+     "ecx": "[ebp+var_34]"
+    },
+    {
+     "callee": "Sqrat_Class_VarA_44F080",
+     "args": [
+      {
+       "str": "_CharaPrio_Far_Layer_9"
+      },
+      {
+       "raw": "22",
+       "fn": null
+      }
+     ],
+     "ea": "0x732857",
+     "ecx": "[ebp+var_34]"
+    },
+    {
+     "callee": "Sqrat_Class_VarA_44F080",
+     "args": [
+      {
+       "str": "_CharaPrio_Parent_P1"
+      },
+      {
+       "raw": "23",
+       "fn": null
+      }
+     ],
+     "ea": "0x732866",
+     "ecx": "[ebp+var_34]"
+    },
+    {
+     "callee": "Sqrat_Class_VarA_44F080",
+     "args": [
+      {
+       "str": "_CharaPrio_Parent_M1"
+      },
+      {
+       "raw": "24",
+       "fn": null
+      }
+     ],
+     "ea": "0x732875",
+     "ecx": "[ebp+var_34]"
+    },
+    {
+     "callee": "Sqrat_Class_VarA_44F080",
+     "args": [
+      {
+       "str": "_CharaPrio_Parent_BG"
+      },
+      {
+       "raw": "25",
+       "fn": null
+      }
+     ],
+     "ea": "0x732884",
+     "ecx": "[ebp+var_34]"
+    },
+    {
+     "callee": "Sqrat_Class_VarA_44F080",
+     "args": [
+      {
+       "str": "_CharaPrio_Near_P1"
+      },
+      {
+       "raw": "26",
+       "fn": null
+      }
+     ],
+     "ea": "0x732893",
+     "ecx": "[ebp+var_34]"
+    },
+    {
+     "callee": "Sqrat_Class_VarA_44F080",
+     "args": [
+      {
+       "str": "_CatchFlag_AtkStandGuard"
+      },
+      {
+       "raw": "1",
+       "fn": null
+      }
+     ],
+     "ea": "0x7328a2",
+     "ecx": "[ebp+var_34]"
+    },
+    {
+     "callee": "Sqrat_Class_VarA_44F080",
+     "args": [
+      {
+       "str": "_CatchFlag_AtkAirGuard"
+      },
+      {
+       "raw": "2",
+       "fn": null
+      }
+     ],
+     "ea": "0x7328b1",
+     "ecx": "[ebp+var_34]"
+    },
+    {
+     "callee": "Sqrat_Class_VarA_44F080",
+     "args": [
+      {
+       "str": "_CatchFlag_AtkCrouchGuard"
+      },
+      {
+       "raw": "4",
+       "fn": null
+      }
+     ],
+     "ea": "0x7328c0",
+     "ecx": "[ebp+var_34]"
+    },
+    {
+     "callee": "Sqrat_Class_VarA_44F080",
+     "args": [
+      {
+       "str": "_CatchFlag_AtkNoGuard"
+      },
+      {
+       "raw": "8",
+       "fn": null
+      }
+     ],
+     "ea": "0x7328cf",
+     "ecx": "[ebp+var_34]"
+    },
+    {
+     "callee": "Sqrat_Class_VarA_44F080",
+     "args": [
+      {
+       "str": "_CatchFlag_AtkNoGuardThrow"
+      },
+      {
+       "raw": "16",
+       "fn": null
+      }
+     ],
+     "ea": "0x7328de",
+     "ecx": "[ebp+var_34]"
+    },
+    {
+     "callee": "Sqrat_Class_VarA_44F080",
+     "args": [
+      {
+       "str": "_CatchFlag_StateStand"
+      },
+      {
+       "raw": "32",
+       "fn": null
+      }
+     ],
+     "ea": "0x7328ed",
+     "ecx": "[ebp+var_34]"
+    },
+    {
+     "callee": "Sqrat_Class_VarA_44F080",
+     "args": [
+      {
+       "str": "_CatchFlag_StateAir"
+      },
+      {
+       "raw": "64",
+       "fn": null
+      }
+     ],
+     "ea": "0x7328fc",
+     "ecx": "[ebp+var_34]"
+    },
+    {
+     "callee": "Sqrat_Class_VarA_44F080",
+     "args": [
+      {
+       "str": "_CatchFlag_StateCrouch"
+      },
+      {
+       "raw": "128",
+       "fn": null
+      }
+     ],
+     "ea": "0x73290e",
+     "ecx": "[ebp+var_34]"
+    },
+    {
+     "callee": "Sqrat_Class_VarA_44F080",
+     "args": [
+      {
+       "str": "_CatchFlag_AtkAllGuard"
+      },
+      {
+       "raw": "7",
+       "fn": null
+      }
+     ],
+     "ea": "0x73291d",
+     "ecx": "[ebp+var_34]"
+    },
+    {
+     "callee": "Sqrat_Class_VarA_44F080",
+     "args": [
+      {
+       "str": "_CatchSuccess_HitSub"
+      },
+      {
+       "raw": "1",
+       "fn": null
+      }
+     ],
+     "ea": "0x73292c",
+     "ecx": "[ebp+var_34]"
+    },
+    {
+     "callee": "Sqrat_Class_VarA_44F080",
+     "args": [
+      {
+       "str": "_CatchSuccess_HitSub_Enemy"
+      },
+      {
+       "raw": "2",
+       "fn": null
+      }
+     ],
+     "ea": "0x73293b",
+     "ecx": "[ebp+var_34]"
+    },
+    {
+     "callee": "Sqrat_Class_VarA_44F080",
+     "args": [
+      {
+       "str": "_CharaMoveMode_Enable"
+      },
+      {
+       "raw": "0",
+       "fn": null
+      }
+     ],
+     "ea": "0x73294a",
+     "ecx": "[ebp+var_34]"
+    },
+    {
+     "callee": "Sqrat_Class_VarA_44F080",
+     "args": [
+      {
+       "str": "_CharaMoveMode_Limit"
+      },
+      {
+       "raw": "1",
+       "fn": null
+      }
+     ],
+     "ea": "0x732959",
+     "ecx": "[ebp+var_34]"
+    },
+    {
+     "callee": "Sqrat_Class_VarA_44F080",
+     "args": [
+      {
+       "str": "_CharaMoveMode_Disable"
+      },
+      {
+       "raw": "2",
+       "fn": null
+      }
+     ],
+     "ea": "0x732968",
+     "ecx": "[ebp+var_34]"
+    },
+    {
+     "callee": "Sqrat_Class_VarA_44F080",
+     "args": [
+      {
+       "str": "_PCGaugeType_Eltnum"
+      },
+      {
+       "raw": "2",
+       "fn": null
+      }
+     ],
+     "ea": "0x732977",
+     "ecx": "[ebp+var_34]"
+    },
+    {
+     "callee": "Sqrat_Class_VarA_44F080",
+     "args": [
+      {
+       "str": "_MvStFlag_CounterAtk"
+      },
+      {
+       "raw": "1",
+       "fn": null
+      }
+     ],
+     "ea": "0x732986",
+     "ecx": "[ebp+var_34]"
+    },
+    {
+     "callee": "Sqrat_Class_VarA_44F080",
+     "args": [
+      {
+       "str": "_MvStFlag_CounterDef"
+      },
+      {
+       "raw": "2",
+       "fn": null
+      }
+     ],
+     "ea": "0x732995",
+     "ecx": "[ebp+var_34]"
+    },
+    {
+     "callee": "Sqrat_Class_VarA_44F080",
+     "args": [
+      {
+       "str": "_MvStFlag_DangerHPAtk"
+      },
+      {
+       "raw": "8",
+       "fn": null
+      }
+     ],
+     "ea": "0x7329a4",
+     "ecx": "[ebp+var_34]"
+    },
+    {
+     "callee": "Sqrat_Class_VarA_44F080",
+     "args": [
+      {
+       "str": "_MvStFlag_DangerHPDef"
+      },
+      {
+       "raw": "4",
+       "fn": null
+      }
+     ],
+     "ea": "0x7329b3",
+     "ecx": "[ebp+var_34]"
+    },
+    {
+     "callee": "Sqrat_RootTable_BindTable",
+     "args": [
+      {
+       "str": "BMvConst"
+      },
+      {
+       "raw": "(int)v29",
+       "fn": null
+      }
+     ],
+     "ea": "0x7329ec",
+     "bind_obj": "[ebp+var_34]",
+     "ecx": "[ebp+var_188]"
+    },
+    {
+     "callee": "Sqrat_TableBase_BindFunc_44FEA0",
+     "args": [
+      {
+       "str": "StdCall"
+      },
+      {
+       "raw": "(int)sub_45F420",
+       "fn": "sub_45F420"
+      }
+     ],
+     "ea": "0x732a22",
+     "ecx": "[ebp+var_20]"
+    },
+    {
+     "callee": "Sqrat_RootTable_BindTable",
+     "args": [
+      {
+       "str": "BMvIf"
+      },
+      {
+       "raw": "(int)v30",
+       "fn": null
+      }
+     ],
+     "ea": "0x732a5b",
+     "bind_obj": "[ebp+var_20]",
+     "ecx": "[ebp+var_190]"
+    }
+   ]
+  },
+  "0x732b20": {
+   "name": "sub_732B20",
+   "calls": [
+    {
+     "callee": "Sqrat_TableBase_BindFunc_459CF0",
+     "args": [
+      {
+       "str": "SE_Play"
+      },
+      {
+       "raw": "(int)sub_45AD70",
+       "fn": "sub_45AD70"
+      }
+     ],
+     "ea": "0x732b77",
+     "ecx": "[ebp+var_34]"
+    },
+    {
+     "callee": "Sqrat_TableBase_BindFunc_459CF0",
+     "args": [
+      {
+       "str": "SE_Stop"
+      },
+      {
+       "raw": "(int)sub_45B010",
+       "fn": "sub_45B010"
+      }
+     ],
+     "ea": "0x732b89",
+     "ecx": "[ebp+var_34]"
+    },
+    {
+     "callee": "Sqrat_TableBase_BindFunc_459D30",
+     "args": [
+      {
+       "str": "BGM_Mute"
+      },
+      {
+       "raw": "(int)sub_45B160",
+       "fn": "sub_45B160"
+      }
+     ],
+     "ea": "0x732b9b",
+     "ecx": "[ebp+var_34]"
+    },
+    {
+     "callee": "Sqrat_RootTable_BindTable",
+     "args": [
+      {
+       "str": "BSound"
+      },
+      {
+       "raw": "(int)v6",
+       "fn": null
+      }
+     ],
+     "ea": "0x732bc5",
+     "bind_obj": "[ebp+var_34]",
+     "ecx": "[ebp+var_68]"
+    },
+    {
+     "callee": "Sqrat_Class_VarA_44F080",
+     "args": [
+      {
+       "str": "_SeType_All"
+      },
+      {
+       "raw": "-2",
+       "fn": null
+      }
+     ],
+     "ea": "0x732bf5",
+     "ecx": "[ebp+var_20]"
+    },
+    {
+     "callee": "Sqrat_Class_VarA_44F080",
+     "args": [
+      {
+       "str": "_SeType_Normal"
+      },
+      {
+       "raw": "-1",
+       "fn": null
+      }
+     ],
+     "ea": "0x732c04",
+     "ecx": "[ebp+var_20]"
+    },
+    {
+     "callee": "Sqrat_Class_VarA_44F080",
+     "args": [
+      {
+       "str": "_SeType_Player"
+      },
+      {
+       "raw": "0",
+       "fn": null
+      }
+     ],
+     "ea": "0x732c13",
+     "ecx": "[ebp+var_20]"
+    },
+    {
+     "callee": "Sqrat_RootTable_BindTable",
+     "args": [
+      {
+       "str": "BMvSoundConst"
+      },
+      {
+       "raw": "(int)v7",
+       "fn": null
+      }
+     ],
+     "ea": "0x732c3d",
+     "bind_obj": "[ebp+var_20]",
+     "ecx": "[ebp+var_70]"
+    }
+   ]
+  },
+  "0x732ec0": {
+   "name": "sub_732EC0",
+   "calls": [
+    {
+     "callee": "Sqrat_TableBase_BindFunc_463240",
+     "args": [
+      {
+       "str": "Random"
+      },
+      {
+       "raw": "(int)sub_457140",
+       "fn": "sub_457140"
+      }
+     ],
+     "ea": "0x732f17",
+     "ecx": "[ebp+var_34]"
+    },
+    {
+     "callee": "Sqrat_Class_BindMethod_459C30",
+     "args": [
+      {
+       "str": "Random_F"
+      },
+      {
+       "raw": "(int)sub_457150",
+       "fn": "sub_457150"
+      }
+     ],
+     "ea": "0x732f29",
+     "ecx": "[ebp+var_34]"
+    },
+    {
+     "callee": "Sqrat_TableBase_BindFunc_4631C0",
+     "args": [
+      {
+       "str": "Random_Limit"
+      },
+      {
+       "raw": "(int)sub_457170",
+       "fn": "sub_457170"
+      }
+     ],
+     "ea": "0x732f3b",
+     "ecx": "[ebp+var_34]"
+    },
+    {
+     "callee": "Sqrat_TableBase_BindFunc_459C70",
+     "args": [
+      {
+       "str": "Random_FAbs"
+      },
+      {
+       "raw": "(int)sub_457190",
+       "fn": "sub_457190"
+      }
+     ],
+     "ea": "0x732f4d",
+     "ecx": "[ebp+var_34]"
+    },
+    {
+     "callee": "Sqrat_TableBase_BindFunc_459CB0",
+     "args": [
+      {
+       "str": "Random_PointRect"
+      },
+      {
+       "raw": "(int)sub_457280",
+       "fn": "sub_457280"
+      }
+     ],
+     "ea": "0x732f5f",
+     "ecx": "[ebp+var_34]"
+    },
+    {
+     "callee": "Sqrat_TableBase_BindFunc_459CB0",
+     "args": [
+      {
+       "str": "Random_PointRad"
+      },
+      {
+       "raw": "(int)sub_4571C0",
+       "fn": "sub_4571C0"
+      }
+     ],
+     "ea": "0x732f71",
+     "ecx": "[ebp+var_34]"
+    },
+    {
+     "callee": "Sqrat_TableBase_BindFunc_44FEA0",
+     "args": [
+      {
+       "str": "StdCall"
+      },
+      {
+       "raw": "(int)sub_454680",
+       "fn": "sub_454680"
+      }
+     ],
+     "ea": "0x732f83",
+     "ecx": "[ebp+var_34]"
+    },
+    {
+     "callee": "Sqrat_TableBase_BindFunc_44FEA0",
+     "args": [
+      {
+       "str": "ThrowRelease"
+      },
+      {
+       "raw": "(int)sub_455000",
+       "fn": "sub_455000"
+      }
+     ],
+     "ea": "0x732f95",
+     "ecx": "[ebp+var_34]"
+    },
+    {
+     "callee": "Sqrat_TableBase_BindFunc_44FEA0",
+     "args": [
+      {
+       "str": "ThrowParam"
+      },
+      {
+       "raw": "(int)sub_454910",
+       "fn": "sub_454910"
+      }
+     ],
+     "ea": "0x732fa7",
+     "ecx": "[ebp+var_34]"
+    },
+    {
+     "callee": "Sqrat_TableBase_BindFunc_4631C0",
+     "args": [
+      {
+       "str": "ThrowChara_SetJoint"
+      },
+      {
+       "raw": "(int)sub_454D00",
+       "fn": "sub_454D00"
+      }
+     ],
+     "ea": "0x732fb9",
+     "ecx": "[ebp+var_34]"
+    },
+    {
+     "callee": "Sqrat_TableBase_BindFunc_4631C0",
+     "args": [
+      {
+       "str": "ThrowChara_SetCamera"
+      },
+      {
+       "raw": "(int)sub_454DD0",
+       "fn": "sub_454DD0"
+      }
+     ],
+     "ea": "0x732fcb",
+     "ecx": "[ebp+var_34]"
+    },
+    {
+     "callee": "Sqrat_TableBase_BindFunc_44FEA0",
+     "args": [
+      {
+       "str": "ThrowChara_Transfer"
+      },
+      {
+       "raw": "(int)sub_454F10",
+       "fn": "sub_454F10"
+      }
+     ],
+     "ea": "0x732fdd",
+     "ecx": "[ebp+var_34]"
+    },
+    {
+     "callee": "Sqrat_TableBase_BindFunc_44FEA0",
+     "args": [
+      {
+       "str": "CapturePlayer"
+      },
+      {
+       "raw": "(int)sub_455250",
+       "fn": "sub_455250"
+      }
+     ],
+     "ea": "0x732fef",
+     "ecx": "[ebp+var_34]"
+    },
+    {
+     "callee": "Sqrat_TableBase_BindFunc_4536B0",
+     "args": [
+      {
+       "str": "CreateObject"
+      },
+      {
+       "raw": "(int)sub_455810",
+       "fn": "sub_455810"
+      }
+     ],
+     "ea": "0x733001",
+     "ecx": "[ebp+var_34]"
+    },
+    {
+     "callee": "Sqrat_TableBase_BindFunc_44FEA0",
+     "args": [
+      {
+       "str": "SetObjectFlags"
+      },
+      {
+       "raw": "(int)sub_455B80",
+       "fn": "sub_455B80"
+      }
+     ],
+     "ea": "0x733013",
+     "ecx": "[ebp+var_34]"
+    },
+    {
+     "callee": "Sqrat_TableBase_BindFunc_459CF0",
+     "args": [
+      {
+       "str": "SetObjectRender"
+      },
+      {
+       "raw": "(int)sub_455EF0",
+       "fn": "sub_455EF0"
+      }
+     ],
+     "ea": "0x733025",
+     "ecx": "[ebp+var_34]"
+    },
+    {
+     "callee": "Sqrat_TableBase_BindFunc_44FEA0",
+     "args": [
+      {
+       "str": "EraseObjectFlags"
+      },
+      {
+       "raw": "(int)sub_455C30",
+       "fn": "sub_455C30"
+      }
+     ],
+     "ea": "0x733037",
+     "ecx": "[ebp+var_34]"
+    },
+    {
+     "callee": "Sqrat_TableBase_BindFunc_44FEA0",
+     "args": [
+      {
+       "str": "ObjProcFlags_Set"
+      },
+      {
+       "raw": "(int)sub_455CC0",
+       "fn": "sub_455CC0"
+      }
+     ],
+     "ea": "0x733049",
+     "ecx": "[ebp+var_34]"
+    },
+    {
+     "callee": "Sqrat_TableBase_BindFunc_44FEA0",
+     "args": [
+      {
+       "str": "ObjProcFlags_Erase"
+      },
+      {
+       "raw": "(int)sub_455D40",
+       "fn": "sub_455D40"
+      }
+     ],
+     "ea": "0x73305b",
+     "ecx": "[ebp+var_34]"
+    },
+    {
+     "callee": "Sqrat_TableBase_BindFunc_44FEA0",
+     "args": [
+      {
+       "str": "ObjType_Set"
+      },
+      {
+       "raw": "(int)sub_455DC0",
+       "fn": "sub_455DC0"
+      }
+     ],
+     "ea": "0x73306d",
+     "ecx": "[ebp+var_34]"
+    },
+    {
+     "callee": "Sqrat_TableBase_BindFunc_44FEA0",
+     "args": [
+      {
+       "str": "SetCamera_Quake"
+      },
+      {
+       "raw": "(int)sub_455F90",
+       "fn": "sub_455F90"
+      }
+     ],
+     "ea": "0x73307f",
+     "ecx": "[ebp+var_34]"
+    },
+    {
+     "callee": "Sqrat_TableBase_BindFunc_44FEA0",
+     "args": [
+      {
+       "str": "SetCamera_Focus"
+      },
+      {
+       "raw": "(int)sub_456030",
+       "fn": "sub_456030"
+      }
+     ],
+     "ea": "0x733091",
+     "ecx": "[ebp+var_34]"
+    },
+    {
+     "callee": "Sqrat_TableBase_BindFunc_459D30",
+     "args": [
+      {
+       "str": "SetCamera_FocusKeep"
+      },
+      {
+       "raw": "(int)sub_4562C0",
+       "fn": "sub_4562C0"
+      }
+     ],
+     "ea": "0x7330a3",
+     "ecx": "[ebp+var_34]"
+    },
+    {
+     "callee": "Sqrat_TableBase_BindFunc_459D70",
+     "args": [
+      {
+       "str": "ResetCamera"
+      },
+      {
+       "raw": "(int)sub_4562E0",
+       "fn": "sub_4562E0"
+      }
+     ],
+     "ea": "0x7330b5",
+     "ecx": "[ebp+var_34]"
+    },
+    {
+     "callee": "Sqrat_TableBase_BindFunc_463240",
+     "args": [
+      {
+       "str": "ResetViewCamera"
+      },
+      {
+       "raw": "(int)sub_456300",
+       "fn": "sub_456300"
+      }
+     ],
+     "ea": "0x7330c7",
+     "ecx": "[ebp+var_34]"
+    },
+    {
+     "callee": "Sqrat_TableBase_BindFunc_459CF0",
+     "args": [
+      {
+       "str": "CameraShift_Set"
+      },
+      {
+       "raw": "(int)sub_456350",
+       "fn": "sub_456350"
+      }
+     ],
+     "ea": "0x7330d9",
+     "ecx": "[ebp+var_34]"
+    },
+    {
+     "callee": "Sqrat_TableBase_BindFunc_459D70",
+     "args": [
+      {
+       "str": "CameraShift_Clear"
+      },
+      {
+       "raw": "(int)sub_456410",
+       "fn": "sub_456410"
+      }
+     ],
+     "ea": "0x7330eb",
+     "ecx": "[ebp+var_34]"
+    },
+    {
+     "callee": "Sqrat_TableBase_BindFunc_44FEA0",
+     "args": [
+      {
+       "str": "SetStopTime"
+      },
+      {
+       "raw": "(int)sub_456450",
+       "fn": "sub_456450"
+      }
+     ],
+     "ea": "0x7330fd",
+     "ecx": "[ebp+var_34]"
+    },
+    {
+     "callee": "Sqrat_TableBase_BindFunc_44FEA0",
+     "args": [
+      {
+       "str": "SetHpGauge"
+      },
+      {
+       "raw": "(int)sub_456560",
+       "fn": "sub_456560"
+      }
+     ],
+     "ea": "0x73310f",
+     "ecx": "[ebp+var_34]"
+    },
+    {
+     "callee": "Sqrat_TableBase_BindFunc_44FEA0",
+     "args": [
+      {
+       "str": "SetSpGauge"
+      },
+      {
+       "raw": "(int)sub_4567A0",
+       "fn": "sub_4567A0"
+      }
+     ],
+     "ea": "0x733121",
+     "ecx": "[ebp+var_34]"
+    },
+    {
+     "callee": "Sqrat_TableBase_BindFunc_44FEA0",
+     "args": [
+      {
+       "str": "SpGauge_SetLimit"
+      },
+      {
+       "raw": "(int)sub_456950",
+       "fn": "sub_456950"
+      }
+     ],
+     "ea": "0x733133",
+     "ecx": "[ebp+var_34]"
+    },
+    {
+     "callee": "Sqrat_TableBase_BindFunc_463240",
+     "args": [
+      {
+       "str": "SpGauge_GetPlusCorrect_ComboTimePos"
+      },
+      {
+       "raw": "(int)sub_4569C0",
+       "fn": "sub_4569C0"
+      }
+     ],
+     "ea": "0x733145",
+     "ecx": "[ebp+var_34]"
+    },
+    {
+     "callee": "Sqrat_TableBase_BindFunc_459CF0",
+     "args": [
+      {
+       "str": "SetExist"
+      },
+      {
+       "raw": "(int)sub_455E20",
+       "fn": "sub_455E20"
+      }
+     ],
+     "ea": "0x733157",
+     "ecx": "[ebp+var_34]"
+    },
+    {
+     "callee": "Sqrat_TableBase_BindFunc_459DB0",
+     "args": [
+      {
+       "str": "GetPointStatus"
+      },
+      {
+       "raw": "(int)sub_456C70",
+       "fn": "sub_456C70"
+      }
+     ],
+     "ea": "0x733169",
+     "ecx": "[ebp+var_34]"
+    },
+    {
+     "callee": "Sqrat_TableBase_BindFunc_459DF0",
+     "args": [
+      {
+       "str": "GetVector_FromAngle"
+      },
+      {
+       "raw": "(int)sub_456FA0",
+       "fn": "sub_456FA0"
+      }
+     ],
+     "ea": "0x73317b",
+     "ecx": "[ebp+var_34]"
+    },
+    {
+     "callee": "Sqrat_TableBase_BindFunc_459DB0",
+     "args": [
+      {
+       "str": "GetAngle_FromVector"
+      },
+      {
+       "raw": "(int)sub_457080",
+       "fn": "sub_457080"
+      }
+     ],
+     "ea": "0x73318d",
+     "ecx": "[ebp+var_34]"
+    },
+    {
+     "callee": "Sqrat_TableBase_BindFunc_4536B0",
+     "args": [
+      {
+       "str": "CheckHantei"
+      },
+      {
+       "raw": "(int)sub_455340",
+       "fn": "sub_455340"
+      }
+     ],
+     "ea": "0x73319f",
+     "ecx": "[ebp+var_34]"
+    },
+    {
+     "callee": "Sqrat_TableBase_BindFunc_459E30",
+     "args": [
+      {
+       "str": "GetHanteiRect"
+      },
+      {
+       "raw": "(int)sub_4555F0",
+       "fn": "sub_4555F0"
+      }
+     ],
+     "ea": "0x7331b1",
+     "ecx": "[ebp+var_34]"
+    },
+    {
+     "callee": "Sqrat_TableBase_BindFunc_459CB0",
+     "args": [
+      {
+       "str": "GetCameraPosition"
+      },
+      {
+       "raw": "(int)sub_4573C0",
+       "fn": "sub_4573C0"
+      }
+     ],
+     "ea": "0x7331c3",
+     "ecx": "[ebp+var_34]"
+    },
+    {
+     "callee": "Sqrat_TableBase_BindFunc_459E30",
+     "args": [
+      {
+       "str": "GetCameraRect"
+      },
+      {
+       "raw": "(int)sub_457520",
+       "fn": "sub_457520"
+      }
+     ],
+     "ea": "0x7331d5",
+     "ecx": "[ebp+var_34]"
+    },
+    {
+     "callee": "Sqrat_TableBase_BindFunc_44FEA0",
+     "args": [
+      {
+       "str": "SetPlayerTimer"
+      },
+      {
+       "raw": "(int)sub_457700",
+       "fn": "sub_457700"
+      }
+     ],
+     "ea": "0x7331e7",
+     "ecx": "[ebp+var_34]"
+    },
+    {
+     "callee": "Sqrat_TableBase_BindFunc_4631C0",
+     "args": [
+      {
+       "str": "AddAttackHitNum"
+      },
+      {
+       "raw": "(int)sub_457810",
+       "fn": "sub_457810"
+      }
+     ],
+     "ea": "0x7331f9",
+     "ecx": "[ebp+var_34]"
+    },
+    {
+     "callee": "Sqrat_TableBase_BindFunc_459D70",
+     "args": [
+      {
+       "str": "ClearAttackHitNum"
+      },
+      {
+       "raw": "(int)sub_4578F0",
+       "fn": "sub_4578F0"
+      }
+     ],
+     "ea": "0x73320b",
+     "ecx": "[ebp+var_34]"
+    },
+    {
+     "callee": "Sqrat_TableBase_BindFunc_459E70",
+     "args": [
+      {
+       "str": "GetAttackHitPos"
+      },
+      {
+       "raw": "(int)sub_457870",
+       "fn": "sub_457870"
+      }
+     ],
+     "ea": "0x73321d",
+     "ecx": "[ebp+var_34]"
+    },
+    {
+     "callee": "Sqrat_TableBase_BindFunc_463240",
+     "args": [
+      {
+       "str": "Liberate_OK"
+      },
+      {
+       "raw": "(int)sub_457930",
+       "fn": "sub_457930"
+      }
+     ],
+     "ea": "0x73322f",
+     "ecx": "[ebp+var_34]"
+    },
+    {
+     "callee": "Sqrat_TableBase_BindFunc_459D70",
+     "args": [
+      {
+       "str": "Liberate_Set"
+      },
+      {
+       "raw": "(int)sub_457990",
+       "fn": "sub_457990"
+      }
+     ],
+     "ea": "0x733241",
+     "ecx": "[ebp+var_34]"
+    },
+    {
+     "callee": "Sqrat_TableBase_BindFunc_463240",
+     "args": [
+      {
+       "str": "Liberate_Get"
+      },
+      {
+       "raw": "(int)sub_457A40",
+       "fn": "sub_457A40"
+      }
+     ],
+     "ea": "0x733253",
+     "ecx": "[ebp+var_34]"
+    },
+    {
+     "callee": "Sqrat_TableBase_BindFunc_44FEA0",
+     "args": [
+      {
+       "str": "Liberate_Calc"
+      },
+      {
+       "raw": "(int)sub_457AA0",
+       "fn": "sub_457AA0"
+      }
+     ],
+     "ea": "0x733265",
+     "ecx": "[ebp+var_34]"
+    },
+    {
+     "callee": "Sqrat_TableBase_BindFunc_459D70",
+     "args": [
+      {
+       "str": "Liberate_End"
+      },
+      {
+       "raw": "(int)sub_457A10",
+       "fn": "sub_457A10"
+      }
+     ],
+     "ea": "0x733277",
+     "ecx": "[ebp+var_34]"
+    },
+    {
+     "callee": "Sqrat_TableBase_BindFunc_44FEA0",
+     "args": [
+      {
+       "str": "GRD_UseStock"
+      },
+      {
+       "raw": "(int)sub_458000",
+       "fn": "sub_458000"
+      }
+     ],
+     "ea": "0x733289",
+     "ecx": "[ebp+var_34]"
+    },
+    {
+     "callee": "Sqrat_TableBase_BindFunc_44FEA0",
+     "args": [
+      {
+       "str": "GRD_CheckStock"
+      },
+      {
+       "raw": "(int)sub_457EC0",
+       "fn": "sub_457EC0"
+      }
+     ],
+     "ea": "0x73329b",
+     "ecx": "[ebp+var_34]"
+    },
+    {
+     "callee": "Sqrat_TableBase_BindFunc_463240",
+     "args": [
+      {
+       "str": "GRD_GetJudgeResult"
+      },
+      {
+       "raw": "(int)sub_457F70",
+       "fn": "sub_457F70"
+      }
+     ],
+     "ea": "0x7332ad",
+     "ecx": "[ebp+var_34]"
+    },
+    {
+     "callee": "Sqrat_TableBase_BindFunc_459D30",
+     "args": [
+      {
+       "str": "GRD_SetBreak"
+      },
+      {
+       "raw": "(int)sub_457B90",
+       "fn": "sub_457B90"
+      }
+     ],
+     "ea": "0x7332bf",
+     "ecx": "[ebp+var_34]"
+    },
+    {
+     "callee": "Sqrat_TableBase_BindFunc_4631C0",
+     "args": [
+      {
+       "str": "GRD_GetBreak"
+      },
+      {
+       "raw": "(int)sub_457C70",
+       "fn": "sub_457C70"
+      }
+     ],
+     "ea": "0x7332d1",
+     "ecx": "[ebp+var_34]"
+    },
+    {
+     "callee": "Sqrat_TableBase_BindFunc_459EB0",
+     "args": [
+      {
+       "str": "GRD_CorrectBreakTime"
+      },
+      {
+       "raw": "(int)sub_457BF0",
+       "fn": "sub_457BF0"
+      }
+     ],
+     "ea": "0x7332e3",
+     "ecx": "[ebp+var_34]"
+    },
+    {
+     "callee": "Sqrat_TableBase_BindFunc_4631C0",
+     "args": [
+      {
+       "str": "GRD_ClearBreak"
+      },
+      {
+       "raw": "(int)sub_457D10",
+       "fn": "sub_457D10"
+      }
+     ],
+     "ea": "0x7332f5",
+     "ecx": "[ebp+var_34]"
+    },
+    {
+     "callee": "Sqrat_TableBase_BindFunc_44FEA0",
+     "args": [
+      {
+       "str": "GRD_SetConvertBreak"
+      },
+      {
+       "raw": "(int)sub_457DA0",
+       "fn": "sub_457DA0"
+      }
+     ],
+     "ea": "0x733307",
+     "ecx": "[ebp+var_34]"
+    },
+    {
+     "callee": "Sqrat_TableBase_BindFunc_463240",
+     "args": [
+      {
+       "str": "GRD_GetConvertCount"
+      },
+      {
+       "raw": "(int)sub_457E80",
+       "fn": "sub_457E80"
+      }
+     ],
+     "ea": "0x733319",
+     "ecx": "[ebp+var_34]"
+    },
+    {
+     "callee": "Sqrat_TableBase_BindFunc_44FEA0",
+     "args": [
+      {
+       "str": "GRD_AddValue"
+      },
+      {
+       "raw": "(int)sub_458080",
+       "fn": "sub_458080"
+      }
+     ],
+     "ea": "0x73332b",
+     "ecx": "[ebp+var_34]"
+    },
+    {
+     "callee": "Sqrat_TableBase_BindFunc_44FEA0",
+     "args": [
+      {
+       "str": "GuardSP_Set"
+      },
+      {
+       "raw": "(int)sub_458150",
+       "fn": "sub_458150"
+      }
+     ],
+     "ea": "0x73333d",
+     "ecx": "[ebp+var_34]"
+    },
+    {
+     "callee": "Sqrat_TableBase_BindFunc_463240",
+     "args": [
+      {
+       "str": "GuardSP_Get"
+      },
+      {
+       "raw": "(int)sub_4581C0",
+       "fn": "sub_4581C0"
+      }
+     ],
+     "ea": "0x73334f",
+     "ecx": "[ebp+var_34]"
+    },
+    {
+     "callee": "Sqrat_TableBase_BindFunc_463240",
+     "args": [
+      {
+       "str": "GuardSP_Success"
+      },
+      {
+       "raw": "(int)sub_458200",
+       "fn": "sub_458200"
+      }
+     ],
+     "ea": "0x733361",
+     "ecx": "[ebp+var_34]"
+    },
+    {
+     "callee": "Sqrat_TableBase_BindFunc_459CF0",
+     "args": [
+      {
+       "str": "AttackInfoString_Set"
+      },
+      {
+       "raw": "(int)sub_458240",
+       "fn": "sub_458240"
+      }
+     ],
+     "ea": "0x733373",
+     "ecx": "[ebp+var_34]"
+    },
+    {
+     "callee": "Sqrat_TableBase_BindFunc_44FEA0",
+     "args": [
+      {
+       "str": "FadeProc_Set"
+      },
+      {
+       "raw": "(int)sub_4582C0",
+       "fn": "sub_4582C0"
+      }
+     ],
+     "ea": "0x733385",
+     "ecx": "[ebp+var_34]"
+    },
+    {
+     "callee": "Sqrat_TableBase_BindFunc_44FEA0",
+     "args": [
+      {
+       "str": "FadeProc_Erase"
+      },
+      {
+       "raw": "(int)sub_458500",
+       "fn": "sub_458500"
+      }
+     ],
+     "ea": "0x733397",
+     "ecx": "[ebp+var_34]"
+    },
+    {
+     "callee": "Sqrat_TableBase_BindFunc_44FEA0",
+     "args": [
+      {
+       "str": "CutInProc_Set"
+      },
+      {
+       "raw": "(int)sub_4585D0",
+       "fn": "sub_4585D0"
+      }
+     ],
+     "ea": "0x7333a9",
+     "ecx": "[ebp+var_34]"
+    },
+    {
+     "callee": "Sqrat_TableBase_BindFunc_44FEA0",
+     "args": [
+      {
+       "str": "CutInProc_Erase"
+      },
+      {
+       "raw": "(int)sub_458810",
+       "fn": "sub_458810"
+      }
+     ],
+     "ea": "0x7333bb",
+     "ecx": "[ebp+var_34]"
+    },
+    {
+     "callee": "Sqrat_TableBase_BindFunc_44FEA0",
+     "args": [
+      {
+       "str": "SetCharaFlash"
+      },
+      {
+       "raw": "(int)sub_458850",
+       "fn": "sub_458850"
+      }
+     ],
+     "ea": "0x7333cd",
+     "ecx": "[ebp+var_34]"
+    },
+    {
+     "callee": "Sqrat_TableBase_BindFunc_44FEA0",
+     "args": [
+      {
+       "str": "SetCharaColor"
+      },
+      {
+       "raw": "(int)sub_458900",
+       "fn": "sub_458900"
+      }
+     ],
+     "ea": "0x7333df",
+     "ecx": "[ebp+var_34]"
+    },
+    {
+     "callee": "Sqrat_TableBase_BindFunc_44FEA0",
+     "args": [
+      {
+       "str": "SetCharaDrawType"
+      },
+      {
+       "raw": "(int)sub_4589D0",
+       "fn": "sub_4589D0"
+      }
+     ],
+     "ea": "0x7333f1",
+     "ecx": "[ebp+var_34]"
+    },
+    {
+     "callee": "Sqrat_TableBase_BindFunc_44FEA0",
+     "args": [
+      {
+       "str": "PcAfterImage_Set"
+      },
+      {
+       "raw": "(int)sub_458A30",
+       "fn": "sub_458A30"
+      }
+     ],
+     "ea": "0x733403",
+     "ecx": "[ebp+var_34]"
+    },
+    {
+     "callee": "Sqrat_TableBase_BindFunc_463240",
+     "args": [
+      {
+       "str": "PcAfterImage_Clear"
+      },
+      {
+       "raw": "(int)sub_458B50",
+       "fn": "sub_458B50"
+      }
+     ],
+     "ea": "0x733415",
+     "ecx": "[ebp+var_34]"
+    },
+    {
+     "callee": "Sqrat_TableBase_BindFunc_44FEA0",
+     "args": [
+      {
+       "str": "PcAuraEffect_Set"
+      },
+      {
+       "raw": "(int)sub_458BA0",
+       "fn": "sub_458BA0"
+      }
+     ],
+     "ea": "0x733427",
+     "ecx": "[ebp+var_34]"
+    },
+    {
+     "callee": "Sqrat_TableBase_BindFunc_463240",
+     "args": [
+      {
+       "str": "PcAuraEffect_Clear"
+      },
+      {
+       "raw": "(int)sub_458EB0",
+       "fn": "sub_458EB0"
+      }
+     ],
+     "ea": "0x733439",
+     "ecx": "[ebp+var_34]"
+    },
+    {
+     "callee": "Sqrat_TableBase_BindFunc_44FEA0",
+     "args": [
+      {
+       "str": "Slowmotion_Set"
+      },
+      {
+       "raw": "(int)sub_458F00",
+       "fn": "sub_458F00"
+      }
+     ],
+     "ea": "0x73344b",
+     "ecx": "[ebp+var_34]"
+    },
+    {
+     "callee": "Sqrat_TableBase_BindFunc_44FEA0",
+     "args": [
+      {
+       "str": "LinePrim_Set"
+      },
+      {
+       "raw": "(int)sub_458FD0",
+       "fn": "sub_458FD0"
+      }
+     ],
+     "ea": "0x73345d",
+     "ecx": "[ebp+var_34]"
+    },
+    {
+     "callee": "Sqrat_TableBase_BindFunc_459CF0",
+     "args": [
+      {
+       "str": "Cockpit_SetView"
+      },
+      {
+       "raw": "(int)sub_459290",
+       "fn": "sub_459290"
+      }
+     ],
+     "ea": "0x73346f",
+     "ecx": "[ebp+var_34]"
+    },
+    {
+     "callee": "Sqrat_TableBase_BindFunc_459D70",
+     "args": [
+      {
+       "str": "ComboView_Clear"
+      },
+      {
+       "raw": "(int)sub_459300",
+       "fn": "sub_459300"
+      }
+     ],
+     "ea": "0x733481",
+     "ecx": "[ebp+var_34]"
+    },
+    {
+     "callee": "Sqrat_TableBase_BindFunc_459CF0",
+     "args": [
+      {
+       "str": "BGM_Set"
+      },
+      {
+       "raw": "(int)sub_459350",
+       "fn": "sub_459350"
+      }
+     ],
+     "ea": "0x733493",
+     "ecx": "[ebp+var_34]"
+    },
+    {
+     "callee": "Sqrat_TableBase_BindFunc_44FEA0",
+     "args": [
+      {
+       "str": "SetSpUseBuffer"
+      },
+      {
+       "raw": "(int)sub_4593B0",
+       "fn": "sub_4593B0"
+      }
+     ],
+     "ea": "0x7334a5",
+     "ecx": "[ebp+var_34]"
+    },
+    {
+     "callee": "Sqrat_Class_VarA_459EF0",
+     "args": [
+      {
+       "str": "distance"
+      },
+      {
+       "raw": "0",
+       "fn": null
+      }
+     ],
+     "ea": "0x7334cb",
+     "ecx": "[ebp+var_4C]"
+    },
+    {
+     "callee": "Sqrat_Class_VarA_459EF0",
+     "args": [
+      {
+       "str": "distance_x"
+      },
+      {
+       "raw": "4",
+       "fn": null
+      }
+     ],
+     "ea": "0x7334da",
+     "ecx": "[ebp+var_4C]"
+    },
+    {
+     "callee": "Sqrat_Class_VarA_459EF0",
+     "args": [
+      {
+       "str": "distance_y"
+      },
+      {
+       "raw": "8",
+       "fn": null
+      }
+     ],
+     "ea": "0x7334e9",
+     "ecx": "[ebp+var_4C]"
+    },
+    {
+     "callee": "Sqrat_Class_VarA_459EF0",
+     "args": [
+      {
+       "str": "pos_x"
+      },
+      {
+       "raw": "12",
+       "fn": null
+      }
+     ],
+     "ea": "0x7334f8",
+     "ecx": "[ebp+var_4C]"
+    },
+    {
+     "callee": "Sqrat_Class_VarA_459EF0",
+     "args": [
+      {
+       "str": "pos_y"
+      },
+      {
+       "raw": "16",
+       "fn": null
+      }
+     ],
+     "ea": "0x733507",
+     "ecx": "[ebp+var_4C]"
+    },
+    {
+     "callee": "Sqrat_Class_VarA_459F50",
+     "args": [
+      {
+       "str": "angle"
+      },
+      {
+       "raw": "20",
+       "fn": null
+      }
+     ],
+     "ea": "0x733516",
+     "ecx": "[ebp+var_4C]"
+    },
+    {
+     "callee": "Sqrat_RootTable_BindTable",
+     "args": [
+      {
+       "str": "CPointStatus"
+      },
+      {
+       "raw": "(int)v7",
+       "fn": null
+      }
+     ],
+     "ea": "0x733527",
+     "bind_obj": "[ebp+var_4C]",
+     "ecx": "[ebp+var_34]"
+    },
+    {
+     "callee": "Sqrat_RootTable_BindTable",
+     "args": [
+      {
+       "str": "BMvEff"
+      },
+      {
+       "raw": "(int)v8",
+       "fn": null
+      }
+     ],
+     "ea": "0x73355d",
+     "bind_obj": "[ebp+var_34]",
+     "ecx": "[ebp+var_80]"
+    },
+    {
+     "callee": "Sqrat_Class_VarA_44F080",
+     "args": [
+      {
+       "str": "_ObjFlags_ParentMove"
+      },
+      {
+       "raw": "4",
+       "fn": null
+      }
+     ],
+     "ea": "0x73358d",
+     "ecx": "[ebp+var_20]"
+    },
+    {
+     "callee": "Sqrat_Class_VarA_44F080",
+     "args": [
+      {
+       "str": "_ObjFlags_EraseParentDamage"
+      },
+      {
+       "raw": "1",
+       "fn": null
+      }
+     ],
+     "ea": "0x73359c",
+     "ecx": "[ebp+var_20]"
+    },
+    {
+     "callee": "Sqrat_Class_VarA_44F080",
+     "args": [
+      {
+       "str": "_ObjFlags_NoRender"
+      },
+      {
+       "raw": "0x20000000",
+       "fn": null
+      }
+     ],
+     "ea": "0x7335ae",
+     "ecx": "[ebp+var_20]"
+    },
+    {
+     "callee": "Sqrat_Class_VarA_44F080",
+     "args": [
+      {
+       "str": "_ObjFlags_NoRenderBlackOut"
+      },
+      {
+       "raw": "0x200000",
+       "fn": null
+      }
+     ],
+     "ea": "0x7335c0",
+     "ecx": "[ebp+var_20]"
+    },
+    {
+     "callee": "Sqrat_Class_VarA_44F080",
+     "args": [
+      {
+       "str": "_ObjFlags_NoRenderOrder"
+      },
+      {
+       "raw": "0x100000",
+       "fn": null
+      }
+     ],
+     "ea": "0x7335d2",
+     "ecx": "[ebp+var_20]"
+    },
+    {
+     "callee": "Sqrat_Class_VarA_44F080",
+     "args": [
+      {
+       "str": "_ObjFlags_EraseParentPatChange"
+      },
+      {
+       "raw": "32",
+       "fn": null
+      }
+     ],
+     "ea": "0x7335e1",
+     "ecx": "[ebp+var_20]"
+    },
+    {
+     "callee": "Sqrat_Class_VarA_44F080",
+     "args": [
+      {
+       "str": "_ObjFlags_PatChangeNoLanding"
+      },
+      {
+       "raw": "0x4000",
+       "fn": null
+      }
+     ],
+     "ea": "0x7335f3",
+     "ecx": "[ebp+var_20]"
+    },
+    {
+     "callee": "Sqrat_Class_VarA_44F080",
+     "args": [
+      {
+       "str": "_ObjFlags_MoveTimeStopAll"
+      },
+      {
+       "raw": "0x10000000",
+       "fn": null
+      }
+     ],
+     "ea": "0x733605",
+     "ecx": "[ebp+var_20]"
+    },
+    {
+     "callee": "Sqrat_Class_VarA_44F080",
+     "args": [
+      {
+       "str": "_ObjFlags_ParentMuki"
+      },
+      {
+       "raw": "4096",
+       "fn": null
+      }
+     ],
+     "ea": "0x733617",
+     "ecx": "[ebp+var_20]"
+    },
+    {
+     "callee": "Sqrat_Class_VarA_44F080",
+     "args": [
+      {
+       "str": "_ObjFlags_MukiXPosMove"
+      },
+      {
+       "raw": "0x2000",
+       "fn": null
+      }
+     ],
+     "ea": "0x733629",
+     "ecx": "[ebp+var_20]"
+    },
+    {
+     "callee": "Sqrat_Class_VarA_44F080",
+     "args": [
+      {
+       "str": "_ObjFlags_RenderShadow"
+      },
+      {
+       "raw": "0x10000",
+       "fn": null
+      }
+     ],
+     "ea": "0x73363b",
+     "ecx": "[ebp+var_20]"
+    },
+    {
+     "callee": "Sqrat_Class_VarA_44F080",
+     "args": [
+      {
+       "str": "_ObjFlags_FromParentStop"
+      },
+      {
+       "raw": "8",
+       "fn": null
+      }
+     ],
+     "ea": "0x73364a",
+     "ecx": "[ebp+var_20]"
+    },
+    {
+     "callee": "Sqrat_Class_VarA_44F080",
+     "args": [
+      {
+       "str": "_ObjFlags_ToParentStop"
+      },
+      {
+       "raw": "0x80000",
+       "fn": null
+      }
+     ],
+     "ea": "0x73365c",
+     "ecx": "[ebp+var_20]"
+    },
+    {
+     "callee": "Sqrat_Class_VarA_44F080",
+     "args": [
+      {
+       "str": "_ObjFlags_ToParentHitBack"
+      },
+      {
+       "raw": "0x8000",
+       "fn": null
+      }
+     ],
+     "ea": "0x73366e",
+     "ecx": "[ebp+var_20]"
+    },
+    {
+     "callee": "Sqrat_Class_VarA_44F080",
+     "args": [
+      {
+       "str": "_ObjFlags_ToParentHitStatus"
+      },
+      {
+       "raw": "0x40000",
+       "fn": null
+      }
+     ],
+     "ea": "0x733680",
+     "ecx": "[ebp+var_20]"
+    },
+    {
+     "callee": "Sqrat_Class_VarA_44F080",
+     "args": [
+      {
+       "str": "_ObjFlags_NoCamera"
+      },
+      {
+       "raw": "&off_800000",
+       "fn": null
+      }
+     ],
+     "ea": "0x733692",
+     "ecx": "[ebp+var_20]"
+    },
+    {
+     "callee": "Sqrat_Class_VarA_44F080",
+     "args": [
+      {
+       "str": "_ObjFlags_NoGround"
+      },
+      {
+       "raw": "64",
+       "fn": null
+      }
+     ],
+     "ea": "0x7336a1",
+     "ecx": "[ebp+var_20]"
+    },
+    {
+     "callee": "Sqrat_Class_VarA_44F080",
+     "args": [
+      {
+       "str": "_ObjProcFlags_EraseParentNull"
+      },
+      {
+       "raw": "1",
+       "fn": null
+      }
+     ],
+     "ea": "0x7336b0",
+     "ecx": "[ebp+var_20]"
+    },
+    {
+     "callee": "Sqrat_Class_VarA_44F080",
+     "args": [
+      {
+       "str": "_ObjProcFlags_EraseChangeParentMv"
+      },
+      {
+       "raw": "2",
+       "fn": null
+      }
+     ],
+     "ea": "0x7336bf",
+     "ecx": "[ebp+var_20]"
+    },
+    {
+     "callee": "Sqrat_Class_VarA_44F080",
+     "args": [
+      {
+       "str": "_ObjType_FireBall"
+      },
+      {
+       "raw": "2",
+       "fn": null
+      }
+     ],
+     "ea": "0x7336ce",
+     "ecx": "[ebp+var_20]"
+    },
+    {
+     "callee": "Sqrat_Class_VarA_44F080",
+     "args": [
+      {
+       "str": "_ObjType_Blade"
+      },
+      {
+       "raw": "3",
+       "fn": null
+      }
+     ],
+     "ea": "0x7336dd",
+     "ecx": "[ebp+var_20]"
+    },
+    {
+     "callee": "Sqrat_Class_VarA_44F080",
+     "args": [
+      {
+       "str": "_Exist_NoCamera"
+      },
+      {
+       "raw": "1",
+       "fn": null
+      }
+     ],
+     "ea": "0x7336ec",
+     "ecx": "[ebp+var_20]"
+    },
+    {
+     "callee": "Sqrat_Class_VarA_44F080",
+     "args": [
+      {
+       "str": "_Exist_NoWall"
+      },
+      {
+       "raw": "2",
+       "fn": null
+      }
+     ],
+     "ea": "0x7336fb",
+     "ecx": "[ebp+var_20]"
+    },
+    {
+     "callee": "Sqrat_Class_VarA_44F080",
+     "args": [
+      {
+       "str": "_Exist_NoHantei"
+      },
+      {
+       "raw": "3840",
+       "fn": null
+      }
+     ],
+     "ea": "0x73370d",
+     "ecx": "[ebp+var_20]"
+    },
+    {
+     "callee": "Sqrat_Class_VarA_44F080",
+     "args": [
+      {
+       "str": "_Exist_NoKasanariHantei"
+      },
+      {
+       "raw": "256",
+       "fn": null
+      }
+     ],
+     "ea": "0x73371f",
+     "ecx": "[ebp+var_20]"
+    },
+    {
+     "callee": "Sqrat_Class_VarA_44F080",
+     "args": [
+      {
+       "str": "_Exist_NoKuraiHantei"
+      },
+      {
+       "raw": "512",
+       "fn": null
+      }
+     ],
+     "ea": "0x733731",
+     "ecx": "[ebp+var_20]"
+    },
+    {
+     "callee": "Sqrat_Class_VarA_44F080",
+     "args": [
+      {
+       "str": "_Exist_NoAttackHantei"
+      },
+      {
+       "raw": "1024",
+       "fn": null
+      }
+     ],
+     "ea": "0x733743",
+     "ecx": "[ebp+var_20]"
+    },
+    {
+     "callee": "Sqrat_Class_VarA_44F080",
+     "args": [
+      {
+       "str": "_Exist_NoEtcHantei"
+      },
+      {
+       "raw": "2048",
+       "fn": null
+      }
+     ],
+     "ea": "0x733755",
+     "ecx": "[ebp+var_20]"
+    },
+    {
+     "callee": "Sqrat_Class_VarA_44F080",
+     "args": [
+      {
+       "str": "_ExistMode_Set"
+      },
+      {
+       "raw": "0",
+       "fn": null
+      }
+     ],
+     "ea": "0x733764",
+     "ecx": "[ebp+var_20]"
+    },
+    {
+     "callee": "Sqrat_Class_VarA_44F080",
+     "args": [
+      {
+       "str": "_ExistMode_Add"
+      },
+      {
+       "raw": "1",
+       "fn": null
+      }
+     ],
+     "ea": "0x733773",
+     "ecx": "[ebp+var_20]"
+    },
+    {
+     "callee": "Sqrat_Class_VarA_44F080",
+     "args": [
+      {
+       "str": "_ExistMode_Erase"
+      },
+      {
+       "raw": "2",
+       "fn": null
+      }
+     ],
+     "ea": "0x733782",
+     "ecx": "[ebp+var_20]"
+    },
+    {
+     "callee": "Sqrat_Class_VarA_44F080",
+     "args": [
+      {
+       "str": "_ExistMode_Reverse"
+      },
+      {
+       "raw": "3",
+       "fn": null
+      }
+     ],
+     "ea": "0x733791",
+     "ecx": "[ebp+var_20]"
+    },
+    {
+     "callee": "Sqrat_Class_VarA_44F080",
+     "args": [
+      {
+       "str": "_Hantei_Kasanari"
+      },
+      {
+       "raw": "0",
+       "fn": null
+      }
+     ],
+     "ea": "0x7337a0",
+     "ecx": "[ebp+var_20]"
+    },
+    {
+     "callee": "Sqrat_Class_VarA_44F080",
+     "args": [
+      {
+       "str": "_Hantei_Kurai"
+      },
+      {
+       "raw": "1",
+       "fn": null
+      }
+     ],
+     "ea": "0x7337af",
+     "ecx": "[ebp+var_20]"
+    },
+    {
+     "callee": "Sqrat_Class_VarA_44F080",
+     "args": [
+      {
+       "str": "_Hantei_Etc"
+      },
+      {
+       "raw": "2",
+       "fn": null
+      }
+     ],
+     "ea": "0x7337be",
+     "ecx": "[ebp+var_20]"
+    },
+    {
+     "callee": "Sqrat_Class_VarA_44F080",
+     "args": [
+      {
+       "str": "_Hantei_Attack"
+      },
+      {
+       "raw": "3",
+       "fn": null
+      }
+     ],
+     "ea": "0x7337cd",
+     "ecx": "[ebp+var_20]"
+    },
+    {
+     "callee": "Sqrat_Class_VarA_44F080",
+     "args": [
+      {
+       "str": "_HC_EnemyPc"
+      },
+      {
+       "raw": "1",
+       "fn": null
+      }
+     ],
+     "ea": "0x7337dc",
+     "ecx": "[ebp+var_20]"
+    },
+    {
+     "callee": "Sqrat_Class_VarA_44F080",
+     "args": [
+      {
+       "str": "_HC_EnemyObj"
+      },
+      {
+       "raw": "2",
+       "fn": null
+      }
+     ],
+     "ea": "0x7337eb",
+     "ecx": "[ebp+var_20]"
+    },
+    {
+     "callee": "Sqrat_Class_VarA_44F080",
+     "args": [
+      {
+       "str": "_HC_FavourPc"
+      },
+      {
+       "raw": "4",
+       "fn": null
+      }
+     ],
+     "ea": "0x7337fa",
+     "ecx": "[ebp+var_20]"
+    },
+    {
+     "callee": "Sqrat_Class_VarA_44F080",
+     "args": [
+      {
+       "str": "_HC_FavourObj"
+      },
+      {
+       "raw": "8",
+       "fn": null
+      }
+     ],
+     "ea": "0x733809",
+     "ecx": "[ebp+var_20]"
+    },
+    {
+     "callee": "Sqrat_Class_VarA_44F080",
+     "args": [
+      {
+       "str": "_HC_WithoutNoHanteiFlagObj"
+      },
+      {
+       "raw": "16",
+       "fn": null
+      }
+     ],
+     "ea": "0x733818",
+     "ecx": "[ebp+var_20]"
+    },
+    {
+     "callee": "Sqrat_Class_VarA_44F080",
+     "args": [
+      {
+       "str": "_Hantei_Error"
+      },
+      {
+       "raw": "-7654321",
+       "fn": null
+      }
+     ],
+     "ea": "0x73382a",
+     "ecx": "[ebp+var_20]"
+    },
+    {
+     "callee": "Sqrat_Class_VarA_44F080",
+     "args": [
+      {
+       "str": "_HanteiFlag_Tool"
+      },
+      {
+       "raw": "1",
+       "fn": null
+      }
+     ],
+     "ea": "0x733839",
+     "ecx": "[ebp+var_20]"
+    },
+    {
+     "callee": "Sqrat_Class_VarA_44F080",
+     "args": [
+      {
+       "str": "_HanteiFlag_Offset"
+      },
+      {
+       "raw": "2",
+       "fn": null
+      }
+     ],
+     "ea": "0x733848",
+     "ecx": "[ebp+var_20]"
+    },
+    {
+     "callee": "Sqrat_Class_VarA_44F080",
+     "args": [
+      {
+       "str": "_HanteiFlag_NoMukiChange"
+      },
+      {
+       "raw": "4",
+       "fn": null
+      }
+     ],
+     "ea": "0x733857",
+     "ecx": "[ebp+var_20]"
+    },
+    {
+     "callee": "Sqrat_Class_VarA_44F080",
+     "args": [
+      {
+       "str": "_SpGauge_UseAll"
+      },
+      {
+       "raw": "-1",
+       "fn": null
+      }
+     ],
+     "ea": "0x733866",
+     "ecx": "[ebp+var_20]"
+    },
+    {
+     "callee": "Sqrat_Class_VarA_44F080",
+     "args": [
+      {
+       "str": "_SpGauge_UseBuffer"
+      },
+      {
+       "raw": "-2",
+       "fn": null
+      }
+     ],
+     "ea": "0x733875",
+     "ecx": "[ebp+var_20]"
+    },
+    {
+     "callee": "Sqrat_Class_VarA_44F080",
+     "args": [
+      {
+       "str": "_GetPos_TrueCamera"
+      },
+      {
+       "raw": "1",
+       "fn": null
+      }
+     ],
+     "ea": "0x733884",
+     "ecx": "[ebp+var_20]"
+    },
+    {
+     "callee": "Sqrat_Class_VarA_44F080",
+     "args": [
+      {
+       "str": "_GetPos_ViewCamera"
+      },
+      {
+       "raw": "2",
+       "fn": null
+      }
+     ],
+     "ea": "0x733893",
+     "ecx": "[ebp+var_20]"
+    },
+    {
+     "callee": "Sqrat_Class_VarA_44F080",
+     "args": [
+      {
+       "str": "_GetPos_DispCamera"
+      },
+      {
+       "raw": "4",
+       "fn": null
+      }
+     ],
+     "ea": "0x7338a2",
+     "ecx": "[ebp+var_20]"
+    },
+    {
+     "callee": "Sqrat_Class_VarA_44F080",
+     "args": [
+      {
+       "str": "_GetPos_Offset"
+      },
+      {
+       "raw": "256",
+       "fn": null
+      }
+     ],
+     "ea": "0x7338b4",
+     "ecx": "[ebp+var_20]"
+    },
+    {
+     "callee": "Sqrat_Class_VarA_44F080",
+     "args": [
+      {
+       "str": "_GetPos_TypeWall"
+      },
+      {
+       "raw": "512",
+       "fn": null
+      }
+     ],
+     "ea": "0x7338c6",
+     "ecx": "[ebp+var_20]"
+    },
+    {
+     "callee": "Sqrat_Class_VarA_44F080",
+     "args": [
+      {
+       "str": "_GetPos_TypeScreen"
+      },
+      {
+       "raw": "1024",
+       "fn": null
+      }
+     ],
+     "ea": "0x7338d8",
+     "ecx": "[ebp+var_20]"
+    },
+    {
+     "callee": "Sqrat_Class_VarA_44F080",
+     "args": [
+      {
+       "str": "_GetPos_NoMuki"
+      },
+      {
+       "raw": "2048",
+       "fn": null
+      }
+     ],
+     "ea": "0x7338ea",
+     "ecx": "[ebp+var_20]"
+    },
+    {
+     "callee": "Sqrat_Class_VarA_44F080",
+     "args": [
+      {
+       "str": "_GetPos_ToolOffset"
+      },
+      {
+       "raw": "4096",
+       "fn": null
+      }
+     ],
+     "ea": "0x7338fc",
+     "ecx": "[ebp+var_20]"
+    },
+    {
+     "callee": "Sqrat_Class_VarA_44F080",
+     "args": [
+      {
+       "str": "_SpGaugeMode_Normal"
+      },
+      {
+       "raw": "0",
+       "fn": null
+      }
+     ],
+     "ea": "0x73390b",
+     "ecx": "[ebp+var_20]"
+    },
+    {
+     "callee": "Sqrat_Class_VarA_44F080",
+     "args": [
+      {
+       "str": "_SpGaugeMode_Liberate"
+      },
+      {
+       "raw": "1",
+       "fn": null
+      }
+     ],
+     "ea": "0x73391a",
+     "ecx": "[ebp+var_20]"
+    },
+    {
+     "callee": "Sqrat_Class_VarA_44F080",
+     "args": [
+      {
+       "str": "_SpGaugeMode_OverLiberate"
+      },
+      {
+       "raw": "2",
+       "fn": null
+      }
+     ],
+     "ea": "0x733929",
+     "ecx": "[ebp+var_20]"
+    },
+    {
+     "callee": "Sqrat_Class_VarA_44F080",
+     "args": [
+      {
+       "str": "_ThrowRelease_NoGroundRecover"
+      },
+      {
+       "raw": "16",
+       "fn": null
+      }
+     ],
+     "ea": "0x733938",
+     "ecx": "[ebp+var_20]"
+    },
+    {
+     "callee": "Sqrat_Class_VarA_44F080",
+     "args": [
+      {
+       "str": "_ThrowRelease_NoWallRecover"
+      },
+      {
+       "raw": "32",
+       "fn": null
+      }
+     ],
+     "ea": "0x733947",
+     "ecx": "[ebp+var_20]"
+    },
+    {
+     "callee": "Sqrat_Class_VarA_44F080",
+     "args": [
+      {
+       "str": "_ThrowRelease_NoAttackHit"
+      },
+      {
+       "raw": "64",
+       "fn": null
+      }
+     ],
+     "ea": "0x733956",
+     "ecx": "[ebp+var_20]"
+    },
+    {
+     "callee": "Sqrat_Class_VarA_44F080",
+     "args": [
+      {
+       "str": "_ThrowRelease_ReverseVec"
+      },
+      {
+       "raw": "2",
+       "fn": null
+      }
+     ],
+     "ea": "0x733965",
+     "ecx": "[ebp+var_20]"
+    },
+    {
+     "callee": "Sqrat_Class_VarA_44F080",
+     "args": [
+      {
+       "str": "_ThrowRelease_NoVec"
+      },
+      {
+       "raw": "1",
+       "fn": null
+      }
+     ],
+     "ea": "0x733974",
+     "ecx": "[ebp+var_20]"
+    },
+    {
+     "callee": "Sqrat_Class_VarA_44F080",
+     "args": [
+      {
+       "str": "_ThrowRelease_NoVecTimeHosei"
+      },
+      {
+       "raw": "0x10000",
+       "fn": null
+      }
+     ],
+     "ea": "0x733986",
+     "ecx": "[ebp+var_20]"
+    },
+    {
+     "callee": "Sqrat_RootTable_BindTable",
+     "args": [
+      {
+       "str": "BMvConst"
+      },
+      {
+       "raw": "(int)v9",
+       "fn": null
+      }
+     ],
+     "ea": "0x7339bc",
+     "bind_obj": "[ebp+var_20]",
+     "ecx": "[ebp+var_88]"
+    }
+   ]
+  },
+  "0x777b40": {
+   "name": "sub_777B40",
+   "calls": [
+    {
+     "callee": "Sqrat_TableBase_BindFunc_4631C0",
+     "args": [
+      {
+       "str": "GetParam"
+      },
+      {
+       "raw": "(int)sub_776DE0",
+       "fn": "sub_776DE0"
+      }
+     ],
+     "ea": "0x777be0",
+     "ecx": "[ebp+var_28]"
+    },
+    {
+     "callee": "Sqrat_RootTable_BindTable",
+     "args": [
+      {
+       "str": "SeFunc"
+      },
+      {
+       "raw": "(int)v8",
+       "fn": null
+      }
+     ],
+     "ea": "0x777c0a",
+     "bind_obj": "[ebp+var_28]",
+     "ecx": "[ebp+var_58]"
+    }
+   ]
+  },
+  "0x7e03e0": {
+   "name": "sub_7E03E0",
+   "calls": [
+    {
+     "callee": "Sqrat_TableBase_BindFunc_453670",
+     "args": [
+      {
+       "str": "GetCaptureCharaData"
+      },
+      {
+       "raw": "(int)sub_452DB0",
+       "fn": "sub_452DB0"
+      }
+     ],
+     "ea": "0x7e0437",
+     "ecx": "[ebp+var_20]"
+    },
+    {
+     "callee": "Sqrat_TableBase_BindFunc_453670",
+     "args": [
+      {
+       "str": "GetParentCharaData"
+      },
+      {
+       "raw": "(int)sub_452E20",
+       "fn": "sub_452E20"
+      }
+     ],
+     "ea": "0x7e0449",
+     "ecx": "[ebp+var_20]"
+    },
+    {
+     "callee": "Sqrat_TableBase_BindFunc_453670",
+     "args": [
+      {
+       "str": "GetPlayerCharaData"
+      },
+      {
+       "raw": "(int)sub_452E90",
+       "fn": "sub_452E90"
+      }
+     ],
+     "ea": "0x7e045b",
+     "ecx": "[ebp+var_20]"
+    },
+    {
+     "callee": "Sqrat_TableBase_BindFunc_453670",
+     "args": [
+      {
+       "str": "GetNearEnemyCharaData"
+      },
+      {
+       "raw": "(int)sub_452F00",
+       "fn": "sub_452F00"
+      }
+     ],
+     "ea": "0x7e046d",
+     "ecx": "[ebp+var_20]"
+    },
+    {
+     "callee": "Sqrat_TableBase_BindFunc_4536B0",
+     "args": [
+      {
+       "str": "GetEnemyCharaData"
+      },
+      {
+       "raw": "(int)sub_452F70",
+       "fn": "sub_452F70"
+      }
+     ],
+     "ea": "0x7e047f",
+     "ecx": "[ebp+var_20]"
+    },
+    {
+     "callee": "Sqrat_TableBase_BindFunc_4536F0",
+     "args": [
+      {
+       "str": "GetLastDamageCharaData"
+      },
+      {
+       "raw": "(int)sub_453080",
+       "fn": "sub_453080"
+      }
+     ],
+     "ea": "0x7e0491",
+     "ecx": "[ebp+var_20]"
+    },
+    {
+     "callee": "Sqrat_TableBase_BindFunc_453730",
+     "args": [
+      {
+       "str": "SetLastDamageCharaData"
+      },
+      {
+       "raw": "(int)sub_453040",
+       "fn": "sub_453040"
+      }
+     ],
+     "ea": "0x7e04a3",
+     "ecx": "[ebp+var_20]"
+    },
+    {
+     "callee": "Sqrat_TableBase_BindFunc_4536F0",
+     "args": [
+      {
+       "str": "GetLastHitCharaData"
+      },
+      {
+       "raw": "(int)sub_453110",
+       "fn": "sub_453110"
+      }
+     ],
+     "ea": "0x7e04b5",
+     "ecx": "[ebp+var_20]"
+    },
+    {
+     "callee": "Sqrat_TableBase_BindFunc_453770",
+     "args": [
+      {
+       "str": "PushCharaData"
+      },
+      {
+       "raw": "(int)sub_4531A0",
+       "fn": "sub_4531A0"
+      }
+     ],
+     "ea": "0x7e04c7",
+     "ecx": "[ebp+var_20]"
+    },
+    {
+     "callee": "Sqrat_TableBase_BindFunc_463240",
+     "args": [
+      {
+       "str": "PopCharaData"
+      },
+      {
+       "raw": "(int)sub_453200",
+       "fn": "sub_453200"
+      }
+     ],
+     "ea": "0x7e04d9",
+     "ecx": "[ebp+var_20]"
+    },
+    {
+     "callee": "Sqrat_Class_VarA_4537B0",
+     "args": [
+      {
+       "str": "IsDone"
+      },
+      {
+       "raw": "0",
+       "fn": null
+      }
+     ],
+     "ea": "0x7e04ff",
+     "ecx": "[ebp+var_38]"
+    },
+    {
+     "callee": "Sqrat_Class_VarA_453810",
+     "args": [
+      {
+       "str": "data"
+      },
+      {
+       "raw": "4",
+       "fn": null
+      }
+     ],
+     "ea": "0x7e050e",
+     "ecx": "[ebp+var_38]"
+    },
+    {
+     "callee": "Sqrat_RootTable_BindTable",
+     "args": [
+      {
+       "str": "CCharaData"
+      },
+      {
+       "raw": "(int)v5",
+       "fn": null
+      }
+     ],
+     "ea": "0x7e051f",
+     "bind_obj": "[ebp+var_38]",
+     "ecx": "[ebp+var_20]"
+    },
+    {
+     "callee": "Sqrat_RootTable_BindTable",
+     "args": [
+      {
+       "str": "BMvCore"
+      },
+      {
+       "raw": "(int)v6",
+       "fn": null
+      }
+     ],
+     "ea": "0x7e0555",
+     "bind_obj": "[ebp+var_20]",
+     "ecx": "[ebp+var_58]"
+    }
+   ]
+  },
+  "0x7e0590": {
+   "name": "sub_7E0590",
+   "calls": [
+    {
+     "callee": "Sqrat_TableBase_BindFunc_44FEA0",
+     "args": [
+      {
+       "str": "Move_Jump"
+      },
+      {
+       "raw": "(int)sub_44F4B0",
+       "fn": "sub_44F4B0"
+      }
+     ],
+     "ea": "0x7e05f4",
+     "ecx": "[ebp+var_20]"
+    },
+    {
+     "callee": "Sqrat_TableBase_BindFunc_463240",
+     "args": [
+      {
+       "str": "Move_Next"
+      },
+      {
+       "raw": "(int)sub_44F540",
+       "fn": "sub_44F540"
+      }
+     ],
+     "ea": "0x7e0606",
+     "ecx": "[ebp+var_20]"
+    },
+    {
+     "callee": "Sqrat_TableBase_BindFunc_44FEA0",
+     "args": [
+      {
+       "str": "Move_End"
+      },
+      {
+       "raw": "(int)sub_44F580",
+       "fn": "sub_44F580"
+      }
+     ],
+     "ea": "0x7e0618",
+     "ecx": "[ebp+var_20]"
+    },
+    {
+     "callee": "Sqrat_TableBase_BindFunc_44FEE0",
+     "args": [
+      {
+       "str": "GetMoveTag"
+      },
+      {
+       "raw": "(int)sub_44F620",
+       "fn": "sub_44F620"
+      }
+     ],
+     "ea": "0x7e062a",
+     "ecx": "[ebp+var_20]"
+    },
+    {
+     "callee": "Sqrat_TableBase_BindFunc_44FF20",
+     "args": [
+      {
+       "str": "GetStatus"
+      },
+      {
+       "raw": "(int)sub_44F690",
+       "fn": "sub_44F690"
+      }
+     ],
+     "ea": "0x7e063c",
+     "ecx": "[ebp+var_20]"
+    },
+    {
+     "callee": "Sqrat_Class_BindMethod_44FF60",
+     "args": [
+      {
+       "str": "GetLevel"
+      },
+      {
+       "raw": "(int)Concurrency::details::HardwareAffinity::GetGroup",
+       "fn": null
+      }
+     ],
+     "ea": "0x7e0665",
+     "ecx": "[ebp+var_38]"
+    },
+    {
+     "callee": "Sqrat_Class_BindMethod_44FF60",
+     "args": [
+      {
+       "str": "GetSkill"
+      },
+      {
+       "raw": "(int)sub_420DD0",
+       "fn": "sub_420DD0"
+      }
+     ],
+     "ea": "0x7e0677",
+     "ecx": "[ebp+var_38]"
+    },
+    {
+     "callee": "Sqrat_Class_BindMethod_44FF60",
+     "args": [
+      {
+       "str": "GetMove"
+      },
+      {
+       "raw": "(int)sub_44F280",
+       "fn": "sub_44F280"
+      }
+     ],
+     "ea": "0x7e0689",
+     "ecx": "[ebp+var_38]"
+    },
+    {
+     "callee": "Sqrat_Class_BindMethod_44FF60",
+     "args": [
+      {
+       "str": "GetSkillTime"
+      },
+      {
+       "raw": "(int)sub_44F2A0",
+       "fn": "sub_44F2A0"
+      }
+     ],
+     "ea": "0x7e069b",
+     "ecx": "[ebp+var_38]"
+    },
+    {
+     "callee": "Sqrat_Class_BindMethod_44FF60",
+     "args": [
+      {
+       "str": "GetMoveTime"
+      },
+      {
+       "raw": "(int)sub_44F2C0",
+       "fn": "sub_44F2C0"
+      }
+     ],
+     "ea": "0x7e06ad",
+     "ecx": "[ebp+var_38]"
+    },
+    {
+     "callee": "Sqrat_TableBase_BindFunc_469520",
+     "args": [
+      {
+       "str": "GetELenX"
+      },
+      {
+       "raw": "(int)Concurrency::details::_CancellationTokenRegistration::_GetToken",
+       "fn": null
+      }
+     ],
+     "ea": "0x7e06bf",
+     "ecx": "[ebp+var_38]"
+    },
+    {
+     "callee": "Sqrat_TableBase_BindFunc_469520",
+     "args": [
+      {
+       "str": "GetELenY"
+      },
+      {
+       "raw": "(int)unknown_libname_126",
+       "fn": "unknown_libname_126"
+      }
+     ],
+     "ea": "0x7e06d1",
+     "ecx": "[ebp+var_38]"
+    },
+    {
+     "callee": "Sqrat_Class_BindMethod_44FF60",
+     "args": [
+      {
+       "str": "GetHPP"
+      },
+      {
+       "raw": "(int)sub_44F2E0",
+       "fn": "sub_44F2E0"
+      }
+     ],
+     "ea": "0x7e06e3",
+     "ecx": "[ebp+var_38]"
+    },
+    {
+     "callee": "Sqrat_Class_BindMethod_44FF60",
+     "args": [
+      {
+       "str": "GetEXS"
+      },
+      {
+       "raw": "(int)sub_44F300",
+       "fn": "sub_44F300"
+      }
+     ],
+     "ea": "0x7e06f5",
+     "ecx": "[ebp+var_38]"
+    },
+    {
+     "callee": "Sqrat_Class_BindMethod_44FF60",
+     "args": [
+      {
+       "str": "IsPMoveable"
+      },
+      {
+       "raw": "(int)sub_44F320",
+       "fn": "sub_44F320"
+      }
+     ],
+     "ea": "0x7e0707",
+     "ecx": "[ebp+var_38]"
+    },
+    {
+     "callee": "Sqrat_Class_BindMethod_44FF60",
+     "args": [
+      {
+       "str": "IsPBound"
+      },
+      {
+       "raw": "(int)sub_44F340",
+       "fn": "sub_44F340"
+      }
+     ],
+     "ea": "0x7e0719",
+     "ecx": "[ebp+var_38]"
+    },
+    {
+     "callee": "Sqrat_Class_BindMethod_44FFA0",
+     "args": [
+      {
+       "str": "CheckPosState"
+      },
+      {
+       "raw": "(int)sub_44F380",
+       "fn": "sub_44F380"
+      }
+     ],
+     "ea": "0x7e072b",
+     "ecx": "[ebp+var_38]"
+    },
+    {
+     "callee": "Sqrat_Class_BindMethod_44FFA0",
+     "args": [
+      {
+       "str": "CheckPState"
+      },
+      {
+       "raw": "(int)sub_44F3A0",
+       "fn": "sub_44F3A0"
+      }
+     ],
+     "ea": "0x7e073d",
+     "ecx": "[ebp+var_38]"
+    },
+    {
+     "callee": "Sqrat_Class_BindMethod_44FFA0",
+     "args": [
+      {
+       "str": "CheckEState"
+      },
+      {
+       "raw": "(int)sub_44F3C0",
+       "fn": "sub_44F3C0"
+      }
+     ],
+     "ea": "0x7e074f",
+     "ecx": "[ebp+var_38]"
+    },
+    {
+     "callee": "Sqrat_Class_BindMethod_44FF60",
+     "args": [
+      {
+       "str": "GetTobiTime"
+      },
+      {
+       "raw": "(int)sub_44F3E0",
+       "fn": "sub_44F3E0"
+      }
+     ],
+     "ea": "0x7e0761",
+     "ecx": "[ebp+var_38]"
+    },
+    {
+     "callee": "Sqrat_Class_BindMethod_44FF60",
+     "args": [
+      {
+       "str": "GetComJumpLen"
+      },
+      {
+       "raw": "(int)sub_44F400",
+       "fn": "sub_44F400"
+      }
+     ],
+     "ea": "0x7e0773",
+     "ecx": "[ebp+var_38]"
+    },
+    {
+     "callee": "Sqrat_RootTable_BindTable",
+     "args": [
+      {
+       "str": "UpdateSt"
+      },
+      {
+       "raw": "(int)v11",
+       "fn": null
+      }
+     ],
+     "ea": "0x7e0784",
+     "bind_obj": "[ebp+var_38]",
+     "ecx": "[ebp+var_20]"
+    },
+    {
+     "callee": "Sqrat_Class_VarA_44F080",
+     "args": [
+      {
+       "str": "_eComMoveFlag_MoveEnd"
+      },
+      {
+       "raw": "1",
+       "fn": null
+      }
+     ],
+     "ea": "0x7e07b4",
+     "ecx": "[ebp+var_4C]"
+    },
+    {
+     "callee": "Sqrat_Class_VarA_44F080",
+     "args": [
+      {
+       "str": "_eComMoveFlag_ThroughEnd"
+      },
+      {
+       "raw": "2",
+       "fn": null
+      }
+     ],
+     "ea": "0x7e07c3",
+     "ecx": "[ebp+var_4C]"
+    },
+    {
+     "callee": "Sqrat_Class_VarA_44F080",
+     "args": [
+      {
+       "str": "_eComMoveFlag_HitNext"
+      },
+      {
+       "raw": "4",
+       "fn": null
+      }
+     ],
+     "ea": "0x7e07d2",
+     "ecx": "[ebp+var_4C]"
+    },
+    {
+     "callee": "Sqrat_Class_VarA_44F080",
+     "args": [
+      {
+       "str": "_eComMoveFlag_DamageNext"
+      },
+      {
+       "raw": "8",
+       "fn": null
+      }
+     ],
+     "ea": "0x7e07e1",
+     "ecx": "[ebp+var_4C]"
+    },
+    {
+     "callee": "Sqrat_Class_VarA_44F080",
+     "args": [
+      {
+       "str": "_eComMoveFlag_HitObjNext"
+      },
+      {
+       "raw": "16",
+       "fn": null
+      }
+     ],
+     "ea": "0x7e07f0",
+     "ecx": "[ebp+var_4C]"
+    },
+    {
+     "callee": "Sqrat_Class_VarA_44F080",
+     "args": [
+      {
+       "str": "_eComMoveFlag_DamageObjNext"
+      },
+      {
+       "raw": "32",
+       "fn": null
+      }
+     ],
+     "ea": "0x7e07ff",
+     "ecx": "[ebp+var_4C]"
+    },
+    {
+     "callee": "Sqrat_Class_VarA_44F080",
+     "args": [
+      {
+       "str": "_eComMoveFlag_HitEnd"
+      },
+      {
+       "raw": "64",
+       "fn": null
+      }
+     ],
+     "ea": "0x7e080e",
+     "ecx": "[ebp+var_4C]"
+    },
+    {
+     "callee": "Sqrat_Class_VarA_44F080",
+     "args": [
+      {
+       "str": "_eComMoveFlag_DamageEnd"
+      },
+      {
+       "raw": "128",
+       "fn": null
+      }
+     ],
+     "ea": "0x7e0820",
+     "ecx": "[ebp+var_4C]"
+    },
+    {
+     "callee": "Sqrat_Class_VarA_44F080",
+     "args": [
+      {
+       "str": "_eComMoveFlag_AirNext"
+      },
+      {
+       "raw": "256",
+       "fn": null
+      }
+     ],
+     "ea": "0x7e0832",
+     "ecx": "[ebp+var_4C]"
+    },
+    {
+     "callee": "Sqrat_Class_VarA_44F080",
+     "args": [
+      {
+       "str": "_eComMoveFlag_GroundNext"
+      },
+      {
+       "raw": "512",
+       "fn": null
+      }
+     ],
+     "ea": "0x7e0844",
+     "ecx": "[ebp+var_4C]"
+    },
+    {
+     "callee": "Sqrat_Class_VarA_44F080",
+     "args": [
+      {
+       "str": "_eComMoveFlag_MoveableNext"
+      },
+      {
+       "raw": "1024",
+       "fn": null
+      }
+     ],
+     "ea": "0x7e0856",
+     "ecx": "[ebp+var_4C]"
+    },
+    {
+     "callee": "Sqrat_Class_VarA_44F080",
+     "args": [
+      {
+       "str": "_eComMoveFlag_MovedisableNext"
+      },
+      {
+       "raw": "2048",
+       "fn": null
+      }
+     ],
+     "ea": "0x7e0868",
+     "ecx": "[ebp+var_4C]"
+    },
+    {
+     "callee": "Sqrat_Class_VarA_44F080",
+     "args": [
+      {
+       "str": "_eComMoveFlag_AirEnd"
+      },
+      {
+       "raw": "4096",
+       "fn": null
+      }
+     ],
+     "ea": "0x7e087a",
+     "ecx": "[ebp+var_4C]"
+    },
+    {
+     "callee": "Sqrat_Class_VarA_44F080",
+     "args": [
+      {
+       "str": "_eComMoveFlag_GroundEnd"
+      },
+      {
+       "raw": "0x2000",
+       "fn": null
+      }
+     ],
+     "ea": "0x7e088c",
+     "ecx": "[ebp+var_4C]"
+    },
+    {
+     "callee": "Sqrat_Class_VarA_44F080",
+     "args": [
+      {
+       "str": "_eComMoveFlag_MoveableEnd"
+      },
+      {
+       "raw": "0x4000",
+       "fn": null
+      }
+     ],
+     "ea": "0x7e089e",
+     "ecx": "[ebp+var_4C]"
+    },
+    {
+     "callee": "Sqrat_Class_VarA_44F080",
+     "args": [
+      {
+       "str": "_eComMoveFlag_MovedisableEnd"
+      },
+      {
+       "raw": "0x8000",
+       "fn": null
+      }
+     ],
+     "ea": "0x7e08b0",
+     "ecx": "[ebp+var_4C]"
+    },
+    {
+     "callee": "Sqrat_Class_VarA_44F080",
+     "args": [
+      {
+       "str": "_eComMoveFlag_NmCancelEnd"
+      },
+      {
+       "raw": "0x10000",
+       "fn": null
+      }
+     ],
+     "ea": "0x7e08c2",
+     "ecx": "[ebp+var_4C]"
+    },
+    {
+     "callee": "Sqrat_Class_VarA_44F080",
+     "args": [
+      {
+       "str": "_eComMoveFlag_SpCancelEnd"
+      },
+      {
+       "raw": "0x20000",
+       "fn": null
+      }
+     ],
+     "ea": "0x7e08d4",
+     "ecx": "[ebp+var_4C]"
+    },
+    {
+     "callee": "Sqrat_Class_VarA_44F080",
+     "args": [
+      {
+       "str": "_eComMoveFlag_CancelEnd"
+      },
+      {
+       "raw": "196608",
+       "fn": null
+      }
+     ],
+     "ea": "0x7e08e6",
+     "ecx": "[ebp+var_4C]"
+    },
+    {
+     "callee": "Sqrat_Class_VarA_44F080",
+     "args": [
+      {
+       "str": "_eComMoveFlag_NmCancelNext"
+      },
+      {
+       "raw": "0x40000",
+       "fn": null
+      }
+     ],
+     "ea": "0x7e08f8",
+     "ecx": "[ebp+var_4C]"
+    },
+    {
+     "callee": "Sqrat_Class_VarA_44F080",
+     "args": [
+      {
+       "str": "_eComMoveFlag_SpCancelNext"
+      },
+      {
+       "raw": "0x80000",
+       "fn": null
+      }
+     ],
+     "ea": "0x7e090a",
+     "ecx": "[ebp+var_4C]"
+    },
+    {
+     "callee": "Sqrat_Class_VarA_44F080",
+     "args": [
+      {
+       "str": "_eComMoveFlag_CancelNext"
+      },
+      {
+       "raw": "786432",
+       "fn": null
+      }
+     ],
+     "ea": "0x7e091c",
+     "ecx": "[ebp+var_4C]"
+    },
+    {
+     "callee": "Sqrat_Class_VarA_44F080",
+     "args": [
+      {
+       "str": "_eComMoveFlag_StickHold"
+      },
+      {
+       "raw": "0x40000000",
+       "fn": null
+      }
+     ],
+     "ea": "0x7e092e",
+     "ecx": "[ebp+var_4C]"
+    },
+    {
+     "callee": "Sqrat_Class_VarA_44F080",
+     "args": [
+      {
+       "str": "_eComMoveFlag_ButtonHold"
+      },
+      {
+       "raw": "0x80000000",
+       "fn": null
+      }
+     ],
+     "ea": "0x7e0940",
+     "ecx": "[ebp+var_4C]"
+    },
+    {
+     "callee": "Sqrat_Class_VarA_44F080",
+     "args": [
+      {
+       "str": "_eComSkillType_Interrupt"
+      },
+      {
+       "raw": "1",
+       "fn": null
+      }
+     ],
+     "ea": "0x7e094f",
+     "ecx": "[ebp+var_4C]"
+    },
+    {
+     "callee": "Sqrat_Class_VarA_44F080",
+     "args": [
+      {
+       "str": "_eComSkillType_NoInterrupt"
+      },
+      {
+       "raw": "2",
+       "fn": null
+      }
+     ],
+     "ea": "0x7e095e",
+     "ecx": "[ebp+var_4C]"
+    },
+    {
+     "callee": "Sqrat_Class_VarA_44F080",
+     "args": [
+      {
+       "str": "_eComButton_A"
+      },
+      {
+       "raw": "1",
+       "fn": null
+      }
+     ],
+     "ea": "0x7e096d",
+     "ecx": "[ebp+var_4C]"
+    },
+    {
+     "callee": "Sqrat_Class_VarA_44F080",
+     "args": [
+      {
+       "str": "_eComButton_B"
+      },
+      {
+       "raw": "2",
+       "fn": null
+      }
+     ],
+     "ea": "0x7e097c",
+     "ecx": "[ebp+var_4C]"
+    },
+    {
+     "callee": "Sqrat_Class_VarA_44F080",
+     "args": [
+      {
+       "str": "_eComButton_C"
+      },
+      {
+       "raw": "4",
+       "fn": null
+      }
+     ],
+     "ea": "0x7e098b",
+     "ecx": "[ebp+var_4C]"
+    },
+    {
+     "callee": "Sqrat_Class_VarA_44F080",
+     "args": [
+      {
+       "str": "_eComButton_D"
+      },
+      {
+       "raw": "8",
+       "fn": null
+      }
+     ],
+     "ea": "0x7e099a",
+     "ecx": "[ebp+var_4C]"
+    },
+    {
+     "callee": "Sqrat_Class_VarA_44F080",
+     "args": [
+      {
+       "str": "_eComState_MoveAble"
+      },
+      {
+       "raw": "1",
+       "fn": null
+      }
+     ],
+     "ea": "0x7e09a9",
+     "ecx": "[ebp+var_4C]"
+    },
+    {
+     "callee": "Sqrat_Class_VarA_44F080",
+     "args": [
+      {
+       "str": "_eComState_Guard"
+      },
+      {
+       "raw": "2",
+       "fn": null
+      }
+     ],
+     "ea": "0x7e09b8",
+     "ecx": "[ebp+var_4C]"
+    },
+    {
+     "callee": "Sqrat_Class_VarA_44F080",
+     "args": [
+      {
+       "str": "_eComState_Damage"
+      },
+      {
+       "raw": "4",
+       "fn": null
+      }
+     ],
+     "ea": "0x7e09c7",
+     "ecx": "[ebp+var_4C]"
+    },
+    {
+     "callee": "Sqrat_Class_VarA_44F080",
+     "args": [
+      {
+       "str": "_eComState_Grapped"
+      },
+      {
+       "raw": "8",
+       "fn": null
+      }
+     ],
+     "ea": "0x7e09d6",
+     "ecx": "[ebp+var_4C]"
+    },
+    {
+     "callee": "Sqrat_Class_VarA_44F080",
+     "args": [
+      {
+       "str": "_eComState_Bound"
+      },
+      {
+       "raw": "6",
+       "fn": null
+      }
+     ],
+     "ea": "0x7e09e5",
+     "ecx": "[ebp+var_4C]"
+    },
+    {
+     "callee": "Sqrat_Class_VarA_44F080",
+     "args": [
+      {
+       "str": "_eComState_Chance"
+      },
+      {
+       "raw": "128",
+       "fn": null
+      }
+     ],
+     "ea": "0x7e09f7",
+     "ecx": "[ebp+var_4C]"
+    },
+    {
+     "callee": "Sqrat_Class_VarA_44F080",
+     "args": [
+      {
+       "str": "_eComState_Attack"
+      },
+      {
+       "raw": "256",
+       "fn": null
+      }
+     ],
+     "ea": "0x7e0a09",
+     "ecx": "[ebp+var_4C]"
+    },
+    {
+     "callee": "Sqrat_RootTable_BindTable",
+     "args": [
+      {
+       "str": "BMvCoreConst"
+      },
+      {
+       "raw": "(int)v10",
+       "fn": null
+      }
+     ],
+     "ea": "0x7e0a3f",
+     "bind_obj": "[ebp+var_4C]",
+     "ecx": "[ebp+var_9C]"
+    },
+    {
+     "callee": "Sqrat_RootTable_BindTable",
+     "args": [
+      {
+       "str": "BCom"
+      },
+      {
+       "raw": "(int)v12",
+       "fn": null
+      }
+     ],
+     "ea": "0x7e0a8d",
+     "bind_obj": "[ebp+var_20]",
+     "ecx": "[ebp+var_A4]"
+    }
+   ]
+  },
+  "0x7e1710": {
+   "name": "sub_7E1710",
+   "calls": [
+    {
+     "callee": "Sqrat_Class_BindMethod_469320",
+     "args": [
+      {
+       "str": "Load"
+      },
+      {
+       "raw": "(int)sub_7CFCD0",
+       "fn": "sub_7CFCD0"
+      }
+     ],
+     "ea": "0x7e177c",
+     "ecx": "[ebp+var_50]"
+    },
+    {
+     "callee": "Sqrat_Class_BindMethod_469360",
+     "args": [
+      {
+       "str": "SetPosition"
+      },
+      {
+       "raw": "(int)sub_7CFA80",
+       "fn": "sub_7CFA80"
+      }
+     ],
+     "ea": "0x7e178e",
+     "ecx": "[ebp+var_50]"
+    },
+    {
+     "callee": "Sqrat_RootTable_BindTable",
+     "args": [
+      {
+       "str": "CDat"
+      },
+      {
+       "raw": "(int)v10",
+       "fn": null
+      }
+     ],
+     "ea": "0x7e179f",
+     "bind_obj": "[ebp+var_50]",
+     "ecx": "[ebp+var_38]"
+    },
+    {
+     "callee": "Sqrat_TableBase_BindFunc_4693E0",
+     "args": [
+      {
+       "str": "AddFrame"
+      },
+      {
+       "raw": "(int)sub_72CB10",
+       "fn": "sub_72CB10"
+      }
+     ],
+     "ea": "0x7e17e6",
+     "ecx": "[ebp+var_68]"
+    },
+    {
+     "callee": "Sqrat_TableBase_BindFunc_469420",
+     "args": [
+      {
+       "str": "AddFrameEx"
+      },
+      {
+       "raw": "(int)sub_72CA60",
+       "fn": "sub_72CA60"
+      }
+     ],
+     "ea": "0x7e17f8",
+     "ecx": "[ebp+var_68]"
+    },
+    {
+     "callee": "Sqrat_TableBase_BindFunc_469620",
+     "args": [
+      {
+       "str": "AddJump"
+      },
+      {
+       "raw": "(int)sub_72C780",
+       "fn": "sub_72C780"
+      }
+     ],
+     "ea": "0x7e180a",
+     "ecx": "[ebp+var_68]"
+    },
+    {
+     "callee": "Sqrat_Class_BindMethod_469460",
+     "args": [
+      {
+       "str": "AddModeJump"
+      },
+      {
+       "raw": "(int)sub_72C6A0",
+       "fn": "sub_72C6A0"
+      }
+     ],
+     "ea": "0x7e181c",
+     "ecx": "[ebp+var_68]"
+    },
+    {
+     "callee": "Sqrat_TableBase_BindFunc_4694A0",
+     "args": [
+      {
+       "str": "AddTagJump"
+      },
+      {
+       "raw": "(int)sub_72CA40",
+       "fn": "sub_72CA40"
+      }
+     ],
+     "ea": "0x7e182e",
+     "ecx": "[ebp+var_68]"
+    },
+    {
+     "callee": "Sqrat_TableBase_BindFunc_4694E0",
+     "args": [
+      {
+       "str": "AddModeTagJump"
+      },
+      {
+       "raw": "(int)sub_72C900",
+       "fn": "sub_72C900"
+      }
+     ],
+     "ea": "0x7e1840",
+     "ecx": "[ebp+var_68]"
+    },
+    {
+     "callee": "Sqrat_TableBase_BindFunc_4694A0",
+     "args": [
+      {
+       "str": "AddTag"
+      },
+      {
+       "raw": "(int)sub_72C9A0",
+       "fn": "sub_72C9A0"
+      }
+     ],
+     "ea": "0x7e1852",
+     "ecx": "[ebp+var_68]"
+    },
+    {
+     "callee": "Sqrat_TableBase_BindFunc_469620",
+     "args": [
+      {
+       "str": "AddSe"
+      },
+      {
+       "raw": "(int)sub_72C5D0",
+       "fn": "sub_72C5D0"
+      }
+     ],
+     "ea": "0x7e1864",
+     "ecx": "[ebp+var_68]"
+    },
+    {
+     "callee": "Sqrat_TableBase_BindFunc_469620",
+     "args": [
+      {
+       "str": "AddModeTag"
+      },
+      {
+       "raw": "(int)sub_72C570",
+       "fn": "sub_72C570"
+      }
+     ],
+     "ea": "0x7e1876",
+     "ecx": "[ebp+var_68]"
+    },
+    {
+     "callee": "Sqrat_TableBase_BindFunc_469620",
+     "args": [
+      {
+       "str": "SetPrio"
+      },
+      {
+       "raw": "(int)streambuf::unbuffered",
+       "fn": null
+      }
+     ],
+     "ea": "0x7e1888",
+     "ecx": "[ebp+var_68]"
+    },
+    {
+     "callee": "Sqrat_TableBase_BindFunc_469620",
+     "args": [
+      {
+       "str": "SetMode"
+      },
+      {
+       "raw": "(int)sub_4426D0",
+       "fn": "sub_4426D0"
+      }
+     ],
+     "ea": "0x7e189a",
+     "ecx": "[ebp+var_68]"
+    },
+    {
+     "callee": "Sqrat_TableBase_BindFunc_469520",
+     "args": [
+      {
+       "str": "GetMode"
+      },
+      {
+       "raw": "(int)Concurrency::details::VirtualProcessor::GetExecutionResourceId",
+       "fn": null
+      }
+     ],
+     "ea": "0x7e18ac",
+     "ecx": "[ebp+var_68]"
+    },
+    {
+     "callee": "Sqrat_TableBase_BindFunc_469620",
+     "args": [
+      {
+       "str": "AddMode"
+      },
+      {
+       "raw": "(int)sub_4680B0",
+       "fn": "sub_4680B0"
+      }
+     ],
+     "ea": "0x7e18be",
+     "ecx": "[ebp+var_68]"
+    },
+    {
+     "callee": "Sqrat_TableBase_BindFunc_469520",
+     "args": [
+      {
+       "str": "IsNull"
+      },
+      {
+       "raw": "(int)sub_44E5C0",
+       "fn": "sub_44E5C0"
+      }
+     ],
+     "ea": "0x7e18d0",
+     "ecx": "[ebp+var_68]"
+    },
+    {
+     "callee": "Sqrat_TableBase_BindFunc_469620",
+     "args": [
+      {
+       "str": "SetView"
+      },
+      {
+       "raw": "(int)sub_434BF0",
+       "fn": "sub_434BF0"
+      }
+     ],
+     "ea": "0x7e18e2",
+     "ecx": "[ebp+var_68]"
+    },
+    {
+     "callee": "Sqrat_TableBase_BindFunc_469520",
+     "args": [
+      {
+       "str": "GetView"
+      },
+      {
+       "raw": "(int)Concurrency::details::VirtualProcessor::GetId",
+       "fn": null
+      }
+     ],
+     "ea": "0x7e18f4",
+     "ecx": "[ebp+var_68]"
+    },
+    {
+     "callee": "Sqrat_Class_BindMethod_469560",
+     "args": [
+      {
+       "str": "ClearFrame"
+      },
+      {
+       "raw": "(int)sub_72C190",
+       "fn": "sub_72C190"
+      }
+     ],
+     "ea": "0x7e1906",
+     "ecx": "[ebp+var_68]"
+    },
+    {
+     "callee": "Sqrat_Class_BindMethod_4695A0",
+     "args": [
+      {
+       "str": "SetStartWait"
+      },
+      {
+       "raw": "(int)sub_4426F0",
+       "fn": "sub_4426F0"
+      }
+     ],
+     "ea": "0x7e1918",
+     "ecx": "[ebp+var_68]"
+    },
+    {
+     "callee": "Sqrat_RootTable_BindTable",
+     "args": [
+      {
+       "str": "CAnime"
+      },
+      {
+       "raw": "(int)v9",
+       "fn": null
+      }
+     ],
+     "ea": "0x7e1929",
+     "bind_obj": "[ebp+var_68]",
+     "ecx": "[ebp+var_38]"
+    },
+    {
+     "callee": "Sqrat_TableBase_BindFunc_469520",
+     "args": [
+      {
+       "str": "Render"
+      },
+      {
+       "raw": "(int)sub_434EA0",
+       "fn": "sub_434EA0"
+      }
+     ],
+     "ea": "0x7e1970",
+     "ecx": "[ebp+var_80]"
+    },
+    {
+     "callee": "Sqrat_TableBase_BindFunc_469520",
+     "args": [
+      {
+       "str": "Update"
+      },
+      {
+       "raw": "(int)sub_434E30",
+       "fn": "sub_434E30"
+      }
+     ],
+     "ea": "0x7e1982",
+     "ecx": "[ebp+var_80]"
+    },
+    {
+     "callee": "Sqrat_TableBase_BindFunc_469520",
+     "args": [
+      {
+       "str": "Reset"
+      },
+      {
+       "raw": "(int)sub_444680",
+       "fn": "sub_444680"
+      }
+     ],
+     "ea": "0x7e1994",
+     "ecx": "[ebp+var_80]"
+    },
+    {
+     "callee": "Sqrat_Class_BindMethod_469560",
+     "args": [
+      {
+       "str": "Finalize"
+      },
+      {
+       "raw": "(int)sub_434D20",
+       "fn": "sub_434D20"
+      }
+     ],
+     "ea": "0x7e19a6",
+     "ecx": "[ebp+var_80]"
+    },
+    {
+     "callee": "Sqrat_TableBase_BindFunc_469620",
+     "args": [
+      {
+       "str": "SetMode"
+      },
+      {
+       "raw": "(int)sub_442710",
+       "fn": "sub_442710"
+      }
+     ],
+     "ea": "0x7e19b8",
+     "ecx": "[ebp+var_80]"
+    },
+    {
+     "callee": "Sqrat_TableBase_BindFunc_469660",
+     "args": [
+      {
+       "str": "GetCAnime"
+      },
+      {
+       "raw": "(int)sub_4680E0",
+       "fn": "sub_4680E0"
+      }
+     ],
+     "ea": "0x7e19ca",
+     "ecx": "[ebp+var_80]"
+    },
+    {
+     "callee": "Sqrat_RootTable_BindTable",
+     "args": [
+      {
+       "str": "CAniManager"
+      },
+      {
+       "raw": "(int)v8",
+       "fn": null
+      }
+     ],
+     "ea": "0x7e19db",
+     "bind_obj": "[ebp+var_80]",
+     "ecx": "[ebp+var_38]"
+    },
+    {
+     "callee": "Sqrat_RootTable_BindTable",
+     "args": [
+      {
+       "str": "tPAni"
+      },
+      {
+       "raw": "(int)v11",
+       "fn": null
+      }
+     ],
+     "ea": "0x7e1a20",
+     "bind_obj": "[ebp+var_38]",
+     "ecx": "[ebp+var_B0]"
+    },
+    {
+     "callee": "Sqrat_Class_VarA_44F080",
+     "args": [
+      {
+       "str": "_PAniFlag_JpEqual"
+      },
+      {
+       "raw": "1",
+       "fn": null
+      }
+     ],
+     "ea": "0x7e1a53",
+     "ecx": "[ebp+var_24]"
+    },
+    {
+     "callee": "Sqrat_Class_VarA_44F080",
+     "args": [
+      {
+       "str": "_PAniFlag_JpGrater"
+      },
+      {
+       "raw": "2",
+       "fn": null
+      }
+     ],
+     "ea": "0x7e1a62",
+     "ecx": "[ebp+var_24]"
+    },
+    {
+     "callee": "Sqrat_Class_VarA_44F080",
+     "args": [
+      {
+       "str": "_PAniFlag_JpLess"
+      },
+      {
+       "raw": "3",
+       "fn": null
+      }
+     ],
+     "ea": "0x7e1a71",
+     "ecx": "[ebp+var_24]"
+    },
+    {
+     "callee": "Sqrat_Class_VarA_44F080",
+     "args": [
+      {
+       "str": "_PAniFrame_IpNormal"
+      },
+      {
+       "raw": "0",
+       "fn": null
+      }
+     ],
+     "ea": "0x7e1a80",
+     "ecx": "[ebp+var_24]"
+    },
+    {
+     "callee": "Sqrat_Class_VarA_44F080",
+     "args": [
+      {
+       "str": "_PAniFrame_IpAccel"
+      },
+      {
+       "raw": "1",
+       "fn": null
+      }
+     ],
+     "ea": "0x7e1a8f",
+     "ecx": "[ebp+var_24]"
+    },
+    {
+     "callee": "Sqrat_Class_VarA_44F080",
+     "args": [
+      {
+       "str": "_PAniFrame_IpDecel"
+      },
+      {
+       "raw": "2",
+       "fn": null
+      }
+     ],
+     "ea": "0x7e1a9e",
+     "ecx": "[ebp+var_24]"
+    },
+    {
+     "callee": "Sqrat_Class_VarA_44F080",
+     "args": [
+      {
+       "str": "_PAniFrame_IpAccelEx"
+      },
+      {
+       "raw": "3",
+       "fn": null
+      }
+     ],
+     "ea": "0x7e1aad",
+     "ecx": "[ebp+var_24]"
+    },
+    {
+     "callee": "Sqrat_Class_VarA_44F080",
+     "args": [
+      {
+       "str": "_PAniFrame_IpDecelEx"
+      },
+      {
+       "raw": "4",
+       "fn": null
+      }
+     ],
+     "ea": "0x7e1abc",
+     "ecx": "[ebp+var_24]"
+    },
+    {
+     "callee": "Sqrat_Class_VarA_44F080",
+     "args": [
+      {
+       "str": "_PAniFrame_IpAtoD"
+      },
+      {
+       "raw": "5",
+       "fn": null
+      }
+     ],
+     "ea": "0x7e1acb",
+     "ecx": "[ebp+var_24]"
+    },
+    {
+     "callee": "Sqrat_Class_VarA_44F080",
+     "args": [
+      {
+       "str": "_PAniFrame_IpDtoA"
+      },
+      {
+       "raw": "6",
+       "fn": null
+      }
+     ],
+     "ea": "0x7e1ada",
+     "ecx": "[ebp+var_24]"
+    },
+    {
+     "callee": "Sqrat_Class_VarA_44F080",
+     "args": [
+      {
+       "str": "_PAniFrame_IpNone"
+      },
+      {
+       "raw": "7",
+       "fn": null
+      }
+     ],
+     "ea": "0x7e1ae9",
+     "ecx": "[ebp+var_24]"
+    },
+    {
+     "callee": "Sqrat_RootTable_BindTable",
+     "args": [
+      {
+       "str": "tPAniConst"
+      },
+      {
+       "raw": "(int)v12",
+       "fn": null
+      }
+     ],
+     "ea": "0x7e1b22",
+     "bind_obj": "[ebp+var_24]",
+     "ecx": "[ebp+var_B8]"
+    }
+   ]
+  }
+ },
+ "wrappers": {
+  "sub_72D3A0": {
+   "ret": "int",
+   "args": [],
+   "member": false,
+   "proto": "int *sub_72D3A0()"
+  },
+  "sub_72DF00": {
+   "ret": "int",
+   "args": [],
+   "member": false,
+   "proto": "int *sub_72DF00()"
+  },
+  "sub_72FF90": {
+   "ret": "void",
+   "args": [],
+   "member": false,
+   "proto": "void sub_72FF90()"
+  },
+  "sub_72FF80": {
+   "ret": "void",
+   "args": [],
+   "member": false,
+   "proto": "void sub_72FF80()"
+  },
+  "sub_464A20": {
+   "ret": "int",
+   "args": [],
+   "member": false,
+   "proto": "int sub_464A20()"
+  },
+  "sub_464A50": {
+   "ret": "int",
+   "args": [],
+   "member": false,
+   "proto": "int sub_464A50()"
+  },
+  "sub_464AD0": {
+   "ret": "int",
+   "args": [],
+   "member": false,
+   "proto": "int sub_464AD0()"
+  },
+  "sub_45E780": {
+   "ret": "int",
+   "args": [
+    "int"
+   ],
+   "member": false,
+   "proto": "int __cdecl sub_45E780(int a1)"
+  },
+  "sub_464B00": {
+   "ret": "int",
+   "args": [],
+   "member": false,
+   "proto": "int sub_464B00()"
+  },
+  "sub_464B30": {
+   "ret": "int",
+   "args": [],
+   "member": true,
+   "proto": "BOOL __thiscall sub_464B30(void *this)"
+  },
+  "sub_464B60": {
+   "ret": "int",
+   "args": [
+    "int"
+   ],
+   "member": false,
+   "proto": "int __cdecl sub_464B60(int a1)"
+  },
+  "sub_45EA40": {
+   "ret": "int",
+   "args": [],
+   "member": false,
+   "proto": "int sub_45EA40()"
+  },
+  "sub_464D90": {
+   "ret": "int",
+   "args": [
+    "int"
+   ],
+   "member": false,
+   "proto": "int __cdecl sub_464D90(int a1)"
+  },
+  "sub_730030": {
+   "ret": "int",
+   "args": [
+    "int"
+   ],
+   "member": false,
+   "proto": "int __cdecl sub_730030(char a1)"
+  },
+  "sub_464E60": {
+   "ret": "int",
+   "args": [
+    "int"
+   ],
+   "member": false,
+   "proto": "int __cdecl sub_464E60(int a1)"
+  },
+  "sub_464E90": {
+   "ret": "int",
+   "args": [
+    "int",
+    "int"
+   ],
+   "member": false,
+   "proto": "int __cdecl sub_464E90(int a1, int a2)"
+  },
+  "sub_464F20": {
+   "ret": "int",
+   "args": [
+    "int"
+   ],
+   "member": false,
+   "proto": "BOOL __cdecl sub_464F20(unsigned __int8 a1)"
+  },
+  "sub_464E10": {
+   "ret": "int",
+   "args": [
+    "int"
+   ],
+   "member": false,
+   "proto": "int __cdecl sub_464E10(int a1)"
+  },
+  "sub_464DD0": {
+   "ret": "int",
+   "args": [
+    "int"
+   ],
+   "member": false,
+   "proto": "int __cdecl sub_464DD0(int a1)"
+  },
+  "sub_72FF70": {
+   "ret": "int",
+   "args": [],
+   "member": false,
+   "proto": "int sub_72FF70()"
+  },
+  "sub_7300B0": {
+   "ret": "int",
+   "args": [
+    "int"
+   ],
+   "member": false,
+   "proto": "int __cdecl sub_7300B0(int a1)"
+  },
+  "sub_4593B0": {
+   "ret": "int",
+   "args": [
+    "int"
+   ],
+   "member": false,
+   "proto": "int __cdecl sub_4593B0(int a1)"
+  },
+  "sub_45C3F0": {
+   "ret": "int",
+   "args": [
+    "int"
+   ],
+   "member": false,
+   "proto": "int __cdecl sub_45C3F0(int a1)"
+  },
+  "sub_45C5C0": {
+   "ret": "int",
+   "args": [],
+   "member": false,
+   "proto": "int sub_45C5C0()"
+  },
+  "sub_45C630": {
+   "ret": "int",
+   "args": [],
+   "member": false,
+   "proto": "int sub_45C630()"
+  },
+  "sub_45C6E0": {
+   "ret": "int",
+   "args": [],
+   "member": false,
+   "proto": "int sub_45C6E0()"
+  },
+  "sub_45C720": {
+   "ret": "int",
+   "args": [],
+   "member": false,
+   "proto": "int sub_45C720()"
+  },
+  "sub_45C780": {
+   "ret": "int",
+   "args": [],
+   "member": false,
+   "proto": "int sub_45C780()"
+  },
+  "sub_45C830": {
+   "ret": "int",
+   "args": [],
+   "member": false,
+   "proto": "int sub_45C830()"
+  },
+  "sub_45DC90": {
+   "ret": "int",
+   "args": [],
+   "member": false,
+   "proto": "BOOL sub_45DC90()"
+  },
+  "sub_45CA30": {
+   "ret": "int",
+   "args": [
+    "int"
+   ],
+   "member": false,
+   "proto": "int __cdecl sub_45CA30(int a1)"
+  },
+  "sub_45DCD0": {
+   "ret": "int",
+   "args": [
+    "int"
+   ],
+   "member": false,
+   "proto": "int __cdecl sub_45DCD0(int a1)"
+  },
+  "sub_45DD50": {
+   "ret": "int",
+   "args": [],
+   "member": false,
+   "proto": "int sub_45DD50()"
+  },
+  "sub_45DDA0": {
+   "ret": "int",
+   "args": [],
+   "member": false,
+   "proto": "BOOL sub_45DDA0()"
+  },
+  "sub_45DDF0": {
+   "ret": "int",
+   "args": [],
+   "member": false,
+   "proto": "int sub_45DDF0()"
+  },
+  "sub_45DE30": {
+   "ret": "int",
+   "args": [
+    "int"
+   ],
+   "member": false,
+   "proto": "int __cdecl sub_45DE30(int a1)"
+  },
+  "sub_45DE70": {
+   "ret": "int",
+   "args": [
+    "int"
+   ],
+   "member": false,
+   "proto": "BOOL __cdecl sub_45DE70(int a1)"
+  },
+  "sub_45DEF0": {
+   "ret": "int",
+   "args": [
+    "int"
+   ],
+   "member": false,
+   "proto": "int __cdecl sub_45DEF0(int a1)"
+  },
+  "sub_45DF70": {
+   "ret": "int",
+   "args": [],
+   "member": false,
+   "proto": "BOOL sub_45DF70()"
+  },
+  "sub_45DFE0": {
+   "ret": "instance",
+   "args": [
+    "string"
+   ],
+   "member": false,
+   "proto": "_DWORD *__cdecl sub_45DFE0(char *Str)"
+  },
+  "sub_45E080": {
+   "ret": "int",
+   "args": [],
+   "member": false,
+   "proto": "int sub_45E080()"
+  },
+  "sub_45E0A0": {
+   "ret": "instance",
+   "args": [
+    "int"
+   ],
+   "member": false,
+   "proto": "_DWORD *__cdecl sub_45E0A0(int a1)"
+  },
+  "sub_45E0E0": {
+   "ret": "instance",
+   "args": [
+    "int"
+   ],
+   "member": false,
+   "proto": "_DWORD *__cdecl sub_45E0E0(int a1)"
+  },
+  "sub_45E120": {
+   "ret": "int",
+   "args": [],
+   "member": false,
+   "proto": "int sub_45E120()"
+  },
+  "sub_45E160": {
+   "ret": "int",
+   "args": [],
+   "member": false,
+   "proto": "BOOL sub_45E160()"
+  },
+  "sub_45E1A0": {
+   "ret": "void",
+   "args": [
+    "int"
+   ],
+   "member": false,
+   "proto": "void __cdecl sub_45E1A0(int a1)"
+  },
+  "sub_45E1E0": {
+   "ret": "int",
+   "args": [],
+   "member": false,
+   "proto": "int sub_45E1E0()"
+  },
+  "sub_45E220": {
+   "ret": "int",
+   "args": [
+    "int"
+   ],
+   "member": false,
+   "proto": "int __cdecl sub_45E220(int a1)"
+  },
+  "sub_45E280": {
+   "ret": "instance",
+   "args": [
+    "int",
+    "int"
+   ],
+   "member": false,
+   "proto": "_DWORD *__cdecl sub_45E280(int a1, int a2)"
+  },
+  "sub_45E2E0": {
+   "ret": "int",
+   "args": [
+    "int",
+    "int"
+   ],
+   "member": false,
+   "proto": "int __cdecl sub_45E2E0(int a1, int a2)"
+  },
+  "sub_45E350": {
+   "ret": "int",
+   "args": [
+    "int"
+   ],
+   "member": false,
+   "proto": "int __cdecl sub_45E350(int a1)"
+  },
+  "sub_45E390": {
+   "ret": "int",
+   "args": [
+    "int",
+    "int"
+   ],
+   "member": false,
+   "proto": "int __cdecl sub_45E390(int a1, int a2)"
+  },
+  "sub_45E3D0": {
+   "ret": "int",
+   "args": [
+    "int",
+    "int"
+   ],
+   "member": false,
+   "proto": "int __cdecl sub_45E3D0(int a1, int a2)"
+  },
+  "sub_45E420": {
+   "ret": "instance",
+   "args": [
+    "int"
+   ],
+   "member": false,
+   "proto": "_DWORD *__cdecl sub_45E420(int a1)"
+  },
+  "sub_45E470": {
+   "ret": "int",
+   "args": [
+    "int"
+   ],
+   "member": false,
+   "proto": "char __cdecl sub_45E470(int a1)"
+  },
+  "sub_45E4B0": {
+   "ret": "int",
+   "args": [
+    "int"
+   ],
+   "member": false,
+   "proto": "char __cdecl sub_45E4B0(char a1)"
+  },
+  "sub_45E4E0": {
+   "ret": "int",
+   "args": [
+    "int"
+   ],
+   "member": false,
+   "proto": "int __cdecl sub_45E4E0(int a1)"
+  },
+  "sub_45E550": {
+   "ret": "int",
+   "args": [
+    "int"
+   ],
+   "member": false,
+   "proto": "int __cdecl sub_45E550(int a1)"
+  },
+  "sub_45E680": {
+   "ret": "int",
+   "args": [
+    "int"
+   ],
+   "member": false,
+   "proto": "int __cdecl sub_45E680(int a1)"
+  },
+  "sub_45E900": {
+   "ret": "int",
+   "args": [
+    "int"
+   ],
+   "member": false,
+   "proto": "int __cdecl sub_45E900(int a1)"
+  },
+  "sub_45EA80": {
+   "ret": "int",
+   "args": [
+    "int"
+   ],
+   "member": false,
+   "proto": "int __cdecl sub_45EA80(int a1)"
+  },
+  "sub_45F0F0": {
+   "ret": "int",
+   "args": [
+    "int"
+   ],
+   "member": false,
+   "proto": "int __cdecl sub_45F0F0(int a1)"
+  },
+  "sub_45F150": {
+   "ret": "int",
+   "args": [
+    "int",
+    "int"
+   ],
+   "member": false,
+   "proto": "int __cdecl sub_45F150(int a1, int a2)"
+  },
+  "sub_45EAD0": {
+   "ret": "instance",
+   "args": [
+    "int"
+   ],
+   "member": false,
+   "proto": "_DWORD *__cdecl sub_45EAD0(int a1)"
+  },
+  "sub_45EB10": {
+   "ret": "int",
+   "args": [
+    "int"
+   ],
+   "member": false,
+   "proto": "char __cdecl sub_45EB10(char a1)"
+  },
+  "sub_45EC20": {
+   "ret": "int",
+   "args": [
+    "int"
+   ],
+   "member": false,
+   "proto": "int __cdecl sub_45EC20(int a1)"
+  },
+  "sub_45EDE0": {
+   "ret": "int",
+   "args": [
+    "int"
+   ],
+   "member": false,
+   "proto": "int __cdecl sub_45EDE0(int a1)"
+  },
+  "sub_45F030": {
+   "ret": "int",
+   "args": [],
+   "member": false,
+   "proto": "int sub_45F030()"
+  },
+  "sub_45D900": {
+   "ret": "instance",
+   "args": [
+    "instance"
+   ],
+   "member": false,
+   "proto": "void *__cdecl sub_45D900(void *a1)"
+  },
+  "sub_45DAA0": {
+   "ret": "int",
+   "args": [],
+   "member": false,
+   "proto": "const char *sub_45DAA0()"
+  },
+  "sub_45DC10": {
+   "ret": "int",
+   "args": [
+    "int"
+   ],
+   "member": false,
+   "proto": "int __cdecl sub_45DC10(int a1)"
+  },
+  "sub_45DAF0": {
+   "ret": "int",
+   "args": [
+    "int"
+   ],
+   "member": false,
+   "proto": "int __cdecl sub_45DAF0(int a1)"
+  },
+  "sub_45DC60": {
+   "ret": "int",
+   "args": [],
+   "member": false,
+   "proto": "_DWORD *sub_45DC60()"
+  },
+  "sub_45CD80": {
+   "ret": "int",
+   "args": [
+    "int"
+   ],
+   "member": false,
+   "proto": "int __cdecl sub_45CD80(int a1)"
+  },
+  "sub_45CF70": {
+   "ret": "instance",
+   "args": [
+    "instance"
+   ],
+   "member": false,
+   "proto": "int *__cdecl sub_45CF70(int *a1)"
+  },
+  "sub_45CEB0": {
+   "ret": "int",
+   "args": [
+    "int"
+   ],
+   "member": false,
+   "proto": "__int16 __cdecl sub_45CEB0(__int16 a1)"
+  },
+  "sub_45D2B0": {
+   "ret": "instance",
+   "args": [
+    "int"
+   ],
+   "member": false,
+   "proto": "int *__cdecl sub_45D2B0(int a1)"
+  },
+  "sub_45D1E0": {
+   "ret": "instance",
+   "args": [
+    "instance",
+    "int"
+   ],
+   "member": false,
+   "proto": "_DWORD *__cdecl sub_45D1E0(_DWORD *a1, int a2)"
+  },
+  "sub_45D350": {
+   "ret": "int",
+   "args": [
+    "int"
+   ],
+   "member": false,
+   "proto": "int __cdecl sub_45D350(int a1)"
+  },
+  "sub_45D560": {
+   "ret": "int",
+   "args": [
+    "int"
+   ],
+   "member": false,
+   "proto": "int __cdecl sub_45D560(int a1)"
+  },
+  "sub_45D7D0": {
+   "ret": "int",
+   "args": [],
+   "member": false,
+   "proto": "int sub_45D7D0()"
+  },
+  "sub_45D800": {
+   "ret": "instance",
+   "args": [
+    "int"
+   ],
+   "member": false,
+   "proto": "int *__cdecl sub_45D800(int a1)"
+  },
+  "sub_45D880": {
+   "ret": "instance",
+   "args": [
+    "instance"
+   ],
+   "member": false,
+   "proto": "_QWORD *__cdecl sub_45D880(_QWORD *a1)"
+  },
+  "sub_45F190": {
+   "ret": "int",
+   "args": [],
+   "member": false,
+   "proto": "BOOL sub_45F190()"
+  },
+  "sub_45F1A0": {
+   "ret": "instance",
+   "args": [
+    "instance"
+   ],
+   "member": false,
+   "proto": "_DWORD *__cdecl sub_45F1A0(_DWORD *a1)"
+  },
+  "sub_45F380": {
+   "ret": "int",
+   "args": [],
+   "member": false,
+   "proto": "_DWORD *sub_45F380()"
+  },
+  "sub_45F3D0": {
+   "ret": "int",
+   "args": [],
+   "member": false,
+   "proto": "_DWORD *sub_45F3D0()"
+  },
+  "sub_45F600": {
+   "ret": "int",
+   "args": [
+    "int"
+   ],
+   "member": false,
+   "proto": "int __cdecl sub_45F600(int a1)"
+  },
+  "sub_45F750": {
+   "ret": "int",
+   "args": [
+    "int"
+   ],
+   "member": false,
+   "proto": "int __cdecl sub_45F750(int a1)"
+  },
+  "sub_45F690": {
+   "ret": "int",
+   "args": [
+    "int"
+   ],
+   "member": false,
+   "proto": "int __cdecl sub_45F690(int a1)"
+  },
+  "sub_45F860": {
+   "ret": "int",
+   "args": [
+    "int"
+   ],
+   "member": false,
+   "proto": "int __cdecl sub_45F860(int a1)"
+  },
+  "sub_45F7E0": {
+   "ret": "int",
+   "args": [
+    "int"
+   ],
+   "member": false,
+   "proto": "int __cdecl sub_45F7E0(int a1)"
+  },
+  "sub_45F330": {
+   "ret": "int",
+   "args": [
+    "int"
+   ],
+   "member": false,
+   "proto": "int __cdecl sub_45F330(int a1)"
+  },
+  "sub_45F940": {
+   "ret": "int",
+   "args": [
+    "int"
+   ],
+   "member": false,
+   "proto": "int __cdecl sub_45F940(int a1)"
+  },
+  "sub_45FAD0": {
+   "ret": "int",
+   "args": [
+    "int"
+   ],
+   "member": false,
+   "proto": "int __cdecl sub_45FAD0(int a1)"
+  },
+  "sub_45F420": {
+   "ret": "int",
+   "args": [
+    "int"
+   ],
+   "member": false,
+   "proto": "int __cdecl sub_45F420(int a1)"
+  },
+  "sub_45AD70": {
+   "ret": "int",
+   "args": [
+    "int"
+   ],
+   "member": false,
+   "proto": "int __cdecl sub_45AD70(int a1)"
+  },
+  "sub_45B010": {
+   "ret": "void",
+   "args": [
+    "int"
+   ],
+   "member": false,
+   "proto": "void __cdecl sub_45B010(int a1)"
+  },
+  "sub_45B160": {
+   "ret": "int",
+   "args": [],
+   "member": false,
+   "proto": "int sub_45B160()"
+  },
+  "sub_457140": {
+   "ret": "int",
+   "args": [],
+   "member": false,
+   "proto": "int sub_457140()"
+  },
+  "sub_457150": {
+   "ret": "float",
+   "args": [],
+   "member": true,
+   "proto": "double __thiscall sub_457150(void *this)"
+  },
+  "sub_457170": {
+   "ret": "int",
+   "args": [
+    "int"
+   ],
+   "member": false,
+   "proto": "int __cdecl sub_457170(int a1)"
+  },
+  "sub_457190": {
+   "ret": "float",
+   "args": [
+    "int"
+   ],
+   "member": false,
+   "proto": "double __cdecl sub_457190(int a1)"
+  },
+  "sub_457280": {
+   "ret": "instance",
+   "args": [
+    "instance",
+    "int"
+   ],
+   "member": false,
+   "proto": "int *__cdecl sub_457280(int *a1, int a2)"
+  },
+  "sub_4571C0": {
+   "ret": "instance",
+   "args": [
+    "instance",
+    "int"
+   ],
+   "member": false,
+   "proto": "int *__cdecl sub_4571C0(int *a1, int a2)"
+  },
+  "sub_454680": {
+   "ret": "int",
+   "args": [
+    "int"
+   ],
+   "member": false,
+   "proto": "int __cdecl sub_454680(int a1)"
+  },
+  "sub_455000": {
+   "ret": "int",
+   "args": [
+    "int"
+   ],
+   "member": false,
+   "proto": "int __cdecl sub_455000(int a1)"
+  },
+  "sub_454910": {
+   "ret": "int",
+   "args": [
+    "int"
+   ],
+   "member": false,
+   "proto": "int __cdecl sub_454910(int a1)"
+  },
+  "sub_454D00": {
+   "ret": "int",
+   "args": [
+    "int"
+   ],
+   "member": false,
+   "proto": "BOOL __cdecl sub_454D00(int a1)"
+  },
+  "sub_454DD0": {
+   "ret": "int",
+   "args": [
+    "int"
+   ],
+   "member": false,
+   "proto": "int __cdecl sub_454DD0(int a1)"
+  },
+  "sub_454F10": {
+   "ret": "int",
+   "args": [
+    "int"
+   ],
+   "member": false,
+   "proto": "BOOL __cdecl sub_454F10(int a1)"
+  },
+  "sub_455250": {
+   "ret": "int",
+   "args": [
+    "int"
+   ],
+   "member": false,
+   "proto": "int __cdecl sub_455250(int a1)"
+  },
+  "sub_455810": {
+   "ret": "instance",
+   "args": [
+    "instance",
+    "int"
+   ],
+   "member": false,
+   "proto": "int *__cdecl sub_455810(int *a1, int a2)"
+  },
+  "sub_455B80": {
+   "ret": "int",
+   "args": [
+    "int"
+   ],
+   "member": false,
+   "proto": "int __cdecl sub_455B80(int a1)"
+  },
+  "sub_455EF0": {
+   "ret": "instance",
+   "args": [
+    "int"
+   ],
+   "member": false,
+   "proto": "int *__cdecl sub_455EF0(int a1)"
+  },
+  "sub_455C30": {
+   "ret": "int",
+   "args": [
+    "int"
+   ],
+   "member": false,
+   "proto": "int __cdecl sub_455C30(int a1)"
+  },
+  "sub_455CC0": {
+   "ret": "int",
+   "args": [
+    "int"
+   ],
+   "member": false,
+   "proto": "int __cdecl sub_455CC0(int a1)"
+  },
+  "sub_455D40": {
+   "ret": "int",
+   "args": [
+    "int"
+   ],
+   "member": false,
+   "proto": "int __cdecl sub_455D40(int a1)"
+  },
+  "sub_455DC0": {
+   "ret": "int",
+   "args": [
+    "int"
+   ],
+   "member": false,
+   "proto": "BOOL __cdecl sub_455DC0(int a1)"
+  },
+  "sub_455F90": {
+   "ret": "int",
+   "args": [
+    "int"
+   ],
+   "member": false,
+   "proto": "int __cdecl sub_455F90(int a1)"
+  },
+  "sub_456030": {
+   "ret": "int",
+   "args": [
+    "int"
+   ],
+   "member": false,
+   "proto": "int __cdecl sub_456030(int a1)"
+  },
+  "sub_4562C0": {
+   "ret": "int",
+   "args": [
+    "int"
+   ],
+   "member": false,
+   "proto": "int __cdecl sub_4562C0(int a1)"
+  },
+  "sub_4562E0": {
+   "ret": "int",
+   "args": [],
+   "member": true,
+   "proto": "int __thiscall sub_4562E0(void *this)"
+  },
+  "sub_456300": {
+   "ret": "int",
+   "args": [],
+   "member": true,
+   "proto": "int __thiscall sub_456300(void *this)"
+  },
+  "sub_456350": {
+   "ret": "instance",
+   "args": [
+    "int"
+   ],
+   "member": false,
+   "proto": "int *__cdecl sub_456350(int a1)"
+  },
+  "sub_456410": {
+   "ret": "int",
+   "args": [],
+   "member": false,
+   "proto": "_DWORD *sub_456410()"
+  },
+  "sub_456450": {
+   "ret": "int",
+   "args": [
+    "int"
+   ],
+   "member": false,
+   "proto": "int __cdecl sub_456450(int a1)"
+  },
+  "sub_456560": {
+   "ret": "int",
+   "args": [
+    "int"
+   ],
+   "member": false,
+   "proto": "int __cdecl sub_456560(int a1)"
+  },
+  "sub_4567A0": {
+   "ret": "int",
+   "args": [
+    "int"
+   ],
+   "member": false,
+   "proto": "int __cdecl sub_4567A0(int a1)"
+  },
+  "sub_456950": {
+   "ret": "int",
+   "args": [
+    "int"
+   ],
+   "member": false,
+   "proto": "int __cdecl sub_456950(int a1)"
+  },
+  "sub_4569C0": {
+   "ret": "int",
+   "args": [],
+   "member": false,
+   "proto": "int sub_4569C0()"
+  },
+  "sub_455E20": {
+   "ret": "instance",
+   "args": [
+    "int"
+   ],
+   "member": false,
+   "proto": "_DWORD *__cdecl sub_455E20(int a1)"
+  },
+  "sub_456C70": {
+   "ret": "instance",
+   "args": [
+    "instance",
+    "int"
+   ],
+   "member": false,
+   "proto": "int *__cdecl sub_456C70(int *a1, int a2)"
+  },
+  "sub_456FA0": {
+   "ret": "instance",
+   "args": [
+    "instance",
+    "int"
+   ],
+   "member": false,
+   "proto": "int *__cdecl sub_456FA0(int *a1, int a2)"
+  },
+  "sub_457080": {
+   "ret": "instance",
+   "args": [
+    "instance",
+    "int"
+   ],
+   "member": false,
+   "proto": "int *__cdecl sub_457080(int *a1, int a2)"
+  },
+  "sub_455340": {
+   "ret": "instance",
+   "args": [
+    "instance",
+    "int"
+   ],
+   "member": false,
+   "proto": "int *__cdecl sub_455340(int *a1, int a2)"
+  },
+  "sub_4555F0": {
+   "ret": "instance",
+   "args": [
+    "instance",
+    "int"
+   ],
+   "member": false,
+   "proto": "_DWORD *__cdecl sub_4555F0(_DWORD *a1, int a2)"
+  },
+  "sub_4573C0": {
+   "ret": "instance",
+   "args": [
+    "instance",
+    "int"
+   ],
+   "member": false,
+   "proto": "int *__cdecl sub_4573C0(int *a1, int a2)"
+  },
+  "sub_457520": {
+   "ret": "instance",
+   "args": [
+    "instance",
+    "int"
+   ],
+   "member": false,
+   "proto": "_DWORD *__cdecl sub_457520(_DWORD *a1, int a2)"
+  },
+  "sub_457700": {
+   "ret": "int",
+   "args": [
+    "int"
+   ],
+   "member": false,
+   "proto": "int __cdecl sub_457700(int a1)"
+  },
+  "sub_457810": {
+   "ret": "int",
+   "args": [
+    "int"
+   ],
+   "member": false,
+   "proto": "int __cdecl sub_457810(__int16 a1)"
+  },
+  "sub_4578F0": {
+   "ret": "int",
+   "args": [],
+   "member": false,
+   "proto": "int sub_4578F0()"
+  },
+  "sub_457870": {
+   "ret": "instance",
+   "args": [
+    "instance"
+   ],
+   "member": false,
+   "proto": "_QWORD *__cdecl sub_457870(_QWORD *a1)"
+  },
+  "sub_457930": {
+   "ret": "int",
+   "args": [],
+   "member": false,
+   "proto": "BOOL sub_457930()"
+  },
+  "sub_457990": {
+   "ret": "int",
+   "args": [],
+   "member": false,
+   "proto": "_DWORD *sub_457990()"
+  },
+  "sub_457A40": {
+   "ret": "int",
+   "args": [],
+   "member": false,
+   "proto": "int sub_457A40()"
+  },
+  "sub_457AA0": {
+   "ret": "int",
+   "args": [
+    "int"
+   ],
+   "member": false,
+   "proto": "int __cdecl sub_457AA0(int a1)"
+  },
+  "sub_457A10": {
+   "ret": "int",
+   "args": [],
+   "member": false,
+   "proto": "_DWORD *sub_457A10()"
+  },
+  "sub_458000": {
+   "ret": "int",
+   "args": [
+    "int"
+   ],
+   "member": false,
+   "proto": "int __cdecl sub_458000(int a1)"
+  },
+  "sub_457EC0": {
+   "ret": "int",
+   "args": [
+    "int"
+   ],
+   "member": false,
+   "proto": "int __cdecl sub_457EC0(int a1)"
+  },
+  "sub_457F70": {
+   "ret": "int",
+   "args": [],
+   "member": false,
+   "proto": "int sub_457F70()"
+  },
+  "sub_457B90": {
+   "ret": "instance",
+   "args": [
+    "int"
+   ],
+   "member": false,
+   "proto": "_DWORD *__cdecl sub_457B90(int a1)"
+  },
+  "sub_457C70": {
+   "ret": "int",
+   "args": [
+    "int"
+   ],
+   "member": false,
+   "proto": "int __cdecl sub_457C70(int a1)"
+  },
+  "sub_457BF0": {
+   "ret": "instance",
+   "args": [
+    "int",
+    "int"
+   ],
+   "member": false,
+   "proto": "int *__cdecl sub_457BF0(int a1, int a2)"
+  },
+  "sub_457D10": {
+   "ret": "int",
+   "args": [
+    "int"
+   ],
+   "member": false,
+   "proto": "int __cdecl sub_457D10(int a1)"
+  },
+  "sub_457DA0": {
+   "ret": "int",
+   "args": [
+    "int"
+   ],
+   "member": false,
+   "proto": "int __cdecl sub_457DA0(int a1)"
+  },
+  "sub_457E80": {
+   "ret": "int",
+   "args": [],
+   "member": false,
+   "proto": "int sub_457E80()"
+  },
+  "sub_458080": {
+   "ret": "int",
+   "args": [
+    "int"
+   ],
+   "member": false,
+   "proto": "int __cdecl sub_458080(int a1)"
+  },
+  "sub_458150": {
+   "ret": "int",
+   "args": [
+    "int"
+   ],
+   "member": false,
+   "proto": "int __cdecl sub_458150(int a1)"
+  },
+  "sub_4581C0": {
+   "ret": "int",
+   "args": [],
+   "member": false,
+   "proto": "int sub_4581C0()"
+  },
+  "sub_458200": {
+   "ret": "int",
+   "args": [],
+   "member": false,
+   "proto": "int sub_458200()"
+  },
+  "sub_458240": {
+   "ret": "instance",
+   "args": [
+    "int"
+   ],
+   "member": false,
+   "proto": "int *__cdecl sub_458240(int a1)"
+  },
+  "sub_4582C0": {
+   "ret": "int",
+   "args": [
+    "int"
+   ],
+   "member": false,
+   "proto": "int __cdecl sub_4582C0(int a1)"
+  },
+  "sub_458500": {
+   "ret": "int",
+   "args": [
+    "int"
+   ],
+   "member": false,
+   "proto": "int __cdecl sub_458500(int a1)"
+  },
+  "sub_4585D0": {
+   "ret": "int",
+   "args": [
+    "int"
+   ],
+   "member": false,
+   "proto": "int __cdecl sub_4585D0(int a1)"
+  },
+  "sub_458810": {
+   "ret": "int",
+   "args": [],
+   "member": false,
+   "proto": "int sub_458810()"
+  },
+  "sub_458850": {
+   "ret": "int",
+   "args": [
+    "int"
+   ],
+   "member": false,
+   "proto": "int __cdecl sub_458850(int a1)"
+  },
+  "sub_458900": {
+   "ret": "int",
+   "args": [
+    "int"
+   ],
+   "member": false,
+   "proto": "int __cdecl sub_458900(int a1)"
+  },
+  "sub_4589D0": {
+   "ret": "int",
+   "args": [
+    "int"
+   ],
+   "member": false,
+   "proto": "int __cdecl sub_4589D0(int a1)"
+  },
+  "sub_458A30": {
+   "ret": "int",
+   "args": [
+    "int"
+   ],
+   "member": false,
+   "proto": "int __cdecl sub_458A30(int a1)"
+  },
+  "sub_458B50": {
+   "ret": "int",
+   "args": [],
+   "member": false,
+   "proto": "int sub_458B50()"
+  },
+  "sub_458BA0": {
+   "ret": "int",
+   "args": [
+    "int"
+   ],
+   "member": false,
+   "proto": "int __cdecl sub_458BA0(int a1)"
+  },
+  "sub_458EB0": {
+   "ret": "int",
+   "args": [],
+   "member": false,
+   "proto": "int sub_458EB0()"
+  },
+  "sub_458F00": {
+   "ret": "int",
+   "args": [
+    "int"
+   ],
+   "member": false,
+   "proto": "int __cdecl sub_458F00(int a1)"
+  },
+  "sub_458FD0": {
+   "ret": "int",
+   "args": [
+    "int"
+   ],
+   "member": false,
+   "proto": "int __cdecl sub_458FD0(int a1)"
+  },
+  "sub_459290": {
+   "ret": "void",
+   "args": [
+    "int"
+   ],
+   "member": false,
+   "proto": "void __cdecl sub_459290(int a1)"
+  },
+  "sub_459300": {
+   "ret": "int",
+   "args": [],
+   "member": false,
+   "proto": "int sub_459300()"
+  },
+  "sub_459350": {
+   "ret": "instance",
+   "args": [
+    "int"
+   ],
+   "member": false,
+   "proto": "_DWORD *__cdecl sub_459350(int a1)"
+  },
+  "sub_776DE0": {
+   "ret": "int",
+   "args": [
+    "int"
+   ],
+   "member": false,
+   "proto": "int __cdecl sub_776DE0(int a1)"
+  },
+  "sub_452DB0": {
+   "ret": "instance",
+   "args": [
+    "instance"
+   ],
+   "member": false,
+   "proto": "int *__cdecl sub_452DB0(int *a1)"
+  },
+  "sub_452E20": {
+   "ret": "instance",
+   "args": [
+    "instance"
+   ],
+   "member": false,
+   "proto": "int *__cdecl sub_452E20(int *a1)"
+  },
+  "sub_452E90": {
+   "ret": "instance",
+   "args": [
+    "instance"
+   ],
+   "member": false,
+   "proto": "int *__cdecl sub_452E90(int *a1)"
+  },
+  "sub_452F00": {
+   "ret": "instance",
+   "args": [
+    "instance"
+   ],
+   "member": false,
+   "proto": "int *__cdecl sub_452F00(int *a1)"
+  },
+  "sub_452F70": {
+   "ret": "instance",
+   "args": [
+    "instance",
+    "int"
+   ],
+   "member": false,
+   "proto": "int *__cdecl sub_452F70(int *a1, int a2)"
+  },
+  "sub_453080": {
+   "ret": "instance",
+   "args": [
+    "instance",
+    "int"
+   ],
+   "member": false,
+   "proto": "int *__cdecl sub_453080(int *a1, int a2)"
+  },
+  "sub_453040": {
+   "ret": "int",
+   "args": [
+    "instance"
+   ],
+   "member": false,
+   "proto": "int __cdecl sub_453040(_DWORD *a1)"
+  },
+  "sub_453110": {
+   "ret": "instance",
+   "args": [
+    "instance",
+    "int"
+   ],
+   "member": false,
+   "proto": "int *__cdecl sub_453110(int *a1, int a2)"
+  },
+  "sub_4531A0": {
+   "ret": "int",
+   "args": [
+    "instance"
+   ],
+   "member": false,
+   "proto": "BOOL __cdecl sub_4531A0(_DWORD *a1)"
+  },
+  "sub_453200": {
+   "ret": "int",
+   "args": [],
+   "member": false,
+   "proto": "int sub_453200()"
+  },
+  "sub_44F4B0": {
+   "ret": "int",
+   "args": [
+    "int"
+   ],
+   "member": false,
+   "proto": "int __cdecl sub_44F4B0(int a1)"
+  },
+  "sub_44F540": {
+   "ret": "int",
+   "args": [],
+   "member": false,
+   "proto": "int sub_44F540()"
+  },
+  "sub_44F580": {
+   "ret": "int",
+   "args": [
+    "int"
+   ],
+   "member": false,
+   "proto": "int __cdecl sub_44F580(int a1)"
+  },
+  "sub_44F620": {
+   "ret": "int",
+   "args": [],
+   "member": false,
+   "proto": "const char *sub_44F620()"
+  },
+  "sub_44F690": {
+   "ret": "instance",
+   "args": [
+    "instance"
+   ],
+   "member": false,
+   "proto": "void *__cdecl sub_44F690(void *a1)"
+  },
+  "sub_420DD0": {
+   "ret": "int",
+   "args": [],
+   "member": true,
+   "proto": "__int16 __thiscall sub_420DD0(_WORD *this)"
+  },
+  "sub_44F280": {
+   "ret": "int",
+   "args": [],
+   "member": true,
+   "proto": "__int16 __thiscall sub_44F280(_WORD *this)"
+  },
+  "sub_44F2A0": {
+   "ret": "int",
+   "args": [],
+   "member": true,
+   "proto": "__int16 __thiscall sub_44F2A0(_WORD *this)"
+  },
+  "sub_44F2C0": {
+   "ret": "int",
+   "args": [],
+   "member": true,
+   "proto": "__int16 __thiscall sub_44F2C0(_WORD *this)"
+  },
+  "unknown_libname_126": {
+   "ret": "int",
+   "args": [],
+   "member": true,
+   "proto": "int __thiscall unknown_libname_126(_DWORD *this)"
+  },
+  "sub_44F2E0": {
+   "ret": "int",
+   "args": [],
+   "member": true,
+   "proto": "__int16 __thiscall sub_44F2E0(_WORD *this)"
+  },
+  "sub_44F300": {
+   "ret": "int",
+   "args": [],
+   "member": true,
+   "proto": "__int16 __thiscall sub_44F300(_WORD *this)"
+  },
+  "sub_44F320": {
+   "ret": "int",
+   "args": [],
+   "member": false,
+   "proto": "int sub_44F320()"
+  },
+  "sub_44F340": {
+   "ret": "int",
+   "args": [],
+   "member": false,
+   "proto": "int sub_44F340()"
+  },
+  "sub_44F380": {
+   "ret": "int",
+   "args": [
+    "int"
+   ],
+   "member": true,
+   "proto": "BOOL __thiscall sub_44F380(__int16 *this, __int16 a2)"
+  },
+  "sub_44F3A0": {
+   "ret": "int",
+   "args": [
+    "int"
+   ],
+   "member": true,
+   "proto": "BOOL __thiscall sub_44F3A0(__int16 *this, __int16 a2)"
+  },
+  "sub_44F3C0": {
+   "ret": "int",
+   "args": [
+    "int"
+   ],
+   "member": true,
+   "proto": "BOOL __thiscall sub_44F3C0(__int16 *this, __int16 a2)"
+  },
+  "sub_44F3E0": {
+   "ret": "int",
+   "args": [],
+   "member": true,
+   "proto": "__int16 __thiscall sub_44F3E0(_WORD *this)"
+  },
+  "sub_44F400": {
+   "ret": "int",
+   "args": [],
+   "member": true,
+   "proto": "__int16 __thiscall sub_44F400(_WORD *this)"
+  },
+  "sub_7CFCD0": {
+   "ret": "int",
+   "args": [
+    "int"
+   ],
+   "member": true,
+   "proto": "BOOL __thiscall sub_7CFCD0(_DWORD *this, LPCSTR lpFileName)"
+  },
+  "sub_7CFA80": {
+   "ret": "int",
+   "args": [
+    "int",
+    "int"
+   ],
+   "member": true,
+   "proto": "int __thiscall sub_7CFA80(char *this, int a2, int a3)"
+  },
+  "sub_72CB10": {
+   "ret": "int",
+   "args": [
+    "string",
+    "float"
+   ],
+   "member": false,
+   "proto": "int __stdcall sub_72CB10(char *Str, float a2)"
+  },
+  "sub_72CA60": {
+   "ret": "int",
+   "args": [
+    "string",
+    "float",
+    "int"
+   ],
+   "member": false,
+   "proto": "int __stdcall sub_72CA60(char *Str, float a2, int a3)"
+  },
+  "sub_72C780": {
+   "ret": "int",
+   "args": [
+    "int"
+   ],
+   "member": false,
+   "proto": "int __stdcall sub_72C780(int a1)"
+  },
+  "sub_72C6A0": {
+   "ret": "int",
+   "args": [
+    "int",
+    "int",
+    "int"
+   ],
+   "member": true,
+   "proto": "int __thiscall sub_72C6A0(char *this, int a2, int a3, int a4)"
+  },
+  "sub_72CA40": {
+   "ret": "int",
+   "args": [
+    "int"
+   ],
+   "member": false,
+   "proto": "int __stdcall sub_72CA40(int a1)"
+  },
+  "sub_72C900": {
+   "ret": "int",
+   "args": [
+    "int",
+    "int",
+    "int"
+   ],
+   "member": false,
+   "proto": "int __stdcall sub_72C900(int a1, int a2, int a3)"
+  },
+  "sub_72C9A0": {
+   "ret": "int",
+   "args": [
+    "string"
+   ],
+   "member": false,
+   "proto": "int __stdcall sub_72C9A0(char *Str)"
+  },
+  "sub_72C5D0": {
+   "ret": "int",
+   "args": [
+    "int"
+   ],
+   "member": false,
+   "proto": "int __stdcall sub_72C5D0(int a1)"
+  },
+  "sub_72C570": {
+   "ret": "int",
+   "args": [
+    "int"
+   ],
+   "member": false,
+   "proto": "int __stdcall sub_72C570(int a1)"
+  },
+  "sub_4426D0": {
+   "ret": "instance",
+   "args": [
+    "int"
+   ],
+   "member": true,
+   "proto": "_DWORD *__thiscall sub_4426D0(_DWORD *this, int a2)"
+  },
+  "sub_4680B0": {
+   "ret": "instance",
+   "args": [
+    "int"
+   ],
+   "member": true,
+   "proto": "_DWORD *__thiscall sub_4680B0(_DWORD *this, int a2)"
+  },
+  "sub_44E5C0": {
+   "ret": "int",
+   "args": [],
+   "member": true,
+   "proto": "BOOL __thiscall sub_44E5C0(_DWORD *this)"
+  },
+  "sub_434BF0": {
+   "ret": "instance",
+   "args": [
+    "int"
+   ],
+   "member": true,
+   "proto": "_DWORD *__thiscall sub_434BF0(_DWORD *this, int a2)"
+  },
+  "sub_72C190": {
+   "ret": "int",
+   "args": [],
+   "member": true,
+   "proto": "int __thiscall sub_72C190(char *this)"
+  },
+  "sub_4426F0": {
+   "ret": "float",
+   "args": [
+    "float"
+   ],
+   "member": true,
+   "proto": "float *__thiscall sub_4426F0(float *this, float a2)"
+  },
+  "sub_434EA0": {
+   "ret": "int",
+   "args": [],
+   "member": true,
+   "proto": "int __thiscall sub_434EA0(char *this)"
+  },
+  "sub_434E30": {
+   "ret": "int",
+   "args": [],
+   "member": true,
+   "proto": "int __thiscall sub_434E30(_DWORD *this)"
+  },
+  "sub_444680": {
+   "ret": "int",
+   "args": [],
+   "member": true,
+   "proto": "int __thiscall sub_444680(char *this)"
+  },
+  "sub_434D20": {
+   "ret": "int",
+   "args": [],
+   "member": true,
+   "proto": "int __thiscall sub_434D20(_DWORD *this)"
+  },
+  "sub_442710": {
+   "ret": "int",
+   "args": [
+    "int"
+   ],
+   "member": true,
+   "proto": "unsigned int __thiscall sub_442710(char *this, int a2)"
+  },
+  "sub_4680E0": {
+   "ret": "instance",
+   "args": [
+    "string"
+   ],
+   "member": false,
+   "proto": "void *__stdcall sub_4680E0(char *a1)"
+  }
+ }
+}

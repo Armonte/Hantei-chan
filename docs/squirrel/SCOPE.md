@@ -168,6 +168,14 @@ The unresolved ones are:
   `Sqrat_Class_Var{A..D}_*`, `Sqrat_TableBase_SetValueInt_*`, plus `Sqrat_RootTable_BindTable`. Argument types come from
   each native's own prototype (the native is passed directly). Table: `api/dfci_api.json` (594 entries in 43 tables:
   BMvTbl 125, BMvEff 115, tDDC 62, BCMDTbl 26, CAnime 25, BMvCore 19, ...). Script: `tools/squirrel/ida_extract_sqrat_dfci.py`.
+  `sqtool check <dfci> --api dfci_api.json --run`: Battle_Init + Battle_Std run clean (42 tables, 501 natives, 323 consts).
+- **UNI[st]/[cl-r] arcade** (`C:\games\unib\RingGame.exe`, sha256 cf96fd7f..., IDB `C:\dev\ida\server\unib_arcade_RingGame.exe.i64`,
+  saved 2026-10-15): the same older-compiler layout. `Sqrat_RootTable_BindTable` = 0x427DD0, 68 binder instances named by
+  shape. Constant tables (`BMvConst`, `BMvCoreConst`, `BCMDConst`) use the (name, int) shape, so the normalizer turns a
+  "var" on a `*Const` table into a constant. Table: `api/unib_api.json` (587 entries: 228 consts, 219 funcs, 81 vars,
+  21 methods, 38 tables). The bootstrap loads its defines with the stdlib `dofile(".\\script\\...")`, which both VMs now
+  resolve read-only inside the game root, like `__dofile__`. `sqtool --run`: Battle_Init + Battle_Std run clean
+  (21 tables, 240 natives, 227 consts).
 
 ### 1.7 How scripts link to HA6
 - **Move scripts (`_mv_`)** are tables `t.Mv_<Name> <- { DataPattern = N, Init_After, FrameUpdate_After, … }`.

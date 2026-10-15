@@ -136,6 +136,12 @@ def main(raw, out_json, out_md):
             e['table'] = e['table'] or '(root/unbound:%s)' % v['name']
     for e in entries:
         e.pop('_obj', None)
+        # Older builds (UNI[st]/[cl-r]) bind constant tables (BMvConst, BCMDConst ...) with the same (name, int) shape that
+        # binds member-variable offsets elsewhere: on a *Const table the int is the constant's value.
+        if e['kind'] == 'var' and (e.get('table') or '').endswith('Const'):
+            e['kind'] = 'const'
+            e['value'] = e.pop('offset', None)
+            e.pop('vartype', None)
     # qualify nested tables/classes: Parent.Child
     parent = {e['name']: e['table'] for e in entries if e['kind'] == 'table' and e['table']}
     def qual(t):

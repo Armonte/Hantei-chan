@@ -350,9 +350,12 @@ bool ScriptVM::open(const std::string& gameRoot, const std::string& apiJsonPath,
 	sqstd_register_mathlib(v);
 	sqstd_register_stringlib(v);
 	// Sandbox: the game also registers iolib and the full systemlib (CSquirrel_ctor, UNI2 0x418640).
-	for (const char* n : {"file", "dofile", "loadfile", "writeclosuretofile", "system", "remove", "rename", "getenv"})
+	for (const char* n : {"file", "loadfile", "writeclosuretofile", "system", "remove", "rename", "getenv"})
 		SetClosure(v, n, Native_Blocked, n);
 	SetClosure(v, "__dofile__", Native_dofile, nullptr);
+	// UNI[st]/[cl-r] loads its defines with the stdlib dofile(".\\script\\x.txt"): same read-only loader as __dofile__
+	// (inside the game root, never writes), so the bootstrap sees what the game sees.
+	SetClosure(v, "dofile", Native_dofile, nullptr);
 	SetClosure(v, "SQ_LoadString", Native_LoadString, nullptr);
 	sq_pop(v, 1);
 	sq_newclosure(v, RuntimeErrorHandler, 0);
