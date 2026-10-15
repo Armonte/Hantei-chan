@@ -1,0 +1,121 @@
+<!-- source: https://mizuumi.wiki/w/User:Pixloen/FPANModding/Hanteichan (MediaWiki API, 2026-10-15) -->
+{{DISPLAYTITLE:Modding French Bread Games: Hantei-chan Usage Guide}}
+{{Disclaimer MFPG
+|border-color=#FF60B0
+|bg-color=
+|image=MBTL_data_icon.png
+|text='''This page documents Hantei-chan version 2.1.6x!'''<br>Other versions may differ in layout.
+}}
+== First Setup ==
+
+Each character has a folder, found in <code>data\chrXXX</code>, where <code>chrXXX</code> is the character id. In Hantei-chan, go to <code>File > Load HA6</code> and load <code>chrXXX.HA6</code>, then repeat this step for <code>Load CG</code> and <code>Load Parts</code> respectively. This method prevents crashes and corruption of files.
+
+== User Interface ==
+
+[[File:PIXL hantei-chan.png|1000px|center]]
+<div style='text-align: center;'>Some options have been hidden to fit everything into one screenshot.</div>
+=== 1) Navigation ===
+----
+You can switch patterns and frames by using the navigation bars on the top left, or by pressing the arrow keys (Up/Down for patterns, Left/Right for frames). The pattern bar is dropdown as well, you can click the down arrow next to it to see a list of all the patterns on this HA6.
+Pressing animate underneath plays the animation frame-by-frame. Pressing it again will stop the animation. The animation playback will be slower than is displayed in game. Earlier versions do not support pattern interpolation.
+
+=== 2) Pattern Data ===
+----
+Holds the current Pattern's name and codename. The code name is used to map the current pattern to an [[User:Pixloen/FPANModding/Scripts#Character_cmd_0.txt|input command]] or for use in the [[User:Pixloen/FPANModding/Scripts#Character_mv_0.txt|mv scripts]]. PUPS sets this pattern's palette to the corresponding [[User:Pixloen/FPANModding/Files|numbered pal file]] found in the character folder. You can also copy and paste patterns to new slots using the Copy Pattern and Paste Pattern buttons. 
+
+==== Pattern Name ====
+:Sets the pattern's name. Does not affect any internal code and is purely for pattern organization / cosmetical.
+==== Code Name ====
+:Sets the pattern's code name. This is used in script files and used by the game to determine which pattern corresponds to which command in the command list.
+:For patterns made for commands, formatting must be followed:
+
+:*Use Numpad Notation, with all button inputs capitalized (236A, 6B)
+:*Aerial versions of moves must have a J before them (J236A, J2B)
+:*Special moves that require inputting direction X twice must be notated as 0X0X (0202A, J0606B)
+==== PSTS ====
+:Unknown.
+==== Level ====
+:Unknown.
+==== PUPS ====
+:Sets the palette file that this pattern will use. Additional palette files can be added to a character project by adding suffix _pX (e.g. chr000_p1.pal, chr000_p2.pal). The number corresponds to the palette file to use, 0 being the base pal file.
+==== Copy Pattern ====
+:Copies the current pattern. Note that this copy can only be used in the same instance of Hantei-chan, i.e. You cannot copy from one Hantei-chan window to another, or from one HA6 file to another.
+==== Paste Pattern ====
+:Pastes the current pattern.
+==== Push Pattern Copy ====
+:Pushes a copy of the current pattern into memory. This is tied to an instance of Hantei-chan. The number of stored copies is listed in text to the right.
+==== Pop all and Paste ====
+:Pops all stored copies in memory to the current HA6. This is useful if you want to copy patterns from one HA6 to a different HA6, which can be done by opening a different file after pushing pattern copies.
+
+=== 3) Viewbox ===
+----
+Displays the current frame's animation and hitboxes. The two lines represent the ground centerpoint. 
+
+*Left click to drag the view around.
+*Right click and hold to draw the currently selected box found in the Box Data menu.
+
+=== 4) Box Data ===
+----
+Shows which box is currently being edited, as well as co-ordinates for the four corners of the box.
+*Click the box dragdown to see a list of available boxes.
+*Enable "Highlight Selected" to highlight the selected box (turns pink).
+
+=== 5) State Data ===
+----
+The top half shows the movement options for this frame. Horizontal and Vertical Speeds and Accelerations can be set. Note that a positive vertical speed/acceleration correlates to move downwards on the screen.
+The tick boxes tell the game engine what to do with the typed-in values underneath. The left two boxes correspond to X Speed and X Accel, the right boxes correspond to Y Speed and Y Accel.
+
+Underneath, various flags can be set. Hover over them to see what they do.
+'''Number of hits determines the amount of hits this frame will inflict. Zero hits means that the hitbox won't be active at all.'''
+
+The dropdowns underneath set the state for type of position, counterhits, movement and cancels.
+
+=== 6) Animation Data ===
+----
+The top half animation data section is used for everything visual-- this includes what sprite to display, where to position sprites, as well as adding blending or color data. Each of these boxes can be dragged up and down, like a knob, to quickly alter their value. Or double click on a box to type in a custom value.
+
+Rotation values are based on a float scale -- (from 0 to 1 equals a 360 degree rotation in the specified axis). Layer priority will determine how each of the layers are rendered.
+
+Underneath is a section dedicated to how the frame or animation of the move is played, including setting Frame IDs which can be used in code to check for specific frames of animation. 
+
+The animation tab is the most important when making new or existing animations: here's what each does.
+*Go to pattern - At the end of this frame, the object will jump to the pattern specified by the "Go to" box.
+*Next frame - Will advance a frame after the duration is finished.
+*Go to frame - At the end of this frame, the object will jump to the frame specified by the "Go to" box.
+*End - Ends the animation. For a player object, this means resetting to the Neutral animation, but for projectiles or effects it means that the object disappears.
+
+Interpolation can be used for .pat effects to tween between two frames. This is used to create smooth effects from only a few frames of .pat animation. Interpolation '''cannot''' be used on sprites.
+
+Z-Priority is used to set the priority of the ''object'', and typically ranges from 8-35. Smaller values result in the object being rendered above both players, larger Z-priority values will render the object behind both players and some effects.
+
+=== 7) Attack Data ===
+----
+The top section consists of a bunch of tickboxes with unique properties, though not all of them are documented. Hover over each box to find out what each one does. The top half flags deal with guard properties and the bottom half deals with hit properties.
+
+Underneath are a few more boxes used to create many grabs -- this is used in conjunction with mv code to create command throws and regular throws alike. 
+
+Underneath are many of the values that you'd typically expect to see in a fighting game editor. Note that hitstun decay does NOT actually change the hitstun of the move but instead determines how the hitstun combo bar animates. For that, Guard Vectors and Hit Vectors determine how the opponent reacts when hit. Each vector corresponds to a unique animation which has it's own hitstun, recovery and techable time. You can look at the file Data/VectorTable.txt, or more simply you can copy and paste various vectors from other characters. 
+
+Each vector has unique properties:
+*The amount of hitstun
+*The trajectory of the opponent, pushback and knockback
+*The animation, and consequentially the position state the opponent is put it (Standing/Crouching/Air, and Block/Hit)
+*Interactions with walls (Wallbounce)
+
+=== 8) Effects ===
+----
+
+Effects are essentially unique calls which can spawn objects, play sound effects and even control momentum of some characters. 
+A list of all known effect types can be found [[User:Pixloen/FPANModding/Hanteichan/Effects|here]].
+
+=== 9) Conditions ===
+----
+Conditions are more calls that can be used to make specific objects.
+*Type 56 makes vacuum regions. The first value sets the speed of the vacuum and the second sets the horizontal range.
+
+=== 10) Tools ===
+----
+The backbone of the editor. Use this section to copy and paste frames, delete frames... etc.
+
+{{Navbox-MFPG}}
+[[Category:Modding French Bread Games]]

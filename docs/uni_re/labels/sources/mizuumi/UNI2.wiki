@@ -1,0 +1,116 @@
+<!-- source: https://mizuumi.wiki/w/User:Pixloen/FPANModding/UNI2 (MediaWiki API, 2026-10-15) -->
+== What is this? ==
+
+This is a page documenting all notes regarding to modding UNI2. 
+
+== Engine Notes ==
+
+*PUPS, or multi-palette character support is in the game. However, there may be some quirks regarding permanently switching PUPS.
+
+*Loading characters from the data folder requires the character folder to be named chrXXX with X being the character number. Everything else (including the CharID.txt file) can be named after the characters id instead of chrXXX
+
+== D File Changes ==
+
+English Language patch only works for some files. This includes:
+
+*BGM folder
+
+Other files must be D file edited to enable mods. Note that any files that are edited this way must ALWAYS be accessible by the game, otherwise the engine treats these files as empty, leading to crashes. This includes:
+
+*Data
+*___English\Script
+*___English\grpdat
+*System
+
+
+== Character Folder Reference ==
+
+*000 = Hyde
+*001 = Linne
+*002 = Waldstein
+*003 = Carmine
+*004 = Orie
+*005 = Gordeau
+*006 = Merkava
+*007 = Vatista
+*008 = Seth
+*009 = Yuzuriha
+*010 = Hilda
+*011 = Eltnum
+*012 = Nanase
+*013 = Byakuya
+*014 = Akatsuki
+*015 = Chaos
+*016 = Wagner
+*017 = Enkidu
+*018 = Londrekia
+*019 = Tsurugi
+*021 = Mika
+*022 = Kaguya
+*023 = Kuon
+*024 = Phonon
+
+== HA6 Pattern Changes ==
+
+Not much has changed honestly, you are able to copy your custom character patterns over from UNICLR to UNISC and they should port over with a few errors or no errors to fix. 
+
+However the round start, round win, and game win animations are now read from Patterns 900 onwards for the original roster of characters, instead of 50-53 in UNICLR (Which is based off Lumina, can be changed in '''btl_StdMoveTbl.txt''').
+
+Here are some of the new important patterns that have been added:
+
+395: Smart Steer Ender, also known as '''SSRelayAtk''', also known as Steer Ender
+
+396: '''Smart Steer Ender'''/'''SSRelayAtk'''/'''Steer Ender''' landing or finisher (Example: Hyde's '''SSRelayAtk''' is a '''landing''', while Seth's '''SSRelayAtk''' is a '''finisher''')
+
+996: Cut-in for the player that '''won the GRD Cycle'''
+
+==Quick Start Guide==
+
+===Extract the game files.===
+
+For Modified UNIST Unpacker, place the .exe into the "d" folder. CTRL+A in that same folder to select all the files, then unselect the unpacker exe. Once done, drag all the selected files on top of the .exe to start unpacking. Let the program do its thing, and wait patiently. Once it is done, there will be a new folder called "output". 
+
+===Set up the directories.===
+
+Go into the "output" folder and CTRL+A to select everything. Right-click and cut the files. Head to the "UNDER NIGHT IN-BIRTH II..." folder and paste (CTRL+V) the files. Once done, all the folders such as "___English", "data", "grpdat" and etc should be in the same folder as UNI2.exe.
+
+(to-do: add images)
+
+===Make your modifications.===
+
+UNI2 can now access the folders found in the game directory, but it does not load them in-game. This is due to what modders call "d file hardcoding". There are some exceptions to this (BGM Folder). The rest of this quick start guide will teach you how to make an example modification.
+
+====Find a file to edit.====
+
+(to-do: Rewrite this section when I'm at my pc and can actually look at the game files)
+
+For this guide, head to folder "System/str_jp", and look for file DLC.csv. open csv and .txt files in Notepad++. To edit these files without causing corruptions, switch your encoding language to Encoding > Japanese > Shift-JIS. Remove the first text in brackets and replace it with the text "Hello World!". After that, CTRL+S to save.
+
+What is this text? This is actually the text that displays when booting up the game. (Checking Add-on..., Loading Save Data & Checking Save Data.) These text lines are handled using GLOBAL REPLACE WORDS (which are enclosed by < and >), which allow language folders to swap out language lines. By removing this reference to a globally replaced word, we can instead write our own custom lines of text.
+
+====Finding the d filepaths in hex.====
+
+Open up HxD, and click on Open File. Head to the d folder and hover over the Size tab. Click the drop-down and select only Tiny (0-16KB). Select all of the files and open all of them. The reason why we are doing this is because a lot of these files contain the paths to almost every game asset and game folder.
+
+We need to now look for the specific d file that contains our specific folder (System). Press CTRL+F4 to unload a file if it is not the System d file. The folder a d file documents is usually listed by name within the first few bytes. Once you find the System d file, stop here.
+
+====Editing the d filepaths.====
+
+CTRL+F to open the Find tab, and search for the exact name of the file that we just edited (DLC.csv). With the d file as it is, the game can successfully load the original asset since it recognises the name. To load in our custom new csv file, simply alter the name so that it is not recognisable. Personally, I like to change the extension of the file to some gibberish (.csv -> .csa) so I can still search for the file latter.
+
+Alternatively, you can change the name of the foldername within the d file, which allows every file in this folder to be read at once. This is helpful if you are setting up large-scale mods such as sound effect or data mods.
+
+Once done, CTRL+S to save.
+
+==Check that everything works.==
+
+Now that we've done all this, open up UNI2 via Steam. If all is correct, the "Checking Add-on..." text you see at the start of the game should now read "Hello World!", and you've successfully set up your first modification!
+
+Most if not all mods require going through the same process. There are many different types of files and each may have their own rules, so check the other pages on this wiki to learn how to edit more specific things!
+
+
+ 
+
+
+[[Category: Modding French Bread Games]]
+{{Navbox-MFPG}}

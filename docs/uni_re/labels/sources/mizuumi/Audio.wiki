@@ -1,0 +1,101 @@
+<!-- source: https://mizuumi.wiki/w/User:Pixloen/FPANModding/Audio (MediaWiki API, 2026-10-15) -->
+{{DISPLAYTITLE:Modding French Bread Games: Audio}}
+== Setup ==
+
+Adding audio files is probably one of the easiest parts of fpan modding. All that is needed is a .wav or .ogg audio file (depending on if you're doing a music mod or not) and simple text editing.
+
+== Music ==
+
+To mod music files, all you need to do is get an .ogg file and put it in <code>[ROOT]/Bgm/</code>. These can be named anything you want. Then in the same folder, there's a file called "bgm.txt", this is where you'll be defining the songs. Here's an example of a definition.
+<pre>
+[BGM_001]
+File = chr_00Hyd
+IsLoop = 1
+LoopPos = 40.139
+</pre>
+
+At the top its the songs ID. This will be important later for when you wanna make it selectable in CSS. Also note that IDs 100 to about 150 are defined in another file for story mode purposes, but nothing bad will happen if you override it except for loading the wrong song in story mode.
+Next is the songs file name. This is the same name of the file you put in the folder '''without''' the .ogg.
+Next is IsLoop. Set it to 1 if you want the song to loop, set it to 0 if not.
+Last is LoopPos. This is only here if the song loops. What you need to put there is the position in the song you want it to loop at, in seconds.
+
+Next, to add it to the CSS, you need to go to <code>[ROOT]/grpdat/CSel/</code> and open bgmselect.txt. This, as you can guess, defines the table to select a bgm. Here's an example of a definition.
+<pre>
+[00]
+num = 1
+name = Scraper Sky High (Hyde)
+</pre>
+
+On the first we have the ID on the table. This is just where it will be placed adjacent to others.
+On the next line is num. This is the ID for the file you set in the bgm.txt file.
+And the last line is name. This is the name that shows up when selecting a song.
+
+And boom, you got new music into the game. For setting a characters theme for when you press auto, that's done in the BtlCharaTbl. Unless you want to add VS themes
+
+
+'''Creating VS Themes'''
+
+If you wanna add a VS theme (i.e. Hyde VS Seth's Mutual Situalon or Gordeau VS Chaos' Cross Thought) you'll need to go to <code>[ROOT]/script/</code> and open sq_stagebgm.txt. This file is easy as it's just a giant else if statement. Here's an example.
+<pre>
+if( btlobj.CheckCharaAlive_str("hyd") != 0  &&  btlobj.CheckCharaAlive_str("set") != 0 )
+{
+	private_bgm = 92; 
+}
+</pre>
+
+So basically all it's doing is checking if the characters with these IDs are active, then it sets the bgm to that number. So if you wanna add your own, just make a new line in the same area where this is being done and then (making sure you write else) just copy and paste this, and switch the IDs to the character IDs you want them to be, then change private_bgm to be the ID of the song you want. This is the ID set in bgm.txt, not bgmselect.txt.
+
+
+== Battle Audio ==
+
+Battle audio is extremely easy, yet also a little bit confusing. First, to add audio to a character, you'll need to go to <code>[ROOT]/data/[charID]/</code> and them open the file "[charID]_se_list.txt" and "[charID]_se_category.txt" if you're doing Lumina or "_se_list.txt" and "[charID]_0_selist.txt" if you're doing Uni or Dfc. At the top of _se_list or [charID]_se_list, there are 3 variables called path, btlpath, and chrpath. These are only there to help write the path to the audio files.
+<pre>
+local path = "./se/normal_se/"; 
+local btlpath = "./se/battle_se/";
+local chrpath = btlpath + "Hyd/";
+</pre>
+
+-Even without defined local paths you can set a sound to be called from wherever as long as you have the layout of a directory like so.
+<pre>
+st[1499] = { volumetype=1, file="./se/battle_se/chr023Eng/Hyd00_7002", type=0, category=1, };
+</pre>
+On the chrpath, change the ID (Hyd in this case) to your characters ID. Now that that's all ready to go, it's prolly a good idea to have the actual audio ready. Make a folder in <code>[ROOT]/se/battle_se/</code> named your characters ID. This is where we will be storing the audio files (fun fact, you can technically store the audio wherever you want, this is just done for organization). Note that these files need to be .wav files in order for them to work. When you have the files ready, go back to _se_list or [charID]_se_list and create a new entry. An entry will look like this.
+</pre>
+st[100] = { volumetype=1 file=chrpath+"Hyd00_2000", type=0, category=1, };
+</pre>
+
+This would be audio number 100 for Hyde, which calls the file "Hyd00_2000.wav". I would be lying if I told you I knew what the rest does, but file is the path of the .wav '''without''' the .wav. What I can tell you though is that volumetype is usually 1 if it's a voice line and its usually 0 if its a sound effect. Now just add this for every audio file you want to add, note that st[] can be pretty much anything, but know there is a limit.(This limit can be overrided since the number is arbitrary and is local to the se list file so you can change it to whatever)   We'll call this number in st[] the audio ID. When you get all of the files you want in, we can move onto getting them to show up in game. Type and category basically have the function of being considered SE or Voice so if you don't want certain lines to be cut off/overlapped by something in the same type/category you can set them to a different number. (-1 allows it to usually play regardless of other sounds but you lose the ability to alter the sound in sound settings from the correct audio category)
+
+
+'''Getting it to play in game''' 
+
+There are multiple ways to get the audio to play in game, lets start with the easiest, which is usually done for playing sfx, but can be used for voice lines too. In the .ha6 file, under the effects tab, you can create a new effect with a type of 9. If the number is 0, it'll play a common audio, if it's 1 it'll play one of the audio files you set.(Worded terribly thanks mr poggers. eff9 type 0 plays from the normal se list while eff9 type1 plays from the current characters se list)  Then in the first parameter, you put in the audio ID you want to play, and boom! Audio! Now this is only used for sfx because this is a set value, and cannot be changed at runtime for random voice lines. Doing random voice lines is a bit harder, but still pretty simple. First, open [charID]_0_selist or [charID]_se_category. In those files, make sure you change the charID definition at the top to your characters ID, just like in the script files. Now there's a lot of instances of se[], the text in the [] are the move names. If it's in Japanese, chances are those are common states. But if it's in English, it's not a common state. For adding your own state, write st[stateName] and then after the state name, write either "_Init" (gets called when the move starts) or "_FU" (gets called every frame update). Here's an example of both a move with _Init and _FU.
+<pre>
+se["Mv_Skill_41236EX_Init"] <- { //init for Hyde's 41236EX
+	selist = { common = [505,580], }
+};
+
+se["Mv_Skill_41236EX_Hit_FU"] <- //frame update for when 41236EX hits
+[
+	{
+		LastSE=505,
+		Param0=10,
+		selist = { common = [506], }
+	},
+	{
+		Param0=20,
+		selist = { common = [509], }
+	},
+]
+
+se["Mv_Skill_214A_FU"] <- { //frame update for Hyde's 214A
+	Param0=10,
+	selist = { common = [527,530], }
+};
+</pre>
+
+As you can see, there's multiple ways to write this. If a voice line only gets called once in a move (like in Hyde's 214A) you can write it like Hyde's 214A, if voice lines get called multiple times (like in Hyde's 41236EX_Hit), then write it like Hyde's 41236EX_Hit. So the one thing that is needed is the selist = {}. This defines what lines get called. In between the {} write common = [] and in between those, write the audio IDs you wanna call. If there are multiple, then just put a comma in between each ID. And then there are also other parameters that need to be true for the line to be called. The two that are most common are LastSE and Param0. LastSE is self explanatory. It only gets called if the last audio called has that ID. Param0 is how were going to call it in game. After setting this up, go to the .ha6 file, and under the Animation Data tab, there's a section called AF Params. The first one is Param0. If this is set to the same number you set in the file, then it will call the voice line. Boom! Randomized Voice Lines!
+
+
+{{Navbox-MFPG}}
+[[Category:Modding French Bread Games]]

@@ -1,0 +1,71 @@
+<!-- source: https://mizuumi.wiki/w/User:Pixloen/FPANModding/Stages (MediaWiki API, 2026-10-15) -->
+== Wait, you can't edit the models? ==
+Well you can, but there is zero documentation on the format that French Bread uses (fbx.bin). MELTY BLOOD TYPE LUMINA also contains fbx.json, which can be used to reverse engineer the format but no one has bothered enough to do that yet. That means there are no conversion tools for fbx to fbx.bin / fbx.json either.
+
+Most stage mods are texture edits of exisitng UNI / MBTL / DFCI stages, or ports of said stages.
+
+== Editing Stage Data ==
+
+Aside from editing textures, which is just a collection of .dds files, the lighting and positioning of stages can be edited through simple txt editing.
+Stage data is found in the file <code>[ROOT]\bg\BgList.txt</code>
+
+=== Common Constants ===
+
+{| class="wikitable"
+|-
+! Constant !! Comment
+|-
+| DataFile || Which folder this bg loads from.
+|-
+| Scale || How large the model appears in-game. X/Y/Z values.
+|-
+| Position || Offsets the position of the model. X/Y/Z values.
+|-
+| ViewGrid || Enabling this renders a simple looping grid on the floor.
+|-
+| FOV || Changes the FOV.
+|-
+| IsFog || Enables fog.
+|-
+| FogColor || RBGA value for the fog.
+|-
+| FogStart || Where the fog starts, distance from the camera.
+|-
+| FogEnd || Where the fog ends, distance from the camera.
+|-
+| IsBloom || Enables bloom.
+|-
+| StageSelTex || Changes what texture is used for the stages icon on the CSS.
+|-
+|}
+
+=== MBTL-Only Constants ===
+
+{| class="wikitable"
+|-
+! Constant !! Comment
+|-
+| BGBloomEnable || 
+|-
+| BGBloomBlightness || 
+|-
+| BGBloomBiass (R/G/B) ||
+|-
+| BGBloomBlurRadius || 
+|-
+| BGBloomTextureSize || 
+|-
+| BGBloomAlpha || 
+|-
+| BGTinyFXAAEnable ||
+|-
+| BGTinyFXAAThreshold ||
+|-
+| BGTinyFXAALerpT ||
+|-
+|}
+
+== Making Them Selectable in CSel ==
+
+{{Navbox-MFPG}}
+[[Category:Modding French Bread Games]]

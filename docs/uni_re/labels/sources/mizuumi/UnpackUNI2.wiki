@@ -1,0 +1,49 @@
+<!-- source: https://mizuumi.wiki/w/User:Pixloen/FPANModding/UnpackUNI2 (MediaWiki API, 2026-10-15) -->
+===Unpacking the game===
+Compile the [https://github.com/Ekey/UNIB.Data.Tool UNIB Data Tool] to use as an unpacker, and run the .exe using a command shell, providing both an input folder and output folder.
+
+Alternatively you can download [https://www.mediafire.com/file/6ftwpto9dy9eyau/uni2datatool.zip/file this compiled version], and extract both the .exe and the .bat files inside the <code>steamapps\common\UNDER NIGHT IN-BIRTH II Sys Celes</code> folder. Open up the batch file with a text editor like Notepad <code>RMB > Edit</code>, and you should see something like this.
+
+<pre>
+@echo off
+color a
+uni2datatool "C:\SteamLibrary\steamapps\common\UNDER NIGHT IN-BIRTH II Sys Celes\d" "C:\SteamLibrary\steamapps\common\UNDER NIGHT IN-BIRTH II Sys Celes\d\Unpacked"
+pause
+</pre>
+
+Notice the two filepaths - the first one tells the unpacker where the d folder is, and the second tells the unpacker where to extract all the files. Simply update those addresses to match your game's and save. Then run the .bat file and wait for it to finish unpacking, which is when it waits for a key input. After, you'll see all the game files inside your output folder. The unpacking process may take a significant amount of time depending on the speed of your hard drive or SSD, so make sure to be patient otherwise you'll be missing many files.
+
+=== Setting up a Modding Environment ===
+{{Disclaimer MFPG
+|border-color=#FF60B0
+|bg-color=
+|image=PIXL_mika.png
+|text='''Wait... Things are different!? This is hurting my brain...'''<br/>Unlike in [[User:Pixloen/FPANModding/Getting_Started#UNICLR-0|UNICLR]], this game only loads files that are listed in internal directories. Read more to find out how modding works for this game!
+}}
+First, go into the output folder and select '''all non-language''' folders. Then, press <code>CTRL+C</code> to copy and head back to the game root folder (where the UNI2.exe is), and <code>CTRL+P</code> to paste. What this does is match the unpacked files to the game's internal directory, allowing you to overwrite existing assets with your files, or add new ones. Once you're done, you can go into the output folder and select a language. '''Copy the contents''' of that language folder and paste them in the game root folder as well. When prompted, replace files. What this does is add back localization files, allowing you to keep, for example, English text.
+[[File:PIXL_language2.png|600px|border|right|Example setup using the __English language, which is most common.]]
+
+=== How do I know that this is working? ===
+
+We can setup a simple check mod to verify that we've setup everything correctly. Enter your language folder and navigate to <code>System\str_jp\DLC.csv</code>. Opening this file with Notepad or any other text editor should show the first line of text <code><GR_MS_CheckingForDLC>,</code>, which calls the "Checking for add-on." text that appears when booting up the game. Simply replace this text (including the brackets) with a string, making sure to keep the comma at the end, example <code>"Hello World, UNI2!",</code>. Now that the mod has been made, next is actually making the game read the mod.
+
+=== De-indexing D Files ===
+If you haven't got it, download HxD. Open up file <code>d/rcwWiiqjmxpmojs</code> (and make sure to keep a backup somewhere safe), which corresponds to the System directory. What this (and a few other small files) contains is a file index which the game reads from. By changing the text of these filepaths, it's possible to de-index these files and force the game to search the directory for backup assets - the mods. Now simply search using <code>CTRL+F</code> for the file that we just changed, '''DLC.csv'''. Then change the name of the file, for example to <code>DLC.csa</code>. Now the d file is de-indexed and booting up the game should show our modified text.
+
+[[File:PIXL_uni2hello.png|left|thumb|Hello world! We've made our first UNI2 mod!]]
+
+{{Disclaimer MFPG
+|border-color=#FF60B0
+|bg-color=
+|image=UNI2_data_icon.png
+|text='''This process has to be done for all modded files, but...'''<br/>If you have the full game dump, you can instead de-index the entire folder of a d file by changing the filepath or folder name at the top.
+}}
+
+=== Changing or Removing Mods ===
+
+Unlike UNICLR, there are less ways to change or remove mods. The only viable method is to do the following:
+
+*Keep a backup of the "vanilla" d folder, or go into Steam and verify files to remove mods
+*Remove all modded files from the game and replace them with new mods to change them.
+
+[[Category: Modding French Bread Games]]

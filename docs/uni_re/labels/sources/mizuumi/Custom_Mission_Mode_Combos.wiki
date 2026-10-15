@@ -1,0 +1,121 @@
+<!-- source: https://mizuumi.wiki/w/User:Pixloen/FPANModding/Custom_Mission_Mode_Combos (MediaWiki API, 2026-10-15) -->
+{{DISPLAYTITLE:Guides & Tutorials: Custom Mission Mode Combos}}
+==Introduction==
+
+This guide will cover how to set up, and create, custom mission mode combos. This includes the creation of replay files which can be added to the game to create demos, as well as defining new moves.
+
+===Important Notes for UNI2===
+
+====Relevant d files:====
+ lzwp1onbeaejbkCh (grpdat index)
+ rcwWiiqjmxpmojs (System index)
+ oMtaqooqotvvonnpwmq (___English index)
+
+====Prerequisites====
+
+* [https://notepad-plus-plus.org/downloads/ Notepad++] or any text editor that supports SHIFT-JIS encoding. If you don't know what that is, then use Notepad++.
+* [https://mh-nexus.de/en/hxd/ HxD], or any other hex editor.
+
+You must have the game files dumped in order to follow this guide. Learn how to do so for your game [[User:Pixloen/FPANModding/Getting_Started|here.]]
+
+==Making the mod==
+
+Move the <code>grpdat</code> and <code>System</code> folders into the main UNI2 folder. Then, do the same with the <code>grpdat</code> and <code>System</code> folders inside <code>___English</code> folder, and replace if needed. What this does is overwrite the Japanese language files with English ones.
+Navigate to your character's mission combos by opening <code>grpdat\tutorial\chrID\_info.txt</code>. The chrID is the character ID.
+
+You may notice that there's some characters which look like nonsense random characters. To fix this, set your encoding to SHIFT-JIS
+
+[[File:PIXL_shiftjis.png|600px|border|Set to SHIFT-JIS.]]
+
+[[File:PIXL_hydemission.png|border|Wait, some of these characters aren't readable.]]
+[[File:PIXL_hydemission1.png|border|Looks better!.]]
+
+With this, the Japanese text is now readable and translatable. This helps because much of the Japanese text actually describes conditions that can be used for mission combos! ''(More information down below.)''
+
+===Fields===
+
+{| class="wikitable"
+|-
+! Field !! Description
+|-
+| Title || What displays at the top of the screen. Write as a string (surround in ").
+|-
+| Category / Cat || Category ID. 
+|-
+| Enemy || Enemy position
+|-
+| StringID ||
+|-
+| Explanation / Expl || 
+|-
+| Skill || 
+|-
+
+|}
+===Notation===
+
+{| class="wikitable" style="width:60%"
+|-
+! colspan="2" | Notation Help
+|-
+! X+Y
+| Buttons "X" and "Y" must be input simultaneously.
+|-
+! dX
+| There should be delay before inputting "X". aka. dl.X
+|-
+! (X)
+| Attack "X" must whiff and not hit the opponent. also known as w.X
+|-
+! JX
+| Button "X" is input while '''j'''umping or in the air.
+|-
+! jc
+| '''J'''ump '''c'''ancel the previous action. Usually will be omitted due to being obvious.
+|-
+! TK.X
+| Indicates the motion "X" is input immediately after leaving the ground. Stands for '''t'''iger '''k'''nee.
+|-
+! (X)
+| Input "X" is optional. Typically the combo will be easier if omitted.
+|-
+! iX
+| Input "X" is held down. Also can be known as "Increase" or "IC" for short. Depending on the character, this can indicate that this button is held down and not released until indicated by the release notation.
+|-
+! >X
+| Attack "X" is a followup special.
+|-
+! X(#)
+| Attack "X" should only hit # of times.
+|-
+! lX
+| Attack "X" should be done after landing.
+|-
+! hX
+| Button "X" should be held, even after the attack.
+|-
+! CS
+| Perform a '''C'''hain '''S'''hift, which is performed by inputting D twice.
+|-
+! CVO
+| Perform a '''C'''ross Cast '''V'''eil '''O'''ff, which is performed by inputting A+B+C.
+|-
+! CIW
+| Perform an '''I'''nfinite '''W'''orth, which is performed by inputting A+B+C during CVO.
+|-
+! IW
+| Perform an '''I'''nfinite '''W'''orth, which is performed by inputting 41236D.
+|-
+! IWEX
+| Perform an '''I'''nfinite '''W'''orth '''EX'''S, which is performed by inputting A+B+C+D.
+|}
+
+
+[[File:PIXL_samplemission.png|border|center|Combo success!]]
+
+[[File:PIXL_missiondesc.png|border|center|This mod is complete!]]
+
+===Tutorial===
+==Navigation==
+{{Navbox-MFPG}}
+[[Category:Modding French Bread Games]]

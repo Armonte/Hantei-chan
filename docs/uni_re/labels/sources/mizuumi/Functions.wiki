@@ -1,0 +1,17 @@
+<!-- source: https://mizuumi.wiki/w/User:Pixloen/FPANModding/Functions (MediaWiki API, 2026-10-15) -->
+placeholder !!!
+
+this is sorta like the classes and methods page but for functions written by french bread.
+these functions are found in MvFunc.txt or something
+
+== Common Functions ==
+
+
+== UNICLR Exclusive ==
+
+== MBTL Exclusive ==
+
+
+
+[[Category: Modding French Bread Games]]
+{{Navbox-MFPG}}

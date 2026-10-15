@@ -258,6 +258,24 @@ if(MINGW)
 endif()
 add_test(NAME uni_dataloss COMMAND uni_dataloss_test WORKING_DIRECTORY ${CMAKE_SOURCE_DIR})
 
+# Per-game EF/IF labels (src/game_labels.h) on UNI2 and MBTL files.
+add_executable(game_labels_test
+	tests/game_labels_test.cpp
+	src/framedata.cpp
+	src/framedata_load.cpp
+	src/framedata_save.cpp
+	src/framedata_ha4.cpp ${HAN2_MODEL_SOURCES}
+	src/misc.cpp
+	tinyalloc/tinyalloc.c
+)
+target_include_directories(game_labels_test PRIVATE "src" "." "third_party" "${CMAKE_BINARY_DIR}/generated")
+target_compile_definitions(game_labels_test PRIVATE WIN32_LEAN_AND_MEAN HA6GUIVERSION="${CMAKE_PROJECT_VERSION}")
+target_link_libraries(game_labels_test PRIVATE tinyalloc)
+if(MINGW)
+	target_link_options(game_labels_test PRIVATE -static-libgcc -static-libstdc++ -static)
+endif()
+add_test(NAME game_labels COMMAND game_labels_test WORKING_DIRECTORY ${CMAKE_SOURCE_DIR})
+
 # .pal (130-palette UNI2/MBTL and MBAACC) lossless round trip.
 add_executable(pal_roundtrip src/pal_roundtrip.cpp src/pal_file.cpp src/misc.cpp)
 target_include_directories(pal_roundtrip PRIVATE "src" "." "third_party" "${CMAKE_BINARY_DIR}/generated")

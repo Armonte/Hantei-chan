@@ -1,0 +1,85 @@
+<!-- source: https://mizuumi.wiki/w/User:Pixloen/FPANModding/Files (MediaWiki API, 2026-10-15) -->
+== Script Folder File Structure ==
+Head to /script and you'll see a list of txt files. All of these can be edited to create new universal functions or new characters.
+
+{| class="wikitable"
+|-
+! Name !! File !! Comment
+|-
+| Define || Btl_Define.txt || Sets a list of constant variables which is used by the game.
+|-
+| Universal CommandTable || Btl_StdCommdandTbl.txt || Contains the universal movelist -- use this to create new universal moves.
+|-
+| Universal MoveTable || Btl_StdMoveTbl.txt || Contains the move logic and specific code for universal moves, including common states such as standby / startup. Also contains character parameters.
+|-
+| Move Functions || Btl_MvFunc.txt || Small bits of script that can be used by other code. Use this for custom functions.
+|}
+
+
+== Basic Character File Structure ==
+Head to /data and you'll see a folder for every character. You can either edit these or make new characters (more info down below).
+Every character folder in modern French Bread games have some variation of these files:
+
+{| class="wikitable"
+|-
+! Name !! File !! Comment
+|-
+| Project / System || character_0.txt || Contains a list of files to load. Usually references the .ha6, the .cg and the .pat.
+|-
+| CommandTable || character_cmd_0.txt || Contains the move list.
+|-
+| MoveTable || character_mv_0.txt || Contains the move logic and specific code for unique moves or projectiles.
+|-
+| Sound Effect List || character_se_list.txt or _se_list.txt || Contains the location of sound effects found in ROOTFOLDER/se
+|-
+| Sound Effect Category || character_se_category.txt or character_selist.txt || Contains the location of sound effects found in ROOTFOLDER/se
+|-
+| Hantei-kun Project File || character.ha6 || Stores move animations, hitboxes and hit data.
+|-
+| CG || character.cg || Stores character sprites.
+|-
+| Pattern || character.pat || Stores images that aren't sprites. Incl. effects such as sword swipes or wings, or MBTL cut-ins.
+|-
+| Base files || BaseData.LST / _temp.ha6 / _temp.LST || Files fpan used for testing. _temp.ha6 might have some cool data in it that was planned for the character but ended up unused, but these are mostly useless and do nothing.
+|}
+
+In short, the CommandTable gives a character inputs which are assigned to patterns in the Hantei-kun Project File, which can feed information to the MoveTable. The MoveTable can then create new functions.
+Base data.ha6 is bad to have in the character project file but is a useful STARTER ha6 to edit everything that isnt system states. IE literally anything not involving veiloff,damage states etc. If you want a uncluttered ha6 to start editing for a NEW character then copy the basedata.ha6 into your character folder. 
+
+== Grpdat Files ==
+
+\grpdat also contains character-related visuals which while not necessary for gameplay, are quite nice to have.
+{| class="wikitable"
+|-
+! Name !! File Location !! Comment
+|-
+| Cockpit Icon || \grpdat\Cockpit\chara or \grpdat\Cockpit\gface || The character art that is located on the Battle UI.
+|-
+| Announce Art || \grpdat\Announce\round_cha || Contains the text used for the Announcer.
+|-
+| Win Screen Art || \grpdat\Winner || Contains the art found in the Win Screen.
+|-
+| Character Select Art|| \grpdat\CSel\chara || Contains the Character Select portraits.
+|}
+
+General grpdat structure
+
+{| class="wikitable"
+|-
+! Name !! File Location !! Comment
+|-
+| Announce || \grpdat\Announce || Contains the graphics for the Announcer, including WINNER - PERFECT and KO.
+|-
+| Cockpit || \grpdat\Cockpit\ || The Battle HUD, including health bars and some effects.
+|-
+| Character Select || \grpdat\CSel\chara || Contains the Character Select graphics.
+|-
+| CutinBG || \grpdat\CutinBG || Contains a .pat file which holds the graphics for the super cut-in background, as well as IW finisher backgrounds.
+|-
+| System || \grpdat\System|| Contains various graphics used throughout the game. This includes some menu UI as well as the combo meter, for some reason.
+|-
+| Winner || \grpdat\Winner || Contains the art found in the Win Screen.
+|}
+
+{{Navbox-MFPG}}
+[[Category:Modding French Bread Games]]

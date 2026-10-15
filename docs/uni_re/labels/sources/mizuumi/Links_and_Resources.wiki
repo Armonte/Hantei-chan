@@ -1,0 +1,82 @@
+<!-- source: https://mizuumi.wiki/w/User:Pixloen/FPANModding/Links_and_Resources (MediaWiki API, 2026-10-15) -->
+{{DISPLAYTITLE:Links & Resources}}
+{{PIXL BeginNav}}
+
+=== Game Rips ===
+
+*[https://drive.google.com/drive/folders/16Ez4O_Dw6cD-KvZRILkY4_EonKjUkeOv Melty Blood Type Lumina] (outdated)
+*[https://drive.google.com/drive/folders/1iJDh5pXszLjDcGp9XUUW5YMuRh-0vm57?usp=sharing UNICLR] (incomplete) (Londrekia's sprites can be found here.)
+
+*[https://www.spriters-resource.com/pc_computer/meltybloodtypelumina/ Lumina Spriters Resource]
+*[https://www.justnopoint.com/lbends/index.php?location=sprites&gallery=unist UNIST sprites from JustNoPoint]
+
+=== Basic Tools ===
+*[https://drive.google.com/drive/folders/15cGQmmbqk2wSmuX-oTkSfwuC818sn4wT?usp=sharing FPAN Modding Resources]
+
+ Contains:
+ * Hantei-chan 2.1.6
+ * CGLib
+ * CGTool 
+
+
+*[https://github.com/DamienIsPoggers/Hantei-chan Hantei-chan with jonbin] (DamienIsPoggers, can convert to BlazBlue files, optional)
+
+*[https://www.mediafire.com/file/vaxwip4wgsr4bft/win-x86.zip/file Pat Editor] by u4ick, incompatible with some modern game dds types
+
+*[https://notepad-plus-plus.org/downloads/ Notepad++]. Other text editors may be fine, but Notepad++ gets the best results due to it's SHIFT-JIS encoder.
+
+*[https://mh-nexus.de/en/hxd/ HxD], or any other hex editor.
+
+*DDS decomp/compression tool. Found in the .pat cut-ins guide.
+
+=== Game Specific Injectors / Extractors ===
+'''MBTL'''
+*[https://github.com/Eiton/MBTL-Hitbox-Viewer MBTL Hitbox Viewer], injector
+*[https://github.com/Ekey/MBTL.BIN.Tool/releases MBTL BIN Tool], file extractor
+
+'''MBTL CACHE FOR BIN TOOL'''
+*[https://www.mediafire.com/file/qphp76tvujvoiv9/cache_1_26_25.zip/file Cache for Update 1.46], 5/23/2024
+*[https://www.mediafire.com/file/df097odukl22jee/cache_5_7_24.zip/file Cache for Update 1.45], 5/7/2024
+
+'''UNDER NIGHT'''
+
+*[https://github.com/ucuckic/unist-unpacker/releases/tag/4 UNIST Unpacker], works for UNI2
+*[https://github.com/ucuckic/unist-unpacker/releases/tag/3 UNIST Unpacker], works for UNICLR
+*[https://github.com/Ekey/UNIB.Data.Tool/tree/main UNIB Data Tool] UNI2 only.
+*[https://www.mediafire.com/file/6ftwpto9dy9eyau/uni2datatool.zip/file UNIB Data Tool] compiled by pixloen. Includes batch file for easy usage.
+
+=== Written Guides & Documentation ===
+*[https://docs.google.com/document/d/11hPfvxlvdkzkFEScYJzDKp2FsxCqpzWUOQ8bFQa3gxI/edit?usp=sharing .pat Image Editing Guide] by AyanamiRei0
+*[https://docs.google.com/document/d/1zjWYuGVWBbKd22YC_ZcIT6WuPbqjVaZ9pu96yng--6c/edit?usp=sharing Detailed .pat documentation] by Blake
+*[https://docs.google.com/document/d/1CsXdXQwz8rYQgO2W3XtGB0ycwJJxOXal9YooXfqd1nw/edit?usp=sharing MBTL Music Modding Guide] by Sera, Yvette & AyanamiRei0
+*[https://imgur.com/a/5GQ2JDO MBTL Unpacker Guide] by koenji
+
+
+*[https://docs.google.com/document/d/1YxiOS1V0VaWnvkn-LKABzEoMWTxDi1rJR4qCj_jzLAo/edit?usp=sharing UNICLR Music Modding Guide] by Sera
+*[https://docs.google.com/document/d/1Y8Xymash1fCR2h-2AQDQZcC7agqgKM7ujQW5q6GdDjQ/edit?usp=sharing UNICLR Old Palette Modding Guide] by Sera
+*[https://docs.google.com/document/d/1dKXJgNR5ndunL4TJ1JTCi7TQr5SVSx1plYed_OmQxMM/edit?usp=sharing UNI2 Palette Modding Guide] by Sera and Hikari
+*[https://docs.google.com/document/d/1pfknuQ8q4jY8NOkxOMn_9304S6UstWSG5NOQwePgv04/edit?usp=sharing MBTL Custom Color Export Guide]
+
+*[https://www.reddit.com/r/meltyblood/comments/widwxl/tl_performance_sucking_on_pc_use_dgvoodoo/ DGVoodoo Setup for Lumina (works with UNI too) ] by u/SK91_NO
+
+{{Disclaimer MFPG
+|border-color=#FF60B0
+|bg-color=
+|image=MBTL_data_icon.png
+|text='''For the following guide:'''<br/>If you aren't tech-literate, it's recommended NOT to use Symlinks.bat as it creates Symlinks which can only be removed through command-line.<br/>Consider using alternative methods.
+}}
+*[https://docs.google.com/document/d/1ypJMX0bqzKgMG06KMtoNimPLxOTG6Ifkrp8YB23E73A/edit?usp=sharing UNICLR Color Modding Guide] by Sera, AyanamiRei0
+
+== Where can I get help? == 
+
+*[https://discord.gg/RP2mN3YJps French Bread Modding Discord]
+*[https://discord.gg/meltyblood Melty Blood Server's #modding-tl] (effectively dead, but it is maincord)
+*[https://discord.gg/HDX7STnDyb MBTL Palette Gallery's Other Mods Category] (effectively dead)
+*[https://discord.gg/uPUtrySvYp UNICLR Color Vault's #general 2] (effectively dead)
+*[https://discord.gg/melty-blood-community-server-851550129684086800 Melty Blood Community Server's Type Lumina Modding thread (under #type-lumina)] (definitely dead)
+*[https://www.reddit.com/r/UnderNightInBirth idk the under night reddit if you really must]
+
+== Navigation ==
+
+{{Navbox-MFPG}}
+[[Category:Modding French Bread Games]]

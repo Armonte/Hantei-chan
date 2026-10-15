@@ -1,0 +1,29 @@
+<!-- source: https://mizuumi.wiki/w/User:Pixloen/FPANModding/Cutscenes (MediaWiki API, 2026-10-15) -->
+{{DISPLAYTITLE:Dialogue}}
+
+== Where to do I find text? ==
+
+Most dialogue and cutscene text is usually found in the BattleRes folder, or the System folder. When you dump the game, check the _English folder. Usually that contains all edited text.
+All files can be opened with any text editor (such as Notepad). If the text appears corrupt, try using a different encoder with programs like VSC or Notepad++. FPAN uses Shift JIS encoding.
+
+{| class="wikitable"
+|-
+! Name !! Location
+|-
+| Win Quotes ||  <code>BattleRes\win_mes\script</code>
+|-
+| Arcade / Boss Rush Dialogue ||  <code>BattleRes\talk\script</code>
+|-
+| Chronicle Mode (UNICLR) ||  <code>BattleRes\talk\script\99story</code>
+|-
+| Intros / Outros (MBTL) ||<code>System\str_jp\stringfile_battlevoice.csv</code>
+|}
+
+== Formatting ==
+
+to do
+== Custom Characters ==
+
+to do
+{{Navbox-MFPG}}
+[[Category:Modding French Bread Games]]

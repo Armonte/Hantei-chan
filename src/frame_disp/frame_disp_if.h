@@ -6,6 +6,7 @@
 #include "../cg.h"
 #include <vector>
 #include "../i18n.h"
+#include "game_label_ui.h"
 
 // ============================================================================
 // Condition (IF) Display - ORGANIZED BY CATEGORY
@@ -147,7 +148,12 @@ inline void IfDisplay(std::vector<Frame_IF> *ifList_, Frame_IF *singleClipboard 
 		if(typeIndex < 0) typeIndex = 0;
 		char headerLabel[256];
 		const auto& condLabels = ConditionTypeLabels();
-		if(typeIndex < (int)condLabels.size()) {
+		// UNI2/UNIB/UNIST/MBTL: that game's table (game_labels.h), never MBAACC's.
+		const Ha6Game labelGame = frameData ? frameData->game() : Ha6Game::MBAACC;
+		const bool ownLabels = GameHasOwnLabels(labelGame);
+		if(ownLabels) {
+			snprintf(headerLabel, sizeof(headerLabel), TXT("Condition %d: %s"), i, GameLabelUiTitle(labelGame, GameLabelKind::IF, ifList[i].type).c_str());
+		} else if(typeIndex < (int)condLabels.size()) {
 			snprintf(headerLabel, sizeof(headerLabel), TXT("Condition %d: %s"), i, TXT(condLabels[typeIndex]));
 		} else {
 			snprintf(headerLabel, sizeof(headerLabel), TXT("Condition %d: Type %d"), i, ifList[i].type);
@@ -181,7 +187,11 @@ inline void IfDisplay(std::vector<Frame_IF> *ifList_, Frame_IF *singleClipboard 
 			im::Indent();
 			
 			// Type dropdown
-			if(typeIndex >= (int)condLabels.size()) {
+			if(ownLabels) {
+				im::SetNextItemWidth(width*2);
+				if(im::InputInt(LBL("Type"), &ifList[i].type, 0, 0)) markModified();
+				im::SameLine(); im::TextDisabled("%s", GameLabelUiTitle(labelGame, GameLabelKind::IF, ifList[i].type).c_str());
+			} else if(typeIndex >= (int)condLabels.size()) {
 				// Handle special cases (50+, 100+, 150+)
 				im::SetNextItemWidth(width*2);
 				if(im::InputInt(LBL("Type"), &ifList[i].type, 0, 0)) markModified();
@@ -218,6 +228,8 @@ inline void IfDisplay(std::vector<Frame_IF> *ifList_, Frame_IF *singleClipboard 
 			// UNI2/MBTL read 10 parameters (Han6_LoadFrameIF); MBAACC files use 9.
 			const int nRaw2 = (frameData && frameData->usesUniFormat()) ? kMaxIfParams - 6 : 3;
 			if(im::InputScalarN("##params2", ImGuiDataType_S32, p+6, nRaw2, NULL, NULL, "%d", 0)) markModified();
+		} else if(ownLabels) {
+			DrawGameConditionUI(ifList[i], labelGame, markModified);
 		} else {
 		// Otherwise show smart UI based on type
 		switch(ifList[i].type) {
