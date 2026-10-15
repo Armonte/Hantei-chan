@@ -225,6 +225,9 @@ struct ScriptPanel::Impl {
 	ScriptPanel* owner = nullptr;
 	// Project index (search, definitions, usages, member completion, move checks) and the bottom panes.
 	ScriptIndex index;
+	int indexGen = 0;   // bumped whenever the index changes (reverse-link cache key)
+	std::string refsKey;
+	std::vector<ScriptPanel::ScriptRef> refsCache;
 	std::map<std::string, std::vector<std::pair<std::string, const ApiSym*>>> apiByTable;   // engine natives per table
 	std::vector<ScriptProblem> problems;
 	double lastEditTime = -1.0;
@@ -606,6 +609,12 @@ struct ScriptPanel::Impl {
 	// switch is over the character's own frame id (GetUpdateFrameID() with no argument; with one it is a spawned object's).
 	std::vector<std::pair<int, PatRef>> scanRefs() const
 	{
+		std::vector<std::string> lines(editor.GetLineCount());
+		for (size_t i = 0; i < lines.size(); ++i) lines[i] = editor.GetLineText(i);
+		return ScanRefs(lines, consts);
+	}
+	static std::vector<std::pair<int, PatRef>> ScanRefs(const std::vector<std::string>& lines, const std::map<std::string, int>& consts)
+	{
 		std::vector<std::pair<int, PatRef>> out;
 		static const std::regex num(R"((?:\bpat|\bstart_pat|\bDataPattern|SetPattern)\s*[=(]\s*(\d+))");
 		static const std::regex code(R"re((?:\bpat|\bstart_pat|\bDataPattern|SetPattern)\s*[=(]\s*"([^"]+)")re");
@@ -615,15 +624,15 @@ struct ScriptPanel::Impl {
 		static const std::regex selfFrame(R"(GetUpdateFrameID\s*\(\s*\))");
 		static const std::regex otherData(R"(\bdatatype\s*=\s*[1-9])");
 		static const std::regex defpat(R"(\b(def_PAT_\w+))");
-		const size_t n = editor.GetLineCount();
+		const size_t n = lines.size();
 		bool frameSwitch = false;
 		for (size_t i = 0; i < n; ++i) {
-			std::string l = editor.GetLineText(i);
+			std::string l = lines[i];
 			const size_t c = l.find("//");
 			if (c != std::string::npos) l.resize(c);
 			std::smatch m;
 			if (std::regex_search(l, m, sw)) frameSwitch = std::regex_search(m[1].str(), selfFrame);
-			const bool effectData = std::regex_search(l, otherData) || (i + 1 < n && std::regex_search(editor.GetLineText(i + 1), otherData));
+			const bool effectData = std::regex_search(l, otherData) || (i + 1 < n && std::regex_search(lines[i + 1], otherData));
 			if (!effectData) {
 				for (std::sregex_iterator it(l.begin(), l.end(), num), e; it != e; ++it) { PatRef r; r.pattern = std::stoi((*it)[1].str()); out.push_back({(int)i, r}); }
 				for (std::sregex_iterator it(l.begin(), l.end(), code), e; it != e; ++it) { PatRef r; r.code = (*it)[1].str(); out.push_back({(int)i, r}); }
@@ -645,6 +654,7 @@ struct ScriptPanel::Impl {
 	{
 		if (currentRel.empty()) return;
 		index.updateFile(currentRel, editor.GetText());
+		indexGen++;
 		problems.clear();
 		const std::string cdir = CharDirOf(currentRel);
 		if (!cdir.empty()) problems = index.checkMoves(cdir);
@@ -715,6 +725,7 @@ struct ScriptPanel::Impl {
 		if (!d.encode(SplitLines(updated), out, &errs)) { setStatus("cannot encode " + fixFile, true); return false; }
 		if (!WriteBackup(path, bytes, &backup) || !WriteAtomic(path, out, &err)) { setStatus("cannot write " + fixFile, true); return false; }
 		index.updateFile(fixFile, updated);
+		indexGen++;
 		say("added a blank move table " + name + " to " + fixFile + " (saved, backup kept)");
 		return true;
 	}
@@ -1055,6 +1066,7 @@ bool ScriptPanel::openGameRoot(const std::string& rootUtf8, const std::string& p
 	}
 	std::sort(m->files.begin(), m->files.end());
 	m->index.build(rootUtf8, m->files);
+	m->indexGen++;
 	m->problems.clear();
 	std::string vmErr;
 	m->vmReady = m->vm.open(ToU8(r), m->apiPath, [this](const std::string& s) { m->say(s); }, &vmErr);
@@ -1087,6 +1099,50 @@ bool ScriptPanel::openFile(const std::string& pathUtf8, std::string* error)
 	return true;
 }
 
+std::vector<ScriptPanel::ScriptRef> ScriptPanel::refsToPattern(const std::string& charDirUtf8, int pattern, const std::string& code)
+{
+	std::vector<ScriptRef> out;
+	if (m->root.empty()) return out;
+	const std::string rel = U8(charDirUtf8).lexically_normal().lexically_relative(U8(m->root).lexically_normal()).generic_u8string();
+	if (rel.empty() || rel.rfind("..", 0) == 0) return out;
+	const std::string key = rel + "|" + std::to_string(pattern) + "|" + code + "|" + std::to_string(m->indexGen);
+	if (key == m->refsKey) return m->refsCache;
+	for (const std::string& f : m->index.files()) {
+		if (f.rfind(rel + "/", 0) != 0) continue;
+		const auto* lines = m->index.lines(f);
+		if (!lines) continue;
+		for (const auto& [line, r] : Impl::ScanRefs(*lines, m->consts))
+			if ((r.pattern >= 0 && r.pattern == pattern) || (!r.code.empty() && r.code == code))
+				out.push_back({f, line, (*lines)[static_cast<size_t>(line)]});
+	}
+	// The move table that owns the pattern: "Mv_<a>_<b>_..." whose name, minus "Mv_" and at most one more leading segment,
+	// is the PTCN (mv_script.h binding rule) -- then every line in the folder that uses that move.
+	if (!code.empty()) {
+		for (const ScriptDef& d : m->index.defs()) {
+			if (d.kind != ScriptDef::MoveTable || d.file.rfind(rel + "/", 0) != 0 || d.name.rfind("Mv_", 0) != 0) continue;
+			std::string tail = d.name.substr(3);
+			bool own = tail == code;
+			const size_t us = tail.find('_');
+			if (!own && us != std::string::npos) own = tail.substr(us + 1) == code;
+			if (!own) continue;
+			const auto* lines = m->index.lines(d.file);
+			out.push_back({d.file, d.line, "[move] " + (lines ? (*lines)[static_cast<size_t>(d.line)] : d.name)});
+			for (const ScriptHit& h : m->index.usages(d.name))
+				if (h.file.rfind(rel + "/", 0) == 0 && !(h.file == d.file && h.line == d.line)) out.push_back({h.file, h.line, h.text});
+		}
+	}
+	m->refsKey = key;
+	m->refsCache = out;
+	return out;
+}
+
+bool ScriptPanel::showAt(const std::string& rel, int line)
+{
+	m_visible = true;
+	ImGui::SetWindowFocus("###SquirrelScript");
+	return m->openAt(rel, line, 0);
+}
+
 bool ScriptPanel::scriptCommand(const std::string& sub, const std::string& arg, std::string* msg)
 {
 	std::string out, err;
@@ -1101,6 +1157,15 @@ bool ScriptPanel::scriptCommand(const std::string& sub, const std::string& arg, 
 	else if (sub == "search") { snprintf(m->searchBuf, sizeof m->searchBuf, "%s", arg.c_str()); m->runSearch(); m->bottomTab = 2; m->selectBottomTab = true; out = m->hitsTitle; }
 	else if (sub == "usages") { m->findUsages(arg); out = m->hitsTitle; }
 	else if (sub == "state") out = std::to_string(m->problems.size()) + " problem(s), tab " + std::to_string(m->bottomTab) + ", lastEdit " + std::to_string(m->lastEditTime) + ", " + std::to_string(m->hits.size()) + " hit(s)";
+	else if (sub == "refs") {   // refs <char dir rel> <pattern> [code]
+		char dir[256] = {}, code[128] = {};
+		int pat = -1;
+		sscanf(arg.c_str(), "%255s %d %127s", dir, &pat, code);
+		const auto r = refsToPattern(ToU8(U8(m->root) / U8(dir)), pat, code);
+		out = std::to_string(r.size()) + " script line(s)";
+		for (size_t i = 0; i < r.size() && i < 10; ++i) out += "\n  " + r[i].file + ":" + std::to_string(r[i].line + 1) + " " + r[i].text;
+	}
+	else if (sub == "hide") m_visible = false;
 	else if (sub == "tab") { m->bottomTab = atoi(arg.c_str()); m->selectBottomTab = true; }
 	else if (sub == "type") { m->editor.ReplaceTextInCurrentCursor(arg); }
 	else if (sub == "problems") {

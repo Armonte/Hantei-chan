@@ -172,6 +172,26 @@ void MainFrame::wireScriptPanel()
 		}
 		return "";
 	};
+	MainPane::drawScriptRefs = [this](FrameData* fd, int pattern) {
+		if (!scriptPanel || !fd) return;
+		CharacterInstance* ch = nullptr;
+		for (auto& c : characters) if (&c->frameData == fd) ch = c.get();
+		if (!ch) return;
+		const std::string& path = !ch->getTxtPath().empty() ? ch->getTxtPath() : ch->getTopHA6Path();
+		if (path.empty()) return;
+		const Sequence* s = fd->get_sequence(pattern);
+		const auto refs = scriptPanel->refsToPattern(std::filesystem::u8path(path).parent_path().u8string(), pattern, s ? std::string(s->codeName.c_str()) : std::string());
+		const std::string head = std::string(TXT("Used by scripts")) + " (" + std::to_string(refs.size()) + ")###sqrefs";
+		if (refs.empty() || !ImGui::TreeNode(head.c_str())) return;
+		for (size_t i = 0; i < refs.size() && i < 200; i++) {
+			std::string t = refs[i].text;
+			while (!t.empty() && (t[0] == ' ' || t[0] == '\t')) t.erase(0, 1);
+			ImGui::PushID((int)i);
+			if (ImGui::Selectable((refs[i].file + ":" + std::to_string(refs[i].line + 1) + "  " + t).c_str())) scriptPanel->showAt(refs[i].file, refs[i].line);
+			ImGui::PopID();
+		}
+		ImGui::TreePop();
+	};
 	scriptPanel->searchHa6 = [this](const std::string& dir, const std::string& query) {
 		std::vector<std::pair<std::string, Ref>> out;
 		CharacterInstance* ch = characterForScriptDir(dir, false);
