@@ -1,0 +1,23 @@
+# v2 chara-aura experiment, part 3 (render-match 2026-10-14): PUPS chr027 p449 lit with the aura in the sidecar
+# (part 1, v2_light_chr027.gcs, had no aura sidecar), then unlit again (aura RGB held at 0).
+include ../games/uni2.gcs
+let P1CHR 27
+let P2CHR 0
+include ../games/uni2_to_training.gcs
+set OUTD C:\dev\hantei-chan\tools\gamecap\captures\v2
+set CTRL ctrl_chr027_p0_lit2
+include ../games/uni2_v2_ctrl.gcs
+set CASE pups_chr027_p449_lit2
+set PAT 449
+set SETFRAME 0
+set FRAME 0
+set GTICK 1
+set STEPKEYS F6
+include ../games/uni2_v2_case_aura.gcs
+hold f32 [P1+0x8C0]+0x40 0
+hold f32 [P1+0x8C0]+0x44 0
+hold f32 [P1+0x8C0]+0x48 0
+step 3
+set CASE pups_chr027_p449_unlit2
+include ../games/uni2_v2_case_aura.gcs
+quit

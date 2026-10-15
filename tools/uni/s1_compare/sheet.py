@@ -153,8 +153,16 @@ def game_transform(meta):
     return (sx, sy), (meta['scale_x'] * m[0] / w, meta['scale_y'] * m[5] / w)
 
 
+# The shoot scripts fix the editor window, zoom and pan, so the world origin of a shot depends only on its size
+# (measured from the axes on every shot that shows them). A view filled by a full-screen part hides the axes, and the
+# edge of such a part was being taken for an axis (pups_chr027 -> (841, 0), mbtl_pral2_chr004 -> (0, 143)).
+KNOWN_ORIGINS = {(1264, 861): (631.0, 580.0),    # shoot.sh / shoot_bw*.sh: 1280x900 window
+                 (1684, 1061): (841.0, 680.0)}   # shoot_v2.sh: 1700x1100 window, zoom 1
+
+
 def editor_origin(im):
     """The editor draws the world axes as full-length grid lines through the origin."""
+    if im.size in KNOWN_ORIGINS: return KNOWN_ORIGINS[im.size]
     a = np.asarray(im.convert('RGB')).astype(int)
     m = np.abs(a - a[2, 2]).sum(2) > 24
     cols = np.where(m.mean(0) > 0.8)[0]; rows = np.where(m.mean(1) > 0.8)[0]
@@ -291,6 +299,7 @@ def game_vs_model(game, plate, ek, ew, zoom, meta, org):
         coef, *_ = np.linalg.lstsq(X, y, rcond=None)
         fit.append((float(coef[0]), float(coef[1])))
     game_vs_model.last_fit = fit
+    game_vs_model.last_arrays = (Gs, Bs, Ps, Qs, m)
     light = LIGHT if LIGHT is not None else [(1.0, 0.0)] * 3
     lpred = np.empty_like(pred)
     for c in range(3):

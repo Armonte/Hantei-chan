@@ -625,6 +625,7 @@ add_test(NAME han2_parts_edit COMMAND han2_parts_edit_test)
 # arithmetic (uni2.exe / MBAA.exe, see src/parts/part_render_math.h). Header-only, no data needed.
 add_executable(part_render_math_test tests/part_render_math_test.cpp)
 target_include_directories(part_render_math_test PRIVATE "src")
+target_link_libraries(part_render_math_test PRIVATE glm)
 if(MINGW)
 	target_link_options(part_render_math_test PRIVATE -static-libgcc -static-libstdc++ -static)
 endif()

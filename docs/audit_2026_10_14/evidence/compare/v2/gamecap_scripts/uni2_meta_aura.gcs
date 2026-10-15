@@ -1,0 +1,10 @@
+# uni2_meta.gcs + P1's chara aura (uni2 1.42 g_CharaAura 0xC7A688, 4 x 0x70; obj+0x8C0 -> slot, set by the character
+# script (SqBind_CharaAura_Set 0x886810), pulsed by CharaAura_UpdatePulse 0x59E8A0). CharaObj_DrawWithStageLight
+# 0x5CE3C0 adds max(flash, int(int(rgb*255) * strength)) to the specular of every layer (pat parts included) when
+# aura_type >= 0.
+meta i32 [P1+0x8C0]+0x8 aura_type
+meta f32 [P1+0x8C0]+0x40 aura_rgb 3
+meta f32 [P1+0x8C0]+0x60 aura_strength
+meta i32 [P1+0x8C0]+0x4 aura_timer
+meta u16 P1+0x2F4 flash_timer
+include uni2_meta.gcs

@@ -14,6 +14,8 @@
 //   PrimRect_Setup 0x413E80 + CPAniPrimRender_Rect vtable 0x940A44           shape type 2
 #include <algorithm>
 #include <cmath>
+#include <glm/glm.hpp>
+#include <glm/gtc/matrix_transform.hpp>
 
 namespace partrender {
 
@@ -144,6 +146,26 @@ inline LayerRgba LerpLayerColor(const LayerRgba &cur, int curMode, const LayerRg
 	out.b = Lerp(cur.b, next.b, t);
 	if (curMode) out.a = Lerp(cur.a, nextMode ? next.a : 1.f, t);
 	return out;
+}
+
+// ---- Part-space perspective ----------------------------------------------------------------------------------
+// Every .pat part goes through uni2 1.42 PatPart_GetGlobalPerspective640x480 0x4C1860 (PatPart_BuildTransformMatrix
+// with a5 == 0): Scale(1/640, 1/480, 1/1024) * LookAtLH(eye (0,0,-cot), at 0, up +y) * PerspectiveFovLH(1.3045008,
+// aspect 1, 0.01, 1000) * Scale(640, 480, 1). A part at z = 0 maps 1:1 to pixels; elsewhere it scales by
+// E / (E + z) with E = 1024 * cot(fov/2) ~ 1340.7 px. LEFT-HANDED: positive part z is FARTHER (smaller). The
+// editor draws with a GL frustum looking down -z, so z is mirrored. `w`, `h` = the editor view in pixels; the
+// result maps the part origin to NDC (-1, 1) (the view's top-left, moved by the caller's pre-transform).
+constexpr float kPartFovY = 1.3045008f;   // radians, uni2.exe 0x4C1860
+inline float PartEyeDistance() { return 1024.f / std::tan(kPartFovY * 0.5f); }
+
+inline glm::mat4 PartPerspective(float w, float h)
+{
+	constexpr float dist = 1024.f, dist2 = dist * 2.f;
+	const float f = 1.f / std::tan(kPartFovY * 0.5f);
+	glm::mat4 m = glm::translate(glm::mat4(1.f), glm::vec3(-1, 1, 0)) *
+		glm::frustum<float>(-w / dist2, w / dist2, h / dist2, -h / dist2, 1 * f, dist * 2 * f);
+	m = glm::translate(m, glm::vec3(0.f, 0.f, -dist * f));
+	return glm::scale(m, glm::vec3(1.f, 1.f, -1.f));
 }
 
 } // namespace partrender
