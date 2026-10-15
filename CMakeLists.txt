@@ -1211,7 +1211,7 @@ set_tests_properties(sqtool_mbtl sqtool_uni2 PROPERTIES SKIP_RETURN_CODE 77)
 # Squirrel script editor (phase P2/P3, docs/squirrel/SCOPE.md §2.4): CP932 document model + sandboxed
 # in-editor VM, and the dockable "Script" panel. Widget: goossens/ImGuiColorTextEdit (MIT, vendored,
 # docs/squirrel/EDITOR_WIDGET_TRIAGE.md).
-add_library(sqeditor_core STATIC src/squirrel/script_document.cpp src/squirrel/script_vm.cpp src/cmdfile/cmd_io.cpp)
+add_library(sqeditor_core STATIC src/squirrel/script_document.cpp src/squirrel/script_vm.cpp src/squirrel/script_index.cpp src/cmdfile/cmd_io.cpp)
 target_include_directories(sqeditor_core PUBLIC "src" "third_party")
 target_compile_definitions(sqeditor_core PRIVATE WIN32_LEAN_AND_MEAN)
 target_link_libraries(sqeditor_core PUBLIC squirrel224)
@@ -1221,6 +1221,13 @@ if(TARGET ${EXE})
 	target_link_libraries(${EXE} PRIVATE sqeditor_core)
 endif()
 
+add_executable(squirrel_index_test tests/squirrel_index_test.cpp)
+target_include_directories(squirrel_index_test PRIVATE "src")
+target_link_libraries(squirrel_index_test PRIVATE sqeditor_core)
+if(MINGW)
+	target_link_options(squirrel_index_test PRIVATE -static-libgcc -static-libstdc++ -static)
+endif()
+add_test(NAME squirrel_index COMMAND squirrel_index_test)
 add_executable(squirrel_doc_test tests/squirrel_doc_test.cpp)
 target_link_libraries(squirrel_doc_test PRIVATE sqeditor_core)
 if(MINGW)
