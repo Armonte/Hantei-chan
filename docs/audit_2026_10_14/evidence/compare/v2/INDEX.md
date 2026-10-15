@@ -269,3 +269,69 @@ pause/step, same-session plates; run log `gamecap_r5.log`). New editor views (on
 
 - **flipHV at zoom 1** improved 9.20 → 5.74 over rounds 6 and 6b, but is still above ctrl_chr019_p0_z1 (1.17 / 2.0%).
   At zoom 1.5 it is 6.17 against a 3.10 control. Still open.
+
+## Round 7 (2026-10-15): probes, no render change
+No render change this round. Every lead tried either matched what the editor already does or made the cases worse.
+So the shots in `editor_bw` are unchanged and every number below equals round 6b. The experiments used env switches
+in throwaway builds; none of them are in the tree.
+
+| case | round 6b | round 7 | control |
+|---|---|---|---|
+| flipHV_chr019_p153 | 6.17 / 17.7% | 6.17 / 17.7% (band 2.74 / 7.2%) | ctrl_chr019_p0 3.10 / 7.4% |
+| flipHV_chr019_p153_z1 | 5.74 / 15.8% | 5.74 / 15.8% (band 2.45 / 7.5%) | ctrl_chr019_p0_z1 1.17 / 2.0% |
+| afhk_cg_chr020_p435_t27 | 2.22 / 2.2% | 2.22 / 2.2% (band 2.01 / 2.0%) | ctrl_chr020_p0 1.29 / 0.6% |
+| other .pat / CG cases | round 6b table | unchanged (no code change) | |
+
+### Part draw order (uni2 1.42, IDB renamed and saved)
+- **What the game does.**
+  - `PatPartSet_BuildDrawOrderByPriority` 0x4C19E0 builds the part set's draw list at +0x164 (count at +0x160).
+  - It holds (slot, PRPR) pairs, `std::sort` ascending by PRPR (comparator `PatPartDrawOrder_LessByPriority`
+    0x4C1CC0). That sort is a stable insertion sort for 32 or fewer parts.
+  - PRPR is stored at slot +4 by the loader (0x4A7989).
+  - `Han6Draw_DrawPatLayerParts_3D` 0x4BF9A0 walks the list in order. It queues each part through
+    `PrimQueue_LinkPrimIntoBucket` 0x4BC570, which links at the bucket head.
+- **Ascending order is worse.** Drawing ascending in the editor makes flipHV much worse: z1 5.74 → 18.62, zoom 1.5
+  6.17 → 23.03. The dark PPPA-0xD6 band (slot 4, cut-out 56) ends up on top. So the editor's highest-PRPR-first
+  order is what reaches the screen, which fits the head insertion reversing the list.
+- **Tie order makes no difference.** Reversing ties (slots 1/2 at PRPR 40, 4/6 at PRPR 45) gives exactly the same
+  numbers, so draw order is ruled out for the fan.
+
+### flipHV texture source
+- **The texture matches.** PPTP 1 is PGST 1 `tsu_ef00.dds`: 2048², DXT5, PGTE 0x00080008. The cut-outs are
+  51 (384,0) 96×176, 52 (480,0), 54 (624,0) 48×192 and 56 (288,0), in /256 units × 2048, so 1 texel per quad unit
+  before PRZM.
+- **Both sides decode DXT5 on the GPU.** The editor uploads the DXT5 blocks as they are
+  (`glCompressedTexImage2D`, no mips, no resize). The game samples the same blocks through D3D9 on the same GPU.
+  A decoder rounding difference is therefore not expected.
+- **Not minification.** The 3D rotation does not turn these quads edge-on (|cos Y| 0.77, cos X 0.94), so the fan is
+  magnified about 1.5× across and 4× along the streak.
+- **Game-only content in the measured region.** The capture has a game-only blue/white arc and a cyan streak near
+  the lower fan, at z1 (300..330, 75..140) and the blue blob in the diff panel. They are not part of pattern 153 and
+  add a small fixed error.
+- **Axis lines are not noise.** The editor's axis crosshair is already corrected in the metric (`sheet.py`
+  AXIS_FIX).
+
+### p435: rotation and pivot are already at the minimum
+Probes on the CG layer matrix (AFRT=false path), against the 2.22 / 2.2% baseline:
+
+| probe | result |
+|---|---|
+| AFAZ + 0.0002 turn (0.07°) | 3.18 |
+| AFAZ ± 0.001 turn | 7.4 |
+| pivot ± 0.5 px in x or y | 13–14.6 |
+| AFHK weight ± 0.006 | 11.4 |
+| neighbouring ticks 26 / 28 | 27.5 / 27.1 |
+
+- **The geometry is right.** Rotation angle, pivot and lerp weight are all at a sharp minimum, so a pixel-centre
+  pivot shift is ruled out.
+- **The remaining gap is not geometry.** p435 is 2.22 against a 1.29 floor; with the ±1 px band it is 2.01. What is
+  left sits on the sprite edges and in the aura ring (no glow 4.33, sq glow 3.70 on the ring).
+- **Next experiment.** Test the glow model (ring radius and falloff, power), not the transform.
+
+### Still open (flipHV)
+- **Inside the stretched streak bands.** The residual is the line structure inside the bands. The line angles agree,
+  but the lateral position and thickness of the fine lines differ.
+- **Best next experiment.** Capture the game with a single streak prop (freeze at set 45 and zero PRCL alpha on all
+  other slots through gamecap poke). Compare one prop against the editor's single-prop render, then check the u
+  mapping across the width (mirrored or offset on the back-facing Y = 220° quads) and PRZM applied before or after
+  PRAS.
