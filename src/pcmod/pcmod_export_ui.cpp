@@ -41,7 +41,7 @@ struct State {
 	std::string id, version = "1.0.0", name, author, description;
 	int priority = 0;
 	int classMode = 0;   // 0 auto, 1 sim, 2 cosmetic
-	std::string exe, requiresText, conflicts, overrides;   // one entry per line / comma
+	std::string exe, requiresText, conflicts, overrides, modes;   // one entry per line / comma
 	std::string outDir;
 	bool writeZip = true;
 	std::string gameDir;
@@ -50,6 +50,7 @@ struct State {
 	std::string result;    // last export report
 	bool resultOk = false;
 	std::string digest, simDigest;
+	std::vector<std::string> skippedWritten;   // data\*.wmt files the add paths skipped (written by the game, never read)
 };
 State g;
 
@@ -103,6 +104,14 @@ void AddFile(const std::string& abs, const std::string& rel, bool include)
 	Row r;
 	r.abs = abs;
 	r.rel = rel.empty() ? GuessRel(abs) : rel;
+	{
+		std::string n, why;
+		if (pcmod::NormalisePath(r.rel, n, why) && pcmod::IsGameWrittenPath(n)) {
+			if (std::find(g.skippedWritten.begin(), g.skippedWritten.end(), r.rel) == g.skippedWritten.end()) g.skippedWritten.push_back(r.rel);
+			HC_LOG_INFO("pcmod export: skipped {} ({})", r.rel, pcmod::RefusedPathReason(n));
+			return;
+		}
+	}
 	r.include = include;
 	Hash(r);
 	g.rows.push_back(r);
@@ -180,6 +189,7 @@ pcmod::Manifest Build(std::string& problem, pcmod::PackageClass& detected, size_
 	}
 	m.conflicts = SplitList(g.conflicts);
 	m.overrides = SplitList(g.overrides);
+	m.modes = pcmod::SplitModes(g.modes);   // empty = every mode; not in any digest
 	size_t sim = 0;
 	for (const Row& r : g.rows) {
 		if (!r.include) continue;
@@ -305,6 +315,8 @@ void Draw()
 	ImGui::SetNextItemWidth(300); ImGui::InputText(LBL("Requires (id@x.y.z, ...)"), &g.requiresText);
 	ImGui::SetNextItemWidth(300); ImGui::InputText(LBL("Conflicts (ids)"), &g.conflicts);
 	ImGui::SetNextItemWidth(300); ImGui::InputText(LBL("Overrides (ids)"), &g.overrides);
+	ImGui::SetNextItemWidth(300); ImGui::InputText(LBL("Modes (ids, e.g. tag,team)"), &g.modes);
+	ImGui::TextDisabled("%s", TXT("Online modes this package counts for (MBAACC: vs, tag, ...). Empty = every mode. Not part of any digest."));
 
 	// ---- files ----
 	ImGui::Separator();
@@ -320,10 +332,18 @@ void Draw()
 	ImGui::SameLine();
 	if (ImGui::Button(LBL("Rehash"))) for (Row& r : g.rows) Hash(r);
 	ImGui::SameLine();
-	if (ImGui::Button(LBL("Clear list"))) g.rows.clear();
+	if (ImGui::Button(LBL("Clear list"))) { g.rows.clear(); g.skippedWritten.clear(); }
 	ImGui::SameLine();
 	if (g.vanilla.loaded) ImGui::TextDisabled(TXT("Vanilla check: %s (%zu packed files)"), g.vanilla.gameDir.c_str(), g.vanilla.packed.size());
 	else ImGui::TextDisabled("%s", TXT("Vanilla check off: no MBAA.exe in C:\\games\\mbaacc"));
+	if (!g.skippedWritten.empty()) {
+		ImGui::TextColored(ColWarn(), TXT("Skipped %zu .wmt file(s): written by the game, never read (win quotes come from story\\battle\\*_win.txt)"), g.skippedWritten.size());
+		if (ImGui::IsItemHovered()) {
+			std::string list;
+			for (const std::string& w : g.skippedWritten) list += w + "\n";
+			ImGui::SetTooltip("%s", list.c_str());
+		}
+	}
 
 	int replaces = 0;
 	const float listH = std::max(120.f, ImGui::GetContentRegionAvail().y - 150.f);
@@ -412,6 +432,7 @@ bool ScriptCommand(const std::string& cmd, const std::string& argIn, std::string
 		if (k == "id") g.id = v; else if (k == "version") g.version = v; else if (k == "name") g.name = v;
 		else if (k == "author") g.author = v; else if (k == "out") g.outDir = v; else if (k == "exe") g.exe = v;
 		else if (k == "priority") g.priority = atoi(v.c_str()); else if (k == "class") g.classMode = v == "sim" ? 1 : v == "cosmetic" ? 2 : 0;
+		else if (k == "modes") g.modes = v;
 		else { if (msg) *msg = "unknown field " + k; return true; }
 		return true;
 	}

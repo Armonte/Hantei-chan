@@ -217,6 +217,20 @@ int main(int argc, char** argv)
 		                      "palettes\\a.pal", "hud_theme.json", "font.fnt", "_sysfont.ini", "data\\a.pal", "data\\_csel\\a.png"})
 			CHECK(pcmod::Validate(Minimal(PackageClass::Cosmetic, p)).empty());
 		CHECK(!pcmod::Validate(Minimal(PackageClass::Cosmetic, "hud_theme.json\\x")).empty());
+		// data\**.wmt is written by the game (ResultMenu_LoadWinQuoteData) and never read: refused, with that reason.
+		for (const char* p : {"data\\SION.wmt", "data\\sub\\a.WMT"}) {
+			std::string n, why;
+			CHECK(pcmod::NormalisePath(p, n, why));
+			CHECK(pcmod::IsGameWrittenPath(n));
+			CHECK(pcmod::ClassifyPath(n) == pcmod::PathClass::Refused);
+			CHECK(pcmod::RefusedPathReason(n).find("written by the game, never read") == 0);
+			pcmod::Manifest w = Minimal(PackageClass::Sim, "data\\a.txt");
+			w.files.push_back({p, kFooSha, 3});
+			CHECK(pcmod::Validate(w).find("written by the game, never read") != std::string::npos);
+		}
+		CHECK(!pcmod::IsGameWrittenPath("story\\battle\\sion_win.txt"));   // the real win-quote input stays sim
+		CHECK(pcmod::ClassifyPath("story\\battle\\sion_win.txt") == pcmod::PathClass::Sim);
+		CHECK(!pcmod::IsGameWrittenPath("grp\\a.wmt") && pcmod::RefusedPathReason("data\\a.txt").empty());
 		pcmod::Manifest dup = Minimal(PackageClass::Sim, "data\\a.txt");
 		dup.files.push_back({"DATA/A.TXT", kFooSha, 3});
 		CHECK(!pcmod::Validate(dup).empty());                                                // one file, two spellings
@@ -253,6 +267,44 @@ int main(int argc, char** argv)
 		t = base; t.replace(t.find("\"schema\": 1"), 11, "\"schema\": 2");
 		CHECK(!pcmod::ParseManifest(t, m, err));
 		CHECK(!pcmod::ParseManifest(base + "x", m, err));
+
+		// ---- "modes" (§2, added 2026-10-15, still schema 1): optional, <= 8 ids, written only when non-empty ----
+		CHECK(base.find("modes") == std::string::npos);                              // absent/empty: not written
+		CHECK(pcmod::ParseManifest(base, m, err) && m.modes.empty());
+		CHECK(pcmod::ParseManifest(with("\"modes\": [],"), m, err) && m.modes.empty());
+		CHECK(pcmod::WriteManifest(m) == base);                                     // empty list round-trips to no key
+		CHECK(pcmod::ParseManifest(with("\"modes\": [\"tag\", \"team\"],"), m, err));
+		CHECK(m.modes == std::vector<std::string>({"tag", "team"}));
+		const std::string withModes = pcmod::WriteManifest(m);
+		CHECK(withModes.find("\"modes\": [\"tag\", \"team\"]") != std::string::npos);
+		pcmod::Manifest back;
+		CHECK(pcmod::ParseManifest(withModes, back, err) && back.modes == m.modes && pcmod::WriteManifest(back) == withModes);
+		CHECK(pcmod::ParseManifest(with("\"modes\": [\"a\",\"b\",\"c\",\"d\",\"e\",\"f\",\"g\",\"h\"],"), m, err));   // 8 = the limit
+		CHECK(!pcmod::ParseManifest(with("\"modes\": [\"a\",\"b\",\"c\",\"d\",\"e\",\"f\",\"g\",\"h\",\"i\"],"), m, err));
+		CHECK(!pcmod::ParseManifest(with("\"modes\": [\"Tag\"],"), m, err));        // id grammar: lowercase
+		CHECK(!pcmod::ParseManifest(with("\"modes\": [\"\"],"), m, err));
+		CHECK(!pcmod::ParseManifest(with("\"modes\": [\"-tag\"],"), m, err));
+		CHECK(!pcmod::ParseManifest(with("\"modes\": [\"" + std::string(65, 'a') + "\"],"), m, err));
+		CHECK(!pcmod::ParseManifest(with("\"modes\": \"tag\","), m, err));          // not an array
+		CHECK(!pcmod::ParseManifest(with("\"modes\": [1],"), m, err));              // not a string
+		CHECK(!pcmod::ParseManifest(with("\"modes\": [\"tag\"], \"modes\": [],"), m, err));   // duplicate key
+		pcmod::Manifest tooMany = Minimal(pcmod::PackageClass::Sim, "data\\a.txt");
+		tooMany.modes = {"a", "b", "c", "d", "e", "f", "g", "h", "i"};
+		CHECK(!pcmod::Validate(tooMany).empty());
+		tooMany.modes = {"vs", "Bad"};
+		CHECK(!pcmod::Validate(tooMany).empty());
+		CHECK(pcmod::SplitModes(" tag, team,,tag ;vs") == std::vector<std::string>({"tag", "team", "vs"}));
+		CHECK_EQ(pcmod::JoinModes({"tag", "team"}), "tag,team");
+		CHECK(pcmod::CountsForMode({}, "vs") && pcmod::CountsForMode({"tag"}, "tag") && pcmod::CountsForMode({"tag"}, ""));
+		CHECK(!pcmod::CountsForMode({"tag", "team"}, "vs"));
+	}
+	// modes is NOT part of any digest: the fixture pins hold with and without it.
+	{
+		pcmod::Manifest t = fx;
+		t.modes = {"tag", "team"};
+		CHECK_EQ(pcmod::PackageDigestHex(t), kPkgDigest);
+		CHECK_EQ(pcmod::PackageSimDigestHex(t), kSimDigest);
+		CHECK_EQ(pcmod::SessionDigestHex(kExe, {{t.id, t.version, t.priority, pcmod::PackageSimDigestHex(t)}}), kSetDigest);
 	}
 
 	// ---- round trip: pack the fixture content -> folder + zip -> verify both ----
@@ -346,6 +398,37 @@ int main(int argc, char** argv)
 		WriteText(tmp / "ini" / "mod.ini", "[Config]\r\nenabled=0\r\npriority = 7\r\n");
 		bool en = true; int pr = 0;
 		CHECK(pcmod::ReadModIni((tmp / "ini").u8string(), en, pr) && !en && pr == 7);
+	}
+	// ---- per-mode session set (§6): a sim package listing only "tag" stays out of a "vs" session's set ----
+	{
+		std::vector<pcmod::SourceFile> src, content;
+		CHECK(pcmod::ScanSourceDir(fixture.u8string(), src, err));
+		for (auto& s : src) if (s.rel.find("ORIGIN") == std::string::npos && s.rel.find(".gitattributes") == std::string::npos) content.push_back(s);
+		pcmod::Manifest meta = fx;
+		meta.files.clear();
+		meta.modes = {"tag"};
+		const pcmod::PackResult r = pcmod::Pack(content, meta, (tmp / "modes").u8string(), true);
+		CHECK(r.ok);
+		CHECK_EQ(r.digestHex, kPkgDigest);       // unchanged by modes
+		CHECK_EQ(r.simDigestHex, kSimDigest);
+		const std::string dir = (tmp / "modes" / "pcmod-fixture").u8string();
+		const pcmod::VerifyResult vz = pcmod::VerifyPath((tmp / "modes" / "pcmod-fixture-1.2.3.zip").u8string());
+		CHECK(vz.ok && vz.manifest.modes == std::vector<std::string>({"tag"}) && vz.digestHex == kPkgDigest);
+		pcmod::SessionResult s = pcmod::ResolveSession(kExe, {dir});
+		CHECK(s.ok && s.simOrder.size() == 1);
+		CHECK_EQ(s.digestHex, kSetDigest);       // no mode filter = the plain session sim digest
+		s = pcmod::ResolveSession(kExe, {dir}, "tag");
+		CHECK(s.ok && s.simOrder.size() == 1);
+		CHECK_EQ(s.digestHex, kSetDigest);
+		s = pcmod::ResolveSession(kExe, {dir}, "vs");
+		CHECK(s.ok && s.simOrder.empty() && !s.notes.empty());
+		CHECK_EQ(s.digestHex, kVanillaSet);      // plain VS does not demand the tag-only package
+		// Without modes the package counts for every mode.
+		meta.modes.clear();
+		CHECK(pcmod::Pack(content, meta, (tmp / "modes").u8string(), false).ok);
+		s = pcmod::ResolveSession(kExe, {dir}, "vs");
+		CHECK(s.ok && s.simOrder.size() == 1);
+		CHECK_EQ(s.digestHex, kSetDigest);
 	}
 	fs::remove_all(tmp, ec);
 	if (g_failures) { std::printf("pcmod_test: %d failure(s)\n", g_failures); return 1; }

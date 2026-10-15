@@ -61,13 +61,17 @@ bool ReadModIni(const std::string& packageDir, bool& enabled, int& priority);
 // failures, an exe not in its list, unmet `requires` (exact version), enabled `conflicts`, and a path shipped by two
 // packages where a sim package is involved and the winner does not list the loser in `overrides`. mod.ini enabled=0
 // leaves a package out; mod.ini priority overrides the manifest's. Cosmetic packages never enter the digest.
+// `mode` (§6 per-mode set): only live sim packages whose `modes` is empty or lists it enter the digest; the others are
+// still checked (a broken one still blocks) and reported in `notes`. "" = no mode filter (the plain session sim digest).
 struct SessionResult {
 	bool ok = false;                      // false = the digest cannot be formed (an enabled sim package is broken)
 	std::string digestHex;                // only when ok
 	std::vector<std::string> errors, notes;
-	std::vector<SessionEntry> simOrder;   // resolved order (priority desc, then id)
+	std::vector<SessionEntry> simOrder;   // resolved order (priority desc, then id), only those in the mode's set
+	std::string mode;                     // the mode the set was built for ("" = every package)
 };
-SessionResult ResolveSession(const std::string& exeSha256Hex, const std::vector<std::string>& packageDirs);
+SessionResult ResolveSession(const std::string& exeSha256Hex, const std::vector<std::string>& packageDirs,
+                             const std::string& mode = std::string());
 
 } // namespace pcmod
 #endif

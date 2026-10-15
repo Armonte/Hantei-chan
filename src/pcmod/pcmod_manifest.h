@@ -36,10 +36,14 @@ struct Manifest {
 	std::vector<std::string> exe;
 	std::vector<Requirement> requires_;
 	std::vector<std::string> conflicts, overrides;
+	// Session modes this package COUNTS for online (§2/§6, added 2026-10-15, still schema 1). Empty = every mode. NOT in any
+	// digest: it only decides which per-mode sets the package joins.
+	std::vector<std::string> modes;
 	std::vector<FileEntry> files;
 };
 
 // ---- field rules (§2) ----
+constexpr size_t kMaxModes = 8;
 constexpr size_t kMaxName = 128, kMaxAuthor = 128, kMaxDescription = 2048, kMaxFiles = 4096, kMaxPath = 240;
 constexpr uint64_t kMaxFileSize = 64ull << 20;
 bool ValidId(const std::string& id);            // [a-z0-9][a-z0-9._-]{0,63}
@@ -55,10 +59,15 @@ bool CanonicalPath(const std::string& raw, std::string& out, std::string& why);
 // Every NORMALISED path has a class decided by the path alone (§3, revised 2026-10-14 to cover the whole MBAACC tree):
 //   sim       data\** (except below), story\**, charaselect.txt
 //   cosmetic  data\**.pal, data\_csel\**, bg\ bgm\ dat\ grp\ se\ shader\ movie\ palettes\, hud_theme.json, font.fnt, _sysfont.ini
-//   refused   anything else (packdataversion\ (gates the update pack), system\, information\, other root files; sound\ is not a root)
+//   refused   data\**.wmt (written by the game from story\battle\*_win.txt on every result screen, never read; IDA
+//             ResultMenu_LoadWinQuoteData, PovertyCaster classifyPath 2026-10-15), and anything else (packdataversion\ (gates the update pack), system\, information\, other root files; sound\ is not a root)
 enum class PathClass : uint8_t { Sim, Cosmetic, Refused };
 PathClass ClassifyPath(const std::string& normPath);
 const char* PathClassName(PathClass c);                // "sim" / "cosmetic" / "refused"
+// A file the GAME writes and never reads (data\**.wmt): refused in a manifest; pack and the GUI export skip it with a note.
+bool IsGameWrittenPath(const std::string& normPath);
+// Why a normalised path is refused by ClassifyPath ("" when it is not refused).
+std::string RefusedPathReason(const std::string& normPath);
 
 // ---- validation: every rule of §2/§3 on a model (used by the writer before it writes, and after parsing) ----
 // Returns the first reason, or "" when the manifest is valid.
@@ -68,7 +77,8 @@ std::string Validate(const Manifest& m);
 // Strict schema-1 reader: unknown/duplicate/reserved keys, a wrong type or an out-of-range value refuse the package.
 bool ParseManifest(const std::string& text, Manifest& out, std::string& error);
 // Deterministic writer (2-space indent, keys in §2 order, UTF-8, '\n'). Optional keys with empty lists are still written
-// (requires/conflicts/overrides: [] ) so a reader never has to guess. Never writes a reserved key.
+// (requires/conflicts/overrides: [] ) so a reader never has to guess, EXCEPT `modes`: written only when non-empty, so a
+// manifest without modes stays byte-identical to one written before the key existed. Never writes a reserved key.
 std::string WriteManifest(const Manifest& m);
 
 // ---- digests (§5) ----
@@ -85,6 +95,12 @@ struct SessionEntry {
 	int priority = 0;
 	std::string simDigestHex;   // PackageSimDigestHex
 };
+// §6 per-mode set: does a package with these `modes` join the set of a session in `mode`? "" = no mode filter (always).
+bool CountsForMode(const std::vector<std::string>& modes, const std::string& mode);
+// Splits "tag,team" (commas and/or spaces) into ids, dropping empties and repeats. No validation (Validate does that).
+std::vector<std::string> SplitModes(const std::string& text);
+std::string JoinModes(const std::vector<std::string>& modes);   // "tag,team"
+
 // Enabled, non-broken SIM packages only (callers drop cosmetic ones). Ordered priority desc, then id.
 std::string SessionDigestHex(const std::string& exeSha256Hex, std::vector<SessionEntry> pkgs);
 

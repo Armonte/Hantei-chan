@@ -3,14 +3,16 @@
 //
 //   pcmodtool pack <srcdir> --id <id> --version <x.y.z> [--class sim|cosmetic] --exe <sha|MBAA.exe path>...
 //             [--out <dir>] [--name ..] [--author ..] [--description ..] [--priority N]
-//             [--requires <id>@<x.y.z>]... [--conflicts <id>]... [--overrides <id>]... [--no-zip] [--game <dir>]
+//             [--requires <id>@<x.y.z>]... [--conflicts <id>]... [--overrides <id>]... [--modes tag,team] [--no-zip] [--game <dir>]
+//        --modes: the online session modes the package counts for (absent = every mode; not part of any digest).
 //        <srcdir> holds the files at their game-relative paths (data\..., grp\...). Writes <out>\<id>\pcmod.json + files
 //        and <out>\<id>-<version>.zip (single top-level <id>\ directory). --class defaults to sim when any file is under
 //        data\, else cosmetic. --exe defaults to the SHA-256 of C:\games\mbaacc\MBAA.exe when found. --game (default
 //        C:\games\mbaacc) lists files that replace a file of that install.
 //   pcmodtool verify <dir|zip>          exit 0 = valid, 1 = broken
 //   pcmodtool digest <dir|zip>          prints "package <hex>" and "sim <hex>" (exit 1 if the package does not verify)
-//   pcmodtool session <exe> <pkgdir>... the session sim digest; <exe> is a 64-hex SHA-256 or a path to MBAA.exe
+//   pcmodtool session [--mode <m>] <exe> <pkgdir>...  the session sim digest; <exe> is a 64-hex SHA-256 or a path to
+//        MBAA.exe. --mode builds the set for that session mode (§6): only sim packages whose modes are empty or list it.
 //
 // The output on stdout is the tool's result (like cgmtool / mbaaccpackage); it is not a log.
 #include "pcmod_manifest.h"
@@ -18,6 +20,7 @@
 #include "pcmod_vanilla.h"
 
 #include <windows.h>
+#include <algorithm>
 #include <cstdio>
 #include <cstdlib>
 #include <string>
@@ -40,10 +43,11 @@ static int Usage()
 	Err("usage:\n"
 		"  pcmodtool pack <srcdir> --id <id> --version <x.y.z> [--class sim|cosmetic] --exe <sha|exe path>...\n"
 		"            [--out <dir>] [--name ..] [--author ..] [--description ..] [--priority N]\n"
-		"            [--requires <id>@<x.y.z>]... [--conflicts <id>]... [--overrides <id>]... [--no-zip] [--game <dir>]\n"
+		"            [--requires <id>@<x.y.z>]... [--conflicts <id>]... [--overrides <id>]... [--modes tag,team]\n"
+		"            [--no-zip] [--game <dir>]\n"
 		"  pcmodtool verify <dir|zip>\n"
 		"  pcmodtool digest <dir|zip>\n"
-		"  pcmodtool session <exe sha|exe path> <pkgdir>...\n");
+		"  pcmodtool session [--mode <m>] <exe sha|exe path> <pkgdir>...\n");
 	return 2;
 }
 
@@ -63,6 +67,7 @@ static void PrintVerify(const pcmod::VerifyResult& v, const std::string& what)
 	if (v.ok) {
 		const auto& m = v.manifest;
 		Out("OK " + what + ": " + m.id + " " + m.version + " (" + pcmod::ClassName(m.cls) + ", " + std::to_string(m.files.size()) + " files)\n");
+		Out("modes          " + (m.modes.empty() ? std::string("(every mode)") : pcmod::JoinModes(m.modes)) + "\n");
 		Out("package digest " + v.digestHex + "\n");
 		Out("sim digest     " + v.simDigestHex + "\n");
 	} else Out("BROKEN " + what + "\n");
@@ -98,6 +103,10 @@ static int Pack(const std::vector<std::string>& a)
 		}
 		else if (k == "--conflicts") m.conflicts.push_back(val());
 		else if (k == "--overrides") m.overrides.push_back(val());
+		else if (k == "--modes") {
+			for (const std::string& md : pcmod::SplitModes(val()))
+				if (std::find(m.modes.begin(), m.modes.end(), md) == m.modes.end()) m.modes.push_back(md);
+		}
 		else if (k == "--no-zip") zip = false;
 		else if (k == "--game") game = val();
 		else { Err("unknown option " + k + "\n"); return Usage(); }
@@ -114,6 +123,14 @@ static int Pack(const std::vector<std::string>& a)
 	std::vector<pcmod::SourceFile> files;
 	std::string why;
 	if (!pcmod::ScanSourceDir(src, files, why)) { Err(why + "\n"); return 1; }
+	// data\*.wmt is written by the game on every result screen and never read: skip it rather than refuse the pack.
+	for (auto it = files.begin(); it != files.end();) {
+		std::string n;
+		if (pcmod::NormalisePath(it->rel, n, why) && pcmod::IsGameWrittenPath(n)) {
+			Out("WARN  skipped " + it->rel + ": " + pcmod::RefusedPathReason(n) + "\n");
+			it = files.erase(it);
+		} else ++it;
+	}
 	if (cls.empty()) {
 		size_t sim = 0;
 		for (const auto& f : files) {
@@ -138,6 +155,7 @@ static int Pack(const std::vector<std::string>& a)
 	if (!r.ok) { Err("pack refused: " + r.error + "\n"); return 1; }
 	Out("wrote " + r.packageDir + "\\pcmod.json (" + std::to_string(r.manifest.files.size()) + " files)\n");
 	if (!r.zipPath.empty()) Out("wrote " + r.zipPath + "\n");
+	if (!r.manifest.modes.empty()) Out("modes " + pcmod::JoinModes(r.manifest.modes) + "\n");
 	Out("package digest " + r.digestHex + "\n");
 	Out("sim digest " + r.simDigestHex + "\n");
 	return 0;
@@ -160,14 +178,23 @@ int wmain(int argc, wchar_t** argv)
 		Out("sim     " + v.simDigestHex + "\n");
 		return 0;
 	}
-	if (cmd == "session" && a.size() >= 1) {
+	if (cmd == "session") {
+		std::string mode;
+		if (!a.empty() && a[0] == "--mode") {
+			if (a.size() < 2) return Usage();
+			mode = a[1];
+			a.erase(a.begin(), a.begin() + 2);
+			if (!pcmod::ValidId(mode)) { Err("--mode " + mode + ": must match [a-z0-9][a-z0-9._-]{0,63}\n"); return 2; }
+		}
+		if (a.empty()) return Usage();
 		const std::string exe = ExeHash(a[0]);
 		if (exe.empty()) { Err(a[0] + ": not a SHA-256 and not a readable file\n"); return 1; }
-		const pcmod::SessionResult s = pcmod::ResolveSession(exe, std::vector<std::string>(a.begin() + 1, a.end()));
+		const pcmod::SessionResult s = pcmod::ResolveSession(exe, std::vector<std::string>(a.begin() + 1, a.end()), mode);
 		for (const auto& n : s.notes) Out("note  " + n + "\n");
 		for (const auto& e : s.errors) Out("ERROR " + e + "\n");
 		if (!s.ok) { Out("no session digest: an enabled sim package is broken\n"); return 1; }
 		Out("exe " + exe + "\n");
+		Out("mode " + (mode.empty() ? std::string("(no filter)") : mode) + "\n");
 		for (const auto& e : s.simOrder) Out("sim  " + e.id + " " + e.version + " priority " + std::to_string(e.priority) + " " + e.simDigestHex + " (sim digest)\n");
 		if (s.simOrder.empty()) Out("(no sim package: vanilla set)\n");
 		Out("session digest " + s.digestHex + "\n");

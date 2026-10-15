@@ -58,6 +58,10 @@ The same item is also under Tools > MBAACC package.
   line. A sim package must name at least one.
 - **Requires** takes `id@x.y.z` entries (an exact version: schema 1 has no ranges). **Conflicts** and **Overrides** take
   ids. Separate entries with commas or spaces.
+- **Modes** (optional, at most 8 ids, e.g. `tag,team`): the online session modes the package counts for (MBAACC: `vs`,
+  `tag`, ...). Empty means every mode. It is written to `pcmod.json` only when set, and it is not part of any digest: it
+  only decides which per-mode sets the package joins (spec §6). A sim package that lists only `tag` is not required for a
+  plain 1v1 VS session.
 - **Ready: N files, package digest ...** and **Online sim digest ... (N sim file(s))** are shown live. **Export
   package** writes the folder and the zip, then reads both back and verifies them before it reports success. **Copy
   digest** copies the package digest for the catalogue entry; **Copy sim digest** copies the sim digest.
@@ -65,26 +69,31 @@ The same item is also under Tools > MBAACC package.
   folder with that name is refused, never overwritten.
 
 UI script (`--ui-script`, see `tools/ui/ab_shot.sh`):
-`pcmod open [chara.txt] | pcmod add <file> | pcmod addfolder <dir> | pcmod set id|version|name|author|out|exe|priority|class <v> | pcmod export | pcmod status`.
+`pcmod open [chara.txt] | pcmod add <file> | pcmod addfolder <dir> | pcmod set id|version|name|author|out|exe|priority|class|modes <v> | pcmod export | pcmod status`.
 
 ## CLI: `pcmodtool`
 
 ```
 pcmodtool pack <srcdir> --id <id> --version <x.y.z> [--class sim|cosmetic] --exe <sha|MBAA.exe path>...
           [--out <dir>] [--name ..] [--author ..] [--description ..] [--priority N]
-          [--requires <id>@<x.y.z>]... [--conflicts <id>]... [--overrides <id>]... [--no-zip] [--game <dir>]
-pcmodtool verify <dir|zip>          exit 0 = valid, 1 = broken
+          [--requires <id>@<x.y.z>]... [--conflicts <id>]... [--overrides <id>]... [--modes tag,team]
+          [--no-zip] [--game <dir>]
+pcmodtool verify <dir|zip>          exit 0 = valid, 1 = broken; also prints the modes
 pcmodtool digest <dir|zip>          "package <hex>" and "sim <hex>" (the package and package sim digests)
-pcmodtool session <exe> <pkgdir>... the session sim digest (<exe> = 64-hex or a path to MBAA.exe)
+pcmodtool session [--mode <m>] <exe> <pkgdir>...  the session sim digest (<exe> = 64-hex or a path to MBAA.exe)
 ```
 
 - `<srcdir>` holds the files at their game-relative paths. A root-level `pcmod.json` or `mod.ini` is skipped.
+- `data\*.wmt` is refused in a manifest: the game writes it from `story\battle\*_win.txt` on every result screen and
+  never reads it. `pack` and the export window skip such files with a note instead of refusing the whole package.
 - `--class` is detected when omitted, and `pack` prints how many files go into the online sim digest. `--exe` defaults to the hash of `C:\games\mbaacc\MBAA.exe`.
 - `--game` (default `C:\games\mbaacc`, `""` turns it off) prints a `REPLACES vanilla` line for each file that the
   install already has.
 - `session` applies the §4 checks: verify failures, an exe not in the package's list, an unmet `requires`, an enabled
   `conflicts`, and a path shipped twice where a sim package is involved without `overrides`. It reads `mod.ini`
   `[Config] enabled= priority=`, and the local value wins. With no sim package enabled, it prints the vanilla-set digest.
+  `--mode <m>` builds the set for that session mode (§6): only sim packages whose `modes` is empty or lists `m` enter
+  the digest; the others are still checked and are listed as notes. Without `--mode` every sim package counts.
 
 ## Digests (spec §5)
 
