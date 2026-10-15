@@ -411,7 +411,7 @@ target_sources(${EXE} PRIVATE
 	src/authoring/authoring_window.cpp src/authoring/authoring_tuning_ui.cpp src/authoring/authoring_live_ui.cpp
 	src/authoring/frame_summary.cpp src/authoring/mbac_reference.cpp src/authoring/hud_layout.cpp src/authoring/hud_layout_ui.cpp
 	src/pal_file.cpp src/game_frame_ring.cpp src/authoring/game_view.cpp
-	src/authoring/sysconst_model.cpp src/authoring/sysconst_ui.cpp)
+	src/authoring/sysconst_model.cpp src/authoring/sysconst_ui.cpp src/authoring/winquote_model.cpp src/authoring/winquote_ui.cpp)
 add_executable(game_link_cli
 	src/game_link_cli.cpp
 	src/game_link.cpp
@@ -1105,13 +1105,13 @@ if(MINGW)
 endif()
 add_test(NAME hmod COMMAND hmod_test build/hmod_test_out WORKING_DIRECTORY ${CMAKE_SOURCE_DIR})
 # System constants editor model (_type.txt / vector.txt in-place edits); also round-trips the vanilla files when present.
-add_executable(sysconst_test tests/sysconst_test.cpp src/authoring/sysconst_model.cpp src/misc.cpp)
+add_executable(sysconst_test tests/sysconst_test.cpp src/authoring/sysconst_model.cpp src/authoring/winquote_model.cpp src/misc.cpp)
 target_include_directories(sysconst_test PRIVATE "src")
 if(MINGW)
 	target_link_options(sysconst_test PRIVATE -static-libgcc -static-libstdc++ -static)
 endif()
 add_test(NAME bg_textini COMMAND bg_test --textini-test)
-add_test(NAME sysconst COMMAND sysconst_test build/sysconst_test_out C:/dev/hantei-chan/gamedata/mbaacc_ref/vanilla_0002 WORKING_DIRECTORY ${CMAKE_SOURCE_DIR})
+add_test(NAME sysconst COMMAND sysconst_test build/sysconst_test_out C:/dev/hantei-chan/gamedata/mbaacc_ref/vanilla_0002 C:/games/mbaacc/story/battle WORKING_DIRECTORY ${CMAKE_SOURCE_DIR})
 # --headless view export (hidden window, FBO readback): PNG size + checksum stability, batch == single shot
 add_test(NAME headless_export COMMAND bash tools/ui/headless_ctest.sh $<TARGET_FILE:gonptechan> tests/fixtures/headless/chr000.ha6 "${CMAKE_BINARY_DIR}/headless_out" WORKING_DIRECTORY ${CMAKE_SOURCE_DIR})
 
