@@ -85,7 +85,7 @@ bool MainFrame::RunShortcut(ShortcutAction action)
 	case ShortcutAction::redo:
 		// The command workspace owns its own history; never let its focus
 		// fall through to the character's undo stack.
-		if (shortcuts.focused() == ShortcutContext::commands)
+		if (shortcuts.focused() == ShortcutContext::commands || shortcuts.focused() == ShortcutContext::script)
 			return false;
 		if (m_posDrag.active) EndPositionDrag(false);
 		return PerformUndoRedo(view, action == ShortcutAction::redo);

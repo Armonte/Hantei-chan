@@ -26,6 +26,7 @@ namespace abrowser { struct OpenRequest; }
 #include "background/bg_renderer.h"
 #include "background/bg_types.h"
 #include "cmdfile/cmd_editor_ui.h"
+#include "squirrel/script_panel.h"
 #include "shortcut_router.h"
 #include "workspace_session.h"
 #include "workspace_viewports.h"
@@ -373,6 +374,10 @@ private:
 	void openCommandEditorForActive();
 	void loadCommandsForActive(const std::string& path);
 	void drawCommandEditor();
+	// Squirrel Script panel (ui/main_frame_script.cpp, squirrel/script_panel.h).
+	std::unique_ptr<sqedit::ScriptPanel> scriptPanel;
+	bool m_scriptShortcutsRegistered = false;
+	void drawScriptPanel();
 	void drawGameLink();   // Game Link window (ui/main_frame_gamelink.cpp)
 	void drawTagPanel();   // Tag / Team window, experimental (ui/main_frame_gamelink.cpp, tag_panel.h)
 	void drawAuthoring();  // [authoring] Authoring workspace (ui/main_frame_gamelink.cpp, authoring/authoring_window.h)

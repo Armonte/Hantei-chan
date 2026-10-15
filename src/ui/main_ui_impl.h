@@ -438,6 +438,7 @@ void MainFrame::DrawUi()
 	aboutWindow.Draw();
 	vectors.Draw();
 	drawCommandEditor();
+	drawScriptPanel();
 	drawGameLink();
 	drawTagPanel();
 	drawAuthoring();

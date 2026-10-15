@@ -1152,3 +1152,26 @@ set_tests_properties(sqtool_fixture_bad PROPERTIES WILL_FAIL TRUE)
 add_test(NAME sqtool_mbtl COMMAND sqtool check ${SQTOOL_GAMEDATA_DIR}/mbtl --api docs/squirrel/api/mbtl_api.json --run WORKING_DIRECTORY ${CMAKE_SOURCE_DIR})
 add_test(NAME sqtool_uni2 COMMAND sqtool check ${SQTOOL_GAMEDATA_DIR}/uni2 --api docs/squirrel/api/uni2_api.json --run WORKING_DIRECTORY ${CMAKE_SOURCE_DIR})
 set_tests_properties(sqtool_mbtl sqtool_uni2 PROPERTIES SKIP_RETURN_CODE 77)
+
+# Squirrel script editor (phase P2/P3, docs/squirrel/SCOPE.md §2.4): CP932 document model + sandboxed
+# in-editor VM, and the dockable "Script" panel. Widget: goossens/ImGuiColorTextEdit (MIT, vendored,
+# docs/squirrel/EDITOR_WIDGET_TRIAGE.md).
+add_library(sqeditor_core STATIC src/squirrel/script_document.cpp src/squirrel/script_vm.cpp src/cmdfile/cmd_io.cpp)
+target_include_directories(sqeditor_core PUBLIC "src" "third_party")
+target_compile_definitions(sqeditor_core PRIVATE WIN32_LEAN_AND_MEAN)
+target_link_libraries(sqeditor_core PUBLIC squirrel224)
+if(TARGET ${EXE})
+	target_sources(${EXE} PRIVATE src/squirrel/script_panel.cpp src/ui/main_frame_script.cpp third_party/ImGuiColorTextEdit/TextEditor.cpp)
+	set_source_files_properties(third_party/ImGuiColorTextEdit/TextEditor.cpp PROPERTIES COMPILE_OPTIONS "-w")
+	target_link_libraries(${EXE} PRIVATE sqeditor_core)
+endif()
+
+add_executable(squirrel_doc_test tests/squirrel_doc_test.cpp)
+target_link_libraries(squirrel_doc_test PRIVATE sqeditor_core)
+if(MINGW)
+	target_link_options(squirrel_doc_test PRIVATE -static-libgcc -static-libstdc++ -static)
+endif()
+add_test(NAME squirrel_doc COMMAND squirrel_doc_test WORKING_DIRECTORY ${CMAKE_SOURCE_DIR})
+# Every shipped .txt of each extracted game must round-trip byte-identical (skipped when absent).
+add_test(NAME squirrel_doc_roundtrip COMMAND squirrel_doc_test --games ${SQTOOL_GAMEDATA_DIR}/mbtl ${SQTOOL_GAMEDATA_DIR}/uni2 D:/Games/unib WORKING_DIRECTORY ${CMAKE_SOURCE_DIR})
+set_tests_properties(squirrel_doc_roundtrip PROPERTIES SKIP_RETURN_CODE 77)

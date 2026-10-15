@@ -278,6 +278,85 @@ stays out of the plan.
 
 ---
 
+### 2.6 Validation profiles (base game API + declared extensions)
+
+Modders ship more than scripts. Exe patches (Cheat Engine tables such as `UNI2_Cha.CT`, see
+`UNI2_CHA_CT_ANALYSIS.md`), fbmod modules and loader DLLs can add natives, lift limits or change what a native
+does. Validation therefore runs against a **profile stack**: one base game profile plus zero or more
+**extension profiles**, each declared by the patch or module that provides it.
+
+**Files (JSON, committed under `res/squirrel/`):**
+- `res/squirrel/<game>.profile.json`: the base profile, generated from `docs/squirrel/api/<game>_api.json`
+  (§2.2): `{ "kind": "base", "id": "uni2-1.42", "game": "uni2", "exe": { "sha1": "...", "version": "1.42" },
+  "vm": "sq2.2.4-fb", "stdlib": [...], "tables": [...], "functions": [{ "name": "BMvTbl.SetPattern",
+  "ret": "void", "args": ["string|int"] }, ...], "constants": [...], "vars": [...], "limits": { ... } }`.
+  `limits` holds facts that scripts can trip over, for example `"csel.icons": 39` and `"chara.portraits": 39`.
+- `res/squirrel/ext/<id>.ext.json`: an extension profile, with this shape:
+
+```json
+{ "kind": "extension", "id": "uni2cha-roster", "title": "UNI2_Cha roster extender",
+  "base": ["uni2-1.42"],
+  "source": { "type": "ce-table|fbmod|exe-patch|dll", "ref": "UNI2_Cha.CT", "sha1": "..." },
+  "adds":    { "functions": [...], "constants": [...], "tables": [...] },
+  "changes": [{ "native": "BMvEff.X", "note": "returns 2 instead of 1 when ..." }],
+  "removes": [],
+  "limits":  { "csel.icons": 100, "chara.portraits": 256 },
+  "behaviours": ["csel.roster>39"],
+  "conflicts": ["other-ext-id"] }
+```
+
+  `behaviours` are free-form tags for effects that are not natives (for example `wallbounce.no-height-check`). A
+  static check or the preview simulator can key on them. An fbmod exe-patch module emits the same file next
+  to its byte-patch records (fbmod `DESIGN.md` §10), so one declaration feeds both the patcher and the
+  validator.
+
+**How a script or mod declares what it needs:**
+- **Mod level (preferred).** The mod manifest (fbmod `mod.json` / pcmod) gets
+  `"squirrel": { "requires": ["uni2cha-roster"], "experimental": false }`. The editor's active stack
+  is the base plus every extension the opened mod requires, and the mod packager refuses to build when a
+  required extension is missing.
+- **File level.** A pragma in a leading comment, which the game ignores:
+  `// @hantei requires: uni2cha-roster, fbmod-wallbounce` and `// @hantei experimental`. The parser reads only the
+  first 20 lines, so the pragma survives the byte-exact round trip.
+- The project or workspace can pin extensions for every file (UI toggle, saved in the session).
+
+**Severity rules:**
+
+| Finding | No extension active | Declared by an active extension | File marked `experimental` |
+|---|---|---|---|
+| Compile error (VM) | error, save needs "Save anyway" | error | error |
+| Unknown native or table member (`Foo.Bar` not in the stack) | **error** | ok, shown as "ext: <id>" in hover | warning |
+| Native used with an extension that `changes` it | n/a | info: "behaviour changed by <id>" | info |
+| Exceeds a base limit (for example a 40th CSel icon) | error | ok when the extension raises the limit | warning |
+| Requires an extension that is not installed or not found | n/a | error ("missing extension <id>") | warning |
+| Two active extensions that conflict | n/a | error | error |
+| Unknown member only in dead code (`if(0)`, as in the MBTL `GRD_*` leftovers) | warning | warning | warning |
+
+Unknown natives are errors by default, because the game throws at run time, usually mid-match. `experimental`
+downgrades the error to a warning for a single file. It never applies silently: the badge shows it.
+
+**UI:**
+- The Script panel toolbar shows `Profile: uni2-1.42 + [uni2cha-roster ×] [+ add]` chips.
+- Each finding carries its source: base, ext id, or experimental.
+- Hovering a native shows its signature and which profile provides it, for example `BMvTbl.SetPattern(string|int): void [uni2-1.42]`.
+- Autocomplete lists base and extension members, and extension members carry a tag.
+- Every save writes a status badge: "valid for uni2-1.42", "valid for uni2-1.42 + uni2cha-roster", or
+  "experimental (2 warnings)".
+- An extensions manager lists the installed ext files with their source (CE table, fbmod module, DLL) and
+  hash, and has a "derive from CE table" import, which only parses the table and never runs it.
+
+**Implementation order:** this lands in P7.
+- Base profiles come first, via `sqtool profile <api.json>`.
+- Next, `ScriptVM::open` takes a profile stack. Natives from an extension are stubs that log
+  `ext:<id>`.
+- A static member pass, over the parser index from P4, then flags unknown `Table.Member`s before running.
+- Today, P3 already gives part of this: an unknown native fails the top-level run after the bootstrap, and
+  shows as a runtime warning at the line.
+
+`UNI2_Cha.CT` is a useful calibration case. It adds no natives and changes no script behaviour. Its extension
+file would only raise `limits`, so a script that relies on it validates the same way, and only the roster/CSel
+data checks change.
+
 ## 3. Prototype (worktree `wt/squirrel`, branch `feat/squirrel`)
 
 - `third_party/squirrel-2.2.4/`: upstream 2.2.4 stable (sha256 recorded) plus `PATCHES.md`.
@@ -327,6 +406,8 @@ Known prototype gaps:
 | **P0** (done) | Version and format per game; vendored 2.2.4; IDB API extraction for UNI2 and MBTL; `sqtool` compile and bootstrap with stubs; ctest | – |
 | **P1** | Run the extractor on the UNIB and DFCI IDBs (rename them first); `SQVM::Execute`/keyword-table diff to close "no VM mods"; MBTL Sqrat Var types; ship `res/squirrel/<game>.profile.json`; extend `sqtool --run` to every character's `_sc/_cmd/_mv/_com` after the bootstrap | S (1–2 days) |
 | **P2** | CP932 document model shared with the cmdfile editor (byte-exact load and save, dirty-line re-encode) plus a round-trip test over every shipped script | S |
+| **P2** status (2026-10-15, `feat/squirrel-editor`) | Done: `src/squirrel/script_document.*` (reuses `cmdfile::Cp932ToUtf8`/`Utf8ToCp932`). ctest `squirrel_doc_roundtrip`: 981 shipped .txt files (MBTL 539, UNI2 302, UNIB 140; 15.0 MB) round-trip byte-identical, also after an edit that is then undone | – |
+| **P3** status | Minimal panel done: Tools > "Squirrel script editor", dockable "Script" window, game-folder file list, goossens ImGuiColorTextEdit with a Squirrel 2.2.4 language. Save: strict CP932 encode, then compile (and with an API profile, bootstrap and run the top level) in the sandboxed `ScriptVM`. A compile error blocks the save ("Save anyway"); a runtime error is a warning. Errors are marked at their line. Autocomplete, hover and fold are not done | – |
 | **P3** | Script editor panel: syntax highlight, fold, compile-on-save errors, autocomplete and hover from the profile | M (3–5 days) |
 | **P4** | Cross-links: a real-parser index of `Mv_*` tables, `DataPattern`, `SetPattern`, `GetUpdateFrameID` and `CreateObject`, linked both ways with HA6 patterns, frames and AFIDs. Replaces `mv_script.cpp`'s regex scan (closes parity F22's "read-only spawn list") | M |
 | **P5** | `_cmd_` command-table editor view (a structured table over the same document; parity F22 "no Squirrel `_cmd_` editor") | M |
@@ -336,12 +417,12 @@ Known prototype gaps:
 
 ## 5. Decisions for the user
 1. **Single VM now?** Recommended: yes, 2.2.4 only, with the `IScriptVM` seam. Don't vendor 3.x speculatively.
-2. **Sandbox:** in-editor runs register no `io`/`system` (recommended), or mirror the game exactly (it
-   has `system()`).
-3. **Strict versus lenient validation** by default: unknown natives as errors (recommended for saves
-   targeting the game) or warnings.
-4. **Editor widget:** extend the cmdfile editor's text widget, or adopt ImGuiColorTextEdit (MIT, about 3k
-   lines).
+2. **Sandbox:** decided: in-editor runs stub `file`/`dofile`/`loadfile`/`writeclosuretofile`/`system`/
+   `remove`/`rename`/`getenv`, and log each call they block (`ScriptVM`). `sqtool` still mirrors the game.
+3. **Validation:** proposed: validation profiles (§2.6). Unknown natives are errors unless an active
+   extension declares them, and warnings in a file marked `experimental`.
+4. **Editor widget:** decided 2026-10-15: goossens/ImGuiColorTextEdit (MIT), vendored in
+   `third_party/ImGuiColorTextEdit` (`EDITOR_WIDGET_TRIAGE.md`).
 5. **Where profiles live:** generated JSON committed under `res/squirrel/` (recommended; regenerate per game
    build), or generated at first run from user-supplied IDB exports.
 6. **UNIEL/UNIST/UNICLR:** acquire a build to confirm 2.2.4. Only one `strings` check is needed; the extractor
