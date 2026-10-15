@@ -468,6 +468,7 @@ void MainFrame::DrawUi()
 	}
 	sysConstWindow.draw();
 	winQuoteWindow.draw();
+	seWindow.draw();
 	drawPatternManagerWindow();
 	drawCgManagerWindow();
 	stage3dview::Draw();

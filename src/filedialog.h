@@ -20,7 +20,8 @@ enum {
 	OPENANY,    // File > Open...: every supported character / archive / project file
 	IMAGE,      // PNG / BMP / JPEG / TIFF to import
 	IMAGESAVE,  // image export, .png by default (also .bmp / .jpg / .tif)
-	JSONDIR     // unused placeholder keeps the order stable
+	JSONDIR,    // unused placeholder keeps the order stable
+	WAV         // sound effect to import (.wav)
 };
 }
 

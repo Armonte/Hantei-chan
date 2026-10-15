@@ -810,6 +810,15 @@ void MainFrame::Menu(unsigned int errorPopupId)
 			if (ImGui::MenuItem(LBL("Pattern manager"), nullptr, m_patMgr.open)) m_patMgr.open = !m_patMgr.open;
 			if (ImGui::MenuItem(LBL("Pattern comparison"), nullptr, m_showCompare)) m_showCompare = !m_showCompare;
 			if (ImGui::MenuItem(LBL("Variable references (batch replace)"), nullptr, m_varRefs.open)) m_varRefs.open = !m_varRefs.open;
+			if (ImGui::MenuItem(LBL("Sound effects (SeList / se\\battle_se)"), nullptr, seWindow.open)) {
+				if (!seWindow.open) {
+					CharacterInstance* ch = getToolCharacter();
+					const std::string from = ch ? (!ch->getTxtPath().empty() ? ch->getTxtPath() : ch->getTopHA6Path()) : "";
+					std::string err;
+					if (from.empty() || !seWindow.openGame(std::filesystem::u8path(from).parent_path().parent_path().u8string(), &err))
+						seWindow.open = true;
+				} else seWindow.open = false;
+			}
 			if (ImGui::MenuItem(LBL("Win quotes (story\\battle\\*_win.txt)"), nullptr, winQuoteWindow.open)) {
 				if (!winQuoteWindow.open) {
 					// The game folder is the active character's data folder's parent.

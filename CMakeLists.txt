@@ -411,7 +411,7 @@ target_sources(${EXE} PRIVATE
 	src/authoring/authoring_window.cpp src/authoring/authoring_tuning_ui.cpp src/authoring/authoring_live_ui.cpp
 	src/authoring/frame_summary.cpp src/authoring/mbac_reference.cpp src/authoring/hud_layout.cpp src/authoring/hud_layout_ui.cpp
 	src/pal_file.cpp src/game_frame_ring.cpp src/authoring/game_view.cpp
-	src/authoring/sysconst_model.cpp src/authoring/sysconst_ui.cpp src/authoring/winquote_model.cpp src/authoring/winquote_ui.cpp)
+	src/authoring/sysconst_model.cpp src/authoring/sysconst_ui.cpp src/authoring/winquote_model.cpp src/authoring/winquote_ui.cpp src/authoring/se_browser.cpp)
 add_executable(game_link_cli
 	src/game_link_cli.cpp
 	src/game_link.cpp
