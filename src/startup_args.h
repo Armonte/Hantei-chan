@@ -82,6 +82,7 @@ struct StartupArgs {
 	bool exportBoxes = false;
 	bool exportSpawns = true;
 	bool hideBoxes = false;     // --hide-boxes: start with the hitbox overlay off (game-vs-editor comparison shots)
+	bool hideSpawns = false;    // --hide-spawns: start with spawned-pattern preview off (isolate a pattern's own parts)
 	bool exportFitEach = false;
 	std::string saveProject;
 	std::string stats;           // UTF-8

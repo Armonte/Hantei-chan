@@ -50,6 +50,7 @@ bool ParseWave2StartupArg(const char* arg, const wchar_t* next, int& i)
 	if (!strcmp(arg, "--export-boxes")) { gStartup.exportBoxes = true; return true; }
 	if (!strcmp(arg, "--export-nospawns")) { gStartup.exportSpawns = false; return true; }
 	if (!strcmp(arg, "--hide-boxes")) { gStartup.hideBoxes = true; return true; }
+	if (!strcmp(arg, "--hide-spawns")) { gStartup.hideSpawns = true; return true; }
 	if (!next) return false;
 	if (!strcmp(arg, "--tick")) { gStartup.tick = atoi(value(CP_ACP).c_str()); return true; }
 	if (!strcmp(arg, "--onion")) {
@@ -382,6 +383,8 @@ void MainFrame::ProcessStartupArgs()
 		}
 	}
 	if (n == 2 && gStartup.hideBoxes) m_showBoxes = false;
+	if (n >= 2 && n < 20 && gStartup.hideSpawns)   // views open over the first frames; keep it off until the capture
+		for (auto &v : views) { v->getState().vizSettings.showSpawnedPatterns = false; v->getState().forceSpawnTreeRebuild = true; }
 	if (n == 8 && !gStartup.exportDir.empty()) {
 		if (CharacterView *v = findViewById(m_startupViewId)) {
 			ExportSettings s = m_export;
