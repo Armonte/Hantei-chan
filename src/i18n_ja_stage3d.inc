@@ -15,3 +15,4 @@
 // Squirrel script -> HA6 links.
 {"also in patterns", "他のパターン"},
 {"not found in the loaded HA6 stack", "読み込んだ HA6 にありません"},
+{"Drag: pan the fight camera. Wheel: zoom. Double-click: reset.", "ドラッグ: 対戦カメラを移動。ホイール: ズーム。ダブルクリック: リセット。"},

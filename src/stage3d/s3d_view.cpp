@@ -464,7 +464,22 @@ void Draw()
 		Render(s);
 		const ImVec2 avail = ImGui::GetContentRegionAvail();
 		const float sc = std::min(avail.x / s.rt.width(), avail.y / s.rt.height());
-		if (sc > 0.f) ImGui::Image((ImTextureID)(intptr_t)s.rt.texture(), ImVec2(s.rt.width() * sc, s.rt.height() * sc), ImVec2(0, 1), ImVec2(1, 0));
+		if (sc > 0.f) {
+			ImGui::Image((ImTextureID)(intptr_t)s.rt.texture(), ImVec2(s.rt.width() * sc, s.rt.height() * sc), ImVec2(0, 1), ImVec2(1, 0));
+			// Interactive fight camera: drag pans (game px of the 1280x720 frame), wheel zooms about the frame, double-click
+			// resets. Same state the cam fields above edit, so values can still be typed exactly.
+			if (ImGui::IsItemHovered()) {
+				ImGuiIO& io = ImGui::GetIO();
+				const float toGame = 1280.f / (s.rt.width() * sc);
+				if (ImGui::IsMouseDragging(ImGuiMouseButton_Left, 0.f) && (io.MouseDelta.x != 0.f || io.MouseDelta.y != 0.f)) {
+					s.camX -= io.MouseDelta.x * toGame * Iz(s);
+					s.camY -= io.MouseDelta.y * toGame * Iz(s);
+				}
+				if (io.MouseWheel != 0.f) s.zoom = std::clamp(s.zoom * std::pow(1.1f, io.MouseWheel), 0.2f, 4.f);
+				if (ImGui::IsMouseDoubleClicked(ImGuiMouseButton_Left)) { s.camX = 0.f; s.camY = 0.f; s.zoom = 1.f; }
+				ImGui::SetItemTooltip("%s", TXT("Drag: pan the fight camera. Wheel: zoom. Double-click: reset."));
+			}
+		}
 	}
 	ImGui::End();
 }
