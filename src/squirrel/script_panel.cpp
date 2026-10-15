@@ -1166,6 +1166,16 @@ bool ScriptPanel::scriptCommand(const std::string& sub, const std::string& arg, 
 		for (size_t i = 0; i < r.size() && i < 10; ++i) out += "\n  " + r[i].file + ":" + std::to_string(r[i].line + 1) + " " + r[i].text;
 	}
 	else if (sub == "hide") m_visible = false;
+	else if (sub == "run") {   // the save-time check without saving: bootstrap, prerequisites, then this file's top level
+		std::string bytes;
+		std::vector<EncodeError> errs;
+		m->doc.encode(SplitLines(m->editor.GetText()), bytes, &errs);
+		const Diagnostic boot = m->vm.bootstrap();
+		const Diagnostic pre = m->vm.runPrerequisites(m->currentRel);
+		const Diagnostic d = m->vm.compileAndRun(bytes, "./" + m->currentRel);
+		out = std::string("boot ") + (boot.ok ? "ok" : boot.message) + ", before " + (pre.ok ? "ok" : pre.source + ":" + std::to_string(pre.line) + " " + pre.message) +
+			", file " + (d.ok ? "ok" : d.source + ":" + std::to_string(d.line) + " " + d.message);
+	}
 	else if (sub == "tab") { m->bottomTab = atoi(arg.c_str()); m->selectBottomTab = true; }
 	else if (sub == "type") { m->editor.ReplaceTextInCurrentCursor(arg); }
 	else if (sub == "problems") {
@@ -1328,6 +1338,8 @@ void ScriptPanel::draw()
 	if (!m->apiPath.empty()) {
 		const Diagnostic boot = m->vm.bootstrap();
 		if (!boot.ok) m->say("bootstrap: " + boot.source + ":" + std::to_string(boot.line) + " " + boot.message);
+		const Diagnostic pre = m->vm.runPrerequisites(m->currentRel);
+		if (!pre.ok) m->say("before this file: " + pre.source + ":" + std::to_string(pre.line) + " " + pre.message);
 		d = m->vm.compileAndRun(bytes, "./" + m->currentRel);
 		m->showDiagnostic(d, "./" + m->currentRel);
 	} else {
