@@ -1,0 +1,15 @@
+sq open C:/dev/hantei-chan/gamedata/uni2
+sq file data/chr001/chr001_mv_0.txt
+sq run
+sq file data/chr001/chr001_sc_0.txt
+sq run
+sq file data/chr001/chr001_com_0.txt
+sq run
+sq file data/chr005/chr005_cmd_0.txt
+sq run
+sq open C:/dev/hantei-chan/gamedata/mbtl
+sq file data/chr001/chr001_mv_0.txt
+sq run
+sq file data/chr003/chr003_sc_0.txt
+sq run
+quit

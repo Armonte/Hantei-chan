@@ -48,6 +48,9 @@ public:
 
 	// Compiles the raw CP932 bytes exactly as the game does (sq_compilebuffer, no transcoding).
 	Diagnostic compile(const std::string& bytes, const std::string& name);
+	// Runs what the game loads before `rel` (game-relative): the character folder's cmd before mv, cmd+mv before sc,
+	// data/_combase.txt before COM files. Returns the first failure (as a runtime diagnostic of that file).
+	Diagnostic runPrerequisites(const std::string& rel);
 	// Compiles, then runs the top level against the stubs (after bootstrap()).
 	Diagnostic compileAndRun(const std::string& bytes, const std::string& name);
 
