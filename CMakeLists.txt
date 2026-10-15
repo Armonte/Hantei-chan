@@ -1111,6 +1111,7 @@ if(MINGW)
 	target_link_options(sysconst_test PRIVATE -static-libgcc -static-libstdc++ -static)
 endif()
 add_test(NAME bg_textini COMMAND bg_test --textini-test)
+add_test(NAME han2_pacselftest COMMAND han2tool pacselftest build/pacselftest_out WORKING_DIRECTORY ${CMAKE_SOURCE_DIR})
 add_test(NAME sysconst COMMAND sysconst_test build/sysconst_test_out C:/dev/hantei-chan/gamedata/mbaacc_ref/vanilla_0002 C:/games/mbaacc/story/battle WORKING_DIRECTORY ${CMAKE_SOURCE_DIR})
 # --headless view export (hidden window, FBO readback): PNG size + checksum stability, batch == single shot
 add_test(NAME headless_export COMMAND bash tools/ui/headless_ctest.sh $<TARGET_FILE:gonptechan> tests/fixtures/headless/chr000.ha6 "${CMAKE_BINARY_DIR}/headless_out" WORKING_DIRECTORY ${CMAKE_SOURCE_DIR})
