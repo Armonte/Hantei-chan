@@ -1,0 +1,42 @@
+# v2 stage-light experiment (render-match, 2026-10-14): idle control + PUPS p449 with the stage light as is ("lit")
+# and with the per-object stage light add colour zeroed ("unlit"). Light object = [P1+0x8C0] (obj+0x65C = owner =
+# P1 itself, probe run v2_light_probe_chr027): floats +0x40/+0x44/+0x48 = RGB 0..1, +0x60 = strength
+# (uni2 1.42 CharaObj_DrawWithStageLight 0x5CE3C0: add = max(flash, rgb*255*strength) for the main object).
+include ../games/uni2.gcs
+let P1CHR 27
+let P2CHR 0
+include ../games/uni2_to_training.gcs
+set OUTD C:\dev\hantei-chan\tools\gamecap\captures\v2
+sym g_CharaTintOverride 0x9A3E68
+peek u32 g_CharaTintOverride tint_override
+peek u32 P1+0x8C0 light_ptr
+peek i32 [P1+0x8C0]+0x8 light_active
+peek f32 [P1+0x8C0]+0x40 light_r
+peek f32 [P1+0x8C0]+0x44 light_g
+peek f32 [P1+0x8C0]+0x48 light_b
+peek f32 [P1+0x8C0]+0x60 light_scale
+peek u32 P2+0x8C0 p2_light_ptr
+
+set CTRL ctrl_chr027_p0_lit
+include ../games/uni2_v2_ctrl.gcs
+set CASE pups_chr027_p449_lit
+set PAT 449
+set SETFRAME 0
+set FRAME 0
+set GTICK 1
+set STEPKEYS F6
+include ../games/uni2_v2_case.gcs
+
+# stage light off for P1's draw (rewritten at every Present by the agent)
+hold f32 [P1+0x8C0]+0x40 0
+hold f32 [P1+0x8C0]+0x44 0
+hold f32 [P1+0x8C0]+0x48 0
+step 3
+peek f32 [P1+0x8C0]+0x40 held_r
+peek f32 [P1+0x8C0]+0x48 held_b
+set CTRL ctrl_chr027_p0_unlit
+include ../games/uni2_v2_ctrl.gcs
+set CASE pups_chr027_p449_unlit
+include ../games/uni2_v2_case.gcs
+peek f32 [P1+0x8C0]+0x48 held_b_end
+quit

@@ -1,4 +1,5 @@
 #include "render.h"
+#include "parts/part_render_math.h"
 #include "main.h"
 
 #include <glm/gtc/matrix_transform.hpp>
@@ -517,20 +518,9 @@ void Render::UpdateProj(float w, float h)
 	projection = glm::ortho<float>(0, w, h, 0, -1024.f, 1024.f);
 	invOrtho = glm::inverse(projection);
 
-	// Perspective for PAT rendering, plane-fit at z=0 (parts at z=0 map 1:1 to
-	// editor pixels; z!=0 foreshortens). The eye distance comes from uni2.exe's
-	// Pat_GetGlobalViewProjMatrix_640x480 (RE'd via IDA):
-	//   PerspectiveFovLH(1.3045008 rad, aspect 1, zn 0.01, zf 1000), eye at
-	//   z = -cot(fov/2) in unit space, part z pre-scaled by 1/1024
-	// => effective eye distance = 1024 * cot(1.3045008/2) pixels (~1338.9).
-	// (sosfiro's f=1.3 was an empirical approximation of the same value.)
-	constexpr float dist = 1024;
-	constexpr float dist2 = dist * 2;
-	const float gameFovY = 1.3045008f;                 // radians, from the binary
-	const float f = 1.f / glm::tan(gameFovY * 0.5f);   // = cot(fov/2) ~= 1.30737
-	perspective = glm::translate(glm::mat4(1.f), glm::vec3(-1, 1, 0)) *
-		glm::frustum<float>(-w/dist2, w/dist2, h/dist2, -h/dist2, 1*f, dist*2*f);
-	perspective = glm::translate(perspective, glm::vec3(0.f, 0.f, -dist*f));
+	// Perspective for PAT rendering: the game's left-handed part space (partrender::PartPerspective, uni2 1.42
+	// PatPart_GetGlobalPerspective640x480 0x4C1860). Parts at z = 0 map 1:1 to editor pixels; positive z is farther.
+	perspective = partrender::PartPerspective(w, h);
 }
 
 void Render::SetCg(CG *cg_)

@@ -8,6 +8,7 @@
 
 #include <cmath>
 #include <cstdio>
+#include <glm/gtc/matrix_transform.hpp>
 
 static int g_fail = 0, g_checks = 0;
 #define CHECK(x) do { ++g_checks; if (!(x)) { std::printf("CHECK failed: %s (line %d)\n", #x, __LINE__); ++g_fail; } } while (0)
@@ -174,8 +175,48 @@ static void TestWeightZero()
 	CHECK(Lerp(cur, next, 0.f) == next && LerpTurns(0.1f, 0.2f, 0.f) == 0.2f);
 }
 
+// The editor's part perspective against the game's own chain (uni2 1.42 PatPart_GetGlobalPerspective640x480 0x4C1860,
+// D3DX row-vector order Scale(1/640,1/480,1/1024) * LookAtLH * PerspectiveFovLH * Scale(640,480,1); glm is
+// column-vector, so the same chain reads right to left). Both are compared in pixels relative to the part origin.
+static glm::vec2 GamePartProject(glm::vec3 p)
+{
+	const float cot = 1.f / std::tan(kPartFovY * 0.5f);
+	glm::mat4 m = glm::scale(glm::mat4(1.f), glm::vec3(640.f, 480.f, 1.f)) *
+		glm::perspectiveFovLH_ZO(kPartFovY, 1.f, 1.f, 0.01f, 1000.f) *
+		glm::lookAtLH(glm::vec3(0, 0, -cot), glm::vec3(0, 0, 0), glm::vec3(0, 1, 0)) *
+		glm::scale(glm::mat4(1.f), glm::vec3(1.f / 640.f, 1.f / 480.f, 1.f / 1024.f));
+	glm::vec4 c = m * glm::vec4(p, 1.f);
+	return glm::vec2(c.x / c.w, c.y / c.w);
+}
+
+static glm::vec2 EditorPartProject(glm::vec3 p, float w, float h)
+{
+	// Render::UpdateProj: perspective = PartPerspective; the draw then applies inverse(ortho(0, w, h, 0)).
+	glm::mat4 inv = glm::inverse(glm::ortho<float>(0, w, h, 0, -1024.f, 1024.f));
+	glm::vec4 c = inv * PartPerspective(w, h) * glm::vec4(p, 1.f);
+	return glm::vec2(c.x / c.w, c.y / c.w);
+}
+
+static void TestPartPerspective()
+{
+	CHECK(Near(PartEyeDistance(), 1340.73f, 0.05f));   // 1024 * cot(1.3045008 / 2)
+	const float w = 1264.f, h = 861.f;
+	const glm::vec3 pts[] = {{0, 0, 0}, {100, -50, 0}, {200, 300, 400}, {-150, 80, -300}, {50, 50, 900}, {-400, -700, 250}};
+	for (const glm::vec3 &p : pts) {
+		const glm::vec2 g = GamePartProject(p), e = EditorPartProject(p, w, h);
+		// game y is the part's +y (down on screen); the editor's view is y-down too
+		CHECK(Near(g.x, e.x, 0.05f));
+		CHECK(Near(g.y, e.y, 0.05f));
+		CHECK(Near(g.x, p.x * PartEyeDistance() / (PartEyeDistance() + p.z), 0.05f));
+	}
+	// left-handed: positive z is farther, so smaller
+	CHECK(std::fabs(EditorPartProject({100, 0, 300}, w, h).x) < 100.f);
+	CHECK(std::fabs(EditorPartProject({100, 0, -300}, w, h).x) > 100.f);
+}
+
 int main()
 {
+	TestPartPerspective();
 	TestBlend();
 	TestFlip();
 	TestEase();

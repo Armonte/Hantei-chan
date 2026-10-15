@@ -1,0 +1,21 @@
+# v2 light probe (render-match, 2026-10-14): read the per-object stage light that UNI2 feeds into every .pat part
+# (uni2 1.42 CharaObj_DrawWithStageLight 0x5CE3C0 -> CharaObj_DrawLayers 0x5CD740 -> DrawObj per-layer
+# mul (+0x1C) / add (+0x20) -> PatPart_SetupWorldMatrixAndShader 0x415230 diffuse*mul, spec+add).
+# The add colour is max(flash, StageLight(+0x40/+0x44/+0x48 floats) * 255 * (+0x60)), StageLight =
+# [[obj+0x3F4]+0x65C]+0x8C0 (or [obj+0x65C]+0x8C0 when that is set).
+include ../games/uni2.gcs
+let P1CHR 27
+let P2CHR 0
+include ../games/uni2_to_training.gcs
+set OUTD C:\dev\hantei-chan\tools\gamecap\captures\v2
+sym g_CharaTintOverride 0x9A3E68
+peek u32 g_CharaTintOverride tint_override
+peek u32 P1+0x65C obj_65c
+peek u32 P1+0x3F4 obj_3f4
+peek u32 [P1+0x3F4]+0x65C owner_65c
+peek u32 [[P1+0x3F4]+0x65C]+0x8C0 light_ptr
+peek i32 [[[P1+0x3F4]+0x65C]+0x8C0]+0x8 light_active
+peek f32 [[[P1+0x3F4]+0x65C]+0x8C0]+0x40 light_r
+peek f32 [[[P1+0x3F4]+0x65C]+0x8C0]+0x44 light_g
+peek f32 [[[P1+0x3F4]+0x65C]+0x8C0]+0x48 light_b
+peek f32 [[[P1+0x3F4]+0x65C]+0x8C0]+0x60 light_scale

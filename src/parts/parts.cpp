@@ -746,6 +746,10 @@ void Parts::Draw(const DrawParams& params,
             partVertices.Prepare(6 * 7 * sizeof(float), &point[0]);
             break;
         }
+        // Shape z is the game's own sign (uni2 1.42 CPAniPrimRender_Ring 0x414120 / _Donuts 0x414590 / _Sphere 0x414A60 /
+        // _Corn 0x414DF0: dz steps and the sphere's start vertex (0, 0, -r) are in +z = away from the eye, the
+        // left-handed part space of partrender::PartPerspective). Before the perspective was made left-handed these
+        // were stored negated to make up for it.
         case ShapeType::RING:
         {
             // Cylindrical ring
@@ -757,7 +761,7 @@ void Parts::Draw(const DrawParams& params,
                 {
                     point[j].x = float(outShape.radius - ((i + tY[j] == outShape.vertexCount && outShape.length == 10000) ? 0 : float(outShape.dRadius * (i + tY[j])) / outShape.vertexCount)) * glm::sin(angle + delta * tY[j]);
                     point[j].y = -float(outShape.radius - ((i + tY[j] == outShape.vertexCount && outShape.length == 10000) ? 0 : float(outShape.dRadius * (i + tY[j])) / outShape.vertexCount)) * glm::cos(angle + delta * tY[j]);
-                    point[j].z = float(outShape.width * -(tX[j] * 2 - 1) - float(outShape.dz * (i + tY[j])) / outShape.vertexCount);
+                    point[j].z = float(outShape.width * (tX[j] * 2 - 1) + float(outShape.dz * (i + tY[j])) / outShape.vertexCount);
                     point[j].s = point[j].p = uvS((float)tX[j]);
                     point[j].t = point[j].q = uvT(1.0f * (i + tY[j]) / outShape.vertexCount);
                 }
@@ -778,7 +782,7 @@ void Parts::Draw(const DrawParams& params,
                 {
                     point[j].x = float((outShape.radius - (1 - tX[j]) * outShape.width - ((i + tY[j] == outShape.vertexCount && outShape.length == 10000) ? 0 : float(outShape.dRadius * (i + tY[j])) / outShape.vertexCount)) * glm::sin(angle + delta * tY[j]));
                     point[j].y = -float((outShape.radius - (1 - tX[j]) * outShape.width - ((i + tY[j] == outShape.vertexCount && outShape.length == 10000) ? 0 : float(outShape.dRadius * (i + tY[j])) / outShape.vertexCount)) * glm::cos(angle + delta * tY[j]));
-                    point[j].z = -float(outShape.dz * (i + tY[j])) / outShape.vertexCount;
+                    point[j].z = float(outShape.dz * (i + tY[j])) / outShape.vertexCount;
                     point[j].s = point[j].p = uvS((float)tX[j]);
                     point[j].t = point[j].q = uvT(1.0f * (i + tY[j]) / outShape.vertexCount);
                 }
@@ -803,7 +807,7 @@ void Parts::Draw(const DrawParams& params,
                     {
                         point[k].x = float((outShape.radius) * glm::sin(angle2 + delta2 * tX[k]) * glm::sin(angle + delta * tY[k]));
                         point[k].y = float((outShape.radius) * glm::sin(angle2 + delta2 * tX[k]) * glm::cos(angle + delta * tY[k]));
-                        point[k].z = outShape.radius * glm::cos(angle2 + delta2 * tX[k]);
+                        point[k].z = -outShape.radius * glm::cos(angle2 + delta2 * tX[k]);
                         point[k].s = point[k].p = uvS(float(i + tY[k]) / outShape.vertexCount);
                         point[k].t = point[k].q = uvT(float(j + tX[k]) / outShape.vertexCount2);
                     }
@@ -827,7 +831,7 @@ void Parts::Draw(const DrawParams& params,
                     for (int k = 0; k < 6; k++) {
                         point[k].x = -w * (outShape.vertexCount2 - 1 - j + tX[k]) * glm::sin(angle + delta * tY[k]);
                         point[k].y = -w * (outShape.vertexCount2 - 1 - j + tX[k]) * glm::cos(angle + delta * tY[k]);
-                        point[k].z = -outShape.dz * float(j + (1 - tX[k])) / outShape.vertexCount2;
+                        point[k].z = outShape.dz * float(j + (1 - tX[k])) / outShape.vertexCount2;
                         point[k].s = point[k].p = uvS(1.0f * (i + tY[k]) / outShape.vertexCount);
                         point[k].t = point[k].q = uvT(1.0f * (1 + j - tX[k]) / outShape.vertexCount2);
                     }
