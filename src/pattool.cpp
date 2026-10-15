@@ -1,3 +1,6 @@
+#include "background/stage_card.h"
+#include "png_writer.h"
+#include "misc.h"
 // pattool: part set renumbering from the command line (src/parts/pat_renumber.h, Hantei_Docs/pat_renumber.md).
 //   pattool refs <pat>                                  users of the .pat and the part set ids their frames draw
 //   pattool renumber <pat> [ops] [--dry-run] [--no-backup]
@@ -362,13 +365,69 @@ static int CmdAppendCheck(const std::string &dstPat, const std::string &srcPat, 
 	return fail ? 1 : 0;
 }
 
+// ---- stage card (src/background/stage_card.h) ----
+static int CmdStageCard(int argc, char **argv)
+{
+	// pattool stagecard <image> <name-en|name-jp|preview|round> <stage id> <out dir>
+	if (argc < 6) { printf("usage: pattool stagecard <image> <name-en|name-jp|preview|round> <stage id> <out dir>\n"); return 1; }
+	const std::string slot = argv[3];
+	stagecard::Slot s = slot == "name-en" ? stagecard::Slot::NameEn : slot == "name-jp" ? stagecard::Slot::NameJp : slot == "preview" ? stagecard::Slot::Preview
+		: slot == "round" ? stagecard::Slot::RoundCall : stagecard::Slot::Count;
+	if (s == stagecard::Slot::Count) { printf("unknown slot %s\n", slot.c_str()); return 1; }
+	std::vector<uint8_t> px; int w = 0, h = 0; std::string err;
+	if (!ReadImageRgba(argv[2], px, w, h, err)) { printf("cannot read %s: %s\n", argv[2], err.c_str()); return 1; }
+	const std::vector<uint8_t> bytes = stagecard::BuildSlot(s, px.data(), w, h);
+	std::string rel = stagecard::GamePath(s, atoi(argv[4]));
+	std::replace(rel.begin(), rel.end(), '\\', '/');
+	const std::filesystem::path out = std::filesystem::u8path(argv[5]) / std::filesystem::u8path(rel);
+	std::error_code ec; std::filesystem::create_directories(out.parent_path(), ec);
+	if (!WriteFileAtomic(out.string().c_str(), bytes.data(), bytes.size())) { printf("cannot write %s\n", out.u8string().c_str()); return 1; }
+	printf("wrote %s (%zu bytes, %dx%d from %dx%d)\n", out.u8string().c_str(), bytes.size(), stagecard::Info(s).w, stagecard::Info(s).h, w, h);
+	return 0;
+}
+
+// pattool stagecard-selftest [<vanilla rd_stNN.bmp>]: byte layout of the files the composer writes.
+static int CmdStageCardSelfTest(int argc, char **argv)
+{
+	int bad = 0;
+	auto check = [&](bool ok, const char *what) { if (!ok) { printf("FAIL %s\n", what); bad++; } };
+	std::vector<uint8_t> rgba(256 * 32 * 4);
+	for (int y = 0; y < 32; y++) for (int x = 0; x < 256; x++) { uint8_t *p = &rgba[(y * 256 + x) * 4]; p[0] = (uint8_t)x; p[1] = (uint8_t)(y * 8); p[2] = 128; p[3] = (uint8_t)(x < 128 ? 0 : 255); }
+	const std::vector<uint8_t> dds = stagecard::BuildSlot(stagecard::Slot::NameEn, rgba.data(), 256, 32);
+	check(dds.size() == 128 + 256 * 32, "DXT3 size");
+	check(!memcmp(dds.data(), "DDS ", 4) && !memcmp(&dds[84], "DXT3", 4), "DXT3 header");
+	check(dds[12] == 32 && dds[16] == 0 && dds[17] == 1, "DXT3 width/height");
+	check(dds[128] == 0x00 && dds[128 + 31 * 16] == 0x00 && dds[128 + 32 * 16] == 0xFF, "DXT3 explicit alpha (transparent left half, opaque right half)");
+	const std::vector<uint8_t> pv = stagecard::BuildSlot(stagecard::Slot::Preview, rgba.data(), 256, 32);
+	check(pv.size() == 128 + 256 * 96 && !memcmp(&pv[84], "DXT5", 4), "preview resized to 256x96, DXT5");
+	const std::vector<uint8_t> bmp = stagecard::BuildSlot(stagecard::Slot::RoundCall, rgba.data(), 256, 32);
+	check(bmp.size() == 16440, "round call size = vanilla 16440");
+	if (argc >= 3) {
+		FILE *f = fopen(argv[2], "rb");
+		std::vector<uint8_t> v(16440);
+		const size_t n = f ? fread(v.data(), 1, v.size(), f) : 0;
+		if (f) fclose(f);
+		check(n == 16440 && !memcmp(v.data(), bmp.data(), 54), "round call header equals the vanilla rd_st header");
+	}
+	std::vector<uint8_t> big(512 * 192 * 4, 0), small;
+	for (int y = 0; y < 192; y++) for (int x = 256; x < 512; x++) { uint8_t *p = &big[(y * 512 + x) * 4]; p[0] = 255; p[3] = 255; }
+	stagecard::Resize(big.data(), 512, 192, small, 256, 96);
+	check(small[(10 * 256 + 200) * 4 + 0] == 255 && small[(10 * 256 + 200) * 4 + 3] == 255 && small[(10 * 256 + 20) * 4 + 3] == 0, "resize keeps opaque red and transparent areas");
+	printf("STAGECARD-SELFTEST %s (%d problems)\n", bad ? "FAIL" : "OK", bad);
+	return bad ? 1 : 0;
+}
+
 int main(int argc, char **argv)
 {
+	if (argc >= 2 && std::string(argv[1]) == "stagecard") return CmdStageCard(argc, argv);
+	if (argc >= 2 && std::string(argv[1]) == "stagecard-selftest") return CmdStageCardSelfTest(argc, argv);
 	if (argc < 3) {
 		printf("usage: pattool refs <pat> | renumber <pat> [--move a-b:to] [--place a-b:to] [--insert at:n] [--delete a-b] [--clear a-b] [--swap a:b] [--dry-run] [--no-backup]\n"
 		       "       pattool check <pat> --tmp <dir> [ops] [--expect-refused]\n"
 		       "       pattool append-from <dst.pat> <src.pat> -o <out.pat> --map <map.tsv> [--sets 1,5,7-9]\n"
-		       "       pattool append-check <dst.pat> <src.pat> --tmp <dir> [--sets 1,5,7-9]\n");
+		       "       pattool append-check <dst.pat> <src.pat> --tmp <dir> [--sets 1,5,7-9]\n"
+		       "       pattool stagecard <image> <name-en|name-jp|preview|round> <stage id> <out dir>\n"
+		       "       pattool stagecard-selftest [<vanilla rd_stNN.bmp>]\n");
 		return 1;
 	}
 	setvbuf(stdout, nullptr, _IONBF, 0);
