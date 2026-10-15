@@ -1124,3 +1124,31 @@ endif()
 if(EXISTS "/home/teo/dev/refs/dgv_better_akiha/extracted/Better Akiha v2")
 	add_test(NAME fxr_dgv_oracle COMMAND python3 tools/fxrecolor/dgv_oracle.py "/home/teo/dev/refs/dgv_better_akiha/extracted/Better Akiha v2" $<TARGET_FILE:cgmtool> docs/cg/effect_recolor_data/dgv_akiha.ini 4 WORKING_DIRECTORY ${CMAKE_SOURCE_DIR})
 endif()
+
+# Squirrel 2.2.4 stable (zlib licence), the VM every post-MBAACC French-Bread game embeds
+# (UNIB, DFCI, UNI2, MBTL). SQ_FB_COMPAT keeps the games' 32-bit integer model on x64
+# (third_party/squirrel-2.2.4/PATCHES.md). docs/squirrel/SCOPE.md has the per-game evidence.
+file(GLOB SQ224_SOURCES third_party/squirrel-2.2.4/squirrel/*.cpp third_party/squirrel-2.2.4/sqstdlib/*.cpp)
+add_library(squirrel224 STATIC ${SQ224_SOURCES})
+target_include_directories(squirrel224 PUBLIC "${CMAKE_SOURCE_DIR}/third_party/squirrel-2.2.4/include")
+target_compile_definitions(squirrel224 PUBLIC SQ_FB_COMPAT)
+target_compile_options(squirrel224 PRIVATE -w)
+
+# sqtool: compile every script of a game with its exact VM; --run executes Battle_Init/Battle_Std
+# against native stubs generated from the IDB API table (docs/squirrel/api/<game>_api.json).
+add_executable(sqtool src/squirrel/sqtool.cpp)
+target_include_directories(sqtool PRIVATE "third_party")
+target_link_libraries(sqtool PRIVATE squirrel224)
+if(MINGW)
+	target_link_options(sqtool PRIVATE -static-libgcc -static-libstdc++ -static)
+endif()
+# Game data lives outside the repo (gamedata/ is reproducible, not committed); the test is skipped (77)
+# when it is missing. The fixture test always runs.
+# A Windows-side path: sqtool.exe runs as a Windows process (WSL interop), so a /mnt/c path would not resolve.
+set(SQTOOL_GAMEDATA_DIR "C:/dev/hantei-chan/gamedata" CACHE STRING "Extracted French-Bread game data root (Windows path)")
+add_test(NAME sqtool_fixture COMMAND sqtool compile tests/fixtures/squirrel/fb_style_move.txt WORKING_DIRECTORY ${CMAKE_SOURCE_DIR})
+add_test(NAME sqtool_fixture_bad COMMAND sqtool compile tests/fixtures/squirrel/syntax_error.txt WORKING_DIRECTORY ${CMAKE_SOURCE_DIR})
+set_tests_properties(sqtool_fixture_bad PROPERTIES WILL_FAIL TRUE)
+add_test(NAME sqtool_mbtl COMMAND sqtool check ${SQTOOL_GAMEDATA_DIR}/mbtl --api docs/squirrel/api/mbtl_api.json --run WORKING_DIRECTORY ${CMAKE_SOURCE_DIR})
+add_test(NAME sqtool_uni2 COMMAND sqtool check ${SQTOOL_GAMEDATA_DIR}/uni2 --api docs/squirrel/api/uni2_api.json --run WORKING_DIRECTORY ${CMAKE_SOURCE_DIR})
+set_tests_properties(sqtool_mbtl sqtool_uni2 PROPERTIES SKIP_RETURN_CODE 77)
