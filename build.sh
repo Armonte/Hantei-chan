@@ -41,13 +41,24 @@ cd build
 
 # Configure with MinGW toolchain
 echo -e "${YELLOW}Configuring CMake with MinGW toolchain...${NC}"
+# ccache (when installed): the cache lives on the WSL disk and paths are hashed relative to the worktree
+# root, so every worktree reuses objects any other worktree already compiled instead of rebuilding all
+# of them over /mnt/c.
+LAUNCHER=()
+if command -v ccache &> /dev/null; then
+    export CCACHE_BASEDIR="$(cd .. && pwd)"
+    export CCACHE_NOHASHDIR=1
+    LAUNCHER=(-DCMAKE_C_COMPILER_LAUNCHER=ccache -DCMAKE_CXX_COMPILER_LAUNCHER=ccache)
+fi
 cmake .. \
     -DCMAKE_TOOLCHAIN_FILE=../mingw-toolchain.cmake \
-    -DCMAKE_BUILD_TYPE=Release
+    -DCMAKE_BUILD_TYPE=Release \
+    "${LAUNCHER[@]}"
 
-# Build
+# Build. HC_JOBS caps the parallel compiles (default 8): several sessions build on this machine at
+# once, and -j$(nproc) per build oversubscribed it badly.
 echo -e "${YELLOW}Building (version info will be auto-generated)...${NC}"
-make -j$(nproc)
+make -j"${HC_JOBS:-8}"
 
 echo -e "${GREEN}Build complete!${NC}"
 echo -e "Executable: ${YELLOW}build/gonptechan.exe${NC}"
