@@ -9,6 +9,7 @@
 #include <cstdlib>
 #include <cstring>
 #include <fstream>
+#include <iterator>
 #include <sstream>
 
 #define STB_VORBIS_NO_PUSHDATA_API
@@ -28,6 +29,13 @@ bool ParseBgmTxt(const std::string& path, std::vector<BgmEntry>& out)
 {
 	std::ifstream f(path, std::ios::binary);
 	if (!f) return false;
+	ParseBgmText(std::string(std::istreambuf_iterator<char>(f), {}), out);
+	return true;
+}
+
+void ParseBgmText(const std::string& raw, std::vector<BgmEntry>& out)
+{
+	std::istringstream f(raw);
 	out.clear();
 	std::string line;
 	BgmEntry* cur = nullptr;
@@ -52,7 +60,6 @@ bool ParseBgmTxt(const std::string& path, std::vector<BgmEntry>& out)
 		else if (key == "LoopPos") cur->loopPos = std::atof(value.c_str());
 	}
 	out.erase(std::remove_if(out.begin(), out.end(), [](const BgmEntry& e) { return e.file.empty(); }), out.end());
-	return true;
 }
 
 long long AdvanceLoop(long long pos, long long total, long long loopStart, bool loop,

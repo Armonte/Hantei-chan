@@ -19,3 +19,9 @@
 {"step", "段"},
 {"Vector list", "ベクトルリスト"},
 {"Edit failed: one value, no spaces.", "編集に失敗しました: 値は1つ、空白なしで。"},
+// BGM tracklist editing.
+{"Edit bgm.txt", "bgm.txt を編集"},
+{"Add track", "曲を追加"},
+{"Set loop point at playhead", "再生位置をループ点にする"},
+{"unsaved", "未保存"},
+{"No such .ogg in the Bgm folder.", "Bgm フォルダにその .ogg がありません。"},

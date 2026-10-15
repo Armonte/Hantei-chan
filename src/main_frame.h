@@ -438,6 +438,8 @@ private:
 		float leadIn = 5.0f;
 		float volume = 0.8f;
 		std::unique_ptr<BgmPlayer> player;
+		bg::TextIni ini;   // bgm.txt as loaded, edited in place (tracklist editing)
+		bool edit = false;
 	} m_bgm;
 	void drawBgmWindow();
 	bool m_showHud = false;

@@ -53,6 +53,10 @@ public:
 	// add "Key = value" at the end of the section (or of the file for "").
 	void Set(const std::string& sec, const std::string& key, const std::string& value);
 	void RemoveKey(const std::string& sec, const std::string& key);
+	// The "// comment" after a key's value (raw bytes, without "//" and leading spaces). SetComment replaces it
+	// (or appends " //comment"); an empty comment removes it. False when the key is absent.
+	bool GetComment(const std::string& sec, const std::string& key, std::string& comment) const;
+	bool SetComment(const std::string& sec, const std::string& key, const std::string& comment);
 	// Append a new section (with keys) before the first section numbered
 	// higher, so the file stays sorted when names are [Prefix_NNN].
 	void AddSection(const std::string& sec, const std::vector<std::pair<std::string, std::string>>& keys);
