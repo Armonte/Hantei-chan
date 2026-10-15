@@ -515,8 +515,13 @@ void Render::UpdateProj(float w, float h)
 	if(w == 0 || h == 0)
 		return;
 
-	projection = glm::ortho<float>(0, w, h, 0, -1024.f, 1024.f);
-	invOrtho = glm::inverse(projection);
+	// The world view (sprites, parts, the axes and boxes) rasterises like the games' D3D9 (pixel centres at integer
+	// window coordinates, partrender::D3d9PixelCentreNdc): the origin then lands on one pixel, as in the game, and the
+	// axis lines sit on that pixel. invOrtho stays the inverse of the plain ortho: the part path maps the
+	// perspective's NDC back to pixels with it before applying `projection`.
+	const glm::mat4 ortho = glm::ortho<float>(0, w, h, 0, -1024.f, 1024.f);
+	projection = partrender::D3d9PixelCentreNdc(w, h) * ortho;
+	invOrtho = glm::inverse(ortho);
 
 	// Perspective for PAT rendering: the game's left-handed part space (partrender::PartPerspective, uni2 1.42
 	// PatPart_GetGlobalPerspective640x480 0x4C1860). Parts at z = 0 map 1:1 to editor pixels; positive z is farther.
@@ -651,6 +656,11 @@ void Render::AdjustImageQuad(int x, int y, int w, int h)
 
 	imageVertex[1] = imageVertex[5] = imageVertex[21] = y;
 	imageVertex[9] = imageVertex[13] = imageVertex[17] = h;
+
+	// The game's CG layer UVs start 0.25 texel in (partrender::CgUvStart, uni2 CgLayer_DrawWithCharaShader 0x4BE140).
+	const float u0 = partrender::CgUvStart(w - x), v0 = partrender::CgUvStart(h - y);
+	imageVertex[2] = imageVertex[18] = imageVertex[22] = u0;
+	imageVertex[3] = imageVertex[7] = imageVertex[23] = v0;
 }
 
 void Render::GenerateHitboxVertices(const BoxList &hitboxes)

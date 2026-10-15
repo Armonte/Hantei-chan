@@ -12,7 +12,7 @@ grep -v "^#" "$(dirname "$0")/cases.txt" | grep -E "${CASES:-.}" | while IFS='|'
 	name=$(echo $name); txt=$(echo $txt | tr / '\\'); pat=$(echo $pat); fr=$(echo $fr); tick=$(echo $tick); zoom=$(echo $zoom)
 	[ -z "$name" ] && continue
 	for v in old new; do
-		printf "[Other settings][]\nposX=10\nposY=10\nsizeX=1280\nsizeY=900\n" > "$W/$v/hanteichan.ini"
+		printf "[Other settings][]\nposX=-2000\nposY=10\nsizeX=1280\nsizeY=900\n" > "$W/$v/hanteichan.ini"
 		args=(--open "$G\\$txt" --pattern "$pat" --frame "$fr" --zoom "$zoom")
 		[ "$tick" != "-1" ] && args+=(--tick "$tick")
 		(cd "$W/$v" && timeout 120 ./gonptechan.exe "${args[@]}" --capture-view "$(wslpath -w "$W/$v")\\$name.png" </dev/null >/dev/null 2>&1)

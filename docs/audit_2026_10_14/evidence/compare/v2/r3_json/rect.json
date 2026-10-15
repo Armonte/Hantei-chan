@@ -1,0 +1,40 @@
+{
+ "case": "rect_chr024_p76",
+ "game": "rect_chr024_p76_unlit",
+ "plate": "/mnt/c/dev/hantei-chan/tools/gamecap/captures/v2/rect_chr024_p76_unlit_game_plate.png",
+ "light": [
+  [
+   1.0,
+   0.0
+  ],
+  [
+   1.0,
+   0.0
+  ],
+  [
+   1.0,
+   0.0
+  ]
+ ],
+ "raw": [
+  25.27972169461465,
+  66.45569620253164
+ ],
+ "lit": [
+  25.27972169461465,
+  66.45569620253164
+ ],
+ "band": [
+  10.518634363422079,
+  48.9451476793249
+ ],
+ "band_px": 1,
+ "grad": null,
+ "glow": null,
+ "glow_ring": null,
+ "px": 474,
+ "refine": [
+  0,
+  0
+ ]
+}

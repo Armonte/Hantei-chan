@@ -14,7 +14,7 @@ grep -v "^#" "$(dirname "$0")/${CASEFILE:-cases.txt}" | grep -E "${CASES:-.}" | 
 	[ -z "$name" ] && continue
 	for bg in k w; do
 		c=$([ $bg = k ] && echo "0.000000,0.000000,0.000000" || echo "1.000000,1.000000,1.000000")
-		printf "[Other settings][]\nposX=10\nposY=10\nsizeX=1280\nsizeY=900\nColor=%s\n" "$c" > "$W/hanteichan.ini"
+		printf "[Other settings][]\nposX=-2000\nposY=10\nsizeX=1280\nsizeY=900\nColor=%s\n" "$c" > "$W/hanteichan.ini"
 		args=(--open "$G\\$txt" --pattern "$pat" --frame "$fr" --zoom "$zoom" --hide-boxes ${EXTRA_ARGS:-})
 		[ "$tick" != "-1" ] && args+=(--tick "$tick")
 		rm -f "$W/$name.png"

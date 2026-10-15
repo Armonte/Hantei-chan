@@ -1,0 +1,15 @@
+# MBTL v2: PRAL 2 case
+include ../games/mbtl.gcs
+let P1CHR 4
+let P2CHR 4
+include ../games/mbtl_to_training.gcs
+set OUTD C:\dev\hantei-chan\tools\gamecap\captures\v2
+set NSTEPS 1
+
+set CASE mbtl_pral2_chr004_p420f4
+set PAT 420
+set SETFRAME 4
+set FRAME 4
+set GTICK 1
+include ../games/mbtl_v2_case_plate.gcs
+quit

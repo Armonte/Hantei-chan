@@ -214,9 +214,44 @@ static void TestPartPerspective()
 	CHECK(std::fabs(EditorPartProject({100, 0, -300}, w, h).x) > 100.f);
 }
 
+static void TestD3d9PixelCentre()
+{
+	// D3D9 (uni2/MBTL/MBAA, no half-pixel correction): geometry at window x is sampled at pixel x's centre. The
+	// editor's game projection (Render::UpdateProj: D3d9PixelCentreNdc * ortho) must put window point (X, Y) on GL
+	// window coordinate (X + 0.5, Y + 0.5), the centre of pixel (X, Y) in a y-down view.
+	const float w = 1264.f, h = 861.f;
+	const glm::mat4 proj = D3d9PixelCentreNdc(w, h) * glm::ortho<float>(0, w, h, 0, -1024.f, 1024.f);
+	auto toWindow = [&](float x, float y) {
+		const glm::vec4 c = proj * glm::vec4(x, y, 0.f, 1.f);
+		return glm::vec2((c.x / c.w + 1.f) * 0.5f * w, (1.f - c.y / c.w) * 0.5f * h);
+	};
+	const glm::vec2 o = toWindow(600.f, 700.f);
+	CHECK(Near(o.x, 600.5f, 1e-3f));
+	CHECK(Near(o.y, 700.5f, 1e-3f));
+	// rect_chr024_p76: a 6-px linear rect from the origin pixel X. GL pixel k (centre k + 0.5) maps back to geometry
+	// k - X, so it samples u = (k - X) / 6: pixel X + 3 samples the texture centre (the game's 1-px core on the
+	// origin pixel), and pixel X samples the edge. Without the shift it would be (k - X + 0.5) / 6 (2-px core).
+	const float X = 600.f;
+	for (int k = 0; k < 6; ++k) {
+		const float centreGl = X + k + 0.5f;
+		const float geom = centreGl - (o.x - 600.f);   // undo the shift
+		CHECK(Near((geom - X) / 6.f, k / 6.f, 1e-4f));
+	}
+	// CG layer UVs start 0.25 texel in (CgLayer_DrawWithCharaShader 0x4BE140)
+	CHECK(Near(CgUvStart(100), 0.0025f));
+	CHECK(Near(CgUvStart(0), 0.f));
+	// a 1:1 point-sampled sprite: pixel k samples 0.25 + k (w - 0.25) / w texels, always inside texel k
+	const int tw = 37;
+	for (int k = 0; k < tw; ++k) {
+		const float u = (CgUvStart(tw) + (1.f - CgUvStart(tw)) * (float)k / tw) * tw;
+		CHECK((int)std::floor(u) == k);
+	}
+}
+
 int main()
 {
 	TestPartPerspective();
+	TestD3d9PixelCentre();
 	TestBlend();
 	TestFlip();
 	TestEase();

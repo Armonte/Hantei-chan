@@ -1,4 +1,4 @@
-# v2 game-vs-editor index (2026-10-14, fix/render-match)
+# v2 game-vs-editor index (2026-10-15, fix/render-match2; first pass fix/render-match)
 
 The sheets are `<case>.png` in this folder (half size here, full size in the main checkout's copy of the same folder). Each sheet has four tiles: game with the Improvement Mod hitboxes, game clean, ours, and sosfiro. The sosfiro shot is scaled by its own zoom.
 
@@ -29,28 +29,65 @@ The game frame in every sheet is verified: pattern, frame and tick are asserted 
 
 **Floor used below: ≈ 5–7 mean, ≈ 10–20%.**
 
-## Cases
-| case | game frame | status | residual (no light → aura model) | aura |
-|---|---|---|---|---|
-| flipHV_chr019_p153 | p153 f0 t1 | **Fixed (root cause found)**. The "brown band" is palette[214] = (101,85,58) via PPPA, in the game too. The earlier capture had a strong blue aura add (0,21–23,35–37) that lifted it. | old frame: 19.00 → 7.51 / 20.8%. New lit frame: 8.98 → **6.99 / 19.8%**. Aura held 0: **6.75 / 19.5%** | sidecar (0,5,8); held 0 |
-| pups_chr027_p449 | p449 f0 t1 | **Fixed (root cause found)**. The black part is (0,0,0) in the editor and in the game with the aura held at 0. The game lifts it by exactly the aura add. | old frame 18.67 → **0.00** with c=(0,21,35). lit2 frame (0,6,9): **0.00**. Aura held 0: **0.00** (whole black area, 0% > 24) | sidecar (0,6,9); held 0 |
-| mbtl_pral2_chr004_p420f4 | p420 f4 t1 | **Matches**. There is no cutscene camera at this frame: the sidecar shows camera element 1 at pos (0,0), zoom 1 (MBTL `GetCameraPosition` 0x7FB870). The sheet only looked wrong because the editor origin detection read the white fill's edge as an axis (fixed). | full frame **0.69 / 0.6%**. Brush window 1.88 / 3.4%. PRAL2 cloud texture (part 10, subtractive, α 0x28) correlates with the game at r = 0.93; a flat white fill would give 4.75 | n/a |
-| pral2_chr025_p133f1 | p133 f1 t1 | Matches | 6.85 → **4.68 / 13.8%** | fit (0,17,28) |
-| flipH_chr000_p96f1 | p96 f1 t1 | Matches | 14.52 → **0.76 / 0.5%** | fit (0,20,33) |
-| flipV_chr000_p383f1 | p383 f1 t1 | Matches | 4.45 → **3.43 / 10.2%** | fit (2,4,6) |
-| afhk_pat_chr000_p72_t2 | p72 f0 t3 | Matches | 11.68 → **3.83 / 14.4%** | fit (0,21,35) |
-| afhk_pat_chr019_p62_t7 | p62 f1 t5 | Matches | 11.48 → **3.04 / 6.0%** | fit (66,103,116)? Large: probably a flash or spawn; geometry is fine |
-| afhk_cg_chr020_p435_t27 | p435 f0 t28 | Matches visually. CG layer: the residual is the CG BgColor stage shading, which the aura model does not cover | 23.25 → 14.53 / 13.2% | fit (10,10,16) |
-| afhk_cg_chr020_p437_t2 | p437 f0 t3 | Matches visually. CG layer, as above | 19.28 → 9.60 / 8.9% | fit (12,11,15) |
-| rect_chr024_p76 | p76 f0 t1 | Matches visually. A 540 px line; the refine hit its bound (−10), so the number is not meaningful | 17.54 → 11.67 / 60.9% | fit |
-| pras_chr020_p5f2 | p5 f2 t1 | Matches | 31.43 → **5.45 / 13.5%** | fit (14,63,93) incl. CG |
-| mbtl_ctrl_chr001_p0f0 | p0 f0 t1 | Control: position and scale match | visual only | n/a |
-| mbtl_flipV_chr001_p157f2 | p157 f2 t1 | Matches visually (arc, sparkles, place) | No plate metric: the MBTL plates predate the v2 frames (refine hits ±10) | n/a |
-| mbtl_pups_chr011_p309 | p309 f0 t1 | Matches visually (silhouette, hurtbox) | No plate metric, as above | n/a |
+## Cases (render-match2, 2026-10-15: every case numeric, against its own control)
+Columns: residual = mean |d| per channel / % footprint px with |d| > 24 (summed RGB); "band" = the same with a +-1 px
+tolerance band (per pixel, best of the prediction shifted by up to 1 px; `v2_model.py --band 1`). Floor = the idle
+control of the same character, same session, same metric. Status: **floor** = at or below the control floor;
+**edge** = at the floor only with the +-1 px band (residual confined to a 1-px edge); **real** = a real editor
+difference, open.
 
-## Still to do
-- MBTL plate-based numbers: capture an MBTL-IM fighters-hidden plate in the v2 session.
-- Record the aura in every UNI2 sidecar: `games/uni2_meta_aura.gcs` / `uni2_v2_case_aura.gcs`.
+| case | game capture used | residual (plain) | band +-1 | own control floor (plain / band) | status |
+|---|---|---|---|---|---|
+| flipHV_chr019_p153 | `_unlit` (aura held 0) | 6.75 / 19.5% | - | chr019 p0 unlit 5.20 / 10.7% | floor (previous pass, unchanged) |
+| pups_chr027_p449 | `_unlit` | 0.00 / 0% | - | chr027 p0 unlit 9.50 / 21.4% | floor (previous pass) |
+| mbtl_pral2_chr004_p420f4 | v2 | full frame 0.69 / 0.6% | - | full-frame (no sprite) | floor (previous pass) |
+| pral2_chr025_p133f1 | v2 + S1 plate | 4.68 / 13.8% | - | chr025 p0 5.6 / 18% | floor (previous pass) |
+| flipH_chr000_p96f1 | v2 + S1 plate | 0.76 / 0.5% | - | chr000 p0 5.2 / 18% | floor (previous pass) |
+| flipV_chr000_p383f1 | v2 + S1 plate | 3.43 / 10.2% | - | chr000 p0 5.2 / 18% | floor (previous pass) |
+| afhk_pat_chr000_p72_t2 | v2 + S1 plate | 3.83 / 14.4% | - | chr000 p0 5.2 / 18% | floor (previous pass) |
+| afhk_pat_chr019_p62_t7 | v2 + S1 plate | 3.04 / 6.0% | - | chr019 p0 5.20 / 10.7% | floor (previous pass) |
+| pras_chr020_p5f2 | v2 + S1 plate | 5.45 / 13.5% | - | chr020 p0 unlit 1.29 / 0.6% (new) | above the new chr020 floor; old plate, not re-run with the gradient model (see handoff) |
+| **afhk_cg_chr020_p435_t27** | `_unlit` + same-session plate, stage gradient model | 13.32 / 13.2% | **2.23 / 2.4%** | ctrl_chr020_p0_unlit **1.29 / 0.6%**, band 1.27 / 0.6% | edge (1-px edge band of the AFAZ-rotated point-sampled CG) |
+| **afhk_cg_chr020_p437_t2** | `_unlit` + same-session plate, stage gradient model | 9.88 / 10.8% | **2.84 / 5.5%** | as above | edge (AFZM-scaled CG, same edge band) |
+| **rect_chr024_p76** | `_unlit` + same-session plate; `v2_thin.py` on the zoom-1 shot | line metric: width 6 = 6 px, top endpoint 0 px, **centre +0.6 px**, R integral x1.27, R profile mean |d| 15.4 | 13.30 / 74.2% (pixel metric, zoom 1.5 shot) | ctrl_chr024_p0_unlit 1.71 / 0.4% | **real**: the editor rasterises the .pat line half a pixel right with a 2-px core; the game's is centred on the origin pixel with a 1-px core |
+| **mbtl_ctrl_chr001_p0f0** | `_nb` (MBTL-IM bloom 0) + same-session plate (P1/P2 draw alpha 0) | 13.02 / 70.7% raw; **7.29 / 31.0%** with the MBTL stage light (k 1.07/1.04/1.05, c 2/3/5) | 6.02 / 27.3% | (is the MBTL floor) | control |
+| **mbtl_flipV_chr001_p157f2** | `_nb` + same-session plate, control light | 11.84 / 46.6% | **5.46 / 23.6%** | 7.29 / 31.0%, band 6.02 / 27.3% | floor with the band (plain is the arc's AA over a 35k px translucent footprint) |
+| **mbtl_pups_chr011_p309** | `_nb` + same-session plate, control light | silhouette (Q < 0.5, 42.7k px) **2.27 / 5.6%**; translucent disc 43.7 / 96.8% | 22.35 / 53.6% (all) | 7.29 / 31.0% | silhouette at floor; the soft halo around it in the game is not in the editor (unmodelled glow/blur pass, see handoff) |
+
+**Stage chara gradient (new, all UNI2 CG character sprites).** IDA uni2 1.42 (renamed, saved):
+`Stage_BuildCharaBgColorParams` 0x5C44E0 builds a BgColor block (base and height colours from
+`Stage_SampleCharaBgSpecular` 0x518130 at the object's x, std pixel height from `g_StageCharaStdHeightTbl` 0xC58C24 or 400)
+and `DrawObj_DrawLayers` draws each CG layer three times through `CgLayer_DrawWithCharaShader` 0x4BE140
+(`TecCharaDrawBgColor_V`, `TecCharaDrawBgColorSpecular_V`, `TecCharaDrawBgColorBokashi_V`; shader
+`Shader/sh_chara.txt`): specular += base + height x clamp(h / H, 0, 1), h = sprite px above the origin. The model
+(`v2_model.py --grad-ctrl CTRL,CTRLGAME`) calibrates (base, height) on the same session's idle control and applies it to
+the case unchanged. chr020 on the pinned stage: base (10.3, 9.1, 11.5), height (11.9, 3.2, 13.7) at H = 400. It takes
+the chr020 idle control from 14.04 / 97.7% to 1.29 / 0.6%.
+
+## Round 3 (2026-10-15, after acca786: D3D9 pixel-centre rule in the editor)
+Editor shots retaken with the fixed build (window off-screen at x = -2000). The editor origin is now (632, 580) in
+the 1264x861 shots (`sheet.py` KNOWN_ORIGINS). Metrics in `r3_json/`. "r3" captures: `gamecap_scripts/v2r3_chr020.gcs`
+(chr020 unlit, same-session plates, aura glow fields in the sidecar).
+
+| case | capture | residual (plain) | band +-1 | own floor | status |
+|---|---|---|---|---|---|
+| rect_chr024_p76 | `_unlit`, `v2_thin.py` on the zoom-1 shot | R profile **identical** (7.6 28.5 38 100 38 28.3; mean abs d 0.00), centre d 0.00 px, width 6 = 6, R integral x1.000; top endpoint d +1 row (see handoff) | - | ctrl_chr024_p0 1.71 / 0.4% | **fixed** (x); 1 top row open |
+| afhk_cg_chr020_p435_t27 | `_r3` + gradient (ctrl r3) | **2.06 / 2.1%** | 2.01 / 2.0% | ctrl_chr020 1.29 / 0.6% | floor without the band (old `_unlit` capture: 5.50 / 5.5%, band 2.06) |
+| afhk_cg_chr020_p437_t2 | `_r3` + gradient | **2.31 / 4.4%** | 2.30 / 4.4% | 1.29 / 0.6% | edge band gone (was 9.88 / 10.8%); same on the old `_unlit` capture |
+| afhk_cg_chr020_p437_t2 Vorpal glow ring (12 px around the doll) | `_r3`, `--glow sq` | no glow 16.02 / 37.9% -> **glow model 6.99 / 19.0%** | - | ctrl r3 ring: 11.22 / 41.9% -> 7.20 / 13.4% | modelled (ring includes the game's drop shadow) |
+| pras_chr020_p5f2 | `_r3` same-session plate + gradient + glow | 7.15 / 24.6% | 3.86 / 13.5% | 1.29 / 0.6% | open: mixed CG + .pat footprint, the gradient applies to the CG layers only |
+| mbtl_ctrl_chr001_p0f0 | `_nb` | 7.30 / 31.0% (k 1.07/1.04/1.05, c 2/3/5) | 6.02 / 27.3% | control | MBTL light = stage_color/specular strips (handoff) |
+| mbtl_flipV_chr001_p157f2 | `_nb` | 9.51 / 40.8% | 5.24 / 22.2% | 7.30 / 31.0% | floor with the band |
+| mbtl_pups_chr011_p309 | `_nb` (all px) | 27.78 / 61.7% | 22.38 / 53.5% | 7.30 / 31.0% | halo open (silhouette at floor) |
+
+The other first-pass cases (flipHV, pups_chr027, pral2, flipH, flipV, afhk_pat) were not re-measured in round 3:
+their S1 plate paths are not in captures/v2.
+
+**Vorpal glow.** The cyan outline on chr020's doll is the GRD Vorpal aura: `btl_MvFunc.txt`
+`Battle_Std.GRDJudgeWinEffect_Init` sets `PcAuraEffect_Set { type 0, power 1.0, color 0xAA00AAFF, colorB 0x0000AAFF,
+color_chara 0x00001A2A, delay 60, blendmode 0 }` when P1 wins the GRD judge. `CharaAura_DrawGlow` 0x59D910 draws it
+whenever aura type >= 0, independent of `color_chara` (the `_unlit` hold zeroes only that). Model:
+`v2_model.py --glow sq` (see the `aura_glow` docstring).
 
 ## Reproduce
 ```
@@ -58,5 +95,14 @@ CASES=<re> OUTDIR=docs/.../v2/editor_bw tools/uni/s1_compare/shoot_bw2.sh
 python3 tools/uni/s1_compare/v2_model.py <case> --plate <plate> [--game-name <capture>] [--aura-fit]
 python3 tools/uni/s1_compare/v2_fullframe.py <case> --rect x0,y0,x1,y1 [--game-name N] [--aura]
 python3 tools/uni/s1_compare/v2_sheet.py <case> [--game-name N --out NAME]
+# render-match2
+python3 tools/uni/s1_compare/v2_model.py afhk_cg_chr020_p435_t27 --game-name afhk_cg_chr020_p435_t27_unlit --grad-ctrl ctrl_chr020_p0,ctrl_chr020_p0_unlit
+python3 tools/uni/s1_compare/v2_model.py mbtl_flipV_chr001_p157f2 --game-name mbtl_flipV_chr001_p157f2_nb --light "1.07,2;1.04,3;1.05,5"
+python3 tools/uni/s1_compare/v2_thin.py rect_chr024_p76_z1 --game-name rect_chr024_p76_unlit
+# round 3
+python3 tools/uni/s1_compare/v2_model.py afhk_cg_chr020_p437_t2 --game-name afhk_cg_chr020_p437_t2_r3 --grad-ctrl ctrl_chr020_p0,ctrl_chr020_p0_r3 --glow sq
 ```
+Captures: `cases/v2_light_chr020.gcs`, `v2_light_chr024.gcs` (UNI2, plate = one UNI2-IM step after `hidefighters on`,
+because a paused UNI2-IM replays the frozen frame), `v2p_mbtl_*.gcs` (MBTL, plate = P1/P2 draw-alpha override held 0
+for one MBTL-IM step; MBTL-IM's own "Hide the characters" key did not follow the toggle reliably under gamecap).
 Game captures: `tools/gamecap/run.sh cases/v2_light_*.gcs`. Copies are in `gamecap_scripts/`, sidecars in `game_meta/`.
