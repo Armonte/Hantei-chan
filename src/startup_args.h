@@ -81,6 +81,7 @@ struct StartupArgs {
 	bool exportTransparent = true;
 	bool exportBoxes = false;
 	bool exportSpawns = true;
+	bool hideBoxes = false;     // --hide-boxes: start with the hitbox overlay off (game-vs-editor comparison shots)
 	bool exportFitEach = false;
 	std::string saveProject;
 	std::string stats;           // UTF-8

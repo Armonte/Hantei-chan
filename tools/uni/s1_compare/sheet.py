@@ -11,7 +11,7 @@ region under the editor crop is resampled to the editor crop and |game - new| is
 editor's content pixels (where the editor shows sprite, not its clear colour/grid).
 Writes <dir>/sheets/<name>.png and prints the mean / changed-pixel stats per pair; with a game shot it
 also writes <dir>/sheets/game_vs_new.tsv."""
-import os, sys
+import json, os, sys
 import numpy as np
 from PIL import Image, ImageDraw, ImageOps
 
@@ -22,7 +22,7 @@ def cases():
     for ln in open(os.path.join(HERE, 'cases.txt'), encoding='utf-8'):
         if ln.startswith('#') or not ln.strip(): continue
         f = [x.strip() for x in ln.split('|')]
-        yield f[0], f[-1]
+        yield f[0], f[-1], float(f[5])
 
 
 def crop_box(imgs, pad=24):
@@ -51,10 +51,14 @@ def diff(a, b):
     return Image.fromarray(np.clip(d * 4, 0, 255).astype(np.uint8)), d.mean(), changed
 
 
+EDITOR_CLEAR = np.array([83, 104, 47])  # the editor's clear colour in --capture-view shots
+EDITOR_ORIGIN = (631.0, 580.0)          # where shoot.sh's 1264x861 capture puts the world origin
+
+
 def content_mask(im):
-    """Pixels that differ from the clear colour (corner pixel), editor grid lines removed."""
+    """Pixels that differ from the editor clear colour, editor grid lines removed."""
     a = np.asarray(im.convert('RGB')).astype(int)
-    m = np.abs(a - a[2, 2]).sum(2) > 24
+    m = np.abs(a - EDITOR_CLEAR).sum(2) > 24
     m[m.mean(1) > 0.8, :] = False
     m[:, m.mean(0) > 0.8] = False
     return m
@@ -120,19 +124,156 @@ def register(game, new_c, scales=np.arange(0.40, 1.61, 0.02)):
     return refine if refine[1] else None
 
 
-def game_vs_new(game, new_c):
-    r = register(game, new_c)
-    if r is None: return None
-    score, (sc, mirror, x, y, w, h) = r
-    g = game.crop((x, y, x + w, y + h)).resize(new_c.size, Image.BILINEAR)
-    if mirror: g = ImageOps.mirror(g)
+# Where the world origin of P1 lands in the game shot. gamecap leaves training at its start positions
+# (P1 x = -320 px, P2 x = +320 px, so the camera is centred on 0 at zoom 1), which puts P1's origin at
+# (319, 640) of the 1280x720 frame (measured on the zoom-1 chr020 cases, which register by image to 0.3 px).
+GAME_ORIGIN = (319.0, 640.0)
+
+
+def game_transform(meta):
+    """P1 origin on screen and screen px per sprite px (x, y) from the gamecap sidecar: the game's own
+    world->screen path (pixel = world * ScaleCommon; (x, y) = pixel * (ScaleX, ScaleY); screen = M (x, y, 0, 1)
+    with M row-major and divided by w), the same transform its hitbox overlay uses."""
+    if 'cam_f32' in meta:
+        # MBTL: screen = 640 + (world - cam) * zoom / 128 on the 1280x720 reference (camera element 1, the one
+        # GetCameraPosition uses by default: +8 x, +0xC y, +0x14 zoom in a 0x18-byte element)
+        e = 6  # element 1 starts at dword 6
+        camx, camy = meta['cam_i32'][e + 2], meta['cam_i32'][e + 3]
+        zf, zi = meta['cam_f32'][e + 5], meta['cam_i32'][e + 5]
+        zoom = zf if 0.05 < abs(zf) < 20 else (zi / 1000.0 if zi else 1.0)
+        wx = meta['p1_x'] + meta.get('p1_offx', 0); wy = meta['p1_y'] + meta.get('p1_offy', 0)
+        return (640 + (wx - camx) * zoom / 128.0, 640 + (wy - camy) * zoom / 128.0), (zoom, zoom)
+    m = meta['screen_matrix']
+    px = (meta['p1_x'] + meta.get('p1_offx', 0)) * meta['scale_common']
+    py = (meta['p1_y'] + meta.get('p1_offy', 0)) * meta['scale_common']
+    x, y = px * meta['scale_x'], py * meta['scale_y']
+    w = x * m[3] + y * m[7] + m[15]
+    sx = (x * m[0] + y * m[4] + m[12]) / w
+    sy = (x * m[1] + y * m[5] + m[13]) / w
+    return (sx, sy), (meta['scale_x'] * m[0] / w, meta['scale_y'] * m[5] / w)
+
+
+def editor_origin(im):
+    """The editor draws the world axes as full-length grid lines through the origin."""
+    a = np.asarray(im.convert('RGB')).astype(int)
+    m = np.abs(a - a[2, 2]).sum(2) > 24
+    cols = np.where(m.mean(0) > 0.8)[0]; rows = np.where(m.mean(1) > 0.8)[0]
+    if len(cols) == 0 or len(rows) == 0: return EDITOR_ORIGIN  # axes hidden (e.g. a full-screen part)
+    return float(cols[0]), float(rows[0])
+
+
+def game_vs_new(game, new_full, box, zoom=1.0, meta=None):
+    """Map the editor crop into the game frame by geometry (origin + 1/zoom scale), refine by masked NCC within
+    +-6 game px (image matching alone is unreliable: translucent/blended parts composite over the stage
+    differently, which is exactly what is being measured). Returns the aligned game crop, diff, stats."""
+    org = editor_origin(new_full)
+    new_c = new_full.crop(box)
+    if org is None: return None
+    gorg, gsc = (GAME_ORIGIN, (1.0, 1.0)) if meta is None else game_transform(meta)
+    sc = abs(gsc[0]) / zoom
+    x0 = gorg[0] + (box[0] - org[0]) * sc
+    y0 = gorg[1] + (box[1] - org[1]) * sc
+    w, h = int(round(new_c.width * sc)), int(round(new_c.height * sc))
+    mask0 = Image.fromarray((content_mask(new_c) * 255).astype(np.uint8))
+    t = np.asarray(new_c.resize((w, h), Image.BILINEAR)).astype(np.float64) / 255.0
+    m = np.asarray(mask0.resize((w, h), Image.NEAREST)) > 127
+    G = np.asarray(game.convert('RGB')).astype(np.float64) / 255.0
+    R = 6
+    xs, ys = int(round(x0)) - R, int(round(y0)) - R
+    # pad the game frame so crops that run off its edge still work
+    P = max(w, h) + 2 * R
+    Gp = np.pad(G, ((P, P), (P, P), (0, 0)))
+    sub = Gp[ys + P:ys + P + h + 2 * R, xs + P:xs + P + w + 2 * R]
+    r = masked_ncc(sub, t, m)
+    dx = dy = 0; score = float('nan')
+    if r is not None:
+        i = np.nanargmax(r); yy, xx = divmod(i, r.shape[1])
+        score = float(r[yy, xx]); dx, dy = xx - R, yy - R
+    gx, gy = int(round(x0)) + dx, int(round(y0)) + dy
+    gpad = Image.fromarray((Gp * 255).astype(np.uint8))
+    g = gpad.crop((gx + P, gy + P, gx + P + w, gy + P + h)).resize(new_c.size, Image.BILINEAR)
     mask = content_mask(new_c)
+    inside = np.zeros_like(mask)  # editor pixels that fall inside the real game frame
+    yy_, xx_ = np.mgrid[0:new_c.height, 0:new_c.width]
+    gxx = gx + xx_ * w / new_c.width; gyy = gy + yy_ * h / new_c.height
+    inside = (gxx >= 0) & (gxx < game.width) & (gyy >= 0) & (gyy < game.height)
+    mask = mask & inside
     a = np.asarray(g.convert('RGB')).astype(int); b = np.asarray(new_c.convert('RGB')).astype(int)
     d = np.abs(a - b) * mask[:, :, None]
     n = max(1, mask.sum())
     mean = d.sum() / (n * 3)
     changed = ((d.sum(2) > 24) & mask).sum() * 100.0 / n
-    return g, Image.fromarray(np.clip(d * 4, 0, 255).astype(np.uint8)), mean, changed, score, sc, mirror
+    return g, Image.fromarray(np.clip(d * 4, 0, 255).astype(np.uint8)), mean, changed, score, sc, (dx, dy)
+
+
+def grid_mask(K, Wh):
+    """Editor grid lines: opaque (identical on the black and the white backdrop) and running across the view."""
+    opaque = (np.abs(K - Wh).sum(2) == 0)
+    m = np.zeros(opaque.shape, bool)
+    m[:, opaque.mean(0) > 0.9] = True
+    m[opaque.mean(1) > 0.9, :] = True
+    return m
+
+
+def game_vs_model(game, plate, ek, ew, zoom, meta, org):
+    """Honest game-vs-editor comparison for blended parts.
+    The editor view on a black (ek) and a white (ew) backdrop gives, per pixel and channel, E = P + Q*backdrop
+    with P = ek, Q = (ew - ek)/255 (normal alpha, additive, subtractive and multiply are all of this form).
+    The gamecap plate is the same game frame with the fighters hidden (UNI2-IM harness), i.e. the backdrop the
+    game blended onto, so the game pixel should be P + Q*plate. Everything is mapped into game pixels by the
+    recorded camera transform; the region is the editor's sprite footprint (Q != 1 or P != 0)."""
+    K = np.asarray(ek.convert('RGB')).astype(np.float64); Wh = np.asarray(ew.convert('RGB')).astype(np.float64)
+    grid = grid_mask(K, Wh)
+    P = K; Q = (Wh - K) / 255.0
+    foot = ((np.abs(Q - 1).max(2) > 0.02) | (P.max(2) > 4)) & ~grid
+    # translucent grid lines (not identical on both backdrops) still run across the whole view
+    foot[:, foot.mean(0) > 0.9] = False
+    foot[foot.mean(1) > 0.9, :] = False
+    # and the 1-px axis lines through the origin
+    ox, oy = int(round(org[0])), int(round(org[1]))
+    foot[:, max(0, ox - 1):ox + 2] &= ~(foot[:, max(0, ox - 1):ox + 2].mean(0) > 0.5)[None, :]
+    foot[max(0, oy - 1):oy + 2, :] &= ~(foot[max(0, oy - 1):oy + 2, :].mean(1) > 0.5)[:, None]
+    ys, xs = np.nonzero(foot)
+    if len(xs) == 0: return None
+    pad = 8
+    x0e, x1e = max(0, xs.min() - pad), min(K.shape[1], xs.max() + pad + 1)
+    y0e, y1e = max(0, ys.min() - pad), min(K.shape[0], ys.max() + pad + 1)
+    gorg, gsc = (GAME_ORIGIN, (1.0, 1.0)) if meta is None else game_transform(meta)
+    sc = abs(gsc[0]) / zoom
+    # game-pixel window covering the editor crop
+    gx0 = gorg[0] + (x0e - org[0]) * sc; gy0 = gorg[1] + (y0e - org[1]) * sc
+    gw = int(round((x1e - x0e) * sc)); gh = int(round((y1e - y0e) * sc))
+    def to_game(arr):  # resample an editor-space float array (crop) to game pixels (area-ish, bilinear)
+        out = []
+        for c in range(arr.shape[2]):
+            im = Image.fromarray(arr[y0e:y1e, x0e:x1e, c].astype(np.float32), mode='F')
+            out.append(np.asarray(im.resize((gw, gh), Image.BILINEAR if sc >= 1 else Image.BOX)))
+        return np.stack(out, 2)
+    Pg = to_game(P); Qg = to_game(Q)
+    Fg = np.asarray(Image.fromarray(foot[y0e:y1e, x0e:x1e].astype(np.uint8) * 255).resize((gw, gh), Image.NEAREST)) > 127
+    G = np.asarray(game.convert('RGB')).astype(np.float64); B = np.asarray(plate.convert('RGB')).astype(np.float64)
+    best = None
+    for dy in range(-10, 11):
+        for dx in range(-10, 11):
+            X = int(round(gx0)) + dx; Y = int(round(gy0)) + dy
+            xa, ya = max(0, X), max(0, Y); xb, yb = min(G.shape[1], X + gw), min(G.shape[0], Y + gh)
+            if xb - xa < 4 or yb - ya < 4: continue
+            sl = (slice(ya - Y, yb - Y), slice(xa - X, xb - X))
+            pred = np.clip(Pg[sl] + Qg[sl] * B[ya:yb, xa:xb], 0, 255)
+            d = np.abs(G[ya:yb, xa:xb] - pred)
+            m = Fg[sl]
+            if m.sum() < 16: continue
+            mean = d[m].mean()
+            if best is None or mean < best[0]:
+                best = (mean, dx, dy, (xa, ya, xb, yb), sl, pred, d, m)
+    if best is None: return None
+    mean, dx, dy, (xa, ya, xb, yb), sl, pred, d, m = best
+    changed = ((d.sum(2) > 24) & m).sum() * 100.0 / m.sum()
+    gcrop = Image.fromarray(G[ya:yb, xa:xb].astype(np.uint8))
+    pcrop = Image.fromarray(pred.astype(np.uint8))
+    dimg = Image.fromarray(np.clip(d * 4 * m[:, :, None], 0, 255).astype(np.uint8))
+    up = lambda im: im.resize((int(im.width / sc), int(im.height / sc)), Image.NEAREST) if sc < 1 else im
+    return up(gcrop), up(pcrop), up(dimg), mean, changed, (dx, dy), int(m.sum())
 
 
 def label(im, text):
@@ -143,45 +284,80 @@ def label(im, text):
 
 
 def main():
-    root = sys.argv[1]
-    ed = os.path.join(root, 'editor'); gd = os.path.join(root, 'game'); od = os.path.join(root, 'sheets')
+    # sheet.py <compare dir> [--game DIR] [--small]
+    #   --game: where the full game frames are (gamecap writes them to tools/gamecap/captures/s1_compare/game,
+    #           outside git); JSON sidecars are read from there too, falling back to <compare dir>/game
+    #   --small: palette-quantize the sheets (evidence kept small in git)
+    args = sys.argv[1:]
+    small = '--small' in args
+    if small: args.remove('--small')
+    gd = None
+    if '--game' in args:
+        i = args.index('--game'); gd = args[i + 1]; del args[i:i + 2]
+    root = args[0]
+    ed = os.path.join(root, 'editor'); od = os.path.join(root, 'sheets')
+    if gd is None:
+        gd = os.path.join(root, 'game')
     os.makedirs(od, exist_ok=True)
     tsv = []
-    for name, note in cases():
+    for name, note, zoom in cases():
         po, pn = os.path.join(ed, name + '_old.png'), os.path.join(ed, name + '_new.png')
         if not (os.path.exists(po) and os.path.exists(pn)):
             print(name, 'missing editor shots'); continue
         old, new = Image.open(po).convert('RGB'), Image.open(pn).convert('RGB')
         box = crop_box([old, new]) or (0, 0, old.width, old.height)
+        if box[2] - box[0] < 8 or box[3] - box[1] < 8: box = (0, 0, old.width, old.height)
         old_c, new_c = old.crop(box), new.crop(box)
         d, mean, changed = diff(old_c, new_c)
+        mv = None
         tiles = [label(old_c, 'old build (395a56b)'), label(new_c, 'new build (S1)'), label(d, '|old - new| x4')]
         pg = os.path.join(gd, name + '_game.png')
         if os.path.exists(pg):
             game = Image.open(pg).convert('RGB')
             who = 'MBTL' if name.startswith('mbtl_') else 'UNI2'
-            gv = game_vs_new(game, new_c)
-            if gv is None:
+            pk, pw = os.path.join(ed, name + '_new_k.png'), os.path.join(ed, name + '_new_w.png')
+            pp = os.path.join(gd, name + '_game_plate.png')
+            pm = os.path.join(gd, name + '_game.json')
+            meta = json.load(open(pm)) if os.path.exists(pm) else None
+            mv = None
+            if os.path.exists(pk) and os.path.exists(pw) and os.path.exists(pp):
+                mv = game_vs_model(game, Image.open(pp).convert('RGB'), Image.open(pk), Image.open(pw), zoom, meta, editor_origin(new))
+            gv = None if mv else game_vs_new(game, new, box, zoom, meta)
+            if mv:
+                gcrop, pcrop, dimg, gmean, gchanged, (dx, dy), npx = mv
+                model_tiles = [label(gcrop, 'game (%s), refine %+d,%+d' % (who, dx, dy)),
+                               label(pcrop, 'new editor over the game backdrop'), label(dimg, '|game - predicted| x4')]
+                print('%-28s game vs new-editor model: mean |d| %.2f, %.2f%% of %d sprite px differ by >24 (refine %+d,%+d)'
+                      % (name, gmean, gchanged, npx, dx, dy))
+                tsv.append('%s\t%.3f\t%.2f\t%d\t%d\t%d\tmodel' % (name, gmean, gchanged, npx, dx, dy))
+            elif gv is None:
                 tiles.insert(0, label(game, 'game (%s), registration failed' % who))
                 print('%-28s game: registration failed' % name)
             else:
-                g_al, gd_im, gmean, gchanged, score, sc, mirror = gv
-                tiles.insert(0, label(g_al, 'game (%s) x%.3f%s ncc %.2f' % (who, sc, ' mirrored' if mirror else '', score)))
+                g_al, gd_im, gmean, gchanged, score, sc, (dx, dy) = gv
+                tiles.insert(0, label(g_al, 'game (%s) x%.3f, refine %+d,%+d px, ncc %.2f' % (who, sc, dx, dy, score)))
                 tiles.append(label(gd_im, '|game - new| x4 (sprite px)'))
-                print('%-28s game->new mean |d| %.2f, %.2f%% sprite pixels differ (scale %.3f%s, ncc %.2f)'
-                      % (name, gmean, gchanged, sc, ' mirrored' if mirror else '', score))
-                tsv.append('%s\t%.3f\t%.2f\t%.4f\t%d\t%.3f' % (name, gmean, gchanged, sc, mirror, score))
-        W = sum(t.width for t in tiles) + 8 * (len(tiles) - 1); H = max(t.height for t in tiles)
-        sheet = Image.new('RGB', (W, H + 24), (32, 32, 32))
-        x = 0
-        for t in tiles:
-            sheet.paste(t, (x, 24)); x += t.width + 8
+                print('%-28s game->new mean |d| %.2f, %.2f%% sprite pixels differ (scale %.3f, refine %+d,%+d, ncc %.2f)'
+                      % (name, gmean, gchanged, sc, dx, dy, score))
+                tsv.append('%s\t%.3f\t%.2f\t%d\t%d\t%d\traw(ncc %.2f)' % (name, gmean, gchanged, -1, dx, dy, score))
+        rows = [tiles] + ([model_tiles] if mv else [])
+        W = max(sum(t.width for t in r) + 8 * (len(r) - 1) for r in rows)
+        Hs = [max(t.height for t in r) for r in rows]
+        sheet = Image.new('RGB', (W, sum(Hs) + 24 + 8 * (len(rows) - 1)), (32, 32, 32))
+        y = 24
+        for r, h in zip(rows, Hs):
+            x = 0
+            for t in r:
+                sheet.paste(t, (x, y)); x += t.width + 8
+            y += h + 8
         ImageDraw.Draw(sheet).text((6, 6), '%s: %s' % (name, note), fill=(255, 220, 120))
-        sheet.save(os.path.join(od, name + '.png'))
+        if small:
+            sheet = sheet.quantize(colors=256, method=Image.Quantize.MEDIANCUT, dither=Image.Dither.NONE)
+        sheet.save(os.path.join(od, name + '.png'), optimize=True)
         print('%-28s old->new mean |d| %.2f, %.2f%% pixels changed' % (name, mean, changed))
     if tsv:
         with open(os.path.join(od, 'game_vs_new.tsv'), 'w') as f:
-            f.write('case\tmean_abs_diff\tpct_sprite_px_diff\tscale\tmirrored\tncc\n' + '\n'.join(tsv) + '\n')
+            f.write('case\tmean_abs_diff\tpct_sprite_px_diff_gt24\tsprite_px\trefine_dx\trefine_dy\tmethod\n' + '\n'.join(tsv) + '\n')
 
 
 if __name__ == '__main__':
