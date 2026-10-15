@@ -215,6 +215,18 @@ def grid_mask(K, Wh):
     return m
 
 
+LIGHT = None  # [(k, c)] * 3, set from --light (fit on the idle controls of the pinned stage)
+
+
+def fit_light(game, plate, ek, ew, zoom, meta, org):
+    """Least-squares stage light (k, c) per channel on an idle character sprite (all parts lit, normal blend)."""
+    global LIGHT
+    keep = LIGHT; LIGHT = None
+    r = game_vs_model(game, plate, ek, ew, zoom, meta, org)
+    LIGHT = keep
+    return game_vs_model.last_fit
+
+
 def game_vs_model(game, plate, ek, ew, zoom, meta, org):
     """Honest game-vs-editor comparison for blended parts.
     The editor view on a black (ek) and a white (ew) backdrop gives, per pixel and channel, E = P + Q*backdrop
@@ -268,6 +280,26 @@ def game_vs_model(game, plate, ek, ew, zoom, meta, org):
                 best = (mean, dx, dy, (xa, ya, xb, yb), sl, pred, d, m)
     if best is None: return None
     mean, dx, dy, (xa, ya, xb, yb), sl, pred, d, m = best
+    # Lighting: the game shades character sprites with the stage light (a per-channel scale k and offset c on the
+    # sprite colour before blending). gamecap pins one training stage and measures (k, c) once on idle-sprite
+    # controls (fit_light); with E = P + Q*bg the lit prediction is k*P + c*(1-Q) + Q*plate.
+    Gs = G[ya:yb, xa:xb]; Bs = B[ya:yb, xa:xb]; Ps = Pg[sl]; Qs = Qg[sl]
+    fit = []
+    for c in range(3):
+        y = (Gs[..., c] - Qs[..., c] * Bs[..., c])[m]
+        X = np.stack([Ps[..., c][m], (1 - Qs[..., c])[m]], 1)
+        coef, *_ = np.linalg.lstsq(X, y, rcond=None)
+        fit.append((float(coef[0]), float(coef[1])))
+    game_vs_model.last_fit = fit
+    light = LIGHT if LIGHT is not None else [(1.0, 0.0)] * 3
+    lpred = np.empty_like(pred)
+    for c in range(3):
+        lpred[..., c] = Ps[..., c] * light[c][0] + (1 - Qs[..., c]) * light[c][1] + Qs[..., c] * Bs[..., c]
+    lpred = np.clip(lpred, 0, 255)
+    ld = np.abs(Gs - lpred)
+    lmean = ld[m].mean(); lchanged = ((ld.sum(2) > 24) & m).sum() * 100.0 / m.sum()
+    game_vs_model.last_light = (light, lmean, lchanged, Image.fromarray(lpred.astype(np.uint8)),
+                                Image.fromarray(np.clip(ld * 4 * m[:, :, None], 0, 255).astype(np.uint8)))
     changed = ((d.sum(2) > 24) & m).sum() * 100.0 / m.sum()
     gcrop = Image.fromarray(G[ya:yb, xa:xb].astype(np.uint8))
     pcrop = Image.fromarray(pred.astype(np.uint8))

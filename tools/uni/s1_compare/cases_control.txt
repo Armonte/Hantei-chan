@@ -1,0 +1,3 @@
+# name | project .txt under gamedata/ | pattern | frame | tick (-1 = frame) | zoom | note
+ctrl_chr025_p0f0 | uni2/data/chr025/chr025_0.txt | 0 | 0 | -1 | 1 | control: Ogre idle, plain sprite
+ctrl_chr000_p0f0 | uni2/data/chr000/chr000_0.txt | 0 | 0 | -1 | 1 | control: Hyde idle, plain sprite

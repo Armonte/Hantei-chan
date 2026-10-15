@@ -6,7 +6,7 @@
 set -u
 D="$(cd "$(dirname "$0")/../../.." && pwd)"; H=/mnt/c/dev/hantei-chan
 NEW="${1:-$D/build/gonptechan.exe}"
-W=$H/work/s1bw; OUT="$D/docs/audit_2026_10_14/evidence/compare/editor"; mkdir -p "$W" "$OUT"
+W=$H/work/s1bw${WORK_SUFFIX:-}; OUT="${OUTDIR:-$D/docs/audit_2026_10_14/evidence/compare/editor}"; mkdir -p "$W" "$OUT"
 cp "$NEW" "$W/gonptechan.exe"
 G='C:\dev\hantei-chan\gamedata'
 grep -v "^#" "$(dirname "$0")/cases.txt" | grep -E "${CASES:-.}" | while IFS='|' read -r name txt pat fr tick zoom note; do
@@ -15,10 +15,10 @@ grep -v "^#" "$(dirname "$0")/cases.txt" | grep -E "${CASES:-.}" | while IFS='|'
 	for bg in k w; do
 		c=$([ $bg = k ] && echo "0.000000,0.000000,0.000000" || echo "1.000000,1.000000,1.000000")
 		printf "[Other settings][]\nposX=10\nposY=10\nsizeX=1280\nsizeY=900\nColor=%s\n" "$c" > "$W/hanteichan.ini"
-		args=(--open "$G\\$txt" --pattern "$pat" --frame "$fr" --zoom "$zoom" --hide-boxes)
+		args=(--open "$G\\$txt" --pattern "$pat" --frame "$fr" --zoom "$zoom" --hide-boxes ${EXTRA_ARGS:-})
 		[ "$tick" != "-1" ] && args+=(--tick "$tick")
 		rm -f "$W/$name.png"
-		(cd "$W" && timeout 120 ./gonptechan.exe "${args[@]}" --capture-view "C:\\dev\\hantei-chan\\work\\s1bw\\$name.png" </dev/null >/dev/null 2>&1)
+		(cd "$W" && timeout 120 ./gonptechan.exe "${args[@]}" --capture-view "$(wslpath -w "$W")\\$name.png" </dev/null >/dev/null 2>&1)
 		cp "$W/$name.png" "$OUT/${name}_new_$bg.png" 2>/dev/null || echo "no shot: $bg $name"
 	done
 	echo "$name done"
