@@ -470,6 +470,9 @@ static int Run(int argc, char** argv)
 		std::string err;
 		CHECK(ImportInstall(q, inst.u8string(), van, r, err));
 		if (!err.empty()) std::printf("  import: %s\n", err.c_str());
+		std::printf("import: scanned %zu imported %zu unchanged %zu reencoded %zu clutter %zu skipped %zu\n", r.scanned, r.imported, r.unchanged, r.reencoded, r.clutter, r.skipped);
+		for (const auto& [k, n] : r.perAsset) std::printf("  asset %s %zu\n", k.c_str(), n);
+		for (const auto& n : r.notes) std::printf("  note %s\n", n.c_str());
 		CHECK(r.imported == 4 && r.reencoded == 1 && r.unchanged == 1 && r.clutter == 1 && r.skipped == 1);
 		CHECK(r.perAsset["char-akiha"] == 1 && r.perAsset["char-eddie"] == 1 && r.perAsset["system-constants"] == 1 && r.perAsset["audio-se"] == 1);
 		CHECK(q.FindAsset("char-akiha") && q.FindAsset("char-akiha")->origin.kind == "install-import" && q.FindAsset("char-akiha")->targets.size() == 1);

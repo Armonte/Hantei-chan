@@ -90,7 +90,8 @@ bool ImportInstall(Project& p, const std::string& installDir, const VanillaIndex
 		for (auto f = fs::recursive_directory_iterator(it->path(), ec); f != fs::recursive_directory_iterator(); f.increment(ec)) {
 			if (ec) break;
 			if (!f->is_regular_file(ec)) continue;
-			const std::string rel = fs::relative(f->path(), inst, ec).generic_u8string();
+			// lexically_relative: fs::relative canonicalises and fails on UNC roots (\\\\wsl.localhost\\...).
+			const std::string rel = f->path().lexically_relative(inst).generic_u8string();
 			std::string relBs = rel;
 			std::replace(relBs.begin(), relBs.end(), '/', '\\');
 			const std::string norm = NormKey(relBs);
