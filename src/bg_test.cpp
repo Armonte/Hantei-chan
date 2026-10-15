@@ -92,6 +92,24 @@ int main(int argc, char** argv)
 		_exit(0);
 	}
 
+	// --textini-test: key comments (BGM track titles) are read and replaced in place, nothing else changes.
+	if (argc >= 2 && strcmp(argv[1], "--textini-test") == 0) {
+		bg::TextIni t;
+		t.LoadText("[BGM_001]\r\nFile = bgmme01 //Encount\r\nIsLoop = 1\r\n[BGM_002]\r\nFile = bgmme02\r\nIsLoop = 0 // x\r\n");
+		int bad = 0;
+		std::string c;
+		if (!t.GetComment("BGM_001", "File", c) || c != "Encount") { printf("get comment\n"); ++bad; }
+		if (!t.GetComment("BGM_002", "File", c) || !c.empty()) { printf("get empty comment\n"); ++bad; }
+		t.SetComment("BGM_001", "File", "Encount (remix)");
+		t.SetComment("BGM_002", "File", "New title");
+		t.SetComment("BGM_002", "IsLoop", "");
+		const std::string want = "[BGM_001]\r\nFile = bgmme01 //Encount (remix)\r\nIsLoop = 1\r\n[BGM_002]\r\nFile = bgmme02 //New title\r\nIsLoop = 0\r\n";
+		if (t.Text() != want) { printf("text after edits:\n%s\n", t.Text().c_str()); ++bad; }
+		if (t.SetComment("BGM_003", "File", "x")) { printf("missing section accepted\n"); ++bad; }
+		printf("TEXTINI-TEST %s (%d problems)\n", bad ? "FAIL" : "OK", bad);
+		_exit(bad ? 8 : 0);
+	}
+
 	// --project-test <stage.dat|game dir> <scratch dir>: BgList.ini / bgm.txt
 	// open, unedited save byte-identical, edits touch only their value, undo
 	// restores the original bytes, add/move/remove round trip.

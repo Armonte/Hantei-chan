@@ -730,8 +730,11 @@ void MainFrame::drawBgmWindow()
 		std::error_code ec;
 		if (!fs::is_directory(dir, ec)) { b.status = TwFmt(TXT("Not a folder: %s"), b.folder.c_str()); return; }
 		if (ParseBgmTxt((dir / "bgm.txt").string(), b.entries)) {
+			b.ini.Load((dir / "bgm.txt").u8string());
 			b.status = TwFmt(TXT("%zu track(s) from bgm.txt"), b.entries.size());
 		} else {
+			b.ini = bg::TextIni();
+			b.edit = false;
 			for (auto& e : fs::directory_iterator(dir, ec)) {
 				if (e.path().extension() != ".ogg" && e.path().extension() != ".OGG") continue;
 				BgmEntry be; be.file = e.path().stem().string(); be.section = be.file;
@@ -793,20 +796,60 @@ void MainFrame::drawBgmWindow()
 	if (ImGui::SliderFloat(LBL("Volume"), &vol, 0.f, 1.f)) { b.volume = vol; pl.setVolume(vol); }
 	ImGui::EndDisabled();
 
+	// Tracklist editing: bgm.txt values and the track title (the comment after File =, which the game ignores)
+	// change in place; everything else in the file stays byte-identical.
+	const bool canEdit = b.ini.IsLoaded();
+	ImGui::BeginDisabled(!canEdit);
+	ImGui::Checkbox(LBL("Edit bgm.txt"), &b.edit);
+	ImGui::EndDisabled();
+	if (b.edit && canEdit) {
+		auto reparse = [&] { ParseBgmText(b.ini.Text(), b.entries); };
+		ImGui::SameLine();
+		ImGui::BeginDisabled(!b.ini.IsDirty());
+		if (ImGui::Button(LBL("Save bgm.txt"))) b.status = b.ini.Save("") ? TXT("Saved.") : TXT("Save failed.");
+		ImGui::EndDisabled();
+		ImGui::SameLine();
+		if (ImGui::Button(LBL("Add track"))) {
+			int next = 0;
+			for (const auto& e : b.entries) if (e.section.rfind("BGM_", 0) == 0) next = std::max(next, std::atoi(e.section.c_str() + 4) + 1);
+			char sec[16];
+			snprintf(sec, sizeof sec, "BGM_%03d", next);
+			b.ini.AddSection(sec, {{"File", "bgmnew"}, {"IsLoop", "1"}, {"LoopPos", "0.0"}});
+			reparse();
+		}
+		ImGui::SameLine();
+		const bool haveSel = b.selected >= 0 && b.selected < (int)b.entries.size();
+		ImGui::BeginDisabled(!haveSel || !pl.loaded());
+		if (ImGui::Button(LBL("Set loop point at playhead")) && haveSel) {
+			char v[32];
+			snprintf(v, sizeof v, "%.3f", pl.position());
+			b.ini.Set(b.entries[b.selected].section, "LoopPos", v);
+			b.ini.Set(b.entries[b.selected].section, "IsLoop", "1");
+			reparse();
+		}
+		ImGui::EndDisabled();
+		if (b.ini.IsDirty()) { ImGui::SameLine(); ImGui::TextColored(ImVec4(1, 0.75f, 0.3f, 1), "%s", TXT("unsaved")); }
+	}
+
 	// Track list
-	if (ImGui::BeginTable("##bgm", 4, ImGuiTableFlags_RowBg | ImGuiTableFlags_ScrollY | ImGuiTableFlags_BordersInnerV | ImGuiTableFlags_Resizable)) {
+	const bool editing = b.edit && canEdit;
+	const bool stages = stageProject.IsOpen();
+	if (ImGui::BeginTable("##bgm", 5, ImGuiTableFlags_RowBg | ImGuiTableFlags_ScrollY | ImGuiTableFlags_BordersInnerV | ImGuiTableFlags_Resizable)) {
 		ImGui::TableSetupColumn(LBL("Section"), ImGuiTableColumnFlags_WidthFixed, 80);
-		ImGui::TableSetupColumn(LBL("File"), ImGuiTableColumnFlags_WidthFixed, 80);
-		ImGui::TableSetupColumn(LBL("Loop"), ImGuiTableColumnFlags_WidthFixed, 70);
+		ImGui::TableSetupColumn(LBL("File"), ImGuiTableColumnFlags_WidthFixed, 90);
+		ImGui::TableSetupColumn(LBL("Loop"), ImGuiTableColumnFlags_WidthFixed, editing ? 110 : 70);
 		ImGui::TableSetupColumn(LBL("Title"));
+		ImGui::TableSetupColumn(LBL("Stage"), ImGuiTableColumnFlags_WidthFixed, 150);
 		ImGui::TableHeadersRow();
+		std::string setSec, setKey, setVal, setTitle;
+		bool doTitle = false;
 		for (size_t i = 0; i < b.entries.size(); ++i) {
 			const auto& e = b.entries[i];
 			ImGui::TableNextRow();
 			ImGui::TableNextColumn();
 			ImGui::PushID((int)i);
 			const bool sel = (int)i == b.selected;
-			if (ImGui::Selectable(e.section.c_str(), sel, ImGuiSelectableFlags_SpanAllColumns | ImGuiSelectableFlags_AllowDoubleClick)) {
+			if (ImGui::Selectable(e.section.c_str(), sel, ImGuiSelectableFlags_AllowDoubleClick | (editing ? 0 : ImGuiSelectableFlags_SpanAllColumns))) {
 				b.selected = (int)i;
 				std::string err;
 				const std::string path = (std::filesystem::u8path(b.folder) / (e.file + ".ogg")).string();
@@ -818,13 +861,48 @@ void MainFrame::drawBgmWindow()
 					b.status = err;
 				}
 			}
-			ImGui::PopID();
-			ImGui::TableNextColumn(); ImGui::TextUnformatted(e.file.c_str());
+			char buf2[256];
 			ImGui::TableNextColumn();
-			if (e.isLoop) ImGui::Text("%.3f", e.loopPos); else ImGui::TextDisabled("-");
-			ImGui::TableNextColumn(); ImGui::TextUnformatted(e.comment.c_str());
+			if (editing) {
+				snprintf(buf2, sizeof buf2, "%s", e.file.c_str());
+				ImGui::SetNextItemWidth(-1);
+				ImGui::InputText("##file", buf2, 33);   // bgm.txt: file names up to 32 characters, no extension
+				if (ImGui::IsItemDeactivatedAfterEdit() && e.file != buf2 && buf2[0]) { setSec = e.section; setKey = "File"; setVal = buf2; }
+				std::error_code ec;
+				if (!std::filesystem::exists(std::filesystem::u8path(b.folder) / (e.file + ".ogg"), ec) && ImGui::IsItemHovered())
+					ImGui::SetTooltip("%s", TXT("No such .ogg in the Bgm folder."));
+			} else ImGui::TextUnformatted(e.file.c_str());
+			ImGui::TableNextColumn();
+			if (editing) {
+				bool loop = e.isLoop;
+				if (ImGui::Checkbox("##loop", &loop)) { setSec = e.section; setKey = "IsLoop"; setVal = loop ? "1" : "0"; }
+				ImGui::SameLine();
+				float lp = (float)e.loopPos;
+				ImGui::SetNextItemWidth(-1);
+				ImGui::InputFloat("##lp", &lp, 0, 0, "%.3f");
+				if (ImGui::IsItemDeactivatedAfterEdit()) {
+					char v[32];
+					snprintf(v, sizeof v, "%.3f", lp);
+					setSec = e.section; setKey = "LoopPos"; setVal = v;
+				}
+			} else if (e.isLoop) ImGui::Text("%.3f", e.loopPos); else ImGui::TextDisabled("-");
+			ImGui::TableNextColumn();
+			if (editing) {
+				snprintf(buf2, sizeof buf2, "%s", e.comment.c_str());
+				ImGui::SetNextItemWidth(-1);
+				ImGui::InputText("##title", buf2, sizeof buf2);
+				if (ImGui::IsItemDeactivatedAfterEdit() && e.comment != buf2) { setSec = e.section; setTitle = buf2; doTitle = true; }
+			} else ImGui::TextUnformatted(e.comment.c_str());
+			ImGui::TableNextColumn();
+			// Battle BGM id = stage id ([BGM_0NN] plays on stage NN).
+			if (stages && e.section.rfind("BGM_", 0) == 0) {
+				if (const auto* st = stageProject.Find(std::atoi(e.section.c_str() + 4))) ImGui::TextDisabled("%s", st->Label().c_str());
+			}
+			ImGui::PopID();
 		}
 		ImGui::EndTable();
+		if (!setKey.empty()) { b.ini.Set(setSec, setKey, setVal); ParseBgmText(b.ini.Text(), b.entries); }
+		if (doTitle) { b.ini.SetComment(setSec, "File", utf82sj(setTitle)); ParseBgmText(b.ini.Text(), b.entries); }
 	}
 	ImGui::End();
 }

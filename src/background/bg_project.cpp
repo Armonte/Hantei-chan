@@ -327,6 +327,41 @@ void TextIni::Set(const std::string& sec, const std::string& key, const std::str
 	dirty = true;
 }
 
+bool TextIni::GetComment(const std::string& sec, const std::string& key, std::string& comment) const {
+	auto ls = Lines();
+	size_t a = 0, b = ls.size();
+	if (!sec.empty() && !SectionRange(ls, sec, a, b)) return false;
+	for (size_t i = a; i < b; ++i) {
+		std::string line = LineText(ls[i]), k;
+		size_t vb, ve;
+		if (!ParseKV(line, k, vb, ve) || !IEq(k, key)) continue;
+		const size_t cm = line.find("//", ve);
+		comment = cm == std::string::npos ? "" : Trim(line.substr(cm + 2));
+		return true;
+	}
+	return false;
+}
+
+bool TextIni::SetComment(const std::string& sec, const std::string& key, const std::string& comment) {
+	auto ls = Lines();
+	size_t a = 0, b = ls.size();
+	if (!sec.empty() && !SectionRange(ls, sec, a, b)) return false;
+	for (size_t i = a; i < b; ++i) {
+		std::string line = LineText(ls[i]), k;
+		size_t vb, ve;
+		if (!ParseKV(line, k, vb, ve) || !IEq(k, key)) continue;
+		const size_t cm = line.find("//", ve);
+		// Vanilla writes "File = bgmme01 //Title": keep whatever spacing was before the old comment.
+		size_t from = cm != std::string::npos ? cm : line.size();
+		std::string repl = comment.empty() ? "" : (cm != std::string::npos ? "" : " ") + std::string("//") + comment;
+		if (comment.empty()) while (from > ve && (line[from - 1] == ' ' || line[from - 1] == '\t')) --from;
+		text.replace(ls[i].begin + from, line.size() - from, repl);
+		dirty = true;
+		return true;
+	}
+	return false;
+}
+
 void TextIni::RemoveKey(const std::string& sec, const std::string& key) {
 	auto ls = Lines();
 	size_t a = 0, b = ls.size();

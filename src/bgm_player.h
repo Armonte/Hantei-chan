@@ -27,6 +27,8 @@ struct BgmEntry {
 
 // Parses bgm.txt. Returns false if the file cannot be read.
 bool ParseBgmTxt(const std::string& path, std::vector<BgmEntry>& out);
+// Same, from the raw (CP932) text.
+void ParseBgmText(const std::string& raw, std::vector<BgmEntry>& out);
 
 // Next `frames` sample frames starting at `pos`, wrapping to `loopStart` at
 // `total` when looping (pure; used by the player and the tests). Writes the
