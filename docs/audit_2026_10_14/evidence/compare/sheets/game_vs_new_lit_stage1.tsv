@@ -1,0 +1,17 @@
+case	raw_mean	raw_pct	lit_mean	lit_pct	px	frame	tick
+pral2_chr025_p133f1	13.8	42	20.1	68	30040	1	1
+flipH_chr000_p96f1	32.9	85	44.5	92	52933	1	1
+flipV_chr000_p383f1	47.0	78	40.4	77	51905	1	1
+flipHV_chr019_p153	43.3	91	44.9	89	62880	0	1
+afhk_pat_chr000_p72_t2	29.5	89	25.7	89	6661	0	3
+afhk_pat_chr019_p62_t7	23.5	66	23.4	65	176954	1	5
+afhk_cg_chr020_p435_t27	35.7	81	21.3	72	4422	0	28
+pups_chr027_p449	no footprint
+rect_chr024_p76	17.5	74	13.5	61	540	0	1
+pras_chr020_p5f2	31.7	79	32.9	79	92273	2	1
+afhk_cg_chr020_p437_t2	25.4	78	25.3	78	3530	0	3
+mbtl_pral2_chr004_p420f4	no footprint
+mbtl_flipV_chr001_p157f2	66.5	97	66.4	98	26639	3	3
+mbtl_pups_chr011_p309	56.8	64	55.2	64	110503	0	1
+ctrl_chr025_p0f0	49.0	96	5.6	18	32911	0	1
+ctrl_chr000_p0f0	47.5	94	5.2	18	26082	0	1
