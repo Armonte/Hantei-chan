@@ -820,7 +820,7 @@ void MainFrame::Menu(unsigned int errorPopupId)
 			}
 			if (ImGui::MenuItem(LBL("Squirrel script editor (UNI2 / MBTL ...)"), nullptr, scriptPanel && scriptPanel->visible()))
 			{
-				if (!scriptPanel) scriptPanel = std::make_unique<sqedit::ScriptPanel>();
+				if (!scriptPanel) { scriptPanel = std::make_unique<sqedit::ScriptPanel>(); wireScriptPanel(); }
 				scriptPanel->setVisible(!scriptPanel->visible());
 			}
 			ImGui::Separator();

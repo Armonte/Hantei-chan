@@ -56,6 +56,94 @@ void MainFrame::navigateActiveView(int pattern, int frame)
 	if (view->getMainPane()) view->getMainPane()->RegenerateNames();
 }
 
+namespace {
+std::string LowerGeneric(const std::filesystem::path& p)
+{
+	std::string s = p.lexically_normal().generic_u8string();
+	for (auto& c : s) c = (char)tolower((unsigned char)c);
+	while (!s.empty() && s.back() == '/') s.pop_back();
+	return s;
+}
+} // namespace
+
+CharacterInstance* MainFrame::characterForScriptDir(const std::string& dirUtf8, bool openIfNeeded)
+{
+	namespace fs = std::filesystem;
+	const fs::path dir = fs::u8path(dirUtf8);
+	const std::string want = LowerGeneric(dir);
+	for (auto& c : characters) {
+		for (const std::string* p : {&c->getTxtPath(), &c->getTopHA6Path()})
+			if (!p->empty() && LowerGeneric(fs::u8path(*p).parent_path()) == want) return c.get();
+	}
+	// A character folder holds <name>_0.txt (the project list: ha6 stack, cg, pat). Shared script/ files
+	// have none and resolve against the character in the active tab.
+	const fs::path txt = dir / (dir.filename().u8string() + "_0.txt");
+	std::error_code ec;
+	if (!fs::exists(txt, ec)) return getToolCharacter();
+	if (!openIfNeeded) return nullptr;
+	openAnyFile(txt.u8string());
+	return findCharacterByPath(txt.u8string());
+}
+
+void MainFrame::wireScriptPanel()
+{
+	using Ref = sqedit::ScriptPanel::PatRef;
+	// Pattern index for a reference, or -1. An AFID prefers the active tab's pattern, then the first pattern holding it.
+	auto resolve = [this](CharacterInstance* ch, const Ref& r, int* frame, std::vector<int>* all) {
+		*frame = 0;
+		FrameData& fd = ch->frameData;
+		const int n = fd.get_sequence_count();
+		if (r.pattern >= 0) return r.pattern < n && fd.get_sequence(r.pattern) ? r.pattern : -1;
+		int found = -1;
+		CharacterView* view = getToolView();
+		const int cur = view && view->getCharacter() == ch ? view->getState().pattern : -1;
+		for (int i = 0; i < n; i++) {
+			const Sequence* s = fd.get_sequence(i);
+			if (!s) continue;
+			if (!r.code.empty()) {
+				if (s->codeName.c_str() == r.code) return i;
+				continue;
+			}
+			for (int f = 0; f < (int)s->frames.size(); f++) {
+				if (s->frames[f].AF.frameId != r.afid) continue;
+				if (all) all->push_back(i);
+				if (found < 0 || i == cur) { found = i; *frame = f; }
+				break;
+			}
+		}
+		return found;
+	};
+	scriptPanel->describeRef = [this, resolve](const std::string& dir, const Ref& r) -> std::string {
+		CharacterInstance* ch = characterForScriptDir(dir, false);
+		if (!ch) return "";
+		int frame = 0;
+		std::vector<int> all;
+		const int p = resolve(ch, r, &frame, &all);
+		std::string head = r.afid >= 0 ? "frame id (AFID) " + std::to_string(r.afid) + ": "
+			: !r.code.empty() ? "\"" + r.code + "\" -> " : "";
+		if (p < 0) return head + TXT("not found in the loaded HA6 stack");
+		const Sequence* s = ch->frameData.get_sequence(p);
+		std::string out = head + TXT("pattern") + std::string(" ") + std::to_string(p) + "  " + std::string(s->name.c_str());
+		if (r.afid >= 0) {
+			out += "  (" + std::string(TXT("frame")) + " " + std::to_string(frame) + ")";
+			if (all.size() > 1) {
+				out += "\n" + std::string(TXT("also in patterns")) + ":";
+				for (size_t i = 0; i < all.size() && i < 12; i++) if (all[i] != p) out += " " + std::to_string(all[i]);
+			}
+		}
+		return out;
+	};
+	scriptPanel->openRef = [this, resolve](const std::string& dir, const Ref& r) {
+		CharacterInstance* ch = characterForScriptDir(dir, true);
+		if (!ch) return;
+		for (int i = 0; i < (int)views.size(); i++)
+			if (views[i]->getCharacter() == ch) { setActiveView(i); break; }
+		int frame = 0;
+		const int p = resolve(ch, r, &frame, nullptr);
+		if (p >= 0) navigateActiveView(p, frame);
+	};
+}
+
 void MainFrame::drawVarRefsWindow()
 {
 	if (!m_varRefs.open) return;

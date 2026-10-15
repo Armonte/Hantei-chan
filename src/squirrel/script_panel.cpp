@@ -8,14 +8,18 @@
 
 #include <ImGuiColorTextEdit/TextEditor.h>
 #include <imgui.h>
+#include <json/json.hpp>
 
 #include <algorithm>
+#include <cctype>
 #include <chrono>
 #include <ctime>
 #include <deque>
 #include <filesystem>
 #include <fstream>
+#include <map>
 #include <regex>
+#include <set>
 #include <vector>
 
 #include <windows.h>
@@ -161,6 +165,19 @@ std::string FindApiProfile(const std::string& game)
 	return "";
 }
 
+// One native from the game's API profile, for hover and completion.
+struct ApiSym {
+	std::string table, ret;
+	std::vector<std::string> args;
+};
+
+std::string Signature(const std::string& name, const ApiSym& a)
+{
+	std::string s = (a.table.empty() || a.table[0] == '(' ? "" : a.table + ".") + name + "(";
+	for (size_t i = 0; i < a.args.size(); i++) s += (i ? ", " : "") + a.args[i];
+	return s + ") -> " + (a.ret.empty() ? "?" : a.ret);
+}
+
 struct ScriptPanel::Impl {
 	TextEditor editor;
 	ScriptDocument doc;
@@ -176,6 +193,192 @@ struct ScriptPanel::Impl {
 	bool offerSaveAnyway = false;
 	bool forceNextSave = false;
 	std::deque<std::string> log;
+	ScriptPanel* owner = nullptr;
+	std::map<std::string, std::vector<ApiSym>> api; // by native name; one name can live in several tables
+	std::map<std::string, int> consts;               // integer `const` from script/*.txt (def_PAT_* = pattern numbers)
+	// Completion popup (Ctrl+Space). It is an ImGui popup so it owns the keyboard while open.
+	bool acOpenRequest = false;
+	char acFilter[64] = {};
+	int acSel = 0;
+	TextEditor::DocPos acStart, acEnd;
+	std::vector<std::string> acWords;
+
+	void loadApi(const std::string& path)
+	{
+		api.clear();
+		if (path.empty()) return;
+		std::ifstream f(U8(path));
+		const nlohmann::json j = nlohmann::json::parse(f, nullptr, false);
+		if (!j.is_array()) return;
+		for (const auto& e : j) {
+			if (!e.is_object() || !e.contains("name") || !e["name"].is_string()) continue;
+			ApiSym a;
+			a.table = e.value("table", "");
+			a.ret = e.value("ret", "");
+			if (e.contains("args") && e["args"].is_array())
+				for (const auto& x : e["args"]) if (x.is_string()) a.args.push_back(x.get<std::string>());
+			api[e["name"].get<std::string>()].push_back(std::move(a));
+		}
+	}
+
+	// Candidates: API natives, Squirrel keywords, and names this file declares (function/local/class/const).
+	void collectWords()
+	{
+		std::set<std::string> w;
+		for (const auto& [k, v] : api) w.insert(k);
+		for (const char* k : {"base", "break", "case", "catch", "class", "clone", "const", "continue", "default", "delegate", "delete", "else",
+				 "enum", "extends", "for", "foreach", "function", "if", "in", "instanceof", "local", "null", "resume", "return", "static",
+				 "switch", "this", "throw", "try", "typeof", "while", "yield", "true", "false"})
+			w.insert(k);
+		static const std::regex decl(R"((?:function|local|class|const|enum)\s+([A-Za-z_]\w*))");
+		const std::string text = editor.GetText();
+		for (std::sregex_iterator it(text.begin(), text.end(), decl), end; it != end; ++it) w.insert((*it)[1].str());
+		acWords.assign(w.begin(), w.end());
+	}
+
+	void loadConsts()
+	{
+		consts.clear();
+		static const std::regex c(R"(^\s*const\s+([A-Za-z_]\w*)\s*=\s*(-?\d+)\s*;)");
+		std::error_code ec;
+		for (auto it = fs::directory_iterator(U8(root) / "script", ec); it != fs::directory_iterator(); it.increment(ec)) {
+			if (ec) break;
+			if (it->path().extension() != ".txt") continue;
+			std::ifstream f(it->path(), std::ios::binary);
+			std::string line;
+			std::smatch mm;
+			while (std::getline(f, line))
+				if (std::regex_search(line, mm, c)) consts[mm[1].str()] = std::stoi(mm[2].str());
+		}
+	}
+
+	// The token under the mouse, read as a pattern reference. Columns are code points; the line is UTF-8.
+	bool refAtMouse(ScriptPanel::PatRef& out)
+	{
+		const ImVec2 mp = ImGui::GetMousePos();
+		if (!editor.IsMousePosOverTextArea(mp) || !editor.IsMousePosOverGlyph(mp)) return false;
+		const TextEditor::DocPos pos = editor.GetDocPosAtMousePos(mp);
+		const std::string line = editor.GetLineText(pos.line);
+		size_t at = 0;
+		for (size_t cp = 0; at < line.size() && cp < pos.index; cp++) {
+			at++;
+			while (at < line.size() && (static_cast<unsigned char>(line[at]) & 0xC0) == 0x80) at++;
+		}
+		if (at >= line.size()) return false;
+		const auto isWord = [](char ch) { return std::isalnum(static_cast<unsigned char>(ch)) || ch == '_'; };
+		// Inside a string literal? Quotes pair up left to right (scripts here have no escaped quotes in names).
+		for (size_t open = line.find('"'); open != std::string::npos;) {
+			const size_t close = line.find('"', open + 1);
+			if (close == std::string::npos) break;
+			if (open <= at && at <= close) {
+				static const std::regex lead(R"((?:\bpat|\bstart_pat|SetPattern)\s*[=(]\s*$)");
+				if (!std::regex_search(line.substr(0, open), lead)) return false;
+				out.code = line.substr(open + 1, close - open - 1);
+				return !out.code.empty();
+			}
+			open = line.find('"', close + 1);
+		}
+		if (!isWord(line[at])) return false;
+		size_t b = at, e = at;
+		while (b > 0 && isWord(line[b - 1])) b--;
+		while (e < line.size() && isWord(line[e])) e++;
+		const std::string word = line.substr(b, e - b);
+		if (word.rfind("def_PAT_", 0) == 0) {
+			const auto c = consts.find(word);
+			if (c == consts.end()) return false;
+			out.pattern = c->second;
+			return true;
+		}
+		if (word.find_first_not_of("0123456789") != std::string::npos) return false;
+		const std::string left = line.substr(0, b);
+		static const std::regex patLead(R"((?:\bpat|\bstart_pat|SetPattern)\s*[=(]\s*$)");
+		static const std::regex afidLead(R"((?:JumpFrameID\s*\(\s*|\bcase\s+)$)");
+		if (std::regex_search(left, patLead)) out.pattern = std::stoi(word);
+		else if (std::regex_search(left, afidLead)) out.afid = std::stoi(word);
+		else return false;
+		return true;
+	}
+
+	void drawHover()
+	{
+		if (!ImGui::IsItemHovered() && !ImGui::IsWindowHovered(ImGuiHoveredFlags_ChildWindows)) return;
+		const ImVec2 mp = ImGui::GetMousePos();
+		if (!editor.IsMousePosOverTextArea(mp) || !editor.IsMousePosOverGlyph(mp)) return;
+		ScriptPanel::PatRef ref;
+		if (owner && refAtMouse(ref)) {
+			const std::string dir = ToU8((U8(root) / U8(currentRel)).parent_path());
+			const std::string what = owner->describeRef ? owner->describeRef(dir, ref) : "";
+			ImGui::BeginTooltip();
+			if (!what.empty()) ImGui::TextUnformatted(what.c_str());
+			else if (ref.afid >= 0) ImGui::Text("frame id (AFID) %d", ref.afid);
+			else if (!ref.code.empty()) ImGui::Text("pattern code name (PTCN) \"%s\"", ref.code.c_str());
+			else ImGui::Text("pattern %d", ref.pattern);
+			if (owner->openRef) ImGui::TextDisabled("Ctrl+click: open in the HA6 editor");
+			ImGui::EndTooltip();
+			if (owner->openRef && ImGui::IsMouseClicked(ImGuiMouseButton_Left) && ImGui::GetIO().KeyCtrl) owner->openRef(dir, ref);
+			return;
+		}
+		const auto it = api.find(editor.GetWordAtMousePos(mp));
+		if (it == api.end()) return;
+		ImGui::BeginTooltip();
+		for (const auto& a : it->second) ImGui::TextUnformatted(Signature(it->first, a).c_str());
+		ImGui::TextDisabled("%s", (game + " native, from the IDB API table").c_str());
+		ImGui::EndTooltip();
+	}
+
+	void drawCompletion(bool focused)
+	{
+		if (focused && ImGui::IsKeyDown(ImGuiMod_Ctrl) && ImGui::IsKeyPressed(ImGuiKey_Space, false)) {
+			acEnd = editor.GetMainCursorPosition();
+			acStart = editor.FindWordStart(acEnd);
+			std::string prefix = editor.GetLineText(acEnd.line);
+			prefix = acStart.line == acEnd.line && acStart.index <= acEnd.index && acEnd.index <= prefix.size()
+				? prefix.substr(acStart.index, acEnd.index - acStart.index) : "";
+			if (prefix.find_first_not_of("ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789_") != std::string::npos) {
+				prefix.clear();
+				acStart = acEnd;
+			}
+			snprintf(acFilter, sizeof acFilter, "%s", prefix.c_str());
+			acSel = 0;
+			collectWords();
+			const ImVec2 at = editor.DocPos2ScreenPos(acEnd);
+			ImGui::SetNextWindowPos(ImVec2(at.x, at.y + editor.GetLineHeight()));
+			ImGui::OpenPopup("##sqcomplete");
+		}
+		ImGui::SetNextWindowSizeConstraints(ImVec2(280, 0), ImVec2(520, 320));
+		if (!ImGui::BeginPopup("##sqcomplete")) return;
+		if (ImGui::IsWindowAppearing()) ImGui::SetKeyboardFocusHere();
+		ImGui::SetNextItemWidth(-1);
+		if (ImGui::InputText("##acfilter", acFilter, sizeof acFilter)) acSel = 0;
+		std::string low = acFilter;
+		std::transform(low.begin(), low.end(), low.begin(), [](unsigned char c) { return static_cast<char>(std::tolower(c)); });
+		std::vector<const std::string*> hits;
+		for (const auto& w : acWords) {
+			std::string lw = w;
+			std::transform(lw.begin(), lw.end(), lw.begin(), [](unsigned char c) { return static_cast<char>(std::tolower(c)); });
+			if (lw.rfind(low, 0) == 0) hits.push_back(&w);
+		}
+		if (ImGui::IsKeyPressed(ImGuiKey_DownArrow)) acSel = std::min(acSel + 1, static_cast<int>(hits.size()) - 1);
+		if (ImGui::IsKeyPressed(ImGuiKey_UpArrow)) acSel = std::max(acSel - 1, 0);
+		const std::string* chosen = nullptr;
+		if (!hits.empty() && (ImGui::IsKeyPressed(ImGuiKey_Enter) || ImGui::IsKeyPressed(ImGuiKey_KeypadEnter) || ImGui::IsKeyPressed(ImGuiKey_Tab)))
+			chosen = hits[std::clamp(acSel, 0, static_cast<int>(hits.size()) - 1)];
+		ImGui::BeginChild("##aclist", ImVec2(0, std::min(10, static_cast<int>(hits.size())) * ImGui::GetTextLineHeightWithSpacing() + 4));
+		for (int i = 0; i < static_cast<int>(hits.size()) && i < 400; i++) {
+			const auto a = api.find(*hits[i]);
+			const std::string label = a == api.end() ? *hits[i] : Signature(*hits[i], a->second.front());
+			if (ImGui::Selectable(label.c_str(), i == acSel)) chosen = hits[i];
+			if (i == acSel && (ImGui::IsKeyPressed(ImGuiKey_DownArrow) || ImGui::IsKeyPressed(ImGuiKey_UpArrow))) ImGui::SetScrollHereY();
+		}
+		ImGui::EndChild();
+		if (chosen) {
+			editor.SelectRegion(acStart, acEnd);
+			editor.ReplaceTextInCurrentCursor(*chosen);
+			ImGui::CloseCurrentPopup();
+		}
+		if (ImGui::IsKeyPressed(ImGuiKey_Escape)) ImGui::CloseCurrentPopup();
+		ImGui::EndPopup();
+	}
 
 	void say(const std::string& s)
 	{
@@ -209,6 +412,8 @@ struct ScriptPanel::Impl {
 ScriptPanel::ScriptPanel() : m(std::make_unique<Impl>())
 {
 	m->editor.SetLanguage(SquirrelLanguage());
+	m->editor.SetLineFoldingEnabled(true);
+	m->owner = this;
 	m->editor.SetChangeCallback([this] { m->dirty = true; });
 }
 
@@ -227,6 +432,8 @@ bool ScriptPanel::openGameRoot(const std::string& rootUtf8, const std::string& p
 	m->root = rootUtf8;
 	m->game = profile.empty() ? GuessGame(rootUtf8) : profile;
 	m->apiPath = FindApiProfile(m->game);
+	m->loadApi(m->apiPath);
+	m->loadConsts();
 	m->files.clear();
 	for (const char* sub : {"script", "data"}) {
 		if (!fs::exists(r / sub, ec)) continue;
@@ -334,8 +541,11 @@ void ScriptPanel::draw()
 	ImGui::EndChild();
 	ImGui::SameLine();
 	ImGui::BeginChild("##edit", ImVec2(0, -logH));
-	if (!m->currentRel.empty()) m->editor.Render("##sqtext", ImVec2(-1, -1));
-	else ImGui::TextDisabled("Open a game folder (the one holding script/ and data/), then pick a script.");
+	if (!m->currentRel.empty()) {
+		m->editor.Render("##sqtext", ImVec2(-1, -1));
+		m->drawHover();
+		m->drawCompletion(m_focused);
+	} else ImGui::TextDisabled("Open a game folder (the one holding script/ and data/), then pick a script.");
 	ImGui::EndChild();
 	ImGui::BeginChild("##log", ImVec2(0, 0), ImGuiChildFlags_Borders);
 	for (const auto& l : m->log) ImGui::TextUnformatted(l.c_str());
