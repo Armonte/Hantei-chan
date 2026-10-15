@@ -23,6 +23,7 @@
 #include <cstdio>
 #include <cstdlib>
 #include <filesystem>
+#include <fstream>
 #include <map>
 #include <memory>
 #include <vector>
@@ -116,6 +117,15 @@ struct State {
 	int playStartFrame = 0;
 	float clear[3] = {0.f, 0.392f, 0.f};       // game default clear 0xff006400 (UNI2), visible where nothing draws
 	bool loaded = false;
+	// MBAACC alignment (docs/stage3d/SCOPE.md section 4): the source camera driven from MBAACC's 2D camera, shown as MBAACC sees
+	// it (centre 4:3 of the 16:9 frame, same vertical FOV: "crop"), with the floor row, walls and a fighter ruler.
+	bool align = false;
+	float mbCamX = 0.f, mbZoom = 1.f;    // MBAACC camera: sim px (clamp +-208) and zoom
+	float fighterScale = 1.f;            // s: MBAACC px per source px at the plane (pc-stage3d fighter_px = 237 * s)
+	float centerX = 0.f;                 // stage units under MBAACC camera x = 0 (pc-stage3d center_x)
+	float floorPx = 432.f, yBias = 0.f;  // MBAACC floor row; small floor fix in MBAACC px
+	int replaces = -1;                   // MBAACC 2D stage slot the port replaces (pc-stage3d replaces)
+	std::string alignStatus;
 };
 State* S()
 {
@@ -297,7 +307,14 @@ float Iz(const State& s) { return 1.f / (s.zoom > 0.01f ? s.zoom : 1.f); }
 // Aspect 1 makes the projection anisotropic; StageWorld folds H/W (0.5625) into Scale.x, so 1 mesh unit = 360 px at z=0.
 s3d::Mat4 GameProjection(const State& s)
 {
-	return s3d::MatMul(PerspectiveFovLH(FovDeg(s) * 3.14159265f / 180.f, 1.f, 0.15f, 1000.f), Translation(0.f, -s.params.vanishingPoint, 0.f));
+	s3d::Mat4 p = s3d::MatMul(PerspectiveFovLH(FovDeg(s) * 3.14159265f / 180.f, 1.f, 0.15f, 1000.f), Translation(0.f, -s.params.vanishingPoint, 0.f));
+	if (s.align) {
+		// Lens shift (no perspective change): the floor, at source row 640 of 720, goes to MBAACC's floor row (x1.5 into the
+		// 720-line frame) plus the bias. Row-vector translation after the projection adds dy*w to clip y: an NDC shift.
+		const float want = (s.floorPx + s.yBias) * 1.5f;
+		p = s3d::MatMul(p, Translation(0.f, -(want - 640.f) / 360.f, 0.f));
+	}
+	return p;
 }
 // eye = (x/640, -(y - 280*iz)/360 - iz*v, -cot*iz), LookAtLH towards +Z (no rotation): View = T(-eye).
 // World y = 0 lands 280 px below the centre (screen y 640 of 720) at zoom 1; zoom dollies, FOV stays.
@@ -418,6 +435,9 @@ bool Capture(State& s, const std::string& path, std::string& err)
 
 }  // namespace
 
+void DrawAlignView(State& s, ImVec2 avail);
+void WriteAlignIni(State& s);
+
 void MenuItem()
 {
 	if (ImGui::MenuItem("3D Stage view (UNI2 / UNI / MBTL)...", nullptr, show)) show = !show;
@@ -464,10 +484,29 @@ void Draw()
 		ImGui::SameLine();
 		ImGui::SetNextItemWidth(160); ImGui::DragInt(LBL("frame (30 fps)"), &s.frame, 1.f, 0, 100000);
 		if (s.play) s.frame = s.playStartFrame + int((Now() - s.playStart) * 30.0);
+		ImGui::Checkbox(LBL("MBAACC alignment"), &s.align);
+		if (ImGui::IsItemHovered()) ImGui::SetTooltip("%s", TXT("Show the stage as an MBAACC port sees it: the centre 4:3 of the frame (same vertical FOV), driven by MBAACC's 2D camera, with its floor row, walls and a fighter-height ruler. Tune, then write stage3d.ini for PovertyCaster's pc-stage3d."));
+		if (s.align) {
+			ImGui::SetNextItemWidth(110); ImGui::DragFloat(LBL("MBAACC cam x"), &s.mbCamX, 1.f, -208.f, 208.f, "%.0f"); ImGui::SameLine();
+			ImGui::SetNextItemWidth(110); ImGui::DragFloat(LBL("MBAACC zoom"), &s.mbZoom, 0.005f, 0.5f, 1.5f); ImGui::SameLine();
+			ImGui::SetNextItemWidth(110); ImGui::DragFloat(LBL("fighter scale"), &s.fighterScale, 0.005f, 0.3f, 2.f); ImGui::SameLine();
+			ImGui::SetNextItemWidth(110); ImGui::DragFloat(LBL("center x (units)"), &s.centerX, 0.01f); ImGui::SameLine();
+			ImGui::SetNextItemWidth(110); ImGui::DragFloat(LBL("floor row"), &s.floorPx, 0.5f, 300.f, 480.f, "%.1f"); ImGui::SameLine();
+			ImGui::SetNextItemWidth(110); ImGui::DragFloat(LBL("y bias"), &s.yBias, 0.25f, -60.f, 60.f, "%.2f"); ImGui::SameLine();
+			ImGui::SetNextItemWidth(110); ImGui::InputInt(LBL("replaces slot"), &s.replaces);
+			if (ImGui::Button(LBL("Write stage3d.ini..."))) WriteAlignIni(s);
+			if (!s.alignStatus.empty()) { ImGui::SameLine(); ImGui::TextUnformatted(s.alignStatus.c_str()); }
+			s.mbCamX = std::clamp(s.mbCamX, -208.f, 208.f);
+			// 1 MBAACC px = 1.5 / s source px; the source zoom shows the same world height (720/s px over 480 lines)
+			s.camX = s.centerX * 640.f + s.mbCamX * 1.5f / std::max(0.01f, s.fighterScale);
+			s.camY = 0.f;
+			s.zoom = s.mbZoom * s.fighterScale;
+		}
 		Render(s);
 		const ImVec2 avail = ImGui::GetContentRegionAvail();
-		const float sc = std::min(avail.x / s.rt.width(), avail.y / s.rt.height());
-		if (sc > 0.f) {
+		if (s.align) {
+			DrawAlignView(s, avail);
+		} else if (const float sc = std::min(avail.x / s.rt.width(), avail.y / s.rt.height()); sc > 0.f) {
 			ImGui::Image((ImTextureID)(intptr_t)s.rt.texture(), ImVec2(s.rt.width() * sc, s.rt.height() * sc), ImVec2(0, 1), ImVec2(1, 0));
 			// Interactive fight camera: drag pans (game px of the 1280x720 frame), wheel zooms about the frame, double-click
 			// resets. Same state the cam fields above edit, so values can still be typed exactly.
@@ -487,6 +526,66 @@ void Draw()
 	ImGui::End();
 }
 
+// The 640x480 MBAACC picture: centre 4:3 crop (x 160..1120 of 1280) of the composited stage, plus MBAACC's 2D landmarks.
+void DrawAlignView(State& s, ImVec2 avail)
+{
+	const float sc = std::min(avail.x / 640.f, avail.y / 480.f);
+	if (sc <= 0.f) return;
+	const ImVec2 o = ImGui::GetCursorScreenPos();
+	ImGui::Image((ImTextureID)(intptr_t)s.rt.texture(), ImVec2(640.f * sc, 480.f * sc), ImVec2(0.125f, 1.f), ImVec2(0.875f, 0.f));
+	ImDrawList* dl = ImGui::GetWindowDrawList();
+	auto P = [&](float x, float y) { return ImVec2(o.x + x * sc, o.y + y * sc); };
+	dl->PushClipRect(P(0, 0), P(640, 480), true);   // landmarks off the 640x480 picture (walls at cam 0) are not drawn
+	const float z = s.mbZoom;
+	auto screenX = [&](float worldX) { return 320.f + z * (worldX - s.mbCamX); };   // screen = zoom*(world - cam) + (320, 432)
+	const ImU32 floorCol = IM_COL32(255, 220, 0, 220), wallCol = IM_COL32(255, 80, 80, 220), rulerCol = IM_COL32(80, 220, 255, 230),
+		srcWallCol = IM_COL32(255, 160, 255, 200);
+	dl->AddLine(P(0, s.floorPx), P(640, s.floorPx), floorCol, 1.5f);
+	// MBAACC walls: camera clamp 67584 fixed-point - 40960/zoom -> +-528 px of world (pc-stage3d host_world_w 1056)
+	for (float w : {-528.f, 528.f}) { const float x = screenX(w); dl->AddLine(P(x, 0), P(x, 480), wallCol, 2.f); }
+	// The source game's own walls (BgList StageW, its 1280-wide px), in MBAACC world px: (+-W/2 - center_x*640) / (1.5/s)
+	const float stageW = s.params.stageW > 0 ? s.params.stageW : 4096.f;
+	for (float w : {-stageW / 2.f, stageW / 2.f}) {
+		const float x = screenX((w - s.centerX * 640.f) * s.fighterScale / 1.5f);
+		for (float y = 0; y < 480; y += 12) dl->AddLine(P(x, y), P(x, y + 6), srcWallCol, 1.f);
+	}
+	// fighter ruler at world x 0: measured MBAACC fighters ~195 px, the source character 237*s at this scale
+	const float rx = screenX(0.f);
+	dl->AddRectFilled(P(rx - 3, s.floorPx - 195.f * z), P(rx + 3, s.floorPx), IM_COL32(80, 220, 255, 90));
+	dl->AddLine(P(rx - 10, s.floorPx - 195.f * z), P(rx + 10, s.floorPx - 195.f * z), rulerCol, 1.5f);
+	dl->AddLine(P(rx - 6, s.floorPx - 237.f * s.fighterScale * z), P(rx + 6, s.floorPx - 237.f * s.fighterScale * z), srcWallCol, 1.5f);
+	dl->AddText(P(rx + 12, s.floorPx - 195.f * z - 7), rulerCol, "195 MBAACC fighter");
+	dl->AddText(P(rx + 12, s.floorPx - 237.f * s.fighterScale * z - 7), srcWallCol, "source character");
+	dl->AddText(P(6, s.floorPx + 4), floorCol, "MBAACC floor");
+	dl->PopClipRect();
+}
+
+// stage3d.ini for PovertyCaster's pc-stage3d (keys: pc-stage3d include/pc/stage3d/StageIni.hpp), next to the stage folder.
+void WriteAlignIni(State& s)
+{
+	namespace fs = std::filesystem;
+	const fs::path dir = fs::u8path(std::string(s.bgDir)) / fs::u8path(s.dataFile);
+	char b[1024];
+	snprintf(b, sizeof b,
+		"; written by Hantei-chan's 3D Stage view, MBAACC alignment (%s)\n"
+		"%s"
+		"package = %s\n"
+		"fit_mode = crop\n"
+		"center_x = %.4f\n"
+		"fighter_px = %.2f\n"
+		"uni_char_px = 355\n"
+		"floor_px = %.2f\n"
+		"stage_w = %.0f\n"
+		"host_world_w = 1056\n",
+		s.loadedName.c_str(), s.replaces >= 0 ? ("replaces = " + std::to_string(s.replaces) + "\n").c_str() : "",
+		dir.generic_u8string().c_str(), s.centerX, 237.f * s.fighterScale, s.floorPx + s.yBias,
+		s.params.stageW > 0 ? s.params.stageW : 4096.f);
+	const fs::path out = dir / "stage3d.ini";
+	std::ofstream f(out, std::ios::binary);
+	f << b;
+	s.alignStatus = f ? std::string(TXT("Wrote")) + " " + out.u8string() : std::string(TXT("Save failed.")) + " " + out.u8string();
+}
+
 bool ScriptCommand(const std::string& cmd, const std::string& arg, std::string* msg)
 {
 	if (cmd != "stage3d") return false;
@@ -503,6 +602,17 @@ bool ScriptCommand(const std::string& cmd, const std::string& arg, std::string* 
 		out(ok ? "ok " + s.loadedName : "FAILED " + s.error);
 		return true;
 	}
+	if (sub == "align") {   // align on|off [mbCamX mbZoom fighterScale centerX]
+		show = true;
+		char onoff[8] = {};
+		float v[4] = {s.mbCamX, s.mbZoom, s.fighterScale, s.centerX};
+		sscanf(rest.c_str(), "%7s %f %f %f %f", onoff, &v[0], &v[1], &v[2], &v[3]);
+		s.align = std::string(onoff) != "off";
+		s.mbCamX = v[0]; s.mbZoom = v[1]; s.fighterScale = v[2]; s.centerX = v[3];
+		out("ok");
+		return true;
+	}
+	if (sub == "alignini") { WriteAlignIni(s); out(s.alignStatus); return true; }
 	if (sub == "frame") { s.play = false; s.frame = atoi(rest.c_str()); out("ok"); return true; }
 	if (sub == "cam") { sscanf(rest.c_str(), "%f %f %f", &s.camX, &s.camY, &s.zoom); out("ok"); return true; }
 	if (sub == "set") {
