@@ -55,7 +55,7 @@ private:
 // Finds docs/squirrel/api/<game>_api.json (or res/squirrel/<game>_api.json) near the working
 // directory or the executable. Empty when not found.
 std::string FindApiProfile(const std::string& game);
-// "uni2" / "mbtl" from the folder name or exe present in the root; "" when unknown.
+// "uni2" / "mbtl" / "dfci" / "unib" from the folder name or exe present in the root; "" when unknown.
 std::string GuessGame(const std::string& rootUtf8);
 
 } // namespace sqedit

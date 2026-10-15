@@ -26,7 +26,10 @@ def name_binders_by_shape(raw):
         for r in scan_func(rf):
             c, a = r['callee'], r['args']
             if not c.startswith('sub_'): continue
-            k = ['str' if 'str' in x else ('fn' if x.get('fn') else ('int' if re.fullmatch(r'-?\d+|0x[0-9A-Fa-f]+', x.get('raw', '')) else 'obj')) for x in a]
+            for x in a:   # (int)"name": older Hex-Rays prints BindTable / SetValueInt names with a cast
+                m = re.fullmatch(r'\(int\)"((?:[^"\\]|\\.)*)"', x.get('raw', ''))
+                if m and 'str' not in x: x['str'] = m.group(1)
+            k = ['str' if 'str' in x else ('fn' if x.get('fn') else ('int' if re.fullmatch(r'-?\d+u?|0x[0-9A-Fa-f]+u?', x.get('raw', '')) else 'obj')) for x in a]
             if k == ['str', 'fn']: role = 'Sqrat_Class_BindMethod' if _isthis(a[1]['fn']) else 'Sqrat_TableBase_BindFunc'
             elif k == ['str', 'int']: role = 'Sqrat_Class_VarA'
             elif len(k) == 3 and k[1] == 'str' and k[2] == 'int': role = 'Sqrat_TableBase_SetValueInt'

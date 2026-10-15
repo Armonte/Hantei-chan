@@ -848,6 +848,123 @@
   "ea": "0x80ea0a"
  },
  {
+  "kind": "const",
+  "name": "_PosState_Stand",
+  "table": "BCMDConst",
+  "regfunc": "0x80e480",
+  "ea": "0x80ea55",
+  "value": "1",
+  "qualified_table": "BCMDConst"
+ },
+ {
+  "kind": "const",
+  "name": "_PosState_Air",
+  "table": "BCMDConst",
+  "regfunc": "0x80e480",
+  "ea": "0x80ea67",
+  "value": "2",
+  "qualified_table": "BCMDConst"
+ },
+ {
+  "kind": "const",
+  "name": "_PosState_Crouch",
+  "table": "BCMDConst",
+  "regfunc": "0x80e480",
+  "ea": "0x80ea79",
+  "value": "4",
+  "qualified_table": "BCMDConst"
+ },
+ {
+  "kind": "const",
+  "name": "_PosState_Ground",
+  "table": "BCMDConst",
+  "regfunc": "0x80e480",
+  "ea": "0x80ea8b",
+  "value": "5",
+  "qualified_table": "BCMDConst"
+ },
+ {
+  "kind": "const",
+  "name": "_PosState_Always",
+  "table": "BCMDConst",
+  "regfunc": "0x80e480",
+  "ea": "0x80ea9d",
+  "value": "7",
+  "qualified_table": "BCMDConst"
+ },
+ {
+  "kind": "const",
+  "name": "_SkillType_None",
+  "table": "BCMDConst",
+  "regfunc": "0x80e480",
+  "ea": "0x80eaaf",
+  "value": "0",
+  "qualified_table": "BCMDConst"
+ },
+ {
+  "kind": "const",
+  "name": "_SkillType_Normal",
+  "table": "BCMDConst",
+  "regfunc": "0x80e480",
+  "ea": "0x80eac1",
+  "value": "1",
+  "qualified_table": "BCMDConst"
+ },
+ {
+  "kind": "const",
+  "name": "_SkillType_Special",
+  "table": "BCMDConst",
+  "regfunc": "0x80e480",
+  "ea": "0x80ead3",
+  "value": "2",
+  "qualified_table": "BCMDConst"
+ },
+ {
+  "kind": "const",
+  "name": "_SkillType_ExSpecial",
+  "table": "BCMDConst",
+  "regfunc": "0x80e480",
+  "ea": "0x80eae5",
+  "value": "6",
+  "qualified_table": "BCMDConst"
+ },
+ {
+  "kind": "const",
+  "name": "_SkillType_Ex",
+  "table": "BCMDConst",
+  "regfunc": "0x80e480",
+  "ea": "0x80eaf7",
+  "value": "4",
+  "qualified_table": "BCMDConst"
+ },
+ {
+  "kind": "const",
+  "name": "_SkillType_ChainShift",
+  "table": "BCMDConst",
+  "regfunc": "0x80e480",
+  "ea": "0x80eb09",
+  "value": "8",
+  "qualified_table": "BCMDConst"
+ },
+ {
+  "kind": "const",
+  "name": "_State_Guard",
+  "table": "BCMDConst",
+  "regfunc": "0x80e480",
+  "ea": "0x80eb1b",
+  "value": "1",
+  "qualified_table": "BCMDConst"
+ },
+ {
+  "kind": "const",
+  "name": "_State_GuardCancel",
+  "table": "BCMDConst",
+  "regfunc": "0x80e480",
+  "ea": "0x80eb2d",
+  "value": "2",
+  "qualified_table": "BCMDConst"
+ },
+ {
   "kind": "table",
   "name": "BCMDConst",
   "table": "",
@@ -3466,6 +3583,1311 @@
   "ea": "0x810f9c"
  },
  {
+  "kind": "const",
+  "name": "_isDebugModeExe",
+  "table": "BMvConst",
+  "regfunc": "0x80fea0",
+  "ea": "0x810fcf",
+  "value": "0",
+  "qualified_table": "BMvConst"
+ },
+ {
+  "kind": "const",
+  "name": "_PlatformType",
+  "table": "BMvConst",
+  "regfunc": "0x80fea0",
+  "ea": "0x810fde",
+  "value": "0",
+  "qualified_table": "BMvConst"
+ },
+ {
+  "kind": "const",
+  "name": "_PlatformAPM",
+  "table": "BMvConst",
+  "regfunc": "0x80fea0",
+  "ea": "0x810fed",
+  "value": "1",
+  "qualified_table": "BMvConst"
+ },
+ {
+  "kind": "const",
+  "name": "_DevWindows",
+  "table": "BMvConst",
+  "regfunc": "0x80fea0",
+  "ea": "0x810ffc",
+  "value": "1",
+  "qualified_table": "BMvConst"
+ },
+ {
+  "kind": "const",
+  "name": "_DevPS3",
+  "table": "BMvConst",
+  "regfunc": "0x80fea0",
+  "ea": "0x81100b",
+  "value": "0",
+  "qualified_table": "BMvConst"
+ },
+ {
+  "kind": "const",
+  "name": "_DevVITA",
+  "table": "BMvConst",
+  "regfunc": "0x80fea0",
+  "ea": "0x81101a",
+  "value": "0",
+  "qualified_table": "BMvConst"
+ },
+ {
+  "kind": "const",
+  "name": "_DevPS4",
+  "table": "BMvConst",
+  "regfunc": "0x80fea0",
+  "ea": "0x811029",
+  "value": "0",
+  "qualified_table": "BMvConst"
+ },
+ {
+  "kind": "const",
+  "name": "_PosState_Stand",
+  "table": "BMvConst",
+  "regfunc": "0x80fea0",
+  "ea": "0x811038",
+  "value": "1",
+  "qualified_table": "BMvConst"
+ },
+ {
+  "kind": "const",
+  "name": "_PosState_Air",
+  "table": "BMvConst",
+  "regfunc": "0x80fea0",
+  "ea": "0x811047",
+  "value": "2",
+  "qualified_table": "BMvConst"
+ },
+ {
+  "kind": "const",
+  "name": "_PosState_Crouch",
+  "table": "BMvConst",
+  "regfunc": "0x80fea0",
+  "ea": "0x811056",
+  "value": "4",
+  "qualified_table": "BMvConst"
+ },
+ {
+  "kind": "const",
+  "name": "_PosState_Ground",
+  "table": "BMvConst",
+  "regfunc": "0x80fea0",
+  "ea": "0x811065",
+  "value": "5",
+  "qualified_table": "BMvConst"
+ },
+ {
+  "kind": "const",
+  "name": "_PosState_Always",
+  "table": "BMvConst",
+  "regfunc": "0x80fea0",
+  "ea": "0x811074",
+  "value": "7",
+  "qualified_table": "BMvConst"
+ },
+ {
+  "kind": "const",
+  "name": "_PrioType_",
+  "table": "BMvConst",
+  "regfunc": "0x80fea0",
+  "ea": "0x811083",
+  "value": "7",
+  "qualified_table": "BMvConst"
+ },
+ {
+  "kind": "const",
+  "name": "_HitType_Hit",
+  "table": "BMvConst",
+  "regfunc": "0x80fea0",
+  "ea": "0x811092",
+  "value": "3",
+  "qualified_table": "BMvConst"
+ },
+ {
+  "kind": "const",
+  "name": "_HitType_Damage",
+  "table": "BMvConst",
+  "regfunc": "0x80fea0",
+  "ea": "0x8110a1",
+  "value": "2",
+  "qualified_table": "BMvConst"
+ },
+ {
+  "kind": "const",
+  "name": "_HitType_Guard",
+  "table": "BMvConst",
+  "regfunc": "0x80fea0",
+  "ea": "0x8110b0",
+  "value": "1",
+  "qualified_table": "BMvConst"
+ },
+ {
+  "kind": "const",
+  "name": "_Direction_Auto",
+  "table": "BMvConst",
+  "regfunc": "0x80fea0",
+  "ea": "0x8110bf",
+  "value": "-1",
+  "qualified_table": "BMvConst"
+ },
+ {
+  "kind": "const",
+  "name": "_Direction_Left",
+  "table": "BMvConst",
+  "regfunc": "0x80fea0",
+  "ea": "0x8110ce",
+  "value": "0",
+  "qualified_table": "BMvConst"
+ },
+ {
+  "kind": "const",
+  "name": "_Direction_Right",
+  "table": "BMvConst",
+  "regfunc": "0x80fea0",
+  "ea": "0x8110dd",
+  "value": "1",
+  "qualified_table": "BMvConst"
+ },
+ {
+  "kind": "const",
+  "name": "_Direction_Reverse",
+  "table": "BMvConst",
+  "regfunc": "0x80fea0",
+  "ea": "0x8110ec",
+  "value": "10",
+  "qualified_table": "BMvConst"
+ },
+ {
+  "kind": "const",
+  "name": "_Position_CaptureChara",
+  "table": "BMvConst",
+  "regfunc": "0x80fea0",
+  "ea": "0x8110fb",
+  "value": "1",
+  "qualified_table": "BMvConst"
+ },
+ {
+  "kind": "const",
+  "name": "_Position_CaptureShift",
+  "table": "BMvConst",
+  "regfunc": "0x80fea0",
+  "ea": "0x81110a",
+  "value": "2",
+  "qualified_table": "BMvConst"
+ },
+ {
+  "kind": "const",
+  "name": "_Position_ToolShift",
+  "table": "BMvConst",
+  "regfunc": "0x80fea0",
+  "ea": "0x811119",
+  "value": "2",
+  "qualified_table": "BMvConst"
+ },
+ {
+  "kind": "const",
+  "name": "_Position_ChangeMuki",
+  "table": "BMvConst",
+  "regfunc": "0x80fea0",
+  "ea": "0x811128",
+  "value": "4",
+  "qualified_table": "BMvConst"
+ },
+ {
+  "kind": "const",
+  "name": "_Position_Add",
+  "table": "BMvConst",
+  "regfunc": "0x80fea0",
+  "ea": "0x811137",
+  "value": "8",
+  "qualified_table": "BMvConst"
+ },
+ {
+  "kind": "const",
+  "name": "_Position_NoMoveChild",
+  "table": "BMvConst",
+  "regfunc": "0x80fea0",
+  "ea": "0x811146",
+  "value": "16",
+  "qualified_table": "BMvConst"
+ },
+ {
+  "kind": "const",
+  "name": "_Angle_AngleAdd",
+  "table": "BMvConst",
+  "regfunc": "0x80fea0",
+  "ea": "0x811155",
+  "value": "1",
+  "qualified_table": "BMvConst"
+ },
+ {
+  "kind": "const",
+  "name": "_Angle_PositionAdd",
+  "table": "BMvConst",
+  "regfunc": "0x80fea0",
+  "ea": "0x811164",
+  "value": "2",
+  "qualified_table": "BMvConst"
+ },
+ {
+  "kind": "const",
+  "name": "_VecFlag_Add",
+  "table": "BMvConst",
+  "regfunc": "0x80fea0",
+  "ea": "0x811173",
+  "value": "1",
+  "qualified_table": "BMvConst"
+ },
+ {
+  "kind": "const",
+  "name": "_VecFlag_NoMuki",
+  "table": "BMvConst",
+  "regfunc": "0x80fea0",
+  "ea": "0x811182",
+  "value": "2",
+  "qualified_table": "BMvConst"
+ },
+ {
+  "kind": "const",
+  "name": "_Vector_Normal",
+  "table": "BMvConst",
+  "regfunc": "0x80fea0",
+  "ea": "0x811194",
+  "value": "0",
+  "qualified_table": "BMvConst"
+ },
+ {
+  "kind": "const",
+  "name": "_Vector_Bound",
+  "table": "BMvConst",
+  "regfunc": "0x80fea0",
+  "ea": "0x8111a6",
+  "value": "0",
+  "qualified_table": "BMvConst"
+ },
+ {
+  "kind": "const",
+  "name": "_Vector_Div",
+  "table": "BMvConst",
+  "regfunc": "0x80fea0",
+  "ea": "0x8111b8",
+  "value": "0",
+  "qualified_table": "BMvConst"
+ },
+ {
+  "kind": "const",
+  "name": "_Vector_Keep",
+  "table": "BMvConst",
+  "regfunc": "0x80fea0",
+  "ea": "0x8111ca",
+  "value": "0",
+  "qualified_table": "BMvConst"
+ },
+ {
+  "kind": "const",
+  "name": "_Vector_DivKeep",
+  "table": "BMvConst",
+  "regfunc": "0x80fea0",
+  "ea": "0x8111dc",
+  "value": "0",
+  "qualified_table": "BMvConst"
+ },
+ {
+  "kind": "const",
+  "name": "_ValSet",
+  "table": "BMvConst",
+  "regfunc": "0x80fea0",
+  "ea": "0x8111eb",
+  "value": "0",
+  "qualified_table": "BMvConst"
+ },
+ {
+  "kind": "const",
+  "name": "_ValGet",
+  "table": "BMvConst",
+  "regfunc": "0x80fea0",
+  "ea": "0x8111fa",
+  "value": "1",
+  "qualified_table": "BMvConst"
+ },
+ {
+  "kind": "const",
+  "name": "_ValAdd",
+  "table": "BMvConst",
+  "regfunc": "0x80fea0",
+  "ea": "0x811209",
+  "value": "2",
+  "qualified_table": "BMvConst"
+ },
+ {
+  "kind": "const",
+  "name": "_ValClear",
+  "table": "BMvConst",
+  "regfunc": "0x80fea0",
+  "ea": "0x811218",
+  "value": "3",
+  "qualified_table": "BMvConst"
+ },
+ {
+  "kind": "const",
+  "name": "_ValErase",
+  "table": "BMvConst",
+  "regfunc": "0x80fea0",
+  "ea": "0x811227",
+  "value": "4",
+  "qualified_table": "BMvConst"
+ },
+ {
+  "kind": "const",
+  "name": "_ValCheck",
+  "table": "BMvConst",
+  "regfunc": "0x80fea0",
+  "ea": "0x811236",
+  "value": "5",
+  "qualified_table": "BMvConst"
+ },
+ {
+  "kind": "const",
+  "name": "_InterruptType_Ko_Atk",
+  "table": "BMvConst",
+  "regfunc": "0x80fea0",
+  "ea": "0x811245",
+  "value": "0",
+  "qualified_table": "BMvConst"
+ },
+ {
+  "kind": "const",
+  "name": "_InterruptType_Ko_Def",
+  "table": "BMvConst",
+  "regfunc": "0x80fea0",
+  "ea": "0x811254",
+  "value": "1",
+  "qualified_table": "BMvConst"
+ },
+ {
+  "kind": "const",
+  "name": "_InterruptType_Judge",
+  "table": "BMvConst",
+  "regfunc": "0x80fea0",
+  "ea": "0x811263",
+  "value": "2",
+  "qualified_table": "BMvConst"
+ },
+ {
+  "kind": "const",
+  "name": "_InterruptType_DrawMotion",
+  "table": "BMvConst",
+  "regfunc": "0x80fea0",
+  "ea": "0x811272",
+  "value": "3",
+  "qualified_table": "BMvConst"
+ },
+ {
+  "kind": "const",
+  "name": "_InterruptType_WinMotion",
+  "table": "BMvConst",
+  "regfunc": "0x80fea0",
+  "ea": "0x811281",
+  "value": "4",
+  "qualified_table": "BMvConst"
+ },
+ {
+  "kind": "const",
+  "name": "_InterruptType_LoseMotion",
+  "table": "BMvConst",
+  "regfunc": "0x80fea0",
+  "ea": "0x811290",
+  "value": "5",
+  "qualified_table": "BMvConst"
+ },
+ {
+  "kind": "const",
+  "name": "_InterruptType_SupportCharge",
+  "table": "BMvConst",
+  "regfunc": "0x80fea0",
+  "ea": "0x81129f",
+  "value": "6",
+  "qualified_table": "BMvConst"
+ },
+ {
+  "kind": "const",
+  "name": "_InterruptType_Jem",
+  "table": "BMvConst",
+  "regfunc": "0x80fea0",
+  "ea": "0x8112ae",
+  "value": "7",
+  "qualified_table": "BMvConst"
+ },
+ {
+  "kind": "const",
+  "name": "_InterruptType_BlastCharge",
+  "table": "BMvConst",
+  "regfunc": "0x80fea0",
+  "ea": "0x8112bd",
+  "value": "8",
+  "qualified_table": "BMvConst"
+ },
+ {
+  "kind": "const",
+  "name": "_ImpactFlag_IsBound",
+  "table": "BMvConst",
+  "regfunc": "0x80fea0",
+  "ea": "0x8112cc",
+  "value": "1",
+  "qualified_table": "BMvConst"
+ },
+ {
+  "kind": "const",
+  "name": "_ImpactFlag_IsGuard",
+  "table": "BMvConst",
+  "regfunc": "0x80fea0",
+  "ea": "0x8112db",
+  "value": "2",
+  "qualified_table": "BMvConst"
+ },
+ {
+  "kind": "const",
+  "name": "_ImpactFlag_IsCounter",
+  "table": "BMvConst",
+  "regfunc": "0x80fea0",
+  "ea": "0x8112ed",
+  "value": "128",
+  "qualified_table": "BMvConst"
+ },
+ {
+  "kind": "const",
+  "name": "_ImpactFlag_IsDangerHP",
+  "table": "BMvConst",
+  "regfunc": "0x80fea0",
+  "ea": "0x8112fc",
+  "value": "64",
+  "qualified_table": "BMvConst"
+ },
+ {
+  "kind": "const",
+  "name": "_CancelFlag_None",
+  "table": "BMvConst",
+  "regfunc": "0x80fea0",
+  "ea": "0x81130b",
+  "value": "0",
+  "qualified_table": "BMvConst"
+ },
+ {
+  "kind": "const",
+  "name": "_CancelFlag_Hit",
+  "table": "BMvConst",
+  "regfunc": "0x80fea0",
+  "ea": "0x81131a",
+  "value": "1",
+  "qualified_table": "BMvConst"
+ },
+ {
+  "kind": "const",
+  "name": "_CancelFlag_Always",
+  "table": "BMvConst",
+  "regfunc": "0x80fea0",
+  "ea": "0x811329",
+  "value": "2",
+  "qualified_table": "BMvConst"
+ },
+ {
+  "kind": "const",
+  "name": "_CancelFlag_Damage",
+  "table": "BMvConst",
+  "regfunc": "0x80fea0",
+  "ea": "0x811338",
+  "value": "3",
+  "qualified_table": "BMvConst"
+ },
+ {
+  "kind": "const",
+  "name": "_CancelFlag_Invalid",
+  "table": "BMvConst",
+  "regfunc": "0x80fea0",
+  "ea": "0x81134a",
+  "value": "255",
+  "qualified_table": "BMvConst"
+ },
+ {
+  "kind": "const",
+  "name": "_ClearFlag_ChangeFrame",
+  "table": "BMvConst",
+  "regfunc": "0x80fea0",
+  "ea": "0x811359",
+  "value": "2",
+  "qualified_table": "BMvConst"
+ },
+ {
+  "kind": "const",
+  "name": "_ClearFlag_ChangePattern",
+  "table": "BMvConst",
+  "regfunc": "0x80fea0",
+  "ea": "0x811368",
+  "value": "4",
+  "qualified_table": "BMvConst"
+ },
+ {
+  "kind": "const",
+  "name": "_ClearFlag_ChangeMv",
+  "table": "BMvConst",
+  "regfunc": "0x80fea0",
+  "ea": "0x811377",
+  "value": "1",
+  "qualified_table": "BMvConst"
+ },
+ {
+  "kind": "const",
+  "name": "_ClearFlag_ComboEnd",
+  "table": "BMvConst",
+  "regfunc": "0x80fea0",
+  "ea": "0x811386",
+  "value": "64",
+  "qualified_table": "BMvConst"
+ },
+ {
+  "kind": "const",
+  "name": "_AsFlag_ExCancel",
+  "table": "BMvConst",
+  "regfunc": "0x80fea0",
+  "ea": "0x811395",
+  "value": "1",
+  "qualified_table": "BMvConst"
+ },
+ {
+  "kind": "const",
+  "name": "_AsFlag_ChainShift",
+  "table": "BMvConst",
+  "regfunc": "0x80fea0",
+  "ea": "0x8113a4",
+  "value": "2",
+  "qualified_table": "BMvConst"
+ },
+ {
+  "kind": "const",
+  "name": "_AsFlag_GuardRev",
+  "table": "BMvConst",
+  "regfunc": "0x80fea0",
+  "ea": "0x8113b3",
+  "value": "4",
+  "qualified_table": "BMvConst"
+ },
+ {
+  "kind": "const",
+  "name": "_AsFlag_Guard_Stand",
+  "table": "BMvConst",
+  "regfunc": "0x80fea0",
+  "ea": "0x8113c2",
+  "value": "16",
+  "qualified_table": "BMvConst"
+ },
+ {
+  "kind": "const",
+  "name": "_AsFlag_Guard_Air",
+  "table": "BMvConst",
+  "regfunc": "0x80fea0",
+  "ea": "0x8113d1",
+  "value": "32",
+  "qualified_table": "BMvConst"
+ },
+ {
+  "kind": "const",
+  "name": "_AsFlag_Guard_Crouch",
+  "table": "BMvConst",
+  "regfunc": "0x80fea0",
+  "ea": "0x8113e0",
+  "value": "64",
+  "qualified_table": "BMvConst"
+ },
+ {
+  "kind": "const",
+  "name": "_CharaPrio_None",
+  "table": "BMvConst",
+  "regfunc": "0x80fea0",
+  "ea": "0x8113ef",
+  "value": "0",
+  "qualified_table": "BMvConst"
+ },
+ {
+  "kind": "const",
+  "name": "_CharaPrio_Near",
+  "table": "BMvConst",
+  "regfunc": "0x80fea0",
+  "ea": "0x8113fe",
+  "value": "1",
+  "qualified_table": "BMvConst"
+ },
+ {
+  "kind": "const",
+  "name": "_CharaPrio_Far",
+  "table": "BMvConst",
+  "regfunc": "0x80fea0",
+  "ea": "0x81140d",
+  "value": "2",
+  "qualified_table": "BMvConst"
+ },
+ {
+  "kind": "const",
+  "name": "_CharaPrio_Near_Layer_0",
+  "table": "BMvConst",
+  "regfunc": "0x80fea0",
+  "ea": "0x81141c",
+  "value": "3",
+  "qualified_table": "BMvConst"
+ },
+ {
+  "kind": "const",
+  "name": "_CharaPrio_Near_Layer_1",
+  "table": "BMvConst",
+  "regfunc": "0x80fea0",
+  "ea": "0x81142b",
+  "value": "4",
+  "qualified_table": "BMvConst"
+ },
+ {
+  "kind": "const",
+  "name": "_CharaPrio_Near_Layer_2",
+  "table": "BMvConst",
+  "regfunc": "0x80fea0",
+  "ea": "0x81143a",
+  "value": "5",
+  "qualified_table": "BMvConst"
+ },
+ {
+  "kind": "const",
+  "name": "_CharaPrio_Near_Layer_3",
+  "table": "BMvConst",
+  "regfunc": "0x80fea0",
+  "ea": "0x811449",
+  "value": "6",
+  "qualified_table": "BMvConst"
+ },
+ {
+  "kind": "const",
+  "name": "_CharaPrio_Near_Layer_4",
+  "table": "BMvConst",
+  "regfunc": "0x80fea0",
+  "ea": "0x811458",
+  "value": "7",
+  "qualified_table": "BMvConst"
+ },
+ {
+  "kind": "const",
+  "name": "_CharaPrio_Near_Layer_5",
+  "table": "BMvConst",
+  "regfunc": "0x80fea0",
+  "ea": "0x811467",
+  "value": "8",
+  "qualified_table": "BMvConst"
+ },
+ {
+  "kind": "const",
+  "name": "_CharaPrio_Near_Layer_6",
+  "table": "BMvConst",
+  "regfunc": "0x80fea0",
+  "ea": "0x811476",
+  "value": "9",
+  "qualified_table": "BMvConst"
+ },
+ {
+  "kind": "const",
+  "name": "_CharaPrio_Near_Layer_7",
+  "table": "BMvConst",
+  "regfunc": "0x80fea0",
+  "ea": "0x811485",
+  "value": "10",
+  "qualified_table": "BMvConst"
+ },
+ {
+  "kind": "const",
+  "name": "_CharaPrio_Near_Layer_8",
+  "table": "BMvConst",
+  "regfunc": "0x80fea0",
+  "ea": "0x811494",
+  "value": "11",
+  "qualified_table": "BMvConst"
+ },
+ {
+  "kind": "const",
+  "name": "_CharaPrio_Near_Layer_9",
+  "table": "BMvConst",
+  "regfunc": "0x80fea0",
+  "ea": "0x8114a3",
+  "value": "12",
+  "qualified_table": "BMvConst"
+ },
+ {
+  "kind": "const",
+  "name": "_CharaPrio_Far_Layer_0",
+  "table": "BMvConst",
+  "regfunc": "0x80fea0",
+  "ea": "0x8114b2",
+  "value": "13",
+  "qualified_table": "BMvConst"
+ },
+ {
+  "kind": "const",
+  "name": "_CharaPrio_Far_Layer_1",
+  "table": "BMvConst",
+  "regfunc": "0x80fea0",
+  "ea": "0x8114c1",
+  "value": "14",
+  "qualified_table": "BMvConst"
+ },
+ {
+  "kind": "const",
+  "name": "_CharaPrio_Far_Layer_2",
+  "table": "BMvConst",
+  "regfunc": "0x80fea0",
+  "ea": "0x8114d0",
+  "value": "15",
+  "qualified_table": "BMvConst"
+ },
+ {
+  "kind": "const",
+  "name": "_CharaPrio_Far_Layer_3",
+  "table": "BMvConst",
+  "regfunc": "0x80fea0",
+  "ea": "0x8114df",
+  "value": "16",
+  "qualified_table": "BMvConst"
+ },
+ {
+  "kind": "const",
+  "name": "_CharaPrio_Far_Layer_4",
+  "table": "BMvConst",
+  "regfunc": "0x80fea0",
+  "ea": "0x8114ee",
+  "value": "17",
+  "qualified_table": "BMvConst"
+ },
+ {
+  "kind": "const",
+  "name": "_CharaPrio_Far_Layer_5",
+  "table": "BMvConst",
+  "regfunc": "0x80fea0",
+  "ea": "0x8114fd",
+  "value": "18",
+  "qualified_table": "BMvConst"
+ },
+ {
+  "kind": "const",
+  "name": "_CharaPrio_Far_Layer_6",
+  "table": "BMvConst",
+  "regfunc": "0x80fea0",
+  "ea": "0x81150c",
+  "value": "19",
+  "qualified_table": "BMvConst"
+ },
+ {
+  "kind": "const",
+  "name": "_CharaPrio_Far_Layer_7",
+  "table": "BMvConst",
+  "regfunc": "0x80fea0",
+  "ea": "0x81151b",
+  "value": "20",
+  "qualified_table": "BMvConst"
+ },
+ {
+  "kind": "const",
+  "name": "_CharaPrio_Far_Layer_8",
+  "table": "BMvConst",
+  "regfunc": "0x80fea0",
+  "ea": "0x81152a",
+  "value": "21",
+  "qualified_table": "BMvConst"
+ },
+ {
+  "kind": "const",
+  "name": "_CharaPrio_Far_Layer_9",
+  "table": "BMvConst",
+  "regfunc": "0x80fea0",
+  "ea": "0x811539",
+  "value": "22",
+  "qualified_table": "BMvConst"
+ },
+ {
+  "kind": "const",
+  "name": "_CharaPrio_Parent_P1",
+  "table": "BMvConst",
+  "regfunc": "0x80fea0",
+  "ea": "0x811548",
+  "value": "23",
+  "qualified_table": "BMvConst"
+ },
+ {
+  "kind": "const",
+  "name": "_CharaPrio_Parent_M1",
+  "table": "BMvConst",
+  "regfunc": "0x80fea0",
+  "ea": "0x811557",
+  "value": "24",
+  "qualified_table": "BMvConst"
+ },
+ {
+  "kind": "const",
+  "name": "_CharaPrio_Parent_BG",
+  "table": "BMvConst",
+  "regfunc": "0x80fea0",
+  "ea": "0x811566",
+  "value": "25",
+  "qualified_table": "BMvConst"
+ },
+ {
+  "kind": "const",
+  "name": "_CharaPrio_Near_P1",
+  "table": "BMvConst",
+  "regfunc": "0x80fea0",
+  "ea": "0x811575",
+  "value": "26",
+  "qualified_table": "BMvConst"
+ },
+ {
+  "kind": "const",
+  "name": "_CharaPrio_GaugeCombo_P1",
+  "table": "BMvConst",
+  "regfunc": "0x80fea0",
+  "ea": "0x811584",
+  "value": "27",
+  "qualified_table": "BMvConst"
+ },
+ {
+  "kind": "const",
+  "name": "_CharaPrio_GaugeHP_P1",
+  "table": "BMvConst",
+  "regfunc": "0x80fea0",
+  "ea": "0x811593",
+  "value": "28",
+  "qualified_table": "BMvConst"
+ },
+ {
+  "kind": "const",
+  "name": "_CatchFlag_AtkStandGuard",
+  "table": "BMvConst",
+  "regfunc": "0x80fea0",
+  "ea": "0x8115a2",
+  "value": "1",
+  "qualified_table": "BMvConst"
+ },
+ {
+  "kind": "const",
+  "name": "_CatchFlag_AtkAirGuard",
+  "table": "BMvConst",
+  "regfunc": "0x80fea0",
+  "ea": "0x8115b1",
+  "value": "2",
+  "qualified_table": "BMvConst"
+ },
+ {
+  "kind": "const",
+  "name": "_CatchFlag_AtkCrouchGuard",
+  "table": "BMvConst",
+  "regfunc": "0x80fea0",
+  "ea": "0x8115c0",
+  "value": "4",
+  "qualified_table": "BMvConst"
+ },
+ {
+  "kind": "const",
+  "name": "_CatchFlag_AtkNoGuard",
+  "table": "BMvConst",
+  "regfunc": "0x80fea0",
+  "ea": "0x8115cf",
+  "value": "8",
+  "qualified_table": "BMvConst"
+ },
+ {
+  "kind": "const",
+  "name": "_CatchFlag_AtkNoGuardThrow",
+  "table": "BMvConst",
+  "regfunc": "0x80fea0",
+  "ea": "0x8115de",
+  "value": "16",
+  "qualified_table": "BMvConst"
+ },
+ {
+  "kind": "const",
+  "name": "_CatchFlag_StateStand",
+  "table": "BMvConst",
+  "regfunc": "0x80fea0",
+  "ea": "0x8115ed",
+  "value": "32",
+  "qualified_table": "BMvConst"
+ },
+ {
+  "kind": "const",
+  "name": "_CatchFlag_StateAir",
+  "table": "BMvConst",
+  "regfunc": "0x80fea0",
+  "ea": "0x8115fc",
+  "value": "64",
+  "qualified_table": "BMvConst"
+ },
+ {
+  "kind": "const",
+  "name": "_CatchFlag_StateCrouch",
+  "table": "BMvConst",
+  "regfunc": "0x80fea0",
+  "ea": "0x81160e",
+  "value": "128",
+  "qualified_table": "BMvConst"
+ },
+ {
+  "kind": "const",
+  "name": "_CatchFlag_AtkAllGuard",
+  "table": "BMvConst",
+  "regfunc": "0x80fea0",
+  "ea": "0x81161d",
+  "value": "7",
+  "qualified_table": "BMvConst"
+ },
+ {
+  "kind": "const",
+  "name": "_CatchSuccess_HitSub",
+  "table": "BMvConst",
+  "regfunc": "0x80fea0",
+  "ea": "0x81162c",
+  "value": "1",
+  "qualified_table": "BMvConst"
+ },
+ {
+  "kind": "const",
+  "name": "_CatchSuccess_HitSub_Enemy",
+  "table": "BMvConst",
+  "regfunc": "0x80fea0",
+  "ea": "0x81163b",
+  "value": "2",
+  "qualified_table": "BMvConst"
+ },
+ {
+  "kind": "const",
+  "name": "_CatchSuccess_HitSub_None",
+  "table": "BMvConst",
+  "regfunc": "0x80fea0",
+  "ea": "0x81164a",
+  "value": "4",
+  "qualified_table": "BMvConst"
+ },
+ {
+  "kind": "const",
+  "name": "_CatchSuccess_FlagHit_Enemy",
+  "table": "BMvConst",
+  "regfunc": "0x80fea0",
+  "ea": "0x811659",
+  "value": "8",
+  "qualified_table": "BMvConst"
+ },
+ {
+  "kind": "const",
+  "name": "_CharaMoveMode_Enable",
+  "table": "BMvConst",
+  "regfunc": "0x80fea0",
+  "ea": "0x811668",
+  "value": "0",
+  "qualified_table": "BMvConst"
+ },
+ {
+  "kind": "const",
+  "name": "_CharaMoveMode_Limit",
+  "table": "BMvConst",
+  "regfunc": "0x80fea0",
+  "ea": "0x811677",
+  "value": "1",
+  "qualified_table": "BMvConst"
+ },
+ {
+  "kind": "const",
+  "name": "_CharaMoveMode_Disable",
+  "table": "BMvConst",
+  "regfunc": "0x80fea0",
+  "ea": "0x811686",
+  "value": "2",
+  "qualified_table": "BMvConst"
+ },
+ {
+  "kind": "const",
+  "name": "_PCGaugeType_Eltnum",
+  "table": "BMvConst",
+  "regfunc": "0x80fea0",
+  "ea": "0x811695",
+  "value": "2",
+  "qualified_table": "BMvConst"
+ },
+ {
+  "kind": "const",
+  "name": "_MvStFlag_CounterAtk",
+  "table": "BMvConst",
+  "regfunc": "0x80fea0",
+  "ea": "0x8116a4",
+  "value": "1",
+  "qualified_table": "BMvConst"
+ },
+ {
+  "kind": "const",
+  "name": "_MvStFlag_CounterDef",
+  "table": "BMvConst",
+  "regfunc": "0x80fea0",
+  "ea": "0x8116b3",
+  "value": "2",
+  "qualified_table": "BMvConst"
+ },
+ {
+  "kind": "const",
+  "name": "_MvStFlag_DangerHPAtk",
+  "table": "BMvConst",
+  "regfunc": "0x80fea0",
+  "ea": "0x8116c2",
+  "value": "8",
+  "qualified_table": "BMvConst"
+ },
+ {
+  "kind": "const",
+  "name": "_MvStFlag_DangerHPDef",
+  "table": "BMvConst",
+  "regfunc": "0x80fea0",
+  "ea": "0x8116d1",
+  "value": "4",
+  "qualified_table": "BMvConst"
+ },
+ {
+  "kind": "const",
+  "name": "_HitCheckFlag_Head",
+  "table": "BMvConst",
+  "regfunc": "0x80fea0",
+  "ea": "0x8116e0",
+  "value": "1",
+  "qualified_table": "BMvConst"
+ },
+ {
+  "kind": "const",
+  "name": "_HitCheckFlag_Body",
+  "table": "BMvConst",
+  "regfunc": "0x80fea0",
+  "ea": "0x8116ef",
+  "value": "2",
+  "qualified_table": "BMvConst"
+ },
+ {
+  "kind": "const",
+  "name": "_HitCheckFlag_Legs",
+  "table": "BMvConst",
+  "regfunc": "0x80fea0",
+  "ea": "0x8116fe",
+  "value": "4",
+  "qualified_table": "BMvConst"
+ },
+ {
+  "kind": "const",
+  "name": "_HitCheckFlag_FireBall",
+  "table": "BMvConst",
+  "regfunc": "0x80fea0",
+  "ea": "0x81170d",
+  "value": "8",
+  "qualified_table": "BMvConst"
+ },
+ {
+  "kind": "const",
+  "name": "_HitCheckFlag_Throw",
+  "table": "BMvConst",
+  "regfunc": "0x80fea0",
+  "ea": "0x81171c",
+  "value": "16",
+  "qualified_table": "BMvConst"
+ },
+ {
+  "kind": "const",
+  "name": "_CaptureHitFlag_Parent",
+  "table": "BMvConst",
+  "regfunc": "0x80fea0",
+  "ea": "0x81172b",
+  "value": "1",
+  "qualified_table": "BMvConst"
+ },
+ {
+  "kind": "const",
+  "name": "_eAchievement_SHA",
+  "table": "BMvConst",
+  "regfunc": "0x80fea0",
+  "ea": "0x81173a",
+  "value": "0",
+  "qualified_table": "BMvConst"
+ },
+ {
+  "kind": "const",
+  "name": "_eAchievement_ASU",
+  "table": "BMvConst",
+  "regfunc": "0x80fea0",
+  "ea": "0x811749",
+  "value": "1",
+  "qualified_table": "BMvConst"
+ },
+ {
+  "kind": "const",
+  "name": "_eAchievement_MIS",
+  "table": "BMvConst",
+  "regfunc": "0x80fea0",
+  "ea": "0x811758",
+  "value": "2",
+  "qualified_table": "BMvConst"
+ },
+ {
+  "kind": "const",
+  "name": "_eAchievement_KRN",
+  "table": "BMvConst",
+  "regfunc": "0x80fea0",
+  "ea": "0x811767",
+  "value": "3",
+  "qualified_table": "BMvConst"
+ },
+ {
+  "kind": "const",
+  "name": "_eAchievement_HIW",
+  "table": "BMvConst",
+  "regfunc": "0x80fea0",
+  "ea": "0x811776",
+  "value": "4",
+  "qualified_table": "BMvConst"
+ },
+ {
+  "kind": "const",
+  "name": "_eAchievement_KUR",
+  "table": "BMvConst",
+  "regfunc": "0x80fea0",
+  "ea": "0x811785",
+  "value": "5",
+  "qualified_table": "BMvConst"
+ },
+ {
+  "kind": "const",
+  "name": "_eAchievement_TMK",
+  "table": "BMvConst",
+  "regfunc": "0x80fea0",
+  "ea": "0x811794",
+  "value": "6",
+  "qualified_table": "BMvConst"
+ },
+ {
+  "kind": "const",
+  "name": "_eAchievement_TGR",
+  "table": "BMvConst",
+  "regfunc": "0x80fea0",
+  "ea": "0x8117a3",
+  "value": "7",
+  "qualified_table": "BMvConst"
+ },
+ {
+  "kind": "const",
+  "name": "_eAchievement_SBM",
+  "table": "BMvConst",
+  "regfunc": "0x80fea0",
+  "ea": "0x8117b2",
+  "value": "8",
+  "qualified_table": "BMvConst"
+ },
+ {
+  "kind": "const",
+  "name": "_eAchievement_STM",
+  "table": "BMvConst",
+  "regfunc": "0x80fea0",
+  "ea": "0x8117c1",
+  "value": "9",
+  "qualified_table": "BMvConst"
+ },
+ {
+  "kind": "const",
+  "name": "_eAchievement_EMI",
+  "table": "BMvConst",
+  "regfunc": "0x80fea0",
+  "ea": "0x8117d0",
+  "value": "10",
+  "qualified_table": "BMvConst"
+ },
+ {
+  "kind": "const",
+  "name": "_eAchievement_QEN",
+  "table": "BMvConst",
+  "regfunc": "0x80fea0",
+  "ea": "0x8117df",
+  "value": "11",
+  "qualified_table": "BMvConst"
+ },
+ {
+  "kind": "const",
+  "name": "_eAchievement_ONI",
+  "table": "BMvConst",
+  "regfunc": "0x80fea0",
+  "ea": "0x8117ee",
+  "value": "12",
+  "qualified_table": "BMvConst"
+ },
+ {
+  "kind": "const",
+  "name": "_eAchievement_KRK",
+  "table": "BMvConst",
+  "regfunc": "0x80fea0",
+  "ea": "0x8117fd",
+  "value": "13",
+  "qualified_table": "BMvConst"
+ },
+ {
+  "kind": "const",
+  "name": "_eAchievement_YAK",
+  "table": "BMvConst",
+  "regfunc": "0x80fea0",
+  "ea": "0x81180c",
+  "value": "14",
+  "qualified_table": "BMvConst"
+ },
+ {
+  "kind": "const",
+  "name": "_eAchievement_SLV",
+  "table": "BMvConst",
+  "regfunc": "0x80fea0",
+  "ea": "0x81181b",
+  "value": "15",
+  "qualified_table": "BMvConst"
+ },
+ {
+  "kind": "const",
+  "name": "_eAchievement_DENDENKIN_MAIN",
+  "table": "BMvConst",
+  "regfunc": "0x80fea0",
+  "ea": "0x81182a",
+  "value": "17",
+  "qualified_table": "BMvConst"
+ },
+ {
+  "kind": "const",
+  "name": "_eAchievement_DENDENKIN_SUPPORT",
+  "table": "BMvConst",
+  "regfunc": "0x80fea0",
+  "ea": "0x811839",
+  "value": "18",
+  "qualified_table": "BMvConst"
+ },
+ {
+  "kind": "const",
+  "name": "_eAchievement_DENDENKIN_BLAST",
+  "table": "BMvConst",
+  "regfunc": "0x80fea0",
+  "ea": "0x811848",
+  "value": "19",
+  "qualified_table": "BMvConst"
+ },
+ {
+  "kind": "const",
+  "name": "_eAchievement_BLUE_KIRIFUDA",
+  "table": "BMvConst",
+  "regfunc": "0x80fea0",
+  "ea": "0x811857",
+  "value": "20",
+  "qualified_table": "BMvConst"
+ },
+ {
   "kind": "table",
   "name": "BMvConst",
   "table": "",
@@ -3547,6 +4969,33 @@
   "table": "",
   "regfunc": "0x8119d0",
   "ea": "0x811a87"
+ },
+ {
+  "kind": "const",
+  "name": "_SeType_All",
+  "table": "BMvSoundConst",
+  "regfunc": "0x8119d0",
+  "ea": "0x811ab7",
+  "value": "-2",
+  "qualified_table": "BMvSoundConst"
+ },
+ {
+  "kind": "const",
+  "name": "_SeType_Normal",
+  "table": "BMvSoundConst",
+  "regfunc": "0x8119d0",
+  "ea": "0x811ac6",
+  "value": "-1",
+  "qualified_table": "BMvSoundConst"
+ },
+ {
+  "kind": "const",
+  "name": "_SeType_Player",
+  "table": "BMvSoundConst",
+  "regfunc": "0x8119d0",
+  "ea": "0x811ad5",
+  "value": "0",
+  "qualified_table": "BMvSoundConst"
  },
  {
   "kind": "table",
@@ -5361,6 +6810,816 @@
   "ea": "0x813111"
  },
  {
+  "kind": "const",
+  "name": "_ObjFlags_ParentMove",
+  "table": "BMvConst",
+  "regfunc": "0x812800",
+  "ea": "0x813141",
+  "value": "4",
+  "qualified_table": "BMvConst"
+ },
+ {
+  "kind": "const",
+  "name": "_ObjFlags_EraseParentDamage",
+  "table": "BMvConst",
+  "regfunc": "0x812800",
+  "ea": "0x813150",
+  "value": "1",
+  "qualified_table": "BMvConst"
+ },
+ {
+  "kind": "const",
+  "name": "_ObjFlags_NoRender",
+  "table": "BMvConst",
+  "regfunc": "0x812800",
+  "ea": "0x813162",
+  "value": "0",
+  "qualified_table": "BMvConst"
+ },
+ {
+  "kind": "const",
+  "name": "_ObjFlags_NoRenderBlackOut",
+  "table": "BMvConst",
+  "regfunc": "0x812800",
+  "ea": "0x813174",
+  "value": "0",
+  "qualified_table": "BMvConst"
+ },
+ {
+  "kind": "const",
+  "name": "_ObjFlags_NoRenderOrder",
+  "table": "BMvConst",
+  "regfunc": "0x812800",
+  "ea": "0x813186",
+  "value": "0",
+  "qualified_table": "BMvConst"
+ },
+ {
+  "kind": "const",
+  "name": "_ObjFlags_NoRenderOrderPlus",
+  "table": "BMvConst",
+  "regfunc": "0x812800",
+  "ea": "0x813198",
+  "value": "0",
+  "qualified_table": "BMvConst"
+ },
+ {
+  "kind": "const",
+  "name": "_ObjFlags_EraseParentPatChange",
+  "table": "BMvConst",
+  "regfunc": "0x812800",
+  "ea": "0x8131a7",
+  "value": "32",
+  "qualified_table": "BMvConst"
+ },
+ {
+  "kind": "const",
+  "name": "_ObjFlags_PatChangeNoLanding",
+  "table": "BMvConst",
+  "regfunc": "0x812800",
+  "ea": "0x8131b9",
+  "value": "0",
+  "qualified_table": "BMvConst"
+ },
+ {
+  "kind": "const",
+  "name": "_ObjFlags_MoveTimeStopAll",
+  "table": "BMvConst",
+  "regfunc": "0x812800",
+  "ea": "0x8131cb",
+  "value": "0",
+  "qualified_table": "BMvConst"
+ },
+ {
+  "kind": "const",
+  "name": "_ObjFlags_ParentMuki",
+  "table": "BMvConst",
+  "regfunc": "0x812800",
+  "ea": "0x8131dd",
+  "value": "0",
+  "qualified_table": "BMvConst"
+ },
+ {
+  "kind": "const",
+  "name": "_ObjFlags_MukiXPosMove",
+  "table": "BMvConst",
+  "regfunc": "0x812800",
+  "ea": "0x8131ef",
+  "value": "0",
+  "qualified_table": "BMvConst"
+ },
+ {
+  "kind": "const",
+  "name": "_ObjFlags_RenderShadow",
+  "table": "BMvConst",
+  "regfunc": "0x812800",
+  "ea": "0x813201",
+  "value": "0",
+  "qualified_table": "BMvConst"
+ },
+ {
+  "kind": "const",
+  "name": "_ObjFlags_FromParentStop",
+  "table": "BMvConst",
+  "regfunc": "0x812800",
+  "ea": "0x813210",
+  "value": "8",
+  "qualified_table": "BMvConst"
+ },
+ {
+  "kind": "const",
+  "name": "_ObjFlags_ToParentStop",
+  "table": "BMvConst",
+  "regfunc": "0x812800",
+  "ea": "0x813222",
+  "value": "0",
+  "qualified_table": "BMvConst"
+ },
+ {
+  "kind": "const",
+  "name": "_ObjFlags_ToParentHitBack",
+  "table": "BMvConst",
+  "regfunc": "0x812800",
+  "ea": "0x813234",
+  "value": "0",
+  "qualified_table": "BMvConst"
+ },
+ {
+  "kind": "const",
+  "name": "_ObjFlags_ToParentHitStatus",
+  "table": "BMvConst",
+  "regfunc": "0x812800",
+  "ea": "0x813246",
+  "value": "0",
+  "qualified_table": "BMvConst"
+ },
+ {
+  "kind": "const",
+  "name": "_ObjFlags_NoCamera",
+  "table": "BMvConst",
+  "regfunc": "0x812800",
+  "ea": "0x813258",
+  "value": "0",
+  "qualified_table": "BMvConst"
+ },
+ {
+  "kind": "const",
+  "name": "_ObjFlags_NoGround",
+  "table": "BMvConst",
+  "regfunc": "0x812800",
+  "ea": "0x813267",
+  "value": "64",
+  "qualified_table": "BMvConst"
+ },
+ {
+  "kind": "const",
+  "name": "_ObjProcFlags_EraseParentNull",
+  "table": "BMvConst",
+  "regfunc": "0x812800",
+  "ea": "0x813276",
+  "value": "1",
+  "qualified_table": "BMvConst"
+ },
+ {
+  "kind": "const",
+  "name": "_ObjProcFlags_EraseChangeParentMv",
+  "table": "BMvConst",
+  "regfunc": "0x812800",
+  "ea": "0x813285",
+  "value": "2",
+  "qualified_table": "BMvConst"
+ },
+ {
+  "kind": "const",
+  "name": "_ObjProcFlag_UnEraseDamageEx",
+  "table": "BMvConst",
+  "regfunc": "0x812800",
+  "ea": "0x813294",
+  "value": "4",
+  "qualified_table": "BMvConst"
+ },
+ {
+  "kind": "const",
+  "name": "_ObjProcFlag_EraseParentDelete",
+  "table": "BMvConst",
+  "regfunc": "0x812800",
+  "ea": "0x8132a3",
+  "value": "8",
+  "qualified_table": "BMvConst"
+ },
+ {
+  "kind": "const",
+  "name": "_ObjType_FireBall",
+  "table": "BMvConst",
+  "regfunc": "0x812800",
+  "ea": "0x8132b2",
+  "value": "2",
+  "qualified_table": "BMvConst"
+ },
+ {
+  "kind": "const",
+  "name": "_ObjType_Blade",
+  "table": "BMvConst",
+  "regfunc": "0x812800",
+  "ea": "0x8132c1",
+  "value": "3",
+  "qualified_table": "BMvConst"
+ },
+ {
+  "kind": "const",
+  "name": "_Exist_NoCamera",
+  "table": "BMvConst",
+  "regfunc": "0x812800",
+  "ea": "0x8132d0",
+  "value": "1",
+  "qualified_table": "BMvConst"
+ },
+ {
+  "kind": "const",
+  "name": "_Exist_NoWall",
+  "table": "BMvConst",
+  "regfunc": "0x812800",
+  "ea": "0x8132df",
+  "value": "2",
+  "qualified_table": "BMvConst"
+ },
+ {
+  "kind": "const",
+  "name": "_Exist_NoHantei",
+  "table": "BMvConst",
+  "regfunc": "0x812800",
+  "ea": "0x8132f1",
+  "value": "0",
+  "qualified_table": "BMvConst"
+ },
+ {
+  "kind": "const",
+  "name": "_Exist_NoKasanariHantei",
+  "table": "BMvConst",
+  "regfunc": "0x812800",
+  "ea": "0x813303",
+  "value": "0",
+  "qualified_table": "BMvConst"
+ },
+ {
+  "kind": "const",
+  "name": "_Exist_NoKuraiHantei",
+  "table": "BMvConst",
+  "regfunc": "0x812800",
+  "ea": "0x813315",
+  "value": "0",
+  "qualified_table": "BMvConst"
+ },
+ {
+  "kind": "const",
+  "name": "_Exist_NoAttackHantei",
+  "table": "BMvConst",
+  "regfunc": "0x812800",
+  "ea": "0x813327",
+  "value": "0",
+  "qualified_table": "BMvConst"
+ },
+ {
+  "kind": "const",
+  "name": "_Exist_NoEtcHantei",
+  "table": "BMvConst",
+  "regfunc": "0x812800",
+  "ea": "0x813339",
+  "value": "0",
+  "qualified_table": "BMvConst"
+ },
+ {
+  "kind": "const",
+  "name": "_ExistMode_Set",
+  "table": "BMvConst",
+  "regfunc": "0x812800",
+  "ea": "0x813348",
+  "value": "0",
+  "qualified_table": "BMvConst"
+ },
+ {
+  "kind": "const",
+  "name": "_ExistMode_Add",
+  "table": "BMvConst",
+  "regfunc": "0x812800",
+  "ea": "0x813357",
+  "value": "1",
+  "qualified_table": "BMvConst"
+ },
+ {
+  "kind": "const",
+  "name": "_ExistMode_Erase",
+  "table": "BMvConst",
+  "regfunc": "0x812800",
+  "ea": "0x813366",
+  "value": "2",
+  "qualified_table": "BMvConst"
+ },
+ {
+  "kind": "const",
+  "name": "_ExistMode_Reverse",
+  "table": "BMvConst",
+  "regfunc": "0x812800",
+  "ea": "0x813375",
+  "value": "3",
+  "qualified_table": "BMvConst"
+ },
+ {
+  "kind": "const",
+  "name": "_Hantei_Kasanari",
+  "table": "BMvConst",
+  "regfunc": "0x812800",
+  "ea": "0x813384",
+  "value": "0",
+  "qualified_table": "BMvConst"
+ },
+ {
+  "kind": "const",
+  "name": "_Hantei_Kurai",
+  "table": "BMvConst",
+  "regfunc": "0x812800",
+  "ea": "0x813393",
+  "value": "1",
+  "qualified_table": "BMvConst"
+ },
+ {
+  "kind": "const",
+  "name": "_Hantei_Etc",
+  "table": "BMvConst",
+  "regfunc": "0x812800",
+  "ea": "0x8133a2",
+  "value": "2",
+  "qualified_table": "BMvConst"
+ },
+ {
+  "kind": "const",
+  "name": "_Hantei_Attack",
+  "table": "BMvConst",
+  "regfunc": "0x812800",
+  "ea": "0x8133b1",
+  "value": "3",
+  "qualified_table": "BMvConst"
+ },
+ {
+  "kind": "const",
+  "name": "_HC_EnemyPc",
+  "table": "BMvConst",
+  "regfunc": "0x812800",
+  "ea": "0x8133c0",
+  "value": "1",
+  "qualified_table": "BMvConst"
+ },
+ {
+  "kind": "const",
+  "name": "_HC_EnemyObj",
+  "table": "BMvConst",
+  "regfunc": "0x812800",
+  "ea": "0x8133cf",
+  "value": "2",
+  "qualified_table": "BMvConst"
+ },
+ {
+  "kind": "const",
+  "name": "_HC_FavourPc",
+  "table": "BMvConst",
+  "regfunc": "0x812800",
+  "ea": "0x8133de",
+  "value": "4",
+  "qualified_table": "BMvConst"
+ },
+ {
+  "kind": "const",
+  "name": "_HC_FavourObj",
+  "table": "BMvConst",
+  "regfunc": "0x812800",
+  "ea": "0x8133ed",
+  "value": "8",
+  "qualified_table": "BMvConst"
+ },
+ {
+  "kind": "const",
+  "name": "_HC_WithoutNoHanteiFlagObj",
+  "table": "BMvConst",
+  "regfunc": "0x812800",
+  "ea": "0x8133fc",
+  "value": "16",
+  "qualified_table": "BMvConst"
+ },
+ {
+  "kind": "const",
+  "name": "_CamUpdateFlag_NoX",
+  "table": "BMvConst",
+  "regfunc": "0x812800",
+  "ea": "0x81340b",
+  "value": "1",
+  "qualified_table": "BMvConst"
+ },
+ {
+  "kind": "const",
+  "name": "_CamUpdateFlag_NoY",
+  "table": "BMvConst",
+  "regfunc": "0x812800",
+  "ea": "0x81341a",
+  "value": "2",
+  "qualified_table": "BMvConst"
+ },
+ {
+  "kind": "const",
+  "name": "_Hantei_Error",
+  "table": "BMvConst",
+  "regfunc": "0x812800",
+  "ea": "0x81342c",
+  "value": "79",
+  "qualified_table": "BMvConst"
+ },
+ {
+  "kind": "const",
+  "name": "_HanteiFlag_Tool",
+  "table": "BMvConst",
+  "regfunc": "0x812800",
+  "ea": "0x81343b",
+  "value": "1",
+  "qualified_table": "BMvConst"
+ },
+ {
+  "kind": "const",
+  "name": "_HanteiFlag_Offset",
+  "table": "BMvConst",
+  "regfunc": "0x812800",
+  "ea": "0x81344a",
+  "value": "2",
+  "qualified_table": "BMvConst"
+ },
+ {
+  "kind": "const",
+  "name": "_HanteiFlag_NoMukiChange",
+  "table": "BMvConst",
+  "regfunc": "0x812800",
+  "ea": "0x813459",
+  "value": "4",
+  "qualified_table": "BMvConst"
+ },
+ {
+  "kind": "const",
+  "name": "_SpGauge_UseAll",
+  "table": "BMvConst",
+  "regfunc": "0x812800",
+  "ea": "0x813468",
+  "value": "-1",
+  "qualified_table": "BMvConst"
+ },
+ {
+  "kind": "const",
+  "name": "_SpGauge_UseBuffer",
+  "table": "BMvConst",
+  "regfunc": "0x812800",
+  "ea": "0x813477",
+  "value": "-2",
+  "qualified_table": "BMvConst"
+ },
+ {
+  "kind": "const",
+  "name": "_GetPos_TrueCamera",
+  "table": "BMvConst",
+  "regfunc": "0x812800",
+  "ea": "0x813486",
+  "value": "1",
+  "qualified_table": "BMvConst"
+ },
+ {
+  "kind": "const",
+  "name": "_GetPos_ViewCamera",
+  "table": "BMvConst",
+  "regfunc": "0x812800",
+  "ea": "0x813495",
+  "value": "2",
+  "qualified_table": "BMvConst"
+ },
+ {
+  "kind": "const",
+  "name": "_GetPos_DispCamera",
+  "table": "BMvConst",
+  "regfunc": "0x812800",
+  "ea": "0x8134a4",
+  "value": "4",
+  "qualified_table": "BMvConst"
+ },
+ {
+  "kind": "const",
+  "name": "_GetPos_Offset",
+  "table": "BMvConst",
+  "regfunc": "0x812800",
+  "ea": "0x8134b6",
+  "value": "0",
+  "qualified_table": "BMvConst"
+ },
+ {
+  "kind": "const",
+  "name": "_GetPos_TypeWall",
+  "table": "BMvConst",
+  "regfunc": "0x812800",
+  "ea": "0x8134c8",
+  "value": "0",
+  "qualified_table": "BMvConst"
+ },
+ {
+  "kind": "const",
+  "name": "_GetPos_TypeScreen",
+  "table": "BMvConst",
+  "regfunc": "0x812800",
+  "ea": "0x8134da",
+  "value": "0",
+  "qualified_table": "BMvConst"
+ },
+ {
+  "kind": "const",
+  "name": "_GetPos_NoMuki",
+  "table": "BMvConst",
+  "regfunc": "0x812800",
+  "ea": "0x8134ec",
+  "value": "0",
+  "qualified_table": "BMvConst"
+ },
+ {
+  "kind": "const",
+  "name": "_GetPos_ToolOffset",
+  "table": "BMvConst",
+  "regfunc": "0x812800",
+  "ea": "0x8134fe",
+  "value": "0",
+  "qualified_table": "BMvConst"
+ },
+ {
+  "kind": "const",
+  "name": "_SpGaugeMode_Normal",
+  "table": "BMvConst",
+  "regfunc": "0x812800",
+  "ea": "0x81350d",
+  "value": "0",
+  "qualified_table": "BMvConst"
+ },
+ {
+  "kind": "const",
+  "name": "_SpGaugeMode_Liberate",
+  "table": "BMvConst",
+  "regfunc": "0x812800",
+  "ea": "0x81351c",
+  "value": "1",
+  "qualified_table": "BMvConst"
+ },
+ {
+  "kind": "const",
+  "name": "_SpGaugeMode_OverLiberate",
+  "table": "BMvConst",
+  "regfunc": "0x812800",
+  "ea": "0x81352b",
+  "value": "2",
+  "qualified_table": "BMvConst"
+ },
+ {
+  "kind": "const",
+  "name": "_ThrowRelease_NoGroundRecover",
+  "table": "BMvConst",
+  "regfunc": "0x812800",
+  "ea": "0x81353a",
+  "value": "16",
+  "qualified_table": "BMvConst"
+ },
+ {
+  "kind": "const",
+  "name": "_ThrowRelease_NoWallRecover",
+  "table": "BMvConst",
+  "regfunc": "0x812800",
+  "ea": "0x813549",
+  "value": "32",
+  "qualified_table": "BMvConst"
+ },
+ {
+  "kind": "const",
+  "name": "_ThrowRelease_NoAttackHit",
+  "table": "BMvConst",
+  "regfunc": "0x812800",
+  "ea": "0x813558",
+  "value": "64",
+  "qualified_table": "BMvConst"
+ },
+ {
+  "kind": "const",
+  "name": "_ThrowRelease_ReverseVec",
+  "table": "BMvConst",
+  "regfunc": "0x812800",
+  "ea": "0x813567",
+  "value": "2",
+  "qualified_table": "BMvConst"
+ },
+ {
+  "kind": "const",
+  "name": "_ThrowRelease_NoVec",
+  "table": "BMvConst",
+  "regfunc": "0x812800",
+  "ea": "0x813576",
+  "value": "1",
+  "qualified_table": "BMvConst"
+ },
+ {
+  "kind": "const",
+  "name": "_ThrowRelease_NoVecTimeHosei",
+  "table": "BMvConst",
+  "regfunc": "0x812800",
+  "ea": "0x813588",
+  "value": "0",
+  "qualified_table": "BMvConst"
+ },
+ {
+  "kind": "const",
+  "name": "_ThrowRelease_NoBurst",
+  "table": "BMvConst",
+  "regfunc": "0x812800",
+  "ea": "0x81359a",
+  "value": "0",
+  "qualified_table": "BMvConst"
+ },
+ {
+  "kind": "const",
+  "name": "_SkillCount_Assult",
+  "table": "BMvConst",
+  "regfunc": "0x812800",
+  "ea": "0x8135a9",
+  "value": "0",
+  "qualified_table": "BMvConst"
+ },
+ {
+  "kind": "const",
+  "name": "_SkillCount_ChainShift",
+  "table": "BMvConst",
+  "regfunc": "0x812800",
+  "ea": "0x8135b8",
+  "value": "1",
+  "qualified_table": "BMvConst"
+ },
+ {
+  "kind": "const",
+  "name": "_SkillCount_VeilOff",
+  "table": "BMvConst",
+  "regfunc": "0x812800",
+  "ea": "0x8135c7",
+  "value": "2",
+  "qualified_table": "BMvConst"
+ },
+ {
+  "kind": "const",
+  "name": "_SkillCount_Sp",
+  "table": "BMvConst",
+  "regfunc": "0x812800",
+  "ea": "0x8135d6",
+  "value": "3",
+  "qualified_table": "BMvConst"
+ },
+ {
+  "kind": "const",
+  "name": "_SkillCount_SpEx",
+  "table": "BMvConst",
+  "regfunc": "0x812800",
+  "ea": "0x8135e5",
+  "value": "4",
+  "qualified_table": "BMvConst"
+ },
+ {
+  "kind": "const",
+  "name": "_SkillCount_SpIFW",
+  "table": "BMvConst",
+  "regfunc": "0x812800",
+  "ea": "0x8135f4",
+  "value": "5",
+  "qualified_table": "BMvConst"
+ },
+ {
+  "kind": "const",
+  "name": "_SkillCount_SpIFWX",
+  "table": "BMvConst",
+  "regfunc": "0x812800",
+  "ea": "0x813603",
+  "value": "6",
+  "qualified_table": "BMvConst"
+ },
+ {
+  "kind": "const",
+  "name": "_SkillCount_Throw",
+  "table": "BMvConst",
+  "regfunc": "0x812800",
+  "ea": "0x813612",
+  "value": "7",
+  "qualified_table": "BMvConst"
+ },
+ {
+  "kind": "const",
+  "name": "_SkillCount_ThrowRecover",
+  "table": "BMvConst",
+  "regfunc": "0x812800",
+  "ea": "0x813621",
+  "value": "8",
+  "qualified_table": "BMvConst"
+ },
+ {
+  "kind": "const",
+  "name": "_GuardFlag_GuardStand",
+  "table": "BMvConst",
+  "regfunc": "0x812800",
+  "ea": "0x813630",
+  "value": "1",
+  "qualified_table": "BMvConst"
+ },
+ {
+  "kind": "const",
+  "name": "_GuardFlag_GuardAir",
+  "table": "BMvConst",
+  "regfunc": "0x812800",
+  "ea": "0x81363f",
+  "value": "2",
+  "qualified_table": "BMvConst"
+ },
+ {
+  "kind": "const",
+  "name": "_GuardFlag_GuardCrouch",
+  "table": "BMvConst",
+  "regfunc": "0x812800",
+  "ea": "0x81364e",
+  "value": "4",
+  "qualified_table": "BMvConst"
+ },
+ {
+  "kind": "const",
+  "name": "_GuardFlag_ShieldStand",
+  "table": "BMvConst",
+  "regfunc": "0x812800",
+  "ea": "0x81365d",
+  "value": "1",
+  "qualified_table": "BMvConst"
+ },
+ {
+  "kind": "const",
+  "name": "_GuardFlag_ShieldAir",
+  "table": "BMvConst",
+  "regfunc": "0x812800",
+  "ea": "0x81366c",
+  "value": "2",
+  "qualified_table": "BMvConst"
+ },
+ {
+  "kind": "const",
+  "name": "_GuardFlag_ShieldCrouch",
+  "table": "BMvConst",
+  "regfunc": "0x812800",
+  "ea": "0x81367b",
+  "value": "4",
+  "qualified_table": "BMvConst"
+ },
+ {
+  "kind": "const",
+  "name": "_DataType_Me",
+  "table": "BMvConst",
+  "regfunc": "0x812800",
+  "ea": "0x81368a",
+  "value": "0",
+  "qualified_table": "BMvConst"
+ },
+ {
+  "kind": "const",
+  "name": "_DataType_Player",
+  "table": "BMvConst",
+  "regfunc": "0x812800",
+  "ea": "0x813699",
+  "value": "1",
+  "qualified_table": "BMvConst"
+ },
+ {
+  "kind": "const",
+  "name": "_DataType_Parent",
+  "table": "BMvConst",
+  "regfunc": "0x812800",
+  "ea": "0x8136a8",
+  "value": "2",
+  "qualified_table": "BMvConst"
+ },
+ {
+  "kind": "const",
+  "name": "_KOMode_ToEndWait",
+  "table": "BMvConst",
+  "regfunc": "0x812800",
+  "ea": "0x8136ba",
+  "value": "204",
+  "qualified_table": "BMvConst"
+ },
+ {
+  "kind": "const",
+  "name": "_KOMode_ToEndWait_Fade",
+  "table": "BMvConst",
+  "regfunc": "0x812800",
+  "ea": "0x8136cc",
+  "value": "205",
+  "qualified_table": "BMvConst"
+ },
+ {
   "kind": "table",
   "name": "BMvConst",
   "table": "",
@@ -6202,6 +8461,222 @@
   "ea": "0x813deb"
  },
  {
+  "kind": "const",
+  "name": "_JemCheckType_Reversal",
+  "table": "BMvConst",
+  "regfunc": "0x813920",
+  "ea": "0x813e1b",
+  "value": "100",
+  "qualified_table": "BMvConst"
+ },
+ {
+  "kind": "const",
+  "name": "_JemCheckType_Ex",
+  "table": "BMvConst",
+  "regfunc": "0x813920",
+  "ea": "0x813e2a",
+  "value": "100",
+  "qualified_table": "BMvConst"
+ },
+ {
+  "kind": "const",
+  "name": "_JemCheckType_ExSkillUse",
+  "table": "BMvConst",
+  "regfunc": "0x813920",
+  "ea": "0x813e39",
+  "value": "9",
+  "qualified_table": "BMvConst"
+ },
+ {
+  "kind": "const",
+  "name": "_JemEffType_AttackUP",
+  "table": "BMvConst",
+  "regfunc": "0x813920",
+  "ea": "0x813e48",
+  "value": "1",
+  "qualified_table": "BMvConst"
+ },
+ {
+  "kind": "const",
+  "name": "_JemEffType_DefenceUP",
+  "table": "BMvConst",
+  "regfunc": "0x813920",
+  "ea": "0x813e57",
+  "value": "2",
+  "qualified_table": "BMvConst"
+ },
+ {
+  "kind": "const",
+  "name": "_JemEffType_SupportPlus",
+  "table": "BMvConst",
+  "regfunc": "0x813920",
+  "ea": "0x813e66",
+  "value": "4",
+  "qualified_table": "BMvConst"
+ },
+ {
+  "kind": "const",
+  "name": "_JemEffType_ReflectionGuardBreak",
+  "table": "BMvConst",
+  "regfunc": "0x813920",
+  "ea": "0x813e75",
+  "value": "5",
+  "qualified_table": "BMvConst"
+ },
+ {
+  "kind": "const",
+  "name": "_JemEffType_AtkDefUP",
+  "table": "BMvConst",
+  "regfunc": "0x813920",
+  "ea": "0x813e84",
+  "value": "6",
+  "qualified_table": "BMvConst"
+ },
+ {
+  "kind": "const",
+  "name": "_TimeEffect_Attack",
+  "table": "BMvConst",
+  "regfunc": "0x813920",
+  "ea": "0x813e93",
+  "value": "0",
+  "qualified_table": "BMvConst"
+ },
+ {
+  "kind": "const",
+  "name": "_TimeEffect_Defense",
+  "table": "BMvConst",
+  "regfunc": "0x813920",
+  "ea": "0x813ea2",
+  "value": "1",
+  "qualified_table": "BMvConst"
+ },
+ {
+  "kind": "const",
+  "name": "_TimeEffect_ComboGaugeRegain",
+  "table": "BMvConst",
+  "regfunc": "0x813920",
+  "ea": "0x813eb1",
+  "value": "2",
+  "qualified_table": "BMvConst"
+ },
+ {
+  "kind": "const",
+  "name": "_SkillCount_Support",
+  "table": "BMvConst",
+  "regfunc": "0x813920",
+  "ea": "0x813ec0",
+  "value": "1",
+  "qualified_table": "BMvConst"
+ },
+ {
+  "kind": "const",
+  "name": "_SkillCount_Guard",
+  "table": "BMvConst",
+  "regfunc": "0x813920",
+  "ea": "0x813ecf",
+  "value": "2",
+  "qualified_table": "BMvConst"
+ },
+ {
+  "kind": "const",
+  "name": "_SkillCount_ThrowRecover",
+  "table": "BMvConst",
+  "regfunc": "0x813920",
+  "ea": "0x813ede",
+  "value": "3",
+  "qualified_table": "BMvConst"
+ },
+ {
+  "kind": "const",
+  "name": "_SkillCount_Kirifuda",
+  "table": "BMvConst",
+  "regfunc": "0x813920",
+  "ea": "0x813eed",
+  "value": "4",
+  "qualified_table": "BMvConst"
+ },
+ {
+  "kind": "const",
+  "name": "_SkillCount_Blast",
+  "table": "BMvConst",
+  "regfunc": "0x813920",
+  "ea": "0x813efc",
+  "value": "5",
+  "qualified_table": "BMvConst"
+ },
+ {
+  "kind": "const",
+  "name": "_SkillCount_ExSp",
+  "table": "BMvConst",
+  "regfunc": "0x813920",
+  "ea": "0x813f0b",
+  "value": "6",
+  "qualified_table": "BMvConst"
+ },
+ {
+  "kind": "const",
+  "name": "_SkillCount_CliSp",
+  "table": "BMvConst",
+  "regfunc": "0x813920",
+  "ea": "0x813f1a",
+  "value": "7",
+  "qualified_table": "BMvConst"
+ },
+ {
+  "kind": "const",
+  "name": "_SkillCount_ImpactSkill",
+  "table": "BMvConst",
+  "regfunc": "0x813920",
+  "ea": "0x813f29",
+  "value": "8",
+  "qualified_table": "BMvConst"
+ },
+ {
+  "kind": "const",
+  "name": "_SkillCount_RefGuard",
+  "table": "BMvConst",
+  "regfunc": "0x813920",
+  "ea": "0x813f38",
+  "value": "9",
+  "qualified_table": "BMvConst"
+ },
+ {
+  "kind": "const",
+  "name": "_SkillCount_Damage",
+  "table": "BMvConst",
+  "regfunc": "0x813920",
+  "ea": "0x813f47",
+  "value": "10",
+  "qualified_table": "BMvConst"
+ },
+ {
+  "kind": "const",
+  "name": "_SupportRecast_Ready",
+  "table": "BMvConst",
+  "regfunc": "0x813920",
+  "ea": "0x813f56",
+  "value": "0",
+  "qualified_table": "BMvConst"
+ },
+ {
+  "kind": "const",
+  "name": "_SupportRecast_Stop",
+  "table": "BMvConst",
+  "regfunc": "0x813920",
+  "ea": "0x813f65",
+  "value": "1",
+  "qualified_table": "BMvConst"
+ },
+ {
+  "kind": "const",
+  "name": "_SupportRecast_Charge",
+  "table": "BMvConst",
+  "regfunc": "0x813920",
+  "ea": "0x813f74",
+  "value": "2",
+  "qualified_table": "BMvConst"
+ },
+ {
   "kind": "table",
   "name": "BMvConst",
   "table": "",
@@ -6270,6 +8745,339 @@
   "table": "BCom",
   "regfunc": "0x893db0",
   "ea": "0x893fb3"
+ },
+ {
+  "kind": "const",
+  "name": "_eComMoveFlag_MoveEnd",
+  "table": "BMvCoreConst",
+  "regfunc": "0x893db0",
+  "ea": "0x893fe3",
+  "value": "1",
+  "qualified_table": "BMvCoreConst"
+ },
+ {
+  "kind": "const",
+  "name": "_eComMoveFlag_ThroughEnd",
+  "table": "BMvCoreConst",
+  "regfunc": "0x893db0",
+  "ea": "0x893ff2",
+  "value": "2",
+  "qualified_table": "BMvCoreConst"
+ },
+ {
+  "kind": "const",
+  "name": "_eComMoveFlag_HitNext",
+  "table": "BMvCoreConst",
+  "regfunc": "0x893db0",
+  "ea": "0x894001",
+  "value": "4",
+  "qualified_table": "BMvCoreConst"
+ },
+ {
+  "kind": "const",
+  "name": "_eComMoveFlag_DamageNext",
+  "table": "BMvCoreConst",
+  "regfunc": "0x893db0",
+  "ea": "0x894010",
+  "value": "8",
+  "qualified_table": "BMvCoreConst"
+ },
+ {
+  "kind": "const",
+  "name": "_eComMoveFlag_HitObjNext",
+  "table": "BMvCoreConst",
+  "regfunc": "0x893db0",
+  "ea": "0x89401f",
+  "value": "16",
+  "qualified_table": "BMvCoreConst"
+ },
+ {
+  "kind": "const",
+  "name": "_eComMoveFlag_DamageObjNext",
+  "table": "BMvCoreConst",
+  "regfunc": "0x893db0",
+  "ea": "0x89402e",
+  "value": "32",
+  "qualified_table": "BMvCoreConst"
+ },
+ {
+  "kind": "const",
+  "name": "_eComMoveFlag_HitEnd",
+  "table": "BMvCoreConst",
+  "regfunc": "0x893db0",
+  "ea": "0x89403d",
+  "value": "64",
+  "qualified_table": "BMvCoreConst"
+ },
+ {
+  "kind": "const",
+  "name": "_eComMoveFlag_DamageEnd",
+  "table": "BMvCoreConst",
+  "regfunc": "0x893db0",
+  "ea": "0x89404f",
+  "value": "128",
+  "qualified_table": "BMvCoreConst"
+ },
+ {
+  "kind": "const",
+  "name": "_eComMoveFlag_AirNext",
+  "table": "BMvCoreConst",
+  "regfunc": "0x893db0",
+  "ea": "0x894061",
+  "value": "0",
+  "qualified_table": "BMvCoreConst"
+ },
+ {
+  "kind": "const",
+  "name": "_eComMoveFlag_GroundNext",
+  "table": "BMvCoreConst",
+  "regfunc": "0x893db0",
+  "ea": "0x894073",
+  "value": "0",
+  "qualified_table": "BMvCoreConst"
+ },
+ {
+  "kind": "const",
+  "name": "_eComMoveFlag_MoveableNext",
+  "table": "BMvCoreConst",
+  "regfunc": "0x893db0",
+  "ea": "0x894085",
+  "value": "0",
+  "qualified_table": "BMvCoreConst"
+ },
+ {
+  "kind": "const",
+  "name": "_eComMoveFlag_MovedisableNext",
+  "table": "BMvCoreConst",
+  "regfunc": "0x893db0",
+  "ea": "0x894097",
+  "value": "0",
+  "qualified_table": "BMvCoreConst"
+ },
+ {
+  "kind": "const",
+  "name": "_eComMoveFlag_AirEnd",
+  "table": "BMvCoreConst",
+  "regfunc": "0x893db0",
+  "ea": "0x8940a9",
+  "value": "0",
+  "qualified_table": "BMvCoreConst"
+ },
+ {
+  "kind": "const",
+  "name": "_eComMoveFlag_GroundEnd",
+  "table": "BMvCoreConst",
+  "regfunc": "0x893db0",
+  "ea": "0x8940bb",
+  "value": "0",
+  "qualified_table": "BMvCoreConst"
+ },
+ {
+  "kind": "const",
+  "name": "_eComMoveFlag_MoveableEnd",
+  "table": "BMvCoreConst",
+  "regfunc": "0x893db0",
+  "ea": "0x8940cd",
+  "value": "0",
+  "qualified_table": "BMvCoreConst"
+ },
+ {
+  "kind": "const",
+  "name": "_eComMoveFlag_MovedisableEnd",
+  "table": "BMvCoreConst",
+  "regfunc": "0x893db0",
+  "ea": "0x8940df",
+  "value": "0",
+  "qualified_table": "BMvCoreConst"
+ },
+ {
+  "kind": "const",
+  "name": "_eComMoveFlag_NmCancelEnd",
+  "table": "BMvCoreConst",
+  "regfunc": "0x893db0",
+  "ea": "0x8940f1",
+  "value": "0",
+  "qualified_table": "BMvCoreConst"
+ },
+ {
+  "kind": "const",
+  "name": "_eComMoveFlag_SpCancelEnd",
+  "table": "BMvCoreConst",
+  "regfunc": "0x893db0",
+  "ea": "0x894103",
+  "value": "0",
+  "qualified_table": "BMvCoreConst"
+ },
+ {
+  "kind": "const",
+  "name": "_eComMoveFlag_CancelEnd",
+  "table": "BMvCoreConst",
+  "regfunc": "0x893db0",
+  "ea": "0x894115",
+  "value": "0",
+  "qualified_table": "BMvCoreConst"
+ },
+ {
+  "kind": "const",
+  "name": "_eComMoveFlag_NmCancelNext",
+  "table": "BMvCoreConst",
+  "regfunc": "0x893db0",
+  "ea": "0x894127",
+  "value": "0",
+  "qualified_table": "BMvCoreConst"
+ },
+ {
+  "kind": "const",
+  "name": "_eComMoveFlag_SpCancelNext",
+  "table": "BMvCoreConst",
+  "regfunc": "0x893db0",
+  "ea": "0x894139",
+  "value": "0",
+  "qualified_table": "BMvCoreConst"
+ },
+ {
+  "kind": "const",
+  "name": "_eComMoveFlag_CancelNext",
+  "table": "BMvCoreConst",
+  "regfunc": "0x893db0",
+  "ea": "0x89414b",
+  "value": "0",
+  "qualified_table": "BMvCoreConst"
+ },
+ {
+  "kind": "const",
+  "name": "_eComMoveFlag_StickHold",
+  "table": "BMvCoreConst",
+  "regfunc": "0x893db0",
+  "ea": "0x89415d",
+  "value": "0",
+  "qualified_table": "BMvCoreConst"
+ },
+ {
+  "kind": "const",
+  "name": "_eComMoveFlag_ButtonHold",
+  "table": "BMvCoreConst",
+  "regfunc": "0x893db0",
+  "ea": "0x89416f",
+  "value": "0",
+  "qualified_table": "BMvCoreConst"
+ },
+ {
+  "kind": "const",
+  "name": "_eComSkillType_Interrupt",
+  "table": "BMvCoreConst",
+  "regfunc": "0x893db0",
+  "ea": "0x89417e",
+  "value": "1",
+  "qualified_table": "BMvCoreConst"
+ },
+ {
+  "kind": "const",
+  "name": "_eComSkillType_NoInterrupt",
+  "table": "BMvCoreConst",
+  "regfunc": "0x893db0",
+  "ea": "0x89418d",
+  "value": "2",
+  "qualified_table": "BMvCoreConst"
+ },
+ {
+  "kind": "const",
+  "name": "_eComButton_A",
+  "table": "BMvCoreConst",
+  "regfunc": "0x893db0",
+  "ea": "0x89419c",
+  "value": "1",
+  "qualified_table": "BMvCoreConst"
+ },
+ {
+  "kind": "const",
+  "name": "_eComButton_B",
+  "table": "BMvCoreConst",
+  "regfunc": "0x893db0",
+  "ea": "0x8941ab",
+  "value": "2",
+  "qualified_table": "BMvCoreConst"
+ },
+ {
+  "kind": "const",
+  "name": "_eComButton_C",
+  "table": "BMvCoreConst",
+  "regfunc": "0x893db0",
+  "ea": "0x8941ba",
+  "value": "4",
+  "qualified_table": "BMvCoreConst"
+ },
+ {
+  "kind": "const",
+  "name": "_eComButton_D",
+  "table": "BMvCoreConst",
+  "regfunc": "0x893db0",
+  "ea": "0x8941c9",
+  "value": "8",
+  "qualified_table": "BMvCoreConst"
+ },
+ {
+  "kind": "const",
+  "name": "_eComState_MoveAble",
+  "table": "BMvCoreConst",
+  "regfunc": "0x893db0",
+  "ea": "0x8941d8",
+  "value": "1",
+  "qualified_table": "BMvCoreConst"
+ },
+ {
+  "kind": "const",
+  "name": "_eComState_Guard",
+  "table": "BMvCoreConst",
+  "regfunc": "0x893db0",
+  "ea": "0x8941e7",
+  "value": "2",
+  "qualified_table": "BMvCoreConst"
+ },
+ {
+  "kind": "const",
+  "name": "_eComState_Damage",
+  "table": "BMvCoreConst",
+  "regfunc": "0x893db0",
+  "ea": "0x8941f6",
+  "value": "4",
+  "qualified_table": "BMvCoreConst"
+ },
+ {
+  "kind": "const",
+  "name": "_eComState_Grapped",
+  "table": "BMvCoreConst",
+  "regfunc": "0x893db0",
+  "ea": "0x894205",
+  "value": "8",
+  "qualified_table": "BMvCoreConst"
+ },
+ {
+  "kind": "const",
+  "name": "_eComState_Bound",
+  "table": "BMvCoreConst",
+  "regfunc": "0x893db0",
+  "ea": "0x894214",
+  "value": "6",
+  "qualified_table": "BMvCoreConst"
+ },
+ {
+  "kind": "const",
+  "name": "_eComState_Chance",
+  "table": "BMvCoreConst",
+  "regfunc": "0x893db0",
+  "ea": "0x894226",
+  "value": "128",
+  "qualified_table": "BMvCoreConst"
+ },
+ {
+  "kind": "const",
+  "name": "_eComState_Attack",
+  "table": "BMvCoreConst",
+  "regfunc": "0x893db0",
+  "ea": "0x894238",
+  "value": "0",
+  "qualified_table": "BMvCoreConst"
  },
  {
   "kind": "table",
@@ -7077,6 +9885,105 @@
   "table": "",
   "regfunc": "0x896220",
   "ea": "0x896594"
+ },
+ {
+  "kind": "const",
+  "name": "_PAniFlag_JpEqual",
+  "table": "tPAniConst",
+  "regfunc": "0x896220",
+  "ea": "0x8965c7",
+  "value": "1",
+  "qualified_table": "tPAniConst"
+ },
+ {
+  "kind": "const",
+  "name": "_PAniFlag_JpGrater",
+  "table": "tPAniConst",
+  "regfunc": "0x896220",
+  "ea": "0x8965d6",
+  "value": "2",
+  "qualified_table": "tPAniConst"
+ },
+ {
+  "kind": "const",
+  "name": "_PAniFlag_JpLess",
+  "table": "tPAniConst",
+  "regfunc": "0x896220",
+  "ea": "0x8965e5",
+  "value": "3",
+  "qualified_table": "tPAniConst"
+ },
+ {
+  "kind": "const",
+  "name": "_PAniFrame_IpNormal",
+  "table": "tPAniConst",
+  "regfunc": "0x896220",
+  "ea": "0x8965f4",
+  "value": "0",
+  "qualified_table": "tPAniConst"
+ },
+ {
+  "kind": "const",
+  "name": "_PAniFrame_IpAccel",
+  "table": "tPAniConst",
+  "regfunc": "0x896220",
+  "ea": "0x896603",
+  "value": "1",
+  "qualified_table": "tPAniConst"
+ },
+ {
+  "kind": "const",
+  "name": "_PAniFrame_IpDecel",
+  "table": "tPAniConst",
+  "regfunc": "0x896220",
+  "ea": "0x896612",
+  "value": "2",
+  "qualified_table": "tPAniConst"
+ },
+ {
+  "kind": "const",
+  "name": "_PAniFrame_IpAccelEx",
+  "table": "tPAniConst",
+  "regfunc": "0x896220",
+  "ea": "0x896621",
+  "value": "3",
+  "qualified_table": "tPAniConst"
+ },
+ {
+  "kind": "const",
+  "name": "_PAniFrame_IpDecelEx",
+  "table": "tPAniConst",
+  "regfunc": "0x896220",
+  "ea": "0x896630",
+  "value": "4",
+  "qualified_table": "tPAniConst"
+ },
+ {
+  "kind": "const",
+  "name": "_PAniFrame_IpAtoD",
+  "table": "tPAniConst",
+  "regfunc": "0x896220",
+  "ea": "0x89663f",
+  "value": "5",
+  "qualified_table": "tPAniConst"
+ },
+ {
+  "kind": "const",
+  "name": "_PAniFrame_IpDtoA",
+  "table": "tPAniConst",
+  "regfunc": "0x896220",
+  "ea": "0x89664e",
+  "value": "6",
+  "qualified_table": "tPAniConst"
+ },
+ {
+  "kind": "const",
+  "name": "_PAniFrame_IpNone",
+  "table": "tPAniConst",
+  "regfunc": "0x896220",
+  "ea": "0x89665d",
+  "value": "7",
+  "qualified_table": "tPAniConst"
  },
  {
   "kind": "table",

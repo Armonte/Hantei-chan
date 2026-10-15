@@ -1,0 +1,445 @@
+file	kind	bytes	result	line	col	error
+data/Acr_s_0/Acr_s_0.txt	other	179	fail	3	2	cannot brake deref/or comma needed after [exp]=exp slot declaration
+data/Acr_s_0/Acr_s_0_cmd.txt	squirrel	81	ok	0	0	
+data/Acr_s_0/Acr_s_0_mv.txt	squirrel	13562	ok	0	0	
+data/Acr_s_0/Acr_s_0_sc.txt	squirrel	162	ok	0	0	
+data/Acr_s_0/_com.txt	other	31054	ok	0	0	
+data/Acr_s_0/_se_list.txt	other	4121	ok	0	0	
+data/Acr_s_0/_string.txt	other	263	fail	3	6	can't assign expression
+data/Aen_s_0/Aen_s_0.txt	other	179	fail	3	2	cannot brake deref/or comma needed after [exp]=exp slot declaration
+data/Aen_s_0/Aen_s_0_cmd.txt	squirrel	81	ok	0	0	
+data/Aen_s_0/Aen_s_0_mv.txt	squirrel	16580	ok	0	0	
+data/Aen_s_0/Aen_s_0_sc.txt	squirrel	162	ok	0	0	
+data/Aen_s_0/_com.txt	other	31054	ok	0	0	
+data/Aen_s_0/_se_list.txt	other	4844	ok	0	0	
+data/Aen_s_0/_string.txt	other	335	fail	6	6	can't assign expression
+data/Akj_s_0/Akj_s_0.txt	other	179	fail	3	2	cannot brake deref/or comma needed after [exp]=exp slot declaration
+data/Akj_s_0/Akj_s_0_cmd.txt	squirrel	81	ok	0	0	
+data/Akj_s_0/Akj_s_0_mv.txt	squirrel	13629	ok	0	0	
+data/Akj_s_0/Akj_s_0_sc.txt	squirrel	162	ok	0	0	
+data/Akj_s_0/_com.txt	other	31054	ok	0	0	
+data/Akj_s_0/_se_list.txt	other	3694	ok	0	0	
+data/Akj_s_0/_string.txt	other	314	fail	3	6	can't assign expression
+data/Ako_0/Ako_0.txt	other	195	fail	3	2	cannot brake deref/or comma needed after [exp]=exp slot declaration
+data/Ako_0/Ako_0_cmd.txt	squirrel	3477	ok	0	0	
+data/Ako_0/Ako_0_mv.txt	squirrel	118528	ok	0	0	
+data/Ako_0/Ako_0_sc.txt	squirrel	1468	ok	0	0	
+data/Ako_0/Ako_0_selist.txt	other	7290	ok	0	0	
+data/Ako_0/_com.txt	other	68678	ok	0	0	
+data/Ako_0/_finish_list.txt	other	530	ok	0	0	
+data/Ako_0/_se_list.txt	other	19654	ok	0	0	
+data/Alc_s_0/Alc_s_0.txt	other	179	fail	3	2	cannot brake deref/or comma needed after [exp]=exp slot declaration
+data/Alc_s_0/Alc_s_0_cmd.txt	squirrel	81	ok	0	0	
+data/Alc_s_0/Alc_s_0_mv.txt	squirrel	9506	ok	0	0	
+data/Alc_s_0/Alc_s_0_sc.txt	squirrel	162	ok	0	0	
+data/Alc_s_0/_com.txt	other	31054	ok	0	0	
+data/Alc_s_0/_se_list.txt	other	3017	ok	0	0	
+data/Alc_s_0/_string.txt	other	263	fail	6	6	can't assign expression
+data/Asm_s_0/Asm_s_0.txt	other	179	fail	3	2	cannot brake deref/or comma needed after [exp]=exp slot declaration
+data/Asm_s_0/Asm_s_0_cmd.txt	squirrel	81	ok	0	0	
+data/Asm_s_0/Asm_s_0_mv.txt	squirrel	24757	ok	0	0	
+data/Asm_s_0/Asm_s_0_sc.txt	squirrel	161	ok	0	0	
+data/Asm_s_0/_com.txt	other	31054	ok	0	0	
+data/Asm_s_0/_se_list.txt	other	3626	ok	0	0	
+data/Asm_s_0/_string.txt	other	200	fail	5	6	can't assign expression
+data/Asu_0/Asu_0.txt	other	195	fail	3	2	cannot brake deref/or comma needed after [exp]=exp slot declaration
+data/Asu_0/Asu_0_cmd.txt	squirrel	2797	ok	0	0	
+data/Asu_0/Asu_0_mv.txt	squirrel	53184	ok	0	0	
+data/Asu_0/Asu_0_sc.txt	squirrel	531	ok	0	0	
+data/Asu_0/Asu_0_selist.txt	other	7563	ok	0	0	
+data/Asu_0/_com.txt	other	65886	ok	0	0	
+data/Asu_0/_finish_list.txt	other	463	ok	0	0	
+data/Asu_0/_se_list.txt	other	20381	ok	0	0	
+data/Asu_0/_string.txt	other	591	fail	3	6	can't assign expression
+data/BattleInfo.txt	other	2973	ok	0	0	
+data/Bog_s_0/Bog_s_0.txt	other	179	fail	3	2	cannot brake deref/or comma needed after [exp]=exp slot declaration
+data/Bog_s_0/Bog_s_0_cmd.txt	squirrel	88	ok	0	0	
+data/Bog_s_0/Bog_s_0_mv.txt	squirrel	14945	ok	0	0	
+data/Bog_s_0/Bog_s_0_sc.txt	squirrel	169	ok	0	0	
+data/Bog_s_0/_com.txt	other	31054	ok	0	0	
+data/Bog_s_0/_se_list.txt	other	3125	ok	0	0	
+data/Bog_s_0/_string.txt	other	288	fail	5	6	can't assign expression
+data/BoundEff.txt	other	2651	ok	0	0	
+data/Crt_s_0/Crt_s_0.txt	other	179	fail	3	2	cannot brake deref/or comma needed after [exp]=exp slot declaration
+data/Crt_s_0/Crt_s_0_cmd.txt	squirrel	81	ok	0	0	
+data/Crt_s_0/Crt_s_0_mv.txt	squirrel	3814	ok	0	0	
+data/Crt_s_0/Crt_s_0_sc.txt	squirrel	162	ok	0	0	
+data/Crt_s_0/_com.txt	other	31054	ok	0	0	
+data/Crt_s_0/_se_list.txt	other	2855	ok	0	0	
+data/Crt_s_0/_string.txt	other	256	fail	5	6	can't assign expression
+data/Dok_s_0/Dok_s_0.txt	other	181	fail	3	2	cannot brake deref/or comma needed after [exp]=exp slot declaration
+data/Dok_s_0/Dok_s_0_cmd.txt	squirrel	81	ok	0	0	
+data/Dok_s_0/Dok_s_0_mv.txt	squirrel	8719	ok	0	0	
+data/Dok_s_0/Dok_s_0_sc.txt	squirrel	162	ok	0	0	
+data/Dok_s_0/_com.txt	other	31054	ok	0	0	
+data/Dok_s_0/_se_list.txt	other	3425	ok	0	0	
+data/Dok_s_0/_string.txt	other	234	fail	5	6	can't assign expression
+data/Emi_0/Emi_0.txt	other	195	fail	3	2	cannot brake deref/or comma needed after [exp]=exp slot declaration
+data/Emi_0/Emi_0_NoBaseData.txt	other	171	fail	3	2	cannot brake deref/or comma needed after [exp]=exp slot declaration
+data/Emi_0/Emi_0_cmd.txt	squirrel	2895	ok	0	0	
+data/Emi_0/Emi_0_mv.txt	squirrel	45813	ok	0	0	
+data/Emi_0/Emi_0_sc.txt	squirrel	1318	ok	0	0	
+data/Emi_0/Emi_0_selist.txt	other	6777	ok	0	0	
+data/Emi_0/_com.txt	other	65961	ok	0	0	
+data/Emi_0/_finish_list.txt	other	526	ok	0	0	
+data/Emi_0/_se_list.txt	other	19794	ok	0	0	
+data/Ero_s_0/Ero_s_0.txt	other	179	fail	3	2	cannot brake deref/or comma needed after [exp]=exp slot declaration
+data/Ero_s_0/Ero_s_0_cmd.txt	squirrel	81	ok	0	0	
+data/Ero_s_0/Ero_s_0_mv.txt	squirrel	12355	ok	0	0	
+data/Ero_s_0/Ero_s_0_sc.txt	squirrel	162	ok	0	0	
+data/Ero_s_0/_com.txt	other	31054	ok	0	0	
+data/Ero_s_0/_se_list.txt	other	3967	ok	0	0	
+data/Ero_s_0/_string.txt	other	261	fail	5	6	can't assign expression
+data/Fro_s_0/Fro_s_0.txt	other	179	fail	3	2	cannot brake deref/or comma needed after [exp]=exp slot declaration
+data/Fro_s_0/Fro_s_0_cmd.txt	squirrel	81	ok	0	0	
+data/Fro_s_0/Fro_s_0_mv.txt	squirrel	15339	ok	0	0	
+data/Fro_s_0/Fro_s_0_sc.txt	squirrel	162	ok	0	0	
+data/Fro_s_0/_com.txt	other	31054	ok	0	0	
+data/Fro_s_0/_se_list.txt	other	3088	ok	0	0	
+data/Fro_s_0/_string.txt	other	236	fail	5	6	can't assign expression
+data/Har_s_0/Har_s_0.txt	other	179	fail	3	2	cannot brake deref/or comma needed after [exp]=exp slot declaration
+data/Har_s_0/Har_s_0_cmd.txt	squirrel	81	ok	0	0	
+data/Har_s_0/Har_s_0_mv.txt	squirrel	11747	ok	0	0	
+data/Har_s_0/Har_s_0_sc.txt	squirrel	162	ok	0	0	
+data/Har_s_0/_com.txt	other	31054	ok	0	0	
+data/Har_s_0/_se_list.txt	other	3523	ok	0	0	
+data/Har_s_0/_string.txt	other	208	fail	5	6	can't assign expression
+data/Hiw_0/Hiw_0.txt	other	195	fail	3	2	cannot brake deref/or comma needed after [exp]=exp slot declaration
+data/Hiw_0/Hiw_0_cmd.txt	squirrel	2783	ok	0	0	
+data/Hiw_0/Hiw_0_mv.txt	squirrel	27241	ok	0	0	
+data/Hiw_0/Hiw_0_sc.txt	squirrel	522	ok	0	0	
+data/Hiw_0/Hiw_0_selist.txt	other	8016	ok	0	0	
+data/Hiw_0/_com.txt	other	65892	ok	0	0	
+data/Hiw_0/_finish_list.txt	other	645	ok	0	0	
+data/Hiw_0/_se_list.txt	other	22198	ok	0	0	
+data/Hiw_0/_string.txt	other	565	fail	3	6	can't assign expression
+data/Hol_s_0/Hol_s_0.txt	other	179	fail	3	2	cannot brake deref/or comma needed after [exp]=exp slot declaration
+data/Hol_s_0/Hol_s_0_cmd.txt	squirrel	81	ok	0	0	
+data/Hol_s_0/Hol_s_0_mv.txt	squirrel	9290	ok	0	0	
+data/Hol_s_0/Hol_s_0_sc.txt	squirrel	162	ok	0	0	
+data/Hol_s_0/_com.txt	other	31054	ok	0	0	
+data/Hol_s_0/_se_list.txt	other	3041	ok	0	0	
+data/Hol_s_0/_string.txt	other	240	fail	5	6	can't assign expression
+data/Ino_s_0/Ino_s_0.txt	other	179	fail	3	2	cannot brake deref/or comma needed after [exp]=exp slot declaration
+data/Ino_s_0/Ino_s_0_cmd.txt	squirrel	81	ok	0	0	
+data/Ino_s_0/Ino_s_0_mv.txt	squirrel	7069	ok	0	0	
+data/Ino_s_0/Ino_s_0_sc.txt	squirrel	162	ok	0	0	
+data/Ino_s_0/_com.txt	other	31054	ok	0	0	
+data/Ino_s_0/_se_list.txt	other	2863	ok	0	0	
+data/Ino_s_0/_string.txt	other	221	fail	5	6	can't assign expression
+data/Iry_s_0/Iry_s_0.txt	other	179	fail	3	2	cannot brake deref/or comma needed after [exp]=exp slot declaration
+data/Iry_s_0/Iry_s_0_cmd.txt	squirrel	81	ok	0	0	
+data/Iry_s_0/Iry_s_0_mv.txt	squirrel	26471	ok	0	0	
+data/Iry_s_0/Iry_s_0_sc.txt	squirrel	165	ok	0	0	
+data/Iry_s_0/_com.txt	other	31054	ok	0	0	
+data/Iry_s_0/_se_list.txt	other	6294	ok	0	0	
+data/Iry_s_0/_string.txt	other	185	fail	5	6	can't assign expression
+data/Izy_s_0/Izy_s_0.txt	other	179	fail	3	2	cannot brake deref/or comma needed after [exp]=exp slot declaration
+data/Izy_s_0/Izy_s_0_cmd.txt	squirrel	81	ok	0	0	
+data/Izy_s_0/Izy_s_0_mv.txt	squirrel	11976	ok	0	0	
+data/Izy_s_0/Izy_s_0_sc.txt	squirrel	162	ok	0	0	
+data/Izy_s_0/_com.txt	other	31054	ok	0	0	
+data/Izy_s_0/_se_list.txt	other	5313	ok	0	0	
+data/Izy_s_0/_string.txt	other	475	fail	3	6	can't assign expression
+data/Kgk_s_0/Kgk_s_0.txt	other	179	fail	3	2	cannot brake deref/or comma needed after [exp]=exp slot declaration
+data/Kgk_s_0/Kgk_s_0_cmd.txt	squirrel	81	ok	0	0	
+data/Kgk_s_0/Kgk_s_0_mv.txt	squirrel	13286	ok	0	0	
+data/Kgk_s_0/Kgk_s_0_sc.txt	squirrel	162	ok	0	0	
+data/Kgk_s_0/_com.txt	other	31054	ok	0	0	
+data/Kgk_s_0/_se_list.txt	other	2902	ok	0	0	
+data/Kgk_s_0/_string.txt	other	250	fail	5	6	can't assign expression
+data/Kin_s_0/Kin_s_0.txt	other	179	fail	3	2	cannot brake deref/or comma needed after [exp]=exp slot declaration
+data/Kin_s_0/Kin_s_0_cmd.txt	squirrel	81	ok	0	0	
+data/Kin_s_0/Kin_s_0_mv.txt	squirrel	7542	ok	0	0	
+data/Kin_s_0/Kin_s_0_sc.txt	squirrel	165	ok	0	0	
+data/Kin_s_0/_com.txt	other	31054	ok	0	0	
+data/Kin_s_0/_se_list.txt	other	2965	ok	0	0	
+data/Kin_s_0/_string.txt	other	258	fail	5	6	can't assign expression
+data/Krk_0/Krk_0.txt	other	195	fail	3	2	cannot brake deref/or comma needed after [exp]=exp slot declaration
+data/Krk_0/Krk_0_cmd.txt	squirrel	2829	ok	0	0	
+data/Krk_0/Krk_0_mv.txt	squirrel	81433	ok	0	0	
+data/Krk_0/Krk_0_sc.txt	squirrel	602	ok	0	0	
+data/Krk_0/Krk_0_selist.txt	other	8107	ok	0	0	
+data/Krk_0/_com.txt	other	65887	ok	0	0	
+data/Krk_0/_finish_list.txt	other	592	ok	0	0	
+data/Krk_0/_se_list.txt	other	22502	ok	0	0	
+data/Krk_0/_string.txt	other	471	fail	3	6	can't assign expression
+data/Krn_0/Krn_0.txt	other	195	fail	3	2	cannot brake deref/or comma needed after [exp]=exp slot declaration
+data/Krn_0/Krn_0_cmd.txt	squirrel	9616	ok	0	0	
+data/Krn_0/Krn_0_mv.txt	squirrel	42923	ok	0	0	
+data/Krn_0/Krn_0_sc.txt	squirrel	593	ok	0	0	
+data/Krn_0/Krn_0_selist.txt	other	8523	ok	0	0	
+data/Krn_0/_com.txt	other	65885	ok	0	0	
+data/Krn_0/_finish_list.txt	other	640	ok	0	0	
+data/Krn_0/_se_list.txt	other	22944	ok	0	0	
+data/Krn_0/_string.txt	other	606	fail	3	6	can't assign expression
+data/Kro_s_0/Kro_s_0.txt	other	179	fail	3	2	cannot brake deref/or comma needed after [exp]=exp slot declaration
+data/Kro_s_0/Kro_s_0_cmd.txt	squirrel	81	ok	0	0	
+data/Kro_s_0/Kro_s_0_mv.txt	squirrel	16614	ok	0	0	
+data/Kro_s_0/Kro_s_0_sc.txt	squirrel	162	ok	0	0	
+data/Kro_s_0/_com.txt	other	31054	ok	0	0	
+data/Kro_s_0/_se_list.txt	other	3211	ok	0	0	
+data/Kro_s_0/_string.txt	other	241	fail	5	6	can't assign expression
+data/Krt_0/Krt_0.txt	other	195	fail	3	2	cannot brake deref/or comma needed after [exp]=exp slot declaration
+data/Krt_0/Krt_0_cmd.txt	squirrel	14481	ok	0	0	
+data/Krt_0/Krt_0_mv.txt	squirrel	42635	ok	0	0	
+data/Krt_0/Krt_0_sc.txt	squirrel	705	ok	0	0	
+data/Krt_0/Krt_0_selist.txt	other	7691	ok	0	0	
+data/Krt_0/_com.txt	other	65887	ok	0	0	
+data/Krt_0/_finish_list.txt	other	463	ok	0	0	
+data/Krt_0/_se_list.txt	other	20330	ok	0	0	
+data/Krt_0/_string.txt	other	608	fail	3	6	can't assign expression
+data/Kur_0/Kur_0.txt	other	195	fail	3	2	cannot brake deref/or comma needed after [exp]=exp slot declaration
+data/Kur_0/Kur_0_cmd.txt	squirrel	8369	ok	0	0	
+data/Kur_0/Kur_0_mv.txt	squirrel	64883	ok	0	0	
+data/Kur_0/Kur_0_sc.txt	squirrel	428	ok	0	0	
+data/Kur_0/Kur_0_selist.txt	other	7219	ok	0	0	
+data/Kur_0/_com.txt	other	65885	ok	0	0	
+data/Kur_0/_finish_list.txt	other	702	ok	0	0	
+data/Kur_0/_se_list.txt	other	20170	ok	0	0	
+data/Kur_0/_string.txt	other	605	fail	3	6	can't assign expression
+data/Lea_s_0/Lea_s_0.txt	other	179	fail	3	2	cannot brake deref/or comma needed after [exp]=exp slot declaration
+data/Lea_s_0/Lea_s_0_cmd.txt	squirrel	86	ok	0	0	
+data/Lea_s_0/Lea_s_0_mv.txt	squirrel	9279	ok	0	0	
+data/Lea_s_0/Lea_s_0_sc.txt	squirrel	162	ok	0	0	
+data/Lea_s_0/_com.txt	other	31054	ok	0	0	
+data/Lea_s_0/_se_list.txt	other	2867	ok	0	0	
+data/Lea_s_0/_string.txt	other	245	fail	5	6	can't assign expression
+data/Mas_s_0/Mas_s_0.txt	other	179	fail	3	2	cannot brake deref/or comma needed after [exp]=exp slot declaration
+data/Mas_s_0/Mas_s_0_cmd.txt	squirrel	81	ok	0	0	
+data/Mas_s_0/Mas_s_0_mv.txt	squirrel	12960	ok	0	0	
+data/Mas_s_0/Mas_s_0_sc.txt	squirrel	162	ok	0	0	
+data/Mas_s_0/_com.txt	other	31054	ok	0	0	
+data/Mas_s_0/_se_list.txt	other	2989	ok	0	0	
+data/Mas_s_0/_string.txt	other	200	fail	5	6	can't assign expression
+data/Mis_0/Mis_0.txt	other	195	fail	3	2	cannot brake deref/or comma needed after [exp]=exp slot declaration
+data/Mis_0/Mis_0_cmd.txt	squirrel	7181	ok	0	0	
+data/Mis_0/Mis_0_mv.txt	squirrel	38688	ok	0	0	
+data/Mis_0/Mis_0_sc.txt	squirrel	534	ok	0	0	
+data/Mis_0/Mis_0_selist.txt	other	6975	ok	0	0	
+data/Mis_0/_com.txt	other	65829	ok	0	0	
+data/Mis_0/_finish_list.txt	other	637	ok	0	0	
+data/Mis_0/_se_list.txt	other	21024	ok	0	0	
+data/Mis_0/_string.txt	other	563	fail	3	6	can't assign expression
+data/Mou_s_0/Mou_s_0.txt	other	179	fail	3	2	cannot brake deref/or comma needed after [exp]=exp slot declaration
+data/Mou_s_0/Mou_s_0_cmd.txt	squirrel	81	ok	0	0	
+data/Mou_s_0/Mou_s_0_mv.txt	squirrel	13765	ok	0	0	
+data/Mou_s_0/Mou_s_0_sc.txt	squirrel	162	ok	0	0	
+data/Mou_s_0/_com.txt	other	31054	ok	0	0	
+data/Mou_s_0/_se_list.txt	other	3800	ok	0	0	
+data/Mou_s_0/_string.txt	other	270	fail	5	6	can't assign expression
+data/Oni_0/Oni_0.txt	other	195	fail	3	2	cannot brake deref/or comma needed after [exp]=exp slot declaration
+data/Oni_0/Oni_0_cmd.txt	squirrel	8895	ok	0	0	
+data/Oni_0/Oni_0_mv.txt	squirrel	80125	ok	0	0	
+data/Oni_0/Oni_0_sc.txt	squirrel	866	ok	0	0	
+data/Oni_0/Oni_0_selist.txt	other	8952	ok	0	0	
+data/Oni_0/_com.txt	other	66343	ok	0	0	
+data/Oni_0/_finish_list.txt	other	532	ok	0	0	
+data/Oni_0/_se_list.txt	other	20309	ok	0	0	
+data/Oni_0/_string.txt	other	565	fail	3	6	can't assign expression
+data/Pai_s_0/Pai_s_0.txt	other	179	fail	3	2	cannot brake deref/or comma needed after [exp]=exp slot declaration
+data/Pai_s_0/Pai_s_0_cmd.txt	squirrel	81	ok	0	0	
+data/Pai_s_0/Pai_s_0_mv.txt	squirrel	4412	ok	0	0	
+data/Pai_s_0/Pai_s_0_sc.txt	squirrel	165	ok	0	0	
+data/Pai_s_0/_com.txt	other	31054	ok	0	0	
+data/Pai_s_0/_se_list.txt	other	3847	ok	0	0	
+data/Pai_s_0/_string.txt	other	254	fail	5	6	can't assign expression
+data/Qen_0/Qen_0.txt	other	195	fail	3	2	cannot brake deref/or comma needed after [exp]=exp slot declaration
+data/Qen_0/Qen_0_NoBaseData.txt	other	171	fail	3	2	cannot brake deref/or comma needed after [exp]=exp slot declaration
+data/Qen_0/Qen_0_cmd.txt	squirrel	4987	ok	0	0	
+data/Qen_0/Qen_0_mv.txt	squirrel	90337	ok	0	0	
+data/Qen_0/Qen_0_sc.txt	squirrel	1097	ok	0	0	
+data/Qen_0/Qen_0_selist.txt	other	8360	ok	0	0	
+data/Qen_0/_com.txt	other	65962	ok	0	0	
+data/Qen_0/_finish_list.txt	other	654	ok	0	0	
+data/Qen_0/_se_list.txt	other	20341	ok	0	0	
+data/Ren_s_0/Ren_s_0.txt	other	179	fail	3	2	cannot brake deref/or comma needed after [exp]=exp slot declaration
+data/Ren_s_0/Ren_s_0_cmd.txt	squirrel	81	ok	0	0	
+data/Ren_s_0/Ren_s_0_mv.txt	squirrel	27075	ok	0	0	
+data/Ren_s_0/Ren_s_0_sc.txt	squirrel	165	ok	0	0	
+data/Ren_s_0/_com.txt	other	31054	ok	0	0	
+data/Ren_s_0/_se_list.txt	other	3994	ok	0	0	
+data/Ren_s_0/_string.txt	other	252	fail	5	6	can't assign expression
+data/Rus_s_0/Rus_s_0.txt	other	179	fail	3	2	cannot brake deref/or comma needed after [exp]=exp slot declaration
+data/Rus_s_0/Rus_s_0_cmd.txt	squirrel	81	ok	0	0	
+data/Rus_s_0/Rus_s_0_mv.txt	squirrel	24807	ok	0	0	
+data/Rus_s_0/Rus_s_0_sc.txt	squirrel	165	ok	0	0	
+data/Rus_s_0/_com.txt	other	31054	ok	0	0	
+data/Rus_s_0/_se_list.txt	other	4367	ok	0	0	
+data/Rus_s_0/_string.txt	other	275	fail	5	6	can't assign expression
+data/Sbm_0/Sbm_0.txt	other	195	fail	3	2	cannot brake deref/or comma needed after [exp]=exp slot declaration
+data/Sbm_0/Sbm_0_NoBaseData.txt	other	171	fail	3	2	cannot brake deref/or comma needed after [exp]=exp slot declaration
+data/Sbm_0/Sbm_0_cmd.txt	squirrel	6006	ok	0	0	
+data/Sbm_0/Sbm_0_mv.txt	squirrel	40669	ok	0	0	
+data/Sbm_0/Sbm_0_sc.txt	squirrel	920	ok	0	0	
+data/Sbm_0/Sbm_0_selist.txt	other	7239	ok	0	0	
+data/Sbm_0/_com.txt	other	65884	ok	0	0	
+data/Sbm_0/_finish_list.txt	other	525	ok	0	0	
+data/Sbm_0/_se_list.txt	other	18472	ok	0	0	
+data/Sbm_0/_string.txt	other	595	fail	3	6	can't assign expression
+data/Sbt_s_0/Sbt_s_0.txt	other	179	fail	3	2	cannot brake deref/or comma needed after [exp]=exp slot declaration
+data/Sbt_s_0/Sbt_s_0_cmd.txt	squirrel	81	ok	0	0	
+data/Sbt_s_0/Sbt_s_0_mv.txt	squirrel	11971	ok	0	0	
+data/Sbt_s_0/Sbt_s_0_sc.txt	squirrel	162	ok	0	0	
+data/Sbt_s_0/_com.txt	other	31054	ok	0	0	
+data/Sbt_s_0/_se_list.txt	other	3231	ok	0	0	
+data/Sbt_s_0/_string.txt	other	233	fail	5	6	can't assign expression
+data/Sha_0/Sha_0.txt	other	195	fail	3	2	cannot brake deref/or comma needed after [exp]=exp slot declaration
+data/Sha_0/Sha_0_cmd.txt	squirrel	3858	ok	0	0	
+data/Sha_0/Sha_0_mv.txt	squirrel	69299	ok	0	0	
+data/Sha_0/Sha_0_sc.txt	squirrel	420	ok	0	0	
+data/Sha_0/Sha_0_selist.txt	other	7157	ok	0	0	
+data/Sha_0/_com.txt	other	66355	ok	0	0	
+data/Sha_0/_finish_list.txt	other	375	ok	0	0	
+data/Sha_0/_se_list.txt	other	21127	ok	0	0	
+data/Sha_0/_string.txt	other	570	fail	3	6	can't assign expression
+data/Slv_0/Slv_0.txt	other	195	fail	3	2	cannot brake deref/or comma needed after [exp]=exp slot declaration
+data/Slv_0/Slv_0_NoBaseData.txt	other	171	fail	3	2	cannot brake deref/or comma needed after [exp]=exp slot declaration
+data/Slv_0/Slv_0_cmd.txt	squirrel	5799	ok	0	0	
+data/Slv_0/Slv_0_mv.txt	squirrel	41448	ok	0	0	
+data/Slv_0/Slv_0_sc.txt	squirrel	650	ok	0	0	
+data/Slv_0/Slv_0_selist.txt	other	7893	ok	0	0	
+data/Slv_0/_com.txt	other	67056	ok	0	0	
+data/Slv_0/_finish_list.txt	other	554	ok	0	0	
+data/Slv_0/_se_list.txt	other	23020	ok	0	0	
+data/Slv_0/_string.txt	other	439	fail	2	6	can't assign expression
+data/Smy_s_0/Smy_s_0.txt	other	181	fail	3	2	cannot brake deref/or comma needed after [exp]=exp slot declaration
+data/Smy_s_0/Smy_s_0_cmd.txt	squirrel	81	ok	0	0	
+data/Smy_s_0/Smy_s_0_mv.txt	squirrel	10747	ok	0	0	
+data/Smy_s_0/Smy_s_0_sc.txt	squirrel	162	ok	0	0	
+data/Smy_s_0/_com.txt	other	31054	ok	0	0	
+data/Smy_s_0/_se_list.txt	other	3716	ok	0	0	
+data/Smy_s_0/_string.txt	other	242	fail	5	6	can't assign expression
+data/Stm_0/Stm_0.txt	other	195	fail	3	2	cannot brake deref/or comma needed after [exp]=exp slot declaration
+data/Stm_0/Stm_0_NoBaseData.txt	other	171	fail	3	2	cannot brake deref/or comma needed after [exp]=exp slot declaration
+data/Stm_0/Stm_0_cmd.txt	squirrel	2821	ok	0	0	
+data/Stm_0/Stm_0_mv.txt	squirrel	31474	ok	0	0	
+data/Stm_0/Stm_0_sc.txt	squirrel	587	ok	0	0	
+data/Stm_0/Stm_0_selist.txt	other	7298	ok	0	0	
+data/Stm_0/_com.txt	other	65888	ok	0	0	
+data/Stm_0/_finish_list.txt	other	527	ok	0	0	
+data/Stm_0/_se_list.txt	other	21137	ok	0	0	
+data/Stm_0/_string.txt	other	539	fail	3	6	can't assign expression
+data/Tgr_0/Tgr_0.txt	other	195	fail	3	2	cannot brake deref/or comma needed after [exp]=exp slot declaration
+data/Tgr_0/Tgr_0_NoBaseData.txt	other	171	fail	3	2	cannot brake deref/or comma needed after [exp]=exp slot declaration
+data/Tgr_0/Tgr_0_cmd.txt	squirrel	3409	ok	0	0	
+data/Tgr_0/Tgr_0_mv.txt	squirrel	32942	ok	0	0	
+data/Tgr_0/Tgr_0_sc.txt	squirrel	667	ok	0	0	
+data/Tgr_0/Tgr_0_selist.txt	other	7181	ok	0	0	
+data/Tgr_0/_com.txt	other	65885	ok	0	0	
+data/Tgr_0/_finish_list.txt	other	527	ok	0	0	
+data/Tgr_0/_se_list.txt	other	20619	ok	0	0	
+data/Tgr_0/_string.txt	other	514	fail	3	6	can't assign expression
+data/Tks_s_0/Tks_s_0.txt	other	179	fail	3	2	cannot brake deref/or comma needed after [exp]=exp slot declaration
+data/Tks_s_0/Tks_s_0_cmd.txt	squirrel	81	ok	0	0	
+data/Tks_s_0/Tks_s_0_mv.txt	squirrel	21692	ok	0	0	
+data/Tks_s_0/Tks_s_0_sc.txt	squirrel	162	ok	0	0	
+data/Tks_s_0/_com.txt	other	31054	ok	0	0	
+data/Tks_s_0/_se_list.txt	other	3179	ok	0	0	
+data/Tks_s_0/_string.txt	other	258	fail	5	6	can't assign expression
+data/Tmk_0/Tmk_0.txt	other	195	fail	3	2	cannot brake deref/or comma needed after [exp]=exp slot declaration
+data/Tmk_0/Tmk_0_cmd.txt	squirrel	3986	ok	0	0	
+data/Tmk_0/Tmk_0_mv.txt	squirrel	82469	ok	0	0	
+data/Tmk_0/Tmk_0_sc.txt	squirrel	591	ok	0	0	
+data/Tmk_0/Tmk_0_selist.txt	other	7024	ok	0	0	
+data/Tmk_0/_com.txt	other	65887	ok	0	0	
+data/Tmk_0/_finish_list.txt	other	594	ok	0	0	
+data/Tmk_0/_se_list.txt	other	30240	ok	0	0	
+data/Tmk_0/_string.txt	other	471	fail	3	6	can't assign expression
+data/Tom_s_0/Tom_s_0.txt	other	179	fail	3	2	cannot brake deref/or comma needed after [exp]=exp slot declaration
+data/Tom_s_0/Tom_s_0_cmd.txt	squirrel	81	ok	0	0	
+data/Tom_s_0/Tom_s_0_mv.txt	squirrel	11161	ok	0	0	
+data/Tom_s_0/Tom_s_0_sc.txt	squirrel	162	ok	0	0	
+data/Tom_s_0/_com.txt	other	31054	ok	0	0	
+data/Tom_s_0/_se_list.txt	other	3028	ok	0	0	
+data/Tom_s_0/_string.txt	other	221	fail	5	6	can't assign expression
+data/Uih_s_0/Uih_s_0.txt	other	179	fail	3	2	cannot brake deref/or comma needed after [exp]=exp slot declaration
+data/Uih_s_0/Uih_s_0_cmd.txt	squirrel	81	ok	0	0	
+data/Uih_s_0/Uih_s_0_mv.txt	squirrel	30359	ok	0	0	
+data/Uih_s_0/Uih_s_0_sc.txt	squirrel	165	ok	0	0	
+data/Uih_s_0/_com.txt	other	31054	ok	0	0	
+data/Uih_s_0/_se_list.txt	other	4553	ok	0	0	
+data/Uih_s_0/_string.txt	other	405	fail	7	6	can't assign expression
+data/VectorTable.txt	other	248600	ok	0	0	
+data/Wil_s_0/Wil_s_0.txt	other	179	fail	3	2	cannot brake deref/or comma needed after [exp]=exp slot declaration
+data/Wil_s_0/Wil_s_0_cmd.txt	squirrel	84	ok	0	0	
+data/Wil_s_0/Wil_s_0_mv.txt	squirrel	16176	ok	0	0	
+data/Wil_s_0/Wil_s_0_sc.txt	squirrel	162	ok	0	0	
+data/Wil_s_0/_com.txt	other	31034	ok	0	0	
+data/Wil_s_0/_se_list.txt	other	2886	ok	0	0	
+data/Wil_s_0/_string.txt	other	252	fail	5	6	can't assign expression
+data/Yak_0/Yak_0.txt	other	195	fail	3	2	cannot brake deref/or comma needed after [exp]=exp slot declaration
+data/Yak_0/Yak_0_cmd.txt	squirrel	3920	ok	0	0	
+data/Yak_0/Yak_0_mv.txt	squirrel	31466	ok	0	0	
+data/Yak_0/Yak_0_sc.txt	squirrel	533	ok	0	0	
+data/Yak_0/Yak_0_selist.txt	other	8438	ok	0	0	
+data/Yak_0/_com.txt	other	65883	ok	0	0	
+data/Yak_0/_finish_list.txt	other	507	ok	0	0	
+data/Yak_0/_se_list.txt	other	19485	ok	0	0	
+data/Yak_0/_string.txt	other	356	fail	2	6	can't assign expression
+data/Ykn_0/Ykn_0.txt	other	195	fail	3	2	cannot brake deref/or comma needed after [exp]=exp slot declaration
+data/Ykn_0/Ykn_0_NoBaseData.txt	other	171	fail	3	2	cannot brake deref/or comma needed after [exp]=exp slot declaration
+data/Ykn_0/Ykn_0_cmd.txt	squirrel	6652	ok	0	0	
+data/Ykn_0/Ykn_0_mv.txt	squirrel	24366	ok	0	0	
+data/Ykn_0/Ykn_0_sc.txt	squirrel	884	ok	0	0	
+data/Ykn_0/Ykn_0_selist.txt	other	7872	ok	0	0	
+data/Ykn_0/_com.txt	other	65886	ok	0	0	
+data/Ykn_0/_finish_list.txt	other	527	ok	0	0	
+data/Ykn_0/_se_list.txt	other	22453	ok	0	0	
+data/Ykn_0/_string.txt	other	605	fail	3	6	can't assign expression
+data/Yuk_0/Yuk_0.txt	other	195	fail	3	2	cannot brake deref/or comma needed after [exp]=exp slot declaration
+data/Yuk_0/Yuk_0_cmd.txt	squirrel	8602	ok	0	0	
+data/Yuk_0/Yuk_0_mv.txt	squirrel	56368	ok	0	0	
+data/Yuk_0/Yuk_0_sc.txt	squirrel	731	ok	0	0	
+data/Yuk_0/Yuk_0_selist.txt	other	6937	ok	0	0	
+data/Yuk_0/_com.txt	other	65886	ok	0	0	
+data/Yuk_0/_finish_list.txt	other	528	ok	0	0	
+data/Yuk_0/_se_list.txt	other	20848	ok	0	0	
+data/Yuk_0/_string.txt	other	591	fail	3	6	can't assign expression
+data/Zer_s_0/Zer_s_0.txt	other	179	fail	3	2	cannot brake deref/or comma needed after [exp]=exp slot declaration
+data/Zer_s_0/Zer_s_0_cmd.txt	squirrel	81	ok	0	0	
+data/Zer_s_0/Zer_s_0_mv.txt	squirrel	12740	ok	0	0	
+data/Zer_s_0/Zer_s_0_sc.txt	squirrel	165	ok	0	0	
+data/Zer_s_0/_com.txt	other	31054	ok	0	0	
+data/Zer_s_0/_se_list.txt	other	3061	ok	0	0	
+data/Zer_s_0/_string.txt	other	234	fail	5	6	can't assign expression
+data/_combase.txt	other	6780	ok	0	0	
+data/_csel/csel_Ako.txt	other	147	fail	3	2	cannot brake deref/or comma needed after [exp]=exp slot declaration
+data/_csel/csel_Asu.txt	other	147	fail	3	2	cannot brake deref/or comma needed after [exp]=exp slot declaration
+data/_csel/csel_Emi.txt	other	147	fail	3	2	cannot brake deref/or comma needed after [exp]=exp slot declaration
+data/_csel/csel_Hiw.txt	other	147	fail	3	2	cannot brake deref/or comma needed after [exp]=exp slot declaration
+data/_csel/csel_Krk.txt	other	147	fail	3	2	cannot brake deref/or comma needed after [exp]=exp slot declaration
+data/_csel/csel_Krn.txt	other	147	fail	3	2	cannot brake deref/or comma needed after [exp]=exp slot declaration
+data/_csel/csel_Krt.txt	other	147	fail	3	2	cannot brake deref/or comma needed after [exp]=exp slot declaration
+data/_csel/csel_Kur.txt	other	173	fail	3	2	cannot brake deref/or comma needed after [exp]=exp slot declaration
+data/_csel/csel_Mis.txt	other	147	fail	3	2	cannot brake deref/or comma needed after [exp]=exp slot declaration
+data/_csel/csel_Oni.txt	other	147	fail	3	2	cannot brake deref/or comma needed after [exp]=exp slot declaration
+data/_csel/csel_Qen.txt	other	147	fail	3	2	cannot brake deref/or comma needed after [exp]=exp slot declaration
+data/_csel/csel_Sbm.txt	other	147	fail	3	2	cannot brake deref/or comma needed after [exp]=exp slot declaration
+data/_csel/csel_Sha.txt	other	173	fail	3	2	cannot brake deref/or comma needed after [exp]=exp slot declaration
+data/_csel/csel_Slv.txt	other	147	fail	3	2	cannot brake deref/or comma needed after [exp]=exp slot declaration
+data/_csel/csel_Stm.txt	other	147	fail	3	2	cannot brake deref/or comma needed after [exp]=exp slot declaration
+data/_csel/csel_Tgr.txt	other	147	fail	3	2	cannot brake deref/or comma needed after [exp]=exp slot declaration
+data/_csel/csel_Tmk.txt	other	147	fail	3	2	cannot brake deref/or comma needed after [exp]=exp slot declaration
+data/_csel/csel_Yak.txt	other	147	fail	3	2	cannot brake deref/or comma needed after [exp]=exp slot declaration
+data/_csel/csel_Ykn.txt	other	147	fail	3	2	cannot brake deref/or comma needed after [exp]=exp slot declaration
+data/_csel/csel_Yuk.txt	other	147	fail	3	2	cannot brake deref/or comma needed after [exp]=exp slot declaration
+data/effect.txt	other	211	fail	3	2	cannot brake deref/or comma needed after [exp]=exp slot declaration
+script/Battle_Init.txt	squirrel	759	ok	0	0	
+script/Battle_Std.txt	squirrel	1426	ok	0	0	
+script/BtlFunc.txt	squirrel	6073	ok	0	0	
+script/btl_ChrTableFunc.txt	squirrel	78061	ok	0	0	
+script/btl_CmdCheck.txt	squirrel	18939	ok	0	0	
+script/btl_Define.txt	squirrel	89644	ok	0	0	
+script/btl_Define_LocalDebug - Hitbox Viewer.txt	squirrel	3776	ok	0	0	
+script/btl_Define_LocalDebug.txt	squirrel	3776	ok	0	0	
+script/btl_Define_NoLocalDebug.txt	squirrel	1993	ok	0	0	
+script/btl_MvFunc.txt	squirrel	257404	ok	0	0	
+script/btl_SEDefine.txt	squirrel	585	ok	0	0	
+script/btl_StdCommdandTbl.txt	squirrel	94175	ok	0	0	
+script/btl_StdMoveTbl.txt	squirrel	433567	ok	0	0	
+script/btl_Std_BattleStatusTbl.txt	squirrel	12384	ok	0	0	
+script/btl_SupportChrTableFunc.txt	squirrel	83198	ok	0	0	
+script/btl_debugFunc.txt	squirrel	8717	ok	0	0	
+script/sq_powerup.txt	squirrel	3001	ok	0	0	
+script/sq_stagebgm.txt	squirrel	478	ok	0	0	
