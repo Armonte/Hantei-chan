@@ -444,6 +444,7 @@ void MainFrame::DrawUi()
 	drawVarRefsWindow();
 	drawPatternManagerWindow();
 	drawCgManagerWindow();
+	stage3dview::Draw();
 	drawNotesWindow();
 	drawKeyBindingsWindow();
 	drawCompareWindow();

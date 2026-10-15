@@ -37,6 +37,7 @@
 #include "tag_panel.h"
 #include "authoring/authoring_window.h"
 #include "authoring/game_view.h"
+#include "stage3d/s3d_view.h"
 
 #include <imgui.h>
 #include <imgui_internal.h>

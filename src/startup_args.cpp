@@ -1,6 +1,7 @@
 // MainFrame startup actions (--open / --capture); see startup_args.h.
 #include "startup_args.h"
 #include "archive_browser.h"
+#include "stage3d/s3d_view.h"
 #include "authoring/authoring_window.h"
 #include "main_frame.h"
 #include "character_instance.h"
@@ -267,6 +268,12 @@ static void RunUiScript(MainFrame &mf, HDC dc, const std::function<void(const st
 		std::string msg;
 		if (mf.PatScriptCommand(cmd, arg, &msg)) {   // PAT editor commands (ui/pat_editor_impl.h)
 			if (!msg.empty()) { FILE *lf = fopen((gStartup.uiScript + ".log").c_str(), "a"); if (lf) { fprintf(lf, "%s\n", msg.c_str()); fclose(lf); } }
+			waitFrames = 3;
+			return;
+		}
+		if (stage3dview::ScriptCommand(cmd, arg, &msg)) {   // stage3d open|frame|cam|set|capture|status (stage3d/s3d_view.h)
+			FILE *lf = fopen((gStartup.uiScript + ".log").c_str(), "a");
+			if (lf) { fprintf(lf, "%s %s -> %s\n", cmd.c_str(), arg.c_str(), msg.c_str()); fclose(lf); }
 			waitFrames = 3;
 			return;
 		}

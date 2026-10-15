@@ -31,6 +31,8 @@ set(HAN2_MODEL_SOURCES src/framedata_han2.cpp src/han2/han2_container.cpp src/ha
 include_directories(SYSTEM "${CMAKE_SOURCE_DIR}/third_party/quill/include")
 
 # PovertyCaster pcmod packages (docs/modmanager/pcmod-manifest_schema1.md): manifest, digests, zip, pack/verify. Pure C++.
+# 3D stage view (docs/stage3d/SCOPE.md): fbxex model, DDS, BgList. The GL view (s3d_view.cpp) is editor-only.
+set(STAGE3D_SOURCES src/stage3d/s3d_model.cpp src/stage3d/s3d_dds.cpp src/stage3d/s3d_bglist.cpp)
 set(PCMOD_SOURCES src/pcmod/pcmod_sha256.cpp src/pcmod/pcmod_manifest.cpp src/pcmod/pcmod_zip.cpp src/pcmod/pcmod_package.cpp)
 
 add_executable(${EXE}
@@ -47,6 +49,7 @@ add_executable(${EXE}
 	src/mbaacc_pack.cpp
 	src/mbaacc_package.cpp
 	${PCMOD_SOURCES} src/pcmod/pcmod_vanilla.cpp src/pcmod/pcmod_export_ui.cpp
+	${STAGE3D_SOURCES} src/stage3d/s3d_view.cpp
 	src/vao.cpp
 	src/shader.cpp
 	src/texture.cpp
@@ -862,6 +865,13 @@ if(MINGW)
 	target_link_options(live_reload_test PRIVATE -static-libgcc -static-libstdc++ -static)
 endif()
 add_test(NAME live_reload COMMAND live_reload_test)
+
+add_executable(stage3d_test tests/stage3d_test.cpp ${STAGE3D_SOURCES})
+target_include_directories(stage3d_test PRIVATE "src")
+if(MINGW)
+	target_link_options(stage3d_test PRIVATE -static-libgcc -static-libstdc++ -static)
+endif()
+add_test(NAME stage3d COMMAND stage3d_test)
 
 add_executable(undo_manager_test tests/undo_manager_test.cpp src/undo_manager.cpp)
 target_include_directories(undo_manager_test PRIVATE "src")

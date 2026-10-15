@@ -837,6 +837,8 @@ void MainFrame::Menu(unsigned int errorPopupId)
 		}
 		if (ImGui::BeginMenu(LBL("Stage")))
 		{
+			stage3dview::MenuItem();
+			ImGui::Separator();
 			if (ImGui::MenuItem(LBL("Load Stage File...")))
 			{
 				std::string path = FileDialog(fileType::DAT, false);
