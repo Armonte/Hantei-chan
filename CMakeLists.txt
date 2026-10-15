@@ -1118,7 +1118,7 @@ add_test(NAME headless_export COMMAND bash tools/ui/headless_ctest.sh $<TARGET_F
 
 # CG manager core + command line (docs/cg/cg_manager_design.md)
 set(CGM_CORE_SOURCES src/cgm/cgm_bank.cpp src/cgm/cgm_ops.cpp src/cgm/cgm_export.cpp src/cgm/cgm_io.cpp src/cgm/cgm_palette.cpp src/cgm/cgm_struct.cpp src/cgm/cgm_folder.cpp src/cgm/cgm_ccpal.cpp)
-add_executable(cgmtool src/cgm/cgmtool.cpp src/cgm/cgmtool_ops.cpp src/cgm/fxr_cli.cpp src/cgm/fxr_core.cpp ${CGM_CORE_SOURCES} src/cgm/cgm_usage.cpp src/cgm/cgm_project.cpp src/framedata.cpp src/framedata_load.cpp src/framedata_save.cpp src/framedata_ha4.cpp ${HAN2_MODEL_SOURCES} src/cg.cpp src/misc.cpp src/png_writer.cpp tinyalloc/tinyalloc.c)
+add_executable(cgmtool src/cgm/cgmtool.cpp src/cgm/cgmtool_ops.cpp src/cgm/cgm_acmoon.cpp src/cgm/fxr_cli.cpp src/cgm/fxr_core.cpp ${CGM_CORE_SOURCES} src/cgm/cgm_usage.cpp src/cgm/cgm_project.cpp src/framedata.cpp src/framedata_load.cpp src/framedata_save.cpp src/framedata_ha4.cpp ${HAN2_MODEL_SOURCES} src/cg.cpp src/misc.cpp src/png_writer.cpp tinyalloc/tinyalloc.c)
 target_include_directories(cgmtool PRIVATE "." "src" "third_party" "${CMAKE_BINARY_DIR}/generated")
 target_compile_definitions(cgmtool PRIVATE WIN32_LEAN_AND_MEAN HA6GUIVERSION="${CMAKE_PROJECT_VERSION}")
 target_link_libraries(cgmtool PRIVATE tinyalloc windowscodecs ole32 uuid)
@@ -1156,6 +1156,16 @@ endif()
 fb_data_exists(_has "C:/dev/hantei-chan/gamedata/mbtl/BattleRes/talk/st_pat/chr012/chr012_ed00.pat")
 if(_has)
 	add_test(NAME pat_textures_x8 COMMAND pattex check C:/dev/hantei-chan/gamedata/mbtl/BattleRes/talk/st_pat/chr012/chr012_ed00.pat)
+endif()
+# ActCadenza moon-3 rebase (cgm_acmoon.cpp): sion has re-canvassed and missing images, nero the most missing ones.
+# The command re-reads its outputs and fails unless every CG reference resolves to the same picture.
+fb_data_exists(_has "C:/dev/hantei-chan/gamedata/mbac_to_cc/roster_v3/sion/sion.ha6")
+if(_has)
+	foreach(_c sion nero)
+		add_test(NAME cgm_ac_moon3_${_c} COMMAND cgmtool ac-moon3 C:/dev/hantei-chan/gamedata/mbac_to_cc/roster_v3/${_c}/${_c}.ha6
+			C:/dev/hantei-chan/gamedata/mbac_to_cc/roster_v3/${_c}/${_c}.cg C:/dev/hantei-chan/gamedata/mbaacc_ref/vanilla_0002/${_c}.cg
+			--ha6-out acm3_${_c}_3.HA6 --cg-out acm3_${_c}_3.cg)
+	endforeach()
 endif()
 fb_data_exists(_has "C:/dev/hantei-chan/gamedata/mbac/02/GAKIHA.DAT")
 if(_has)   # BMP Cutter2 (pre-baked pages) read from the .DAT: byte-exact, decode == CG, structure, edit locality
@@ -1221,7 +1231,7 @@ set_tests_properties(squirrel_doc_roundtrip PROPERTIES SKIP_RETURN_CODE 77)
 
 # Part set renumbering (src/parts/pat_renumber.h, Hantei_Docs/pat_renumber.md): the PAT editor's part set list and pattool.
 target_sources(${EXE} PRIVATE src/parts/pat_renumber.cpp src/PatEditor/pat_partset_renumber.cpp)
-add_executable(pattool src/pattool.cpp src/parts/pat_renumber.cpp src/parts/parts_undo.cpp src/undo_manager.cpp src/file_backup.cpp
+add_executable(pattool src/pattool.cpp src/parts/pat_renumber.cpp src/parts/pat_append.cpp src/parts/pat_texconv.cpp src/parts/parts_undo.cpp src/undo_manager.cpp src/file_backup.cpp
 	src/parts/parts.cpp src/app_log.cpp src/parts/parts_part.cpp src/parts/parts_partset.cpp src/parts/parts_shape.cpp src/parts/parts_texture.cpp
 	src/cgm/cgm_project.cpp src/cgm/cgm_usage.cpp src/framedata.cpp src/framedata_load.cpp src/framedata_save.cpp src/framedata_ha4.cpp ${HAN2_MODEL_SOURCES}
 	src/cg.cpp src/texture.cpp src/vao.cpp src/shader.cpp src/misc.cpp src/png_writer.cpp tinyalloc/tinyalloc.c)
@@ -1242,4 +1252,21 @@ if(_has)
 	add_test(NAME pat_renumber_csel007_delete COMMAND pattool check C:/dev/hantei-chan/gamedata/uni2/data/_csel/csel_chr007.pat --tmp pat_rn6 --insert 2:5 --delete 2-6 --clear 700-720)
 	add_test(NAME pat_renumber_effect COMMAND pattool check C:/dev/hantei-chan/gamedata/uni2/data/sys_effect.pat --tmp pat_rn4 --insert 0:2)
 	set_tests_properties(pat_renumber_csel007_move pat_renumber_csel023_ops pat_renumber_csel018_ops pat_renumber_csel018_refuse pat_renumber_csel007_delete pat_renumber_effect PROPERTIES WORKING_DIRECTORY ${CMAKE_BINARY_DIR})
+endif()
+# Appending part sets of one .pat to another (src/parts/pat_append.h): the ActCadenza moon-3 part sets into MBAACC's
+# .pat. The destination's own records stay byte-identical; each appended part set draws the same parts, cut-outs,
+# shapes and texture pixels as in the source.
+fb_data_exists(_has "C:/dev/hantei-chan/gamedata/mbac_to_cc/roster_v3/arc/arc.pat")
+fb_data_exists(_has2 "C:/dev/hantei-chan/gamedata/mbaacc_ref/vanilla_0002/arc.pat")
+if(_has AND _has2)
+	add_test(NAME pat_append_arc COMMAND pattool append-check C:/dev/hantei-chan/gamedata/mbaacc_ref/vanilla_0002/arc.pat C:/dev/hantei-chan/gamedata/mbac_to_cc/roster_v3/arc/arc.pat --tmp pat_ap1)
+	add_test(NAME pat_append_warc COMMAND pattool append-check C:/dev/hantei-chan/gamedata/mbaacc_ref/vanilla_0002/warc.pat C:/dev/hantei-chan/gamedata/mbac_to_cc/roster_v3/warc/warc.pat --tmp pat_ap2)
+	add_test(NAME pat_append_hisui_sets COMMAND pattool append-check C:/dev/hantei-chan/gamedata/mbaacc_ref/vanilla_0002/hisui.pat C:/dev/hantei-chan/gamedata/mbac_to_cc/roster_v3/hisui/hisui.pat --tmp pat_ap3 --sets 0-10,30-40)
+	set_tests_properties(pat_append_arc pat_append_warc pat_append_hisui_sets PROPERTIES WORKING_DIRECTORY ${CMAKE_BINARY_DIR})
+	fb_data_exists(_has3 "C:/dev/hantei-chan/gamedata/uni2/data/_csel/csel_chr007.pat")
+	if(_has3)
+		# MBAACC PGTX source into a UNI2 .pat: textures re-encoded as A8R8G8B8 PGT2, cut-outs drawn with a plane shape
+		add_test(NAME pat_append_mbaacc_to_uni2 COMMAND pattool append-check C:/dev/hantei-chan/gamedata/uni2/data/_csel/csel_chr007.pat C:/dev/hantei-chan/gamedata/mbac_to_cc/roster_v3/arc/arc.pat --tmp pat_ap4 --sets 0-30)
+		set_tests_properties(pat_append_mbaacc_to_uni2 PROPERTIES WORKING_DIRECTORY ${CMAKE_BINARY_DIR})
+	endif()
 endif()

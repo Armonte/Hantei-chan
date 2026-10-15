@@ -434,12 +434,14 @@ static int CmdRefsCheck(int argc, char **argv) {
 }
 
 int FxrMain(int argc, char **argv);   // fxr_cli.cpp
+int CmdAcMoon3(int argc, char **argv);   // cgm_acmoon.cpp
 int OpsMain(const std::string &c, int argc, char **argv);   // cgmtool_ops.cpp: structural edits, folders, projects, palettes, CC export
 
 int main(int argc, char **argv) {
 	if (argc < 2) { puts("usage: cgmtool check|info|export|import|roundtrip ..."); return 2; }
 	std::string c = argv[1];
 	{ const int r = OpsMain(c, argc - 2, argv + 2); if (r != -1) return r; }
+	if (c == "ac-moon3") return CmdAcMoon3(argc - 2, argv + 2);
 	if (c == "check") return CmdCheck(argc - 2, argv + 2);
 	if (c == "info") return CmdInfo(argc - 2, argv + 2);
 	if (c == "export") return CmdExport(argc - 2, argv + 2);
