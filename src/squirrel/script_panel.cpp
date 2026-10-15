@@ -195,6 +195,18 @@ const char* EngineTableNote(const std::string& t)
 	return "engine native (from the game executable)";
 }
 
+// Text colours that stay readable on both the dark and the light (cream) theme.
+bool LightTheme()
+{
+	const ImVec4 b = ImGui::GetStyle().Colors[ImGuiCol_WindowBg];
+	return 0.299f * b.x + 0.587f * b.y + 0.114f * b.z > 0.5f;
+}
+ImVec4 EngineCol() { return LightTheme() ? ImVec4(0.1f, 0.35f, 0.75f, 1) : EngineCol(); }
+ImVec4 ScriptCol() { return LightTheme() ? ImVec4(0.1f, 0.5f, 0.15f, 1) : ScriptCol(); }
+ImVec4 WarnCol() { return LightTheme() ? ImVec4(0.65f, 0.38f, 0, 1) : ImVec4(1, 0.8f, 0.4f, 1); }
+ImVec4 ErrCol() { return LightTheme() ? ImVec4(0.75f, 0.1f, 0.05f, 1) : ImVec4(1, 0.45f, 0.4f, 1); }
+ImVec4 ArgCol() { return LightTheme() ? ImVec4(0.75f, 0.35f, 0, 1) : ImVec4(1, 0.85f, 0.3f, 1); }
+
 struct ScriptPanel::Impl {
 	TextEditor editor;
 	ScriptDocument doc;
@@ -479,18 +491,18 @@ struct ScriptPanel::Impl {
 		ImGui::BeginTooltip();
 		ImGui::PushTextWrapPos(ImGui::GetFontSize() * 40);
 		if (isTable) {
-			ImGui::TextColored(ImVec4(0.55f, 0.8f, 1, 1), "[engine]"); ImGui::SameLine();
+			ImGui::TextColored(EngineCol(), "[engine]"); ImGui::SameLine();
 			ImGui::Text("%s: %s (%zu natives)", word.c_str(), EngineTableNote(word), apiByTable.at(word).size());
 		}
 		for (const auto& e : engine) {
-			ImGui::TextColored(ImVec4(0.55f, 0.8f, 1, 1), "[engine]"); ImGui::SameLine();
+			ImGui::TextColored(EngineCol(), "[engine]"); ImGui::SameLine();
 			ImGui::TextUnformatted(e.c_str());
 		}
 		if (!engine.empty()) ImGui::TextDisabled("%s", (game + " native in the game executable (" + EngineTableNote(own.empty() ? it->second.front().table : own) + ")").c_str());
 		int shown = 0;
 		for (const ScriptDef* d : defs) {
 			if (shown++ == 4) { ImGui::TextDisabled("... %zu more definitions", defs.size() - 4); break; }
-			ImGui::TextColored(ImVec4(0.6f, 0.95f, 0.6f, 1), "[script]"); ImGui::SameLine();
+			ImGui::TextColored(ScriptCol(), "[script]"); ImGui::SameLine();
 			std::string head = (d->owner.empty() ? "" : d->owner + ".") + d->name;
 			if (d->kind == ScriptDef::Function) head += "(" + d->params + ")";
 			if (d->kind == ScriptDef::Const) head += " = " + d->value;
@@ -555,7 +567,7 @@ struct ScriptPanel::Impl {
 			if (ImGui::Selectable(hits[i]->c_str(), i == acSel)) chosen = hits[i];
 			if (t != acTag.end()) {
 				ImGui::SameLine(160);
-				ImGui::TextColored(t->second.rfind("[engine]", 0) == 0 ? ImVec4(0.55f, 0.8f, 1, 1) : ImVec4(0.6f, 0.95f, 0.6f, 1), "%s", t->second.c_str());
+				ImGui::TextColored(t->second.rfind("[engine]", 0) == 0 ? EngineCol() : ScriptCol(), "%s", t->second.c_str());
 			}
 			if (i == acSel && (ImGui::IsKeyPressed(ImGuiKey_DownArrow) || ImGui::IsKeyPressed(ImGuiKey_UpArrow))) ImGui::SetScrollHereY();
 		}
@@ -589,22 +601,36 @@ struct ScriptPanel::Impl {
 		return true;
 	}
 
-	// Every pattern / code-name / frame-id reference in the current file, for the HA6 checks.
+	// Every pattern / code-name / frame-id reference in the current file that points into the character's own HA6, for
+	// the HA6 checks. Skipped: objects created with datatype=N (they read the effect HA6), and `case N` labels unless the
+	// switch is over the character's own frame id (GetUpdateFrameID() with no argument; with one it is a spawned object's).
 	std::vector<std::pair<int, PatRef>> scanRefs() const
 	{
 		std::vector<std::pair<int, PatRef>> out;
 		static const std::regex num(R"((?:\bpat|\bstart_pat|\bDataPattern|SetPattern)\s*[=(]\s*(\d+))");
-		static const std::regex code(R"((?:\bpat|\bstart_pat|\bDataPattern|SetPattern)\s*[=(]\s*"([^"]+)")");
-		static const std::regex afid(R"((?:JumpFrameID\s*\(\s*|\bcase\s+)(\d+))");
+		static const std::regex code(R"re((?:\bpat|\bstart_pat|\bDataPattern|SetPattern)\s*[=(]\s*"([^"]+)")re");
+		static const std::regex jump(R"((?:^|[^.\w]|\bBMvTbl\.)JumpFrameID\s*\(\s*(\d+))");
+		static const std::regex caseN(R"(\bcase\s+(\d+))");
+		static const std::regex sw(R"(\bswitch\s*\((.*)\))");
+		static const std::regex selfFrame(R"(GetUpdateFrameID\s*\(\s*\))");
+		static const std::regex otherData(R"(\bdatatype\s*=\s*[1-9])");
 		static const std::regex defpat(R"(\b(def_PAT_\w+))");
 		const size_t n = editor.GetLineCount();
+		bool frameSwitch = false;
 		for (size_t i = 0; i < n; ++i) {
 			std::string l = editor.GetLineText(i);
 			const size_t c = l.find("//");
 			if (c != std::string::npos) l.resize(c);
-			for (std::sregex_iterator it(l.begin(), l.end(), num), e; it != e; ++it) { PatRef r; r.pattern = std::stoi((*it)[1].str()); out.push_back({(int)i, r}); }
-			for (std::sregex_iterator it(l.begin(), l.end(), code), e; it != e; ++it) { PatRef r; r.code = (*it)[1].str(); out.push_back({(int)i, r}); }
-			for (std::sregex_iterator it(l.begin(), l.end(), afid), e; it != e; ++it) { PatRef r; r.afid = std::stoi((*it)[1].str()); out.push_back({(int)i, r}); }
+			std::smatch m;
+			if (std::regex_search(l, m, sw)) frameSwitch = std::regex_search(m[1].str(), selfFrame);
+			const bool effectData = std::regex_search(l, otherData) || (i + 1 < n && std::regex_search(editor.GetLineText(i + 1), otherData));
+			if (!effectData) {
+				for (std::sregex_iterator it(l.begin(), l.end(), num), e; it != e; ++it) { PatRef r; r.pattern = std::stoi((*it)[1].str()); out.push_back({(int)i, r}); }
+				for (std::sregex_iterator it(l.begin(), l.end(), code), e; it != e; ++it) { PatRef r; r.code = (*it)[1].str(); out.push_back({(int)i, r}); }
+			}
+			for (std::sregex_iterator it(l.begin(), l.end(), jump), e; it != e; ++it) { PatRef r; r.afid = std::stoi((*it)[1].str()); out.push_back({(int)i, r}); }
+			if (frameSwitch)
+				for (std::sregex_iterator it(l.begin(), l.end(), caseN), e; it != e; ++it) { PatRef r; r.afid = std::stoi((*it)[1].str()); out.push_back({(int)i, r}); }
 			for (std::sregex_iterator it(l.begin(), l.end(), defpat), e; it != e; ++it) {
 				const auto k = consts.find((*it)[1].str());
 				if (k != consts.end()) { PatRef r; r.pattern = k->second; out.push_back({(int)i, r}); }
@@ -817,13 +843,13 @@ struct ScriptPanel::Impl {
 		const ImVec2 pos = editor.DocPos2ScreenPos(cur);
 		ImGui::SetNextWindowPos(ImVec2(pos.x, pos.y - editor.GetLineHeight() * 2.2f));
 		ImGui::BeginTooltip();
-		ImGui::TextColored(engine ? ImVec4(0.55f, 0.8f, 1, 1) : ImVec4(0.6f, 0.95f, 0.6f, 1), "%s", engine ? "[engine]" : "[script]");
+		ImGui::TextColored(engine ? EngineCol() : ScriptCol(), "%s", engine ? "[engine]" : "[script]");
 		ImGui::SameLine();
 		ImGui::TextUnformatted((head + "(").c_str());
 		for (size_t i = 0; i < params.size(); ++i) {
 			ImGui::SameLine(0, 0);
 			const std::string t = params[i] + (i + 1 < params.size() ? ", " : "");
-			if ((int)i == arg) ImGui::TextColored(ImVec4(1, 0.85f, 0.3f, 1), "%s", t.c_str());
+			if ((int)i == arg) ImGui::TextColored(ArgCol(), "%s", t.c_str());
 			else ImGui::TextUnformatted(t.c_str());
 		}
 		ImGui::SameLine(0, 0);
@@ -836,9 +862,10 @@ struct ScriptPanel::Impl {
 	void drawBottom()
 	{
 		ImGui::BeginChild("##bottom", ImVec2(0, 0), ImGuiChildFlags_Borders);
+		const int want = selectBottomTab ? bottomTab : -1;
 		if (ImGui::BeginTabBar("##btabs")) {
 			auto tab = [&](const char* label, int id) {
-				const bool sel = selectBottomTab && bottomTab == id;
+				const bool sel = want == id;
 				const bool open = ImGui::BeginTabItem(label, nullptr, sel ? ImGuiTabItemFlags_SetSelected : 0);
 				if (open) bottomTab = id;
 				return open;
@@ -877,9 +904,11 @@ struct ScriptPanel::Impl {
 				ImGui::SameLine();
 			}
 			const std::string label = p.file + ":" + std::to_string(p.line + 1) + "  " + p.message;
-			ImGui::PushStyleColor(ImGuiCol_Text, p.severity == ScriptProblem::Error ? ImVec4(1, 0.45f, 0.4f, 1) : ImVec4(1, 0.8f, 0.4f, 1));
-			if (ImGui::Selectable(label.c_str())) openAt(p.file, p.line, p.col);
+			ImGui::PushStyleColor(ImGuiCol_Text, p.severity == ScriptProblem::Error ? ErrCol() : WarnCol());
+			const bool go = ImGui::Selectable(label.c_str());
 			ImGui::PopStyleColor();
+			if (ImGui::IsItemHovered()) { ImGui::BeginTooltip(); ImGui::PushTextWrapPos(ImGui::GetFontSize() * 40); ImGui::TextUnformatted(p.message.c_str()); ImGui::PopTextWrapPos(); ImGui::EndTooltip(); }
+			if (go) { const ScriptProblem copy = p; openAt(copy.file, copy.line, copy.col); ImGui::PopID(); break; }
 			ImGui::PopID();
 		}
 		ImGui::EndChild();
@@ -935,8 +964,8 @@ struct ScriptPanel::Impl {
 			ImGui::TextUnformatted("These moves are referenced but not found in the character's mv file:");
 			for (const auto& p : pendingMissing) {
 				ImGui::BulletText("%s  (line %d)", p.fixArg.c_str(), p.line + 1);
-				const std::string near = index.nearestMove(p.fixArg, CharDirOf(p.file));
-				if (!near.empty() && near != p.fixArg) { ImGui::SameLine(); ImGui::TextDisabled("did you mean %s?", near.c_str()); }
+				const std::string guess = index.nearestMove(p.fixArg, CharDirOf(p.file));
+				if (!guess.empty() && guess != p.fixArg) { ImGui::SameLine(); ImGui::TextDisabled("did you mean %s?", guess.c_str()); }
 			}
 			ImGui::Spacing();
 			ImGui::PushTextWrapPos(ImGui::GetFontSize() * 34);
@@ -1058,6 +1087,47 @@ bool ScriptPanel::openFile(const std::string& pathUtf8, std::string* error)
 	return true;
 }
 
+bool ScriptPanel::scriptCommand(const std::string& sub, const std::string& arg, std::string* msg)
+{
+	std::string out, err;
+	if (sub == "open") { if (!openGameRoot(arg, "", &err)) out = err; else out = m->status; }
+	else if (sub == "file") { if (!openFile(ToU8(U8(m->root) / U8(arg)), &err)) out = err; else out = std::to_string(m->problems.size()) + " problem(s)"; }
+	else if (sub == "goto") {
+		int line = 0, col = 0;
+		sscanf(arg.c_str(), "%d %d", &line, &col);
+		m->openAt(m->currentRel, line - 1, col);
+		m->editor.SelectRegion(TextEditor::DocPos(line - 1, col), TextEditor::DocPos(line - 1, col));
+	}
+	else if (sub == "search") { snprintf(m->searchBuf, sizeof m->searchBuf, "%s", arg.c_str()); m->runSearch(); m->bottomTab = 2; m->selectBottomTab = true; out = m->hitsTitle; }
+	else if (sub == "usages") { m->findUsages(arg); out = m->hitsTitle; }
+	else if (sub == "state") out = std::to_string(m->problems.size()) + " problem(s), tab " + std::to_string(m->bottomTab) + ", lastEdit " + std::to_string(m->lastEditTime) + ", " + std::to_string(m->hits.size()) + " hit(s)";
+	else if (sub == "tab") { m->bottomTab = atoi(arg.c_str()); m->selectBottomTab = true; }
+	else if (sub == "type") { m->editor.ReplaceTextInCurrentCursor(arg); }
+	else if (sub == "problems") {
+		m->recheck();
+		out = std::to_string(m->problems.size()) + " problem(s)";
+		for (const auto& p : m->problems) out += "\n  " + p.file + ":" + std::to_string(p.line + 1) + " " + p.message;
+	}
+	else if (sub == "fix") {
+		const size_t i = static_cast<size_t>(atoi(arg.c_str()));
+		if (i < m->problems.size() && m->problems[i].fix == ScriptProblem::CreateMoveTable) {
+			const ScriptProblem p = m->problems[i];
+			out = m->addMoveStub(p.fixArg, p.fixFile) ? "added " + p.fixArg + " to " + p.fixFile : m->status;
+			m->recheck();
+		} else out = "no fix for problem " + arg;
+	}
+	else if (sub == "complete") {
+		const std::string own = arg;
+		m->acOwner = own;
+		m->collectWords();
+		out = std::to_string(m->acWords.size()) + " candidate(s)";
+		for (size_t i = 0; i < m->acWords.size() && i < 12; ++i) out += "\n  " + m->acWords[i] + "  " + m->acTag[m->acWords[i]];
+	}
+	else return false;
+	if (msg) *msg = out;
+	return true;
+}
+
 void ScriptPanel::draw()
 {
 	m_focused = false;
@@ -1106,7 +1176,7 @@ void ScriptPanel::draw()
 	}
 	if (!m->status.empty()) {
 		ImGui::SameLine();
-		ImGui::TextColored(m->statusError ? ImVec4(1, 0.45f, 0.4f, 1) : ImVec4(0.6f, 0.9f, 0.6f, 1), "%s", m->status.c_str());
+		ImGui::TextColored(m->statusError ? ErrCol() : ScriptCol(), "%s", m->status.c_str());
 	}
 
 	const float listW = 260.0f, logH = 190.0f;

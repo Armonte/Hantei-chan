@@ -593,6 +593,12 @@ bool MainFrame::PatScriptCommand(const std::string& cmd, const std::string& arg,
 {
 	CharacterView* view = getActiveView();
 	CharacterInstance* ch = view ? view->getCharacter() : nullptr;
+	if (cmd == "sq") {   // Squirrel Script panel (squirrel/script_panel.h scriptCommand)
+		if (!scriptPanel) { scriptPanel = std::make_unique<sqedit::ScriptPanel>(); wireScriptPanel(); }
+		scriptPanel->setVisible(true);
+		const size_t sp = arg.find(' ');
+		return scriptPanel->scriptCommand(arg.substr(0, sp), sp == std::string::npos ? "" : arg.substr(sp + 1), msg), true;
+	}
 	if (cmd == "patopen") { createPatEditorView(arg); return true; }
 	if (cmd == "newpat") { createNewPatView(arg == "mbaacc"); return true; }
 	if (cmd == "prefswindow") { m_showPatPrefs = arg != "off"; return true; }
