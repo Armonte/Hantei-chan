@@ -1,0 +1,6339 @@
+[
+ {
+  "kind": "var",
+  "name": "Winner",
+  "table": "CStatus",
+  "regfunc": "0x72d530",
+  "ea": "0x72d596",
+  "offset": "16",
+  "vartype": "Sqrat_Class_VarA_46B6F0",
+  "qualified_table": "tSceneWinDemo.CStatus"
+ },
+ {
+  "kind": "var",
+  "name": "WinnerNum",
+  "table": "CStatus",
+  "regfunc": "0x72d530",
+  "ea": "0x72d5a5",
+  "offset": "44",
+  "vartype": "Sqrat_Class_VarA_46B750",
+  "qualified_table": "tSceneWinDemo.CStatus"
+ },
+ {
+  "kind": "var",
+  "name": "Player",
+  "table": "CStatus",
+  "regfunc": "0x72d530",
+  "ea": "0x72d5b4",
+  "offset": "8",
+  "vartype": "Sqrat_Class_VarA_46B750",
+  "qualified_table": "tSceneWinDemo.CStatus"
+ },
+ {
+  "kind": "var",
+  "name": "Stage",
+  "table": "CStatus",
+  "regfunc": "0x72d530",
+  "ea": "0x72d5c3",
+  "offset": "0",
+  "vartype": "Sqrat_Class_VarA_46B750",
+  "qualified_table": "tSceneWinDemo.CStatus"
+ },
+ {
+  "kind": "var",
+  "name": "NextStage",
+  "table": "CStatus",
+  "regfunc": "0x72d530",
+  "ea": "0x72d5d2",
+  "offset": "4",
+  "vartype": "Sqrat_Class_VarA_46B750",
+  "qualified_table": "tSceneWinDemo.CStatus"
+ },
+ {
+  "kind": "table",
+  "name": "CStatus",
+  "table": "tSceneWinDemo",
+  "regfunc": "0x72d530",
+  "ea": "0x72d5e3"
+ },
+ {
+  "kind": "func",
+  "name": "GetStatus",
+  "table": "tSceneWinDemo",
+  "regfunc": "0x72d530",
+  "ea": "0x72d601",
+  "native": "sub_72D3A0",
+  "wrapper": "sub_72D3A0",
+  "ret": "int",
+  "args": [],
+  "qualified_table": "tSceneWinDemo"
+ },
+ {
+  "kind": "table",
+  "name": "tSceneWinDemo",
+  "table": "",
+  "regfunc": "0x72d530",
+  "ea": "0x72d62b"
+ },
+ {
+  "kind": "var",
+  "name": "Player1",
+  "table": "CPlayerSt",
+  "regfunc": "0x72df60",
+  "ea": "0x72dfc6",
+  "offset": "8",
+  "vartype": "Sqrat_Class_VarA_46AB70",
+  "qualified_table": "tSceneVS.CPlayerSt"
+ },
+ {
+  "kind": "var",
+  "name": "Player2",
+  "table": "CPlayerSt",
+  "regfunc": "0x72df60",
+  "ea": "0x72dfd5",
+  "offset": "36",
+  "vartype": "Sqrat_Class_VarA_46AB70",
+  "qualified_table": "tSceneVS.CPlayerSt"
+ },
+ {
+  "kind": "table",
+  "name": "CPlayerSt",
+  "table": "tSceneVS",
+  "regfunc": "0x72df60",
+  "ea": "0x72dfe6"
+ },
+ {
+  "kind": "func",
+  "name": "GetStatus",
+  "table": "tSceneVS",
+  "regfunc": "0x72df60",
+  "ea": "0x72e004",
+  "native": "sub_72DF00",
+  "wrapper": "sub_72DF00",
+  "ret": "int",
+  "args": [],
+  "qualified_table": "tSceneVS"
+ },
+ {
+  "kind": "table",
+  "name": "tSceneVS",
+  "table": "",
+  "regfunc": "0x72df60",
+  "ea": "0x72e02e"
+ },
+ {
+  "kind": "func",
+  "name": "write",
+  "table": "debuglog",
+  "regfunc": "0x730270",
+  "ea": "0x7302ca",
+  "native": "sub_72FF90",
+  "wrapper": "sub_72FF90",
+  "ret": "void",
+  "args": [],
+  "qualified_table": "debuglog"
+ },
+ {
+  "kind": "func",
+  "name": "write_r",
+  "table": "debuglog",
+  "regfunc": "0x730270",
+  "ea": "0x7302dc",
+  "native": "sub_72FF80",
+  "wrapper": "sub_72FF80",
+  "ret": "void",
+  "args": [],
+  "qualified_table": "debuglog"
+ },
+ {
+  "kind": "table",
+  "name": "debuglog",
+  "table": "",
+  "regfunc": "0x730270",
+  "ea": "0x730312"
+ },
+ {
+  "kind": "func",
+  "name": "GetHP",
+  "table": "BCMDTbl",
+  "regfunc": "0x730270",
+  "ea": "0x730357",
+  "native": "sub_464A20",
+  "wrapper": "sub_464A20",
+  "ret": "int",
+  "args": [],
+  "qualified_table": "BCMDTbl"
+ },
+ {
+  "kind": "func",
+  "name": "GetHPRatio",
+  "table": "BCMDTbl",
+  "regfunc": "0x730270",
+  "ea": "0x730369",
+  "native": "sub_464A50",
+  "wrapper": "sub_464A50",
+  "ret": "int",
+  "args": [],
+  "qualified_table": "BCMDTbl"
+ },
+ {
+  "kind": "func",
+  "name": "GetComboGauge",
+  "table": "BCMDTbl",
+  "regfunc": "0x730270",
+  "ea": "0x73037b",
+  "native": "sub_464AD0",
+  "wrapper": "sub_464AD0",
+  "ret": "int",
+  "args": [],
+  "qualified_table": "BCMDTbl"
+ },
+ {
+  "kind": "func",
+  "name": "CheckPosState",
+  "table": "BCMDTbl",
+  "regfunc": "0x730270",
+  "ea": "0x73038d",
+  "native": "sub_45E780",
+  "wrapper": "sub_45E780",
+  "ret": "int",
+  "args": [
+   "int"
+  ],
+  "qualified_table": "BCMDTbl"
+ },
+ {
+  "kind": "func",
+  "name": "IsMoveAble",
+  "table": "BCMDTbl",
+  "regfunc": "0x730270",
+  "ea": "0x73039f",
+  "native": "sub_464B00",
+  "wrapper": "sub_464B00",
+  "ret": "int",
+  "args": [],
+  "qualified_table": "BCMDTbl"
+ },
+ {
+  "kind": "func",
+  "name": "IsAddCommand",
+  "table": "BCMDTbl",
+  "regfunc": "0x730270",
+  "ea": "0x7303b1",
+  "native": "sub_464B30",
+  "wrapper": "sub_464B30",
+  "ret": "int",
+  "args": [],
+  "qualified_table": "BCMDTbl"
+ },
+ {
+  "kind": "func",
+  "name": "CheckPattern",
+  "table": "BCMDTbl",
+  "regfunc": "0x730270",
+  "ea": "0x7303c3",
+  "native": "sub_464B60",
+  "wrapper": "sub_464B60",
+  "ret": "int",
+  "args": [
+   "int"
+  ],
+  "qualified_table": "BCMDTbl"
+ },
+ {
+  "kind": "func",
+  "name": "GetFrameID",
+  "table": "BCMDTbl",
+  "regfunc": "0x730270",
+  "ea": "0x7303d5",
+  "native": "sub_45EA40",
+  "wrapper": "sub_45EA40",
+  "ret": "int",
+  "args": [],
+  "qualified_table": "BCMDTbl"
+ },
+ {
+  "kind": "func",
+  "name": "CheckFireballLimit",
+  "table": "BCMDTbl",
+  "regfunc": "0x730270",
+  "ea": "0x7303e7",
+  "native": "sub_464D90",
+  "wrapper": "sub_464D90",
+  "ret": "int",
+  "args": [
+   "int"
+  ],
+  "qualified_table": "BCMDTbl"
+ },
+ {
+  "kind": "func",
+  "name": "CheckState",
+  "table": "BCMDTbl",
+  "regfunc": "0x730270",
+  "ea": "0x7303f9",
+  "native": "sub_730030",
+  "wrapper": "sub_730030",
+  "ret": "int",
+  "args": [
+   "int"
+  ],
+  "qualified_table": "BCMDTbl"
+ },
+ {
+  "kind": "func",
+  "name": "CheckCancel",
+  "table": "BCMDTbl",
+  "regfunc": "0x730270",
+  "ea": "0x73040b",
+  "native": "sub_464E60",
+  "wrapper": "sub_464E60",
+  "ret": "int",
+  "args": [
+   "int"
+  ],
+  "qualified_table": "BCMDTbl"
+ },
+ {
+  "kind": "func",
+  "name": "CheckDash",
+  "table": "BCMDTbl",
+  "regfunc": "0x730270",
+  "ea": "0x73041d",
+  "native": "sub_464E90",
+  "wrapper": "sub_464E90",
+  "ret": "int",
+  "args": [
+   "int",
+   "int"
+  ],
+  "qualified_table": "BCMDTbl"
+ },
+ {
+  "kind": "func",
+  "name": "CheckAirJump",
+  "table": "BCMDTbl",
+  "regfunc": "0x730270",
+  "ea": "0x73042f",
+  "native": "sub_464F20",
+  "wrapper": "sub_464F20",
+  "ret": "int",
+  "args": [
+   "int"
+  ],
+  "qualified_table": "BCMDTbl"
+ },
+ {
+  "kind": "func",
+  "name": "CheckComboLimit",
+  "table": "BCMDTbl",
+  "regfunc": "0x730270",
+  "ea": "0x730441",
+  "native": "sub_464E10",
+  "wrapper": "sub_464E10",
+  "ret": "int",
+  "args": [
+   "int"
+  ],
+  "qualified_table": "BCMDTbl"
+ },
+ {
+  "kind": "func",
+  "name": "CheckUserParam",
+  "table": "BCMDTbl",
+  "regfunc": "0x730270",
+  "ea": "0x730453",
+  "native": "sub_464DD0",
+  "wrapper": "sub_464DD0",
+  "ret": "int",
+  "args": [
+   "int"
+  ],
+  "qualified_table": "BCMDTbl"
+ },
+ {
+  "kind": "func",
+  "name": "CheckSeedCost",
+  "table": "BCMDTbl",
+  "regfunc": "0x730270",
+  "ea": "0x730465",
+  "native": "sub_72FF70",
+  "wrapper": "sub_72FF70",
+  "ret": "int",
+  "args": [],
+  "qualified_table": "BCMDTbl"
+ },
+ {
+  "kind": "func",
+  "name": "CheckMoveName",
+  "table": "BCMDTbl",
+  "regfunc": "0x730270",
+  "ea": "0x730477",
+  "native": "sub_7300B0",
+  "wrapper": "sub_7300B0",
+  "ret": "int",
+  "args": [
+   "int"
+  ],
+  "qualified_table": "BCMDTbl"
+ },
+ {
+  "kind": "func",
+  "name": "SetSpUseBufferTmp",
+  "table": "BCMDTbl",
+  "regfunc": "0x730270",
+  "ea": "0x730489",
+  "native": "sub_4593B0",
+  "wrapper": "sub_4593B0",
+  "ret": "int",
+  "args": [
+   "int"
+  ],
+  "qualified_table": "BCMDTbl"
+ },
+ {
+  "kind": "table",
+  "name": "BCMDTbl",
+  "table": "",
+  "regfunc": "0x730270",
+  "ea": "0x7304bf"
+ },
+ {
+  "kind": "const",
+  "name": "_PosState_Stand",
+  "table": "BCMDConst",
+  "regfunc": "0x730270",
+  "ea": "0x730501",
+  "value": "1",
+  "qualified_table": "BCMDConst"
+ },
+ {
+  "kind": "const",
+  "name": "_PosState_Air",
+  "table": "BCMDConst",
+  "regfunc": "0x730270",
+  "ea": "0x730510",
+  "value": "2",
+  "qualified_table": "BCMDConst"
+ },
+ {
+  "kind": "const",
+  "name": "_PosState_Crouch",
+  "table": "BCMDConst",
+  "regfunc": "0x730270",
+  "ea": "0x73051f",
+  "value": "4",
+  "qualified_table": "BCMDConst"
+ },
+ {
+  "kind": "const",
+  "name": "_PosState_Ground",
+  "table": "BCMDConst",
+  "regfunc": "0x730270",
+  "ea": "0x73052e",
+  "value": "5",
+  "qualified_table": "BCMDConst"
+ },
+ {
+  "kind": "const",
+  "name": "_PosState_Always",
+  "table": "BCMDConst",
+  "regfunc": "0x730270",
+  "ea": "0x73053d",
+  "value": "7",
+  "qualified_table": "BCMDConst"
+ },
+ {
+  "kind": "const",
+  "name": "_SkillType_None",
+  "table": "BCMDConst",
+  "regfunc": "0x730270",
+  "ea": "0x73054c",
+  "value": "0",
+  "qualified_table": "BCMDConst"
+ },
+ {
+  "kind": "const",
+  "name": "_SkillType_Normal",
+  "table": "BCMDConst",
+  "regfunc": "0x730270",
+  "ea": "0x73055b",
+  "value": "1",
+  "qualified_table": "BCMDConst"
+ },
+ {
+  "kind": "const",
+  "name": "_SkillType_Special",
+  "table": "BCMDConst",
+  "regfunc": "0x730270",
+  "ea": "0x73056a",
+  "value": "2",
+  "qualified_table": "BCMDConst"
+ },
+ {
+  "kind": "const",
+  "name": "_SkillType_ExSpecial",
+  "table": "BCMDConst",
+  "regfunc": "0x730270",
+  "ea": "0x730579",
+  "value": "6",
+  "qualified_table": "BCMDConst"
+ },
+ {
+  "kind": "const",
+  "name": "_SkillType_Ex",
+  "table": "BCMDConst",
+  "regfunc": "0x730270",
+  "ea": "0x730588",
+  "value": "4",
+  "qualified_table": "BCMDConst"
+ },
+ {
+  "kind": "const",
+  "name": "_SkillType_ChainShift",
+  "table": "BCMDConst",
+  "regfunc": "0x730270",
+  "ea": "0x730597",
+  "value": "8",
+  "qualified_table": "BCMDConst"
+ },
+ {
+  "kind": "const",
+  "name": "_State_Guard",
+  "table": "BCMDConst",
+  "regfunc": "0x730270",
+  "ea": "0x7305a6",
+  "value": "1",
+  "qualified_table": "BCMDConst"
+ },
+ {
+  "kind": "const",
+  "name": "_State_GuardCancel",
+  "table": "BCMDConst",
+  "regfunc": "0x730270",
+  "ea": "0x7305b5",
+  "value": "2",
+  "qualified_table": "BCMDConst"
+ },
+ {
+  "kind": "table",
+  "name": "BCMDConst",
+  "table": "",
+  "regfunc": "0x730270",
+  "ea": "0x7305ee"
+ },
+ {
+  "kind": "func",
+  "name": "GetBoundStatus",
+  "table": "BtlMvStd",
+  "regfunc": "0x731610",
+  "ea": "0x731667",
+  "native": "sub_45C3F0",
+  "wrapper": "sub_45C3F0",
+  "ret": "int",
+  "args": [
+   "int"
+  ],
+  "qualified_table": "BtlMvStd"
+ },
+ {
+  "kind": "func",
+  "name": "SetBoundStatus",
+  "table": "BtlMvStd",
+  "regfunc": "0x731610",
+  "ea": "0x731679",
+  "native": "sub_45C5C0",
+  "wrapper": "sub_45C5C0",
+  "ret": "int",
+  "args": [],
+  "qualified_table": "BtlMvStd"
+ },
+ {
+  "kind": "func",
+  "name": "SetBoundFinalize",
+  "table": "BtlMvStd",
+  "regfunc": "0x731610",
+  "ea": "0x73168b",
+  "native": "sub_45C630",
+  "wrapper": "sub_45C630",
+  "ret": "int",
+  "args": [],
+  "qualified_table": "BtlMvStd"
+ },
+ {
+  "kind": "func",
+  "name": "ClearBound",
+  "table": "BtlMvStd",
+  "regfunc": "0x731610",
+  "ea": "0x73169d",
+  "native": "sub_45C6E0",
+  "wrapper": "sub_45C6E0",
+  "ret": "int",
+  "args": [],
+  "qualified_table": "BtlMvStd"
+ },
+ {
+  "kind": "func",
+  "name": "SetGuardStatus",
+  "table": "BtlMvStd",
+  "regfunc": "0x731610",
+  "ea": "0x7316af",
+  "native": "sub_45C720",
+  "wrapper": "sub_45C720",
+  "ret": "int",
+  "args": [],
+  "qualified_table": "BtlMvStd"
+ },
+ {
+  "kind": "func",
+  "name": "SetGuardFinalize",
+  "table": "BtlMvStd",
+  "regfunc": "0x731610",
+  "ea": "0x7316c1",
+  "native": "sub_45C780",
+  "wrapper": "sub_45C780",
+  "ret": "int",
+  "args": [],
+  "qualified_table": "BtlMvStd"
+ },
+ {
+  "kind": "func",
+  "name": "ClearGuard",
+  "table": "BtlMvStd",
+  "regfunc": "0x731610",
+  "ea": "0x7316d3",
+  "native": "sub_45C830",
+  "wrapper": "sub_45C830",
+  "ret": "int",
+  "args": [],
+  "qualified_table": "BtlMvStd"
+ },
+ {
+  "kind": "var",
+  "name": "isDone",
+  "table": "CCharaVector",
+  "regfunc": "0x731610",
+  "ea": "0x7316f9",
+  "offset": "0",
+  "vartype": "Sqrat_Class_VarA_463080",
+  "qualified_table": "BMvTbl.CCharaVector"
+ },
+ {
+  "kind": "var",
+  "name": "isCapture",
+  "table": "CCharaVector",
+  "regfunc": "0x731610",
+  "ea": "0x731708",
+  "offset": "2",
+  "vartype": "Sqrat_Class_VarA_463080",
+  "qualified_table": "BMvTbl.CCharaVector"
+ },
+ {
+  "kind": "var",
+  "name": "isBound",
+  "table": "CCharaVector",
+  "regfunc": "0x731610",
+  "ea": "0x731717",
+  "offset": "4",
+  "vartype": "Sqrat_Class_VarA_463080",
+  "qualified_table": "BMvTbl.CCharaVector"
+ },
+ {
+  "kind": "var",
+  "name": "VecCount",
+  "table": "CCharaVector",
+  "regfunc": "0x731610",
+  "ea": "0x731735",
+  "offset": "8",
+  "vartype": "Sqrat_Class_VarA_463080",
+  "qualified_table": "BMvTbl.CCharaVector"
+ },
+ {
+  "kind": "var",
+  "name": "WallCount",
+  "table": "CCharaVector",
+  "regfunc": "0x731610",
+  "ea": "0x731744",
+  "offset": "14",
+  "vartype": "Sqrat_Class_VarA_463080",
+  "qualified_table": "BMvTbl.CCharaVector"
+ },
+ {
+  "kind": "var",
+  "name": "Name",
+  "table": "CCharaVector",
+  "regfunc": "0x731610",
+  "ea": "0x731753",
+  "offset": "16",
+  "vartype": "Sqrat_Class_VarA_4630E0",
+  "qualified_table": "BMvTbl.CCharaVector"
+ },
+ {
+  "kind": "var",
+  "name": "Power",
+  "table": "CCharaVector",
+  "regfunc": "0x731610",
+  "ea": "0x731762",
+  "offset": "20",
+  "vartype": "Sqrat_Class_VarA_463080",
+  "qualified_table": "BMvTbl.CCharaVector"
+ },
+ {
+  "kind": "var",
+  "name": "AirUkemi",
+  "table": "CCharaVector",
+  "regfunc": "0x731610",
+  "ea": "0x731771",
+  "offset": "12",
+  "vartype": "Sqrat_Class_VarA_463080",
+  "qualified_table": "BMvTbl.CCharaVector"
+ },
+ {
+  "kind": "var",
+  "name": "VecMuki",
+  "table": "CCharaVector",
+  "regfunc": "0x731610",
+  "ea": "0x731780",
+  "offset": "10",
+  "vartype": "Sqrat_Class_VarA_463080",
+  "qualified_table": "BMvTbl.CCharaVector"
+ },
+ {
+  "kind": "table",
+  "name": "CCharaVector",
+  "table": "BtlMvStd",
+  "regfunc": "0x731610",
+  "ea": "0x731791"
+ },
+ {
+  "kind": "table",
+  "name": "BtlMvStd",
+  "table": "",
+  "regfunc": "0x731610",
+  "ea": "0x7317c7"
+ },
+ {
+  "kind": "func",
+  "name": "GetPlayerSide",
+  "table": "BMvTbl",
+  "regfunc": "0x731800",
+  "ea": "0x73185a",
+  "native": "sub_45DC90",
+  "wrapper": "sub_45DC90",
+  "ret": "int",
+  "args": [],
+  "qualified_table": "BMvTbl"
+ },
+ {
+  "kind": "func",
+  "name": "SetPattern",
+  "table": "BMvTbl",
+  "regfunc": "0x731800",
+  "ea": "0x73186c",
+  "native": "sub_45CA30",
+  "wrapper": "sub_45CA30",
+  "ret": "int",
+  "args": [
+   "int"
+  ],
+  "qualified_table": "BMvTbl"
+ },
+ {
+  "kind": "func",
+  "name": "SetMuki",
+  "table": "BMvTbl",
+  "regfunc": "0x731800",
+  "ea": "0x73187e",
+  "native": "sub_45DCD0",
+  "wrapper": "sub_45DCD0",
+  "ret": "int",
+  "args": [
+   "int"
+  ],
+  "qualified_table": "BMvTbl"
+ },
+ {
+  "kind": "func",
+  "name": "GetMuki",
+  "table": "BMvTbl",
+  "regfunc": "0x731800",
+  "ea": "0x731890",
+  "native": "sub_45DD50",
+  "wrapper": "sub_45DD50",
+  "ret": "int",
+  "args": [],
+  "qualified_table": "BMvTbl"
+ },
+ {
+  "kind": "func",
+  "name": "CheckFurimuki",
+  "table": "BMvTbl",
+  "regfunc": "0x731800",
+  "ea": "0x7318a2",
+  "native": "sub_45DDA0",
+  "wrapper": "sub_45DDA0",
+  "ret": "int",
+  "args": [],
+  "qualified_table": "BMvTbl"
+ },
+ {
+  "kind": "func",
+  "name": "VGuard_CheckKeep",
+  "table": "BMvTbl",
+  "regfunc": "0x731800",
+  "ea": "0x7318b4",
+  "native": "sub_45DDF0",
+  "wrapper": "sub_45DDF0",
+  "ret": "int",
+  "args": [],
+  "qualified_table": "BMvTbl"
+ },
+ {
+  "kind": "func",
+  "name": "VGuard_Time",
+  "table": "BMvTbl",
+  "regfunc": "0x731800",
+  "ea": "0x7318c6",
+  "native": "sub_45DE30",
+  "wrapper": "sub_45DE30",
+  "ret": "int",
+  "args": [
+   "int"
+  ],
+  "qualified_table": "BMvTbl"
+ },
+ {
+  "kind": "func",
+  "name": "CheckStickHold",
+  "table": "BMvTbl",
+  "regfunc": "0x731800",
+  "ea": "0x7318d8",
+  "native": "sub_45DE70",
+  "wrapper": "sub_45DE70",
+  "ret": "int",
+  "args": [
+   "int"
+  ],
+  "qualified_table": "BMvTbl"
+ },
+ {
+  "kind": "func",
+  "name": "CheckButtonHold",
+  "table": "BMvTbl",
+  "regfunc": "0x731800",
+  "ea": "0x7318ea",
+  "native": "sub_45DEF0",
+  "wrapper": "sub_45DEF0",
+  "ret": "int",
+  "args": [
+   "int"
+  ],
+  "qualified_table": "BMvTbl"
+ },
+ {
+  "kind": "func",
+  "name": "IsStartTrigger",
+  "table": "BMvTbl",
+  "regfunc": "0x731800",
+  "ea": "0x7318fc",
+  "native": "sub_45DF70",
+  "wrapper": "sub_45DF70",
+  "ret": "int",
+  "args": [],
+  "qualified_table": "BMvTbl"
+ },
+ {
+  "kind": "func",
+  "name": "SetNextMoveTable",
+  "table": "BMvTbl",
+  "regfunc": "0x731800",
+  "ea": "0x73190e",
+  "native": "sub_45DFE0",
+  "wrapper": "sub_45DFE0",
+  "ret": "instance",
+  "args": [
+   "string"
+  ],
+  "qualified_table": "BMvTbl"
+ },
+ {
+  "kind": "func",
+  "name": "SetDeleteMoveTable",
+  "table": "BMvTbl",
+  "regfunc": "0x731800",
+  "ea": "0x731920",
+  "native": "sub_45E080",
+  "wrapper": "sub_45E080",
+  "ret": "int",
+  "args": [],
+  "qualified_table": "BMvTbl"
+ },
+ {
+  "kind": "func",
+  "name": "SetFinalize",
+  "table": "BMvTbl",
+  "regfunc": "0x731800",
+  "ea": "0x731932",
+  "native": "sub_45E0A0",
+  "wrapper": "sub_45E0A0",
+  "ret": "instance",
+  "args": [
+   "int"
+  ],
+  "qualified_table": "BMvTbl"
+ },
+ {
+  "kind": "func",
+  "name": "SetFinalizeCode",
+  "table": "BMvTbl",
+  "regfunc": "0x731800",
+  "ea": "0x731944",
+  "native": "sub_45E0E0",
+  "wrapper": "sub_45E0E0",
+  "ret": "instance",
+  "args": [
+   "int"
+  ],
+  "qualified_table": "BMvTbl"
+ },
+ {
+  "kind": "func",
+  "name": "GetFinalizeCode",
+  "table": "BMvTbl",
+  "regfunc": "0x731800",
+  "ea": "0x731956",
+  "native": "sub_45E120",
+  "wrapper": "sub_45E120",
+  "ret": "int",
+  "args": [],
+  "qualified_table": "BMvTbl"
+ },
+ {
+  "kind": "func",
+  "name": "FromFinalize",
+  "table": "BMvTbl",
+  "regfunc": "0x731800",
+  "ea": "0x731968",
+  "native": "sub_45E160",
+  "wrapper": "sub_45E160",
+  "ret": "int",
+  "args": [],
+  "qualified_table": "BMvTbl"
+ },
+ {
+  "kind": "func",
+  "name": "SetMoveCode",
+  "table": "BMvTbl",
+  "regfunc": "0x731800",
+  "ea": "0x73197a",
+  "native": "sub_45E1A0",
+  "wrapper": "sub_45E1A0",
+  "ret": "void",
+  "args": [
+   "int"
+  ],
+  "qualified_table": "BMvTbl"
+ },
+ {
+  "kind": "func",
+  "name": "GetMoveCode",
+  "table": "BMvTbl",
+  "regfunc": "0x731800",
+  "ea": "0x73198c",
+  "native": "sub_45E1E0",
+  "wrapper": "sub_45E1E0",
+  "ret": "int",
+  "args": [],
+  "qualified_table": "BMvTbl"
+ },
+ {
+  "kind": "func",
+  "name": "GetPP",
+  "table": "BMvTbl",
+  "regfunc": "0x731800",
+  "ea": "0x73199e",
+  "native": "sub_45E220",
+  "wrapper": "sub_45E220",
+  "ret": "int",
+  "args": [
+   "int"
+  ],
+  "qualified_table": "BMvTbl"
+ },
+ {
+  "kind": "func",
+  "name": "SetPP",
+  "table": "BMvTbl",
+  "regfunc": "0x731800",
+  "ea": "0x7319b0",
+  "native": "sub_45E280",
+  "wrapper": "sub_45E280",
+  "ret": "instance",
+  "args": [
+   "int",
+   "int"
+  ],
+  "qualified_table": "BMvTbl"
+ },
+ {
+  "kind": "func",
+  "name": "AddPP",
+  "table": "BMvTbl",
+  "regfunc": "0x731800",
+  "ea": "0x7319c2",
+  "native": "sub_45E2E0",
+  "wrapper": "sub_45E2E0",
+  "ret": "int",
+  "args": [
+   "int",
+   "int"
+  ],
+  "qualified_table": "BMvTbl"
+ },
+ {
+  "kind": "func",
+  "name": "GetLP",
+  "table": "BMvTbl",
+  "regfunc": "0x731800",
+  "ea": "0x7319d4",
+  "native": "sub_45E350",
+  "wrapper": "sub_45E350",
+  "ret": "int",
+  "args": [
+   "int"
+  ],
+  "qualified_table": "BMvTbl"
+ },
+ {
+  "kind": "func",
+  "name": "SetLP",
+  "table": "BMvTbl",
+  "regfunc": "0x731800",
+  "ea": "0x7319e6",
+  "native": "sub_45E390",
+  "wrapper": "sub_45E390",
+  "ret": "int",
+  "args": [
+   "int",
+   "int"
+  ],
+  "qualified_table": "BMvTbl"
+ },
+ {
+  "kind": "func",
+  "name": "AddLP",
+  "table": "BMvTbl",
+  "regfunc": "0x731800",
+  "ea": "0x7319f8",
+  "native": "sub_45E3D0",
+  "wrapper": "sub_45E3D0",
+  "ret": "int",
+  "args": [
+   "int",
+   "int"
+  ],
+  "qualified_table": "BMvTbl"
+ },
+ {
+  "kind": "func",
+  "name": "SetComboLimit",
+  "table": "BMvTbl",
+  "regfunc": "0x731800",
+  "ea": "0x731a0a",
+  "native": "sub_45E420",
+  "wrapper": "sub_45E420",
+  "ret": "instance",
+  "args": [
+   "int"
+  ],
+  "qualified_table": "BMvTbl"
+ },
+ {
+  "kind": "func",
+  "name": "SetWallCount",
+  "table": "BMvTbl",
+  "regfunc": "0x731800",
+  "ea": "0x731a1c",
+  "native": "sub_45E470",
+  "wrapper": "sub_45E470",
+  "ret": "int",
+  "args": [
+   "int"
+  ],
+  "qualified_table": "BMvTbl"
+ },
+ {
+  "kind": "func",
+  "name": "SetAirJumpOK",
+  "table": "BMvTbl",
+  "regfunc": "0x731800",
+  "ea": "0x731a2e",
+  "native": "sub_45E4B0",
+  "wrapper": "sub_45E4B0",
+  "ret": "int",
+  "args": [
+   "int"
+  ],
+  "qualified_table": "BMvTbl"
+ },
+ {
+  "kind": "func",
+  "name": "AddAirJumpCount",
+  "table": "BMvTbl",
+  "regfunc": "0x731800",
+  "ea": "0x731a40",
+  "native": "sub_45E4E0",
+  "wrapper": "sub_45E4E0",
+  "ret": "int",
+  "args": [
+   "int"
+  ],
+  "qualified_table": "BMvTbl"
+ },
+ {
+  "kind": "func",
+  "name": "TobiParam_Func",
+  "table": "BMvTbl",
+  "regfunc": "0x731800",
+  "ea": "0x731a52",
+  "native": "sub_45E550",
+  "wrapper": "sub_45E550",
+  "ret": "int",
+  "args": [
+   "int"
+  ],
+  "qualified_table": "BMvTbl"
+ },
+ {
+  "kind": "func",
+  "name": "TobiParamEndFlag_Func",
+  "table": "BMvTbl",
+  "regfunc": "0x731800",
+  "ea": "0x731a64",
+  "native": "sub_45E680",
+  "wrapper": "sub_45E680",
+  "ret": "int",
+  "args": [
+   "int"
+  ],
+  "qualified_table": "BMvTbl"
+ },
+ {
+  "kind": "func",
+  "name": "CheckPosState",
+  "table": "BMvTbl",
+  "regfunc": "0x731800",
+  "ea": "0x731a76",
+  "native": "sub_45E780",
+  "wrapper": "sub_45E780",
+  "ret": "int",
+  "args": [
+   "int"
+  ],
+  "qualified_table": "BMvTbl"
+ },
+ {
+  "kind": "func",
+  "name": "CheckPattern",
+  "table": "BMvTbl",
+  "regfunc": "0x731800",
+  "ea": "0x731a88",
+  "native": "sub_45E900",
+  "wrapper": "sub_45E900",
+  "ret": "int",
+  "args": [
+   "int"
+  ],
+  "qualified_table": "BMvTbl"
+ },
+ {
+  "kind": "func",
+  "name": "GetFrameParam",
+  "table": "BMvTbl",
+  "regfunc": "0x731800",
+  "ea": "0x731a9a",
+  "native": "sub_45EA80",
+  "wrapper": "sub_45EA80",
+  "ret": "int",
+  "args": [
+   "int"
+  ],
+  "qualified_table": "BMvTbl"
+ },
+ {
+  "kind": "func",
+  "name": "GetFrameID",
+  "table": "BMvTbl",
+  "regfunc": "0x731800",
+  "ea": "0x731aac",
+  "native": "sub_45EA40",
+  "wrapper": "sub_45EA40",
+  "ret": "int",
+  "args": [],
+  "qualified_table": "BMvTbl"
+ },
+ {
+  "kind": "func",
+  "name": "JumpFrameID",
+  "table": "BMvTbl",
+  "regfunc": "0x731800",
+  "ea": "0x731abe",
+  "native": "sub_45F0F0",
+  "wrapper": "sub_45F0F0",
+  "ret": "int",
+  "args": [
+   "int"
+  ],
+  "qualified_table": "BMvTbl"
+ },
+ {
+  "kind": "func",
+  "name": "Frame_Proc",
+  "table": "BMvTbl",
+  "regfunc": "0x731800",
+  "ea": "0x731ad0",
+  "native": "sub_45F150",
+  "wrapper": "sub_45F150",
+  "ret": "int",
+  "args": [
+   "int",
+   "int"
+  ],
+  "qualified_table": "BMvTbl"
+ },
+ {
+  "kind": "func",
+  "name": "SetPrio",
+  "table": "BMvTbl",
+  "regfunc": "0x731800",
+  "ea": "0x731ae2",
+  "native": "sub_45EAD0",
+  "wrapper": "sub_45EAD0",
+  "ret": "instance",
+  "args": [
+   "int"
+  ],
+  "qualified_table": "BMvTbl"
+ },
+ {
+  "kind": "func",
+  "name": "SetCommandLongDelay",
+  "table": "BMvTbl",
+  "regfunc": "0x731800",
+  "ea": "0x731af4",
+  "native": "sub_45EB10",
+  "wrapper": "sub_45EB10",
+  "ret": "int",
+  "args": [
+   "int"
+  ],
+  "qualified_table": "BMvTbl"
+ },
+ {
+  "kind": "func",
+  "name": "CheckCommand",
+  "table": "BMvTbl",
+  "regfunc": "0x731800",
+  "ea": "0x731b06",
+  "native": "sub_45EC20",
+  "wrapper": "sub_45EC20",
+  "ret": "int",
+  "args": [
+   "int"
+  ],
+  "qualified_table": "BMvTbl"
+ },
+ {
+  "kind": "func",
+  "name": "CheckCommandString",
+  "table": "BMvTbl",
+  "regfunc": "0x731800",
+  "ea": "0x731b18",
+  "native": "sub_45EDE0",
+  "wrapper": "sub_45EDE0",
+  "ret": "int",
+  "args": [
+   "int"
+  ],
+  "qualified_table": "BMvTbl"
+ },
+ {
+  "kind": "func",
+  "name": "ClearCommand",
+  "table": "BMvTbl",
+  "regfunc": "0x731800",
+  "ea": "0x731b2a",
+  "native": "sub_45F030",
+  "wrapper": "sub_45F030",
+  "ret": "int",
+  "args": [],
+  "qualified_table": "BMvTbl"
+ },
+ {
+  "kind": "func",
+  "name": "GetMvStatus",
+  "table": "BMvTbl",
+  "regfunc": "0x731800",
+  "ea": "0x731b3c",
+  "native": "sub_45D900",
+  "wrapper": "sub_45D900",
+  "ret": "instance",
+  "args": [
+   "instance"
+  ],
+  "qualified_table": "BMvTbl"
+ },
+ {
+  "kind": "func",
+  "name": "GetMvName",
+  "table": "BMvTbl",
+  "regfunc": "0x731800",
+  "ea": "0x731b4e",
+  "native": "sub_45DAA0",
+  "wrapper": "sub_45DAA0",
+  "ret": "int",
+  "args": [],
+  "qualified_table": "BMvTbl"
+ },
+ {
+  "kind": "func",
+  "name": "SetMvHitStatus",
+  "table": "BMvTbl",
+  "regfunc": "0x731800",
+  "ea": "0x731b60",
+  "native": "sub_45DC10",
+  "wrapper": "sub_45DC10",
+  "ret": "int",
+  "args": [
+   "int"
+  ],
+  "qualified_table": "BMvTbl"
+ },
+ {
+  "kind": "func",
+  "name": "GetMvHitStatus",
+  "table": "BMvTbl",
+  "regfunc": "0x731800",
+  "ea": "0x731b72",
+  "native": "sub_45DAF0",
+  "wrapper": "sub_45DAF0",
+  "ret": "int",
+  "args": [
+   "int"
+  ],
+  "qualified_table": "BMvTbl"
+ },
+ {
+  "kind": "func",
+  "name": "ClearHitStatus",
+  "table": "BMvTbl",
+  "regfunc": "0x731800",
+  "ea": "0x731b84",
+  "native": "sub_45DC60",
+  "wrapper": "sub_45DC60",
+  "ret": "int",
+  "args": [],
+  "qualified_table": "BMvTbl"
+ },
+ {
+  "kind": "func",
+  "name": "SetVector",
+  "table": "BMvTbl",
+  "regfunc": "0x731800",
+  "ea": "0x731b96",
+  "native": "sub_45CD80",
+  "wrapper": "sub_45CD80",
+  "ret": "int",
+  "args": [
+   "int"
+  ],
+  "qualified_table": "BMvTbl"
+ },
+ {
+  "kind": "func",
+  "name": "GetVector",
+  "table": "BMvTbl",
+  "regfunc": "0x731800",
+  "ea": "0x731ba8",
+  "native": "sub_45CF70",
+  "wrapper": "sub_45CF70",
+  "ret": "instance",
+  "args": [
+   "instance"
+  ],
+  "qualified_table": "BMvTbl"
+ },
+ {
+  "kind": "func",
+  "name": "SetVector_CCharaVector",
+  "table": "BMvTbl",
+  "regfunc": "0x731800",
+  "ea": "0x731bba",
+  "native": "sub_45CF10",
+  "wrapper": "sub_45CF10",
+  "ret": "?",
+  "args": [],
+  "qualified_table": "BMvTbl"
+ },
+ {
+  "kind": "func",
+  "name": "SetVector_MaxX",
+  "table": "BMvTbl",
+  "regfunc": "0x731800",
+  "ea": "0x731bcc",
+  "native": "sub_45CEB0",
+  "wrapper": "sub_45CEB0",
+  "ret": "int",
+  "args": [
+   "int"
+  ],
+  "qualified_table": "BMvTbl"
+ },
+ {
+  "kind": "func",
+  "name": "SetSpPrio",
+  "table": "BMvTbl",
+  "regfunc": "0x731800",
+  "ea": "0x731bde",
+  "native": "sub_45D2B0",
+  "wrapper": "sub_45D2B0",
+  "ret": "instance",
+  "args": [
+   "int"
+  ],
+  "qualified_table": "BMvTbl"
+ },
+ {
+  "kind": "func",
+  "name": "GetPosition",
+  "table": "BMvTbl",
+  "regfunc": "0x731800",
+  "ea": "0x731bf0",
+  "native": "sub_45D1E0",
+  "wrapper": "sub_45D1E0",
+  "ret": "instance",
+  "args": [
+   "instance",
+   "int"
+  ],
+  "qualified_table": "BMvTbl"
+ },
+ {
+  "kind": "func",
+  "name": "SetPosition",
+  "table": "BMvTbl",
+  "regfunc": "0x731800",
+  "ea": "0x731c02",
+  "native": "sub_45D350",
+  "wrapper": "sub_45D350",
+  "ret": "int",
+  "args": [
+   "int"
+  ],
+  "qualified_table": "BMvTbl"
+ },
+ {
+  "kind": "func",
+  "name": "SetAngle",
+  "table": "BMvTbl",
+  "regfunc": "0x731800",
+  "ea": "0x731c14",
+  "native": "sub_45D560",
+  "wrapper": "sub_45D560",
+  "ret": "int",
+  "args": [
+   "int"
+  ],
+  "qualified_table": "BMvTbl"
+ },
+ {
+  "kind": "func",
+  "name": "GetAngle",
+  "table": "BMvTbl",
+  "regfunc": "0x731800",
+  "ea": "0x731c26",
+  "native": "sub_45D7D0",
+  "wrapper": "sub_45D7D0",
+  "ret": "int",
+  "args": [],
+  "qualified_table": "BMvTbl"
+ },
+ {
+  "kind": "func",
+  "name": "SetScale",
+  "table": "BMvTbl",
+  "regfunc": "0x731800",
+  "ea": "0x731c38",
+  "native": "sub_45D800",
+  "wrapper": "sub_45D800",
+  "ret": "instance",
+  "args": [
+   "int"
+  ],
+  "qualified_table": "BMvTbl"
+ },
+ {
+  "kind": "func",
+  "name": "GetScale",
+  "table": "BMvTbl",
+  "regfunc": "0x731800",
+  "ea": "0x731c4a",
+  "native": "sub_45D880",
+  "wrapper": "sub_45D880",
+  "ret": "instance",
+  "args": [
+   "instance"
+  ],
+  "qualified_table": "BMvTbl"
+ },
+ {
+  "kind": "func",
+  "name": "TalkScript_IsDone",
+  "table": "BMvTbl",
+  "regfunc": "0x731800",
+  "ea": "0x731c5c",
+  "native": "sub_45F190",
+  "wrapper": "sub_45F190",
+  "ret": "int",
+  "args": [],
+  "qualified_table": "BMvTbl"
+ },
+ {
+  "kind": "func",
+  "name": "GetMvRoundStatus",
+  "table": "BMvTbl",
+  "regfunc": "0x731800",
+  "ea": "0x731c6e",
+  "native": "sub_45F1A0",
+  "wrapper": "sub_45F1A0",
+  "ret": "instance",
+  "args": [
+   "instance"
+  ],
+  "qualified_table": "BMvTbl"
+ },
+ {
+  "kind": "func",
+  "name": "SetRoundEnd",
+  "table": "BMvTbl",
+  "regfunc": "0x731800",
+  "ea": "0x731c80",
+  "native": "sub_45F380",
+  "wrapper": "sub_45F380",
+  "ret": "int",
+  "args": [],
+  "qualified_table": "BMvTbl"
+ },
+ {
+  "kind": "func",
+  "name": "SetRoundStart",
+  "table": "BMvTbl",
+  "regfunc": "0x731800",
+  "ea": "0x731c92",
+  "native": "sub_45F3D0",
+  "wrapper": "sub_45F3D0",
+  "ret": "int",
+  "args": [],
+  "qualified_table": "BMvTbl"
+ },
+ {
+  "kind": "func",
+  "name": "SetMoveableFlag",
+  "table": "BMvTbl",
+  "regfunc": "0x731800",
+  "ea": "0x731ca4",
+  "native": "sub_45F600",
+  "wrapper": "sub_45F600",
+  "ret": "int",
+  "args": [
+   "int"
+  ],
+  "qualified_table": "BMvTbl"
+ },
+ {
+  "kind": "func",
+  "name": "SetAsFlag",
+  "table": "BMvTbl",
+  "regfunc": "0x731800",
+  "ea": "0x731cb6",
+  "native": "sub_45F750",
+  "wrapper": "sub_45F750",
+  "ret": "int",
+  "args": [
+   "int"
+  ],
+  "qualified_table": "BMvTbl"
+ },
+ {
+  "kind": "func",
+  "name": "SetAsStatusFlag",
+  "table": "BMvTbl",
+  "regfunc": "0x731800",
+  "ea": "0x731cc8",
+  "native": "sub_45F690",
+  "wrapper": "sub_45F690",
+  "ret": "int",
+  "args": [
+   "int"
+  ],
+  "qualified_table": "BMvTbl"
+ },
+ {
+  "kind": "func",
+  "name": "SetAtkCatchFlag",
+  "table": "BMvTbl",
+  "regfunc": "0x731800",
+  "ea": "0x731cda",
+  "native": "sub_45F860",
+  "wrapper": "sub_45F860",
+  "ret": "int",
+  "args": [
+   "int"
+  ],
+  "qualified_table": "BMvTbl"
+ },
+ {
+  "kind": "func",
+  "name": "CalcHitValue",
+  "table": "BMvTbl",
+  "regfunc": "0x731800",
+  "ea": "0x731cec",
+  "native": "sub_45F7E0",
+  "wrapper": "sub_45F7E0",
+  "ret": "int",
+  "args": [
+   "int"
+  ],
+  "qualified_table": "BMvTbl"
+ },
+ {
+  "kind": "func",
+  "name": "GetRecoverStatus",
+  "table": "BMvTbl",
+  "regfunc": "0x731800",
+  "ea": "0x731cfe",
+  "native": "sub_45F330",
+  "wrapper": "sub_45F330",
+  "ret": "int",
+  "args": [
+   "int"
+  ],
+  "qualified_table": "BMvTbl"
+ },
+ {
+  "kind": "func",
+  "name": "PcGauge_Set",
+  "table": "BMvTbl",
+  "regfunc": "0x731800",
+  "ea": "0x731d10",
+  "native": "sub_45F940",
+  "wrapper": "sub_45F940",
+  "ret": "int",
+  "args": [
+   "int"
+  ],
+  "qualified_table": "BMvTbl"
+ },
+ {
+  "kind": "func",
+  "name": "BoundCorrect_Calc",
+  "table": "BMvTbl",
+  "regfunc": "0x731800",
+  "ea": "0x731d22",
+  "native": "sub_45FAD0",
+  "wrapper": "sub_45FAD0",
+  "ret": "int",
+  "args": [
+   "int"
+  ],
+  "qualified_table": "BMvTbl"
+ },
+ {
+  "kind": "var",
+  "name": "x",
+  "table": "CCharaVector",
+  "regfunc": "0x731800",
+  "ea": "0x731d48",
+  "offset": "0",
+  "vartype": "Sqrat_Class_VarA_463440",
+  "qualified_table": "BMvTbl.CCharaVector"
+ },
+ {
+  "kind": "var",
+  "name": "y",
+  "table": "CCharaVector",
+  "regfunc": "0x731800",
+  "ea": "0x731d57",
+  "offset": "4",
+  "vartype": "Sqrat_Class_VarA_463440",
+  "qualified_table": "BMvTbl.CCharaVector"
+ },
+ {
+  "kind": "var",
+  "name": "addx",
+  "table": "CCharaVector",
+  "regfunc": "0x731800",
+  "ea": "0x731d66",
+  "offset": "8",
+  "vartype": "Sqrat_Class_VarA_463440",
+  "qualified_table": "BMvTbl.CCharaVector"
+ },
+ {
+  "kind": "var",
+  "name": "addy",
+  "table": "CCharaVector",
+  "regfunc": "0x731800",
+  "ea": "0x731d75",
+  "offset": "12",
+  "vartype": "Sqrat_Class_VarA_463440",
+  "qualified_table": "BMvTbl.CCharaVector"
+ },
+ {
+  "kind": "table",
+  "name": "CCharaVector",
+  "table": "BMvTbl",
+  "regfunc": "0x731800",
+  "ea": "0x731d86"
+ },
+ {
+  "kind": "var",
+  "name": "x",
+  "table": "CCharaPosition",
+  "regfunc": "0x731800",
+  "ea": "0x731db8",
+  "offset": "0",
+  "vartype": "Sqrat_Class_VarA_4634A0",
+  "qualified_table": "BMvTbl.CCharaPosition"
+ },
+ {
+  "kind": "var",
+  "name": "y",
+  "table": "CCharaPosition",
+  "regfunc": "0x731800",
+  "ea": "0x731dc7",
+  "offset": "4",
+  "vartype": "Sqrat_Class_VarA_4634A0",
+  "qualified_table": "BMvTbl.CCharaPosition"
+ },
+ {
+  "kind": "table",
+  "name": "CCharaPosition",
+  "table": "BMvTbl",
+  "regfunc": "0x731800",
+  "ea": "0x731dd8"
+ },
+ {
+  "kind": "var",
+  "name": "sx",
+  "table": "CCharaRect",
+  "regfunc": "0x731800",
+  "ea": "0x731e10",
+  "offset": "0",
+  "vartype": "Sqrat_Class_VarA_463500",
+  "qualified_table": "BMvTbl.CCharaRect"
+ },
+ {
+  "kind": "var",
+  "name": "sy",
+  "table": "CCharaRect",
+  "regfunc": "0x731800",
+  "ea": "0x731e22",
+  "offset": "4",
+  "vartype": "Sqrat_Class_VarA_463500",
+  "qualified_table": "BMvTbl.CCharaRect"
+ },
+ {
+  "kind": "var",
+  "name": "ex",
+  "table": "CCharaRect",
+  "regfunc": "0x731800",
+  "ea": "0x731e34",
+  "offset": "8",
+  "vartype": "Sqrat_Class_VarA_463500",
+  "qualified_table": "BMvTbl.CCharaRect"
+ },
+ {
+  "kind": "var",
+  "name": "ey",
+  "table": "CCharaRect",
+  "regfunc": "0x731800",
+  "ea": "0x731e46",
+  "offset": "12",
+  "vartype": "Sqrat_Class_VarA_463500",
+  "qualified_table": "BMvTbl.CCharaRect"
+ },
+ {
+  "kind": "table",
+  "name": "CCharaRect",
+  "table": "BMvTbl",
+  "regfunc": "0x731800",
+  "ea": "0x731e5a"
+ },
+ {
+  "kind": "var",
+  "name": "x0",
+  "table": "CCharaPoint4",
+  "regfunc": "0x731800",
+  "ea": "0x731e95",
+  "offset": "0",
+  "vartype": "Sqrat_Class_VarA_463560",
+  "qualified_table": "BMvTbl.CCharaPoint4"
+ },
+ {
+  "kind": "var",
+  "name": "y0",
+  "table": "CCharaPoint4",
+  "regfunc": "0x731800",
+  "ea": "0x731ea7",
+  "offset": "4",
+  "vartype": "Sqrat_Class_VarA_463560",
+  "qualified_table": "BMvTbl.CCharaPoint4"
+ },
+ {
+  "kind": "var",
+  "name": "x1",
+  "table": "CCharaPoint4",
+  "regfunc": "0x731800",
+  "ea": "0x731eb9",
+  "offset": "8",
+  "vartype": "Sqrat_Class_VarA_463560",
+  "qualified_table": "BMvTbl.CCharaPoint4"
+ },
+ {
+  "kind": "var",
+  "name": "y1",
+  "table": "CCharaPoint4",
+  "regfunc": "0x731800",
+  "ea": "0x731ecb",
+  "offset": "12",
+  "vartype": "Sqrat_Class_VarA_463560",
+  "qualified_table": "BMvTbl.CCharaPoint4"
+ },
+ {
+  "kind": "var",
+  "name": "x2",
+  "table": "CCharaPoint4",
+  "regfunc": "0x731800",
+  "ea": "0x731edd",
+  "offset": "16",
+  "vartype": "Sqrat_Class_VarA_463560",
+  "qualified_table": "BMvTbl.CCharaPoint4"
+ },
+ {
+  "kind": "var",
+  "name": "y2",
+  "table": "CCharaPoint4",
+  "regfunc": "0x731800",
+  "ea": "0x731eef",
+  "offset": "20",
+  "vartype": "Sqrat_Class_VarA_463560",
+  "qualified_table": "BMvTbl.CCharaPoint4"
+ },
+ {
+  "kind": "var",
+  "name": "x3",
+  "table": "CCharaPoint4",
+  "regfunc": "0x731800",
+  "ea": "0x731f01",
+  "offset": "24",
+  "vartype": "Sqrat_Class_VarA_463560",
+  "qualified_table": "BMvTbl.CCharaPoint4"
+ },
+ {
+  "kind": "var",
+  "name": "y3",
+  "table": "CCharaPoint4",
+  "regfunc": "0x731800",
+  "ea": "0x731f13",
+  "offset": "28",
+  "vartype": "Sqrat_Class_VarA_463560",
+  "qualified_table": "BMvTbl.CCharaPoint4"
+ },
+ {
+  "kind": "table",
+  "name": "CCharaPoint4",
+  "table": "BMvTbl",
+  "regfunc": "0x731800",
+  "ea": "0x731f27"
+ },
+ {
+  "kind": "var",
+  "name": "CharaNo",
+  "table": "MvStatus",
+  "regfunc": "0x731800",
+  "ea": "0x731f62",
+  "offset": "0",
+  "vartype": "Sqrat_Class_VarA_4635C0",
+  "qualified_table": "BMvTbl.MvStatus"
+ },
+ {
+  "kind": "var",
+  "name": "isUpdate",
+  "table": "MvStatus",
+  "regfunc": "0x731800",
+  "ea": "0x731f74",
+  "offset": "8",
+  "vartype": "Sqrat_Class_VarA_4635C0",
+  "qualified_table": "BMvTbl.MvStatus"
+ },
+ {
+  "kind": "var",
+  "name": "MvCount",
+  "table": "MvStatus",
+  "regfunc": "0x731800",
+  "ea": "0x731f86",
+  "offset": "4",
+  "vartype": "Sqrat_Class_VarA_463620",
+  "qualified_table": "BMvTbl.MvStatus"
+ },
+ {
+  "kind": "var",
+  "name": "FrameID",
+  "table": "MvStatus",
+  "regfunc": "0x731800",
+  "ea": "0x731f98",
+  "offset": "16",
+  "vartype": "Sqrat_Class_VarA_4635C0",
+  "qualified_table": "BMvTbl.MvStatus"
+ },
+ {
+  "kind": "var",
+  "name": "isFrameUpdate",
+  "table": "MvStatus",
+  "regfunc": "0x731800",
+  "ea": "0x731faa",
+  "offset": "10",
+  "vartype": "Sqrat_Class_VarA_4635C0",
+  "qualified_table": "BMvTbl.MvStatus"
+ },
+ {
+  "kind": "var",
+  "name": "isLanding",
+  "table": "MvStatus",
+  "regfunc": "0x731800",
+  "ea": "0x731fbc",
+  "offset": "18",
+  "vartype": "Sqrat_Class_VarA_4635C0",
+  "qualified_table": "BMvTbl.MvStatus"
+ },
+ {
+  "kind": "var",
+  "name": "DataPattern",
+  "table": "MvStatus",
+  "regfunc": "0x731800",
+  "ea": "0x731fce",
+  "offset": "12",
+  "vartype": "Sqrat_Class_VarA_4635C0",
+  "qualified_table": "BMvTbl.MvStatus"
+ },
+ {
+  "kind": "var",
+  "name": "DataFrame",
+  "table": "MvStatus",
+  "regfunc": "0x731800",
+  "ea": "0x731fe0",
+  "offset": "14",
+  "vartype": "Sqrat_Class_VarA_4635C0",
+  "qualified_table": "BMvTbl.MvStatus"
+ },
+ {
+  "kind": "var",
+  "name": "DataDelayVal",
+  "table": "MvStatus",
+  "regfunc": "0x731800",
+  "ea": "0x731ff2",
+  "offset": "20",
+  "vartype": "Sqrat_Class_VarA_4635C0",
+  "qualified_table": "BMvTbl.MvStatus"
+ },
+ {
+  "kind": "var",
+  "name": "flags",
+  "table": "MvStatus",
+  "regfunc": "0x731800",
+  "ea": "0x732004",
+  "offset": "22",
+  "vartype": "Sqrat_Class_VarA_4635C0",
+  "qualified_table": "BMvTbl.MvStatus"
+ },
+ {
+  "kind": "var",
+  "name": "Param0",
+  "table": "MvStatus",
+  "regfunc": "0x731800",
+  "ea": "0x732016",
+  "offset": "24",
+  "vartype": "Sqrat_Class_VarA_4635C0",
+  "qualified_table": "BMvTbl.MvStatus"
+ },
+ {
+  "kind": "var",
+  "name": "Param1",
+  "table": "MvStatus",
+  "regfunc": "0x731800",
+  "ea": "0x732028",
+  "offset": "26",
+  "vartype": "Sqrat_Class_VarA_4635C0",
+  "qualified_table": "BMvTbl.MvStatus"
+ },
+ {
+  "kind": "var",
+  "name": "Param2",
+  "table": "MvStatus",
+  "regfunc": "0x731800",
+  "ea": "0x73203a",
+  "offset": "28",
+  "vartype": "Sqrat_Class_VarA_4635C0",
+  "qualified_table": "BMvTbl.MvStatus"
+ },
+ {
+  "kind": "var",
+  "name": "Param3",
+  "table": "MvStatus",
+  "regfunc": "0x731800",
+  "ea": "0x73204c",
+  "offset": "30",
+  "vartype": "Sqrat_Class_VarA_4635C0",
+  "qualified_table": "BMvTbl.MvStatus"
+ },
+ {
+  "kind": "table",
+  "name": "MvStatus",
+  "table": "BMvTbl",
+  "regfunc": "0x731800",
+  "ea": "0x732060"
+ },
+ {
+  "kind": "var",
+  "name": "Type",
+  "table": "MvHitStatus",
+  "regfunc": "0x731800",
+  "ea": "0x73209b",
+  "offset": "0",
+  "vartype": "Sqrat_Class_VarA_463680",
+  "qualified_table": "BMvTbl.MvHitStatus"
+ },
+ {
+  "kind": "var",
+  "name": "PosState",
+  "table": "MvHitStatus",
+  "regfunc": "0x731800",
+  "ea": "0x7320ad",
+  "offset": "2",
+  "vartype": "Sqrat_Class_VarA_463680",
+  "qualified_table": "BMvTbl.MvHitStatus"
+ },
+ {
+  "kind": "var",
+  "name": "isDown",
+  "table": "MvHitStatus",
+  "regfunc": "0x731800",
+  "ea": "0x7320bf",
+  "offset": "4",
+  "vartype": "Sqrat_Class_VarA_463680",
+  "qualified_table": "BMvTbl.MvHitStatus"
+ },
+ {
+  "kind": "var",
+  "name": "isFirstUpdate",
+  "table": "MvHitStatus",
+  "regfunc": "0x731800",
+  "ea": "0x7320d1",
+  "offset": "8",
+  "vartype": "Sqrat_Class_VarA_463680",
+  "qualified_table": "BMvTbl.MvHitStatus"
+ },
+ {
+  "kind": "var",
+  "name": "Count",
+  "table": "MvHitStatus",
+  "regfunc": "0x731800",
+  "ea": "0x7320e3",
+  "offset": "6",
+  "vartype": "Sqrat_Class_VarA_463680",
+  "qualified_table": "BMvTbl.MvHitStatus"
+ },
+ {
+  "kind": "table",
+  "name": "MvHitStatus",
+  "table": "BMvTbl",
+  "regfunc": "0x731800",
+  "ea": "0x7320f7"
+ },
+ {
+  "kind": "var",
+  "name": "type",
+  "table": "MvHitImpactInfo",
+  "regfunc": "0x731800",
+  "ea": "0x732132",
+  "offset": "0",
+  "vartype": "Sqrat_Class_VarA_4636E0",
+  "qualified_table": "BMvTbl.MvHitImpactInfo"
+ },
+ {
+  "kind": "var",
+  "name": "d_state",
+  "table": "MvHitImpactInfo",
+  "regfunc": "0x731800",
+  "ea": "0x732144",
+  "offset": "2",
+  "vartype": "Sqrat_Class_VarA_4636E0",
+  "qualified_table": "BMvTbl.MvHitImpactInfo"
+ },
+ {
+  "kind": "var",
+  "name": "atk_guard",
+  "table": "MvHitImpactInfo",
+  "regfunc": "0x731800",
+  "ea": "0x732156",
+  "offset": "4",
+  "vartype": "Sqrat_Class_VarA_4636E0",
+  "qualified_table": "BMvTbl.MvHitImpactInfo"
+ },
+ {
+  "kind": "var",
+  "name": "atk_throw",
+  "table": "MvHitImpactInfo",
+  "regfunc": "0x731800",
+  "ea": "0x732168",
+  "offset": "6",
+  "vartype": "Sqrat_Class_VarA_4636E0",
+  "qualified_table": "BMvTbl.MvHitImpactInfo"
+ },
+ {
+  "kind": "var",
+  "name": "def_guard",
+  "table": "MvHitImpactInfo",
+  "regfunc": "0x731800",
+  "ea": "0x73217a",
+  "offset": "8",
+  "vartype": "Sqrat_Class_VarA_4636E0",
+  "qualified_table": "BMvTbl.MvHitImpactInfo"
+ },
+ {
+  "kind": "var",
+  "name": "grd_break",
+  "table": "MvHitImpactInfo",
+  "regfunc": "0x731800",
+  "ea": "0x73218c",
+  "offset": "10",
+  "vartype": "Sqrat_Class_VarA_4636E0",
+  "qualified_table": "BMvTbl.MvHitImpactInfo"
+ },
+ {
+  "kind": "var",
+  "name": "counterhit",
+  "table": "MvHitImpactInfo",
+  "regfunc": "0x731800",
+  "ea": "0x73219e",
+  "offset": "12",
+  "vartype": "Sqrat_Class_VarA_4636E0",
+  "qualified_table": "BMvTbl.MvHitImpactInfo"
+ },
+ {
+  "kind": "var",
+  "name": "flags",
+  "table": "MvHitImpactInfo",
+  "regfunc": "0x731800",
+  "ea": "0x7321b0",
+  "offset": "16",
+  "vartype": "Sqrat_Class_VarA_463740",
+  "qualified_table": "BMvTbl.MvHitImpactInfo"
+ },
+ {
+  "kind": "table",
+  "name": "MvHitImpactInfo",
+  "table": "BMvTbl",
+  "regfunc": "0x731800",
+  "ea": "0x7321c4"
+ },
+ {
+  "kind": "var",
+  "name": "type",
+  "table": "MvInterruptInfo",
+  "regfunc": "0x731800",
+  "ea": "0x7321ff",
+  "offset": "0",
+  "vartype": "Sqrat_Class_VarA_4637A0",
+  "qualified_table": "BMvTbl.MvInterruptInfo"
+ },
+ {
+  "kind": "table",
+  "name": "MvInterruptInfo",
+  "table": "BMvTbl",
+  "regfunc": "0x731800",
+  "ea": "0x732213"
+ },
+ {
+  "kind": "var",
+  "name": "Type",
+  "table": "MvRecoverStatus",
+  "regfunc": "0x731800",
+  "ea": "0x73224e",
+  "offset": "0",
+  "vartype": "Sqrat_Class_VarA_463800",
+  "qualified_table": "BMvTbl.MvRecoverStatus"
+ },
+ {
+  "kind": "table",
+  "name": "MvRecoverStatus",
+  "table": "BMvTbl",
+  "regfunc": "0x731800",
+  "ea": "0x732262"
+ },
+ {
+  "kind": "var",
+  "name": "Time",
+  "table": "MvRoundStatus",
+  "regfunc": "0x731800",
+  "ea": "0x73229d",
+  "offset": "10",
+  "vartype": "Sqrat_Class_VarA_463860",
+  "qualified_table": "BMvTbl.MvRoundStatus"
+ },
+ {
+  "kind": "var",
+  "name": "TimeUpdate",
+  "table": "MvRoundStatus",
+  "regfunc": "0x731800",
+  "ea": "0x7322af",
+  "offset": "12",
+  "vartype": "Sqrat_Class_VarA_463860",
+  "qualified_table": "BMvTbl.MvRoundStatus"
+ },
+ {
+  "kind": "var",
+  "name": "Round",
+  "table": "MvRoundStatus",
+  "regfunc": "0x731800",
+  "ea": "0x7322c1",
+  "offset": "14",
+  "vartype": "Sqrat_Class_VarA_463860",
+  "qualified_table": "BMvTbl.MvRoundStatus"
+ },
+ {
+  "kind": "var",
+  "name": "WinType",
+  "table": "MvRoundStatus",
+  "regfunc": "0x731800",
+  "ea": "0x7322d3",
+  "offset": "16",
+  "vartype": "Sqrat_Class_VarA_463860",
+  "qualified_table": "BMvTbl.MvRoundStatus"
+ },
+ {
+  "kind": "var",
+  "name": "isKo",
+  "table": "MvRoundStatus",
+  "regfunc": "0x731800",
+  "ea": "0x7322e5",
+  "offset": "0",
+  "vartype": "Sqrat_Class_VarA_463860",
+  "qualified_table": "BMvTbl.MvRoundStatus"
+ },
+ {
+  "kind": "var",
+  "name": "isMyKo",
+  "table": "MvRoundStatus",
+  "regfunc": "0x731800",
+  "ea": "0x7322f7",
+  "offset": "2",
+  "vartype": "Sqrat_Class_VarA_463860",
+  "qualified_table": "BMvTbl.MvRoundStatus"
+ },
+ {
+  "kind": "var",
+  "name": "isWinRound",
+  "table": "MvRoundStatus",
+  "regfunc": "0x731800",
+  "ea": "0x732309",
+  "offset": "4",
+  "vartype": "Sqrat_Class_VarA_463860",
+  "qualified_table": "BMvTbl.MvRoundStatus"
+ },
+ {
+  "kind": "var",
+  "name": "isLoseRound",
+  "table": "MvRoundStatus",
+  "regfunc": "0x731800",
+  "ea": "0x73231b",
+  "offset": "6",
+  "vartype": "Sqrat_Class_VarA_463860",
+  "qualified_table": "BMvTbl.MvRoundStatus"
+ },
+ {
+  "kind": "var",
+  "name": "isFinalRound",
+  "table": "MvRoundStatus",
+  "regfunc": "0x731800",
+  "ea": "0x73232d",
+  "offset": "8",
+  "vartype": "Sqrat_Class_VarA_463860",
+  "qualified_table": "BMvTbl.MvRoundStatus"
+ },
+ {
+  "kind": "var",
+  "name": "CharaMoveMode",
+  "table": "MvRoundStatus",
+  "regfunc": "0x731800",
+  "ea": "0x73233f",
+  "offset": "18",
+  "vartype": "Sqrat_Class_VarA_463860",
+  "qualified_table": "BMvTbl.MvRoundStatus"
+ },
+ {
+  "kind": "table",
+  "name": "MvRoundStatus",
+  "table": "BMvTbl",
+  "regfunc": "0x731800",
+  "ea": "0x732353"
+ },
+ {
+  "kind": "table",
+  "name": "BMvTbl",
+  "table": "",
+  "regfunc": "0x731800",
+  "ea": "0x73239b"
+ },
+ {
+  "kind": "const",
+  "name": "_isDebugModeExe",
+  "table": "BMvConst",
+  "regfunc": "0x731800",
+  "ea": "0x7323ce",
+  "value": "0",
+  "qualified_table": "BMvConst"
+ },
+ {
+  "kind": "const",
+  "name": "_PosState_Stand",
+  "table": "BMvConst",
+  "regfunc": "0x731800",
+  "ea": "0x7323dd",
+  "value": "1",
+  "qualified_table": "BMvConst"
+ },
+ {
+  "kind": "const",
+  "name": "_PosState_Air",
+  "table": "BMvConst",
+  "regfunc": "0x731800",
+  "ea": "0x7323ec",
+  "value": "2",
+  "qualified_table": "BMvConst"
+ },
+ {
+  "kind": "const",
+  "name": "_PosState_Crouch",
+  "table": "BMvConst",
+  "regfunc": "0x731800",
+  "ea": "0x7323fb",
+  "value": "4",
+  "qualified_table": "BMvConst"
+ },
+ {
+  "kind": "const",
+  "name": "_PosState_Ground",
+  "table": "BMvConst",
+  "regfunc": "0x731800",
+  "ea": "0x73240a",
+  "value": "5",
+  "qualified_table": "BMvConst"
+ },
+ {
+  "kind": "const",
+  "name": "_PosState_Always",
+  "table": "BMvConst",
+  "regfunc": "0x731800",
+  "ea": "0x732419",
+  "value": "7",
+  "qualified_table": "BMvConst"
+ },
+ {
+  "kind": "const",
+  "name": "_PrioType_",
+  "table": "BMvConst",
+  "regfunc": "0x731800",
+  "ea": "0x732428",
+  "value": "7",
+  "qualified_table": "BMvConst"
+ },
+ {
+  "kind": "const",
+  "name": "_HitType_Hit",
+  "table": "BMvConst",
+  "regfunc": "0x731800",
+  "ea": "0x732437",
+  "value": "3",
+  "qualified_table": "BMvConst"
+ },
+ {
+  "kind": "const",
+  "name": "_HitType_Damage",
+  "table": "BMvConst",
+  "regfunc": "0x731800",
+  "ea": "0x732446",
+  "value": "2",
+  "qualified_table": "BMvConst"
+ },
+ {
+  "kind": "const",
+  "name": "_HitType_Guard",
+  "table": "BMvConst",
+  "regfunc": "0x731800",
+  "ea": "0x732455",
+  "value": "1",
+  "qualified_table": "BMvConst"
+ },
+ {
+  "kind": "const",
+  "name": "_Direction_Auto",
+  "table": "BMvConst",
+  "regfunc": "0x731800",
+  "ea": "0x732464",
+  "value": "-1",
+  "qualified_table": "BMvConst"
+ },
+ {
+  "kind": "const",
+  "name": "_Direction_Left",
+  "table": "BMvConst",
+  "regfunc": "0x731800",
+  "ea": "0x732473",
+  "value": "0",
+  "qualified_table": "BMvConst"
+ },
+ {
+  "kind": "const",
+  "name": "_Direction_Right",
+  "table": "BMvConst",
+  "regfunc": "0x731800",
+  "ea": "0x732482",
+  "value": "1",
+  "qualified_table": "BMvConst"
+ },
+ {
+  "kind": "const",
+  "name": "_Direction_Reverse",
+  "table": "BMvConst",
+  "regfunc": "0x731800",
+  "ea": "0x732491",
+  "value": "10",
+  "qualified_table": "BMvConst"
+ },
+ {
+  "kind": "const",
+  "name": "_Position_CaptureChara",
+  "table": "BMvConst",
+  "regfunc": "0x731800",
+  "ea": "0x7324a0",
+  "value": "1",
+  "qualified_table": "BMvConst"
+ },
+ {
+  "kind": "const",
+  "name": "_Position_CaptureShift",
+  "table": "BMvConst",
+  "regfunc": "0x731800",
+  "ea": "0x7324af",
+  "value": "2",
+  "qualified_table": "BMvConst"
+ },
+ {
+  "kind": "const",
+  "name": "_Position_ToolShift",
+  "table": "BMvConst",
+  "regfunc": "0x731800",
+  "ea": "0x7324be",
+  "value": "2",
+  "qualified_table": "BMvConst"
+ },
+ {
+  "kind": "const",
+  "name": "_Position_ChangeMuki",
+  "table": "BMvConst",
+  "regfunc": "0x731800",
+  "ea": "0x7324cd",
+  "value": "4",
+  "qualified_table": "BMvConst"
+ },
+ {
+  "kind": "const",
+  "name": "_Position_Add",
+  "table": "BMvConst",
+  "regfunc": "0x731800",
+  "ea": "0x7324dc",
+  "value": "8",
+  "qualified_table": "BMvConst"
+ },
+ {
+  "kind": "const",
+  "name": "_Position_NoMoveChild",
+  "table": "BMvConst",
+  "regfunc": "0x731800",
+  "ea": "0x7324eb",
+  "value": "16",
+  "qualified_table": "BMvConst"
+ },
+ {
+  "kind": "const",
+  "name": "_Angle_AngleAdd",
+  "table": "BMvConst",
+  "regfunc": "0x731800",
+  "ea": "0x7324fa",
+  "value": "1",
+  "qualified_table": "BMvConst"
+ },
+ {
+  "kind": "const",
+  "name": "_Angle_PositionAdd",
+  "table": "BMvConst",
+  "regfunc": "0x731800",
+  "ea": "0x732509",
+  "value": "2",
+  "qualified_table": "BMvConst"
+ },
+ {
+  "kind": "const",
+  "name": "_VecFlag_Add",
+  "table": "BMvConst",
+  "regfunc": "0x731800",
+  "ea": "0x732518",
+  "value": "1",
+  "qualified_table": "BMvConst"
+ },
+ {
+  "kind": "const",
+  "name": "_VecFlag_NoMuki",
+  "table": "BMvConst",
+  "regfunc": "0x731800",
+  "ea": "0x732527",
+  "value": "2",
+  "qualified_table": "BMvConst"
+ },
+ {
+  "kind": "const",
+  "name": "_Vector_Normal",
+  "table": "BMvConst",
+  "regfunc": "0x731800",
+  "ea": "0x732539",
+  "value": "0x80000000",
+  "qualified_table": "BMvConst"
+ },
+ {
+  "kind": "const",
+  "name": "_Vector_Bound",
+  "table": "BMvConst",
+  "regfunc": "0x731800",
+  "ea": "0x73254b",
+  "value": "0x40000000",
+  "qualified_table": "BMvConst"
+ },
+ {
+  "kind": "const",
+  "name": "_Vector_Div",
+  "table": "BMvConst",
+  "regfunc": "0x731800",
+  "ea": "0x73255d",
+  "value": "0x20000000",
+  "qualified_table": "BMvConst"
+ },
+ {
+  "kind": "const",
+  "name": "_Vector_Keep",
+  "table": "BMvConst",
+  "regfunc": "0x731800",
+  "ea": "0x73256f",
+  "value": "0x10000000",
+  "qualified_table": "BMvConst"
+ },
+ {
+  "kind": "const",
+  "name": "_Vector_DivKeep",
+  "table": "BMvConst",
+  "regfunc": "0x731800",
+  "ea": "0x732581",
+  "value": "0x8000000",
+  "qualified_table": "BMvConst"
+ },
+ {
+  "kind": "const",
+  "name": "_ValSet",
+  "table": "BMvConst",
+  "regfunc": "0x731800",
+  "ea": "0x732590",
+  "value": "0",
+  "qualified_table": "BMvConst"
+ },
+ {
+  "kind": "const",
+  "name": "_ValGet",
+  "table": "BMvConst",
+  "regfunc": "0x731800",
+  "ea": "0x73259f",
+  "value": "1",
+  "qualified_table": "BMvConst"
+ },
+ {
+  "kind": "const",
+  "name": "_ValAdd",
+  "table": "BMvConst",
+  "regfunc": "0x731800",
+  "ea": "0x7325ae",
+  "value": "2",
+  "qualified_table": "BMvConst"
+ },
+ {
+  "kind": "const",
+  "name": "_ValClear",
+  "table": "BMvConst",
+  "regfunc": "0x731800",
+  "ea": "0x7325bd",
+  "value": "3",
+  "qualified_table": "BMvConst"
+ },
+ {
+  "kind": "const",
+  "name": "_InterruptType_Ko_Atk",
+  "table": "BMvConst",
+  "regfunc": "0x731800",
+  "ea": "0x7325cc",
+  "value": "0",
+  "qualified_table": "BMvConst"
+ },
+ {
+  "kind": "const",
+  "name": "_InterruptType_Ko_Def",
+  "table": "BMvConst",
+  "regfunc": "0x731800",
+  "ea": "0x7325db",
+  "value": "1",
+  "qualified_table": "BMvConst"
+ },
+ {
+  "kind": "const",
+  "name": "_InterruptType_Judge",
+  "table": "BMvConst",
+  "regfunc": "0x731800",
+  "ea": "0x7325ea",
+  "value": "2",
+  "qualified_table": "BMvConst"
+ },
+ {
+  "kind": "const",
+  "name": "_ImpactFlag_IsBound",
+  "table": "BMvConst",
+  "regfunc": "0x731800",
+  "ea": "0x7325f9",
+  "value": "1",
+  "qualified_table": "BMvConst"
+ },
+ {
+  "kind": "const",
+  "name": "_ImpactFlag_IsGuard",
+  "table": "BMvConst",
+  "regfunc": "0x731800",
+  "ea": "0x732608",
+  "value": "2",
+  "qualified_table": "BMvConst"
+ },
+ {
+  "kind": "const",
+  "name": "_ImpactFlag_IsCounter",
+  "table": "BMvConst",
+  "regfunc": "0x731800",
+  "ea": "0x73261a",
+  "value": "128",
+  "qualified_table": "BMvConst"
+ },
+ {
+  "kind": "const",
+  "name": "_ImpactFlag_IsDangerHP",
+  "table": "BMvConst",
+  "regfunc": "0x731800",
+  "ea": "0x732629",
+  "value": "64",
+  "qualified_table": "BMvConst"
+ },
+ {
+  "kind": "const",
+  "name": "_CancelFlag_None",
+  "table": "BMvConst",
+  "regfunc": "0x731800",
+  "ea": "0x732638",
+  "value": "0",
+  "qualified_table": "BMvConst"
+ },
+ {
+  "kind": "const",
+  "name": "_CancelFlag_Hit",
+  "table": "BMvConst",
+  "regfunc": "0x731800",
+  "ea": "0x732647",
+  "value": "1",
+  "qualified_table": "BMvConst"
+ },
+ {
+  "kind": "const",
+  "name": "_CancelFlag_Always",
+  "table": "BMvConst",
+  "regfunc": "0x731800",
+  "ea": "0x732656",
+  "value": "2",
+  "qualified_table": "BMvConst"
+ },
+ {
+  "kind": "const",
+  "name": "_CancelFlag_Damage",
+  "table": "BMvConst",
+  "regfunc": "0x731800",
+  "ea": "0x732665",
+  "value": "3",
+  "qualified_table": "BMvConst"
+ },
+ {
+  "kind": "const",
+  "name": "_CancelFlag_Invalid",
+  "table": "BMvConst",
+  "regfunc": "0x731800",
+  "ea": "0x732677",
+  "value": "255",
+  "qualified_table": "BMvConst"
+ },
+ {
+  "kind": "const",
+  "name": "_ClearFlag_ChangeFrame",
+  "table": "BMvConst",
+  "regfunc": "0x731800",
+  "ea": "0x732686",
+  "value": "2",
+  "qualified_table": "BMvConst"
+ },
+ {
+  "kind": "const",
+  "name": "_ClearFlag_ChangePattern",
+  "table": "BMvConst",
+  "regfunc": "0x731800",
+  "ea": "0x732695",
+  "value": "4",
+  "qualified_table": "BMvConst"
+ },
+ {
+  "kind": "const",
+  "name": "_ClearFlag_ChangeMv",
+  "table": "BMvConst",
+  "regfunc": "0x731800",
+  "ea": "0x7326a4",
+  "value": "1",
+  "qualified_table": "BMvConst"
+ },
+ {
+  "kind": "const",
+  "name": "_AsFlag_ExCancel",
+  "table": "BMvConst",
+  "regfunc": "0x731800",
+  "ea": "0x7326b3",
+  "value": "1",
+  "qualified_table": "BMvConst"
+ },
+ {
+  "kind": "const",
+  "name": "_AsFlag_ChainShift",
+  "table": "BMvConst",
+  "regfunc": "0x731800",
+  "ea": "0x7326c2",
+  "value": "2",
+  "qualified_table": "BMvConst"
+ },
+ {
+  "kind": "const",
+  "name": "_AsFlag_GuardRev",
+  "table": "BMvConst",
+  "regfunc": "0x731800",
+  "ea": "0x7326d1",
+  "value": "4",
+  "qualified_table": "BMvConst"
+ },
+ {
+  "kind": "const",
+  "name": "_AsFlag_Guard_Stand",
+  "table": "BMvConst",
+  "regfunc": "0x731800",
+  "ea": "0x7326e0",
+  "value": "16",
+  "qualified_table": "BMvConst"
+ },
+ {
+  "kind": "const",
+  "name": "_AsFlag_Guard_Air",
+  "table": "BMvConst",
+  "regfunc": "0x731800",
+  "ea": "0x7326ef",
+  "value": "32",
+  "qualified_table": "BMvConst"
+ },
+ {
+  "kind": "const",
+  "name": "_AsFlag_Guard_Crouch",
+  "table": "BMvConst",
+  "regfunc": "0x731800",
+  "ea": "0x7326fe",
+  "value": "64",
+  "qualified_table": "BMvConst"
+ },
+ {
+  "kind": "const",
+  "name": "_CharaPrio_None",
+  "table": "BMvConst",
+  "regfunc": "0x731800",
+  "ea": "0x73270d",
+  "value": "0",
+  "qualified_table": "BMvConst"
+ },
+ {
+  "kind": "const",
+  "name": "_CharaPrio_Near",
+  "table": "BMvConst",
+  "regfunc": "0x731800",
+  "ea": "0x73271c",
+  "value": "1",
+  "qualified_table": "BMvConst"
+ },
+ {
+  "kind": "const",
+  "name": "_CharaPrio_Far",
+  "table": "BMvConst",
+  "regfunc": "0x731800",
+  "ea": "0x73272b",
+  "value": "2",
+  "qualified_table": "BMvConst"
+ },
+ {
+  "kind": "const",
+  "name": "_CharaPrio_Near_Layer_0",
+  "table": "BMvConst",
+  "regfunc": "0x731800",
+  "ea": "0x73273a",
+  "value": "3",
+  "qualified_table": "BMvConst"
+ },
+ {
+  "kind": "const",
+  "name": "_CharaPrio_Near_Layer_1",
+  "table": "BMvConst",
+  "regfunc": "0x731800",
+  "ea": "0x732749",
+  "value": "4",
+  "qualified_table": "BMvConst"
+ },
+ {
+  "kind": "const",
+  "name": "_CharaPrio_Near_Layer_2",
+  "table": "BMvConst",
+  "regfunc": "0x731800",
+  "ea": "0x732758",
+  "value": "5",
+  "qualified_table": "BMvConst"
+ },
+ {
+  "kind": "const",
+  "name": "_CharaPrio_Near_Layer_3",
+  "table": "BMvConst",
+  "regfunc": "0x731800",
+  "ea": "0x732767",
+  "value": "6",
+  "qualified_table": "BMvConst"
+ },
+ {
+  "kind": "const",
+  "name": "_CharaPrio_Near_Layer_4",
+  "table": "BMvConst",
+  "regfunc": "0x731800",
+  "ea": "0x732776",
+  "value": "7",
+  "qualified_table": "BMvConst"
+ },
+ {
+  "kind": "const",
+  "name": "_CharaPrio_Near_Layer_5",
+  "table": "BMvConst",
+  "regfunc": "0x731800",
+  "ea": "0x732785",
+  "value": "8",
+  "qualified_table": "BMvConst"
+ },
+ {
+  "kind": "const",
+  "name": "_CharaPrio_Near_Layer_6",
+  "table": "BMvConst",
+  "regfunc": "0x731800",
+  "ea": "0x732794",
+  "value": "9",
+  "qualified_table": "BMvConst"
+ },
+ {
+  "kind": "const",
+  "name": "_CharaPrio_Near_Layer_7",
+  "table": "BMvConst",
+  "regfunc": "0x731800",
+  "ea": "0x7327a3",
+  "value": "10",
+  "qualified_table": "BMvConst"
+ },
+ {
+  "kind": "const",
+  "name": "_CharaPrio_Near_Layer_8",
+  "table": "BMvConst",
+  "regfunc": "0x731800",
+  "ea": "0x7327b2",
+  "value": "11",
+  "qualified_table": "BMvConst"
+ },
+ {
+  "kind": "const",
+  "name": "_CharaPrio_Near_Layer_9",
+  "table": "BMvConst",
+  "regfunc": "0x731800",
+  "ea": "0x7327c1",
+  "value": "12",
+  "qualified_table": "BMvConst"
+ },
+ {
+  "kind": "const",
+  "name": "_CharaPrio_Far_Layer_0",
+  "table": "BMvConst",
+  "regfunc": "0x731800",
+  "ea": "0x7327d0",
+  "value": "13",
+  "qualified_table": "BMvConst"
+ },
+ {
+  "kind": "const",
+  "name": "_CharaPrio_Far_Layer_1",
+  "table": "BMvConst",
+  "regfunc": "0x731800",
+  "ea": "0x7327df",
+  "value": "14",
+  "qualified_table": "BMvConst"
+ },
+ {
+  "kind": "const",
+  "name": "_CharaPrio_Far_Layer_2",
+  "table": "BMvConst",
+  "regfunc": "0x731800",
+  "ea": "0x7327ee",
+  "value": "15",
+  "qualified_table": "BMvConst"
+ },
+ {
+  "kind": "const",
+  "name": "_CharaPrio_Far_Layer_3",
+  "table": "BMvConst",
+  "regfunc": "0x731800",
+  "ea": "0x7327fd",
+  "value": "16",
+  "qualified_table": "BMvConst"
+ },
+ {
+  "kind": "const",
+  "name": "_CharaPrio_Far_Layer_4",
+  "table": "BMvConst",
+  "regfunc": "0x731800",
+  "ea": "0x73280c",
+  "value": "17",
+  "qualified_table": "BMvConst"
+ },
+ {
+  "kind": "const",
+  "name": "_CharaPrio_Far_Layer_5",
+  "table": "BMvConst",
+  "regfunc": "0x731800",
+  "ea": "0x73281b",
+  "value": "18",
+  "qualified_table": "BMvConst"
+ },
+ {
+  "kind": "const",
+  "name": "_CharaPrio_Far_Layer_6",
+  "table": "BMvConst",
+  "regfunc": "0x731800",
+  "ea": "0x73282a",
+  "value": "19",
+  "qualified_table": "BMvConst"
+ },
+ {
+  "kind": "const",
+  "name": "_CharaPrio_Far_Layer_7",
+  "table": "BMvConst",
+  "regfunc": "0x731800",
+  "ea": "0x732839",
+  "value": "20",
+  "qualified_table": "BMvConst"
+ },
+ {
+  "kind": "const",
+  "name": "_CharaPrio_Far_Layer_8",
+  "table": "BMvConst",
+  "regfunc": "0x731800",
+  "ea": "0x732848",
+  "value": "21",
+  "qualified_table": "BMvConst"
+ },
+ {
+  "kind": "const",
+  "name": "_CharaPrio_Far_Layer_9",
+  "table": "BMvConst",
+  "regfunc": "0x731800",
+  "ea": "0x732857",
+  "value": "22",
+  "qualified_table": "BMvConst"
+ },
+ {
+  "kind": "const",
+  "name": "_CharaPrio_Parent_P1",
+  "table": "BMvConst",
+  "regfunc": "0x731800",
+  "ea": "0x732866",
+  "value": "23",
+  "qualified_table": "BMvConst"
+ },
+ {
+  "kind": "const",
+  "name": "_CharaPrio_Parent_M1",
+  "table": "BMvConst",
+  "regfunc": "0x731800",
+  "ea": "0x732875",
+  "value": "24",
+  "qualified_table": "BMvConst"
+ },
+ {
+  "kind": "const",
+  "name": "_CharaPrio_Parent_BG",
+  "table": "BMvConst",
+  "regfunc": "0x731800",
+  "ea": "0x732884",
+  "value": "25",
+  "qualified_table": "BMvConst"
+ },
+ {
+  "kind": "const",
+  "name": "_CharaPrio_Near_P1",
+  "table": "BMvConst",
+  "regfunc": "0x731800",
+  "ea": "0x732893",
+  "value": "26",
+  "qualified_table": "BMvConst"
+ },
+ {
+  "kind": "const",
+  "name": "_CatchFlag_AtkStandGuard",
+  "table": "BMvConst",
+  "regfunc": "0x731800",
+  "ea": "0x7328a2",
+  "value": "1",
+  "qualified_table": "BMvConst"
+ },
+ {
+  "kind": "const",
+  "name": "_CatchFlag_AtkAirGuard",
+  "table": "BMvConst",
+  "regfunc": "0x731800",
+  "ea": "0x7328b1",
+  "value": "2",
+  "qualified_table": "BMvConst"
+ },
+ {
+  "kind": "const",
+  "name": "_CatchFlag_AtkCrouchGuard",
+  "table": "BMvConst",
+  "regfunc": "0x731800",
+  "ea": "0x7328c0",
+  "value": "4",
+  "qualified_table": "BMvConst"
+ },
+ {
+  "kind": "const",
+  "name": "_CatchFlag_AtkNoGuard",
+  "table": "BMvConst",
+  "regfunc": "0x731800",
+  "ea": "0x7328cf",
+  "value": "8",
+  "qualified_table": "BMvConst"
+ },
+ {
+  "kind": "const",
+  "name": "_CatchFlag_AtkNoGuardThrow",
+  "table": "BMvConst",
+  "regfunc": "0x731800",
+  "ea": "0x7328de",
+  "value": "16",
+  "qualified_table": "BMvConst"
+ },
+ {
+  "kind": "const",
+  "name": "_CatchFlag_StateStand",
+  "table": "BMvConst",
+  "regfunc": "0x731800",
+  "ea": "0x7328ed",
+  "value": "32",
+  "qualified_table": "BMvConst"
+ },
+ {
+  "kind": "const",
+  "name": "_CatchFlag_StateAir",
+  "table": "BMvConst",
+  "regfunc": "0x731800",
+  "ea": "0x7328fc",
+  "value": "64",
+  "qualified_table": "BMvConst"
+ },
+ {
+  "kind": "const",
+  "name": "_CatchFlag_StateCrouch",
+  "table": "BMvConst",
+  "regfunc": "0x731800",
+  "ea": "0x73290e",
+  "value": "128",
+  "qualified_table": "BMvConst"
+ },
+ {
+  "kind": "const",
+  "name": "_CatchFlag_AtkAllGuard",
+  "table": "BMvConst",
+  "regfunc": "0x731800",
+  "ea": "0x73291d",
+  "value": "7",
+  "qualified_table": "BMvConst"
+ },
+ {
+  "kind": "const",
+  "name": "_CatchSuccess_HitSub",
+  "table": "BMvConst",
+  "regfunc": "0x731800",
+  "ea": "0x73292c",
+  "value": "1",
+  "qualified_table": "BMvConst"
+ },
+ {
+  "kind": "const",
+  "name": "_CatchSuccess_HitSub_Enemy",
+  "table": "BMvConst",
+  "regfunc": "0x731800",
+  "ea": "0x73293b",
+  "value": "2",
+  "qualified_table": "BMvConst"
+ },
+ {
+  "kind": "const",
+  "name": "_CharaMoveMode_Enable",
+  "table": "BMvConst",
+  "regfunc": "0x731800",
+  "ea": "0x73294a",
+  "value": "0",
+  "qualified_table": "BMvConst"
+ },
+ {
+  "kind": "const",
+  "name": "_CharaMoveMode_Limit",
+  "table": "BMvConst",
+  "regfunc": "0x731800",
+  "ea": "0x732959",
+  "value": "1",
+  "qualified_table": "BMvConst"
+ },
+ {
+  "kind": "const",
+  "name": "_CharaMoveMode_Disable",
+  "table": "BMvConst",
+  "regfunc": "0x731800",
+  "ea": "0x732968",
+  "value": "2",
+  "qualified_table": "BMvConst"
+ },
+ {
+  "kind": "const",
+  "name": "_PCGaugeType_Eltnum",
+  "table": "BMvConst",
+  "regfunc": "0x731800",
+  "ea": "0x732977",
+  "value": "2",
+  "qualified_table": "BMvConst"
+ },
+ {
+  "kind": "const",
+  "name": "_MvStFlag_CounterAtk",
+  "table": "BMvConst",
+  "regfunc": "0x731800",
+  "ea": "0x732986",
+  "value": "1",
+  "qualified_table": "BMvConst"
+ },
+ {
+  "kind": "const",
+  "name": "_MvStFlag_CounterDef",
+  "table": "BMvConst",
+  "regfunc": "0x731800",
+  "ea": "0x732995",
+  "value": "2",
+  "qualified_table": "BMvConst"
+ },
+ {
+  "kind": "const",
+  "name": "_MvStFlag_DangerHPAtk",
+  "table": "BMvConst",
+  "regfunc": "0x731800",
+  "ea": "0x7329a4",
+  "value": "8",
+  "qualified_table": "BMvConst"
+ },
+ {
+  "kind": "const",
+  "name": "_MvStFlag_DangerHPDef",
+  "table": "BMvConst",
+  "regfunc": "0x731800",
+  "ea": "0x7329b3",
+  "value": "4",
+  "qualified_table": "BMvConst"
+ },
+ {
+  "kind": "table",
+  "name": "BMvConst",
+  "table": "",
+  "regfunc": "0x731800",
+  "ea": "0x7329ec"
+ },
+ {
+  "kind": "func",
+  "name": "StdCall",
+  "table": "BMvIf",
+  "regfunc": "0x731800",
+  "ea": "0x732a22",
+  "native": "sub_45F420",
+  "wrapper": "sub_45F420",
+  "ret": "int",
+  "args": [
+   "int"
+  ],
+  "qualified_table": "BMvIf"
+ },
+ {
+  "kind": "table",
+  "name": "BMvIf",
+  "table": "",
+  "regfunc": "0x731800",
+  "ea": "0x732a5b"
+ },
+ {
+  "kind": "func",
+  "name": "SE_Play",
+  "table": "BSound",
+  "regfunc": "0x732b20",
+  "ea": "0x732b77",
+  "native": "sub_45AD70",
+  "wrapper": "sub_45AD70",
+  "ret": "int",
+  "args": [
+   "int"
+  ],
+  "qualified_table": "BSound"
+ },
+ {
+  "kind": "func",
+  "name": "SE_Stop",
+  "table": "BSound",
+  "regfunc": "0x732b20",
+  "ea": "0x732b89",
+  "native": "sub_45B010",
+  "wrapper": "sub_45B010",
+  "ret": "void",
+  "args": [
+   "int"
+  ],
+  "qualified_table": "BSound"
+ },
+ {
+  "kind": "func",
+  "name": "BGM_Mute",
+  "table": "BSound",
+  "regfunc": "0x732b20",
+  "ea": "0x732b9b",
+  "native": "sub_45B160",
+  "wrapper": "sub_45B160",
+  "ret": "int",
+  "args": [],
+  "qualified_table": "BSound"
+ },
+ {
+  "kind": "table",
+  "name": "BSound",
+  "table": "",
+  "regfunc": "0x732b20",
+  "ea": "0x732bc5"
+ },
+ {
+  "kind": "const",
+  "name": "_SeType_All",
+  "table": "BMvSoundConst",
+  "regfunc": "0x732b20",
+  "ea": "0x732bf5",
+  "value": "-2",
+  "qualified_table": "BMvSoundConst"
+ },
+ {
+  "kind": "const",
+  "name": "_SeType_Normal",
+  "table": "BMvSoundConst",
+  "regfunc": "0x732b20",
+  "ea": "0x732c04",
+  "value": "-1",
+  "qualified_table": "BMvSoundConst"
+ },
+ {
+  "kind": "const",
+  "name": "_SeType_Player",
+  "table": "BMvSoundConst",
+  "regfunc": "0x732b20",
+  "ea": "0x732c13",
+  "value": "0",
+  "qualified_table": "BMvSoundConst"
+ },
+ {
+  "kind": "table",
+  "name": "BMvSoundConst",
+  "table": "",
+  "regfunc": "0x732b20",
+  "ea": "0x732c3d"
+ },
+ {
+  "kind": "func",
+  "name": "Random",
+  "table": "BMvEff",
+  "regfunc": "0x732ec0",
+  "ea": "0x732f17",
+  "native": "sub_457140",
+  "wrapper": "sub_457140",
+  "ret": "int",
+  "args": [],
+  "qualified_table": "BMvEff"
+ },
+ {
+  "kind": "method",
+  "name": "Random_F",
+  "table": "BMvEff",
+  "regfunc": "0x732ec0",
+  "ea": "0x732f29",
+  "native": "sub_457150",
+  "wrapper": "sub_457150",
+  "ret": "float",
+  "args": [],
+  "qualified_table": "BMvEff"
+ },
+ {
+  "kind": "func",
+  "name": "Random_Limit",
+  "table": "BMvEff",
+  "regfunc": "0x732ec0",
+  "ea": "0x732f3b",
+  "native": "sub_457170",
+  "wrapper": "sub_457170",
+  "ret": "int",
+  "args": [
+   "int"
+  ],
+  "qualified_table": "BMvEff"
+ },
+ {
+  "kind": "func",
+  "name": "Random_FAbs",
+  "table": "BMvEff",
+  "regfunc": "0x732ec0",
+  "ea": "0x732f4d",
+  "native": "sub_457190",
+  "wrapper": "sub_457190",
+  "ret": "float",
+  "args": [
+   "int"
+  ],
+  "qualified_table": "BMvEff"
+ },
+ {
+  "kind": "func",
+  "name": "Random_PointRect",
+  "table": "BMvEff",
+  "regfunc": "0x732ec0",
+  "ea": "0x732f5f",
+  "native": "sub_457280",
+  "wrapper": "sub_457280",
+  "ret": "instance",
+  "args": [
+   "instance",
+   "int"
+  ],
+  "qualified_table": "BMvEff"
+ },
+ {
+  "kind": "func",
+  "name": "Random_PointRad",
+  "table": "BMvEff",
+  "regfunc": "0x732ec0",
+  "ea": "0x732f71",
+  "native": "sub_4571C0",
+  "wrapper": "sub_4571C0",
+  "ret": "instance",
+  "args": [
+   "instance",
+   "int"
+  ],
+  "qualified_table": "BMvEff"
+ },
+ {
+  "kind": "func",
+  "name": "StdCall",
+  "table": "BMvEff",
+  "regfunc": "0x732ec0",
+  "ea": "0x732f83",
+  "native": "sub_454680",
+  "wrapper": "sub_454680",
+  "ret": "int",
+  "args": [
+   "int"
+  ],
+  "qualified_table": "BMvEff"
+ },
+ {
+  "kind": "func",
+  "name": "ThrowRelease",
+  "table": "BMvEff",
+  "regfunc": "0x732ec0",
+  "ea": "0x732f95",
+  "native": "sub_455000",
+  "wrapper": "sub_455000",
+  "ret": "int",
+  "args": [
+   "int"
+  ],
+  "qualified_table": "BMvEff"
+ },
+ {
+  "kind": "func",
+  "name": "ThrowParam",
+  "table": "BMvEff",
+  "regfunc": "0x732ec0",
+  "ea": "0x732fa7",
+  "native": "sub_454910",
+  "wrapper": "sub_454910",
+  "ret": "int",
+  "args": [
+   "int"
+  ],
+  "qualified_table": "BMvEff"
+ },
+ {
+  "kind": "func",
+  "name": "ThrowChara_SetJoint",
+  "table": "BMvEff",
+  "regfunc": "0x732ec0",
+  "ea": "0x732fb9",
+  "native": "sub_454D00",
+  "wrapper": "sub_454D00",
+  "ret": "int",
+  "args": [
+   "int"
+  ],
+  "qualified_table": "BMvEff"
+ },
+ {
+  "kind": "func",
+  "name": "ThrowChara_SetCamera",
+  "table": "BMvEff",
+  "regfunc": "0x732ec0",
+  "ea": "0x732fcb",
+  "native": "sub_454DD0",
+  "wrapper": "sub_454DD0",
+  "ret": "int",
+  "args": [
+   "int"
+  ],
+  "qualified_table": "BMvEff"
+ },
+ {
+  "kind": "func",
+  "name": "ThrowChara_Transfer",
+  "table": "BMvEff",
+  "regfunc": "0x732ec0",
+  "ea": "0x732fdd",
+  "native": "sub_454F10",
+  "wrapper": "sub_454F10",
+  "ret": "int",
+  "args": [
+   "int"
+  ],
+  "qualified_table": "BMvEff"
+ },
+ {
+  "kind": "func",
+  "name": "CapturePlayer",
+  "table": "BMvEff",
+  "regfunc": "0x732ec0",
+  "ea": "0x732fef",
+  "native": "sub_455250",
+  "wrapper": "sub_455250",
+  "ret": "int",
+  "args": [
+   "int"
+  ],
+  "qualified_table": "BMvEff"
+ },
+ {
+  "kind": "func",
+  "name": "CreateObject",
+  "table": "BMvEff",
+  "regfunc": "0x732ec0",
+  "ea": "0x733001",
+  "native": "sub_455810",
+  "wrapper": "sub_455810",
+  "ret": "instance",
+  "args": [
+   "instance",
+   "int"
+  ],
+  "qualified_table": "BMvEff"
+ },
+ {
+  "kind": "func",
+  "name": "SetObjectFlags",
+  "table": "BMvEff",
+  "regfunc": "0x732ec0",
+  "ea": "0x733013",
+  "native": "sub_455B80",
+  "wrapper": "sub_455B80",
+  "ret": "int",
+  "args": [
+   "int"
+  ],
+  "qualified_table": "BMvEff"
+ },
+ {
+  "kind": "func",
+  "name": "SetObjectRender",
+  "table": "BMvEff",
+  "regfunc": "0x732ec0",
+  "ea": "0x733025",
+  "native": "sub_455EF0",
+  "wrapper": "sub_455EF0",
+  "ret": "instance",
+  "args": [
+   "int"
+  ],
+  "qualified_table": "BMvEff"
+ },
+ {
+  "kind": "func",
+  "name": "EraseObjectFlags",
+  "table": "BMvEff",
+  "regfunc": "0x732ec0",
+  "ea": "0x733037",
+  "native": "sub_455C30",
+  "wrapper": "sub_455C30",
+  "ret": "int",
+  "args": [
+   "int"
+  ],
+  "qualified_table": "BMvEff"
+ },
+ {
+  "kind": "func",
+  "name": "ObjProcFlags_Set",
+  "table": "BMvEff",
+  "regfunc": "0x732ec0",
+  "ea": "0x733049",
+  "native": "sub_455CC0",
+  "wrapper": "sub_455CC0",
+  "ret": "int",
+  "args": [
+   "int"
+  ],
+  "qualified_table": "BMvEff"
+ },
+ {
+  "kind": "func",
+  "name": "ObjProcFlags_Erase",
+  "table": "BMvEff",
+  "regfunc": "0x732ec0",
+  "ea": "0x73305b",
+  "native": "sub_455D40",
+  "wrapper": "sub_455D40",
+  "ret": "int",
+  "args": [
+   "int"
+  ],
+  "qualified_table": "BMvEff"
+ },
+ {
+  "kind": "func",
+  "name": "ObjType_Set",
+  "table": "BMvEff",
+  "regfunc": "0x732ec0",
+  "ea": "0x73306d",
+  "native": "sub_455DC0",
+  "wrapper": "sub_455DC0",
+  "ret": "int",
+  "args": [
+   "int"
+  ],
+  "qualified_table": "BMvEff"
+ },
+ {
+  "kind": "func",
+  "name": "SetCamera_Quake",
+  "table": "BMvEff",
+  "regfunc": "0x732ec0",
+  "ea": "0x73307f",
+  "native": "sub_455F90",
+  "wrapper": "sub_455F90",
+  "ret": "int",
+  "args": [
+   "int"
+  ],
+  "qualified_table": "BMvEff"
+ },
+ {
+  "kind": "func",
+  "name": "SetCamera_Focus",
+  "table": "BMvEff",
+  "regfunc": "0x732ec0",
+  "ea": "0x733091",
+  "native": "sub_456030",
+  "wrapper": "sub_456030",
+  "ret": "int",
+  "args": [
+   "int"
+  ],
+  "qualified_table": "BMvEff"
+ },
+ {
+  "kind": "func",
+  "name": "SetCamera_FocusKeep",
+  "table": "BMvEff",
+  "regfunc": "0x732ec0",
+  "ea": "0x7330a3",
+  "native": "sub_4562C0",
+  "wrapper": "sub_4562C0",
+  "ret": "int",
+  "args": [
+   "int"
+  ],
+  "qualified_table": "BMvEff"
+ },
+ {
+  "kind": "func",
+  "name": "ResetCamera",
+  "table": "BMvEff",
+  "regfunc": "0x732ec0",
+  "ea": "0x7330b5",
+  "native": "sub_4562E0",
+  "wrapper": "sub_4562E0",
+  "ret": "int",
+  "args": [],
+  "qualified_table": "BMvEff"
+ },
+ {
+  "kind": "func",
+  "name": "ResetViewCamera",
+  "table": "BMvEff",
+  "regfunc": "0x732ec0",
+  "ea": "0x7330c7",
+  "native": "sub_456300",
+  "wrapper": "sub_456300",
+  "ret": "int",
+  "args": [],
+  "qualified_table": "BMvEff"
+ },
+ {
+  "kind": "func",
+  "name": "CameraShift_Set",
+  "table": "BMvEff",
+  "regfunc": "0x732ec0",
+  "ea": "0x7330d9",
+  "native": "sub_456350",
+  "wrapper": "sub_456350",
+  "ret": "instance",
+  "args": [
+   "int"
+  ],
+  "qualified_table": "BMvEff"
+ },
+ {
+  "kind": "func",
+  "name": "CameraShift_Clear",
+  "table": "BMvEff",
+  "regfunc": "0x732ec0",
+  "ea": "0x7330eb",
+  "native": "sub_456410",
+  "wrapper": "sub_456410",
+  "ret": "int",
+  "args": [],
+  "qualified_table": "BMvEff"
+ },
+ {
+  "kind": "func",
+  "name": "SetStopTime",
+  "table": "BMvEff",
+  "regfunc": "0x732ec0",
+  "ea": "0x7330fd",
+  "native": "sub_456450",
+  "wrapper": "sub_456450",
+  "ret": "int",
+  "args": [
+   "int"
+  ],
+  "qualified_table": "BMvEff"
+ },
+ {
+  "kind": "func",
+  "name": "SetHpGauge",
+  "table": "BMvEff",
+  "regfunc": "0x732ec0",
+  "ea": "0x73310f",
+  "native": "sub_456560",
+  "wrapper": "sub_456560",
+  "ret": "int",
+  "args": [
+   "int"
+  ],
+  "qualified_table": "BMvEff"
+ },
+ {
+  "kind": "func",
+  "name": "SetSpGauge",
+  "table": "BMvEff",
+  "regfunc": "0x732ec0",
+  "ea": "0x733121",
+  "native": "sub_4567A0",
+  "wrapper": "sub_4567A0",
+  "ret": "int",
+  "args": [
+   "int"
+  ],
+  "qualified_table": "BMvEff"
+ },
+ {
+  "kind": "func",
+  "name": "SpGauge_SetLimit",
+  "table": "BMvEff",
+  "regfunc": "0x732ec0",
+  "ea": "0x733133",
+  "native": "sub_456950",
+  "wrapper": "sub_456950",
+  "ret": "int",
+  "args": [
+   "int"
+  ],
+  "qualified_table": "BMvEff"
+ },
+ {
+  "kind": "func",
+  "name": "SpGauge_GetPlusCorrect_ComboTimePos",
+  "table": "BMvEff",
+  "regfunc": "0x732ec0",
+  "ea": "0x733145",
+  "native": "sub_4569C0",
+  "wrapper": "sub_4569C0",
+  "ret": "int",
+  "args": [],
+  "qualified_table": "BMvEff"
+ },
+ {
+  "kind": "func",
+  "name": "SetExist",
+  "table": "BMvEff",
+  "regfunc": "0x732ec0",
+  "ea": "0x733157",
+  "native": "sub_455E20",
+  "wrapper": "sub_455E20",
+  "ret": "instance",
+  "args": [
+   "int"
+  ],
+  "qualified_table": "BMvEff"
+ },
+ {
+  "kind": "func",
+  "name": "GetPointStatus",
+  "table": "BMvEff",
+  "regfunc": "0x732ec0",
+  "ea": "0x733169",
+  "native": "sub_456C70",
+  "wrapper": "sub_456C70",
+  "ret": "instance",
+  "args": [
+   "instance",
+   "int"
+  ],
+  "qualified_table": "BMvEff"
+ },
+ {
+  "kind": "func",
+  "name": "GetVector_FromAngle",
+  "table": "BMvEff",
+  "regfunc": "0x732ec0",
+  "ea": "0x73317b",
+  "native": "sub_456FA0",
+  "wrapper": "sub_456FA0",
+  "ret": "instance",
+  "args": [
+   "instance",
+   "int"
+  ],
+  "qualified_table": "BMvEff"
+ },
+ {
+  "kind": "func",
+  "name": "GetAngle_FromVector",
+  "table": "BMvEff",
+  "regfunc": "0x732ec0",
+  "ea": "0x73318d",
+  "native": "sub_457080",
+  "wrapper": "sub_457080",
+  "ret": "instance",
+  "args": [
+   "instance",
+   "int"
+  ],
+  "qualified_table": "BMvEff"
+ },
+ {
+  "kind": "func",
+  "name": "CheckHantei",
+  "table": "BMvEff",
+  "regfunc": "0x732ec0",
+  "ea": "0x73319f",
+  "native": "sub_455340",
+  "wrapper": "sub_455340",
+  "ret": "instance",
+  "args": [
+   "instance",
+   "int"
+  ],
+  "qualified_table": "BMvEff"
+ },
+ {
+  "kind": "func",
+  "name": "GetHanteiRect",
+  "table": "BMvEff",
+  "regfunc": "0x732ec0",
+  "ea": "0x7331b1",
+  "native": "sub_4555F0",
+  "wrapper": "sub_4555F0",
+  "ret": "instance",
+  "args": [
+   "instance",
+   "int"
+  ],
+  "qualified_table": "BMvEff"
+ },
+ {
+  "kind": "func",
+  "name": "GetCameraPosition",
+  "table": "BMvEff",
+  "regfunc": "0x732ec0",
+  "ea": "0x7331c3",
+  "native": "sub_4573C0",
+  "wrapper": "sub_4573C0",
+  "ret": "instance",
+  "args": [
+   "instance",
+   "int"
+  ],
+  "qualified_table": "BMvEff"
+ },
+ {
+  "kind": "func",
+  "name": "GetCameraRect",
+  "table": "BMvEff",
+  "regfunc": "0x732ec0",
+  "ea": "0x7331d5",
+  "native": "sub_457520",
+  "wrapper": "sub_457520",
+  "ret": "instance",
+  "args": [
+   "instance",
+   "int"
+  ],
+  "qualified_table": "BMvEff"
+ },
+ {
+  "kind": "func",
+  "name": "SetPlayerTimer",
+  "table": "BMvEff",
+  "regfunc": "0x732ec0",
+  "ea": "0x7331e7",
+  "native": "sub_457700",
+  "wrapper": "sub_457700",
+  "ret": "int",
+  "args": [
+   "int"
+  ],
+  "qualified_table": "BMvEff"
+ },
+ {
+  "kind": "func",
+  "name": "AddAttackHitNum",
+  "table": "BMvEff",
+  "regfunc": "0x732ec0",
+  "ea": "0x7331f9",
+  "native": "sub_457810",
+  "wrapper": "sub_457810",
+  "ret": "int",
+  "args": [
+   "int"
+  ],
+  "qualified_table": "BMvEff"
+ },
+ {
+  "kind": "func",
+  "name": "ClearAttackHitNum",
+  "table": "BMvEff",
+  "regfunc": "0x732ec0",
+  "ea": "0x73320b",
+  "native": "sub_4578F0",
+  "wrapper": "sub_4578F0",
+  "ret": "int",
+  "args": [],
+  "qualified_table": "BMvEff"
+ },
+ {
+  "kind": "func",
+  "name": "GetAttackHitPos",
+  "table": "BMvEff",
+  "regfunc": "0x732ec0",
+  "ea": "0x73321d",
+  "native": "sub_457870",
+  "wrapper": "sub_457870",
+  "ret": "instance",
+  "args": [
+   "instance"
+  ],
+  "qualified_table": "BMvEff"
+ },
+ {
+  "kind": "func",
+  "name": "Liberate_OK",
+  "table": "BMvEff",
+  "regfunc": "0x732ec0",
+  "ea": "0x73322f",
+  "native": "sub_457930",
+  "wrapper": "sub_457930",
+  "ret": "int",
+  "args": [],
+  "qualified_table": "BMvEff"
+ },
+ {
+  "kind": "func",
+  "name": "Liberate_Set",
+  "table": "BMvEff",
+  "regfunc": "0x732ec0",
+  "ea": "0x733241",
+  "native": "sub_457990",
+  "wrapper": "sub_457990",
+  "ret": "int",
+  "args": [],
+  "qualified_table": "BMvEff"
+ },
+ {
+  "kind": "func",
+  "name": "Liberate_Get",
+  "table": "BMvEff",
+  "regfunc": "0x732ec0",
+  "ea": "0x733253",
+  "native": "sub_457A40",
+  "wrapper": "sub_457A40",
+  "ret": "int",
+  "args": [],
+  "qualified_table": "BMvEff"
+ },
+ {
+  "kind": "func",
+  "name": "Liberate_Calc",
+  "table": "BMvEff",
+  "regfunc": "0x732ec0",
+  "ea": "0x733265",
+  "native": "sub_457AA0",
+  "wrapper": "sub_457AA0",
+  "ret": "int",
+  "args": [
+   "int"
+  ],
+  "qualified_table": "BMvEff"
+ },
+ {
+  "kind": "func",
+  "name": "Liberate_End",
+  "table": "BMvEff",
+  "regfunc": "0x732ec0",
+  "ea": "0x733277",
+  "native": "sub_457A10",
+  "wrapper": "sub_457A10",
+  "ret": "int",
+  "args": [],
+  "qualified_table": "BMvEff"
+ },
+ {
+  "kind": "func",
+  "name": "GRD_UseStock",
+  "table": "BMvEff",
+  "regfunc": "0x732ec0",
+  "ea": "0x733289",
+  "native": "sub_458000",
+  "wrapper": "sub_458000",
+  "ret": "int",
+  "args": [
+   "int"
+  ],
+  "qualified_table": "BMvEff"
+ },
+ {
+  "kind": "func",
+  "name": "GRD_CheckStock",
+  "table": "BMvEff",
+  "regfunc": "0x732ec0",
+  "ea": "0x73329b",
+  "native": "sub_457EC0",
+  "wrapper": "sub_457EC0",
+  "ret": "int",
+  "args": [
+   "int"
+  ],
+  "qualified_table": "BMvEff"
+ },
+ {
+  "kind": "func",
+  "name": "GRD_GetJudgeResult",
+  "table": "BMvEff",
+  "regfunc": "0x732ec0",
+  "ea": "0x7332ad",
+  "native": "sub_457F70",
+  "wrapper": "sub_457F70",
+  "ret": "int",
+  "args": [],
+  "qualified_table": "BMvEff"
+ },
+ {
+  "kind": "func",
+  "name": "GRD_SetBreak",
+  "table": "BMvEff",
+  "regfunc": "0x732ec0",
+  "ea": "0x7332bf",
+  "native": "sub_457B90",
+  "wrapper": "sub_457B90",
+  "ret": "instance",
+  "args": [
+   "int"
+  ],
+  "qualified_table": "BMvEff"
+ },
+ {
+  "kind": "func",
+  "name": "GRD_GetBreak",
+  "table": "BMvEff",
+  "regfunc": "0x732ec0",
+  "ea": "0x7332d1",
+  "native": "sub_457C70",
+  "wrapper": "sub_457C70",
+  "ret": "int",
+  "args": [
+   "int"
+  ],
+  "qualified_table": "BMvEff"
+ },
+ {
+  "kind": "func",
+  "name": "GRD_CorrectBreakTime",
+  "table": "BMvEff",
+  "regfunc": "0x732ec0",
+  "ea": "0x7332e3",
+  "native": "sub_457BF0",
+  "wrapper": "sub_457BF0",
+  "ret": "instance",
+  "args": [
+   "int",
+   "int"
+  ],
+  "qualified_table": "BMvEff"
+ },
+ {
+  "kind": "func",
+  "name": "GRD_ClearBreak",
+  "table": "BMvEff",
+  "regfunc": "0x732ec0",
+  "ea": "0x7332f5",
+  "native": "sub_457D10",
+  "wrapper": "sub_457D10",
+  "ret": "int",
+  "args": [
+   "int"
+  ],
+  "qualified_table": "BMvEff"
+ },
+ {
+  "kind": "func",
+  "name": "GRD_SetConvertBreak",
+  "table": "BMvEff",
+  "regfunc": "0x732ec0",
+  "ea": "0x733307",
+  "native": "sub_457DA0",
+  "wrapper": "sub_457DA0",
+  "ret": "int",
+  "args": [
+   "int"
+  ],
+  "qualified_table": "BMvEff"
+ },
+ {
+  "kind": "func",
+  "name": "GRD_GetConvertCount",
+  "table": "BMvEff",
+  "regfunc": "0x732ec0",
+  "ea": "0x733319",
+  "native": "sub_457E80",
+  "wrapper": "sub_457E80",
+  "ret": "int",
+  "args": [],
+  "qualified_table": "BMvEff"
+ },
+ {
+  "kind": "func",
+  "name": "GRD_AddValue",
+  "table": "BMvEff",
+  "regfunc": "0x732ec0",
+  "ea": "0x73332b",
+  "native": "sub_458080",
+  "wrapper": "sub_458080",
+  "ret": "int",
+  "args": [
+   "int"
+  ],
+  "qualified_table": "BMvEff"
+ },
+ {
+  "kind": "func",
+  "name": "GuardSP_Set",
+  "table": "BMvEff",
+  "regfunc": "0x732ec0",
+  "ea": "0x73333d",
+  "native": "sub_458150",
+  "wrapper": "sub_458150",
+  "ret": "int",
+  "args": [
+   "int"
+  ],
+  "qualified_table": "BMvEff"
+ },
+ {
+  "kind": "func",
+  "name": "GuardSP_Get",
+  "table": "BMvEff",
+  "regfunc": "0x732ec0",
+  "ea": "0x73334f",
+  "native": "sub_4581C0",
+  "wrapper": "sub_4581C0",
+  "ret": "int",
+  "args": [],
+  "qualified_table": "BMvEff"
+ },
+ {
+  "kind": "func",
+  "name": "GuardSP_Success",
+  "table": "BMvEff",
+  "regfunc": "0x732ec0",
+  "ea": "0x733361",
+  "native": "sub_458200",
+  "wrapper": "sub_458200",
+  "ret": "int",
+  "args": [],
+  "qualified_table": "BMvEff"
+ },
+ {
+  "kind": "func",
+  "name": "AttackInfoString_Set",
+  "table": "BMvEff",
+  "regfunc": "0x732ec0",
+  "ea": "0x733373",
+  "native": "sub_458240",
+  "wrapper": "sub_458240",
+  "ret": "instance",
+  "args": [
+   "int"
+  ],
+  "qualified_table": "BMvEff"
+ },
+ {
+  "kind": "func",
+  "name": "FadeProc_Set",
+  "table": "BMvEff",
+  "regfunc": "0x732ec0",
+  "ea": "0x733385",
+  "native": "sub_4582C0",
+  "wrapper": "sub_4582C0",
+  "ret": "int",
+  "args": [
+   "int"
+  ],
+  "qualified_table": "BMvEff"
+ },
+ {
+  "kind": "func",
+  "name": "FadeProc_Erase",
+  "table": "BMvEff",
+  "regfunc": "0x732ec0",
+  "ea": "0x733397",
+  "native": "sub_458500",
+  "wrapper": "sub_458500",
+  "ret": "int",
+  "args": [
+   "int"
+  ],
+  "qualified_table": "BMvEff"
+ },
+ {
+  "kind": "func",
+  "name": "CutInProc_Set",
+  "table": "BMvEff",
+  "regfunc": "0x732ec0",
+  "ea": "0x7333a9",
+  "native": "sub_4585D0",
+  "wrapper": "sub_4585D0",
+  "ret": "int",
+  "args": [
+   "int"
+  ],
+  "qualified_table": "BMvEff"
+ },
+ {
+  "kind": "func",
+  "name": "CutInProc_Erase",
+  "table": "BMvEff",
+  "regfunc": "0x732ec0",
+  "ea": "0x7333bb",
+  "native": "sub_458810",
+  "wrapper": "sub_458810",
+  "ret": "int",
+  "args": [],
+  "qualified_table": "BMvEff"
+ },
+ {
+  "kind": "func",
+  "name": "SetCharaFlash",
+  "table": "BMvEff",
+  "regfunc": "0x732ec0",
+  "ea": "0x7333cd",
+  "native": "sub_458850",
+  "wrapper": "sub_458850",
+  "ret": "int",
+  "args": [
+   "int"
+  ],
+  "qualified_table": "BMvEff"
+ },
+ {
+  "kind": "func",
+  "name": "SetCharaColor",
+  "table": "BMvEff",
+  "regfunc": "0x732ec0",
+  "ea": "0x7333df",
+  "native": "sub_458900",
+  "wrapper": "sub_458900",
+  "ret": "int",
+  "args": [
+   "int"
+  ],
+  "qualified_table": "BMvEff"
+ },
+ {
+  "kind": "func",
+  "name": "SetCharaDrawType",
+  "table": "BMvEff",
+  "regfunc": "0x732ec0",
+  "ea": "0x7333f1",
+  "native": "sub_4589D0",
+  "wrapper": "sub_4589D0",
+  "ret": "int",
+  "args": [
+   "int"
+  ],
+  "qualified_table": "BMvEff"
+ },
+ {
+  "kind": "func",
+  "name": "PcAfterImage_Set",
+  "table": "BMvEff",
+  "regfunc": "0x732ec0",
+  "ea": "0x733403",
+  "native": "sub_458A30",
+  "wrapper": "sub_458A30",
+  "ret": "int",
+  "args": [
+   "int"
+  ],
+  "qualified_table": "BMvEff"
+ },
+ {
+  "kind": "func",
+  "name": "PcAfterImage_Clear",
+  "table": "BMvEff",
+  "regfunc": "0x732ec0",
+  "ea": "0x733415",
+  "native": "sub_458B50",
+  "wrapper": "sub_458B50",
+  "ret": "int",
+  "args": [],
+  "qualified_table": "BMvEff"
+ },
+ {
+  "kind": "func",
+  "name": "PcAuraEffect_Set",
+  "table": "BMvEff",
+  "regfunc": "0x732ec0",
+  "ea": "0x733427",
+  "native": "sub_458BA0",
+  "wrapper": "sub_458BA0",
+  "ret": "int",
+  "args": [
+   "int"
+  ],
+  "qualified_table": "BMvEff"
+ },
+ {
+  "kind": "func",
+  "name": "PcAuraEffect_Clear",
+  "table": "BMvEff",
+  "regfunc": "0x732ec0",
+  "ea": "0x733439",
+  "native": "sub_458EB0",
+  "wrapper": "sub_458EB0",
+  "ret": "int",
+  "args": [],
+  "qualified_table": "BMvEff"
+ },
+ {
+  "kind": "func",
+  "name": "Slowmotion_Set",
+  "table": "BMvEff",
+  "regfunc": "0x732ec0",
+  "ea": "0x73344b",
+  "native": "sub_458F00",
+  "wrapper": "sub_458F00",
+  "ret": "int",
+  "args": [
+   "int"
+  ],
+  "qualified_table": "BMvEff"
+ },
+ {
+  "kind": "func",
+  "name": "LinePrim_Set",
+  "table": "BMvEff",
+  "regfunc": "0x732ec0",
+  "ea": "0x73345d",
+  "native": "sub_458FD0",
+  "wrapper": "sub_458FD0",
+  "ret": "int",
+  "args": [
+   "int"
+  ],
+  "qualified_table": "BMvEff"
+ },
+ {
+  "kind": "func",
+  "name": "Cockpit_SetView",
+  "table": "BMvEff",
+  "regfunc": "0x732ec0",
+  "ea": "0x73346f",
+  "native": "sub_459290",
+  "wrapper": "sub_459290",
+  "ret": "void",
+  "args": [
+   "int"
+  ],
+  "qualified_table": "BMvEff"
+ },
+ {
+  "kind": "func",
+  "name": "ComboView_Clear",
+  "table": "BMvEff",
+  "regfunc": "0x732ec0",
+  "ea": "0x733481",
+  "native": "sub_459300",
+  "wrapper": "sub_459300",
+  "ret": "int",
+  "args": [],
+  "qualified_table": "BMvEff"
+ },
+ {
+  "kind": "func",
+  "name": "BGM_Set",
+  "table": "BMvEff",
+  "regfunc": "0x732ec0",
+  "ea": "0x733493",
+  "native": "sub_459350",
+  "wrapper": "sub_459350",
+  "ret": "instance",
+  "args": [
+   "int"
+  ],
+  "qualified_table": "BMvEff"
+ },
+ {
+  "kind": "func",
+  "name": "SetSpUseBuffer",
+  "table": "BMvEff",
+  "regfunc": "0x732ec0",
+  "ea": "0x7334a5",
+  "native": "sub_4593B0",
+  "wrapper": "sub_4593B0",
+  "ret": "int",
+  "args": [
+   "int"
+  ],
+  "qualified_table": "BMvEff"
+ },
+ {
+  "kind": "var",
+  "name": "distance",
+  "table": "CPointStatus",
+  "regfunc": "0x732ec0",
+  "ea": "0x7334cb",
+  "offset": "0",
+  "vartype": "Sqrat_Class_VarA_459EF0",
+  "qualified_table": "BMvEff.CPointStatus"
+ },
+ {
+  "kind": "var",
+  "name": "distance_x",
+  "table": "CPointStatus",
+  "regfunc": "0x732ec0",
+  "ea": "0x7334da",
+  "offset": "4",
+  "vartype": "Sqrat_Class_VarA_459EF0",
+  "qualified_table": "BMvEff.CPointStatus"
+ },
+ {
+  "kind": "var",
+  "name": "distance_y",
+  "table": "CPointStatus",
+  "regfunc": "0x732ec0",
+  "ea": "0x7334e9",
+  "offset": "8",
+  "vartype": "Sqrat_Class_VarA_459EF0",
+  "qualified_table": "BMvEff.CPointStatus"
+ },
+ {
+  "kind": "var",
+  "name": "pos_x",
+  "table": "CPointStatus",
+  "regfunc": "0x732ec0",
+  "ea": "0x7334f8",
+  "offset": "12",
+  "vartype": "Sqrat_Class_VarA_459EF0",
+  "qualified_table": "BMvEff.CPointStatus"
+ },
+ {
+  "kind": "var",
+  "name": "pos_y",
+  "table": "CPointStatus",
+  "regfunc": "0x732ec0",
+  "ea": "0x733507",
+  "offset": "16",
+  "vartype": "Sqrat_Class_VarA_459EF0",
+  "qualified_table": "BMvEff.CPointStatus"
+ },
+ {
+  "kind": "var",
+  "name": "angle",
+  "table": "CPointStatus",
+  "regfunc": "0x732ec0",
+  "ea": "0x733516",
+  "offset": "20",
+  "vartype": "Sqrat_Class_VarA_459F50",
+  "qualified_table": "BMvEff.CPointStatus"
+ },
+ {
+  "kind": "table",
+  "name": "CPointStatus",
+  "table": "BMvEff",
+  "regfunc": "0x732ec0",
+  "ea": "0x733527"
+ },
+ {
+  "kind": "table",
+  "name": "BMvEff",
+  "table": "",
+  "regfunc": "0x732ec0",
+  "ea": "0x73355d"
+ },
+ {
+  "kind": "const",
+  "name": "_ObjFlags_ParentMove",
+  "table": "BMvConst",
+  "regfunc": "0x732ec0",
+  "ea": "0x73358d",
+  "value": "4",
+  "qualified_table": "BMvConst"
+ },
+ {
+  "kind": "const",
+  "name": "_ObjFlags_EraseParentDamage",
+  "table": "BMvConst",
+  "regfunc": "0x732ec0",
+  "ea": "0x73359c",
+  "value": "1",
+  "qualified_table": "BMvConst"
+ },
+ {
+  "kind": "const",
+  "name": "_ObjFlags_NoRender",
+  "table": "BMvConst",
+  "regfunc": "0x732ec0",
+  "ea": "0x7335ae",
+  "value": "0x20000000",
+  "qualified_table": "BMvConst"
+ },
+ {
+  "kind": "const",
+  "name": "_ObjFlags_NoRenderBlackOut",
+  "table": "BMvConst",
+  "regfunc": "0x732ec0",
+  "ea": "0x7335c0",
+  "value": "0x200000",
+  "qualified_table": "BMvConst"
+ },
+ {
+  "kind": "const",
+  "name": "_ObjFlags_NoRenderOrder",
+  "table": "BMvConst",
+  "regfunc": "0x732ec0",
+  "ea": "0x7335d2",
+  "value": "0x100000",
+  "qualified_table": "BMvConst"
+ },
+ {
+  "kind": "const",
+  "name": "_ObjFlags_EraseParentPatChange",
+  "table": "BMvConst",
+  "regfunc": "0x732ec0",
+  "ea": "0x7335e1",
+  "value": "32",
+  "qualified_table": "BMvConst"
+ },
+ {
+  "kind": "const",
+  "name": "_ObjFlags_PatChangeNoLanding",
+  "table": "BMvConst",
+  "regfunc": "0x732ec0",
+  "ea": "0x7335f3",
+  "value": "0x4000",
+  "qualified_table": "BMvConst"
+ },
+ {
+  "kind": "const",
+  "name": "_ObjFlags_MoveTimeStopAll",
+  "table": "BMvConst",
+  "regfunc": "0x732ec0",
+  "ea": "0x733605",
+  "value": "0x10000000",
+  "qualified_table": "BMvConst"
+ },
+ {
+  "kind": "const",
+  "name": "_ObjFlags_ParentMuki",
+  "table": "BMvConst",
+  "regfunc": "0x732ec0",
+  "ea": "0x733617",
+  "value": "4096",
+  "qualified_table": "BMvConst"
+ },
+ {
+  "kind": "const",
+  "name": "_ObjFlags_MukiXPosMove",
+  "table": "BMvConst",
+  "regfunc": "0x732ec0",
+  "ea": "0x733629",
+  "value": "0x2000",
+  "qualified_table": "BMvConst"
+ },
+ {
+  "kind": "const",
+  "name": "_ObjFlags_RenderShadow",
+  "table": "BMvConst",
+  "regfunc": "0x732ec0",
+  "ea": "0x73363b",
+  "value": "0x10000",
+  "qualified_table": "BMvConst"
+ },
+ {
+  "kind": "const",
+  "name": "_ObjFlags_FromParentStop",
+  "table": "BMvConst",
+  "regfunc": "0x732ec0",
+  "ea": "0x73364a",
+  "value": "8",
+  "qualified_table": "BMvConst"
+ },
+ {
+  "kind": "const",
+  "name": "_ObjFlags_ToParentStop",
+  "table": "BMvConst",
+  "regfunc": "0x732ec0",
+  "ea": "0x73365c",
+  "value": "0x80000",
+  "qualified_table": "BMvConst"
+ },
+ {
+  "kind": "const",
+  "name": "_ObjFlags_ToParentHitBack",
+  "table": "BMvConst",
+  "regfunc": "0x732ec0",
+  "ea": "0x73366e",
+  "value": "0x8000",
+  "qualified_table": "BMvConst"
+ },
+ {
+  "kind": "const",
+  "name": "_ObjFlags_ToParentHitStatus",
+  "table": "BMvConst",
+  "regfunc": "0x732ec0",
+  "ea": "0x733680",
+  "value": "0x40000",
+  "qualified_table": "BMvConst"
+ },
+ {
+  "kind": "const",
+  "name": "_ObjFlags_NoCamera",
+  "table": "BMvConst",
+  "regfunc": "0x732ec0",
+  "ea": "0x733692",
+  "value": "&off_800000",
+  "qualified_table": "BMvConst"
+ },
+ {
+  "kind": "const",
+  "name": "_ObjFlags_NoGround",
+  "table": "BMvConst",
+  "regfunc": "0x732ec0",
+  "ea": "0x7336a1",
+  "value": "64",
+  "qualified_table": "BMvConst"
+ },
+ {
+  "kind": "const",
+  "name": "_ObjProcFlags_EraseParentNull",
+  "table": "BMvConst",
+  "regfunc": "0x732ec0",
+  "ea": "0x7336b0",
+  "value": "1",
+  "qualified_table": "BMvConst"
+ },
+ {
+  "kind": "const",
+  "name": "_ObjProcFlags_EraseChangeParentMv",
+  "table": "BMvConst",
+  "regfunc": "0x732ec0",
+  "ea": "0x7336bf",
+  "value": "2",
+  "qualified_table": "BMvConst"
+ },
+ {
+  "kind": "const",
+  "name": "_ObjType_FireBall",
+  "table": "BMvConst",
+  "regfunc": "0x732ec0",
+  "ea": "0x7336ce",
+  "value": "2",
+  "qualified_table": "BMvConst"
+ },
+ {
+  "kind": "const",
+  "name": "_ObjType_Blade",
+  "table": "BMvConst",
+  "regfunc": "0x732ec0",
+  "ea": "0x7336dd",
+  "value": "3",
+  "qualified_table": "BMvConst"
+ },
+ {
+  "kind": "const",
+  "name": "_Exist_NoCamera",
+  "table": "BMvConst",
+  "regfunc": "0x732ec0",
+  "ea": "0x7336ec",
+  "value": "1",
+  "qualified_table": "BMvConst"
+ },
+ {
+  "kind": "const",
+  "name": "_Exist_NoWall",
+  "table": "BMvConst",
+  "regfunc": "0x732ec0",
+  "ea": "0x7336fb",
+  "value": "2",
+  "qualified_table": "BMvConst"
+ },
+ {
+  "kind": "const",
+  "name": "_Exist_NoHantei",
+  "table": "BMvConst",
+  "regfunc": "0x732ec0",
+  "ea": "0x73370d",
+  "value": "3840",
+  "qualified_table": "BMvConst"
+ },
+ {
+  "kind": "const",
+  "name": "_Exist_NoKasanariHantei",
+  "table": "BMvConst",
+  "regfunc": "0x732ec0",
+  "ea": "0x73371f",
+  "value": "256",
+  "qualified_table": "BMvConst"
+ },
+ {
+  "kind": "const",
+  "name": "_Exist_NoKuraiHantei",
+  "table": "BMvConst",
+  "regfunc": "0x732ec0",
+  "ea": "0x733731",
+  "value": "512",
+  "qualified_table": "BMvConst"
+ },
+ {
+  "kind": "const",
+  "name": "_Exist_NoAttackHantei",
+  "table": "BMvConst",
+  "regfunc": "0x732ec0",
+  "ea": "0x733743",
+  "value": "1024",
+  "qualified_table": "BMvConst"
+ },
+ {
+  "kind": "const",
+  "name": "_Exist_NoEtcHantei",
+  "table": "BMvConst",
+  "regfunc": "0x732ec0",
+  "ea": "0x733755",
+  "value": "2048",
+  "qualified_table": "BMvConst"
+ },
+ {
+  "kind": "const",
+  "name": "_ExistMode_Set",
+  "table": "BMvConst",
+  "regfunc": "0x732ec0",
+  "ea": "0x733764",
+  "value": "0",
+  "qualified_table": "BMvConst"
+ },
+ {
+  "kind": "const",
+  "name": "_ExistMode_Add",
+  "table": "BMvConst",
+  "regfunc": "0x732ec0",
+  "ea": "0x733773",
+  "value": "1",
+  "qualified_table": "BMvConst"
+ },
+ {
+  "kind": "const",
+  "name": "_ExistMode_Erase",
+  "table": "BMvConst",
+  "regfunc": "0x732ec0",
+  "ea": "0x733782",
+  "value": "2",
+  "qualified_table": "BMvConst"
+ },
+ {
+  "kind": "const",
+  "name": "_ExistMode_Reverse",
+  "table": "BMvConst",
+  "regfunc": "0x732ec0",
+  "ea": "0x733791",
+  "value": "3",
+  "qualified_table": "BMvConst"
+ },
+ {
+  "kind": "const",
+  "name": "_Hantei_Kasanari",
+  "table": "BMvConst",
+  "regfunc": "0x732ec0",
+  "ea": "0x7337a0",
+  "value": "0",
+  "qualified_table": "BMvConst"
+ },
+ {
+  "kind": "const",
+  "name": "_Hantei_Kurai",
+  "table": "BMvConst",
+  "regfunc": "0x732ec0",
+  "ea": "0x7337af",
+  "value": "1",
+  "qualified_table": "BMvConst"
+ },
+ {
+  "kind": "const",
+  "name": "_Hantei_Etc",
+  "table": "BMvConst",
+  "regfunc": "0x732ec0",
+  "ea": "0x7337be",
+  "value": "2",
+  "qualified_table": "BMvConst"
+ },
+ {
+  "kind": "const",
+  "name": "_Hantei_Attack",
+  "table": "BMvConst",
+  "regfunc": "0x732ec0",
+  "ea": "0x7337cd",
+  "value": "3",
+  "qualified_table": "BMvConst"
+ },
+ {
+  "kind": "const",
+  "name": "_HC_EnemyPc",
+  "table": "BMvConst",
+  "regfunc": "0x732ec0",
+  "ea": "0x7337dc",
+  "value": "1",
+  "qualified_table": "BMvConst"
+ },
+ {
+  "kind": "const",
+  "name": "_HC_EnemyObj",
+  "table": "BMvConst",
+  "regfunc": "0x732ec0",
+  "ea": "0x7337eb",
+  "value": "2",
+  "qualified_table": "BMvConst"
+ },
+ {
+  "kind": "const",
+  "name": "_HC_FavourPc",
+  "table": "BMvConst",
+  "regfunc": "0x732ec0",
+  "ea": "0x7337fa",
+  "value": "4",
+  "qualified_table": "BMvConst"
+ },
+ {
+  "kind": "const",
+  "name": "_HC_FavourObj",
+  "table": "BMvConst",
+  "regfunc": "0x732ec0",
+  "ea": "0x733809",
+  "value": "8",
+  "qualified_table": "BMvConst"
+ },
+ {
+  "kind": "const",
+  "name": "_HC_WithoutNoHanteiFlagObj",
+  "table": "BMvConst",
+  "regfunc": "0x732ec0",
+  "ea": "0x733818",
+  "value": "16",
+  "qualified_table": "BMvConst"
+ },
+ {
+  "kind": "const",
+  "name": "_Hantei_Error",
+  "table": "BMvConst",
+  "regfunc": "0x732ec0",
+  "ea": "0x73382a",
+  "value": "-7654321",
+  "qualified_table": "BMvConst"
+ },
+ {
+  "kind": "const",
+  "name": "_HanteiFlag_Tool",
+  "table": "BMvConst",
+  "regfunc": "0x732ec0",
+  "ea": "0x733839",
+  "value": "1",
+  "qualified_table": "BMvConst"
+ },
+ {
+  "kind": "const",
+  "name": "_HanteiFlag_Offset",
+  "table": "BMvConst",
+  "regfunc": "0x732ec0",
+  "ea": "0x733848",
+  "value": "2",
+  "qualified_table": "BMvConst"
+ },
+ {
+  "kind": "const",
+  "name": "_HanteiFlag_NoMukiChange",
+  "table": "BMvConst",
+  "regfunc": "0x732ec0",
+  "ea": "0x733857",
+  "value": "4",
+  "qualified_table": "BMvConst"
+ },
+ {
+  "kind": "const",
+  "name": "_SpGauge_UseAll",
+  "table": "BMvConst",
+  "regfunc": "0x732ec0",
+  "ea": "0x733866",
+  "value": "-1",
+  "qualified_table": "BMvConst"
+ },
+ {
+  "kind": "const",
+  "name": "_SpGauge_UseBuffer",
+  "table": "BMvConst",
+  "regfunc": "0x732ec0",
+  "ea": "0x733875",
+  "value": "-2",
+  "qualified_table": "BMvConst"
+ },
+ {
+  "kind": "const",
+  "name": "_GetPos_TrueCamera",
+  "table": "BMvConst",
+  "regfunc": "0x732ec0",
+  "ea": "0x733884",
+  "value": "1",
+  "qualified_table": "BMvConst"
+ },
+ {
+  "kind": "const",
+  "name": "_GetPos_ViewCamera",
+  "table": "BMvConst",
+  "regfunc": "0x732ec0",
+  "ea": "0x733893",
+  "value": "2",
+  "qualified_table": "BMvConst"
+ },
+ {
+  "kind": "const",
+  "name": "_GetPos_DispCamera",
+  "table": "BMvConst",
+  "regfunc": "0x732ec0",
+  "ea": "0x7338a2",
+  "value": "4",
+  "qualified_table": "BMvConst"
+ },
+ {
+  "kind": "const",
+  "name": "_GetPos_Offset",
+  "table": "BMvConst",
+  "regfunc": "0x732ec0",
+  "ea": "0x7338b4",
+  "value": "256",
+  "qualified_table": "BMvConst"
+ },
+ {
+  "kind": "const",
+  "name": "_GetPos_TypeWall",
+  "table": "BMvConst",
+  "regfunc": "0x732ec0",
+  "ea": "0x7338c6",
+  "value": "512",
+  "qualified_table": "BMvConst"
+ },
+ {
+  "kind": "const",
+  "name": "_GetPos_TypeScreen",
+  "table": "BMvConst",
+  "regfunc": "0x732ec0",
+  "ea": "0x7338d8",
+  "value": "1024",
+  "qualified_table": "BMvConst"
+ },
+ {
+  "kind": "const",
+  "name": "_GetPos_NoMuki",
+  "table": "BMvConst",
+  "regfunc": "0x732ec0",
+  "ea": "0x7338ea",
+  "value": "2048",
+  "qualified_table": "BMvConst"
+ },
+ {
+  "kind": "const",
+  "name": "_GetPos_ToolOffset",
+  "table": "BMvConst",
+  "regfunc": "0x732ec0",
+  "ea": "0x7338fc",
+  "value": "4096",
+  "qualified_table": "BMvConst"
+ },
+ {
+  "kind": "const",
+  "name": "_SpGaugeMode_Normal",
+  "table": "BMvConst",
+  "regfunc": "0x732ec0",
+  "ea": "0x73390b",
+  "value": "0",
+  "qualified_table": "BMvConst"
+ },
+ {
+  "kind": "const",
+  "name": "_SpGaugeMode_Liberate",
+  "table": "BMvConst",
+  "regfunc": "0x732ec0",
+  "ea": "0x73391a",
+  "value": "1",
+  "qualified_table": "BMvConst"
+ },
+ {
+  "kind": "const",
+  "name": "_SpGaugeMode_OverLiberate",
+  "table": "BMvConst",
+  "regfunc": "0x732ec0",
+  "ea": "0x733929",
+  "value": "2",
+  "qualified_table": "BMvConst"
+ },
+ {
+  "kind": "const",
+  "name": "_ThrowRelease_NoGroundRecover",
+  "table": "BMvConst",
+  "regfunc": "0x732ec0",
+  "ea": "0x733938",
+  "value": "16",
+  "qualified_table": "BMvConst"
+ },
+ {
+  "kind": "const",
+  "name": "_ThrowRelease_NoWallRecover",
+  "table": "BMvConst",
+  "regfunc": "0x732ec0",
+  "ea": "0x733947",
+  "value": "32",
+  "qualified_table": "BMvConst"
+ },
+ {
+  "kind": "const",
+  "name": "_ThrowRelease_NoAttackHit",
+  "table": "BMvConst",
+  "regfunc": "0x732ec0",
+  "ea": "0x733956",
+  "value": "64",
+  "qualified_table": "BMvConst"
+ },
+ {
+  "kind": "const",
+  "name": "_ThrowRelease_ReverseVec",
+  "table": "BMvConst",
+  "regfunc": "0x732ec0",
+  "ea": "0x733965",
+  "value": "2",
+  "qualified_table": "BMvConst"
+ },
+ {
+  "kind": "const",
+  "name": "_ThrowRelease_NoVec",
+  "table": "BMvConst",
+  "regfunc": "0x732ec0",
+  "ea": "0x733974",
+  "value": "1",
+  "qualified_table": "BMvConst"
+ },
+ {
+  "kind": "const",
+  "name": "_ThrowRelease_NoVecTimeHosei",
+  "table": "BMvConst",
+  "regfunc": "0x732ec0",
+  "ea": "0x733986",
+  "value": "0x10000",
+  "qualified_table": "BMvConst"
+ },
+ {
+  "kind": "table",
+  "name": "BMvConst",
+  "table": "",
+  "regfunc": "0x732ec0",
+  "ea": "0x7339bc"
+ },
+ {
+  "kind": "func",
+  "name": "GetParam",
+  "table": "SeFunc",
+  "regfunc": "0x777b40",
+  "ea": "0x777be0",
+  "native": "sub_776DE0",
+  "wrapper": "sub_776DE0",
+  "ret": "int",
+  "args": [
+   "int"
+  ],
+  "qualified_table": "SeFunc"
+ },
+ {
+  "kind": "table",
+  "name": "SeFunc",
+  "table": "",
+  "regfunc": "0x777b40",
+  "ea": "0x777c0a"
+ },
+ {
+  "kind": "func",
+  "name": "GetCaptureCharaData",
+  "table": "BMvCore",
+  "regfunc": "0x7e03e0",
+  "ea": "0x7e0437",
+  "native": "sub_452DB0",
+  "wrapper": "sub_452DB0",
+  "ret": "instance",
+  "args": [
+   "instance"
+  ],
+  "qualified_table": "BMvCore"
+ },
+ {
+  "kind": "func",
+  "name": "GetParentCharaData",
+  "table": "BMvCore",
+  "regfunc": "0x7e03e0",
+  "ea": "0x7e0449",
+  "native": "sub_452E20",
+  "wrapper": "sub_452E20",
+  "ret": "instance",
+  "args": [
+   "instance"
+  ],
+  "qualified_table": "BMvCore"
+ },
+ {
+  "kind": "func",
+  "name": "GetPlayerCharaData",
+  "table": "BMvCore",
+  "regfunc": "0x7e03e0",
+  "ea": "0x7e045b",
+  "native": "sub_452E90",
+  "wrapper": "sub_452E90",
+  "ret": "instance",
+  "args": [
+   "instance"
+  ],
+  "qualified_table": "BMvCore"
+ },
+ {
+  "kind": "func",
+  "name": "GetNearEnemyCharaData",
+  "table": "BMvCore",
+  "regfunc": "0x7e03e0",
+  "ea": "0x7e046d",
+  "native": "sub_452F00",
+  "wrapper": "sub_452F00",
+  "ret": "instance",
+  "args": [
+   "instance"
+  ],
+  "qualified_table": "BMvCore"
+ },
+ {
+  "kind": "func",
+  "name": "GetEnemyCharaData",
+  "table": "BMvCore",
+  "regfunc": "0x7e03e0",
+  "ea": "0x7e047f",
+  "native": "sub_452F70",
+  "wrapper": "sub_452F70",
+  "ret": "instance",
+  "args": [
+   "instance",
+   "int"
+  ],
+  "qualified_table": "BMvCore"
+ },
+ {
+  "kind": "func",
+  "name": "GetLastDamageCharaData",
+  "table": "BMvCore",
+  "regfunc": "0x7e03e0",
+  "ea": "0x7e0491",
+  "native": "sub_453080",
+  "wrapper": "sub_453080",
+  "ret": "instance",
+  "args": [
+   "instance",
+   "int"
+  ],
+  "qualified_table": "BMvCore"
+ },
+ {
+  "kind": "func",
+  "name": "SetLastDamageCharaData",
+  "table": "BMvCore",
+  "regfunc": "0x7e03e0",
+  "ea": "0x7e04a3",
+  "native": "sub_453040",
+  "wrapper": "sub_453040",
+  "ret": "int",
+  "args": [
+   "instance"
+  ],
+  "qualified_table": "BMvCore"
+ },
+ {
+  "kind": "func",
+  "name": "GetLastHitCharaData",
+  "table": "BMvCore",
+  "regfunc": "0x7e03e0",
+  "ea": "0x7e04b5",
+  "native": "sub_453110",
+  "wrapper": "sub_453110",
+  "ret": "instance",
+  "args": [
+   "instance",
+   "int"
+  ],
+  "qualified_table": "BMvCore"
+ },
+ {
+  "kind": "func",
+  "name": "PushCharaData",
+  "table": "BMvCore",
+  "regfunc": "0x7e03e0",
+  "ea": "0x7e04c7",
+  "native": "sub_4531A0",
+  "wrapper": "sub_4531A0",
+  "ret": "int",
+  "args": [
+   "instance"
+  ],
+  "qualified_table": "BMvCore"
+ },
+ {
+  "kind": "func",
+  "name": "PopCharaData",
+  "table": "BMvCore",
+  "regfunc": "0x7e03e0",
+  "ea": "0x7e04d9",
+  "native": "sub_453200",
+  "wrapper": "sub_453200",
+  "ret": "int",
+  "args": [],
+  "qualified_table": "BMvCore"
+ },
+ {
+  "kind": "var",
+  "name": "IsDone",
+  "table": "CCharaData",
+  "regfunc": "0x7e03e0",
+  "ea": "0x7e04ff",
+  "offset": "0",
+  "vartype": "Sqrat_Class_VarA_4537B0",
+  "qualified_table": "BMvCore.CCharaData"
+ },
+ {
+  "kind": "var",
+  "name": "data",
+  "table": "CCharaData",
+  "regfunc": "0x7e03e0",
+  "ea": "0x7e050e",
+  "offset": "4",
+  "vartype": "Sqrat_Class_VarA_453810",
+  "qualified_table": "BMvCore.CCharaData"
+ },
+ {
+  "kind": "table",
+  "name": "CCharaData",
+  "table": "BMvCore",
+  "regfunc": "0x7e03e0",
+  "ea": "0x7e051f"
+ },
+ {
+  "kind": "table",
+  "name": "BMvCore",
+  "table": "",
+  "regfunc": "0x7e03e0",
+  "ea": "0x7e0555"
+ },
+ {
+  "kind": "func",
+  "name": "Move_Jump",
+  "table": "BCom",
+  "regfunc": "0x7e0590",
+  "ea": "0x7e05f4",
+  "native": "sub_44F4B0",
+  "wrapper": "sub_44F4B0",
+  "ret": "int",
+  "args": [
+   "int"
+  ],
+  "qualified_table": "BCom"
+ },
+ {
+  "kind": "func",
+  "name": "Move_Next",
+  "table": "BCom",
+  "regfunc": "0x7e0590",
+  "ea": "0x7e0606",
+  "native": "sub_44F540",
+  "wrapper": "sub_44F540",
+  "ret": "int",
+  "args": [],
+  "qualified_table": "BCom"
+ },
+ {
+  "kind": "func",
+  "name": "Move_End",
+  "table": "BCom",
+  "regfunc": "0x7e0590",
+  "ea": "0x7e0618",
+  "native": "sub_44F580",
+  "wrapper": "sub_44F580",
+  "ret": "int",
+  "args": [
+   "int"
+  ],
+  "qualified_table": "BCom"
+ },
+ {
+  "kind": "func",
+  "name": "GetMoveTag",
+  "table": "BCom",
+  "regfunc": "0x7e0590",
+  "ea": "0x7e062a",
+  "native": "sub_44F620",
+  "wrapper": "sub_44F620",
+  "ret": "int",
+  "args": [],
+  "qualified_table": "BCom"
+ },
+ {
+  "kind": "func",
+  "name": "GetStatus",
+  "table": "BCom",
+  "regfunc": "0x7e0590",
+  "ea": "0x7e063c",
+  "native": "sub_44F690",
+  "wrapper": "sub_44F690",
+  "ret": "instance",
+  "args": [
+   "instance"
+  ],
+  "qualified_table": "BCom"
+ },
+ {
+  "kind": "method",
+  "name": "GetLevel",
+  "table": "UpdateSt",
+  "regfunc": "0x7e0590",
+  "ea": "0x7e0665",
+  "qualified_table": "BCom.UpdateSt"
+ },
+ {
+  "kind": "method",
+  "name": "GetSkill",
+  "table": "UpdateSt",
+  "regfunc": "0x7e0590",
+  "ea": "0x7e0677",
+  "native": "sub_420DD0",
+  "wrapper": "sub_420DD0",
+  "ret": "int",
+  "args": [],
+  "qualified_table": "BCom.UpdateSt"
+ },
+ {
+  "kind": "method",
+  "name": "GetMove",
+  "table": "UpdateSt",
+  "regfunc": "0x7e0590",
+  "ea": "0x7e0689",
+  "native": "sub_44F280",
+  "wrapper": "sub_44F280",
+  "ret": "int",
+  "args": [],
+  "qualified_table": "BCom.UpdateSt"
+ },
+ {
+  "kind": "method",
+  "name": "GetSkillTime",
+  "table": "UpdateSt",
+  "regfunc": "0x7e0590",
+  "ea": "0x7e069b",
+  "native": "sub_44F2A0",
+  "wrapper": "sub_44F2A0",
+  "ret": "int",
+  "args": [],
+  "qualified_table": "BCom.UpdateSt"
+ },
+ {
+  "kind": "method",
+  "name": "GetMoveTime",
+  "table": "UpdateSt",
+  "regfunc": "0x7e0590",
+  "ea": "0x7e06ad",
+  "native": "sub_44F2C0",
+  "wrapper": "sub_44F2C0",
+  "ret": "int",
+  "args": [],
+  "qualified_table": "BCom.UpdateSt"
+ },
+ {
+  "kind": "func",
+  "name": "GetELenX",
+  "table": "UpdateSt",
+  "regfunc": "0x7e0590",
+  "ea": "0x7e06bf",
+  "qualified_table": "BCom.UpdateSt"
+ },
+ {
+  "kind": "func",
+  "name": "GetELenY",
+  "table": "UpdateSt",
+  "regfunc": "0x7e0590",
+  "ea": "0x7e06d1",
+  "native": "unknown_libname_126",
+  "wrapper": "unknown_libname_126",
+  "ret": "int",
+  "args": [],
+  "qualified_table": "BCom.UpdateSt"
+ },
+ {
+  "kind": "method",
+  "name": "GetHPP",
+  "table": "UpdateSt",
+  "regfunc": "0x7e0590",
+  "ea": "0x7e06e3",
+  "native": "sub_44F2E0",
+  "wrapper": "sub_44F2E0",
+  "ret": "int",
+  "args": [],
+  "qualified_table": "BCom.UpdateSt"
+ },
+ {
+  "kind": "method",
+  "name": "GetEXS",
+  "table": "UpdateSt",
+  "regfunc": "0x7e0590",
+  "ea": "0x7e06f5",
+  "native": "sub_44F300",
+  "wrapper": "sub_44F300",
+  "ret": "int",
+  "args": [],
+  "qualified_table": "BCom.UpdateSt"
+ },
+ {
+  "kind": "method",
+  "name": "IsPMoveable",
+  "table": "UpdateSt",
+  "regfunc": "0x7e0590",
+  "ea": "0x7e0707",
+  "native": "sub_44F320",
+  "wrapper": "sub_44F320",
+  "ret": "int",
+  "args": [],
+  "qualified_table": "BCom.UpdateSt"
+ },
+ {
+  "kind": "method",
+  "name": "IsPBound",
+  "table": "UpdateSt",
+  "regfunc": "0x7e0590",
+  "ea": "0x7e0719",
+  "native": "sub_44F340",
+  "wrapper": "sub_44F340",
+  "ret": "int",
+  "args": [],
+  "qualified_table": "BCom.UpdateSt"
+ },
+ {
+  "kind": "method",
+  "name": "CheckPosState",
+  "table": "UpdateSt",
+  "regfunc": "0x7e0590",
+  "ea": "0x7e072b",
+  "native": "sub_44F380",
+  "wrapper": "sub_44F380",
+  "ret": "int",
+  "args": [
+   "int"
+  ],
+  "qualified_table": "BCom.UpdateSt"
+ },
+ {
+  "kind": "method",
+  "name": "CheckPState",
+  "table": "UpdateSt",
+  "regfunc": "0x7e0590",
+  "ea": "0x7e073d",
+  "native": "sub_44F3A0",
+  "wrapper": "sub_44F3A0",
+  "ret": "int",
+  "args": [
+   "int"
+  ],
+  "qualified_table": "BCom.UpdateSt"
+ },
+ {
+  "kind": "method",
+  "name": "CheckEState",
+  "table": "UpdateSt",
+  "regfunc": "0x7e0590",
+  "ea": "0x7e074f",
+  "native": "sub_44F3C0",
+  "wrapper": "sub_44F3C0",
+  "ret": "int",
+  "args": [
+   "int"
+  ],
+  "qualified_table": "BCom.UpdateSt"
+ },
+ {
+  "kind": "method",
+  "name": "GetTobiTime",
+  "table": "UpdateSt",
+  "regfunc": "0x7e0590",
+  "ea": "0x7e0761",
+  "native": "sub_44F3E0",
+  "wrapper": "sub_44F3E0",
+  "ret": "int",
+  "args": [],
+  "qualified_table": "BCom.UpdateSt"
+ },
+ {
+  "kind": "method",
+  "name": "GetComJumpLen",
+  "table": "UpdateSt",
+  "regfunc": "0x7e0590",
+  "ea": "0x7e0773",
+  "native": "sub_44F400",
+  "wrapper": "sub_44F400",
+  "ret": "int",
+  "args": [],
+  "qualified_table": "BCom.UpdateSt"
+ },
+ {
+  "kind": "table",
+  "name": "UpdateSt",
+  "table": "BCom",
+  "regfunc": "0x7e0590",
+  "ea": "0x7e0784"
+ },
+ {
+  "kind": "const",
+  "name": "_eComMoveFlag_MoveEnd",
+  "table": "BMvCoreConst",
+  "regfunc": "0x7e0590",
+  "ea": "0x7e07b4",
+  "value": "1",
+  "qualified_table": "BMvCoreConst"
+ },
+ {
+  "kind": "const",
+  "name": "_eComMoveFlag_ThroughEnd",
+  "table": "BMvCoreConst",
+  "regfunc": "0x7e0590",
+  "ea": "0x7e07c3",
+  "value": "2",
+  "qualified_table": "BMvCoreConst"
+ },
+ {
+  "kind": "const",
+  "name": "_eComMoveFlag_HitNext",
+  "table": "BMvCoreConst",
+  "regfunc": "0x7e0590",
+  "ea": "0x7e07d2",
+  "value": "4",
+  "qualified_table": "BMvCoreConst"
+ },
+ {
+  "kind": "const",
+  "name": "_eComMoveFlag_DamageNext",
+  "table": "BMvCoreConst",
+  "regfunc": "0x7e0590",
+  "ea": "0x7e07e1",
+  "value": "8",
+  "qualified_table": "BMvCoreConst"
+ },
+ {
+  "kind": "const",
+  "name": "_eComMoveFlag_HitObjNext",
+  "table": "BMvCoreConst",
+  "regfunc": "0x7e0590",
+  "ea": "0x7e07f0",
+  "value": "16",
+  "qualified_table": "BMvCoreConst"
+ },
+ {
+  "kind": "const",
+  "name": "_eComMoveFlag_DamageObjNext",
+  "table": "BMvCoreConst",
+  "regfunc": "0x7e0590",
+  "ea": "0x7e07ff",
+  "value": "32",
+  "qualified_table": "BMvCoreConst"
+ },
+ {
+  "kind": "const",
+  "name": "_eComMoveFlag_HitEnd",
+  "table": "BMvCoreConst",
+  "regfunc": "0x7e0590",
+  "ea": "0x7e080e",
+  "value": "64",
+  "qualified_table": "BMvCoreConst"
+ },
+ {
+  "kind": "const",
+  "name": "_eComMoveFlag_DamageEnd",
+  "table": "BMvCoreConst",
+  "regfunc": "0x7e0590",
+  "ea": "0x7e0820",
+  "value": "128",
+  "qualified_table": "BMvCoreConst"
+ },
+ {
+  "kind": "const",
+  "name": "_eComMoveFlag_AirNext",
+  "table": "BMvCoreConst",
+  "regfunc": "0x7e0590",
+  "ea": "0x7e0832",
+  "value": "256",
+  "qualified_table": "BMvCoreConst"
+ },
+ {
+  "kind": "const",
+  "name": "_eComMoveFlag_GroundNext",
+  "table": "BMvCoreConst",
+  "regfunc": "0x7e0590",
+  "ea": "0x7e0844",
+  "value": "512",
+  "qualified_table": "BMvCoreConst"
+ },
+ {
+  "kind": "const",
+  "name": "_eComMoveFlag_MoveableNext",
+  "table": "BMvCoreConst",
+  "regfunc": "0x7e0590",
+  "ea": "0x7e0856",
+  "value": "1024",
+  "qualified_table": "BMvCoreConst"
+ },
+ {
+  "kind": "const",
+  "name": "_eComMoveFlag_MovedisableNext",
+  "table": "BMvCoreConst",
+  "regfunc": "0x7e0590",
+  "ea": "0x7e0868",
+  "value": "2048",
+  "qualified_table": "BMvCoreConst"
+ },
+ {
+  "kind": "const",
+  "name": "_eComMoveFlag_AirEnd",
+  "table": "BMvCoreConst",
+  "regfunc": "0x7e0590",
+  "ea": "0x7e087a",
+  "value": "4096",
+  "qualified_table": "BMvCoreConst"
+ },
+ {
+  "kind": "const",
+  "name": "_eComMoveFlag_GroundEnd",
+  "table": "BMvCoreConst",
+  "regfunc": "0x7e0590",
+  "ea": "0x7e088c",
+  "value": "0x2000",
+  "qualified_table": "BMvCoreConst"
+ },
+ {
+  "kind": "const",
+  "name": "_eComMoveFlag_MoveableEnd",
+  "table": "BMvCoreConst",
+  "regfunc": "0x7e0590",
+  "ea": "0x7e089e",
+  "value": "0x4000",
+  "qualified_table": "BMvCoreConst"
+ },
+ {
+  "kind": "const",
+  "name": "_eComMoveFlag_MovedisableEnd",
+  "table": "BMvCoreConst",
+  "regfunc": "0x7e0590",
+  "ea": "0x7e08b0",
+  "value": "0x8000",
+  "qualified_table": "BMvCoreConst"
+ },
+ {
+  "kind": "const",
+  "name": "_eComMoveFlag_NmCancelEnd",
+  "table": "BMvCoreConst",
+  "regfunc": "0x7e0590",
+  "ea": "0x7e08c2",
+  "value": "0x10000",
+  "qualified_table": "BMvCoreConst"
+ },
+ {
+  "kind": "const",
+  "name": "_eComMoveFlag_SpCancelEnd",
+  "table": "BMvCoreConst",
+  "regfunc": "0x7e0590",
+  "ea": "0x7e08d4",
+  "value": "0x20000",
+  "qualified_table": "BMvCoreConst"
+ },
+ {
+  "kind": "const",
+  "name": "_eComMoveFlag_CancelEnd",
+  "table": "BMvCoreConst",
+  "regfunc": "0x7e0590",
+  "ea": "0x7e08e6",
+  "value": "196608",
+  "qualified_table": "BMvCoreConst"
+ },
+ {
+  "kind": "const",
+  "name": "_eComMoveFlag_NmCancelNext",
+  "table": "BMvCoreConst",
+  "regfunc": "0x7e0590",
+  "ea": "0x7e08f8",
+  "value": "0x40000",
+  "qualified_table": "BMvCoreConst"
+ },
+ {
+  "kind": "const",
+  "name": "_eComMoveFlag_SpCancelNext",
+  "table": "BMvCoreConst",
+  "regfunc": "0x7e0590",
+  "ea": "0x7e090a",
+  "value": "0x80000",
+  "qualified_table": "BMvCoreConst"
+ },
+ {
+  "kind": "const",
+  "name": "_eComMoveFlag_CancelNext",
+  "table": "BMvCoreConst",
+  "regfunc": "0x7e0590",
+  "ea": "0x7e091c",
+  "value": "786432",
+  "qualified_table": "BMvCoreConst"
+ },
+ {
+  "kind": "const",
+  "name": "_eComMoveFlag_StickHold",
+  "table": "BMvCoreConst",
+  "regfunc": "0x7e0590",
+  "ea": "0x7e092e",
+  "value": "0x40000000",
+  "qualified_table": "BMvCoreConst"
+ },
+ {
+  "kind": "const",
+  "name": "_eComMoveFlag_ButtonHold",
+  "table": "BMvCoreConst",
+  "regfunc": "0x7e0590",
+  "ea": "0x7e0940",
+  "value": "0x80000000",
+  "qualified_table": "BMvCoreConst"
+ },
+ {
+  "kind": "const",
+  "name": "_eComSkillType_Interrupt",
+  "table": "BMvCoreConst",
+  "regfunc": "0x7e0590",
+  "ea": "0x7e094f",
+  "value": "1",
+  "qualified_table": "BMvCoreConst"
+ },
+ {
+  "kind": "const",
+  "name": "_eComSkillType_NoInterrupt",
+  "table": "BMvCoreConst",
+  "regfunc": "0x7e0590",
+  "ea": "0x7e095e",
+  "value": "2",
+  "qualified_table": "BMvCoreConst"
+ },
+ {
+  "kind": "const",
+  "name": "_eComButton_A",
+  "table": "BMvCoreConst",
+  "regfunc": "0x7e0590",
+  "ea": "0x7e096d",
+  "value": "1",
+  "qualified_table": "BMvCoreConst"
+ },
+ {
+  "kind": "const",
+  "name": "_eComButton_B",
+  "table": "BMvCoreConst",
+  "regfunc": "0x7e0590",
+  "ea": "0x7e097c",
+  "value": "2",
+  "qualified_table": "BMvCoreConst"
+ },
+ {
+  "kind": "const",
+  "name": "_eComButton_C",
+  "table": "BMvCoreConst",
+  "regfunc": "0x7e0590",
+  "ea": "0x7e098b",
+  "value": "4",
+  "qualified_table": "BMvCoreConst"
+ },
+ {
+  "kind": "const",
+  "name": "_eComButton_D",
+  "table": "BMvCoreConst",
+  "regfunc": "0x7e0590",
+  "ea": "0x7e099a",
+  "value": "8",
+  "qualified_table": "BMvCoreConst"
+ },
+ {
+  "kind": "const",
+  "name": "_eComState_MoveAble",
+  "table": "BMvCoreConst",
+  "regfunc": "0x7e0590",
+  "ea": "0x7e09a9",
+  "value": "1",
+  "qualified_table": "BMvCoreConst"
+ },
+ {
+  "kind": "const",
+  "name": "_eComState_Guard",
+  "table": "BMvCoreConst",
+  "regfunc": "0x7e0590",
+  "ea": "0x7e09b8",
+  "value": "2",
+  "qualified_table": "BMvCoreConst"
+ },
+ {
+  "kind": "const",
+  "name": "_eComState_Damage",
+  "table": "BMvCoreConst",
+  "regfunc": "0x7e0590",
+  "ea": "0x7e09c7",
+  "value": "4",
+  "qualified_table": "BMvCoreConst"
+ },
+ {
+  "kind": "const",
+  "name": "_eComState_Grapped",
+  "table": "BMvCoreConst",
+  "regfunc": "0x7e0590",
+  "ea": "0x7e09d6",
+  "value": "8",
+  "qualified_table": "BMvCoreConst"
+ },
+ {
+  "kind": "const",
+  "name": "_eComState_Bound",
+  "table": "BMvCoreConst",
+  "regfunc": "0x7e0590",
+  "ea": "0x7e09e5",
+  "value": "6",
+  "qualified_table": "BMvCoreConst"
+ },
+ {
+  "kind": "const",
+  "name": "_eComState_Chance",
+  "table": "BMvCoreConst",
+  "regfunc": "0x7e0590",
+  "ea": "0x7e09f7",
+  "value": "128",
+  "qualified_table": "BMvCoreConst"
+ },
+ {
+  "kind": "const",
+  "name": "_eComState_Attack",
+  "table": "BMvCoreConst",
+  "regfunc": "0x7e0590",
+  "ea": "0x7e0a09",
+  "value": "256",
+  "qualified_table": "BMvCoreConst"
+ },
+ {
+  "kind": "table",
+  "name": "BMvCoreConst",
+  "table": "",
+  "regfunc": "0x7e0590",
+  "ea": "0x7e0a3f"
+ },
+ {
+  "kind": "table",
+  "name": "BCom",
+  "table": "",
+  "regfunc": "0x7e0590",
+  "ea": "0x7e0a8d"
+ },
+ {
+  "kind": "method",
+  "name": "Load",
+  "table": "CDat",
+  "regfunc": "0x7e1710",
+  "ea": "0x7e177c",
+  "native": "sub_7CFCD0",
+  "wrapper": "sub_7CFCD0",
+  "ret": "int",
+  "args": [
+   "int"
+  ],
+  "qualified_table": "tPAni.CDat"
+ },
+ {
+  "kind": "method",
+  "name": "SetPosition",
+  "table": "CDat",
+  "regfunc": "0x7e1710",
+  "ea": "0x7e178e",
+  "native": "sub_7CFA80",
+  "wrapper": "sub_7CFA80",
+  "ret": "int",
+  "args": [
+   "int",
+   "int"
+  ],
+  "qualified_table": "tPAni.CDat"
+ },
+ {
+  "kind": "table",
+  "name": "CDat",
+  "table": "tPAni",
+  "regfunc": "0x7e1710",
+  "ea": "0x7e179f"
+ },
+ {
+  "kind": "func",
+  "name": "AddFrame",
+  "table": "CAnime",
+  "regfunc": "0x7e1710",
+  "ea": "0x7e17e6",
+  "native": "sub_72CB10",
+  "wrapper": "sub_72CB10",
+  "ret": "int",
+  "args": [
+   "string",
+   "float"
+  ],
+  "qualified_table": "tPAni.CAnime"
+ },
+ {
+  "kind": "func",
+  "name": "AddFrameEx",
+  "table": "CAnime",
+  "regfunc": "0x7e1710",
+  "ea": "0x7e17f8",
+  "native": "sub_72CA60",
+  "wrapper": "sub_72CA60",
+  "ret": "int",
+  "args": [
+   "string",
+   "float",
+   "int"
+  ],
+  "qualified_table": "tPAni.CAnime"
+ },
+ {
+  "kind": "func",
+  "name": "AddJump",
+  "table": "CAnime",
+  "regfunc": "0x7e1710",
+  "ea": "0x7e180a",
+  "native": "sub_72C780",
+  "wrapper": "sub_72C780",
+  "ret": "int",
+  "args": [
+   "int"
+  ],
+  "qualified_table": "tPAni.CAnime"
+ },
+ {
+  "kind": "method",
+  "name": "AddModeJump",
+  "table": "CAnime",
+  "regfunc": "0x7e1710",
+  "ea": "0x7e181c",
+  "native": "sub_72C6A0",
+  "wrapper": "sub_72C6A0",
+  "ret": "int",
+  "args": [
+   "int",
+   "int",
+   "int"
+  ],
+  "qualified_table": "tPAni.CAnime"
+ },
+ {
+  "kind": "func",
+  "name": "AddTagJump",
+  "table": "CAnime",
+  "regfunc": "0x7e1710",
+  "ea": "0x7e182e",
+  "native": "sub_72CA40",
+  "wrapper": "sub_72CA40",
+  "ret": "int",
+  "args": [
+   "int"
+  ],
+  "qualified_table": "tPAni.CAnime"
+ },
+ {
+  "kind": "func",
+  "name": "AddModeTagJump",
+  "table": "CAnime",
+  "regfunc": "0x7e1710",
+  "ea": "0x7e1840",
+  "native": "sub_72C900",
+  "wrapper": "sub_72C900",
+  "ret": "int",
+  "args": [
+   "int",
+   "int",
+   "int"
+  ],
+  "qualified_table": "tPAni.CAnime"
+ },
+ {
+  "kind": "func",
+  "name": "AddTag",
+  "table": "CAnime",
+  "regfunc": "0x7e1710",
+  "ea": "0x7e1852",
+  "native": "sub_72C9A0",
+  "wrapper": "sub_72C9A0",
+  "ret": "int",
+  "args": [
+   "string"
+  ],
+  "qualified_table": "tPAni.CAnime"
+ },
+ {
+  "kind": "func",
+  "name": "AddSe",
+  "table": "CAnime",
+  "regfunc": "0x7e1710",
+  "ea": "0x7e1864",
+  "native": "sub_72C5D0",
+  "wrapper": "sub_72C5D0",
+  "ret": "int",
+  "args": [
+   "int"
+  ],
+  "qualified_table": "tPAni.CAnime"
+ },
+ {
+  "kind": "func",
+  "name": "AddModeTag",
+  "table": "CAnime",
+  "regfunc": "0x7e1710",
+  "ea": "0x7e1876",
+  "native": "sub_72C570",
+  "wrapper": "sub_72C570",
+  "ret": "int",
+  "args": [
+   "int"
+  ],
+  "qualified_table": "tPAni.CAnime"
+ },
+ {
+  "kind": "func",
+  "name": "SetPrio",
+  "table": "CAnime",
+  "regfunc": "0x7e1710",
+  "ea": "0x7e1888",
+  "qualified_table": "tPAni.CAnime"
+ },
+ {
+  "kind": "func",
+  "name": "SetMode",
+  "table": "CAnime",
+  "regfunc": "0x7e1710",
+  "ea": "0x7e189a",
+  "native": "sub_4426D0",
+  "wrapper": "sub_4426D0",
+  "ret": "instance",
+  "args": [
+   "int"
+  ],
+  "qualified_table": "tPAni.CAnime"
+ },
+ {
+  "kind": "func",
+  "name": "GetMode",
+  "table": "CAnime",
+  "regfunc": "0x7e1710",
+  "ea": "0x7e18ac",
+  "qualified_table": "tPAni.CAnime"
+ },
+ {
+  "kind": "func",
+  "name": "AddMode",
+  "table": "CAnime",
+  "regfunc": "0x7e1710",
+  "ea": "0x7e18be",
+  "native": "sub_4680B0",
+  "wrapper": "sub_4680B0",
+  "ret": "instance",
+  "args": [
+   "int"
+  ],
+  "qualified_table": "tPAni.CAnime"
+ },
+ {
+  "kind": "func",
+  "name": "IsNull",
+  "table": "CAnime",
+  "regfunc": "0x7e1710",
+  "ea": "0x7e18d0",
+  "native": "sub_44E5C0",
+  "wrapper": "sub_44E5C0",
+  "ret": "int",
+  "args": [],
+  "qualified_table": "tPAni.CAnime"
+ },
+ {
+  "kind": "func",
+  "name": "SetView",
+  "table": "CAnime",
+  "regfunc": "0x7e1710",
+  "ea": "0x7e18e2",
+  "native": "sub_434BF0",
+  "wrapper": "sub_434BF0",
+  "ret": "instance",
+  "args": [
+   "int"
+  ],
+  "qualified_table": "tPAni.CAnime"
+ },
+ {
+  "kind": "func",
+  "name": "GetView",
+  "table": "CAnime",
+  "regfunc": "0x7e1710",
+  "ea": "0x7e18f4",
+  "qualified_table": "tPAni.CAnime"
+ },
+ {
+  "kind": "method",
+  "name": "ClearFrame",
+  "table": "CAnime",
+  "regfunc": "0x7e1710",
+  "ea": "0x7e1906",
+  "native": "sub_72C190",
+  "wrapper": "sub_72C190",
+  "ret": "int",
+  "args": [],
+  "qualified_table": "tPAni.CAnime"
+ },
+ {
+  "kind": "method",
+  "name": "SetStartWait",
+  "table": "CAnime",
+  "regfunc": "0x7e1710",
+  "ea": "0x7e1918",
+  "native": "sub_4426F0",
+  "wrapper": "sub_4426F0",
+  "ret": "float",
+  "args": [
+   "float"
+  ],
+  "qualified_table": "tPAni.CAnime"
+ },
+ {
+  "kind": "table",
+  "name": "CAnime",
+  "table": "tPAni",
+  "regfunc": "0x7e1710",
+  "ea": "0x7e1929"
+ },
+ {
+  "kind": "func",
+  "name": "Render",
+  "table": "CAniManager",
+  "regfunc": "0x7e1710",
+  "ea": "0x7e1970",
+  "native": "sub_434EA0",
+  "wrapper": "sub_434EA0",
+  "ret": "int",
+  "args": [],
+  "qualified_table": "tPAni.CAniManager"
+ },
+ {
+  "kind": "func",
+  "name": "Update",
+  "table": "CAniManager",
+  "regfunc": "0x7e1710",
+  "ea": "0x7e1982",
+  "native": "sub_434E30",
+  "wrapper": "sub_434E30",
+  "ret": "int",
+  "args": [],
+  "qualified_table": "tPAni.CAniManager"
+ },
+ {
+  "kind": "func",
+  "name": "Reset",
+  "table": "CAniManager",
+  "regfunc": "0x7e1710",
+  "ea": "0x7e1994",
+  "native": "sub_444680",
+  "wrapper": "sub_444680",
+  "ret": "int",
+  "args": [],
+  "qualified_table": "tPAni.CAniManager"
+ },
+ {
+  "kind": "method",
+  "name": "Finalize",
+  "table": "CAniManager",
+  "regfunc": "0x7e1710",
+  "ea": "0x7e19a6",
+  "native": "sub_434D20",
+  "wrapper": "sub_434D20",
+  "ret": "int",
+  "args": [],
+  "qualified_table": "tPAni.CAniManager"
+ },
+ {
+  "kind": "func",
+  "name": "SetMode",
+  "table": "CAniManager",
+  "regfunc": "0x7e1710",
+  "ea": "0x7e19b8",
+  "native": "sub_442710",
+  "wrapper": "sub_442710",
+  "ret": "int",
+  "args": [
+   "int"
+  ],
+  "qualified_table": "tPAni.CAniManager"
+ },
+ {
+  "kind": "func",
+  "name": "GetCAnime",
+  "table": "CAniManager",
+  "regfunc": "0x7e1710",
+  "ea": "0x7e19ca",
+  "native": "sub_4680E0",
+  "wrapper": "sub_4680E0",
+  "ret": "instance",
+  "args": [
+   "string"
+  ],
+  "qualified_table": "tPAni.CAniManager"
+ },
+ {
+  "kind": "table",
+  "name": "CAniManager",
+  "table": "tPAni",
+  "regfunc": "0x7e1710",
+  "ea": "0x7e19db"
+ },
+ {
+  "kind": "table",
+  "name": "tPAni",
+  "table": "",
+  "regfunc": "0x7e1710",
+  "ea": "0x7e1a20"
+ },
+ {
+  "kind": "const",
+  "name": "_PAniFlag_JpEqual",
+  "table": "tPAniConst",
+  "regfunc": "0x7e1710",
+  "ea": "0x7e1a53",
+  "value": "1",
+  "qualified_table": "tPAniConst"
+ },
+ {
+  "kind": "const",
+  "name": "_PAniFlag_JpGrater",
+  "table": "tPAniConst",
+  "regfunc": "0x7e1710",
+  "ea": "0x7e1a62",
+  "value": "2",
+  "qualified_table": "tPAniConst"
+ },
+ {
+  "kind": "const",
+  "name": "_PAniFlag_JpLess",
+  "table": "tPAniConst",
+  "regfunc": "0x7e1710",
+  "ea": "0x7e1a71",
+  "value": "3",
+  "qualified_table": "tPAniConst"
+ },
+ {
+  "kind": "const",
+  "name": "_PAniFrame_IpNormal",
+  "table": "tPAniConst",
+  "regfunc": "0x7e1710",
+  "ea": "0x7e1a80",
+  "value": "0",
+  "qualified_table": "tPAniConst"
+ },
+ {
+  "kind": "const",
+  "name": "_PAniFrame_IpAccel",
+  "table": "tPAniConst",
+  "regfunc": "0x7e1710",
+  "ea": "0x7e1a8f",
+  "value": "1",
+  "qualified_table": "tPAniConst"
+ },
+ {
+  "kind": "const",
+  "name": "_PAniFrame_IpDecel",
+  "table": "tPAniConst",
+  "regfunc": "0x7e1710",
+  "ea": "0x7e1a9e",
+  "value": "2",
+  "qualified_table": "tPAniConst"
+ },
+ {
+  "kind": "const",
+  "name": "_PAniFrame_IpAccelEx",
+  "table": "tPAniConst",
+  "regfunc": "0x7e1710",
+  "ea": "0x7e1aad",
+  "value": "3",
+  "qualified_table": "tPAniConst"
+ },
+ {
+  "kind": "const",
+  "name": "_PAniFrame_IpDecelEx",
+  "table": "tPAniConst",
+  "regfunc": "0x7e1710",
+  "ea": "0x7e1abc",
+  "value": "4",
+  "qualified_table": "tPAniConst"
+ },
+ {
+  "kind": "const",
+  "name": "_PAniFrame_IpAtoD",
+  "table": "tPAniConst",
+  "regfunc": "0x7e1710",
+  "ea": "0x7e1acb",
+  "value": "5",
+  "qualified_table": "tPAniConst"
+ },
+ {
+  "kind": "const",
+  "name": "_PAniFrame_IpDtoA",
+  "table": "tPAniConst",
+  "regfunc": "0x7e1710",
+  "ea": "0x7e1ada",
+  "value": "6",
+  "qualified_table": "tPAniConst"
+ },
+ {
+  "kind": "const",
+  "name": "_PAniFrame_IpNone",
+  "table": "tPAniConst",
+  "regfunc": "0x7e1710",
+  "ea": "0x7e1ae9",
+  "value": "7",
+  "qualified_table": "tPAniConst"
+ },
+ {
+  "kind": "table",
+  "name": "tPAniConst",
+  "table": "",
+  "regfunc": "0x7e1710",
+  "ea": "0x7e1b22"
+ }
+]

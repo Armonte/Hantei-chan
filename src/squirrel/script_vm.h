@@ -3,8 +3,8 @@
 
 // In-editor Squirrel 2.2.4 VM (the games' exact VM, third_party/squirrel-2.2.4 with SQ_FB_COMPAT and
 // FB's Shift-JIS lexer), sandboxed: the game registers io and system, but here every native that
-// could touch files or spawn processes (file, dofile, loadfile, writeclosuretofile, system, remove,
-// rename, getenv) is a stub that only reports what the script would have done. __dofile__ and
+// could touch files or spawn processes (file, loadfile, writeclosuretofile, system, remove,
+// rename, getenv) is a stub that only reports what the script would have done. __dofile__, dofile and
 // SQ_LoadString read (never write) below the game root, like the game's archive search path.
 //
 // Natives come from the game's API profile (docs/squirrel/api/<game>_api.json, generated from the

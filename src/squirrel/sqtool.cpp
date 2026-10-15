@@ -370,6 +370,9 @@ static HSQUIRRELVM OpenGameVM(const json *api, StubStats *st)
 	sq_newclosure(v, RuntimeErrorHandler, 0);
 	sq_seterrorhandler(v);
 	RegisterGlobal(v, "__dofile__", Native_dofile);
+	// UNI[st]/[cl-r] loads its defines with the stdlib dofile(".\\script\\x.txt"): resolve it against the game root too
+	// (the stdlib one would read relative to the current directory).
+	RegisterGlobal(v, "dofile", Native_dofile);
 	RegisterGlobal(v, "SQ_LoadString", Native_LoadString);
 	if (api && st)
 		*st = InstallApi(v, *api);
