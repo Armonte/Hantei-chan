@@ -27,6 +27,7 @@ enum class ShortcutContext : uint8_t {
 	stageView,       // background/stage tab
 	commands,        // _c.txt command workspace (owns its own undo history)
 	authoring,       // [authoring] the Authoring workspace (its tuning history: Ctrl+Z / Ctrl+Y)
+	script,          // Squirrel Script panel (the text widget owns its own undo history)
 	count
 };
 

@@ -817,6 +817,11 @@ void MainFrame::Menu(unsigned int errorPopupId)
 				std::string &&file = FileDialog(fileType::CMDTXT);
 				if (!file.empty()) openCommandEditor(file);
 			}
+			if (ImGui::MenuItem(LBL("Squirrel script editor (UNI2 / MBTL ...)"), nullptr, scriptPanel && scriptPanel->visible()))
+			{
+				if (!scriptPanel) scriptPanel = std::make_unique<sqedit::ScriptPanel>();
+				scriptPanel->setVisible(!scriptPanel->visible());
+			}
 			ImGui::Separator();
 			if (ImGui::MenuItem(LBL("Edit parts of this RBO / GOF2 character (PAT editor)"), nullptr, false, hasActive && active->frameData.isHan2() && active->parts.loaded))
 				openPartsEditorForCharacter(active);
