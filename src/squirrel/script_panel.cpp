@@ -194,6 +194,93 @@ struct ScriptPanel::Impl {
 	bool forceNextSave = false;
 	std::deque<std::string> log;
 	ScriptPanel* owner = nullptr;
+	// Outline (P5): command entries of a _cmd_ table, t.Mv_* move blocks, functions. Rebuilt on change.
+	struct OutlineItem {
+		std::string name, command, move; // command: the command = [...] list; move: UpdateTable name
+		size_t line = 0;
+		int depth = 0;
+	};
+	std::vector<OutlineItem> outline;
+	bool outlineDirty = true;
+	std::string outlineFilter;
+
+	void buildOutline()
+	{
+		outline.clear();
+		outlineDirty = false;
+		const size_t n = editor.GetLineCount();
+		int depth = 0;
+		bool inBlockComment = false;
+		static const std::regex member(R"(^\s*([A-Za-z_]\w*)\s*=\s*(\{|$))");
+		static const std::regex slot(R"(^\s*(?:[A-Za-z_]\w*\.)+([A-Za-z_]\w*)\s*<-)");
+		static const std::regex func(R"(^\s*function\s+([A-Za-z_][\w:.]*)\s*\()");
+		static const std::regex cmd(R"(\bcommand\s*=\s*\[([^\]]*)\])");
+		static const std::regex mv(R"(\bname\s*=\s*"(Mv_\w+)")");
+		OutlineItem* open = nullptr;
+		int openDepth = -1;
+		for (size_t i = 0; i < n; i++) {
+			const std::string line = editor.GetLineText(i);
+			// Strip comments and string contents for brace counting.
+			std::string code;
+			bool str = false;
+			for (size_t k = 0; k < line.size(); k++) {
+				const char c = line[k];
+				if (inBlockComment) { if (c == '*' && k + 1 < line.size() && line[k + 1] == '/') { inBlockComment = false; k++; } continue; }
+				if (str) { if (c == '\\') k++; else if (c == '"') str = false; continue; }
+				if (c == '"') { str = true; code += c; continue; }
+				if (c == '/' && k + 1 < line.size() && line[k + 1] == '/') break;
+				if (c == '/' && k + 1 < line.size() && line[k + 1] == '*') { inBlockComment = true; k++; continue; }
+				code += c;
+			}
+			std::smatch m;
+			const int before = depth;
+			if (std::regex_search(code, m, slot)) {
+				outline.push_back({m[1].str(), "", "", i, 0});
+				open = &outline.back(); openDepth = before;
+			} else if (std::regex_search(code, m, func) && before <= 2) {
+				outline.push_back({m[1].str() + "()", "", "", i, before});
+			} else if (before == 1 && std::regex_search(code, m, member)) {
+				outline.push_back({m[1].str(), "", "", i, 0});
+				open = &outline.back(); openDepth = before;
+			}
+			if (open) {
+				if (std::regex_search(line, m, cmd) && open->command.empty()) open->command = m[1].str();
+				if (std::regex_search(line, m, mv) && open->move.empty()) open->move = m[1].str();
+			}
+			for (char c : code) depth += c == '{' ? 1 : c == '}' ? -1 : 0;
+			if (open && depth <= openDepth && i > open->line) open = nullptr;
+		}
+	}
+
+	void drawOutline()
+	{
+		if (outlineDirty) buildOutline();
+		ImGui::SetNextItemWidth(-1);
+		char buf[64];
+		snprintf(buf, sizeof buf, "%s", outlineFilter.c_str());
+		if (ImGui::InputTextWithHint("##ofilter", "outline filter", buf, sizeof buf)) outlineFilter = buf;
+		for (size_t i = 0; i < outline.size(); i++) {
+			const auto& o = outline[i];
+			if (!outlineFilter.empty() && o.name.find(outlineFilter) == std::string::npos && o.move.find(outlineFilter) == std::string::npos) continue;
+			ImGui::PushID(static_cast<int>(i));
+			if (o.depth) ImGui::Indent(10.0f * o.depth);
+			if (ImGui::Selectable(o.name.c_str())) {
+				editor.SetCursor(TextEditor::DocPos(o.line, 0));
+				editor.ScrollToLine(o.line, TextEditor::Scroll::alignTop);
+			}
+			if (!o.command.empty() || !o.move.empty()) {
+				if (ImGui::IsItemHovered()) {
+					ImGui::BeginTooltip();
+					if (!o.command.empty()) ImGui::Text("command = [%s]", o.command.c_str());
+					if (!o.move.empty()) ImGui::Text("-> %s", o.move.c_str());
+					ImGui::EndTooltip();
+				}
+				if (!o.command.empty()) { ImGui::SameLine(); ImGui::TextDisabled("%s", o.command.c_str()); }
+			}
+			if (o.depth) ImGui::Unindent(10.0f * o.depth);
+			ImGui::PopID();
+		}
+	}
 	std::map<std::string, std::vector<ApiSym>> api; // by native name; one name can live in several tables
 	std::map<std::string, int> consts;               // integer `const` from script/*.txt (def_PAT_* = pattern numbers)
 	// Completion popup (Ctrl+Space). It is an ImGui popup so it owns the keyboard while open.
@@ -271,7 +358,7 @@ struct ScriptPanel::Impl {
 			const size_t close = line.find('"', open + 1);
 			if (close == std::string::npos) break;
 			if (open <= at && at <= close) {
-				static const std::regex lead(R"((?:\bpat|\bstart_pat|SetPattern)\s*[=(]\s*$)");
+				static const std::regex lead(R"((?:\bpat|\bstart_pat|\bDataPattern|SetPattern)\s*[=(]\s*$)");
 				if (!std::regex_search(line.substr(0, open), lead)) return false;
 				out.code = line.substr(open + 1, close - open - 1);
 				return !out.code.empty();
@@ -291,7 +378,7 @@ struct ScriptPanel::Impl {
 		}
 		if (word.find_first_not_of("0123456789") != std::string::npos) return false;
 		const std::string left = line.substr(0, b);
-		static const std::regex patLead(R"((?:\bpat|\bstart_pat|SetPattern)\s*[=(]\s*$)");
+		static const std::regex patLead(R"((?:\bpat|\bstart_pat|\bDataPattern|SetPattern)\s*[=(]\s*$)");
 		static const std::regex afidLead(R"((?:JumpFrameID\s*\(\s*|\bcase\s+)$)");
 		if (std::regex_search(left, patLead)) out.pattern = std::stoi(word);
 		else if (std::regex_search(left, afidLead)) out.afid = std::stoi(word);
@@ -414,7 +501,7 @@ ScriptPanel::ScriptPanel() : m(std::make_unique<Impl>())
 	m->editor.SetLanguage(SquirrelLanguage());
 	m->editor.SetLineFoldingEnabled(true);
 	m->owner = this;
-	m->editor.SetChangeCallback([this] { m->dirty = true; });
+	m->editor.SetChangeCallback([this] { m->dirty = true; m->outlineDirty = true; });
 }
 
 ScriptPanel::~ScriptPanel() = default;
@@ -463,6 +550,7 @@ bool ScriptPanel::openFile(const std::string& pathUtf8, std::string* error)
 	}
 	m->doc.loadBytes(bytes);
 	m->editor.SetText(m->doc.utf8Text());
+	m->outlineDirty = true;
 	m->editor.ClearMarkers();
 	m->dirty = false;
 	m->offerSaveAnyway = false;
@@ -540,13 +628,20 @@ void ScriptPanel::draw()
 	}
 	ImGui::EndChild();
 	ImGui::SameLine();
-	ImGui::BeginChild("##edit", ImVec2(0, -logH));
+	const float outlineW = m->currentRel.empty() ? 0.0f : 240.0f;
+	ImGui::BeginChild("##edit", ImVec2(outlineW > 0 ? -outlineW - ImGui::GetStyle().ItemSpacing.x : 0, -logH));
 	if (!m->currentRel.empty()) {
 		m->editor.Render("##sqtext", ImVec2(-1, -1));
 		m->drawHover();
 		m->drawCompletion(m_focused);
 	} else ImGui::TextDisabled("Open a game folder (the one holding script/ and data/), then pick a script.");
 	ImGui::EndChild();
+	if (outlineW > 0) {
+		ImGui::SameLine();
+		ImGui::BeginChild("##outline", ImVec2(0, -logH), ImGuiChildFlags_Borders);
+		m->drawOutline();
+		ImGui::EndChild();
+	}
 	ImGui::BeginChild("##log", ImVec2(0, 0), ImGuiChildFlags_Borders);
 	for (const auto& l : m->log) ImGui::TextUnformatted(l.c_str());
 	if (ImGui::GetScrollY() >= ImGui::GetScrollMaxY()) ImGui::SetScrollHereY(1.0f);
