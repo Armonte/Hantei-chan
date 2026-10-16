@@ -329,6 +329,7 @@ bool Load(State& s, const std::string& bgDir, const std::string& dataFile)
 	snprintf(s.bgDir, sizeof(s.bgDir), "%s", bgDir.c_str());
 	s.dataFile = dataFile;
 	s.loadedName = dataFile;
+	s.alignStatus.clear();   // a "Wrote ..." line belongs to the previous stage
 	s.loaded = true;
 	s.frame = 0;
 	HC_LOG_INFO("stage3d: loaded {} ({} nodes, {} meshes, {} tris, {} textures, {} missing), FOV {} scale {} fog {}", dir, s.stats.nodes, s.stats.meshes,
