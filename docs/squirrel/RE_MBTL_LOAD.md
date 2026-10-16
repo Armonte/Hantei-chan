@@ -102,3 +102,19 @@ not crash. The standard move builders (`GetStdMoveTable`, `makemv_*`) also probe
 P_AtkA, ...); those misses are by design and are not tied to a command. `sqtool --chars` reports a missing code only for a
 template move the character's `<CHR>_CommandTable` can start (UpdateTable.name), with the move name read from the calling
 script frame (`mvname`). Vanilla MBTL: none.
+
+## UNI2 1.42 (same model, traced 2026-10-15)
+
+IDB `C:\dev\ida\server\uni2_142_4ebed985.exe.i64`. `Chara_LoadBattleScripts` 0x645E50 has the same order (sc via
+`CharaDatSq_LoadBattleStatus` 0x8905B0, push on `g_ObjectManager` 0x9F2A98, `Chara_LoadCommandList` 0x646F30,
+`Chara_LoadMoveList` 0x646B20, `Chara_LoadComScripts` 0x645350); `Sq_InitBattleVM` 0x8808B0 runs Battle_Init, Battle_Std,
+data/_combase.txt. Load-time natives: `BMvEff_GetPatternNum` 0x88B100 (same datatype rule, `g_ExtraPlayerObject` 0x1060110),
+`BtlMvStd_CheckHan6Data_Stub` 0x89A6C0 (returns 0), `BMvTbl_GetPlayerSide` 0x899310, `BMvEff_GetVector_FromAngle` 0x8894A0
+(angle·π, speed 100). Class fields bind through `Sqrat_Class_BindVarClosure` (one call per getter/setter closure, offset by
+reference; was misnamed BindMethod); classes are created in per-class `SqClass_<Name>_Ctor` helpers. `sqtool --chars`:
+UNI2 28/28 load clean.
+
+Caveat on the missing-pattern report: a template move's `Init_Std` calls `SetPattern(-1)` when its code is missing, but the
+move's own `Init_After` may set the real pattern afterwards (UNI2 chr022 `Mv_Atk_StdBandC_AddAtk5/6` via
+`maketmpl_SkillAvoidAtk` → `SetPattern("B+C_Add5")`), so a reported move is only broken when nothing later in its Init sets
+a pattern.
