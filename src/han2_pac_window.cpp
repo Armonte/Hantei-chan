@@ -1,4 +1,5 @@
 #include "han2_pac_window.h"
+#include "ui/ui_style.h"
 #include "han2_typed_files.h"
 #include "han2_browser.h"
 #include "archive_browser.h"
@@ -151,7 +152,7 @@ void PacCreateAddMemory(const std::string &name, std::vector<uint8_t> data)
 void DrawPacCreate()
 {
 	if (!showPacCreate) return;
-	ImGui::SetNextWindowSize(ImVec2(720, 520), ImGuiCond_FirstUseEver);
+	ui::FitNextWindow(720, 520);
 	if (!ImGui::Begin(LBL("Create / patch a PAC archive"), &showPacCreate)) { ImGui::End(); return; }
 	ImGui::TextWrapped("%s", TXT("Pick a base PAC (it is copied to a temp file and read from the copy), replace entries by adding files or a folder with the same names, then save as a NEW archive. The base archive is never overwritten."));
 	if (ImGui::Button(LBL("Select base PAC..."))) { std::string p = FileDialog(fileType::HAN2, false); if (!p.empty()) SetBase(p); }
@@ -347,7 +348,7 @@ void DrawFileViewers()
 	for (auto &vp : g_views) {
 		Viewer &v = *vp;
 		char title[256]; snprintf(title, sizeof(title), "%s%s###viewer%d", sj2utf8(v.name).c_str(), v.dirty ? " *" : "", v.id);
-		ImGui::SetNextWindowSize(ImVec2(560, 460), ImGuiCond_FirstUseEver);
+		ui::FitNextWindow(560, 460);
 		if (!ImGui::Begin(title, &v.open)) { ImGui::End(); continue; }
 		ImGui::PushTextWrapPos(0.0f); ImGui::TextDisabled(TXT("%s, %zu bytes"), v.origin.c_str(), v.bytes.size()); ImGui::PopTextWrapPos();
 		if (v.kind == Viewer::Image) {

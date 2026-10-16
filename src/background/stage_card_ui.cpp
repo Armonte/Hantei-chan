@@ -1,6 +1,7 @@
 // Stage card window (stage_card.h): one image per slot, resized to the slot's size, previewed, and written as the game's
 // files for a stage id into an output folder.
 #include "stage_card.h"
+#include "../ui/ui_style.h"
 
 #include "../filedialog.h"
 #include "../i18n.h"
@@ -41,7 +42,7 @@ bool Window::load(Slot s, const std::string& path)
 void Window::draw()
 {
 	if (!open) return;
-	ImGui::SetNextWindowSize(ImVec2(640, 520), ImGuiCond_FirstUseEver);
+	ui::FitNextWindow(640, 520);
 	if (!ImGui::Begin(LBL("Stage card (select name, preview, round call)"), &open)) { ImGui::End(); return; }
 	ImGui::TextWrapped("%s", TXT("MBAACC has no stage-name strings: the select screen and the round call show these images. Load any image per slot; it is resized to the slot. The BGM and its title are in the BGM window."));
 	ImGui::SetNextItemWidth(120);

@@ -1,4 +1,5 @@
 #include "script_panel.h"
+#include "../ui/ui_style.h"
 
 #include "script_document.h"
 #include "script_index.h"
@@ -1545,7 +1546,7 @@ void ScriptPanel::draw()
 {
 	m_focused = false;
 	if (!m_visible) return;
-	ImGui::SetNextWindowSize(ImVec2(1000, 700), ImGuiCond_FirstUseEver);
+	ui::FitNextWindow(1000, 700);
 	const std::string title = std::string("Script") + (m->dirty ? " *" : "") + (m->currentRel.empty() ? "" : " - " + m->currentRel) + "###SquirrelScript";
 	if (!ImGui::Begin(title.c_str(), &m_visible)) {
 		ImGui::End();

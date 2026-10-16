@@ -1,4 +1,5 @@
 #include "main_frame.h"
+#include "ui/ui_style.h"
 #include "startup_args.h"
 #include "render_target.h"
 
@@ -1073,7 +1074,7 @@ void MainFrame::drawStageBrowser()
 	ensureStageProject();
 	const ImVec2 mainPos = ImGui::GetMainViewport()->Pos;
 	ImGui::SetNextWindowPos(ImVec2(mainPos.x + 520.0f, mainPos.y + 80.0f), ImGuiCond_FirstUseEver);
-	ImGui::SetNextWindowSize(ImVec2(620.0f, 720.0f), ImGuiCond_FirstUseEver);
+	ui::FitNextWindow(620.0f, 720.0f);
 	if (!ImGui::Begin(LBL("Stage Browser"), &m_showStageBrowser)) { ImGui::End(); return; }
 	if (ImGui::IsWindowFocused(ImGuiFocusedFlags_RootAndChildWindows))
 		shortcuts.claimFocus(ShortcutContext::stageView, getActiveView() ? getActiveView()->getId() : 0);
