@@ -1533,3 +1533,63 @@ taken as a screen box at 1.5x (the bokashi input is also the editor's filtered c
   modes 0x64 / 0x65 (`TecCharaPtDraw_ShadowV`: out = vertex colour where tex a > 0; `_TEX`: tex × vertex colour), and the
   RT composite blend. Then: a Bg_003 gamecap `_sa` case with a plate that has the shadow pass off (hold the option at
   `dword_3642AF8`+0x10AFC = 0 for the plate only), and an editor shadow layer (toggle) drawn from the current frame.
+
+## UNI2 render-match17 (2026-10-16, fix/uni2-pral3-blur): PRAL 3, the post-fighter pass, the ring arcs
+No net renderer change: PRAL 3 stays normal blend, now backed by IDA and a game capture. Evidence: `r24b/`
+(`game_pral3_pral0_snone_crop.png` = game PRAL 3 | PRAL 0 | no prop, hat region), capture scripts
+`gamecap_scripts/v2r24b_chr020_{pral3,pral0,snone}.gcs`, pats in the main checkout's `tools/gamecap/round24b/`
+(built with `pat_solo_prop.py` + the new `pat_set_pral.py`). Full ctest exit 0.
+
+### PRAL 3 "blur mask": not on the battle path
+- **The blur pass (uni2 1.42; the plan's 0x872B10/0x872A60 names are the old exe).** `PatPart_PrepareDraw_ColorSpecBlendMatrix`
+  0x4150E0 calls `g_PatPartBlurCb_Blur` = `CharaPtBlur_Callback_Blur` → `CharaPtBlur_DrawBlurWH_Passes` 0x87F9A0, and
+  `Han6Draw_DrawPatLayerParts_2D` 0x4C01D0 calls `g_PatPartBlurCb_Begin` = `CharaPtBlur_BeginMaskTarget` 0x87FBA0 after
+  the part's prims. Everything goes into the part's bucket through `PrimQueue_QueueCallback` 0x4BAB70 (prim type 15);
+  buckets are LIFO (`PrimQueue_LinkPrimIntoBucket` 0x4BC570, walked by `PrimQueue_ExecuteBucketList` 0x4AB7F0), so the run
+  order is: save RTs (`CharaPtBlur_Cb_SaveRenderTargets`), RT B ← scene copy, bind the mask RT and clear it to 0xFF000000,
+  the part's prims, RT C ← `TecCharaPtBlurDrawH` (vertical 9 taps of B), restore, `TecCharaPtBlurDrawW` (horizontal 9 taps
+  of C, 0 where mask.r < 0.001) over the scene with normal blend. Kernel 0.1489 / 0.1416 / 0.1219 / 0.0949 / 0.0669, one
+  1280×720 texel per tap (`gamedata/uni2/Shader/sh_paniblur.txt`). The second pair `CharaPtMaskCopy_*` (TecCharaPtMaskCopy)
+  is registered but `g_PatPartMaskCopyCb_Draw/Begin` have no readers.
+- **Battle .pat layers do not take that path.** `DrawObj_DrawLayer` sends a .pat layer to `Han6Draw_DrawPatLayerParts_3D`
+  0x4BF9A0 when the object has a shader context (obj+116), else to `_2D`. The 3D path (`PatPart_SetupWorldMatrixAndShader`
+  → `PatPart_SetBlendState_PRAL`, 3 → normal) has no blur callback.
+- **Game check.** chr020 p5f2, set 991 reduced to slots 1,2,4,5,14,15 with PRAL forced to 3, against the same file with
+  PRAL 0 (UNI2 ships no PRAL 3 part: `pat_render_census.py` counts 0):
+
+| game pair (hat region 320×260) | mean \|d\| | px > 24 |
+|---|---|---|
+| PRAL 3 vs PRAL 0 | **1.14** | 1871 (the run-to-run ring arcs) |
+| PRAL 3 vs no prop | 19.70 | 26323 |
+| PRAL 0 vs no prop | 20.03 | 26555 |
+
+  On the flame px away from the arcs (4858 px) PRAL 3 vs PRAL 0 is 2.14. PRAL 3 is drawn like PRAL 0.
+- **Editor, before / after.** Before (normal blend): editor PRAL 3 shot = editor PRAL 0 shot (0 px differ), which matches
+  the game pair above. A mask-only blur implementation (built and shot this round, then removed) drew **nothing** for these
+  parts (0 px differ from the no-prop shot), against the game's 19.7. So the blur stays out of the editor. The 2D path
+  (`Han6Draw_DrawPartSet2D_FromObj` 0x606150 and objects without a shader context) is not a view the editor has.
+
+### "Post-fighter screen pass" (INDEX line 623): closed
+After the fighters, the queued full-screen passes are: `Stage_SubmitScreenTintQuads` (alpha tints, round 12); the
+Battle_FrameUpdate fade quad 0x526C6D (1280×720, `g_BattleScreenQuad_RGB/Alpha` at priority 0x400, only while
+`g_BattleScreenQuad_Timer` ≥ 0, normal blend); two 0x96-alpha HUD bars (596×32); and the CharaPtBlur pair above, which the
+battle path never queues. An alpha quad would add a uniform signed offset, and round 15 measured p435's signed residual
+at ≤ 0.1 (and negative). Nothing in the fighter path adds unsigned per-pixel noise, so **p435 stays at texel noise**:
+0.63, or 0.43 without the 8 rotated-texel px, against the 0.28 floor. That is the point-sampled rotated CG (rounds 6, 7
+and 15). No change.
+
+### Ring arcs (set 991 slots 41/44/45)
+They still change between runs: in this round's three captures they make up most of the 1871 px > 24 between PRAL 3
+and PRAL 0. The new IDA facts do not add an input. The prim queue is deterministic (fixed LIFO buckets by PRPR), the 3D
+part path has no callback, and round 15 found no varying timer in the ring and donut setup. **Not modelled.** The round-14
+mask stays.
+
+### IDB (uni2_142, renamed, commented, saved)
+`CharaPtBlur_Cb_{SaveRenderTargets,SetRT_SceneCopy,SetRT_Mask,SetRT_BlurV,RestoreRenderTargets}` 0x87F640/0x87F5C0/
+0x87F600/0x87F580/0x87F660, `RenderTargetSet_{Save,Restore,Release}` 0x4AD4F0/0x4AD470/0x417BA0, `PrimQueue_QueueCallback`
+0x4BAB70, `PrimQueue_SubmitTexturedQuad` 0x413330, `Prim_InitFromBlendFilterGlobals` 0x4AC500, `Prim_SetQuadPositions`
+0x4BB140, `CharaPtMaskCopy_{Callback_Draw,Callback_Begin,Passes,BeginMaskTarget,RegisterCallbacks}`,
+`g_PatPartMaskCopyCb_{Draw,Begin}`, `PatPartBlurCallbacks_RegisterAll` 0x4CF740, `PatPartBlurCallbacks_InvokeSlot`
+0x4C0BA0 (made a function), `g_CharaPtBlurCtx`, `g_CharaPtMaskCopyCtx`, `g_BattleScreenQuad_{Timer,RGB,Alpha}`,
+`Han6Draw_DrawPartSet2D_FromObj` 0x606150. Comments on `CharaPtBlur_BeginMaskTarget`, `CharaPtBlur_DrawBlurWH_Passes`,
+`Han6Draw_DrawPatLayerParts_3D` and `DrawObj_DrawLayer`.

@@ -1,5 +1,4 @@
 #include "render.h"
-#include "part_blur_pass.h"
 #include "parts/part_render_math.h"
 #include "main.h"
 
@@ -388,8 +387,6 @@ void Render::Draw()
 		dp.pattern = curPattern;
 		dp.nextPattern = curNextPattern;
 		dp.curWeight = curInterp;
-		dp.blurMaskPass = PartBlurPass::Run;
-		dp.pxPerGamePx = scale;
 		try {
 			m_parts->Draw(dp, setMatrix, setAddColor, colorRgba);
 		} catch (const std::exception& e) {
@@ -1080,8 +1077,6 @@ void Render::DrawPatLayerItem(const RenderLayer& layer, Parts* origParts)
 	dp.paletteTint = layer.patPaletteTint;
 	dp.applyPras = layer.patApplyPras;
 	dp.uniDialect = layer.patUniDialect;
-	dp.blurMaskPass = PartBlurPass::Run;
-	dp.pxPerGamePx = scale;
 	m_parts->Draw(dp, setMatrix, setAddColor, layerColor);
 
 	// Leave a clean slate: unbind buffers/textures/shader, swallow PAT GL errors.
@@ -1330,8 +1325,6 @@ void Render::DrawBgPattern(Parts* parts, int pattern,
 	Parts::DrawParams dp;
 	dp.pattern = pattern;
 	dp.paletteTint = false;   // stage objects never go through the character shader
-	dp.blurMaskPass = PartBlurPass::Run;
-	dp.pxPerGamePx = scale;
 	try {
 		parts->Draw(dp, setMatrix, setAddColor, color);
 	} catch (...) {

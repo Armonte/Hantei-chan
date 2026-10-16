@@ -45,7 +45,6 @@ add_executable(${EXE}
 	src/right_pane.cpp
 	src/box_pane.cpp
 	src/render.cpp
-	src/part_blur_pass.cpp
 	src/render_target.cpp
 	src/png_writer.cpp
 	src/workspace_session.cpp
