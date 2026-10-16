@@ -63,8 +63,11 @@ static std::string ToCrlf(const std::string& s)
 	return o;
 }
 
-static void TestRoundTrip(const std::string& sample)
+static void TestRoundTrip(const std::string& sampleIn)
 {
+	// Both line-ending variants are built from an LF copy: a Windows checkout (core.autocrlf) hands the sample over as CRLF.
+	std::string sample;
+	for (char c : sampleIn) if (c != '\r') sample += c;
 	for (int crlf = 0; crlf < 2; ++crlf) {
 		const std::string raw = crlf ? ToCrlf(sample) : sample;
 		TagIni ini;
