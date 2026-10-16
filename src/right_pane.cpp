@@ -295,6 +295,10 @@ void RightPane::DisplaySpawnNode(int spawnIndex, int displayNumber)
 		if(sp.flagset2 & 0x100) {
 			ImGui::BulletText(TXT("Relative to opponent"));
 		}
+		// No real camera/opponent in the editor: preview::ApplyRoundStartStandIn places them.
+		if((sp.flagset1 & (0x10 | 0x200 | 0x400)) || (sp.flagset2 & 0x100)) {
+			ImGui::TextDisabled(TXT("Preview position is approximate: round-start stand-in (opponent 128 px ahead, camera between)"));
+		}
 
 		// Recursively display children
 		if(hasChildren)

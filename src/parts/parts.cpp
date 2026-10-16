@@ -719,8 +719,9 @@ void Parts::Draw(const DrawParams& params,
         // effect (partrender::PartTintPalette; MBTL chr011 pattern 309 halo, slot 248).
         float newColor[4];
         memcpy(newColor, color, sizeof(float) * 4);
-        if (params.paletteTint && cutout.colorSlot > 0 && cutout.colorSlot < 256 && cg) {
-            const unsigned *tintPal = partrender::PartTintPalette(cg->paletteAt(cg->paletteNumber(), 0), cg->getPalettePtr());
+        const CG* tintCg = partrender::PartTintOwner(params.tintCg, (const CG*)cg);
+        if (params.paletteTint && cutout.colorSlot > 0 && cutout.colorSlot < 256 && tintCg) {
+            const unsigned *tintPal = partrender::PartTintPalette(tintCg->paletteAt(tintCg->paletteNumber(), 0), tintCg->getPalettePtr());
             unsigned int palColor = tintPal ? tintPal[cutout.colorSlot] : 0;
             if (palColor) {
                 float rgb[3];

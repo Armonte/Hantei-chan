@@ -336,6 +336,41 @@ void PlaceChild(const Options& o, const SimActor& parent, SimActor& ch,
 
 	ch.angle = efAngle + ((fs1 & 0x100) ? parent.angle : 0);
 
+	if (o.uniPlacement) {
+		// UNI2 Han6_EF1_ResolveSpawnPattern / MBTL Effect_RegisterSpawned 0x581BD0: flags = p2 | p3 << 16,
+		// world 128 units per px, EF offsets << 7 (1 px) except the fixed origin's << 8 (2 px).
+		if (fs2 & 0x200) {                         // 0x2000000: ((X-128) << 8, Y << 8), faces right
+			ch.x = (float)(2 * (ox - 128));
+			ch.y = (float)(2 * oy);
+			ch.facingLeft = false;
+			return;
+		}
+		const float dx = (float)(parent.facingLeft ? -ox : ox);   // mirrored by the SPAWNER's facing
+		const float zoom = o.cameraZoom > 0.f ? o.cameraZoom : 1.f;
+		const float halfW = 160.f / zoom;
+		float x = parent.x + dx, y = parent.y + oy;
+		if (fs2 & 0x100) {                         // 0x1000000: x = +-|dx to opponent|, REPLACING the position
+			const float d = std::fabs(parent.x - o.opponentX);       // (Chara_GetOpponentAndAbsDistX)
+			x = o.opponentX < parent.x ? -d : d;
+		} else if (fs1 & 0x400) {                  // screen edge only, no own offset, no margin
+			x = facing ? o.cameraX - halfW : o.cameraX + halfW;      // (BtlCamera_GetClampedViewCoord)
+		} else if (fs1 & 0x200) {
+			x = !facing ? o.cameraX - halfW : o.cameraX + halfW;
+		} else if (fs1 & 0x10) {                   // camera-relative unless 0x800000 (screen-absolute)
+			x = (float)ox; y = (float)oy;
+			if (!(fs2 & 0x80)) { x += o.cameraX; y += o.cameraY; }
+		}
+		if (fs1 & 0x80) y = (float)oy;             // absolute Y
+		if (fs1 & 0x2) {                           // own X unmirrored on the parent's, faces right
+			x = parent.x + ox;
+			facing = false;
+		}
+		ch.x = x;
+		ch.y = y;
+		ch.facingLeft = facing;
+		return;
+	}
+
 	if (fs2 & 0x200) {                             // fixed: ((X-128)<<8, Y<<8)
 		ch.x = (float)(ox - 128);
 		ch.y = (float)oy;
@@ -372,6 +407,7 @@ void PlaceChild(const Options& o, const SimActor& parent, SimActor& ch,
 	if (fs1 & 0x2) facing = false;                 // always face right
 	ch.facingLeft = facing;
 }
+
 
 int LinkFlagsFrom(int fs1, int fs2)
 {
@@ -1077,6 +1113,17 @@ const std::vector<int>& PreviewSim::rootFrameTrack()
 {
 	ensureSimulatedTo(0);
 	return m_impl->rootTrack;
+}
+
+void ApplyRoundStartStandIn(Options& o)
+{
+	// Root = P1 at -64 px, opponent P2 at +64 px, camera at 0 (see Options::opponentX). Shifted so the root
+	// sits at the sim's origin; mirrored when the root faces left (it is then the right-hand player).
+	const float side = o.rootFacingLeft ? -1.f : 1.f;
+	o.opponentX = 128.f * side;
+	o.cameraX = 64.f * side;
+	o.cameraY = 0.f;
+	o.cameraZoom = 1.f;
 }
 
 } // namespace preview

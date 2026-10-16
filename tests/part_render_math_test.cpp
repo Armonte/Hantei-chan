@@ -280,9 +280,28 @@ static void TestPppaTintPalette()
 	CHECK(PartTintPalette(nullptr, nullptr) == nullptr);
 }
 
+static void TestPppaTintOwner()
+{
+	// E20: effect.ha6 parts tint from the OWNER character's base palette (g_CharaResRecords[obj+4]+0x118; effects
+	// copy obj+4 from the owner), not from effect.cg's palette, and are not exempt from the tint.
+	struct FakeCg { unsigned bank0[256]; };
+	FakeCg owner{}, effect{};
+	owner.bank0[5] = 0xFF0000FFu;    // red
+	effect.bank0[5] = 0xFFFF0000u;   // blue
+	const FakeCg *src = PartTintOwner(&owner, &effect);
+	CHECK(src == &owner);
+	float rgb[3];
+	PaletteEntryRgb(PartTintPalette(src->bank0, nullptr)[5], rgb);
+	CHECK(Near(rgb[0], 1.f) && Near(rgb[1], 0.f) && Near(rgb[2], 0.f));
+	// Character parts: no separate owner, the parts' own CG.
+	CHECK(PartTintOwner<FakeCg>(nullptr, &effect) == &effect);
+	CHECK(PartTintOwner<FakeCg>(nullptr, nullptr) == nullptr);
+}
+
 int main()
 {
 	TestPppaTintPalette();
+	TestPppaTintOwner();
 	TestPartPerspective();
 	TestD3d9PixelCentre();
 	TestBlend();

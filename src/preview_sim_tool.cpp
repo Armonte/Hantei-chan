@@ -319,6 +319,39 @@ int SelfTest()
 		CHECK(a5 && a5->y == 77.f, "flagset1 sign bit -> absolute Y");
 	}
 
+	// 5b) UNI2/MBTL placement (Han6_EF1_ResolveSpawnPattern / MBTL Effect_RegisterSpawned 0x581BD0) and the
+	// round-start stand-in (Player_SetStartPosition 0x41CEF0, Camera_ResetState).
+	{
+		preview::Options so; so.rootFacingLeft = false;
+		preview::ApplyRoundStartStandIn(so);
+		CHECK(so.opponentX == 128.f && so.cameraX == 64.f && so.cameraY == 0.f, "stand-in: opponent +128, camera +64");
+		so.rootFacingLeft = true;
+		preview::ApplyRoundStartStandIn(so);
+		CHECK(so.opponentX == -128.f && so.cameraX == -64.f, "stand-in mirrors for a left-facing root");
+
+		Frame& r = AddFrame(d, 156, 5, 0);
+		AddEF(r, 1, 157, {200, 10, 0, 0x200});         // fixed: 2*(X-128), 2*Y
+		AddEF(r, 1, 158, {10, 5, 0x10, 0});            // camera-relative
+		AddEF(r, 1, 159, {10, 5, 0x10, 0x80});         // screen-absolute
+		AddEF(r, 1, 160, {10, 3, 0, 0x100});           // = +-|opponent distance|, own X dropped
+		AddEF(r, 1, 161, {10, 3, 0x200, 0});           // back screen edge, no offset / margin
+		AddEF(r, 1, 162, {10, 77, 0x80, 0});           // absolute Y (fs1 0x80)
+		for (int p = 157; p <= 162; p++) AddFrame(d, p, 5, 0);
+		preview::Options o = opt; o.uniPlacement = true; o.patOwnerHalfScale = false;
+		o.cameraX = 30.f; o.cameraY = -40.f; o.opponentX = 120.f;
+		preview::PreviewSim sim;
+		sim.setInputs(&d, &fx, 156, o);
+		sim.getStateAt(0, st);
+		auto* b1 = ByPattern(st, 157); auto* b2 = ByPattern(st, 158); auto* b3 = ByPattern(st, 159);
+		auto* b4 = ByPattern(st, 160); auto* b5 = ByPattern(st, 161); auto* b6 = ByPattern(st, 162);
+		CHECK(b1 && b1->x == 144.f && b1->y == 20.f, "UNI fixed origin is (X-128, Y) << 8 = 2 px units");
+		CHECK(b2 && b2->x == 40.f && b2->y == -35.f, "UNI camera-relative");
+		CHECK(b3 && b3->x == 10.f && b3->y == 5.f, "UNI fs2 0x80 makes 0x10 screen-absolute");
+		CHECK(b4 && b4->x == 120.f && b4->y == 3.f, "UNI opponent flag sets x = |distance|");
+		CHECK(b5 && b5->x == 30.f - 160.f, "UNI screen edge without own offset or margin");
+		CHECK(b6 && b6->y == 77.f, "UNI fs1 0x80 -> absolute Y");
+	}
+
 	// 6) IF2 p3 destroys at pattern end; without it the actor chains to AF jump.
 	{
 		Frame& r = AddFrame(d, 60, 20, 0);

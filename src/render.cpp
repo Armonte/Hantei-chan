@@ -1075,6 +1075,7 @@ void Render::DrawPatLayerItem(const RenderLayer& layer, Parts* origParts)
 	dp.nextPattern = layer.nextSpriteId;
 	dp.curWeight = layer.curWeight;
 	dp.paletteTint = layer.patPaletteTint;
+	dp.tintCg = layer.patTintCg;
 	dp.applyPras = layer.patApplyPras;
 	dp.uniDialect = layer.patUniDialect;
 	m_parts->Draw(dp, setMatrix, setAddColor, layerColor);
@@ -1166,8 +1167,8 @@ void Render::DrawLayers()
 	// every CG layer regardless of priority.) Every item starts from an
 	// explicit GL baseline — nothing inherits blend/depth/texture state from
 	// the previous item.
-	// TODO: positioning flags (flagset1 & 0x10 camera-relative,
-	// flagset2 & 0x100 opponent-relative, flagset2 & 0x200 fixed-origin).
+	// Spawn positioning flags (camera-relative, opponent-relative, fixed origin, screen edges) are resolved
+	// by the preview sim (preview::PlaceChild); the layer offsets here are already final world positions.
 	for (const auto& layer : renderLayers)
 	{
 		// Fully transparent layers draw no sprite (their hitboxes still draw

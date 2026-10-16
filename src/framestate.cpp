@@ -774,6 +774,8 @@ preview::PreviewSim& FrameState::BindPreviewSim(FrameData* mainData, FrameData* 
 	preview::Options o = previewOptions;
 	// The half-scale PAT owner rule is MBAA's; UNI/MBTL data keeps 1:1.
 	o.patOwnerHalfScale = previewOptions.patOwnerHalfScale && mainData && !mainData->usesUniFormat();
+	o.uniPlacement = mainData && mainData->usesUniFormat();
+	preview::ApplyRoundStartStandIn(o);   // no real opponent/camera: round-start stand-in (approximation)
 	previewSim->setInputs(mainData, effectData, pattern, o, scriptSchedule);
 	return *previewSim;
 }
