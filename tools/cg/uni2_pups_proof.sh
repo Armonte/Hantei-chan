@@ -1,8 +1,7 @@
 #!/bin/bash
 # UNI2 in-game PUPS proof through gamecap (per-process: input only reaches the PID gamecap launched, capture = its backbuffer).
-# PENDING A LOADER: UNI2 1.42 does NOT take loose files from ___St\data (S3 test: the archive copy wins, 0x4B9971), and no
-# DLL may be added to the install. Run it only once a loader is active, with OVR = the loader's override root, relative to
-# the game dir (e.g. nuuni "mod"). The override folder must not exist before the run; it is removed afterwards and checked.
+# UNI2 1.42 does NOT take loose files from ___St\data (S3 test: the archive copy wins, 0x4B9971). Run it with fbmod / UNI2-IM
+# active and OVR = its override root relative to the game dir, "UNI2-IM\Mods" (what the CG manager's "Save to mod folder" uses). The override folder must not exist before the run; it is removed afterwards and checked.
 [ -n "${OVR:-}" ] || { echo "pending: no UNI2 loader override root (set OVR=<dir relative to the game> once a loader is active)"; exit 2; }
 set -u
 D="$(cd "$(dirname "$0")/../.." && pwd)"

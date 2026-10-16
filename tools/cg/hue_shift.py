@@ -7,6 +7,7 @@
   --idx 8-12,31-40   act only: shift only these palette entries (what a modder selects in the swatch grid), band still applies
   --colorize H S     png only: grey pixels (saturation < smin, alpha > 0) get hue H and saturation S, value kept (a grey
                      texture that the game tints with a palette slot)
+  --rect X Y W H     png only, repeatable: change only pixels inside these rectangles (a .pat cutout's texel area)
 
 A pixel / colour is shifted when its saturation >= smin and its hue (degrees) lies in [LO, HI] (LO > HI wraps through 0).
 Shifted: H += shift, S *= satmul (clamped), V *= valmul (clamped). Value (shading, line art) and alpha are never touched
@@ -30,6 +31,7 @@ def main():
     p.add_argument("--band", nargs=2, type=float, default=[0, 360]); p.add_argument("--shift", type=float, default=0)
     p.add_argument("--smin", type=float, default=0.2); p.add_argument("--satmul", type=float, default=1); p.add_argument("--valmul", type=float, default=1)
     p.add_argument("--idx", default=""); p.add_argument("--colorize", nargs=2, type=float)
+    p.add_argument("--rect", nargs=4, type=int, action="append", default=[])
     a = p.parse_args()
     if a.mode == "hist":
         if a.inp.endswith(".act"):
@@ -55,9 +57,10 @@ def main():
             if o: d[i:i + 3] = bytes(o); n += 1
         open(a.out, "wb").write(d)
     else:
-        im = Image.open(a.inp).convert("RGBA"); px = list(im.getdata()); cache = {}
+        im = Image.open(a.inp).convert("RGBA"); px = list(im.getdata()); cache = {}; W = im.width
+        inside = lambda k: not a.rect or any(x <= k % W < x + w and y <= k // W < y + h for x, y, w, h in a.rect)
         for k, (r, g, b, al) in enumerate(px):
-            if not al: continue
+            if not al or not inside(k): continue
             key = (r, g, b)
             if key not in cache: cache[key] = shift_rgb(r, g, b, a)
             o = cache[key]

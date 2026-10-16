@@ -75,7 +75,10 @@ real input) and `tools/cg/hue_shift.py` does the recolour. fbmod boots [boot] tr
 The files are installed in `<game>\<IM>\Mods\data\chr003\` only inside gamecap's game lock (`tools/cg/showcase_ingame_boot.sh`)
 and restored afterwards. The Mods\data folders were empty before and after, and UNI2_IM.ini / MBTL_IM.ini are byte-identical (md5).
 The shots are window-only gamecap captures shrunk to 1280x720: `<game>_{before,after}_idle.jpg` and `<game>_{before,after}_move.jpg`.
-The move is 236+A (pad_down/pad_up DOWN, RIGHT, then pad_tap A), shown 6 frames after the button.
+The move is 236+A: pad_down/pad_up DOWN, RIGHT, then pad_tap **X**, which is the game's A button on the default pad layout. Pad A is
+the game's D button, so the first take on 2026-10-16 ran 236+D (Shield) by mistake, and that shield effect comes from the shared bank.
+The move pair was retaken with the fix (`tools/cg/showcase_ingame_boot.sh <game> <out> X ...`). The idle pair is from the first
+take, with the same palette.
 
 - **Export.** "CG + .pat textures" tab > Export PNG of pattern 0's images (UNI2: 36, MBTL: 21) and of one .pat texture. Palettes tab >
   Export colours (.act) of chr003.pal palette 0. Every pattern-0 sprite is 8-bit (bank palette), so its colour lives in the .pal.
@@ -83,20 +86,32 @@ The move is 236+A (pad_down/pad_up DOWN, RIGHT, then pad_tap A), shown 6 frames 
 - **UNI2 Carmine, red to deep teal.** chr003.pal palette 0, entries 8-12, 31-40, 48-53, 114-120 and 251 (coat, hair and the red
   tint slots): hue **+185 deg**, with saturation and value kept. Entries 240-245 (blue effect tint slots): hue **-40 deg**. Skin
   (2-7), greys, black line art and the other 129 palettes are unchanged; 35 of 256 colours changed. .pat texture 0 `car_ef00.dds`
-  (2048x2048 DXT5) is greyscale, because the game tints it from the palette's PPPA slots. Its grey pixels were colourised to hue
-  185 deg, saturation 0.35, with value and alpha kept.
+  (2048x2048 DXT5) is greyscale, because the game tints it from the palette's PPPA slots. Every grey pixel was colourised to hue
+  **165 deg (sea green), saturation 0.6**, with value and alpha kept (902,305 px; `hue_shift.py png ... --colorize 165 0.6`).
 - **MBTL Shiki, navy to dark crimson.** chr003.pal palette 0: every entry below 240 with hue 200-245 deg and saturation >= 0.2 (the
   uniform and hair shading, plus entry 15, the light-blue eye highlight): hue **+125 deg**, with S, V and alpha kept; 52 colours
   changed. The fx slots 241-249 are unchanged. .pat texture 1 `chr003_0.dds` (2048x2048 DXT5): pixels with hue 160-220 deg and
   saturation >= 0.2 (the blue slashes) get hue **+150 deg**, with V and alpha kept (224,060 px). The red parts are unchanged.
+  The white slash-trail cutouts that 236A draws (cutout 56, texels 832,0 64x448, and cutout 21, texels 0,896 192x896) were then
+  colourised to hue **348 deg (crimson), saturation 0.7**, with V and alpha kept (120,630 px; `--colorize 348 0.7 --rect ...`).
 - **Import and save.** Palettes tab > Import colours (the shifted .act) > **Save .pal to mod folder** (new, see below). Then
   "CG + .pat textures" > Import PNG (the shifted texture) > Save to mod folder. The game folder is a scratch folder; the boot
   script installs what the GUI wrote.
-- **Result.** The idle pair shows the full recolour in game. On the move pair, the character's colours change, but the main
-  236A effect does not (UNI2: the blue swirl; MBTL: the blue/purple ring). That effect is drawn from the shared effect bank,
-  not from chr003.pat, so neither the texture edit nor the palette slots reach it. The .pat edit is loaded: the game reads the
-  2.4 MB / 39 MB mod .pat without error. It is not visible in this move, though, and a move that draws car_ef00 /
-  chr003_0 parts is still to be picked.
+- **Which frame draws the .pat texture (from the data).** `cgmtex users <ha6> <pat> <id>` prints the CG manager's "Used by" list
+  (texture > parts > part sets > pattern layers), and `cgmtex effects <ha6>` prints every frame effect (to see what spawns a pattern).
+  - UNI2 Carmine 236A: Mv_Skill_236A (chr003_mv_0.txt, maketmpl_SkillFireRollingCutter) creates an object at FrameID 100 and sets its
+    pattern to `236TamaA` = pattern **136**. Frames 1-21 of 136 draw layer 0 from part sets 70-85, whose cutouts (56, 57, 59, 60, ...)
+    sample texture 0 `car_ef00.dds` with PPPA colour slot 251. The game multiplies the texel by palette[251] (vanilla (255,0,0), red;
+    the palette recolour makes it (0,234,255), cyan). So the blade's hue is texel x slot 251: cyan from the palette alone, and the
+    sea-green cast in `uni2_after_move.jpg` comes from the texture edit. Shot: `move_30` (about 30 frames after the button).
+  - MBTL Shiki 236A = pattern **200** (PTCN "236A"). Frame 5 has a type-1 effect that spawns pattern **210**, whose frames 0-3 draw
+    part sets 648-651. Those place cutouts 56 and 21 from texture 1 `chr003_0.dds` with no colour slot (texel drawn as is), and
+    cutout 22 (the same texels as 21) with fx slot 246 (blue, unchanged). The inner trail of the slash is the untinted texel, now
+    crimson. The outer blue glow is the slot-246 copy, and the hit spark is the shared effect bank. Shots: before `move_06`, after
+    `move_02`; the game's frame timing differed between the two boots, so the frames that match visually were used.
+- **Result.** The move pair shows the .pat texture edit in game: the UNI2 236A blood blade is sea-green teal instead of red, and
+  the MBTL 236A slash has a crimson inner trail instead of white. The first take's "no visible change" was the wrong button (236+D),
+  not the .pat path.
 - **Fix found along the way.** The Palettes tab could only save the .pal in place, and UNI2 / MBTL never read that (they read the
   archive), so a palette recolour could not reach the game from the browser. "Save .pal to mod folder" writes it to the same IM
   mod folder as the tab's .cg / .pat save, using that tab's game and game-folder settings (`Window::modFolderDst`).
