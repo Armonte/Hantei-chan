@@ -1,0 +1,8 @@
+# Layout sweep round 4: the Game Link window on its first open (run with --tool gamelink; no game is launched), EN then JA.
+openany C:/games/mbaacc/data/akiha_0.txt
+wait 120
+capture C:/dev/hantei-chan/work/ab/R11_gamelink.png
+lang ja
+wait 30
+capture C:/dev/hantei-chan/work/ab/R11_gamelink_ja.png
+quit
