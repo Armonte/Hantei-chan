@@ -227,6 +227,8 @@ def grid_mask(K, Wh):
 
 AXIS_FIX = False  # v2_model sets it: correct the editor's additive axis lines instead of dropping them
 EXACT_REG = False  # v2_model --exact-reg (render-match10): registration independent of the footprint bbox
+SUBPIX = (0.0, 0.0)  # render-match11: (dx, dy) game px added to the EXACT_REG registration (prediction moves by +d);
+                     # fitted on a control (v2_model --subpix-fit) and applied unchanged to that control's cases
 REFINE = 10       # +- px of the alignment search (0 = trust the camera geometry)
 BAND = 0          # +- px tolerance band for the extra band residual
 ROW_ADD = None    # f(channel, game rows (n,1), P1 origin) -> add per row: the stage's chara gradient
@@ -298,8 +300,9 @@ def game_vs_model(game, plate, ek, ew, zoom, meta, org):
     # changes; thin-line parts (mbtl_flipV_chr001_p157f2 arcs 4/5/6) swing 3.5 -> 6.6 on that alone.
     if EXACT_REG:
         GX0, GY0 = int(round(gx0)), int(round(gy0))
-        ebox = (org[0] + (GX0 - gorg[0]) / sc, org[1] + (GY0 - gorg[1]) / sc,
-                org[0] + (GX0 + gw - gorg[0]) / sc, org[1] + (GY0 + gh - gorg[1]) / sc)
+        sx, sy = SUBPIX  # the box is sampled at -d so the prediction lands at +d game px
+        ebox = (org[0] + (GX0 - sx - gorg[0]) / sc, org[1] + (GY0 - sy - gorg[1]) / sc,
+                org[0] + (GX0 - sx + gw - gorg[0]) / sc, org[1] + (GY0 - sy + gh - gorg[1]) / sc)
         gx0, gy0 = GX0, GY0
         EP = 16  # the box may run past the shot's edge: pad (P 0, Q 1 = nothing drawn there)
         ebox = tuple(v + EP for v in ebox)

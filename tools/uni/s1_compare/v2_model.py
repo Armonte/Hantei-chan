@@ -214,8 +214,21 @@ def mbtl_light(stage, std_h, xpos):
     return fn
 
 
-def main():
-    a = sys.argv[1:]
+def measure(a, quiet=False):
+    """One measurement (the old main). Returns {'lit': mean, 'lit_pct', 'band', 'refine'}; quiet: no printing."""
+    a = list(a)
+    global print
+    _print = print
+    if quiet: print = lambda *x, **k: None
+    try:
+        return _measure(a)
+    finally:
+        print = _print
+
+
+def _measure(a):
+    # every sheet global a run may set, back to its default (measure() runs many times per process under --subpix-fit)
+    sh.ROW_ADD = None; sh.ROW_ADD_W = None; sh.POST_ADD = None; sh.POST_ADD_SRC = None; sh.LIGHT_FN = None; sh.LIGHT = None
     bw = arg(a, '--bw', os.path.join(D, 'docs/audit_2026_10_14/evidence/compare/v2/editor_bw'))
     gd = arg(a, '--game', '/mnt/c/dev/hantei-chan/tools/gamecap/captures/v2')
     plate = arg(a, '--plate')
@@ -312,6 +325,7 @@ def main():
     print('%s: raw %.2f / %.1f%%  lit %.2f / %.1f%%  band+-%d %s  (%d px, refine %+d,%+d)  free fit k,c = %s'
           % (case, r[3], r[4], lmean, lch, sh.BAND, '%.2f / %.1f%%' % band if band else '-', r[6], r[5][0], r[5][1],
              ', '.join('(%.2f,%.0f)' % f for f in fit)))
+    res = {'lit': float(lmean), 'lit_pct': float(lch), 'band': band, 'refine': list(r[5]), 'subpix': list(sh.SUBPIX)}
     if jout:
         json.dump({'case': case, 'game': gn, 'plate': plate, 'light': light, 'raw': [r[3], r[4]], 'lit': [lmean, lch],
                    'band': band, 'band_px': sh.BAND, 'grad': grad, 'glow': gmode, 'glow_ring': ring, 'px': r[6], 'refine': list(r[5])}, open(jout, 'w'), indent=1)
@@ -320,6 +334,51 @@ def main():
         s = Image.new('RGB', (w * 3 + 16, g.height), (30, 30, 30))
         s.paste(g, (0, 0)); s.paste(lpred.resize(g.size), (w + 8, 0)); s.paste(ldiff.resize(g.size), (2 * w + 16, 0))
         s.save(out)
+    return res
+
+
+def subpix_fit(a, bound=1.5):
+    """render-match11: the registration of a control. Camera geometry (--exact-reg, no integer refine) plus a bounded
+    sub-pixel offset (|dx|, |dy| <= bound game px) that minimises the control's own lit residual, coarse to fine
+    (steps 0.5 over +-1, 0.125, 1/32 game px). The offset is then given to the control's cases unchanged (--subpix), so a case and
+    its control are registered the same way and neither gets its own best-shift luck."""
+    best = None; cx = cy = 0.0
+    for step, n in ((0.5, 2), (0.125, 2), (1.0 / 32, 1)):  # 25 + 25 + 9 evaluations
+        cand = []
+        for iy in range(-n, n + 1):
+            for ix in range(-n, n + 1):
+                x = min(bound, max(-bound, cx + ix * step)); y = min(bound, max(-bound, cy + iy * step))
+                if (x, y) in cand: continue
+                cand.append((x, y))
+        for x, y in cand:
+            sh.SUBPIX = (x, y)
+            r = measure(a, quiet=True)
+            if r and (best is None or r['lit'] < best[0]): best = (r['lit'], x, y)
+        cx, cy = best[1], best[2]
+    sh.SUBPIX = (cx, cy)
+    return cx, cy
+
+
+def main():
+    a = sys.argv[1:]
+    sp = arg(a, '--subpix')            # DX,DY game px (or a --subpix-fit JSON): implies --exact-reg --refine 0
+    spfit = arg(a, '--subpix-fit')     # OUT.json: fit the offset on this (control) run, write it, report with it
+    if sp or spfit:
+        for k in ('--exact-reg',):
+            if k in a: a.remove(k)
+        arg(a, '--refine')
+        a += ['--exact-reg', '--refine', '0']
+    if sp:
+        if os.path.exists(sp):
+            j = json.load(open(sp)); sh.SUBPIX = tuple(j['subpix'])
+        else:
+            sh.SUBPIX = tuple(float(v) for v in sp.split(','))
+    if spfit:
+        x, y = subpix_fit(a)
+        json.dump({'control': a[0], 'args': a, 'subpix': [x, y]}, open(spfit, 'w'), indent=1)
+        print('subpix fit on %s: %+.4f, %+.4f game px' % (a[0], x, y))
+    if sh.SUBPIX != (0.0, 0.0) or sp: print('registration: camera geometry %+.4f, %+.4f game px' % sh.SUBPIX)
+    measure(a)
 
 
 if __name__ == '__main__':
