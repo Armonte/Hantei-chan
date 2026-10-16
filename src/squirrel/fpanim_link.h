@@ -1,10 +1,10 @@
-#ifndef SQUIRREL_FBMOD_LINK_H_GUARD
-#define SQUIRREL_FBMOD_LINK_H_GUARD
+#ifndef SQUIRREL_FPANIM_LINK_H_GUARD
+#define SQUIRREL_FPANIM_LINK_H_GUARD
 
-// Client side of the fbmod in-game pipe (Squirrel hot reload). fbmod serves a message-mode named pipe
-// \\.\pipe\fbmod-<pid> and \\.\pipe\fbmod-<exe stem lowercase> (fbmod-uni2, fbmod-mbtl). One request per
+// Client side of the fpan-im in-game pipe (Squirrel hot reload). fpan-im serves a message-mode named pipe
+// \\.\pipe\fpan-im-<pid> and \\.\pipe\fpan-im-<exe stem lowercase> (fpan-im-uni2, fpan-im-mbtl). One request per
 // connection: write the ASCII request, read one reply (<= 4096 bytes), close.
-//   ping            -> "OK fbmod <game> session=<name> mods=<windows path of fbmod\mods>"
+//   ping            -> "OK fpan-im <game> session=<name> mods=<windows path of fpan-im\mods>"
 //   reload chrNNN   -> "OK reloaded chrNNN (...)" or "ERROR <reason>"   (scripts only)
 //   reloadchara chrNNN       -> engine training rebuild (the training menu's character switch, ~1-3 s, resets
 //                               positions/meter): "OK engine rebuild chrNNN: <picks>; ha6 root XXXXXXXX -> YYYYYYYY;
@@ -24,19 +24,19 @@
 
 namespace sqedit {
 
-struct FbmodReply {
-	bool connected = false; // false: no pipe by that name (game not running / fbmod not loaded)
+struct FpanimReply {
+	bool connected = false; // false: no pipe by that name (game not running / fpan-im not loaded)
 	bool ok = false;        // reply starts with "OK"
 	std::string text;       // reply text, or the transport error
 };
 
-// pipeName: "fbmod-uni2" or a full "\\.\pipe\..." path.
-FbmodReply FbmodRequest(const std::string& pipeName, const std::string& request, unsigned timeoutMs = 8000);
+// pipeName: "fpan-im-uni2" or a full "\\.\pipe\..." path.
+FpanimReply FpanimRequest(const std::string& pipeName, const std::string& request, unsigned timeoutMs = 8000);
 // The mods= value of a ping reply ("" when absent). The path runs to the end of the reply (it may hold spaces).
-std::string FbmodModsDir(const std::string& pingReply);
+std::string FpanimModsDir(const std::string& pingReply);
 
 // The parts of a reloadchara reply the panel shows (platform independent, unit tested).
-struct FbmodReloadInfo {
+struct FpanimReloadInfo {
 	bool engine = false;        // an engine rebuild reply ("engine rebuild chrNNN: ...")
 	bool refused = false;       // refused/timed out because no training battle is running
 	bool hasRoots = false;      // "ha6 root X -> Y" present
@@ -45,22 +45,26 @@ struct FbmodReloadInfo {
 	long ms = -1;               // "after N ms" (-1: absent)
 	bool stdReload = false;     // a reloadstd reply (shared scripts)
 };
-FbmodReloadInfo FbmodParseReloadReply(const std::string& reply);
+FpanimReloadInfo FpanimParseReloadReply(const std::string& reply);
 // The request for a character reload: "reloadchara <chr>" (engine rebuild) or "reloadchara <chr> live".
-std::string FbmodReloadRequest(const std::string& chr, bool live);
+std::string FpanimReloadRequest(const std::string& chr, bool live);
 // A game-relative path ("script/btl_MvFunc.txt", "data/VectorTable.txt") of a shared battle file: every script/*.txt,
 // and data/_combase.txt, VectorTable.txt, BattleInfo.txt, BoundEff.txt. The game loads these once per process, so a
 // save needs "reloadstd" instead of a character reload.
-bool FbmodIsSharedFile(const std::string& rel);
+bool FpanimIsSharedFile(const std::string& rel);
 // "reloadstd" (engine rebuild of every character) or "reloadstd live".
-std::string FbmodStdReloadRequest(bool live);
-// The fbmod pipe of a script-panel game profile: "mbtl" -> "fbmod-mbtl", anything else -> "fbmod-uni2" (fbmod runs
+std::string FpanimStdReloadRequest(bool live);
+// The fpan-im pipe of a script-panel game profile: "mbtl" -> "fpan-im-mbtl", anything else -> "fpan-im-uni2" (fpan-im runs
 // on UNI2 1.42 and MBTL only). Both games take the same requests (reloadchara, reloadstd [live]).
-std::string FbmodPipeForGame(const std::string& game);
-// Where a saved file goes under the fbmod mods folder: the same game-relative path (data/chrNNN/..., script/...,
+std::string FpanimPipeForGame(const std::string& game);
+// The old name of an fpan-im pipe ("fpan-im-uni2" -> "fbmod-uni2", full "\\.\pipe\..." paths kept full), "" for any
+// other name. The project was called fbmod until 2026-10-16; FpanimRequest retries there once when the new name is
+// absent, so an older game-side build still answers. Remove after the next release.
+std::string FpanimLegacyPipeName(const std::string& pipeName);
+// Where a saved file goes under the fpan-im mods folder: the same game-relative path (data/chrNNN/..., script/...,
 // data/VectorTable.txt). Both games read their archives as data/... and script/..., so no per-game prefix. "./" and
 // backslashes are normalised; "" for a path that leaves the folder ("..") or is absolute.
-std::string FbmodModsTarget(const std::string& modsDir, const std::string& rel);
+std::string FpanimModsTarget(const std::string& modsDir, const std::string& rel);
 
 } // namespace sqedit
 

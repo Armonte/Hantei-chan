@@ -1,4 +1,4 @@
-#include "fbmod_link.h"
+#include "fpanim_link.h"
 
 #include "../app_log.h"
 
@@ -11,7 +11,7 @@
 
 namespace sqedit {
 
-std::string FbmodModsDir(const std::string& pingReply)
+std::string FpanimModsDir(const std::string& pingReply)
 {
 	const size_t at = pingReply.find("mods=");
 	if (at == std::string::npos) return "";
@@ -20,12 +20,12 @@ std::string FbmodModsDir(const std::string& pingReply)
 	return s;
 }
 
-std::string FbmodReloadRequest(const std::string& chr, bool live)
+std::string FpanimReloadRequest(const std::string& chr, bool live)
 {
 	return "reloadchara " + chr + (live ? " live" : "");
 }
 
-bool FbmodIsSharedFile(const std::string& rel)
+bool FpanimIsSharedFile(const std::string& rel)
 {
 	std::string r = rel;
 	for (char& c : r) c = c == '\\' ? '/' : static_cast<char>(tolower(static_cast<unsigned char>(c)));
@@ -37,17 +37,26 @@ bool FbmodIsSharedFile(const std::string& rel)
 	return false;
 }
 
-std::string FbmodStdReloadRequest(bool live)
+std::string FpanimStdReloadRequest(bool live)
 {
 	return live ? "reloadstd live" : "reloadstd";
 }
 
-std::string FbmodPipeForGame(const std::string& game)
+std::string FpanimPipeForGame(const std::string& game)
 {
-	return game == "mbtl" ? "fbmod-mbtl" : "fbmod-uni2";
+	return game == "mbtl" ? "fpan-im-mbtl" : "fpan-im-uni2";
 }
 
-std::string FbmodModsTarget(const std::string& modsDir, const std::string& rel)
+std::string FpanimLegacyPipeName(const std::string& pipeName)
+{
+	const std::string prefix = "\\\\.\\pipe\\";
+	const bool full = pipeName.rfind(prefix, 0) == 0;
+	const std::string bare = full ? pipeName.substr(prefix.size()) : pipeName;
+	if (bare.rfind("fpan-im-", 0) != 0) return "";
+	return (full ? prefix : "") + "fbmod-" + bare.substr(8);
+}
+
+std::string FpanimModsTarget(const std::string& modsDir, const std::string& rel)
 {
 	std::string r = rel;
 	for (char& c : r) if (c == '\\') c = '/';
@@ -60,9 +69,9 @@ std::string FbmodModsTarget(const std::string& modsDir, const std::string& rel)
 	return m + r;
 }
 
-FbmodReloadInfo FbmodParseReloadReply(const std::string& reply)
+FpanimReloadInfo FpanimParseReloadReply(const std::string& reply)
 {
-	FbmodReloadInfo info;
+	FpanimReloadInfo info;
 	const bool err = reply.rfind("ERROR", 0) == 0;
 	info.stdReload = reply.find("reloadstd") != std::string::npos;
 	info.engine = reply.find("engine rebuild ") != std::string::npos || reply.find("engine rebuild:") != std::string::npos;
@@ -122,9 +131,9 @@ bool IoWait(HANDLE h, OVERLAPPED& ov, BOOL started, DWORD timeoutMs, DWORD* got)
 
 } // namespace
 
-FbmodReply FbmodRequest(const std::string& pipeName, const std::string& request, unsigned timeoutMs)
+static FpanimReply RequestExact(const std::string& pipeName, const std::string& request, unsigned timeoutMs)
 {
-	FbmodReply r;
+	FpanimReply r;
 	const std::string full = pipeName.rfind("\\\\.\\pipe\\", 0) == 0 ? pipeName : "\\\\.\\pipe\\" + pipeName;
 	const std::wstring wname = Widen(full);
 	HANDLE h = INVALID_HANDLE_VALUE;
@@ -163,16 +172,25 @@ FbmodReply FbmodRequest(const std::string& pipeName, const std::string& request,
 	}
 	CloseHandle(ov.hEvent);
 	CloseHandle(h);
-	HC_LOG_INFO("[fbmod] {} '{}' -> {}", full, request, r.text);
+	HC_LOG_INFO("[fpan-im] {} '{}' -> {}", full, request, r.text);
 	return r;
+}
+
+FpanimReply FpanimRequest(const std::string& pipeName, const std::string& request, unsigned timeoutMs)
+{
+	FpanimReply r = RequestExact(pipeName, request, timeoutMs);
+	if (r.connected) return r;
+	// An fbmod-era build (the project was fbmod until 2026-10-16) only serves the old pipe names: retry once there.
+	const std::string legacy = FpanimLegacyPipeName(pipeName);
+	return legacy.empty() ? r : RequestExact(legacy, request, timeoutMs);
 }
 
 #else
 
-FbmodReply FbmodRequest(const std::string&, const std::string&, unsigned)
+FpanimReply FpanimRequest(const std::string&, const std::string&, unsigned)
 {
-	FbmodReply r;
-	r.text = "fbmod pipe: not supported on this platform";
+	FpanimReply r;
+	r.text = "fpan-im pipe: not supported on this platform";
 	return r;
 }
 
