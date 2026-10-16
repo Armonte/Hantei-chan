@@ -22,3 +22,4 @@ flipHV_chr019_p153_solo4_z1 | uni2/data/chr019solo4/chr019_0.txt | 153 | 0 | -1 
 flipHV_chr019_p153_solo8_z1 | uni2/data/chr019solo8/chr019_0.txt | 153 | 0 | -1 | 1 | render-match8: flipHV with only set-45 slot 8 on screen, zoom 1
 mbtl_flipV_chr001_p157f2_solo_s8 | mbtl/data/chr001solos8/chr001_0.txt | 157 | 2 | -1 | 1.5 | render-match10: MBTL flipV with only set-21 slot 8 (arc, PRRV 2) on screen
 mbtl_flipV_chr001_p157f2_solo_s456 | mbtl/data/chr001solos456/chr001_0.txt | 157 | 2 | -1 | 1.5 | render-match10: MBTL flipV with only set-21 arc slots 4/5/6 on screen
+pras_chr020_p5f2_z1 | uni2/data/chr020/chr020_0.txt | 5 | 2 | -1 | 1 | render-match11: pras at the game's zoom 1 (CG edges over the .pat flame: no 1.5x resample)
