@@ -95,6 +95,10 @@ public:
         bool paletteTint = true;  // PPPA tint: the game applies it in the character shader path only
         bool applyPras = true;    // PRAS: UNI2 applies it, MBTL does not read it
         bool uniDialect = true;   // AFHK weight 0: MBAACC keeps the current part transform (PartLerpsTransform); arc split
+        // PRAL 3: runs the game's masked screen blur around drawMask (PartBlurPass::Run). Null = draw the part
+        // normally (headless tools, tests).
+        void (*blurMaskPass)(const std::function<void()>& drawMask, float pxPerGamePx) = nullptr;
+        float pxPerGamePx = 1.f;  // view zoom, for the blur tap spacing (one game pixel)
     };
     // setAddColor gets the PRSP specular colour as RGBA 0..1 (added to the output, alpha included).
     void Draw(const DrawParams& params,

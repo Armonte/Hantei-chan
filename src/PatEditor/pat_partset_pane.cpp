@@ -148,7 +148,7 @@ const char* const blendList[] = {
         "Normal",
         "Additive",
         "Subtractive",
-        "Blur mask (normal)",
+        "Blur mask (blurs what is behind)",
 };
 
 void PatPartSetPane::Draw()
