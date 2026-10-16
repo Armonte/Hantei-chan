@@ -52,6 +52,10 @@ extern struct Settings
 	// Mouse buttons of the view (issue #9): 0 left, 1 right, 2 middle
 	int mousePanButton = 0;                  // drag pans the view
 	int mouseDrawButton = 1;                 // drag draws a box (UV rectangle in a PAT tab)
+
+	// Script panel hot reload (fbmod pipe): on/off and the game install folder per profile ("" = Steam default)
+	bool sqHotReload = false;
+	std::string sqGameDirUni2, sqGameDirMbtl;
 } gSettings;
 
 bool LoadFromIni(FrameData *framedata, CG *cg, const std::string& iniPath, std::string* outTopHA6Path = nullptr, Parts* parts = nullptr, std::string* outPATPath = nullptr);
