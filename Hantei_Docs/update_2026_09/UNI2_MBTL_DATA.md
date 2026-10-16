@@ -32,6 +32,8 @@ MELTY BLOOD: TYPE LUMINA (MBTL). Related GitHub issues on Armonte/Hantei-chan: #
   `kluioyxovozlort` -> `dcmbsz` = `script/`, `rcwWiiqjmxpmojs` -> `joiIuc` = `System/`, `IQHoknqjnskt` -> `FNE` = `DLC/`.
 - `<UNI2>/mod/___Csel`, `___English`, ... is **not** game data. It is the override tree used by the nuuni bypass
   winmm proxy: loose files with the same relative paths replace the archive's copies.
+  Hantei-chan does not write there: since 2026-10 the CG manager's "Save to mod folder" writes
+  `<UNI2>\UNI2-IM\Mods\<relative path>`, loaded through fbmod / UNI2-IM.
 
 ### MBTL (`<MBTL>/data000..019.bin`)
 - The archives have **no TOC**. The file table is compiled into `MBTL.exe` (.rdata):
@@ -59,6 +61,8 @@ MELTY BLOOD: TYPE LUMINA (MBTL). Related GitHub issues on Armonte/Hantei-chan: #
   onward (for example, `data/chr022/*` and `data/effect.HA6`). Always read the table from the current exe
   (`mbtl_extract.py` does this by default). `MBTL.Unpacker.bat` would also write about 21 GB into `<MBTL>\OUT`.
 - `<MBTL>/fu/data` (filepatch-tl) and `<MBTL>/__Mods` (mbtl_mod_loader) are user override folders.
+  Hantei-chan does not write there: since 2026-10 the CG manager's "Save to mod folder" writes
+  `<MBTL>\MBTL-IM\Mods\<relative path>`, loaded through fbmod / MBTL-IM.
 
 ---
 
