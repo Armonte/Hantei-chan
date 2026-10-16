@@ -47,7 +47,7 @@ def joinlits(seq):
 def load_table():
     rows = {}; dups = []
     for f in sorted(glob.glob(os.path.join(ROOT, "src/i18n_ja_*.inc"))):
-        txt = open(f, encoding='utf-8').read()
+        txt = re.sub(r'(?m)^\s*//.*$', '', open(f, encoding='utf-8').read())   # comment lines (e.g. the {"English", "Japanese"} header) are not rows
         for m in re.finditer(r'\{\s*(' + SEQ + r')\s*,\s*(' + SEQ + r')\s*\}', txt):
             k = joinlits(m.group(1))
             if k in rows: dups.append((k, rows[k][1], os.path.basename(f)))
@@ -66,13 +66,14 @@ HELPERS = ('BitField', 'ShowFrameField', 'Tooltip', 'PickRow', 'HelpMarker', 'Sh
 def bare_literals(path):
     out = []
     for n, line in enumerate(open(os.path.join(ROOT, path), encoding='utf-8'), 1):
-        if re.match(r'\s*//', line): continue
+        if re.match(r'\s*//', line) or '// i18n-ok' in line: continue   # '// i18n-ok: <reason>' marks a literal that must stay as is (IDs, names, diagnostics)
         for m in re.finditer(r'(?:\b(?:ImGui|im)::|\b)(\w+)\(\s*(' + LIT + r')', line):
             lit = unescape(m.group(2)[1:-1]).split('##')[0]
             if m.group(1) in HELPERS: continue   # helpers translate internally; their literals are keys (keys_of)
             if not m.group(0).lstrip().startswith(('ImGui::','im::')): continue
-            if m.group(1) in ('DockBuilderDockWindow', 'GetID', 'PushID', 'DragDropPayload', 'SetDragDropPayload', 'AcceptDragDropPayload', 'BeginChild', 'BeginTable', 'BeginTabBar', 'BeginPopup', 'OpenPopup', 'BeginPopupContextItem', 'BeginPopupContextWindow', 'InvisibleButton', 'InputScalarN', 'BeginPopupContext'): continue
-            if re.search(r'[A-Za-z]{2}', lit) and not lit.startswith('%'): out.append((n, line.strip()[:110]))
+            if m.group(1) in ('DockBuilderDockWindow', 'GetID', 'PushID', 'DragDropPayload', 'SetDragDropPayload', 'AcceptDragDropPayload', 'BeginChild', 'BeginTable', 'BeginTabBar', 'BeginPopup', 'OpenPopup', 'BeginPopupContextItem', 'BeginPopupContextWindow', 'InvisibleButton', 'InputScalarN', 'BeginPopupContext', 'FindWindowByName'): continue
+            words = re.sub(r'%(?:[-+ #0]*)(?:\d+|\*)?(?:\.\d+)?(?:hh|h|ll|l|z|j|t|L)?[diouxXeEfFgGaAcspn]', '', lit)   # format specifiers are not words
+            if re.search(r'[A-Za-z]{2}', words) and not lit.startswith('%'): out.append((n, line.strip()[:110]))
     return out
 def main():
     args = [a for a in sys.argv[1:] if not a.startswith('--')]

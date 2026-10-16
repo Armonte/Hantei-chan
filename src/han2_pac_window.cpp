@@ -457,14 +457,14 @@ void DrawFileViewers()
 			for (size_t i = 0; i < v.fob.items.size(); i++) {
 				auto &it = v.fob.items[i];
 				auto lb = labels.find(it.pc); if (lb != labels.end()) ImGui::TextColored(ImVec4(.5f, .9f, 1, 1), "%s:", lb->second.c_str());
-				if (!it.isInsn) { ImGui::TextDisabled("  %05x  .data %zu bytes", it.pc, it.raw.size()); continue; }
+				if (!it.isInsn) { ImGui::TextDisabled("  %05x  .data %zu bytes", it.pc, it.raw.size()); continue; }   // i18n-ok: disassembly listing
 				const char *nm = han2::dmpfob::OpName(it.insn.op, v.fob.dialect); std::string name = nm[0] ? nm : "op" + std::to_string(it.insn.op);
 				if (!v.fobFilter.empty() && name.find(v.fobFilter) == std::string::npos) continue;
 				ImGui::PushID((int)i);
 				ImGui::Text("  %05x  %-24s", it.pc, name.c_str());
 				if (it.insn.op == (v.fob.dialect == han2::dmpfob::Dialect::Qoh99 ? 0x1A : 0x03)) { ImGui::SameLine(); int iv = (int)it.insn.imm; ImGui::SetNextItemWidth(110); if (ImGui::InputInt("##imm", &iv, 0, 0)) { it.insn.imm = (uint32_t)iv; v.dirty = true; } }
 				else if (!nm[0] ? false : (it.insn.op != 0x19 && it.insn.op != 0x2D && (std::string(nm).find("JMP") != std::string::npos || std::string(nm).find("CALL") != std::string::npos || std::string(nm).find("ADDR") != std::string::npos || std::string(nm) == "LINE" || std::string(nm) == "PUSH_CODE_ADDR"))) { ImGui::SameLine(); ImGui::Text("%#x", it.insn.imm); }
-				else if (it.insn.op == 0x19 || it.insn.op == 0x2D) { ImGui::SameLine(); ImGui::Text("kind=%#x -> %#x", it.insn.kind, it.insn.imm); }
+				else if (it.insn.op == 0x19 || it.insn.op == 0x2D) { ImGui::SameLine(); ImGui::Text("kind=%#x -> %#x", it.insn.kind, it.insn.imm); }   // i18n-ok: disassembly listing
 				ImGui::PopID();
 			}
 			ImGui::EndChild();
@@ -511,7 +511,7 @@ void DrawFileViewers()
 					const auto &it = v.rfob.items[(size_t)rows[(size_t)r]];
 					auto lb = labels.find(it.pc);
 					const std::string lab = lb != labels.end() ? sj2utf8(lb->second) + ":" : std::string();
-					if (!it.isInsn) { ImGui::TextDisabled("  %05x  .data %zu bytes  %s", it.pc, it.raw.size(), lab.c_str()); continue; }
+					if (!it.isInsn) { ImGui::TextDisabled("  %05x  .data %zu bytes  %s", it.pc, it.raw.size(), lab.c_str()); continue; }   // i18n-ok: disassembly listing
 					if (!lab.empty()) { ImGui::TextColored(ImVec4(.5f, .9f, 1, 1), "%s", lab.c_str()); ImGui::SameLine(); }
 					if (it.reached) ImGui::Text("  %05x  %s", it.pc, han2::fob::Mnemonic(it.insn).c_str());
 					else ImGui::TextDisabled("  %05x  %s", it.pc, han2::fob::Mnemonic(it.insn).c_str());

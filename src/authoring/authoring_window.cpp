@@ -313,7 +313,7 @@ void Header(HostContext& host, const gamelink::Snapshot& s, const LinkPolicy& p)
 		                   TXT(wire::AuthStateName(st.authState)), st.message[0] ? " - " : "", st.message);
 		if (st.lastPath && st.authState == (uint8_t)wire::AuthState::Ready) {
 			ImGui::SameLine();
-			ImGui::TextDisabled("(%s, %u ms)", st.lastPath == 1 ? TXT("hot") : TXT("cold"), (unsigned)st.lastDurationMs);
+			ImGui::TextDisabled("(%s, %u ms)", st.lastPath == 1 ? TXT("hot") : TXT("cold"), (unsigned)st.lastDurationMs);   // i18n-ok: format with unit only
 		}
 	}
 	if (!p.banner.empty()) {

@@ -181,7 +181,7 @@ void DrawStageBrowser(StageProject& pr, const std::string& currentDat, const Bro
 	if (ImGui::BeginTable("stages", 6, ImGuiTableFlags_ScrollY | ImGuiTableFlags_RowBg | ImGuiTableFlags_BordersInnerV |
 	                                       ImGuiTableFlags_Resizable, ImVec2(0, listH))) {
 		ImGui::TableSetupScrollFreeze(0, 1);
-		ImGui::TableSetupColumn("Id", ImGuiTableColumnFlags_WidthFixed, 34);
+		ImGui::TableSetupColumn(LBL("Id"), ImGuiTableColumnFlags_WidthFixed, 34);
 		ImGui::TableSetupColumn(LBL("Preview"), ImGuiTableColumnFlags_WidthFixed, 132);
 		ImGui::TableSetupColumn(LBL("Name"));
 		ImGui::TableSetupColumn(LBL("File"), ImGuiTableColumnFlags_WidthFixed, 60);
