@@ -1,0 +1,87 @@
+== mbtl_patctrl_chr001_p238f10_z1 (one layer)
+mbtl_patctrl_chr001_p238f10_z1 vs mbtl_patctrl_chr001_p238f10_sa (plate mbtl_patctrl_chr001_p238f10_sa_game_plate_b0.png): footprint 34044 px
+  float     residual 0.232  signed +0.019  |d|<=1 99.4%  |d|>=2 0.23%
+  quant rn  residual 0.154  signed +0.013  |d|<=1 99.7%  |d|>=2 0.30%
+  quant tr  residual 0.363  signed +0.354  |d|<=1 99.5%  |d|>=2 0.55%
+  quant rn integer residual histogram: -4:0.1% -3:0.0% -2:0.1% -1:6.6% +0:85.3% +1:7.9% +2:0.1% +3:0.0% +4:0.0%
+  quant rn on flat px (26778): residual 0.164
+  quant rn on edge px (7266): residual 0.114
+  float vs quant rn prediction: mean |d| 0.179
+== mbtl_patctrl_chr001_p277f0_z1 (one layer)
+mbtl_patctrl_chr001_p277f0_z1 vs mbtl_patctrl_chr001_p277f0_sa (plate mbtl_patctrl_chr001_p277f0_sa_game_plate_b0.png): footprint 9876 px
+  float     residual 0.000  signed +0.000  |d|<=1 100.0%  |d|>=2 0.00%
+  quant rn  residual 0.000  signed +0.000  |d|<=1 100.0%  |d|>=2 0.00%
+  quant tr  residual 0.000  signed +0.000  |d|<=1 100.0%  |d|>=2 0.00%
+  quant rn integer residual histogram: +0:100.0%
+  quant rn on flat px (5170): residual 0.000
+  quant rn on edge px (4706): residual 0.000
+  float vs quant rn prediction: mean |d| 0.000
+== mbtl_flipV_chr001_p157f2_z1 (one layer)
+mbtl_flipV_chr001_p157f2_z1 vs mbtl_flipV_chr001_p157f2_sa (plate mbtl_flipV_chr001_p157f2_sa_game_plate_b0.png): footprint 49686 px
+  float     residual 0.184  signed +0.005  |d|<=1 95.6%  |d|>=2 0.39%
+  quant rn  residual 0.167  signed -0.003  |d|<=1 98.7%  |d|>=2 1.29%
+  quant tr  residual 0.218  signed +0.154  |d|<=1 97.5%  |d|>=2 2.46%
+  quant rn integer residual histogram: -4:0.0% -3:0.0% -2:0.6% -1:7.1% +0:84.9% +1:6.7% +2:0.6% +3:0.0% +4:0.0%
+  quant rn on flat px (27381): residual 0.032
+  quant rn on edge px (22305): residual 0.332
+  float vs quant rn prediction: mean |d| 0.078
+== mbtl_flipV_chr001_p157f2_solo_s8_z1 (one layer)
+mbtl_flipV_chr001_p157f2_solo_s8_z1 vs mbtl_flipV_chr001_p157f2_solo_s8_sa (plate mbtl_flipV_chr001_p157f2_solo_s8_sa_game_plate_b0.png): footprint 43965 px
+  float     residual 0.010  signed -0.001  |d|<=1 100.0%  |d|>=2 0.01%
+  quant rn  residual 0.010  signed -0.001  |d|<=1 100.0%  |d|>=2 0.01%
+  quant tr  residual 0.010  signed -0.001  |d|<=1 100.0%  |d|>=2 0.01%
+  quant rn integer residual histogram: -4:0.0% -3:0.0% -2:0.0% -1:0.5% +0:99.1% +1:0.5%
+  quant rn on flat px (42306): residual 0.010
+  quant rn on edge px (1659): residual 0.011
+  float vs quant rn prediction: mean |d| 0.000
+== mbtl_flipV_chr001_p157f2_solo_s456_z1 (one layer)
+mbtl_flipV_chr001_p157f2_solo_s456_z1 vs mbtl_flipV_chr001_p157f2_solo_s456_sa (plate mbtl_flipV_chr001_p157f2_solo_s456_sa_game_plate_b0.png): footprint 13156 px
+  float     residual 0.598  signed +0.064  |d|<=1 82.1%  |d|>=2 1.74%
+  quant rn  residual 0.536  signed +0.038  |d|<=1 94.9%  |d|>=2 5.11%
+  quant tr  residual 0.731  signed +0.543  |d|<=1 89.1%  |d|>=2 10.88%
+  quant rn integer residual histogram: -3:0.1% -2:2.3% -1:20.0% +0:51.7% +1:23.2% +2:2.5% +3:0.1%
+  quant rn on flat px (815): residual 0.449
+  quant rn on edge px (12341): residual 0.542
+  float vs quant rn prediction: mean |d| 0.251
+== mbtl_patctrl_chr001_p238f10_z1 layers mbtl_patctrl_chr001_p238f10_solo_s18_z1
+layer stack on black vs case shot: mean |d| 47.247
+pixels where the layers are the whole frame: 9169
+mbtl_patctrl_chr001_p238f10_z1 vs mbtl_patctrl_chr001_p238f10_sa (plate mbtl_patctrl_chr001_p238f10_sa_game_plate_b0.png): footprint 9169 px
+  float     residual 0.324  signed +0.033  |d|<=1 99.3%  |d|>=2 0.18%
+  quant rn  residual 0.212  signed +0.051  |d|<=1 99.8%  |d|>=2 0.24%
+  quant tr  residual 0.498  signed +0.492  |d|<=1 99.4%  |d|>=2 0.59%
+  quant rn integer residual histogram: -4:0.0% -3:0.0% -2:0.0% -1:7.7% +0:79.3% +1:12.8% +2:0.1% +3:0.1% +4:0.0%
+  quant rn on flat px (8852): residual 0.213
+  quant rn on edge px (317): residual 0.172
+  float vs quant rn prediction: mean |d| 0.253
+== mbtl_patctrl_chr001_p238f10_z1 layers mbtl_patctrl_chr001_p238f10_solo_s18_z1,mbtl_patctrl_chr001_p238f10_solo_s4_z1,mbtl_patctrl_chr001_p238f10_solo_s5_z1
+layer stack on black vs case shot: mean |d| 8.078
+pixels where the layers are the whole frame: 24170
+mbtl_patctrl_chr001_p238f10_z1 vs mbtl_patctrl_chr001_p238f10_sa (plate mbtl_patctrl_chr001_p238f10_sa_game_plate_b0.png): footprint 24170 px
+  float     residual 0.324  signed +0.027  |d|<=1 99.2%  |d|>=2 0.25%
+  quant rn  residual 0.214  signed +0.018  |d|<=1 99.7%  |d|>=2 0.34%
+  quant tr  residual 0.509  signed +0.499  |d|<=1 99.3%  |d|>=2 0.70%
+  quant rn integer residual histogram: -4:0.1% -3:0.0% -2:0.1% -1:9.2% +0:79.4% +1:11.1% +2:0.1% +3:0.0% +4:0.0%
+  quant rn on flat px (20576): residual 0.213
+  quant rn on edge px (3594): residual 0.215
+  float vs quant rn prediction: mean |d| 0.252
+== mbtl_patctrl_chr001_p238f10_z1 layers mbtl_patctrl_chr001_p238f10_solo_s4_z1,mbtl_patctrl_chr001_p238f10_solo_s5_z1,mbtl_patctrl_chr001_p238f10_solo_s18_z1
+layer stack on black vs case shot: mean |d| 8.515
+pixels where the layers are the whole frame: 15256
+mbtl_patctrl_chr001_p238f10_z1 vs mbtl_patctrl_chr001_p238f10_sa (plate mbtl_patctrl_chr001_p238f10_sa_game_plate_b0.png): footprint 15256 px
+  float     residual 0.324  signed +0.031  |d|<=1 99.2%  |d|>=2 0.19%
+  quant rn  residual 0.251  signed +0.131  |d|<=1 99.7%  |d|>=2 0.29%
+  quant tr  residual 0.587  signed +0.580  |d|<=1 98.3%  |d|>=2 1.68%
+  quant rn integer residual histogram: -4:0.0% -3:0.0% -2:0.0% -1:5.7% +0:75.5% +1:18.6% +2:0.1% +3:0.1% +4:0.0%
+  quant rn on flat px (14503): residual 0.250
+  quant rn on edge px (753): residual 0.262
+  float vs quant rn prediction: mean |d| 0.281
+-- p157 floor strip (y 660-705, x 500-900) minus p277 plate_b0; r23 = the effect-peek session
+mbtl_flipV_chr001_p157f2_solo_s456_sa game_bb [0.36 0.28 1.11]
+r23/mbtl_flipV_chr001_p157f2_solo_s456_sa23 game_bb [0.36 0.28 1.11]
+mbtl_flipV_chr001_p157f2_solo_s456_sa game_plate_b0 [0.36 0.27 1.11]
+r23/mbtl_flipV_chr001_p157f2_solo_s456_sa23 game_plate_b0 [0.36 0.27 1.11]
+mbtl_flipV_chr001_p157f2_solo_s456_sa game_plate_bb [0.19 0.14 0.6 ]
+r23/mbtl_flipV_chr001_p157f2_solo_s456_sa23 game_plate_bb [0.19 0.14 0.6 ]
+p158 puddle, plate_b0: blue sum over y 600-720 (B > 0) 172654
+p158 puddle, plate_bb: blue sum over y 600-720 (B > 0) 76799
