@@ -1,0 +1,1 @@
+SECTION texsrc-pat: pass 71 fail 0 | 1117 items decoded, 275 PNG export -> import round trips with no byte changed, 71/71 containers byte-exact on parse -> serialize; 0 texture(s) of a kind the loader does not read (listed, not editable)
