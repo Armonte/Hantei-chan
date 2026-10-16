@@ -7,6 +7,7 @@
 #include "imsearch.h"
 #include "pattern_search.h"
 #include "i18n.h"
+#include "ui/ui_style.h"
 #include "paste_notice.h"
 
 MainPane::MainPane(Render* render, FrameData *framedata, FrameState &fs) : DrawWindow(render, framedata, fs),
@@ -106,8 +107,8 @@ void MainPane::Draw()
 
 		{	// the combo takes what the label, the ID field and the search button leave, so a longer (Japanese) label never pushes them out
 			const ImGuiStyle &sty = im::GetStyle();
-			const float others = im::CalcTextSize(LBL("Pattern"), nullptr, true).x + sty.ItemInnerSpacing.x * 2 + 20.f + 45.f
-				+ im::CalcTextSize(TXT("ID")).x + 10.f + 30.f;
+			const float others = im::CalcTextSize(LBL("Pattern"), nullptr, true).x + sty.ItemInnerSpacing.x * 2 + 20.f + ui::Px(45.f)
+				+ im::CalcTextSize(TXT("ID")).x + 10.f + im::GetFrameHeight() + sty.FramePadding.x * 2;
 			im::SetNextItemWidth(std::max(80.f, im::GetContentRegionAvail().x - others));
 		}
 		if (im::BeginCombo(LBL("Pattern"), decoratedNames[currState.pattern].c_str(), ImGuiComboFlags_HeightLargest))
@@ -132,7 +133,7 @@ void MainPane::Draw()
 			im::EndCombo();
 		}
 		im::SameLine(0, 20.f);
-		im::SetNextItemWidth(45);
+		im::SetNextItemWidth(ui::Px(45));
 		if(im::InputInt(LBL("ID##Pattern"), &currState.pattern, 0, 0)) {
 			// Clamp to valid range
 			int count = frameData->get_sequence_count();
@@ -161,7 +162,7 @@ void MainPane::Draw()
 			if(nframes >= 0)
 			{			
 				float spacing = im::GetStyle().ItemInnerSpacing.x;
-				im::SetNextItemWidth(im::GetWindowWidth() - 160.f);
+				im::SetNextItemWidth(im::GetWindowWidth() - ui::Px(160.f));
 				// On manual frame navigation, drop any activeSpawns left by a
 				// timeline scrub: the render path prefers activeSpawns when
 				// non-empty, so stale entries kept showing the scrubbed tick's
@@ -653,6 +654,36 @@ void MainPane::Draw()
 				frameData->mark_modified(currState.pattern);
 				markModified();
 			}
+			}
+			// The space the (collapsed) trees leave holds the pattern list, so the pane is not half empty
+			// (docs/ui/LAYOUT_AUDIT_2026-10-16.md #10). Picking a row is the same as picking it in the Pattern combo.
+			if (im::GetContentRegionAvail().y > im::GetTextLineHeightWithSpacing() * 6.f)
+			{
+				im::SeparatorText(TXT("Pattern"));
+				const int count = frameData->get_sequence_count();
+				static int lastListed = -1;
+				if (im::BeginChild("##patternList", ImVec2(0, 0), ImGuiChildFlags_Borders))
+				{
+					ImGuiListClipper clip;
+					clip.Begin(count);
+					if (lastListed != currState.pattern && currState.pattern >= 0 && currState.pattern < count)
+						clip.IncludeItemByIndex(currState.pattern);
+					while (clip.Step())
+						for (int n = clip.DisplayStart; n < clip.DisplayEnd; n++)
+						{
+							const bool sel = currState.pattern == n;
+							im::PushID(n);
+							if (im::Selectable(decoratedNames[n].c_str(), sel))
+							{
+								currState.pattern = n;
+								currState.frame = 0;
+								currState.currentTick = 0;
+							}
+							im::PopID();
+							if (sel && lastListed != currState.pattern) { im::SetScrollHereY(0.3f); lastListed = currState.pattern; }
+						}
+				}
+				im::EndChild();
 			}
 			currState.leftPaneScrollY = im::GetScrollY();
 			im::EndChild();

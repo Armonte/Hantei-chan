@@ -257,7 +257,7 @@ void Header(gamelink::Client& c, const gamelink::Snapshot& s)
 	// file
 	const std::string def = DefaultIniPath(s);
 	if (!g_pathExplicit && def != g_path && !def.empty() && !g_ini.IsDirty()) { g_path = def; LoadFromDisk("loaded"); }
-	ImGui::SetNextItemWidth(260);
+	ImGui::SetNextItemWidth(ui::Px(260));
 	ImGui::InputTextWithHint("##gamedir", TXT("game folder (default: from the Game Link)"), g_gameDirBuf, sizeof g_gameDirBuf);
 	ImGui::SameLine();
 	if (ImGui::Button(LBL("Open ini..."))) {
@@ -336,7 +336,7 @@ void GlobalTab()
 
 	// style
 	const std::string active = g_ini.ActiveStyle();
-	ImGui::SetNextItemWidth(200);
+	ImGui::SetNextItemWidth(ui::Px(200));
 	if (ImGui::BeginCombo(LBL("style (active_style)"), active.empty() ? TXT("(none: defaults)") : active.c_str())) {
 		if (ImGui::Selectable(LBL("(none: defaults)"), active.empty())) { SelectStyle(g_ini, "", g_dropOverrides); Edited(); }
 		for (const std::string& n : StyleNames(g_ini)) {
@@ -352,7 +352,7 @@ void GlobalTab()
 	ImGui::Checkbox(LBL("picking a style drops [tuning] overrides"), &g_dropOverrides);
 	if (ImGui::IsItemHovered()) ImGui::SetTooltip("%s", TXT("As the in-game F3 panel does: the style is what you asked for."));
 	if (!r.styleFound) ImGui::TextColored(kWarn, TXT("active_style '%s' is unknown: the game uses the defaults"), active.c_str());
-	ImGui::SetNextItemWidth(160);
+	ImGui::SetNextItemWidth(ui::Px(160));
 	ImGui::InputTextWithHint("##newstyle", TXT("new style name"), g_newStyle, sizeof g_newStyle);
 	ImGui::SameLine();
 	const bool nameOk = g_newStyle[0] && !std::strpbrk(g_newStyle, "[]=;# \t");
@@ -489,7 +489,7 @@ void CharPicker(EditorContext& ctx, const gamelink::Snapshot& s)
 {
 	const std::vector<std::string> chars = CharacterList(ctx, s);
 	if (g_char.empty() && !chars.empty()) g_char = chars.front();
-	ImGui::SetNextItemWidth(200);
+	ImGui::SetNextItemWidth(ui::Px(200));
 	std::string cur = g_char + (g_ini.HasSection(SecKind::Char, g_char) ? " *" : "");
 	if (ImGui::BeginCombo(LBL("character ([char.<file>])"), cur.c_str(), ImGuiComboFlags_HeightLarge)) {
 		for (const std::string& n : chars) {
@@ -594,7 +594,7 @@ void AssistTab(EditorContext& ctx, const gamelink::Snapshot& s)
 	const bool fromEditor = ActiveMatches(ctx) && (!ctx.activeCommandsPath.empty() ||
 		(!ctx.activeTxtPath.empty() && !cmdfile::CommandFileCandidates(ctx.activeTxtPath).empty()));
 	if (!fromEditor) {
-		ImGui::SetNextItemWidth(120);
+		ImGui::SetNextItemWidth(ui::Px(120));
 		const char* moons[] = { TXT("0 Crescent"), TXT("1 Full"), TXT("2 Half") };
 		i18n::Combo(LBL("moon (_c.txt)"), &g_cmdMoon, moons, 3);
 	}
@@ -673,7 +673,7 @@ void AssistTab(EditorContext& ctx, const gamelink::Snapshot& s)
 		} else if (mode == 2) {
 			const int32_t id = now[li.command];
 			const CommandInfo* cur = FindCommand(g_cmds, id);
-			ImGui::SetNextItemWidth(360);
+			ImGui::SetNextItemWidth(ui::Px(360));
 			const std::string label = cur ? CommandLabel(*cur) : std::to_string(id) + TXT(" (not in the _c.txt)");
 			if (ImGui::BeginCombo("##cmd", label.c_str(), ImGuiComboFlags_HeightLarge)) {
 				for (const CommandInfo& c : g_cmds)
@@ -683,7 +683,7 @@ void AssistTab(EditorContext& ctx, const gamelink::Snapshot& s)
 			if (g_cmds.empty()) {
 				ImGui::SameLine();
 				int32_t x = id;
-				ImGui::SetNextItemWidth(100);
+				ImGui::SetNextItemWidth(ui::Px(100));
 				if (ImGui::InputInt(LBL("id"), &x)) { x = std::clamp(x, 0, 999); SetCharLever(g_ini, g_char, li.command, x); Edited(); }
 			}
 		} else if (mode == 3) {
@@ -691,7 +691,7 @@ void AssistTab(EditorContext& ctx, const gamelink::Snapshot& s)
 				std::snprintf(g_motionBuf[slot], sizeof g_motionBuf[slot], "%s", UnpackMotion(now[li.motion]).c_str());
 				g_motionInit[slot] = true;
 			}
-			ImGui::SetNextItemWidth(120);
+			ImGui::SetNextItemWidth(ui::Px(120));
 			ImGui::InputText("##mot", g_motionBuf[slot], sizeof g_motionBuf[slot], ImGuiInputTextFlags_CharsUppercase);
 			const std::string err = ValidateMotion(g_motionBuf[slot]);
 			ImGui::SameLine();
@@ -843,7 +843,7 @@ void LiveTab(EditorContext& ctx, gamelink::Client& c, const gamelink::Snapshot& 
 	// follow point
 	ImGui::Checkbox(LBL("Follow point"), &g_follow);
 	ImGui::SameLine();
-	ImGui::SetNextItemWidth(90);
+	ImGui::SetNextItemWidth(ui::Px(90));
 	const char* teams[] = { TXT("Team 1"), TXT("Team 2") };
 	i18n::Combo("##fteam", &g_followTeam, teams, 2);
 	if (!g_follow) return;
