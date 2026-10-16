@@ -464,3 +464,8 @@ Evidence: `round9/`.
     RenderBatch_AppendQuad_Idx012_321 0x410CC0, RenderBatch_AppendTri_Idx012 0x410D10,
     RenderBatch_AppendVertsIndices 0x410BE0.
   - Commented: the Bokashi pass on CgLayer_DrawWithCharaShader 0x4BE140.
+- **Checks.**
+  - The round-8 list in `round9.log` reproduces the round 8 numbers.
+  - Its last line, `ctrl_chr019_p0` at 15.48, is already that value with the round 8 tools. The line has no stage
+    gradient and no bokashi model, and chr019 p0 is a CG sprite, so it is not a regression.
+  - Full ctest: 67/67 passed (`ctest_r9.log`, `--timeout 900`).
