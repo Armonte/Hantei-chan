@@ -1,0 +1,121 @@
+[10:42:34.751] [89556] [I] fbmod 0.1.0 (standalone), exe uni2.exe, game dir c:\program files (x86)\steam\steamapps\common\under night in-birth ii sys celes\
+[10:42:34.830] [89556] [I] build: 1.42 (Steam 25624308) (stamp 6abcb77f size 044e5000) sha256 4ebed985ecbf330ab8e495573361e49df20bb555263289d1aff5425fac9b7ed9
+[10:42:34.831] [89556] [W] UNI2-IM is loaded too: fbmod chains its hooks after it and moves its default hotkeys to F9-F12
+[10:42:34.831] [89556] [I] hook ExitProcess: create at 0x76a0b360 (entry 55 8b ec 6a ff)
+[10:42:34.839] [89556] [I] hook ExitProcess: enable
+[10:42:35.148] [89556] [I] hook ExitProcess at 0x76a0b360 (presentation)
+[10:42:35.148] [89556] [I] hook NtTerminateProcess: create at 0x77ce9e60 (entry b8 2c 00 07 00)
+[10:42:35.155] [89556] [I] hook NtTerminateProcess: enable
+[10:42:35.426] [89556] [I] hook NtTerminateProcess at 0x77ce9e60 (presentation)
+[10:42:35.426] [89556] [I] adapter: uni2 (UNDER NIGHT IN-BIRTH II Sys:Celes)
+[10:42:35.426] [89556] [I] resolve uni2_142: Battle_FrameUpdate pinned rva 0x126660 (entry already detoured by another module; rest of the signature verified)
+[10:42:35.426] [89556] [I] resolve uni2_142: OpenFileViaSearchPaths pinned rva 0xb9720
+[10:42:35.426] [89556] [I] resolve uni2_142: File_ExistsViaSearchPaths pinned rva 0xb90d0
+[10:42:35.426] [89556] [I] resolve uni2_142: FileReader_Close pinned rva 0xb9ba0
+[10:42:35.427] [89556] [I] resolve uni2_142: ArchiveIndex_OpenEntryByName pinned rva 0xb9ea0
+[10:42:35.427] [89556] [I] resolve uni2_142: g_CharaObjects pinned rva 0xc65280
+[10:42:35.427] [89556] [I] resolve uni2_142: g_EffectObjects pinned rva 0x87d430
+[10:42:35.427] [89556] [I] resolve uni2_142: vt_PLAYER_DATA pinned rva 0x5536c8
+[10:42:35.427] [89556] [I] resolve uni2_142: vt_PL_EFFECT pinned rva 0x556f28
+[10:42:35.427] [89556] [I] resolve uni2_142: g_SceneId pinned rva 0x5a4a84
+[10:42:35.427] [89556] [I] resolve uni2_142: g_GameMode pinned rva 0x5a5948
+[10:42:35.427] [89556] [I] resolve uni2_142: g_GameSubMode pinned rva 0x5a594c
+[10:42:35.427] [89556] [I] resolve uni2_142: g_NetplayActive pinned rva 0x5a49a0
+[10:42:35.427] [89556] [I] resolve uni2_142: g_GgpoSession pinned rva 0x4448858
+[10:42:35.427] [89556] [I] resolve uni2_142: vt_Peer2PeerBackend pinned rva 0x537910
+[10:42:35.427] [89556] [I] resolve uni2_142: vt_SpectatorBackend pinned rva 0x5379f4
+[10:42:35.427] [89556] [I] resolve uni2_142: g_ScreenMatrix pinned rva 0x85d058
+[10:42:35.427] [89556] [I] resolve uni2_142: k_PixelToClipX pinned rva 0x569f98
+[10:42:35.427] [89556] [I] resolve uni2_142: k_PixelToClipY pinned rva 0x56a3f0
+[10:42:35.427] [89556] [I] resolve uni2_142: k_WorldToPixel pinned rva 0x569fac
+[10:42:35.427] [89556] [I] resolve uni2_142: g_RenderPhysicalWidth pinned rva 0x5a46b4
+[10:42:35.427] [89556] [I] resolve uni2_142: g_RenderPhysicalHeight pinned rva 0x5a46b8
+[10:42:35.427] [89556] [I] resolve uni2_142: Chara_LoadCommandList pinned rva 0x246f30
+[10:42:35.427] [89556] [I] resolve uni2_142: Chara_LoadMoveList pinned rva 0x246b20
+[10:42:35.427] [89556] [I] resolve uni2_142: ObjectManagerStackPush pinned rva 0x29bd0
+[10:42:35.427] [89556] [I] resolve uni2_142: g_ObjectManagerBase pinned rva 0x5f2a94
+[10:42:35.427] [89556] [I] resolve uni2_142: g_CharaScriptVariantFlag pinned rva 0x8750f8
+[10:42:35.427] [89556] [I] resolve uni2_142: g_CharaScriptVariantNum pinned rva 0x8750fc
+[10:42:35.427] [89556] [I] resolve uni2_142: g_BattleSqVM pinned rva 0x4401008
+[10:42:35.427] [89556] [I] resolve uni2_142: sq_pop pinned rva 0x5e3d0
+[10:42:35.427] [89556] [I] resolve uni2_142: g_TrainingSnapshotValid pinned rva 0x657fc8
+[10:42:35.427] [89556] [I] resolve uni2_142: Scene_DispatchUpdate pinned rva 0x1cb3d0
+[10:42:35.427] [89556] [I] resolve uni2_142: g_SceneInitFlag pinned rva 0x776b64
+[10:42:35.427] [89556] [I] resolve uni2_142: g_BootLogoState pinned rva 0x5f0d64
+[10:42:35.427] [89556] [I] resolve uni2_142: g_TitleBootMode pinned rva 0x5a4a88
+[10:42:35.427] [89556] [I] resolve uni2_142: g_MenuPlayerSide pinned rva 0x5a5940
+[10:42:35.427] [89556] [I] resolve uni2_142: g_TitleState pinned rva 0x5effe0
+[10:42:35.427] [89556] [I] resolve uni2_142: g_TitleStateTimer pinned rva 0x5effe4
+[10:42:35.427] [89556] [I] resolve uni2_142: g_TitleResult pinned rva 0x5efff4
+[10:42:35.427] [89556] [I] resolve uni2_142: g_TitleState4Timer pinned rva 0x5efffc
+[10:42:35.427] [89556] [I] resolve uni2_142: g_CSS_State pinned rva 0x776be8
+[10:42:35.427] [89556] [I] resolve uni2_142: g_CSS_LastChara pinned rva 0x5a4324
+[10:42:35.427] [89556] [I] resolve uni2_142: g_CSS_LastColor pinned rva 0x776bd0
+[10:42:35.427] [89556] [I] resolve uni2_142: g_BattleStateStore2 pinned rva 0x843560
+[10:42:35.427] [89556] [I] resolve uni2_142: CharaRes_LoadOrGetCached pinned rva 0x1c9d10
+[10:42:35.427] [89556] [I] resolve uni2_142: CharaRes_LoadPalFiles pinned rva 0x1c9bd0 (entry already detoured by another module; rest of the signature verified)
+[10:42:35.427] [89556] [I] resolve uni2_142: CharaRes_ApplyPaletteToCg pinned rva 0x1c9660
+[10:42:35.427] [89556] [I] resolve uni2_142: Obj_RefreshPatternFramePointers pinned rva 0x13bc90
+[10:42:35.427] [89556] [I] resolve uni2_142: g_CharaResRecords pinned rva 0xc60cd0
+[10:42:35.427] [89556] [I] resolve uni2_142: g_CharaResCacheBegin pinned rva 0xc57994
+[10:42:35.427] [89556] [I] resolve uni2_142: g_CharaResCacheEnd pinned rva 0xc57998
+[10:42:35.427] [89556] [I] resolve uni2_142: g_CharaResCacheLock pinned rva 0x87b4dc
+[10:42:35.427] [89556] [I] resolve uni2_142: SpriteTexCache_Clear pinned rva 0xbf7d0
+[10:42:35.427] [89556] [I] resolve uni2_142: g_SpriteTexCacheBegin pinned rva 0x844d94
+[10:42:35.427] [89556] [I] resolve uni2_142: g_SpriteTexCacheEnd pinned rva 0x844d98
+[10:42:35.427] [89556] [I] resolve uni2_142: PatFile_Destruct pinned rva 0xa7f10
+[10:42:35.427] [89556] [I] resolve uni2_142: CgFile_Destruct pinned rva 0xaa330
+[10:42:35.427] [89556] [I] resolve uni2_142: Ha6Root_Destroy pinned rva 0xc2d80
+[10:42:35.427] [89556] [I] resolve uni2_142: GameOperatorDelete pinned rva 0x99082
+[10:42:35.427] [89556] [I] resolve uni2_142: TrainingCharaChange_ApplyPicksToBattleConfig pinned rva 0x1a87e0
+[10:42:35.427] [89556] [I] resolve uni2_142: g_TrainingChangeChara_P1Pick pinned rva 0x87acc4
+[10:42:35.427] [89556] [I] resolve uni2_142: g_TrainingChangeChara_P2Pick pinned rva 0x87acc8
+[10:42:35.427] [89556] [I] resolve uni2_142: g_TrainingChangeChara_StagePick pinned rva 0x87accc
+[10:42:35.427] [89556] [I] resolve uni2_142: g_BattleStageSel pinned rva 0x657b80
+[10:42:35.427] [89556] [I] resolve uni2_142: g_BattleCfg_CharaId pinned rva 0x8750ec
+[10:42:35.427] [89556] [I] resolve uni2_142: g_VsLoad_QuickNoVsScreen pinned rva 0x84357c
+[10:42:35.427] [89556] [I] resolve uni2_142: g_VsLoad_SkipCharaScripts pinned rva 0x843590
+[10:42:35.427] [89556] [I] resolve uni2_142: g_D3DDevice pinned rva 0x603740
+[10:42:35.427] [89556] [I] resolve uni2_142: 68 pinned, 0 scanned, 0 unresolved of 68
+[10:42:35.427] [89556] [I] hook uni2.Scene_DispatchUpdate(boot): create at 0x62b3d0 (entry 53 8b dc 83 ec)
+[10:42:35.437] [89556] [I] hook uni2.Scene_DispatchUpdate(boot): enable
+[10:42:35.723] [89556] [I] hook uni2.Scene_DispatchUpdate(boot) at 0x62b3d0 (presentation)
+[10:42:35.723] [89556] [I] uni2 boot: straight into training with 3 (colour 0) vs 5 (colour 0)
+[10:42:35.723] [89556] [I] hook uni2.Battle_FrameUpdate: create at 0x586660 (entry e9 9b 9b c4 04)
+[10:42:35.732] [42756] [I] uni2 boot: scene 4294967295 -> 2 at 312 ms
+[10:42:35.733] [89556] [I] hook uni2.Battle_FrameUpdate: enable
+[10:42:35.933] [89556] [I] hook uni2.Battle_FrameUpdate at 0x586660 (sim)
+[10:42:35.933] [89556] [I] hook uni2.OpenFileViaSearchPaths: create at 0x519720 (entry 53 8b dc 83 ec)
+[10:42:35.936] [89556] [I] hook uni2.OpenFileViaSearchPaths: enable
+[10:42:36.077] [89556] [I] hook uni2.OpenFileViaSearchPaths at 0x519720 (presentation)
+[10:42:36.077] [89556] [I] hook uni2.File_ExistsViaSearchPaths: create at 0x5190d0 (entry 55 8b ec 6a ff)
+[10:42:36.093] [89556] [I] hook uni2.File_ExistsViaSearchPaths: enable
+[10:42:36.274] [89556] [I] hook uni2.File_ExistsViaSearchPaths at 0x5190d0 (presentation)
+[10:42:36.274] [89556] [I] uni2: table ok (68 rows), frame step true, vfs open true, vfs exists true, hitboxes true, script reload true
+[10:42:36.274] [89556] [I] adapter init ok; hitboxes available, frame step available
+[10:42:36.276] [89556] [I] vfs layer fbmod\mods (prio 1000): 0 file(s)
+[10:42:36.276] [89556] [I] vfs: 0 override key(s)
+[10:42:36.276] [89556] [I] d3d9: late attach queued for the game thread
+[10:42:36.276] [13912] [I] hotreload: pipe server \\.\pipe\fbmod-88316
+[10:42:36.277] [39108] [I] hotreload: pipe server \\.\pipe\fbmod-uni2
+[10:42:44.781] [42756] [I] uni2 boot: scene 2 -> 10 at 9359 ms
+[10:42:44.795] [42756] [I] d3d9: late attach on the game thread
+[10:42:44.805] [42756] [I] d3d9: late attach through the game device 0xe0e6da0
+[10:42:44.805] [42756] [I] hook IDirect3DDevice9::Present: create at 0x68c835a0 (entry 56 53 83 ec 24)
+[10:42:44.811] [42756] [I] hook IDirect3DDevice9::Present: enable
+[10:42:44.925] [42756] [I] hook IDirect3DDevice9::Present at 0x68c835a0 (presentation)
+[10:42:44.925] [42756] [I] hook IDirect3DDevice9::Reset: create at 0x699009d0 (entry e9 8b f7 8c 9b)
+[10:42:44.935] [42756] [I] hook IDirect3DDevice9::Reset: enable
+[10:42:45.043] [42756] [I] hook IDirect3DDevice9::Reset at 0x699009d0 (presentation)
+[10:42:45.043] [42756] [I] uni2 boot: scene 10 -> 3 at 9625 ms
+[10:42:45.050] [42756] [I] overlay: ImGui 1.92.9b on window 0x1772138
+[10:42:45.050] [42756] [I] session: unknown -> offline
+[10:42:45.050] [42756] [I] vfs: sim-affecting overrides enabled
+[10:42:45.053] [42756] [I] overlay: first frame drawn (1280x720 backbuffer)
+[10:42:45.064] [42756] [I] session: offline -> training
+[10:42:45.069] [42756] [I] uni2 boot: scene 3 -> 24 at 9640 ms
+[10:42:45.104] [42756] [I] uni2 boot: CSS quick select set to 3 vs 5
+[10:42:45.236] [42756] [I] uni2 boot: scene 24 -> 15 at 9812 ms
+[10:42:47.818] [42756] [I] uni2 boot: training battle with 3 (colour 0) vs 5 (colour 0) saved as last used
+[10:42:47.824] [42756] [I] uni2 boot: scene 15 -> 1 at 12406 ms
+[10:42:47.824] [42756] [I] uni2 boot: training battle reached (mode 3)
