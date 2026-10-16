@@ -661,13 +661,19 @@ void MainPane::Draw()
 			{
 				im::SeparatorText(TXT("Pattern"));
 				const int count = frameData->get_sequence_count();
-				static int lastListed = -1;
+				// The selection follows currState.pattern both ways: a click here sets it, and a change anywhere else (combo,
+				// ID field, search, shortcuts) moves the selection and scrolls the row into view once. The scroll is held
+				// back while a popup is open (the Pattern combo's own keyboard navigation) and while this list has the
+				// keyboard nav focus, and a click never scrolls (the row is already where the mouse is).
+				const bool popupOpen = im::IsPopupOpen("", ImGuiPopupFlags_AnyPopupId | ImGuiPopupFlags_AnyPopupLevel);
 				if (im::BeginChild("##patternList", ImVec2(0, 0), ImGuiChildFlags_Borders))
 				{
+					const bool listNav = im::IsWindowFocused() && im::GetIO().NavVisible;
+					const bool follow = patternListShown != currState.pattern && !popupOpen && !listNav
+						&& currState.pattern >= 0 && currState.pattern < count;
 					ImGuiListClipper clip;
 					clip.Begin(count);
-					if (lastListed != currState.pattern && currState.pattern >= 0 && currState.pattern < count)
-						clip.IncludeItemByIndex(currState.pattern);
+					if (follow) clip.IncludeItemByIndex(currState.pattern);
 					while (clip.Step())
 						for (int n = clip.DisplayStart; n < clip.DisplayEnd; n++)
 						{
@@ -675,12 +681,20 @@ void MainPane::Draw()
 							im::PushID(n);
 							if (im::Selectable(decoratedNames[n].c_str(), sel))
 							{
-								currState.pattern = n;
+								currState.pattern = n;   // same as picking it in the Pattern combo
 								currState.frame = 0;
 								currState.currentTick = 0;
+								patternListShown = n;
 							}
 							im::PopID();
-							if (sel && lastListed != currState.pattern) { im::SetScrollHereY(0.3f); lastListed = currState.pattern; }
+							if (sel && follow)
+							{
+								// only when the row is not fully in view, so a visible selection does not jump
+								const float top = im::GetWindowPos().y, bottom = top + im::GetWindowHeight();
+								if (im::GetItemRectMin().y < top || im::GetItemRectMax().y > bottom)
+									im::SetScrollHereY(0.3f);
+								patternListShown = currState.pattern;
+							}
 						}
 				}
 				im::EndChild();
