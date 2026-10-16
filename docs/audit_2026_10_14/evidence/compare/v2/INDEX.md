@@ -643,3 +643,97 @@ printed three ways: round-9 registration, `--exact-reg`, and control-registered.
   after the fighters (callers of Stage_DrawFrame / Battle_FrameUpdate 0x52740B).
 - MBTL p157: refit the chr001 offset on raw. Its +1.06 over p238 is the remaining MBTL gap.
 - Reshoot the remaining zoom-1.5 cases at zoom 1 (flipHV_chr019_p153 is already done as `_z1`).
+
+## Round 12 / render-match12 (2026-10-15): the "R add" was the metric, MBTL thin arcs at zoom 1
+No editor (C++) change this round: all three open gaps were measurement errors. Numbers:
+`tools/uni/s1_compare/v2_round12.sh` (log `round12.log`, control-registered line only, offsets refitted into
+`round12/reg/`) and `v2_round12_mbtl_z1.sh` (log `round12_mbtl_z1.log`). Full ctest 69/69 (`ctest_r12.log`, `--timeout 900`).
+
+### pras_chr020_p5f2: the glow model darkened R under the additive flame
+- **Not a game pass.** UNI2 1.42 has nothing after the fighters that would add red over them:
+  - `Stage_DrawFrame` renders the stage into its own MSAA target and does bloom and FXAA there (`StageBloom_Apply`,
+    the `g_BiassR/G/B` bloom). Battle_FrameUpdate's call to it comes after the chara loop, but only to composite the
+    stage RT at priority 250.
+  - `Stage_SubmitScreenTintQuads` 0x52B3D0 (new name) draws full-screen tint quads and the chara-light darkening quad.
+    These alpha-blend, so they would pull G and B down over the flame; they cannot add R.
+  - `sh_paniblur.txt` TecCharaPtBlurDrawW/H (`CharaPtBlur_DrawBlurWH_Passes` 0x87F9A0) is a 9-tap blur of .pat parts.
+    It runs only for parts with blend byte 3 (`PatPart_PrepareDraw_ColorSpecBlendMatrix` 0x4150E0, 2D path).
+    The flame is PRAL 1, so this pass is not it either.
+- **What the metric did.** `--glow sq` built the glow silhouette from the whole frame's 1 − Q. With `--grey`, the
+  saturated cyan flame clips G and B on the 64-grey shot, so its 1 − Q came out at about 2/3 instead of 0. The model
+  therefore put the 0x16-alpha glow lerp (towards 00AAFF) under the flame, which lowered the predicted R by
+  a·R_plate, about 4 to 5. G and B were already clipped at 255, so only R showed the error. Evidence, on the
+  saturated-flame px (11.6k):
+  - Glow on the full silhouette: game − pred R = **+4.13**, and it rises with plate R (3.6 / 3.9 / 4.8 at plate R
+    20–40 / 40–60 / 60–90). That is the a·R signature.
+  - No glow: **−0.44**.
+  - Glow silhouette from the CG layer only: **−0.12**.
+- **Model.** `v2_model --glow-sil cg` (with `--layers`) builds the glow silhouette from the CG layer shot alone. Additive
+  parts carry no alpha coverage. Commented on `CharaAura_DrawGlow` 0x59D910.
+- **What is left on pras_z1, .pat-only px only.** Mean 1.6, signed about 0. It grows with the local gradient
+  (|d| ≈ 0.2 × |∇|). It is not a shift: the best ±0.75 px shift is 0,0. It is not blur either: the game and the
+  prediction have the same gradient energy, and blurring either one makes it worse. So this is texel-level detail in
+  the flame texture sampling, with no post pass involved.
+
+### pups_chr027_p449f4: the "+4.4 R" was a stage-gradient fit biased by clipped px
+- `grad_fit` least-squares fitted the stage chara gradient (base + height·t) on every control footprint px. 14% of
+  ctrl_chr027_p0's R channel is game-clipped (≥ 254), where the add cannot show. Those px pulled the R base down to
+  2.4. The unclipped px of the control itself read R +3.9, and pups read +4.4, so this was the same bias, not a
+  pups-specific pass.
+- **Fix (metric).** `grad_fit` now leaves out px with game ≥ 254, per channel. The chr027 R base goes 2.4 → 7.9. It
+  agrees with a fit on pups itself (7.7) and with chr020's 8.4. Every CG control drops, because they all had some
+  clipped px.
+
+### mbtl_flipV_chr001_p157f2: thin-line arcs were the 1.5× shot resample
+- **Raw refit.** `v2_model --subpix-obj raw` (new) on p238f10 gives the same offset as round 11: +0.25, 0. So p157
+  stays at 4.46 at zoom 1.5. The round-11/12 scripts pass `"$L0"` as one argument, so the MBTL lit line used the stage
+  light JSON, not the identity. raw is unaffected. `v2_round12_mbtl_z1.sh` passes `--light` correctly (lit = raw).
+- **Where it is.** `v2_split_by_shot.py` (new) splits a case's residual by the coverage of other shots with the same
+  framing. At 1.5, the thin-line arcs (slots 4/5/6, solo s456 coverage, 12.9k px) carry 73% of p157's raw residual
+  (mean 8.97); the rest is 1.86. The s456 solo case (12.10) has the right energy (game/pred 1.03) but is sharper in the
+  game: gradient energy is +13% and the peak is 217 vs 180. Blur makes it worse and the best shift gives only 9.1. That
+  is the resample softening thin lines, as with the pras CG edges in round 11.
+- **Zoom-1 shots** (new rows in cases_control.txt, `*_z1`, against the same `_nb` game captures, camera geometry 0,0):
+
+| case | zoom 1.5 (raw) | **zoom 1 (raw)** |
+|---|---|---|
+| mbtl_patctrl_chr001_p238f10 (control) | 3.40 | **3.25** |
+| mbtl_flipV_chr001_p157f2 | 4.46 | **1.28** (s456 px 0.71, rest 1.48) |
+| mbtl_flipV_chr001_p157f2_solo_s456 | 12.10 | **0.75** |
+| mbtl_flipV_chr001_p157f2_solo_s8 | 1.03 | **0.79** |
+| mbtl_patctrl_chr001_p277f0 | 1.66 | invalid (0.00: the editor window falls outside the capture, so the game side is the P pad) |
+
+### Table (control-registered; zoom-1 rows preferred)
+
+| case | round 11 | **round 12** | floor (its control, round 12) |
+|---|---|---|---|
+| ctrl_chr020_p0 | 0.71 | **0.28** | is the floor |
+| afhk_cg_chr020_p435_t27 | 0.67 | **0.63** | 0.28: +0.35 |
+| afhk_cg_chr020_p437_t2 | 0.30 | **0.27** | 0.28: at floor |
+| pras_chr020_p5f2 (zoom 1.5) | 2.43 | 2.12 | 0.28 |
+| **pras_chr020_p5f2_z1** | 1.32 | **1.01** | 0.28: +0.73 (.pat flame texel detail, see above) |
+| ctrl_chr027_p0 / _z1 | 1.45 / 1.46 | **0.49 / 0.50** | is the floor |
+| pups_chr027_p449f4 / _z1 | 1.89 / 1.89 | **0.34 / 0.59** | 0.49 / 0.50: below / +0.09 (474 edge px) |
+| ctrl_chr019_p0 / _z1 | 1.58 / 1.58 | **0.28 / 0.28** | is the floor |
+| flipHV_chr019_p153 (zoom 1.5) | 3.65 | 3.65 | (no gradient; use _z1) |
+| flipHV_chr019_p153_z1 / _solo8_z1 | 0.32 / 0.28 | **0.32 / 0.28** | 0.28: at floor |
+| ctrl_chr024_p0 | 0.86 | **0.27** | is the floor |
+| rect_chr024_p76_z1 | 0.33 | **0.33** | 0.27: at floor |
+| mbtl_patctrl_chr001_p238f10 (raw) | 3.40 | 3.40 (z1 **3.25**) | is the floor |
+| mbtl_flipV_chr001_p157f2 (raw) | 4.46 | 4.46 (z1 **1.28**) | 3.25: below at zoom 1 |
+| mbtl_pups_chr011_p309 (raw) | 0.59 | 0.59 | below |
+
+### UNI2 IDB (renamed, commented, saved)
+- Renamed: CharaPtBlur_DrawBlurWH_Passes 0x87F9A0, CharaPtBlur_BeginMaskTarget 0x87FBA0, CharaPtBlur_Callback_Blur
+  0x87FC50, CharaPtBlur_RegisterCallbacks 0x87FC70, PatPart_PrepareDraw_ColorSpecBlendMatrix 0x4150E0,
+  PatPartBlurCallbacks_SetSlot 0x4C0BB0, g_PatPartBlurCb_Blur 0xA54CA8, g_PatPartBlurCb_Begin 0xA54CAC,
+  Stage_SubmitScreenTintQuads 0x52B3D0.
+- Commented: CharaAura_DrawGlow (round-12 finding), the three functions above. MBTL IDB untouched (not needed).
+
+### Next
+- pras_z1 .pat flame (+0.73 over the new 0.28 floor): texel-level. Compare the flame texture's sampling (filter,
+  UV bias, mip) per part, e.g. a solo-part shot of slot 237.
+- afhk p435 is now +0.35 over the lower floor: recheck it with `--glow-sil cg` style care (it is CG only) and look at
+  the glow ring.
+- MBTL p277 zoom-1 registration (window outside the capture); reshoot MBTL pups_chr011 at zoom 1.
+- Fix the `"$L0"` quoting in v2_round11/12.sh (MBTL lit line).
