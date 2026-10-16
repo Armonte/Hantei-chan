@@ -1,5 +1,6 @@
 #include "cgm_window.h"
 #include "../ui/ui_style.h"
+#include "../ui/ui_layout2.h"
 #include "../cg.h"
 #include "../character_instance.h"
 #include "../i18n.h"
@@ -41,11 +42,15 @@ bool LabelIs(const char *label, const std::string &want) {
 	const char *id = strstr(label, "###");
 	return id && want == id + 3;
 }
-bool CgmButton(const char *label) {
-	bool r = ImGui::Button(label);
+bool CgmButton(const char *label, const ImVec2 &size = ImVec2(0, 0)) {
+	bool r = ImGui::Button(label, size);
 	if (!g_scriptPress.empty() && LabelIs(label, g_scriptPress)) { g_scriptPress.clear(); r = true; }
 	return r;
 }
+// A CgmButton in the next cell of an equal-width ui::ButtonGrid (rows wrap evenly).
+bool GridButton(ui::ButtonGrid &g, const char *label) { g.Next(); return CgmButton(label, ImVec2(g.cellW, 0)); }
+// A CgmButton that follows the previous item on the same line while it fits, otherwise starts a new line.
+bool FitButton(const char *label, float spacing = -1.f) { ui::SameLineButton(label, spacing); return CgmButton(label); }
 ImGuiTabItemFlags CgmTab(const char *name) {
 	if (!g_scriptTab.empty() && g_scriptTab == name) { g_scriptTab.clear(); return ImGuiTabItemFlags_SetSelected; }
 	return 0;
@@ -288,15 +293,20 @@ void Window::drawPalettes(CharacterInstance &ch, const WindowHost &host) {
 	for (int b = 0; b < 8; b++) if (P.loaded[b]) { names.push_back(std::filesystem::path(ch.cg.palettePath(b)).filename().string() + (P.dirty[b] ? " *" : "")); ids.push_back(b); }
 	if (names.empty()) { ImGui::TextDisabled("%s", TXT("This character has no palette file and its bank is not editable.")); return; }
 	int cur = 0; for (size_t i = 0; i < ids.size(); i++) if (ids[i] == P.bank) cur = (int)i;
-	ImGui::SetNextItemWidth(260);
-	if (ImGui::BeginCombo(LBL("Palette source"), names[cur].c_str())) { for (size_t i = 0; i < ids.size(); i++) if (ImGui::Selectable(names[i].c_str(), (int)i == cur)) { P.bank = ids[i]; P.number = 0; } ImGui::EndCombo(); }
 	const bool isFile = P.bank >= 0;
 	const int total = isFile ? P.set[P.bank].count : 8;
 	P.number = std::clamp(P.number, 0, std::max(0, total - 1));
-	ImGui::SameLine(); ImGui::SetNextItemWidth(110);
-	if (ImGui::InputInt(LBL("Palette number"), &P.number, 1, 8)) { P.number = std::clamp(P.number, 0, total - 1); if (isFile) { previewPal = P.number; previewPups = P.bank; } clearThumbs(); previewId = -1; }
-	ImGui::SameLine(); ImGui::TextDisabled(TXT("of %d"), total);
-	if (isFile) { ImGui::SameLine(); if (CgmButton(LBL("Show in main view"))) { ch.palette = P.number; ch.cg.changePaletteNumber(P.number); } }
+	// label-first source cells: the source combo, then the number with its count and "Show in main view"
+	if (ui::BeginFormGrid("##palsrc", 2, ui::Em(18.f))) {
+		ui::FormCell(TXT("Palette source"));
+		if (ImGui::BeginCombo("##palsource", names[cur].c_str())) { for (size_t i = 0; i < ids.size(); i++) if (ImGui::Selectable(names[i].c_str(), (int)i == cur)) { P.bank = ids[i]; P.number = 0; } ImGui::EndCombo(); }
+		ui::FormCell(TXT("Palette number"));
+		ImGui::SetNextItemWidth(ui::Px(110));
+		if (ImGui::InputInt("##palnumber", &P.number, 1, 8)) { P.number = std::clamp(P.number, 0, total - 1); if (isFile) { previewPal = P.number; previewPups = P.bank; } clearThumbs(); previewId = -1; }
+		ImGui::SameLine(); ImGui::TextDisabled(TXT("of %d"), total);
+		if (isFile && FitButton(LBL("Show in main view"))) { ch.palette = P.number; ch.cg.changePaletteNumber(P.number); }
+		ui::EndFormGrid();
+	}
 
 	// Run an edit on the current palette: `fn` changes the 256 colours; the step is recorded for undo and shown everywhere at once.
 	auto edit = [&](const std::string &label, auto &&fn, bool record = true) -> bool {
@@ -313,7 +323,15 @@ void Window::drawPalettes(CharacterInstance &ch, const WindowHost &host) {
 	uint32_t *colors = isFile ? P.set[P.bank].pal(P.number) : (uint32_t *)(bank->palettes.data() + 0x400 * P.number);
 
 	// ---- swatches ----
-	const float cell = 20.f; ImVec2 g0 = ImGui::GetCursorScreenPos();
+	// swatches (fixed column) | colour tools (the rest of the width)
+	const float cell = std::floor(ui::Px(20.f));
+	const bool palSplit = ImGui::BeginTable("##palmain", 2, ImGuiTableFlags_SizingFixedFit | ImGuiTableFlags_NoSavedSettings);
+	if (palSplit) {
+		ImGui::TableSetupColumn("##sw", ImGuiTableColumnFlags_WidthFixed, cell * 16);
+		ImGui::TableSetupColumn("##tools", ImGuiTableColumnFlags_WidthStretch);
+		ImGui::TableNextRow(); ImGui::TableSetColumnIndex(0);
+	}
+	ImVec2 g0 = ImGui::GetCursorScreenPos();
 	ImGui::InvisibleButton("##swatches", ImVec2(cell * 16, cell * 16));
 	{
 		ImDrawList *dl = ImGui::GetWindowDrawList();
@@ -332,13 +350,14 @@ void Window::drawPalettes(CharacterInstance &ch, const WindowHost &host) {
 			ImGui::SetTooltip("%d  #%02X%02X%02X", i, cgm::R(colors[i]), cgm::G(colors[i]), cgm::B(colors[i]));
 		}
 	}
-	ImGui::SameLine(0, 16);
+	if (palSplit) ImGui::TableSetColumnIndex(1); else ImGui::SameLine(0, ui::Px(16));
 	ImGui::BeginGroup();
 	const int lo = std::min(P.selA, P.selB), hi = std::max(P.selA, P.selB);
 	ImGui::Text(TXT("Selected: %d - %d"), lo, hi);
 	{   // single colour
 		float c[3] = {cgm::R(colors[lo]) / 255.f, cgm::G(colors[lo]) / 255.f, cgm::B(colors[lo]) / 255.f};
 		static PalSet liveBefore; static Bank liveBankBefore; static bool live = false;
+		ImGui::SetNextItemWidth(std::max(ui::Em(10.f), ImGui::GetContentRegionAvail().x - ui::LabelTextW(LBL("Colour")) - ImGui::GetStyle().ItemInnerSpacing.x));
 		if (ImGui::ColorEdit3(LBL("Colour"), c, ImGuiColorEditFlags_DisplayRGB | ImGuiColorEditFlags_Uint8)) {
 			if (!live) { live = true; if (isFile) liveBefore = P.set[P.bank]; else liveBankBefore = *bank; }
 			const uint32_t n = FromCol(c);
@@ -354,21 +373,25 @@ void Window::drawPalettes(CharacterInstance &ch, const WindowHost &host) {
 	ImGui::SeparatorText(TXT("Selection"));
 	{   // fill / gradient
 		float f[3] = {cgm::R(P.fill) / 255.f, cgm::G(P.fill) / 255.f, cgm::B(P.fill) / 255.f};
-		ImGui::SetNextItemWidth(150); if (ImGui::ColorEdit3("##fill", f, ImGuiColorEditFlags_NoInputs)) P.fill = FromCol(f);
-		ImGui::SameLine(); if (CgmButton(LBL("Fill selection"))) edit(Fmt(TXT("Fill %d-%d"), lo, hi), [&](uint32_t *p) { FillRange(p, lo, hi, P.fill); });
-		ImGui::SameLine(); if (CgmButton(LBL("Gradient first -> last"))) edit(Fmt(TXT("Gradient %d-%d"), lo, hi), [&](uint32_t *p) { Gradient(p, lo, hi, p[lo], p[hi], P.hsvGradient); });
+		if (ImGui::ColorEdit3("##fill", f, ImGuiColorEditFlags_NoInputs)) P.fill = FromCol(f);
 		ImGui::SameLine(); ImGui::Checkbox(LBL("via HSV"), &P.hsvGradient);
-		if (CgmButton(LBL("Reverse"))) edit(Fmt(TXT("Reverse %d-%d"), lo, hi), [&](uint32_t *p) { ReverseRange(p, lo, hi); });
-		ImGui::SameLine(); if (CgmButton(LBL("Copy range"))) { P.clipLen = hi - lo + 1; memcpy(P.clip, colors + lo, sizeof(uint32_t) * P.clipLen); }
-		ImGui::SameLine(); ImGui::BeginDisabled(P.clipLen == 0);
-		if (CgmButton(LBL("Paste at selection"))) edit(Fmt(TXT("Paste at %d"), lo), [&](uint32_t *p) { CopyRange(P.clip, 0, P.clipLen - 1, p, lo); });
+		ui::ButtonGrid g({LBL("Fill selection"), LBL("Gradient first -> last"), LBL("Reverse"), LBL("Copy range"), LBL("Paste at selection")});
+		if (GridButton(g, LBL("Fill selection"))) edit(Fmt(TXT("Fill %d-%d"), lo, hi), [&](uint32_t *p) { FillRange(p, lo, hi, P.fill); });
+		if (GridButton(g, LBL("Gradient first -> last"))) edit(Fmt(TXT("Gradient %d-%d"), lo, hi), [&](uint32_t *p) { Gradient(p, lo, hi, p[lo], p[hi], P.hsvGradient); });
+		if (GridButton(g, LBL("Reverse"))) edit(Fmt(TXT("Reverse %d-%d"), lo, hi), [&](uint32_t *p) { ReverseRange(p, lo, hi); });
+		if (GridButton(g, LBL("Copy range"))) { P.clipLen = hi - lo + 1; memcpy(P.clip, colors + lo, sizeof(uint32_t) * P.clipLen); }
+		ImGui::BeginDisabled(P.clipLen == 0);
+		if (GridButton(g, LBL("Paste at selection"))) edit(Fmt(TXT("Paste at %d"), lo), [&](uint32_t *p) { CopyRange(P.clip, 0, P.clipLen - 1, p, lo); });
 		ImGui::EndDisabled();
 	}
 	{   // hue / saturation / value of the selection, live
 		static PalSet baseSet; static Bank baseBank; static bool active = false; static uint32_t baseColors[256];
 		bool changed = false, started = false, finished = false;
-		auto sl = [&](const char *l, float *v, float mn, float mx, const char *fmt) { ImGui::SetNextItemWidth(220); changed |= ImGui::SliderFloat(l, v, mn, mx, fmt); started |= ImGui::IsItemActivated(); finished |= ImGui::IsItemDeactivated(); };
-		sl(LBL("Hue shift"), &P.adj.hueDeg, -180.f, 180.f, "%.0f deg"); sl(LBL("Saturation x"), &P.adj.satMul, 0.f, 2.f, "%.2f"); sl(LBL("Brightness x"), &P.adj.valMul, 0.f, 2.f, "%.2f");
+		auto sl = [&](const char *l, float *v, float mn, float mx, const char *fmt) { changed |= ImGui::SliderFloat(ui::FormRow(l), v, mn, mx, fmt); started |= ImGui::IsItemActivated(); finished |= ImGui::IsItemDeactivated(); };
+		if (ui::BeginLabelForm("##paladj", ui::LabelColW({LBL("Hue shift"), LBL("Saturation x"), LBL("Brightness x")}))) {
+			sl(LBL("Hue shift"), &P.adj.hueDeg, -180.f, 180.f, "%.0f deg"); sl(LBL("Saturation x"), &P.adj.satMul, 0.f, 2.f, "%.2f"); sl(LBL("Brightness x"), &P.adj.valMul, 0.f, 2.f, "%.2f");
+			ui::EndLabelForm();
+		}
 		if (started && !active) { active = true; memcpy(baseColors, colors, 1024); if (isFile) baseSet = P.set[P.bank]; else baseBank = *bank; }
 		if (changed && active && isFile) { memcpy(colors, baseColors, 1024); AdjustRange(colors, lo, hi, P.adj); P.dirty[P.bank] = true; pushPalette(ch, P.bank); }
 		if (finished && active) {
@@ -385,10 +408,11 @@ void Window::drawPalettes(CharacterInstance &ch, const WindowHost &host) {
 		if (ImGui::ColorEdit3("##find", f, ImGuiColorEditFlags_NoInputs)) P.findC = FromCol(f);
 		ImGui::SameLine(); ImGui::TextUnformatted("->"); ImGui::SameLine();
 		if (ImGui::ColorEdit3("##repl", r, ImGuiColorEditFlags_NoInputs)) P.replaceC = FromCol(r);
-		ImGui::SameLine(); ImGui::SetNextItemWidth(70); ImGui::InputInt(LBL("Tolerance"), &P.tolerance, 0, 0); P.tolerance = std::clamp(P.tolerance, 0, 255);
-		ImGui::SameLine(); if (CgmButton(LBL("Replace in this palette"))) edit(TXT("Replace colour"), [&](uint32_t *p) { ReplaceColor(p, P.findC, P.replaceC, P.tolerance); });
+		ui::SameLineField(ui::Px(70), LBL("Tolerance")); ImGui::SetNextItemWidth(ui::Px(70)); ImGui::InputInt(LBL("Tolerance"), &P.tolerance, 0, 0); P.tolerance = std::clamp(P.tolerance, 0, 255);
+		if (FitButton(LBL("Replace in this palette"))) edit(TXT("Replace colour"), [&](uint32_t *p) { ReplaceColor(p, P.findC, P.replaceC, P.tolerance); });
 	}
 	ImGui::EndGroup();
+	if (palSplit) ImGui::EndTable();
 
 	// ---- palette files ----
 	ImGui::SeparatorText(TXT("Palettes of this file"));
@@ -397,35 +421,43 @@ void Window::drawPalettes(CharacterInstance &ch, const WindowHost &host) {
 		auto fileEdit = [&](const std::string &label, auto &&fn) { PalSet before = ps; std::string e; if (fn(e) && ps.raw != before.raw) { commitPalette(ch, label, P.bank, std::move(before), host); status.clear(); } else if (!e.empty()) status = e; };
 		if (ps.paired()) {
 			const int c = ps.colourOf(P.number);
-			ImGui::TextColored(ImVec4(0.6f, 0.8f, 1.f, 1.f), TXT("UNI2 / MBTL layout: %d colours x 2 sets. Palette %d is colour %d's %s set; palette %d is its %s set. Moves keep the two together."),
+			ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(0.6f, 0.8f, 1.f, 1.f));
+			ImGui::TextWrapped(TXT("UNI2 / MBTL layout: %d colours x 2 sets. Palette %d is colour %d's %s set; palette %d is its %s set. Moves keep the two together."),
 				ps.half(), P.number, c, P.number < ps.half() ? TXT("main") : TXT("alternate"), ps.alternateOf(P.number), P.number < ps.half() ? TXT("alternate") : TXT("main"));
-			ImGui::SameLine(); if (ImGui::SmallButton(LBL("Go to its pair"))) { P.number = ps.alternateOf(P.number); clearThumbs(); previewId = -1; }
+			ImGui::PopStyleColor();
+			if (ImGui::SmallButton(LBL("Go to its pair"))) { P.number = ps.alternateOf(P.number); clearThumbs(); previewId = -1; }
 		}
-		if (CgmButton(LBL("Duplicate"))) fileEdit(TXT("Duplicate palette"), [&](std::string &e) { if (!ps.addCopy(P.number, &e)) return false; P.number = ps.count - 1; return true; });
-		ImGui::SameLine(); if (CgmButton(LBL("Delete"))) fileEdit(TXT("Delete palette"), [&](std::string &e) { if (!ps.remove(P.number, &e)) return false; P.number = std::min(P.number, ps.count - 1); return true; });
-		ImGui::SameLine(); if (CgmButton(LBL("Move up")) && ps.colourOf(P.number) > 0) fileEdit(TXT("Move palette"), [&](std::string &) { ps.movePair(P.number, ps.colourOf(P.number) - 1); P.number--; return true; });
-		ImGui::SameLine(); if (CgmButton(LBL("Move down")) && ps.colourOf(P.number) + 1 < ps.half()) fileEdit(TXT("Move palette"), [&](std::string &) { ps.movePair(P.number, ps.colourOf(P.number) + 1); P.number++; return true; });
-		ImGui::SameLine(); if (CgmButton(LBL("Save .pal"))) {
+		{
+		ui::ButtonGrid g({LBL("Duplicate"), LBL("Delete"), LBL("Move up"), LBL("Move down")});
+		if (GridButton(g, LBL("Duplicate"))) fileEdit(TXT("Duplicate palette"), [&](std::string &e) { if (!ps.addCopy(P.number, &e)) return false; P.number = ps.count - 1; return true; });
+		if (GridButton(g, LBL("Delete"))) fileEdit(TXT("Delete palette"), [&](std::string &e) { if (!ps.remove(P.number, &e)) return false; P.number = std::min(P.number, ps.count - 1); return true; });
+		if (GridButton(g, LBL("Move up")) && ps.colourOf(P.number) > 0) fileEdit(TXT("Move palette"), [&](std::string &) { ps.movePair(P.number, ps.colourOf(P.number) - 1); P.number--; return true; });
+		if (GridButton(g, LBL("Move down")) && ps.colourOf(P.number) + 1 < ps.half()) fileEdit(TXT("Move palette"), [&](std::string &) { ps.movePair(P.number, ps.colourOf(P.number) + 1); P.number++; return true; });
+		}
+		// save row: equal cells, the mod-folder save only for the archive games
+		bool modGame = false; modFolderDst(ch, "", &modGame);
+		const char *saveAsLayout = ps.offsetDw == 4 ? LBL("Save as MBAACC layout...") : LBL("Save as UNI2/MBTL layout...");
+		ui::ButtonGrid sg = modGame ? ui::ButtonGrid({LBL("Save .pal"), LBL("Save .pal to mod folder"), LBL("Save .pal as..."), saveAsLayout}) : ui::ButtonGrid({LBL("Save .pal"), LBL("Save .pal as..."), saveAsLayout});
+		if (GridButton(sg, LBL("Save .pal"))) {
 			std::string e; const std::string path = AnsiToUtf8(ch.cg.palettePath(P.bank));
 			if (WritePalSet(path, ps, true, &e)) { P.dirty[P.bank] = false; status = Fmt(TXT("Saved %s (the original is kept as .bak)"), path.c_str()); } else status = e;
 		}
 		// UNI2 / MBTL read their .pal from the archives: an edited palette reaches the game only through the IM mod folder (the same
 		// place the "CG + .pat textures" tab saves the .cg / .pat; its game and game folder settings apply here too)
-		bool modGame = false; modFolderDst(ch, "", &modGame);
 		if (modGame) {
-			ImGui::SameLine(); if (CgmButton(LBL("Save .pal to mod folder"))) {
+			if (GridButton(sg, LBL("Save .pal to mod folder"))) {
 				const std::string dst = modFolderDst(ch, ch.cg.palettePath(P.bank)); std::string e;
 				if (dst.empty()) status = Fmt(TXT("Cannot place %s in the mod folder: no game folder, or the file is not under a data folder."), ch.cg.palettePath(P.bank).c_str());
 				else status = WriteModFile(dst, ps.raw, &e) ? Fmt(TXT("Wrote %s (%zu bytes). The improvement mod / fbmod serve it in place of the archived file."), dst.c_str(), ps.raw.size()) : e;
 			}
 			ImGui::SetItemTooltip("%s", TXT("Writes this .pal to <game folder>\\UNI2-IM\\Mods or MBTL-IM\\Mods (set in the \"CG + .pat textures\" tab). \"Restore mod folder\" there, or cgmtex modrestore, undoes it."));
 		}
-		ImGui::SameLine(); if (CgmButton(LBL("Save .pal as..."))) {
+		if (GridButton(sg, LBL("Save .pal as..."))) {
 			char nm[128]; snprintf(nm, sizeof(nm), "%s", std::filesystem::path(ch.cg.palettePath(P.bank)).filename().string().c_str());
 			const std::string path = FileDialog(-1, true, nm);
 			if (!path.empty()) { std::ofstream f(std::filesystem::u8path(path), std::ios::binary); f.write((const char *)ps.raw.data(), (std::streamsize)ps.raw.size()); status = f ? Fmt(TXT("Saved %s"), path.c_str()) : std::string(TXT("Could not write the file.")); }
 		}
-		ImGui::SameLine(); if (CgmButton(ps.offsetDw == 4 ? LBL("Save as MBAACC layout...") : LBL("Save as UNI2/MBTL layout..."))) {
+		if (GridButton(sg, saveAsLayout)) {
 			const PalSet conv = ps.converted(ps.offsetDw != 4);
 			char nm[128]; snprintf(nm, sizeof(nm), "%s", std::filesystem::path(ch.cg.palettePath(P.bank)).filename().string().c_str());
 			const std::string path = FileDialog(-1, true, nm); std::string e;
@@ -434,9 +466,9 @@ void Window::drawPalettes(CharacterInstance &ch, const WindowHost &host) {
 		ImGui::SetItemTooltip("%s", TXT("MBAACC: count + palettes. UNI2 / MBTL: header FFFF,1,0,130 = 65 colours, palette c + 65 being colour c's alternate set (an MBAACC file gives each colour itself as its alternate)."));
 		// a new PUPS bank (<cg>_pN.pal): what a pattern's PUPS value selects in UNI2 / MBTL
 		if (!ch.getCGPath().empty() && P.loaded[0]) {
-			ImGui::SetNextItemWidth(70); ImGui::InputInt("##newpups", &newPups, 1, 1); newPups = std::clamp(newPups, 1, 7);
-			ImGui::SameLine(); ImGui::BeginDisabled(P.loaded[newPups]);
-			if (CgmButton(LBL("New PUPS bank _pN.pal"))) {
+			ImGui::SetNextItemWidth(ui::Px(90)); ImGui::InputInt("##newpups", &newPups, 1, 1); newPups = std::clamp(newPups, 1, 7);
+			ImGui::BeginDisabled(P.loaded[newPups]);
+			if (FitButton(LBL("New PUPS bank _pN.pal"))) {
 				std::string e, outPath; const std::string cg = AnsiToUtf8(ch.getCGPath());
 				if (!CreatePupsBank(cg, newPups, P.set[0], &outPath, &e)) status = e;
 				else {
@@ -450,23 +482,26 @@ void Window::drawPalettes(CharacterInstance &ch, const WindowHost &host) {
 				}
 			}
 			ImGui::EndDisabled();
-			ImGui::SameLine(); ImGui::TextDisabled("%s", TXT("(a copy of the base .pal; MBAACC ignores PUPS)"));
+			ui::HelpMarker(TXT("(a copy of the base .pal; MBAACC ignores PUPS)"));
 		}
 	}
-	ImGui::SetNextItemWidth(70); ImGui::InputInt(LBL("from palette"), &importFrom, 1, 10); importFrom = std::max(0, importFrom);
+	ImGui::SetNextItemWidth(ui::Px(90)); ImGui::InputInt(LBL("from palette"), &importFrom, 1, 10); importFrom = std::max(0, importFrom);
 	ImGui::SetItemTooltip("%s", TXT("Which palette of a multi-palette .pal to import (e.g. 37 of chr010.pal). Other formats hold one palette."));
-	ImGui::SameLine();
-	if (CgmButton(LBL("Import colours..."))) {
+	if (FitButton(LBL("Import colours..."))) {
 		const std::string path = FileDialog(-1, false);
 		if (!path.empty()) { uint32_t in[256]; std::string e; if (!ReadPalFileColors(path, in, &e, importFrom)) status = e; else edit(Fmt(TXT("Import palette %d"), importFrom), [&](uint32_t *p) { for (int i = 0; i < 256; i++) p[i] = (p[i] & 0xFF000000u) | (in[i] & 0xFFFFFFu); }); }
 	}
-	ImGui::SameLine(); if (CgmButton(LBL("Export colours..."))) {
+	if (FitButton(LBL("Export colours..."))) {
 		char nm[128]; snprintf(nm, sizeof(nm), "palette_%d.act", P.number);
 		const std::string path = FileDialog(-1, true, nm);
 		if (!path.empty()) { std::string e; status = WritePalFileColors(path, colors, &e, palLayout ? PalLayout::Uni : PalLayout::Mbaacc) ? Fmt(TXT("Saved %s"), path.c_str()) : e; }
 	}
-	ImGui::SameLine(); ImGui::SetItemTooltip("%s", TXT("The file extension picks the format: .act, .gpl (GIMP), .png (16x16 strip) or .pal."));
-	ImGui::SameLine(); ImGui::SetNextItemWidth(150); { const char *lay[] = {".pal: MBAACC layout", ".pal: UNI2/MBTL layout"}; i18n::Combo("##pallayout", &palLayout, lay, 2); }
+	ImGui::SetItemTooltip("%s", TXT("The file extension picks the format: .act, .gpl (GIMP), .png (16x16 strip) or .pal."));
+	{
+		const char *lay[] = {".pal: MBAACC layout", ".pal: UNI2/MBTL layout"};
+		const float lw = std::max(ImGui::CalcTextSize(TXT(lay[0])).x, ImGui::CalcTextSize(TXT(lay[1])).x) + ImGui::GetFrameHeight() + ImGui::GetStyle().FramePadding.x * 2;
+		i18n::SameLineFit(lw); ImGui::SetNextItemWidth(lw); i18n::Combo("##pallayout", &palLayout, lay, 2);
+	}
 
 	// ---- MBAA:CC custom palettes for PovertyCaster / CCCaster ----
 	if (!g_scriptPress.empty() && isFile && P.set[P.bank].count > 0) ImGui::SetNextItemOpen(true);   // a scripted press opens the section
@@ -474,14 +509,15 @@ void Window::drawPalettes(CharacterInstance &ch, const WindowHost &host) {
 		const PalSet &ps = P.set[P.bank];
 		const std::string stem = std::filesystem::path(ch.cg.palettePath(P.bank)).stem().string();
 		if (ccChara < 0) ccChara = CcCharaFromStem(stem);
-		ImGui::SetNextItemWidth(70); ImGui::InputInt(LBL("Chara id"), &ccChara, 0, 0);
+		const float fw = ui::Px(70);
+		ImGui::SetNextItemWidth(fw); ImGui::InputInt(LBL("Chara id"), &ccChara, 0, 0);
 		ImGui::SameLine(); ImGui::TextDisabled(TXT("(%s: %d in PovertyCaster's table)"), stem.c_str(), CcCharaFromStem(stem));
-		ImGui::SetNextItemWidth(70); ImGui::InputInt(LBL("Palettes from"), &ccFrom, 0, 0); ImGui::SameLine(); ImGui::SetNextItemWidth(70); ImGui::InputInt(LBL("to##cc"), &ccTo, 0, 0);
+		ImGui::SetNextItemWidth(fw); ImGui::InputInt(LBL("Palettes from"), &ccFrom, 0, 0); ui::SameLineField(fw, LBL("to##cc")); ImGui::SetNextItemWidth(fw); ImGui::InputInt(LBL("to##cc"), &ccTo, 0, 0);
 		ccFrom = std::clamp(ccFrom, 0, ps.count - 1); ccTo = std::clamp(ccTo, ccFrom, ps.count - 1);
-		ImGui::SameLine(); ImGui::SetNextItemWidth(70); ImGui::InputInt(LBL("as slots from"), &ccFirst, 0, 0); ccFirst = std::clamp(ccFirst, 1, kCcMaxPalettes);
+		ui::SameLineField(fw, LBL("as slots from")); ImGui::SetNextItemWidth(fw); ImGui::InputInt(LBL("as slots from"), &ccFirst, 0, 0); ccFirst = std::clamp(ccFirst, 1, kCcMaxPalettes);
 		const int last = std::min(kCcMaxPalettes, ccFirst + ccTo - ccFrom);
 		const CcSlotPlace a = CcPlaceOf(ccFirst), b = CcPlaceOf(last);
-		ImGui::TextDisabled(TXT("Slots %d..%d: selector tab %d entry %d to tab %d entry %d (36 per tab; tab 1 is the stock list)."), ccFirst, last, a.bank + 1, a.local + 1, b.bank + 1, b.local + 1);
+		ImGui::PushTextWrapPos(0.f); ImGui::TextDisabled(TXT("Slots %d..%d: selector tab %d entry %d to tab %d entry %d (36 per tab; tab 1 is the stock list)."), ccFirst, last, a.bank + 1, a.local + 1, b.bank + 1, b.local + 1); ImGui::PopTextWrapPos();
 		ImGui::Checkbox(LBL("Also write the full .pal (data and data\\_csel)"), &ccFullPal);
 		ImGui::SetItemTooltip("%s", TXT("For players without PovertyCaster: data\\<name>.pal and data\\_csel\\<name>.pal with the count grown to the last slot (new slots are palette 0 with entry 0 cleared). Originals are kept as .bak."));
 		if (CgmButton(LBL("Export to <game>\\palettes"))) {
@@ -507,11 +543,11 @@ void Window::drawPalettes(CharacterInstance &ch, const WindowHost &host) {
 
 	// ---- whole-bank recolour ----
 	ImGui::SeparatorText(TXT("Recolour the whole character"));
-	ImGui::TextDisabled("%s", TXT("Uses the hue / saturation / brightness sliders above."));
-	ImGui::Checkbox(LBL("Only the current palette number"), &P.recolorThisOnly); ImGui::SameLine();
-	ImGui::Checkbox(LBL("Palette file(s)"), &P.recolorFiles);
-	ImGui::Checkbox(LBL("Bank slots"), &P.recolorSlots); ImGui::SameLine();
-	ImGui::Checkbox(LBL("Sprites' own palettes (types 2, 3, 4)"), &P.recolorImages);
+	ImGui::Checkbox(LBL("Only the current palette number"), &P.recolorThisOnly);
+	ImGui::SameLine(); ImGui::TextDisabled("(?)"); ImGui::SetItemTooltip("%s", TXT("Uses the hue / saturation / brightness sliders above."));
+	ui::SameLineCheckbox(LBL("Palette file(s)")); ImGui::Checkbox(LBL("Palette file(s)"), &P.recolorFiles);
+	ui::SameLineCheckbox(LBL("Bank slots")); ImGui::Checkbox(LBL("Bank slots"), &P.recolorSlots);
+	ui::SameLineCheckbox(LBL("Sprites' own palettes (types 2, 3, 4)")); ImGui::Checkbox(LBL("Sprites' own palettes (types 2, 3, 4)"), &P.recolorImages);
 	ImGui::BeginDisabled(P.adj.neutral());
 	if (CgmButton(LBL("Apply recolour"))) {
 		HistoryEntry e; e.label = TXT("Recolour"); const int fb = isFile ? P.bank : (P.loaded[0] ? 0 : -1); std::string msg;
@@ -542,29 +578,32 @@ void Window::drawStructure(CharacterInstance &ch, const WindowHost &host) {
 			else if (commitStruct(ch, Fmt(TXT("Add image %d"), id), std::move(before), remap, host)) { selected = id; status = Fmt(TXT("Added image %d (storage type %d). Ids after it moved up by one; frame references were updated."), id, bank->images[id].type); }
 		}
 	}
-	ImGui::SameLine(); ImGui::SetNextItemWidth(70); ImGui::InputInt(LBL("at id"), &insertAt, 0, 0); ImGui::SameLine(); ImGui::SetItemTooltip("%s", TXT("Id the new image takes (-1: after the selected image). Later ids move up and every frame reference follows."));
+	ui::SameLineField(ui::Px(70), LBL("at id")); ImGui::SetNextItemWidth(ui::Px(70)); ImGui::InputInt(LBL("at id"), &insertAt, 0, 0); ImGui::SetItemTooltip("%s", TXT("Id the new image takes (-1: after the selected image). Later ids move up and every frame reference follows."));
 	ImGui::BeginDisabled(!have);
-	if (CgmButton(LBL("Duplicate"))) {
+	{
+	ui::ButtonGrid g({LBL("Duplicate"), LBL("Make independent"), LBL("Clear (keep id)"), LBL("Delete (renumber)")});
+	if (GridButton(g, LBL("Duplicate"))) {
 		Bank before = *bank; std::vector<int> remap; int id = -1; std::string e;
 		if (!DuplicateImage(*bank, selected, selected + 1, remap, &id, &e)) { *bank = std::move(before); status = e; }
 		else if (commitStruct(ch, Fmt(TXT("Duplicate image %d"), selected), std::move(before), remap, host)) { selected = id; status = Fmt(TXT("Duplicated as image %d."), id); }
 	}
-	ImGui::SameLine(); if (CgmButton(LBL("Make independent"))) {
+	if (GridButton(g, LBL("Make independent"))) {
 		Bank before = *bank; std::string e;
 		if (!UnshareImage(*bank, selected, &e)) { *bank = std::move(before); status = e; } else commitStruct(ch, Fmt(TXT("Make image %d independent"), selected), std::move(before), {}, host);
 	}
-	ImGui::SameLine(); ImGui::SetItemTooltip("%s", TXT("Gives the image its own copy of every cell it borrows from another image."));
-	ImGui::SameLine(); if (CgmButton(LBL("Clear (keep id)"))) { pend = {2, selected, true}; }
-	ImGui::SameLine(); if (CgmButton(LBL("Delete (renumber)"))) { pend = {1, selected, true}; }
-	ImGui::SetNextItemWidth(70); ImGui::InputInt(LBL("Move to id"), &moveTarget, 0, 0); ImGui::SameLine();
-	if (CgmButton(LBL("Move"))) {
+	ImGui::SetItemTooltip("%s", TXT("Gives the image its own copy of every cell it borrows from another image."));
+	if (GridButton(g, LBL("Clear (keep id)"))) { pend = {2, selected, true}; }
+	if (GridButton(g, LBL("Delete (renumber)"))) { pend = {1, selected, true}; }
+	}
+	ImGui::SetNextItemWidth(ui::Px(70)); ImGui::InputInt(LBL("Move to id"), &moveTarget, 0, 0);
+	if (FitButton(LBL("Move"))) {
 		Bank before = *bank; std::vector<int> remap; std::string e; moveTarget = std::clamp(moveTarget, 0, count - 1);
 		if (!MoveImage(*bank, selected, moveTarget, remap, &e)) { *bank = std::move(before); status = e; }
 		else if (commitStruct(ch, Fmt(TXT("Move image %d to %d"), selected, moveTarget), std::move(before), remap, host)) { selected = moveTarget; status = TXT("Moved. Every frame reference follows the images."); }
 	}
 	ImGui::EndDisabled();
 	if (CgmButton(LBL("Delete all unused..."))) { pend = {3, -1, true}; if (!users.files.empty() && !diskUsageValid) countProjectUsage(); }
-	ImGui::SameLine(); if (CgmButton(LBL("Trim empty atlas pages"))) { Bank before = *bank; if (TrimPages(*bank)) commitStruct(ch, TXT("Trim atlas pages"), std::move(before), {}, host); else { *bank = std::move(before); status = TXT("No empty pages at the end."); } }
+	if (FitButton(LBL("Trim empty atlas pages"))) { Bank before = *bank; if (TrimPages(*bank)) commitStruct(ch, TXT("Trim atlas pages"), std::move(before), {}, host); else { *bank = std::move(before); status = TXT("No empty pages at the end."); } }
 	ImGui::TreePop();
 
 	// confirmation with the impact of the operation
@@ -609,8 +648,9 @@ void Window::drawEffect(CharacterInstance &ch, const WindowHost &host) {
 	ImGui::SeparatorText(TXT("Effect (PACNyx)"));
 	// rename
 	if (renameFor != selected) { renameFor = selected; memset(renameBuf, 0, sizeof renameBuf); memcpy(renameBuf, im.name, strnlen(im.name, 31)); }
-	ImGui::SetNextItemWidth(180); ImGui::InputText(LBL("Name##eff"), renameBuf, sizeof renameBuf);
-	ImGui::SameLine();
+	ImGui::SetNextItemWidth(std::min(ui::Px(180), std::max(ui::FieldW(), ImGui::GetContentRegionAvail().x - i18n::ButtonWidth(LBL("Rename")) - ui::LabelTextW(LBL("Name##eff")) - ImGui::GetStyle().ItemSpacing.x * 3)));
+	ImGui::InputText(LBL("Name##eff"), renameBuf, sizeof renameBuf);
+	ui::SameLineButton(LBL("Rename"));
 	if (ImGui::Button(LBL("Rename"))) {
 		Bank before = *bank; std::string e;
 		if (RenameImage(*bank, selected, renameBuf, &e)) { if (commit(ch, Fmt(TXT("Rename image %d"), selected), std::move(before), host)) status = Fmt(TXT("image %d renamed"), selected); }
@@ -620,7 +660,7 @@ void Window::drawEffect(CharacterInstance &ch, const WindowHost &host) {
 	// base point: the canvas origin is the anchor the engine places the sprite with; moving the sprite moves it against that point
 	ImGui::AlignTextToFramePadding();
 	ImGui::Text(TXT("Sprite at (%d,%d) from its base point (canvas %d x %d)"), im.x1, im.y1, im.w, im.h);
-	ImGui::SameLine();
+	i18n::SameLineFit(ImGui::GetFrameHeight() * 4 + ImGui::GetStyle().ItemSpacing.x * 3);
 	int d[2] = {0, 0};
 	ImGui::PushButtonRepeat(true);
 	if (ImGui::ArrowButton("##el", ImGuiDir_Left)) d[0] = -1;
@@ -644,28 +684,27 @@ void Window::drawEffect(CharacterInstance &ch, const WindowHost &host) {
 	if (blk.id != selected) return;
 	int on = 0; for (uint8_t m : blk.mask) on += m;
 	ImGui::Text(TXT("Blocks: %d of %d cells stored (%d px cells)"), on, (int)blk.mask.size(), bank->cellUnit());
-	ImGui::SameLine(); ImGui::Checkbox(LBL("Draw blocks"), &blk.show);
-	if (ImGui::Button(LBL("Enable all"))) { std::fill(blk.mask.begin(), blk.mask.end(), 1); blk.pending = true; }
-	ImGui::SameLine(); if (ImGui::Button(LBL("Disable all"))) { std::fill(blk.mask.begin(), blk.mask.end(), 0); blk.pending = true; }
-	ImGui::SameLine();
-	if (ImGui::Button(LBL("Recalculate from alpha"))) {   // every cell that has a visible pixel, nothing else
+	ui::SameLineCheckbox(LBL("Draw blocks")); ImGui::Checkbox(LBL("Draw blocks"), &blk.show);
+	ui::HelpMarker(TXT("Click a cell in the preview to switch it on / off, then Apply. A cell that is switched off is not stored (transparent); a cell without visible pixels is never stored."));
+	ui::ButtonGrid bg({LBL("Enable all"), LBL("Disable all"), LBL("Recalculate from alpha"), LBL("Apply blocks")});
+	bg.Next(); if (ImGui::Button(LBL("Enable all"), ImVec2(bg.cellW, 0))) { std::fill(blk.mask.begin(), blk.mask.end(), 1); blk.pending = true; }
+	bg.Next(); if (ImGui::Button(LBL("Disable all"), ImVec2(bg.cellW, 0))) { std::fill(blk.mask.begin(), blk.mask.end(), 0); blk.pending = true; }
+	bg.Next();
+	if (ImGui::Button(LBL("Recalculate from alpha"), ImVec2(bg.cellW, 0))) {   // every cell that has a visible pixel, nothing else
 		Bank before = *bank; std::string e;
 		if (ReblockImage(*bank, selected, blk.px.data(), blk.w, blk.h, nullptr, &e)) commit(ch, Fmt(TXT("Recalculate blocks of image %d"), selected), std::move(before), host);
 		else { status = e; *bank = std::move(before); }
 		blk.id = -1;
 	}
 	ImGui::BeginDisabled(!blk.pending);
-	ImGui::SameLine();
-	if (ImGui::Button(LBL("Apply blocks"))) {
+	bg.Next();
+	if (ImGui::Button(LBL("Apply blocks"), ImVec2(bg.cellW, 0))) {
 		Bank before = *bank; std::string e;
 		if (ReblockImage(*bank, selected, blk.px.data(), blk.w, blk.h, &blk.mask, &e)) commit(ch, Fmt(TXT("Block edit of image %d"), selected), std::move(before), host);
 		else { status = e; *bank = std::move(before); }
 		blk.id = -1;
 	}
 	ImGui::EndDisabled();
-	ImGui::PushTextWrapPos(0.0f);
-	ImGui::TextDisabled("%s", TXT("Click a cell in the preview to switch it on / off, then Apply. A cell that is switched off is not stored (transparent); a cell without visible pixels is never stored."));
-	ImGui::PopTextWrapPos();
 }
 
 void Window::drawBlockOverlay(const ImVec2 &p0, float z, int x1, int y1) {
@@ -716,11 +755,10 @@ void Window::draw(CharacterInstance *ch, const WindowHost &host) {
 				warnings.clear();
 			}
 		}
-		ImGui::SameLine(); ImGui::SetItemTooltip("%s", TXT("Writes manifest.json, rgba/*.png, indexed/*.png and palettes/*.pal. Edit the PNGs, then import the folder: only changed images are re-encoded."));
-		ImGui::SameLine(); ImGui::Checkbox(LBL("cgtool layout"), &cgtoolLayout);
+		ImGui::SetItemTooltip("%s", TXT("Writes manifest.json, rgba/*.png, indexed/*.png and palettes/*.pal. Edit the PNGs, then import the folder: only changed images are re-encoded."));
+		ui::SameLineCheckbox(LBL("cgtool layout")); ImGui::Checkbox(LBL("cgtool layout"), &cgtoolLayout);
 		ImGui::SetItemTooltip("%s", TXT("<name>_ID_<n>.png, canvas-sized, no manifest (what cgtool writes). Uses the preview palette, so any palette of the .pal can be extracted."));
-		ImGui::SameLine();
-		if (CgmButton(LBL("Import folder..."))) {
+		if (FitButton(LBL("Import folder..."))) {
 			const std::string d = BrowseForFolderUtf8("");
 			if (!d.empty()) {
 				Bank before = *bank; warnings.clear();
@@ -745,9 +783,8 @@ void Window::draw(CharacterInstance *ch, const WindowHost &host) {
 				}
 			}
 		}
-		ImGui::SameLine(); ImGui::SetItemTooltip("%s", TXT("A folder with manifest.json (Export all), or a plain cgtool export: <name>_ID_<n>.png files, canvas-sized or not. A picture of another size is re-cut and keeps its place on the canvas."));
-		ImGui::SameLine();
-		if (CgmButton(LBL("Sync structure from folder..."))) {
+		ImGui::SetItemTooltip("%s", TXT("A folder with manifest.json (Export all), or a plain cgtool export: <name>_ID_<n>.png files, canvas-sized or not. A picture of another size is re-cut and keeps its place on the canvas."));
+		if (FitButton(LBL("Sync structure from folder..."))) {
 			const std::string d = BrowseForFolderUtf8("");
 			if (!d.empty()) {
 				Bank before = *bank; std::vector<int> remap; FolderSyncReport fr; warnings.clear();
@@ -797,27 +834,27 @@ void Window::draw(CharacterInstance *ch, const WindowHost &host) {
 			}
 		}
 		ImGui::EndDisabled();
-		ImGui::SameLine(); ImGui::SetNextItemWidth(130);
-		{ const char *anchors[] = {"Keep bottom centre", "Keep top left"}; i18n::Combo("##cgmanchor", &resizeAnchor, anchors, 2); }
+		{
+			const char *anchors[] = {"Keep bottom centre", "Keep top left"};
+			const float aw = std::max(ui::Px(130), std::max(ImGui::CalcTextSize(TXT(anchors[0])).x, ImGui::CalcTextSize(TXT(anchors[1])).x) + ImGui::GetFrameHeight() + ImGui::GetStyle().FramePadding.x * 2);
+			i18n::SameLineFit(aw); ImGui::SetNextItemWidth(aw); i18n::Combo("##cgmanchor", &resizeAnchor, anchors, 2);
+		}
 		ImGui::SetItemTooltip("%s", TXT("For a replacement of another size: which point of the old sprite the new one keeps, so the frame offsets stay right. A canvas-sized PNG keeps its own position."));
 		if (!ch->getCGPath().empty()) {
-			ImGui::SameLine();
 			const bool multi = users.projects.size() > 1 || (users.files.size() > 1);
-			if (CgmButton(multi ? LBL("Save bank, its projects and this character") : LBL("Save to the character's .cg"))) {
+			if (FitButton(multi ? LBL("Save bank, its projects and this character") : LBL("Save to the character's .cg"))) {
 				std::string rep; const bool ok = saveBankFiles(*ch, rep);
 				if (ok && host.saveCharacter && pendingIdChanges(ch) == false && ch->isModified()) host.saveCharacter(ch);
 				status = rep;
 			}
 			ImGui::SetItemTooltip("%s", TXT("Writes the .cg, rewrites the image ids of every other project file that draws it (other moons, b_ files, MBTL variants) and saves this character, so nothing ships with ids the bank does not have."));
 		}
-		ImGui::SameLine();
-		if (CgmButton(LBL("Save bank as..."))) {
+		if (FitButton(LBL("Save bank as..."))) {
 			char nm[128]; snprintf(nm, sizeof(nm), "%s", "bank.cg");
 			const std::string p = FileDialog(-1, true, nm);
 			if (!p.empty()) { std::vector<uint8_t> bytes; bank->serialize(bytes); std::ofstream f(std::filesystem::u8path(p), std::ios::binary); f.write((const char *)bytes.data(), (std::streamsize)bytes.size()); status = f ? Fmt(TXT("Saved %s"), p.c_str()) : std::string(TXT("Could not write the file.")); }
 		}
-		ImGui::SameLine();
-		if (CgmButton(LBL("New bank from PNG folder..."))) {
+		if (FitButton(LBL("New bank from PNG folder..."))) {
 			const std::string d = BrowseForFolderUtf8("");
 			if (!d.empty()) {
 				BuildOptions bo; Bank nb; BuildReport br;
@@ -838,13 +875,17 @@ void Window::draw(CharacterInstance *ch, const WindowHost &host) {
 				std::string t; for (auto &pj : users.projects) { t += std::filesystem::path(Utf8ToWide(pj.path)).filename().string() + ":"; for (auto &d : pj.dataFiles) t += " " + d; t += "\n"; }
 				ImGui::SetTooltip("%s", t.c_str());
 			}
-			ImGui::SameLine();
+			ui::SameLineButton(LBL("Count usage in all projects"));
 			if (ImGui::SmallButton(LBL("Count usage in all projects"))) { countProjectUsage(); filterKey = ~0ull; }
-			if (diskUsageValid) { ImGui::SameLine(); ImGui::TextDisabled("%s", TXT("(counted: the Unused filter and Delete all unused use every project)")); }
-			if (pendingIdChanges(ch)) ImGui::TextColored(ImVec4(1.f, 0.6f, 0.2f, 1.f), "%s", TXT("Image ids changed: saving the character also saves the bank and rewrites the other projects, so they never ship mismatched ids."));
+			if (diskUsageValid) { ImGui::SameLine(); ImGui::TextDisabled("%s", TXT("(counted)")); ImGui::SetItemTooltip("%s", TXT("(counted: the Unused filter and Delete all unused use every project)")); }
+			if (pendingIdChanges(ch)) { ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(1.f, 0.6f, 0.2f, 1.f)); ImGui::TextWrapped("%s", TXT("Image ids changed: saving the character also saves the bank and rewrites the other projects, so they never ship mismatched ids.")); ImGui::PopStyleColor(); }
 		}
-		if (bank->cutter2 && !cutter2Note) ImGui::TextColored(ImVec4(1.f, 0.75f, 0.3f, 1.f), "%s", TXT("BMP Cutter2 bank (GAKIHA): pixels sit on pre-baked pages. MBAC itself skips this bank (its 'carries a palette' flag is 0), so edits show here but not in the game."));
-		if (ch->frameData.usesUniFormat()) ImGui::TextColored(ImVec4(0.6f, 0.8f, 1.f, 1.f), "%s", TXT("UNI2 / MBTL read their data from archives (d/, .bin) that are not rewritten: saved .cg / .pat / .pal / .ha6 files reach the game only from the IM mod folder, with the same relative path (UNI2: <game>\\UNI2-IM\\Mods\\data\\...; MBTL: <game>\\MBTL-IM\\Mods\\data\\...), loaded through fbmod / UNI2-IM / MBTL-IM. The \"Save to mod folder\" buttons write there."));
+		if (bank->cutter2 && !cutter2Note) { ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(1.f, 0.75f, 0.3f, 1.f)); ImGui::TextWrapped("%s", TXT("BMP Cutter2 bank (GAKIHA): pixels sit on pre-baked pages. MBAC itself skips this bank (its 'carries a palette' flag is 0), so edits show here but not in the game.")); ImGui::PopStyleColor(); }
+		if (ch->frameData.usesUniFormat()) {   // the long explanation lives in the (?) tooltip
+			ImGui::AlignTextToFramePadding();
+			ImGui::TextColored(ImVec4(0.6f, 0.8f, 1.f, 1.f), "%s", TXT("UNI2 / MBTL: saved files reach the game only through the IM mod folder."));
+			ui::HelpMarker(TXT("UNI2 / MBTL read their data from archives (d/, .bin) that are not rewritten: saved .cg / .pat / .pal / .ha6 files reach the game only from the IM mod folder, with the same relative path (UNI2: <game>\\UNI2-IM\\Mods\\data\\...; MBTL: <game>\\MBTL-IM\\Mods\\data\\...), loaded through fbmod / UNI2-IM / MBTL-IM. The \"Save to mod folder\" buttons write there."));
+		}
 		if (!status.empty()) ImGui::TextWrapped("%s", status.c_str());
 		for (const std::string &w : warnings) ImGui::TextColored(ImVec4(1.f, 0.75f, 0.3f, 1.f), "%s", w.c_str());
 	} else {
@@ -854,8 +895,7 @@ void Window::draw(CharacterInstance *ch, const WindowHost &host) {
 			const std::string d = BrowseForFolderUtf8("");
 			if (!d.empty()) { ExportResult er; ExportOptions eo; status = ExportBank(io, d, ch->getName(), eo, er) ? Fmt(TXT("Exported %d images (%d files) to %s"), er.images, er.files, d.c_str()) : er.error; warnings.clear(); }
 		}
-		ImGui::SameLine();
-		if (CgmButton(LBL("Import folder..."))) {
+		if (FitButton(LBL("Import folder..."))) {
 			const std::string d = BrowseForFolderUtf8("");
 			if (!d.empty()) {
 				ImportResult ir; warnings.clear();
@@ -863,9 +903,8 @@ void Window::draw(CharacterInstance *ch, const WindowHost &host) {
 				else { warnings = ir.warnings; if (!ir.changed.empty() && host.markEdited) host.markEdited(ch); status = Fmt(TXT("Imported %zu changed image(s); %d unchanged. This format has no undo here: save the bank to keep it."), ir.changed.size(), ir.skipped); clearThumbs(); previewId = -1; filterKey = ~0ull; cgGen = ch->cg.generation(); }
 			}
 		}
-		ImGui::SameLine();
 		ImGui::BeginDisabled(selected < 0 || selected >= count);
-		if (CgmButton(LBL("Replace selected from PNG..."))) {
+		if (FitButton(LBL("Replace selected from PNG..."))) {
 			const std::string p = FileDialog(-1, false);
 			if (!p.empty()) {
 				std::vector<uint8_t> px; int w = 0, h = 0; std::string e; ReplaceReport rep;
@@ -875,13 +914,12 @@ void Window::draw(CharacterInstance *ch, const WindowHost &host) {
 			}
 		}
 		ImGui::EndDisabled();
-		ImGui::SameLine();
-		if (CgmButton(LBL("Save bank as...")) && ch->cg.foreign()) {
+		if (FitButton(LBL("Save bank as...")) && ch->cg.foreign()) {
 			char nm[128]; snprintf(nm, sizeof(nm), "%s", "bank.bin");
 			const std::string p = FileDialog(-1, true, nm);
 			if (!p.empty()) { std::vector<uint8_t> bytes; ch->cg.foreign()->serialize(bytes); std::ofstream f(std::filesystem::u8path(p), std::ios::binary); f.write((const char *)bytes.data(), (std::streamsize)bytes.size()); status = f ? Fmt(TXT("Saved %s"), p.c_str()) : std::string(TXT("Could not write the file.")); }
 		}
-		ImGui::TextDisabled("%s", TXT("This bank format: browse, batch export / import and image replace. Structural edits and palette editing are for BMP Cutter banks."));
+		ImGui::PushTextWrapPos(0.f); ImGui::TextDisabled("%s", TXT("This bank format: browse, batch export / import and image replace. Structural edits and palette editing are for BMP Cutter banks.")); ImGui::PopTextWrapPos();
 		if (!status.empty()) ImGui::TextWrapped("%s", status.c_str());
 		for (const std::string &w : warnings) ImGui::TextColored(ImVec4(1.f, 0.75f, 0.3f, 1.f), "%s", w.c_str());
 	}
@@ -889,18 +927,24 @@ void Window::draw(CharacterInstance *ch, const WindowHost &host) {
 	if (ImGui::BeginTabBar("##cgmtabs")) {
 	if (ImGui::BeginTabItem(LBL("Browser"), nullptr, CgmTab("Browser"))) {
 	// ---- filters ----
-	ImGui::SetNextItemWidth(160); ImGui::InputTextWithHint("##cgmname", TXT("Filter by id or name"), nameFilter, sizeof(nameFilter));
-	ImGui::SameLine(); ImGui::Checkbox(LBL("Unused"), &onlyUnused); if (onlyUnused) onlyUsed = false;
-	ImGui::SameLine(); ImGui::Checkbox(LBL("Used"), &onlyUsed); if (onlyUsed) onlyUnused = false;
-	ImGui::SameLine(); ImGui::Checkbox(LBL("Shares cells"), &onlyShared);
+	// label-first filter cells, as many per row as the window holds; the check boxes wrap on their own row
 	static const char *kTypes[] = {"Any type", "Type 0", "Type 1", "Type 2", "Type 3", "Type 4", "Type 5", "Type -1"};
 	int tsel = typeFilter == -2 ? 0 : typeFilter == -1 ? 7 : typeFilter + 1;
-	ImGui::SetNextItemWidth(100); if (i18n::Combo("##cgmtype", &tsel, kTypes, 8)) typeFilter = tsel == 0 ? -2 : tsel == 7 ? -1 : tsel - 1;
-	ImGui::SameLine(); ImGui::SetNextItemWidth(70); ImGui::InputInt(LBL("Min side"), &minSize, 0, 0);
-	ImGui::SameLine(); ImGui::SetNextItemWidth(70); ImGui::InputInt(LBL("Max side"), &maxSize, 0, 0);
-	ImGui::SetNextItemWidth(70); ImGui::InputInt(LBL("Used by pattern"), &usedByPattern, 0, 0);
-	ImGui::SameLine(); if (ImGui::SmallButton(LBL("any##cgmpat"))) usedByPattern = -1;
-	ImGui::SameLine(); ImGui::SetNextItemWidth(120); ImGui::SliderInt(LBL("Thumbnail"), &thumbSize, 48, 192);
+	if (ui::BeginFormGrid("##cgmfilters", 6, ui::Em(12.f))) {
+		ui::FormCell(TXT("Filter")); ImGui::InputTextWithHint("##cgmname", TXT("Filter by id or name"), nameFilter, sizeof(nameFilter));
+		ui::FormCell(TXT("Type")); if (i18n::Combo("##cgmtype", &tsel, kTypes, 8)) typeFilter = tsel == 0 ? -2 : tsel == 7 ? -1 : tsel - 1;
+		ui::FormCell(TXT("Min side")); ImGui::InputInt("##cgmminside", &minSize, 0, 0);
+		ui::FormCell(TXT("Max side")); ImGui::InputInt("##cgmmaxside", &maxSize, 0, 0);
+		ui::FormCell(TXT("Used by pattern"));
+		ImGui::SetNextItemWidth(std::max(ui::FieldW() * 0.6f, ImGui::GetContentRegionAvail().x - i18n::ButtonWidth(LBL("any##cgmpat")) - ImGui::GetStyle().ItemSpacing.x));
+		ImGui::InputInt("##cgmusedpat", &usedByPattern, 0, 0);
+		ImGui::SameLine(); if (ImGui::SmallButton(LBL("any##cgmpat"))) usedByPattern = -1;
+		ui::FormCell(TXT("Thumbnail")); ImGui::SliderInt("##cgmthumb", &thumbSize, 48, 192);
+		ui::EndFormGrid();
+	}
+	ImGui::Checkbox(LBL("Unused"), &onlyUnused); if (onlyUnused) onlyUsed = false;
+	ui::SameLineCheckbox(LBL("Used")); ImGui::Checkbox(LBL("Used"), &onlyUsed); if (onlyUsed) onlyUnused = false;
+	ui::SameLineCheckbox(LBL("Shares cells")); ImGui::Checkbox(LBL("Shares cells"), &onlyShared);
 
 	uint64_t key = 1469598103934665603ull;
 	auto mix = [&](uint64_t v) { key ^= v + 0x9e3779b97f4a7c15ull + (key << 6) + (key >> 2); };
@@ -930,12 +974,20 @@ void Window::draw(CharacterInstance *ch, const WindowHost &host) {
 			shown.push_back(i);
 		}
 	}
-	ImGui::TextDisabled(TXT("%d of %d images shown"), (int)shown.size(), count);
+	ImGui::SameLine(); ImGui::TextDisabled(TXT("%d of %d images shown"), (int)shown.size(), count);
 
-	// ---- grid (left) ----
-	ImGui::BeginChild("##cgmgrid", ImVec2(ImGui::GetContentRegionAvail().x * 0.58f, 0), ImGuiChildFlags_Borders);
+	// ---- grid (left) | inspector (right): a resizable split that fills the tab ----
+	const float browseH = ImGui::GetContentRegionAvail().y;
+	const bool split = ImGui::BeginTable("##cgmbrowse", 2, ImGuiTableFlags_Resizable | ImGuiTableFlags_BordersInnerV | ImGuiTableFlags_NoSavedSettings, ImVec2(0, browseH));
+	if (split) {
+		ImGui::TableSetupColumn("##grid", ImGuiTableColumnFlags_WidthStretch, 0.58f);
+		ImGui::TableSetupColumn("##info", ImGuiTableColumnFlags_WidthStretch, 0.42f);
+		ImGui::TableNextRow(); ImGui::TableSetColumnIndex(0);
+	}
+	const float paneH = std::max(ui::Em(4.f), browseH - ImGui::GetStyle().CellPadding.y * 2);
+	ImGui::BeginChild("##cgmgrid", ImVec2(split ? 0.f : ImGui::GetContentRegionAvail().x * 0.58f, paneH), ImGuiChildFlags_Borders);
 	{
-		const float cell = (float)thumbSize + 8.f, availW = ImGui::GetContentRegionAvail().x;
+		const float cell = (float)thumbSize + ui::Px(8.f), availW = ImGui::GetContentRegionAvail().x;
 		const int cols = std::max(1, (int)(availW / cell));
 		const float rowH = cell + ImGui::GetTextLineHeight() + 4.f;
 		const int rows = ((int)shown.size() + cols - 1) / cols;
@@ -977,10 +1029,10 @@ void Window::draw(CharacterInstance *ch, const WindowHost &host) {
 		ImGui::PopStyleVar();
 	}
 	ImGui::EndChild();
-	ImGui::SameLine();
 
 	// ---- inspector (right) ----
-	ImGui::BeginChild("##cgminfo");
+	if (split) ImGui::TableSetColumnIndex(1); else ImGui::SameLine();
+	ImGui::BeginChild("##cgminfo", ImVec2(0, paneH));
 	if (selected >= 0 && selected < count) {
 		int bpp = 0, ty = 0, x1 = 0, y1 = 0, x2 = 0, y2 = 0;
 		const bool ok = ch->cg.image_info(selected, bpp, ty, x1, y1, x2, y2);
@@ -998,11 +1050,14 @@ void Window::draw(CharacterInstance *ch, const WindowHost &host) {
 			if (!dep.empty()) { std::string s; for (int o : dep) s += std::to_string(o) + " "; ImGui::TextWrapped(TXT("Its cells are drawn by image(s): %s"), s.c_str()); }
 		}
 		const int nPal = std::max(1, ch->cg.getPalNumber());
-		if (nPal > 1 || ch->cg.pupsBankCount() > 1) {
-			ImGui::SetNextItemWidth(90); if (ImGui::InputInt(LBL("Palette"), &previewPal, 1, 8)) { previewPal = std::clamp(previewPal, 0, nPal - 1); clearThumbs(); previewId = -1; }
-			if (ch->cg.pupsBankCount() > 1) { ImGui::SameLine(); ImGui::SetNextItemWidth(70); if (ImGui::InputInt(LBL("PUPS bank"), &previewPups, 1, 1)) { previewPups = std::clamp(previewPups, 0, ch->cg.pupsBankCount() - 1); clearThumbs(); previewId = -1; } }
+		if (ui::BeginLabelForm("##cgmview", ui::LabelColW({LBL("Palette"), LBL("PUPS bank"), LBL("Zoom")}))) {
+			if (nPal > 1 || ch->cg.pupsBankCount() > 1) {
+				if (ImGui::InputInt(ui::FormRow(LBL("Palette")), &previewPal, 1, 8)) { previewPal = std::clamp(previewPal, 0, nPal - 1); clearThumbs(); previewId = -1; }
+				if (ch->cg.pupsBankCount() > 1) { if (ImGui::InputInt(ui::FormRow(LBL("PUPS bank")), &previewPups, 1, 1)) { previewPups = std::clamp(previewPups, 0, ch->cg.pupsBankCount() - 1); clearThumbs(); previewId = -1; } }
+			}
+			ImGui::SliderFloat(ui::FormRow(LBL("Zoom")), &zoom, 0.25f, 8.f);
+			ui::EndLabelForm();
 		}
-		ImGui::SetNextItemWidth(120); ImGui::SliderFloat(LBL("Zoom"), &zoom, 0.25f, 8.f);
 		if (previewId != selected || previewGen != cgGen) {
 			previewId = selected; previewGen = cgGen;
 			std::vector<uint8_t> px; int w = 0, h = 0;
@@ -1012,7 +1067,7 @@ void Window::draw(CharacterInstance *ch, const WindowHost &host) {
 		if (bank) drawEffect(*ch, host);
 		ImGui::SeparatorText(TXT("Used by"));
 		if (selected < (int)usage.byImage.size() && !usage.byImage[selected].empty()) {
-			ImGui::BeginChild("##cgmuse", ImVec2(0, 110), ImGuiChildFlags_Borders);
+			ImGui::BeginChild("##cgmuse", ImVec2(0, std::min(ui::Em(6.f), ImGui::GetTextLineHeightWithSpacing() * (usage.byImage[selected].size() + 0.6f))), ImGuiChildFlags_Borders);
 			for (const UsageRef &r : usage.byImage[selected]) {
 				char l[96]; snprintf(l, sizeof(l), TXT("pattern %d, frame %d, layer %d"), r.pattern, r.frame, r.layer);
 				if (ImGui::Selectable(l) && host.navigate) host.navigate(r.pattern, r.frame);
@@ -1033,6 +1088,7 @@ void Window::draw(CharacterInstance *ch, const WindowHost &host) {
 		ImGui::EndChild();
 	} else ImGui::TextDisabled("%s", TXT("Click an image in the grid."));
 	ImGui::EndChild();
+	if (split) ImGui::EndTable();
 	ImGui::EndTabItem();
 	}
 	if (ImGui::BeginTabItem(LBL("CG + .pat textures"), nullptr, CgmTab("CG + .pat textures"))) { drawTextures(*ch, host); ImGui::EndTabItem(); }
@@ -1163,24 +1219,70 @@ void Window::drawTextures(CharacterInstance &ch, const WindowHost &host) {
 	const int gi = tb.game < 0 ? DetectGame(ch) : tb.game;
 	if (tb.gameDir[gi].empty() && kGames[gi].steamDir[0]) tb.gameDir[gi] = kGames[gi].steamDir;
 	const char *names[kGameCount]; for (int i = 0; i < kGameCount; i++) names[i] = kGames[i].name;
-	int g = gi; ImGui::SetNextItemWidth(130);
-	if (ImGui::Combo(LBL("Game##cgmtbgame"), &g, names, kGameCount)) tb.game = g;
 	const std::string game = kGames[gi].id;
-	if (UsesModFolder(game)) {
-		ImGui::SameLine(); ImGui::SetNextItemWidth(420);
-		char buf[512]; snprintf(buf, sizeof(buf), "%s", tb.gameDir[gi].c_str());
-		if (ImGui::InputText(LBL("Game folder##cgmtbdir"), buf, sizeof(buf))) tb.gameDir[gi] = buf;
-		ImGui::SetItemTooltip("%s", TXT("The archives are read-only: saves go to <game folder>\\UNI2-IM\\Mods or MBTL-IM\\Mods, which the improvement mod and fbmod's file layer load instead of the archived file."));
+	const bool modGame = UsesModFolder(game);
+	// ---- game / game folder / filter: label-first cells; the folder cell takes the most room, narrow windows stack them ----
+	{
+		const ImGuiStyle &st = ImGui::GetStyle();
+		const int cols = ImGui::GetContentRegionAvail().x >= ui::Em(36.f) ? (modGame ? 3 : 2) : 1;
+		if (ImGui::BeginTable("##cgmtbtop", cols, ImGuiTableFlags_SizingStretchProp | ImGuiTableFlags_NoSavedSettings)) {
+			const float wGame = 1.f, wDir = 3.2f, wFilter = 1.3f;
+			if (cols > 1) {
+				ImGui::TableSetupColumn("##g", ImGuiTableColumnFlags_WidthStretch, wGame);
+				if (modGame) ImGui::TableSetupColumn("##d", ImGuiTableColumnFlags_WidthStretch, wDir);
+				ImGui::TableSetupColumn("##f", ImGuiTableColumnFlags_WidthStretch, wFilter);
+			}
+			auto cell = [&](const char *label) {
+				ImGui::TableNextColumn(); ImGui::AlignTextToFramePadding(); ImGui::TextUnformatted(label); ImGui::SameLine(0, st.ItemInnerSpacing.x);
+				ImGui::SetNextItemWidth(std::max(ImGui::GetContentRegionAvail().x, ui::FieldW()));
+			};
+			int g = gi;
+			cell(TXT("Game")); if (ImGui::Combo("##cgmtbgame", &g, names, kGameCount)) tb.game = g;
+			if (modGame) {
+				cell(TXT("Game folder"));
+				char buf[512]; snprintf(buf, sizeof(buf), "%s", tb.gameDir[gi].c_str());
+				if (ImGui::InputText("##cgmtbdir", buf, sizeof(buf))) tb.gameDir[gi] = buf;
+				ImGui::SetItemTooltip("%s", TXT("The archives are read-only: saves go to <game folder>\\UNI2-IM\\Mods or MBTL-IM\\Mods, which the improvement mod and fbmod's file layer load instead of the archived file."));
+			}
+			cell(TXT("Filter")); ImGui::InputTextWithHint("##cgmtbfilter", TXT("Filter by id or name"), tb.filter, sizeof(tb.filter));
+			ImGui::EndTable();
+		}
 	}
-	ImGui::SameLine(); ImGui::SetNextItemWidth(160); ImGui::InputTextWithHint("##cgmtbfilter", TXT("Filter by id or name"), tb.filter, sizeof(tb.filter));
 	std::string f = tb.filter; for (auto &c : f) c = (char)tolower((unsigned char)c);
 	auto pass = [&](int id, const std::string &nm) { if (f.empty()) return true; std::string n = nm; for (auto &c : n) c = (char)tolower((unsigned char)c); return n.find(f) != std::string::npos || std::to_string(id) == f; };
 
 	const bool hasPat = ch.parts.loaded && !ch.parts.gfxMeta.empty();
 	PatTexSource patSrc(ch.parts);
-	const float listH = ImGui::GetContentRegionAvail().y * 0.42f, half = ImGui::GetContentRegionAvail().x * 0.5f - 4.f;
-	// ---- CG images (left) ----
-	ImGui::BeginChild("##cgmtbcg", ImVec2(half, listH), ImGuiChildFlags_Borders);
+	// the selected item (identical operations for both kinds)
+	std::unique_ptr<BmpCutterIO> bioOwn; std::unique_ptr<CgIO> cio;
+	std::unique_ptr<CgTexSource> cgSrc;
+	if (bank) { bioOwn.reset(new BmpCutterIO(*bank)); cgSrc.reset(new CgTexSource(*bioOwn)); }
+	else { cio.reset(new CgIO(ch.cg)); cgSrc.reset(new CgTexSource(*cio)); }
+	if (tb.kind == 1 && !hasPat) tb.sel = -1;
+	TexSource &src = tb.kind == 1 ? (TexSource &)patSrc : (TexSource &)*cgSrc;
+	TexEntry e;
+	if (tb.sel >= 0 && !src.entry(tb.sel, e)) tb.sel = -1;
+	const bool haveSel = tb.sel >= 0;
+
+	// ---- lists (left: CG images over .pat textures over "Used by") | the selected item and its preview (right) ----
+	// The .pat list is short (a handful of atlases), so it takes only the rows it needs; the CG list gets the rest of the column.
+	const ImGuiStyle &st = ImGui::GetStyle();
+	const float H = std::max(ui::Em(10.f), ImGui::GetContentRegionAvail().y);
+	const float rowH = ImGui::GetTextLineHeightWithSpacing(), chrome = ImGui::GetFrameHeightWithSpacing() + st.WindowPadding.y * 2 + st.ItemSpacing.y;
+	const int patRows = hasPat ? patSrc.count() : 1;
+	const float usedH = haveSel ? std::clamp(H * 0.26f, ui::Em(4.f), ui::Em(12.f)) : 0.f;
+	const float patH = std::clamp(patRows * rowH + chrome, ui::Em(3.f), H * 0.34f);
+	const float cgH = std::max(ui::Em(4.f), H - patH - usedH - st.ItemSpacing.y * (haveSel ? 2.f : 1.f) - st.CellPadding.y * 2);
+	const bool split = ImGui::BeginTable("##cgmtbsplit", 2, ImGuiTableFlags_Resizable | ImGuiTableFlags_BordersInnerV | ImGuiTableFlags_NoSavedSettings, ImVec2(0, H));
+	if (split) {
+		ImGui::TableSetupColumn("##lists", ImGuiTableColumnFlags_WidthStretch, 0.46f);
+		ImGui::TableSetupColumn("##item", ImGuiTableColumnFlags_WidthStretch, 0.54f);
+		ImGui::TableNextRow(); ImGui::TableSetColumnIndex(0);
+	}
+	const float colW = split ? 0.f : ImGui::GetContentRegionAvail().x * 0.46f;
+	if (!split) ImGui::BeginGroup();
+	// ---- CG images ----
+	ImGui::BeginChild("##cgmtbcg", ImVec2(colW, cgH), ImGuiChildFlags_Borders);
 	ImGui::SeparatorText(TXT("CG images"));
 	{
 		std::vector<int> ids; const int n = ch.cg.get_image_count();
@@ -1194,55 +1296,22 @@ void Window::drawTextures(CharacterInstance &ch, const WindowHost &host) {
 		}
 	}
 	ImGui::EndChild();
-	ImGui::SameLine();
-	// ---- .pat textures (right) ----
-	ImGui::BeginChild("##cgmtbpat", ImVec2(0, listH), ImGuiChildFlags_Borders);
+	// ---- .pat textures ----
+	ImGui::BeginChild("##cgmtbpat", ImVec2(colW, patH), ImGuiChildFlags_Borders);
 	ImGui::SeparatorText(TXT(".pat textures"));
 	if (!hasPat) ImGui::TextDisabled("%s", TXT("This character has no .pat textures loaded."));
 	else for (int i = 0; i < patSrc.count(); i++) {
-		TexEntry e; if (!patSrc.entry(i, e) || !pass(i, e.name)) continue;
+		TexEntry pe; if (!patSrc.entry(i, pe) || !pass(i, pe.name)) continue;
 		const auto users = PatTextureUsers(ch.parts, i, nullptr);
 		int parts = 0; for (auto &u : users) parts += u.partSet < 0;
-		char l[160]; snprintf(l, sizeof(l), "%3d  %-24s %4dx%-4d %-11s %d part(s)##pti%d", i, e.name.c_str(), e.w, e.h, e.format.c_str(), parts, i);
+		char l[160]; snprintf(l, sizeof(l), "%3d  %-24s %4dx%-4d %-11s %d part(s)##pti%d", i, pe.name.c_str(), pe.w, pe.h, pe.format.c_str(), parts, i);
 		if (ImGui::Selectable(l, tb.kind == 1 && tb.sel == i)) { tb.kind = 1; tb.sel = i; }
 	}
 	ImGui::EndChild();
-
-	// ---- the selected item: identical operations for both kinds ----
-	if (tb.sel < 0) { ImGui::TextDisabled("%s", TXT("Select a CG image or a .pat texture.")); return; }
-	BmpCutterIO *bio = nullptr; std::unique_ptr<BmpCutterIO> bioOwn; std::unique_ptr<CgIO> cio;
-	std::unique_ptr<CgTexSource> cgSrc;
-	if (bank) { bioOwn.reset(new BmpCutterIO(*bank)); bio = bioOwn.get(); cgSrc.reset(new CgTexSource(*bio)); }
-	else { cio.reset(new CgIO(ch.cg)); cgSrc.reset(new CgTexSource(*cio)); }
-	TexSource &src = tb.kind == 1 ? (TexSource &)patSrc : (TexSource &)*cgSrc;
-	if (tb.kind == 1 && !hasPat) { tb.sel = -1; return; }
-	TexEntry e; if (!src.entry(tb.sel, e)) { tb.sel = -1; return; }
-	ImGui::Text(tb.kind ? TXT(".pat texture %d: %s, %d x %d, %s") : TXT("CG image %d: %s, %d x %d, %s"), tb.sel, e.name.c_str(), e.w, e.h, e.format.c_str());
-	const std::string def = std::to_string(tb.sel) + "_" + (e.name.empty() ? std::string(tb.kind ? "texture" : "image") : std::filesystem::path(e.name).stem().string()) + ".png";
-	ImGui::BeginDisabled(!e.present);
-	if (CgmButton(LBL("Export PNG...##cgmtb"))) {
-		std::string name = def; const std::string p = FileDialog(fileType::IMAGESAVE, true, name.data());
-		if (!p.empty()) { std::string er; status = ExportPng(src, tb.sel, p, &er) ? Fmt(TXT("Exported %s"), p.c_str()) : er; if (status == er) {} else tb.lastPng = p; }
-	}
-	ImGui::SameLine();
-	if (CgmButton(LBL("Import PNG...##cgmtb"))) { const std::string p = FileDialog(fileType::IMAGE); if (!p.empty()) texReplace(ch, tb.kind, tb.sel, p, true, host); }
-	ImGui::SameLine();
-	if (CgmButton(LBL("Replace...##cgmtb"))) { const std::string p = FileDialog(fileType::IMAGE); if (!p.empty()) texReplace(ch, tb.kind, tb.sel, p, false, host); }
-	ImGui::SetItemTooltip("%s", TXT("Replace the pixels from any image file (PNG, BMP, JPEG, TIFF) of the same size. Pixels that already render identically keep their stored bytes."));
-	ImGui::EndDisabled();
-	ImGui::SameLine(0, 24.f);
-	if (CgmButton(UsesModFolder(game) ? LBL("Save to mod folder##cgmtb") : LBL("Save to game##cgmtb"))) { std::string rep; texSave(ch, tb.kind, game, rep); status = rep; }
-	if (UsesModFolder(game)) {
-		ImGui::SameLine();
-		if (CgmButton(LBL("Restore mod folder##cgmtb"))) {
-			const std::string dst = ModFolderPath(game, tb.gameDir[gi], GameKeyOf(tb.kind == 0 ? ch.getCGPath() : ch.getPATPath()));
-			std::string er; status = !dst.empty() && RestoreModFile(dst, &er) ? Fmt(TXT("Restored %s"), dst.c_str()) : er;
-		}
-	}
-	// references
-	ImGui::BeginChild("##cgmtbrefs", ImVec2(ImGui::GetContentRegionAvail().x * 0.4f, 0), ImGuiChildFlags_Borders);
-	ImGui::SeparatorText(TXT("Used by"));
-	{
+	// ---- references of the selected item ----
+	if (haveSel) {
+		ImGui::BeginChild("##cgmtbrefs", ImVec2(colW, 0), ImGuiChildFlags_Borders);
+		ImGui::SeparatorText(TXT("Used by"));
 		const auto users = tb.kind == 1 ? PatTextureUsers(ch.parts, tb.sel, &ch.frameData) : CgImageUsers(ch.frameData, tb.sel);
 		if (users.empty()) ImGui::TextDisabled("%s", TXT("Not referenced by any frame or part of this character."));
 		int k = 0;
@@ -1256,24 +1325,55 @@ void Window::drawTextures(CharacterInstance &ch, const WindowHost &host) {
 			ImGui::PushID(k); const bool hit = ImGui::Selectable(l); ImGui::PopID();
 			if (hit && u.pattern >= 0 && host.navigate) host.navigate(u.pattern, u.frame);
 		}
+		ImGui::EndChild();
 	}
-	ImGui::EndChild();
-	ImGui::SameLine();
-	// view
-	ImGui::BeginChild("##cgmtbview", ImVec2(0, 0), ImGuiChildFlags_Borders, ImGuiWindowFlags_HorizontalScrollbar);
-	ImGui::SetNextItemWidth(120); ImGui::SliderFloat(LBL("Zoom##cgmtb"), &tb.zoom, 0.125f, 8.f);
-	const unsigned long long gen = tb.kind ? tb.patGen : cgGen;
-	if (tb.viewKind != tb.kind || tb.viewId != tb.sel || tb.viewGen != gen) {
-		tb.viewKind = tb.kind; tb.viewId = tb.sel; tb.viewGen = gen;
-		Rgba px; if (e.present && src.decode(tb.sel, px) && px.w > 0) upload(tb.view, px.px, px.w, px.h, 0, false); else tb.view.w = tb.view.h = 0;
+	if (split) ImGui::TableSetColumnIndex(1); else { ImGui::EndGroup(); ImGui::SameLine(); }
+
+	// ---- the selected item: header, actions, zoom, preview filling the column ----
+	ImGui::BeginGroup();
+	if (!haveSel) ImGui::TextDisabled("%s", TXT("Select a CG image or a .pat texture."));
+	else {
+		ImGui::PushTextWrapPos(0.f);
+		ImGui::Text(tb.kind ? TXT(".pat texture %d: %s, %d x %d, %s") : TXT("CG image %d: %s, %d x %d, %s"), tb.sel, e.name.c_str(), e.w, e.h, e.format.c_str());
+		ImGui::PopTextWrapPos();
+		const std::string def = std::to_string(tb.sel) + "_" + (e.name.empty() ? std::string(tb.kind ? "texture" : "image") : std::filesystem::path(e.name).stem().string()) + ".png";
+		const char *saveLbl = modGame ? LBL("Save to mod folder##cgmtb") : LBL("Save to game##cgmtb");
+		ui::ButtonGrid g = modGame ? ui::ButtonGrid({LBL("Export PNG...##cgmtb"), LBL("Import PNG...##cgmtb"), LBL("Replace...##cgmtb"), saveLbl, LBL("Restore mod folder##cgmtb")})
+		                           : ui::ButtonGrid({LBL("Export PNG...##cgmtb"), LBL("Import PNG...##cgmtb"), LBL("Replace...##cgmtb"), saveLbl});
+		ImGui::BeginDisabled(!e.present);
+		if (GridButton(g, LBL("Export PNG...##cgmtb"))) {
+			std::string name = def; const std::string p = FileDialog(fileType::IMAGESAVE, true, name.data());
+			if (!p.empty()) { std::string er; status = ExportPng(src, tb.sel, p, &er) ? Fmt(TXT("Exported %s"), p.c_str()) : er; if (status == er) {} else tb.lastPng = p; }
+		}
+		if (GridButton(g, LBL("Import PNG...##cgmtb"))) { const std::string p = FileDialog(fileType::IMAGE); if (!p.empty()) texReplace(ch, tb.kind, tb.sel, p, true, host); }
+		if (GridButton(g, LBL("Replace...##cgmtb"))) { const std::string p = FileDialog(fileType::IMAGE); if (!p.empty()) texReplace(ch, tb.kind, tb.sel, p, false, host); }
+		ImGui::SetItemTooltip("%s", TXT("Replace the pixels from any image file (PNG, BMP, JPEG, TIFF) of the same size. Pixels that already render identically keep their stored bytes."));
+		ImGui::EndDisabled();
+		if (GridButton(g, saveLbl)) { std::string rep; texSave(ch, tb.kind, game, rep); status = rep; }
+		if (modGame) {
+			if (GridButton(g, LBL("Restore mod folder##cgmtb"))) {
+				const std::string dst = ModFolderPath(game, tb.gameDir[gi], GameKeyOf(tb.kind == 0 ? ch.getCGPath() : ch.getPATPath()));
+				std::string er; status = !dst.empty() && RestoreModFile(dst, &er) ? Fmt(TXT("Restored %s"), dst.c_str()) : er;
+			}
+		}
+		if (ui::BeginLabelForm("##cgmtbzoom", ui::LabelColW({LBL("Zoom##cgmtb")}))) { ImGui::SliderFloat(ui::FormRow(LBL("Zoom##cgmtb")), &tb.zoom, 0.125f, 8.f); ui::EndLabelForm(); }
+		// view
+		ImGui::BeginChild("##cgmtbview", ImVec2(0, std::max(ui::Em(6.f), ImGui::GetContentRegionAvail().y - (split ? st.CellPadding.y : 0.f))), ImGuiChildFlags_Borders, ImGuiWindowFlags_HorizontalScrollbar);
+		const unsigned long long gen = tb.kind ? tb.patGen : cgGen;
+		if (tb.viewKind != tb.kind || tb.viewId != tb.sel || tb.viewGen != gen) {
+			tb.viewKind = tb.kind; tb.viewId = tb.sel; tb.viewGen = gen;
+			Rgba px; if (e.present && src.decode(tb.sel, px) && px.w > 0) upload(tb.view, px.px, px.w, px.h, 0, false); else tb.view.w = tb.view.h = 0;
+		}
+		if (tb.view.w > 0) {
+			const ImVec2 p0 = ImGui::GetCursorScreenPos(), sz(tb.view.w * tb.zoom, tb.view.h * tb.zoom);
+			ImGui::Dummy(sz);
+			Checker(ImGui::GetWindowDrawList(), p0, ImVec2(p0.x + sz.x, p0.y + sz.y));
+			ImGui::GetWindowDrawList()->AddImage((ImTextureID)(intptr_t)tb.view.tex, p0, ImVec2(p0.x + sz.x, p0.y + sz.y));
+		} else ImGui::TextDisabled("%s", TXT("Nothing to show."));
+		ImGui::EndChild();
 	}
-	if (tb.view.w > 0) {
-		const ImVec2 p0 = ImGui::GetCursorScreenPos(), sz(tb.view.w * tb.zoom, tb.view.h * tb.zoom);
-		ImGui::Dummy(sz);
-		Checker(ImGui::GetWindowDrawList(), p0, ImVec2(p0.x + sz.x, p0.y + sz.y));
-		ImGui::GetWindowDrawList()->AddImage((ImTextureID)(intptr_t)tb.view.tex, p0, ImVec2(p0.x + sz.x, p0.y + sz.y));
-	} else ImGui::TextDisabled("%s", TXT("Nothing to show."));
-	ImGui::EndChild();
+	ImGui::EndGroup();
+	if (split) ImGui::EndTable();
 }
 
 bool Window::script(const std::string &cmd, const std::string &arg, std::string *msg) {

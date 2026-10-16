@@ -230,3 +230,6 @@
 {"Nothing to show.", "表示するものがありません。"},
 {"Save .pal to mod folder", ".palをmodフォルダに保存"},
 {"Writes this .pal to <game folder>\\UNI2-IM\\Mods or MBTL-IM\\Mods (set in the \"CG + .pat textures\" tab). \"Restore mod folder\" there, or cgmtex modrestore, undoes it.", "この.palを<ゲームフォルダ>\\UNI2-IM\\ModsまたはMBTL-IM\\Modsに書き込みます(「CG + .pat textures」タブで設定)。そこの「Restore mod folder」かcgmtex modrestoreで元に戻せます。"},
+{"(counted)", "(集計済み)"},
+{"UNI2 / MBTL: saved files reach the game only through the IM mod folder.", "UNI2 / MBTL: 保存したファイルはIM modフォルダ経由でのみゲームに反映されます。"},
+{"Authors the PovertyCaster runtime recolour (<game>\\fxrecolor\\<char>.ini).", "PovertyCasterのランタイム再配色(<game>\\fxrecolor\\<char>.ini)を作成します。"},
