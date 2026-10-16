@@ -78,7 +78,7 @@ public:
 			return;
 		}
 
-		ImGui::TableSetupColumn("No.");
+		ImGui::TableSetupColumn(LBL("No."));
 		ImGui::TableSetupColumn(LBL("VecCnt"));
 		ImGui::TableSetupColumn(LBL("UkemiTime"));
 		ImGui::TableSetupColumn(LBL("Prio"));

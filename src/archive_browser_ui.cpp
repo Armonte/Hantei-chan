@@ -712,9 +712,9 @@ bool Draw(OpenRequest &req)
 	ImGui::Separator();
 	const float bottom = ImGui::GetFrameHeightWithSpacing() + ImGui::GetStyle().WindowPadding.y + 4.f;
 	if (ImGui::BeginTable("##layout", 3, ImGuiTableFlags_Resizable | ImGuiTableFlags_BordersInnerV | ImGuiTableFlags_NoSavedSettings, ImVec2(0, -bottom))) {
-		ImGui::TableSetupColumn("src", ImGuiTableColumnFlags_WidthFixed, 230.f);
-		ImGui::TableSetupColumn("list", ImGuiTableColumnFlags_WidthStretch, 3.f);
-		ImGui::TableSetupColumn("prev", ImGuiTableColumnFlags_WidthStretch, 2.4f);
+		ImGui::TableSetupColumn("##src", ImGuiTableColumnFlags_WidthFixed, 230.f);
+		ImGui::TableSetupColumn("##list", ImGuiTableColumnFlags_WidthStretch, 3.f);
+		ImGui::TableSetupColumn("##prev", ImGuiTableColumnFlags_WidthStretch, 2.4f);
 		ImGui::TableNextRow();
 		ImGui::TableSetColumnIndex(0);
 		ImGui::BeginChild("##sources", ImVec2(0, 0), false);
@@ -827,7 +827,7 @@ std::string DrawWelcome(const std::vector<std::string> &recentFiles)
 	ImGui::SetNextWindowSize(sz);
 	ImGui::SetNextWindowBgAlpha(0.97f);
 	if (!ImGui::Begin("##welcome", nullptr, ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoDocking | ImGuiWindowFlags_NoSavedSettings)) { ImGui::End(); return {}; }
-	ImGui::SetWindowFontScale(1.5f); ImGui::TextUnformatted("Hantei-chan"); ImGui::SetWindowFontScale(1.f);
+	ImGui::SetWindowFontScale(1.5f); ImGui::TextUnformatted("Hantei-chan"); ImGui::SetWindowFontScale(1.f);   // i18n-ok: product name
 	ImGui::TextDisabled("%s", T("Every French-Bread game this editor reads. Open one: its archives are mounted, characters are listed with thumbnails, a double click opens a character.",
 	                            "対応しているフレンチ・ブレッド作品の一覧です。開くとアーカイブをマウントしてキャラクターをサムネイル付きで表示し、ダブルクリックで編集できます。"));
 	ImGui::Separator();

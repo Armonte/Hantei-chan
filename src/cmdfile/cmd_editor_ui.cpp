@@ -496,7 +496,7 @@ void CommandFileEditor::View::drawCommandTable(const std::vector<Diagnostic>& di
 	if (!ImGui::BeginTable("##commands", 13, flags, ImVec2(0, height))) return;
 	ImGui::TableSetupScrollFreeze(0, 1);
 	ImGui::TableSetupColumn(LBL("Line"), ImGuiTableColumnFlags_WidthFixed, 40);
-	ImGui::TableSetupColumn("ID", ImGuiTableColumnFlags_WidthFixed, 44);
+	ImGui::TableSetupColumn(LBL("ID"), ImGuiTableColumnFlags_WidthFixed, 44);
 	ImGui::TableSetupColumn(LBL("Input"), ImGuiTableColumnFlags_WidthFixed, 80);
 	ImGui::TableSetupColumn(LBL("Flagset 1"), ImGuiTableColumnFlags_WidthFixed, 76);
 	ImGui::TableSetupColumn(LBL("Flagset 2"), ImGuiTableColumnFlags_WidthFixed, 76);
@@ -961,7 +961,7 @@ void CommandFileEditor::View::drawTagTab()
 	}
 	ImGui::Text(TXT("%d team-only, %d solo-only command(s)"), teamOnly, soloOnly);
 	if (teamOnly + soloOnly > 0 && ImGui::BeginTable("##teamsolo", 5, ImGuiTableFlags_RowBg | ImGuiTableFlags_BordersInnerV | ImGuiTableFlags_SizingFixedFit)) {
-		ImGui::TableSetupColumn("ID"); ImGui::TableSetupColumn(LBL("Input")); ImGui::TableSetupColumn(LBL("Pattern"));
+		ImGui::TableSetupColumn(LBL("ID")); ImGui::TableSetupColumn(LBL("Input")); ImGui::TableSetupColumn(LBL("Pattern"));
 		ImGui::TableSetupColumn(LBL("Team/solo")); ImGui::TableSetupColumn(LBL("Comment"), ImGuiTableColumnFlags_WidthStretch);
 		ImGui::TableHeadersRow();
 		for (const auto& c : d.commands) {

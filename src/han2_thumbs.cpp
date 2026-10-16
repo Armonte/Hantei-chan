@@ -71,7 +71,7 @@ void DrawAnimListWindow(CharacterInstance *ch, FrameState &state)
 {
 	if (!showAnimList) return;
 	ImGui::SetNextWindowSize(ImVec2(300, 520), ImGuiCond_FirstUseEver);
-	if (!ImGui::Begin("Animations###animlist", &showAnimList)) { ImGui::End(); return; }
+	if (!ImGui::Begin((std::string(TXT("Animations")) + "###animlist").c_str(), &showAnimList)) { ImGui::End(); return; }
 	if (!ch || ch->frameData.m_sequences.empty()) { ImGui::TextDisabled("%s", Tr("No character open.", "\xe3\x82\xad\xe3\x83\xa3\xe3\x83\xa9\xe3\x81\x8c\xe9\x96\x8b\xe3\x81\x84\xe3\x81\xa6\xe3\x81\x84\xe3\x81\xbe\xe3\x81\x9b\xe3\x82\x93\xe3\x80\x82")); ImGui::End(); return; }
 	static char filter[64] = "";
 	ImGui::SetNextItemWidth(-1);

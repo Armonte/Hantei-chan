@@ -628,7 +628,7 @@ void CharacterView(HostContext& host, const gamelink::Snapshot& s, const CharVie
 						std::string l = std::to_string(c.id) + "  " + c.input + " -> p" + std::to_string(c.pattern) + (c.meter ? " $" + std::to_string(c.meter) : "") + "  " + c.name;
 						if (ImGui::Selectable(l.c_str(), c.id == cv2)) { sink.Begin(std::string(kLevers[sl.command].key) + " (" + label + ")"); SetDocLever(doc.ini, doc.id.kind, sl.command, c.id); sink.Edited(); sink.End(); }
 					}
-					if (cmds.empty()) ImGui::TextDisabled("no %s", ctxt.c_str());
+					if (cmds.empty()) ImGui::TextDisabled(TXT("no %s"), ctxt.c_str());
 					ImGui::EndCombo();
 				}
 			} else if (mode == 3) {

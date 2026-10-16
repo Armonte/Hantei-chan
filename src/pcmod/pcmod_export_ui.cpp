@@ -353,7 +353,7 @@ void Draw()
 		ImGui::TableSetupColumn(TXT("Game path"), ImGuiTableColumnFlags_WidthStretch, 2.f);
 		ImGui::TableSetupColumn(TXT("Class"), ImGuiTableColumnFlags_WidthFixed, 110);
 		ImGui::TableSetupColumn(TXT("Size"), ImGuiTableColumnFlags_WidthFixed, 80);
-		ImGui::TableSetupColumn("SHA-256", ImGuiTableColumnFlags_WidthFixed, 150);
+		ImGui::TableSetupColumn("SHA-256", ImGuiTableColumnFlags_WidthFixed, 150);   // i18n-ok: hash name
 		ImGui::TableSetupColumn(TXT("Notes"), ImGuiTableColumnFlags_WidthStretch, 2.f);
 		ImGui::TableHeadersRow();
 		int del = -1;
@@ -371,7 +371,7 @@ void Draw()
 				ImGui::TextColored(ColSim(), "%s", r.include ? TXT("sim (online)") : "sim");
 				if (ImGui::IsItemHovered()) ImGui::SetTooltip("%s", TXT("In the online sim digest: the peer must have this exact file."));
 			} else if (pc == pcmod::PathClass::Cosmetic) {
-				ImGui::TextDisabled("cosmetic");
+				ImGui::TextDisabled("%s", TXT("cosmetic"));
 				if (ImGui::IsItemHovered()) ImGui::SetTooltip("%s", TXT("Presentation only: in the package digest, not in the online sim digest."));
 			} else ImGui::TextColored(ColBad(), "%s", TXT("refused"));
 			ImGui::TableNextColumn(); ImGui::Text("%llu", (unsigned long long)r.size);
