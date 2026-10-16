@@ -1089,3 +1089,66 @@ No editor (C++) change. Numbers: `tools/uni/s1_compare/v2_round17.sh` (log `roun
   `AnimState_FillDrawInterpCtx`, plus a comment on `Han6Object_Draw`.
 - UNI2: nothing kept. A comment that went to the wrong instance (the ida-mcp current target switched to UNI2 when
   another session opened it) was reverted and the IDB saved.
+
+## Round 18 / render-match18 (2026-10-16): additive coverage in the split, stage-21 lamp flicker, s456 re-measured
+No editor (C++) change. Numbers: `tools/uni/s1_compare/v2_round18.sh` (log `round18/round18.log`). Full ctest 69/69, exit 0.
+
+### MBTL colour / blend path for an additive part (MBTL IDB, renamed and saved)
+- `PatPart_SetupDraw_ShaderWorldMtx` 0x411C10: diffuse = `PatPart_LerpDiffuseColor_PRCL` (PRCL ARGB, byte lerp, float
+  truncation), then `Color_ModulateARGB_Clamped` with DrawObj+0x0C only when that is not −1 (c·k/255, truncated, so it
+  can only darken). Specular for PRAL 1 with no PRSP stays 0. The four vertices get that D3DCOLOR as is
+  (`PatPart_SubmitPrimByShapeType` 0x4A2710, `CPAniPrimRender_SubmitShapeQuads` 0x4A37D0, `RenderList_AllocPrimEntry`
+  0x49DBA0). The pixel shader is `out = tex·diffuse; out.rgb *= g_fPtLastColor (PPPA/255); out += spec`.
+- Blend mode 2 (PRAL 1) in `g_BlendModeStateTable` 0xA1CB80: ADD, SRCALPHA, ONE. Filter 2 (PRFL 1) in
+  `g_TexFilterStateTable` 0xA1CB44 via `D3D_SetTexFilterFromTable`: LINEAR mag / LINEAR min, no mip filter. The .pat
+  DDS go through `Texture_CreateFromFileInMemory_NoMips` 0x492FA0 (MipLevels 1, filter NONE).
+- **No 255 vs 256 divisor, no premultiply, no rounding gain.** The editor's `bgra / 255` vertex colour, its
+  SRC_ALPHA/ONE blend and its PRFL linear filter are the same thing. Nothing in the path can give +1.5%.
+- **MBTL's stage bloom ruled out.** `Stage_ScreenBloomPass` 0x4EEDA0 adds blur(pow(screen, power) · bias RGB) · alpha
+  with blend 2 when `g_StageBloomEnabled` 0xA1CD1A is set (`Stage_ApplyBloomParams` 0x4EF3E0, from the stage's +0xB8..).
+  Stage 21 is on: alpha 0.5, power 3.5, bias 0.4 / 0.3 / 1.3. That per-channel bias looked like the excess (B
+  strongest). But with the flag held at 0 (`v2r18_mbtl_chr001_solo_s8_nobloom.gcs`), the game frame is the same as the
+  `_st` frame (mean signed −0.001), so under MBTL-IM `BloomStrength 0` the pass draws nothing.
+
+### The p157 / s8 excess is the stage-21 door lamp, not the arc
+- Stage 21 is **not** still. The door lamp above the alley door flickers between an off state (probe 96) and several
+  on states (124.8 / 127.2 / 129.6), and it lights the wall and floor at x 560–840, y 360–680 by up to +8 levels
+  (`plate_b0 − plate` of the s8 session). The s8 / s456 arcs and the p157 slot-8 arc sit inside that pool.
+- The game shot and its plate are different frames: window and backbuffer shots of one session are 3 frames apart
+  (MBTL-IM frame counter 280 / 283, `round18/s456_st_win_bb_plate_montage.png`), and the lamp state differs
+  between them. The energy gain of the s8 solo (sum (G − plate) / sum P) is R 1.011, G 1.015, **B 1.038**. It is
+  channel-dependent, which an alpha or divisor error cannot be, and bluish, like the lamp light. Its sign follows
+  the session: `_st` +0.82, the no-bloom session −0.63.
+- `v2_lamp_match.py` fits `plate + λ·(plate_b0 − plate)` on the backdrop around the footprint. A single lamp map does
+  not model it well: s8 0.83 → 0.98, p157 0.99 → 0.85 with the signed value flipping. So the lamp has more than one
+  light pattern. Either way the excess is backdrop, not the editor's arc.
+
+### Split tool: additive coverage
+- `v2_split_by_shot.py` took coverage from 1 − Q, and an additive part has Q = 1, so it was never covered. Coverage is
+  now max(1 − Q, P ≥ 2) from the shot's black-backdrop image. p157_z1 split by the s8 / s456 solos: s8 inner 20.9k px
+  signed +0.98, s8 edge +0.61, s8+s456 +0.03 to +0.17. The "(none)" 5.2k px (+2.5) are the other additive props of set
+  21 (slots 7, 21, 22, 24; no solo shots), also in the lamp pool. On p238 the s4 additive glow is now covered
+  (23.6k px). Its exclusive regions are signed +0.02, so an additive part on a still backdrop is exact.
+
+### s456 solo re-measured (stage 21, `round18/run_s456_stage.log`)
+- The capture came out clean (no black frames). `capture_window` now retries an all-black PrintWindow result up to 8×
+  and logs it (`round18/gamecap_printwindow_retry.diff`; gamecap lives outside the repo). This run needed no retry.
+- Window pair (`_st`): **7.73**. The window game shot is a different frame from the backbuffer one (lamp 96 against
+  129.6; −14 in the arc area) and sits at a different lamp state from its plate. Backbuffer pair (`_stbb` = `game_bb`
+  + `plate_bb`, lamp 129.6 / 129.6): **0.72** (round 10: 0.75). That is the s456 number. On s8 the backbuffer pair
+  is the bad one (4.23, lamp 96 / 127.2) and the window pair is good (0.83). Neither source is always right. **The pair
+  to use is the one whose lamp states match.**
+
+| case | round 17 | **round 18** | note |
+|---|---|---|---|
+| mbtl_flipV_chr001_p157f2_z1 | 0.99 | 0.99 | slot 8 / 7 / 21–24 excess = lamp flicker between game frame and plate; no engine gap found |
+| mbtl_flipV solo s8 _z1 | 0.83 | 0.83 (`_st`), 2.29 (`_nbl`, other lamp phase) | same |
+| mbtl_flipV solo s456 _z1 | not measured | **0.72** (`_stbb`, matched lamp) | at the round-10 floor |
+| mbtl_patctrl_chr001_p238f10 (zoom 1.5) | 1.67 | 1.67 | not worked this round |
+
+### Next
+- **Get rid of the lamp, don't model it.** Either hold the stage-21 lamp object's state (find its animation in the
+  stage script), or capture the game shot and the plate from one source with the lamp state matched (retry until the
+  probe at x 690–750, y 295–325 agrees), or move the MBTL rows to a stage without a light source near the fighters.
+- p238 at zoom 1.5: the zoomed-draw rule (camera scale about the floored origin) is still open. The offset is still
+  the round-13 fit.
