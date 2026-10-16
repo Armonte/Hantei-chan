@@ -297,25 +297,58 @@ test comes straight from the zip), clone + re-point round trip, slot preview equ
 
 ## 5. Shared recolour spec
 
-### 5.1 Format (JSON, versioned, one file per character, same file read by the bake tool and the runtime)
+### 5.1 Format: ini v1, colour model v1.2 (as shipped; the JSON sketch first drafted here was never implemented)
+
+Decision 2026-10-03: runtime only, lossless (no bake, no game data changes). One plain-text ini per character, read by the PovertyCaster runtime and
+written by Hantei-chan's CG manager "Effect recolor" tab. Authoritative: the runtime header `pc-adapters/mbaacc/include/mbaacc/FxRecolor.hpp`
+(PovertyCaster `origin/main`, vendored byte-identical as `src/cgm/fxr_spec.hpp`, checked with `tools/fxrecolor/fxr_sync.sh check`) and PovertyCaster
+`docs/fxrecolor_format.md`; the shared contract is `docs/cg/fxrecolor_config_spec.md`.
+
+File: `<MBAACC game folder>\fxrecolor\<char>.ini`, `<char>` = lowercase roster stem (`akiha`, `arc`, ...). A file replaces the compiled-in default set of that
+character (`FxRecolorDefaults.hpp`: arc, akiha; aoko empty). Hot-reloaded by the runtime (1 s poll).
 
 ```
-{ "version":1, "char":"aoko", "bank":"aoko.cg",
-  "ramps":{ "orbA":{ "stops":[[0.0,"#ffffff"],[0.5,"#4fa3ff"],[1.0,"#000"]], "n":48 }, ... },
-  "rules":[
-    { "id":"arc-projectile", "match":{ "patterns":[203,512], "spriteTypes":[4], "palettes":"*", "blend":"any" },
-      "map":{ "kind":"lumRamp", "by":"max", "ramp":"orbA", "slot":{ "kind":"followBodyAccent" } } },
-    { "id":"fire-rainbow", "match":{ "sprites":[804,805], "palettes":[0,1,2] },
-      "map":{ "kind":"rainbow", "hueBins":6, "steps":16, "ramps":["r0","r1","r2","r3","r4","r5"] } } ],
-  "bake":{ "target":"type0|type5|keepRgb", "cloneForPatterns":true } }
+[rule dgv_00_acc]                 ; one section per rule; first match wins, in file order
+patterns = 64,65                  ; HA6 pattern ids of the drawing object (empty / absent = any)
+sprites  = 18,19,1311             ; CG image ids (empty = any)
+slots    = 0,3-7                  ; owner palette slots 0..35 (empty / * = any)
+bank     = char                   ; any | char | effect (the object comes from effect.ha6)
+blend    = any                    ; any | game blend preset of the quad (1 normal, 2 additive, 3 subtract, ...)
+kind     = lumramp                ; lumramp | rainbow | hsl | hsv
+by       = lightness              ; lumramp / rainbow drive: lightness (Oklab L, default) | max | luma
+vrange   = 0.000,0.803            ; lumramp: source range mapped onto the ramp ends
+ramp     = #000000@0 accent.dark@0.33 accent@0.73 accent.light@0.97   ; stops: #rrggbb | accent | accent.dark | accent.light, optional @pos
+accent_idx = 8                    ; palette index the slot accent is read from (absent: the most vivid entry, marker green/magenta skipped)
+hsv      = 40,1.2,1.0             ; kind = hsl / hsv: hue shift (deg), saturation x, lightness (hsl) / value (hsv) x
+slot.3.accent = #ff8800           ; per-slot accent override
+slot.3.ramp   = #000000 #ff8800 #ffffff   ; per-slot whole-ramp override
+enabled  = 1
+space    = oklab                  ; informative only
 ```
-`match` fields are ANDed; absent = any. The runtime reads `match` + `map` directly (shader); the bake tool consumes `map` + `bake`.
+
+Matching: `patterns`, `sprites`, `slots`, `bank`, `blend` are ANDed; a rule with an empty list matches any value of that key. Only fixed-colour sprites
+(image type != 0) are recoloured; type 0 sprites already follow the slot palette and are never touched.
+
+Colour model (runtime c78ec288, v1.2):
+
+* Ramps live in **Oklab**. The stops are resolved per owner slot (accent tokens: `accent` = the slot's accent colour, `accent.dark` = L x 0.4 and chroma x 0.8,
+  `accent.light` = L + (1 - L) x 0.6 and chroma x 0.4), then sampled into `kRampN = 16` Oklab entries that go to the shader, linear between them.
+* `lumramp`: t = (drive(src) - vmin) / (vmax - vmin), drive = Oklab L (default), max channel or Rec.601 luma; the ramp at t gives the colour.
+* `rainbow`: the source's OkLCh hue picks the ramp entry (entry k = hue k/16); lightness and chroma of the source are kept.
+* `hsl`: **OkHSL** edit (hue shift, saturation x, lightness x); perceived lightness is kept at x = 1. The default hue / saturation edit.
+* `hsv`: OkHSV edit (picker style; V is not perceptual lightness).
+* Alpha and the game's blend preset are never changed, so additive / subtractive effects stay correct. The palette is read in the engine layout
+  (`0xAABBGGRR`, memory R,G,B,A).
+
+What Hantei-chan adds on top of the file (not stored in it): effect classification (type != 0 sprites per pattern, shared-sprite flags), accent index
+suggestion from the body palette (`accent_idx`), the DGV Akiha starter sets (fixed red: `docs/cg/effect_recolor_data/dgv_akiha.ini`; palette-following,
+accent tokens: `dgv_akiha_accent.ini`, `cgmtool fxr dgv --accent`), and the preview, which runs the header's `applyCpu` on the original pixels.
 
 ## 6. Runtime design (PovertyCaster, shader at effect draw time)
 
 ### 6.1 Config
 
-`<game>/recolor/<charname>.fxr.json` (+ `recolor/shared_effect.fxr.json` for effect.HA6 effects keyed by *owner* character), loaded at battle start and hot-reloaded (`PC_UI_LIVE` style).
+(Shipped: `<game>\fxrecolor\<char>.ini`, see 5.1; the plan below was the pre-implementation sketch.) `<game>/recolor/<charname>.fxr.json` (+ `recolor/shared_effect.fxr.json` for effect.HA6 effects keyed by *owner* character), loaded at battle start and hot-reloaded (`PC_UI_LIVE` style).
 Keyed lookup: (character id, owner palette slot, HA6 source: main / moon variant / effect.ha6, pattern id, sprite id, image type, blend preset) -> rule index; precomputed into a small hash on load so
 the per-quad cost is one lookup. Presets: per character `default` rule, per palette override list, per pattern override list.
 

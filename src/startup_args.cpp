@@ -272,7 +272,7 @@ static void RunUiScript(MainFrame &mf, HDC dc, const std::function<void(const st
 			if (!editCmd(cmd, arg)) { FILE *lf = fopen((gStartup.uiScript + ".log").c_str(), "a"); if (lf) { fprintf(lf, "script line %zu '%s' failed\n", pc, line.c_str()); fclose(lf); } }
 			waitFrames = 3; return;
 		}
-		if (cmd == "cgm") {   // cgm <open|tab|press|path|select|set|status> [arg]: the CG manager window (cgm_window.h Window::script)
+		if (cmd == "cgm") {   // cgm <open|tab|press|path|select|set|status|fxr ...> [arg]: the CG manager window (cgm_window.h Window::script)
 			const size_t s2 = arg.find(' ');
 			std::string msg; const bool ok = cgmScript(arg.substr(0, s2), s2 == std::string::npos ? "" : arg.substr(s2 + 1), &msg);
 			if (!ok) { FILE *lf = fopen((gStartup.uiScript + ".log").c_str(), "a"); if (lf) { fprintf(lf, "line %zu '%s': %s\n", pc, line.c_str(), msg.c_str()); fclose(lf); } }
