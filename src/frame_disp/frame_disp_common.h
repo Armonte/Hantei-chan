@@ -31,7 +31,7 @@ static inline bool PatternPickerButton(const char* id, int* value, FrameData* fr
 	if(im::BeginPopup("##patternPicker")) {
 		static char filter[64] = "";
 		if(im::IsWindowAppearing()) { filter[0] = 0; im::SetKeyboardFocusHere(); }
-		im::SetNextItemWidth(300.f);
+		im::SetNextItemWidth(ui::Px(300.f));
 		im::InputTextWithHint("##filter", "Filter by number or name", filter, sizeof(filter));
 		auto matches = [](const std::string& text, const char* f) {
 			if(!f[0]) return true;
@@ -40,7 +40,7 @@ static inline bool PatternPickerButton(const char* id, int* value, FrameData* fr
 			for(auto& c : b) c = (char)tolower((unsigned char)c);
 			return a.find(b) != std::string::npos;
 		};
-		if(im::BeginChild("##list", ImVec2(420.f, 320.f), ImGuiChildFlags_None)) {
+		if(im::BeginChild("##list", ImVec2(ui::Px(420.f), ui::Px(320.f)), ImGuiChildFlags_None)) {
 			for(int i = 0; i < extraCount; ++i) {
 				char buf[128];
 				snprintf(buf, sizeof(buf), "%d: %s", extra[i].value, extra[i].label);

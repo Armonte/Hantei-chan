@@ -1,5 +1,6 @@
 #ifndef EFFECT_ACTOR_H_GUARD
 #include "../../i18n.h"
+#include "effect_form.h"
 #include "../../ui/ui_style.h"
 #define EFFECT_ACTOR_H_GUARD
 
@@ -22,22 +23,19 @@ static inline void DrawEffectActor_Type8(Frame_EF& effect, FrameData* frameData,
 				"26: Charge [X]",
 			};
 
-			if(ShowComboWithManual("Actor", &no, actorTypes, IM_ARRAYSIZE(actorTypes), width*2, width)) {
+			if(EfComboManual("Actor", &no, actorTypes, IM_ARRAYSIZE(actorTypes), width*2, width)) {
 				markModified();
 			}
 
 			// Pattern dropdown (same as type 1)
-			im::SetNextItemWidth(width);
-			im::DragInt(LBL("Offset X"), &p[0]);
+			im::DragInt(EfRow(LBL("Offset X")), &p[0]);
 			if(im::IsItemEdited()) {
 				if (frameData && patternIndex >= 0) frameData->mark_modified(patternIndex);
 			}
 			if(im::IsItemDeactivatedAfterEdit()) {
 				markModified();
 			}
-			im::SameLine(0, 20);
-			im::SetNextItemWidth(width);
-			im::DragInt(LBL("Offset Y"), &p[1]);
+			im::DragInt(EfRow(LBL("Offset Y")), &p[1]);
 			if(im::IsItemEdited()) {
 				if (frameData && patternIndex >= 0) frameData->mark_modified(patternIndex);
 			}
@@ -101,8 +99,7 @@ static inline void DrawEffectActor_Type8(Frame_EF& effect, FrameData* frameData,
 			}
 
 			// Angle: EF8/108 take the same parameters as EF1 (MBAA_NAME_AUDIT.md 2.1); layout as in the Gonptechan EX fork.
-			im::SetNextItemWidth(width);
-			if(im::DragInt(LBL("Angle"), &p[7])) markModified();
+			if(im::DragInt(EfRow(LBL("Angle")), &p[7])) markModified();
 			im::SameLine(); im::TextDisabled("(?)");
 			if(im::IsItemHovered()) Tooltip("Clockwise rotation: 0=0°, 2500=90°, 5000=180°, 10000=360°");
 
