@@ -1,0 +1,104 @@
+# = mbtl_to_training.gcs with the battle stage pinned to ${STAGE} (render-match17). Needs the syms g_BattleStageSel / g_CurStageIndex.
+# MBTL: launch -> title -> Training CSS -> training battle with P1 = ${P1CHR}, P2 = ${P2CHR}, then frozen.
+# Variables: P1CHR, P2CHR (MBTL chara numbers; assumed equal to the chrNNN folder number, UNVERIFIED),
+#            MBTL_STEAMID (winsave folder, default 48034167). To hide P2, include mbtl_hide_p2.gcs afterwards.
+#
+# Hazard: on the title screen a mouse click on the banner (or a keyboard key) opens the Steam store page in the
+# user's browser (ShellExecuteA in Title_WaitAnyButton). This script never sends mouse/keyboard input there.
+include mbtl.gcs
+# MBTL-Improvement-Mod 0.4.2 (dinput8.dll) is installed instead of the old lumina winmm tool (2026-10-14). It hooks
+# d3d9 Present inline (MinHook), gamecap hooks the device vtable, so gamecap captures before MBTL-IM draws its UI.
+# Its update check would open a window: off for the run (restored afterwards).
+ini_set MBTL-IM/MBTL_IM.ini Mod CheckForUpdates 0
+# HIDECHARS=1 is the plate run: MBTL-IM draws no characters (same training start, same camera) -> backdrop plate
+let HIDECHARS 0
+ini_set MBTL-IM/MBTL_IM.ini Training HideCharacters ${HIDECHARS}
+let P1CHR 0
+let P2CHR 0
+let MBTL_STEAMID 48034167
+
+ini_set winsave/${MBTL_STEAMID}/_App.ini System Windowed 1
+ini_set winsave/${MBTL_STEAMID}/_App.ini System ScreenW 1280
+ini_set winsave/${MBTL_STEAMID}/_App.ini System ScreenH 720
+ini_set winsave/${MBTL_STEAMID}/_App.ini System UseVSync 0
+ini_set winsave/${MBTL_STEAMID}/_App.ini System DebWindow 0
+
+launch
+wait_window 60000
+place
+# MBTL crashes on the title when its (foreground-only) DInput mouse was never acquired: pin a zeroed mouse at
+# (0,0), away from the store banner, and mark it valid
+hold i32 g_MouseState 0
+hold i32 g_MouseState+4 0
+hold i32 g_MouseState+8 0
+hold i32 g_MouseState+12 0
+hold u8 g_MouseStateValid 1
+
+# Boot: add-content check (2) -> caution/logos (10) -> opening movie (still scene 10, sub-state 5) -> title (3).
+# The movie only ends by itself after its full length (> 2 min seen live), so skip it with one pad A
+# (Scene10_Caution_Update case 5: any button -> scene 3). Pad only: never mouse/keyboard on MBTL's title.
+# Tap A from the caution screen on (caution, notices, movie all advance on a pad button) until the title is up,
+# instead of waiting the notices out. tap_until checks before each tap, so nothing is pressed on the title itself.
+wait_mem u32 scene_id == SCENE_CAUTION 120000
+tap_until u32 scene_id == SCENE_TITLE A 180 3 20
+wait_mem u32 title_state == 3 60000
+wait_frames 30
+
+# Title -> Training character select, the game's own path (Title_ExecuteSelection case 8:
+# g_GameMode = 3, battle config reset, g_SceneId = 24). Side/device mapping set the way MainMenuCS init sets it.
+poke u32 cur_player_side 0
+poke i32 side_input_dev 0
+poke i32 side_input_dev+4 1
+poke i32 side_input_flag 0
+poke i32 side_input_flag+4 0
+call Title_SetSelection TITLE_SEL_TRAINING 0
+wait_mem u32 scene_id == SCENE_CHARASEL 15000
+wait_mem u32 game_mode == MODE_TRAINING 1000
+
+# Pin the character ids the VS-screen loader and the scripts read. The CSS writes them on confirm;
+# the agent rewrites them at every Present, so the VS worker (next scene) sees ours.
+hold i32 load_chara_p1 ${P1CHR}
+hold i32 load_chara_p2 ${P2CHR}
+hold i32 pdata_chara_p1 ${P1CHR}
+hold i32 pdata_chara_p2 ${P2CHR}
+# render-match17: pin the battle stage: g_BattleStageSel (MBTL IDB 0xAFC04C, a plain u32 value, not a pointer; 0 = random) is the index
+# VsLoad_LoadStageAndCharas 0x7C0BD0 passes to Stage_LoadByIndex 0x4F24F0 (g_StageNames[i], g_CurStageIndex 0xA2E47C)
+hold u32 g_BattleStageSel ${STAGE}
+wait_frames 60
+
+# Skip the CSS entirely: once it is interactive, write both slots and put it straight into "all decided" (state 8,
+# what case 3 does when both sides have confirmed); state 8's own finalize builds the battle config and switches to the
+# VS/load scene (Scene24_CharaSelect_Update 0x611D00). No menu input at all.
+wait_mem u32 css_state == CSS_INTERACTIVE 30000
+freeze
+poke i32 css_chara_p1 ${P1CHR}
+poke i32 css_chara_p2 ${P2CHR}
+poke u32 css_color_p1 0
+poke u32 css_color_p2 0
+poke u32 css_state_frame 0
+poke u32 css_state_enter 1
+poke u32 css_state CSS_DECIDED
+unfreeze
+hold i32 css_chara_p1 ${P1CHR}
+hold i32 css_chara_p2 ${P2CHR}
+wait_mem u32 scene_id == SCENE_VS 30000
+
+wait_mem u32 scene_id == SCENE_BATTLE 60000
+wait_mem u8 p1+OBJ_ACTIVE != 0 30000
+wait_mem u8 p2+OBJ_ACTIVE != 0 30000
+wait_frames 180
+unhold load_chara_p1
+unhold load_chara_p2
+unhold pdata_chara_p1
+unhold pdata_chara_p2
+unhold g_BattleStageSel
+peek u32 g_CurStageIndex stage_loaded
+unhold css_chara_p1
+unhold css_chara_p2
+peek u8 p1+OBJ_CHARA_NO p1_chara_no
+peek u8 p2+OBJ_CHARA_NO p2_chara_no
+peek i32 pdata_chara_p1 p1_pdata_chara
+peek i32 p1+OBJ_PATTERN p1_pattern
+assert_mem u32 game_mode == MODE_TRAINING
+echo "MBTL training ready: P1 ${P1CHR} vs P2 ${P2CHR}"
+freeze
