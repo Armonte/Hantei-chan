@@ -42,6 +42,24 @@ std::string FbmodStdReloadRequest(bool live)
 	return live ? "reloadstd live" : "reloadstd";
 }
 
+std::string FbmodPipeForGame(const std::string& game)
+{
+	return game == "mbtl" ? "fbmod-mbtl" : "fbmod-uni2";
+}
+
+std::string FbmodModsTarget(const std::string& modsDir, const std::string& rel)
+{
+	std::string r = rel;
+	for (char& c : r) if (c == '\\') c = '/';
+	while (r.rfind("./", 0) == 0) r.erase(0, 2);
+	if (r.empty() || r[0] == '/' || (r.size() > 1 && r[1] == ':')) return "";
+	if (r == ".." || r.rfind("../", 0) == 0 || r.find("/../") != std::string::npos) return "";
+	std::string m = modsDir;
+	for (char& c : m) if (c == '\\') c = '/';
+	if (!m.empty() && m.back() != '/') m.push_back('/');
+	return m + r;
+}
+
 FbmodReloadInfo FbmodParseReloadReply(const std::string& reply)
 {
 	FbmodReloadInfo info;

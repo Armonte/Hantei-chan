@@ -46,6 +46,20 @@ int main()
 	CHECK(FbmodParseReloadReply("ERROR reloadstd refused in session Offline").refused);
 	CHECK(!FbmodParseReloadReply("OK engine rebuild chr000: x; back in battle after 5 ms").stdReload);
 
+	// MBTL: the same shared files, routed to the MBTL pipe and the same relative path under its mods folder.
+	CHECK(FbmodPipeForGame("mbtl") == "fbmod-mbtl" && FbmodPipeForGame("uni2") == "fbmod-uni2");
+	CHECK(FbmodPipeForGame("") == "fbmod-uni2");
+	CHECK(FbmodIsSharedFile("script/btl_StdMoveTbl.txt") && FbmodIsSharedFile("data/BoundEff.txt"));
+	const std::string mbtlMods = "C:\\Program Files (x86)\\Steam\\steamapps\\common\\MELTY BLOOD TYPE LUMINA\\fbmod\\mods";
+	CHECK(FbmodModsTarget(mbtlMods, "script/btl_StdMoveTbl.txt") ==
+	      "C:/Program Files (x86)/Steam/steamapps/common/MELTY BLOOD TYPE LUMINA/fbmod/mods/script/btl_StdMoveTbl.txt");
+	CHECK(FbmodModsTarget(mbtlMods + "\\", "./data\\VectorTable.txt") ==
+	      "C:/Program Files (x86)/Steam/steamapps/common/MELTY BLOOD TYPE LUMINA/fbmod/mods/data/VectorTable.txt");
+	CHECK(FbmodModsTarget("m", "data/chr000/chr000_sc_0.txt") == "m/data/chr000/chr000_sc_0.txt");
+	CHECK(FbmodModsTarget("m", "../x.txt").empty() && FbmodModsTarget("m", "C:/x.txt").empty() && FbmodModsTarget("m", "/x").empty());
+	CHECK(FbmodModsTarget("m", "data/../../x.txt").empty());
+	CHECK(FbmodParseReloadReply("ERROR reloadstd is not available on mbtl").stdReload);
+
 	if (g_fail) return 1;
 	std::printf("fbmod_link_test: ok\n");
 	return 0;

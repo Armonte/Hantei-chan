@@ -314,7 +314,9 @@ struct ScriptPanel::Impl {
 		std::string mods = FbmodModsDir(ping.text);
 		if (mods.empty()) mods = ToU8(U8(t.gameDir) / "fbmod" / "mods");
 		// The file goes to the same game-relative path under the mods folder (fbmod's VFS serves it from there).
-		const fs::path dst = U8(mods) / U8(t.rel);
+		const std::string dstU8 = FbmodModsTarget(mods, t.rel);
+		if (dstU8.empty()) return {false, "not a game-relative path: " + t.rel};
+		const fs::path dst = U8(dstU8);
 		std::error_code ec;
 		fs::create_directories(dst.parent_path(), ec);
 		if (ec) return {false, "cannot create " + ToU8(dst.parent_path()) + ": " + ec.message()};
@@ -384,7 +386,7 @@ struct ScriptPanel::Impl {
 	void drawHotReload()
 	{
 		pollHot();
-		if (hotPipeGame != game || hotPipe.empty()) { hotPipeGame = game; hotPipe = game == "mbtl" ? "fbmod-mbtl" : "fbmod-uni2"; }
+		if (hotPipeGame != game || hotPipe.empty()) { hotPipeGame = game; hotPipe = FbmodPipeForGame(game); }
 		if (ImGui::Checkbox(LBL("Hot reload"), &gSettings.sqHotReload)) ImGui::MarkIniSettingsDirty();
 		if (ImGui::IsItemHovered()) ImGui::SetTooltip("%s", TXT("On save, copy the file into the game's fbmod mods folder and reload it in the running game (fbmod pipe). A data/chrNNN file reloads that character; a shared file (script/*.txt, data/_combase, VectorTable, BattleInfo, BoundEff) re-runs the shared battle scripts and tables, then reloads every character."));
 		if (!gSettings.sqHotReload) return;
@@ -1534,7 +1536,7 @@ bool ScriptPanel::scriptCommand(const std::string& sub, const std::string& arg, 
 			out = std::string("mode ") + (gSettings.sqHotReloadMode == 1 ? "live" : "rebuild");
 		}
 		else if (verb == "gamedir") { if (!rest.empty()) m->hotGameDirSetting() = rest; out = "game dir " + m->hotGameDir(); }
-		else if (verb == "ping") { Impl::HotTask t; t.pipe = m->hotPipe.empty() ? (m->game == "mbtl" ? "fbmod-mbtl" : "fbmod-uni2") : m->hotPipe; m->startHot(t); out = "ping " + t.pipe; }
+		else if (verb == "ping") { Impl::HotTask t; t.pipe = m->hotPipe.empty() ? FbmodPipeForGame(m->game) : m->hotPipe; m->startHot(t); out = "ping " + t.pipe; }
 		else out = std::string(m->hotBusy ? "busy: " : "") + (m->hotStatusOk ? "ok: " : "error: ") + m->hotStatus;
 	}
 	else if (sub == "problems") {

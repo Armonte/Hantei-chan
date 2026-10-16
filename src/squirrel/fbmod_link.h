@@ -54,6 +54,13 @@ std::string FbmodReloadRequest(const std::string& chr, bool live);
 bool FbmodIsSharedFile(const std::string& rel);
 // "reloadstd" (engine rebuild of every character) or "reloadstd live".
 std::string FbmodStdReloadRequest(bool live);
+// The fbmod pipe of a script-panel game profile: "mbtl" -> "fbmod-mbtl", anything else -> "fbmod-uni2" (fbmod runs
+// on UNI2 1.42 and MBTL only). Both games take the same requests (reloadchara, reloadstd [live]).
+std::string FbmodPipeForGame(const std::string& game);
+// Where a saved file goes under the fbmod mods folder: the same game-relative path (data/chrNNN/..., script/...,
+// data/VectorTable.txt). Both games read their archives as data/... and script/..., so no per-game prefix. "./" and
+// backslashes are normalised; "" for a path that leaves the folder ("..") or is absolute.
+std::string FbmodModsTarget(const std::string& modsDir, const std::string& rel);
 
 } // namespace sqedit
 
