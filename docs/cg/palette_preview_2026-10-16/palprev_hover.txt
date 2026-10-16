@@ -1,0 +1,15 @@
+# Palettes tab preview on UNI2 chr020 palette 3: grid cell 27 held as hovered (cgm set palHover) and selected; the preview dims every other index.
+openany C:/games/UNI2/data/chr020/chr020_0.txt
+wait 120
+cgm open
+wait 30
+cgm tab Palettes
+wait 20
+cgm set palNumber 3
+wait 20
+cgm set palSel 27
+wait 5
+cgm set palHover 27
+wait 20
+capture C:/dev/hantei-chan/work/ab/palprev_hover.png
+quit
