@@ -284,7 +284,7 @@ static void TestBlenderLink()
 	CHECK(s3d::BlenderImportExpr("", err).empty());
 	const std::string cl = s3d::BlenderCommandLine("C:/Program Files/Blender Foundation/Blender 4.5/blender.exe", "C:/s/bg.fbx.bin", err);
 	CHECK(cl.rfind("\"C:/Program Files/Blender Foundation/Blender 4.5/blender.exe\" --python-expr \"import addon_utils", 0) == 0);
-	CHECK(cl.size() > 2 && cl.substr(cl.size() - 2) == "')" + std::string("\""));
+	CHECK(cl.size() > 3 && cl.substr(cl.size() - 3) == "')\"");
 	CHECK(s3d::BlenderCommandLine("", "C:/s/bg.fbx.bin", err).empty());
 	const auto c = s3d::BlenderCandidates({"Blender 4.0", "Blender 4.10", "notes", "Blender 4.5", "Blender 3.6"});
 	CHECK(c.size() == 5);
