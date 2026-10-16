@@ -4,6 +4,7 @@
 # none = vanilla "before" run) are installed in <game>\<IM>\Mods\<key> only inside gamecap's game lock and restored before it
 # is released (cgmtex modsave / modrestore, as tools/cg/ingame_modfolder_boot.sh).
 #   tools/cg/showcase_ingame_boot.sh uni2|mbtl <out dir (WSL)> <button A|B|X|Y> [<key>=<file (WSL)>]...
+# Pad X is the game's A button on the default UNI2 / MBTL pad layout (pad A is D, the Shield), so 236+A is button X.
 set -u
 G="$1"; EV="$2"; BTN="$3"; shift 3; PAIRS=("$@"); P1=3; P2=5
 HERE="$(cd "$(dirname "$0")" && pwd)"; ROOT="$(cd "$HERE/../.." && pwd)"; TX="$ROOT/build/cgmtex.exe"
