@@ -1,6 +1,7 @@
 #include "chara_load.h"
 
 #include <map>
+#include <regex>
 
 namespace sqedit {
 
@@ -102,7 +103,7 @@ void InstallDevWarningObserver(HSQUIRRELVM v)
 }
 
 CharaLoadResult LoadCharacterScripts(HSQUIRRELVM v, const std::string& chrDirRel, LoadContext& ctx, const RunScriptFn& run,
-	const std::function<bool(const std::string& rel)>& exists)
+	const std::function<bool(const std::string& rel)>& exists, const std::function<std::string(const std::string& rel)>& readFile)
 {
 	CharaLoadResult r;
 	const size_t sl = chrDirRel.find_last_of('/');
@@ -111,11 +112,44 @@ CharaLoadResult LoadCharacterScripts(HSQUIRRELVM v, const std::string& chrDirRel
 	for (auto& c : CHR) c = (char)toupper((unsigned char)c);
 	const std::string base = chrDirRel + "/" + chr;
 
-	std::map<std::string, std::string> missing;   // move -> code
+	struct Miss { std::string code; std::vector<SourceRange> inits; };
+	std::map<std::string, Miss> missing;   // move -> what its template looked up
 	auto userMissing = ctx.onMissingPattern;
-	ctx.onMissingPattern = [&](int dt, const std::string& code, const std::string& move) {
-		if (!move.empty()) missing.emplace(move, (dt ? "effect:" : "") + code);
-		if (userMissing) userMissing(dt, code, move);
+	ctx.onMissingPattern = [&](int dt, const std::string& code, const std::string& move, const std::vector<SourceRange>& inits) {
+		if (!move.empty()) missing.emplace(move, Miss{(dt ? "effect:" : "") + code, inits});
+		if (userMissing) userMissing(dt, code, move, inits);
+	};
+	// Does any of the move's own Init functions call SetPattern with something other than -1? (its own pattern then wins
+	// over the template's SetPattern(-1)). Returns the first such line ("" when none).
+	std::map<std::string, std::vector<std::string>> fileLines;
+	auto setsPattern = [&](const std::vector<SourceRange>& inits, std::string* where) {
+		static const std::regex sp(R"(\bSetPattern\s*\(\s*([^)]*)\))");
+		for (const auto& r : inits) {
+			std::string rel = r.source.rfind("./", 0) == 0 ? r.source.substr(2) : r.source;
+			auto it = fileLines.find(rel);
+			if (it == fileLines.end()) {
+				std::vector<std::string> lines;
+				const std::string bytes = readFile(rel);
+				size_t s0 = 0;
+				for (size_t e; (e = bytes.find('\n', s0)) != std::string::npos; s0 = e + 1) lines.push_back(bytes.substr(s0, e - s0));
+				lines.push_back(bytes.substr(s0));
+				it = fileLines.emplace(rel, std::move(lines)).first;
+			}
+			for (int l = r.first; l >= 1 && l <= r.last && l <= (int)it->second.size(); ++l) {
+				std::string line = it->second[(size_t)l - 1];
+				const size_t c = line.find("//");
+				if (c != std::string::npos) line.resize(c);
+				std::smatch m;
+				if (std::regex_search(line, m, sp)) {
+					std::string arg = m[1].str();
+					while (!arg.empty() && arg.back() == ' ') arg.pop_back();
+					if (arg == "-1") continue;
+					*where = rel + ":" + std::to_string(l) + " (" + r.slot + ")";
+					return true;
+				}
+			}
+		}
+		return false;
 	};
 	ctx.objectPushed = false;
 	SetLoadContext(v, &ctx);
@@ -154,8 +188,11 @@ CharaLoadResult LoadCharacterScripts(HSQUIRRELVM v, const std::string& chrDirRel
 	ctx.onMissingPattern = userMissing;
 
 	r.commandMoves = CommandMoveNames(v, CHR + "_CommandTable");
-	for (const auto& [move, code] : missing) {
+	for (const auto& [move, miss] : missing) {
 		if (!r.commandMoves.count(move)) continue;   // standard-move probes and unreachable templates are by design
+		std::string where;
+		if (setsPattern(miss.inits, &where)) continue;   // the move's own Init sets its pattern afterwards
+		const std::string& code = miss.code;
 		const bool eff = code.rfind("effect:", 0) == 0;
 		r.issues.push_back({CharaLoadIssue::MissingPattern, base + "_mv_0.txt", 0, move,
 			move + " (a command starts it) uses pattern \"" + (eff ? code.substr(7) : code) + "\", which is not in the " +

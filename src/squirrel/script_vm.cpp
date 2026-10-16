@@ -335,7 +335,13 @@ CharaLoadResult ScriptVM::checkCharacter(const std::string& chrDirRel, LoadConte
 		std::error_code ec;
 		return rel == overrideRel || fs::exists(m->root / fs::u8path(rel), ec);
 	};
-	return LoadCharacterScripts(m->v, chrDirRel, ctx, run, exists);
+	auto read = [&](const std::string& rel) {
+		if (rel == overrideRel) return overrideBytes;
+		std::string b;
+		ReadFile(m->root / fs::u8path(rel), b);
+		return b;
+	};
+	return LoadCharacterScripts(m->v, chrDirRel, ctx, run, exists, read);
 }
 
 Diagnostic ScriptVM::compile(const std::string& bytes, const std::string& name)
