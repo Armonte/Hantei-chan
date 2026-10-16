@@ -1,0 +1,27 @@
+532,533c532,546
+< 	BOOL ok = PrintWindow(h, mdc, PW_CLIENTONLY | 2 /*PW_RENDERFULLCONTENT*/);
+< 	GdiFlush();
+---
+> 	// render-match18: PW_RENDERFULLCONTENT reads the DWM redirection surface, which intermittently comes back
+> 	// all black on the paused MBTL session (round 17: one shot or plate in most runs). Retry a black result.
+> 	BOOL ok = FALSE;
+> 	int tries = 0;
+> 	for (; tries < 8; tries++) {
+> 		if (tries) Sleep(60);
+> 		memset(bits, 0, (size_t)w * ht * 4);
+> 		ok = PrintWindow(h, mdc, PW_CLIENTONLY | 2 /*PW_RENDERFULLCONTENT*/);
+> 		GdiFlush();
+> 		if (!ok || !bits) break;
+> 		const uint32_t* px = (const uint32_t*)bits;
+> 		bool black = true;
+> 		for (size_t i = 0; i < (size_t)w * ht && black; i++) black = (px[i] & 0xFFFFFFu) == 0;
+> 		if (!black) break;
+> 	}
+540c553
+< 		msg = res ? "ok" : "write failed";
+---
+> 		msg = res ? (tries ? "ok (black retried " + std::to_string(tries) + "x)" : std::string("ok")) : "write failed";
+1047c1060
+< 			out("captured window %s", p.c_str());
+---
+> 			out("captured window %s (%s)", p.c_str(), msg.c_str());
