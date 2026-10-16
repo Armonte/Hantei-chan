@@ -1,0 +1,15 @@
+-- mbtl_patctrl_chr001_p238f10 sidecar zoom elem0 1.5000 elem1 1.5000 cam x 0 y 0
+-- mbtl_patctrl_chr001_p238f10 (editor zoom 1.5) vs REAL zoom 1.5 _z15sa, plate_b0, subpix 0,0
+mbtl_patctrl_chr001_p238f10: raw 3.12 / 4.4%  lit 3.12 / 4.4%  band+-1 0.27 / 0.0%  (61841 px, refine +0,+0)  
+-- mbtl_patctrl_chr001_p238f10 (editor zoom 1.5) vs zoom-1 _sa (round 19 fake row), plate_b0
+mbtl_patctrl_chr001_p238f10: raw 1.67 / 3.2%  lit 1.67 / 3.2%  band+-1 0.56 / 0.7%  (34178 px, refine +0,+0)  
+-- mbtl_patctrl_chr001_p277f0 sidecar zoom elem0 1.5000 elem1 1.5000 cam x 0 y 0
+-- mbtl_patctrl_chr001_p277f0 (editor zoom 1.5) vs REAL zoom 1.5 _z15sa, plate_b0, subpix 0,0
+mbtl_patctrl_chr001_p277f0: raw 3.50 / 11.8%  lit 3.50 / 11.8%  band+-1 0.03 / 0.1%  (22458 px, refine +0,+0) 
+-- mbtl_patctrl_chr001_p277f0 (editor zoom 1.5) vs zoom-1 _sa (round 19 fake row), plate_b0
+mbtl_patctrl_chr001_p277f0: raw 1.24 / 5.8%  lit 1.24 / 5.8%  band+-1 0.39 / 1.7%  (9931 px, refine +0,+0)  fr
+-- mbtl_flipV_chr001_p157f2 sidecar zoom elem0 1.5000 elem1 1.5000 cam x 0 y 0
+-- mbtl_flipV_chr001_p157f2 (editor zoom 1.5) vs REAL zoom 1.5 _z15sa, plate_b0, subpix 0,0
+mbtl_flipV_chr001_p157f2: raw 8.22 / 28.0%  lit 8.22 / 28.0%  band+-1 1.87 / 5.5%  (79818 px, refine +0,+0)  f
+-- mbtl_flipV_chr001_p157f2 (editor zoom 1.5) vs zoom-1 _sa (round 19 fake row), plate_b0
+mbtl_flipV_chr001_p157f2: raw 4.52 / 18.1%  lit 4.52 / 18.1%  band+-1 1.95 / 5.4%  (35346 px, refine +0,+0)  f
