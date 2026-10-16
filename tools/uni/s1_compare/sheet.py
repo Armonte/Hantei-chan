@@ -142,6 +142,8 @@ def game_transform(meta):
         zf, zi = meta['cam_f32'][e + 5], meta['cam_i32'][e + 5]
         zoom = zf if 0.05 < abs(zf) < 20 else (zi / 1000.0 if zi else 1.0)
         wx = meta['p1_x'] + meta.get('p1_offx', 0); wy = meta['p1_y'] + meta.get('p1_offy', 0)
+        if MBTL_SNAP_ORIGIN:  # render-match17: Han6Object_Draw floors the object position to whole sprite px (sar 7)
+            wx, wy = (int(wx) >> 7) * 128, (int(wy) >> 7) * 128
         return (640 + (wx - camx) * zoom / 128.0, 640 + (wy - camy) * zoom / 128.0), (zoom, zoom)
     m = meta['screen_matrix']
     px = (meta['p1_x'] + meta.get('p1_offx', 0)) * meta['scale_common']
@@ -226,6 +228,12 @@ def grid_mask(K, Wh):
 
 
 AXIS_FIX = False  # v2_model sets it: correct the editor's additive axis lines instead of dropping them
+# render-match17: MBTL Han6Object_Draw 0x597070 (MBTL IDB; UNI2 CharaObj_DrawLayersWithLight is the same code) takes the
+# draw origin as (obj x >> 7, obj y >> 7): world units floored to whole sprite px before the camera / zoom matrix.
+# mbtl_patctrl_chr001_p238f10 (p1_y -500 -> -4 px, origin y 636 at zoom 1, not 636.094) is 0.71 with the unfloored
+# origin (a 0.094 px bilinear blur, 4.66 on the opaque tray edges) and 0.26 floored (tray 0.01). Rows with p1_y 0 are
+# unchanged.
+MBTL_SNAP_ORIGIN = True
 EXACT_REG = False  # v2_model --exact-reg (render-match10): registration independent of the footprint bbox
 SUBPIX = (0.0, 0.0)  # render-match11: (dx, dy) game px added to the EXACT_REG registration (prediction moves by +d);
                      # fitted on a control (v2_model --subpix-fit) and applied unchanged to that control's cases
