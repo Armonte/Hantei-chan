@@ -184,9 +184,12 @@ void MainFrame::DrawUi()
 			ImGui::DockBuilderSetNodeSize(dockspaceID, clientRect);
 
 			ImGuiID toSplit = dockspaceID;
-			ImGuiID dock_left_id = ImGui::DockBuilderSplitNode(toSplit, ImGuiDir_Left, 0.30f, nullptr, &toSplit);
-			ImGuiID dock_right_id = ImGui::DockBuilderSplitNode(toSplit, ImGuiDir_Right, 0.45f, nullptr, &toSplit);
-			ImGuiID dock_down_id = ImGui::DockBuilderSplitNode(toSplit, ImGuiDir_Down, 0.25f, nullptr, &toSplit);
+			// Default split (docs/ui/LAYOUT_AUDIT_2026-10-16.md): the left pane (pattern list + collapsed trees) gave 30% of
+			// the width to mostly empty space while the bottom Box pane at 25% hid its Timeline below 1080p; the view keeps
+			// the same share, the Box pane gets the height its two sections need.
+			ImGuiID dock_left_id = ImGui::DockBuilderSplitNode(toSplit, ImGuiDir_Left, 0.24f, nullptr, &toSplit);
+			ImGuiID dock_right_id = ImGui::DockBuilderSplitNode(toSplit, ImGuiDir_Right, 0.44f, nullptr, &toSplit);
+			ImGuiID dock_down_id = ImGui::DockBuilderSplitNode(toSplit, ImGuiDir_Down, 0.34f, nullptr, &toSplit);
 			ImGuiID dock_pat_right_id = ImGui::DockBuilderSplitNode(toSplit, ImGuiDir_Right, 0.60f, nullptr, &toSplit);
 
 			ImGuiID texture_dock = ImGui::DockBuilderSplitNode(dock_down_id, ImGuiDir_Right, 0.50f, nullptr, &dock_down_id);
@@ -494,7 +497,7 @@ void MainFrame::DrawUi()
 		// could open the inspector as its own OS window off the main one.
 		const ImVec2 mainPos = ImGui::GetMainViewport()->Pos;
 		ImGui::SetNextWindowPos(ImVec2(mainPos.x + 80.0f, mainPos.y + 80.0f), ImGuiCond_FirstUseEver);
-		ImGui::SetNextWindowSize(ImVec2(540.0f, 640.0f), ImGuiCond_FirstUseEver);
+		ui::FitNextWindow(540.0f, 640.0f);
 		ImGui::Begin(LBL("Background Inspector"), nullptr, 0);
 		// Editing here is stage editing: route Ctrl+Z/Y/S to the stage.
 		if (ImGui::IsWindowFocused(ImGuiFocusedFlags_RootAndChildWindows))

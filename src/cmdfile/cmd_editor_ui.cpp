@@ -1,4 +1,5 @@
 #include "cmd_editor_ui.h"
+#include "../ui/ui_style.h"
 
 #include "cmd_io.h"
 #include "cmd_notes.h"
@@ -269,7 +270,7 @@ bool CommandFileEditor::requestSaveFocused()
 
 void CommandFileEditor::View::drawWindow(const std::string& title, const DocumentChanged& onChanged)
 {
-	ImGui::SetNextWindowSize(ImVec2(1100, 720), ImGuiCond_FirstUseEver);
+	ui::FitNextWindow(1100, 720);
 	if (focus) { ImGui::SetNextWindowFocus(); focus = false; }
 	bool keepOpen = true;
 	const bool visible = ImGui::Begin(title.c_str(), &keepOpen, ImGuiWindowFlags_NoCollapse);

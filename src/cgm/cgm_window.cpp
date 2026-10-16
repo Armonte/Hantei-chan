@@ -1,4 +1,5 @@
 #include "cgm_window.h"
+#include "../ui/ui_style.h"
 #include "../cg.h"
 #include "../character_instance.h"
 #include "../i18n.h"
@@ -691,7 +692,7 @@ void Window::clickBlock(const ImVec2 &p0, float z, int x1, int y1) {
 
 void Window::draw(CharacterInstance *ch, const WindowHost &host) {
 	if (!open) return;
-	ImGui::SetNextWindowSize(ImVec2(1200, 820), ImGuiCond_FirstUseEver);
+	ui::FitNextWindow(1200, 820);
 	if (!ImGui::Begin(LBL("CG manager"), &open)) { ImGui::End(); return; }
 	if (!ch || !ch->cg.m_loaded) { ImGui::TextDisabled("%s", TXT("The active character has no CG bank.")); ImGui::End(); return; }
 	if (owner != ch || cgGen != ch->cg.generation()) rebuild(*ch);

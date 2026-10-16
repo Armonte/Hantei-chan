@@ -1,5 +1,6 @@
 // 3D stage view, see s3d_view.h and docs/stage3d/SCOPE.md.
 #include "s3d_view.h"
+#include "../ui/ui_style.h"
 
 #include "s3d_bglist.h"
 #include "s3d_dds.h"
@@ -551,7 +552,7 @@ void BlenderPrefsItems()
 {
 	char path[512];
 	snprintf(path, sizeof path, "%s", gSettings.blenderPath.c_str());
-	ImGui::SetNextItemWidth(360);
+	ImGui::SetNextItemWidth(ui::PathFieldW());
 	if (ImGui::InputTextWithHint(LBL("Blender executable"), TXT("auto-detect"), path, sizeof path)) {
 		gSettings.blenderPath = path;
 		ImGui::MarkIniSettingsDirty();
@@ -562,7 +563,7 @@ void BlenderPrefsItems()
 		if (!d.empty()) { gSettings.blenderPath = d; ImGui::MarkIniSettingsDirty(); }
 		HC_LOG_INFO("stage3d: blender auto-detect: {}", d.empty() ? std::string("none") : d);
 	}
-	ImGui::TextDisabled("%s", TXT("Used by the 3D Stage view's Open in Blender (MBTL_fbx_json add-on, Blender 5.2). Missing or empty: newest Blender found."));
+	ui::HelpMarker(TXT("Used by the 3D Stage view's Open in Blender (MBTL_fbx_json add-on, Blender 5.2). Missing or empty: newest Blender found."));
 }
 
 void MenuItem()
@@ -574,15 +575,22 @@ void Draw()
 {
 	if (!show) return;
 	State& s = *S();
-	ImGui::SetNextWindowSize(ImVec2(900, 640), ImGuiCond_FirstUseEver);
+	ui::FitNextWindow(1000, 760);
 	if (!ImGui::Begin(LBL("3D Stage"), &show)) { ImGui::End(); return; }
-	ImGui::SetNextItemWidth(360);
-	ImGui::InputText(LBL("bg folder"), s.bgDir, sizeof(s.bgDir));
+	// Source row, label first like the parameter grid below: "bg folder [path] Scan  stage [combo] Load"
+	ImGui::AlignTextToFramePadding();
+	ImGui::TextUnformatted(TXT("bg folder"));
+	ImGui::SameLine();
+	ImGui::SetNextItemWidth(ui::PathFieldW());
+	ImGui::InputText("##bgfolder", s.bgDir, sizeof(s.bgDir));
 	ImGui::SameLine();
 	if (ImGui::Button(LBL("Scan"))) { std::string err; s3d::LoadBgListFile(std::string(s.bgDir) + "/BgList.txt", s.list, err); }
+	i18n::SameLineFit(ui::Em(3.f) + ui::WideFieldW(), ui::Em(1.f));
+	ImGui::AlignTextToFramePadding();
+	ImGui::TextUnformatted(TXT("stage"));
 	ImGui::SameLine();
-	ImGui::SetNextItemWidth(160);
-	if (ImGui::BeginCombo(LBL("stage"), s.dataFile.c_str())) {
+	ImGui::SetNextItemWidth(ui::WideFieldW());
+	if (ImGui::BeginCombo("##stage", s.dataFile.c_str())) {
 		// BgList entries with a model (bg.fbx.bin, UNIEL enciphered included, or the ASCII bg.fbx), then stage folders
 		// BgList does not name (no / unreadable BgList, ASCII-only DFCI / UNIB folders)
 		const std::vector<std::string> folders = s3d::ScanStageFolders(s.bgDir);
@@ -603,11 +611,11 @@ void Draw()
 	ImGui::SameLine();
 	if (ImGui::Button(s.loaded ? "Reload" : "Load")) Load(s, s.bgDir, s.dataFile);
 	if (s.loaded) {
-		ImGui::SameLine();
+		i18n::SameLineFit(i18n::ButtonWidth(TXT("Open in Blender")), ui::Em(1.f));
 		std::string cmd;
 		if (ImGui::Button(LBL("Open in Blender"))) LaunchBlender(s, cmd);
 		if (ImGui::IsItemHovered()) ImGui::SetTooltip("%s", TXT("Start Blender with the MBTL_fbx_json add-on importing this stage. Its export writes bg.fbx.bin back into the stage folder."));
-		ImGui::SameLine();
+		i18n::SameLineFit(i18n::ButtonWidth(TXT("Reload from Blender")));
 		if (Now() - s.lastDiskCheck > 1.0) {   // poll the model file's write time once a second
 			s.lastDiskCheck = Now();
 			const bool was = s.changedOnDisk;
@@ -620,31 +628,41 @@ void Draw()
 	}
 	if (!s.error.empty()) ImGui::TextColored(ImVec4(1, 0.4f, 0.4f, 1), "%s", s.error.c_str());
 	if (s.loaded) {
-		ImGui::Text("%s %s | %u nodes, %u meshes (%u additive, %u animated), %u tris | FOV %.1f, scale %.3g, pos %.3g %.3g %.3g, fog %s %.0f..%.0f",
+		ImGui::PushStyleColor(ImGuiCol_Text, ImGui::GetStyle().Colors[ImGuiCol_TextDisabled]);
+		ImGui::TextWrapped("%s %s | %u nodes, %u meshes (%u additive, %u animated), %u tris | FOV %.1f, scale %.3g, pos %.3g %.3g %.3g, fog %s %.0f..%.0f",
 			s.loadedName.c_str(), s.nameUtf8.c_str(), s.stats.nodes, s.stats.meshes, s.stats.additive, s.stats.animated, s.stats.triangles, s.params.fov,
 			s.params.scale[0], s.params.position[0], s.params.position[1], s.params.position[2], s.params.fog ? "on" : "off", s.params.fogStart, s.params.fogEnd);
-		ImGui::SetNextItemWidth(120); ImGui::DragFloat(LBL("cam x (px)"), &s.camX, 1.f); ImGui::SameLine();
-		ImGui::SetNextItemWidth(120); ImGui::DragFloat(LBL("cam y (px)"), &s.camY, 1.f); ImGui::SameLine();
-		ImGui::SetNextItemWidth(120); ImGui::DragFloat(LBL("zoom"), &s.zoom, 0.005f, 0.2f, 4.f); ImGui::SameLine();
-		ImGui::SetNextItemWidth(120); ImGui::DragFloat(LBL("FOV override"), &s.fovOverride, 0.1f, 0.f, 120.f); ImGui::SameLine();
-		ImGui::Checkbox(LBL("fog"), &s.fog); ImGui::SameLine();
-		ImGui::SetNextItemWidth(140); ImGui::Combo(LBL("cull"), &s.cull, "none\0clockwise\0counter-clockwise\0");
-		ImGui::SetNextItemWidth(120); ImGui::DragFloat(LBL("lift"), &s.lift, 0.005f, -1.f, 1.f); ImGui::SameLine();
-		ImGui::SetNextItemWidth(120); ImGui::DragFloat(LBL("contrast"), &s.contrast, 0.005f, 0.f, 4.f); ImGui::SameLine();
-		if (ImGui::Checkbox(LBL("play"), &s.play)) { s.playStart = Now(); s.playStartFrame = s.frame; }
-		ImGui::SameLine();
-		ImGui::SetNextItemWidth(160); ImGui::DragInt(LBL("frame (30 fps)"), &s.frame, 1.f, 0, 100000);
+		ImGui::PopStyleColor();
+		// View parameters: label-first cells in a grid that reflows with the window width (was a row of value-then-label
+		// fields of fixed pixel widths that ran off the window and clipped in Japanese).
+		if (ui::BeginFormGrid("##s3dview", 5)) {
+			ui::FormCell(TXT("cam x (px)")); ImGui::DragFloat("##camx", &s.camX, 1.f);
+			ui::FormCell(TXT("cam y (px)")); ImGui::DragFloat("##camy", &s.camY, 1.f);
+			ui::FormCell(TXT("zoom")); ImGui::DragFloat("##zoom", &s.zoom, 0.005f, 0.2f, 4.f);
+			ui::FormCell(TXT("FOV override")); ImGui::DragFloat("##fov", &s.fovOverride, 0.1f, 0.f, 120.f);
+			ui::FormCell(TXT("cull")); ImGui::Combo("##cull", &s.cull, "none\0clockwise\0counter-clockwise\0");
+			ui::FormCell(TXT("lift")); ImGui::DragFloat("##lift", &s.lift, 0.005f, -1.f, 1.f);
+			ui::FormCell(TXT("contrast")); ImGui::DragFloat("##contrast", &s.contrast, 0.005f, 0.f, 4.f);
+			ui::FormCell(TXT("frame (30 fps)")); ImGui::DragInt("##frame", &s.frame, 1.f, 0, 100000);
+			ImGui::TableNextColumn(); ImGui::Checkbox(LBL("fog"), &s.fog);
+			ImGui::TableNextColumn();
+			if (ImGui::Checkbox(LBL("play"), &s.play)) { s.playStart = Now(); s.playStartFrame = s.frame; }
+			ui::EndFormGrid();
+		}
 		if (s.play) s.frame = s.playStartFrame + int((Now() - s.playStart) * 30.0);
 		ImGui::Checkbox(LBL("MBAACC alignment"), &s.align);
-		if (ImGui::IsItemHovered()) ImGui::SetTooltip("%s", TXT("Show the stage as an MBAACC port sees it: the centre 4:3 of the frame (same vertical FOV), driven by MBAACC's 2D camera, with its floor row, walls and a fighter-height ruler. Tune, then write stage3d.ini for PovertyCaster's pc-stage3d."));
+		ui::HelpMarker(TXT("Show the stage as an MBAACC port sees it: the centre 4:3 of the frame (same vertical FOV), driven by MBAACC's 2D camera, with its floor row, walls and a fighter-height ruler. Tune, then write stage3d.ini for PovertyCaster's pc-stage3d."));
 		if (s.align) {
-			ImGui::SetNextItemWidth(110); ImGui::DragFloat(LBL("MBAACC cam x"), &s.mbCamX, 1.f, -s3d::AlignCamLimit(s.mbZoom), s3d::AlignCamLimit(s.mbZoom), "%.0f"); ImGui::SameLine();
-			ImGui::SetNextItemWidth(110); ImGui::DragFloat(LBL("MBAACC zoom"), &s.mbZoom, 0.005f, 0.5f, 1.5f); ImGui::SameLine();
-			ImGui::SetNextItemWidth(110); ImGui::DragFloat(LBL("fighter scale"), &s.fighterScale, 0.005f, 0.3f, 2.f); ImGui::SameLine();
-			ImGui::SetNextItemWidth(110); ImGui::DragFloat(LBL("center x (units)"), &s.centerX, 0.01f); ImGui::SameLine();
-			ImGui::SetNextItemWidth(110); ImGui::DragFloat(LBL("floor row"), &s.floorPx, 0.5f, 300.f, 480.f, "%.1f"); ImGui::SameLine();
-			ImGui::SetNextItemWidth(110); ImGui::DragFloat(LBL("y bias"), &s.yBias, 0.25f, -60.f, 60.f, "%.2f"); ImGui::SameLine();
-			ImGui::SetNextItemWidth(110); ImGui::InputInt(LBL("replaces slot"), &s.replaces);
+			if (ui::BeginFormGrid("##s3dalign", 4)) {
+				ui::FormCell(TXT("MBAACC cam x")); ImGui::DragFloat("##mbcamx", &s.mbCamX, 1.f, -s3d::AlignCamLimit(s.mbZoom), s3d::AlignCamLimit(s.mbZoom), "%.0f");
+				ui::FormCell(TXT("MBAACC zoom")); ImGui::DragFloat("##mbzoom", &s.mbZoom, 0.005f, 0.5f, 1.5f);
+				ui::FormCell(TXT("fighter scale")); ImGui::DragFloat("##fscale", &s.fighterScale, 0.005f, 0.3f, 2.f);
+				ui::FormCell(TXT("center x (units)")); ImGui::DragFloat("##centerx", &s.centerX, 0.01f);
+				ui::FormCell(TXT("floor row")); ImGui::DragFloat("##floorrow", &s.floorPx, 0.5f, 300.f, 480.f, "%.1f");
+				ui::FormCell(TXT("y bias")); ImGui::DragFloat("##ybias", &s.yBias, 0.25f, -60.f, 60.f, "%.2f");
+				ui::FormCell(TXT("replaces slot")); ImGui::InputInt("##replaces", &s.replaces);
+				ui::EndFormGrid();
+			}
 			if (ImGui::Button(LBL("Write stage3d.ini..."))) WriteAlignIni(s);
 			if (!s.alignStatus.empty()) { ImGui::SameLine(); ImGui::TextUnformatted(s.alignStatus.c_str()); }
 			// MBAACC's camera clamp depends on zoom (|cam| <= 528 - 320/zoom), so the picture never shows past its walls
@@ -658,6 +676,7 @@ void Draw()
 		if (s.align) {
 			DrawAlignView(s, avail);
 		} else if (const float sc = std::min(avail.x / s.rt.width(), avail.y / s.rt.height()); sc > 0.f) {
+			ImGui::SetCursorPosX(ImGui::GetCursorPosX() + std::max(0.f, (avail.x - s.rt.width() * sc) * 0.5f));
 			ImGui::Image((ImTextureID)(intptr_t)s.rt.texture(), ImVec2(s.rt.width() * sc, s.rt.height() * sc), ImVec2(0, 1), ImVec2(1, 0));
 			// Interactive fight camera: drag pans (game px of the 1280x720 frame), wheel zooms about the frame, double-click
 			// resets. Same state the cam fields above edit, so values can still be typed exactly.
@@ -682,6 +701,7 @@ void DrawAlignView(State& s, ImVec2 avail)
 {
 	const float sc = std::min(avail.x / 640.f, avail.y / 480.f);
 	if (sc <= 0.f) return;
+	ImGui::SetCursorPosX(ImGui::GetCursorPosX() + std::max(0.f, (avail.x - 640.f * sc) * 0.5f));
 	const ImVec2 o = ImGui::GetCursorScreenPos();
 	ImGui::Image((ImTextureID)(intptr_t)s.rt.texture(), ImVec2(640.f * sc, 480.f * sc), ImVec2(0.125f, 1.f), ImVec2(0.875f, 0.f));
 	ImDrawList* dl = ImGui::GetWindowDrawList();
