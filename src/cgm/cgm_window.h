@@ -83,6 +83,7 @@ private:
 		int shownId = -1; unsigned long long idxGen = ~0ull;   // image whose indices are cached / CG generation they came from
 		std::vector<uint8_t> idx; int w = 0, h = 0;            // 1 byte per pixel palette indices
 		Thumb tex; uint64_t texKey = 0;      // RGBA upload, keyed on the colours + hover
+		int scriptHover = -1;                // --ui-script "cgm set palHover": a grid cell held as hovered (screenshots)
 		int hover = -1;                      // palette index under the mouse in the preview (last frame), outlined in the grid
 	} pp;
 	// Palette indices drawn by any 8-bit CG image (counted a few images per frame) and the PPPA tint slots of the .pat parts.
