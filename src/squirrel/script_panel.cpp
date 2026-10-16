@@ -194,8 +194,8 @@ using PatRef = ScriptPanel::PatRef;
 // What each engine table is for (modder notes, BootySama 2026-10-15); script tables are labelled from the index.
 const char* EngineTableNote(const std::string& t)
 {
-	if (t == "BMvCore") return "engine: core battle data (both players, stage and other essentials)";
-	if (t == "BMvTbl") return "engine: the current move's data (read, compare and set values for MVs, stage status)";
+	if (t == "BMvCore") return "engine: core battle data (P1/P2, stages and other essentials)";
+	if (t == "BMvTbl") return "engine: move data holder (edit, compare and check values for MVs, stage status)";
 	if (t == "BMvEff") return "engine: effects and their special flags";
 	if (t == "BCMDTbl") return "engine: command input checks";
 	return "engine native (from the game executable)";
@@ -641,6 +641,13 @@ struct ScriptPanel::Impl {
 			ImGui::TextUnformatted(head.c_str());
 			ImGui::TextDisabled("  %s:%d", d->file.c_str(), d->line + 1);
 			if (!d->doc.empty()) ImGui::TextUnformatted(d->doc.c_str());
+			if (d->kind == ScriptDef::Function) {   // script wrappers: which engine natives they build on
+				const std::string calls = EngineCallsOf(*d);
+				if (!calls.empty()) {
+					ImGui::TextColored(EngineCol(), "Calls engine:"); ImGui::SameLine();
+					ImGui::TextUnformatted(calls.c_str());
+				}
+			}
 		}
 		if (!defs.empty()) ImGui::TextDisabled("Ctrl+click / F12: go to definition, Shift+F12: find usages");
 		ImGui::PopTextWrapPos();
@@ -928,6 +935,47 @@ struct ScriptPanel::Impl {
 		indexGen++;
 		say("added a blank move table " + name + " to " + fixFile + " (saved, backup kept)");
 		return true;
+	}
+
+	// The engine natives a script function's body calls ("BMvTbl.GetPosition, BMvEff.GetCameraRect"), from its definition
+	// line to the brace that closes it; cached per definition.
+	std::map<std::string, std::string> engineCallsCache;
+	std::string EngineCallsOf(const ScriptDef& d)
+	{
+		const std::string key = d.file + ":" + std::to_string(d.line) + ":" + std::to_string(indexGen);
+		const auto hit = engineCallsCache.find(key);
+		if (hit != engineCallsCache.end()) return hit->second;
+		const auto* lines = index.lines(d.file);
+		std::vector<std::string> found;
+		if (lines) {
+			static const std::regex call(R"(\b([A-Z]\w*)\.([A-Za-z_]\w*)\s*\()");
+			int depth = 0;
+			bool opened = false;
+			for (size_t i = static_cast<size_t>(d.line); i < lines->size() && i < static_cast<size_t>(d.line) + 2000; ++i) {
+				std::string l = (*lines)[i];
+				const size_t c = l.find("//");
+				if (c != std::string::npos) l.resize(c);
+				if (i == static_cast<size_t>(d.line)) {   // skip the parameter list: default values like tbl={} are not the body
+					const size_t close = l.rfind(')');
+					if (close != std::string::npos) l = l.substr(close + 1);
+				}
+				for (std::sregex_iterator it(l.begin(), l.end(), call), e; it != e; ++it) {
+					if (!apiByTable.count((*it)[1].str())) continue;   // only engine tables
+					const std::string q = (*it)[1].str() + "." + (*it)[2].str();
+					if (std::find(found.begin(), found.end(), q) == found.end()) found.push_back(q);
+				}
+				for (char ch : l) {
+					if (ch == '{') { depth++; opened = true; }
+					else if (ch == '}') depth--;
+				}
+				if (opened && depth <= 0) break;
+			}
+		}
+		std::string out;
+		for (size_t i = 0; i < found.size() && i < 12; ++i) out += (i ? ", " : "") + found[i];
+		if (found.size() > 12) out += ", ... (" + std::to_string(found.size()) + ")";
+		engineCallsCache[key] = out;
+		return out;
 	}
 
 	// The identifier under the cursor / mouse, and the table it is reached through ("BMvTbl" in BMvTbl.GetPosition).
@@ -1365,6 +1413,18 @@ bool ScriptPanel::scriptCommand(const std::string& sub, const std::string& arg, 
 		const auto r = refsToPattern(ToU8(U8(m->root) / U8(dir)), pat, code);
 		out = std::to_string(r.size()) + " script line(s)";
 		for (size_t i = 0; i < r.size() && i < 10; ++i) out += "\n  " + r[i].file + ":" + std::to_string(r[i].line + 1) + " " + r[i].text;
+	}
+	else if (sub == "hover") {   // hover <Owner.name | name>: what the hover shows for a script definition
+		const size_t dot = arg.rfind('.');
+		const std::string own = dot == std::string::npos ? "" : arg.substr(0, dot), name = dot == std::string::npos ? arg : arg.substr(dot + 1);
+		for (const ScriptDef* d : m->defsFor(name, own)) {
+			out += "[script] " + (d->owner.empty() ? "" : d->owner + ".") + d->name + "(" + d->params + ")  " + d->file + ":" + std::to_string(d->line + 1);
+			if (!d->doc.empty()) out += "\n  doc: " + d->doc;
+			const std::string calls = m->EngineCallsOf(*d);
+			if (!calls.empty()) out += "\n  calls engine: " + calls;
+			out += "\n";
+		}
+		if (m->apiByTable.count(arg)) out += "[engine] " + arg + ": " + EngineTableNote(arg);
 	}
 	else if (sub == "hide") m_visible = false;
 	else if (sub == "check") {   // the Check button: compile, then (MBTL character files) the game's character load

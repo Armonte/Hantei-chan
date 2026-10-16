@@ -1,0 +1,8 @@
+sq open C:/dev/hantei-chan/gamedata/uni2
+sq hover Battle_Std.GetHaimenGamenHajiDistance
+sq hover BMvTbl
+sq hover BMvCore
+sq hover BMvEff
+sq open C:/dev/hantei-chan/gamedata/mbtl
+sq hover Battle_Std.GetHaimenGamenHajiDistance
+quit
