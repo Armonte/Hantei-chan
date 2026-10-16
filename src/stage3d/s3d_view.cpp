@@ -9,6 +9,7 @@
 #include "s3d_align.h"
 
 #include "../app_log.h"
+#include "../misc.h"   // sj2utf8: BgList.txt is cp932 in every FB game (UNI2, MBTL, DFCI, UNIB)
 #include "../i18n.h"
 #include "../ini.h"
 #include "../png_writer.h"
@@ -237,7 +238,7 @@ bool Load(State& s, const std::string& bgDir, const std::string& dataFile)
 	if (!s3d::LoadBgListFile(bgDir + "/BgList.txt", s.list, err)) HC_LOG_WARN("stage3d: BgList: {}", err);
 	const s3d::BgEntry* e = s.list.byDataFile(dataFile);
 	s.params = e ? s3d::ParamsFrom(*e) : s3d::StageParams{};
-	s.nameUtf8 = e ? AnsiToUtf8(e->str("Name")) : std::string();
+	s.nameUtf8 = e ? sj2utf8(e->str("Name")) : std::string();
 	const std::string dir = bgDir + "/" + dataFile;
 	std::string used;
 	// bg.fbx.bin (UNI2, MBTL) or the ASCII bg.fbx (DFCI, the UNI[st]/[cl-r] arcade build)
@@ -592,7 +593,7 @@ void Draw()
 			for (size_t i = 0; i < folders.size(); ++i)
 				if (!df.empty() && SameNameNoCase(folders[i], df)) { found = true; named[i] = true; }
 			if (!found) continue;
-			const std::string label = df + "  " + AnsiToUtf8(e.str("Name"));
+			const std::string label = df + "  " + sj2utf8(e.str("Name"));
 			if (ImGui::Selectable(label.c_str(), df == s.dataFile)) Load(s, s.bgDir, df);
 		}
 		for (size_t i = 0; i < folders.size(); ++i)

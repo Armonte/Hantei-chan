@@ -2448,3 +2448,4 @@
 	{"no %s", "%sなし"},
 	{"Animations", "アニメーション"},
 	{"No.", "番号"},
+	{"Preview position is approximate: round-start stand-in (opponent 128 px ahead, camera between)", "プレビュー位置は概算です: ラウンド開始時の仮配置 (相手は 128 px 前方、カメラはその中間)"},

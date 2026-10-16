@@ -243,6 +243,9 @@ struct ScriptPanel::Impl {
 	double lastEditTime = -1.0;
 	int bottomTab = 0;            // 0 log, 1 problems, 2 search
 	bool selectBottomTab = false;
+	// `sq hoverat <line> <col>` (ui-script): show the hover tooltip for that text position, as if the mouse rested there.
+	bool scriptHover = false;
+	TextEditor::DocPos scriptHoverPos;
 	char searchBuf[256] = {};
 	SearchOptions searchOpt;
 	std::vector<ScriptHit> hits;
@@ -633,11 +636,17 @@ struct ScriptPanel::Impl {
 
 	void drawHover()
 	{
-		if (!ImGui::IsItemHovered() && !ImGui::IsWindowHovered(ImGuiHoveredFlags_ChildWindows)) return;
-		const ImVec2 mp = ImGui::GetMousePos();
-		if (!editor.IsMousePosOverTextArea(mp) || !editor.IsMousePosOverGlyph(mp)) return;
+		ImVec2 mp;
+		if (scriptHover) {
+			const ImVec2 at = editor.DocPos2ScreenPos(scriptHoverPos);
+			mp = ImVec2(at.x + 2.0f, at.y + editor.GetLineHeight() * 0.5f);
+		} else {
+			if (!ImGui::IsItemHovered() && !ImGui::IsWindowHovered(ImGuiHoveredFlags_ChildWindows)) return;
+			mp = ImGui::GetMousePos();
+			if (!editor.IsMousePosOverTextArea(mp) || !editor.IsMousePosOverGlyph(mp)) return;
+		}
 		ScriptPanel::PatRef ref;
-		if (owner && refAtMouse(ref)) {
+		if (!scriptHover && owner && refAtMouse(ref)) {
 			const std::string dir = ToU8((U8(root) / U8(currentRel)).parent_path());
 			const std::string what = owner->describeRef ? owner->describeRef(dir, ref) : "";
 			ImGui::BeginTooltip();
@@ -655,7 +664,7 @@ struct ScriptPanel::Impl {
 		std::string word, own;
 		WordAt(line, ByteCol(line, pos.index), word, own);
 		if (word.empty() || std::isdigit(static_cast<unsigned char>(word[0]))) return;
-		const bool ctrlClick = ImGui::IsMouseClicked(ImGuiMouseButton_Left) && ImGui::GetIO().KeyCtrl;
+		const bool ctrlClick = !scriptHover && ImGui::IsMouseClicked(ImGuiMouseButton_Left) && ImGui::GetIO().KeyCtrl;
 		// Engine side: natives of the table it is called through (or any table when unqualified), and the tables themselves.
 		std::vector<std::string> engine;
 		const auto it = api.find(word);
@@ -664,6 +673,7 @@ struct ScriptPanel::Impl {
 		const bool isTable = apiByTable.count(word) && own.empty();
 		const auto defs = defsFor(word, own);
 		if (engine.empty() && !isTable && defs.empty()) return;
+		if (scriptHover) ImGui::SetNextWindowPos(ImVec2(mp.x + 16.0f, mp.y + editor.GetLineHeight()));   // where a resting mouse puts it
 		ImGui::BeginTooltip();
 		ImGui::PushTextWrapPos(ImGui::GetFontSize() * 40);
 		if (isTable) {
@@ -1327,7 +1337,9 @@ ScriptPanel::ScriptPanel() : m(std::make_unique<Impl>())
 	m->editor.SetLanguage(SquirrelLanguage());
 	m->editor.SetLineFoldingEnabled(true);
 	m->owner = this;
-	m->editor.SetChangeCallback([this] { m->dirty = true; m->outlineDirty = true; m->lastEditTime = ImGui::GetTime(); });
+	// SetText (opening a file) also reports a change on the next frame; only an undoable edit makes the file dirty,
+	// so a freshly opened file no longer shows the unsaved marker or blocks switching files.
+	m->editor.SetChangeCallback([this] { if (m->editor.CanUndo()) m->dirty = true; m->outlineDirty = true; m->lastEditTime = ImGui::GetTime(); });
 }
 
 ScriptPanel::~ScriptPanel() = default;
@@ -1470,6 +1482,11 @@ bool ScriptPanel::scriptCommand(const std::string& sub, const std::string& arg, 
 			out += "\n";
 		}
 		if (m->apiByTable.count(arg)) out += "[engine] " + arg + ": " + EngineTableNote(arg);
+	}
+	else if (sub == "hoverat") {   // hoverat <line> <col> | off: pin the hover tooltip to a text position (1-based line), for screenshots
+		int line = 0, col = 0;
+		if (arg == "off" || sscanf(arg.c_str(), "%d %d", &line, &col) < 1) { m->scriptHover = false; out = "hover off"; }
+		else { m->scriptHover = true; m->scriptHoverPos = TextEditor::DocPos(line - 1, col); out = "hover at " + std::to_string(line) + ":" + std::to_string(col); }
 	}
 	else if (sub == "hide") m_visible = false;
 	else if (sub == "check") {   // the Check button: compile, then (MBTL character files) the game's character load

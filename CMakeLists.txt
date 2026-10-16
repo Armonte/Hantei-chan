@@ -1254,6 +1254,13 @@ if(TARGET ${EXE})
 	target_sources(${EXE} PRIVATE src/squirrel/script_panel.cpp src/squirrel/fbmod_link.cpp src/squirrel/ptcn_stack.cpp src/ui/main_frame_script.cpp third_party/ImGuiColorTextEdit/TextEditor.cpp)
 	set_source_files_properties(third_party/ImGuiColorTextEdit/TextEditor.cpp PROPERTIES COMPILE_OPTIONS "-w")
 	target_link_libraries(${EXE} PRIVATE sqeditor_core)
+	# Ship the Squirrel API tables next to the exe (res/squirrel, as CI packaging does): the script panel's
+	# hover, natives and checks need them, and a copied or packaged exe has no docs/ folder to walk up to.
+	file(GLOB SQ_API_TABLES CONFIGURE_DEPENDS "${CMAKE_SOURCE_DIR}/docs/squirrel/api/*_api.json")
+	add_custom_command(TARGET ${EXE} POST_BUILD
+		COMMAND ${CMAKE_COMMAND} -E make_directory "$<TARGET_FILE_DIR:${EXE}>/res/squirrel"
+		COMMAND ${CMAKE_COMMAND} -E copy_if_different ${SQ_API_TABLES} "$<TARGET_FILE_DIR:${EXE}>/res/squirrel/"
+		VERBATIM)
 endif()
 
 add_executable(squirrel_index_test tests/squirrel_index_test.cpp)
