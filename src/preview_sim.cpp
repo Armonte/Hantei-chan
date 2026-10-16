@@ -408,16 +408,6 @@ void PlaceChild(const Options& o, const SimActor& parent, SimActor& ch,
 	ch.facingLeft = facing;
 }
 
-void ApplyRoundStartStandIn(Options& o)
-{
-	// Root = P1 at -64 px, opponent P2 at +64 px, camera at 0 (see Options::opponentX). Shifted so the root
-	// sits at the sim's origin; mirrored when the root faces left (it is then the right-hand player).
-	const float side = o.rootFacingLeft ? -1.f : 1.f;
-	o.opponentX = 128.f * side;
-	o.cameraX = 64.f * side;
-	o.cameraY = 0.f;
-	o.cameraZoom = 1.f;
-}
 
 int LinkFlagsFrom(int fs1, int fs2)
 {
@@ -1123,6 +1113,17 @@ const std::vector<int>& PreviewSim::rootFrameTrack()
 {
 	ensureSimulatedTo(0);
 	return m_impl->rootTrack;
+}
+
+void ApplyRoundStartStandIn(Options& o)
+{
+	// Root = P1 at -64 px, opponent P2 at +64 px, camera at 0 (see Options::opponentX). Shifted so the root
+	// sits at the sim's origin; mirrored when the root faces left (it is then the right-hand player).
+	const float side = o.rootFacingLeft ? -1.f : 1.f;
+	o.opponentX = 128.f * side;
+	o.cameraX = 64.f * side;
+	o.cameraY = 0.f;
+	o.cameraZoom = 1.f;
 }
 
 } // namespace preview
