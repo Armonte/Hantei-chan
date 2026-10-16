@@ -22,6 +22,7 @@
 #include <fstream>
 #include <glad/glad.h>
 #include <imgui.h>
+#include <imgui_internal.h>
 #include <algorithm>
 #include <cmath>
 #include <cstdarg>
@@ -89,6 +90,7 @@ void Window::clearThumbs() {
 void Window::rebuild(CharacterInstance &ch) {
 	owner = &ch; cgGen = ch.cg.generation();
 	clearThumbs();
+	pp.shownId = -1; idxUse.owner = nullptr;   // pixels or image count may have changed (palette pushes keep cgGen in step and skip this)
 	bank.reset(); atlas.clear();
 	if (!ch.cg.foreign() && ch.cg.bank_data()) {
 		auto b = std::make_unique<Bank>(); std::string err;
@@ -284,6 +286,121 @@ void Window::commitPalette(CharacterInstance &ch, const std::string &label, int 
 static ImVec4 Col4(uint32_t c) { return ImVec4(cgm::R(c) / 255.f, cgm::G(c) / 255.f, cgm::B(c) / 255.f, 1.f); }
 static uint32_t FromCol(const float c[3]) { return cgm::Rgb((uint8_t)std::lround(std::clamp(c[0], 0.f, 1.f) * 255), (uint8_t)std::lround(std::clamp(c[1], 0.f, 1.f) * 255), (uint8_t)std::lround(std::clamp(c[2], 0.f, 1.f) * 255)); }
 
+// A slider whose value text stays readable: the theme's orange grab used to sit on top of the centred value ("0 deg" under the
+// grab at the default). The value is drawn at the end of the frame away from the grab instead; Ctrl+click typing is untouched.
+static bool ReadableSliderFloat(const char *label, float *v, float mn, float mx, const char *fmt) {
+	const ImGuiID id = ImGui::GetID(label);
+	const bool typing = ImGui::TempInputIsActive(id);
+	if (!typing) ImGui::PushStyleColor(ImGuiCol_Text, IM_COL32(0, 0, 0, 0));
+	const bool changed = ImGui::SliderFloat(label, v, mn, mx, fmt);
+	if (typing) return changed;
+	ImGui::PopStyleColor();
+	char buf[64]; std::snprintf(buf, sizeof buf, fmt, *v);
+	const ImVec2 a = ImGui::GetItemRectMin(), b = ImGui::GetItemRectMax(), ts = ImGui::CalcTextSize(buf);
+	const float t = mx > mn ? std::clamp((*v - mn) / (mx - mn), 0.f, 1.f) : 0.f, pad = ImGui::GetStyle().FramePadding.x;
+	const float x = t >= 0.5f ? a.x + pad : b.x - pad - ts.x;   // the half the grab is not in
+	ImGui::GetWindowDrawList()->AddText(ImVec2(x, a.y + (b.y - a.y - ts.y) * 0.5f), ImGui::GetColorU32(ImGuiCol_Text), buf);
+	return changed;
+}
+
+// Palette indices drawn by the bank's 8-bit images (a few dozen images per frame so a big UNI2 bank does not stall the UI), plus the
+// PPPA colour slots the .pat parts tint from (part_render_math.h PartTintPalette). Index 0 is the transparent entry: counted as used.
+void Window::countIndexUse(CharacterInstance &ch) {
+	const int count = ch.cg.get_image_count();
+	if (idxUse.owner != &ch || idxUse.images != count) {
+		idxUse = IndexUse(); idxUse.owner = &ch; idxUse.images = count; idxUse.used[0] = true;
+		for (const auto &c : ch.parts.cutOuts) if (c.colorSlot >= 0 && c.colorSlot < 256) idxUse.tint[c.colorSlot] = true;
+	}
+	for (int budget = 48; !idxUse.done && budget > 0; budget--) {
+		if (idxUse.next >= count) { idxUse.done = true; break; }
+		const int n = idxUse.next++;
+		if (!ch.cg.image_is_8bpp((unsigned)n)) continue;
+		std::unique_ptr<ImageData> im(ch.cg.draw_texture((unsigned)n, false, true));
+		if (!im || !im->is8bpp || !im->pixels) continue;
+		const size_t px = (size_t)im->width * im->height;
+		for (size_t i = 0; i < px; i++) idxUse.used[im->pixels[i]] = true;
+	}
+}
+
+// The preview pane: the active frame's palette-following sprite (or any 8-bit CG image) drawn with `colors`, the palette as the grid
+// shows it. Hovering a grid cell (hoverIndex) dims every other index; clicking a pixel selects its index in the grid.
+void Window::drawPalPreview(CharacterInstance &ch, const WindowHost &host, const uint32_t *colors, int hoverIndex, float boxW, float boxH) {
+	auto &P = pal;
+	ImGui::PushID("##palpreview");
+	const int count = ch.cg.get_image_count();
+	ImGui::SetNextItemWidth(boxW);
+	const char *modes[] = {TXT("Sprite of the current frame"), TXT("CG image")};
+	ImGui::Combo("##ppmode", &pp.mode, modes, 2);
+	int id = -1;
+	if (pp.mode == 0) {
+		int pat = -1, fr = 0;
+		std::vector<std::pair<int, int>> lay;   // layer, image
+		if (host.current && host.current(pat, fr)) {
+			if (Sequence *seq = ch.frameData.get_sequence(pat); seq && fr >= 0 && fr < (int)seq->frames.size()) {
+				const auto &L = seq->frames[fr].AF.layers;
+				for (int l = 0; l < (int)L.size(); l++) if (!L[l].usePat && L[l].spriteId >= 0 && L[l].spriteId < count && ch.cg.image_is_8bpp((unsigned)L[l].spriteId)) lay.push_back({l, L[l].spriteId});
+			}
+		}
+		if (lay.empty()) ImGui::TextDisabled(TXT("Pattern %d frame %d draws no palette-following sprite."), pat, fr);
+		else {
+			int k = 0; for (size_t i = 0; i < lay.size(); i++) if (lay[i].first == pp.layer) k = (int)i;
+			if (lay.size() > 1) {
+				ImGui::SetNextItemWidth(boxW);
+				if (ImGui::BeginCombo("##pplayer", Fmt(TXT("Layer %d: image %d"), lay[k].first, lay[k].second).c_str())) {
+					for (size_t i = 0; i < lay.size(); i++) if (ImGui::Selectable(Fmt(TXT("Layer %d: image %d"), lay[i].first, lay[i].second).c_str(), (int)i == k)) k = (int)i;
+					ImGui::EndCombo();
+				}
+			} else ImGui::TextDisabled(TXT("Pattern %d frame %d, image %d"), pat, fr, lay[k].second);
+			pp.layer = lay[k].first; id = lay[k].second;
+		}
+	} else {
+		ImGui::SetNextItemWidth(boxW);
+		if (ImGui::InputInt("##ppimage", &pp.image)) pp.image = std::clamp(pp.image, 0, std::max(0, count - 1));
+		if (pp.image >= 0 && pp.image < count && ch.cg.image_is_8bpp((unsigned)pp.image)) id = pp.image;
+		else ImGui::TextDisabled("%s", TXT("Not a palette-following (8-bit) image."));
+	}
+	if (id >= 0 && id != pp.shownId) {
+		pp.shownId = id; pp.texKey = 0; pp.idx.clear(); pp.w = pp.h = 0;
+		std::unique_ptr<ImageData> im(ch.cg.draw_texture((unsigned)id, false, true));
+		if (im && im->is8bpp && im->pixels) { pp.w = im->width; pp.h = im->height; pp.idx.assign(im->pixels, im->pixels + (size_t)pp.w * pp.h); }
+	}
+	pp.hover = -1;
+	if (id < 0 || pp.idx.empty()) { ImGui::Dummy(ImVec2(boxW, boxH * 0.5f)); ImGui::PopID(); return; }
+	// recolour only when the palette or the highlighted index changed
+	uint64_t key = 1469598103934665603ull;
+	auto mix = [&](uint64_t v) { key = (key ^ v) * 1099511628211ull; };
+	for (int i = 0; i < 256; i++) mix(colors[i]);
+	mix((uint64_t)(hoverIndex + 2)); mix((uint64_t)id);
+	if (key != pp.texKey || !pp.tex.tex) {
+		std::vector<uint8_t> rgba((size_t)pp.w * pp.h * 4, 0);
+		for (size_t i = 0; i < pp.idx.size(); i++) {
+			const int k = pp.idx[i]; if (k == 0) continue;
+			uint8_t *o = &rgba[i * 4]; const uint32_t c = colors[k];
+			o[0] = cgm::R(c); o[1] = cgm::G(c); o[2] = cgm::B(c); o[3] = 255;
+			if (hoverIndex >= 0 && k != hoverIndex) { const uint8_t g = (uint8_t)((o[0] + o[1] + o[2]) / 9 + 24); o[0] = o[1] = o[2] = g; o[3] = 70; }   // greyed: the hovered index stands out
+		}
+		upload(pp.tex, rgba, pp.w, pp.h, 0, false); pp.texKey = key;
+	}
+	// fit the box, whole-number zoom when the sprite is smaller than the box
+	float z = std::min(boxW / pp.w, boxH / pp.h); if (z >= 1.f) z = std::floor(z);
+	const ImVec2 sz(pp.w * z, pp.h * z), c0 = ImGui::GetCursorScreenPos();
+	const ImVec2 o(c0.x + std::floor((boxW - sz.x) * 0.5f), c0.y);
+	Checker(ImGui::GetWindowDrawList(), c0, ImVec2(c0.x + boxW, c0.y + std::max(sz.y, ui::Em(4.f))));
+	ImGui::GetWindowDrawList()->AddImage((ImTextureID)(intptr_t)pp.tex.tex, o, ImVec2(o.x + sz.x, o.y + sz.y));
+	ImGui::InvisibleButton("##pppick", ImVec2(boxW, std::max(sz.y, ui::Em(4.f))));
+	if (ImGui::IsItemHovered()) {
+		const ImVec2 m = ImGui::GetMousePos(); const int x = (int)((m.x - o.x) / z), y = (int)((m.y - o.y) / z);
+		if (x >= 0 && y >= 0 && x < pp.w && y < pp.h) {
+			const int k = pp.idx[(size_t)y * pp.w + x];
+			pp.hover = k;
+			ImGui::SetTooltip(TXT("Index %d  #%02X%02X%02X\nClick: select it in the grid (Shift: extend)"), k, cgm::R(colors[k]), cgm::G(colors[k]), cgm::B(colors[k]));
+			if (ImGui::IsItemClicked(0)) { if (ImGui::GetIO().KeyShift) P.selB = k; else P.selA = P.selB = k; }
+		}
+	}
+	ImGui::TextDisabled(TXT("Image %d  %dx%d  x%.2g"), id, pp.w, pp.h, z);
+	ImGui::PopID();
+}
+
 void Window::drawPalettes(CharacterInstance &ch, const WindowHost &host) {
 	if (palOwner != &ch) loadPalettes(ch);
 	auto &P = pal;
@@ -323,32 +440,72 @@ void Window::drawPalettes(CharacterInstance &ch, const WindowHost &host) {
 	uint32_t *colors = isFile ? P.set[P.bank].pal(P.number) : (uint32_t *)(bank->palettes.data() + 0x400 * P.number);
 
 	// ---- swatches ----
-	// swatches (fixed column) | colour tools (the rest of the width)
+	// swatches (fixed column) | colour tools (the rest of the width) | sprite preview (wide windows; below the grid otherwise)
+	countIndexUse(ch);
 	const float cell = std::floor(ui::Px(20.f));
-	const bool palSplit = ImGui::BeginTable("##palmain", 2, ImGuiTableFlags_SizingFixedFit | ImGuiTableFlags_NoSavedSettings);
+	const bool threeCols = ImGui::GetContentRegionAvail().x >= cell * 16 + ui::Em(46.f);
+	const float prevW = threeCols ? std::max(ui::Em(15.f), std::floor(ImGui::GetContentRegionAvail().x * 0.24f)) : cell * 16;
+	const bool palSplit = ImGui::BeginTable("##palmain", threeCols ? 3 : 2, ImGuiTableFlags_SizingFixedFit | ImGuiTableFlags_NoSavedSettings);
 	if (palSplit) {
 		ImGui::TableSetupColumn("##sw", ImGuiTableColumnFlags_WidthFixed, cell * 16);
 		ImGui::TableSetupColumn("##tools", ImGuiTableColumnFlags_WidthStretch);
+		if (threeCols) ImGui::TableSetupColumn("##preview", ImGuiTableColumnFlags_WidthFixed, prevW);
 		ImGui::TableNextRow(); ImGui::TableSetColumnIndex(0);
 	}
+	// The colour each entry shows: the live slider preview of the selection on bank slots (palette files are adjusted in place).
+	uint32_t shown[256];
+	{
+		const int lo = std::min(P.selA, P.selB), hi = std::max(P.selA, P.selB);
+		const bool preview = !isFile && !P.adj.neutral();
+		for (int i = 0; i < 256; i++) shown[i] = preview && i >= lo && i <= hi ? cgm::Adjust(colors[i], P.adj) : colors[i];
+	}
+	int gridHover = -1;
 	ImVec2 g0 = ImGui::GetCursorScreenPos();
 	ImGui::InvisibleButton("##swatches", ImVec2(cell * 16, cell * 16));
 	{
 		ImDrawList *dl = ImGui::GetWindowDrawList();
 		const int lo = std::min(P.selA, P.selB), hi = std::max(P.selA, P.selB);
-		const bool preview = !P.adj.neutral();
+		const ImU32 bg = ImGui::GetColorU32(ImGuiCol_WindowBg), hatch = IM_COL32(128, 128, 128, 200);
 		for (int i = 0; i < 256; i++) {
 			const ImVec2 a(g0.x + (i % 16) * cell, g0.y + (i / 16) * cell), b(a.x + cell - 1, a.y + cell - 1);
-			uint32_t c = colors[i]; if (preview && i >= lo && i <= hi) c = cgm::Adjust(c, P.adj);
-			dl->AddRectFilled(a, b, ImGui::ColorConvertFloat4ToU32(Col4(c)));
+			const ImU32 col = ImGui::ColorConvertFloat4ToU32(Col4(shown[i]));
+			if (idxUse.done && !idxUse.used[i] && !idxUse.tint[i]) {   // no sprite draws it: the stored colour, faded and hatched
+				dl->AddRectFilled(a, b, bg);
+				dl->AddRectFilled(a, b, (col & ~IM_COL32_A_MASK) | IM_COL32(0, 0, 0, 45));
+				dl->AddLine(ImVec2(a.x, b.y), ImVec2(b.x, a.y), hatch);
+				dl->AddLine(ImVec2(a.x, a.y + (b.y - a.y) * 0.5f), ImVec2(a.x + (b.x - a.x) * 0.5f, a.y), hatch);
+				dl->AddLine(ImVec2(a.x + (b.x - a.x) * 0.5f, b.y), ImVec2(b.x, a.y + (b.y - a.y) * 0.5f), hatch);
+			} else dl->AddRectFilled(a, b, col);
+			if (idxUse.tint[i]) dl->AddTriangleFilled(a, ImVec2(a.x + cell * 0.4f, a.y), ImVec2(a.x, a.y + cell * 0.4f), IM_COL32(40, 200, 255, 255));
 			if (i >= lo && i <= hi) dl->AddRect(a, b, IM_COL32(255, 200, 60, 255), 0, 0, 2.f);
+			if (i == pp.hover) dl->AddRect(ImVec2(a.x - 1, a.y - 1), ImVec2(b.x + 1, b.y + 1), IM_COL32(255, 255, 255, 255), 0, 0, 2.f);
 		}
 		if (ImGui::IsItemHovered()) {
 			const ImVec2 m = ImGui::GetMousePos(); const int cx = (int)((m.x - g0.x) / cell), cy = (int)((m.y - g0.y) / cell), i = std::clamp(cy, 0, 15) * 16 + std::clamp(cx, 0, 15);
+			gridHover = i;
 			if (ImGui::IsMouseClicked(0)) { if (ImGui::GetIO().KeyShift) P.selB = i; else P.selA = P.selB = i; }
 			else if (ImGui::IsMouseDragging(0)) P.selB = i;
-			ImGui::SetTooltip("%d  #%02X%02X%02X", i, cgm::R(colors[i]), cgm::G(colors[i]), cgm::B(colors[i]));
+			const char *note = !idxUse.done ? "" : idxUse.tint[i] ? TXT("\nPPPA tint slot of a .pat part") : !idxUse.used[i] ? TXT("\nNo sprite draws this entry") : "";
+			ImGui::SetTooltip("%d  #%02X%02X%02X%s", i, cgm::R(colors[i]), cgm::G(colors[i]), cgm::B(colors[i]), note);
 		}
+	}
+	if (gridHover < 0) gridHover = pp.scriptHover;
+	{   // legend
+		const float s = std::floor(ImGui::GetTextLineHeight() * 0.8f);
+		auto key = [&](bool hatched, const char *text) {
+			const ImVec2 a = ImGui::GetCursorScreenPos(); const float dy = (ImGui::GetTextLineHeight() - s) * 0.5f;
+			ImDrawList *dl = ImGui::GetWindowDrawList(); const ImVec2 p0(a.x, a.y + dy), p1(a.x + s, a.y + dy + s);
+			if (hatched) { dl->AddRectFilled(p0, p1, IM_COL32(0, 255, 0, 45)); dl->AddLine(ImVec2(p0.x, p1.y), ImVec2(p1.x, p0.y), IM_COL32(128, 128, 128, 200)); }
+			else { dl->AddRectFilled(p0, p1, IM_COL32(120, 120, 120, 255)); dl->AddTriangleFilled(p0, ImVec2(p0.x + s * 0.5f, p0.y), ImVec2(p0.x, p0.y + s * 0.5f), IM_COL32(40, 200, 255, 255)); }
+			ImGui::Dummy(ImVec2(s, ImGui::GetTextLineHeight())); ImGui::SameLine(); ImGui::TextDisabled("%s", text);
+		};
+		int unused = 0, tints = 0; for (int i = 0; i < 256; i++) { unused += idxUse.done && !idxUse.used[i] && !idxUse.tint[i]; tints += idxUse.tint[i]; }
+		if (!idxUse.done) ImGui::TextDisabled(TXT("Counting the entries sprites use... %d / %d images"), idxUse.next, idxUse.images);
+		else key(true, Fmt(TXT("No sprite draws it (%d entries; colours kept)"), unused).c_str());
+		if (tints) key(false, Fmt(TXT("PPPA tint slot of a .pat part (%d)"), tints).c_str());
+	}
+	if (palSplit && !threeCols) {   // narrow: the preview under the grid
+		ImGui::Spacing(); drawPalPreview(ch, host, shown, gridHover, cell * 16, cell * 12);
 	}
 	if (palSplit) ImGui::TableSetColumnIndex(1); else ImGui::SameLine(0, ui::Px(16));
 	ImGui::BeginGroup();
@@ -387,7 +544,7 @@ void Window::drawPalettes(CharacterInstance &ch, const WindowHost &host) {
 	{   // hue / saturation / value of the selection, live
 		static PalSet baseSet; static Bank baseBank; static bool active = false; static uint32_t baseColors[256];
 		bool changed = false, started = false, finished = false;
-		auto sl = [&](const char *l, float *v, float mn, float mx, const char *fmt) { changed |= ImGui::SliderFloat(ui::FormRow(l), v, mn, mx, fmt); started |= ImGui::IsItemActivated(); finished |= ImGui::IsItemDeactivated(); };
+		auto sl = [&](const char *l, float *v, float mn, float mx, const char *fmt) { changed |= ReadableSliderFloat(ui::FormRow(l), v, mn, mx, fmt); started |= ImGui::IsItemActivated(); finished |= ImGui::IsItemDeactivated(); };
 		if (ui::BeginLabelForm("##paladj", ui::LabelColW({LBL("Hue shift"), LBL("Saturation x"), LBL("Brightness x")}))) {
 			sl(LBL("Hue shift"), &P.adj.hueDeg, -180.f, 180.f, "%.0f deg"); sl(LBL("Saturation x"), &P.adj.satMul, 0.f, 2.f, "%.2f"); sl(LBL("Brightness x"), &P.adj.valMul, 0.f, 2.f, "%.2f");
 			ui::EndLabelForm();
@@ -412,6 +569,11 @@ void Window::drawPalettes(CharacterInstance &ch, const WindowHost &host) {
 		if (FitButton(LBL("Replace in this palette"))) edit(TXT("Replace colour"), [&](uint32_t *p) { ReplaceColor(p, P.findC, P.replaceC, P.tolerance); });
 	}
 	ImGui::EndGroup();
+	if (palSplit && threeCols) {
+		ImGui::TableSetColumnIndex(2);
+		ImGui::TextUnformatted(TXT("Preview"));
+		drawPalPreview(ch, host, shown, gridHover, prevW, cell * 16);
+	}
 	if (palSplit) ImGui::EndTable();
 
 	// ---- palette files ----
@@ -1397,6 +1559,10 @@ bool Window::script(const std::string &cmd, const std::string &arg, std::string 
 		if (key == "ccTo") return num(ccTo);
 		if (key == "palBank") return num(pal.bank);
 		if (key == "palNumber") return num(pal.number);
+		if (key == "palHover") return num(pp.scriptHover);
+		if (key == "palSel") { const bool r = num(pal.selA); pal.selB = pal.selA; return r; }
+		if (key == "palPreviewMode") return num(pp.mode);
+		if (key == "palPreviewImage") return num(pp.image);
 		if (key == "previewPal") return num(previewPal);
 		if (msg) *msg = "unknown field " + key; return false;
 	}
