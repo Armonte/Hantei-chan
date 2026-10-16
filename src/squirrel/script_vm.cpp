@@ -36,10 +36,6 @@ struct ScriptVM::Impl {
 	int blocked = 0;
 	bool bootstrapped = false;
 	Diagnostic bootDiag;
-	// Permissive return objects (same model as sqtool): fields read 0, known native method names read as stubs.
-	std::set<std::string> methodNames;
-	HSQOBJECT dlgFields, dlgMethods;
-	bool haveDlg = false;
 
 	void say(const std::string& s) { if (log) log(s); }
 };
@@ -199,69 +195,6 @@ SQInteger Native_Blocked(HSQUIRRELVM v)
 	return 1;
 }
 
-SQInteger Native_Stub(HSQUIRRELVM v);
-
-SQInteger PushStubFn(HSQUIRRELVM v, const std::string& name, bool methods)
-{
-	// "valuem": a method of a class the API table does not list returns another such class (CCom.GetSkill -> PlusMove)
-	const std::string tag = (methods ? "valuem|?." : "value|?.") + name;
-	sq_pushstring(v, tag.c_str(), -1);
-	sq_newclosure(v, Native_Stub, 1);
-	return 1;
-}
-SQInteger Native_GetField(HSQUIRRELVM v)
-{
-	const SQChar* key = nullptr;
-	if (SQ_SUCCEEDED(sq_getstring(v, 2, &key)) && Ctx(v)->methodNames.count(key)) return PushStubFn(v, key, false);
-	sq_pushinteger(v, 0);
-	return 1;
-}
-SQInteger Native_GetMethod(HSQUIRRELVM v)
-{
-	const SQChar* key = "";
-	sq_getstring(v, 2, &key);
-	return PushStubFn(v, key, true);
-}
-SQInteger Native_SetSlot(HSQUIRRELVM v)
-{
-	sq_push(v, 2);
-	sq_push(v, 3);
-	sq_rawset(v, 1);
-	return 0;
-}
-void PushPermissive(HSQUIRRELVM v, bool methods)
-{
-	sq_newtable(v);
-	auto* c = Ctx(v);
-	if (!c->haveDlg) return;
-	sq_pushobject(v, methods ? c->dlgMethods : c->dlgFields);
-	sq_setdelegate(v, -2);
-}
-SQInteger Native_PermissiveCtor(HSQUIRRELVM v)
-{
-	PushPermissive(v, true);
-	return 1;
-}
-void MakeDelegates(HSQUIRRELVM v)
-{
-	auto* c = Ctx(v);
-	for (int i = 0; i < 2; ++i) {
-		HSQOBJECT& o = i ? c->dlgMethods : c->dlgFields;
-		sq_newtable(v);
-		sq_pushstring(v, "_get", -1);
-		sq_newclosure(v, i ? Native_GetMethod : Native_GetField, 0);
-		sq_createslot(v, -3);
-		sq_pushstring(v, "_set", -1);
-		sq_newclosure(v, Native_SetSlot, 0);
-		sq_createslot(v, -3);
-		sq_resetobject(&o);
-		sq_getstackobj(v, -1, &o);
-		sq_addref(v, &o);
-		sq_pop(v, 1);
-	}
-	c->haveDlg = true;
-}
-
 SQInteger Native_Stub(HSQUIRRELVM v)
 {
 	const SQChar* fv = "void|?";
@@ -280,8 +213,7 @@ SQInteger Native_Stub(HSQUIRRELVM v)
 	if (r == "int" || r == "bool") { sq_pushinteger(v, 0); return 1; }
 	if (r == "float") { sq_pushfloat(v, 0.0f); return 1; }
 	if (r == "string") { sq_pushstring(v, "", 0); return 1; }
-	if (r == "array") { sq_newarray(v, 0); return 1; }
-	if (r == "value" || r == "object" || r == "instance" || r == "valuem") { PushPermissive(v, r == "valuem"); return 1; }
+	if (r == "value" || r == "object" || r == "instance" || r == "array") { sq_newtable(v); return 1; }
 	return 0;
 }
 
@@ -389,8 +321,6 @@ void ScriptVM::close()
 	if (m->v) sq_close(m->v);
 	m->v = nullptr;
 	m->bootstrapped = false;
-	m->haveDlg = false;
-	m->methodNames.clear();
 	m->natives = 0;
 	m->blocked = 0;
 }
@@ -430,23 +360,7 @@ bool ScriptVM::open(const std::string& gameRoot, const std::string& apiJsonPath,
 	sq_pop(v, 1);
 	sq_newclosure(v, RuntimeErrorHandler, 0);
 	sq_seterrorhandler(v);
-	if (api.is_array()) {
-		m->natives = InstallApi(v, api);
-		for (auto& e : api)
-			if (e.value("kind", "") == "method" || e.value("kind", "") == "func") m->methodNames.insert(e.value("name", ""));
-		MakeDelegates(v);
-		// Classes the scripts construct that the API table does not list yet (UNI2's CCom AI builder).
-		for (const char* cls : {"CCom"}) {
-			sq_pushroottable(v);
-			sq_pushstring(v, cls, -1);
-			if (SQ_FAILED(sq_get(v, -2))) {
-				sq_settop(v, 0);
-				sq_pushroottable(v);
-				SetClosure(v, cls, Native_PermissiveCtor, nullptr);
-			}
-			sq_settop(v, 0);
-		}
-	}
+	if (api.is_array()) m->natives = InstallApi(v, api);
 	return true;
 }
 
@@ -472,47 +386,6 @@ Diagnostic ScriptVM::compile(const std::string& bytes, const std::string& name)
 	Diagnostic d = CompileIn(m->v, bytes, name);
 	sq_settop(m->v, 0);
 	return d;
-}
-
-Diagnostic ScriptVM::runPrerequisites(const std::string& rel)
-{
-	Diagnostic ok;
-	if (!m->v || rel.rfind("data/", 0) != 0) return ok;
-	// The game's load order inside a character folder: cmd, then mv (MakeMoveTable needs the command table), then sc;
-	// COM (CPU AI) files build on data/_combase.txt.
-	auto rank = [](const std::string& f) {
-		if (f.find("_cmd") != std::string::npos) return 0;
-		if (f.find("_mv") != std::string::npos) return 1;
-		if (f.find("_sc") != std::string::npos) return 2;
-		if (f.find("_com") != std::string::npos) return 3;
-		return 9;
-	};
-	const fs::path self = m->root / fs::u8path(rel);
-	const int mine = rank(self.filename().u8string());
-	if (mine == 9) return ok;
-	std::vector<fs::path> before;
-	if (mine == 3 && fs::exists(m->root / "data/_combase.txt")) before.push_back(m->root / "data/_combase.txt");
-	std::error_code ec;
-	std::vector<fs::path> sib;
-	for (auto it = fs::directory_iterator(self.parent_path(), ec); it != fs::directory_iterator(); it.increment(ec)) {
-		if (ec) break;
-		const std::string f = it->path().filename().u8string();
-		if (it->path().extension() != ".txt" || it->path() == self) continue;
-		const int r = rank(f);
-		if (r < mine && r < 3) sib.push_back(it->path());
-	}
-	std::sort(sib.begin(), sib.end(), [&](const fs::path& a, const fs::path& b) {
-		const int ra = rank(a.filename().u8string()), rb = rank(b.filename().u8string());
-		return ra != rb ? ra < rb : a < b;
-	});
-	before.insert(before.end(), sib.begin(), sib.end());
-	for (const auto& p : before) {
-		const std::string name = "./" + p.lexically_relative(m->root).generic_u8string();
-		Diagnostic d = RunFile(m->v, p, name);
-		sq_settop(m->v, 0);
-		if (!d.ok) return d;
-	}
-	return ok;
 }
 
 Diagnostic ScriptVM::compileAndRun(const std::string& bytes, const std::string& name)

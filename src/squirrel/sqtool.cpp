@@ -9,8 +9,6 @@
 //     exactly as the game does (raw bytes, sq_compilebuffer). With --run it also executes
 //     script/Battle_Init.txt and script/Battle_Std.txt against native stubs generated from the
 //     IDB-extracted API table, with a working __dofile__.
-//     With --chars (implies --run) it then runs each character folder's scripts in the bootstrapped VM in load
-//     order (cmd, mv, sc, com: mv's MakeMoveTable needs the command table) and reports runtime errors per character.
 //   sqtool compile <file.txt>...   compile single files
 //
 // Exit code: 0 when every Squirrel file compiled (and --run succeeded), 1 otherwise,
@@ -193,77 +191,6 @@ static SQInteger Native_LoadString(HSQUIRRELVM v)
 
 // Stub native: records the call and returns a default for the declared return type.
 static std::map<std::string, int> g_stubCalls;
-static SQInteger Native_Stub(HSQUIRRELVM v);
-
-// Objects a stub returns ("instance"/"value": MvStatus, a position, ...). The API table does not record which class a
-// native returns, so they are permissive: a member that is a known native method name reads as a stub function, any
-// other member (CharaNo, x, ...) reads as 0. g_dlgMethods answers every member with a stub function (classes the
-// extractor missed, e.g. UNI2's CCom AI builder).
-static std::set<std::string> g_methodNames;
-static HSQOBJECT g_dlgFields, g_dlgMethods;
-static bool g_haveDelegates = false;
-static SQInteger PushStubFn(HSQUIRRELVM v, const std::string &name, bool methods = false)
-{
-	// "valuem": what an unlisted class's method returns is another unlisted class (CCom.GetSkill -> skill -> PlusMove -> move)
-	const std::string tag = (methods ? "valuem|?." : "value|?.") + name;
-	sq_pushstring(v, tag.c_str(), -1);
-	sq_newclosure(v, Native_Stub, 1);
-	return 1;
-}
-static SQInteger Native_GetField(HSQUIRRELVM v)
-{
-	const SQChar *key = nullptr;
-	if (SQ_SUCCEEDED(sq_getstring(v, 2, &key)) && g_methodNames.count(key))
-		return PushStubFn(v, key);
-	sq_pushinteger(v, 0);
-	return 1;
-}
-static SQInteger Native_GetMethod(HSQUIRRELVM v)
-{
-	const SQChar *key = "";
-	sq_getstring(v, 2, &key);
-	return PushStubFn(v, key, true);
-}
-// obj.newMember = x on a permissive object creates the slot (the game's Sqrat instances have the member already).
-static SQInteger Native_SetSlot(HSQUIRRELVM v)
-{
-	sq_push(v, 2);
-	sq_push(v, 3);
-	sq_rawset(v, 1);
-	return 0;
-}
-static void PushPermissive(HSQUIRRELVM v, bool methods)
-{
-	sq_newtable(v);
-	if (!g_haveDelegates)
-		return;
-	sq_pushobject(v, methods ? g_dlgMethods : g_dlgFields);
-	sq_setdelegate(v, -2);
-}
-static SQInteger Native_PermissiveCtor(HSQUIRRELVM v)
-{
-	PushPermissive(v, true);
-	return 1;
-}
-static void MakeDelegates(HSQUIRRELVM v)
-{
-	for (int i = 0; i < 2; ++i) {
-		HSQOBJECT &o = i ? g_dlgMethods : g_dlgFields;
-		sq_newtable(v);
-		sq_pushstring(v, "_get", -1);
-		sq_newclosure(v, i ? Native_GetMethod : Native_GetField, 0);
-		sq_createslot(v, -3);
-		sq_pushstring(v, "_set", -1);
-		sq_newclosure(v, Native_SetSlot, 0);
-		sq_createslot(v, -3);
-		sq_resetobject(&o);
-		sq_getstackobj(v, -1, &o);
-		sq_addref(v, &o);
-		sq_pop(v, 1);
-	}
-	g_haveDelegates = true;
-}
-
 static SQInteger Native_Stub(HSQUIRRELVM v)
 {
 	// one free variable "ret|Qualified.Name" (the last stack slot)
@@ -296,12 +223,8 @@ static SQInteger Native_Stub(HSQUIRRELVM v)
 		sq_pushstring(v, "", 0);
 		return 1;
 	}
-	if (r == "array") {
-		sq_newarray(v, 0);
-		return 1;
-	}
-	if (r == "value" || r == "object" || r == "instance" || r == "valuem") {
-		PushPermissive(v, r == "valuem");
+	if (r == "value" || r == "object" || r == "instance" || r == "array") {
+		sq_newtable(v);
 		return 1;
 	}
 	return 0;
@@ -451,21 +374,8 @@ static HSQUIRRELVM OpenGameVM(const json *api, StubStats *st)
 	// (the stdlib one would read relative to the current directory).
 	RegisterGlobal(v, "dofile", Native_dofile);
 	RegisterGlobal(v, "SQ_LoadString", Native_LoadString);
-	if (api && st) {
+	if (api && st)
 		*st = InstallApi(v, *api);
-		for (auto &e : *api)
-			if (e.value("kind", "") == "method" || e.value("kind", "") == "func")
-				g_methodNames.insert(e.value("name", ""));
-		MakeDelegates(v);
-		// Classes the scripts construct that the API table does not list yet: answer with an all-methods stand-in.
-		for (const char *cls : {"CCom"}) {
-			sq_pushroottable(v);
-			sq_pushstring(v, cls, -1);
-			if (SQ_FAILED(sq_get(v, -2)))
-				RegisterGlobal(v, cls, Native_PermissiveCtor);
-			sq_settop(v, 0);
-		}
-	}
 	return v;
 }
 
@@ -495,7 +405,7 @@ struct Result {
 	size_t bytes = 0;
 };
 
-static int CmdCheck(const fs::path &root, const std::string &apiPath, bool run, bool chars, const std::string &reportPath)
+static int CmdCheck(const fs::path &root, const std::string &apiPath, bool run, const std::string &reportPath)
 {
 	if (!fs::exists(root)) {
 		LOGW("sqtool: {} not found, skipping", root.string());
@@ -570,43 +480,6 @@ static int CmdCheck(const fs::path &root, const std::string &apiPath, bool run, 
 			LOGI("sqtool: run {} -> {}", entry, ok ? "ok" : "FAILED");
 			runOk = runOk && ok;
 		}
-		if (chars && runOk) {
-			// Character folders: data/<name>/ holding _cmd/_mv/_sc/_com scripts (UNI2/MBTL chrNNN_mv_0.txt, UNIB/DFCI Aka_0_mv.txt).
-			int charOk = 0, charFail = 0;
-			std::map<std::string, std::vector<fs::path>> byDir;
-			for (auto &rel : files)
-				if (IsSquirrelScript(rel) && rel.generic_string().rfind("data/", 0) == 0)
-					byDir[rel.parent_path().generic_string()].push_back(rel);
-			auto order = [](const fs::path &p) {
-				const std::string f = p.filename().string();
-				if (f.find("_cmd") != std::string::npos) return 0;
-				if (f.find("_mv") != std::string::npos) return 1;
-				if (f.find("_sc") != std::string::npos) return 2;
-				if (f.find("_se_list") != std::string::npos) return 4;
-				return 3;
-			};
-			// COM (CPU AI) files build on data/_combase.txt (AddBasicMove, ...), which the game loads first.
-			bool comBaseDone = !fs::exists(root / "data/_combase.txt");
-			for (auto &[dir, list] : byDir) {
-				std::stable_sort(list.begin(), list.end(), [&](const fs::path &a, const fs::path &b) { return order(a) < order(b); });
-				bool ok = true;
-				for (auto &rel : list) {
-					if (order(rel) == 4) continue;   // se_list is loaded by the sound side, after the battle tables
-					if (order(rel) == 3 && !comBaseDone) {
-						comBaseDone = true;
-						if (!RunFile(rv, root / "data/_combase.txt", "./data/_combase.txt"))
-							LOGE("sqtool: chars: data/_combase.txt FAILED");
-					}
-					if (!RunFile(rv, root / rel, "./" + rel.generic_string())) {
-						ok = false;
-						LOGE("sqtool: chars: {} FAILED", rel.generic_string());
-					}
-				}
-				(ok ? charOk : charFail)++;
-			}
-			LOGI("sqtool: chars: {} character folders ran clean, {} with runtime errors", charOk, charFail);
-			runOk = charFail == 0;
-		}
 		std::vector<std::pair<int, std::string>> top;
 		for (auto &kv : g_stubCalls)
 			top.push_back({kv.second, kv.first});
@@ -657,7 +530,7 @@ int main(int argc, char **argv)
 	std::vector<std::string> args(argv + 1, argv + argc);
 	if (args.size() >= 2 && args[0] == "check") {
 		std::string api, report;
-		bool run = false, chars = false;
+		bool run = false;
 		for (size_t i = 2; i < args.size(); ++i) {
 			if (args[i] == "--api" && i + 1 < args.size())
 				api = args[++i];
@@ -665,14 +538,12 @@ int main(int argc, char **argv)
 				report = args[++i];
 			else if (args[i] == "--run")
 				run = true;
-			else if (args[i] == "--chars")
-				run = chars = true;
 		}
-		rc = CmdCheck(args[1], api, run, chars, report);
+		rc = CmdCheck(args[1], api, run, report);
 	} else if (args.size() >= 2 && args[0] == "compile") {
 		rc = CmdCompile(std::vector<std::string>(args.begin() + 1, args.end()));
 	} else {
-		LOGI("usage: sqtool check <gamedir> [--api <game>_api.json] [--run] [--chars] [--report out.tsv]");
+		LOGI("usage: sqtool check <gamedir> [--api <game>_api.json] [--run] [--report out.tsv]");
 		LOGI("       sqtool compile <file.txt>...");
 	}
 	g_log->flush_log();

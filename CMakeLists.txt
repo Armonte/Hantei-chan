@@ -1189,7 +1189,7 @@ target_include_directories(squirrel224 PUBLIC "${CMAKE_SOURCE_DIR}/third_party/s
 target_compile_definitions(squirrel224 PUBLIC SQ_FB_COMPAT)
 target_compile_options(squirrel224 PRIVATE -w)
 
-# sqtool: compile every script of a game with its exact VM; --run executes Battle_Init/Battle_Std, --chars then every character folder
+# sqtool: compile every script of a game with its exact VM; --run executes Battle_Init/Battle_Std
 # against native stubs generated from the IDB API table (docs/squirrel/api/<game>_api.json).
 add_executable(sqtool src/squirrel/sqtool.cpp)
 target_include_directories(sqtool PRIVATE "third_party")
@@ -1204,8 +1204,8 @@ set(SQTOOL_GAMEDATA_DIR "C:/dev/hantei-chan/gamedata" CACHE STRING "Extracted Fr
 add_test(NAME sqtool_fixture COMMAND sqtool compile tests/fixtures/squirrel/fb_style_move.txt WORKING_DIRECTORY ${CMAKE_SOURCE_DIR})
 add_test(NAME sqtool_fixture_bad COMMAND sqtool compile tests/fixtures/squirrel/syntax_error.txt WORKING_DIRECTORY ${CMAKE_SOURCE_DIR})
 set_tests_properties(sqtool_fixture_bad PROPERTIES WILL_FAIL TRUE)
-add_test(NAME sqtool_mbtl COMMAND sqtool check ${SQTOOL_GAMEDATA_DIR}/mbtl --api docs/squirrel/api/mbtl_api.json --chars WORKING_DIRECTORY ${CMAKE_SOURCE_DIR})
-add_test(NAME sqtool_uni2 COMMAND sqtool check ${SQTOOL_GAMEDATA_DIR}/uni2 --api docs/squirrel/api/uni2_api.json --chars WORKING_DIRECTORY ${CMAKE_SOURCE_DIR})
+add_test(NAME sqtool_mbtl COMMAND sqtool check ${SQTOOL_GAMEDATA_DIR}/mbtl --api docs/squirrel/api/mbtl_api.json --run WORKING_DIRECTORY ${CMAKE_SOURCE_DIR})
+add_test(NAME sqtool_uni2 COMMAND sqtool check ${SQTOOL_GAMEDATA_DIR}/uni2 --api docs/squirrel/api/uni2_api.json --run WORKING_DIRECTORY ${CMAKE_SOURCE_DIR})
 set_tests_properties(sqtool_mbtl sqtool_uni2 PROPERTIES SKIP_RETURN_CODE 77)
 
 # Squirrel script editor (phase P2/P3, docs/squirrel/SCOPE.md §2.4): CP932 document model + sandboxed
