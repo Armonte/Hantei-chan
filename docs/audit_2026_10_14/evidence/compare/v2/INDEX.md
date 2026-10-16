@@ -814,3 +814,81 @@ into `round13/reg/`). Full ctest 69/69 (`ctest_r13.log`, `--timeout 900`).
   per session): find what draws it (chara effect / aura particles / pattern-start script) and either hide it in the
   harness or mask it out of the pras comparison. Until then pras is at the floor off the arcs.
 - MBTL p238f10 (3.25 at zoom 1) is now the outlier among MBTL .pat controls (p277 0.00): split it by prop.
+
+## Round 14 / render-match14 (2026-10-16): the pras "extra object" is set-991's ring props; MBTL p238 is the HUD
+No editor (C++) change this round. Numbers: `tools/uni/s1_compare/v2_round14.sh` (log `round14.log`; offsets reused
+from `round13/reg`). Every round-13 line is unchanged (identical `: raw` lines). Full ctest 69/69 (`--timeout 900`).
+
+### pras_chr020_p5f2: the blue arcs are set-991 slots 41/44/45, and they change from run to run in the game
+- **Round 13 missed three slots.** Set 991 also has slots **41, 44, 45**: additive PRID 947/952/936, cut-outs on
+  tex 3 with shapes 47/51 (type 4, donut) and 38 (type 3, ring), tilted in 3D (PRA3 x/y non-zero), alpha 0x99/0x33/0x99.
+  41 and 44 have **no PRZM**, so `pat_solo_prop.py` could only move them to PRXY 30000 and could not collapse them.
+  Every round-13 solo (s12/slin/s1025/snone) therefore still had them in the game. That is why "snone" still showed arcs.
+- **Not a spawned effect.** Pattern 5 (しゃがみ中攻撃, `Mv_Atk_CroB`, an empty table in chr020_mv_0.txt) spawns nothing
+  before frame 3 (`EF type 9` at frame 3 only). Frame 2 has no EF.
+- **Proof.** `round14/chr020_991_norings.pat` is the original file with only slots 41/44/45 at PRCL alpha 0
+  (`cases/v2r14_chr020_norings.gcs`, capture `pras_chr020_p5f2_norings`). In that capture the arcs are gone. On the
+  game side the ring props are the only source of the arcs.
+- **Runtime-varying.** Two runs of the same ring-only file (`round14/chr020_solo991_srings.pat`, `v2r14_chr020_solo_srings{,_b}.gcs`)
+  differ by 5013 px. Only the thin arcs (and the timer-driven aura glow on the hat) differ; the plates are identical.
+  snone vs s1025 (byte-identical 41/44/45 data) differ the same way. The ring setup
+  (`CPAniPrimRender_Ring_Setup` / `_Donuts_Setup`) and the AFHK weight (`DrawObj_DrawLayers` → `Easing_ApplyCurve_AFHK`)
+  have no timer, so the time source is still unknown. Candidates not yet excluded: `CharaObj_DrawAfterimages` (it
+  redraws history records through `DrawObj_DrawLayers`) and the aura timer.
+- **The editor draws them as wide soft bands.** Editor shot `pras_chr020_p5f2_solo_srings_z1_pat` (new case row).
+  Sign flips of PRA3 x/y/z do not turn them into thin arcs. Where only the editor draws them, the game agrees: the
+  game draws the same soft band there, and **removing them from the full game frame takes lit from 0.88 to 6.40**.
+- **Mask (metric, documented).** `v2_mask_rings.py` (new) masks out the union of where the editor draws 41/44/45 and
+  where the game frame differs from the norings capture by more than 12, dilated by 2 px. Split on the r13 capture:
+
+| px set | px | mean | share |
+|---|---|---|---|
+| all footprint | 63496 | 0.98 | 100% |
+| editor-rings-only px | 24958 | **0.32** | 13% |
+| game-rings-only px (thin arcs) | 1296 | 31.65 | **66%** |
+| off the ring mask | 21647 | **0.27** | 9% |
+
+  pras is at the floor everywhere except the 1296 thin-arc px, which are runtime game output the editor cannot
+  reproduce statically.
+
+### MBTL mbtl_patctrl_chr001_p238f10_z1 (3.25): the MAGIC CIRCUIT HUD draws over the tray
+- Set 275 has three props: 4 (additive glow), 5 (opaque tray, rot 0.75), 18 (translucent, tilted x 0.879). Editor-only
+  solo shots (`mbtl_patctrl_chr001_p238f10_solo_s{4,5,18}_z1`, data `gamedata/mbtl/data/chr001solo`, other slots
+  PRID −1) were fed to `v2_split_by_shot.py`. The tray (s5) carries 67% at mean 7.52. Its best shift is 0,0 (7.43; ±1 px
+  14.6-19.9), so this is not registration.
+- `v2_mbtl_hud_split.py` (new): within the opaque tray footprint, 767 game px equal the plate. These are the MAGIC CIRCUIT
+  gauge (bottom-left HUD, which is in the plate) drawn on top of the tray, in rows 123-137 of the window. The model
+  composites the tray over the plate, so the gauge is "missing" there. Rows from 123 down: 10473 px at mean 7.61
+  (70%). **Off the HUD rows: 1.43.** This is the harness, not the renderer. Next: capture MBTL with the HUD hidden, or
+  mask those rows.
+
+### afhk_cg_chr020_p435_t27 (0.63): not decided this round (time cap)
+- The round-13 split stands: 8 rotated-texel px carry 28%, ±1 band 0.21. Whether the uniform +0.2..0.3 is the
+  gradient-fit extrapolation is still open. Next: fit the gradient on p435 itself, leaving out its own footprint ring,
+  and compare that against the idle-control fit.
+
+### Table
+
+| case | round 13 | **round 14** | floor |
+|---|---|---|---|
+| ctrl_chr020_p0 | 0.28 | **0.28** | is the floor |
+| afhk_cg_chr020_p435_t27 | 0.63 | **0.63** | 0.28 (open) |
+| afhk_cg_chr020_p437_t2 | 0.27 | **0.27** | at floor |
+| pras_chr020_p5f2_z1 (r13 capture) | 0.88 | 0.88; **0.27 off the ring mask** (editor-ring px 0.32) | at floor off the 1296 runtime-arc px |
+| ctrl / pups chr027, chr019, chr024 rows | as round 13 | **unchanged** | |
+| mbtl_patctrl_chr001_p238f10_z1 | 3.25 | 3.25; **1.43 off the HUD rows** | HUD occlusion (harness) |
+| mbtl_patctrl_chr001_p277f0_z1 | 0.00 | **0.00** | |
+| mbtl_flipV_chr001_p157f2_z1 | 1.28 | **1.28** | |
+| mbtl_pups_chr011_p309_z1 | 0.14 | **0.14** | |
+
+### UNI2 IDB (renamed, commented, saved)
+- Renamed: CPAniPrimRender_Sphere_Setup 0x414A60, CPAniPrimRender_Corn_Setup 0x414DF0, PatPart_SubmitPrimQueue_2D
+  0x4C0BC0 (named from its call site; the body is not traced).
+- Commented: Han6Draw_DrawPatLayerParts_2D (ctx layout: current/next set, AFHK weight), CPAniPrimRender_Donuts_Setup
+  (the round-14 runtime arcs), CharaObj_DrawAfterimages. MBTL IDB not needed.
+
+### Next
+- Find the time source of the ring-prop arcs: watch slots 41/44 draw calls live (break in `CPAniPrimRender_Donuts_Setup`
+  for PRID 947 and dump the matrix in two runs), or check `CharaObj_DrawAfterimages` records for P1.
+- MBTL: recapture p238 with the HUD hidden (or mask the gauge rows in v2_model) so the control drops to about 1.4.
+- afhk p435: the gradient-fit question above.
