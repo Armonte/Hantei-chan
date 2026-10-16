@@ -40,3 +40,22 @@ for n, c in zip(shots, wrapped.cov):
     print('%-44s px %6d  lit %.2f (share %4.1f%%)  raw %.2f (share %4.1f%%)' % (n, s.sum(), dl[s].mean(), dl[s].sum() * 100 / tl, dr[s].mean(), dr[s].sum() * 100 / tr))
 s = m & ~cov_any
 print('%-44s px %6d  lit %.2f (share %4.1f%%)  raw %.2f (share %4.1f%%)' % ('(none of these shots)', s.sum(), dl[s].mean(), dl[s].sum() * 100 / tl, dr[s].mean(), dr[s].sum() * 100 / tr))
+# render-match17: exclusive coverage combinations, each split into edge (within 1 px of a coverage boundary of any
+# shot or the footprint) and interior, with the signed lit residual (game - prediction) per region.
+if os.environ.get('SPLIT_EXCL'):
+    from scipy import ndimage
+    cs = [(c > 0.02) & m for c in wrapped.cov]
+    edge = np.zeros(m.shape, bool)
+    for c in cs + [m]:
+        edge |= c ^ ndimage.binary_erosion(c, iterations=1, border_value=0)
+    edge = ndimage.binary_dilation(edge, iterations=1) & m
+    sl = (G - lp).mean(2)
+    print('-- exclusive regions (edge = within 1 px of a coverage boundary)')
+    for code in range(1, 1 << len(cs)):
+        r = m.copy()
+        for i, c in enumerate(cs): r &= c if code >> i & 1 else ~c
+        if not r.any(): continue
+        nm = '+'.join(shots[i].split('_solo_')[-1] for i in range(len(cs)) if code >> i & 1)
+        for tag, rr in (('edge', r & edge), ('inner', r & ~edge)):
+            if rr.any():
+                print('%-16s %-5s px %6d  lit %.2f signed %+.2f (share %4.1f%%)  |d|>8 px %d' % (nm, tag, rr.sum(), dl[rr].mean(), sl[rr].mean(), dl[rr].sum() * 100 / tl, (dl[rr] > 8).sum()))

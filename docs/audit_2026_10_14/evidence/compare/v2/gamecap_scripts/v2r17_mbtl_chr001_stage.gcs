@@ -1,0 +1,40 @@
+# render-match17 (2026-10-16): v2r16_mbtl_chr001_nohud.gcs on the pinned stage (STAGE, default 21). The MBTL chr001 rows (idle control, p157f2, p238f10, p277f0) recaptured with the battle
+# HUD / gauges hidden: g_BattleHudFader (MBTL IDB 0xAFC3C8, the object TutorialTalk GAUGEVIEW 0 hides) held at state 2,
+# alpha 0. Otherwise as v2p_mbtl_ctrl_chr001.gcs / v2r5_mbtl_chr001.gcs (MBTL-IM bloom 0, same-session plates).
+include ../games/mbtl.gcs
+sym g_BattleHudFader 0xAFC3C8
+sym g_BattleStageSel 0xAFC04C
+sym g_CurStageIndex 0xA2E47C
+let STAGE 21
+let P1CHR 1
+let P2CHR 1
+ini_set MBTL-IM/MBTL_IM.ini Stages BloomStrength 0
+include ../games/mbtl_to_training_stage.gcs
+hold i32 [g_BattleHudFader]+8 2
+hold i32 [g_BattleHudFader]+16 0
+hold i32 [g_BattleHudFader]+20 0
+step 4
+set OUTD C:\dev\hantei-chan\tools\gamecap\captures\v2\nohud_st
+set NSTEPS 1
+set GTICK 1
+set CASE mbtl_patctrl_chr001_p238f10
+set PAT 238
+set SETFRAME 10
+set FRAME 10
+include ../games/mbtl_v2_case_plate.gcs
+set CASE mbtl_patctrl_chr001_p277f0
+set PAT 277
+set SETFRAME 0
+set FRAME 0
+include ../games/mbtl_v2_case_plate.gcs
+set CASE mbtl_ctrl_chr001_p0f0
+set PAT 0
+set SETFRAME 0
+set FRAME 0
+include ../games/mbtl_v2_case_plate.gcs
+set CASE mbtl_flipV_chr001_p157f2
+set PAT 157
+set SETFRAME 2
+set FRAME 2
+include ../games/mbtl_v2_case_plate.gcs
+quit

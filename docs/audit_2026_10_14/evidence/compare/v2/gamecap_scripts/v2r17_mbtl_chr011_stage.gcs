@@ -1,0 +1,24 @@
+# render-match17 (2026-10-16): mbtl_pups_chr011_p309 HUD-free (g_BattleHudFader) on a pinned stage (-D STAGE=n,
+# games/mbtl_to_training_stage.gcs). Shots in captures/v2/nohud_st.
+include ../games/mbtl.gcs
+sym g_BattleHudFader 0xAFC3C8
+sym g_BattleStageSel 0xAFC04C
+sym g_CurStageIndex 0xA2E47C
+let STAGE 21
+let P1CHR 11
+let P2CHR 11
+ini_set MBTL-IM/MBTL_IM.ini Stages BloomStrength 0
+include ../games/mbtl_to_training_stage.gcs
+hold i32 [g_BattleHudFader]+8 2
+hold i32 [g_BattleHudFader]+16 0
+hold i32 [g_BattleHudFader]+20 0
+step 4
+set OUTD C:\dev\hantei-chan\tools\gamecap\captures\v2\nohud_st
+set NSTEPS 1
+set GTICK 1
+set CASE mbtl_pups_chr011_p309
+set PAT 309
+set SETFRAME 0
+set FRAME 0
+include ../games/mbtl_v2_case_plate.gcs
+quit
