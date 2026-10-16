@@ -12,13 +12,27 @@
 #   cgm-project-refs   shared bank: insert/move/delete rewrite EVERY project that draws it, shared files untouched, inverse byte-identical
 #   cgm-folder         cgtool export -> plain import / sync identical; folder add/remove/reorder; build from folder; resized replace
 #   cgm-cc-palettes    PovertyCaster <charID>_<palNum>.png + .pal grown past 36 (MBAACC)
+#   texsrc-pat         cgmtex (src/cgm/cgm_texsrc.h, the CG + .pat browser's layer) on EVERY .pat of the game: byte-exact load -> save, every texture
+#                      decoded, PNG export -> import of each texture (first 8 per file; --every: all) changes no byte, a texture replaced ->
+#                      saved -> reloaded decodes as edited and the parts sampling it follow (MBAACC, UNIB, UNI2, MBTL; ActCadenza has no .pat)
+#   texsrc-cg          the same operations on the sampled CG banks through the same layer (cgmtool covers the banks themselves)
 HERE="$(cd "$(dirname "$0")" && pwd)"; ROOT="$(cd "$HERE/../.." && pwd)"
 T="$ROOT/build/cgmtool.exe"; QUICK=0; EVERY=0; JOBS=4; GAMES="MBAACC UNIB UNI2 MBTL MBAC"
 while [ $# -gt 0 ]; do case "$1" in --quick) QUICK=1;; --every) EVERY=1;; --jobs) JOBS="$2"; shift;; --games) GAMES="$2"; shift;; *.exe) T="$1";; esac; shift; done
 GD="${CGM_GAMEDATA:-/mnt/c/dev/hantei-chan/gamedata}"
 SCR="${CGM_TMP:-C:\\dev\\hantei-chan\\work\\cgm_suite}"
 w() { while read -r f; do wslpath -w "$f"; done; }
-rc=0; NPAL=40; [ $EVERY -eq 1 ] && NPAL=100000
+TX="$(dirname "$T")/cgmtex.exe"; TXMAX=8
+rc=0; NPAL=40; [ $EVERY -eq 1 ] && { NPAL=100000; TXMAX=0; }
+# texsrc <pat list file> <cg list file>: the unified browser's operations (cgmtex) on .pat textures and CG images
+texsrc() {
+	[ -x "$TX" ] || { echo "SECTION texsrc: skipped (no cgmtex.exe)"; return; }
+	local out r; mapfile -t X < <(cat "$1" | w)
+	if [ ${#X[@]} -gt 0 ]; then out=$(cd "$ROOT/build" && nice -n 10 "$TX" check --max $TXMAX "${X[@]}" 2>&1); r=$?; echo "$out" | grep -E "^(FAIL|SECTION)"; [ $r -ne 0 ] && { echo "!! cgmtex check (.pat) exited $r"; rc=1; }; fi
+	mapfile -t X < <(cat "$2" | w); local S=() n=0 sp=$(( (${#X[@]} + 5) / 6 )); [ $EVERY -eq 1 ] && sp=1
+	for b in "${X[@]}"; do [ $((n % sp)) -eq 0 ] && S+=("$b"); n=$((n + 1)); done
+	if [ ${#S[@]} -gt 0 ]; then out=$(cd "$ROOT/build" && nice -n 10 "$TX" check --max 16 "${S[@]}" 2>&1); r=$?; echo "$out" | grep -E "^(FAIL|SECTION)"; [ $r -ne 0 ] && { echo "!! cgmtex check (.cg) exited $r"; rc=1; }; fi
+}
 run() { local out r; out=$(nice -n 10 "$T" "$@" 2>&1); r=$?; echo "$out" | grep -E "^(FAIL|SECTION)"; [ $r -ne 0 ] && { echo "!! $1 $2 exited $r"; rc=1; }; }
 # non-quick sections are queued (one tab-separated command per line) and run in parallel at the end; {TMP} becomes a per-job scratch folder
 queue() { local IFS=$'\t'; echo "$*" >> "$L/jobs"; }
@@ -52,25 +66,30 @@ for g in $GAMES; do
 	MBAACC)
 		ls /mnt/c/games/mbaacc/data/*.cg > $L/b 2>/dev/null; ls /mnt/c/games/mbaacc/data/*.pal > $L/p 2>/dev/null
 		game MBAACC $L/b $L/p /mnt/c/games/mbaacc/data/akiha.cg /mnt/c/games/mbaacc/data/neco.cg
+		ls /mnt/c/games/mbaacc/data/*.pat > $L/t 2>/dev/null; texsrc $L/t $L/b
 		run cc-check "$(wslpath -w /mnt/c/games/mbaacc/data/arc.pal)" "$(wslpath -w /mnt/c/games/mbaacc/data/akiha.pal)"
 		;;
 	UNIB)
 		ls /mnt/c/games/unib/data/*/*.cg > $L/b 2>/dev/null; ls /mnt/c/games/unib/data/*/*.pal > $L/p 2>/dev/null
 		game UNIB $L/b $L/p /mnt/c/games/unib/data/Hyd_0/Hyd.cg
+		find /mnt/c/games/unib/data -iname '*.pat' 2>/dev/null | sort > $L/t; texsrc $L/t $L/b
 		;;
 	UNI2)
 		find "$GD/uni2/data" -iname '*.cg' 2>/dev/null | sort > $L/b; find "$GD/uni2/data" -iname '*.pal' 2>/dev/null | sort > $L/p
 		game UNI2 $L/b $L/p "$GD/uni2/data/chr000/chr000.cg" "$GD/uni2/data/chr006/chr006.cg"
+		find "$GD/uni2/data" -iname '*.pat' 2>/dev/null | sort > $L/t; texsrc $L/t $L/b
 		[ -s $L/p ] && { mapfile -t P < <(grep -v _coloredit $L/p | head -$NPAL | w); run pal-check-uni "${P[@]}"; }
 		;;
 	MBTL)
 		find "$GD/mbtl/data" -iname '*.cg' 2>/dev/null | sort > $L/b; find "$GD/mbtl/data" -iname '*.pal' 2>/dev/null | sort > $L/p
 		game MBTL $L/b $L/p "$GD/mbtl/data/chr000/chr000.cg" "$GD/mbtl/data/chr011/chr011.cg"
+		find "$GD/mbtl/data" -iname '*.pat' 2>/dev/null | sort > $L/t; texsrc $L/t $L/b
 		[ -s $L/p ] && { mapfile -t P < <(grep -v _coloredit $L/p | head -$NPAL | w); run pal-check-uni "${P[@]}"; }
 		;;
 	MBAC)
 		find "$GD/mbac/02" -iname "*.DAT" 2>/dev/null | sort > $L/b; : > $L/p   # character DATs; the 05/BG*.DAT stage files hold a different CG layout (not a character bank)
 		game MBAC $L/b $L/p
+		: > $L/t; texsrc $L/t $L/b   # no .pat: the CG inside the DATs through the same layer
 		[ $QUICK -eq 0 ] && [ $EVERY -eq 0 ] && [ -f "$GD/mbac/02/GAKIHA.DAT" ] && { G=$(wslpath -w "$GD/mbac/02/GAKIHA.DAT"); queue MBAC struct-check "$G"; queue MBAC roundtrip "$G" --tmp "{TMP}"; }
 		[ $QUICK -eq 0 ] && [ -f "$GD/mbac/02/GAKIHA.DAT" ] && queue MBAC folder-check "$(wslpath -w "$GD/mbac/02/GAKIHA.DAT")" --tmp "{TMP}"
 		;;
