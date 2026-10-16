@@ -62,3 +62,43 @@ Instance-returning wrappers (`SqratWrap_instance__*`) push a per-class static (e
 `push offset dword_364B874; call Sqrat_CreateClass`, then binds fields with `Sqrat_Class_Var*` (name, byte offset) and ends with
 `Sqrat_RootTable_BindTable("MvStatus")`. Field types come from the binder's getter: `*(_DWORD*)` int, `*(__int16*)` short,
 `unsigned __int8` bool (sub_455E40).
+
+## Battle VM setup (`Sq_InitBattleVM` 0x7F4710)
+
+`Sq_RegisterBattleObjectFunctions`, then `./script/Battle_Init.txt` ("BattleInit"), `./script/Battle_Std.txt` ("BattleScript"),
+then `./data/_combase.txt` ("_com_base_"). The sc file runs through `Sq_RunScriptBuffer` 0x815680 in the same VM; the engine
+reads root `Battle_Status` {HpDivValue, HpDivRatio, CP_VecMinus_Ground/Air/AirBound, CP_Time_Val, Blast_DamagePlus, HeatStatus,
+MoonStatus{ValueMax}, MvActionParam, VS_AtkVal_HP[4], VS_DefVal_HP[4], VS_HealVal[2], GuardDam_CorrectLower/CorrectHeal/
+StopTime, GRD{AutoFramePlus, BoundTimePlus, ShieldFramePlus, JustShieldPlus, PassiveMovePlus, PressureVal_Min/Max, MaxKeepTime,
+BreakTime, OverBreakTime, JustShieldMinus, FaildGuardMinus, Liberate_AutoPlusVal, ReduceSuccessPlus, JudgeWin_*, JudgeBreak_*}}
+and deletes it (`Sq_DeleteRootSlot` 0x815580 runs `if ("X" in getroottable()) { delete X; }`).
+
+## Load-time natives (every native the vanilla character loads call; `sqtool check --chars --calls`)
+
+The character is pushed on the engine's object stack after its sc file and before LoadCommandList; natives reading "the
+current object" see nothing during the VM setup and the sc file.
+
+| native | exe | load-time behaviour (implemented in src/squirrel/sq_api.cpp `CallTracedNative`) |
+|---|---|---|
+| BMvEff.GetPatternNum({pat, datatype=0}) | 0x7FDAD0 → `PatternNum_FromSqObject` 0x444450 → `CharaObj_FindPatternByCodeName` 0x41E770 | no object → -1; integer pat → itself; string pat, datatype 0 → first PTCN match in the character's HA6 stack, 1 → `g_ExtraPlayerObject` (data/effect.txt); else -1 |
+| BtlMvStd.CheckHan6Data | 0x80B450 | release build: `return 0` ("0 = debug off"; the developers' debug build returns -1/-2 for missing pattern/frames) |
+| BMvCore.GetCharaNo | 0x7F5360 | player data chara number; -1 without an object |
+| BMvTbl.GetCharaNo | 0x80A130 | object +5; 0 without an object |
+| BMvTbl.GetMvStatus().CharaNo | 0x80A430 | object +5 (the other MvStatus fields are battle state; vanilla loads only read CharaNo) |
+| BMvCore.VsScreen_GetCharaNo | 0x7F5300 | `g_VsScreenCharaNo` 0xC0BE30, the chara-list index the loader set (sqtool: folder number) |
+| BMvTbl.GetPlayerSide | 0x80A110 | object side byte (+1260) != 0 (sqtool `--side`) |
+| MvStageStatus.IsTrainingBattle | 0x808020 | game mode: 0+sub 1 or 3 → 1, 4 → 2, 5 → 3, else 0 (sqtool `--mode`/`--training`) |
+| BMvTbl.GetRapidBeatType(i) | 0x8064C0 | root chara +20 (0..3): i=0 → {0,1,2,0}, i=1 → {0,1,1,1}; 0 in modes 4/5 (sqtool `--rapidbeat`) |
+| BMvEff.GetVector_FromAngle({angle, speed=100}) | 0x7FBF60 | x = sin(angle·π)·speed, y = cos(angle·π)·−speed (angle in half turns: Battle_Std passes angle/10000·2) |
+| BtlMvStd.IsFileAlive | | file existence inside the game root |
+
+## What a missing pattern does
+
+`Battle_Std::MakeMoveTmpl` looks up a template move's pattern by code (`Mv_Skill_<X>` → `<X>`, or `usepat`). In the release
+build `CheckHan6Data` is 0, so a missing code becomes `GetPatternNum` = -1 and the move's `Init_Std` calls
+`BMvTbl.SetPattern(-1)` → `Sq_SetPattern` 0x80B0D0 → `Object_SetPatternFrame(obj, -1, 0)` 0x510800: pattern -1 = keep the
+current pattern, frame 0. Entering such a move keeps whatever the character was showing and restarts it from frame 0; it does
+not crash. The standard move builders (`GetStdMoveTable`, `makemv_*`) also probe optional per-character codes (BlastFall,
+P_AtkA, ...); those misses are by design and are not tied to a command. `sqtool --chars` reports a missing code only for a
+template move the character's `<CHR>_CommandTable` can start (UpdateTable.name), with the move name read from the calling
+script frame (`mvname`). Vanilla MBTL: none.
