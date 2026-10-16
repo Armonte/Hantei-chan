@@ -47,6 +47,12 @@ inline void AfDisplay(Frame_AF *af, int &selectedLayer, FrameData *frameData = n
 	static Frame_AF copiedAnimationFrame = {};
 
 	const float width = ui::Px(50.f);   // follows the font size (ui_style.h)
+	// Label-first form (ui_style.h LabelForm): one label column for every section of this display.
+	const bool uniAf = frameData && frameData->usesUniFormat();
+	const float lw = ui::LabelColW({LBL("Draw bucket (AFPL)"), LBL("Sprite"), LBL("Use .pat"), LBL("Animation"),
+		LBL("Go to"), LBL("Landing frame"), LBL("Z-Priority"), LBL("Loop N times"), LBL("End of loop"), LBL("Duration"),
+		LBL("Interpolation"), "X", "Y", LBL("Blend Mode"), LBL("Color"), LBL("Rot XYZ"), LBL("Scale"),
+		uniAf ? LBL("Frame ID (AFID)") : "", uniAf ? LBL("AFJH") : "", uniAf ? LBL("Params (AFPA)") : ""});
 
 	// ============================================================================
 	// Multi-Layer UI (UNI AFGX support)
@@ -121,15 +127,14 @@ inline void AfDisplay(Frame_AF *af, int &selectedLayer, FrameData *frameData = n
 		if (im::IsItemHovered()) Tooltip("Select which layer to edit");
 
 		// AFPL: draw bucket of the layer (UNI2/MBTL).
-		im::SameLine(0, 20.f);
-		im::SetNextItemWidth(width * 3);
 		static const char* const kBuckets[] = {
 			"0: with object", "1: top (403)", "2: front (338)", "3: just in front", "4: just behind" };
 		int& pl = af->layers[selectedLayer].priority;
+		if (ui::BeginLabelForm("##af_bucket", lw)) {
 		if (pl >= 0 && pl <= 4) {
-			if (i18n::Combo(LBL("Draw bucket (AFPL)"), &pl, kBuckets, IM_ARRAYSIZE(kBuckets)))
+			if (i18n::Combo(ui::FormRow(LBL("Draw bucket (AFPL)")), &pl, kBuckets, IM_ARRAYSIZE(kBuckets)))
 				markModified();
-		} else if (im::InputInt(LBL("Draw bucket (AFPL)"), &pl, 0, 0)) {
+		} else if (im::InputInt(ui::FormRow(LBL("Draw bucket (AFPL)")), &pl, 0, 0)) {
 			markModified();
 		}
 		if (im::IsItemHovered())
@@ -138,21 +143,23 @@ inline void AfDisplay(Frame_AF *af, int &selectedLayer, FrameData *frameData = n
 				"1 = bucket 403, 2 = bucket 338 (drawn over the characters)\n"
 				"3 = object + 258 (just in front of it), 4 = object + 254 (just behind)\n"
 				"Buckets are drawn in ascending order.");
+		ui::EndLabelForm();
+		}
 	}
-
-	im::Separator();
 
 	// Get reference to the layer we're editing
 	Layer_Type& layer = af->layers[selectedLayer];
 
 	// Sprite and .pat (per-layer properties)
-	im::SetNextItemWidth(width*3);
-	if(im::InputInt(LBL("Sprite"), &layer.spriteId)) {
-		markModified();
-	}
-	im::SameLine(0, 20.f);
-	if(im::Checkbox(LBL("Use .pat"), &layer.usePat)) {
-		markModified();
+	ui::FormSection(TXT("Sprite"));
+	if(ui::BeginLabelForm("##af_sprite", lw)) {
+		if(im::InputInt(ui::FormRow(LBL("Sprite")), &layer.spriteId)) {
+			markModified();
+		}
+		if(im::Checkbox(ui::FormRow(LBL("Use .pat")), &layer.usePat)) {
+			markModified();
+		}
+		ui::EndLabelForm();
 	}
 
 	if(im::SmallButton(LBL("Copy animation"))) {
@@ -185,7 +192,7 @@ inline void AfDisplay(Frame_AF *af, int &selectedLayer, FrameData *frameData = n
 	}
 	if(im::IsItemHovered()) Tooltip("Paste sprite, duration, jumps, priority, and loops");
 
-	im::Separator();
+	ui::FormSection(TXT("Animation"));
 
 	unsigned int flagIndex = -1;
 	if(BitField("Animation flags", &af->aniFlag, &flagIndex, 4)) {
@@ -199,16 +206,16 @@ inline void AfDisplay(Frame_AF *af, int &selectedLayer, FrameData *frameData = n
 		case 3: Tooltip("End of loop: Use relative offset"); break;
 	}
 
-	if(i18n::Combo(LBL("Animation"), &af->aniType, animationList, IM_ARRAYSIZE(animationList))) {
+	const bool afTiming = ui::BeginLabelForm("##af_timing", lw);
+	if(afTiming) {
+	if(i18n::Combo(ui::FormRow(LBL("Animation")), &af->aniType, animationList, IM_ARRAYSIZE(animationList))) {
 		markModified();
 	}
 
-	im::SetNextItemWidth(width);
-	if(im::InputInt(LBL("Go to"), &af->jump, 0, 0)) {
+	if(im::InputInt(ui::FormRow(LBL("Go to")), &af->jump, 0, 0)) {
 		markModified();
 	}
-	im::SameLine(0.f, 20); im::SetNextItemWidth(width);
-	if(im::InputInt(LBL("Landing frame"), &af->landJump, 0, 0)) {
+	if(im::InputInt(ui::FormRow(LBL("Landing frame")), &af->landJump, 0, 0)) {
 		markModified();
 	}
 
@@ -217,7 +224,8 @@ inline void AfDisplay(Frame_AF *af, int &selectedLayer, FrameData *frameData = n
 		static int landingFrameToolValue = 0;
 		static int landingFrameRange[2] = {0, 0};
 
-		im::SetNextItemWidth(width);
+		ui::FormRow("");
+		im::SetNextItemWidth(ui::FieldW());
 		im::InputInt("##LandingValue", &landingFrameToolValue, 0, 0);
 		if(im::IsItemHovered()) Tooltip("Landing frame value to set");
 
@@ -274,24 +282,23 @@ inline void AfDisplay(Frame_AF *af, int &selectedLayer, FrameData *frameData = n
 		}
 	}
 
-	im::SetNextItemWidth(width);
-	if(im::InputInt(LBL("Z-Priority"), &af->priority, 0, 0)) {
+	if(im::InputInt(ui::FormRow(LBL("Z-Priority")), &af->priority, 0, 0)) {
 		markModified();
 	}
-	im::SetNextItemWidth(width);
-	if(im::InputInt(LBL("Loop N times"), &af->loopCount, 0, 0)) {
+	if(im::InputInt(ui::FormRow(LBL("Loop N times")), &af->loopCount, 0, 0)) {
 		markModified();
 	}
-	im::SameLine(0,20); im::SetNextItemWidth(width);
-	if(im::InputInt(LBL("End of loop"), &af->loopEnd, 0, 0)) {
+	if(im::InputInt(ui::FormRow(LBL("End of loop")), &af->loopEnd, 0, 0)) {
 		markModified();
 	}
-	if(im::InputInt(LBL("Duration"), &af->duration, 1, 0)) {
+	if(im::InputInt(ui::FormRow(LBL("Duration")), &af->duration, 1, 0)) {
 		markModified();
+	}
+	ui::EndLabelForm();
 	}
 	im::EndDisabled(); // templateLocked (timing)
 
-	im::Separator();
+	ui::FormSection(TXT("Transforms"));
 
 	// Copy/paste buttons for transform section
 	static Layer_Type copiedTransformLayer = {};
@@ -324,24 +331,29 @@ inline void AfDisplay(Frame_AF *af, int &selectedLayer, FrameData *frameData = n
 	}
 	if(im::IsItemHovered()) Tooltip("Paste offset, rotation, scale, color, blend mode, and interpolation");
 
-	if(i18n::Combo(LBL("Interpolation"), &af->interpolationType, interpolationList, IM_ARRAYSIZE(interpolationList))) {
-		markModified();
+	if(ui::BeginLabelForm("##af_interp", lw)) {
+		if(i18n::Combo(ui::FormRow(LBL("Interpolation")), &af->interpolationType, interpolationList, IM_ARRAYSIZE(interpolationList))) {
+			markModified();
+		}
+		ui::EndLabelForm();
 	}
 	im::EndDisabled(); // templateLocked
 
-	im::SetNextItemWidth(width);
-	im::DragInt("X", &layer.offset_x);
-	if(im::IsItemDeactivatedAfterEdit()) {
-		markModified();
-	}
-	im::SameLine();
-	im::SetNextItemWidth(width);
-	im::DragInt("Y", &layer.offset_y);
-	if(im::IsItemDeactivatedAfterEdit()) {
-		markModified();
+	if(ui::BeginLabelForm("##af_offset", lw)) {
+		im::DragInt(ui::FormRow("X"), &layer.offset_x);
+		if(im::IsItemDeactivatedAfterEdit()) {
+			markModified();
+		}
+		im::DragInt(ui::FormRow("Y"), &layer.offset_y);
+		if(im::IsItemDeactivatedAfterEdit()) {
+			markModified();
+		}
+		ui::EndLabelForm();
 	}
 
 	im::BeginDisabled(templateLocked);
+	const bool afLook = ui::BeginLabelForm("##af_look", lw);
+	if(afLook) {
 	// MBAA blend numbering, confirmed in MBAA.exe: HA6_ParseAnimationFrameChunks stores AFAL int0 at
 	// frame+0x1B; SpriteAnimation_Render 0x407462 maps 0 -> preset 0 (Sprite_EmitTransformedQuad: preset 1 with
 	// alpha forced to 255), 2 -> preset 2, 3 -> preset 3, anything else -> preset 1. g_BlendPresetTable 0x54CC50:
@@ -351,7 +363,7 @@ inline void AfDisplay(Frame_AF *af, int &selectedLayer, FrameData *frameData = n
 	int mode = layer.blend_mode-1;
 	if(mode < 1)
 		mode = 0;
-	if (i18n::Combo(LBL("Blend Mode"), &mode, "Normal\0Additive\0Subtractive\0"))
+	if (i18n::Combo(ui::FormRow(LBL("Blend Mode")), &mode, "Normal\0Additive\0Subtractive\0"))
 	{
 		layer.blend_mode=mode+1;
 		markModified();
@@ -362,17 +374,19 @@ inline void AfDisplay(Frame_AF *af, int &selectedLayer, FrameData *frameData = n
 			"2 = additive (src alpha, one)\n"
 			"3 = subtractive (reverse subtract, src alpha, one)\n"
 			"No AFAL = normal with the alpha forced to 255.");
-	if(im::ColorEdit4(LBL("Color"), layer.rgba)) {
+	if(im::ColorEdit4(ui::FormRow(LBL("Color")), layer.rgba)) {
 		markModified();
 	}
 
-	im::DragFloat3(LBL("Rot XYZ"), layer.rotation, 0.005);
+	im::DragFloat3(ui::FormRow(LBL("Rot XYZ")), layer.rotation, 0.005);
 	if(im::IsItemDeactivatedAfterEdit()) {
 		markModified();
 	}
-	im::DragFloat2(LBL("Scale"), layer.scale, 0.1);
+	im::DragFloat2(ui::FormRow(LBL("Scale")), layer.scale, 0.1);
 	if(im::IsItemDeactivatedAfterEdit()) {
 		markModified();
+	}
+	ui::EndLabelForm();
 	}
 	if (uni) {
 		// UNI2/MBTL store AFRT per layer (Han6_LoadFrameAF, layer +32).
@@ -383,15 +397,13 @@ inline void AfDisplay(Frame_AF *af, int &selectedLayer, FrameData *frameData = n
 		markModified();
 	}
 	if (uni) {
-		im::Separator();
-		im::TextDisabled(TXT("Script references (UNI/MBTL)"));
-		im::SetNextItemWidth(width);
-		if (im::InputInt(LBL("Frame ID (AFID)"), &af->frameId, 0, 0))
+		ui::FormSection(TXT("Script references (UNI/MBTL)"));
+		if (ui::BeginLabelForm("##af_uni", lw)) {
+		if (im::InputInt(ui::FormRow(LBL("Frame ID (AFID)")), &af->frameId, 0, 0))
 			markModified();
 		if (im::IsItemHovered())
 			Tooltip("AFID: frame id the Squirrel move scripts look up (frame +248, int16).");
-		im::SameLine(0, 20.f);
-		if (im::Checkbox(LBL("AFJH"), &af->afjh))
+		if (im::Checkbox(ui::FormRow(LBL("AFJH")), &af->afjh))
 			markModified();
 		if (im::IsItemHovered())
 			Tooltip("AFJH: frame flag byte (+262); set on the first frame of most patterns.");
@@ -399,22 +411,22 @@ inline void AfDisplay(Frame_AF *af, int &selectedLayer, FrameData *frameData = n
 		int16_t pa[2];
 		memcpy(pa, af->param, 4);
 		int pai[2] = { pa[0], pa[1] };
-		im::SetNextItemWidth(width * 2.5f);
-		if (im::InputInt2(LBL("Params (AFPA)"), pai)) {
+		if (im::InputInt2(ui::FormRow(LBL("Params (AFPA)")), pai)) {
 			pa[0] = (int16_t)pai[0]; pa[1] = (int16_t)pai[1];
 			memcpy(af->param, pa, 4);
 			markModified();
 		}
 		if (im::IsItemHovered())
 			Tooltip("AFPA: two int16 values for the move scripts (frame +250 / +252).");
+		ui::EndLabelForm();
+		}
 	}
 	if(clipboard) {
-		im::SameLine(0,20.f);
 		if(im::Button(LBL("Copy AF"))) {
 			*clipboard = *af;
 		}
 		if(im::IsItemHovered()) Tooltip("Copy all animation data (sprite, timing, transforms, colors)");
-		im::SameLine(0,20.f);
+		i18n::SameLineFit(i18n::ButtonWidth(LBL("Paste AF")));
 		if(im::Button(LBL("Paste AF"))) {
 			*af = *clipboard;
 			markModified();
