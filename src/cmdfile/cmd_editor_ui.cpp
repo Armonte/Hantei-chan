@@ -454,7 +454,7 @@ void CommandFileEditor::View::drawCommandsTab(const std::vector<Diagnostic>& dia
 	if (ImGui::ArrowButton("##down", ImGuiDir_Down)) moveSelected(1);
 	ImGui::EndDisabled();
 	ImGui::SameLine();
-	ImGui::SetNextItemWidth(260);
+	ImGui::SetNextItemWidth(ui::Px(260));
 	ImGui::InputTextWithHint("##search", TXT("Search ID, input, pattern, comment, note"), &search);
 	if (!search.empty()) { ImGui::SameLine(); if (ImGui::SmallButton("x")) search.clear(); }
 	ImGui::SameLine();
@@ -462,7 +462,7 @@ void CommandFileEditor::View::drawCommandsTab(const std::vector<Diagnostic>& dia
 	i18n::Combo("##flagfilter", &flagFilterSet, "Any flags\0Flagset 1 bit\0Flagset 2 bit\0");
 	if (flagFilterSet) {
 		ImGui::SameLine();
-		ImGui::SetNextItemWidth(70);
+		ImGui::SetNextItemWidth(ui::Px(70));
 		if (ImGui::InputInt("##flagbit", &flagFilterBit)) flagFilterBit = std::clamp(flagFilterBit, 0, 31);
 	}
 	if (ImGui::IsItemHovered()) ImGui::SetTooltip(TXT("Show only commands with this flag bit set (e.g. every EX-cancelable move)"));
@@ -706,7 +706,7 @@ void CommandFileEditor::View::drawCommandDetail()
 		if (hasClass) {
 			static const char* classes[] = { "0 Normal", "1 Special", "2 EX" };
 			int cls = bits[0] - '0';
-			ImGui::SetNextItemWidth(100);
+			ImGui::SetNextItemWidth(ui::Px(100));
 			if (i18n::Combo("##class", &cls, classes, 3)) { bits[0] = static_cast<char>('0' + cls); setField(field, bits); }
 			if (ImGui::IsItemHovered()) ImGui::SetTooltip(TXT("Cancel class (first digit): normal / special / EX"));
 			ImGui::SameLine();
@@ -731,7 +731,7 @@ void CommandFileEditor::View::drawCommandDetail()
 	{
 		static const char* opts[] = { "0: both", "1: team only", "2: solo only" };
 		int v = static_cast<int>(ParseInteger(c.fields[CF_TeamSolo]).value_or(-1));
-		ImGui::SetNextItemWidth(160);
+		ImGui::SetNextItemWidth(ui::Px(160));
 		if (v >= 0 && v <= 2) {
 			if (i18n::Combo("##teamsolo", &v, opts, 3)) setField(CF_TeamSolo, std::to_string(v));
 		} else ImGui::TextColored(kWarnColor, "%s (unknown)", c.fields[CF_TeamSolo].c_str());
@@ -907,7 +907,7 @@ void CommandFileEditor::View::drawCheckDetail()
 	const ExComTypeInfo* info = type ? FindExComType(static_cast<int>(*type)) : nullptr;
 	ImGui::Text(TXT("Row %03d for command %s"), chk.index, chk.values[XF_CheckNum].value_or("?").c_str());
 	ImGui::SameLine();
-	ImGui::SetNextItemWidth(320);
+	ImGui::SetNextItemWidth(ui::Px(320));
 	const std::string preview = info ? std::to_string(info->type) + ": " + TXT(info->name) : std::string(TXT("Type ")) + chk.values[XF_Type].value_or("?");
 	if (ImGui::BeginCombo(LBL("Type"), preview.c_str())) {
 		for (const auto* t : ExComTypes(GetExtensionProfile())) {
@@ -932,7 +932,7 @@ void CommandFileEditor::View::drawCheckDetail()
 		ImGui::SameLine(220);
 		if (present) {
 			std::string text = *chk.values[f];
-			ImGui::SetNextItemWidth(120);
+			ImGui::SetNextItemWidth(ui::Px(120));
 			if (ImGui::InputText("##v", &text, ImGuiInputTextFlags_EnterReturnsTrue | ImGuiInputTextFlags_CharsDecimal)) {
 				queue([uid, f, text](WorkspaceSnapshot& s) { const int r = s.document.findCheckRow(uid); return r >= 0 && s.document.setCheckValue(r, f, text); });
 			}
@@ -992,12 +992,12 @@ void CommandFileEditor::View::drawTagTab()
 	// Edit into view-local values; commit once when the field is left (one undo step).
 	if (!teamEditing) { teamIn = d.teamChange.tagIn.value_or(0); teamOut = d.teamChange.tagOut.value_or(0); }
 	bool commit = false, active = false;
-	ImGui::SetNextItemWidth(120);
+	ImGui::SetNextItemWidth(ui::Px(120));
 	ImGui::InputInt(LBL("Tag-in pattern"), &teamIn, 0, 0);
 	active |= ImGui::IsItemActive();
 	commit |= ImGui::IsItemDeactivatedAfterEdit();
 	ImGui::SameLine();
-	ImGui::SetNextItemWidth(120);
+	ImGui::SetNextItemWidth(ui::Px(120));
 	ImGui::InputInt(LBL("Tag-out pattern"), &teamOut, 0, 0);
 	active |= ImGui::IsItemActive();
 	commit |= ImGui::IsItemDeactivatedAfterEdit();

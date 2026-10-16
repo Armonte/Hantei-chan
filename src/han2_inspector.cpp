@@ -95,7 +95,7 @@ bool EditRecordFields(const char *id, uint8_t *rec, const Han2FieldInfo *tbl, in
 				std::string u = sj2utf8(cur);
 				char label[96]; snprintf(label, sizeof(label), "%s +0x%X", f.name, f.offset);
 				std::vector<char> buf(u.begin(), u.end()); buf.resize(u.size() + 512, 0);
-				if (ImGui::InputTextMultiline(label, buf.data(), buf.size(), ImVec2(380, 54))) {
+				if (ImGui::InputTextMultiline(label, buf.data(), buf.size(), ImVec2(ui::Px(380), ui::Px(54)))) {
 					std::string sj = utf82sj(std::string(buf.data()));
 					if (sj.size() >= f.count) sj.resize(f.count - 1);
 					memset(rec + f.offset, 0, f.count); memcpy(rec + f.offset, sj.data(), sj.size()); changed = true;
@@ -118,13 +118,13 @@ bool EditRecordFields(const char *id, uint8_t *rec, const Han2FieldInfo *tbl, in
 					break;
 				}
 				if (f.kind == 6) {
-					float fv; memcpy(&fv, p, 4); ImGui::SetNextItemWidth(150);
+					float fv; memcpy(&fv, p, 4); ImGui::SetNextItemWidth(ui::Px(150));
 					if (ImGui::InputFloat(label, &fv, 0, 0, "%.6g")) { memcpy(p, &fv, 4); changed = true; }
 					if (f.comment && f.comment[0] && ImGui::IsItemHovered()) ImGui::SetTooltip("%s", f.comment);
 					ImGui::PopID(); continue;
 				}
 				const Han2EnumInfo *en = f.enumName ? FindEnum(f.enumName) : nullptr;
-				ImGui::SetNextItemWidth(150);
+				ImGui::SetNextItemWidth(ui::Px(150));
 				if (en && !en->flags) {
 					const char *cur = nullptr;
 					for (int e = 0; e < en->count; e++) if (en->values[e].value == v) cur = en->values[e].name;
@@ -190,7 +190,7 @@ void DrawInspector(CharacterInstance *ch, FrameState &state)
 	if (seq) {
 		ImGui::SeparatorText(TXT("Pattern"));
 		int flags = (int)seq->han2.patFlags;
-		ImGui::SetNextItemWidth(120);
+		ImGui::SetNextItemWidth(ui::Px(120));
 		if (ImGui::InputInt(LBL("pattern flags (0x40 = alt draw mode)"), &flags, 0, 0, ImGuiInputTextFlags_CharsHexadecimal)) { seq->han2.patFlags = (uint32_t)flags; changed = true; }
 		{
 			std::vector<std::pair<int, int>> visits; std::string note;
@@ -352,8 +352,8 @@ void DrawCgWindow(CharacterInstance *ch)
 	if (!ImGui::Begin(LBL("CG sprites (RBO / GOF2 bank)"), &showCgWindow)) { ImGui::End(); return; }
 	if (!ch || !ch->cg.m_loaded) { ImGui::TextDisabled("%s", TXT("The active character has no CG bank.")); ImGui::End(); return; }
 	const int n = ch->cg.get_image_count();
-	ImGui::SetNextItemWidth(100); ImGui::InputText(LBL("filter"), g_cgFilter, sizeof(g_cgFilter)); ImGui::SameLine(); ImGui::PushTextWrapPos(0.0f); ImGui::TextDisabled(TXT("%d images"), n); ImGui::PopTextWrapPos();
-	ImGui::BeginChild("list", ImVec2(210, 0), true);
+	ImGui::SetNextItemWidth(ui::Px(100)); ImGui::InputText(LBL("filter"), g_cgFilter, sizeof(g_cgFilter)); ImGui::SameLine(); ImGui::PushTextWrapPos(0.0f); ImGui::TextDisabled(TXT("%d images"), n); ImGui::PopTextWrapPos();
+	ImGui::BeginChild("list", ImVec2(ui::Px(210), 0), true);
 	for (int i = 0; i < n; i++) {
 		int bpp, ty, x1, y1, x2, y2;
 		if (!ch->cg.image_info(i, bpp, ty, x1, y1, x2, y2)) continue;
@@ -367,7 +367,7 @@ void DrawCgWindow(CharacterInstance *ch)
 	if (g_prev.owner != ch || g_prev.image != g_cgSel || g_prev.gen != ch->cg.generation()) LoadPreview(*ch, g_cgSel);
 	int bpp = 0, ty = 0, x1 = 0, y1 = 0, x2 = 0, y2 = 0; ch->cg.image_info(g_cgSel, bpp, ty, x1, y1, x2, y2);
 	ImGui::Text(TXT("image %d: storage type %d, %d-bit, canvas bounds (%d,%d)-(%d,%d)"), g_cgSel, ty, bpp, x1, y1, x2, y2);
-	ImGui::SetNextItemWidth(120); ImGui::SliderFloat(LBL("zoom"), &g_cgZoom, 0.25f, 6.f);
+	ImGui::SetNextItemWidth(ui::Px(120)); ImGui::SliderFloat(LBL("zoom"), &g_cgZoom, 0.25f, 6.f);
 	if (ImGui::Button(LBL("Export PNG..."))) {
 		std::string p = FileDialog(-1, true);
 		if (!p.empty()) { if (p.size() < 4 || p.substr(p.size() - 4) != ".png") p += ".png";
@@ -472,13 +472,13 @@ void DrawAnimWindow(CharacterInstance *ch, FrameState &state, void *onionPtr)
 	ImGui::SameLine();
 	if (ImGui::Button(LBL("+1 tick"))) { playing = false; han2::AnimTick(fd, st, follow, loop); }
 	ImGui::SameLine(); ImGui::Checkbox(LBL("loop"), &loop); ImGui::SameLine(); ImGui::Checkbox(LBL("follow pattern jumps"), &follow);
-	ImGui::SetNextItemWidth(90);
+	ImGui::SetNextItemWidth(ui::Px(90));
 	static const int rates[] = { 30, 60, 120, 240 }; static int ri = 2;
 	if (ImGui::BeginCombo(LBL("logic rate"), (std::to_string(rateHz) + " Hz").c_str())) { for (int i = 0; i < 4; i++) if (ImGui::Selectable((std::to_string(rates[i]) + " Hz").c_str(), rateHz == rates[i])) { rateHz = rates[i]; ri = i; } ImGui::EndCombo(); }
-	ImGui::SameLine(); ImGui::SetNextItemWidth(120); ImGui::SliderFloat(LBL("speed"), &speed, 0.1f, 4.f, "x%.2f");
+	ImGui::SameLine(); ImGui::SetNextItemWidth(ui::Px(120)); ImGui::SliderFloat(LBL("speed"), &speed, 0.1f, 4.f, "x%.2f");
 	if (seq) {
 		// frame strip: one card per frame with its picture, index and duration; click selects, the playing frame is outlined
-		ImGui::BeginChild("##framestrip", ImVec2(0, 92), true, ImGuiWindowFlags_HorizontalScrollbar);
+		ImGui::BeginChild("##framestrip", ImVec2(0, ui::Px(92)), true, ImGuiWindowFlags_HorizontalScrollbar);
 		{
 			ImDrawList *sdl = ImGui::GetWindowDrawList();
 			for (size_t i = 0; i < seq->frames.size(); i++) {
@@ -518,7 +518,7 @@ void DrawAnimWindow(CharacterInstance *ch, FrameState &state, void *onionPtr)
 	            st.ticksInFrame, seq && st.frame < (int)seq->frames.size() ? seq->frames[st.frame].AF.duration : 0, st.loopCounter, st.totalTicks, st.totalTicks / (double)rateHz, st.ended ? TXT("  [ended]") : "");
 	// onion skin
 	ImGui::Checkbox(LBL("onion skin"), &onion.enabled);
-	if (onion.enabled) { ImGui::SameLine(); ImGui::SetNextItemWidth(70); ImGui::SliderInt(LBL("before"), &onion.before, 0, 6); ImGui::SameLine(); ImGui::SetNextItemWidth(70); ImGui::SliderInt(LBL("after"), &onion.after, 0, 6); ImGui::SameLine(); ImGui::SetNextItemWidth(70); ImGui::SliderInt(LBL("spacing"), &onion.spacing, 1, 12); ImGui::SameLine(); ImGui::Checkbox(LBL("keyframes only"), &onion.keyframesOnly); }
+	if (onion.enabled) { ImGui::SameLine(); ImGui::SetNextItemWidth(ui::Px(70)); ImGui::SliderInt(LBL("before"), &onion.before, 0, 6); ImGui::SameLine(); ImGui::SetNextItemWidth(ui::Px(70)); ImGui::SliderInt(LBL("after"), &onion.after, 0, 6); ImGui::SameLine(); ImGui::SetNextItemWidth(ui::Px(70)); ImGui::SliderInt(LBL("spacing"), &onion.spacing, 1, 12); ImGui::SameLine(); ImGui::Checkbox(LBL("keyframes only"), &onion.keyframesOnly); }
 	// timeline: one cell per frame, width proportional to its duration; red = attack boxes, blue = script lists (effects), current outlined
 	if (seq) {
 		ImDrawList *dl = ImGui::GetWindowDrawList();

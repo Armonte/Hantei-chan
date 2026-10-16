@@ -1,4 +1,5 @@
 // "Export as pcmod package..." window; see pcmod_export_ui.h and docs/modmanager/pcmod-manifest_schema1.md.
+#include "../ui/ui_style.h"
 #include "pcmod_export_ui.h"
 #include "pcmod_manifest.h"
 #include "pcmod_package.h"
@@ -285,7 +286,7 @@ void Draw()
 	const pcmod::Manifest m = Build(problem, detected, &simFiles);
 
 	// ---- identity ----
-	ImGui::PushItemWidth(260);
+	ImGui::PushItemWidth(ui::Px(260));
 	ImGui::InputText(LBL("Id"), &g.id);
 	ImGui::SameLine(); ImGui::TextDisabled("%s", TXT("[a-z0-9][a-z0-9._-], folder name and catalogue key"));
 	ImGui::InputText(LBL("Version"), &g.version);
@@ -298,7 +299,7 @@ void Draw()
 	ImGui::InputTextMultiline(LBL("Description"), &g.description, ImVec2(-160, 48));
 
 	const char* classes[] = {TXT("Auto"), "sim", "cosmetic"};
-	ImGui::SetNextItemWidth(160);
+	ImGui::SetNextItemWidth(ui::Px(160));
 	ImGui::Combo(LBL("Class"), &g.classMode, classes, 3);
 	ImGui::SameLine();
 	ImGui::Text(TXT("-> %s (detected: %s)"), pcmod::ClassName(m.cls), pcmod::ClassName(detected));
@@ -313,10 +314,10 @@ void Draw()
 
 	ImGui::InputTextMultiline(LBL("MBAA.exe SHA-256 (one per line)"), &g.exe, ImVec2(-260, 40));
 	if (!g.gameDir.empty()) { ImGui::SameLine(); if (ImGui::SmallButton(LBL("Use installed MBAA.exe"))) g.exe = pcmod::DefaultExeSha256(g.gameDir); }
-	ImGui::SetNextItemWidth(300); ImGui::InputText(LBL("Requires (id@x.y.z, ...)"), &g.requiresText);
-	ImGui::SetNextItemWidth(300); ImGui::InputText(LBL("Conflicts (ids)"), &g.conflicts);
-	ImGui::SetNextItemWidth(300); ImGui::InputText(LBL("Overrides (ids)"), &g.overrides);
-	ImGui::SetNextItemWidth(300); ImGui::InputText(LBL("Modes (ids, e.g. tag,team)"), &g.modes);
+	ImGui::SetNextItemWidth(ui::Px(300)); ImGui::InputText(LBL("Requires (id@x.y.z, ...)"), &g.requiresText);
+	ImGui::SetNextItemWidth(ui::Px(300)); ImGui::InputText(LBL("Conflicts (ids)"), &g.conflicts);
+	ImGui::SetNextItemWidth(ui::Px(300)); ImGui::InputText(LBL("Overrides (ids)"), &g.overrides);
+	ImGui::SetNextItemWidth(ui::Px(300)); ImGui::InputText(LBL("Modes (ids, e.g. tag,team)"), &g.modes);
 	ImGui::TextDisabled("%s", TXT("Online modes this package counts for (MBAACC: vs, tag, ...). Empty = every mode. Not part of any digest."));
 
 	// ---- files ----
