@@ -1259,3 +1259,43 @@ The rows `mbtl_patctrl_chr001_p238f10` / `p277f0` / `mbtl_flipV_chr001_p157f2` m
 (sidecar `cam_f32[11]` = 1) box-downsampled the editor's 1.5× raster to 1× (sheet `sc = 0.667`). They measured the
 resample, not MBTL, which is how p238 sat at 1.67 while its z1 row was 0.23. They are retired: zoom-1 parity is the
 `_z1` rows, zoom-1.5 parity is the `_z15sa` rows above.
+
+## Round 21 / render-match21 (2026-10-16): the editor's world origin was half a pixel off at 1.5x; zoom 1.5 now at the zoom-1 floor
+Editor (C++) change: `Render::BeginPass` (src/render.cpp). Numbers: `tools/uni/s1_compare/v2_round21.sh` (log
+`round21/round21.log`; the same rows on the round-20 shots: `round21/round21_before.log`). The three zoom-1.5 editor shot
+pairs in `editor_bw/` (`*_new_k/_g`) were re-shot with this build; the zoom-1 shots came out pixel-identical. No new game
+capture: the round-20 `_z15sa` captures are used unchanged.
+
+### The cause: the editor truncated its pan to whole world px before zooming
+- `BeginPass` set the world pan as `x = (int)(originX / zoom)` and the world matrices draw `scale(zoom) * translate(x)`.
+  With the shoot window's origin 632 that is `1.5 * 421 = 631.5`: the world origin, and every sprite px k at
+  `631.5 + 1.5k`, was half a screen px left of the analysis origin (632, `sheet.KNOWN_ORIGINS`). The axis column
+  moved 632 -> 631 at 1.5x (zoom-1 shots: 632). Exact registration (`--subpix`) then resampled the editor image by
+  half a pixel, and the texel phase of every point-sampled magnified part was off by 0.5 px: the 1-px lines along part
+  edges and texel boundaries of round 20.
+- The engine (MBTL IDB, unchanged names): `Han6Object_Draw` 0x597070 floors the object to whole sprite px;
+  `CBtlCamera_UpdateMatrices` 0x509240 zooms by moving the eye (1 / zoom) and its NDC->px matrix (+824) maps the camera
+  centre to the fixed pixel (640, 360) at every zoom; there is no -0.5 px term (round 19) and no snapping of the camera to
+  a zoomed grid. So sprite px k lands at `centre + zoom * k` with the centre on a whole pixel. p238/p277/p157 at 1.5x:
+  origin (160, 634 / 640), whole pixels.
+- Fix: the remainder `floor(origin) - zoom * x` (screen px) is a translate folded into `projection` in front of every
+  world matrix (sprites, parts, axes, boxes). It is 0 at zoom 1 and at any integer zoom, so zoom-1 and zoom-2 images do
+  not change. This replaces nothing fitted: the round-20 half-pixel tests shifted the resample (a blur), not the raster.
+
+### Numbers (editor zoom 1.5 vs REAL game zoom 1.5 `_z15sa`, plate_b0, `--subpix 0,0`)
+| case | round 20 | **round 21** | band ±1 (r20 -> r21) | zoom-1 `_z1` vs `_sa` (unchanged) |
+|---|---|---|---|---|
+| mbtl_patctrl_chr001_p238f10 | 3.12 | **0.24** | 0.27 -> 0.19 | 0.23 |
+| mbtl_patctrl_chr001_p277f0 | 3.50 | **0.00** | 0.03 -> 0.00 | 0.00 |
+| mbtl_flipV_chr001_p157f2 | 8.22 | **0.19** | 1.87 -> 0.18 | 0.18 |
+| mbtl_flipV_chr001_p157f2_solo_s8 | - | - | - | 0.01 |
+What is left at 1.5x is the zoom-1 floor: p238's s18 translucent residual (round 17) and p157's stage-21 shadow (round 19).
+
+### The zoom > 1 flag (MBTL IDB, commented and saved)
+`Stage_BuildCharaBgColorParams` 0x58E230 stores its a6 (`BtlCamera_IsZoomedIn` / `Han6Object_Draw`: elem0 zoom > 1)
+at param block +4; the block goes to draw context +0x84 and from `Han6Draw_DrawLayer` into the CG sprite record +0x4C.
+Its only reader is `Han6Draw_SubmitCgSprite_ParentMtx` 0x4A0C40: 0x4A0F68 picks `TecCharaDrawBgColorFilter_V` over
+`TecCharaDrawBgColor_V` (colour pass 0) and 0x4A0F2A picks `TecCharaDrawBgColorSpecularFilter_V` over
+`TecCharaDrawBgColorSpecular_V` (specular pass 1). So it changes the shader technique of zoomed-in CG sprites only.
+.pat parts draw through `TecCharaPtDraw_V`, which has no Filter variant, so the three .pat cases here are not affected.
+The Filter techniques' shader body is not in the repo yet; a CG-sprite row at zoom 1.5 is the place to measure it.
