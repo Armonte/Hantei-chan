@@ -3,6 +3,8 @@
 // commands, colour, source rect / origin). Reimplemented from the behaviour of PACNyx+ (2010) and icaroffa's 2026 build.
 // Model operations live in han2_parts_edit.cpp; undo / the tab '*' come from the character's undo history (parts/parts_undo.h).
 #include "pat_partset_pane.h"
+#include "../ui/ui_layout2.h"
+#include "../ui/ui_style.h"
 #include "../parts/parts.h"
 #include "../filedialog.h"
 #include "../han2_parts_edit.h"
@@ -54,7 +56,7 @@ void PatPartSetPane::DrawFbPoses()
     if (st.partSet < 0 || st.partSet >= nSets) st.partSet = nSets > 0 ? 0 : -1;
 
     // ---- pose index / name ----
-    ImGui::SetNextItemWidth(130);
+    ImGui::SetNextItemWidth(ui::Px(130));
     int idx = st.partSet;
     if (ImGui::InputInt(LBL("Pose"), &idx, 1, 10) && nSets > 0) { idx = std::clamp(idx, 0, nSets - 1); UpdateRenderFrame(idx); }
     ImGui::SameLine();
@@ -72,9 +74,9 @@ void PatPartSetPane::DrawFbPoses()
     }
 
     // ---- add (named) / delete ----
-    ImGui::SetNextItemWidth(160);
+    ImGui::SetNextItemWidth(ui::Px(160));
     ImGui::InputText(LBL("New pose name"), &fbNewPoseName);
-    ImGui::SameLine();
+    ui::SameLineButton(LBL("Add pose"));
     std::string why;
     const bool canAdd = CanAddPose(parts, &why) && !fbNewPoseName.empty();
     ImGui::BeginDisabled(!canAdd);
@@ -87,7 +89,7 @@ void PatPartSetPane::DrawFbPoses()
     if (!canAdd && ImGui::IsItemHovered(ImGuiHoveredFlags_AllowWhenDisabled))
         ImGui::SetTooltip("%s", fbNewPoseName.empty() ? TXT("A pose needs a name.") : TXT(why.c_str()));
     if (ps) {
-        ImGui::SameLine();
+        ui::SameLineButton(LBL("Clear pose"));
         if (ImGui::Button(LBL("Clear pose"))) {   // the slot stays (frames reference poses by index)
             ps->groups.clear(); ps->name.clear();
             RegeneratePartSetNames(); RegeneratePartPropNames(); st.partProp = 0; curInstance->markEdited();
@@ -96,10 +98,10 @@ void PatPartSetPane::DrawFbPoses()
     if (!ps) { if (!fbMessage.empty()) ImGui::TextWrapped("%s", fbMessage.c_str()); return; }
 
     // ---- reorder: swap with another index (frames follow) ----
-    ImGui::SetNextItemWidth(130);
+    ImGui::SetNextItemWidth(ui::Px(130));
     ImGui::InputInt(LBL("Move to index"), &fbMoveTarget, 1, 10);
     fbMoveTarget = std::clamp(fbMoveTarget, 0, maxPoses - 1);
-    ImGui::SameLine();
+    ui::SameLineButton(LBL("Swap"));
     if (ImGui::Button(LBL("Swap"))) {
         std::string e; const int from = st.partSet;
         if (SwapPoses(parts, from, fbMoveTarget, &e)) {
@@ -108,7 +110,7 @@ void PatPartSetPane::DrawFbPoses()
             fbMessage = Fmt(TXT("pose %d <-> %d, %d frame references updated"), from, fbMoveTarget, refs); curInstance->markEdited();
         } else fbMessage = e;
     }
-    ImGui::SameLine();
+    ui::SameLineCheckbox(LBL("Update frame references"));
     ImGui::Checkbox(LBL("Update frame references"), &fbRemapFrames);
 
     // ---- base point: move every part of the pose (PACNyx "Set pose base point") ----
@@ -121,7 +123,7 @@ void PatPartSetPane::DrawFbPoses()
     ImGui::SameLine(); if (ImGui::ArrowButton("##pu", ImGuiDir_Up)) ShiftPose(*ps, 0, -Step());
     ImGui::SameLine(); if (ImGui::ArrowButton("##pd", ImGuiDir_Down)) ShiftPose(*ps, 0, Step());
     ImGui::PopButtonRepeat();
-    ImGui::SameLine();
+    ui::SameLineCheckbox(LBL("Show base point"));
     ImGui::Checkbox(LBL("Show base point"), &st.showPoseBasePoint);
     if (ImGui::Button(LBL("Save pose as image..."))) {
         std::vector<uint8_t> px; int w = 0, h = 0, ax = 0, ay = 0;
@@ -132,7 +134,7 @@ void PatPartSetPane::DrawFbPoses()
             if (!f.empty()) { std::string e; f = AnsiToUtf8(f); fbMessage = WriteImageRgba(f, px.data(), w, h, e) ? Fmt(TXT("saved %s (%d x %d, base point at %d,%d)"), f.c_str(), w, h, ax, ay) : e; }
         }
     }
-    ImGui::SameLine();
+    ui::SameLineCheckbox(LBL("Highlight selected Part Prop"));
     if (ImGui::Checkbox(LBL("Highlight selected Part Prop"), &activeHighligth)) UpdateHighligth(activeHighligth);
 
     DrawFbParts(*ps);
@@ -150,7 +152,7 @@ void PatPartSetPane::DrawFbParts(PartSet<> &ps)
     ImGui::Text(TXT("Parts: %d of 40 (draw order: higher layer on top)"), count);
 
     // slot list (40 rows, like PACNyx's body-part list)
-    ImGui::BeginChild("fbparts", ImVec2(0, 150), true);
+    ImGui::BeginChild("fbparts", ImVec2(0, ui::Px(150)), true);
     for (int k = 0; k < kPartsPerPose; k++) {
         const bool has = k < (int)ps.groups.size() && ps.groups[k].ppId >= 0;
         std::string label;
@@ -182,14 +184,14 @@ void PatPartSetPane::DrawFbParts(PartSet<> &ps)
     ImGui::EndDisabled();
     if (ImGui::IsItemHovered(ImGuiHoveredFlags_AllowWhenDisabled))
         ImGui::SetTooltip("%s", !canAdd ? TXT(why.c_str()) : TXT("Show a sprite sheet (Texture pane) and right-drag a rectangle on it, then add the part."));
-    ImGui::SameLine();
+    ui::SameLineButton(LBL("Add part..."));
     ImGui::BeginDisabled(!canAdd);
     if (ImGui::Button(LBL("Add part..."))) { fbAddOpen = true; fbAddSheet = std::max(0, st.partGraph); if (st.sheetSelValid) for (int i = 0; i < 4; i++) fbAddRect[i] = st.sheetSel[i]; }
     ImGui::EndDisabled();
     if (fbAddOpen) {
         ImGui::Indent();
-        ImGui::SetNextItemWidth(120); ImGui::InputInt(LBL("Sprite sheet"), &fbAddSheet);
-        ImGui::SetNextItemWidth(260); ImGui::InputInt4(LBL("Rect x, y, w, h (pixels)"), fbAddRect);
+        ImGui::SetNextItemWidth(ui::Px(120)); ImGui::InputInt(LBL("Sprite sheet"), &fbAddSheet);
+        ImGui::SetNextItemWidth(ui::Px(260)); ImGui::InputInt4(LBL("Rect x, y, w, h (pixels)"), fbAddRect);
         if (ImGui::Button(LBL("Create part"))) {
             std::string e;
             const int slot = AddPartFromSheet(parts, st.partSet, fbAddSheet, fbAddRect[0], fbAddRect[1], fbAddRect[2], fbAddRect[3], st.partProp, &e);
@@ -205,7 +207,7 @@ void PatPartSetPane::DrawFbParts(PartSet<> &ps)
     ImGui::BeginDisabled(!has);
     if (ImGui::Button(LBL("Copy Part Prop")) && has) PartSet<>::CopyPropertyTo(&CopyManager::copiedParts->partProperty, &ps.groups[st.partProp]);
     ImGui::EndDisabled();
-    ImGui::SameLine();
+    ui::SameLineButton(LBL("Paste Part Prop"));
     const bool clip = CopyManager::copiedParts->partProperty.ppId >= 0 && CopyManager::copiedParts->partProperty.ppId < (int)parts.cutOuts.size();
     ImGui::BeginDisabled(!clip || st.partProp < 0 || st.partProp >= kPartsPerPose || (!has && !canAdd));
     if (ImGui::Button(LBL("Paste Part Prop"))) {
@@ -216,7 +218,7 @@ void PatPartSetPane::DrawFbParts(PartSet<> &ps)
         RegeneratePartPropNames(); RegeneratePartSetNames(); curInstance->markEdited();
     }
     ImGui::EndDisabled();
-    ImGui::SameLine();
+    ui::SameLineButton(LBL("Remove part"));
     ImGui::BeginDisabled(!has);
     if (ImGui::Button(LBL("Remove part")) && has) { ps.groups[st.partProp] = PartProperty{}; ps.groups[st.partProp].propId = st.partProp; RegeneratePartPropNames(); RegeneratePartSetNames(); curInstance->markEdited(); }
     ImGui::EndDisabled();
@@ -226,7 +228,7 @@ void PatPartSetPane::DrawFbParts(PartSet<> &ps)
     ImGui::Separator();
     // position + nudge
     int pos[2] = {p.x, p.y};
-    ImGui::SetNextItemWidth(160);
+    ImGui::SetNextItemWidth(ui::Px(160));
     if (ImGui::DragInt2(LBL("Position"), pos, 1)) { p.x = pos[0]; p.y = pos[1]; }
     ImGui::SameLine();
     ImGui::PushButtonRepeat(true);
@@ -237,7 +239,7 @@ void PatPartSetPane::DrawFbParts(PartSet<> &ps)
     ImGui::PopButtonRepeat();
     // rotation (stored as turns: 1.0 = 360 degrees, the file keeps 1/10000 turns)
     float deg = p.rotation[3] * 360.f;
-    ImGui::SetNextItemWidth(110);
+    ImGui::SetNextItemWidth(ui::Px(110));
     if (ImGui::DragFloat(LBL("Rotation (deg)"), &deg, 0.5f, -3600.f, 3600.f, "%.1f")) p.rotation[3] = deg / 360.f;
     ImGui::SameLine();
     ImGui::PushButtonRepeat(true);
@@ -250,23 +252,23 @@ void PatPartSetPane::DrawFbParts(PartSet<> &ps)
     ImGui::PopButtonRepeat();
     // scale (permille in the file) + flip
     float sc[2] = {p.scaleX * 100.f, p.scaleY * 100.f};
-    ImGui::SetNextItemWidth(160);
+    ImGui::SetNextItemWidth(ui::Px(160));
     if (ImGui::DragFloat2(LBL("Scale H / V (%)"), sc, 0.5f, -1000.f, 1000.f, "%.1f")) { p.scaleX = sc[0] / 100.f; p.scaleY = sc[1] / 100.f; }
     static const char *const flips[] = {"None", "Flip Horizontally", "Flip Vertically", "Flip both"};
-    ImGui::SetNextItemWidth(160);
+    ImGui::SetNextItemWidth(ui::Px(160));
     i18n::Combo(LBL("Flip Side"), &p.flip, flips, 4);
     // layer commands
     ImGui::AlignTextToFramePadding();
     ImGui::Text(TXT("Layer %d"), LayerOf(p));
-    ImGui::SameLine();
+    ui::SameLineButton(LBL("To back"));
     if (ImGui::Button(LBL("To back"))) LayerCommand(ps, st.partProp, LayerCmd::ToBack);
-    ImGui::SameLine(); if (ImGui::Button(LBL("Back one"))) LayerCommand(ps, st.partProp, LayerCmd::Backward);
-    ImGui::SameLine(); if (ImGui::Button(LBL("Forward one"))) LayerCommand(ps, st.partProp, LayerCmd::Forward);
-    ImGui::SameLine(); if (ImGui::Button(LBL("To front"))) LayerCommand(ps, st.partProp, LayerCmd::ToFront);
-    ImGui::SetNextItemWidth(110);
+    ui::SameLineButton(LBL("Back one")); if (ImGui::Button(LBL("Back one"))) LayerCommand(ps, st.partProp, LayerCmd::Backward);
+    ui::SameLineButton(LBL("Forward one")); if (ImGui::Button(LBL("Forward one"))) LayerCommand(ps, st.partProp, LayerCmd::Forward);
+    ui::SameLineButton(LBL("To front")); if (ImGui::Button(LBL("To front"))) LayerCommand(ps, st.partProp, LayerCmd::ToFront);
+    ImGui::SetNextItemWidth(ui::Px(110));
     ImGui::InputInt(LBL("Layer value"), &fbLayerValue, 1, 10);
     fbLayerValue = std::clamp(fbLayerValue, 0, 255);
-    ImGui::SameLine();
+    ui::SameLineButton(LBL("Set layer"));
     if (ImGui::Button(LBL("Set layer"))) LayerCommand(ps, st.partProp, LayerCmd::Set, fbLayerValue);
     // colour (bytes A,R,G,B in the file) and additive tint
     float rgba[4] = {p.bgra[2] / 255.f, p.bgra[1] / 255.f, p.bgra[0] / 255.f, p.bgra[3] / 255.f};
@@ -286,9 +288,9 @@ void PatPartSetPane::DrawFbParts(PartSet<> &ps)
     int src[4] = {UnitsToPx(co->uv[0], sheetW), UnitsToPx(co->uv[1], sheetH), UnitsToPx(co->uv[2], sheetW), UnitsToPx(co->uv[3], sheetH)};
     int wh[2] = {co->wh[0], co->wh[1]}, org[2] = {co->xy[0], co->xy[1]};
     auto own = [&]() -> CutOut<> * { const int c = UniqueCutOut(parts, st.partSet, st.partProp); return parts.GetCutOut(c); };
-    ImGui::SetNextItemWidth(110);
+    ImGui::SetNextItemWidth(ui::Px(110));
     if (ImGui::InputInt(LBL("Sprite sheet##part"), &sheet) && sheet >= 0 && sheet < (int)parts.gfxMeta.size()) { if (auto *c = own()) c->texture = sheet; }
-    ImGui::SetNextItemWidth(260);
+    ImGui::SetNextItemWidth(ui::Px(260));
     if (ImGui::InputInt4(LBL("Source rect (px)"), src)) {
         if (auto *c = own()) { c->uv[0] = PxToUnits(src[0], sheetW); c->uv[1] = PxToUnits(src[1], sheetH); c->uv[2] = PxToUnits(src[2], sheetW); c->uv[3] = PxToUnits(src[3], sheetH); }
     }
@@ -303,10 +305,10 @@ void PatPartSetPane::DrawFbParts(PartSet<> &ps)
         }
     }
     ImGui::EndDisabled();
-    ImGui::SetNextItemWidth(160);
+    ImGui::SetNextItemWidth(ui::Px(160));
     if (ImGui::DragInt2(LBL("Quad size"), wh, 1)) { if (auto *c = own()) { c->wh[0] = wh[0]; c->wh[1] = wh[1]; } }
-    ImGui::SetNextItemWidth(160);
+    ImGui::SetNextItemWidth(ui::Px(160));
     if (ImGui::DragInt2(LBL("Origin (pivot)"), org, 1)) { if (auto *c = own()) { c->xy[0] = org[0]; c->xy[1] = org[1]; } }
-    ImGui::SameLine();
+    ui::SameLineButton(LBL("Centre"));
     if (ImGui::Button(LBL("Centre"))) { if (auto *c = own()) { c->xy[0] = c->wh[0] / 2; c->xy[1] = c->wh[1] / 2; } }
 }

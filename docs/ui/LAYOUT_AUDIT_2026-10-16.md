@@ -26,13 +26,13 @@ Branch `ui/layout-sweep` (cut from `update/parity-1014`).
 | 6 | PAT editor (RBO / GOF2 / MBAACC .pat) | Tool pane (top right, 60% of the centre column) holds one help line; PartSet pane buttons clip ("Cle...", "Update fr...") in its 30% column; Shape pane is one button over a large empty area | wasted space, clipped | **Fixed** (dock): PAT layout keeps the left column at 30% and gives the Tool pane 36% instead of 60%. Shape pane emptiness remains (content is per-part) |
 | 7 | Right pane (AT / AS / AF / IF / effects) | All field widths are fixed px (`constexpr float width = 75.f` etc.), so a larger font (Preferences font size, high DPI) truncates every number | fixed px | **Fixed**: widths follow the font (`ui::Px`) |
 | 8 | Preferences (Saving and PAT editor) | Two full-width disabled help lines under Backup folder and one under Mouse buttons; fixed 120 / 260 px fields | long help, fixed px | **Fixed**: `(?)` tooltips, widths scale |
-| 9 | Right pane AT | ImGui's value-then-label convention with mixed multi-field rows ("Weak (6f) Hitstop 0 Cust HS 0 Cust BS"), label column not aligned between rows; JA labels clip at the pane edge at 1280 ("ガードフラグ") | alignment | Open: needs a per-section table conversion of frame_disp_at.h / frame_disp_as.h (large, high-touch file) |
-| 10 | Left pane | Empty region below the collapsed trees (no fill) at every size | empty region | Partly: column narrower (5). Defaulting a tree open would change behaviour, not done |
-| 11 | CG manager | Fixed widths (Filter 160, Min/Max side 70, Thumbnail 120, Palette 90) do not follow the font; JA labels of "Min side / Max side" crowd the filter row | fixed px | Open (cgm_window.cpp is being edited on fix/pat-ingame-proof; only the window size was changed here to keep that merge clean) |
-| 12 | Script panel (Squirrel) | Three columns fixed (file list, editor, outline) leave the editor at ~45% of the window at 1280 | proportion | Open |
-| 13 | Box pane | Box-type colour strip and the "Copy all / Paste all / Copy params ..." row wrap unevenly in JA at 1280 (two buttons per line) | wrap | Open (now taller, wraps without hiding the Timeline) |
+| 9 | Right pane AT | ImGui's value-then-label convention with mixed multi-field rows ("Weak (6f) Hitstop 0 Cust HS 0 Cust BS"), label column not aligned between rows; JA labels clip at the pane edge at 1280 ("ガードフラグ") | alignment | **Fixed (round 2)** for AT / AS / AF: `ui::BeginLabelForm / FormRow` (label column sized to the longest label, capped at 42% of the pane, wraps with a full-text tooltip on overflow), one label column per display, sub-headers (Hitstop, Damage, Proration, Vectors, Effects; Flags, State; Sprite, Animation, Transforms). Guard/Hit vector rows, UNI VectorTable names and JA hint kept. IF / EF smart UIs (effects/*.h, frame_disp_if.h, ~280 call sites) still value-then-label: open |
+| 10 | Left pane | Empty region below the collapsed trees (no fill) at every size | empty region | **Fixed (round 2)**: a Pattern list (clipper, follows the current pattern, click = same as the Pattern combo) fills the height left under the collapsed trees; nothing opens by default |
+| 11 | CG manager | Fixed widths (Filter 160, Min/Max side 70, Thumbnail 120, Palette 90) do not follow the font; JA labels of "Min side / Max side" crowd the filter row | fixed px | Open (cgm_window.cpp left for the CG manager follow-up) |
+| 12 | Script panel (Squirrel) | Three columns fixed (file list, editor, outline) leave the editor at ~45% of the window at 1280 | proportion | **Fixed (round 2)**: resizable table 18 / 64 / 18, Files / Outline toggles fold the side columns, editor takes the rest |
+| 13 | Box pane | Box-type colour strip and the "Copy all / Paste all / Copy params ..." row wrap unevenly in JA at 1280 (two buttons per line) | wrap | **Fixed (round 2)**: `ui::ButtonGrid` (src/ui/ui_layout2.h) equal-width cells, even rows; checkboxes on their own wrapping row. Colour strip unchanged |
 | 14 | Archive browser | Fine at all three sizes; the preview column keeps its proportion | - | No change |
-| 15 | han2 inspector / pac window / tool windows (tool_windows_impl.h) | Fixed `SetNextItemWidth(N)` in many places (cgm 29, tool windows 18, han2 15, fxr 15, png export 14, hmod 13) | fixed px | Open: replace with `ui::Px(N)` / tokens file by file |
+| 15 | han2 inspector / pac window / tool windows (tool_windows_impl.h) | Fixed `SetNextItemWidth(N)` in many places (cgm 29, tool windows 18, han2 15, fxr 15, png export 14, hmod 13) | fixed px | **Fixed (round 2)**: every positive `SetNextItemWidth/PushItemWidth(N)` in tool windows, png export, han2 pac / inspector, hmod, fxr (+ bg inspector, tag, authoring, pcmod export, cmd editor, game link, workspace hosts) goes through `ui::Px`. Some ImVec2 child sizes and the han2 frame-strip cards stay fixed |
 
 ## Shared helper
 
@@ -43,6 +43,14 @@ Branch `ui/layout-sweep` (cut from `update/parity-1014`).
 - `ui::HelpMarker(text)`: the `(?)` tooltip for long help.
 - `ui::BeginFormGrid / FormCell / EndFormGrid`: label-first cells in a table that reflows by width.
 
-## Remaining (not done in this pass)
+## Round 2 (branch `ui/layout-sweep2`)
 
-Items 9, 11, 12, 13 and 15 above.
+- PartSet pane (item 6): Clear pose / Update frame references / part buttons wrap with `ui::SameLineButton` instead of clipping (RBO ACOLYTE_F, `tools/ui/shots_layout/L_pat.txt`, since `C:\games\rbo_run` used by L_all.txt is gone).
+- Showcase crop boxes (`docs/showcase_2026-10-16/scripts/ui/crop_features.py`) re-measured for the centred windows; feature shots re-run and re-cropped.
+- Before / after sheets: `docs/ui/evidence/layout2_2026-10-16/` (`make_sheets.py <out> before2 after2`).
+
+## Remaining
+
+- Item 9 for IF / EF (frame_disp_if.h and effects/*.h smart UIs).
+- Item 11 (CG manager, after fix/pat-ingame-proof).
+- ImVec2 child sizes in tag / authoring / bg inspector / cmd editor, han2 frame-strip cards.

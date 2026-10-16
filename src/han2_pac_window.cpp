@@ -168,7 +168,7 @@ void DrawPacCreate()
 	ImGui::SameLine();
 	if (ImGui::Button(LBL("Clear"))) { g_c.rows.clear(); CloseBase(); g_c.basePath.clear(); }
 	ImGui::PushTextWrapPos(0.0f); ImGui::TextDisabled(TXT("base: %s"), g_c.basePath.empty() ? TXT("(none)") : g_c.basePath.c_str()); ImGui::PopTextWrapPos();
-	ImGui::SetNextItemWidth(200); ImGui::InputText(LBL("filter"), g_c.filter, sizeof(g_c.filter));
+	ImGui::SetNextItemWidth(ui::Px(200)); ImGui::InputText(LBL("filter"), g_c.filter, sizeof(g_c.filter));
 	if (ImGui::BeginTable("rows", 4, ImGuiTableFlags_ScrollY | ImGuiTableFlags_RowBg | ImGuiTableFlags_Resizable, ImVec2(0, -70))) {
 		ImGui::TableSetupColumn(LBL("name")); ImGui::TableSetupColumn(LBL("size")); ImGui::TableSetupColumn(LBL("source")); ImGui::TableSetupColumn(LBL("note"));
 		ImGui::TableSetupScrollFreeze(0, 1); ImGui::TableHeadersRow();
@@ -236,9 +236,9 @@ void DrawLiveReloadRow(Viewer &v, const std::function<void(std::vector<uint8_t> 
 	ImGui::Separator();
 	static char gameDir[512]; static bool init = false;
 	if (!init) { init = true; snprintf(gameDir, sizeof gameDir, "%s", LiveReloadGameDir().c_str()); }
-	ImGui::SetNextItemWidth(260); if (ImGui::InputText(LBL("game folder"), gameDir, sizeof gameDir)) SetLiveReloadGameDir(gameDir);
+	ImGui::SetNextItemWidth(ui::Px(260)); if (ImGui::InputText(LBL("game folder"), gameDir, sizeof gameDir)) SetLiveReloadGameDir(gameDir);
 	ImGui::SameLine(); if (ImGui::Button(LBL("Browse game folder..."))) { std::string d = BrowseForFolderUtf8(""); if (!d.empty()) { snprintf(gameDir, sizeof gameDir, "%s", d.c_str()); SetLiveReloadGameDir(d); } }
-	ImGui::SetNextItemWidth(260); ImGui::InputText(LBL("loose path in the game folder"), v.loosePath, sizeof v.loosePath);
+	ImGui::SetNextItemWidth(ui::Px(260)); ImGui::InputText(LBL("loose path in the game folder"), v.loosePath, sizeof v.loosePath);
 	ImGui::SameLine();
 	if (ImGui::Button(LBL("Reload in running game"))) { std::vector<uint8_t> bytesToSend; makeBytes(bytesToSend); livereload::Result r = livereload::Reload(gameDir, v.loosePath, bytesToSend); v.msg = r.status; }
 	if (ImGui::IsItemHovered()) ImGui::SetTooltip("%s", TXT("Writes the edited file under the game folder (the game opens loose files before its archives) and asks the game, running offline under PovertyCaster, to re-read it."));
@@ -353,16 +353,16 @@ void DrawFileViewers()
 		ImGui::PushTextWrapPos(0.0f); ImGui::TextDisabled(TXT("%s, %zu bytes"), v.origin.c_str(), v.bytes.size()); ImGui::PopTextWrapPos();
 		if (v.kind == Viewer::Image) {
 			ImGui::Text(TXT("IMG v%u, %d x %d, %s"), v.img.version, v.img.width, v.img.height, v.img.format == 0 ? "ARGB1555" : v.img.format == 1 ? "ARGB4444" : v.img.format == 3 ? "RGB24" : "RGBA");
-			ImGui::SetNextItemWidth(120); ImGui::SliderFloat(LBL("zoom"), &v.zoom, 0.25f, 8.f); ImGui::SameLine(); ImGui::Checkbox(LBL("checkerboard"), &v.checker);
+			ImGui::SetNextItemWidth(ui::Px(120)); ImGui::SliderFloat(LBL("zoom"), &v.zoom, 0.25f, 8.f); ImGui::SameLine(); ImGui::Checkbox(LBL("checkerboard"), &v.checker);
 			{
-				int ver = (int)v.img.version; ImGui::SameLine(); ImGui::SetNextItemWidth(90);
+				int ver = (int)v.img.version; ImGui::SameLine(); ImGui::SetNextItemWidth(ui::Px(90));
 				if (ImGui::InputInt(LBL("IMG version"), &ver, 1, 1)) { v.img.version = (uint32_t)std::clamp(ver, 6, 8); v.dirty = true; }
-				int fmtSel = (int)v.img.format; ImGui::SameLine(); ImGui::SetNextItemWidth(130);
+				int fmtSel = (int)v.img.format; ImGui::SameLine(); ImGui::SetNextItemWidth(ui::Px(130));
 				const char *fmts[4] = { "ARGB1555", "ARGB4444", "RGBA", "RGB24" };
 				if (ImGui::Combo(LBL("store as"), &fmtSel, fmts, 4) && fmtSel != (int)v.img.format) ConvertImg(v, fmtSel);
 			}
 			if (!v.img.native.empty() && v.img.format <= 1) {
-				ImGui::SameLine(); ImGui::SetNextItemWidth(150);
+				ImGui::SameLine(); ImGui::SetNextItemWidth(ui::Px(150));
 				const char *fm[2] = { "A1R5G5B5", "A4R4G4B4" };
 				if (ImGui::Combo(LBL("16-bit pixel format"), &v.px16, fm, 2)) { han2::DecodePixels16(v.img.native.data(), (size_t)v.img.width * v.img.height, v.px16, v.img.rgba); Upload(v); }
 			}
@@ -394,7 +394,7 @@ void DrawFileViewers()
 		} else if (v.kind == Viewer::Poly) {
 			// GOF1 .B polygon object (docs/formats/frenchbread_rbo_gof.md section 7): wireframe of every triangle/quad face, orthographic, drag to rotate
 			ImGui::Text(TXT("GOF1 polygon object: %u vertices, %u faces, %u texture slots"), (unsigned)v.poly.nVerts, v.poly.nFaces, (unsigned)v.poly.nTextures);
-			ImGui::SetNextItemWidth(120); ImGui::SliderFloat(LBL("zoom"), &v.polyZoom, 0.2f, 6.f);
+			ImGui::SetNextItemWidth(ui::Px(120)); ImGui::SliderFloat(LBL("zoom"), &v.polyZoom, 0.2f, 6.f);
 			ImGui::SameLine(); if (ImGui::Button(LBL("Reset view"))) { v.polyYaw = v.polyPitch = 0.f; v.polyZoom = 1.f; }
 			ImGui::BeginChild("poly", ImVec2(0, 0), true);
 			ImVec2 p0 = ImGui::GetCursorScreenPos(), sz = ImGui::GetContentRegionAvail();
@@ -414,7 +414,7 @@ void DrawFileViewers()
 		} else if (v.kind == Viewer::QohPic || v.kind == Viewer::RosaPic) {
 			const bool qp = v.kind == Viewer::QohPic;
 			ImGui::Text(TXT("%s image, %d x %d, %u-bit%s"), qp ? "Queen of Heart" : "Rosa", v.img.width, v.img.height, qp ? v.qimg.bpp : v.rimg.bpp, qp ? "" : (v.rimg.version == 4 ? " (v4, enciphered)" : " (v1)"));
-			ImGui::SetNextItemWidth(120); ImGui::SliderFloat(LBL("zoom"), &v.zoom, 0.25f, 8.f); ImGui::SameLine(); ImGui::Checkbox(LBL("checkerboard"), &v.checker);
+			ImGui::SetNextItemWidth(ui::Px(120)); ImGui::SliderFloat(LBL("zoom"), &v.zoom, 0.25f, 8.f); ImGui::SameLine(); ImGui::Checkbox(LBL("checkerboard"), &v.checker);
 			if (ImGui::Button(LBL("Export PNG..."))) { std::string p = FileDialog(-1, true); if (!p.empty()) { std::string e; if (p.size() < 4 || Lower(p.substr(p.size() - 4)) != ".png") p += ".png"; v.msg = WritePngRgba(p, v.img.rgba.data(), v.img.width, v.img.height, e) ? Fmt(TXT("exported %s"), p.c_str()) : e; } }
 			ImGui::SameLine();
 			if (ImGui::Button(LBL("Import PNG (replace pixels)..."))) {
@@ -450,7 +450,7 @@ void DrawFileViewers()
 			if (ImGui::Button(LBL("Put into new PAC"))) { std::vector<uint8_t> out; han2::dmpfob::Serialize(v.fob, out); PacCreateAddMemory(v.name, std::move(out)); }
 			ImGui::SameLine();
 			if (ImGui::Button(LBL("Export disassembly..."))) { std::string p = FileDialog(-1, true, (char *)"script.txt"); if (!p.empty()) { std::string t = han2::dmpfob::Disassemble(v.fob); std::ofstream f(fs::u8path(p), std::ios::binary); f.write(t.data(), (std::streamsize)t.size()); } }
-			ImGui::SetNextItemWidth(200); char fb[64]; snprintf(fb, sizeof fb, "%s", v.fobFilter.c_str()); if (ImGui::InputText(LBL("filter (op name)"), fb, sizeof fb)) v.fobFilter = fb;
+			ImGui::SetNextItemWidth(ui::Px(200)); char fb[64]; snprintf(fb, sizeof fb, "%s", v.fobFilter.c_str()); if (ImGui::InputText(LBL("filter (op name)"), fb, sizeof fb)) v.fobFilter = fb;
 			ImGui::TextDisabled("%s", TXT("PUSH_IMM / PUSH_CODE_ADDR operands are editable (constants of the script); structure edits are not offered, unedited banks save byte-identical."));
 			DrawLiveReloadRow(v, [&](std::vector<uint8_t> &o) { han2::dmpfob::Serialize(v.fob, o); });
 			ImGui::BeginChild("fob", ImVec2(0, 0), true);
@@ -463,7 +463,7 @@ void DrawFileViewers()
 				if (!v.fobFilter.empty() && name.find(v.fobFilter) == std::string::npos) continue;
 				ImGui::PushID((int)i);
 				ImGui::Text("  %05x  %-24s", it.pc, name.c_str());
-				if (it.insn.op == (v.fob.dialect == han2::dmpfob::Dialect::Qoh99 ? 0x1A : 0x03)) { ImGui::SameLine(); int iv = (int)it.insn.imm; ImGui::SetNextItemWidth(110); if (ImGui::InputInt("##imm", &iv, 0, 0)) { it.insn.imm = (uint32_t)iv; v.dirty = true; } }
+				if (it.insn.op == (v.fob.dialect == han2::dmpfob::Dialect::Qoh99 ? 0x1A : 0x03)) { ImGui::SameLine(); int iv = (int)it.insn.imm; ImGui::SetNextItemWidth(ui::Px(110)); if (ImGui::InputInt("##imm", &iv, 0, 0)) { it.insn.imm = (uint32_t)iv; v.dirty = true; } }
 				else if (!nm[0] ? false : (it.insn.op != 0x19 && it.insn.op != 0x2D && (std::string(nm).find("JMP") != std::string::npos || std::string(nm).find("CALL") != std::string::npos || std::string(nm).find("ADDR") != std::string::npos || std::string(nm) == "LINE" || std::string(nm) == "PUSH_CODE_ADDR"))) { ImGui::SameLine(); ImGui::Text("%#x", it.insn.imm); }
 				else if (it.insn.op == 0x19 || it.insn.op == 0x2D) { ImGui::SameLine(); ImGui::Text("kind=%#x -> %#x", it.insn.kind, it.insn.imm); }   // i18n-ok: disassembly listing
 				ImGui::PopID();
@@ -488,7 +488,7 @@ void DrawFileViewers()
 					std::ofstream f(fs::u8path(p), std::ios::binary); f.write(t.data(), (std::streamsize)t.size()); v.msg = f ? Fmt(TXT("saved %s"), p.c_str()) : Fmt(TXT("could not write %s"), p.c_str());
 				}
 			}
-			ImGui::SetNextItemWidth(200); char fb[64]; snprintf(fb, sizeof fb, "%s", v.fobFilter.c_str()); if (ImGui::InputText(LBL("filter (op name)"), fb, sizeof fb)) v.fobFilter = fb;
+			ImGui::SetNextItemWidth(ui::Px(200)); char fb[64]; snprintf(fb, sizeof fb, "%s", v.fobFilter.c_str()); if (ImGui::InputText(LBL("filter (op name)"), fb, sizeof fb)) v.fobFilter = fb;
 			if (!v.rfob.indexTables.empty() && ImGui::TreeNode(TXT("Index tables (frame enter / transition / condition / system hook)"))) {
 				for (size_t t = 0; t < v.rfob.indexTables.size(); t++) {
 					std::string row = Fmt("%zu:", t); int shown = 0;
@@ -558,7 +558,7 @@ void DrawFileViewers()
 		} else {
 			ImGui::TextWrapped("%s", TXT("Script bank / data file. Raw view below; strings found (CP932):"));
 			if (ImGui::Button(LBL("Export raw..."))) { std::string p = FileDialog(-1, true); if (!p.empty()) { std::ofstream f(fs::u8path(p), std::ios::binary); f.write((const char *)v.bytes.data(), (std::streamsize)v.bytes.size()); v.msg = f ? Fmt(TXT("saved %s"), p.c_str()) : Fmt(TXT("could not write %s"), p.c_str()); } }
-			ImGui::BeginChild("strs", ImVec2(0, 140), true);
+			ImGui::BeginChild("strs", ImVec2(0, ui::Px(140)), true);
 			for (auto &s : v.strings) ImGui::TextUnformatted(s.c_str());
 			ImGui::EndChild();
 			ImGui::BeginChild("hex", ImVec2(0, 0), true);

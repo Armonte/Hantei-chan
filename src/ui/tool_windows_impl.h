@@ -228,7 +228,7 @@ void MainFrame::drawVarRefsWindow()
 	ImGui::CheckboxFlags(LBL("Variables (EF2/105, IF25, IF31, IF38)"), &w.categories, varrefs::catVariable);
 	ImGui::CheckboxFlags(LBL("Projectile variables (EF1/101/1000/11/111, EF2/100-101, IF2, IF3, IF24)"), &w.categories, varrefs::catProjectile);
 	ImGui::CheckboxFlags(LBL("Spawn-once guard (EF1000 p6)"), &w.categories, varrefs::catOnceGuard);
-	ImGui::SetNextItemWidth(90);
+	ImGui::SetNextItemWidth(ui::Px(90));
 	ImGui::InputInt(LBL("Variable ID"), &w.from, 0, 0);
 	ImGui::SameLine();
 	if (ImGui::Button(LBL("Find"))) {
@@ -242,7 +242,7 @@ void MainFrame::drawVarRefsWindow()
 		w.searched = true;
 		w.status.clear();
 	}
-	ImGui::SetNextItemWidth(90);
+	ImGui::SetNextItemWidth(ui::Px(90));
 	ImGui::InputInt(LBL("Replace with"), &w.to, 0, 0);
 	ImGui::SameLine();
 	if (ImGui::Button(LBL("Replace all"))) {
@@ -301,7 +301,7 @@ void MainFrame::drawPatternManagerWindow()
 	auto isSelected = [&](int p) { return std::find(w.selection.begin(), w.selection.end(), p) != w.selection.end(); };
 
 	// ---- left: pattern list ----
-	ImGui::BeginChild("##patlist", ImVec2(340, 0), ImGuiChildFlags_Borders | ImGuiChildFlags_ResizeX);
+	ImGui::BeginChild("##patlist", ImVec2(ui::Px(340), 0), ImGuiChildFlags_Borders | ImGuiChildFlags_ResizeX);
 	ImGui::SetNextItemWidth(-FLT_MIN);
 	ImGui::InputTextWithHint("##filter", TXT("Filter by number or name"), w.filter, sizeof(w.filter));
 	ImGui::Checkbox(LBL("Hide empty slots"), &w.hideEmpty);
@@ -381,9 +381,9 @@ void MainFrame::drawPatternManagerWindow()
 
 	const char* placements[] = {
 		TXT("Next empty slots from target"), TXT("Consecutive from target (overwrite)"), TXT("Original ids (overwrite)") };
-	ImGui::SetNextItemWidth(260);
+	ImGui::SetNextItemWidth(ui::Px(260));
 	i18n::Combo(LBL("Placement"), &w.placement, placements, IM_ARRAYSIZE(placements));
-	ImGui::SetNextItemWidth(90);
+	ImGui::SetNextItemWidth(ui::Px(90));
 	ImGui::InputInt(LBL("Target slot"), &w.target, 0, 0);
 	ImGui::SameLine();
 	if (ImGui::SmallButton(LBL("= current pattern"))) w.target = view->getState().pattern;
@@ -740,7 +740,7 @@ void MainFrame::drawCompareWindow()
 	}
 	if (c.character) {
 		FrameData& fd = c.character->frameData;
-		ImGui::SetNextItemWidth(90);
+		ImGui::SetNextItemWidth(ui::Px(90));
 		if (ImGui::InputInt(LBL("Pattern"), &c.pattern)) c.pattern = std::clamp(c.pattern, 0, std::max(0, fd.get_sequence_count() - 1));
 		if (PatternPickerButton("Pattern", &c.pattern, &fd)) c.frame = 0;
 		ImGui::SameLine();
@@ -848,7 +848,7 @@ void MainFrame::drawBgmWindow()
 	if (ImGui::SliderFloat("##pos", &pos, 0.f, (float)std::max(0.001, pl.length()), "%.2f s")) pl.seek(pos);
 	ImGui::SameLine();
 	ImGui::Text(TXT("/ %.2f s"), pl.length());
-	ImGui::SetNextItemWidth(80);
+	ImGui::SetNextItemWidth(ui::Px(80));
 	ImGui::InputFloat(LBL("s before end"), &b.leadIn, 0, 0, "%.1f");
 	ImGui::SameLine();
 	if (ImGui::Button(LBL("Preview loop"))) {
@@ -861,7 +861,7 @@ void MainFrame::drawBgmWindow()
 	if (pl.looping()) ImGui::Text(TXT("Loop -> %.3f s (looped %d time(s))"), pl.loopPos(), pl.loopsDone());
 	else ImGui::TextDisabled("%s", TXT("No loop"));
 	float vol = b.volume;
-	ImGui::SetNextItemWidth(160);
+	ImGui::SetNextItemWidth(ui::Px(160));
 	if (ImGui::SliderFloat(LBL("Volume"), &vol, 0.f, 1.f)) { b.volume = vol; pl.setVolume(vol); }
 	ImGui::EndDisabled();
 
@@ -1074,10 +1074,10 @@ void MainFrame::drawHudWindow()
 			// ---- live preview ----
 			ImGui::SeparatorText(TXT("Preview"));
 			const char* modes[] = {TXT("Normal"), "HEAT", "MAX", "BLOOD HEAT", "UNLIMITED", "BREAK"};
-			ImGui::SetNextItemWidth(140); i18n::Combo(LBL("Meter state"), &h.meterMode, modes, IM_ARRAYSIZE(modes));
-			ImGui::SameLine(); ImGui::SetNextItemWidth(200); ImGui::SliderFloat(LBL("Meter %"), &h.meterPct, 0.f, 300.f, "%.0f%%");
+			ImGui::SetNextItemWidth(ui::Px(140)); i18n::Combo(LBL("Meter state"), &h.meterMode, modes, IM_ARRAYSIZE(modes));
+			ImGui::SameLine(); ImGui::SetNextItemWidth(ui::Px(200)); ImGui::SliderFloat(LBL("Meter %"), &h.meterPct, 0.f, 300.f, "%.0f%%");
 			ImGui::SameLine(); ImGui::Checkbox(LBL("Half moon"), &h.halfMoon);
-			ImGui::SetNextItemWidth(200); ImGui::SliderFloat(LBL("Guard quality"), &h.guardQuality, 0.f, 1.f);
+			ImGui::SetNextItemWidth(ui::Px(200)); ImGui::SliderFloat(LBL("Guard quality"), &h.guardQuality, 0.f, 1.f);
 			ImGui::SameLine(); ImGui::Checkbox(LBL("Guard broken"), &h.guardBroken);
 
 			int slot = 0;

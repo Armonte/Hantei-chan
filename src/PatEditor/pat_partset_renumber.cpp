@@ -6,9 +6,12 @@
 #include "../parts/pat_renumber.h"
 #include "../png_writer.h"
 #include "../i18n.h"
+#include "../ui/ui_style.h"
+#include "../ui/ui_layout2.h"
 #include "../app_log.h"
 #include <windows.h>
 #include <imgui.h>
+#include <algorithm>
 
 static std::string AcpToUtf8(const std::string &s)
 {
@@ -47,15 +50,15 @@ void PatPartSetPane::DrawRenumber()
 	ImGui::Text(TXT("%d HA6 files draw this .pat (%d references)"), (int)users->files.size(), users->refCount());
 	if (ImGui::IsItemHovered())
 		ImGui::SetTooltip("%s", TXT("Every [DataFile] HA6 of the project .txt files in this folder whose [PAniFile] names the .pat."));
-	ImGui::SetNextItemWidth(220);
+	ImGui::SetNextItemWidth(ui::Px(220));
 	ImGui::Combo(LBL("Operation"), &rnKind, [](void *, int i) { return TXT(kRnKinds[i]); }, nullptr, IM_ARRAYSIZE(kRnKinds));
 	const auto kind = (patrn::Op::Kind)rnKind;
-	ImGui::SetNextItemWidth(100); ImGui::InputInt(kind == patrn::Op::Insert ? LBL("At id") : kind == patrn::Op::Swap ? LBL("Id A") : LBL("From id"), &rnFrom);
-	if (kind != patrn::Op::Insert && kind != patrn::Op::Swap) { ImGui::SameLine(); ImGui::SetNextItemWidth(100); ImGui::InputInt(LBL("To id (block end)"), &rnTo); }
-	if (kind == patrn::Op::Move || kind == patrn::Op::Place || kind == patrn::Op::Swap) { ImGui::SetNextItemWidth(100); ImGui::InputInt(kind == patrn::Op::Swap ? LBL("Id B") : LBL("Target id"), &rnTarget); }
-	if (kind == patrn::Op::Insert) { ImGui::SameLine(); ImGui::SetNextItemWidth(100); ImGui::InputInt(LBL("Count"), &rnCount); }
+	ImGui::SetNextItemWidth(ui::Px(100)); ImGui::InputInt(kind == patrn::Op::Insert ? LBL("At id") : kind == patrn::Op::Swap ? LBL("Id A") : LBL("From id"), &rnFrom);
+	if (kind != patrn::Op::Insert && kind != patrn::Op::Swap) { ui::SameLineField(ui::Px(100), LBL("To id (block end)")); ImGui::SetNextItemWidth(ui::Px(100)); ImGui::InputInt(LBL("To id (block end)"), &rnTo); }
+	if (kind == patrn::Op::Move || kind == patrn::Op::Place || kind == patrn::Op::Swap) { ImGui::SetNextItemWidth(ui::Px(100)); ImGui::InputInt(kind == patrn::Op::Swap ? LBL("Id B") : LBL("Target id"), &rnTarget); }
+	if (kind == patrn::Op::Insert) { ui::SameLineField(ui::Px(100), LBL("Count")); ImGui::SetNextItemWidth(ui::Px(100)); ImGui::InputInt(LBL("Count"), &rnCount); }
 	if (ImGui::Button(LBL("Use selected part set"))) { rnFrom = rnTo = curInstance->currState->partSet; }
-	ImGui::SameLine();
+	ui::SameLineButton(LBL("Preview..."));
 	if (ImGui::Button(LBL("Preview..."))) {
 		// apply to the live model, plan, and put the model back: the preview changes nothing
 		const auto saved = parts->partSets; const auto savedDisk = parts->diskIdOfOrig;
@@ -90,11 +93,11 @@ void PatPartSetPane::DrawRenumberPopup()
 {
 	if (rnPreviewOpen) { ImGui::OpenPopup(LBL("Renumber part sets##preview")); rnPreviewOpen = false; }
 	if (!ImGui::BeginPopupModal(LBL("Renumber part sets##preview"), nullptr, ImGuiWindowFlags_AlwaysAutoResize)) return;
-	ImGui::BeginChild("rnlist", ImVec2(640, 260), true);
+	ImGui::BeginChild("rnlist", ImVec2(std::min(ui::Px(640), ImGui::GetContentRegionAvail().x), ui::Px(260)), true);
 	ImGui::TextUnformatted(rnPreview.c_str());
 	ImGui::EndChild();
 	ImGui::BeginDisabled(!rnPreviewOk);
-	if (ImGui::Button(LBL("Apply"), ImVec2(120, 0))) {
+	if (ImGui::Button(LBL("Apply"), ImVec2(ui::Px(120), 0))) {
 		auto *users = static_cast<patrn::Users *>(rnUsers);
 		std::string err;
 		const patrn::Op op = OpFrom(rnKind, rnFrom, rnTo, rnTarget, rnCount);
@@ -109,6 +112,6 @@ void PatPartSetPane::DrawRenumberPopup()
 	}
 	ImGui::EndDisabled();
 	ImGui::SameLine();
-	if (ImGui::Button(LBL("Cancel"), ImVec2(120, 0))) ImGui::CloseCurrentPopup();
+	if (ImGui::Button(LBL("Cancel"), ImVec2(ui::Px(120), 0))) ImGui::CloseCurrentPopup();
 	ImGui::EndPopup();
 }

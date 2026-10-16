@@ -1,6 +1,7 @@
 // [authoring] The Authoring workspace: header (game folder, launch / attach, link, crash relaunch), Setup, Setups, the
 // HUD tab host, the edit sink (instant apply + one undo history) and the public API. See authoring_window.h and
 // docs/HANTEI_AUTHORING_MODE.md §5 / §8.9. Tuning: authoring_tuning_ui.cpp. Live + Log: authoring_live_ui.cpp.
+#include "../ui/ui_style.h"
 #include "authoring_state.h"
 #include "hud_layout.h"
 #include "game_view.h"
@@ -224,7 +225,7 @@ void Header(HostContext& host, const gamelink::Snapshot& s, const LinkPolicy& p)
 	// game folder + checks
 	char buf[512];
 	std::snprintf(buf, sizeof buf, "%s", a.gameDir.c_str());
-	ImGui::SetNextItemWidth(360);
+	ImGui::SetNextItemWidth(ui::Px(360));
 	if (ImGui::InputTextWithHint(LBL("Game##dir"), "C:\\games\\mbaacc_dev", buf, sizeof buf, ImGuiInputTextFlags_EnterReturnsTrue)) {
 		a.gameDir = buf;
 		SaveSettings();
@@ -388,7 +389,7 @@ bool PickRow(int slot, const char* role, bool optional)
 	ImGui::TextUnformatted(TXT(role));
 	ImGui::SameLine(90);
 	const RosterChar* cur = pk.Empty() ? nullptr : RosterFor(pk.chara);
-	ImGui::SetNextItemWidth(150);
+	ImGui::SetNextItemWidth(ui::Px(150));
 	if (ImGui::BeginCombo("##chara", cur ? cur->name.c_str() : pk.Empty() ? (optional ? TXT("(none: solo)") : TXT("(pick)")) : "?", ImGuiComboFlags_HeightLarge)) {
 		if (optional && ImGui::Selectable(LBL("(none: solo)"), pk.Empty())) { pk = {}; changed = true; }
 		for (const RosterChar& c : a.roster) {
@@ -419,7 +420,7 @@ bool PickRow(int slot, const char* role, bool optional)
 		}
 		ImGui::SameLine();
 		const int n = PaletteCount(cur->file1);
-		ImGui::SetNextItemWidth(70);
+		ImGui::SetNextItemWidth(ui::Px(70));
 		char pl[16];
 		std::snprintf(pl, sizeof pl, "pal %02d", pk.palette);
 		if (ImGui::BeginCombo("##pal", pl, ImGuiComboFlags_HeightLarge)) {
@@ -483,7 +484,7 @@ void StageCombo()
 	std::string preview = a.setup.stage == 0 ? TXT("keep the current stage") : a.setup.stage < 0 ? TXT("random") : "stage " + std::to_string(a.setup.stage);
 	if (a.setup.stage > 0 && proj.IsOpen())
 		if (const bg::StageEntry* e = proj.Find(a.setup.stage)) preview = e->Label();
-	ImGui::SetNextItemWidth(320);
+	ImGui::SetNextItemWidth(ui::Px(320));
 	if (ImGui::BeginCombo(LBL("Stage"), preview.c_str(), ImGuiComboFlags_HeightLargest)) {
 		if (ImGui::Selectable(LBL("keep the current stage"), a.setup.stage == 0)) a.setup.stage = 0;
 		if (ImGui::Selectable(LBL("random (the game's roll)"), a.setup.stage < 0)) a.setup.stage = -1;
@@ -519,7 +520,7 @@ void SetupTab(HostContext& host, const gamelink::Snapshot& s, const LinkPolicy& 
 		a.setup.assists = a.setup.mode == Mode::Tag;
 	}
 	ImGui::SameLine(0, 30);
-	ImGui::SetNextItemWidth(150);
+	ImGui::SetNextItemWidth(ui::Px(150));
 	const char* scenes[] = { "Auto", "Training", "Authoring VS" };
 	if (ImGui::BeginCombo(LBL("Scene"), TXT(scenes[a.setup.scene < 3 ? a.setup.scene : 0]))) {
 		for (int k = 0; k < 3; ++k) {
@@ -538,7 +539,7 @@ void SetupTab(HostContext& host, const gamelink::Snapshot& s, const LinkPolicy& 
 	{
 		const tagtune::GlobalResolution g = a.ws.Global();
 		const std::vector<std::string> names = tagtune::SidecarStyleNames(a.ws.Set());
-		ImGui::SetNextItemWidth(150);
+		ImGui::SetNextItemWidth(ui::Px(150));
 		const bool can = Sink().CanEdit();
 		ImGui::BeginDisabled(!can);
 		if (ImGui::BeginCombo("##style", g.style.empty() ? TXT("(defaults)") : g.style.c_str())) {
@@ -560,12 +561,12 @@ void SetupTab(HostContext& host, const gamelink::Snapshot& s, const LinkPolicy& 
 			ImGui::SetTooltip(TXT("Edits global.ini active_style (a tuning edit: undoable, applied at once). The style layer sits under\nthe global overrides and every character / moon value."));
 	}
 	ImGui::SameLine(0, 30);
-	ImGui::SetNextItemWidth(130);
+	ImGui::SetNextItemWidth(ui::Px(130));
 	const char* ko[] = { "oneDown", "allDown", "the tuning's" };
 	int koi = a.setup.koRule == 0 ? 0 : a.setup.koRule == 1 ? 1 : 2;
 	if (i18n::Combo(LBL("KO rule"), &koi, ko, 3)) a.setup.koRule = koi == 2 ? 0xFF : koi;
 	ImGui::SameLine();
-	ImGui::SetNextItemWidth(110);
+	ImGui::SetNextItemWidth(ui::Px(110));
 	const char* timers[] = { "infinite", "slow (1)", "normal (2)", "fast (4)", "scene default" };
 	const int tv[] = { 0, 1, 2, 4, 0xFF };
 	int ti = 4;
@@ -653,7 +654,7 @@ void SetupTab(HostContext& host, const gamelink::Snapshot& s, const LinkPolicy& 
 	}
 	ImGui::Separator();
 	// save as a named setup
-	ImGui::SetNextItemWidth(200);
+	ImGui::SetNextItemWidth(ui::Px(200));
 	ImGui::InputTextWithHint("##savename", TXT("setup name"), a.saveName, sizeof a.saveName);
 	ImGui::SameLine();
 	ImGui::BeginDisabled(!a.saveName[0]);

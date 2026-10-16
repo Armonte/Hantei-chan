@@ -382,14 +382,14 @@ void MainFrame::DrawExportWindow()
 	ImGui::RadioButton(LBL("Tick range"), &s.range, ExportSettings::tickRange); ImGui::SameLine();
 	ImGui::RadioButton(LBL("Whole pattern"), &s.range, ExportSettings::wholePattern);
 	if (s.range == ExportSettings::tickRange) {
-		ImGui::SetNextItemWidth(90); ImGui::InputInt(LBL("From##tick"), &s.fromTick); ImGui::SameLine();
-		ImGui::SetNextItemWidth(90); ImGui::InputInt(LBL("To##tick"), &s.toTick); ImGui::SameLine();
+		ImGui::SetNextItemWidth(ui::Px(90)); ImGui::InputInt(LBL("From##tick"), &s.fromTick); ImGui::SameLine();
+		ImGui::SetNextItemWidth(ui::Px(90)); ImGui::InputInt(LBL("To##tick"), &s.toTick); ImGui::SameLine();
 		if (ImGui::SmallButton(LBL("Current"))) s.fromTick = s.toTick = st.currentTick;
 	}
 	if (s.range != ExportSettings::currentFrame) {
-		ImGui::SetNextItemWidth(90); ImGui::InputInt(LBL("Every N ticks"), &s.step); s.step = std::max(1, s.step);
+		ImGui::SetNextItemWidth(ui::Px(90)); ImGui::InputInt(LBL("Every N ticks"), &s.step); s.step = std::max(1, s.step);
 		ImGui::SameLine();
-		ImGui::SetNextItemWidth(90); ImGui::InputInt(LBL("Max ticks"), &s.maxTicks); s.maxTicks = std::clamp(s.maxTicks, 1, 5000);
+		ImGui::SetNextItemWidth(ui::Px(90)); ImGui::InputInt(LBL("Max ticks"), &s.maxTicks); s.maxTicks = std::clamp(s.maxTicks, 1, 5000);
 		ImGui::Checkbox(LBL("Only ticks where the root frame changes"), &s.keyframesOnly);
 		ImGui::Checkbox(LBL("Skip empty ticks"), &s.skipEmpty);
 	}
@@ -399,7 +399,7 @@ void MainFrame::DrawExportWindow()
 	ImGui::Checkbox(LBL("Spawned actors"), &s.spawns); ImGui::SameLine();
 	ImGui::Checkbox(LBL("Hitboxes"), &s.boxes); ImGui::SameLine();
 	ImGui::Checkbox(LBL("Smooth filter"), &s.smooth);
-	ImGui::SetNextItemWidth(120); ImGui::SliderInt(LBL("Scale"), &s.scale, 1, 8, "%dx");
+	ImGui::SetNextItemWidth(ui::Px(120)); ImGui::SliderInt(LBL("Scale"), &s.scale, 1, 8, "%dx");
 
 	ImGui::TextUnformatted(TXT("Background"));
 	ImGui::RadioButton(LBL("Transparent"), &s.background, ExportSettings::transparent); ImGui::SameLine();
@@ -412,18 +412,18 @@ void MainFrame::DrawExportWindow()
 	ImGui::RadioButton(LBL("Fit each tick"), &s.crop, ExportSettings::fitEach);
 	ImGui::RadioButton(LBL("Fixed size"), &s.crop, ExportSettings::fixedCanvas);
 	if (s.crop == ExportSettings::fixedCanvas) {
-		ImGui::SetNextItemWidth(80); ImGui::InputInt(LBL("W"), &s.canvasW); ImGui::SameLine();
-		ImGui::SetNextItemWidth(80); ImGui::InputInt(LBL("H"), &s.canvasH); ImGui::SameLine();
-		ImGui::SetNextItemWidth(80); ImGui::InputInt(LBL("Origin X"), &s.canvasOriginX); ImGui::SameLine();
-		ImGui::SetNextItemWidth(80); ImGui::InputInt(LBL("Origin Y"), &s.canvasOriginY);
+		ImGui::SetNextItemWidth(ui::Px(80)); ImGui::InputInt(LBL("W"), &s.canvasW); ImGui::SameLine();
+		ImGui::SetNextItemWidth(ui::Px(80)); ImGui::InputInt(LBL("H"), &s.canvasH); ImGui::SameLine();
+		ImGui::SetNextItemWidth(ui::Px(80)); ImGui::InputInt(LBL("Origin X"), &s.canvasOriginX); ImGui::SameLine();
+		ImGui::SetNextItemWidth(ui::Px(80)); ImGui::InputInt(LBL("Origin Y"), &s.canvasOriginY);
 	} else {
-		ImGui::SetNextItemWidth(80); ImGui::InputInt(LBL("Padding (px)"), &s.padding); s.padding = std::clamp(s.padding, 0, 512);
+		ImGui::SetNextItemWidth(ui::Px(80)); ImGui::InputInt(LBL("Padding (px)"), &s.padding); s.padding = std::clamp(s.padding, 0, 512);
 	}
 
 	ImGui::Separator();
 	char folder[1024];
 	snprintf(folder, sizeof(folder), "%s", s.folder.c_str());
-	ImGui::SetNextItemWidth(330);
+	ImGui::SetNextItemWidth(ui::Px(330));
 	if (ImGui::InputText("##folder", folder, sizeof(folder))) s.folder = folder;
 	ImGui::SameLine();
 	if (ImGui::Button(LBL("Browse..."))) {
@@ -432,11 +432,11 @@ void MainFrame::DrawExportWindow()
 	}
 	char base[256];
 	snprintf(base, sizeof(base), "%s", s.baseName.c_str());
-	ImGui::SetNextItemWidth(330);
+	ImGui::SetNextItemWidth(ui::Px(330));
 	if (ImGui::InputText(LBL("File name prefix"), base, sizeof(base))) { s.baseName = base; m_exportBaseAuto = false; }
 	ImGui::Checkbox(LBL("Write JSON manifest (origin and tick of every file)"), &s.writeManifest);
 
-	if (ImGui::Button(LBL("Export"), ImVec2(120, 0))) {
+	if (ImGui::Button(LBL("Export"), ImVec2(ui::Px(120), 0))) {
 		m_exportRequest = ExportRequest::run;
 		m_exportViewId = view->getId();
 	}

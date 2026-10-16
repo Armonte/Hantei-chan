@@ -1,3 +1,4 @@
+#include "../ui/ui_style.h"
 #include "bg_inspector.h"
 #include "bg_file.h"
 #include "bg_renderer.h"
@@ -34,7 +35,7 @@ bool EditU8Flag(const char* label, uint8_t* v) {
 // One 52-byte record: type/w2 plus d[1..12], with a decoded hint.
 bool EditRecord(EventRecord& r, bool trigger) {
 	bool ch = false;
-	ImGui::PushItemWidth(90);
+	ImGui::PushItemWidth(ui::Px(90));
 	ch |= EditScalar("type", ImGuiDataType_S16, &r.type); ImGui::SameLine();
 	ch |= EditScalar("w2", ImGuiDataType_S16, &r.w2);
 	for (int k = 1; k <= 12; ++k) {
@@ -103,7 +104,7 @@ void DrawSideFiles(File& file) {
 		ImGui::SameLine();
 		ImGui::TextDisabled(file.IsInfoDirty() ? TXT("(modified)") : TXT("(saved)"));
 		auto setInt = [&](const char* key, int v) { file.SetInfoValue(key, std::to_string(v)); };
-		ImGui::PushItemWidth(110);
+		ImGui::PushItemWidth(ui::Px(110));
 		int n = (int)info.lights.size();
 		if (ImGui::InputInt(LBL("LightNum"), &n)) setInt("LightNum", std::max(0, std::min(10, n)));
 		for (int i = 0; i < (int)info.lights.size(); ++i) {
@@ -186,7 +187,7 @@ static void DrawInspectorBody(File& file, Renderer& renderer, InspectorResult& r
 	// --- game flavour / variants / RNG ---
 	int game = (int)file.GetGame();
 	const char* games[] = { "MBAACC", "MBAC" };
-	ImGui::PushItemWidth(110);
+	ImGui::PushItemWidth(ui::Px(110));
 	if (i18n::Combo(LBL("Game"), &game, games, 2)) file.SetGame((Game)game);
 	ImGui::PopItemWidth();
 	if (ImGui::IsItemHovered())
@@ -200,7 +201,7 @@ static void DrawInspectorBody(File& file, Renderer& renderer, InspectorResult& r
 			res.openPath = sib;
 	}
 	int seed = file.GetSeed();
-	ImGui::PushItemWidth(110);
+	ImGui::PushItemWidth(ui::Px(110));
 	if (ImGui::InputInt(LBL("RNG seed"), &seed, 1, 100, ImGuiInputTextFlags_EnterReturnsTrue))
 		file.SetSeed(seed);
 	ImGui::PopItemWidth();
@@ -218,7 +219,7 @@ static void DrawInspectorBody(File& file, Renderer& renderer, InspectorResult& r
 	{
 		int pp = renderer.GetPatPlacement() == Renderer::PatPlacement::Authoring ? 1 : 0;
 		const char* pps[] = { "Game-exact", "Authoring" };
-		ImGui::PushItemWidth(120);
+		ImGui::PushItemWidth(ui::Px(120));
 		if (i18n::Combo(LBL("PAT placement"), &pp, pps, 2)) {
 			renderer.SetPatPlacement(pp ? Renderer::PatPlacement::Authoring : Renderer::PatPlacement::Game);
 			PatPlacementChanged(pp != 0);
@@ -232,7 +233,7 @@ static void DrawInspectorBody(File& file, Renderer& renderer, InspectorResult& r
 	}
 	{
 		static float heat = 0.0f;
-		ImGui::PushItemWidth(120);
+		ImGui::PushItemWidth(ui::Px(120));
 		ImGui::SliderFloat(LBL("HEAT preview"), &heat, 0.0f, 1.0f, heat > 0.0f ? "%.2f" : "off");
 		ImGui::PopItemWidth();
 		renderer.SetHeatPreview(heat, (float)ImGui::GetTime());
@@ -251,7 +252,7 @@ static void DrawInspectorBody(File& file, Renderer& renderer, InspectorResult& r
 			ImGui::SetTooltip(TXT("Two silhouettes with the game's fighter shadows: one flat shadow, or one\n"
 			                  "per Info.txt light (strength fades over the light's Power)."));
 		if (si.enabled) {
-			ImGui::PushItemWidth(200);
+			ImGui::PushItemWidth(ui::Px(200));
 			ImGui::DragFloat2(LBL("Fighter x"), si.x, 1.0f, -512.0f, 512.0f, "%.0f");
 			ImGui::PopItemWidth();
 		}
@@ -303,7 +304,7 @@ static void DrawInspectorBody(File& file, Renderer& renderer, InspectorResult& r
 	bool ch = false;
 
 	ImGui::Text(TXT("Object slot %d"), obj.originalIndex);
-	ImGui::PushItemWidth(100);
+	ImGui::PushItemWidth(ui::Px(100));
 	ch |= ImGui::InputInt(LBL("Parallax (256 = world)"), &obj.parallax);
 	ch |= ImGui::InputInt(LBL("Layer"), &obj.layer);
 	ImGui::PopItemWidth();
@@ -343,18 +344,18 @@ static void DrawInspectorBody(File& file, Renderer& renderer, InspectorResult& r
 		if (selFrame >= 0 && selFrame < (int)obj.frames.size()) {
 			Frame& fr = obj.frames[selFrame];
 			bool fch = false;
-			ImGui::PushItemWidth(100);
+			ImGui::PushItemWidth(ui::Px(100));
 			fch |= EditScalar("Sprite (>=10000 CG, <10000 PAT)", ImGuiDataType_S16, &fr.spriteId);
 			fch |= EditScalar("Offset X", ImGuiDataType_S16, &fr.offsetX); ImGui::SameLine();
 			fch |= EditScalar("Offset Y", ImGuiDataType_S16, &fr.offsetY);
 			fch |= EditScalar("Duration", ImGuiDataType_U16, (uint16_t*)&fr.duration);
 			int blend = std::min<int>(fr.blendMode, 3);
-			ImGui::PushItemWidth(160);
+			ImGui::PushItemWidth(ui::Px(160));
 			if (i18n::Combo(LBL("Blend (+9)"), &blend, kBlend, 4)) { fr.blendMode = (uint8_t)blend; fch = true; }
 			ImGui::PopItemWidth();
 			fch |= EditScalar("Opacity (+10)", ImGuiDataType_U8, &fr.opacity);
 			int ani = std::min<int>(fr.aniType, 5);
-			ImGui::PushItemWidth(160);
+			ImGui::PushItemWidth(ui::Px(160));
 			if (i18n::Combo(LBL("Anim type (+11)"), &ani, kAniTypes, 6)) { fr.aniType = (uint8_t)ani; fch = true; }
 			ImGui::PopItemWidth();
 			fch |= EditScalar("Jump (+12)", ImGuiDataType_U8, &fr.jumpFrame); ImGui::SameLine();
@@ -373,7 +374,7 @@ static void DrawInspectorBody(File& file, Renderer& renderer, InspectorResult& r
 			fch |= EditScalar("Acc Y (+62)", ImGuiDataType_S16, &fr.accY);
 			ImGui::PopItemWidth();
 			ImGui::Text(TXT("Trigger refs (+100) / command refs (+116), -1 = none:"));
-			ImGui::PushItemWidth(40);
+			ImGui::PushItemWidth(ui::Px(40));
 			for (int k = 0; k < 8; ++k) {
 				ImGui::PushID(k);
 				fch |= EditScalar("##t", ImGuiDataType_S16, &fr.triggerRef[k]);
