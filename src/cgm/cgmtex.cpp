@@ -303,6 +303,17 @@ static int RealMain(int argc, char **argv) {
 		std::set<int> ids; for (auto &fr : q->frames) for (auto &L : fr.AF.layers) if (!L.usePat && L.spriteId >= 0) ids.insert(L.spriteId);
 		for (int i : ids) printf("%d\n", i); return 0;
 	}
+	if (c == "users" && argc >= 5) {   // users <x.ha6> <x.cg|x.pat> <id>: the "Used by" list of one image / .pat texture
+		FrameData fd; if (!fd.load(argv[2])) { printf("cannot load %s\n", argv[2]); return 1; }
+		Opened o; std::string err; if (!Open(argv[3], o, err)) { printf("error: %s\n", err.c_str()); return 1; }
+		const int id = atoi(argv[4]);
+		for (auto &u : o.bank ? cgm::CgImageUsers(fd, id) : cgm::PatTextureUsers(*o.parts, id, &fd)) {
+			if (u.pattern >= 0) printf("pattern %d frame %d layer %d part-set %d\n", u.pattern, u.frame, u.layer, u.partSet);
+			else if (u.partSet >= 0) printf("part-set %d part %d\n", u.partSet, u.part);
+			else printf("part %d\n", u.part);
+		}
+		return 0;
+	}
 	if (c == "list" && argc >= 3) {
 		Opened o; std::string err; if (!Open(argv[2], o, err)) { printf("error: %s\n", err.c_str()); return 1; }
 		for (int i = 0; i < o.src->count(); i++) { cgm::TexEntry e; if (o.src->entry(i, e) && e.present) printf("%4d %5d x %-5d %-22s %s\n", i, e.w, e.h, e.format.c_str(), e.name.c_str()); }
