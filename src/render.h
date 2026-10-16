@@ -184,6 +184,9 @@ public:
 	// Switch to <cg>_pN.pal for layers of patterns with PUPS N (issue #76).
 	bool followPups = true;
 	bool filter;
+	// MBTL CG sprites at zoom > 1 (set per scene by the caller from the character's game and the View > Filter toggle):
+	// Han6Draw_SubmitCgSprite_ParentMtx 0x4A0C40 picks TecCharaDrawBgColorFilter_V when the camera zoom is > 1.
+	bool cgZoomFilter = false;
 	int x, offsetX;
 	int y, offsetY;
 	float scale;

@@ -731,6 +731,10 @@ void MainFrame::Menu(unsigned int errorPopupId)
 					render.filter = smoothRender;
 					render.SwitchImage(-1);
 				}
+				ImGui::Checkbox(LBL("MBTL CG zoom filter"), &gSettings.mbtlCgZoomFilter);
+				if (ImGui::IsItemHovered())
+					Tooltip(TXT("MBTL draws CG sprites through its *Filter_V shaders when the camera zoom is above 1\n"
+					            "(a 3x3 palette blur). On: the editor does the same at zoom > 1. .pat parts are unaffected."));
 				ImGui::EndMenu();
 			}
 			if (ImGui::BeginMenu(LBL("Background color")))
