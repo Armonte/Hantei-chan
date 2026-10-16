@@ -6,6 +6,7 @@
 #include <glm/gtc/type_ptr.hpp>
 #include <glm/gtc/constants.hpp>
 #include <algorithm>
+#include <cmath>
 
 //Error
 #include <windows.h>
@@ -255,6 +256,17 @@ void Render::BeginPass(const PassParams& params)
 	// with the old camera reproduces the old image pixel for pixel.
 	x = (int)(pass.originX / pass.zoom);
 	y = (int)(pass.originY / pass.zoom);
+	// render-match21: the world origin lands on the whole pixel floor(origin), at every zoom. MBTL
+	// CBtlCamera_UpdateMatrices 0x509240 zooms by moving the eye (1 / zoom), and its NDC->px matrix (+824) maps the camera
+	// centre to the fixed pixel (640, 360) at every zoom; Han6Object_Draw 0x597070 floors the object to whole sprite px
+	// before the camera, so a sprite px k lands at centre + zoom * k. The integer world pan above (kept: the world
+	// matrices and the stage path translate by it) puts the origin on zoom * int(origin / zoom) instead, half a pixel off
+	// at 1.5x (632 -> 631.5), which moves every texel edge of a point-sampled magnified part. The remainder is a
+	// screen-space translate in front of the world matrices; it is 0 at zoom 1 and at any integer zoom.
+	const float rx = std::floor(pass.originX) - (float)x * pass.zoom;
+	const float ry = std::floor(pass.originY) - (float)y * pass.zoom;
+	if (rx != 0.f || ry != 0.f)
+		projection = projection * glm::translate(glm::mat4(1.f), glm::vec3(rx, ry, 0.f));
 }
 
 void Render::ApplySpriteTextureMode()
