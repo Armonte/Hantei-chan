@@ -13,7 +13,9 @@ void BlenderPrefsItems();   // Preferences: Blender executable for "Open in Blen
 void Draw();   // call once per frame from the ImGui build phase (renders into its own FBO, restores GL state)
 // --ui-script: `stage3d open <bg folder> <bgNNN>` | `stage3d frame <n>` | `stage3d cam <x> <y> <zoom>` | `stage3d capture <png>`
 // | `stage3d set <key> <value>` (lift, contrast, cull, fog, fov) | `stage3d status`
-// | `stage3d blender [launch]` (print / run the Open in Blender command) | `stage3d reload`
+// | `stage3d blender [launch]` (print / run the Open in Blender command) | `stage3d reload` (= Reload from Blender)
+// | `stage3d stages [bg folder]` (stage folders with bg.fbx.bin or bg.fbx); `status` also prints model=, watch= (the files
+// "changed on disk" polls, bg.fbx.bin first) and changed_on_disk=0|1
 bool ScriptCommand(const std::string& cmd, const std::string& arg, std::string* msg);
 
 }  // namespace stage3dview
