@@ -2,6 +2,7 @@
 #include "character_view.h"
 #include "hud_theme_exporter.h"
 #include "misc.h"
+#include "app_log.h"
 #include "../third_party/json/json.hpp"
 #include <fstream>
 #include <filesystem>
@@ -82,6 +83,18 @@ static std::string MakeAbsolutePath(const std::string& filePath, const std::stri
 }
 
 // Helper: Get current timestamp in ISO 8601 format
+// The text shown and logged for a project character that did not load: its path, flagged when the
+// file is simply not there (moved or deleted since the project was saved) so it reads differently
+// from a file that exists but failed to parse.
+static std::string DescribeFailedCharacter(const json& charObj, const std::string& absolutePath)
+{
+	if (absolutePath.empty()) return charObj.value("name", std::string("(unnamed)"));
+	std::error_code ec;
+	if (!std::filesystem::exists(std::filesystem::u8path(absolutePath), ec))
+		return absolutePath + " (file not found)";
+	return absolutePath;
+}
+
 static std::string GetCurrentTimestamp()
 {
 	auto now = std::chrono::system_clock::now();
@@ -206,7 +219,8 @@ bool ProjectManager::LoadProject(
 	int* outTheme,
 	float* outZoomLevel,
 	bool* outSmoothRender,
-	float* outClearColor)
+	float* outClearColor,
+	std::vector<std::string>* outFailedCharacters)
 {
 	try {
 		std::ifstream file(path);
@@ -239,8 +253,11 @@ bool ProjectManager::LoadProject(
 				}
 
 				if (!loaded) {
-					// TODO: Show missing file dialog
-					continue; // Skip this character for now
+					// Never skip silently: log it and hand it back so the caller can show it.
+					const std::string what = DescribeFailedCharacter(charObj, absolutePath);
+					HC_LOG_WARN("Project {}: character skipped: {}", path, what);
+					if (outFailedCharacters) outFailedCharacters->push_back(what);
+					continue;
 				}
 
 				// Restore render state
@@ -487,7 +504,9 @@ bool ProjectManager::LoadProject(
 				}
 
 				if (!loaded) {
-					failed.push_back(absolutePath.empty() ? charObj.value("name", std::string("(unnamed)")) : absolutePath);
+					const std::string what = DescribeFailedCharacter(charObj, absolutePath);
+					HC_LOG_WARN("Project {}: character skipped: {}", path, what);
+					failed.push_back(what);
 					fileToLoaded.push_back(nullptr);
 					continue;
 				}
