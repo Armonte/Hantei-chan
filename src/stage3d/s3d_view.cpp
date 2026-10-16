@@ -486,11 +486,15 @@ bool Capture(State& s, const std::string& path, std::string& err)
 void DrawAlignView(State& s, ImVec2 avail);
 void WriteAlignIni(State& s);
 
-// Blender link (s3d_blender.h). The configured path, else the newest detected install.
+// Blender link (s3d_blender.h). The configured path (default: the 5.2.2 portable build) when it exists, else the newest
+// detected install (5.x first).
 static std::string BlenderExe()
 {
-	if (!gSettings.blenderPath.empty()) return gSettings.blenderPath;
-	return s3d::DetectBlender();
+	std::error_code ec;
+	if (!gSettings.blenderPath.empty() && fs::exists(fs::u8path(gSettings.blenderPath), ec)) return gSettings.blenderPath;
+	const std::string d = s3d::DetectBlender();
+	if (!gSettings.blenderPath.empty()) HC_LOG_WARN("stage3d: blender: {} not found, using {}", gSettings.blenderPath, d.empty() ? std::string("none") : d);
+	return d;
 }
 
 static bool LaunchBlender(State& s, std::string& cmdOut)
@@ -540,7 +544,7 @@ void BlenderPrefsItems()
 		if (!d.empty()) { gSettings.blenderPath = d; ImGui::MarkIniSettingsDirty(); }
 		HC_LOG_INFO("stage3d: blender auto-detect: {}", d.empty() ? std::string("none") : d);
 	}
-	ImGui::TextDisabled("%s", TXT("Used by the 3D Stage view's Open in Blender (MBTL_fbx_json add-on). Empty: newest Blender found."));
+	ImGui::TextDisabled("%s", TXT("Used by the 3D Stage view's Open in Blender (MBTL_fbx_json add-on, Blender 5.2). Missing or empty: newest Blender found."));
 }
 
 void MenuItem()

@@ -18,11 +18,15 @@ std::string BlenderCommandLine(const std::string& blenderExe, const std::string&
 //  - `foundationDirNames`: children of C:/Program Files/Blender Foundation named "Blender X.Y" (installer)
 //  - `appsDirNames`: children of C:/apps named "blender-X.Y.Z-windows-x64" (portable zip)
 // Versions compare numerically per component (5.2.2 > 5.2 > 4.10 > 4.5); on a tie the portable build comes first.
-// C:/dev/blender40/blender-4.0.2-windows-x64 is always last.
 std::vector<std::string> BlenderCandidates(const std::vector<std::string>& foundationDirNames,
                                            const std::vector<std::string>& appsDirNames = {});
 // First candidate that exists on disk, "" when none.
 std::string DetectBlender();
+// The default "Open in Blender" executable (the MBTL_fbx_json add-on targets Blender 5.2): the portable 5.2.2 build.
+const char* DefaultBlenderPath();
+// True when the path names a Blender older than 5 ("Blender 4.5/blender.exe", "blender-4.0.2-windows-x64/..."): the
+// add-on no longer supports it, so a saved pre-5 path is not migrated (the 5.2 default is used instead).
+bool BlenderPathIsPre5(const std::string& exePath);
 
 // Files "changed on disk" watches for a stage loaded from `modelPath`: the add-on's export always writes bg.fbx.bin into
 // the stage folder (also for an ASCII bg.fbx stage, DFCI / UNIB), so that comes first; the loaded file second when it
