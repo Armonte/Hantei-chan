@@ -19,7 +19,7 @@
 #include <squirrel.h>
 #include "sq_api.h"
 #include "chara_load.h"
-#include "../framedata.h"
+#include "ptcn_stack.h"
 #include <windows.h>
 #include <sqstdaux.h>
 #include <sqstdblob.h>
@@ -287,41 +287,9 @@ struct Result {
 // Load-time context settings (sqtool check ... --side N --mode M --rapidbeat T).
 static int g_side = 0, g_gameMode = 1, g_gameModeSub = 0, g_rapidBeat = 0;
 
-// PTCN -> first pattern index of a project .txt's [DataFile] HA6 stack, loaded the way the editor and the game stack it
-// (files after the project's own file only fill empty slots).
-static std::map<std::string, int> LoadPatternCodes(const fs::path &txt)
-{
-	std::map<std::string, int> out;
-	const std::string t = txt.string();
-	const int n = GetPrivateProfileIntA("DataFile", "FileNum", 0, t.c_str());
-	std::vector<std::string> names;
-	for (int i = 0; i < n; ++i) {
-		char key[16], val[260] = {};
-		snprintf(key, sizeof key, i >= 100 ? "File%03d" : "File%02d", i);
-		GetPrivateProfileStringA("DataFile", key, "", val, sizeof val, t.c_str());
-		names.push_back(val);
-	}
-	if (names.empty()) return out;
-	const int own = FrameData::StackSaveTarget(names);
-	FrameData fd;
-	bool any = false;
-	for (int i = 0; i < (int)names.size(); ++i) {
-		if (names[i].empty()) continue;
-		const fs::path p = txt.parent_path() / names[i];
-		std::error_code ec;
-		if (!fs::exists(p, ec)) continue;
-		if (fd.load(p.string().c_str(), any, own >= 0 && i > own)) any = true;
-	}
-	for (int i = 0; i < (int)fd.get_sequence_count(); ++i) {
-		const Sequence *s = fd.get_sequence(i);
-		if (s && !s->codeName.empty()) out.emplace(std::string(s->codeName.c_str()), i);
-	}
-	return out;
-}
-
 static bool RunCharacters(HSQUIRRELVM v, const fs::path &root)
 {
-	const auto effectCodes = LoadPatternCodes(root / "data" / "effect.txt");
+	const auto effectCodes = sqedit::LoadPatternCodes((root / "data" / "effect.txt").u8string());
 	int clean = 0, bad = 0;
 	std::error_code ec;
 	std::vector<fs::path> dirs;
@@ -332,7 +300,7 @@ static bool RunCharacters(HSQUIRRELVM v, const fs::path &root)
 	sqedit::InstallDevWarningObserver(v);
 	for (auto &d : dirs) {
 		const std::string chr = d.filename().string();
-		const auto codes = LoadPatternCodes(d / (chr + "_0.txt"));
+		const auto codes = sqedit::LoadPatternCodes((d / (chr + "_0.txt")).u8string());
 		sqedit::LoadContext ctx;
 		ctx.charaNo = ctx.vsCharaNo = std::atoi(chr.c_str() + 3);
 		ctx.side = g_side;

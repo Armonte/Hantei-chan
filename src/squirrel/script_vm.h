@@ -10,6 +10,8 @@
 // Natives come from the game's API profile (docs/squirrel/api/<game>_api.json, generated from the
 // IDB): stubs that return a default for their inferred return type.
 
+#include "chara_load_types.h"
+
 #include <functional>
 #include <memory>
 #include <string>
@@ -42,7 +44,7 @@ public:
 	void close();
 	bool isOpen() const;
 
-	// Runs script/Battle_Init.txt + script/Battle_Std.txt once (the game's bootstrap), so a file's
+	// Runs the battle VM setup once (MBTL Sq_InitBattleVM: script/Battle_Init.txt, script/Battle_Std.txt, data/_combase.txt), so a file's
 	// top level sees the shared move library. Returns the first failure, or ok.
 	Diagnostic bootstrap();
 
@@ -50,6 +52,11 @@ public:
 	Diagnostic compile(const std::string& bytes, const std::string& name);
 	// Compiles, then runs the top level against the stubs (after bootstrap()).
 	Diagnostic compileAndRun(const std::string& bytes, const std::string& name);
+
+	// The game's character load (chara_load.h) in a fresh VM: the battle VM setup, then chrDirRel's sc/cmd/mv/com in game
+	// order with load-time natives answering from ctx; overrideRel's bytes (the unsaved editor text) replace that file.
+	CharaLoadResult checkCharacter(const std::string& chrDirRel, LoadContext ctx, const std::string& overrideRel,
+		const std::string& overrideBytes);
 
 	int nativeCount() const;
 	int sandboxBlockedCount() const;

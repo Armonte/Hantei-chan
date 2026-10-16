@@ -20,22 +20,6 @@
 
 namespace sqedit {
 
-struct CharaLoadIssue {
-	enum Kind { RuntimeError, MissingTable, MissingPattern, DevWarning };
-	Kind kind = RuntimeError;
-	std::string file;      // game-relative ("data/chr001/chr001_mv_0.txt"); "" when not tied to a file
-	int line = 0;          // 1-based, 0 = unknown
-	std::string move;      // MissingPattern: the move
-	std::string message;
-};
-
-struct CharaLoadResult {
-	std::vector<CharaLoadIssue> issues;
-	std::set<std::string> commandMoves;   // UpdateTable.name of every <CHR>_CommandTable entry
-	int filesRun = 0;
-	bool ok() const;                     // no RuntimeError / MissingTable
-};
-
 // Runs a game-relative script file in v; false + error text/line on a compile or runtime error.
 using RunScriptFn = std::function<bool(const std::string& rel, std::string* error, std::string* errorFile, int* errorLine)>;
 

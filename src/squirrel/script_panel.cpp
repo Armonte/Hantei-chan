@@ -2,6 +2,7 @@
 
 #include "script_document.h"
 #include "script_index.h"
+#include "ptcn_stack.h"
 #include "script_vm.h"
 
 #include "../app_log.h"
@@ -230,6 +231,8 @@ struct ScriptPanel::Impl {
 	std::vector<ScriptPanel::ScriptRef> refsCache;
 	std::map<std::string, std::vector<std::pair<std::string, const ApiSym*>>> apiByTable;   // engine natives per table
 	std::vector<ScriptProblem> problems;
+	std::vector<ScriptProblem> loadProblems;   // from the last character load check (save / Check), MBTL
+	std::string loadProblemsDir;
 	double lastEditTime = -1.0;
 	int bottomTab = 0;            // 0 log, 1 problems, 2 search
 	bool selectBottomTab = false;
@@ -691,9 +694,60 @@ struct ScriptPanel::Impl {
 			const bool ah = a.file == currentRel, bh = b.file == currentRel;
 			return ah != bh ? ah : (a.file != b.file ? a.file < b.file : a.line < b.line);
 		});
+		if (!loadProblemsDir.empty() && CharDirOf(currentRel) == loadProblemsDir)
+			problems.insert(problems.end(), loadProblems.begin(), loadProblems.end());
 		editor.ClearMarkers();
 		for (const auto& p : problems)
 			if (p.file == currentRel) editor.AddMarker(static_cast<size_t>(p.line), IM_COL32(230, 170, 40, 255), IM_COL32(110, 80, 0, 70), p.message, p.message);
+	}
+
+	// The game's character load for the open file's character (MBTL: traced order, docs/squirrel/RE_MBTL_LOAD.md), with the
+	// editor text in place of the file on disk. False when it does not apply (not a character sc/cmd/mv/com file, or the load
+	// order of this game is not traced yet). Fills loadProblems; the first runtime error in this file comes back in *here.
+	bool characterCheck(const std::string& bytes, Diagnostic* here)
+	{
+		static const std::regex re(R"(^data/(chr(\d+))/\1_(sc|cmd|mv|com)_0\.txt$)");
+		std::smatch m;
+		if (game != "mbtl" || apiPath.empty() || !std::regex_match(currentRel, m, re)) return false;
+		const std::string dir = "data/" + m[1].str();
+		const auto t0 = std::chrono::steady_clock::now();
+		const auto codes = LoadPatternCodes(ToU8(U8(root) / U8(dir) / U8(m[1].str() + "_0.txt")));
+		const auto effect = LoadPatternCodes(ToU8(U8(root) / "data" / "effect.txt"));
+		LoadContext ctx;
+		ctx.charaNo = ctx.vsCharaNo = std::stoi(m[2].str());
+		ctx.patternByCode = [&](int dt, const std::string& code) {
+			const auto& t = dt == 1 ? effect : codes;
+			const auto it = t.find(code);
+			return it == t.end() ? -1 : it->second;
+		};
+		const CharaLoadResult r = vm.checkCharacter(dir, ctx, currentRel, bytes);
+		loadProblems.clear();
+		loadProblemsDir = dir;
+		int dev = 0;
+		for (const auto& i : r.issues) {
+			if (i.kind == CharaLoadIssue::DevWarning) { dev++; say("developer warning (" + dir + "): " + i.message); continue; }
+			ScriptProblem p;
+			p.severity = i.kind == CharaLoadIssue::MissingPattern ? ScriptProblem::Warning : ScriptProblem::Error;
+			p.file = i.file.empty() ? currentRel : i.file;
+			p.line = std::max(0, i.line - 1);
+			if (i.kind == CharaLoadIssue::MissingPattern)   // point at the move's own table (last definition in this folder wins)
+				for (const ScriptDef* def : index.find(i.move))
+					if (def->kind == ScriptDef::MoveTable && def->file.rfind(dir + "/", 0) == 0) { p.file = def->file; p.line = def->line; }
+			p.message = (i.kind == CharaLoadIssue::RuntimeError ? "game load: " : "") + i.message;
+			loadProblems.push_back(p);
+			if (here && here->ok && i.kind == CharaLoadIssue::RuntimeError && p.file == currentRel) {
+				here->ok = false;
+				here->runtime = true;
+				here->line = i.line;
+				here->message = i.message;
+				here->source = "./" + currentRel;
+			}
+		}
+		const long ms = (long)std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::steady_clock::now() - t0).count();
+		say("character load check " + dir + ": " + std::to_string(r.filesRun) + " files, " + std::to_string(r.commandMoves.size()) +
+			" moves startable by commands, " + std::to_string(loadProblems.size()) + " problem(s), " + std::to_string(dev) +
+			" developer warning(s), " + std::to_string(ms) + " ms");
+		return true;
 	}
 
 	// Writes the blank move table `name` into `fixFile` (the open editor when it is that file, so it can be undone).
@@ -1166,6 +1220,17 @@ bool ScriptPanel::scriptCommand(const std::string& sub, const std::string& arg, 
 		for (size_t i = 0; i < r.size() && i < 10; ++i) out += "\n  " + r[i].file + ":" + std::to_string(r[i].line + 1) + " " + r[i].text;
 	}
 	else if (sub == "hide") m_visible = false;
+	else if (sub == "check") {   // the Check button: compile, then (MBTL character files) the game's character load
+		std::string bytes;
+		std::vector<EncodeError> errs;
+		m->doc.encode(SplitLines(m->editor.GetText()), bytes, &errs);
+		Diagnostic d = m->vm.compile(bytes, m->currentRel);
+		const bool loaded = d.ok && m->characterCheck(bytes, &d);
+		if (loaded) m->recheck();
+		out = std::string(d.ok ? "ok" : "error line " + std::to_string(d.line) + ": " + d.message) + (loaded ? ", character load ran" : ", single file") +
+			", " + std::to_string(m->loadProblems.size()) + " load problem(s)";
+		for (const auto& p : m->loadProblems) out += "\n  " + p.file + ":" + std::to_string(p.line + 1) + " " + p.message;
+	}
 	else if (sub == "tab") { m->bottomTab = atoi(arg.c_str()); m->selectBottomTab = true; }
 	else if (sub == "type") { m->editor.ReplaceTextInCurrentCursor(arg); }
 	else if (sub == "problems") {
@@ -1229,9 +1294,12 @@ void ScriptPanel::draw()
 		std::string bytes;
 		std::vector<EncodeError> errs;
 		if (m->doc.encode(SplitLines(m->editor.GetText()), bytes, &errs)) {
-			const Diagnostic d = m->vm.compile(bytes, m->currentRel);
-			m->showDiagnostic(d, m->currentRel);
-			m->setStatus(d.ok ? "compiles" : "line " + std::to_string(d.line) + ": " + d.message, !d.ok);
+			Diagnostic d = m->vm.compile(bytes, m->currentRel);
+			const bool loaded = d.ok && m->characterCheck(bytes, &d);
+			m->showDiagnostic(d, "./" + m->currentRel);
+			if (loaded) m->recheck();
+			m->setStatus(d.ok ? (m->loadProblems.empty() ? "compiles; the character loads clean" : "compiles; see Problems")
+				: "line " + std::to_string(d.line) + ": " + d.message, !d.ok);
 		}
 	}
 	ImGui::EndDisabled();
@@ -1324,8 +1392,13 @@ void ScriptPanel::draw()
 		return;
 	}
 	// 2. Compile with the game's VM; with an API profile also run the top level after the bootstrap.
-	Diagnostic d;
-	if (!m->apiPath.empty()) {
+	Diagnostic d = m->vm.compile(bytes, "./" + m->currentRel);
+	if (d.ok && m->characterCheck(bytes, &d)) {
+		m->showDiagnostic(d, "./" + m->currentRel);
+		m->recheck();
+	} else if (!d.ok) {
+		m->showDiagnostic(d, "./" + m->currentRel);
+	} else if (!m->apiPath.empty()) {
 		const Diagnostic boot = m->vm.bootstrap();
 		if (!boot.ok) m->say("bootstrap: " + boot.source + ":" + std::to_string(boot.line) + " " + boot.message);
 		d = m->vm.compileAndRun(bytes, "./" + m->currentRel);
