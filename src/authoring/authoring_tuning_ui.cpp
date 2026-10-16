@@ -5,6 +5,7 @@
 //     lever, tag-in / tag-out with the HA6 pattern picker (read-only) + inline frame data + the MBAC reference, and the
 //     five assist slots with the _c.txt command picker (read-only) and the resolved move's frame data.
 // Every edit goes through the EditSink: one undo step, saved at once, live-applied (ApplyTuning).
+#include "../ui/ui_style.h"
 #include "authoring_state.h"
 #include "frame_summary.h"
 #include "mbac_reference.h"
@@ -299,7 +300,7 @@ void TreeBar(HostContext& host, const gamelink::Snapshot& s, const LinkPolicy& p
 	if (ImGui::Button(LBL("Save all"))) SaveAndApply("save");
 	ImGui::EndDisabled();
 	ImGui::SameLine();
-	ImGui::SetNextItemWidth(130);
+	ImGui::SetNextItemWidth(ui::Px(130));
 	if (ImGui::BeginCombo("##revert", TXT("Revert file"), ImGuiComboFlags_WidthFitPreview)) {
 		for (const SidecarDoc* d : a.ws.Docs())
 			if (d->ini.IsDirty() && ImGui::Selectable(d->id.Label().c_str())) a.ws.Revert(d->id);
@@ -423,7 +424,7 @@ void GlobalView(const gamelink::Snapshot& s)
 	const GlobalResolution g = a.ws.Global();
 	static bool dropOverrides = false;
 	static char newStyle[48] = "";
-	ImGui::SetNextItemWidth(200);
+	ImGui::SetNextItemWidth(ui::Px(200));
 	ImGui::BeginDisabled(!sink.CanEdit());
 	if (ImGui::BeginCombo(LBL("Style"), g.style.empty() ? "(none: defaults)" : g.style.c_str())) {
 		for (const std::string& n : SidecarStyleNames(a.ws.Set())) {
@@ -441,7 +442,7 @@ void GlobalView(const gamelink::Snapshot& s)
 	}
 	ImGui::SameLine();
 	ImGui::Checkbox(LBL("picking a style drops [tuning] overrides"), &dropOverrides);
-	ImGui::SetNextItemWidth(160);
+	ImGui::SetNextItemWidth(ui::Px(160));
 	ImGui::InputTextWithHint("##newstyle", TXT("new style name"), newStyle, sizeof newStyle);
 	ImGui::SameLine();
 	const bool nameOk = newStyle[0] && !std::strpbrk(newStyle, "[]=;# \t");
@@ -595,7 +596,7 @@ void CharacterView(HostContext& host, const gamelink::Snapshot& s, const CharVie
 			const bool hm = DocHasLever(doc.ini, doc.id.kind, sl.motion, &mv) && mv != 0;
 			int mode = hp ? 1 : hc ? 2 : hm ? 3 : 0;
 			const char* modes[] = { "inherit", "pattern", "command", "motion" };
-			ImGui::SetNextItemWidth(90);
+			ImGui::SetNextItemWidth(ui::Px(90));
 			ImGui::BeginDisabled(!sink.CanEdit());
 			if (i18n::Combo("##mode", &mode, modes, 4)) {
 				sink.Begin(std::string("assist ") + std::to_string(kAssistDirs[slot]) + " " + modes[mode] + " (" + label + ")");
@@ -620,7 +621,7 @@ void CharacterView(HostContext& host, const gamelink::Snapshot& s, const CharVie
 			if (mode == 1) {
 				if (PatternPicker(fd, pv, 1, 999, 220)) { sink.Begin(std::string(kLevers[sl.pattern].key) + " (" + label + ")"); SetDocLever(doc.ini, doc.id.kind, sl.pattern, pv); sink.Edited(); sink.End(); }
 			} else if (mode == 2) {
-				ImGui::SetNextItemWidth(220);
+				ImGui::SetNextItemWidth(ui::Px(220));
 				const CommandInfo* cur = FindCommand(cmds, cv2);
 				const std::string prev = cur ? std::to_string(cur->id) + "  " + cur->input + " -> p" + std::to_string(cur->pattern) : std::to_string(cv2);
 				if (ImGui::BeginCombo("##cmd", prev.c_str(), ImGuiComboFlags_HeightLarge)) {
@@ -634,7 +635,7 @@ void CharacterView(HostContext& host, const gamelink::Snapshot& s, const CharVie
 			} else if (mode == 3) {
 				char buf[16];
 				std::snprintf(buf, sizeof buf, "%s", UnpackMotion(mv).c_str());
-				ImGui::SetNextItemWidth(90);
+				ImGui::SetNextItemWidth(ui::Px(90));
 				if (ImGui::InputText("##motion", buf, sizeof buf, ImGuiInputTextFlags_EnterReturnsTrue | ImGuiInputTextFlags_CharsUppercase)) {
 					int32_t p = 0;
 					if (ValidateMotion(buf).empty() && PackMotion(buf, p)) { sink.Begin(std::string(kLevers[sl.motion].key) + " (" + label + ")"); SetDocLever(doc.ini, doc.id.kind, sl.motion, p); sink.Edited(); sink.End(); }

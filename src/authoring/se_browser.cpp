@@ -218,7 +218,7 @@ void Window::draw()
 	ImGui::TextDisabled("%s %s | %s %s", TXT("game:"), m_game.empty() ? "-" : m_game.c_str(), TXT("output:"), m_outDir.empty() ? "-" : m_outDir.c_str());
 	if (!m_status.empty()) ImGui::TextColored(m_statusError ? ImVec4(1, 0.45f, 0.4f, 1) : ImVec4(0.6f, 0.9f, 0.6f, 1), "%s", m_status.c_str());
 
-	ImGui::BeginChild("##sechars", ImVec2(160, 0), ImGuiChildFlags_Borders | ImGuiChildFlags_ResizeX);
+	ImGui::BeginChild("##sechars", ImVec2(ui::Px(160), 0), ImGuiChildFlags_Borders | ImGuiChildFlags_ResizeX);
 	for (size_t i = 0; i < m_chars.size(); i++) {
 		if (ImGui::Selectable(m_chars[i].c_str(), static_cast<int>(i) == m_current)) {
 			if (m_list.IsDirty() && static_cast<int>(i) != m_current) { m_status = TXT("Save or revert the open file first."); m_statusError = true; }
@@ -233,7 +233,7 @@ void Window::draw()
 		ImGui::SameLine();
 		if (m_list.IsDirty() && ImGui::SmallButton(LBL("Revert"))) selectCharacter(static_cast<size_t>(m_current));
 		ImGui::SameLine();
-		ImGui::SetNextItemWidth(200);
+		ImGui::SetNextItemWidth(ui::Px(200));
 		char f[64];
 		snprintf(f, sizeof f, "%s", m_filter.c_str());
 		if (ImGui::InputTextWithHint("##sefilter", TXT("filter"), f, sizeof f)) m_filter = f;

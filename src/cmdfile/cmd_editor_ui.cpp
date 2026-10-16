@@ -472,8 +472,8 @@ void CommandFileEditor::View::drawCommandsTab(const std::vector<Diagnostic>& dia
 		"Ctrl/Shift+click selects several rows. Right-click a row for more actions.\n"
 		"Keys: Ctrl+Z / Ctrl+Y undo/redo, Ctrl+S save, Delete removes, Alt+Up/Down moves.");
 
-	const float detailHeight = 250.0f;
-	drawCommandTable(diagnostics, std::max(120.0f, ImGui::GetContentRegionAvail().y - detailHeight));
+	const float detailHeight = ui::Px(250.0f);
+	drawCommandTable(diagnostics, std::max(ui::Px(120.0f), ImGui::GetContentRegionAvail().y - detailHeight));
 	drawCommandDetail();
 }
 

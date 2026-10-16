@@ -12,6 +12,7 @@
 //  - keyboard: part set / part navigation, Ctrl+arrow nudges, H / T / U
 //  - Tools: Fill missing layers, Scale all layers
 
+#include "ui_style.h"
 #include "../parts/pat_renumber.h"
 #include "../app_log.h"
 #include "../png_writer.h"
@@ -566,7 +567,7 @@ void MainFrame::DrawLayerToolsMenu()
 	if (ImGui::IsItemHovered(ImGuiHoveredFlags_AllowWhenDisabled))
 		ImGui::SetTooltip("%s", TXT("Adds empty layers up to the game's layer count (UNI 5, MBTL 3)."));
 	ImGui::Separator();
-	ImGui::SetNextItemWidth(90);
+	ImGui::SetNextItemWidth(ui::Px(90));
 	ImGui::InputFloat(LBL("Factor##layerscale"), &m_layerScaleFactor, 0.f, 0.f, "%.3f");
 	ImGui::SameLine();
 	if (ImGui::Button(LBL("Scale all layers and boxes")) && m_layerScaleFactor > 0.f && m_layerScaleFactor != 1.f) {

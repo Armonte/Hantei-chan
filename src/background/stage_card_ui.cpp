@@ -45,7 +45,7 @@ void Window::draw()
 	ui::FitNextWindow(640, 520);
 	if (!ImGui::Begin(LBL("Stage card (select name, preview, round call)"), &open)) { ImGui::End(); return; }
 	ImGui::TextWrapped("%s", TXT("MBAACC has no stage-name strings: the select screen and the round call show these images. Load any image per slot; it is resized to the slot. The BGM and its title are in the BGM window."));
-	ImGui::SetNextItemWidth(120);
+	ImGui::SetNextItemWidth(ui::Px(120));
 	ImGui::InputInt(LBL("Stage id"), &stageId);
 	stageId = std::clamp(stageId, 0, 99);
 	ImGui::SameLine();

@@ -328,7 +328,7 @@ void Header(HostContext& host, const gamelink::Snapshot& s, const LinkPolicy& p)
 	// a crash / an exit: offer to relaunch the same setup (§8.9)
 	if (ls.phase == LaunchPhase::Exited && !a.crashDismissed) {
 		ImGui::PushStyleColor(ImGuiCol_ChildBg, ImVec4(0.25f, 0.08f, 0.08f, 1.0f));
-		ImGui::BeginChild("##crash", ImVec2(0, 150), ImGuiChildFlags_Borders);
+		ImGui::BeginChild("##crash", ImVec2(0, ui::Px(150)), ImGuiChildFlags_Borders);
 		ImGui::TextColored(ls.crashed ? kColBad : kColWarn, "%s", ls.message.c_str());
 		if (ImGui::Button(LBL("Relaunch with the same setup"))) {
 			wire::MatchSetup w{};
@@ -608,7 +608,7 @@ void SetupTab(HostContext& host, const gamelink::Snapshot& s, const LinkPolicy& 
 	}
 	const bool onlyRestart = needsRestart && probs.size() == 1;
 	ImGui::BeginDisabled(!p.canLoadInGame || !probs.empty());
-	if (ImGui::Button(LBL("Load in game"), ImVec2(160, 0))) LoadInGame(host, s);
+	if (ImGui::Button(LBL("Load in game"), ImVec2(std::max(ui::Px(160), i18n::ButtonWidth(LBL("Load in game"))), 0))) LoadInGame(host, s);
 	ImGui::EndDisabled();
 	if (ImGui::IsItemHovered(ImGuiHoveredFlags_AllowWhenDisabled)) {
 		if (!s.connected) ImGui::SetTooltip(TXT("Not linked: Launch (header) starts the game with this setup, or Attach to a running one."));

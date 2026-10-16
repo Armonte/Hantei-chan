@@ -1,4 +1,5 @@
 // Stage browser window; see bg_browser.h.
+#include "../ui/ui_style.h"
 #include "bg_browser.h"
 #include "bg_gametex.h"
 #include "../bgm_player.h"
@@ -130,7 +131,7 @@ void DrawStageBrowser(StageProject& pr, const std::string& currentDat, const Bro
 	ImGui::InputText("##dir", dirBuf, sizeof(dirBuf));
 	ImGui::PopItemWidth();
 	ImGui::SameLine();
-	ImGui::PushItemWidth(80);
+	ImGui::PushItemWidth(ui::Px(80));
 	const char* games[] = {"MBAACC", "MBAC"};
 	if (pr.IsOpen()) gameSel = pr.GetGame() == Game::MBAC ? 1 : 0;
 	i18n::Combo("##game", &gameSel, games, 2);
@@ -198,12 +199,12 @@ void DrawStageBrowser(StageProject& pr, const std::string& currentDat, const Bro
 			const bool isCur = cur && cur->id == e.id;
 			if (isCur) ImGui::TableSetBgColor(ImGuiTableBgTarget_RowBg0, IM_COL32(60, 90, 140, 160));
 			if (ImGui::Selectable(lab, g_selected == e.id, ImGuiSelectableFlags_SpanAllColumns | ImGuiSelectableFlags_AllowDoubleClick,
-			                      ImVec2(0, 44))) {
+			                      ImVec2(0, ui::Px(44)))) {
 				g_selected = e.id;
 				if (ImGui::IsMouseDoubleClicked(0) && !e.datPath.empty() && hooks.open) hooks.open(e.datPath);
 			}
 			ImGui::TableNextColumn();
-			if (const Thumb* t = LoadDds(e.previewPath)) ImGui::Image((ImTextureID)(intptr_t)t->id, ImVec2(117, 44));
+			if (const Thumb* t = LoadDds(e.previewPath)) ImGui::Image((ImTextureID)(intptr_t)t->id, ImVec2(ui::Px(117), ui::Px(44)));
 			ImGui::TableNextColumn();
 			ImGui::TextUnformatted(e.name.empty() ? "-" : e.name.c_str());
 			if (!e.nameJp.empty() && e.nameJp != e.name) ImGui::TextDisabled("%s", e.nameJp.c_str());
@@ -260,7 +261,7 @@ void DrawStageBrowser(StageProject& pr, const std::string& currentDat, const Bro
 			if (ImGui::Button(LBL("Add to BgList.ini"))) pr.AddStage(sel->id, sel->dataFile.empty() ? "bg00" : sel->dataFile);
 		} else {
 			ImGui::TextDisabled(TXT("BgList.ini [%s]"), sec);
-			ImGui::PushItemWidth(160);
+			ImGui::PushItemWidth(ui::Px(160));
 			std::string v;
 			if (EditTextKey("DataFile", sel->dataFile, v)) pr.SetListValue(sel->id, "DataFile", v);
 			bool b = sel->selectable != 0;
@@ -305,7 +306,7 @@ void DrawStageBrowser(StageProject& pr, const std::string& currentDat, const Bro
 	ImGui::TextDisabled(TXT("Music: bgm.txt [%s] (stage %d plays BGM %d)"), bsec, sel->id, sel->id);
 	if (!pr.Bgm().IsLoaded()) ImGui::TextDisabled(TXT("bgm.txt not found"));
 	else {
-		ImGui::PushItemWidth(160);
+		ImGui::PushItemWidth(ui::Px(160));
 		std::string v;
 		if (mbaacc && EditTextKey("File##bgm", sel->bgmFile, v)) pr.SetBgmValue(sel->id, "File", v);
 		bool loop = sel->bgmLoop != 0;

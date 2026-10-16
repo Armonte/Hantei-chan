@@ -481,21 +481,23 @@ void DrawAnimWindow(CharacterInstance *ch, FrameState &state, void *onionPtr)
 		ImGui::BeginChild("##framestrip", ImVec2(0, ui::Px(92)), true, ImGuiWindowFlags_HorizontalScrollbar);
 		{
 			ImDrawList *sdl = ImGui::GetWindowDrawList();
+			// card size follows the font: picture on top, "index  ticks" line under it
+			const float C = ui::Px(60), picH = C - ImGui::GetFontSize() - ui::Px(6);
 			for (size_t i = 0; i < seq->frames.size(); i++) {
 				ImGui::PushID((int)i);
 				const ImVec2 q = ImGui::GetCursorScreenPos();
-				ImGui::InvisibleButton("##card", ImVec2(60, 60));
+				ImGui::InvisibleButton("##card", ImVec2(C, C));
 				if (ImGui::IsItemClicked()) { playing = false; st.frame = (int)i; st.ticksInFrame = 0; st.ended = false; }
 				const bool cur = (int)i == st.frame;
-				sdl->AddRectFilled(q, ImVec2(q.x + 60, q.y + 60), ImGui::GetColorU32(cur ? ImGuiCol_Header : ImGuiCol_FrameBg), 3.f);
-				if (cur) sdl->AddRect(q, ImVec2(q.x + 60, q.y + 60), IM_COL32(230, 180, 0, 255), 3.f, 0, 2.f);
+				sdl->AddRectFilled(q, ImVec2(q.x + C, q.y + C), ImGui::GetColorU32(cur ? ImGuiCol_Header : ImGuiCol_FrameBg), 3.f);
+				if (cur) sdl->AddRect(q, ImVec2(q.x + C, q.y + C), IM_COL32(230, 180, 0, 255), 3.f, 0, 2.f);
 				unsigned tex; int tw, th;
-				if (ImGui::IsRectVisible(q, ImVec2(q.x + 60, q.y + 60)) && FrameThumb(*ch, state.pattern, (int)i, tex, tw, th)) {
-					const float z = std::min(54.f / tw, 40.f / th); const ImVec2 sz(tw * z, th * z); const ImVec2 a(q.x + (60 - sz.x) * 0.5f, q.y + 2 + (40 - sz.y) * 0.5f);
+				if (ImGui::IsRectVisible(q, ImVec2(q.x + C, q.y + C)) && FrameThumb(*ch, state.pattern, (int)i, tex, tw, th)) {
+					const float z = std::min((C - ui::Px(6)) / tw, picH / th); const ImVec2 sz(tw * z, th * z); const ImVec2 a(q.x + (C - sz.x) * 0.5f, q.y + ui::Px(2) + (picH - sz.y) * 0.5f);
 					sdl->AddImage((ImTextureID)(intptr_t)tex, a, ImVec2(a.x + sz.x, a.y + sz.y));
 				}
 				char l[32]; snprintf(l, sizeof l, "%zu  %dt", i, seq->frames[i].AF.duration);
-				sdl->AddText(ImVec2(q.x + 3, q.y + 44), ImGui::GetColorU32(ImGuiCol_Text), l);
+				sdl->AddText(ImVec2(q.x + ui::Px(3), q.y + C - ImGui::GetFontSize() - ui::Px(2)), ImGui::GetColorU32(ImGuiCol_Text), l);
 				ImGui::PopID();
 				ImGui::SameLine();
 			}

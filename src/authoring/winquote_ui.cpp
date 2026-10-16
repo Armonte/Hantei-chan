@@ -125,7 +125,7 @@ void Window::draw()
 	}
 	ImGui::TextDisabled("%s", TXT("The game reads these files and regenerates data\\*.wmt from them; a win-quote mod ships the _win.txt."));
 
-	ImGui::BeginChild("##wqfiles", ImVec2(200, 0), ImGuiChildFlags_Borders | ImGuiChildFlags_ResizeX);
+	ImGui::BeginChild("##wqfiles", ImVec2(ui::Px(200), 0), ImGuiChildFlags_Borders | ImGuiChildFlags_ResizeX);
 	for (size_t i = 0; i < m_names.size(); i++) {
 		if (ImGui::Selectable(m_names[i].c_str(), static_cast<int>(i) == m_current)) {
 			if (m_file.dirty() && static_cast<int>(i) != m_current) { m_status = TXT("Save or revert the open file first."); m_statusError = true; }
@@ -146,7 +146,7 @@ void Window::draw()
 			m_file.add(m_file.quotes().size(), q);
 		}
 		ImGui::SameLine();
-		ImGui::SetNextItemWidth(200);
+		ImGui::SetNextItemWidth(ui::Px(200));
 		char f[64];
 		snprintf(f, sizeof f, "%s", m_filter.c_str());
 		if (ImGui::InputTextWithHint("##wqfilter", TXT("filter"), f, sizeof f)) m_filter = f;

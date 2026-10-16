@@ -1,3 +1,4 @@
+#include "ui/ui_style.h"
 #include "box_pane.h"
 #include "ui/ui_layout2.h"
 #include "i18n.h"
@@ -463,7 +464,7 @@ void BoxPane::DrawSpawnTimeline()
 	if (showSpawns) {
 		int mode = currState.previewOptions.defaultIfAssumption == preview::IfAssume::True ? 1 : 0;
 		const char* modes[] = {TXT("Assume false (authored flow)"), TXT("Assume true (branch once per frame visit)")};
-		im::SetNextItemWidth(260.f);
+		im::SetNextItemWidth(ui::Px(260.f));
 		if (i18n::Combo(LBL("Runtime IF conditions"), &mode, modes, 2)) {
 			currState.previewOptions.defaultIfAssumption = mode ? preview::IfAssume::True : preview::IfAssume::False;
 		}
@@ -492,7 +493,7 @@ void BoxPane::DrawSpawnTimeline()
 	im::SetNextItemWidth(-160.f);
 	if (im::SliderInt("##tickscrub", &scrubTick, 0, maxTimelineTick, TXT("Tick %d"))) seekTick(scrubTick);
 	im::SameLine();
-	im::SetNextItemWidth(100.f);
+	im::SetNextItemWidth(ui::Px(100.f));
 	im::SliderFloat(LBL("Zoom##tl"), &timelineZoom, 0.25f, 16.f, "%.2fx", ImGuiSliderFlags_Logarithmic);
 	if (im::IsItemHovered())
 		im::SetTooltip(TXT("Ctrl+wheel over the timeline zooms, middle-drag pans,\n"
@@ -871,7 +872,7 @@ void BoxPane::DrawSpawnTimeline()
 			auto it = currState.previewOptions.ifOverrides.find(c->ifKey);
 			int v = it == currState.previewOptions.ifOverrides.end() ? 0 : (int)it->second;
 			const char* opts[] = {TXT("Default"), TXT("False"), TXT("True")};
-			im::SetNextItemWidth(80.f);
+			im::SetNextItemWidth(ui::Px(80.f));
 			if (i18n::Combo("##assume", &v, opts, 3)) {
 				if (v == 0) currState.previewOptions.ifOverrides.erase(c->ifKey);
 				else currState.previewOptions.ifOverrides[c->ifKey] = (preview::IfAssume)v;

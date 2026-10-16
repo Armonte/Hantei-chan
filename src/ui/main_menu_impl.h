@@ -1,6 +1,7 @@
 #ifndef UI_MAIN_MENU_IMPL_H_GUARD
 #define UI_MAIN_MENU_IMPL_H_GUARD
 
+#include "ui_style.h"
 #include "../app_log.h"
 
 // ============================================================================
@@ -715,7 +716,7 @@ void MainFrame::Menu(unsigned int errorPopupId)
 				auto* view = getActiveView();
 				float currentZoom = view ? view->getZoom() : zoom_idx;
 				
-				ImGui::SetNextItemWidth(80);
+				ImGui::SetNextItemWidth(ui::Px(80));
 				if (ImGui::SliderFloat(LBL("Zoom"), &currentZoom, 0.25f, 20.0f, "%.2f"))
 				{
 					SetZoom(currentZoom);
@@ -746,7 +747,7 @@ void MainFrame::Menu(unsigned int errorPopupId)
 			}
 			if (active && active->cg.getPalNumber() > 0 && ImGui::BeginMenu(LBL("Palette number")))
 			{
-				ImGui::SetNextItemWidth(80);
+				ImGui::SetNextItemWidth(ui::Px(80));
 				ImGui::InputInt(LBL("Palette"), &active->palette);
 				if(active->palette >= active->cg.getPalNumber())
 					active->palette = active->cg.getPalNumber()-1;
