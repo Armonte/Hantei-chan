@@ -230,6 +230,7 @@ EXACT_REG = False  # v2_model --exact-reg (render-match10): registration indepen
 REFINE = 10       # +- px of the alignment search (0 = trust the camera geometry)
 BAND = 0          # +- px tolerance band for the extra band residual
 ROW_ADD = None    # f(channel, game rows (n,1), P1 origin) -> add per row: the stage's chara gradient
+POST_ADD_SRC = None  # (P_cg, Q_cg, visibility) editor-space arrays: v2_model --layers + --bokashi (render-match10)
 POST_ADD = None   # f(P, Q) -> (H, W, 3) add on top of the lit prediction (v2_model --bokashi: UNI2 chara Bokashi pass)
 LIGHT_FN = None   # f(P, Q, plate, game rows, P1 origin) -> prediction: replaces the (k, c) light (v2_model --mbtl-light)
 ROW_ADD_W = None  # editor-space (H, W, 3) weight of ROW_ADD per pixel (default 1 - Q: the whole sprite). Mixed CG +
@@ -358,7 +359,13 @@ def game_vs_model(game, plate, ek, ew, zoom, meta, org):
             w = (1 - Qs[..., c]) if Wg is None else Wg[sl][..., c]
             lpred[..., c] += w * ROW_ADD(c, rows, gorg)
     if LIGHT_FN is not None: lpred = LIGHT_FN(Ps, Qs, Bs, rows, gorg)  # a full per-pixel shading model (MBTL)
-    if POST_ADD is not None: lpred = lpred + POST_ADD(Ps, Qs)
+    if POST_ADD is not None:
+        if POST_ADD_SRC is not None:  # bokashi from the CG layer only, seen through the .pat layer drawn over it
+            Pc, Qc, Vc = (to_game(a, f)[sl] for a, f in zip(POST_ADD_SRC, (0.0, 1.0, 1.0)))
+            lpred = lpred + POST_ADD(Pc, Qc) * Vc
+            game_vs_model.last_cg = (Pc, Qc, Vc)
+        else:
+            lpred = lpred + POST_ADD(Ps, Qs)
     lpred = np.clip(lpred, 0, 255)
     ld = np.abs(Gs - lpred)
     lmean = ld[m].mean(); lchanged = ((ld.sum(2) > 24) & m).sum() * 100.0 / m.sum()

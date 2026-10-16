@@ -264,6 +264,13 @@ def main():
         if layers:
             lc, lp = layers.split(',')
             sh.ROW_ADD_W, order, err = layer_weight(bw, lc, lp, case, org)
+            if bok:  # render-match10: the Bokashi pass belongs to the CG layers; .pat parts do not get it
+                def _pq(n):
+                    K = np.asarray(Image.open(os.path.join(bw, n + '_new_k.png')).convert('RGB')).astype(np.float64)
+                    w_ = load_w(bw, n); Wh = w_ if isinstance(w_, np.ndarray) else np.asarray(w_.convert('RGB')).astype(np.float64)
+                    return K, (Wh - K) / 255.0
+                Pc_, Qc_ = _pq(lc); _, Qp_ = _pq(lp)
+                sh.POST_ADD_SRC = (Pc_, Qc_, Qp_ if order == 'pat over CG' else np.ones_like(Qp_))
             print('per-layer gradient: CG %s, .pat %s, %s (layer composite vs all-layer shot: mean |d| %.3f)' % (lc, lp, order, err))
     sh.LIGHT = None
     r = sh.game_vs_model(game, pl, ek, ew, zoom, meta, org)

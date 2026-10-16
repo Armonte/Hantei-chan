@@ -21,4 +21,11 @@ for name, sel in [('interior d>=3', m & (dist_in >= 3)), ('interior d=2', m & (d
     if sel.sum() == 0: continue
     s = ad[sel]; sg = d[sel].mean(0)
     print('%-18s px %5d  mean %.2f  share %4.1f%%  signed G-pred RGB %+.1f %+.1f %+.1f' % (name, sel.sum(), s.mean(), s.sum() * 100 / tot, *sg))
+if getattr(sh.game_vs_model, 'last_cg', None) is not None:  # render-match10: --layers + --bokashi, CG vs .pat-only px
+    Pc, Qc, Vc = sh.game_vs_model.last_cg
+    cg = np.clip(1 - Qc.mean(2), 0, 1) * Vc.mean(2)
+    for name, sel in [('CG visible >.5', m & (cg > 0.5)), ('CG partial', m & (cg > 0.02) & (cg <= 0.5)), ('.pat only', m & (cg <= 0.02))]:
+        if sel.sum() == 0: continue
+        s = ad[sel]; sg = d[sel].mean(0)
+        print('%-18s px %5d  mean %.2f  share %4.1f%%  signed G-pred RGB %+.1f %+.1f %+.1f' % (name, sel.sum(), s.mean(), s.sum() * 100 / tot, *sg))
 if os.environ.get('DECOMP_OUT'): np.savez_compressed(os.environ['DECOMP_OUT'], G=G, B=B, P=Pp, Q=Q, m=m, lp=lp)
