@@ -275,7 +275,8 @@ void Draw()
 	if (!g.open) return;
 	const ImVec2 mp = ImGui::GetMainViewport()->Pos;
 	ImGui::SetNextWindowPos(ImVec2(mp.x + 100, mp.y + 70), ImGuiCond_Appearing);
-	ImGui::SetNextWindowSize(ImVec2(980, 700), ImGuiCond_Appearing);
+	// tall enough for the file table, the status lines and the export report under them, but inside the main window
+	ImGui::SetNextWindowSize(ImVec2(980, std::max(400.f, std::min(880.f, ImGui::GetMainViewport()->Size.y - 90.f))), ImGuiCond_Appearing);
 	if (!ImGui::Begin(LBL("Export as pcmod package###pcmod_export"), &g.open, ImGuiWindowFlags_NoDocking)) { ImGui::End(); return; }
 
 	std::string problem;
