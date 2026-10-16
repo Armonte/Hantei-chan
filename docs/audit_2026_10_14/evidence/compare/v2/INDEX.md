@@ -1229,7 +1229,7 @@ Gamecap case `tools/gamecap/cases/v2r20_mbtl_chr001_zoom15.gcs` (copy + run log 
 - Side finding: `BtlCamera_IsZoomedIn` 0x58E590 and `Han6Object_Draw` pass `elem0 zoom > 1.0` as a byte into
   `Stage_BuildCharaBgColorParams` 0x58E230's param block (+4, read via the draw context +0x84 by
   `Han6Draw_DrawLayer`). Its consumer is not traced. The texture filter is not it: `D3D_SetTexFilterFromTable`
-  0x48CD00 sets MAG/MIN from the part's PRFL only.
+  0x48CD20 sets MAG/MIN from the part's PRFL only.
 
 ### Numbers (editor zoom 1.5 vs game, plate_b0, `--subpix 0,0`, refine found +0,+0 on all three)
 | case | round 19 (fake: editor 1.5 → game zoom 1) | **round 20 (real game zoom 1.5)** | band ±1 (r19 → r20) |
@@ -1238,7 +1238,7 @@ Gamecap case `tools/gamecap/cases/v2r20_mbtl_chr001_zoom15.gcs` (copy + run log 
 | mbtl_patctrl_chr001_p277f0 | 1.24 | **3.50** | 0.39 → **0.03** |
 | mbtl_flipV_chr001_p157f2 | 4.52 | **8.22** | 1.95 → 1.87 |
 The raw mean is higher because the real 1.5× shot is compared at full resolution (no box filter averaging the edges
-away; 2.3× more pixels in the footprint). The band ±1 numbers fall: on p277 everything but 0.03 is a 1-px edge.
+away; 1.8–2.3× more pixels in the footprint). The band ±1 numbers fall: on p277 everything but 0.03 is a 1-px edge.
 
 ### What remains: 1-px texel-edge lines (sheets `round20/*_z15sa_sheet.png`: game, model, |diff|)
 - The residual is thin lines along part edges and along texel boundaries inside parts (p277 chair rungs/slats).
