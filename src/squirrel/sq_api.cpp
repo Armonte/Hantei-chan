@@ -1,6 +1,7 @@
 #include "sq_api.h"
 
 #include <algorithm>
+#include <cmath>
 #include <cstdint>
 #include <map>
 #include <regex>
@@ -70,7 +71,133 @@ void PushStub(HSQUIRRELVM v, SQFUNCTION stub, const std::string& tag, const HSQO
 	sq_newclosure(v, stub, cls ? 2 : 1);
 }
 
+std::map<HSQUIRRELVM, const LoadContext*>& Contexts()
+{
+	static std::map<HSQUIRRELVM, const LoadContext*> m;
+	return m;
+}
+
+// Reads `key` of the table at stack index idx: integer/float/string into the outputs; false when absent.
+bool TableGet(HSQUIRRELVM v, SQInteger idx, const char* key, SQInteger* i, SQFloat* f, std::string* str)
+{
+	if (sq_gettype(v, idx) != OT_TABLE) return false;
+	sq_push(v, idx);
+	sq_pushstring(v, key, -1);
+	bool ok = false;
+	if (SQ_SUCCEEDED(sq_get(v, -2))) {
+		const SQObjectType t = sq_gettype(v, -1);
+		if (t == OT_INTEGER && i) { sq_getinteger(v, -1, i); if (f) *f = (SQFloat)*i; ok = true; }
+		else if (t == OT_FLOAT && f) { sq_getfloat(v, -1, f); if (i) *i = (SQInteger)*f; ok = true; }
+		else if (t == OT_STRING && str) { const SQChar* s = nullptr; sq_getstring(v, -1, &s); *str = s ? s : ""; ok = true; }
+		else ok = t != OT_NULL;
+		sq_pop(v, 1);
+	}
+	sq_pop(v, 1);
+	return ok;
+}
+
+// A string local of the calling script function ("" when absent).
+std::string CallerLocal(HSQUIRRELVM v, const char* name)
+{
+	for (SQUnsignedInteger level = 1; level <= 2; ++level)
+		for (SQUnsignedInteger i = 0;; ++i) {
+			const SQChar* n = sq_getlocal(v, level, i);
+			if (!n) break;
+			std::string out;
+			if (std::string(n) == name && sq_gettype(v, -1) == OT_STRING) {
+				const SQChar* s = nullptr;
+				sq_getstring(v, -1, &s);
+				out = s ? s : "";
+			}
+			sq_pop(v, 1);
+			if (!out.empty()) return out;
+		}
+	return "";
+}
+
+// Sets field `name` of the instance at stack top.
+void SetField(HSQUIRRELVM v, const char* name, SQInteger val)
+{
+	sq_pushstring(v, name, -1);
+	sq_pushinteger(v, val);
+	sq_set(v, -3);
+}
+
 } // namespace
+
+void SetLoadContext(HSQUIRRELVM v, const LoadContext* ctx)
+{
+	if (ctx) Contexts()[v] = ctx;
+	else Contexts().erase(v);
+}
+
+SQInteger CallTracedNative(HSQUIRRELVM v, const std::string& tag)
+{
+	const std::string name = tag.substr(tag.find('|') + 1);
+	const auto it = Contexts().find(v);
+	const LoadContext* c = it == Contexts().end() ? nullptr : it->second;
+	if (!c) return -1;
+	// BtlMvStd.CheckHan6Data: the release exe's body is `return 0` (0x80B450).
+	if (name == "BtlMvStd.CheckHan6Data") { sq_pushinteger(v, 0); return 1; }
+	// BMvEff.GetPatternNum({pat, datatype=0}) 0x7FDAD0.
+	if (name == "BMvEff.GetPatternNum") {
+		SQInteger r = -1, dt = 0, pi = 0;
+		std::string pat;
+		TableGet(v, 2, "datatype", &dt, nullptr, nullptr);
+		if (c->objectPushed) {
+			if (TableGet(v, 2, "pat", &pi, nullptr, &pat)) {
+				if (pat.empty()) r = pi;                                    // an integer pat is returned as is
+				else if ((dt == 0 || dt == 1) && c->patternByCode) {
+					r = c->patternByCode((int)dt, pat);
+					if (r < 0 && c->onMissingPattern) c->onMissingPattern((int)dt, pat, CallerLocal(v, "mvname"));
+				}
+			}
+		}
+		sq_pushinteger(v, r);
+		return 1;
+	}
+	if (name == "BMvCore.GetCharaNo") { sq_pushinteger(v, c->objectPushed ? c->charaNo : -1); return 1; }
+	if (name == "BMvTbl.GetCharaNo") { sq_pushinteger(v, c->objectPushed ? c->charaNo : 0); return 1; }
+	if (name == "BMvCore.VsScreen_GetCharaNo") { sq_pushinteger(v, c->vsCharaNo); return 1; }
+	if (name == "BMvTbl.GetPlayerSide") { sq_pushinteger(v, c->objectPushed && c->side != 0 ? 1 : 0); return 1; }
+	if (name == "BMvTbl.MvStageStatus.IsTrainingBattle") {
+		int r = 0;
+		if ((c->gameMode == 0 && c->gameModeSub == 1) || c->gameMode == 3) r = 1;
+		else if (c->gameMode == 4) r = 2;
+		else if (c->gameMode == 5) r = 3;
+		sq_pushinteger(v, r);
+		return 1;
+	}
+	if (name == "BMvTbl.GetRapidBeatType") {   // 0x8064C0
+		SQInteger which = 0;
+		sq_getinteger(v, 2, &which);
+		static const int t0[4] = {0, 1, 2, 0}, t1[4] = {0, 1, 1, 1};
+		int r = 0;
+		if (c->objectPushed && !(c->gameMode == 4 || c->gameMode == 5) && c->rapidBeatType >= 0 && c->rapidBeatType <= 3)
+			r = which == 0 ? t0[c->rapidBeatType] : which == 1 ? t1[c->rapidBeatType] : 0;
+		sq_pushinteger(v, r);
+		return 1;
+	}
+	if (name == "BMvTbl.GetMvStatus" && tag.rfind("instance:", 0) == 0) {   // 0x80A430: CharaNo = object +5
+		PushStubReturn(v, tag);
+		if (c->objectPushed && sq_gettype(v, -1) == OT_INSTANCE) SetField(v, "CharaNo", c->charaNo);
+		return 1;
+	}
+	if (name == "BMvEff.GetVector_FromAngle" && tag.rfind("instance:", 0) == 0) {   // 0x7FBF60: angle in half turns
+		SQFloat angle = 0;
+		SQInteger speed = 100;
+		TableGet(v, 2, "angle", nullptr, &angle, nullptr);
+		TableGet(v, 2, "speed", &speed, nullptr, nullptr);
+		PushStubReturn(v, tag);
+		if (sq_gettype(v, -1) == OT_INSTANCE) {
+			const float a = (float)angle * 3.14159274f;
+			SetField(v, "x", (SQInteger)(std::sin(a) * (float)speed));
+			SetField(v, "y", (SQInteger)(std::cos(a) * (float)-speed));
+		}
+		return 1;
+	}
+	return -1;
+}
 
 std::string StubTag(HSQUIRRELVM v)
 {

@@ -18,6 +18,8 @@
 
 #include <squirrel.h>
 #include "sq_api.h"
+#include "../framedata.h"
+#include <windows.h>
 #include <sqstdaux.h>
 #include <sqstdblob.h>
 #include <sqstdio.h>
@@ -196,6 +198,8 @@ static SQInteger Native_Stub(HSQUIRRELVM v)
 {
 	const std::string tag = sqedit::StubTag(v);
 	g_stubCalls[tag.substr(tag.find('|') + 1)]++;
+	if (const SQInteger r = sqedit::CallTracedNative(v, tag); r >= 0)
+		return r;
 	// File-existence probes answer truthfully (read-only, inside the game root): the bootstrap branches on them
 	// (DFCI Battle_Init loads btl_Define_LocalDebug.txt only when BtlMvStd.IsFileAlive says it is there).
 	if (tag.size() >= 12 && tag.compare(tag.size() - 12, 12, ".IsFileAlive") == 0) {
@@ -295,8 +299,71 @@ static std::string RootSlotType(HSQUIRRELVM v, const std::string &name)
 //   <chr>_cmd_0.txt -> the engine reads root <CHR>_CommandTable as an array; missing = the character cannot act
 //   <chr>_mv_0.txt  -> the engine reads root <CHR>_MoveTable
 //   <chr>_com_0.txt (CPU AI, on top of data/_combase.txt)
+// UpdateTable.name of every entry of root array `table` (the moves a command can start).
+static std::set<std::string> CommandMoveNames(HSQUIRRELVM v, const std::string &table)
+{
+	std::set<std::string> out;
+	sq_pushroottable(v);
+	sq_pushstring(v, table.c_str(), -1);
+	if (SQ_SUCCEEDED(sq_get(v, -2)) && sq_gettype(v, -1) == OT_ARRAY) {
+		sq_pushnull(v);
+		while (SQ_SUCCEEDED(sq_next(v, -2))) {
+			if (sq_gettype(v, -1) == OT_TABLE) {
+				sq_pushstring(v, "UpdateTable", -1);
+				if (SQ_SUCCEEDED(sq_get(v, -2))) {
+					sq_pushstring(v, "name", -1);
+					const SQChar *s = nullptr;
+					if (SQ_SUCCEEDED(sq_get(v, -2)) && SQ_SUCCEEDED(sq_getstring(v, -1, &s)) && s) out.insert(s);
+					sq_settop(v, sq_gettop(v) - 1);
+					sq_pop(v, 1);
+				}
+			}
+			sq_pop(v, 2);
+		}
+		sq_pop(v, 1);
+	}
+	sq_settop(v, 0);
+	return out;
+}
+
+// Load-time context settings (sqtool check ... --side N --mode M --rapidbeat T).
+static int g_side = 0, g_gameMode = 1, g_gameModeSub = 0, g_rapidBeat = 0;
+
+// PTCN -> first pattern index of a project .txt's [DataFile] HA6 stack, loaded the way the editor and the game stack it
+// (files after the project's own file only fill empty slots).
+static std::map<std::string, int> LoadPatternCodes(const fs::path &txt)
+{
+	std::map<std::string, int> out;
+	const std::string t = txt.string();
+	const int n = GetPrivateProfileIntA("DataFile", "FileNum", 0, t.c_str());
+	std::vector<std::string> names;
+	for (int i = 0; i < n; ++i) {
+		char key[16], val[260] = {};
+		snprintf(key, sizeof key, i >= 100 ? "File%03d" : "File%02d", i);
+		GetPrivateProfileStringA("DataFile", key, "", val, sizeof val, t.c_str());
+		names.push_back(val);
+	}
+	if (names.empty()) return out;
+	const int own = FrameData::StackSaveTarget(names);
+	FrameData fd;
+	bool any = false;
+	for (int i = 0; i < (int)names.size(); ++i) {
+		if (names[i].empty()) continue;
+		const fs::path p = txt.parent_path() / names[i];
+		std::error_code ec;
+		if (!fs::exists(p, ec)) continue;
+		if (fd.load(p.string().c_str(), any, own >= 0 && i > own)) any = true;
+	}
+	for (int i = 0; i < (int)fd.get_sequence_count(); ++i) {
+		const Sequence *s = fd.get_sequence(i);
+		if (s && !s->codeName.empty()) out.emplace(std::string(s->codeName.c_str()), i);
+	}
+	return out;
+}
+
 static bool RunCharacters(HSQUIRRELVM v, const fs::path &root)
 {
+	const auto effectCodes = LoadPatternCodes(root / "data" / "effect.txt");
 	int clean = 0, bad = 0;
 	std::error_code ec;
 	std::vector<fs::path> dirs;
@@ -310,6 +377,23 @@ static bool RunCharacters(HSQUIRRELVM v, const fs::path &root)
 		for (auto &c : CHR) c = (char)toupper((unsigned char)c);
 		const std::string rel = "./data/" + chr + "/" + chr;
 		bool ok = true;
+		const auto codes = LoadPatternCodes(d / (chr + "_0.txt"));
+		sqedit::LoadContext ctx;
+		ctx.charaNo = ctx.vsCharaNo = std::atoi(chr.c_str() + 3);
+		ctx.side = g_side;
+		ctx.gameMode = g_gameMode;
+		ctx.gameModeSub = g_gameModeSub;
+		ctx.rapidBeatType = g_rapidBeat;
+		ctx.patternByCode = [&](int dt, const std::string &code) {
+			const auto &m = dt == 1 ? effectCodes : codes;
+			const auto it = m.find(code);
+			return it == m.end() ? -1 : it->second;
+		};
+		std::map<std::string, std::string> missing;   // move -> pattern code its template looked up and did not find
+		ctx.onMissingPattern = [&](int dt, const std::string &code, const std::string &move) {
+			if (!move.empty()) missing.emplace(move, (dt ? "effect:" : "") + code);
+		};
+		sqedit::SetLoadContext(v, &ctx);
 		auto run = [&](const std::string &suffix) -> bool {
 			const fs::path p = d / (chr + suffix);
 			if (!fs::exists(p, ec)) return false;
@@ -321,6 +405,7 @@ static bool RunCharacters(HSQUIRRELVM v, const fs::path &root)
 			std::string del = "if( \"Battle_Status\" in getroottable() ) { delete Battle_Status; }";
 			if (CompileBuffer(v, del, "__DeleteRootInTable")) { sq_pushroottable(v); sq_call(v, 1, SQFalse, SQTrue); sq_settop(v, 0); }
 		}
+		ctx.objectPushed = true;   // the loader pushes the character before LoadCommandList (0x607650)
 		if (run("_cmd_0.txt")) {
 			const std::string t = RootSlotType(v, CHR + "_CommandTable");
 			if (t != "array") { ok = false; LOGE("sqtool: chars: {}_cmd_0.txt leaves {}_CommandTable {}: the engine reads it as an array, the character cannot act", chr, CHR, t.empty() ? "undefined" : t); }
@@ -330,6 +415,22 @@ static bool RunCharacters(HSQUIRRELVM v, const fs::path &root)
 			if (t != "table") { ok = false; LOGE("sqtool: chars: {}_mv_0.txt leaves {}_MoveTable {}", chr, CHR, t.empty() ? "undefined" : t); }
 		}
 		run("_com_0.txt");
+		sqedit::SetLoadContext(v, nullptr);
+		// Only moves this character's command table can start (UpdateTable.name) matter: Battle_Std builds template moves for
+		// every name, and a template whose pattern is absent keeps the current pattern (SetPattern(-1) -> Object_SetPatternFrame
+		// pattern -1 = keep, frame 0).
+		const std::set<std::string> reachable = CommandMoveNames(v, CHR + "_CommandTable");
+		LOGI("sqtool: chars: {}: {} moves startable by commands, {} template pattern lookups missed", chr, reachable.size(), missing.size());
+		for (const auto &[move, code] : missing) {
+			if (!reachable.count(move)) continue;
+			const bool eff = code.rfind("effect:", 0) == 0;
+			LOGW("sqtool: chars: {}: {} (a command starts it) looks up pattern \"{}\", which is not in the {} HA6: entering it keeps the "
+				"current pattern and restarts it at frame 0", chr, move, eff ? code.substr(7) : code, eff ? "effect" : "character's");
+		}
+		// The developers' own load warnings (btl_debError_CharacterMake), silenced in the release build.
+		if (CompileBuffer(v, "if (\"__hc_devwarn\" in getroottable()) { foreach (w in ::__hc_devwarn) print(\"__HCWARN \" + w + \"\\n\"); ::__hc_devwarn.clear(); }", "__hc")) {
+			sq_pushroottable(v); sq_call(v, 1, SQFalse, SQTrue); sq_settop(v, 0);
+		}
 		(ok ? clean : bad)++;
 	}
 	LOGI("sqtool: chars: {} character folders load clean, {} with errors", clean, bad);
@@ -414,8 +515,13 @@ static int CmdCheck(const fs::path &root, const std::string &apiPath, bool run, 
 			LOGI("sqtool: run {} -> {}", entry, ok ? "ok" : "FAILED");
 			runOk = runOk && ok;
 		}
-		if (chars && runOk)
+		if (chars && runOk) {
+			// Observe the developers' character-table warnings (the release build prints nothing): record, then call the original.
+			const char *hook = "if (\"btl_debError_CharacterMake\" in getroottable()) { ::__hc_devwarn <- []; local o = ::btl_debError_CharacterMake;"
+				" ::btl_debError_CharacterMake <- function(s) : (o) { ::__hc_devwarn.append(s.tostring()); o(s); } }";
+			if (CompileBuffer(rv, hook, "__hc_hook")) { sq_pushroottable(rv); sq_call(rv, 1, SQFalse, SQTrue); sq_settop(rv, 0); }
 			runOk = RunCharacters(rv, root);
+		}
 		std::vector<std::pair<int, std::string>> top;
 		for (auto &kv : g_stubCalls)
 			top.push_back({kv.second, kv.first});
@@ -478,12 +584,20 @@ int main(int argc, char **argv)
 				run = chars = true;
 			else if (args[i] == "--calls")
 				calls = true;
+			else if (args[i] == "--side" && i + 1 < args.size())
+				g_side = std::atoi(args[++i].c_str());
+			else if (args[i] == "--mode" && i + 1 < args.size())
+				g_gameMode = std::atoi(args[++i].c_str());
+			else if (args[i] == "--training")
+				g_gameMode = 3;
+			else if (args[i] == "--rapidbeat" && i + 1 < args.size())
+				g_rapidBeat = std::atoi(args[++i].c_str());
 		}
 		rc = CmdCheck(args[1], api, run, chars, calls, report);
 	} else if (args.size() >= 2 && args[0] == "compile") {
 		rc = CmdCompile(std::vector<std::string>(args.begin() + 1, args.end()));
 	} else {
-		LOGI("usage: sqtool check <gamedir> [--api <game>_api.json] [--run] [--chars] [--calls] [--report out.tsv]");
+		LOGI("usage: sqtool check <gamedir> [--api <game>_api.json] [--run] [--chars] [--calls] [--side 0|1] [--mode N|--training] [--rapidbeat 0-3] [--report out.tsv]");
 		LOGI("       sqtool compile <file.txt>...");
 	}
 	g_log->flush_log();
