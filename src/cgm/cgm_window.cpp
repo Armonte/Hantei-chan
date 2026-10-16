@@ -408,6 +408,17 @@ void Window::drawPalettes(CharacterInstance &ch, const WindowHost &host) {
 			std::string e; const std::string path = AnsiToUtf8(ch.cg.palettePath(P.bank));
 			if (WritePalSet(path, ps, true, &e)) { P.dirty[P.bank] = false; status = Fmt(TXT("Saved %s (the original is kept as .bak)"), path.c_str()); } else status = e;
 		}
+		// UNI2 / MBTL read their .pal from the archives: an edited palette reaches the game only through the IM mod folder (the same
+		// place the "CG + .pat textures" tab saves the .cg / .pat; its game and game folder settings apply here too)
+		bool modGame = false; modFolderDst(ch, "", &modGame);
+		if (modGame) {
+			ImGui::SameLine(); if (CgmButton(LBL("Save .pal to mod folder"))) {
+				const std::string dst = modFolderDst(ch, ch.cg.palettePath(P.bank)); std::string e;
+				if (dst.empty()) status = Fmt(TXT("Cannot place %s in the mod folder: no game folder, or the file is not under a data folder."), ch.cg.palettePath(P.bank).c_str());
+				else status = WriteModFile(dst, ps.raw, &e) ? Fmt(TXT("Wrote %s (%zu bytes). The improvement mod / fbmod serve it in place of the archived file."), dst.c_str(), ps.raw.size()) : e;
+			}
+			ImGui::SetItemTooltip("%s", TXT("Writes this .pal to <game folder>\\UNI2-IM\\Mods or MBTL-IM\\Mods (set in the \"CG + .pat textures\" tab). \"Restore mod folder\" there, or cgmtex modrestore, undoes it."));
+		}
 		ImGui::SameLine(); if (CgmButton(LBL("Save .pal as..."))) {
 			char nm[128]; snprintf(nm, sizeof(nm), "%s", std::filesystem::path(ch.cg.palettePath(P.bank)).filename().string().c_str());
 			const std::string path = FileDialog(-1, true, nm);
@@ -1109,6 +1120,15 @@ bool Window::texReplace(CharacterInstance &ch, int kind, int id, const std::stri
 	}
 	status = Fmt(TXT("Image %d replaced. Save the bank to keep it."), id);
 	return true;
+}
+
+std::string Window::modFolderDst(CharacterInstance &ch, const std::string &srcPath, bool *usesModFolder) {
+	const int gi = tb.game < 0 ? DetectGame(ch) : tb.game;
+	const bool mod = UsesModFolder(kGames[gi].id);
+	if (usesModFolder) *usesModFolder = mod;
+	if (!mod) return "";
+	if (tb.gameDir[gi].empty() && kGames[gi].steamDir[0]) tb.gameDir[gi] = kGames[gi].steamDir;
+	return ModFolderPath(kGames[gi].id, tb.gameDir[gi], GameKeyOf(srcPath));
 }
 
 bool Window::texSave(CharacterInstance &ch, int kind, const std::string &game, std::string &report) {
