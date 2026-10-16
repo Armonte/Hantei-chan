@@ -94,8 +94,7 @@ public:
         float curWeight = 1.f;    // AFHK: weight of the current frame (1 = no interpolation)
         bool paletteTint = true;  // PPPA tint: the game applies it in the character shader path only
         bool applyPras = true;    // PRAS: UNI2 applies it, MBTL does not read it
-        bool uni2ArcSplit = true; // UNI2 arc segment triangle split (Parts::Draw kSplitX); MBTL measured worse with it
-        bool uniDialect = true;   // AFHK weight 0: MBAACC keeps the current part transform (PartLerpsTransform)
+        bool uniDialect = true;   // AFHK weight 0: MBAACC keeps the current part transform (PartLerpsTransform); arc split
     };
     // setAddColor gets the PRSP specular colour as RGBA 0..1 (added to the output, alpha included).
     void Draw(const DrawParams& params,
