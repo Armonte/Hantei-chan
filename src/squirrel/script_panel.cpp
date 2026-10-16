@@ -1614,9 +1614,9 @@ void ScriptPanel::draw()
 	const bool hasFile = !m->currentRel.empty();
 	ImGui::BeginChild("##sqcols", ImVec2(0, -logH), ImGuiChildFlags_None, ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_NoScrollWithMouse);
 	if (ImGui::BeginTable("##sqcolumns", 3, ImGuiTableFlags_Resizable | ImGuiTableFlags_Hideable | ImGuiTableFlags_BordersInnerV | ImGuiTableFlags_SizingStretchProp, ImVec2(0, ImGui::GetContentRegionAvail().y))) {
-		ImGui::TableSetupColumn("files", ImGuiTableColumnFlags_WidthStretch, 0.18f);
-		ImGui::TableSetupColumn("editor", ImGuiTableColumnFlags_WidthStretch | ImGuiTableColumnFlags_NoHide, 0.64f);
-		ImGui::TableSetupColumn("outline", ImGuiTableColumnFlags_WidthStretch, 0.18f);
+		ImGui::TableSetupColumn("##files", ImGuiTableColumnFlags_WidthStretch, 0.18f);
+		ImGui::TableSetupColumn("##editor", ImGuiTableColumnFlags_WidthStretch | ImGuiTableColumnFlags_NoHide, 0.64f);
+		ImGui::TableSetupColumn("##outline", ImGuiTableColumnFlags_WidthStretch, 0.18f);
 		ImGui::TableSetColumnEnabled(0, showFiles);
 		ImGui::TableSetColumnEnabled(2, showOutline && hasFile);
 		ImGui::TableNextRow(ImGuiTableRowFlags_None, ImGui::GetContentRegionAvail().y);
