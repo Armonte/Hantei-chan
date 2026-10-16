@@ -1,0 +1,21 @@
+# render-match17 (2026-10-16): PRAL 3 blur-mask check. pral3 = chr020.pat with set 991 reduced to slots 1,2,4,5,14,15
+# and their PRAL set to 3 (tools/uni/s1_compare/pat_set_pral.py); snone = no set-991 prop (baseline scene for the blur
+# prediction). UNI2-IM loose-file override, removed at quit.
+include ../games/uni2.gcs
+file_put ../round24b/chr020_pral3.pat UNI2-IM/Mods/data/chr020/chr020.pat
+let P1CHR 20
+let P2CHR 0
+include ../games/uni2_to_training.gcs
+set OUTD C:\dev\hantei-chan\tools\gamecap\captures\v2
+hold f32 [P1+0x8C0]+0x40 0
+hold f32 [P1+0x8C0]+0x44 0
+hold f32 [P1+0x8C0]+0x48 0
+step 3
+set CASE pras_chr020_p5f2_r24b_pral3
+set PAT 5
+set SETFRAME 2
+set FRAME 2
+set GTICK 1
+set STEPKEYS F6
+include ../games/uni2_v2_case_aura_plate.gcs
+quit

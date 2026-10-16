@@ -494,8 +494,12 @@ void ApplyPartBlend(partrender::PartBlend mode)
         glBlendFunc(GL_SRC_ALPHA, GL_ONE);
         break;
     default:
-        // Normal, and PRAL 3: the part draws normally into the blur mask (DrawParams::blurMaskPass); without a
-        // blur pass hook it draws normally on screen.
+        // Normal, and PRAL 3. uni2 1.42 draws character / effect .pat layers through the shader path
+        // (Han6Draw_DrawPatLayerParts_3D 0x4BF9A0 -> PatPart_SetBlendState_PRAL: 3 -> normal), which has no blur.
+        // The CharaPtBlur mask passes (sh_paniblur.txt, CharaPtBlur_BeginMaskTarget 0x87FBA0 /
+        // CharaPtBlur_DrawBlurWH_Passes 0x87F9A0) are queued only by the non-shader 2D path
+        // (Han6Draw_DrawPatLayerParts_2D 0x4C01D0). Measured in game (render-match17, chr020 set 991 slots forced
+        // to PRAL 3 vs PRAL 0): the same image.
         glBlendEquation(GL_FUNC_ADD);
         glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
         break;
@@ -892,13 +896,7 @@ void Parts::Draw(const DrawParams& params,
         partVertices.Load();
         partVertices.Bind();
         // PRFL: exactly 1 draws linear; other non-zero bytes draw point like the game.
-        const bool linear = part.filter && (part.prfl == 0 || part.prfl == 1);
-        if (!rawTextureView && params.blurMaskPass && PartBlendOf(part) == kBlendBlurMask) {
-            // PRAL 3: the part is only the mask of a screen blur (see part_blur_pass.h for the uni2 1.42 trace).
-            params.blurMaskPass([&] { DrawPart(part.ppId, linear); }, params.pxPerGamePx);
-        } else {
-            DrawPart(part.ppId, linear);
-        }
+        DrawPart(part.ppId, part.filter && (part.prfl == 0 || part.prfl == 1));
         partVertices.Clear();
     }
 
