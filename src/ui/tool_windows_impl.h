@@ -710,6 +710,7 @@ void MainFrame::AddCompareLayers(CharacterView* view, CharacterInstance* active)
 		layer.sourceParts = &c.character->parts;
 		layer.patApplyPras = partrender::PartUsesPras(c.character->frameData.usesUniFormat(),
 			c.character->frameData.game() == Ha6Game::MBTL);
+		layer.patUniDialect = c.character->frameData.usesUniFormat();  // also picks the arc split (UNI2 / MBTL)
 		render.AddLayer(layer);
 	}
 }
