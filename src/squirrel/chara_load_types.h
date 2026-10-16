@@ -10,6 +10,13 @@
 
 namespace sqedit {
 
+// Where a script function lives: its source name ("./data/chr001/chr001_mv_0.txt") and line range (1-based, inclusive).
+struct SourceRange {
+	std::string source;
+	int first = 0, last = 0;
+	std::string slot;   // "Init", "Init_After", ...
+};
+
 // What the engine knows while a character's scripts load (MBTL Chara_LoadBattleScripts 0x607650). Natives whose load-time
 // behaviour is traced (docs/squirrel/RE_MBTL_LOAD.md, "Load-time natives") answer from it instead of a type default.
 struct LoadContext {
@@ -26,7 +33,9 @@ struct LoadContext {
 	std::function<int(int datatype, const std::string& code)> patternByCode;
 	// Called when a PTCN lookup returns -1 (the scripts then carry -1 as the move's pattern: Init_Std's SetPattern(-1)).
 	// `move` is the calling script's local `mvname` (the move Battle_Std.MakeMoveTmpl is building), "" when there is none.
-	std::function<void(int datatype, const std::string& code, const std::string& move)> onMissingPattern;
+	// `inits`: the source ranges of the move's own Init / Init_Before / Init_After (the caller's t[mvname] table), which can set
+	// the real pattern after the template's Init_Std called SetPattern(-1).
+	std::function<void(int datatype, const std::string& code, const std::string& move, const std::vector<SourceRange>& inits)> onMissingPattern;
 };
 
 struct CharaLoadIssue {

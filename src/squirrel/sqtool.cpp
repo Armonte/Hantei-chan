@@ -323,7 +323,8 @@ static bool RunCharacters(HSQUIRRELVM v, const fs::path &root)
 				}
 				return ok;
 			},
-			[&](const std::string &rel) { return fs::exists(root / rel, ec); });
+			[&](const std::string &rel) { return fs::exists(root / rel, ec); },
+			[&](const std::string &rel) { std::string b; ReadFile(root / rel, b); return b; });
 		int devw = 0;
 		for (const auto &i : r.issues) {
 			switch (i.kind) {

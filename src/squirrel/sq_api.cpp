@@ -1,5 +1,6 @@
 #include "sq_api.h"
 
+
 #include <algorithm>
 #include <cmath>
 #include <cstdint>
@@ -9,6 +10,9 @@
 #include <vector>
 
 namespace sqedit {
+
+// Source range of the closure at stack top ({} when it is not a script closure); sq_internals.cpp.
+bool SqClosureSourceRange(HSQUIRRELVM v, SQInteger idx, std::string* source, int* first, int* last);
 
 namespace {
 
@@ -115,6 +119,43 @@ std::string CallerLocal(HSQUIRRELVM v, const char* name)
 	return "";
 }
 
+SourceRange ClosureRange(HSQUIRRELVM v)
+{
+	SourceRange r;
+	if (!SqClosureSourceRange(v, -1, &r.source, &r.first, &r.last)) r = {};
+	return r;
+}
+
+// The move's own Init / Init_Before / Init_After: the calling frame's local table `t`, slot `move`.
+std::vector<SourceRange> CallerMoveInits(HSQUIRRELVM v, const std::string& move)
+{
+	std::vector<SourceRange> out;
+	if (move.empty()) return out;
+	for (SQUnsignedInteger level = 1; level <= 2 && out.empty(); ++level)
+		for (SQUnsignedInteger i = 0;; ++i) {
+			const SQChar* n = sq_getlocal(v, level, i);
+			if (!n) break;
+			if (std::string(n) == "t" && sq_gettype(v, -1) == OT_TABLE) {
+				sq_pushstring(v, move.c_str(), -1);
+				if (SQ_SUCCEEDED(sq_get(v, -2)) && sq_gettype(v, -1) == OT_TABLE) {
+					for (const char* slot : {"Init", "Init_Before", "Init_After"}) {
+						sq_pushstring(v, slot, -1);
+						if (SQ_SUCCEEDED(sq_get(v, -2))) {
+							SourceRange r = ClosureRange(v);
+							r.slot = slot;
+							if (!r.source.empty()) out.push_back(r);
+							sq_pop(v, 1);
+						}
+					}
+					sq_pop(v, 1);
+				}
+			}
+			sq_pop(v, 1);
+			if (!out.empty()) break;
+		}
+	return out;
+}
+
 // Sets field `name` of the instance at stack top.
 void SetField(HSQUIRRELVM v, const char* name, SQInteger val)
 {
@@ -149,7 +190,10 @@ SQInteger CallTracedNative(HSQUIRRELVM v, const std::string& tag)
 				if (pat.empty()) r = pi;                                    // an integer pat is returned as is
 				else if ((dt == 0 || dt == 1) && c->patternByCode) {
 					r = c->patternByCode((int)dt, pat);
-					if (r < 0 && c->onMissingPattern) c->onMissingPattern((int)dt, pat, CallerLocal(v, "mvname"));
+					if (r < 0 && c->onMissingPattern) {
+						const std::string move = CallerLocal(v, "mvname");
+						c->onMissingPattern((int)dt, pat, move, CallerMoveInits(v, move));
+					}
 				}
 			}
 		}
