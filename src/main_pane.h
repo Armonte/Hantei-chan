@@ -21,6 +21,7 @@ public:
 	// Pattern name search
 	bool showPatternSearch = false;  // Popup window visibility
 	bool showPatternSearchBar = true;  // Search bar visibility (always visible when enabled)
+	int patternListShown = -1;         // left pane pattern list: the pattern its selection last followed (scrolls only on change)
 
 private:
 	bool copyThisFrame = true;
