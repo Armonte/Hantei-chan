@@ -96,6 +96,8 @@ static void ReadLine(ImGuiContext*, ImGuiSettingsHandler*, void* entry, const ch
 			gSettings.mousePanButton = pan;
 			gSettings.mouseDrawButton = draw;
 		}
+	} else if (sscanf(line, "SqHotReloadMode=%i", &i) == 1){
+		gSettings.sqHotReloadMode = i == 1 ? 1 : 0;
 	} else if (sscanf(line, "SqHotReload=%i", &i) == 1){
 		gSettings.sqHotReload = i != 0;
 	} else if (strncmp(line, "SqGameDirUni2=", 14) == 0){
@@ -159,6 +161,7 @@ static void Write(ImGuiContext* ctx, ImGuiSettingsHandler* handler, ImGuiTextBuf
 	buf->appendf("PatColorSelected=%f,%f,%f,%f\n", se[0], se[1], se[2], se[3]);
 	buf->appendf("MouseButtons=%i,%i\n", gSettings.mousePanButton, gSettings.mouseDrawButton);
 	buf->appendf("SqHotReload=%i\n", gSettings.sqHotReload ? 1 : 0);
+	buf->appendf("SqHotReloadMode=%i\n", gSettings.sqHotReloadMode);
 	if (!gSettings.sqGameDirUni2.empty()) buf->appendf("SqGameDirUni2=%s\n", gSettings.sqGameDirUni2.c_str());
 	if (!gSettings.sqGameDirMbtl.empty()) buf->appendf("SqGameDirMbtl=%s\n", gSettings.sqGameDirMbtl.c_str());
 	if (!gSettings.blenderPath.empty()) buf->appendf("Stage3dBlenderPath=%s\n", gSettings.blenderPath.c_str());
