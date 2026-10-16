@@ -13,3 +13,10 @@ pups_chr027_p449f4 | uni2/data/chr027/chr027_0.txt | 449 | 4 | -1 | 1.5 | render
 pups_chr027_p449f6 | uni2/data/chr027/chr027_0.txt | 449 | 6 | -1 | 1.5 | render-match4: PUPS 1, CG 870 (x2, one zoomed alpha 128) + .pat set 840 on two layers
 mbtl_patctrl_chr001_p238f10 | mbtl/data/chr001/chr001_0.txt | 238 | 10 | -1 | 1.5 | render-match4: MBTL .pat-only control (set 275, PRAL 1 + translucent parts, no PRRV / PRAL 2-3 / PRAS)
 mbtl_patctrl_chr001_p277f0 | mbtl/data/chr001/chr001_0.txt | 277 | 0 | -1 | 1.5 | render-match4: MBTL .pat-only control (set 211)
+flipHV_chr019_p153_solo6 | uni2/data/chr019solo6/chr019_0.txt | 153 | 0 | -1 | 1.5 | render-match8: flipHV with only set-45 slot 6 on screen (round8/chr019_solo45_s6.pat)
+flipHV_chr019_p153_solo6_z1 | uni2/data/chr019solo6/chr019_0.txt | 153 | 0 | -1 | 1 | render-match8: same, zoom 1
+flipHV_chr019_p153_solo1_z1 | uni2/data/chr019solo1/chr019_0.txt | 153 | 0 | -1 | 1 | render-match8: flipHV with only set-45 slot 1 on screen, zoom 1
+flipHV_chr019_p153_solo2_z1 | uni2/data/chr019solo2/chr019_0.txt | 153 | 0 | -1 | 1 | render-match8: flipHV with only set-45 slot 2 on screen, zoom 1
+flipHV_chr019_p153_solo3_z1 | uni2/data/chr019solo3/chr019_0.txt | 153 | 0 | -1 | 1 | render-match8: flipHV with only set-45 slot 3 on screen, zoom 1
+flipHV_chr019_p153_solo4_z1 | uni2/data/chr019solo4/chr019_0.txt | 153 | 0 | -1 | 1 | render-match8: flipHV with only set-45 slot 4 on screen, zoom 1
+flipHV_chr019_p153_solo8_z1 | uni2/data/chr019solo8/chr019_0.txt | 153 | 0 | -1 | 1 | render-match8: flipHV with only set-45 slot 8 on screen, zoom 1

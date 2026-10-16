@@ -545,6 +545,15 @@ void Parts::Draw(const DrawParams& params,
 
     constexpr int tX[] = { 0,1,1, 1,0,0 };
     constexpr int tY[] = { 0,0,1, 1,1,0 };
+    const int *tXd = tX, *tYd = tY;
+    // The games queue every ring / arc / sphere / cone segment as one 4-vertex prim with UVs (u0,v0) (u1,v0) (u0,v1)
+    // (u1,v1) (uni2 1.42 CPAniPrimRender_DrawQuads 0x4C0F10 and the shape classes' corner getters) and draw it split
+    // along (u1,v0)-(u0,v1). Their segments are not parallelograms, so the split shows in the texture (render-match8:
+    // the 3-segment arc of chr019 p153, 29.45 -> 0.28). kSplit* is that split for shapes mapping u to tX and v to tY
+    // (arc). Only the UNI2 arc uses it: the split was measured on it (render-match8); applying it to ring / sphere
+    // is unverified (no measured case isolates them), and MBTL's arc measured worse.
+    constexpr int kSplitX[] = { 0,1,0, 1,1,0 };
+    constexpr int kSplitY[] = { 0,0,1, 0,1,1 };
 
     struct {
         float x, y, z, s, t, p, q;
@@ -797,16 +806,24 @@ void Parts::Draw(const DrawParams& params,
         }
         case ShapeType::ARC:
         {
-            // Curved arc surface
+            // Curved arc surface (game corners: inner-cur, outer-cur, inner-next, outer-next; split as kSplit*).
+            // UNI2 only: the MBTL arc of flipV p157 measured 3.55 -> 4.62 with this split, so MBTL keeps the default.
+            const int *tX = params.uni2ArcSplit ? kSplitX : tXd, *tY = params.uni2ArcSplit ? kSplitY : tYd;
             float angle = 0;
             float delta = glm::pi<float>() * outShape.length / 5000 / outShape.vertexCount;
             vertexData.resize(6 * outShape.vertexCount * 7);
             for (int i = 0; i < outShape.vertexCount; i++) {
                 for (int j = 0; j < 6; j++)
                 {
-                    point[j].x = float((outShape.radius - (1 - tX[j]) * outShape.width - ((i + tY[j] == outShape.vertexCount && outShape.length == 10000) ? 0 : float(outShape.dRadius * (i + tY[j])) / outShape.vertexCount)) * glm::sin(angle + delta * tY[j]));
-                    point[j].y = -float((outShape.radius - (1 - tX[j]) * outShape.width - ((i + tY[j] == outShape.vertexCount && outShape.length == 10000) ? 0 : float(outShape.dRadius * (i + tY[j])) / outShape.vertexCount)) * glm::cos(angle + delta * tY[j]));
-                    point[j].z = float(outShape.dz * (i + tY[j])) / outShape.vertexCount;
+                    // Geometric shrink of both edges (partrender::ArcEdgeScale, uni2 0x414590 / 0x4148D0). A closed
+                    // ring's last edge reuses the unshrunk start points, keeping the previous edge's z.
+                    const int e = i + tY[j];
+                    const bool closing = e == outShape.vertexCount && outShape.length == 10000;
+                    const float k = closing ? 1.f : partrender::ArcEdgeScale(outShape.radius, outShape.dRadius, outShape.vertexCount, e);
+                    const float r = (outShape.radius - (1 - tX[j]) * outShape.width) * k;
+                    point[j].x = r * glm::sin(angle + delta * tY[j]);
+                    point[j].y = -r * glm::cos(angle + delta * tY[j]);
+                    point[j].z = float(outShape.dz * (closing ? e - 1 : e)) / outShape.vertexCount;
                     point[j].s = point[j].p = uvS((float)tX[j]);
                     point[j].t = point[j].q = uvT(1.0f * (i + tY[j]) / outShape.vertexCount);
                 }
