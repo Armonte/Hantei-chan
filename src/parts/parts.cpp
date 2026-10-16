@@ -550,8 +550,10 @@ void Parts::Draw(const DrawParams& params,
     // (u1,v1) (uni2 1.42 CPAniPrimRender_DrawQuads 0x4C0F10 and the shape classes' corner getters) and draw it split
     // along (u1,v0)-(u0,v1). Their segments are not parallelograms, so the split shows in the texture (render-match8:
     // the 3-segment arc of chr019 p153, 29.45 -> 0.28). kSplit* is that split for shapes mapping u to tX and v to tY
-    // (arc). Only the UNI2 arc uses it: the split was measured on it (render-match8); applying it to ring / sphere
-    // is unverified (no measured case isolates them), and MBTL's arc measured worse.
+    // (arc). Both games' arcs use it: UNI2 measured in render-match8; MBTL's arc code is the same (MBTL 25646393
+    // CPAniPrimRender_DrawQuads 0x4A3480 + RenderBatch_AppendQuad_Idx012_321 0x40DBA0) and, measured with the
+    // footprint-independent registration (v2_model --exact-reg), flipV p157 goes 5.11 -> 4.62 (render-match10).
+    // MBAACC and the ring / sphere stay on the default split (no measured case isolates them).
     constexpr int kSplitX[] = { 0,1,0, 1,1,0 };
     constexpr int kSplitY[] = { 0,0,1, 0,1,1 };
 
@@ -806,9 +808,9 @@ void Parts::Draw(const DrawParams& params,
         }
         case ShapeType::ARC:
         {
-            // Curved arc surface (game corners: inner-cur, outer-cur, inner-next, outer-next; split as kSplit*).
-            // UNI2 only: the MBTL arc of flipV p157 measured 3.55 -> 4.62 with this split, so MBTL keeps the default.
-            const int *tX = params.uni2ArcSplit ? kSplitX : tXd, *tY = params.uni2ArcSplit ? kSplitY : tYd;
+            // Curved arc surface (game corners: inner-cur, outer-cur, inner-next, outer-next; split as kSplit* in
+            // UNI2 and MBTL, the uniDialect games). MBAACC keeps the default split (not traced or measured).
+            const int *tX = params.uniDialect ? kSplitX : tXd, *tY = params.uniDialect ? kSplitY : tYd;
             float angle = 0;
             float delta = glm::pi<float>() * outShape.length / 5000 / outShape.vertexCount;
             vertexData.resize(6 * outShape.vertexCount * 7);

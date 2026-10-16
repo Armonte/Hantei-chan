@@ -1045,8 +1045,6 @@ void Render::DrawPatLayerItem(const RenderLayer& layer, Parts* origParts)
 	dp.curWeight = layer.curWeight;
 	dp.paletteTint = layer.patPaletteTint;
 	dp.applyPras = layer.patApplyPras;
-	// The UNI2 arc split (render-match8) follows the same UNI2-vs-MBTL layer flag; MBTL flipV p157 went 3.55 -> 4.62 with it.
-	dp.uni2ArcSplit = layer.patApplyPras;
 	dp.uniDialect = layer.patUniDialect;
 	m_parts->Draw(dp, setMatrix, setAddColor, layerColor);
 

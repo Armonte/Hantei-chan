@@ -226,6 +226,7 @@ def grid_mask(K, Wh):
 
 
 AXIS_FIX = False  # v2_model sets it: correct the editor's additive axis lines instead of dropping them
+EXACT_REG = False  # v2_model --exact-reg (render-match10): registration independent of the footprint bbox
 REFINE = 10       # +- px of the alignment search (0 = trust the camera geometry)
 BAND = 0          # +- px tolerance band for the extra band residual
 ROW_ADD = None    # f(channel, game rows (n,1), P1 origin) -> add per row: the stage's chara gradient
@@ -290,15 +291,33 @@ def game_vs_model(game, plate, ek, ew, zoom, meta, org):
     # game-pixel window covering the editor crop
     gx0 = gorg[0] + (x0e - org[0]) * sc; gy0 = gorg[1] + (y0e - org[1]) * sc
     gw = int(round((x1e - x0e) * sc)); gh = int(round((y1e - y0e) * sc))
-    def to_game(arr):  # resample an editor-space float array (crop) to game pixels (area-ish, bilinear)
+    # EXACT_REG (render-match10): resample from the exact editor-space box of the integer game window, so the
+    # sub-pixel registration follows the camera geometry only. The default maps the footprint's integer crop onto a
+    # rounded game size, so it shifts by up to +-0.5 game px (and rescales slightly) whenever the footprint bbox
+    # changes; thin-line parts (mbtl_flipV_chr001_p157f2 arcs 4/5/6) swing 3.5 -> 6.6 on that alone.
+    if EXACT_REG:
+        GX0, GY0 = int(round(gx0)), int(round(gy0))
+        ebox = (org[0] + (GX0 - gorg[0]) / sc, org[1] + (GY0 - gorg[1]) / sc,
+                org[0] + (GX0 + gw - gorg[0]) / sc, org[1] + (GY0 + gh - gorg[1]) / sc)
+        gx0, gy0 = GX0, GY0
+        EP = 16  # the box may run past the shot's edge: pad (P 0, Q 1 = nothing drawn there)
+        ebox = tuple(v + EP for v in ebox)
+    def to_game(arr, fill=0.0):  # resample an editor-space float array (crop) to game pixels (area-ish, bilinear)
         out = []
         for c in range(arr.shape[2]):
+            if EXACT_REG:
+                im = Image.fromarray(np.pad(arr[..., c].astype(np.float32), EP, constant_values=fill), mode='F')
+                out.append(np.asarray(im.resize((gw, gh), Image.BILINEAR if sc >= 1 else Image.BOX, box=ebox)))
+                continue
             im = Image.fromarray(arr[y0e:y1e, x0e:x1e, c].astype(np.float32), mode='F')
             out.append(np.asarray(im.resize((gw, gh), Image.BILINEAR if sc >= 1 else Image.BOX)))
         return np.stack(out, 2)
-    Pg = to_game(P); Qg = to_game(Q)
+    Pg = to_game(P); Qg = to_game(Q, 1.0)
     Wg = to_game(ROW_ADD_W) if ROW_ADD_W is not None else None
-    Fg = np.asarray(Image.fromarray(foot[y0e:y1e, x0e:x1e].astype(np.uint8) * 255).resize((gw, gh), Image.NEAREST)) > 127
+    if EXACT_REG:
+        Fg = np.asarray(Image.fromarray(np.pad(foot.astype(np.uint8) * 255, EP)).resize((gw, gh), Image.NEAREST, box=ebox)) > 127
+    else:
+        Fg = np.asarray(Image.fromarray(foot[y0e:y1e, x0e:x1e].astype(np.uint8) * 255).resize((gw, gh), Image.NEAREST)) > 127
     G = np.asarray(game.convert('RGB')).astype(np.float64); B = np.asarray(plate.convert('RGB')).astype(np.float64)
     best = None
     for dy in range(-REFINE, REFINE + 1):
