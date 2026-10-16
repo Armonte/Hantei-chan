@@ -1,0 +1,86 @@
+=== v2r19_mbtl_chr001_stagehold.gcs
+gamecap C:\dev\hantei-chan\tools\gamecap\cases\v2r19_mbtl_chr001_stagehold.gcs
+backup: C:\Program Files (x86)\Steam\steamapps\common\MELTY BLOOD TYPE LUMINA\MBTL-IM/MBTL_IM.ini -> C:\dev\hantei-chan\game_mod_backup\gamecap\mbtl_20261016_045006\file00_MBTL_IM.ini
+backup: C:\Program Files (x86)\Steam\steamapps\common\MELTY BLOOD TYPE LUMINA\winsave/48034167/_App.ini -> C:\dev\hantei-chan\game_mod_backup\gamecap\mbtl_20261016_045006\file01__App.ini
+launched MBTL.exe pid 68068 (suspended)
+agent attached: module base 0x00550000, hooks 0x39
+window 01b00566 at 0,0 136x39
+placed window at -640,307
+tap_until met after 4 tap(s)
+frozen at frame 768
+peek stage_loaded @0x00b7e47c = 21 (0x15)
+echo: MBTL training ready: P1 1 vs P2 1
+frozen at frame 1777
+peek anim_before @0x00b800a0 = 0 (0x0)
+peek tick_paused_a @0x01249370 = 1 (0x1)
+peek tick_paused_b @0x01249370 = 1 (0x1)
+peek frame_after_set @0x01249360 = 10 (0xa)
+peek tick_after_set @0x01249370 = 0 (0x0)
+peek frame_s @0x01249360 = 10 (0xa)
+peek tick_s @0x01249370 = 1 (0x1)
+meta -> C:\dev\hantei-chan\tools\gamecap\captures\v2\nohud_st\mbtl_patctrl_chr001_p238f10_sa_game.json
+captured window C:\dev\hantei-chan\tools\gamecap\captures\v2\nohud_st\mbtl_patctrl_chr001_p238f10_sa_game.png (ok (black retried 2x))
+captured C:\dev\hantei-chan\tools\gamecap\captures\v2\nohud_st\mbtl_patctrl_chr001_p238f10_sa_game_bb.png (1280x720 fmt 22)
+captured window C:\dev\hantei-chan\tools\gamecap\captures\v2\nohud_st\mbtl_patctrl_chr001_p238f10_sa_game_im.png (ok)
+captured C:\dev\hantei-chan\tools\gamecap\captures\v2\nohud_st\mbtl_patctrl_chr001_p238f10_sa_game_plate_b0.png (1280x720 fmt 22)
+peek tick_plate_b @0x01249370 = 2 (0x2)
+captured C:\dev\hantei-chan\tools\gamecap\captures\v2\nohud_st\mbtl_patctrl_chr001_p238f10_sa_game_plate_bb.png (1280x720 fmt 22)
+captured window C:\dev\hantei-chan\tools\gamecap\captures\v2\nohud_st\mbtl_patctrl_chr001_p238f10_sa_game_plate.png (ok (black retried 1x))
+frozen at frame 1987
+peek anim_after @0x00b800a0 = 0 (0x0)
+peek anim_before @0x00b800a0 = 0 (0x0)
+peek tick_paused_a @0x01249370 = 2 (0x2)
+peek tick_paused_b @0x01249370 = 2 (0x2)
+peek frame_after_set @0x01249360 = 0 (0x0)
+peek tick_after_set @0x01249370 = 0 (0x0)
+peek frame_s @0x01249360 = 0 (0x0)
+peek tick_s @0x01249370 = 1 (0x1)
+meta -> C:\dev\hantei-chan\tools\gamecap\captures\v2\nohud_st\mbtl_patctrl_chr001_p277f0_sa_game.json
+captured window C:\dev\hantei-chan\tools\gamecap\captures\v2\nohud_st\mbtl_patctrl_chr001_p277f0_sa_game.png (ok)
+captured C:\dev\hantei-chan\tools\gamecap\captures\v2\nohud_st\mbtl_patctrl_chr001_p277f0_sa_game_bb.png (1280x720 fmt 22)
+captured window C:\dev\hantei-chan\tools\gamecap\captures\v2\nohud_st\mbtl_patctrl_chr001_p277f0_sa_game_im.png (ok)
+captured C:\dev\hantei-chan\tools\gamecap\captures\v2\nohud_st\mbtl_patctrl_chr001_p277f0_sa_game_plate_b0.png (1280x720 fmt 22)
+peek tick_plate_b @0x01249370 = 2 (0x2)
+captured C:\dev\hantei-chan\tools\gamecap\captures\v2\nohud_st\mbtl_patctrl_chr001_p277f0_sa_game_plate_bb.png (1280x720 fmt 22)
+captured window C:\dev\hantei-chan\tools\gamecap\captures\v2\nohud_st\mbtl_patctrl_chr001_p277f0_sa_game_plate.png (ok (black retried 1x))
+frozen at frame 2184
+peek anim_after @0x00b800a0 = 0 (0x0)
+peek anim_before @0x00b800a0 = 0 (0x0)
+peek tick_paused_a @0x01249370 = 50 (0x32)
+peek tick_paused_b @0x01249370 = 50 (0x32)
+peek frame_after_set @0x01249360 = 0 (0x0)
+peek tick_after_set @0x01249370 = 0 (0x0)
+peek frame_s @0x01249360 = 0 (0x0)
+peek tick_s @0x01249370 = 1 (0x1)
+meta -> C:\dev\hantei-chan\tools\gamecap\captures\v2\nohud_st\mbtl_ctrl_chr001_p0f0_sa_game.json
+captured window C:\dev\hantei-chan\tools\gamecap\captures\v2\nohud_st\mbtl_ctrl_chr001_p0f0_sa_game.png (ok)
+captured C:\dev\hantei-chan\tools\gamecap\captures\v2\nohud_st\mbtl_ctrl_chr001_p0f0_sa_game_bb.png (1280x720 fmt 22)
+captured window C:\dev\hantei-chan\tools\gamecap\captures\v2\nohud_st\mbtl_ctrl_chr001_p0f0_sa_game_im.png (ok)
+captured C:\dev\hantei-chan\tools\gamecap\captures\v2\nohud_st\mbtl_ctrl_chr001_p0f0_sa_game_plate_b0.png (1280x720 fmt 22)
+peek tick_plate_b @0x01249370 = 2 (0x2)
+captured C:\dev\hantei-chan\tools\gamecap\captures\v2\nohud_st\mbtl_ctrl_chr001_p0f0_sa_game_plate_bb.png (1280x720 fmt 22)
+captured window C:\dev\hantei-chan\tools\gamecap\captures\v2\nohud_st\mbtl_ctrl_chr001_p0f0_sa_game_plate.png (ok)
+frozen at frame 2373
+peek anim_after @0x00b800a0 = 0 (0x0)
+peek anim_before @0x00b800a0 = 0 (0x0)
+peek tick_paused_a @0x01249370 = 5 (0x5)
+peek tick_paused_b @0x01249370 = 5 (0x5)
+peek frame_after_set @0x01249360 = 2 (0x2)
+peek tick_after_set @0x01249370 = 0 (0x0)
+peek frame_s @0x01249360 = 2 (0x2)
+peek tick_s @0x01249370 = 1 (0x1)
+meta -> C:\dev\hantei-chan\tools\gamecap\captures\v2\nohud_st\mbtl_flipV_chr001_p157f2_sa_game.json
+captured window C:\dev\hantei-chan\tools\gamecap\captures\v2\nohud_st\mbtl_flipV_chr001_p157f2_sa_game.png (ok)
+captured C:\dev\hantei-chan\tools\gamecap\captures\v2\nohud_st\mbtl_flipV_chr001_p157f2_sa_game_bb.png (1280x720 fmt 22)
+captured window C:\dev\hantei-chan\tools\gamecap\captures\v2\nohud_st\mbtl_flipV_chr001_p157f2_sa_game_im.png (ok (black retried 1x))
+captured C:\dev\hantei-chan\tools\gamecap\captures\v2\nohud_st\mbtl_flipV_chr001_p157f2_sa_game_plate_b0.png (1280x720 fmt 22)
+peek tick_plate_b @0x01249370 = 2 (0x2)
+captured C:\dev\hantei-chan\tools\gamecap\captures\v2\nohud_st\mbtl_flipV_chr001_p157f2_sa_game_plate_bb.png (1280x720 fmt 22)
+captured window C:\dev\hantei-chan\tools\gamecap\captures\v2\nohud_st\mbtl_flipV_chr001_p157f2_sa_game_plate.png (ok)
+frozen at frame 2570
+peek anim_after @0x00b800a0 = 0 (0x0)
+quit (quit): terminating pid 68068
+restored C:\Program Files (x86)\Steam\steamapps\common\MELTY BLOOD TYPE LUMINA\MBTL-IM/MBTL_IM.ini
+restored C:\Program Files (x86)\Steam\steamapps\common\MELTY BLOOD TYPE LUMINA\winsave/48034167/_App.ini
+script finished: 733 commands, 24 capture(s)
+failures: 0
