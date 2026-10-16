@@ -55,6 +55,7 @@ extern struct Settings
 
 	// Script panel hot reload (fbmod pipe): on/off and the game install folder per profile ("" = Steam default)
 	bool sqHotReload = false;
+	int sqHotReloadMode = 0;   // 0: engine rebuild (reloadchara <chr>), 1: live in-place (reloadchara <chr> live)
 	std::string sqGameDirUni2, sqGameDirMbtl;
 	// 3D stage view "Open in Blender": blender.exe, UTF-8 ("" = auto-detect at launch, s3d_blender.h)
 	// (Edit > Preferences > 3D stage: Blender; ini key Stage3dBlenderPath=, the older BlenderPath= is still read and wins

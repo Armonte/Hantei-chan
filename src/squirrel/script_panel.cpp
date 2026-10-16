@@ -18,6 +18,7 @@
 
 #include <algorithm>
 #include <cctype>
+#include <cstring>
 #include <chrono>
 #include <ctime>
 #include <deque>
@@ -266,17 +267,24 @@ struct ScriptPanel::Impl {
 	// next battle frame); the UI polls hotJob each frame. A save while a job runs replaces hotPending (latest wins).
 	struct HotTask {
 		bool reload = false;   // false: ping only
+		bool live = false;     // reloadchara <chr> live (in-place, keeps state) instead of the engine rebuild
 		std::string pipe, gameDir, srcFile, chr, fileName;
 	};
 	struct HotResult {
 		bool ok = false;
 		std::string text;
+		bool reload = false;      // a reloadchara reply (info is valid)
+		FbmodReloadInfo info;
+		std::string chr;
 	};
 	std::future<HotResult> hotJob;
 	bool hotBusy = false, hasHotPending = false;
 	HotTask hotPending;
 	std::string hotStatus;
 	bool hotStatusOk = false;
+	bool hotHasInfo = false;            // hotInfo/hotChr describe the last reloadchara reply
+	FbmodReloadInfo hotInfo;
+	std::string hotChr;
 	std::string hotPipe, hotPipeGame;   // pipe name; reset to the profile's default when the profile changes
 	std::string hotGameDirOther;        // game folder for profiles without a saved setting
 
@@ -306,16 +314,22 @@ struct ScriptPanel::Impl {
 		fs::copy_file(U8(t.srcFile), dstDir / U8(t.fileName), fs::copy_options::overwrite_existing, ec);
 		if (ec) return {false, "cannot copy to " + ToU8(dstDir / U8(t.fileName)) + ": " + ec.message()};
 		HC_LOG_INFO("[script] hot reload: copied {} to {}", t.srcFile, ToU8(dstDir / U8(t.fileName)));
-		const FbmodReply r = FbmodRequest(t.pipe, "reload " + t.chr, 8000);
+		// Engine rebuild: fbmod waits up to 120 s for the training battle to tick again; live: up to 30 s.
+		const FbmodReply r = FbmodRequest(t.pipe, FbmodReloadRequest(t.chr, t.live), t.live ? 35000 : 130000);
 		if (!r.connected) return {false, "game not running (no fbmod pipe)"};
-		return {r.ok, r.text};
+		HotResult out{r.ok, r.text};
+		out.reload = true;
+		out.info = FbmodParseReloadReply(r.text);
+		out.chr = t.chr;
+		return out;
 	}
 	void startHot(const HotTask& t)
 	{
 		if (hotBusy) { hotPending = t; hasHotPending = true; return; }
 		hotBusy = true;
-		hotStatus = t.reload ? "reloading " + t.chr + "..." : "ping...";
+		hotStatus = t.reload ? (t.live ? "reloading " : "rebuilding ") + t.chr + "..." : "ping...";
 		hotStatusOk = true;
+		hotHasInfo = false;
 		hotJob = std::async(std::launch::async, RunHotTask, t);
 	}
 	void pollHot()
@@ -325,6 +339,9 @@ struct ScriptPanel::Impl {
 		hotBusy = false;
 		hotStatus = r.text;
 		hotStatusOk = r.ok;
+		hotHasInfo = r.reload;
+		hotInfo = r.info;
+		hotChr = r.chr;
 		say("hot reload: " + r.text);
 		if (hasHotPending) { hasHotPending = false; startHot(hotPending); }
 	}
@@ -337,6 +354,7 @@ struct ScriptPanel::Impl {
 		if (!std::regex_match(currentRel, mm, re)) { hotStatus = "not a data/chrNNN file: not reloaded"; hotStatusOk = false; return; }
 		HotTask t;
 		t.reload = true;
+		t.live = gSettings.sqHotReloadMode == 1;
 		t.pipe = hotPipe;
 		t.gameDir = hotGameDir();
 		t.srcFile = ToU8(U8(root) / U8(currentRel));
@@ -375,10 +393,37 @@ struct ScriptPanel::Impl {
 		ImGui::BeginDisabled(hotBusy);
 		if (ImGui::Button(LBL("Ping"))) { HotTask t; t.pipe = hotPipe; t.gameDir = hotGameDir(); startHot(t); }
 		ImGui::EndDisabled();
+		ImGui::SameLine();
+		const char* modes[] = {TXT("Rebuild (engine)"), TXT("Live (keep state)")};
+		int mode = gSettings.sqHotReloadMode == 1 ? 1 : 0;
+		ImGui::SetNextItemWidth(150);
+		if (ImGui::Combo(LBL("Reload mode"), &mode, modes, 2)) { gSettings.sqHotReloadMode = mode; ImGui::MarkIniSettingsDirty(); }
+		if (ImGui::IsItemHovered()) ImGui::SetTooltip("%s", TXT("Rebuild (engine): the game's own training-menu character switch. A full battle rebuild of about 1-3 s that picks up every change (HA6, CG, PAT, palettes, effects, scripts) but resets positions and meter.\nLive (keep state): reloads the character in place, so positions, meter and the current move are kept; use it for mid-move tests. It keeps the old character data in memory until the game restarts.\nBoth need a running training battle."));
 		if (!hotStatus.empty()) {
 			ImGui::SameLine();
-			ImGui::TextColored(hotStatusOk ? ScriptCol() : ErrCol(), "%s", i18n::TrDetail(hotStatus).c_str());
+			drawHotStatus();
 		}
+	}
+
+	// The last reply: a reloadchara reply is summarized (timing, HA6 root before/after, refusals); anything else as is.
+	void drawHotStatus()
+	{
+		char line[512];
+		bool ok = hotStatusOk;
+		if (hotBusy || !hotHasInfo) snprintf(line, sizeof line, "%s", i18n::TrDetail(hotStatus).c_str());
+		else if (hotInfo.refused) {
+			ok = false;
+			snprintf(line, sizeof line, "%s", TXT("Refused: no training battle is running. Start a training battle in the game, then save again."));
+		} else if (hotInfo.engine && hotInfo.hasRoots) {
+			snprintf(line, sizeof line, hotInfo.backInBattle ? TXT("Rebuilt %s in %ld ms, HA6 root %08X -> %08X") : TXT("Rebuild of %s did not return to the training battle (%ld ms), HA6 root %08X -> %08X"),
+				hotChr.c_str(), hotInfo.ms, static_cast<unsigned>(hotInfo.rootBefore), static_cast<unsigned>(hotInfo.rootAfter));
+			if (hotInfo.backInBattle && hotInfo.rootBefore == hotInfo.rootAfter) {
+				const size_t n = strlen(line);
+				snprintf(line + n, sizeof line - n, " %s", TXT("(HA6 root unchanged)"));
+			}
+		} else snprintf(line, sizeof line, "%s", i18n::TrDetail(hotStatus).c_str());
+		ImGui::TextColored(ok ? ScriptCol() : ErrCol(), "%s", line);
+		if (hotHasInfo && ImGui::IsItemHovered()) ImGui::SetTooltip("%s", hotStatus.c_str());   // the raw fbmod reply
 	}
 
 	void buildOutline()
@@ -1441,11 +1486,15 @@ bool ScriptPanel::scriptCommand(const std::string& sub, const std::string& arg, 
 	else if (sub == "tab") { m->bottomTab = atoi(arg.c_str()); m->selectBottomTab = true; }
 	else if (sub == "type") { m->editor.ReplaceTextInCurrentCursor(arg); }
 	else if (sub == "save") { requestSave(); out = "save requested"; }   // the next frame runs the Ctrl+S path (checks, backup, hot reload)
-	else if (sub == "hotreload") {   // hotreload on|off|ping|status|pipe <name>|gamedir <dir>: the Hot reload row of the panel
+	else if (sub == "hotreload") {   // hotreload on|off|ping|status|mode rebuild|live|pipe <name>|gamedir <dir>: the Hot reload row of the panel
 		const size_t sp = arg.find(' ');
 		const std::string verb = arg.substr(0, sp), rest = sp == std::string::npos ? "" : arg.substr(sp + 1);
 		if (verb == "on" || verb == "off") { gSettings.sqHotReload = verb == "on"; out = std::string("hot reload ") + verb; }
 		else if (verb == "pipe") { if (!rest.empty()) { m->hotPipe = rest; m->hotPipeGame = m->game; } out = "pipe " + m->hotPipe; }
+		else if (verb == "mode") {   // mode rebuild|live
+			if (rest == "rebuild" || rest == "live") { gSettings.sqHotReloadMode = rest == "live" ? 1 : 0; ImGui::MarkIniSettingsDirty(); }
+			out = std::string("mode ") + (gSettings.sqHotReloadMode == 1 ? "live" : "rebuild");
+		}
 		else if (verb == "gamedir") { if (!rest.empty()) m->hotGameDirSetting() = rest; out = "game dir " + m->hotGameDir(); }
 		else if (verb == "ping") { Impl::HotTask t; t.pipe = m->hotPipe.empty() ? (m->game == "mbtl" ? "fbmod-mbtl" : "fbmod-uni2") : m->hotPipe; m->startHot(t); out = "ping " + t.pipe; }
 		else out = std::string(m->hotBusy ? "busy: " : "") + (m->hotStatusOk ? "ok: " : "error: ") + m->hotStatus;
