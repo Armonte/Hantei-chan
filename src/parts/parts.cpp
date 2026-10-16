@@ -494,8 +494,8 @@ void ApplyPartBlend(partrender::PartBlend mode)
         glBlendFunc(GL_SRC_ALPHA, GL_ONE);
         break;
     default:
-        // Normal, and PRAL 3: the game draws the part with normal blending and also uses it as the mask of
-        // a screen-space blur pass (not reproduced here).
+        // Normal, and PRAL 3: the part draws normally into the blur mask (DrawParams::blurMaskPass); without a
+        // blur pass hook it draws normally on screen.
         glBlendEquation(GL_FUNC_ADD);
         glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
         break;
@@ -892,7 +892,13 @@ void Parts::Draw(const DrawParams& params,
         partVertices.Load();
         partVertices.Bind();
         // PRFL: exactly 1 draws linear; other non-zero bytes draw point like the game.
-        DrawPart(part.ppId, part.filter && (part.prfl == 0 || part.prfl == 1));
+        const bool linear = part.filter && (part.prfl == 0 || part.prfl == 1);
+        if (!rawTextureView && params.blurMaskPass && PartBlendOf(part) == kBlendBlurMask) {
+            // PRAL 3: the part is only the mask of a screen blur (see part_blur_pass.h for the uni2 1.42 trace).
+            params.blurMaskPass([&] { DrawPart(part.ppId, linear); }, params.pxPerGamePx);
+        } else {
+            DrawPart(part.ppId, linear);
+        }
         partVertices.Clear();
     }
 
