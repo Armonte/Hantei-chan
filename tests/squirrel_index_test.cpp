@@ -81,8 +81,32 @@ static void Shipped(const char* label, const fs::path& root)
 	CHECK(mvs > 50 && funcs > 50);
 }
 
+#ifdef _WIN32
+#include <windows.h>
+// Crash report for the intermittent fault this test has shown (exit 0xC0000005 / 0xC0000374): code, address and a
+// backtrace relative to the exe base, to resolve with nm / addr2line.
+static LONG WINAPI CrashReport(EXCEPTION_POINTERS* e)
+{
+	const auto base = (uintptr_t)GetModuleHandleW(nullptr);
+	std::fprintf(stderr, "CRASH code %08lx at exe+%llx\n", e->ExceptionRecord->ExceptionCode,
+		(unsigned long long)((uintptr_t)e->ExceptionRecord->ExceptionAddress - base));
+	void* frames[48];
+	const USHORT n = RtlCaptureStackBackTrace(0, 48, frames, nullptr);
+	for (USHORT i = 0; i < n; ++i) std::fprintf(stderr, "  #%u exe+%llx\n", i, (unsigned long long)((uintptr_t)frames[i] - base));
+	std::fflush(stderr);
+	return EXCEPTION_CONTINUE_SEARCH;
+}
+#endif
+
 int main(int argc, char** argv)
 {
+#ifdef _WIN32
+	AddVectoredExceptionHandler(1, [](EXCEPTION_POINTERS* e) -> LONG {
+		const DWORD c = e->ExceptionRecord->ExceptionCode;
+		return c == 0xC0000005 || c == 0xC0000374 || c == 0xC00000FD ? CrashReport(e) : EXCEPTION_CONTINUE_SEARCH;
+	});
+	setvbuf(stdout, nullptr, _IONBF, 0);
+#endif
 	Synthetic();
 	Shipped("uni2", "C:/dev/hantei-chan/gamedata/uni2");
 	Shipped("mbtl", "C:/dev/hantei-chan/gamedata/mbtl");
