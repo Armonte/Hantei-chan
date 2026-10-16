@@ -4,6 +4,7 @@
 //   pattex import <x.pat> <index> <in.png> -o <out.pat> [--type 1|5|21|22]   (default: the texture's own kind)
 //   pattex check <x.pat>...                             decode every texture; raw kinds survive PNG -> import byte-exact; DXT encode -> decode
 //                                                       stays close; an imported texture is saved and reloaded unchanged
+#include <windows.h>
 #include "parts/parts.h"
 #include "parts/pat_texconv.h"
 #include "png_writer.h"
@@ -24,7 +25,8 @@ static const char *Kind(const PartGfx<> &g) {
 
 static int Check(int argc, char **argv) {
 	int pass = 0, fail = 0, tex = 0, raw = 0, dxt = 0; double worst = 1e9;
-	const std::string tmp = "pattex_tmp"; std::error_code ec; std::filesystem::create_directories(tmp, ec);
+	// per process: parallel runs (ctest -j, other worktrees' tools) must never share or delete each other's scratch folder
+	const std::string tmp = "pattex_tmp_" + std::to_string(GetCurrentProcessId()); std::error_code ec; std::filesystem::create_directories(tmp, ec);
 	for (int i = 0; i < argc; i++) {
 		Parts &p = *new Parts(nullptr);   // never destroyed: Parts::Free needs a GL context
 		if (!p.Load(argv[i])) { printf("FAIL %s: load\n", argv[i]); fail++; continue; }
