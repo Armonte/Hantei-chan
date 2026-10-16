@@ -1,0 +1,24 @@
+stage3d open C:/dev/hantei-chan/work/align_stages/uni2/bg bg001 -> ok bg001
+stage3d status -> bg001 loaded=1 nodes=82 meshes=78 tris=7390 fov=45.00 bounds=[-87.15 -1.92 -89.27]..[87.51 44.02 87.31] model=C:/dev/hantei-chan/work/align_stages/uni2/bg/bg001\bg.fbx.bin watch=C:/dev/hantei-chan/work/align_stages/uni2/bg/bg001/bg.fbx.bin changed_on_disk=0
+stage3d align on 0 1 1 0 -> ok
+stage3d align on 300 0.8 0.9 0.5 -> ok
+stage3d alignini -> Wrote C:/dev/hantei-chan/work/align_stages/uni2/bg\bg001\stage3d.ini
+stage3d align off -> ok
+stage3d open C:/dev/hantei-chan/work/align_stages/mbtl/bg bg001 -> ok bg001
+stage3d status -> bg001 loaded=1 nodes=82 meshes=64 tris=44598 fov=43.00 bounds=[-2638.21 -768.32 -2563.53]..[2199.84 2183.86 47.09] model=C:/dev/hantei-chan/work/align_stages/mbtl/bg/bg001\bg.fbx.bin watch=C:/dev/hantei-chan/work/align_stages/mbtl/bg/bg001/bg.fbx.bin changed_on_disk=0
+stage3d align on 0 1 1 0 -> ok
+stage3d align on 300 0.8 0.9 0.5 -> ok
+stage3d alignini -> Wrote C:/dev/hantei-chan/work/align_stages/mbtl/bg\bg001\stage3d.ini
+stage3d align off -> ok
+stage3d open C:/dev/hantei-chan/work/align_stages/dfci/bg bg01 -> ok bg01
+stage3d status -> bg01 loaded=1 nodes=45 meshes=27 tris=29861 fov=35.60 bounds=[-112.61 -45.50 -141.31]..[131.83 108.16 23.50] model=C:/dev/hantei-chan/work/align_stages/dfci/bg/bg01\bg.fbx watch=C:/dev/hantei-chan/work/align_stages/dfci/bg/bg01/bg.fbx.bin,C:/dev/hantei-chan/work/align_stages/dfci/bg/bg01/bg.fbx changed_on_disk=0
+stage3d align on 0 1 1 0 -> ok
+stage3d align on 300 0.8 0.9 0.5 -> ok
+stage3d alignini -> Wrote C:/dev/hantei-chan/work/align_stages/dfci/bg\bg01\stage3d.ini
+stage3d align off -> ok
+stage3d open C:/dev/hantei-chan/work/align_stages/unib/bg bg01 -> ok bg01
+stage3d status -> bg01 loaded=1 nodes=99 meshes=98 tris=2411 fov=45.00 bounds=[-46.19 -1.21 -89.14]..[31.50 55.66 5.96] model=C:/dev/hantei-chan/work/align_stages/unib/bg/bg01\bg.fbx watch=C:/dev/hantei-chan/work/align_stages/unib/bg/bg01/bg.fbx.bin,C:/dev/hantei-chan/work/align_stages/unib/bg/bg01/bg.fbx changed_on_disk=0
+stage3d align on 0 1 1 0 -> ok
+stage3d align on 300 0.8 0.9 0.5 -> ok
+stage3d alignini -> Wrote C:/dev/hantei-chan/work/align_stages/unib/bg\bg01\stage3d.ini
+stage3d align off -> ok
