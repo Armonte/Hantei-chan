@@ -50,6 +50,7 @@ struct CharaLoadIssue {
 struct CharaLoadResult {
 	std::vector<CharaLoadIssue> issues;
 	std::set<std::string> commandMoves;   // UpdateTable.name of every <CHR>_CommandTable entry
+	std::set<std::string> moves;          // keys of the built <CHR>_MoveTable (what the engine can switch to)
 	int filesRun = 0;
 	bool ok() const;                     // no RuntimeError / MissingTable
 };
