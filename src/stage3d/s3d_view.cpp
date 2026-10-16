@@ -6,6 +6,7 @@
 #include "s3d_model.h"
 #include "s3d_fbxascii.h"
 #include "s3d_blender.h"
+#include "s3d_align.h"
 
 #include "../app_log.h"
 #include "../i18n.h"
@@ -483,6 +484,19 @@ bool Capture(State& s, const std::string& path, std::string& err)
 
 }  // namespace
 
+s3d::AlignInput AlignInputOf(const State& s)
+{
+	namespace fs = std::filesystem;
+	s3d::AlignInput in;
+	in.mbCamX = s.mbCamX; in.mbZoom = s.mbZoom; in.fighterScale = s.fighterScale; in.centerX = s.centerX;
+	in.floorPx = s.floorPx; in.yBias = s.yBias; in.replaces = s.replaces;
+	in.fovDeg = FovDeg(s); in.vanishingPoint = s.params.vanishingPoint;
+	for (int i = 0; i < 3; ++i) { in.scale[i] = s.params.scale[i]; in.position[i] = s.params.position[i]; }
+	in.stageW = s.params.stageW > 0 ? float(s.params.stageW) : 4096.f;
+	in.package = (fs::u8path(std::string(s.bgDir)) / fs::u8path(s.dataFile)).generic_u8string();
+	in.name = s.loadedName;
+	return in;
+}
 void DrawAlignView(State& s, ImVec2 avail);
 void WriteAlignIni(State& s);
 
@@ -622,7 +636,7 @@ void Draw()
 		ImGui::Checkbox(LBL("MBAACC alignment"), &s.align);
 		if (ImGui::IsItemHovered()) ImGui::SetTooltip("%s", TXT("Show the stage as an MBAACC port sees it: the centre 4:3 of the frame (same vertical FOV), driven by MBAACC's 2D camera, with its floor row, walls and a fighter-height ruler. Tune, then write stage3d.ini for PovertyCaster's pc-stage3d."));
 		if (s.align) {
-			ImGui::SetNextItemWidth(110); ImGui::DragFloat(LBL("MBAACC cam x"), &s.mbCamX, 1.f, -208.f, 208.f, "%.0f"); ImGui::SameLine();
+			ImGui::SetNextItemWidth(110); ImGui::DragFloat(LBL("MBAACC cam x"), &s.mbCamX, 1.f, -s3d::AlignCamLimit(s.mbZoom), s3d::AlignCamLimit(s.mbZoom), "%.0f"); ImGui::SameLine();
 			ImGui::SetNextItemWidth(110); ImGui::DragFloat(LBL("MBAACC zoom"), &s.mbZoom, 0.005f, 0.5f, 1.5f); ImGui::SameLine();
 			ImGui::SetNextItemWidth(110); ImGui::DragFloat(LBL("fighter scale"), &s.fighterScale, 0.005f, 0.3f, 2.f); ImGui::SameLine();
 			ImGui::SetNextItemWidth(110); ImGui::DragFloat(LBL("center x (units)"), &s.centerX, 0.01f); ImGui::SameLine();
@@ -631,11 +645,11 @@ void Draw()
 			ImGui::SetNextItemWidth(110); ImGui::InputInt(LBL("replaces slot"), &s.replaces);
 			if (ImGui::Button(LBL("Write stage3d.ini..."))) WriteAlignIni(s);
 			if (!s.alignStatus.empty()) { ImGui::SameLine(); ImGui::TextUnformatted(s.alignStatus.c_str()); }
-			s.mbCamX = std::clamp(s.mbCamX, -208.f, 208.f);
-			// 1 MBAACC px = 1.5 / s source px; the source zoom shows the same world height (720/s px over 480 lines)
-			s.camX = s.centerX * 640.f + s.mbCamX * 1.5f / std::max(0.01f, s.fighterScale);
-			s.camY = 0.f;
-			s.zoom = s.mbZoom * s.fighterScale;
+			// MBAACC's camera clamp depends on zoom (|cam| <= 528 - 320/zoom), so the picture never shows past its walls
+			const float lim = s3d::AlignCamLimit(s.mbZoom);
+			s.mbCamX = std::clamp(s.mbCamX, -lim, lim);
+			const s3d::AlignSourceCam c = s3d::AlignSourceCamera(AlignInputOf(s));
+			s.camX = c.camX; s.camY = c.camY; s.zoom = c.zoom;
 		}
 		Render(s);
 		const ImVec2 avail = ImGui::GetContentRegionAvail();
@@ -700,25 +714,12 @@ void WriteAlignIni(State& s)
 {
 	namespace fs = std::filesystem;
 	const fs::path dir = fs::u8path(std::string(s.bgDir)) / fs::u8path(s.dataFile);
-	char b[1024];
-	snprintf(b, sizeof b,
-		"; written by Hantei-chan's 3D Stage view, MBAACC alignment (%s)\n"
-		"%s"
-		"package = %s\n"
-		"fit_mode = crop\n"
-		"center_x = %.4f\n"
-		"fighter_px = %.2f\n"
-		"uni_char_px = 355\n"
-		"floor_px = %.2f\n"
-		"stage_w = %.0f\n"
-		"host_world_w = 1056\n",
-		s.loadedName.c_str(), s.replaces >= 0 ? ("replaces = " + std::to_string(s.replaces) + "\n").c_str() : "",
-		dir.generic_u8string().c_str(), s.centerX, 237.f * s.fighterScale, s.floorPx + s.yBias,
-		s.params.stageW > 0 ? s.params.stageW : 4096.f);
 	const fs::path out = dir / "stage3d.ini";
 	std::ofstream f(out, std::ios::binary);
-	f << b;
+	f << s3d::FormatAlignIni(AlignInputOf(s));
+	f.close();
 	s.alignStatus = f ? std::string(TXT("Wrote")) + " " + out.u8string() : std::string(TXT("Save failed.")) + " " + out.u8string();
+	HC_LOG_INFO("stage3d: {}", s.alignStatus);
 }
 
 bool ChangedOnDiskNow()

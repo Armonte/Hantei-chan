@@ -32,7 +32,7 @@ include_directories(SYSTEM "${CMAKE_SOURCE_DIR}/third_party/quill/include")
 
 # PovertyCaster pcmod packages (docs/modmanager/pcmod-manifest_schema1.md): manifest, digests, zip, pack/verify. Pure C++.
 # 3D stage view (docs/stage3d/SCOPE.md): fbxex model, DDS, BgList. The GL view (s3d_view.cpp) is editor-only.
-set(STAGE3D_SOURCES src/stage3d/s3d_model.cpp src/stage3d/s3d_dds.cpp src/stage3d/s3d_bglist.cpp src/stage3d/s3d_fbxascii.cpp src/stage3d/s3d_blender.cpp)
+set(STAGE3D_SOURCES src/stage3d/s3d_model.cpp src/stage3d/s3d_dds.cpp src/stage3d/s3d_bglist.cpp src/stage3d/s3d_fbxascii.cpp src/stage3d/s3d_blender.cpp src/stage3d/s3d_align.cpp)
 set(PCMOD_SOURCES src/pcmod/pcmod_sha256.cpp src/pcmod/pcmod_manifest.cpp src/pcmod/pcmod_zip.cpp src/pcmod/pcmod_package.cpp)
 # Mod projects (docs/modmanager/AUTHORING_DESIGN.md): hmod.json, vanilla hash index, change tracking, conflict check, exporters.
 set(HMOD_SOURCES src/modproject/hmod_ha6.cpp src/modproject/hmod_vanilla.cpp src/modproject/hmod_project.cpp src/modproject/hmod_track.cpp
