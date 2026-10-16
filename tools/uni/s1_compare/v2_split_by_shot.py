@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """v2_split_by_shot.py SHOT1[,SHOT2...] <v2_model args...>: render-match12. Run v2_model's measurement and split the
-lit and raw residual of the footprint by the coverage (1 - Q > 0.02) of other editor shots with the same framing
+lit and raw residual of the footprint by the coverage (1 - Q > 0.02, or P >= 2 for additive parts) of other editor shots with the same framing
 (e.g. the single-prop solo shots of a case), mapped into the game window the same way as the case.
 Used for mbtl_flipV_chr001_p157f2: which props carry the residual above the .pat-only control."""
 import sys, os, numpy as np
@@ -21,7 +21,11 @@ def wrapped(*a, **k):
         if n not in covs: covs[n] = pq(n)
         keep = sh.POST_ADD, sh.POST_ADD_SRC
         sh.POST_ADD = lambda P, Q: np.zeros_like(P); sh.POST_ADD_SRC = (covs[n][0], covs[n][1], np.ones_like(covs[n][1]))
-        orig(*a, **k); out.append(np.clip(1 - wrapped.last_cg[1].mean(2), 0, 1))  # sheet sets attrs on the module name (= wrapped)
+        orig(*a, **k)  # sheet sets attrs on the module name (= wrapped)
+        # render-match18: an additive (PRAL 1) part has Q = 1 (it does not hide the backdrop), so 1 - Q missed it; it
+        # covers where its black-backdrop shot is lit (P >= 2 levels, above the 8-bit noise).
+        Pc, Qc = wrapped.last_cg[0], wrapped.last_cg[1]
+        out.append(np.maximum(np.clip(1 - Qc.mean(2), 0, 1), (np.asarray(Pc).max(2) >= 2).astype(np.float64)))
         sh.POST_ADD, sh.POST_ADD_SRC = keep
     r = orig(*a, **k); wrapped.cov = out
     return r
