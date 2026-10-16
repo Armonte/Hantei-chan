@@ -1,3 +1,4 @@
+#include <cstdint>
 #include "script_index.h"
 
 #include "../cmdfile/cmd_io.h"   // cmdfile::Cp932ToUtf8
@@ -144,7 +145,8 @@ void ScriptIndex::parse(const std::string& rel, FileData& fd, std::vector<Script
 	struct Open { std::string owner; int depth; };
 	std::vector<Open> owners;   // open slots / members whose block we are inside
 	int depth = 0;
-	ScriptDef* cmd = nullptr;
+	// index into `out`, never a pointer: later push_backs (functions inside the entry) reallocate it
+	size_t cmd = SIZE_MAX;
 	int cmdDepth = -1;
 	for (size_t li = 0; li < fd.code.size(); ++li) {
 		const std::string& c = fd.code[li];
@@ -198,16 +200,16 @@ void ScriptIndex::parse(const std::string& rel, FileData& fd, std::vector<Script
 			d.name = m[1].str(); d.owner = owner;
 			d.file = rel; d.line = (int)li; d.col = (int)m.position(1);
 			out.push_back(d);
-			cmd = &out.back();
+			cmd = out.size() - 1;
 			cmdDepth = depth;
 			pendingOwner = d.name;
 		} else if (std::regex_search(c, m, reMember) && c.find('{') != std::string::npos) {
 			pendingOwner = m[1].str();   // a nested table member: its functions belong to it
 		}
-		if (cmd) {
+		if (cmd != SIZE_MAX) {
 			// the Mv_ a command runs: UpdateTable = { name = "Mv_..." }
 			for (const auto& s : fd.strings)
-				if (s.line == (int)li && IsMvName(s.text) && cmd->value.empty() && c.find("name") != std::string::npos) cmd->value = s.text;
+				if (s.line == (int)li && IsMvName(s.text) && out[cmd].value.empty() && c.find("name") != std::string::npos) out[cmd].value = s.text;
 		}
 		for (size_t k = 0; k < c.size(); ++k) {
 			if (c[k] == '{') {
@@ -216,7 +218,7 @@ void ScriptIndex::parse(const std::string& rel, FileData& fd, std::vector<Script
 			} else if (c[k] == '}') {
 				while (!owners.empty() && owners.back().depth >= depth) owners.pop_back();
 				--depth;
-				if (cmd && depth <= cmdDepth) { cmd = nullptr; cmdDepth = -1; }
+				if (cmd != SIZE_MAX && depth <= cmdDepth) { cmd = SIZE_MAX; cmdDepth = -1; }
 			}
 		}
 		// "X <-" with its "{" on the next line (the vanilla move-table layout)
