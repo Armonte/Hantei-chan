@@ -87,7 +87,7 @@ bool PatTexSource::entry(int i, TexEntry &o) const {
 	const size_t need = pgtx ? 0 : (g.type == 1 || g.type == 5) ? (size_t)((g.w + 3) / 4) * ((g.h + 3) / 4) * (g.type == 5 ? 16 : 8) : (size_t)g.w * g.h * 4;
 	const bool known = kindOk && (pgtx || (g.imageData && (size_t)g.imageSize >= need));
 	o.present = g.w > 0 && (g.imageData || g.data) && known;   // a kind the loader does not read (UNIB DXT3) is listed, not editable
-	o.w = g.w; o.h = g.h; o.name = g.name.c_str(); o.format = known ? PatTextureFormat(m_p, i) : "unsupported kind";
+	o.w = g.w; o.h = g.h; o.name = g.name.c_str(); o.format = g.w <= 0 ? "empty" : known ? PatTextureFormat(m_p, i) : "unsupported kind";
 	return true;
 }
 

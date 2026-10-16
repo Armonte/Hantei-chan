@@ -1,0 +1,110 @@
+=== MBAACC
+SECTION cgm-bank: pass 72 fail 0 | images 48199 (undrawable 3593), decode==CG 44606, differ 0 | type-1:3593 type0:29647 type1:7411 type2:3833 type3:1369 type4:2346
+SECTION cgm-palette: pass 44 fail 0 | palettes checked 176 (raw exact, .act/.gpl/.png round trip, neutral recolour identity)
+SECTION texsrc-pat: pass 19 fail 0 | 39 items decoded, 39 PNG export -> import round trips with no byte changed, 19/19 containers byte-exact on parse -> serialize
+SECTION texsrc-cg: pass 6 fail 0 | 2586 items decoded, 96 PNG export -> import round trips with no byte changed, 6/6 containers byte-exact on parse -> serialize
+SECTION cgm-cc-palettes: pass 2 fail 0 | <charID>_<palNum>.png PLTE read back as PovertyCaster does, .pal grown past 36, bank layout
+=== UNIB
+SECTION cgm-bank: pass 30 fail 0 | images 10298 (undrawable 3), decode==CG 10295, differ 0 | type-1:3 type0:10295
+SECTION cgm-palette: pass 30 fail 0 | palettes checked 120 (raw exact, .act/.gpl/.png round trip, neutral recolour identity)
+FAIL D:\Games\unib\data\Hyd_0\hyd_ef00.pat: decode 0
+FAIL D:\Games\unib\data\Lin_0\lin_ef00.pat: decode 0
+FAIL D:\Games\unib\data\Lin_0\lin_ef00.pat: decode 1
+FAIL D:\Games\unib\data\Lin_0\lin_ef00.pat: decode 2
+FAIL D:\Games\unib\data\Ori_0\ori_ef00.pat: decode 0
+FAIL D:\Games\unib\data\Yuz_0\yuz_ef00.pat: decode 0
+SECTION texsrc-pat: pass 10 fail 4 | 63 items decoded, 63 PNG export -> import round trips with no byte changed, 14/14 containers byte-exact on parse -> serialize
+!! cgmtex check (.pat) exited 1
+SECTION texsrc-cg: pass 6 fail 0 | 2034 items decoded, 96 PNG export -> import round trips with no byte changed, 6/6 containers byte-exact on parse -> serialize
+=== UNI2
+SECTION cgm-bank: pass 98 fail 0 | images 32391 (undrawable 0), decode==CG 32391, differ 0 | type0:32391
+SECTION cgm-palette: pass 100 fail 0 | palettes checked 400 (raw exact, .act/.gpl/.png round trip, neutral recolour identity)
+SECTION texsrc-pat: pass 75 fail 0 | 124 items decoded, 124 PNG export -> import round trips with no byte changed, 75/75 containers byte-exact on parse -> serialize
+SECTION texsrc-cg: pass 6 fail 0 | 1484 items decoded, 71 PNG export -> import round trips with no byte changed, 6/6 containers byte-exact on parse -> serialize; 0 texture(s) of a kind the loader does not read (listed, not editable)
+SECTION cgm-palette-uni: pass 40 fail 0 | pair move/swap round trip, layout conversion, UNI single export, import of any index
+=== MBTL
+SECTION cgm-bank: pass 91 fail 0 | images 24845 (undrawable 0), decode==CG 24845, differ 0 | type0:24845
+SECTION cgm-palette: pass 110 fail 0 | palettes checked 440 (raw exact, .act/.gpl/.png round trip, neutral recolour identity)
+SECTION texsrc-pat: pass 71 fail 0 | 1117 items decoded, 275 PNG export -> import round trips with no byte changed, 71/71 containers byte-exact on parse -> serialize; 629 texture(s) of a kind the loader does not read (listed, not editable)
+SECTION texsrc-cg: pass 6 fail 0 | 1818 items decoded, 72 PNG export -> import round trips with no byte changed, 6/6 containers byte-exact on parse -> serialize; 0 texture(s) of a kind the loader does not read (listed, not editable)
+SECTION cgm-palette-uni: pass 40 fail 0 | pair move/swap round trip, layout conversion, UNI single export, import of any index
+=== MBAC
+SECTION cgm-bank: pass 50 fail 0 | images 26064 (undrawable 26), decode==CG 26038, differ 0 | type-1:26 type0:17706 type1:3060 type2:3503 type3:1557 type4:212
+SECTION texsrc-cg: pass 6 fail 0 | 4316 items decoded, 96 PNG export -> import round trips with no byte changed, 6/6 containers byte-exact on parse -> serialize; 0 texture(s) of a kind the loader does not read (listed, not editable)
+=== parallel sections: 74 jobs, 4 workers
+[MBAACC] SECTION cgm-roundtrip: pass 1 fail 0 | export->import unchanged identical; locality edits 3 ok 3
+[MBAACC] SECTION cgm-struct: pass 1 fail 0 | structural operations proven 12 (add/insert/delete round trip byte-identical, permute + inverse, move, unshare, delete owner, clear, duplicate; engine loader agrees)
+[MBAACC] SECTION cgm-roundtrip: pass 1 fail 0 | export->import unchanged identical; locality edits 1 ok 1
+[MBAACC] SECTION cgm-struct: pass 1 fail 0 | structural operations proven 10 (add/insert/delete round trip byte-identical, permute + inverse, move, unshare, delete owner, clear, duplicate; engine loader agrees)
+[MBAACC] SECTION cgm-roundtrip: pass 1 fail 0 | export->import unchanged identical; locality edits 1 ok 1
+[MBAACC] SECTION cgm-struct: pass 1 fail 0 | structural operations proven 10 (add/insert/delete round trip byte-identical, permute + inverse, move, unshare, delete owner, clear, duplicate; engine loader agrees)
+[MBAACC] SECTION cgm-roundtrip: pass 1 fail 0 | export->import unchanged identical; locality edits 1 ok 1
+[MBAACC] SECTION cgm-struct: pass 1 fail 0 | structural operations proven 10 (add/insert/delete round trip byte-identical, permute + inverse, move, unshare, delete owner, clear, duplicate; engine loader agrees)
+[MBAACC] SECTION cgm-roundtrip: pass 1 fail 0 | export->import unchanged identical; locality edits 3 ok 3
+[MBAACC] SECTION cgm-struct: pass 1 fail 0 | structural operations proven 12 (add/insert/delete round trip byte-identical, permute + inverse, move, unshare, delete owner, clear, duplicate; engine loader agrees)
+[MBAACC] SECTION cgm-roundtrip: pass 1 fail 0 | export->import unchanged identical; locality edits 3 ok 3
+[MBAACC] SECTION cgm-struct: pass 1 fail 0 | structural operations proven 10 (add/insert/delete round trip byte-identical, permute + inverse, move, unshare, delete owner, clear, duplicate; engine loader agrees)
+[MBAACC] SECTION cgm-project-refs: pass | akiha.cg: 5 projects, 9 files (9 rewritable), 12297 layer refs: 12296 same picture, 1 cleared (deleted image 1028); 9 files rewritten; inverse byte-identical 8/8
+[MBAACC] SECTION cgm-project-refs: pass | neco.cg: 8 projects, 16 files (16 rewritable), 6523 layer refs: 6522 same picture, 1 cleared (deleted image 66); 12 files rewritten; inverse byte-identical 15/15
+[MBAACC] SECTION cgm-folder: pass | akiha.cg: 1424 drawable; cgtool export -> plain import / sync identical; sync delete+add+rename; build from folder 1424/1424 images identical; resized replace anchored
+[UNIB] SECTION cgm-roundtrip: pass 1 fail 0 | export->import unchanged identical; locality edits 1 ok 1
+[UNIB] SECTION cgm-struct: pass 1 fail 0 | structural operations proven 10 (add/insert/delete round trip byte-identical, permute + inverse, move, unshare, delete owner, clear, duplicate; engine loader agrees)
+[UNIB] SECTION cgm-roundtrip: pass 1 fail 0 | export->import unchanged identical; locality edits 1 ok 1
+[UNIB] SECTION cgm-struct: pass 1 fail 0 | structural operations proven 10 (add/insert/delete round trip byte-identical, permute + inverse, move, unshare, delete owner, clear, duplicate; engine loader agrees)
+[UNIB] SECTION cgm-roundtrip: pass 1 fail 0 | export->import unchanged identical; locality edits 1 ok 1
+[UNIB] SECTION cgm-struct: pass 1 fail 0 | structural operations proven 10 (add/insert/delete round trip byte-identical, permute + inverse, move, unshare, delete owner, clear, duplicate; engine loader agrees)
+[UNIB] SECTION cgm-roundtrip: pass 1 fail 0 | export->import unchanged identical; locality edits 1 ok 1
+[UNIB] SECTION cgm-struct: pass 1 fail 0 | structural operations proven 10 (add/insert/delete round trip byte-identical, permute + inverse, move, unshare, delete owner, clear, duplicate; engine loader agrees)
+[UNIB] SECTION cgm-roundtrip: pass 1 fail 0 | export->import unchanged identical; locality edits 1 ok 1
+[UNIB] SECTION cgm-struct: pass 1 fail 0 | structural operations proven 10 (add/insert/delete round trip byte-identical, permute + inverse, move, unshare, delete owner, clear, duplicate; engine loader agrees)
+[UNIB] SECTION cgm-roundtrip: pass 1 fail 0 | export->import unchanged identical; locality edits 1 ok 1
+[UNIB] SECTION cgm-struct: pass 1 fail 0 | structural operations proven 10 (add/insert/delete round trip byte-identical, permute + inverse, move, unshare, delete owner, clear, duplicate; engine loader agrees)
+[UNIB] SECTION cgm-project-refs: pass | Hyd.cg: 1 projects, 5 files (4 rewritable), 1813 layer refs: 1812 same picture, 1 cleared (deleted image 26); 3 files rewritten; inverse byte-identical 4/4
+[UNIB] SECTION cgm-folder: pass | Hyd.cg: 677 drawable; cgtool export -> plain import / sync identical; sync delete+add+rename; build from folder 677/677 images identical; resized replace anchored
+[UNI2] SECTION cgm-roundtrip: pass 1 fail 0 | export->import unchanged identical; locality edits 1 ok 1
+[UNI2] SECTION cgm-struct: pass 1 fail 0 | structural operations proven 8 (add/insert/delete round trip byte-identical, permute + inverse, move, unshare, delete owner, clear, duplicate; engine loader agrees)
+[UNI2] SECTION cgm-roundtrip: pass 1 fail 0 | export->import unchanged identical; locality edits 1 ok 1
+[UNI2] SECTION cgm-struct: pass 1 fail 0 | structural operations proven 8 (add/insert/delete round trip byte-identical, permute + inverse, move, unshare, delete owner, clear, duplicate; engine loader agrees)
+[UNI2] SECTION cgm-roundtrip: pass 1 fail 0 | export->import unchanged identical; locality edits 1 ok 1
+[UNI2] SECTION cgm-struct: pass 1 fail 0 | structural operations proven 10 (add/insert/delete round trip byte-identical, permute + inverse, move, unshare, delete owner, clear, duplicate; engine loader agrees)
+[UNI2] SECTION cgm-roundtrip: pass 1 fail 0 | export->import unchanged identical; locality edits 1 ok 1
+[UNI2] SECTION cgm-struct: pass 1 fail 0 | structural operations proven 10 (add/insert/delete round trip byte-identical, permute + inverse, move, unshare, delete owner, clear, duplicate; engine loader agrees)
+[UNI2] SECTION cgm-roundtrip: pass 1 fail 0 | export->import unchanged identical; locality edits 1 ok 1
+[UNI2] SECTION cgm-struct: pass 1 fail 0 | structural operations proven 10 (add/insert/delete round trip byte-identical, permute + inverse, move, unshare, delete owner, clear, duplicate; engine loader agrees)
+[UNI2] SECTION cgm-roundtrip: pass 1 fail 0 | export->import unchanged identical; locality edits 1 ok 1
+[UNI2] SECTION cgm-struct: pass 1 fail 0 | structural operations proven 10 (add/insert/delete round trip byte-identical, permute + inverse, move, unshare, delete owner, clear, duplicate; engine loader agrees)
+[UNI2] SECTION cgm-project-refs: pass | chr000.cg: 1 projects, 3 files (2 rewritable), 1756 layer refs: 1755 same picture, 1 cleared (deleted image 0); 2 files rewritten; inverse byte-identical 2/2
+[UNI2] SECTION cgm-project-refs: pass | chr006.cg: 1 projects, 3 files (2 rewritable), 3036 layer refs: 3035 same picture, 1 cleared (deleted image 1); 2 files rewritten; inverse byte-identical 2/2
+[UNI2] SECTION cgm-folder: pass | chr000.cg: 679 drawable; cgtool export -> plain import / sync identical; sync delete+add+rename; build from folder 679/679 images identical; resized replace anchored
+[MBTL] SECTION cgm-roundtrip: pass 1 fail 0 | export->import unchanged identical; locality edits 1 ok 1
+[MBTL] SECTION cgm-struct: pass 1 fail 0 | structural operations proven 8 (add/insert/delete round trip byte-identical, permute + inverse, move, unshare, delete owner, clear, duplicate; engine loader agrees)
+[MBTL] SECTION cgm-roundtrip: pass 1 fail 0 | export->import unchanged identical; locality edits 1 ok 1
+[MBTL] SECTION cgm-struct: pass 1 fail 0 | structural operations proven 8 (add/insert/delete round trip byte-identical, permute + inverse, move, unshare, delete owner, clear, duplicate; engine loader agrees)
+[MBTL] SECTION cgm-roundtrip: pass 1 fail 0 | export->import unchanged identical; locality edits 1 ok 1
+[MBTL] SECTION cgm-struct: pass 1 fail 0 | structural operations proven 10 (add/insert/delete round trip byte-identical, permute + inverse, move, unshare, delete owner, clear, duplicate; engine loader agrees)
+[MBTL] SECTION cgm-roundtrip: pass 1 fail 0 | export->import unchanged identical; locality edits 1 ok 1
+[MBTL] SECTION cgm-struct: pass 1 fail 0 | structural operations proven 10 (add/insert/delete round trip byte-identical, permute + inverse, move, unshare, delete owner, clear, duplicate; engine loader agrees)
+[MBTL] SECTION cgm-roundtrip: pass 1 fail 0 | export->import unchanged identical; locality edits 1 ok 1
+[MBTL] SECTION cgm-struct: pass 1 fail 0 | structural operations proven 10 (add/insert/delete round trip byte-identical, permute + inverse, move, unshare, delete owner, clear, duplicate; engine loader agrees)
+[MBTL] SECTION cgm-roundtrip: pass 1 fail 0 | export->import unchanged identical; locality edits 1 ok 1
+[MBTL] SECTION cgm-struct: pass 1 fail 0 | structural operations proven 10 (add/insert/delete round trip byte-identical, permute + inverse, move, unshare, delete owner, clear, duplicate; engine loader agrees)
+[MBTL] SECTION cgm-project-refs: pass | chr000.cg: 4 projects, 5 files (4 rewritable), 2540 layer refs: 2539 same picture, 1 cleared (deleted image 63); 4 files rewritten; inverse byte-identical 4/4
+[MBTL] SECTION cgm-project-refs: pass | chr011.cg: 2 projects, 4 files (3 rewritable), 2501 layer refs: 2500 same picture, 1 cleared (deleted image 0); 3 files rewritten; inverse byte-identical 3/3
+[MBTL] SECTION cgm-folder: pass | chr000.cg: 601 drawable; cgtool export -> plain import / sync identical; sync delete+add+rename; build from folder 601/601 images identical; resized replace anchored
+[MBAC] SECTION cgm-roundtrip: pass 1 fail 0 | export->import unchanged identical; locality edits 3 ok 3
+[MBAC] SECTION cgm-struct: pass 1 fail 0 | structural operations proven 10 (add/insert/delete round trip byte-identical, permute + inverse, move, unshare, delete owner, clear, duplicate; engine loader agrees)
+[MBAC] SECTION cgm-roundtrip: pass 1 fail 0 | export->import unchanged identical; locality edits 1 ok 1
+[MBAC] SECTION cgm-struct: pass 1 fail 0 | structural operations proven 10 (add/insert/delete round trip byte-identical, permute + inverse, move, unshare, delete owner, clear, duplicate; engine loader agrees)
+[MBAC] SECTION cgm-roundtrip: pass 1 fail 0 | export->import unchanged identical; locality edits 1 ok 1
+[MBAC] SECTION cgm-struct: pass 1 fail 0 | structural operations proven 10 (add/insert/delete round trip byte-identical, permute + inverse, move, unshare, delete owner, clear, duplicate; engine loader agrees)
+[MBAC] SECTION cgm-roundtrip: pass 1 fail 0 | export->import unchanged identical; locality edits 3 ok 3
+[MBAC] SECTION cgm-struct: pass 1 fail 0 | structural operations proven 10 (add/insert/delete round trip byte-identical, permute + inverse, move, unshare, delete owner, clear, duplicate; engine loader agrees)
+[MBAC] SECTION cgm-roundtrip: pass 1 fail 0 | export->import unchanged identical; locality edits 3 ok 3
+[MBAC] SECTION cgm-struct: pass 1 fail 0 | structural operations proven 10 (add/insert/delete round trip byte-identical, permute + inverse, move, unshare, delete owner, clear, duplicate; engine loader agrees)
+[MBAC] SECTION cgm-roundtrip: pass 1 fail 0 | export->import unchanged identical; locality edits 3 ok 3
+[MBAC] SECTION cgm-struct: pass 1 fail 0 | structural operations proven 10 (add/insert/delete round trip byte-identical, permute + inverse, move, unshare, delete owner, clear, duplicate; engine loader agrees)
+[MBAC] SECTION cgm-struct: pass 1 fail 0 | structural operations proven 10 (add/insert/delete round trip byte-identical, permute + inverse, move, unshare, delete owner, clear, duplicate; engine loader agrees)
+[MBAC] SECTION cgm-roundtrip: pass 1 fail 0 | export->import unchanged identical; locality edits 2 ok 2
+[MBAC] SECTION cgm-folder: pass | GAKIHA.DAT: 45 drawable; cgtool export -> plain import / sync identical; sync delete+add+rename; build from folder 45/45 images identical; resized replace anchored
+SECTION cgio pass 1 fail 0 skipped 0
+EXIT 1
