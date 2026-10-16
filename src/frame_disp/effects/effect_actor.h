@@ -1,5 +1,6 @@
 #ifndef EFFECT_ACTOR_H_GUARD
 #include "../../i18n.h"
+#include "../../ui/ui_style.h"
 #define EFFECT_ACTOR_H_GUARD
 
 // ============================================================================
@@ -13,7 +14,7 @@ static inline void DrawEffectActor_Type8(Frame_EF& effect, FrameData* frameData,
 {
 	int* p = effect.parameters;
 	int& no = effect.number;
-	constexpr float width = 75.f;
+	const float width = ui::Px(75.f);   // follows the font size (ui_style.h)
 
 
 			const char* const actorTypes[] = {

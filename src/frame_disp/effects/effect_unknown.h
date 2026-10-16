@@ -17,7 +17,7 @@ static inline void DrawEffectUnknown(Frame_EF& effect, FrameData* frameData, int
 {
 	int* p = effect.parameters;
 	int& no = effect.number;
-	constexpr float width = 75.f;
+	const float width = ui::Px(75.f);   // follows the font size (ui_style.h)
 
 	switch(effect.type) {
 		case 7: // System effect

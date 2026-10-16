@@ -22,7 +22,7 @@ static inline void DrawEffectSpawn_Type1_101(Frame_EF& effect, FrameData* frameD
 {
 	int* p = effect.parameters;
 	int& no = effect.number;
-	constexpr float width = 75.f;
+	const float width = ui::Px(75.f);   // follows the font size (ui_style.h)
 
 	// Check if this is a relative spawn (Type 101)
 	bool isRelative = (effect.type == 101);
@@ -202,7 +202,7 @@ static inline void DrawEffectSpawn_Type11_111(Frame_EF& effect, FrameData* frame
 {
 	int* p = effect.parameters;
 	int& no = effect.number;
-	constexpr float width = 75.f;
+	const float width = ui::Px(75.f);   // follows the font size (ui_style.h)
 
 	// Check if this is a relative spawn (Type 111)
 	bool isRelative = (effect.type == 111);
