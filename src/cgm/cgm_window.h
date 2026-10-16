@@ -105,6 +105,8 @@ private:
 	void drawTextures(CharacterInstance &ch, const WindowHost &host);
 	bool texReplace(CharacterInstance &ch, int kind, int id, const std::string &file, bool pngOnly, const WindowHost &host);
 	bool texSave(CharacterInstance &ch, int kind, const std::string &game, std::string &report);
+	// UNI2 / MBTL: where <srcPath> goes in <game folder>\<IM>\Mods ("" when the detected game has no mod folder or the file is not under data\)
+	std::string modFolderDst(CharacterInstance &ch, const std::string &srcPath, bool *usesModFolder = nullptr);
 	History hist;
 	std::string status;
 	std::vector<std::string> warnings;
