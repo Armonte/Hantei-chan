@@ -1347,8 +1347,8 @@ floor-strip statistics on the existing round-19 `_sa` captures. The `v2_round19.
     state that pattern 157 sets up outside P1's drawn frame, such as an effect object or a light it spawns. The plate
     hide covers only P1 and P2, not effect objects.
   - The term roughly halves after one F6 tick (blue +1.11 → +0.60). It does not vanish outright. So it is
-    tick-driven state that decays as the move advances. It is not a last-frame draw list (the RT list is refilled on
-    every draw pass, and b0 is taken after 8 draw-only frames) and not the hide flag.
+    tick-driven state that decays as the move advances. It is not a stale draw list: b0 is taken after 8 draw-only frames, and the shadow pass is
+    issued by `Object_DrawWithStageShadow` on each draw pass. It is not the hide flag either.
   - Not traced: which object or light pattern 157 spawns. The probe, if it is ever needed, is one gamecap peek of
     `g_ObjectListCount` and the effect entries at `plate_b0` against `plate_bb`. No run was made: the verdict below does
     not depend on it.
