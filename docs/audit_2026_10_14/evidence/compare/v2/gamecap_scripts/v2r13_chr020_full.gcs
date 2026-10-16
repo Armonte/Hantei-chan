@@ -1,0 +1,19 @@
+# render-match13 round 13 (2026-10-15): pras chr020 p5f2 recaptured unmodified in the same harness/session style as the
+# set-991 solo shots (v2r13_chr020_solo_*.gcs), to compare the full frame against a fresh capture (the r3 one is from round 3).
+include ../games/uni2.gcs
+let P1CHR 20
+let P2CHR 0
+include ../games/uni2_to_training.gcs
+set OUTD C:\dev\hantei-chan\tools\gamecap\captures\v2
+hold f32 [P1+0x8C0]+0x40 0
+hold f32 [P1+0x8C0]+0x44 0
+hold f32 [P1+0x8C0]+0x48 0
+step 3
+set CASE pras_chr020_p5f2_r13
+set PAT 5
+set SETFRAME 2
+set FRAME 2
+set GTICK 1
+set STEPKEYS F6
+include ../games/uni2_v2_case_aura_plate.gcs
+quit
