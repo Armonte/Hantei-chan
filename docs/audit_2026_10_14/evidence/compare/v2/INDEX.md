@@ -1205,9 +1205,57 @@ No editor (C++) change. Numbers: `tools/uni/s1_compare/v2_round19.sh` (log `roun
 | mbtl_flipV solo s456 _z1 | 0.72 (`_stbb`) | **0.60** (`_sa`, plate_b0); 0.72 window plate | thin-line arcs; below the round-10 0.75 |
 | mbtl_patctrl_chr001_p238f10_z1 | 0.23 | 0.23 (all plates) | floor: s18 8-bit blend rounding (round 17) |
 | mbtl_patctrl_chr001_p277f0_z1 | 0.00 | 0.00 | pixel-exact |
-| mbtl_patctrl_chr001_p238f10 (editor 1.5) | 1.67 | 1.67 | 1.5×→1× resample of the editor shot; game at zoom 1 |
+| ~~mbtl_patctrl_chr001_p238f10 (editor 1.5)~~ | 1.67 | 1.67 | **retired in round 20**: 1.5×→1× resample of the editor shot, game at zoom 1 (see round 20) |
 
 ### Next
 - MBTL stage rows: report `_sa` + plate_b0 (or recapture the plate before any tick). Optional: trace the
   ShadowLightType → draw mode 0x65 link and the one-tick shadow lag.
 - Retire the MBTL "zoom 1.5" rows, or capture a real zoomed game frame (camera zoom ≠ 1) to test the D3D9 rule.
+
+## Round 20 / render-match20 (2026-10-16): real camera zoom 1.5 captures; the fake zoom-1.5 rows are retired
+No editor (C++) change. Numbers: `tools/uni/s1_compare/v2_round20.sh` (log `round20/round20.log`). Full ctest exit 0.
+Gamecap case `tools/gamecap/cases/v2r20_mbtl_chr001_zoom15.gcs` (copy + run log in `round20/`), suffix `_z15sa`.
+
+### MBTL battle camera zoom (MBTL IDB, renamed and saved)
+- `g_CameraElements` 0xCABA90 is four 0x18-byte elements (+8 x, +0xC y, +0x14 zoom). `CBtlCamera_Update` 0x50B7F0
+  (called each battle tick by `CBtlCamera_TickGatherObjectsAndUpdate` 0x508020, skipped on training-update /
+  battle-pause) eases elem1's zoom `g_CamElem1_Zoom` 0xCABABC (sidecar `cam_f32[11]`) toward the half width that
+  `g_CamElem2_ZoomTarget` 0xCABAD4 asks for (81920 / z), copies elem1 into elem0 (`g_CamElem0_RenderZoom` 0xCABAA4),
+  applies the effect-camera lerps, then calls `CBtlCamera_UpdateMatrices` 0x509240. The matrices use
+  elem0 zoom × `g_CamElem3_ZoomMul` 0xCABAEC (eye distance ∝ 1 / zoom: a dolly, not a viewport scale).
+- The case holds all three zooms (elem0, elem1, elem2) at 1.5, so the ease has nothing to do and the tick's matrices
+  see 1.5. MBTL-IM's pause only suppresses ticks, so the matrices refresh on the case's F6 step. Every shot: zoom0
+  1.5 before and after, stage anime 0 (run log). Sidecars: `cam_f32[5]` = `cam_f32[11]` = 1.5.
+- Side finding: `BtlCamera_IsZoomedIn` 0x58E590 and `Han6Object_Draw` pass `elem0 zoom > 1.0` as a byte into
+  `Stage_BuildCharaBgColorParams` 0x58E230's param block (+4, read via the draw context +0x84 by
+  `Han6Draw_DrawLayer`). Its consumer is not traced. The texture filter is not it: `D3D_SetTexFilterFromTable`
+  0x48CD20 sets MAG/MIN from the part's PRFL only.
+
+### Numbers (editor zoom 1.5 vs game, plate_b0, `--subpix 0,0`, refine found +0,+0 on all three)
+| case | round 19 (fake: editor 1.5 → game zoom 1) | **round 20 (real game zoom 1.5)** | band ±1 (r19 → r20) |
+|---|---|---|---|
+| mbtl_patctrl_chr001_p238f10 | 1.67 | **3.12** | 0.56 → **0.27** |
+| mbtl_patctrl_chr001_p277f0 | 1.24 | **3.50** | 0.39 → **0.03** |
+| mbtl_flipV_chr001_p157f2 | 4.52 | **8.22** | 1.95 → 1.87 |
+The raw mean is higher because the real 1.5× shot is compared at full resolution (no box filter averaging the edges
+away; 1.8–2.3× more pixels in the footprint). The band ±1 numbers fall: on p277 everything but 0.03 is a 1-px edge.
+
+### What remains: 1-px texel-edge lines (sheets `round20/*_z15sa_sheet.png`: game, model, |diff|)
+- The residual is thin lines along part edges and along texel boundaries inside parts (p277 chair rungs/slats).
+  That is the signature of point sampling under magnification: at 1.5× each texel covers 1.5 screen px, so texels
+  land on 2, 1, 2, 1… pixels, and which pixel gets the extra texel depends on where the pixel is sampled.
+- The plain D3D9 pixel-centre rule (no −0.5 term, pixel i shaded at screen i, round 19) predicts a uniform half-pixel
+  shift against a GL raster. Tested as a prediction, not a fit: `--subpix -0.5,-0.5` → p238 3.95, p277 5.40, p157 7.40;
+  `0.5,0.5` → 4.71 / 5.00 / 9.17. Both are worse than 0,0 on the controls (p238 / p277), so the residual is not a
+  uniform half-pixel offset. p157 prefers y −0.5 (5.38) while the controls do not, so no single offset explains all
+  three; nothing was fitted.
+- Not traced yet: where each part's vertices land in sub-pixel terms at 1.5× (Han6Object_Draw floors the object
+  position to whole sprite px, then the 1.5× dolly puts that origin on a 1.5-px grid, so the texel phase alternates
+  with the object x), versus the editor's quad placement at 1.5×. That per-part phase, not a global shift, is the next
+  thing to model from IDA. p157's PRRV thin-line arcs add on top (as at zoom 1, round 10).
+
+### Retired: the MBTL "zoom 1.5" rows of rounds 4–19
+The rows `mbtl_patctrl_chr001_p238f10` / `p277f0` / `mbtl_flipV_chr001_p157f2` measured against a zoom-1 game shot
+(sidecar `cam_f32[11]` = 1) box-downsampled the editor's 1.5× raster to 1× (sheet `sc = 0.667`). They measured the
+resample, not MBTL, which is how p238 sat at 1.67 while its z1 row was 0.23. They are retired: zoom-1 parity is the
+`_z1` rows, zoom-1.5 parity is the `_z15sa` rows above.
