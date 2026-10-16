@@ -1,5 +1,5 @@
 #!/bin/bash
-# In-game before/after shots for docs/showcase_2026-10-16/ingame: fbmod [boot] training (P1 = the edited character), an idle
+# In-game before/after shots for docs/showcase_2026-10-16/ingame: fpan-im [boot] training (P1 = the edited character), an idle
 # shot, then a 236+button special (gamecap pad only, no global input) shot every few frames. The edited files (any number,
 # none = vanilla "before" run) are installed in <game>\<IM>\Mods\<key> only inside gamecap's game lock and restored before it
 # is released (cgmtex modsave / modrestore, as tools/cg/ingame_modfolder_boot.sh).
@@ -8,15 +8,15 @@
 set -u
 G="$1"; EV="$2"; BTN="$3"; shift 3; PAIRS=("$@"); P1=3; P2=5
 HERE="$(cd "$(dirname "$0")" && pwd)"; ROOT="$(cd "$HERE/../.." && pwd)"; TX="$ROOT/build/cgmtex.exe"
-FB=/mnt/c/dev/fbmod; GC=/mnt/c/dev/hantei-chan/tools/gamecap; LOCK=/tmp/claude-1000/game_session.lock
+FB=/mnt/c/dev/fpan-im; GC=/mnt/c/dev/hantei-chan/tools/gamecap; LOCK=/tmp/claude-1000/game_session.lock
 case "$G" in
 uni2) GAMEDIR='C:\Program Files (x86)\Steam\steamapps\common\UNDER NIGHT IN-BIRTH II Sys Celes';;
 mbtl) GAMEDIR='C:\Program Files (x86)\Steam\steamapps\common\MELTY BLOOD TYPE LUMINA';;
 *) echo "game: uni2 | mbtl"; exit 2;;
 esac
 CEV=/mnt/c/dev/hantei-chan/work/showcase_ev_$G; rm -rf "$CEV"; mkdir -p "$CEV" "$EV" "$FB/build/inject"
-cp "$FB/build/bin/fbmod.dll" "$FB/build/inject/fbmod.dll"
-python3 - "$FB/build/inject/fbmod.ini" "$P1" "$P2" <<'PY'
+cp "$FB/build/bin/fpan-im.dll" "$FB/build/inject/fpan-im.dll"
+python3 - "$FB/build/inject/fpan-im.ini" "$P1" "$P2" <<'PY'
 import os, re, sys
 p, p1, p2 = sys.argv[1:]
 lines = open(p).read().splitlines() if os.path.exists(p) else []
@@ -32,7 +32,7 @@ i = [l.strip().lower() for l in out].index("[boot]")
 out[i + 1:i + 1] = ["%s = %s" % kv for kv in want.items()]
 open(p, "w").write("\n".join(out) + "\n")
 PY
-CASE="$FB/tests/ingame/fbmod_${G}_boot_training.gcs"; TMPCASE="$FB/tests/ingame/.run_showcase_$(basename "$CASE")"
+CASE="$FB/tests/ingame/fpanim_${G}_boot_training.gcs"; TMPCASE="$FB/tests/ingame/.run_showcase_$(basename "$CASE")"
 EVW="$(wslpath -w "$CEV" | sed 's/\\/\\\\/g')"
 { sed -e "s/^let P1CHR .*/let P1CHR $P1/" -e "s/^let P2CHR .*/let P2CHR $P2/" -e "s|^let EV .*|let EV $EVW|" "$CASE" | sed '/^capture .*boot_battle/,$d'
   echo 'wait_frames 60'; echo 'capture ${EV}\idle.png'; echo 'wait_frames 7'; echo 'capture ${EV}\idle_b.png'

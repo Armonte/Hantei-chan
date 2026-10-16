@@ -1,4 +1,4 @@
-# UNI2 / MBTL hot reload (the Squirrel panel's Hot reload row: game folder, fbmod pipe, Ping, Reload mode). No game is launched.
+# UNI2 / MBTL hot reload (the Squirrel panel's Hot reload row: game folder, fpan-im pipe, Ping, Reload mode). No game is launched.
 openany C:/games/UNI2/data/chr020/chr020_0.txt
 wait 60
 sq open C:/games/UNI2

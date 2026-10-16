@@ -6,7 +6,7 @@
 #include "script_index.h"
 #include "ptcn_stack.h"
 #include "script_vm.h"
-#include "fbmod_link.h"
+#include "fpanim_link.h"
 
 #include "../app_log.h"
 #include "../i18n.h"
@@ -268,7 +268,7 @@ struct ScriptPanel::Impl {
 	bool outlineDirty = true;
 	std::string outlineFilter;
 
-	// Hot reload through the fbmod in-game pipe (fbmod_link.h). Pipe calls run on a worker (a reload reply waits for the
+	// Hot reload through the fpan-im in-game pipe (fpanim_link.h). Pipe calls run on a worker (a reload reply waits for the
 	// next battle frame); the UI polls hotJob each frame. A save while a job runs replaces hotPending (latest wins).
 	struct HotTask {
 		bool reload = false;   // false: ping only
@@ -280,7 +280,7 @@ struct ScriptPanel::Impl {
 		bool ok = false;
 		std::string text;
 		bool reload = false;      // a reloadchara reply (info is valid)
-		FbmodReloadInfo info;
+		FpanimReloadInfo info;
 		std::string chr;
 	};
 	std::future<HotResult> hotJob;
@@ -289,7 +289,7 @@ struct ScriptPanel::Impl {
 	std::string hotStatus;
 	bool hotStatusOk = false;
 	bool hotHasInfo = false;            // hotInfo/hotChr describe the last reloadchara reply
-	FbmodReloadInfo hotInfo;
+	FpanimReloadInfo hotInfo;
 	std::string hotChr;
 	std::string hotPipe, hotPipeGame;   // pipe name; reset to the profile's default when the profile changes
 	std::string hotGameDirOther;        // game folder for profiles without a saved setting
@@ -307,14 +307,14 @@ struct ScriptPanel::Impl {
 
 	static HotResult RunHotTask(const HotTask& t)
 	{
-		const FbmodReply ping = FbmodRequest(t.pipe, "ping", 3000);
-		if (!ping.connected) return {false, "game not running (no fbmod pipe)"};
+		const FpanimReply ping = FpanimRequest(t.pipe, "ping", 3000);
+		if (!ping.connected) return {false, "game not running (no fpan-im pipe)"};
 		if (!ping.ok) return {false, "ping: " + ping.text};
 		if (!t.reload) return {true, ping.text};
-		std::string mods = FbmodModsDir(ping.text);
-		if (mods.empty()) mods = ToU8(U8(t.gameDir) / "fbmod" / "mods");
-		// The file goes to the same game-relative path under the mods folder (fbmod's VFS serves it from there).
-		const std::string dstU8 = FbmodModsTarget(mods, t.rel);
+		std::string mods = FpanimModsDir(ping.text);
+		if (mods.empty()) mods = ToU8(U8(t.gameDir) / "fpan-im" / "mods");
+		// The file goes to the same game-relative path under the mods folder (fpan-im's VFS serves it from there).
+		const std::string dstU8 = FpanimModsTarget(mods, t.rel);
 		if (dstU8.empty()) return {false, "not a game-relative path: " + t.rel};
 		const fs::path dst = U8(dstU8);
 		std::error_code ec;
@@ -323,13 +323,13 @@ struct ScriptPanel::Impl {
 		fs::copy_file(U8(t.srcFile), dst, fs::copy_options::overwrite_existing, ec);
 		if (ec) return {false, "cannot copy to " + ToU8(dst) + ": " + ec.message()};
 		HC_LOG_INFO("[script] hot reload: copied {} to {}", t.srcFile, ToU8(dst));
-		// Engine rebuild: fbmod waits up to 120 s for the training battle to tick again; live: up to 30 s.
-		const std::string req = t.shared ? FbmodStdReloadRequest(t.live) : FbmodReloadRequest(t.chr, t.live);
-		const FbmodReply r = FbmodRequest(t.pipe, req, t.live ? 35000 : 130000);
-		if (!r.connected) return {false, "game not running (no fbmod pipe)"};
+		// Engine rebuild: fpan-im waits up to 120 s for the training battle to tick again; live: up to 30 s.
+		const std::string req = t.shared ? FpanimStdReloadRequest(t.live) : FpanimReloadRequest(t.chr, t.live);
+		const FpanimReply r = FpanimRequest(t.pipe, req, t.live ? 35000 : 130000);
+		if (!r.connected) return {false, "game not running (no fpan-im pipe)"};
 		HotResult out{r.ok, r.text};
 		out.reload = true;
-		out.info = FbmodParseReloadReply(r.text);
+		out.info = FpanimParseReloadReply(r.text);
 		out.chr = t.chr;
 		return out;
 	}
@@ -365,7 +365,7 @@ struct ScriptPanel::Impl {
 		static const std::regex re(R"(^data/(chr\d+)/([^/]+)$)");
 		std::smatch mm;
 		HotTask t;
-		t.shared = FbmodIsSharedFile(currentRel);
+		t.shared = FpanimIsSharedFile(currentRel);
 		if (!t.shared && !std::regex_match(currentRel, mm, re)) {
 			hotStatus = "not a data/chrNNN or shared script/data file: not reloaded";
 			hotStatusOk = false;
@@ -386,9 +386,9 @@ struct ScriptPanel::Impl {
 	void drawHotReload()
 	{
 		pollHot();
-		if (hotPipeGame != game || hotPipe.empty()) { hotPipeGame = game; hotPipe = FbmodPipeForGame(game); }
+		if (hotPipeGame != game || hotPipe.empty()) { hotPipeGame = game; hotPipe = FpanimPipeForGame(game); }
 		if (ImGui::Checkbox(LBL("Hot reload"), &gSettings.sqHotReload)) ImGui::MarkIniSettingsDirty();
-		if (ImGui::IsItemHovered()) ImGui::SetTooltip("%s", TXT("On save, copy the file into the game's fbmod mods folder and reload it in the running game (fbmod pipe). A data/chrNNN file reloads that character; a shared file (script/*.txt, data/_combase, VectorTable, BattleInfo, BoundEff) re-runs the shared battle scripts and tables, then reloads every character."));
+		if (ImGui::IsItemHovered()) ImGui::SetTooltip("%s", TXT("On save, copy the file into the game's fpan-im mods folder and reload it in the running game (fpan-im pipe). A data/chrNNN file reloads that character; a shared file (script/*.txt, data/_combase, VectorTable, BattleInfo, BoundEff) re-runs the shared battle scripts and tables, then reloads every character."));
 		if (!gSettings.sqHotReload) return;
 		// The row wraps before an item that no longer fits (1280, Japanese labels) instead of clipping it.
 		ui::SameLineField(ui::Px(320), LBL("Game folder"));
@@ -399,7 +399,7 @@ struct ScriptPanel::Impl {
 			hotGameDirSetting() = buf == DefaultGameDir(game) ? std::string() : std::string(buf);
 			ImGui::MarkIniSettingsDirty();
 		}
-		if (ImGui::IsItemHovered()) ImGui::SetTooltip("%s", TXT("Install folder of the game. Used for fbmod\\mods when the game's ping reply does not name the mods folder."));
+		if (ImGui::IsItemHovered()) ImGui::SetTooltip("%s", TXT("Install folder of the game. Used for fpan-im\\mods when the game's ping reply does not name the mods folder."));
 		ui::SameLineField(ui::Px(130) + ImGui::GetFrameHeight(), LBL("Pipe"));
 		char pbuf[128];
 		snprintf(pbuf, sizeof pbuf, "%s", hotPipe.c_str());
@@ -407,7 +407,7 @@ struct ScriptPanel::Impl {
 		if (ImGui::InputText("##hotpipe", pbuf, sizeof pbuf)) hotPipe = pbuf;
 		ImGui::SameLine(0, 0);
 		if (ImGui::BeginCombo(LBL("Pipe"), nullptr, ImGuiComboFlags_NoPreview)) {
-			for (const char* p : {"fbmod-uni2", "fbmod-mbtl"})
+			for (const char* p : {"fpan-im-uni2", "fpan-im-mbtl"})
 				if (ImGui::Selectable(p, hotPipe == p)) hotPipe = p;
 			ImGui::EndCombo();
 		}
@@ -449,7 +449,7 @@ struct ScriptPanel::Impl {
 			}
 		} else snprintf(line, sizeof line, "%s", i18n::TrDetail(hotStatus).c_str());
 		ImGui::TextColored(ok ? ScriptCol() : ErrCol(), "%s", line);
-		if (hotHasInfo && ImGui::IsItemHovered()) ImGui::SetTooltip("%s", hotStatus.c_str());   // the raw fbmod reply
+		if (hotHasInfo && ImGui::IsItemHovered()) ImGui::SetTooltip("%s", hotStatus.c_str());   // the raw fpan-im reply
 	}
 
 	void buildOutline()
@@ -1536,7 +1536,7 @@ bool ScriptPanel::scriptCommand(const std::string& sub, const std::string& arg, 
 			out = std::string("mode ") + (gSettings.sqHotReloadMode == 1 ? "live" : "rebuild");
 		}
 		else if (verb == "gamedir") { if (!rest.empty()) m->hotGameDirSetting() = rest; out = "game dir " + m->hotGameDir(); }
-		else if (verb == "ping") { Impl::HotTask t; t.pipe = m->hotPipe.empty() ? FbmodPipeForGame(m->game) : m->hotPipe; m->startHot(t); out = "ping " + t.pipe; }
+		else if (verb == "ping") { Impl::HotTask t; t.pipe = m->hotPipe.empty() ? FpanimPipeForGame(m->game) : m->hotPipe; m->startHot(t); out = "ping " + t.pipe; }
 		else out = std::string(m->hotBusy ? "busy: " : "") + (m->hotStatusOk ? "ok: " : "error: ") + m->hotStatus;
 	}
 	else if (sub == "problems") {
