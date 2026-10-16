@@ -895,7 +895,11 @@ void Window::draw(CharacterInstance *ch, const WindowHost &host) {
 	if (!open) return;
 	ui::FitNextWindow(1200, 820);
 	if (!ImGui::Begin(LBL("CG manager"), &open)) { ImGui::End(); return; }
-	if (!ch || !ch->cg.m_loaded) { ImGui::TextDisabled("%s", TXT("The active character has no CG bank.")); ImGui::End(); return; }
+	if (!ch || !ch->cg.m_loaded) {
+		ImGui::TextDisabled("%s", TXT("The active character has no CG bank."));
+		if (ch && fxr.selfTestPending()) fxr.draw(*ch, nullptr, usage, host.navigate);   // --fxr-selftest on a CG-less fixture (ctest fxr_selftest)
+		ImGui::End(); return;
+	}
 	if (owner != ch || cgGen != ch->cg.generation()) rebuild(*ch);
 	if (usage.stale(ch->frameData) || (int)usage.byImage.size() < ch->cg.get_image_count()) { usage.build(ch->frameData, ch->cg.get_image_count()); filterKey = ~0ull; }
 	const int count = ch->cg.get_image_count();
@@ -1550,6 +1554,7 @@ bool Window::script(const std::string &cmd, const std::string &arg, std::string 
 	if (cmd == "open") { open = arg != "off"; return true; }
 	if (cmd == "tab") { g_scriptTab = arg; return true; }
 	if (cmd == "press") { g_scriptPress = arg; return true; }
+	if (cmd == "fxr") return fxr.script(arg, msg);   // Effect recolor tab: import / rule / pattern / slot / accent / path / load / save / status
 	if (cmd == "path") { g_scriptPaths.push_back(arg); return true; }
 	if (cmd == "select") { selected = atoi(arg.c_str()); previewId = -1; return true; }
 	if (cmd == "texsel") { tb.kind = atoi(arg.c_str()); tb.sel = atoi(arg.c_str() + arg.find(' ') + 1); return true; }   // "texsel <0 CG | 1 .pat> <id>"
