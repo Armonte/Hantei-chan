@@ -321,11 +321,12 @@ void readObjects(const FNode* objects, Scene& sc) {
                             for (int i = 0; i < n; ++i) d[i] = std::strtof(pt[3 + i].c_str(), nullptr);
                     }
                 };
-                float c3[3];
-                col("DiffuseColor", c3, 3); mi.v[0] = c3[0]; mi.v[1] = c3[1]; mi.v[2] = c3[2]; mi.v[3] = 1;
-                col("AmbientColor", c3, 3); mi.v[4] = c3[0]; mi.v[5] = c3[1]; mi.v[6] = c3[2]; mi.v[7] = 1;
-                col("SpecularColor", c3, 3); mi.v[8] = c3[0]; mi.v[9] = c3[1]; mi.v[10] = c3[2]; mi.v[11] = 1;
-                col("EmissiveColor", c3, 3); mi.v[12] = c3[0]; mi.v[13] = c3[1]; mi.v[14] = c3[2]; mi.v[15] = 1;
+                // A colour the material does not list is black (D3DMATERIAL9 zero), not the previous colour.
+                auto col3 = [&](const char* key, int base) { float c3[3] = {0.f, 0.f, 0.f}; col(key, c3, 3); mi.v[base] = c3[0]; mi.v[base + 1] = c3[1]; mi.v[base + 2] = c3[2]; mi.v[base + 3] = 1; };
+                col3("DiffuseColor", 0);
+                col3("AmbientColor", 4);
+                col3("SpecularColor", 8);
+                col3("EmissiveColor", 12);
                 col("Shininess", &mi.v[16], 1);
             }
             matByName[mi.name] = static_cast<int>(mats.size());
