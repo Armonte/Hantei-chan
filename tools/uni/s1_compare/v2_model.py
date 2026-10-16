@@ -91,9 +91,10 @@ def grad_fit(ctrl, ctrl_game, bw, gd, plate_fallback=None):
     G, B, P, Q, m = sh.game_vs_model.last_arrays; xa, ya, xb, yb, gorg = sh.game_vs_model.last_window
     t = np.clip((gorg[1] - np.repeat(np.arange(ya, yb)[:, None], xb - xa, 1))[m] / GRAD_H, 0, 1)
     aura = aura_add(meta) if 'aura_rgb' in meta else (0, 0, 0)
+    bk = sh.POST_ADD(P, Q) if sh.POST_ADD is not None else np.zeros_like(P)
     out = []
     for c in range(3):
-        w = (1 - Q[..., c])[m]; r = (G[..., c] - P[..., c] - Q[..., c] * B[..., c])[m] - w * aura[c]
+        w = (1 - Q[..., c])[m]; r = (G[..., c] - P[..., c] - Q[..., c] * B[..., c])[m] - w * aura[c] - bk[..., c][m]
         co, *_ = np.linalg.lstsq(np.stack([w, w * t], 1), r, rcond=None)
         out.append((float(co[0]), float(co[1])))
     return out
@@ -134,6 +135,26 @@ def aura_glow(sil, meta, mode='sq'):
     ga = ((argb >> 24) & 255) / 255.0
     rgb = np.array([(argb >> 16) & 255, (argb >> 8) & 255, argb & 255], dtype=np.float64)
     return np.clip(up, 0, 1) * ga, rgb
+
+
+def uni2_bokashi(alpha, r=4):
+    """UNI2 1.42 chara Bokashi pass (render-match9). CgLayer_DrawWithCharaShader 0x4BE300 draws each CG layer a third
+    time with TecCharaDrawBgColorBokashi_V (Shader/sh_chara.txt PS_CharaDrawBgColorBokashiV): over the 9x9 texel
+    neighbourhood (CHARA_DRAW_BG_BOKASHI_SAMPLE_W/H = 1 + 4*2, g_BlurRadius 40.5 keeps every sample), the mean of
+    pow(pal * vcol, g_Power 4) over the opaque samples, alpha = g_fCharaBgBokashiAlpha (stage_bokashi_alpha.img byte 0
+    at the object's column; training stage bg001 = 20/255), times count/81 on a transparent source pixel; added on top.
+    Returns f(P, Q) -> the add in game px (1 texel = 1 game px: unzoomed CG)."""
+    from numpy.lib.stride_tricks import sliding_window_view
+    def boxmean(a): return sliding_window_view(np.pad(a, r), (2 * r + 1, 2 * r + 1)).mean((-1, -2))
+    def fn(P, Q):
+        op = 1 - Q.mean(2); opm = op > 0.5; frac = boxmean(opm.astype(np.float64))
+        out = np.empty_like(P)
+        for c in range(3):
+            e = np.clip(P[..., c] / np.maximum(op, 1e-3) / 255, 0, 1)
+            mean = boxmean(np.where(opm, e ** 4, 0)) / np.maximum(frac, 1e-6)
+            out[..., c] = alpha * 255 * mean * np.where(opm, 1, frac)
+        return out
+    return fn
 
 
 def layer_weight(bw, cg, pat, full, org):
@@ -217,6 +238,7 @@ def main():
     gctrl = arg(a, '--grad-ctrl')  # CTRLCASE,CTRLGAME: calibrate the stage chara gradient on that control
     layers = arg(a, '--layers')  # CGSHOT,PATSHOT: per-layer editor shots; the gradient goes on the CG layers only
     ml = arg(a, '--mbtl-light')  # STAGE,STDH: the MBTL BgColor three-pass shading (mbtl_light)
+    bok = arg(a, '--bokashi')  # ALPHA (0..1, e.g. 0.0784 = bg001 20/255): model the UNI2 chara Bokashi pass (uni2_bokashi)
     gmode = arg(a, '--glow')  # 'lin' / 'sq': model the aura (GRD Vorpal) glow pass from the sidecar (aura_glow_argb)
     case = a[0]
     zoom = float(zarg) if zarg else zoom_of(case)
@@ -230,6 +252,7 @@ def main():
     elif 'aura_rgb' in meta: light = [(1.0, float(c)) for c in aura_add(meta)]
     else: light = json.load(open(lj))
     pl = Image.open(plate).convert('RGB')
+    sh.POST_ADD = uni2_bokashi(float(bok)) if bok else None
     grad = None
     if gctrl:
         cc, cg = gctrl.split(',')

@@ -376,3 +376,96 @@ Probes on the CG layer matrix (AFRT=false path), against the 2.22 / 2.2% baselin
   and lower in % with the band.
 - **Open.** p435 glow-ring model (round 7 next experiment). Also MBTL's arc split: MBTL flipV keeps the old split.
   Check MBTL's DrawQuads corner order (MBTL_25646393 IDB) before changing it.
+
+## Round 9 / render-match9 (2026-10-15): the UNI2 chara Bokashi pass; MBTL arc split from code
+No editor (C++) change this round. The p435 gap was a game shading pass that the measurement model left out, not a
+render difference, so the fix is in `v2_model.py`. Numbers: `tools/uni/s1_compare/v2_round9.sh` (log `round9.log`).
+Evidence: `round9/`.
+
+### p435: where the residual was
+- `tools/uni/s1_compare/v2_decomp.py` splits the lit residual by editor coverage and by distance to the edge.
+  - On p435, 74% of |d| sits in the interior, 3 or more px from any edge; it is not on the edges.
+  - The game is brighter there: about +1.3 / +2.4 / +2.4 RGB on average.
+- **The glow ring is not the cause.** The aura glow (`CharaAura_DrawGlow` 0x59D910) is drawn under the doll. Its
+  0x10 alpha cannot reach opaque pixels, so `--glow sq` leaves the in-footprint number at exactly 2.22. A glow drawn
+  over the doll is ruled out by the signs: it would add +10 G and +16 B to the dark pixels (lerp: R −7), but the dark
+  pixels measure only +1.4.
+- **What the error looks like.** For a single flat palette colour (74,72,73; 1147 px), the game value varies with a
+  standard deviation of 5.7. Pixels near the white eye/ear areas are brighter, and pixels next to the dark outline are
+  darker (`round9/p435_palette74_game_minus_pred.png`). That pattern is a blur of the sprite's own colours added on
+  top of it.
+
+### Cause: TecCharaDrawBgColorBokashi_V
+- **Where the game draws it.** `CgLayer_DrawWithCharaShader` 0x4BE140 draws each CG layer a third time with
+  `TecCharaDrawBgColorBokashi_V` (UNI2 Shader/sh_chara.txt `PS_CharaDrawBgColorBokashiV`).
+- **What the pass computes.**
+  - It averages pow(pal × vcol, g_Power 4) over the opaque samples of a 9×9 texel window. g_BlurRadius is 40.5, so
+    all 81 samples are used.
+  - Output alpha is `g_fCharaBgBokashiAlpha`, taken from stage_bokashi_alpha.img byte 0. Training stage 1 = bg001,
+    which is 20/255 at every column.
+  - On a transparent source pixel the alpha is multiplied by count/81.
+- **Model.** `v2_model.py --bokashi 0.0784` adds the pass (additive) on top of the lit prediction (`sheet.POST_ADD`).
+  `grad_fit` subtracts the same add from the control before it calibrates the stage gradient.
+- **The alpha is the stage's value, not a fit.** A free fit on p435 gives 0.08 (r = 4), and bg001's 20/255 is
+  0.0784. Additive fits; alpha-blend made both cases worse (`round9/bok.py`).
+
+| case | round 8 | round 9 (`--bokashi 0.0784`) | floor |
+|---|---|---|---|
+| ctrl_chr020_p0 (r3) | 1.29 / 0.6% (band 1.27) | **0.71 / 0.0%** (band 0.59) | is the floor |
+| **afhk_cg_chr020_p435_t27** (r3, `--glow sq`) | 2.22 / 2.2% (band 2.01) | **0.67 / 0.2%** (band 0.25) | 0.71: **at the floor** |
+| afhk_cg_chr020_p435_t27 (old `_unlit` capture) | 5.54 / 5.5% (band 2.06) | 4.00 / 3.6% (band 0.30) | |
+| afhk_cg_chr020_p437_t2 (r3, `--glow sq`) | 2.31 / 4.4% | **0.30 / 0.0%** | 0.71 |
+| pras_chr020_p5f2 (r3, `--glow sq --grey`) | 4.30 / 8.5% (band 1.63) | 3.84 / 8.6% (band 1.08) | |
+| ctrl_chr027_p0 (r5) | 4.67 / 10.2% (band 2.29) | **4.20 / 9.4%** (band 1.69) | is the floor |
+| pups_chr027_p449f4 (r5) | 3.81 / 12.9% (band 2.97) | **2.46 / 3.1%** (band 1.58) | 4.20: below |
+| round-8 list (.pat cases, MBTL) | | unchanged (same shots, no bokashi) | |
+
+- **Glow ring.** The ring metric of p435 is unchanged at no glow 4.33 → glow model 3.70; `lin` gives 4.33 and `sqblur`
+  3.74. That ring sits outside the footprint and does not enter the 2.22. The pass also puts a faint (count/81) halo
+  just outside the sprite, which the ring metric does not model yet.
+- **Use `--bokashi 0.0784` on every UNI2 CG case** captured on training stage 1. .pat layers do not get the pass.
+- **The editor does not draw stage shading.** It has no BgColor, specular or bokashi pass, and that is by design: the
+  editor shows the raw sprite.
+
+### MBTL arc split (MBTL_25646393, read-only; no names or comments written)
+- **MBTL's arc code matches UNI2's.** Every piece of the arc path below is the same in both games:
+  - The Donuts setup, edge step and advance.
+  - The corner getters and the UV assignment.
+  - The batch index pattern.
+- **So both games split along (u1,v0)-(u0,v1).** Both turn the 4-vertex prim into the triangles (0,1,2),(3,2,1).
+  MBTL's DrawQuads difference is CPU-side: it pre-transforms the corners to XYZRHW with a perspective divide and
+  queues them as command type 1 (FVF 0x1C4). UNI2 uses command type 2.
+- **The measured regression is real.** Rebuilt with the UNI2 split forced on for MBTL (throwaway probe, reverted), the
+  case gives:
+  - mbtl_flipV_chr001_p157f2: 3.55 → 4.62 (auto-refine moved +1,0), or 3.55 → 6.55 with `--refine 0`.
+  - mbtl_pups_chr011_p309: unchanged at 0.64.
+- **Conclusion.** The old diagonal is not what the game draws. The p157 residual has another arc-related cause that
+  the old split partly hides. Next: a solo-prop isolation of the p157 arc in MBTL (the round 8 method, through MBTL-IM
+  loose-file override), before switching MBTL to the split.
+
+| MBTL address | current name | suggested name |
+|---|---|---|
+| 0x4A31B0 | PatPart_DrawPrimitive_DispatchByShapeType | (keep) |
+| 0x4A3480 | sub_4A3480 | CPAniPrimRender_DrawQuads (pre-transformed XYZRHW, command type 1) |
+| 0x410F60 | sub_410F60 | CPAniPrimRender_Donuts_Setup |
+| 0x410ED0 | sub_410ED0 | CPAniPrimRender_Donuts_GetSegmentCount |
+| 0x410EE0 / 0x410F00 / 0x410F20 / 0x410F40 | sub_* | CPAniPrimRender_Donuts_GetCorner0_InnerCur / 1_OuterCur / 2_InnerNext / 3_OuterNext |
+| 0x4112A0 / 0x411330 | sub_* | CPAniPrimRender_Donuts_NextEdge / _AdvanceEdge |
+| 0x4106E0 | sub_4106E0 | CPAniPrimRender_GetCutoutUvFlipped (PRRV bit 1 / 2 flips u / v) |
+| 0x410910 / 0x410AF0 / 0x411430 / 0x4117C0 | sub_* | CPAniPrimRender_Rect / Ring / Sphere / Corn_Setup |
+| 0x48D260 | RenderList_Execute | (keep); its table 0x8A1E80 holds the per-command-type batchers |
+| 0x48DA80 | sub_48DA80 | RenderList_BatchPrim_Quad4Tri3Line2 |
+| 0x40DBA0 | sub_40DBA0 | RenderBatch_AppendQuad_Idx012_321 |
+| 0x40DBF0 | sub_40DBF0 | RenderBatch_AppendTri_Idx012 |
+| 0x40DD30 | sub_40DD30 | RenderBatch_Flush (DrawIndexedPrimitive) |
+
+- **UNI2 IDB (renamed, commented, saved).**
+  - Renamed: PrimQueue_ExecuteBucketList 0x4AB7F0, PrimQueue_BatchPrim_Quad4Tri3Line2 0x4ABEA0,
+    RenderBatch_AppendQuad_Idx012_321 0x410CC0, RenderBatch_AppendTri_Idx012 0x410D10,
+    RenderBatch_AppendVertsIndices 0x410BE0.
+  - Commented: the Bokashi pass on CgLayer_DrawWithCharaShader 0x4BE140.
+- **Checks.**
+  - The round-8 list in `round9.log` reproduces the round 8 numbers.
+  - Its last line, `ctrl_chr019_p0` at 15.48, is already that value with the round 8 tools. The line has no stage
+    gradient and no bokashi model, and chr019 p0 is a CG sprite, so it is not a regression.
+  - Full ctest: 67/67 passed (`ctest_r9.log`, `--timeout 900`).
