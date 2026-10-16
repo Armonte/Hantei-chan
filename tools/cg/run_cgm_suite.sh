@@ -20,7 +20,7 @@ HERE="$(cd "$(dirname "$0")" && pwd)"; ROOT="$(cd "$HERE/../.." && pwd)"
 T="$ROOT/build/cgmtool.exe"; QUICK=0; EVERY=0; JOBS=4; GAMES="MBAACC UNIB UNI2 MBTL MBAC"
 while [ $# -gt 0 ]; do case "$1" in --quick) QUICK=1;; --every) EVERY=1;; --jobs) JOBS="$2"; shift;; --games) GAMES="$2"; shift;; *.exe) T="$1";; esac; shift; done
 GD="${CGM_GAMEDATA:-/mnt/c/dev/hantei-chan/gamedata}"
-SCR="${CGM_TMP:-C:\\dev\\hantei-chan\\work\\cgm_suite}"
+SCR="${CGM_TMP:-C:\\dev\\hantei-chan\\work\\cgm_suite}\\run$$_$RANDOM"   # per process: concurrent suites must not share job folders
 w() { while read -r f; do wslpath -w "$f"; done; }
 TX="$(dirname "$T")/cgmtex.exe"; TXMAX=8
 rc=0; NPAL=40; [ $EVERY -eq 1 ] && { NPAL=100000; TXMAX=0; }

@@ -1,4 +1,5 @@
 #include "parts_part.h"
+#include "../app_log.h"
 #include <cstring>
 #include <fstream>
 
@@ -118,7 +119,7 @@ unsigned int* CutOut<>::PpLoad(unsigned int* data, const unsigned int* data_end,
         else {
             char tag[5]{};
             memcpy(tag, buf, 4);
-            std::cout << "\tUnknown PP level tag: " << tag << "\n";
+            HC_LOG_WARN("Unknown PP level tag: {}", (const char *)tag);
         }
     }
 

@@ -313,7 +313,7 @@ inline void AtDisplay(Frame_AT *at, FrameData *frameData = nullptr, int patternI
 	}
 	im::SameLine(0, 20.f);
 	im::SetNextItemWidth(70);
-	if(im::InputInt("ID##Hit effect", &at->hitEffect, 0, 0)) {
+	if(im::InputInt(LBL("ID##Hit effect"), &at->hitEffect, 0, 0)) {
 		markModified();
 	}
 
@@ -329,7 +329,7 @@ inline void AtDisplay(Frame_AT *at, FrameData *frameData = nullptr, int patternI
 	// Any ID, also ones the list does not name (sosfiro: raw added effect ID)
 	im::SameLine(0, 20.f);
 	im::SetNextItemWidth(70);
-	if(im::InputInt("ID##Added effect", &at->addedEffect, 0, 0)) {
+	if(im::InputInt(LBL("ID##Added effect"), &at->addedEffect, 0, 0)) {
 		markModified();
 	}
 

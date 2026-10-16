@@ -493,7 +493,7 @@ struct ScriptPanel::Impl {
 			if (!o.command.empty() || !o.move.empty()) {
 				if (ImGui::IsItemHovered()) {
 					ImGui::BeginTooltip();
-					if (!o.command.empty()) ImGui::Text("command = [%s]", o.command.c_str());
+					if (!o.command.empty()) ImGui::Text(TXT("command = [%s]"), o.command.c_str());
 					if (!o.move.empty()) ImGui::Text("-> %s", o.move.c_str());
 					ImGui::EndTooltip();
 				}
@@ -642,10 +642,10 @@ struct ScriptPanel::Impl {
 			const std::string what = owner->describeRef ? owner->describeRef(dir, ref) : "";
 			ImGui::BeginTooltip();
 			if (!what.empty()) ImGui::TextUnformatted(what.c_str());
-			else if (ref.afid >= 0) ImGui::Text("frame id (AFID) %d", ref.afid);
-			else if (!ref.code.empty()) ImGui::Text("pattern code name (PTCN) \"%s\"", ref.code.c_str());
-			else ImGui::Text("pattern %d", ref.pattern);
-			if (owner->openRef) ImGui::TextDisabled("Ctrl+click: open in the HA6 editor");
+			else if (ref.afid >= 0) ImGui::Text(TXT("frame id (AFID) %d"), ref.afid);
+			else if (!ref.code.empty()) ImGui::Text(TXT("pattern code name (PTCN) \"%s\""), ref.code.c_str());
+			else ImGui::Text(TXT("pattern %d"), ref.pattern);
+			if (owner->openRef) ImGui::TextDisabled("%s", TXT("Ctrl+click: open in the HA6 editor"));
 			ImGui::EndTooltip();
 			if (owner->openRef && ImGui::IsMouseClicked(ImGuiMouseButton_Left) && ImGui::GetIO().KeyCtrl) owner->openRef(dir, ref);
 			return;
@@ -677,7 +677,7 @@ struct ScriptPanel::Impl {
 		if (!engine.empty()) ImGui::TextDisabled("%s", (game + " native in the game executable (" + EngineTableNote(own.empty() ? it->second.front().table : own) + ")").c_str());
 		int shown = 0;
 		for (const ScriptDef* d : defs) {
-			if (shown++ == 4) { ImGui::TextDisabled("... %zu more definitions", defs.size() - 4); break; }
+			if (shown++ == 4) { ImGui::TextDisabled(TXT("... %zu more definitions"), defs.size() - 4); break; }
 			ImGui::TextColored(ScriptCol(), "[script]"); ImGui::SameLine();
 			std::string head = (d->owner.empty() ? "" : d->owner + ".") + d->name;
 			if (d->kind == ScriptDef::Function) head += "(" + d->params + ")";
@@ -694,7 +694,7 @@ struct ScriptPanel::Impl {
 				}
 			}
 		}
-		if (!defs.empty()) ImGui::TextDisabled("Ctrl+click / F12: go to definition, Shift+F12: find usages");
+		if (!defs.empty()) ImGui::TextDisabled("%s", TXT("Ctrl+click / F12: go to definition, Shift+F12: find usages"));
 		ImGui::PopTextWrapPos();
 		ImGui::EndTooltip();
 		if (ctrlClick && !defs.empty()) goToDefinition(word, own);
@@ -1198,13 +1198,13 @@ struct ScriptPanel::Impl {
 			const ScriptProblem& p = problems[i];
 			ImGui::PushID(static_cast<int>(i));
 			if (p.fix == ScriptProblem::CreateMoveTable) {
-				if (ImGui::SmallButton("Add blank state")) {
+				if (ImGui::SmallButton(LBL("Add blank state"))) {
 					const ScriptProblem copy = p;
 					if (addMoveStub(copy.fixArg, copy.fixFile)) recheck();
 					ImGui::PopID();
 					break;
 				}
-				if (ImGui::IsItemHovered()) ImGui::SetTooltip("Writes an empty %s <- { } into %s, named exactly as referenced.", p.fixArg.c_str(), p.fixFile.c_str());
+				if (ImGui::IsItemHovered()) ImGui::SetTooltip(TXT("Writes an empty %s <- { } into %s, named exactly as referenced."), p.fixArg.c_str(), p.fixFile.c_str());
 				ImGui::SameLine();
 			}
 			const std::string label = p.file + ":" + std::to_string(p.line + 1) + "  " + p.message;
@@ -1223,10 +1223,10 @@ struct ScriptPanel::Impl {
 		if (focusSearch) { ImGui::SetKeyboardFocusHere(); focusSearch = false; }
 		ImGui::SetNextItemWidth(320);
 		bool go = ImGui::InputTextWithHint("##q", "search all scripts + pattern names (Enter)", searchBuf, sizeof searchBuf, ImGuiInputTextFlags_EnterReturnsTrue);
-		ImGui::SameLine(); go |= ImGui::Checkbox("Regex", &searchOpt.regex);
-		ImGui::SameLine(); go |= ImGui::Checkbox("Whole word", &searchOpt.wholeWord);
-		ImGui::SameLine(); go |= ImGui::Checkbox("Match case", &searchOpt.matchCase);
-		ImGui::SameLine(); go |= ImGui::Checkbox("Skip comments", &searchOpt.codeOnly);
+		ImGui::SameLine(); go |= ImGui::Checkbox(LBL("Regex"), &searchOpt.regex);
+		ImGui::SameLine(); go |= ImGui::Checkbox(LBL("Whole word"), &searchOpt.wholeWord);
+		ImGui::SameLine(); go |= ImGui::Checkbox(LBL("Match case"), &searchOpt.matchCase);
+		ImGui::SameLine(); go |= ImGui::Checkbox(LBL("Skip comments"), &searchOpt.codeOnly);
 		if (go && searchBuf[0]) runSearch();
 		if (!hitsTitle.empty()) { ImGui::SameLine(); ImGui::TextDisabled("%s", hitsTitle.c_str()); }
 		ImGui::BeginChild("##hits");
@@ -1262,22 +1262,22 @@ struct ScriptPanel::Impl {
 			}
 			ImGui::EndPopup();
 		}
-		if (askMissingMoves) { ImGui::OpenPopup("Missing moves##sq"); askMissingMoves = false; }
+		if (askMissingMoves) { ImGui::OpenPopup(LBL("Missing moves###sqmissing")); askMissingMoves = false; }
 		ImGui::SetNextWindowSizeConstraints(ImVec2(460, 0), ImVec2(900, 600));
-		if (ImGui::BeginPopupModal("Missing moves##sq", nullptr, ImGuiWindowFlags_AlwaysAutoResize)) {
-			ImGui::TextUnformatted("These moves are referenced but not found in the character's mv file:");
+		if (ImGui::BeginPopupModal(LBL("Missing moves###sqmissing"), nullptr, ImGuiWindowFlags_AlwaysAutoResize)) {
+			ImGui::TextUnformatted(TXT("These moves are referenced but not found in the character's mv file:"));
 			for (const auto& p : pendingMissing) {
 				ImGui::BulletText("%s  (line %d)", p.fixArg.c_str(), p.line + 1);
 				const std::string guess = index.nearestMove(p.fixArg, CharDirOf(p.file));
-				if (!guess.empty() && guess != p.fixArg) { ImGui::SameLine(); ImGui::TextDisabled("did you mean %s?", guess.c_str()); }
+				if (!guess.empty() && guess != p.fixArg) { ImGui::SameLine(); ImGui::TextDisabled(TXT("did you mean %s?"), guess.c_str()); }
 			}
 			ImGui::Spacing();
 			ImGui::PushTextWrapPos(ImGui::GetFontSize() * 34);
-			ImGui::TextDisabled("Save them as blank states in the mv file? A missing move can reset the character to neutral, or spawn copies of the character on button presses.");
+			ImGui::TextDisabled("%s", TXT("Save them as blank states in the mv file? A missing move can reset the character to neutral, or spawn copies of the character on button presses."));
 			ImGui::PopTextWrapPos();
 			const std::string fixFile = pendingMissing.empty() ? std::string() : pendingMissing.front().fixFile;
 			ImGui::BeginDisabled(fixFile.empty());
-			if (ImGui::Button("Add blank states and save")) {
+			if (ImGui::Button(LBL("Add blank states and save"))) {
 				const auto todo = pendingMissing;
 				for (const auto& p : todo) addMoveStub(p.fixArg, p.fixFile);
 				skipMovePromptOnce = true;
@@ -1286,9 +1286,9 @@ struct ScriptPanel::Impl {
 			}
 			ImGui::EndDisabled();
 			ImGui::SameLine();
-			if (ImGui::Button("Save without adding")) { skipMovePromptOnce = true; owner->requestSave(); ImGui::CloseCurrentPopup(); }
+			if (ImGui::Button(LBL("Save without adding"))) { skipMovePromptOnce = true; owner->requestSave(); ImGui::CloseCurrentPopup(); }
 			ImGui::SameLine();
-			if (ImGui::Button("Cancel")) { forceNextSave = false; ImGui::CloseCurrentPopup(); }
+			if (ImGui::Button(LBL("Cancel"))) { forceNextSave = false; ImGui::CloseCurrentPopup(); }
 			ImGui::EndPopup();
 		}
 	}
@@ -1536,7 +1536,7 @@ void ScriptPanel::draw()
 	}
 	m_focused = ImGui::IsWindowFocused(ImGuiFocusedFlags_RootAndChildWindows);
 
-	if (ImGui::Button("Open game folder...")) {
+	if (ImGui::Button(LBL("Open game folder..."))) {
 		const std::string dir = BrowseForFolderUtf8(m->root);
 		std::string err;
 		if (!dir.empty() && !openGameRoot(dir, "", &err)) m->setStatus(err, true);
@@ -1547,16 +1547,16 @@ void ScriptPanel::draw()
 	const char* games[] = {"(auto)", "uni2", "mbtl", "dfci", "unib"};
 	int gi = 0;
 	for (int i = 1; i < 5; i++) if (m->game == games[i]) gi = i;
-	if (ImGui::Combo("Profile", &gi, games, 5)) {
+	if (ImGui::Combo(LBL("Profile"), &gi, games, 5)) {
 		std::string err;
 		openGameRoot(m->root, gi ? games[gi] : "", &err);
 	}
 	ImGui::EndDisabled();
 	ImGui::SameLine();
 	ImGui::BeginDisabled(m->currentRel.empty());
-	if (ImGui::Button("Save (Ctrl+S)")) m_saveRequested = true;
+	if (ImGui::Button(LBL("Save (Ctrl+S)"))) m_saveRequested = true;
 	ImGui::SameLine();
-	if (ImGui::Button("Check")) {
+	if (ImGui::Button(LBL("Check"))) {
 		std::string bytes;
 		std::vector<EncodeError> errs;
 		if (m->doc.encode(SplitLines(m->editor.GetText()), bytes, &errs)) {
@@ -1572,7 +1572,7 @@ void ScriptPanel::draw()
 	m->drawHotReload();
 	if (m->offerSaveAnyway) {
 		ImGui::SameLine();
-		if (ImGui::Button("Save anyway")) { m->offerSaveAnyway = false; m->forceNextSave = true; m_saveRequested = true; }
+		if (ImGui::Button(LBL("Save anyway"))) { m->offerSaveAnyway = false; m->forceNextSave = true; m_saveRequested = true; }
 	}
 	if (!m->status.empty()) {
 		ImGui::SameLine();
@@ -1614,7 +1614,7 @@ void ScriptPanel::draw()
 				else m->goToDefinition(word, own);
 			}
 		}
-	} else ImGui::TextDisabled("Open a game folder (the one holding script/ and data/), then pick a script.");
+	} else ImGui::TextDisabled("%s", TXT("Open a game folder (the one holding script/ and data/), then pick a script."));
 	ImGui::EndChild();
 	if (outlineW > 0) {
 		ImGui::SameLine();

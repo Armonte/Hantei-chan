@@ -566,7 +566,7 @@ void BlenderPrefsItems()
 
 void MenuItem()
 {
-	if (ImGui::MenuItem("3D Stage view (UNI2 / UNI / MBTL)...", nullptr, show)) show = !show;
+	if (ImGui::MenuItem(LBL("3D Stage view (UNI2 / UNI / MBTL)..."), nullptr, show)) show = !show;
 }
 
 void Draw()
@@ -574,14 +574,14 @@ void Draw()
 	if (!show) return;
 	State& s = *S();
 	ImGui::SetNextWindowSize(ImVec2(900, 640), ImGuiCond_FirstUseEver);
-	if (!ImGui::Begin("3D Stage", &show)) { ImGui::End(); return; }
+	if (!ImGui::Begin(LBL("3D Stage"), &show)) { ImGui::End(); return; }
 	ImGui::SetNextItemWidth(360);
-	ImGui::InputText("bg folder", s.bgDir, sizeof(s.bgDir));
+	ImGui::InputText(LBL("bg folder"), s.bgDir, sizeof(s.bgDir));
 	ImGui::SameLine();
-	if (ImGui::Button("Scan")) { std::string err; s3d::LoadBgListFile(std::string(s.bgDir) + "/BgList.txt", s.list, err); }
+	if (ImGui::Button(LBL("Scan"))) { std::string err; s3d::LoadBgListFile(std::string(s.bgDir) + "/BgList.txt", s.list, err); }
 	ImGui::SameLine();
 	ImGui::SetNextItemWidth(160);
-	if (ImGui::BeginCombo("stage", s.dataFile.c_str())) {
+	if (ImGui::BeginCombo(LBL("stage"), s.dataFile.c_str())) {
 		// BgList entries with a model (bg.fbx.bin, UNIEL enciphered included, or the ASCII bg.fbx), then stage folders
 		// BgList does not name (no / unreadable BgList, ASCII-only DFCI / UNIB folders)
 		const std::vector<std::string> folders = s3d::ScanStageFolders(s.bgDir);

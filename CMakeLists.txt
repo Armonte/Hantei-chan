@@ -212,7 +212,7 @@ endif()
 add_executable(roundtrip
 	src/roundtrip.cpp
 	src/framedata.cpp
-	src/framedata_load.cpp
+	src/framedata_load.cpp src/app_log.cpp
 	src/framedata_save.cpp
 	src/framedata_ha4.cpp ${HAN2_MODEL_SOURCES}
 	src/misc.cpp
@@ -229,7 +229,7 @@ endif()
 add_executable(uni_edit_test
 	tests/uni_edit_test.cpp
 	src/framedata.cpp
-	src/framedata_load.cpp
+	src/framedata_load.cpp src/app_log.cpp
 	src/framedata_save.cpp
 	src/framedata_ha4.cpp ${HAN2_MODEL_SOURCES}
 	src/misc.cpp
@@ -247,7 +247,7 @@ endif()
 add_executable(uni_dataloss_test
 	tests/uni_dataloss_test.cpp
 	src/framedata.cpp
-	src/framedata_load.cpp
+	src/framedata_load.cpp src/app_log.cpp
 	src/framedata_save.cpp
 	src/framedata_ha4.cpp ${HAN2_MODEL_SOURCES}
 	src/mv_script.cpp
@@ -266,7 +266,7 @@ add_test(NAME uni_dataloss COMMAND uni_dataloss_test WORKING_DIRECTORY ${CMAKE_S
 add_executable(game_labels_test
 	tests/game_labels_test.cpp
 	src/framedata.cpp
-	src/framedata_load.cpp
+	src/framedata_load.cpp src/app_log.cpp
 	src/framedata_save.cpp
 	src/framedata_ha4.cpp ${HAN2_MODEL_SOURCES}
 	src/misc.cpp
@@ -291,7 +291,7 @@ endif()
 # Standalone smoke test for bg::File loader (no GL needed for parse-only).
 add_executable(bg_test
 	src/bg_test.cpp
-	src/background/bg_file.cpp
+	src/background/bg_file.cpp src/app_log.cpp
 	src/background/bg_pat.cpp
 	src/background/bg_info.cpp
 	src/background/bg_project.cpp
@@ -427,7 +427,7 @@ add_executable(game_link_cli
 	src/background/bg_info.cpp
 	src/cg.cpp
 	src/framedata.cpp
-	src/framedata_load.cpp
+	src/framedata_load.cpp src/app_log.cpp
 	src/framedata_save.cpp
 	src/framedata_ha4.cpp ${HAN2_MODEL_SOURCES}
 	src/misc.cpp
@@ -444,7 +444,7 @@ endif()
 add_executable(ha6_dump
 	src/ha6_dump.cpp
 	src/framedata.cpp
-	src/framedata_load.cpp
+	src/framedata_load.cpp src/app_log.cpp
 	src/framedata_save.cpp
 	src/framedata_ha4.cpp ${HAN2_MODEL_SOURCES}
 	src/misc.cpp
@@ -462,7 +462,7 @@ add_executable(preview_sim_tool
 	src/preview_sim_tool.cpp
 	src/preview_sim.cpp
 	src/framedata.cpp
-	src/framedata_load.cpp
+	src/framedata_load.cpp src/app_log.cpp
 	src/framedata_save.cpp
 	src/framedata_ha4.cpp ${HAN2_MODEL_SOURCES}
 	src/misc.cpp
@@ -561,7 +561,7 @@ add_test(NAME cmdfile_ui_smoke COMMAND cmdfile_ui_smoke tests/fixtures/cmdfile/e
 add_executable(pattern_search_test
 	tests/pattern_search_test.cpp
 	src/framedata.cpp
-	src/framedata_load.cpp
+	src/framedata_load.cpp src/app_log.cpp
 	src/framedata_save.cpp
 	src/framedata_ha4.cpp ${HAN2_MODEL_SOURCES}
 	src/misc.cpp
@@ -665,7 +665,7 @@ add_executable(refs_test
 	src/pattern_refs.cpp
 	src/ha6_notes.cpp
 	src/framedata.cpp
-	src/framedata_load.cpp
+	src/framedata_load.cpp src/app_log.cpp
 	src/framedata_save.cpp
 	src/framedata_ha4.cpp ${HAN2_MODEL_SOURCES}
 	src/misc.cpp
@@ -954,7 +954,7 @@ set(MBAACC_PACKAGE_SOURCES
 	src/mbaacc_package.cpp
 	src/mbaacc_pack.cpp
 	src/framedata.cpp
-	src/framedata_load.cpp
+	src/framedata_load.cpp src/app_log.cpp
 	src/framedata_save.cpp
 	src/framedata_ha4.cpp ${HAN2_MODEL_SOURCES}
 	src/misc.cpp
@@ -1065,7 +1065,7 @@ endif()
 add_test(NAME authoring_model COMMAND authoring_model_test WORKING_DIRECTORY ${CMAKE_SOURCE_DIR})
 # [authoring] inline frame data (startup / active / recovery) and the MBAC reference values (§8.9).
 add_executable(frame_data_test tests/frame_data_test.cpp src/authoring/frame_summary.cpp src/authoring/mbac_reference.cpp
-	src/framedata.cpp src/framedata_load.cpp src/framedata_save.cpp src/framedata_ha4.cpp ${HAN2_MODEL_SOURCES} src/misc.cpp tinyalloc/tinyalloc.c)
+	src/framedata.cpp src/framedata_load.cpp src/app_log.cpp src/framedata_save.cpp src/framedata_ha4.cpp ${HAN2_MODEL_SOURCES} src/misc.cpp tinyalloc/tinyalloc.c)
 target_include_directories(frame_data_test PRIVATE "src" "." "third_party" "${CMAKE_BINARY_DIR}/generated")
 target_compile_definitions(frame_data_test PRIVATE WIN32_LEAN_AND_MEAN HA6GUIVERSION="${CMAKE_PROJECT_VERSION}")
 target_link_libraries(frame_data_test PRIVATE tinyalloc)
@@ -1122,7 +1122,7 @@ add_test(NAME headless_export COMMAND bash tools/ui/headless_ctest.sh $<TARGET_F
 
 # CG manager core + command line (docs/cg/cg_manager_design.md)
 set(CGM_CORE_SOURCES src/cgm/cgm_bank.cpp src/cgm/cgm_ops.cpp src/cgm/cgm_export.cpp src/cgm/cgm_io.cpp src/cgm/cgm_palette.cpp src/cgm/cgm_struct.cpp src/cgm/cgm_folder.cpp src/cgm/cgm_ccpal.cpp)
-add_executable(cgmtool src/cgm/cgmtool.cpp src/cgm/cgmtool_ops.cpp src/cgm/cgm_acmoon.cpp src/cgm/fxr_cli.cpp src/cgm/fxr_core.cpp ${CGM_CORE_SOURCES} src/cgm/cgm_usage.cpp src/cgm/cgm_project.cpp src/framedata.cpp src/framedata_load.cpp src/framedata_save.cpp src/framedata_ha4.cpp ${HAN2_MODEL_SOURCES} src/cg.cpp src/misc.cpp src/png_writer.cpp tinyalloc/tinyalloc.c)
+add_executable(cgmtool src/cgm/cgmtool.cpp src/cgm/cgmtool_ops.cpp src/cgm/cgm_acmoon.cpp src/cgm/fxr_cli.cpp src/cgm/fxr_core.cpp ${CGM_CORE_SOURCES} src/cgm/cgm_usage.cpp src/cgm/cgm_project.cpp src/framedata.cpp src/framedata_load.cpp src/app_log.cpp src/framedata_save.cpp src/framedata_ha4.cpp ${HAN2_MODEL_SOURCES} src/cg.cpp src/misc.cpp src/png_writer.cpp tinyalloc/tinyalloc.c)
 target_include_directories(cgmtool PRIVATE "." "src" "third_party" "${CMAKE_BINARY_DIR}/generated")
 target_compile_definitions(cgmtool PRIVATE WIN32_LEAN_AND_MEAN HA6GUIVERSION="${CMAKE_PROJECT_VERSION}")
 target_link_libraries(cgmtool PRIVATE tinyalloc windowscodecs ole32 uuid)
@@ -1221,7 +1221,7 @@ target_compile_options(squirrel224 PRIVATE -w)
 # sqtool: compile every script of a game with its exact VM; --run executes Battle_Init/Battle_Std
 # against native stubs generated from the IDB API table (docs/squirrel/api/<game>_api.json).
 add_executable(sqtool src/squirrel/sqtool.cpp src/squirrel/ptcn_stack.cpp
-	src/framedata.cpp src/framedata_load.cpp src/framedata_save.cpp src/framedata_ha4.cpp ${HAN2_MODEL_SOURCES}
+	src/framedata.cpp src/framedata_load.cpp src/app_log.cpp src/framedata_save.cpp src/framedata_ha4.cpp ${HAN2_MODEL_SOURCES}
 	src/misc.cpp tinyalloc/tinyalloc.c)
 target_include_directories(sqtool PRIVATE "." "third_party" "${CMAKE_BINARY_DIR}/generated")
 target_compile_definitions(sqtool PRIVATE WIN32_LEAN_AND_MEAN HA6GUIVERSION="${CMAKE_PROJECT_VERSION}")
@@ -1322,3 +1322,11 @@ if(_has AND _has2)
 		set_tests_properties(pat_append_mbaacc_to_uni2 PROPERTIES WORKING_DIRECTORY ${CMAKE_BINARY_DIR})
 	endif()
 endif()
+
+# Game-data-free HA6 load -> save byte round trip on the committed fixture (runs in CI; the full corpus is tools/uni/uni_regress.sh).
+add_test(NAME ha6_roundtrip_fixture COMMAND roundtrip --bytes tests/fixtures/headless/chr000.ha6 "${CMAKE_BINARY_DIR}/ha6_roundtrip_fixture.ha6" WORKING_DIRECTORY ${CMAKE_SOURCE_DIR})
+# Opens a real (hidden) OpenGL 3.3 window: CI runners have no GPU driver, so CI runs `ctest -LE gpu`.
+set_tests_properties(headless_export PROPERTIES LABELS gpu)
+# Every test that needs game data or an outside install exits 77 when it is missing: count that as skipped, never failed.
+get_property(_hc_all_tests DIRECTORY PROPERTY TESTS)
+set_tests_properties(${_hc_all_tests} PROPERTIES SKIP_RETURN_CODE 77)

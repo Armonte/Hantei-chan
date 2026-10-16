@@ -1,0 +1,213 @@
+[0;32m=== Hantei-chan Build Script ===[0m
+[0;34mCurrent build number: 688 (commit 8ce4d89)[0m
+[1;33mConfiguring CMake with MinGW toolchain...[0m
+-- GLM: Version 1.0.3
+-- GLM: Build with C++ features auto detection
+statusWith -municode
+-- Configuring done (3.0s)
+-- Generating done (0.2s)
+CMake Warning:
+  Manually-specified variables were not used by the project:
+
+    CMAKE_TOOLCHAIN_FILE
+
+
+-- Build files have been written to: /home/teo/dev/hantei-chan-wt/hygiene/build
+[1;33mBuilding (version info will be auto-generated)...[0m
+[  0%] Updating version information...
+[  0%] Built target glm
+[  0%] Built target glad
+[  0%] Built target tinyalloc
+[  2%] Built target squirrel224
+[  2%] Built target bg_dxt32
+[  3%] Built target pal_roundtrip
+[  3%] Building CXX object CMakeFiles/cmdfile_roundtrip.dir/src/i18n.cpp.obj
+[  3%] Built target shared_clipboard_test
+[  3%] Building CXX object CMakeFiles/cmdfile_test.dir/src/i18n.cpp.obj
+[  3%] Building CXX object CMakeFiles/cmdfile_ui_smoke.dir/src/i18n.cpp.obj
+[  3%] Built target part_render_math_test
+[  3%] Building CXX object CMakeFiles/pattern_search_test.dir/tests/pattern_search_test.cpp.obj
+[  3%] Building CXX object CMakeFiles/pattern_search_test.dir/src/framedata.cpp.obj
+[  3%] Building CXX object CMakeFiles/fb_part_transform_test.dir/src/parts/parts_part.cpp.obj
+[  3%] Building CXX object CMakeFiles/fb_part_transform_test.dir/src/parts/parts_partset.cpp.obj
+[  3%] Building CXX object CMakeFiles/fb_part_transform_test.dir/src/parts/parts_shape.cpp.obj
+[  3%] Building CXX object CMakeFiles/fb_part_transform_test.dir/src/parts/parts_texture.cpp.obj
+[  3%] Building CXX object CMakeFiles/han2_parts_edit_test.dir/src/parts/parts_part.cpp.obj
+[  3%] Linking CXX executable fb_part_transform_test.exe
+[  4%] Building CXX object CMakeFiles/han2_parts_edit_test.dir/src/parts/parts_partset.cpp.obj
+[  4%] Building CXX object CMakeFiles/han2_parts_edit_test.dir/src/parts/parts_shape.cpp.obj
+[  4%] Building CXX object CMakeFiles/han2_parts_edit_test.dir/src/parts/parts_texture.cpp.obj
+[  4%] Linking CXX executable han2_parts_edit_test.exe
+[  4%] Building CXX object CMakeFiles/refs_test.dir/src/framedata.cpp.obj
+[  5%] Building CXX object CMakeFiles/refs_test.dir/src/framedata_load.cpp.obj
+[  5%] Building CXX object CMakeFiles/refs_test.dir/src/app_log.cpp.obj
+[  5%] Linking CXX executable refs_test.exe
+[  7%] Built target fb_part_transform_test
+[  7%] Built target bgm_test
+[  7%] Built target han2_parts_edit_test
+[  7%] Building CXX object CMakeFiles/pattern_search_test.dir/src/framedata_load.cpp.obj
+[  7%] Built target hud_test
+[  8%] Built target refs_test
+[  8%] Building CXX object CMakeFiles/pattern_search_test.dir/src/app_log.cpp.obj
+[  8%] Building CXX object CMakeFiles/pattern_search_test.dir/src/i18n.cpp.obj
+[  8%] Building CXX object CMakeFiles/ha4tool.dir/src/framedata.cpp.obj
+[  8%] Building CXX object CMakeFiles/ha4tool.dir/src/framedata_load.cpp.obj
+[  8%] Building CXX object CMakeFiles/ha4_convert_test.dir/src/framedata.cpp.obj
+[  8%] Building CXX object CMakeFiles/ha4_convert_test.dir/src/framedata_load.cpp.obj
+[  8%] Building CXX object CMakeFiles/ha4_convert_test.dir/src/parts/parts_part.cpp.obj
+[  8%] Building CXX object CMakeFiles/ha4_convert_test.dir/src/parts/parts_partset.cpp.obj
+[  8%] Building CXX object CMakeFiles/ha4_convert_test.dir/src/parts/parts_shape.cpp.obj
+[  8%] Building CXX object CMakeFiles/ha4_convert_test.dir/src/parts/parts_texture.cpp.obj
+[  8%] Linking CXX executable ha4_convert_test.exe
+[  8%] Built target update_version
+[  8%] Building CXX object CMakeFiles/ha4tool.dir/src/parts/parts_part.cpp.obj
+[  8%] Building CXX object CMakeFiles/han2tool.dir/src/framedata.cpp.obj
+[  9%] Building CXX object CMakeFiles/han2tool.dir/src/framedata_load.cpp.obj
+[  9%] Building CXX object CMakeFiles/han2tool.dir/src/parts/parts_part.cpp.obj
+[  9%] Building CXX object CMakeFiles/han2tool.dir/src/parts/parts_partset.cpp.obj
+[ 10%] Building CXX object CMakeFiles/han2tool.dir/src/parts/parts_shape.cpp.obj
+[ 10%] Building CXX object CMakeFiles/ha4tool.dir/src/parts/parts_partset.cpp.obj
+[ 10%] Building CXX object CMakeFiles/cmdfile_ui_smoke.dir/src/cmdfile/cmd_editor_ui.cpp.obj
+[ 10%] Building CXX object CMakeFiles/han2tool.dir/src/parts/parts_texture.cpp.obj
+[ 10%] Linking CXX executable cmdfile_test.exe
+[ 10%] Linking CXX executable han2tool.exe
+[ 10%] Building CXX object CMakeFiles/ha4tool.dir/src/parts/parts_shape.cpp.obj
+[ 13%] Built target ha4_convert_test
+[ 13%] Built target fbarctool
+[ 13%] Building CXX object CMakeFiles/ha4tool.dir/src/parts/parts_texture.cpp.obj
+[ 14%] Built target cmdfile_test
+[ 15%] Built target shortcut_router_test
+[ 15%] Built target live_reload_test
+[ 15%] Linking CXX executable ha4tool.exe
+[ 15%] Linking CXX executable cmdfile_roundtrip.exe
+[ 15%] Built target stage3d_test
+[ 15%] Built target undo_manager_test
+[ 17%] Built target han2tool
+[ 18%] Built target workspace_session_test
+[ 18%] Linking CXX executable mbaaccpackage.exe
+[ 18%] Building CXX object CMakeFiles/pat_safety_test.dir/src/parts/parts_part.cpp.obj
+[ 18%] Building CXX object CMakeFiles/fbchartool.dir/src/framedata.cpp.obj
+[ 18%] Building CXX object CMakeFiles/pat_safety_test.dir/src/parts/parts_partset.cpp.obj
+[ 19%] Building CXX object CMakeFiles/fbchartool.dir/src/framedata_load.cpp.obj
+[ 19%] Building CXX object CMakeFiles/pat_safety_test.dir/src/parts/parts_shape.cpp.obj
+[ 19%] Building CXX object CMakeFiles/pat_safety_test.dir/src/parts/parts_texture.cpp.obj
+[ 19%] Linking CXX executable pat_safety_test.exe
+[ 19%] Building CXX object CMakeFiles/fbchartool.dir/src/background/bg_file.cpp.obj
+[ 19%] Building CXX object CMakeFiles/fbchartool.dir/src/parts/parts_part.cpp.obj
+[ 20%] Built target cmdfile_roundtrip
+[ 20%] Building CXX object CMakeFiles/fbchartool.dir/src/parts/parts_partset.cpp.obj
+[ 20%] Building CXX object CMakeFiles/package_tools_test.dir/src/framedata.cpp.obj
+[ 20%] Building CXX object CMakeFiles/fbchartool.dir/src/parts/parts_shape.cpp.obj
+[ 20%] Building CXX object CMakeFiles/package_tools_test.dir/src/framedata_load.cpp.obj
+[ 20%] Building CXX object CMakeFiles/package_tools_test.dir/src/app_log.cpp.obj
+[ 20%] Linking CXX executable package_tools_test.exe
+[ 23%] Built target ha4tool
+[ 24%] Building CXX object CMakeFiles/fbchartool.dir/src/parts/parts_texture.cpp.obj
+[ 26%] Built target mbaaccpackage
+[ 26%] Linking CXX executable fbchartool.exe
+[ 27%] Built target pat_safety_test
+[ 28%] Built target tag_tuning_test
+[ 28%] Built target tag_sidecar_test
+[ 29%] Built target game_link_test
+[ 30%] Built target game_view_test
+[ 30%] Built target authoring_model_test
+[ 30%] Built target pcmod_test
+[ 32%] Built target pcmodtool
+[ 32%] Built target hud_layout_test
+[ 33%] Built target sysconst_test
+[ 33%] Building CXX object CMakeFiles/frame_data_test.dir/src/framedata.cpp.obj
+[ 35%] Built target hmod_test
+[ 37%] Built target hmodtool
+[ 37%] Building CXX object CMakeFiles/frame_data_test.dir/src/framedata_load.cpp.obj
+[ 40%] Built target cgmtool
+[ 41%] Built target fbmod_link_test
+[ 41%] Building CXX object CMakeFiles/frame_data_test.dir/src/app_log.cpp.obj
+[ 45%] Built target pattool
+[ 45%] Linking CXX executable pattern_search_test.exe
+[ 46%] Built target imgui
+[ 46%] Built target sqeditor_core
+[ 48%] Built target roundtrip
+[ 48%] Building CXX object CMakeFiles/uni_edit_test.dir/src/framedata.cpp.obj
+[ 48%] Building CXX object CMakeFiles/uni_dataloss_test.dir/src/framedata.cpp.obj
+[ 49%] Building CXX object CMakeFiles/uni_edit_test.dir/src/framedata_load.cpp.obj
+[ 50%] Building CXX object CMakeFiles/uni_dataloss_test.dir/src/framedata_load.cpp.obj
+[ 50%] Building CXX object CMakeFiles/uni_dataloss_test.dir/src/app_log.cpp.obj
+[ 52%] Built target package_tools_test
+[ 52%] Building CXX object CMakeFiles/game_labels_test.dir/src/framedata.cpp.obj
+[ 52%] Building CXX object CMakeFiles/game_labels_test.dir/src/framedata_load.cpp.obj
+[ 52%] Building CXX object CMakeFiles/game_labels_test.dir/src/app_log.cpp.obj
+[ 53%] Linking CXX executable frame_data_test.exe
+[ 53%] Building CXX object CMakeFiles/uni_edit_test.dir/src/app_log.cpp.obj
+[ 53%] Linking CXX executable uni_edit_test.exe
+[ 54%] Built target bg_test
+[ 54%] Building CXX object CMakeFiles/bg_render.dir/src/background/bg_file.cpp.obj
+[ 54%] Linking CXX executable uni_dataloss_test.exe
+[ 57%] Built target fbchartool
+[ 60%] Built target pattern_search_test
+[ 60%] Linking CXX executable game_labels_test.exe
+[ 60%] Building CXX object CMakeFiles/bg_render.dir/src/background/bg_renderer.cpp.obj
+[ 60%] Building CXX object CMakeFiles/pat_roundtrip.dir/src/parts/parts_part.cpp.obj
+[ 60%] Building CXX object CMakeFiles/pattex.dir/src/parts/parts_part.cpp.obj
+[ 60%] Building CXX object CMakeFiles/pattex.dir/src/parts/parts_partset.cpp.obj
+[ 60%] Building CXX object CMakeFiles/pat_roundtrip.dir/src/parts/parts_partset.cpp.obj
+[ 60%] Building CXX object CMakeFiles/pattex.dir/src/parts/parts_shape.cpp.obj
+[ 61%] Built target uni_edit_test
+[ 62%] Built target frame_data_test
+[ 62%] Building CXX object CMakeFiles/pattex.dir/src/parts/parts_texture.cpp.obj
+[ 62%] Building CXX object CMakeFiles/pat_roundtrip.dir/src/parts/parts_shape.cpp.obj
+[ 62%] Linking CXX executable pattex.exe
+[ 62%] Building CXX object CMakeFiles/pat_roundtrip.dir/src/parts/parts_texture.cpp.obj
+[ 66%] Built target game_link_cli
+[ 66%] Building CXX object CMakeFiles/bg_render.dir/src/parts/parts_part.cpp.obj
+[ 67%] Linking CXX executable pat_roundtrip.exe
+[ 67%] Building CXX object CMakeFiles/ha6_dump.dir/src/framedata.cpp.obj
+[ 67%] Building CXX object CMakeFiles/preview_sim_tool.dir/src/framedata.cpp.obj
+[ 67%] Building CXX object CMakeFiles/preview_sim_tool.dir/src/framedata_load.cpp.obj
+[ 67%] Building CXX object CMakeFiles/ha6_dump.dir/src/framedata_load.cpp.obj
+[ 67%] Building CXX object CMakeFiles/preview_sim_tool.dir/src/app_log.cpp.obj
+[ 67%] Building CXX object CMakeFiles/ha6_dump.dir/src/app_log.cpp.obj
+[ 67%] Linking CXX executable preview_sim_tool.exe
+[ 67%] Linking CXX executable ha6_dump.exe
+[ 68%] Built target game_labels_test
+[ 69%] Built target uni_dataloss_test
+[ 69%] Building CXX object CMakeFiles/bg_render.dir/src/parts/parts_partset.cpp.obj
+[ 69%] Building CXX object CMakeFiles/pat_dump.dir/src/parts/parts_part.cpp.obj
+[ 69%] Building CXX object CMakeFiles/sqtool.dir/src/framedata.cpp.obj
+[ 69%] Building CXX object CMakeFiles/bg_render.dir/src/parts/parts_shape.cpp.obj
+[ 69%] Building CXX object CMakeFiles/pat_dump.dir/src/parts/parts_partset.cpp.obj
+[ 70%] Building CXX object CMakeFiles/pat_dump.dir/src/parts/parts_shape.cpp.obj
+[ 70%] Building CXX object CMakeFiles/pat_dump.dir/src/parts/parts_texture.cpp.obj
+[ 70%] Linking CXX executable pat_dump.exe
+[ 70%] Building CXX object CMakeFiles/sqtool.dir/src/framedata_load.cpp.obj
+[ 71%] Built target pattex
+[ 72%] Built target pat_roundtrip
+[ 72%] Building CXX object CMakeFiles/sqtool.dir/src/app_log.cpp.obj
+[ 72%] Linking CXX executable squirrel_index_test.exe
+[ 74%] Built target ha6_dump
+[ 76%] Built target preview_sim_tool
+[ 76%] Building CXX object CMakeFiles/bg_render.dir/src/parts/parts_texture.cpp.obj
+[ 76%] Linking CXX executable squirrel_doc_test.exe
+[ 76%] Linking CXX executable bg_render.exe
+[ 76%] Linking CXX executable sqtool.exe
+[ 76%] Linking CXX executable cmdfile_ui_smoke.exe
+[ 76%] Built target pat_dump
+[ 77%] Built target squirrel_index_test
+[ 77%] Built target squirrel_doc_test
+[ 77%] Building CXX object CMakeFiles/gonptechan.dir/src/main.cpp.obj
+[ 77%] Building CXX object CMakeFiles/gonptechan.dir/src/main_frame.cpp.obj
+[ 78%] Building CXX object CMakeFiles/gonptechan.dir/src/PatEditor/pat_partset_pane.cpp.obj
+[ 77%] Building CXX object CMakeFiles/gonptechan.dir/src/startup_args.cpp.obj
+[ 77%] Building CXX object CMakeFiles/gonptechan.dir/src/PatEditor/pat_part_pane.cpp.obj
+[ 80%] Built target bg_render
+[ 80%] Building CXX object CMakeFiles/gonptechan.dir/src/PatEditor/pat_shape_pane.cpp.obj
+[ 82%] Built target sqtool
+[ 82%] Building CXX object CMakeFiles/gonptechan.dir/src/PatEditor/pat_texture_pane.cpp.obj
+[ 83%] Built target cmdfile_ui_smoke
+[ 83%] Building CXX object CMakeFiles/gonptechan.dir/src/PatEditor/pat_tool_pane.cpp.obj
+[ 83%] Building CXX object CMakeFiles/gonptechan.dir/src/ui/main_frame_cmdfile.cpp.obj
+[ 83%] Building CXX object CMakeFiles/gonptechan.dir/src/ui/main_frame_gamelink.cpp.obj
+[ 83%] Building CXX object CMakeFiles/gonptechan.dir/src/ui/main_frame_script.cpp.obj
+[ 83%] Linking CXX executable gonptechan.exe
+[100%] Built target gonptechan
+[0;32mBuild complete![0m
+Executable: [1;33mbuild/gonptechan.exe[0m

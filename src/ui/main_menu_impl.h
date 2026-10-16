@@ -1,6 +1,8 @@
 #ifndef UI_MAIN_MENU_IMPL_H_GUARD
 #define UI_MAIN_MENU_IMPL_H_GUARD
 
+#include "../app_log.h"
+
 // ============================================================================
 // Main Menu Implementation
 // ============================================================================
@@ -426,12 +428,12 @@ void MainFrame::Menu(unsigned int errorPopupId)
 					}
 
 					if (ImGui::MenuItem(LBL("Reload Effect.ha6"))) {
-						printf("[Effect] Reloading effect.ha6 for %s\n", active->getName().c_str());
+						HC_LOG_INFO("[Effect] Reloading effect.ha6 for {}", active->getName().c_str());
 						active->effectCharacter.reset();
 						if (active->loadEffectCharacter()) {
-							printf("[Effect] ✓ Successfully reloaded\n");
+							HC_LOG_INFO("[Effect] Reloaded");
 						} else {
-							printf("[Effect] ✗ Failed to reload\n");
+							HC_LOG_ERROR("[Effect] Failed to reload");
 						}
 					}
 				} else if (active) {
@@ -775,7 +777,7 @@ void MainFrame::Menu(unsigned int errorPopupId)
 				std::string autoLabel = std::string(autoBuf) + "###gfAuto";
 				if (ImGui::MenuItem(autoLabel.c_str(), nullptr, cur == Ha6Game::Auto))
 					fd.setGameOverride(Ha6Game::Auto);
-				if (ImGui::MenuItem("MBAACC", nullptr, cur == Ha6Game::MBAACC))
+				if (ImGui::MenuItem("MBAACC", nullptr, cur == Ha6Game::MBAACC))   // i18n-ok: game name
 					fd.setGameOverride(Ha6Game::MBAACC);
 				if (ImGui::MenuItem(LBL("UNDER NIGHT IN-BIRTH / UNIB (3 layers)"), nullptr, cur == Ha6Game::UNIB))
 					fd.setGameOverride(Ha6Game::UNIB);
@@ -794,8 +796,8 @@ void MainFrame::Menu(unsigned int errorPopupId)
 					"(5 = UNI2, 3 = MBTL or UNIB, told apart by tags and file names),\n"
 					"no ATV2/AFGX = MBAACC. Pasting never changes it: pasted data is converted.\n"
 					"Switches field labels and the format the file is saved in."));
-			if (ImGui::BeginMenu("Language / \xe8\xa8\x80\xe8\xaa\x9e###Language")) {
-				if (ImGui::MenuItem("English", nullptr, i18n::language == 0)) { i18n::language = 0; han2ui::SaveHan2Settings(); }
+			if (ImGui::BeginMenu("Language / \xe8\xa8\x80\xe8\xaa\x9e###Language")) {   // i18n-ok: already bilingual
+				if (ImGui::MenuItem("English", nullptr, i18n::language == 0)) { i18n::language = 0; han2ui::SaveHan2Settings(); }   // i18n-ok: language name shown in its own language
 				if (ImGui::MenuItem("\xe6\x97\xa5\xe6\x9c\xac\xe8\xaa\x9e", nullptr, i18n::language == 1)) { i18n::language = 1; han2ui::SaveHan2Settings(); }
 				ImGui::EndMenu();
 			}

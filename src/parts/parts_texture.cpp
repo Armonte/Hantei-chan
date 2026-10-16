@@ -1,4 +1,5 @@
 #include "parts_texture.h"
+#include "../app_log.h"
 #include "../texture.h"
 #include <glad/glad.h>
 #include <cstring>
@@ -84,7 +85,7 @@ unsigned int* PartGfx<>::PgLoad(unsigned int *data, const unsigned int *data_end
                 tex.type = 5; // DXT5 (BC3)
             }
             else {
-                std::cout << "\tUnknown texture type in PGT2\n";
+                HC_LOG_WARN("Unknown texture type in PGT2");
                 assert(0 && "Unknown texture type");
             }
 

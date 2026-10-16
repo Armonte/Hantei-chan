@@ -49,3 +49,4 @@
 {"sim file: needs class sim", "sim ファイル: クラス sim が必要です"},
 {"Online sim digest %s (%zu sim file(s))", "オンライン sim ダイジェスト %s (sim ファイル %zu 個)"},
 {"Copy sim digest", "simダイジェストをコピー"},
+{"cosmetic", "見た目のみ"},

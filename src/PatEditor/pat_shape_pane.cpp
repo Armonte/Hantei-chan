@@ -189,7 +189,7 @@ void PatShapePane::DrawShape()
                     }
                     if (shape->type != ShapeType::SPHERE) {
                         ImGui::SetNextItemWidth(width);
-                        ImGui::DragInt("Dz", &shape->dz, 1, 0, INT32_MAX);
+                        ImGui::DragInt(LBL("Dz"), &shape->dz, 1, 0, INT32_MAX);
                     }
                     if (shape->type == ShapeType::RING || shape->type == ShapeType::ARC) {
                         ImGui::SameLine();
