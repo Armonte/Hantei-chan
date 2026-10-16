@@ -28,7 +28,7 @@ stubs. Results are in §3.
 | Bytecode (`.cnut`, 0xFAFA) | none | none | none | none |
 | Script files | `script\` 11 + `data\<Chr>_0\<Chr>_0_{mv,sc,cmd}.txt` | `script\` 18 + `data\<Chr>[_s]_0\…` | `script/` 17 + `data/chrNNN/` | `script/` 19 + `data/chrNNN/`, `data/_talk/npcNNN/` |
 
-The other titles (UNIEL, UNIST, UNICLR, DFC, PC DFCI) are not on this machine (`docs/fbmod/INVENTORY.md` §4).
+The other titles (UNIEL, UNIST, UNICLR, DFC, PC DFCI) are not on this machine (`docs/fpan-im/INVENTORY.md` §4).
 UNIB (2013) and MBTL (2026 build) carry the identical version string, so UNIEL/UNIST/UNICLR are almost
 certainly 2.2.4 as well. That is a prediction: **verify with one `strings | grep "Squirrel "`** when a build
 turns up.
@@ -294,7 +294,7 @@ stays out of the plan.
 ### 2.6 Validation profiles (base game API + declared extensions)
 
 Modders ship more than scripts. Exe patches (Cheat Engine tables such as `UNI2_Cha.CT`, see
-`UNI2_CHA_CT_ANALYSIS.md`), fbmod modules and loader DLLs can add natives, lift limits or change what a native
+`UNI2_CHA_CT_ANALYSIS.md`), fpan-im modules and loader DLLs can add natives, lift limits or change what a native
 does. Validation therefore runs against a **profile stack**: one base game profile plus zero or more
 **extension profiles**, each declared by the patch or module that provides it.
 
@@ -309,7 +309,7 @@ does. Validation therefore runs against a **profile stack**: one base game profi
 ```json
 { "kind": "extension", "id": "uni2cha-roster", "title": "UNI2_Cha roster extender",
   "base": ["uni2-1.42"],
-  "source": { "type": "ce-table|fbmod|exe-patch|dll", "ref": "UNI2_Cha.CT", "sha1": "..." },
+  "source": { "type": "ce-table|fpan-im|exe-patch|dll", "ref": "UNI2_Cha.CT", "sha1": "..." },
   "adds":    { "functions": [...], "constants": [...], "tables": [...] },
   "changes": [{ "native": "BMvEff.X", "note": "returns 2 instead of 1 when ..." }],
   "removes": [],
@@ -319,17 +319,17 @@ does. Validation therefore runs against a **profile stack**: one base game profi
 ```
 
   `behaviours` are free-form tags for effects that are not natives (for example `wallbounce.no-height-check`). A
-  static check or the preview simulator can key on them. An fbmod exe-patch module emits the same file next
-  to its byte-patch records (fbmod `DESIGN.md` §10), so one declaration feeds both the patcher and the
+  static check or the preview simulator can key on them. An fpan-im exe-patch module emits the same file next
+  to its byte-patch records (fpan-im `DESIGN.md` §10), so one declaration feeds both the patcher and the
   validator.
 
 **How a script or mod declares what it needs:**
-- **Mod level (preferred).** The mod manifest (fbmod `mod.json` / pcmod) gets
+- **Mod level (preferred).** The mod manifest (fpan-im `mod.json` / pcmod) gets
   `"squirrel": { "requires": ["uni2cha-roster"], "experimental": false }`. The editor's active stack
   is the base plus every extension the opened mod requires, and the mod packager refuses to build when a
   required extension is missing.
 - **File level.** A pragma in a leading comment, which the game ignores:
-  `// @hantei requires: uni2cha-roster, fbmod-wallbounce` and `// @hantei experimental`. The parser reads only the
+  `// @hantei requires: uni2cha-roster, fpan-im-wallbounce` and `// @hantei experimental`. The parser reads only the
   first 20 lines, so the pragma survives the byte-exact round trip.
 - The project or workspace can pin extensions for every file (UI toggle, saved in the session).
 
@@ -355,7 +355,7 @@ downgrades the error to a warning for a single file. It never applies silently: 
 - Autocomplete lists base and extension members, and extension members carry a tag.
 - Every save writes a status badge: "valid for uni2-1.42", "valid for uni2-1.42 + uni2cha-roster", or
   "experimental (2 warnings)".
-- An extensions manager lists the installed ext files with their source (CE table, fbmod module, DLL) and
+- An extensions manager lists the installed ext files with their source (CE table, fpan-im module, DLL) and
   hash, and has a "derive from CE table" import, which only parses the table and never runs it.
 
 **Implementation order:** this lands in P7.

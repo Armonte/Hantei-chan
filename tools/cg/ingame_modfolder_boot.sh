@@ -1,13 +1,13 @@
 #!/bin/bash
 # In-game proof of a CG manager edit saved to the UNI2-IM / MBTL-IM mod folder (src/cgm/cgm_texsrc.h ModFolderPath):
-# fbmod [boot] training (fbmod tests/ingame/run_boot.sh steps) with the edited file installed in <game>\<IM>\Mods\<key> only while
+# fpan-im [boot] training (fpan-im tests/ingame/run_boot.sh steps) with the edited file installed in <game>\<IM>\Mods\<key> only while
 # the game runs. Install, boot, capture and restore all happen inside gamecap's machine-wide game lock (the one run.sh takes), so no
 # other agent's game session ever sees the edited file.
 #   tools/cg/ingame_modfolder_boot.sh uni2|mbtl <edited file (WSL)> <key, e.g. data/chr003/chr003.cg> <evidence dir (WSL)> [p1] [p2]
 set -u
 G="$1"; SRC="$2"; KEY="$3"; EV="$4"; P1="${5:-3}"; P2="${6:-5}"
 HERE="$(cd "$(dirname "$0")" && pwd)"; ROOT="$(cd "$HERE/../.." && pwd)"
-FB=/mnt/c/dev/fbmod; GC=/mnt/c/dev/hantei-chan/tools/gamecap; LOCK=/tmp/claude-1000/game_session.lock
+FB=/mnt/c/dev/fpan-im; GC=/mnt/c/dev/hantei-chan/tools/gamecap; LOCK=/tmp/claude-1000/game_session.lock
 case "$G" in
 uni2) GAMEDIR='C:\Program Files (x86)\Steam\steamapps\common\UNDER NIGHT IN-BIRTH II Sys Celes';;
 mbtl) GAMEDIR='C:\Program Files (x86)\Steam\steamapps\common\MELTY BLOOD TYPE LUMINA';;
@@ -16,8 +16,8 @@ esac
 TX="$ROOT/build/cgmtex.exe"
 # gamecap captures need a Windows drive path: the case writes to C:\dev\hantei-chan\work\cgb_ev_<game>, copied to <evidence dir> afterwards
 CEV=/mnt/c/dev/hantei-chan/work/cgb_ev_$G; rm -rf "$CEV"; mkdir -p "$CEV"
-mkdir -p "$EV" "$FB/build/inject"; cp "$FB/build/bin/fbmod.dll" "$FB/build/inject/fbmod.dll"
-python3 - "$FB/build/inject/fbmod.ini" "$P1" "$P2" <<'PY'
+mkdir -p "$EV" "$FB/build/inject"; cp "$FB/build/bin/fpan-im.dll" "$FB/build/inject/fpan-im.dll"
+python3 - "$FB/build/inject/fpan-im.ini" "$P1" "$P2" <<'PY'
 import os, re, sys
 p, p1, p2 = sys.argv[1:]
 lines = open(p).read().splitlines() if os.path.exists(p) else []
@@ -33,7 +33,7 @@ i = [l.strip().lower() for l in out].index("[boot]")
 out[i + 1:i + 1] = ["%s = %s" % kv for kv in want.items()]
 open(p, "w").write("\n".join(out) + "\n")
 PY
-CASE="$FB/tests/ingame/fbmod_${G}_boot_training.gcs"; TMPCASE="$FB/tests/ingame/.run_cgb_$(basename "$CASE")"
+CASE="$FB/tests/ingame/fpanim_${G}_boot_training.gcs"; TMPCASE="$FB/tests/ingame/.run_cgb_$(basename "$CASE")"
 sed -e "s/^let P1CHR .*/let P1CHR $P1/" -e "s/^let P2CHR .*/let P2CHR $P2/" -e "s|^let EV .*|let EV $(wslpath -w "$CEV" | sed 's/\\/\\\\/g')|" "$CASE" > "$TMPCASE"
 SRCW="$(wslpath -w "$(realpath "$SRC")")"
 flock "$LOCK" bash -c '
@@ -45,5 +45,5 @@ flock "$LOCK" bash -c '
 rc=${PIPESTATUS[0]}
 rm -f "$TMPCASE"
 cp "$CEV"/*.png "$EV"/ 2>/dev/null
-L=$(ls -t "$FB"/build/inject/logs/*.log 2>/dev/null | head -1); [ -n "$L" ] && cp "$L" "$EV/fbmod.log"
+L=$(ls -t "$FB"/build/inject/logs/*.log 2>/dev/null | head -1); [ -n "$L" ] && cp "$L" "$EV/fpan-im.log"
 exit $rc
