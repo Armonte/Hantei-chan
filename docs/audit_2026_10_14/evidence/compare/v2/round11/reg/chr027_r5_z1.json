@@ -1,0 +1,21 @@
+{
+ "control": "ctrl_chr027_p0_z1",
+ "args": [
+  "ctrl_chr027_p0_z1",
+  "--game-name",
+  "ctrl_chr027_p0_r5",
+  "--light 1,0;1,0;1,0",
+  "--grey",
+  "--grad-ctrl",
+  "ctrl_chr027_p0_z1,ctrl_chr027_p0_r5",
+  "--bokashi",
+  "0.0784",
+  "--exact-reg",
+  "--refine",
+  "0"
+ ],
+ "subpix": [
+  0.0,
+  0.0
+ ]
+}
