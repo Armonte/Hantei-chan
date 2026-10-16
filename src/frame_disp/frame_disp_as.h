@@ -31,7 +31,7 @@ inline void AsDisplay(Frame_AS *as, FrameData *frameData = nullptr, int patternI
 		}
 	};
 
-	constexpr float width = 103.f;
+	const float width = ui::Px(103.f);   // follows the font size (ui_style.h)
 
 	unsigned int flagIndex = -1;
 	if(BitField("Movement Flags", &as->movementFlags, &flagIndex, 8)) {

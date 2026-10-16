@@ -646,9 +646,9 @@ void MainFrame::DrawDetachedHosts()
 						ImGui::DockBuilderAddNode(dockId, ImGuiDockNodeFlags_DockSpace);
 						ImGui::DockBuilderSetNodeSize(dockId, avail);
 						ImGuiID center = dockId;
-						const ImGuiID left = ImGui::DockBuilderSplitNode(center, ImGuiDir_Left, 0.28f, nullptr, &center);
-						const ImGuiID right = ImGui::DockBuilderSplitNode(center, ImGuiDir_Right, 0.38f, nullptr, &center);
-						const ImGuiID down = ImGui::DockBuilderSplitNode(center, ImGuiDir_Down, 0.25f, nullptr, &center);
+						const ImGuiID left = ImGui::DockBuilderSplitNode(center, ImGuiDir_Left, 0.24f, nullptr, &center);
+						const ImGuiID right = ImGui::DockBuilderSplitNode(center, ImGuiDir_Right, 0.44f, nullptr, &center);
+						const ImGuiID down = ImGui::DockBuilderSplitNode(center, ImGuiDir_Down, 0.34f, nullptr, &center);
 						ImGui::DockBuilderDockWindow(("Left Pane###" + ns + "_Left Pane").c_str(), left);
 						ImGui::DockBuilderDockWindow(("Right Pane###" + ns + "_Right Pane").c_str(), right);
 						ImGui::DockBuilderDockWindow(("Box Pane###" + ns + "_Box Pane").c_str(), down);

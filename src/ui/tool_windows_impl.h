@@ -216,7 +216,7 @@ void MainFrame::drawVarRefsWindow()
 {
 	if (!m_varRefs.open) return;
 	auto* character = getToolCharacter();
-	ImGui::SetNextWindowSize(ImVec2(620, 460), ImGuiCond_FirstUseEver);
+	ui::FitNextWindow(620, 460);
 	if (!ImGui::Begin(LBL("Variable references"), &m_varRefs.open)) { ImGui::End(); return; }
 	if (!character) {
 		ImGui::TextDisabled("%s", TXT("Open a character first."));
@@ -286,7 +286,7 @@ void MainFrame::drawPatternManagerWindow()
 	if (!w.open) return;
 	auto* character = getToolCharacter();
 	auto* view = getToolView();
-	ImGui::SetNextWindowSize(ImVec2(760, 560), ImGuiCond_FirstUseEver);
+	ui::FitNextWindow(760, 560);
 	if (!ImGui::Begin(LBL("Pattern manager"), &w.open)) { ImGui::End(); return; }
 	if (!character || !view || view->isStageView()) {
 		ImGui::TextDisabled("%s", TXT("Open a character first."));
@@ -508,7 +508,7 @@ void MainFrame::drawNotesWindow()
 {
 	if (!m_showNotes) return;
 	auto* character = getToolCharacter();
-	ImGui::SetNextWindowSize(ImVec2(560, 380), ImGuiCond_FirstUseEver);
+	ui::FitNextWindow(560, 380);
 	if (!ImGui::Begin(LBL("Notes"), &m_showNotes)) { ImGui::End(); return; }
 	if (!character) { ImGui::TextDisabled("%s", TXT("Open a character first.")); ImGui::End(); return; }
 	FrameData& fd = character->frameData;
@@ -555,7 +555,7 @@ void MainFrame::drawNotesWindow()
 void MainFrame::drawKeyBindingsWindow()
 {
 	if (!m_showKeyBindings) { m_keyCapture = -1; return; }
-	ImGui::SetNextWindowSize(ImVec2(560, 560), ImGuiCond_FirstUseEver);
+	ui::FitNextWindow(560, 560);
 	if (!ImGui::Begin(LBL("Keyboard shortcuts"), &m_showKeyBindings)) { ImGui::End(); return; }
 	auto& reg = shortcuts.registry();
 	ImGui::TextWrapped("%s", TXT("Click a shortcut, then press the new key (with Ctrl/Shift/Alt). Esc cancels. "
@@ -719,7 +719,7 @@ void MainFrame::drawCompareWindow()
 {
 	auto& c = m_compare;
 	if (!m_showCompare) return;
-	ImGui::SetNextWindowSize(ImVec2(440, 420), ImGuiCond_FirstUseEver);
+	ui::FitNextWindow(440, 420);
 	if (!ImGui::Begin(LBL("Pattern comparison"), &m_showCompare)) { ImGui::End(); return; }
 	if (c.character && !isLiveCharacter(c.character)) { c.character = nullptr; c.sim.reset(); }
 	ImGui::Checkbox(LBL("Show comparison"), &c.enabled);
@@ -787,7 +787,7 @@ void MainFrame::drawBgmWindow()
 		if (b.player && b.player->playing()) b.player->stop();
 		return;
 	}
-	ImGui::SetNextWindowSize(ImVec2(620, 480), ImGuiCond_FirstUseEver);
+	ui::FitNextWindow(620, 480);
 	if (!ImGui::Begin(LBL("BGM preview"), &m_showBgm)) { ImGui::End(); return; }
 	if (!b.player) b.player = std::make_unique<BgmPlayer>();
 
@@ -1003,7 +1003,7 @@ void MainFrame::drawHudWindow()
 		h.colors.clear();
 		for (auto& sl : slots) h.colors.push_back(sl.defaultArgb);
 	}
-	ImGui::SetNextWindowSize(ImVec2(760, 640), ImGuiCond_FirstUseEver);
+	ui::FitNextWindow(760, 640);
 	if (!ImGui::Begin(LBL("HUD preview"), &m_showHud)) { ImGui::End(); return; }
 
 	if (h.gameDir.empty()) {

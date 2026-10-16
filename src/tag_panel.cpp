@@ -1,5 +1,6 @@
 // EXPERIMENTAL Tag / Team window — see tag_panel.h and docs/HANTEI_TAG_PANEL.md.
 #include "i18n.h"
+#include "ui/ui_style.h"
 #include "tag_panel.h"
 #include "tag_tuning/tag_assist.h"
 #include "tag_tuning/tag_ini.h"
@@ -922,7 +923,7 @@ void DrawPanel(EditorContext& ctx)
 	// relative to the main viewport: with detachable windows a fixed position could open it as its own OS window
 	const ImVec2 mainPos = ImGui::GetMainViewport()->Pos;
 	ImGui::SetNextWindowPos(ImVec2(mainPos.x + 60.0f, mainPos.y + 40.0f), ImGuiCond_FirstUseEver);
-	ImGui::SetNextWindowSize(ImVec2(760, 720), ImGuiCond_FirstUseEver);
+	ui::FitNextWindow(760, 720);
 	if (!ImGui::Begin(LBL("Tag / Team (experimental)"), &showPanel)) { ImGui::End(); return; }
 	Header(c, s);
 	ImGui::Separator();

@@ -1,5 +1,6 @@
 // Game Link window — see game_link_panel.h.
 #include "game_link_panel.h"
+#include "ui/ui_style.h"
 #include "i18n.h"
 #include "game_link_api.h"
 #include "framestate.h"
@@ -224,7 +225,7 @@ void DrawPanel(EditorContext& ctx)
 	c.SetPollHz(g_follow ? 30 : 5);
 	const Snapshot s = c.Get();
 
-	ImGui::SetNextWindowSize(ImVec2(640, 520), ImGuiCond_FirstUseEver);
+	ui::FitNextWindow(640, 520);
 	if (!ImGui::Begin(LBL("Game Link (MBAACC)"), &showPanel)) { ImGui::End(); return; }
 
 	if (!s.wantConnected) { if (ImGui::Button(LBL("Connect"))) c.Connect(); }

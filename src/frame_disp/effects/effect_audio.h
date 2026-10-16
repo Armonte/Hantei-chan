@@ -13,7 +13,7 @@ static inline void DrawEffectAudio_Type9(Frame_EF& effect, FrameData* frameData,
 {
 	int* p = effect.parameters;
 	int& no = effect.number;
-	constexpr float width = 75.f;
+	const float width = ui::Px(75.f);   // follows the font size (ui_style.h)
 
 			im::SetNextItemWidth(width*2);
 			if(i18n::Combo(LBL("Bank"), &no,

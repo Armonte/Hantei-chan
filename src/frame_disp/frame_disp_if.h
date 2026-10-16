@@ -62,7 +62,7 @@ inline void IfDisplay(std::vector<Frame_IF> *ifList_, Frame_IF *singleClipboard 
 	};
 
 	std::vector<Frame_IF> & ifList = *ifList_;
-	constexpr float width = 75.f;
+	const float width = ui::Px(75.f);   // follows the font size (ui_style.h)
 
 	auto ShowTooltipMarker = [&](const char* tooltip) {
 		if(tooltip) {

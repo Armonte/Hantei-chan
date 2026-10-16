@@ -1,4 +1,5 @@
 #include "sysconst_ui.h"
+#include "../ui/ui_style.h"
 
 #include "../i18n.h"
 #include "../misc.h"       // sj2utf8
@@ -62,7 +63,7 @@ bool Window::save()
 void Window::draw()
 {
 	if (!open) return;
-	ImGui::SetNextWindowSize(ImVec2(900, 620), ImGuiCond_FirstUseEver);
+	ui::FitNextWindow(900, 620);
 	if (!ImGui::Begin(LBL("System constants (_type.txt / vector.txt)"), &open)) {
 		ImGui::End();
 		return;

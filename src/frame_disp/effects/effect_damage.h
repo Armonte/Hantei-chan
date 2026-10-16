@@ -1,5 +1,6 @@
 #ifndef EFFECT_DAMAGE_H_GUARD
 #include "../../i18n.h"
+#include "../../ui/ui_style.h"
 #define EFFECT_DAMAGE_H_GUARD
 
 // ============================================================================
@@ -14,7 +15,7 @@ static inline void DrawEffectDamage_Type5(Frame_EF& effect, FrameData* frameData
 {
 	int* p = effect.parameters;
 	int& no = effect.number;
-	constexpr float width = 75.f;
+	const float width = ui::Px(75.f);   // follows the font size (ui_style.h)
 
 			const char* const damageTypes[] = {
 				"0: Set added effect on victim",
