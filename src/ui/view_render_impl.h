@@ -361,6 +361,7 @@ void MainFrame::DrawCharacterScene(CharacterView* view, const Render::PassParams
 	CharacterInstance* active = view ? view->getCharacter() : nullptr;
 	if (!active) return;
 	render.BeginPass(pass);
+	render.cgZoomFilter = gSettings.mbtlCgZoomFilter && active->frameData.game() == Ha6Game::MBTL;
 	auto& state = view->getState();
 
 	if (opt.grid) {

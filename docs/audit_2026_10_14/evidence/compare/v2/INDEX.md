@@ -1470,3 +1470,66 @@ make up the whole frame. The float row is the existing P + Q·B (it reproduces 0
 **Status: the p157 floor term is identified (effect pattern 158, the puddle; in plate_b0 by construction). Every MBTL
 row has a measured floor. What remains is a whole-level difference in the filtered source value, mostly on part edges.
 Blend quantization is measured at 0.06–0.08, rounding to nearest.**
+
+## Round 24 / feat/stage-shadow-cgfilter (2026-10-16): MBTL CG-sprite Filter_V at zoom > 1 (done); stage character shadow (traced, handoff)
+Editor (C++) change: MBTL CG sprites at zoom > 1 draw through the game's Filter_V palette blur (src/render.cpp textured shader mode 3,
+View > Filter > "MBTL CG zoom filter", ini `MbtlCgZoomFilter`, default on). Numbers: `tools/uni/s1_compare/v2_round24_cgfilter.sh`
+(log `cgfilter/round24_cgfilter.log`, sheets `cgfilter/p0f0_z15_filter_{on,off}_sheet.png`). Gamecap case
+`cgfilter/v2r24_mbtl_chr001_cg_zoom15.gcs` (copy of `tools/gamecap/cases/`, run log beside it), suffix `_z15sa`.
+
+### Filter_V (MBTL IDB, commented and saved; shader `gamedata/mbtl/Shader/sh_chara.txt`)
+- `Han6Draw_SubmitCgSprite_ParentMtx` 0x4A0C40 picks `TecCharaDrawBgColorFilter_V` / `...SpecularFilter_V` when the CG
+  record's BgColor block has its zoom > 1 byte set (round 21). Their pixel shaders call `CharaDrawBgColorBaseFilterBokashi`:
+  a 3x3 neighbourhood, point sampled (`TexSample_Empty`), offsets `g_fStepTexture1DotSizeW/H`; for each texel whose index
+  alpha is > 0 it adds palette colour × weight (0.04 0.06 0.04 / 0.06 0.60 0.06 / 0.04 0.06 0.04), no renormalisation, 0 if
+  none. The result then goes through the same BgColor gradient / specular as the non-filter technique.
+- The step is one texel: `CharaBgColor_SetDrawLocalConsts` sets 1 / (rect w + 1), 1 / (rect h + 1), and the CG texture is
+  created at exactly (w + 1) x (h + 1) (`Han6Draw_SpriteTexBuild_Step` 0x4A4600 → `D3D_CreateTextureRetry` 0x48F490).
+- Editor: textured shader mode 3 does that sum on the indexed sprite (`texelFetch`, out-of-image texels = index 0; the game's
+  sampler is WRAP, which only matters if opaque texels touch the opposite edge). Set per scene from the character's game
+  (`Ha6Game::MBTL`) and the toggle; used only when the pass zoom > 1, so zoom-1 shots are pixel-identical (checked: 0 px).
+- `v2_model.py`: `mbtl_light` takes the zoom (t over StdH × zoom; the texel-space bokashi 9x9 approximated by a screen box of
+  radius round(4 × zoom)); `--exclude x0,y0,x1,y1` drops game-px boxes from the footprint (the training frame counter).
+- New IDA names: `ColorRGB_PackArgbClamp` 0x42A140, `ColorRGB_MulBy255` 0x42E7B0, `CBtlCamera_PushMatricesAndUpdate` 0x509030,
+  `CBtlCamera_PopMatricesAndUpdate` 0x508EA0, `Han6Draw_SpriteTexBuild_Step` 0x4A4600, `D3D_CreateTextureRetry` 0x48F490,
+  `D3DTex_WrapLostResource` 0x4923A0, `Mtx_RotateX_InPlace` 0x40FE10.
+
+### Numbers (chr001 p0 f0, stage 21, `--mbtl-light bg021,330`, plate_b0, `--subpix 0,0`)
+Game shots are the backbuffer captures (`*_game_bb.png`, stored next to the window shots as `*_sabb` / `*_z15sabb`): the
+z15 window shot has a foreign overlay over its left half (an intro banner panel), the backbuffer does not.
+
+| case | residual | band ±1 | px > 24 |
+|---|---|---|---|
+| p0f0 zoom 1 (`_sa`) | **0.34** | 0.29 | 0.0% |
+| p0f0 zoom 1.5 (`_z15sa`), editor Filter_V **on** | **0.67** | 0.48 | 0.0% |
+| p0f0 zoom 1.5, editor Filter_V off (old editor) | 3.97 | 3.53 | 15.8% |
+The 1.5x floor (0.67) sits above zoom 1 (0.34); the known approximation left in the model is the bokashi pass's texel-space 9x9
+taken as a screen box at 1.5x (the bokashi input is also the editor's filtered colour, the game's is unfiltered).
+
+### Stage character shadow: what is traced (not implemented in the editor)
+- The shadow params block (`Object_DrawWithStageShadow` 0x597B90, passed as Han6Object_Draw this+0x2C): +0 = ShadowLightType
+  (draw mode 100 + type), +4 = record+0x224, +8 = record+0x228 (defaults 0.6 / 0.7: these are the `ShadowScale` /
+  `ShadowAlpha` fields of UNI's BgList), +0xC..+0x14 colour, +0x18 / +0x1C = 0.4 / 0.711 post-view x / y scales, +0x20 the
+  reflection flag.
+- `CharaShadow_ApplyStageShadowLight` 0x596D60, per light i (record+0x104 + 0x1C·i: Type, Position, PowerValue, Color RGBA):
+  +8 = x fade 1 − min(1, |(Position − objX/128/640 [− camX/128/640 for Type 0]) / PowerValue|) (PowerValue ≤ 0.001: 1, fade
+  < 0.001 skips the light); +0xC..+0x14 = Color.rgb × 255; draw alpha = 255 × Color.a. It pushes the camera matrices
+  (`CBtlCamera_PushMatricesAndUpdate`, an xmm1 argument into camera+0x438 that the decompiler loses); the caller pops after
+  the draw. With no ShadowLightStatus (or option +0x10AFC = 1/2) the object is drawn once with +8 = ShadowAlpha.
+- `Han6Object_Draw` 0x597070 with params: the world y column × ShadowScale, then `Mtx_RotateX_InPlace` (angle passed in
+  xmm0, not recovered); +0x20 set (reflection, from ShadowReflexColor record+0x1E4..0x1F0, alpha = A × 256) flips y instead;
+  after view × `unk_CABE08` the x / y columns × 0.4 / 0.711; alpha byte × +8. Option +0x10AFC 2 / 4 is a different tilt
+  (cos/sin, y × 0.24).
+- Into `g_CharaShadowRT` (cleared to 0, Z on, LESSEQUAL, alpha test), then `CharaShadowRT_RenderAndComposite` 0x4B6540
+  draws it back with linear filtering through sub_49E3A0. The composite blend mode (BgList: "乗算影" = multiply) is not
+  traced yet.
+- **Stage 21 shows no shadow**: ShadowLightType 1 with Color [0,0,0,0.8]; the BgList header notes that type 1 with a black
+  colour adds black, so it is invisible. That matches round 22 (no floor term on the controls). A visible-shadow capture
+  needs a type-0 stage (e.g. Bg_003, type 0, Color [0,0,0,0.6], ShadowReflexColor [0.8,1,1,0.8]).
+- UNI2: the same record fields. Most UNI2 stages give only `ShadowScale` / `ShadowAlpha` (no ShadowLightType). Bg_028
+  (`bg028`) gives ShadowLightType 0 + one light + ShadowReflexColor. The UNI2 IDB was not opened this round.
+- **Handoff, still to trace before writing editor code:** the X-rotation angle (xmm0 at the `Mtx_RotateX_InPlace` call in
+  Han6Object_Draw), `unk_CABE08`, the camera push argument (camera+0x438), how +0xC colour reaches the vertex colour for
+  modes 0x64 / 0x65 (`TecCharaPtDraw_ShadowV`: out = vertex colour where tex a > 0; `_TEX`: tex × vertex colour), and the
+  RT composite blend. Then: a Bg_003 gamecap `_sa` case with a plate that has the shadow pass off (hold the option at
+  `dword_3642AF8`+0x10AFC = 0 for the plate only), and an editor shadow layer (toggle) drawn from the current frame.

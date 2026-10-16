@@ -80,6 +80,8 @@
 {"Ctrl + Click to set exact value (per-view setting)", "Ctrl + クリックで正確な値を入力 (ビューごとの設定)"},
 {"Filter", "フィルタ"},
 {"Bilinear", "バイリニア"},
+{"MBTL CG zoom filter", "MBTL CG ズームフィルタ"},
+{"MBTL draws CG sprites through its *Filter_V shaders when the camera zoom is above 1\n(a 3x3 palette blur). On: the editor does the same at zoom > 1. .pat parts are unaffected.", "MBTL はカメラのズームが 1 を超えると CG スプライトを *Filter_V シェーダー\n(3x3 パレットぼかし) で描画します。オン: エディタもズーム > 1 で同じ処理をします。.pat パーツは対象外です。"},
 {"Stage", "ステージ"},
 {"Load Stage File...", "ステージファイルを読み込み..."},
 {"Save Stage As...", "ステージに名前を付けて保存..."},

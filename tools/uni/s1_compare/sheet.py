@@ -257,6 +257,9 @@ def fit_light(game, plate, ek, ew, zoom, meta, org):
     return game_vs_model.last_fit
 
 
+EXCLUDE = []  # v2_model --exclude x0,y0,x1,y1[;...]: game-px boxes left out of the footprint
+
+
 def game_vs_model(game, plate, ek, ew, zoom, meta, org):
     """Honest game-vs-editor comparison for blended parts.
     The editor view on a black (ek) and a white (ew) backdrop gives, per pixel and channel, E = P + Q*backdrop
@@ -341,6 +344,8 @@ def game_vs_model(game, plate, ek, ew, zoom, meta, org):
             pred = np.clip(Pg[sl] + Qg[sl] * B[ya:yb, xa:xb], 0, 255)
             d = np.abs(G[ya:yb, xa:xb] - pred)
             m = Fg[sl]
+            for (ex0, ey0, ex1, ey1) in EXCLUDE:  # game-px boxes left out (HUD text over the footprint)
+                m = m.copy(); m[max(0, ey0 - Y):max(0, ey1 - Y), max(0, ex0 - X):max(0, ex1 - X)] = False
             if m.sum() < 16: continue
             mean = d[m].mean()
             if best is None or mean < best[0]:
