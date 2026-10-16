@@ -1128,6 +1128,33 @@ if(MINGW)
 	target_link_options(cgmtool PRIVATE -static-libgcc -static-libstdc++ -static)
 endif()
 
+# cgmtex: the CG manager's unified CG + .pat texture layer (src/cgm/cgm_texsrc.h): unit tests, corpus checks, in-game proof edits.
+add_executable(cgmtex src/cgm/cgmtex.cpp src/cgm/cgm_texsrc.cpp ${CGM_CORE_SOURCES} src/cgm/cgm_usage.cpp src/framedata.cpp src/framedata_load.cpp src/framedata_save.cpp src/framedata_ha4.cpp ${HAN2_MODEL_SOURCES}
+	src/parts/parts.cpp src/app_log.cpp src/parts/parts_part.cpp src/parts/parts_partset.cpp src/parts/parts_shape.cpp src/parts/parts_texture.cpp src/parts/pat_texconv.cpp
+	src/cg.cpp src/texture.cpp src/vao.cpp src/shader.cpp src/misc.cpp src/png_writer.cpp tinyalloc/tinyalloc.c)
+target_include_directories(cgmtex PRIVATE "." "src" "third_party" "${CMAKE_BINARY_DIR}/generated")
+target_compile_definitions(cgmtex PRIVATE WIN32_LEAN_AND_MEAN HA6GUIVERSION="${CMAKE_PROJECT_VERSION}" PAT_HEADLESS)
+target_link_libraries(cgmtex PRIVATE tinyalloc glad glm OpenGL::GL windowscodecs ole32 uuid)
+if(MINGW)
+	target_link_options(cgmtex PRIVATE -static-libgcc -static-libstdc++ -static)
+endif()
+add_test(NAME texsrc_unit COMMAND cgmtex selftest)
+# one .cg and one .pat per game with local data: container byte-exact, PNG export -> import changes no byte, replace -> save -> reload
+foreach(_s "games/mbaacc/data/akiha.cg" "games/mbaacc/data/arc.pat" "games/unib/data/Hyd_0/Hyd.cg" "games/unib/data/Elt_0/elt_ef00.pat" "dev/hantei-chan/gamedata/mbac/02/GAKIHA.DAT" "dev/hantei-chan/gamedata/uni2/data/chr003/chr003.cg" "dev/hantei-chan/gamedata/uni2/data/chr003/chr003.pat"
+		"dev/hantei-chan/gamedata/mbtl/data/chr000/chr000.cg" "dev/hantei-chan/gamedata/mbtl/data/chr000/chr000.pat")
+	if(EXISTS "/mnt/c/${_s}")
+		get_filename_component(_n "${_s}" NAME)
+		string(REPLACE "." "_" _n "${_n}")
+		string(REGEX MATCH "^[^/]+/([^/]+)/" _g "${_s}")
+		set(_g "${CMAKE_MATCH_1}")
+		if(_g STREQUAL "hantei-chan")
+			string(REGEX MATCH "gamedata/([^/]+)/" _g "${_s}")
+			set(_g "${CMAKE_MATCH_1}")
+		endif()
+		add_test(NAME texsrc_${_g}_${_n} COMMAND cgmtex check --max 48 "C:/${_s}")
+	endif()
+endforeach()
+
 # Effect recolour authoring (docs/cg/fxrecolor_config_spec.md): ruleset text round trip through the runtime's own parser/writer.
 add_test(NAME fxr_ini COMMAND cgmtool fxr check docs/cg/effect_recolor_data/dgv_akiha.ini WORKING_DIRECTORY ${CMAKE_SOURCE_DIR})
 # Shared-bank safety and cgtool workflows on real game data (skipped when the data is absent): an insert / move / delete
