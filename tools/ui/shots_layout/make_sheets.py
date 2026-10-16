@@ -1,10 +1,11 @@
 #!/usr/bin/env python3
-# make_sheets.py <out_dir> : before | after sheets (shrunk, palette PNG) from run_layout.sh's before / after folders
+# make_sheets.py <out_dir> [before_tag after_tag] : before | after sheets (shrunk, palette PNG) from run_layout.sh's before / after folders
 import sys, os
 from PIL import Image, ImageDraw
 W = '/mnt/c/dev/hantei-chan/work'; out = sys.argv[1]; os.makedirs(out, exist_ok=True)
+BT, AT = (sys.argv[2], sys.argv[3]) if len(sys.argv) > 3 else ('before', 'after')   # run_layout.sh tags
 for sz in ['1280x720', '1900x1000', '1920x1080']:
-    b, a = f'{W}/ab_layout_before_{sz}', f'{W}/ab_layout_after_{sz}'
+    b, a = f'{W}/ab_layout_{BT}_{sz}', f'{W}/ab_layout_{AT}_{sz}'
     for n in sorted(os.listdir(a)):
         if not n.startswith('L') or not n.endswith('.png') or not os.path.exists(f'{b}/{n}'): continue
         if n.startswith('L02') or n.startswith('L04') or n.startswith('L06') or n.startswith('L08'):
