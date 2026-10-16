@@ -30,7 +30,7 @@ while IFS='|' read -r name txt pat fr tick zoom note; do
 done < <(rows)
 while IFS='|' read -r name base lay; do
 	[ -z "$name" ] && continue
-	r=$(cat "$(dirname "$0")/cases.txt" | grep -v "^#" | grep "^$base ")
+	r=$(cat "$(dirname "$0")/cases.txt" "$(dirname "$0")/cases_control.txt" | grep -v "^#" | grep "^$base ")
 	[ -z "$r" ] && continue
 	IFS='|' read -r _ txt pat fr tick zoom note <<< "$r"
 	line "$name" "$(echo $txt | tr / '\\')" $(echo $pat) $(echo $fr) $(echo $tick) $(echo $zoom) "$lay"
