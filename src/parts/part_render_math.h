@@ -48,6 +48,21 @@ inline UvRect FlipUv(int u, int v, int w, int h, int prrv)
 	return r;
 }
 
+// ---- Arc (shape type 4) radial shrink ------------------------------------------------------------------------
+// uni2 1.42 CPAniPrimRender_Donuts_Setup 0x414590 / _NextEdge 0x4148D0 (IDB names): the inner and outer edge points (0, -r) and
+// (0, w - r) are carried from segment to segment by ONE matrix, Rz(step) with its x/y rows scaled by
+// s = 1 - (dRadius / radius) / segments and z translated by dz / segments. The shrink is therefore geometric and
+// scales the strip's width too (edge e sits at radius r * s^e, inner r - w scaled the same), not a linear
+// r - dRadius * e / segments with a constant width. Returns the scale of edge e.
+inline float ArcEdgeScale(int radius, int dRadius, int segments, int e)
+{
+	if (dRadius == 0 || radius == 0 || segments == 0) return 1.f;
+	const float s = 1.f - ((float)dRadius / (float)radius) / (float)segments;
+	float k = 1.f;
+	for (int i = 0; i < e; i++) k *= s;
+	return k;
+}
+
 // ---- Part UV bias ----------------------------------------------------------------------------------------------
 // Every part quad's UVs are (uv / 256) + a bias at each end (uni2 PatPart_DrawPlaneQuad 0x4BFCB0 + sub_4C0430 shapes,
 // MBTL 0xA1CB7C / 0xA1CB78, MBAA PatPart_RenderQuad 0x54C970 / 0x54C974). The start-side biases are initialised to

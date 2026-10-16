@@ -335,3 +335,44 @@ Probes on the CG layer matrix (AFRT=false path), against the 2.22 / 2.2% baselin
   other slots through gamecap poke). Compare one prop against the editor's single-prop render, then check the u
   mapping across the width (mirrored or offset on the back-facing Y = 220° quads) and PRZM applied before or after
   PRAS.
+
+## Round 8 / render-match8 (2026-10-15): arc segment triangle split
+- **Single-prop isolation.** `tools/uni/s1_compare/pat_solo_prop.py` writes a chr019.pat whose part set 45 keeps one
+  slot on screen (the others moved to PRXY 30000,30000 in place: set 45 has no PRCL to zero). The game loads it as a
+  UNI2-IM loose-file override (`gamecap_scripts/v2r8_chr019_solo{,1,2,3,4,8}.gcs`, file_put, removed at quit); the
+  editor renders the same file from `gamedata/uni2/data/chr019solo<k>` (cases `flipHV_chr019_p153_solo<k>_z1`).
+  Files and diff panels: `round8/`.
+- **Result.** Every streak quad (slots 1, 2, 3, 4, 6; Y 220°, PRZM up to 2 x 5) already matched: 0.21-0.42 mean,
+  0.0-0.1% px. So u mirroring on back-facing quads and the PRZM/PRAS order are ruled out (IDA confirms both:
+  PatPart_BuildTransformMatrix 0x4C10E0 = S·Rz·Rx·Ry·T, _PRASPath 0x4C1580 scales then adds PRAS). The whole residual
+  was slot 8, the type-4 arc (shape 91: radius 400, width 160, **3 segments over 288°**): 29.45 / 61.1%.
+- **Cause.** Each arc segment is a trapezoid, so the triangle split shows in the texture. uni2
+  CPAniPrimRender_DrawQuads 0x4C0F10 queues the segment's corners as inner-cur (u0,v0), outer-cur (u1,v0),
+  inner-next (u0,v1), outer-next (u1,v1); the game splits along (u1,v0)-(u0,v1). The editor split along
+  (u0,v0)-(u1,v1). The split was established by measurement (solo8 29.45 → 0.28); the index/strip setup of the
+  batch renderer was not traced.
+- **Fix.** `src/parts/parts.cpp` kSplitX/kSplitY on the ARC branch, UNI2 only (`DrawParams::uni2ArcSplit`, set from
+  the layer's patApplyPras flag in `render.cpp`). With the split MBTL flipV p157 (also an arc) went 3.55 → 4.62, so
+  MBTL keeps the old split. Ring / sphere stay unchanged (no case isolates them).
+- **Also.** Arc shrink is now geometric as in the game (CPAniPrimRender_Donuts_Setup 0x414590 / _NextEdge 0x4148D0:
+  one matrix scales x/y by 1 - (dR/r)/N per segment, width included): `partrender::ArcEdgeScale`. No measured case
+  has dR != 0, so no number moved.
+- **IDB.** Donuts setup/edge/corner getters, PrimQueue_DrawLinePrimUP 0x4AC190, RenderBatch_LockVBIB 0x410B30 renamed
+  and commented; saved.
+- **Numbers.** `tools/uni/s1_compare/v2_round8.sh [BWDIR]` (pass the old editor_bw to compare).
+
+| case | round 7 | round 8 | control |
+|---|---|---|---|
+| flipHV_chr019_p153 | 6.17 / 17.7% (band 2.74 / 7.2%) | **3.20 / 10.1%** (band 1.88 / 4.4%) | ctrl_chr019_p0 3.10 / 7.4% |
+| flipHV_chr019_p153_z1 | 5.74 / 15.8% (band 2.45 / 7.5%) | **0.32 / 0.1%** (band 0.31 / 0.1%) | ctrl_chr019_p0_z1 1.17 / 2.0% |
+| flipHV solo slot 8 (arc), z1 | 29.45 / 61.1% | **0.28 / 0.0%** | |
+| flipHV solo slots 1/2/3/4/6, z1 | 0.37 / 0.34 / 0.34 / 0.21 / 0.42 | unchanged | |
+| flipV_chr000_p383f1 (`--aura-fit`, plate) | lit 3.26 / 9.2% | **lit 2.64 / 6.1%** | |
+| mbtl_flipV_chr001_p157f2 | 3.55 / 11.3% | 3.55 / 11.3% (unchanged: MBTL keeps the old split) | .pat-only 4.55-4.83 |
+| mbtl_pups_chr011_p309, afhk_pat_chr019_p62_t7, pras_chr020_p5f2, rect_chr024_p76 | | within ±0.02 / unchanged | |
+| afhk_cg_chr020_p435_t27 | 2.22 | not worked this round (no change to its path) | 1.29 |
+
+- **flipHV is at its floor:** the z1 shot is below its control (0.32 vs 1.17). At zoom 1.5 it is 3.20 against 3.10,
+  and lower in % with the band.
+- **Open.** p435 glow-ring model (round 7 next experiment). Also MBTL's arc split: MBTL flipV keeps the old split.
+  Check MBTL's DrawQuads corner order (MBTL_25646393 IDB) before changing it.
