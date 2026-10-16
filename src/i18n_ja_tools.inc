@@ -490,3 +490,5 @@
 {"Rebuilt %s in %ld ms, HA6 root %08X -> %08X", "%s を %ld ms で再構築しました、HA6 ルート %08X -> %08X"},
 {"Rebuild of %s did not return to the training battle (%ld ms), HA6 root %08X -> %08X", "%s の再構築後にトレーニングのバトルへ戻りませんでした (%ld ms)、HA6 ルート %08X -> %08X"},
 {"(HA6 root unchanged)", "(HA6 ルートは変化なし)"},
+{"Files", "ファイル"},
+{"Outline", "アウトライン"},
