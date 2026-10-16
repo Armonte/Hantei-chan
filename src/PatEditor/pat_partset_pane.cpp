@@ -1,4 +1,6 @@
 #include "pat_partset_pane.h"
+#include "../ui/ui_layout2.h"
+#include "../ui/ui_style.h"
 #include "../parts/parts.h"
 #include "../filedialog.h"
 #include "../main_frame.h"
@@ -180,7 +182,7 @@ void PatPartSetPane::DrawPopUp() {
 
         ImGui::Separator();
 
-        if (ImGui::Button(LBL("OK"), ImVec2(120, 40))) {
+        if (ImGui::Button(LBL("OK"), ImVec2(ui::Px(120), ui::Px(40)))) {
             if (auto* ps = curInstance->parts->GetPartSet(curInstance->currState->partSet)) {
                 const int id = ps->partId, orig = ps->origId;
                 const bool loaded = ps->wasLoaded;
@@ -195,7 +197,7 @@ void PatPartSetPane::DrawPopUp() {
             ImGui::CloseCurrentPopup();
         }
         ImGui::SameLine();
-        if (ImGui::Button(LBL("Cancel"), ImVec2(120, 40))) {
+        if (ImGui::Button(LBL("Cancel"), ImVec2(ui::Px(120), ui::Px(40)))) {
             ImGui::CloseCurrentPopup();
         }
         ImGui::EndPopup();
@@ -210,7 +212,7 @@ void PatPartSetPane::DrawPopUp() {
 
         const int sel = curInstance->currState->partProp;
         const bool valid = partSet && sel >= 0 && sel < (int)partSet->groups.size();
-        if (ImGui::Button(LBL("Remove from list"), ImVec2(120, 40))) {
+        if (ImGui::Button(LBL("Remove from list"), ImVec2(ui::Px(120), ui::Px(40)))) {
             if (valid) {
                 auto props = &partSet->groups;
                 props->erase(props->begin()+sel);
@@ -228,7 +230,7 @@ void PatPartSetPane::DrawPopUp() {
             ImGui::CloseCurrentPopup();
         }
         ImGui::SameLine();
-        if (ImGui::Button(LBL("Remove data only"), ImVec2(120, 40))) {
+        if (ImGui::Button(LBL("Remove data only"), ImVec2(ui::Px(120), ui::Px(40)))) {
             if (valid) {
                 const int id = partSet->groups[sel].propId;
                 partSet->groups[sel] = {};
@@ -239,7 +241,7 @@ void PatPartSetPane::DrawPopUp() {
             ImGui::CloseCurrentPopup();
         }
         ImGui::SameLine();
-        if (ImGui::Button(LBL("Cancel"), ImVec2(120, 40))) {
+        if (ImGui::Button(LBL("Cancel"), ImVec2(ui::Px(120), ui::Px(40)))) {
             ImGui::CloseCurrentPopup();
         }
         ImGui::EndPopup();
@@ -258,7 +260,7 @@ void PatPartSetPane::DrawPartSet()
             // adding a part set", "highlight applied to every prop after adding a part set").
             UpdateRenderFrame(item->partId);
         }
-        ImGui::SameLine();
+        ui::SameLineButton(LBL("Delete Part Set"));
         if(nPartSet > 0 && ImGui::Button(LBL("Delete Part Set"))){
             openpopupWithId = LBL("PartSet Delete");
         }
@@ -303,8 +305,8 @@ void PatPartSetPane::DrawPartSet()
                     ImGui::SetTooltip("%s", TXT("H toggles it in the view. The other parts are drawn at the opacity on the right."));
                 if(activeHighligth)
                 {
-                    ImGui::SameLine();
-                    ImGui::SetNextItemWidth(width);
+                    ui::SameLineField(ui::Px(width), LBL("Opacity"));
+                    ImGui::SetNextItemWidth(ui::Px(width));
                     if(ImGui::DragFloat(LBL("Opacity"), &highlightOpacity, 0.01f, 0.f, 1.f))
                     {
                         curInstance->parts->SetHighlightOpacity(highlightOpacity);
@@ -316,7 +318,7 @@ void PatPartSetPane::DrawPartSet()
                 if(ImGui::Button(LBL("Copy Part Set"))){
                     partSet->CopyPartSetTo(&CopyManager::copiedParts->partSet);
                 }
-                ImGui::SameLine();
+                ui::SameLineButton(LBL("Paste Part Set"));
                 if(ImGui::Button(LBL("Paste Part Set"))){
                     CopyManager::copiedParts->partSet.CopyPartSetTo(partSet);
                     if (curInstance->currState->partProp >= (int)partSet->groups.size())
@@ -346,7 +348,7 @@ void PatPartSetPane::DrawPartProperty(PartSet<>* partSet)
         RegeneratePartSetNames();
         UpdateHighligth(activeHighligth);
     }
-    ImGui::SameLine();
+    ui::SameLineButton(LBL("Insert Prop"));
     if(nparts >= 0 && ImGui::Button(LBL("Insert Prop"))){
         auto props = &partSet->groups;
         PartProperty newItem = {};
@@ -362,7 +364,7 @@ void PatPartSetPane::DrawPartProperty(PartSet<>* partSet)
         RegeneratePartSetNames();
         UpdateHighligth(activeHighligth);
     }
-    ImGui::SameLine();
+    ui::SameLineButton(LBL("Delete Prop"));
     if(nparts >= 0 && ImGui::Button(LBL("Delete Prop"))){
         openpopupWithId = LBL("PartProps Delete");
     }
@@ -397,7 +399,7 @@ void PatPartSetPane::DrawPartProperty(PartSet<>* partSet)
         if(ImGui::Button(LBL("Copy Part Prop"))){
             PartSet<>::CopyPropertyTo(&CopyManager::copiedParts->partProperty, props);
         }
-        ImGui::SameLine();
+        ui::SameLineButton(LBL("Paste Part Prop"));
         if(ImGui::Button(LBL("Paste Part Prop"))){
             // The pasted prop keeps this slot's id (a copied id would make two parts answer to one highlight).
             const int keepId = props->propId;
@@ -439,7 +441,7 @@ void PatPartSetPane::DrawPartProperty(PartSet<>* partSet)
         }
         if(ImGui::IsItemHovered())
             Tooltip("PRA3 X, Y, Z in turns (1 = 360 degrees).");
-        ImGui::SetNextItemWidth(widthInput);
+        ImGui::SetNextItemWidth(ui::Px(widthInput));
         ImGui::DragFloat(LBL("PRA3 [0]"), &props->rotation[0], 0.01f);
         if(ImGui::IsItemHovered())
             Tooltip("First PRA3 value. Kept in the file; the games' part matrix does not read it.");
@@ -452,7 +454,7 @@ void PatPartSetPane::DrawPartProperty(PartSet<>* partSet)
             props->scaleX = scale[0];
             props->scaleY = scale[1];
         }
-        ImGui::SetNextItemWidth(widthInput);
+        ImGui::SetNextItemWidth(ui::Px(widthInput));
         if(ImGui::InputInt(LBL("Part ID"), &props->ppId, 1, 0)) {
             partPropsDecoratedNames[curInstance->currState->partProp] =
                     curInstance->parts->GetPartPropsDecorateName(curInstance->currState->partSet,curInstance->currState->partProp);
@@ -461,7 +463,7 @@ void PatPartSetPane::DrawPartProperty(PartSet<>* partSet)
         {
             const float frac = props->priority - std::floor(props->priority);
             int prio = (int)std::floor(props->priority);
-            ImGui::SetNextItemWidth(widthInput);
+            ImGui::SetNextItemWidth(ui::Px(widthInput));
             if(ImGui::InputInt(LBL("Priority"), &prio, 1, 10))
                 props->priority = (float)prio + frac;
             if(ImGui::IsItemHovered())
@@ -470,7 +472,7 @@ void PatPartSetPane::DrawPartProperty(PartSet<>* partSet)
         {
             int blend = props->additive ? (props->pral ? props->pral : 1) : 0;
             const bool known = blend >= 0 && blend < IM_ARRAYSIZE(blendList);
-            ImGui::SetNextItemWidth(widthInput);
+            ImGui::SetNextItemWidth(ui::Px(widthInput));
             if(ImGui::BeginCombo(LBL("Blend (PRAL)"), known ? blendList[blend] : "Other")) {
                 for(int n = 0; n < IM_ARRAYSIZE(blendList); n++) {
                     if(ImGui::Selectable(blendList[n], n == blend)) {
@@ -484,11 +486,11 @@ void PatPartSetPane::DrawPartProperty(PartSet<>* partSet)
                 Tooltip("PRAL: 1 = additive, 2 = subtractive (reverse subtract), 3 = drawn normally and used\n"
                         "by the game as the mask of a screen blur (the blur is not previewed).");
         }
-        ImGui::SameLine();
+        ui::SameLineCheckbox(LBL("Bilinear Filter"));
         ImGui::Checkbox(LBL("Bilinear Filter"), &props->filter);
         {
             int prpa = props->prpa;
-            ImGui::SetNextItemWidth(widthInput);
+            ImGui::SetNextItemWidth(ui::Px(widthInput));
             if(ImGui::InputInt(LBL("PRPA"), &prpa, 1, 10)) {
                 props->prpa = prpa;
                 props->hasPrpa = true;

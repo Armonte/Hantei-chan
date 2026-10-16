@@ -1,4 +1,5 @@
 #include "box_pane.h"
+#include "ui/ui_layout2.h"
 #include "i18n.h"
 #include "mv_script.h"
 #include "paste_notice.h"
@@ -332,8 +333,11 @@ void BoxPane::Draw()
 				AdvanceBox(+1);
 			im::PopButtonRepeat();
 
-			i18n::SameLineFit(i18n::ButtonWidth(LBL("Copy all")), 20.f);
-			if(im::Button(LBL("Copy all")))
+			// Copy / paste / delete as an even button grid next to the arrows (wraps 5 / 3+2 / 2+2+1 by width, also in
+			// Japanese), then the toggles as a wrapping row.
+			im::SameLine(0.f, 20.f);
+			ui::ButtonGrid grid({LBL("Copy all"), LBL("Paste all"), LBL("Copy params"), LBL("Paste params"), LBL("Delete selected")});
+			if(grid.Button(LBL("Copy all")))
 			{
 				// Manually copy map for cross-allocator support
 				currState.copied->boxes.clear();
@@ -341,8 +345,7 @@ void BoxPane::Draw()
 					currState.copied->boxes[pair.first] = pair.second;
 				}
 			}
-			i18n::SameLineFit(i18n::ButtonWidth(LBL("Paste all")), 20.f);
-			if(im::Button(LBL("Paste all")))
+			if(grid.Button(LBL("Paste all")))
 			{
 				// Manually copy map for cross-allocator support
 				boxes.clear();
@@ -352,32 +355,27 @@ void BoxPane::Draw()
 				frameData->mark_modified(currState.pattern);
 				markModified();
 			}
-
-			i18n::SameLineFit(i18n::ButtonWidth(LBL("Copy params")), 20.f);
-			if(im::Button(LBL("Copy params")))
+			if(grid.Button(LBL("Copy params")))
 			{
 				currState.copied->box = boxes[currentBox];
 			}
-			i18n::SameLineFit(i18n::ButtonWidth(LBL("Paste params")), 20.f);
-			if(im::Button(LBL("Paste params")))
+			if(grid.Button(LBL("Paste params")))
 			{
 				boxes[currentBox] = currState.copied->box;
 				frameData->mark_modified(currState.pattern);
 				markModified();
 			}
-
-			i18n::SameLineFit(i18n::FieldWidth(im::GetFrameHeight(), LBL("Highlight selected")), 20.f);
-			im::Checkbox(LBL("Highlight selected"), &highlight);
-			i18n::SameLineFit(i18n::ButtonWidth(LBL("Delete selected")), 20.f);
-			if(im::Button(LBL("Delete selected")))
+			if(grid.Button(LBL("Delete selected")))
 			{
 				boxes.erase(currentBox);
 				frameData->mark_modified(currState.pattern);
 				markModified();
 			}
-			i18n::SameLineFit(i18n::FieldWidth(im::GetFrameHeight(), LBL("Show manual box controls")), 20.f);
+
+			im::Checkbox(LBL("Highlight selected"), &highlight);
+			ui::SameLineCheckbox(LBL("Show manual box controls"), 20.f);
 			im::Checkbox(LBL("Show manual box controls"), &showManualControls);
-			i18n::SameLineFit(i18n::FieldWidth(im::GetFrameHeight(), LBL("Position tool")), 20.f);
+			ui::SameLineCheckbox(LBL("Position tool"), 20.f);
 			im::Checkbox(LBL("Position tool"), &positionTool);
 			if(im::IsItemHovered())
 				im::SetTooltip(TXT("Drag the handles in the viewport to move animation layers and\n"
