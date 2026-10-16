@@ -737,3 +737,80 @@ No editor (C++) change this round: all three open gaps were measurement errors. 
   the glow ring.
 - MBTL p277 zoom-1 registration (window outside the capture); reshoot MBTL pups_chr011 at zoom 1.
 - Fix the `"$L0"` quoting in v2_round11/12.sh (MBTL lit line).
+
+## Round 13 / render-match13 (2026-10-15): pras flame solos, MBTL zoom 1, the L0 quoting
+No editor (C++) change this round. Numbers: `tools/uni/s1_compare/v2_round13.sh` (log `round13.log`, offsets refitted
+into `round13/reg/`). Full ctest 69/69 (`ctest_r13.log`, `--timeout 900`).
+
+### pras_chr020_p5f2_z1: the .pat layer matches; the residual is an extra animated game object
+- **Set 991 props** (the pras .pat layer, AFGX layer 0): additive point-sampled slots 1,2 (PRID 921, no PRFL); additive
+  PRFL 1 slots 4,5,14,15,27,28; normal-blend slots 10,25 (PRCL alpha 0). "Slot 237" in the round-4 note is not a set-991 slot.
+- **UNI2 sampler state** (IDB): `PatPart_SetBlendState_PRAL` 0x413900 sets `g_2DFilterMode` 2 (LINEAR) for PRFL == 1,
+  else 1 (POINT); `D3D_SetTexFilterFromTable` applies MIN/MAG only (no mip filter); `sh_chara` `TecCharaPtDraw_V`
+  samples `TexSample_EmptyNF` (no sampler_state, so the device state rules) and returns 0 where the texel alpha is 0.
+  The UV bias globals are now named (`g_PartUvBiasU0/U1/V0/V1`); `D3D_QueryDeviceCaps_SetAmdPartUvBias` 0x4B0480 swaps
+  them only on AMD (VendorId 0x1002). Everything matches `src/parts` (PRFL filter, plane-quad bias). No render change.
+- **Solo shots** (`pat_solo_prop.py`, UNI2-IM loose override, `gamecap_scripts/v2r13_chr020_solo_{s12,slin,s1025,snone}.gcs`;
+  editor `gamedata/uni2/data/chr020solo<k>`, cases `pras_chr020_p5f2_solo_<k>_z1` + `_cg`/`_pat` layer shots):
+
+| solo | lit | .pat-only px |
+|---|---|---|
+| s12 (point-sampled additive 1,2) | **0.42** | 0.66 |
+| slin (PRFL 1 additive) | **0.41** | 0.55 |
+| s1025 (normal blend, alpha 0: editor draws nothing) | **0.28** | (none) |
+
+- **`pat_solo_prop.py` fix.** Moving a prop to PRXY 30000 is not enough for PRA3-rotated props: UNI2 still projected
+  slots 27/28 on screen (first s12 shot: 1.29, B +8.7). KEEP mode now also zeroes PRZM.
+- **The extra object.** With *no* set-991 prop left (`snone`) the game still draws blue/cyan arcs near the hat; they
+  are hidden by hidefighters (character-owned), have no hitboxes in the IM view, and move between captures. A fresh
+  full capture (`v2r13_chr020_full.gcs`, `pras_chr020_p5f2_r13`) gives **0.88**, and `v2_split_additive.py` (new: splits
+  the residual by where each additive solo shot draws) puts 71% of it on the s12-only px (mean 4.16, the arcs) while
+  slin-only / both / neither sit at 0.28 / 0.38 / 0.40. Against the round-3 capture the same split is s12 1.17,
+  slin 1.63: the residual moves with the arcs, not with a prop. The "texel-level detail" of round 12 was this object.
+
+### afhk_cg_chr020_p435_t27 (0.63 vs 0.28)
+- 4421 px. 8 px (0.2%) with |d| > 5 carry 28% (the rotated-CG texel choice of rounds 6/7); the rest is a uniform
+  +0.2..+0.3 interior bias (stage-gradient extrapolation from the idle control to the airborne sprite). Band 0.21 is
+  below the floor. The glow ring is outside the footprint (ring 7161 px: no glow 4.33, glow model 3.70). No change.
+
+### MBTL
+- **p277_z1 is not a registration failure.** Game = prediction exactly (raw 0.00 over 9876 px, game ≠ plate there by
+  71/px); a ±1 px subpix gives 5.2-6.5. The part is an unrotated opaque point-sampled quad at scale 1, so zoom 1 is
+  pixel-exact. Round 12's "window outside the capture" was wrong.
+- **mbtl_pups_chr011_p309_z1** (new zoom-1 editor shot against the `_nb` capture, camera geometry 0,0): **0.14**.
+- **`"$L0"`**: v2_round10/11/12.sh passed `--light 1,0;1,0;1,0` as one argument, so v2_model never saw `--light`. L0 is
+  now a bash array (`"${L0[@]}"`). Effect: MBTL lit = raw again; the UNI2 r5 lines are unchanged (their gradient
+  calibration dominates); the chr019_r5 offset refits to +0.25, −0.375 (was +0.125, −0.375), same numbers.
+
+### Table (control-registered; zoom-1 rows preferred)
+
+| case | round 12 | **round 13** | floor |
+|---|---|---|---|
+| ctrl_chr020_p0 | 0.28 | **0.28** | is the floor |
+| afhk_cg_chr020_p435_t27 | 0.63 | **0.63** | 0.28 (8 rotated-texel px = 28%; band 0.21) |
+| afhk_cg_chr020_p437_t2 | 0.27 | **0.27** | at floor |
+| pras_chr020_p5f2_z1 (r3 capture) | 1.01 | **1.01** | 0.28: extra arc object, not the .pat layer |
+| pras_chr020_p5f2_z1 (r13 recapture) | | **0.88** | non-arc px 0.28-0.40 |
+| pras solos s12 / slin / s1025 | | **0.42 / 0.41 / 0.28** | at floor |
+| ctrl_chr027_p0 / _z1 | 0.49 / 0.50 | **0.49 / 0.50** | is the floor |
+| pups_chr027_p449f4 / _z1 | 0.34 / 0.59 | **0.34 / 0.59** | 0.49 / 0.50 |
+| ctrl_chr019_p0 / _z1 | 0.28 / 0.28 | **0.28 / 0.28** | is the floor |
+| flipHV_chr019_p153_z1 / _solo8_z1 | 0.32 / 0.28 | **0.32 / 0.28** | at floor |
+| ctrl_chr024_p0 / rect_chr024_p76_z1 | 0.27 / 0.33 | **0.27 / 0.33** | at floor |
+| mbtl_patctrl_chr001_p238f10_z1 | 3.25 | **3.25** | MBTL .pat control |
+| mbtl_patctrl_chr001_p277f0_z1 | invalid | **0.00** | MBTL .pat control (pixel-exact) |
+| mbtl_flipV_chr001_p157f2_z1 | 1.28 | **1.28** | below p238 |
+| mbtl_flipV solo s8 / s456 _z1 | 0.79 / 0.75 | **0.79 / 0.75** | |
+| mbtl_pups_chr011_p309 / _z1 | 0.59 | **0.59 / 0.14** | below |
+
+### UNI2 IDB (renamed, commented, saved)
+- Renamed: D3D_QueryDeviceCaps_SetAmdPartUvBias 0x4B0480, PartUvBias_SetAmdValues 0x4B11B0, PatPart_DrawPlaneQuad_2D
+  0x4C0430, PatPart_DrawByShapeType_2D 0x4C08F0, CPAniPrimRender_Ring_Setup 0x414120, g_PartUvBiasU0 0x9A3C5C,
+  g_PartUvBiasU1 0xA0361C, g_PartUvBiasV0 0x9A3C58, g_PartUvBiasV1 0xA0374C.
+- Commented: PatPart_SetBlendState_PRAL (round-13 solos), the two new functions, the four bias globals.
+
+### Next
+- Identify the blue arc object on chr020 pattern 5 (character-owned, hidden by hidefighters, no boxes, animates
+  per session): find what draws it (chara effect / aura particles / pattern-start script) and either hide it in the
+  harness or mask it out of the pras comparison. Until then pras is at the floor off the arcs.
+- MBTL p238f10 (3.25 at zoom 1) is now the outlier among MBTL .pat controls (p277 0.00): split it by prop.
