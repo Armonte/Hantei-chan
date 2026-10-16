@@ -3,6 +3,7 @@
 // Every size here follows the font size (Preferences > font size, DPI), so a pane laid out with them keeps its proportions
 // at 14 px and at 28 px, and Japanese labels (wider) get the room they need instead of a fixed pixel budget.
 #include <imgui.h>
+#include <imgui_internal.h>   // FindWindowByID / FindWindowSettingsByID (FitNextWindowToContent)
 #include <algorithm>
 #include <cfloat>
 #include <cstdio>
@@ -35,6 +36,26 @@ inline void FitNextWindow(float w, float h, ImGuiCond cond = ImGuiCond_FirstUseE
 	const ImVec2 size(w > 0.f ? std::min(Px(w), maxW) : 0.f, h > 0.f ? std::min(Px(h), maxH) : 0.f);
 	ImGui::SetNextWindowSize(size, cond);
 	ImGui::SetNextWindowPos(ImVec2(vp->WorkPos.x + vp->WorkSize.x * 0.5f, vp->WorkPos.y + vp->WorkSize.y * 0.5f), cond, ImVec2(0.5f, 0.5f));
+}
+
+// First-use size that fits the content, for a tool window whose fixed first-use size was much bigger than what it
+// shows. On the window's first appearance (nothing for it in imgui.ini and not created yet this session) it auto-resizes
+// for a few frames between `minW` and `maxW` (design px, ui::Px; height up to 90% of the work area) and stays centred like
+// FitNextWindow; after that it is an ordinary resizable window, and a size the user set (saved in imgui.ini) is never
+// touched. `name` is the exact title passed to Begin. Returns the flags to OR into Begin's flags.
+inline ImGuiWindowFlags FitNextWindowToContent(const char *name, float minW, float maxW)
+{
+	static ImGuiStorage state;   // per window id: 0 undecided, >0 auto-resize frames left, -1 done
+	const ImGuiID id = ImHashStr(name);
+	int left = state.GetInt(id, 0);
+	if (left == 0) left = (ImGui::FindWindowByID(id) || ImGui::FindWindowSettingsByID(id)) ? -1 : 3;
+	if (left < 0) { state.SetInt(id, -1); return 0; }
+	state.SetInt(id, left == 1 ? -1 : left - 1);
+	const ImGuiViewport *vp = ImGui::GetMainViewport();
+	const float maxPxW = std::min(Px(maxW), vp->WorkSize.x * 0.92f);
+	ImGui::SetNextWindowSizeConstraints(ImVec2(std::min(Px(minW), maxPxW), 0.f), ImVec2(maxPxW, vp->WorkSize.y * 0.90f));
+	ImGui::SetNextWindowPos(ImVec2(vp->WorkPos.x + vp->WorkSize.x * 0.5f, vp->WorkPos.y + vp->WorkSize.y * 0.5f), ImGuiCond_Always, ImVec2(0.5f, 0.5f));
+	return ImGuiWindowFlags_AlwaysAutoResize;
 }
 
 // A "(?)" marker after the previous item: the long help text lives in its tooltip instead of eating rows.
@@ -98,7 +119,7 @@ inline void EndLabelForm() { ImGui::EndTable(); }
 // English "###Damage" id, so switching language keeps widget state).
 inline const char *HiddenId(const char *label)
 {
-	static char buf[16][192];
+	static char buf[16][400];   // room for the long UNI2 / MBTL parameter labels (game_label_ui.h)
 	static int slot = 0;
 	slot = (slot + 1) & 15;
 	std::snprintf(buf[slot], sizeof buf[slot], "##%s", label);
