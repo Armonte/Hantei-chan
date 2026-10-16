@@ -5,6 +5,7 @@
 #include "stage3d/s3d_dds.h"
 #include "stage3d/s3d_model.h"
 #include "stage3d/s3d_fbxascii.h"
+#include "stage3d/s3d_blender.h"
 
 #include <cmath>
 #include <cstdio>
@@ -272,12 +273,32 @@ static void TestAscii(const std::string& bg, const char* label)
 	CHECK(stages > 0);
 }
 
+static void TestBlenderLink()
+{
+	std::string err;
+	const std::string e = s3d::BlenderImportExpr("C:\\dev\\gamedata\\mbtl\\bg\\bg001\\bg.fbx.bin", err);
+	CHECK(e == "import addon_utils,bpy; addon_utils.enable('MBTL_fbx_json', default_set=True, persistent=True); "
+	           "bpy.ops.mbtl.hantei_open(filepath=r'C:/dev/gamedata/mbtl/bg/bg001/bg.fbx.bin')");
+	CHECK(s3d::BlenderImportExpr("C:/it's/bg.fbx", err).empty() && !err.empty());
+	CHECK(s3d::BlenderImportExpr("C:/a\"b/bg.fbx", err).empty());
+	CHECK(s3d::BlenderImportExpr("", err).empty());
+	const std::string cl = s3d::BlenderCommandLine("C:/Program Files/Blender Foundation/Blender 4.5/blender.exe", "C:/s/bg.fbx.bin", err);
+	CHECK(cl.rfind("\"C:/Program Files/Blender Foundation/Blender 4.5/blender.exe\" --python-expr \"import addon_utils", 0) == 0);
+	CHECK(cl.size() > 3 && cl.substr(cl.size() - 3) == "')\"");
+	CHECK(s3d::BlenderCommandLine("", "C:/s/bg.fbx.bin", err).empty());
+	const auto c = s3d::BlenderCandidates({"Blender 4.0", "Blender 4.10", "notes", "Blender 4.5", "Blender 3.6"});
+	CHECK(c.size() == 5);
+	CHECK(c.size() == 5 && c[0] == "C:/Program Files/Blender Foundation/Blender 4.10/blender.exe" && c[1].find("Blender 4.5/") != std::string::npos
+		&& c[3].find("Blender 3.6/") != std::string::npos && c[4] == "C:/dev/blender40/blender-4.0.2-windows-x64/blender.exe");
+}
+
 int main(int argc, char** argv)
 {
 	TestSynthetic();
 	TestDds();
 	TestBgList();
 	TestUniel();
+	TestBlenderLink();
 	TestShipped(argc > 1 ? argv[1] : "C:/dev/hantei-chan/gamedata/uni2/bg");
 	TestAscii("C:/dev/hantei-chan/gamedata/uni2/bg", "uni2 (both forms)");
 	TestAscii("C:/games/unib/bg", "unib arcade");
