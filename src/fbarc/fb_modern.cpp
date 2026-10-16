@@ -32,7 +32,7 @@ public:
 		if (!f) { if (err) *err = "short read of " + e.name; return false; }
 		return true;
 	}
-	bool rebuild(const std::string&, const Edit&, std::string* err) const override { if (err) *err = "UNI2 archives are read-only here (edit the working copy, or use the game's mod folder)"; return false; }
+	bool rebuild(const std::string&, const Edit&, std::string* err) const override { if (err) *err = "UNI2 archives are read-only here (edit the working copy, or save to the game's UNI2-IM\\Mods folder)"; return false; }
 	std::string describe() const override { return desc; }
 };
 
@@ -146,7 +146,7 @@ public:
 		MbtlDecrypt(plain.data(), take, (size_t)e.size);
 		return true;
 	}
-	bool rebuild(const std::string&, const Edit&, std::string* err) const override { if (err) *err = "MBTL archives are read-only here (edit the working copy, or use the game's __Mods / fu folder)"; return false; }
+	bool rebuild(const std::string&, const Edit&, std::string* err) const override { if (err) *err = "MBTL archives are read-only here (edit the working copy, or save to the game's MBTL-IM\\Mods folder)"; return false; }
 	std::string describe() const override { return "table read from MBTL.exe" + std::string(stage.empty() ? "" : " (archives also read from HC_MBTL_ARCHIVE_DIR)") + ", per-entry XOR cipher, " + std::to_string(m_entries.size()) + " entries"; }
 };
 

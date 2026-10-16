@@ -843,7 +843,7 @@ void Window::draw(CharacterInstance *ch, const WindowHost &host) {
 			if (pendingIdChanges(ch)) ImGui::TextColored(ImVec4(1.f, 0.6f, 0.2f, 1.f), "%s", TXT("Image ids changed: saving the character also saves the bank and rewrites the other projects, so they never ship mismatched ids."));
 		}
 		if (bank->cutter2 && !cutter2Note) ImGui::TextColored(ImVec4(1.f, 0.75f, 0.3f, 1.f), "%s", TXT("BMP Cutter2 bank (GAKIHA): pixels sit on pre-baked pages. MBAC itself skips this bank (its 'carries a palette' flag is 0), so edits show here but not in the game."));
-		if (ch->frameData.usesUniFormat()) ImGui::TextColored(ImVec4(0.6f, 0.8f, 1.f, 1.f), "%s", TXT("UNI2 / MBTL read their data from archives (d/, .bin) that are not rewritten: saved .cg / .pal / .ha6 files reach the game only from a loose override folder (UNI2: the nuuni mod/ tree; MBTL: __Mods or fu/data), with the same relative path."));
+		if (ch->frameData.usesUniFormat()) ImGui::TextColored(ImVec4(0.6f, 0.8f, 1.f, 1.f), "%s", TXT("UNI2 / MBTL read their data from archives (d/, .bin) that are not rewritten: saved .cg / .pat / .pal / .ha6 files reach the game only from the IM mod folder, with the same relative path (UNI2: <game>\\UNI2-IM\\Mods\\data\\...; MBTL: <game>\\MBTL-IM\\Mods\\data\\...), loaded through fbmod / UNI2-IM / MBTL-IM. The \"Save to mod folder\" buttons write there."));
 		if (!status.empty()) ImGui::TextWrapped("%s", status.c_str());
 		for (const std::string &w : warnings) ImGui::TextColored(ImVec4(1.f, 0.75f, 0.3f, 1.f), "%s", w.c_str());
 	} else {
