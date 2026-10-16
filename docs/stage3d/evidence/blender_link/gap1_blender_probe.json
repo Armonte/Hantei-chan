@@ -1,0 +1,24 @@
+{
+ "blender": "5.2.2 LTS",
+ "background": true,
+ "argv": [
+  "C:/apps/blender-5.2.2-windows-x64/blender.exe",
+  "--python-expr",
+  "import addon_utils,bpy; addon_utils.enable('MBTL_fbx_json', default_set=True, persistent=True); bpy.ops.mbtl.hantei_open(filepath=r'C:/dev/hantei-chan/work/blender_live/uni2/bg/bg001/bg.fbx.bin')",
+  "--background"
+ ],
+ "stage": "C:\\dev\\hantei-chan\\work\\blender_live\\uni2\\bg\\bg001\\bg.fbx.bin",
+ "kind": "fbxex",
+ "objects": 83,
+ "meshes": 78,
+ "nodes": 82,
+ "edit": {
+  "object": "0010",
+  "node": 10,
+  "dx": 60.0
+ },
+ "export": [
+  "FINISHED"
+ ],
+ "exported": "C:\\dev\\hantei-chan\\work\\blender_live\\uni2\\bg\\bg001\\bg.fbx.bin"
+}

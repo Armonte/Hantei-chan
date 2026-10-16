@@ -497,13 +497,15 @@ static std::string BlenderExe()
 	return d;
 }
 
-static bool LaunchBlender(State& s, std::string& cmdOut)
+// background: the same command plus --background (ui-script check of the launch path without a Blender window)
+static bool LaunchBlender(State& s, std::string& cmdOut, bool background = false)
 {
 	std::string err;
 	const std::string exe = BlenderExe();
 	if (exe.empty()) { s.blenderStatus = TXT("Blender not found: set its path in Preferences."); HC_LOG_WARN("stage3d: blender: not found"); return false; }
 	cmdOut = s3d::BlenderCommandLine(exe, fs::absolute(fs::u8path(s.modelPath)).u8string(), err);
 	if (cmdOut.empty()) { s.blenderStatus = err; HC_LOG_ERROR("stage3d: blender: {}", err); return false; }
+	if (background) cmdOut += " --background";
 #ifdef _WIN32
 	auto wide = [](const std::string& u) {
 		std::wstring w(MultiByteToWideChar(CP_UTF8, 0, u.c_str(), int(u.size()), nullptr, 0), L'\0');
@@ -515,7 +517,7 @@ static bool LaunchBlender(State& s, std::string& cmdOut)
 	STARTUPINFOW si{};
 	si.cb = sizeof(si);
 	PROCESS_INFORMATION pi{};
-	if (!CreateProcessW(nullptr, cl.data(), nullptr, nullptr, FALSE, DETACHED_PROCESS, nullptr, dir.empty() ? nullptr : dir.c_str(), &si, &pi)) {
+	if (!CreateProcessW(nullptr, cl.data(), nullptr, nullptr, FALSE, CREATE_NO_WINDOW, nullptr, dir.empty() ? nullptr : dir.c_str(), &si, &pi)) {
 		s.blenderStatus = std::string(TXT("Could not start Blender:")) + " " + exe;
 		HC_LOG_ERROR("stage3d: blender: CreateProcess failed ({}): {}", GetLastError(), cmdOut);
 		return false;
@@ -753,7 +755,12 @@ bool ScriptCommand(const std::string& cmd, const std::string& arg, std::string* 
 	}
 	if (sub == "blender") {   // blender [launch]: the launch command for the loaded stage; "launch" also starts Blender
 		if (!s.loaded) { out("FAILED no stage loaded"); return true; }
-		if (rest == "launch") { std::string cmd; const bool ok = LaunchBlender(s, cmd); out(ok ? "ok " + cmd : "FAILED " + s.blenderStatus); return true; }
+		if (rest == "launch" || rest == "launch-bg") {
+			std::string cmd;
+			const bool ok = LaunchBlender(s, cmd, rest == "launch-bg");
+			out(ok ? "ok " + cmd : "FAILED " + s.blenderStatus);
+			return true;
+		}
 		const std::string exe = BlenderExe();
 		const std::string cmd = s3d::BlenderCommandLine(exe.empty() ? std::string("blender.exe") : exe, fs::absolute(fs::u8path(s.modelPath)).u8string(), err);
 		out(cmd.empty() ? "FAILED " + err : cmd);
