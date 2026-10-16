@@ -31,6 +31,21 @@ int main()
 	auto c = FbmodParseReloadReply("OK resources: chr000 P1 (slot 0): ha6 cg pat pal | scripts: OK reloaded chr000");
 	CHECK(!c.engine && !c.refused && !c.hasRoots && c.ms == -1);
 
+	// Shared battle files -> reloadstd.
+	CHECK(FbmodIsSharedFile("script/btl_StdMoveTbl.txt") && FbmodIsSharedFile("script/btl_MvFunc.txt"));
+	CHECK(FbmodIsSharedFile("script/Battle_Std.txt") && FbmodIsSharedFile("./script/sq_stagebgm.txt"));
+	CHECK(FbmodIsSharedFile("data/VectorTable.txt") && FbmodIsSharedFile("data/BattleInfo.txt"));
+	CHECK(FbmodIsSharedFile("data/BoundEff.txt") && FbmodIsSharedFile("data\\_combase.txt"));
+	CHECK(!FbmodIsSharedFile("data/chr000/chr000_mv_0.txt") && !FbmodIsSharedFile("data/effect.txt"));
+	CHECK(!FbmodIsSharedFile("script/sub/x.txt") && !FbmodIsSharedFile("script/readme.md"));
+	CHECK(FbmodStdReloadRequest(false) == "reloadstd" && FbmodStdReloadRequest(true) == "reloadstd live");
+	auto d = FbmodParseReloadReply("OK reloadstd: Battle_Init + Battle_Std (btl_*, cmn_SetPosition, sq_stagebgm) + _combase re-run; VectorTable, BattleInfo, BoundEff reparsed | engine rebuild: chars 0/0 stage 1 quick; back in battle after 1141 ms");
+	CHECK(d.stdReload && d.engine && d.backInBattle && d.ms == 1141 && !d.refused);
+	auto e = FbmodParseReloadReply("OK reloadstd live: Battle_Init + Battle_Std ... reparsed | chr000 sc: OK chr000 P1 (slot 0): sc ./data/chr000/chr000_sc_0.txt");
+	CHECK(e.stdReload && !e.engine && e.ms == -1);
+	CHECK(FbmodParseReloadReply("ERROR reloadstd refused in session Offline").refused);
+	CHECK(!FbmodParseReloadReply("OK engine rebuild chr000: x; back in battle after 5 ms").stdReload);
+
 	if (g_fail) return 1;
 	std::printf("fbmod_link_test: ok\n");
 	return 0;
