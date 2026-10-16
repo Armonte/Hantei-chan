@@ -33,7 +33,7 @@ const std::vector<GameDef> &Games()
 		  "txt project stack: _temp.ha6 + chrNNN.ha6 + BaseData.HA6 + .cg + .pal + .pat (loadFromTxt, 3 AFGX layers)",
 		  "data000..019.bin, no table inside: the file table is read from MBTL.exe; per-entry XOR cipher; read-only here",
 		  { "TYPE LUMINA" }, { "C:\\Program Files (x86)\\Steam\\steamapps\\common\\MELTY BLOOD TYPE LUMINA", "D:\\SteamLibrary\\steamapps\\common\\MELTY BLOOD TYPE LUMINA" },
-		  Support::Characters, "Archives are never written: a character opens as a working copy (Save writes the copy; "Save to mod folder" in the CG manager writes <game>\\MBTL-IM\\Mods\\..., loaded through fbmod / MBTL-IM). Needs MBTL.exe next to data*.bin." },
+		  Support::Characters, "Archives are never written: a character opens as a working copy (Save writes the copy; 'Save to mod folder' in the CG manager writes <game>\\MBTL-IM\\Mods\\..., loaded through fbmod / MBTL-IM). Needs MBTL.exe next to data*.bin." },
 		{ Game::UNI2, "UNI2", "Under Night In-Birth II Sys:Celes", "UNDER NIGHT IN-BIRTH II Sys:Celes", Family::Hantei6Modern,
 		  "txt project stack (loadFromTxt, 5 AFGX layers)",
 		  "<install>\\d\\ : obfuscated index files + data files, entries stored raw; read-only here",
