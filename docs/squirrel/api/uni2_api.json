@@ -16749,20 +16749,6 @@
   "ea": "0x8dd280"
  },
  {
-  "kind": "class",
-  "name": "MvStageStatus",
-  "qualified": "BMvTbl.MvStageStatus",
-  "cpp": "BtlMvFunc::MvStageStatus",
-  "table": "BMvTbl"
- },
- {
-  "kind": "class",
-  "name": "MvNetworkInfo",
-  "qualified": "BMvTbl.MvNetworkInfo",
-  "cpp": "BtlMvFunc::MvNetworkInfo",
-  "table": "BMvTbl"
- },
- {
   "kind": "var",
   "name": "NetworkVsMode",
   "table": "MvNetworkInfo",
@@ -16781,13 +16767,6 @@
   "vartype": "Sqrat_Class_BindVarClosure",
   "type": "short",
   "offset": 4
- },
- {
-  "kind": "class",
-  "name": "MvRoundStatus",
-  "qualified": "BMvTbl.MvRoundStatus",
-  "cpp": "BtlMvFunc::MvRoundStatus",
-  "table": "BMvTbl"
  },
  {
   "kind": "var",
@@ -16900,13 +16879,6 @@
   "offset": 20
  },
  {
-  "kind": "class",
-  "name": "MvRecoverStatus",
-  "qualified": "BMvTbl.MvRecoverStatus",
-  "cpp": "CPcRecoverStatus",
-  "table": "BMvTbl"
- },
- {
   "kind": "var",
   "name": "Type",
   "table": "MvRecoverStatus",
@@ -16925,13 +16897,6 @@
   "vartype": "Sqrat_Class_BindVarClosure",
   "type": "int",
   "offset": 4
- },
- {
-  "kind": "class",
-  "name": "MvInterruptInfo",
-  "qualified": "BMvTbl.MvInterruptInfo",
-  "cpp": "BtlMvFunc::MvInterruptInfo",
-  "table": "BMvTbl"
  },
  {
   "kind": "var",
@@ -16992,20 +16957,6 @@
   "vartype": "Sqrat_Class_BindVarClosure",
   "type": "int",
   "offset": 20
- },
- {
-  "kind": "class",
-  "name": "MvHitEffectInfo",
-  "qualified": "BMvTbl.MvHitEffectInfo",
-  "cpp": "BtlMvFunc::MvHitEffectInfo",
-  "table": "BMvTbl"
- },
- {
-  "kind": "class",
-  "name": "MvHitImpactInfo",
-  "qualified": "BMvTbl.MvHitImpactInfo",
-  "cpp": "BtlMvFunc::MvHitImpactInfo",
-  "table": "BMvTbl"
  },
  {
   "kind": "var",
@@ -17118,13 +17069,6 @@
   "offset": 24
  },
  {
-  "kind": "class",
-  "name": "MvHitStatus",
-  "qualified": "BMvTbl.MvHitStatus",
-  "cpp": "BtlMvFunc::MvHitStatus",
-  "table": "BMvTbl"
- },
- {
   "kind": "var",
   "name": "Type",
   "table": "MvHitStatus",
@@ -17193,13 +17137,6 @@
   "vartype": "Sqrat_Class_BindVarClosure",
   "type": "short",
   "offset": 6
- },
- {
-  "kind": "class",
-  "name": "MvStatus",
-  "qualified": "BMvTbl.MvStatus",
-  "cpp": "BtlMvFunc::MvStatus",
-  "table": "BMvTbl"
  },
  {
   "kind": "var",
@@ -17382,13 +17319,6 @@
   "offset": 40
  },
  {
-  "kind": "class",
-  "name": "CCharaPoint4",
-  "qualified": "BMvTbl.CCharaPoint4",
-  "cpp": "BtlMvFunc::CCharaPoint4",
-  "table": "BMvTbl"
- },
- {
   "kind": "var",
   "name": "x0",
   "table": "CCharaPoint4",
@@ -17469,13 +17399,6 @@
   "offset": 28
  },
  {
-  "kind": "class",
-  "name": "CCharaRect",
-  "qualified": "BMvTbl.CCharaRect",
-  "cpp": "BtlMvFunc::CCharaRect",
-  "table": "BMvTbl"
- },
- {
   "kind": "var",
   "name": "sx",
   "table": "CCharaRect",
@@ -17516,13 +17439,6 @@
   "offset": 12
  },
  {
-  "kind": "class",
-  "name": "CCharaPosition",
-  "qualified": "BMvTbl.CCharaPosition",
-  "cpp": "BtlMvFunc::CCharaPosition",
-  "table": "BMvTbl"
- },
- {
   "kind": "var",
   "name": "x",
   "table": "CCharaPosition",
@@ -17541,13 +17457,6 @@
   "vartype": "Sqrat_Class_BindVarClosure",
   "type": "int",
   "offset": 4
- },
- {
-  "kind": "class",
-  "name": "CCharaVector",
-  "qualified": "BMvTbl.CCharaVector",
-  "cpp": "BtlMvFunc::CCharaVector",
-  "table": "BMvTbl"
  },
  {
   "kind": "var",
@@ -17590,6 +17499,117 @@
   "offset": 12
  },
  {
+  "kind": "var",
+  "name": "Player1",
+  "table": "CPlayerSt",
+  "qualified_table": "tSceneVS.CPlayerSt",
+  "ea": "0x8444ec",
+  "vartype": "Sqrat_Class_VarStdString",
+  "type": "string",
+  "offset": 8
+ },
+ {
+  "kind": "var",
+  "name": "Player2",
+  "table": "CPlayerSt",
+  "qualified_table": "tSceneVS.CPlayerSt",
+  "ea": "0x8444fb",
+  "vartype": "Sqrat_Class_VarStdString",
+  "type": "string",
+  "offset": 32
+ },
+ {
+  "kind": "class",
+  "name": "MvStageStatus",
+  "qualified": "BMvTbl.MvStageStatus",
+  "cpp": "BtlMvFunc::MvStageStatus",
+  "table": "BMvTbl"
+ },
+ {
+  "kind": "class",
+  "name": "MvNetworkInfo",
+  "qualified": "BMvTbl.MvNetworkInfo",
+  "cpp": "BtlMvFunc::MvNetworkInfo",
+  "table": "BMvTbl"
+ },
+ {
+  "kind": "class",
+  "name": "MvRoundStatus",
+  "qualified": "BMvTbl.MvRoundStatus",
+  "cpp": "BtlMvFunc::MvRoundStatus",
+  "table": "BMvTbl"
+ },
+ {
+  "kind": "class",
+  "name": "MvRecoverStatus",
+  "qualified": "BMvTbl.MvRecoverStatus",
+  "cpp": "CPcRecoverStatus",
+  "table": "BMvTbl"
+ },
+ {
+  "kind": "class",
+  "name": "MvInterruptInfo",
+  "qualified": "BMvTbl.MvInterruptInfo",
+  "cpp": "BtlMvFunc::MvInterruptInfo",
+  "table": "BMvTbl"
+ },
+ {
+  "kind": "class",
+  "name": "MvHitEffectInfo",
+  "qualified": "BMvTbl.MvHitEffectInfo",
+  "cpp": "BtlMvFunc::MvHitEffectInfo",
+  "table": "BMvTbl"
+ },
+ {
+  "kind": "class",
+  "name": "MvHitImpactInfo",
+  "qualified": "BMvTbl.MvHitImpactInfo",
+  "cpp": "BtlMvFunc::MvHitImpactInfo",
+  "table": "BMvTbl"
+ },
+ {
+  "kind": "class",
+  "name": "MvHitStatus",
+  "qualified": "BMvTbl.MvHitStatus",
+  "cpp": "BtlMvFunc::MvHitStatus",
+  "table": "BMvTbl"
+ },
+ {
+  "kind": "class",
+  "name": "MvStatus",
+  "qualified": "BMvTbl.MvStatus",
+  "cpp": "BtlMvFunc::MvStatus",
+  "table": "BMvTbl"
+ },
+ {
+  "kind": "class",
+  "name": "CCharaPoint4",
+  "qualified": "BMvTbl.CCharaPoint4",
+  "cpp": "BtlMvFunc::CCharaPoint4",
+  "table": "BMvTbl"
+ },
+ {
+  "kind": "class",
+  "name": "CCharaRect",
+  "qualified": "BMvTbl.CCharaRect",
+  "cpp": "BtlMvFunc::CCharaRect",
+  "table": "BMvTbl"
+ },
+ {
+  "kind": "class",
+  "name": "CCharaPosition",
+  "qualified": "BMvTbl.CCharaPosition",
+  "cpp": "BtlMvFunc::CCharaPosition",
+  "table": "BMvTbl"
+ },
+ {
+  "kind": "class",
+  "name": "CCharaVector",
+  "qualified": "BMvTbl.CCharaVector",
+  "cpp": "BtlMvFunc::CCharaVector",
+  "table": "BMvTbl"
+ },
+ {
   "kind": "class",
   "name": "UpdateSt",
   "qualified": "BCom.UpdateSt",
@@ -17609,26 +17629,6 @@
   "qualified": "tSceneVS.CPlayerSt",
   "cpp": "CSceneVS_PlayerSt",
   "table": "tSceneVS"
- },
- {
-  "kind": "var",
-  "name": "Player1",
-  "table": "CPlayerSt",
-  "qualified_table": "tSceneVS.CPlayerSt",
-  "ea": "0x8444ec",
-  "vartype": "Sqrat_Class_VarStdString",
-  "type": "string",
-  "offset": 8
- },
- {
-  "kind": "var",
-  "name": "Player2",
-  "table": "CPlayerSt",
-  "qualified_table": "tSceneVS.CPlayerSt",
-  "ea": "0x8444fb",
-  "vartype": "Sqrat_Class_VarStdString",
-  "type": "string",
-  "offset": 32
  },
  {
   "kind": "class",
