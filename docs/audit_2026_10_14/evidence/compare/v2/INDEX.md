@@ -1299,3 +1299,93 @@ Its only reader is `Han6Draw_SubmitCgSprite_ParentMtx` 0x4A0C40: 0x4A0F68 picks 
 `TecCharaDrawBgColorSpecular_V` (specular pass 1). So it changes the shader technique of zoomed-in CG sprites only.
 .pat parts draw through `TecCharaPtDraw_V`, which has no Filter variant, so the three .pat cases here are not affected.
 The Filter techniques' shader body is not in the repo yet; a CG-sprite row at zoom 1.5 is the place to measure it.
+
+## Round 22 (2026-10-16): remainder closure
+Docs only. No editor change, no build, no game run. Static trace in the MBTL IDB (renamed, commented, saved) plus
+floor-strip statistics on the existing round-19 `_sa` captures. The `v2_round19.sh` rows reproduce unchanged
+(s456 0.60 / band 0.58, p238 0.23 / band 0.21).
+
+### The stage-21 character shadow path (MBTL IDB)
+- `Stage_LoadBgListParams` 0x4F38B0 reads `ShadowLightType` into the BgList record at +0xFC (0x4F52F5; -1 = none,
+  1 = texture colour), the `ShadowLightStatus` count (max 8) into +0x100, and the lights into +0x104 (0x1C bytes each).
+  The record array was named `g_StageNames`. It is renamed `g_StageBgListRecords` 0xAFC170 (0x234-byte records).
+- `Stage_HasCharaShadow` 0x4F1DC0 returns record+0xFC >= 0. `BattleProc_UpdateFrame` also copies that test into
+  `g_CharaShadowRT_Enabled` 0xC7BE60 and calls `CharaShadowRT_RenderAndComposite` 0x4B6540 on the draw pass. That
+  function renders the 1280x720 RT `g_CharaShadowRT` 0xC7BDF8, whose list is `g_CharaShadowRT_DrawList` 0xC7BE18, and
+  draws it back.
+- `Object_DrawWithStageShadow` 0x597B90 is the per-object draw. Its callers are `BattleProc_UpdateFrame` and
+  `ObjectList_DrawAllWithShadows` 0x5371C0 (new function). It does three things:
+  1. The main `Han6Object_Draw` 0x597070. Its alpha is the draw-alpha override obj+0x648 while obj+0x654 > 0
+     (0x597CEC). That is what gamecap's plate hide holds at 0.
+  2. Then the shadow pass. Gates: `Stage_HasCharaShadow`, stage index >= 0, `byte_C0B906`, a full-screen fade value
+     (`Stage_GetMaxFadeOverlay` 0x5003E0, a guessed name) < 1, and the shadow option at `dword_3642AF8`+0x10AFC != 0.
+     The mode is 1 for players (`PLAYER_DATA` vtbl+8 = `PlayerData_GetObjType_Ret1` 0x40D780). Other objects need
+     `_ObjFlags_RenderShadow` 0x10000 in obj+0x7C. The pass draws the same object again into the shadow list, with:
+     - alpha forced to 255 (0x5984F8), so it does **not** read obj+0x648;
+     - shadow params {type = record+0xFC, y squash = +0x224, alpha = +0x228} and the per-light colour and x fade
+       (`CharaShadow_ApplyStageShadowLight` 0x596D60, one draw per ShadowLightStatus light);
+     - draw mode 100 + type in `Han6Object_Draw`, so type 1 gives 0x65 = `TecCharaPtDraw_ShadowV_TEX`. This is the
+       ShadowLightType → mode-0x65 link left open in round 19.
+  3. A third, reflection draw from `ShadowReflexColor` (+0x1E4..+0x1F0) when its strength is > 0.
+
+### Why the plate_b0 extra is there and why it fades one step later
+- The hide cannot remove the shadow pass. The plate hide only changes obj+0x648, and the shadow pass forces alpha 255.
+  This is the engine-backed reason that P1/P2 vanish from `plate_b0` while their secondary draws stay.
+- The p157 floor light is **not** P1's shadow silhouette. Floor-strip means (y 660–705, x 500–900, minus the p277
+  `plate_b0`) on the existing `_sa` shots:
+
+| case | game_bb | plate_b0 | plate_bb (one F6 tick) |
+|---|---|---|---|
+| p0f0 / p238f10 / p277f0 | 0.00 | 0.00 | 0.00 (b0 = bb pixel-identical outside the lamp) |
+| p157f2 full | +4.9 / +8.1 / +6.8 (fighter in strip) | +0.36 / +0.27 / +1.11 | +0.19 / +0.14 / +0.60 |
+| p157f2 solo s8 | (fighter) | +0.36 / +0.27 / +1.11 | +0.19 / +0.14 / +0.60 |
+| p157f2 solo s456 | +0.36 / +0.28 / +1.11 | +0.36 / +0.27 / +1.11 | +0.19 / +0.14 / +0.60 |
+
+  - The three non-p157 controls show no floor term at all, so P1's stage-21 shadow pass leaves nothing visible on this
+    floor. The term is the same with the full .pat and with the s8 and s456 solo .pats, which share pattern 157 but
+    have different frame-2 layers. A silhouette of P1's parts would change between them. So the term comes from
+    state that pattern 157 sets up outside P1's drawn frame, such as an effect object or a light it spawns. The plate
+    hide covers only P1 and P2, not effect objects.
+  - The term roughly halves after one F6 tick (blue +1.11 → +0.60). It does not vanish outright. So it is
+    tick-driven state that decays as the move advances. It is not a last-frame draw list (the RT list is refilled on
+    every draw pass, and b0 is taken after 8 draw-only frames) and not the hide flag.
+  - Not traced: which object or light pattern 157 spawns. The probe, if it is ever needed, is one gamecap peek of
+    `g_ObjectListCount` and the effect entries at `plate_b0` against `plate_bb`. No run was made: the verdict below does
+    not depend on it.
+- **Verdict: the plate_b0 method is correct.** `plate_b0` is taken on the same battle tick as the game shot (no F6
+  between them; sidecar tick 1, `tick_plate_b` 2 only after the step). Every non-P1/P2 draw is in the same state,
+  including this term and the stage anime (held). The editor draws only P1's pattern frame, so everything else belongs
+  in the backdrop. The s456 solo game shot equals its `plate_b0` in the floor strip to 0.01, which shows that the game
+  shot's term is the `plate_b0` term. Use `plate_b0` for every MBTL stage row. `plate` / `plate_bb` (one tick later)
+  is wrong for p157 and identical for the rest.
+- **Follow-up (not implemented):** the editor draws no stage shadow. When a stage with `ShadowLightType >= 0` is
+  previewed, the engine model is a second draw of the frame into a shadow layer: alpha 255, y scaled by record+0x224,
+  alpha × record+0x228, and per-light colour / x fade from ShadowLightStatus. Mode 0x64 is `TecCharaPtDraw_ShadowV`
+  and mode 0x65 is `_TEX`. Then the reflection draw from ShadowReflexColor. The shader bodies are not in the repo.
+  Measuring this needs a case where the shadow is visible. None of the current rows shows one.
+
+### Final table (zoom 1 `_sa` + plate_b0, zoom 1.5 `_z15sa` + plate_b0; `--subpix 0,0`)
+| case | residual | band ±1 | px > 24 | floor reason |
+|---|---|---|---|---|
+| mbtl_patctrl_chr001_p238f10_z1 | **0.23** | 0.21 | 0.0% | 8-bit rounding of the s18 translucent plane (round 17); tray 0.01 |
+| mbtl_patctrl_chr001_p277f0_z1 | **0.00** | 0.00 | 0.0% | opaque point-sampled parts: pixel-exact |
+| mbtl_flipV_chr001_p157f2_z1 | **0.18** | – | 0.0% | under the p238 control; the additive props and the s8 arc are on the same blend-rounding floor |
+| mbtl_flipV_chr001_p157f2_solo_s8_z1 | **0.01** | – | 0.0% | one opaque part: exact once the backdrop is plate_b0 |
+| mbtl_flipV_chr001_p157f2_solo_s456_z1 | **0.60** | 0.58 | 0.0% | see below |
+| mbtl_patctrl_chr001_p238f10 (zoom 1.5) | **0.24** | 0.19 | – | the zoom-1 floor (round 21) |
+| mbtl_patctrl_chr001_p277f0 (zoom 1.5) | **0.00** | 0.00 | – | pixel-exact |
+| mbtl_flipV_chr001_p157f2 (zoom 1.5) | **0.19** | 0.18 | – | the zoom-1 floor (round 21) |
+
+**s456 at 0.60 is at its floor.**
+- Its whole 13,156 px footprint is the three additive thin-line arcs (slots 4/5/6). No pixel is over 24, and the
+  ±1 band changes nothing (0.60 → 0.58), so none of it sits on an edge or comes from registration.
+- The game shot and plate_b0 agree on the backdrop (lamp 127.2 / 127.2, floor strip to 0.01). What remains is the
+  same 8-bit blend-rounding floor as p238: each blend into the X8R8G8B8 backbuffer rounds, while the prediction
+  P + Q·B is float.
+- p238's single translucent layer gives 0.32–0.40 per pixel. s456 stacks three additive arcs per pixel (each rounds
+  once), so its per-pixel floor is about √3 × 0.35 ≈ 0.6. This is an estimate from the p238 split, not a new fit.
+- The earlier s456 figures (0.75 in round 10, 0.72 in round 18) were measured against later-tick plates. They carried
+  part of the p157 term described above (+0.6 blue in the strip), which is how the window plate still gives 0.72.
+
+**Status: every MBTL row is at its floor. Nothing is left untraced on the parity side except the identity of the
+p157 spawned floor term, which plate_b0 already covers by construction.**
