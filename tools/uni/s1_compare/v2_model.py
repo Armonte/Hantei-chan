@@ -184,7 +184,7 @@ def layer_weight(bw, cg, pat, full, org):
     return np.clip(w, 0, 1), ('pat over CG' if e_pat_top < e_cg_top else 'CG over pat'), min(e_cg_top, e_pat_top)
 
 
-def mbtl_light(stage, std_h, xpos):
+def mbtl_light(stage, std_h, xpos, zoom=1.0):
     """MBTL CG character shading (IDA MBTL 25646393, renamed and saved): Han6Draw_DrawFrameLayers_2to0 0x4A0750 draws
     each CG layer three times through Han6Draw_SubmitCgSprite_ParentMtx 0x4A0C40 (Shader/sh_chara.txt):
       TecCharaDrawBgColor_V      normal blend:  pal * vcol * (base + height * t)
@@ -203,9 +203,12 @@ def mbtl_light(stage, std_h, xpos):
     col = strip('stage_color.img')[:, xi]; spc = strip('stage_specular.img')[:, xi]
     bk = strip('stage_bokashi_alpha.img')[0, xi, 0] / 255.0
     from numpy.lib.stride_tricks import sliding_window_view
-    def boxmean(a, r=4): return sliding_window_view(np.pad(a, r), (2 * r + 1, 2 * r + 1)).mean((-1, -2))
+    # zoom: t is in sprite px (std_h * zoom screen px); the bokashi 9x9 is in texels, approximated here by a screen box of
+    # radius round(4 * zoom). At zoom > 1 the colour pass is the editor's Filter_V output (P already blurred, Q its alpha).
+    R = int(round(4 * zoom))
+    def boxmean(a, r=R): return sliding_window_view(np.pad(a, r), (2 * r + 1, 2 * r + 1)).mean((-1, -2))
     def fn(P, Q, B, rows, gorg):
-        t = np.clip((gorg[1] - rows) / std_h, 0, 1)
+        t = np.clip((gorg[1] - rows) / (std_h * zoom), 0, 1)
         op = 1 - Q.mean(2); opm = op > 0.5; cnt = boxmean(opm.astype(np.float64))
         out = np.empty_like(P)
         for c in range(3):
@@ -231,6 +234,8 @@ def measure(a, quiet=False):
 
 def _measure(a):
     # every sheet global a run may set, back to its default (measure() runs many times per process under --subpix-fit)
+    exc = arg(a, '--exclude')  # x0,y0,x1,y1[;...] game px: left out of the footprint (e.g. the training frame counter)
+    sh.EXCLUDE = [tuple(int(v) for v in b.split(',')) for b in exc.split(';')] if exc else []
     sh.ROW_ADD = None; sh.ROW_ADD_W = None; sh.POST_ADD = None; sh.POST_ADD_SRC = None; sh.LIGHT_FN = None; sh.LIGHT = None
     bw = arg(a, '--bw', os.path.join(D, 'docs/audit_2026_10_14/evidence/compare/v2/editor_bw'))
     gd = arg(a, '--game', '/mnt/c/dev/hantei-chan/tools/gamecap/captures/v2')
@@ -325,7 +330,7 @@ def _measure(a):
     if fitl: light = fit  # free least-squares (k, c): the floor for CG sprites, whose shader adds its own stage colour
     sh.LIGHT = light
     if ml:
-        st, sth = ml.split(','); sh.LIGHT_FN = mbtl_light(st, float(sth), meta.get('p1_x', 0))
+        st, sth = ml.split(','); sh.LIGHT_FN = mbtl_light(st, float(sth), meta.get('p1_x', 0), zoom)
         sh.LIGHT = [(1.0, 0.0)] * 3; light = 'mbtl %s StdH %s' % (st, sth)
     r = sh.game_vs_model(game, pl, ek, ew, zoom, meta, org)
     _, lmean, lch, lpred, ldiff = sh.game_vs_model.last_light

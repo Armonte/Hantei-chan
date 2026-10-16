@@ -56,6 +56,8 @@ static void ReadLine(ImGuiContext*, ImGuiSettingsHandler*, void* entry, const ch
 		gSettings.invertWheelZoom = i != 0;
 	} else if (sscanf(line, "StagePatAuthoring=%i", &i) == 1){
 		gSettings.stagePatAuthoring = i != 0;
+	} else if (sscanf(line, "MbtlCgZoomFilter=%i", &i) == 1){
+		gSettings.mbtlCgZoomFilter = i != 0;
 	} else if (sscanf(line, "StageClampCamera=%i", &i) == 1){
 		gSettings.stageClampCamera = i != 0;
 	} else if (sscanf(line, "StageGame=%i", &i) == 1){
@@ -147,6 +149,7 @@ static void Write(ImGuiContext* ctx, ImGuiSettingsHandler* handler, ImGuiTextBuf
 	buf->appendf("StageGame=%i\n", gSettings.stageGame);
 	buf->appendf("StagePatAuthoring=%i\n", gSettings.stagePatAuthoring ? 1 : 0);
 	buf->appendf("StageClampCamera=%i\n", gSettings.stageClampCamera ? 1 : 0);
+	buf->appendf("MbtlCgZoomFilter=%i\n", gSettings.mbtlCgZoomFilter ? 1 : 0);
 	buf->appendf("BackupHa6=%i\n", gSettings.backupHa6 ? 1 : 0);
 	buf->appendf("BackupPat=%i\n", gSettings.backupPat ? 1 : 0);
 	buf->appendf("BackupKeep=%i\n", gSettings.backupKeep);
