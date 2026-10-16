@@ -68,8 +68,26 @@ std::vector<std::string> BlenderCandidates(const std::vector<std::string>& found
 	});
 	std::vector<std::string> out;
 	for (const V& v : vs) out.push_back(v.path);
-	out.push_back("C:/dev/blender40/blender-4.0.2-windows-x64/blender.exe");
 	return out;
+}
+
+const char* DefaultBlenderPath() { return "C:/apps/blender-5.2.2-windows-x64/blender.exe"; }
+
+bool BlenderPathIsPre5(const std::string& exePath)
+{
+	std::string p = exePath;
+	std::replace(p.begin(), p.end(), '\\', '/');
+	size_t i = 0;
+	while (i <= p.size()) {   // any path component "Blender X.Y" / "blender-X.Y.Z-..." with X < 5
+		const size_t j = std::min(p.find('/', i), p.size());
+		const std::string part = p.substr(i, j - i);
+		for (const char* prefix : {"Blender ", "blender-"}) {
+			const std::vector<int> v = ParseVersion(part, prefix);
+			if (!v.empty()) return v[0] < 5;
+		}
+		i = j + 1;
+	}
+	return false;
 }
 
 static std::vector<std::string> ChildDirs(const char* dir)

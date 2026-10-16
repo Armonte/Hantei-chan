@@ -50,5 +50,5 @@
 {"Blender executable", "Blender 実行ファイル"},
 {"auto-detect", "自動検出"},
 {"Auto-detect", "自動検出"},
-{"Used by the 3D Stage view's Open in Blender (MBTL_fbx_json add-on). Empty: newest Blender found.", "3D ステージビューの「Blender で開く」で使用 (MBTL_fbx_json アドオン)。空欄: 見つかった最新の Blender。"},
+{"Used by the 3D Stage view's Open in Blender (MBTL_fbx_json add-on, Blender 5.2). Missing or empty: newest Blender found.", "3D ステージビューの「Blender で開く」で使用 (MBTL_fbx_json アドオン、Blender 5.2)。見つからないか空欄: 見つかった最新の Blender。"},
 {"3D stage: Blender", "3D ステージ: Blender"},

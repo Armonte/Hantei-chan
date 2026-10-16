@@ -288,14 +288,21 @@ static void TestBlenderLink()
 	CHECK(cl.size() > 3 && cl.substr(cl.size() - 3) == "')\"");
 	CHECK(s3d::BlenderCommandLine("", "C:/s/bg.fbx.bin", err).empty());
 	const auto c = s3d::BlenderCandidates({"Blender 4.0", "Blender 4.10", "notes", "Blender 4.5", "Blender 3.6"});
-	CHECK(c.size() == 5);
-	CHECK(c.size() == 5 && c[0] == "C:/Program Files/Blender Foundation/Blender 4.10/blender.exe" && c[1].find("Blender 4.5/") != std::string::npos
-		&& c[3].find("Blender 3.6/") != std::string::npos && c[4] == "C:/dev/blender40/blender-4.0.2-windows-x64/blender.exe");
+	CHECK(c.size() == 4);
+	CHECK(c.size() == 4 && c[0] == "C:/Program Files/Blender Foundation/Blender 4.10/blender.exe" && c[1].find("Blender 4.5/") != std::string::npos
+		&& c[3].find("Blender 3.6/") != std::string::npos);
+	// default + migration: the add-on targets Blender 5.2; a saved pre-5 path is not migrated
+	CHECK(std::string(s3d::DefaultBlenderPath()) == "C:/apps/blender-5.2.2-windows-x64/blender.exe");
+	CHECK(s3d::BlenderPathIsPre5("C:/Program Files/Blender Foundation/Blender 4.5/blender.exe"));
+	CHECK(s3d::BlenderPathIsPre5("C:\\dev\\blender40\\blender-4.0.2-windows-x64\\blender.exe"));
+	CHECK(!s3d::BlenderPathIsPre5("C:/apps/blender-5.2.2-windows-x64/blender.exe"));
+	CHECK(!s3d::BlenderPathIsPre5("C:/Program Files/Blender Foundation/Blender 5.2/blender.exe"));
+	CHECK(!s3d::BlenderPathIsPre5("D:/tools/blender.exe"));
 	// portable C:/apps/blender-X.Y.Z builds join the sort: 5.2.2 > 5.2 > 4.5.1 > 4.5 (portable first on a tie)
 	const auto c2 = s3d::BlenderCandidates({"Blender 4.5", "Blender 5.2", "Blender 4.0"},
 		{"blender-5.2.2-windows-x64", "blender-4.5-windows-x64", "blender-notes", "blender-4.5.1-windows-x64"});
-	CHECK(c2.size() == 7);
-	CHECK(c2.size() == 7 && c2[0] == "C:/apps/blender-5.2.2-windows-x64/blender.exe"
+	CHECK(c2.size() == 6);
+	CHECK(c2.size() == 6 && c2[0] == "C:/apps/blender-5.2.2-windows-x64/blender.exe"
 		&& c2[1] == "C:/Program Files/Blender Foundation/Blender 5.2/blender.exe"
 		&& c2[2] == "C:/apps/blender-4.5.1-windows-x64/blender.exe"
 		&& c2[3] == "C:/apps/blender-4.5-windows-x64/blender.exe"
