@@ -1440,6 +1440,16 @@ bool ScriptPanel::scriptCommand(const std::string& sub, const std::string& arg, 
 	}
 	else if (sub == "tab") { m->bottomTab = atoi(arg.c_str()); m->selectBottomTab = true; }
 	else if (sub == "type") { m->editor.ReplaceTextInCurrentCursor(arg); }
+	else if (sub == "save") { requestSave(); out = "save requested"; }   // the next frame runs the Ctrl+S path (checks, backup, hot reload)
+	else if (sub == "hotreload") {   // hotreload on|off|ping|status|pipe <name>|gamedir <dir>: the Hot reload row of the panel
+		const size_t sp = arg.find(' ');
+		const std::string verb = arg.substr(0, sp), rest = sp == std::string::npos ? "" : arg.substr(sp + 1);
+		if (verb == "on" || verb == "off") { gSettings.sqHotReload = verb == "on"; out = std::string("hot reload ") + verb; }
+		else if (verb == "pipe") { if (!rest.empty()) { m->hotPipe = rest; m->hotPipeGame = m->game; } out = "pipe " + m->hotPipe; }
+		else if (verb == "gamedir") { if (!rest.empty()) m->hotGameDirSetting() = rest; out = "game dir " + m->hotGameDir(); }
+		else if (verb == "ping") { Impl::HotTask t; t.pipe = m->hotPipe.empty() ? (m->game == "mbtl" ? "fbmod-mbtl" : "fbmod-uni2") : m->hotPipe; m->startHot(t); out = "ping " + t.pipe; }
+		else out = std::string(m->hotBusy ? "busy: " : "") + (m->hotStatusOk ? "ok: " : "error: ") + m->hotStatus;
+	}
 	else if (sub == "problems") {
 		m->recheck();
 		out = std::to_string(m->problems.size()) + " problem(s)";
