@@ -11,6 +11,10 @@
 #include "cgm_folder.h"
 #include "cgm_ccpal.h"
 #include "cgm_project.h"
+#include "cgm_texsrc.h"
+#include "../parts/pat_texconv.h"
+#include "../texture.h"
+#include <memory>
 #include "../character_instance.h"
 #include <filesystem>
 #include <fstream>
@@ -1019,6 +1023,7 @@ void Window::draw(CharacterInstance *ch, const WindowHost &host) {
 	ImGui::EndChild();
 	ImGui::EndTabItem();
 	}
+	if (ImGui::BeginTabItem(LBL("CG + .pat textures"), nullptr, CgmTab("CG + .pat textures"))) { drawTextures(*ch, host); ImGui::EndTabItem(); }
 	if (ImGui::BeginTabItem(LBL("Palettes"), nullptr, CgmTab("Palettes"))) {
 		drawPalettes(*ch, host);
 		ImGui::EndTabItem();
@@ -1036,6 +1041,220 @@ void Window::draw(CharacterInstance *ch, const WindowHost &host) {
 }
 
 
+
+// ---------------------------------------------------------------------------------------------------------------------------------------
+// "CG + .pat textures" tab: one browser for the CG bank and the character's .pat textures (cgm_texsrc.h does every operation)
+// ---------------------------------------------------------------------------------------------------------------------------------------
+namespace {
+struct GameRow { const char *id, *name, *steamDir; };
+const GameRow kGames[] = {
+	{"mbaacc", "MBAACC", ""}, {"mbac", "ActCadenza", ""}, {"unib", "UNIB", ""},
+	{"uni2", "UNI2", "C:\\Program Files (x86)\\Steam\\steamapps\\common\\UNDER NIGHT IN-BIRTH II Sys Celes"},
+	{"mbtl", "MBTL", "C:\\Program Files (x86)\\Steam\\steamapps\\common\\MELTY BLOOD TYPE LUMINA"},
+	{"rbo", "RBO / GOF2", ""},
+};
+constexpr int kGameCount = (int)(sizeof(kGames) / sizeof(kGames[0]));
+int DetectGame(CharacterInstance &ch) {
+	std::string p = ch.getCGPath().empty() ? ch.getTopHA6Path() : ch.getCGPath();
+	for (auto &c : p) c = (char)tolower((unsigned char)c);
+	switch (ch.frameData.game()) {
+	case Ha6Game::MBTL: return 4;
+	case Ha6Game::UNIB: return 2;
+	case Ha6Game::UNI: case Ha6Game::UNIST: return p.find("unib") != std::string::npos ? 2 : 3;
+	default: break;
+	}
+	if (ch.frameData.isHA4()) return 1;
+	if (p.find(".pac") != std::string::npos || p.find("rbo") != std::string::npos || p.find("gof") != std::string::npos) return 5;
+	return 0;
+}
+// a .pat texture's GL copy follows its pixels (the PAT editor and the game view draw from it)
+void UploadPatTexture(Parts &parts, int i) {
+	PartGfx<> &g = parts.gfxMeta[i];
+	std::vector<uint8_t> rgba; int w = 0, h = 0; std::string e;
+	if (!pattex::Decode(g, rgba, w, h, &e)) return;
+	for (size_t k = 0; k < rgba.size(); k += 4) std::swap(rgba[k], rgba[k + 2]);   // LoadDirect takes BGRA
+	Texture *t = g.GetTextureFromId(parts.textures);
+	if (!t) { t = new Texture; parts.textures.push_back(t); }
+	t->LoadDirect((char *)rgba.data(), w, h, true);
+	t->Apply(false, false);
+	g.textureIndex = t->id;
+}
+}
+
+bool Window::texReplace(CharacterInstance &ch, int kind, int id, const std::string &file, bool pngOnly, const WindowHost &host) {
+	std::string e; bool changed = false;
+	if (pngOnly) { std::string low = file; for (auto &c : low) c = (char)tolower((unsigned char)c); if (low.size() < 4 || low.compare(low.size() - 4, 4, ".png")) { status = TXT("Import PNG takes a .png file."); return false; } }
+	if (kind == 1) {
+		PatTexSource src(ch.parts);
+		if (!ImportPng(src, id, file, &e, &changed)) { status = e; return false; }
+		if (!changed) { status = TXT("The PNG renders exactly like the stored texture: nothing changed."); return true; }
+		UploadPatTexture(ch.parts, id); tb.patGen++;
+		if (host.markEdited) host.markEdited(&ch);
+		status = Fmt(TXT(".pat texture %d replaced; %d part(s) that sample it follow it. Save the .pat to keep it."), id, (int)src.touchedParts.size());
+		return true;
+	}
+	if (bank) {
+		Bank before = *bank; BmpCutterIO io(*bank); CgTexSource src(io);
+		if (!ImportPng(src, id, file, &e, &changed)) { *bank = std::move(before); status = e; return false; }
+		if (!changed) { status = TXT("The PNG renders exactly like the stored image: nothing changed."); return true; }
+		warnings.clear();
+		if (src.lastReport.lostPixels) warnings.push_back(Fmt(TXT("%d changed pixel(s) sit in cells borrowed from another image and were not written."), src.lastReport.lostPixels));
+		if (!src.lastReport.alsoChanges.empty()) { std::string o; for (int x : src.lastReport.alsoChanges) o += " " + std::to_string(x); warnings.push_back(std::string(TXT("Shared cells: these images change too:")) + o); }
+		if (!commit(ch, Fmt(TXT("Replace image %d"), id), std::move(before), host)) return false;
+	} else {
+		CgIO io(ch.cg); CgTexSource src(io);
+		if (!ImportPng(src, id, file, &e, &changed)) { status = e; return false; }
+		if (!changed) { status = TXT("The PNG renders exactly like the stored image: nothing changed."); return true; }
+		if (host.markEdited) host.markEdited(&ch);
+	}
+	status = Fmt(TXT("Image %d replaced. Save the bank to keep it."), id);
+	return true;
+}
+
+bool Window::texSave(CharacterInstance &ch, int kind, const std::string &game, std::string &report) {
+	const int gi = tb.game < 0 ? DetectGame(ch) : tb.game;
+	if (UsesModFolder(game)) {
+		const std::string srcPath = kind == 0 ? ch.getCGPath() : ch.getPATPath();
+		const std::string key = GameKeyOf(srcPath), dst = ModFolderPath(game, tb.gameDir[gi], key);
+		if (dst.empty()) { report = Fmt(TXT("Cannot place %s in the mod folder: no game folder, or the file is not under a data folder."), srcPath.c_str()); return false; }
+		std::vector<uint8_t> bytes; std::string e;
+		if (kind == 0) {
+			if (!bank) { report = TXT("This bank format cannot be written to the mod folder."); return false; }
+			bank->serialize(bytes);
+		} else {
+			const std::string tmp = dst + ".hcpat";
+			{ std::error_code ec; std::filesystem::create_directories(std::filesystem::u8path(dst).parent_path(), ec); }
+			if (!ch.parts.Save(tmp.c_str())) { report = TXT("The .pat could not be written."); return false; }
+			std::ifstream f(std::filesystem::u8path(tmp), std::ios::binary); bytes.assign(std::istreambuf_iterator<char>(f), std::istreambuf_iterator<char>()); f.close();
+			std::error_code ec; std::filesystem::remove(std::filesystem::u8path(tmp), ec);
+		}
+		if (!WriteModFile(dst, bytes, &e)) { report = e; return false; }
+		report = Fmt(TXT("Wrote %s (%zu bytes). The improvement mod / fbmod serve it in place of the archived file."), dst.c_str(), bytes.size());
+		return true;
+	}
+	if (kind == 0) return saveBankFiles(ch, report);
+	if (!ch.savePAT()) { report = TXT("The .pat could not be written."); return false; }
+	report = Fmt(TXT("Saved %s"), ch.getPATPath().c_str());
+	return true;
+}
+
+void Window::drawTextures(CharacterInstance &ch, const WindowHost &host) {
+	const int gi = tb.game < 0 ? DetectGame(ch) : tb.game;
+	if (tb.gameDir[gi].empty() && kGames[gi].steamDir[0]) tb.gameDir[gi] = kGames[gi].steamDir;
+	const char *names[kGameCount]; for (int i = 0; i < kGameCount; i++) names[i] = kGames[i].name;
+	int g = gi; ImGui::SetNextItemWidth(130);
+	if (ImGui::Combo(LBL("Game##cgmtbgame"), &g, names, kGameCount)) tb.game = g;
+	const std::string game = kGames[gi].id;
+	if (UsesModFolder(game)) {
+		ImGui::SameLine(); ImGui::SetNextItemWidth(420);
+		char buf[512]; snprintf(buf, sizeof(buf), "%s", tb.gameDir[gi].c_str());
+		if (ImGui::InputText(LBL("Game folder##cgmtbdir"), buf, sizeof(buf))) tb.gameDir[gi] = buf;
+		ImGui::SetItemTooltip("%s", TXT("The archives are read-only: saves go to <game folder>\\UNI2-IM\\Mods or MBTL-IM\\Mods, which the improvement mod and fbmod's file layer load instead of the archived file."));
+	}
+	ImGui::SameLine(); ImGui::SetNextItemWidth(160); ImGui::InputTextWithHint("##cgmtbfilter", TXT("Filter by id or name"), tb.filter, sizeof(tb.filter));
+	std::string f = tb.filter; for (auto &c : f) c = (char)tolower((unsigned char)c);
+	auto pass = [&](int id, const std::string &nm) { if (f.empty()) return true; std::string n = nm; for (auto &c : n) c = (char)tolower((unsigned char)c); return n.find(f) != std::string::npos || std::to_string(id) == f; };
+
+	const bool hasPat = ch.parts.loaded && !ch.parts.gfxMeta.empty();
+	PatTexSource patSrc(ch.parts);
+	const float listH = ImGui::GetContentRegionAvail().y * 0.42f, half = ImGui::GetContentRegionAvail().x * 0.5f - 4.f;
+	// ---- CG images (left) ----
+	ImGui::BeginChild("##cgmtbcg", ImVec2(half, listH), ImGuiChildFlags_Borders);
+	ImGui::SeparatorText(TXT("CG images"));
+	{
+		std::vector<int> ids; const int n = ch.cg.get_image_count();
+		for (int i = 0; i < n; i++) { int bpp, ty, x1, y1, x2, y2; if (!ch.cg.image_info(i, bpp, ty, x1, y1, x2, y2)) continue; const char *nm = ch.cg.get_filename(i); if (pass(i, nm ? nm : "")) ids.push_back(i); }
+		ImGuiListClipper clip; clip.Begin((int)ids.size());
+		while (clip.Step()) for (int r = clip.DisplayStart; r < clip.DisplayEnd; r++) {
+			const int i = ids[r]; int bpp, ty, x1, y1, x2, y2; ch.cg.image_info(i, bpp, ty, x1, y1, x2, y2);
+			const char *nm = ch.cg.get_filename(i);
+			char l[128]; snprintf(l, sizeof(l), "%4d  %-24s %4dx%-4d  x%d##cgi%d", i, nm ? nm : "", x2 - x1 + 1, y2 - y1 + 1, usage.count(i), i);
+			if (ImGui::Selectable(l, tb.kind == 0 && tb.sel == i)) { tb.kind = 0; tb.sel = i; }
+		}
+	}
+	ImGui::EndChild();
+	ImGui::SameLine();
+	// ---- .pat textures (right) ----
+	ImGui::BeginChild("##cgmtbpat", ImVec2(0, listH), ImGuiChildFlags_Borders);
+	ImGui::SeparatorText(TXT(".pat textures"));
+	if (!hasPat) ImGui::TextDisabled("%s", TXT("This character has no .pat textures loaded."));
+	else for (int i = 0; i < patSrc.count(); i++) {
+		TexEntry e; if (!patSrc.entry(i, e) || !pass(i, e.name)) continue;
+		const auto users = PatTextureUsers(ch.parts, i, nullptr);
+		int parts = 0; for (auto &u : users) parts += u.partSet < 0;
+		char l[160]; snprintf(l, sizeof(l), "%3d  %-24s %4dx%-4d %-11s %d part(s)##pti%d", i, e.name.c_str(), e.w, e.h, e.format.c_str(), parts, i);
+		if (ImGui::Selectable(l, tb.kind == 1 && tb.sel == i)) { tb.kind = 1; tb.sel = i; }
+	}
+	ImGui::EndChild();
+
+	// ---- the selected item: identical operations for both kinds ----
+	if (tb.sel < 0) { ImGui::TextDisabled("%s", TXT("Select a CG image or a .pat texture.")); return; }
+	BmpCutterIO *bio = nullptr; std::unique_ptr<BmpCutterIO> bioOwn; std::unique_ptr<CgIO> cio;
+	std::unique_ptr<CgTexSource> cgSrc;
+	if (bank) { bioOwn.reset(new BmpCutterIO(*bank)); bio = bioOwn.get(); cgSrc.reset(new CgTexSource(*bio)); }
+	else { cio.reset(new CgIO(ch.cg)); cgSrc.reset(new CgTexSource(*cio)); }
+	TexSource &src = tb.kind == 1 ? (TexSource &)patSrc : (TexSource &)*cgSrc;
+	if (tb.kind == 1 && !hasPat) { tb.sel = -1; return; }
+	TexEntry e; if (!src.entry(tb.sel, e)) { tb.sel = -1; return; }
+	ImGui::Text(tb.kind ? TXT(".pat texture %d: %s, %d x %d, %s") : TXT("CG image %d: %s, %d x %d, %s"), tb.sel, e.name.c_str(), e.w, e.h, e.format.c_str());
+	const std::string def = std::to_string(tb.sel) + "_" + (e.name.empty() ? std::string(tb.kind ? "texture" : "image") : std::filesystem::path(e.name).stem().string()) + ".png";
+	ImGui::BeginDisabled(!e.present);
+	if (CgmButton(LBL("Export PNG...##cgmtb"))) {
+		std::string name = def; const std::string p = FileDialog(fileType::IMAGESAVE, true, name.data());
+		if (!p.empty()) { std::string er; status = ExportPng(src, tb.sel, p, &er) ? Fmt(TXT("Exported %s"), p.c_str()) : er; if (status == er) {} else tb.lastPng = p; }
+	}
+	ImGui::SameLine();
+	if (CgmButton(LBL("Import PNG...##cgmtb"))) { const std::string p = FileDialog(fileType::IMAGE); if (!p.empty()) texReplace(ch, tb.kind, tb.sel, p, true, host); }
+	ImGui::SameLine();
+	if (CgmButton(LBL("Replace...##cgmtb"))) { const std::string p = FileDialog(fileType::IMAGE); if (!p.empty()) texReplace(ch, tb.kind, tb.sel, p, false, host); }
+	ImGui::SetItemTooltip("%s", TXT("Replace the pixels from any image file (PNG, BMP, JPEG, TIFF) of the same size. Pixels that already render identically keep their stored bytes."));
+	ImGui::EndDisabled();
+	ImGui::SameLine(0, 24.f);
+	if (CgmButton(UsesModFolder(game) ? LBL("Save to mod folder##cgmtb") : LBL("Save to game##cgmtb"))) { std::string rep; texSave(ch, tb.kind, game, rep); status = rep; }
+	if (UsesModFolder(game)) {
+		ImGui::SameLine();
+		if (CgmButton(LBL("Restore mod folder##cgmtb"))) {
+			const std::string dst = ModFolderPath(game, tb.gameDir[gi], GameKeyOf(tb.kind == 0 ? ch.getCGPath() : ch.getPATPath()));
+			std::string er; status = !dst.empty() && RestoreModFile(dst, &er) ? Fmt(TXT("Restored %s"), dst.c_str()) : er;
+		}
+	}
+	// references
+	ImGui::BeginChild("##cgmtbrefs", ImVec2(ImGui::GetContentRegionAvail().x * 0.4f, 0), ImGuiChildFlags_Borders);
+	ImGui::SeparatorText(TXT("Used by"));
+	{
+		const auto users = tb.kind == 1 ? PatTextureUsers(ch.parts, tb.sel, &ch.frameData) : CgImageUsers(ch.frameData, tb.sel);
+		if (users.empty()) ImGui::TextDisabled("%s", TXT("Not referenced by any frame or part of this character."));
+		int k = 0;
+		for (const TexUse &u : users) {
+			if (++k > 400) { ImGui::TextDisabled(TXT("... %d more"), (int)users.size() - 400); break; }
+			char l[128];
+			if (u.pattern >= 0 && u.partSet >= 0) snprintf(l, sizeof(l), TXT("pattern %d, frame %d, layer %d (part set %d)"), u.pattern, u.frame, u.layer, u.partSet);
+			else if (u.pattern >= 0) snprintf(l, sizeof(l), TXT("pattern %d, frame %d, layer %d"), u.pattern, u.frame, u.layer);
+			else if (u.partSet >= 0) snprintf(l, sizeof(l), TXT("part set %d places part %d"), u.partSet, u.part);
+			else snprintf(l, sizeof(l), TXT("part %d samples it"), u.part);
+			ImGui::PushID(k); const bool hit = ImGui::Selectable(l); ImGui::PopID();
+			if (hit && u.pattern >= 0 && host.navigate) host.navigate(u.pattern, u.frame);
+		}
+	}
+	ImGui::EndChild();
+	ImGui::SameLine();
+	// view
+	ImGui::BeginChild("##cgmtbview", ImVec2(0, 0), ImGuiChildFlags_Borders, ImGuiWindowFlags_HorizontalScrollbar);
+	ImGui::SetNextItemWidth(120); ImGui::SliderFloat(LBL("Zoom##cgmtb"), &tb.zoom, 0.125f, 8.f);
+	const unsigned long long gen = tb.kind ? tb.patGen : cgGen;
+	if (tb.viewKind != tb.kind || tb.viewId != tb.sel || tb.viewGen != gen) {
+		tb.viewKind = tb.kind; tb.viewId = tb.sel; tb.viewGen = gen;
+		Rgba px; if (e.present && src.decode(tb.sel, px) && px.w > 0) upload(tb.view, px.px, px.w, px.h, 0, false); else tb.view.w = tb.view.h = 0;
+	}
+	if (tb.view.w > 0) {
+		const ImVec2 p0 = ImGui::GetCursorScreenPos(), sz(tb.view.w * tb.zoom, tb.view.h * tb.zoom);
+		ImGui::Dummy(sz);
+		Checker(ImGui::GetWindowDrawList(), p0, ImVec2(p0.x + sz.x, p0.y + sz.y));
+		ImGui::GetWindowDrawList()->AddImage((ImTextureID)(intptr_t)tb.view.tex, p0, ImVec2(p0.x + sz.x, p0.y + sz.y));
+	} else ImGui::TextDisabled("%s", TXT("Nothing to show."));
+	ImGui::EndChild();
+}
+
 bool Window::script(const std::string &cmd, const std::string &arg, std::string *msg) {
 	auto num = [&](int &v) { v = atoi(arg.c_str() + arg.find(' ') + 1); return true; };
 	const std::string key = arg.substr(0, arg.find(' '));
@@ -1044,6 +1263,9 @@ bool Window::script(const std::string &cmd, const std::string &arg, std::string 
 	if (cmd == "press") { g_scriptPress = arg; return true; }
 	if (cmd == "path") { g_scriptPaths.push_back(arg); return true; }
 	if (cmd == "select") { selected = atoi(arg.c_str()); previewId = -1; return true; }
+	if (cmd == "texsel") { tb.kind = atoi(arg.c_str()); tb.sel = atoi(arg.c_str() + arg.find(' ') + 1); return true; }   // "texsel <0 CG | 1 .pat> <id>"
+	if (cmd == "texgame") { tb.game = atoi(arg.c_str()); return true; }
+	if (cmd == "texdir") { const int gi = tb.game < 0 ? 0 : tb.game; tb.gameDir[gi] = arg; return true; }
 	if (cmd == "set") {
 		if (key == "moveTarget") return num(moveTarget);
 		if (key == "insertAt") return num(insertAt);

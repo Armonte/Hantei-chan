@@ -11,6 +11,8 @@
 #include "../han2_parts_edit.h"
 #include "../han2_pat.h"
 #include "../png_writer.h"
+#include "../cgm/cgm_texsrc.h"
+#include "../parts/pat_texconv.h"
 #include <filesystem>
 #include <cstdarg>
 
@@ -328,6 +330,36 @@ void PatTexturePane::DrawTexture()
                             openpopupWithId = LBL("Import Texture Error");
                             customPopUpMessage = err;
                         }
+                    }
+                }
+                // PNG in / out through the CG manager's shared texture layer (cgm/cgm_texsrc.h): the texture keeps its kind
+                // (MBAACC PGTX 32-bit; UNI / MBTL DXT1, DXT5, A8R8G8B8 or X8R8G8B8), a PNG that renders the same changes no byte.
+                if (ImGui::Button(LBL("Import PNG"))) {
+                    std::string &&file = FileDialog(fileType::IMAGE);
+                    if (!file.empty()) {
+                        cgm::PatTexSource src(*curInstance->parts); std::string err; bool changed = false;
+                        const int t = curInstance->currState->partGraph;
+                        if (!cgm::ImportPng(src, t, file, &err, &changed)) { openpopupWithId = LBL("Import Texture Error"); customPopUpMessage = err; }
+                        else if (changed) {
+                            std::vector<uint8_t> rgba; int w = 0, h = 0; std::string e2;
+                            if (pattex::Decode(*gfx, rgba, w, h, &e2)) {
+                                for (size_t k = 0; k < rgba.size(); k += 4) std::swap(rgba[k], rgba[k + 2]);
+                                Texture* tex = gfx->GetTextureFromId(curInstance->parts->textures);
+                                if (!tex) { tex = new Texture; curInstance->parts->textures.push_back(tex); }
+                                tex->LoadDirect((char*)rgba.data(), w, h, true); tex->Apply(false, false); gfx->textureIndex = tex->id;
+                            }
+                            textureDecoratedNames[t] = curInstance->parts->GetTexturesDecorateName(t);
+                            curInstance->markEdited();
+                        }
+                    }
+                }
+                ImGui::SameLine();
+                if (ImGui::Button(LBL("Export PNG"))) {
+                    std::string filename = std::filesystem::path(gfx->name.c_str()).stem().string() + ".png";
+                    std::string &&file = FileDialog(fileType::IMAGESAVE, true, const_cast<char *>(filename.c_str()));
+                    if (!file.empty()) {
+                        cgm::PatTexSource src(*curInstance->parts); std::string err;
+                        if (!cgm::ExportPng(src, curInstance->currState->partGraph, file, &err)) { openpopupWithId = LBL("Import Texture Error"); customPopUpMessage = err; }
                     }
                 }
                 ImGui::NewLine();

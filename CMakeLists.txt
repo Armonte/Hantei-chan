@@ -105,6 +105,7 @@ add_executable(${EXE}
 	src/cgm/fxr_core.cpp
 	src/cgm/fxr_panel.cpp
 	src/cgm/cgm_window.cpp
+	src/cgm/cgm_texsrc.cpp
 	src/han2/qoh_img.cpp
 	src/han2/rosa_img.cpp
 	src/startup_args.cpp

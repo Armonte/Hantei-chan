@@ -90,6 +90,21 @@ private:
 	int importFrom = 0, palLayout = 0, ccChara = -1, ccFirst = 37, ccFrom = 0, ccTo = 0; bool ccFullPal = false; int newPups = 1;
 	int resizeAnchor = 0;                  // replace with another size: 0 bottom-centre, 1 top-left
 	FxPanel fxr;                    // "Effect recolor" tab (fxr_panel.cpp)
+	// "CG + .pat textures" tab (cgm_texbrowser.cpp): CG images and the character's .pat textures side by side, one set of operations
+	// for both through cgm_texsrc.h (view, replace, PNG export / import, references, save to the game or its mod folder)
+	struct TexBrowser {
+		int kind = 0, sel = -1;                       // kind: 0 CG image, 1 .pat texture
+		char filter[48] = {};
+		int viewKind = -1, viewId = -1; unsigned long long viewGen = ~0ull;
+		Thumb view; float zoom = 1.f;
+		int game = -1;                                // index into the browser's game list (-1 = detect)
+		std::string gameDir[8];
+		unsigned long long patGen = 0;                // bumped on every .pat texture replace
+		std::string lastPng;
+	} tb;
+	void drawTextures(CharacterInstance &ch, const WindowHost &host);
+	bool texReplace(CharacterInstance &ch, int kind, int id, const std::string &file, bool pngOnly, const WindowHost &host);
+	bool texSave(CharacterInstance &ch, int kind, const std::string &game, std::string &report);
 	History hist;
 	std::string status;
 	std::vector<std::string> warnings;
