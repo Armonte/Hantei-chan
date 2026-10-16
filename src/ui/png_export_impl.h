@@ -365,7 +365,7 @@ void MainFrame::DrawExportWindow()
 
 	const ImVec2 mainPos = ImGui::GetMainViewport()->Pos;
 	ImGui::SetNextWindowPos(ImVec2(mainPos.x + 160, mainPos.y + 120), ImGuiCond_FirstUseEver);
-	ImGui::SetNextWindowSize(ImVec2(470, 0), ImGuiCond_FirstUseEver);
+	ui::FitNextWindow(470, 0);
 	if (!ImGui::Begin(LBL("Export PNG"), &m_showExportWindow, ImGuiWindowFlags_NoDocking)) { ImGui::End(); return; }
 	if (!view || !view->getCharacter() || view->isStageView()) {
 		ImGui::TextDisabled("%s", TXT("Select a character tab to export."));

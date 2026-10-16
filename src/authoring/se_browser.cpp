@@ -1,4 +1,5 @@
 #include "se_browser.h"
+#include "../ui/ui_style.h"
 
 #include "../filedialog.h"
 #include "../i18n.h"
@@ -186,7 +187,7 @@ void Window::draw()
 		if (!m_playing.empty()) { PlaySoundW(nullptr, nullptr, 0); m_playing.clear(); }
 		return;
 	}
-	ImGui::SetNextWindowSize(ImVec2(920, 600), ImGuiCond_FirstUseEver);
+	ui::FitNextWindow(920, 600);
 	if (!ImGui::Begin(LBL("Sound effects (SeList / se\\battle_se)"), &open)) {
 		ImGui::End();
 		return;

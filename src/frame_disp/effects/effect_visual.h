@@ -1,5 +1,6 @@
 #ifndef EFFECT_VISUAL_H_GUARD
 #include "../../i18n.h"
+#include "../../ui/ui_style.h"
 #define EFFECT_VISUAL_H_GUARD
 
 // ============================================================================
@@ -13,7 +14,7 @@ static inline void DrawEffectVisual_Type2(Frame_EF& effect, FrameData* frameData
 {
 	int* p = effect.parameters;
 	int& no = effect.number;
-	constexpr float width = 75.f;
+	const float width = ui::Px(75.f);   // follows the font size (ui_style.h)
 
 	// Sub-type dropdown
 			// Sub-No table: MBAA_NAME_AUDIT.md 2.2 (Effect2_CreateByNo 0x455620).

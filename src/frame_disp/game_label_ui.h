@@ -26,7 +26,7 @@ inline std::string GameLabelUiTitle(Ha6Game g, GameLabelKind k, int id)
 // Labelled parameters as single fields; unlabelled ones only when non-zero.
 inline void DrawGameLabelParams(const GameLabelRow* row, int* p, int count, const std::function<void()>& markModified)
 {
-	constexpr float width = 75.f;
+	const float width = ui::Px(75.f);   // follows the font size (ui_style.h)
 	for (int k = 0; k < count; ++k) {
 		const char* label = (row && k < 12) ? row->params[k] : nullptr;
 		if (!label && p[k] == 0) continue;
@@ -44,7 +44,7 @@ inline void DrawGameLabelParams(const GameLabelRow* row, int* p, int count, cons
 // Effect body for a game with its own labels.
 inline void DrawGameEffectUI(Frame_EF& ef, FrameData* frameData, Ha6Game game, const std::function<void()>& markModified)
 {
-	constexpr float width = 75.f;
+	const float width = ui::Px(75.f);   // follows the font size (ui_style.h)
 	const GameLabelRow* row = FindGameLabel(game, GameLabelKind::EF, ef.type);
 	im::SetNextItemWidth(width);
 	if (im::InputInt(LBL("Number"), &ef.number, 0, 0)) markModified();

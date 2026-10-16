@@ -1,4 +1,5 @@
 #include "han2_browser.h"
+#include "ui/ui_style.h"
 #include "i18n.h"
 #include "han2/pac_archive.h"
 #include "han2/gof1_archive.h"
@@ -98,7 +99,7 @@ static std::string TrReportSummary(const std::string &s)
 void DrawLoadReport()
 {
 	if (!showLoadReport) return;
-	ImGui::SetNextWindowSize(ImVec2(620, 320), ImGuiCond_FirstUseEver);
+	ui::FitNextWindow(620, 320);
 	if (!ImGui::Begin(LBL("Loading report"), &showLoadReport)) { ImGui::End(); return; }
 	if (ImGui::Button(LBL("Clear"))) g_reports.clear();
 	for (int i = (int)g_reports.size() - 1; i >= 0; i--) {

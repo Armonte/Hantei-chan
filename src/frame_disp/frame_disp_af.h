@@ -46,7 +46,7 @@ inline void AfDisplay(Frame_AF *af, int &selectedLayer, FrameData *frameData = n
 	static Layer_Type copiedAnimationLayer = {};
 	static Frame_AF copiedAnimationFrame = {};
 
-	constexpr float width = 50.f;
+	const float width = ui::Px(50.f);   // follows the font size (ui_style.h)
 
 	// ============================================================================
 	// Multi-Layer UI (UNI AFGX support)

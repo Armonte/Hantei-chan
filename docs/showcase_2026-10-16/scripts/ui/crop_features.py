@@ -7,8 +7,8 @@ from PIL import Image
 BOXES = {   # name: (left, top, right, bottom); the squirrel hover box also covers the tooltip, the game link box the sprite
     'feat_squirrel_hover': (58, 58, 1130, 756),
     'feat_squirrel_problems': (58, 58, 1060, 756),
-    'feat_stage3d_uni2_align': (58, 58, 961, 700),
-    'feat_stage3d_mbtl_align': (58, 58, 961, 700),
+    'feat_stage3d_uni2_align': (442, 100, 1442, 861),
+    'feat_stage3d_mbtl_align': (442, 100, 1442, 861),
     'feat_cgm_uni2_palettes': (58, 58, 1261, 880),
     'feat_cgm_uni2_textures': (58, 58, 1261, 880),
     'feat_gamelink_panel': (60, 58, 1100, 700),

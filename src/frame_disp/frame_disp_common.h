@@ -3,6 +3,7 @@
 
 #include <imgui.h>
 #include "../imgui_utils.h"
+#include "../ui/ui_style.h"
 #include "../framedata.h"
 #include "../framedata_labels.h"
 #include <functional>

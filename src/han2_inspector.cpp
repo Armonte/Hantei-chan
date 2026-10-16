@@ -1,5 +1,6 @@
 // "RBO / GOF2 (HAN2)" inspector: every field of the current frame record, named after the IDA struct it is generated from.
 #include "han2_character.h"
+#include "ui/ui_style.h"
 #include "han2_thumbs.h"
 #include "character_instance.h"
 #include "framedata_han2.h"
@@ -174,7 +175,7 @@ void DrawInspector(CharacterInstance *ch, FrameState &state)
 	if (!ch || !ch->frameData.isHan2() || !showInspector) return;
 	ImGuiViewport *vp = ImGui::GetMainViewport();
 	ImGui::SetNextWindowPos(ImVec2(vp->WorkPos.x + vp->WorkSize.x - 420, vp->WorkPos.y + 60), ImGuiCond_FirstUseEver);
-	ImGui::SetNextWindowSize(ImVec2(400, 560), ImGuiCond_FirstUseEver);
+	ui::FitNextWindow(400, 560);
 	if (dockInspectorId) ImGui::SetNextWindowDockID(dockInspectorId, ImGuiCond_FirstUseEver);
 	if (!ImGui::Begin(LBL("RBO / GOF2 (HAN2)"), &showInspector)) { ImGui::End(); return; }
 
@@ -347,7 +348,7 @@ std::string DropImageOnCgWindow(CharacterInstance *ch, const std::string &utf8Pa
 void DrawCgWindow(CharacterInstance *ch)
 {
 	if (!showCgWindow) return;
-	ImGui::SetNextWindowSize(ImVec2(700, 520), ImGuiCond_FirstUseEver);
+	ui::FitNextWindow(700, 520);
 	if (!ImGui::Begin(LBL("CG sprites (RBO / GOF2 bank)"), &showCgWindow)) { ImGui::End(); return; }
 	if (!ch || !ch->cg.m_loaded) { ImGui::TextDisabled("%s", TXT("The active character has no CG bank.")); ImGui::End(); return; }
 	const int n = ch->cg.get_image_count();
@@ -415,7 +416,7 @@ bool showDiffWindow = false;
 void DrawDiffWindow(CharacterInstance *ch)
 {
 	if (!showDiffWindow) return;
-	ImGui::SetNextWindowSize(ImVec2(640, 420), ImGuiCond_FirstUseEver);
+	ui::FitNextWindow(640, 420);
 	if (!ImGui::Begin(LBL("Changes against the loaded file"), &showDiffWindow)) { ImGui::End(); return; }
 	if (!ch || !ch->frameData.isHan2()) { ImGui::TextDisabled("%s", TXT("The active character is not an RBO / GOF2 file.")); ImGui::End(); return; }
 	static std::vector<han2::DiffEntry> entries; static std::string err; static bool ran = false; static const CharacterInstance *who = nullptr;
@@ -445,7 +446,7 @@ void DrawAnimWindow(CharacterInstance *ch, FrameState &state, void *onionPtr)
 {
 	if (!showAnimWindow) return;
 	OnionSkinSettings &onion = *(OnionSkinSettings *)onionPtr;
-	ImGui::SetNextWindowSize(ImVec2(620, 330), ImGuiCond_FirstUseEver);
+	ui::FitNextWindow(620, 330);
 	if (dockAnimId) ImGui::SetNextWindowDockID(dockAnimId, ImGuiCond_FirstUseEver);
 	{ static int calls = 0; if (++calls == 6) ImGui::SetNextWindowFocus(); }   // first appearance: bring the playback controls forward (a tab next to the box controls)
 	if (!ImGui::Begin(LBL("Animation (game rules)"), &showAnimWindow)) { ImGui::End(); return; }

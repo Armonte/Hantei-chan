@@ -1,4 +1,5 @@
 #include "winquote_ui.h"
+#include "../ui/ui_style.h"
 
 #include "roster_mirror.h"
 #include "../i18n.h"
@@ -97,7 +98,7 @@ bool Window::selectFile(size_t i)
 void Window::draw()
 {
 	if (!open) return;
-	ImGui::SetNextWindowSize(ImVec2(980, 640), ImGuiCond_FirstUseEver);
+	ui::FitNextWindow(980, 640);
 	if (!ImGui::Begin(LBL("Win quotes (story\\battle\\*_win.txt)"), &open)) {
 		ImGui::End();
 		return;

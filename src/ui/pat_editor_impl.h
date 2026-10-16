@@ -419,14 +419,14 @@ void MainFrame::DrawBackupPrefsItems()
 		bool changed = false;
 		changed |= ImGui::Checkbox(LBL("Back up character files (HA6, ...) before saving"), &gSettings.backupHa6);
 		changed |= ImGui::Checkbox(LBL("Back up .pat files before saving"), &gSettings.backupPat);
-		ImGui::SetNextItemWidth(120);
+		ImGui::SetNextItemWidth(ui::Px(120));
 		if (ImGui::InputInt(LBL("Backups kept per file (0 = all)"), &gSettings.backupKeep)) {
 			gSettings.backupKeep = std::clamp(gSettings.backupKeep, 0, 999);
 			changed = true;
 		}
 		char folder[512];
 		snprintf(folder, sizeof folder, "%s", gSettings.backupFolder.c_str());
-		ImGui::SetNextItemWidth(260);
+		ImGui::SetNextItemWidth(ui::Px(260));
 		if (ImGui::InputTextWithHint(LBL("Backup folder"), "backup", folder, sizeof folder)) {
 			gSettings.backupFolder = folder;
 			changed = true;
@@ -436,8 +436,9 @@ void MainFrame::DrawBackupPrefsItems()
 			const std::string picked = BrowseForFolderUtf8(AnsiToUtf8(gSettings.backupFolder));
 			if (!picked.empty()) { gSettings.backupFolder = Utf8ToAcp(picked); changed = true; }
 		}
-		ImGui::TextDisabled("%s", TXT("Empty: a \"backup\" folder next to the file. A relative folder is relative to the file."));
-		ImGui::TextDisabled("%s", TXT("Every save (menu, Ctrl+S, close prompt) copies the old file to <name>.<date-time>-NN.bak first."));
+		// help in a (?) tooltip instead of two full-width lines
+		ui::HelpMarker((std::string(TXT("Empty: a \"backup\" folder next to the file. A relative folder is relative to the file.")) + "\n"
+			+ TXT("Every save (menu, Ctrl+S, close prompt) copies the old file to <name>.<date-time>-NN.bak first.")).c_str());
 		if (changed) ImGui::MarkIniSettingsDirty();
 	}
 }
@@ -451,7 +452,7 @@ void MainFrame::DrawPatColourPrefsItems()
 		changed |= ImGui::Checkbox(LBL("Show##outline"), &gSettings.patOutlineSelected);
 		changed |= ImGui::ColorEdit4(LBL("Part centre cross"), gSettings.patCenterColor, ImGuiColorEditFlags_NoInputs);
 		changed |= ImGui::ColorEdit4(LBL("UV rectangle"), gSettings.patUvRectColor, ImGuiColorEditFlags_NoInputs);
-		ImGui::SetNextItemWidth(120);
+		ImGui::SetNextItemWidth(ui::Px(120));
 		changed |= ImGui::SliderFloat(LBL("Highlight opacity of the other parts"), &gSettings.patHighlightOpacity, 0.f, 1.f, "%.2f");
 		if (changed) {
 			for (auto& v : views)
@@ -467,9 +468,9 @@ void MainFrame::DrawMousePrefsItems()
 		// Issue #9: which button pans the view and which draws boxes / UV rectangles.
 		const char* buttons[] = {LBL("Left"), LBL("Right"), LBL("Middle")};
 		int pan = gSettings.mousePanButton, draw = gSettings.mouseDrawButton;
-		ImGui::SetNextItemWidth(120);
+		ImGui::SetNextItemWidth(ui::Px(120));
 		bool changed = ImGui::Combo(LBL("Pan the view"), &pan, buttons, 3);
-		ImGui::SetNextItemWidth(120);
+		ImGui::SetNextItemWidth(ui::Px(120));
 		changed |= ImGui::Combo(LBL("Draw boxes / UV rectangle"), &draw, buttons, 3);
 		if (changed) {
 			if (pan == draw) {   // keep them on different buttons: swap
@@ -485,7 +486,7 @@ void MainFrame::DrawMousePrefsItems()
 			gSettings.mouseDrawButton = 1;
 			ImGui::MarkIniSettingsDirty();
 		}
-		ImGui::TextDisabled("%s", TXT("The middle button always pans when it does not draw."));
+		ui::HelpMarker(TXT("The middle button always pans when it does not draw."));
 	}
 }
 
