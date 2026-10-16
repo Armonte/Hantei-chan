@@ -2418,3 +2418,4 @@
 	{"For the active file only. Detected when it is loaded: AFGX layer count\n(5 = UNI2, 3 = MBTL or UNIB, told apart by tags and file names),\nno ATV2/AFGX = MBAACC. Pasting never changes it: pasted data is converted.\nSwitches field labels and the format the file is saved in.", "アクティブなファイルのみに適用されます。読み込み時に検出: AFGX レイヤー数\n(5 = UNI2、3 = MBTL または UNIB。タグとファイル名で区別)、\nATV2/AFGX なし = MBAACC。貼り付けでは変わりません (貼り付けたデータが変換されます)。\n項目のラベルと保存形式が切り替わります。"},
 	{"(not in VectorTable.txt)", "(VectorTable.txt にありません)"},
 	{"(VectorTable.txt not found)", "(VectorTable.txt が見つかりません)"},
+	{"Preview position is approximate: round-start stand-in (opponent 128 px ahead, camera between)", "プレビュー位置は概算です: ラウンド開始時の仮配置 (相手は 128 px 前方、カメラはその中間)"},

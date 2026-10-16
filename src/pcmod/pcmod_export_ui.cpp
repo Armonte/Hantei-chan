@@ -347,7 +347,9 @@ void Draw()
 	}
 
 	int replaces = 0;
-	const float listH = std::max(120.f, ImGui::GetContentRegionAvail().y - 150.f);
+	// below the table: the status lines, the buttons and (after an export) the report, which must stay in view
+	const float reportH = g.result.empty() ? 0.f : ImGui::GetTextLineHeightWithSpacing() * (float)(1 + std::count(g.result.begin(), g.result.end(), '\n'));
+	const float listH = std::max(120.f, ImGui::GetContentRegionAvail().y - 150.f - reportH);
 	if (ImGui::BeginTable("##pcmodfiles", 6, ImGuiTableFlags_Borders | ImGuiTableFlags_RowBg | ImGuiTableFlags_ScrollY | ImGuiTableFlags_Resizable, ImVec2(0, listH))) {
 		ImGui::TableSetupScrollFreeze(0, 1);
 		ImGui::TableSetupColumn(TXT("Use"), ImGuiTableColumnFlags_WidthFixed, 34);
