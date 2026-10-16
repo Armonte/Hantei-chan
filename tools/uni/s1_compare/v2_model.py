@@ -95,7 +95,10 @@ def grad_fit(ctrl, ctrl_game, bw, gd, plate_fallback=None):
     out = []
     for c in range(3):
         w = (1 - Q[..., c])[m]; r = (G[..., c] - P[..., c] - Q[..., c] * B[..., c])[m] - w * aura[c] - bk[..., c][m]
-        co, *_ = np.linalg.lstsq(np.stack([w, w * t], 1), r, rcond=None)
+        # render-match12: leave out the pixels the game clips (>= 254): the add cannot show there, and ctrl_chr027_p0
+        # (14% R-saturated) fitted an R base of 2.4 instead of ~7.5 with them in, so every chr027 case read R +4
+        k = G[..., c][m] < 254
+        co, *_ = np.linalg.lstsq(np.stack([w, w * t], 1)[k], r[k], rcond=None)
         out.append((float(co[0]), float(co[1])))
     return out
 
@@ -254,6 +257,7 @@ def _measure(a):
     layers = arg(a, '--layers')  # CGSHOT,PATSHOT: per-layer editor shots; the gradient goes on the CG layers only
     ml = arg(a, '--mbtl-light')  # STAGE,STDH: the MBTL BgColor three-pass shading (mbtl_light)
     bok = arg(a, '--bokashi')  # ALPHA (0..1, e.g. 0.0784 = bg001 20/255): model the UNI2 chara Bokashi pass (uni2_bokashi)
+    gsil = arg(a, '--glow-sil', 'all')  # 'cg' (with --layers + --bokashi): glow silhouette from the CG layer only
     gmode = arg(a, '--glow')  # 'lin' / 'sq': model the aura (GRD Vorpal) glow pass from the sidecar (aura_glow_argb)
     case = a[0]
     zoom = float(zarg) if zarg else zoom_of(case)
@@ -294,6 +298,11 @@ def _measure(a):
         _, _, _, Qs0, _ = sh.game_vs_model.last_arrays; xa, ya, xb, yb, _g = sh.game_vs_model.last_window
         Gf = np.asarray(game).astype(np.float64); Bf = np.asarray(pl).astype(np.float64)
         sil = np.zeros(Gf.shape[:2]); sil[ya:yb, xa:xb] = np.clip(1 - Qs0.mean(2), 0, 1)
+        if gsil == 'cg' and getattr(sh.game_vs_model, 'last_cg', None) is not None:
+            # render-match12: the glow silhouette from the CG layer(s) only. The additive .pat layer's footprint
+            # (1 - Q from the grey-extrapolated shot: 2/3 where its G and B clip) is not in the game's glow
+            _, Qc0, _ = sh.game_vs_model.last_cg
+            sil = np.zeros(Gf.shape[:2]); sil[ya:yb, xa:xb] = np.clip(1 - Qc0.mean(2), 0, 1)
         ga, rgb = aura_glow(sil, meta, gmode)
         Bg = Bf * (1 - ga[..., None]) + rgb[None, None, :] * ga[..., None]
         pl = Image.fromarray(np.clip(np.round(Bg), 0, 255).astype(np.uint8))
@@ -325,7 +334,7 @@ def _measure(a):
     print('%s: raw %.2f / %.1f%%  lit %.2f / %.1f%%  band+-%d %s  (%d px, refine %+d,%+d)  free fit k,c = %s'
           % (case, r[3], r[4], lmean, lch, sh.BAND, '%.2f / %.1f%%' % band if band else '-', r[6], r[5][0], r[5][1],
              ', '.join('(%.2f,%.0f)' % f for f in fit)))
-    res = {'lit': float(lmean), 'lit_pct': float(lch), 'band': band, 'refine': list(r[5]), 'subpix': list(sh.SUBPIX)}
+    res = {'raw': float(r[3]), 'lit': float(lmean), 'lit_pct': float(lch), 'band': band, 'refine': list(r[5]), 'subpix': list(sh.SUBPIX)}
     if jout:
         json.dump({'case': case, 'game': gn, 'plate': plate, 'light': light, 'raw': [r[3], r[4]], 'lit': [lmean, lch],
                    'band': band, 'band_px': sh.BAND, 'grad': grad, 'glow': gmode, 'glow_ring': ring, 'px': r[6], 'refine': list(r[5])}, open(jout, 'w'), indent=1)
@@ -337,7 +346,7 @@ def _measure(a):
     return res
 
 
-def subpix_fit(a, bound=1.5):
+def subpix_fit(a, bound=1.5, obj='lit'):
     """render-match11: the registration of a control. Camera geometry (--exact-reg, no integer refine) plus a bounded
     sub-pixel offset (|dx|, |dy| <= bound game px) that minimises the control's own lit residual, coarse to fine
     (steps 0.5 over +-1, 0.125, 1/32 game px). The offset is then given to the control's cases unchanged (--subpix), so a case and
@@ -353,7 +362,7 @@ def subpix_fit(a, bound=1.5):
         for x, y in cand:
             sh.SUBPIX = (x, y)
             r = measure(a, quiet=True)
-            if r and (best is None or r['lit'] < best[0]): best = (r['lit'], x, y)
+            if r and (best is None or r[obj] < best[0]): best = (r[obj], x, y)
         cx, cy = best[1], best[2]
     sh.SUBPIX = (cx, cy)
     return cx, cy
@@ -363,6 +372,7 @@ def main():
     a = sys.argv[1:]
     sp = arg(a, '--subpix')            # DX,DY game px (or a --subpix-fit JSON): implies --exact-reg --refine 0
     spfit = arg(a, '--subpix-fit')     # OUT.json: fit the offset on this (control) run, write it, report with it
+    spobj = arg(a, '--subpix-obj', 'lit')  # render-match12: 'raw' for MBTL (reported on raw; the identity light makes lit differ)
     if sp or spfit:
         for k in ('--exact-reg',):
             if k in a: a.remove(k)
@@ -374,8 +384,8 @@ def main():
         else:
             sh.SUBPIX = tuple(float(v) for v in sp.split(','))
     if spfit:
-        x, y = subpix_fit(a)
-        json.dump({'control': a[0], 'args': a, 'subpix': [x, y]}, open(spfit, 'w'), indent=1)
+        x, y = subpix_fit(a, obj=spobj)
+        json.dump({'control': a[0], 'args': a, 'subpix': [x, y], 'objective': spobj}, open(spfit, 'w'), indent=1)
         print('subpix fit on %s: %+.4f, %+.4f game px' % (a[0], x, y))
     if sh.SUBPIX != (0.0, 0.0) or sp: print('registration: camera geometry %+.4f, %+.4f game px' % sh.SUBPIX)
     measure(a)
