@@ -892,3 +892,72 @@ from `round13/reg`). Every round-13 line is unchanged (identical `: raw` lines).
   for PRID 947 and dump the matrix in two runs), or check `CharaObj_DrawAfterimages` records for P1.
 - MBTL: recapture p238 with the HUD hidden (or mask the gauge rows in v2_model) so the control drops to about 1.4.
 - afhk p435: the gradient-fit question above.
+
+## Round 15 / render-match15 (2026-10-16): the ring arcs vary inside the game renderer; p435 has no uniform bias
+No editor (C++) change. The round-14 numbers stand (same build inputs). Full ctest 69/69 (`ctest_r15.log`, `--timeout 900`). Logs: `round15_afhk_bias.log`; gamecap runs in
+`tools/gamecap/round15/` (main checkout).
+
+### pras set-991 ring slots 41/44/45: what makes them differ between runs
+- **Probe at the grab** (`cases/v2r15_chr020_srings_probe.gcs` with `games/uni2_v2_case_aura_plate_probe.gcs`, two runs
+  `_p1` / `_p2`). Identical in both runs: tick 1, subtick 0, speed 128, AFHK progress (+0x48) **0.0**, AFHK target
+  (+0x40/+0x44) = pattern 5 frame 3, and aura timer 253. The arcs still differ by 5602 px.
+- **Not UNI2-IM's pause/replay.** `cases/v2r15_chr020_srings_freeze.gcs` captures through gamecap's own freeze and the
+  real backbuffer (`games/uni2_force_pattern.gcs`, no F5/F6, no harness grab). Its two runs (`pras_chr020_p5f2_srings_frz_{a,b}`)
+  also differ by 3980 px on the arcs. So the variation happens inside UNI2's own renderer, not in the harness.
+- **What the draw path reads** (traced this round): the AFHK weight comes from `Easing_ApplyCurve_AFHK(type, progress)`
+  (animstate +0x1C / +0x10), and progress is the same in both runs. The ring and donut setups take only shape fields
+  and that weight. `PatPart_QueueShapeSegments_2D` (body traced, see below) has no timer or global counter either. No
+  timer, frame counter or afterimage input was found that differs. The afterimage pass (`CharaObj_DrawAfterimages`)
+  redraws history records through `DrawObj_DrawLayers`, but it draws whole-object ghosts and these runs do not differ
+  in history. Not proven either way.
+- **Decision: the round-14 mask is the final answer** for these px. The editor draws the deterministic soft band and the
+  game agrees with it there (0.32). The thin arcs change from run to run with byte-identical data and identical object
+  state, so no static renderer can match them. The likely cause is uninitialised or stale state in the game's prim
+  path; that would need a live debugger to confirm, and gamecap has no breakpoints.
+
+### MBTL p238: HUD-free recapture not done
+- MBTL has no harness HUD switch. A lead was found and named in the MBTL IDB: the tutorial script tag `@GAUGEVIEW@<n>`
+  (`TutorialTalk_ParseTag_GAUGEVIEW` 0x7BC800 builds a `CTutorialTalk_ItemGAUGEVIEW`, item type 5) toggles the battle
+  gauges. Its executor (the global it writes) is not traced yet. The HUD-row workaround of round 14 stays (1.43 off
+  the gauge rows).
+
+### afhk_cg_chr020_p435_t27: the +0.2..0.3 is not a gradient-fit bias
+- `v2_bias_split.py` (new) prints the **signed** residual from the float prediction. It needed `sheet.game_vs_model.last_lpred`
+  (new): `last_light[3]` is truncated to uint8, which adds a fake +0.48 to every channel.
+
+| case (grad fitted on) | lit | signed R/G/B (footprint) | interior signed | without the 8 \|d\|>5 px |
+|---|---|---|---|---|
+| ctrl_chr020_p0 (itself) | 0.28 | +0.00 −0.00 +0.00 | +0.00 | 0.28 |
+| p435 (idle control) | 0.63 | −0.05 −0.08 −0.11 | −0.09 −0.11 −0.14 | **0.43** |
+| p435 (**fitted on p435 itself**) | 0.65 | +0.05 +0.05 +0.05 | −0.01 0.00 −0.00 | 0.44 |
+| p437 (idle control) | 0.27 | +0.05 −0.11 +0.01 | | 0.27 |
+| p437 (itself) | 0.26 | 0 0 0 | | 0.26 |
+
+- There is no uniform signed bias (at most 0.1, and negative). Fitting the gradient on p435 itself does not lower it
+  (0.65 vs 0.63). Removing the best constant makes it worse. So the extra 0.15 above the floor (after the 8 rotated-texel
+  px) is unsigned per-pixel noise of the rotated, point-sampled CG (texel choice along rotated rows, rounds 6/7), not
+  the metric. Round 13's "+0.2..0.3 interior bias" described |d|, not a signed offset. **No metric change.**
+
+### Table vs floors
+
+| case | round 14 | **round 15** | floor / note |
+|---|---|---|---|
+| ctrl_chr020_p0 | 0.28 | **0.28** | is the floor |
+| afhk p435 | 0.63 | **0.63** (0.43 without 8 rotated-texel px) | texel noise, not metric |
+| afhk p437 | 0.27 | **0.27** | at floor |
+| pras_z1 (r13) off ring mask / editor band px | 0.27 / 0.32 | **0.27 / 0.32** | at floor; arcs nondeterministic in game |
+| MBTL p238_z1 | 3.25 (1.43 off HUD rows) | **same** | HUD recapture pending |
+| other rows | | unchanged | |
+
+### IDBs (renamed, commented, saved)
+- UNI2: `PatPart_SubmitPrimQueue_2D` → **`PatPart_QueueShapeSegments_2D`** 0x4C0BC0 (body traced: per segment it allocates
+  a prim, transforms the 4 corners by the part matrix with the part perspective, divides by w on the CPU, stores 1/w,
+  zeroes z, sets UVs and colours, links the prim into its bucket), `PrimQueue_AllocPrim` 0x413110. Comment added to
+  `CPAniPrimRender_Donuts_Setup` (the round-15 freeze-capture result).
+- MBTL: `TutorialTalk_ParseTag_GAUGEVIEW` 0x7BC800, `CTutorialTalk_Item_ScalarDeletingDtor` 0x440840.
+
+### Next
+- MBTL: trace the CTutorialTalk_ItemGAUGEVIEW executor (vtable 0x9E17C8 users, item type 5) to the gauge-visible
+  global, `hold` it in `mbtl_to_training.gcs`, recapture p238 and drop the HUD-row split.
+- pras arcs: a live debugger session (a breakpoint in `CPAniPrimRender_Donuts_Setup` for PRID 947, then dump the 4
+  corners from `PatPart_QueueShapeSegments_2D` in two runs) would show which input differs.
