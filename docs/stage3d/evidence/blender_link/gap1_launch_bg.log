@@ -1,0 +1,11 @@
+exit 0
+stage3d open C:/dev/hantei-chan/work/blender_live/uni2/bg bg001 -> ok bg001
+stage3d status -> bg001 loaded=1 nodes=82 meshes=78 tris=7390 fov=45.00 bounds=[-87.15 -1.92 -89.27]..[87.51 44.02 87.31] model=C:/dev/hantei-chan/work/blender_live/uni2/bg/bg001\bg.fbx.bin watch=C:/dev/hantei-chan/work/blender_live/uni2/bg/bg001/bg.fbx.bin changed_on_disk=0
+stage3d capture C:/dev/hantei-chan/work/blender_live/probe/hc_before.png -> ok C:/dev/hantei-chan/work/blender_live/probe/hc_before.png
+stage3d blender -> "C:/apps/blender-5.2.2-windows-x64/blender.exe" --python-expr "import addon_utils,bpy; addon_utils.enable('MBTL_fbx_json', default_set=True, persistent=True); bpy.ops.mbtl.hantei_open(filepath=r'C:/dev/hantei-chan/work/blender_live/uni2/bg/bg001/bg.fbx.bin')"
+stage3d blender launch-bg -> ok "C:/apps/blender-5.2.2-windows-x64/blender.exe" --python-expr "import addon_utils,bpy; addon_utils.enable('MBTL_fbx_json', default_set=True, persistent=True); bpy.ops.mbtl.hantei_open(filepath=r'C:/dev/hantei-chan/work/blender_live/uni2/bg/bg001/bg.fbx.bin')" --background
+waits3dchange -> changed
+stage3d status -> bg001 loaded=1 nodes=82 meshes=78 tris=7390 fov=45.00 bounds=[-87.15 -1.92 -89.27]..[87.51 44.02 87.31] model=C:/dev/hantei-chan/work/blender_live/uni2/bg/bg001\bg.fbx.bin watch=C:/dev/hantei-chan/work/blender_live/uni2/bg/bg001/bg.fbx.bin changed_on_disk=1
+stage3d reload -> ok bg001
+stage3d status -> bg001 loaded=1 nodes=82 meshes=78 tris=7390 fov=45.00 bounds=[-68.04 -1.92 -89.27]..[147.51 44.02 87.31] model=C:/dev/hantei-chan/work/blender_live/uni2/bg/bg001\bg.fbx.bin watch=C:/dev/hantei-chan/work/blender_live/uni2/bg/bg001/bg.fbx.bin changed_on_disk=0
+stage3d capture C:/dev/hantei-chan/work/blender_live/probe/hc_after.png -> ok C:/dev/hantei-chan/work/blender_live/probe/hc_after.png

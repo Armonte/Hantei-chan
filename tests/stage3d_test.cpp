@@ -8,6 +8,7 @@
 #include "stage3d/s3d_blender.h"
 
 #include <cmath>
+#include <cstdint>
 #include <cstdio>
 #include <cstring>
 #include <filesystem>
@@ -287,9 +288,49 @@ static void TestBlenderLink()
 	CHECK(cl.size() > 3 && cl.substr(cl.size() - 3) == "')\"");
 	CHECK(s3d::BlenderCommandLine("", "C:/s/bg.fbx.bin", err).empty());
 	const auto c = s3d::BlenderCandidates({"Blender 4.0", "Blender 4.10", "notes", "Blender 4.5", "Blender 3.6"});
-	CHECK(c.size() == 5);
-	CHECK(c.size() == 5 && c[0] == "C:/Program Files/Blender Foundation/Blender 4.10/blender.exe" && c[1].find("Blender 4.5/") != std::string::npos
-		&& c[3].find("Blender 3.6/") != std::string::npos && c[4] == "C:/dev/blender40/blender-4.0.2-windows-x64/blender.exe");
+	CHECK(c.size() == 4);
+	CHECK(c.size() == 4 && c[0] == "C:/Program Files/Blender Foundation/Blender 4.10/blender.exe" && c[1].find("Blender 4.5/") != std::string::npos
+		&& c[3].find("Blender 3.6/") != std::string::npos);
+	// default + migration: the add-on targets Blender 5.2; a saved pre-5 path is not migrated
+	CHECK(std::string(s3d::DefaultBlenderPath()) == "C:/apps/blender-5.2.2-windows-x64/blender.exe");
+	CHECK(s3d::BlenderPathIsPre5("C:/Program Files/Blender Foundation/Blender 4.5/blender.exe"));
+	CHECK(s3d::BlenderPathIsPre5("C:\\dev\\blender40\\blender-4.0.2-windows-x64\\blender.exe"));
+	CHECK(!s3d::BlenderPathIsPre5("C:/apps/blender-5.2.2-windows-x64/blender.exe"));
+	CHECK(!s3d::BlenderPathIsPre5("C:/Program Files/Blender Foundation/Blender 5.2/blender.exe"));
+	CHECK(!s3d::BlenderPathIsPre5("D:/tools/blender.exe"));
+	// portable C:/apps/blender-X.Y.Z builds join the sort: 5.2.2 > 5.2 > 4.5.1 > 4.5 (portable first on a tie)
+	const auto c2 = s3d::BlenderCandidates({"Blender 4.5", "Blender 5.2", "Blender 4.0"},
+		{"blender-5.2.2-windows-x64", "blender-4.5-windows-x64", "blender-notes", "blender-4.5.1-windows-x64"});
+	CHECK(c2.size() == 6);
+	CHECK(c2.size() == 6 && c2[0] == "C:/apps/blender-5.2.2-windows-x64/blender.exe"
+		&& c2[1] == "C:/Program Files/Blender Foundation/Blender 5.2/blender.exe"
+		&& c2[2] == "C:/apps/blender-4.5.1-windows-x64/blender.exe"
+		&& c2[3] == "C:/apps/blender-4.5-windows-x64/blender.exe"
+		&& c2[4] == "C:/Program Files/Blender Foundation/Blender 4.5/blender.exe"
+		&& c2[5] == "C:/Program Files/Blender Foundation/Blender 4.0/blender.exe");
+	// "changed on disk": the add-on always writes bg.fbx.bin next to the loaded model
+	const auto w1 = s3d::BlenderWatchPaths("C:\\g\\dfci\\bg\\bg01\\bg.fbx");
+	CHECK(w1.size() == 2 && w1[0] == "C:/g/dfci/bg/bg01/bg.fbx.bin" && w1[1] == "C:/g/dfci/bg/bg01/bg.fbx");
+	const auto w2 = s3d::BlenderWatchPaths("C:/g/uni2/bg/bg001/bg.fbx.bin");
+	CHECK(w2.size() == 1 && w2[0] == "C:/g/uni2/bg/bg001/bg.fbx.bin");
+	CHECK(s3d::BlenderWatchPaths("").empty());
+	// stage folder scan: bg.fbx.bin or bg.fbx, no BgList needed
+	namespace fs = std::filesystem;
+	std::error_code ec;
+	const fs::path tmp = fs::temp_directory_path(ec) / ("s3d_scan_" + std::to_string(reinterpret_cast<uintptr_t>(&ec)));
+	fs::remove_all(tmp, ec);
+	for (const char* d : {"bg003", "bg001", "bg002", "empty"}) fs::create_directories(tmp / d, ec);
+	auto touch = [](const fs::path& p) { std::ofstream(p, std::ios::binary) << "x"; };
+	touch(tmp / "bg001" / "bg.fbx.bin");   // fbxex / UNIEL
+	touch(tmp / "bg002" / "bg.fbx");       // ASCII only (DFCI / UNIB)
+	touch(tmp / "bg003" / "bg.fbx");
+	touch(tmp / "bg003" / "bg.fbx.bin");
+	touch(tmp / "empty" / "readme.txt");
+	touch(tmp / "bg.fbx");                 // a file, not a folder
+	const auto sf = s3d::ScanStageFolders(tmp.u8string());
+	CHECK(sf.size() == 3 && sf[0] == "bg001" && sf[1] == "bg002" && sf[2] == "bg003");
+	fs::remove_all(tmp, ec);
+	CHECK(s3d::ScanStageFolders((tmp / "missing").u8string()).empty());
 }
 
 int main(int argc, char** argv)

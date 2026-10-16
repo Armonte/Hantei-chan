@@ -1,0 +1,8 @@
+# tools/ui/ab_shot.sh docs/stage3d/evidence/blender_link/gap2_watch_ascii.txt on a scratch copy of DFCI bg01 (bg.fbx only, no BgList); a bg.fbx.bin (UNI2 bg001, stand-in for the add-on's export) copied in 15 s after start
+stage3d stages C:/dev/hantei-chan/work/ab_blender2/dfci_bg -> bg01
+stage3d open C:/dev/hantei-chan/work/ab_blender2/dfci_bg bg01 -> ok bg01
+stage3d status -> bg01 loaded=1 nodes=45 meshes=27 tris=29861 fov=45.00 bounds=[-112.61 -45.50 -141.31]..[131.83 108.16 23.50] model=C:/dev/hantei-chan/work/ab_blender2/dfci_bg/bg01\bg.fbx watch=C:/dev/hantei-chan/work/ab_blender2/dfci_bg/bg01/bg.fbx.bin,C:/dev/hantei-chan/work/ab_blender2/dfci_bg/bg01/bg.fbx changed_on_disk=0
+waits3dchange -> changed
+stage3d status -> bg01 loaded=1 nodes=45 meshes=27 tris=29861 fov=45.00 bounds=[-112.61 -45.50 -141.31]..[131.83 108.16 23.50] model=C:/dev/hantei-chan/work/ab_blender2/dfci_bg/bg01\bg.fbx watch=C:/dev/hantei-chan/work/ab_blender2/dfci_bg/bg01/bg.fbx.bin,C:/dev/hantei-chan/work/ab_blender2/dfci_bg/bg01/bg.fbx changed_on_disk=1
+stage3d reload -> ok bg01
+stage3d status -> bg01 loaded=1 nodes=82 meshes=78 tris=7390 fov=45.00 bounds=[-87.15 -1.92 -89.27]..[87.51 44.02 87.31] model=C:/dev/hantei-chan/work/ab_blender2/dfci_bg/bg01\bg.fbx.bin watch=C:/dev/hantei-chan/work/ab_blender2/dfci_bg/bg01/bg.fbx.bin changed_on_disk=0

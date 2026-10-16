@@ -22,6 +22,7 @@
 
 #include <algorithm>
 #include <chrono>
+#include <cctype>
 #include <cmath>
 #include <cstdio>
 #include <cstdlib>
@@ -137,8 +138,11 @@ struct State {
 	int replaces = -1;                   // MBAACC 2D stage slot the port replaces (pc-stage3d replaces)
 	std::string alignStatus;
 	// Blender link (s3d_blender.h): the model file the stage was loaded from and its write time then
+	// watch = s3d::BlenderWatchPaths(modelPath) (bg.fbx.bin first: the add-on writes it also for an ASCII bg.fbx stage),
+	// watchTimes = their write times at load (min() = file absent)
 	std::string modelPath, blenderStatus;
-	fs::file_time_type modelTime{};
+	std::vector<std::string> watch;
+	std::vector<fs::file_time_type> watchTimes;
 	double lastDiskCheck = 0;
 	bool changedOnDisk = false;
 };
@@ -201,6 +205,27 @@ void FreeGpu(State& s)
 	s.textures.clear();
 }
 
+// Write time of a watched file, min() when it does not exist (so a bg.fbx.bin appearing next to bg.fbx counts as a change).
+static fs::file_time_type WatchTime(const std::string& p)
+{
+	std::error_code ec;
+	const auto t = fs::last_write_time(fs::u8path(p), ec);
+	return ec ? fs::file_time_type::min() : t;
+}
+
+static bool SameNameNoCase(const std::string& a, const std::string& b)
+{
+	return a.size() == b.size() && std::equal(a.begin(), a.end(), b.begin(), [](char x, char y) {
+		return std::tolower(static_cast<unsigned char>(x)) == std::tolower(static_cast<unsigned char>(y)); });
+}
+
+static bool WatchChanged(const State& s)
+{
+	for (size_t i = 0; i < s.watch.size() && i < s.watchTimes.size(); ++i)
+		if (WatchTime(s.watch[i]) != s.watchTimes[i]) return true;
+	return false;
+}
+
 bool Load(State& s, const std::string& bgDir, const std::string& dataFile)
 {
 	EnsureProgram(s);
@@ -224,7 +249,9 @@ bool Load(State& s, const std::string& bgDir, const std::string& dataFile)
 	{
 		std::error_code tec;
 		s.modelPath = used;
-		s.modelTime = fs::last_write_time(fs::u8path(used), tec);
+		s.watch = s3d::BlenderWatchPaths(used);
+		s.watchTimes.clear();
+		for (const std::string& w : s.watch) s.watchTimes.push_back(WatchTime(w));
 		s.changedOnDisk = false;
 	}
 	// textures: straight decode, LINEAR + WRAP, no mips (the shipped DDS have none; fbxshader.txt diffuseSampler)
@@ -459,20 +486,26 @@ bool Capture(State& s, const std::string& path, std::string& err)
 void DrawAlignView(State& s, ImVec2 avail);
 void WriteAlignIni(State& s);
 
-// Blender link (s3d_blender.h). The configured path, else the newest detected install.
+// Blender link (s3d_blender.h). The configured path (default: the 5.2.2 portable build) when it exists, else the newest
+// detected install (5.x first).
 static std::string BlenderExe()
 {
-	if (!gSettings.blenderPath.empty()) return gSettings.blenderPath;
-	return s3d::DetectBlender();
+	std::error_code ec;
+	if (!gSettings.blenderPath.empty() && fs::exists(fs::u8path(gSettings.blenderPath), ec)) return gSettings.blenderPath;
+	const std::string d = s3d::DetectBlender();
+	if (!gSettings.blenderPath.empty()) HC_LOG_WARN("stage3d: blender: {} not found, using {}", gSettings.blenderPath, d.empty() ? std::string("none") : d);
+	return d;
 }
 
-static bool LaunchBlender(State& s, std::string& cmdOut)
+// background: the same command plus --background (ui-script check of the launch path without a Blender window)
+static bool LaunchBlender(State& s, std::string& cmdOut, bool background = false)
 {
 	std::string err;
 	const std::string exe = BlenderExe();
 	if (exe.empty()) { s.blenderStatus = TXT("Blender not found: set its path in Preferences."); HC_LOG_WARN("stage3d: blender: not found"); return false; }
 	cmdOut = s3d::BlenderCommandLine(exe, fs::absolute(fs::u8path(s.modelPath)).u8string(), err);
 	if (cmdOut.empty()) { s.blenderStatus = err; HC_LOG_ERROR("stage3d: blender: {}", err); return false; }
+	if (background) cmdOut += " --background";
 #ifdef _WIN32
 	auto wide = [](const std::string& u) {
 		std::wstring w(MultiByteToWideChar(CP_UTF8, 0, u.c_str(), int(u.size()), nullptr, 0), L'\0');
@@ -484,7 +517,7 @@ static bool LaunchBlender(State& s, std::string& cmdOut)
 	STARTUPINFOW si{};
 	si.cb = sizeof(si);
 	PROCESS_INFORMATION pi{};
-	if (!CreateProcessW(nullptr, cl.data(), nullptr, nullptr, FALSE, DETACHED_PROCESS, nullptr, dir.empty() ? nullptr : dir.c_str(), &si, &pi)) {
+	if (!CreateProcessW(nullptr, cl.data(), nullptr, nullptr, FALSE, CREATE_NO_WINDOW, nullptr, dir.empty() ? nullptr : dir.c_str(), &si, &pi)) {
 		s.blenderStatus = std::string(TXT("Could not start Blender:")) + " " + exe;
 		HC_LOG_ERROR("stage3d: blender: CreateProcess failed ({}): {}", GetLastError(), cmdOut);
 		return false;
@@ -513,7 +546,7 @@ void BlenderPrefsItems()
 		if (!d.empty()) { gSettings.blenderPath = d; ImGui::MarkIniSettingsDirty(); }
 		HC_LOG_INFO("stage3d: blender auto-detect: {}", d.empty() ? std::string("none") : d);
 	}
-	ImGui::TextDisabled("%s", TXT("Used by the 3D Stage view's Open in Blender (MBTL_fbx_json add-on). Empty: newest Blender found."));
+	ImGui::TextDisabled("%s", TXT("Used by the 3D Stage view's Open in Blender (MBTL_fbx_json add-on, Blender 5.2). Missing or empty: newest Blender found."));
 }
 
 void MenuItem()
@@ -534,13 +567,21 @@ void Draw()
 	ImGui::SameLine();
 	ImGui::SetNextItemWidth(160);
 	if (ImGui::BeginCombo("stage", s.dataFile.c_str())) {
-		std::error_code ec;
+		// BgList entries with a model (bg.fbx.bin, UNIEL enciphered included, or the ASCII bg.fbx), then stage folders
+		// BgList does not name (no / unreadable BgList, ASCII-only DFCI / UNIB folders)
+		const std::vector<std::string> folders = s3d::ScanStageFolders(s.bgDir);
+		std::vector<bool> named(folders.size(), false);
 		for (const s3d::BgEntry& e : s.list.entries) {
 			const std::string df = e.str("DataFile");
-			if (df.empty() || !fs::exists(fs::u8path(std::string(s.bgDir) + "/" + df + "/bg.fbx.bin"), ec)) continue;
+			bool found = false;
+			for (size_t i = 0; i < folders.size(); ++i)
+				if (!df.empty() && SameNameNoCase(folders[i], df)) { found = true; named[i] = true; }
+			if (!found) continue;
 			const std::string label = df + "  " + AnsiToUtf8(e.str("Name"));
 			if (ImGui::Selectable(label.c_str(), df == s.dataFile)) Load(s, s.bgDir, df);
 		}
+		for (size_t i = 0; i < folders.size(); ++i)
+			if (!named[i] && ImGui::Selectable(folders[i].c_str(), folders[i] == s.dataFile)) Load(s, s.bgDir, folders[i]);
 		ImGui::EndCombo();
 	}
 	ImGui::SameLine();
@@ -553,9 +594,9 @@ void Draw()
 		ImGui::SameLine();
 		if (Now() - s.lastDiskCheck > 1.0) {   // poll the model file's write time once a second
 			s.lastDiskCheck = Now();
-			std::error_code tec;
-			const auto t = fs::last_write_time(fs::u8path(s.modelPath), tec);
-			s.changedOnDisk = !tec && t != s.modelTime;
+			const bool was = s.changedOnDisk;
+			s.changedOnDisk = WatchChanged(s);
+			if (s.changedOnDisk && !was) HC_LOG_INFO("stage3d: blender: {} changed on disk", s.watch.empty() ? s.modelPath : s.watch[0]);
 		}
 		if (ImGui::Button(LBL("Reload from Blender"))) Load(s, s.bgDir, s.dataFile);
 		if (s.changedOnDisk) { ImGui::SameLine(); ImGui::TextColored(ImVec4(1, 0.8f, 0.3f, 1), "%s", TXT("(changed on disk)")); }
@@ -680,6 +721,12 @@ void WriteAlignIni(State& s)
 	s.alignStatus = f ? std::string(TXT("Wrote")) + " " + out.u8string() : std::string(TXT("Save failed.")) + " " + out.u8string();
 }
 
+bool ChangedOnDiskNow()
+{
+	State& s = *S();
+	return s.loaded && WatchChanged(s);
+}
+
 bool ScriptCommand(const std::string& cmd, const std::string& arg, std::string* msg)
 {
 	if (cmd != "stage3d") return false;
@@ -708,7 +755,12 @@ bool ScriptCommand(const std::string& cmd, const std::string& arg, std::string* 
 	}
 	if (sub == "blender") {   // blender [launch]: the launch command for the loaded stage; "launch" also starts Blender
 		if (!s.loaded) { out("FAILED no stage loaded"); return true; }
-		if (rest == "launch") { std::string cmd; const bool ok = LaunchBlender(s, cmd); out(ok ? "ok " + cmd : "FAILED " + s.blenderStatus); return true; }
+		if (rest == "launch" || rest == "launch-bg") {
+			std::string cmd;
+			const bool ok = LaunchBlender(s, cmd, rest == "launch-bg");
+			out(ok ? "ok " + cmd : "FAILED " + s.blenderStatus);
+			return true;
+		}
 		const std::string exe = BlenderExe();
 		const std::string cmd = s3d::BlenderCommandLine(exe.empty() ? std::string("blender.exe") : exe, fs::absolute(fs::u8path(s.modelPath)).u8string(), err);
 		out(cmd.empty() ? "FAILED " + err : cmd);
@@ -735,7 +787,19 @@ bool ScriptCommand(const std::string& cmd, const std::string& arg, std::string* 
 		char b[512];
 		snprintf(b, sizeof(b), "%s loaded=%d nodes=%u meshes=%u tris=%u fov=%.2f bounds=[%.2f %.2f %.2f]..[%.2f %.2f %.2f]", s.loadedName.c_str(), s.loaded ? 1 : 0,
 			s.stats.nodes, s.stats.meshes, s.stats.triangles, s.params.fov, s.stats.bmin[0], s.stats.bmin[1], s.stats.bmin[2], s.stats.bmax[0], s.stats.bmax[1], s.stats.bmax[2]);
-		out(b);
+		std::string line = b;
+		if (s.loaded) {   // Blender link: the loaded model, the watched files and the "changed on disk" state (polled now)
+			line += " model=" + s.modelPath + " watch=";
+			for (size_t i = 0; i < s.watch.size(); ++i) line += (i ? "," : "") + s.watch[i];
+			line += std::string(" changed_on_disk=") + (WatchChanged(s) ? "1" : "0");
+		}
+		out(line);
+		return true;
+	}
+	if (sub == "stages") {   // stages: the combo's list (BgList entries with a model + unlisted stage folders)
+		std::string line;
+		for (const std::string& f : s3d::ScanStageFolders(rest.empty() ? std::string(s.bgDir) : rest)) line += (line.empty() ? "" : " ") + f;
+		out(line.empty() ? "FAILED no stage folders" : line);
 		return true;
 	}
 	out("unknown stage3d command " + sub);
