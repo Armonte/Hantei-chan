@@ -412,7 +412,7 @@ void MainFrame::DrawPatSelectionOutline(CharacterView* view, ImDrawList* dl, ImV
 // Menus and windows
 // ---------------------------------------------------------------------------
 
-// Edit > Preferences: Auto backup, PAT editor, Mouse buttons (menus), and the same settings in one window.
+// Edit > Preferences: Auto backup, PAT editor, Mouse buttons, 3D stage: Blender (menus), and the same settings in one window.
 void MainFrame::DrawBackupPrefsItems()
 {
 	{
@@ -494,6 +494,7 @@ void MainFrame::DrawPatPreferences()
 	if (ImGui::BeginMenu(LBL("Auto backup"))) { DrawBackupPrefsItems(); ImGui::EndMenu(); }
 	if (ImGui::BeginMenu(LBL("PAT editor"))) { DrawPatColourPrefsItems(); ImGui::EndMenu(); }
 	if (ImGui::BeginMenu(LBL("Mouse buttons"))) { DrawMousePrefsItems(); ImGui::EndMenu(); }
+	if (ImGui::BeginMenu(LBL("3D stage: Blender"))) { stage3dview::BlenderPrefsItems(); ImGui::EndMenu(); }
 	if (ImGui::MenuItem(LBL("Saving and PAT editor settings..."), nullptr, m_showPatPrefs)) m_showPatPrefs = !m_showPatPrefs;
 }
 

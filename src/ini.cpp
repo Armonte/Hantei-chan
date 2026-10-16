@@ -3,6 +3,8 @@
 #include "parts/parts.h"
 #include "misc.h"
 #include "extension_profile.h"
+#include "app_log.h"
+#include "stage3d/s3d_blender.h"
 #include <sstream>
 #include <iomanip>
 #include <string>
@@ -100,8 +102,13 @@ static void ReadLine(ImGuiContext*, ImGuiSettingsHandler*, void* entry, const ch
 		gSettings.sqGameDirUni2 = line + 14;
 	} else if (strncmp(line, "SqGameDirMbtl=", 14) == 0){
 		gSettings.sqGameDirMbtl = line + 14;
+	} else if (strncmp(line, "Stage3dBlenderPath=", 19) == 0){
+		if (!s3d::BlenderPathIsPre5(line + 19)) gSettings.blenderPath = line + 19;
+		else HC_LOG_WARN("ini: Stage3dBlenderPath {} is older than Blender 5 (the add-on needs 5.2): using {}", line + 19, gSettings.blenderPath);
+		gSettings.blenderPathFromNewKey = true;
 	} else if (strncmp(line, "BlenderPath=", 12) == 0){
-		gSettings.blenderPath = line + 12;
+		// pre-Preferences key (feat/blender-link): read once, the next save writes Stage3dBlenderPath= only
+		if (!gSettings.blenderPathFromNewKey && !s3d::BlenderPathIsPre5(line + 12)) gSettings.blenderPath = line + 12;
 	} else if (strncmp(line, "StageGameDir=", 13) == 0){
 		gSettings.stageGameDir = line + 13;
 	} else if (strncmp(line, "Key=", 4) == 0){
@@ -154,7 +161,7 @@ static void Write(ImGuiContext* ctx, ImGuiSettingsHandler* handler, ImGuiTextBuf
 	buf->appendf("SqHotReload=%i\n", gSettings.sqHotReload ? 1 : 0);
 	if (!gSettings.sqGameDirUni2.empty()) buf->appendf("SqGameDirUni2=%s\n", gSettings.sqGameDirUni2.c_str());
 	if (!gSettings.sqGameDirMbtl.empty()) buf->appendf("SqGameDirMbtl=%s\n", gSettings.sqGameDirMbtl.c_str());
-	if (!gSettings.blenderPath.empty()) buf->appendf("BlenderPath=%s\n", gSettings.blenderPath.c_str());
+	if (!gSettings.blenderPath.empty()) buf->appendf("Stage3dBlenderPath=%s\n", gSettings.blenderPath.c_str());
 	for (const auto& k : gSettings.keyBindings)
 		buf->appendf("%s\n", k.c_str());
 

@@ -1,0 +1,9 @@
+wait 10
+stage3d stages C:/dev/hantei-chan/work/ab_blender2/dfci_bg
+stage3d open C:/dev/hantei-chan/work/ab_blender2/dfci_bg bg01
+stage3d status
+waits3dchange 60
+stage3d status
+stage3d reload
+stage3d status
+quit

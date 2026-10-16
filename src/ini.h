@@ -57,7 +57,11 @@ extern struct Settings
 	bool sqHotReload = false;
 	std::string sqGameDirUni2, sqGameDirMbtl;
 	// 3D stage view "Open in Blender": blender.exe, UTF-8 ("" = auto-detect at launch, s3d_blender.h)
-	std::string blenderPath;
+	// (Edit > Preferences > 3D stage: Blender; ini key Stage3dBlenderPath=, the older BlenderPath= is still read and wins
+	// only when the new key is absent)
+	// Default: the Blender 5.2.2 portable build (s3d::DefaultBlenderPath); a saved pre-5 Blender is not migrated.
+	std::string blenderPath = "C:/apps/blender-5.2.2-windows-x64/blender.exe";
+	bool blenderPathFromNewKey = false;
 } gSettings;
 
 bool LoadFromIni(FrameData *framedata, CG *cg, const std::string& iniPath, std::string* outTopHA6Path = nullptr, Parts* parts = nullptr, std::string* outPATPath = nullptr);
