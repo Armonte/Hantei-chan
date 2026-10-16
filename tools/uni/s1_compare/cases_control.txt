@@ -25,3 +25,8 @@ mbtl_flipV_chr001_p157f2_solo_s456 | mbtl/data/chr001solos456/chr001_0.txt | 157
 pras_chr020_p5f2_z1 | uni2/data/chr020/chr020_0.txt | 5 | 2 | -1 | 1 | render-match11: pras at the game's zoom 1 (CG edges over the .pat flame: no 1.5x resample)
 ctrl_chr027_p0_z1 | uni2/data/chr027/chr027_0.txt | 0 | 0 | -1 | 1 | render-match11: chr027 idle at the game's zoom 1 (floor of pups_chr027_p449f4_z1)
 pups_chr027_p449f4_z1 | uni2/data/chr027/chr027_0.txt | 449 | 4 | -1 | 1 | render-match11: pups f4 at the game's zoom 1
+mbtl_patctrl_chr001_p238f10_z1 | mbtl/data/chr001/chr001_0.txt | 238 | 10 | -1 | 1 | render-match12: MBTL .pat-only control at zoom 1 (no editor-shot resample)
+mbtl_patctrl_chr001_p277f0_z1 | mbtl/data/chr001/chr001_0.txt | 277 | 0 | -1 | 1 | render-match12: MBTL .pat-only control at zoom 1
+mbtl_flipV_chr001_p157f2_z1 | mbtl/data/chr001/chr001_0.txt | 157 | 2 | -1 | 1 | render-match12: p157 at zoom 1 (thin-line arcs: the 1.5x shot resample softens them)
+mbtl_flipV_chr001_p157f2_solo_s456_z1 | mbtl/data/chr001solos456/chr001_0.txt | 157 | 2 | -1 | 1 | render-match12: solo arc slots 4/5/6 at zoom 1
+mbtl_flipV_chr001_p157f2_solo_s8_z1 | mbtl/data/chr001solos8/chr001_0.txt | 157 | 2 | -1 | 1 | render-match12: solo arc slot 8 at zoom 1
