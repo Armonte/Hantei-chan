@@ -1,5 +1,6 @@
 #include "script_vm.h"
 #include "sq_api.h"
+#include "chara_load.h"
 
 #include <squirrel.h>
 #include <sqstdaux.h>
@@ -29,6 +30,7 @@ namespace sqedit {
 struct ScriptVM::Impl {
 	HSQUIRRELVM v = nullptr;
 	fs::path root;
+	std::string apiPath;
 	LogFn log;
 	Diagnostic compileErr;
 	Diagnostic runtimeErr;
@@ -209,6 +211,7 @@ SQInteger Native_Stub(HSQUIRRELVM v)
 		sq_pushinteger(v, alive ? 1 : 0);
 		return 1;
 	}
+	if (const SQInteger r = CallTracedNative(v, tag); r >= 0) return r;
 	return PushStubReturn(v, tag);
 }
 
@@ -244,6 +247,7 @@ bool ScriptVM::open(const std::string& gameRoot, const std::string& apiJsonPath,
 {
 	close();
 	m->root = fs::path(gameRoot);
+	m->apiPath = apiJsonPath;
 	m->log = log;
 	json api;
 	if (!apiJsonPath.empty()) {
@@ -285,7 +289,7 @@ Diagnostic ScriptVM::bootstrap()
 	if (m->bootstrapped) return m->bootDiag;
 	m->bootstrapped = true;
 	m->bootDiag = {};
-	for (const char* entry : {"script/Battle_Init.txt", "script/Battle_Std.txt"}) {
+	for (const char* entry : {"script/Battle_Init.txt", "script/Battle_Std.txt", "data/_combase.txt"}) {
 		const fs::path p = m->root / entry;
 		if (!fs::exists(p)) continue;
 		Diagnostic d = RunFile(m->v, p, std::string("./") + entry);
@@ -293,6 +297,45 @@ Diagnostic ScriptVM::bootstrap()
 		if (!d.ok) { m->bootDiag = d; break; }
 	}
 	return m->bootDiag;
+}
+
+CharaLoadResult ScriptVM::checkCharacter(const std::string& chrDirRel, LoadContext ctx, const std::string& overrideRel,
+	const std::string& overrideBytes)
+{
+	CharaLoadResult r;
+	const std::string root = m->root.u8string(), api = m->apiPath;
+	const LogFn log = m->log;
+	std::string err;
+	if (!open(root, api, log, &err)) {
+		r.issues.push_back({CharaLoadIssue::RuntimeError, "", 0, "", err});
+		return r;
+	}
+	const Diagnostic boot = bootstrap();
+	if (!boot.ok) {
+		r.issues.push_back({CharaLoadIssue::RuntimeError, boot.source, boot.line, "", "battle VM setup failed: " + boot.message});
+		return r;
+	}
+	InstallDevWarningObserver(m->v);
+	auto run = [&](const std::string& rel, std::string* e, std::string* ef, int* line) {
+		Diagnostic d;
+		if (rel == overrideRel) {
+			d = CompileIn(m->v, overrideBytes, "./" + rel);
+			if (d.ok) d = RunCompiled(m->v);
+		} else
+			d = RunFile(m->v, m->root / fs::u8path(rel), "./" + rel);
+		sq_settop(m->v, 0);
+		if (!d.ok) {
+			*e = d.message;
+			*ef = d.source.rfind("./", 0) == 0 ? d.source.substr(2) : d.source;
+			*line = d.line;
+		}
+		return d.ok;
+	};
+	auto exists = [&](const std::string& rel) {
+		std::error_code ec;
+		return rel == overrideRel || fs::exists(m->root / fs::u8path(rel), ec);
+	};
+	return LoadCharacterScripts(m->v, chrDirRel, ctx, run, exists);
 }
 
 Diagnostic ScriptVM::compile(const std::string& bytes, const std::string& name)

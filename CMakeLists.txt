@@ -1191,7 +1191,7 @@ target_compile_options(squirrel224 PRIVATE -w)
 
 # sqtool: compile every script of a game with its exact VM; --run executes Battle_Init/Battle_Std
 # against native stubs generated from the IDB API table (docs/squirrel/api/<game>_api.json).
-add_executable(sqtool src/squirrel/sqtool.cpp
+add_executable(sqtool src/squirrel/sqtool.cpp src/squirrel/ptcn_stack.cpp
 	src/framedata.cpp src/framedata_load.cpp src/framedata_save.cpp src/framedata_ha4.cpp ${HAN2_MODEL_SOURCES}
 	src/misc.cpp tinyalloc/tinyalloc.c)
 target_include_directories(sqtool PRIVATE "." "third_party" "${CMAKE_BINARY_DIR}/generated")
@@ -1220,7 +1220,7 @@ target_include_directories(sqeditor_core PUBLIC "src" "third_party")
 target_compile_definitions(sqeditor_core PRIVATE WIN32_LEAN_AND_MEAN)
 target_link_libraries(sqeditor_core PUBLIC squirrel224)
 if(TARGET ${EXE})
-	target_sources(${EXE} PRIVATE src/squirrel/script_panel.cpp src/ui/main_frame_script.cpp third_party/ImGuiColorTextEdit/TextEditor.cpp)
+	target_sources(${EXE} PRIVATE src/squirrel/script_panel.cpp src/squirrel/ptcn_stack.cpp src/ui/main_frame_script.cpp third_party/ImGuiColorTextEdit/TextEditor.cpp)
 	set_source_files_properties(third_party/ImGuiColorTextEdit/TextEditor.cpp PROPERTIES COMPILE_OPTIONS "-w")
 	target_link_libraries(${EXE} PRIVATE sqeditor_core)
 endif()
