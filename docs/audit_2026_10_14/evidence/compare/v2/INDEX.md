@@ -1389,3 +1389,84 @@ floor-strip statistics on the existing round-19 `_sa` captures. The `v2_round19.
 
 **Status: every MBTL row is at its floor. Nothing is left untraced on the parity side except the identity of the
 p157 spawned floor term, which plate_b0 already covers by construction.**
+
+## Round 23 (2026-10-16): the p157 floor term is a puddle effect (p158); s456 / p238 floors measured in 8 bits
+No editor (C++) change, so no build. One MBTL run (`round23/v2r23_mbtl_chr001_solo_s456_efpeek.gcs`, log
+`round23/run_v2r23_efpeek.log`; shots in gamecap `captures/v2/r23`, suffix `_sa23`). Numbers:
+`tools/uni/s1_compare/v2_round23.sh` (log `round23/round23.log`). New tool `v2_quant.py` (8-bit model). The float path is
+unchanged, and both are reported. MBTL IDB commented, renamed and saved.
+
+### What pattern 157 spawns: effect pattern 158, "水たまり" (puddle)
+- chr001.ha6 (MBTL data008) p157 frame 2 has one EF entry: `EFTP 1`, `EFNO 158`, `EFPR {420, 0, 64}`. Pattern 158's
+  PTT2 name is Shift-JIS 水たまり ("puddle"). It has 13 frames, each one part set (AFGX layer 0: sets 302, 303, 304,
+  306 ... 316), and every frame has AFHK 1 (interpolate to the next frame).
+- Engine path (MBTL IDB): `Han6_EF_Dispatch` 0x582420 (case 1 at 0x582452) → `EffectPool_AllocSlot` 0x42CAE0
+  (`g_EffectPool` 0xCCE700, 2000 slots × 0x868, in-use byte +0x864) → `Effect_RegisterSpawned` 0x581BD0 (EFPR word 0 =
+  x offset <<7, mirrored by facing; word 1 = y; words 2|3<<16 → obj+0x7C, here 0x40; pattern = EFNO for type 1) → the
+  object goes into `g_ActiveEffectList_Objs` 0xCCC7A4 (renamed from `dword_CCC7A4`) and is drawn from `g_ObjectList`
+  0xCAAD04 by `ObjectList_DrawAllWithShadows` 0x5371C0 after P1 and P2. Effect objects have no draw-alpha override, so
+  the plate hide (P1/P2 obj+0x648) leaves it drawn. 0x40 is not `_ObjFlags_RenderShadow` (0x10000), so it gets no stage
+  shadow pass.
+- Live peek (game shot, `plate_b0`, `plate_bb`): `g_ObjectListCount` = 3 every time: P1 0x10F9340, P2 0x10F9F84 and
+  effect slot 0 (0xCCE700). Slot 0: in use, owner side 0 (P1), pattern **158**, frame 0, duration 3, obj+0x7C 0x40.
+  Its tick is 1 at the game shot and `plate_b0`, and 2 at `plate_bb`. No other effect slot is in use.
+  `g_CharaShadowRT_Enabled` is 1 throughout. There is no other light or stage object.
+- The part set (chr001.pat): set 302 slot 30 is part 1, PRCL bytes ff 66 66 33 (B 255, G 102, R 102, **A 0x33**),
+  zoom 3.0 × 0.8, normal alpha blend, priority 255. That is a flat bluish ellipse on the floor to the right of P1, which
+  matches the floor term's colour (blue strongest). Set 303 slot 30: A 0x00, zoom 2.7 × 0.7. With AFHK the frame-0 draw
+  lerps 302 → 303 as its tick advances. So the term fades within frame 0, and that is the "halving" one F6 step later.
+  Measured: blue summed over y 600–720 is 172,654 at `plate_b0` and 76,799 at `plate_bb` (ratio 0.44). The strip mean goes
+  +1.11 → +0.60, the same as round 19 / 22 to 0.01. Interpolation weights tick/3 (1/3 → 2/3: alpha ×0.5, area ×0.93,
+  ratio ≈ 0.46) fit this better than (tick−1)/3 (0 → 1/3: ≈ 0.62). The exact lerp weight in the effect draw is not
+  traced.
+  (`round23/p158_puddle_b0_bb_minus_p277_x8.png`: `plate_b0` and `plate_bb` minus the p277 `plate_b0`, ×8, floor
+  strip x 400–1280.)
+- The term is the same for the full, s8 and s456 .pats because pattern 158 draws set 302+. The solo .pats only move
+  set-21 props. **plate_b0 is the correct backdrop**: it holds the puddle at the game shot's tick.
+- Editor follow-up (not done): the editor previews only P1's pattern. Drawing EF type-1 spawns (pattern EFNO at
+  EFPR x/y) would put the puddle in the editor frame.
+
+### s456 and p238: the 8-bit model
+`v2_quant.py` blends into the integer plate and quantizes after each layer, with round-to-nearest (`rn`) or truncation
+(`tr`). Each layer is x_i + q_i·dst, where x_i is the editor's black shot and q_i = (grey − black) / 64. One layer is the
+case shot itself. p238 can also use its s4 / s5 / s18 solo shots as separate layers, restricted to the pixels where they
+make up the whole frame. The float row is the existing P + Q·B (it reproduces 0.598 / 0.232).
+
+| case | float | **quant rn** | quant tr | quant rn histogram (|d| = 0 / 1 / ≥ 2) |
+|---|---|---|---|---|
+| mbtl_flipV_chr001_p157f2_solo_s456_z1 | 0.60 | **0.54** | 0.73 (signed +0.54) | 51.7% / 43.2% / 5.1% |
+| mbtl_patctrl_chr001_p238f10_z1 | 0.23 | **0.15** | 0.36 (signed +0.35) | 85.3% / 14.5% / 0.3% |
+| p238, layers s18 → s4 → s5 (24,170 px) | 0.32 | 0.21 | 0.51 | 79.4% / 20.3% / 0.3% |
+| mbtl_flipV_chr001_p157f2_z1 | 0.18 | 0.17 | 0.22 | 84.9% / 13.8% / 1.3% |
+| mbtl_flipV_chr001_p157f2_solo_s8_z1 | 0.01 | 0.01 | 0.01 | 99.1% / 1.0% / 0.0% |
+| mbtl_patctrl_chr001_p277f0_z1 | 0.00 | 0.00 | 0.00 | 100% |
+
+- **The game rounds to nearest.** Truncation adds a +0.35 to +0.58 signed bias that the game shot does not have. The rn
+  model has none (signed +0.04 s456, +0.01 p238).
+- **Blend quantization is a small part of either floor.** It accounts for 0.06 of s456 (0.60 → 0.54) and 0.08 of p238
+  (0.23 → 0.15). The rn prediction is an integer image, and what is left is whole-level differences in the layer's own
+  value (the filtered texel × diffuse colour × alpha), not in the blend.
+- **Round 22's √3 estimate is refuted.** The s456 arcs are not additive. Set 21 slots 4/5/6 have no PRAL (normal alpha
+  blend), PRFL 1 (linear filter), A3 3D rotation and zoom 1.07–1.15. 12,341 of the 13,156 footprint px (94%) are on
+  part edges (|∇P| > 4 levels/px), with rn residual 0.54 on the edges and 0.45 in the interior. So s456's floor is the
+  ±1-level difference in the filtered, rotated thin lines' coverage: bilinear-weight precision and texture-coordinate
+  interpolation between the game's D3D9 pipeline and the editor. It is not a stacking of blend roundings. p238's s18
+  plane is mostly interior (rn 0.16 interior, 0.11 edge), so its floor is a single-plane ±1 on 14.5% of pixels.
+- Draw order on p238: s18 → s4 → s5 composes back to the editor's case shot on 24,170 px with signed +0.02. s4 → s5
+  → s18 gives +0.13 on its 15,256 px. The draw order is not traced and does not change the floor.
+
+### Final table (zoom 1 `_sa` + plate_b0, `--subpix 0,0`; zoom 1.5 unchanged from round 22)
+| case | float | 8-bit rn | measured floor and reason |
+|---|---|---|---|
+| mbtl_patctrl_chr001_p238f10_z1 | 0.23 | **0.15** | blend rounding 0.08 (measured). Rest: ±1 level on 14.5% of px of the s18 translucent plane's source value |
+| mbtl_patctrl_chr001_p277f0_z1 | 0.00 | 0.00 | opaque point-sampled parts: pixel-exact |
+| mbtl_flipV_chr001_p157f2_z1 | 0.18 | **0.17** | ±1 on 14% of px (s8 arc edges, set-21 props). The p158 puddle is in plate_b0 at the same tick |
+| mbtl_flipV_chr001_p157f2_solo_s8_z1 | 0.01 | 0.01 | one opaque part: exact |
+| mbtl_flipV_chr001_p157f2_solo_s456_z1 | 0.60 | **0.54** | blend rounding 0.06 (measured). Rest: ±1 on 43% / ±2 on 5% of px, on the linear-filtered, 3D-rotated thin arc edges (94% of the footprint) |
+| mbtl_patctrl_chr001_p238f10 (zoom 1.5) | 0.24 | – | the zoom-1 floor (round 21) |
+| mbtl_patctrl_chr001_p277f0 (zoom 1.5) | 0.00 | – | pixel-exact |
+| mbtl_flipV_chr001_p157f2 (zoom 1.5) | 0.19 | – | the zoom-1 floor (round 21) |
+
+**Status: the p157 floor term is identified (effect pattern 158, the puddle; in plate_b0 by construction). Every MBTL
+row has a measured floor. What remains is a whole-level difference in the filtered source value, mostly on part edges.
+Blend quantization is measured at 0.06–0.08, rounding to nearest.**
