@@ -285,6 +285,7 @@ struct Result {
 //   <chr>_com_0.txt (CPU AI, on top of data/_combase.txt)
 
 // Load-time context settings (sqtool check ... --side N --mode M --rapidbeat T).
+static std::string g_game;   // from --game or the API file name (<game>_api.json)
 static int g_side = 0, g_gameMode = 1, g_gameModeSub = 0, g_rapidBeat = 0;
 
 static bool RunCharacters(HSQUIRRELVM v, const fs::path &root)
@@ -324,7 +325,7 @@ static bool RunCharacters(HSQUIRRELVM v, const fs::path &root)
 				return ok;
 			},
 			[&](const std::string &rel) { return fs::exists(root / rel, ec); },
-			[&](const std::string &rel) { std::string b; ReadFile(root / rel, b); return b; });
+			[&](const std::string &rel) { std::string b; ReadFile(root / rel, b); return b; }, sqedit::LoadProfileFor(g_game));
 		int devw = 0;
 		for (const auto &i : r.issues) {
 			switch (i.kind) {
@@ -411,10 +412,11 @@ static int CmdCheck(const fs::path &root, const std::string &apiPath, bool run, 
 		LOGI("sqtool: run: stubs {} tables, {} natives, {} consts, {} classes ({} fields, {} methods), {} entries skipped", st.tables,
 			st.natives, st.consts, st.classes, st.fields, st.methods, st.skipped);
 		// Battle VM setup (MBTL Sq_InitBattleVM 0x7F4710): Battle_Init, Battle_Std, then data/_combase.txt (COM classes).
+		const sqedit::LoadProfile prof = sqedit::LoadProfileFor(g_game);
 		for (const char *entry : {"script/Battle_Init.txt", "script/Battle_Std.txt", "data/_combase.txt"}) {
 			if (!fs::exists(root / entry))
 				continue;
-			if (!chars && std::string(entry) == "data/_combase.txt")
+			if ((!chars || !prof.comBase) && std::string(entry) == "data/_combase.txt")
 				continue;
 			bool ok = RunFile(rv, root / entry, std::string("./") + entry);
 			LOGI("sqtool: run {} -> {}", entry, ok ? "ok" : "FAILED");
@@ -475,8 +477,13 @@ int main(int argc, char **argv)
 		std::string api, report;
 		bool run = false, chars = false, calls = false;
 		for (size_t i = 2; i < args.size(); ++i) {
-			if (args[i] == "--api" && i + 1 < args.size())
+			if (args[i] == "--api" && i + 1 < args.size()) {
 				api = args[++i];
+				const std::string f = fs::path(api).filename().string();
+				if (g_game.empty() && f.size() > 9 && f.compare(f.size() - 9, 9, "_api.json") == 0) g_game = f.substr(0, f.size() - 9);
+			}
+			else if (args[i] == "--game" && i + 1 < args.size())
+				g_game = args[++i];
 			else if (args[i] == "--report" && i + 1 < args.size())
 				report = args[++i];
 			else if (args[i] == "--run")
@@ -498,7 +505,7 @@ int main(int argc, char **argv)
 	} else if (args.size() >= 2 && args[0] == "compile") {
 		rc = CmdCompile(std::vector<std::string>(args.begin() + 1, args.end()));
 	} else {
-		LOGI("usage: sqtool check <gamedir> [--api <game>_api.json] [--run] [--chars] [--calls] [--side 0|1] [--mode N|--training] [--rapidbeat 0-3] [--report out.tsv]");
+		LOGI("usage: sqtool check <gamedir> [--api <game>_api.json] [--run] [--chars] [--calls] [--game uni2|mbtl|dfci|unib] [--side 0|1] [--mode N|--training] [--rapidbeat 0-3] [--report out.tsv]");
 		LOGI("       sqtool compile <file.txt>...");
 	}
 	g_log->flush_log();

@@ -713,15 +713,18 @@ struct ScriptPanel::Impl {
 	// order of this game is not traced yet). Fills loadProblems; the first runtime error in this file comes back in *here.
 	bool characterCheck(const std::string& bytes, Diagnostic* here)
 	{
-		static const std::regex re(R"(^data/(chr(\d+))/\1_(sc|cmd|mv|com)_0\.txt$)");
+		// UNI2 / MBTL: data/chrNNN/chrNNN_{sc,cmd,mv,com}_0.txt; DFCI / UNIB: data/<Name>_0/<Name>_0_{sc,cmd,mv}.txt, _com.txt
+		static const std::regex reUni(R"(^data/(chr(\d+))/\1_(sc|cmd|mv|com)_0\.txt$)");
+		static const std::regex reArc(R"(^data/(([A-Za-z]+(?:_s)?)_0)/(?:\1_(?:sc|cmd|mv)\.txt|_com\.txt)$)");
 		std::smatch m;
-		if ((game != "mbtl" && game != "uni2") || apiPath.empty() || !std::regex_match(currentRel, m, re)) return false;   // load order traced for these
+		const bool uni = std::regex_match(currentRel, m, reUni);
+		if (apiPath.empty() || game.empty() || (!uni && !std::regex_match(currentRel, m, reArc))) return false;
 		const std::string dir = "data/" + m[1].str();
 		const auto t0 = std::chrono::steady_clock::now();
-		const auto codes = LoadPatternCodes(ToU8(U8(root) / U8(dir) / U8(m[1].str() + "_0.txt")));
+		const auto codes = LoadPatternCodes(ToU8(U8(root) / U8(dir) / U8(m[1].str() + (uni ? "_0.txt" : ".txt"))));
 		const auto effect = LoadPatternCodes(ToU8(U8(root) / "data" / "effect.txt"));
 		LoadContext ctx;
-		ctx.charaNo = ctx.vsCharaNo = std::stoi(m[2].str());
+		ctx.charaNo = ctx.vsCharaNo = uni ? std::stoi(m[2].str()) : -1;
 		ctx.patternByCode = [&](int dt, const std::string& code) {
 			const auto& t = dt == 1 ? effect : codes;
 			const auto it = t.find(code);
@@ -1142,6 +1145,7 @@ bool ScriptPanel::openGameRoot(const std::string& rootUtf8, const std::string& p
 	m->indexGen++;
 	m->problems.clear();
 	std::string vmErr;
+	m->vm.setLoadProfile(LoadProfileFor(m->game));
 	m->vmReady = m->vm.open(ToU8(r), m->apiPath, [this](const std::string& s) { m->say(s); }, &vmErr);
 	if (!m->vmReady) m->vm.open(ToU8(r), "", [this](const std::string& s) { m->say(s); }, &vmErr);
 	m->setStatus(std::to_string(m->files.size()) + " Squirrel scripts; profile " + (m->game.empty() ? "none" : m->game) +

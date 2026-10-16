@@ -38,6 +38,15 @@ struct LoadContext {
 	std::function<void(int datatype, const std::string& code, const std::string& move, const std::vector<SourceRange>& inits)> onMissingPattern;
 };
 
+// How a game loads a character (traced per exe, docs/squirrel/RE_MBTL_LOAD.md).
+struct LoadProfile {
+	bool comBase = true;      // battle VM setup runs data/_combase.txt after Battle_Init/Battle_Std (UNI2, MBTL, DFCI; not UNIB)
+	bool scFirst = true;      // the sc file runs before cmd/mv (UNI2, MBTL, DFCI); UNIB runs cmd, mv, then sc
+	bool pushObject = true;   // the character is on the object stack during cmd/mv/com (not in UNIB)
+};
+// "uni2", "mbtl", "dfci", "unib" (anything else: the UNI2/MBTL profile).
+LoadProfile LoadProfileFor(const std::string& game);
+
 struct CharaLoadIssue {
 	enum Kind { RuntimeError, MissingTable, MissingPattern, DevWarning, Note };
 	Kind kind = RuntimeError;

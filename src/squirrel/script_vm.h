@@ -57,6 +57,8 @@ public:
 	// order with load-time natives answering from ctx; overrideRel's bytes (the unsaved editor text) replace that file.
 	CharaLoadResult checkCharacter(const std::string& chrDirRel, LoadContext ctx, const std::string& overrideRel,
 		const std::string& overrideBytes);
+	// The game's load profile (LoadProfileFor): whether the setup runs data/_combase.txt, the file order, the object push.
+	void setLoadProfile(const LoadProfile& p);
 
 	int nativeCount() const;
 	int sandboxBlockedCount() const;
