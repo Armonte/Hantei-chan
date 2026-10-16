@@ -119,7 +119,7 @@ inline void EndLabelForm() { ImGui::EndTable(); }
 // English "###Damage" id, so switching language keeps widget state).
 inline const char *HiddenId(const char *label)
 {
-	static char buf[16][192];
+	static char buf[16][400];   // room for the long UNI2 / MBTL parameter labels (game_label_ui.h)
 	static int slot = 0;
 	slot = (slot + 1) & 15;
 	std::snprintf(buf[slot], sizeof buf[slot], "##%s", label);

@@ -219,11 +219,16 @@ inline void IfDisplay(std::vector<Frame_IF> *ifList_, Frame_IF *singleClipboard 
 			// in a tooltip), so Japanese at 1280 does not push the fields out of the pane.
 			lw = ui::LabelColW({LBL("Type"), LBL("Frame to jump to"), LBL("Pattern to queue"), LBL("Jump to"),
 				LBL("Projectile var decrease"), LBL("Hitstop on collision"), LBL("Opponent state"), LBL("Command ID")});
+			if(ownLabels) lw = std::max(lw, GameConditionLabelColW(ifList[i], labelGame));   // Type and the label-table rows share it
 
 			// Type dropdown
 			if(ownLabels) {
 				if(im::InputInt(Row("Type", 0.f, true), &ifList[i].type, 0, 0)) markModified();
-				im::SameLine(); im::TextDisabled("%s", GameLabelUiTitle(labelGame, GameLabelKind::IF, ifList[i].type).c_str());
+				// the type's name after the field when it fits, else under it (1280 / Japanese clipped it at the pane edge)
+				const std::string title = GameLabelUiTitle(labelGame, GameLabelKind::IF, ifList[i].type);
+				im::SameLine();
+				if(im::GetContentRegionAvail().x >= im::CalcTextSize(title.c_str()).x) im::TextDisabled("%s", title.c_str());
+				else { im::NewLine(); im::PushTextWrapPos(0.f); im::TextDisabled("%s", title.c_str()); im::PopTextWrapPos(); }
 			} else if(typeIndex >= (int)condLabels.size()) {
 				// Handle special cases (50+, 100+, 150+)
 				if(im::InputInt(Row("Type", 0.f, true), &ifList[i].type, 0, 0)) markModified();
@@ -263,7 +268,7 @@ inline void IfDisplay(std::vector<Frame_IF> *ifList_, Frame_IF *singleClipboard 
 			const int nRaw2 = (frameData && frameData->usesUniFormat()) ? kMaxIfParams - 6 : 3;
 			if(im::InputScalarN("##params2", ImGuiDataType_S32, p+6, nRaw2, NULL, NULL, "%d", 0)) markModified();
 		} else if(ownLabels) {
-			DrawGameConditionUI(ifList[i], labelGame, markModified);
+			DrawGameConditionUI(ifList[i], labelGame, markModified, lw);
 		} else {
 		// Otherwise show smart UI based on type
 		switch(ifList[i].type) {
