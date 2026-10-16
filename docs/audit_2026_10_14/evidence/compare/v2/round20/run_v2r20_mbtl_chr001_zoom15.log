@@ -1,0 +1,113 @@
+=== v2r20_mbtl_chr001_zoom15.gcs
+gamecap C:\dev\hantei-chan\tools\gamecap\cases\v2r20_mbtl_chr001_zoom15.gcs
+backup: C:\Program Files (x86)\Steam\steamapps\common\MELTY BLOOD TYPE LUMINA\MBTL-IM/MBTL_IM.ini -> C:\dev\hantei-chan\game_mod_backup\gamecap\mbtl_20261016_052208\file00_MBTL_IM.ini
+backup: C:\Program Files (x86)\Steam\steamapps\common\MELTY BLOOD TYPE LUMINA\winsave/48034167/_App.ini -> C:\dev\hantei-chan\game_mod_backup\gamecap\mbtl_20261016_052208\file01__App.ini
+launched MBTL.exe pid 80772 (suspended)
+agent attached: module base 0x00f20000, hooks 0x39
+window 01012858 at 0,0 1296x759
+placed window at -640,307
+tap_until met after 5 tap(s)
+poke cur_player_side @0x0154fd70 <- 0
+poke side_input_dev @0x015adbd4 <- 0
+poke side_input_dev+4 @0x015adbd8 <- 1
+poke side_input_flag @0x015adbdc <- 0
+poke side_input_flag+4 @0x015adbe0 <- 0
+call 0x012c3ed0 -> 0x00000008
+frozen at frame 789
+poke css_chara_p1 @0x0172bec8 <- 1
+poke css_chara_p2 @0x0172bf08 <- 1
+poke css_color_p1 @0x0172bed0 <- 0
+poke css_color_p2 @0x0172bf10 <- 0
+poke css_state_frame @0x0172be5c <- 0
+poke css_state_enter @0x0172be6c <- 1
+poke css_state @0x0172be58 <- CSS_DECIDED
+peek stage_loaded @0x0154e47c = 21 (0x15)
+peek p1_chara_no @0x01c19345 = 1 (0x1)
+peek p2_chara_no @0x01c19f89 = 1 (0x1)
+peek p1_pdata_chara @0x017e430c = 1 (0x1)
+peek p1_pattern @0x01c1935c = 0 (0x0)
+echo: MBTL training ready: P1 1 vs P2 1
+frozen at frame 1796
+peek anim_before @0x015500a0 = 0 (0x0)
+peek zoom0_before @0x017cbaa4 = 1.5
+peek tick_paused_a @0x01c19370 = 3 (0x3)
+peek tick_paused_b @0x01c19370 = 3 (0x3)
+call 0x01030800 -> 0x00000000
+peek pat_after_set @0x01c1935c = 238 (0xee)
+peek frame_after_set @0x01c19360 = 10 (0xa)
+peek tick_after_set @0x01c19370 = 0 (0x0)
+peek pat_s @0x01c1935c = 238 (0xee)
+peek frame_s @0x01c19360 = 10 (0xa)
+peek tick_s @0x01c19370 = 1 (0x1)
+meta -> C:\dev\hantei-chan\tools\gamecap\captures\v2\nohud_st\mbtl_patctrl_chr001_p238f10_z15sa_game.json
+captured window C:\dev\hantei-chan\tools\gamecap\captures\v2\nohud_st\mbtl_patctrl_chr001_p238f10_z15sa_game.png (ok)
+captured C:\dev\hantei-chan\tools\gamecap\captures\v2\nohud_st\mbtl_patctrl_chr001_p238f10_z15sa_game_bb.png (1280x720 fmt 22)
+captured window C:\dev\hantei-chan\tools\gamecap\captures\v2\nohud_st\mbtl_patctrl_chr001_p238f10_z15sa_game_im.png (ok)
+captured C:\dev\hantei-chan\tools\gamecap\captures\v2\nohud_st\mbtl_patctrl_chr001_p238f10_z15sa_game_plate_b0.png (1280x720 fmt 22)
+peek tick_plate_b @0x01c19370 = 2 (0x2)
+captured C:\dev\hantei-chan\tools\gamecap\captures\v2\nohud_st\mbtl_patctrl_chr001_p238f10_z15sa_game_plate_bb.png (1280x720 fmt 22)
+captured window C:\dev\hantei-chan\tools\gamecap\captures\v2\nohud_st\mbtl_patctrl_chr001_p238f10_z15sa_game_plate.png (ok)
+poke p1+OBJ_ALPHA_OVR_ON @0x01c19994 <- 0
+poke p2+OBJ_ALPHA_OVR_ON @0x01c1a5d8 <- 0
+poke p1+OBJ_ALPHA_OVR @0x01c19988 <- 255
+poke p2+OBJ_ALPHA_OVR @0x01c1a5cc <- 255
+frozen at frame 2024
+peek anim_after @0x015500a0 = 0 (0x0)
+peek zoom0_after @0x017cbaa4 = 1.5
+peek anim_before @0x015500a0 = 0 (0x0)
+peek zoom0_before @0x017cbaa4 = 1.5
+peek tick_paused_a @0x01c19370 = 2 (0x2)
+peek tick_paused_b @0x01c19370 = 2 (0x2)
+call 0x01030800 -> 0x00000000
+peek pat_after_set @0x01c1935c = 277 (0x115)
+peek frame_after_set @0x01c19360 = 0 (0x0)
+peek tick_after_set @0x01c19370 = 0 (0x0)
+peek pat_s @0x01c1935c = 277 (0x115)
+peek frame_s @0x01c19360 = 0 (0x0)
+peek tick_s @0x01c19370 = 1 (0x1)
+meta -> C:\dev\hantei-chan\tools\gamecap\captures\v2\nohud_st\mbtl_patctrl_chr001_p277f0_z15sa_game.json
+captured window C:\dev\hantei-chan\tools\gamecap\captures\v2\nohud_st\mbtl_patctrl_chr001_p277f0_z15sa_game.png (ok)
+captured C:\dev\hantei-chan\tools\gamecap\captures\v2\nohud_st\mbtl_patctrl_chr001_p277f0_z15sa_game_bb.png (1280x720 fmt 22)
+captured window C:\dev\hantei-chan\tools\gamecap\captures\v2\nohud_st\mbtl_patctrl_chr001_p277f0_z15sa_game_im.png (ok)
+captured C:\dev\hantei-chan\tools\gamecap\captures\v2\nohud_st\mbtl_patctrl_chr001_p277f0_z15sa_game_plate_b0.png (1280x720 fmt 22)
+peek tick_plate_b @0x01c19370 = 2 (0x2)
+captured C:\dev\hantei-chan\tools\gamecap\captures\v2\nohud_st\mbtl_patctrl_chr001_p277f0_z15sa_game_plate_bb.png (1280x720 fmt 22)
+captured window C:\dev\hantei-chan\tools\gamecap\captures\v2\nohud_st\mbtl_patctrl_chr001_p277f0_z15sa_game_plate.png (ok)
+poke p1+OBJ_ALPHA_OVR_ON @0x01c19994 <- 0
+poke p2+OBJ_ALPHA_OVR_ON @0x01c1a5d8 <- 0
+poke p1+OBJ_ALPHA_OVR @0x01c19988 <- 255
+poke p2+OBJ_ALPHA_OVR @0x01c1a5cc <- 255
+frozen at frame 2216
+peek anim_after @0x015500a0 = 0 (0x0)
+peek zoom0_after @0x017cbaa4 = 1.5
+peek anim_before @0x015500a0 = 0 (0x0)
+peek zoom0_before @0x017cbaa4 = 1.5
+peek tick_paused_a @0x01c19370 = 50 (0x32)
+peek tick_paused_b @0x01c19370 = 50 (0x32)
+call 0x01030800 -> 0x00000000
+peek pat_after_set @0x01c1935c = 157 (0x9d)
+peek frame_after_set @0x01c19360 = 2 (0x2)
+peek tick_after_set @0x01c19370 = 0 (0x0)
+peek pat_s @0x01c1935c = 157 (0x9d)
+peek frame_s @0x01c19360 = 2 (0x2)
+peek tick_s @0x01c19370 = 1 (0x1)
+meta -> C:\dev\hantei-chan\tools\gamecap\captures\v2\nohud_st\mbtl_flipV_chr001_p157f2_z15sa_game.json
+captured window C:\dev\hantei-chan\tools\gamecap\captures\v2\nohud_st\mbtl_flipV_chr001_p157f2_z15sa_game.png (ok)
+captured C:\dev\hantei-chan\tools\gamecap\captures\v2\nohud_st\mbtl_flipV_chr001_p157f2_z15sa_game_bb.png (1280x720 fmt 22)
+captured window C:\dev\hantei-chan\tools\gamecap\captures\v2\nohud_st\mbtl_flipV_chr001_p157f2_z15sa_game_im.png (ok)
+captured C:\dev\hantei-chan\tools\gamecap\captures\v2\nohud_st\mbtl_flipV_chr001_p157f2_z15sa_game_plate_b0.png (1280x720 fmt 22)
+peek tick_plate_b @0x01c19370 = 2 (0x2)
+captured C:\dev\hantei-chan\tools\gamecap\captures\v2\nohud_st\mbtl_flipV_chr001_p157f2_z15sa_game_plate_bb.png (1280x720 fmt 22)
+captured window C:\dev\hantei-chan\tools\gamecap\captures\v2\nohud_st\mbtl_flipV_chr001_p157f2_z15sa_game_plate.png (ok)
+poke p1+OBJ_ALPHA_OVR_ON @0x01c19994 <- 0
+poke p2+OBJ_ALPHA_OVR_ON @0x01c1a5d8 <- 0
+poke p1+OBJ_ALPHA_OVR @0x01c19988 <- 255
+poke p2+OBJ_ALPHA_OVR @0x01c1a5cc <- 255
+frozen at frame 2406
+peek anim_after @0x015500a0 = 0 (0x0)
+peek zoom0_after @0x017cbaa4 = 1.5
+quit (quit): terminating pid 80772
+restored C:\Program Files (x86)\Steam\steamapps\common\MELTY BLOOD TYPE LUMINA\MBTL-IM/MBTL_IM.ini
+restored C:\Program Files (x86)\Steam\steamapps\common\MELTY BLOOD TYPE LUMINA\winsave/48034167/_App.ini
+script finished: 614 commands, 18 capture(s)
+failures: 0
