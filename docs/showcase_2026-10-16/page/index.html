@@ -1,0 +1,203 @@
+<title>Hantei-chan Against the Game</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@75..125,400..800&family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&display=swap">
+<style>
+/* Layout: one reading column of evidence; each case is a captioned plate, the scoreboard leads. */
+:root{
+  --bg:#f3f4f7; --panel:#ffffff; --fg:#14161c; --muted:#5b6170; --rule:#d9dce4;
+  --accent:#d6324a;      /* hitbox red */
+  --hurt:#2f6fd6;        /* hurtbox blue */
+  --win:#167a52; --winbg:#e3f3ec; --lose:#8a3a2a; --losebg:#f8e9e5;
+  --display:"Archivo","Arial Narrow",system-ui,sans-serif;
+  --body:"IBM Plex Sans",system-ui,-apple-system,"Segoe UI",sans-serif;
+  --mono:"IBM Plex Mono",ui-monospace,"Cascadia Mono",Consolas,monospace;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --bg:#0f1116; --panel:#171a21; --fg:#e8eaf0; --muted:#9aa1b2; --rule:#2a2f3a;
+  --accent:#ff5a6e; --hurt:#6ea2ff; --win:#5fd3a0; --winbg:#13291f; --lose:#f0a08c; --losebg:#2c1a16; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#0f1116; --panel:#171a21; --fg:#e8eaf0; --muted:#9aa1b2; --rule:#2a2f3a;
+  --accent:#ff5a6e; --hurt:#6ea2ff; --win:#5fd3a0; --winbg:#13291f; --lose:#f0a08c; --losebg:#2c1a16; color-scheme:dark}
+body{background:var(--bg);color:var(--fg);font-family:var(--body);font-size:16px;line-height:1.55}
+.wrap{max-width:1080px;margin:0 auto;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-block:40px 72px;display:flex;flex-direction:column;gap:56px}
+h1,h2,h3{font-family:var(--display);text-wrap:balance;margin:0}
+h1{font-size:clamp(34px,6vw,60px);font-stretch:85%;font-weight:800;line-height:1.02;letter-spacing:-.01em}
+h2{font-size:clamp(24px,3.4vw,32px);font-stretch:90%;font-weight:750}
+h3{font-size:20px;font-weight:700;font-stretch:95%}
+p{margin:0;max-width:68ch}
+.eyebrow{font-family:var(--mono);font-size:12px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}
+.hero{display:flex;flex-direction:column;gap:18px}
+.hero h1 span{color:var(--accent)}
+.lede{font-size:18px;color:var(--fg)}
+.versions{display:flex;flex-wrap:wrap;gap:8px 18px;font-family:var(--mono);font-size:13px;color:var(--muted)}
+.versions b{color:var(--fg);font-weight:500}
+section{display:flex;flex-direction:column;gap:18px}
+.tablebox{overflow-x:auto;border:1px solid var(--rule);background:var(--panel);border-radius:6px}
+table{border-collapse:collapse;width:100%;min-width:640px;font-size:14px}
+th,td{padding:10px 12px;text-align:left;border-bottom:1px solid var(--rule);vertical-align:top}
+th{font-family:var(--mono);font-size:12px;font-weight:500;letter-spacing:.04em;text-transform:uppercase;color:var(--muted)}
+tr:last-child td{border-bottom:0}
+td.n{font-family:var(--mono);font-variant-numeric:tabular-nums;white-space:nowrap}
+td.n small{color:var(--muted);font-size:12px}
+td.best{color:var(--win);background:var(--winbg);font-weight:500}
+td.na{color:var(--muted);font-family:var(--body)}
+.key{font-size:13px;color:var(--muted)}
+.case{display:flex;flex-direction:column;gap:12px;padding-top:28px;border-top:1px solid var(--rule)}
+.case header{display:flex;flex-wrap:wrap;align-items:baseline;gap:6px 14px}
+.tag{font-family:var(--mono);font-size:12px;padding:2px 8px;border-radius:3px;border:1px solid var(--rule);color:var(--muted)}
+.tag.uni2{color:var(--hurt);border-color:var(--hurt)}
+.tag.mbtl{color:var(--accent);border-color:var(--accent)}
+figure{margin:0;display:flex;flex-direction:column;gap:8px}
+figure a{display:block}
+figure img{display:block;width:100%;height:auto;border-radius:4px;border:1px solid var(--rule);background:#000}
+figcaption{font-size:13px;color:var(--muted)}
+.scores{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}
+.score{padding:10px 12px;border:1px solid var(--rule);border-radius:4px;background:var(--panel);display:flex;flex-direction:column;gap:2px;min-width:0}
+.score .who{font-family:var(--mono);font-size:12px;color:var(--muted)}
+.score .v{font-family:var(--mono);font-variant-numeric:tabular-nums;font-size:18px}
+.score.best{border-color:var(--win)}
+.score.best .v{color:var(--win)}
+.notes{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px 24px;font-size:14px}
+.notes div{min-width:0}
+.notes b{font-family:var(--mono);font-weight:500;font-size:12px;color:var(--muted);display:block;text-transform:uppercase;letter-spacing:.05em}
+.caveat{font-size:13px;color:var(--muted);border-left:2px solid var(--rule);padding-left:12px;max-width:none}
+.grid2{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:18px}
+.method ul{margin:0;padding-left:20px;display:flex;flex-direction:column;gap:8px;max-width:76ch}
+code{font-family:var(--mono);font-size:.9em}
+a{color:var(--hurt)}
+a:focus-visible{outline:2px solid var(--accent);outline-offset:3px}
+@media (max-width:640px){.scores{grid-template-columns:1fr}.notes,.grid2{grid-template-columns:1fr}.wrap{gap:44px}}
+</style>
+
+<div class="wrap">
+<header class="hero">
+  <div class="eyebrow">UNI2 · MBTL · MBAACC — editor vs game, 2026-10-16</div>
+  <h1>What the game draws, <span>drawn by the editor</span></h1>
+  <p class="lede">Seven hard frames from UNDER NIGHT IN-BIRTH II and MELTY BLOOD: TYPE LUMINA, captured in the game and rendered in three editors: our Hantei-chan, sosfiro's fork, and gonp's upstream Hantei-chan. Every editor is scored against the same game pixels. Lower numbers mean closer to the game.</p>
+  <div class="versions">
+    <span>ours <b>update/parity-1014 · e758112</b></span>
+    <span>sosfiro <b>v3.0.0_alpha10</b></span>
+    <span>gonp <b>gonpgonp/Hantei-chan · 7e97e19</b></span>
+    <span>game <b>UNI2 1.42 · MBTL 25646393</b></span>
+  </div>
+</header>
+
+<section id="scoreboard">
+  <h2>Scoreboard</h2>
+  <p class="key">Mean absolute difference per colour channel (0–255) against the game, then the share of pixels off by more than 24. Green is the closest editor for that frame.</p>
+  <div class="tablebox"><table>
+    <thead><tr><th>Frame</th><th>Hantei-chan (ours)</th><th>sosfiro</th><th>gonp</th></tr></thead>
+    <tbody>
+      <tr><td>UNI2 chr020 p5 f2: CG + .pat set 991, additive flame, ring arcs</td><td class="n best">1.32 <small>1.9%</small></td><td class="n">2.44 <small>7.3%</small></td><td class="n">39.37 <small>50.1%</small></td></tr>
+      <tr><td>UNI2 chr020 p435, tick 27 of 55: rotated CG mid-tween</td><td class="n best">3.98 <small>6.9%</small></td><td class="n">85.50 <small>94.6%</small></td><td class="n">104.64 <small>100%</small></td></tr>
+      <tr><td>UNI2 chr027 p449 f4: PUPS palette switch + tinted .pat</td><td class="n best">2.47 <small>4.5%</small></td><td class="n">129.25 <small>87.5%</small></td><td class="n">73.75 <small>100%</small></td></tr>
+      <tr><td>UNI2 chr019 p153: .pat-only, H+V flipped streaks</td><td class="n best">0.38 <small>0.3%</small></td><td class="n">18.03 <small>35.5%</small></td><td class="n">74.05 <small>85.5%</small></td></tr>
+      <tr><td>MBTL chr001 p238 f10: translucent tray, zoom 1.5</td><td class="n best">0.39 <small>0.4%</small></td><td class="n">3.50 <small>7.7%</small></td><td class="n">78.57 <small>84.6%</small></td></tr>
+      <tr><td>MBTL chr001 p157 f2: additive arcs + puddle effect, zoom 1.5</td><td class="n best">0.26 <small>0.2%</small></td><td class="n">21.54 <small>66.0%</small></td><td class="n">50.87 <small>77.9%</small></td></tr>
+      <tr><td>MBTL chr001 p0 f0: one CG sprite, zoom 1.5 filter</td><td class="n best">0.67 <small>0.0%</small></td><td class="n">7.78 <small>20.8%</small></td><td class="n">7.78 <small>20.8%</small></td></tr>
+    </tbody>
+  </table></div>
+</section>
+
+<section id="cases">
+  <h2>The frames</h2>
+  <p>Each plate shows the game on the left, then each editor. The row underneath is the difference from the game, amplified four times: black means a match.</p>
+
+  <article class="case">
+    <header><span class="tag uni2">UNI2</span><h3>Layered scene: CG plus .pat set 991</h3><span class="eyebrow">chr020 p5 f2 · zoom 1</span></header>
+    <figure><a href="img/uni2_set991.jpg" target="_blank" rel="noopener"><img src="img/uni2_set991.jpg" alt="Game, Hantei-chan, sosfiro and gonp rendering UNI2 chr020 pattern 5 frame 2 with its additive flame and ring parts" loading="lazy" width="1596" height="896"></a></figure>
+    <div class="scores"><div class="score best"><span class="who">ours</span><span class="v">1.32</span></div><div class="score"><span class="who">sosfiro</span><span class="v">2.44</span></div><div class="score"><span class="who">gonp</span><span class="v">39.37</span></div></div>
+    <div class="notes"><div><b>sosfiro</b>Close to the game and second best. The additive flame edges and ring arcs drift further than ours.</div><div><b>gonp</b>No .pat support, so the whole flame and ring layer is missing. Only the CG sprite is drawn.</div></div>
+    <p class="caveat">Our remaining difference is mostly the three ring arcs (set 991 slots 41/44/45). They change between game runs, so they can't be matched exactly.</p>
+  </article>
+
+  <article class="case">
+    <header><span class="tag uni2">UNI2</span><h3>Rotated CG in the middle of a tween</h3><span class="eyebrow">chr020 p435 · tick 27 of 55</span></header>
+    <figure><a href="img/uni2_p435.jpg" target="_blank" rel="noopener"><img src="img/uni2_p435.jpg" alt="UNI2 chr020 pattern 435 mid-interpolation in the game and the three editors" loading="lazy" width="1596" height="942"></a></figure>
+    <div class="scores"><div class="score best"><span class="who">ours</span><span class="v">3.98</span></div><div class="score"><span class="who">sosfiro</span><span class="v">85.50</span></div><div class="score"><span class="who">gonp</span><span class="v">104.64</span></div></div>
+    <div class="notes"><div><b>sosfiro</b>Wrong palette (light-blue body), and the AFHK rotation between the two keyframes isn't interpolated, so the pose is wrong.</div><div><b>gonp</b>Draws a solid green silhouette: UNI2's palette format isn't decoded. It has no playback, so it shows the keyframe.</div></div>
+    <p class="caveat">Ours scores 0.63 on its own pixels. The 3.98 here includes the game's drop shadow, which falls on pixels the other editors cover.</p>
+  </article>
+
+  <article class="case">
+    <header><span class="tag uni2">UNI2</span><h3>Palette switch with tinted .pat parts</h3><span class="eyebrow">chr027 p449 f4 · PUPS + PPPA</span></header>
+    <figure><a href="img/uni2_pups.jpg" target="_blank" rel="noopener"><img src="img/uni2_pups.jpg" alt="UNI2 chr027 pattern 449: the game's coat is dark purple; ours matches, sosfiro's is white, gonp's is orange" loading="lazy" width="1596" height="880"></a></figure>
+    <div class="scores"><div class="score best"><span class="who">ours</span><span class="v">2.47</span></div><div class="score"><span class="who">sosfiro</span><span class="v">129.25</span></div><div class="score"><span class="who">gonp</span><span class="v">73.75</span></div></div>
+    <div class="notes"><div><b>sosfiro</b>Ignores the pattern's palette switch (PUPS), so the coat comes out white and pink.</div><div><b>gonp</b>Wrong palette (orange coat), no PUPS or per-part tint, and no .pat layer.</div></div>
+    <p class="caveat">Close-up of the lower right of the sprite. The same pixels are scored for every editor.</p>
+  </article>
+
+  <article class="case">
+    <header><span class="tag uni2">UNI2</span><h3>.pat-only effect with flipped parts</h3><span class="eyebrow">chr019 p153 f0 · PRRV 3</span></header>
+    <figure><a href="img/uni2_flipHV.jpg" target="_blank" rel="noopener"><img src="img/uni2_flipHV.jpg" alt="UNI2 chr019 pattern 153, a pure .pat effect with horizontally and vertically flipped streaks" loading="lazy" width="1596" height="912"></a></figure>
+    <div class="scores"><div class="score best"><span class="who">ours</span><span class="v">0.38</span></div><div class="score"><span class="who">sosfiro</span><span class="v">18.03</span></div><div class="score"><span class="who">gonp</span><span class="v">74.05</span></div></div>
+    <div class="notes"><div><b>sosfiro</b>Draws the streaks, but the parts flipped on both axes land away from where the game puts them.</div><div><b>gonp</b>No .pat support. The frame has no CG sprite, so it draws nothing.</div></div>
+  </article>
+
+  <article class="case">
+    <header><span class="tag mbtl">MBTL</span><h3>Translucent tray at real zoom 1.5</h3><span class="eyebrow">chr001 p238 f10</span></header>
+    <figure><a href="img/mbtl_patctrl_chr001_p238f10.jpg" target="_blank" rel="noopener"><img src="img/mbtl_patctrl_chr001_p238f10.jpg" alt="MBTL chr001 pattern 238 frame 10 at zoom 1.5" loading="lazy" width="1596" height="626"></a></figure>
+    <div class="scores"><div class="score best"><span class="who">ours</span><span class="v">0.39</span></div><div class="score"><span class="who">sosfiro</span><span class="v">3.50</span></div><div class="score"><span class="who">gonp</span><span class="v">78.57</span></div></div>
+    <div class="notes"><div><b>sosfiro</b>Draws the tray but misses the translucent purple glow parts.</div><div><b>gonp</b>No .pat support: draws nothing.</div></div>
+  </article>
+
+  <article class="case">
+    <header><span class="tag mbtl">MBTL</span><h3>Additive arcs and a spawned puddle</h3><span class="eyebrow">chr001 p157 f2 · zoom 1.5</span></header>
+    <figure><a href="img/mbtl_flipV_chr001_p157f2.jpg" target="_blank" rel="noopener"><img src="img/mbtl_flipV_chr001_p157f2.jpg" alt="MBTL chr001 pattern 157 frame 2 with additive arcs and the puddle effect" loading="lazy" width="1596" height="868"></a></figure>
+    <div class="scores"><div class="score best"><span class="who">ours</span><span class="v">0.26</span></div><div class="score"><span class="who">sosfiro</span><span class="v">21.54</span></div><div class="score"><span class="who">gonp</span><span class="v">50.87</span></div></div>
+    <div class="notes"><div><b>sosfiro</b>Arcs come out red and magenta instead of white and cyan, and the puddle the move spawns (pattern 158) is missing.</div><div><b>gonp</b>No .pat support: draws nothing.</div></div>
+  </article>
+
+  <article class="case">
+    <header><span class="tag mbtl">MBTL</span><h3>The zoom filter on a plain sprite</h3><span class="eyebrow">chr001 p0 f0 · zoom 1.5 · control</span></header>
+    <figure><a href="img/mbtl_cg_z15.jpg" target="_blank" rel="noopener"><img src="img/mbtl_cg_z15.jpg" alt="MBTL idle sprite at zoom 1.5 with and without the game's zoom filter" loading="lazy" width="1596" height="1210"></a></figure>
+    <div class="scores"><div class="score best"><span class="who">ours</span><span class="v">0.67</span></div><div class="score"><span class="who">sosfiro</span><span class="v">7.78</span></div><div class="score"><span class="who">gonp</span><span class="v">7.78</span></div></div>
+    <p>When MBTL zooms in, it softens each CG pixel with its eight neighbours. Ours does the same. Neither other editor applies it, which is why they score identically here.</p>
+  </article>
+
+  <article class="case">
+    <header><span class="tag">MBAACC</span><h3>ActCadenza Akiha with spawned effects</h3><span class="eyebrow">akiha_3 p238 f4 · editor only</span></header>
+    <figure><a href="img/mbaacc_actcadenza_p238.jpg" target="_blank" rel="noopener"><img src="img/mbaacc_actcadenza_p238.jpg" alt="ActCadenza moon-3 Akiha pattern 238: ours shows the spawned flame effect, gonp shows the sprite only" loading="lazy" width="1596" height="578"></a></figure>
+    <p>Ours previews the effect patterns the move spawns (the red flame). gonp draws the sprite correctly, with no effects. There's no game column or score here: our capture tool drives UNI2 and MBTL only.</p>
+  </article>
+</section>
+
+<section id="ingame">
+  <h2>Edits that load in the game</h2>
+  <p>Each recolour was made in Hantei-chan's CG manager: export the palette, shift the hue of the costume colours only, import it, and save. Then the game was booted to training. In UNI2 and MBTL the file goes to the UNI2-IM or MBTL-IM mod folder; in MBAACC the bank is saved in place. Line art, shading and skin are untouched.</p>
+  <div class="grid2">
+    <figure><img src="img/uni2_before_idle.jpg" alt="UNI2 training mode: Carmine in his normal red colours" loading="lazy" width="1280" height="720"><figcaption>UNI2 · Carmine, vanilla</figcaption></figure>
+    <figure><img src="img/uni2_after_idle.jpg" alt="UNI2 training mode: Carmine recoloured to teal" loading="lazy" width="1280" height="720"><figcaption>UNI2 · Carmine, 35 palette entries shifted from red to teal</figcaption></figure>
+    <figure><img src="img/mbtl_before_idle.jpg" alt="MBTL training mode: Shiki in his normal navy uniform" loading="lazy" width="1280" height="720"><figcaption>MBTL · Shiki, vanilla</figcaption></figure>
+    <figure><img src="img/mbtl_after_idle.jpg" alt="MBTL training mode: Shiki recoloured to dark crimson" loading="lazy" width="1280" height="720"><figcaption>MBTL · Shiki, 52 palette entries shifted from navy to crimson (the stage differs between boots)</figcaption></figure>
+    <figure><img src="img/cgm_mbaacc_ingame_before_sion_vs_tatari.jpg" alt="MBAACC before the bank edit" loading="lazy" width="854" height="480"><figcaption>MBAACC · before</figcaption></figure>
+    <figure><img src="img/cgm_mbaacc_ingame_after_recolour_and_replaced_sprites.jpg" alt="MBAACC after a recolour and replaced sprites saved into the CG bank" loading="lazy" width="854" height="480"><figcaption>MBAACC · after a recolour and replaced sprites, saved into the CG bank</figcaption></figure>
+  </div>
+</section>
+
+<section id="tools" data-features>
+  <h2>Tools the other editors don't have</h2>
+  <div class="grid2">
+    <figure><img src="img/feat_cgm_uni2_textures.jpg" alt="CG manager with CG images and .pat textures side by side for a UNI2 character" loading="lazy" width="1203" height="822"><figcaption>CG sprites and .pat textures in one browser: PNG export and import, replace, where each one is used, save to the mod folder</figcaption></figure>
+    <figure><img src="img/feat_cgm_uni2_palettes.jpg" alt="CG manager palette view for UNI2 with paired palettes" loading="lazy" width="1203" height="822"><figcaption>UNI2 palettes kept in their 65-apart pairs, new <code>_pN.pal</code> files, import and export in the UNI layout</figcaption></figure>
+    <figure><img src="img/feat_squirrel_hover.jpg" alt="Squirrel script editor showing a hover tooltip for an engine native" loading="lazy" width="1072" height="698"><figcaption>Squirrel move scripts with the game's 536 UNI2 engine functions: hover, outline, checks</figcaption></figure>
+    <figure><img src="img/feat_stage3d_mbtl_align.jpg" alt="3D stage view of an MBTL stage with MBAACC alignment guides" loading="lazy" width="903" height="642"><figcaption>3D stages from UNI2, MBTL, DFCI and UNIB, lined up to MBAACC's camera, with Open in Blender</figcaption></figure>
+    <figure><img src="img/feat_gamelink_panel.jpg" alt="Game link panel next to an MBAACC character" loading="lazy" width="1040" height="642"><figcaption>Hot reload into a running UNI2 or MBTL training session</figcaption></figure>
+    <figure><img src="img/pcmod_export_done.jpg" alt="Export as pcmod package window after a finished export" loading="lazy" width="983" height="882"><figcaption>Export a mod project as a PovertyCaster package</figcaption></figure>
+  </div>
+</section>
+
+<section id="method" class="method">
+  <h2>How it was measured</h2>
+  <ul>
+    <li>The game frames are real captures: the HUD hidden, the stage animation held still, and the fighters hidden for a clean backdrop taken on the same frame.</li>
+    <li>Each editor renders the frame with the same view and zoom. Only the editor's own back buffer is read: no desktop capture and no input.</li>
+    <li>Every render goes through the same model: it's composited over the game's backdrop with the same light, glow and camera alignment.</li>
+    <li>All three editors are scored on the same pixels: everything any of them drew. Scoring each editor only where it drew would reward drawing less.</li>
+    <li>The frames were picked before measuring, from our existing render-test cases.</li>
+    <li>sosfiro's and gonp's drawing code is unchanged. Each got a small capture-only patch that loads the file, picks the frame and reads the image back.</li>
+    <li>"Gonptechan" is the name of our own fork's releases, not a separate tool. gonp's editor is the upstream gonpgonp/Hantei-chan.</li>
+  </ul>
+</section>
+</div>
