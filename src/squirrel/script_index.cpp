@@ -383,8 +383,15 @@ std::vector<ScriptProblem> ScriptIndex::checkMoves(const std::string& charDir) c
 			p.severity = ScriptProblem::Warning;
 			p.file = rel; p.line = s.line; p.col = s.col;
 			const std::string near = nearestMove(s.text, charDir);
-			p.message = s.text + " is not a move table of this character or the shared library: the move cannot start (it "
-				"drops back to neutral) or runs without its script functions." + (near.empty() ? "" : " Did you mean " + near + "?");
+			// Traced (docs/squirrel/RE_MBTL_LOAD.md): a command's UpdateTable.name always gets a move from Battle_Std's
+			// template (pattern = the name minus its prefix; missing pattern = SetPattern(-1), the current pattern keeps
+			// playing); any other switch to an undefined name runs no script functions (MoveList_CallMoveFunc skips it).
+			const bool cmdName = std::regex_search(before, std::regex(R"(\bname\s*=\s*$)")) && rel.find("_cmd") != std::string::npos;
+			p.message = s.text + " is not defined in this character's scripts or the shared library: " +
+				(cmdName ? std::string("the game builds a bare template move for it, which shows its own pattern only if the HA6 has one "
+					"(otherwise the current pattern keeps playing).")
+					: std::string("switching to it runs none of its script functions (Init, FrameUpdate, ...).")) +
+				(near.empty() ? "" : " Did you mean " + near + "?");
 			if (!mvFile.empty()) { p.fix = ScriptProblem::CreateMoveTable; p.fixArg = s.text; p.fixFile = mvFile; }
 			out.push_back(p);
 		}

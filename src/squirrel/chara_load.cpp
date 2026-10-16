@@ -62,6 +62,24 @@ std::set<std::string> CommandMoveNames(HSQUIRRELVM v, const std::string& table)
 	return out;
 }
 
+std::set<std::string> TableKeys(HSQUIRRELVM v, const std::string& table)
+{
+	std::set<std::string> out;
+	const SQInteger top = sq_gettop(v);
+	sq_pushroottable(v);
+	sq_pushstring(v, table.c_str(), -1);
+	if (SQ_SUCCEEDED(sq_get(v, -2)) && sq_gettype(v, -1) == OT_TABLE) {
+		sq_pushnull(v);
+		while (SQ_SUCCEEDED(sq_next(v, -2))) {
+			const SQChar* k = nullptr;
+			if (SQ_SUCCEEDED(sq_getstring(v, -2, &k)) && k) out.insert(k);
+			sq_pop(v, 2);
+		}
+	}
+	sq_settop(v, top);
+	return out;
+}
+
 std::vector<std::string> TakeDevWarnings(HSQUIRRELVM v)
 {
 	std::vector<std::string> out;
@@ -188,6 +206,7 @@ CharaLoadResult LoadCharacterScripts(HSQUIRRELVM v, const std::string& chrDirRel
 	ctx.onMissingPattern = userMissing;
 
 	r.commandMoves = CommandMoveNames(v, CHR + "_CommandTable");
+	r.moves = TableKeys(v, CHR + "_MoveTable");
 	for (const auto& [move, miss] : missing) {
 		if (!r.commandMoves.count(move)) continue;   // standard-move probes and unreachable templates are by design
 		std::string where;
@@ -196,7 +215,7 @@ CharaLoadResult LoadCharacterScripts(HSQUIRRELVM v, const std::string& chrDirRel
 		const bool eff = code.rfind("effect:", 0) == 0;
 		r.issues.push_back({CharaLoadIssue::MissingPattern, base + "_mv_0.txt", 0, move,
 			move + " (a command starts it) uses pattern \"" + (eff ? code.substr(7) : code) + "\", which is not in the " +
-				(eff ? "effect" : "character's") + " HA6: entering the move keeps the current pattern and restarts it at frame 0"});
+				(eff ? "effect" : "character's") + " HA6: entering the move keeps the current pattern and restarts it at frame 0."});
 	}
 	for (const auto& w : TakeDevWarnings(v))
 		r.issues.push_back({CharaLoadIssue::DevWarning, "", 0, "", w});

@@ -45,6 +45,7 @@ struct ScriptProblem {
 	Fix fix = NoFix;
 	std::string fixArg;   // CreateMoveTable: the Mv_ name
 	std::string fixFile;  // where the fix writes (the character's _mv file)
+	std::string message_suffix_hint;   // nearest existing name ("did you mean"), when known
 };
 
 struct SearchOptions {

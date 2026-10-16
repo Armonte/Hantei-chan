@@ -233,6 +233,7 @@ struct ScriptPanel::Impl {
 	std::vector<ScriptProblem> problems;
 	std::vector<ScriptProblem> loadProblems;   // from the last character load check (save / Check), MBTL
 	std::string loadProblemsDir;
+	std::set<std::string> realMoves;   // keys of the <CHR>_MoveTable the last character load built (loadProblemsDir)
 	double lastEditTime = -1.0;
 	int bottomTab = 0;            // 0 log, 1 problems, 2 search
 	bool selectBottomTab = false;
@@ -661,6 +662,12 @@ struct ScriptPanel::Impl {
 		problems.clear();
 		const std::string cdir = CharDirOf(currentRel);
 		if (!cdir.empty()) problems = index.checkMoves(cdir);
+		// After a character load, the game's own move table decides: Battle_Std also builds moves the mv files never define
+		// (command templates, standard moves), and those exist in game.
+		if (!realMoves.empty() && cdir == loadProblemsDir)
+			problems.erase(std::remove_if(problems.begin(), problems.end(), [&](const ScriptProblem& p) {
+				return p.fix == ScriptProblem::CreateMoveTable && realMoves.count(p.fixArg);
+			}), problems.end());
 		static const std::regex call(R"(\b([A-Z]\w*)\.([A-Za-z_]\w*)\s*\()");
 		const size_t n = editor.GetLineCount();
 		for (size_t i = 0; i < n; ++i) {
@@ -708,7 +715,7 @@ struct ScriptPanel::Impl {
 	{
 		static const std::regex re(R"(^data/(chr(\d+))/\1_(sc|cmd|mv|com)_0\.txt$)");
 		std::smatch m;
-		if (game != "mbtl" || apiPath.empty() || !std::regex_match(currentRel, m, re)) return false;
+		if ((game != "mbtl" && game != "uni2") || apiPath.empty() || !std::regex_match(currentRel, m, re)) return false;   // load order traced for these
 		const std::string dir = "data/" + m[1].str();
 		const auto t0 = std::chrono::steady_clock::now();
 		const auto codes = LoadPatternCodes(ToU8(U8(root) / U8(dir) / U8(m[1].str() + "_0.txt")));
@@ -723,6 +730,7 @@ struct ScriptPanel::Impl {
 		const CharaLoadResult r = vm.checkCharacter(dir, ctx, currentRel, bytes);
 		loadProblems.clear();
 		loadProblemsDir = dir;
+		realMoves = r.moves;
 		int dev = 0;
 		for (const auto& i : r.issues) {
 			if (i.kind == CharaLoadIssue::DevWarning) { dev++; say("developer warning (" + dir + "): " + i.message); continue; }
@@ -730,10 +738,20 @@ struct ScriptPanel::Impl {
 			p.severity = i.kind == CharaLoadIssue::MissingPattern ? ScriptProblem::Warning : ScriptProblem::Error;
 			p.file = i.file.empty() ? currentRel : i.file;
 			p.line = std::max(0, i.line - 1);
-			if (i.kind == CharaLoadIssue::MissingPattern)   // point at the move's own table (last definition in this folder wins)
+			if (i.kind == CharaLoadIssue::MissingPattern) {
+				// point at the move's own table (last definition in this folder wins), else at the command that names it
+				bool defined = false;
 				for (const ScriptDef* def : index.find(i.move))
-					if (def->kind == ScriptDef::MoveTable && def->file.rfind(dir + "/", 0) == 0) { p.file = def->file; p.line = def->line; }
-			p.message = (i.kind == CharaLoadIssue::RuntimeError ? "game load: " : "") + i.message;
+					if (def->kind == ScriptDef::MoveTable && def->file.rfind(dir + "/", 0) == 0) { p.file = def->file; p.line = def->line; defined = true; }
+				if (!defined) {   // only a command names it: point there and suggest the closest defined move
+					for (const ScriptHit& h : index.usages(i.move))
+						if (h.file.rfind(dir + "/", 0) == 0 && h.file.find("_cmd") != std::string::npos) { p.file = h.file; p.line = h.line; p.col = h.col; break; }
+					const std::string guess = index.nearestMove(i.move, dir);
+					if (!guess.empty() && guess != i.move) p.message_suffix_hint = guess;
+				}
+			}
+			p.message = (i.kind == CharaLoadIssue::RuntimeError ? "game load: " : "") + i.message +
+				(p.message_suffix_hint.empty() ? "" : " Did you mean " + p.message_suffix_hint + "?");
 			loadProblems.push_back(p);
 			if (here && here->ok && i.kind == CharaLoadIssue::RuntimeError && p.file == currentRel) {
 				here->ok = false;
