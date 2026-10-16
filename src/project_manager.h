@@ -48,7 +48,8 @@ public:
 	                        int* outTheme = nullptr,
 	                        float* outZoomLevel = nullptr,
 	                        bool* outSmoothRender = nullptr,
-	                        float* outClearColor = nullptr);
+	                        float* outClearColor = nullptr,
+	                        std::vector<std::string>* outFailedCharacters = nullptr);
 
 	// Current project path management
 	static bool HasCurrentProject();
