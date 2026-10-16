@@ -1,0 +1,44 @@
+# render-match18 (2026-10-16): v2r17_mbtl_chr001_solo_s8_stage.gcs with MBTL's own stage bloom off. Stage_ScreenBloomPass
+# (MBTL IDB 0x4EEDA0) adds a blurred pow()/per-channel-bias copy of the screen (blend mode 2 = SRCALPHA,ONE) when
+# g_StageBloomEnabled (0xA1CD1A, set by Stage_ApplyBloomParams 0x4EF3E0 from the stage's +0xB8) is non-zero; MBTL-IM's
+# "Stages BloomStrength 0" may not reach it. Peeks the stage bloom params, then holds the flag 0. Shots: *_nbl in nohud_st.
+include ../games/mbtl.gcs
+sym g_BattleHudFader 0xAFC3C8
+sym g_BattleStageSel 0xAFC04C
+sym g_CurStageIndex 0xA2E47C
+sym g_StageBloomEnabled 0xA1CD1A
+sym g_StageBloomAlpha 0xA2E45C
+sym g_StageBloomBrightness 0xA2E458
+sym g_StageBloomPower 0xA2E454
+sym g_StageBloomBiasR 0xA2E450
+sym g_StageBloomBiasG 0xA2E464
+sym g_StageBloomBiasB 0xA2E44C
+sym g_StageBloomBlurRadius 0xA2E460
+file_put ../round10/chr001_solo21_s8.pat MBTL-IM/Mods/data/chr001/chr001.pat
+let STAGE 21
+let P1CHR 1
+let P2CHR 1
+ini_set MBTL-IM/MBTL_IM.ini Stages BloomStrength 0
+include ../games/mbtl_to_training_stage.gcs
+peek u8 g_StageBloomEnabled bloom_on
+peek f32 g_StageBloomAlpha bloom_alpha
+peek f32 g_StageBloomBrightness bloom_brightness
+peek f32 g_StageBloomPower bloom_power
+peek f32 g_StageBloomBiasR bloom_bias_r
+peek f32 g_StageBloomBiasG bloom_bias_g
+peek f32 g_StageBloomBiasB bloom_bias_b
+peek f32 g_StageBloomBlurRadius bloom_blur
+hold u8 g_StageBloomEnabled 0
+hold i32 [g_BattleHudFader]+8 2
+hold i32 [g_BattleHudFader]+16 0
+hold i32 [g_BattleHudFader]+20 0
+step 4
+set OUTD C:\dev\hantei-chan\tools\gamecap\captures\v2\nohud_st
+set NSTEPS 1
+set CASE mbtl_flipV_chr001_p157f2_solo_s8_nbl
+set PAT 157
+set SETFRAME 2
+set FRAME 2
+set GTICK 1
+include ../games/mbtl_v2_case_plate.gcs
+quit
