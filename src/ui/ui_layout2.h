@@ -27,7 +27,7 @@ struct ButtonGrid {
 		for (const char *l : labels) cellW = std::max(cellW, i18n::ButtonWidth(l));
 		cellW += extraW;
 		spacing = ImGui::GetStyle().ItemSpacing.x;
-		x0 = ImGui::GetCursorPosX();
+		x0 = ImGui::GetCursorScreenPos().x;   // screen space: SameLine(x) would add a table column's offset twice
 		const float avail = ImGui::GetContentRegionAvail().x;
 		cols = std::max(1, int((avail + spacing) / (cellW + spacing)));
 		const int n = std::max(1, (int)labels.size());
@@ -38,8 +38,10 @@ struct ButtonGrid {
 	}
 	void Next()
 	{
-		if (i % cols) ImGui::SameLine(x0 + (i % cols) * (cellW + spacing));
-		else if (i > 0) ImGui::SetCursorPosX(x0);             // later rows start under the first cell
+		if (i % cols) {
+			ImGui::SameLine();
+			ImGui::SetCursorScreenPos(ImVec2(x0 + (i % cols) * (cellW + spacing), ImGui::GetCursorScreenPos().y));
+		} else if (i > 0) ImGui::SetCursorScreenPos(ImVec2(x0, ImGui::GetCursorScreenPos().y));   // later rows start under the first cell
 		++i;
 	}
 	bool Button(const char *label) { Next(); return ImGui::Button(label, ImVec2(cellW, 0.f)); }
