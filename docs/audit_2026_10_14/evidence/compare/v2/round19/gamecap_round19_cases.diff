@@ -1,0 +1,139 @@
+--- /dev/null	2026-10-16 03:42:04.087602178 -0400
++++ b/tools/gamecap/cases/v2r19_mbtl_chr001_solo_s8_stagehold.gcs
+@@ -0,0 +1,33 @@
++# render-match19 (2026-10-16): v2r17_mbtl_chr001_solo_s8_stage.gcs with the stage-21 FBX anime held. MBTL IDB:
++# Stage_RenderSceneAndAdvanceAnim 0x4B0AA0 does ++g_StageAnimFrame (0xA300A0) right before FbxScene_Draw whenever
++# Stage_GetAnimHoldState 0x4F3160 >= 0 (no training-update / battle-pause flag; MBTL-IM's tick-suppress pause sets
++# neither), and FbxScene_DrawNodeTree 0x585DA0 takes each node matrix from anime[g_StageAnimFrame % keys]. So the
++# door lamp (stage anime) kept running while the case was paused. Holding the frame pins one stage state for the game
++# shot, the window/backbuffer shots and the plate. Shots in captures/v2/nohud_st, suffix _sa.
++include ../games/mbtl.gcs
++sym g_BattleHudFader 0xAFC3C8
++sym g_BattleStageSel 0xAFC04C
++sym g_CurStageIndex 0xA2E47C
++sym g_StageAnimFrame 0xA300A0
++file_put ../round10/chr001_solo21_s8.pat MBTL-IM/Mods/data/chr001/chr001.pat
++let STAGE 21
++let P1CHR 1
++let P2CHR 1
++ini_set MBTL-IM/MBTL_IM.ini Stages BloomStrength 0
++include ../games/mbtl_to_training_stage.gcs
++hold i32 g_StageAnimFrame 0
++hold i32 [g_BattleHudFader]+8 2
++hold i32 [g_BattleHudFader]+16 0
++hold i32 [g_BattleHudFader]+20 0
++step 4
++set OUTD C:\dev\hantei-chan\tools\gamecap\captures\v2\nohud_st
++set NSTEPS 1
++set CASE mbtl_flipV_chr001_p157f2_solo_s8_sa
++set PAT 157
++set SETFRAME 2
++set FRAME 2
++set GTICK 1
++peek i32 g_StageAnimFrame anim_before
++include ../games/mbtl_v2_case_plate.gcs
++peek i32 g_StageAnimFrame anim_after
++quit
+--- /dev/null	2026-10-16 03:42:04.087602178 -0400
++++ b/tools/gamecap/cases/v2r19_mbtl_chr001_solo_s456_stagehold.gcs
+@@ -0,0 +1,33 @@
++# render-match19 (2026-10-16): v2r17_mbtl_chr001_solo_s456_stage.gcs with the stage-21 FBX anime held. MBTL IDB:
++# Stage_RenderSceneAndAdvanceAnim 0x4B0AA0 does ++g_StageAnimFrame (0xA300A0) right before FbxScene_Draw whenever
++# Stage_GetAnimHoldState 0x4F3160 >= 0 (no training-update / battle-pause flag; MBTL-IM's tick-suppress pause sets
++# neither), and FbxScene_DrawNodeTree 0x585DA0 takes each node matrix from anime[g_StageAnimFrame % keys]. So the
++# door lamp (stage anime) kept running while the case was paused. Holding the frame pins one stage state for the game
++# shot, the window/backbuffer shots and the plate. Shots in captures/v2/nohud_st, suffix _sa.
++include ../games/mbtl.gcs
++sym g_BattleHudFader 0xAFC3C8
++sym g_BattleStageSel 0xAFC04C
++sym g_CurStageIndex 0xA2E47C
++sym g_StageAnimFrame 0xA300A0
++file_put ../round10/chr001_solo21_s456.pat MBTL-IM/Mods/data/chr001/chr001.pat
++let STAGE 21
++let P1CHR 1
++let P2CHR 1
++ini_set MBTL-IM/MBTL_IM.ini Stages BloomStrength 0
++include ../games/mbtl_to_training_stage.gcs
++hold i32 g_StageAnimFrame 0
++hold i32 [g_BattleHudFader]+8 2
++hold i32 [g_BattleHudFader]+16 0
++hold i32 [g_BattleHudFader]+20 0
++step 4
++set OUTD C:\dev\hantei-chan\tools\gamecap\captures\v2\nohud_st
++set NSTEPS 1
++set CASE mbtl_flipV_chr001_p157f2_solo_s456_sa
++set PAT 157
++set SETFRAME 2
++set FRAME 2
++set GTICK 1
++peek i32 g_StageAnimFrame anim_before
++include ../games/mbtl_v2_case_plate.gcs
++peek i32 g_StageAnimFrame anim_after
++quit
+--- /dev/null	2026-10-16 03:42:04.087602178 -0400
++++ b/tools/gamecap/cases/v2r19_mbtl_chr001_stagehold.gcs
+@@ -0,0 +1,49 @@
++# render-match19 (2026-10-16): v2r17_mbtl_chr001_stage.gcs with the stage-21 FBX anime held (g_StageAnimFrame 0xA300A0,
++# see v2r19_mbtl_chr001_solo_s8_stagehold.gcs). Cases p238f10 / p277f0 / p0f0 / p157f2, suffix _sa.
++include ../games/mbtl.gcs
++sym g_BattleHudFader 0xAFC3C8
++sym g_BattleStageSel 0xAFC04C
++sym g_CurStageIndex 0xA2E47C
++sym g_StageAnimFrame 0xA300A0
++let STAGE 21
++let P1CHR 1
++let P2CHR 1
++ini_set MBTL-IM/MBTL_IM.ini Stages BloomStrength 0
++include ../games/mbtl_to_training_stage.gcs
++hold i32 g_StageAnimFrame 0
++hold i32 [g_BattleHudFader]+8 2
++hold i32 [g_BattleHudFader]+16 0
++hold i32 [g_BattleHudFader]+20 0
++step 4
++set OUTD C:\dev\hantei-chan\tools\gamecap\captures\v2\nohud_st
++set NSTEPS 1
++set GTICK 1
++set CASE mbtl_patctrl_chr001_p238f10_sa
++set PAT 238
++set SETFRAME 10
++set FRAME 10
++peek i32 g_StageAnimFrame anim_before
++include ../games/mbtl_v2_case_plate.gcs
++peek i32 g_StageAnimFrame anim_after
++set CASE mbtl_patctrl_chr001_p277f0_sa
++set PAT 277
++set SETFRAME 0
++set FRAME 0
++peek i32 g_StageAnimFrame anim_before
++include ../games/mbtl_v2_case_plate.gcs
++peek i32 g_StageAnimFrame anim_after
++set CASE mbtl_ctrl_chr001_p0f0_sa
++set PAT 0
++set SETFRAME 0
++set FRAME 0
++peek i32 g_StageAnimFrame anim_before
++include ../games/mbtl_v2_case_plate.gcs
++peek i32 g_StageAnimFrame anim_after
++set CASE mbtl_flipV_chr001_p157f2_sa
++set PAT 157
++set SETFRAME 2
++set FRAME 2
++peek i32 g_StageAnimFrame anim_before
++include ../games/mbtl_v2_case_plate.gcs
++peek i32 g_StageAnimFrame anim_after
++quit
+--- /dev/null	2026-10-16 03:42:04.087602178 -0400
++++ b/tools/gamecap/round19/run_round19.sh
+@@ -0,0 +1,12 @@
++#!/bin/bash
++# render-match19: the three stage-anim-held MBTL captures, one game at a time through run.sh's lock.
++# Retries a case while another agent's game is still running (run.sh refuses to start then).
++D=/mnt/c/dev/hantei-chan/tools/gamecap
++for c in ${CASES:-v2r19_mbtl_chr001_solo_s8_stagehold v2r19_mbtl_chr001_solo_s456_stagehold v2r19_mbtl_chr001_stagehold}; do
++  for try in $(seq 1 60); do
++    "$D/run.sh" "$D/cases/$c.gcs" > "$D/round19/run_$c.log" 2>&1; rc=$?
++    grep -q "a game is already running" "$D/round19/run_$c.log" || break
++    sleep 20
++  done
++  echo "$c rc=$rc"
++done
