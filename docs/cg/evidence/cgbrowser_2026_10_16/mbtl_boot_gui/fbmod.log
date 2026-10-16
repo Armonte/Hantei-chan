@@ -1,0 +1,110 @@
+[10:55:14.624] [72256] [I] fbmod 0.1.0 (standalone), exe mbtl.exe, game dir c:\program files (x86)\steam\steamapps\common\melty blood type lumina\
+[10:55:14.664] [72256] [I] build: Steam 25646393 (stamp 6abdffe7 size 032ab000) sha256 be83d058f55d332a3458f3821dce8417d7c876a4d1771f0c10e895412e7847da
+[10:55:14.664] [72256] [W] MBTL-IM is loaded too: fbmod chains its hooks after it and moves its default hotkeys to F9-F12
+[10:55:14.664] [72256] [I] hook ExitProcess: create at 0x76a0b360 (entry 55 8b ec 6a ff)
+[10:55:14.690] [72256] [I] hook ExitProcess: enable
+[10:55:14.868] [72256] [I] hook ExitProcess at 0x76a0b360 (presentation)
+[10:55:14.869] [72256] [I] hook NtTerminateProcess: create at 0x77ce9e60 (entry b8 2c 00 07 00)
+[10:55:14.874] [72256] [I] hook NtTerminateProcess: enable
+[10:55:15.066] [72256] [I] hook NtTerminateProcess at 0x77ce9e60 (presentation)
+[10:55:15.066] [72256] [I] adapter: mbtl (MELTY BLOOD: TYPE LUMINA)
+[10:55:15.066] [72256] [I] resolve mbtl_25646393: BattleProc_UpdateFrame pinned rva 0xfbe70 (entry already detoured by another module; rest of the signature verified)
+[10:55:15.066] [72256] [I] resolve mbtl_25646393: FileSystem_LoadFile pinned rva 0x9b970 (entry already detoured by another module; rest of the signature verified)
+[10:55:15.066] [72256] [I] resolve mbtl_25646393: FileReader_OpenFromMemory pinned rva 0x9c990
+[10:55:15.066] [72256] [I] resolve mbtl_25646393: Archive_FileExists_ArchiveOrLoose pinned rva 0x9a640 (entry already detoured by another module; rest of the signature verified)
+[10:55:15.066] [72256] [I] resolve mbtl_25646393: g_PlayerObjects pinned rva 0xcf9340
+[10:55:15.066] [72256] [I] resolve mbtl_25646393: g_ActiveEffectList pinned rva 0x8cc7a0
+[10:55:15.066] [72256] [I] resolve mbtl_25646393: g_CameraElements pinned rva 0x8aba90
+[10:55:15.066] [72256] [I] resolve mbtl_25646393: g_SceneId pinned rva 0x6657b0
+[10:55:15.066] [72256] [I] resolve mbtl_25646393: g_GameMode pinned rva 0x62fd78
+[10:55:15.066] [72256] [I] resolve mbtl_25646393: g_GameModeSub pinned rva 0x62fd7c
+[10:55:15.066] [72256] [I] resolve mbtl_25646393: g_BattleGGPOSession pinned rva 0x324ab0c
+[10:55:15.066] [72256] [I] resolve mbtl_25646393: g_BattlePauseState pinned rva 0x8c3e64
+[10:55:15.066] [72256] [I] resolve mbtl_25646393: Chara_LoadCommandList pinned rva 0x2089b0
+[10:55:15.066] [72256] [I] resolve mbtl_25646393: Chara_LoadMoveList pinned rva 0x2085a0
+[10:55:15.066] [72256] [I] resolve mbtl_25646393: ObjectManagerStackPush pinned rva 0x22470
+[10:55:15.066] [72256] [I] resolve mbtl_25646393: g_ObjectManagerStack pinned rva 0x68e344
+[10:55:15.066] [72256] [I] resolve mbtl_25646393: g_PlayerVariantFlag pinned rva 0x8c4318
+[10:55:15.066] [72256] [I] resolve mbtl_25646393: g_PlayerVariantIndex pinned rva 0x8c431c
+[10:55:15.066] [72256] [I] resolve mbtl_25646393: g_BattleSqVM pinned rva 0x32041e8
+[10:55:15.066] [72256] [I] resolve mbtl_25646393: sq_pop pinned rva 0x55df0
+[10:55:15.066] [72256] [I] resolve mbtl_25646393: g_TrainingSnapshotValid pinned rva 0x6fc418
+[10:55:15.066] [72256] [I] resolve mbtl_25646393: CharaRes_LoadOrGetCached pinned rva 0x1936f0
+[10:55:15.066] [72256] [I] resolve mbtl_25646393: CharaPalette_LoadPalAndPupsVariants pinned rva 0x1935b0
+[10:55:15.066] [72256] [I] resolve mbtl_25646393: CharaRes_ApplyPaletteToCg pinned rva 0x192f40
+[10:55:15.066] [72256] [I] resolve mbtl_25646393: Object_RefreshPatternFramePtrs pinned rva 0x110260
+[10:55:15.066] [72256] [I] resolve mbtl_25646393: SpriteTexCache_Clear pinned rva 0xa2070
+[10:55:15.066] [72256] [I] resolve mbtl_25646393: g_CharaResRecords pinned rva 0xcf42a0
+[10:55:15.066] [72256] [I] resolve mbtl_25646393: g_CharaResCacheBegin pinned rva 0xceb2c4
+[10:55:15.066] [72256] [I] resolve mbtl_25646393: g_CharaResCacheEnd pinned rva 0xceb2c8
+[10:55:15.066] [72256] [I] resolve mbtl_25646393: g_CharaResCacheLock pinned rva 0x8abedc
+[10:55:15.066] [72256] [I] resolve mbtl_25646393: g_EffectPool pinned rva 0x8ce700
+[10:55:15.066] [72256] [I] resolve mbtl_25646393: g_SpriteTexCacheBegin pinned rva 0x87bc34
+[10:55:15.066] [72256] [I] resolve mbtl_25646393: g_SpriteTexCacheEnd pinned rva 0x87bc38
+[10:55:15.066] [72256] [I] resolve mbtl_25646393: PatFile_Destruct pinned rva 0x892a0
+[10:55:15.066] [72256] [I] resolve mbtl_25646393: CgFile_Destruct pinned rva 0x8b6e0
+[10:55:15.066] [72256] [I] resolve mbtl_25646393: Ha6Root_Destroy pinned rva 0xc4c0
+[10:55:15.066] [72256] [I] resolve mbtl_25646393: operator_delete_game pinned rva 0x7b4b7
+[10:55:15.066] [72256] [I] resolve mbtl_25646393: Scene_DispatchUpdate pinned rva 0x194d00 (entry already detoured by another module; rest of the signature verified)
+[10:55:15.066] [72256] [I] resolve mbtl_25646393: g_CautionState pinned rva 0x875e08
+[10:55:15.066] [72256] [I] resolve mbtl_25646393: g_SceneSubStateEnter pinned rva 0x876098
+[10:55:15.066] [72256] [I] resolve mbtl_25646393: g_MoviePlayer pinned rva 0x87a7dc
+[10:55:15.066] [72256] [I] resolve mbtl_25646393: g_TitleState pinned rva 0x68ba88
+[10:55:15.066] [72256] [I] resolve mbtl_25646393: Title_SetSelection pinned rva 0x3a3ed0
+[10:55:15.066] [72256] [I] resolve mbtl_25646393: g_CurrentPlayerIndex pinned rva 0x62fd70
+[10:55:15.066] [72256] [I] resolve mbtl_25646393: g_SideInputDevice pinned rva 0x68dbd4
+[10:55:15.066] [72256] [I] resolve mbtl_25646393: g_SideInputFlag pinned rva 0x68dbdc
+[10:55:15.066] [72256] [I] resolve mbtl_25646393: g_CssState pinned rva 0x80be58
+[10:55:15.066] [72256] [I] resolve mbtl_25646393: g_CssState_Frame pinned rva 0x80be5c
+[10:55:15.066] [72256] [I] resolve mbtl_25646393: g_CssState_EnterPending pinned rva 0x80be6c
+[10:55:15.066] [72256] [I] resolve mbtl_25646393: g_CssSlot_CharaId pinned rva 0x80bec8
+[10:55:15.066] [72256] [I] resolve mbtl_25646393: g_CssSlot_Color pinned rva 0x80bed0
+[10:55:15.066] [72256] [I] resolve mbtl_25646393: g_PlayerData_CharaNo pinned rva 0x8c430c
+[10:55:15.066] [72256] [I] resolve mbtl_25646393: TrainingCharaChange_ApplyPicksToBattleConfig pinned rva 0x172dc0
+[10:55:15.066] [72256] [I] resolve mbtl_25646393: g_TrainingChangeChara_P1Pick pinned rva 0x8ca374
+[10:55:15.066] [72256] [I] resolve mbtl_25646393: g_TrainingChangeChara_P2Pick pinned rva 0x8ca378
+[10:55:15.066] [72256] [I] resolve mbtl_25646393: g_TrainingChangeChara_StagePick pinned rva 0x8ca37c
+[10:55:15.066] [72256] [I] resolve mbtl_25646393: g_BattleStageSel pinned rva 0x6fc04c
+[10:55:15.066] [72256] [I] resolve mbtl_25646393: g_SceneInitPending pinned rva 0x80bddc
+[10:55:15.066] [72256] [I] resolve mbtl_25646393: g_VsLoad_QuickNoVsScreen pinned rva 0x87a310
+[10:55:15.066] [72256] [I] resolve mbtl_25646393: g_VsLoad_SkipCharaScripts pinned rva 0x87a328
+[10:55:15.066] [72256] [I] resolve mbtl_25646393: g_DxDeviceCtx pinned rva 0x6960c8
+[10:55:15.066] [72256] [I] resolve mbtl_25646393: 61 pinned, 0 scanned, 0 unresolved of 61
+[10:55:15.066] [72256] [I] hook mbtl.Scene_DispatchUpdate(boot): create at 0xf04d00 (entry e9 7b 33 85 57)
+[10:55:15.073] [72256] [I] hook mbtl.Scene_DispatchUpdate(boot): enable
+[10:55:15.255] [72256] [I] hook mbtl.Scene_DispatchUpdate(boot) at 0xf04d00 (presentation)
+[10:55:15.255] [72256] [I] mbtl boot: straight into training with 3 (colour 0) vs 5 (colour 0)
+[10:55:15.255] [72256] [W] mbtl: MBTL-IM detected; both hook the reader and the battle update (MinHook chains them). fbmod leaves MBTL-IM\Mods/Packs to MBTL-IM.
+[10:55:15.255] [72256] [I] hook mbtl.FileSystem_LoadFile: create at 0xe0b970 (entry e9 8b fb 94 57)
+[10:55:15.264] [72256] [I] hook mbtl.FileSystem_LoadFile: enable
+[10:55:15.433] [72256] [I] hook mbtl.FileSystem_LoadFile at 0xe0b970 (presentation)
+[10:55:15.433] [72256] [I] hook mbtl.Archive_FileExists: create at 0xe0a640 (entry e9 fb 14 95 57)
+[10:55:15.434] [72256] [I] hook mbtl.Archive_FileExists: enable
+[10:55:15.600] [72256] [I] hook mbtl.Archive_FileExists at 0xe0a640 (presentation)
+[10:55:15.600] [72256] [I] mbtl vfs: reader hook true, exists hook true
+[10:55:15.600] [72256] [I] hook mbtl.BattleProc_UpdateFrame: create at 0xe6be70 (entry e9 ab 65 95 57)
+[10:55:15.609] [72256] [I] hook mbtl.BattleProc_UpdateFrame: enable
+[10:55:15.771] [72256] [I] hook mbtl.BattleProc_UpdateFrame at 0xe6be70 (sim)
+[10:55:15.771] [72256] [I] mbtl: frame step true, hitboxes true, session source g_BattleGGPOSession, script reload true
+[10:55:15.771] [72256] [I] adapter init ok; hitboxes available, frame step available
+[10:55:15.772] [72256] [I] vfs layer fbmod\mods (prio 1000): 0 file(s)
+[10:55:15.772] [72256] [I] vfs: 0 override key(s)
+[10:55:15.772] [72256] [I] d3d9: late attach queued for the game thread
+[10:55:15.772] [70608] [I] hotreload: pipe server \\.\pipe\fbmod-mbtl
+[10:55:15.773] [80284] [I] hotreload: pipe server \\.\pipe\fbmod-75656
+[10:55:18.011] [52604] [I] d3d9: late attach on the game thread
+[10:55:18.034] [52604] [I] d3d9: late attach through the game device 0xb894f00
+[10:55:18.034] [52604] [I] hook IDirect3DDevice9::Present: create at 0x5c7a35a0 (entry 56 53 83 ec 24)
+[10:55:18.047] [52604] [I] hook IDirect3DDevice9::Present: enable
+[10:55:18.200] [52604] [I] hook IDirect3DDevice9::Present at 0x5c7a35a0 (presentation)
+[10:55:18.200] [52604] [I] hook IDirect3DDevice9::Reset: create at 0x699009d0 (entry e9 4b 78 e4 ee)
+[10:55:18.217] [52604] [I] hook IDirect3DDevice9::Reset: enable
+[10:55:18.362] [52604] [I] hook IDirect3DDevice9::Reset at 0x699009d0 (presentation)
+[10:55:18.367] [52604] [I] overlay: ImGui 1.92.9b on window 0x3314f0
+[10:55:18.379] [52604] [I] overlay: first frame drawn (1280x720 backbuffer)
+[10:55:28.551] [52604] [I] mbtl boot: opening movie marked finished (scene's own exit to the title)
+[10:55:28.827] [52604] [I] mbtl boot: title -> Title_SetSelection(training)
+[10:55:29.091] [52604] [I] session: unknown -> training
+[10:55:29.091] [52604] [I] vfs: sim-affecting overrides enabled
+[10:55:30.760] [52604] [I] mbtl boot: CSS decided (3 vs 5)
+[10:55:44.612] [52604] [I] mbtl boot: training battle reached (mode 3)
