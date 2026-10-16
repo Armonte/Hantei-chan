@@ -1381,7 +1381,7 @@
     {
      "name": "GetCharaData",
      "ea": "0x884e7c",
-     "wrapper": null
+     "wrapper": "SqratWrap_instance_CCharaData_44C6F0"
     }
    ],
    "site": "0x884d4b",
@@ -1991,13 +1991,13 @@
   "SqratWrap_instance__noargs_6": "0x4849218",
   "SqratWrap_instance__int": "0x4849218",
   "SqratWrap_instance__int_2": "0x4849218",
-  "sub_44AF90": "0x4849218",
+  "SqratWrap_instance_CCharaData_44AF90": "0x4849218",
   "SqratWrap_instance__noargs_7": "0x4849228",
-  "sub_44C6F0": "0x4849218",
+  "SqratWrap_instance_CCharaData_44C6F0": "0x4849218",
   "SqratWrap_instance__string": "0x48493cc",
   "SqratWrap_instance__string_2": "0x4849244",
   "SqratWrap_instance__string_3": "0x4849234",
-  "sub_44CE50": "0x4849228",
+  "SqratWrap_instance_CCharaPosition_44CE50": "0x4849228",
   "SqratWrap_instance__noargs_13": "0x48494e8",
   "SqratWrap_instance__noargs_12": "0x4849554",
   "SqratWrap_instance__noargs_11": "0x48495cc",
@@ -2010,12 +2010,12 @@
   "SqratWrap_instance__int_3": "0x484965c",
   "SqratWrap_instance__instance_object": "0x48496a8",
   "SqratWrap_instance__object": "0x48496a8",
-  "sub_54B270": "0x48495bc",
-  "sub_54B490": "0x48494f4",
-  "sub_54CEB0": "0x48495b4",
-  "sub_8A0660": "0x48495b4",
-  "sub_8A0820": "0x48495bc",
-  "sub_8A09E0": "0x48494f4"
+  "SqratWrap_instance_MvHitEffectInfo_54B270": "0x48495bc",
+  "SqratWrap_instance_MvHitImpactInfo_54B490": "0x48494f4",
+  "SqratWrap_instance_MvInterruptInfo_54CEB0": "0x48495b4",
+  "SqratWrap_instance_MvInterruptInfo_8A0660": "0x48495b4",
+  "SqratWrap_instance_MvHitEffectInfo_8A0820": "0x48495bc",
+  "SqratWrap_instance_MvHitImpactInfo_8A09E0": "0x48494f4"
  },
  "unnamed_binders": []
 }

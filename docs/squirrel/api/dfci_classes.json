@@ -1,0 +1,2003 @@
+{
+ "classes": [
+  {
+   "static": "0x13c5884",
+   "cpp": "CComUpdateSt",
+   "name": "UpdateSt",
+   "parent_table": null,
+   "fields": [],
+   "methods": [
+    {
+     "name": "GetELenX",
+     "ea": "0x893edc",
+     "wrapper": null
+    },
+    {
+     "name": "GetELenY",
+     "ea": "0x893eee",
+     "wrapper": null
+    }
+   ],
+   "site": "0x893e6c",
+   "bind_ea": "0x893fb3"
+  },
+  {
+   "static": "0x13c546c",
+   "cpp": "BtlSqCoreFunc::CCharaData",
+   "name": "CCharaData",
+   "parent_table": null,
+   "fields": [
+    {
+     "name": "IsDone",
+     "offset": 0,
+     "ea": "0x895fcd",
+     "type": "int",
+     "binder": "Sqrat_Class_VarA_43CFB0"
+    },
+    {
+     "name": "data",
+     "offset": 4,
+     "ea": "0x896024",
+     "type": "instance:0x13c5830",
+     "binder": "Sqrat_Class_VarA_43D010"
+    }
+   ],
+   "methods": [
+    {
+     "name": "push",
+     "ea": "0x895fdf",
+     "wrapper": null
+    },
+    {
+     "name": "pop",
+     "ea": "0x895ff1",
+     "wrapper": null
+    },
+    {
+     "name": "isdone",
+     "ea": "0x896003",
+     "wrapper": null
+    },
+    {
+     "name": "isPlayer",
+     "ea": "0x896015",
+     "wrapper": null
+    }
+   ],
+   "site": "0x895fba",
+   "bind_ea": "0x896035"
+  },
+  {
+   "static": "0x13c5864",
+   "cpp": "BtlSqCoreFunc::CFindObject",
+   "name": "CFindObject",
+   "parent_table": null,
+   "fields": [],
+   "methods": [
+    {
+     "name": "SetFirst",
+     "ea": "0x89606a",
+     "wrapper": null
+    }
+   ],
+   "site": "0x896054",
+   "bind_ea": "0x89608d"
+  },
+  {
+   "static": "0x13c5828",
+   "cpp": "BtlSqEffObject::CBtlSqCheckRect",
+   "name": "CCheckRect",
+   "parent_table": null,
+   "fields": [],
+   "methods": [
+    {
+     "name": "Reset",
+     "ea": "0x81245c",
+     "wrapper": null
+    },
+    {
+     "name": "SetPlayer",
+     "ea": "0x81246e",
+     "wrapper": null
+    },
+    {
+     "name": "SetSrc",
+     "ea": "0x812480",
+     "wrapper": null
+    },
+    {
+     "name": "SetDst",
+     "ea": "0x812492",
+     "wrapper": null
+    },
+    {
+     "name": "SetFlags",
+     "ea": "0x8124a4",
+     "wrapper": null
+    },
+    {
+     "name": "Check",
+     "ea": "0x8124b6",
+     "wrapper": null
+    },
+    {
+     "name": "GetCharaData",
+     "ea": "0x8124c8",
+     "wrapper": null
+    }
+   ],
+   "site": "0x812443",
+   "bind_ea": "0x8124d9"
+  },
+  {
+   "static": "0x13c5820",
+   "cpp": "BtlSqEffObject::CPointStatus",
+   "name": "CPointStatus",
+   "parent_table": null,
+   "fields": [
+    {
+     "name": "distance",
+     "offset": 0,
+     "ea": "0x81306f",
+     "type": "int",
+     "binder": "Sqrat_Class_VarD_446CE0"
+    },
+    {
+     "name": "distance_x",
+     "offset": 4,
+     "ea": "0x81307e",
+     "type": "int",
+     "binder": "Sqrat_Class_VarD_446CE0"
+    },
+    {
+     "name": "distance_y",
+     "offset": 8,
+     "ea": "0x81308d",
+     "type": "int",
+     "binder": "Sqrat_Class_VarD_446CE0"
+    },
+    {
+     "name": "pos_x",
+     "offset": 12,
+     "ea": "0x81309c",
+     "type": "int",
+     "binder": "Sqrat_Class_VarD_446CE0"
+    },
+    {
+     "name": "pos_y",
+     "offset": 16,
+     "ea": "0x8130ab",
+     "type": "int",
+     "binder": "Sqrat_Class_VarD_446CE0"
+    },
+    {
+     "name": "angle",
+     "offset": 20,
+     "ea": "0x8130ba",
+     "type": "float",
+     "binder": "Sqrat_Class_VarA_446D40"
+    }
+   ],
+   "methods": [],
+   "site": "0x81305c",
+   "bind_ea": "0x8130cb"
+  },
+  {
+   "static": "0x13c57e8",
+   "cpp": "BtlSqDebugCode::PTClass",
+   "name": "ProcTimer",
+   "parent_table": null,
+   "fields": [],
+   "methods": [
+    {
+     "name": "End",
+     "ea": "0x811cde",
+     "wrapper": null
+    },
+    {
+     "name": "ReStart",
+     "ea": "0x811cf0",
+     "wrapper": null
+    },
+    {
+     "name": "SetName",
+     "ea": "0x811d02",
+     "wrapper": null
+    },
+    {
+     "name": "GetTime",
+     "ea": "0x811d14",
+     "wrapper": null
+    },
+    {
+     "name": "PrintTime_Int",
+     "ea": "0x811d26",
+     "wrapper": null
+    },
+    {
+     "name": "GetNowTime",
+     "ea": "0x811d38",
+     "wrapper": null
+    },
+    {
+     "name": "PrintNowTime_Int",
+     "ea": "0x811d4a",
+     "wrapper": null
+    },
+    {
+     "name": "EndPrint_Off",
+     "ea": "0x811d5c",
+     "wrapper": null
+    }
+   ],
+   "site": "0x811cc8",
+   "bind_ea": "0x811d6d"
+  },
+  {
+   "static": "0x13c57c8",
+   "cpp": "BtlMvStdFunc::MvBoundStatus",
+   "name": "MvBoundStatus",
+   "parent_table": null,
+   "fields": [
+    {
+     "name": "isDone",
+     "offset": 0,
+     "ea": "0x80fd4c",
+     "type": "short",
+     "binder": "Sqrat_Class_VarC_452F30"
+    },
+    {
+     "name": "isCapture",
+     "offset": 2,
+     "ea": "0x80fd5b",
+     "type": "short",
+     "binder": "Sqrat_Class_VarC_452F30"
+    },
+    {
+     "name": "isBound",
+     "offset": 4,
+     "ea": "0x80fd6a",
+     "type": "short",
+     "binder": "Sqrat_Class_VarC_452F30"
+    },
+    {
+     "name": "isBoundNext",
+     "offset": 6,
+     "ea": "0x80fd79",
+     "type": "short",
+     "binder": "Sqrat_Class_VarC_452F30"
+    },
+    {
+     "name": "Num",
+     "offset": 10,
+     "ea": "0x80fd88",
+     "type": "short",
+     "binder": "Sqrat_Class_VarC_452F30"
+    },
+    {
+     "name": "VecCount",
+     "offset": 12,
+     "ea": "0x80fd97",
+     "type": "short",
+     "binder": "Sqrat_Class_VarC_452F30"
+    },
+    {
+     "name": "WallCount",
+     "offset": 18,
+     "ea": "0x80fda6",
+     "type": "short",
+     "binder": "Sqrat_Class_VarC_452F30"
+    },
+    {
+     "name": "Name",
+     "offset": 20,
+     "ea": "0x80fdb5",
+     "type": "string",
+     "binder": "Sqrat_Class_VarA_452F90"
+    },
+    {
+     "name": "Power",
+     "offset": 24,
+     "ea": "0x80fdc4",
+     "type": "short",
+     "binder": "Sqrat_Class_VarC_452F30"
+    },
+    {
+     "name": "AirUkemi",
+     "offset": 16,
+     "ea": "0x80fdd3",
+     "type": "short",
+     "binder": "Sqrat_Class_VarC_452F30"
+    },
+    {
+     "name": "VecMuki",
+     "offset": 14,
+     "ea": "0x80fde2",
+     "type": "short",
+     "binder": "Sqrat_Class_VarC_452F30"
+    },
+    {
+     "name": "BoundTime",
+     "offset": 26,
+     "ea": "0x80fdf1",
+     "type": "short",
+     "binder": "Sqrat_Class_VarC_452F30"
+    },
+    {
+     "name": "BoundTimeAll",
+     "offset": 28,
+     "ea": "0x80fe00",
+     "type": "short",
+     "binder": "Sqrat_Class_VarC_452F30"
+    }
+   ],
+   "methods": [
+    {
+     "name": "IsDown",
+     "ea": "0x80fe12",
+     "wrapper": null
+    }
+   ],
+   "site": "0x80fd39",
+   "bind_ea": "0x80fe23"
+  },
+  {
+   "static": "0x13c57c0",
+   "cpp": "BtlMvFunc::CSqBtlInfo",
+   "name": "CBtlInfo",
+   "parent_table": null,
+   "fields": [],
+   "methods": [
+    {
+     "name": "CheckCharaAlive",
+     "ea": "0x80f70c",
+     "wrapper": null
+    },
+    {
+     "name": "CheckCharaAlive_str",
+     "ea": "0x80f71e",
+     "wrapper": null
+    }
+   ],
+   "site": "0x80f6f3",
+   "bind_ea": "0x80f72f"
+  },
+  {
+   "static": "0x13c5490",
+   "cpp": "BtlMvFunc::CCharaVector",
+   "name": "CCharaVector",
+   "parent_table": null,
+   "fields": [
+    {
+     "name": "x",
+     "offset": 0,
+     "ea": "0x810724",
+     "type": "int",
+     "binder": "Sqrat_Class_BindMethod_453300"
+    },
+    {
+     "name": "y",
+     "offset": 4,
+     "ea": "0x810733",
+     "type": "int",
+     "binder": "Sqrat_Class_BindMethod_453300"
+    },
+    {
+     "name": "addx",
+     "offset": 8,
+     "ea": "0x810742",
+     "type": "int",
+     "binder": "Sqrat_Class_BindMethod_453300"
+    },
+    {
+     "name": "addy",
+     "offset": 12,
+     "ea": "0x810751",
+     "type": "int",
+     "binder": "Sqrat_Class_BindMethod_453300"
+    }
+   ],
+   "methods": [],
+   "site": "0x810711",
+   "bind_ea": "0x810762"
+  },
+  {
+   "static": "0x13c5498",
+   "cpp": "BtlMvFunc::CCharaPosition",
+   "name": "CCharaPosition",
+   "parent_table": null,
+   "fields": [
+    {
+     "name": "x",
+     "offset": 0,
+     "ea": "0x810794",
+     "type": "int",
+     "binder": "Sqrat_Class_VarA_453360"
+    },
+    {
+     "name": "y",
+     "offset": 4,
+     "ea": "0x8107a3",
+     "type": "int",
+     "binder": "Sqrat_Class_VarA_453360"
+    }
+   ],
+   "methods": [],
+   "site": "0x810781",
+   "bind_ea": "0x8107b4"
+  },
+  {
+   "static": "0x13c5480",
+   "cpp": "BtlMvFunc::CCharaRect",
+   "name": "CCharaRect",
+   "parent_table": null,
+   "fields": [
+    {
+     "name": "sx",
+     "offset": 0,
+     "ea": "0x8107ec",
+     "type": "int",
+     "binder": "Sqrat_Class_BindMethod_4533C0"
+    },
+    {
+     "name": "sy",
+     "offset": 4,
+     "ea": "0x8107fe",
+     "type": "int",
+     "binder": "Sqrat_Class_BindMethod_4533C0"
+    },
+    {
+     "name": "ex",
+     "offset": 8,
+     "ea": "0x810810",
+     "type": "int",
+     "binder": "Sqrat_Class_BindMethod_4533C0"
+    },
+    {
+     "name": "ey",
+     "offset": 12,
+     "ea": "0x810822",
+     "type": "int",
+     "binder": "Sqrat_Class_BindMethod_4533C0"
+    }
+   ],
+   "methods": [],
+   "site": "0x8107d6",
+   "bind_ea": "0x810836"
+  },
+  {
+   "static": "0x13c57b8",
+   "cpp": "BtlMvFunc::CCharaPoint4",
+   "name": "CCharaPoint4",
+   "parent_table": null,
+   "fields": [
+    {
+     "name": "x0",
+     "offset": 0,
+     "ea": "0x810871",
+     "type": "int",
+     "binder": "Sqrat_Class_BindMethod_453420"
+    },
+    {
+     "name": "y0",
+     "offset": 4,
+     "ea": "0x810883",
+     "type": "int",
+     "binder": "Sqrat_Class_BindMethod_453420"
+    },
+    {
+     "name": "x1",
+     "offset": 8,
+     "ea": "0x810895",
+     "type": "int",
+     "binder": "Sqrat_Class_BindMethod_453420"
+    },
+    {
+     "name": "y1",
+     "offset": 12,
+     "ea": "0x8108a7",
+     "type": "int",
+     "binder": "Sqrat_Class_BindMethod_453420"
+    },
+    {
+     "name": "x2",
+     "offset": 16,
+     "ea": "0x8108b9",
+     "type": "int",
+     "binder": "Sqrat_Class_BindMethod_453420"
+    },
+    {
+     "name": "y2",
+     "offset": 20,
+     "ea": "0x8108cb",
+     "type": "int",
+     "binder": "Sqrat_Class_BindMethod_453420"
+    },
+    {
+     "name": "x3",
+     "offset": 24,
+     "ea": "0x8108dd",
+     "type": "int",
+     "binder": "Sqrat_Class_BindMethod_453420"
+    },
+    {
+     "name": "y3",
+     "offset": 28,
+     "ea": "0x8108ef",
+     "type": "int",
+     "binder": "Sqrat_Class_BindMethod_453420"
+    }
+   ],
+   "methods": [],
+   "site": "0x81085b",
+   "bind_ea": "0x810903"
+  },
+  {
+   "static": "0x13c57b0",
+   "cpp": "BtlMvFunc::MvStatus",
+   "name": "MvStatus",
+   "parent_table": null,
+   "fields": [
+    {
+     "name": "CharaNo",
+     "offset": 0,
+     "ea": "0x81093e",
+     "type": "short",
+     "binder": "Sqrat_Class_BindMethod_453480"
+    },
+    {
+     "name": "CallCount",
+     "offset": 2,
+     "ea": "0x810950",
+     "type": "short",
+     "binder": "Sqrat_Class_BindMethod_453480"
+    },
+    {
+     "name": "FrameCallCount",
+     "offset": 4,
+     "ea": "0x810962",
+     "type": "short",
+     "binder": "Sqrat_Class_BindMethod_453480"
+    },
+    {
+     "name": "isUpdate",
+     "offset": 16,
+     "ea": "0x810974",
+     "type": "short",
+     "binder": "Sqrat_Class_BindMethod_453480"
+    },
+    {
+     "name": "MvCount",
+     "offset": 8,
+     "ea": "0x810986",
+     "type": "int",
+     "binder": "Sqrat_Class_VarA_4534E0"
+    },
+    {
+     "name": "MvCountFrame",
+     "offset": 12,
+     "ea": "0x810998",
+     "type": "int",
+     "binder": "Sqrat_Class_VarA_4534E0"
+    },
+    {
+     "name": "isFrameUpdate",
+     "offset": 18,
+     "ea": "0x8109aa",
+     "type": "short",
+     "binder": "Sqrat_Class_BindMethod_453480"
+    },
+    {
+     "name": "isLanding",
+     "offset": 24,
+     "ea": "0x8109bc",
+     "type": "short",
+     "binder": "Sqrat_Class_BindMethod_453480"
+    },
+    {
+     "name": "DataPattern",
+     "offset": 20,
+     "ea": "0x8109ce",
+     "type": "short",
+     "binder": "Sqrat_Class_BindMethod_453480"
+    },
+    {
+     "name": "DataFrame",
+     "offset": 22,
+     "ea": "0x8109e0",
+     "type": "short",
+     "binder": "Sqrat_Class_BindMethod_453480"
+    },
+    {
+     "name": "DataDelayVal",
+     "offset": 26,
+     "ea": "0x8109f2",
+     "type": "short",
+     "binder": "Sqrat_Class_BindMethod_453480"
+    },
+    {
+     "name": "DataDelay",
+     "offset": 28,
+     "ea": "0x810a04",
+     "type": "short",
+     "binder": "Sqrat_Class_BindMethod_453480"
+    },
+    {
+     "name": "flags",
+     "offset": 30,
+     "ea": "0x810a16",
+     "type": "short",
+     "binder": "Sqrat_Class_BindMethod_453480"
+    },
+    {
+     "name": "FrameID",
+     "offset": 32,
+     "ea": "0x810a28",
+     "type": "short",
+     "binder": "Sqrat_Class_BindMethod_453480"
+    },
+    {
+     "name": "Param0",
+     "offset": 34,
+     "ea": "0x810a3a",
+     "type": "short",
+     "binder": "Sqrat_Class_BindMethod_453480"
+    },
+    {
+     "name": "Param1",
+     "offset": 36,
+     "ea": "0x810a4c",
+     "type": "short",
+     "binder": "Sqrat_Class_BindMethod_453480"
+    },
+    {
+     "name": "Param2",
+     "offset": 38,
+     "ea": "0x810a5e",
+     "type": "short",
+     "binder": "Sqrat_Class_BindMethod_453480"
+    },
+    {
+     "name": "Param3",
+     "offset": 40,
+     "ea": "0x810a70",
+     "type": "short",
+     "binder": "Sqrat_Class_BindMethod_453480"
+    }
+   ],
+   "methods": [],
+   "site": "0x810928",
+   "bind_ea": "0x810a84"
+  },
+  {
+   "static": "0x13c57a8",
+   "cpp": "BtlMvFunc::MvFrameStatus",
+   "name": "MvFrameStatus",
+   "parent_table": null,
+   "fields": [
+    {
+     "name": "FrameID",
+     "offset": 0,
+     "ea": "0x810abf",
+     "type": "short",
+     "binder": "Sqrat_Class_BindMethod_453540"
+    },
+    {
+     "name": "Param0",
+     "offset": 2,
+     "ea": "0x810ad1",
+     "type": "short",
+     "binder": "Sqrat_Class_BindMethod_453540"
+    },
+    {
+     "name": "Param1",
+     "offset": 4,
+     "ea": "0x810ae3",
+     "type": "short",
+     "binder": "Sqrat_Class_BindMethod_453540"
+    },
+    {
+     "name": "Param2",
+     "offset": 6,
+     "ea": "0x810af5",
+     "type": "short",
+     "binder": "Sqrat_Class_BindMethod_453540"
+    },
+    {
+     "name": "Param3",
+     "offset": 8,
+     "ea": "0x810b07",
+     "type": "short",
+     "binder": "Sqrat_Class_BindMethod_453540"
+    }
+   ],
+   "methods": [],
+   "site": "0x810aa9",
+   "bind_ea": "0x810b1b"
+  },
+  {
+   "static": "0x13c57a0",
+   "cpp": "BtlMvFunc::MvHitStatus",
+   "name": "MvHitStatus",
+   "parent_table": null,
+   "fields": [
+    {
+     "name": "Type",
+     "offset": 0,
+     "ea": "0x810b56",
+     "type": "short",
+     "binder": "Sqrat_Class_BindMethod_4535A0"
+    },
+    {
+     "name": "PosState",
+     "offset": 2,
+     "ea": "0x810b68",
+     "type": "short",
+     "binder": "Sqrat_Class_BindMethod_4535A0"
+    },
+    {
+     "name": "isDown",
+     "offset": 4,
+     "ea": "0x810b7a",
+     "type": "short",
+     "binder": "Sqrat_Class_BindMethod_4535A0"
+    },
+    {
+     "name": "isFirstUpdate",
+     "offset": 8,
+     "ea": "0x810b8c",
+     "type": "short",
+     "binder": "Sqrat_Class_BindMethod_4535A0"
+    },
+    {
+     "name": "isCatchFlag",
+     "offset": 10,
+     "ea": "0x810b9e",
+     "type": "short",
+     "binder": "Sqrat_Class_BindMethod_4535A0"
+    },
+    {
+     "name": "isMoveable",
+     "offset": 12,
+     "ea": "0x810bb0",
+     "type": "short",
+     "binder": "Sqrat_Class_BindMethod_4535A0"
+    },
+    {
+     "name": "Count",
+     "offset": 6,
+     "ea": "0x810bc2",
+     "type": "short",
+     "binder": "Sqrat_Class_BindMethod_4535A0"
+    }
+   ],
+   "methods": [
+    {
+     "name": "IsDown",
+     "ea": "0x810bd7",
+     "wrapper": null
+    }
+   ],
+   "site": "0x810b40",
+   "bind_ea": "0x810beb"
+  },
+  {
+   "static": "0x13c5798",
+   "cpp": "BtlMvFunc::MvHitImpactInfo",
+   "name": "MvHitImpactInfo",
+   "parent_table": null,
+   "fields": [
+    {
+     "name": "type",
+     "offset": 0,
+     "ea": "0x810c26",
+     "type": "short",
+     "binder": "Sqrat_Class_BindMethod_453640"
+    },
+    {
+     "name": "d_state",
+     "offset": 2,
+     "ea": "0x810c38",
+     "type": "short",
+     "binder": "Sqrat_Class_BindMethod_453640"
+    },
+    {
+     "name": "atk_guard",
+     "offset": 4,
+     "ea": "0x810c4a",
+     "type": "short",
+     "binder": "Sqrat_Class_BindMethod_453640"
+    },
+    {
+     "name": "atk_throw",
+     "offset": 6,
+     "ea": "0x810c5c",
+     "type": "short",
+     "binder": "Sqrat_Class_BindMethod_453640"
+    },
+    {
+     "name": "def_guard",
+     "offset": 8,
+     "ea": "0x810c6e",
+     "type": "short",
+     "binder": "Sqrat_Class_BindMethod_453640"
+    },
+    {
+     "name": "grd_break",
+     "offset": 10,
+     "ea": "0x810c80",
+     "type": "short",
+     "binder": "Sqrat_Class_BindMethod_453640"
+    },
+    {
+     "name": "counterhit",
+     "offset": 12,
+     "ea": "0x810c92",
+     "type": "short",
+     "binder": "Sqrat_Class_BindMethod_453640"
+    },
+    {
+     "name": "flags",
+     "offset": 16,
+     "ea": "0x810ca4",
+     "type": "int",
+     "binder": "Sqrat_Class_VarA_4536A0"
+    }
+   ],
+   "methods": [],
+   "site": "0x810c10",
+   "bind_ea": "0x810cb8"
+  },
+  {
+   "static": "0x13c5790",
+   "cpp": "BtlMvFunc::MvInterruptInfo",
+   "name": "MvInterruptInfo",
+   "parent_table": null,
+   "fields": [
+    {
+     "name": "type",
+     "offset": 0,
+     "ea": "0x810cf3",
+     "type": "short",
+     "binder": "Sqrat_Class_BindMethod_453700"
+    },
+    {
+     "name": "Param0",
+     "offset": 2,
+     "ea": "0x810d05",
+     "type": "short",
+     "binder": "Sqrat_Class_BindMethod_453700"
+    },
+    {
+     "name": "Param1",
+     "offset": 4,
+     "ea": "0x810d17",
+     "type": "short",
+     "binder": "Sqrat_Class_BindMethod_453700"
+    },
+    {
+     "name": "Param2",
+     "offset": 6,
+     "ea": "0x810d29",
+     "type": "short",
+     "binder": "Sqrat_Class_BindMethod_453700"
+    },
+    {
+     "name": "Param3",
+     "offset": 8,
+     "ea": "0x810d3b",
+     "type": "short",
+     "binder": "Sqrat_Class_BindMethod_453700"
+    },
+    {
+     "name": "Param4",
+     "offset": 10,
+     "ea": "0x810d4d",
+     "type": "short",
+     "binder": "Sqrat_Class_BindMethod_453700"
+    }
+   ],
+   "methods": [],
+   "site": "0x810cdd",
+   "bind_ea": "0x810d61"
+  },
+  {
+   "static": "0x13c5788",
+   "cpp": "CPcRecoverStatus",
+   "name": "MvRecoverStatus",
+   "parent_table": null,
+   "fields": [
+    {
+     "name": "Type",
+     "offset": 0,
+     "ea": "0x810d9c",
+     "type": "int",
+     "binder": "Sqrat_Class_VarA_453760"
+    },
+    {
+     "name": "Stick",
+     "offset": 4,
+     "ea": "0x810dae",
+     "type": "int",
+     "binder": "Sqrat_Class_VarA_453760"
+    }
+   ],
+   "methods": [],
+   "site": "0x810d86",
+   "bind_ea": "0x810dc2"
+  },
+  {
+   "static": "0x13c5780",
+   "cpp": "BtlMvFunc::MvRoundStatus",
+   "name": "MvRoundStatus",
+   "parent_table": null,
+   "fields": [
+    {
+     "name": "Time",
+     "offset": 10,
+     "ea": "0x810dfd",
+     "type": "short",
+     "binder": "Sqrat_Class_BindMethod_4537C0"
+    },
+    {
+     "name": "TimeUpdate",
+     "offset": 12,
+     "ea": "0x810e0f",
+     "type": "short",
+     "binder": "Sqrat_Class_BindMethod_4537C0"
+    },
+    {
+     "name": "Round",
+     "offset": 14,
+     "ea": "0x810e21",
+     "type": "short",
+     "binder": "Sqrat_Class_BindMethod_4537C0"
+    },
+    {
+     "name": "WinType",
+     "offset": 16,
+     "ea": "0x810e33",
+     "type": "short",
+     "binder": "Sqrat_Class_BindMethod_4537C0"
+    },
+    {
+     "name": "isKo",
+     "offset": 0,
+     "ea": "0x810e45",
+     "type": "short",
+     "binder": "Sqrat_Class_BindMethod_4537C0"
+    },
+    {
+     "name": "isMyKo",
+     "offset": 2,
+     "ea": "0x810e57",
+     "type": "short",
+     "binder": "Sqrat_Class_BindMethod_4537C0"
+    },
+    {
+     "name": "isWinRound",
+     "offset": 4,
+     "ea": "0x810e69",
+     "type": "short",
+     "binder": "Sqrat_Class_BindMethod_4537C0"
+    },
+    {
+     "name": "isLoseRound",
+     "offset": 6,
+     "ea": "0x810e7b",
+     "type": "short",
+     "binder": "Sqrat_Class_BindMethod_4537C0"
+    },
+    {
+     "name": "isFinalRound",
+     "offset": 8,
+     "ea": "0x810e8d",
+     "type": "short",
+     "binder": "Sqrat_Class_BindMethod_4537C0"
+    },
+    {
+     "name": "CharaMoveMode",
+     "offset": 18,
+     "ea": "0x810e9f",
+     "type": "short",
+     "binder": "Sqrat_Class_BindMethod_4537C0"
+    }
+   ],
+   "methods": [],
+   "site": "0x810de7",
+   "bind_ea": "0x810eb3"
+  },
+  {
+   "static": "0x13c5778",
+   "cpp": "BtlMvFunc::MvStageStatus",
+   "name": "MvStageStatus",
+   "parent_table": null,
+   "fields": [],
+   "methods": [
+    {
+     "name": "IsStoryBattle",
+     "ea": "0x810ef1",
+     "wrapper": null
+    },
+    {
+     "name": "GetCpuChara",
+     "ea": "0x810f06",
+     "wrapper": null
+    },
+    {
+     "name": "GetPcChara",
+     "ea": "0x810f1b",
+     "wrapper": null
+    },
+    {
+     "name": "GetStartSide",
+     "ea": "0x810f30",
+     "wrapper": null
+    }
+   ],
+   "site": "0x810ed8",
+   "bind_ea": "0x810f44"
+  },
+  {
+   "static": "0x13c562c",
+   "cpp": "BtlCmdFunc::_LogsFile",
+   "name": "_LogsFile",
+   "parent_table": null,
+   "fields": [],
+   "methods": [
+    {
+     "name": "open",
+     "ea": "0x80e515",
+     "wrapper": null
+    },
+    {
+     "name": "opennew",
+     "ea": "0x80e527",
+     "wrapper": null
+    },
+    {
+     "name": "write",
+     "ea": "0x80e539",
+     "wrapper": null
+    },
+    {
+     "name": "write_r",
+     "ea": "0x80e54b",
+     "wrapper": null
+    },
+    {
+     "name": "writeD",
+     "ea": "0x80e55d",
+     "wrapper": null
+    },
+    {
+     "name": "writeD_r",
+     "ea": "0x80e56f",
+     "wrapper": null
+    },
+    {
+     "name": "close",
+     "ea": "0x80e581",
+     "wrapper": null
+    }
+   ],
+   "site": "0x80e4ff",
+   "bind_ea": "0x80e592"
+  },
+  {
+   "static": "0x13c5624",
+   "cpp": "CBtlCmdInfo",
+   "name": "CmdInfo",
+   "parent_table": null,
+   "fields": [],
+   "methods": [
+    {
+     "name": "GetLastButton",
+     "ea": "0x80e95a",
+     "wrapper": null
+    },
+    {
+     "name": "GetCancel",
+     "ea": "0x80e96f",
+     "wrapper": null
+    },
+    {
+     "name": "GetCancelFlag",
+     "ea": "0x80e984",
+     "wrapper": null
+    },
+    {
+     "name": "GetFrame",
+     "ea": "0x80e999",
+     "wrapper": null
+    },
+    {
+     "name": "GetNum",
+     "ea": "0x80e9ae",
+     "wrapper": null
+    }
+   ],
+   "site": "0x80e941",
+   "bind_ea": "0x80e9c2"
+  },
+  {
+   "static": "0x13c55ec",
+   "cpp": "CPaniData",
+   "name": "CDat",
+   "parent_table": null,
+   "fields": [],
+   "methods": [
+    {
+     "name": "Load",
+     "ea": "0x896284",
+     "wrapper": null
+    },
+    {
+     "name": "SetPosition",
+     "ea": "0x896296",
+     "wrapper": null
+    }
+   ],
+   "site": "0x89626e",
+   "bind_ea": "0x8962a7"
+  },
+  {
+   "static": "0x13c55e4",
+   "cpp": "CPaniData_Anime",
+   "name": "CAnime",
+   "parent_table": null,
+   "fields": [],
+   "methods": [
+    {
+     "name": "SetCDat",
+     "ea": "0x8962dc",
+     "wrapper": null
+    },
+    {
+     "name": "AddFrame",
+     "ea": "0x8962ee",
+     "wrapper": null
+    },
+    {
+     "name": "AddFrameEx",
+     "ea": "0x896300",
+     "wrapper": null
+    },
+    {
+     "name": "AddJump",
+     "ea": "0x896312",
+     "wrapper": null
+    },
+    {
+     "name": "AddModeJump",
+     "ea": "0x896324",
+     "wrapper": null
+    },
+    {
+     "name": "AddTagJump",
+     "ea": "0x896336",
+     "wrapper": null
+    },
+    {
+     "name": "AddModeTagJump",
+     "ea": "0x896348",
+     "wrapper": null
+    },
+    {
+     "name": "AddTag",
+     "ea": "0x89635a",
+     "wrapper": null
+    },
+    {
+     "name": "AddSe",
+     "ea": "0x89636c",
+     "wrapper": null
+    },
+    {
+     "name": "AddModeTag",
+     "ea": "0x89637e",
+     "wrapper": null
+    },
+    {
+     "name": "AddEnd",
+     "ea": "0x896390",
+     "wrapper": null
+    },
+    {
+     "name": "SetPrio",
+     "ea": "0x8963a2",
+     "wrapper": null
+    },
+    {
+     "name": "SetMode",
+     "ea": "0x8963b4",
+     "wrapper": null
+    },
+    {
+     "name": "GetMode",
+     "ea": "0x8963c6",
+     "wrapper": null
+    },
+    {
+     "name": "AddMode",
+     "ea": "0x8963d8",
+     "wrapper": null
+    },
+    {
+     "name": "Jump",
+     "ea": "0x8963ea",
+     "wrapper": null
+    },
+    {
+     "name": "TagJump",
+     "ea": "0x8963fc",
+     "wrapper": null
+    },
+    {
+     "name": "Reset",
+     "ea": "0x89640e",
+     "wrapper": null
+    },
+    {
+     "name": "ResetFrameTime",
+     "ea": "0x896420",
+     "wrapper": null
+    },
+    {
+     "name": "IsNull",
+     "ea": "0x896432",
+     "wrapper": null
+    },
+    {
+     "name": "SetView",
+     "ea": "0x896444",
+     "wrapper": null
+    },
+    {
+     "name": "GetView",
+     "ea": "0x896456",
+     "wrapper": null
+    },
+    {
+     "name": "ClearFrame",
+     "ea": "0x896468",
+     "wrapper": null
+    },
+    {
+     "name": "SetStartWait",
+     "ea": "0x89647a",
+     "wrapper": null
+    },
+    {
+     "name": "SetPosition",
+     "ea": "0x89648c",
+     "wrapper": null
+    }
+   ],
+   "site": "0x8962c6",
+   "bind_ea": "0x89649d"
+  },
+  {
+   "static": "0x13c55dc",
+   "cpp": "CPaniData_AnimeManager",
+   "name": "CAniManager",
+   "parent_table": null,
+   "fields": [],
+   "methods": [
+    {
+     "name": "Render",
+     "ea": "0x8964e4",
+     "wrapper": null
+    },
+    {
+     "name": "Update",
+     "ea": "0x8964f6",
+     "wrapper": null
+    },
+    {
+     "name": "Reset",
+     "ea": "0x896508",
+     "wrapper": null
+    },
+    {
+     "name": "Finalize",
+     "ea": "0x89651a",
+     "wrapper": null
+    },
+    {
+     "name": "SetMode",
+     "ea": "0x89652c",
+     "wrapper": null
+    },
+    {
+     "name": "GetCAnime",
+     "ea": "0x89653e",
+     "wrapper": null
+    }
+   ],
+   "site": "0x8964bc",
+   "bind_ea": "0x89654f"
+  },
+  {
+   "static": "0x13c558c",
+   "cpp": "CSceneVS_PlayerSt",
+   "name": "CPlayerSt",
+   "parent_table": null,
+   "fields": [
+    {
+     "name": "Player1",
+     "offset": 8,
+     "ea": "0x7cea0e",
+     "type": "string",
+     "binder": "Sqrat_Class_VarB_46C5B0"
+    },
+    {
+     "name": "Player2",
+     "offset": 92,
+     "ea": "0x7cea1d",
+     "type": "string",
+     "binder": "Sqrat_Class_VarB_46C5B0"
+    },
+    {
+     "name": "Player1s",
+     "offset": 36,
+     "ea": "0x7cea2c",
+     "type": "string",
+     "binder": "Sqrat_Class_VarB_46C5B0"
+    },
+    {
+     "name": "Player2s",
+     "offset": 120,
+     "ea": "0x7cea3b",
+     "type": "string",
+     "binder": "Sqrat_Class_VarB_46C5B0"
+    },
+    {
+     "name": "Player1ss",
+     "offset": 64,
+     "ea": "0x7cea4a",
+     "type": "string",
+     "binder": "Sqrat_Class_VarB_46C5B0"
+    },
+    {
+     "name": "Player2ss",
+     "offset": 148,
+     "ea": "0x7cea5c",
+     "type": "string",
+     "binder": "Sqrat_Class_VarB_46C5B0"
+    },
+    {
+     "name": "bBoard",
+     "offset": 176,
+     "ea": "0x7cea6e",
+     "type": "int",
+     "binder": "Sqrat_Class_VarA_46C610"
+    }
+   ],
+   "methods": [],
+   "site": "0x7ce9fb",
+   "bind_ea": "0x7cea7f"
+  },
+  {
+   "static": "0x13c556c",
+   "cpp": "CSceneWinDemo_St",
+   "name": "CStatus",
+   "parent_table": null,
+   "fields": [
+    {
+     "name": "Winner",
+     "offset": 24,
+     "ea": "0x7cb96e",
+     "type": "string",
+     "binder": "Sqrat_Class_VarA_46D470"
+    },
+    {
+     "name": "WinnerNum",
+     "offset": 52,
+     "ea": "0x7cb97d",
+     "type": "int",
+     "binder": "Sqrat_Class_VarA_46D4D0"
+    },
+    {
+     "name": "Player",
+     "offset": 12,
+     "ea": "0x7cb98c",
+     "type": "int",
+     "binder": "Sqrat_Class_VarA_46D4D0"
+    },
+    {
+     "name": "Stage",
+     "offset": 4,
+     "ea": "0x7cb99b",
+     "type": "int",
+     "binder": "Sqrat_Class_VarA_46D4D0"
+    },
+    {
+     "name": "NextStage",
+     "offset": 8,
+     "ea": "0x7cb9aa",
+     "type": "int",
+     "binder": "Sqrat_Class_VarA_46D4D0"
+    },
+    {
+     "name": "WinStreak",
+     "offset": 20,
+     "ea": "0x7cb9b9",
+     "type": "int",
+     "binder": "Sqrat_Class_VarA_46D4D0"
+    }
+   ],
+   "methods": [],
+   "site": "0x7cb95b",
+   "bind_ea": "0x7cb9ca"
+  }
+ ],
+ "wrapper_returns": {
+  "sub_42FA80": "0x13c5884",
+  "sub_43D590": "0x13c546c",
+  "sub_447A90": "0x13c5498",
+  "sub_447C50": "0x13c5820",
+  "sub_447CC0": "0x13c5490",
+  "sub_447D30": "0x13c5480",
+  "sub_454060": "0x13c5798",
+  "sub_4540D0": "0x13c5790",
+  "sub_4545C0": "0x13c57c8",
+  "sub_454630": "0x13c57b0",
+  "sub_4546A0": "0x13c57a0",
+  "sub_454760": "0x13c5788",
+  "sub_4547D0": "0x13c5780",
+  "sub_454840": "0x13c5778",
+  "sub_458E60": "0x13c5624",
+  "sub_45AD30": "0x13c55e4",
+  "sub_46C860": "0x13c558c",
+  "sub_46D680": "0x13c556c"
+ },
+ "unnamed_binders": [],
+ "native_rets": {
+  "0x738093": "int",
+  "0x7cb9e8": "instance:CStatus",
+  "0x7cea9d": "instance:CPlayerSt",
+  "0x80e4da": "void",
+  "0x80e4ec": "void",
+  "0x80e515": "void",
+  "0x80e527": "void",
+  "0x80e539": "void",
+  "0x80e54b": "void",
+  "0x80e55d": "void",
+  "0x80e56f": "void",
+  "0x80e581": "void",
+  "0x80e61f": "void",
+  "0x80e631": "void",
+  "0x80e643": "void",
+  "0x80e6c4": "void",
+  "0x80e6d6": "void",
+  "0x80e6e8": "void",
+  "0x80e6fa": "void",
+  "0x80e77b": "int",
+  "0x80e78d": "int",
+  "0x80e79f": "int",
+  "0x80e7b1": "int",
+  "0x80e7c3": "int",
+  "0x80e7d5": "int",
+  "0x80e7e7": "int",
+  "0x80e7f9": "int",
+  "0x80e80b": "int",
+  "0x80e81d": "int",
+  "0x80e82f": "int",
+  "0x80e841": "int",
+  "0x80e853": "int",
+  "0x80e865": "int",
+  "0x80e877": "int",
+  "0x80e889": "int",
+  "0x80e89b": "int",
+  "0x80e8ad": "int",
+  "0x80e8bf": "int",
+  "0x80e8d1": "int",
+  "0x80e8e3": "int",
+  "0x80e8f5": "instance:CmdInfo",
+  "0x80e907": "instance:CmdInfo",
+  "0x80e919": "int",
+  "0x80e92b": "int",
+  "0x80e95a": "int",
+  "0x80e96f": "int",
+  "0x80e984": "int",
+  "0x80e999": "int",
+  "0x80e9ae": "int",
+  "0x80f70c": "int",
+  "0x80f71e": "int",
+  "0x80fc4b": "int",
+  "0x80fc84": "instance:MvBoundStatus",
+  "0x80fc96": "int",
+  "0x80fca8": "int",
+  "0x80fcba": "int",
+  "0x80fccc": "int",
+  "0x80fcde": "int",
+  "0x80fcf0": "int",
+  "0x80fd02": "int",
+  "0x80fd14": "int",
+  "0x80fd26": "int",
+  "0x80fe12": "int",
+  "0x80fefa": "int",
+  "0x80ff0c": "int",
+  "0x80ff1e": "void",
+  "0x80ff30": "int",
+  "0x80ff42": "int",
+  "0x80ff54": "int",
+  "0x80ff66": "int",
+  "0x80ff78": "int",
+  "0x80ff8a": "int",
+  "0x80ff9c": "int",
+  "0x80ffae": "int",
+  "0x80ffc0": "int",
+  "0x80ffd2": "void",
+  "0x80ffe4": "void",
+  "0x80fff6": "void",
+  "0x810008": "void",
+  "0x81001a": "int",
+  "0x81002c": "int",
+  "0x81003e": "void",
+  "0x810050": "int",
+  "0x810062": "void",
+  "0x810074": "int",
+  "0x810086": "int",
+  "0x810098": "int",
+  "0x8100aa": "int",
+  "0x8100ce": "int",
+  "0x8100e0": "void",
+  "0x8100f2": "int",
+  "0x810104": "int",
+  "0x810116": "void",
+  "0x810128": "int",
+  "0x81013a": "int",
+  "0x81014c": "void",
+  "0x81015e": "int",
+  "0x810170": "void",
+  "0x810182": "void",
+  "0x810194": "int",
+  "0x8101a6": "void",
+  "0x8101b8": "int",
+  "0x8101ca": "int",
+  "0x8101dc": "int",
+  "0x8101ee": "int",
+  "0x810200": "int",
+  "0x810212": "int",
+  "0x810224": "int",
+  "0x810236": "int",
+  "0x810248": "int",
+  "0x81025a": "void",
+  "0x81026c": "void",
+  "0x81027e": "void",
+  "0x810290": "int",
+  "0x8102a2": "int",
+  "0x8102b4": "int",
+  "0x8102c6": "int",
+  "0x8102d8": "int",
+  "0x8102ea": "instance:MvStatus",
+  "0x8102fc": "int",
+  "0x810320": "void",
+  "0x810332": "instance:MvHitStatus",
+  "0x810344": "void",
+  "0x810356": "void",
+  "0x810368": "void",
+  "0x81037a": "int",
+  "0x81038c": "instance:CCharaVector",
+  "0x81039e": "int",
+  "0x8103b0": "void",
+  "0x8103c2": "instance:CCharaPosition",
+  "0x8103d4": "int",
+  "0x8103e6": "int",
+  "0x8103f8": "instance:CCharaPosition",
+  "0x81040a": "int",
+  "0x81041c": "int",
+  "0x81042e": "void",
+  "0x810440": "instance:CCharaPosition",
+  "0x810452": "int",
+  "0x810464": "instance:MvRoundStatus",
+  "0x810476": "instance:MvStageStatus",
+  "0x810488": "void",
+  "0x81049a": "void",
+  "0x8104ac": "void",
+  "0x8104be": "int",
+  "0x8104d0": "int",
+  "0x8104e2": "int",
+  "0x8104f4": "int",
+  "0x810506": "int",
+  "0x810518": "int",
+  "0x81052a": "int",
+  "0x81053c": "int",
+  "0x81054e": "instance:MvRecoverStatus",
+  "0x810560": "int",
+  "0x810572": "int",
+  "0x810584": "int",
+  "0x810596": "int",
+  "0x8105a8": "int",
+  "0x8105ba": "int",
+  "0x8105cc": "int",
+  "0x8105de": "int",
+  "0x8105f0": "int",
+  "0x810602": "int",
+  "0x810614": "int",
+  "0x810626": "int",
+  "0x810638": "void",
+  "0x81064a": "int",
+  "0x81065c": "int",
+  "0x81066e": "int",
+  "0x810680": "int",
+  "0x810692": "int",
+  "0x8106a4": "int",
+  "0x8106b6": "int",
+  "0x8106c8": "int",
+  "0x8106da": "int",
+  "0x8106ec": "int",
+  "0x8106fe": "void",
+  "0x810bd7": "int",
+  "0x810ef1": "int",
+  "0x810f06": "int",
+  "0x810f1b": "int",
+  "0x810f30": "int",
+  "0x8118c6": "int",
+  "0x811a27": "void",
+  "0x811a39": "void",
+  "0x811a4b": "void",
+  "0x811a5d": "void",
+  "0x811cf0": "void",
+  "0x811d02": "void",
+  "0x811d14": "float",
+  "0x811d26": "void",
+  "0x811d38": "float",
+  "0x811d4a": "void",
+  "0x811d5c": "void",
+  "0x81245c": "void",
+  "0x81246e": "void",
+  "0x812480": "void",
+  "0x812492": "void",
+  "0x8124a4": "void",
+  "0x8124b6": "int",
+  "0x8124c8": "instance:CCharaData",
+  "0x812857": "int",
+  "0x812869": "float",
+  "0x81287b": "int",
+  "0x81288d": "float",
+  "0x81289f": "instance:CCharaPosition",
+  "0x8128b1": "instance:CCharaPosition",
+  "0x8128c3": "int",
+  "0x8128d5": "int",
+  "0x8128e7": "int",
+  "0x8128f9": "int",
+  "0x81290b": "int",
+  "0x81291d": "int",
+  "0x81292f": "int",
+  "0x812941": "int",
+  "0x812953": "int",
+  "0x812965": "instance:CCharaData",
+  "0x812977": "int",
+  "0x812989": "void",
+  "0x81299b": "int",
+  "0x8129ad": "int",
+  "0x8129bf": "int",
+  "0x8129d1": "int",
+  "0x8129e3": "int",
+  "0x8129f5": "int",
+  "0x812a07": "void",
+  "0x812a19": "void",
+  "0x812a2b": "void",
+  "0x812a3d": "void",
+  "0x812a4f": "void",
+  "0x812a61": "void",
+  "0x812a73": "void",
+  "0x812a85": "void",
+  "0x812a97": "int",
+  "0x812aa9": "void",
+  "0x812abb": "int",
+  "0x812acd": "int",
+  "0x812adf": "int",
+  "0x812af1": "void",
+  "0x812b03": "int",
+  "0x812b15": "int",
+  "0x812b27": "int",
+  "0x812b39": "int",
+  "0x812b4b": "int",
+  "0x812b5d": "int",
+  "0x812b6f": "void",
+  "0x812b81": "void",
+  "0x812b93": "int",
+  "0x812ba5": "void",
+  "0x812bb7": "instance:CPointStatus",
+  "0x812bc9": "instance:CCharaVector",
+  "0x812bdb": "instance:CPointStatus",
+  "0x812bed": "int",
+  "0x812bff": "instance:CCharaData",
+  "0x812c11": "instance:CCharaRect",
+  "0x812c23": "int",
+  "0x812c35": "instance:CCharaPosition",
+  "0x812c47": "instance:CCharaRect",
+  "0x812c59": "int",
+  "0x812c6b": "int",
+  "0x812c7d": "int",
+  "0x812c8f": "void",
+  "0x812ca1": "instance:CCharaPosition",
+  "0x812cb3": "int",
+  "0x812cc5": "void",
+  "0x812cd7": "int",
+  "0x812ce9": "int",
+  "0x812cfb": "void",
+  "0x812d0d": "int",
+  "0x812d1f": "int",
+  "0x812d31": "int",
+  "0x812d43": "void",
+  "0x812d55": "int",
+  "0x812d67": "void",
+  "0x812d79": "int",
+  "0x812d8b": "int",
+  "0x812d9d": "int",
+  "0x812daf": "int",
+  "0x812dc1": "int",
+  "0x812dd3": "int",
+  "0x812de5": "int",
+  "0x812df7": "void",
+  "0x812e09": "int",
+  "0x812e1b": "int",
+  "0x812e2d": "int",
+  "0x812e3f": "int",
+  "0x812e51": "int",
+  "0x812e63": "int",
+  "0x812e75": "int",
+  "0x812e87": "int",
+  "0x812e99": "int",
+  "0x812eab": "int",
+  "0x812ebd": "int",
+  "0x812ecf": "int",
+  "0x812ee1": "int",
+  "0x812ef3": "int",
+  "0x812f05": "int",
+  "0x812f17": "int",
+  "0x812f29": "void",
+  "0x812f3b": "int",
+  "0x812f4d": "void",
+  "0x812f5f": "void",
+  "0x812f71": "void",
+  "0x812f83": "int",
+  "0x812f95": "int",
+  "0x812fa7": "int",
+  "0x812fb9": "int",
+  "0x812fcb": "int",
+  "0x812fdd": "void",
+  "0x812fef": "int",
+  "0x813001": "int",
+  "0x813013": "void",
+  "0x813025": "int",
+  "0x813037": "void",
+  "0x813049": "void",
+  "0x813977": "int",
+  "0x813989": "int",
+  "0x81399b": "int",
+  "0x8139ad": "int",
+  "0x8139bf": "int",
+  "0x8139d1": "int",
+  "0x8139e3": "int",
+  "0x8139f5": "int",
+  "0x813a07": "void",
+  "0x813a19": "int",
+  "0x813a2b": "void",
+  "0x813a3d": "void",
+  "0x813a4f": "int",
+  "0x813a61": "void",
+  "0x813a73": "int",
+  "0x813a85": "void",
+  "0x813a97": "void",
+  "0x813aa9": "int",
+  "0x813abb": "void",
+  "0x813acd": "int",
+  "0x813adf": "int",
+  "0x813af1": "int",
+  "0x813b03": "int",
+  "0x813b15": "int",
+  "0x813b27": "int",
+  "0x813b39": "int",
+  "0x813b4b": "int",
+  "0x813b5d": "int",
+  "0x813b6f": "int",
+  "0x813b81": "void",
+  "0x813b93": "int",
+  "0x813ba5": "int",
+  "0x813bb7": "int",
+  "0x813bc9": "int",
+  "0x813bdb": "void",
+  "0x813bed": "int",
+  "0x813bff": "int",
+  "0x813c11": "int",
+  "0x813c23": "int",
+  "0x813c35": "int",
+  "0x813c47": "int",
+  "0x813c59": "int",
+  "0x813c6b": "int",
+  "0x813c7d": "int",
+  "0x813c8f": "void",
+  "0x813ca1": "void",
+  "0x813cb3": "int",
+  "0x813cc5": "int",
+  "0x813cd7": "int",
+  "0x813ce9": "void",
+  "0x813cfb": "int",
+  "0x813d0d": "int",
+  "0x813d1f": "int",
+  "0x813d31": "int",
+  "0x813d43": "void",
+  "0x813d55": "void",
+  "0x813d67": "int",
+  "0x813d79": "int",
+  "0x813d8b": "int",
+  "0x813d9d": "int",
+  "0x813daf": "int",
+  "0x813dc1": "int",
+  "0x893e11": "int",
+  "0x893e23": "int",
+  "0x893e35": "int",
+  "0x893edc": "int",
+  "0x893eee": "int",
+  "0x895e87": "instance:CCharaData",
+  "0x895e99": "instance:CCharaData",
+  "0x895eab": "instance:CCharaData",
+  "0x895ebd": "instance:CCharaData",
+  "0x895ecf": "instance:CCharaData",
+  "0x895ee1": "instance:CCharaData",
+  "0x895ef3": "instance:CCharaData",
+  "0x895f05": "void",
+  "0x895f17": "instance:CCharaData",
+  "0x895f29": "instance:CCharaData",
+  "0x895f3b": "instance:CCharaData",
+  "0x895f4d": "instance:CCharaData",
+  "0x895f5f": "instance:CCharaData",
+  "0x895f71": "instance:CCharaData",
+  "0x895f83": "int",
+  "0x895f95": "int",
+  "0x895fa7": "int",
+  "0x895fdf": "int",
+  "0x896003": "int",
+  "0x896015": "int",
+  "0x89606a": "void",
+  "0x896284": "int",
+  "0x896296": "void",
+  "0x8962dc": "void",
+  "0x8962ee": "void",
+  "0x896300": "void",
+  "0x896312": "void",
+  "0x896324": "void",
+  "0x896336": "void",
+  "0x896348": "void",
+  "0x89635a": "void",
+  "0x89636c": "void",
+  "0x89637e": "void",
+  "0x896390": "void",
+  "0x8963a2": "void",
+  "0x8963b4": "void",
+  "0x8963c6": "int",
+  "0x8963d8": "void",
+  "0x8963ea": "void",
+  "0x8963fc": "void",
+  "0x89640e": "void",
+  "0x896420": "void",
+  "0x896432": "int",
+  "0x896444": "void",
+  "0x896456": "int",
+  "0x896468": "void",
+  "0x89647a": "void",
+  "0x89648c": "void",
+  "0x8964e4": "int",
+  "0x8964f6": "int",
+  "0x896508": "int",
+  "0x89651a": "void",
+  "0x89652c": "void",
+  "0x89653e": "instance:CAnime"
+ },
+ "field_bind_eas": [
+  "0x7cb96e",
+  "0x7cb97d",
+  "0x7cb98c",
+  "0x7cb99b",
+  "0x7cb9aa",
+  "0x7cb9b9",
+  "0x7cea0e",
+  "0x7cea1d",
+  "0x7cea2c",
+  "0x7cea3b",
+  "0x7cea4a",
+  "0x7cea5c",
+  "0x7cea6e",
+  "0x80fd4c",
+  "0x80fd5b",
+  "0x80fd6a",
+  "0x80fd79",
+  "0x80fd88",
+  "0x80fd97",
+  "0x80fda6",
+  "0x80fdb5",
+  "0x80fdc4",
+  "0x80fdd3",
+  "0x80fde2",
+  "0x80fdf1",
+  "0x80fe00",
+  "0x810724",
+  "0x810733",
+  "0x810742",
+  "0x810751",
+  "0x810794",
+  "0x8107a3",
+  "0x8107ec",
+  "0x8107fe",
+  "0x810810",
+  "0x810822",
+  "0x810871",
+  "0x810883",
+  "0x810895",
+  "0x8108a7",
+  "0x8108b9",
+  "0x8108cb",
+  "0x8108dd",
+  "0x8108ef",
+  "0x81093e",
+  "0x810950",
+  "0x810962",
+  "0x810974",
+  "0x810986",
+  "0x810998",
+  "0x8109aa",
+  "0x8109bc",
+  "0x8109ce",
+  "0x8109e0",
+  "0x8109f2",
+  "0x810a04",
+  "0x810a16",
+  "0x810a28",
+  "0x810a3a",
+  "0x810a4c",
+  "0x810a5e",
+  "0x810a70",
+  "0x810abf",
+  "0x810ad1",
+  "0x810ae3",
+  "0x810af5",
+  "0x810b07",
+  "0x810b56",
+  "0x810b68",
+  "0x810b7a",
+  "0x810b8c",
+  "0x810b9e",
+  "0x810bb0",
+  "0x810bc2",
+  "0x810c26",
+  "0x810c38",
+  "0x810c4a",
+  "0x810c5c",
+  "0x810c6e",
+  "0x810c80",
+  "0x810c92",
+  "0x810ca4",
+  "0x810cf3",
+  "0x810d05",
+  "0x810d17",
+  "0x810d29",
+  "0x810d3b",
+  "0x810d4d",
+  "0x810d9c",
+  "0x810dae",
+  "0x810dfd",
+  "0x810e0f",
+  "0x810e21",
+  "0x810e33",
+  "0x810e45",
+  "0x810e57",
+  "0x810e69",
+  "0x810e7b",
+  "0x810e8d",
+  "0x810e9f",
+  "0x81306f",
+  "0x81307e",
+  "0x81308d",
+  "0x81309c",
+  "0x8130ab",
+  "0x8130ba",
+  "0x895fcd",
+  "0x896024"
+ ]
+}

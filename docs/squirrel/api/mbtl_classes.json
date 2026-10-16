@@ -10,92 +10,92 @@
     {
      "name": "GetLevel",
      "ea": "0x5407e2",
-     "wrapper": null
+     "wrapper": "SqratWrap_int__noargs_2"
     },
     {
      "name": "GetSkill",
      "ea": "0x540801",
-     "wrapper": null
+     "wrapper": "SqratWrap_int__noargs_2"
     },
     {
      "name": "GetMove",
      "ea": "0x540820",
-     "wrapper": null
+     "wrapper": "SqratWrap_int__noargs_2"
     },
     {
      "name": "GetSkillTime",
      "ea": "0x54083f",
-     "wrapper": null
+     "wrapper": "SqratWrap_int__noargs_2"
     },
     {
      "name": "GetMoveTime",
      "ea": "0x54085e",
-     "wrapper": null
+     "wrapper": "SqratWrap_int__noargs_2"
     },
     {
      "name": "GetELenX",
      "ea": "0x54087d",
-     "wrapper": null
+     "wrapper": "SqratWrap_int__noargs_3"
     },
     {
      "name": "GetELenY",
      "ea": "0x54089c",
-     "wrapper": null
+     "wrapper": "SqratWrap_int__noargs_3"
     },
     {
      "name": "GetHPP",
      "ea": "0x5408bb",
-     "wrapper": null
+     "wrapper": "SqratWrap_int__noargs_2"
     },
     {
      "name": "GetEXS",
      "ea": "0x5408da",
-     "wrapper": null
+     "wrapper": "SqratWrap_int__noargs_2"
     },
     {
      "name": "IsPMoveable",
      "ea": "0x5408f9",
-     "wrapper": null
+     "wrapper": "SqratWrap_int__noargs_2"
     },
     {
      "name": "IsPBound",
      "ea": "0x540918",
-     "wrapper": null
+     "wrapper": "SqratWrap_int__noargs_2"
     },
     {
      "name": "CheckPosState",
      "ea": "0x540937",
-     "wrapper": null
+     "wrapper": "SqratWrap_int__int_2"
     },
     {
      "name": "CheckPosState_Enemy",
      "ea": "0x540956",
-     "wrapper": null
+     "wrapper": "SqratWrap_int__int_2"
     },
     {
      "name": "CheckPState",
      "ea": "0x540975",
-     "wrapper": null
+     "wrapper": "SqratWrap_int__int_2"
     },
     {
      "name": "CheckEState",
      "ea": "0x540994",
-     "wrapper": null
+     "wrapper": "SqratWrap_int__int_2"
     },
     {
      "name": "GetTobiTime",
      "ea": "0x5409b3",
-     "wrapper": null
+     "wrapper": "SqratWrap_int__noargs_2"
     },
     {
      "name": "GetComJumpLen",
      "ea": "0x5409d2",
-     "wrapper": null
+     "wrapper": "SqratWrap_int__noargs_3"
     },
     {
      "name": "GetPlayerMuteki",
      "ea": "0x5409f1",
-     "wrapper": null
+     "wrapper": "SqratWrap_int__int_2"
     }
    ],
    "site": "0x54076e",
@@ -470,22 +470,22 @@
     {
      "name": "push",
      "ea": "0x7f4dba",
-     "wrapper": null
+     "wrapper": "SqratWrap_int__noargs_3"
     },
     {
      "name": "pop",
      "ea": "0x7f4dd9",
-     "wrapper": null
+     "wrapper": "SqratWrap_int__noargs_3"
     },
     {
      "name": "isdone",
      "ea": "0x7f4df8",
-     "wrapper": null
+     "wrapper": "SqratWrap_int__noargs_3"
     },
     {
      "name": "isPlayer",
      "ea": "0x7f4e17",
-     "wrapper": null
+     "wrapper": "SqratWrap_int__noargs_3"
     }
    ],
    "site": "0x7f4c7c",
@@ -501,12 +501,12 @@
     {
      "name": "SetFirst",
      "ea": "0x7f4fcb",
-     "wrapper": null
+     "wrapper": "SqratWrap_void__noargs"
     },
     {
      "name": "Get",
      "ea": "0x7f4fea",
-     "wrapper": null
+     "wrapper": "SqratWrap_instance__int_2"
     }
    ],
    "site": "0x7f4f57",
@@ -568,12 +568,12 @@
     {
      "name": "Reset",
      "ea": "0x7f89e2",
-     "wrapper": null
+     "wrapper": "SqratWrap_void__noargs"
     },
     {
      "name": "SetPlayer",
      "ea": "0x7f8a01",
-     "wrapper": null
+     "wrapper": "SqratWrap_void__noargs"
     },
     {
      "name": "SetSrc",
@@ -588,17 +588,17 @@
     {
      "name": "SetFlags",
      "ea": "0x7f8a5e",
-     "wrapper": null
+     "wrapper": "SqratWrap_void__int_2"
     },
     {
      "name": "Check",
      "ea": "0x7f8a7d",
-     "wrapper": null
+     "wrapper": "SqratWrap_int__noargs_3"
     },
     {
      "name": "GetCharaData",
      "ea": "0x7f8a9c",
-     "wrapper": null
+     "wrapper": "SqratWrap_instance_CCharaData_4453B0"
     }
    ],
    "site": "0x7f896b",
@@ -614,42 +614,42 @@
     {
      "name": "End",
      "ea": "0x8005e7",
-     "wrapper": null
+     "wrapper": "SqratWrap_void__noargs"
     },
     {
      "name": "ReStart",
      "ea": "0x800606",
-     "wrapper": null
+     "wrapper": "SqratWrap_void__noargs"
     },
     {
      "name": "SetName",
      "ea": "0x800625",
-     "wrapper": null
+     "wrapper": "SqratWrap_void__object"
     },
     {
      "name": "GetTime",
      "ea": "0x800644",
-     "wrapper": null
+     "wrapper": "SqratWrap_float__noargs_2"
     },
     {
      "name": "PrintTime_Int",
      "ea": "0x800663",
-     "wrapper": null
+     "wrapper": "SqratWrap_void__noargs"
     },
     {
      "name": "GetNowTime",
      "ea": "0x800682",
-     "wrapper": null
+     "wrapper": "SqratWrap_float__noargs_2"
     },
     {
      "name": "PrintNowTime_Int",
      "ea": "0x8006a1",
-     "wrapper": null
+     "wrapper": "SqratWrap_void__noargs"
     },
     {
      "name": "EndPrint_Off",
      "ea": "0x8006c0",
-     "wrapper": null
+     "wrapper": "SqratWrap_void__noargs"
     }
    ],
    "site": "0x800573",
@@ -665,42 +665,42 @@
     {
      "name": "CheckCharaAlive",
      "ea": "0x8060f2",
-     "wrapper": null
+     "wrapper": "SqratWrap_int__int_3"
     },
     {
      "name": "CheckCharaAlive_str",
      "ea": "0x806111",
-     "wrapper": null
+     "wrapper": "SqratWrap_int__object"
     },
     {
      "name": "IsSelectBgm",
      "ea": "0x806130",
-     "wrapper": null
+     "wrapper": "SqratWrap_int__noargs_3"
     },
     {
      "name": "GetSelectBgm",
      "ea": "0x80614f",
-     "wrapper": null
+     "wrapper": "SqratWrap_int__noargs_3"
     },
     {
      "name": "IsBgmAuto",
      "ea": "0x80616e",
-     "wrapper": null
+     "wrapper": "SqratWrap_int__noargs_3"
     },
     {
      "name": "IsBgmMute",
      "ea": "0x80618d",
-     "wrapper": null
+     "wrapper": "SqratWrap_int__noargs_3"
     },
     {
      "name": "GetFixStageBGM",
      "ea": "0x8061ac",
-     "wrapper": null
+     "wrapper": "SqratWrap_int__noargs_3"
     },
     {
      "name": "SetBattleBgm",
      "ea": "0x8061cb",
-     "wrapper": null
+     "wrapper": "SqratWrap_void__int_2"
     }
    ],
    "site": "0x80607b",
@@ -1013,87 +1013,87 @@
     {
      "name": "GetCharaNo",
      "ea": "0x80d6aa",
-     "wrapper": null
+     "wrapper": "SqratWrap_int__noargs_2"
     },
     {
      "name": "GetCallCount",
      "ea": "0x80d6c9",
-     "wrapper": null
+     "wrapper": "SqratWrap_int__noargs_2"
     },
     {
      "name": "GetMvCount",
      "ea": "0x80d6e8",
-     "wrapper": null
+     "wrapper": "SqratWrap_int__noargs_3"
     },
     {
      "name": "GetMvCountFrame",
      "ea": "0x80d707",
-     "wrapper": null
+     "wrapper": "SqratWrap_int__noargs_3"
     },
     {
      "name": "IsUpdate",
      "ea": "0x80d726",
-     "wrapper": null
+     "wrapper": "SqratWrap_int__noargs_2"
     },
     {
      "name": "IsFrameUpdate",
      "ea": "0x80d745",
-     "wrapper": null
+     "wrapper": "SqratWrap_int__noargs_2"
     },
     {
      "name": "GetDataPattern",
      "ea": "0x80d764",
-     "wrapper": null
+     "wrapper": "SqratWrap_int__noargs_2"
     },
     {
      "name": "GetDataFrame",
      "ea": "0x80d783",
-     "wrapper": null
+     "wrapper": "SqratWrap_int__noargs_2"
     },
     {
      "name": "GetFrameID",
      "ea": "0x80d7a2",
-     "wrapper": null
+     "wrapper": "SqratWrap_int__noargs_2"
     },
     {
      "name": "IsLanding",
      "ea": "0x80d7c1",
-     "wrapper": null
+     "wrapper": "SqratWrap_int__noargs_2"
     },
     {
      "name": "GetDataDelayVal",
      "ea": "0x80d7e0",
-     "wrapper": null
+     "wrapper": "SqratWrap_int__noargs_2"
     },
     {
      "name": "GetDataDelay",
      "ea": "0x80d7ff",
-     "wrapper": null
+     "wrapper": "SqratWrap_int__noargs_2"
     },
     {
      "name": "GetFlags",
      "ea": "0x80d81e",
-     "wrapper": null
+     "wrapper": "SqratWrap_int__noargs_2"
     },
     {
      "name": "GetParam0",
      "ea": "0x80d83d",
-     "wrapper": null
+     "wrapper": "SqratWrap_int__noargs_2"
     },
     {
      "name": "GetParam1",
      "ea": "0x80d85c",
-     "wrapper": null
+     "wrapper": "SqratWrap_int__noargs_2"
     },
     {
      "name": "GetParam2",
      "ea": "0x80d87b",
-     "wrapper": null
+     "wrapper": "SqratWrap_int__noargs_2"
     },
     {
      "name": "GetParam3",
      "ea": "0x80d89a",
-     "wrapper": null
+     "wrapper": "SqratWrap_int__noargs_2"
     }
    ],
    "site": "0x80d528",
@@ -1159,7 +1159,7 @@
     {
      "name": "IsDown",
      "ea": "0x80d9ec",
-     "wrapper": null
+     "wrapper": "SqratWrap_int__noargs_3"
     }
    ],
    "site": "0x80d90f",
@@ -1457,27 +1457,27 @@
     {
      "name": "IsStoryBattle",
      "ea": "0x80e22d",
-     "wrapper": null
+     "wrapper": "SqratWrap_int__noargs_3"
     },
     {
      "name": "IsTrainingBattle",
      "ea": "0x80e24c",
-     "wrapper": null
+     "wrapper": "SqratWrap_int__noargs_3"
     },
     {
      "name": "GetCpuChara",
      "ea": "0x80e26b",
-     "wrapper": null
+     "wrapper": "SqratWrap_int__noargs_3"
     },
     {
      "name": "GetPcChara",
      "ea": "0x80e28a",
-     "wrapper": null
+     "wrapper": "SqratWrap_int__noargs_3"
     },
     {
      "name": "GetStartSide",
      "ea": "0x80e2a9",
-     "wrapper": null
+     "wrapper": "SqratWrap_int__noargs_3"
     }
    ],
    "site": "0x80e1b9",
@@ -1578,107 +1578,107 @@
     {
      "name": "IsDone",
      "ea": "0x80f206",
-     "wrapper": null
+     "wrapper": "SqratWrap_int__noargs_2"
     },
     {
      "name": "IsCapture",
      "ea": "0x80f225",
-     "wrapper": null
+     "wrapper": "SqratWrap_int__noargs_2"
     },
     {
      "name": "IsBound",
      "ea": "0x80f244",
-     "wrapper": null
+     "wrapper": "SqratWrap_int__noargs_2"
     },
     {
      "name": "GetNum",
      "ea": "0x80f263",
-     "wrapper": null
+     "wrapper": "SqratWrap_int__noargs_2"
     },
     {
      "name": "GetVecCount",
      "ea": "0x80f282",
-     "wrapper": null
+     "wrapper": "SqratWrap_int__noargs_2"
     },
     {
      "name": "GetVecMuki",
      "ea": "0x80f2a1",
-     "wrapper": null
+     "wrapper": "SqratWrap_int__noargs_2"
     },
     {
      "name": "GetAirUkemi",
      "ea": "0x80f2c0",
-     "wrapper": null
+     "wrapper": "SqratWrap_int__noargs_2"
     },
     {
      "name": "GetWallCount",
      "ea": "0x80f2df",
-     "wrapper": null
+     "wrapper": "SqratWrap_int__noargs_2"
     },
     {
      "name": "GetName",
      "ea": "0x80f2fe",
-     "wrapper": null
+     "wrapper": "SqratWrap_string__noargs_2"
     },
     {
      "name": "GetPower",
      "ea": "0x80f31d",
-     "wrapper": null
+     "wrapper": "SqratWrap_int__noargs_2"
     },
     {
      "name": "GetBoundTime",
      "ea": "0x80f33c",
-     "wrapper": null
+     "wrapper": "SqratWrap_int__noargs_2"
     },
     {
      "name": "GetBoundTimeAll",
      "ea": "0x80f35b",
-     "wrapper": null
+     "wrapper": "SqratWrap_int__noargs_2"
     },
     {
      "name": "GetBoundFlag",
      "ea": "0x80f37a",
-     "wrapper": null
+     "wrapper": "SqratWrap_int__noargs_2"
     },
     {
      "name": "GetCountMax",
      "ea": "0x80f399",
-     "wrapper": null
+     "wrapper": "SqratWrap_int__noargs_2"
     },
     {
      "name": "GetCountMaxTrue",
      "ea": "0x80f3b8",
-     "wrapper": null
+     "wrapper": "SqratWrap_int__noargs_2"
     },
     {
      "name": "GetCountNow",
      "ea": "0x80f3d7",
-     "wrapper": null
+     "wrapper": "SqratWrap_int__noargs_2"
     },
     {
      "name": "GetAirUkemiTimeNow",
      "ea": "0x80f3f6",
-     "wrapper": null
+     "wrapper": "SqratWrap_int__noargs_2"
     },
     {
      "name": "GetAirUkemiTimeMax",
      "ea": "0x80f415",
-     "wrapper": null
+     "wrapper": "SqratWrap_int__noargs_2"
     },
     {
      "name": "GetVecX",
      "ea": "0x80f434",
-     "wrapper": null
+     "wrapper": "SqratWrap_int__noargs_3"
     },
     {
      "name": "GetVecY",
      "ea": "0x80f453",
-     "wrapper": null
+     "wrapper": "SqratWrap_int__noargs_3"
     },
     {
      "name": "IsDown",
      "ea": "0x80f472",
-     "wrapper": null
+     "wrapper": "SqratWrap_int__noargs_3"
     }
    ],
    "site": "0x80effa",
@@ -1694,27 +1694,27 @@
     {
      "name": "IsDone",
      "ea": "0x80f575",
-     "wrapper": null
+     "wrapper": "SqratWrap_int__noargs_2"
     },
     {
      "name": "GetVectime",
      "ea": "0x80f594",
-     "wrapper": null
+     "wrapper": "SqratWrap_int__noargs_2"
     },
     {
      "name": "GetUkemifailedtime",
      "ea": "0x80f5b3",
-     "wrapper": null
+     "wrapper": "SqratWrap_int__noargs_2"
     },
     {
      "name": "GetUkeminum_g",
      "ea": "0x80f5d2",
-     "wrapper": null
+     "wrapper": "SqratWrap_int__noargs_2"
     },
     {
      "name": "GetPower",
      "ea": "0x80f5f1",
-     "wrapper": null
+     "wrapper": "SqratWrap_int__noargs_2"
     }
    ],
    "site": "0x80f4e8",
@@ -1730,37 +1730,37 @@
     {
      "name": "open",
      "ea": "0x812045",
-     "wrapper": null
+     "wrapper": "SqratWrap_void__object"
     },
     {
      "name": "opennew",
      "ea": "0x812064",
-     "wrapper": null
+     "wrapper": "SqratWrap_void__object"
     },
     {
      "name": "write",
      "ea": "0x812083",
-     "wrapper": null
+     "wrapper": "SqratWrap_void__object"
     },
     {
      "name": "write_r",
      "ea": "0x8120a2",
-     "wrapper": null
+     "wrapper": "SqratWrap_void__object"
     },
     {
      "name": "writeD",
      "ea": "0x8120c1",
-     "wrapper": null
+     "wrapper": "SqratWrap_void__object"
     },
     {
      "name": "writeD_r",
      "ea": "0x8120e0",
-     "wrapper": null
+     "wrapper": "SqratWrap_void__object"
     },
     {
      "name": "close",
      "ea": "0x8120ff",
-     "wrapper": null
+     "wrapper": "SqratWrap_void__noargs"
     }
    ],
    "site": "0x811fd1",
@@ -1776,27 +1776,27 @@
     {
      "name": "GetLastButton",
      "ea": "0x81277f",
-     "wrapper": null
+     "wrapper": "SqratWrap_int__int_3"
     },
     {
      "name": "GetCancel",
      "ea": "0x81279e",
-     "wrapper": null
+     "wrapper": "SqratWrap_int__int_3"
     },
     {
      "name": "GetCancelFlag",
      "ea": "0x8127bd",
-     "wrapper": null
+     "wrapper": "SqratWrap_int__int_3"
     },
     {
      "name": "GetFrame",
      "ea": "0x8127dc",
-     "wrapper": null
+     "wrapper": "SqratWrap_int__noargs_3"
     },
     {
      "name": "GetNum",
      "ea": "0x8127fb",
-     "wrapper": null
+     "wrapper": "SqratWrap_int__int_3"
     }
    ],
    "site": "0x81270b",
@@ -1812,12 +1812,12 @@
     {
      "name": "Load",
      "ea": "0x81451d",
-     "wrapper": null
+     "wrapper": "SqratWrap_int__object"
     },
     {
      "name": "SetPosition",
      "ea": "0x81453c",
-     "wrapper": null
+     "wrapper": "SqratWrap_void__int_int_2"
     }
    ],
    "site": "0x8144a9",
@@ -1833,97 +1833,97 @@
     {
      "name": "SetCDat",
      "ea": "0x814625",
-     "wrapper": null
+     "wrapper": "SqratWrap_void__instance_3"
     },
     {
      "name": "AddFrame",
      "ea": "0x814644",
-     "wrapper": null
+     "wrapper": "SqratWrap_void__object_float"
     },
     {
      "name": "AddFrameEx",
      "ea": "0x814663",
-     "wrapper": null
+     "wrapper": "SqratWrap_void__object_float_int"
     },
     {
      "name": "AddJump",
      "ea": "0x814682",
-     "wrapper": null
+     "wrapper": "SqratWrap_void__int_2"
     },
     {
      "name": "AddModeJump",
      "ea": "0x8146a1",
-     "wrapper": null
+     "wrapper": "SqratWrap_void__int_int_int_2"
     },
     {
      "name": "AddTagJump",
      "ea": "0x8146c0",
-     "wrapper": null
+     "wrapper": "SqratWrap_void__object"
     },
     {
      "name": "AddModeTagJump",
      "ea": "0x8146df",
-     "wrapper": null
+     "wrapper": "SqratWrap_void__object_int_int"
     },
     {
      "name": "AddTag",
      "ea": "0x8146fe",
-     "wrapper": null
+     "wrapper": "SqratWrap_void__object"
     },
     {
      "name": "AddSe",
      "ea": "0x81471d",
-     "wrapper": null
+     "wrapper": "SqratWrap_void__int_2"
     },
     {
      "name": "AddModeTag",
      "ea": "0x81473c",
-     "wrapper": null
+     "wrapper": "SqratWrap_void__int_2"
     },
     {
      "name": "SetPrio",
      "ea": "0x81475b",
-     "wrapper": null
+     "wrapper": "SqratWrap_void__int_2"
     },
     {
      "name": "SetMode",
      "ea": "0x81477a",
-     "wrapper": null
+     "wrapper": "SqratWrap_void__int_2"
     },
     {
      "name": "GetMode",
      "ea": "0x814799",
-     "wrapper": null
+     "wrapper": "SqratWrap_int__noargs_3"
     },
     {
      "name": "AddMode",
      "ea": "0x8147b8",
-     "wrapper": null
+     "wrapper": "SqratWrap_void__int_2"
     },
     {
      "name": "IsNull",
      "ea": "0x8147d7",
-     "wrapper": null
+     "wrapper": "SqratWrap_int__noargs_3"
     },
     {
      "name": "SetView",
      "ea": "0x8147f6",
-     "wrapper": null
+     "wrapper": "SqratWrap_void__int_2"
     },
     {
      "name": "GetView",
      "ea": "0x814815",
-     "wrapper": null
+     "wrapper": "SqratWrap_int__noargs_3"
     },
     {
      "name": "ClearFrame",
      "ea": "0x814834",
-     "wrapper": null
+     "wrapper": "SqratWrap_void__noargs"
     },
     {
      "name": "SetStartWait",
      "ea": "0x814853",
-     "wrapper": null
+     "wrapper": "SqratWrap_void__float"
     }
    ],
    "site": "0x8145b1",
@@ -1939,37 +1939,37 @@
     {
      "name": "Add",
      "ea": "0x81493c",
-     "wrapper": null
+     "wrapper": "SqratWrap_instance__instance_object"
     },
     {
      "name": "Render",
      "ea": "0x81495b",
-     "wrapper": null
+     "wrapper": "SqratWrap_int__noargs_3"
     },
     {
      "name": "Update",
      "ea": "0x81497a",
-     "wrapper": null
+     "wrapper": "SqratWrap_int__noargs_3"
     },
     {
      "name": "Reset",
      "ea": "0x814999",
-     "wrapper": null
+     "wrapper": "SqratWrap_int__noargs_3"
     },
     {
      "name": "Finalize",
      "ea": "0x8149b8",
-     "wrapper": null
+     "wrapper": "SqratWrap_void__noargs"
     },
     {
      "name": "SetMode",
      "ea": "0x8149d7",
-     "wrapper": null
+     "wrapper": "SqratWrap_void__int_2"
     },
     {
      "name": "GetCAnime",
      "ea": "0x8149f6",
-     "wrapper": null
+     "wrapper": "SqratWrap_instance__object"
     }
    ],
    "site": "0x8148c8",
@@ -1985,13 +1985,13 @@
   "SqratWrap_instance__noargs_6": "0x364b504",
   "SqratWrap_instance__int": "0x364b504",
   "SqratWrap_instance__int_2": "0x364b504",
-  "sub_443C50": "0x364b504",
+  "SqratWrap_instance_CCharaData_443C50": "0x364b504",
   "SqratWrap_instance__noargs_7": "0x364b518",
-  "sub_4453B0": "0x364b504",
+  "SqratWrap_instance_CCharaData_4453B0": "0x364b504",
   "SqratWrap_instance__string": "0x364b6a8",
   "SqratWrap_instance__string_2": "0x364b52c",
   "SqratWrap_instance__string_3": "0x364b510",
-  "sub_445AA0": "0x364b518",
+  "SqratWrap_instance_CCharaPosition_445AA0": "0x364b518",
   "SqratWrap_instance__noargs_13": "0x364b7c4",
   "SqratWrap_instance__noargs_12": "0x364b830",
   "SqratWrap_instance__noargs_11": "0x364b8a8",
@@ -2004,12 +2004,12 @@
   "SqratWrap_instance__int_3": "0x364b934",
   "SqratWrap_instance__instance_object": "0x364b980",
   "SqratWrap_instance__object": "0x364b980",
-  "sub_51F230": "0x364b898",
-  "sub_51F450": "0x364b7d0",
-  "sub_520D10": "0x364b890",
-  "sub_80F880": "0x364b890",
-  "sub_80FA40": "0x364b898",
-  "sub_80FC00": "0x364b7d0"
+  "SqratWrap_instance_MvHitEffectInfo_51F230": "0x364b898",
+  "SqratWrap_instance_MvHitImpactInfo_51F450": "0x364b7d0",
+  "SqratWrap_instance_MvInterruptInfo_520D10": "0x364b890",
+  "SqratWrap_instance_MvInterruptInfo_80F880": "0x364b890",
+  "SqratWrap_instance_MvHitEffectInfo_80FA40": "0x364b898",
+  "SqratWrap_instance_MvHitImpactInfo_80FC00": "0x364b7d0"
  },
  "unnamed_binders": []
 }

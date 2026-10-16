@@ -26,9 +26,10 @@
   "table": "CStatus",
   "regfunc": "0x7cb910",
   "ea": "0x7cb96e",
-  "offset": "24",
+  "offset": 24,
   "vartype": "Sqrat_Class_VarA_46D470",
-  "qualified_table": "tSceneWinDemo.CStatus"
+  "qualified_table": "tSceneWinDemo.CStatus",
+  "type": "string"
  },
  {
   "kind": "var",
@@ -36,9 +37,10 @@
   "table": "CStatus",
   "regfunc": "0x7cb910",
   "ea": "0x7cb97d",
-  "offset": "52",
+  "offset": 52,
   "vartype": "Sqrat_Class_VarA_46D4D0",
-  "qualified_table": "tSceneWinDemo.CStatus"
+  "qualified_table": "tSceneWinDemo.CStatus",
+  "type": "int"
  },
  {
   "kind": "var",
@@ -46,9 +48,10 @@
   "table": "CStatus",
   "regfunc": "0x7cb910",
   "ea": "0x7cb98c",
-  "offset": "12",
+  "offset": 12,
   "vartype": "Sqrat_Class_VarA_46D4D0",
-  "qualified_table": "tSceneWinDemo.CStatus"
+  "qualified_table": "tSceneWinDemo.CStatus",
+  "type": "int"
  },
  {
   "kind": "var",
@@ -56,9 +59,10 @@
   "table": "CStatus",
   "regfunc": "0x7cb910",
   "ea": "0x7cb99b",
-  "offset": "4",
+  "offset": 4,
   "vartype": "Sqrat_Class_VarA_46D4D0",
-  "qualified_table": "tSceneWinDemo.CStatus"
+  "qualified_table": "tSceneWinDemo.CStatus",
+  "type": "int"
  },
  {
   "kind": "var",
@@ -66,9 +70,10 @@
   "table": "CStatus",
   "regfunc": "0x7cb910",
   "ea": "0x7cb9aa",
-  "offset": "8",
+  "offset": 8,
   "vartype": "Sqrat_Class_VarA_46D4D0",
-  "qualified_table": "tSceneWinDemo.CStatus"
+  "qualified_table": "tSceneWinDemo.CStatus",
+  "type": "int"
  },
  {
   "kind": "var",
@@ -76,9 +81,10 @@
   "table": "CStatus",
   "regfunc": "0x7cb910",
   "ea": "0x7cb9b9",
-  "offset": "20",
+  "offset": 20,
   "vartype": "Sqrat_Class_VarA_46D4D0",
-  "qualified_table": "tSceneWinDemo.CStatus"
+  "qualified_table": "tSceneWinDemo.CStatus",
+  "type": "int"
  },
  {
   "kind": "table",
@@ -95,9 +101,10 @@
   "ea": "0x7cb9e8",
   "native": "sub_7CB710",
   "wrapper": "sub_7CB710",
-  "ret": "void",
+  "ret": "instance",
   "args": [],
-  "qualified_table": "tSceneWinDemo"
+  "qualified_table": "tSceneWinDemo",
+  "class": "tSceneWinDemo.CStatus"
  },
  {
   "kind": "table",
@@ -112,9 +119,10 @@
   "table": "CPlayerSt",
   "regfunc": "0x7ce9b0",
   "ea": "0x7cea0e",
-  "offset": "8",
+  "offset": 8,
   "vartype": "Sqrat_Class_VarB_46C5B0",
-  "qualified_table": "tSceneVS.CPlayerSt"
+  "qualified_table": "tSceneVS.CPlayerSt",
+  "type": "string"
  },
  {
   "kind": "var",
@@ -122,9 +130,10 @@
   "table": "CPlayerSt",
   "regfunc": "0x7ce9b0",
   "ea": "0x7cea1d",
-  "offset": "92",
+  "offset": 92,
   "vartype": "Sqrat_Class_VarB_46C5B0",
-  "qualified_table": "tSceneVS.CPlayerSt"
+  "qualified_table": "tSceneVS.CPlayerSt",
+  "type": "string"
  },
  {
   "kind": "var",
@@ -132,9 +141,10 @@
   "table": "CPlayerSt",
   "regfunc": "0x7ce9b0",
   "ea": "0x7cea2c",
-  "offset": "36",
+  "offset": 36,
   "vartype": "Sqrat_Class_VarB_46C5B0",
-  "qualified_table": "tSceneVS.CPlayerSt"
+  "qualified_table": "tSceneVS.CPlayerSt",
+  "type": "string"
  },
  {
   "kind": "var",
@@ -142,9 +152,10 @@
   "table": "CPlayerSt",
   "regfunc": "0x7ce9b0",
   "ea": "0x7cea3b",
-  "offset": "120",
+  "offset": 120,
   "vartype": "Sqrat_Class_VarB_46C5B0",
-  "qualified_table": "tSceneVS.CPlayerSt"
+  "qualified_table": "tSceneVS.CPlayerSt",
+  "type": "string"
  },
  {
   "kind": "var",
@@ -152,9 +163,10 @@
   "table": "CPlayerSt",
   "regfunc": "0x7ce9b0",
   "ea": "0x7cea4a",
-  "offset": "64",
+  "offset": 64,
   "vartype": "Sqrat_Class_VarB_46C5B0",
-  "qualified_table": "tSceneVS.CPlayerSt"
+  "qualified_table": "tSceneVS.CPlayerSt",
+  "type": "string"
  },
  {
   "kind": "var",
@@ -162,9 +174,10 @@
   "table": "CPlayerSt",
   "regfunc": "0x7ce9b0",
   "ea": "0x7cea5c",
-  "offset": "148",
+  "offset": 148,
   "vartype": "Sqrat_Class_VarB_46C5B0",
-  "qualified_table": "tSceneVS.CPlayerSt"
+  "qualified_table": "tSceneVS.CPlayerSt",
+  "type": "string"
  },
  {
   "kind": "var",
@@ -172,9 +185,10 @@
   "table": "CPlayerSt",
   "regfunc": "0x7ce9b0",
   "ea": "0x7cea6e",
-  "offset": "176",
+  "offset": 176,
   "vartype": "Sqrat_Class_VarA_46C610",
-  "qualified_table": "tSceneVS.CPlayerSt"
+  "qualified_table": "tSceneVS.CPlayerSt",
+  "type": "int"
  },
  {
   "kind": "table",
@@ -191,9 +205,10 @@
   "ea": "0x7cea9d",
   "native": "sub_7CE930",
   "wrapper": "sub_7CE930",
-  "ret": "int",
+  "ret": "instance",
   "args": [],
-  "qualified_table": "tSceneVS"
+  "qualified_table": "tSceneVS",
+  "class": "tSceneVS.CPlayerSt"
  },
  {
   "kind": "table",
@@ -344,7 +359,7 @@
   "ea": "0x80e61f",
   "native": "sub_80DC60",
   "wrapper": "sub_80DC60",
-  "ret": "int",
+  "ret": "void",
   "args": [
    "int"
   ],
@@ -358,7 +373,7 @@
   "ea": "0x80e631",
   "native": "sub_80DC50",
   "wrapper": "sub_80DC50",
-  "ret": "int",
+  "ret": "void",
   "args": [
    "int"
   ],
@@ -391,7 +406,7 @@
   "ea": "0x80e6c4",
   "native": "sub_80DC30",
   "wrapper": "sub_80DC30",
-  "ret": "int",
+  "ret": "void",
   "args": [
    "int"
   ],
@@ -405,7 +420,7 @@
   "ea": "0x80e6d6",
   "native": "sub_80DC20",
   "wrapper": "sub_80DC20",
-  "ret": "int",
+  "ret": "void",
   "args": [
    "int"
   ],
@@ -727,9 +742,10 @@
   "ea": "0x80e8f5",
   "native": "sub_455400",
   "wrapper": "sub_455400",
-  "ret": "int",
+  "ret": "instance",
   "args": [],
-  "qualified_table": "BCMDTbl"
+  "qualified_table": "BCMDTbl",
+  "class": "BCMDTbl.CmdInfo"
  },
  {
   "kind": "func",
@@ -739,11 +755,12 @@
   "ea": "0x80e907",
   "native": "sub_455410",
   "wrapper": "sub_455410",
-  "ret": "int",
+  "ret": "instance",
   "args": [
    "int"
   ],
-  "qualified_table": "BCMDTbl"
+  "qualified_table": "BCMDTbl",
+  "class": "BCMDTbl.CmdInfo"
  },
  {
   "kind": "func",
@@ -817,7 +834,8 @@
   "table": "CmdInfo",
   "regfunc": "0x80e480",
   "ea": "0x80e999",
-  "qualified_table": "BCMDTbl.CmdInfo"
+  "qualified_table": "BCMDTbl.CmdInfo",
+  "ret": "int"
  },
  {
   "kind": "func",
@@ -1029,7 +1047,8 @@
   "args": [
    "instance"
   ],
-  "qualified_table": "BtlMvStd"
+  "qualified_table": "BtlMvStd",
+  "class": "BtlMvStd.MvBoundStatus"
  },
  {
   "kind": "func",
@@ -1147,9 +1166,10 @@
   "table": "MvBoundStatus",
   "regfunc": "0x80fbf0",
   "ea": "0x80fd4c",
-  "offset": "0",
+  "offset": 0,
   "vartype": "Sqrat_Class_VarC_452F30",
-  "qualified_table": "BtlMvStd.MvBoundStatus"
+  "qualified_table": "BtlMvStd.MvBoundStatus",
+  "type": "short"
  },
  {
   "kind": "var",
@@ -1157,9 +1177,10 @@
   "table": "MvBoundStatus",
   "regfunc": "0x80fbf0",
   "ea": "0x80fd5b",
-  "offset": "2",
+  "offset": 2,
   "vartype": "Sqrat_Class_VarC_452F30",
-  "qualified_table": "BtlMvStd.MvBoundStatus"
+  "qualified_table": "BtlMvStd.MvBoundStatus",
+  "type": "short"
  },
  {
   "kind": "var",
@@ -1167,9 +1188,10 @@
   "table": "MvBoundStatus",
   "regfunc": "0x80fbf0",
   "ea": "0x80fd6a",
-  "offset": "4",
+  "offset": 4,
   "vartype": "Sqrat_Class_VarC_452F30",
-  "qualified_table": "BtlMvStd.MvBoundStatus"
+  "qualified_table": "BtlMvStd.MvBoundStatus",
+  "type": "short"
  },
  {
   "kind": "var",
@@ -1177,9 +1199,10 @@
   "table": "MvBoundStatus",
   "regfunc": "0x80fbf0",
   "ea": "0x80fd79",
-  "offset": "6",
+  "offset": 6,
   "vartype": "Sqrat_Class_VarC_452F30",
-  "qualified_table": "BtlMvStd.MvBoundStatus"
+  "qualified_table": "BtlMvStd.MvBoundStatus",
+  "type": "short"
  },
  {
   "kind": "var",
@@ -1187,9 +1210,10 @@
   "table": "MvBoundStatus",
   "regfunc": "0x80fbf0",
   "ea": "0x80fd88",
-  "offset": "10",
+  "offset": 10,
   "vartype": "Sqrat_Class_VarC_452F30",
-  "qualified_table": "BtlMvStd.MvBoundStatus"
+  "qualified_table": "BtlMvStd.MvBoundStatus",
+  "type": "short"
  },
  {
   "kind": "var",
@@ -1197,9 +1221,10 @@
   "table": "MvBoundStatus",
   "regfunc": "0x80fbf0",
   "ea": "0x80fd97",
-  "offset": "12",
+  "offset": 12,
   "vartype": "Sqrat_Class_VarC_452F30",
-  "qualified_table": "BtlMvStd.MvBoundStatus"
+  "qualified_table": "BtlMvStd.MvBoundStatus",
+  "type": "short"
  },
  {
   "kind": "var",
@@ -1207,9 +1232,10 @@
   "table": "MvBoundStatus",
   "regfunc": "0x80fbf0",
   "ea": "0x80fda6",
-  "offset": "18",
+  "offset": 18,
   "vartype": "Sqrat_Class_VarC_452F30",
-  "qualified_table": "BtlMvStd.MvBoundStatus"
+  "qualified_table": "BtlMvStd.MvBoundStatus",
+  "type": "short"
  },
  {
   "kind": "var",
@@ -1217,9 +1243,10 @@
   "table": "MvBoundStatus",
   "regfunc": "0x80fbf0",
   "ea": "0x80fdb5",
-  "offset": "20",
+  "offset": 20,
   "vartype": "Sqrat_Class_VarA_452F90",
-  "qualified_table": "BtlMvStd.MvBoundStatus"
+  "qualified_table": "BtlMvStd.MvBoundStatus",
+  "type": "string"
  },
  {
   "kind": "var",
@@ -1227,9 +1254,10 @@
   "table": "MvBoundStatus",
   "regfunc": "0x80fbf0",
   "ea": "0x80fdc4",
-  "offset": "24",
+  "offset": 24,
   "vartype": "Sqrat_Class_VarC_452F30",
-  "qualified_table": "BtlMvStd.MvBoundStatus"
+  "qualified_table": "BtlMvStd.MvBoundStatus",
+  "type": "short"
  },
  {
   "kind": "var",
@@ -1237,9 +1265,10 @@
   "table": "MvBoundStatus",
   "regfunc": "0x80fbf0",
   "ea": "0x80fdd3",
-  "offset": "16",
+  "offset": 16,
   "vartype": "Sqrat_Class_VarC_452F30",
-  "qualified_table": "BtlMvStd.MvBoundStatus"
+  "qualified_table": "BtlMvStd.MvBoundStatus",
+  "type": "short"
  },
  {
   "kind": "var",
@@ -1247,9 +1276,10 @@
   "table": "MvBoundStatus",
   "regfunc": "0x80fbf0",
   "ea": "0x80fde2",
-  "offset": "14",
+  "offset": 14,
   "vartype": "Sqrat_Class_VarC_452F30",
-  "qualified_table": "BtlMvStd.MvBoundStatus"
+  "qualified_table": "BtlMvStd.MvBoundStatus",
+  "type": "short"
  },
  {
   "kind": "var",
@@ -1257,9 +1287,10 @@
   "table": "MvBoundStatus",
   "regfunc": "0x80fbf0",
   "ea": "0x80fdf1",
-  "offset": "26",
+  "offset": 26,
   "vartype": "Sqrat_Class_VarC_452F30",
-  "qualified_table": "BtlMvStd.MvBoundStatus"
+  "qualified_table": "BtlMvStd.MvBoundStatus",
+  "type": "short"
  },
  {
   "kind": "var",
@@ -1267,9 +1298,10 @@
   "table": "MvBoundStatus",
   "regfunc": "0x80fbf0",
   "ea": "0x80fe00",
-  "offset": "28",
+  "offset": 28,
   "vartype": "Sqrat_Class_VarC_452F30",
-  "qualified_table": "BtlMvStd.MvBoundStatus"
+  "qualified_table": "BtlMvStd.MvBoundStatus",
+  "type": "short"
  },
  {
   "kind": "func",
@@ -1331,7 +1363,7 @@
   "ea": "0x80ff1e",
   "native": "sub_44BA90",
   "wrapper": "sub_44BA90",
-  "ret": "int",
+  "ret": "void",
   "args": [
    "int"
   ],
@@ -1459,7 +1491,7 @@
   "ea": "0x80ffd2",
   "native": "sub_44BE50",
   "wrapper": "sub_44BE50",
-  "ret": "instance",
+  "ret": "void",
   "args": [
    "int"
   ],
@@ -1473,7 +1505,7 @@
   "ea": "0x80ffe4",
   "native": "sub_44BEF0",
   "wrapper": "sub_44BEF0",
-  "ret": "int",
+  "ret": "void",
   "args": [],
   "qualified_table": "BMvTbl"
  },
@@ -1485,7 +1517,7 @@
   "ea": "0x80fff6",
   "native": "sub_44BF10",
   "wrapper": "sub_44BF10",
-  "ret": "instance",
+  "ret": "void",
   "args": [
    "int"
   ],
@@ -1499,7 +1531,7 @@
   "ea": "0x810008",
   "native": "sub_44BF50",
   "wrapper": "sub_44BF50",
-  "ret": "instance",
+  "ret": "void",
   "args": [
    "int"
   ],
@@ -1537,7 +1569,7 @@
   "ea": "0x81003e",
   "native": "sub_44C090",
   "wrapper": "sub_44C090",
-  "ret": "int",
+  "ret": "void",
   "args": [
    "int"
   ],
@@ -1563,7 +1595,7 @@
   "ea": "0x810062",
   "native": "sub_44C010",
   "wrapper": "sub_44C010",
-  "ret": "instance",
+  "ret": "void",
   "args": [
    "int",
    "int"
@@ -1644,7 +1676,7 @@
   "ea": "0x8100e0",
   "native": "sub_44C250",
   "wrapper": "sub_44C250",
-  "ret": "int",
+  "ret": "void",
   "args": [
    "int",
    "int"
@@ -1688,7 +1720,7 @@
   "ea": "0x810116",
   "native": "sub_44C330",
   "wrapper": "sub_44C330",
-  "ret": "instance",
+  "ret": "void",
   "args": [
    "int",
    "int"
@@ -1732,7 +1764,7 @@
   "ea": "0x81014c",
   "native": "sub_44C440",
   "wrapper": "sub_44C440",
-  "ret": "int",
+  "ret": "void",
   "args": [
    "int",
    "int"
@@ -1762,7 +1794,7 @@
   "ea": "0x810170",
   "native": "sub_44C4D0",
   "wrapper": "sub_44C4D0",
-  "ret": "instance",
+  "ret": "void",
   "args": [
    "int"
   ],
@@ -1776,7 +1808,7 @@
   "ea": "0x810182",
   "native": "sub_44C520",
   "wrapper": "sub_44C520",
-  "ret": "int",
+  "ret": "void",
   "args": [
    "int"
   ],
@@ -1805,7 +1837,7 @@
   "ea": "0x8101a6",
   "native": "sub_44C610",
   "wrapper": "sub_44C610",
-  "ret": "int",
+  "ret": "void",
   "args": [
    "int"
   ],
@@ -1944,7 +1976,7 @@
   "ea": "0x81025a",
   "native": "sub_44CBC0",
   "wrapper": "sub_44CBC0",
-  "ret": "instance",
+  "ret": "void",
   "args": [
    "int"
   ],
@@ -1958,7 +1990,7 @@
   "ea": "0x81026c",
   "native": "sub_44CC00",
   "wrapper": "sub_44CC00",
-  "ret": "instance",
+  "ret": "void",
   "args": [
    "int"
   ],
@@ -1972,7 +2004,7 @@
   "ea": "0x81027e",
   "native": "sub_44CCB0",
   "wrapper": "sub_44CCB0",
-  "ret": "int",
+  "ret": "void",
   "args": [
    "int"
   ],
@@ -2056,7 +2088,8 @@
   "args": [
    "instance"
   ],
-  "qualified_table": "BMvTbl"
+  "qualified_table": "BMvTbl",
+  "class": "BMvTbl.MvStatus"
  },
  {
   "kind": "func",
@@ -2080,7 +2113,7 @@
   "ea": "0x810320",
   "native": "sub_44B840",
   "wrapper": "sub_44B840",
-  "ret": "int",
+  "ret": "void",
   "args": [
    "instance"
   ],
@@ -2094,11 +2127,12 @@
   "ea": "0x810332",
   "native": "sub_44B6C0",
   "wrapper": "sub_44B6C0",
-  "ret": "int",
+  "ret": "instance",
   "args": [
    "int"
   ],
-  "qualified_table": "BMvTbl"
+  "qualified_table": "BMvTbl",
+  "class": "BMvTbl.MvHitStatus"
  },
  {
   "kind": "func",
@@ -2108,7 +2142,7 @@
   "ea": "0x810344",
   "native": "sub_44B950",
   "wrapper": "sub_44B950",
-  "ret": "int",
+  "ret": "void",
   "args": [],
   "qualified_table": "BMvTbl"
  },
@@ -2120,7 +2154,7 @@
   "ea": "0x810356",
   "native": "sub_44B980",
   "wrapper": "sub_44B980",
-  "ret": "int",
+  "ret": "void",
   "args": [],
   "qualified_table": "BMvTbl"
  },
@@ -2132,7 +2166,7 @@
   "ea": "0x810368",
   "native": "sub_44B900",
   "wrapper": "sub_44B900",
-  "ret": "int",
+  "ret": "void",
   "args": [
    "int",
    "int"
@@ -2165,7 +2199,8 @@
   "args": [
    "instance"
   ],
-  "qualified_table": "BMvTbl"
+  "qualified_table": "BMvTbl",
+  "class": "BMvTbl.CCharaVector"
  },
  {
   "kind": "func",
@@ -2193,7 +2228,7 @@
   "ea": "0x8103b0",
   "native": "sub_44A8D0",
   "wrapper": "sub_44A8D0",
-  "ret": "int",
+  "ret": "void",
   "args": [
    "int"
   ],
@@ -2212,7 +2247,8 @@
    "instance",
    "int"
   ],
-  "qualified_table": "BMvTbl"
+  "qualified_table": "BMvTbl",
+  "class": "BMvTbl.CCharaPosition"
  },
  {
   "kind": "func",
@@ -2252,7 +2288,8 @@
   "args": [
    "instance"
   ],
-  "qualified_table": "BMvTbl"
+  "qualified_table": "BMvTbl",
+  "class": "BMvTbl.CCharaPosition"
  },
  {
   "kind": "func",
@@ -2288,7 +2325,7 @@
   "ea": "0x81042e",
   "native": "sub_44B270",
   "wrapper": "sub_44B270",
-  "ret": "instance",
+  "ret": "void",
   "args": [
    "int"
   ],
@@ -2306,7 +2343,8 @@
   "args": [
    "instance"
   ],
-  "qualified_table": "BMvTbl"
+  "qualified_table": "BMvTbl",
+  "class": "BMvTbl.CCharaPosition"
  },
  {
   "kind": "func",
@@ -2332,7 +2370,8 @@
   "args": [
    "instance"
   ],
-  "qualified_table": "BMvTbl"
+  "qualified_table": "BMvTbl",
+  "class": "BMvTbl.MvRoundStatus"
  },
  {
   "kind": "func",
@@ -2342,11 +2381,12 @@
   "ea": "0x810476",
   "native": "sub_44D690",
   "wrapper": "sub_44D690",
-  "ret": "int",
+  "ret": "instance",
   "args": [
    "int"
   ],
-  "qualified_table": "BMvTbl"
+  "qualified_table": "BMvTbl",
+  "class": "BMvTbl.MvStageStatus"
  },
  {
   "kind": "func",
@@ -2356,7 +2396,7 @@
   "ea": "0x810488",
   "native": "sub_44D930",
   "wrapper": "sub_44D930",
-  "ret": "int",
+  "ret": "void",
   "args": [],
   "qualified_table": "BMvTbl"
  },
@@ -2368,7 +2408,7 @@
   "ea": "0x81049a",
   "native": "sub_44D980",
   "wrapper": "sub_44D980",
-  "ret": "int",
+  "ret": "void",
   "args": [],
   "qualified_table": "BMvTbl"
  },
@@ -2380,7 +2420,7 @@
   "ea": "0x8104ac",
   "native": "sub_44D9D0",
   "wrapper": "sub_44D9D0",
-  "ret": "instance",
+  "ret": "void",
   "args": [
    "int"
   ],
@@ -2506,11 +2546,12 @@
   "ea": "0x81054e",
   "native": "sub_44D8E0",
   "wrapper": "sub_44D8E0",
-  "ret": "int",
+  "ret": "instance",
   "args": [
    "int"
   ],
-  "qualified_table": "BMvTbl"
+  "qualified_table": "BMvTbl",
+  "class": "BMvTbl.MvRecoverStatus"
  },
  {
   "kind": "func",
@@ -2688,7 +2729,7 @@
   "ea": "0x810638",
   "native": "sub_44E9C0",
   "wrapper": "sub_44E9C0",
-  "ret": "int",
+  "ret": "void",
   "args": [],
   "qualified_table": "BMvTbl"
  },
@@ -2801,7 +2842,8 @@
   "table": "BMvTbl",
   "regfunc": "0x80fea0",
   "ea": "0x8106da",
-  "qualified_table": "BMvTbl"
+  "qualified_table": "BMvTbl",
+  "ret": "int"
  },
  {
   "kind": "func",
@@ -2809,7 +2851,8 @@
   "table": "BMvTbl",
   "regfunc": "0x80fea0",
   "ea": "0x8106ec",
-  "qualified_table": "BMvTbl"
+  "qualified_table": "BMvTbl",
+  "ret": "int"
  },
  {
   "kind": "func",
@@ -2819,14 +2862,14 @@
   "ea": "0x8106fe",
   "native": "sub_44EC90",
   "wrapper": "sub_44EC90",
-  "ret": "instance",
+  "ret": "void",
   "args": [
    "int"
   ],
   "qualified_table": "BMvTbl"
  },
  {
-  "kind": "method",
+  "kind": "var",
   "name": "x",
   "table": "CCharaVector",
   "regfunc": "0x80fea0",
@@ -2834,7 +2877,7 @@
   "qualified_table": "BMvTbl.CCharaVector"
  },
  {
-  "kind": "method",
+  "kind": "var",
   "name": "y",
   "table": "CCharaVector",
   "regfunc": "0x80fea0",
@@ -2842,7 +2885,7 @@
   "qualified_table": "BMvTbl.CCharaVector"
  },
  {
-  "kind": "method",
+  "kind": "var",
   "name": "addx",
   "table": "CCharaVector",
   "regfunc": "0x80fea0",
@@ -2850,7 +2893,7 @@
   "qualified_table": "BMvTbl.CCharaVector"
  },
  {
-  "kind": "method",
+  "kind": "var",
   "name": "addy",
   "table": "CCharaVector",
   "regfunc": "0x80fea0",
@@ -2870,9 +2913,10 @@
   "table": "CCharaPosition",
   "regfunc": "0x80fea0",
   "ea": "0x810794",
-  "offset": "0",
+  "offset": 0,
   "vartype": "Sqrat_Class_VarA_453360",
-  "qualified_table": "BMvTbl.CCharaPosition"
+  "qualified_table": "BMvTbl.CCharaPosition",
+  "type": "int"
  },
  {
   "kind": "var",
@@ -2880,9 +2924,10 @@
   "table": "CCharaPosition",
   "regfunc": "0x80fea0",
   "ea": "0x8107a3",
-  "offset": "4",
+  "offset": 4,
   "vartype": "Sqrat_Class_VarA_453360",
-  "qualified_table": "BMvTbl.CCharaPosition"
+  "qualified_table": "BMvTbl.CCharaPosition",
+  "type": "int"
  },
  {
   "kind": "table",
@@ -2892,7 +2937,7 @@
   "ea": "0x8107b4"
  },
  {
-  "kind": "method",
+  "kind": "var",
   "name": "sx",
   "table": "CCharaRect",
   "regfunc": "0x80fea0",
@@ -2900,7 +2945,7 @@
   "qualified_table": "BMvTbl.CCharaRect"
  },
  {
-  "kind": "method",
+  "kind": "var",
   "name": "sy",
   "table": "CCharaRect",
   "regfunc": "0x80fea0",
@@ -2908,7 +2953,7 @@
   "qualified_table": "BMvTbl.CCharaRect"
  },
  {
-  "kind": "method",
+  "kind": "var",
   "name": "ex",
   "table": "CCharaRect",
   "regfunc": "0x80fea0",
@@ -2916,7 +2961,7 @@
   "qualified_table": "BMvTbl.CCharaRect"
  },
  {
-  "kind": "method",
+  "kind": "var",
   "name": "ey",
   "table": "CCharaRect",
   "regfunc": "0x80fea0",
@@ -2931,7 +2976,7 @@
   "ea": "0x810836"
  },
  {
-  "kind": "method",
+  "kind": "var",
   "name": "x0",
   "table": "CCharaPoint4",
   "regfunc": "0x80fea0",
@@ -2939,7 +2984,7 @@
   "qualified_table": "BMvTbl.CCharaPoint4"
  },
  {
-  "kind": "method",
+  "kind": "var",
   "name": "y0",
   "table": "CCharaPoint4",
   "regfunc": "0x80fea0",
@@ -2947,7 +2992,7 @@
   "qualified_table": "BMvTbl.CCharaPoint4"
  },
  {
-  "kind": "method",
+  "kind": "var",
   "name": "x1",
   "table": "CCharaPoint4",
   "regfunc": "0x80fea0",
@@ -2955,7 +3000,7 @@
   "qualified_table": "BMvTbl.CCharaPoint4"
  },
  {
-  "kind": "method",
+  "kind": "var",
   "name": "y1",
   "table": "CCharaPoint4",
   "regfunc": "0x80fea0",
@@ -2963,7 +3008,7 @@
   "qualified_table": "BMvTbl.CCharaPoint4"
  },
  {
-  "kind": "method",
+  "kind": "var",
   "name": "x2",
   "table": "CCharaPoint4",
   "regfunc": "0x80fea0",
@@ -2971,7 +3016,7 @@
   "qualified_table": "BMvTbl.CCharaPoint4"
  },
  {
-  "kind": "method",
+  "kind": "var",
   "name": "y2",
   "table": "CCharaPoint4",
   "regfunc": "0x80fea0",
@@ -2979,7 +3024,7 @@
   "qualified_table": "BMvTbl.CCharaPoint4"
  },
  {
-  "kind": "method",
+  "kind": "var",
   "name": "x3",
   "table": "CCharaPoint4",
   "regfunc": "0x80fea0",
@@ -2987,7 +3032,7 @@
   "qualified_table": "BMvTbl.CCharaPoint4"
  },
  {
-  "kind": "method",
+  "kind": "var",
   "name": "y3",
   "table": "CCharaPoint4",
   "regfunc": "0x80fea0",
@@ -3002,7 +3047,7 @@
   "ea": "0x810903"
  },
  {
-  "kind": "method",
+  "kind": "var",
   "name": "CharaNo",
   "table": "MvStatus",
   "regfunc": "0x80fea0",
@@ -3010,7 +3055,7 @@
   "qualified_table": "BMvTbl.MvStatus"
  },
  {
-  "kind": "method",
+  "kind": "var",
   "name": "CallCount",
   "table": "MvStatus",
   "regfunc": "0x80fea0",
@@ -3018,7 +3063,7 @@
   "qualified_table": "BMvTbl.MvStatus"
  },
  {
-  "kind": "method",
+  "kind": "var",
   "name": "FrameCallCount",
   "table": "MvStatus",
   "regfunc": "0x80fea0",
@@ -3026,7 +3071,7 @@
   "qualified_table": "BMvTbl.MvStatus"
  },
  {
-  "kind": "method",
+  "kind": "var",
   "name": "isUpdate",
   "table": "MvStatus",
   "regfunc": "0x80fea0",
@@ -3039,9 +3084,10 @@
   "table": "MvStatus",
   "regfunc": "0x80fea0",
   "ea": "0x810986",
-  "offset": "8",
+  "offset": 8,
   "vartype": "Sqrat_Class_VarA_4534E0",
-  "qualified_table": "BMvTbl.MvStatus"
+  "qualified_table": "BMvTbl.MvStatus",
+  "type": "int"
  },
  {
   "kind": "var",
@@ -3049,12 +3095,13 @@
   "table": "MvStatus",
   "regfunc": "0x80fea0",
   "ea": "0x810998",
-  "offset": "12",
+  "offset": 12,
   "vartype": "Sqrat_Class_VarA_4534E0",
-  "qualified_table": "BMvTbl.MvStatus"
+  "qualified_table": "BMvTbl.MvStatus",
+  "type": "int"
  },
  {
-  "kind": "method",
+  "kind": "var",
   "name": "isFrameUpdate",
   "table": "MvStatus",
   "regfunc": "0x80fea0",
@@ -3062,7 +3109,7 @@
   "qualified_table": "BMvTbl.MvStatus"
  },
  {
-  "kind": "method",
+  "kind": "var",
   "name": "isLanding",
   "table": "MvStatus",
   "regfunc": "0x80fea0",
@@ -3070,7 +3117,7 @@
   "qualified_table": "BMvTbl.MvStatus"
  },
  {
-  "kind": "method",
+  "kind": "var",
   "name": "DataPattern",
   "table": "MvStatus",
   "regfunc": "0x80fea0",
@@ -3078,7 +3125,7 @@
   "qualified_table": "BMvTbl.MvStatus"
  },
  {
-  "kind": "method",
+  "kind": "var",
   "name": "DataFrame",
   "table": "MvStatus",
   "regfunc": "0x80fea0",
@@ -3086,7 +3133,7 @@
   "qualified_table": "BMvTbl.MvStatus"
  },
  {
-  "kind": "method",
+  "kind": "var",
   "name": "DataDelayVal",
   "table": "MvStatus",
   "regfunc": "0x80fea0",
@@ -3094,7 +3141,7 @@
   "qualified_table": "BMvTbl.MvStatus"
  },
  {
-  "kind": "method",
+  "kind": "var",
   "name": "DataDelay",
   "table": "MvStatus",
   "regfunc": "0x80fea0",
@@ -3102,7 +3149,7 @@
   "qualified_table": "BMvTbl.MvStatus"
  },
  {
-  "kind": "method",
+  "kind": "var",
   "name": "flags",
   "table": "MvStatus",
   "regfunc": "0x80fea0",
@@ -3110,7 +3157,7 @@
   "qualified_table": "BMvTbl.MvStatus"
  },
  {
-  "kind": "method",
+  "kind": "var",
   "name": "FrameID",
   "table": "MvStatus",
   "regfunc": "0x80fea0",
@@ -3118,7 +3165,7 @@
   "qualified_table": "BMvTbl.MvStatus"
  },
  {
-  "kind": "method",
+  "kind": "var",
   "name": "Param0",
   "table": "MvStatus",
   "regfunc": "0x80fea0",
@@ -3126,7 +3173,7 @@
   "qualified_table": "BMvTbl.MvStatus"
  },
  {
-  "kind": "method",
+  "kind": "var",
   "name": "Param1",
   "table": "MvStatus",
   "regfunc": "0x80fea0",
@@ -3134,7 +3181,7 @@
   "qualified_table": "BMvTbl.MvStatus"
  },
  {
-  "kind": "method",
+  "kind": "var",
   "name": "Param2",
   "table": "MvStatus",
   "regfunc": "0x80fea0",
@@ -3142,7 +3189,7 @@
   "qualified_table": "BMvTbl.MvStatus"
  },
  {
-  "kind": "method",
+  "kind": "var",
   "name": "Param3",
   "table": "MvStatus",
   "regfunc": "0x80fea0",
@@ -3157,7 +3204,7 @@
   "ea": "0x810a84"
  },
  {
-  "kind": "method",
+  "kind": "var",
   "name": "FrameID",
   "table": "MvFrameStatus",
   "regfunc": "0x80fea0",
@@ -3165,7 +3212,7 @@
   "qualified_table": "BMvTbl.MvFrameStatus"
  },
  {
-  "kind": "method",
+  "kind": "var",
   "name": "Param0",
   "table": "MvFrameStatus",
   "regfunc": "0x80fea0",
@@ -3173,7 +3220,7 @@
   "qualified_table": "BMvTbl.MvFrameStatus"
  },
  {
-  "kind": "method",
+  "kind": "var",
   "name": "Param1",
   "table": "MvFrameStatus",
   "regfunc": "0x80fea0",
@@ -3181,7 +3228,7 @@
   "qualified_table": "BMvTbl.MvFrameStatus"
  },
  {
-  "kind": "method",
+  "kind": "var",
   "name": "Param2",
   "table": "MvFrameStatus",
   "regfunc": "0x80fea0",
@@ -3189,7 +3236,7 @@
   "qualified_table": "BMvTbl.MvFrameStatus"
  },
  {
-  "kind": "method",
+  "kind": "var",
   "name": "Param3",
   "table": "MvFrameStatus",
   "regfunc": "0x80fea0",
@@ -3204,7 +3251,7 @@
   "ea": "0x810b1b"
  },
  {
-  "kind": "method",
+  "kind": "var",
   "name": "Type",
   "table": "MvHitStatus",
   "regfunc": "0x80fea0",
@@ -3212,7 +3259,7 @@
   "qualified_table": "BMvTbl.MvHitStatus"
  },
  {
-  "kind": "method",
+  "kind": "var",
   "name": "PosState",
   "table": "MvHitStatus",
   "regfunc": "0x80fea0",
@@ -3220,7 +3267,7 @@
   "qualified_table": "BMvTbl.MvHitStatus"
  },
  {
-  "kind": "method",
+  "kind": "var",
   "name": "isDown",
   "table": "MvHitStatus",
   "regfunc": "0x80fea0",
@@ -3228,7 +3275,7 @@
   "qualified_table": "BMvTbl.MvHitStatus"
  },
  {
-  "kind": "method",
+  "kind": "var",
   "name": "isFirstUpdate",
   "table": "MvHitStatus",
   "regfunc": "0x80fea0",
@@ -3236,7 +3283,7 @@
   "qualified_table": "BMvTbl.MvHitStatus"
  },
  {
-  "kind": "method",
+  "kind": "var",
   "name": "isCatchFlag",
   "table": "MvHitStatus",
   "regfunc": "0x80fea0",
@@ -3244,7 +3291,7 @@
   "qualified_table": "BMvTbl.MvHitStatus"
  },
  {
-  "kind": "method",
+  "kind": "var",
   "name": "isMoveable",
   "table": "MvHitStatus",
   "regfunc": "0x80fea0",
@@ -3252,7 +3299,7 @@
   "qualified_table": "BMvTbl.MvHitStatus"
  },
  {
-  "kind": "method",
+  "kind": "var",
   "name": "Count",
   "table": "MvHitStatus",
   "regfunc": "0x80fea0",
@@ -3279,7 +3326,7 @@
   "ea": "0x810beb"
  },
  {
-  "kind": "method",
+  "kind": "var",
   "name": "type",
   "table": "MvHitImpactInfo",
   "regfunc": "0x80fea0",
@@ -3287,7 +3334,7 @@
   "qualified_table": "BMvTbl.MvHitImpactInfo"
  },
  {
-  "kind": "method",
+  "kind": "var",
   "name": "d_state",
   "table": "MvHitImpactInfo",
   "regfunc": "0x80fea0",
@@ -3295,7 +3342,7 @@
   "qualified_table": "BMvTbl.MvHitImpactInfo"
  },
  {
-  "kind": "method",
+  "kind": "var",
   "name": "atk_guard",
   "table": "MvHitImpactInfo",
   "regfunc": "0x80fea0",
@@ -3303,7 +3350,7 @@
   "qualified_table": "BMvTbl.MvHitImpactInfo"
  },
  {
-  "kind": "method",
+  "kind": "var",
   "name": "atk_throw",
   "table": "MvHitImpactInfo",
   "regfunc": "0x80fea0",
@@ -3311,7 +3358,7 @@
   "qualified_table": "BMvTbl.MvHitImpactInfo"
  },
  {
-  "kind": "method",
+  "kind": "var",
   "name": "def_guard",
   "table": "MvHitImpactInfo",
   "regfunc": "0x80fea0",
@@ -3319,7 +3366,7 @@
   "qualified_table": "BMvTbl.MvHitImpactInfo"
  },
  {
-  "kind": "method",
+  "kind": "var",
   "name": "grd_break",
   "table": "MvHitImpactInfo",
   "regfunc": "0x80fea0",
@@ -3327,7 +3374,7 @@
   "qualified_table": "BMvTbl.MvHitImpactInfo"
  },
  {
-  "kind": "method",
+  "kind": "var",
   "name": "counterhit",
   "table": "MvHitImpactInfo",
   "regfunc": "0x80fea0",
@@ -3340,9 +3387,10 @@
   "table": "MvHitImpactInfo",
   "regfunc": "0x80fea0",
   "ea": "0x810ca4",
-  "offset": "16",
+  "offset": 16,
   "vartype": "Sqrat_Class_VarA_4536A0",
-  "qualified_table": "BMvTbl.MvHitImpactInfo"
+  "qualified_table": "BMvTbl.MvHitImpactInfo",
+  "type": "int"
  },
  {
   "kind": "table",
@@ -3352,7 +3400,7 @@
   "ea": "0x810cb8"
  },
  {
-  "kind": "method",
+  "kind": "var",
   "name": "type",
   "table": "MvInterruptInfo",
   "regfunc": "0x80fea0",
@@ -3360,7 +3408,7 @@
   "qualified_table": "BMvTbl.MvInterruptInfo"
  },
  {
-  "kind": "method",
+  "kind": "var",
   "name": "Param0",
   "table": "MvInterruptInfo",
   "regfunc": "0x80fea0",
@@ -3368,7 +3416,7 @@
   "qualified_table": "BMvTbl.MvInterruptInfo"
  },
  {
-  "kind": "method",
+  "kind": "var",
   "name": "Param1",
   "table": "MvInterruptInfo",
   "regfunc": "0x80fea0",
@@ -3376,7 +3424,7 @@
   "qualified_table": "BMvTbl.MvInterruptInfo"
  },
  {
-  "kind": "method",
+  "kind": "var",
   "name": "Param2",
   "table": "MvInterruptInfo",
   "regfunc": "0x80fea0",
@@ -3384,7 +3432,7 @@
   "qualified_table": "BMvTbl.MvInterruptInfo"
  },
  {
-  "kind": "method",
+  "kind": "var",
   "name": "Param3",
   "table": "MvInterruptInfo",
   "regfunc": "0x80fea0",
@@ -3392,7 +3440,7 @@
   "qualified_table": "BMvTbl.MvInterruptInfo"
  },
  {
-  "kind": "method",
+  "kind": "var",
   "name": "Param4",
   "table": "MvInterruptInfo",
   "regfunc": "0x80fea0",
@@ -3412,9 +3460,10 @@
   "table": "MvRecoverStatus",
   "regfunc": "0x80fea0",
   "ea": "0x810d9c",
-  "offset": "0",
+  "offset": 0,
   "vartype": "Sqrat_Class_VarA_453760",
-  "qualified_table": "BMvTbl.MvRecoverStatus"
+  "qualified_table": "BMvTbl.MvRecoverStatus",
+  "type": "int"
  },
  {
   "kind": "var",
@@ -3422,9 +3471,10 @@
   "table": "MvRecoverStatus",
   "regfunc": "0x80fea0",
   "ea": "0x810dae",
-  "offset": "4",
+  "offset": 4,
   "vartype": "Sqrat_Class_VarA_453760",
-  "qualified_table": "BMvTbl.MvRecoverStatus"
+  "qualified_table": "BMvTbl.MvRecoverStatus",
+  "type": "int"
  },
  {
   "kind": "table",
@@ -3434,7 +3484,7 @@
   "ea": "0x810dc2"
  },
  {
-  "kind": "method",
+  "kind": "var",
   "name": "Time",
   "table": "MvRoundStatus",
   "regfunc": "0x80fea0",
@@ -3442,7 +3492,7 @@
   "qualified_table": "BMvTbl.MvRoundStatus"
  },
  {
-  "kind": "method",
+  "kind": "var",
   "name": "TimeUpdate",
   "table": "MvRoundStatus",
   "regfunc": "0x80fea0",
@@ -3450,7 +3500,7 @@
   "qualified_table": "BMvTbl.MvRoundStatus"
  },
  {
-  "kind": "method",
+  "kind": "var",
   "name": "Round",
   "table": "MvRoundStatus",
   "regfunc": "0x80fea0",
@@ -3458,7 +3508,7 @@
   "qualified_table": "BMvTbl.MvRoundStatus"
  },
  {
-  "kind": "method",
+  "kind": "var",
   "name": "WinType",
   "table": "MvRoundStatus",
   "regfunc": "0x80fea0",
@@ -3466,7 +3516,7 @@
   "qualified_table": "BMvTbl.MvRoundStatus"
  },
  {
-  "kind": "method",
+  "kind": "var",
   "name": "isKo",
   "table": "MvRoundStatus",
   "regfunc": "0x80fea0",
@@ -3474,7 +3524,7 @@
   "qualified_table": "BMvTbl.MvRoundStatus"
  },
  {
-  "kind": "method",
+  "kind": "var",
   "name": "isMyKo",
   "table": "MvRoundStatus",
   "regfunc": "0x80fea0",
@@ -3482,7 +3532,7 @@
   "qualified_table": "BMvTbl.MvRoundStatus"
  },
  {
-  "kind": "method",
+  "kind": "var",
   "name": "isWinRound",
   "table": "MvRoundStatus",
   "regfunc": "0x80fea0",
@@ -3490,7 +3540,7 @@
   "qualified_table": "BMvTbl.MvRoundStatus"
  },
  {
-  "kind": "method",
+  "kind": "var",
   "name": "isLoseRound",
   "table": "MvRoundStatus",
   "regfunc": "0x80fea0",
@@ -3498,7 +3548,7 @@
   "qualified_table": "BMvTbl.MvRoundStatus"
  },
  {
-  "kind": "method",
+  "kind": "var",
   "name": "isFinalRound",
   "table": "MvRoundStatus",
   "regfunc": "0x80fea0",
@@ -3506,7 +3556,7 @@
   "qualified_table": "BMvTbl.MvRoundStatus"
  },
  {
-  "kind": "method",
+  "kind": "var",
   "name": "CharaMoveMode",
   "table": "MvRoundStatus",
   "regfunc": "0x80fea0",
@@ -4923,7 +4973,7 @@
   "ea": "0x811a27",
   "native": "sub_4490D0",
   "wrapper": "sub_4490D0",
-  "ret": "instance",
+  "ret": "void",
   "args": [
    "int"
   ],
@@ -4935,7 +4985,8 @@
   "table": "BSound",
   "regfunc": "0x8119d0",
   "ea": "0x811a39",
-  "qualified_table": "BSound"
+  "qualified_table": "BSound",
+  "ret": "void"
  },
  {
   "kind": "func",
@@ -4957,7 +5008,7 @@
   "ea": "0x811a5d",
   "native": "sub_449350",
   "wrapper": "sub_449350",
-  "ret": "int",
+  "ret": "void",
   "args": [
    "int"
   ],
@@ -5012,7 +5063,7 @@
   "ea": "0x811cf0",
   "native": "sub_448D30",
   "wrapper": "sub_448D30",
-  "ret": "int",
+  "ret": "void",
   "args": [],
   "qualified_table": "BMvDeb.ProcTimer"
  },
@@ -5024,7 +5075,7 @@
   "ea": "0x811d02",
   "native": "sub_448390",
   "wrapper": "sub_448390",
-  "ret": "int",
+  "ret": "void",
   "args": [
    "int"
   ],
@@ -5062,7 +5113,7 @@
   "ea": "0x811d38",
   "native": "sub_448D50",
   "wrapper": "sub_448D50",
-  "ret": "int",
+  "ret": "float",
   "args": [],
   "qualified_table": "BMvDeb.ProcTimer"
  },
@@ -5086,7 +5137,7 @@
   "ea": "0x811d5c",
   "native": "sub_4485A0",
   "wrapper": "sub_4485A0",
-  "ret": "instance",
+  "ret": "void",
   "args": [],
   "qualified_table": "BMvDeb.ProcTimer"
  },
@@ -5112,7 +5163,7 @@
   "ea": "0x81245c",
   "native": "sub_811E60",
   "wrapper": "sub_811E60",
-  "ret": "instance",
+  "ret": "void",
   "args": [],
   "qualified_table": "CCheckRect"
  },
@@ -5124,7 +5175,7 @@
   "ea": "0x81246e",
   "native": "sub_812270",
   "wrapper": "sub_812270",
-  "ret": "instance",
+  "ret": "void",
   "args": [],
   "qualified_table": "CCheckRect"
  },
@@ -5136,7 +5187,7 @@
   "ea": "0x812480",
   "native": "sub_811FB0",
   "wrapper": "sub_811FB0",
-  "ret": "instance",
+  "ret": "void",
   "args": [
    "int"
   ],
@@ -5150,7 +5201,7 @@
   "ea": "0x812492",
   "native": "sub_811F10",
   "wrapper": "sub_811F10",
-  "ret": "instance",
+  "ret": "void",
   "args": [
    "int"
   ],
@@ -5164,7 +5215,7 @@
   "ea": "0x8124a4",
   "native": "sub_41CAB0",
   "wrapper": "sub_41CAB0",
-  "ret": "instance",
+  "ret": "void",
   "args": [
    "int"
   ],
@@ -5194,7 +5245,8 @@
   "args": [
    "instance"
   ],
-  "qualified_table": "CCheckRect"
+  "qualified_table": "CCheckRect",
+  "class": "BMvCore.CCharaData"
  },
  {
   "kind": "table",
@@ -5223,7 +5275,7 @@
   "ea": "0x812869",
   "native": "sub_442FF0",
   "wrapper": "sub_442FF0",
-  "ret": "?",
+  "ret": "float",
   "args": [],
   "qualified_table": "BMvEff"
  },
@@ -5268,7 +5320,8 @@
    "instance",
    "int"
   ],
-  "qualified_table": "BMvEff"
+  "qualified_table": "BMvEff",
+  "class": "BMvTbl.CCharaPosition"
  },
  {
   "kind": "func",
@@ -5278,9 +5331,10 @@
   "ea": "0x8128b1",
   "native": "sub_443060",
   "wrapper": "sub_443060",
-  "ret": "?",
+  "ret": "instance",
   "args": [],
-  "qualified_table": "BMvEff"
+  "qualified_table": "BMvEff",
+  "class": "BMvTbl.CCharaPosition"
  },
  {
   "kind": "func",
@@ -5421,7 +5475,8 @@
    "instance",
    "int"
   ],
-  "qualified_table": "BMvEff"
+  "qualified_table": "BMvEff",
+  "class": "BMvCore.CCharaData"
  },
  {
   "kind": "func",
@@ -5543,7 +5598,7 @@
   "ea": "0x812a07",
   "native": "sub_442090",
   "wrapper": "sub_442090",
-  "ret": "instance",
+  "ret": "void",
   "args": [
    "int"
   ],
@@ -5557,7 +5612,7 @@
   "ea": "0x812a19",
   "native": "sub_4420B0",
   "wrapper": "sub_4420B0",
-  "ret": "instance",
+  "ret": "void",
   "args": [
    "int"
   ],
@@ -5571,7 +5626,7 @@
   "ea": "0x812a2b",
   "native": "sub_4420D0",
   "wrapper": "sub_4420D0",
-  "ret": "int",
+  "ret": "void",
   "args": [
    "int",
    "int"
@@ -5586,7 +5641,7 @@
   "ea": "0x812a3d",
   "native": "sub_4420F0",
   "wrapper": "sub_4420F0",
-  "ret": "int",
+  "ret": "void",
   "args": [],
   "qualified_table": "BMvEff"
  },
@@ -5598,7 +5653,7 @@
   "ea": "0x812a4f",
   "native": "sub_442100",
   "wrapper": "sub_442100",
-  "ret": "int",
+  "ret": "void",
   "args": [],
   "qualified_table": "BMvEff"
  },
@@ -5610,7 +5665,7 @@
   "ea": "0x812a61",
   "native": "sub_442110",
   "wrapper": "sub_442110",
-  "ret": "int",
+  "ret": "void",
   "args": [],
   "qualified_table": "BMvEff"
  },
@@ -5622,7 +5677,7 @@
   "ea": "0x812a73",
   "native": "sub_442160",
   "wrapper": "sub_442160",
-  "ret": "instance",
+  "ret": "void",
   "args": [
    "int"
   ],
@@ -5636,7 +5691,7 @@
   "ea": "0x812a85",
   "native": "sub_442220",
   "wrapper": "sub_442220",
-  "ret": "int",
+  "ret": "void",
   "args": [],
   "qualified_table": "BMvEff"
  },
@@ -5662,7 +5717,7 @@
   "ea": "0x812aa9",
   "native": "sub_442390",
   "wrapper": "sub_442390",
-  "ret": "int",
+  "ret": "void",
   "args": [],
   "qualified_table": "BMvEff"
  },
@@ -5710,7 +5765,7 @@
   "ea": "0x812af1",
   "native": "sub_4424A0",
   "wrapper": "sub_4424A0",
-  "ret": "int",
+  "ret": "void",
   "args": [
    "int"
   ],
@@ -5806,7 +5861,7 @@
   "ea": "0x812b6f",
   "native": "sub_441AE0",
   "wrapper": "sub_441AE0",
-  "ret": "instance",
+  "ret": "void",
   "args": [
    "int"
   ],
@@ -5820,7 +5875,7 @@
   "ea": "0x812b81",
   "native": "sub_441BB0",
   "wrapper": "sub_441BB0",
-  "ret": "instance",
+  "ret": "void",
   "args": [
    "int",
    "int"
@@ -5847,7 +5902,7 @@
   "ea": "0x812ba5",
   "native": "sub_441C00",
   "wrapper": "sub_441C00",
-  "ret": "instance",
+  "ret": "void",
   "args": [
    "int",
    "int"
@@ -5867,7 +5922,8 @@
    "instance",
    "int"
   ],
-  "qualified_table": "BMvEff"
+  "qualified_table": "BMvEff",
+  "class": "BMvEff.CPointStatus"
  },
  {
   "kind": "func",
@@ -5882,7 +5938,8 @@
    "instance",
    "int"
   ],
-  "qualified_table": "BMvEff"
+  "qualified_table": "BMvEff",
+  "class": "BMvTbl.CCharaVector"
  },
  {
   "kind": "func",
@@ -5897,7 +5954,8 @@
    "instance",
    "int"
   ],
-  "qualified_table": "BMvEff"
+  "qualified_table": "BMvEff",
+  "class": "BMvEff.CPointStatus"
  },
  {
   "kind": "func",
@@ -5926,7 +5984,8 @@
    "instance",
    "int"
   ],
-  "qualified_table": "BMvEff"
+  "qualified_table": "BMvEff",
+  "class": "BMvCore.CCharaData"
  },
  {
   "kind": "func",
@@ -5941,7 +6000,8 @@
    "instance",
    "int"
   ],
-  "qualified_table": "BMvEff"
+  "qualified_table": "BMvEff",
+  "class": "BMvTbl.CCharaRect"
  },
  {
   "kind": "func",
@@ -5968,7 +6028,8 @@
    "instance",
    "int"
   ],
-  "qualified_table": "BMvEff"
+  "qualified_table": "BMvEff",
+  "class": "BMvTbl.CCharaPosition"
  },
  {
   "kind": "func",
@@ -5983,7 +6044,8 @@
    "instance",
    "int"
   ],
-  "qualified_table": "BMvEff"
+  "qualified_table": "BMvEff",
+  "class": "BMvTbl.CCharaRect"
  },
  {
   "kind": "func",
@@ -6035,7 +6097,7 @@
   "ea": "0x812c8f",
   "native": "sub_443820",
   "wrapper": "sub_443820",
-  "ret": "int",
+  "ret": "void",
   "args": [],
   "qualified_table": "BMvEff"
  },
@@ -6051,7 +6113,8 @@
   "args": [
    "instance"
   ],
-  "qualified_table": "BMvEff"
+  "qualified_table": "BMvEff",
+  "class": "BMvTbl.CCharaPosition"
  },
  {
   "kind": "func",
@@ -6073,7 +6136,7 @@
   "ea": "0x812cc5",
   "native": "sub_4438C0",
   "wrapper": "sub_4438C0",
-  "ret": "int",
+  "ret": "void",
   "args": [],
   "qualified_table": "BMvEff"
  },
@@ -6111,7 +6174,7 @@
   "ea": "0x812cfb",
   "native": "sub_443940",
   "wrapper": "sub_443940",
-  "ret": "int",
+  "ret": "void",
   "args": [],
   "qualified_table": "BMvEff"
  },
@@ -6281,7 +6344,7 @@
   "ea": "0x812df7",
   "native": "sub_443D50",
   "wrapper": "sub_443D50",
-  "ret": "instance",
+  "ret": "void",
   "args": [
    "int"
   ],
@@ -6513,7 +6576,7 @@
   "ea": "0x812f29",
   "native": "sub_445120",
   "wrapper": "sub_445120",
-  "ret": "int",
+  "ret": "void",
   "args": [],
   "qualified_table": "BMvEff"
  },
@@ -6539,7 +6602,7 @@
   "ea": "0x812f4d",
   "native": "sub_445210",
   "wrapper": "sub_445210",
-  "ret": "int",
+  "ret": "void",
   "args": [],
   "qualified_table": "BMvEff"
  },
@@ -6551,7 +6614,7 @@
   "ea": "0x812f5f",
   "native": "sub_445270",
   "wrapper": "sub_445270",
-  "ret": "int",
+  "ret": "void",
   "args": [],
   "qualified_table": "BMvEff"
  },
@@ -6639,7 +6702,7 @@
   "ea": "0x812fdd",
   "native": "sub_4453B0",
   "wrapper": "sub_4453B0",
-  "ret": "instance",
+  "ret": "void",
   "args": [
    "int"
   ],
@@ -6689,7 +6752,7 @@
   "ea": "0x813013",
   "native": "sub_445640",
   "wrapper": "sub_445640",
-  "ret": "instance",
+  "ret": "void",
   "args": [
    "int"
   ],
@@ -6717,7 +6780,7 @@
   "ea": "0x813037",
   "native": "sub_445720",
   "wrapper": "sub_445720",
-  "ret": "int",
+  "ret": "void",
   "args": [],
   "qualified_table": "BMvEff"
  },
@@ -6729,7 +6792,7 @@
   "ea": "0x813049",
   "native": "sub_445790",
   "wrapper": "sub_445790",
-  "ret": "int",
+  "ret": "void",
   "args": [
    "int"
   ],
@@ -6741,9 +6804,10 @@
   "table": "CPointStatus",
   "regfunc": "0x812800",
   "ea": "0x81306f",
-  "offset": "0",
+  "offset": 0,
   "vartype": "Sqrat_Class_VarD_446CE0",
-  "qualified_table": "BMvEff.CPointStatus"
+  "qualified_table": "BMvEff.CPointStatus",
+  "type": "int"
  },
  {
   "kind": "var",
@@ -6751,9 +6815,10 @@
   "table": "CPointStatus",
   "regfunc": "0x812800",
   "ea": "0x81307e",
-  "offset": "4",
+  "offset": 4,
   "vartype": "Sqrat_Class_VarD_446CE0",
-  "qualified_table": "BMvEff.CPointStatus"
+  "qualified_table": "BMvEff.CPointStatus",
+  "type": "int"
  },
  {
   "kind": "var",
@@ -6761,9 +6826,10 @@
   "table": "CPointStatus",
   "regfunc": "0x812800",
   "ea": "0x81308d",
-  "offset": "8",
+  "offset": 8,
   "vartype": "Sqrat_Class_VarD_446CE0",
-  "qualified_table": "BMvEff.CPointStatus"
+  "qualified_table": "BMvEff.CPointStatus",
+  "type": "int"
  },
  {
   "kind": "var",
@@ -6771,9 +6837,10 @@
   "table": "CPointStatus",
   "regfunc": "0x812800",
   "ea": "0x81309c",
-  "offset": "12",
+  "offset": 12,
   "vartype": "Sqrat_Class_VarD_446CE0",
-  "qualified_table": "BMvEff.CPointStatus"
+  "qualified_table": "BMvEff.CPointStatus",
+  "type": "int"
  },
  {
   "kind": "var",
@@ -6781,9 +6848,10 @@
   "table": "CPointStatus",
   "regfunc": "0x812800",
   "ea": "0x8130ab",
-  "offset": "16",
+  "offset": 16,
   "vartype": "Sqrat_Class_VarD_446CE0",
-  "qualified_table": "BMvEff.CPointStatus"
+  "qualified_table": "BMvEff.CPointStatus",
+  "type": "int"
  },
  {
   "kind": "var",
@@ -6791,9 +6859,10 @@
   "table": "CPointStatus",
   "regfunc": "0x812800",
   "ea": "0x8130ba",
-  "offset": "20",
+  "offset": 20,
   "vartype": "Sqrat_Class_VarA_446D40",
-  "qualified_table": "BMvEff.CPointStatus"
+  "qualified_table": "BMvEff.CPointStatus",
+  "type": "float"
  },
  {
   "kind": "table",
@@ -7737,7 +7806,7 @@
   "ea": "0x813a07",
   "native": "sub_43DC20",
   "wrapper": "sub_43DC20",
-  "ret": "string",
+  "ret": "void",
   "args": [
    "int",
    "int"
@@ -7764,7 +7833,7 @@
   "ea": "0x813a2b",
   "native": "sub_43DCC0",
   "wrapper": "sub_43DCC0",
-  "ret": "string",
+  "ret": "void",
   "args": [
    "int"
   ],
@@ -7778,7 +7847,7 @@
   "ea": "0x813a3d",
   "native": "sub_43DD10",
   "wrapper": "sub_43DD10",
-  "ret": "string",
+  "ret": "void",
   "args": [
    "int"
   ],
@@ -7804,7 +7873,7 @@
   "ea": "0x813a61",
   "native": "sub_43DB30",
   "wrapper": "sub_43DB30",
-  "ret": "int",
+  "ret": "void",
   "args": [],
   "qualified_table": "tDDC"
  },
@@ -7828,7 +7897,7 @@
   "ea": "0x813a85",
   "native": "sub_43DE60",
   "wrapper": "sub_43DE60",
-  "ret": "string",
+  "ret": "void",
   "args": [
    "int",
    "int"
@@ -7843,7 +7912,7 @@
   "ea": "0x813a97",
   "native": "sub_43DEB0",
   "wrapper": "sub_43DEB0",
-  "ret": "string",
+  "ret": "void",
   "args": [
    "int",
    "int"
@@ -7872,7 +7941,7 @@
   "ea": "0x813abb",
   "native": "sub_43DF50",
   "wrapper": "sub_43DF50",
-  "ret": "string",
+  "ret": "void",
   "args": [
    "int"
   ],
@@ -8017,7 +8086,7 @@
   "ea": "0x813b81",
   "native": "sub_43E440",
   "wrapper": "sub_43E440",
-  "ret": "string",
+  "ret": "void",
   "args": [
    "int"
   ],
@@ -8083,7 +8152,7 @@
   "ea": "0x813bdb",
   "native": "sub_43E6A0",
   "wrapper": "sub_43E6A0",
-  "ret": "string",
+  "ret": "void",
   "args": [
    "int"
   ],
@@ -8213,7 +8282,7 @@
   "ea": "0x813c8f",
   "native": "sub_43EAF0",
   "wrapper": "sub_43EAF0",
-  "ret": "instance",
+  "ret": "void",
   "args": [
    "int",
    "int"
@@ -8228,7 +8297,7 @@
   "ea": "0x813ca1",
   "native": "sub_43EB50",
   "wrapper": "sub_43EB50",
-  "ret": "instance",
+  "ret": "void",
   "args": [
    "int"
   ],
@@ -8284,7 +8353,7 @@
   "ea": "0x813ce9",
   "native": "sub_43ECE0",
   "wrapper": "sub_43ECE0",
-  "ret": "instance",
+  "ret": "void",
   "args": [
    "int",
    "int"
@@ -8359,7 +8428,7 @@
   "ea": "0x813d43",
   "native": "sub_43F0D0",
   "wrapper": "sub_43F0D0",
-  "ret": "instance",
+  "ret": "void",
   "args": [
    "int"
   ],
@@ -8373,7 +8442,7 @@
   "ea": "0x813d55",
   "native": "sub_43F110",
   "wrapper": "sub_43F110",
-  "ret": "int",
+  "ret": "void",
   "args": [],
   "qualified_table": "tDDC"
  },
@@ -8729,7 +8798,8 @@
   "table": "UpdateSt",
   "regfunc": "0x893db0",
   "ea": "0x893edc",
-  "qualified_table": "BCom.UpdateSt"
+  "qualified_table": "BCom.UpdateSt",
+  "ret": "int"
  },
  {
   "kind": "func",
@@ -8737,7 +8807,8 @@
   "table": "UpdateSt",
   "regfunc": "0x893db0",
   "ea": "0x893eee",
-  "qualified_table": "BCom.UpdateSt"
+  "qualified_table": "BCom.UpdateSt",
+  "ret": "int"
  },
  {
   "kind": "table",
@@ -9105,7 +9176,8 @@
   "args": [
    "instance"
   ],
-  "qualified_table": "BMvCore"
+  "qualified_table": "BMvCore",
+  "class": "BMvCore.CCharaData"
  },
  {
   "kind": "func",
@@ -9119,7 +9191,8 @@
   "args": [
    "instance"
   ],
-  "qualified_table": "BMvCore"
+  "qualified_table": "BMvCore",
+  "class": "BMvCore.CCharaData"
  },
  {
   "kind": "func",
@@ -9133,7 +9206,8 @@
   "args": [
    "instance"
   ],
-  "qualified_table": "BMvCore"
+  "qualified_table": "BMvCore",
+  "class": "BMvCore.CCharaData"
  },
  {
   "kind": "func",
@@ -9147,7 +9221,8 @@
   "args": [
    "instance"
   ],
-  "qualified_table": "BMvCore"
+  "qualified_table": "BMvCore",
+  "class": "BMvCore.CCharaData"
  },
  {
   "kind": "func",
@@ -9161,7 +9236,8 @@
   "args": [
    "instance"
   ],
-  "qualified_table": "BMvCore"
+  "qualified_table": "BMvCore",
+  "class": "BMvCore.CCharaData"
  },
  {
   "kind": "func",
@@ -9176,7 +9252,8 @@
    "instance",
    "int"
   ],
-  "qualified_table": "BMvCore"
+  "qualified_table": "BMvCore",
+  "class": "BMvCore.CCharaData"
  },
  {
   "kind": "func",
@@ -9191,7 +9268,8 @@
    "instance",
    "int"
   ],
-  "qualified_table": "BMvCore"
+  "qualified_table": "BMvCore",
+  "class": "BMvCore.CCharaData"
  },
  {
   "kind": "func",
@@ -9201,7 +9279,7 @@
   "ea": "0x895f05",
   "native": "sub_43C1D0",
   "wrapper": "sub_43C1D0",
-  "ret": "instance",
+  "ret": "void",
   "args": [
    "int"
   ],
@@ -9220,7 +9298,8 @@
    "instance",
    "int"
   ],
-  "qualified_table": "BMvCore"
+  "qualified_table": "BMvCore",
+  "class": "BMvCore.CCharaData"
  },
  {
   "kind": "func",
@@ -9235,7 +9314,8 @@
    "instance",
    "int"
   ],
-  "qualified_table": "BMvCore"
+  "qualified_table": "BMvCore",
+  "class": "BMvCore.CCharaData"
  },
  {
   "kind": "func",
@@ -9249,7 +9329,8 @@
   "args": [
    "instance"
   ],
-  "qualified_table": "BMvCore"
+  "qualified_table": "BMvCore",
+  "class": "BMvCore.CCharaData"
  },
  {
   "kind": "func",
@@ -9263,7 +9344,8 @@
   "args": [
    "instance"
   ],
-  "qualified_table": "BMvCore"
+  "qualified_table": "BMvCore",
+  "class": "BMvCore.CCharaData"
  },
  {
   "kind": "func",
@@ -9277,7 +9359,8 @@
   "args": [
    "instance"
   ],
-  "qualified_table": "BMvCore"
+  "qualified_table": "BMvCore",
+  "class": "BMvCore.CCharaData"
  },
  {
   "kind": "func",
@@ -9292,7 +9375,8 @@
    "instance",
    "int"
   ],
-  "qualified_table": "BMvCore"
+  "qualified_table": "BMvCore",
+  "class": "BMvCore.CCharaData"
  },
  {
   "kind": "func",
@@ -9338,9 +9422,10 @@
   "table": "CCharaData",
   "regfunc": "0x895e30",
   "ea": "0x895fcd",
-  "offset": "0",
+  "offset": 0,
   "vartype": "Sqrat_Class_VarA_43CFB0",
-  "qualified_table": "BMvCore.CCharaData"
+  "qualified_table": "BMvCore.CCharaData",
+  "type": "int"
  },
  {
   "kind": "func",
@@ -9360,7 +9445,8 @@
   "table": "CCharaData",
   "regfunc": "0x895e30",
   "ea": "0x896003",
-  "qualified_table": "BMvCore.CCharaData"
+  "qualified_table": "BMvCore.CCharaData",
+  "ret": "int"
  },
  {
   "kind": "func",
@@ -9380,9 +9466,10 @@
   "table": "CCharaData",
   "regfunc": "0x895e30",
   "ea": "0x896024",
-  "offset": "4",
+  "offset": 4,
   "vartype": "Sqrat_Class_VarA_43D010",
-  "qualified_table": "BMvCore.CCharaData"
+  "qualified_table": "BMvCore.CCharaData",
+  "type": "instance:0x13c5830"
  },
  {
   "kind": "table",
@@ -9399,7 +9486,7 @@
   "ea": "0x89606a",
   "native": "sub_43BD10",
   "wrapper": "sub_43BD10",
-  "ret": "int",
+  "ret": "void",
   "args": [],
   "qualified_table": "BMvCore.CFindObject"
  },
@@ -9439,7 +9526,7 @@
   "ea": "0x896296",
   "native": "sub_4191F0",
   "wrapper": "sub_4191F0",
-  "ret": "int",
+  "ret": "void",
   "args": [
    "int",
    "int"
@@ -9461,7 +9548,7 @@
   "ea": "0x8962dc",
   "native": "sub_45B120",
   "wrapper": "sub_45B120",
-  "ret": "instance",
+  "ret": "void",
   "args": [
    "int"
   ],
@@ -9475,7 +9562,7 @@
   "ea": "0x8962ee",
   "native": "sub_80AD70",
   "wrapper": "sub_80AD70",
-  "ret": "int",
+  "ret": "void",
   "args": [
    "int",
    "float"
@@ -9490,7 +9577,7 @@
   "ea": "0x896300",
   "native": "sub_80ACC0",
   "wrapper": "sub_80ACC0",
-  "ret": "int",
+  "ret": "void",
   "args": [
    "int",
    "float",
@@ -9506,7 +9593,7 @@
   "ea": "0x896312",
   "native": "sub_80ACA0",
   "wrapper": "sub_80ACA0",
-  "ret": "int",
+  "ret": "void",
   "args": [
    "int"
   ],
@@ -9520,7 +9607,7 @@
   "ea": "0x896324",
   "native": "sub_80AB00",
   "wrapper": "sub_80AB00",
-  "ret": "int",
+  "ret": "void",
   "args": [
    "int",
    "int",
@@ -9536,7 +9623,7 @@
   "ea": "0x896336",
   "native": "sub_80AC80",
   "wrapper": "sub_80AC80",
-  "ret": "int",
+  "ret": "void",
   "args": [
    "int"
   ],
@@ -9550,7 +9637,7 @@
   "ea": "0x896348",
   "native": "sub_80AA60",
   "wrapper": "sub_80AA60",
-  "ret": "int",
+  "ret": "void",
   "args": [
    "int",
    "int",
@@ -9566,7 +9653,7 @@
   "ea": "0x89635a",
   "native": "sub_80ABE0",
   "wrapper": "sub_80ABE0",
-  "ret": "int",
+  "ret": "void",
   "args": [
    "int"
   ],
@@ -9580,7 +9667,7 @@
   "ea": "0x89636c",
   "native": "sub_80A990",
   "wrapper": "sub_80A990",
-  "ret": "int",
+  "ret": "void",
   "args": [
    "int"
   ],
@@ -9594,7 +9681,7 @@
   "ea": "0x89637e",
   "native": "sub_80A920",
   "wrapper": "sub_80A920",
-  "ret": "int",
+  "ret": "void",
   "args": [
    "int"
   ],
@@ -9608,7 +9695,7 @@
   "ea": "0x896390",
   "native": "sub_80A8B0",
   "wrapper": "sub_80A8B0",
-  "ret": "int",
+  "ret": "void",
   "args": [
    "int"
   ],
@@ -9620,7 +9707,8 @@
   "table": "CAnime",
   "regfunc": "0x896220",
   "ea": "0x8963a2",
-  "qualified_table": "tPAni.CAnime"
+  "qualified_table": "tPAni.CAnime",
+  "ret": "void"
  },
  {
   "kind": "func",
@@ -9630,7 +9718,7 @@
   "ea": "0x8963b4",
   "native": "sub_41CAD0",
   "wrapper": "sub_41CAD0",
-  "ret": "instance",
+  "ret": "void",
   "args": [
    "int"
   ],
@@ -9656,7 +9744,7 @@
   "ea": "0x8963d8",
   "native": "sub_4591D0",
   "wrapper": "sub_4591D0",
-  "ret": "instance",
+  "ret": "void",
   "args": [
    "int"
   ],
@@ -9670,7 +9758,7 @@
   "ea": "0x8963ea",
   "native": "sub_80A7F0",
   "wrapper": "sub_80A7F0",
-  "ret": "int",
+  "ret": "void",
   "args": [
    "int"
   ],
@@ -9684,7 +9772,7 @@
   "ea": "0x8963fc",
   "native": "sub_80B100",
   "wrapper": "sub_80B100",
-  "ret": "int",
+  "ret": "void",
   "args": [
    "int"
   ],
@@ -9698,7 +9786,7 @@
   "ea": "0x89640e",
   "native": "sub_419340",
   "wrapper": "sub_419340",
-  "ret": "int",
+  "ret": "void",
   "args": [],
   "qualified_table": "tPAni.CAnime"
  },
@@ -9710,7 +9798,7 @@
   "ea": "0x896420",
   "native": "sub_4193B0",
   "wrapper": "sub_4193B0",
-  "ret": "float",
+  "ret": "void",
   "args": [],
   "qualified_table": "tPAni.CAnime"
  },
@@ -9734,7 +9822,7 @@
   "ea": "0x896444",
   "native": "sub_41CAB0",
   "wrapper": "sub_41CAB0",
-  "ret": "instance",
+  "ret": "void",
   "args": [
    "int"
   ],
@@ -9760,7 +9848,7 @@
   "ea": "0x896468",
   "native": "sub_80A3B0",
   "wrapper": "sub_80A3B0",
-  "ret": "int",
+  "ret": "void",
   "args": [],
   "qualified_table": "tPAni.CAnime"
  },
@@ -9772,7 +9860,7 @@
   "ea": "0x89647a",
   "native": "sub_430DA0",
   "wrapper": "sub_430DA0",
-  "ret": "float",
+  "ret": "void",
   "args": [
    "float"
   ],
@@ -9786,7 +9874,7 @@
   "ea": "0x89648c",
   "native": "sub_80A240",
   "wrapper": "sub_80A240",
-  "ret": "int",
+  "ret": "void",
   "args": [
    "int",
    "int"
@@ -9842,7 +9930,8 @@
   "table": "CAniManager",
   "regfunc": "0x896220",
   "ea": "0x89651a",
-  "qualified_table": "tPAni.CAniManager"
+  "qualified_table": "tPAni.CAniManager",
+  "ret": "void"
  },
  {
   "kind": "func",
@@ -9852,7 +9941,7 @@
   "ea": "0x89652c",
   "native": "sub_419770",
   "wrapper": "sub_419770",
-  "ret": "int",
+  "ret": "void",
   "args": [
    "int"
   ],
@@ -9870,7 +9959,8 @@
   "args": [
    "int"
   ],
-  "qualified_table": "tPAni.CAniManager"
+  "qualified_table": "tPAni.CAniManager",
+  "class": "tPAni.CAnime"
  },
  {
   "kind": "table",
@@ -9991,5 +10081,864 @@
   "table": "",
   "regfunc": "0x896220",
   "ea": "0x896696"
+ },
+ {
+  "kind": "class",
+  "name": "UpdateSt",
+  "qualified": "BCom.UpdateSt",
+  "cpp": "CComUpdateSt",
+  "table": "BCom"
+ },
+ {
+  "kind": "class",
+  "name": "CCharaData",
+  "qualified": "BMvCore.CCharaData",
+  "cpp": "BtlSqCoreFunc::CCharaData",
+  "table": "BMvCore"
+ },
+ {
+  "kind": "class",
+  "name": "CFindObject",
+  "qualified": "BMvCore.CFindObject",
+  "cpp": "BtlSqCoreFunc::CFindObject",
+  "table": "BMvCore"
+ },
+ {
+  "kind": "class",
+  "name": "CCheckRect",
+  "qualified": "CCheckRect",
+  "cpp": "BtlSqEffObject::CBtlSqCheckRect",
+  "table": ""
+ },
+ {
+  "kind": "class",
+  "name": "CPointStatus",
+  "qualified": "BMvEff.CPointStatus",
+  "cpp": "BtlSqEffObject::CPointStatus",
+  "table": "BMvEff"
+ },
+ {
+  "kind": "class",
+  "name": "ProcTimer",
+  "qualified": "BMvDeb.ProcTimer",
+  "cpp": "BtlSqDebugCode::PTClass",
+  "table": "BMvDeb"
+ },
+ {
+  "kind": "class",
+  "name": "MvBoundStatus",
+  "qualified": "BtlMvStd.MvBoundStatus",
+  "cpp": "BtlMvStdFunc::MvBoundStatus",
+  "table": "BtlMvStd"
+ },
+ {
+  "kind": "class",
+  "name": "CBtlInfo",
+  "qualified": "CBtlInfo",
+  "cpp": "BtlMvFunc::CSqBtlInfo",
+  "table": ""
+ },
+ {
+  "kind": "class",
+  "name": "CCharaVector",
+  "qualified": "BMvTbl.CCharaVector",
+  "cpp": "BtlMvFunc::CCharaVector",
+  "table": "BMvTbl"
+ },
+ {
+  "kind": "var",
+  "name": "x",
+  "table": "CCharaVector",
+  "qualified_table": "BMvTbl.CCharaVector",
+  "ea": "0x810724",
+  "vartype": "Sqrat_Class_BindMethod_453300",
+  "type": "int",
+  "offset": 0
+ },
+ {
+  "kind": "var",
+  "name": "y",
+  "table": "CCharaVector",
+  "qualified_table": "BMvTbl.CCharaVector",
+  "ea": "0x810733",
+  "vartype": "Sqrat_Class_BindMethod_453300",
+  "type": "int",
+  "offset": 4
+ },
+ {
+  "kind": "var",
+  "name": "addx",
+  "table": "CCharaVector",
+  "qualified_table": "BMvTbl.CCharaVector",
+  "ea": "0x810742",
+  "vartype": "Sqrat_Class_BindMethod_453300",
+  "type": "int",
+  "offset": 8
+ },
+ {
+  "kind": "var",
+  "name": "addy",
+  "table": "CCharaVector",
+  "qualified_table": "BMvTbl.CCharaVector",
+  "ea": "0x810751",
+  "vartype": "Sqrat_Class_BindMethod_453300",
+  "type": "int",
+  "offset": 12
+ },
+ {
+  "kind": "class",
+  "name": "CCharaPosition",
+  "qualified": "BMvTbl.CCharaPosition",
+  "cpp": "BtlMvFunc::CCharaPosition",
+  "table": "BMvTbl"
+ },
+ {
+  "kind": "class",
+  "name": "CCharaRect",
+  "qualified": "BMvTbl.CCharaRect",
+  "cpp": "BtlMvFunc::CCharaRect",
+  "table": "BMvTbl"
+ },
+ {
+  "kind": "var",
+  "name": "sx",
+  "table": "CCharaRect",
+  "qualified_table": "BMvTbl.CCharaRect",
+  "ea": "0x8107ec",
+  "vartype": "Sqrat_Class_BindMethod_4533C0",
+  "type": "int",
+  "offset": 0
+ },
+ {
+  "kind": "var",
+  "name": "sy",
+  "table": "CCharaRect",
+  "qualified_table": "BMvTbl.CCharaRect",
+  "ea": "0x8107fe",
+  "vartype": "Sqrat_Class_BindMethod_4533C0",
+  "type": "int",
+  "offset": 4
+ },
+ {
+  "kind": "var",
+  "name": "ex",
+  "table": "CCharaRect",
+  "qualified_table": "BMvTbl.CCharaRect",
+  "ea": "0x810810",
+  "vartype": "Sqrat_Class_BindMethod_4533C0",
+  "type": "int",
+  "offset": 8
+ },
+ {
+  "kind": "var",
+  "name": "ey",
+  "table": "CCharaRect",
+  "qualified_table": "BMvTbl.CCharaRect",
+  "ea": "0x810822",
+  "vartype": "Sqrat_Class_BindMethod_4533C0",
+  "type": "int",
+  "offset": 12
+ },
+ {
+  "kind": "class",
+  "name": "CCharaPoint4",
+  "qualified": "BMvTbl.CCharaPoint4",
+  "cpp": "BtlMvFunc::CCharaPoint4",
+  "table": "BMvTbl"
+ },
+ {
+  "kind": "var",
+  "name": "x0",
+  "table": "CCharaPoint4",
+  "qualified_table": "BMvTbl.CCharaPoint4",
+  "ea": "0x810871",
+  "vartype": "Sqrat_Class_BindMethod_453420",
+  "type": "int",
+  "offset": 0
+ },
+ {
+  "kind": "var",
+  "name": "y0",
+  "table": "CCharaPoint4",
+  "qualified_table": "BMvTbl.CCharaPoint4",
+  "ea": "0x810883",
+  "vartype": "Sqrat_Class_BindMethod_453420",
+  "type": "int",
+  "offset": 4
+ },
+ {
+  "kind": "var",
+  "name": "x1",
+  "table": "CCharaPoint4",
+  "qualified_table": "BMvTbl.CCharaPoint4",
+  "ea": "0x810895",
+  "vartype": "Sqrat_Class_BindMethod_453420",
+  "type": "int",
+  "offset": 8
+ },
+ {
+  "kind": "var",
+  "name": "y1",
+  "table": "CCharaPoint4",
+  "qualified_table": "BMvTbl.CCharaPoint4",
+  "ea": "0x8108a7",
+  "vartype": "Sqrat_Class_BindMethod_453420",
+  "type": "int",
+  "offset": 12
+ },
+ {
+  "kind": "var",
+  "name": "x2",
+  "table": "CCharaPoint4",
+  "qualified_table": "BMvTbl.CCharaPoint4",
+  "ea": "0x8108b9",
+  "vartype": "Sqrat_Class_BindMethod_453420",
+  "type": "int",
+  "offset": 16
+ },
+ {
+  "kind": "var",
+  "name": "y2",
+  "table": "CCharaPoint4",
+  "qualified_table": "BMvTbl.CCharaPoint4",
+  "ea": "0x8108cb",
+  "vartype": "Sqrat_Class_BindMethod_453420",
+  "type": "int",
+  "offset": 20
+ },
+ {
+  "kind": "var",
+  "name": "x3",
+  "table": "CCharaPoint4",
+  "qualified_table": "BMvTbl.CCharaPoint4",
+  "ea": "0x8108dd",
+  "vartype": "Sqrat_Class_BindMethod_453420",
+  "type": "int",
+  "offset": 24
+ },
+ {
+  "kind": "var",
+  "name": "y3",
+  "table": "CCharaPoint4",
+  "qualified_table": "BMvTbl.CCharaPoint4",
+  "ea": "0x8108ef",
+  "vartype": "Sqrat_Class_BindMethod_453420",
+  "type": "int",
+  "offset": 28
+ },
+ {
+  "kind": "class",
+  "name": "MvStatus",
+  "qualified": "BMvTbl.MvStatus",
+  "cpp": "BtlMvFunc::MvStatus",
+  "table": "BMvTbl"
+ },
+ {
+  "kind": "var",
+  "name": "CharaNo",
+  "table": "MvStatus",
+  "qualified_table": "BMvTbl.MvStatus",
+  "ea": "0x81093e",
+  "vartype": "Sqrat_Class_BindMethod_453480",
+  "type": "short",
+  "offset": 0
+ },
+ {
+  "kind": "var",
+  "name": "CallCount",
+  "table": "MvStatus",
+  "qualified_table": "BMvTbl.MvStatus",
+  "ea": "0x810950",
+  "vartype": "Sqrat_Class_BindMethod_453480",
+  "type": "short",
+  "offset": 2
+ },
+ {
+  "kind": "var",
+  "name": "FrameCallCount",
+  "table": "MvStatus",
+  "qualified_table": "BMvTbl.MvStatus",
+  "ea": "0x810962",
+  "vartype": "Sqrat_Class_BindMethod_453480",
+  "type": "short",
+  "offset": 4
+ },
+ {
+  "kind": "var",
+  "name": "isUpdate",
+  "table": "MvStatus",
+  "qualified_table": "BMvTbl.MvStatus",
+  "ea": "0x810974",
+  "vartype": "Sqrat_Class_BindMethod_453480",
+  "type": "short",
+  "offset": 16
+ },
+ {
+  "kind": "var",
+  "name": "isFrameUpdate",
+  "table": "MvStatus",
+  "qualified_table": "BMvTbl.MvStatus",
+  "ea": "0x8109aa",
+  "vartype": "Sqrat_Class_BindMethod_453480",
+  "type": "short",
+  "offset": 18
+ },
+ {
+  "kind": "var",
+  "name": "isLanding",
+  "table": "MvStatus",
+  "qualified_table": "BMvTbl.MvStatus",
+  "ea": "0x8109bc",
+  "vartype": "Sqrat_Class_BindMethod_453480",
+  "type": "short",
+  "offset": 24
+ },
+ {
+  "kind": "var",
+  "name": "DataPattern",
+  "table": "MvStatus",
+  "qualified_table": "BMvTbl.MvStatus",
+  "ea": "0x8109ce",
+  "vartype": "Sqrat_Class_BindMethod_453480",
+  "type": "short",
+  "offset": 20
+ },
+ {
+  "kind": "var",
+  "name": "DataFrame",
+  "table": "MvStatus",
+  "qualified_table": "BMvTbl.MvStatus",
+  "ea": "0x8109e0",
+  "vartype": "Sqrat_Class_BindMethod_453480",
+  "type": "short",
+  "offset": 22
+ },
+ {
+  "kind": "var",
+  "name": "DataDelayVal",
+  "table": "MvStatus",
+  "qualified_table": "BMvTbl.MvStatus",
+  "ea": "0x8109f2",
+  "vartype": "Sqrat_Class_BindMethod_453480",
+  "type": "short",
+  "offset": 26
+ },
+ {
+  "kind": "var",
+  "name": "DataDelay",
+  "table": "MvStatus",
+  "qualified_table": "BMvTbl.MvStatus",
+  "ea": "0x810a04",
+  "vartype": "Sqrat_Class_BindMethod_453480",
+  "type": "short",
+  "offset": 28
+ },
+ {
+  "kind": "var",
+  "name": "flags",
+  "table": "MvStatus",
+  "qualified_table": "BMvTbl.MvStatus",
+  "ea": "0x810a16",
+  "vartype": "Sqrat_Class_BindMethod_453480",
+  "type": "short",
+  "offset": 30
+ },
+ {
+  "kind": "var",
+  "name": "FrameID",
+  "table": "MvStatus",
+  "qualified_table": "BMvTbl.MvStatus",
+  "ea": "0x810a28",
+  "vartype": "Sqrat_Class_BindMethod_453480",
+  "type": "short",
+  "offset": 32
+ },
+ {
+  "kind": "var",
+  "name": "Param0",
+  "table": "MvStatus",
+  "qualified_table": "BMvTbl.MvStatus",
+  "ea": "0x810a3a",
+  "vartype": "Sqrat_Class_BindMethod_453480",
+  "type": "short",
+  "offset": 34
+ },
+ {
+  "kind": "var",
+  "name": "Param1",
+  "table": "MvStatus",
+  "qualified_table": "BMvTbl.MvStatus",
+  "ea": "0x810a4c",
+  "vartype": "Sqrat_Class_BindMethod_453480",
+  "type": "short",
+  "offset": 36
+ },
+ {
+  "kind": "var",
+  "name": "Param2",
+  "table": "MvStatus",
+  "qualified_table": "BMvTbl.MvStatus",
+  "ea": "0x810a5e",
+  "vartype": "Sqrat_Class_BindMethod_453480",
+  "type": "short",
+  "offset": 38
+ },
+ {
+  "kind": "var",
+  "name": "Param3",
+  "table": "MvStatus",
+  "qualified_table": "BMvTbl.MvStatus",
+  "ea": "0x810a70",
+  "vartype": "Sqrat_Class_BindMethod_453480",
+  "type": "short",
+  "offset": 40
+ },
+ {
+  "kind": "class",
+  "name": "MvFrameStatus",
+  "qualified": "BMvTbl.MvFrameStatus",
+  "cpp": "BtlMvFunc::MvFrameStatus",
+  "table": "BMvTbl"
+ },
+ {
+  "kind": "var",
+  "name": "FrameID",
+  "table": "MvFrameStatus",
+  "qualified_table": "BMvTbl.MvFrameStatus",
+  "ea": "0x810abf",
+  "vartype": "Sqrat_Class_BindMethod_453540",
+  "type": "short",
+  "offset": 0
+ },
+ {
+  "kind": "var",
+  "name": "Param0",
+  "table": "MvFrameStatus",
+  "qualified_table": "BMvTbl.MvFrameStatus",
+  "ea": "0x810ad1",
+  "vartype": "Sqrat_Class_BindMethod_453540",
+  "type": "short",
+  "offset": 2
+ },
+ {
+  "kind": "var",
+  "name": "Param1",
+  "table": "MvFrameStatus",
+  "qualified_table": "BMvTbl.MvFrameStatus",
+  "ea": "0x810ae3",
+  "vartype": "Sqrat_Class_BindMethod_453540",
+  "type": "short",
+  "offset": 4
+ },
+ {
+  "kind": "var",
+  "name": "Param2",
+  "table": "MvFrameStatus",
+  "qualified_table": "BMvTbl.MvFrameStatus",
+  "ea": "0x810af5",
+  "vartype": "Sqrat_Class_BindMethod_453540",
+  "type": "short",
+  "offset": 6
+ },
+ {
+  "kind": "var",
+  "name": "Param3",
+  "table": "MvFrameStatus",
+  "qualified_table": "BMvTbl.MvFrameStatus",
+  "ea": "0x810b07",
+  "vartype": "Sqrat_Class_BindMethod_453540",
+  "type": "short",
+  "offset": 8
+ },
+ {
+  "kind": "class",
+  "name": "MvHitStatus",
+  "qualified": "BMvTbl.MvHitStatus",
+  "cpp": "BtlMvFunc::MvHitStatus",
+  "table": "BMvTbl"
+ },
+ {
+  "kind": "var",
+  "name": "Type",
+  "table": "MvHitStatus",
+  "qualified_table": "BMvTbl.MvHitStatus",
+  "ea": "0x810b56",
+  "vartype": "Sqrat_Class_BindMethod_4535A0",
+  "type": "short",
+  "offset": 0
+ },
+ {
+  "kind": "var",
+  "name": "PosState",
+  "table": "MvHitStatus",
+  "qualified_table": "BMvTbl.MvHitStatus",
+  "ea": "0x810b68",
+  "vartype": "Sqrat_Class_BindMethod_4535A0",
+  "type": "short",
+  "offset": 2
+ },
+ {
+  "kind": "var",
+  "name": "isDown",
+  "table": "MvHitStatus",
+  "qualified_table": "BMvTbl.MvHitStatus",
+  "ea": "0x810b7a",
+  "vartype": "Sqrat_Class_BindMethod_4535A0",
+  "type": "short",
+  "offset": 4
+ },
+ {
+  "kind": "var",
+  "name": "isFirstUpdate",
+  "table": "MvHitStatus",
+  "qualified_table": "BMvTbl.MvHitStatus",
+  "ea": "0x810b8c",
+  "vartype": "Sqrat_Class_BindMethod_4535A0",
+  "type": "short",
+  "offset": 8
+ },
+ {
+  "kind": "var",
+  "name": "isCatchFlag",
+  "table": "MvHitStatus",
+  "qualified_table": "BMvTbl.MvHitStatus",
+  "ea": "0x810b9e",
+  "vartype": "Sqrat_Class_BindMethod_4535A0",
+  "type": "short",
+  "offset": 10
+ },
+ {
+  "kind": "var",
+  "name": "isMoveable",
+  "table": "MvHitStatus",
+  "qualified_table": "BMvTbl.MvHitStatus",
+  "ea": "0x810bb0",
+  "vartype": "Sqrat_Class_BindMethod_4535A0",
+  "type": "short",
+  "offset": 12
+ },
+ {
+  "kind": "var",
+  "name": "Count",
+  "table": "MvHitStatus",
+  "qualified_table": "BMvTbl.MvHitStatus",
+  "ea": "0x810bc2",
+  "vartype": "Sqrat_Class_BindMethod_4535A0",
+  "type": "short",
+  "offset": 6
+ },
+ {
+  "kind": "class",
+  "name": "MvHitImpactInfo",
+  "qualified": "BMvTbl.MvHitImpactInfo",
+  "cpp": "BtlMvFunc::MvHitImpactInfo",
+  "table": "BMvTbl"
+ },
+ {
+  "kind": "var",
+  "name": "type",
+  "table": "MvHitImpactInfo",
+  "qualified_table": "BMvTbl.MvHitImpactInfo",
+  "ea": "0x810c26",
+  "vartype": "Sqrat_Class_BindMethod_453640",
+  "type": "short",
+  "offset": 0
+ },
+ {
+  "kind": "var",
+  "name": "d_state",
+  "table": "MvHitImpactInfo",
+  "qualified_table": "BMvTbl.MvHitImpactInfo",
+  "ea": "0x810c38",
+  "vartype": "Sqrat_Class_BindMethod_453640",
+  "type": "short",
+  "offset": 2
+ },
+ {
+  "kind": "var",
+  "name": "atk_guard",
+  "table": "MvHitImpactInfo",
+  "qualified_table": "BMvTbl.MvHitImpactInfo",
+  "ea": "0x810c4a",
+  "vartype": "Sqrat_Class_BindMethod_453640",
+  "type": "short",
+  "offset": 4
+ },
+ {
+  "kind": "var",
+  "name": "atk_throw",
+  "table": "MvHitImpactInfo",
+  "qualified_table": "BMvTbl.MvHitImpactInfo",
+  "ea": "0x810c5c",
+  "vartype": "Sqrat_Class_BindMethod_453640",
+  "type": "short",
+  "offset": 6
+ },
+ {
+  "kind": "var",
+  "name": "def_guard",
+  "table": "MvHitImpactInfo",
+  "qualified_table": "BMvTbl.MvHitImpactInfo",
+  "ea": "0x810c6e",
+  "vartype": "Sqrat_Class_BindMethod_453640",
+  "type": "short",
+  "offset": 8
+ },
+ {
+  "kind": "var",
+  "name": "grd_break",
+  "table": "MvHitImpactInfo",
+  "qualified_table": "BMvTbl.MvHitImpactInfo",
+  "ea": "0x810c80",
+  "vartype": "Sqrat_Class_BindMethod_453640",
+  "type": "short",
+  "offset": 10
+ },
+ {
+  "kind": "var",
+  "name": "counterhit",
+  "table": "MvHitImpactInfo",
+  "qualified_table": "BMvTbl.MvHitImpactInfo",
+  "ea": "0x810c92",
+  "vartype": "Sqrat_Class_BindMethod_453640",
+  "type": "short",
+  "offset": 12
+ },
+ {
+  "kind": "class",
+  "name": "MvInterruptInfo",
+  "qualified": "BMvTbl.MvInterruptInfo",
+  "cpp": "BtlMvFunc::MvInterruptInfo",
+  "table": "BMvTbl"
+ },
+ {
+  "kind": "var",
+  "name": "type",
+  "table": "MvInterruptInfo",
+  "qualified_table": "BMvTbl.MvInterruptInfo",
+  "ea": "0x810cf3",
+  "vartype": "Sqrat_Class_BindMethod_453700",
+  "type": "short",
+  "offset": 0
+ },
+ {
+  "kind": "var",
+  "name": "Param0",
+  "table": "MvInterruptInfo",
+  "qualified_table": "BMvTbl.MvInterruptInfo",
+  "ea": "0x810d05",
+  "vartype": "Sqrat_Class_BindMethod_453700",
+  "type": "short",
+  "offset": 2
+ },
+ {
+  "kind": "var",
+  "name": "Param1",
+  "table": "MvInterruptInfo",
+  "qualified_table": "BMvTbl.MvInterruptInfo",
+  "ea": "0x810d17",
+  "vartype": "Sqrat_Class_BindMethod_453700",
+  "type": "short",
+  "offset": 4
+ },
+ {
+  "kind": "var",
+  "name": "Param2",
+  "table": "MvInterruptInfo",
+  "qualified_table": "BMvTbl.MvInterruptInfo",
+  "ea": "0x810d29",
+  "vartype": "Sqrat_Class_BindMethod_453700",
+  "type": "short",
+  "offset": 6
+ },
+ {
+  "kind": "var",
+  "name": "Param3",
+  "table": "MvInterruptInfo",
+  "qualified_table": "BMvTbl.MvInterruptInfo",
+  "ea": "0x810d3b",
+  "vartype": "Sqrat_Class_BindMethod_453700",
+  "type": "short",
+  "offset": 8
+ },
+ {
+  "kind": "var",
+  "name": "Param4",
+  "table": "MvInterruptInfo",
+  "qualified_table": "BMvTbl.MvInterruptInfo",
+  "ea": "0x810d4d",
+  "vartype": "Sqrat_Class_BindMethod_453700",
+  "type": "short",
+  "offset": 10
+ },
+ {
+  "kind": "class",
+  "name": "MvRecoverStatus",
+  "qualified": "BMvTbl.MvRecoverStatus",
+  "cpp": "CPcRecoverStatus",
+  "table": "BMvTbl"
+ },
+ {
+  "kind": "class",
+  "name": "MvRoundStatus",
+  "qualified": "BMvTbl.MvRoundStatus",
+  "cpp": "BtlMvFunc::MvRoundStatus",
+  "table": "BMvTbl"
+ },
+ {
+  "kind": "var",
+  "name": "Time",
+  "table": "MvRoundStatus",
+  "qualified_table": "BMvTbl.MvRoundStatus",
+  "ea": "0x810dfd",
+  "vartype": "Sqrat_Class_BindMethod_4537C0",
+  "type": "short",
+  "offset": 10
+ },
+ {
+  "kind": "var",
+  "name": "TimeUpdate",
+  "table": "MvRoundStatus",
+  "qualified_table": "BMvTbl.MvRoundStatus",
+  "ea": "0x810e0f",
+  "vartype": "Sqrat_Class_BindMethod_4537C0",
+  "type": "short",
+  "offset": 12
+ },
+ {
+  "kind": "var",
+  "name": "Round",
+  "table": "MvRoundStatus",
+  "qualified_table": "BMvTbl.MvRoundStatus",
+  "ea": "0x810e21",
+  "vartype": "Sqrat_Class_BindMethod_4537C0",
+  "type": "short",
+  "offset": 14
+ },
+ {
+  "kind": "var",
+  "name": "WinType",
+  "table": "MvRoundStatus",
+  "qualified_table": "BMvTbl.MvRoundStatus",
+  "ea": "0x810e33",
+  "vartype": "Sqrat_Class_BindMethod_4537C0",
+  "type": "short",
+  "offset": 16
+ },
+ {
+  "kind": "var",
+  "name": "isKo",
+  "table": "MvRoundStatus",
+  "qualified_table": "BMvTbl.MvRoundStatus",
+  "ea": "0x810e45",
+  "vartype": "Sqrat_Class_BindMethod_4537C0",
+  "type": "short",
+  "offset": 0
+ },
+ {
+  "kind": "var",
+  "name": "isMyKo",
+  "table": "MvRoundStatus",
+  "qualified_table": "BMvTbl.MvRoundStatus",
+  "ea": "0x810e57",
+  "vartype": "Sqrat_Class_BindMethod_4537C0",
+  "type": "short",
+  "offset": 2
+ },
+ {
+  "kind": "var",
+  "name": "isWinRound",
+  "table": "MvRoundStatus",
+  "qualified_table": "BMvTbl.MvRoundStatus",
+  "ea": "0x810e69",
+  "vartype": "Sqrat_Class_BindMethod_4537C0",
+  "type": "short",
+  "offset": 4
+ },
+ {
+  "kind": "var",
+  "name": "isLoseRound",
+  "table": "MvRoundStatus",
+  "qualified_table": "BMvTbl.MvRoundStatus",
+  "ea": "0x810e7b",
+  "vartype": "Sqrat_Class_BindMethod_4537C0",
+  "type": "short",
+  "offset": 6
+ },
+ {
+  "kind": "var",
+  "name": "isFinalRound",
+  "table": "MvRoundStatus",
+  "qualified_table": "BMvTbl.MvRoundStatus",
+  "ea": "0x810e8d",
+  "vartype": "Sqrat_Class_BindMethod_4537C0",
+  "type": "short",
+  "offset": 8
+ },
+ {
+  "kind": "var",
+  "name": "CharaMoveMode",
+  "table": "MvRoundStatus",
+  "qualified_table": "BMvTbl.MvRoundStatus",
+  "ea": "0x810e9f",
+  "vartype": "Sqrat_Class_BindMethod_4537C0",
+  "type": "short",
+  "offset": 18
+ },
+ {
+  "kind": "class",
+  "name": "MvStageStatus",
+  "qualified": "BMvTbl.MvStageStatus",
+  "cpp": "BtlMvFunc::MvStageStatus",
+  "table": "BMvTbl"
+ },
+ {
+  "kind": "class",
+  "name": "_LogsFile",
+  "qualified": "debuglog._LogsFile",
+  "cpp": "BtlCmdFunc::_LogsFile",
+  "table": "debuglog"
+ },
+ {
+  "kind": "class",
+  "name": "CmdInfo",
+  "qualified": "BCMDTbl.CmdInfo",
+  "cpp": "CBtlCmdInfo",
+  "table": "BCMDTbl"
+ },
+ {
+  "kind": "class",
+  "name": "CDat",
+  "qualified": "tPAni.CDat",
+  "cpp": "CPaniData",
+  "table": "tPAni"
+ },
+ {
+  "kind": "class",
+  "name": "CAnime",
+  "qualified": "tPAni.CAnime",
+  "cpp": "CPaniData_Anime",
+  "table": "tPAni"
+ },
+ {
+  "kind": "class",
+  "name": "CAniManager",
+  "qualified": "tPAni.CAniManager",
+  "cpp": "CPaniData_AnimeManager",
+  "table": "tPAni"
+ },
+ {
+  "kind": "class",
+  "name": "CPlayerSt",
+  "qualified": "tSceneVS.CPlayerSt",
+  "cpp": "CSceneVS_PlayerSt",
+  "table": "tSceneVS"
+ },
+ {
+  "kind": "class",
+  "name": "CStatus",
+  "qualified": "tSceneWinDemo.CStatus",
+  "cpp": "CSceneWinDemo_St",
+  "table": "tSceneWinDemo"
  }
 ]
