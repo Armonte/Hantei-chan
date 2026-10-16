@@ -58,7 +58,7 @@ inline void EfDisplay(std::vector<Frame_EF> *efList_, Frame_EF *singleClipboard 
 	};
 
 	std::vector<Frame_EF> & efList = *efList_;
-	constexpr float width = 75.f;
+	const float width = ui::Px(75.f);   // follows the font size (ui_style.h)
 
 	// Manual edit mode tracking
 	static std::vector<int> manualEditMode;
@@ -393,7 +393,7 @@ static inline void DrawSmartEffectUI(Frame_EF& effect, FrameData* frameData, int
 			// Fallback for completely unknown types
 			int* p = effect.parameters;
 			int& no = effect.number;
-			constexpr float width = 75.f;
+			const float width = ui::Px(75.f);   // follows the font size (ui_style.h)
 			
 			im::SetNextItemWidth(width);
 			if(im::InputInt(LBL("Number"), &no, 0, 0)) {

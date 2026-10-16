@@ -15,7 +15,7 @@ static inline void DrawEffectState_Type4_14(Frame_EF& effect, FrameData* frameDa
 {
 	int* p = effect.parameters;
 	int& no = effect.number;
-	constexpr float width = 75.f;
+	const float width = ui::Px(75.f);   // follows the font size (ui_style.h)
 
 	// Pattern dropdown for opponent state
 			if(frameData) {

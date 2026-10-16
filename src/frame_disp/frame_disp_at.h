@@ -33,7 +33,7 @@ inline void AtDisplay(Frame_AT *at, FrameData *frameData = nullptr, int patternI
 	};
 
 
-	constexpr float width = 75.f;
+	const float width = ui::Px(75.f);   // follows the font size (ui_style.h)
 	//Some attack flags mean different things in UNI/MBTL/UNI2 than in MBAACC (issue #74).
 	const bool uniFormat = frameData && frameData->usesUniFormat();
 	unsigned int flagIndex = -1;
