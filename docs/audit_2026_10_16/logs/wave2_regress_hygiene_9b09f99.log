@@ -1,0 +1,9 @@
+shortcut_router_test         SHORTCUT_ROUTER_TEST_PASS
+undo_manager_test            UNDO_MANAGER_TEST_PASS
+workspace_session_test       workspace_session_test: PASS
+package_tools_test           package_tools_test: PASS
+cmdfile_test                 272 checks, 0 failed, 7 command files
+preview_sim_tool --selftest  selftest: passed (0 failure(s))
+HA6 roundtrip vs baseline    302/302 identical
+ha4tool roundtrip            roundtrip: 50/50 byte-identical
+bg_regress.sh 600              bg59.dat: SIM seed=1234 ticks=600 live[min=75 max=76] hash=e86a28ab2a2e3712 roundtrip: 56 ok, 0 failed | sim(600 ticks): 56 ok, 0 failed | determinism/rng failures: 0 | edit failures: 0 

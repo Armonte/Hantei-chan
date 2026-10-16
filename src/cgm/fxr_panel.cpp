@@ -247,7 +247,7 @@ void FxPanel::drawRuleEditor(CharacterInstance &ch, const Bank *bank) {
 		ImGui::SameLine(); const uint32_t *pp = slotPal(ch, slotSel); const uint32_t col = pp ? pp[c.index] : 0;
 		ImGui::PushID(c.index);
 		if (ImGui::ColorButton("##cand", ImVec4((col & 255) / 255.f, ((col >> 8) & 255) / 255.f, ((col >> 16) & 255) / 255.f, 1), 0, ImVec2(18, 18))) r.accentIdx = { c.index };
-		ImGui::SetItemTooltip("index %d", c.index);
+		ImGui::SetItemTooltip(TXT("index %d"), c.index);
 		ImGui::PopID();
 	}
 	if (ImGui::Button(LBL("Write auto accents of all slots as overrides"))) {
@@ -393,9 +393,9 @@ void FxPanel::draw(CharacterInstance &ch, const Bank *bank, const UsageIndex &us
 	ImGui::SameLine(); ImGui::Text("(%zu)", picked.size());
 	if (ImGui::BeginTable("##fxgrid", 8, ImGuiTableFlags_RowBg | ImGuiTableFlags_ScrollY | ImGuiTableFlags_Resizable | ImGuiTableFlags_SizingStretchProp, ImVec2(0, ImGui::GetContentRegionAvail().y - 62))) {
 		ImGui::TableSetupScrollFreeze(0, 1);
-		ImGui::TableSetupColumn("", ImGuiTableColumnFlags_WidthFixed, 22); ImGui::TableSetupColumn("pat", ImGuiTableColumnFlags_WidthFixed, 40); ImGui::TableSetupColumn("name");
-		ImGui::TableSetupColumn("fx/all", ImGuiTableColumnFlags_WidthFixed, 56); ImGui::TableSetupColumn("%", ImGuiTableColumnFlags_WidthFixed, 30); ImGui::TableSetupColumn("spr", ImGuiTableColumnFlags_WidthFixed, 32);
-		ImGui::TableSetupColumn("shr", ImGuiTableColumnFlags_WidthFixed, 32); ImGui::TableSetupColumn("rule");
+		ImGui::TableSetupColumn("", ImGuiTableColumnFlags_WidthFixed, 22); ImGui::TableSetupColumn(LBL("pat"), ImGuiTableColumnFlags_WidthFixed, 40); ImGui::TableSetupColumn(LBL("name"));
+		ImGui::TableSetupColumn(LBL("fx/all"), ImGuiTableColumnFlags_WidthFixed, 56); ImGui::TableSetupColumn("%", ImGuiTableColumnFlags_WidthFixed, 30); ImGui::TableSetupColumn(LBL("spr"), ImGuiTableColumnFlags_WidthFixed, 32);
+		ImGui::TableSetupColumn(LBL("shr"), ImGuiTableColumnFlags_WidthFixed, 32); ImGui::TableSetupColumn(LBL("rule"));
 		ImGui::TableHeadersRow();
 		ImGuiListClipper clip; clip.Begin((int)shown.size());
 		while (clip.Step()) for (int k = clip.DisplayStart; k < clip.DisplayEnd; k++) {

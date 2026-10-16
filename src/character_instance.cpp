@@ -1,4 +1,5 @@
 #include "han2_browser.h"
+#include "app_log.h"
 #include "character_instance.h"
 #include "framedata_ha4.h"
 #include <cstring>
@@ -43,7 +44,7 @@ void CharacterInstance::loadMvScripts(const std::string& txtPath)
 	if (m_mvScripts.loadForCharacter(txtPath)) {
 		m_mvScripts.resolveCodeNames(&frameData);
 		MvScriptIndex::Register(&frameData, &m_mvScripts);
-		printf("[MvScript] %s: %d script spawn(s) parsed from move scripts\n",
+		HC_LOG_INFO("[MvScript] {}: {} script spawn(s) parsed from move scripts",
 			   m_name.c_str(), (int)m_mvScripts.allSpawns().size());
 	} else {
 		MvScriptIndex::Unregister(&frameData);
@@ -551,13 +552,13 @@ bool CharacterInstance::loadEffectCharacter()
 		}
 
 		useParentDirectory = true;
-		printf("[Effect] %s: Using shared effect.txt from parent directory\n", m_name.c_str());
+		HC_LOG_INFO("[Effect] {}: Using shared effect.txt from parent directory", m_name.c_str());
 	}
 
 	// Create and load effect character
 	auto effect = std::make_unique<CharacterInstance>();
 	if (!effect->loadFromTxt(effectTxtPath)) {
-		printf("[Effect] Failed to load effect.txt from: %s\n", effectFolder.c_str());
+		HC_LOG_ERROR("[Effect] Failed to load effect.txt from: {}", effectFolder.c_str());
 		return false;
 	}
 
@@ -573,12 +574,12 @@ bool CharacterInstance::loadEffectCharacter()
 
 		if (std::filesystem::exists(patPath)) {
 			bool patLoaded = effect->loadPAT(effectPatPath);
-			printf("[Effect] %s: sys_effect.pat %s from parent directory (%d part sets)\n",
+			HC_LOG_INFO("[Effect] {}: sys_effect.pat {} from parent directory ({} part sets)",
 				   m_name.c_str(),
 				   patLoaded ? "loaded" : "FAILED",
 				   patLoaded ? (int)effect->parts.partSets.size() : 0);
 		} else {
-			printf("[Effect] %s: sys_effect.pat not found in parent directory\n", m_name.c_str());
+			HC_LOG_WARN("[Effect] {}: sys_effect.pat not found in parent directory", m_name.c_str());
 		}
 	} else {
 		// MBAACC: data/chr###/effect.pat
@@ -587,7 +588,7 @@ bool CharacterInstance::loadEffectCharacter()
 
 		if (std::filesystem::exists(patPath)) {
 			bool patLoaded = effect->loadPAT(effectPatPath);
-			printf("[Effect] %s: effect.pat %s (%d part sets)\n",
+			HC_LOG_INFO("[Effect] {}: effect.pat {} ({} part sets)",
 				   m_name.c_str(),
 				   patLoaded ? "loaded" : "FAILED",
 				   patLoaded ? (int)effect->parts.partSets.size() : 0);
@@ -595,6 +596,6 @@ bool CharacterInstance::loadEffectCharacter()
 	}
 
 	effectCharacter = std::move(effect);
-	printf("[Effect] %s: Loaded effect character from %s\n", m_name.c_str(), effectFolder.c_str());
+	HC_LOG_INFO("[Effect] {}: Loaded effect character from {}", m_name.c_str(), effectFolder.c_str());
 	return true;
 }

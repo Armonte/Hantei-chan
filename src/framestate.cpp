@@ -1,4 +1,5 @@
 #include "framestate.h"
+#include "app_log.h"
 #include "framedata.h"
 #include "mv_script.h"
 #include "preview_sim.h"
@@ -496,12 +497,12 @@ void BuildSpawnTreeRecursive(
 
 	// Debug: Log data source selection (commented out to reduce spam)
 	// if (depth == 0) {
-	// 	printf("[BuildSpawnTree] Pattern %d using %s\n",
+	// 	HC_LOG_INFO("[BuildSpawnTree] Pattern {} using {}",
 	// 		   patternId, usesEffectHA6 ? "effect.ha6" : "main character");
 	// }
 
 	if (!sourceFrameData) {
-		printf("[BuildSpawnTree ERROR] Pattern %d needs %s but data is NULL!\n",
+		HC_LOG_ERROR("[BuildSpawnTree] Pattern {} needs {} but data is NULL!",
 			   patternId, usesEffectHA6 ? "effect.ha6" : "main character");
 		return;
 	}
@@ -560,7 +561,7 @@ void BuildSpawnTreeRecursive(
 
 				// Debug: Log inheritance decisions (commented out to reduce spam)
 				// if (spawn.effectType == 8 || originalUsesEffectHA6 != spawn.usesEffectHA6) {
-				// 	printf("[Spawn Inheritance] Type %d pattern %d: usesEffectHA6 %s -> %s (parent: %s)\n",
+				// 	HC_LOG_INFO("[Spawn Inheritance] Type {} pattern {}: usesEffectHA6 {} -> {} (parent: {})",
 				// 		   spawn.effectType, spawn.patternId,
 				// 		   originalUsesEffectHA6 ? "true" : "false",
 				// 		   spawn.usesEffectHA6 ? "true" : "false",
@@ -584,7 +585,7 @@ void BuildSpawnTreeRecursive(
 
 				// Warn if Effect Type 8 needs effect.ha6 but it's null
 				if (spawn.effectType == 8 && !effectFrameData) {
-					printf("[ERROR] Effect Type 8 pattern %d requires effect.ha6 but it's not loaded!\n",
+					HC_LOG_ERROR("Effect Type 8 pattern {} requires effect.ha6 but it's not loaded!",
 						   spawn.patternId);
 				}
 
@@ -600,11 +601,11 @@ void BuildSpawnTreeRecursive(
 							spawn.lifetime = 9999;  // Looping
 						}
 					} else {
-						printf("[WARNING] Pattern %d not found in %s\n",
+						HC_LOG_WARN("Pattern {} not found in {}",
 							   spawn.patternId, spawn.usesEffectHA6 ? "effect.ha6" : "main character");
 					}
 				} else {
-					printf("[ERROR] Data source is NULL for pattern %d (needs %s)\n",
+					HC_LOG_ERROR("Data source is NULL for pattern {} (needs {})",
 						   spawn.patternId, spawn.usesEffectHA6 ? "effect.ha6" : "main character");
 				}
 			} else {

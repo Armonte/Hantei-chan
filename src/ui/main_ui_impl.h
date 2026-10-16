@@ -48,7 +48,7 @@ void MainFrame::DrawUi()
 	ImGui::PushStyleVar(ImGuiStyleVar_WindowRounding, 0.0f);
 	ImGui::PushStyleVar(ImGuiStyleVar_WindowBorderSize, 0.0f);
 	ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(0.0f, 0.0f));
-	ImGui::Begin("Dock Window", nullptr,
+	ImGui::Begin("Dock Window", nullptr,   // i18n-ok: untitled dock host (NoTitleBar), ID only
 		ImGuiWindowFlags_NoTitleBar |
 		ImGuiWindowFlags_NoResize |
 		ImGuiWindowFlags_NoMove |
@@ -523,7 +523,7 @@ void MainFrame::DrawUi()
 		// camera's stable pose).
 		ImGui::Separator();
 		ImGui::TextDisabled(TXT("--- Diagnostics ---"));
-		ImGui::Text("bgCamera pan=(%.1f, %.1f) panLast=(%.1f, %.1f) dragging=%d",
+		ImGui::Text("bgCamera pan=(%.1f, %.1f) panLast=(%.1f, %.1f) dragging=%d",   // i18n-ok: diagnostics readout (variable names)
 		            bgCamera.panX, bgCamera.panY,
 		            bgCamera.panLastX, bgCamera.panLastY,
 		            (int)bgCamera.dragging);
@@ -531,9 +531,9 @@ void MainFrame::DrawUi()
 		// %.1f format was undefined behavior on x64 and was reporting
 		// garbage zeros that made it look like render.x wasn't being
 		// mirrored from bgCamera. Cast explicitly so we see the real value.
-		ImGui::Text("view zoom=%.2f pass x=%d y=%d",
+		ImGui::Text("view zoom=%.2f pass x=%d y=%d",   // i18n-ok: diagnostics readout (variable names)
 		            getActiveView() ? getActiveView()->getZoom() : 0.f, render.x, render.y);
-		ImGui::Text("viewport clientRect=(%.0f, %.0f)", clientRect.x, clientRect.y);
+		ImGui::Text("viewport clientRect=(%.0f, %.0f)", clientRect.x, clientRect.y);   // i18n-ok: diagnostics readout (variable names)
 		if (!objects.empty() && !objects[0].frames.empty()) {
 			const auto& obj0 = objects[0];
 			const auto& f0 = obj0.frames[obj0.currentFrame];
@@ -541,10 +541,10 @@ void MainFrame::DrawUi()
 			float sy = bgCamera.ScreenY((float)f0.offsetY, obj0.parallax);
 			float screenPx = sx + bgCamera.panLastX;
 			float screenPy = sy + bgCamera.panLastY;
-			ImGui::Text("obj[0].f[%d/%d] sprId=%d offset=(%d, %d)",
+			ImGui::Text("obj[0].f[%d/%d] sprId=%d offset=(%d, %d)",   // i18n-ok: diagnostics readout (variable names)
 			            obj0.currentFrame, (int)obj0.frames.size() - 1,
 			            f0.spriteId, f0.offsetX, f0.offsetY);
-			ImGui::Text("  -> screen=(%.1f, %.1f)", screenPx, screenPy);
+			ImGui::Text("  -> screen=(%.1f, %.1f)", screenPx, screenPy);   // i18n-ok: diagnostics readout (variable names)
 
 			// Y-flicker diagnostic: dump sprite dimensions AND content
 			// origin (bounds_x1, bounds_y1) for every frame in obj[0]'s
@@ -564,7 +564,7 @@ void MainFrame::DrawUi()
 					int ox = img ? img->offsetX : -1;
 					int oy = img ? img->offsetY : -1;
 					delete img;
-					ImGui::Text("  [%zu] spr=%d  %dx%d  origin=(%d, %d)",
+					ImGui::Text("  [%zu] spr=%d  %dx%d  origin=(%d, %d)",   // i18n-ok: diagnostics readout (variable names)
 					            fi, sid, w, h, ox, oy);
 				}
 			}

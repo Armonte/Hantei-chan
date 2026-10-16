@@ -1,19 +1,21 @@
 #include <map>
 #include <algorithm>
 #include <cassert>
-#include <iostream>
+#include <string>
 #include <cstdint>
 #include <cstring>
 #include <windows.h>
 #include "framedata_load.h"
 #include "misc.h"
+#include "app_log.h"
 
 TestInfo test;
 
-void TestInfo::Print(const void *data, const void *data_end)
+// "file seq id:frame (offset N)" prefix for loader warnings.
+std::string TestInfo::Where(const void *data, const void *data_end) const
 {
-	std::cout <<filename<<" "<<seqName<<" "<<seqId<<":"<<frame<<"\t";
-	std::cout <<"Offsets: "<<(uint64_t)((const char*)data_end - (const char*)data) << "\n";
+	return std::string(filename ? filename : "?") + " " + seqName + " " + std::to_string(seqId) + ":" + std::to_string(frame)
+		+ " (offset " + std::to_string((uint64_t)((const char*)data_end - (const char*)data)) + ")";
 }
 
 //Attack data
@@ -43,7 +45,7 @@ static bool KeepRareTag(unsigned int *&data, const unsigned int *buf, uint8_t bl
 	if (n < 0) return false;
 	if (enc && !enc->addExtra((const char*)buf, block, (const int32_t*)data, n)) {
 		char tag[5]{}; memcpy(tag, buf, 4);
-		std::cout << "\tToo many rare tags in one frame, dropped: " << tag << "\n";
+		HC_LOG_WARN("Too many rare tags in one frame, dropped: {}", (const char *)tag);
 	}
 	data += n;
 	return true;
@@ -71,8 +73,7 @@ unsigned int *fd_frame_AT_load(unsigned int *data, const unsigned int *data_end,
 
 			/* if(data[0] & 1<<15)
 			{
-				test.Print(data, data_end);
-				std::cout << "ATGD "<<data[0]<<"\n";
+				HC_LOG_WARN("{} ATGD {}", test.Where(data, data_end), data[0]);
 			} */
 			++data;
 		} else if (!memcmp(buf, "ATHS", 4)) {
@@ -114,8 +115,7 @@ unsigned int *fd_frame_AT_load(unsigned int *data, const unsigned int *data_end,
 
  			/* if(data[0] != 0)
 			{
-				test.Print(data, data_end);
-				std::cout << "ATF1 "<< data[0]<<"\n";
+				HC_LOG_WARN("{} ATF1 {}", test.Where(data, data_end), data[0]);
 			} */
 			++data;
 		} else if (!memcmp(buf, "ATHE", 4)) {
@@ -215,8 +215,7 @@ unsigned int *fd_frame_AT_load(unsigned int *data, const unsigned int *data_end,
 		} else {
 			char tag[5]{};
 			memcpy(tag,buf,4);
-			test.Print(data, data_end);
-			std::cout <<"\tUnknown AT tag: " << tag <<"\n";
+			HC_LOG_WARN("{} Unknown AT tag: {}", test.Where(data, data_end), (const char *)tag);
 		}
 
 		//Unhandled: None, unless they're not vanilla melty files.
@@ -241,8 +240,7 @@ unsigned int *fd_frame_AS_load(unsigned int *data, const unsigned int *data_end,
 			AS->accel[1] = data[4];
 			if((AS->movementFlags&~0x33) != 0)
 			{
-				test.Print(data, data_end);
-				std::cout << "Unknown ASV0 flags: "<<AS->movementFlags<<"\n";
+				HC_LOG_WARN("{} Unknown ASV0 flags: {}", test.Where(data, data_end), AS->movementFlags);
 			}
 			data += 5;
 		} else if (!memcmp(buf, "ASVX", 4)) {
@@ -255,8 +253,7 @@ unsigned int *fd_frame_AS_load(unsigned int *data, const unsigned int *data_end,
 			AS->canMove = data[0];
 			if(AS->canMove != 1)
 			{
-				test.Print(data, data_end);
-				std::cout << "ASMV: "<<AS->canMove<<"\n";
+				HC_LOG_WARN("{} ASMV: {}", test.Where(data, data_end), AS->canMove);
 			}
 			++data;
 		} else if (!memcmp(buf, "ASS1", 4)) {
@@ -267,24 +264,21 @@ unsigned int *fd_frame_AS_load(unsigned int *data, const unsigned int *data_end,
 			AS->cancelNormal = data[0];
 			if(AS->cancelNormal > 3 || AS->cancelNormal < 1)
 			{
-				test.Print(data, data_end);
-				std::cout << "Cancel N: "<<AS->cancelNormal<<"\n";
+				HC_LOG_WARN("{} Cancel N: {}", test.Where(data, data_end), AS->cancelNormal);
 			}
 			data++;
 		} else if (!memcmp(buf, "ASCS", 4)) {
 			AS->cancelSpecial = data[0];
 			if(AS->cancelSpecial > 3 || AS->cancelSpecial < 1)
 			{
-				test.Print(data, data_end);
-				std::cout << "Cancel S: "<<AS->cancelSpecial<<"\n";
+				HC_LOG_WARN("{} Cancel S: {}", test.Where(data, data_end), AS->cancelSpecial);
 			}
 			data++;
 		} else if (!memcmp(buf, "ASCT", 4)) {
 			AS->counterType = data[0];
 			if(AS->counterType > 3 || AS->counterType < 1)
 			{
-				test.Print(data, data_end);
-				std::cout << "Counter T: "<<AS->counterType<<"\n";
+				HC_LOG_WARN("{} Counter T: {}", test.Where(data, data_end), AS->counterType);
 			}
 			data++;
 		} else if (!memcmp(buf, "AST0", 4)) {
@@ -294,8 +288,7 @@ unsigned int *fd_frame_AS_load(unsigned int *data, const unsigned int *data_end,
 			AS->sinePhases[1] = ((float*)data)[6];
 			if((data[0]&~0x11) != 0)
 			{
-				test.Print(data, data_end);
-				std::cout << "AST0 has nonstandard flags\n";
+				HC_LOG_WARN("{} AST0 has nonstandard flags", test.Where(data, data_end));
 			}
 			data += 7;
 		} else if (!memcmp(buf, "ASMX", 4)) {
@@ -309,8 +302,7 @@ unsigned int *fd_frame_AS_load(unsigned int *data, const unsigned int *data_end,
 			AS->invincibility = data[0];
 			if(data[0] > 5)
 			{
-				test.Print(data, data_end);
-				std::cout <<"\tUnknown ASYS value: " << data[0] <<"\n";
+				HC_LOG_WARN("{} Unknown ASYS value: {}", test.Where(data, data_end), data[0]);
 			}
 			data++;
 		} else if (!memcmp(buf, "ASF2", 4) || !memcmp(buf, "ASF3", 4)) {
@@ -323,8 +315,7 @@ unsigned int *fd_frame_AS_load(unsigned int *data, const unsigned int *data_end,
 			char t = ((char *)buf)[3];
 			if(t != '0' && t !='1')
 			{
-				test.Print(data, data_end);
-				std::cout <<"\tUnknown ASF suffix" << t <<"\n";
+				HC_LOG_WARN("{} Unknown ASF suffix{}", test.Where(data, data_end), std::string(1, t));
 			}
 			else
 			{
@@ -337,8 +328,7 @@ unsigned int *fd_frame_AS_load(unsigned int *data, const unsigned int *data_end,
 		} else {
 			char tag[5]{};
 			memcpy(tag,buf,4);
-			test.Print(data, data_end);
-			std::cout <<"\tUnknown AS tag: " << tag <<"\n";
+			HC_LOG_WARN("{} Unknown AS tag: {}", test.Where(data, data_end), (const char *)tag);
 		}
 		
 		//Unhandled: None, unless they're not in vanilla melty files.
@@ -379,8 +369,7 @@ unsigned int *fd_frame_EF_load(unsigned int *data, const unsigned int *data_end,
 		} else {
 			char tag[5]{};
 			memcpy(tag,buf,4);
-			test.Print(data, data_end);
-			std::cout <<"\tUnknown EF tag: " << tag <<"\n";
+			HC_LOG_WARN("{} Unknown EF tag: {}", test.Where(data, data_end), (const char *)tag);
 		}
 	}
 	
@@ -417,8 +406,7 @@ unsigned int *fd_frame_IF_load(unsigned int *data, const unsigned int *data_end,
 		} else {
 			char tag[5]{};
 			memcpy(tag,buf,4);
-			test.Print(data, data_end);
-			std::cout <<"\tUnknown IF tag: " << tag <<"\n";
+			HC_LOG_WARN("{} Unknown IF tag: {}", test.Where(data, data_end), (const char *)tag);
 		}
 	}
 	
@@ -520,8 +508,7 @@ unsigned int *fd_frame_AF_load(unsigned int *data, const unsigned int *data_end,
 				++data;
 			}
 			else {
-				test.Print(data, data_end);
-				std::cout <<"\tAFF uses uknown value: " << t <<"\n";
+				HC_LOG_WARN("{} AFF uses uknown value: {}", test.Where(data, data_end), std::string(1, t));
 			}
 
 		} else if (!memcmp(buf, "AFAL", 4)) {
@@ -623,7 +610,7 @@ unsigned int *fd_frame_AF_load(unsigned int *data, const unsigned int *data_end,
 			//Unknown tags are dropped on save — never skip one silently (issues #71/#68).
 			char tag[5]{};
 			memcpy(tag,buf,4);
-			std::cout <<"\tUnknown AF tag: " << tag <<"\n";
+			HC_LOG_WARN("Unknown AF tag: {}", (const char *)tag);
 		}
 		//Unhandled: None, unless they're not in vanilla melty files.
 	}
@@ -657,8 +644,7 @@ unsigned int *fd_frame_load(unsigned int *data, const unsigned int *data_end, Fr
 			}
 			else
 			{
-				test.Print(data, data_end);
-				std::cout << "\tBox out of range or over the PDS2 count: " << location << "\n";
+				HC_LOG_WARN("{} Box out of range or over the PDS2 count: {}", test.Where(data, data_end), location);
 			}
 			
 			data += 5;
@@ -676,8 +662,7 @@ unsigned int *fd_frame_load(unsigned int *data, const unsigned int *data_end, Fr
 			}
 			else
 			{
-				test.Print(data, data_end);
-				std::cout << "\tBox reference out of range: " << location << "\n";
+				HC_LOG_WARN("{} Box reference out of range: {}", test.Where(data, data_end), location);
 			}
 			
 			data += 2;
@@ -715,8 +700,7 @@ unsigned int *fd_frame_load(unsigned int *data, const unsigned int *data_end, Fr
 			}
 			else
 			{
-				test.Print(data, data_end);
-				std::cout <<"\tASSM future reference: " << data[0] <<":"<<info->cur_AS<<"\n";
+				HC_LOG_WARN("{} ASSM future reference: {}:{}", test.Where(data, data_end), data[0], info->cur_AS);
 			}
 
 		} else if (!memcmp(buf, "AFST", 4)) {
@@ -764,8 +748,7 @@ unsigned int *fd_frame_load(unsigned int *data, const unsigned int *data_end, Fr
 		} else {
 			char tag[5]{};
 			memcpy(tag,buf,4);
-			test.Print(data, data_end);
-			std::cout <<"\tUnknown Frame level tag: " << tag <<"\n";
+			HC_LOG_WARN("{} Unknown Frame level tag: {}", test.Where(data, data_end), (const char *)tag);
 		}
 
 		//Unhandled: None, unless they're not in vanilla melty files.
@@ -955,7 +938,7 @@ unsigned int *fd_sequence_load(unsigned int *data, const unsigned int *data_end,
 				Frame &frame = seq->frames[delayLoad.frameNo];
 				if (delayLoad.source >= temp_info.boxesRefs.size() || !temp_info.boxesRefs[delayLoad.source])
 				{
-					std::cout << "\tBox reference to a missing box: " << delayLoad.source << "\n";
+					HC_LOG_WARN("Box reference to a missing box: {}", delayLoad.source);
 					continue;
 				}
 				frame.hitboxes[delayLoad.location] = *temp_info.boxesRefs[delayLoad.source];
@@ -980,8 +963,7 @@ unsigned int *fd_sequence_load(unsigned int *data, const unsigned int *data_end,
 		{
 			char tag[5]{};
 			memcpy(tag,buf,4);
-			test.Print(data, data_end);
-			std::cout <<"\tUnknown Pattern level tag: " << tag <<"\n";
+			HC_LOG_WARN("{} Unknown Pattern level tag: {}", test.Where(data, data_end), (const char *)tag);
 		}
 	}
 	

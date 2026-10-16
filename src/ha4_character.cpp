@@ -1,4 +1,5 @@
 #include "ha4_character.h"
+#include "app_log.h"
 #include "character_instance.h"
 #include "framedata_ha4.h"
 #include "ha4_parts.h"
@@ -71,7 +72,7 @@ std::string AttachCharacterResources(CharacterInstance &ch, const std::string &d
 			}
 		}
 	}
-	printf("[HA4] %s: %s\n", dat.filename().string().c_str(), summary.c_str());
+	HC_LOG_INFO("[HA4] {}: {}", dat.filename().string().c_str(), summary.c_str());
 	return summary;
 }
 

@@ -107,7 +107,7 @@ void MainPane::Draw()
 		{	// the combo takes what the label, the ID field and the search button leave, so a longer (Japanese) label never pushes them out
 			const ImGuiStyle &sty = im::GetStyle();
 			const float others = im::CalcTextSize(LBL("Pattern"), nullptr, true).x + sty.ItemInnerSpacing.x * 2 + 20.f + 45.f
-				+ im::CalcTextSize("ID").x + 10.f + 30.f;
+				+ im::CalcTextSize(TXT("ID")).x + 10.f + 30.f;
 			im::SetNextItemWidth(std::max(80.f, im::GetContentRegionAvail().x - others));
 		}
 		if (im::BeginCombo(LBL("Pattern"), decoratedNames[currState.pattern].c_str(), ImGuiComboFlags_HeightLargest))
@@ -123,15 +123,6 @@ void MainPane::Draw()
 					currState.pattern = n;
 					currState.frame = 0;
 					currState.currentTick = 0;  // Reset tick when changing pattern
-					// Debug: Print pattern name
-					auto seq = frameData->get_sequence(n);
-					if(seq) {
-						printf("[Pattern Switch] Pattern %d: '%s' (UTF-8 bytes: ", n, seq->name.c_str());
-						for(size_t i = 0; i < seq->name.length() && i < 64; i++) {
-							printf("%02x ", (unsigned char)seq->name[i]);
-						}
-						printf(")\n");
-					}
 				}
 
 				// Set the initial focus when opening the combo (scrolling + keyboard navigation focus)
@@ -142,7 +133,7 @@ void MainPane::Draw()
 		}
 		im::SameLine(0, 20.f);
 		im::SetNextItemWidth(45);
-		if(im::InputInt("ID##Pattern", &currState.pattern, 0, 0)) {
+		if(im::InputInt(LBL("ID##Pattern"), &currState.pattern, 0, 0)) {
 			// Clamp to valid range
 			int count = frameData->get_sequence_count();
 			if(currState.pattern < 0) currState.pattern = 0;

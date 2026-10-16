@@ -1,4 +1,5 @@
 #include "parts_shape.h"
+#include "../app_log.h"
 #include <fstream>
 #include <cstring>
 
@@ -55,7 +56,7 @@ unsigned int* Shape<>::VeLoad(unsigned int* data, const unsigned int* data_end, 
                 break;
 
             default:
-                std::cout << "\tUnknown Shape type: " << (int)sh.type << "\n";
+                HC_LOG_WARN("Unknown Shape type: {}", (int)sh.type);
                 break;
         }
 
@@ -90,7 +91,7 @@ unsigned int* Shape<>::VnLoad(unsigned int* data, const unsigned int* data_end, 
         else {
             char tag[5]{};
             memcpy(tag, buf, 4);
-            std::cout << "\tUnknown VE level tag: " << tag << "\n";
+            HC_LOG_WARN("Unknown VE level tag: {}", (const char *)tag);
         }
     }
 
