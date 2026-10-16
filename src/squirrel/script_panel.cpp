@@ -4,12 +4,16 @@
 #include "script_index.h"
 #include "ptcn_stack.h"
 #include "script_vm.h"
+#include "fbmod_link.h"
 
 #include "../app_log.h"
+#include "../i18n.h"
+#include "../ini.h"
 #include "../png_writer.h" // BrowseForFolderUtf8
 
 #include <ImGuiColorTextEdit/TextEditor.h>
 #include <imgui.h>
+#include <imgui_internal.h> // MarkIniSettingsDirty (hot reload settings)
 #include <json/json.hpp>
 
 #include <algorithm>
@@ -19,6 +23,7 @@
 #include <deque>
 #include <filesystem>
 #include <fstream>
+#include <future>
 #include <map>
 #include <regex>
 #include <set>
@@ -202,8 +207,8 @@ bool LightTheme()
 	const ImVec4 b = ImGui::GetStyle().Colors[ImGuiCol_WindowBg];
 	return 0.299f * b.x + 0.587f * b.y + 0.114f * b.z > 0.5f;
 }
-ImVec4 EngineCol() { return LightTheme() ? ImVec4(0.1f, 0.35f, 0.75f, 1) : EngineCol(); }
-ImVec4 ScriptCol() { return LightTheme() ? ImVec4(0.1f, 0.5f, 0.15f, 1) : ScriptCol(); }
+ImVec4 EngineCol() { return LightTheme() ? ImVec4(0.1f, 0.35f, 0.75f, 1) : ImVec4(0.45f, 0.7f, 1, 1); }
+ImVec4 ScriptCol() { return LightTheme() ? ImVec4(0.1f, 0.5f, 0.15f, 1) : ImVec4(0.5f, 0.9f, 0.5f, 1); }
 ImVec4 WarnCol() { return LightTheme() ? ImVec4(0.65f, 0.38f, 0, 1) : ImVec4(1, 0.8f, 0.4f, 1); }
 ImVec4 ErrCol() { return LightTheme() ? ImVec4(0.75f, 0.1f, 0.05f, 1) : ImVec4(1, 0.45f, 0.4f, 1); }
 ImVec4 ArgCol() { return LightTheme() ? ImVec4(0.75f, 0.35f, 0, 1) : ImVec4(1, 0.85f, 0.3f, 1); }
@@ -256,6 +261,125 @@ struct ScriptPanel::Impl {
 	std::vector<OutlineItem> outline;
 	bool outlineDirty = true;
 	std::string outlineFilter;
+
+	// Hot reload through the fbmod in-game pipe (fbmod_link.h). Pipe calls run on a worker (a reload reply waits for the
+	// next battle frame); the UI polls hotJob each frame. A save while a job runs replaces hotPending (latest wins).
+	struct HotTask {
+		bool reload = false;   // false: ping only
+		std::string pipe, gameDir, srcFile, chr, fileName;
+	};
+	struct HotResult {
+		bool ok = false;
+		std::string text;
+	};
+	std::future<HotResult> hotJob;
+	bool hotBusy = false, hasHotPending = false;
+	HotTask hotPending;
+	std::string hotStatus;
+	bool hotStatusOk = false;
+	std::string hotPipe, hotPipeGame;   // pipe name; reset to the profile's default when the profile changes
+	std::string hotGameDirOther;        // game folder for profiles without a saved setting
+
+	static std::string DefaultGameDir(const std::string& g)
+	{
+		if (g == "mbtl") return "C:\\Program Files (x86)\\Steam\\steamapps\\common\\MELTY BLOOD TYPE LUMINA";
+		return "C:\\Program Files (x86)\\Steam\\steamapps\\common\\UNDER NIGHT IN-BIRTH II Sys Celes";
+	}
+	std::string& hotGameDirSetting()
+	{
+		return game == "mbtl" ? gSettings.sqGameDirMbtl : game == "uni2" ? gSettings.sqGameDirUni2 : hotGameDirOther;
+	}
+	std::string hotGameDir() { const std::string& d = hotGameDirSetting(); return d.empty() ? DefaultGameDir(game) : d; }
+
+	static HotResult RunHotTask(const HotTask& t)
+	{
+		const FbmodReply ping = FbmodRequest(t.pipe, "ping", 3000);
+		if (!ping.connected) return {false, "game not running (no fbmod pipe)"};
+		if (!ping.ok) return {false, "ping: " + ping.text};
+		if (!t.reload) return {true, ping.text};
+		std::string mods = FbmodModsDir(ping.text);
+		if (mods.empty()) mods = ToU8(U8(t.gameDir) / "fbmod" / "mods");
+		const fs::path dstDir = U8(mods) / "data" / U8(t.chr);
+		std::error_code ec;
+		fs::create_directories(dstDir, ec);
+		if (ec) return {false, "cannot create " + ToU8(dstDir) + ": " + ec.message()};
+		fs::copy_file(U8(t.srcFile), dstDir / U8(t.fileName), fs::copy_options::overwrite_existing, ec);
+		if (ec) return {false, "cannot copy to " + ToU8(dstDir / U8(t.fileName)) + ": " + ec.message()};
+		HC_LOG_INFO("[script] hot reload: copied {} to {}", t.srcFile, ToU8(dstDir / U8(t.fileName)));
+		const FbmodReply r = FbmodRequest(t.pipe, "reload " + t.chr, 8000);
+		if (!r.connected) return {false, "game not running (no fbmod pipe)"};
+		return {r.ok, r.text};
+	}
+	void startHot(const HotTask& t)
+	{
+		if (hotBusy) { hotPending = t; hasHotPending = true; return; }
+		hotBusy = true;
+		hotStatus = t.reload ? "reloading " + t.chr + "..." : "ping...";
+		hotStatusOk = true;
+		hotJob = std::async(std::launch::async, RunHotTask, t);
+	}
+	void pollHot()
+	{
+		if (!hotBusy || hotJob.wait_for(std::chrono::seconds(0)) != std::future_status::ready) return;
+		const HotResult r = hotJob.get();
+		hotBusy = false;
+		hotStatus = r.text;
+		hotStatusOk = r.ok;
+		say("hot reload: " + r.text);
+		if (hasHotPending) { hasHotPending = false; startHot(hotPending); }
+	}
+	// After a save: data/chrNNN/<file> (relative to the opened game root) goes to <mods>\data\chrNNN\<file>, then reload chrNNN.
+	void hotReloadSaved()
+	{
+		if (!gSettings.sqHotReload) return;
+		static const std::regex re(R"(^data/(chr\d+)/([^/]+)$)");
+		std::smatch mm;
+		if (!std::regex_match(currentRel, mm, re)) { hotStatus = "not a data/chrNNN file: not reloaded"; hotStatusOk = false; return; }
+		HotTask t;
+		t.reload = true;
+		t.pipe = hotPipe;
+		t.gameDir = hotGameDir();
+		t.srcFile = ToU8(U8(root) / U8(currentRel));
+		t.chr = mm[1].str();
+		t.fileName = mm[2].str();
+		startHot(t);
+	}
+	void drawHotReload()
+	{
+		pollHot();
+		if (hotPipeGame != game || hotPipe.empty()) { hotPipeGame = game; hotPipe = game == "mbtl" ? "fbmod-mbtl" : "fbmod-uni2"; }
+		if (ImGui::Checkbox(LBL("Hot reload"), &gSettings.sqHotReload)) ImGui::MarkIniSettingsDirty();
+		if (ImGui::IsItemHovered()) ImGui::SetTooltip("%s", TXT("On save, copy a data/chrNNN file into the game's fbmod mods folder and reload that character in the running game (fbmod pipe)."));
+		if (!gSettings.sqHotReload) return;
+		ImGui::SameLine();
+		char buf[512];
+		snprintf(buf, sizeof buf, "%s", hotGameDir().c_str());
+		ImGui::SetNextItemWidth(320);
+		if (ImGui::InputText(LBL("Game folder"), buf, sizeof buf)) {
+			hotGameDirSetting() = buf == DefaultGameDir(game) ? std::string() : std::string(buf);
+			ImGui::MarkIniSettingsDirty();
+		}
+		if (ImGui::IsItemHovered()) ImGui::SetTooltip("%s", TXT("Install folder of the game. Used for fbmod\\mods when the game's ping reply does not name the mods folder."));
+		ImGui::SameLine();
+		char pbuf[128];
+		snprintf(pbuf, sizeof pbuf, "%s", hotPipe.c_str());
+		ImGui::SetNextItemWidth(130);
+		if (ImGui::InputText("##hotpipe", pbuf, sizeof pbuf)) hotPipe = pbuf;
+		ImGui::SameLine(0, 0);
+		if (ImGui::BeginCombo(LBL("Pipe"), nullptr, ImGuiComboFlags_NoPreview)) {
+			for (const char* p : {"fbmod-uni2", "fbmod-mbtl"})
+				if (ImGui::Selectable(p, hotPipe == p)) hotPipe = p;
+			ImGui::EndCombo();
+		}
+		ImGui::SameLine();
+		ImGui::BeginDisabled(hotBusy);
+		if (ImGui::Button(LBL("Ping"))) { HotTask t; t.pipe = hotPipe; t.gameDir = hotGameDir(); startHot(t); }
+		ImGui::EndDisabled();
+		if (!hotStatus.empty()) {
+			ImGui::SameLine();
+			ImGui::TextColored(hotStatusOk ? ScriptCol() : ErrCol(), "%s", i18n::TrDetail(hotStatus).c_str());
+		}
+	}
 
 	void buildOutline()
 	{
@@ -1326,6 +1450,7 @@ void ScriptPanel::draw()
 		}
 	}
 	ImGui::EndDisabled();
+	m->drawHotReload();
 	if (m->offerSaveAnyway) {
 		ImGui::SameLine();
 		if (ImGui::Button("Save anyway")) { m->offerSaveAnyway = false; m->forceNextSave = true; m_saveRequested = true; }
@@ -1439,6 +1564,7 @@ void ScriptPanel::draw()
 	if (bytes == m->doc.originalBytes()) {
 		m->dirty = false;
 		m->setStatus(d.ok ? "no changes (file is byte-identical); compiles" : "no changes; " + d.message, !d.ok);
+		m->hotReloadSaved();   // unchanged file: still push it (first sync after turning hot reload on)
 		return;
 	}
 	// 3. Backup + atomic replace.
@@ -1450,6 +1576,7 @@ void ScriptPanel::draw()
 	m->dirty = false;
 	if (d.ok) m->setStatus("saved " + m->currentRel + " (" + std::to_string(bytes.size()) + " bytes); compiles" + (m->apiPath.empty() ? "" : " and runs against the " + m->game + " stubs"), false);
 	else m->setStatus("saved with " + std::string(d.runtime ? "a runtime warning" : "a COMPILE ERROR") + " (" + d.source + ":" + std::to_string(d.line) + ") " + d.message, true);
+	m->hotReloadSaved();
 }
 
 } // namespace sqedit

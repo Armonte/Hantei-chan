@@ -94,6 +94,12 @@ static void ReadLine(ImGuiContext*, ImGuiSettingsHandler*, void* entry, const ch
 			gSettings.mousePanButton = pan;
 			gSettings.mouseDrawButton = draw;
 		}
+	} else if (sscanf(line, "SqHotReload=%i", &i) == 1){
+		gSettings.sqHotReload = i != 0;
+	} else if (strncmp(line, "SqGameDirUni2=", 14) == 0){
+		gSettings.sqGameDirUni2 = line + 14;
+	} else if (strncmp(line, "SqGameDirMbtl=", 14) == 0){
+		gSettings.sqGameDirMbtl = line + 14;
 	} else if (strncmp(line, "StageGameDir=", 13) == 0){
 		gSettings.stageGameDir = line + 13;
 	} else if (strncmp(line, "Key=", 4) == 0){
@@ -143,6 +149,9 @@ static void Write(ImGuiContext* ctx, ImGuiSettingsHandler* handler, ImGuiTextBuf
 	buf->appendf("PatColorCenter=%f,%f,%f,%f\n", ce[0], ce[1], ce[2], ce[3]);
 	buf->appendf("PatColorSelected=%f,%f,%f,%f\n", se[0], se[1], se[2], se[3]);
 	buf->appendf("MouseButtons=%i,%i\n", gSettings.mousePanButton, gSettings.mouseDrawButton);
+	buf->appendf("SqHotReload=%i\n", gSettings.sqHotReload ? 1 : 0);
+	if (!gSettings.sqGameDirUni2.empty()) buf->appendf("SqGameDirUni2=%s\n", gSettings.sqGameDirUni2.c_str());
+	if (!gSettings.sqGameDirMbtl.empty()) buf->appendf("SqGameDirMbtl=%s\n", gSettings.sqGameDirMbtl.c_str());
 	for (const auto& k : gSettings.keyBindings)
 		buf->appendf("%s\n", k.c_str());
 
