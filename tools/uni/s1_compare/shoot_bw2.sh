@@ -17,7 +17,7 @@ grep -v "^#" "$(dirname "$0")/${CASEFILE:-cases.txt}" | grep -E "${CASES:-.}" | 
 	[ -z "$name" ] && continue
 	for bg in ${BGS:-k w}; do
 		case $bg in k) c=0.000000,0.000000,0.000000;; g) c=0.250980,0.250980,0.250980;; *) c=1.000000,1.000000,1.000000;; esac
-		printf "[Other settings][]\nposX=-2000\nposY=10\nsizeX=1280\nsizeY=900\nColor=%s\n" "$c" > "$W/hanteichan.ini"
+		printf "[Other settings][]\nposX=-2000\nposY=10\nsizeX=1280\nsizeY=900\nColor=%s\n" "$c" > "$W/hanteichan.ini"; [ -n "${INI_EXTRA:-}" ] && printf "%b\n" "$INI_EXTRA" >> "$W/hanteichan.ini"
 		args=(--open "$G\\$txt" --pattern "$pat" --frame "$fr" --zoom "$zoom" --hide-boxes ${EXTRA_ARGS:-})
 		[ "$tick" != "-1" ] && args+=(--tick "$tick")
 		rm -f "$W/$name.png"
