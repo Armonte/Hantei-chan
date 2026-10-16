@@ -7,8 +7,8 @@ Output folder (default work/s45/uni2_pups_proof/___St/data/chr000/):
   chr000.ha6     the shipped file with one tag added: pattern 0 (Hyde's stand, no BaseData template) gets PUPS 1,
                  which makes the game draw that pattern with chr000_p1.pal (UNI2_MBTL_DATA.md: PUPS n = _pn.pal)
 
-Deploying them needs a loader override folder (nuuni mod/ or UNI2-Improvement-Mod): UNI2 1.42 opens a loose
-___St\\data file but the archive copy still wins (S3 test, 0x4B9971). The output folder name is only a staging layout. Usage: make_uni2_pups_proof.py [--cgmtool build/cgmtool.exe] [--out DIR]
+Deploying them needs the loader's override folder, <game>\\UNI2-IM\\Mods\\data\\chr000\\ (fbmod / UNI2-IM; the CG manager's
+"Save to mod folder" writes there): UNI2 1.42 opens a loose ___St\\data file but the archive copy still wins (S3 test, 0x4B9971). The output folder name is only a staging layout. Usage: make_uni2_pups_proof.py [--cgmtool build/cgmtool.exe] [--out DIR]
 """
 import argparse, hashlib, os, shutil, struct, subprocess, sys
 
