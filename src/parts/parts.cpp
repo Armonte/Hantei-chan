@@ -545,11 +545,13 @@ void Parts::Draw(const DrawParams& params,
 
     constexpr int tX[] = { 0,1,1, 1,0,0 };
     constexpr int tY[] = { 0,0,1, 1,1,0 };
+    const int *tXd = tX, *tYd = tY;
     // The games queue every ring / arc / sphere / cone segment as one 4-vertex prim with UVs (u0,v0) (u1,v0) (u0,v1)
     // (u1,v1) (uni2 1.42 CPAniPrimRender_DrawQuads 0x4C0F10 and the shape classes' corner getters) and draw it split
     // along (u1,v0)-(u0,v1). Their segments are not parallelograms, so the split shows in the texture (render-match8:
     // the 3-segment arc of chr019 p153, 29.45 -> 0.28). kSplit* is that split for shapes mapping u to tX and v to tY
-    // (ring, arc) or u to tY and v to tX (sphere); the cone maps v to 1 - tX, where the default tables already match.
+    // (arc). Only the UNI2 arc uses it: the split was measured on it (render-match8); applying it to ring / sphere
+    // is unverified (no measured case isolates them), and MBTL's arc measured worse.
     constexpr int kSplitX[] = { 0,1,0, 1,1,0 };
     constexpr int kSplitY[] = { 0,0,1, 0,1,1 };
 
@@ -783,7 +785,6 @@ void Parts::Draw(const DrawParams& params,
         // were stored negated to make up for it.
         case ShapeType::RING:
         {
-            const int *tX = kSplitX, *tY = kSplitY;   // segment split as in the games (see kSplitX)
             // Cylindrical ring
             float angle = 0;
             float delta = glm::pi<float>() * outShape.length / 5000 / outShape.vertexCount;
@@ -806,7 +807,8 @@ void Parts::Draw(const DrawParams& params,
         case ShapeType::ARC:
         {
             // Curved arc surface (game corners: inner-cur, outer-cur, inner-next, outer-next; split as kSplit*).
-            const int *tX = kSplitX, *tY = kSplitY;
+            // UNI2 only: the MBTL arc of flipV p157 measured 3.55 -> 4.62 with this split, so MBTL keeps the default.
+            const int *tX = params.uni2ArcSplit ? kSplitX : tXd, *tY = params.uni2ArcSplit ? kSplitY : tYd;
             float angle = 0;
             float delta = glm::pi<float>() * outShape.length / 5000 / outShape.vertexCount;
             vertexData.resize(6 * outShape.vertexCount * 7);
@@ -833,7 +835,6 @@ void Parts::Draw(const DrawParams& params,
         }
         case ShapeType::SPHERE:
         {
-            const int *tX = kSplitX, *tY = kSplitY;   // segment split as in the games (see kSplitX)
             // Spherical surface
             float angle = 0;
             float delta = glm::pi<float>() * outShape.length / 5000 / outShape.vertexCount;
