@@ -961,3 +961,46 @@ No editor (C++) change. The round-14 numbers stand (same build inputs). Full cte
   global, `hold` it in `mbtl_to_training.gcs`, recapture p238 and drop the HUD-row split.
 - pras arcs: a live debugger session (a breakpoint in `CPAniPrimRender_Donuts_Setup` for PRID 947, then dump the 4
   corners from `PatPart_QueueShapeSegments_2D` in two runs) would show which input differs.
+
+## Round 16 / render-match16 (2026-10-16): MBTL captures without the battle HUD
+No editor (C++) change. Numbers: `tools/uni/s1_compare/v2_round16.sh` (log `round16.log`). Full ctest 69/69 (`ctest_r16.log`, `--timeout 900`).
+
+### The gauge-visible flag (MBTL IDB, renamed and saved)
+- `TutorialTalk_ParseTag_GAUGEVIEW` 0x7BC800 builds an item of type 5 whose value is the tag number. The runner
+  **`TutorialTalk_ExecuteItems`** 0x7BB0B0 (`switch` on item +4) handles case 5:
+  - value ≠ 0 → **`BattleHudFader_Show`** 0x5463E0 (fade in from alpha 0, or straight to alpha 10000).
+  - value 0 → `*g_BattleHudFader`: state +8 = 2 (hidden), alpha +16 / +20 = 0, +24 = 0, +28 (i16) = 0.
+- **`g_BattleHudFader`** 0xAFC3C8 (was `g_BattleObjPtrAFB3E0_Unverified`) points at that fader. State +8: 0 shown,
+  1 fading in, 2 hidden.
+- **Harness.** `cases/v2r16_mbtl_chr00{1,11}_nohud.gcs` hold `[g_BattleHudFader]+8 = 2`, `+16 = 0` and `+20 = 0` after
+  `mbtl_to_training.gcs`. Otherwise they are the round-5 case files (bloom 0, same-session plates). Every MBTL gauge
+  (life, MAGIC CIRCUIT, portraits) is gone from both the shot and the plate. The training input/frame overlay text and
+  the combo counter stay. Raw shots are in `captures/v2/nohud/`, copied as `*_nh_game*` next to the `_nb` ones.
+- **The stage is random.** The `_nh` session landed on different stages (chr001: dojo, chr011: a fountain stage), and
+  stage choice is not pinned (`CBtlStageTableMakeRandom` / `MakeBgNo`, not traced).
+
+### MBTL rows (raw = lit, identity light)
+
+| case | _nb (round 5) | **_nh (HUD hidden)** | note |
+|---|---|---|---|
+| mbtl_patctrl_chr001_p238f10_z1 (control) | 3.25 | **0.71** | the gauge was over the tray; the HUD-row split is no longer needed |
+| mbtl_patctrl_chr001_p238f10 (zoom 1.5) | 3.40 | **1.08** | |
+| mbtl_patctrl_chr001_p277f0_z1 | 0.00 | **0.00** | pixel-exact |
+| mbtl_patctrl_chr001_p277f0 (zoom 1.5) | 1.66 | **1.17** | |
+| mbtl_flipV_chr001_p157f2_z1 | 1.28 | **1.05** | |
+| mbtl_flipV_chr001_p157f2 (zoom 1.5) | 4.46 | **4.23** | thin arcs at 1.5 (round 12) |
+| mbtl_pups_chr011_p309_z1 | **0.14** | 0.85 | `_nh` landed on the fountain stage; the residual is the animated spray (plate one step later). Keep `_nb` (no HUD over the footprint) |
+| mbtl_pups_chr011_p309 (zoom 1.5) | **0.59** | 1.02 | same |
+| mbtl_flipV solos s8 / s456 _z1 | 0.79 / 0.75 | not recaptured | own `.pat` captures |
+
+- Zoom 1.5 uses the round-12 chr001 offset (+0.25, 0; same camera) for both captures. A refit on the `_nh` p238 alone
+  gives +0.25, +0.125. That makes p277 (3.67) and p157 (6.61) worse, so the y term is ambiguous on p238 and the refit
+  is printed for reference only.
+- **Preferred rows from now on:** chr001 rows against `_nh`, chr011 against `_nb`. The MBTL .pat control floor is now
+  **0.71** at zoom 1 (p238) and 0.00 (p277). The round-14 `v2_mbtl_hud_split.py` workaround is retired (kept for the
+  `_nb` history).
+
+### Next
+- Pin the MBTL training stage (trace `CBtlStageTableMakeRandom` / the BgNo the training scene picks), recapture
+  chr011 HUD-free on a still stage, and recapture the p157 s8/s456 solos HUD-free.
+- What is left on p238 _nh at zoom 1 (0.71): split by prop again (`v2_split_by_shot.py` with the round-14 solo shots).
