@@ -1,0 +1,18 @@
+# render-match10 round 10 (2026-10-15): mbtl_flipV_chr001_p157f2 with only part-set-21 slot(s) s8 on screen.
+# round10/chr001_solo21_s8.pat = chr001.pat with every other slot of set 21 moved off-screen (PRXY 30000,30000;
+# tools/uni/s1_compare/pat_solo_prop.py), loaded as an MBTL-IM loose-file override (removed again at quit).
+include ../games/mbtl.gcs
+file_put ../round10/chr001_solo21_s8.pat MBTL-IM/Mods/data/chr001/chr001.pat
+let P1CHR 1
+let P2CHR 1
+ini_set MBTL-IM/MBTL_IM.ini Stages BloomStrength 0
+include ../games/mbtl_to_training.gcs
+set OUTD C:\dev\hantei-chan\tools\gamecap\captures\v2
+set NSTEPS 1
+set CASE mbtl_flipV_chr001_p157f2_solo_s8
+set PAT 157
+set SETFRAME 2
+set FRAME 2
+set GTICK 1
+include ../games/mbtl_v2_case_plate.gcs
+quit

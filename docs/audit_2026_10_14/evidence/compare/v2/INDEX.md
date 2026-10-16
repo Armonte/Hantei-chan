@@ -469,3 +469,65 @@ Evidence: `round9/`.
   - Its last line, `ctrl_chr019_p0` at 15.48, is already that value with the round 8 tools. The line has no stage
     gradient and no bokashi model, and chr019 p0 is a CG sprite, so it is not a regression.
   - Full ctest: 67/67 passed (`ctest_r9.log`, `--timeout 900`).
+
+## Round 10 / render-match10 (2026-10-15): MBTL arc split, metric registration, pras layers
+Numbers: `tools/uni/s1_compare/v2_round10.sh` (log `round10.log`: every line with the round-9 registration and with
+`--exact-reg`). Full ctest 67/67 (`ctest_r10.log`, `--timeout 900`).
+
+### mbtl_flipV_chr001_p157f2: single-prop isolation
+- Part set 21 holds four arcs (VEST type 4, radius 256, 24 segments): slots 4/5/6 (widths 64/56/40, thin-line
+  texture, PRRV 0) and slot 8 (width 100, 54%, **PRRV 2**, PRAL 1, PRCL 0x99), plus planes 7/11/21/22/24.
+- Solo files: `pat_solo_prop.py chr001.pat 21 8` and `... 21 4,5,6` (`tools/gamecap/round10/chr001_solo21_s8.pat`
+  sha256 453f517c..., `_s456.pat` 72ecf84f...; 50 MB each, not committed, regenerate with the script). Game:
+  `gamecap_scripts/v2r10_mbtl_chr001_solo_s{8,456}.gcs` (MBTL-IM `Mods/data/chr001/chr001.pat` override, removed at
+  quit). The s8 window plate came out black: measure both against `_game_plate_bb.png`. Editor: cases
+  `mbtl_flipV_chr001_p157f2_solo_s8 / _s456` (`gamedata/mbtl/data/chr001solos8`, `chr001solos456`).
+
+| probe | old split | game split (0,1,2),(3,2,1) |
+|---|---|---|
+| solo slot 8 (PRRV 2 arc) | 1.73 / 4.6% | **1.06 / 2.5%** (refine 0: 1.73 → 1.32) |
+| solo slots 4/5/6 | 12.17 / 54.6% (band 4.91) | 12.10 / 54.3% (band 4.91): neutral |
+| full p157, round-9 registration | 3.55 / 11.3% | 4.62 / 17.9% |
+| full p157, `--exact-reg` | 5.11 / 19.9% (band 4.34) | **4.62 / 17.9%** (band 4.22) |
+| full p157 `--exact-reg`, split on slot 8 only / on 4,5,6 only | | 4.63 / 5.11 |
+
+- **Why the game split measured worse.** Not the render. `sheet.game_vs_model` mapped the editor crop (footprint
+  bbox + 8 px) onto a rounded game-pixel size, so the sub-pixel registration and scale moved whenever the footprint
+  bbox moved. The split changes slot 8's faint footprint (~135 px), which re-registered the thin-line arcs 4/5/6; a
+  sub-pixel shift scan of the s456 solo shot swings 10.4 → 33.7 over ±0.75 editor px. The old 3.55 was crop luck.
+- **Metric.** `v2_model --exact-reg` resamples from the exact editor-space box of the integer game window (the camera
+  geometry alone sets the registration; the shot is padded with P 0 / Q 1 at its edges). Opt-in: it is not better
+  everywhere (ctrl_chr027_p0 4.20 → 7.14, pups_chr027_p449f4 2.46 → 3.35, flipHV_chr019_p153 3.20 → 4.63 but band
+  1.88 → 1.50), so those round-9 numbers carried the same crop luck the other way. ctrl_chr020, p435, p437 and the
+  z1 / solo flipHV cases are identical either way.
+- **MBTL code (IDB renamed/commented, saved).** No other arc difference: CPAniPrimRender_DrawQuads 0x4A3480 divides
+  by w and sets rhw = 1/w (perspective-correct, as UNI2's type 2); corners inner-cur (u0,v), outer-cur (u0+du,v),
+  inner-next, outer-next as in the editor; no UV bias on these shapes; segment count is the VEST int, angle per
+  segment length/10000 · 360/N, shrink geometric (as round 8); GetCutoutUvFlipped 0x4106E0 = the editor's FlipUv.
+  New names: CPAniPrimRender_GetUvU0 0x4107E0, _GetUvVCur 0x4107F0, _GetUvDu 0x410800, _GetUvDvStep 0x410810,
+  CPAniPrimRender_Donuts_ScalarDeletingDtor 0x411370.
+- **Fix.** `src/parts/parts.cpp`: the arc uses the game split for every uniDialect game (UNI2 and MBTL);
+  `DrawParams::uni2ArcSplit` is gone. MBAACC keeps the old split (not traced). `tool_windows_impl.h` now sets
+  `patUniDialect` on its layers (it left the default true, so MBAACC would have taken the split there).
+- **Floor.** With `--exact-reg` the MBTL .pat-only controls are p238f10 4.29 / 9.9%, p277f0 4.75 / 14.5%: p157 at
+  4.62 / 17.9% is at the floor on the mean. mbtl_pups_chr011_p309 0.64 (0.92 with --exact-reg).
+
+### pras_chr020_p5f2
+- A mixed frame: a CG layer (gets the Bokashi pass) and a .pat layer (does not). Round 9 applied `--bokashi` to the
+  whole footprint. With `--layers pras_chr020_p5f2_cg,pras_chr020_p5f2_pat` the add now comes from the CG layer only
+  (`sheet.POST_ADD_SRC`, through Q_pat when the .pat is on top; here CG is over .pat): 3.84 → 3.83, so the .pat leak
+  was negligible.
+- With `--exact-reg`: **2.43 / 5.0% (band 0.83 / 0.6%)**; the round-9 crop had moved it by (0,-1). Floor
+  ctrl_chr020_p0 0.71 / 0.0% (band 0.59), unchanged by `--exact-reg`.
+- **What is left** (`v2_decomp.py`, now with a CG / .pat split under `--layers` + `--bokashi`): 1886 px (3%) with
+  |d| > 20 carry 49% of the residual, in 550 scattered 1–16 px components.
+  - CG-partial pixels (577 px, mean 42.5, 15% share; game −13 R): CG sprite edges over the cyan .pat flame.
+  - CG interior (mean 2.8): rotated/zoomed CG edge texel choice (as p435 in rounds 6/7).
+  - .pat-only pixels: mean 1.63 (at the floor).
+- **UNI2 IDB** untouched (read-only this round); no new addresses. Lead for the CG-over-.pat edge:
+  CgLayer_DrawWithCharaShader 0x4BE140 (CG edge alpha cut / sampling) vs Han6Draw_DrawPatLayerParts_3D 0x4BF9A0.
+
+### Next
+- Decide whether `--exact-reg` becomes the default; if so, recheck ctrl_chr027 / pups_chr027 / flipHV at zoom 1.5
+  with a sub-pixel registration fit instead of the integer refine.
+- pras: the CG edge alpha cut on a CG-over-.pat edge.
