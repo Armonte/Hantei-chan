@@ -2,6 +2,8 @@
 
 #include "../app_log.h"
 
+#include <cstdio>
+
 #ifdef _WIN32
 #include <windows.h>
 #endif
@@ -15,6 +17,38 @@ std::string FbmodModsDir(const std::string& pingReply)
 	std::string s = pingReply.substr(at + 5);
 	while (!s.empty() && (s.back() == '\r' || s.back() == '\n' || s.back() == ' ' || s.back() == '\0')) s.pop_back();
 	return s;
+}
+
+std::string FbmodReloadRequest(const std::string& chr, bool live)
+{
+	return "reloadchara " + chr + (live ? " live" : "");
+}
+
+FbmodReloadInfo FbmodParseReloadReply(const std::string& reply)
+{
+	FbmodReloadInfo info;
+	const bool err = reply.rfind("ERROR", 0) == 0;
+	info.engine = reply.find("engine rebuild ") != std::string::npos;
+	if (err) {
+		for (const char* k : {"refused in session", "not in a battle", "no battle frame within"})
+			if (reply.find(k) != std::string::npos) { info.refused = true; break; }
+	}
+	const size_t r = reply.find("ha6 root ");
+	if (r != std::string::npos) {
+		unsigned a = 0, b = 0;
+		if (sscanf(reply.c_str() + r + 9, "%8X -> %8X", &a, &b) == 2) {
+			info.hasRoots = true;
+			info.rootBefore = a;
+			info.rootAfter = b;
+		}
+	}
+	const size_t back = reply.find("back in battle after ");
+	if (back != std::string::npos) {
+		info.backInBattle = !(back >= 4 && reply.compare(back - 4, 4, "NOT ") == 0);
+		unsigned long ms = 0;
+		if (sscanf(reply.c_str() + back + 21, "%lu ms", &ms) == 1) info.ms = static_cast<long>(ms);
+	}
+	return info;
 }
 
 #ifdef _WIN32
