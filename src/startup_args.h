@@ -27,7 +27,7 @@
 //   --post-key <vk>      frame 12: post WM_KEYDOWN <vk> to the first detached window
 //                        (checks shortcut routing through the HWND subclass)
 //   --stats <file>       frames 10-19: average scene render / onion-skin cost (CPU ms)
-//   --ui-script <file>   run a scripted UI session: one command per line (# = comment): wait N | waitidle | capture <png> | quit | openany <path> |
+//   --ui-script <file>   run a scripted UI session: one command per line (# = comment): wait N | waitidle | waitms <ms> | waits3dchange <s> (until the 3D stage model on disk changes) | capture <png> | quit | openany <path> |
 //                        pattern N | frame N | viewframe N | zoomview N | framenodes MASK (hold open: 1 Attack data, 2 Effects, 4 Conditions) | copypattern N | pastepattern N | gameformat G | layer N | switchview N |
 //                        and every abrowser::ScriptCommand (browse, source, filter, type, select, open, key, ...)
 //   --quit               quit after the actions even without --capture

@@ -2,6 +2,9 @@
 #include "startup_args.h"
 #include "archive_browser.h"
 #include "stage3d/s3d_view.h"
+
+#include <algorithm>
+#include <chrono>
 #include "authoring/authoring_window.h"
 #include "main_frame.h"
 #include "character_instance.h"
@@ -204,6 +207,13 @@ static bool WriteViewTargetPng(CharacterView *v, const std::string &path)
 	return true;
 }
 
+static int pendingWaitMs = 0; static bool pendingWaitS3d = false;   // set by waitms / waits3dchange, armed by RunUiScript
+static void LogLine(const char* text)
+{
+	FILE *lf = fopen((gStartup.uiScript + ".log").c_str(), "a");
+	if (lf) { fprintf(lf, "%s\n", text); fclose(lf); }
+}
+
 // Scripted UI session (--ui-script): runs between render and swap, so `capture` sees exactly what this frame drew.
 static void RunUiScript(MainFrame &mf, HDC dc, const std::function<void(const std::string &)> &openAny, const std::function<void(int, int)> &setView, const std::function<bool()> &saveActive,
                         const std::function<bool(const std::string &, const std::string &)> &editCmd,
@@ -219,6 +229,19 @@ static void RunUiScript(MainFrame &mf, HDC dc, const std::function<void(const st
 		if (lines.empty()) { done = true; gStartup.exitCode = 2; PostQuitMessage(2); return; }
 	}
 	if (waitFrames > 0) { waitFrames--; return; }
+	{   // wall-clock waits: `waitms <ms>`, `waits3dchange <seconds>` (until the 3D stage's watched file changes, e.g. a Blender export)
+		using clk = std::chrono::steady_clock;
+		static clk::time_point waitUntil{}; static bool waitingMs = false, waitingS3d = false;
+		if (pendingWaitMs > 0) { waitUntil = clk::now() + std::chrono::milliseconds(pendingWaitMs); waitingMs = !pendingWaitS3d; waitingS3d = pendingWaitS3d; pendingWaitMs = 0; pendingWaitS3d = false; }
+		if (waitingS3d) {
+			if (stage3dview::ChangedOnDiskNow()) {   // then 1 s for the writer to finish (a plain copy is not atomic)
+				waitingS3d = false; waitingMs = true; waitUntil = clk::now() + std::chrono::seconds(1); LogLine("waits3dchange -> changed");
+			}
+			else if (clk::now() >= waitUntil) { waitingS3d = false; LogLine("waits3dchange -> FAILED timeout"); gStartup.exitCode = 1; }
+			else return;
+		}
+		if (waitingMs) { if (clk::now() < waitUntil) return; waitingMs = false; }   // also the settle after waits3dchange
+	}
 	if (waitIdle) { if (abrowser::Busy() && ++idleWaited < 1800) return; waitIdle = false; idleWaited = 0; waitFrames = 6; return; }   // a few frames for the uploaded textures to draw
 	while (pc < lines.size()) {
 		const std::string line = lines[pc++];
@@ -226,6 +249,8 @@ static void RunUiScript(MainFrame &mf, HDC dc, const std::function<void(const st
 		const std::string cmd = line.substr(0, sp), arg = sp == std::string::npos ? "" : line.substr(sp + 1);
 		if (cmd == "wait") { waitFrames = atoi(arg.c_str()); return; }
 		if (cmd == "waitidle") { waitIdle = true; return; }
+		if (cmd == "waitms") { pendingWaitMs = std::max(1, atoi(arg.c_str())); return; }
+		if (cmd == "waits3dchange") { pendingWaitMs = std::max(1, atoi(arg.c_str())) * 1000; pendingWaitS3d = true; return; }
 		if (cmd == "quit") { done = true; PostQuitMessage(gStartup.exitCode); return; }
 		if (cmd == "openany") { openAny(arg); continue; }
 		if (cmd == "pattern") { setView(0, atoi(arg.c_str())); continue; }
