@@ -10,6 +10,10 @@
 //                               positions/meter): "OK engine rebuild chrNNN: <picks>; ha6 root XXXXXXXX -> YYYYYYYY;
 //                               back in battle after N ms" ("ERROR ... NOT back in battle ..." when it did not return)
 //   reloadchara chrNNN live  -> in-place reload of HA6/CG/pat/palettes + scripts, keeps state: "OK ..." / "ERROR ..."
+//   reloadstd                -> shared battle scripts (script/Battle_Init, Battle_Std + every btl_*.txt, data/_combase)
+//                               re-run and data/VectorTable, BattleInfo, BoundEff reparsed, then the engine rebuild:
+//                               "OK reloadstd: ... | engine rebuild: ...; back in battle after N ms"
+//   reloadstd live           -> the same, then sc + cmd + mv of every loaded character in place: "OK reloadstd live: ..."
 //   Outside a training battle both are refused: "ERROR reloadchara refused in session <s>: ...",
 //   "ERROR not in a battle (start training first)", "ERROR timeout: no battle frame within 5 s ...".
 // Calls block (a reload reply waits for the next battle frame, up to ~5 s): run them off the UI thread.
@@ -39,10 +43,17 @@ struct FbmodReloadInfo {
 	uint32_t rootBefore = 0, rootAfter = 0;
 	bool backInBattle = false;  // the rebuild reached the training battle again
 	long ms = -1;               // "after N ms" (-1: absent)
+	bool stdReload = false;     // a reloadstd reply (shared scripts)
 };
 FbmodReloadInfo FbmodParseReloadReply(const std::string& reply);
 // The request for a character reload: "reloadchara <chr>" (engine rebuild) or "reloadchara <chr> live".
 std::string FbmodReloadRequest(const std::string& chr, bool live);
+// A game-relative path ("script/btl_MvFunc.txt", "data/VectorTable.txt") of a shared battle file: every script/*.txt,
+// and data/_combase.txt, VectorTable.txt, BattleInfo.txt, BoundEff.txt. The game loads these once per process, so a
+// save needs "reloadstd" instead of a character reload.
+bool FbmodIsSharedFile(const std::string& rel);
+// "reloadstd" (engine rebuild of every character) or "reloadstd live".
+std::string FbmodStdReloadRequest(bool live);
 
 } // namespace sqedit
 

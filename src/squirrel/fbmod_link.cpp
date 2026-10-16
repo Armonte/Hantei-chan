@@ -2,6 +2,7 @@
 
 #include "../app_log.h"
 
+#include <cctype>
 #include <cstdio>
 
 #ifdef _WIN32
@@ -24,11 +25,29 @@ std::string FbmodReloadRequest(const std::string& chr, bool live)
 	return "reloadchara " + chr + (live ? " live" : "");
 }
 
+bool FbmodIsSharedFile(const std::string& rel)
+{
+	std::string r = rel;
+	for (char& c : r) c = c == '\\' ? '/' : static_cast<char>(tolower(static_cast<unsigned char>(c)));
+	if (r.rfind("./", 0) == 0) r.erase(0, 2);
+	auto endsTxt = [&](size_t from) { return r.size() > from + 4 && r.compare(r.size() - 4, 4, ".txt") == 0 && r.find('/', from) == std::string::npos; };
+	if (r.rfind("script/", 0) == 0) return endsTxt(7);
+	for (const char* f : {"data/_combase.txt", "data/vectortable.txt", "data/battleinfo.txt", "data/boundeff.txt"})
+		if (r == f) return true;
+	return false;
+}
+
+std::string FbmodStdReloadRequest(bool live)
+{
+	return live ? "reloadstd live" : "reloadstd";
+}
+
 FbmodReloadInfo FbmodParseReloadReply(const std::string& reply)
 {
 	FbmodReloadInfo info;
 	const bool err = reply.rfind("ERROR", 0) == 0;
-	info.engine = reply.find("engine rebuild ") != std::string::npos;
+	info.stdReload = reply.find("reloadstd") != std::string::npos;
+	info.engine = reply.find("engine rebuild ") != std::string::npos || reply.find("engine rebuild:") != std::string::npos;
 	if (err) {
 		for (const char* k : {"refused in session", "not in a battle", "no battle frame within"})
 			if (reply.find(k) != std::string::npos) { info.refused = true; break; }
