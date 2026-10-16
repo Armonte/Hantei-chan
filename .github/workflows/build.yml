@@ -29,6 +29,16 @@ jobs:
     - name: Build
       run: cmake --build build --config Release
 
+    # Unit tests and the committed fixtures. Tests that need game data or an outside install exit 77 when it is
+    # missing and ctest reports them as skipped (SKIP_RETURN_CODE), not failed. `gpu` tests need a real OpenGL 3.3
+    # driver, which the runner does not have. Git's bash comes first so `bash` is not the WSL launcher.
+    - name: Test
+      run: |
+        $env:PATH = "C:\Program Files\Git\bin;C:\Program Files\Git\usr\bin;" + $env:PATH
+        ctest --test-dir build -C Release -LE gpu --output-on-failure --timeout 600 -j 2
+        if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+      shell: pwsh
+
     - name: Package artifacts
       run: |
         New-Item -ItemType Directory -Force ci_package | Out-Null

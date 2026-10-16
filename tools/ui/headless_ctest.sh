@@ -6,7 +6,7 @@ set -u
 EXE="$1"; CHAR="$2"; OUT="$3"
 rm -rf "$OUT"; mkdir -p "$OUT"
 cp "$EXE" "$OUT/gonptechan.exe"
-W() { wslpath -w "$1"; }
+W() { if command -v wslpath >/dev/null 2>&1; then wslpath -w "$1"; elif command -v cygpath >/dev/null 2>&1; then cygpath -w "$1"; else echo "$1"; fi; }
 CW="$(W "$(cd "$(dirname "$CHAR")" && pwd)/$(basename "$CHAR")")"
 run() { (cd "$OUT" && timeout 60 ./gonptechan.exe --headless "$@" </dev/null); }
 fail() { echo "FAIL: $*"; exit 1; }
@@ -21,7 +21,7 @@ printf 'open %s; pattern 0; frame 0; zoom 2; size 320x240; bg 40,80,120; export 
 printf 'pattern 0; frame 0; export %s\\batch_b.png\n' "$(W "$OUT")" >> "$OUT/batch.txt"
 run --batch "$(W "$OUT/batch.txt")" >/dev/null 2>&1; rc=$?
 [ $rc -eq 0 ] || fail "batch exit $rc"
-dims=$(python3 -c "import struct,sys; d=open(sys.argv[1],'rb').read(24); print('%dx%d'%struct.unpack('>II',d[16:24]))" "$OUT/shot1.png")
+dims=$(od -An -tu1 -j16 -N8 "$OUT/shot1.png" | awk '{printf "%dx%d", $1*16777216+$2*65536+$3*256+$4, $5*16777216+$6*65536+$7*256+$8}')
 [ "$dims" = "320x240" ] || fail "shot size $dims, want 320x240"
 s1=$(sha256sum < "$OUT/shot1.png"); s2=$(sha256sum < "$OUT/shot2.png"); sa=$(sha256sum < "$OUT/batch_a.png"); sb=$(sha256sum < "$OUT/batch_b.png")
 [ "$s1" = "$s2" ] || fail "checksum differs between runs"
