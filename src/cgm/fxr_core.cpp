@@ -204,4 +204,52 @@ static const char kDgvAkiha[] =
 ;
 const char *DgvAkihaIni() { return kDgvAkiha; }
 
+// Palette-following variant: every chromatic stop of a DGV ramp becomes the accent token (accent.dark / accent / accent.light) whose
+// colour is nearest in Oklab to it, taking the rule's most chromatic stop as the reference accent. Runs of the same token collapse into one
+// stop at the run's mean position, so the shader interpolates between them (no plateaus). Neutral stops (black, greys, white) stay literal:
+// they carry the luminance shape, and grey-only groups (01, 02) are left as they are. The accent itself comes from the slot palette.
+fx::CharRules DgvAccentFollow(const fx::CharRules &src, const std::vector<int> &accentIdx) {
+	fx::CharRules out = src;
+	for (fx::Rule &r : out.rules) {
+		if (r.ramp.empty()) continue;
+		auto chroma = [](const fx::Lab &l) { return std::sqrt(l.a * l.a + l.b * l.b); };
+		int ref = -1; float bestC = 0.f;
+		for (size_t i = 0; i < r.ramp.size(); i++) {
+			if (r.ramp[i].tok != fx::ColTok::Literal) continue;
+			const float c = chroma(fx::srgbToOklab(r.ramp[i].c));
+			if (c > bestC) { bestC = c; ref = (int)i; }
+		}
+		if (ref < 0 || bestC < 0.05f) continue;   // grey ramp: nothing to follow
+		const fx::Rgb refC = r.ramp[ref].c;
+		const fx::ColTok toks[3] = { fx::ColTok::AccentDark, fx::ColTok::Accent, fx::ColTok::AccentLight };
+		struct Pend { fx::Stop s; float sum = 0; int n = 0; };
+		std::vector<Pend> res;
+		const size_t n = r.ramp.size();
+		for (size_t i = 0; i < n; i++) {
+			const fx::Stop &st = r.ramp[i];
+			const float pos = st.hasPos ? st.pos : (n > 1 ? (float)i / (float)(n - 1) : 0.f);
+			fx::Stop ns = st; ns.hasPos = true; ns.pos = pos;
+			if (st.tok == fx::ColTok::Literal) {
+				const fx::Lab l = fx::srgbToOklab(st.c);
+				if (chroma(l) >= 0.035f) {
+					float best = 1e9f; fx::ColTok bt = fx::ColTok::Accent;
+					for (fx::ColTok t : toks) {
+						fx::Stop q; q.tok = t; const fx::Lab tl = fx::resolveStop(q, refC);
+						const float d = (tl.L - l.L) * (tl.L - l.L) + (tl.a - l.a) * (tl.a - l.a) + (tl.b - l.b) * (tl.b - l.b);
+						if (d < best) { best = d; bt = t; }
+					}
+					ns.tok = bt;
+				}
+			}
+			if (ns.tok != fx::ColTok::Literal && !res.empty() && res.back().s.tok == ns.tok) { res.back().sum += pos; res.back().n++; continue; }
+			res.push_back({ ns, pos, 1 });
+		}
+		r.ramp.clear();
+		for (Pend &p : res) { p.s.pos = p.sum / p.n; r.ramp.push_back(p.s); }
+		if (!accentIdx.empty()) r.accentIdx = accentIdx;
+		r.id += "_acc";
+	}
+	return out;
+}
+
 } // namespace cgm

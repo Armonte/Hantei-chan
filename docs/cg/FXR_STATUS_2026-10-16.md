@@ -103,20 +103,20 @@ Save button would write next to the exe instead of `C:\games\mbaacc\fxrecolor\ak
 2. Type-0 palette-following effects (e.g. Aoko's orbs, many Akiha type-0 effect frames) are never touched by the runtime (format doc, by design for v1). Type-0 effect frames inside "mix" patterns stay unrecoloured.
 3. The type-5 bake tool is not built (type5_report.md status: parked, "user wants no data changes"). Hantei-chan reads and keeps type 5 byte-exact but refuses to author it (`cgm_ops.cpp`).
 4. Starter rulesets exist only for Akiha (DGV) in Hantei-chan and for arc/akiha in the runtime defaults; no rules for the other characters, no `bank = effect` (shared effect.cg) rules in either.
-5. The DGV starter set does not follow palette slots (fixed red ramps); turning it into per-slot colours (accent ramps) is left to the user.
-6. `fxr_sync.sh` cannot check against origin/main when the local PovertyCaster checkout is on an old branch (both are today); it silently needs a working tree.
-7. Default save path can resolve relative to the exe (see above), unverified in normal use.
-8. `--fxr-selftest` is not a ctest; the panel has no ctest coverage. The oracle test depends on an external folder (skipped when absent).
+5. ~~The DGV starter set does not follow palette slots.~~ Done: palette-following variant (see Next steps).
+6. ~~Done (fix/fxr-next).~~ `fxr_sync.sh` could not check against origin/main when the local PovertyCaster checkout is on an old branch (both are today); it silently needs a working tree.
+7. ~~Done (fix/fxr-next).~~ Default save path could resolve relative to the exe.
+8. ~~Done (fix/fxr-next): ctests fxr_selftest / fxr_selftest_akiha.~~ `--fxr-selftest` was not a ctest; the panel has no ctest coverage. The oracle test depends on an external folder (skipped when absent).
 9. Runtime: first commit is labelled "spike"; netplay loopback/hash verification and the 5-character x 36-slot in-game pass from the design plan (design doc section 7, effort table) are not documented as done. The CANARY sim-state check exists but no recorded run.
-10. Design doc section 5.1 still describes a JSON config; the shipped format is the ini (fxrecolor_format.md). The design doc is stale on that point.
-11. No ui-script command for "Import DGV Akiha ruleset", rule/slot selection in the tab, so the tab can only be shot via the env hook.
+10. ~~Done (fix/fxr-next).~~ Design doc section 5.1 described a JSON config; the shipped format is the ini (fxrecolor_format.md). The design doc is stale on that point.
+11. ~~Done (fix/fxr-next): `cgm fxr ...`.~~ No ui-script command for "Import DGV Akiha ruleset", rule/slot selection in the tab, so the tab can only be shot via the env hook.
 
 ## Next steps
 
 * [cg2/PovertyCaster] Run `tools/mbaacc_fxrecolor_shots.sh` with `docs/cg/effect_recolor_data/` style rules (akiha.ini from Hantei-chan) and with `-` (defaults), pin a non-red Akiha palette, and commit the shots + `_log.txt` as the first kept in-game proof.
 * [cg2/PovertyCaster] One CANARY run (`PCHOST_MBAACC_FXRECOLOR_CANARY=1` vs `=2` control) to record that the hook leaves sim state untouched.
-* [Hantei-chan] `fxr_sync.sh`: compare against `git show origin/main:...` (fetch first) instead of a working tree; keep `pull` writing from the same source.
-* [Hantei-chan] Fix `FxPanel::defaultPath` fallback (derive the game dir from the .cg / .HA6 path when no .pal path, recompute when the bank changes).
-* [Hantei-chan] Add `cgm fxr ...` script commands (import DGV, select rule, select slot) and make `--fxr-selftest` a ctest, so the tab can be shot and tested without env hooks.
-* [Hantei-chan] Offer an "accent-follow" variant of the DGV set (ramps through `accent.*` tokens) so the starter rules recolour per slot.
-* [Hantei-chan] Update effect_recolor_design.md section 5.1 to point at the ini format.
+* [Hantei-chan] DONE (fix/fxr-next) `fxr_sync.sh`: fetches and compares against `git show origin/main:...` of `/home/teo/dev/PovertyCaster` (`$FXR_PC_REPO` / arg 2 override, arg 3 ref); `pull` writes from the same source. `check` today: in sync with origin/main 49f98e13f.
+* [Hantei-chan] DONE (fix/fxr-next) Save path: `<MBAACC game folder>\fxrecolor\<char>.ini`, game folder = the MBAA.exe folder above the .pal/.cg/.HA6, else the remembered (File > Open game folder) or detected install; recomputed on bank change until the user types a path; when none is known the field is empty and Save asks with a folder picker (scripts get an error instead). Never the exe folder. Checked with `--open akiha.txt` (normal open: .HA6+.cg+.pal) and `--open akiha.HA6 --cg akiha.cg` (no .pal): both `C:\games\mbaacc\fxrecolor\akiha.ini`.
+* [Hantei-chan] DONE (fix/fxr-next) `cgm fxr import dgv|dgv-accent | rule | pattern | sprite | slot | accent <idx|auto|#hex> | path | load | save | status`; `HANTEI_FXR_DEMO` removed. ctests `fxr_selftest` (game-data-free, fixture chr000.ha6, no CG) and `fxr_selftest_akiha` (real bank, skip 77 without game data), plus `fxr_ini_accent`.
+* [Hantei-chan] DONE (fix/fxr-next) Import menu: "DGV Akiha: fixed red (original)" and "DGV Akiha: follows the palette slot (accent)"; data `docs/cg/effect_recolor_data/dgv_akiha_accent.ini`. Shots `docs/cg/fxr_next_2026-10-16/` (pattern 64, sprite 1311, recoloured preview mean RGB: slot 0 135,18,15 red / slot 3 124,136,175 / slot 16 165,141,36 gold / slot 30 44,99,57 green; fixed-red set at slot 16: 154,11,11).
+* [Hantei-chan] DONE (fix/fxr-next) effect_recolor_design.md 5.1 rewritten for ini v1 / colour model v1.2 (Oklab ramps, OkHSL / OkHSV edits); 6.1 points at it.
