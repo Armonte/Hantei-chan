@@ -66,7 +66,29 @@ Branch `ui/layout-sweep` (cut from `update/parity-1014`).
   `make_sheets.py <out> <before> <after> [dir suffix]`. Sheets: `docs/ui/evidence/layout3_2026-10-16/`
   (L* = L_all / L_pat round 2 after vs round 3, R* = round 3 scripts before vs after; 1280x720 and 1920x1080, EN + JA).
 
+## Round 4 (closed 2026-10-16)
+
+- BOF / Extended helpers (`bof_extensions.h`: DrawEffect154, DrawVar6Presets, and IF 14 filters / IF 154-157) are
+  label-first `effect_form.h` rows: `EfSection` sub-headers, `EfRow` fields, `EfComboManual` combos, the bit-mask
+  checkbox groups as one row each (wrapping in the value column), queue / command names as `EfNote`, warnings wrapped.
+  Every field, its validation and the presets are unchanged. **Closed.**
+- UNI2 / MBTL label-table forms (`game_label_ui.h`): effect Number and parameter rows now use the effect form's label
+  column (the Type row's), so Type, Number and p1..pN line up; condition parameter rows share the condition's Type
+  column (`GameConditionLabelColW` folded into frame_disp_if.h `lw`). Long labels were cut at 160 bytes ("... 1024 stage
+  cent"): buffers raised (and `ui::HiddenId` to 400). The spawned pattern / IF type name after a field drops under it
+  when it does not fit (it clipped at 1280 in Japanese). Shot frames: UNI2 chr017 p110 f16 and MBTL chr015 p170 f6 (two
+  conditions, two effects each; HA6 IFTP / EFTP scan). **Closed.**
+- CG + .pat textures tab: "Used by" is sized to its rows (one row minimum, at most a quarter of the column / 12 em, then
+  it scrolls); the CG list takes the rest. **Closed.**
+- Game Link window: `ui::FitNextWindowToContent` (ui_style.h) auto-resizes it on its first appearance only (no imgui.ini
+  entry, not created this session; 420..760 design px), centred like FitNextWindow; a size the user set is kept. Log
+  child height font-relative. The UNI2 / MBTL hot-reload row (Squirrel panel) wraps before an item that no longer fits,
+  and the panel status line moves to its own wrapped line instead of clipping. **Closed.**
+- Shots: `tools/ui/shots_layout/L_r4.txt` (UNI2 / MBTL IF + EF, CG + .pat tab, hot-reload row), `L_r4if.txt`
+  (Conditions alone), `L_r4gl.txt` (run with `--tool gamelink`). Sheets: `docs/ui/evidence/layout4_2026-10-16/`
+  (1280x720 and 1920x1080, EN + JA). Showcase: `feat_cgm_uni2_textures`, `feat_gamelink_panel` re-cropped,
+  `feat_hotreload_uni2` added (crop_features.py boxes updated).
+
 ## Remaining
 
-- BOF / Extended effect helpers (`bof_extensions.h`: DrawEffect154, DrawVar6Presets) keep their own value-then-label rows.
-- CG + .pat textures tab at 1280x720: the CG list gets ~5 rows while Used-by keeps a fixed share; could size Used-by to content.
+- None from this sweep.
