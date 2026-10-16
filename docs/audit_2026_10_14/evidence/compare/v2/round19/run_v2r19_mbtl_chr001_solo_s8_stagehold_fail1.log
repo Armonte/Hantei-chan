@@ -1,0 +1,15 @@
+=== v2r19_mbtl_chr001_solo_s8_stagehold.gcs
+gamecap C:\dev\hantei-chan\tools\gamecap\cases\v2r19_mbtl_chr001_solo_s8_stagehold.gcs
+backup: C:\Program Files (x86)\Steam\steamapps\common\MELTY BLOOD TYPE LUMINA\MBTL-IM/Mods/data/chr001/chr001.pat -> (new file, will be deleted)
+put C:\dev\hantei-chan\tools\gamecap\cases\../round10/chr001_solo21_s8.pat -> C:\Program Files (x86)\Steam\steamapps\common\MELTY BLOOD TYPE LUMINA\MBTL-IM/Mods/data/chr001/chr001.pat
+backup: C:\Program Files (x86)\Steam\steamapps\common\MELTY BLOOD TYPE LUMINA\MBTL-IM/MBTL_IM.ini -> C:\dev\hantei-chan\game_mod_backup\gamecap\mbtl_20261016_044736\file01_MBTL_IM.ini
+backup: C:\Program Files (x86)\Steam\steamapps\common\MELTY BLOOD TYPE LUMINA\winsave/48034167/_App.ini -> C:\dev\hantei-chan\game_mod_backup\gamecap\mbtl_20261016_044736\file02__App.ini
+launched MBTL.exe pid 23700 (suspended)
+agent attached: module base 0x00550000, hooks 0x39
+window 03ac0fa8 at 0,0 136x39
+placed window at -640,307
+FAILED: game exited (at C:\dev\hantei-chan\tools\gamecap\cases\../games/mbtl_to_training_stage.gcs:42)
+removed C:\Program Files (x86)\Steam\steamapps\common\MELTY BLOOD TYPE LUMINA\MBTL-IM/Mods/data/chr001/chr001.pat
+restored C:\Program Files (x86)\Steam\steamapps\common\MELTY BLOOD TYPE LUMINA\MBTL-IM/MBTL_IM.ini
+restored C:\Program Files (x86)\Steam\steamapps\common\MELTY BLOOD TYPE LUMINA\winsave/48034167/_App.ini
+failures: 1

@@ -1152,3 +1152,62 @@ No editor (C++) change. Numbers: `tools/uni/s1_compare/v2_round18.sh` (log `roun
   probe at x 690–750, y 295–325 agrees), or move the MBTL rows to a stage without a light source near the fighters.
 - p238 at zoom 1.5: the zoomed-draw rule (camera scale about the floored origin) is still open. The offset is still
   the round-13 fit.
+
+## Round 19 / render-match19 (2026-10-16): stage anime held, the p157 / s8 excess is the stage-21 shadow, zoom-1.5 rows are a resample
+No editor (C++) change. Numbers: `tools/uni/s1_compare/v2_round19.sh` (log `round19/round19.log`). Full ctest exit 0.
+
+### Stage-21 lamp: held through the stage anime clock (MBTL IDB, renamed and saved)
+- The battle stage is one FBX scene (`Stage_LoadByIndex` 0x4F24F0: `bg/bg021/bg.fbx.bin/.json`, `g_StageFbxScene`
+  0xA2FF60). `FbxScene_DrawNodeTree` 0x585DA0 takes each node matrix from its anime keys at
+  `g_StageAnimFrame % keycount` (`g_StageAnimFrame` 0xA300A0 = scene+0x140; bg021 has 7999-key nodes).
+- `Stage_RenderSceneAndAdvanceAnim` 0x4B0AA0 does `++g_StageAnimFrame` right before `FbxScene_Draw` 0x586A40 on every
+  rendered frame where `Stage_GetAnimHoldState` 0x4F3160 >= 0. That is −1 only for `g_TrainingMode_UpdateFlag` /
+  `g_BattlePauseState`, and MBTL-IM's pause sets neither. So the stage kept animating while a case was paused, and
+  the window shot, the backbuffer shot and each plate caught different lamp frames.
+- gamecap `hold i32 g_StageAnimFrame 0` (cases `v2r19_mbtl_chr001_{solo_s8,solo_s456,}_stagehold.gcs`, suffix `_sa`;
+  diff `round19/gamecap_round19_cases.diff`). Every `_sa` shot and plate now has the same lamp probe (127.2). Before
+  the hold the probe read 96 to 129.6 across the shots of one session.
+- **The lamp was not the p157 / s8 excess.** With the lamp matched, p157_z1 stays at 0.99 and s8 at 0.83 against the
+  window plate. The game shot's wall and floor pool (x 560–840, y 360–680) is the same in `_st` and `_sa` (mean
+  difference −0.002). Round 18's "lamp pool" was `plate_b0 − plate`, and that difference is the shadow below.
+
+### The excess is the stage-21 character shadow, which the window plate removes
+- The residual sits entirely on y 600–680 under the fighters: signed RGB +6.4 / +6.5 / +15.5 on s8 and
+  +4.3 / +3.4 / +8.4 on p157. That matches a bluish ellipse that `plate_b0` has and `plate` does not:
+  +6.6 / +6.7 / +16.1 at the ellipse core (`round19/p157_sa_floor_shadow_game_b0_plate_bb_diffx8.png`, panels game,
+  plate_b0, plate, plate_bb, diff ×8).
+- `plate_b0` is taken with the P1/P2 draw-alpha override at 0 and no tick, so the fighters are gone but the shadow
+  is still drawn. `plate` / `plate_bb` come one F6 tick later, and by then the shadow is gone too. The game shot has
+  the shadow, so `plate_b0` is the right backdrop.
+- Stage 21 in `bg/BgList.txt` (read by `Stage_LoadBgListParams` 0x4F38B0) has `ShadowLightType = 1`
+  ("texture-colour shadow") and one `ShadowLightStatus` light. The PatPart path has a texture-shadow technique
+  (`PatPart_SetupDraw_ShaderWorldMtx` draw mode 0x65 → `TecCharaPtDraw_ShadowV_TEX`). The link from
+  ShadowLightType to mode 0x65, and why the shadow follows the override one tick late, are not traced.
+- The editor does not draw MBTL's stage shadow. Use `--plate *_sa_game_plate_b0.png` for MBTL stage rows.
+
+### p238 at "zoom 1.5": not a zoomed engine draw
+- The game shots are at camera zoom 1.0 (sidecar `cam_f32[11]` = 1). The "zoom 1.5" rows take the editor's 1.5×
+  raster and box-downsample it to the 1× game (sheet `sc = 0.667`). The same game shot is exact against the zoom-1
+  editor shot (p277 0.00, p238 0.23). So the 1.67 / 1.24 / 4.52 are the 1.5×→1× resample, not MBTL. A refit (+0.25 /
+  +0.25 on p238, but y 0 on p277 / p157) cannot fix a re-rasterisation.
+- D3D9 half-pixel rule, checked in IDA: `CBtlCamera_UpdateMatrices` 0x509240 builds a plain `D3DXMatrixLookAtLH`
+  (0xCABD08) and `D3DXMatrixPerspectiveFovLH` (0xCABD88). The chara-part VS (`Shader/sh_chara.txt`
+  `Chara_Transform`) is world·view·proj, and `Han6Object_Draw` 0x597070 passes those two matrices as g_mView / g_mProj.
+  There is no −0.5 px term, so D3D9's pixel-centre rule applies unchanged: pixel i is shaded at screen x = i. At 1×
+  with integer-floored origins, a point-filtered texel sampled at an exact texel boundary is floor()ed to the same
+  texel the editor draws, so the rule does not show at 1× (z1 rows pixel-exact). A zoomed game capture would be
+  needed to see it. None exists, so no zoom model was added.
+
+| case | round 18 | **round 19** | note |
+|---|---|---|---|
+| mbtl_flipV solo s8 _z1 | 0.83 (`_st`) | **0.01** (`_sa`, plate_b0) | was the stage shadow |
+| mbtl_flipV_chr001_p157f2_z1 | 0.99 | **0.18** (`_sa`, plate_b0) | under the p238 control (0.23) |
+| mbtl_flipV solo s456 _z1 | 0.72 (`_stbb`) | **0.60** (`_sa`, plate_b0); 0.72 window plate | thin-line arcs; below the round-10 0.75 |
+| mbtl_patctrl_chr001_p238f10_z1 | 0.23 | 0.23 (all plates) | floor: s18 8-bit blend rounding (round 17) |
+| mbtl_patctrl_chr001_p277f0_z1 | 0.00 | 0.00 | pixel-exact |
+| mbtl_patctrl_chr001_p238f10 (editor 1.5) | 1.67 | 1.67 | 1.5×→1× resample of the editor shot; game at zoom 1 |
+
+### Next
+- MBTL stage rows: report `_sa` + plate_b0 (or recapture the plate before any tick). Optional: trace the
+  ShadowLightType → draw mode 0x65 link and the one-tick shadow lag.
+- Retire the MBTL "zoom 1.5" rows, or capture a real zoomed game frame (camera zoom ≠ 1) to test the D3D9 rule.
