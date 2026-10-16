@@ -1,4 +1,5 @@
 // See hmod_ui.h.
+#include "../ui/ui_style.h"
 #include "hmod_ui.h"
 #include "hmod_export.h"
 #include "hmod_import.h"
@@ -207,20 +208,20 @@ void Draw()
 	if (!g.open) return;
 	const ImVec2 mp = ImGui::GetMainViewport()->Pos;
 	ImGui::SetNextWindowPos(ImVec2(mp.x + 90, mp.y + 60), ImGuiCond_Appearing);
-	ImGui::SetNextWindowSize(ImVec2(1040, 740), ImGuiCond_Appearing);
+	ImGui::SetNextWindowSize(ImVec2(std::min(ui::Px(1040), ImGui::GetMainViewport()->WorkSize.x * 0.92f), std::min(ui::Px(740), ImGui::GetMainViewport()->WorkSize.y * 0.90f)), ImGuiCond_Appearing);
 	if (!ImGui::Begin(LBL("Mod Project###hmod_panel"), &g.open, ImGuiWindowFlags_NoDocking)) { ImGui::End(); return; }
 
 	// ---- open / new ----
-	ImGui::SetNextItemWidth(420);
+	ImGui::SetNextItemWidth(ui::Px(420));
 	ImGui::InputText(LBL("Project folder"), &g.projPath);
 	ImGui::SameLine();
 	if (ImGui::SmallButton(LBL("Browse..."))) { const std::string d = BrowseForFolderUtf8(g.projPath); if (!d.empty()) g.projPath = d; }
 	ImGui::SameLine();
 	if (ImGui::Button(LBL("Open"))) LoadProject(g.projPath);
 	ImGui::SameLine();
-	ImGui::SetNextItemWidth(130); ImGui::InputText(LBL("Id##newid"), &g.newId);
+	ImGui::SetNextItemWidth(ui::Px(130)); ImGui::InputText(LBL("Id##newid"), &g.newId);
 	ImGui::SameLine();
-	ImGui::SetNextItemWidth(90); ImGui::Combo(LBL("Game##newgame"), &g.newGame, kGames, 3);
+	ImGui::SetNextItemWidth(ui::Px(90)); ImGui::Combo(LBL("Game##newgame"), &g.newGame, kGames, 3);
 	ImGui::SameLine();
 	if (ImGui::Button(LBL("Create"))) {
 		Project p; std::string err;
@@ -231,14 +232,14 @@ void Draw()
 
 	Project& p = g.proj;
 	ImGui::Separator();
-	ImGui::SetNextItemWidth(260); if (ImGui::InputText(LBL("Name"), &p.name)) {}
-	ImGui::SameLine(); ImGui::SetNextItemWidth(200); ImGui::InputText(LBL("Author"), &p.author);
+	ImGui::SetNextItemWidth(ui::Px(260)); if (ImGui::InputText(LBL("Name"), &p.name)) {}
+	ImGui::SameLine(); ImGui::SetNextItemWidth(ui::Px(200)); ImGui::InputText(LBL("Author"), &p.author);
 	ImGui::SameLine(); ImGui::TextDisabled("%s: %s", TXT("Game"), p.game.c_str());
 	ImGui::SameLine();
 	if (ImGui::Button(LBL("Save hmod.json"))) { std::string err; g.status = Save(p, err) ? std::string(TXT("Saved")) : err; }
 
 	// ---- game install + vanilla index ----
-	ImGui::SetNextItemWidth(420);
+	ImGui::SetNextItemWidth(ui::Px(420));
 	if (ImGui::InputText(LBL("Game install"), &g.gameDir)) TryLoadIndex();
 	ImGui::SameLine();
 	if (ImGui::SmallButton(LBL("Browse...##game"))) { const std::string d = BrowseForFolderUtf8(g.gameDir); if (!d.empty()) { g.gameDir = d; TryLoadIndex(); } }
@@ -249,7 +250,7 @@ void Draw()
 	if (g.building) {
 		ImGui::SameLine();
 		const size_t t = g.bTotal;
-		ImGui::ProgressBar(t ? float(g.bDone) / float(t) : 0.f, ImVec2(180, 0));
+		ImGui::ProgressBar(t ? float(g.bDone) / float(t) : 0.f, ImVec2(ui::Px(180), 0));
 		ImGui::SameLine(); if (ImGui::SmallButton(LBL("Cancel"))) g.cancel = true;
 	}
 	ImGui::TextColored(g.vanReady ? ColGood() : ColWarn(), "%s %s", TXT("Vanilla index:"), g.vanMsg.empty() ? TXT("not built (files are treated as changed)") : g.vanMsg.c_str());
@@ -296,11 +297,11 @@ void Draw()
 			if (ImGui::IsItemHovered()) ImGui::SetTooltip("%s\n%s", a.category.c_str(), a.origin.kind.c_str());
 		}
 		ImGui::Separator();
-		ImGui::SetNextItemWidth(120); ImGui::InputText("##newasset", &g.newAssetId);
+		ImGui::SetNextItemWidth(ui::Px(120)); ImGui::InputText("##newasset", &g.newAssetId);
 		ImGui::SameLine();
 		std::vector<const char*> cats;
 		for (const CategoryInfo& ci : Categories()) cats.push_back(ci.id);
-		ImGui::SetNextItemWidth(140); ImGui::Combo("##newcat", &g.newAssetCat, cats.data(), (int)cats.size());
+		ImGui::SetNextItemWidth(ui::Px(140)); ImGui::Combo("##newcat", &g.newAssetCat, cats.data(), (int)cats.size());
 		if (ImGui::SmallButton(LBL("Add asset"))) {
 			Asset a; a.id = g.newAssetId; a.category = cats[g.newAssetCat]; a.origin.kind = "vanilla-derived";
 			p.assets.push_back(a);
@@ -351,7 +352,7 @@ void Draw()
 		if (ImGui::SmallButton(pc ? LBL("Export pcmod") : LBL("Save to mod folder"))) RunExport(k.id, false);
 		ImGui::PopID();
 	}
-	ImGui::SetNextItemWidth(130); ImGui::InputText(LBL("New package id"), &g.newPkgId);
+	ImGui::SetNextItemWidth(ui::Px(130)); ImGui::InputText(LBL("New package id"), &g.newPkgId);
 	ImGui::SameLine();
 	if (ImGui::SmallButton(LBL("Add package")) && !g.newPkgId.empty()) {
 		Package k; k.id = g.newPkgId;
@@ -365,7 +366,7 @@ void Draw()
 	if (ImGui::Button(p.game == "mbaacc" ? LBL("Export all (pcmod)") : LBL("Save all to mod folder"))) RunExport("", false);
 
 	if (p.game == "mbaacc") {
-		ImGui::SetNextItemWidth(420); ImGui::InputText(LBL("Output folder"), &g.outDir);
+		ImGui::SetNextItemWidth(ui::Px(420)); ImGui::InputText(LBL("Output folder"), &g.outDir);
 		ImGui::SameLine(); ImGui::Checkbox(LBL("Also write the .zip"), &g.writeZip);
 	} else {
 		ImGui::Checkbox(LBL("Switchable pack (Packs\\<id>) instead of Mods"), &g.imPacks);

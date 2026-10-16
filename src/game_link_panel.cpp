@@ -87,7 +87,7 @@ void StageSection(Client& c, const Snapshot& s, const EditorContext& ctx)
 	if (!st.allowed)
 		ImGui::TextColored(ImVec4(1.0f, 0.6f, 0.3f, 1.0f), "%s", TXT("Stage ops refused right now (needs an offline battle)."));
 	if (g_stagePick < 1) g_stagePick = st.loaded;
-	ImGui::SetNextItemWidth(180);
+	ImGui::SetNextItemWidth(ui::Px(180));
 	if (ImGui::BeginCombo("##gstage", StageLabel(g_stagePick).c_str())) {
 		for (int i = 1; i < 100; ++i) {
 			if (!st.IsValid(i)) continue;
@@ -151,7 +151,7 @@ void FollowSection(const Snapshot& s, EditorContext& ctx)
 {
 	ImGui::Checkbox(LBL("Follow game slot"), &g_follow);
 	ImGui::SameLine();
-	ImGui::SetNextItemWidth(70);
+	ImGui::SetNextItemWidth(ui::Px(70));
 	const char* slots[] = { "P1", "P2", "P3", "P4" };
 	i18n::Combo("##followslot", &g_followSlot, slots, 4);
 	ImGui::SameLine();
@@ -192,9 +192,9 @@ void SetCharSection(Client& c, const Snapshot& s)
 			g_setPal[i] = s.state.actors[i].palette;
 		}
 		ImGui::Text("P%d", i + 1); ImGui::SameLine();
-		ImGui::SetNextItemWidth(80); ImGui::InputInt(LBL("chara"), &g_setChara[i]); ImGui::SameLine();
-		ImGui::SetNextItemWidth(80); ImGui::InputInt(LBL("moon"), &g_setMoon[i]); ImGui::SameLine();
-		ImGui::SetNextItemWidth(80); ImGui::InputInt(LBL("pal"), &g_setPal[i]); ImGui::SameLine();
+		ImGui::SetNextItemWidth(ui::Px(80)); ImGui::InputInt(LBL("chara"), &g_setChara[i]); ImGui::SameLine();
+		ImGui::SetNextItemWidth(ui::Px(80)); ImGui::InputInt(LBL("moon"), &g_setMoon[i]); ImGui::SameLine();
+		ImGui::SetNextItemWidth(ui::Px(80)); ImGui::InputInt(LBL("pal"), &g_setPal[i]); ImGui::SameLine();
 		if (ImGui::SmallButton(LBL("Set + reload")))
 			c.SetChar(i, g_setChara[i], g_setMoon[i], g_setPal[i], wire::kFlagReload | (g_forceReload ? wire::kFlagForce : 0));
 		ImGui::PopID();

@@ -1,3 +1,4 @@
+#include "../ui/ui_style.h"
 #include "fxr_panel.h"
 #include "../cg.h"
 #include "../character_instance.h"
@@ -187,12 +188,12 @@ void FxPanel::drawStops(std::vector<fx::Stop> &stops, fx::Rgb accent, const char
 		fx::Stop &s = stops[i];
 		ImGui::PushID((int)i);
 		int tk = (int)s.tok;
-		ImGui::SetNextItemWidth(104); if (ImGui::Combo("##tok", &tk, kTok, 4)) s.tok = (fx::ColTok)tk;
+		ImGui::SetNextItemWidth(ui::Px(104)); if (ImGui::Combo("##tok", &tk, kTok, 4)) s.tok = (fx::ColTok)tk;
 		ImGui::SameLine();
 		if (s.tok == fx::ColTok::Literal) { float c[3] = { s.c.r, s.c.g, s.c.b }; if (ImGui::ColorEdit3("##c", c, ImGuiColorEditFlags_NoInputs)) s.c = { c[0], c[1], c[2] }; }
 		else { const fx::Rgb rc = fx::oklabToSrgb(fx::resolveStop(s, accent)); ImGui::ColorButton("##a", V4(rc), ImGuiColorEditFlags_NoTooltip, ImVec2(20, 20)); }
 		ImGui::SameLine(); ImGui::Checkbox("@", &s.hasPos);
-		if (s.hasPos) { ImGui::SameLine(); ImGui::SetNextItemWidth(90); ImGui::SliderFloat("##p", &s.pos, 0.f, 1.f, "%.2f"); }
+		if (s.hasPos) { ImGui::SameLine(); ImGui::SetNextItemWidth(ui::Px(90)); ImGui::SliderFloat("##p", &s.pos, 0.f, 1.f, "%.2f"); }
 		ImGui::SameLine(); if (ImGui::SmallButton("x") && stops.size() > 1) del = (int)i;
 		ImGui::PopID();
 	}
@@ -211,25 +212,25 @@ void FxPanel::drawRuleEditor(CharacterInstance &ch, const Bank *bank) {
 	const unsigned *sp = slotPal(ch, slotSel);
 	const fx::Rgb acc = AccentFor(r, sp, slotSel);
 	char idb[64]; snprintf(idb, sizeof idb, "%s", r.id.c_str());
-	ImGui::SetNextItemWidth(160); if (ImGui::InputText(LBL("Rule id"), idb, sizeof idb) && idb[0]) r.id = idb;
+	ImGui::SetNextItemWidth(ui::Px(160)); if (ImGui::InputText(LBL("Rule id"), idb, sizeof idb) && idb[0]) r.id = idb;
 	ImGui::SameLine(); ImGui::Checkbox(LBL("Enabled"), &r.enabled);
 	int kind = r.kind == fx::Kind::LumRamp ? 0 : r.kind == fx::Kind::Rainbow ? 1 : r.kind == fx::Kind::Hsl ? 2 : 3;
 	static const char *kKind[] = { "Luminance -> ramp", "Rainbow (hue -> ramp)", "HSL shift (OkHSL, default)", "HSV shift (OkHSV)" };
-	ImGui::SetNextItemWidth(200);
+	ImGui::SetNextItemWidth(ui::Px(200));
 	if (ImGui::Combo(LBL("Mapping"), &kind, kKind, 4)) r.kind = kind == 0 ? fx::Kind::LumRamp : kind == 1 ? fx::Kind::Rainbow : kind == 2 ? fx::Kind::Hsl : fx::Kind::Hsv;
 	int bank_ = r.bank; static const char *kBank[] = { "any", "character bank", "effect.ha6" };
-	ImGui::SetNextItemWidth(140); if (ImGui::Combo(LBL("Bank"), &bank_, kBank, 3)) r.bank = bank_;
-	ImGui::SameLine(); int bl = r.blend; ImGui::SetNextItemWidth(70); if (ImGui::InputInt(LBL("Blend (-1 any)"), &bl, 0, 0)) r.blend = std::max(-1, bl);
+	ImGui::SetNextItemWidth(ui::Px(140)); if (ImGui::Combo(LBL("Bank"), &bank_, kBank, 3)) r.bank = bank_;
+	ImGui::SameLine(); int bl = r.blend; ImGui::SetNextItemWidth(ui::Px(70)); if (ImGui::InputInt(LBL("Blend (-1 any)"), &bl, 0, 0)) r.blend = std::max(-1, bl);
 	if (r.kind == fx::Kind::Hsv || r.kind == fx::Kind::Hsl) {
 		const bool hsl = r.kind == fx::Kind::Hsl;
 		ImGui::TextDisabled("%s", hsl ? TXT("OkHSL edit: hue and saturation change, perceived lightness is kept (lightness x = 1).") : TXT("OkHSV edit (picker style): V is not perceptual lightness.")); ImGui::SliderFloat(LBL("Hue shift"), &r.hueDeg, -180.f, 180.f, "%.0f deg");
 		ImGui::SliderFloat(LBL("Saturation x"), &r.sat, 0.f, 2.f); ImGui::SliderFloat(hsl ? LBL("Lightness x") : LBL("Value x"), &r.val, 0.f, 2.f);
 	} else {
 		static const char *kBy[] = { "Oklab lightness (default)", "Max channel", "Luma" };
-		int by = std::clamp(r.by, 0, 2); ImGui::SetNextItemWidth(200);
+		int by = std::clamp(r.by, 0, 2); ImGui::SetNextItemWidth(ui::Px(200));
 		if (ImGui::Combo(LBL("Drive by"), &by, kBy, 3)) r.by = by;
 		if (r.kind == fx::Kind::LumRamp) {
-			ImGui::SetNextItemWidth(220); float vr[2] = { r.vmin, r.vmax };
+			ImGui::SetNextItemWidth(ui::Px(220)); float vr[2] = { r.vmin, r.vmax };
 			if (ImGui::DragFloat2(LBL("Source range"), vr, 0.005f, 0.f, 1.f, "%.3f")) { r.vmin = std::clamp(vr[0], 0.f, 0.99f); r.vmax = std::clamp(vr[1], r.vmin + 0.01f, 1.f); }
 		} else ImGui::TextDisabled("%s", TXT("Rainbow: entry k of the ramp (16 slots) colours OkLCh hue k/16; lightness and chroma are kept."));
 		ImGui::SeparatorText(TXT("Ramp"));
@@ -238,7 +239,7 @@ void FxPanel::drawRuleEditor(CharacterInstance &ch, const Bank *bank) {
 	// accent
 	ImGui::SeparatorText(TXT("Accent (per slot)"));
 	std::string ai = fx::joinInts(r.accentIdx); char ab[64]; snprintf(ab, sizeof ab, "%s", ai.c_str());
-	ImGui::SetNextItemWidth(160);
+	ImGui::SetNextItemWidth(ui::Px(160));
 	if (ImGui::InputText(LBL("Accent palette indices"), ab, sizeof ab)) r.accentIdx = fx::parseInts(ab);
 	ImGui::SetItemTooltip("%s", TXT("Empty = the most vivid colour of the slot's palette. Otherwise the first listed index is the accent."));
 	if (ImGui::Button(LBL("Suggest accent index from the body")) && !accentCands.empty()) r.accentIdx = { accentCands[0].index };
@@ -258,7 +259,7 @@ void FxPanel::drawRuleEditor(CharacterInstance &ch, const Bank *bank) {
 		}
 	}
 	ImGui::SameLine(); if (ImGui::Button(LBL("Clear all overrides"))) r.ov.clear();
-	if (ImGui::BeginTable("##ov", 4, ImGuiTableFlags_RowBg | ImGuiTableFlags_ScrollY | ImGuiTableFlags_SizingFixedFit, ImVec2(0, 150))) {
+	if (ImGui::BeginTable("##ov", 4, ImGuiTableFlags_RowBg | ImGuiTableFlags_ScrollY | ImGuiTableFlags_SizingFixedFit, ImVec2(0, ui::Px(150)))) {
 		ImGui::TableSetupColumn(TXT("slot")); ImGui::TableSetupColumn(TXT("auto")); ImGui::TableSetupColumn(TXT("override")); ImGui::TableSetupColumn(TXT("ramp"));
 		ImGui::TableHeadersRow();
 		for (int s = 0; s < nSlots; s++) {
@@ -366,7 +367,7 @@ void FxPanel::draw(CharacterInstance &ch, const Bank *bank, const UsageIndex &us
 	ImGui::SameLine(); if (ImGui::SmallButton(LBL("Up")) && ruleSel > 0) { std::swap(rules.rules[ruleSel], rules.rules[ruleSel - 1]); ruleSel--; freeTex(); }
 	ImGui::SameLine(); if (ImGui::SmallButton(LBL("Down")) && ruleSel >= 0 && ruleSel + 1 < (int)rules.rules.size()) { std::swap(rules.rules[ruleSel], rules.rules[ruleSel + 1]); ruleSel++; freeTex(); }
 	ImGui::EndDisabled();
-	ImGui::BeginChild("##fxrules", ImVec2(0, 110), ImGuiChildFlags_Borders);
+	ImGui::BeginChild("##fxrules", ImVec2(0, ui::Px(110)), ImGuiChildFlags_Borders);
 	for (int i = 0; i < (int)rules.rules.size(); i++) {
 		const fx::Rule &r = rules.rules[i];
 		if (ImGui::Selectable(Fmt("%s%s  [%zu patterns, %zu sprites]##r%d", r.enabled ? "" : "(off) ", r.id.c_str(), r.patterns.size(), r.sprites.size(), i).c_str(), ruleSel == i)) ruleSel = i;
@@ -374,8 +375,8 @@ void FxPanel::draw(CharacterInstance &ch, const Bank *bank, const UsageIndex &us
 	ImGui::EndChild();
 	// grid
 	ImGui::SeparatorText(TXT("Effect patterns"));
-	ImGui::SetNextItemWidth(110); ImGui::InputText(LBL("Name"), nameFilter, sizeof nameFilter);
-	ImGui::SameLine(); ImGui::SetNextItemWidth(70); ImGui::SliderInt(LBL("Min score"), &minScore, 0, 100);
+	ImGui::SetNextItemWidth(ui::Px(110)); ImGui::InputText(LBL("Name"), nameFilter, sizeof nameFilter);
+	ImGui::SameLine(); ImGui::SetNextItemWidth(ui::Px(70)); ImGui::SliderInt(LBL("Min score"), &minScore, 0, 100);
 	ImGui::SetItemTooltip("%s", TXT("Share of the pattern's layers that draw fixed-colour sprites. A body pattern with one RGB hair sprite scores low."));
 	ImGui::Checkbox(LBL("Shared sprites only"), &onlyShared); ImGui::SameLine(); ImGui::Checkbox(LBL("No rule yet"), &onlyUnruled);
 	std::vector<int> shown;

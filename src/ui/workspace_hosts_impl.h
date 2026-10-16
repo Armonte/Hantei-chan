@@ -425,19 +425,19 @@ void MainFrame::DrawOnionSkinControls(CharacterView* view)
 	changed |= ImGui::Checkbox(LBL("Onion skin"), &o.enabled);
 	ImGui::SameLine();
 	ImGui::TextDisabled("(%s)", shortcuts.registry().label(ShortcutAction::toggleOnionSkin).c_str());
-	ImGui::SetNextItemWidth(120);
+	ImGui::SetNextItemWidth(ui::Px(120));
 	changed |= ImGui::SliderInt(LBL("Before"), &o.before, 0, 16);
-	ImGui::SetNextItemWidth(120);
+	ImGui::SetNextItemWidth(ui::Px(120));
 	changed |= ImGui::SliderInt(LBL("After"), &o.after, 0, 16);
 	changed |= ImGui::Checkbox(LBL("Keyframes (root frame entries)"), &o.keyframesOnly);
 	if (!o.keyframesOnly) {
-		ImGui::SetNextItemWidth(120);
+		ImGui::SetNextItemWidth(ui::Px(120));
 		changed |= ImGui::SliderInt(LBL("Spacing (ticks)"), &o.spacing, 1, 60);
 	}
 	changed |= ImGui::Checkbox(LBL("Include spawned actors"), &o.includeSpawns);
-	ImGui::SetNextItemWidth(120);
+	ImGui::SetNextItemWidth(ui::Px(120));
 	changed |= ImGui::SliderFloat(LBL("Opacity"), &o.alpha, 0.05f, 1.f, "%.2f");
-	ImGui::SetNextItemWidth(120);
+	ImGui::SetNextItemWidth(ui::Px(120));
 	changed |= ImGui::SliderFloat(LBL("Falloff"), &o.falloff, 0.1f, 1.f, "%.2f");
 	changed |= ImGui::ColorEdit3(LBL("Past tint"), &o.pastTint.x, ImGuiColorEditFlags_NoInputs);
 	ImGui::SameLine();
@@ -558,7 +558,7 @@ void MainFrame::DrawDetachedHostToolbar(HostWindow& hw, CharacterView* view)
 	ImGui::SameLine();
 	if (ImGui::SmallButton(">")) StepTick(view, +1);
 	ImGui::SameLine();
-	ImGui::SetNextItemWidth(90);
+	ImGui::SetNextItemWidth(ui::Px(90));
 	float z = view->getZoom();
 	if (ImGui::SliderFloat("##zoom", &z, 0.25f, 20.f, TXT("zoom %.2f"))) view->setZoom(z);
 	ImGui::SameLine();
