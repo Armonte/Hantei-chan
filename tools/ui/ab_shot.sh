@@ -8,6 +8,8 @@ D="$(cd "$(dirname "$0")/../.." && pwd)"
 W="${AB_WORK:-/mnt/c/dev/hantei-chan/work/ab_$(basename "$D")}"
 mkdir -p "$W"
 cp "${AB_EXE:-$D/build/gonptechan.exe}" "$W/gonptechan.exe"   # AB_EXE: run another build (e.g. a before/after pair)
+# the Squirrel API tables ship next to the exe (res/squirrel, see CMakeLists and CI packaging)
+mkdir -p "$W/res/squirrel" && cp "$D"/docs/squirrel/api/*_api.json "$W/res/squirrel/"
 # shot scripts name their captures under C:/dev/hantei-chan/work/ab/; point them at this worktree's folder
 WW="$(wslpath -m "$W")"
 sed "s#C:/dev/hantei-chan/work/ab/#$WW/#g" "$1" > "$W/script.txt"
