@@ -1210,7 +1210,8 @@ add_test(NAME sqtool_fixture_bad COMMAND sqtool compile tests/fixtures/squirrel/
 set_tests_properties(sqtool_fixture_bad PROPERTIES WILL_FAIL TRUE)
 add_test(NAME sqtool_mbtl COMMAND sqtool check ${SQTOOL_GAMEDATA_DIR}/mbtl --api docs/squirrel/api/mbtl_api.json --chars WORKING_DIRECTORY ${CMAKE_SOURCE_DIR})
 add_test(NAME sqtool_uni2 COMMAND sqtool check ${SQTOOL_GAMEDATA_DIR}/uni2 --api docs/squirrel/api/uni2_api.json --run WORKING_DIRECTORY ${CMAKE_SOURCE_DIR})
-set_tests_properties(sqtool_mbtl sqtool_uni2 PROPERTIES SKIP_RETURN_CODE 77)
+add_test(NAME sqtool_dfci COMMAND sqtool check "C:/dev/transmission/dfci+transmission" --api docs/squirrel/api/dfci_api.json --chars WORKING_DIRECTORY ${CMAKE_SOURCE_DIR})
+set_tests_properties(sqtool_mbtl sqtool_uni2 sqtool_dfci PROPERTIES SKIP_RETURN_CODE 77)
 
 # Squirrel script editor (phase P2/P3, docs/squirrel/SCOPE.md §2.4): CP932 document model + sandboxed
 # in-editor VM, and the dockable "Script" panel. Widget: goossens/ImGuiColorTextEdit (MIT, vendored,
