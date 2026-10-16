@@ -1,0 +1,61 @@
+[
+ {
+  "id": "uni2_set991",
+  "title": "UNI2 layered scene: CG + .pat part set 991 (additive flame, PRAS pivots, 3D ring arcs)",
+  "game": "UNI2",
+  "pattern_frame": "chr020 p5 f2 (zoom 1)",
+  "game_capture": "pras_chr020_p5f2_r3 (gamecap v2)",
+  "notes": "Additive point-sampled and PRFL-filtered .pat parts over the CG layer; the stage Bokashi pass and aura glow are modelled for every tool alike.",
+  "caveat": "Known residual for ours: the ring arcs (set 991 slots 41/44/45) change between game runs (render-match17); the per-layer bokashi split (--layers) is off here because only our editor can export per-layer shots."
+ },
+ {
+  "id": "uni2_p435",
+  "title": "UNI2 rotated CG mid-tween (AFHK 1 interpolation, AFAZ rotation lerp, tick 27 of 55)",
+  "game": "UNI2",
+  "pattern_frame": "chr020 p435 tick 27 (zoom 1)",
+  "game_capture": "afhk_cg_chr020_p435_t27_r3",
+  "notes": "Needs AFHK interpolation between two keyframes plus a rotated, palette-indexed CG sprite.",
+  "caveat": "gonp has no animation playback, so it is shown at frame 0 (the keyframe tick 27 belongs to); its failure here is the sprite decode/palette, not only the missing tween."
+ },
+ {
+  "id": "uni2_pups",
+  "title": "UNI2 PUPS palette switch: CG 869 + .pat set 839 with PPPA-tinted parts",
+  "game": "UNI2",
+  "pattern_frame": "chr027 p449 f4 (zoom 1.5 editor vs zoom 1 game)",
+  "game_capture": "pups_chr027_p449f4_r5",
+  "notes": "Palette bank chosen by the pattern's PUPS, plus per-part palette (PPPA) tint on the .pat layer.",
+  "caveat": "Close-up: v2_model drops view-wide rows/columns from every footprint (its grid-line guard), so only the lower-right of the sprite is scored, the same pixels for every tool."
+ },
+ {
+  "id": "uni2_flipHV",
+  "title": "UNI2 .pat-only pattern with PRRV 3 (H+V flipped) streak parts",
+  "game": "UNI2",
+  "pattern_frame": "chr019 p153 f0 (zoom 1)",
+  "game_capture": "flipHV_chr019_p153_r5",
+  "notes": "Pure .pat effect (no CG sprite on the frame): a tool without .pat support draws nothing."
+ },
+ {
+  "id": "mbtl_patctrl_chr001_p238f10",
+  "title": "MBTL p238: translucent tray (.pat set 275, PRAL 1 + translucent parts) at real zoom 1.5",
+  "game": "MBTL",
+  "pattern_frame": "chr001 p238 f10 (zoom 1.5)",
+  "game_capture": "mbtl_patctrl_chr001_p238f10_z15sa (HUD-free, stage-held, plate_b0)"
+ },
+ {
+  "id": "mbtl_flipV_chr001_p157f2",
+  "title": "MBTL p157: additive arcs (PRRV 2) + the puddle effect at real zoom 1.5",
+  "game": "MBTL",
+  "pattern_frame": "chr001 p157 f2 (zoom 1.5)",
+  "game_capture": "mbtl_flipV_chr001_p157f2_z15sa (HUD-free, stage-held, plate_b0)",
+  "caveat": "The puddle (p158 spawn) is in the game frame; scored pixels are the union of the tools' footprints, so game-only pixels outside every tool's footprint are not scored."
+ },
+ {
+  "id": "mbtl_cg_z15",
+  "title": "MBTL CG sprite at zoom 1.5 with the game's CG zoom filter (Filter_V) and BgColor light",
+  "game": "MBTL",
+  "pattern_frame": "chr001 p0 f0 (zoom 1.5)",
+  "game_capture": "mbtl_ctrl_chr001_p0f0_z15sabb (backbuffer capture)",
+  "notes": "Plain idle sprite: every tool loads it; the difference is the zoom filter. The training frame counter box is excluded.",
+  "caveat": "Control-style case (one CG sprite) to show the zoom filter, not a complex scene. sosfiro and gonp give identical numbers: neither applies the game's CG zoom filter (Filter_V) at 1.5x."
+ }
+]

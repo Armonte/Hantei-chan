@@ -1,0 +1,18 @@
+# pcmod export window on the PovertyCaster fixture (tools/ui/ab_shot.sh tools/ui/pcmod/export_window.txt)
+wait 30
+pcmod open
+pcmod addfolder C:/dev/hantei-chan/work/ab_showcase/pcmod_fixture/data
+pcmod addfolder C:/dev/hantei-chan/work/ab_showcase/pcmod_fixture/grp
+pcmod set id pcmod-fixture
+pcmod set version 1.2.3
+pcmod set name PovertyCaster pcmod fixture
+pcmod set exe 0000000000000000000000000000000000000000000000000000000000000001
+pcmod set priority 100
+pcmod set out C:/dev/hantei-chan/work/ab/pcmod_out
+pcmod status
+wait 10
+capture C:/dev/hantei-chan/work/ab/pcmod_export_window.png
+pcmod export
+wait 10
+capture C:/dev/hantei-chan/work/ab/pcmod_export_done.png
+quit

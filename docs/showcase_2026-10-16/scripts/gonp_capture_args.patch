@@ -1,0 +1,272 @@
+diff --git a/CMakeLists.txt b/CMakeLists.txt
+index 5e566ad..92bf3e5 100644
+--- a/CMakeLists.txt
++++ b/CMakeLists.txt
+@@ -17,6 +17,7 @@ add_subdirectory(glm)
+ add_executable(${EXE} WIN32
+ 	src/main.cpp
+ 	src/main_frame.cpp
++	src/capture_args.cpp
+ 	src/main_pane.cpp
+ 	src/right_pane.cpp
+ 	src/box_pane.cpp
+diff --git a/src/capture_args.cpp b/src/capture_args.cpp
+new file mode 100644
+index 0000000..349f598
+--- /dev/null
++++ b/src/capture_args.cpp
+@@ -0,0 +1,105 @@
++// Capture-only startup automation (see capture_args.h).
++#include "capture_args.h"
++#include "main_frame.h"
++#include "main.h"
++#include "ini.h"
++#include <windows.h>
++#include <glad/glad.h>
++#define STB_IMAGE_WRITE_IMPLEMENTATION
++#include "stb_image_write.h"
++#include <cstdio>
++#include <cstdlib>
++#include <fstream>
++#include <vector>
++
++CaptureArgs gCapture;
++
++static std::string Narrow(const wchar_t *w)
++{
++	int n = WideCharToMultiByte(CP_ACP, 0, w, -1, nullptr, 0, nullptr, nullptr);
++	std::string s(n > 0 ? n - 1 : 0, '\0');
++	if (n > 1) WideCharToMultiByte(CP_ACP, 0, w, -1, &s[0], n, nullptr, nullptr);
++	return s;
++}
++
++bool ParseCaptureArg(int argC, wchar_t **argV, int &i)
++{
++	std::string a = Narrow(argV[i]);
++	auto val = [&](int k = 1) -> std::string { return (i + k < argC) ? Narrow(argV[i + k]) : std::string(); };
++	auto has = [&](int k) { return i + k < argC; };
++	if (a == "--open" && has(1))         { gCapture.open = val(); i += 1; }
++	else if (a == "--pattern" && has(1)) { gCapture.pattern = atoi(val().c_str()); i += 1; }
++	else if (a == "--frame" && has(1))   { gCapture.frame = atoi(val().c_str()); i += 1; }
++	else if (a == "--zoom" && has(1))    { gCapture.zoom = (float)atof(val().c_str()); i += 1; }
++	else if (a == "--view" && has(2))    { gCapture.viewW = atoi(val(1).c_str()); gCapture.viewH = atoi(val(2).c_str()); i += 2; }
++	else if (a == "--bg" && has(1)) {
++		int r = 0, g = 0, b = 0;
++		if (sscanf(val().c_str(), "%d,%d,%d", &r, &g, &b) == 3) { gCapture.bgSet = true; gCapture.bg[0] = r / 255.f; gCapture.bg[1] = g / 255.f; gCapture.bg[2] = b / 255.f; }
++		i += 1;
++	}
++	else if (a == "--hide-ui")    gCapture.hideUi = true;
++	else if (a == "--hide-boxes") gCapture.boxes = 0;
++	else if (a == "--capture" && has(1))       { gCapture.capture = val(); i += 1; }
++	else if (a == "--capture-frame" && has(1)) { gCapture.captureFrame = atoi(val().c_str()); i += 1; }
++	else if (a == "--status" && has(1))        { gCapture.status = val(); i += 1; }
++	else return false;
++	return true;
++}
++
++bool WriteBackBufferPng(const std::string &path, int w, int h)
++{
++	if (w <= 0 || h <= 0) return false;
++	std::vector<unsigned char> px((size_t)w * h * 4);
++	glPixelStorei(GL_PACK_ALIGNMENT, 1);
++	glReadBuffer(GL_BACK);
++	glReadPixels(0, 0, w, h, GL_RGBA, GL_UNSIGNED_BYTE, px.data());
++	for (size_t k = 3; k < px.size(); k += 4) px[k] = 255;
++	stbi_flip_vertically_on_write(1);
++	return stbi_write_png(path.c_str(), w, h, 4, px.data(), w * 4) != 0;
++}
++
++static void WriteStatus(const std::string &s)
++{
++	if (gCapture.status.empty()) return;
++	std::ofstream o(gCapture.status); o << s << "\n";
++}
++
++// Frame 2: the same calls as gonp's File menu items.
++void MainFrame::CaptureBeforeDraw()
++{
++	CaptureArgs &c = gCapture;
++	if (c.n == 2) {
++		if (!c.open.empty()) {
++			std::string file = c.open, ext = file.substr(file.find_last_of('.') + 1);
++			for (auto &ch : ext) ch = (char)tolower((unsigned char)ch);
++			bool ok;
++			if (ext == "txt") { ok = LoadFromIni(&framedata, &cg, file); if (ok) { currentFilePath.clear(); mainPane.RegenerateNames(); render.SwitchImage(-1); } }
++			else { ok = framedata.load(file.c_str()); if (ok) { currentFilePath = file; mainPane.RegenerateNames(); } }
++			if (!ok) { c.loadFailed = true; c.loadMsg = "gonp: \"There was a problem loading the file. The file couldn't be accessed or it's not a valid file.\" (" + ext + " loader returned false)"; }
++		}
++		if (c.pattern >= 0) currState.pattern = c.pattern;
++		if (c.frame >= 0) {
++			Sequence *seq = framedata.get_sequence(currState.pattern);
++			if (!seq) { if (!c.loadFailed) { c.loadFailed = true; c.loadMsg = "gonp: pattern " + std::to_string(c.pattern) + " not present (" + std::to_string(framedata.get_sequence_count()) + " patterns loaded)"; } }
++			else if (c.frame >= (int)seq->frames.size()) { if (!c.loadFailed) { c.loadFailed = true; c.loadMsg = "gonp: frame out of range"; } }
++			else currState.frame = c.frame;
++		}
++		if (c.zoom > 0.f) SetZoom(c.zoom);
++		if (c.bgSet) ChangeClearColor(c.bg[0], c.bg[1], c.bg[2]);
++		if (c.boxes == 0) render.DontDraw();
++	}
++}
++
++void MainFrame::CaptureAfterDraw()
++{
++	CaptureArgs &c = gCapture;
++	if (!c.capture.empty() && c.n == 2 + c.captureFrame) {
++		if (!c.loadFailed) {
++			WriteBackBufferPng(c.capture, (int)clientRect.x, (int)clientRect.y);
++			Sequence *seq = framedata.get_sequence(currState.pattern);
++			WriteStatus("ok pattern " + std::to_string(currState.pattern) + " frame " + std::to_string(currState.frame) + " sprite " + std::to_string(currState.spriteId) + (seq ? " frames " + std::to_string(seq->frames.size()) : ""));
++		} else WriteStatus("fail " + c.loadMsg);
++		PostMessage(mainWindowHandle, WM_CLOSE, 0, 0);
++	}
++	c.n++;
++}
+diff --git a/src/capture_args.h b/src/capture_args.h
+new file mode 100644
+index 0000000..565e99f
+--- /dev/null
++++ b/src/capture_args.h
+@@ -0,0 +1,25 @@
++#ifndef CAPTURE_ARGS_H_GUARD
++#define CAPTURE_ARGS_H_GUARD
++// Capture-only startup automation for render comparisons (NOT part of gonp's editor).
++// Same option set as the sosfiro capture build (work/sosfiro_capture/src/capture_args.h).
++// gonp's render code is untouched: these options only do what File > Load from .txt / Load HA6,
++// the pattern/frame spinners, View > Zoom and the background colour picker do, then read back
++// the window's own GL back buffer.
++//   --open <file.txt|file.ha6>  --pattern N  --frame N  --zoom Z  --view W H  --bg R,G,B
++//   --hide-ui (skip the ImGui panels)  --hide-boxes  --capture <png>  --capture-frame N  --status <txt>
++#include <string>
++struct CaptureArgs {
++	std::string open, capture, status;
++	int pattern = -1, frame = -1;
++	float zoom = 0.f;
++	int viewW = 0, viewH = 0;
++	bool bgSet = false; float bg[3] = {0, 0, 0};
++	bool hideUi = false; int boxes = -1;
++	int captureFrame = 12;
++	int n = 0; bool loadFailed = false; std::string loadMsg;
++	bool active() const { return !open.empty() || !capture.empty(); }
++};
++extern CaptureArgs gCapture;
++bool ParseCaptureArg(int argC, wchar_t **argV, int &i);
++bool WriteBackBufferPng(const std::string &path, int w, int h);
++#endif
+diff --git a/src/main.cpp b/src/main.cpp
+index 166be0c..508c5db 100644
+--- a/src/main.cpp
++++ b/src/main.cpp
+@@ -3,6 +3,7 @@
+ #include "main_frame.h"
+ #include "test.h"
+ #include "ini.h"
++#include "capture_args.h"
+ 
+ #include <iostream>
+ #include <fstream>
+@@ -61,6 +62,8 @@ int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE, PWSTR pCmdLine, int nCmdShow
+ 	PWSTR* argV = CommandLineToArgvW(pCmdLine, &argC);
+ 	for(int i=0; i<argC; i++)
+ 	{
++		if(ParseCaptureArg(argC, argV, i))
++			continue;
+ 		char * arg = (char*)(argV[i]);
+ 		wcstombs(arg, argV[i], wcslen(argV[i])+1);
+ 		if(!strcmp(arg, "--test"))
+@@ -121,10 +124,18 @@ int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE, PWSTR pCmdLine, int nCmdShow
+ 		ShowWindow(hwnd, nCmdShow);
+ 		
+ 	UpdateWindow(hwnd);
++	if(gCapture.viewW > 0 && gCapture.viewH > 0)   // capture build: --view W H = exact client size
++	{
++		RECT r{0, 0, gCapture.viewW, gCapture.viewH};
++		AdjustWindowRect(&r, WS_OVERLAPPEDWINDOW, FALSE);
++		MoveWindow(hwnd, gSettings.posX, gSettings.posY, r.right - r.left, r.bottom - r.top, false);
++	}
+ 
+ 	MSG msg;
+ 	while (GetMessage(&msg, NULL, 0, 0))
+ 	{
++		if(gCapture.active())   // capture build: keep drawing without input
++			PostMessage(hwnd, WM_NULL, 0, 0);
+ 		TranslateMessage(&msg);
+ 		DispatchMessage(&msg);
+ 		MainFrame* mf = (MainFrame*)GetWindowLongPtr(hwnd, GWLP_USERDATA);
+diff --git a/src/main_frame.cpp b/src/main_frame.cpp
+index 1cdadd1..7be56c1 100644
+--- a/src/main_frame.cpp
++++ b/src/main_frame.cpp
+@@ -4,6 +4,7 @@
+ #include "filedialog.h"
+ #include "ini.h"
+ #include "imgui_utils.h"
++#include "capture_args.h"
+ 
+ #include <imgui.h>
+ #include <imgui_internal.h>
+@@ -47,11 +48,24 @@ void MainFrame::Draw()
+ 	ImGui_ImplOpenGL3_NewFrame();
+ 	ImGui_ImplWin32_NewFrame();
+ 	ImGui::NewFrame();
+-	DrawUi();
++	if(gCapture.active())
++		CaptureBeforeDraw();
++	if(gCapture.hideUi)
++	{
++		RenderUpdate();   // what DrawUi() ends with, without the panels
++		render.captureNoLines = true;
++	}
++	else
++		DrawUi();
++	if(gCapture.boxes == 0)
++		render.GenerateHitboxVertices(BoxList{});
+ 	DrawBack();
+ 	ImGui::Render();
+ 	
+-	ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
++	if(!gCapture.hideUi)
++		ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
++	if(gCapture.active())
++		CaptureAfterDraw();
+ 
+ 	SwapBuffers(context->dc);
+ 
+diff --git a/src/main_frame.h b/src/main_frame.h
+index 2059515..68abc74 100644
+--- a/src/main_frame.h
++++ b/src/main_frame.h
+@@ -25,6 +25,8 @@ public:
+ 
+ 	void RightClick(int x, int y);
+ 	void LoadSettings();
++	void CaptureBeforeDraw();
++	void CaptureAfterDraw();
+ 
+ private:
+ 	ContextGl *context;
+diff --git a/src/render.cpp b/src/render.cpp
+index a780b80..be9d255 100644
+--- a/src/render.cpp
++++ b/src/render.cpp
+@@ -160,7 +160,8 @@ void Render::Draw()
+ 	glUniform1f(lAlphaS, 0.25f);
+ 	SetMatrix(lProjectionS);
+ 	vGeometry.Bind();
+-	vGeometry.Draw(geoParts[LINES], 0, GL_LINES);
++	if(!captureNoLines) // capture build: --hide-ui hides the axis cross (sosfiro --no-lines equivalent)
++		vGeometry.Draw(geoParts[LINES], 0, GL_LINES);
+ 
+ 	//Sprite
+ 	constexpr float tau = glm::pi<float>()*2.f;
+diff --git a/src/render.h b/src/render.h
+index 7cff968..1fb26ba 100644
+--- a/src/render.h
++++ b/src/render.h
+@@ -57,6 +57,7 @@ public:
+ 	void UpdateProj(float w, float h);
+ 
+ 	void GenerateHitboxVertices(const BoxList &hitboxes);
++	bool captureNoLines = false;
+ 	void SetCg(CG *cg);
+ 	void SwitchImage(int id);
+ 	void DontDraw();
