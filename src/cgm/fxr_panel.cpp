@@ -1,4 +1,5 @@
 #include "../ui/ui_style.h"
+#include "../ui/ui_layout2.h"
 #include "fxr_panel.h"
 #include "../cg.h"
 #include "../character_instance.h"
@@ -173,7 +174,7 @@ static void DrawTex(const FxPanel *, unsigned id, int w, int h, float box) {
 void FxPanel::drawStops(std::vector<fx::Stop> &stops, fx::Rgb accent, const char *idp) {
 	// gradient bar as the shader sees it (kRampN entries, linear between)
 	float r[fx::kRampN][4]; fx::evalRamp(stops, accent, r);
-	const ImVec2 p0 = ImGui::GetCursorScreenPos(); const float W = ImGui::GetContentRegionAvail().x - 8, H = 16;
+	const ImVec2 p0 = ImGui::GetCursorScreenPos(); const float W = ImGui::GetContentRegionAvail().x - ui::Px(8), H = ui::Px(16);
 	ImGui::Dummy(ImVec2(W, H));
 	ImDrawList *dl = ImGui::GetWindowDrawList();
 	ImU32 col[fx::kRampN];
@@ -191,7 +192,7 @@ void FxPanel::drawStops(std::vector<fx::Stop> &stops, fx::Rgb accent, const char
 		ImGui::SetNextItemWidth(ui::Px(104)); if (ImGui::Combo("##tok", &tk, kTok, 4)) s.tok = (fx::ColTok)tk;
 		ImGui::SameLine();
 		if (s.tok == fx::ColTok::Literal) { float c[3] = { s.c.r, s.c.g, s.c.b }; if (ImGui::ColorEdit3("##c", c, ImGuiColorEditFlags_NoInputs)) s.c = { c[0], c[1], c[2] }; }
-		else { const fx::Rgb rc = fx::oklabToSrgb(fx::resolveStop(s, accent)); ImGui::ColorButton("##a", V4(rc), ImGuiColorEditFlags_NoTooltip, ImVec2(20, 20)); }
+		else { const fx::Rgb rc = fx::oklabToSrgb(fx::resolveStop(s, accent)); ImGui::ColorButton("##a", V4(rc), ImGuiColorEditFlags_NoTooltip, ImVec2(ImGui::GetFrameHeight(), ImGui::GetFrameHeight())); }
 		ImGui::SameLine(); ImGui::Checkbox("@", &s.hasPos);
 		if (s.hasPos) { ImGui::SameLine(); ImGui::SetNextItemWidth(ui::Px(90)); ImGui::SliderFloat("##p", &s.pos, 0.f, 1.f, "%.2f"); }
 		ImGui::SameLine(); if (ImGui::SmallButton("x") && stops.size() > 1) del = (int)i;
@@ -200,9 +201,9 @@ void FxPanel::drawStops(std::vector<fx::Stop> &stops, fx::Rgb accent, const char
 	if (del >= 0) stops.erase(stops.begin() + del);
 	ImGui::PushID(idp);
 	if (ImGui::SmallButton(LBL("+ stop"))) { fx::Stop s; s.tok = fx::ColTok::Accent; stops.insert(stops.end() - (stops.size() > 1 ? 1 : 0), s); }
-	ImGui::SameLine(); if (ImGui::SmallButton(LBL("Preset: dark-accent-white"))) fx::parseStops("#000000 accent.dark accent accent.light #ffffff", stops);
-	ImGui::SameLine(); if (ImGui::SmallButton(LBL("Preset: black-accent"))) fx::parseStops("#000000 accent", stops);
-	ImGui::SameLine(); if (ImGui::SmallButton(LBL("Preset: rainbow"))) { stops.clear(); for (int k = 0; k < fx::kRampN; k++) { fx::Stop s; s.c = fx::okhsvToSrgb({ (double)k / fx::kRampN, 0.9, 0.95 }); stops.push_back(s); } }
+	ui::SameLineButton(LBL("Preset: dark-accent-white")); if (ImGui::SmallButton(LBL("Preset: dark-accent-white"))) fx::parseStops("#000000 accent.dark accent accent.light #ffffff", stops);
+	ui::SameLineButton(LBL("Preset: black-accent")); if (ImGui::SmallButton(LBL("Preset: black-accent"))) fx::parseStops("#000000 accent", stops);
+	ui::SameLineButton(LBL("Preset: rainbow")); if (ImGui::SmallButton(LBL("Preset: rainbow"))) { stops.clear(); for (int k = 0; k < fx::kRampN; k++) { fx::Stop s; s.c = fx::okhsvToSrgb({ (double)k / fx::kRampN, 0.9, 0.95 }); stops.push_back(s); } }
 	ImGui::PopID();
 }
 
@@ -247,7 +248,7 @@ void FxPanel::drawRuleEditor(CharacterInstance &ch, const Bank *bank) {
 	for (const AccentCandidate &c : accentCands) {
 		ImGui::SameLine(); const uint32_t *pp = slotPal(ch, slotSel); const uint32_t col = pp ? pp[c.index] : 0;
 		ImGui::PushID(c.index);
-		if (ImGui::ColorButton("##cand", ImVec4((col & 255) / 255.f, ((col >> 8) & 255) / 255.f, ((col >> 16) & 255) / 255.f, 1), 0, ImVec2(18, 18))) r.accentIdx = { c.index };
+		if (ImGui::ColorButton("##cand", ImVec4((col & 255) / 255.f, ((col >> 8) & 255) / 255.f, ((col >> 16) & 255) / 255.f, 1), 0, ImVec2(ImGui::GetTextLineHeight(), ImGui::GetTextLineHeight()))) r.accentIdx = { c.index };
 		ImGui::SetItemTooltip(TXT("index %d"), c.index);
 		ImGui::PopID();
 	}
@@ -266,7 +267,7 @@ void FxPanel::drawRuleEditor(CharacterInstance &ch, const Bank *bank) {
 			ImGui::TableNextRow(); ImGui::PushID(s);
 			fx::SlotOv *o = nullptr; for (auto &x : r.ov) if (x.slot == s) o = &x;
 			ImGui::TableNextColumn(); if (ImGui::Selectable(Fmt("%d", s).c_str(), slotSel == s, ImGuiSelectableFlags_SpanAllColumns)) slotSel = s;
-			ImGui::TableNextColumn(); uint32_t rp[256]; ToRuntimePalette(slotPal(ch, s), rp); ImGui::ColorButton("##auto", V4(fx::autoAccent(rp, r.accentIdx)), ImGuiColorEditFlags_NoTooltip, ImVec2(18, 18));
+			ImGui::TableNextColumn(); uint32_t rp[256]; ToRuntimePalette(slotPal(ch, s), rp); ImGui::ColorButton("##auto", V4(fx::autoAccent(rp, r.accentIdx)), ImGuiColorEditFlags_NoTooltip, ImVec2(ImGui::GetTextLineHeight(), ImGui::GetTextLineHeight()));
 			ImGui::TableNextColumn();
 			bool has = o && o->hasAccent;
 			if (ImGui::Checkbox("##has", &has)) {
@@ -307,18 +308,18 @@ void FxPanel::drawSlotStrip(CharacterInstance &ch, const Bank &bank) {
 	// big: original vs recolour at the chosen slot
 	const fx::Rule *rule = RuleFor(rules, row->pattern, spriteSel, slotSel, 1);
 	if (!rule) rule = RuleFor(rules, row->pattern, spriteSel, slotSel, 2);
-	const float box = 150.f;
+	const float box = ui::Px(150);
 	if (showBefore) { Tex &t = preview(ch, bank, spriteSel, nullptr, slotSel); DrawTex(this, t.id, t.w, t.h, box); ImGui::SameLine(); }
 	{ Tex &t = preview(ch, bank, spriteSel, rule, slotSel); DrawTex(this, t.id, t.w, t.h, box); }
 	ImGui::SameLine(); ImGui::BeginGroup();
 	ImGui::Text("%s: %s", TXT("rule"), rule ? rule->id.c_str() : TXT("(none, stays as authored)"));
 	ImGui::Text("%s %d", TXT("slot"), slotSel);
-	{ const uint32_t *pp = slotPal(ch, slotSel); if (rule) { const fx::Rgb a = AccentFor(*rule, pp, slotSel); ImGui::ColorButton("##acc", V4(a), 0, ImVec2(20, 20)); ImGui::SameLine(); ImGui::TextUnformatted(fx::hexOf(a).c_str()); } }
+	{ const uint32_t *pp = slotPal(ch, slotSel); if (rule) { const fx::Rgb a = AccentFor(*rule, pp, slotSel); ImGui::ColorButton("##acc", V4(a), 0, ImVec2(ImGui::GetFrameHeight(), ImGui::GetFrameHeight())); ImGui::SameLine(); ImGui::TextUnformatted(fx::hexOf(a).c_str()); } }
 	ImGui::EndGroup();
 	// every slot
-	const float tile = 56.f;
+	const float tile = ui::Px(56), gap = ui::Px(6);
 	const float W = ImGui::GetContentRegionAvail().x;
-	const int perRow = std::max(1, (int)(W / (tile + 6)));
+	const int perRow = std::max(1, (int)(W / (tile + gap)));
 	for (int s = 0; s < nSlots; s++) {
 		const fx::Rule *rs = RuleFor(rules, row->pattern, spriteSel, s, 1);
 		if (!rs) rs = RuleFor(rules, row->pattern, spriteSel, s, 2);
@@ -330,7 +331,7 @@ void FxPanel::drawSlotStrip(CharacterInstance &ch, const Bank &bank) {
 		if (slotSel == s) ImGui::GetWindowDrawList()->AddRect(p0, ImVec2(p0.x + tile, p0.y + tile), IM_COL32(255, 200, 40, 255), 0, 0, 2.f);
 		ImGui::SetItemTooltip("%s %d", TXT("slot"), s);
 		ImGui::PopID();
-		if ((s + 1) % perRow) ImGui::SameLine(0, 6);
+		if ((s + 1) % perRow) ImGui::SameLine(0, gap);
 	}
 	ImGui::NewLine();
 }
@@ -338,34 +339,48 @@ void FxPanel::drawSlotStrip(CharacterInstance &ch, const Bank &bank) {
 void FxPanel::draw(CharacterInstance &ch, const Bank *bank, const UsageIndex &usage, const std::function<void(int, int)> &navigate) {
 	if (owner != &ch || gen != ch.cg.generation() || usageVersion != usage.version) reset(ch, bank, usage);
 	if (!bank) { ImGui::TextDisabled("%s", TXT("This bank format has no effect classification (not a BMP Cutter bank).")); return; }
-	ImGui::TextWrapped("%s", TXT("Authors the PovertyCaster runtime recolour (<game>\\fxrecolor\\<char>.ini). Previews apply the runtime's own shader maths to the original pixels: nothing in the game files changes. Method after DGV's \"Better Akiha\"."));
+	// one line; the method note lives in the (?) tooltip
+	ImGui::AlignTextToFramePadding();
+	ImGui::TextUnformatted(TXT("Authors the PovertyCaster runtime recolour (<game>\\fxrecolor\\<char>.ini)."));
+	ui::HelpMarker(TXT("Authors the PovertyCaster runtime recolour (<game>\\fxrecolor\\<char>.ini). Previews apply the runtime's own shader maths to the original pixels: nothing in the game files changes. Method after DGV's \"Better Akiha\"."));
 	// file bar
 	{
 		char pb[512]; snprintf(pb, sizeof pb, "%s", path.c_str());
-		ImGui::SetNextItemWidth(ImGui::GetContentRegionAvail().x - 420);
+		// the path takes what the four buttons leave; at a narrow width the buttons wrap under it
+		const float sp = ImGui::GetStyle().ItemSpacing.x;
+		const float btnW = i18n::ButtonWidth(LBL("Load")) + i18n::ButtonWidth(LBL("Save")) + i18n::ButtonWidth(LBL("Import DGV Akiha ruleset")) + i18n::ButtonWidth(LBL("Diff vs file")) + sp * 4;
+		ImGui::SetNextItemWidth(std::max(ui::Em(14.f), ImGui::GetContentRegionAvail().x - btnW));
 		if (ImGui::InputText("##fxpath", pb, sizeof pb)) path = pb;
-		ImGui::SameLine(); if (ImGui::Button(LBL("Load"))) loadFile();
-		ImGui::SameLine(); if (ImGui::Button(LBL("Save"))) saveFile();
-		ImGui::SameLine(); if (ImGui::Button(LBL("Import DGV Akiha ruleset"))) {
+		ui::SameLineButton(LBL("Load")); if (ImGui::Button(LBL("Load"))) loadFile();
+		ui::SameLineButton(LBL("Save")); if (ImGui::Button(LBL("Save"))) saveFile();
+		ui::SameLineButton(LBL("Import DGV Akiha ruleset")); if (ImGui::Button(LBL("Import DGV Akiha ruleset"))) {
 			parserMsgs.clear(); const int n = LoadRules(DgvAkihaIni(), rules, parserMsgs); status = Fmt(TXT("Imported %d DGV groups (Akiha only: sprite ids are Akiha's)"), n); ruleSel = rules.rules.empty() ? -1 : 0; freeTex();
 		}
-		ImGui::SameLine(); if (ImGui::Button(LBL("Diff vs file"))) ImGui::OpenPopup("##fxdiff");
+		ui::SameLineButton(LBL("Diff vs file")); if (ImGui::Button(LBL("Diff vs file"))) ImGui::OpenPopup("##fxdiff");
 		if (ImGui::BeginPopup("##fxdiff")) { ImGui::TextUnformatted(DiffRules(saved, rules).c_str()); ImGui::EndPopup(); }
 	}
-	if (!status.empty()) ImGui::TextDisabled("%s", status.c_str());
+	if (!status.empty()) { ImGui::PushTextWrapPos(0.f); ImGui::TextDisabled("%s", status.c_str()); ImGui::PopTextWrapPos(); }
 	if (!parserMsgs.empty()) ImGui::TextColored(ImVec4(1, .6f, .3f, 1), "%s", parserMsgs.c_str());
 	ImGui::Text("%s: %d | %s: %d | %s: %d | %s: %zu", TXT("fixed-colour sprites"), cls.fixedImages, TXT("drawn"), cls.usedFixedImages, TXT("shared by 2+ patterns"), cls.sharedFixedImages, TXT("effect patterns"), cls.patterns.size());
 
-	const float leftW = 520.f;
-	ImGui::BeginChild("##fxl", ImVec2(leftW, 0), ImGuiChildFlags_Borders);
+	// rules + effect patterns (left) | slot strip + rule editor (right): a resizable split that fills the tab
+	const float paneH = std::max(ui::Em(10.f), ImGui::GetContentRegionAvail().y);
+	const bool split = ImGui::BeginTable("##fxsplit", 2, ImGuiTableFlags_Resizable | ImGuiTableFlags_BordersInnerV | ImGuiTableFlags_NoSavedSettings, ImVec2(0, paneH));
+	if (split) {
+		ImGui::TableSetupColumn("##fxleft", ImGuiTableColumnFlags_WidthStretch, 0.45f);
+		ImGui::TableSetupColumn("##fxright", ImGuiTableColumnFlags_WidthStretch, 0.55f);
+		ImGui::TableNextRow(); ImGui::TableSetColumnIndex(0);
+	}
+	const float childH = paneH - ImGui::GetStyle().CellPadding.y * 2;
+	ImGui::BeginChild("##fxl", ImVec2(split ? 0.f : ui::Px(520), childH), ImGuiChildFlags_Borders);
 	// rules list
 	ImGui::SeparatorText(TXT("Rules (first match wins, file order)"));
 	if (ImGui::SmallButton(LBL("New"))) { { fx::Rule nr = DefaultRule(UniqueRuleId(rules, "rule")); if (!accentCands.empty()) nr.accentIdx = { accentCands[0].index }; rules.rules.insert(rules.rules.begin(), nr); } ruleSel = 0; freeTex(); }
-	ImGui::SameLine(); ImGui::BeginDisabled(ruleSel < 0);
-	if (ImGui::SmallButton(LBL("Duplicate")) && ruleSel >= 0) { fx::Rule d = rules.rules[ruleSel]; d.id = UniqueRuleId(rules, d.id + "_copy"); rules.rules.insert(rules.rules.begin() + ruleSel + 1, d); ruleSel++; }
-	ImGui::SameLine(); if (ImGui::SmallButton(LBL("Delete")) && ruleSel >= 0) { rules.rules.erase(rules.rules.begin() + ruleSel); ruleSel = std::min(ruleSel, (int)rules.rules.size() - 1); freeTex(); }
-	ImGui::SameLine(); if (ImGui::SmallButton(LBL("Up")) && ruleSel > 0) { std::swap(rules.rules[ruleSel], rules.rules[ruleSel - 1]); ruleSel--; freeTex(); }
-	ImGui::SameLine(); if (ImGui::SmallButton(LBL("Down")) && ruleSel >= 0 && ruleSel + 1 < (int)rules.rules.size()) { std::swap(rules.rules[ruleSel], rules.rules[ruleSel + 1]); ruleSel++; freeTex(); }
+	ImGui::BeginDisabled(ruleSel < 0);
+	ui::SameLineButton(LBL("Duplicate")); if (ImGui::SmallButton(LBL("Duplicate")) && ruleSel >= 0) { fx::Rule d = rules.rules[ruleSel]; d.id = UniqueRuleId(rules, d.id + "_copy"); rules.rules.insert(rules.rules.begin() + ruleSel + 1, d); ruleSel++; }
+	ui::SameLineButton(LBL("Delete")); if (ImGui::SmallButton(LBL("Delete")) && ruleSel >= 0) { rules.rules.erase(rules.rules.begin() + ruleSel); ruleSel = std::min(ruleSel, (int)rules.rules.size() - 1); freeTex(); }
+	ui::SameLineButton(LBL("Up")); if (ImGui::SmallButton(LBL("Up")) && ruleSel > 0) { std::swap(rules.rules[ruleSel], rules.rules[ruleSel - 1]); ruleSel--; freeTex(); }
+	ui::SameLineButton(LBL("Down")); if (ImGui::SmallButton(LBL("Down")) && ruleSel >= 0 && ruleSel + 1 < (int)rules.rules.size()) { std::swap(rules.rules[ruleSel], rules.rules[ruleSel + 1]); ruleSel++; freeTex(); }
 	ImGui::EndDisabled();
 	ImGui::BeginChild("##fxrules", ImVec2(0, ui::Px(110)), ImGuiChildFlags_Borders);
 	for (int i = 0; i < (int)rules.rules.size(); i++) {
@@ -375,10 +390,13 @@ void FxPanel::draw(CharacterInstance &ch, const Bank *bank, const UsageIndex &us
 	ImGui::EndChild();
 	// grid
 	ImGui::SeparatorText(TXT("Effect patterns"));
-	ImGui::SetNextItemWidth(ui::Px(110)); ImGui::InputText(LBL("Name"), nameFilter, sizeof nameFilter);
-	ImGui::SameLine(); ImGui::SetNextItemWidth(ui::Px(70)); ImGui::SliderInt(LBL("Min score"), &minScore, 0, 100);
-	ImGui::SetItemTooltip("%s", TXT("Share of the pattern's layers that draw fixed-colour sprites. A body pattern with one RGB hair sprite scores low."));
-	ImGui::Checkbox(LBL("Shared sprites only"), &onlyShared); ImGui::SameLine(); ImGui::Checkbox(LBL("No rule yet"), &onlyUnruled);
+	if (ui::BeginFormGrid("##fxfilter", 2, ui::Em(11.f))) {
+		ui::FormCell(TXT("Name")); ImGui::InputText("##fxname", nameFilter, sizeof nameFilter);
+		ui::FormCell(TXT("Min score")); ImGui::SliderInt("##fxminscore", &minScore, 0, 100);
+		ImGui::SetItemTooltip("%s", TXT("Share of the pattern's layers that draw fixed-colour sprites. A body pattern with one RGB hair sprite scores low."));
+		ui::EndFormGrid();
+	}
+	ImGui::Checkbox(LBL("Shared sprites only"), &onlyShared); ui::SameLineCheckbox(LBL("No rule yet")); ImGui::Checkbox(LBL("No rule yet"), &onlyUnruled);
 	std::vector<int> shown;
 	for (size_t i = 0; i < cls.patterns.size(); i++) {
 		const FxPatternRow &p = cls.patterns[i];
@@ -392,11 +410,11 @@ void FxPanel::draw(CharacterInstance &ch, const Bank *bank, const UsageIndex &us
 	ImGui::SameLine(); if (ImGui::SmallButton(LBL("Tick all shown"))) for (int i : shown) if (std::find(picked.begin(), picked.end(), cls.patterns[i].pattern) == picked.end()) picked.push_back(cls.patterns[i].pattern);
 	ImGui::SameLine(); if (ImGui::SmallButton(LBL("Untick"))) picked.clear();
 	ImGui::SameLine(); ImGui::Text("(%zu)", picked.size());
-	if (ImGui::BeginTable("##fxgrid", 8, ImGuiTableFlags_RowBg | ImGuiTableFlags_ScrollY | ImGuiTableFlags_Resizable | ImGuiTableFlags_SizingStretchProp, ImVec2(0, ImGui::GetContentRegionAvail().y - 62))) {
+	if (ImGui::BeginTable("##fxgrid", 8, ImGuiTableFlags_RowBg | ImGuiTableFlags_ScrollY | ImGuiTableFlags_Resizable | ImGuiTableFlags_SizingStretchProp, ImVec2(0, std::max(ui::Em(6.f), ImGui::GetContentRegionAvail().y - ImGui::GetFrameHeightWithSpacing() * 2 - ImGui::GetStyle().WindowPadding.y)))) {
 		ImGui::TableSetupScrollFreeze(0, 1);
-		ImGui::TableSetupColumn("", ImGuiTableColumnFlags_WidthFixed, 22); ImGui::TableSetupColumn(LBL("pat"), ImGuiTableColumnFlags_WidthFixed, 40); ImGui::TableSetupColumn(LBL("name"));
-		ImGui::TableSetupColumn(LBL("fx/all"), ImGuiTableColumnFlags_WidthFixed, 56); ImGui::TableSetupColumn("%", ImGuiTableColumnFlags_WidthFixed, 30); ImGui::TableSetupColumn(LBL("spr"), ImGuiTableColumnFlags_WidthFixed, 32);
-		ImGui::TableSetupColumn(LBL("shr"), ImGuiTableColumnFlags_WidthFixed, 32); ImGui::TableSetupColumn(LBL("rule"));
+		ImGui::TableSetupColumn("", ImGuiTableColumnFlags_WidthFixed, ImGui::GetFrameHeight()); ImGui::TableSetupColumn(LBL("pat"), ImGuiTableColumnFlags_WidthFixed, ui::Px(40)); ImGui::TableSetupColumn(LBL("name"));
+		ImGui::TableSetupColumn(LBL("fx/all"), ImGuiTableColumnFlags_WidthFixed, ui::Px(56)); ImGui::TableSetupColumn("%", ImGuiTableColumnFlags_WidthFixed, ui::Px(30)); ImGui::TableSetupColumn(LBL("spr"), ImGuiTableColumnFlags_WidthFixed, ui::Px(32));
+		ImGui::TableSetupColumn(LBL("shr"), ImGuiTableColumnFlags_WidthFixed, ui::Px(32)); ImGui::TableSetupColumn(LBL("rule"));
 		ImGui::TableHeadersRow();
 		ImGuiListClipper clip; clip.Begin((int)shown.size());
 		while (clip.Step()) for (int k = clip.DisplayStart; k < clip.DisplayEnd; k++) {
@@ -424,17 +442,18 @@ void FxPanel::draw(CharacterInstance &ch, const Bank *bank, const UsageIndex &us
 		ImGui::BeginDisabled(picked.empty() || rules.rules.empty() || ruleSel < 0);
 		if (ImGui::Button(LBL("Assign ticked patterns to the selected rule"))) { AssignPatterns(rules, ruleSel, picked); freeTex(); status = Fmt(TXT("Assigned %zu patterns to %s"), picked.size(), rules.rules[ruleSel].id.c_str()); }
 		ImGui::EndDisabled();
-		ImGui::SameLine(); ImGui::BeginDisabled(picked.empty());
-		if (ImGui::Button(LBL("New rule from ticked"))) newRuleFromTicked();
+		ImGui::BeginDisabled(picked.empty());
+		ui::SameLineButton(LBL("New rule from ticked")); if (ImGui::Button(LBL("New rule from ticked"))) newRuleFromTicked();
 		ImGui::EndDisabled();
 	}
 	ImGui::EndChild();
-	ImGui::SameLine();
-	ImGui::BeginChild("##fxr", ImVec2(0, 0), ImGuiChildFlags_Borders);
+	if (split) ImGui::TableSetColumnIndex(1); else ImGui::SameLine();
+	ImGui::BeginChild("##fxr", ImVec2(0, childH), ImGuiChildFlags_Borders);
 	drawSlotStrip(ch, *bank);
 	ImGui::Separator();
 	drawRuleEditor(ch, bank);
 	ImGui::EndChild();
+	if (split) ImGui::EndTable();
 }
 
 } // namespace cgm
