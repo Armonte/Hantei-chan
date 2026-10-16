@@ -151,6 +151,9 @@ static int SelfTest() {
 		cgm::Rgba small; small.w = small.h = 4; small.px.assign(64, 200);
 		CHECK(s.replace(1, small, &err, &ch) && ch && m.imageSize == 0 && m.data);
 		CHECK(std::string(cgm::PatTextureFormat(p, 1)) == "PGTX 32-bit");
+		// a PGT2 kind the loader does not read (UNIB DXT3): stale type, data shorter than the texture -> listed, not editable
+		p.gfxMeta.resize(3); PartGfx<> &ux = p.gfxMeta[2]; ux.w = ux.h = 512; ux.type = 5; ux.imageData = new char[16](); ux.imageSize = 16;
+		CHECK(s.entry(2, e) && !e.present && e.format == "unsupported kind");
 	}
 	// mod folder
 	{
@@ -177,7 +180,7 @@ static int SelfTest() {
 
 // ---------------------------------------------------------------- check
 static int Check(int argc, char **argv) {
-	int maxItems = 64, pass = 0, fail = 0; long items = 0, pngRt = 0, exact = 0; std::string kindName;
+	int maxItems = 64, pass = 0, fail = 0, unsupported = 0; long items = 0, pngRt = 0, exact = 0; std::string kindName;
 	std::vector<std::string> files;
 	for (int i = 0; i < argc; i++) { if (!strcmp(argv[i], "--max") && i + 1 < argc) maxItems = atoi(argv[++i]); else files.push_back(argv[i]); }
 	const std::string tmp = TmpDir("check");
@@ -193,7 +196,8 @@ static int Check(int argc, char **argv) {
 		else if (o.bank) F("parse -> serialize is not byte-exact");   // the CG model guarantees it; Parts::Save re-packs (reported only)
 		cgm::TexSource &s = *o.src; int done = 0, first = -1;
 		for (int i = 0; i < s.count(); i++) {
-			cgm::TexEntry e; if (!s.entry(i, e) || !e.present) continue;
+			cgm::TexEntry e; if (!s.entry(i, e)) continue;
+			if (!e.present) { if (e.format == "unsupported kind") unsupported++; continue; }
 			cgm::Rgba px; if (!s.decode(i, px)) { F("decode " + std::to_string(i)); continue; }
 			items++;
 			if (first < 0 && px.w > 0) first = i;
@@ -229,8 +233,8 @@ static int Check(int argc, char **argv) {
 		bad ? fail++ : pass++;
 	}
 	std::error_code ec; fs::remove_all(tmp, ec);
-	printf("SECTION texsrc-%s: pass %d fail %d | %ld items decoded, %ld PNG export -> import round trips with no byte changed, %d/%zu containers byte-exact on parse -> serialize\n",
-	       kindName.c_str(), pass, fail, items, pngRt, (int)exact, files.size());
+	printf("SECTION texsrc-%s: pass %d fail %d | %ld items decoded, %ld PNG export -> import round trips with no byte changed, %d/%zu containers byte-exact on parse -> serialize; %d texture(s) of a kind the loader does not read (listed, not editable)\n",
+	       kindName.c_str(), pass, fail, items, pngRt, (int)exact, files.size(), unsupported);
 	return fail ? 1 : 0;
 }
 
