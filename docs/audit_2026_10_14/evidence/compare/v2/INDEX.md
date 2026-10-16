@@ -1005,16 +1005,87 @@ No editor (C++) change. Numbers: `tools/uni/s1_compare/v2_round16.sh` (log `roun
   chr011 HUD-free on a still stage, and recapture the p157 s8/s456 solos HUD-free.
 - What is left on p238 _nh at zoom 1 (0.71): split by prop again (`v2_split_by_shot.py` with the round-14 solo shots).
 
-## Round 17 (interrupted, 2026-10-16): MBTL stage pin, where I stopped / next
-- **Stage pick traced (MBTL IDB, saved).** `VsLoad_LoadStageAndCharas` 0x7C0BD0 (and its task twin 0x7C0EE0) calls
-  `Stage_LoadByIndex` 0x4F24F0 with `*g_pBattleStageSel` (0xAFC04C; `BattleStageSel_Set` 0x4F5FB0 / `_Get` 0x4F5FC0).
-  `Stage_LoadByIndex` loads `g_StageNames[i]` (0xAFC170) and sets `g_CurStageIndex` 0xA2E47C.
-- **Harness, untested.** `gamecap/games/mbtl_to_training_stage.gcs` holds `[g_pBattleStageSel] = ${STAGE}` from before
-  the CSS decide until the battle starts. The case is `cases/v2r17_mbtl_chr011_stage.gcs`.
-- **First try.** STAGE 0 still loaded stage **21** (alley at night, looks still). 0 may mean "random", or the hold may land
-  too late. The STAGE=5 run did not start: `-D` has to go to `run.sh`, not inside the `wait_and_run.sh` group name.
-- **Capture method.** `capture_window` came out black on that run; `_game_bb.png` is fine. Next time use the bb shots,
-  or keep the window on the main monitor.
-- **Next.** `./run.sh cases/v2r17_mbtl_chr011_stage.gcs -D STAGE=5`, check `stage_loaded`. If it stays random, hold the
-  CSS-side stage field instead (trace `BattleStageSel_Set`'s callers). Then recapture chr011 pups and the p157
-  s8/s456 solos, split p238's 0.71 by prop, and run the full ctest. No MBTL row was re-measured in round 17.
+## Round 17 / render-match17 (2026-10-16): MBTL stage pinned, draw origin floored, p238 at its floor
+No editor (C++) change. Numbers: `tools/uni/s1_compare/v2_round17.sh` (log `round17/round17.log`). Full ctest 69/69, exit 0 (`ctest_r17.log`, `--timeout 900`).
+
+### Stage pin (MBTL IDB, renamed and saved)
+- **The pin never worked because the symbol was misnamed.** 0xAFC04C is the stage index itself, not a pointer
+  (`mov eax, ds:0xAFC04C` in `BattleStageSel_Get`; `mov ds:0xAFC04C, 5Ah` in the CSS). Renamed **`g_BattleStageSel`**
+  (u32). The draft harness held `[g_pBattleStageSel]`, a write through the value, so the real field stayed 0.
+- **0 = random.** `Scene15_VsScreen_Update` calls **`BattleStage_PickRandom`** 0x609DB0 (was sub_) when the field is 0.
+  The CSS writes 0 or 90. **`Stage_ApplyVariantRedirect`** 0x7C11F0 can swap in a stage's alternate index (+524);
+  **`Stage_IsAlreadyLoaded`** 0x4F2BC0 compares against **`g_LoadedStageName`** 0xAFC050.
+- **Harness.** `games/mbtl_to_training_stage.gcs` holds `u32 g_BattleStageSel ${STAGE}` from before the CSS decide
+  until the battle starts. Every run printed `stage_loaded = 21`: chr011, chr001 full and both solos (logs in
+  `round17/`). Stage 21 is the night alley; it has no animated props. The earlier tries loaded 21 (STAGE 0, random)
+  and 27 (STAGE 21 written through the value).
+- **New cases** (copies in `gamecap_scripts/`): `v2r17_mbtl_chr011_stage.gcs`, `v2r17_mbtl_chr001_stage.gcs` (p238,
+  p277, p0, p157) and `v2r17_mbtl_chr001_solo_{s8,s456}_stage.gcs`. All are HUD-free (g_BattleHudFader). Shots are in
+  `captures/v2/nohud_st`, copied as `*_st_game*`.
+- **Capture caveat.** `capture_window` (PrintWindow) sometimes returns an all-black image on these runs: p277/p0 and
+  the p157 plate in the first chr001 run, then the s456 shot or its plate. The `_bb` backbuffer does not replace it:
+  it differs from the window image in about 217k px. So the black sessions were re-run and only all-clean sessions
+  were copied.
+
+### MBTL draw origin: whole sprite px (MBTL IDB)
+- **`Han6Object_Draw`** 0x597070 (commented) takes the draw origin as `this+0x10 + (obj x >> 7)`, `(obj y >> 7)`. That
+  is world units floored to whole sprite px, before the camera / zoom matrix. The matrix uses `g_BtlCamera_RcpHalfW/H`
+  (0xCABCFC / 0xCABD00, renamed) and `AnimState_FillDrawInterpCtx` 0x42A630 (renamed). UNI2's
+  `CharaObj_DrawLayersWithLight` is the same code.
+- **p238f10 is the only MBTL row with a fractional origin.** Its p1_y is −500, which floors to −4 px, so the origin y is
+  636, not 636.094. `sheet.game_transform` (MBTL branch) now floors the same way (`sheet.MBTL_SNAP_ORIGIN`). The
+  unfloored origin had resampled the prediction 0.094 px off, a bilinear blur that cost 4.66 on the opaque tray edges.
+  The rows with p1_y 0 (p277, p157, p0, chr011) do not change.
+
+### p238_z1 split by prop (`v2_split_by_shot.py`, SPLIT_EXCL=1: exclusive regions, edge = within 1 px of a boundary)
+
+| region (editor solo shots s4 / s5 / s18) | round 16 (0.71) | **round 17 floored, _nh (0.26)** | _st (0.23) |
+|---|---|---|---|
+| s5 tray (opaque, rot 0.75) edge, 1447-1607 px | 4.66, 28% of the residual | **0.01** | 0.01 |
+| s5 tray inner, 8.3-8.5k px | 0.87, 31% | **0.01** | 0.01 |
+| s18 translucent only, inner, 19.8k px | 0.40, 32% | **0.36** (signed +0.05) | 0.32 (+0.03) |
+| s18 translucent only, edge, 3.1k px | 0.44 | **0.40** (+0.12) | 0.30 (+0.08) |
+| s4 additive glow | 252 px at 2.31 (blur bleed) | 0 px | 0 px |
+
+- **What is left on p238 is the floor.** The opaque tray is pixel-exact (0.01). The last 0.23–0.26 sits on the
+  translucent s18 plane and has no sign (|d| 0.3–0.4, signed ≤ +0.1, no px > 8). That is 8-bit rounding of an
+  alpha-blended layer: the game blends into an X8R8G8B8 backbuffer (capture fmt 22), while the prediction
+  P + Q·B is float from 8-bit editor shots. The split's `lit` column reads `last_light[3]`, truncated to uint8
+  (+0.48, round 15), so the regions are reported on raw.
+
+### Rows (raw = lit, identity light; zoom 1 at camera geometry 0,0, zoom 1.5 at the round-13 chr001 offset)
+
+| case | round 16 | **round 17 _nh** | **round 17 _st (stage 21)** | floor / note |
+|---|---|---|---|---|
+| mbtl_patctrl_chr001_p238f10_z1 (control) | 0.71 | **0.26** | **0.23** | at floor: s18 8-bit blend rounding |
+| mbtl_patctrl_chr001_p238f10 (zoom 1.5) | 1.08 | 1.68 | 1.67 | see below |
+| mbtl_patctrl_chr001_p277f0_z1 | 0.00 | 0.00 | **0.00** | pixel-exact |
+| mbtl_patctrl_chr001_p277f0 (zoom 1.5) | 1.17 | 1.17 | 1.24 | 1.5× resample |
+| mbtl_flipV_chr001_p157f2_z1 | 1.05 | 1.05 | **0.99** | +0.76 over p238: the slot-8 arc, below |
+| mbtl_flipV_chr001_p157f2 (zoom 1.5) | 4.23 | 4.23 | 4.88 | thin arcs at 1.5 (round 12) |
+| mbtl_pups_chr011_p309_z1 | 0.14 (_nb) / 0.85 (_nh, fountain) | 0.85 | **0.15** | floor; the round-16 0.85 was the fountain spray |
+| mbtl_pups_chr011_p309 (zoom 1.5) | 0.59 (_nb) / 1.02 | 1.02 | **0.59** | |
+| mbtl_flipV solo s8 _z1 | 0.79 (round 10) | | **0.83** | the slot-8 arc, below |
+| mbtl_flipV solo s456 _z1 | 0.75 (round 10) | | not re-measured | thin-line arcs; every `_st` session so far had a black shot or plate (the last re-run was refused: an MBAA.exe from another session was running outside the lock) |
+
+- **Preferred rows from now on:** `_st` for every MBTL row (HUD-free, same still stage). chr011 pups is back at its
+  `_nb` value without the HUD, so the floor there is confirmed.
+- **p238 at zoom 1.5 (1.08 → 1.67).** The shared chr001 1.5× offset (+0.25, 0) was fitted with the unfloored origin.
+  On the floored p238, a refit gives +0.25, +0.25 (1.08; `round17/reg/mbtl_chr001_nh_snap.json`). p277 and p157
+  (origin y 640) are best at y 0 (3.52 / 6.61 at +0.25). The y scan is flat in 1/8 px steps at 1.5×
+  (y 0.125 = y 0.25), which matches the editor-shot resample grid. This is the round-16 "y ambiguous" result again,
+  now with the game origin known exactly. It is the zoom-1.5 resample, not the game: the zoom-1 rows are exact.
+- **p157_z1: 0.76 above p238, localised but not fixed.** With SPLIT_EXCL, the uncovered region carries 84% of the
+  residual at **signed +1.26 ≈ |d| 1.27**, so the game is uniformly brighter there. The s8 solo game case shows the
+  same thing on its own (inner 21.3k px, signed +1.28; free fit gain k 1.01–1.02). So the excess is the slot-8 arc
+  (PRRV 2, PRAL 1, 54%, PRCL 0x99). The split listed it under "none" because an additive part has Q = 1, so 1 − Q
+  coverage cannot see it. A ~1.5% gain on an additive part points at how MBTL turns the part's alpha % / PRCL into
+  the vertex colour. **Next:** trace that conversion in `PatPart_DrawByShapeType` / the PRAL 1 blend state, and compare
+  it with the editor's `54 / 100` and colour path.
+
+### IDBs (saved)
+- MBTL: `g_BattleStageSel` (was `g_pBattleStageSel`, now typed u32), `BattleStage_PickRandom`,
+  `Stage_ApplyVariantRedirect`, `Stage_IsAlreadyLoaded`, `g_LoadedStageName`, `g_BtlCamera_RcpHalfW/H`,
+  `AnimState_FillDrawInterpCtx`, plus a comment on `Han6Object_Draw`.
+- UNI2: nothing kept. A comment that went to the wrong instance (the ida-mcp current target switched to UNI2 when
+  another session opened it) was reverted and the IDB saved.

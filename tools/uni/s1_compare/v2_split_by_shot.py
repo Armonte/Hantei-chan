@@ -52,11 +52,11 @@ if os.environ.get('SPLIT_EXCL'):
     edge = ndimage.binary_dilation(edge, iterations=1) & m
     sl = (G - raw).mean(2)
     print('-- exclusive regions (edge = within 1 px of a coverage boundary)')
-    for code in range(1, 1 << len(cs)):
+    for code in range(0, 1 << len(cs)):
         r = m.copy()
         for i, c in enumerate(cs): r &= c if code >> i & 1 else ~c
         if not r.any(): continue
-        nm = '+'.join(shots[i].split('_solo_')[-1] for i in range(len(cs)) if code >> i & 1)
+        nm = '+'.join(shots[i].split('_solo_')[-1] for i in range(len(cs)) if code >> i & 1) or '(none)'
         for tag, rr in (('edge', r & edge), ('inner', r & ~edge)):
             if rr.any():
                 print('%-16s %-5s px %6d  raw %.2f signed %+.2f (share %4.1f%%)  |d|>8 px %d' % (nm, tag, rr.sum(), dr[rr].mean(), sl[rr].mean(), dr[rr].sum() * 100 / tr, (dr[rr] > 8).sum()))
