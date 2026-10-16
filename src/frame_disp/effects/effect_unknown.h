@@ -1,5 +1,6 @@
 #ifndef EFFECT_UNKNOWN_H_GUARD
 #include "../../i18n.h"
+#include "effect_form.h"
 #define EFFECT_UNKNOWN_H_GUARD
 
 // ============================================================================
@@ -32,21 +33,17 @@ static inline void DrawEffectUnknown(Frame_EF& effect, FrameData* frameData, int
 				"1001: Particles (1504)",
 				"1002: Particles (1505)",
 			};
-			if(ShowComboWithManual("System effect", &no, sysEffects, IM_ARRAYSIZE(sysEffects), width*2, width)) {
+			if(EfComboManual("System effect", &no, sysEffects, IM_ARRAYSIZE(sysEffects), width*2, width)) {
 				markModified();
 			}
 			im::SameLine(); im::TextDisabled("(?)");
 			if(im::IsItemHovered()) Tooltip("Spawned into the system effect pool (SysEffect_SpawnById).\nConfidence: medium.");
 
-			im::SetNextItemWidth(width);
-			if(im::InputInt(LBL("Position X"), &p[0], 0, 0)) markModified();
-			im::SameLine(0, 20);
-			im::SetNextItemWidth(width);
-			if(im::InputInt(LBL("Position Y"), &p[1], 0, 0)) markModified();
+			if(im::InputInt(EfRow(LBL("Position X")), &p[0], 0, 0)) markModified();
+			if(im::InputInt(EfRow(LBL("Position Y")), &p[1], 0, 0)) markModified();
 
 			if(no == 256) {
-				im::SetNextItemWidth(width);
-				if(im::InputInt(LBL("KO variant (p3 % 10)"), &p[2], 0, 0)) markModified();
+				if(im::InputInt(EfRow(LBL("KO variant (p3 % 10)")), &p[2], 0, 0)) markModified();
 			}
 			break;
 		}
@@ -57,24 +54,19 @@ static inline void DrawEffectUnknown(Frame_EF& effect, FrameData* frameData, int
 				"0: Set behaviour words",
 				"1: Set tracking param",
 			};
-			if(ShowComboWithManual("Mode", &no, ef30Modes, IM_ARRAYSIZE(ef30Modes), width*2, width)) {
+			if(EfComboManual("Mode", &no, ef30Modes, IM_ARRAYSIZE(ef30Modes), width*2, width)) {
 				markModified();
 			}
 			im::TextDisabled(TXT("Same block EF6 No 200 sets (object tracking behaviour)"));
 			if(no == 0) {
-				im::SetNextItemWidth(width);
-				if(im::InputInt(LBL("Value A (+0x30)"), &p[0], 0, 0)) markModified();
-				im::SetNextItemWidth(width);
-				if(im::InputInt(LBL("Value B (+0x32)"), &p[1], 0, 0)) markModified();
-				im::SetNextItemWidth(width);
-				if(im::InputInt(LBL("Value C (+0x2E)"), &p[2], 0, 0)) markModified();
+				if(im::InputInt(EfRow(LBL("Value A (+0x30)")), &p[0], 0, 0)) markModified();
+				if(im::InputInt(EfRow(LBL("Value B (+0x32)")), &p[1], 0, 0)) markModified();
+				if(im::InputInt(EfRow(LBL("Value C (+0x2E)")), &p[2], 0, 0)) markModified();
 				im::SameLine(); im::TextDisabled("(?)");
 				if(im::IsItemHovered()) Tooltip("Only non-zero values are written.\nExact meaning of each word unknown (?)");
 			} else if(no == 1) {
-				im::SetNextItemWidth(width);
-				if(im::InputInt(LBL("Param index"), &p[0], 0, 0)) markModified();
-				im::SetNextItemWidth(width);
-				if(im::InputInt(LBL("Value"), &p[1], 0, 0)) markModified();
+				if(im::InputInt(EfRow(LBL("Param index")), &p[0], 0, 0)) markModified();
+				if(im::InputInt(EfRow(LBL("Value")), &p[1], 0, 0)) markModified();
 				im::SameLine(); im::TextDisabled("(?)");
 				if(im::IsItemHovered()) Tooltip("word[+0x36 + 2*index] = value\n(the EF6 No 200 p2..p6 words)");
 			} else {

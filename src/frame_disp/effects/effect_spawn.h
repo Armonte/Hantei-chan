@@ -1,5 +1,6 @@
 #ifndef EFFECT_SPAWN_H_GUARD
 #include "../../i18n.h"
+#include "effect_form.h"
 #define EFFECT_SPAWN_H_GUARD
 
 // ============================================================================
@@ -22,14 +23,12 @@ static inline void DrawEffectSpawn_Type1_101(Frame_EF& effect, FrameData* frameD
 {
 	int* p = effect.parameters;
 	int& no = effect.number;
-	const float width = ui::Px(75.f);   // follows the font size (ui_style.h)
 
 	// Check if this is a relative spawn (Type 101)
 	bool isRelative = (effect.type == 101);
 
 	// Pattern dropdown with names
 			if(frameData) {
-				im::SetNextItemWidth(width*3);
 				
 				// For relative spawns, show as offset notation
 				std::string currentName;
@@ -49,7 +48,7 @@ static inline void DrawEffectSpawn_Type1_101(Frame_EF& effect, FrameData* frameD
 					currentName = frameData->GetDecoratedName(no);
 				}
 				
-				if(im::BeginCombo(LBL("Pattern"), currentName.c_str())) {
+				if(im::BeginCombo(EfRow(LBL("Pattern")), currentName.c_str())) {
 					if(isRelative) {
 						// For Type 101: Show relative offsets
 						for(int i = 0; i < frameData->get_sequence_count(); i++) {
@@ -84,25 +83,21 @@ static inline void DrawEffectSpawn_Type1_101(Frame_EF& effect, FrameData* frameD
 					im::EndCombo();
 				}
 			} else {
-				im::SetNextItemWidth(width);
 				const char* label = isRelative ? LBL("Pattern Offset") : LBL("Pattern");
-				if(im::InputInt(label, &no, 0, 0)) {
+				if(im::InputInt(EfRow(label), &no, 0, 0)) {
 					markModified();
 				}
 			}
 
 			// Offset
-			im::SetNextItemWidth(width);
-			im::DragInt(LBL("Offset X"), &p[0]);
+			im::DragInt(EfRow(LBL("Offset X")), &p[0]);
 			if(im::IsItemEdited()) {
 				if (frameData && patternIndex >= 0) frameData->mark_modified(patternIndex);
 			}
 			if(im::IsItemDeactivatedAfterEdit()) {
 				markModified();
 			}
-			im::SameLine(0, 20);
-			im::SetNextItemWidth(width);
-			im::DragInt(LBL("Offset Y"), &p[1]);
+			im::DragInt(EfRow(LBL("Offset Y")), &p[1]);
 			if(im::IsItemEdited()) {
 				if (frameData && patternIndex >= 0) frameData->mark_modified(patternIndex);
 			}
@@ -166,8 +161,7 @@ static inline void DrawEffectSpawn_Type1_101(Frame_EF& effect, FrameData* frameD
 			}
 
 			// Angle
-			im::SetNextItemWidth(width);
-			im::DragInt(LBL("Angle"), &p[7]);
+			im::DragInt(EfRow(LBL("Angle")), &p[7]);
 			if(im::IsItemEdited()) {
 				if (frameData && patternIndex >= 0) frameData->mark_modified(patternIndex);
 			}
@@ -180,8 +174,7 @@ static inline void DrawEffectSpawn_Type1_101(Frame_EF& effect, FrameData* frameD
 			}
 
 			// Projectile var decrease
-	im::SetNextItemWidth(width);
-	im::DragInt(LBL("Proj var decrease"), &p[8]);
+	im::DragInt(EfRow(LBL("Proj var decrease")), &p[8]);
 	if(im::IsItemEdited()) {
 		if (frameData && patternIndex >= 0) frameData->mark_modified(patternIndex);
 	}
@@ -191,8 +184,7 @@ static inline void DrawEffectSpawn_Type1_101(Frame_EF& effect, FrameData* frameD
 
 	if(effect.type == 1000) {
 		// MBAA Effect1_SpawnPattern: EF1000 spawns only while var word[+0x1C0 + 2*p6] == 0, then sets it to 1.
-		im::SetNextItemWidth(width);
-		if(im::InputInt(LBL("Once-guard variable"), &p[5], 0, 0)) markModified();
+		if(im::InputInt(EfRow(LBL("Once-guard variable")), &p[5], 0, 0)) markModified();
 		im::SameLine(); im::TextDisabled("(?)");
 		if(im::IsItemHovered()) Tooltip("Spawns only if this variable is 0, then sets it to 1\n(e.g. Sion's Dust of Osiris)");
 	}
@@ -202,14 +194,12 @@ static inline void DrawEffectSpawn_Type11_111(Frame_EF& effect, FrameData* frame
 {
 	int* p = effect.parameters;
 	int& no = effect.number;
-	const float width = ui::Px(75.f);   // follows the font size (ui_style.h)
 
 	// Check if this is a relative spawn (Type 111)
 	bool isRelative = (effect.type == 111);
 
 	// Similar to type 1, but for random patterns
 			if(frameData) {
-				im::SetNextItemWidth(width*3);
 				
 				// For relative spawns, show as offset notation
 				std::string currentName;
@@ -229,7 +219,7 @@ static inline void DrawEffectSpawn_Type11_111(Frame_EF& effect, FrameData* frame
 					currentName = frameData->GetDecoratedName(no);
 				}
 				
-				if(im::BeginCombo(LBL("Pattern"), currentName.c_str())) {
+				if(im::BeginCombo(EfRow(LBL("Pattern")), currentName.c_str())) {
 					if(isRelative) {
 						// For Type 111: Show relative offsets
 						for(int i = 0; i < frameData->get_sequence_count(); i++) {
@@ -264,36 +254,26 @@ static inline void DrawEffectSpawn_Type11_111(Frame_EF& effect, FrameData* frame
 					im::EndCombo();
 				}
 			} else {
-				im::SetNextItemWidth(width);
 				const char* label = isRelative ? LBL("Pattern Offset") : LBL("Pattern");
-				if(im::InputInt(label, &no, 0, 0)) {
+				if(im::InputInt(EfRow(label), &no, 0, 0)) {
 					markModified();
 				}
 			}
 
 			// Spawn rectangle
-			im::SetNextItemWidth(width);
-			if(im::InputInt(LBL("Offset X"), &p[0], 0, 0)) markModified();
-			im::SameLine(0, 20);
-			im::SetNextItemWidth(width);
-			if(im::InputInt(LBL("Offset Y"), &p[1], 0, 0)) markModified();
-			im::SetNextItemWidth(width);
-			if(im::InputInt(LBL("Random width"), &p[2], 0, 0)) markModified();
+			if(im::InputInt(EfRow(LBL("Offset X")), &p[0], 0, 0)) markModified();
+			if(im::InputInt(EfRow(LBL("Offset Y")), &p[1], 0, 0)) markModified();
+			if(im::InputInt(EfRow(LBL("Random width")), &p[2], 0, 0)) markModified();
 			im::SameLine(); im::TextDisabled("(?)");
 			if(im::IsItemHovered()) Tooltip("X += random(0, width)\nIf Random height = 30000: radius of a random circle instead");
-			im::SameLine(0, 20);
-			im::SetNextItemWidth(width);
-			if(im::InputInt(LBL("Random height"), &p[3], 0, 0)) markModified();
+			if(im::InputInt(EfRow(LBL("Random height")), &p[3], 0, 0)) markModified();
 			im::SameLine(); im::TextDisabled("(?)");
 			if(im::IsItemHovered()) Tooltip("Y += random(0, height)\n30000 = circular mode (random angle, radius = Random width)");
 
-			im::SetNextItemWidth(width);
-			if(im::InputInt(LBL("Pattern range"), &p[4], 0, 0)) markModified();
+			if(im::InputInt(EfRow(LBL("Pattern range")), &p[4], 0, 0)) markModified();
 			im::SameLine(); im::TextDisabled("(?)");
 			if(im::IsItemHovered()) Tooltip("Patterns Pattern .. Pattern+range-1 (0 = 1)");
-			im::SameLine(0, 20);
-			im::SetNextItemWidth(width);
-			if(im::InputInt(LBL("Spawn count"), &p[5], 0, 0)) markModified();
+			if(im::InputInt(EfRow(LBL("Spawn count")), &p[5], 0, 0)) markModified();
 			im::SameLine(); im::TextDisabled("(?)");
 			if(im::IsItemHovered()) Tooltip("0 = spawn every pattern of the range once, in order;\notherwise spawn this many, each a random pattern from the range");
 
@@ -350,8 +330,7 @@ static inline void DrawEffectSpawn_Type11_111(Frame_EF& effect, FrameData* frame
 			}
 
 			// Angle
-			im::SetNextItemWidth(width);
-			im::DragInt(LBL("Angle"), &p[8]);
+			im::DragInt(EfRow(LBL("Angle")), &p[8]);
 			if(im::IsItemEdited()) {
 				if (frameData && patternIndex >= 0) frameData->mark_modified(patternIndex);
 			}
@@ -362,15 +341,12 @@ static inline void DrawEffectSpawn_Type11_111(Frame_EF& effect, FrameData* frame
 			if(im::IsItemHovered()) {
 				Tooltip("Clockwise rotation: 0=0°, 2500=90°, 5000=180°, 10000=360°");
 			}
-			im::SameLine(0, 20);
-			im::SetNextItemWidth(width);
-			if(im::InputInt(LBL("Random angle"), &p[9], 0, 0)) markModified();
+			if(im::InputInt(EfRow(LBL("Random angle")), &p[9], 0, 0)) markModified();
 			im::SameLine(); im::TextDisabled("(?)");
 			if(im::IsItemHovered()) Tooltip("Angle += random(0, value)");
 
 			// Projectile var decrease
-	im::SetNextItemWidth(width);
-	im::DragInt(LBL("Proj var decrease"), &p[10]);
+	im::DragInt(EfRow(LBL("Proj var decrease")), &p[10]);
 	if(im::IsItemEdited()) {
 		if (frameData && patternIndex >= 0) frameData->mark_modified(patternIndex);
 	}

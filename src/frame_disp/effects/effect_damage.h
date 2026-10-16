@@ -1,5 +1,6 @@
 #ifndef EFFECT_DAMAGE_H_GUARD
 #include "../../i18n.h"
+#include "effect_form.h"
 #include "../../ui/ui_style.h"
 #define EFFECT_DAMAGE_H_GUARD
 
@@ -15,7 +16,6 @@ static inline void DrawEffectDamage_Type5(Frame_EF& effect, FrameData* frameData
 {
 	int* p = effect.parameters;
 	int& no = effect.number;
-	const float width = ui::Px(75.f);   // follows the font size (ui_style.h)
 
 			const char* const damageTypes[] = {
 				"0: Set added effect on victim",
@@ -35,20 +35,17 @@ static inline void DrawEffectDamage_Type5(Frame_EF& effect, FrameData* frameData
 			}
 
 			if(typeIndex >= 0) {
-				im::SetNextItemWidth(width*2);
-				if(i18n::Combo(LBL("Damage Type"), &typeIndex, damageTypes, IM_ARRAYSIZE(damageTypes))) {
+				if(i18n::Combo(EfRow(LBL("Damage Type")), &typeIndex, damageTypes, IM_ARRAYSIZE(damageTypes))) {
 					no = knownTypes[typeIndex];
 					markModified();
 				}
 			} else {
-				im::SetNextItemWidth(width);
-				if(im::InputInt(LBL("Type"), &no, 0, 0)) {
+				if(im::InputInt(EfRow(LBL("Type")), &no, 0, 0)) {
 					markModified();
 				}
 			}
 
 			if(no == 0) { // Set added effect
-				im::SetNextItemWidth(width*2);
 				int effectTypes[] = {1, 2, 3, 4, 100};
 				const char* effectNames[] = {
 					"1: Burn",
@@ -67,13 +64,12 @@ static inline void DrawEffectDamage_Type5(Frame_EF& effect, FrameData* frameData
 					}
 				}
 
-				if(i18n::Combo(LBL("Effect"), &currentIdx, effectNames, IM_ARRAYSIZE(effectNames))) {
+				if(i18n::Combo(EfRow(LBL("Effect")), &currentIdx, effectNames, IM_ARRAYSIZE(effectNames))) {
 					p[0] = effectTypes[currentIdx];
 					markModified();
 				}
 			} else if(no == 1) { // Damage opponent
-				im::SetNextItemWidth(width);
-				im::DragInt(LBL("Damage"), &p[0]);
+				im::DragInt(EfRow(LBL("Damage")), &p[0]);
 				if(im::IsItemEdited()) {
 				if (frameData && patternIndex >= 0) frameData->mark_modified(patternIndex);
 			}
@@ -81,13 +77,11 @@ static inline void DrawEffectDamage_Type5(Frame_EF& effect, FrameData* frameData
 				markModified();
 			}
 
-				im::SetNextItemWidth(width);
-				if(i18n::Combo(LBL("Add to hit count"), &p[1], "0\0001\0002\000")) {
+				if(i18n::Combo(EfRow(LBL("Add to hit count")), &p[1], "0\0001\0002\000")) {
 					markModified();
 				}
 
-				im::SetNextItemWidth(width);
-				im::DragInt(LBL("Hitstop"), &p[2]);
+				im::DragInt(EfRow(LBL("Hitstop")), &p[2]);
 				if(im::IsItemEdited()) {
 				if (frameData && patternIndex >= 0) frameData->mark_modified(patternIndex);
 			}
@@ -95,8 +89,7 @@ static inline void DrawEffectDamage_Type5(Frame_EF& effect, FrameData* frameData
 				markModified();
 			}
 
-				im::SetNextItemWidth(width);
-				im::DragInt(LBL("Hit sound"), &p[3]);
+				im::DragInt(EfRow(LBL("Hit sound")), &p[3]);
 				if(im::IsItemEdited()) {
 				if (frameData && patternIndex >= 0) frameData->mark_modified(patternIndex);
 			}
@@ -108,13 +101,11 @@ static inline void DrawEffectDamage_Type5(Frame_EF& effect, FrameData* frameData
 					Tooltip("Same as in AT data");
 				}
 
-				im::SetNextItemWidth(width);
-				if(i18n::Combo(LBL("Hit scaling"), &p[4], "0\0001\000")) {
+				if(i18n::Combo(EfRow(LBL("Hit scaling")), &p[4], "0\0001\000")) {
 					markModified();
 				}
 
-				im::SetNextItemWidth(width);
-				im::DragInt(LBL("Red damage"), &p[5]);
+				im::DragInt(EfRow(LBL("Red damage")), &p[5]);
 				if(im::IsItemEdited()) {
 				if (frameData && patternIndex >= 0) frameData->mark_modified(patternIndex);
 			}
@@ -124,13 +115,11 @@ static inline void DrawEffectDamage_Type5(Frame_EF& effect, FrameData* frameData
 			} else if(no == 2) { // Flip victim facing
 				im::TextDisabled(TXT("No parameters"));
 			} else if(no == 3) { // Victim meter
-				im::SetNextItemWidth(width);
-				if(im::InputInt(LBL("Meter change"), &p[0], 0, 0)) markModified();
+				if(im::InputInt(EfRow(LBL("Meter change")), &p[0], 0, 0)) markModified();
 				im::SameLine(); im::TextDisabled("(?)");
 				if(im::IsItemHovered()) Tooltip("Victim meter += value, clamped 0..30000");
 			} else if(no == 4) { // Not handled by MBAA
-				im::SetNextItemWidth(width);
-				im::DragInt(LBL("Unknown"), &p[0]);
+				im::DragInt(EfRow(LBL("Unknown")), &p[0]);
 				if(im::IsItemEdited()) {
 				if (frameData && patternIndex >= 0) frameData->mark_modified(patternIndex);
 			}

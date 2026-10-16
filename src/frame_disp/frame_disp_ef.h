@@ -39,6 +39,7 @@
 #include "effects/effect_audio.h"
 #include "effects/effect_unknown.h"
 #include "../i18n.h"
+#include "../ui/ui_layout2.h"
 #include "game_label_ui.h"
 
 // Forward declaration
@@ -58,7 +59,6 @@ inline void EfDisplay(std::vector<Frame_EF> *efList_, Frame_EF *singleClipboard 
 	};
 
 	std::vector<Frame_EF> & efList = *efList_;
-	const float width = ui::Px(75.f);   // follows the font size (ui_style.h)
 
 	// Manual edit mode tracking
 	static std::vector<int> manualEditMode;
@@ -133,21 +133,19 @@ inline void EfDisplay(std::vector<Frame_EF> *efList_, Frame_EF *singleClipboard 
 			im::Indent();
 			
 			// Type dropdown (with fallback for unlisted types)
+			// Label-first rows (effects/effect_form.h): one label column for the type row and every effect field.
 			if(ownLabels) {
-				im::SetNextItemWidth(width);
-				if(im::InputInt(LBL("Type"), &efList[i].type, 0, 0)) {
+				if(im::InputInt(EfRow(LBL("Type")), &efList[i].type, 0, 0)) {
 					markModified();
 				}
-				im::SameLine(); im::TextDisabled("%s", GameLabelUiTitle(labelGame, GameLabelKind::EF, efList[i].type).c_str());
+				EfNote(GameLabelUiTitle(labelGame, GameLabelKind::EF, efList[i].type).c_str());
 			} else if(typeIndex >= 0) {
-				im::SetNextItemWidth(width*3);
-				if(i18n::Combo(LBL("Type"), &typeIndex, effectTypes, IM_ARRAYSIZE(effectTypes))) {
+				if(i18n::Combo(EfRow(LBL("Type")), &typeIndex, effectTypes, IM_ARRAYSIZE(effectTypes))) {
 					efList[i].type = knownTypes[typeIndex];
 					markModified();
 				}
 			} else {
-				im::SetNextItemWidth(width);
-				if(im::InputInt(LBL("Type"), &efList[i].type, 0, 0)) {
+				if(im::InputInt(EfRow(LBL("Type")), &efList[i].type, 0, 0)) {
 					markModified();
 				}
 			}
@@ -173,8 +171,7 @@ inline void EfDisplay(std::vector<Frame_EF> *efList_, Frame_EF *singleClipboard 
 
 			if(manualEditMode[i]) {
 				// Raw parameter editing
-				im::SetNextItemWidth(width);
-				if(im::InputInt(LBL("Number"), &no, 0, 0)) {
+				if(im::InputInt(EfRow(LBL("Number")), &no, 0, 0)) {
 					markModified();
 				}
 				im::Text(TXT("Raw parameters:"));
@@ -192,7 +189,8 @@ inline void EfDisplay(std::vector<Frame_EF> *efList_, Frame_EF *singleClipboard 
 					DrawSmartEffectUI(efList[i], frameData, patternIndex, markModified);
 			}
 
-			im::SameLine();
+			// After the last (full-width) field the Copy button starts its own line instead of running off the pane.
+			if(singleClipboard) i18n::SameLineFit(i18n::ButtonWidth(LBL("Copy")));
 			if(singleClipboard && im::Button(LBL("Copy"))) {
 				*singleClipboard = efList[i];
 			}
@@ -306,7 +304,11 @@ inline void EfDisplay(std::vector<Frame_EF> *efList_, Frame_EF *singleClipboard 
 		markModified();
 	}
 
-	if(im::Button(LBL("Add effect"))) {
+	// Equal-width button cells that wrap into even rows (ui_layout2.h), as in the Box pane.
+	ui::ButtonGrid footer = groupClipboard
+		? ui::ButtonGrid({LBL("Add effect"), LBL("Copy all"), LBL("Paste all"), LBL("Add copy")})
+		: ui::ButtonGrid({LBL("Add effect")});
+	if(footer.Button(LBL("Add effect"))) {
 		efList.push_back({});
 		manualEditMode.push_back(0);
 		collapsedStates.push_back(false); // New items start expanded
@@ -314,17 +316,14 @@ inline void EfDisplay(std::vector<Frame_EF> *efList_, Frame_EF *singleClipboard 
 	}
 
 	if(groupClipboard) {
-		i18n::SameLineFit(i18n::ButtonWidth(LBL("Copy all")), 20.f);
-		if(im::Button(LBL("Copy all"))) {
+		if(footer.Button(LBL("Copy all"))) {
 			CopyVectorContents<Frame_EF>(*groupClipboard, efList);
 		}
-		i18n::SameLineFit(i18n::ButtonWidth(LBL("Paste all")), 20.f);
-		if(im::Button(LBL("Paste all"))) {
+		if(footer.Button(LBL("Paste all"))) {
 			CopyVectorContents<Frame_EF>(efList, *groupClipboard);
 			markModified();
 		}
-		i18n::SameLineFit(i18n::ButtonWidth(LBL("Add copy")), 20.f);
-		if(im::Button(LBL("Add copy"))) {
+		if(footer.Button(LBL("Add copy"))) {
 			if(singleClipboard) {
 				efList.push_back(*singleClipboard);
 				manualEditMode.push_back(0);
@@ -393,10 +392,7 @@ static inline void DrawSmartEffectUI(Frame_EF& effect, FrameData* frameData, int
 			// Fallback for completely unknown types
 			int* p = effect.parameters;
 			int& no = effect.number;
-			const float width = ui::Px(75.f);   // follows the font size (ui_style.h)
-			
-			im::SetNextItemWidth(width);
-			if(im::InputInt(LBL("Number"), &no, 0, 0)) {
+			if(im::InputInt(EfRow(LBL("Number")), &no, 0, 0)) {
 				markModified();
 			}
 			im::Text(TXT("Unknown effect type - raw parameters:"));
