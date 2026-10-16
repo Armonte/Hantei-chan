@@ -1,4 +1,5 @@
 #include "parts_partset.h"
+#include "../app_log.h"
 #include <fstream>
 #include <cstring>
 #include <cmath>
@@ -54,7 +55,7 @@ unsigned int* PartSet<>::P_Load(unsigned int* data, const unsigned int* data_end
         else {
             char tag[5]{};
             memcpy(tag, buf, 4);
-            std::cout << "\tUnknown P_ level tag: " << tag << "\n";
+            HC_LOG_WARN("Unknown P_ level tag: {}", (const char *)tag);
         }
     }
 
@@ -166,7 +167,7 @@ unsigned int* PartSet<Allocator>::PrLoad(unsigned int* data, const unsigned int*
         else {
             char tag[5]{};
             memcpy(tag, buf, 4);
-            std::cout << "\tUnknown PR level tag: " << tag << "\n";
+            HC_LOG_WARN("Unknown PR level tag: {}", (const char *)tag);
         }
     }
 

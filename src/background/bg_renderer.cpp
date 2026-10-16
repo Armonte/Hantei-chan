@@ -17,6 +17,7 @@
 #include "../parts/parts.h"
 #include "bg_pat.h"
 #include "bg_gametex.h"
+#include "../app_log.h"
 #include <algorithm>
 #include <utility>
 #include <fstream>
@@ -78,7 +79,7 @@ static GLuint CompileShader(GLenum type, const char* src) {
 	if (!ok) {
 		char log[1024];
 		glGetShaderInfoLog(s, sizeof(log), nullptr, log);
-		std::cerr << "[bg] shader compile failed: " << log << std::endl;
+		HC_LOG_ERROR("[bg] shader compile failed: {}", (const char *)log);
 	}
 	return s;
 }
@@ -93,7 +94,7 @@ static GLuint LinkProgram(GLuint vs, GLuint fs) {
 	if (!ok) {
 		char log[1024];
 		glGetProgramInfoLog(p, sizeof(log), nullptr, log);
-		std::cerr << "[bg] program link failed: " << log << std::endl;
+		HC_LOG_ERROR("[bg] program link failed: {}", (const char *)log);
 	}
 	return p;
 }
@@ -444,9 +445,7 @@ void Renderer::BuildPatParts() {
 
 	P.loaded = true;
 	patParts = std::move(parts);
-	std::cout << "[bg] built PAT Parts: " << P.gfxMeta.size() << " tex, "
-	          << P.cutOuts.size() << " cutouts, "
-	          << P.partSets.size() << " patterns" << std::endl;
+	HC_LOG_INFO("[bg] built PAT Parts: {} tex, {} cutouts, {} patterns", P.gfxMeta.size(), P.cutOuts.size(), P.partSets.size());
 }
 
 // ---- helpers ---------------------------------------------------------------

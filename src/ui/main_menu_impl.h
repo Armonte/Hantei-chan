@@ -1,6 +1,8 @@
 #ifndef UI_MAIN_MENU_IMPL_H_GUARD
 #define UI_MAIN_MENU_IMPL_H_GUARD
 
+#include "../app_log.h"
+
 // ============================================================================
 // Main Menu Implementation
 // ============================================================================
@@ -426,12 +428,12 @@ void MainFrame::Menu(unsigned int errorPopupId)
 					}
 
 					if (ImGui::MenuItem(LBL("Reload Effect.ha6"))) {
-						printf("[Effect] Reloading effect.ha6 for %s\n", active->getName().c_str());
+						HC_LOG_INFO("[Effect] Reloading effect.ha6 for {}", active->getName().c_str());
 						active->effectCharacter.reset();
 						if (active->loadEffectCharacter()) {
-							printf("[Effect] ✓ Successfully reloaded\n");
+							HC_LOG_INFO("[Effect] Reloaded");
 						} else {
-							printf("[Effect] ✗ Failed to reload\n");
+							HC_LOG_ERROR("[Effect] Failed to reload");
 						}
 					}
 				} else if (active) {

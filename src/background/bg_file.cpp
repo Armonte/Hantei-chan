@@ -1,5 +1,6 @@
 #include "bg_file.h"
 #include "../misc.h"
+#include "../app_log.h"
 #include <algorithm>
 #include <cctype>
 #include <filesystem>
@@ -41,7 +42,7 @@ bool File::Load(const char* filename) {
 	unsigned int size;
 
 	if (!ReadInMem(filename, data, size)) {
-		std::cerr << "Failed to read file: " << filename << std::endl;
+		HC_LOG_ERROR("Failed to read file: {}", filename);
 		return false;
 	}
 	
@@ -66,7 +67,7 @@ bool File::Load(const char* filename) {
 	
 	// Load embedded CG
 	if (!LoadEmbeddedCG(data, size, header)) {
-		std::cerr << "Warning: Failed to load embedded CG" << std::endl;
+		HC_LOG_WARN("Failed to load embedded CG");
 		// Not fatal - continue without sprites
 	}
 	
@@ -77,15 +78,14 @@ bool File::Load(const char* filename) {
 	ResetRuntime();
 	ResetHistory();
 	
-	std::cout << "Loaded background: " << objects.size() << " objects, "
-	          << (cg ? cg->get_image_count() : 0) << " sprites" << std::endl;
+	HC_LOG_INFO("Loaded background: {} objects, {} sprites", objects.size(), cg ? cg->get_image_count() : 0);
 	
 	return true;
 }
 
 bool File::LoadHeader(const char* data, size_t size, Header& header) {
 	if (size < sizeof(Header)) {
-		std::cerr << "File too small for header" << std::endl;
+		HC_LOG_ERROR("File too small for header");
 		return false;
 	}
 	
@@ -111,12 +111,7 @@ bool File::LoadHeader(const char* data, size_t size, Header& header) {
 	
 	// Verify magic - bgmake tool writes "bgmake" (6 bytes) + 10 null bytes
 	if (strncmp(header.magic, "bgmake", 6) != 0) {
-		std::cerr << "Invalid magic header (expected 'bgmake')" << std::endl;
-		std::cerr << "File signature: '";
-		for (int i = 0; i < 6; i++) {
-			std::cerr << header.magic[i];
-		}
-		std::cerr << "'" << std::endl;
+		HC_LOG_ERROR("Invalid magic header (expected 'bgmake'), file signature: '{}'", std::string(header.magic, 6));
 		return false;
 	}
 	
@@ -126,7 +121,7 @@ bool File::LoadHeader(const char* data, size_t size, Header& header) {
 bool File::LoadOffsetTable(const char* data, size_t size) {
 	size_t offsetTablePos = sizeof(Header);
 	if (size < offsetTablePos + sizeof(offsetTable)) {
-		std::cerr << "File too small for offset table" << std::endl;
+		HC_LOG_ERROR("File too small for offset table");
 		return false;
 	}
 	
@@ -142,7 +137,7 @@ bool File::LoadObjects(const char* data, size_t size, const Header& header) {
 		
 		size_t pos = offsetTable[i];
 		if (pos + 60 > size) {
-			std::cerr << "Invalid object offset at index " << i << std::endl;
+			HC_LOG_ERROR("Invalid object offset at index {}", i);
 			continue;
 		}
 		
@@ -171,7 +166,7 @@ bool File::LoadObjects(const char* data, size_t size, const Header& header) {
 		// Read frames (132 bytes each)
 		for (int f = 0; f < numFrames; f++) {
 			if (pos + 132 > size) {
-				std::cerr << "Invalid frame data for object " << i << std::endl;
+				HC_LOG_ERROR("Invalid frame data for object {}", i);
 				break;
 			}
 			
@@ -299,7 +294,7 @@ bool File::LoadEmbeddedCG(const char* data, size_t size, const Header& header) {
 	}
 
 	if ((size_t)(header.cg_file_off + header.cg_file_len) > size) {
-		std::cerr << "Invalid CG offset/length" << std::endl;
+		HC_LOG_ERROR("Invalid CG offset/length");
 		return false;
 	}
 
@@ -321,7 +316,7 @@ bool File::LoadEmbeddedCG(const char* data, size_t size, const Header& header) {
 	const char* tempPath = "temp_bg_stage.cg";
 	std::ofstream tempFile(tempPath, std::ios::binary);
 	if (!tempFile) {
-		std::cerr << "Failed to create temp CG file" << std::endl;
+		HC_LOG_ERROR("Failed to create temp CG file");
 		return false;
 	}
 	tempFile.write((const char*)cgData.data(), cgData.size());
@@ -330,7 +325,7 @@ bool File::LoadEmbeddedCG(const char* data, size_t size, const Header& header) {
 	// Load using existing CG system
 	cg = std::make_unique<CG>();
 	if (!cg->load(tempPath)) {
-		std::cerr << "Failed to load CG from embedded data" << std::endl;
+		HC_LOG_ERROR("Failed to load CG from embedded data");
 		cg.reset();
 		std::remove(tempPath);
 		return false;
@@ -347,9 +342,9 @@ bool File::LoadEmbeddedCG(const char* data, size_t size, const Header& header) {
 		oldPat = std::make_unique<OldPat>();
 		if (!oldPat->Parse(patData.data(), patData.size())) {
 			oldPat.reset();
-			std::cerr << "Failed to parse embedded PAT" << std::endl;
+			HC_LOG_ERROR("Failed to parse embedded PAT");
 		} else {
-			std::cout << "Parsed embedded PAT (old format)" << std::endl;
+			HC_LOG_INFO("Parsed embedded PAT (old format)");
 		}
 	}
 

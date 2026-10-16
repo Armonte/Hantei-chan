@@ -27,7 +27,7 @@ struct TestInfo{
 	int seqId;
 	int frame;
 
-	void Print(const void *data, const void *data_end);
+	std::string Where(const void *data, const void *data_end) const;
 
 };
 
