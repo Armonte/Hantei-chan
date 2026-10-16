@@ -46,6 +46,9 @@ def main():
             if r['slot'] in keep: continue
             if 'PRXY' not in r: raise SystemExit('slot %d has no PRXY (cannot move in place)' % r['slot'])
             struct.pack_into('<ii', b, r['PRXY'][0], 30000, 30000)
+            # render-match13: a PRA3-rotated prop at PRXY 30000 can still project on screen in UNI2 (the s12 solo of
+            # chr020 set 991 showed slots 27/28's arcs); a zero PRZM collapses the quad in both renderers
+            if 'PRZM' in r: struct.pack_into('<ff', b, r['PRZM'][0], 0.0, 0.0)
         open(sys.argv[4], 'wb').write(b); print('wrote', sys.argv[4], 'keep slot', keep)
 
 main()
