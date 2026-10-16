@@ -386,6 +386,7 @@ def game_vs_model(game, plate, ek, ew, zoom, meta, org):
         game_vs_model.last_band = (float(bdc[m].mean()), float(((bd > 24) & m).sum() * 100.0 / m.sum()))
     else:
         game_vs_model.last_band = None
+    game_vs_model.last_lpred = lpred  # render-match15: the float prediction (last_light[3] is truncated to uint8)
     game_vs_model.last_light = (light, lmean, lchanged, Image.fromarray(lpred.astype(np.uint8)),
                                 Image.fromarray(np.clip(ld * 4 * m[:, :, None], 0, 255).astype(np.uint8)))
     changed = ((d.sum(2) > 24) & m).sum() * 100.0 / m.sum()
