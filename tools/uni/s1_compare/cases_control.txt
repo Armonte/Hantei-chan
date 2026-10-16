@@ -34,3 +34,4 @@ pras_chr020_p5f2_solo_s12_z1 | uni2/data/chr020solos12/chr020_0.txt | 5 | 2 | -1
 pras_chr020_p5f2_solo_slin_z1 | uni2/data/chr020soloslin/chr020_0.txt | 5 | 2 | -1 | 1 | render-match13: pras with only .pat set-991 slots 4,5,14,15,27,28 (PRFL 1 additive) on screen, zoom 1
 mbtl_pups_chr011_p309_z1 | mbtl/data/chr011/chr011_0.txt | 309 | 0 | -1 | 1 | render-match13: MBTL PUPS chr011 at zoom 1 (no editor-shot resample)
 pras_chr020_p5f2_solo_s1025_z1 | uni2/data/chr020solos1025/chr020_0.txt | 5 | 2 | -1 | 1 | render-match13: pras with only .pat set-991 slots 10,25 (normal blend, PRCL alpha 0) on screen, zoom 1
+pras_chr020_p5f2_solo_srings_z1 | uni2/data/chr020solorings/chr020_0.txt | 5 | 2 | -1 | 1 | render-match14: pras with only .pat set-991 ring slots 41,44,45 (3D-tilted arc/ring prims) on screen, zoom 1
