@@ -1,0 +1,57 @@
+=== v2r17_mbtl_chr011_stage.gcs
+gamecap C:\dev\hantei-chan\tools\gamecap\cases\v2r17_mbtl_chr011_stage.gcs
+backup: C:\Program Files (x86)\Steam\steamapps\common\MELTY BLOOD TYPE LUMINA\MBTL-IM/MBTL_IM.ini -> (new file, will be deleted)
+backup: C:\Program Files (x86)\Steam\steamapps\common\MELTY BLOOD TYPE LUMINA\winsave/48034167/_App.ini -> C:\dev\hantei-chan\game_mod_backup\gamecap\mbtl_20261016_030117\file01__App.ini
+launched MBTL.exe pid 81856 (suspended)
+agent attached: module base 0x00330000, hooks 0x39
+window 00e2272c at 0,0 1296x759
+placed window at -640,307
+tap_until met after 5 tap(s)
+poke cur_player_side @0x0095fd70 <- 0
+poke side_input_dev @0x009bdbd4 <- 0
+poke side_input_dev+4 @0x009bdbd8 <- 1
+poke side_input_flag @0x009bdbdc <- 0
+poke side_input_flag+4 @0x009bdbe0 <- 0
+call 0x006d3ed0 -> 0x00000008
+frozen at frame 709
+poke css_chara_p1 @0x00b3bec8 <- 11
+poke css_chara_p2 @0x00b3bf08 <- 11
+poke css_color_p1 @0x00b3bed0 <- 0
+poke css_color_p2 @0x00b3bf10 <- 0
+poke css_state_frame @0x00b3be5c <- 0
+poke css_state_enter @0x00b3be6c <- 1
+poke css_state @0x00b3be58 <- CSS_DECIDED
+peek stage_loaded @0x0095e47c = 21 (0x15)
+peek p1_chara_no @0x01029345 = 11 (0xb)
+peek p2_chara_no @0x01029f89 = 11 (0xb)
+peek p1_pdata_chara @0x00bf430c = 11 (0xb)
+peek p1_pattern @0x0102935c = 0 (0x0)
+echo: MBTL training ready: P1 11 vs P2 11
+frozen at frame 1715
+peek tick_paused_a @0x01029370 = 4 (0x4)
+peek tick_paused_b @0x01029370 = 4 (0x4)
+call 0x00440800 -> 0x00000000
+peek pat_after_set @0x0102935c = 309 (0x135)
+peek frame_after_set @0x01029360 = 0 (0x0)
+peek tick_after_set @0x01029370 = 0 (0x0)
+peek pat_s @0x0102935c = 309 (0x135)
+peek frame_s @0x01029360 = 0 (0x0)
+peek tick_s @0x01029370 = 1 (0x1)
+meta -> C:\dev\hantei-chan\tools\gamecap\captures\v2\nohud_st\mbtl_pups_chr011_p309_game.json
+captured window C:\dev\hantei-chan\tools\gamecap\captures\v2\nohud_st\mbtl_pups_chr011_p309_game.png
+captured C:\dev\hantei-chan\tools\gamecap\captures\v2\nohud_st\mbtl_pups_chr011_p309_game_bb.png (1280x720 fmt 22)
+captured window C:\dev\hantei-chan\tools\gamecap\captures\v2\nohud_st\mbtl_pups_chr011_p309_game_im.png
+captured C:\dev\hantei-chan\tools\gamecap\captures\v2\nohud_st\mbtl_pups_chr011_p309_game_plate_b0.png (1280x720 fmt 22)
+peek tick_plate_b @0x01029370 = 2 (0x2)
+captured C:\dev\hantei-chan\tools\gamecap\captures\v2\nohud_st\mbtl_pups_chr011_p309_game_plate_bb.png (1280x720 fmt 22)
+captured window C:\dev\hantei-chan\tools\gamecap\captures\v2\nohud_st\mbtl_pups_chr011_p309_game_plate.png
+poke p1+OBJ_ALPHA_OVR_ON @0x01029994 <- 0
+poke p2+OBJ_ALPHA_OVR_ON @0x0102a5d8 <- 0
+poke p1+OBJ_ALPHA_OVR @0x01029988 <- 255
+poke p2+OBJ_ALPHA_OVR @0x0102a5cc <- 255
+frozen at frame 1910
+quit (quit): terminating pid 81856
+removed C:\Program Files (x86)\Steam\steamapps\common\MELTY BLOOD TYPE LUMINA\MBTL-IM/MBTL_IM.ini
+restored C:\Program Files (x86)\Steam\steamapps\common\MELTY BLOOD TYPE LUMINA\winsave/48034167/_App.ini
+script finished: 333 commands, 6 capture(s)
+failures: 0

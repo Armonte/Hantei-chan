@@ -1,0 +1,78 @@
+-- mbtl_patctrl_chr001_p238f10_z1 vs _nb (reg 0,0)
+mbtl_patctrl_chr001_p238f10_z1: raw 2.92 / 7.4%  lit 2.92 / 7.4%  band+-1 2.33 / 6.9%  (34044 px, refine +0,+0
+-- mbtl_patctrl_chr001_p238f10 (zoom 1.5) vs _nb (reg mbtl_chr001_nb)
+mbtl_patctrl_chr001_p238f10: raw 4.20 / 10.3%  lit 4.20 / 10.3%  band+-1 2.66 / 7.6%  (34178 px, refine +0,+0)
+-- mbtl_patctrl_chr001_p238f10_z1 vs _nh (reg 0,0)
+mbtl_patctrl_chr001_p238f10_z1: raw 0.26 / 0.0%  lit 0.26 / 0.0%  band+-1 0.24 / 0.0%  (34044 px, refine +0,+0
+-- mbtl_patctrl_chr001_p238f10 (zoom 1.5) vs _nh (reg mbtl_chr001_nb)
+mbtl_patctrl_chr001_p238f10: raw 1.68 / 3.2%  lit 1.68 / 3.2%  band+-1 0.65 / 0.7%  (34178 px, refine +0,+0)  
+-- mbtl_patctrl_chr001_p238f10_z1 vs _st (reg 0,0)
+mbtl_patctrl_chr001_p238f10_z1: raw 0.23 / 0.0%  lit 0.23 / 0.0%  band+-1 0.21 / 0.0%  (34044 px, refine +0,+0
+-- mbtl_patctrl_chr001_p238f10 (zoom 1.5) vs _st (reg mbtl_chr001_nb)
+mbtl_patctrl_chr001_p238f10: raw 1.67 / 3.2%  lit 1.67 / 3.2%  band+-1 0.56 / 0.7%  (34178 px, refine +0,+0)  
+-- mbtl_patctrl_chr001_p277f0_z1 vs _nb (reg 0,0)
+mbtl_patctrl_chr001_p277f0_z1: raw 0.00 / 0.0%  lit 0.00 / 0.0%  band+-1 0.00 / 0.0%  (9876 px, refine +0,+0) 
+-- mbtl_patctrl_chr001_p277f0 (zoom 1.5) vs _nb (reg mbtl_chr001_nb)
+mbtl_patctrl_chr001_p277f0: raw 1.66 / 5.8%  lit 1.66 / 5.8%  band+-1 0.78 / 2.6%  (9931 px, refine +0,+0)  fr
+-- mbtl_patctrl_chr001_p277f0_z1 vs _nh (reg 0,0)
+mbtl_patctrl_chr001_p277f0_z1: raw 0.00 / 0.0%  lit 0.00 / 0.0%  band+-1 0.00 / 0.0%  (9876 px, refine +0,+0) 
+-- mbtl_patctrl_chr001_p277f0 (zoom 1.5) vs _nh (reg mbtl_chr001_nb)
+mbtl_patctrl_chr001_p277f0: raw 1.17 / 5.2%  lit 1.17 / 5.2%  band+-1 0.39 / 1.6%  (9931 px, refine +0,+0)  fr
+-- mbtl_patctrl_chr001_p277f0_z1 vs _st (reg 0,0)
+mbtl_patctrl_chr001_p277f0_z1: raw 0.00 / 0.0%  lit 0.00 / 0.0%  band+-1 0.00 / 0.0%  (9876 px, refine +0,+0) 
+-- mbtl_patctrl_chr001_p277f0 (zoom 1.5) vs _st (reg mbtl_chr001_nb)
+mbtl_patctrl_chr001_p277f0: raw 1.24 / 5.8%  lit 1.24 / 5.8%  band+-1 0.39 / 1.7%  (9931 px, refine +0,+0)  fr
+-- mbtl_flipV_chr001_p157f2_z1 vs _nb (reg 0,0)
+mbtl_flipV_chr001_p157f2_z1: raw 1.28 / 3.6%  lit 1.28 / 3.6%  band+-1 0.82 / 0.6%  (49686 px, refine +0,+0)  
+-- mbtl_flipV_chr001_p157f2 (zoom 1.5) vs _nb (reg mbtl_chr001_nb)
+mbtl_flipV_chr001_p157f2: raw 4.46 / 16.4%  lit 4.46 / 16.4%  band+-1 2.19 / 5.2%  (35346 px, refine +0,+0)  f
+-- mbtl_flipV_chr001_p157f2_z1 vs _nh (reg 0,0)
+mbtl_flipV_chr001_p157f2_z1: raw 1.05 / 4.2%  lit 1.05 / 4.2%  band+-1 0.72 / 0.3%  (49686 px, refine +0,+0)  
+-- mbtl_flipV_chr001_p157f2 (zoom 1.5) vs _nh (reg mbtl_chr001_nb)
+mbtl_flipV_chr001_p157f2: raw 4.23 / 18.0%  lit 4.23 / 18.0%  band+-1 1.97 / 4.0%  (35346 px, refine +0,+0)  f
+-- mbtl_flipV_chr001_p157f2_z1 vs _st (reg 0,0)
+mbtl_flipV_chr001_p157f2_z1: raw 0.99 / 2.9%  lit 0.99 / 2.9%  band+-1 0.67 / 0.1%  (49686 px, refine +0,+0)  
+-- mbtl_flipV_chr001_p157f2 (zoom 1.5) vs _st (reg mbtl_chr001_nb)
+mbtl_flipV_chr001_p157f2: raw 4.88 / 19.1%  lit 4.88 / 19.1%  band+-1 2.18 / 5.4%  (35346 px, refine +0,+0)  f
+-- mbtl_pups_chr011_p309_z1 vs _nb (reg 0,0)
+mbtl_pups_chr011_p309_z1: raw 0.14 / 0.2%  lit 0.14 / 0.2%  band+-1 0.07 / 0.0%  (146256 px, refine +0,+0)  fr
+-- mbtl_pups_chr011_p309 (zoom 1.5) vs _nb (reg mbtl_chr001_nb)
+mbtl_pups_chr011_p309: raw 0.59 / 1.1%  lit 0.59 / 1.1%  band+-1 0.25 / 0.2%  (139198 px, refine +0,+0)  free 
+-- mbtl_pups_chr011_p309_z1 vs _nh (reg 0,0)
+mbtl_pups_chr011_p309_z1: raw 0.85 / 1.6%  lit 0.85 / 1.6%  band+-1 0.55 / 0.8%  (146256 px, refine +0,+0)  fr
+-- mbtl_pups_chr011_p309 (zoom 1.5) vs _nh (reg mbtl_chr001_nb)
+mbtl_pups_chr011_p309: raw 1.02 / 2.1%  lit 1.02 / 2.1%  band+-1 0.53 / 0.8%  (139198 px, refine +0,+0)  free 
+-- mbtl_pups_chr011_p309_z1 vs _st (reg 0,0)
+mbtl_pups_chr011_p309_z1: raw 0.15 / 0.2%  lit 0.15 / 0.2%  band+-1 0.08 / 0.0%  (146256 px, refine +0,+0)  fr
+-- mbtl_pups_chr011_p309 (zoom 1.5) vs _st (reg mbtl_chr001_nb)
+mbtl_pups_chr011_p309: raw 0.59 / 1.1%  lit 0.59 / 1.1%  band+-1 0.24 / 0.2%  (139198 px, refine +0,+0)  free 
+-- mbtl_flipV_chr001_p157f2_solo_s8_z1 vs round-10 (bb plate)
+mbtl_flipV_chr001_p157f2_solo_s8_z1: raw 0.79 / 3.6%  lit 0.79 / 3.6%  band+-1 0.55 / 1.1%  (43965 px, refine 
+-- mbtl_flipV_chr001_p157f2_solo_s8_z1 vs _st
+mbtl_flipV_chr001_p157f2_solo_s8_z1: raw 0.83 / 5.4%  lit 0.83 / 5.4%  band+-1 0.52 / 0.9%  (43965 px, refine 
+-- mbtl_flipV_chr001_p157f2_solo_s456_z1 vs round-10 (bb plate)
+mbtl_flipV_chr001_p157f2_solo_s456_z1: raw 0.75 / 0.8%  lit 0.75 / 0.8%  band+-1 0.70 / 0.5%  (13156 px, refin
+-- mbtl_flipV_chr001_p157f2_solo_s456_z1 vs _st
+mbtl_flipV_chr001_p157f2_solo_s456_z1: raw 96.81 / 100.0%  lit 96.81 / 100.0%  band+-1 52.58 / 100.0%  (13156 
+-- mbtl_patctrl_chr001_p238f10_z1 vs _nh split by the s4 / s5 / s18 editor solo shots
+mbtl_patctrl_chr001_p238f10_solo_s5_z1       px   9883  lit 0.01 (share  0.5%)  raw 0.01 (share  0.8%)
+mbtl_patctrl_chr001_p238f10_solo_s18_z1      px  32887  lit 0.38 (share 97.2%)  raw 0.26 (share 96.4%)
+(none of these shots)                        px   1157  lit 0.31 (share  2.8%)  raw 0.27 (share  3.6%)
+-- exclusive regions (edge = within 1 px of a coverage boundary)
+(none)           edge  px   1122  raw 0.27 signed -0.15 (share  3.5%)  |d|>8 px 0
+(none)           inner px     35  raw 0.24 signed -0.11 (share  0.1%)  |d|>8 px 0
+s18_z1           edge  px   3188  raw 0.40 signed +0.12 (share 14.3%)  |d|>8 px 0
+s18_z1           inner px  19816  raw 0.36 signed +0.05 (share 81.4%)  |d|>8 px 0
+s5_z1+s18_z1     edge  px   1607  raw 0.01 signed +0.00 (share  0.1%)  |d|>8 px 0
+s5_z1+s18_z1     inner px   8276  raw 0.01 signed -0.00 (share  0.7%)  |d|>8 px 1
+-- mbtl_patctrl_chr001_p238f10_z1 vs _st split by the s4 / s5 / s18 editor solo shots
+mbtl_patctrl_chr001_p238f10_solo_s5_z1       px   9883  lit 0.01 (share  0.5%)  raw 0.01 (share  0.9%)
+mbtl_patctrl_chr001_p238f10_solo_s18_z1      px  32887  lit 0.37 (share 97.4%)  raw 0.23 (share 94.3%)
+(none of these shots)                        px   1157  lit 0.28 (share  2.6%)  raw 0.39 (share  5.7%)
+-- exclusive regions (edge = within 1 px of a coverage boundary)
+(none)           edge  px   1122  raw 0.39 signed -0.16 (share  5.5%)  |d|>8 px 0
+(none)           inner px     35  raw 0.36 signed -0.12 (share  0.2%)  |d|>8 px 0
+s18_z1           edge  px   3188  raw 0.30 signed +0.08 (share 12.3%)  |d|>8 px 0
+s18_z1           inner px  19816  raw 0.32 signed +0.03 (share 81.2%)  |d|>8 px 0
+s5_z1+s18_z1     edge  px   1607  raw 0.01 signed +0.00 (share  0.1%)  |d|>8 px 0
+s5_z1+s18_z1     inner px   8276  raw 0.01 signed -0.00 (share  0.7%)  |d|>8 px 1
