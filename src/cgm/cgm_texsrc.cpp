@@ -82,8 +82,12 @@ bool PatTexSource::entry(int i, TexEntry &o) const {
 	o = TexEntry();
 	if (i < 0 || i >= count()) return false;
 	const PartGfx<> &g = m_p.gfxMeta[i];
-	o.present = g.w > 0 && (g.imageData || g.data);
-	o.w = g.w; o.h = g.h; o.name = g.name.c_str(); o.format = PatTextureFormat(m_p, i);
+	const bool pgtx = g.imageSize == 0 && g.data, kindOk = pgtx || g.type == 1 || g.type == 5 || pattex::IsRawBgra(g.type);
+	// the data must hold the whole texture (a PGT2 kind the loader does not read, e.g. UNIB DXT3, keeps a stale type and no full data)
+	const size_t need = pgtx ? 0 : (g.type == 1 || g.type == 5) ? (size_t)((g.w + 3) / 4) * ((g.h + 3) / 4) * (g.type == 5 ? 16 : 8) : (size_t)g.w * g.h * 4;
+	const bool known = kindOk && (pgtx || (g.imageData && (size_t)g.imageSize >= need));
+	o.present = g.w > 0 && (g.imageData || g.data) && known;   // a kind the loader does not read (UNIB DXT3) is listed, not editable
+	o.w = g.w; o.h = g.h; o.name = g.name.c_str(); o.format = known ? PatTextureFormat(m_p, i) : "unsupported kind";
 	return true;
 }
 
