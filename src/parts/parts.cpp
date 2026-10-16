@@ -545,6 +545,13 @@ void Parts::Draw(const DrawParams& params,
 
     constexpr int tX[] = { 0,1,1, 1,0,0 };
     constexpr int tY[] = { 0,0,1, 1,1,0 };
+    // The games queue every ring / arc / sphere / cone segment as one 4-vertex prim with UVs (u0,v0) (u1,v0) (u0,v1)
+    // (u1,v1) (uni2 1.42 CPAniPrimRender_DrawQuads 0x4C0F10 and the shape classes' corner getters) and draw it split
+    // along (u1,v0)-(u0,v1). Their segments are not parallelograms, so the split shows in the texture (render-match8:
+    // the 3-segment arc of chr019 p153, 29.45 -> 0.28). kSplit* is that split for shapes mapping u to tX and v to tY
+    // (ring, arc) or u to tY and v to tX (sphere); the cone maps v to 1 - tX, where the default tables already match.
+    constexpr int kSplitX[] = { 0,1,0, 1,1,0 };
+    constexpr int kSplitY[] = { 0,0,1, 0,1,1 };
 
     struct {
         float x, y, z, s, t, p, q;
@@ -776,6 +783,7 @@ void Parts::Draw(const DrawParams& params,
         // were stored negated to make up for it.
         case ShapeType::RING:
         {
+            const int *tX = kSplitX, *tY = kSplitY;   // segment split as in the games (see kSplitX)
             // Cylindrical ring
             float angle = 0;
             float delta = glm::pi<float>() * outShape.length / 5000 / outShape.vertexCount;
@@ -797,16 +805,23 @@ void Parts::Draw(const DrawParams& params,
         }
         case ShapeType::ARC:
         {
-            // Curved arc surface
+            // Curved arc surface (game corners: inner-cur, outer-cur, inner-next, outer-next; split as kSplit*).
+            const int *tX = kSplitX, *tY = kSplitY;
             float angle = 0;
             float delta = glm::pi<float>() * outShape.length / 5000 / outShape.vertexCount;
             vertexData.resize(6 * outShape.vertexCount * 7);
             for (int i = 0; i < outShape.vertexCount; i++) {
                 for (int j = 0; j < 6; j++)
                 {
-                    point[j].x = float((outShape.radius - (1 - tX[j]) * outShape.width - ((i + tY[j] == outShape.vertexCount && outShape.length == 10000) ? 0 : float(outShape.dRadius * (i + tY[j])) / outShape.vertexCount)) * glm::sin(angle + delta * tY[j]));
-                    point[j].y = -float((outShape.radius - (1 - tX[j]) * outShape.width - ((i + tY[j] == outShape.vertexCount && outShape.length == 10000) ? 0 : float(outShape.dRadius * (i + tY[j])) / outShape.vertexCount)) * glm::cos(angle + delta * tY[j]));
-                    point[j].z = float(outShape.dz * (i + tY[j])) / outShape.vertexCount;
+                    // Geometric shrink of both edges (partrender::ArcEdgeScale, uni2 0x414590 / 0x4148D0). A closed
+                    // ring's last edge reuses the unshrunk start points, keeping the previous edge's z.
+                    const int e = i + tY[j];
+                    const bool closing = e == outShape.vertexCount && outShape.length == 10000;
+                    const float k = closing ? 1.f : partrender::ArcEdgeScale(outShape.radius, outShape.dRadius, outShape.vertexCount, e);
+                    const float r = (outShape.radius - (1 - tX[j]) * outShape.width) * k;
+                    point[j].x = r * glm::sin(angle + delta * tY[j]);
+                    point[j].y = -r * glm::cos(angle + delta * tY[j]);
+                    point[j].z = float(outShape.dz * (closing ? e - 1 : e)) / outShape.vertexCount;
                     point[j].s = point[j].p = uvS((float)tX[j]);
                     point[j].t = point[j].q = uvT(1.0f * (i + tY[j]) / outShape.vertexCount);
                 }
@@ -818,6 +833,7 @@ void Parts::Draw(const DrawParams& params,
         }
         case ShapeType::SPHERE:
         {
+            const int *tX = kSplitX, *tY = kSplitY;   // segment split as in the games (see kSplitX)
             // Spherical surface
             float angle = 0;
             float delta = glm::pi<float>() * outShape.length / 5000 / outShape.vertexCount;

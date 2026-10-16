@@ -31,7 +31,7 @@ def scan(b, want):
     return slots
 
 def main():
-    """KEEP mode moves every other slot of the set off-screen (PRXY = 30000,30000: in place, PRCL is absent in set 45)."""
+    """KEEP (a slot or a comma list) mode moves every other slot of the set off-screen (PRXY = 30000,30000: in place, PRCL is absent in set 45)."""
     b = bytearray(open(sys.argv[1], 'rb').read()); want = int(sys.argv[2])
     slots = scan(b, want)
     for r in slots:
@@ -41,9 +41,9 @@ def main():
               'AS', f('PRAS', 'ii'), 'RV', f('PRRV', 'B'), 'FL', f('PRFL', 'B'), 'AL', f('PRAL', 'B'),
               'CL', d['PRCL'].hex() if 'PRCL' in d else None, 'PR', f('PRPR', 'i'), 'ID', f('PRID', 'i'))
     if len(sys.argv) > 4:
-        keep = int(sys.argv[3])
+        keep = [int(x) for x in sys.argv[3].split(',')]   # one slot or a comma list
         for r in slots:
-            if r['slot'] == keep: continue
+            if r['slot'] in keep: continue
             if 'PRXY' not in r: raise SystemExit('slot %d has no PRXY (cannot move in place)' % r['slot'])
             struct.pack_into('<ii', b, r['PRXY'][0], 30000, 30000)
         open(sys.argv[4], 'wb').write(b); print('wrote', sys.argv[4], 'keep slot', keep)

@@ -1,0 +1,22 @@
+# render-match8 round 8 (2026-10-15): flipHV chr019 p153 with ONE streak prop of part set 45 left on screen.
+# round8/chr019_solo45_s2.pat = chr019.pat with every other slot of set 45 moved off-screen (PRXY 30000,30000;
+# tools/uni/s1_compare/pat_solo_prop.py), loaded as a UNI2-IM loose-file override (removed again at quit).
+# The editor renders the same file from gamedata/uni2/data/chr019solo2 (case flipHV_chr019_p153_solo2*).
+include ../games/uni2.gcs
+file_put ../round8/chr019_solo45_s2.pat UNI2-IM/Mods/data/chr019/chr019.pat
+let P1CHR 19
+let P2CHR 0
+include ../games/uni2_to_training.gcs
+set OUTD C:\dev\hantei-chan\tools\gamecap\captures\v2
+hold f32 [P1+0x8C0]+0x40 0
+hold f32 [P1+0x8C0]+0x44 0
+hold f32 [P1+0x8C0]+0x48 0
+step 3
+set CASE flipHV_chr019_p153_solo2
+set PAT 153
+set SETFRAME 0
+set FRAME 0
+set GTICK 1
+set STEPKEYS F6
+include ../games/uni2_v2_case_aura_plate.gcs
+quit
