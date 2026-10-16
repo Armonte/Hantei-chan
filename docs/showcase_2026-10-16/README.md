@@ -62,3 +62,35 @@ master 7e97e19). The second row is |game - tool| x4. All per-case data is in `ma
 `scripts/shoot_others.sh {sosfiro|gonp} <cases>`, then `tools/uni/s1_compare/shoot_batch.sh` (with
 `OUTDIR=work/bw_ours`), then `scripts/run_cases.sh`, `scripts/make_sheets.py`, `scripts/mbaacc_sheet.py` and
 `scripts/ui/run_features.sh`. The raw shots in `work/` are not committed.
+
+## In-game recolour through the CG manager (`ingame/`)
+This is a modder's round trip with no hand edits to files. `tools/cg/showcase_recolour.sh` drives the editor with --ui-script (no
+real input) and `tools/cg/hue_shift.py` does the recolour. fbmod boots [boot] training with P1 = chr003 and P2 = chr005, colour 1.
+The files are installed in `<game>\<IM>\Mods\data\chr003\` only inside gamecap's game lock (`tools/cg/showcase_ingame_boot.sh`)
+and restored afterwards. The Mods\data folders were empty before and after, and UNI2_IM.ini / MBTL_IM.ini are byte-identical (md5).
+The shots are window-only gamecap captures shrunk to 1280x720: `<game>_{before,after}_idle.jpg` and `<game>_{before,after}_move.jpg`.
+The move is 236+A (pad_down/pad_up DOWN, RIGHT, then pad_tap A), shown 6 frames after the button.
+
+- **Export.** "CG + .pat textures" tab > Export PNG of pattern 0's images (UNI2: 36, MBTL: 21) and of one .pat texture. Palettes tab >
+  Export colours (.act) of chr003.pal palette 0. Every pattern-0 sprite is 8-bit (bank palette), so its colour lives in the .pal.
+  The natural path is the palette, and the sprite pixels were not touched.
+- **UNI2 Carmine, red to deep teal.** chr003.pal palette 0, entries 8-12, 31-40, 48-53, 114-120 and 251 (coat, hair and the red
+  tint slots): hue **+185 deg**, with saturation and value kept. Entries 240-245 (blue effect tint slots): hue **-40 deg**. Skin
+  (2-7), greys, black line art and the other 129 palettes are unchanged; 35 of 256 colours changed. .pat texture 0 `car_ef00.dds`
+  (2048x2048 DXT5) is greyscale, because the game tints it from the palette's PPPA slots. Its grey pixels were colourised to hue
+  185 deg, saturation 0.35, with value and alpha kept.
+- **MBTL Shiki, navy to dark crimson.** chr003.pal palette 0: every entry below 240 with hue 200-245 deg and saturation >= 0.2 (the
+  uniform and hair shading, plus entry 15, the light-blue eye highlight): hue **+125 deg**, with S, V and alpha kept; 52 colours
+  changed. The fx slots 241-249 are unchanged. .pat texture 1 `chr003_0.dds` (2048x2048 DXT5): pixels with hue 160-220 deg and
+  saturation >= 0.2 (the blue slashes) get hue **+150 deg**, with V and alpha kept (224,060 px). The red parts are unchanged.
+- **Import and save.** Palettes tab > Import colours (the shifted .act) > **Save .pal to mod folder** (new, see below). Then
+  "CG + .pat textures" > Import PNG (the shifted texture) > Save to mod folder. The game folder is a scratch folder; the boot
+  script installs what the GUI wrote.
+- **Result.** The idle pair shows the full recolour in game. On the move pair, the character's colours change, but the main
+  236A effect does not (UNI2: the blue swirl; MBTL: the blue/purple ring). That effect is drawn from the shared effect bank,
+  not from chr003.pat, so neither the texture edit nor the palette slots reach it. The .pat edit is loaded: the game reads the
+  2.4 MB / 39 MB mod .pat without error. It is not visible in this move, though, and a move that draws car_ef00 /
+  chr003_0 parts is still to be picked.
+- **Fix found along the way.** The Palettes tab could only save the .pal in place, and UNI2 / MBTL never read that (they read the
+  archive), so a palette recolour could not reach the game from the browser. "Save .pal to mod folder" writes it to the same IM
+  mod folder as the tab's .cg / .pat save, using that tab's game and game-folder settings (`Window::modFolderDst`).
