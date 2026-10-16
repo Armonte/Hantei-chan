@@ -531,3 +531,115 @@ Numbers: `tools/uni/s1_compare/v2_round10.sh` (log `round10.log`: every line wit
 - Decide whether `--exact-reg` becomes the default; if so, recheck ctrl_chr027 / pups_chr027 / flipHV at zoom 1.5
   with a sub-pixel registration fit instead of the integer refine.
 - pras: the CG edge alpha cut on a CG-over-.pat edge.
+
+## Round 11 / render-match11 (2026-10-15): control-registered metric, zoom-1 shots
+No editor (C++) change this round. Numbers: `tools/uni/s1_compare/v2_round11.sh` (log `round11.log`). Each case is
+printed three ways: round-9 registration, `--exact-reg`, and control-registered. Full ctest 69/69 (`ctest_r11.log`,
+`--timeout 900`).
+
+### Metric: the control sets the registration
+- **`v2_model --subpix-fit OUT.json`** (run on a control).
+  - The registration is the camera geometry (`--exact-reg`, no integer refine) plus a bounded sub-pixel offset,
+    |dx|, |dy| ≤ 1.5 game px.
+  - The offset is the one that minimises the control's own lit residual. The search is coarse to fine: steps of
+    0.5, then 0.125, then 1/32 game px.
+- **`v2_model --subpix OUT.json`** (or `--subpix dx,dy`) applies that offset unchanged to the control's cases. It
+  implies `--exact-reg --refine 0`, so a case cannot pick its own best shift.
+- **Code.** `sheet.SUBPIX` shifts the exact editor-space box. `v2_model.main` became `measure()` (it resets the
+  sheet globals on each call) plus `subpix_fit()`.
+- **Fitted offsets** (`round11/reg/*.json`):
+
+| control | zoom | offset (game px) |
+|---|---|---|
+| ctrl_chr019_p0 (r5) | 1.5 | +0.125, −0.375 |
+| ctrl_chr027_p0 (r5) | 1.5 | +0.25, −0.375 |
+| mbtl_patctrl_chr001_p238f10 (nb) | 1.5 | +0.25, 0 |
+| ctrl_chr020_p0 (r3), ctrl_chr019_p0_z1, ctrl_chr027_p0_z1, ctrl_chr024_p0 | 1 | 0, 0 |
+
+- **What the offsets show.**
+  - Zoom 1.5 shots need about +¼, −⅜ game px, and the two independent UNI2 r5 controls agree.
+  - Zoom 1 needs none: the camera geometry is exact. At sc = 1 the area resample is pixel-exact, so only whole-pixel
+    offsets could register, and the fit picks 0.
+  - **Cross-check:** ctrl_chr027_p0 at zoom 1.5 with its offset gives 1.45, and the same control shot at zoom 1 gives
+    1.46. pups f4 gives 1.89 both ways.
+- **Default.** Report the control-registered number (this round's `three` third line) for every case. Where a zoom-1
+  shot exists, prefer it: it needs no sub-pixel registration at all. `--exact-reg` on its own is retired for
+  zoom-1.5 cases.
+  - The offset is per zoom and per session. rect_chr024_p76 (zoom 1.5) against the zoom-1 chr024 control is
+    invalid (19.22). Use rect_chr024_p76_z1.
+  - MBTL is reported on raw (as before). Its fit minimises the lit line, which for MBTL with the identity light
+    differs from raw. A raw-objective fit is a follow-up.
+
+| case | old (round-9 reg) | exact-reg | **new (control-registered)** | floor (its control, new) |
+|---|---|---|---|---|
+| ctrl_chr020_p0 | 0.71 | 0.71 | **0.71** | is the floor |
+| afhk_cg_chr020_p435_t27 | 0.67 | 0.67 | **0.67** | 0.71: at floor |
+| afhk_cg_chr020_p437_t2 | 0.30 | 0.30 | **0.30** | 0.71: at floor |
+| pras_chr020_p5f2 (zoom 1.5, `--layers`) | 3.83 | 2.43 | 2.43 | 0.71 |
+| **pras_chr020_p5f2_z1** (new zoom-1 shot) | | 1.32 | **1.32** | 0.71: +0.61 (see below) |
+| ctrl_chr027_p0 | 4.20 | 7.14 | **1.45** | is the floor |
+| ctrl_chr027_p0_z1 | | 1.46 | **1.46** | is the floor (zoom 1) |
+| pups_chr027_p449f4 | 2.46 | 3.35 | **1.89** | 1.45: +0.44 |
+| pups_chr027_p449f4_z1 | | 1.89 | **1.89** | 1.46: +0.43 |
+| ctrl_chr019_p0 | 3.56 | 5.04 | **1.58** | is the floor |
+| flipHV_chr019_p153 | 3.20 | 4.63 | **3.65** (band 1.83) | 1.58 (CG control; the zoom-1 pair is the fair one) |
+| ctrl_chr019_p0_z1 | 1.58 | 1.58 | **1.58** | is the floor |
+| flipHV_chr019_p153_z1 | 0.32 | 0.32 | **0.32** | 1.58: below |
+| flipHV_chr019_p153_solo8_z1 | 0.28 | 0.28 | **0.28** | below |
+| ctrl_chr024_p0 | 0.86 | 0.86 | **0.86** | is the floor |
+| rect_chr024_p76 (zoom 1.5) | 11.62 | 12.65 | (19.22: zoom mismatch, invalid) | |
+| rect_chr024_p76_z1 | | 0.33 | **0.33** | 0.86: below |
+| mbtl_patctrl_chr001_p238f10 (raw) | 4.85 | 4.29 | **3.40** | is the floor |
+| mbtl_patctrl_chr001_p277f0 (raw) | 4.89 | 4.75 | **1.66** | control |
+| mbtl_flipV_chr001_p157f2 (raw) | 4.62 | 4.62 | **4.46** | 3.40 / 1.66: +1.06 over p238 |
+| mbtl_flipV_chr001_p157f2_solo_s8 (raw) | 1.07 | 1.06 | **1.03** | below |
+| mbtl_flipV_chr001_p157f2_solo_s456 (raw) | 12.10 | 12.26 | 12.10 (band 5.03) | thin-line arcs |
+| mbtl_pups_chr011_p309 (raw, chr001 offset: no chr011 control) | 0.64 | 0.92 | **0.59** | below |
+
+- **The rounds 9–10 swings were crop luck.**
+  - ctrl_chr027 went 4.20 → 7.14 → 1.45, and pups 2.46 → 3.35 → 1.89. Both controls, chr019 and chr027 at
+    zoom 1.5, now sit at about 1.5 (the old 4–7 "floors" were misregistration).
+  - pups_chr027_p449f4 was "below its floor" in round 9. It is now correctly measured as +0.44 above it.
+
+### pras_chr020_p5f2: the CG edge was the 1.5× shot resample
+- **Draw order is right.** `DrawObj_DrawLayer` submits each AF layer immediately, in layer order: .pat goes to
+  `Han6Draw_DrawPatLayerParts_3D`/`_2D`, CG goes to `CgLayer_DrawWithCharaShader`/`_NoCharaShader`. A pat-over-CG
+  composite built from the per-layer shots measures 21.91, against 2.43 for CG-over-pat, so the editor's order
+  matches the game.
+- **No edge alpha cut.** `PS_CharaDrawBgColorV` (sh_chara.txt) point-samples the index texture and returns 0 where
+  palette alpha == 0. That is the editor's rule.
+- **Zoom 1 fixes the CG edge.** A zoom-1 shot (`pras_chr020_p5f2_z1` plus `_z1_cg` / `_z1_pat` layer shots;
+  `shoot_batch.sh` now resolves LAYER_SHOTS bases from cases_control.txt too) takes the case from 2.43 to **1.32**.
+  The CG-visible pixels are at **0.65**, at the 0.71 floor. The CG-edge-over-flame residual of round 10 was the 1.5×
+  editor-shot resample of hard CG edges against the bright flame. It was not a render difference.
+- **What is left (.pat-only, mean 2.0): a smooth R-only add over the saturated additive flame.**
+  - The flame has P_G = P_B = 255, Q = 0, P_R = 0, Q_R = 1.
+  - Where it is saturated, game − prediction is R +3.2 at the edge of the saturated area, rising to +5.0 at a depth
+    of 16 px. It decays over about 6 px outside (+3.2, then +1.5, then 0). G and B are clipped, so they read 0.
+  - That profile is a blur-like add, not a per-part colour. Not the cause:
+    - `StageBloom_Apply`: stage only, drawn in `Stage_DrawFrame` before the fighters.
+    - The aura glow: its colour 0x00AAFF has no R.
+    - The bokashi pass: CG only.
+  - **Open.** Find a post-fighter screen pass in UNI2 (bloom/glare over the battle target) or rule it out. Do not
+    change the editor until it is found.
+- **pups_chr027_p449f4_z1 (+0.43).** The interior has a uniform R bias of +4.4 (G +0.8, B +1.0) over 118k px. The
+  edge pixels (474 px, mean 40) are darker in the game. The R bias has the same sign and size as the pras flame
+  add. That suggests the same unknown pass, so investigate the two together.
+
+### UNI2 IDB (renamed, commented, saved)
+- **Renamed:**
+  - AfLayer_BuildTransformMatrix_Interp 0x4BDE20
+  - CgLayer_LookupTextureChip 0x4BF1B0
+  - Han6Draw_DrawPatLayerParts_2D 0x4C01D0
+  - CgLayer_Draw_NoCharaShader 0x4BED20
+  - ShaderCmd_QueueSetTextureParam 0x4AE840
+  - ShaderCmd_NewEffTag 0x4AF400
+  - ShaderCmd_PushEffTag 0x4AF2D0
+- **Commented:** DrawObj_DrawLayer (layer order, measured), CgLayer_DrawWithCharaShader 0x4BE140 (round 11
+  finding), StageBloom_Apply (stage only).
+
+### Next
+- UNI2: find the R add over saturated additive .pat (pras flame, pups interior). Start from the battle-frame draw
+  after the fighters (callers of Stage_DrawFrame / Battle_FrameUpdate 0x52740B).
+- MBTL p157: refit the chr001 offset on raw. Its +1.06 over p238 is the remaining MBTL gap.
+- Reshoot the remaining zoom-1.5 cases at zoom 1 (flipHV_chr019_p153 is already done as `_z1`).
