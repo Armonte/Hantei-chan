@@ -894,8 +894,8 @@ from `round13/reg`). Every round-13 line is unchanged (identical `: raw` lines).
 - afhk p435: the gradient-fit question above.
 
 ## Round 15 / render-match15 (2026-10-16): the ring arcs vary inside the game renderer; p435 has no uniform bias
-No editor (C++) change. The round-14 numbers stand (same build inputs). Logs: `round15_afhk_bias.log`; gamecap runs in
-`tools/gamecap/round15/` (main checkout). Full ctest at the end of the round.
+No editor (C++) change. The round-14 numbers stand (same build inputs). Full ctest 69/69 (`ctest_r15.log`, `--timeout 900`). Logs: `round15_afhk_bias.log`; gamecap runs in
+`tools/gamecap/round15/` (main checkout).
 
 ### pras set-991 ring slots 41/44/45: what makes them differ between runs
 - **Probe at the grab** (`cases/v2r15_chr020_srings_probe.gcs` with `games/uni2_v2_case_aura_plate_probe.gcs`, two runs
