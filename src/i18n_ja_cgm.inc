@@ -228,3 +228,5 @@
 {"part set %d places part %d", "パーツセット%dがパーツ%dを配置"},
 {"part %d samples it", "パーツ%dが使用"},
 {"Nothing to show.", "表示するものがありません。"},
+{"Save .pal to mod folder", ".palをmodフォルダに保存"},
+{"Writes this .pal to <game folder>\\UNI2-IM\\Mods or MBTL-IM\\Mods (set in the \"CG + .pat textures\" tab). \"Restore mod folder\" there, or cgmtex modrestore, undoes it.", "この.palを<ゲームフォルダ>\\UNI2-IM\\ModsまたはMBTL-IM\\Modsに書き込みます(「CG + .pat textures」タブで設定)。そこの「Restore mod folder」かcgmtex modrestoreで元に戻せます。"},
