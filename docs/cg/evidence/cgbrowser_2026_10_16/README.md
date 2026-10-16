@@ -16,3 +16,14 @@ inside gamecap's game lock (`tools/cg/ingame_modfolder_boot.sh`), and is restore
   "Save to mod folder" (scratch game folder). `tools/cg/gui_modfolder_edit.sh` does this.
 - `uni2_boot_gui/`, `mbtl_boot_gui/`: that GUI-written file booted in the game.
 - `uni2_chr003_striped_ingame_cli.png`, `mbtl_boot/`: the first runs, where the file came from `cgmtex stripe` (the same layer, patterns 0-40).
+
+Results: ctest 80/80 (`ctest.log`, exit 0). The CG suite passed everywhere except UNIB texsrc-pat, where the first binary failed on DXT3
+textures. With the fix, `cgm_suite_unib_rerun.log` exits 0 and `texsrc_mbtl_pat_rerun.log` passes.
+
+## Left to do (HANDOFF)
+- UNIB DXT3 .pat textures (6 in 14 files: hyd/lin/ori/yuz ef00). The PGT2 loader does not read DXT3, so the browser lists them as
+  "unsupported kind" and does not edit them. This needs DXT3 load, GL upload, decode and encode in parts_texture.cpp and pat_texconv.
+- RBO / GOF2: CG banks show in the tab through CgIO. Their part sheets are edited in the han2 PAT pane, which already has PNG; they are not
+  routed through PatTexSource. ActCadenza has no .pat.
+- The tab's .pat replace marks the character edited, but it has no undo step of its own (the CG replace goes through the CG manager history).
+- Mod-folder save writes the .cg / .pat. A .pal edited in the Palettes tab still saves in place, not to the IM mod folder.
