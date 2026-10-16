@@ -12,7 +12,8 @@ BOXES = {   # name: (left, top, right, bottom); the squirrel hover box also cove
     'feat_stage3d_mbtl_align': (440, 98, 1444, 864),
     'feat_cgm_uni2_palettes': (340, 68, 1544, 894),
     'feat_cgm_uni2_textures': (340, 68, 1544, 894),
-    'feat_gamelink_panel': (620, 218, 1264, 742),
+    'feat_gamelink_panel': (732, 404, 1152, 556),   # layout sweep 4: the window fits its content on first open
+    'feat_hotreload_uni2': (440, 128, 1444, 834),   # UNI2 / MBTL hot reload: the Squirrel panel's Hot reload row
     'pcmod_export_window': (98, 68, 1081, 956),
     'pcmod_export_done': (98, 68, 1081, 956),
 }

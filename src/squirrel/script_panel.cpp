@@ -1594,9 +1594,13 @@ void ScriptPanel::draw()
 		ImGui::SameLine();
 		if (ImGui::Button(LBL("Save anyway"))) { m->offerSaveAnyway = false; m->forceNextSave = true; m_saveRequested = true; }
 	}
-	if (!m->status.empty()) {
-		ImGui::SameLine();
-		ImGui::TextColored(m->statusError ? ErrCol() : ScriptCol(), "%s", m->status.c_str());
+	if (!m->status.empty()) {   // after the toolbar while it fits, else on its own wrapped line (the hot-reload row filled it)
+		i18n::SameLineFit(std::min(ImGui::CalcTextSize(m->status.c_str()).x, ui::Em(16.f)));
+		ImGui::PushStyleColor(ImGuiCol_Text, m->statusError ? ErrCol() : ScriptCol());
+		ImGui::PushTextWrapPos(0.f);
+		ImGui::TextUnformatted(m->status.c_str());
+		ImGui::PopTextWrapPos();
+		ImGui::PopStyleColor();
 	}
 
 	// File list | editor | outline as one resizable table (drag the borders): 18% / 64% / 18% by default, the editor takes
