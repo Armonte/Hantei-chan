@@ -5,9 +5,11 @@
 #include "s3d_dds.h"
 #include "s3d_model.h"
 #include "s3d_fbxascii.h"
+#include "s3d_blender.h"
 
 #include "../app_log.h"
 #include "../i18n.h"
+#include "../ini.h"
 #include "../png_writer.h"
 #include "../render_target.h"
 
@@ -16,6 +18,7 @@
 #include <glm/gtc/type_ptr.hpp>
 #include <glm/mat4x4.hpp>
 #include <imgui.h>
+#include <imgui_internal.h>   // MarkIniSettingsDirty (Preferences)
 
 #include <algorithm>
 #include <chrono>
@@ -27,6 +30,13 @@
 #include <map>
 #include <memory>
 #include <vector>
+
+#ifdef _WIN32
+#ifndef NOMINMAX
+#define NOMINMAX
+#endif
+#include <windows.h>
+#endif
 
 namespace stage3dview {
 bool show = false;
@@ -126,6 +136,11 @@ struct State {
 	float floorPx = 432.f, yBias = 0.f;  // MBAACC floor row; small floor fix in MBAACC px
 	int replaces = -1;                   // MBAACC 2D stage slot the port replaces (pc-stage3d replaces)
 	std::string alignStatus;
+	// Blender link (s3d_blender.h): the model file the stage was loaded from and its write time then
+	std::string modelPath, blenderStatus;
+	fs::file_time_type modelTime{};
+	double lastDiskCheck = 0;
+	bool changedOnDisk = false;
 };
 State* S()
 {
@@ -206,6 +221,12 @@ bool Load(State& s, const std::string& bgDir, const std::string& dataFile)
 		return false;
 	}
 	s.stats = s3d::ComputeStats(s.model);
+	{
+		std::error_code tec;
+		s.modelPath = used;
+		s.modelTime = fs::last_write_time(fs::u8path(used), tec);
+		s.changedOnDisk = false;
+	}
 	// textures: straight decode, LINEAR + WRAP, no mips (the shipped DDS have none; fbxshader.txt diffuseSampler)
 	s.textures.assign(s.model.textures.size(), 0);
 	int missing = 0;
@@ -438,6 +459,63 @@ bool Capture(State& s, const std::string& path, std::string& err)
 void DrawAlignView(State& s, ImVec2 avail);
 void WriteAlignIni(State& s);
 
+// Blender link (s3d_blender.h). The configured path, else the newest detected install.
+static std::string BlenderExe()
+{
+	if (!gSettings.blenderPath.empty()) return gSettings.blenderPath;
+	return s3d::DetectBlender();
+}
+
+static bool LaunchBlender(State& s, std::string& cmdOut)
+{
+	std::string err;
+	const std::string exe = BlenderExe();
+	if (exe.empty()) { s.blenderStatus = TXT("Blender not found: set its path in Preferences."); HC_LOG_WARN("stage3d: blender: not found"); return false; }
+	cmdOut = s3d::BlenderCommandLine(exe, fs::absolute(fs::u8path(s.modelPath)).u8string(), err);
+	if (cmdOut.empty()) { s.blenderStatus = err; HC_LOG_ERROR("stage3d: blender: {}", err); return false; }
+#ifdef _WIN32
+	auto wide = [](const std::string& u) {
+		std::wstring w(MultiByteToWideChar(CP_UTF8, 0, u.c_str(), int(u.size()), nullptr, 0), L'\0');
+		MultiByteToWideChar(CP_UTF8, 0, u.c_str(), int(u.size()), w.data(), int(w.size()));
+		return w;
+	};
+	std::wstring cl = wide(cmdOut);
+	const std::wstring dir = wide(fs::u8path(exe).parent_path().u8string());
+	STARTUPINFOW si{};
+	si.cb = sizeof(si);
+	PROCESS_INFORMATION pi{};
+	if (!CreateProcessW(nullptr, cl.data(), nullptr, nullptr, FALSE, DETACHED_PROCESS, nullptr, dir.empty() ? nullptr : dir.c_str(), &si, &pi)) {
+		s.blenderStatus = std::string(TXT("Could not start Blender:")) + " " + exe;
+		HC_LOG_ERROR("stage3d: blender: CreateProcess failed ({}): {}", GetLastError(), cmdOut);
+		return false;
+	}
+	CloseHandle(pi.hThread);
+	CloseHandle(pi.hProcess);
+#endif
+	s.blenderStatus = TXT("Blender started. Export from Blender, then Reload from Blender.");
+	HC_LOG_INFO("stage3d: blender: {}", cmdOut);
+	return true;
+}
+
+// Preferences > 3D stage: Blender executable for "Open in Blender".
+void BlenderPrefsItems()
+{
+	char path[512];
+	snprintf(path, sizeof path, "%s", gSettings.blenderPath.c_str());
+	ImGui::SetNextItemWidth(360);
+	if (ImGui::InputTextWithHint(LBL("Blender executable"), TXT("auto-detect"), path, sizeof path)) {
+		gSettings.blenderPath = path;
+		ImGui::MarkIniSettingsDirty();
+	}
+	ImGui::SameLine();
+	if (ImGui::SmallButton(LBL("Auto-detect"))) {
+		const std::string d = s3d::DetectBlender();
+		if (!d.empty()) { gSettings.blenderPath = d; ImGui::MarkIniSettingsDirty(); }
+		HC_LOG_INFO("stage3d: blender auto-detect: {}", d.empty() ? std::string("none") : d);
+	}
+	ImGui::TextDisabled("%s", TXT("Used by the 3D Stage view's Open in Blender (MBTL_fbx_json add-on). Empty: newest Blender found."));
+}
+
 void MenuItem()
 {
 	if (ImGui::MenuItem("3D Stage view (UNI2 / UNI / MBTL)...", nullptr, show)) show = !show;
@@ -467,6 +545,22 @@ void Draw()
 	}
 	ImGui::SameLine();
 	if (ImGui::Button(s.loaded ? "Reload" : "Load")) Load(s, s.bgDir, s.dataFile);
+	if (s.loaded) {
+		ImGui::SameLine();
+		std::string cmd;
+		if (ImGui::Button(LBL("Open in Blender"))) LaunchBlender(s, cmd);
+		if (ImGui::IsItemHovered()) ImGui::SetTooltip("%s", TXT("Start Blender with the MBTL_fbx_json add-on importing this stage. Its export writes bg.fbx.bin back into the stage folder."));
+		ImGui::SameLine();
+		if (Now() - s.lastDiskCheck > 1.0) {   // poll the model file's write time once a second
+			s.lastDiskCheck = Now();
+			std::error_code tec;
+			const auto t = fs::last_write_time(fs::u8path(s.modelPath), tec);
+			s.changedOnDisk = !tec && t != s.modelTime;
+		}
+		if (ImGui::Button(LBL("Reload from Blender"))) Load(s, s.bgDir, s.dataFile);
+		if (s.changedOnDisk) { ImGui::SameLine(); ImGui::TextColored(ImVec4(1, 0.8f, 0.3f, 1), "%s", TXT("(changed on disk)")); }
+		if (!s.blenderStatus.empty()) ImGui::TextDisabled("%s", s.blenderStatus.c_str());
+	}
 	if (!s.error.empty()) ImGui::TextColored(ImVec4(1, 0.4f, 0.4f, 1), "%s", s.error.c_str());
 	if (s.loaded) {
 		ImGui::Text("%s %s | %u nodes, %u meshes (%u additive, %u animated), %u tris | FOV %.1f, scale %.3g, pos %.3g %.3g %.3g, fog %s %.0f..%.0f",
@@ -612,6 +706,15 @@ bool ScriptCommand(const std::string& cmd, const std::string& arg, std::string* 
 		out("ok");
 		return true;
 	}
+	if (sub == "blender") {   // blender [launch]: the launch command for the loaded stage; "launch" also starts Blender
+		if (!s.loaded) { out("FAILED no stage loaded"); return true; }
+		if (rest == "launch") { std::string cmd; const bool ok = LaunchBlender(s, cmd); out(ok ? "ok " + cmd : "FAILED " + s.blenderStatus); return true; }
+		const std::string exe = BlenderExe();
+		const std::string cmd = s3d::BlenderCommandLine(exe.empty() ? std::string("blender.exe") : exe, fs::absolute(fs::u8path(s.modelPath)).u8string(), err);
+		out(cmd.empty() ? "FAILED " + err : cmd);
+		return true;
+	}
+	if (sub == "reload") { const bool ok = Load(s, s.bgDir, s.dataFile); out(ok ? "ok " + s.loadedName : "FAILED " + s.error); return true; }
 	if (sub == "alignini") { WriteAlignIni(s); out(s.alignStatus); return true; }
 	if (sub == "frame") { s.play = false; s.frame = atoi(rest.c_str()); out("ok"); return true; }
 	if (sub == "cam") { sscanf(rest.c_str(), "%f %f %f", &s.camX, &s.camY, &s.zoom); out("ok"); return true; }

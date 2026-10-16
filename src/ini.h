@@ -56,6 +56,8 @@ extern struct Settings
 	// Script panel hot reload (fbmod pipe): on/off and the game install folder per profile ("" = Steam default)
 	bool sqHotReload = false;
 	std::string sqGameDirUni2, sqGameDirMbtl;
+	// 3D stage view "Open in Blender": blender.exe, UTF-8 ("" = auto-detect at launch, s3d_blender.h)
+	std::string blenderPath;
 } gSettings;
 
 bool LoadFromIni(FrameData *framedata, CG *cg, const std::string& iniPath, std::string* outTopHA6Path = nullptr, Parts* parts = nullptr, std::string* outPATPath = nullptr);
