@@ -1,4 +1,5 @@
 #include "script_vm.h"
+#include "sq_api.h"
 
 #include <squirrel.h>
 #include <sqstdaux.h>
@@ -197,9 +198,7 @@ SQInteger Native_Blocked(HSQUIRRELVM v)
 
 SQInteger Native_Stub(HSQUIRRELVM v)
 {
-	const SQChar* fv = "void|?";
-	sq_getstring(v, sq_gettop(v), &fv);
-	const std::string tag = fv, r = tag.substr(0, tag.find('|'));
+	const std::string tag = StubTag(v);
 	// File-existence probes answer truthfully (read-only, inside the game root, like __dofile__): the bootstrap branches on
 	// them (DFCI Battle_Init loads btl_Define_LocalDebug.txt only when BtlMvStd.IsFileAlive says it is there).
 	if (tag.size() >= 12 && tag.compare(tag.size() - 12, 12, ".IsFileAlive") == 0) {
@@ -210,11 +209,7 @@ SQInteger Native_Stub(HSQUIRRELVM v)
 		sq_pushinteger(v, alive ? 1 : 0);
 		return 1;
 	}
-	if (r == "int" || r == "bool") { sq_pushinteger(v, 0); return 1; }
-	if (r == "float") { sq_pushfloat(v, 0.0f); return 1; }
-	if (r == "string") { sq_pushstring(v, "", 0); return 1; }
-	if (r == "value" || r == "object" || r == "instance" || r == "array") { sq_newtable(v); return 1; }
-	return 0;
+	return PushStubReturn(v, tag);
 }
 
 void SetClosure(HSQUIRRELVM v, const char* name, SQFUNCTION f, const char* freeVar)
@@ -226,86 +221,6 @@ void SetClosure(HSQUIRRELVM v, const char* name, SQFUNCTION f, const char* freeV
 	} else
 		sq_newclosure(v, f, 0);
 	sq_createslot(v, -3);
-}
-
-bool ParseConst(const std::string& raw, SQInteger& out)
-{
-	std::string s = std::regex_replace(raw, std::regex(R"(\([^)]*\))"), "");
-	s.erase(std::remove(s.begin(), s.end(), ' '), s.end());
-	if (s.rfind("&unk_", 0) == 0) s = "0x" + s.substr(5);
-	if (s.empty()) return false;
-	try {
-		std::size_t used = 0;
-		const long long val = std::stoll(s, &used, 0);
-		if (used != s.size()) return false;
-		out = static_cast<SQInteger>(static_cast<int32_t>(static_cast<uint32_t>(val)));
-		return true;
-	} catch (...) {
-		return false;
-	}
-}
-
-void PushSubTable(HSQUIRRELVM v, const std::string& name)
-{
-	sq_pushstring(v, name.c_str(), -1);
-	if (SQ_SUCCEEDED(sq_get(v, -2))) return;
-	sq_pushstring(v, name.c_str(), -1);
-	sq_newtable(v);
-	sq_createslot(v, -3);
-	sq_pushstring(v, name.c_str(), -1);
-	sq_get(v, -2);
-}
-
-// Same model as sqtool's InstallApi (SCOPE.md §2.2 "pure stubs").
-int InstallApi(HSQUIRRELVM v, const json& api)
-{
-	int funcs = 0;
-	std::map<std::string, std::string> parent;
-	for (auto& e : api)
-		if (e.value("kind", "") == "table") parent[e.value("name", "")] = e.value("table", "");
-	auto pathOf = [&](std::string t) {
-		std::vector<std::string> chain;
-		std::set<std::string> seen;
-		while (!t.empty() && t[0] != '(' && !seen.count(t)) {
-			seen.insert(t);
-			chain.insert(chain.begin(), t);
-			auto it = parent.find(t);
-			t = it == parent.end() ? "" : it->second;
-		}
-		return chain;
-	};
-	for (auto& e : api) {
-		const std::string kind = e.value("kind", ""), name = e.value("name", ""), table = e.value("table", "");
-		const bool constTable = table == "(consttable)";
-		if (kind == "table" || kind == "var" || table.empty() || (table[0] == '(' && !constTable)) continue;
-		if (constTable) sq_pushconsttable(v);
-		else sq_pushroottable(v);
-		std::string q;
-		if (!constTable)
-			for (auto& t : pathOf(table)) { PushSubTable(v, t); q += t + "."; }
-		if (kind == "func" || kind == "method") {
-			const std::string tag = e.value("ret", "void") + "|" + q + name;
-			SetClosure(v, name.c_str(), Native_Stub, tag.c_str());
-			++funcs;
-		} else if (kind == "const") {
-			SQInteger val = 0;
-			const std::string raw = e["value"].is_string() ? e["value"].get<std::string>() : "";
-			if (ParseConst(raw, val)) {
-				sq_pushstring(v, name.c_str(), -1);
-				sq_pushinteger(v, val);
-				sq_createslot(v, -3);
-				if (!constTable) {
-					sq_pushconsttable(v);
-					sq_pushstring(v, name.c_str(), -1);
-					sq_pushinteger(v, val);
-					sq_createslot(v, -3);
-					sq_pop(v, 1);
-				}
-			}
-		}
-		sq_settop(v, 0);
-	}
-	return funcs;
 }
 
 } // namespace
@@ -360,7 +275,7 @@ bool ScriptVM::open(const std::string& gameRoot, const std::string& apiJsonPath,
 	sq_pop(v, 1);
 	sq_newclosure(v, RuntimeErrorHandler, 0);
 	sq_seterrorhandler(v);
-	if (api.is_array()) m->natives = InstallApi(v, api);
+	if (api.is_array()) m->natives = InstallSqratApi(v, api, Native_Stub).natives;
 	return true;
 }
 
