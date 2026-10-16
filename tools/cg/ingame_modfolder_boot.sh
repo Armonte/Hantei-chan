@@ -14,6 +14,8 @@ mbtl) GAMEDIR='C:\Program Files (x86)\Steam\steamapps\common\MELTY BLOOD TYPE LU
 *) echo "game: uni2 | mbtl"; exit 2;;
 esac
 TX="$ROOT/build/cgmtex.exe"
+# gamecap captures need a Windows drive path: the case writes to C:\dev\hantei-chan\work\cgb_ev_<game>, copied to <evidence dir> afterwards
+CEV=/mnt/c/dev/hantei-chan/work/cgb_ev_$G; rm -rf "$CEV"; mkdir -p "$CEV"
 mkdir -p "$EV" "$FB/build/inject"; cp "$FB/build/bin/fbmod.dll" "$FB/build/inject/fbmod.dll"
 python3 - "$FB/build/inject/fbmod.ini" "$P1" "$P2" <<'PY'
 import os, re, sys
@@ -32,7 +34,7 @@ out[i + 1:i + 1] = ["%s = %s" % kv for kv in want.items()]
 open(p, "w").write("\n".join(out) + "\n")
 PY
 CASE="$FB/tests/ingame/fbmod_${G}_boot_training.gcs"; TMPCASE="$FB/tests/ingame/.run_cgb_$(basename "$CASE")"
-sed -e "s/^let P1CHR .*/let P1CHR $P1/" -e "s/^let P2CHR .*/let P2CHR $P2/" -e "s|^let EV .*|let EV $(wslpath -w "$(realpath "$EV")" | sed 's/\\/\\\\/g')|" "$CASE" > "$TMPCASE"
+sed -e "s/^let P1CHR .*/let P1CHR $P1/" -e "s/^let P2CHR .*/let P2CHR $P2/" -e "s|^let EV .*|let EV $(wslpath -w "$CEV" | sed 's/\\/\\\\/g')|" "$CASE" > "$TMPCASE"
 SRCW="$(wslpath -w "$(realpath "$SRC")")"
 flock "$LOCK" bash -c '
 	if tasklist.exe 2>/dev/null | grep -i -q -E "^(uni2|uni2_booty[^ ]*|MBTL|MBAA|mbacPC[^ ]*|hantei4[^ ]*|RBO[^ ]*)\.exe "; then echo "a game is already running:"; tasklist.exe | grep -i -E "^(uni2|MBTL|MBAA|RBO)"; exit 1; fi
@@ -42,5 +44,6 @@ flock "$LOCK" bash -c '
 	exit $r' _ "$TX" "$G" "$GAMEDIR" "$KEY" "$SRCW" "$GC/build/gamecap.exe" "$TMPCASE" 2>&1 | tee "$EV/gamecap_run.log"
 rc=${PIPESTATUS[0]}
 rm -f "$TMPCASE"
+cp "$CEV"/*.png "$EV"/ 2>/dev/null
 L=$(ls -t "$FB"/build/inject/logs/*.log 2>/dev/null | head -1); [ -n "$L" ] && cp "$L" "$EV/fbmod.log"
 exit $rc

@@ -289,6 +289,16 @@ static int RealMain(int argc, char **argv) {
 	if (c == "check") return Check(argc - 2, argv + 2);
 	if (c == "refs" && argc >= 4) return Refs(argv[2], argv[3]);
 	if (c == "stripe" && argc >= 6) return Stripe(argv[2], argv[3], argv[4], argv[5], argc > 6 ? argv[6] : nullptr);
+	if (c == "export" && argc >= 5) {   // export <file> <id> <out.png>
+		Opened o; std::string err; if (!Open(argv[2], o, err)) { printf("error: %s\n", err.c_str()); return 1; }
+		if (!cgm::ExportPng(*o.src, atoi(argv[3]), argv[4], &err)) { printf("error: %s\n", err.c_str()); return 1; }
+		printf("exported %s %s -> %s\n", argv[2], argv[3], argv[4]); return 0;
+	}
+	if (c == "pattern-ids" && argc >= 4) {   // pattern-ids <x.ha6> <pattern>: the CG ids its frames draw
+		FrameData fd; if (!fd.load(argv[2])) return 1; Sequence *q = fd.get_sequence(atoi(argv[3])); if (!q) return 1;
+		std::set<int> ids; for (auto &fr : q->frames) for (auto &L : fr.AF.layers) if (!L.usePat && L.spriteId >= 0) ids.insert(L.spriteId);
+		for (int i : ids) printf("%d\n", i); return 0;
+	}
 	if (c == "list" && argc >= 3) {
 		Opened o; std::string err; if (!Open(argv[2], o, err)) { printf("error: %s\n", err.c_str()); return 1; }
 		for (int i = 0; i < o.src->count(); i++) { cgm::TexEntry e; if (o.src->entry(i, e) && e.present) printf("%4d %5d x %-5d %-22s %s\n", i, e.w, e.h, e.format.c_str(), e.name.c_str()); }
