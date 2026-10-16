@@ -376,7 +376,7 @@ struct ScriptPanel::Impl {
 		ImGui::SameLine();
 		char buf[512];
 		snprintf(buf, sizeof buf, "%s", hotGameDir().c_str());
-		ImGui::SetNextItemWidth(320);
+		ImGui::SetNextItemWidth(ui::Px(320));
 		if (ImGui::InputText(LBL("Game folder"), buf, sizeof buf)) {
 			hotGameDirSetting() = buf == DefaultGameDir(game) ? std::string() : std::string(buf);
 			ImGui::MarkIniSettingsDirty();
@@ -385,7 +385,7 @@ struct ScriptPanel::Impl {
 		ImGui::SameLine();
 		char pbuf[128];
 		snprintf(pbuf, sizeof pbuf, "%s", hotPipe.c_str());
-		ImGui::SetNextItemWidth(130);
+		ImGui::SetNextItemWidth(ui::Px(130));
 		if (ImGui::InputText("##hotpipe", pbuf, sizeof pbuf)) hotPipe = pbuf;
 		ImGui::SameLine(0, 0);
 		if (ImGui::BeginCombo(LBL("Pipe"), nullptr, ImGuiComboFlags_NoPreview)) {
@@ -400,7 +400,7 @@ struct ScriptPanel::Impl {
 		ImGui::SameLine();
 		const char* modes[] = {TXT("Rebuild (engine)"), TXT("Live (keep state)")};
 		int mode = gSettings.sqHotReloadMode == 1 ? 1 : 0;
-		ImGui::SetNextItemWidth(150);
+		ImGui::SetNextItemWidth(ui::Px(150));
 		if (ImGui::Combo(LBL("Reload mode"), &mode, modes, 2)) { gSettings.sqHotReloadMode = mode; ImGui::MarkIniSettingsDirty(); }
 		if (ImGui::IsItemHovered()) ImGui::SetTooltip("%s", TXT("Rebuild (engine): the game's own training-menu character switch. A full battle rebuild of about 1-3 s that picks up every change (HA6, CG, PAT, palettes, effects, scripts) but resets positions and meter.\nLive (keep state): reloads the character in place, so positions, meter and the current move are kept; use it for mid-move tests. It keeps the old character data in memory until the game restarts.\nBoth need a running training battle."));
 		if (!hotStatus.empty()) {
@@ -737,7 +737,7 @@ struct ScriptPanel::Impl {
 			ImGui::SetNextWindowPos(ImVec2(at.x, at.y + editor.GetLineHeight()));
 			ImGui::OpenPopup("##sqcomplete");
 		}
-		ImGui::SetNextWindowSizeConstraints(ImVec2(420, 0), ImVec2(900, 340));
+		ImGui::SetNextWindowSizeConstraints(ImVec2(ui::Px(420), 0), ImVec2(ui::Px(900), ui::Px(340)));
 		if (!ImGui::BeginPopup("##sqcomplete")) return;
 		if (ImGui::IsWindowAppearing()) ImGui::SetKeyboardFocusHere();
 		ImGui::SetNextItemWidth(-1);
@@ -760,7 +760,7 @@ struct ScriptPanel::Impl {
 			const auto t = acTag.find(*hits[i]);
 			if (ImGui::Selectable(hits[i]->c_str(), i == acSel)) chosen = hits[i];
 			if (t != acTag.end()) {
-				ImGui::SameLine(160);
+				ImGui::SameLine(ui::Px(160));
 				ImGui::TextColored(t->second.rfind("[engine]", 0) == 0 ? EngineCol() : ScriptCol(), "%s", t->second.c_str());
 			}
 			if (i == acSel && (ImGui::IsKeyPressed(ImGuiKey_DownArrow) || ImGui::IsKeyPressed(ImGuiKey_UpArrow))) ImGui::SetScrollHereY();
@@ -1232,7 +1232,7 @@ struct ScriptPanel::Impl {
 	void drawSearch()
 	{
 		if (focusSearch) { ImGui::SetKeyboardFocusHere(); focusSearch = false; }
-		ImGui::SetNextItemWidth(320);
+		ImGui::SetNextItemWidth(ui::Px(320));
 		bool go = ImGui::InputTextWithHint("##q", "search all scripts + pattern names (Enter)", searchBuf, sizeof searchBuf, ImGuiInputTextFlags_EnterReturnsTrue);
 		ImGui::SameLine(); go |= ImGui::Checkbox(LBL("Regex"), &searchOpt.regex);
 		ImGui::SameLine(); go |= ImGui::Checkbox(LBL("Whole word"), &searchOpt.wholeWord);
@@ -1274,7 +1274,7 @@ struct ScriptPanel::Impl {
 			ImGui::EndPopup();
 		}
 		if (askMissingMoves) { ImGui::OpenPopup(LBL("Missing moves###sqmissing")); askMissingMoves = false; }
-		ImGui::SetNextWindowSizeConstraints(ImVec2(460, 0), ImVec2(900, 600));
+		ImGui::SetNextWindowSizeConstraints(ImVec2(ui::Px(460), 0), ImVec2(ui::Px(900), ui::Px(600)));
 		if (ImGui::BeginPopupModal(LBL("Missing moves###sqmissing"), nullptr, ImGuiWindowFlags_AlwaysAutoResize)) {
 			ImGui::TextUnformatted(TXT("These moves are referenced but not found in the character's mv file:"));
 			for (const auto& p : pendingMissing) {
@@ -1561,7 +1561,7 @@ void ScriptPanel::draw()
 	}
 	ImGui::SameLine();
 	ImGui::BeginDisabled(m->root.empty());
-	ImGui::SetNextItemWidth(110);
+	ImGui::SetNextItemWidth(ui::Px(110));
 	const char* games[] = {"(auto)", "uni2", "mbtl", "dfci", "unib"};
 	int gi = 0;
 	for (int i = 1; i < 5; i++) if (m->game == games[i]) gi = i;
@@ -1597,8 +1597,31 @@ void ScriptPanel::draw()
 		ImGui::TextColored(m->statusError ? ErrCol() : ScriptCol(), "%s", m->status.c_str());
 	}
 
-	const float listW = 260.0f, logH = 190.0f;
-	ImGui::BeginChild("##files", ImVec2(listW, -logH), ImGuiChildFlags_Borders | ImGuiChildFlags_ResizeX);
+	// File list | editor | outline as one resizable table (drag the borders): 18% / 64% / 18% by default, the editor takes
+	// what the side columns leave. Either side column folds away with the toggles on the right of the toolbar.
+	static bool showFiles = true, showOutline = true;
+	{
+		const float tw = i18n::FieldWidth(ImGui::GetFrameHeight(), LBL("Files")) + ImGui::GetStyle().ItemSpacing.x
+			+ i18n::FieldWidth(ImGui::GetFrameHeight(), LBL("Outline"));
+		const float right = ImGui::GetWindowContentRegionMax().x;   // window-local
+		if (ImGui::GetItemRectMax().x - ImGui::GetWindowPos().x + ImGui::GetStyle().ItemSpacing.x + tw <= right) ImGui::SameLine();
+		ImGui::SetCursorPosX(std::max(ImGui::GetCursorPosX(), right - tw));
+		ImGui::Checkbox(LBL("Files"), &showFiles);
+		ImGui::SameLine();
+		ImGui::Checkbox(LBL("Outline"), &showOutline);
+	}
+	const float logH = ui::Px(190.0f);
+	const bool hasFile = !m->currentRel.empty();
+	ImGui::BeginChild("##sqcols", ImVec2(0, -logH), ImGuiChildFlags_None, ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_NoScrollWithMouse);
+	if (ImGui::BeginTable("##sqcolumns", 3, ImGuiTableFlags_Resizable | ImGuiTableFlags_Hideable | ImGuiTableFlags_BordersInnerV | ImGuiTableFlags_SizingStretchProp, ImVec2(0, ImGui::GetContentRegionAvail().y))) {
+		ImGui::TableSetupColumn("files", ImGuiTableColumnFlags_WidthStretch, 0.18f);
+		ImGui::TableSetupColumn("editor", ImGuiTableColumnFlags_WidthStretch | ImGuiTableColumnFlags_NoHide, 0.64f);
+		ImGui::TableSetupColumn("outline", ImGuiTableColumnFlags_WidthStretch, 0.18f);
+		ImGui::TableSetColumnEnabled(0, showFiles);
+		ImGui::TableSetColumnEnabled(2, showOutline && hasFile);
+		ImGui::TableNextRow(ImGuiTableRowFlags_None, ImGui::GetContentRegionAvail().y);
+	if (ImGui::TableSetColumnIndex(0)) {
+	ImGui::BeginChild("##files", ImVec2(0, 0), ImGuiChildFlags_Borders);
 	ImGui::SetNextItemWidth(-1);
 	char buf[128];
 	snprintf(buf, sizeof buf, "%s", m->filter.c_str());
@@ -1614,9 +1637,9 @@ void ScriptPanel::draw()
 		}
 	}
 	ImGui::EndChild();
-	ImGui::SameLine();
-	const float outlineW = m->currentRel.empty() ? 0.0f : 240.0f;
-	ImGui::BeginChild("##edit", ImVec2(outlineW > 0 ? -outlineW - ImGui::GetStyle().ItemSpacing.x : 0, -logH));
+	}
+	ImGui::TableSetColumnIndex(1);
+	ImGui::BeginChild("##edit", ImVec2(0, 0));
 	if (!m->currentRel.empty()) {
 		m->editor.Render("##sqtext", ImVec2(-1, -1));
 		m->drawHover();
@@ -1634,12 +1657,14 @@ void ScriptPanel::draw()
 		}
 	} else ImGui::TextDisabled("%s", TXT("Open a game folder (the one holding script/ and data/), then pick a script."));
 	ImGui::EndChild();
-	if (outlineW > 0) {
-		ImGui::SameLine();
-		ImGui::BeginChild("##outline", ImVec2(0, -logH), ImGuiChildFlags_Borders);
+	if (hasFile && ImGui::TableSetColumnIndex(2)) {
+		ImGui::BeginChild("##outline", ImVec2(0, 0), ImGuiChildFlags_Borders);
 		m->drawOutline();
 		ImGui::EndChild();
 	}
+		ImGui::EndTable();
+	}
+	ImGui::EndChild();
 	m->drawBottom();
 	m->drawPopups();
 	if (m->lastEditTime >= 0 && ImGui::GetTime() - m->lastEditTime > 0.6) { m->lastEditTime = -1.0; m->recheck(); }
