@@ -4,6 +4,10 @@
 // at 14 px and at 28 px, and Japanese labels (wider) get the room they need instead of a fixed pixel budget.
 #include <imgui.h>
 #include <algorithm>
+#include <cfloat>
+#include <cstdio>
+#include <cstring>
+#include <initializer_list>
 
 namespace ui {
 
@@ -66,5 +70,63 @@ inline void FormCell(const char *label)
 	ImGui::SetNextItemWidth(std::max(ImGui::GetContentRegionAvail().x, FieldW() * 0.6f));
 }
 inline void EndFormGrid() { ImGui::EndTable(); }
+
+// LabelForm: label-first rows ("label | field") on a two-column table. One label column width per display (LabelColW over
+// every label it shows) keeps the values of all its sections on one line, and the field fills the rest of the pane.
+// Labels are LBL()/TXT() strings; the part from "##" on is not drawn. A label wider than the column wraps, and its full
+// text is in a tooltip.
+//   const float lw = ui::LabelColW({LBL("Damage"), LBL("Meter gain")});
+//   if (ui::BeginLabelForm("dmg", lw)) { if (ImGui::InputInt(ui::FormRow(LBL("Damage")), &v, 0, 0)) ...; ui::EndLabelForm(); }
+inline float LabelTextW(const char *label) { return ImGui::CalcTextSize(label, nullptr, true).x; }
+inline float LabelColW(std::initializer_list<const char *> labels, float capFrac = 0.42f)
+{
+	float w = 0.f;
+	for (const char *l : labels) w = std::max(w, LabelTextW(l));
+	w += ImGui::GetStyle().ItemSpacing.x;
+	const float cap = std::max(Em(5.f), ImGui::GetContentRegionAvail().x * capFrac);
+	return std::min(w, cap);
+}
+inline bool BeginLabelForm(const char *id, float labelW)
+{
+	if (!ImGui::BeginTable(id, 2, ImGuiTableFlags_SizingFixedFit | ImGuiTableFlags_NoSavedSettings)) return false;
+	ImGui::TableSetupColumn("##label", ImGuiTableColumnFlags_WidthFixed, labelW);
+	ImGui::TableSetupColumn("##value", ImGuiTableColumnFlags_WidthStretch);
+	return true;
+}
+inline void EndLabelForm() { ImGui::EndTable(); }
+// "##<label>": the hidden-label id of a field whose label is drawn in the label column ("##日本語###Damage" keeps the
+// English "###Damage" id, so switching language keeps widget state).
+inline const char *HiddenId(const char *label)
+{
+	static char buf[16][192];
+	static int slot = 0;
+	slot = (slot + 1) & 15;
+	std::snprintf(buf[slot], sizeof buf[slot], "##%s", label);
+	return buf[slot];
+}
+// Starts a row: the label in the label column, then moves to the value column with the next item filling it.
+// Returns the hidden id to give the field.
+inline const char *FormRow(const char *label)
+{
+	ImGui::TableNextRow();
+	ImGui::TableSetColumnIndex(0);
+	ImGui::AlignTextToFramePadding();
+	const char *end = std::strstr(label, "##");
+	const float colW = ImGui::GetContentRegionAvail().x;
+	const bool overflow = ImGui::CalcTextSize(label, end).x > colW;
+	ImGui::PushTextWrapPos(ImGui::GetCursorPosX() + colW);
+	ImGui::TextUnformatted(label, end);
+	ImGui::PopTextWrapPos();
+	if (overflow && ImGui::IsItemHovered()) ImGui::SetTooltip("%.*s", end ? int(end - label) : int(std::strlen(label)), label);
+	ImGui::TableSetColumnIndex(1);
+	ImGui::SetNextItemWidth(-FLT_MIN);
+	return HiddenId(label);
+}
+// A sub-header between the forms of one display (damage, hitstop, vectors ...).
+inline void FormSection(const char *title)
+{
+	ImGui::Dummy(ImVec2(0.f, ImGui::GetStyle().ItemSpacing.y * 0.5f));
+	ImGui::SeparatorText(title);
+}
 
 }  // namespace ui
