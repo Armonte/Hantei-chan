@@ -1,0 +1,13 @@
+# Squirrel script panel on UNI2 chr001: file open, hover over natives (Battle_Std / BMvTbl), problems list.
+openany C:/dev/hantei-chan/gamedata/uni2/data/chr001/chr001_0.txt
+wait 30
+sq open C:/dev/hantei-chan/gamedata/uni2
+sq file data/chr001/chr001_cmd_0.txt
+sq goto 31 0
+sq hover Battle_Std.GetHaimenGamenHajiDistance
+wait 30
+capture C:/dev/hantei-chan/work/ab/feat_squirrel_hover.png
+sq hover BMvTbl
+wait 20
+capture C:/dev/hantei-chan/work/ab/feat_squirrel_hover2.png
+quit
