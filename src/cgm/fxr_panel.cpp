@@ -4,7 +4,11 @@
 #include "../cg.h"
 #include "../character_instance.h"
 #include "../i18n.h"
+#include "../game_table.h"
+#include "../png_writer.h"
 #include <algorithm>
+#include <cctype>
+#include <cmath>
 #include <cstdarg>
 #include <cstdio>
 #include <cstdlib>
@@ -31,15 +35,37 @@ static ImVec4 V4(fx::Rgb c) { return ImVec4(c.r, c.g, c.b, 1.f); }
 FxPanel::~FxPanel() { freeTex(); }
 void FxPanel::freeTex() { for (auto &t : tex) if (t.second.id) glDeleteTextures(1, &t.second.id); tex.clear(); }
 
-std::string FxPanel::defaultPath(CharacterInstance &ch) const {
+// The MBAACC game folder the ini belongs in: the install the character's files came from (a folder holding MBAA.exe, up to 3 levels above
+// the .pal / .cg / .HA6), else the configured folder (File > Open game folder remembers it), else the detected install (Steam / common paths).
+// "" when none is known: the panel never falls back to the exe's working directory.
+static bool IsMbaaccRoot(const std::filesystem::path &d) { std::error_code ec; return !d.empty() && std::filesystem::is_regular_file(d / "MBAA.exe", ec); }
+std::string FxPanel::mbaaccGameDir(const CharacterInstance &ch) {
 	namespace fs = std::filesystem;
-	std::string pp = ch.cg.palettePath(0);
+	std::vector<std::string> files = { ch.cg.palettePath(0), ch.getCGPath(), ch.getTopHA6Path() };
+	for (const std::string &h : ch.getHA6Paths()) files.push_back(h);
+	for (const std::string &f : files) {
+		if (f.empty()) continue;
+		fs::path d = fs::u8path(f).parent_path();
+		for (int k = 0; k < 4 && !d.empty(); k++, d = d.parent_path()) { if (IsMbaaccRoot(d)) return d.u8string(); if (d == d.parent_path()) break; }
+	}
+	const std::string rem = abrowser::RememberedDir(abrowser::Game::MBAACC);
+	if (!rem.empty() && IsMbaaccRoot(fs::u8path(rem))) return rem;
+	const abrowser::Install &in = abrowser::InstallOf(abrowser::Game::MBAACC);
+	if (!in.path.empty()) return in.path;
+	if (const abrowser::GameDef *g = abrowser::FindGame(abrowser::Game::MBAACC))
+		for (const char *c : g->commonPaths) if (IsMbaaccRoot(fs::u8path(c))) return c;
+	return "";
+}
+
+std::string FxPanel::defaultPath(const CharacterInstance &ch) {
+	namespace fs = std::filesystem;
 	std::string stem = ch.getName();
+	const std::string pp = ch.cg.palettePath(0), cgp = ch.getCGPath();
+	if (!pp.empty()) stem = fs::u8path(pp).stem().string(); else if (!cgp.empty()) stem = fs::u8path(cgp).stem().string();
 	for (char &c : stem) c = (char)tolower((unsigned char)c);
-	fs::path dir = pp.empty() ? fs::path(".") : fs::u8path(pp).parent_path();
-	if (!pp.empty()) { stem = fs::u8path(pp).stem().string(); for (char &c : stem) c = (char)tolower((unsigned char)c); }
-	if (dir.filename() == "data") dir = dir.parent_path();   // <game>\data\<char>.pal -> <game>\fxrecolor\<char>.ini
-	return (dir / "fxrecolor" / (stem + ".ini")).u8string();
+	charStem = stem;
+	const std::string dir = mbaaccGameDir(ch);
+	return dir.empty() ? std::string() : (fs::u8path(dir) / "fxrecolor" / (stem + ".ini")).u8string();   // <game>\fxrecolor\<char>.ini
 }
 
 const unsigned *FxPanel::slotPal(CharacterInstance &ch, int slot) const { return ch.cg.paletteAt(slot, 0); }
@@ -56,17 +82,37 @@ void FxPanel::reset(CharacterInstance &ch, const Bank *bank, const UsageIndex &u
 		std::vector<const uint32_t *> pals; for (int s = 0; s < nSlots; s++) pals.push_back(ch.cg.paletteAt(s, 0));
 		accentCands = SuggestAccentIndices(bodyHist, pals, 6);
 	}
-	if (path.empty()) path = defaultPath(ch);
-	if (const char *st = std::getenv("HANTEI_FXR_SELFTEST")) { static bool done = false; if (bank && !done) { done = true; selfTest(st); return; } }
-	static bool demo = std::getenv("HANTEI_FXR_DEMO") != nullptr;   // screenshot / test hook: DGV ruleset loaded, first ruled pattern selected
-	if (demo && bank && rules.rules.empty()) {
-		LoadRules(DgvAkihaIni(), rules, parserMsgs); ruleSel = 0;
-		for (const FxPatternRow &p : cls.patterns) if (RuleOfPattern(rules, p, 0)) { sel = p.pattern; break; }
-		if (!strcmp(std::getenv("HANTEI_FXR_DEMO"), "accent") && sel >= 0) {   // a per-pattern accent rule on top of the DGV groups
-			fx::Rule nr = DefaultRule("demo_accent"); if (!accentCands.empty()) nr.accentIdx = { accentCands[0].index };
-			nr.patterns = { sel }; rules.rules.insert(rules.rules.begin(), nr); ruleSel = 0;
+	if (pathAuto) path = defaultPath(ch);   // follows the character / bank until the user types or picks another file
+	if (const char *st = std::getenv("HANTEI_FXR_SELFTEST")) { static bool done = false; if (!done) { done = true; selfTest(st); return; } }
+}
+
+bool FxPanel::selfTestPending() const {
+	static bool want = std::getenv("HANTEI_FXR_SELFTEST") != nullptr;
+	return want && owner == nullptr;
+}
+
+void FxPanel::importDgv(bool accentFollow) {
+	parserMsgs.clear();
+	const int n = LoadRules(DgvAkihaIni(), rules, parserMsgs);
+	if (accentFollow) {
+		// accent index: of the suggested body indices, the one whose slot-0 colour is closest in hue to DGV's red, so slot 0 keeps his look
+		// and the other slots follow that same palette entry
+		std::vector<int> idx;
+		const uint32_t *p0 = owner ? owner->cg.paletteAt(0, 0) : nullptr;
+		float best = 1e9f;
+		const fx::Lab red = fx::srgbToOklab({ 0xeb / 255.f, 0.f, 0.f });
+		for (const AccentCandidate &c : accentCands) {
+			if (!p0) { idx = { c.index }; break; }
+			uint32_t rp[256]; ToRuntimePalette(p0, rp); const fx::Lab l = fx::srgbToOklab(fx::autoAccent(rp, { c.index }));
+			const float C = std::sqrt(l.a * l.a + l.b * l.b); if (C < 0.05f) continue;
+			float d = std::fabs(std::atan2(l.b, l.a) - std::atan2(red.b, red.a)); if (d > 3.14159265f) d = 6.2831853f - d;
+			if (d < best) { best = d; idx = { c.index }; }
 		}
-	}
+		if (idx.empty() && !accentCands.empty()) idx = { accentCands[0].index };
+		rules = DgvAccentFollow(rules, idx);
+		status = Fmt(TXT("Imported %d DGV groups, palette-following (accent tokens; Akiha only: sprite ids are Akiha's)"), n);
+	} else status = Fmt(TXT("Imported %d DGV groups (Akiha only: sprite ids are Akiha's)"), n);
+	ruleSel = rules.rules.empty() ? -1 : 0; freeTex();
 }
 
 bool FxPanel::loadFile() {
@@ -75,7 +121,14 @@ bool FxPanel::loadFile() {
 	parserMsgs.clear(); const int n = LoadRules(t, rules, parserMsgs); saved = rules; status = Fmt(TXT("Loaded %d rules"), n); ruleSel = rules.rules.empty() ? -1 : 0; freeTex();
 	return true;
 }
-bool FxPanel::saveFile() {
+bool FxPanel::saveFile(bool askFolder) {
+	if (path.empty()) {   // no MBAACC folder known: ask (never write next to the exe)
+		if (!askFolder) { status = TXT("No MBAACC game folder is known: set the file path or pick the game folder."); return false; }
+		const std::string dir = BrowseForFolderUtf8("");
+		if (dir.empty()) { status = TXT("Save cancelled: no game folder picked."); return false; }
+		path = (std::filesystem::u8path(dir) / "fxrecolor" / ((charStem.empty() ? std::string("char") : charStem) + ".ini")).u8string();
+		pathAuto = false;
+	}
 	std::error_code ec; std::filesystem::create_directories(std::filesystem::u8path(path).parent_path(), ec);
 	std::ofstream f(std::filesystem::u8path(path), std::ios::binary);
 	if (!f) { status = TXT("Cannot write that file."); return false; }
@@ -94,7 +147,7 @@ void FxPanel::selfTest(const std::string &dir) {
 	std::string rep; int fails = 0;
 	auto chk = [&](bool ok, const std::string &what) { rep += std::string(ok ? "PASS " : "FAIL ") + what + "\n"; fails += !ok; };
 	std::error_code ec; fs::create_directories(fs::u8path(dir), ec);
-	path = (fs::u8path(dir) / "selftest.ini").u8string();
+	path = (fs::u8path(dir) / "selftest.ini").u8string(); pathAuto = false;
 	rules = fx::CharRules(); picked.clear();
 	LoadRules(DgvAkihaIni(), rules, parserMsgs);
 	const size_t nDgv = rules.rules.size();
@@ -107,6 +160,32 @@ void FxPanel::selfTest(const std::string &dir) {
 	rules = fx::CharRules(); chk(loadFile(), "load"); chk(rules.rules.size() == nDgv && SaveRules(rules) == saved1, "load/save round trip is text-identical");
 	// new rule from ticked patterns, with the new fields
 	for (const FxPatternRow &p : cls.patterns) { if (picked.size() >= 3) break; picked.push_back(p.pattern); }
+	for (int p = 0; picked.size() < 3 && p < 3; p++) if (std::find(picked.begin(), picked.end(), p) == picked.end()) picked.push_back(p);   // no CG bank (fixture): any pattern ids
+	// accent-following DGV variant: every chromatic stop is a token, grey groups untouched, ids suffixed
+	{
+		fx::CharRules acc = DgvAccentFollow(rules, { 7 });
+		bool tok = true, grey = true, ids = true;
+		for (size_t i = 0; i < acc.rules.size(); i++) {
+			const fx::Rule &a = acc.rules[i]; const fx::Rule &o = rules.rules[i];
+			bool anyTok = false; for (auto &st : a.ramp) anyTok |= st.tok != fx::ColTok::Literal;
+			if (o.id == "dgv_01" || o.id == "dgv_02") grey &= !anyTok && a.id == o.id; else { tok &= anyTok && a.accentIdx == std::vector<int>{ 7 }; ids &= a.id == o.id + "_acc"; }
+		}
+		chk(tok && ids, "accent-follow DGV: colour groups use accent tokens + accent_idx, ids get _acc");
+		chk(grey, "accent-follow DGV: grey-only groups stay literal");
+		fx::CharRules back2; std::string e2; LoadRules(SaveRules(acc), back2, e2);
+		chk(e2.empty() && SaveRules(back2) == SaveRules(acc), "accent-follow DGV round-trips through the runtime parser");
+		// the variant follows the slot: two different accents give different colours for the same mid-tone input
+		const int ri = FindRuleIndex(acc, "dgv_00_acc");
+		if (ri >= 0) {
+			fx::Rule r2 = acc.rules[ri]; r2.accentIdx.clear();
+			fx::SlotOv o0; o0.slot = 0; o0.hasAccent = true; o0.accent = { 0.9f, 0.1f, 0.1f };
+			fx::SlotOv o1; o1.slot = 1; o1.hasAccent = true; o1.accent = { 0.1f, 0.3f, 0.95f };
+			r2.ov = { o0, o1 };
+			fx::Packed p0, p1; fx::pack(r2, 0, nullptr, p0); fx::pack(r2, 1, nullptr, p1);
+			const fx::Rgb a = fx::applyCpu(p0, { 0.5f, 0.5f, 0.5f }), b = fx::applyCpu(p1, { 0.5f, 0.5f, 0.5f });
+			chk(a.r > a.b && b.b > b.r, "accent-follow DGV: a red slot gives red, a blue slot gives blue");
+		} else chk(false, "accent-follow DGV has dgv_00_acc");
+	}
 	chk(picked.size() == 3, "ticked 3 patterns");
 	newRuleFromTicked();
 	fx::Rule &nr = rules.rules[0];
@@ -350,11 +429,16 @@ void FxPanel::draw(CharacterInstance &ch, const Bank *bank, const UsageIndex &us
 		const float sp = ImGui::GetStyle().ItemSpacing.x;
 		const float btnW = i18n::ButtonWidth(LBL("Load")) + i18n::ButtonWidth(LBL("Save")) + i18n::ButtonWidth(LBL("Import DGV Akiha ruleset")) + i18n::ButtonWidth(LBL("Diff vs file")) + sp * 4;
 		ImGui::SetNextItemWidth(std::max(ui::Em(14.f), ImGui::GetContentRegionAvail().x - btnW));
-		if (ImGui::InputText("##fxpath", pb, sizeof pb)) path = pb;
+		if (ImGui::InputTextWithHint("##fxpath", TXT("no MBAACC game folder known: Save asks for it"), pb, sizeof pb)) { path = pb; pathAuto = false; }
 		ui::SameLineButton(LBL("Load")); if (ImGui::Button(LBL("Load"))) loadFile();
-		ui::SameLineButton(LBL("Save")); if (ImGui::Button(LBL("Save"))) saveFile();
-		ui::SameLineButton(LBL("Import DGV Akiha ruleset")); if (ImGui::Button(LBL("Import DGV Akiha ruleset"))) {
-			parserMsgs.clear(); const int n = LoadRules(DgvAkihaIni(), rules, parserMsgs); status = Fmt(TXT("Imported %d DGV groups (Akiha only: sprite ids are Akiha's)"), n); ruleSel = rules.rules.empty() ? -1 : 0; freeTex();
+		ui::SameLineButton(LBL("Save")); if (ImGui::Button(LBL("Save"))) saveFile(true);
+		ui::SameLineButton(LBL("Import DGV Akiha ruleset")); if (ImGui::Button(LBL("Import DGV Akiha ruleset"))) ImGui::OpenPopup("##fximport");
+		if (ImGui::BeginPopup("##fximport")) {
+			if (ImGui::MenuItem(LBL("DGV Akiha: fixed red (original)"))) importDgv(false);
+			ImGui::SetItemTooltip("%s", TXT("DGV's ramps as he painted them: the same red in every palette slot."));
+			if (ImGui::MenuItem(LBL("DGV Akiha: follows the palette slot (accent)"))) importDgv(true);
+			ImGui::SetItemTooltip("%s", TXT("DGV's groups with the red stops turned into accent tokens: each palette slot recolours the effects with its own accent colour."));
+			ImGui::EndPopup();
 		}
 		ui::SameLineButton(LBL("Diff vs file")); if (ImGui::Button(LBL("Diff vs file"))) ImGui::OpenPopup("##fxdiff");
 		if (ImGui::BeginPopup("##fxdiff")) { ImGui::TextUnformatted(DiffRules(saved, rules).c_str()); ImGui::EndPopup(); }
@@ -454,6 +538,54 @@ void FxPanel::draw(CharacterInstance &ch, const Bank *bank, const UsageIndex &us
 	drawRuleEditor(ch, bank);
 	ImGui::EndChild();
 	if (split) ImGui::EndTable();
+}
+
+bool FxPanel::script(const std::string &arg, std::string *msg) {
+	const size_t sp = arg.find(' ');
+	const std::string sub = arg.substr(0, sp), val = sp == std::string::npos ? std::string() : arg.substr(sp + 1);
+	auto fail = [&](const std::string &m) { if (msg) *msg = "fxr " + sub + ": " + m; return false; };
+	if (!owner) return fail("draw the Effect recolor tab first (cgm tab Effect recolor + wait)");
+	if (sub == "import") {
+		if (val == "dgv") importDgv(false); else if (val == "dgv-accent") importDgv(true); else return fail("want dgv | dgv-accent");
+		return true;
+	}
+	if (sub == "rule") {
+		int i = FindRuleIndex(rules, val);
+		if (i < 0 && !val.empty() && isdigit((unsigned char)val[0])) i = atoi(val.c_str());
+		if (i < 0 || i >= (int)rules.rules.size()) return fail("no rule " + val);
+		ruleSel = i; return true;
+	}
+	if (sub == "pattern") {
+		if (val == "first") {   // first effect pattern the current rules colour
+			for (const FxPatternRow &p : cls.patterns) if (RuleOfPattern(rules, p, slotSel)) { sel = p.pattern; spriteSel = -1; return true; }
+			return fail("no ruled effect pattern");
+		}
+		if (!cls.find(atoi(val.c_str()))) return fail("pattern " + val + " is not an effect pattern");
+		sel = atoi(val.c_str()); spriteSel = -1; return true;
+	}
+	if (sub == "sprite") { spriteSel = atoi(val.c_str()); return true; }
+	if (sub == "slot") { const int s = atoi(val.c_str()); if (s < 0 || s >= std::max(1, nSlots)) return fail("slot out of range"); slotSel = s; return true; }
+	if (sub == "accent") {   // on the selected rule: palette index, auto (the suggested body index), or a fixed override for the selected slot
+		if (ruleSel < 0 || ruleSel >= (int)rules.rules.size()) return fail("no rule selected");
+		fx::Rule &r = rules.rules[ruleSel];
+		if (val == "auto") { if (accentCands.empty()) return fail("no accent candidates"); r.accentIdx = { accentCands[0].index }; }
+		else if (!val.empty() && val[0] == '#') {
+			fx::Rgb c; if (!fx::parseHex(val, c)) return fail("bad colour " + val);
+			fx::SlotOv *o = nullptr; for (auto &x : r.ov) if (x.slot == slotSel) o = &x;
+			if (!o) { r.ov.emplace_back(); o = &r.ov.back(); o->slot = slotSel; }
+			o->hasAccent = true; o->accent = c;
+		} else if (!val.empty() && isdigit((unsigned char)val[0])) r.accentIdx = fx::parseInts(val);
+		else return fail("want <index> | auto | #rrggbb");
+		freeTex(); return true;
+	}
+	if (sub == "path") { pathAuto = val.empty(); path = pathAuto ? defaultPath(*owner) : val; return true; }   // empty = back to <game>\fxrecolor\<char>.ini
+	if (sub == "load") { if (!val.empty()) { path = val; pathAuto = false; } return loadFile() || fail(status); }
+	if (sub == "save") { if (!val.empty()) { path = val; pathAuto = false; } return saveFile(false) || fail(status); }   // scripts never open the folder picker
+	if (sub == "status") {
+		if (msg) *msg = Fmt("fxr status: path='%s' auto=%d rules=%zu rule=%d pattern=%d slot=%d | %s", path.c_str(), (int)pathAuto, rules.rules.size(), ruleSel, sel, slotSel, status.c_str());
+		return false;   // like `cgm status`: the message lands in the script log
+	}
+	return fail("unknown (import|rule|pattern|sprite|slot|accent|path|load|save|status)");
 }
 
 } // namespace cgm

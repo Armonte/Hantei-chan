@@ -1159,6 +1159,12 @@ endforeach()
 
 # Effect recolour authoring (docs/cg/fxrecolor_config_spec.md): ruleset text round trip through the runtime's own parser/writer.
 add_test(NAME fxr_ini COMMAND cgmtool fxr check docs/cg/effect_recolor_data/dgv_akiha.ini WORKING_DIRECTORY ${CMAKE_SOURCE_DIR})
+add_test(NAME fxr_ini_accent COMMAND cgmtool fxr check docs/cg/effect_recolor_data/dgv_akiha_accent.ini WORKING_DIRECTORY ${CMAKE_SOURCE_DIR})
+# Effect recolor tab self-test (--fxr-selftest, FxPanel::selfTest) headless: game-data-free on the committed fixture, plus the real Akiha
+# bank when C:\games\mbaacc is present (exit 77 = skipped otherwise).
+add_test(NAME fxr_selftest COMMAND bash tools/fxrecolor/fxr_selftest_ctest.sh $<TARGET_FILE:gonptechan> tests/fixtures/headless/chr000.ha6 - "${CMAKE_BINARY_DIR}/fxr_selftest_out" WORKING_DIRECTORY ${CMAKE_SOURCE_DIR})
+add_test(NAME fxr_selftest_akiha COMMAND bash tools/fxrecolor/fxr_selftest_ctest.sh $<TARGET_FILE:gonptechan> /mnt/c/games/mbaacc/data/akiha.HA6 /mnt/c/games/mbaacc/data/akiha.cg "${CMAKE_BINARY_DIR}/fxr_selftest_akiha_out" WORKING_DIRECTORY ${CMAKE_SOURCE_DIR})
+set_tests_properties(fxr_selftest fxr_selftest_akiha PROPERTIES LABELS gpu SKIP_RETURN_CODE 77)
 # Shared-bank safety and cgtool workflows on real game data (skipped when the data is absent): an insert / move / delete
 # rewrites the references of EVERY project that draws the bank (MBAACC moons + b_akiha, MBTL variants), shared files stay
 # untouched, the inverse gives every file back byte-identical; cgtool folder import / sync / build / resized replace.

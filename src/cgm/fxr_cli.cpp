@@ -3,7 +3,7 @@
 //   fxr check <rules.ini>                           parse -> write -> parse is lossless; prints the parser messages
 //   fxr shade <rules.ini> <ruleId> [slot [pal]]     stdin: W H then W*H*4 RGBA bytes; stdout: the same recoloured by the rule (the runtime's shader maths)
 //   fxr apply <bank.cg> <rules.ini> <slot> <pal> <outdir>   PNGs of every recoloured fixed sprite (pal = a .pal file, MBAACC layout)
-//   fxr dgv                                          writes DGV's Akiha starter ruleset to stdout
+//   fxr dgv [--accent [idx]]                         writes DGV's Akiha starter ruleset (or its palette-following variant) to stdout
 #include "fxr_core.h"
 #include "cgm_palette.h"
 #include "../framedata.h"
@@ -113,6 +113,15 @@ int FxrMain(int argc, char **argv) {
 	if (c == "check") return Check(argc - 1, argv + 1);
 	if (c == "shade") return Shade(argc - 1, argv + 1);
 	if (c == "apply") return Apply(argc - 1, argv + 1);
-	if (c == "dgv") { fputs(cgm::DgvAkihaIni(), stdout); return 0; }
+	if (c == "dgv") {   // dgv [--accent [idx,...]]: the fixed-red original, or the palette-following variant
+		if (argc > 1 && std::string(argv[1]) == "--accent") {
+			cgm::fx::CharRules c0; std::string err; cgm::LoadRules(cgm::DgvAkihaIni(), c0, err);
+			const std::vector<int> idx = argc > 2 ? cgm::fx::parseInts(argv[2]) : std::vector<int>{};
+			fputs("; \"Better Akiha\" by DGV, palette-following variant (generated: cgmtool fxr dgv --accent). Chromatic ramp stops are accent tokens,\n"
+			      "; so each palette slot recolours the effects with its own accent; neutral stops keep DGV's luminance shape. Credit: DGV, \"Better Akiha v2\".\n\n", stdout);
+			fputs(cgm::SaveRules(cgm::DgvAccentFollow(c0, idx)).c_str(), stdout); return 0;
+		}
+		fputs(cgm::DgvAkihaIni(), stdout); return 0;
+	}
 	puts("unknown fxr command"); return 2;
 }

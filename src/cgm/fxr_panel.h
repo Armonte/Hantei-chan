@@ -17,6 +17,10 @@ public:
 	// Draws the tab body. bank may be null (foreign banks: nothing to classify). navigate(pattern, frame) shows a pattern in the main view.
 	void draw(CharacterInstance &ch, const Bank *bank, const UsageIndex &usage, const std::function<void(int, int)> &navigate);
 	~FxPanel();
+	// ui-script (`cgm fxr <sub> [arg]`, see Window::script): import dgv|dgv-accent, rule <id|index>, pattern <id|first>, slot <n>,
+	// accent <index|auto|#rrggbb>, path <file>, load, save [file], status. The tab must have been drawn once (it binds the character).
+	bool script(const std::string &arg, std::string *msg);
+	bool selfTestPending() const;    // --fxr-selftest given and not yet run (the CG manager then draws the tab even without a CG bank)
 private:
 	struct Tex { unsigned id = 0; int w = 0, h = 0; };
 	const CharacterInstance *owner = nullptr;
@@ -25,6 +29,8 @@ private:
 	FxClassification cls;
 	fx::CharRules rules, saved;      // saved = the last loaded/saved state (diff report)
 	std::string path, status, parserMsgs;
+	bool pathAuto = true;            // path is the derived default (follows the character); false once typed / loaded / saved elsewhere
+	std::string charStem;            // lowercase roster stem of the bound character (<char>.ini)
 	int nSlots = 0;
 	std::vector<uint32_t> bodyHist; std::vector<AccentCandidate> accentCands;   // body index usage / suggested accent indices (lazy)
 	// view state
@@ -38,9 +44,11 @@ private:
 	// preview cache
 	std::unordered_map<std::string, Tex> tex;
 	void freeTex();
-	bool loadFile(); bool saveFile(); void newRuleFromTicked(); void selfTest(const std::string &dir);
+	bool loadFile(); bool saveFile(bool askFolder = false); void newRuleFromTicked(); void selfTest(const std::string &dir);
+	void importDgv(bool accentFollow);
 	void reset(CharacterInstance &ch, const Bank *bank, const UsageIndex &usage);
-	std::string defaultPath(CharacterInstance &ch) const;
+	std::string defaultPath(const CharacterInstance &ch);
+	static std::string mbaaccGameDir(const CharacterInstance &ch);   // "" = unknown (Save then asks with a folder picker)
 	const unsigned *slotPal(CharacterInstance &ch, int slot) const;
 	Tex &preview(CharacterInstance &ch, const Bank &bank, int image, const fx::Rule *rule, int slot);
 	void drawRuleEditor(CharacterInstance &ch, const Bank *bank);

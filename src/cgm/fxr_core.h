@@ -74,6 +74,9 @@ std::string DiffRules(const fx::CharRules &before, const fx::CharRules &after);
 
 // DGV's Akiha groups as a ruleset (embedded text, fxr_dgv_akiha.inc).
 const char *DgvAkihaIni();
+// The same groups made palette-following: chromatic ramp stops become accent / accent.dark / accent.light (nearest in Oklab), neutral stops stay;
+// rule ids get "_acc"; accentIdx (if not empty) is written as every rule's accent_idx. Grey-only ramps are kept as they are.
+fx::CharRules DgvAccentFollow(const fx::CharRules &dgv, const std::vector<int> &accentIdx = {});
 
 } // namespace cgm
 #endif
