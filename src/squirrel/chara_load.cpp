@@ -105,6 +105,17 @@ std::vector<std::string> TakeDevWarnings(HSQUIRRELVM v)
 
 } // namespace
 
+LoadProfile LoadProfileFor(const std::string& game)
+{
+	LoadProfile p;
+	if (game == "unib") {   // UNIB arcade RingGame: Sq setup 0x787B00 (Init, Std only); loader 0x72AD80: cmd/mv 0x72A950, then sc
+		p.comBase = false;
+		p.scFirst = false;
+		p.pushObject = false;
+	}
+	return p;
+}
+
 bool CharaLoadResult::ok() const
 {
 	for (const auto& i : issues)
@@ -121,7 +132,8 @@ void InstallDevWarningObserver(HSQUIRRELVM v)
 }
 
 CharaLoadResult LoadCharacterScripts(HSQUIRRELVM v, const std::string& chrDirRel, LoadContext& ctx, const RunScriptFn& run,
-	const std::function<bool(const std::string& rel)>& exists, const std::function<std::string(const std::string& rel)>& readFile)
+	const std::function<bool(const std::string& rel)>& exists, const std::function<std::string(const std::string& rel)>& readFile,
+	const LoadProfile& prof)
 {
 	CharaLoadResult r;
 	const size_t sl = chrDirRel.find_last_of('/');
@@ -195,13 +207,16 @@ CharaLoadResult LoadCharacterScripts(HSQUIRRELVM v, const std::string& chrDirRel
 			r.issues.push_back({CharaLoadIssue::RuntimeError, errFile.empty() ? rel : errFile, line, "", err});
 		return true;
 	};
-	if (step(scF)) {
-		if (RootSlotType(v, "Battle_Status") != "table")
-			r.issues.push_back({CharaLoadIssue::MissingTable, scF, 0, "",
-				"the sc file does not define the root table Battle_Status that the engine reads the character's status from"});
-		RunSnippet(v, "if( \"Battle_Status\" in getroottable() ) { delete Battle_Status; }", "__DeleteRootInTable");
-	}
-	ctx.objectPushed = true;   // the loader pushes the character before LoadCommandList
+	auto runSc = [&] {
+		if (step(scF)) {
+			if (RootSlotType(v, "Battle_Status") != "table")
+				r.issues.push_back({CharaLoadIssue::MissingTable, scF, 0, "",
+					"the sc file does not define the root table Battle_Status that the engine reads the character's status from"});
+			RunSnippet(v, "if( \"Battle_Status\" in getroottable() ) { delete Battle_Status; }", "__DeleteRootInTable");
+		}
+	};
+	if (prof.scFirst) runSc();
+	ctx.objectPushed = prof.pushObject;   // UNI2/MBTL/DFCI push the character before LoadCommandList; UNIB does not
 	if (step(cmdF)) {
 		// The loaders (MBTL 0x812A80, DFCI 0x80F230) only require the slot to be non-null, then read its entries: a value that
 		// is not an array gives no commands (DFCI support characters set it to 0 on purpose).
@@ -219,6 +234,10 @@ CharaLoadResult LoadCharacterScripts(HSQUIRRELVM v, const std::string& chrDirRel
 		if (t != "table")
 			r.issues.push_back({CharaLoadIssue::MissingTable, mvF, 0, "",
 				CHR + "_MoveTable is " + (t.empty() ? "not defined" : t) + " after the mv file: the engine has no moves for the character"});
+	}
+	if (!prof.scFirst) {
+		ctx.objectPushed = false;
+		runSc();
 	}
 	step(comF);
 	SetLoadContext(v, nullptr);

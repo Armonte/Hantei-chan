@@ -31,6 +31,7 @@ struct ScriptVM::Impl {
 	HSQUIRRELVM v = nullptr;
 	fs::path root;
 	std::string apiPath;
+	LoadProfile profile;
 	LogFn log;
 	Diagnostic compileErr;
 	Diagnostic runtimeErr;
@@ -290,6 +291,7 @@ Diagnostic ScriptVM::bootstrap()
 	m->bootstrapped = true;
 	m->bootDiag = {};
 	for (const char* entry : {"script/Battle_Init.txt", "script/Battle_Std.txt", "data/_combase.txt"}) {
+		if (!m->profile.comBase && std::string(entry) == "data/_combase.txt") continue;
 		const fs::path p = m->root / entry;
 		if (!fs::exists(p)) continue;
 		Diagnostic d = RunFile(m->v, p, std::string("./") + entry);
@@ -298,6 +300,8 @@ Diagnostic ScriptVM::bootstrap()
 	}
 	return m->bootDiag;
 }
+
+void ScriptVM::setLoadProfile(const LoadProfile& p) { m->profile = p; }
 
 CharaLoadResult ScriptVM::checkCharacter(const std::string& chrDirRel, LoadContext ctx, const std::string& overrideRel,
 	const std::string& overrideBytes)
@@ -341,7 +345,7 @@ CharaLoadResult ScriptVM::checkCharacter(const std::string& chrDirRel, LoadConte
 		ReadFile(m->root / fs::u8path(rel), b);
 		return b;
 	};
-	return LoadCharacterScripts(m->v, chrDirRel, ctx, run, exists, read);
+	return LoadCharacterScripts(m->v, chrDirRel, ctx, run, exists, read, m->profile);
 }
 
 Diagnostic ScriptVM::compile(const std::string& bytes, const std::string& name)

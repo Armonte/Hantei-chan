@@ -94,10 +94,21 @@ def _push_kind(ea, depth=3, seen=None):
             # the tag prints as a number, or as &unk_<hex> when IDA reads it as an address inside the image
             if re.search(r'=\s*(?:' + tag + r'|\([^)]*\)\s*&unk_' + format(int(tag), 'X') + r'|&unk_' + format(int(tag), 'X') + r')\s*;', t):
                 return k
-    for callee in re.findall(r'\b(sub_[0-9A-F]+|Sqrat_PushVar\w*)\(', t):
-        k = _push_kind(_name_ea(callee) or 0, depth - 1, seen)
-        if k:
-            return k
+    # follow the call instructions by address: library signatures can mislabel folded helpers (UNIB's int push shows up as
+    # "operator delete(...)" after identical-code folding)
+    # The value push is the last call that is not a read / error helper: walk the calls backwards.
+    f = ida_funcs.get_func(ea)
+    if f is not None:
+        calls = [h for h in idautils.FuncItems(f.start_ea)
+                 if idc.print_insn_mnem(h) == 'call' and idc.get_operand_type(h, 0) in (idc.o_near, idc.o_far)]
+        for h in reversed(calls):
+            tgt = idc.get_operand_value(h, 0)
+            n = idc.get_name(tgt)
+            if n.startswith(('sq_get', 'sq_throwerror', 'sq_aux', 'sq_pop', 'sq_settop')):
+                continue
+            k = _push_kind(tgt, depth - 1, seen)
+            if k:
+                return k
     return None
 
 _TYPE_CACHE = {}
@@ -169,6 +180,8 @@ def _offset_before(h, n=14):
             return idc.get_operand_value(h, 1)
     return None
 
+_CLASS_CTORS = set()
+
 def _walk_bindings(start, rec, var_binders, bind_table, bind_func, create):
     """Forward from `start` in its function: field binders, method binds, up to the *_BindTable call that names the class."""
     f = ida_funcs.get_func(start)
@@ -200,8 +213,8 @@ def _walk_bindings(start, rec, var_binders, bind_table, bind_func, create):
             rec['name'] = strs[0]
             rec['bind_ea'] = hex(h)
             return
-        elif tgt == create:
-            return
+        elif tgt == create or tgt in _CLASS_CTORS:
+            return   # the next class's creation: this class was not bound to a name here
 
 _ACC_CACHE = {}
 def _accessor_static(fn_ea):
@@ -230,6 +243,12 @@ def extract_classes():
     bind_func = {ea for ea, n in idautils.Names() if re.match(r'^(Sqrat_TableBase_BindFunc|Sqrat_Class_BindMethod)(_[0-9A-F]{5,8})?$', n)
                  and n != 'Sqrat_Class_BindVarClosure'}
     classes = {}      # static ea -> class record
+    # functions that create a class (per-class constructors in UNI2/DFCI/UNIB): the name walk stops at the next one
+    _CLASS_CTORS.clear()
+    for x in idautils.XrefsTo(create):
+        f = ida_funcs.get_func(x.frm)
+        if f is not None:
+            _CLASS_CTORS.add(f.start_ea)
     for x in idautils.XrefsTo(create):
         if not x.iscode:
             continue
@@ -308,3 +327,47 @@ def extract_classes():
                 f['type'] = 'instance:' + classes[st]['name'] if st in classes and classes[st]['name'] else 'null:unregistered-class'
     unnamed = sorted(n for n in var_binders.values() if not n.startswith('Sqrat_'))
     return {'classes': list(classes.values()), 'wrapper_returns': returns, 'unnamed_binders': unnamed}
+
+
+def derive_native_rets(api, classes_result):
+    """Older compilers (DFCI, UNIB): each per-signature BindFunc binder asks a selector for its wrapper and binds it with the
+    native pointer. Re-derive every native's return type from what that wrapper pushes, and list the registrations whose binder
+    is a field binder (filed as methods by the first extraction). Adds 'native_rets' / 'field_bind_eas' to classes_result."""
+    statname = {int(c['static'], 16): c['name'] for c in classes_result['classes']}
+
+    def wrapper_of_binder(b):
+        t = _pseudo(b)
+        for sel in re.findall(r'=\s*(sub_[0-9A-F]+|\w+Selector\w*)\(\w*\);', t):
+            st = _pseudo(_name_ea(sel) or 0)
+            m = re.search(r'return (\w+);', st)
+            if m and st.count('\n') < 8:
+                return _name_ea(m.group(1))
+        return None
+
+    def kind_of(w):
+        k = _push_kind(w)
+        if k is None:
+            return 'void' if re.search(r'return 0;', _pseudo(w)) else None
+        if k.startswith('instance@'):
+            return 'instance:' + statname.get(int(k[9:], 16), 'unregistered')
+        return k
+
+    cache, rets, fields = {}, {}, []
+    for e in api:
+        if not e.get('ea') or e.get('kind') not in ('func', 'method'):
+            continue
+        site = int(e['ea'], 16)
+        if idc.print_insn_mnem(site) != 'call':
+            continue
+        b = idc.get_operand_value(site, 0)
+        if _is_var_binder(b):
+            fields.append(e['ea'])
+            continue
+        if b not in cache:
+            w = wrapper_of_binder(b)
+            cache[b] = kind_of(w) if w else None
+        if cache[b]:
+            rets[e['ea']] = cache[b]
+    classes_result['native_rets'] = rets
+    classes_result['field_bind_eas'] = fields
+    return len(rets), len(fields)

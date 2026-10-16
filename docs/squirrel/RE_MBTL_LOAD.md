@@ -130,3 +130,15 @@ DFCI `CBtlSkillCommandList_LoadFromScript` 0x80F230) only require the slot to be
 characters set `<NAME>_CommandTable <- 0` and take no commands. Sqrat classes: 27 (accessor-held class objects, per-signature
 binders; the "Sqrat_Class_BindMethod_*" binders were field binders, renamed Sqrat_Class_VarBind_*). Native return types were
 re-derived from each binder's wrapper (`native_rets` in dfci_classes.json). `sqtool --chars`: 51/51 character folders load clean.
+
+## UNIB arcade (RingGame.exe sha cf96fd7f, traced 2026-10-15)
+
+IDB `C:\dev\ida\server\unib_arcade_RingGame.exe.i64`. Different from the other three: `Sq_InitBattleVM` 0x787B00 runs only
+`.\Script\Battle_Init.txt` and `.\Script\Battle_Std.txt` (the exe never loads data/_combase.txt, which is on disk);
+`Chara_LoadBattleScripts` 0x72AD80 runs `Chara_LoadCommandAndMoveList` 0x72A950 (cmd → `<NAME>_CommandTable`, mv →
+`<NAME>_MoveTable`) BEFORE the sc file (`CharaDatSq_LoadBattleStatus` 0x7DA4B0), and pushes no object on the script object
+stack during the load (current-object natives return their empty values). This build ships no `_com.txt`.
+`ProcTest_LoadCommandAndMoveList_Unused` 0x7B6B60 is the developers' ProcTest.cpp copy, never called. Profiles are in
+src/squirrel/chara_load.cpp `LoadProfileFor`. Sqrat classes: 19 (82 typed fields; `BtlMvStdFunc::MvBoundStatus` is bound under
+the root name "CCharaVector", which the real CCharaVector then overwrites); native return types re-derived from the binders.
+`sqtool --chars`: 15/15 character folders load clean.

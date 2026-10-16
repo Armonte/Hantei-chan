@@ -30,7 +30,8 @@ void InstallDevWarningObserver(HSQUIRRELVM v);
 // chrDirRel: "data/chr001". ctx.objectPushed is managed here; ctx.patternByCode must be set by the caller.
 // readFile: raw bytes of a game-relative file (the missing-pattern check reads the move's own Init code).
 CharaLoadResult LoadCharacterScripts(HSQUIRRELVM v, const std::string& chrDirRel, LoadContext& ctx, const RunScriptFn& run,
-	const std::function<bool(const std::string& rel)>& exists, const std::function<std::string(const std::string& rel)>& readFile);
+	const std::function<bool(const std::string& rel)>& exists, const std::function<std::string(const std::string& rel)>& readFile,
+	const LoadProfile& prof = LoadProfile());
 
 } // namespace sqedit
 
