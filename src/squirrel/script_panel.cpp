@@ -273,7 +273,8 @@ struct ScriptPanel::Impl {
 	struct HotTask {
 		bool reload = false;   // false: ping only
 		bool live = false;     // reloadchara <chr> live (in-place, keeps state) instead of the engine rebuild
-		std::string pipe, gameDir, srcFile, chr, fileName;
+		bool shared = false;   // a shared battle file (script/*, data/VectorTable...): reloadstd [live]
+		std::string pipe, gameDir, srcFile, chr, fileName, rel;
 	};
 	struct HotResult {
 		bool ok = false;
@@ -312,15 +313,17 @@ struct ScriptPanel::Impl {
 		if (!t.reload) return {true, ping.text};
 		std::string mods = FbmodModsDir(ping.text);
 		if (mods.empty()) mods = ToU8(U8(t.gameDir) / "fbmod" / "mods");
-		const fs::path dstDir = U8(mods) / "data" / U8(t.chr);
+		// The file goes to the same game-relative path under the mods folder (fbmod's VFS serves it from there).
+		const fs::path dst = U8(mods) / U8(t.rel);
 		std::error_code ec;
-		fs::create_directories(dstDir, ec);
-		if (ec) return {false, "cannot create " + ToU8(dstDir) + ": " + ec.message()};
-		fs::copy_file(U8(t.srcFile), dstDir / U8(t.fileName), fs::copy_options::overwrite_existing, ec);
-		if (ec) return {false, "cannot copy to " + ToU8(dstDir / U8(t.fileName)) + ": " + ec.message()};
-		HC_LOG_INFO("[script] hot reload: copied {} to {}", t.srcFile, ToU8(dstDir / U8(t.fileName)));
+		fs::create_directories(dst.parent_path(), ec);
+		if (ec) return {false, "cannot create " + ToU8(dst.parent_path()) + ": " + ec.message()};
+		fs::copy_file(U8(t.srcFile), dst, fs::copy_options::overwrite_existing, ec);
+		if (ec) return {false, "cannot copy to " + ToU8(dst) + ": " + ec.message()};
+		HC_LOG_INFO("[script] hot reload: copied {} to {}", t.srcFile, ToU8(dst));
 		// Engine rebuild: fbmod waits up to 120 s for the training battle to tick again; live: up to 30 s.
-		const FbmodReply r = FbmodRequest(t.pipe, FbmodReloadRequest(t.chr, t.live), t.live ? 35000 : 130000);
+		const std::string req = t.shared ? FbmodStdReloadRequest(t.live) : FbmodReloadRequest(t.chr, t.live);
+		const FbmodReply r = FbmodRequest(t.pipe, req, t.live ? 35000 : 130000);
 		if (!r.connected) return {false, "game not running (no fbmod pipe)"};
 		HotResult out{r.ok, r.text};
 		out.reload = true;
@@ -332,7 +335,7 @@ struct ScriptPanel::Impl {
 	{
 		if (hotBusy) { hotPending = t; hasHotPending = true; return; }
 		hotBusy = true;
-		hotStatus = t.reload ? (t.live ? "reloading " : "rebuilding ") + t.chr + "..." : "ping...";
+		hotStatus = t.reload ? (t.live ? "reloading " : "rebuilding ") + (t.shared ? std::string("shared scripts") : t.chr) + "..." : "ping...";
 		hotStatusOk = true;
 		hotHasInfo = false;
 		hotJob = std::async(std::launch::async, RunHotTask, t);
@@ -350,21 +353,32 @@ struct ScriptPanel::Impl {
 		say("hot reload: " + r.text);
 		if (hasHotPending) { hasHotPending = false; startHot(hotPending); }
 	}
-	// After a save: data/chrNNN/<file> (relative to the opened game root) goes to <mods>\data\chrNNN\<file>, then reload chrNNN.
+	// After a save: the file (relative to the opened game root) goes to the same path under <mods>, then
+	//  - data/chrNNN/<file>: reloadchara chrNNN [live];
+	//  - a shared battle file (every script/*.txt, data/_combase / VectorTable / BattleInfo / BoundEff.txt), which the
+	//    game loads once per process: reloadstd [live] (re-runs them, then rebuilds every character against them).
 	void hotReloadSaved()
 	{
 		if (!gSettings.sqHotReload) return;
 		static const std::regex re(R"(^data/(chr\d+)/([^/]+)$)");
 		std::smatch mm;
-		if (!std::regex_match(currentRel, mm, re)) { hotStatus = "not a data/chrNNN file: not reloaded"; hotStatusOk = false; return; }
 		HotTask t;
+		t.shared = FbmodIsSharedFile(currentRel);
+		if (!t.shared && !std::regex_match(currentRel, mm, re)) {
+			hotStatus = "not a data/chrNNN or shared script/data file: not reloaded";
+			hotStatusOk = false;
+			return;
+		}
 		t.reload = true;
 		t.live = gSettings.sqHotReloadMode == 1;
 		t.pipe = hotPipe;
 		t.gameDir = hotGameDir();
 		t.srcFile = ToU8(U8(root) / U8(currentRel));
-		t.chr = mm[1].str();
-		t.fileName = mm[2].str();
+		t.rel = currentRel;
+		if (!t.shared) {
+			t.chr = mm[1].str();
+			t.fileName = mm[2].str();
+		}
 		startHot(t);
 	}
 	void drawHotReload()
@@ -372,7 +386,7 @@ struct ScriptPanel::Impl {
 		pollHot();
 		if (hotPipeGame != game || hotPipe.empty()) { hotPipeGame = game; hotPipe = game == "mbtl" ? "fbmod-mbtl" : "fbmod-uni2"; }
 		if (ImGui::Checkbox(LBL("Hot reload"), &gSettings.sqHotReload)) ImGui::MarkIniSettingsDirty();
-		if (ImGui::IsItemHovered()) ImGui::SetTooltip("%s", TXT("On save, copy a data/chrNNN file into the game's fbmod mods folder and reload that character in the running game (fbmod pipe)."));
+		if (ImGui::IsItemHovered()) ImGui::SetTooltip("%s", TXT("On save, copy the file into the game's fbmod mods folder and reload it in the running game (fbmod pipe). A data/chrNNN file reloads that character; a shared file (script/*.txt, data/_combase, VectorTable, BattleInfo, BoundEff) re-runs the shared battle scripts and tables, then reloads every character."));
 		if (!gSettings.sqHotReload) return;
 		// The row wraps before an item that no longer fits (1280, Japanese labels) instead of clipping it.
 		ui::SameLineField(ui::Px(320), LBL("Game folder"));
@@ -420,6 +434,10 @@ struct ScriptPanel::Impl {
 		else if (hotInfo.refused) {
 			ok = false;
 			snprintf(line, sizeof line, "%s", TXT("Refused: no training battle is running. Start a training battle in the game, then save again."));
+		} else if (hotInfo.stdReload && hotStatusOk) {
+			if (hotInfo.engine)
+				snprintf(line, sizeof line, hotInfo.backInBattle ? TXT("Reloaded shared scripts and rebuilt the battle in %ld ms") : TXT("Reloaded shared scripts; the rebuild did not return to the training battle (%ld ms)"), hotInfo.ms);
+			else snprintf(line, sizeof line, "%s", TXT("Reloaded shared scripts and every character in place"));
 		} else if (hotInfo.engine && hotInfo.hasRoots) {
 			snprintf(line, sizeof line, hotInfo.backInBattle ? TXT("Rebuilt %s in %ld ms, HA6 root %08X -> %08X") : TXT("Rebuild of %s did not return to the training battle (%ld ms), HA6 root %08X -> %08X"),
 				hotChr.c_str(), hotInfo.ms, static_cast<unsigned>(hotInfo.rootBefore), static_cast<unsigned>(hotInfo.rootAfter));
