@@ -1004,3 +1004,17 @@ No editor (C++) change. Numbers: `tools/uni/s1_compare/v2_round16.sh` (log `roun
 - Pin the MBTL training stage (trace `CBtlStageTableMakeRandom` / the BgNo the training scene picks), recapture
   chr011 HUD-free on a still stage, and recapture the p157 s8/s456 solos HUD-free.
 - What is left on p238 _nh at zoom 1 (0.71): split by prop again (`v2_split_by_shot.py` with the round-14 solo shots).
+
+## Round 17 (interrupted, 2026-10-16): MBTL stage pin, where I stopped / next
+- **Stage pick traced (MBTL IDB, saved).** `VsLoad_LoadStageAndCharas` 0x7C0BD0 (and its task twin 0x7C0EE0) calls
+  `Stage_LoadByIndex` 0x4F24F0 with `*g_pBattleStageSel` (0xAFC04C; `BattleStageSel_Set` 0x4F5FB0 / `_Get` 0x4F5FC0).
+  `Stage_LoadByIndex` loads `g_StageNames[i]` (0xAFC170) and sets `g_CurStageIndex` 0xA2E47C.
+- **Harness, untested.** `gamecap/games/mbtl_to_training_stage.gcs` holds `[g_pBattleStageSel] = ${STAGE}` from before
+  the CSS decide until the battle starts. The case is `cases/v2r17_mbtl_chr011_stage.gcs`.
+- **First try.** STAGE 0 still loaded stage **21** (alley at night, looks still). 0 may mean "random", or the hold may land
+  too late. The STAGE=5 run did not start: `-D` has to go to `run.sh`, not inside the `wait_and_run.sh` group name.
+- **Capture method.** `capture_window` came out black on that run; `_game_bb.png` is fine. Next time use the bb shots,
+  or keep the window on the main monitor.
+- **Next.** `./run.sh cases/v2r17_mbtl_chr011_stage.gcs -D STAGE=5`, check `stage_loaded`. If it stays random, hold the
+  CSS-side stage field instead (trace `BattleStageSel_Set`'s callers). Then recapture chr011 pups and the p157
+  s8/s456 solos, split p238's 0.71 by prop, and run the full ctest. No MBTL row was re-measured in round 17.
