@@ -24,8 +24,8 @@ UNI_DIR="${HA6_UNI_DIR:-/mnt/c/games/unib/data}"
 [ -x "$RT" ] || { echo "build first: $RT missing"; exit 2; }
 # roundtrip.exe is a Windows binary: give it Windows paths, and keep outputs on
 # a Windows drive (build/) so the paths stay short.
-TMP="$ROOT/build/ha6_regress.tmp"
-rm -rf "$TMP"; mkdir -p "$TMP"
+# Per-process folder so concurrent runs never share outputs.
+mkdir -p "$ROOT/build"; TMP="$(mktemp -d "$ROOT/build/ha6_regress.XXXXXX")"
 trap 'rm -rf "$TMP"' EXIT
 wp() { if command -v wslpath >/dev/null; then wslpath -w "$1"; else echo "$1"; fi; }
 fail=0

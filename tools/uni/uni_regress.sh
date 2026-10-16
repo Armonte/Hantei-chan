@@ -23,6 +23,7 @@ G="${GAMEDATA:-/mnt/c/dev/hantei-chan/gamedata}"
 MBAACC="${HA6_MBAACC_DIR:-/mnt/c/games/mbaacc_tag/data}"
 MBAC_DAT="${MBAC_DAT_DIR:-/mnt/c/games/MB/AC/install/MBACPC/02_extracted}"
 wp() { wslpath -w "$1"; }
+mkdir -p "$B"; T="$(mktemp -d "$B/uni_regress.XXXXXX")"; trap 'rm -rf "$T"' EXIT   # per-run outputs (parallel runs)
 fail=0
 note() { echo "== $*"; }
 # The summary line must be a single "rc0=N" (every file passed) with N at least the 2026-09 corpus size.
@@ -44,7 +45,7 @@ all_rc0 "$out" 135 || { echo "FAIL: PAT bytes"; fail=1; }
 out=$("$ROOT/tools/uni/pat_rt_all.sh" --fresh "$G"); echo "$out"
 all_rc0 "$out" 135 || { echo "FAIL: PAT fresh"; fail=1; }
 n=0; bad=0
-for f in "$MBAACC"/*.pat; do [ -f "$f" ] || continue; n=$((n+1)); "$B/pat_roundtrip.exe" --bytes "$(wp "$f")" "$(wp "$B/mbaacc_rt.pat")" </dev/null >/dev/null 2>&1 || bad=$((bad+1)); done
+for f in "$MBAACC"/*.pat; do [ -f "$f" ] || continue; n=$((n+1)); "$B/pat_roundtrip.exe" --bytes "$(wp "$f")" "$(wp "$T/mbaacc_rt.pat")" </dev/null >/dev/null 2>&1 || bad=$((bad+1)); done
 echo "MBAACC .pat byte round trip: $n files, $bad differ"; [ $bad -eq 0 ] || fail=1
 
 note "3. PAL"
@@ -57,8 +58,8 @@ edit_case() { # dir txt pattern
 	num=$(grep -a -m1 '^FileNum=' "$dir/$txt" | tr -d ' \r' | cut -d= -f2)
 	for ((i=0;i<num;i++)); do local n; n=$(grep -a -m1 "^$(printf 'File%02d' $i)=" "$dir/$txt" | tr -d ' \r' | cut -d= -f2); names+=("$n"); files+=("$(wp "$dir/$n")"); done
 	own=$((num-1)); while [ $own -gt 0 ] && { echo "${names[$own]}" | grep -qi basedata || [ "${names[$own]:0:3}" = "../" ]; }; do own=$((own-1)); done
-	"$B/uni_edit_test.exe" $own $pat "$(wp "$B/edit71.ha6")" "${files[@]}" </dev/null >/dev/null 2>&1 || { echo "FAIL: edit $txt"; fail=1; return; }
-	local r; r=$(python3 "$ROOT/tools/uni/ha6patdiff.py" "$dir/${names[$own]}" "$B/edit71.ha6")
+	"$B/uni_edit_test.exe" $own $pat "$(wp "$T/edit71.ha6")" "${files[@]}" </dev/null >/dev/null 2>&1 || { echo "FAIL: edit $txt"; fail=1; return; }
+	local r; r=$(python3 "$ROOT/tools/uni/ha6patdiff.py" "$dir/${names[$own]}" "$T/edit71.ha6")
 	echo "  $txt -> ${names[$own]}, edit p$pat: $r"
 	[ "$r" = "1 pattern(s) differ: $pat" ] || { echo "FAIL: edit $txt"; fail=1; }
 }
