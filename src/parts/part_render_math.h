@@ -21,8 +21,9 @@ namespace partrender {
 
 // ---- PRAL ------------------------------------------------------------------------------------------------------
 // The byte the game switches on: 1 = additive (SRCALPHA, ONE), 2 = reverse-subtract (SRCALPHA, ONE),
-// 3 = normal blend, and the part is also the mask of a full-screen blur (PatPralMode3_Begin_BlurMaskPass
-// 0x872B10 / _End_CompositeBlur 0x872A60). Every other value draws normal.
+// 3 = normal blend on the shader path the game uses for character / effect .pat layers (uni2 1.42
+// Han6Draw_DrawPatLayerParts_3D; measured equal to PRAL 0 in game, render-match17). Only the non-shader 2D path
+// (Han6Draw_DrawPatLayerParts_2D) also runs the CharaPtBlur mask passes for it. Every other value draws normal.
 enum PartBlend { kBlendNormal = 0, kBlendAdd = 1, kBlendSub = 2, kBlendBlurMask = 3 };
 
 inline PartBlend BlendFromPral(int pral)

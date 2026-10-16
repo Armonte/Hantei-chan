@@ -494,8 +494,12 @@ void ApplyPartBlend(partrender::PartBlend mode)
         glBlendFunc(GL_SRC_ALPHA, GL_ONE);
         break;
     default:
-        // Normal, and PRAL 3: the game draws the part with normal blending and also uses it as the mask of
-        // a screen-space blur pass (not reproduced here).
+        // Normal, and PRAL 3. uni2 1.42 draws character / effect .pat layers through the shader path
+        // (Han6Draw_DrawPatLayerParts_3D 0x4BF9A0 -> PatPart_SetBlendState_PRAL: 3 -> normal), which has no blur.
+        // The CharaPtBlur mask passes (sh_paniblur.txt, CharaPtBlur_BeginMaskTarget 0x87FBA0 /
+        // CharaPtBlur_DrawBlurWH_Passes 0x87F9A0) are queued only by the non-shader 2D path
+        // (Han6Draw_DrawPatLayerParts_2D 0x4C01D0). Measured in game (render-match17, chr020 set 991 slots forced
+        // to PRAL 3 vs PRAL 0): the same image.
         glBlendEquation(GL_FUNC_ADD);
         glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
         break;

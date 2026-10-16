@@ -51,4 +51,5 @@ def main():
             if 'PRZM' in r: struct.pack_into('<ff', b, r['PRZM'][0], 0.0, 0.0)
         open(sys.argv[4], 'wb').write(b); print('wrote', sys.argv[4], 'keep slot', keep)
 
-main()
+if __name__ == "__main__":
+    main()

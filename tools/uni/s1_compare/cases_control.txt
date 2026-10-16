@@ -36,3 +36,6 @@ mbtl_pups_chr011_p309_z1 | mbtl/data/chr011/chr011_0.txt | 309 | 0 | -1 | 1 | re
 pras_chr020_p5f2_solo_s1025_z1 | uni2/data/chr020solos1025/chr020_0.txt | 5 | 2 | -1 | 1 | render-match13: pras with only .pat set-991 slots 10,25 (normal blend, PRCL alpha 0) on screen, zoom 1
 pras_chr020_p5f2_solo_srings_z1 | uni2/data/chr020solorings/chr020_0.txt | 5 | 2 | -1 | 1 | render-match14: pras with only .pat set-991 ring slots 41,44,45 (3D-tilted arc/ring prims) on screen, zoom 1
 mbtl_ctrl_chr001_p0f0_z15 | mbtl/data/chr001/chr001_0.txt | 0 | 0 | -1 | 1.5 | stage-shadow-cgfilter: MBTL CG sprite at zoom 1.5 (Filter_V)
+pras_chr020_p5f2_r24b_pral3_z1 | uni2/data/chr020pral3/chr020_0.txt | 5 | 2 | -1 | 1 | render-match17: set-991 slots 1,2,4,5,14,15 only, PRAL forced to 3 (blur mask; UNI2 ships no PRAL 3 part), zoom 1
+pras_chr020_p5f2_r24b_snone_z1 | uni2/data/chr020snone/chr020_0.txt | 5 | 2 | -1 | 1 | render-match17: no set-991 prop (baseline scene of the PRAL 3 check), zoom 1
+pras_chr020_p5f2_r24b_pral0_z1 | uni2/data/chr020pral0/chr020_0.txt | 5 | 2 | -1 | 1 | render-match17: the same slots with PRAL 0 (normal blend), zoom 1
