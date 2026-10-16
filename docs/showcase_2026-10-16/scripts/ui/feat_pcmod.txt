@@ -1,14 +1,14 @@
-# pcmod export window on the PovertyCaster fixture (tools/ui/ab_shot.sh tools/ui/pcmod/export_window.txt)
+# pcmod export window on a small mod folder (C:/games/MyMod: the PovertyCaster pcmod fixture files)
 wait 30
 pcmod open
-pcmod addfolder C:/dev/hantei-chan/work/ab_showcase/pcmod_fixture/data
-pcmod addfolder C:/dev/hantei-chan/work/ab_showcase/pcmod_fixture/grp
-pcmod set id pcmod-fixture
+pcmod addfolder C:/games/MyMod/data
+pcmod addfolder C:/games/MyMod/grp
+pcmod set id my-mod
 pcmod set version 1.2.3
-pcmod set name PovertyCaster pcmod fixture
-pcmod set exe 0000000000000000000000000000000000000000000000000000000000000001
+pcmod set name My MBAACC mod
+pcmod set exe 6d1415ca9573100e86a779ac2f81e9bedd322664e3daeae0229a67d13720310a
 pcmod set priority 100
-pcmod set out C:/dev/hantei-chan/work/ab/pcmod_out
+pcmod set out C:/games/MyMod/out
 pcmod status
 wait 10
 capture C:/dev/hantei-chan/work/ab/pcmod_export_window.png

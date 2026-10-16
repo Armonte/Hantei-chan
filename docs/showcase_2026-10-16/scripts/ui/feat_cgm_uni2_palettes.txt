@@ -1,5 +1,5 @@
-# CG manager on UNI2 chr020: Palettes tab (palette pairs). Read-only: nothing is saved.
-openany C:/dev/hantei-chan/gamedata/uni2/data/chr020/chr020_0.txt
+# CG manager on UNI2 chr020 (game folder C:/games/UNI2): Palettes tab (palette pairs). Read-only: nothing is saved.
+openany C:/games/UNI2/data/chr020/chr020_0.txt
 wait 120
 cgm open
 wait 30

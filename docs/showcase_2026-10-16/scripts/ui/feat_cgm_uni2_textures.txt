@@ -1,0 +1,11 @@
+# CG manager on UNI2 chr020: the unified "CG + .pat textures" tab (CG images left, .pat textures right). Read-only: nothing is saved.
+openany C:/games/UNI2/data/chr020/chr020_0.txt
+wait 120
+cgm open
+wait 30
+cgm tab CG + .pat textures
+wait 20
+cgm texsel 0 0
+wait 30
+capture C:/dev/hantei-chan/work/ab/feat_cgm_uni2_textures.png
+quit

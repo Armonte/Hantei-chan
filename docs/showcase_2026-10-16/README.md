@@ -51,14 +51,20 @@ master 7e97e19). The second row is |game - tool| x4. All per-case data is in `ma
   axis lines, and reads back the frame. Its render code is unchanged.
 
 ## Features with no equivalent in sosfiro or gonp (`features/`)
-- CG manager: an MBAACC bank insert/replace shown in game (`cgm_mbaacc_ingame_*.jpg`, from `docs/cg/evidence/`), and
-  UNI2 palette pairs (`feat_cgm_uni2_palettes.png`).
-- The Squirrel script panel (`feat_squirrel_hover.png`). The scripted hover does not draw its tooltip into the capture.
-- The 3D stage view with MBAACC camera alignment (`feat_stage3d_*_align.png`).
-- The game link / hot-reload panel (`feat_gamelink_panel.png`, with no game attached).
+- CG manager: an MBAACC bank insert/replace shown in game (`cgm_mbaacc_ingame_*.jpg`, from `docs/cg/evidence/`),
+  UNI2 palette pairs (`feat_cgm_uni2_palettes.png`) and the unified "CG + .pat textures" tab on UNI2 chr020, with CG images
+  and .pat textures side by side (`feat_cgm_uni2_textures.png`).
+- The Squirrel script panel with the UNI2 API table loaded (536 natives): a hover tooltip on an engine native
+  (`feat_squirrel_hover.png`) and the Problems tab after a check (`feat_squirrel_problems.png`).
+- The 3D stage view with MBAACC camera alignment (`feat_stage3d_*_align.png`). The BgList stage name is decoded from cp932.
+- The game link / hot-reload panel (`feat_gamelink_panel.png`, with no game attached; hitbox overlay off).
 - PovertyCaster .pcmod export (`pcmod_export_*.png`).
+
+The feature shots were retaken on 2026-10-16 with branch fix/showcase-polish. The scripts read the games through neutral
+folders: `C:\games\UNI2` and `C:\games\MBTL` are junctions to the game data, and `C:\games\MyMod` holds a copy of the pcmod
+fixture. `scripts/ui/crop_features.py` cuts each window out of the full frame.
 
 ## Reproduce
 `scripts/shoot_others.sh {sosfiro|gonp} <cases>`, then `tools/uni/s1_compare/shoot_batch.sh` (with
 `OUTDIR=work/bw_ours`), then `scripts/run_cases.sh`, `scripts/make_sheets.py`, `scripts/mbaacc_sheet.py` and
-`scripts/ui/run_features.sh`. The raw shots in `work/` are not committed.
+`scripts/ui/run_features.sh` and `scripts/ui/crop_features.py`. The raw shots in `work/` are not committed.

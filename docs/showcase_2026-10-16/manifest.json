@@ -481,13 +481,21 @@
    "others": "no equivalent"
   },
   {
-   "title": "Squirrel script panel (UNI2 chr001 cmd script, file tree, natives list)",
+   "title": "CG manager: unified CG + .pat textures tab (UNI2 chr020: CG images and .pat textures, Used by, PNG import/export)",
    "images": [
-    "features/feat_squirrel_hover.png"
+    "features/feat_cgm_uni2_textures.png"
    ],
-   "source": "scripts/ui/feat_squirrel.txt",
-   "others": "no equivalent",
-   "caveat": "The scripted `sq hover` does not draw the tooltip into the capture; the hover text is in the run log only. The shot shows the panel, not the hover popup."
+   "source": "scripts/ui/feat_cgm_uni2_textures.txt via tools/ui/ab_shot.sh",
+   "others": "no equivalent"
+  },
+  {
+   "title": "Squirrel script panel (UNI2 chr001 mv script, uni2 API table: hover on an engine native, Problems tab)",
+   "images": [
+    "features/feat_squirrel_hover.png",
+    "features/feat_squirrel_problems.png"
+   ],
+   "source": "scripts/ui/feat_squirrel.txt (`sq hoverat` pins the real hover tooltip to a text position)",
+   "others": "no equivalent"
   },
   {
    "title": "3D stage view with MBAACC camera alignment (UNI2 bg001 cam 0, MBTL bg001 with clamp)",
@@ -503,7 +511,7 @@
    "images": [
     "features/feat_gamelink_panel.png"
    ],
-   "source": "scripts/ui/feat_gamelink.txt with --tool gamelink (no game launched, so \"not connected\")",
+   "source": "scripts/ui/feat_gamelink.txt with --tool gamelink --hide-boxes (no game launched, so \"not connected\")",
    "others": "no equivalent"
   },
   {
@@ -512,7 +520,7 @@
     "features/pcmod_export_window.png",
     "features/pcmod_export_done.png"
    ],
-   "source": "scripts/ui/feat_pcmod.txt (tests/fixtures/pcmod)",
+   "source": "scripts/ui/feat_pcmod.txt (tests/fixtures/pcmod files in C:/games/MyMod)",
    "others": "no equivalent"
   }
  ],
@@ -520,7 +528,7 @@
   "scripts/shoot_others.sh gonp|sosfiro <cases>  (and tools/uni/s1_compare/shoot_batch.sh for ours with OUTDIR=work/bw_ours)",
   "scripts/run_cases.sh",
   "python3 scripts/make_sheets.py; python3 scripts/mbaacc_sheet.py",
-  "scripts/ui/run_features.sh"
+  "scripts/ui/run_features.sh; python3 scripts/ui/crop_features.py <shot dir> features"
  ],
  "selection": "The 7 measured cases were chosen BEFORE measuring, from the brief (set 991, p435, PUPS, flips, MBTL p238/p157/zoom-1.5 CG) among the render-match cases that already have HUD-free game captures with a fighters-hidden plate. Not run (time, not results): flipH_chr000_p96f1, flipV_chr000_p383f1, afhk_pat_chr000_p72/chr019_p62, afhk_cg_chr020_p437, rect_chr024_p76, mbtl_pral2_chr004_p420f4, mbtl_pups_chr011_p309, mbtl p277. pral2_chr025_p133f1 has no plate capture. mbtl_cg_z15 is a single-sprite control, labelled as such. Registration (round13/reg/*.json) was fitted earlier on OUR editor's control shots; it is a game-camera offset and is applied unchanged to every tool."
 }
