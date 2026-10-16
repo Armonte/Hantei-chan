@@ -512,6 +512,8 @@ void MainFrame::DrawPatPreferencesWindow()
 	DrawPatColourPrefsItems();
 	ImGui::SeparatorText(TXT("Mouse buttons"));
 	DrawMousePrefsItems();
+	ImGui::SeparatorText(TXT("3D stage: Blender"));
+	stage3dview::BlenderPrefsItems();
 	ImGui::End();
 }
 
