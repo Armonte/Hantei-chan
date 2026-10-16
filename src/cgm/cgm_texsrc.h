@@ -88,7 +88,7 @@ std::vector<TexUse> CgImageUsers(FrameData &fd, int image);
 // ---- saving into the game
 // Game ids as hmod uses them: "mbaacc", "mbac", "unib", "uni2", "mbtl", "rbo", "gof2".
 // True for the games whose shipped archives are read-only (UNI2 d\*.pak-style archive, MBTL data0NN.bin): edits go to the
-// improvement mod's always-on Mods folder, which UNI2-IM / MBTL-IM serve and fbmod's VFS mounts (core imCompatLayers):
+// improvement mod's always-on Mods folder, which UNI2-IM / MBTL-IM serve and fpan-im's VFS mounts (core imCompatLayers):
 //   <gameDir>\UNI2-IM\Mods\<game path>     <gameDir>\MBTL-IM\Mods\<game path>
 bool UsesModFolder(const std::string &game);
 // <gameDir>\<IM>\Mods\<key>, key = the game path of the file ("data/chr003/chr003.cg"); "" for a game without a mod folder.

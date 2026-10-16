@@ -2,7 +2,7 @@
 # In-game showcase recolour (docs/showcase_2026-10-16/ingame): the modder's round trip through the editor's CG manager,
 # driven by --ui-script (no real input):
 #   export: "CG + .pat textures" tab -> Export PNG of the idle (pattern 0) sprites and one .pat texture; Palettes tab -> Export
-#           colours (.act) of palette 0 (colour 1, what fbmod's boot picks).
+#           colours (.act) of palette 0 (colour 1, what fpan-im's boot picks).
 #   (recolour the .act and the texture PNG with tools/cg/hue_shift.py)
 #   import: Palettes tab -> Import colours (the shifted .act) -> "Save .pal to mod folder"; "CG + .pat textures" tab ->
 #           Import PNG (the shifted texture) -> "Save to mod folder". The game folder is a scratch folder, never the live game.

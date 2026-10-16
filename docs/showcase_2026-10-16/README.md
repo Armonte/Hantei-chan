@@ -71,7 +71,7 @@ fixture. `scripts/ui/crop_features.py` cuts each window out of the full frame.
 
 ## In-game recolour through the CG manager (`ingame/`)
 This is a modder's round trip with no hand edits to files. `tools/cg/showcase_recolour.sh` drives the editor with --ui-script (no
-real input) and `tools/cg/hue_shift.py` does the recolour. fbmod boots [boot] training with P1 = chr003 and P2 = chr005, colour 1.
+real input) and `tools/cg/hue_shift.py` does the recolour. fpan-im boots [boot] training with P1 = chr003 and P2 = chr005, colour 1.
 The files are installed in `<game>\<IM>\Mods\data\chr003\` only inside gamecap's game lock (`tools/cg/showcase_ingame_boot.sh`)
 and restored afterwards. The Mods\data folders were empty before and after, and UNI2_IM.ini / MBTL_IM.ini are byte-identical (md5).
 The shots are window-only gamecap captures shrunk to 1280x720: `<game>_{before,after}_idle.jpg` and `<game>_{before,after}_move.jpg`.

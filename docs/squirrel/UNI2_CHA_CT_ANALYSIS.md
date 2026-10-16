@@ -110,7 +110,7 @@ data-side roster mod (more `cs_chr%03d.pat`, more CSelAnim.ini sections) would d
 Comments `UNI2_Cha.CT: <entry> patches X -> Y` were added at every patch site listed above, plus the anchor
 0x657DE4, the unrelocated init 0x657D70, and function comments on `CSel_PAni_Init` / `CSel_PAni_LoadCSelAnimIni`.
 
-## As a declared fbmod patch module
+## As a declared fpan-im patch module
 
 Game `uni2`, exe version `1.42 Steam`, identity = IDB input MD5 `67e8f8dfcc131317d8ab3e64f01fb023` (a SHA-256 of
 the on-disk exe should be added when the module is built). Records use VA at image base 0x400000; the loader

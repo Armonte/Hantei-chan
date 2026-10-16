@@ -54,7 +54,7 @@ extern struct Settings
 	int mousePanButton = 0;                  // drag pans the view
 	int mouseDrawButton = 1;                 // drag draws a box (UV rectangle in a PAT tab)
 
-	// Script panel hot reload (fbmod pipe): on/off and the game install folder per profile ("" = Steam default)
+	// Script panel hot reload (fpan-im pipe): on/off and the game install folder per profile ("" = Steam default)
 	bool sqHotReload = false;
 	int sqHotReloadMode = 0;   // 0: engine rebuild (reloadchara <chr>), 1: live in-place (reloadchara <chr> live)
 	std::string sqGameDirUni2, sqGameDirMbtl;

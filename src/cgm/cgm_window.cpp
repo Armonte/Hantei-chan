@@ -610,7 +610,7 @@ void Window::drawPalettes(CharacterInstance &ch, const WindowHost &host) {
 			if (GridButton(sg, LBL("Save .pal to mod folder"))) {
 				const std::string dst = modFolderDst(ch, ch.cg.palettePath(P.bank)); std::string e;
 				if (dst.empty()) status = Fmt(TXT("Cannot place %s in the mod folder: no game folder, or the file is not under a data folder."), ch.cg.palettePath(P.bank).c_str());
-				else status = WriteModFile(dst, ps.raw, &e) ? Fmt(TXT("Wrote %s (%zu bytes). The improvement mod / fbmod serve it in place of the archived file."), dst.c_str(), ps.raw.size()) : e;
+				else status = WriteModFile(dst, ps.raw, &e) ? Fmt(TXT("Wrote %s (%zu bytes). The improvement mod / fpan-im serve it in place of the archived file."), dst.c_str(), ps.raw.size()) : e;
 			}
 			ImGui::SetItemTooltip("%s", TXT("Writes this .pal to <game folder>\\UNI2-IM\\Mods or MBTL-IM\\Mods (set in the \"CG + .pat textures\" tab). \"Restore mod folder\" there, or cgmtex modrestore, undoes it."));
 		}
@@ -1050,7 +1050,7 @@ void Window::draw(CharacterInstance *ch, const WindowHost &host) {
 		if (ch->frameData.usesUniFormat()) {   // the long explanation lives in the (?) tooltip
 			ImGui::AlignTextToFramePadding();
 			ImGui::TextColored(ImVec4(0.6f, 0.8f, 1.f, 1.f), "%s", TXT("UNI2 / MBTL: saved files reach the game only through the IM mod folder."));
-			ui::HelpMarker(TXT("UNI2 / MBTL read their data from archives (d/, .bin) that are not rewritten: saved .cg / .pat / .pal / .ha6 files reach the game only from the IM mod folder, with the same relative path (UNI2: <game>\\UNI2-IM\\Mods\\data\\...; MBTL: <game>\\MBTL-IM\\Mods\\data\\...), loaded through fbmod / UNI2-IM / MBTL-IM. The \"Save to mod folder\" buttons write there."));
+			ui::HelpMarker(TXT("UNI2 / MBTL read their data from archives (d/, .bin) that are not rewritten: saved .cg / .pat / .pal / .ha6 files reach the game only from the IM mod folder, with the same relative path (UNI2: <game>\\UNI2-IM\\Mods\\data\\...; MBTL: <game>\\MBTL-IM\\Mods\\data\\...), loaded through fpan-im / UNI2-IM / MBTL-IM. The \"Save to mod folder\" buttons write there."));
 		}
 		if (!status.empty()) ImGui::TextWrapped("%s", status.c_str());
 		for (const std::string &w : warnings) ImGui::TextColored(ImVec4(1.f, 0.75f, 0.3f, 1.f), "%s", w.c_str());
@@ -1372,7 +1372,7 @@ bool Window::texSave(CharacterInstance &ch, int kind, const std::string &game, s
 			std::error_code ec; std::filesystem::remove(std::filesystem::u8path(tmp), ec);
 		}
 		if (!WriteModFile(dst, bytes, &e)) { report = e; return false; }
-		report = Fmt(TXT("Wrote %s (%zu bytes). The improvement mod / fbmod serve it in place of the archived file."), dst.c_str(), bytes.size());
+		report = Fmt(TXT("Wrote %s (%zu bytes). The improvement mod / fpan-im serve it in place of the archived file."), dst.c_str(), bytes.size());
 		return true;
 	}
 	if (kind == 0) return saveBankFiles(ch, report);
@@ -1408,7 +1408,7 @@ void Window::drawTextures(CharacterInstance &ch, const WindowHost &host) {
 				cell(TXT("Game folder"));
 				char buf[512]; snprintf(buf, sizeof(buf), "%s", tb.gameDir[gi].c_str());
 				if (ImGui::InputText("##cgmtbdir", buf, sizeof(buf))) tb.gameDir[gi] = buf;
-				ImGui::SetItemTooltip("%s", TXT("The archives are read-only: saves go to <game folder>\\UNI2-IM\\Mods or MBTL-IM\\Mods, which the improvement mod and fbmod's file layer load instead of the archived file."));
+				ImGui::SetItemTooltip("%s", TXT("The archives are read-only: saves go to <game folder>\\UNI2-IM\\Mods or MBTL-IM\\Mods, which the improvement mod and fpan-im's file layer load instead of the archived file."));
 			}
 			cell(TXT("Filter")); ImGui::InputTextWithHint("##cgmtbfilter", TXT("Filter by id or name"), tb.filter, sizeof(tb.filter));
 			ImGui::EndTable();
