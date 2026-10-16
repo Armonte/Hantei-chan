@@ -147,7 +147,8 @@
   "wrapper": "SqratWrap_instance__noargs",
   "ret": "instance",
   "args": [],
-  "qualified_table": "BCom"
+  "qualified_table": "BCom",
+  "class": "BCom.UpdateSt"
  },
  {
   "kind": "func",
@@ -1125,7 +1126,8 @@
   "wrapper": "SqratWrap_instance__noargs_2",
   "ret": "instance",
   "args": [],
-  "qualified_table": "tSceneOpenSecChar"
+  "qualified_table": "tSceneOpenSecChar",
+  "class": "tSceneOpenSecChar.CStatus"
  },
  {
   "kind": "table",
@@ -1172,7 +1174,8 @@
   "wrapper": "SqratWrap_instance__noargs_3",
   "ret": "instance",
   "args": [],
-  "qualified_table": "tSceneVS"
+  "qualified_table": "tSceneVS",
+  "class": "tSceneVS.CPlayerSt"
  },
  {
   "kind": "table",
@@ -1187,9 +1190,10 @@
   "table": "CStatus",
   "regfunc": "0x84c7a0",
   "ea": "0x84c998",
-  "offset": "48",
+  "offset": 48,
   "vartype": "Sqrat_Class_VarA",
-  "qualified_table": "tSceneWinDemo.CStatus"
+  "qualified_table": "tSceneWinDemo.CStatus",
+  "type": "int"
  },
  {
   "kind": "var",
@@ -1197,9 +1201,10 @@
   "table": "CStatus",
   "regfunc": "0x84c7a0",
   "ea": "0x84c9a7",
-  "offset": "12",
+  "offset": 12,
   "vartype": "Sqrat_Class_VarA",
-  "qualified_table": "tSceneWinDemo.CStatus"
+  "qualified_table": "tSceneWinDemo.CStatus",
+  "type": "int"
  },
  {
   "kind": "var",
@@ -1207,9 +1212,10 @@
   "table": "CStatus",
   "regfunc": "0x84c7a0",
   "ea": "0x84c9b6",
-  "offset": "4",
+  "offset": 4,
   "vartype": "Sqrat_Class_VarA",
-  "qualified_table": "tSceneWinDemo.CStatus"
+  "qualified_table": "tSceneWinDemo.CStatus",
+  "type": "int"
  },
  {
   "kind": "var",
@@ -1217,9 +1223,10 @@
   "table": "CStatus",
   "regfunc": "0x84c7a0",
   "ea": "0x84c9c5",
-  "offset": "8",
+  "offset": 8,
   "vartype": "Sqrat_Class_VarA",
-  "qualified_table": "tSceneWinDemo.CStatus"
+  "qualified_table": "tSceneWinDemo.CStatus",
+  "type": "int"
  },
  {
   "kind": "var",
@@ -1227,9 +1234,10 @@
   "table": "CStatus",
   "regfunc": "0x84c7a0",
   "ea": "0x84c9d4",
-  "offset": "52",
+  "offset": 52,
   "vartype": "Sqrat_Class_VarA",
-  "qualified_table": "tSceneWinDemo.CStatus"
+  "qualified_table": "tSceneWinDemo.CStatus",
+  "type": "int"
  },
  {
   "kind": "var",
@@ -1237,9 +1245,10 @@
   "table": "CStatus",
   "regfunc": "0x84c7a0",
   "ea": "0x84c9e3",
-  "offset": "56",
+  "offset": 56,
   "vartype": "Sqrat_Class_VarA",
-  "qualified_table": "tSceneWinDemo.CStatus"
+  "qualified_table": "tSceneWinDemo.CStatus",
+  "type": "int"
  },
  {
   "kind": "var",
@@ -1247,9 +1256,10 @@
   "table": "CStatus",
   "regfunc": "0x84c7a0",
   "ea": "0x84c9f2",
-  "offset": "60",
+  "offset": 60,
   "vartype": "Sqrat_Class_VarA",
-  "qualified_table": "tSceneWinDemo.CStatus"
+  "qualified_table": "tSceneWinDemo.CStatus",
+  "type": "int"
  },
  {
   "kind": "var",
@@ -1257,9 +1267,10 @@
   "table": "CStatus",
   "regfunc": "0x84c7a0",
   "ea": "0x84ca01",
-  "offset": "56",
+  "offset": 56,
   "vartype": "Sqrat_Class_VarA",
-  "qualified_table": "tSceneWinDemo.CStatus"
+  "qualified_table": "tSceneWinDemo.CStatus",
+  "type": "int"
  },
  {
   "kind": "var",
@@ -1267,9 +1278,10 @@
   "table": "CStatus",
   "regfunc": "0x84c7a0",
   "ea": "0x84ca10",
-  "offset": "60",
+  "offset": 60,
   "vartype": "Sqrat_Class_VarA",
-  "qualified_table": "tSceneWinDemo.CStatus"
+  "qualified_table": "tSceneWinDemo.CStatus",
+  "type": "int"
  },
  {
   "kind": "var",
@@ -1277,9 +1289,10 @@
   "table": "CStatus",
   "regfunc": "0x84c7a0",
   "ea": "0x84ca1f",
-  "offset": "64",
+  "offset": 64,
   "vartype": "Sqrat_Class_VarA",
-  "qualified_table": "tSceneWinDemo.CStatus"
+  "qualified_table": "tSceneWinDemo.CStatus",
+  "type": "int"
  },
  {
   "kind": "var",
@@ -1287,9 +1300,10 @@
   "table": "CStatus",
   "regfunc": "0x84c7a0",
   "ea": "0x84ca2e",
-  "offset": "68",
+  "offset": 68,
   "vartype": "Sqrat_Class_VarA",
-  "qualified_table": "tSceneWinDemo.CStatus"
+  "qualified_table": "tSceneWinDemo.CStatus",
+  "type": "int"
  },
  {
   "kind": "var",
@@ -1297,9 +1311,10 @@
   "table": "CStatus",
   "regfunc": "0x84c7a0",
   "ea": "0x84ca3d",
-  "offset": "72",
+  "offset": 72,
   "vartype": "Sqrat_Class_VarA",
-  "qualified_table": "tSceneWinDemo.CStatus"
+  "qualified_table": "tSceneWinDemo.CStatus",
+  "type": "int"
  },
  {
   "kind": "var",
@@ -1307,9 +1322,10 @@
   "table": "CStatus",
   "regfunc": "0x84c7a0",
   "ea": "0x84ca4c",
-  "offset": "76",
+  "offset": 76,
   "vartype": "Sqrat_Class_VarA",
-  "qualified_table": "tSceneWinDemo.CStatus"
+  "qualified_table": "tSceneWinDemo.CStatus",
+  "type": "int"
  },
  {
   "kind": "var",
@@ -1317,9 +1333,10 @@
   "table": "CStatus",
   "regfunc": "0x84c7a0",
   "ea": "0x84ca5b",
-  "offset": "20",
+  "offset": 20,
   "vartype": "Sqrat_Class_VarA",
-  "qualified_table": "tSceneWinDemo.CStatus"
+  "qualified_table": "tSceneWinDemo.CStatus",
+  "type": "int"
  },
  {
   "kind": "var",
@@ -1327,9 +1344,10 @@
   "table": "CStatus",
   "regfunc": "0x84c7a0",
   "ea": "0x84ca6a",
-  "offset": "84",
+  "offset": 84,
   "vartype": "Sqrat_Class_VarE",
-  "qualified_table": "tSceneWinDemo.CStatus"
+  "qualified_table": "tSceneWinDemo.CStatus",
+  "type": "bool"
  },
  {
   "kind": "var",
@@ -1337,9 +1355,10 @@
   "table": "CStatus",
   "regfunc": "0x84c7a0",
   "ea": "0x84ca79",
-  "offset": "88",
+  "offset": 88,
   "vartype": "Sqrat_Class_VarA",
-  "qualified_table": "tSceneWinDemo.CStatus"
+  "qualified_table": "tSceneWinDemo.CStatus",
+  "type": "int"
  },
  {
   "kind": "var",
@@ -1347,9 +1366,10 @@
   "table": "CStatus",
   "regfunc": "0x84c7a0",
   "ea": "0x84ca88",
-  "offset": "92",
+  "offset": 92,
   "vartype": "Sqrat_Class_VarA",
-  "qualified_table": "tSceneWinDemo.CStatus"
+  "qualified_table": "tSceneWinDemo.CStatus",
+  "type": "int"
  },
  {
   "kind": "var",
@@ -1357,9 +1377,10 @@
   "table": "CStatus",
   "regfunc": "0x84c7a0",
   "ea": "0x84ca97",
-  "offset": "96",
+  "offset": 96,
   "vartype": "Sqrat_Class_VarA",
-  "qualified_table": "tSceneWinDemo.CStatus"
+  "qualified_table": "tSceneWinDemo.CStatus",
+  "type": "int"
  },
  {
   "kind": "var",
@@ -1367,9 +1388,10 @@
   "table": "CStatus",
   "regfunc": "0x84c7a0",
   "ea": "0x84caa6",
-  "offset": "100",
+  "offset": 100,
   "vartype": "Sqrat_Class_VarE",
-  "qualified_table": "tSceneWinDemo.CStatus"
+  "qualified_table": "tSceneWinDemo.CStatus",
+  "type": "bool"
  },
  {
   "kind": "var",
@@ -1377,9 +1399,10 @@
   "table": "CStatus",
   "regfunc": "0x84c7a0",
   "ea": "0x84cab5",
-  "offset": "104",
+  "offset": 104,
   "vartype": "Sqrat_Class_VarA",
-  "qualified_table": "tSceneWinDemo.CStatus"
+  "qualified_table": "tSceneWinDemo.CStatus",
+  "type": "int"
  },
  {
   "kind": "var",
@@ -1387,9 +1410,10 @@
   "table": "CStatus",
   "regfunc": "0x84c7a0",
   "ea": "0x84cac4",
-  "offset": "108",
+  "offset": 108,
   "vartype": "Sqrat_Class_VarE",
-  "qualified_table": "tSceneWinDemo.CStatus"
+  "qualified_table": "tSceneWinDemo.CStatus",
+  "type": "bool"
  },
  {
   "kind": "var",
@@ -1397,9 +1421,10 @@
   "table": "CStatus",
   "regfunc": "0x84c7a0",
   "ea": "0x84cad3",
-  "offset": "112",
+  "offset": 112,
   "vartype": "Sqrat_Class_VarA",
-  "qualified_table": "tSceneWinDemo.CStatus"
+  "qualified_table": "tSceneWinDemo.CStatus",
+  "type": "int"
  },
  {
   "kind": "var",
@@ -1407,9 +1432,10 @@
   "table": "CStatus",
   "regfunc": "0x84c7a0",
   "ea": "0x84cae2",
-  "offset": "116",
+  "offset": 116,
   "vartype": "Sqrat_Class_VarA",
-  "qualified_table": "tSceneWinDemo.CStatus"
+  "qualified_table": "tSceneWinDemo.CStatus",
+  "type": "int"
  },
  {
   "kind": "var",
@@ -1417,9 +1443,10 @@
   "table": "CStatus",
   "regfunc": "0x84c7a0",
   "ea": "0x84caf1",
-  "offset": "120",
+  "offset": 120,
   "vartype": "Sqrat_Class_VarA",
-  "qualified_table": "tSceneWinDemo.CStatus"
+  "qualified_table": "tSceneWinDemo.CStatus",
+  "type": "int"
  },
  {
   "kind": "var",
@@ -1427,9 +1454,10 @@
   "table": "CStatus",
   "regfunc": "0x84c7a0",
   "ea": "0x84cb00",
-  "offset": "124",
+  "offset": 124,
   "vartype": "Sqrat_Class_VarA",
-  "qualified_table": "tSceneWinDemo.CStatus"
+  "qualified_table": "tSceneWinDemo.CStatus",
+  "type": "int"
  },
  {
   "kind": "var",
@@ -1437,9 +1465,10 @@
   "table": "CStatus",
   "regfunc": "0x84c7a0",
   "ea": "0x84cb12",
-  "offset": "128",
+  "offset": 128,
   "vartype": "Sqrat_Class_VarA",
-  "qualified_table": "tSceneWinDemo.CStatus"
+  "qualified_table": "tSceneWinDemo.CStatus",
+  "type": "int"
  },
  {
   "kind": "var",
@@ -1447,9 +1476,10 @@
   "table": "CStatus",
   "regfunc": "0x84c7a0",
   "ea": "0x84cb24",
-  "offset": "140",
+  "offset": 140,
   "vartype": "Sqrat_Class_VarA",
-  "qualified_table": "tSceneWinDemo.CStatus"
+  "qualified_table": "tSceneWinDemo.CStatus",
+  "type": "int"
  },
  {
   "kind": "var",
@@ -1457,9 +1487,10 @@
   "table": "CStatus",
   "regfunc": "0x84c7a0",
   "ea": "0x84cb36",
-  "offset": "144",
+  "offset": 144,
   "vartype": "Sqrat_Class_VarA",
-  "qualified_table": "tSceneWinDemo.CStatus"
+  "qualified_table": "tSceneWinDemo.CStatus",
+  "type": "int"
  },
  {
   "kind": "var",
@@ -1467,9 +1498,10 @@
   "table": "CStatus",
   "regfunc": "0x84c7a0",
   "ea": "0x84cb48",
-  "offset": "148",
+  "offset": 148,
   "vartype": "Sqrat_Class_VarA",
-  "qualified_table": "tSceneWinDemo.CStatus"
+  "qualified_table": "tSceneWinDemo.CStatus",
+  "type": "int"
  },
  {
   "kind": "var",
@@ -1477,9 +1509,10 @@
   "table": "CStatus",
   "regfunc": "0x84c7a0",
   "ea": "0x84cb5a",
-  "offset": "152",
+  "offset": 152,
   "vartype": "Sqrat_Class_VarA",
-  "qualified_table": "tSceneWinDemo.CStatus"
+  "qualified_table": "tSceneWinDemo.CStatus",
+  "type": "int"
  },
  {
   "kind": "var",
@@ -1487,9 +1520,10 @@
   "table": "CStatus",
   "regfunc": "0x84c7a0",
   "ea": "0x84cb6c",
-  "offset": "156",
+  "offset": 156,
   "vartype": "Sqrat_Class_VarA",
-  "qualified_table": "tSceneWinDemo.CStatus"
+  "qualified_table": "tSceneWinDemo.CStatus",
+  "type": "int"
  },
  {
   "kind": "table",
@@ -1508,7 +1542,8 @@
   "wrapper": "SqratWrap_instance__noargs_4",
   "ret": "instance",
   "args": [],
-  "qualified_table": "tSceneWinDemo"
+  "qualified_table": "tSceneWinDemo",
+  "class": "tSceneWinDemo.CStatus"
  },
  {
   "kind": "table",
@@ -1579,7 +1614,8 @@
   "wrapper": "SqratWrap_instance__noargs_5",
   "ret": "instance",
   "args": [],
-  "qualified_table": "tWinMessageTableCSVCallback"
+  "qualified_table": "tWinMessageTableCSVCallback",
+  "class": "WinMesTableLotCallbackInfo"
  },
  {
   "kind": "var",
@@ -1587,9 +1623,10 @@
   "table": "WinMesTableLotCallbackInfo",
   "regfunc": "0x85ddb0",
   "ea": "0x85defa",
-  "offset": "0",
+  "offset": 0,
   "vartype": "Sqrat_Class_VarB",
-  "qualified_table": "WinMesTableLotCallbackInfo"
+  "qualified_table": "WinMesTableLotCallbackInfo",
+  "type": "int"
  },
  {
   "kind": "var",
@@ -1597,9 +1634,10 @@
   "table": "WinMesTableLotCallbackInfo",
   "regfunc": "0x85ddb0",
   "ea": "0x85df09",
-  "offset": "4",
+  "offset": 4,
   "vartype": "Sqrat_Class_VarB",
-  "qualified_table": "WinMesTableLotCallbackInfo"
+  "qualified_table": "WinMesTableLotCallbackInfo",
+  "type": "int"
  },
  {
   "kind": "var",
@@ -1607,9 +1645,10 @@
   "table": "WinMesTableLotCallbackInfo",
   "regfunc": "0x85ddb0",
   "ea": "0x85df18",
-  "offset": "8",
+  "offset": 8,
   "vartype": "Sqrat_Class_VarB",
-  "qualified_table": "WinMesTableLotCallbackInfo"
+  "qualified_table": "WinMesTableLotCallbackInfo",
+  "type": "int"
  },
  {
   "kind": "var",
@@ -1617,9 +1656,10 @@
   "table": "WinMesTableLotCallbackInfo",
   "regfunc": "0x85ddb0",
   "ea": "0x85df27",
-  "offset": "12",
+  "offset": 12,
   "vartype": "Sqrat_Class_VarB",
-  "qualified_table": "WinMesTableLotCallbackInfo"
+  "qualified_table": "WinMesTableLotCallbackInfo",
+  "type": "int"
  },
  {
   "kind": "var",
@@ -1627,9 +1667,10 @@
   "table": "WinMesTableLotCallbackInfo",
   "regfunc": "0x85ddb0",
   "ea": "0x85df36",
-  "offset": "16",
+  "offset": 16,
   "vartype": "Sqrat_Class_VarB",
-  "qualified_table": "WinMesTableLotCallbackInfo"
+  "qualified_table": "WinMesTableLotCallbackInfo",
+  "type": "int"
  },
  {
   "kind": "var",
@@ -1637,9 +1678,10 @@
   "table": "WinMesTableLotCallbackInfo",
   "regfunc": "0x85ddb0",
   "ea": "0x85df45",
-  "offset": "20",
+  "offset": 20,
   "vartype": "Sqrat_Class_VarB",
-  "qualified_table": "WinMesTableLotCallbackInfo"
+  "qualified_table": "WinMesTableLotCallbackInfo",
+  "type": "int"
  },
  {
   "kind": "var",
@@ -1647,9 +1689,10 @@
   "table": "WinMesTableLotCallbackInfo",
   "regfunc": "0x85ddb0",
   "ea": "0x85df54",
-  "offset": "24",
+  "offset": 24,
   "vartype": "Sqrat_Class_VarB",
-  "qualified_table": "WinMesTableLotCallbackInfo"
+  "qualified_table": "WinMesTableLotCallbackInfo",
+  "type": "int"
  },
  {
   "kind": "var",
@@ -1657,9 +1700,10 @@
   "table": "WinMesTableLotCallbackInfo",
   "regfunc": "0x85ddb0",
   "ea": "0x85df63",
-  "offset": "28",
+  "offset": 28,
   "vartype": "Sqrat_Class_VarB",
-  "qualified_table": "WinMesTableLotCallbackInfo"
+  "qualified_table": "WinMesTableLotCallbackInfo",
+  "type": "int"
  },
  {
   "kind": "var",
@@ -1667,9 +1711,10 @@
   "table": "WinMesTableLotCallbackInfo",
   "regfunc": "0x85ddb0",
   "ea": "0x85df72",
-  "offset": "32",
+  "offset": 32,
   "vartype": "Sqrat_Class_VarB",
-  "qualified_table": "WinMesTableLotCallbackInfo"
+  "qualified_table": "WinMesTableLotCallbackInfo",
+  "type": "int"
  },
  {
   "kind": "var",
@@ -1677,9 +1722,10 @@
   "table": "WinMesTableLotCallbackInfo",
   "regfunc": "0x85ddb0",
   "ea": "0x85df81",
-  "offset": "36",
+  "offset": 36,
   "vartype": "Sqrat_Class_VarB",
-  "qualified_table": "WinMesTableLotCallbackInfo"
+  "qualified_table": "WinMesTableLotCallbackInfo",
+  "type": "int"
  },
  {
   "kind": "var",
@@ -1687,9 +1733,10 @@
   "table": "WinMesTableLotCallbackInfo",
   "regfunc": "0x85ddb0",
   "ea": "0x85df90",
-  "offset": "40",
+  "offset": 40,
   "vartype": "Sqrat_Class_VarB",
-  "qualified_table": "WinMesTableLotCallbackInfo"
+  "qualified_table": "WinMesTableLotCallbackInfo",
+  "type": "int"
  },
  {
   "kind": "var",
@@ -1697,9 +1744,10 @@
   "table": "WinMesTableLotCallbackInfo",
   "regfunc": "0x85ddb0",
   "ea": "0x85df9f",
-  "offset": "44",
+  "offset": 44,
   "vartype": "Sqrat_Class_VarB",
-  "qualified_table": "WinMesTableLotCallbackInfo"
+  "qualified_table": "WinMesTableLotCallbackInfo",
+  "type": "int"
  },
  {
   "kind": "const",
@@ -1886,7 +1934,8 @@
   "wrapper": "SqratWrap_instance__noargs_6",
   "ret": "instance",
   "args": [],
-  "qualified_table": "BMvCore"
+  "qualified_table": "BMvCore",
+  "class": "BMvCore.CCharaData"
  },
  {
   "kind": "func",
@@ -1898,7 +1947,8 @@
   "wrapper": "SqratWrap_instance__noargs_6",
   "ret": "instance",
   "args": [],
-  "qualified_table": "BMvCore"
+  "qualified_table": "BMvCore",
+  "class": "BMvCore.CCharaData"
  },
  {
   "kind": "func",
@@ -1910,7 +1960,8 @@
   "wrapper": "SqratWrap_instance__noargs_6",
   "ret": "instance",
   "args": [],
-  "qualified_table": "BMvCore"
+  "qualified_table": "BMvCore",
+  "class": "BMvCore.CCharaData"
  },
  {
   "kind": "func",
@@ -1922,7 +1973,8 @@
   "wrapper": "SqratWrap_instance__noargs_6",
   "ret": "instance",
   "args": [],
-  "qualified_table": "BMvCore"
+  "qualified_table": "BMvCore",
+  "class": "BMvCore.CCharaData"
  },
  {
   "kind": "func",
@@ -1934,7 +1986,8 @@
   "wrapper": "SqratWrap_instance__noargs_6",
   "ret": "instance",
   "args": [],
-  "qualified_table": "BMvCore"
+  "qualified_table": "BMvCore",
+  "class": "BMvCore.CCharaData"
  },
  {
   "kind": "func",
@@ -1962,7 +2015,8 @@
   "args": [
    "int"
   ],
-  "qualified_table": "BMvCore"
+  "qualified_table": "BMvCore",
+  "class": "BMvCore.CCharaData"
  },
  {
   "kind": "func",
@@ -1990,7 +2044,8 @@
   "args": [
    "int"
   ],
-  "qualified_table": "BMvCore"
+  "qualified_table": "BMvCore",
+  "class": "BMvCore.CCharaData"
  },
  {
   "kind": "func",
@@ -2004,7 +2059,8 @@
   "args": [
    "int"
   ],
-  "qualified_table": "BMvCore"
+  "qualified_table": "BMvCore",
+  "class": "BMvCore.CCharaData"
  },
  {
   "kind": "func",
@@ -2102,7 +2158,8 @@
   "wrapper": "SqratWrap_instance__noargs_6",
   "ret": "instance",
   "args": [],
-  "qualified_table": "BMvCore"
+  "qualified_table": "BMvCore",
+  "class": "BMvCore.CCharaData"
  },
  {
   "kind": "func",
@@ -2114,7 +2171,8 @@
   "wrapper": "SqratWrap_instance__noargs_6",
   "ret": "instance",
   "args": [],
-  "qualified_table": "BMvCore"
+  "qualified_table": "BMvCore",
+  "class": "BMvCore.CCharaData"
  },
  {
   "kind": "func",
@@ -2154,7 +2212,8 @@
   "args": [
    "int"
   ],
-  "qualified_table": "BMvCore"
+  "qualified_table": "BMvCore",
+  "class": "BMvCore.CCharaData"
  },
  {
   "kind": "func",
@@ -2247,7 +2306,8 @@
   "args": [
    "int"
   ],
-  "qualified_table": "BMvCore.CFindObject"
+  "qualified_table": "BMvCore.CFindObject",
+  "class": "BMvCore.CCharaData"
  },
  {
   "kind": "table",
@@ -3987,7 +4047,8 @@
   "args": [
    "string"
   ],
-  "qualified_table": "BMvEff"
+  "qualified_table": "BMvEff",
+  "class": "BMvEff.CPointStatus"
  },
  {
   "kind": "func",
@@ -4001,7 +4062,8 @@
   "args": [
    "string"
   ],
-  "qualified_table": "BMvEff"
+  "qualified_table": "BMvEff",
+  "class": "BMvTbl.CCharaVector"
  },
  {
   "kind": "func",
@@ -4015,7 +4077,8 @@
   "args": [
    "string"
   ],
-  "qualified_table": "BMvEff"
+  "qualified_table": "BMvEff",
+  "class": "BMvEff.CPointStatus"
  },
  {
   "kind": "func",
@@ -4100,7 +4163,8 @@
   "args": [
    "string"
   ],
-  "qualified_table": "BMvEff"
+  "qualified_table": "BMvEff",
+  "class": "BMvTbl.CCharaRect"
  },
  {
   "kind": "func",
@@ -4152,7 +4216,8 @@
   "args": [
    "string"
   ],
-  "qualified_table": "BMvEff"
+  "qualified_table": "BMvEff",
+  "class": "BMvTbl.CCharaRect"
  },
  {
   "kind": "func",
@@ -4246,7 +4311,8 @@
   "wrapper": "SqratWrap_instance__noargs_7",
   "ret": "instance",
   "args": [],
-  "qualified_table": "BMvEff"
+  "qualified_table": "BMvEff",
+  "class": "BMvTbl.CCharaPosition"
  },
  {
   "kind": "func",
@@ -5409,9 +5475,10 @@
   "table": "CPointStatus",
   "regfunc": "0x882cb0",
   "ea": "0x884183",
-  "offset": "0",
+  "offset": 0,
   "vartype": "Sqrat_Class_VarD",
-  "qualified_table": "BMvEff.CPointStatus"
+  "qualified_table": "BMvEff.CPointStatus",
+  "type": "int"
  },
  {
   "kind": "var",
@@ -5419,9 +5486,10 @@
   "table": "CPointStatus",
   "regfunc": "0x882cb0",
   "ea": "0x884192",
-  "offset": "4",
+  "offset": 4,
   "vartype": "Sqrat_Class_VarD",
-  "qualified_table": "BMvEff.CPointStatus"
+  "qualified_table": "BMvEff.CPointStatus",
+  "type": "int"
  },
  {
   "kind": "var",
@@ -5429,9 +5497,10 @@
   "table": "CPointStatus",
   "regfunc": "0x882cb0",
   "ea": "0x8841a1",
-  "offset": "8",
+  "offset": 8,
   "vartype": "Sqrat_Class_VarD",
-  "qualified_table": "BMvEff.CPointStatus"
+  "qualified_table": "BMvEff.CPointStatus",
+  "type": "int"
  },
  {
   "kind": "var",
@@ -5439,9 +5508,10 @@
   "table": "CPointStatus",
   "regfunc": "0x882cb0",
   "ea": "0x8841b0",
-  "offset": "12",
+  "offset": 12,
   "vartype": "Sqrat_Class_VarD",
-  "qualified_table": "BMvEff.CPointStatus"
+  "qualified_table": "BMvEff.CPointStatus",
+  "type": "int"
  },
  {
   "kind": "var",
@@ -5449,9 +5519,10 @@
   "table": "CPointStatus",
   "regfunc": "0x882cb0",
   "ea": "0x8841bf",
-  "offset": "16",
+  "offset": 16,
   "vartype": "Sqrat_Class_VarD",
-  "qualified_table": "BMvEff.CPointStatus"
+  "qualified_table": "BMvEff.CPointStatus",
+  "type": "int"
  },
  {
   "kind": "table",
@@ -6552,7 +6623,8 @@
   "wrapper": "sub_44C6F0",
   "ret": "instance",
   "args": [],
-  "qualified_table": "CCheckRect"
+  "qualified_table": "CCheckRect",
+  "class": "BMvCore.CCharaData"
  },
  {
   "kind": "table",
@@ -8075,7 +8147,8 @@
   "wrapper": "SqratWrap_instance__noargs_8",
   "ret": "instance",
   "args": [],
-  "qualified_table": "BMvTbl"
+  "qualified_table": "BMvTbl",
+  "class": "BMvTbl.MvStatus"
  },
  {
   "kind": "func",
@@ -8087,7 +8160,8 @@
   "wrapper": "SqratWrap_instance__noargs_8",
   "ret": "instance",
   "args": [],
-  "qualified_table": "BMvTbl"
+  "qualified_table": "BMvTbl",
+  "class": "BMvTbl.MvStatus"
  },
  {
   "kind": "func",
@@ -8139,7 +8213,8 @@
   "wrapper": "SqratWrap_instance__noargs_9",
   "ret": "instance",
   "args": [],
-  "qualified_table": "BMvTbl"
+  "qualified_table": "BMvTbl",
+  "class": "BMvTbl.MvHitStatus"
  },
  {
   "kind": "func",
@@ -8151,7 +8226,8 @@
   "wrapper": "SqratWrap_instance__noargs_9",
   "ret": "instance",
   "args": [],
-  "qualified_table": "BMvTbl"
+  "qualified_table": "BMvTbl",
+  "class": "BMvTbl.MvHitStatus"
  },
  {
   "kind": "func",
@@ -8218,7 +8294,8 @@
   "args": [
    "string"
   ],
-  "qualified_table": "BMvTbl"
+  "qualified_table": "BMvTbl",
+  "class": "BMvTbl.CCharaVector"
  },
  {
   "kind": "func",
@@ -8312,7 +8389,8 @@
   "wrapper": "SqratWrap_instance__noargs_7",
   "ret": "instance",
   "args": [],
-  "qualified_table": "BMvTbl"
+  "qualified_table": "BMvTbl",
+  "class": "BMvTbl.CCharaPosition"
  },
  {
   "kind": "func",
@@ -8364,7 +8442,8 @@
   "wrapper": "SqratWrap_instance__noargs_7",
   "ret": "instance",
   "args": [],
-  "qualified_table": "BMvTbl"
+  "qualified_table": "BMvTbl",
+  "class": "BMvTbl.CCharaPosition"
  },
  {
   "kind": "func",
@@ -8388,7 +8467,8 @@
   "wrapper": "SqratWrap_instance__noargs_10",
   "ret": "instance",
   "args": [],
-  "qualified_table": "BMvTbl"
+  "qualified_table": "BMvTbl",
+  "class": "BMvTbl.MvRoundStatus"
  },
  {
   "kind": "func",
@@ -8400,7 +8480,8 @@
   "wrapper": "SqratWrap_instance__noargs_11",
   "ret": "instance",
   "args": [],
-  "qualified_table": "BMvTbl"
+  "qualified_table": "BMvTbl",
+  "class": "BMvTbl.MvStageStatus"
  },
  {
   "kind": "func",
@@ -8412,7 +8493,8 @@
   "wrapper": "SqratWrap_instance__noargs_12",
   "ret": "instance",
   "args": [],
-  "qualified_table": "BMvTbl"
+  "qualified_table": "BMvTbl",
+  "class": "BMvTbl.MvNetworkInfo"
  },
  {
   "kind": "func",
@@ -8670,7 +8752,8 @@
   "wrapper": "SqratWrap_instance__noargs_13",
   "ret": "instance",
   "args": [],
-  "qualified_table": "BMvTbl"
+  "qualified_table": "BMvTbl",
+  "class": "BMvTbl.MvRecoverStatus"
  },
  {
   "kind": "func",
@@ -13688,7 +13771,8 @@
   "wrapper": "SqratWrap_instance__noargs_14",
   "ret": "instance",
   "args": [],
-  "qualified_table": "BtlMvStd"
+  "qualified_table": "BtlMvStd",
+  "class": "BtlMvStd.MvBoundStatus"
  },
  {
   "kind": "func",
@@ -13803,7 +13887,8 @@
    "int",
    "int"
   ],
-  "qualified_table": "BtlMvStd"
+  "qualified_table": "BtlMvStd",
+  "class": "BtlMvStd.MvBoundVectorStatus"
  },
  {
   "kind": "var",
@@ -13811,9 +13896,10 @@
   "table": "MvBoundStatus",
   "regfunc": "0x89f730",
   "ea": "0x89f977",
-  "offset": "0",
+  "offset": 0,
   "vartype": "Sqrat_Class_VarC",
-  "qualified_table": "BtlMvStd.MvBoundStatus"
+  "qualified_table": "BtlMvStd.MvBoundStatus",
+  "type": "short"
  },
  {
   "kind": "var",
@@ -13821,9 +13907,10 @@
   "table": "MvBoundStatus",
   "regfunc": "0x89f730",
   "ea": "0x89f986",
-  "offset": "2",
+  "offset": 2,
   "vartype": "Sqrat_Class_VarC",
-  "qualified_table": "BtlMvStd.MvBoundStatus"
+  "qualified_table": "BtlMvStd.MvBoundStatus",
+  "type": "short"
  },
  {
   "kind": "var",
@@ -13831,9 +13918,10 @@
   "table": "MvBoundStatus",
   "regfunc": "0x89f730",
   "ea": "0x89f995",
-  "offset": "4",
+  "offset": 4,
   "vartype": "Sqrat_Class_VarC",
-  "qualified_table": "BtlMvStd.MvBoundStatus"
+  "qualified_table": "BtlMvStd.MvBoundStatus",
+  "type": "short"
  },
  {
   "kind": "var",
@@ -13841,9 +13929,10 @@
   "table": "MvBoundStatus",
   "regfunc": "0x89f730",
   "ea": "0x89f9a4",
-  "offset": "10",
+  "offset": 10,
   "vartype": "Sqrat_Class_VarC",
-  "qualified_table": "BtlMvStd.MvBoundStatus"
+  "qualified_table": "BtlMvStd.MvBoundStatus",
+  "type": "short"
  },
  {
   "kind": "var",
@@ -13851,9 +13940,10 @@
   "table": "MvBoundStatus",
   "regfunc": "0x89f730",
   "ea": "0x89f9b3",
-  "offset": "12",
+  "offset": 12,
   "vartype": "Sqrat_Class_VarC",
-  "qualified_table": "BtlMvStd.MvBoundStatus"
+  "qualified_table": "BtlMvStd.MvBoundStatus",
+  "type": "short"
  },
  {
   "kind": "var",
@@ -13861,9 +13951,10 @@
   "table": "MvBoundStatus",
   "regfunc": "0x89f730",
   "ea": "0x89f9c2",
-  "offset": "18",
+  "offset": 18,
   "vartype": "Sqrat_Class_VarC",
-  "qualified_table": "BtlMvStd.MvBoundStatus"
+  "qualified_table": "BtlMvStd.MvBoundStatus",
+  "type": "short"
  },
  {
   "kind": "var",
@@ -13871,9 +13962,10 @@
   "table": "MvBoundStatus",
   "regfunc": "0x89f730",
   "ea": "0x89fa9c",
-  "offset": "24",
+  "offset": 24,
   "vartype": "Sqrat_Class_VarC",
-  "qualified_table": "BtlMvStd.MvBoundStatus"
+  "qualified_table": "BtlMvStd.MvBoundStatus",
+  "type": "short"
  },
  {
   "kind": "var",
@@ -13881,9 +13973,10 @@
   "table": "MvBoundStatus",
   "regfunc": "0x89f730",
   "ea": "0x89faab",
-  "offset": "16",
+  "offset": 16,
   "vartype": "Sqrat_Class_VarC",
-  "qualified_table": "BtlMvStd.MvBoundStatus"
+  "qualified_table": "BtlMvStd.MvBoundStatus",
+  "type": "short"
  },
  {
   "kind": "var",
@@ -13891,9 +13984,10 @@
   "table": "MvBoundStatus",
   "regfunc": "0x89f730",
   "ea": "0x89faba",
-  "offset": "14",
+  "offset": 14,
   "vartype": "Sqrat_Class_VarC",
-  "qualified_table": "BtlMvStd.MvBoundStatus"
+  "qualified_table": "BtlMvStd.MvBoundStatus",
+  "type": "short"
  },
  {
   "kind": "var",
@@ -13901,9 +13995,10 @@
   "table": "MvBoundStatus",
   "regfunc": "0x89f730",
   "ea": "0x89fac9",
-  "offset": "26",
+  "offset": 26,
   "vartype": "Sqrat_Class_VarC",
-  "qualified_table": "BtlMvStd.MvBoundStatus"
+  "qualified_table": "BtlMvStd.MvBoundStatus",
+  "type": "short"
  },
  {
   "kind": "var",
@@ -13911,9 +14006,10 @@
   "table": "MvBoundStatus",
   "regfunc": "0x89f730",
   "ea": "0x89fad8",
-  "offset": "28",
+  "offset": 28,
   "vartype": "Sqrat_Class_VarC",
-  "qualified_table": "BtlMvStd.MvBoundStatus"
+  "qualified_table": "BtlMvStd.MvBoundStatus",
+  "type": "short"
  },
  {
   "kind": "var",
@@ -13921,9 +14017,10 @@
   "table": "MvBoundStatus",
   "regfunc": "0x89f730",
   "ea": "0x89fae7",
-  "offset": "30",
+  "offset": 30,
   "vartype": "Sqrat_Class_VarC",
-  "qualified_table": "BtlMvStd.MvBoundStatus"
+  "qualified_table": "BtlMvStd.MvBoundStatus",
+  "type": "short"
  },
  {
   "kind": "func",
@@ -14879,7 +14976,8 @@
   "wrapper": "SqratWrap_instance__noargs_15",
   "ret": "instance",
   "args": [],
-  "qualified_table": "BCMDTbl"
+  "qualified_table": "BCMDTbl",
+  "class": "BCMDTbl.CmdInfo"
  },
  {
   "kind": "func",
@@ -14893,7 +14991,8 @@
   "args": [
    "int"
   ],
-  "qualified_table": "BCMDTbl"
+  "qualified_table": "BCMDTbl",
+  "class": "BCMDTbl.CmdInfo"
  },
  {
   "kind": "func",
@@ -16407,7 +16506,8 @@
    "instance",
    "object"
   ],
-  "qualified_table": "tPAni.CAniManager"
+  "qualified_table": "tPAni.CAniManager",
+  "class": "tPAni.CAnime"
  },
  {
   "kind": "func",
@@ -16483,7 +16583,8 @@
   "args": [
    "object"
   ],
-  "qualified_table": "tPAni.CAniManager"
+  "qualified_table": "tPAni.CAniManager",
+  "class": "tPAni.CAnime"
  },
  {
   "kind": "table",
@@ -16646,5 +16747,992 @@
   "table": "",
   "regfunc": "0x8dd0f0",
   "ea": "0x8dd280"
+ },
+ {
+  "kind": "class",
+  "name": "MvStageStatus",
+  "qualified": "BMvTbl.MvStageStatus",
+  "cpp": "BtlMvFunc::MvStageStatus",
+  "table": "BMvTbl"
+ },
+ {
+  "kind": "class",
+  "name": "MvNetworkInfo",
+  "qualified": "BMvTbl.MvNetworkInfo",
+  "cpp": "BtlMvFunc::MvNetworkInfo",
+  "table": "BMvTbl"
+ },
+ {
+  "kind": "var",
+  "name": "NetworkVsMode",
+  "table": "MvNetworkInfo",
+  "qualified_table": "BMvTbl.MvNetworkInfo",
+  "ea": "0x89e534",
+  "vartype": "Sqrat_Class_BindVarClosure",
+  "type": "short",
+  "offset": 2
+ },
+ {
+  "kind": "var",
+  "name": "NetworkVsControlType",
+  "table": "MvNetworkInfo",
+  "qualified_table": "BMvTbl.MvNetworkInfo",
+  "ea": "0x89e589",
+  "vartype": "Sqrat_Class_BindVarClosure",
+  "type": "short",
+  "offset": 4
+ },
+ {
+  "kind": "class",
+  "name": "MvRoundStatus",
+  "qualified": "BMvTbl.MvRoundStatus",
+  "cpp": "BtlMvFunc::MvRoundStatus",
+  "table": "BMvTbl"
+ },
+ {
+  "kind": "var",
+  "name": "Time",
+  "table": "MvRoundStatus",
+  "qualified_table": "BMvTbl.MvRoundStatus",
+  "ea": "0x89e19b",
+  "vartype": "Sqrat_Class_BindVarClosure",
+  "type": "short",
+  "offset": 12
+ },
+ {
+  "kind": "var",
+  "name": "TimeUpdate",
+  "table": "MvRoundStatus",
+  "qualified_table": "BMvTbl.MvRoundStatus",
+  "ea": "0x89e1ea",
+  "vartype": "Sqrat_Class_BindVarClosure",
+  "type": "short",
+  "offset": 14
+ },
+ {
+  "kind": "var",
+  "name": "Round",
+  "table": "MvRoundStatus",
+  "qualified_table": "BMvTbl.MvRoundStatus",
+  "ea": "0x89e239",
+  "vartype": "Sqrat_Class_BindVarClosure",
+  "type": "short",
+  "offset": 16
+ },
+ {
+  "kind": "var",
+  "name": "WinType",
+  "table": "MvRoundStatus",
+  "qualified_table": "BMvTbl.MvRoundStatus",
+  "ea": "0x89e288",
+  "vartype": "Sqrat_Class_BindVarClosure",
+  "type": "short",
+  "offset": 18
+ },
+ {
+  "kind": "var",
+  "name": "isKo",
+  "table": "MvRoundStatus",
+  "qualified_table": "BMvTbl.MvRoundStatus",
+  "ea": "0x89e2d7",
+  "vartype": "Sqrat_Class_BindVarClosure",
+  "type": "short",
+  "offset": 0
+ },
+ {
+  "kind": "var",
+  "name": "isMyKo",
+  "table": "MvRoundStatus",
+  "qualified_table": "BMvTbl.MvRoundStatus",
+  "ea": "0x89e326",
+  "vartype": "Sqrat_Class_BindVarClosure",
+  "type": "short",
+  "offset": 2
+ },
+ {
+  "kind": "var",
+  "name": "isWinRound",
+  "table": "MvRoundStatus",
+  "qualified_table": "BMvTbl.MvRoundStatus",
+  "ea": "0x89e375",
+  "vartype": "Sqrat_Class_BindVarClosure",
+  "type": "short",
+  "offset": 4
+ },
+ {
+  "kind": "var",
+  "name": "isLoseRound",
+  "table": "MvRoundStatus",
+  "qualified_table": "BMvTbl.MvRoundStatus",
+  "ea": "0x89e3c4",
+  "vartype": "Sqrat_Class_BindVarClosure",
+  "type": "short",
+  "offset": 6
+ },
+ {
+  "kind": "var",
+  "name": "isExtraRound",
+  "table": "MvRoundStatus",
+  "qualified_table": "BMvTbl.MvRoundStatus",
+  "ea": "0x89e413",
+  "vartype": "Sqrat_Class_BindVarClosure",
+  "type": "short",
+  "offset": 8
+ },
+ {
+  "kind": "var",
+  "name": "isFirstLoseRound",
+  "table": "MvRoundStatus",
+  "qualified_table": "BMvTbl.MvRoundStatus",
+  "ea": "0x89e462",
+  "vartype": "Sqrat_Class_BindVarClosure",
+  "type": "short",
+  "offset": 10
+ },
+ {
+  "kind": "var",
+  "name": "CharaMoveMode",
+  "table": "MvRoundStatus",
+  "qualified_table": "BMvTbl.MvRoundStatus",
+  "ea": "0x89e4b1",
+  "vartype": "Sqrat_Class_BindVarClosure",
+  "type": "short",
+  "offset": 20
+ },
+ {
+  "kind": "class",
+  "name": "MvRecoverStatus",
+  "qualified": "BMvTbl.MvRecoverStatus",
+  "cpp": "CPcRecoverStatus",
+  "table": "BMvTbl"
+ },
+ {
+  "kind": "var",
+  "name": "Type",
+  "table": "MvRecoverStatus",
+  "qualified_table": "BMvTbl.MvRecoverStatus",
+  "ea": "0x89e0c0",
+  "vartype": "Sqrat_Class_BindVarClosure",
+  "type": "int",
+  "offset": 0
+ },
+ {
+  "kind": "var",
+  "name": "Stick",
+  "table": "MvRecoverStatus",
+  "qualified_table": "BMvTbl.MvRecoverStatus",
+  "ea": "0x89e115",
+  "vartype": "Sqrat_Class_BindVarClosure",
+  "type": "int",
+  "offset": 4
+ },
+ {
+  "kind": "class",
+  "name": "MvInterruptInfo",
+  "qualified": "BMvTbl.MvInterruptInfo",
+  "cpp": "BtlMvFunc::MvInterruptInfo",
+  "table": "BMvTbl"
+ },
+ {
+  "kind": "var",
+  "name": "type",
+  "table": "MvInterruptInfo",
+  "qualified_table": "BMvTbl.MvInterruptInfo",
+  "ea": "0x89de8b",
+  "vartype": "Sqrat_Class_BindVarClosure",
+  "type": "int",
+  "offset": 0
+ },
+ {
+  "kind": "var",
+  "name": "Param0",
+  "table": "MvInterruptInfo",
+  "qualified_table": "BMvTbl.MvInterruptInfo",
+  "ea": "0x89dee0",
+  "vartype": "Sqrat_Class_BindVarClosure",
+  "type": "int",
+  "offset": 4
+ },
+ {
+  "kind": "var",
+  "name": "Param1",
+  "table": "MvInterruptInfo",
+  "qualified_table": "BMvTbl.MvInterruptInfo",
+  "ea": "0x89df35",
+  "vartype": "Sqrat_Class_BindVarClosure",
+  "type": "int",
+  "offset": 8
+ },
+ {
+  "kind": "var",
+  "name": "Param2",
+  "table": "MvInterruptInfo",
+  "qualified_table": "BMvTbl.MvInterruptInfo",
+  "ea": "0x89df8a",
+  "vartype": "Sqrat_Class_BindVarClosure",
+  "type": "int",
+  "offset": 12
+ },
+ {
+  "kind": "var",
+  "name": "Param3",
+  "table": "MvInterruptInfo",
+  "qualified_table": "BMvTbl.MvInterruptInfo",
+  "ea": "0x89dfdf",
+  "vartype": "Sqrat_Class_BindVarClosure",
+  "type": "int",
+  "offset": 16
+ },
+ {
+  "kind": "var",
+  "name": "Param4",
+  "table": "MvInterruptInfo",
+  "qualified_table": "BMvTbl.MvInterruptInfo",
+  "ea": "0x89e034",
+  "vartype": "Sqrat_Class_BindVarClosure",
+  "type": "int",
+  "offset": 20
+ },
+ {
+  "kind": "class",
+  "name": "MvHitEffectInfo",
+  "qualified": "BMvTbl.MvHitEffectInfo",
+  "cpp": "BtlMvFunc::MvHitEffectInfo",
+  "table": "BMvTbl"
+ },
+ {
+  "kind": "class",
+  "name": "MvHitImpactInfo",
+  "qualified": "BMvTbl.MvHitImpactInfo",
+  "cpp": "BtlMvFunc::MvHitImpactInfo",
+  "table": "BMvTbl"
+ },
+ {
+  "kind": "var",
+  "name": "type",
+  "table": "MvHitImpactInfo",
+  "qualified_table": "BMvTbl.MvHitImpactInfo",
+  "ea": "0x89da66",
+  "vartype": "Sqrat_Class_BindVarClosure",
+  "type": "short",
+  "offset": 0
+ },
+ {
+  "kind": "var",
+  "name": "d_state",
+  "table": "MvHitImpactInfo",
+  "qualified_table": "BMvTbl.MvHitImpactInfo",
+  "ea": "0x89dab5",
+  "vartype": "Sqrat_Class_BindVarClosure",
+  "type": "short",
+  "offset": 2
+ },
+ {
+  "kind": "var",
+  "name": "atk_guard",
+  "table": "MvHitImpactInfo",
+  "qualified_table": "BMvTbl.MvHitImpactInfo",
+  "ea": "0x89db04",
+  "vartype": "Sqrat_Class_BindVarClosure",
+  "type": "int",
+  "offset": 4
+ },
+ {
+  "kind": "var",
+  "name": "atk_throw",
+  "table": "MvHitImpactInfo",
+  "qualified_table": "BMvTbl.MvHitImpactInfo",
+  "ea": "0x89db53",
+  "vartype": "Sqrat_Class_BindVarClosure",
+  "type": "short",
+  "offset": 8
+ },
+ {
+  "kind": "var",
+  "name": "def_guard",
+  "table": "MvHitImpactInfo",
+  "qualified_table": "BMvTbl.MvHitImpactInfo",
+  "ea": "0x89dba2",
+  "vartype": "Sqrat_Class_BindVarClosure",
+  "type": "short",
+  "offset": 10
+ },
+ {
+  "kind": "var",
+  "name": "grd_break",
+  "table": "MvHitImpactInfo",
+  "qualified_table": "BMvTbl.MvHitImpactInfo",
+  "ea": "0x89dbf1",
+  "vartype": "Sqrat_Class_BindVarClosure",
+  "type": "short",
+  "offset": 12
+ },
+ {
+  "kind": "var",
+  "name": "armor_break",
+  "table": "MvHitImpactInfo",
+  "qualified_table": "BMvTbl.MvHitImpactInfo",
+  "ea": "0x89dc40",
+  "vartype": "Sqrat_Class_BindVarClosure",
+  "type": "short",
+  "offset": 14
+ },
+ {
+  "kind": "var",
+  "name": "counterhit",
+  "table": "MvHitImpactInfo",
+  "qualified_table": "BMvTbl.MvHitImpactInfo",
+  "ea": "0x89dc8f",
+  "vartype": "Sqrat_Class_BindVarClosure",
+  "type": "short",
+  "offset": 16
+ },
+ {
+  "kind": "var",
+  "name": "counterhittmp",
+  "table": "MvHitImpactInfo",
+  "qualified_table": "BMvTbl.MvHitImpactInfo",
+  "ea": "0x89dcde",
+  "vartype": "Sqrat_Class_BindVarClosure",
+  "type": "short",
+  "offset": 18
+ },
+ {
+  "kind": "var",
+  "name": "vectortype",
+  "table": "MvHitImpactInfo",
+  "qualified_table": "BMvTbl.MvHitImpactInfo",
+  "ea": "0x89dd2d",
+  "vartype": "Sqrat_Class_BindVarClosure",
+  "type": "short",
+  "offset": 20
+ },
+ {
+  "kind": "var",
+  "name": "flags",
+  "table": "MvHitImpactInfo",
+  "qualified_table": "BMvTbl.MvHitImpactInfo",
+  "ea": "0x89dd7c",
+  "vartype": "Sqrat_Class_BindVarClosure",
+  "type": "int",
+  "offset": 24
+ },
+ {
+  "kind": "class",
+  "name": "MvHitStatus",
+  "qualified": "BMvTbl.MvHitStatus",
+  "cpp": "BtlMvFunc::MvHitStatus",
+  "table": "BMvTbl"
+ },
+ {
+  "kind": "var",
+  "name": "Type",
+  "table": "MvHitStatus",
+  "qualified_table": "BMvTbl.MvHitStatus",
+  "ea": "0x89d7be",
+  "vartype": "Sqrat_Class_BindVarClosure",
+  "type": "short",
+  "offset": 0
+ },
+ {
+  "kind": "var",
+  "name": "PosState",
+  "table": "MvHitStatus",
+  "qualified_table": "BMvTbl.MvHitStatus",
+  "ea": "0x89d813",
+  "vartype": "Sqrat_Class_BindVarClosure",
+  "type": "short",
+  "offset": 2
+ },
+ {
+  "kind": "var",
+  "name": "isDown",
+  "table": "MvHitStatus",
+  "qualified_table": "BMvTbl.MvHitStatus",
+  "ea": "0x89d868",
+  "vartype": "Sqrat_Class_BindVarClosure",
+  "type": "short",
+  "offset": 4
+ },
+ {
+  "kind": "var",
+  "name": "isFirstUpdate",
+  "table": "MvHitStatus",
+  "qualified_table": "BMvTbl.MvHitStatus",
+  "ea": "0x89d8bd",
+  "vartype": "Sqrat_Class_BindVarClosure",
+  "type": "short",
+  "offset": 8
+ },
+ {
+  "kind": "var",
+  "name": "isCatchFlag",
+  "table": "MvHitStatus",
+  "qualified_table": "BMvTbl.MvHitStatus",
+  "ea": "0x89d912",
+  "vartype": "Sqrat_Class_BindVarClosure",
+  "type": "short",
+  "offset": 10
+ },
+ {
+  "kind": "var",
+  "name": "isMoveable",
+  "table": "MvHitStatus",
+  "qualified_table": "BMvTbl.MvHitStatus",
+  "ea": "0x89d967",
+  "vartype": "Sqrat_Class_BindVarClosure",
+  "type": "short",
+  "offset": 12
+ },
+ {
+  "kind": "var",
+  "name": "Count",
+  "table": "MvHitStatus",
+  "qualified_table": "BMvTbl.MvHitStatus",
+  "ea": "0x89d9bc",
+  "vartype": "Sqrat_Class_BindVarClosure",
+  "type": "short",
+  "offset": 6
+ },
+ {
+  "kind": "class",
+  "name": "MvStatus",
+  "qualified": "BMvTbl.MvStatus",
+  "cpp": "BtlMvFunc::MvStatus",
+  "table": "BMvTbl"
+ },
+ {
+  "kind": "var",
+  "name": "CharaNo",
+  "table": "MvStatus",
+  "qualified_table": "BMvTbl.MvStatus",
+  "ea": "0x89cfcb",
+  "vartype": "Sqrat_Class_BindVarClosure",
+  "type": "short",
+  "offset": 0
+ },
+ {
+  "kind": "var",
+  "name": "CallCount",
+  "table": "MvStatus",
+  "qualified_table": "BMvTbl.MvStatus",
+  "ea": "0x89d01a",
+  "vartype": "Sqrat_Class_BindVarClosure",
+  "type": "short",
+  "offset": 2
+ },
+ {
+  "kind": "var",
+  "name": "FrameCallCount",
+  "table": "MvStatus",
+  "qualified_table": "BMvTbl.MvStatus",
+  "ea": "0x89d069",
+  "vartype": "Sqrat_Class_BindVarClosure",
+  "type": "short",
+  "offset": 4
+ },
+ {
+  "kind": "var",
+  "name": "isUpdate",
+  "table": "MvStatus",
+  "qualified_table": "BMvTbl.MvStatus",
+  "ea": "0x89d0b8",
+  "vartype": "Sqrat_Class_BindVarClosure",
+  "type": "short",
+  "offset": 16
+ },
+ {
+  "kind": "var",
+  "name": "MvCount",
+  "table": "MvStatus",
+  "qualified_table": "BMvTbl.MvStatus",
+  "ea": "0x89d107",
+  "vartype": "Sqrat_Class_BindVarClosure",
+  "type": "int",
+  "offset": 8
+ },
+ {
+  "kind": "var",
+  "name": "MvCountFrame",
+  "table": "MvStatus",
+  "qualified_table": "BMvTbl.MvStatus",
+  "ea": "0x89d156",
+  "vartype": "Sqrat_Class_BindVarClosure",
+  "type": "int",
+  "offset": 12
+ },
+ {
+  "kind": "var",
+  "name": "isFrameUpdate",
+  "table": "MvStatus",
+  "qualified_table": "BMvTbl.MvStatus",
+  "ea": "0x89d1a5",
+  "vartype": "Sqrat_Class_BindVarClosure",
+  "type": "short",
+  "offset": 18
+ },
+ {
+  "kind": "var",
+  "name": "isLanding",
+  "table": "MvStatus",
+  "qualified_table": "BMvTbl.MvStatus",
+  "ea": "0x89d1f4",
+  "vartype": "Sqrat_Class_BindVarClosure",
+  "type": "short",
+  "offset": 24
+ },
+ {
+  "kind": "var",
+  "name": "DataPattern",
+  "table": "MvStatus",
+  "qualified_table": "BMvTbl.MvStatus",
+  "ea": "0x89d243",
+  "vartype": "Sqrat_Class_BindVarClosure",
+  "type": "short",
+  "offset": 20
+ },
+ {
+  "kind": "var",
+  "name": "DataFrame",
+  "table": "MvStatus",
+  "qualified_table": "BMvTbl.MvStatus",
+  "ea": "0x89d292",
+  "vartype": "Sqrat_Class_BindVarClosure",
+  "type": "short",
+  "offset": 22
+ },
+ {
+  "kind": "var",
+  "name": "DataDelayVal",
+  "table": "MvStatus",
+  "qualified_table": "BMvTbl.MvStatus",
+  "ea": "0x89d2e1",
+  "vartype": "Sqrat_Class_BindVarClosure",
+  "type": "short",
+  "offset": 26
+ },
+ {
+  "kind": "var",
+  "name": "DataDelay",
+  "table": "MvStatus",
+  "qualified_table": "BMvTbl.MvStatus",
+  "ea": "0x89d330",
+  "vartype": "Sqrat_Class_BindVarClosure",
+  "type": "short",
+  "offset": 28
+ },
+ {
+  "kind": "var",
+  "name": "flags",
+  "table": "MvStatus",
+  "qualified_table": "BMvTbl.MvStatus",
+  "ea": "0x89d37f",
+  "vartype": "Sqrat_Class_BindVarClosure",
+  "type": "short",
+  "offset": 30
+ },
+ {
+  "kind": "var",
+  "name": "FrameID",
+  "table": "MvStatus",
+  "qualified_table": "BMvTbl.MvStatus",
+  "ea": "0x89d3ce",
+  "vartype": "Sqrat_Class_BindVarClosure",
+  "type": "short",
+  "offset": 32
+ },
+ {
+  "kind": "var",
+  "name": "Param0",
+  "table": "MvStatus",
+  "qualified_table": "BMvTbl.MvStatus",
+  "ea": "0x89d41d",
+  "vartype": "Sqrat_Class_BindVarClosure",
+  "type": "short",
+  "offset": 34
+ },
+ {
+  "kind": "var",
+  "name": "Param1",
+  "table": "MvStatus",
+  "qualified_table": "BMvTbl.MvStatus",
+  "ea": "0x89d46c",
+  "vartype": "Sqrat_Class_BindVarClosure",
+  "type": "short",
+  "offset": 36
+ },
+ {
+  "kind": "var",
+  "name": "Param2",
+  "table": "MvStatus",
+  "qualified_table": "BMvTbl.MvStatus",
+  "ea": "0x89d4bb",
+  "vartype": "Sqrat_Class_BindVarClosure",
+  "type": "short",
+  "offset": 38
+ },
+ {
+  "kind": "var",
+  "name": "Param3",
+  "table": "MvStatus",
+  "qualified_table": "BMvTbl.MvStatus",
+  "ea": "0x89d50a",
+  "vartype": "Sqrat_Class_BindVarClosure",
+  "type": "short",
+  "offset": 40
+ },
+ {
+  "kind": "class",
+  "name": "CCharaPoint4",
+  "qualified": "BMvTbl.CCharaPoint4",
+  "cpp": "BtlMvFunc::CCharaPoint4",
+  "table": "BMvTbl"
+ },
+ {
+  "kind": "var",
+  "name": "x0",
+  "table": "CCharaPoint4",
+  "qualified_table": "BMvTbl.CCharaPoint4",
+  "ea": "0x89ccf2",
+  "vartype": "Sqrat_Class_BindVarClosure",
+  "type": "int",
+  "offset": 0
+ },
+ {
+  "kind": "var",
+  "name": "y0",
+  "table": "CCharaPoint4",
+  "qualified_table": "BMvTbl.CCharaPoint4",
+  "ea": "0x89cd47",
+  "vartype": "Sqrat_Class_BindVarClosure",
+  "type": "int",
+  "offset": 4
+ },
+ {
+  "kind": "var",
+  "name": "x1",
+  "table": "CCharaPoint4",
+  "qualified_table": "BMvTbl.CCharaPoint4",
+  "ea": "0x89cd9c",
+  "vartype": "Sqrat_Class_BindVarClosure",
+  "type": "int",
+  "offset": 8
+ },
+ {
+  "kind": "var",
+  "name": "y1",
+  "table": "CCharaPoint4",
+  "qualified_table": "BMvTbl.CCharaPoint4",
+  "ea": "0x89cdf1",
+  "vartype": "Sqrat_Class_BindVarClosure",
+  "type": "int",
+  "offset": 12
+ },
+ {
+  "kind": "var",
+  "name": "x2",
+  "table": "CCharaPoint4",
+  "qualified_table": "BMvTbl.CCharaPoint4",
+  "ea": "0x89ce46",
+  "vartype": "Sqrat_Class_BindVarClosure",
+  "type": "int",
+  "offset": 16
+ },
+ {
+  "kind": "var",
+  "name": "y2",
+  "table": "CCharaPoint4",
+  "qualified_table": "BMvTbl.CCharaPoint4",
+  "ea": "0x89ce9b",
+  "vartype": "Sqrat_Class_BindVarClosure",
+  "type": "int",
+  "offset": 20
+ },
+ {
+  "kind": "var",
+  "name": "x3",
+  "table": "CCharaPoint4",
+  "qualified_table": "BMvTbl.CCharaPoint4",
+  "ea": "0x89cef0",
+  "vartype": "Sqrat_Class_BindVarClosure",
+  "type": "int",
+  "offset": 24
+ },
+ {
+  "kind": "var",
+  "name": "y3",
+  "table": "CCharaPoint4",
+  "qualified_table": "BMvTbl.CCharaPoint4",
+  "ea": "0x89cf45",
+  "vartype": "Sqrat_Class_BindVarClosure",
+  "type": "int",
+  "offset": 28
+ },
+ {
+  "kind": "class",
+  "name": "CCharaRect",
+  "qualified": "BMvTbl.CCharaRect",
+  "cpp": "BtlMvFunc::CCharaRect",
+  "table": "BMvTbl"
+ },
+ {
+  "kind": "var",
+  "name": "sx",
+  "table": "CCharaRect",
+  "qualified_table": "BMvTbl.CCharaRect",
+  "ea": "0x89cb67",
+  "vartype": "Sqrat_Class_BindVarClosure",
+  "type": "int",
+  "offset": 0
+ },
+ {
+  "kind": "var",
+  "name": "sy",
+  "table": "CCharaRect",
+  "qualified_table": "BMvTbl.CCharaRect",
+  "ea": "0x89cbbc",
+  "vartype": "Sqrat_Class_BindVarClosure",
+  "type": "int",
+  "offset": 4
+ },
+ {
+  "kind": "var",
+  "name": "ex",
+  "table": "CCharaRect",
+  "qualified_table": "BMvTbl.CCharaRect",
+  "ea": "0x89cc11",
+  "vartype": "Sqrat_Class_BindVarClosure",
+  "type": "int",
+  "offset": 8
+ },
+ {
+  "kind": "var",
+  "name": "ey",
+  "table": "CCharaRect",
+  "qualified_table": "BMvTbl.CCharaRect",
+  "ea": "0x89cc66",
+  "vartype": "Sqrat_Class_BindVarClosure",
+  "type": "int",
+  "offset": 12
+ },
+ {
+  "kind": "class",
+  "name": "CCharaPosition",
+  "qualified": "BMvTbl.CCharaPosition",
+  "cpp": "BtlMvFunc::CCharaPosition",
+  "table": "BMvTbl"
+ },
+ {
+  "kind": "var",
+  "name": "x",
+  "table": "CCharaPosition",
+  "qualified_table": "BMvTbl.CCharaPosition",
+  "ea": "0x89ca86",
+  "vartype": "Sqrat_Class_BindVarClosure",
+  "type": "int",
+  "offset": 0
+ },
+ {
+  "kind": "var",
+  "name": "y",
+  "table": "CCharaPosition",
+  "qualified_table": "BMvTbl.CCharaPosition",
+  "ea": "0x89cadb",
+  "vartype": "Sqrat_Class_BindVarClosure",
+  "type": "int",
+  "offset": 4
+ },
+ {
+  "kind": "class",
+  "name": "CCharaVector",
+  "qualified": "BMvTbl.CCharaVector",
+  "cpp": "BtlMvFunc::CCharaVector",
+  "table": "BMvTbl"
+ },
+ {
+  "kind": "var",
+  "name": "x",
+  "table": "CCharaVector",
+  "qualified_table": "BMvTbl.CCharaVector",
+  "ea": "0x89c8fb",
+  "vartype": "Sqrat_Class_BindVarClosure",
+  "type": "int",
+  "offset": 0
+ },
+ {
+  "kind": "var",
+  "name": "y",
+  "table": "CCharaVector",
+  "qualified_table": "BMvTbl.CCharaVector",
+  "ea": "0x89c950",
+  "vartype": "Sqrat_Class_BindVarClosure",
+  "type": "int",
+  "offset": 4
+ },
+ {
+  "kind": "var",
+  "name": "addx",
+  "table": "CCharaVector",
+  "qualified_table": "BMvTbl.CCharaVector",
+  "ea": "0x89c9a5",
+  "vartype": "Sqrat_Class_BindVarClosure",
+  "type": "int",
+  "offset": 8
+ },
+ {
+  "kind": "var",
+  "name": "addy",
+  "table": "CCharaVector",
+  "qualified_table": "BMvTbl.CCharaVector",
+  "ea": "0x89c9fa",
+  "vartype": "Sqrat_Class_BindVarClosure",
+  "type": "int",
+  "offset": 12
+ },
+ {
+  "kind": "class",
+  "name": "UpdateSt",
+  "qualified": "BCom.UpdateSt",
+  "cpp": "CComUpdateSt",
+  "table": "BCom"
+ },
+ {
+  "kind": "class",
+  "name": "CStatus",
+  "qualified": "tSceneOpenSecChar.CStatus",
+  "cpp": "CSceneOpenSecChar_St",
+  "table": "tSceneOpenSecChar"
+ },
+ {
+  "kind": "class",
+  "name": "CPlayerSt",
+  "qualified": "tSceneVS.CPlayerSt",
+  "cpp": "CSceneVS_PlayerSt",
+  "table": "tSceneVS"
+ },
+ {
+  "kind": "var",
+  "name": "Player1",
+  "table": "CPlayerSt",
+  "qualified_table": "tSceneVS.CPlayerSt",
+  "ea": "0x8444ec",
+  "vartype": "Sqrat_Class_VarStdString",
+  "type": "string",
+  "offset": 8
+ },
+ {
+  "kind": "var",
+  "name": "Player2",
+  "table": "CPlayerSt",
+  "qualified_table": "tSceneVS.CPlayerSt",
+  "ea": "0x8444fb",
+  "vartype": "Sqrat_Class_VarStdString",
+  "type": "string",
+  "offset": 32
+ },
+ {
+  "kind": "class",
+  "name": "CStatus",
+  "qualified": "tSceneWinDemo.CStatus",
+  "cpp": "CSceneWinDemo_St",
+  "table": "tSceneWinDemo"
+ },
+ {
+  "kind": "class",
+  "name": "WinMesTableLotCallbackInfo",
+  "qualified": "WinMesTableLotCallbackInfo",
+  "cpp": "CWinMessageTableCSVCallback::_WinMesTableLotCallbackInfo",
+  "table": ""
+ },
+ {
+  "kind": "class",
+  "name": "CCharaData",
+  "qualified": "BMvCore.CCharaData",
+  "cpp": "BtlSqCoreFunc::CCharaData",
+  "table": "BMvCore"
+ },
+ {
+  "kind": "class",
+  "name": "CFindObject",
+  "qualified": "BMvCore.CFindObject",
+  "cpp": "BtlSqCoreFunc::CFindObject",
+  "table": "BMvCore"
+ },
+ {
+  "kind": "class",
+  "name": "CPointStatus",
+  "qualified": "BMvEff.CPointStatus",
+  "cpp": "BtlSqEffObject::CPointStatus",
+  "table": "BMvEff"
+ },
+ {
+  "kind": "class",
+  "name": "CCheckRect",
+  "qualified": "CCheckRect",
+  "cpp": "BtlSqEffObject::CBtlSqCheckRect",
+  "table": ""
+ },
+ {
+  "kind": "class",
+  "name": "ProcTimer",
+  "qualified": "BMvDeb.ProcTimer",
+  "cpp": "BtlSqDebugCode::PTClass",
+  "table": "BMvDeb"
+ },
+ {
+  "kind": "class",
+  "name": "CBtlInfo",
+  "qualified": "CBtlInfo",
+  "cpp": "BtlMvFunc::CSqBtlInfo",
+  "table": ""
+ },
+ {
+  "kind": "class",
+  "name": "MvBoundStatus",
+  "qualified": "BtlMvStd.MvBoundStatus",
+  "cpp": "BtlMvStdFunc::MvBoundStatus",
+  "table": "BtlMvStd"
+ },
+ {
+  "kind": "class",
+  "name": "MvBoundVectorStatus",
+  "qualified": "BtlMvStd.MvBoundVectorStatus",
+  "cpp": "BtlMvStdFunc::MvBoundVectorStatus",
+  "table": "BtlMvStd"
+ },
+ {
+  "kind": "class",
+  "name": "_LogsFile",
+  "qualified": "debuglog._LogsFile",
+  "cpp": "BtlCmdFunc::_LogsFile",
+  "table": "debuglog"
+ },
+ {
+  "kind": "class",
+  "name": "CmdInfo",
+  "qualified": "BCMDTbl.CmdInfo",
+  "cpp": "CBtlCmdInfo",
+  "table": "BCMDTbl"
+ },
+ {
+  "kind": "class",
+  "name": "CDat",
+  "qualified": "tPAni.CDat",
+  "cpp": "CPaniData",
+  "table": "tPAni"
+ },
+ {
+  "kind": "class",
+  "name": "CAnime",
+  "qualified": "tPAni.CAnime",
+  "cpp": "CPaniData_Anime",
+  "table": "tPAni"
+ },
+ {
+  "kind": "class",
+  "name": "CAniManager",
+  "qualified": "tPAni.CAniManager",
+  "cpp": "CPaniData_AnimeManager",
+  "table": "tPAni"
  }
 ]
