@@ -473,6 +473,7 @@ target_link_libraries(preview_sim_tool PRIVATE tinyalloc glm)
 if(MINGW)
 	target_link_options(preview_sim_tool PRIVATE -static-libgcc -static-libstdc++ -static)
 endif()
+add_test(NAME preview_sim COMMAND preview_sim_tool --selftest)
 
 # Debug tool: dump PAT part-set data via the real loader (headless).
 add_executable(pat_dump

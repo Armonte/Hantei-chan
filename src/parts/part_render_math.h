@@ -253,6 +253,15 @@ inline const unsigned *PartTintPalette(const unsigned *bank0Palette, const unsig
 {
 	return bank0Palette ? bank0Palette : currentPalette;
 }
+// Whose palette the PPPA tint reads. UNI2 CharaObj_DrawWithStageLight 0x5CEBA4 / MBTL Object_DrawWithStageShadow
+// 0x5983A4 hand every object (characters and effects alike) &g_CharaResRecords[obj+4] as its tint source
+// (Han6Object_Draw 0x5976FD: +0x118 of that CCharaDataSet), and a spawned effect copies obj+4 from its owner
+// (uni2 Han6_EF1_ResolveSpawnPattern, MBTL Effect_RegisterSpawned 0x581C8A). So effect.ha6 parts are tinted
+// too, from the OWNER character's base palette, not effect.cg's. Returns the owner when known, else the source.
+template <class Cg> inline const Cg *PartTintOwner(const Cg *owner, const Cg *source)
+{
+	return owner ? owner : source;
+}
 // RGB multipliers of a palette entry as the game reads it (memory bytes 0, 1, 2 = R, G, B).
 inline void PaletteEntryRgb(unsigned entry, float rgb[3])
 {

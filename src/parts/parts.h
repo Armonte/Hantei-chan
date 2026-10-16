@@ -93,6 +93,7 @@ public:
         int nextPattern = -1;     // AFHK: part set of the next frame's same layer (-1 = none)
         float curWeight = 1.f;    // AFHK: weight of the current frame (1 = no interpolation)
         bool paletteTint = true;  // PPPA tint: the game applies it in the character shader path only
+        const CG* tintCg = nullptr; // palette owner for the PPPA tint (nullptr = this Parts' CG; partrender::PartTintOwner)
         bool applyPras = true;    // PRAS: UNI2 applies it, MBTL does not read it
         bool uniDialect = true;   // AFHK weight 0: MBAACC keeps the current part transform (PartLerpsTransform); arc split
     };
