@@ -1261,7 +1261,7 @@ resample, not MBTL, which is how p238 sat at 1.67 while its z1 row was 0.23. The
 `_z1` rows, zoom-1.5 parity is the `_z15sa` rows above.
 
 ## Round 21 / render-match21 (2026-10-16): the editor's world origin was half a pixel off at 1.5x; zoom 1.5 now at the zoom-1 floor
-Editor (C++) change: `Render::BeginPass` (src/render.cpp). Numbers: `tools/uni/s1_compare/v2_round21.sh` (log
+Editor (C++) change: `Render::BeginPass` (src/render.cpp). Full ctest 69/69, exit 0 (`round21/ctest_r21.log`). Numbers: `tools/uni/s1_compare/v2_round21.sh` (log
 `round21/round21.log`; the same rows on the round-20 shots: `round21/round21_before.log`). The three zoom-1.5 editor shot
 pairs in `editor_bw/` (`*_new_k/_g`) were re-shot with this build; the zoom-1 shots came out pixel-identical. No new game
 capture: the round-20 `_z15sa` captures are used unchanged.
