@@ -2452,3 +2452,6 @@
 	{"Transforms", "変形"},
 	{"Vectors", "ベクトル"},
 	{"Parameters", "パラメータ"},
+	{"Main body", "本体"},
+	{"Assist / partner", "アシスト / パートナー"},
+	{"Spawned effect actor", "生成エフェクトアクター"},

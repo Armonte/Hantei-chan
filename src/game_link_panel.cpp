@@ -225,8 +225,10 @@ void DrawPanel(EditorContext& ctx)
 	c.SetPollHz(g_follow ? 30 : 5);
 	const Snapshot s = c.Get();
 
-	ui::FitNextWindow(640, 520);
-	if (!ImGui::Begin(LBL("Game Link (MBAACC)"), &showPanel)) { ImGui::End(); return; }
+	// First open: fit the window to what it shows (it used to open at 640x520 around a few rows); a size the user set is kept.
+	const char* title = LBL("Game Link (MBAACC)");
+	const ImGuiWindowFlags fit = ui::FitNextWindowToContent(title, 420, 760);
+	if (!ImGui::Begin(title, &showPanel, fit)) { ImGui::End(); return; }
 
 	if (!s.wantConnected) { if (ImGui::Button(LBL("Connect"))) c.Connect(); }
 	else if (ImGui::Button(s.connected ? LBL("Disconnect") : LBL("Stop connecting"))) c.Disconnect();
@@ -280,7 +282,7 @@ void DrawPanel(EditorContext& ctx)
 
 	if (ImGui::TreeNode(LBL("Log"))) {
 		const auto log = c.RecentLog();
-		ImGui::BeginChild("linklog", ImVec2(0, 140), true);
+		ImGui::BeginChild("linklog", ImVec2(0, ui::Em(8.f)), true);
 		for (const auto& l : log) ImGui::TextUnformatted(l.c_str());
 		if (ImGui::GetScrollY() >= ImGui::GetScrollMaxY()) ImGui::SetScrollHereY(1.0f);
 		ImGui::EndChild();
