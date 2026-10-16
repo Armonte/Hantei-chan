@@ -1,4 +1,5 @@
 // Archive browser: the ImGui window (sources, listing with thumbnails, inline preview) and the welcome screen.
+#include "ui/ui_style.h"
 #include "archive_browser_state.h"
 #include "game_table.h"
 #include "cgm/cgm_bank.h"
@@ -247,7 +248,7 @@ static void DrawBankPreview(State &st)
 	cgm::Bank &bank = *pv.bank;
 	static std::vector<int> present; static uint64_t presentSerial = 0;
 	if (presentSerial != pv.serial) { present.clear(); for (size_t i = 0; i < bank.images.size(); i++) if (bank.images[i].present) present.push_back((int)i); presentSerial = pv.serial; }
-	ImGui::SetNextItemWidth(120);
+	ImGui::SetNextItemWidth(ui::Px(120));
 	char lbl[32]; snprintf(lbl, sizeof lbl, "%s %d", T("Palette", "\xe3\x83\x91\xe3\x83\xac\xe3\x83\x83\xe3\x83\x88"), st.bankPalette + 1);
 	if (ImGui::BeginCombo("##bankpal", lbl)) {
 		for (int i = 0; i < 8; i++) { char l2[32]; snprintf(l2, sizeof l2, "%s %d", T("Palette", "\xe3\x83\x91\xe3\x83\xac\xe3\x83\x83\xe3\x83\x88"), i + 1); if (ImGui::Selectable(l2, st.bankPalette == i)) st.bankPalette = i; }
@@ -673,10 +674,10 @@ static void Toolbar(State &st)
 	}
 	ImGui::SameLine(0, 18);
 	if (g_focusFilter) { ImGui::SetKeyboardFocusHere(); g_focusFilter = false; }
-	ImGui::SetNextItemWidth(220);
+	ImGui::SetNextItemWidth(ui::Px(220));
 	if (ImGui::InputTextWithHint("##filter", T("Filter (Ctrl+F)", "\xe7\xb5\x9e\xe3\x82\x8a\xe8\xbe\xbc\xe3\x81\xbf (Ctrl+F)"), st.filter, sizeof st.filter)) st.viewDirty = true;
 	ImGui::SameLine();
-	ImGui::SetNextItemWidth(130);
+	ImGui::SetNextItemWidth(ui::Px(130));
 	const char *cur = st.typeFilter < 0 ? T("All types", "\xe3\x81\x99\xe3\x81\xb9\xe3\x81\xa6") : kTypeNames[st.typeFilter];
 	if (ImGui::BeginCombo("##typefilter", cur)) {
 		if (ImGui::Selectable(T("All types", "\xe3\x81\x99\xe3\x81\xb9\xe3\x81\xa6"), st.typeFilter < 0)) { st.typeFilter = -1; st.viewDirty = true; }

@@ -513,7 +513,7 @@ void MainFrame::DrawUi()
 			// the view moves it, zooming does not. Round start is (0, 0); the game
 			// limits x to +-(528 - 320/zoom) and y to [-340, 0] (not enforced here).
 			float cam[2] = {bgCamera.camX, bgCamera.camY};
-			ImGui::SetNextItemWidth(160);
+			ImGui::SetNextItemWidth(ui::Px(160));
 			if (ImGui::DragFloat2(LBL("Game camera"), cam, 1.0f, -2000.f, 2000.f, "%.0f")) bgCamera.SetGameCam(cam[0], cam[1]);
 			ImGui::SameLine();
 			if (ImGui::SmallButton(LBL("Round start"))) bgCamera.SetGameCam(0.0f, 0.0f);
@@ -599,7 +599,7 @@ void MainFrame::DrawUi()
 		static float manualPanX = 0.0f, manualPanY = 0.0f;
 		manualPanX = bgCamera.panLastX;
 		manualPanY = bgCamera.panLastY;
-		ImGui::PushItemWidth(100);
+		ImGui::PushItemWidth(ui::Px(100));
 		ImGui::InputFloat("##manualPanX", &manualPanX);
 		ImGui::SameLine();
 		ImGui::InputFloat("##manualPanY", &manualPanY);

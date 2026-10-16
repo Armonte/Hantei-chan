@@ -90,7 +90,7 @@ void Window::draw()
 	ImGui::SameLine();
 	ImGui::Checkbox(LBL("Only changed"), &m_onlyChanged);
 	ImGui::SameLine();
-	ImGui::SetNextItemWidth(160);
+	ImGui::SetNextItemWidth(ui::Px(160));
 	char f[64];
 	snprintf(f, sizeof f, "%s", m_filter.c_str());
 	if (ImGui::InputTextWithHint("##scfilter", TXT("filter"), f, sizeof f)) m_filter = f;

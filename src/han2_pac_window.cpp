@@ -169,7 +169,7 @@ void DrawPacCreate()
 	if (ImGui::Button(LBL("Clear"))) { g_c.rows.clear(); CloseBase(); g_c.basePath.clear(); }
 	ImGui::PushTextWrapPos(0.0f); ImGui::TextDisabled(TXT("base: %s"), g_c.basePath.empty() ? TXT("(none)") : g_c.basePath.c_str()); ImGui::PopTextWrapPos();
 	ImGui::SetNextItemWidth(ui::Px(200)); ImGui::InputText(LBL("filter"), g_c.filter, sizeof(g_c.filter));
-	if (ImGui::BeginTable("rows", 4, ImGuiTableFlags_ScrollY | ImGuiTableFlags_RowBg | ImGuiTableFlags_Resizable, ImVec2(0, -70))) {
+	if (ImGui::BeginTable("rows", 4, ImGuiTableFlags_ScrollY | ImGuiTableFlags_RowBg | ImGuiTableFlags_Resizable, ImVec2(0, -ui::Px(70)))) {
 		ImGui::TableSetupColumn(LBL("name")); ImGui::TableSetupColumn(LBL("size")); ImGui::TableSetupColumn(LBL("source")); ImGui::TableSetupColumn(LBL("note"));
 		ImGui::TableSetupScrollFreeze(0, 1); ImGui::TableHeadersRow();
 		std::string flt = Lower(g_c.filter);

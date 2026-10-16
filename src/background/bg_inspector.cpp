@@ -277,7 +277,7 @@ static void DrawInspectorBody(File& file, Renderer& renderer, InspectorResult& r
 	int live[256] = {0};
 	for (const auto& in : file.GetInstances())
 		if (in.state >= 1 && in.objIndex >= 0 && in.objIndex < 256) ++live[in.objIndex];
-	ImGui::BeginChild("objlist", ImVec2(0, 160), true);
+	ImGui::BeginChild("objlist", ImVec2(0, ui::Px(160)), true);
 	for (size_t i = 0; i < objects.size(); ++i) {
 		const Object& o = objects[i];
 		ImGui::PushID((int)i);
@@ -324,7 +324,7 @@ static void DrawInspectorBody(File& file, Renderer& renderer, InspectorResult& r
 	if (ImGui::TreeNodeEx(LBL("Frames"), ImGuiTreeNodeFlags_DefaultOpen)) {
 		if (selFrame >= (int)obj.frames.size()) selFrame = (int)obj.frames.size() - 1;
 		if (selFrame < 0) selFrame = 0;
-		ImGui::BeginChild("frlist", ImVec2(0, 120), true);
+		ImGui::BeginChild("frlist", ImVec2(0, ui::Px(120)), true);
 		for (size_t f = 0; f < obj.frames.size(); ++f) {
 			const Frame& fr = obj.frames[f];
 			char label[128];

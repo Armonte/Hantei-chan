@@ -5,6 +5,7 @@
 // bottom-right handle resizes) or typed in the list beside it. Edits go to local\hud.ini through the EditSink: one
 // undo step per gesture, saved and live-applied (the game re-reads hud.ini with the tuning). UI thread only: the
 // textures are GL objects of the editor's context.
+#include "../ui/ui_style.h"
 #include "hud_layout.h"
 #include "edit_sink.h"
 #include "../tag_tuning/tag_sidecar.h"
@@ -148,8 +149,8 @@ void DrawHudLayoutEditor(EditSink& sink, const std::string& gameDir, const int p
 	else if (!canEdit) ImGui::TextColored(ImVec4(1, 0.6f, 0.3f, 1), TXT("Read-only right now (session lock / lever table / no tree)."));
 	ImGui::TextDisabled(TXT("Drag an element (Shift: 8 px grid); drag its corner to resize. Edits go to local\\hud.ini; the game follows."));
 
-	const float listW = std::min(430.0f, ImGui::GetContentRegionAvail().x * 0.42f);
-	const float previewW = std::max(200.0f, ImGui::GetContentRegionAvail().x - listW - 12.0f);
+	const float listW = std::min(ui::Px(430.0f), ImGui::GetContentRegionAvail().x * 0.42f);
+	const float previewW = std::max(ui::Px(200.0f), ImGui::GetContentRegionAvail().x - listW - ui::Px(12.0f));
 	const float s = previewW / 640.0f;
 
 	// ================== the preview ==================
@@ -284,8 +285,8 @@ void DrawHudLayoutEditor(EditSink& sink, const std::string& gameDir, const int p
 		ImGui::TextColored(!std::strcmp(layer, "local") ? ImVec4(0.55f, 0.8f, 1, 1) : !std::strcmp(layer, "shipped") ? ImVec4(0.8f, 0.8f, 0.8f, 1)
 		                                                                                                                  : ImVec4(0.55f, 0.55f, 0.55f, 1),
 		                   "%-16s %s", k.key, TXT(layer));
-		ImGui::SameLine(210);
-		ImGui::SetNextItemWidth(std::max(60.0f, listW - 210 - 110));
+		ImGui::SameLine(ui::Px(210));
+		ImGui::SetNextItemWidth(std::max(ui::Px(60.0f), listW - ui::Px(210 + 110)));
 		const std::string label = std::string(k.key) + " (hud)";
 		bool changed = false;
 		std::string text;

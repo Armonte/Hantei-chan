@@ -1,6 +1,7 @@
 // [authoring] The Live tab (what the game runs and resolved: teams, tag / assist state, Follow point, the resolved-values
 // grid with the cells that differ from Hantei-chan's own resolution) and the Log tab (a filtered tail of
 // <gamedir>\pchost_authoring.log plus the link and launcher logs). docs/HANTEI_AUTHORING_MODE.md §5.6, §8.9.
+#include "../ui/ui_style.h"
 #include "authoring_state.h"
 #include "../tag_tuning/tag_levers.h"
 
@@ -247,7 +248,7 @@ void DrawLogTab(const gamelink::Snapshot& s)
 {
 	AuthoringState& a = St();
 	PollGameLog();
-	ImGui::SetNextItemWidth(260);
+	ImGui::SetNextItemWidth(ui::Px(260));
 	ImGui::InputTextWithHint("##filter", TXT("filter (substring, case-insensitive)"), a.logFilter, sizeof a.logFilter);
 	ImGui::SameLine();
 	ImGui::Checkbox(LBL("tag / authoring lines only"), &a.logTagOnly);

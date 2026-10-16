@@ -1,4 +1,5 @@
 // [game-view] The Game panel — see game_view.h and docs/HANTEI_AUTHORING_MODE.md §12.2.
+#include "../ui/ui_style.h"
 #include "game_view.h"
 #include "authoring_state.h"
 #include "game_view_input.h"
@@ -325,7 +326,7 @@ void DrawGameView(HostContext& host)
 			ImGui::Separator();
 			// §12.3: StageColorVal is applied (the BgList entry); the stage light colour is report-only
 			ImGui::TextDisabled(TXT("StageColorVal override (BgPointBlur fColorHosei)"));
-			ImGui::SetNextItemWidth(160);
+			ImGui::SetNextItemWidth(ui::Px(160));
 			ImGui::SliderInt("x1000##colorval", &g.colorValX1000, 0, 2000);
 			if (ImGui::MenuItem(LBL("Apply StageColorVal"), nullptr, false, can)) {
 				wire::StageLighting l{};
