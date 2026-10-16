@@ -1186,5 +1186,11 @@ void MainFrame::drawCgManagerWindow()
 	host.navigate = [this](int pattern, int frame) { navigateActiveView(pattern, frame); };
 	host.markEdited = [this](CharacterInstance* c) { markToolEdit(c); };
 	host.saveCharacter = [this](CharacterInstance* c) { return saveCharacter(c); };
+	host.current = [this](int& pattern, int& frame) {
+		auto* view = getToolView();
+		if (!view) return false;
+		pattern = view->getState().pattern; frame = view->getState().frame;
+		return true;
+	};
 	m_cgm.draw(getToolCharacter(), host);
 }

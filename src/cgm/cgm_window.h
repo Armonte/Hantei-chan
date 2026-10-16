@@ -22,6 +22,7 @@ struct WindowHost {
 	std::function<void(int pattern, int frame)> navigate;   // show a pattern / frame in the active view
 	std::function<void(CharacterInstance *)> markEdited;    // the character changed (dirty flag + undo step)
 	std::function<bool(CharacterInstance *)> saveCharacter; // File > Save of that character (its own HA6 file)
+	std::function<bool(int &pattern, int &frame)> current;  // pattern / frame shown in the active view (Palettes tab preview)
 };
 
 class Window {
@@ -75,6 +76,22 @@ private:
 	const CharacterInstance *palOwner = nullptr;
 	void loadPalettes(CharacterInstance &ch);
 	void drawPalettes(CharacterInstance &ch, const WindowHost &host);
+	// Palettes tab sprite preview: a palette-following (8-bit) CG image drawn with the palette being edited.
+	struct PalPreview {
+		int mode = 0;                        // 0 a layer of the active view's frame, 1 any CG image
+		int layer = 0, image = 0;            // layer pick (mode 0) / image id (mode 1)
+		int shownId = -1; unsigned long long idxGen = ~0ull;   // image whose indices are cached / CG generation they came from
+		std::vector<uint8_t> idx; int w = 0, h = 0;            // 1 byte per pixel palette indices
+		Thumb tex; uint64_t texKey = 0;      // RGBA upload, keyed on the colours + hover
+		int hover = -1;                      // palette index under the mouse in the preview (last frame), outlined in the grid
+	} pp;
+	// Palette indices drawn by any 8-bit CG image (counted a few images per frame) and the PPPA tint slots of the .pat parts.
+	struct IndexUse {
+		const void *owner = nullptr; int images = -1, next = 0; bool done = false;
+		bool used[256] = {}; bool tint[256] = {};
+	} idxUse;
+	void countIndexUse(CharacterInstance &ch);
+	void drawPalPreview(CharacterInstance &ch, const WindowHost &host, const uint32_t *colors, int hoverIndex, float boxW, float boxH);
 	void pushPalette(CharacterInstance &ch, int bank);   // show pal.set[bank] in the CG object (live preview everywhere)
 	void commitPalette(CharacterInstance &ch, const std::string &label, int bank, PalSet before, const WindowHost &host);
 	// every project that draws the bank on disk (MBAACC moons + b_ files, MBTL variants, ...)
