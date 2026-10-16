@@ -1270,7 +1270,12 @@ void Window::drawTextures(CharacterInstance &ch, const WindowHost &host) {
 	const float H = std::max(ui::Em(10.f), ImGui::GetContentRegionAvail().y);
 	const float rowH = ImGui::GetTextLineHeightWithSpacing(), chrome = ImGui::GetFrameHeightWithSpacing() + st.WindowPadding.y * 2 + st.ItemSpacing.y;
 	const int patRows = hasPat ? patSrc.count() : 1;
-	const float usedH = haveSel ? std::clamp(H * 0.26f, ui::Em(4.f), ui::Em(12.f)) : 0.f;
+	// "Used by" sized to its rows (at least ~2 rows so the empty note fits, at most a quarter of the column), so the CG
+	// list keeps the rest of the height instead of a fixed share (1280x720 left the CG list ~5 rows).
+	std::vector<TexUse> users;
+	if (haveSel) users = tb.kind == 1 ? PatTextureUsers(ch.parts, tb.sel, &ch.frameData) : CgImageUsers(ch.frameData, tb.sel);
+	const int usedRows = std::max(2, std::min((int)users.size(), 401));
+	const float usedH = haveSel ? std::clamp(usedRows * rowH + chrome, ui::Em(4.f), std::max(ui::Em(4.f), std::min(ui::Em(12.f), H * 0.25f))) : 0.f;
 	const float patH = std::clamp(patRows * rowH + chrome, ui::Em(3.f), H * 0.34f);
 	const float cgH = std::max(ui::Em(4.f), H - patH - usedH - st.ItemSpacing.y * (haveSel ? 2.f : 1.f) - st.CellPadding.y * 2);
 	const bool split = ImGui::BeginTable("##cgmtbsplit", 2, ImGuiTableFlags_Resizable | ImGuiTableFlags_BordersInnerV | ImGuiTableFlags_NoSavedSettings, ImVec2(0, H));
@@ -1312,7 +1317,6 @@ void Window::drawTextures(CharacterInstance &ch, const WindowHost &host) {
 	if (haveSel) {
 		ImGui::BeginChild("##cgmtbrefs", ImVec2(colW, 0), ImGuiChildFlags_Borders);
 		ImGui::SeparatorText(TXT("Used by"));
-		const auto users = tb.kind == 1 ? PatTextureUsers(ch.parts, tb.sel, &ch.frameData) : CgImageUsers(ch.frameData, tb.sel);
 		if (users.empty()) ImGui::TextDisabled("%s", TXT("Not referenced by any frame or part of this character."));
 		int k = 0;
 		for (const TexUse &u : users) {

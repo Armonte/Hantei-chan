@@ -1,5 +1,6 @@
 #include "script_panel.h"
 #include "../ui/ui_style.h"
+#include "../ui/ui_layout2.h"
 
 #include "script_document.h"
 #include "script_index.h"
@@ -373,7 +374,8 @@ struct ScriptPanel::Impl {
 		if (ImGui::Checkbox(LBL("Hot reload"), &gSettings.sqHotReload)) ImGui::MarkIniSettingsDirty();
 		if (ImGui::IsItemHovered()) ImGui::SetTooltip("%s", TXT("On save, copy a data/chrNNN file into the game's fbmod mods folder and reload that character in the running game (fbmod pipe)."));
 		if (!gSettings.sqHotReload) return;
-		ImGui::SameLine();
+		// The row wraps before an item that no longer fits (1280, Japanese labels) instead of clipping it.
+		ui::SameLineField(ui::Px(320), LBL("Game folder"));
 		char buf[512];
 		snprintf(buf, sizeof buf, "%s", hotGameDir().c_str());
 		ImGui::SetNextItemWidth(ui::Px(320));
@@ -382,7 +384,7 @@ struct ScriptPanel::Impl {
 			ImGui::MarkIniSettingsDirty();
 		}
 		if (ImGui::IsItemHovered()) ImGui::SetTooltip("%s", TXT("Install folder of the game. Used for fbmod\\mods when the game's ping reply does not name the mods folder."));
-		ImGui::SameLine();
+		ui::SameLineField(ui::Px(130) + ImGui::GetFrameHeight(), LBL("Pipe"));
 		char pbuf[128];
 		snprintf(pbuf, sizeof pbuf, "%s", hotPipe.c_str());
 		ImGui::SetNextItemWidth(ui::Px(130));
@@ -393,11 +395,11 @@ struct ScriptPanel::Impl {
 				if (ImGui::Selectable(p, hotPipe == p)) hotPipe = p;
 			ImGui::EndCombo();
 		}
-		ImGui::SameLine();
+		ui::SameLineButton(LBL("Ping"));
 		ImGui::BeginDisabled(hotBusy);
 		if (ImGui::Button(LBL("Ping"))) { HotTask t; t.pipe = hotPipe; t.gameDir = hotGameDir(); startHot(t); }
 		ImGui::EndDisabled();
-		ImGui::SameLine();
+		ui::SameLineField(ui::Px(150), LBL("Reload mode"));
 		const char* modes[] = {TXT("Rebuild (engine)"), TXT("Live (keep state)")};
 		int mode = gSettings.sqHotReloadMode == 1 ? 1 : 0;
 		ImGui::SetNextItemWidth(ui::Px(150));
