@@ -294,15 +294,15 @@ static bool RunCharacters(HSQUIRRELVM v, const fs::path &root)
 	std::error_code ec;
 	std::vector<fs::path> dirs;
 	for (auto &it : fs::directory_iterator(root / "data", ec))
-		if (it.is_directory() && std::regex_match(it.path().filename().string(), std::regex(R"(chr\d+)")))
+		if (it.is_directory() && std::regex_match(it.path().filename().string(), std::regex(R"(chr\d+|[A-Za-z]+(_s)?_0)")))
 			dirs.push_back(it.path());
 	std::sort(dirs.begin(), dirs.end());
 	sqedit::InstallDevWarningObserver(v);
 	for (auto &d : dirs) {
 		const std::string chr = d.filename().string();
-		const auto codes = sqedit::LoadPatternCodes((d / (chr + "_0.txt")).u8string());
+		const auto codes = sqedit::LoadPatternCodes((d / (chr.rfind("chr", 0) == 0 ? chr + "_0.txt" : chr + ".txt")).u8string());
 		sqedit::LoadContext ctx;
-		ctx.charaNo = ctx.vsCharaNo = std::atoi(chr.c_str() + 3);
+		ctx.charaNo = ctx.vsCharaNo = chr.rfind("chr", 0) == 0 ? std::atoi(chr.c_str() + 3) : -1;   // DFCI: by name, no number
 		ctx.side = g_side;
 		ctx.gameMode = g_gameMode;
 		ctx.gameModeSub = g_gameModeSub;
@@ -331,6 +331,7 @@ static bool RunCharacters(HSQUIRRELVM v, const fs::path &root)
 			case sqedit::CharaLoadIssue::RuntimeError: LOGE("sqtool: chars: {}: runtime error: {}", i.file, Printable(i.message)); break;
 			case sqedit::CharaLoadIssue::MissingTable: LOGE("sqtool: chars: {}: {}", i.file, i.message); break;
 			case sqedit::CharaLoadIssue::MissingPattern: LOGW("sqtool: chars: {}: {}", chr, i.message); break;
+			case sqedit::CharaLoadIssue::Note: LOGI("sqtool: chars: {}: {}", i.file, i.message); break;
 			case sqedit::CharaLoadIssue::DevWarning: devw++; LOGI("sqtool: chars: {}: developer warning: {}", chr, Printable(i.message)); break;
 			}
 		}

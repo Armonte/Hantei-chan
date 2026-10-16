@@ -118,3 +118,15 @@ Caveat on the missing-pattern report: a template move's `Init_Std` calls `SetPat
 move's own `Init_After` may set the real pattern afterwards (UNI2 chr022 `Mv_Atk_StdBandC_AddAtk5/6` via
 `maketmpl_SkillAvoidAtk` → `SetPattern("B+C_Add5")`), so a reported move is only broken when nothing later in its Init sets
 a pattern.
+
+## DFCI (RingGame.exe, traced 2026-10-15)
+
+IDB `C:\dev\transmission\Fighting Climax Ignition [SDCS]\RingGame.exe.i64`. `Sq_InitBattleVM` 0x814230: Battle_Init, Battle_Std,
+then `Sq_LoadComBase` 0x882D10 (data/_combase.txt). `dfci_battle_load_characters`: every character's `<dir>/<Name>_0_sc.txt`
+first (`dfci_load_chara_battle_status_sq`, Battle_Status), then per character `ObjectStack_Push` 0x414FE0 and
+`Chara_LoadCommandAndMoveList` 0x7E5930 (`<Name>_0_cmd.txt` → root `<NAME>_CommandTable`, `<Name>_0_mv.txt` → `<NAME>_MoveTable`;
+folder data/<Name>_0, NAME upper-case), `_finish_list.txt`, COM `<dir>/_com.txt`. The command-table readers (MBTL 0x812A80,
+DFCI `CBtlSkillCommandList_LoadFromScript` 0x80F230) only require the slot to be non-null and then read its entries: support
+characters set `<NAME>_CommandTable <- 0` and take no commands. Sqrat classes: 27 (accessor-held class objects, per-signature
+binders; the "Sqrat_Class_BindMethod_*" binders were field binders, renamed Sqrat_Class_VarBind_*). Native return types were
+re-derived from each binder's wrapper (`native_rets` in dfci_classes.json). `sqtool --chars`: 51/51 character folders load clean.

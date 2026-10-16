@@ -39,7 +39,7 @@ struct LoadContext {
 };
 
 struct CharaLoadIssue {
-	enum Kind { RuntimeError, MissingTable, MissingPattern, DevWarning };
+	enum Kind { RuntimeError, MissingTable, MissingPattern, DevWarning, Note };
 	Kind kind = RuntimeError;
 	std::string file;      // game-relative ("data/chr001/chr001_mv_0.txt"); "" when not tied to a file
 	int line = 0;          // 1-based, 0 = unknown

@@ -126,9 +126,24 @@ CharaLoadResult LoadCharacterScripts(HSQUIRRELVM v, const std::string& chrDirRel
 	CharaLoadResult r;
 	const size_t sl = chrDirRel.find_last_of('/');
 	const std::string chr = sl == std::string::npos ? chrDirRel : chrDirRel.substr(sl + 1);
-	std::string CHR = chr;
+	// File layout by game (traced loaders, docs/squirrel/RE_MBTL_LOAD.md):
+	//   UNI2 / MBTL  data/chrNNN/chrNNN_{sc,cmd,mv,com}_0.txt, root tables CHRNNN_*
+	//   DFCI         data/<Name>_0/<Name>_0_{sc,cmd,mv}.txt + data/<Name>_0/_com.txt, root tables <NAME>_*
+	std::string name = chr, scF, cmdF, mvF, comF;
+	if (chr.size() > 2 && chr.compare(chr.size() - 2, 2, "_0") == 0 && chr.rfind("chr", 0) != 0) {
+		name = chr.substr(0, chr.size() - 2);
+		scF = chrDirRel + "/" + chr + "_sc.txt";
+		cmdF = chrDirRel + "/" + chr + "_cmd.txt";
+		mvF = chrDirRel + "/" + chr + "_mv.txt";
+		comF = chrDirRel + "/_com.txt";
+	} else {
+		scF = chrDirRel + "/" + chr + "_sc_0.txt";
+		cmdF = chrDirRel + "/" + chr + "_cmd_0.txt";
+		mvF = chrDirRel + "/" + chr + "_mv_0.txt";
+		comF = chrDirRel + "/" + chr + "_com_0.txt";
+	}
+	std::string CHR = name;
 	for (auto& c : CHR) c = (char)toupper((unsigned char)c);
-	const std::string base = chrDirRel + "/" + chr;
 
 	struct Miss { std::string code; std::vector<SourceRange> inits; };
 	std::map<std::string, Miss> missing;   // move -> what its template looked up
@@ -171,8 +186,7 @@ CharaLoadResult LoadCharacterScripts(HSQUIRRELVM v, const std::string& chrDirRel
 	};
 	ctx.objectPushed = false;
 	SetLoadContext(v, &ctx);
-	auto step = [&](const std::string& suffix) -> bool {
-		const std::string rel = base + suffix;
+	auto step = [&](const std::string& rel) -> bool {
 		if (!exists(rel)) return false;
 		std::string err, errFile;
 		int line = 0;
@@ -181,27 +195,32 @@ CharaLoadResult LoadCharacterScripts(HSQUIRRELVM v, const std::string& chrDirRel
 			r.issues.push_back({CharaLoadIssue::RuntimeError, errFile.empty() ? rel : errFile, line, "", err});
 		return true;
 	};
-	if (step("_sc_0.txt")) {
+	if (step(scF)) {
 		if (RootSlotType(v, "Battle_Status") != "table")
-			r.issues.push_back({CharaLoadIssue::MissingTable, base + "_sc_0.txt", 0, "",
+			r.issues.push_back({CharaLoadIssue::MissingTable, scF, 0, "",
 				"the sc file does not define the root table Battle_Status that the engine reads the character's status from"});
 		RunSnippet(v, "if( \"Battle_Status\" in getroottable() ) { delete Battle_Status; }", "__DeleteRootInTable");
 	}
 	ctx.objectPushed = true;   // the loader pushes the character before LoadCommandList
-	if (step("_cmd_0.txt")) {
+	if (step(cmdF)) {
+		// The loaders (MBTL 0x812A80, DFCI 0x80F230) only require the slot to be non-null, then read its entries: a value that
+		// is not an array gives no commands (DFCI support characters set it to 0 on purpose).
 		const std::string t = RootSlotType(v, CHR + "_CommandTable");
-		if (t != "array")
-			r.issues.push_back({CharaLoadIssue::MissingTable, base + "_cmd_0.txt", 0, "",
-				CHR + "_CommandTable is " + (t.empty() ? "not defined" : t) + " after the cmd file: the engine reads it as an array, "
-				"so the character has no commands and cannot act"});
+		if (t.empty() || t == "null")
+			r.issues.push_back({CharaLoadIssue::MissingTable, cmdF, 0, "",
+				CHR + "_CommandTable is " + (t.empty() ? "not defined" : "null") + " after the cmd file: the engine finds no command "
+				"table, so the character has no commands and cannot act"});
+		else if (t != "array")
+			r.issues.push_back({CharaLoadIssue::Note, cmdF, 0, "",
+				CHR + "_CommandTable is not an array: the character takes no commands (normal for assist/support characters)"});
 	}
-	if (step("_mv_0.txt")) {
+	if (step(mvF)) {
 		const std::string t = RootSlotType(v, CHR + "_MoveTable");
 		if (t != "table")
-			r.issues.push_back({CharaLoadIssue::MissingTable, base + "_mv_0.txt", 0, "",
+			r.issues.push_back({CharaLoadIssue::MissingTable, mvF, 0, "",
 				CHR + "_MoveTable is " + (t.empty() ? "not defined" : t) + " after the mv file: the engine has no moves for the character"});
 	}
-	step("_com_0.txt");
+	step(comF);
 	SetLoadContext(v, nullptr);
 	ctx.onMissingPattern = userMissing;
 
@@ -213,7 +232,7 @@ CharaLoadResult LoadCharacterScripts(HSQUIRRELVM v, const std::string& chrDirRel
 		if (setsPattern(miss.inits, &where)) continue;   // the move's own Init sets its pattern afterwards
 		const std::string& code = miss.code;
 		const bool eff = code.rfind("effect:", 0) == 0;
-		r.issues.push_back({CharaLoadIssue::MissingPattern, base + "_mv_0.txt", 0, move,
+		r.issues.push_back({CharaLoadIssue::MissingPattern, mvF, 0, move,
 			move + " (a command starts it) uses pattern \"" + (eff ? code.substr(7) : code) + "\", which is not in the " +
 				(eff ? "effect" : "character's") + " HA6: entering the move keeps the current pattern and restarts it at frame 0."});
 	}

@@ -734,6 +734,7 @@ struct ScriptPanel::Impl {
 		int dev = 0;
 		for (const auto& i : r.issues) {
 			if (i.kind == CharaLoadIssue::DevWarning) { dev++; say("developer warning (" + dir + "): " + i.message); continue; }
+			if (i.kind == CharaLoadIssue::Note) { say(i.file + ": " + i.message); continue; }
 			ScriptProblem p;
 			p.severity = i.kind == CharaLoadIssue::MissingPattern ? ScriptProblem::Warning : ScriptProblem::Error;
 			p.file = i.file.empty() ? currentRel : i.file;
