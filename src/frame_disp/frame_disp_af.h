@@ -342,10 +342,12 @@ inline void AfDisplay(Frame_AF *af, int &selectedLayer, FrameData *frameData = n
 	}
 
 	im::BeginDisabled(templateLocked);
-	// TODO(blend numbering): hantei4/MBAC uses 0 none, 1 multiply, 2 add, 3 subtract
-	// (HANTEI4_EF_IF_LABELS.md section 3). Neither MBAA_NAME_AUDIT.md nor IDA has confirmed
-	// the MBAA renderer's numbering yet, so the stored values (1 Normal, 2 Additive,
-	// 3 Subtractive) are left unchanged. Verify against the MBAA renderer before relabeling.
+	// MBAA blend numbering, confirmed in MBAA.exe: HA6_ParseAnimationFrameChunks stores AFAL int0 at
+	// frame+0x1B; SpriteAnimation_Render 0x407462 maps 0 -> preset 0 (Sprite_EmitTransformedQuad: preset 1 with
+	// alpha forced to 255), 2 -> preset 2, 3 -> preset 3, anything else -> preset 1. g_BlendPresetTable 0x54CC50:
+	// 1 = ADD (src alpha, inv src alpha), 2 = ADD (src alpha, one), 3 = REVSUBTRACT (src alpha, one).
+	// So stored 1 Normal, 2 Additive, 3 Subtractive are right (0 = Normal at full alpha); Render::SetBlendingMode
+	// uses the same mapping.
 	int mode = layer.blend_mode-1;
 	if(mode < 1)
 		mode = 0;

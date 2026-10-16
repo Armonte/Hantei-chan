@@ -66,6 +66,9 @@ struct RenderLayer {
 	float curWeight = 1.f;
 	// PAT layers: PPPA palette tint (character parts only) and PRAS (MBTL ignores it).
 	bool patPaletteTint = true;
+	// Character whose base palette the PPPA tint reads (nullptr = the layer's own CG). Effect.ha6 layers
+	// point at the owner: the game tints every object from g_CharaResRecords[obj+4], which effects inherit.
+	CG* patTintCg = nullptr;
 	bool patApplyPras = true;
 	// AFHK weight 0: UNI2/MBTL lerp the part transform fully to the next part set, MBAACC keeps the current
 	// one (partrender::PartLerpsTransform).

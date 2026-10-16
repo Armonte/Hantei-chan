@@ -46,6 +46,7 @@ struct ActorStyle {
 	int loopCounter = 0;
 	bool uniDialect = false;             // UNI/UNI2/MBTL colour lerp rules (else MBAACC)
 	bool mbtl = false;                   // MBTL does not read PRAS
+	CG* tintCg = nullptr;                // PPPA tint palette owner (effect.ha6 actors: the character)
 };
 
 // AFHK target of `frameIndex` in `seq` and the current frame's weight (1 = no interpolation).
@@ -128,6 +129,7 @@ static void AddFrameLayers(Render& render, Frame& frame, CG* cg, Parts* parts, c
 		layer.sourceParts = parts;
 		layer.patApplyPras = partrender::PartUsesPras(s.uniDialect, s.mbtl);
 		layer.patUniDialect = s.uniDialect;
+		layer.patTintCg = s.tintCg;
 		layer.spawnFlagset1 = s.flagset1;
 		layer.spawnFlagset2 = s.flagset2;
 		render.AddLayer(layer);
@@ -268,6 +270,7 @@ void MainFrame::AddSimulatedActorLayers(CharacterView* view, const preview::Tick
 		s.loopCounter = actor.loopCounter;
 		s.flagset1 = actor.flagset1;
 		s.flagset2 = actor.flagset2;
+		if (actor.effectHa6) s.tintCg = &active->cg;   // effects tint from the owner's palette
 		s.patBoxesHalf = sourceFrameData->patBoxesHalfScale();
 		viewrender::AddFrameLayers(render, spawnedSeq->frames[actor.frame], sourceCG, sourceParts, s);
 	}

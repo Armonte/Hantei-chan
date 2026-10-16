@@ -66,15 +66,24 @@ struct ScheduledSpawn {
 	bool operator==(const ScheduledSpawn& o) const;
 };
 
+struct Options;
+void ApplyRoundStartStandIn(Options& o);
 struct Options {
 	// Context. World units are "CG pixels" (EF offset unit on a CG-sprite
 	// owner frame; the engine uses 256 fixed-point units per CG pixel).
 	bool rootFacingLeft = false;
 	bool ownerSlotOdd = false;       // player slot parity, for flagset2 bit 11
-	float opponentX = 160.f;         // opponent world X (flagset2 bit 8)
-	float cameraX = 0.f;             // camera centre (flagset1 bit 4, screen edges)
+	// The editor has no real opponent or camera. ApplyRoundStartStandIn() puts both where MBAA's round start
+	// leaves them (an approximation, labelled as such in the UI): the root as P1 at x -64 px facing the
+	// opponent at +64 px (Player_SetStartPosition 0x41CEF0: -16384 / +16384), camera reset to (0, 0) at zoom 1
+	// (Camera_ResetState), which their 128 px spread keeps inside the dead zone (Camera_CalculateXPosition).
+	float opponentX = 128.f;         // opponent world X (flagset2 bit 8)
+	float cameraX = 64.f;            // camera centre (flagset1 bit 4, screen edges)
 	float cameraY = 0.f;
 	float cameraZoom = 1.f;
+	// UNI2/MBTL spawn placement (uni2 Han6_EF1_ResolveSpawnPattern, MBTL Effect_RegisterSpawned 0x581BD0)
+	// instead of MBAA's Effect_InitializeComplex 0x454900. See PlaceChild.
+	bool uniPlacement = false;
 	// MBAA rule: EF offsets are half-scale when the spawner's current frame is
 	// a PAT frame (AFGP[0] != 0). Disable for non-MBAACC data (UNI/MBTL).
 	bool patOwnerHalfScale = true;
