@@ -377,7 +377,7 @@ void Window::drawPalPreview(CharacterInstance &ch, const WindowHost &host, const
 			const int k = pp.idx[i]; if (k == 0) continue;
 			uint8_t *o = &rgba[i * 4]; const uint32_t c = colors[k];
 			o[0] = cgm::R(c); o[1] = cgm::G(c); o[2] = cgm::B(c); o[3] = 255;
-			if (hoverIndex >= 0 && k != hoverIndex) { for (int j = 0; j < 3; j++) o[j] = (uint8_t)(o[j] / 4 + 40); o[3] = 150; }
+			if (hoverIndex >= 0 && k != hoverIndex) { const uint8_t g = (uint8_t)((o[0] + o[1] + o[2]) / 9 + 24); o[0] = o[1] = o[2] = g; o[3] = 70; }   // greyed: the hovered index stands out
 		}
 		upload(pp.tex, rgba, pp.w, pp.h, 0, false); pp.texKey = key;
 	}
@@ -471,7 +471,7 @@ void Window::drawPalettes(CharacterInstance &ch, const WindowHost &host) {
 			const ImU32 col = ImGui::ColorConvertFloat4ToU32(Col4(shown[i]));
 			if (idxUse.done && !idxUse.used[i] && !idxUse.tint[i]) {   // no sprite draws it: the stored colour, faded and hatched
 				dl->AddRectFilled(a, b, bg);
-				dl->AddRectFilled(a, b, (col & ~IM_COL32_A_MASK) | IM_COL32(0, 0, 0, 70));
+				dl->AddRectFilled(a, b, (col & ~IM_COL32_A_MASK) | IM_COL32(0, 0, 0, 45));
 				dl->AddLine(ImVec2(a.x, b.y), ImVec2(b.x, a.y), hatch);
 				dl->AddLine(ImVec2(a.x, a.y + (b.y - a.y) * 0.5f), ImVec2(a.x + (b.x - a.x) * 0.5f, a.y), hatch);
 				dl->AddLine(ImVec2(a.x + (b.x - a.x) * 0.5f, b.y), ImVec2(b.x, a.y + (b.y - a.y) * 0.5f), hatch);
@@ -489,12 +489,13 @@ void Window::drawPalettes(CharacterInstance &ch, const WindowHost &host) {
 			ImGui::SetTooltip("%d  #%02X%02X%02X%s", i, cgm::R(colors[i]), cgm::G(colors[i]), cgm::B(colors[i]), note);
 		}
 	}
+	if (gridHover < 0) gridHover = pp.scriptHover;
 	{   // legend
 		const float s = std::floor(ImGui::GetTextLineHeight() * 0.8f);
 		auto key = [&](bool hatched, const char *text) {
 			const ImVec2 a = ImGui::GetCursorScreenPos(); const float dy = (ImGui::GetTextLineHeight() - s) * 0.5f;
 			ImDrawList *dl = ImGui::GetWindowDrawList(); const ImVec2 p0(a.x, a.y + dy), p1(a.x + s, a.y + dy + s);
-			if (hatched) { dl->AddRectFilled(p0, p1, IM_COL32(0, 255, 0, 70)); dl->AddLine(ImVec2(p0.x, p1.y), ImVec2(p1.x, p0.y), IM_COL32(128, 128, 128, 200)); }
+			if (hatched) { dl->AddRectFilled(p0, p1, IM_COL32(0, 255, 0, 45)); dl->AddLine(ImVec2(p0.x, p1.y), ImVec2(p1.x, p0.y), IM_COL32(128, 128, 128, 200)); }
 			else { dl->AddRectFilled(p0, p1, IM_COL32(120, 120, 120, 255)); dl->AddTriangleFilled(p0, ImVec2(p0.x + s * 0.5f, p0.y), ImVec2(p0.x, p0.y + s * 0.5f), IM_COL32(40, 200, 255, 255)); }
 			ImGui::Dummy(ImVec2(s, ImGui::GetTextLineHeight())); ImGui::SameLine(); ImGui::TextDisabled("%s", text);
 		};
@@ -1558,6 +1559,10 @@ bool Window::script(const std::string &cmd, const std::string &arg, std::string 
 		if (key == "ccTo") return num(ccTo);
 		if (key == "palBank") return num(pal.bank);
 		if (key == "palNumber") return num(pal.number);
+		if (key == "palHover") return num(pp.scriptHover);
+		if (key == "palSel") { const bool r = num(pal.selA); pal.selB = pal.selA; return r; }
+		if (key == "palPreviewMode") return num(pp.mode);
+		if (key == "palPreviewImage") return num(pp.image);
 		if (key == "previewPal") return num(previewPal);
 		if (msg) *msg = "unknown field " + key; return false;
 	}
