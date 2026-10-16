@@ -6,7 +6,9 @@
 #include "stage3d/s3d_model.h"
 #include "stage3d/s3d_fbxascii.h"
 #include "stage3d/s3d_blender.h"
+#include "stage3d/s3d_align.h"
 
+#include <cctype>
 #include <cmath>
 #include <cstdint>
 #include <cstdio>
@@ -333,6 +335,102 @@ static void TestBlenderLink()
 	CHECK(s3d::ScanStageFolders((tmp / "missing").u8string()).empty());
 }
 
+
+// MBAACC alignment (SCOPE.md section 4). Expected values come from the spec, not from s3d_align:
+// - MBAACC 2D camera: screen x = 320 + zoom*(world - cam), floor row 432, cam clamp 67584 - 40960/zoom fixed (= 528 - 320/zoom px).
+// - The source camera at zoom Z puts a fighter-plane point P (source px) at 640 + Z*(P - camX) of 1280; the 4:3 crop is x 160..1120.
+// - SCOPE 4.2: unitPx = 360 * 2/3 * s. DFCI_ISSUES.md "Ini-only workaround" tables: FOV 45 -> fov 72.73, VP 0.55 -> horizon 377.3.
+// - The ini must parse with pc-stage3d's applyStageIni (StageIni.cpp): every key known, every value strict decimals.
+static bool Near(float a, float b, float eps) { return std::fabs(a - b) <= eps; }
+static void TestAlign()
+{
+	// clamp
+	CHECK(Near(s3d::AlignCamLimit(1.f), 208.f, 1e-3f));
+	CHECK(Near(s3d::AlignCamLimit(0.8f), 128.f, 1e-3f));
+	CHECK(Near(s3d::AlignCamLimit(1.25f), 272.f, 1e-3f));
+	// camera mapping: MBAACC world points land where MBAACC's 2D camera puts them
+	for (float s : {1.f, 0.9f, 0.75f})
+		for (float z : {1.f, 0.85f, 1.2f})
+			for (float cam : {0.f, -100.f, 120.f}) {
+				s3d::AlignInput in;
+				in.mbCamX = cam; in.mbZoom = z; in.fighterScale = s; in.centerX = 0.4f;
+				const s3d::AlignSourceCam c = s3d::AlignSourceCamera(in);
+				CHECK(c.camY == 0.f);
+				for (float wx : {-528.f, -200.f, 0.f, 37.f, 528.f}) {
+					// MBAACC world px -> source px at the plane: centre slice + 1.5/s source px per MBAACC px
+					const float P = 0.4f * 640.f + wx * 1.5f / s;
+					const float src = 640.f + c.zoom * (P - c.camX);
+					const float mb = (src - 160.f) / 1.5f;
+					CHECK(Near(mb, 320.f + z * (wx - cam), 0.02f));
+				}
+				// a 355 px source character (720p) at this camera is 355 * s * z * 2/3 MBAACC px tall (spec fighter_px 237 * s at zoom 1)
+				CHECK(Near(355.f * c.zoom / 1.5f, 236.667f * s * z, 0.01f));
+			}
+	{   // the clamp applies before mapping: cam 300 at zoom 1 is cam 208
+		s3d::AlignInput a, b; a.mbCamX = 300.f; b.mbCamX = 208.f;
+		CHECK(Near(s3d::AlignSourceCamera(a).camX, s3d::AlignSourceCamera(b).camX, 1e-3f));
+	}
+	// ini keys against the spec / DFCI_ISSUES tables
+	s3d::AlignInput in;
+	in.fighterScale = 0.9f; in.centerX = 0.5f; in.fovDeg = 45.f; in.vanishingPoint = 0.55f; in.floorPx = 432.f;
+	in.scale[0] = in.scale[1] = in.scale[2] = 2.f; in.position[0] = 0.1125f; in.position[1] = -0.05f;
+	in.stageW = 4096.f; in.replaces = 16; in.package = "C:/g/uni2/bg/bg001"; in.name = "bg001";
+	CHECK(Near(s3d::AlignUnitsToPx(in), 216.f, 1e-3f));          // 360 * 2/3 * 0.9
+	CHECK(Near(s3d::AlignIniFov(in), 72.73f, 0.01f));
+	CHECK(Near(s3d::AlignIniHorizonPx(in), 377.3f, 0.05f));
+	in.vanishingPoint = 0.3f; CHECK(Near(s3d::AlignIniHorizonPx(in), 317.3f, 0.05f));
+	in.fovDeg = 35.f; CHECK(Near(s3d::AlignIniFov(in), 58.54f, 0.01f));
+	in.fovDeg = 45.f; in.vanishingPoint = 0.55f;
+	CHECK(Near(s3d::AlignIniCenterX(in), 0.5f / 0.5625f, 1e-4f));
+	// parse like pc-stage3d applyStageIni
+	static const char* kKnown[] = {"replaces", "package", "scale", "pos", "fit_mode", "center_x", "pan_boost", "pan_depth", "stage_w",
+		"host_world_w", "yaw", "cam_pitch", "ground_auto", "ground_y", "fighter_px", "uni_char_px", "ref_fov", "debug_overlay",
+		"depth_offset", "cam_height", "negate_z", "mirror_x", "flip_v", "fov", "world_scale", "units_to_px", "floor_px", "horizon_px",
+		"cam_offset", "lift", "gain", "contrast", "gray", "vcol_gain", "fog", "fog_start", "fog_end", "fog_color", "torch", "torch_color",
+		"torch_pos", "torch_falloff", "front_pass", "front_z"};
+	auto trim = [](std::string x) { while (!x.empty() && std::isspace((unsigned char)x.back())) x.pop_back(); size_t a = 0; while (a < x.size() && std::isspace((unsigned char)x[a])) ++a; return x.substr(a); };
+	const std::string ini = s3d::FormatAlignIni(in);
+	std::vector<std::pair<std::string, std::string>> kv;
+	size_t pos = 0;
+	while (pos < ini.size()) {
+		size_t nl = ini.find('\n', pos); if (nl == std::string::npos) nl = ini.size();
+		std::string line = ini.substr(pos, nl - pos); pos = nl + 1;
+		const size_t cm = line.find_first_of(";#"); if (cm != std::string::npos) line.erase(cm);
+		line = trim(line); if (line.empty()) continue;
+		const size_t eq = line.find('='); CHECK(eq != std::string::npos); if (eq == std::string::npos) continue;
+		const std::string k = trim(line.substr(0, eq)), v = trim(line.substr(eq + 1));
+		bool known = false; for (const char* n : kKnown) known |= k == n;
+		CHECK(known);
+		if (known && k != "package" && k != "fit_mode") {   // strict decimals, comma separated
+			const char* c = v.c_str(); bool ok = true;
+			while (*c) { char* e = nullptr; std::strtof(c, &e); if (e == c) { ok = false; break; } c = e; while (*c == ',' || std::isspace((unsigned char)*c)) ++c; }
+			CHECK(ok);
+		}
+		kv.emplace_back(k, v);
+	}
+	auto val = [&](const char* k) { for (auto& p : kv) if (p.first == k) return p.second; return std::string("<missing>"); };
+	auto num = [&](const char* k) { return std::strtof(val(k).c_str(), nullptr); };
+	CHECK(val("fit_mode") == "crop");
+	CHECK(val("package") == "C:/g/uni2/bg/bg001");
+	CHECK(val("replaces") == "16");
+	CHECK(Near(num("units_to_px"), 216.f, 1e-3f));
+	CHECK(Near(num("fighter_px"), 237.f * 0.9f, 1e-2f));
+	CHECK(Near(num("uni_char_px"), 355.f, 0.f));
+	CHECK(Near(num("floor_px"), 432.f, 1e-3f));
+	CHECK(Near(num("horizon_px"), 377.3f, 0.05f));
+	CHECK(Near(num("fov"), 72.73f, 0.01f));
+	CHECK(Near(num("center_x"), 0.8889f, 1e-3f));
+	CHECK(Near(num("stage_w"), 4096.f, 0.f) && Near(num("host_world_w"), 1056.f, 0.f));
+	CHECK(val("ground_auto") == "0" && val("pan_boost") == "0" && val("world_scale") == "1");
+	CHECK(Near(num("scale"), 2.f, 1e-4f));
+	CHECK(val("pos").rfind("0.2,", 0) == 0);   // Position.x / 0.5625 (DFCI_ISSUES.md)
+	in.replaces = -1; in.yBias = 3.f;
+	const std::string ini2 = s3d::FormatAlignIni(in);
+	CHECK(ini2.find("replaces") == std::string::npos);
+	CHECK(ini2.find("floor_px = 435\n") != std::string::npos);
+	std::printf("align: ok\n");
+}
+
 int main(int argc, char** argv)
 {
 	TestSynthetic();
@@ -340,6 +438,7 @@ int main(int argc, char** argv)
 	TestBgList();
 	TestUniel();
 	TestBlenderLink();
+	TestAlign();
 	TestShipped(argc > 1 ? argv[1] : "C:/dev/hantei-chan/gamedata/uni2/bg");
 	TestAscii("C:/dev/hantei-chan/gamedata/uni2/bg", "uni2 (both forms)");
 	TestAscii("C:/games/unib/bg", "unib arcade");
