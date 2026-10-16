@@ -5,7 +5,7 @@ ROOT="$(cd "$(dirname "$0")/../.." && pwd)"
 RT="$ROOT/build/pat_roundtrip.exe"
 MODE="--bytes"; [ "$1" = "--fresh" ] && { MODE="--fresh"; shift; }
 DATA="${1:-/mnt/c/dev/hantei-chan/gamedata}"
-TMP="$ROOT/build/pat_rt.tmp"; mkdir -p "$TMP"
+mkdir -p "$ROOT/build"; TMP="$(mktemp -d "$ROOT/build/pat_rt.XXXXXX")"; trap 'rm -rf "$TMP"' EXIT   # per process (parallel runs)
 declare -A rc=(); fails=()
 while IFS= read -r f; do
 	out=$("$RT" $MODE "$(wslpath -w "$f")" "$(wslpath -w "$TMP/x.pat")" </dev/null 2>&1)

@@ -5,7 +5,9 @@ ROOT="$(cd "$(dirname "$0")/../.." && pwd)"
 RT="$ROOT/build/roundtrip.exe"
 OPT=""; [ "$1" = "--fresh" ] && { OPT="--fresh"; shift; }
 DATA="${1:-/mnt/c/dev/hantei-chan/gamedata}"
-TMP="$ROOT/build/rt_all.tmp"; mkdir -p "$TMP"
+# Per-process scratch folder: concurrent runs must not share outputs (a shared build/rt_all.tmp made
+# parallel uni_regress runs report each other's half-written files as "save failed").
+mkdir -p "$ROOT/build"; TMP="$(mktemp -d "$ROOT/build/rt_all.XXXXXX")"; trap 'rm -rf "$TMP"' EXIT
 declare -A rc=(); fails=()
 while IFS= read -r f; do
 	key=$(echo "${f#$DATA/}" | tr '/' '_')
