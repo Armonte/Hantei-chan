@@ -715,6 +715,12 @@ void WriteAlignIni(State& s)
 	s.alignStatus = f ? std::string(TXT("Wrote")) + " " + out.u8string() : std::string(TXT("Save failed.")) + " " + out.u8string();
 }
 
+bool ChangedOnDiskNow()
+{
+	State& s = *S();
+	return s.loaded && WatchChanged(s);
+}
+
 bool ScriptCommand(const std::string& cmd, const std::string& arg, std::string* msg)
 {
 	if (cmd != "stage3d") return false;

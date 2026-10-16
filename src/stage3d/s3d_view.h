@@ -16,6 +16,8 @@ void Draw();   // call once per frame from the ImGui build phase (renders into i
 // | `stage3d blender [launch]` (print / run the Open in Blender command) | `stage3d reload` (= Reload from Blender)
 // | `stage3d stages [bg folder]` (stage folders with bg.fbx.bin or bg.fbx); `status` also prints model=, watch= (the files
 // "changed on disk" polls, bg.fbx.bin first) and changed_on_disk=0|1
+// True when a watched model file changed since the last load (polls the disk now). --ui-script `waits3dchange <s>`.
+bool ChangedOnDiskNow();
 bool ScriptCommand(const std::string& cmd, const std::string& arg, std::string* msg);
 
 }  // namespace stage3dview
