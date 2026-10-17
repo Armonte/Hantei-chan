@@ -4,6 +4,9 @@
 
 #include <cstdio>
 #include <set>
+#include <filesystem>
+#include <fstream>
+#include <sstream>
 
 static int g_fail = 0;
 #define CHECK(c) do { if (!(c)) { std::fprintf(stderr, "FAIL %s:%d %s\n", __FILE__, __LINE__, #c); g_fail++; } } while (0)
@@ -24,8 +27,18 @@ static bool Has(const Plan& p, Op::Type t, const std::string& src, const std::st
 	return false;
 }
 
-int main()
+int main(int argc, char** argv)
 {
+	// fpanim_install_test <file.dll>...: print what the install window reads from real DLLs (version resource, marker).
+	if (argc > 1) {
+		for (int i = 1; i < argc; ++i) {
+			const FileInfo f = ReadFileInfo(argv[i]);
+			std::printf("%s: exists=%d hasVersion=%d product='%s' version='%s' component='%s' marker=%d ours=%d label='%s'\n", argv[i],
+			            f.exists, f.hasVersion, f.productName.c_str(), f.version.c_str(), f.component.c_str(), f.hasMarker, IsOurShim(f),
+			            VersionLabel(f).c_str());
+		}
+		return 0;
+	}
 	// Shim identity and version labels.
 	CHECK(IsOurShim(Ours()));
 	CHECK(!IsOurShim(Foreign()));
@@ -111,6 +124,46 @@ int main()
 	CHECK(ImageIsInDir("C:\\Games\\UNI2\\uni2.exe", "c:/games/uni2/"));
 	CHECK(ImageIsInDir("D:/Steam/MELTY BLOOD TYPE LUMINA/MBTL.exe", "D:\\Steam\\MELTY BLOOD TYPE LUMINA"));
 	CHECK(!ImageIsInDir("C:/Games/UNI2/sub/uni2.exe", "C:/Games/UNI2") && !ImageIsInDir("C:/Games/UNI2/notepad.exe", "C:/Games/UNI2"));
+
+	// End to end on a temp folder: a foreign winmm.dll and a UNI2-IM dinput8.dll; install, then uninstall.
+	{
+		namespace fs = std::filesystem;
+		const fs::path root = fs::temp_directory_path() / "hc_fpanim_install_test";
+		std::error_code ec;
+		fs::remove_all(root, ec);
+		fs::create_directories(root / "game" / "UNI2-IM");
+		fs::create_directories(root / "bin");
+		auto put = [](const fs::path& p, const std::string& t) { std::ofstream(p, std::ios::binary) << t; };
+		auto get = [](const fs::path& p) { std::ifstream f(p, std::ios::binary); std::stringstream ss; ss << f.rdbuf(); return ss.str(); };
+		put(root / "game" / "winmm.dll", "FOREIGN LOADER");
+		put(root / "game" / "dinput8.dll", "UNI2-IM");
+		put(root / "game" / "UNI2-IM" / "UNI2-IM.ini", "x=1");
+		put(root / "bin" / "winmm.dll", "shim loads fpan-im\\fpan-im.dll");
+		put(root / "bin" / "fpan-im.dll", "core fpan-im");
+		const std::string game = (root / "game").u8string(), bin = (root / "bin").u8string();
+		const Bundle bb = ResolveBundle(bin, [](const std::string& p) { return fs::exists(fs::u8path(p)); });
+		CHECK(bb.found);
+		GameState gs = ReadGameState(game);
+		CHECK(gs.shim.exists && !IsOurShim(gs.shim) && Classify(gs) == Status::NotInstalled);
+		CHECK(Execute(game, PlanInstall(gs, bb, NowStamp())).empty());
+		gs = ReadGameState(game);
+		CHECK(Classify(gs) == Status::Installed && gs.chainExists && gs.recordedBackup == "winmm.chain.dll");
+		CHECK(get(root / "game" / "winmm.chain.dll") == "FOREIGN LOADER");
+		CHECK(FindRunningGame(game) == 0);
+		// Update over it: no second backup.
+		CHECK(Execute(game, PlanInstall(gs, bb, NowStamp())).empty());
+		CHECK(get(root / "game" / "winmm.chain.dll") == "FOREIGN LOADER");
+		fs::create_directories(root / "game" / "fpan-im" / "mods");
+		put(root / "game" / "fpan-im" / "mods" / "keep.txt", "k");
+		gs = ReadGameState(game);
+		CHECK(Execute(game, PlanUninstall(gs)).empty());
+		gs = ReadGameState(game);
+		CHECK(Classify(gs) == Status::NotInstalled && !gs.chainExists);
+		CHECK(get(root / "game" / "winmm.dll") == "FOREIGN LOADER");
+		CHECK(get(root / "game" / "dinput8.dll") == "UNI2-IM" && get(root / "game" / "UNI2-IM" / "UNI2-IM.ini") == "x=1");
+		CHECK(get(root / "game" / "fpan-im" / "mods" / "keep.txt") == "k");
+		fs::remove_all(root, ec);
+	}
 
 	if (g_fail) return 1;
 	std::printf("fpanim_install_test: ok\n");
