@@ -84,6 +84,9 @@ unsigned int* PartGfx<>::PgLoad(unsigned int *data, const unsigned int *data_end
             else if (!memcmp(data, "DXT5", 4)) {
                 tex.type = 5; // DXT5 (BC3)
             }
+            else if (!memcmp(data, "DXT3", 4)) {
+                tex.type = 3; // DXT3 (BC2): UNIB hyd/lin/ori/yuz ef00.pat
+            }
             else {
                 HC_LOG_WARN("Unknown texture type in PGT2");
                 assert(0 && "Unknown texture type");
@@ -93,8 +96,8 @@ unsigned int* PartGfx<>::PgLoad(unsigned int *data, const unsigned int *data_end
 
             tex.noCompress = true;
 
-            // Handle uncompressed DXT5
-            if (tex.type == 5 && someSize == tex.w * tex.h + 128)
+            // Handle uncompressed DXT5 / DXT3 (both 1 byte per pixel)
+            if ((tex.type == 5 || tex.type == 3) && someSize == tex.w * tex.h + 128)
             {
                 data += 2; // Skip unknown fields
                 auto* oData = (unsigned char*)data;
@@ -613,6 +616,8 @@ void PartGfx<>::Save(std::ostream &file, const PartGfx *gfx)
         typeName = 827611204; // "DXT1" as int32
     else if (gfx->type == 5)
         typeName = 894720068; // "DXT5" as int32
+    else if (gfx->type == 3)
+        typeName = 861165636; // "DXT3" as int32
 
     file.write("PGT2", 4);
     int totalSize = gfx->imageSize;
