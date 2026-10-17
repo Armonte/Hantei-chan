@@ -7,7 +7,7 @@
 //
 // Texture formats written per game (.pat, pat_texconv.h):
 //   MBAACC                    PGTX 32-bit BGRA (the only record MBAA.exe reads)
-//   UNIB / UNI2 / MBTL        PGT2 DXT1 (1), DXT5 (5), A8R8G8B8 (21), X8R8G8B8 (22); a replace keeps the texture's own kind
+//   UNIB / UNI2 / MBTL        PGT2 DXT1 (1), DXT3 (3, UNIB), DXT5 (5), A8R8G8B8 (21), X8R8G8B8 (22); a replace keeps the texture's own kind
 //   ActCadenza                no .pat (HA4 parts live in the DAT)
 //   RBO / GOF2                part sheets are CG-style banks (han2), browsed through the CG side
 #include "cgm_bank.h"
