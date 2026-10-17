@@ -967,6 +967,7 @@ void MainFrame::Menu(unsigned int errorPopupId)
 		if (ImGui::BeginMenu(LBL("Game")))
 		{
 			if (ImGui::MenuItem(LBL("Game Link (MBAACC)"), nullptr, gamelink::showPanel)) gamelink::showPanel = !gamelink::showPanel;
+			if (ImGui::MenuItem(LBL("fpan-im (UNI2 / MBTL): install, status"), nullptr, fpanimpanel::showPanel)) fpanimpanel::showPanel = !fpanimpanel::showPanel;
 			ImGui::Separator();
 			// [authoring] docs/HANTEI_AUTHORING_MODE.md §8.11: Authoring ships in the public build, here (was "Experimental: Authoring").
 			if (ImGui::BeginMenu(LBL("Authoring")))
