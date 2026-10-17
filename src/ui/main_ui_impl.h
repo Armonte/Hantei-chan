@@ -447,6 +447,7 @@ void MainFrame::DrawUi()
 	drawCommandEditor();
 	drawScriptPanel();
 	drawGameLink();
+	fpanimpanel::DrawPanel();
 	drawTagPanel();
 	drawAuthoring();
 	drawVarRefsWindow();
