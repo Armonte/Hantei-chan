@@ -1158,6 +1158,14 @@ foreach(_s "games/mbaacc/data/akiha.cg" "games/mbaacc/data/arc.pat" "games/unib/
 	endif()
 endforeach()
 
+# RBO / GOF2 part sheets through the same layer (SheetTexSource): sheet PNG round trip and replace -> undo -> redo, PAT block byte-exact
+if(EXISTS "/mnt/c/games/rbo/DATA/DATA01.PAC")
+	add_test(NAME texsrc_rbo_sheets COMMAND cgmtex sheetcheck --max 2 "C:/games/rbo/DATA/DATA01.PAC")
+endif()
+if(EXISTS "/mnt/c/games/gof/Data/data02.dat")
+	add_test(NAME texsrc_gof2_sheets COMMAND cgmtex sheetcheck --max 2 "C:/games/gof/Data/data02.dat")
+endif()
+
 # Effect recolour authoring (docs/cg/fxrecolor_config_spec.md): ruleset text round trip through the runtime's own parser/writer.
 add_test(NAME fxr_ini COMMAND cgmtool fxr check docs/cg/effect_recolor_data/dgv_akiha.ini WORKING_DIRECTORY ${CMAKE_SOURCE_DIR})
 add_test(NAME fxr_ini_accent COMMAND cgmtool fxr check docs/cg/effect_recolor_data/dgv_akiha_accent.ini WORKING_DIRECTORY ${CMAKE_SOURCE_DIR})

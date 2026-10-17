@@ -16,8 +16,10 @@
 #                      decoded, PNG export -> import of each texture (first 8 per file; --every: all) changes no byte, a texture replaced ->
 #                      saved -> reloaded decodes as edited and the parts sampling it follow (MBAACC, UNIB, UNI2, MBTL; ActCadenza has no .pat)
 #   texsrc-cg          the same operations on the sampled CG banks through the same layer (cgmtool covers the banks themselves)
+#   texsrc-sheet       RBO / GOF2 part sheets (cgmtex sheetcheck, SheetTexSource) in every character archive: PAT block byte-exact on read ->
+#                      write, sheet PNG export -> import changes no byte, replace -> undo -> redo byte-exact, the replaced sheet reloads as edited
 HERE="$(cd "$(dirname "$0")" && pwd)"; ROOT="$(cd "$HERE/../.." && pwd)"
-T="$ROOT/build/cgmtool.exe"; QUICK=0; EVERY=0; JOBS=4; GAMES="MBAACC UNIB UNI2 MBTL MBAC"
+T="$ROOT/build/cgmtool.exe"; QUICK=0; EVERY=0; JOBS=4; GAMES="MBAACC UNIB UNI2 MBTL MBAC RBO GOF2"
 while [ $# -gt 0 ]; do case "$1" in --quick) QUICK=1;; --every) EVERY=1;; --jobs) JOBS="$2"; shift;; --games) GAMES="$2"; shift;; *.exe) T="$1";; esac; shift; done
 GD="${CGM_GAMEDATA:-/mnt/c/dev/hantei-chan/gamedata}"
 SCR="${CGM_TMP:-C:\\dev\\hantei-chan\\work\\cgm_suite}\\run$$_$RANDOM"   # per process: concurrent suites must not share job folders
@@ -92,6 +94,14 @@ for g in $GAMES; do
 		: > $L/t; texsrc $L/t $L/b   # no .pat: the CG inside the DATs through the same layer
 		[ $QUICK -eq 0 ] && [ $EVERY -eq 0 ] && [ -f "$GD/mbac/02/GAKIHA.DAT" ] && { G=$(wslpath -w "$GD/mbac/02/GAKIHA.DAT"); queue MBAC struct-check "$G"; queue MBAC roundtrip "$G" --tmp "{TMP}"; }
 		[ $QUICK -eq 0 ] && [ -f "$GD/mbac/02/GAKIHA.DAT" ] && queue MBAC folder-check "$(wslpath -w "$GD/mbac/02/GAKIHA.DAT")" --tmp "{TMP}"
+		;;
+	RBO|GOF2)   # part sheets inside the character archives (the CG banks of these games are covered by tools/han2/run_roundtrip.sh "cgm")
+		[ -x "$TX" ] || { echo "SECTION texsrc-sheet: skipped (no cgmtex.exe)"; continue; }
+		if [ $g = RBO ]; then R=/mnt/c/games/rbo/DATA; A=("$R/DATA01.PAC" "$R/DATA02.PAC" "$R/Update01.PAC" "$R/Ex1Disc.PAC" "$R/Ex2Disc.PAC" "$R/Ex3Disc.pac"); else A=(/mnt/c/games/gof/Data/data0{0,1,2,3,4,5}.dat); fi
+		X=(); for a in "${A[@]}"; do [ -f "$a" ] && X+=("$(wslpath -w "$a")"); done
+		[ ${#X[@]} -eq 0 ] && continue
+		out=$(cd "$ROOT/build" && nice -n 10 "$TX" sheetcheck --max $TXMAX "${X[@]}" 2>&1); r=$?
+		echo "$out" | grep -E "^(FAIL|SECTION)" | sed "s|^|[$g] |"; [ $r -ne 0 ] && { echo "!! [$g] cgmtex sheetcheck exited $r"; rc=1; }
 		;;
 	esac
 done
