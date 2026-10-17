@@ -173,6 +173,7 @@ add_executable(${EXE}
 	# fpan-im install / update / uninstall for UNI2 / MBTL (docs/FPANIM_BUNDLE.md)
 	src/fpanim_install.cpp
 	src/fpanim_install_panel.cpp
+	src/fpanim_play.cpp
 	# Tag / Team panel (experimental, docs/HANTEI_TAG_PANEL.md)
 	src/tag_tuning/tag_ini.cpp
 	src/tag_tuning/tag_assist.cpp

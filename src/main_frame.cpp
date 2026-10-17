@@ -36,6 +36,7 @@
 #include "han2/qoh_dat.h"
 #include "game_link_panel.h"
 #include "fpanim_install_panel.h"
+#include "fpanim_play.h"
 #include "tag_panel.h"
 #include "authoring/authoring_window.h"
 #include "authoring/game_view.h"
