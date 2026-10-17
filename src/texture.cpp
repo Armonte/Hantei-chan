@@ -16,6 +16,9 @@
 #ifndef GL_COMPRESSED_RGBA_S3TC_DXT1_EXT
 #define GL_COMPRESSED_RGBA_S3TC_DXT1_EXT 0x83F1
 #endif
+#ifndef GL_COMPRESSED_RGBA_S3TC_DXT3_EXT
+#define GL_COMPRESSED_RGBA_S3TC_DXT3_EXT 0x83F2
+#endif
 #ifndef GL_COMPRESSED_RGBA_S3TC_DXT5_EXT
 #define GL_COMPRESSED_RGBA_S3TC_DXT5_EXT 0x83F3
 #endif
@@ -89,6 +92,8 @@ void Texture::LoadCompressed(char* data, int width, int height, size_t compresse
 	GLenum format;
 	if (type == 1) {
 		format = GL_COMPRESSED_RGBA_S3TC_DXT1_EXT; // DXT1 (0x83F1)
+	} else if (type == 3) {
+		format = GL_COMPRESSED_RGBA_S3TC_DXT3_EXT; // DXT3 (0x83F2)
 	} else if (type == 5) {
 		format = GL_COMPRESSED_RGBA_S3TC_DXT5_EXT; // DXT5 (0x83F3)
 	} else {

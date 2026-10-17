@@ -163,6 +163,41 @@ static int SelfTest() {
 		p.gfxMeta.resize(3); PartGfx<> &ux = p.gfxMeta[2]; ux.w = ux.h = 512; ux.type = 5; ux.imageData = new char[16](); ux.imageSize = 16;
 		CHECK(s.entry(2, e) && !e.present && e.format == "unsupported kind");
 	}
+	// .pat DXT3 (BC2, UNIB ef00.pat): decode / encode, PNG round trip keeps every byte, an edit decodes as edited
+	{
+		Parts &p = *new Parts(nullptr);
+		p.gfxMeta.resize(1); p.cutOuts.resize(1); p.cutOuts[0].texture = 0;
+		PartGfx<> &g = p.gfxMeta[0];
+		// solid 4x4 blocks of 565-exact colours and 4-bit-exact alphas: BC2 stores them losslessly
+		auto block = [](int w, int seed) {
+			std::vector<uint8_t> px((size_t)w * w * 4);
+			for (int y = 0; y < w; y++) for (int x = 0; x < w; x++) {
+				const int b = (y / 4) * (w / 4) + x / 4 + seed; uint8_t *o = &px[((size_t)y * w + x) * 4];
+				o[0] = (uint8_t)((1 + b % 31) * 255 / 31); o[1] = (uint8_t)((1 + (b * 7) % 63) * 255 / 63); o[2] = (uint8_t)((1 + (b * 3) % 31) * 255 / 31); o[3] = (uint8_t)((b % 16) * 17);
+			}
+			return px;
+		};
+		const std::vector<uint8_t> rgba = block(128, 0);
+		std::string err; g.name = "d3.dds"; g.type = 3; g.w = g.h = 1; g.imageData = new char[16](); g.imageSize = 16;
+		CHECK(pattex::Encode(g, rgba.data(), 128, 128, -1, &err) && g.type == 3 && g.imageSize == 128 * 128);
+		CHECK(!memcmp(g.ddsHeader + 80, "DXT3", 4));
+		cgm::PatTexSource s(p);
+		cgm::TexEntry e; CHECK(s.entry(0, e) && e.present && e.format == "DXT3");
+		cgm::Rgba px; CHECK(s.decode(0, px) && px.px == rgba);
+		const char *before = g.imageData; const std::vector<char> bytes(g.imageData, g.imageData + g.imageSize);
+		const std::string png = tmp + "/d3.png"; bool ch = true;
+		CHECK(cgm::ExportPng(s, 0, png, &err));
+		CHECK(cgm::ImportPng(s, 0, png, &err, &ch) && !ch && g.imageData == before);   // nothing re-encoded
+		cgm::Rgba same = px; CHECK(s.replace(0, same, &err, &ch) && !ch);
+		std::vector<uint8_t> re; pattex::EncodeDxtKind(rgba.data(), 128, 128, 3, re);
+		CHECK(re.size() == bytes.size() && !memcmp(re.data(), bytes.data(), re.size()));   // re-encoding the decoded pixels gives the same bytes
+		cgm::Rgba edit; edit.w = edit.h = 128; edit.px = block(128, 5);
+		CHECK(s.replace(0, edit, &err, &ch) && ch && g.type == 3);
+		cgm::Rgba back; CHECK(s.decode(0, back) && back.px == edit.px);
+		// DXT1 / DXT5 through the kind form match the bool form
+		std::vector<uint8_t> a1, b1; pattex::EncodeDxt(rgba.data(), 128, 128, true, a1); pattex::EncodeDxtKind(rgba.data(), 128, 128, 5, b1); CHECK(a1 == b1);
+		pattex::EncodeDxt(rgba.data(), 128, 128, false, a1); pattex::EncodeDxtKind(rgba.data(), 128, 128, 1, b1); CHECK(a1 == b1);
+	}
 	// mod folder
 	{
 		CHECK(cgm::UsesModFolder("uni2") && cgm::UsesModFolder("mbtl") && !cgm::UsesModFolder("mbaacc"));
