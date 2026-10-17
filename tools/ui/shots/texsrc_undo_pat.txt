@@ -1,0 +1,21 @@
+# "CG + .pat textures" tab: a .pat texture replace (UNI2 chr003 texture 0, red/blue inverted PNG) -> Undo -> Redo, window-only captures
+openany C:/dev/hantei-chan/gamedata/uni2/data/chr003/chr003_0.txt
+wait 200
+cgm open
+wait 30
+cgm tab CG + .pat textures
+wait 10
+cgm texsel 1 0
+wait 20
+capture C:/dev/hantei-chan/work/ab/shots/texsrc_pat_0_original.png
+cgm path C:/dev/hantei-chan/work/texundo/pat0_edit.png
+cgm press Import PNG...##cgmtb
+wait 20
+capture C:/dev/hantei-chan/work/ab/shots/texsrc_pat_1_replaced.png
+cgm press Undo##cgmtb
+wait 20
+capture C:/dev/hantei-chan/work/ab/shots/texsrc_pat_2_undone.png
+cgm press Redo##cgmtb
+wait 20
+capture C:/dev/hantei-chan/work/ab/shots/texsrc_pat_3_redone.png
+quit

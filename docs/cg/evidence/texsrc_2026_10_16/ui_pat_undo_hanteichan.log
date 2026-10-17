@@ -1,0 +1,7 @@
+[21:14:20.251] [INFO] [Font] Noto Sans JP loaded with symbol support
+[21:14:20.251] [INFO] [Font] Japanese font loaded with symbol support and set as default
+[21:14:20.251] [INFO] [Font] Glyph ranges size: 4663
+[21:14:20.364] [INFO] [MvScript] chr003_0: 64 script spawn(s) parsed from move scripts
+[21:14:20.364] [INFO] [Effect] chr003_0: Using shared effect.txt from parent directory
+[21:14:20.413] [INFO] [Effect] chr003_0: sys_effect.pat loaded from parent directory (1040 part sets)
+[21:14:20.413] [INFO] [Effect] chr003_0: Loaded effect character from C:/dev/hantei-chan/gamedata/uni2/data

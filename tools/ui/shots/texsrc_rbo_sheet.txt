@@ -1,0 +1,15 @@
+# "CG + .pat textures" tab on an RBO character: its part sheets listed as the third source kind, sheet 0 viewed with "Used by"
+browse C:\games\rbo_run
+waitidle
+select ACOLYTE_F.DT2
+waitidle
+open
+wait 160
+cgm open
+wait 30
+cgm tab CG + .pat textures
+wait 10
+cgm texsel 2 0
+wait 20
+capture C:/dev/hantei-chan/work/ab/shots/texsrc_rbo_sheet.png
+quit
