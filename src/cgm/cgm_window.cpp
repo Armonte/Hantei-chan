@@ -927,7 +927,7 @@ void Window::draw(CharacterInstance *ch, const WindowHost &host) {
 		const bool focused = ImGui::IsWindowFocused(ImGuiFocusedFlags_RootAndChildWindows) && !io.WantTextInput;
 		ImGui::BeginDisabled(!hist.canUndo()); if (CgmButton(LBL("Undo")) || (focused && io.KeyCtrl && ImGui::IsKeyPressed(ImGuiKey_Z, false) && !io.KeyShift)) undoRedo(*ch, false, host); ImGui::EndDisabled();
 		ImGui::SameLine(); ImGui::BeginDisabled(!hist.canRedo()); if (CgmButton(LBL("Redo")) || (focused && io.KeyCtrl && (ImGui::IsKeyPressed(ImGuiKey_Y, false) || (io.KeyShift && ImGui::IsKeyPressed(ImGuiKey_Z, false))))) undoRedo(*ch, true, host); ImGui::EndDisabled();
-		if (hist.canUndo()) { ImGui::SameLine(); ImGui::TextDisabled("%s", hist.top().label.c_str()); }
+		if (hist.canUndo()) { ImGui::SameLine(); ImGui::TextDisabled("%s", hist.topLabel()); }
 		static bool cgtoolLayout = false;
 		if (CgmButton(LBL("Export all..."))) {
 			const std::string d = BrowseForFolderUtf8("");
@@ -1326,6 +1326,7 @@ void UploadPatTexture(Parts &parts, int i) {
 	for (size_t k = 0; k < rgba.size(); k += 4) std::swap(rgba[k], rgba[k + 2]);   // LoadDirect takes BGRA
 	Texture *t = g.GetTextureFromId(parts.textures);
 	if (!t) { t = new Texture; parts.textures.push_back(t); }
+	t->Unapply();   // Apply() skips a texture that is already on the GPU (every loaded .pat texture): drop it so the new pixels upload
 	t->LoadDirect((char *)rgba.data(), w, h, true);
 	t->Apply(false, false);
 	g.textureIndex = t->id;
@@ -1578,7 +1579,7 @@ void Window::drawTextures(CharacterInstance &ch, const WindowHost &host) {
 		const bool canU = hist.canUndo() && (bank || !hist.top().hasBank), canR = hist.canRedo() && (bank || !hist.topRedo().hasBank);
 		ImGui::BeginDisabled(!canU); if (CgmButton(LBL("Undo##cgmtb"))) undoRedo(ch, false, host); ImGui::EndDisabled();
 		ImGui::SameLine(); ImGui::BeginDisabled(!canR); if (CgmButton(LBL("Redo##cgmtb"))) undoRedo(ch, true, host); ImGui::EndDisabled();
-		if (canU) { ImGui::SameLine(); ImGui::TextDisabled("%s", hist.top().label.c_str()); }
+		if (hist.canUndo()) { ImGui::SameLine(); ImGui::TextDisabled("%s", hist.topLabel()); }   // re-read: the press above may have emptied it
 		if (live && tb.kind != 0) { ImGui::SameLine(); ImGui::TextDisabled("%s", TXT("(sheet / .pat steps: Edit > Undo, Ctrl+Z in the editor)")); }
 	}
 	if (!haveSel) ImGui::TextDisabled("%s", TXT("Select a CG image or a .pat texture."));

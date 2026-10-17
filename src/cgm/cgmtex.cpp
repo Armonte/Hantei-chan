@@ -16,6 +16,7 @@
 //                                                     edited. Prints "SECTION texsrc-sheet: pass P fail F | ..." 
 #include <windows.h>
 #include "cgm_texsrc.h"
+#include "cgm_undo.h"
 #include "cgm_bank.h"
 #include "cgm_io.h"
 #include "cgm_palette.h"
@@ -122,6 +123,35 @@ static int SelfTest() {
 		CHECK(cgm::ImportPng(s, 0, png, &err, &ch) && !ch && io.replaces == 0);   // PNG round trip: nothing re-encoded
 		cgm::Rgba edit = px; edit.px[0] ^= 0xFF; CHECK(s.replace(0, edit, &err, &ch) && ch && io.replaces == 1);
 		CHECK(!cgm::ExportPng(s, 1, png, &err));   // empty slot
+	}
+	// The tab's undo sequence that crashed the GUI: one .pat texture replace recorded as the only history step, Undo pressed, then the
+	// tab reads the label of the next step to undo in the same frame (it read back() of the emptied history). Undo / redo restore the
+	// texture records byte for byte and the part that followed the size.
+	{
+		Parts &p = *new Parts(nullptr);
+		p.gfxMeta.resize(1); PartGfx<> &g = p.gfxMeta[0];
+		std::vector<uint8_t> rgba(128 * 128 * 4); for (size_t k = 0; k < rgba.size(); k++) rgba[k] = (uint8_t)(k * 5 + 1);
+		std::string err; g.type = 21; g.w = g.h = 1; g.imageData = new char[4](); g.imageSize = 4;
+		CHECK(pattex::Encode(g, rgba.data(), 128, 128, 21, &err));
+		p.cutOuts.resize(1); p.cutOuts[0].texture = 0; p.cutOuts[0].ppte[0] = p.cutOuts[0].ppte[1] = 64;
+		const std::vector<uint8_t> origBytes((uint8_t *)g.imageData, (uint8_t *)g.imageData + g.imageSize);
+		cgm::PatTexSource s(p); cgm::History hist;
+		cgm::HistoryEntry h; h.label = "Replace .pat texture 0"; h.patBefore = cgm::CapturePatTex(p);
+		cgm::Rgba edit; edit.w = edit.h = 256; edit.px.assign(256 * 256 * 4, 0); for (size_t k = 0; k < edit.px.size(); k++) edit.px[k] = (uint8_t)(k * 3);
+		bool ch = false; CHECK(s.replace(0, edit, &err, &ch) && ch && p.cutOuts[0].ppte[0] == 256);
+		const std::vector<uint8_t> newBytes((uint8_t *)p.gfxMeta[0].imageData, (uint8_t *)p.gfxMeta[0].imageData + p.gfxMeta[0].imageSize);
+		h.patAfter = cgm::CapturePatTex(p); hist.push(std::move(h));
+		CHECK(hist.canUndo() && std::string(hist.topLabel()) == "Replace .pat texture 0");
+		cgm::HistoryEntry u = hist.undo();
+		CHECK(cgm::RestorePatTex(p, u.patBefore) == std::vector<int>{0});
+		CHECK(!hist.canUndo() && std::string(hist.topLabel()).empty());   // the read that crashed: safe and empty
+		CHECK(cgm::SamePatTex(p, u.patBefore) && p.gfxMeta[0].w == 128 && p.cutOuts[0].ppte[0] == 64);
+		CHECK(std::vector<uint8_t>((uint8_t *)p.gfxMeta[0].imageData, (uint8_t *)p.gfxMeta[0].imageData + p.gfxMeta[0].imageSize) == origBytes);
+		cgm::Rgba back; CHECK(s.decode(0, back) && back.w == 128 && back.px == rgba);
+		cgm::HistoryEntry r = hist.redo();
+		CHECK(cgm::RestorePatTex(p, r.patAfter) == std::vector<int>{0} && hist.canUndo() && !hist.canRedo());
+		CHECK(std::vector<uint8_t>((uint8_t *)p.gfxMeta[0].imageData, (uint8_t *)p.gfxMeta[0].imageData + p.gfxMeta[0].imageSize) == newBytes && p.cutOuts[0].ppte[0] == 256);
+		CHECK(s.decode(0, back) && back.px == edit.px);
 	}
 	// .pat side: a 128 x 128 A8R8G8B8 texture, two parts sampling it, one part set placing one of them
 	{

@@ -38,7 +38,10 @@ public:
 	}
 	bool canUndo() const { return !done_.empty(); }
 	bool canRedo() const { return !redo_.empty(); }
-	const HistoryEntry &top() const { return done_.back(); }
+	const HistoryEntry &top() const { return done_.back(); }   // only while canUndo()
+	// Label of the step Undo would revert, "" when there is none. UI code reads this after a button may have undone the last step in
+	// the same frame (reading top() then was the "CG + .pat textures" tab's undo crash: back() of an empty history).
+	const char *topLabel() const { return done_.empty() ? "" : done_.back().label.c_str(); }
 	const HistoryEntry &topRedo() const { return redo_.back(); }
 	HistoryEntry undo() { HistoryEntry e = std::move(done_.back()); done_.pop_back(); redo_.push_back(e); return e; }
 	HistoryEntry redo() { HistoryEntry e = std::move(redo_.back()); redo_.pop_back(); done_.push_back(e); return e; }
