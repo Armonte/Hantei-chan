@@ -233,6 +233,7 @@ static int SelfTest() {
 		CHECK(cgm::UsesModFolder("uni2") && cgm::UsesModFolder("mbtl") && !cgm::UsesModFolder("mbaacc"));
 		CHECK(cgm::ModFolderPath("uni2", "C:\\g", "data/chr003/chr003.cg") == "C:\\g\\UNI2-IM\\Mods\\data\\chr003\\chr003.cg");
 		CHECK(cgm::ModFolderPath("mbtl", "C:\\g\\", "./data/chr000/chr000.pat") == "C:\\g\\MBTL-IM\\Mods\\data\\chr000\\chr000.pat");
+		CHECK(cgm::ModFolderPath("uni2", "C:\\g", "data/../../x.cg").empty() && cgm::ModFolderPath("uni2", "C:\\g", "C:/x.cg").empty());
 		CHECK(cgm::ModFolderPath("mbaacc", "C:\\g", "data/x.cg").empty());
 		CHECK(cgm::GameKeyOf("C:\\dev\\hantei-chan\\gamedata\\uni2\\data\\chr003\\chr003.cg") == "data/chr003/chr003.cg");
 		CHECK(cgm::GameKeyOf("C:/x/y.cg").empty());

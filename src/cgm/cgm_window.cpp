@@ -62,6 +62,7 @@ std::string ScriptPath() { std::string p = g_scriptPaths.front(); g_scriptPaths.
 #define FileDialog(...) (g_scriptPaths.empty() ? FileDialog(__VA_ARGS__) : ScriptPath())
 #define BrowseForFolderUtf8(...) (g_scriptPaths.empty() ? BrowseForFolderUtf8(__VA_ARGS__) : ScriptPath())
 
+std::string HotSaveGameDir(const std::string &game);   // ui/main_frame_hotsave.cpp: Preferences / Script panel game folder, else the Steam default
 namespace cgm {
 
 static std::string Fmt(const char *fmt, ...) {
@@ -147,6 +148,7 @@ bool Window::saveBankFiles(CharacterInstance &ch, std::string &report) {
 	std::filesystem::rename(tmp, target, ec);
 	if (ec) { report = TXT("Could not write the file."); return false; }
 	report = Fmt(TXT("Saved %s (the original is kept as .bak)"), ch.getCGPath().c_str());
+	if (onSaved) onSaved(&ch, cg);
 	const std::vector<int> remap = RemapSince(diskUids, *bank);
 	bool ok = true;
 	if (!IsIdentityRemap(remap) && !users.files.empty()) {
@@ -619,7 +621,7 @@ void Window::drawPalettes(CharacterInstance &ch, const WindowHost &host) {
 		ui::ButtonGrid sg = modGame ? ui::ButtonGrid({LBL("Save .pal"), LBL("Save .pal to mod folder"), LBL("Save .pal as..."), saveAsLayout}) : ui::ButtonGrid({LBL("Save .pal"), LBL("Save .pal as..."), saveAsLayout});
 		if (GridButton(sg, LBL("Save .pal"))) {
 			std::string e; const std::string path = AnsiToUtf8(ch.cg.palettePath(P.bank));
-			if (WritePalSet(path, ps, true, &e)) { P.dirty[P.bank] = false; status = Fmt(TXT("Saved %s (the original is kept as .bak)"), path.c_str()); } else status = e;
+			if (WritePalSet(path, ps, true, &e)) { P.dirty[P.bank] = false; status = Fmt(TXT("Saved %s (the original is kept as .bak)"), path.c_str()); if (onSaved) onSaved(&ch, path); } else status = e;
 		}
 		// UNI2 / MBTL read their .pal from the archives: an edited palette reaches the game only through the IM mod folder (the same
 		// place the "CG + .pat textures" tab saves the .cg / .pat; its game and game folder settings apply here too)
@@ -627,7 +629,10 @@ void Window::drawPalettes(CharacterInstance &ch, const WindowHost &host) {
 			if (GridButton(sg, LBL("Save .pal to mod folder"))) {
 				const std::string dst = modFolderDst(ch, ch.cg.palettePath(P.bank)); std::string e;
 				if (dst.empty()) status = Fmt(TXT("Cannot place %s in the mod folder: no game folder, or the file is not under a data folder."), ch.cg.palettePath(P.bank).c_str());
-				else status = writeModStep(dst, ps.raw, Fmt(TXT("Save %s to mod folder"), std::filesystem::u8path(dst).filename().u8string().c_str()), &e) ? Fmt(TXT("Wrote %s (%zu bytes). The improvement mod / fpan-im serve it in place of the archived file."), dst.c_str(), ps.raw.size()) : e;
+				else if (writeModStep(dst, ps.raw, Fmt(TXT("Save %s to mod folder"), std::filesystem::u8path(dst).filename().u8string().c_str()), &e)) {
+					status = Fmt(TXT("Wrote %s (%zu bytes). The improvement mod / fpan-im serve it in place of the archived file."), dst.c_str(), ps.raw.size());
+					if (onSaved) onSaved(&ch, dst);
+				} else status = e;
 			}
 			ImGui::SetItemTooltip("%s", TXT("Writes this .pal to <game folder>\\UNI2-IM\\Mods or MBTL-IM\\Mods (set in the \"CG + .pat textures\" tab). \"Restore mod folder\" there, or cgmtex modrestore, undoes it."));
 		}
@@ -1400,7 +1405,7 @@ std::string Window::modFolderDst(CharacterInstance &ch, const std::string &srcPa
 	const bool mod = UsesModFolder(kGames[gi].id);
 	if (usesModFolder) *usesModFolder = mod;
 	if (!mod) return "";
-	if (tb.gameDir[gi].empty() && kGames[gi].steamDir[0]) tb.gameDir[gi] = kGames[gi].steamDir;
+	if (tb.gameDir[gi].empty() && kGames[gi].steamDir[0]) tb.gameDir[gi] = ::HotSaveGameDir(kGames[gi].id);   // Preferences game folder, else Steam
 	return ModFolderPath(kGames[gi].id, tb.gameDir[gi], GameKeyOf(srcPath));
 }
 
@@ -1439,17 +1444,19 @@ bool Window::texSave(CharacterInstance &ch, int kind, const std::string &game, s
 		}
 		if (!writeModStep(dst, bytes, Fmt(TXT("Save %s to mod folder"), std::filesystem::u8path(dst).filename().u8string().c_str()), &e)) { report = e; return false; }
 		report = Fmt(TXT("Wrote %s (%zu bytes). The improvement mod / fpan-im serve it in place of the archived file."), dst.c_str(), bytes.size());
+		if (onSaved) onSaved(&ch, dst);
 		return true;
 	}
 	if (kind == 0) return saveBankFiles(ch, report);
 	if (!ch.savePAT()) { report = TXT("The .pat could not be written."); return false; }
 	report = Fmt(TXT("Saved %s"), ch.getPATPath().c_str());
+	if (onSaved) onSaved(&ch, AnsiToUtf8(ch.getPATPath()));
 	return true;
 }
 
 void Window::drawTextures(CharacterInstance &ch, const WindowHost &host) {
 	const int gi = tb.game < 0 ? DetectGame(ch) : tb.game;
-	if (tb.gameDir[gi].empty() && kGames[gi].steamDir[0]) tb.gameDir[gi] = kGames[gi].steamDir;
+	if (tb.gameDir[gi].empty() && kGames[gi].steamDir[0]) tb.gameDir[gi] = ::HotSaveGameDir(kGames[gi].id);   // Preferences game folder, else Steam
 	const char *names[kGameCount]; for (int i = 0; i < kGameCount; i++) names[i] = kGames[i].name;
 	const std::string game = kGames[gi].id;
 	const bool modGame = UsesModFolder(game);

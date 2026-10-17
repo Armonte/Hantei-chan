@@ -82,6 +82,12 @@ public:
 	std::string RouteDroppedImage(const std::string& utf8Path);
 	// --ui-script commands of the PACNyx-parity features (ui/pacnyx_script_impl.h); false = not one of them
 	bool PacnyxScriptCommand(const std::string& cmd, const std::string& arg, std::string* msg);
+	// ui/main_frame_hotsave.cpp: a UNI2 / MBTL file was saved (UTF-8 path): copy it into the IM mod folder and hot reload it
+	// in the game (fpan-im), per the Preferences / Script panel settings. Status in the menu bar.
+	void onFileSaved(CharacterInstance* ch, const std::string& u8path);
+	bool HotSaveScriptCommand(const std::string& cmd, const std::string& arg, std::string* msg);   // hotsave ... | framedur P F N
+	void DrawHotSaveStatus();
+	void DrawHotSavePrefsItems();
 	void ProcessDroppedFiles();
 	std::vector<std::string> m_droppedFiles;
 	void ProcessStartupArgs();   // --open / --capture (startup_args.cpp)

@@ -257,6 +257,10 @@ static void RunUiScript(MainFrame &mf, HDC dc, const std::function<void(const st
 		if (cmd == "savechar") { const bool ok = saveActive(); FILE *lf = fopen((gStartup.uiScript + ".log").c_str(), "a"); if (lf) { fprintf(lf, "savechar -> %s\n", ok ? "ok" : "FAILED"); fclose(lf); } waitFrames = 20; return; }
 		if (cmd == "zoomview") { setView(2, (int)(atof(arg.c_str()) * 100.0 + 0.5)); continue; }
 		if (cmd == "viewframe") { setView(1, atoi(arg.c_str())); continue; }
+		{   // hotsave <status|on|off|mode|tomods|gamedir> | framedur P F N (ui/main_frame_hotsave.cpp)
+			std::string hmsg;
+			if (mf.HotSaveScriptCommand(cmd, arg, &hmsg)) { LogLine((cmd + " " + arg + " -> " + hmsg).c_str()); waitFrames = 3; return; }
+		}
 		{   // PACNyx-parity commands (ui/pacnyx_script_impl.h) first: `layer` in an RBO / GOF2 PAT editor tab is the part layer
 			std::string pmsg;
 			if (mf.PacnyxScriptCommand(cmd, arg, &pmsg)) {   // PAT editor / CG / export commands: result line in the log, a few frames to settle

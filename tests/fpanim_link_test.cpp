@@ -63,6 +63,62 @@ int main()
 	CHECK(FpanimModsTarget("m", "data/../../x.txt").empty());
 	CHECK(FpanimParseReloadReply("ERROR reloadstd is not available on mbtl").stdReload);
 
+	// Main-editor saves (HA6 / .pat / .cg / .pal) -> the IM mod folder and the reload request (FpanimPlanSave).
+	const std::string uniDir = "C:\\Program Files (x86)\\Steam\\steamapps\\common\\UNDER NIGHT IN-BIRTH II Sys Celes";
+	const std::string uniMods = "C:/Program Files (x86)/Steam/steamapps/common/UNDER NIGHT IN-BIRTH II Sys Celes/UNI2-IM/Mods";
+	CHECK(FpanimImModsRoot("uni2", uniDir) == uniMods);
+	CHECK(FpanimImModsRoot("mbtl", "D:\\g\\") == "D:/g/MBTL-IM/Mods");
+	CHECK(FpanimImModsRoot("mbaacc", "D:\\g").empty() && FpanimImModsRoot("uni2", "").empty());
+	CHECK(FpanimGameKey("C:\\Users\\u\\AppData\\Local\\Temp\\hantei_archive\\uni2_d\\data\\chr003\\chr003.ha6") == "data/chr003/chr003.ha6");
+	CHECK(FpanimGameKey("C:/work/uni2/data/chr000/chr000.pat") == "data/chr000/chr000.pat");
+	CHECK(FpanimGameKey("data/chr000/chr000.cg") == "data/chr000/chr000.cg");
+	CHECK(FpanimGameKey("C:/g/script/btl_MvFunc.txt") == "script/btl_MvFunc.txt");
+	CHECK(FpanimGameKey("C:/x/chr000.ha6").empty());
+	const char* kinds[] = {"chr003.ha6", "chr003.pat", "chr003.cg", "chr003.pal", "chr003_temp.ha6"};
+	for (const char* k : kinds) {
+		const std::string src = "C:\\Temp\\hantei_archive\\uni2_d\\data\\chr003\\" + std::string(k);
+		auto p = FpanimPlanSave("uni2", uniDir, src, true, true, false);
+		CHECK(p.key == "data/chr003/" + std::string(k));
+		CHECK(p.modsDst == uniMods + "/data/chr003/" + k);
+		CHECK(!p.alreadyInMods && p.chr == "chr003" && !p.shared);
+		CHECK(p.request == "reloadchara chr003" && p.pipe == "fpan-im-uni2");
+	}
+	{   // MBTL, live mode
+		auto p = FpanimPlanSave("mbtl", "C:\\MBTL", "C:/w/mbtl_data000/data/chr012/chr012.pal", true, true, true);
+		CHECK(p.modsDst == "C:/MBTL/MBTL-IM/Mods/data/chr012/chr012.pal" && p.request == "reloadchara chr012 live" && p.pipe == "fpan-im-mbtl");
+	}
+	{   // the setting off: no mod-folder copy (the plain save still happened), the request is still named
+		auto p = FpanimPlanSave("uni2", uniDir, "C:/w/data/chr000/chr000.ha6", false, true, false);
+		CHECK(p.modsDst.empty() && p.request == "reloadchara chr000");
+	}
+	{   // hot reload off: copy, no request
+		auto p = FpanimPlanSave("uni2", uniDir, "C:/w/data/chr000/chr000.ha6", true, false, false);
+		CHECK(!p.modsDst.empty() && p.request.empty());
+	}
+	{   // the CG manager's "Save to mod folder" wrote the mod-folder file itself
+		auto p = FpanimPlanSave("uni2", uniDir, uniDir + "\\UNI2-IM\\Mods\\data\\chr000\\chr000.cg", false, true, false);
+		CHECK(p.alreadyInMods && p.modsDst == uniMods + "/data/chr000/chr000.cg" && p.request == "reloadchara chr000");
+	}
+	{   // shared files -> reloadstd; other data files: copied, not reloaded
+		auto p = FpanimPlanSave("uni2", uniDir, "C:/w/data/VectorTable.txt", true, true, true);
+		CHECK(p.shared && p.chr.empty() && p.request == "reloadstd live" && p.modsDst == uniMods + "/data/VectorTable.txt");
+		auto q = FpanimPlanSave("mbtl", "C:/M", "C:/w/script/btl_StdMoveTbl.txt", true, true, false);
+		CHECK(q.shared && q.request == "reloadstd" && q.pipe == "fpan-im-mbtl");
+		auto r = FpanimPlanSave("uni2", uniDir, "C:/w/data/effect.ha6", true, true, false);
+		CHECK(!r.shared && r.chr.empty() && r.request.empty() && !r.modsDst.empty());
+		auto t = FpanimPlanSave("uni2", uniDir, "C:/w/data/chr000/sub/x.ha6", true, true, false);
+		CHECK(t.chr.empty() && t.request.empty());
+	}
+	{   // other games, files outside data/ or script/, and ".." are left alone
+		CHECK(FpanimPlanSave("mbaacc", "C:/g", "C:/w/data/chr000/chr000.ha6", true, true, false).key.empty());
+		auto p = FpanimPlanSave("uni2", uniDir, "C:/w/chr000.ha6", true, true, false);
+		CHECK(p.key.empty() && p.modsDst.empty() && p.request.empty());
+		auto q = FpanimPlanSave("uni2", uniDir, "C:/w/data/../../x/chr000.ha6", true, true, false);
+		CHECK(q.modsDst.empty() && q.request.empty());
+		auto r = FpanimPlanSave("uni2", "", "C:/w/data/chr000/chr000.ha6", true, true, false);
+		CHECK(r.modsDst.empty() && r.request == "reloadchara chr000");
+	}
+
 	if (g_fail) return 1;
 	std::printf("fpanim_link_test: ok\n");
 	return 0;
