@@ -168,7 +168,7 @@ bool Parts::Load(const char* name)
             {
                 // Compressed (DXT1 or DXT5)
                 size_t compressedSize;
-                if (gfx.type == 5)
+                if (gfx.type == 5 || gfx.type == 3)
                     compressedSize = gfx.w * gfx.h;
                 else if (gfx.type == 1)
                     compressedSize = (gfx.w * gfx.h) * 3 / 6;

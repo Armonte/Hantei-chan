@@ -75,7 +75,7 @@ const char *PatTextureFormat(const Parts &p, int i) {
 	if (i < 0 || i >= (int)p.gfxMeta.size()) return "?";
 	const PartGfx<> &g = p.gfxMeta[i];
 	if (g.imageSize == 0 && g.data) return "PGTX 32-bit";
-	switch (g.type) { case 1: return "DXT1"; case 5: return "DXT5"; case 21: return "A8R8G8B8"; case 22: return "X8R8G8B8"; }
+	switch (g.type) { case 1: return "DXT1"; case 3: return "DXT3"; case 5: return "DXT5"; case 21: return "A8R8G8B8"; case 22: return "X8R8G8B8"; }
 	return "?";
 }
 
@@ -83,11 +83,11 @@ bool PatTexSource::entry(int i, TexEntry &o) const {
 	o = TexEntry();
 	if (i < 0 || i >= count()) return false;
 	const PartGfx<> &g = m_p.gfxMeta[i];
-	const bool pgtx = g.imageSize == 0 && g.data, kindOk = pgtx || g.type == 1 || g.type == 5 || pattex::IsRawBgra(g.type);
-	// the data must hold the whole texture (a PGT2 kind the loader does not read, e.g. UNIB DXT3, keeps a stale type and no full data)
-	const size_t need = pgtx ? 0 : (g.type == 1 || g.type == 5) ? (size_t)((g.w + 3) / 4) * ((g.h + 3) / 4) * (g.type == 5 ? 16 : 8) : (size_t)g.w * g.h * 4;
+	const bool pgtx = g.imageSize == 0 && g.data, kindOk = pgtx || pattex::IsDxt(g.type) || pattex::IsRawBgra(g.type);
+	// the data must hold the whole texture (a PGT2 kind the loader does not read keeps a stale type and no full data)
+	const size_t need = pgtx ? 0 : pattex::IsDxt(g.type) ? (size_t)((g.w + 3) / 4) * ((g.h + 3) / 4) * (g.type == 1 ? 8 : 16) : (size_t)g.w * g.h * 4;
 	const bool known = kindOk && (pgtx || (g.imageData && (size_t)g.imageSize >= need));
-	o.present = g.w > 0 && (g.imageData || g.data) && known;   // a kind the loader does not read (UNIB DXT3) is listed, not editable
+	o.present = g.w > 0 && (g.imageData || g.data) && known;   // a kind the loader does not read is listed, not editable
 	o.w = g.w; o.h = g.h; o.name = g.name.c_str(); o.format = g.w <= 0 ? "empty" : known ? PatTextureFormat(m_p, i) : "unsupported kind";
 	return true;
 }

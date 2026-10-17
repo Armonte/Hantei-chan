@@ -6,15 +6,22 @@
 namespace pattex {
 
 bool IsRawBgra(int t) { return t == 21 || t == 22; }
+bool IsDxt(int t) { return t == 1 || t == 3 || t == 5; }
 
 static void Rgb565(uint16_t c, int &r, int &g, int &b) { r = ((c >> 11) & 31) * 255 / 31; g = ((c >> 5) & 63) * 255 / 63; b = (c & 31) * 255 / 31; }
 
-void DecodeDxt(const uint8_t *src, int w, int h, bool dxt5, uint8_t *out) {
+void DecodeDxt(const uint8_t *src, int w, int h, bool dxt5, uint8_t *out) { DecodeDxtKind(src, w, h, dxt5 ? 5 : 1, out); }
+
+void DecodeDxtKind(const uint8_t *src, int w, int h, int kind, uint8_t *out) {
+	const bool dxt3 = kind == 3, dxt5 = kind == 5 || dxt3;   // dxt5: a 16-byte block with an alpha half (BC3 interpolated / BC2 explicit)
 	const int bw = (w + 3) / 4, bh = (h + 3) / 4;
 	for (int by = 0; by < bh; by++) for (int bx = 0; bx < bw; bx++) {
 		const uint8_t *blk = src + (size_t)(by * bw + bx) * (dxt5 ? 16 : 8);
 		uint8_t alpha[16]; for (int i = 0; i < 16; i++) alpha[i] = 255;
-		if (dxt5) {
+		if (dxt3) {   // BC2: 16 explicit 4-bit alphas, low nibble first
+			for (int i = 0; i < 16; i++) { const int a = (blk[i >> 1] >> ((i & 1) * 4)) & 15; alpha[i] = (uint8_t)(a * 17); }
+			blk += 8;
+		} else if (dxt5) {
 			const int a0 = blk[0], a1 = blk[1]; int pal[8] = {a0, a1};
 			if (a0 > a1) for (int k = 1; k < 7; k++) pal[k + 1] = ((7 - k) * a0 + k * a1) / 7;
 			else { for (int k = 1; k < 5; k++) pal[k + 1] = ((5 - k) * a0 + k * a1) / 5; pal[6] = 0; pal[7] = 255; }
@@ -38,14 +45,21 @@ void DecodeDxt(const uint8_t *src, int w, int h, bool dxt5, uint8_t *out) {
 
 static uint16_t To565(int r, int g, int b) { return (uint16_t)(((r * 31 + 127) / 255) << 11 | ((g * 63 + 127) / 255) << 5 | ((b * 31 + 127) / 255)); }
 
-void EncodeDxt(const uint8_t *rgba, int w, int h, bool dxt5, std::vector<uint8_t> &out) {
+void EncodeDxt(const uint8_t *rgba, int w, int h, bool dxt5, std::vector<uint8_t> &out) { EncodeDxtKind(rgba, w, h, dxt5 ? 5 : 1, out); }
+
+void EncodeDxtKind(const uint8_t *rgba, int w, int h, int kind, std::vector<uint8_t> &out) {
+	const bool dxt3 = kind == 3, dxt5 = kind == 5 || dxt3;
 	const int bw = (w + 3) / 4, bh = (h + 3) / 4;
 	out.assign((size_t)bw * bh * (dxt5 ? 16 : 8), 0);
 	for (int by = 0; by < bh; by++) for (int bx = 0; bx < bw; bx++) {
 		uint8_t px[16][4]; bool transparent = false;
 		for (int i = 0; i < 16; i++) { const int x = std::min(bx * 4 + (i & 3), w - 1), y = std::min(by * 4 + (i >> 2), h - 1); memcpy(px[i], &rgba[((size_t)y * w + x) * 4], 4); if (px[i][3] < 128) transparent = true; }
 		uint8_t *blk = &out[(size_t)(by * bw + bx) * (dxt5 ? 16 : 8)];
-		if (dxt5) {
+		if (dxt3) {   // BC2 explicit alpha: nibble = round(a * 15 / 255)
+			for (int i = 0; i < 8; i++) blk[i] = 0;
+			for (int i = 0; i < 16; i++) blk[i >> 1] |= (uint8_t)(((px[i][3] * 15 + 127) / 255) << ((i & 1) * 4));
+			blk += 8; transparent = false;   // the BC2 colour block is always the 4-colour mode
+		} else if (dxt5) {
 			int lo = 255, hi = 0; for (auto &p : px) { lo = std::min<int>(lo, p[3]); hi = std::max<int>(hi, p[3]); }
 			blk[0] = (uint8_t)hi; blk[1] = (uint8_t)lo; uint64_t bits = 0;
 			if (hi > lo) {
@@ -96,10 +110,10 @@ bool Decode(const PartGfx<> &g, std::vector<uint8_t> &rgba, int &w, int &h, std:
 		for (size_t i = 0; i < (size_t)w * h; i++) { rgba[i * 4] = s[i * 4 + 2]; rgba[i * 4 + 1] = s[i * 4 + 1]; rgba[i * 4 + 2] = s[i * 4]; rgba[i * 4 + 3] = g.type == 22 ? 255 : s[i * 4 + 3]; }
 		return true;
 	}
-	if (g.type == 1 || g.type == 5) {
-		const size_t need = (size_t)((w + 3) / 4) * ((h + 3) / 4) * (g.type == 5 ? 16 : 8);
+	if (IsDxt(g.type)) {
+		const size_t need = (size_t)((w + 3) / 4) * ((h + 3) / 4) * (g.type == 1 ? 8 : 16);
 		if ((size_t)g.imageSize < need) return fail("the texture data is shorter than its size");
-		DecodeDxt(s, w, h, g.type == 5, rgba.data());
+		DecodeDxtKind(s, w, h, g.type, rgba.data());
 		return true;
 	}
 	return fail("unknown texture kind");
@@ -117,7 +131,7 @@ static void Header(char hdr[124], int type, int w, int h, size_t dataSize) {
 	d[0] = 124; d[2] = (uint32_t)h; d[3] = (uint32_t)w;
 	d[26] = 0x1000;   // caps: texture
 	uint32_t *pf = &d[18]; pf[0] = 32;
-	if (type == 1 || type == 5) { d[1] = 0x81007; d[4] = (uint32_t)dataSize; pf[1] = 4; memcpy(&pf[2], type == 1 ? "DXT1" : "DXT5", 4); }
+	if (IsDxt(type)) { d[1] = 0x81007; d[4] = (uint32_t)dataSize; pf[1] = 4; memcpy(&pf[2], type == 1 ? "DXT1" : type == 3 ? "DXT3" : "DXT5", 4); }
 	else { d[1] = 0x1007; pf[1] = type == 22 ? 0x40 : 0x41; pf[3] = 32; pf[4] = 0xFF0000; pf[5] = 0xFF00; pf[6] = 0xFF; pf[7] = type == 22 ? 0 : 0xFF000000u; }
 	memcpy(hdr, d, 124);
 }
@@ -133,9 +147,9 @@ bool Encode(PartGfx<> &g, const uint8_t *rgba, int w, int h, int type, std::stri
 	}
 	if (pgtx) { if (err) *err = "MBAACC part textures are 32-bit (PGTX): DXT is UNI2 / MBTL only"; return false; }
 	if (type == -1) type = g.type;
-	if (type != 1 && type != 5 && type != 21 && type != 22) type = 21;
+	if (!IsDxt(type) && !IsRawBgra(type)) type = 21;
 	std::vector<uint8_t> data;
-	if (type == 1 || type == 5) EncodeDxt(rgba, w, h, type == 5, data);
+	if (IsDxt(type)) EncodeDxtKind(rgba, w, h, type, data);
 	else { data.resize((size_t)w * h * 4); for (size_t i = 0; i < (size_t)w * h; i++) { data[i * 4] = rgba[i * 4 + 2]; data[i * 4 + 1] = rgba[i * 4 + 1]; data[i * 4 + 2] = rgba[i * 4]; data[i * 4 + 3] = type == 22 ? 0 : rgba[i * 4 + 3]; } }
 	const bool keepHeader = g.type == type && g.w == w && g.h == h && g.imageSize == (int)data.size();
 	if (!keepHeader) Header(g.ddsHeader, type, w, h, data.size());
