@@ -1,11 +1,19 @@
 name: Build
 
 on:
+  # Branches with an open PR build once, through pull_request; push builds only the main branches.
   push:
-    # Build on push to any branch
+    branches: [ main, master, develop ]
+    paths-ignore: [ 'docs/**', '**/*.md' ]
   pull_request:
     branches: [ main, master, develop ]
+    paths-ignore: [ 'docs/**', '**/*.md' ]
   workflow_dispatch:
+
+# A newer push to the same branch or PR cancels the run still in progress.
+concurrency:
+  group: build-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
 
 jobs:
   build-windows:
@@ -23,11 +31,17 @@ jobs:
       with:
         cmake-version: '3.27.x'
 
+    - name: ccache
+      uses: hendrikmuhs/ccache-action@v1.2.14
+      with:
+        key: windows-mingw
+        max-size: 2G
+
     - name: Configure CMake
-      run: cmake -B build -G "MinGW Makefiles"
+      run: cmake -B build -G "MinGW Makefiles" -DCMAKE_C_COMPILER_LAUNCHER=ccache -DCMAKE_CXX_COMPILER_LAUNCHER=ccache
 
     - name: Build
-      run: cmake --build build --config Release
+      run: cmake --build build --config Release --parallel 4
 
     # Unit tests and the committed fixtures. Tests that need game data or an outside install exit 77 when it is
     # missing and ctest reports them as skipped (SKIP_RETURN_CODE), not failed. `gpu` tests need a real OpenGL 3.3
@@ -72,14 +86,21 @@ jobs:
         sudo apt-get update
         sudo apt-get install -y mingw-w64 cmake
 
+    - name: ccache
+      uses: hendrikmuhs/ccache-action@v1.2.14
+      with:
+        key: linux-mingw-cross
+        max-size: 2G
+
     - name: Configure CMake
       run: |
         cmake -B build \
           -DCMAKE_TOOLCHAIN_FILE=mingw-toolchain.cmake \
-          -DCMAKE_BUILD_TYPE=Release
+          -DCMAKE_BUILD_TYPE=Release \
+          -DCMAKE_C_COMPILER_LAUNCHER=ccache -DCMAKE_CXX_COMPILER_LAUNCHER=ccache
 
     - name: Build
-      run: cmake --build build
+      run: cmake --build build --parallel 4
 
     - name: Package artifacts
       run: |
