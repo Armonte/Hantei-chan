@@ -10,6 +10,7 @@
 #include "../png_writer.h"
 #include "../character_instance.h"
 #include "../squirrel/fpanim_link.h"
+#include "../fpanim_play.h"
 #include "../cgm/cgm_texsrc.h"
 #include "ui_style.h"
 
@@ -20,6 +21,7 @@
 #include <fstream>
 #include <future>
 #include <iterator>
+#include <set>
 #include <vector>
 
 namespace {
@@ -37,6 +39,7 @@ struct HotSaveState {
 	std::string reload;             // the summarised reply
 	std::string raw;                // the raw fpan-im reply (tooltip)
 	bool ok = true;
+	std::set<std::string> stale;    // chrNNN saved into the mod folder since its last successful reload (Play in game)
 } g_hot;
 
 HotDone RunJob(HotJob j)
@@ -93,6 +96,10 @@ void Poll()
 	g_hot.busy = false;
 	g_hot.raw = d.reply.text;
 	g_hot.reload = Summarise(d, &g_hot.ok);
+	if (g_hot.ok) {   // what the game now runs: a character reload clears that character, a shared reload every one
+		if (d.job.request.rfind("reloadstd", 0) == 0) g_hot.stale.clear();
+		else if (!d.job.chr.empty()) g_hot.stale.erase(d.job.chr);
+	}
 	HC_LOG_INFO("[hotsave] {} -> {} ({} ms)", d.job.request, d.reply.text, d.ms);
 	if (!g_hot.pending.empty()) { const HotJob next = g_hot.pending.front(); g_hot.pending.erase(g_hot.pending.begin()); Start(next); }
 }
@@ -125,6 +132,12 @@ bool ReadAll(const std::string& u8, std::vector<uint8_t>& out)
 }
 
 } // namespace
+
+namespace fpanimplay {
+bool HotSaveBusy() { Poll(); return g_hot.busy || !g_hot.pending.empty(); }
+bool HotSaveStale(const std::string& chr) { return g_hot.stale.count(chr) != 0; }
+void HotSaveMarkReloaded(const std::string& chr) { g_hot.stale.erase(chr); }
+} // namespace fpanimplay
 
 std::string HotSaveGameDir(const std::string& game)
 {
@@ -159,6 +172,7 @@ void MainFrame::onFileSaved(CharacterInstance* ch, const std::string& u8path)
 		if (!ReadAll(u8path, bytes)) err = "cannot read " + u8path;
 		else if (!cgm::WriteModFile(dst, bytes, &err)) {}
 		if (err.empty()) {
+			if (!plan.chr.empty()) g_hot.stale.insert(plan.chr);
 			g_hot.saved = std::string(TXT("Saved into the mod folder: ")) + dst;
 			HC_LOG_INFO("[hotsave] {} -> {} ({} bytes)", u8path, dst, bytes.size());
 		} else {
@@ -167,7 +181,10 @@ void MainFrame::onFileSaved(CharacterInstance* ch, const std::string& u8path)
 			HC_LOG_WARN("[hotsave] {}: {}", u8path, err);
 			return;
 		}
-	} else g_hot.saved = std::string(TXT("Saved ")) + (plan.alreadyInMods ? plan.modsDst : u8path);
+	} else {
+		if (plan.alreadyInMods && !plan.chr.empty()) g_hot.stale.insert(plan.chr);
+		g_hot.saved = std::string(TXT("Saved ")) + (plan.alreadyInMods ? plan.modsDst : u8path);
+	}
 	if (plan.request.empty()) {
 		g_hot.reload = gSettings.sqHotReload ? TXT("Hot reload: not a data/chrNNN or shared file, not reloaded") : "";
 		return;
