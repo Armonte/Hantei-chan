@@ -66,6 +66,30 @@ std::string FpanimLegacyPipeName(const std::string& pipeName);
 // backslashes are normalised; "" for a path that leaves the folder ("..") or is absolute.
 std::string FpanimModsTarget(const std::string& modsDir, const std::string& rel);
 
+// ---- saves from the main editor (HA6, .pat, .cg, .pal), UNI2 / MBTL ----
+// The improvement mod folder the main editor saves into: "<gameDir>/UNI2-IM/Mods" (uni2) or "<gameDir>/MBTL-IM/Mods" (mbtl),
+// forward slashes; "" for another game or an empty gameDir. fpan-im's VFS mounts it (core imCompatLayers), so a file there
+// replaces the archived one with the same game-relative path.
+std::string FpanimImModsRoot(const std::string& game, const std::string& gameDir);
+// The game-relative path of a saved file: the part from its last "data/" or "script/" folder on
+// ("C:/tmp/hantei_archive/uni2_d/data/chr003/chr003.ha6" -> "data/chr003/chr003.ha6"); "" when there is none.
+std::string FpanimGameKey(const std::string& path);
+// What a save from the main editor does. Pure: no file is touched.
+struct FpanimSavePlan {
+	std::string key;        // game-relative path ("" -> not a game file: no mod-folder copy, no reload)
+	std::string modsDst;    // where the file goes in the IM mod folder ("" = not copied: setting off, no game folder, bad key)
+	bool alreadyInMods = false; // the saved file is the mod-folder file itself (CG manager "Save to mod folder")
+	std::string chr;        // "chr003" for data/chrNNN/<file>
+	bool shared = false;    // a shared battle file (FpanimIsSharedFile): reloadstd
+	std::string request;    // "reloadchara chr003 [live]" / "reloadstd [live]"; "" = no reload (hot reload off, or neither kind)
+	std::string pipe;       // FpanimPipeForGame(game)
+};
+// game: "uni2" / "mbtl" (anything else: no mod folder, no reload). savedPath: the file just written (UTF-8, either slash).
+// toMods: the "UNI2/MBTL: save into the IM mod folder" setting of that game. hotReload / live: the shared Hot reload toggle
+// and Reload mode (Script panel and main editor).
+FpanimSavePlan FpanimPlanSave(const std::string& game, const std::string& gameDir, const std::string& savedPath, bool toMods,
+                              bool hotReload, bool live);
+
 } // namespace sqedit
 
 #endif

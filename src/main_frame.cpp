@@ -553,6 +553,7 @@ bool MainFrame::saveCharacter(CharacterInstance* character)
 		// a managed working copy of an archive entry (opened through the browser): write it back into the archive too
 		std::string err; bool had = false;
 		if (!abrowser::SaveEntryBytesIntoArchive(character->getTopHA6Path(), &err, &had) && had) { requestErrorPopup("Save Error", std::string(TXT("Saved the working copy, but could not write back into the archive: ")) + err); return false; }
+		onFileSaved(character, AnsiToUtf8(character->getTopHA6Path()));   // UNI2 / MBTL: IM mod folder + fpan-im hot reload
 		return true;
 	}
 	const std::string& path = character->getTopHA6Path();

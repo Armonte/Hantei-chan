@@ -37,6 +37,9 @@ public:
 	// Writes the .cg (original kept as .bak) and rewrites the references of every other project file that draws it
 	// (cgm_project.h). The loaded character's own file is left to its own save. Returns false on an error; `report` says what was written.
 	bool saveBankFiles(CharacterInstance &ch, std::string &report);
+	// Called after each file this window writes (UTF-8 path): .cg, .pat, .pal, or the IM mod-folder copy. MainFrame hooks the
+	// UNI2 / MBTL mod-folder copy and the fpan-im hot reload in (ui/main_frame_hotsave.cpp).
+	std::function<void(CharacterInstance *, const std::string &)> onSaved;
 	// --ui-script "cgm <cmd> <arg>": open | tab <name> | press <English button label> | path <file or folder for the next dialog> |
 	// select <id> | set <field> <n> | status (logs the status line). False = logged (status, or an error in msg).
 	bool script(const std::string &cmd, const std::string &arg, std::string *msg);

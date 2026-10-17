@@ -58,6 +58,9 @@ extern struct Settings
 	bool sqHotReload = false;
 	int sqHotReloadMode = 0;   // 0: engine rebuild (reloadchara <chr>), 1: live in-place (reloadchara <chr> live)
 	std::string sqGameDirUni2, sqGameDirMbtl;
+	// Main-editor saves of a UNI2 / MBTL character file also go into <game>\\UNI2-IM\\Mods / MBTL-IM\\Mods (ui/main_frame_hotsave.cpp);
+	// on by default, effective when the game folder above (or the Steam default) exists. Ini ImSaveUni2= / ImSaveMbtl=.
+	bool imSaveUni2 = true, imSaveMbtl = true;
 	// 3D stage view "Open in Blender": blender.exe, UTF-8 ("" = auto-detect at launch, s3d_blender.h)
 	// (Edit > Preferences > 3D stage: Blender; ini key Stage3dBlenderPath=, the older BlenderPath= is still read and wins
 	// only when the new key is absent)
