@@ -1,4 +1,5 @@
 #include "cgm_texsrc.h"
+#include "../squirrel/fpanim_link.h"
 #include "../parts/parts.h"
 #include "../parts/pat_texconv.h"
 #include "../framedata.h"
@@ -225,12 +226,12 @@ std::vector<TexUse> CgImageUsers(FrameData &fd, int image) {
 bool UsesModFolder(const std::string &g) { return g == "uni2" || g == "mbtl"; }
 
 std::string ModFolderPath(const std::string &game, const std::string &gameDir, const std::string &key) {
-	const char *im = game == "uni2" ? "UNI2-IM" : game == "mbtl" ? "MBTL-IM" : nullptr;
-	if (!im || gameDir.empty() || key.empty()) return "";
-	std::string k = key; std::replace(k.begin(), k.end(), '/', '\\');
-	while (!k.empty() && (k[0] == '\\' || k[0] == '.')) k.erase(0, 1);
-	std::string d = gameDir; if (d.back() != '\\' && d.back() != '/') d += '\\';
-	return d + im + "\\Mods\\" + k;
+	// The same mapping the main editor's saves and the Script panel use (fpanim_link.h): refuses absolute keys and "..".
+	if (key.empty()) return "";
+	std::string out = sqedit::FpanimModsTarget(sqedit::FpanimImModsRoot(game, gameDir), key);
+	if (out.empty() || sqedit::FpanimImModsRoot(game, gameDir).empty()) return "";
+	std::replace(out.begin(), out.end(), '/', '\\');
+	return out;
 }
 
 std::string GameKeyOf(const std::string &path) {

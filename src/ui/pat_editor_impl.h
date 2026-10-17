@@ -163,6 +163,7 @@ bool MainFrame::savePatOf(CharacterInstance* character, const std::string& path)
 	if (character->isPatDocument()) character->setName(FileNameOf(target));
 	reloadPatInOtherTabs(character, target);
 	updateWindowTitle();
+	onFileSaved(character, AcpToUtf8Rn(target));   // UNI2 / MBTL: IM mod folder + fpan-im hot reload
 	return true;
 }
 
@@ -497,6 +498,7 @@ void MainFrame::DrawPatPreferences()
 	if (ImGui::BeginMenu(LBL("PAT editor"))) { DrawPatColourPrefsItems(); ImGui::EndMenu(); }
 	if (ImGui::BeginMenu(LBL("Mouse buttons"))) { DrawMousePrefsItems(); ImGui::EndMenu(); }
 	if (ImGui::BeginMenu(LBL("3D stage: Blender"))) { stage3dview::BlenderPrefsItems(); ImGui::EndMenu(); }
+	if (ImGui::BeginMenu(LBL("UNI2/MBTL: mod folder and hot reload"))) { DrawHotSavePrefsItems(); ImGui::EndMenu(); }
 	if (ImGui::MenuItem(LBL("Saving and PAT editor settings..."), nullptr, m_showPatPrefs)) m_showPatPrefs = !m_showPatPrefs;
 }
 
@@ -517,6 +519,8 @@ void MainFrame::DrawPatPreferencesWindow()
 	DrawMousePrefsItems();
 	ImGui::SeparatorText(TXT("3D stage: Blender"));
 	stage3dview::BlenderPrefsItems();
+	ImGui::SeparatorText(TXT("UNI2/MBTL: mod folder and hot reload"));
+	DrawHotSavePrefsItems();
 	ImGui::End();
 }
 

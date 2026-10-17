@@ -1,5 +1,6 @@
 // MainFrame startup actions (--open / --capture); see startup_args.h.
 #include "startup_args.h"
+#include "fpanim_play.h"
 #include "archive_browser.h"
 #include "stage3d/s3d_view.h"
 
@@ -207,7 +208,8 @@ static bool WriteViewTargetPng(CharacterView *v, const std::string &path)
 	return true;
 }
 
-static int pendingWaitMs = 0; static bool pendingWaitS3d = false;   // set by waitms / waits3dchange, armed by RunUiScript
+static int pendingWaitMs = 0; static bool pendingWaitS3d = false;
+static int pendingPlayWaitS = 0;   // set by playwait <seconds>: until Play in game is idle, then its reply goes to the log   // set by waitms / waits3dchange, armed by RunUiScript
 static void LogLine(const char* text)
 {
 	FILE *lf = fopen((gStartup.uiScript + ".log").c_str(), "a");
@@ -242,6 +244,18 @@ static void RunUiScript(MainFrame &mf, HDC dc, const std::function<void(const st
 		}
 		if (waitingMs) { if (clk::now() < waitUntil) return; waitingMs = false; }   // also the settle after waits3dchange
 	}
+	{   // playwait <seconds>: Play in game (and the save's hot reload it waits for) finished
+		using clk = std::chrono::steady_clock;
+		static clk::time_point playUntil{}; static bool playWaiting = false;
+		if (pendingPlayWaitS > 0) { playUntil = clk::now() + std::chrono::seconds(pendingPlayWaitS); playWaiting = true; pendingPlayWaitS = 0; }
+		if (playWaiting) {
+			const bool timeout = clk::now() >= playUntil;
+			if (fpanimplay::Busy() && !timeout) return;
+			playWaiting = false;
+			LogLine(((timeout ? "playwait -> FAILED timeout: " : "playwait -> ") + fpanimplay::LastReply()).c_str());
+			if (timeout) gStartup.exitCode = 1;
+		}
+	}
 	if (waitIdle) { if (abrowser::Busy() && ++idleWaited < 1800) return; waitIdle = false; idleWaited = 0; waitFrames = 6; return; }   // a few frames for the uploaded textures to draw
 	while (pc < lines.size()) {
 		const std::string line = lines[pc++];
@@ -257,6 +271,15 @@ static void RunUiScript(MainFrame &mf, HDC dc, const std::function<void(const st
 		if (cmd == "savechar") { const bool ok = saveActive(); FILE *lf = fopen((gStartup.uiScript + ".log").c_str(), "a"); if (lf) { fprintf(lf, "savechar -> %s\n", ok ? "ok" : "FAILED"); fclose(lf); } waitFrames = 20; return; }
 		if (cmd == "zoomview") { setView(2, (int)(atof(arg.c_str()) * 100.0 + 0.5)); continue; }
 		if (cmd == "viewframe") { setView(1, atoi(arg.c_str())); continue; }
+		if (cmd == "playwait") { pendingPlayWaitS = std::max(1, atoi(arg.c_str())); waitFrames = 2; return; }
+		{   // playingame [loop|noloop] | playloop on|off | playstop (fpanim_play.cpp)
+			std::string pmsg;
+			if (fpanimplay::ScriptCommand(cmd, arg, &pmsg)) { LogLine((cmd + " " + arg + " -> " + pmsg).c_str()); waitFrames = 3; return; }
+		}
+		{   // hotsave <status|on|off|mode|tomods|gamedir> | framedur P F N (ui/main_frame_hotsave.cpp)
+			std::string hmsg;
+			if (mf.HotSaveScriptCommand(cmd, arg, &hmsg)) { LogLine((cmd + " " + arg + " -> " + hmsg).c_str()); waitFrames = 3; return; }
+		}
 		{   // PACNyx-parity commands (ui/pacnyx_script_impl.h) first: `layer` in an RBO / GOF2 PAT editor tab is the part layer
 			std::string pmsg;
 			if (mf.PacnyxScriptCommand(cmd, arg, &pmsg)) {   // PAT editor / CG / export commands: result line in the log, a few frames to settle

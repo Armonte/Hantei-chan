@@ -69,6 +69,64 @@ std::string FpanimModsTarget(const std::string& modsDir, const std::string& rel)
 	return m + r;
 }
 
+std::string FpanimImModsRoot(const std::string& game, const std::string& gameDir)
+{
+	const char* im = game == "uni2" ? "UNI2-IM" : game == "mbtl" ? "MBTL-IM" : nullptr;
+	if (!im || gameDir.empty()) return "";
+	std::string d = gameDir;
+	for (char& c : d) if (c == '\\') c = '/';
+	if (d.back() != '/') d.push_back('/');
+	return d + im + "/Mods";
+}
+
+std::string FpanimGameKey(const std::string& path)
+{
+	std::string p = path;
+	for (char& c : p) if (c == '\\') c = '/';
+	while (p.rfind("./", 0) == 0) p.erase(0, 2);
+	std::string low = p;
+	for (char& c : low) c = static_cast<char>(tolower(static_cast<unsigned char>(c)));
+	size_t best = std::string::npos;
+	for (const char* f : {"data/", "script/"}) {
+		const std::string slash = std::string("/") + f;
+		size_t at = low.rfind(slash);
+		if (at != std::string::npos) at += 1;
+		else if (low.rfind(f, 0) == 0) at = 0;
+		if (at != std::string::npos && (best == std::string::npos || at > best)) best = at;
+	}
+	return best == std::string::npos ? "" : p.substr(best);
+}
+
+FpanimSavePlan FpanimPlanSave(const std::string& game, const std::string& gameDir, const std::string& savedPath, bool toMods,
+                              bool hotReload, bool live)
+{
+	FpanimSavePlan p;
+	if (game != "uni2" && game != "mbtl") return p;
+	p.pipe = FpanimPipeForGame(game);
+	p.key = FpanimGameKey(savedPath);
+	if (p.key.empty() || FpanimModsTarget("m", p.key).empty()) { p.key.clear(); return p; }
+	const std::string root = FpanimImModsRoot(game, gameDir);
+	if (!root.empty()) {
+		std::string sp = savedPath, lr = root + "/";
+		for (char& c : sp) c = c == '\\' ? '/' : static_cast<char>(tolower(static_cast<unsigned char>(c)));
+		for (char& c : lr) c = static_cast<char>(tolower(static_cast<unsigned char>(c)));
+		p.alreadyInMods = sp.rfind(lr, 0) == 0;
+		if (toMods || p.alreadyInMods) p.modsDst = FpanimModsTarget(root, p.key);
+	}
+	// data/chrNNN/<file> -> that character; a shared battle file -> reloadstd
+	std::string low = p.key;
+	for (char& c : low) c = static_cast<char>(tolower(static_cast<unsigned char>(c)));
+	p.shared = FpanimIsSharedFile(p.key);
+	if (!p.shared && low.rfind("data/chr", 0) == 0) {
+		size_t i = 8;
+		while (i < low.size() && isdigit(static_cast<unsigned char>(low[i]))) i++;
+		if (i > 8 && i < low.size() && low[i] == '/' && low.find('/', i + 1) == std::string::npos && i + 1 < low.size())
+			p.chr = low.substr(5, i - 5);
+	}
+	if (hotReload) p.request = p.shared ? FpanimStdReloadRequest(live) : !p.chr.empty() ? FpanimReloadRequest(p.chr, live) : "";
+	return p;
+}
+
 FpanimReloadInfo FpanimParseReloadReply(const std::string& reply)
 {
 	FpanimReloadInfo info;

@@ -17,3 +17,6 @@ gamedata/
 HUD_THEME_STATUS.md
 generated/
 __pycache__/
+
+# Optional fpan-im bundle (tools/fpanim/bundle.sh; private binaries, never committed)
+/res/fpan-im/
