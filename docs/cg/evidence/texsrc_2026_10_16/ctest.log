@@ -1,0 +1,183 @@
+Test project /home/teo/dev/hantei-chan-wt/texundo/build
+      Start  1: uni_dataloss
+      Start  2: game_labels
+      Start  3: preview_sim
+      Start  4: cmdfile
+ 1/87 Test  #3: preview_sim ......................   Passed    0.35 sec
+      Start  5: cmdfile_ui_smoke
+ 2/87 Test  #2: game_labels ......................   Passed    0.36 sec
+      Start  6: pattern_search
+ 3/87 Test  #4: cmdfile ..........................   Passed    0.61 sec
+      Start  7: shared_clipboard
+ 4/87 Test  #5: cmdfile_ui_smoke .................   Passed    0.40 sec
+      Start  8: fb_part_transform
+ 5/87 Test  #6: pattern_search ...................   Passed    0.43 sec
+      Start  9: han2_parts_edit
+ 6/87 Test  #7: shared_clipboard .................   Passed    0.43 sec
+      Start 10: part_render_math
+ 7/87 Test  #8: fb_part_transform ................   Passed    0.33 sec
+      Start 11: refs
+ 8/87 Test  #9: han2_parts_edit ..................   Passed    0.35 sec
+      Start 12: bgm
+ 9/87 Test #10: part_render_math .................   Passed    0.12 sec
+      Start 13: hud
+10/87 Test #12: bgm ..............................   Passed    0.22 sec
+      Start 14: ha4_convert
+11/87 Test #13: hud ..............................   Passed    0.29 sec
+      Start 15: ha4_golden
+12/87 Test #11: refs .............................   Passed    0.43 sec
+      Start 16: shortcut_router
+13/87 Test #16: shortcut_router ..................   Passed    0.16 sec
+      Start 17: live_reload
+14/87 Test  #1: uni_dataloss .....................   Passed    2.48 sec
+      Start 18: stage3d
+15/87 Test #17: live_reload ......................   Passed    1.55 sec
+      Start 19: undo_manager
+16/87 Test #14: ha4_convert ......................   Passed    1.94 sec
+      Start 20: pat_safety
+17/87 Test #19: undo_manager .....................   Passed    2.82 sec
+      Start 21: pat_safety_gamedata
+18/87 Test #20: pat_safety .......................   Passed    2.89 sec
+      Start 22: workspace_session
+19/87 Test #22: workspace_session ................   Passed    0.18 sec
+      Start 23: package_tools
+20/87 Test #23: package_tools ....................   Passed    0.64 sec
+      Start 24: game_link
+21/87 Test #21: pat_safety_gamedata ..............   Passed    3.91 sec
+      Start 25: game_view
+22/87 Test #24: game_link ........................   Passed    5.92 sec
+      Start 26: tag_tuning
+23/87 Test #26: tag_tuning .......................   Passed    0.54 sec
+      Start 27: tag_sidecar
+24/87 Test #27: tag_sidecar ......................   Passed    3.01 sec
+      Start 28: authoring_model
+25/87 Test #28: authoring_model ..................   Passed    0.52 sec
+      Start 29: frame_data
+26/87 Test #25: game_view ........................   Passed    7.57 sec
+      Start 30: hud_layout
+27/87 Test #30: hud_layout .......................   Passed    0.50 sec
+      Start 31: pcmod
+28/87 Test #29: frame_data .......................   Passed    1.84 sec
+      Start 32: pcmod_cli
+29/87 Test #18: stage3d ..........................   Passed   16.74 sec
+      Start 33: hmod
+30/87 Test #31: pcmod ............................   Passed    1.89 sec
+      Start 34: bg_textini
+31/87 Test #34: bg_textini .......................   Passed    0.75 sec
+      Start 35: stagecard
+32/87 Test #35: stagecard ........................   Passed    2.29 sec
+      Start 36: han2_pacselftest
+33/87 Test #36: han2_pacselftest .................   Passed    0.52 sec
+      Start 37: sysconst
+34/87 Test #37: sysconst .........................   Passed    0.40 sec
+      Start 38: headless_export
+35/87 Test #32: pcmod_cli ........................   Passed    6.65 sec
+      Start 39: texsrc_unit
+36/87 Test #39: texsrc_unit ......................   Passed    0.40 sec
+      Start 40: texsrc_mbaacc_akiha_cg
+37/87 Test #38: headless_export ..................   Passed    3.17 sec
+      Start 41: texsrc_mbaacc_arc_pat
+38/87 Test #41: texsrc_mbaacc_arc_pat ............   Passed    0.32 sec
+      Start 42: texsrc_unib_Hyd_cg
+39/87 Test #33: hmod .............................   Passed    9.11 sec
+      Start 43: texsrc_unib_elt_ef00_pat
+40/87 Test #43: texsrc_unib_elt_ef00_pat .........   Passed    0.71 sec
+      Start 44: texsrc_mbac_GAKIHA_DAT
+41/87 Test #40: texsrc_mbaacc_akiha_cg ...........   Passed    4.10 sec
+      Start 45: texsrc_uni2_chr003_cg
+42/87 Test #44: texsrc_mbac_GAKIHA_DAT ...........   Passed    0.97 sec
+      Start 46: texsrc_uni2_chr003_pat
+43/87 Test #42: texsrc_unib_Hyd_cg ...............   Passed    2.84 sec
+      Start 47: texsrc_mbtl_chr000_cg
+44/87 Test #46: texsrc_uni2_chr003_pat ...........   Passed    1.28 sec
+      Start 48: texsrc_mbtl_chr000_pat
+45/87 Test #47: texsrc_mbtl_chr000_cg ............   Passed    2.18 sec
+      Start 49: texsrc_rbo_sheets
+46/87 Test #45: texsrc_uni2_chr003_cg ............   Passed    3.83 sec
+      Start 50: texsrc_gof2_sheets
+47/87 Test #49: texsrc_rbo_sheets ................   Passed    6.44 sec
+      Start 51: fxr_ini
+48/87 Test #51: fxr_ini ..........................   Passed    0.59 sec
+      Start 52: fxr_ini_accent
+49/87 Test #52: fxr_ini_accent ...................   Passed    0.37 sec
+      Start 53: fxr_selftest
+50/87 Test #53: fxr_selftest .....................   Passed    1.15 sec
+      Start 54: fxr_selftest_akiha
+51/87 Test #15: ha4_golden .......................   Passed   39.52 sec
+      Start 55: cgm_project_refs_mbaacc
+52/87 Test #50: texsrc_gof2_sheets ...............   Passed    8.53 sec
+      Start 56: cgm_folder_mbaacc
+53/87 Test #54: fxr_selftest_akiha ...............   Passed    3.74 sec
+      Start 57: cgm_cc_palettes
+54/87 Test #57: cgm_cc_palettes ..................   Passed    0.30 sec
+      Start 58: cgm_project_refs_mbtl
+55/87 Test #48: texsrc_mbtl_chr000_pat ...........   Passed   13.89 sec
+      Start 59: cgm_palette_uni_mbtl
+56/87 Test #59: cgm_palette_uni_mbtl .............   Passed    0.11 sec
+      Start 60: pat_textures_x8
+57/87 Test #60: pat_textures_x8 ..................   Passed    7.05 sec
+      Start 61: cgm_ac_moon3_sion
+58/87 Test #58: cgm_project_refs_mbtl ............   Passed    9.28 sec
+      Start 62: cgm_ac_moon3_nero
+59/87 Test #61: cgm_ac_moon3_sion ................   Passed    3.34 sec
+      Start 63: cgm_cutter2_gakiha
+60/87 Test #63: cgm_cutter2_gakiha ...............   Passed    0.09 sec
+      Start 64: cgm_cutter2_gakiha_struct
+61/87 Test #64: cgm_cutter2_gakiha_struct ........   Passed    0.28 sec
+      Start 65: cgm_cutter2_gakiha_rt
+62/87 Test #65: cgm_cutter2_gakiha_rt ............   Passed    4.71 sec
+      Start 66: fxr_dgv_oracle
+63/87 Test #62: cgm_ac_moon3_nero ................   Passed    7.45 sec
+      Start 67: sqtool_fixture
+64/87 Test #67: sqtool_fixture ...................   Passed    0.66 sec
+      Start 68: sqtool_fixture_bad
+65/87 Test #68: sqtool_fixture_bad ...............   Passed    0.66 sec
+      Start 69: sqtool_mbtl
+66/87 Test #66: fxr_dgv_oracle ...................   Passed    3.04 sec
+      Start 70: sqtool_uni2
+67/87 Test #70: sqtool_uni2 ......................   Passed    0.66 sec
+      Start 71: sqtool_dfci
+68/87 Test #69: sqtool_mbtl ......................   Passed    2.13 sec
+      Start 72: sqtool_unib
+69/87 Test #71: sqtool_dfci ......................   Passed    1.16 sec
+      Start 73: squirrel_index
+70/87 Test #72: sqtool_unib ......................   Passed    0.61 sec
+      Start 74: fpanim_link
+71/87 Test #74: fpanim_link ......................   Passed    0.25 sec
+      Start 75: squirrel_doc
+72/87 Test #75: squirrel_doc .....................   Passed    0.78 sec
+      Start 76: squirrel_doc_roundtrip
+73/87 Test #76: squirrel_doc_roundtrip ...........   Passed    1.48 sec
+      Start 77: pat_renumber_csel007_move
+74/87 Test #77: pat_renumber_csel007_move ........   Passed    1.69 sec
+      Start 78: pat_renumber_csel023_ops
+75/87 Test #73: squirrel_index ...................   Passed    4.78 sec
+      Start 79: pat_renumber_csel018_ops
+76/87 Test #79: pat_renumber_csel018_ops .........   Passed    1.53 sec
+      Start 80: pat_renumber_csel018_refuse
+77/87 Test #80: pat_renumber_csel018_refuse ......   Passed    0.80 sec
+      Start 81: pat_renumber_csel007_delete
+78/87 Test #78: pat_renumber_csel023_ops .........   Passed    3.48 sec
+      Start 82: pat_renumber_effect
+79/87 Test #81: pat_renumber_csel007_delete ......   Passed    2.80 sec
+      Start 83: pat_append_arc
+80/87 Test #83: pat_append_arc ...................   Passed    0.33 sec
+      Start 84: pat_append_warc
+81/87 Test #84: pat_append_warc ..................   Passed    0.28 sec
+      Start 85: pat_append_hisui_sets
+82/87 Test #85: pat_append_hisui_sets ............   Passed    0.42 sec
+      Start 86: pat_append_mbaacc_to_uni2
+83/87 Test #86: pat_append_mbaacc_to_uni2 ........   Passed    0.19 sec
+      Start 87: ha6_roundtrip_fixture
+84/87 Test #87: ha6_roundtrip_fixture ............   Passed    0.51 sec
+85/87 Test #82: pat_renumber_effect ..............   Passed    4.06 sec
+86/87 Test #55: cgm_project_refs_mbaacc ..........   Passed   55.12 sec
+87/87 Test #56: cgm_folder_mbaacc ................   Passed  130.43 sec
+
+100% tests passed, 0 tests failed out of 87
+
+Label Time Summary:
+gpu    =   8.06 sec*proc (3 tests)
+
+Total Test time (real) = 172.79 sec
+ctest exit 0
