@@ -3,6 +3,7 @@
 #include "../parts/pat_texconv.h"
 #include "../framedata.h"
 #include "../png_writer.h"
+#include "../han2_parts_edit.h"
 #include <algorithm>
 #include <cstdio>
 #include <cstring>
@@ -112,6 +113,75 @@ bool PatTexSource::replace(int i, const Rgba &px, std::string *err, bool *change
 	}
 	if (changed) *changed = true;
 	return true;
+}
+
+// ---------------------------------------------------------------- RBO / GOF2 part sheets
+int SheetTexSource::count() const { return (int)m_p.gfxMeta.size(); }
+
+bool SheetTexSource::entry(int i, TexEntry &o) const {
+	o = TexEntry();
+	if (i < 0 || i >= count()) return false;
+	const PartGfx<> &g = m_p.gfxMeta[i];
+	o.present = g.data && g.w > 0 && g.h > 0 && g.bpp == 32;
+	o.w = g.w; o.h = g.h; o.name = g.name.c_str(); o.format = o.present ? "32-bit sheet" : "empty";
+	return true;
+}
+
+bool SheetTexSource::decode(int i, Rgba &o) const {
+	o = Rgba();
+	return han2::edit::SheetRgba(m_p, i, o.px, o.w, o.h);
+}
+
+bool SheetTexSource::replace(int i, const Rgba &px, std::string *err, bool *changed) {
+	if (changed) *changed = false;
+	touchedParts.clear();
+	if (i < 0 || i >= count()) { if (err) *err = "no such sprite sheet"; return false; }
+	Rgba cur;
+	if (decode(i, cur) && SameDrawn(cur, px)) return true;
+	if (!han2::edit::ImportSheetRgba(m_p, i, px.px.data(), px.w, px.h, err)) return false;
+	for (auto &c : m_p.cutOuts) if (c.texture == i) touchedParts.push_back(c.id);
+	if (changed) *changed = true;
+	return true;
+}
+
+// ---------------------------------------------------------------- undo state
+struct PatTexState { std::vector<PartGfx<>> gfx; std::vector<CutOut<>> cuts; };
+
+static bool SameGfx(const PartGfx<> &a, const PartGfx<> &b) {
+	return a.data == b.data && a.imageData == b.imageData && a.imageSize == b.imageSize && a.w == b.w && a.h == b.h && a.bpp == b.bpp && a.type == b.type
+		&& a.name == b.name && !memcmp(a.pgte, b.pgte, sizeof a.pgte) && !memcmp(a.uvBpp, b.uvBpp, sizeof a.uvBpp) && a.noCompress == b.noCompress
+		&& !memcmp(a.ddsHeader, b.ddsHeader, sizeof a.ddsHeader);
+}
+
+PatTexSnap CapturePatTex(const Parts &p) {
+	auto s = std::make_shared<PatTexState>();
+	s->gfx = p.gfxMeta; s->cuts = p.cutOuts;
+	return s;
+}
+
+bool SamePatTex(const Parts &p, const PatTexSnap &s) {
+	if (!s || s->gfx.size() != p.gfxMeta.size() || s->cuts.size() != p.cutOuts.size()) return false;
+	for (size_t i = 0; i < s->gfx.size(); i++) if (!SameGfx(s->gfx[i], p.gfxMeta[i])) return false;
+	for (size_t i = 0; i < s->cuts.size(); i++) if (memcmp(s->cuts[i].ppte, p.cutOuts[i].ppte, sizeof s->cuts[i].ppte)) return false;
+	return true;
+}
+
+std::vector<int> RestorePatTex(Parts &p, const PatTexSnap &s) {
+	std::vector<int> changed;
+	if (!s) return changed;
+	for (size_t i = 0; i < s->gfx.size(); i++) {
+		const bool same = i < p.gfxMeta.size() && SameGfx(s->gfx[i], p.gfxMeta[i]);
+		if (same) continue;
+		const int texIndex = i < p.gfxMeta.size() ? p.gfxMeta[i].textureIndex : s->gfx[i].textureIndex;
+		changed.push_back((int)i);
+		if (i >= p.gfxMeta.size()) p.gfxMeta.resize(i + 1);
+		p.gfxMeta[i] = s->gfx[i];
+		p.gfxMeta[i].textureIndex = texIndex;   // the GL copy stays the record's own: the caller re-uploads its pixels
+	}
+	if (p.gfxMeta.size() > s->gfx.size()) p.gfxMeta.resize(s->gfx.size());   // a sheet appended by the step
+	// cut-outs: only the fields a texture replace writes (the rest belongs to the PAT editor's own history)
+	for (size_t i = 0; i < s->cuts.size() && i < p.cutOuts.size(); i++) memcpy(p.cutOuts[i].ppte, s->cuts[i].ppte, sizeof p.cutOuts[i].ppte);
+	return changed;
 }
 
 // ---------------------------------------------------------------- references

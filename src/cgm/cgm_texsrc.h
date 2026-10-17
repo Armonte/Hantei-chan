@@ -9,9 +9,11 @@
 //   MBAACC                    PGTX 32-bit BGRA (the only record MBAA.exe reads)
 //   UNIB / UNI2 / MBTL        PGT2 DXT1 (1), DXT5 (5), A8R8G8B8 (21), X8R8G8B8 (22); a replace keeps the texture's own kind
 //   ActCadenza                no .pat (HA4 parts live in the DAT)
-//   RBO / GOF2                part sheets are CG-style banks (han2), browsed through the CG side
+//   RBO / GOF2                square 32-bit part sheets inside the PAT block of the .DAT / .DT2 companion (SheetTexSource, the han2
+//                             pane's han2::edit sheet code), saved through the han2 writers with the character
 #include "cgm_bank.h"
 #include "cgm_io.h"
+#include <memory>
 #include <string>
 #include <vector>
 
@@ -20,7 +22,7 @@ class FrameData;
 
 namespace cgm {
 
-enum class TexKind { CgImage = 0, PatTexture = 1 };
+enum class TexKind { CgImage = 0, PatTexture = 1, PartSheet = 2 };
 
 struct TexEntry {
 	bool present = false;   // false: empty slot (nothing to view / export)
@@ -74,6 +76,31 @@ private:
 	Parts &m_p;
 };
 const char *PatTextureFormat(const Parts &p, int texture);
+
+// RBO / GOF2 (French-Bread parts model, Parts::fbPartModel) sprite sheets: square 32-bit images. Decode / replace go through the han2
+// pane's code (han2::edit::SheetRgba / ImportSheetRgba), so the tab and the han2 PAT pane write the same records.
+class SheetTexSource : public TexSource {
+public:
+	explicit SheetTexSource(Parts &p) : m_p(p) {}
+	TexKind kind() const override { return TexKind::PartSheet; }
+	int count() const override;
+	bool entry(int i, TexEntry &out) const override;
+	bool decode(int i, Rgba &out) const override;
+	bool replace(int i, const Rgba &px, std::string *err, bool *changed) override;
+	std::vector<int> touchedParts;   // parts (cut-outs) drawing from the sheet replaced last
+private:
+	Parts &m_p;
+};
+
+// ---- undo state of the .pat / part-sheet side: every texture record and the cut-outs that follow a replaced texture.
+// Texture pixels are never freed while the character is loaded (pattex::Encode / Parts::AdoptPixels allocate new buffers), so a
+// state keeps the record pointers; restoring the state before a replace makes Parts::Save / han2::BuildPat write the original bytes.
+struct PatTexState;
+using PatTexSnap = std::shared_ptr<const PatTexState>;
+PatTexSnap CapturePatTex(const Parts &p);
+// Puts the records back. Returns the indices of the textures whose pixels changed (the caller re-uploads them).
+std::vector<int> RestorePatTex(Parts &p, const PatTexSnap &s);
+bool SamePatTex(const Parts &p, const PatTexSnap &s);
 
 // ---- references
 struct TexUse {

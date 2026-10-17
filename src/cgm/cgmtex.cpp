@@ -9,6 +9,11 @@
 //   cgmtex stripe <x.cg> <x.ha6> <x.pal> <out.cg> [patterns]   recolour in stripes every CG image the patterns draw (default 0-40)
 //   cgmtex modsave <game> <gameDir> <key> <file>      write a file into the UNI2-IM / MBTL-IM mod folder (original kept as .hcbak)
 //   cgmtex modrestore <game> <gameDir> <key>          undo modsave
+//   cgmtex sheetcheck [--max N] <x.PAC|x.DAT|x.DT2>... RBO / GOF2 part sheets (SheetTexSource) in every HAN2RBO entry / bare PAT: PAT block
+//                                                     reader -> writer byte-exact; every sheet decoded; PNG export -> import of the first N
+//                                                     sheets per file (default 8, 0 = all) leaves the block byte-exact; one sheet replaced ->
+//                                                     undo -> block equals the original, redo -> equals the replaced block, which reloads as
+//                                                     edited. Prints "SECTION texsrc-sheet: pass P fail F | ..." 
 #include <windows.h>
 #include "cgm_texsrc.h"
 #include "cgm_bank.h"
@@ -19,6 +24,9 @@
 #include "../framedata.h"
 #include "../framedata_ha4.h"
 #include "../png_writer.h"
+#include "../han2_pat.h"
+#include "../han2/han2_container.h"
+#include "../han2/pac_archive.h"
 #include <unistd.h>
 #include <cstdio>
 #include <cstring>
@@ -180,7 +188,7 @@ static int SelfTest() {
 
 // ---------------------------------------------------------------- check
 static int Check(int argc, char **argv) {
-	int maxItems = 64, pass = 0, fail = 0, unsupported = 0; long items = 0, pngRt = 0, exact = 0; std::string kindName;
+	int maxItems = 64, pass = 0, fail = 0, unsupported = 0, undoExact = 0; long items = 0, pngRt = 0, exact = 0; std::string kindName;
 	std::vector<std::string> files;
 	for (int i = 0; i < argc; i++) { if (!strcmp(argv[i], "--max") && i + 1 < argc) maxItems = atoi(argv[++i]); else files.push_back(argv[i]); }
 	const std::string tmp = TmpDir("check");
@@ -216,8 +224,23 @@ static int Check(int argc, char **argv) {
 			if (o.bank) { for (int y = 0; y < px.h; y++) for (int x = 0; x < px.w; x++) memcpy(&edit.px[((size_t)y * px.w + x) * 4], &px.px[((size_t)y * px.w + (px.w - 1 - x)) * 4], 4); }   // mirror: palette-exact for every type
 			else for (size_t k = 0; k < edit.px.size(); k += 4) { edit.px[k] = 255 - edit.px[k]; }
 			bool ch = false;
+			// undo state as the tab records it: the Bank copy (CG manager history) / the .pat texture records (CapturePatTex)
+			std::unique_ptr<cgm::Bank> bankBefore; cgm::PatTexSnap patBefore;
+			if (o.bank) bankBefore.reset(new cgm::Bank(*o.bank)); else patBefore = cgm::CapturePatTex(*o.parts);
 			if (!s.replace(first, edit, &err, &ch)) F("replace: " + err);
 			else {
+				// replace -> undo -> bytes equal the original; redo -> bytes equal the replaced version
+				std::vector<uint8_t> replaced, undone, redone;
+				o.serialize(replaced, tmp);
+				std::unique_ptr<cgm::Bank> bankAfter; cgm::PatTexSnap patAfter;
+				if (o.bank) { bankAfter.reset(new cgm::Bank(*o.bank)); *o.bank = *bankBefore; } else { patAfter = cgm::CapturePatTex(*o.parts); cgm::RestorePatTex(*o.parts, patBefore); }
+				o.serialize(undone, tmp);
+				if (o.bank) *o.bank = *bankAfter; else cgm::RestorePatTex(*o.parts, patAfter);
+				o.serialize(redone, tmp);
+				if (replaced == base) F("the replace changed no byte (undo test needs a change)");
+				else if (undone != base) F("undo of the replace is not byte-exact");
+				else if (redone != replaced) F("redo of the replace is not byte-exact");
+				else undoExact++;
 				cgm::Rgba mem; s.decode(first, mem);
 				std::vector<uint8_t> saved; o.serialize(saved, tmp);
 				const std::string p2 = tmp + (o.bank ? "/r.cg" : "/r.pat");
@@ -233,9 +256,73 @@ static int Check(int argc, char **argv) {
 		bad ? fail++ : pass++;
 	}
 	std::error_code ec; fs::remove_all(tmp, ec);
-	printf("SECTION texsrc-%s: pass %d fail %d | %ld items decoded, %ld PNG export -> import round trips with no byte changed, %d/%zu containers byte-exact on parse -> serialize; %d texture(s) of a kind the loader does not read (listed, not editable)\n",
-	       kindName.c_str(), pass, fail, items, pngRt, (int)exact, files.size(), unsupported);
+	printf("SECTION texsrc-%s: pass %d fail %d | %ld items decoded, %ld PNG export -> import round trips with no byte changed, %d/%zu containers byte-exact on parse -> serialize; %d replace -> undo -> redo byte-exact; %d texture(s) of a kind the loader does not read (listed, not editable)\n",
+	       kindName.c_str(), pass, fail, items, pngRt, (int)exact, files.size(), undoExact, unsupported);
 	return fail ? 1 : 0;
+}
+
+// ---------------------------------------------------------------- sheetcheck (RBO / GOF2)
+static int SheetCheck(int argc, char **argv) {
+	int maxItems = 8, pass = 0, fail = 0, undoExact = 0, files = 0; long sheets = 0, pngRt = 0;
+	std::vector<std::string> in;
+	for (int i = 0; i < argc; i++) { if (!strcmp(argv[i], "--max") && i + 1 < argc) maxItems = atoi(argv[++i]); else in.push_back(argv[i]); }
+	const std::string tmp = TmpDir("sheet");
+	auto one = [&](const std::string &label, const std::vector<uint8_t> &b) {
+		han2::Han2File f; std::string err; const std::vector<uint8_t> *blob = nullptr;
+		if (han2::Parse(b.data(), b.size(), f, nullptr)) blob = &f.area[han2::kAreaParts];
+		else if (han2::IsPat(b.data(), b.size())) blob = &b;
+		if (!blob || blob->empty()) return;   // not a parts container / an entry that borrows another file's parts
+		files++;
+		bool bad = false; auto F = [&](const std::string &m) { printf("FAIL %s: %s\n", label.c_str(), m.c_str()); bad = true; };
+		static Parts *pp = new Parts(nullptr), *rp = new Parts(nullptr);   // reused, never destroyed (~Parts calls GL), as han2tool patrt
+		auto reset = [](Parts &q) { q.textures.clear(); q.partSets.clear(); q.cutOuts.clear(); q.shapes.clear(); q.gfxMeta.clear(); q.loaded = false; };
+		Parts &p = *pp; reset(p);
+		if (!han2::PatSectionToParts(blob->data(), blob->size(), p, &err)) { F("read: " + err); fail++; return; }
+		auto build = [&](std::vector<uint8_t> &out) { return han2::BuildPatSection(p, *blob, out, &err); };
+		std::vector<uint8_t> base; if (!build(base) || base != *blob) { F("PAT block reader -> writer is not byte-exact"); fail++; return; }
+		cgm::SheetTexSource s(p); int done = 0, first = -1;
+		for (int i = 0; i < s.count(); i++) {
+			cgm::TexEntry e; if (!s.entry(i, e) || !e.present) continue;
+			cgm::Rgba px; if (!s.decode(i, px)) { F("decode sheet " + std::to_string(i)); continue; }
+			sheets++; if (first < 0) first = i;
+			if (maxItems && done >= maxItems) continue;
+			const std::string png = tmp + "/s.png"; bool ch = true;
+			if (!cgm::ExportPng(s, i, png, &err) || !cgm::ImportPng(s, i, png, &err, &ch)) { F("PNG round trip of sheet " + std::to_string(i) + ": " + err); continue; }
+			if (ch) F("PNG round trip re-encoded sheet " + std::to_string(i));
+			done++; pngRt++;
+		}
+		std::vector<uint8_t> after; if (!build(after) || after != base) F("PAT block changed after the PNG round trips");
+		if (first >= 0 && !bad) {
+			cgm::Rgba px; s.decode(first, px); cgm::Rgba edit = px;
+			for (size_t k = 0; k < edit.px.size(); k += 4) edit.px[k] = 255 - edit.px[k];
+			const cgm::PatTexSnap before = cgm::CapturePatTex(p); bool ch = false;
+			if (!s.replace(first, edit, &err, &ch) || !ch) F("replace: " + err);
+			else {
+				const cgm::PatTexSnap afterSnap = cgm::CapturePatTex(p);
+				std::vector<uint8_t> replaced, undone, redone;
+				build(replaced); cgm::RestorePatTex(p, before); build(undone); cgm::RestorePatTex(p, afterSnap); build(redone);
+				if (replaced == base) F("the replace changed no byte");
+				else if (undone != base) F("undo of the sheet replace is not byte-exact");
+				else if (redone != replaced) F("redo of the sheet replace is not byte-exact");
+				else {
+					Parts &r = *rp; reset(r); cgm::SheetTexSource rs(r); cgm::Rgba back;
+					if (!han2::PatSectionToParts(replaced.data(), replaced.size(), r, &err) || !rs.decode(first, back) || back.px != edit.px) F("replaced sheet does not survive save -> reload");
+					else undoExact++;
+				}
+			}
+		}
+		bad ? fail++ : pass++;
+	};
+	for (const auto &a : in) {
+		pac::Archive ar; std::string err;
+		if (pac::Open(a, ar, nullptr)) {
+			for (size_t k = 0; k < ar.entries.size(); k++) { std::vector<uint8_t> b; if (pac::ReadEntry(ar, k, b, &err)) one(a + "::" + ar.entries[k].name, b); else { printf("FAIL %s: %s\n", a.c_str(), err.c_str()); fail++; } }
+		} else { std::vector<uint8_t> b; if (Slurp(a, b)) one(a, b); else { printf("FAIL %s: cannot read\n", a.c_str()); fail++; } }
+	}
+	std::error_code ec; fs::remove_all(tmp, ec);
+	printf("SECTION texsrc-sheet: pass %d fail %d | %d parts container(s), %ld sheets decoded, %ld PNG export -> import round trips with the PAT block byte-exact, %d replace -> undo -> redo byte-exact\n",
+	       pass, fail, files, sheets, pngRt, undoExact);
+	return fail || !files ? 1 : 0;
 }
 
 // ---------------------------------------------------------------- refs
@@ -290,6 +377,7 @@ static int RealMain(int argc, char **argv) {
 	if (argc < 2) { puts("usage: cgmtex selftest|list|check|refs|stripe|modsave|modrestore ..."); return 2; }
 	const std::string c = argv[1];
 	if (c == "selftest") return SelfTest();
+	if (c == "sheetcheck") return SheetCheck(argc - 2, argv + 2);
 	if (c == "check") return Check(argc - 2, argv + 2);
 	if (c == "refs" && argc >= 4) return Refs(argv[2], argv[3]);
 	if (c == "stripe" && argc >= 6) return Stripe(argv[2], argv[3], argv[4], argv[5], argc > 6 ? argv[6] : nullptr);

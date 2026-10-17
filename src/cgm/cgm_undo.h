@@ -5,6 +5,7 @@
 #include "cgm_bank.h"
 #include "cgm_palette.h"
 #include "cgm_usage.h"
+#include "cgm_texsrc.h"
 #include <string>
 #include <vector>
 
@@ -18,6 +19,13 @@ struct HistoryEntry {
 	PalSet palBefore, palAfter;
 	std::vector<int> remap;   // optional: old image id -> new id (-1 = removed): the frame references were rewritten through it
 	std::vector<ClearedRef> cleared;   // references cleared because their image was deleted (restored on undo)
+	// "CG + .pat textures" tab: a .pat texture replace (texture records + the parts that follow it), and a CG image replace in a bank
+	// format the Bank model does not hold (CgIO: the CG's own stored bytes)
+	PatTexSnap patBefore, patAfter;
+	std::shared_ptr<const std::vector<uint8_t>> rawBefore, rawAfter;
+	// a write into the UNI2-IM / MBTL-IM mod folder ("Save .pal to mod folder", "Save to mod folder"): the file before (null = none) / after
+	std::string modDst;
+	std::shared_ptr<const std::vector<uint8_t>> modBefore, modAfter;
 };
 
 class History {

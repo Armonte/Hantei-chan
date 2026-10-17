@@ -111,7 +111,7 @@ private:
 	// "CG + .pat textures" tab (cgm_texbrowser.cpp): CG images and the character's .pat textures side by side, one set of operations
 	// for both through cgm_texsrc.h (view, replace, PNG export / import, references, save to the game or its mod folder)
 	struct TexBrowser {
-		int kind = 0, sel = -1;                       // kind: 0 CG image, 1 .pat texture
+		int kind = 0, sel = -1;                       // kind: 0 CG image, 1 .pat texture, 2 RBO / GOF2 part sheet
 		char filter[48] = {};
 		int viewKind = -1, viewId = -1; unsigned long long viewGen = ~0ull;
 		Thumb view; float zoom = 1.f;
@@ -122,7 +122,10 @@ private:
 	} tb;
 	void drawTextures(CharacterInstance &ch, const WindowHost &host);
 	bool texReplace(CharacterInstance &ch, int kind, int id, const std::string &file, bool pngOnly, const WindowHost &host);
-	bool texSave(CharacterInstance &ch, int kind, const std::string &game, std::string &report);
+	void uploadPatSide(CharacterInstance &ch, const std::vector<int> &textures);   // GL copies of replaced / restored textures
+	void restorePatTex(CharacterInstance &ch, const PatTexSnap &s, const WindowHost &host);
+	bool writeModStep(const std::string &dst, const std::vector<uint8_t> &bytes, const std::string &label, std::string *err);
+	bool texSave(CharacterInstance &ch, int kind, const std::string &game, std::string &report, const WindowHost &host);
 	// UNI2 / MBTL: where <srcPath> goes in <game folder>\<IM>\Mods ("" when the detected game has no mod folder or the file is not under data\)
 	std::string modFolderDst(CharacterInstance &ch, const std::string &srcPath, bool *usesModFolder = nullptr);
 	History hist;

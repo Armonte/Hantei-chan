@@ -15,6 +15,7 @@
 #include "cgm_project.h"
 #include "cgm_texsrc.h"
 #include "../parts/pat_texconv.h"
+#include "../han2_pat.h"
 #include "../texture.h"
 #include <memory>
 #include "../character_instance.h"
@@ -194,9 +195,25 @@ bool Window::commitStruct(CharacterInstance &ch, const std::string &label, Bank 
 }
 
 void Window::undoRedo(CharacterInstance &ch, bool redo, const WindowHost &host) {
-	if (!bank || (redo ? !hist.canRedo() : !hist.canUndo())) return;
+	if (redo ? !hist.canRedo() : !hist.canUndo()) return;
+	if (!bank && (redo ? hist.topRedo().hasBank : hist.top().hasBank)) return;
 	HistoryEntry e = redo ? hist.redo() : hist.undo();
-	if (e.hasBank) {
+	if (e.patBefore) restorePatTex(ch, redo ? e.patAfter : e.patBefore, host);
+	if (e.rawBefore) {   // a CG bank format the Bank model does not hold: its stored bytes
+		const std::vector<uint8_t> &b = redo ? *e.rawAfter : *e.rawBefore;
+		if (b.size() == ch.cg.bank_size()) ch.cg.restore_bank((const char *)b.data(), (unsigned)b.size());
+		else ch.cg.replaceBank(b.data(), (unsigned)b.size());
+		clearThumbs(); previewId = -1; filterKey = ~0ull;
+		if (host.markEdited) host.markEdited(&ch);
+	}
+	if (!e.modDst.empty()) {   // a mod-folder write: put the file back the way it was (removed when there was none)
+		std::string er; bool ok;
+		if (redo) ok = WriteModFile(e.modDst, *e.modAfter, &er);
+		else if (e.modBefore) ok = WriteModFile(e.modDst, *e.modBefore, &er);
+		else ok = RestoreModFile(e.modDst, &er);
+		if (!ok) status = er;
+	}
+	if (e.hasBank && bank) {
 		*bank = redo ? e.after : e.before;
 		if (!e.remap.empty()) {   // put the frame references back the way they were
 			std::vector<ClearedRef> again;
@@ -610,7 +627,7 @@ void Window::drawPalettes(CharacterInstance &ch, const WindowHost &host) {
 			if (GridButton(sg, LBL("Save .pal to mod folder"))) {
 				const std::string dst = modFolderDst(ch, ch.cg.palettePath(P.bank)); std::string e;
 				if (dst.empty()) status = Fmt(TXT("Cannot place %s in the mod folder: no game folder, or the file is not under a data folder."), ch.cg.palettePath(P.bank).c_str());
-				else status = WriteModFile(dst, ps.raw, &e) ? Fmt(TXT("Wrote %s (%zu bytes). The improvement mod / fpan-im serve it in place of the archived file."), dst.c_str(), ps.raw.size()) : e;
+				else status = writeModStep(dst, ps.raw, Fmt(TXT("Save %s to mod folder"), std::filesystem::u8path(dst).filename().u8string().c_str()), &e) ? Fmt(TXT("Wrote %s (%zu bytes). The improvement mod / fpan-im serve it in place of the archived file."), dst.c_str(), ps.raw.size()) : e;
 			}
 			ImGui::SetItemTooltip("%s", TXT("Writes this .pal to <game folder>\\UNI2-IM\\Mods or MBTL-IM\\Mods (set in the \"CG + .pat textures\" tab). \"Restore mod folder\" there, or cgmtex modrestore, undoes it."));
 		}
@@ -1315,16 +1332,40 @@ void UploadPatTexture(Parts &parts, int i) {
 }
 }
 
+// .pat textures / part sheets: the PAT editor's history owns the parts model when its channel is live (French-Bread characters, a
+// .pat opened as its own document): the step goes there, so Ctrl+Z in the editor and the han2 pane undo it. Otherwise (UNI / MBAACC
+// characters, whose .pat saves on its own) the step goes into this window's history.
+static bool PatChannelLive(CharacterInstance &ch) { return ch.partsUndo.active() || (ch.isPatDocument() && ch.patDocumentUndo() && ch.patDocumentUndo()->active()); }
+
+void Window::uploadPatSide(CharacterInstance &ch, const std::vector<int> &textures) {
+	if (ch.parts.fbPartModel) han2::UploadPartsTextures(ch.parts);
+	else for (int i : textures) if (i >= 0 && i < (int)ch.parts.gfxMeta.size()) UploadPatTexture(ch.parts, i);
+	tb.patGen++;
+}
+
+void Window::restorePatTex(CharacterInstance &ch, const PatTexSnap &s, const WindowHost &host) {
+	uploadPatSide(ch, RestorePatTex(ch.parts, s));
+	if (host.markEdited) host.markEdited(&ch);
+}
+
 bool Window::texReplace(CharacterInstance &ch, int kind, int id, const std::string &file, bool pngOnly, const WindowHost &host) {
 	std::string e; bool changed = false;
 	if (pngOnly) { std::string low = file; for (auto &c : low) c = (char)tolower((unsigned char)c); if (low.size() < 4 || low.compare(low.size() - 4, 4, ".png")) { status = TXT("Import PNG takes a .png file."); return false; } }
-	if (kind == 1) {
-		PatTexSource src(ch.parts);
-		if (!ImportPng(src, id, file, &e, &changed)) { status = e; return false; }
+	if (kind == 1 || kind == 2) {
+		PatTexSource patSrc(ch.parts); SheetTexSource sheetSrc(ch.parts);
+		TexSource &src = kind == 2 ? (TexSource &)sheetSrc : (TexSource &)patSrc;
+		const bool live = PatChannelLive(ch);
+		if (live) ch.undoManager.flush();   // an earlier pending edit stays its own step
+		PatTexSnap before = CapturePatTex(ch.parts);
+		if (!ImportPng(src, id, file, &e, &changed)) { RestorePatTex(ch.parts, before); status = e; return false; }
 		if (!changed) { status = TXT("The PNG renders exactly like the stored texture: nothing changed."); return true; }
-		UploadPatTexture(ch.parts, id); tb.patGen++;
+		const std::vector<int> &touched = kind == 2 ? sheetSrc.touchedParts : patSrc.touchedParts;
+		uploadPatSide(ch, {id});
+		const std::string label = Fmt(kind == 2 ? TXT("Replace sheet %d") : TXT("Replace .pat texture %d"), id);
 		if (host.markEdited) host.markEdited(&ch);
-		status = Fmt(TXT(".pat texture %d replaced; %d part(s) that sample it follow it. Save the .pat to keep it."), id, (int)src.touchedParts.size());
+		if (live) ch.undoManager.flush(label.c_str());
+		else { HistoryEntry h; h.label = label; h.patBefore = std::move(before); h.patAfter = CapturePatTex(ch.parts); hist.push(std::move(h)); }
+		status = Fmt(kind == 2 ? TXT("Sheet %d replaced; %d part(s) that draw from it follow it. Save the character to keep it.") : TXT(".pat texture %d replaced; %d part(s) that sample it follow it. Save the .pat to keep it."), id, (int)touched.size());
 		return true;
 	}
 	if (bank) {
@@ -1336,9 +1377,17 @@ bool Window::texReplace(CharacterInstance &ch, int kind, int id, const std::stri
 		if (!src.lastReport.alsoChanges.empty()) { std::string o; for (int x : src.lastReport.alsoChanges) o += " " + std::to_string(x); warnings.push_back(std::string(TXT("Shared cells: these images change too:")) + o); }
 		if (!commit(ch, Fmt(TXT("Replace image %d"), id), std::move(before), host)) return false;
 	} else {
+		// a bank format the Bank model does not hold: the step keeps the CG's stored bytes before and after
+		std::shared_ptr<std::vector<uint8_t>> raw0;
+		if (ch.cg.bank_data() && ch.cg.bank_size()) raw0 = std::make_shared<std::vector<uint8_t>>((const uint8_t *)ch.cg.bank_data(), (const uint8_t *)ch.cg.bank_data() + ch.cg.bank_size());
 		CgIO io(ch.cg); CgTexSource src(io);
 		if (!ImportPng(src, id, file, &e, &changed)) { status = e; return false; }
 		if (!changed) { status = TXT("The PNG renders exactly like the stored image: nothing changed."); return true; }
+		if (raw0 && ch.cg.bank_data()) {
+			HistoryEntry h; h.label = Fmt(TXT("Replace image %d"), id); h.rawBefore = raw0;
+			h.rawAfter = std::make_shared<std::vector<uint8_t>>((const uint8_t *)ch.cg.bank_data(), (const uint8_t *)ch.cg.bank_data() + ch.cg.bank_size());
+			hist.push(std::move(h));
+		}
 		if (host.markEdited) host.markEdited(&ch);
 	}
 	status = Fmt(TXT("Image %d replaced. Save the bank to keep it."), id);
@@ -1354,7 +1403,23 @@ std::string Window::modFolderDst(CharacterInstance &ch, const std::string &srcPa
 	return ModFolderPath(kGames[gi].id, tb.gameDir[gi], GameKeyOf(srcPath));
 }
 
-bool Window::texSave(CharacterInstance &ch, int kind, const std::string &game, std::string &report) {
+// One undo step per mod-folder write: the file as it was before (none = null) and the bytes written.
+bool Window::writeModStep(const std::string &dst, const std::vector<uint8_t> &bytes, const std::string &label, std::string *err) {
+	std::shared_ptr<std::vector<uint8_t>> before;
+	{ std::ifstream f(std::filesystem::u8path(dst), std::ios::binary); if (f) before = std::make_shared<std::vector<uint8_t>>(std::istreambuf_iterator<char>(f), std::istreambuf_iterator<char>()); }
+	if (!WriteModFile(dst, bytes, err)) return false;
+	HistoryEntry h; h.label = label; h.modDst = dst; h.modBefore = before; h.modAfter = std::make_shared<std::vector<uint8_t>>(bytes);
+	hist.push(std::move(h));
+	return true;
+}
+
+bool Window::texSave(CharacterInstance &ch, int kind, const std::string &game, std::string &report, const WindowHost &host) {
+	if (kind == 2) {   // RBO / GOF2 sheets live in the character's PAT block: the han2 writers save the .DAT / .DT2 companion with it
+		if (!host.saveCharacter) { report = TXT("Save the character (File > Save) to write the sheets."); return false; }
+		if (!host.saveCharacter(&ch)) { report = TXT("The character could not be saved."); return false; }
+		report = Fmt(TXT("Saved %s (sheets written by the han2 writers)."), ch.getTopHA6Path().c_str());
+		return true;
+	}
 	const int gi = tb.game < 0 ? DetectGame(ch) : tb.game;
 	if (UsesModFolder(game)) {
 		const std::string srcPath = kind == 0 ? ch.getCGPath() : ch.getPATPath();
@@ -1371,7 +1436,7 @@ bool Window::texSave(CharacterInstance &ch, int kind, const std::string &game, s
 			std::ifstream f(std::filesystem::u8path(tmp), std::ios::binary); bytes.assign(std::istreambuf_iterator<char>(f), std::istreambuf_iterator<char>()); f.close();
 			std::error_code ec; std::filesystem::remove(std::filesystem::u8path(tmp), ec);
 		}
-		if (!WriteModFile(dst, bytes, &e)) { report = e; return false; }
+		if (!writeModStep(dst, bytes, Fmt(TXT("Save %s to mod folder"), std::filesystem::u8path(dst).filename().u8string().c_str()), &e)) { report = e; return false; }
 		report = Fmt(TXT("Wrote %s (%zu bytes). The improvement mod / fpan-im serve it in place of the archived file."), dst.c_str(), bytes.size());
 		return true;
 	}
@@ -1418,14 +1483,19 @@ void Window::drawTextures(CharacterInstance &ch, const WindowHost &host) {
 	auto pass = [&](int id, const std::string &nm) { if (f.empty()) return true; std::string n = nm; for (auto &c : n) c = (char)tolower((unsigned char)c); return n.find(f) != std::string::npos || std::to_string(id) == f; };
 
 	const bool hasPat = ch.parts.loaded && !ch.parts.gfxMeta.empty();
-	PatTexSource patSrc(ch.parts);
+	const bool fbSheets = ch.parts.fbPartModel;   // RBO / GOF2: the parts model's square sprite sheets (third source kind)
+	const int patKind = fbSheets ? 2 : 1;
+	PatTexSource patOnly(ch.parts); SheetTexSource sheetSrc(ch.parts);
+	TexSource &patSrc = fbSheets ? (TexSource &)sheetSrc : (TexSource &)patOnly;
+	if (tb.kind == 1 && fbSheets) tb.kind = 2;
+	if (tb.kind == 2 && !fbSheets) tb.kind = 1;
 	// the selected item (identical operations for both kinds)
 	std::unique_ptr<BmpCutterIO> bioOwn; std::unique_ptr<CgIO> cio;
 	std::unique_ptr<CgTexSource> cgSrc;
 	if (bank) { bioOwn.reset(new BmpCutterIO(*bank)); cgSrc.reset(new CgTexSource(*bioOwn)); }
 	else { cio.reset(new CgIO(ch.cg)); cgSrc.reset(new CgTexSource(*cio)); }
-	if (tb.kind == 1 && !hasPat) tb.sel = -1;
-	TexSource &src = tb.kind == 1 ? (TexSource &)patSrc : (TexSource &)*cgSrc;
+	if (tb.kind != 0 && !hasPat) tb.sel = -1;
+	TexSource &src = tb.kind != 0 ? patSrc : (TexSource &)*cgSrc;
 	TexEntry e;
 	if (tb.sel >= 0 && !src.entry(tb.sel, e)) tb.sel = -1;
 	const bool haveSel = tb.sel >= 0;
@@ -1440,7 +1510,7 @@ void Window::drawTextures(CharacterInstance &ch, const WindowHost &host) {
 	// the column, then it scrolls), so the CG list keeps the rest of the height instead of a fixed share (1280x720 left
 	// the CG list ~5 rows).
 	std::vector<TexUse> users;
-	if (haveSel) users = tb.kind == 1 ? PatTextureUsers(ch.parts, tb.sel, &ch.frameData) : CgImageUsers(ch.frameData, tb.sel);
+	if (haveSel) users = tb.kind != 0 ? PatTextureUsers(ch.parts, tb.sel, &ch.frameData) : CgImageUsers(ch.frameData, tb.sel);
 	const int usedRows = std::max(1, std::min((int)users.size(), 401));
 	const float usedMin = rowH + chrome;
 	const float usedH = haveSel ? std::clamp(usedRows * rowH + chrome, usedMin, std::max(usedMin, std::min(ui::Em(12.f), H * 0.25f))) : 0.f;
@@ -1471,14 +1541,14 @@ void Window::drawTextures(CharacterInstance &ch, const WindowHost &host) {
 	ImGui::EndChild();
 	// ---- .pat textures ----
 	ImGui::BeginChild("##cgmtbpat", ImVec2(colW, patH), ImGuiChildFlags_Borders);
-	ImGui::SeparatorText(TXT(".pat textures"));
+	ImGui::SeparatorText(fbSheets ? TXT("Part sheets (RBO / GOF2)") : TXT(".pat textures"));
 	if (!hasPat) ImGui::TextDisabled("%s", TXT("This character has no .pat textures loaded."));
 	else for (int i = 0; i < patSrc.count(); i++) {
 		TexEntry pe; if (!patSrc.entry(i, pe) || !pass(i, pe.name)) continue;
 		const auto users = PatTextureUsers(ch.parts, i, nullptr);
 		int parts = 0; for (auto &u : users) parts += u.partSet < 0;
 		char l[160]; snprintf(l, sizeof(l), "%3d  %-24s %4dx%-4d %-11s %d part(s)##pti%d", i, pe.name.c_str(), pe.w, pe.h, pe.format.c_str(), parts, i);
-		if (ImGui::Selectable(l, tb.kind == 1 && tb.sel == i)) { tb.kind = 1; tb.sel = i; }
+		if (ImGui::Selectable(l, tb.kind == patKind && tb.sel == i)) { tb.kind = patKind; tb.sel = i; }
 	}
 	ImGui::EndChild();
 	// ---- references of the selected item ----
@@ -1492,7 +1562,7 @@ void Window::drawTextures(CharacterInstance &ch, const WindowHost &host) {
 			char l[128];
 			if (u.pattern >= 0 && u.partSet >= 0) snprintf(l, sizeof(l), TXT("pattern %d, frame %d, layer %d (part set %d)"), u.pattern, u.frame, u.layer, u.partSet);
 			else if (u.pattern >= 0) snprintf(l, sizeof(l), TXT("pattern %d, frame %d, layer %d"), u.pattern, u.frame, u.layer);
-			else if (u.partSet >= 0) snprintf(l, sizeof(l), TXT("part set %d places part %d"), u.partSet, u.part);
+			else if (u.partSet >= 0) snprintf(l, sizeof(l), fbSheets ? TXT("pose %d places part %d") : TXT("part set %d places part %d"), u.partSet, u.part);
 			else snprintf(l, sizeof(l), TXT("part %d samples it"), u.part);
 			ImGui::PushID(k); const bool hit = ImGui::Selectable(l); ImGui::PopID();
 			if (hit && u.pattern >= 0 && host.navigate) host.navigate(u.pattern, u.frame);
@@ -1503,10 +1573,18 @@ void Window::drawTextures(CharacterInstance &ch, const WindowHost &host) {
 
 	// ---- the selected item: header, actions, zoom, preview filling the column ----
 	ImGui::BeginGroup();
+	{   // the tab's own undo / redo: every replace and import here is one step (the PAT editor's history for French-Bread parts)
+		const bool live = PatChannelLive(ch);
+		const bool canU = hist.canUndo() && (bank || !hist.top().hasBank), canR = hist.canRedo() && (bank || !hist.topRedo().hasBank);
+		ImGui::BeginDisabled(!canU); if (CgmButton(LBL("Undo##cgmtb"))) undoRedo(ch, false, host); ImGui::EndDisabled();
+		ImGui::SameLine(); ImGui::BeginDisabled(!canR); if (CgmButton(LBL("Redo##cgmtb"))) undoRedo(ch, true, host); ImGui::EndDisabled();
+		if (canU) { ImGui::SameLine(); ImGui::TextDisabled("%s", hist.top().label.c_str()); }
+		if (live && tb.kind != 0) { ImGui::SameLine(); ImGui::TextDisabled("%s", TXT("(sheet / .pat steps: Edit > Undo, Ctrl+Z in the editor)")); }
+	}
 	if (!haveSel) ImGui::TextDisabled("%s", TXT("Select a CG image or a .pat texture."));
 	else {
 		ImGui::PushTextWrapPos(0.f);
-		ImGui::Text(tb.kind ? TXT(".pat texture %d: %s, %d x %d, %s") : TXT("CG image %d: %s, %d x %d, %s"), tb.sel, e.name.c_str(), e.w, e.h, e.format.c_str());
+		ImGui::Text(tb.kind == 2 ? TXT("Part sheet %d: %s, %d x %d, %s") : tb.kind ? TXT(".pat texture %d: %s, %d x %d, %s") : TXT("CG image %d: %s, %d x %d, %s"), tb.sel, e.name.c_str(), e.w, e.h, e.format.c_str());
 		ImGui::PopTextWrapPos();
 		const std::string def = std::to_string(tb.sel) + "_" + (e.name.empty() ? std::string(tb.kind ? "texture" : "image") : std::filesystem::path(e.name).stem().string()) + ".png";
 		const char *saveLbl = modGame ? LBL("Save to mod folder##cgmtb") : LBL("Save to game##cgmtb");
@@ -1521,7 +1599,7 @@ void Window::drawTextures(CharacterInstance &ch, const WindowHost &host) {
 		if (GridButton(g, LBL("Replace...##cgmtb"))) { const std::string p = FileDialog(fileType::IMAGE); if (!p.empty()) texReplace(ch, tb.kind, tb.sel, p, false, host); }
 		ImGui::SetItemTooltip("%s", TXT("Replace the pixels from any image file (PNG, BMP, JPEG, TIFF) of the same size. Pixels that already render identically keep their stored bytes."));
 		ImGui::EndDisabled();
-		if (GridButton(g, saveLbl)) { std::string rep; texSave(ch, tb.kind, game, rep); status = rep; }
+		if (GridButton(g, saveLbl)) { std::string rep; texSave(ch, tb.kind, game, rep, host); status = rep; }
 		if (modGame) {
 			if (GridButton(g, LBL("Restore mod folder##cgmtb"))) {
 				const std::string dst = ModFolderPath(game, tb.gameDir[gi], GameKeyOf(tb.kind == 0 ? ch.getCGPath() : ch.getPATPath()));
@@ -1531,7 +1609,9 @@ void Window::drawTextures(CharacterInstance &ch, const WindowHost &host) {
 		if (ui::BeginLabelForm("##cgmtbzoom", ui::LabelColW({LBL("Zoom##cgmtb")}))) { ImGui::SliderFloat(ui::FormRow(LBL("Zoom##cgmtb")), &tb.zoom, 0.125f, 8.f); ui::EndLabelForm(); }
 		// view
 		ImGui::BeginChild("##cgmtbview", ImVec2(0, std::max(ui::Em(6.f), ImGui::GetContentRegionAvail().y - (split ? st.CellPadding.y : 0.f))), ImGuiChildFlags_Borders, ImGuiWindowFlags_HorizontalScrollbar);
-		const unsigned long long gen = tb.kind ? tb.patGen : cgGen;
+		// .pat side: also keyed on the record's pixel pointers, so an undo made in the PAT editor / han2 pane refreshes the view
+		unsigned long long gen = tb.kind ? tb.patGen : cgGen;
+		if (tb.kind && tb.sel < (int)ch.parts.gfxMeta.size()) gen ^= (unsigned long long)(uintptr_t)ch.parts.gfxMeta[tb.sel].data * 31 ^ (unsigned long long)(uintptr_t)ch.parts.gfxMeta[tb.sel].imageData;
 		if (tb.viewKind != tb.kind || tb.viewId != tb.sel || tb.viewGen != gen) {
 			tb.viewKind = tb.kind; tb.viewId = tb.sel; tb.viewGen = gen;
 			Rgba px; if (e.present && src.decode(tb.sel, px) && px.w > 0) upload(tb.view, px.px, px.w, px.h, 0, false); else tb.view.w = tb.view.h = 0;
