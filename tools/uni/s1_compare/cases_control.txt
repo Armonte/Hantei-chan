@@ -1,0 +1,41 @@
+# name | project .txt under gamedata/ | pattern | frame | tick (-1 = frame) | zoom | note
+ctrl_chr025_p0f0 | uni2/data/chr025/chr025_0.txt | 0 | 0 | -1 | 1 | control: Ogre idle, plain sprite
+ctrl_chr000_p0f0 | uni2/data/chr000/chr000_0.txt | 0 | 0 | -1 | 1 | control: Hyde idle, plain sprite
+mbtl_ctrl_chr001_p0f0 | mbtl/data/chr001/chr001_0.txt | 0 | 0 | -1 | 1 | control: MBTL Hisui idle, plain sprite (v2, MBTL-IM pause)
+ctrl_chr019_p0 | uni2/data/chr019/chr019_0.txt | 0 | 0 | -1 | 1.5 | v2 control: chr019 idle, plain sprite (aura lit / unlit runs)
+ctrl_chr027_p0 | uni2/data/chr027/chr027_0.txt | 0 | 0 | -1 | 1.5 | v2 control: chr027 idle, plain sprite (aura lit / unlit runs)
+ctrl_chr020_p0 | uni2/data/chr020/chr020_0.txt | 0 | 0 | -1 | 1 | render-match2 control: chr020 idle, plain sprite (aura lit / unlit runs, CG cases' floor)
+ctrl_chr024_p0 | uni2/data/chr024/chr024_0.txt | 0 | 0 | -1 | 1 | render-match2 control: chr024 idle (rect case's floor)
+rect_chr024_p76_z1 | uni2/data/chr024/chr024_0.txt | 76 | 0 | -1 | 1 | render-match2: rect line at the game's zoom 1 (thin geometry: no 1.5x resample)
+flipHV_chr019_p153_z1 | uni2/data/chr019/chr019_0.txt | 153 | 0 | -1 | 1 | render-match4: flipHV at the game's zoom 1 (thin streak edges: no 1.5x resample)
+ctrl_chr019_p0_z1 | uni2/data/chr019/chr019_0.txt | 0 | 0 | -1 | 1 | render-match4: chr019 idle at zoom 1 (floor of flipHV_chr019_p153_z1)
+pups_chr027_p449f4 | uni2/data/chr027/chr027_0.txt | 449 | 4 | -1 | 1.5 | render-match4: PUPS 1, CG 869 + .pat set 839 (cutout 427 PPPA 254, PRAL 1) on screen
+pups_chr027_p449f6 | uni2/data/chr027/chr027_0.txt | 449 | 6 | -1 | 1.5 | render-match4: PUPS 1, CG 870 (x2, one zoomed alpha 128) + .pat set 840 on two layers
+mbtl_patctrl_chr001_p238f10 | mbtl/data/chr001/chr001_0.txt | 238 | 10 | -1 | 1.5 | render-match4: MBTL .pat-only control (set 275, PRAL 1 + translucent parts, no PRRV / PRAL 2-3 / PRAS)
+mbtl_patctrl_chr001_p277f0 | mbtl/data/chr001/chr001_0.txt | 277 | 0 | -1 | 1.5 | render-match4: MBTL .pat-only control (set 211)
+flipHV_chr019_p153_solo6 | uni2/data/chr019solo6/chr019_0.txt | 153 | 0 | -1 | 1.5 | render-match8: flipHV with only set-45 slot 6 on screen (round8/chr019_solo45_s6.pat)
+flipHV_chr019_p153_solo6_z1 | uni2/data/chr019solo6/chr019_0.txt | 153 | 0 | -1 | 1 | render-match8: same, zoom 1
+flipHV_chr019_p153_solo1_z1 | uni2/data/chr019solo1/chr019_0.txt | 153 | 0 | -1 | 1 | render-match8: flipHV with only set-45 slot 1 on screen, zoom 1
+flipHV_chr019_p153_solo2_z1 | uni2/data/chr019solo2/chr019_0.txt | 153 | 0 | -1 | 1 | render-match8: flipHV with only set-45 slot 2 on screen, zoom 1
+flipHV_chr019_p153_solo3_z1 | uni2/data/chr019solo3/chr019_0.txt | 153 | 0 | -1 | 1 | render-match8: flipHV with only set-45 slot 3 on screen, zoom 1
+flipHV_chr019_p153_solo4_z1 | uni2/data/chr019solo4/chr019_0.txt | 153 | 0 | -1 | 1 | render-match8: flipHV with only set-45 slot 4 on screen, zoom 1
+flipHV_chr019_p153_solo8_z1 | uni2/data/chr019solo8/chr019_0.txt | 153 | 0 | -1 | 1 | render-match8: flipHV with only set-45 slot 8 on screen, zoom 1
+mbtl_flipV_chr001_p157f2_solo_s8 | mbtl/data/chr001solos8/chr001_0.txt | 157 | 2 | -1 | 1.5 | render-match10: MBTL flipV with only set-21 slot 8 (arc, PRRV 2) on screen
+mbtl_flipV_chr001_p157f2_solo_s456 | mbtl/data/chr001solos456/chr001_0.txt | 157 | 2 | -1 | 1.5 | render-match10: MBTL flipV with only set-21 arc slots 4/5/6 on screen
+pras_chr020_p5f2_z1 | uni2/data/chr020/chr020_0.txt | 5 | 2 | -1 | 1 | render-match11: pras at the game's zoom 1 (CG edges over the .pat flame: no 1.5x resample)
+ctrl_chr027_p0_z1 | uni2/data/chr027/chr027_0.txt | 0 | 0 | -1 | 1 | render-match11: chr027 idle at the game's zoom 1 (floor of pups_chr027_p449f4_z1)
+pups_chr027_p449f4_z1 | uni2/data/chr027/chr027_0.txt | 449 | 4 | -1 | 1 | render-match11: pups f4 at the game's zoom 1
+mbtl_patctrl_chr001_p238f10_z1 | mbtl/data/chr001/chr001_0.txt | 238 | 10 | -1 | 1 | render-match12: MBTL .pat-only control at zoom 1 (no editor-shot resample)
+mbtl_patctrl_chr001_p277f0_z1 | mbtl/data/chr001/chr001_0.txt | 277 | 0 | -1 | 1 | render-match12: MBTL .pat-only control at zoom 1
+mbtl_flipV_chr001_p157f2_z1 | mbtl/data/chr001/chr001_0.txt | 157 | 2 | -1 | 1 | render-match12: p157 at zoom 1 (thin-line arcs: the 1.5x shot resample softens them)
+mbtl_flipV_chr001_p157f2_solo_s456_z1 | mbtl/data/chr001solos456/chr001_0.txt | 157 | 2 | -1 | 1 | render-match12: solo arc slots 4/5/6 at zoom 1
+mbtl_flipV_chr001_p157f2_solo_s8_z1 | mbtl/data/chr001solos8/chr001_0.txt | 157 | 2 | -1 | 1 | render-match12: solo arc slot 8 at zoom 1
+pras_chr020_p5f2_solo_s12_z1 | uni2/data/chr020solos12/chr020_0.txt | 5 | 2 | -1 | 1 | render-match13: pras with only .pat set-991 slots 1,2 (point-sampled additive) on screen, zoom 1
+pras_chr020_p5f2_solo_slin_z1 | uni2/data/chr020soloslin/chr020_0.txt | 5 | 2 | -1 | 1 | render-match13: pras with only .pat set-991 slots 4,5,14,15,27,28 (PRFL 1 additive) on screen, zoom 1
+mbtl_pups_chr011_p309_z1 | mbtl/data/chr011/chr011_0.txt | 309 | 0 | -1 | 1 | render-match13: MBTL PUPS chr011 at zoom 1 (no editor-shot resample)
+pras_chr020_p5f2_solo_s1025_z1 | uni2/data/chr020solos1025/chr020_0.txt | 5 | 2 | -1 | 1 | render-match13: pras with only .pat set-991 slots 10,25 (normal blend, PRCL alpha 0) on screen, zoom 1
+pras_chr020_p5f2_solo_srings_z1 | uni2/data/chr020solorings/chr020_0.txt | 5 | 2 | -1 | 1 | render-match14: pras with only .pat set-991 ring slots 41,44,45 (3D-tilted arc/ring prims) on screen, zoom 1
+mbtl_ctrl_chr001_p0f0_z15 | mbtl/data/chr001/chr001_0.txt | 0 | 0 | -1 | 1.5 | stage-shadow-cgfilter: MBTL CG sprite at zoom 1.5 (Filter_V)
+pras_chr020_p5f2_r24b_pral3_z1 | uni2/data/chr020pral3/chr020_0.txt | 5 | 2 | -1 | 1 | render-match17: set-991 slots 1,2,4,5,14,15 only, PRAL forced to 3 (blur mask; UNI2 ships no PRAL 3 part), zoom 1
+pras_chr020_p5f2_r24b_snone_z1 | uni2/data/chr020snone/chr020_0.txt | 5 | 2 | -1 | 1 | render-match17: no set-991 prop (baseline scene of the PRAL 3 check), zoom 1
+pras_chr020_p5f2_r24b_pral0_z1 | uni2/data/chr020pral0/chr020_0.txt | 5 | 2 | -1 | 1 | render-match17: the same slots with PRAL 0 (normal blend), zoom 1

@@ -1,0 +1,25 @@
+{
+ "control": "ctrl_chr019_p0",
+ "args": [
+  "ctrl_chr019_p0",
+  "--game-name",
+  "ctrl_chr019_p0_r5",
+  "--light",
+  "1,0;1,0;1,0",
+  "--grey",
+  "--grad-ctrl",
+  "ctrl_chr019_p0,ctrl_chr019_p0_r5",
+  "--bokashi",
+  "0.0784",
+  "--bw",
+  "/home/teo/dev/hantei-chan-wt/render13/docs/audit_2026_10_14/evidence/compare/v2/editor_bw",
+  "--exact-reg",
+  "--refine",
+  "0"
+ ],
+ "subpix": [
+  0.25,
+  -0.375
+ ],
+ "objective": "lit"
+}

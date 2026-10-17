@@ -1,0 +1,22 @@
+# render-match4 round 5 (2026-10-15): flipHV chr019 p153 unlit (aura RGB held 0) with a same-session plate taken
+# by uni2_v2_case_aura_plate.gcs (hidefighters + one UNI2-IM step). The round-4 plate (v2_light_chr019_027.gcs)
+# was grabbed after unpausing and still held P1's body under the streaks.
+include ../games/uni2.gcs
+let P1CHR 19
+let P2CHR 0
+include ../games/uni2_to_training.gcs
+set OUTD C:\dev\hantei-chan\tools\gamecap\captures\v2
+hold f32 [P1+0x8C0]+0x40 0
+hold f32 [P1+0x8C0]+0x44 0
+hold f32 [P1+0x8C0]+0x48 0
+step 3
+set CTRL ctrl_chr019_p0_r5
+include ../games/uni2_v2_ctrl_plate.gcs
+set CASE flipHV_chr019_p153_r5
+set PAT 153
+set SETFRAME 0
+set FRAME 0
+set GTICK 1
+set STEPKEYS F6
+include ../games/uni2_v2_case_aura_plate.gcs
+quit

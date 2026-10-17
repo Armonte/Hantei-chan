@@ -1,0 +1,19 @@
+<!-- source: https://mizuumi.wiki/w/User:Pixloen/FPANModding/File_Structure (MediaWiki API, 2026-10-15) -->
+{{DISPLAYTITLE:File Structure}}
+{{PIXL BeginNav}}
+{{Disclaimer MFPG
+|border-color=#FF60B0
+|bg-color=
+|image=PIXL mika.png
+|text='''It's so empty...'''<br/>This page is a work-in-progress!
+}}
+<tabber>
+|-|UNICLR=
+{{:User:Pixloen/FPANModding/FileCLR}}
+|-|UNI2=
+{{:User:Pixloen/FPANModding/FileUNI2}}
+|-|MBTL=
+{{:User:Pixloen/FPANModding/FileMBTL}}
+</tabber>
+
+{{Navbox-MFPG}}

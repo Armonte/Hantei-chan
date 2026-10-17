@@ -1,0 +1,6 @@
+sq open C:/dev/hantei-chan/work/sqtest/uni2
+sq file data/chr001/chr001_cmd_0.txt
+sq problems
+sq check
+sq problems
+quit

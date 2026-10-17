@@ -1,0 +1,25 @@
+# "CG + .pat textures" tab on RBO ACOLYTE_F (lineage sample, read-only): part sheets listed as the third source kind, sheet 0 viewed
+# with "Used by" (sheet -> parts -> poses -> patterns); then sheet 0 replaced from a PNG (red/blue swapped) -> Undo
+browse C:\games\rbo\_lineage_samples
+waitidle
+select ACOLYTE_F.DT2
+waitidle
+wait 30
+open
+wait 160
+cgm open
+wait 30
+cgm tab CG + .pat textures
+wait 10
+cgm texsel 2 0
+cgm texzoom 0.75
+wait 20
+capture C:/dev/hantei-chan/work/ab/shots/texsrc_rbo_0_sheet.png
+cgm path C:/dev/hantei-chan/work/texundo/rbo_sheet0_edit.png
+cgm press Import PNG...##cgmtb
+wait 20
+capture C:/dev/hantei-chan/work/ab/shots/texsrc_rbo_1_replaced.png
+cgm press Undo##cgmtb
+wait 20
+capture C:/dev/hantei-chan/work/ab/shots/texsrc_rbo_2_after_tab_undo.png
+quit

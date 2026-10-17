@@ -1,0 +1,10 @@
+[Font] Noto Sans JP loaded with symbol support
+[Font] Japanese font loaded with symbol support and set as default
+[Font] Glyph ranges size: 4663
+[Font] First few glyph ranges: 0x0020 0x00FF 0x2000 0x206F 0x2190 0x21FF 0x25A0 0x26FF 0x3000 0x30FF 0x31F0 0x31FF 0x4E00 0x4E01 0x4E03 0x4E03 0x4E07 0x4E0B 0x4E0D 0x4E0E 
+exit 0
+cgm on -> ok
+cgmselect 2 -> ok
+cgm off -> ok
+cgwindow on -> ok
+cgimport C:\dev\hantei-chan\work\pacnyx\effect_96x64.png -> ok

@@ -1,0 +1,28 @@
+<!-- source: https://mizuumi.wiki/w/User:Pixloen/FPANModding/Custom_Mission (MediaWiki API, 2026-10-15) -->
+{{DISPLAYTITLE:Guide: Custom Mission Mode Combos}}
+{{Disclaimer MFPG
+|border-color=#FF60B0
+|bg-color=
+|image=MBTL_data_icon.png
+|text='''This guide is made for UNI2!'''<br>But this guide works for UNICLR and MBTL too.
+}}
+
+== Quick Overview ==
+This guide will walkthrough the process of creating custom combo trials, also known as '''Mission Mode'''. It is possible to create new sections dedicated categories, and by the end you'll even be able to prepare a mod with a drag-and-drop install.
+
+== Prerequisites ==
+This guide requires the following programs.
+
+*[https://notepad-plus-plus.org/ Notepad++], for editing the text files. Any text editor will work but use this if you don't have anything other than regular Windows Notepad.
+*[https://mh-nexus.de/en/hxd/ HxD], a hex editor. Not required if you're modding non-UNI2 games.
+
+The relevant d file index is located at <code>lzwp1onbeaejbkCh</code>.
+
+== Editing Custom Combos ==
+All Tutorial and Mission Mode files can be found at <code>grpdat/tutorial</code>. Open any character's folder inside and find the file <code>info.txt</code>
+
+
+== Navigation ==
+
+{{Navbox-MFPG}}
+[[Category:Modding French Bread Games]]

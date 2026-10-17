@@ -1,0 +1,11 @@
+# RBO: the whole install as one game view (DATA01 + DATA02 + Update01 + Ex discs merged, later wins); character with thumbnail and facts
+browse C:\games\rbo_run
+waitidle
+select ACOLYTE_F.DT2
+waitidle
+wait 40
+capture C:/dev/hantei-chan/work/ab/shots/03_rbo_archive.png
+grid on
+wait 40
+capture C:/dev/hantei-chan/work/ab/shots/03b_rbo_grid.png
+quit

@@ -58,6 +58,7 @@ public:
     int type = 0;                   // Texture type (1=DXT1, 5=DXT5, 21=RGB)
     int textureIndex = 0;           // GL texture ID
     int pgte[2]{};                  // Unknown (stored as short[2])
+    int pgtp = 0;                   // MBAACC type hint tag (single uint32)
 
     // DDS compression data
     char ddsHeader[124]{};          // DDS header (without "DDS " magic)
@@ -73,15 +74,21 @@ public:
 
     // Texture management
     Texture* GetTextureFromId(std::vector<Texture*> textures);
-    std::string ImportTexture(const char *filename, std::vector<Texture*> textures);
-    void ExportTexture(const char *filename);
+    // Import a .dds into this slot. UNI / MBTL .pat files keep it as PGT2 (DXT1 / DXT5 / 32-bit, sizes a multiple of
+    // 256). MBAACC files (mbaaccFormat) only read PGTX, 32-bit BGRA pixels: the DDS is decoded (DXT1 / DXT5 / 32-bit)
+    // and stored that way, never as PGT2. Returns an error message, empty on success.
+    std::string ImportTexture(const char *filename, std::vector<Texture*>& textures, bool mbaaccFormat = false);
+    // Export as .dds: PGT2 textures as stored, MBAACC PGTX textures as an uncompressed 32-bit DDS. Written atomically.
+    std::string ExportTexture(const char *filename) const;
+    // Decode a .dds file in memory to BGRA rows (top-down). Error message, empty on success.
+    static std::string DecodeDds(const char* file, size_t size, std::vector<uint8_t>& bgra, int& w, int& h);
 
     // Compression/decompression
     static bool Decrappress(unsigned char* cdata, unsigned char* outData, size_t csize, size_t outSize);
-    static void CompressDDS(std::ofstream &file, const PartGfx *gfx, std::streampos pgt2A);
+    static void CompressDDS(std::ostream &file, const PartGfx *gfx, std::streampos pgt2A);
 
     // Saving
-    static void Save(std::ofstream &file, const PartGfx *gfx);
+    static void Save(std::ostream &file, const PartGfx *gfx);
     static bool IsModifiedData(const PartGfx *gfx);
 
     // Utilities

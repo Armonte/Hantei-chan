@@ -1,0 +1,19 @@
+{
+ "control": "mbtl_patctrl_chr001_p238f10",
+ "args": [
+  "mbtl_patctrl_chr001_p238f10",
+  "--game-name",
+  "mbtl_patctrl_chr001_p238f10_nh",
+  "--light",
+  "1,0;1,0;1,0",
+  "--grey",
+  "--exact-reg",
+  "--refine",
+  "0"
+ ],
+ "subpix": [
+  0.25,
+  0.25
+ ],
+ "objective": "raw"
+}

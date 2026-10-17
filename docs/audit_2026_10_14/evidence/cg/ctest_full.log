@@ -1,0 +1,79 @@
+Test project /mnt/c/dev/hantei-chan/wt/s45-cg-palettes/build
+      Start 11: undo_manager
+      Start 15: game_view
+      Start 31: fxr_dgv_oracle
+      Start 14: game_link
+      Start 19: frame_data
+      Start  4: shared_clipboard
+ 1/31 Test  #4: shared_clipboard .................   Passed    0.50 sec
+      Start 10: live_reload
+ 2/31 Test #10: live_reload ......................   Passed    0.57 sec
+      Start 13: package_tools
+ 3/31 Test #13: package_tools ....................   Passed    0.36 sec
+      Start  8: hud
+ 4/31 Test  #8: hud ..............................   Passed    0.18 sec
+      Start 12: workspace_session
+ 5/31 Test #19: frame_data .......................   Passed    2.08 sec
+      Start 17: tag_sidecar
+ 6/31 Test #12: workspace_session ................   Passed    0.26 sec
+      Start  7: bgm
+ 7/31 Test  #7: bgm ..............................   Passed    0.13 sec
+      Start  9: shortcut_router
+ 8/31 Test  #9: shortcut_router ..................   Passed    0.13 sec
+      Start  2: cmdfile_ui_smoke
+ 9/31 Test #17: tag_sidecar ......................   Passed    0.48 sec
+      Start  6: refs
+10/31 Test  #2: cmdfile_ui_smoke .................   Passed    0.20 sec
+      Start  3: pattern_search
+11/31 Test  #6: refs .............................   Passed    0.16 sec
+      Start 16: tag_tuning
+12/31 Test #16: tag_tuning .......................   Passed    0.11 sec
+      Start  5: fb_part_transform
+13/31 Test  #3: pattern_search ...................   Passed    0.24 sec
+      Start  1: cmdfile
+14/31 Test  #5: fb_part_transform ................   Passed    0.15 sec
+      Start 18: authoring_model
+15/31 Test  #1: cmdfile ..........................   Passed    0.25 sec
+      Start 21: fxr_ini
+16/31 Test #18: authoring_model ..................   Passed    0.18 sec
+      Start 20: hud_layout
+17/31 Test #21: fxr_ini ..........................   Passed    0.14 sec
+      Start 22: cgm_project_refs_mbaacc
+18/31 Test #20: hud_layout .......................   Passed    0.19 sec
+      Start 23: cgm_folder_mbaacc
+19/31 Test #11: undo_manager .....................***Failed    4.40 sec
+  baseline capture 89.63 ms, full-document diff+commit 31.111 ms/step, history 4977 KiB
+FAIL /mnt/c/dev/hantei-chan/wt/s45-cg-palettes/tests/undo_manager_test.cpp:303: commitMs < 16.0
+undo_manager_test: 1 failure(s)
+
+      Start 24: cgm_cc_palettes
+20/31 Test #24: cgm_cc_palettes ..................   Passed    0.21 sec
+      Start 25: cgm_project_refs_mbtl
+21/31 Test #14: game_link ........................   Passed    4.91 sec
+      Start 26: cgm_palette_uni_mbtl
+22/31 Test #26: cgm_palette_uni_mbtl .............   Passed    0.13 sec
+      Start 27: pat_textures_x8
+23/31 Test #31: fxr_dgv_oracle ...................   Passed    6.88 sec
+      Start 28: cgm_cutter2_gakiha
+24/31 Test #28: cgm_cutter2_gakiha ...............   Passed    0.20 sec
+      Start 29: cgm_cutter2_gakiha_struct
+25/31 Test #15: game_view ........................   Passed    7.25 sec
+      Start 30: cgm_cutter2_gakiha_rt
+26/31 Test #29: cgm_cutter2_gakiha_struct ........   Passed    0.51 sec
+27/31 Test #30: cgm_cutter2_gakiha_rt ............   Passed    0.68 sec
+28/31 Test #27: pat_textures_x8 ..................   Passed    3.37 sec
+29/31 Test #25: cgm_project_refs_mbtl ............   Passed    4.41 sec
+30/31 Test #23: cgm_folder_mbaacc ................   Passed   33.94 sec
+31/31 Test #22: cgm_project_refs_mbaacc ..........   Passed   70.37 sec
+
+97% tests passed, 1 tests failed out of 31
+
+Total Test time (real) =  74.32 sec
+
+The following tests FAILED:
+	 11 - undo_manager (Failed)
+Errors while running CTest
+
+real	1m7.885s
+user	0m2.305s
+sys	0m1.266s

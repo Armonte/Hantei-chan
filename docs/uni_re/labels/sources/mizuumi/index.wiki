@@ -1,0 +1,126 @@
+<!-- source: https://mizuumi.wiki/w/User:Pixloen/FPANModding (MediaWiki API, 2026-10-15) -->
+{{Disclaimer MFPG
+|border-color=#FF60B0
+|bg-color=
+|image=UNI2_resources_icon.png
+|text='''Now, this is a surprise...'''<br/>This wiki is being rewritten from the ground up! If you're interested in helping, join the [https://discord.gg/RP2mN3YJps French Bread Modding Discord]!
+}}
+{{DISPLAYTITLE:French Bread Modding Wiki}}
+{{2 Column Flex|flex1=7|flex2=3|reverse=yes
+|content1=
+{{Content Box|content=
+<center><div style="max-width:686px;">[[File:PIXL banner.png|class=flex-image|link=]]</div></center>
+Welcome to the '''French Bread Modding Wiki'''! This wiki is meant to provide a comprehensive documentation of the engine used in modern French Bread games, as well as basic examples and tutorials. 
+
+Games covered include '''UNDER NIGHT IN-BIRTH II: Sys:Celes''', '''UNDER NIGHT IN-BIRTH Exe:Late [cl-r]''', and '''MELTY BLOOD: TYPE LUMINA'''. Some minor information about '''Blazblue Cross Tag Battle''' and '''Dengeki Bunko Fighting Climax Ignition''' is included too!
+
+==Credits==
+*'''pixloen''' - Lead writer, proofreader and formatter
+*'''_Bootysama''' - Proofreader and Known Gatekeeper
+*'''Blake''' - Writer on .pat and Audio sections
+
+===Contributors===
+*'''NerfNoobPls''' - Writer for various MBTL-related content
+}}
+|content2={{Infobox Game
+| gamename     = French Bread Modding Wiki
+| abbreviation = FBModdingWiki
+| image        = PIXL hyde.png
+| system       = Steam / PC Versions of Games Only
+| community    = [https://discord.gg/RP2mN3YJps French Bread Modding Discord]
+| community2    = [https://discord.gg/uPUtrySvYp UNICLR Color Vault]
+| community3   = [https://discord.gg/meltyblood Melty Blood Server]
+| community4   = [https://discord.gg/HDX7STnDyb MBTL Palette Gallery]
+| community5   = [https://discord.gg/melty-blood-community-server-851550129684086800 Melty Blood Community Server] 
+| extra        = 
+{{!}} colspan="2" {{!}}<!--
+-->{{(!}} style="margin:auto;" cellpadding="1" cellspacing="0"
+{{!}}+ '''Note'''
+{{!}}-
+{{!}} The Under Night In-Birth Player Hub has a rule that bans discussion of modding any games. Don't go there expecting any help with mods!
+{{!}}
+{{!)}}
+}}}}
+====<span class="invisible-header" style="font-size: 0em;">For Beginners</span>====
+{{Content Box|header=For Beginners|content=
+<div style="margin-left: auto; margin-right: auto; display: flex; flex-direction: row; flex-wrap: wrap; justify-content: center; max-width:1500px; align-items: center;">
+{{PIXL FP Banner|image=started|name=Getting Started}}
+{{PIXL FP Banner|image=files|name=File Structure}}
+{{PIXL FP Banner|image=install|name=Installing Mods}}
+{{PIXL FP Banner|image=list|name=Example Mods}}
+{{PIXL FP Banner|image=glossary|name=Glossary}}
+{{PIXL FP Banner|image=links|name=Links and Resources}}
+</div>
+}}
+====<span class="invisible-header" style="font-size: 0em;">File Formats & Software Guide</span>====
+{{Content Box|header=File Formats & Software Guide|content=
+<div width="fit-content" style="display: flex; flex-direction: row; flex-wrap: wrap; justify-content: center;">
+{{PIXL FP Bar|image=ha6|name=Hanteichan}}
+{{PIXL FP Bar|image=cg|name=CG}}
+{{PIXL FP Bar|image=pat|name=Pat Effects}}
+{{PIXL FP Bar|image=pal|name=Palettes}}
+{{PIXL FP Bar|image=dds|name=DDS Images}}
+
+</div>
+}}
+====<span class="invisible-header" style="font-size: 0em;">Engine Documentation</span>====
+{{Content Box|header=Engine Documentation|content=
+<div width="fit-content" style="display: flex; flex-direction: row; flex-wrap: wrap; justify-content: center;">
+{{PIXL FP Bar|image=audio|name=Audio}}
+{{PIXL FP Bar|image=bg|name=Backgrounds}}
+{{PIXL FP Bar|image=class|name=Classes and Methods}}
+{{PIXL FP Bar|image=cutsc|name=Cutscenes}}
+{{PIXL FP Bar|image=dfile|name=D File}}
+{{PIXL FP Bar|image=func|name=Functions}}
+</div>
+}}
+====<span class="invisible-header" style="font-size: 0em;">Guides & Tutorials</span>====
+{{Content Box|header=Guides & Tutorials|content=
+
+{{Content Box|content=
+<div width="fit-content" style="display: flex; flex-direction: row; flex-wrap: wrap;">
+{{PIXL FP Banner|image=mission|margin=1.0em|size=500px|name=Custom_Mission_Mode_Combos}}
+<div width="fit-content" style="display: flex; flex-direction: column; flex-wrap: wrap;">
+==Work In Progress: Custom Mission Mode Combos==
+
+Do you want to add your custom combos to the game? Or create a basic combos guide for other players?
+This guide will cover the basics of setting up a mission mode mod.
+
+*Included is a sample mod which adds [[Under_Night_In-Birth/UNI2/Hyde/Combos#Starter_Combos|Hyde's Starter Combos]] from the UNI2 Mizuumi Wiki.
+</div>
+</div>
+}}
+
+{{Content Box|content=
+<div width="fit-content" style="display: flex; flex-direction: row; flex-wrap: wrap;">
+<div width="fit-content" style="display: flex; flex-direction: column; flex-wrap: wrap;">
+==Coming Soon: Definitive Character Modding Guide==
+
+Want to dive straight into modifying or adding new characters?
+This guide will cover everything you need to get started with understanding the FPAN engine and creating character mods.
+</div>
+</div>
+}}
+
+{{Content Box|content=
+<div width="fit-content" style="display: flex; flex-direction: row; flex-wrap: wrap;">
+<div width="fit-content" style="display: flex; flex-direction: column; flex-wrap: wrap;">
+==Coming Soon: The .Pat Editor==
+
+Effects cover a lot of visuals in FPAN games, so this guide will cover how to use the editor.
+You can use these for character effects and even some menus!
+</div>
+</div>
+}}
+
+
+}}
+
+==Navigation (old)==
+{{Navbox-MFPG}}
+[[Category: Modding French Bread Games]]
+
+<templatestyles src="Pixl/frontpage.css"/>
+<div style="position: fixed; bottom: 0; left: 0; z-index:-1;display:flex; width:100%;">
+[[File:PIXL bg001.png|10000px|class=image|link=]]
+</div>

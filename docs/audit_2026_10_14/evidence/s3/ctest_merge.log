@@ -1,0 +1,53 @@
+Test project /mnt/c/dev/hantei-chan/wt/s3-uni-dataloss/build
+      Start  1: uni_dataloss
+ 1/24 Test  #1: uni_dataloss .....................   Passed    2.40 sec
+      Start  2: cmdfile
+ 2/24 Test  #2: cmdfile ..........................   Passed    0.19 sec
+      Start  3: cmdfile_ui_smoke
+ 3/24 Test  #3: cmdfile_ui_smoke .................   Passed    0.13 sec
+      Start  4: pattern_search
+ 4/24 Test  #4: pattern_search ...................   Passed    0.09 sec
+      Start  5: shared_clipboard
+ 5/24 Test  #5: shared_clipboard .................   Passed    0.11 sec
+      Start  6: fb_part_transform
+ 6/24 Test  #6: fb_part_transform ................   Passed    0.07 sec
+      Start  7: part_render_math
+ 7/24 Test  #7: part_render_math .................   Passed    0.06 sec
+      Start  8: refs
+ 8/24 Test  #8: refs .............................   Passed    0.07 sec
+      Start  9: bgm
+ 9/24 Test  #9: bgm ..............................   Passed    0.09 sec
+      Start 10: hud
+10/24 Test #10: hud ..............................   Passed    0.07 sec
+      Start 11: shortcut_router
+11/24 Test #11: shortcut_router ..................   Passed    0.06 sec
+      Start 12: live_reload
+12/24 Test #12: live_reload ......................   Passed    0.41 sec
+      Start 13: undo_manager
+13/24 Test #13: undo_manager .....................   Passed    1.06 sec
+      Start 14: workspace_session
+14/24 Test #14: workspace_session ................   Passed    0.07 sec
+      Start 15: package_tools
+15/24 Test #15: package_tools ....................   Passed    0.21 sec
+      Start 16: game_link
+16/24 Test #16: game_link ........................   Passed    4.50 sec
+      Start 17: game_view
+17/24 Test #17: game_view ........................   Passed    6.47 sec
+      Start 18: tag_tuning
+18/24 Test #18: tag_tuning .......................   Passed    0.09 sec
+      Start 19: tag_sidecar
+19/24 Test #19: tag_sidecar ......................   Passed    0.29 sec
+      Start 20: authoring_model
+20/24 Test #20: authoring_model ..................   Passed    0.07 sec
+      Start 21: frame_data
+21/24 Test #21: frame_data .......................   Passed    1.10 sec
+      Start 22: hud_layout
+22/24 Test #22: hud_layout .......................   Passed    0.07 sec
+      Start 23: fxr_ini
+23/24 Test #23: fxr_ini ..........................   Passed    0.07 sec
+      Start 24: fxr_dgv_oracle
+24/24 Test #24: fxr_dgv_oracle ...................   Passed    3.07 sec
+
+100% tests passed, 0 tests failed out of 24
+
+Total Test time (real) =  21.45 sec

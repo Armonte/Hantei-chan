@@ -1,0 +1,2906 @@
+{
+  "format": "rbo-dat-export",
+  "version": 1,
+  "maxBodyParts": 40,
+  "spriteSheets": [
+    { "index": 0, "name": "tex0", "width": 512, "height": 512 },
+    { "index": 1, "name": "tex1", "width": 512, "height": 512 },
+    { "index": 2, "name": "tex2", "width": 256, "height": 256 },
+    { "index": 3, "name": "tex3", "width": 256, "height": 256 },
+    { "index": 4, "name": "tex4", "width": 256, "height": 256 }
+  ],
+  "poses": [
+    {
+      "index": 0,
+      "name": "WORK",
+      "file": "poses/WORK.json",
+      "render": "renders/WORK.png"
+    },
+    {
+      "index": 1,
+      "name": "PATTERN003",
+      "file": "poses/PATTERN003.json",
+      "render": "renders/PATTERN003.png"
+    },
+    {
+      "index": 2,
+      "name": "PATTERN004",
+      "file": "poses/PATTERN004.json",
+      "render": "renders/PATTERN004.png"
+    },
+    {
+      "index": 3,
+      "name": "PATTERN005",
+      "file": "poses/PATTERN005.json",
+      "render": "renders/PATTERN005.png"
+    },
+    {
+      "index": 4,
+      "name": "STAND2",
+      "file": "poses/STAND2.json",
+      "render": "renders/STAND2.png"
+    },
+    {
+      "index": 5,
+      "name": "PATTERN007",
+      "file": "poses/PATTERN007.json",
+      "render": "renders/PATTERN007.png"
+    },
+    {
+      "index": 6,
+      "name": "PATTERN008",
+      "file": "poses/PATTERN008.json",
+      "render": "renders/PATTERN008.png"
+    },
+    {
+      "index": 7,
+      "name": "PATTERN009",
+      "file": "poses/PATTERN009.json",
+      "render": "renders/PATTERN009.png"
+    },
+    {
+      "index": 8,
+      "name": "SIT_DW_UP",
+      "file": "poses/SIT_DW_UP.json",
+      "render": "renders/SIT_DW_UP.png"
+    },
+    {
+      "index": 9,
+      "name": "PATTERN011",
+      "file": "poses/PATTERN011.json",
+      "render": "renders/PATTERN011.png"
+    },
+    {
+      "index": 10,
+      "name": "PATTERN012",
+      "file": "poses/PATTERN012.json",
+      "render": "renders/PATTERN012.png"
+    },
+    {
+      "index": 11,
+      "name": "PATTERN013",
+      "file": "poses/PATTERN013.json",
+      "render": "renders/PATTERN013.png"
+    },
+    {
+      "index": 12,
+      "name": "PATTERN014",
+      "file": "poses/PATTERN014.json",
+      "render": "renders/PATTERN014.png"
+    },
+    {
+      "index": 13,
+      "name": "PATTERN015",
+      "file": "poses/PATTERN015.json",
+      "render": "renders/PATTERN015.png"
+    },
+    {
+      "index": 14,
+      "name": "PATTERN016",
+      "file": "poses/PATTERN016.json",
+      "render": "renders/PATTERN016.png"
+    },
+    {
+      "index": 15,
+      "name": "PATTERN017",
+      "file": "poses/PATTERN017.json",
+      "render": "renders/PATTERN017.png"
+    },
+    {
+      "index": 16,
+      "name": "PATTERN018",
+      "file": "poses/PATTERN018.json",
+      "render": "renders/PATTERN018.png"
+    },
+    {
+      "index": 17,
+      "name": "JUMP_FR",
+      "file": "poses/JUMP_FR.json",
+      "render": "renders/JUMP_FR.png"
+    },
+    {
+      "index": 18,
+      "name": "PATTERN021",
+      "file": "poses/PATTERN021.json",
+      "render": "renders/PATTERN021.png"
+    },
+    {
+      "index": 19,
+      "name": "PATTERN022",
+      "file": "poses/PATTERN022.json",
+      "render": "renders/PATTERN022.png"
+    },
+    {
+      "index": 20,
+      "name": "PATTERN023",
+      "file": "poses/PATTERN023.json",
+      "render": "renders/PATTERN023.png"
+    },
+    {
+      "index": 21,
+      "name": "PATTERN024",
+      "file": "poses/PATTERN024.json",
+      "render": "renders/PATTERN024.png"
+    },
+    {
+      "index": 22,
+      "name": "PATTERN205",
+      "file": "poses/PATTERN205.json",
+      "render": "renders/PATTERN205.png"
+    },
+    {
+      "index": 23,
+      "name": "PATTERN025",
+      "file": "poses/PATTERN025.json",
+      "render": "renders/PATTERN025.png"
+    },
+    {
+      "index": 24,
+      "name": "PATTERN026",
+      "file": "poses/PATTERN026.json",
+      "render": "renders/PATTERN026.png"
+    },
+    {
+      "index": 25,
+      "name": "PATTERN027",
+      "file": "poses/PATTERN027.json",
+      "render": "renders/PATTERN027.png"
+    },
+    {
+      "index": 26,
+      "name": "JUMP_BK",
+      "file": "poses/JUMP_BK.json",
+      "render": "renders/JUMP_BK.png"
+    },
+    {
+      "index": 27,
+      "name": "PATTERN029",
+      "file": "poses/PATTERN029.json",
+      "render": "renders/PATTERN029.png"
+    },
+    {
+      "index": 28,
+      "name": "PATTERN030",
+      "file": "poses/PATTERN030.json",
+      "render": "renders/PATTERN030.png"
+    },
+    {
+      "index": 29,
+      "name": "PATTERN031",
+      "file": "poses/PATTERN031.json",
+      "render": "renders/PATTERN031.png"
+    },
+    {
+      "index": 30,
+      "name": "PATTERN032",
+      "file": "poses/PATTERN032.json",
+      "render": "renders/PATTERN032.png"
+    },
+    {
+      "index": 31,
+      "name": "PATTERN033",
+      "file": "poses/PATTERN033.json",
+      "render": "renders/PATTERN033.png"
+    },
+    {
+      "index": 32,
+      "name": "PATTERN034",
+      "file": "poses/PATTERN034.json",
+      "render": "renders/PATTERN034.png"
+    },
+    {
+      "index": 33,
+      "name": "PATTERN035",
+      "file": "poses/PATTERN035.json",
+      "render": "renders/PATTERN035.png"
+    },
+    {
+      "index": 34,
+      "name": "JUMP_UP",
+      "file": "poses/JUMP_UP.json",
+      "render": "renders/JUMP_UP.png"
+    },
+    {
+      "index": 35,
+      "name": "PATTERN037",
+      "file": "poses/PATTERN037.json",
+      "render": "renders/PATTERN037.png"
+    },
+    {
+      "index": 36,
+      "name": "PATTERN103",
+      "file": "poses/PATTERN103.json",
+      "render": "renders/PATTERN103.png"
+    },
+    {
+      "index": 37,
+      "name": "PATTERN038",
+      "file": "poses/PATTERN038.json",
+      "render": "renders/PATTERN038.png"
+    },
+    {
+      "index": 38,
+      "name": "PATTERN039",
+      "file": "poses/PATTERN039.json",
+      "render": "renders/PATTERN039.png"
+    },
+    {
+      "index": 39,
+      "name": "PATTERN040",
+      "file": "poses/PATTERN040.json",
+      "render": "renders/PATTERN040.png"
+    },
+    {
+      "index": 40,
+      "name": "PATTERN041",
+      "file": "poses/PATTERN041.json",
+      "render": "renders/PATTERN041.png"
+    },
+    {
+      "index": 41,
+      "name": "PATTERN042",
+      "file": "poses/PATTERN042.json",
+      "render": "renders/PATTERN042.png"
+    },
+    {
+      "index": 42,
+      "name": "DASH_FR",
+      "file": "poses/DASH_FR.json",
+      "render": "renders/DASH_FR.png"
+    },
+    {
+      "index": 43,
+      "name": "PATTERN044",
+      "file": "poses/PATTERN044.json",
+      "render": "renders/PATTERN044.png"
+    },
+    {
+      "index": 44,
+      "name": "PATTERN045",
+      "file": "poses/PATTERN045.json",
+      "render": "renders/PATTERN045.png"
+    },
+    {
+      "index": 45,
+      "name": "PATTERN046",
+      "file": "poses/PATTERN046.json",
+      "render": "renders/PATTERN046.png"
+    },
+    {
+      "index": 46,
+      "name": "HEAL",
+      "file": "poses/HEAL.json",
+      "render": "renders/HEAL.png"
+    },
+    {
+      "index": 47,
+      "name": "PATTERN048",
+      "file": "poses/PATTERN048.json",
+      "render": "renders/PATTERN048.png"
+    },
+    {
+      "index": 48,
+      "name": "PATTERN049",
+      "file": "poses/PATTERN049.json",
+      "render": "renders/PATTERN049.png"
+    },
+    {
+      "index": 49,
+      "name": "PATTERN050",
+      "file": "poses/PATTERN050.json",
+      "render": "renders/PATTERN050.png"
+    },
+    {
+      "index": 50,
+      "name": "PATTERN051",
+      "file": "poses/PATTERN051.json",
+      "render": "renders/PATTERN051.png"
+    },
+    {
+      "index": 51,
+      "name": "ATTACK_A",
+      "file": "poses/ATTACK_A.json",
+      "render": "renders/ATTACK_A.png"
+    },
+    {
+      "index": 52,
+      "name": "PATTERN053",
+      "file": "poses/PATTERN053.json",
+      "render": "renders/PATTERN053.png"
+    },
+    {
+      "index": 53,
+      "name": "PATTERN054",
+      "file": "poses/PATTERN054.json",
+      "render": "renders/PATTERN054.png"
+    },
+    {
+      "index": 54,
+      "name": "PATTERN119",
+      "file": "poses/PATTERN119.json",
+      "render": "renders/PATTERN119.png"
+    },
+    {
+      "index": 55,
+      "name": "PATTERN055",
+      "file": "poses/PATTERN055.json",
+      "render": "renders/PATTERN055.png"
+    },
+    {
+      "index": 56,
+      "name": "PATTERN056",
+      "file": "poses/PATTERN056.json",
+      "render": "renders/PATTERN056.png"
+    },
+    {
+      "index": 57,
+      "name": "PATTERN057",
+      "file": "poses/PATTERN057.json",
+      "render": "renders/PATTERN057.png"
+    },
+    {
+      "index": 58,
+      "name": "PATTERN000",
+      "file": "poses/PATTERN000.json",
+      "render": "renders/PATTERN000.png"
+    },
+    {
+      "index": 59,
+      "name": "PATTERN114",
+      "file": "poses/PATTERN114.json",
+      "render": "renders/PATTERN114.png"
+    },
+    {
+      "index": 60,
+      "name": "PATTERN058",
+      "file": "poses/PATTERN058.json",
+      "render": "renders/PATTERN058.png"
+    },
+    {
+      "index": 61,
+      "name": "PATTERN108",
+      "file": "poses/PATTERN108.json",
+      "render": "renders/PATTERN108.png"
+    },
+    {
+      "index": 62,
+      "name": "DAMAGE_ST",
+      "file": "poses/DAMAGE_ST.json",
+      "render": "renders/DAMAGE_ST.png"
+    },
+    {
+      "index": 63,
+      "name": "PATTERN060",
+      "file": "poses/PATTERN060.json",
+      "render": "renders/PATTERN060.png"
+    },
+    {
+      "index": 64,
+      "name": "PATTERN061",
+      "file": "poses/PATTERN061.json",
+      "render": "renders/PATTERN061.png"
+    },
+    {
+      "index": 65,
+      "name": "PATTERN062",
+      "file": "poses/PATTERN062.json",
+      "render": "renders/PATTERN062.png"
+    },
+    {
+      "index": 66,
+      "name": "PATTERN063",
+      "file": "poses/PATTERN063.json",
+      "render": "renders/PATTERN063.png"
+    },
+    {
+      "index": 67,
+      "name": "DAMAGE_MID",
+      "file": "poses/DAMAGE_MID.json",
+      "render": "renders/DAMAGE_MID.png"
+    },
+    {
+      "index": 68,
+      "name": "PATTERN065",
+      "file": "poses/PATTERN065.json",
+      "render": "renders/PATTERN065.png"
+    },
+    {
+      "index": 69,
+      "name": "PATTERN066",
+      "file": "poses/PATTERN066.json",
+      "render": "renders/PATTERN066.png"
+    },
+    {
+      "index": 70,
+      "name": "PATTERN067",
+      "file": "poses/PATTERN067.json",
+      "render": "renders/PATTERN067.png"
+    },
+    {
+      "index": 71,
+      "name": "PATTERN068",
+      "file": "poses/PATTERN068.json",
+      "render": "renders/PATTERN068.png"
+    },
+    {
+      "index": 72,
+      "name": "PATTERN069",
+      "file": "poses/PATTERN069.json",
+      "render": "renders/PATTERN069.png"
+    },
+    {
+      "index": 73,
+      "name": "DOWN",
+      "file": "poses/DOWN.json",
+      "render": "renders/DOWN.png"
+    },
+    {
+      "index": 74,
+      "name": "PATTERN071",
+      "file": "poses/PATTERN071.json",
+      "render": "renders/PATTERN071.png"
+    },
+    {
+      "index": 75,
+      "name": "PATTERN072",
+      "file": "poses/PATTERN072.json",
+      "render": "renders/PATTERN072.png"
+    },
+    {
+      "index": 76,
+      "name": "PATTERN073",
+      "file": "poses/PATTERN073.json",
+      "render": "renders/PATTERN073.png"
+    },
+    {
+      "index": 77,
+      "name": "PATTERN074",
+      "file": "poses/PATTERN074.json",
+      "render": "renders/PATTERN074.png"
+    },
+    {
+      "index": 78,
+      "name": "PATTERN075",
+      "file": "poses/PATTERN075.json",
+      "render": "renders/PATTERN075.png"
+    },
+    {
+      "index": 79,
+      "name": "PATTERN076",
+      "file": "poses/PATTERN076.json",
+      "render": "renders/PATTERN076.png"
+    },
+    {
+      "index": 80,
+      "name": "PATTERN077",
+      "file": "poses/PATTERN077.json",
+      "render": "renders/PATTERN077.png"
+    },
+    {
+      "index": 81,
+      "name": "PATTERN078",
+      "file": "poses/PATTERN078.json",
+      "render": "renders/PATTERN078.png"
+    },
+    {
+      "index": 82,
+      "name": "PATTERN079",
+      "file": "poses/PATTERN079.json",
+      "render": "renders/PATTERN079.png"
+    },
+    {
+      "index": 83,
+      "name": "PATTERN125",
+      "file": "poses/PATTERN125.json",
+      "render": "renders/PATTERN125.png"
+    },
+    {
+      "index": 84,
+      "name": "PATTERN080",
+      "file": "poses/PATTERN080.json",
+      "render": "renders/PATTERN080.png"
+    },
+    {
+      "index": 85,
+      "name": "ATTACK_B",
+      "file": "poses/ATTACK_B.json",
+      "render": "renders/ATTACK_B.png"
+    },
+    {
+      "index": 86,
+      "name": "PATTERN082",
+      "file": "poses/PATTERN082.json",
+      "render": "renders/PATTERN082.png"
+    },
+    {
+      "index": 87,
+      "name": "PATTERN083",
+      "file": "poses/PATTERN083.json",
+      "render": "renders/PATTERN083.png"
+    },
+    {
+      "index": 88,
+      "name": "PATTERN084",
+      "file": "poses/PATTERN084.json",
+      "render": "renders/PATTERN084.png"
+    },
+    {
+      "index": 89,
+      "name": "PATTERN006",
+      "file": "poses/PATTERN006.json",
+      "render": "renders/PATTERN006.png"
+    },
+    {
+      "index": 90,
+      "name": "PATTERN085",
+      "file": "poses/PATTERN085.json",
+      "render": "renders/PATTERN085.png"
+    },
+    {
+      "index": 91,
+      "name": "PATTERN086",
+      "file": "poses/PATTERN086.json",
+      "render": "renders/PATTERN086.png"
+    },
+    {
+      "index": 92,
+      "name": "PATTERN087",
+      "file": "poses/PATTERN087.json",
+      "render": "renders/PATTERN087.png"
+    },
+    {
+      "index": 93,
+      "name": "PATTERN088",
+      "file": "poses/PATTERN088.json",
+      "render": "renders/PATTERN088.png"
+    },
+    {
+      "index": 94,
+      "name": "PATTERN129",
+      "file": "poses/PATTERN129.json",
+      "render": "renders/PATTERN129.png"
+    },
+    {
+      "index": 95,
+      "name": "PATTERN128",
+      "file": "poses/PATTERN128.json",
+      "render": "renders/PATTERN128.png"
+    },
+    {
+      "index": 96,
+      "name": "PATTERN132",
+      "file": "poses/PATTERN132.json",
+      "render": "renders/PATTERN132.png"
+    },
+    {
+      "index": 97,
+      "name": "PATTERN136",
+      "file": "poses/PATTERN136.json",
+      "render": "renders/PATTERN136.png"
+    },
+    {
+      "index": 98,
+      "name": "ATTACK_KICK",
+      "file": "poses/ATTACK_KICK.json",
+      "render": "renders/ATTACK_KICK.png"
+    },
+    {
+      "index": 99,
+      "name": "PATTERN090",
+      "file": "poses/PATTERN090.json",
+      "render": "renders/PATTERN090.png"
+    },
+    {
+      "index": 100,
+      "name": "PATTERN091",
+      "file": "poses/PATTERN091.json",
+      "render": "renders/PATTERN091.png"
+    },
+    {
+      "index": 101,
+      "name": "PATTERN002",
+      "file": "poses/PATTERN002.json",
+      "render": "renders/PATTERN002.png"
+    },
+    {
+      "index": 102,
+      "name": "PATTERN092",
+      "file": "poses/PATTERN092.json",
+      "render": "renders/PATTERN092.png"
+    },
+    {
+      "index": 103,
+      "name": "PATTERN094",
+      "file": "poses/PATTERN094.json",
+      "render": "renders/PATTERN094.png"
+    },
+    {
+      "index": 104,
+      "name": "PATTERN095",
+      "file": "poses/PATTERN095.json",
+      "render": "renders/PATTERN095.png"
+    },
+    {
+      "index": 105,
+      "name": "J_ATTACK_A",
+      "file": "poses/J_ATTACK_A.json",
+      "render": "renders/J_ATTACK_A.png"
+    },
+    {
+      "index": 106,
+      "name": "PATTERN097",
+      "file": "poses/PATTERN097.json",
+      "render": "renders/PATTERN097.png"
+    },
+    {
+      "index": 107,
+      "name": "SIT_ATTACK_A",
+      "file": "poses/SIT_ATTACK_A.json",
+      "render": "renders/SIT_ATTACK_A.png"
+    },
+    {
+      "index": 108,
+      "name": "PATTERN100",
+      "file": "poses/PATTERN100.json",
+      "render": "renders/PATTERN100.png"
+    },
+    {
+      "index": 109,
+      "name": "PATTERN101",
+      "file": "poses/PATTERN101.json",
+      "render": "renders/PATTERN101.png"
+    },
+    {
+      "index": 110,
+      "name": "PATTERN102",
+      "file": "poses/PATTERN102.json",
+      "render": "renders/PATTERN102.png"
+    },
+    {
+      "index": 111,
+      "name": "SIT_ATTACK_B",
+      "file": "poses/SIT_ATTACK_B.json",
+      "render": "renders/SIT_ATTACK_B.png"
+    },
+    {
+      "index": 112,
+      "name": "PATTERN010",
+      "file": "poses/PATTERN010.json",
+      "render": "renders/PATTERN010.png"
+    },
+    {
+      "index": 113,
+      "name": "PATTERN104",
+      "file": "poses/PATTERN104.json",
+      "render": "renders/PATTERN104.png"
+    },
+    {
+      "index": 114,
+      "name": "PATTERN105",
+      "file": "poses/PATTERN105.json",
+      "render": "renders/PATTERN105.png"
+    },
+    {
+      "index": 115,
+      "name": "PATTERN106",
+      "file": "poses/PATTERN106.json",
+      "render": "renders/PATTERN106.png"
+    },
+    {
+      "index": 116,
+      "name": "PATTERN107",
+      "file": "poses/PATTERN107.json",
+      "render": "renders/PATTERN107.png"
+    },
+    {
+      "index": 117,
+      "name": "JP_ATTACK_B",
+      "file": "poses/JP_ATTACK_B.json",
+      "render": "renders/JP_ATTACK_B.png"
+    },
+    {
+      "index": 118,
+      "name": "PATTERN109",
+      "file": "poses/PATTERN109.json",
+      "render": "renders/PATTERN109.png"
+    },
+    {
+      "index": 119,
+      "name": "PATTERN110",
+      "file": "poses/PATTERN110.json",
+      "render": "renders/PATTERN110.png"
+    },
+    {
+      "index": 120,
+      "name": "PATTERN111",
+      "file": "poses/PATTERN111.json",
+      "render": "renders/PATTERN111.png"
+    },
+    {
+      "index": 121,
+      "name": "PATTERN112",
+      "file": "poses/PATTERN112.json",
+      "render": "renders/PATTERN112.png"
+    },
+    {
+      "index": 122,
+      "name": "PATTERN113",
+      "file": "poses/PATTERN113.json",
+      "render": "renders/PATTERN113.png"
+    },
+    {
+      "index": 123,
+      "name": "UKEMI",
+      "file": "poses/UKEMI.json",
+      "render": "renders/UKEMI.png"
+    },
+    {
+      "index": 124,
+      "name": "PATTERN115",
+      "file": "poses/PATTERN115.json",
+      "render": "renders/PATTERN115.png"
+    },
+    {
+      "index": 125,
+      "name": "PATTERN116",
+      "file": "poses/PATTERN116.json",
+      "render": "renders/PATTERN116.png"
+    },
+    {
+      "index": 126,
+      "name": "PATTERN117",
+      "file": "poses/PATTERN117.json",
+      "render": "renders/PATTERN117.png"
+    },
+    {
+      "index": 127,
+      "name": "PATTERN118",
+      "file": "poses/PATTERN118.json",
+      "render": "renders/PATTERN118.png"
+    },
+    {
+      "index": 128,
+      "name": "SIT_DAMAGE",
+      "file": "poses/SIT_DAMAGE.json",
+      "render": "renders/SIT_DAMAGE.png"
+    },
+    {
+      "index": 129,
+      "name": "PATTERN120",
+      "file": "poses/PATTERN120.json",
+      "render": "renders/PATTERN120.png"
+    },
+    {
+      "index": 130,
+      "name": "PATTERN121",
+      "file": "poses/PATTERN121.json",
+      "render": "renders/PATTERN121.png"
+    },
+    {
+      "index": 131,
+      "name": "PATTERN122",
+      "file": "poses/PATTERN122.json",
+      "render": "renders/PATTERN122.png"
+    },
+    {
+      "index": 132,
+      "name": "PATTERN123",
+      "file": "poses/PATTERN123.json",
+      "render": "renders/PATTERN123.png"
+    },
+    {
+      "index": 133,
+      "name": "PATTERN124",
+      "file": "poses/PATTERN124.json",
+      "render": "renders/PATTERN124.png"
+    },
+    {
+      "index": 134,
+      "name": "GUARD",
+      "file": "poses/GUARD.json",
+      "render": "renders/GUARD.png"
+    },
+    {
+      "index": 135,
+      "name": "PATTERN126",
+      "file": "poses/PATTERN126.json",
+      "render": "renders/PATTERN126.png"
+    },
+    {
+      "index": 136,
+      "name": "PATTERN127",
+      "file": "poses/PATTERN127.json",
+      "render": "renders/PATTERN127.png"
+    },
+    {
+      "index": 137,
+      "name": "PATTERN176",
+      "file": "poses/PATTERN176.json",
+      "render": "renders/PATTERN176.png"
+    },
+    {
+      "index": 138,
+      "name": "PATTERN064",
+      "file": "poses/PATTERN064.json",
+      "render": "renders/PATTERN064.png"
+    },
+    {
+      "index": 139,
+      "name": "GUARD_UP_ON",
+      "file": "poses/GUARD_UP_ON.json",
+      "render": "renders/GUARD_UP_ON.png"
+    },
+    {
+      "index": 140,
+      "name": "PATTERN196",
+      "file": "poses/PATTERN196.json",
+      "render": "renders/PATTERN196.png"
+    },
+    {
+      "index": 141,
+      "name": "PATTERN194",
+      "file": "poses/PATTERN194.json",
+      "render": "renders/PATTERN194.png"
+    },
+    {
+      "index": 142,
+      "name": "PATTERN096",
+      "file": "poses/PATTERN096.json",
+      "render": "renders/PATTERN096.png"
+    },
+    {
+      "index": 143,
+      "name": "SIT_GUARD",
+      "file": "poses/SIT_GUARD.json",
+      "render": "renders/SIT_GUARD.png"
+    },
+    {
+      "index": 144,
+      "name": "PATTERN195",
+      "file": "poses/PATTERN195.json",
+      "render": "renders/PATTERN195.png"
+    },
+    {
+      "index": 145,
+      "name": "PATTERN130",
+      "file": "poses/PATTERN130.json",
+      "render": "renders/PATTERN130.png"
+    },
+    {
+      "index": 146,
+      "name": "PATTERN186",
+      "file": "poses/PATTERN186.json",
+      "render": "renders/PATTERN186.png"
+    },
+    {
+      "index": 147,
+      "name": "PATTERN187",
+      "file": "poses/PATTERN187.json",
+      "render": "renders/PATTERN187.png"
+    },
+    {
+      "index": 148,
+      "name": "GUARD_DW_ON",
+      "file": "poses/GUARD_DW_ON.json",
+      "render": "renders/GUARD_DW_ON.png"
+    },
+    {
+      "index": 149,
+      "name": "PATTERN177",
+      "file": "poses/PATTERN177.json",
+      "render": "renders/PATTERN177.png"
+    },
+    {
+      "index": 150,
+      "name": "PATTERN070",
+      "file": "poses/PATTERN070.json",
+      "render": "renders/PATTERN070.png"
+    },
+    {
+      "index": 151,
+      "name": "PATTERN131",
+      "file": "poses/PATTERN131.json",
+      "render": "renders/PATTERN131.png"
+    },
+    {
+      "index": 152,
+      "name": "JP_GUARD",
+      "file": "poses/JP_GUARD.json",
+      "render": "renders/JP_GUARD.png"
+    },
+    {
+      "index": 153,
+      "name": "PATTERN133",
+      "file": "poses/PATTERN133.json",
+      "render": "renders/PATTERN133.png"
+    },
+    {
+      "index": 154,
+      "name": "PATTERN134",
+      "file": "poses/PATTERN134.json",
+      "render": "renders/PATTERN134.png"
+    },
+    {
+      "index": 155,
+      "name": "PATTERN135",
+      "file": "poses/PATTERN135.json",
+      "render": "renders/PATTERN135.png"
+    },
+    {
+      "index": 156,
+      "name": "ATTACK_DW_C",
+      "file": "poses/ATTACK_DW_C.json",
+      "render": "renders/ATTACK_DW_C.png"
+    },
+    {
+      "index": 157,
+      "name": "PATTERN137",
+      "file": "poses/PATTERN137.json",
+      "render": "renders/PATTERN137.png"
+    },
+    {
+      "index": 158,
+      "name": "PATTERN138",
+      "file": "poses/PATTERN138.json",
+      "render": "renders/PATTERN138.png"
+    },
+    {
+      "index": 159,
+      "name": "PATTERN052",
+      "file": "poses/PATTERN052.json",
+      "render": "renders/PATTERN052.png"
+    },
+    {
+      "index": 160,
+      "name": "PATTERN139",
+      "file": "poses/PATTERN139.json",
+      "render": "renders/PATTERN139.png"
+    },
+    {
+      "index": 161,
+      "name": "PATTERN019",
+      "file": "poses/PATTERN019.json",
+      "render": "renders/PATTERN019.png"
+    },
+    {
+      "index": 162,
+      "name": "PATTERN140",
+      "file": "poses/PATTERN140.json",
+      "render": "renders/PATTERN140.png"
+    },
+    {
+      "index": 163,
+      "name": "PATTERN142",
+      "file": "poses/PATTERN142.json",
+      "render": "renders/PATTERN142.png"
+    },
+    {
+      "index": 164,
+      "name": "PATTERN143",
+      "file": "poses/PATTERN143.json",
+      "render": "renders/PATTERN143.png"
+    },
+    {
+      "index": 165,
+      "name": "PATTERN144",
+      "file": "poses/PATTERN144.json",
+      "render": "renders/PATTERN144.png"
+    },
+    {
+      "index": 166,
+      "name": "PATTERN098",
+      "file": "poses/PATTERN098.json",
+      "render": "renders/PATTERN098.png"
+    },
+    {
+      "index": 167,
+      "name": "PATTERN178",
+      "file": "poses/PATTERN178.json",
+      "render": "renders/PATTERN178.png"
+    },
+    {
+      "index": 168,
+      "name": "PATTERN181",
+      "file": "poses/PATTERN181.json",
+      "render": "renders/PATTERN181.png"
+    },
+    {
+      "index": 169,
+      "name": "ATTACK_EX",
+      "file": "poses/ATTACK_EX.json",
+      "render": "renders/ATTACK_EX.png"
+    },
+    {
+      "index": 170,
+      "name": "PATTERN146",
+      "file": "poses/PATTERN146.json",
+      "render": "renders/PATTERN146.png"
+    },
+    {
+      "index": 171,
+      "name": "PATTERN147",
+      "file": "poses/PATTERN147.json",
+      "render": "renders/PATTERN147.png"
+    },
+    {
+      "index": 172,
+      "name": "PATTERN148",
+      "file": "poses/PATTERN148.json",
+      "render": "renders/PATTERN148.png"
+    },
+    {
+      "index": 173,
+      "name": "PATTERN149",
+      "file": "poses/PATTERN149.json",
+      "render": "renders/PATTERN149.png"
+    },
+    {
+      "index": 174,
+      "name": "PATTERN150",
+      "file": "poses/PATTERN150.json",
+      "render": "renders/PATTERN150.png"
+    },
+    {
+      "index": 175,
+      "name": "PATTERN151",
+      "file": "poses/PATTERN151.json",
+      "render": "renders/PATTERN151.png"
+    },
+    {
+      "index": 176,
+      "name": "PATTERN152",
+      "file": "poses/PATTERN152.json",
+      "render": "renders/PATTERN152.png"
+    },
+    {
+      "index": 177,
+      "name": "PATTERN153",
+      "file": "poses/PATTERN153.json",
+      "render": "renders/PATTERN153.png"
+    },
+    {
+      "index": 178,
+      "name": "SPELL_02",
+      "file": "poses/SPELL_02.json",
+      "render": "renders/SPELL_02.png"
+    },
+    {
+      "index": 179,
+      "name": "PATTERN020",
+      "file": "poses/PATTERN020.json",
+      "render": "renders/PATTERN020.png"
+    },
+    {
+      "index": 180,
+      "name": "PATTERN155",
+      "file": "poses/PATTERN155.json",
+      "render": "renders/PATTERN155.png"
+    },
+    {
+      "index": 181,
+      "name": "PATTERN156",
+      "file": "poses/PATTERN156.json",
+      "render": "renders/PATTERN156.png"
+    },
+    {
+      "index": 182,
+      "name": "PATTERN157",
+      "file": "poses/PATTERN157.json",
+      "render": "renders/PATTERN157.png"
+    },
+    {
+      "index": 183,
+      "name": "PATTERN158",
+      "file": "poses/PATTERN158.json",
+      "render": "renders/PATTERN158.png"
+    },
+    {
+      "index": 184,
+      "name": "PATTERN160",
+      "file": "poses/PATTERN160.json",
+      "render": "renders/PATTERN160.png"
+    },
+    {
+      "index": 185,
+      "name": "PATTERN161",
+      "file": "poses/PATTERN161.json",
+      "render": "renders/PATTERN161.png"
+    },
+    {
+      "index": 186,
+      "name": "PATTERN028",
+      "file": "poses/PATTERN028.json",
+      "render": "renders/PATTERN028.png"
+    },
+    {
+      "index": 187,
+      "name": "PATTERN036",
+      "file": "poses/PATTERN036.json",
+      "render": "renders/PATTERN036.png"
+    },
+    {
+      "index": 188,
+      "name": "PATTERN162",
+      "file": "poses/PATTERN162.json",
+      "render": "renders/PATTERN162.png"
+    },
+    {
+      "index": 189,
+      "name": "BK_STEP",
+      "file": "poses/BK_STEP.json",
+      "render": "renders/BK_STEP.png"
+    },
+    {
+      "index": 190,
+      "name": "PATTERN164",
+      "file": "poses/PATTERN164.json",
+      "render": "renders/PATTERN164.png"
+    },
+    {
+      "index": 191,
+      "name": "PATTERN047",
+      "file": "poses/PATTERN047.json",
+      "render": "renders/PATTERN047.png"
+    },
+    {
+      "index": 192,
+      "name": "PATTERN165",
+      "file": "poses/PATTERN165.json",
+      "render": "renders/PATTERN165.png"
+    },
+    {
+      "index": 193,
+      "name": "PATTERN166",
+      "file": "poses/PATTERN166.json",
+      "render": "renders/PATTERN166.png"
+    },
+    {
+      "index": 194,
+      "name": "PATTERN043",
+      "file": "poses/PATTERN043.json",
+      "render": "renders/PATTERN043.png"
+    },
+    {
+      "index": 195,
+      "name": "PATTERN167",
+      "file": "poses/PATTERN167.json",
+      "render": "renders/PATTERN167.png"
+    },
+    {
+      "index": 196,
+      "name": "PATTERN168",
+      "file": "poses/PATTERN168.json",
+      "render": "renders/PATTERN168.png"
+    },
+    {
+      "index": 197,
+      "name": "DAMAGE_AIR",
+      "file": "poses/DAMAGE_AIR.json",
+      "render": "renders/DAMAGE_AIR.png"
+    },
+    {
+      "index": 198,
+      "name": "PATTERN190",
+      "file": "poses/PATTERN190.json",
+      "render": "renders/PATTERN190.png"
+    },
+    {
+      "index": 199,
+      "name": "PATTERN191",
+      "file": "poses/PATTERN191.json",
+      "render": "renders/PATTERN191.png"
+    },
+    {
+      "index": 200,
+      "name": "PATTERN192",
+      "file": "poses/PATTERN192.json",
+      "render": "renders/PATTERN192.png"
+    },
+    {
+      "index": 201,
+      "name": "TELEPORT_A",
+      "file": "poses/TELEPORT_A.json",
+      "render": "renders/TELEPORT_A.png"
+    },
+    {
+      "index": 202,
+      "name": "PATTERN216",
+      "file": "poses/PATTERN216.json",
+      "render": "renders/PATTERN216.png"
+    },
+    {
+      "index": 203,
+      "name": "PATTERN217",
+      "file": "poses/PATTERN217.json",
+      "render": "renders/PATTERN217.png"
+    },
+    {
+      "index": 204,
+      "name": "PATTERN218",
+      "file": "poses/PATTERN218.json",
+      "render": "renders/PATTERN218.png"
+    },
+    {
+      "index": 205,
+      "name": "PATTERN219",
+      "file": "poses/PATTERN219.json",
+      "render": "renders/PATTERN219.png"
+    },
+    {
+      "index": 206,
+      "name": "PATTERN220",
+      "file": "poses/PATTERN220.json",
+      "render": "renders/PATTERN220.png"
+    },
+    {
+      "index": 207,
+      "name": "PATTERN221",
+      "file": "poses/PATTERN221.json",
+      "render": "renders/PATTERN221.png"
+    },
+    {
+      "index": 208,
+      "name": "PATTERN222",
+      "file": "poses/PATTERN222.json",
+      "render": "renders/PATTERN222.png"
+    },
+    {
+      "index": 209,
+      "name": "PATTERN223",
+      "file": "poses/PATTERN223.json",
+      "render": "renders/PATTERN223.png"
+    },
+    {
+      "index": 210,
+      "name": "PATTERN224",
+      "file": "poses/PATTERN224.json",
+      "render": "renders/PATTERN224.png"
+    },
+    {
+      "index": 211,
+      "name": "TELEPORT_B",
+      "file": "poses/TELEPORT_B.json",
+      "render": "renders/TELEPORT_B.png"
+    },
+    {
+      "index": 212,
+      "name": "PATTERN206",
+      "file": "poses/PATTERN206.json",
+      "render": "renders/PATTERN206.png"
+    },
+    {
+      "index": 213,
+      "name": "MAGIC_A",
+      "file": "poses/MAGIC_A.json",
+      "render": "renders/MAGIC_A.png"
+    },
+    {
+      "index": 214,
+      "name": "PATTERN226",
+      "file": "poses/PATTERN226.json",
+      "render": "renders/PATTERN226.png"
+    },
+    {
+      "index": 215,
+      "name": "PATTERN198",
+      "file": "poses/PATTERN198.json",
+      "render": "renders/PATTERN198.png"
+    },
+    {
+      "index": 216,
+      "name": "PATTERN227",
+      "file": "poses/PATTERN227.json",
+      "render": "renders/PATTERN227.png"
+    },
+    {
+      "index": 217,
+      "name": "PATTERN228",
+      "file": "poses/PATTERN228.json",
+      "render": "renders/PATTERN228.png"
+    },
+    {
+      "index": 218,
+      "name": "PATTERN229",
+      "file": "poses/PATTERN229.json",
+      "render": "renders/PATTERN229.png"
+    },
+    {
+      "index": 219,
+      "name": "PATTERN230",
+      "file": "poses/PATTERN230.json",
+      "render": "renders/PATTERN230.png"
+    },
+    {
+      "index": 220,
+      "name": "PATTERN231",
+      "file": "poses/PATTERN231.json",
+      "render": "renders/PATTERN231.png"
+    },
+    {
+      "index": 221,
+      "name": "PATTERN197",
+      "file": "poses/PATTERN197.json",
+      "render": "renders/PATTERN197.png"
+    },
+    {
+      "index": 222,
+      "name": "PATTERN232",
+      "file": "poses/PATTERN232.json",
+      "render": "renders/PATTERN232.png"
+    },
+    {
+      "index": 223,
+      "name": "MAGIC_B",
+      "file": "poses/MAGIC_B.json",
+      "render": "renders/MAGIC_B.png"
+    },
+    {
+      "index": 224,
+      "name": "PATTERN234",
+      "file": "poses/PATTERN234.json",
+      "render": "renders/PATTERN234.png"
+    },
+    {
+      "index": 225,
+      "name": "PATTERN059",
+      "file": "poses/PATTERN059.json",
+      "render": "renders/PATTERN059.png"
+    },
+    {
+      "index": 226,
+      "name": "PATTERN235",
+      "file": "poses/PATTERN235.json",
+      "render": "renders/PATTERN235.png"
+    },
+    {
+      "index": 227,
+      "name": "PATTERN236",
+      "file": "poses/PATTERN236.json",
+      "render": "renders/PATTERN236.png"
+    },
+    {
+      "index": 228,
+      "name": "PATTERN180",
+      "file": "poses/PATTERN180.json",
+      "render": "renders/PATTERN180.png"
+    },
+    {
+      "index": 229,
+      "name": "PATTERN237",
+      "file": "poses/PATTERN237.json",
+      "render": "renders/PATTERN237.png"
+    },
+    {
+      "index": 230,
+      "name": "PATTERN238",
+      "file": "poses/PATTERN238.json",
+      "render": "renders/PATTERN238.png"
+    },
+    {
+      "index": 231,
+      "name": "PATTERN200",
+      "file": "poses/PATTERN200.json",
+      "render": "renders/PATTERN200.png"
+    },
+    {
+      "index": 232,
+      "name": "PATTERN239",
+      "file": "poses/PATTERN239.json",
+      "render": "renders/PATTERN239.png"
+    },
+    {
+      "index": 233,
+      "name": "PATTERN175",
+      "file": "poses/PATTERN175.json",
+      "render": "renders/PATTERN175.png"
+    },
+    {
+      "index": 234,
+      "name": "PATTERN199",
+      "file": "poses/PATTERN199.json",
+      "render": "renders/PATTERN199.png"
+    },
+    {
+      "index": 235,
+      "name": "PATTERN240",
+      "file": "poses/PATTERN240.json",
+      "render": "renders/PATTERN240.png"
+    },
+    {
+      "index": 236,
+      "name": "EISYOU_START",
+      "file": "poses/EISYOU_START.json",
+      "render": "renders/EISYOU_START.png"
+    },
+    {
+      "index": 237,
+      "name": "PATTERN242",
+      "file": "poses/PATTERN242.json",
+      "render": "renders/PATTERN242.png"
+    },
+    {
+      "index": 238,
+      "name": "PATTERN243",
+      "file": "poses/PATTERN243.json",
+      "render": "renders/PATTERN243.png"
+    },
+    {
+      "index": 239,
+      "name": "PATTERN141",
+      "file": "poses/PATTERN141.json",
+      "render": "renders/PATTERN141.png"
+    },
+    {
+      "index": 240,
+      "name": "PATTERN244",
+      "file": "poses/PATTERN244.json",
+      "render": "renders/PATTERN244.png"
+    },
+    {
+      "index": 241,
+      "name": "PATTERN245",
+      "file": "poses/PATTERN245.json",
+      "render": "renders/PATTERN245.png"
+    },
+    {
+      "index": 242,
+      "name": "MAGIC",
+      "file": "poses/MAGIC.json",
+      "render": "renders/MAGIC.png"
+    },
+    {
+      "index": 243,
+      "name": "PATTERN247",
+      "file": "poses/PATTERN247.json",
+      "render": "renders/PATTERN247.png"
+    },
+    {
+      "index": 244,
+      "name": "PATTERN248",
+      "file": "poses/PATTERN248.json",
+      "render": "renders/PATTERN248.png"
+    },
+    {
+      "index": 245,
+      "name": "PATTERN249",
+      "file": "poses/PATTERN249.json",
+      "render": "renders/PATTERN249.png"
+    },
+    {
+      "index": 246,
+      "name": "PATTERN174",
+      "file": "poses/PATTERN174.json",
+      "render": "renders/PATTERN174.png"
+    },
+    {
+      "index": 247,
+      "name": "PATTERN173",
+      "file": "poses/PATTERN173.json",
+      "render": "renders/PATTERN173.png"
+    },
+    {
+      "index": 248,
+      "name": "PATTERN250",
+      "file": "poses/PATTERN250.json",
+      "render": "renders/PATTERN250.png"
+    },
+    {
+      "index": 249,
+      "name": "PATTERN251",
+      "file": "poses/PATTERN251.json",
+      "render": "renders/PATTERN251.png"
+    },
+    {
+      "index": 250,
+      "name": "PATTERN252",
+      "file": "poses/PATTERN252.json",
+      "render": "renders/PATTERN252.png"
+    },
+    {
+      "index": 251,
+      "name": "PATTERN253",
+      "file": "poses/PATTERN253.json",
+      "render": "renders/PATTERN253.png"
+    },
+    {
+      "index": 252,
+      "name": "PATTERN254",
+      "file": "poses/PATTERN254.json",
+      "render": "renders/PATTERN254.png"
+    },
+    {
+      "index": 253,
+      "name": "PATTERN255",
+      "file": "poses/PATTERN255.json",
+      "render": "renders/PATTERN255.png"
+    },
+    {
+      "index": 254,
+      "name": "PATTERN256",
+      "file": "poses/PATTERN256.json",
+      "render": "renders/PATTERN256.png"
+    },
+    {
+      "index": 255,
+      "name": "HUNMER_PANCH",
+      "file": "poses/HUNMER_PANCH.json",
+      "render": "renders/HUNMER_PANCH.png"
+    },
+    {
+      "index": 256,
+      "name": "PATTERN172",
+      "file": "poses/PATTERN172.json",
+      "render": "renders/PATTERN172.png"
+    },
+    {
+      "index": 257,
+      "name": "PATTERN170",
+      "file": "poses/PATTERN170.json",
+      "render": "renders/PATTERN170.png"
+    },
+    {
+      "index": 258,
+      "name": "PATTERN258",
+      "file": "poses/PATTERN258.json",
+      "render": "renders/PATTERN258.png"
+    },
+    {
+      "index": 259,
+      "name": "PATTERN259",
+      "file": "poses/PATTERN259.json",
+      "render": "renders/PATTERN259.png"
+    },
+    {
+      "index": 260,
+      "name": "PATTERN363",
+      "file": "poses/PATTERN363.json",
+      "render": "renders/PATTERN363.png"
+    },
+    {
+      "index": 261,
+      "name": "PATTERN307",
+      "file": "poses/PATTERN307.json",
+      "render": "renders/PATTERN307.png"
+    },
+    {
+      "index": 262,
+      "name": "PATTERN300",
+      "file": "poses/PATTERN300.json",
+      "render": "renders/PATTERN300.png"
+    },
+    {
+      "index": 263,
+      "name": "PATTERN314",
+      "file": "poses/PATTERN314.json",
+      "render": "renders/PATTERN314.png"
+    },
+    {
+      "index": 264,
+      "name": "PATTERN295",
+      "file": "poses/PATTERN295.json",
+      "render": "renders/PATTERN295.png"
+    },
+    {
+      "index": 265,
+      "name": "PATTERN288",
+      "file": "poses/PATTERN288.json",
+      "render": "renders/PATTERN288.png"
+    },
+    {
+      "index": 266,
+      "name": "PATTERN324",
+      "file": "poses/PATTERN324.json",
+      "render": "renders/PATTERN324.png"
+    },
+    {
+      "index": 267,
+      "name": "PATTERN326",
+      "file": "poses/PATTERN326.json",
+      "render": "renders/PATTERN326.png"
+    },
+    {
+      "index": 268,
+      "name": "PATTERN320",
+      "file": "poses/PATTERN320.json",
+      "render": "renders/PATTERN320.png"
+    },
+    {
+      "index": 269,
+      "name": "PATTERN260",
+      "file": "poses/PATTERN260.json",
+      "render": "renders/PATTERN260.png"
+    },
+    {
+      "index": 270,
+      "name": "PATTERN261",
+      "file": "poses/PATTERN261.json",
+      "render": "renders/PATTERN261.png"
+    },
+    {
+      "index": 271,
+      "name": "PATTERN262",
+      "file": "poses/PATTERN262.json",
+      "render": "renders/PATTERN262.png"
+    },
+    {
+      "index": 272,
+      "name": "PATTERN171",
+      "file": "poses/PATTERN171.json",
+      "render": "renders/PATTERN171.png"
+    },
+    {
+      "index": 273,
+      "name": "PATTERN263",
+      "file": "poses/PATTERN263.json",
+      "render": "renders/PATTERN263.png"
+    },
+    {
+      "index": 274,
+      "name": "PATTERN264",
+      "file": "poses/PATTERN264.json",
+      "render": "renders/PATTERN264.png"
+    },
+    {
+      "index": 275,
+      "name": "HUNMMER_MISS",
+      "file": "poses/HUNMMER_MISS.json",
+      "render": "renders/HUNMMER_MISS.png"
+    },
+    {
+      "index": 276,
+      "name": "PATTERN327",
+      "file": "poses/PATTERN327.json",
+      "render": "renders/PATTERN327.png"
+    },
+    {
+      "index": 277,
+      "name": "PATTERN330",
+      "file": "poses/PATTERN330.json",
+      "render": "renders/PATTERN330.png"
+    },
+    {
+      "index": 278,
+      "name": "PATTERN329",
+      "file": "poses/PATTERN329.json",
+      "render": "renders/PATTERN329.png"
+    },
+    {
+      "index": 279,
+      "name": "PATTERN328",
+      "file": "poses/PATTERN328.json",
+      "render": "renders/PATTERN328.png"
+    },
+    {
+      "index": 280,
+      "name": "PATTERN338",
+      "file": "poses/PATTERN338.json",
+      "render": "renders/PATTERN338.png"
+    },
+    {
+      "index": 281,
+      "name": "PATTERN332",
+      "file": "poses/PATTERN332.json",
+      "render": "renders/PATTERN332.png"
+    },
+    {
+      "index": 282,
+      "name": "PATTERN331",
+      "file": "poses/PATTERN331.json",
+      "render": "renders/PATTERN331.png"
+    },
+    {
+      "index": 283,
+      "name": "PATTERN357",
+      "file": "poses/PATTERN357.json",
+      "render": "renders/PATTERN357.png"
+    },
+    {
+      "index": 284,
+      "name": "PATTERN349",
+      "file": "poses/PATTERN349.json",
+      "render": "renders/PATTERN349.png"
+    },
+    {
+      "index": 285,
+      "name": "PATTERN348",
+      "file": "poses/PATTERN348.json",
+      "render": "renders/PATTERN348.png"
+    },
+    {
+      "index": 286,
+      "name": "WIN",
+      "file": "poses/WIN.json",
+      "render": "renders/WIN.png"
+    },
+    {
+      "index": 287,
+      "name": "PATTERN182",
+      "file": "poses/PATTERN182.json",
+      "render": "renders/PATTERN182.png"
+    },
+    {
+      "index": 288,
+      "name": "PATTERN185",
+      "file": "poses/PATTERN185.json",
+      "render": "renders/PATTERN185.png"
+    },
+    {
+      "index": 289,
+      "name": "PATTERN089",
+      "file": "poses/PATTERN089.json",
+      "render": "renders/PATTERN089.png"
+    },
+    {
+      "index": 290,
+      "name": "PATTERN093",
+      "file": "poses/PATTERN093.json",
+      "render": "renders/PATTERN093.png"
+    },
+    {
+      "index": 291,
+      "name": "PATTERN184",
+      "file": "poses/PATTERN184.json",
+      "render": "renders/PATTERN184.png"
+    },
+    {
+      "index": 292,
+      "name": "PATTERN183",
+      "file": "poses/PATTERN183.json",
+      "render": "renders/PATTERN183.png"
+    },
+    {
+      "index": 293,
+      "name": "PATTERN188",
+      "file": "poses/PATTERN188.json",
+      "render": "renders/PATTERN188.png"
+    },
+    {
+      "index": 294,
+      "name": "PATTERN266",
+      "file": "poses/PATTERN266.json",
+      "render": "renders/PATTERN266.png"
+    },
+    {
+      "index": 295,
+      "name": "PATTERN267",
+      "file": "poses/PATTERN267.json",
+      "render": "renders/PATTERN267.png"
+    },
+    {
+      "index": 296,
+      "name": "PATTERN268",
+      "file": "poses/PATTERN268.json",
+      "render": "renders/PATTERN268.png"
+    },
+    {
+      "index": 297,
+      "name": "PATTERN269",
+      "file": "poses/PATTERN269.json",
+      "render": "renders/PATTERN269.png"
+    },
+    {
+      "index": 298,
+      "name": "PATTERN270",
+      "file": "poses/PATTERN270.json",
+      "render": "renders/PATTERN270.png"
+    },
+    {
+      "index": 299,
+      "name": "PATTERN271",
+      "file": "poses/PATTERN271.json",
+      "render": "renders/PATTERN271.png"
+    },
+    {
+      "index": 300,
+      "name": "PATTERN272",
+      "file": "poses/PATTERN272.json",
+      "render": "renders/PATTERN272.png"
+    },
+    {
+      "index": 301,
+      "name": "PATTERN273",
+      "file": "poses/PATTERN273.json",
+      "render": "renders/PATTERN273.png"
+    },
+    {
+      "index": 302,
+      "name": "BLESSING_ANGEL",
+      "file": "poses/BLESSING_ANGEL.json",
+      "render": "renders/BLESSING_ANGEL.png"
+    },
+    {
+      "index": 303,
+      "name": "PATTERN275",
+      "file": "poses/PATTERN275.json",
+      "render": "renders/PATTERN275.png"
+    },
+    {
+      "index": 304,
+      "name": "PATTERN276",
+      "file": "poses/PATTERN276.json",
+      "render": "renders/PATTERN276.png"
+    },
+    {
+      "index": 305,
+      "name": "PATTERN277",
+      "file": "poses/PATTERN277.json",
+      "render": "renders/PATTERN277.png"
+    },
+    {
+      "index": 306,
+      "name": "PATTERN278",
+      "file": "poses/PATTERN278.json",
+      "render": "renders/PATTERN278.png"
+    },
+    {
+      "index": 307,
+      "name": "PATTERN279",
+      "file": "poses/PATTERN279.json",
+      "render": "renders/PATTERN279.png"
+    },
+    {
+      "index": 308,
+      "name": "PATTERN280",
+      "file": "poses/PATTERN280.json",
+      "render": "renders/PATTERN280.png"
+    },
+    {
+      "index": 309,
+      "name": "BLESS_END_A",
+      "file": "poses/BLESS_END_A.json",
+      "render": "renders/BLESS_END_A.png"
+    },
+    {
+      "index": 310,
+      "name": "PATTERN282",
+      "file": "poses/PATTERN282.json",
+      "render": "renders/PATTERN282.png"
+    },
+    {
+      "index": 311,
+      "name": "PATTERN283",
+      "file": "poses/PATTERN283.json",
+      "render": "renders/PATTERN283.png"
+    },
+    {
+      "index": 312,
+      "name": "PATTERN284",
+      "file": "poses/PATTERN284.json",
+      "render": "renders/PATTERN284.png"
+    },
+    {
+      "index": 313,
+      "name": "PATTERN285",
+      "file": "poses/PATTERN285.json",
+      "render": "renders/PATTERN285.png"
+    },
+    {
+      "index": 314,
+      "name": "PATTERN286",
+      "file": "poses/PATTERN286.json",
+      "render": "renders/PATTERN286.png"
+    },
+    {
+      "index": 315,
+      "name": "BLESS_END_B",
+      "file": "poses/BLESS_END_B.json",
+      "render": "renders/BLESS_END_B.png"
+    },
+    {
+      "index": 316,
+      "name": "PATTERN289",
+      "file": "poses/PATTERN289.json",
+      "render": "renders/PATTERN289.png"
+    },
+    {
+      "index": 317,
+      "name": "PATTERN290",
+      "file": "poses/PATTERN290.json",
+      "render": "renders/PATTERN290.png"
+    },
+    {
+      "index": 318,
+      "name": "PATTERN291",
+      "file": "poses/PATTERN291.json",
+      "render": "renders/PATTERN291.png"
+    },
+    {
+      "index": 319,
+      "name": "PATTERN292",
+      "file": "poses/PATTERN292.json",
+      "render": "renders/PATTERN292.png"
+    },
+    {
+      "index": 320,
+      "name": "PATTERN293",
+      "file": "poses/PATTERN293.json",
+      "render": "renders/PATTERN293.png"
+    },
+    {
+      "index": 321,
+      "name": "PATTERN294",
+      "file": "poses/PATTERN294.json",
+      "render": "renders/PATTERN294.png"
+    },
+    {
+      "index": 322,
+      "name": "ANGELTH_BELL",
+      "file": "poses/ANGELTH_BELL.json",
+      "render": "renders/ANGELTH_BELL.png"
+    },
+    {
+      "index": 323,
+      "name": "PATTERN296",
+      "file": "poses/PATTERN296.json",
+      "render": "renders/PATTERN296.png"
+    },
+    {
+      "index": 324,
+      "name": "PATTERN297",
+      "file": "poses/PATTERN297.json",
+      "render": "renders/PATTERN297.png"
+    },
+    {
+      "index": 325,
+      "name": "PATTERN298",
+      "file": "poses/PATTERN298.json",
+      "render": "renders/PATTERN298.png"
+    },
+    {
+      "index": 326,
+      "name": "PATTERN299",
+      "file": "poses/PATTERN299.json",
+      "render": "renders/PATTERN299.png"
+    },
+    {
+      "index": 327,
+      "name": "ATTACK_01",
+      "file": "poses/ATTACK_01.json",
+      "render": "renders/ATTACK_01.png"
+    },
+    {
+      "index": 328,
+      "name": "PATTERN081",
+      "file": "poses/PATTERN081.json",
+      "render": "renders/PATTERN081.png"
+    },
+    {
+      "index": 329,
+      "name": "PATTERN301",
+      "file": "poses/PATTERN301.json",
+      "render": "renders/PATTERN301.png"
+    },
+    {
+      "index": 330,
+      "name": "PATTERN302",
+      "file": "poses/PATTERN302.json",
+      "render": "renders/PATTERN302.png"
+    },
+    {
+      "index": 331,
+      "name": "PATTERN303",
+      "file": "poses/PATTERN303.json",
+      "render": "renders/PATTERN303.png"
+    },
+    {
+      "index": 332,
+      "name": "PATTERN304",
+      "file": "poses/PATTERN304.json",
+      "render": "renders/PATTERN304.png"
+    },
+    {
+      "index": 333,
+      "name": "PATTERN305",
+      "file": "poses/PATTERN305.json",
+      "render": "renders/PATTERN305.png"
+    },
+    {
+      "index": 334,
+      "name": "PATTERN306",
+      "file": "poses/PATTERN306.json",
+      "render": "renders/PATTERN306.png"
+    },
+    {
+      "index": 335,
+      "name": "ATTACK_02",
+      "file": "poses/ATTACK_02.json",
+      "render": "renders/ATTACK_02.png"
+    },
+    {
+      "index": 336,
+      "name": "PATTERN179",
+      "file": "poses/PATTERN179.json",
+      "render": "renders/PATTERN179.png"
+    },
+    {
+      "index": 337,
+      "name": "PATTERN308",
+      "file": "poses/PATTERN308.json",
+      "render": "renders/PATTERN308.png"
+    },
+    {
+      "index": 338,
+      "name": "PATTERN309",
+      "file": "poses/PATTERN309.json",
+      "render": "renders/PATTERN309.png"
+    },
+    {
+      "index": 339,
+      "name": "PATTERN310",
+      "file": "poses/PATTERN310.json",
+      "render": "renders/PATTERN310.png"
+    },
+    {
+      "index": 340,
+      "name": "PATTERN311",
+      "file": "poses/PATTERN311.json",
+      "render": "renders/PATTERN311.png"
+    },
+    {
+      "index": 341,
+      "name": "PATTERN312",
+      "file": "poses/PATTERN312.json",
+      "render": "renders/PATTERN312.png"
+    },
+    {
+      "index": 342,
+      "name": "PATTERN313",
+      "file": "poses/PATTERN313.json",
+      "render": "renders/PATTERN313.png"
+    },
+    {
+      "index": 343,
+      "name": "ATTACK_03",
+      "file": "poses/ATTACK_03.json",
+      "render": "renders/ATTACK_03.png"
+    },
+    {
+      "index": 344,
+      "name": "PATTERN315",
+      "file": "poses/PATTERN315.json",
+      "render": "renders/PATTERN315.png"
+    },
+    {
+      "index": 345,
+      "name": "PATTERN316",
+      "file": "poses/PATTERN316.json",
+      "render": "renders/PATTERN316.png"
+    },
+    {
+      "index": 346,
+      "name": "PATTERN189",
+      "file": "poses/PATTERN189.json",
+      "render": "renders/PATTERN189.png"
+    },
+    {
+      "index": 347,
+      "name": "PATTERN317",
+      "file": "poses/PATTERN317.json",
+      "render": "renders/PATTERN317.png"
+    },
+    {
+      "index": 348,
+      "name": "PATTERN318",
+      "file": "poses/PATTERN318.json",
+      "render": "renders/PATTERN318.png"
+    },
+    {
+      "index": 349,
+      "name": "PATTERN319",
+      "file": "poses/PATTERN319.json",
+      "render": "renders/PATTERN319.png"
+    },
+    {
+      "index": 350,
+      "name": "PATTERN321",
+      "file": "poses/PATTERN321.json",
+      "render": "renders/PATTERN321.png"
+    },
+    {
+      "index": 351,
+      "name": "PATTERN322",
+      "file": "poses/PATTERN322.json",
+      "render": "renders/PATTERN322.png"
+    },
+    {
+      "index": 352,
+      "name": "PATTERN201",
+      "file": "poses/PATTERN201.json",
+      "render": "renders/PATTERN201.png"
+    },
+    {
+      "index": 353,
+      "name": "PATTERN193",
+      "file": "poses/PATTERN193.json",
+      "render": "renders/PATTERN193.png"
+    },
+    {
+      "index": 354,
+      "name": "PATTERN323",
+      "file": "poses/PATTERN323.json",
+      "render": "renders/PATTERN323.png"
+    },
+    {
+      "index": 355,
+      "name": "ATTACK_04",
+      "file": "poses/ATTACK_04.json",
+      "render": "renders/ATTACK_04.png"
+    },
+    {
+      "index": 356,
+      "name": "PATTERN325",
+      "file": "poses/PATTERN325.json",
+      "render": "renders/PATTERN325.png"
+    },
+    {
+      "index": 357,
+      "name": "PATTERN212",
+      "file": "poses/PATTERN212.json",
+      "render": "renders/PATTERN212.png"
+    },
+    {
+      "index": 358,
+      "name": "PATTERN211",
+      "file": "poses/PATTERN211.json",
+      "render": "renders/PATTERN211.png"
+    },
+    {
+      "index": 359,
+      "name": "PATTERN333",
+      "file": "poses/PATTERN333.json",
+      "render": "renders/PATTERN333.png"
+    },
+    {
+      "index": 360,
+      "name": "PATTERN334",
+      "file": "poses/PATTERN334.json",
+      "render": "renders/PATTERN334.png"
+    },
+    {
+      "index": 361,
+      "name": "PATTERN210",
+      "file": "poses/PATTERN210.json",
+      "render": "renders/PATTERN210.png"
+    },
+    {
+      "index": 362,
+      "name": "PATTERN335",
+      "file": "poses/PATTERN335.json",
+      "render": "renders/PATTERN335.png"
+    },
+    {
+      "index": 363,
+      "name": "PATTERN336",
+      "file": "poses/PATTERN336.json",
+      "render": "renders/PATTERN336.png"
+    },
+    {
+      "index": 364,
+      "name": "PATTERN337",
+      "file": "poses/PATTERN337.json",
+      "render": "renders/PATTERN337.png"
+    },
+    {
+      "index": 365,
+      "name": "SIT_ATK_01",
+      "file": "poses/SIT_ATK_01.json",
+      "render": "renders/SIT_ATK_01.png"
+    },
+    {
+      "index": 366,
+      "name": "PATTERN215",
+      "file": "poses/PATTERN215.json",
+      "render": "renders/PATTERN215.png"
+    },
+    {
+      "index": 367,
+      "name": "PATTERN339",
+      "file": "poses/PATTERN339.json",
+      "render": "renders/PATTERN339.png"
+    },
+    {
+      "index": 368,
+      "name": "PATTERN209",
+      "file": "poses/PATTERN209.json",
+      "render": "renders/PATTERN209.png"
+    },
+    {
+      "index": 369,
+      "name": "PATTERN207",
+      "file": "poses/PATTERN207.json",
+      "render": "renders/PATTERN207.png"
+    },
+    {
+      "index": 370,
+      "name": "PATTERN340",
+      "file": "poses/PATTERN340.json",
+      "render": "renders/PATTERN340.png"
+    },
+    {
+      "index": 371,
+      "name": "PATTERN341",
+      "file": "poses/PATTERN341.json",
+      "render": "renders/PATTERN341.png"
+    },
+    {
+      "index": 372,
+      "name": "PATTERN213",
+      "file": "poses/PATTERN213.json",
+      "render": "renders/PATTERN213.png"
+    },
+    {
+      "index": 373,
+      "name": "PATTERN342",
+      "file": "poses/PATTERN342.json",
+      "render": "renders/PATTERN342.png"
+    },
+    {
+      "index": 374,
+      "name": "PATTERN214",
+      "file": "poses/PATTERN214.json",
+      "render": "renders/PATTERN214.png"
+    },
+    {
+      "index": 375,
+      "name": "PATTERN343",
+      "file": "poses/PATTERN343.json",
+      "render": "renders/PATTERN343.png"
+    },
+    {
+      "index": 376,
+      "name": "ATK_JP_01",
+      "file": "poses/ATK_JP_01.json",
+      "render": "renders/ATK_JP_01.png"
+    },
+    {
+      "index": 377,
+      "name": "PATTERN344",
+      "file": "poses/PATTERN344.json",
+      "render": "renders/PATTERN344.png"
+    },
+    {
+      "index": 378,
+      "name": "PATTERN345",
+      "file": "poses/PATTERN345.json",
+      "render": "renders/PATTERN345.png"
+    },
+    {
+      "index": 379,
+      "name": "PATTERN225",
+      "file": "poses/PATTERN225.json",
+      "render": "renders/PATTERN225.png"
+    },
+    {
+      "index": 380,
+      "name": "PATTERN346",
+      "file": "poses/PATTERN346.json",
+      "render": "renders/PATTERN346.png"
+    },
+    {
+      "index": 381,
+      "name": "PATTERN347",
+      "file": "poses/PATTERN347.json",
+      "render": "renders/PATTERN347.png"
+    },
+    {
+      "index": 382,
+      "name": "SPELL_01",
+      "file": "poses/SPELL_01.json",
+      "render": "renders/SPELL_01.png"
+    },
+    {
+      "index": 383,
+      "name": "PATTERN204",
+      "file": "poses/PATTERN204.json",
+      "render": "renders/PATTERN204.png"
+    },
+    {
+      "index": 384,
+      "name": "PATTERN202",
+      "file": "poses/PATTERN202.json",
+      "render": "renders/PATTERN202.png"
+    },
+    {
+      "index": 385,
+      "name": "PATTERN350",
+      "file": "poses/PATTERN350.json",
+      "render": "renders/PATTERN350.png"
+    },
+    {
+      "index": 386,
+      "name": "PATTERN351",
+      "file": "poses/PATTERN351.json",
+      "render": "renders/PATTERN351.png"
+    },
+    {
+      "index": 387,
+      "name": "PATTERN352",
+      "file": "poses/PATTERN352.json",
+      "render": "renders/PATTERN352.png"
+    },
+    {
+      "index": 388,
+      "name": "PATTERN353",
+      "file": "poses/PATTERN353.json",
+      "render": "renders/PATTERN353.png"
+    },
+    {
+      "index": 389,
+      "name": "PATTERN354",
+      "file": "poses/PATTERN354.json",
+      "render": "renders/PATTERN354.png"
+    },
+    {
+      "index": 390,
+      "name": "PATTERN355",
+      "file": "poses/PATTERN355.json",
+      "render": "renders/PATTERN355.png"
+    },
+    {
+      "index": 391,
+      "name": "PATTERN203",
+      "file": "poses/PATTERN203.json",
+      "render": "renders/PATTERN203.png"
+    },
+    {
+      "index": 392,
+      "name": "PATTERN099",
+      "file": "poses/PATTERN099.json",
+      "render": "renders/PATTERN099.png"
+    },
+    {
+      "index": 393,
+      "name": "PATTERN356",
+      "file": "poses/PATTERN356.json",
+      "render": "renders/PATTERN356.png"
+    },
+    {
+      "index": 394,
+      "name": "TAIKI",
+      "file": "poses/TAIKI.json",
+      "render": "renders/TAIKI.png"
+    },
+    {
+      "index": 395,
+      "name": "PATTERN358",
+      "file": "poses/PATTERN358.json",
+      "render": "renders/PATTERN358.png"
+    },
+    {
+      "index": 396,
+      "name": "PATTERN159",
+      "file": "poses/PATTERN159.json",
+      "render": "renders/PATTERN159.png"
+    },
+    {
+      "index": 397,
+      "name": "PATTERN169",
+      "file": "poses/PATTERN169.json",
+      "render": "renders/PATTERN169.png"
+    },
+    {
+      "index": 398,
+      "name": "PATTERN163",
+      "file": "poses/PATTERN163.json",
+      "render": "renders/PATTERN163.png"
+    },
+    {
+      "index": 399,
+      "name": "PATTERN154",
+      "file": "poses/PATTERN154.json",
+      "render": "renders/PATTERN154.png"
+    },
+    {
+      "index": 400,
+      "name": "PATTERN145",
+      "file": "poses/PATTERN145.json",
+      "render": "renders/PATTERN145.png"
+    },
+    {
+      "index": 401,
+      "name": "PATTERN359",
+      "file": "poses/PATTERN359.json",
+      "render": "renders/PATTERN359.png"
+    },
+    {
+      "index": 402,
+      "name": "PATTERN360",
+      "file": "poses/PATTERN360.json",
+      "render": "renders/PATTERN360.png"
+    },
+    {
+      "index": 403,
+      "name": "PATTERN361",
+      "file": "poses/PATTERN361.json",
+      "render": "renders/PATTERN361.png"
+    },
+    {
+      "index": 404,
+      "name": "PATTERN362",
+      "file": "poses/PATTERN362.json",
+      "render": "renders/PATTERN362.png"
+    },
+    {
+      "index": 405,
+      "name": "HEAL_ATTACK",
+      "file": "poses/HEAL_ATTACK.json",
+      "render": "renders/HEAL_ATTACK.png"
+    },
+    {
+      "index": 406,
+      "name": "PATTERN364",
+      "file": "poses/PATTERN364.json",
+      "render": "renders/PATTERN364.png"
+    },
+    {
+      "index": 407,
+      "name": "PATTERN001",
+      "file": "poses/PATTERN001.json",
+      "render": "renders/PATTERN001.png"
+    },
+    {
+      "index": 408,
+      "name": "PATTERN365",
+      "file": "poses/PATTERN365.json",
+      "render": "renders/PATTERN365.png"
+    },
+    {
+      "index": 409,
+      "name": "PATTERN208",
+      "file": "poses/PATTERN208.json",
+      "render": "renders/PATTERN208.png"
+    },
+    {
+      "index": 410,
+      "name": "PATTERN366",
+      "file": "poses/PATTERN366.json",
+      "render": "renders/PATTERN366.png"
+    },
+    {
+      "index": 411,
+      "name": "PATTERN367",
+      "file": "poses/PATTERN367.json",
+      "render": "renders/PATTERN367.png"
+    },
+    {
+      "index": 412,
+      "name": "PATTERN368",
+      "file": "poses/PATTERN368.json",
+      "render": "renders/PATTERN368.png"
+    },
+    {
+      "index": 413,
+      "name": "PATTERN369",
+      "file": "poses/PATTERN369.json",
+      "render": "renders/PATTERN369.png"
+    },
+    {
+      "index": 414,
+      "name": "HEAL_ATTACK_HIT",
+      "file": "poses/HEAL_ATTACK_HIT.json",
+      "render": "renders/HEAL_ATTACK_HIT.png"
+    },
+    {
+      "index": 415,
+      "name": "PATTERN371",
+      "file": "poses/PATTERN371.json",
+      "render": "renders/PATTERN371.png"
+    },
+    {
+      "index": 416,
+      "name": "PATTERN372",
+      "file": "poses/PATTERN372.json",
+      "render": "renders/PATTERN372.png"
+    },
+    {
+      "index": 417,
+      "name": "PATTERN373",
+      "file": "poses/PATTERN373.json",
+      "render": "renders/PATTERN373.png"
+    },
+    {
+      "index": 418,
+      "name": "PATTERN374",
+      "file": "poses/PATTERN374.json",
+      "render": "renders/PATTERN374.png"
+    },
+    {
+      "index": 419,
+      "name": "PATTERN375",
+      "file": "poses/PATTERN375.json",
+      "render": "renders/PATTERN375.png"
+    },
+    {
+      "index": 420,
+      "name": "PATTERN376",
+      "file": "poses/PATTERN376.json",
+      "render": "renders/PATTERN376.png"
+    },
+    {
+      "index": 421,
+      "name": "PATTERN377",
+      "file": "poses/PATTERN377.json",
+      "render": "renders/PATTERN377.png"
+    },
+    {
+      "index": 422,
+      "name": "SP_ATK_01",
+      "file": "poses/SP_ATK_01.json",
+      "render": "renders/SP_ATK_01.png"
+    },
+    {
+      "index": 423,
+      "name": "PATTERN379",
+      "file": "poses/PATTERN379.json",
+      "render": "renders/PATTERN379.png"
+    },
+    {
+      "index": 424,
+      "name": "PATTERN274",
+      "file": "poses/PATTERN274.json",
+      "render": "renders/PATTERN274.png"
+    },
+    {
+      "index": 425,
+      "name": "PATTERN233",
+      "file": "poses/PATTERN233.json",
+      "render": "renders/PATTERN233.png"
+    },
+    {
+      "index": 426,
+      "name": "PATTERN380",
+      "file": "poses/PATTERN380.json",
+      "render": "renders/PATTERN380.png"
+    },
+    {
+      "index": 427,
+      "name": "PATTERN381",
+      "file": "poses/PATTERN381.json",
+      "render": "renders/PATTERN381.png"
+    },
+    {
+      "index": 428,
+      "name": "PATTERN382",
+      "file": "poses/PATTERN382.json",
+      "render": "renders/PATTERN382.png"
+    },
+    {
+      "index": 429,
+      "name": "PATTERN383",
+      "file": "poses/PATTERN383.json",
+      "render": "renders/PATTERN383.png"
+    },
+    {
+      "index": 430,
+      "name": "PATTERN241",
+      "file": "poses/PATTERN241.json",
+      "render": "renders/PATTERN241.png"
+    },
+    {
+      "index": 431,
+      "name": "PATTERN246",
+      "file": "poses/PATTERN246.json",
+      "render": "renders/PATTERN246.png"
+    },
+    {
+      "index": 432,
+      "name": "PATTERN281",
+      "file": "poses/PATTERN281.json",
+      "render": "renders/PATTERN281.png"
+    },
+    {
+      "index": 433,
+      "name": "PATTERN384",
+      "file": "poses/PATTERN384.json",
+      "render": "renders/PATTERN384.png"
+    },
+    {
+      "index": 434,
+      "name": "PATTERN257",
+      "file": "poses/PATTERN257.json",
+      "render": "renders/PATTERN257.png"
+    },
+    {
+      "index": 435,
+      "name": "PATTERN265",
+      "file": "poses/PATTERN265.json",
+      "render": "renders/PATTERN265.png"
+    },
+    {
+      "index": 436,
+      "name": "PATTERN385",
+      "file": "poses/PATTERN385.json",
+      "render": "renders/PATTERN385.png"
+    },
+    {
+      "index": 437,
+      "name": "PATTERN386",
+      "file": "poses/PATTERN386.json",
+      "render": "renders/PATTERN386.png"
+    },
+    {
+      "index": 438,
+      "name": "PATTERN387",
+      "file": "poses/PATTERN387.json",
+      "render": "renders/PATTERN387.png"
+    },
+    {
+      "index": 439,
+      "name": "PATTERN388",
+      "file": "poses/PATTERN388.json",
+      "render": "renders/PATTERN388.png"
+    },
+    {
+      "index": 440,
+      "name": "QURE",
+      "file": "poses/QURE.json",
+      "render": "renders/QURE.png"
+    },
+    {
+      "index": 441,
+      "name": "PATTERN390",
+      "file": "poses/PATTERN390.json",
+      "render": "renders/PATTERN390.png"
+    },
+    {
+      "index": 442,
+      "name": "PATTERN287",
+      "file": "poses/PATTERN287.json",
+      "render": "renders/PATTERN287.png"
+    },
+    {
+      "index": 443,
+      "name": "PATTERN391",
+      "file": "poses/PATTERN391.json",
+      "render": "renders/PATTERN391.png"
+    },
+    {
+      "index": 445,
+      "name": "アンゼルス羽",
+      "file": "poses/アンゼルス羽.json",
+      "render": "renders/アンゼルス羽.png"
+    },
+    {
+      "index": 446,
+      "name": "PATTERN394",
+      "file": "poses/PATTERN394.json",
+      "render": "renders/PATTERN394.png"
+    },
+    {
+      "index": 447,
+      "name": "PATTERN395",
+      "file": "poses/PATTERN395.json",
+      "render": "renders/PATTERN395.png"
+    },
+    {
+      "index": 448,
+      "name": "PATTERN396",
+      "file": "poses/PATTERN396.json",
+      "render": "renders/PATTERN396.png"
+    },
+    {
+      "index": 450,
+      "name": "PATTERN398",
+      "file": "poses/PATTERN398.json",
+      "render": "renders/PATTERN398.png"
+    },
+    {
+      "index": 451,
+      "name": "PATTERN399",
+      "file": "poses/PATTERN399.json",
+      "render": "renders/PATTERN399.png"
+    },
+    {
+      "index": 452,
+      "name": "PATTERN400",
+      "file": "poses/PATTERN400.json",
+      "render": "renders/PATTERN400.png"
+    },
+    {
+      "index": 453,
+      "name": "PATTERN401",
+      "file": "poses/PATTERN401.json",
+      "render": "renders/PATTERN401.png"
+    },
+    {
+      "index": 455,
+      "name": "PATTERN403",
+      "file": "poses/PATTERN403.json",
+      "render": "renders/PATTERN403.png"
+    },
+    {
+      "index": 456,
+      "name": "PATTERN404",
+      "file": "poses/PATTERN404.json",
+      "render": "renders/PATTERN404.png"
+    },
+    {
+      "index": 457,
+      "name": "PATTERN405",
+      "file": "poses/PATTERN405.json",
+      "render": "renders/PATTERN405.png"
+    },
+    {
+      "index": 458,
+      "name": "PATTERN406",
+      "file": "poses/PATTERN406.json",
+      "render": "renders/PATTERN406.png"
+    },
+    {
+      "index": 460,
+      "name": "AGI UP",
+      "file": "poses/AGI UP.json",
+      "render": "renders/AGI UP.png"
+    },
+    {
+      "index": 461,
+      "name": "AGI UP消え",
+      "file": "poses/AGI UP消え.json",
+      "render": "renders/AGI UP消え.png"
+    },
+    {
+      "index": 462,
+      "name": "AGI DOWN",
+      "file": "poses/AGI DOWN.json",
+      "render": "renders/AGI DOWN.png"
+    },
+    {
+      "index": 463,
+      "name": "AGIDOWN傾き１",
+      "file": "poses/AGIDOWN傾き１.json",
+      "render": "renders/AGIDOWN傾き１.png"
+    },
+    {
+      "index": 464,
+      "name": "傾き２",
+      "file": "poses/傾き２.json",
+      "render": "renders/傾き２.png"
+    },
+    {
+      "index": 465,
+      "name": "AGIDOWN消え",
+      "file": "poses/AGIDOWN消え.json",
+      "render": "renders/AGIDOWN消え.png"
+    },
+    {
+      "index": 466,
+      "name": "ブレス足下光",
+      "file": "poses/ブレス足下光.json",
+      "render": "renders/ブレス足下光.png"
+    },
+    {
+      "index": 467,
+      "name": "ブレス足下光消え",
+      "file": "poses/ブレス足下光消え.json",
+      "render": "renders/ブレス足下光消え.png"
+    },
+    {
+      "index": 468,
+      "name": "AXBOMBER",
+      "file": "poses/AXBOMBER.json",
+      "render": "renders/AXBOMBER.png"
+    },
+    {
+      "index": 469,
+      "name": "PATTERN417",
+      "file": "poses/PATTERN417.json",
+      "render": "renders/PATTERN417.png"
+    },
+    {
+      "index": 470,
+      "name": "PATTERN418",
+      "file": "poses/PATTERN418.json",
+      "render": "renders/PATTERN418.png"
+    },
+    {
+      "index": 471,
+      "name": "PATTERN419",
+      "file": "poses/PATTERN419.json",
+      "render": "renders/PATTERN419.png"
+    },
+    {
+      "index": 472,
+      "name": "PATTERN389",
+      "file": "poses/PATTERN389.json",
+      "render": "renders/PATTERN389.png"
+    },
+    {
+      "index": 473,
+      "name": "PATTERN393",
+      "file": "poses/PATTERN393.json",
+      "render": "renders/PATTERN393.png"
+    },
+    {
+      "index": 474,
+      "name": "PATTERN378",
+      "file": "poses/PATTERN378.json",
+      "render": "renders/PATTERN378.png"
+    },
+    {
+      "index": 475,
+      "name": "PATTERN420",
+      "file": "poses/PATTERN420.json",
+      "render": "renders/PATTERN420.png"
+    },
+    {
+      "index": 476,
+      "name": "PATTERN370",
+      "file": "poses/PATTERN370.json",
+      "render": "renders/PATTERN370.png"
+    },
+    {
+      "index": 477,
+      "name": "PATTERN408",
+      "file": "poses/PATTERN408.json",
+      "render": "renders/PATTERN408.png"
+    },
+    {
+      "index": 478,
+      "name": "PATTERN422",
+      "file": "poses/PATTERN422.json",
+      "render": "renders/PATTERN422.png"
+    },
+    {
+      "index": 479,
+      "name": "PATTERN423",
+      "file": "poses/PATTERN423.json",
+      "render": "renders/PATTERN423.png"
+    },
+    {
+      "index": 480,
+      "name": "PATTERN424",
+      "file": "poses/PATTERN424.json",
+      "render": "renders/PATTERN424.png"
+    },
+    {
+      "index": 481,
+      "name": "PATTERN411",
+      "file": "poses/PATTERN411.json",
+      "render": "renders/PATTERN411.png"
+    },
+    {
+      "index": 482,
+      "name": "PATTERN410",
+      "file": "poses/PATTERN410.json",
+      "render": "renders/PATTERN410.png"
+    },
+    {
+      "index": 483,
+      "name": "PATTERN427",
+      "file": "poses/PATTERN427.json",
+      "render": "renders/PATTERN427.png"
+    },
+    {
+      "index": 484,
+      "name": "PATTERN409",
+      "file": "poses/PATTERN409.json",
+      "render": "renders/PATTERN409.png"
+    },
+    {
+      "index": 485,
+      "name": "PATTERN428",
+      "file": "poses/PATTERN428.json",
+      "render": "renders/PATTERN428.png"
+    }
+  ]
+}

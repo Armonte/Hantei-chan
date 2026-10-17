@@ -1,6 +1,14 @@
+#include "han2_browser.h"
+#include "app_log.h"
 #include "character_instance.h"
+#include "framedata_ha4.h"
+#include <cstring>
 #include "ini.h"
 #include "misc.h"
+#include "ha4_character.h"
+#include "han2_character.h"
+#include "framedata_han2.h"
+#include "han2_pat.h"
 #include <filesystem>
 #include <sstream>
 #include <iomanip>
@@ -9,13 +17,38 @@
 CharacterInstance::CharacterInstance()
 	: parts(&cg)
 {
+	// Undo tracks the whole pattern list; the baseline is captured lazily on
+	// the first UI frame after (re)load.
+	undoManager.attach(&frameData.m_sequences);
+	// French-Bread parts are saved with the character (SyncPartsToContainer), so their edits are part of its history.
+	partsUndo.enabled = [this] { return parts.fbPartModel && frameData.isHan2(); };
+	partsUndo.onSheetsRestored = [this] { han2::UploadPartsTextures(parts); };
+	undoManager.addChannel(&partsUndo);
 	state.pattern = 0;
 	state.frame = 0;
 	state.spriteId = -1;
+	// FrameData::mark_modified() tells the undo manager which patterns changed (incremental commits).
+	undoManager.setDirtyFeed(&frameData.undoDirtyFeed);
 }
 
 CharacterInstance::~CharacterInstance()
 {
+	MvScriptIndex::Unregister(&frameData);
+}
+
+void CharacterInstance::loadMvScripts(const std::string& txtPath)
+{
+	// MBTL moves spawn patterns from Squirrel scripts (chrXXX_mv_*.txt) next
+	// to the character txt. Parse them so the spawn visualization can show
+	// script-driven spawns; harmless no-op for games without such files.
+	if (m_mvScripts.loadForCharacter(txtPath)) {
+		m_mvScripts.resolveCodeNames(&frameData);
+		MvScriptIndex::Register(&frameData, &m_mvScripts);
+		HC_LOG_INFO("[MvScript] {}: {} script spawn(s) parsed from move scripts",
+			   m_name.c_str(), (int)m_mvScripts.allSpawns().size());
+	} else {
+		MvScriptIndex::Unregister(&frameData);
+	}
 }
 
 bool CharacterInstance::loadFromTxt(const std::string& txtPath)
@@ -59,7 +92,11 @@ bool CharacterInstance::loadFromTxt(const std::string& txtPath)
 	}
 
 	m_isModified = false;
-	undoManager.markCleanState();
+	undoManager.reset();  // document replaced: new baseline, no history
+	loadNotes();
+
+	// Load MBTL move scripts for script-spawn visualization
+	loadMvScripts(txtPath);
 
 	// Auto-load effect character if effect.txt exists in same folder
 	// (but don't try to load effect for the effect itself - prevents infinite loop)
@@ -107,7 +144,12 @@ bool CharacterInstance::loadChrHA6FromTxt(const std::string& txtPath)
 	}
 
 	m_isModified = false;
-	undoManager.markCleanState();
+	undoManager.reset();  // document replaced: new baseline, no history
+	loadNotes();
+
+	// Load MBTL move scripts for script-spawn visualization
+	loadMvScripts(txtPath);
+
 	return true;
 }
 
@@ -127,8 +169,94 @@ bool CharacterInstance::loadHA6(const std::string& ha6Path, bool patch)
 	m_ha6Paths.push_back(ha6Path);
 	m_topHA6Path = ha6Path;
 
+	// MBAC Hantei4 .DAT: sprites, palette, parts and EFFECT.DAT come with it
+	if (frameData.isHA4()) {
+		ha4::AttachCharacterResources(*this, ha6Path);
+	}
+
 	m_isModified = false;
-	undoManager.markCleanState();
+	undoManager.reset();  // document replaced: new baseline, no history
+	loadNotes();
+	return true;
+}
+
+bool CharacterInstance::loadHan2(const std::string& stem,
+	const std::function<bool(const std::string&, std::vector<uint8_t>&)>& read,
+	const std::string& origin, const std::string& saveTarget, std::string& err)
+{
+	std::string summary;
+	if (!han2::LoadCharacter(*this, stem, read, origin, &summary, &err)) { han2ui::PushLoadReport(stem, "", {err}, true); return false; }
+	{
+		std::vector<std::string> w;
+		if (summary.find("no .DAT") != std::string::npos && !(frameData.m_han2 && frameData.m_han2->sub == 2)) w.push_back("no .DAT next to the .DT2: no sprites / parts");   // GOF2 keeps parts and sprites in <stem>NN.PAT / .CHP
+		if (summary.find("no CG") != std::string::npos) w.push_back("no CG sprite bank found");
+		if (summary.find("parts: ") != std::string::npos) w.push_back("parts could not be converted: " + summary.substr(summary.find("parts: ") + 7));
+		han2ui::PushLoadReport(stem, summary, w, false);
+	}
+	m_name = stem;
+	m_ha6Paths.clear();
+	m_topHA6Path = saveTarget;
+	if (!saveTarget.empty()) m_ha6Paths.push_back(saveTarget);
+	m_isModified = false;
+	undoManager.reset();
+	return true;
+}
+
+bool CharacterInstance::loadGof1File(const std::string& path, std::string& err)
+{
+	if (!han2::LoadGof1CharacterFile(*this, path, &err)) return false;
+	m_name = std::filesystem::u8path(path).stem().string();
+	m_ha6Paths.clear(); m_ha6Paths.push_back(path); m_topHA6Path = path;
+	m_isModified = false; undoManager.reset();
+	return true;
+}
+
+bool CharacterInstance::loadPb2k1File(const std::string& path, std::string& err)
+{
+	if (!han2::LoadPb2k1CharacterFile(*this, path, &err)) return false;
+	m_name = std::filesystem::u8path(path).stem().string();
+	m_ha6Paths.clear(); m_ha6Paths.push_back(path); m_topHA6Path = path;
+	m_isModified = false; undoManager.reset();
+	return true;
+}
+
+bool CharacterInstance::loadQohFile(const std::string& path, int version, std::string& err)
+{
+	if (!han2::LoadQohCharacterFile(*this, path, version, &err)) return false;
+	m_name = std::filesystem::u8path(path).stem().string();
+	m_ha6Paths.clear(); m_ha6Paths.push_back(path); m_topHA6Path = path;
+	m_isModified = false; undoManager.reset();
+	return true;
+}
+
+bool CharacterInstance::loadGof1(const std::string& archivePath, const std::string& entryName, std::string& err)
+{
+	if (!han2::LoadGof1Character(*this, archivePath, entryName, &err)) return false;
+	std::string n = entryName; size_t dot = n.find_last_of('.'); if (dot != std::string::npos) n = n.substr(0, dot);
+	m_name = n; m_ha6Paths.clear(); m_topHA6Path.clear();
+	m_isModified = false; undoManager.reset();
+	return true;
+}
+
+void CharacterInstance::loadNotes()
+{
+	if (m_topHA6Path.empty()) return;
+	std::string error;
+	if (!frameData.notes.load(Ha6Notes::PathFor(m_topHA6Path), &error))
+		m_notesError = error;
+	else
+		m_notesError.clear();
+}
+
+bool CharacterInstance::saveNotes(const std::string& ha6Path)
+{
+	// Only touch the side file when there is something to write: notes exist,
+	// or the user removed the last one (dirty). A notes file that failed to
+	// parse is never overwritten.
+	if (!m_notesError.empty()) return false;
+	if (frameData.notes.notes.empty() && !frameData.notes.dirty) return true;
+	if (!frameData.notes.save(Ha6Notes::PathFor(ha6Path))) return false;
+	frameData.notes.dirty = false;
 	return true;
 }
 
@@ -158,21 +286,57 @@ bool CharacterInstance::loadPAT(const std::string& patPath)
 	return true;
 }
 
+// MBAC .DAT: the CG blob is embedded; sprite edits made in the CG manager (any size: the container recomputes its offsets on save) go back into it.
+static void SyncHa4Cg(CharacterInstance& ch)
+{
+	if (!ch.frameData.isHA4() || !ch.cg.m_loaded || ch.cg.foreign()) return;
+	auto& blob = ch.frameData.m_ha4->cg;
+	if (blob.empty()) return;
+	if (blob.size() != ch.cg.bank_size() || memcmp(blob.data(), ch.cg.bank_data(), blob.size()) != 0)
+		blob.assign((const uint8_t*)ch.cg.bank_data(), (const uint8_t*)ch.cg.bank_data() + ch.cg.bank_size());
+}
+
 bool CharacterInstance::save()
 {
+	m_lastSaveError.clear();
 	if (m_topHA6Path.empty()) {
 		return false;
 	}
 
-	frameData.save(m_topHA6Path.c_str());
+	// Commit any pending edit first: a stacked character's save filters on
+	// Sequence::modified, which the undo commit keeps current.
+	undoManager.flush();
+	SyncHa4Cg(*this);
+	if (frameData.isHan2()) {
+		std::string perr;
+		if (!han2::SyncPartsToContainer(*this, nullptr, &perr)) { m_lastSaveError = "parts: " + perr; return false; }
+	}
+	// Only mark clean if the file actually reached disk.
+	if (!frameData.save(m_topHA6Path.c_str())) {
+		return false;
+	}
+	if (frameData.isHan2()) { std::string perr; if (!han2::SaveCompanions(*this, m_topHA6Path, &perr)) { m_lastSaveError = perr; return false; } }
+	saveNotes(m_topHA6Path);
 	m_isModified = false;
-	undoManager.markCleanState();
+	undoManager.markClean();  // undoing back to this revision clears dirty
 	return true;
 }
 
 bool CharacterInstance::saveAs(const std::string& ha6Path)
 {
-	frameData.save(ha6Path.c_str());
+	m_lastSaveError.clear();
+	undoManager.flush();
+	SyncHa4Cg(*this);
+	if (frameData.isHan2()) {
+		std::string perr;
+		if (!han2::SyncPartsToContainer(*this, nullptr, &perr)) { m_lastSaveError = "parts: " + perr; return false; }
+	}
+	if (!frameData.save(ha6Path.c_str())) {
+		return false;
+	}
+	if (frameData.isHan2()) { std::string perr; if (!han2::SaveCompanions(*this, ha6Path, &perr)) { m_lastSaveError = perr; return false; } }
+	frameData.notes.dirty = frameData.notes.dirty || !frameData.notes.notes.empty();
+	saveNotes(ha6Path);
 	m_topHA6Path = ha6Path;
 
 	// Update ha6 paths list
@@ -180,13 +344,15 @@ bool CharacterInstance::saveAs(const std::string& ha6Path)
 	m_ha6Paths.push_back(ha6Path);
 
 	m_isModified = false;
-	undoManager.markCleanState();
+	undoManager.markClean();  // undoing back to this revision clears dirty
 	return true;
 }
 
 bool CharacterInstance::saveModifiedOnly(const std::string& ha6Path)
 {
-	frameData.save_modified_only(ha6Path.c_str());
+	if (!frameData.save_modified_only(ha6Path.c_str())) {
+		return false;
+	}
 
 	// Add to .txt if we have one
 	if (!m_txtPath.empty()) {
@@ -197,7 +363,7 @@ bool CharacterInstance::saveModifiedOnly(const std::string& ha6Path)
 	}
 
 	m_isModified = false;
-	undoManager.markCleanState();
+	undoManager.markClean();  // undoing back to this revision clears dirty
 	return true;
 }
 
@@ -206,17 +372,44 @@ bool CharacterInstance::savePAT()
 	if (m_patPath.empty()) {
 		return false;
 	}
-
-	return parts.Save(m_patPath.c_str());
+	return savePATAs(m_patPath);
 }
 
 bool CharacterInstance::savePATAs(const std::string& patPath)
 {
-	if (parts.Save(patPath.c_str())) {
-		m_patPath = patPath;
-		return true;
+	if (m_patDocument) undoManager.flush();   // the pending edit belongs to the revision being saved
+	if (!parts.Save(patPath.c_str()))
+		return false;
+	m_patPath = patPath;
+	if (m_patDocument) {
+		parts.filePath = patPath;
+		m_isModified = false;
+		undoManager.markClean();   // undoing back to this revision clears the '*'
 	}
-	return false;
+	return true;
+}
+
+void CharacterInstance::makePatDocument()
+{
+	if (m_patDocument) return;
+	m_patDocument = true;
+	// The one-frame placeholder pattern is not document data: diff an empty list instead, so only the parts channel
+	// records steps.
+	undoManager.attach(&m_patUndoDoc);
+	m_patDocUndo = std::make_unique<PartsUndoChannel>(&parts);
+	undoManager.addChannel(m_patDocUndo.get());
+	undoManager.reset();
+}
+
+void CharacterInstance::newPatDocument(bool mbaaccFormat)
+{
+	parts.initEmpty();
+	parts.useMBAACCFormat = mbaaccFormat;
+	if (mbaaccFormat) parts.shapes.clear();   // MBAACC .pat files have no VEST block (every part is a plane)
+	parts.filePath.clear();
+	m_patPath.clear();
+	makePatDocument();
+	undoManager.reset();
 }
 
 void CharacterInstance::setName(const std::string& name)
@@ -359,13 +552,13 @@ bool CharacterInstance::loadEffectCharacter()
 		}
 
 		useParentDirectory = true;
-		printf("[Effect] %s: Using shared effect.txt from parent directory\n", m_name.c_str());
+		HC_LOG_INFO("[Effect] {}: Using shared effect.txt from parent directory", m_name.c_str());
 	}
 
 	// Create and load effect character
 	auto effect = std::make_unique<CharacterInstance>();
 	if (!effect->loadFromTxt(effectTxtPath)) {
-		printf("[Effect] Failed to load effect.txt from: %s\n", effectFolder.c_str());
+		HC_LOG_ERROR("[Effect] Failed to load effect.txt from: {}", effectFolder.c_str());
 		return false;
 	}
 
@@ -381,12 +574,12 @@ bool CharacterInstance::loadEffectCharacter()
 
 		if (std::filesystem::exists(patPath)) {
 			bool patLoaded = effect->loadPAT(effectPatPath);
-			printf("[Effect] %s: sys_effect.pat %s from parent directory (%d part sets)\n",
+			HC_LOG_INFO("[Effect] {}: sys_effect.pat {} from parent directory ({} part sets)",
 				   m_name.c_str(),
 				   patLoaded ? "loaded" : "FAILED",
 				   patLoaded ? (int)effect->parts.partSets.size() : 0);
 		} else {
-			printf("[Effect] %s: sys_effect.pat not found in parent directory\n", m_name.c_str());
+			HC_LOG_WARN("[Effect] {}: sys_effect.pat not found in parent directory", m_name.c_str());
 		}
 	} else {
 		// MBAACC: data/chr###/effect.pat
@@ -395,7 +588,7 @@ bool CharacterInstance::loadEffectCharacter()
 
 		if (std::filesystem::exists(patPath)) {
 			bool patLoaded = effect->loadPAT(effectPatPath);
-			printf("[Effect] %s: effect.pat %s (%d part sets)\n",
+			HC_LOG_INFO("[Effect] {}: effect.pat {} ({} part sets)",
 				   m_name.c_str(),
 				   patLoaded ? "loaded" : "FAILED",
 				   patLoaded ? (int)effect->parts.partSets.size() : 0);
@@ -403,6 +596,6 @@ bool CharacterInstance::loadEffectCharacter()
 	}
 
 	effectCharacter = std::move(effect);
-	printf("[Effect] %s: Loaded effect character from %s\n", m_name.c_str(), effectFolder.c_str());
+	HC_LOG_INFO("[Effect] {}: Loaded effect character from {}", m_name.c_str(), effectFolder.c_str());
 	return true;
 }

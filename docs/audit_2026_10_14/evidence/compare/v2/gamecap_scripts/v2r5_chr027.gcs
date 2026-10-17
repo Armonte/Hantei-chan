@@ -1,0 +1,26 @@
+# render-match4 round 5 (2026-10-15): pups chr027 p449 on frames where the PUPS-bank part is on screen
+# (frame 4: CG 869 + .pat set 839, frame 6: CG 870 + .pat set 840; cutout 427 PPPA 254, PRAL 1), unlit
+# (aura RGB held 0), each with a same-session plate; idle control with its own plate.
+include ../games/uni2.gcs
+let P1CHR 27
+let P2CHR 0
+include ../games/uni2_to_training.gcs
+set OUTD C:\dev\hantei-chan\tools\gamecap\captures\v2
+hold f32 [P1+0x8C0]+0x40 0
+hold f32 [P1+0x8C0]+0x44 0
+hold f32 [P1+0x8C0]+0x48 0
+step 3
+set CTRL ctrl_chr027_p0_r5
+include ../games/uni2_v2_ctrl_plate.gcs
+set CASE pups_chr027_p449f4_r5
+set PAT 449
+set SETFRAME 4
+set FRAME 4
+set GTICK 1
+set STEPKEYS F6
+include ../games/uni2_v2_case_aura_plate.gcs
+set CASE pups_chr027_p449f6_r5
+set SETFRAME 6
+set FRAME 6
+include ../games/uni2_v2_case_aura_plate.gcs
+quit

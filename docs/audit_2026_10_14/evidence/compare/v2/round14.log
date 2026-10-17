@@ -1,0 +1,99 @@
+reg chr019_r5        +0.2500 -0.3750  (ctrl_chr019_p0)
+reg chr019_r5_z1     +0.0000 +0.0000  (ctrl_chr019_p0_z1)
+reg chr020_r3        +0.0000 +0.0000  (ctrl_chr020_p0)
+reg chr024_unlit     +0.0000 +0.0000  (ctrl_chr024_p0)
+reg chr027_r5        +0.2500 -0.3750  (ctrl_chr027_p0)
+reg chr027_r5_z1     +0.0000 +0.0000  (ctrl_chr027_p0_z1)
+reg mbtl_chr001_nb   +0.2500 +0.0000  (mbtl_patctrl_chr001_p238f10)
+-- ctrl_chr020_p0 (reg chr020_r3)
+ctrl_chr020_p0: raw 14.04 / 97.7%  lit 0.28 / 0.0%  band+-1 0.24 / 0.0%  (37551 px, refine +0,+0)  free fit k,
+-- afhk_cg_chr020_p435_t27 (reg chr020_r3)
+afhk_cg_chr020_p435_t27: raw 11.30 / 78.4%  lit 0.63 / 0.2%  band+-1 0.21 / 0.0%  (4421 px, refine +0,+0)  fre
+-- afhk_cg_chr020_p437_t2 (reg chr020_r3)
+afhk_cg_chr020_p437_t2: raw 12.02 / 75.7%  lit 0.27 / 0.0%  band+-1 0.20 / 0.0%  (3517 px, refine +0,+0)  free
+-- pras_chr020_p5f2 (reg chr020_r3)
+pras_chr020_p5f2: raw 7.46 / 45.2%  lit 2.12 / 5.0%  band+-1 0.59 / 0.6%  (63829 px, refine +0,+0)  free fit k
+-- ctrl_chr027_p0 (reg chr027_r5)
+ctrl_chr027_p0: raw 15.06 / 98.7%  lit 0.49 / 0.4%  band+-1 0.45 / 0.4%  (27861 px, refine +0,+0)  free fit k,
+-- pups_chr027_p449f4 (reg chr027_r5)
+pups_chr027_p449f4: raw 12.68 / 100.0%  lit 0.34 / 0.0%  band+-1 0.32 / 0.0%  (61063 px, refine +0,+0)  free f
+-- ctrl_chr019_p0 (reg chr019_r5)
+ctrl_chr019_p0: raw 14.31 / 94.5%  lit 0.28 / 0.0%  band+-1 0.25 / 0.0%  (61002 px, refine +0,+0)  free fit k,
+-- flipHV_chr019_p153 (reg chr019_r5)
+flipHV_chr019_p153: raw 3.65 / 9.8%  lit 3.65 / 9.8%  band+-1 1.84 / 4.1%  (73156 px, refine +0,+0)  free fit 
+-- ctrl_chr019_p0_z1 (reg chr019_r5_z1)
+ctrl_chr019_p0_z1: raw 14.31 / 94.5%  lit 0.28 / 0.0%  band+-1 0.25 / 0.0%  (60665 px, refine +0,+0)  free fit
+-- flipHV_chr019_p153_z1 (reg chr019_r5_z1)
+flipHV_chr019_p153_z1: raw 0.32 / 0.1%  lit 0.32 / 0.1%  band+-1 0.31 / 0.1%  (101371 px, refine +0,+0)  free 
+-- flipHV_chr019_p153_solo8_z1 (reg chr019_r5_z1)
+flipHV_chr019_p153_solo8_z1: raw 0.28 / 0.0%  lit 0.28 / 0.0%  band+-1 0.28 / 0.0%  (44344 px, refine +0,+0)  
+-- ctrl_chr024_p0 (reg chr024_unlit)
+ctrl_chr024_p0: raw 16.24 / 99.1%  lit 0.27 / 0.0%  band+-1 0.23 / 0.0%  (16698 px, refine +0,+0)  free fit k,
+-- rect_chr024_p76 (reg chr024_unlit)
+rect_chr024_p76: raw 19.22 / 79.0%  lit 19.22 / 79.0%  band+-1 9.10 / 50.5%  (400 px, refine +0,+0)  free fit 
+-- mbtl_patctrl_chr001_p238f10 (reg mbtl_chr001_nb)
+mbtl_patctrl_chr001_p238f10: raw 3.40 / 8.1%  lit 3.40 / 8.1%  band+-1 2.50 / 7.1%  (34178 px, refine +0,+0)  
+-- mbtl_patctrl_chr001_p277f0 (reg mbtl_chr001_nb)
+mbtl_patctrl_chr001_p277f0: raw 1.66 / 5.8%  lit 1.66 / 5.8%  band+-1 0.78 / 2.6%  (9931 px, refine +0,+0)  fr
+-- mbtl_flipV_chr001_p157f2 (reg mbtl_chr001_nb)
+mbtl_flipV_chr001_p157f2: raw 4.46 / 16.4%  lit 4.46 / 16.4%  band+-1 2.19 / 5.2%  (35346 px, refine +0,+0)  f
+-- mbtl_flipV_chr001_p157f2_solo_s8 (reg mbtl_chr001_nb)
+mbtl_flipV_chr001_p157f2_solo_s8: raw 1.03 / 2.1%  lit 1.03 / 2.1%  band+-1 0.67 / 0.4%  (32674 px, refine +0,
+-- mbtl_flipV_chr001_p157f2_solo_s456 (reg mbtl_chr001_nb)
+mbtl_flipV_chr001_p157f2_solo_s456: raw 12.10 / 54.4%  lit 12.10 / 54.4%  band+-1 5.15 / 18.2%  (11791 px, ref
+-- mbtl_pups_chr011_p309 (reg mbtl_chr001_nb)
+mbtl_pups_chr011_p309: raw 0.59 / 1.1%  lit 0.59 / 1.1%  band+-1 0.25 / 0.2%  (139198 px, refine +0,+0)  free 
+-- pras_chr020_p5f2_z1 (reg chr020_r3)
+pras_chr020_p5f2_z1: raw 6.82 / 46.0%  lit 1.01 / 1.6%  band+-1 0.50 / 0.2%  (63496 px, refine +0,+0)  free fi
+-- ctrl_chr027_p0_z1 (reg chr027_r5_z1)
+ctrl_chr027_p0_z1: raw 15.05 / 98.6%  lit 0.50 / 0.4%  band+-1 0.45 / 0.4%  (27610 px, refine +0,+0)  free fit
+-- pups_chr027_p449f4_z1 (reg chr027_r5_z1)
+pups_chr027_p449f4_z1: raw 13.54 / 100.0%  lit 0.59 / 0.4%  band+-1 0.43 / 0.0%  (120404 px, refine +0,+0)  fr
+-- rect_chr024_p76_z1 (reg chr024_unlit)
+rect_chr024_p76_z1: raw 0.33 / 0.0%  lit 0.33 / 0.0%  band+-1 0.24 / 0.0%  (400 px, refine +0,+0)  free fit k,
+-- pras_chr020_p5f2_solo_s12_z1 (reg chr020_r3)
+pras_chr020_p5f2_solo_s12_z1: raw 8.72 / 64.1%  lit 0.42 / 0.6%  band+-1 0.33 / 0.5%  (44435 px, refine +0,+0)
+-- pras_chr020_p5f2_solo_slin_z1 (reg chr020_r3)
+pras_chr020_p5f2_solo_slin_z1: raw 6.93 / 50.3%  lit 0.41 / 0.4%  band+-1 0.34 / 0.4%  (56518 px, refine +0,+0
+-- pras_chr020_p5f2_solo_s1025_z1 (reg chr020_r3)
+pras_chr020_p5f2_solo_s1025_z1: raw 13.18 / 98.7%  lit 0.28 / 0.0%  band+-1 0.24 / 0.0%  (28578 px, refine +0,
+-- mbtl_patctrl_chr001_p238f10_z1 (reg 0,0)
+mbtl_patctrl_chr001_p238f10_z1: raw 3.25 / 9.0%  lit 3.25 / 9.0%  band+-1 2.50 / 7.7%  (34044 px, refine +0,+0
+-- mbtl_patctrl_chr001_p277f0_z1 (reg 0,0)
+mbtl_patctrl_chr001_p277f0_z1: raw 0.00 / 0.0%  lit 0.00 / 0.0%  band+-1 0.00 / 0.0%  (9876 px, refine +0,+0) 
+-- mbtl_flipV_chr001_p157f2_z1 (reg 0,0)
+mbtl_flipV_chr001_p157f2_z1: raw 1.28 / 3.6%  lit 1.28 / 3.6%  band+-1 0.82 / 0.6%  (49686 px, refine +0,+0)  
+-- mbtl_pups_chr011_p309_z1 (reg 0,0)
+mbtl_pups_chr011_p309_z1: raw 0.14 / 0.2%  lit 0.14 / 0.2%  band+-1 0.07 / 0.0%  (146256 px, refine +0,+0)  fr
+-- mbtl_flipV_chr001_p157f2_solo_s8_z1 (reg 0,0)
+mbtl_flipV_chr001_p157f2_solo_s8_z1: raw 0.79 / 3.6%  lit 0.79 / 3.6%  band+-1 0.55 / 1.1%  (43965 px, refine 
+-- mbtl_flipV_chr001_p157f2_solo_s456_z1 (reg 0,0)
+mbtl_flipV_chr001_p157f2_solo_s456_z1: raw 0.75 / 0.8%  lit 0.75 / 0.8%  band+-1 0.70 / 0.5%  (13156 px, refin
+-- pras_chr020_p5f2_z1 (reg chr020_r3)
+pras_chr020_p5f2_z1: raw 6.69 / 46.0%  lit 0.88 / 1.5%  band+-1 0.76 / 1.3%  (63496 px, refine +0,+0)  free fi
+-- pras_chr020_p5f2_z1 vs pras_chr020_p5f2_r3 split by the s12 / slin solo .pat shots
+pras_chr020_p5f2_solo_s12_z1_pat only    px  10614 mean 1.17 share 18%
+pras_chr020_p5f2_solo_slin_z1_pat only   px  22337 mean 1.63 share 52%
+both                                     px  14864 mean 0.79 share 17%
+neither                                  px  15681 mean 0.60 share 13%
+-- pras_chr020_p5f2_z1 vs pras_chr020_p5f2_r13 split by the s12 / slin solo .pat shots
+pras_chr020_p5f2_solo_s12_z1_pat only    px  10614 mean 4.16 share 71%
+pras_chr020_p5f2_solo_slin_z1_pat only   px  22337 mean 0.28 share 10%
+both                                     px  14864 mean 0.38 share 9%
+neither                                  px  15681 mean 0.40 share 10%
+-- pras_chr020_p5f2_z1 ring mask (r13 capture)
+all footprint                px  63496 mean 0.98 share 100%
+ring mask (editor | game)    px  41849 mean 1.35 share 91%
+  editor rings only          px  24958 mean 0.32 share 13%
+  game rings only            px   1296 mean 31.65 share 66%
+masked (off rings)           px  21647 mean 0.27 share 9%
+-- mbtl_patctrl_chr001_p238f10_z1 tray / HUD split
+-1,-1:18.37 0,-1:16.53 1,-1:16.12
+-1,0:14.57 0,0:7.43 1,0:14.97
+-1,1:18.09 0,1:18.73 1,1:19.91
+signed -3.4335602750397998
+HUD-occluded opaque-tray px 767 rows 123 137
+footprint                            px  34044 mean 3.33 share 100%
+HUD rows (y >= first occluded row)   px  10473 mean 7.61 share 70%
+off HUD rows                         px  23571 mean 1.43 share 30%
+s5 off HUD                           px   8776 mean 2.45 share 19%

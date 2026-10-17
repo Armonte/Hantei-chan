@@ -1,0 +1,718 @@
+// ================================================================================
+//                         HOW TO READ A COMMAND ROW
+// ================================================================================
+//
+//   ID   INPUT   FLAG1      FLAG2      PATTERN   METER   ASSIST   PROJ   DASH
+//   390  236C+D  10010101   11000011   211       0       0        0      0
+//
+//   ID       Number used by HA6 cancels/checks and [ExComCheck]. Do not renumber casually.
+//   INPUT    Motion + buttons. Directions use numpad notation: 2 down, 6 forward, etc.
+//   PATTERN  HA6 pattern that starts when the command succeeds.
+//   METER    Internal hundredths: 10000 = 100 meter; 15000 = 150; 20000 = 200.
+//   LAST 3   Assist gate | Projectile-variable gate | Dash-variable gate.
+//
+
+// --------------------------------------------------------------------------------
+// FLAG1: WHEN IT MAY START + CANCEL CLASS
+
+// --------------------------------------------------------------------------------
+//
+//   Written as: [CLASS][ b6 b5 b4 b3 b2 b1 b0 ]       RIGHTMOST = b0
+//
+//   CLASS   0 Normal     1 Special     2 EX
+//   b6      Guard/Shield cancel
+//   b5      Follow-up/Rekka input only
+//   b4      Clear the input buffer when this starts
+//   b3      Normally cannot be canceled into
+//   b2      Allowed while crouching
+//   b1      Allowed in the air
+//   b0      Allowed while standing
+//
+
+// --------------------------------------------------------------------------------
+// FLAG2: EXTRA COMMAND/CANCEL RULES
+
+// --------------------------------------------------------------------------------
+//
+//   b7      Unknown
+//   b6      Can be kara-canceled into
+//   b5      Whiff-cancel-only behavior
+//   b4      Guard-cancel only (also requires FLAG1 b6)
+//   b3      May cancel into itself
+//   b2      May work before the round starts
+//   b1      Stricter input timing?       (legacy note; not fully verified)
+//   b0      Activates on button release? (legacy note; not fully verified)
+//
+
+// --------------------------------------------------------------------------------
+// REMEMBER
+
+// --------------------------------------------------------------------------------
+//
+//   - A HA6 frame condition is too late to stop a 0-frame command.
+//     Use a _c gate (Projectile/Dash/ExComCheck) when the move must not start.
+//
+//   - The METER column checks availability. The move normally uses Effect 2/Type 50
+//     to perform the corresponding meter consumption.
+//
+//   - Use // for notes and keep this file saved as CP932 / Shift-JIS.
+//
+// ================================================================================
+
+
+// SUPERS 15 ~ 25 ----------------------------------------------------------------------
+
+
+18    624624A+B     20010101 01000001  162   10000  0 0 0  // SHERMIE HOLD
+19    6321463214B+D     20010101 01000001  163   20000  0 0 0  // SHERMIE HOLD LV2
+
+
+23        41236C 20000101 00000001  250   65535  0 0 0  // ARC DRIVE
+//23        41236C 20000101 00000001  250   65535  0 0 0  // ARC DRIVE AIR
+
+25        41236D 20000101 00000001  299   65535  0 0 0  // LAST ARC MANUAL P1
+26        41236D 20100111 00000001  299   65535  0 0 0  // LAST ARC MANUAL P1 AIR CANCEL
+
+
+// COMMAND NORMALS 600 ~ 700 ------------------------------------------------------------
+
+
+670       3+C  00000101 00000000  108   0  0 0 0  // 3C SHERMIE LAUNCH
+671       6+C  00000101 00000000  105   0  0 0 0  // 6B SHERMIE STAND
+672       3+B  00000101 00000000  106   0  0 0 0  // 3B ANTI AIR CHOP
+673       4+C  00000101 00000000  107   0  0 0 0  // 4C CHOPP
+
+//674       2+B  00000010 00000000  117   0  0 0 0  // j.2B KNEE
+//675       3+B  00000010 00000000  117   0  0 0 0  // j.2B KNEE
+
+//676       V+B  00100010 00000000  118   0  0 0 0  // j.2B KNEE BACKDASH CANCEL
+
+678       2+C  00000010 00000000  123   0  0 0 0  // j.2C ELBOW
+679       3+C  00000010 00000000  123   0  0 0 0  // j.2C ELBOW
+
+680       B+C  00000101 01000000  101   0  0 0 0  // 5BC BLOWBACK
+681       B+C  00000010 01000001  102   0  0 0 0  // JBC BLOWBACK
+
+682       V+A  10100101 00000000  116   0  0 0 0  // 追加しゃがみ弱
+
+
+// UNIVERSAL 0 ~ 19 ---------------------------------------------------------
+
+
+06      A+B+D 00100101 01000000  264   15000  0 0 0  // ROMAN CANCEL
+
+07      A+B+D 00100010 01000000  266   15000  0 0 0  // AIR ROMAN CANCEL  
+
+08      A+B+D 00110101 01000000  264   65535  0 0 0  // ROMAN CANCEL MAX WHIFF CANCEL
+
+09      A+B+D 00100010 01000000  266   65535  0 0 0  // AIR ROMAN CANCEL MAX WHIFF CANCEL
+
+10      A+B+D 00100111 01000000  264   15000  0 0 0  // ROMAN CANCEL GROUND-AIR
+
+11      A+B+D 00110111 01000000  264   65535  0 0 0  // ROMAN CANCEL MAX WHIFF CANCEL GROUND-AIR
+
+12      A+B+D 21000101 00000000  264   15000  0 0 0  // P1 SHIELD ROMAN CANCEL 
+
+13      A+B+D 21000111 00000000  266   15000  0 0 0  // P1 SHIELD AIR ROMAN CANCEL 
+
+// MOVEMENT 20 ~ 200 ----------------------------------------------------------------
+
+79         0V9  00001101 00000100  65   0      0 0 0  // F SJUMP
+78         0V8  00001101 00000100  66   0      0 0 0  // N SJUMP
+77         0V7  00001101 00000100  67   0      0 0 0  //  B SJUMP
+
+89         V9  00101101 00000100  65   0      0 0 0  // EXTRA BUFFER F SJUMP
+88         V8  00101101 00000100  66   0      0 0 0  // EXTRA BUFFER N SJUMP
+87         V7  00101101 00000100  67   0      0 0 0  // EXTRA BUFFER B SJUMP
+
+99         V9  00100010 00000100  74   0      0 0 0  // F S DJUMP
+98         V8  00100010 00000100  75   0      0 0 0  // N S DJUMP
+97         V7  00100010 00000100  76   0      0 0 0  // B S DJUMP
+
+29         0V9  00101101 00000100  95   0      0 0 0  // F SJUMP CANCEL
+28         0V8  00101101 00000100  96   0      0 0 0  // N SJUMP CANCEL
+27         0V7  00101101 00000100  97   0      0 0 0  //  B SJUMP CANCEL
+
+
+41    1+A+B+C  10000010 01000100  90   0  0 0 2  // A+B DASH STANCE
+42    2+A+B+C  10000010 01000101  92   0  0 0 2  // A+B DASH STANCE
+43    3+A+B+C  10000010 01000100  89   0  0 0 2  // A+B DASH STANCE
+
+51      1+A+C  10000010 01000100  88   0  0 0 2  // A+B DASH STANCE
+52      2+A+C  10000010 01000100  91   0  0 0 2  // A+B DASH STANCE
+53      3+A+C  10000010 01000100  87   0  0 0 2  // A+B DASH STANCE
+
+
+106      6+A+B  10000010 01000100  85   0  0 0 2  // A+B DASH STANCE
+104      4+A+B  10000010 01000100  86   0  0 0 2  // A+B DASH STANCE
+
+101      1+A+B  10000010 01000100  90   0  0 0 2  // A+B DASH STANCE
+102      2+A+B  10000010 01000100  92   0  0 0 2  // A+B DASH STANCE
+103      3+A+B  10000010 01000100  89   0  0 0 2  // A+B DASH STANCE
+
+107      7+A+B  10000010 01000100  88   0  0 0 2  // A+B DASH STANCE
+108      8+A+B  10000010 01000100  91   0  0 0 2  // A+B DASH STANCE
+109      9+A+B  10000010 01000100  87   0  0 0 2  // A+B DASH STANCE
+
+
+116        A+B  10000010 01000100  85   0  0 0 1  // A+B DASH STANCE
+//110        A+B  10000010 01000101  84   0  0 0 1  // A+B DASH STANCE
+
+30       0606  00011101 00000100  60   0  0 0 1  // GROUND DASH
+31       0404  00001101 00000100  61   0  0 0 0  // BACKDASH
+
+//32        606  00100101 01000000  60   0  0 0 1  // ROMAN CANCEL DASH
+
+33       0606  00000010 00000100  85   0  0 0 2  // AIR DASH FORWARD
+34       0404  00000010 00000100  86   0  0 0 2  // AIR DASH BACKWARD
+
+36      6+A+B  00001101 00000100  60   0  0 0 1  // GROUND DASH MACRO
+37      4+A+B  00001101 00000100  61   0  0 0 0  // GROUND BACKDASH MACRO
+
+60       2+C+D 00001101 01000000  243   0  0 0 0  // 避け
+61       3+C+D 00001101 01000000  244   0  0 0 0  // 避け
+62       1+C+D 00001101 01000000  245   0  0 0 0  // 避け
+
+64       2+C+D 10001010 01000000  240   0  0 0 0  // 空中避け
+65       3+C+D 10001010 01000000  241   0  0 0 0  // 空中避け
+66       1+C+D 10001010 01000000  242   0  0 0 0  // 空中避け
+
+67       2+C+D 10000010 01000000  240  10000  0 0 0  // キャンセル空中避け
+68       3+C+D 10000010 01000000  241  10000  0 0 0  // キャンセル空中避け
+69       1+C+D 10000010 01000000  242  10000  0 0 0  // キャンセル空中避け
+
+//SPECIALS 200 ~ 500----------------------------------------------------------------------------
+
+// UC SYSTEM ----------------------------------------------------------------
+
+
+//UC STARTER -------------------------------------------------------------------
+
+400     046+C    00000101 01000001  287   0  0 0 0  // 46D KICK
+
+//480      214A  10010101 00000001  143   0  0 0 0  // 小　ハードエッジ ANGEL STOMP
+
+//--------------------------------------------------------------------------
+
+//440    41236A    10000101 00000000  170   0  0 0 0  // RUN UP A
+//441    41236A    10100101 00000000  170   0  0 0 0  // RUN UP A REKKA
+//442     4136A    10000101 00000000  170   0  0 0 0  // RUN UP A
+//443     4136A    10100101 00000000  170   0  0 0 0  // RUN UP A REKKA
+
+445    41236B    10000101 00000000  171   0  0 0 0  // RUN UP B
+446    41236B    10100101 00000000  171   0  0 0 0  // RUN UP B REKKA
+447     4136B    10000101 00000000  171   0  0 0 0  // RUN UP B
+448     4136B    10100101 00000000  171   0  0 0 0  // RUN UP B REKKA
+
+//--------------------------------------------------------------------------
+
+
+//UC CIRCLE START ------------------------------------------------------------------
+
+//411     8+A    10100101 00000000  151   0  0 0 0  // UC 8A UPPER - CANCEL 6B OR 2B
+
+//412     2+B    10110101 00000001  152   0  0 0 0  // UC 2B ASSAULT - CANCEL 6A OR 8A
+
+//413     6+A    10100101 00000000  153   0  0 0 0  // UC 6A HAMMER BLOW - CANCEL 2B OR 8B
+
+//414     8+B    10100101 00000000  154   0  0 0 0  // UC 8B HIGH - CANCEL 2A OR 6A
+
+//415     2+A    10110101 00000001  155   0  0 0 0  // UC 2A UNDER BLOW - CANCEL 8B OR 6B
+
+//416     6+B    10100101 00000000  156   0  0 0 0  // UC 6B SOBAT - CANCEL 2A OR 8A
+
+
+// OVERDRIVE OD -----------------------------------------------------------------------------
+
+//421     8+A+D    10100101 01000000  211   0  0 11 0  // UC OD 8A UPPER
+
+390     236A+D   10100101 01000000  217   0  0 0 0  // DAME NE OD
+391     214A+D   10100101 01000000  217   0  0 0 0  // DAME NE OD
+
+395      236A+D    10100101 00000000  218   0  0 0 0  // 236A REKKA DAME NE LEG 214 VER OD
+396      214A+D    10100101 00000000  218   0  0 0 0  // 236A REKKA DAME NE LEG 214 VER OD
+
+
+360    236A+D  10010101 00000001  215   0  0 0 0  // SHERMIE DIAMOND DUST OD
+363    236A+D  10110101 00000001  216   0  0 0 0  // SHERMIE DIAMOND DUST OD air hit rekka
+
+
+//UC ENDER ------------------------------------------------------------------
+
+430     0606B  10100101 00000000  161   0  0 0 0  // UC 66B ENDER
+431      236B  10100101 00000000  162   0  0 0 0  // 236B COMMAND GRAB ENDER
+432     0606C  10100101 00000000  165   0  0 0 0  // 236B COMMAND GRAB ENDER
+433     0606A  10100101 00000000  163   0  0 0 0  // 236B COMMAND GRAB ENDER
+
+
+//SPECIALS-------------------------------------------------------------------------
+
+
+410    421A     10010101 00000001  158   0  0 0 0  // KIMATTA A
+411    421B     10010101 00000001  159   0  0 0 0  // KIMATTA B
+
+415    623A     10010010 00000001  160   0  0 0 0  // J.623A ANTI AIR GRAB
+416    623B     10010010 00000001  161   0  0 0 0  // J.623B ANTI AIR GRAB
+
+420    41236A   10000101 00000000  141   0  0 0 0  // SUKI NAN DESHOU A
+421    41236B   10000101 00000000  141   0  0 0 0  // SUKI NAN DESHOU B
+
+450    214A     10010101 00000001  166   0  0 0 0  // LEG GRAB A
+451    214B     10010101 00000001  166   0  0 0 0  // LEG GRAB B
+
+480    236A     10010101 00000001  147   0  0 0 0  // DIAMOND DUST A
+481    236B     10010101 00000001  148   0  0 0 0  // DIAMOND DUST B
+
+470    623A     10010101 00000001  170   0  0 0 0  // 623A ANTI AIR GRAB
+471    623B     10010101 00000001  171   0  0 0 0  // 623B ANTI AIR GRAB
+
+490    236A     10100101 00000000  175   0  0 0 0  // 236A REKKA DAME NE
+491    214A     10100101 00000000  175   0  0 0 0  // 236A REKKA DAME NE
+
+495    236A     10100101 00000000  177   0  0 0 0  // 236A REKKA DAME NE LEG 214 VER
+496    214A     10100101 00000000  177   0  0 0 0  // 236A REKKA DAME NE LEG 214 VER
+
+
+//MAX CANCELS 200 ~ ------------------------------------------------------------------
+
+280        421B  10100101 00000000  180   1000  0 0 0  //   MAX CANCEL KIMATTA B
+281        421A  10100101 00000000  181   1000  0 0 0  //   MAX CANCEL KIMATTA A
+
+284      214A  10100101 00000000  183   1000  0 0 0  //   MAX CANCEL 214A
+285      623A  10100111 00000000  186   1000  0 0 0  //   ANGEL STOMP MAX CANCEL
+286      23A  10100111 00000000  186   1000  0 0 0  //   ANGEL STOMP MAX CANCEL
+//106      214A+D  10000101 01000010  123   0  0 01 0  //  ANGEL STOMP OD MAX CANCEL
+
+//160      63214A  10000101 01000010  123   0  0 01 0  //  ANGEL STOMP OD MAX CANCEL
+
+
+// DEFENSIVE 700 ~ 800 -----------------------------------------------------------------
+
+710       6A+D  00011101 01000001  320   0  0 0 0  // THROW
+711       4A+D  00011101 01000001  320   0  0 0 0  // THROW
+
+712       6A+D  00010101 01000001  320   0  0 0 0  // THROW SHIELD CANCEL
+713       4A+D  00010101 01000001  320   0  0 0 0  // THROW SHIELD CANCEL
+
+720       A+D  00010010 01000001  330   0  0 0 0  // AIR THROW
+
+719      A+D  10101101 01000000  344   0  0 0 0  //  GROUND THROW TECH REKKA INPUT LOCK
+729      A+D  10101010 01000000  347   0  0 0 0  //  AIR THROW TECH REKKA INPUT LOCK
+
+
+740          V+D 11001101 00101000  234   0  0 0 0  // CROUCH SHIELD
+741            D 11001101 00101000  233   0  0 0 0  // STAND SHIELD
+742            D 11001010 00101000  235   0  0 0 0  // AIR SHIELD
+
+730         214D 11000101 01010000  236   5000  0 0 0  // ブロッキング
+731         214D 10000101 00000000  236   0  0 0 0  // ブロッキング
+
+
+//EXTRA 800 ~ --------------------------------------------------------------------------
+
+
+//            A 10101101 00001000  001   0  0 0 0  // STAND A LAND CANCEL
+//802          2+A 10101101 00001000  004   0  0 0 0  // CROUCH A LAND CANCEL
+
+
+END
+
+
+// --------------------------------------------------------------------------------
+// TEAM CHANGE DATA
+
+// --------------------------------------------------------------------------------
+// Legacy team/tag-mode data. The exact meaning of this project's test pair is unverified.
+// Leave it unchanged unless we specifically research tag/team behavior.
+
+[TeamChangeData]
+test = 235, 236 // OLD TAG VALUES; PURPOSE UNKNOWN; LEAVE ALONE
+// DEFAULT THROW SETTINGS
+
+// --------------------------------------------------------------------------------
+// Format: Pattern ID, throw range.
+// Ground controls the normal ground throw; Air controls the normal air throw.
+// Pattern ID 0 means that default throw is not defined.
+
+[ThrowParam]
+Ground = 0,0 // PATTERN 0 | RANGE 0
+Air = 0,0 // PATTERN 0 | RANGE 0
+// CHARACTER STATUS / UNIVERSAL ACTION SETTINGS
+
+// --------------------------------------------------------------------------------
+// AirJumpNum = number of extra air jumps supplied by this command-data file.
+// Guard = four guard-related multipliers. Their exact slot order is still unverified.
+// CancelSparkPat_Ground/Air = ground/air Circuit Spark (burst) pattern.
+// For the air value, 0 disables air Circuit Spark. Other optional Status keys may exist.
+
+[Status]
+AirJumpNum = 1 // EXTRA AIR JUMPS: 1
+Guard = 0.9, 0.9, 0.85, 0.8 // 4 GUARD VALUES; ORDER UNKNOWN
+
+
+[ExComCheck]
+// ================================================================================
+//                     EXCOMCHECK: SHOULD THIS COMMAND START?
+// ================================================================================
+//
+// Each numbered entry (000, 001, 002...) is ONE rule for ONE command.
+// If the rule is false, that command is blocked before its first frame.
+//
+// CHOOSE THE TYPE:
+//
+//   Type 0   VANILLA EFFECT COLLISION
+//            Checks the player's existing collision boxes against a Special Box
+//            on one of that player's own spawned effects. P0 selects the player-box
+//            mode; P1 selects the effect's Special Box. Exact P0 modes need more study.
+//
+//   Type 1   VANILLA RANGE COLLISION (RYOUGI USES THIS)
+//            Builds a temporary horizontal range box around the player and checks it
+//            against a Special Box on that player's own effect/projectile.
+//            P0 = range, P1 = Special Box ID, P2 = range shape/mirror mode.
+//
+//   Type 2   CUSTOM VARIABLE GATE (OUR NEW SYSTEM)
+//            Compares one rollback-safe Custom Variable with a number.
+//            This is what OD, Max Cancel, Air Move, Shield RC, and SJC gates use here.
+//
+//   Type 3   HOLD / CHARGE GATE (EXTENDED MELTY)
+//            Reads this player's input history. It uses no Custom Variable.
+//            P0 = policy*1000 + partitions*10 + stream
+//              policy: 0 Transform | 1 Preserve | 2 Break on side switch
+//              partitions: 0..63 | 99 unlimited
+//              stream: 0 Direction | 1 A | 2 B | 3 C | 4 D | 5 E | 6 F
+//            P1 = accepted-input bitmask. Direction bit N accepts numpad N.
+//              only 4 = 16 | 1+4+7 = 146 | 3+6+9 = 584
+//            P2 = total charge frames | P3 = max internal gap
+//            P4 = final release/completion window
+//            Example P0=1010: Preserve + 1 partition + Direction stream.
+//
+// IMPORTANT: P0/P1/P2 mean different things for every Type.
+// The Type 2 layout below does NOT describe vanilla Type 0 or Type 1.
+//
+// READ A TYPE 2 RULE LIKE THIS:
+//
+//   CheckNum   Which command ID are we allowing/blocking?
+//   Type = 2   Use our Custom Variable comparison.
+//   P0         Which Custom Variable?
+//   P1         Which comparison?  0 == | 1 != | 2 < | 3 <= | 4 > | 5 >=
+//   P2         Compare the variable against this number.
+//   P3         Whose variable?     0 Self | 1 Opponent | 2 P1 | 3 P2
+//   P4 = 0     Reserved. Always leave it at 0.
+//
+// FORMULA:   CV[P0]  P1  P2
+// EXAMPLE:   P0=102, P1=0, P2=0  means  "CV102 must equal 0"
+//
+// SAME COMMAND TWICE = AND
+// If two entries use the same CheckNum, BOTH rules must be true.
+// Example: OD SJC checks both "not used yet" AND "enough OD resources".
+//
+// Num tells the game exactly how many numbered entries exist below.
+// Invalid indexes/operators/banks/reserved values safely block the command.
+// ================================================================================
+Num = 33 // TOTAL CHECKS BELOW: 000 to 032
+
+// OD GATING SYSTEM
+// OD MOVE 1: Diamond Dust OD; CustomVar[101] must equal 0.
+000_CheckNum = 360 // MOVE TO ALLOW / BLOCK
+000_Type = 2 // CUSTOM VARIABLE CHECK
+000_P0 = 101 // VARIABLE: CV101
+000_P1 = 0 // TEST: ==
+000_P2 = 0 // AGAINST: 0
+000_P3 = 0 // READ: SELF
+000_P4 = 0 // MUST STAY 0
+
+// OD MOVE 1: air-hit rekka route; CustomVar[101] must equal 0.
+001_CheckNum = 363 // MOVE TO ALLOW / BLOCK
+001_Type = 2 // CUSTOM VARIABLE CHECK
+001_P0 = 101 // VARIABLE: CV101
+001_P1 = 0 // TEST: ==
+001_P2 = 0 // AGAINST: 0
+001_P3 = 0 // READ: SELF
+001_P4 = 0 // MUST STAY 0
+
+// OD MOVE 2: Dame Ne OD (236 route); CustomVar[102] must equal 0.
+002_CheckNum = 390 // MOVE TO ALLOW / BLOCK
+002_Type = 2 // CUSTOM VARIABLE CHECK
+002_P0 = 102 // VARIABLE: CV102
+002_P1 = 0 // TEST: ==
+002_P2 = 0 // AGAINST: 0
+002_P3 = 0 // READ: SELF
+002_P4 = 0 // MUST STAY 0
+
+// OD MOVE 2: Dame Ne OD (214 route); CustomVar[102] must equal 0.
+003_CheckNum = 391 // MOVE TO ALLOW / BLOCK
+003_Type = 2 // CUSTOM VARIABLE CHECK
+003_P0 = 102 // VARIABLE: CV102
+003_P1 = 0 // TEST: ==
+003_P2 = 0 // AGAINST: 0
+003_P3 = 0 // READ: SELF
+003_P4 = 0 // MUST STAY 0
+
+// OD MOVE 2: rekka leg OD (236 route); CustomVar[102] must equal 0.
+004_CheckNum = 395 // MOVE TO ALLOW / BLOCK
+004_Type = 2 // CUSTOM VARIABLE CHECK
+004_P0 = 102 // VARIABLE: CV102
+004_P1 = 0 // TEST: ==
+004_P2 = 0 // AGAINST: 0
+004_P3 = 0 // READ: SELF
+004_P4 = 0 // MUST STAY 0
+
+// OD MOVE 2: rekka leg OD (214 route); CustomVar[102] must equal 0.
+005_CheckNum = 396 // MOVE TO ALLOW / BLOCK
+005_Type = 2 // CUSTOM VARIABLE CHECK
+005_P0 = 102 // VARIABLE: CV102
+005_P1 = 0 // TEST: ==
+005_P2 = 0 // AGAINST: 0
+005_P3 = 0 // READ: SELF
+005_P4 = 0 // MUST STAY 0
+
+// AIR MOVE GATING SYSTEM
+// AIR MOVE 1: Shermie j.623A; CustomVar[401] must equal 0.
+006_CheckNum = 415 // MOVE TO ALLOW / BLOCK
+006_Type = 2 // CUSTOM VARIABLE CHECK
+006_P0 = 401 // VARIABLE: CV401
+006_P1 = 0 // TEST: ==
+006_P2 = 0 // AGAINST: 0
+006_P3 = 0 // READ: SELF
+006_P4 = 0 // MUST STAY 0
+
+// AIR MOVE 1: Shermie j.623B; CustomVar[401] must equal 0.
+007_CheckNum = 416 // MOVE TO ALLOW / BLOCK
+007_Type = 2 // CUSTOM VARIABLE CHECK
+007_P0 = 401 // VARIABLE: CV401
+007_P1 = 0 // TEST: ==
+007_P2 = 0 // AGAINST: 0
+007_P3 = 0 // READ: SELF
+007_P4 = 0 // MUST STAY 0
+
+// MANUAL LAST ARC PERMISSION (CV308) + SHIELD ROMAN CANCEL PERMISSION (CV307)
+// Command 25 = grounded Manual Last Arc (41236D); CV308 < 4 permits it.
+008_CheckNum = 25 // MOVE TO ALLOW / BLOCK
+008_Type = 2 // CUSTOM VARIABLE CHECK
+008_P0 = 308 // VARIABLE: CV308
+008_P1 = 2 // TEST: <
+008_P2 = 4 // AGAINST: 4
+008_P3 = 0 // READ: SELF
+008_P4 = 0 // MUST STAY 0
+
+// Command 26 = air-cancel Manual Last Arc (41236D); CV308 < 4 permits it.
+009_CheckNum = 26 // MOVE TO ALLOW / BLOCK
+009_Type = 2 // CUSTOM VARIABLE CHECK
+009_P0 = 308 // VARIABLE: CV308
+009_P1 = 2 // TEST: <
+009_P2 = 4 // AGAINST: 4
+009_P3 = 0 // READ: SELF
+009_P4 = 0 // MUST STAY 0
+
+// SHIELD RC: command 12 = grounded A+B+D; CV307 < 4 permits it.
+010_CheckNum = 12 // MOVE TO ALLOW / BLOCK
+010_Type = 2 // CUSTOM VARIABLE CHECK
+010_P0 = 307 // VARIABLE: CV307
+010_P1 = 2 // TEST: <
+010_P2 = 4 // AGAINST: 4
+010_P3 = 0 // READ: SELF
+010_P4 = 0 // MUST STAY 0
+
+// SHIELD RC: command 13 = aerial A+B+D; CV307 < 4 permits it.
+011_CheckNum = 13 // MOVE TO ALLOW / BLOCK
+011_Type = 2 // CUSTOM VARIABLE CHECK
+011_P0 = 307 // VARIABLE: CV307
+011_P1 = 2 // TEST: <
+011_P2 = 4 // AGAINST: 4
+011_P3 = 0 // READ: SELF
+011_P4 = 0 // MUST STAY 0
+
+// THROW-SHIELD CANCEL: command 712 = forward 6A+D; CV307 < 4 permits it.
+012_CheckNum = 712 // MOVE TO ALLOW / BLOCK
+012_Type = 2 // CUSTOM VARIABLE CHECK
+012_P0 = 307 // VARIABLE: CV307
+012_P1 = 2 // TEST: <
+012_P2 = 4 // AGAINST: 4
+012_P3 = 0 // READ: SELF
+012_P4 = 0 // MUST STAY 0
+
+// THROW-SHIELD CANCEL: command 713 = back 4A+D; CV307 < 4 permits it.
+013_CheckNum = 713 // MOVE TO ALLOW / BLOCK
+013_Type = 2 // CUSTOM VARIABLE CHECK
+013_P0 = 307 // VARIABLE: CV307
+013_P1 = 2 // TEST: <
+013_P2 = 4 // AGAINST: 4
+013_P3 = 0 // READ: SELF
+013_P4 = 0 // MUST STAY 0
+
+// OD SUPER-JUMP CANCEL SYSTEM
+// Forward OD SJC command 29: CV199 == 0 means OD SJC has not already been used this combo.
+014_CheckNum = 29 // MOVE TO ALLOW / BLOCK
+014_Type = 2 // CUSTOM VARIABLE CHECK
+014_P0 = 199 // VARIABLE: CV199
+014_P1 = 0 // TEST: ==
+014_P2 = 0 // AGAINST: 0
+014_P3 = 0 // READ: SELF
+014_P4 = 0 // MUST STAY 0
+
+// Neutral OD SJC command 28: CV199 == 0 means OD SJC has not already been used this combo.
+015_CheckNum = 28 // MOVE TO ALLOW / BLOCK
+015_Type = 2 // CUSTOM VARIABLE CHECK
+015_P0 = 199 // VARIABLE: CV199
+015_P1 = 0 // TEST: ==
+015_P2 = 0 // AGAINST: 0
+015_P3 = 0 // READ: SELF
+015_P4 = 0 // MUST STAY 0
+
+// Back OD SJC command 27: CV199 == 0 means OD SJC has not already been used this combo.
+016_CheckNum = 27 // MOVE TO ALLOW / BLOCK
+016_Type = 2 // CUSTOM VARIABLE CHECK
+016_P0 = 199 // VARIABLE: CV199
+016_P1 = 0 // TEST: ==
+016_P2 = 0 // AGAINST: 0
+016_P3 = 0 // READ: SELF
+016_P4 = 0 // MUST STAY 0
+
+// MAX CANCEL GATING SYSTEM
+// Command 280 = Max Cancel Kimatta B (421B); CV90 == 0 enables Max Cancels.
+017_CheckNum = 280 // MOVE TO ALLOW / BLOCK
+017_Type = 2 // CUSTOM VARIABLE CHECK
+017_P0 = 90 // VARIABLE: CV90
+017_P1 = 0 // TEST: ==
+017_P2 = 0 // AGAINST: 0
+017_P3 = 0 // READ: SELF
+017_P4 = 0 // MUST STAY 0
+
+// Command 281 = Max Cancel Kimatta A (421A); CV90 == 0 enables Max Cancels.
+018_CheckNum = 281 // MOVE TO ALLOW / BLOCK
+018_Type = 2 // CUSTOM VARIABLE CHECK
+018_P0 = 90 // VARIABLE: CV90
+018_P1 = 0 // TEST: ==
+018_P2 = 0 // AGAINST: 0
+018_P3 = 0 // READ: SELF
+018_P4 = 0 // MUST STAY 0
+
+// Command 284 = Max Cancel 214A; CV90 == 0 enables Max Cancels.
+019_CheckNum = 284 // MOVE TO ALLOW / BLOCK
+019_Type = 2 // CUSTOM VARIABLE CHECK
+019_P0 = 90 // VARIABLE: CV90
+019_P1 = 0 // TEST: ==
+019_P2 = 0 // AGAINST: 0
+019_P3 = 0 // READ: SELF
+019_P4 = 0 // MUST STAY 0
+
+// Command 285 = Max Cancel 623A route; CV90 == 0 enables Max Cancels.
+020_CheckNum = 285 // MOVE TO ALLOW / BLOCK
+020_Type = 2 // CUSTOM VARIABLE CHECK
+020_P0 = 90 // VARIABLE: CV90
+020_P1 = 0 // TEST: ==
+020_P2 = 0 // AGAINST: 0
+020_P3 = 0 // READ: SELF
+020_P4 = 0 // MUST STAY 0
+
+// Command 286 = alternate 23A input for the same Max Cancel route; CV90 == 0 enables Max Cancels.
+021_CheckNum = 286 // MOVE TO ALLOW / BLOCK
+021_Type = 2 // CUSTOM VARIABLE CHECK
+021_P0 = 90 // VARIABLE: CV90
+021_P1 = 0 // TEST: ==
+021_P2 = 0 // AGAINST: 0
+021_P3 = 0 // READ: SELF
+021_P4 = 0 // MUST STAY 0
+
+// OD SJC RESOURCE AVAILABILITY (CV198)
+// Forward OD SJC command 29: second AND gate; CV198 == 0 means OD resources/meter mode permit it.
+022_CheckNum = 29 // MOVE TO ALLOW / BLOCK
+022_Type = 2 // CUSTOM VARIABLE CHECK
+022_P0 = 198 // VARIABLE: CV198
+022_P1 = 0 // TEST: ==
+022_P2 = 0 // AGAINST: 0
+022_P3 = 0 // READ: SELF
+022_P4 = 0 // MUST STAY 0
+
+// Neutral OD SJC command 28: second AND gate; CV198 == 0 means OD resources/meter mode permit it.
+023_CheckNum = 28 // MOVE TO ALLOW / BLOCK
+023_Type = 2 // CUSTOM VARIABLE CHECK
+023_P0 = 198 // VARIABLE: CV198
+023_P1 = 0 // TEST: ==
+023_P2 = 0 // AGAINST: 0
+023_P3 = 0 // READ: SELF
+023_P4 = 0 // MUST STAY 0
+
+// Back OD SJC command 27: second AND gate; CV198 == 0 means OD resources/meter mode permit it.
+024_CheckNum = 27 // MOVE TO ALLOW / BLOCK
+024_Type = 2 // CUSTOM VARIABLE CHECK
+024_P0 = 198 // VARIABLE: CV198
+024_P1 = 0 // TEST: ==
+024_P2 = 0 // AGAINST: 0
+024_P3 = 0 // READ: SELF
+024_P4 = 0 // MUST STAY 0
+
+// ROMAN CANCEL EX-METER-MODE LOCK (CV306)
+// CV306 == 0 permits RC. Heat/Blood Heat set it to 1, rejecting the command before pattern 264/266.
+
+// GROUND ROMAN CANCEL: command 6
+025_CheckNum = 6 // MOVE TO ALLOW / BLOCK
+025_Type = 2 // CUSTOM VARIABLE CHECK
+025_P0 = 306 // VARIABLE: CV306 RC METER-MODE LOCK
+025_P1 = 0 // TEST: ==
+025_P2 = 0 // AGAINST: UNLOCKED
+025_P3 = 0 // READ: SELF
+025_P4 = 0 // MUST STAY 0
+
+// AIR ROMAN CANCEL: command 7
+026_CheckNum = 7 // MOVE TO ALLOW / BLOCK
+026_Type = 2 // CUSTOM VARIABLE CHECK
+026_P0 = 306 // VARIABLE: CV306 RC METER-MODE LOCK
+026_P1 = 0 // TEST: ==
+026_P2 = 0 // AGAINST: UNLOCKED
+026_P3 = 0 // READ: SELF
+026_P4 = 0 // MUST STAY 0
+
+// GROUND MAX/WHIFF ROMAN CANCEL: command 8
+027_CheckNum = 8 // MOVE TO ALLOW / BLOCK
+027_Type = 2 // CUSTOM VARIABLE CHECK
+027_P0 = 306 // VARIABLE: CV306 RC METER-MODE LOCK
+027_P1 = 0 // TEST: ==
+027_P2 = 0 // AGAINST: UNLOCKED
+027_P3 = 0 // READ: SELF
+027_P4 = 0 // MUST STAY 0
+
+// AIR MAX/WHIFF ROMAN CANCEL: command 9
+028_CheckNum = 9 // MOVE TO ALLOW / BLOCK
+028_Type = 2 // CUSTOM VARIABLE CHECK
+028_P0 = 306 // VARIABLE: CV306 RC METER-MODE LOCK
+028_P1 = 0 // TEST: ==
+028_P2 = 0 // AGAINST: UNLOCKED
+028_P3 = 0 // READ: SELF
+028_P4 = 0 // MUST STAY 0
+
+// GROUND-AIR ROMAN CANCEL: command 10
+029_CheckNum = 10 // MOVE TO ALLOW / BLOCK
+029_Type = 2 // CUSTOM VARIABLE CHECK
+029_P0 = 306 // VARIABLE: CV306 RC METER-MODE LOCK
+029_P1 = 0 // TEST: ==
+029_P2 = 0 // AGAINST: UNLOCKED
+029_P3 = 0 // READ: SELF
+029_P4 = 0 // MUST STAY 0
+
+// GROUND-AIR MAX/WHIFF ROMAN CANCEL: command 11
+030_CheckNum = 11 // MOVE TO ALLOW / BLOCK
+030_Type = 2 // CUSTOM VARIABLE CHECK
+030_P0 = 306 // VARIABLE: CV306 RC METER-MODE LOCK
+030_P1 = 0 // TEST: ==
+030_P2 = 0 // AGAINST: UNLOCKED
+030_P3 = 0 // READ: SELF
+030_P4 = 0 // MUST STAY 0
+
+// SHIELD GROUND ROMAN CANCEL: command 12
+031_CheckNum = 12 // MOVE TO ALLOW / BLOCK
+031_Type = 2 // CUSTOM VARIABLE CHECK
+031_P0 = 306 // VARIABLE: CV306 RC METER-MODE LOCK
+031_P1 = 0 // TEST: ==
+031_P2 = 0 // AGAINST: UNLOCKED
+031_P3 = 0 // READ: SELF
+031_P4 = 0 // MUST STAY 0
+
+// SHIELD AIR ROMAN CANCEL: command 13
+032_CheckNum = 13 // MOVE TO ALLOW / BLOCK
+032_Type = 2 // CUSTOM VARIABLE CHECK
+032_P0 = 306 // VARIABLE: CV306 RC METER-MODE LOCK
+032_P1 = 0 // TEST: ==
+032_P2 = 0 // AGAINST: UNLOCKED
+032_P3 = 0 // READ: SELF
+032_P4 = 0 // MUST STAY 0

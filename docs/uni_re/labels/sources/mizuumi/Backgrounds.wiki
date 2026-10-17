@@ -1,0 +1,132 @@
+<!-- source: https://mizuumi.wiki/w/User:Pixloen/FPANModding/Backgrounds (MediaWiki API, 2026-10-15) -->
+== About Stage Models ==
+French Bread games (except for DFCI) use a proprietary version of the Autodesk FBX format (fbx.bin or fbxex). MELTY BLOOD TYPE LUMINA also contains fbx.json. That means there are no conversion tools for fbx to fbx.bin / fbx.json either.
+
+Most stage mods are texture edits of exisitng UNI / MBTL / DFCI stages, ports of stages between games, or made of entirely 2D assets using the game's pat effect system.
+
+== State Properties ==
+
+Aside from editing textures, which is just a collection of .dds files, the lighting and positioning of stages can be edited through simple txt editing.
+Stage data is found in the file <code>[ROOT]\bg\BgList.txt</code>
+
+=== Common Properties ===
+
+{| class="wikitable"
+|-
+! Constant !! Comment
+|-
+| DataFile || Which folder this bg loads from.
+|-
+| Scale || How large the model appears in-game. X/Y/Z values.
+|-
+| Position || Offsets the position of the model. X/Y/Z values.
+|-
+| ViewGrid || Enabling this renders a simple looping grid on the floor.
+|-
+| FOV || Changes the FOV.
+|-
+| IsFog || Enables fog.
+|-
+| FogColor || RBGA value for the fog.
+|-
+| FogStart || Where the fog starts, distance from the camera.
+|-
+| FogEnd || Where the fog ends, distance from the camera.
+|-
+| IsBloom || Enables bloom.
+|-
+| StageSelTex || Changes what texture is used for the stages icon on the CSS.
+|-
+|}
+
+=== MBTL and UNI2 Properties ===
+
+{| class="wikitable"
+|-
+! Constant !! Comment
+|-
+| BGBloomEnable || 
+|-
+| BGBloomBlightness || 
+|-
+| BGBloomBiass (R/G/B) ||
+|-
+| BGBloomBlurRadius || 
+|-
+| BGBloomTextureSize || 
+|-
+| BGBloomAlpha || 
+|-
+| BGTinyFXAAEnable ||
+|-
+| BGTinyFXAAThreshold ||
+|-
+| BGTinyFXAALerpT ||
+|-
+|}
+
+== Adding Pat Effects to a Stage ==
+
+All effects can be added by placing a file named <code>object.txt</code> inside the background's folder. Below is a commented example of how to arrange this file. Information on how to make .pat Effects can be found (soon!).
+
+<pre>
+local array = {
+
+	panidata = "./bg/bg030/bg030.pat", // Set this to the .pat file you want to load effects from.
+	
+	data001 = // This represents an object. Each object must have it's own ID.
+	[
+		{ tag="frm", name="pat_effect1" },          // sets one frame to a pattern.
+		{ tag="prio", val=250 },                    // sets priority. above
+		{ tag="startpos", x=0, y=100 ,z=350 },      // sets position relative to the stage.
+		{ tag="startdelay", val=0 },                // delays the spawn of this object.
+	]
+	
+	data002 =
+	[
+		{ tag="frm", name="frame1", wait=30 },
+		{ tag="frm", name="frame2", wait=30 },
+
+		// adding wait value adds a duration to a frm (in frames)
+		// after which it moves on to the next frame, or loops if it cannot find any
+
+		{ tag="prio", val=250 },      
+
+		// if two objects have the same priority, then the object with the lower ID is 
+		// rendered above.
+          
+		{ tag="startpos", x=0, y=-5000 ,z=450 },
+		{ tag="startdelay", val=0 }, 
+	]
+}
+BgObject <- array;
+</pre>
+
+== FBXEX Documentation (WIP) ==
+<div class="toccolours mw-collapsible">
+00 - 04 | fbxex header
+----
+10 - 13 | ??? (be data size similar to .pat dds format)
+----
+14 - 17 | texture count (int)
+----
+7F bytes long | texture block
+contains texture name and then filled with 00.
+----
+4 bytes | material header?
+----
+4 bytes | material count
+----
+CB bytes long | material block
+
+first 7F bytes - material name
+
+4 bytes - index
+4 bytes - texture index
+43 bytes - value (set of floats, usually 1.0 or 0.0)
+----
+</div>
+
+
+{{Navbox-MFPG}}
+[[Category:Modding French Bread Games]]

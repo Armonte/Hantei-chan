@@ -117,7 +117,12 @@ void Vao::Bind()
 
 void Vao::Load()
 {
-	glGenBuffers(1, &vboId);
+	// Reuse the existing buffer: glBufferData re-specifies (orphans) the old
+	// storage. Generating a new id each Load leaked one VBO per call — with
+	// Parts::Draw calling Prepare/Load/Clear per part per frame, that orphaned
+	// 60·N buffers per second and Clear() never deleted them.
+	if(!vboId)
+		glGenBuffers(1, &vboId);
 	glBindBuffer(GL_ARRAY_BUFFER, vboId);
 	glBufferData(GL_ARRAY_BUFFER, totalSize, nullptr, usage);
 

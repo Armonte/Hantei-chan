@@ -1,0 +1,22 @@
+# render-match13 round 13 (2026-10-15): pras chr020 p5f2 with only some props of .pat part set 991 on screen
+# (s12 = the point-sampled additive slots 1,2; slin = the PRFL 1 additive slots 4,5,14,15,27,28). round13/chr020_solo991_s12.pat
+# = chr020.pat with every other slot of set 991 moved off-screen (tools/uni/s1_compare/pat_solo_prop.py), loaded as a
+# UNI2-IM loose-file override (removed at quit). The editor renders the same file from gamedata/uni2/data/chr020solos12.
+include ../games/uni2.gcs
+file_put ../round13/chr020_solo991_s12.pat UNI2-IM/Mods/data/chr020/chr020.pat
+let P1CHR 20
+let P2CHR 0
+include ../games/uni2_to_training.gcs
+set OUTD C:\dev\hantei-chan\tools\gamecap\captures\v2
+hold f32 [P1+0x8C0]+0x40 0
+hold f32 [P1+0x8C0]+0x44 0
+hold f32 [P1+0x8C0]+0x48 0
+step 3
+set CASE pras_chr020_p5f2_solo_s12
+set PAT 5
+set SETFRAME 2
+set FRAME 2
+set GTICK 1
+set STEPKEYS F6
+include ../games/uni2_v2_case_aura_plate.gcs
+quit

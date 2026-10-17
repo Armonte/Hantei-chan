@@ -1,0 +1,134 @@
+== PAC entry counts
+OK   C:\games\rbo\DATA\DATA01.PAC                183 entries
+OK   C:\games\rbo\DATA\DATA02.PAC                 70 entries
+OK   C:\games\rbo\DATA\Update01.PAC               63 entries
+OK   C:\games\rbo\DATA\Ex1Disc.PAC               380 entries
+OK   C:\games\rbo\DATA\Ex2Disc.PAC               316 entries
+OK   C:\games\rbo\DATA\Ex3Disc.pac               140 entries
+OK   C:\games\rbo\DATA\BG01.PAC                   37 entries
+OK   C:\games\rbo\DATA\BG02.PAC                   40 entries
+OK   C:\games\rbo\DATA\BGM.PAC                    59 entries
+OK   C:\games\rbo\DATA\SE.PAC                    200 entries
+OK   C:\games\rbo\DATA\ETC.PAC                    60 entries
+OK   C:\games\rbo\DATA\CG.PAC                     87 entries
+OK   C:/games/gof/Data/data00.dat               2323 entries
+OK   C:/games/gof/Data/data01.dat                192 entries
+OK   C:/games/gof/Data/data02.dat                142 entries
+OK   C:/games/gof/Data/data03.dat               3097 entries
+OK   C:/games/gof/Data/data04.dat                784 entries
+OK   C:/games/gof/Data/data05.dat                208 entries
+== PAC rebuild byte-identical
+OK   C:\games\rbo\DATA\DATA01.PAC byte-identical (183 entries)
+OK   C:\games\rbo\DATA\DATA02.PAC byte-identical (70 entries)
+OK   C:\games\rbo\DATA\Update01.PAC byte-identical (63 entries)
+OK   C:\games\rbo\DATA\Ex1Disc.PAC byte-identical (380 entries)
+OK   C:\games\rbo\DATA\Ex2Disc.PAC byte-identical (316 entries)
+OK   C:\games\rbo\DATA\Ex3Disc.pac byte-identical (140 entries)
+OK   C:\games\rbo\DATA\BG01.PAC byte-identical (37 entries)
+OK   C:\games\rbo\DATA\BG02.PAC byte-identical (40 entries)
+OK   C:\games\rbo\DATA\BGM.PAC byte-identical (59 entries)
+OK   C:\games\rbo\DATA\SE.PAC byte-identical (200 entries)
+OK   C:\games\rbo\DATA\ETC.PAC byte-identical (60 entries)
+OK   C:\games\rbo\DATA\CG.PAC byte-identical (87 entries)
+OK   C:/games/gof/Data/data00.dat byte-identical (2323 entries)
+OK   C:/games/gof/Data/data01.dat byte-identical (192 entries)
+OK   C:/games/gof/Data/data02.dat byte-identical (142 entries)
+OK   C:/games/gof/Data/data03.dat byte-identical (3097 entries)
+OK   C:/games/gof/Data/data04.dat byte-identical (784 entries)
+OK   C:/games/gof/Data/data05.dat byte-identical (208 entries)
+== container: HAN2RBO parse -> serialize
+SECTION container pass 413 fail 0 skipped 0 | n/a 7968: .CG (IMG) x24, .CHP (CHP bank) x23, .DAT (opaque) x1, .FNT (bitmap font) x12, .FOB (FOB script) x802, .IMG (IMG) x903, .PAT (bare PAT) x64, .REP (replay) x12, .RP2 (replay) x7, .RP3 (replay) x7, .RP4 (replay) x7, .TXT (text) x6, .WAV (RIFF WAVE) x6100
+== model: load into Hantei-chan, save
+SECTION model     pass 413 fail 0 skipped 0 | n/a 7968: .CG (IMG) x24, .CHP (CHP bank) x23, .DAT (opaque) x1, .FNT (bitmap font) x12, .FOB (FOB script) x802, .IMG (IMG) x903, .PAT (bare PAT) x64, .REP (replay) x12, .RP2 (replay) x7, .RP3 (replay) x7, .RP4 (replay) x7, .TXT (text) x6, .WAV (RIFF WAVE) x6100
+== pat: PAT parts reader + writer
+SECTION pat       pass 477 fail 0 skipped 0 | n/a 7904: .CG (IMG) x24, .CHP (CHP bank) x23, .DAT (opaque) x1, .FNT (bitmap font) x12, .FOB (FOB script) x802, .IMG (IMG) x903, .REP (replay) x12, .RP2 (replay) x7, .RP3 (replay) x7, .RP4 (replay) x7, .TXT (text) x6, .WAV (RIFF WAVE) x6100
+    empty PAT section .DAT (counted in pass): 7
+    empty PAT section .DT2 (counted in pass): 198
+== img: IMG parse -> serialize
+SECTION img       pass 927 fail 0 skipped 0 | n/a 7454: .CHP (CHP bank) x23, .DAT (HAN2RBO) x215, .DAT (opaque) x1, .DT2 (HAN2RBO) x198, .FNT (bitmap font) x12, .FOB (FOB script) x802, .PAT (bare PAT) x64, .REP (replay) x12, .RP2 (replay) x7, .RP3 (replay) x7, .RP4 (replay) x7, .TXT (text) x6, .WAV (RIFF WAVE) x6100
+    format 2 v7: 923
+    format 3 v8: 4
+== cg: CG bank load / re-import
+SECTION cg        pass 413 fail 0 skipped 0 | n/a 7968: .CG (IMG) x24, .CHP (CHP bank) x23, .DAT (opaque) x1, .FNT (bitmap font) x12, .FOB (FOB script) x802, .IMG (IMG) x903, .PAT (bare PAT) x64, .REP (replay) x12, .RP2 (replay) x7, .RP3 (replay) x7, .RP4 (replay) x7, .TXT (text) x6, .WAV (RIFF WAVE) x6100
+    empty CG area .DAT (counted in pass: no bank to load; the container round trip proves the empty area): 135
+    empty CG area .DT2 (counted in pass: no bank to load; the container round trip proves the empty area): 198
+    image: absent slot (no record): 19
+    image: re-imported identically (type 1): 3702
+    image: re-imported identically (type 2): 1135
+    image: re-imported identically (type 3): 53
+    image: re-imported identically (type 4): 604
+== fob: script bytecode
+SECTION fob       pass 802 fail 0 skipped 0 | n/a 7579: .CG (IMG) x24, .CHP (CHP bank) x23, .DAT (HAN2RBO) x215, .DAT (opaque) x1, .DT2 (HAN2RBO) x198, .FNT (bitmap font) x12, .IMG (IMG) x903, .PAT (bare PAT) x64, .REP (replay) x12, .RP2 (replay) x7, .RP3 (replay) x7, .RP4 (replay) x7, .TXT (text) x6, .WAV (RIFF WAVE) x6100
+    code bytes: 29249978
+    code bytes left as raw spans (data that does not decode): 1031288
+    decode errors (undecodable words met while following flow): 0
+    instructions decoded linearly from unreached gaps: 1419581
+    instructions reached by control flow (same count as tools/rbo/fobdis.py): 1783936
+    overlapping instructions dropped: 0
+== chp: GOF2 sprite banks
+SECTION chp       pass 23 fail 0 skipped 0 | n/a 8358: .CG (IMG) x24, .DAT (HAN2RBO) x215, .DAT (opaque) x1, .DT2 (HAN2RBO) x198, .FNT (bitmap font) x12, .FOB (FOB script) x802, .IMG (IMG) x903, .PAT (bare PAT) x64, .REP (replay) x12, .RP2 (replay) x7, .RP3 (replay) x7, .RP4 (replay) x7, .TXT (text) x6, .WAV (RIFF WAVE) x6100
+    image: absent slot (no record): 17
+    image: re-imported identically (type 1): 1035
+    image: re-imported identically (type 2): 88
+    image: re-imported identically (type 3): 34
+    image: re-imported identically (type 4): 158
+== cgm: CG manager model over every bank
+SECTION cgm       pass 436 fail 0 skipped 0 | n/a 7945: .CG (IMG) x24, .DAT (opaque) x1, .FNT (bitmap font) x12, .FOB (FOB script) x802, .IMG (IMG) x903, .PAT (bare PAT) x64, .REP (replay) x12, .RP2 (replay) x7, .RP3 (replay) x7, .RP4 (replay) x7, .TXT (text) x6, .WAV (RIFF WAVE) x6100
+    empty CG area: 333
+    images decoded identically to CG: 6809
+    model re-import of an image's own pixels keeps the bytes: 1006
+== rep: replays
+SECTION rep       pass 33 fail 0 skipped 0 | n/a 8348: .CG (IMG) x24, .CHP (CHP bank) x23, .DAT (HAN2RBO) x215, .DAT (opaque) x1, .DT2 (HAN2RBO) x198, .FNT (bitmap font) x12, .FOB (FOB script) x802, .IMG (IMG) x903, .PAT (bare PAT) x64, .TXT (text) x6, .WAV (RIFF WAVE) x6100
+    version 0 (.REP): 6
+    version 1 (.REP): 6
+    version 10 (.RP3): 7
+    version 10 (.RP4): 7
+    version 3 (.RP2): 7
+== fnt: bitmap fonts
+SECTION fnt       pass 12 fail 0 skipped 0 | n/a 8369: .CG (IMG) x24, .CHP (CHP bank) x23, .DAT (HAN2RBO) x215, .DAT (opaque) x1, .DT2 (HAN2RBO) x198, .FOB (FOB script) x802, .IMG (IMG) x903, .PAT (bare PAT) x64, .REP (replay) x12, .RP2 (replay) x7, .RP3 (replay) x7, .RP4 (replay) x7, .TXT (text) x6, .WAV (RIFF WAVE) x6100
+    font 10x10 1bpp: 1
+    font 10x10 1bpp + half-width: 1
+    font 12x12 1bpp: 1
+    font 12x12 1bpp + half-width: 2
+    font 12x12 4bpp: 2
+    font 16x16 1bpp + half-width: 1
+    font 20x20 2bpp + half-width: 1
+    font 22x22 4bpp: 1
+    font 24x24 4bpp: 1
+    font 24x24 4bpp + half-width: 1
+== audio: WAV chunks, MPEG frames
+SECTION audio     pass 6100 fail 0 skipped 0 | n/a 2281: .CG (IMG) x24, .CHP (CHP bank) x23, .DAT (HAN2RBO) x215, .DAT (opaque) x1, .DT2 (HAN2RBO) x198, .FNT (bitmap font) x12, .FOB (FOB script) x802, .IMG (IMG) x903, .PAT (bare PAT) x64, .REP (replay) x12, .RP2 (replay) x7, .RP3 (replay) x7, .RP4 (replay) x7, .TXT (text) x6
+    WAVE fmt tag 1 1ch 16bit: 5923
+    WAVE fmt tag 1 1ch 8bit: 3
+    WAVE fmt tag 1 2ch 16bit: 174
+== misc: BMP, text
+SECTION misc      pass 6 fail 0 skipped 0 | n/a 8375: .CG (IMG) x24, .CHP (CHP bank) x23, .DAT (HAN2RBO) x215, .DAT (opaque) x1, .DT2 (HAN2RBO) x198, .FNT (bitmap font) x12, .FOB (FOB script) x802, .IMG (IMG) x903, .PAT (bare PAT) x64, .REP (replay) x12, .RP2 (replay) x7, .RP3 (replay) x7, .RP4 (replay) x7, .WAV (RIFF WAVE) x6100
+    text .TXT: 6
+== opaque: entries without a reader
+NOTE C:\games\rbo\DATA\DATA01.PAC::DUSTNESS.DAT: stale misspelt copy of DUSTINESS.DAT; whole file is encrypted/compressed (7.998 bits/byte entropy, no HAN2RBO magic), not referenced by name by the game (rbo.exe/ETC.PAC only list DUSTINESS), no reader exists
+SECTION opaque    pass 1 fail 0 skipped 0 | n/a 8380: .CG (IMG) x24, .CHP (CHP bank) x23, .DAT (HAN2RBO) x215, .DT2 (HAN2RBO) x198, .FNT (bitmap font) x12, .FOB (FOB script) x802, .IMG (IMG) x903, .PAT (bare PAT) x64, .REP (replay) x12, .RP2 (replay) x7, .RP3 (replay) x7, .RP4 (replay) x7, .TXT (text) x6, .WAV (RIFF WAVE) x6100
+    opaque .DAT: 1
+== gof1: GOF1 archives + character .DAT
+SECTION gof1      pass 513 fail 0 skipped 0 | n/a 1: nested decoy entry (no data) x1
+      .B faces: 5259
+      .B vertices: 5431
+    .B (polygon object): 36
+    .BMP: 8
+    .CPF (CPU AI script, training dummy): 4
+    .CT (command table): 8
+    .EX3 (LLIF byte-pair blocks): 232
+    .FNT (bitmap font): 1
+    .MP3 (frames validated): 17
+    .WAV (RIFF chunks): 89
+    .WMT (table): 8
+    CHARSEL.CT (enciphered character table): 1
+    MULTICOM.TXT (legacy AI tables, unreferenced): 1
+    _<CHAR>COM.TXT (CPU AI script): 8
+    character .DAT: 71
+    nested archive (index re-encoded identically): 3
+    nested entry with size 0xFFFFFFFF (runs past the archive: overlap decoy, no data): 1
+    text (Shift-JIS, line structure): 22
+== animtest (behaviour check, not bytes)
+animtest patterns: 5323 agree, 0 differ, 10857 not comparable (no self-terminating flow; reasons: [ani flag depends on runtime state x2993] [cap x808] [does not terminate x6982] [runs off the end x74])
+SECTION animtest  pass 413 fail 0 skipped 0 | n/a 7968: .CG (IMG) x24, .CHP (CHP bank) x23, .DAT (opaque) x1, .FNT (bitmap font) x12, .FOB (FOB script) x802, .IMG (IMG) x903, .PAT (bare PAT) x64, .REP (replay) x12, .RP2 (replay) x7, .RP3 (replay) x7, .RP4 (replay) x7, .TXT (text) x6, .WAV (RIFF WAVE) x6100
+rc=0

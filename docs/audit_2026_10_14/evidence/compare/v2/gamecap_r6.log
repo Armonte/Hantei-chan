@@ -1,0 +1,42 @@
+=== v2r6_rect_mtx.gcs
+gamecap C:\dev\hantei-chan\tools\gamecap\cases\v2r6_rect_mtx.gcs
+backup: C:\Program Files (x86)\Steam\steamapps\common\UNDER NIGHT IN-BIRTH II Sys Celes\UNI2-IM/UNI2_IM.ini -> (new file, will be deleted)
+launched uni2.exe pid 36840 (suspended)
+agent attached: module base 0x00f00000, hooks 0x39
+window 003c1116 at 802,158 1296x759
+placed window at -640,307
+pipe \\.\pipe\uni2-im-harness: stage 1 -> ok 1 -> 1
+frozen at frame 1690
+poke g_MenuPlayerSide @0x014a5940 <- 0
+poke g_TitleBootMode @0x014a4a88 <- 2
+poke g_TitleResult @0x014efff4 <- 8
+poke g_TitleState4Timer @0x014efffc <- 0
+poke g_TitleStateTimer @0x014effe4 <- 0
+poke g_TitleState @0x014effe0 <- 4
+step_until met after 16 frame(s) (value 24)
+step_until met after 2 frame(s) (value 8)
+poke g_CSS_LastChara @0x014a4324 <- 24
+poke g_CSS_LastChara+4 @0x014a4328 <- 0
+poke g_CSS_LastColor @0x01676bd0 <- 0
+poke g_CSS_LastColor+4 @0x01676bd4 <- 0
+step_until met after 8 frame(s) (value 15)
+status: frame 1784 frozen 0 freeze 0 budget 0 hooks 0x3f cmd 0/0
+status: frame 1895 frozen 0 freeze 0 budget 0 hooks 0x3f cmd 0/0
+frozen at frame 2016
+peek p1_x @0x01b652e4 = -40960 (0xffffffffffff6000)
+peek p2_x @0x01b65ea4 = 40960 (0xa000)
+peek p1_facing @0x01b658c4 = 0 (0x0)
+peek p1_pattern @0x01b6529c = 0 (0x0)
+echo: uni2 training ready: P1 chr24 vs P2 chr0 (frozen)
+pipe \\.\pipe\uni2-im-harness: keys F5 -> ok 1
+call 0x0103c2e0 -> 0x00000000
+pipe \\.\pipe\uni2-im-harness: keys F6 -> ok 1
+pipe \\.\pipe\uni2-im-harness: grab C:\dev\hantei-chan\tools\gamecap\captures\v2\rect_chr024_p76_r6_game.png -> ok 1280x720 C:\dev\hantei-chan\tools\gamecap\captures\v2\rect_chr024_p76_r6_game.png
+peek rec_end @0x01502ff8 = 0 (0x0)
+peek data_end @0x01503624 = 0 (0x0)
+meta -> C:\dev\hantei-chan\tools\gamecap\captures\v2\rect_chr024_p76_r6_mtx.json
+pipe \\.\pipe\uni2-im-harness: keys F5 -> ok 1
+quit (quit): terminating pid 36840
+removed C:\Program Files (x86)\Steam\steamapps\common\UNDER NIGHT IN-BIRTH II Sys Celes\UNI2-IM/UNI2_IM.ini
+script finished: 249 commands, 0 capture(s)
+failures: 0

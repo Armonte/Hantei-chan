@@ -1,0 +1,14 @@
+-- mbtl_patctrl_chr001_p238f10 (editor zoom 1.5) vs REAL zoom 1.5 _z15sa, plate_b0, subpix 0,0
+mbtl_patctrl_chr001_p238f10: raw 0.24 / 0.1%  lit 0.24 / 0.1%  band+-1 0.19 / 0.0%  (62034 px, refine +0,+0)  
+-- mbtl_patctrl_chr001_p277f0 (editor zoom 1.5) vs REAL zoom 1.5 _z15sa, plate_b0, subpix 0,0
+mbtl_patctrl_chr001_p277f0: raw 0.00 / 0.0%  lit 0.00 / 0.0%  band+-1 0.00 / 0.0%  (22482 px, refine +0,+0)  f
+-- mbtl_flipV_chr001_p157f2 (editor zoom 1.5) vs REAL zoom 1.5 _z15sa, plate_b0, subpix 0,0
+mbtl_flipV_chr001_p157f2: raw 0.19 / 0.0%  lit 0.19 / 0.0%  band+-1 0.18 / 0.0%  (79644 px, refine +0,+0)  fre
+-- mbtl_patctrl_chr001_p238f10_z1 vs _sa (plate_b0)
+mbtl_patctrl_chr001_p238f10_z1: raw 0.23 / 0.0%  lit 0.23 / 0.0%  band+-1 0.21 / 0.0%  (34044 px, refine +0,+0
+-- mbtl_patctrl_chr001_p277f0_z1 vs _sa (plate_b0)
+mbtl_patctrl_chr001_p277f0_z1: raw 0.00 / 0.0%  lit 0.00 / 0.0%  band+-1 0.00 / 0.0%  (9876 px, refine +0,+0) 
+-- mbtl_flipV_chr001_p157f2_z1 vs _sa (plate_b0)
+mbtl_flipV_chr001_p157f2_z1: raw 0.18 / 0.0%  lit 0.18 / 0.0%  band+-1 0.18 / 0.0%  (49686 px, refine +0,+0)  
+-- mbtl_flipV_chr001_p157f2_solo_s8_z1 vs _sa (plate_b0)
+mbtl_flipV_chr001_p157f2_solo_s8_z1: raw 0.01 / 0.0%  lit 0.01 / 0.0%  band+-1 0.01 / 0.0%  (43965 px, refine 

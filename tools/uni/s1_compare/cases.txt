@@ -1,0 +1,15 @@
+# name | project .txt under gamedata/ | pattern | frame | tick (-1 = frame) | zoom | note
+pral2_chr025_p133f1 | uni2/data/chr025/chr025_0.txt | 133 | 1 | -1 | 1.5 | PRAL 2 (subtractive) part, part set 415
+flipH_chr000_p96f1 | uni2/data/chr000/chr000_0.txt | 96 | 1 | -1 | 1.5 | PRRV 1 (H) parts, part set 119
+flipV_chr000_p383f1 | uni2/data/chr000/chr000_0.txt | 383 | 1 | -1 | 1.5 | PRRV 2 (V) parts, part set 638
+flipHV_chr019_p153 | uni2/data/chr019/chr019_0.txt | 153 | 0 | -1 | 1.5 | PRRV 3 parts, part set 45
+afhk_pat_chr000_p72_t2 | uni2/data/chr000/chr000_0.txt | 72 | 0 | 2 | 1.5 | AFHK 1 PAT layer, tick 2 of 5 (part set 313 -> 314)
+afhk_pat_chr019_p62_t7 | uni2/data/chr019/chr019_0.txt | 62 | 1 | 7 | 1.5 | AFHK 1 PAT layer mid-frame
+afhk_cg_chr020_p435_t27 | uni2/data/chr020/chr020_0.txt | 435 | 0 | 27 | 1 | AFHK 1 CG layer, AFAZ rotation lerp, tick 27 of 55
+pups_chr027_p449 | uni2/data/chr027/chr027_0.txt | 449 | 0 | -1 | 1.5 | PUPS 1 pattern, PPPA-tinted parts on layer 1 (layer 0 already selects bank 1, so no visible change is expected)
+rect_chr024_p76 | uni2/data/chr024/chr024_0.txt | 76 | 0 | -1 | 1.5 | shape type 2 (rect) parts, part set 532
+pras_chr020_p5f2 | uni2/data/chr020/chr020_0.txt | 5 | 2 | -1 | 1.5 | PRAS parts (UNI2 applies the pivot) (unchanged on UNI2 by design)
+afhk_cg_chr020_p437_t2 | uni2/data/chr020/chr020_0.txt | 437 | 0 | 2 | 1 | AFHK 1 CG layer, AFZM scale lerp, tick 2 of 5
+mbtl_pral2_chr004_p420f4 | mbtl/data/chr004/chr004_0.txt | 420 | 4 | -1 | 1.5 | MBTL PRAL 2 parts, part set 566
+mbtl_flipV_chr001_p157f2 | mbtl/data/chr001/chr001_0.txt | 157 | 2 | -1 | 1.5 | MBTL PRRV 2 parts, part set 21
+mbtl_pups_chr011_p309 | mbtl/data/chr011/chr011_0.txt | 309 | 0 | -1 | 1.5 | MBTL PUPS 1 pattern, PPPA parts on layer 1

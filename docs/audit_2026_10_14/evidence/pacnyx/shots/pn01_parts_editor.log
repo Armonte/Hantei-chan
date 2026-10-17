@@ -1,0 +1,23 @@
+partseditor  -> ok
+pose 3 -> ok
+part 2 -> ok
+importsheet C:\dev\hantei-chan\work\pacnyx\not_square_256x200.png -> A sprite sheet must be square (the width must equal the height): this image is 256 x 200.
+importsheet C:\dev\hantei-chan\work\pacnyx\test_sheet_256.png -> sheet 5: test_sheet_256.png (256 x 256)
+sheetview on -> ok
+sheetsel 8 8 112 112 -> ok
+addpart  -> part 14
+sheetview off -> ok
+nudge 30 -40 -> ok
+rotate 15 -> ok
+layer front -> layer 226
+dirty  -> modified
+undo  -> ok
+undo  -> ok
+dirty  -> modified
+redo  -> ok
+redo  -> ok
+dirty  -> modified
+addpose MY_NEW_POSE -> pose 444
+basepoint 4 0 -> ok
+savechar-as C:\dev\hantei-chan\work\pacnyx\out\ACOLYTE_F.DT2 -> saved
+dirty  -> clean

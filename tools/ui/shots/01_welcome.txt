@@ -1,0 +1,5 @@
+# start screen: every supported game, grouped by family, with the install found (or Locate...)
+waitidle
+wait 60
+capture C:/dev/hantei-chan/work/ab/shots/01_welcome.png
+quit

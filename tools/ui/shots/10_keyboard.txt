@@ -1,0 +1,15 @@
+# keyboard: arrows move the selection and the preview follows; type-to-search jumps to a name
+browse C:\games\gof2_run
+waitidle
+select AMIY.DT2
+key Down
+key Down
+waitidle
+wait 20
+info
+typeahead C
+typeahead Y
+wait 10
+info
+capture C:/dev/hantei-chan/work/ab/shots/10_keyboard.png
+quit

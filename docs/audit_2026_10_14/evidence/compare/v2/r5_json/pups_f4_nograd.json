@@ -1,0 +1,40 @@
+{
+ "case": "pups_chr027_p449f4",
+ "game": "pups_chr027_p449f4_r5",
+ "plate": "/mnt/c/dev/hantei-chan/tools/gamecap/captures/v2/pups_chr027_p449f4_r5_game_plate.png",
+ "light": [
+  [
+   1.0,
+   0.0
+  ],
+  [
+   1.0,
+   0.0
+  ],
+  [
+   1.0,
+   0.0
+  ]
+ ],
+ "raw": [
+  13.480262978644564,
+  99.51938009841264
+ ],
+ "lit": [
+  13.480262978644564,
+  99.51938009841264
+ ],
+ "band": [
+  12.398647507261066,
+  96.49997547857645
+ ],
+ "band_px": 1,
+ "grad": null,
+ "glow": null,
+ "glow_ring": null,
+ "px": 61171,
+ "refine": [
+  0,
+  0
+ ]
+}

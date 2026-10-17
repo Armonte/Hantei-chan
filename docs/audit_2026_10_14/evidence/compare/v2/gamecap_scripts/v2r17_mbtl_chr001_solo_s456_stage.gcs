@@ -1,0 +1,25 @@
+# render-match17 (2026-10-16): v2r10_mbtl_chr001_solo_s456.gcs recaptured HUD-free (g_BattleHudFader held hidden) on the
+# pinned stage (g_BattleStageSel = ${STAGE}, default 21: night alley, no animated props). Shots in captures/v2/nohud_st.
+include ../games/mbtl.gcs
+sym g_BattleHudFader 0xAFC3C8
+sym g_BattleStageSel 0xAFC04C
+sym g_CurStageIndex 0xA2E47C
+file_put ../round10/chr001_solo21_s456.pat MBTL-IM/Mods/data/chr001/chr001.pat
+let STAGE 21
+let P1CHR 1
+let P2CHR 1
+ini_set MBTL-IM/MBTL_IM.ini Stages BloomStrength 0
+include ../games/mbtl_to_training_stage.gcs
+hold i32 [g_BattleHudFader]+8 2
+hold i32 [g_BattleHudFader]+16 0
+hold i32 [g_BattleHudFader]+20 0
+step 4
+set OUTD C:\dev\hantei-chan\tools\gamecap\captures\v2\nohud_st
+set NSTEPS 1
+set CASE mbtl_flipV_chr001_p157f2_solo_s456
+set PAT 157
+set SETFRAME 2
+set FRAME 2
+set GTICK 1
+include ../games/mbtl_v2_case_plate.gcs
+quit

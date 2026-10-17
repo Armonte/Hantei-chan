@@ -1,0 +1,14 @@
+# 3D stage view: UNI2 bg001 and MBTL bg001 (game folders C:/games/UNI2, C:/games/MBTL) with MBAACC camera alignment on.
+wait 10
+stage3d open C:/games/UNI2/bg bg001
+wait 10
+stage3d align on 0 1 1 0
+wait 5
+capture C:/dev/hantei-chan/work/ab/feat_stage3d_uni2_align.png
+stage3d open C:/games/MBTL/bg bg001
+wait 10
+stage3d align on 300 0.8 0.9 0.5
+wait 5
+capture C:/dev/hantei-chan/work/ab/feat_stage3d_mbtl_align.png
+stage3d align off
+quit

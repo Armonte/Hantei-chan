@@ -1,0 +1,26 @@
+openany C:/dev/hantei-chan/work/sqtest/uni2/data/chr001/chr001_0.txt
+wait 30
+sq open C:/dev/hantei-chan/work/sqtest/uni2
+sq file data/chr001/chr001_cmd_0.txt
+sq complete BMvTbl
+sq complete Battle_Std
+sq goto 31 0
+sq type UpdateTable = { name = "Mv_Skill_CancelDsah", }  
+sq problems
+wait 60
+sq state
+sq tab 1
+wait 20
+capture C:/dev/hantei-chan/work/ab/sq_problems.png
+sq search CancelDash
+wait 20
+capture C:/dev/hantei-chan/work/ab/sq_search.png
+sq usages Mv_Skill_CancelDash
+wait 10
+sq fix 0
+sq problems
+wait 60
+sq state
+wait 10
+capture C:/dev/hantei-chan/work/ab/sq_fixed.png
+quit

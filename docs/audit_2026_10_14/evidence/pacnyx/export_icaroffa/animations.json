@@ -1,0 +1,6275 @@
+{
+  "animations": [
+    {
+      "name": "立ち",
+      "frames": [
+        {
+          "index": 4,
+          "name": "STAND2",
+          "json": "poses/STAND2.json",
+          "render": "renders/000_立ち/000_STAND2.png"
+        },
+        {
+          "index": 5,
+          "name": "PATTERN007",
+          "json": "poses/PATTERN007.json",
+          "render": "renders/000_立ち/001_PATTERN007.png"
+        },
+        {
+          "index": 6,
+          "name": "PATTERN008",
+          "json": "poses/PATTERN008.json",
+          "render": "renders/000_立ち/002_PATTERN008.png"
+        },
+        {
+          "index": 7,
+          "name": "PATTERN009",
+          "json": "poses/PATTERN009.json",
+          "render": "renders/000_立ち/003_PATTERN009.png"
+        },
+        {
+          "index": 4,
+          "name": "STAND2",
+          "json": "poses/STAND2.json",
+          "render": "renders/000_立ち/004_STAND2.png"
+        }
+      ]
+    },
+    {
+      "name": "立ち弱攻撃",
+      "frames": [
+        {
+          "index": 327,
+          "name": "ATTACK_01",
+          "json": "poses/ATTACK_01.json",
+          "render": "renders/001_立ち弱攻撃/000_ATTACK_01.png"
+        },
+        {
+          "index": 328,
+          "name": "PATTERN081",
+          "json": "poses/PATTERN081.json",
+          "render": "renders/001_立ち弱攻撃/001_PATTERN081.png"
+        },
+        {
+          "index": 329,
+          "name": "PATTERN301",
+          "json": "poses/PATTERN301.json",
+          "render": "renders/001_立ち弱攻撃/002_PATTERN301.png"
+        },
+        {
+          "index": 330,
+          "name": "PATTERN302",
+          "json": "poses/PATTERN302.json",
+          "render": "renders/001_立ち弱攻撃/003_PATTERN302.png"
+        },
+        {
+          "index": 331,
+          "name": "PATTERN303",
+          "json": "poses/PATTERN303.json",
+          "render": "renders/001_立ち弱攻撃/004_PATTERN303.png"
+        },
+        {
+          "index": 332,
+          "name": "PATTERN304",
+          "json": "poses/PATTERN304.json",
+          "render": "renders/001_立ち弱攻撃/005_PATTERN304.png"
+        },
+        {
+          "index": 333,
+          "name": "PATTERN305",
+          "json": "poses/PATTERN305.json",
+          "render": "renders/001_立ち弱攻撃/006_PATTERN305.png"
+        },
+        {
+          "index": 334,
+          "name": "PATTERN306",
+          "json": "poses/PATTERN306.json",
+          "render": "renders/001_立ち弱攻撃/007_PATTERN306.png"
+        }
+      ]
+    },
+    {
+      "name": "立ち中攻撃",
+      "frames": [
+        {
+          "index": 51,
+          "name": "ATTACK_A",
+          "json": "poses/ATTACK_A.json",
+          "render": "renders/002_立ち中攻撃/000_ATTACK_A.png"
+        },
+        {
+          "index": 52,
+          "name": "PATTERN053",
+          "json": "poses/PATTERN053.json",
+          "render": "renders/002_立ち中攻撃/001_PATTERN053.png"
+        },
+        {
+          "index": 53,
+          "name": "PATTERN054",
+          "json": "poses/PATTERN054.json",
+          "render": "renders/002_立ち中攻撃/002_PATTERN054.png"
+        },
+        {
+          "index": 54,
+          "name": "PATTERN119",
+          "json": "poses/PATTERN119.json",
+          "render": "renders/002_立ち中攻撃/003_PATTERN119.png"
+        },
+        {
+          "index": 55,
+          "name": "PATTERN055",
+          "json": "poses/PATTERN055.json",
+          "render": "renders/002_立ち中攻撃/004_PATTERN055.png"
+        },
+        {
+          "index": 56,
+          "name": "PATTERN056",
+          "json": "poses/PATTERN056.json",
+          "render": "renders/002_立ち中攻撃/005_PATTERN056.png"
+        },
+        {
+          "index": 58,
+          "name": "PATTERN000",
+          "json": "poses/PATTERN000.json",
+          "render": "renders/002_立ち中攻撃/006_PATTERN000.png"
+        },
+        {
+          "index": 59,
+          "name": "PATTERN114",
+          "json": "poses/PATTERN114.json",
+          "render": "renders/002_立ち中攻撃/007_PATTERN114.png"
+        },
+        {
+          "index": 60,
+          "name": "PATTERN058",
+          "json": "poses/PATTERN058.json",
+          "render": "renders/002_立ち中攻撃/008_PATTERN058.png"
+        },
+        {
+          "index": 61,
+          "name": "PATTERN108",
+          "json": "poses/PATTERN108.json",
+          "render": "renders/002_立ち中攻撃/009_PATTERN108.png"
+        }
+      ]
+    },
+    {
+      "name": "立ち強攻撃",
+      "frames": [
+        {
+          "index": 355,
+          "name": "ATTACK_04",
+          "json": "poses/ATTACK_04.json",
+          "render": "renders/003_立ち強攻撃/000_ATTACK_04.png"
+        },
+        {
+          "index": 356,
+          "name": "PATTERN325",
+          "json": "poses/PATTERN325.json",
+          "render": "renders/003_立ち強攻撃/001_PATTERN325.png"
+        },
+        {
+          "index": 357,
+          "name": "PATTERN212",
+          "json": "poses/PATTERN212.json",
+          "render": "renders/003_立ち強攻撃/002_PATTERN212.png"
+        },
+        {
+          "index": 358,
+          "name": "PATTERN211",
+          "json": "poses/PATTERN211.json",
+          "render": "renders/003_立ち強攻撃/003_PATTERN211.png"
+        },
+        {
+          "index": 360,
+          "name": "PATTERN334",
+          "json": "poses/PATTERN334.json",
+          "render": "renders/003_立ち強攻撃/004_PATTERN334.png"
+        },
+        {
+          "index": 361,
+          "name": "PATTERN210",
+          "json": "poses/PATTERN210.json",
+          "render": "renders/003_立ち強攻撃/005_PATTERN210.png"
+        },
+        {
+          "index": 362,
+          "name": "PATTERN335",
+          "json": "poses/PATTERN335.json",
+          "render": "renders/003_立ち強攻撃/006_PATTERN335.png"
+        },
+        {
+          "index": 363,
+          "name": "PATTERN336",
+          "json": "poses/PATTERN336.json",
+          "render": "renders/003_立ち強攻撃/007_PATTERN336.png"
+        },
+        {
+          "index": 364,
+          "name": "PATTERN337",
+          "json": "poses/PATTERN337.json",
+          "render": "renders/003_立ち強攻撃/008_PATTERN337.png"
+        }
+      ]
+    },
+    {
+      "name": "しゃがみ弱攻撃",
+      "frames": [
+        {
+          "index": 107,
+          "name": "SIT_ATTACK_A",
+          "json": "poses/SIT_ATTACK_A.json",
+          "render": "renders/004_しゃがみ弱攻撃/000_SIT_ATTACK_A.png"
+        },
+        {
+          "index": 109,
+          "name": "PATTERN101",
+          "json": "poses/PATTERN101.json",
+          "render": "renders/004_しゃがみ弱攻撃/001_PATTERN101.png"
+        },
+        {
+          "index": 108,
+          "name": "PATTERN100",
+          "json": "poses/PATTERN100.json",
+          "render": "renders/004_しゃがみ弱攻撃/002_PATTERN100.png"
+        },
+        {
+          "index": 109,
+          "name": "PATTERN101",
+          "json": "poses/PATTERN101.json",
+          "render": "renders/004_しゃがみ弱攻撃/003_PATTERN101.png"
+        },
+        {
+          "index": 110,
+          "name": "PATTERN102",
+          "json": "poses/PATTERN102.json",
+          "render": "renders/004_しゃがみ弱攻撃/004_PATTERN102.png"
+        }
+      ]
+    },
+    {
+      "name": "しゃがみ中攻撃",
+      "frames": [
+        {
+          "index": 111,
+          "name": "SIT_ATTACK_B",
+          "json": "poses/SIT_ATTACK_B.json",
+          "render": "renders/005_しゃがみ中攻撃/000_SIT_ATTACK_B.png"
+        },
+        {
+          "index": 112,
+          "name": "PATTERN010",
+          "json": "poses/PATTERN010.json",
+          "render": "renders/005_しゃがみ中攻撃/001_PATTERN010.png"
+        },
+        {
+          "index": 113,
+          "name": "PATTERN104",
+          "json": "poses/PATTERN104.json",
+          "render": "renders/005_しゃがみ中攻撃/002_PATTERN104.png"
+        },
+        {
+          "index": 114,
+          "name": "PATTERN105",
+          "json": "poses/PATTERN105.json",
+          "render": "renders/005_しゃがみ中攻撃/003_PATTERN105.png"
+        },
+        {
+          "index": 115,
+          "name": "PATTERN106",
+          "json": "poses/PATTERN106.json",
+          "render": "renders/005_しゃがみ中攻撃/004_PATTERN106.png"
+        },
+        {
+          "index": 116,
+          "name": "PATTERN107",
+          "json": "poses/PATTERN107.json",
+          "render": "renders/005_しゃがみ中攻撃/005_PATTERN107.png"
+        }
+      ]
+    },
+    {
+      "name": "しゃがみ強攻撃",
+      "frames": [
+        {
+          "index": 365,
+          "name": "SIT_ATK_01",
+          "json": "poses/SIT_ATK_01.json",
+          "render": "renders/006_しゃがみ強攻撃/000_SIT_ATK_01.png"
+        },
+        {
+          "index": 366,
+          "name": "PATTERN215",
+          "json": "poses/PATTERN215.json",
+          "render": "renders/006_しゃがみ強攻撃/001_PATTERN215.png"
+        },
+        {
+          "index": 367,
+          "name": "PATTERN339",
+          "json": "poses/PATTERN339.json",
+          "render": "renders/006_しゃがみ強攻撃/002_PATTERN339.png"
+        },
+        {
+          "index": 370,
+          "name": "PATTERN340",
+          "json": "poses/PATTERN340.json",
+          "render": "renders/006_しゃがみ強攻撃/003_PATTERN340.png"
+        },
+        {
+          "index": 371,
+          "name": "PATTERN341",
+          "json": "poses/PATTERN341.json",
+          "render": "renders/006_しゃがみ強攻撃/004_PATTERN341.png"
+        },
+        {
+          "index": 372,
+          "name": "PATTERN213",
+          "json": "poses/PATTERN213.json",
+          "render": "renders/006_しゃがみ強攻撃/005_PATTERN213.png"
+        },
+        {
+          "index": 373,
+          "name": "PATTERN342",
+          "json": "poses/PATTERN342.json",
+          "render": "renders/006_しゃがみ強攻撃/006_PATTERN342.png"
+        },
+        {
+          "index": 374,
+          "name": "PATTERN214",
+          "json": "poses/PATTERN214.json",
+          "render": "renders/006_しゃがみ強攻撃/007_PATTERN214.png"
+        }
+      ]
+    },
+    {
+      "name": "ジャンプ弱攻撃",
+      "frames": [
+        {
+          "index": 99,
+          "name": "PATTERN090",
+          "json": "poses/PATTERN090.json",
+          "render": "renders/007_ジャンプ弱攻撃/000_PATTERN090.png"
+        },
+        {
+          "index": 106,
+          "name": "PATTERN097",
+          "json": "poses/PATTERN097.json",
+          "render": "renders/007_ジャンプ弱攻撃/001_PATTERN097.png"
+        },
+        {
+          "index": 105,
+          "name": "J_ATTACK_A",
+          "json": "poses/J_ATTACK_A.json",
+          "render": "renders/007_ジャンプ弱攻撃/002_J_ATTACK_A.png"
+        },
+        {
+          "index": 106,
+          "name": "PATTERN097",
+          "json": "poses/PATTERN097.json",
+          "render": "renders/007_ジャンプ弱攻撃/003_PATTERN097.png"
+        },
+        {
+          "index": 24,
+          "name": "PATTERN026",
+          "json": "poses/PATTERN026.json",
+          "render": "renders/007_ジャンプ弱攻撃/004_PATTERN026.png"
+        },
+        {
+          "index": 25,
+          "name": "PATTERN027",
+          "json": "poses/PATTERN027.json",
+          "render": "renders/007_ジャンプ弱攻撃/005_PATTERN027.png"
+        }
+      ]
+    },
+    {
+      "name": "ジャンプ中攻撃",
+      "frames": [
+        {
+          "index": 376,
+          "name": "ATK_JP_01",
+          "json": "poses/ATK_JP_01.json",
+          "render": "renders/008_ジャンプ中攻撃/000_ATK_JP_01.png"
+        },
+        {
+          "index": 377,
+          "name": "PATTERN344",
+          "json": "poses/PATTERN344.json",
+          "render": "renders/008_ジャンプ中攻撃/001_PATTERN344.png"
+        },
+        {
+          "index": 378,
+          "name": "PATTERN345",
+          "json": "poses/PATTERN345.json",
+          "render": "renders/008_ジャンプ中攻撃/002_PATTERN345.png"
+        },
+        {
+          "index": 380,
+          "name": "PATTERN346",
+          "json": "poses/PATTERN346.json",
+          "render": "renders/008_ジャンプ中攻撃/003_PATTERN346.png"
+        },
+        {
+          "index": 381,
+          "name": "PATTERN347",
+          "json": "poses/PATTERN347.json",
+          "render": "renders/008_ジャンプ中攻撃/004_PATTERN347.png"
+        },
+        {
+          "index": 39,
+          "name": "PATTERN040",
+          "json": "poses/PATTERN040.json",
+          "render": "renders/008_ジャンプ中攻撃/005_PATTERN040.png"
+        },
+        {
+          "index": 40,
+          "name": "PATTERN041",
+          "json": "poses/PATTERN041.json",
+          "render": "renders/008_ジャンプ中攻撃/006_PATTERN041.png"
+        },
+        {
+          "index": 41,
+          "name": "PATTERN042",
+          "json": "poses/PATTERN042.json",
+          "render": "renders/008_ジャンプ中攻撃/007_PATTERN042.png"
+        }
+      ]
+    },
+    {
+      "name": "ジャンプ強攻撃",
+      "frames": [
+        {
+          "index": 117,
+          "name": "JP_ATTACK_B",
+          "json": "poses/JP_ATTACK_B.json",
+          "render": "renders/009_ジャンプ強攻撃/000_JP_ATTACK_B.png"
+        },
+        {
+          "index": 118,
+          "name": "PATTERN109",
+          "json": "poses/PATTERN109.json",
+          "render": "renders/009_ジャンプ強攻撃/001_PATTERN109.png"
+        },
+        {
+          "index": 119,
+          "name": "PATTERN110",
+          "json": "poses/PATTERN110.json",
+          "render": "renders/009_ジャンプ強攻撃/002_PATTERN110.png"
+        },
+        {
+          "index": 120,
+          "name": "PATTERN111",
+          "json": "poses/PATTERN111.json",
+          "render": "renders/009_ジャンプ強攻撃/003_PATTERN111.png"
+        },
+        {
+          "index": 121,
+          "name": "PATTERN112",
+          "json": "poses/PATTERN112.json",
+          "render": "renders/009_ジャンプ強攻撃/004_PATTERN112.png"
+        },
+        {
+          "index": 122,
+          "name": "PATTERN113",
+          "json": "poses/PATTERN113.json",
+          "render": "renders/009_ジャンプ強攻撃/005_PATTERN113.png"
+        },
+        {
+          "index": 39,
+          "name": "PATTERN040",
+          "json": "poses/PATTERN040.json",
+          "render": "renders/009_ジャンプ強攻撃/006_PATTERN040.png"
+        },
+        {
+          "index": 40,
+          "name": "PATTERN041",
+          "json": "poses/PATTERN041.json",
+          "render": "renders/009_ジャンプ強攻撃/007_PATTERN041.png"
+        },
+        {
+          "index": 41,
+          "name": "PATTERN042",
+          "json": "poses/PATTERN042.json",
+          "render": "renders/009_ジャンプ強攻撃/008_PATTERN042.png"
+        }
+      ]
+    },
+    {
+      "name": "前進",
+      "frames": [
+        {
+          "index": 0,
+          "name": "WORK",
+          "json": "poses/WORK.json",
+          "render": "renders/010_前進/000_WORK.png"
+        },
+        {
+          "index": 1,
+          "name": "PATTERN003",
+          "json": "poses/PATTERN003.json",
+          "render": "renders/010_前進/001_PATTERN003.png"
+        },
+        {
+          "index": 2,
+          "name": "PATTERN004",
+          "json": "poses/PATTERN004.json",
+          "render": "renders/010_前進/002_PATTERN004.png"
+        },
+        {
+          "index": 3,
+          "name": "PATTERN005",
+          "json": "poses/PATTERN005.json",
+          "render": "renders/010_前進/003_PATTERN005.png"
+        },
+        {
+          "index": 0,
+          "name": "WORK",
+          "json": "poses/WORK.json",
+          "render": "renders/010_前進/004_WORK.png"
+        }
+      ]
+    },
+    {
+      "name": "後退（前進の逆方向）",
+      "frames": [
+        {
+          "index": 0,
+          "name": "WORK",
+          "json": "poses/WORK.json",
+          "render": "renders/011_後退（前進の逆方向）/000_WORK.png"
+        },
+        {
+          "index": 1,
+          "name": "PATTERN003",
+          "json": "poses/PATTERN003.json",
+          "render": "renders/011_後退（前進の逆方向）/001_PATTERN003.png"
+        },
+        {
+          "index": 2,
+          "name": "PATTERN004",
+          "json": "poses/PATTERN004.json",
+          "render": "renders/011_後退（前進の逆方向）/002_PATTERN004.png"
+        },
+        {
+          "index": 3,
+          "name": "PATTERN005",
+          "json": "poses/PATTERN005.json",
+          "render": "renders/011_後退（前進の逆方向）/003_PATTERN005.png"
+        }
+      ]
+    },
+    {
+      "name": "しゃがみ移行",
+      "frames": [
+        {
+          "index": 8,
+          "name": "SIT_DW_UP",
+          "json": "poses/SIT_DW_UP.json",
+          "render": "renders/012_しゃがみ移行/000_SIT_DW_UP.png"
+        },
+        {
+          "index": 9,
+          "name": "PATTERN011",
+          "json": "poses/PATTERN011.json",
+          "render": "renders/012_しゃがみ移行/001_PATTERN011.png"
+        },
+        {
+          "index": 10,
+          "name": "PATTERN012",
+          "json": "poses/PATTERN012.json",
+          "render": "renders/012_しゃがみ移行/002_PATTERN012.png"
+        },
+        {
+          "index": 11,
+          "name": "PATTERN013",
+          "json": "poses/PATTERN013.json",
+          "render": "renders/012_しゃがみ移行/003_PATTERN013.png"
+        },
+        {
+          "index": 12,
+          "name": "PATTERN014",
+          "json": "poses/PATTERN014.json",
+          "render": "renders/012_しゃがみ移行/004_PATTERN014.png"
+        }
+      ]
+    },
+    {
+      "name": "しゃがみ",
+      "frames": [
+        {
+          "index": 12,
+          "name": "PATTERN014",
+          "json": "poses/PATTERN014.json",
+          "render": "renders/013_しゃがみ/000_PATTERN014.png"
+        }
+      ]
+    },
+    {
+      "name": "立ち上がり",
+      "frames": [
+        {
+          "index": 12,
+          "name": "PATTERN014",
+          "json": "poses/PATTERN014.json",
+          "render": "renders/014_立ち上がり/000_PATTERN014.png"
+        },
+        {
+          "index": 13,
+          "name": "PATTERN015",
+          "json": "poses/PATTERN015.json",
+          "render": "renders/014_立ち上がり/001_PATTERN015.png"
+        },
+        {
+          "index": 14,
+          "name": "PATTERN016",
+          "json": "poses/PATTERN016.json",
+          "render": "renders/014_立ち上がり/002_PATTERN016.png"
+        },
+        {
+          "index": 15,
+          "name": "PATTERN017",
+          "json": "poses/PATTERN017.json",
+          "render": "renders/014_立ち上がり/003_PATTERN017.png"
+        },
+        {
+          "index": 16,
+          "name": "PATTERN018",
+          "json": "poses/PATTERN018.json",
+          "render": "renders/014_立ち上がり/004_PATTERN018.png"
+        }
+      ]
+    },
+    {
+      "name": "立ち振り向き",
+      "frames": [
+        {
+          "index": 0,
+          "name": "WORK",
+          "json": "poses/WORK.json",
+          "render": "renders/015_立ち振り向き/000_WORK.png"
+        }
+      ]
+    },
+    {
+      "name": "しゃがみ振り向き",
+      "frames": [
+        {
+          "index": 12,
+          "name": "PATTERN014",
+          "json": "poses/PATTERN014.json",
+          "render": "renders/016_しゃがみ振り向き/000_PATTERN014.png"
+        }
+      ]
+    },
+    {
+      "name": "立ちガード",
+      "frames": [
+        {
+          "index": 139,
+          "name": "GUARD_UP_ON",
+          "json": "poses/GUARD_UP_ON.json",
+          "render": "renders/017_立ちガード/000_GUARD_UP_ON.png"
+        },
+        {
+          "index": 140,
+          "name": "PATTERN196",
+          "json": "poses/PATTERN196.json",
+          "render": "renders/017_立ちガード/001_PATTERN196.png"
+        },
+        {
+          "index": 140,
+          "name": "PATTERN196",
+          "json": "poses/PATTERN196.json",
+          "render": "renders/017_立ちガード/002_PATTERN196.png"
+        },
+        {
+          "index": 141,
+          "name": "PATTERN194",
+          "json": "poses/PATTERN194.json",
+          "render": "renders/017_立ちガード/003_PATTERN194.png"
+        },
+        {
+          "index": 142,
+          "name": "PATTERN096",
+          "json": "poses/PATTERN096.json",
+          "render": "renders/017_立ちガード/004_PATTERN096.png"
+        }
+      ]
+    },
+    {
+      "name": "しゃがみガード",
+      "frames": [
+        {
+          "index": 148,
+          "name": "GUARD_DW_ON",
+          "json": "poses/GUARD_DW_ON.json",
+          "render": "renders/018_しゃがみガード/000_GUARD_DW_ON.png"
+        },
+        {
+          "index": 149,
+          "name": "PATTERN177",
+          "json": "poses/PATTERN177.json",
+          "render": "renders/018_しゃがみガード/001_PATTERN177.png"
+        },
+        {
+          "index": 149,
+          "name": "PATTERN177",
+          "json": "poses/PATTERN177.json",
+          "render": "renders/018_しゃがみガード/002_PATTERN177.png"
+        },
+        {
+          "index": 150,
+          "name": "PATTERN070",
+          "json": "poses/PATTERN070.json",
+          "render": "renders/018_しゃがみガード/003_PATTERN070.png"
+        },
+        {
+          "index": 151,
+          "name": "PATTERN131",
+          "json": "poses/PATTERN131.json",
+          "render": "renders/018_しゃがみガード/004_PATTERN131.png"
+        }
+      ]
+    },
+    {
+      "name": "空中ガード",
+      "frames": [
+        {
+          "index": 154,
+          "name": "PATTERN134",
+          "json": "poses/PATTERN134.json",
+          "render": "renders/019_空中ガード/000_PATTERN134.png"
+        },
+        {
+          "index": 154,
+          "name": "PATTERN134",
+          "json": "poses/PATTERN134.json",
+          "render": "renders/019_空中ガード/001_PATTERN134.png"
+        },
+        {
+          "index": 155,
+          "name": "PATTERN135",
+          "json": "poses/PATTERN135.json",
+          "render": "renders/019_空中ガード/002_PATTERN135.png"
+        },
+        {
+          "index": 31,
+          "name": "PATTERN033",
+          "json": "poses/PATTERN033.json",
+          "render": "renders/019_空中ガード/003_PATTERN033.png"
+        },
+        {
+          "index": 32,
+          "name": "PATTERN034",
+          "json": "poses/PATTERN034.json",
+          "render": "renders/019_空中ガード/004_PATTERN034.png"
+        },
+        {
+          "index": 33,
+          "name": "PATTERN035",
+          "json": "poses/PATTERN035.json",
+          "render": "renders/019_空中ガード/005_PATTERN035.png"
+        }
+      ]
+    },
+    {
+      "name": "頭やられ",
+      "frames": [
+        {
+          "index": 62,
+          "name": "DAMAGE_ST",
+          "json": "poses/DAMAGE_ST.json",
+          "render": "renders/023_頭やられ/000_DAMAGE_ST.png"
+        },
+        {
+          "index": 63,
+          "name": "PATTERN060",
+          "json": "poses/PATTERN060.json",
+          "render": "renders/023_頭やられ/001_PATTERN060.png"
+        },
+        {
+          "index": 64,
+          "name": "PATTERN061",
+          "json": "poses/PATTERN061.json",
+          "render": "renders/023_頭やられ/002_PATTERN061.png"
+        },
+        {
+          "index": 65,
+          "name": "PATTERN062",
+          "json": "poses/PATTERN062.json",
+          "render": "renders/023_頭やられ/003_PATTERN062.png"
+        },
+        {
+          "index": 66,
+          "name": "PATTERN063",
+          "json": "poses/PATTERN063.json",
+          "render": "renders/023_頭やられ/004_PATTERN063.png"
+        }
+      ]
+    },
+    {
+      "name": "腹やられ",
+      "frames": [
+        {
+          "index": 67,
+          "name": "DAMAGE_MID",
+          "json": "poses/DAMAGE_MID.json",
+          "render": "renders/024_腹やられ/000_DAMAGE_MID.png"
+        },
+        {
+          "index": 68,
+          "name": "PATTERN065",
+          "json": "poses/PATTERN065.json",
+          "render": "renders/024_腹やられ/001_PATTERN065.png"
+        },
+        {
+          "index": 69,
+          "name": "PATTERN066",
+          "json": "poses/PATTERN066.json",
+          "render": "renders/024_腹やられ/002_PATTERN066.png"
+        },
+        {
+          "index": 70,
+          "name": "PATTERN067",
+          "json": "poses/PATTERN067.json",
+          "render": "renders/024_腹やられ/003_PATTERN067.png"
+        },
+        {
+          "index": 71,
+          "name": "PATTERN068",
+          "json": "poses/PATTERN068.json",
+          "render": "renders/024_腹やられ/004_PATTERN068.png"
+        }
+      ]
+    },
+    {
+      "name": "しゃがみやられ",
+      "frames": [
+        {
+          "index": 128,
+          "name": "SIT_DAMAGE",
+          "json": "poses/SIT_DAMAGE.json",
+          "render": "renders/025_しゃがみやられ/000_SIT_DAMAGE.png"
+        },
+        {
+          "index": 129,
+          "name": "PATTERN120",
+          "json": "poses/PATTERN120.json",
+          "render": "renders/025_しゃがみやられ/001_PATTERN120.png"
+        },
+        {
+          "index": 130,
+          "name": "PATTERN121",
+          "json": "poses/PATTERN121.json",
+          "render": "renders/025_しゃがみやられ/002_PATTERN121.png"
+        },
+        {
+          "index": 131,
+          "name": "PATTERN122",
+          "json": "poses/PATTERN122.json",
+          "render": "renders/025_しゃがみやられ/003_PATTERN122.png"
+        },
+        {
+          "index": 132,
+          "name": "PATTERN123",
+          "json": "poses/PATTERN123.json",
+          "render": "renders/025_しゃがみやられ/004_PATTERN123.png"
+        }
+      ]
+    },
+    {
+      "name": "ダウン",
+      "frames": [
+        {
+          "index": 73,
+          "name": "DOWN",
+          "json": "poses/DOWN.json",
+          "render": "renders/026_ダウン/000_DOWN.png"
+        },
+        {
+          "index": 74,
+          "name": "PATTERN071",
+          "json": "poses/PATTERN071.json",
+          "render": "renders/026_ダウン/001_PATTERN071.png"
+        },
+        {
+          "index": 75,
+          "name": "PATTERN072",
+          "json": "poses/PATTERN072.json",
+          "render": "renders/026_ダウン/002_PATTERN072.png"
+        },
+        {
+          "index": 76,
+          "name": "PATTERN073",
+          "json": "poses/PATTERN073.json",
+          "render": "renders/026_ダウン/003_PATTERN073.png"
+        },
+        {
+          "index": 77,
+          "name": "PATTERN074",
+          "json": "poses/PATTERN074.json",
+          "render": "renders/026_ダウン/004_PATTERN074.png"
+        },
+        {
+          "index": 78,
+          "name": "PATTERN075",
+          "json": "poses/PATTERN075.json",
+          "render": "renders/026_ダウン/005_PATTERN075.png"
+        },
+        {
+          "index": 78,
+          "name": "PATTERN075",
+          "json": "poses/PATTERN075.json",
+          "render": "renders/026_ダウン/006_PATTERN075.png"
+        },
+        {
+          "index": 78,
+          "name": "PATTERN075",
+          "json": "poses/PATTERN075.json",
+          "render": "renders/026_ダウン/007_PATTERN075.png"
+        },
+        {
+          "index": 79,
+          "name": "PATTERN076",
+          "json": "poses/PATTERN076.json",
+          "render": "renders/026_ダウン/008_PATTERN076.png"
+        },
+        {
+          "index": 80,
+          "name": "PATTERN077",
+          "json": "poses/PATTERN077.json",
+          "render": "renders/026_ダウン/009_PATTERN077.png"
+        },
+        {
+          "index": 81,
+          "name": "PATTERN078",
+          "json": "poses/PATTERN078.json",
+          "render": "renders/026_ダウン/010_PATTERN078.png"
+        },
+        {
+          "index": 82,
+          "name": "PATTERN079",
+          "json": "poses/PATTERN079.json",
+          "render": "renders/026_ダウン/011_PATTERN079.png"
+        },
+        {
+          "index": 83,
+          "name": "PATTERN125",
+          "json": "poses/PATTERN125.json",
+          "render": "renders/026_ダウン/012_PATTERN125.png"
+        },
+        {
+          "index": 84,
+          "name": "PATTERN080",
+          "json": "poses/PATTERN080.json",
+          "render": "renders/026_ダウン/013_PATTERN080.png"
+        },
+        {
+          "index": 78,
+          "name": "PATTERN075",
+          "json": "poses/PATTERN075.json",
+          "render": "renders/026_ダウン/014_PATTERN075.png"
+        },
+        {
+          "index": 78,
+          "name": "PATTERN075",
+          "json": "poses/PATTERN075.json",
+          "render": "renders/026_ダウン/015_PATTERN075.png"
+        }
+      ]
+    },
+    {
+      "name": "空中やられ",
+      "frames": [
+        {
+          "index": 197,
+          "name": "DAMAGE_AIR",
+          "json": "poses/DAMAGE_AIR.json",
+          "render": "renders/027_空中やられ/000_DAMAGE_AIR.png"
+        },
+        {
+          "index": 198,
+          "name": "PATTERN190",
+          "json": "poses/PATTERN190.json",
+          "render": "renders/027_空中やられ/001_PATTERN190.png"
+        },
+        {
+          "index": 199,
+          "name": "PATTERN191",
+          "json": "poses/PATTERN191.json",
+          "render": "renders/027_空中やられ/002_PATTERN191.png"
+        },
+        {
+          "index": 200,
+          "name": "PATTERN192",
+          "json": "poses/PATTERN192.json",
+          "render": "renders/027_空中やられ/003_PATTERN192.png"
+        },
+        {
+          "index": 75,
+          "name": "PATTERN072",
+          "json": "poses/PATTERN072.json",
+          "render": "renders/027_空中やられ/004_PATTERN072.png"
+        },
+        {
+          "index": 76,
+          "name": "PATTERN073",
+          "json": "poses/PATTERN073.json",
+          "render": "renders/027_空中やられ/005_PATTERN073.png"
+        },
+        {
+          "index": 77,
+          "name": "PATTERN074",
+          "json": "poses/PATTERN074.json",
+          "render": "renders/027_空中やられ/006_PATTERN074.png"
+        },
+        {
+          "index": 78,
+          "name": "PATTERN075",
+          "json": "poses/PATTERN075.json",
+          "render": "renders/027_空中やられ/007_PATTERN075.png"
+        },
+        {
+          "index": 78,
+          "name": "PATTERN075",
+          "json": "poses/PATTERN075.json",
+          "render": "renders/027_空中やられ/008_PATTERN075.png"
+        },
+        {
+          "index": 78,
+          "name": "PATTERN075",
+          "json": "poses/PATTERN075.json",
+          "render": "renders/027_空中やられ/009_PATTERN075.png"
+        },
+        {
+          "index": 79,
+          "name": "PATTERN076",
+          "json": "poses/PATTERN076.json",
+          "render": "renders/027_空中やられ/010_PATTERN076.png"
+        },
+        {
+          "index": 80,
+          "name": "PATTERN077",
+          "json": "poses/PATTERN077.json",
+          "render": "renders/027_空中やられ/011_PATTERN077.png"
+        },
+        {
+          "index": 81,
+          "name": "PATTERN078",
+          "json": "poses/PATTERN078.json",
+          "render": "renders/027_空中やられ/012_PATTERN078.png"
+        },
+        {
+          "index": 82,
+          "name": "PATTERN079",
+          "json": "poses/PATTERN079.json",
+          "render": "renders/027_空中やられ/013_PATTERN079.png"
+        },
+        {
+          "index": 84,
+          "name": "PATTERN080",
+          "json": "poses/PATTERN080.json",
+          "render": "renders/027_空中やられ/014_PATTERN080.png"
+        }
+      ]
+    },
+    {
+      "name": "受け身",
+      "frames": [
+        {
+          "index": 123,
+          "name": "UKEMI",
+          "json": "poses/UKEMI.json",
+          "render": "renders/028_受け身/000_UKEMI.png"
+        },
+        {
+          "index": 124,
+          "name": "PATTERN115",
+          "json": "poses/PATTERN115.json",
+          "render": "renders/028_受け身/001_PATTERN115.png"
+        },
+        {
+          "index": 124,
+          "name": "PATTERN115",
+          "json": "poses/PATTERN115.json",
+          "render": "renders/028_受け身/002_PATTERN115.png"
+        },
+        {
+          "index": 126,
+          "name": "PATTERN117",
+          "json": "poses/PATTERN117.json",
+          "render": "renders/028_受け身/003_PATTERN117.png"
+        },
+        {
+          "index": 127,
+          "name": "PATTERN118",
+          "json": "poses/PATTERN118.json",
+          "render": "renders/028_受け身/004_PATTERN118.png"
+        },
+        {
+          "index": 4,
+          "name": "STAND2",
+          "json": "poses/STAND2.json",
+          "render": "renders/028_受け身/005_STAND2.png"
+        }
+      ]
+    },
+    {
+      "name": "前ダウン",
+      "frames": [
+        {
+          "index": 73,
+          "name": "DOWN",
+          "json": "poses/DOWN.json",
+          "render": "renders/029_前ダウン/000_DOWN.png"
+        },
+        {
+          "index": 74,
+          "name": "PATTERN071",
+          "json": "poses/PATTERN071.json",
+          "render": "renders/029_前ダウン/001_PATTERN071.png"
+        },
+        {
+          "index": 75,
+          "name": "PATTERN072",
+          "json": "poses/PATTERN072.json",
+          "render": "renders/029_前ダウン/002_PATTERN072.png"
+        },
+        {
+          "index": 76,
+          "name": "PATTERN073",
+          "json": "poses/PATTERN073.json",
+          "render": "renders/029_前ダウン/003_PATTERN073.png"
+        },
+        {
+          "index": 77,
+          "name": "PATTERN074",
+          "json": "poses/PATTERN074.json",
+          "render": "renders/029_前ダウン/004_PATTERN074.png"
+        },
+        {
+          "index": 78,
+          "name": "PATTERN075",
+          "json": "poses/PATTERN075.json",
+          "render": "renders/029_前ダウン/005_PATTERN075.png"
+        },
+        {
+          "index": 78,
+          "name": "PATTERN075",
+          "json": "poses/PATTERN075.json",
+          "render": "renders/029_前ダウン/006_PATTERN075.png"
+        },
+        {
+          "index": 79,
+          "name": "PATTERN076",
+          "json": "poses/PATTERN076.json",
+          "render": "renders/029_前ダウン/007_PATTERN076.png"
+        },
+        {
+          "index": 80,
+          "name": "PATTERN077",
+          "json": "poses/PATTERN077.json",
+          "render": "renders/029_前ダウン/008_PATTERN077.png"
+        },
+        {
+          "index": 81,
+          "name": "PATTERN078",
+          "json": "poses/PATTERN078.json",
+          "render": "renders/029_前ダウン/009_PATTERN078.png"
+        },
+        {
+          "index": 82,
+          "name": "PATTERN079",
+          "json": "poses/PATTERN079.json",
+          "render": "renders/029_前ダウン/010_PATTERN079.png"
+        },
+        {
+          "index": 84,
+          "name": "PATTERN080",
+          "json": "poses/PATTERN080.json",
+          "render": "renders/029_前ダウン/011_PATTERN080.png"
+        }
+      ]
+    },
+    {
+      "name": "前ジャンプ",
+      "frames": [
+        {
+          "index": 17,
+          "name": "JUMP_FR",
+          "json": "poses/JUMP_FR.json",
+          "render": "renders/035_前ジャンプ/000_JUMP_FR.png"
+        },
+        {
+          "index": 18,
+          "name": "PATTERN021",
+          "json": "poses/PATTERN021.json",
+          "render": "renders/035_前ジャンプ/001_PATTERN021.png"
+        },
+        {
+          "index": 19,
+          "name": "PATTERN022",
+          "json": "poses/PATTERN022.json",
+          "render": "renders/035_前ジャンプ/002_PATTERN022.png"
+        },
+        {
+          "index": 20,
+          "name": "PATTERN023",
+          "json": "poses/PATTERN023.json",
+          "render": "renders/035_前ジャンプ/003_PATTERN023.png"
+        },
+        {
+          "index": 20,
+          "name": "PATTERN023",
+          "json": "poses/PATTERN023.json",
+          "render": "renders/035_前ジャンプ/004_PATTERN023.png"
+        },
+        {
+          "index": 21,
+          "name": "PATTERN024",
+          "json": "poses/PATTERN024.json",
+          "render": "renders/035_前ジャンプ/005_PATTERN024.png"
+        },
+        {
+          "index": 23,
+          "name": "PATTERN025",
+          "json": "poses/PATTERN025.json",
+          "render": "renders/035_前ジャンプ/006_PATTERN025.png"
+        },
+        {
+          "index": 24,
+          "name": "PATTERN026",
+          "json": "poses/PATTERN026.json",
+          "render": "renders/035_前ジャンプ/007_PATTERN026.png"
+        },
+        {
+          "index": 25,
+          "name": "PATTERN027",
+          "json": "poses/PATTERN027.json",
+          "render": "renders/035_前ジャンプ/008_PATTERN027.png"
+        }
+      ]
+    },
+    {
+      "name": "垂直ジャンプ",
+      "frames": [
+        {
+          "index": 34,
+          "name": "JUMP_UP",
+          "json": "poses/JUMP_UP.json",
+          "render": "renders/036_垂直ジャンプ/000_JUMP_UP.png"
+        },
+        {
+          "index": 35,
+          "name": "PATTERN037",
+          "json": "poses/PATTERN037.json",
+          "render": "renders/036_垂直ジャンプ/001_PATTERN037.png"
+        },
+        {
+          "index": 36,
+          "name": "PATTERN103",
+          "json": "poses/PATTERN103.json",
+          "render": "renders/036_垂直ジャンプ/002_PATTERN103.png"
+        },
+        {
+          "index": 37,
+          "name": "PATTERN038",
+          "json": "poses/PATTERN038.json",
+          "render": "renders/036_垂直ジャンプ/003_PATTERN038.png"
+        },
+        {
+          "index": 37,
+          "name": "PATTERN038",
+          "json": "poses/PATTERN038.json",
+          "render": "renders/036_垂直ジャンプ/004_PATTERN038.png"
+        },
+        {
+          "index": 38,
+          "name": "PATTERN039",
+          "json": "poses/PATTERN039.json",
+          "render": "renders/036_垂直ジャンプ/005_PATTERN039.png"
+        },
+        {
+          "index": 39,
+          "name": "PATTERN040",
+          "json": "poses/PATTERN040.json",
+          "render": "renders/036_垂直ジャンプ/006_PATTERN040.png"
+        },
+        {
+          "index": 40,
+          "name": "PATTERN041",
+          "json": "poses/PATTERN041.json",
+          "render": "renders/036_垂直ジャンプ/007_PATTERN041.png"
+        },
+        {
+          "index": 41,
+          "name": "PATTERN042",
+          "json": "poses/PATTERN042.json",
+          "render": "renders/036_垂直ジャンプ/008_PATTERN042.png"
+        }
+      ]
+    },
+    {
+      "name": "後ろジャンプ",
+      "frames": [
+        {
+          "index": 26,
+          "name": "JUMP_BK",
+          "json": "poses/JUMP_BK.json",
+          "render": "renders/037_後ろジャンプ/000_JUMP_BK.png"
+        },
+        {
+          "index": 27,
+          "name": "PATTERN029",
+          "json": "poses/PATTERN029.json",
+          "render": "renders/037_後ろジャンプ/001_PATTERN029.png"
+        },
+        {
+          "index": 28,
+          "name": "PATTERN030",
+          "json": "poses/PATTERN030.json",
+          "render": "renders/037_後ろジャンプ/002_PATTERN030.png"
+        },
+        {
+          "index": 29,
+          "name": "PATTERN031",
+          "json": "poses/PATTERN031.json",
+          "render": "renders/037_後ろジャンプ/003_PATTERN031.png"
+        },
+        {
+          "index": 30,
+          "name": "PATTERN032",
+          "json": "poses/PATTERN032.json",
+          "render": "renders/037_後ろジャンプ/004_PATTERN032.png"
+        },
+        {
+          "index": 31,
+          "name": "PATTERN033",
+          "json": "poses/PATTERN033.json",
+          "render": "renders/037_後ろジャンプ/005_PATTERN033.png"
+        },
+        {
+          "index": 32,
+          "name": "PATTERN034",
+          "json": "poses/PATTERN034.json",
+          "render": "renders/037_後ろジャンプ/006_PATTERN034.png"
+        },
+        {
+          "index": 33,
+          "name": "PATTERN035",
+          "json": "poses/PATTERN035.json",
+          "render": "renders/037_後ろジャンプ/007_PATTERN035.png"
+        }
+      ]
+    },
+    {
+      "name": "前ジャンプ二段目以降",
+      "frames": [
+        {
+          "index": 21,
+          "name": "PATTERN024",
+          "json": "poses/PATTERN024.json",
+          "render": "renders/038_前ジャンプ二段目以降/000_PATTERN024.png"
+        },
+        {
+          "index": 20,
+          "name": "PATTERN023",
+          "json": "poses/PATTERN023.json",
+          "render": "renders/038_前ジャンプ二段目以降/001_PATTERN023.png"
+        },
+        {
+          "index": 20,
+          "name": "PATTERN023",
+          "json": "poses/PATTERN023.json",
+          "render": "renders/038_前ジャンプ二段目以降/002_PATTERN023.png"
+        },
+        {
+          "index": 22,
+          "name": "PATTERN205",
+          "json": "poses/PATTERN205.json",
+          "render": "renders/038_前ジャンプ二段目以降/003_PATTERN205.png"
+        },
+        {
+          "index": 21,
+          "name": "PATTERN024",
+          "json": "poses/PATTERN024.json",
+          "render": "renders/038_前ジャンプ二段目以降/004_PATTERN024.png"
+        },
+        {
+          "index": 24,
+          "name": "PATTERN026",
+          "json": "poses/PATTERN026.json",
+          "render": "renders/038_前ジャンプ二段目以降/005_PATTERN026.png"
+        },
+        {
+          "index": 25,
+          "name": "PATTERN027",
+          "json": "poses/PATTERN027.json",
+          "render": "renders/038_前ジャンプ二段目以降/006_PATTERN027.png"
+        }
+      ]
+    },
+    {
+      "name": "垂直ジャンプ二段目以降",
+      "frames": [
+        {
+          "index": 36,
+          "name": "PATTERN103",
+          "json": "poses/PATTERN103.json",
+          "render": "renders/039_垂直ジャンプ二段目以降/000_PATTERN103.png"
+        },
+        {
+          "index": 37,
+          "name": "PATTERN038",
+          "json": "poses/PATTERN038.json",
+          "render": "renders/039_垂直ジャンプ二段目以降/001_PATTERN038.png"
+        },
+        {
+          "index": 38,
+          "name": "PATTERN039",
+          "json": "poses/PATTERN039.json",
+          "render": "renders/039_垂直ジャンプ二段目以降/002_PATTERN039.png"
+        },
+        {
+          "index": 38,
+          "name": "PATTERN039",
+          "json": "poses/PATTERN039.json",
+          "render": "renders/039_垂直ジャンプ二段目以降/003_PATTERN039.png"
+        },
+        {
+          "index": 40,
+          "name": "PATTERN041",
+          "json": "poses/PATTERN041.json",
+          "render": "renders/039_垂直ジャンプ二段目以降/004_PATTERN041.png"
+        },
+        {
+          "index": 41,
+          "name": "PATTERN042",
+          "json": "poses/PATTERN042.json",
+          "render": "renders/039_垂直ジャンプ二段目以降/005_PATTERN042.png"
+        }
+      ]
+    },
+    {
+      "name": "後ろジャンプ二段目以降",
+      "frames": [
+        {
+          "index": 27,
+          "name": "PATTERN029",
+          "json": "poses/PATTERN029.json",
+          "render": "renders/040_後ろジャンプ二段目以降/000_PATTERN029.png"
+        },
+        {
+          "index": 28,
+          "name": "PATTERN030",
+          "json": "poses/PATTERN030.json",
+          "render": "renders/040_後ろジャンプ二段目以降/001_PATTERN030.png"
+        },
+        {
+          "index": 29,
+          "name": "PATTERN031",
+          "json": "poses/PATTERN031.json",
+          "render": "renders/040_後ろジャンプ二段目以降/002_PATTERN031.png"
+        },
+        {
+          "index": 30,
+          "name": "PATTERN032",
+          "json": "poses/PATTERN032.json",
+          "render": "renders/040_後ろジャンプ二段目以降/003_PATTERN032.png"
+        },
+        {
+          "index": 31,
+          "name": "PATTERN033",
+          "json": "poses/PATTERN033.json",
+          "render": "renders/040_後ろジャンプ二段目以降/004_PATTERN033.png"
+        },
+        {
+          "index": 32,
+          "name": "PATTERN034",
+          "json": "poses/PATTERN034.json",
+          "render": "renders/040_後ろジャンプ二段目以降/005_PATTERN034.png"
+        },
+        {
+          "index": 33,
+          "name": "PATTERN035",
+          "json": "poses/PATTERN035.json",
+          "render": "renders/040_後ろジャンプ二段目以降/006_PATTERN035.png"
+        }
+      ]
+    },
+    {
+      "name": "ガード予備動作（立ち）",
+      "frames": [
+        {
+          "index": 134,
+          "name": "GUARD",
+          "json": "poses/GUARD.json",
+          "render": "renders/044_ガード予備動作（立ち）/000_GUARD.png"
+        },
+        {
+          "index": 135,
+          "name": "PATTERN126",
+          "json": "poses/PATTERN126.json",
+          "render": "renders/044_ガード予備動作（立ち）/001_PATTERN126.png"
+        },
+        {
+          "index": 136,
+          "name": "PATTERN127",
+          "json": "poses/PATTERN127.json",
+          "render": "renders/044_ガード予備動作（立ち）/002_PATTERN127.png"
+        },
+        {
+          "index": 136,
+          "name": "PATTERN127",
+          "json": "poses/PATTERN127.json",
+          "render": "renders/044_ガード予備動作（立ち）/003_PATTERN127.png"
+        },
+        {
+          "index": 137,
+          "name": "PATTERN176",
+          "json": "poses/PATTERN176.json",
+          "render": "renders/044_ガード予備動作（立ち）/004_PATTERN176.png"
+        },
+        {
+          "index": 138,
+          "name": "PATTERN064",
+          "json": "poses/PATTERN064.json",
+          "render": "renders/044_ガード予備動作（立ち）/005_PATTERN064.png"
+        }
+      ]
+    },
+    {
+      "name": "ガード予備動作（しゃがみ）",
+      "frames": [
+        {
+          "index": 143,
+          "name": "SIT_GUARD",
+          "json": "poses/SIT_GUARD.json",
+          "render": "renders/045_ガード予備動作（しゃがみ）/000_SIT_GUARD.png"
+        },
+        {
+          "index": 144,
+          "name": "PATTERN195",
+          "json": "poses/PATTERN195.json",
+          "render": "renders/045_ガード予備動作（しゃがみ）/001_PATTERN195.png"
+        },
+        {
+          "index": 145,
+          "name": "PATTERN130",
+          "json": "poses/PATTERN130.json",
+          "render": "renders/045_ガード予備動作（しゃがみ）/002_PATTERN130.png"
+        },
+        {
+          "index": 145,
+          "name": "PATTERN130",
+          "json": "poses/PATTERN130.json",
+          "render": "renders/045_ガード予備動作（しゃがみ）/003_PATTERN130.png"
+        },
+        {
+          "index": 146,
+          "name": "PATTERN186",
+          "json": "poses/PATTERN186.json",
+          "render": "renders/045_ガード予備動作（しゃがみ）/004_PATTERN186.png"
+        },
+        {
+          "index": 147,
+          "name": "PATTERN187",
+          "json": "poses/PATTERN187.json",
+          "render": "renders/045_ガード予備動作（しゃがみ）/005_PATTERN187.png"
+        }
+      ]
+    },
+    {
+      "name": "ガード予備動作（空中）",
+      "frames": [
+        {
+          "index": 152,
+          "name": "JP_GUARD",
+          "json": "poses/JP_GUARD.json",
+          "render": "renders/046_ガード予備動作（空中）/000_JP_GUARD.png"
+        },
+        {
+          "index": 153,
+          "name": "PATTERN133",
+          "json": "poses/PATTERN133.json",
+          "render": "renders/046_ガード予備動作（空中）/001_PATTERN133.png"
+        },
+        {
+          "index": 154,
+          "name": "PATTERN134",
+          "json": "poses/PATTERN134.json",
+          "render": "renders/046_ガード予備動作（空中）/002_PATTERN134.png"
+        },
+        {
+          "index": 155,
+          "name": "PATTERN135",
+          "json": "poses/PATTERN135.json",
+          "render": "renders/046_ガード予備動作（空中）/003_PATTERN135.png"
+        },
+        {
+          "index": 31,
+          "name": "PATTERN033",
+          "json": "poses/PATTERN033.json",
+          "render": "renders/046_ガード予備動作（空中）/004_PATTERN033.png"
+        },
+        {
+          "index": 32,
+          "name": "PATTERN034",
+          "json": "poses/PATTERN034.json",
+          "render": "renders/046_ガード予備動作（空中）/005_PATTERN034.png"
+        },
+        {
+          "index": 33,
+          "name": "PATTERN035",
+          "json": "poses/PATTERN035.json",
+          "render": "renders/046_ガード予備動作（空中）/006_PATTERN035.png"
+        }
+      ]
+    },
+    {
+      "name": "攻撃後待機状態から基本へ",
+      "frames": [
+        {
+          "index": 394,
+          "name": "TAIKI",
+          "json": "poses/TAIKI.json",
+          "render": "renders/048_攻撃後待機状態から基本へ/000_TAIKI.png"
+        },
+        {
+          "index": 395,
+          "name": "PATTERN358",
+          "json": "poses/PATTERN358.json",
+          "render": "renders/048_攻撃後待機状態から基本へ/001_PATTERN358.png"
+        },
+        {
+          "index": 396,
+          "name": "PATTERN159",
+          "json": "poses/PATTERN159.json",
+          "render": "renders/048_攻撃後待機状態から基本へ/002_PATTERN159.png"
+        },
+        {
+          "index": 395,
+          "name": "PATTERN358",
+          "json": "poses/PATTERN358.json",
+          "render": "renders/048_攻撃後待機状態から基本へ/003_PATTERN358.png"
+        },
+        {
+          "index": 397,
+          "name": "PATTERN169",
+          "json": "poses/PATTERN169.json",
+          "render": "renders/048_攻撃後待機状態から基本へ/004_PATTERN169.png"
+        },
+        {
+          "index": 398,
+          "name": "PATTERN163",
+          "json": "poses/PATTERN163.json",
+          "render": "renders/048_攻撃後待機状態から基本へ/005_PATTERN163.png"
+        },
+        {
+          "index": 399,
+          "name": "PATTERN154",
+          "json": "poses/PATTERN154.json",
+          "render": "renders/048_攻撃後待機状態から基本へ/006_PATTERN154.png"
+        },
+        {
+          "index": 400,
+          "name": "PATTERN145",
+          "json": "poses/PATTERN145.json",
+          "render": "renders/048_攻撃後待機状態から基本へ/007_PATTERN145.png"
+        },
+        {
+          "index": 401,
+          "name": "PATTERN359",
+          "json": "poses/PATTERN359.json",
+          "render": "renders/048_攻撃後待機状態から基本へ/008_PATTERN359.png"
+        },
+        {
+          "index": 402,
+          "name": "PATTERN360",
+          "json": "poses/PATTERN360.json",
+          "render": "renders/048_攻撃後待機状態から基本へ/009_PATTERN360.png"
+        },
+        {
+          "index": 403,
+          "name": "PATTERN361",
+          "json": "poses/PATTERN361.json",
+          "render": "renders/048_攻撃後待機状態から基本へ/010_PATTERN361.png"
+        },
+        {
+          "index": 404,
+          "name": "PATTERN362",
+          "json": "poses/PATTERN362.json",
+          "render": "renders/048_攻撃後待機状態から基本へ/011_PATTERN362.png"
+        }
+      ]
+    },
+    {
+      "name": "登場",
+      "frames": [
+        {
+          "index": 36,
+          "name": "PATTERN103",
+          "json": "poses/PATTERN103.json",
+          "render": "renders/050_登場/000_PATTERN103.png"
+        },
+        {
+          "index": 37,
+          "name": "PATTERN038",
+          "json": "poses/PATTERN038.json",
+          "render": "renders/050_登場/001_PATTERN038.png"
+        },
+        {
+          "index": 37,
+          "name": "PATTERN038",
+          "json": "poses/PATTERN038.json",
+          "render": "renders/050_登場/002_PATTERN038.png"
+        },
+        {
+          "index": 38,
+          "name": "PATTERN039",
+          "json": "poses/PATTERN039.json",
+          "render": "renders/050_登場/003_PATTERN039.png"
+        },
+        {
+          "index": 39,
+          "name": "PATTERN040",
+          "json": "poses/PATTERN040.json",
+          "render": "renders/050_登場/004_PATTERN040.png"
+        },
+        {
+          "index": 40,
+          "name": "PATTERN041",
+          "json": "poses/PATTERN041.json",
+          "render": "renders/050_登場/005_PATTERN041.png"
+        },
+        {
+          "index": 41,
+          "name": "PATTERN042",
+          "json": "poses/PATTERN042.json",
+          "render": "renders/050_登場/006_PATTERN042.png"
+        }
+      ]
+    },
+    {
+      "name": "勝ちモーション",
+      "frames": [
+        {
+          "index": 286,
+          "name": "WIN",
+          "json": "poses/WIN.json",
+          "render": "renders/052_勝ちモーション/000_WIN.png"
+        },
+        {
+          "index": 287,
+          "name": "PATTERN182",
+          "json": "poses/PATTERN182.json",
+          "render": "renders/052_勝ちモーション/001_PATTERN182.png"
+        },
+        {
+          "index": 288,
+          "name": "PATTERN185",
+          "json": "poses/PATTERN185.json",
+          "render": "renders/052_勝ちモーション/002_PATTERN185.png"
+        },
+        {
+          "index": 289,
+          "name": "PATTERN089",
+          "json": "poses/PATTERN089.json",
+          "render": "renders/052_勝ちモーション/003_PATTERN089.png"
+        },
+        {
+          "index": 290,
+          "name": "PATTERN093",
+          "json": "poses/PATTERN093.json",
+          "render": "renders/052_勝ちモーション/004_PATTERN093.png"
+        },
+        {
+          "index": 291,
+          "name": "PATTERN184",
+          "json": "poses/PATTERN184.json",
+          "render": "renders/052_勝ちモーション/005_PATTERN184.png"
+        },
+        {
+          "index": 292,
+          "name": "PATTERN183",
+          "json": "poses/PATTERN183.json",
+          "render": "renders/052_勝ちモーション/006_PATTERN183.png"
+        },
+        {
+          "index": 293,
+          "name": "PATTERN188",
+          "json": "poses/PATTERN188.json",
+          "render": "renders/052_勝ちモーション/007_PATTERN188.png"
+        },
+        {
+          "index": 294,
+          "name": "PATTERN266",
+          "json": "poses/PATTERN266.json",
+          "render": "renders/052_勝ちモーション/008_PATTERN266.png"
+        },
+        {
+          "index": 295,
+          "name": "PATTERN267",
+          "json": "poses/PATTERN267.json",
+          "render": "renders/052_勝ちモーション/009_PATTERN267.png"
+        },
+        {
+          "index": 296,
+          "name": "PATTERN268",
+          "json": "poses/PATTERN268.json",
+          "render": "renders/052_勝ちモーション/010_PATTERN268.png"
+        },
+        {
+          "index": 297,
+          "name": "PATTERN269",
+          "json": "poses/PATTERN269.json",
+          "render": "renders/052_勝ちモーション/011_PATTERN269.png"
+        },
+        {
+          "index": 297,
+          "name": "PATTERN269",
+          "json": "poses/PATTERN269.json",
+          "render": "renders/052_勝ちモーション/012_PATTERN269.png"
+        },
+        {
+          "index": 298,
+          "name": "PATTERN270",
+          "json": "poses/PATTERN270.json",
+          "render": "renders/052_勝ちモーション/013_PATTERN270.png"
+        },
+        {
+          "index": 299,
+          "name": "PATTERN271",
+          "json": "poses/PATTERN271.json",
+          "render": "renders/052_勝ちモーション/014_PATTERN271.png"
+        },
+        {
+          "index": 300,
+          "name": "PATTERN272",
+          "json": "poses/PATTERN272.json",
+          "render": "renders/052_勝ちモーション/015_PATTERN272.png"
+        },
+        {
+          "index": 301,
+          "name": "PATTERN273",
+          "json": "poses/PATTERN273.json",
+          "render": "renders/052_勝ちモーション/016_PATTERN273.png"
+        }
+      ]
+    },
+    {
+      "name": "ヒール",
+      "frames": [
+        {
+          "index": 236,
+          "name": "EISYOU_START",
+          "json": "poses/EISYOU_START.json",
+          "render": "renders/055_ヒール/000_EISYOU_START.png"
+        },
+        {
+          "index": 237,
+          "name": "PATTERN242",
+          "json": "poses/PATTERN242.json",
+          "render": "renders/055_ヒール/001_PATTERN242.png"
+        },
+        {
+          "index": 238,
+          "name": "PATTERN243",
+          "json": "poses/PATTERN243.json",
+          "render": "renders/055_ヒール/002_PATTERN243.png"
+        },
+        {
+          "index": 239,
+          "name": "PATTERN141",
+          "json": "poses/PATTERN141.json",
+          "render": "renders/055_ヒール/003_PATTERN141.png"
+        },
+        {
+          "index": 238,
+          "name": "PATTERN243",
+          "json": "poses/PATTERN243.json",
+          "render": "renders/055_ヒール/004_PATTERN243.png"
+        },
+        {
+          "index": 240,
+          "name": "PATTERN244",
+          "json": "poses/PATTERN244.json",
+          "render": "renders/055_ヒール/005_PATTERN244.png"
+        },
+        {
+          "index": 241,
+          "name": "PATTERN245",
+          "json": "poses/PATTERN245.json",
+          "render": "renders/055_ヒール/006_PATTERN245.png"
+        }
+      ]
+    },
+    {
+      "name": "掴みヒール（ヒール習得・VIT一定値以上）",
+      "frames": [
+        {
+          "index": 405,
+          "name": "HEAL_ATTACK",
+          "json": "poses/HEAL_ATTACK.json",
+          "render": "renders/056_掴みヒール（ヒール習得・VIT一定値以上）/000_HEAL_ATTACK.png"
+        },
+        {
+          "index": 406,
+          "name": "PATTERN364",
+          "json": "poses/PATTERN364.json",
+          "render": "renders/056_掴みヒール（ヒール習得・VIT一定値以上）/001_PATTERN364.png"
+        },
+        {
+          "index": 407,
+          "name": "PATTERN001",
+          "json": "poses/PATTERN001.json",
+          "render": "renders/056_掴みヒール（ヒール習得・VIT一定値以上）/002_PATTERN001.png"
+        },
+        {
+          "index": 408,
+          "name": "PATTERN365",
+          "json": "poses/PATTERN365.json",
+          "render": "renders/056_掴みヒール（ヒール習得・VIT一定値以上）/003_PATTERN365.png"
+        },
+        {
+          "index": 409,
+          "name": "PATTERN208",
+          "json": "poses/PATTERN208.json",
+          "render": "renders/056_掴みヒール（ヒール習得・VIT一定値以上）/004_PATTERN208.png"
+        },
+        {
+          "index": 410,
+          "name": "PATTERN366",
+          "json": "poses/PATTERN366.json",
+          "render": "renders/056_掴みヒール（ヒール習得・VIT一定値以上）/005_PATTERN366.png"
+        },
+        {
+          "index": 411,
+          "name": "PATTERN367",
+          "json": "poses/PATTERN367.json",
+          "render": "renders/056_掴みヒール（ヒール習得・VIT一定値以上）/006_PATTERN367.png"
+        },
+        {
+          "index": 412,
+          "name": "PATTERN368",
+          "json": "poses/PATTERN368.json",
+          "render": "renders/056_掴みヒール（ヒール習得・VIT一定値以上）/007_PATTERN368.png"
+        },
+        {
+          "index": 413,
+          "name": "PATTERN369",
+          "json": "poses/PATTERN369.json",
+          "render": "renders/056_掴みヒール（ヒール習得・VIT一定値以上）/008_PATTERN369.png"
+        }
+      ]
+    },
+    {
+      "name": "掴みヒール成功",
+      "frames": [
+        {
+          "index": 414,
+          "name": "HEAL_ATTACK_HIT",
+          "json": "poses/HEAL_ATTACK_HIT.json",
+          "render": "renders/057_掴みヒール成功/000_HEAL_ATTACK_HIT.png"
+        },
+        {
+          "index": 415,
+          "name": "PATTERN371",
+          "json": "poses/PATTERN371.json",
+          "render": "renders/057_掴みヒール成功/001_PATTERN371.png"
+        },
+        {
+          "index": 417,
+          "name": "PATTERN373",
+          "json": "poses/PATTERN373.json",
+          "render": "renders/057_掴みヒール成功/002_PATTERN373.png"
+        },
+        {
+          "index": 417,
+          "name": "PATTERN373",
+          "json": "poses/PATTERN373.json",
+          "render": "renders/057_掴みヒール成功/003_PATTERN373.png"
+        },
+        {
+          "index": 417,
+          "name": "PATTERN373",
+          "json": "poses/PATTERN373.json",
+          "render": "renders/057_掴みヒール成功/004_PATTERN373.png"
+        },
+        {
+          "index": 416,
+          "name": "PATTERN372",
+          "json": "poses/PATTERN372.json",
+          "render": "renders/057_掴みヒール成功/005_PATTERN372.png"
+        },
+        {
+          "index": 417,
+          "name": "PATTERN373",
+          "json": "poses/PATTERN373.json",
+          "render": "renders/057_掴みヒール成功/006_PATTERN373.png"
+        },
+        {
+          "index": 418,
+          "name": "PATTERN374",
+          "json": "poses/PATTERN374.json",
+          "render": "renders/057_掴みヒール成功/007_PATTERN374.png"
+        },
+        {
+          "index": 419,
+          "name": "PATTERN375",
+          "json": "poses/PATTERN375.json",
+          "render": "renders/057_掴みヒール成功/008_PATTERN375.png"
+        },
+        {
+          "index": 420,
+          "name": "PATTERN376",
+          "json": "poses/PATTERN376.json",
+          "render": "renders/057_掴みヒール成功/009_PATTERN376.png"
+        },
+        {
+          "index": 421,
+          "name": "PATTERN377",
+          "json": "poses/PATTERN377.json",
+          "render": "renders/057_掴みヒール成功/010_PATTERN377.png"
+        }
+      ]
+    },
+    {
+      "name": "前ダッシュ",
+      "frames": [
+        {
+          "index": 42,
+          "name": "DASH_FR",
+          "json": "poses/DASH_FR.json",
+          "render": "renders/061_前ダッシュ/000_DASH_FR.png"
+        },
+        {
+          "index": 43,
+          "name": "PATTERN044",
+          "json": "poses/PATTERN044.json",
+          "render": "renders/061_前ダッシュ/001_PATTERN044.png"
+        },
+        {
+          "index": 44,
+          "name": "PATTERN045",
+          "json": "poses/PATTERN045.json",
+          "render": "renders/061_前ダッシュ/002_PATTERN045.png"
+        },
+        {
+          "index": 45,
+          "name": "PATTERN046",
+          "json": "poses/PATTERN046.json",
+          "render": "renders/061_前ダッシュ/003_PATTERN046.png"
+        }
+      ]
+    },
+    {
+      "name": "ダッシュ停止",
+      "frames": [
+        {
+          "index": 24,
+          "name": "PATTERN026",
+          "json": "poses/PATTERN026.json",
+          "render": "renders/062_ダッシュ停止/000_PATTERN026.png"
+        },
+        {
+          "index": 255,
+          "name": "HUNMER_PANCH",
+          "json": "poses/HUNMER_PANCH.json",
+          "render": "renders/062_ダッシュ停止/001_HUNMER_PANCH.png"
+        }
+      ]
+    },
+    {
+      "name": "バックステップ",
+      "frames": [
+        {
+          "index": 189,
+          "name": "BK_STEP",
+          "json": "poses/BK_STEP.json",
+          "render": "renders/063_バックステップ/000_BK_STEP.png"
+        },
+        {
+          "index": 190,
+          "name": "PATTERN164",
+          "json": "poses/PATTERN164.json",
+          "render": "renders/063_バックステップ/001_PATTERN164.png"
+        },
+        {
+          "index": 191,
+          "name": "PATTERN047",
+          "json": "poses/PATTERN047.json",
+          "render": "renders/063_バックステップ/002_PATTERN047.png"
+        },
+        {
+          "index": 192,
+          "name": "PATTERN165",
+          "json": "poses/PATTERN165.json",
+          "render": "renders/063_バックステップ/003_PATTERN165.png"
+        },
+        {
+          "index": 193,
+          "name": "PATTERN166",
+          "json": "poses/PATTERN166.json",
+          "render": "renders/063_バックステップ/004_PATTERN166.png"
+        },
+        {
+          "index": 194,
+          "name": "PATTERN043",
+          "json": "poses/PATTERN043.json",
+          "render": "renders/063_バックステップ/005_PATTERN043.png"
+        },
+        {
+          "index": 195,
+          "name": "PATTERN167",
+          "json": "poses/PATTERN167.json",
+          "render": "renders/063_バックステップ/006_PATTERN167.png"
+        },
+        {
+          "index": 196,
+          "name": "PATTERN168",
+          "json": "poses/PATTERN168.json",
+          "render": "renders/063_バックステップ/007_PATTERN168.png"
+        }
+      ]
+    },
+    {
+      "name": "地上詠唱モード",
+      "frames": [
+        {
+          "index": 213,
+          "name": "MAGIC_A",
+          "json": "poses/MAGIC_A.json",
+          "render": "renders/065_地上詠唱モード/000_MAGIC_A.png"
+        },
+        {
+          "index": 214,
+          "name": "PATTERN226",
+          "json": "poses/PATTERN226.json",
+          "render": "renders/065_地上詠唱モード/001_PATTERN226.png"
+        },
+        {
+          "index": 215,
+          "name": "PATTERN198",
+          "json": "poses/PATTERN198.json",
+          "render": "renders/065_地上詠唱モード/002_PATTERN198.png"
+        },
+        {
+          "index": 216,
+          "name": "PATTERN227",
+          "json": "poses/PATTERN227.json",
+          "render": "renders/065_地上詠唱モード/003_PATTERN227.png"
+        },
+        {
+          "index": 217,
+          "name": "PATTERN228",
+          "json": "poses/PATTERN228.json",
+          "render": "renders/065_地上詠唱モード/004_PATTERN228.png"
+        },
+        {
+          "index": 218,
+          "name": "PATTERN229",
+          "json": "poses/PATTERN229.json",
+          "render": "renders/065_地上詠唱モード/005_PATTERN229.png"
+        },
+        {
+          "index": 219,
+          "name": "PATTERN230",
+          "json": "poses/PATTERN230.json",
+          "render": "renders/065_地上詠唱モード/006_PATTERN230.png"
+        },
+        {
+          "index": 220,
+          "name": "PATTERN231",
+          "json": "poses/PATTERN231.json",
+          "render": "renders/065_地上詠唱モード/007_PATTERN231.png"
+        },
+        {
+          "index": 221,
+          "name": "PATTERN197",
+          "json": "poses/PATTERN197.json",
+          "render": "renders/065_地上詠唱モード/008_PATTERN197.png"
+        },
+        {
+          "index": 222,
+          "name": "PATTERN232",
+          "json": "poses/PATTERN232.json",
+          "render": "renders/065_地上詠唱モード/009_PATTERN232.png"
+        }
+      ]
+    },
+    {
+      "name": "デーモンペイン（対アンデッド効果技）",
+      "frames": [
+        {
+          "index": 255,
+          "name": "HUNMER_PANCH",
+          "json": "poses/HUNMER_PANCH.json",
+          "render": "renders/067_デーモンペイン（対アンデッド効果技）/000_HUNMER_PANCH.png"
+        },
+        {
+          "index": 256,
+          "name": "PATTERN172",
+          "json": "poses/PATTERN172.json",
+          "render": "renders/067_デーモンペイン（対アンデッド効果技）/001_PATTERN172.png"
+        },
+        {
+          "index": 257,
+          "name": "PATTERN170",
+          "json": "poses/PATTERN170.json",
+          "render": "renders/067_デーモンペイン（対アンデッド効果技）/002_PATTERN170.png"
+        },
+        {
+          "index": 258,
+          "name": "PATTERN258",
+          "json": "poses/PATTERN258.json",
+          "render": "renders/067_デーモンペイン（対アンデッド効果技）/003_PATTERN258.png"
+        },
+        {
+          "index": 259,
+          "name": "PATTERN259",
+          "json": "poses/PATTERN259.json",
+          "render": "renders/067_デーモンペイン（対アンデッド効果技）/004_PATTERN259.png"
+        },
+        {
+          "index": 269,
+          "name": "PATTERN260",
+          "json": "poses/PATTERN260.json",
+          "render": "renders/067_デーモンペイン（対アンデッド効果技）/005_PATTERN260.png"
+        },
+        {
+          "index": 270,
+          "name": "PATTERN261",
+          "json": "poses/PATTERN261.json",
+          "render": "renders/067_デーモンペイン（対アンデッド効果技）/006_PATTERN261.png"
+        },
+        {
+          "index": 271,
+          "name": "PATTERN262",
+          "json": "poses/PATTERN262.json",
+          "render": "renders/067_デーモンペイン（対アンデッド効果技）/007_PATTERN262.png"
+        },
+        {
+          "index": 272,
+          "name": "PATTERN171",
+          "json": "poses/PATTERN171.json",
+          "render": "renders/067_デーモンペイン（対アンデッド効果技）/008_PATTERN171.png"
+        },
+        {
+          "index": 273,
+          "name": "PATTERN263",
+          "json": "poses/PATTERN263.json",
+          "render": "renders/067_デーモンペイン（対アンデッド効果技）/009_PATTERN263.png"
+        },
+        {
+          "index": 274,
+          "name": "PATTERN264",
+          "json": "poses/PATTERN264.json",
+          "render": "renders/067_デーモンペイン（対アンデッド効果技）/010_PATTERN264.png"
+        }
+      ]
+    },
+    {
+      "name": "ハンマーパンチヒット後連打",
+      "frames": [
+        {
+          "index": 261,
+          "name": "PATTERN307",
+          "json": "poses/PATTERN307.json",
+          "render": "renders/068_ハンマーパンチヒット後連打/000_PATTERN307.png"
+        },
+        {
+          "index": 262,
+          "name": "PATTERN300",
+          "json": "poses/PATTERN300.json",
+          "render": "renders/068_ハンマーパンチヒット後連打/001_PATTERN300.png"
+        },
+        {
+          "index": 263,
+          "name": "PATTERN314",
+          "json": "poses/PATTERN314.json",
+          "render": "renders/068_ハンマーパンチヒット後連打/002_PATTERN314.png"
+        },
+        {
+          "index": 264,
+          "name": "PATTERN295",
+          "json": "poses/PATTERN295.json",
+          "render": "renders/068_ハンマーパンチヒット後連打/003_PATTERN295.png"
+        },
+        {
+          "index": 265,
+          "name": "PATTERN288",
+          "json": "poses/PATTERN288.json",
+          "render": "renders/068_ハンマーパンチヒット後連打/004_PATTERN288.png"
+        },
+        {
+          "index": 261,
+          "name": "PATTERN307",
+          "json": "poses/PATTERN307.json",
+          "render": "renders/068_ハンマーパンチヒット後連打/005_PATTERN307.png"
+        },
+        {
+          "index": 262,
+          "name": "PATTERN300",
+          "json": "poses/PATTERN300.json",
+          "render": "renders/068_ハンマーパンチヒット後連打/006_PATTERN300.png"
+        },
+        {
+          "index": 263,
+          "name": "PATTERN314",
+          "json": "poses/PATTERN314.json",
+          "render": "renders/068_ハンマーパンチヒット後連打/007_PATTERN314.png"
+        },
+        {
+          "index": 267,
+          "name": "PATTERN326",
+          "json": "poses/PATTERN326.json",
+          "render": "renders/068_ハンマーパンチヒット後連打/008_PATTERN326.png"
+        },
+        {
+          "index": 268,
+          "name": "PATTERN320",
+          "json": "poses/PATTERN320.json",
+          "render": "renders/068_ハンマーパンチヒット後連打/009_PATTERN320.png"
+        },
+        {
+          "index": 269,
+          "name": "PATTERN260",
+          "json": "poses/PATTERN260.json",
+          "render": "renders/068_ハンマーパンチヒット後連打/010_PATTERN260.png"
+        },
+        {
+          "index": 270,
+          "name": "PATTERN261",
+          "json": "poses/PATTERN261.json",
+          "render": "renders/068_ハンマーパンチヒット後連打/011_PATTERN261.png"
+        },
+        {
+          "index": 271,
+          "name": "PATTERN262",
+          "json": "poses/PATTERN262.json",
+          "render": "renders/068_ハンマーパンチヒット後連打/012_PATTERN262.png"
+        },
+        {
+          "index": 272,
+          "name": "PATTERN171",
+          "json": "poses/PATTERN171.json",
+          "render": "renders/068_ハンマーパンチヒット後連打/013_PATTERN171.png"
+        },
+        {
+          "index": 273,
+          "name": "PATTERN263",
+          "json": "poses/PATTERN263.json",
+          "render": "renders/068_ハンマーパンチヒット後連打/014_PATTERN263.png"
+        },
+        {
+          "index": 274,
+          "name": "PATTERN264",
+          "json": "poses/PATTERN264.json",
+          "render": "renders/068_ハンマーパンチヒット後連打/015_PATTERN264.png"
+        }
+      ]
+    },
+    {
+      "name": "新技の殴り派生",
+      "frames": [
+        {
+          "index": 255,
+          "name": "HUNMER_PANCH",
+          "json": "poses/HUNMER_PANCH.json",
+          "render": "renders/069_新技の殴り派生/000_HUNMER_PANCH.png"
+        },
+        {
+          "index": 256,
+          "name": "PATTERN172",
+          "json": "poses/PATTERN172.json",
+          "render": "renders/069_新技の殴り派生/001_PATTERN172.png"
+        },
+        {
+          "index": 257,
+          "name": "PATTERN170",
+          "json": "poses/PATTERN170.json",
+          "render": "renders/069_新技の殴り派生/002_PATTERN170.png"
+        },
+        {
+          "index": 258,
+          "name": "PATTERN258",
+          "json": "poses/PATTERN258.json",
+          "render": "renders/069_新技の殴り派生/003_PATTERN258.png"
+        },
+        {
+          "index": 259,
+          "name": "PATTERN259",
+          "json": "poses/PATTERN259.json",
+          "render": "renders/069_新技の殴り派生/004_PATTERN259.png"
+        },
+        {
+          "index": 260,
+          "name": "PATTERN363",
+          "json": "poses/PATTERN363.json",
+          "render": "renders/069_新技の殴り派生/005_PATTERN363.png"
+        },
+        {
+          "index": 275,
+          "name": "HUNMMER_MISS",
+          "json": "poses/HUNMMER_MISS.json",
+          "render": "renders/069_新技の殴り派生/006_HUNMMER_MISS.png"
+        },
+        {
+          "index": 276,
+          "name": "PATTERN327",
+          "json": "poses/PATTERN327.json",
+          "render": "renders/069_新技の殴り派生/007_PATTERN327.png"
+        },
+        {
+          "index": 277,
+          "name": "PATTERN330",
+          "json": "poses/PATTERN330.json",
+          "render": "renders/069_新技の殴り派生/008_PATTERN330.png"
+        },
+        {
+          "index": 278,
+          "name": "PATTERN329",
+          "json": "poses/PATTERN329.json",
+          "render": "renders/069_新技の殴り派生/009_PATTERN329.png"
+        },
+        {
+          "index": 279,
+          "name": "PATTERN328",
+          "json": "poses/PATTERN328.json",
+          "render": "renders/069_新技の殴り派生/010_PATTERN328.png"
+        },
+        {
+          "index": 280,
+          "name": "PATTERN338",
+          "json": "poses/PATTERN338.json",
+          "render": "renders/069_新技の殴り派生/011_PATTERN338.png"
+        },
+        {
+          "index": 281,
+          "name": "PATTERN332",
+          "json": "poses/PATTERN332.json",
+          "render": "renders/069_新技の殴り派生/012_PATTERN332.png"
+        },
+        {
+          "index": 282,
+          "name": "PATTERN331",
+          "json": "poses/PATTERN331.json",
+          "render": "renders/069_新技の殴り派生/013_PATTERN331.png"
+        },
+        {
+          "index": 283,
+          "name": "PATTERN357",
+          "json": "poses/PATTERN357.json",
+          "render": "renders/069_新技の殴り派生/014_PATTERN357.png"
+        },
+        {
+          "index": 284,
+          "name": "PATTERN349",
+          "json": "poses/PATTERN349.json",
+          "render": "renders/069_新技の殴り派生/015_PATTERN349.png"
+        },
+        {
+          "index": 285,
+          "name": "PATTERN348",
+          "json": "poses/PATTERN348.json",
+          "render": "renders/069_新技の殴り派生/016_PATTERN348.png"
+        }
+      ]
+    },
+    {
+      "name": "ニューマ本体",
+      "frames": [
+        {
+          "index": 243,
+          "name": "PATTERN247",
+          "json": "poses/PATTERN247.json",
+          "render": "renders/071_ニューマ本体/000_PATTERN247.png"
+        },
+        {
+          "index": 244,
+          "name": "PATTERN248",
+          "json": "poses/PATTERN248.json",
+          "render": "renders/071_ニューマ本体/001_PATTERN248.png"
+        },
+        {
+          "index": 245,
+          "name": "PATTERN249",
+          "json": "poses/PATTERN249.json",
+          "render": "renders/071_ニューマ本体/002_PATTERN249.png"
+        },
+        {
+          "index": 246,
+          "name": "PATTERN174",
+          "json": "poses/PATTERN174.json",
+          "render": "renders/071_ニューマ本体/003_PATTERN174.png"
+        },
+        {
+          "index": 247,
+          "name": "PATTERN173",
+          "json": "poses/PATTERN173.json",
+          "render": "renders/071_ニューマ本体/004_PATTERN173.png"
+        },
+        {
+          "index": 248,
+          "name": "PATTERN250",
+          "json": "poses/PATTERN250.json",
+          "render": "renders/071_ニューマ本体/005_PATTERN250.png"
+        },
+        {
+          "index": 249,
+          "name": "PATTERN251",
+          "json": "poses/PATTERN251.json",
+          "render": "renders/071_ニューマ本体/006_PATTERN251.png"
+        },
+        {
+          "index": 250,
+          "name": "PATTERN252",
+          "json": "poses/PATTERN252.json",
+          "render": "renders/071_ニューマ本体/007_PATTERN252.png"
+        },
+        {
+          "index": 251,
+          "name": "PATTERN253",
+          "json": "poses/PATTERN253.json",
+          "render": "renders/071_ニューマ本体/008_PATTERN253.png"
+        },
+        {
+          "index": 252,
+          "name": "PATTERN254",
+          "json": "poses/PATTERN254.json",
+          "render": "renders/071_ニューマ本体/009_PATTERN254.png"
+        },
+        {
+          "index": 253,
+          "name": "PATTERN255",
+          "json": "poses/PATTERN255.json",
+          "render": "renders/071_ニューマ本体/010_PATTERN255.png"
+        },
+        {
+          "index": 254,
+          "name": "PATTERN256",
+          "json": "poses/PATTERN256.json",
+          "render": "renders/071_ニューマ本体/011_PATTERN256.png"
+        }
+      ]
+    },
+    {
+      "name": "ニューマ（obj）",
+      "frames": [
+        {
+          "index": -1,
+          "name": "cg192",
+          "json": "",
+          "render": "renders/072_ニューマ（obj）/000_cg192.png"
+        },
+        {
+          "index": -1,
+          "name": "cg193",
+          "json": "",
+          "render": "renders/072_ニューマ（obj）/001_cg193.png"
+        },
+        {
+          "index": -1,
+          "name": "cg194",
+          "json": "",
+          "render": "renders/072_ニューマ（obj）/002_cg194.png"
+        },
+        {
+          "index": -1,
+          "name": "cg195",
+          "json": "",
+          "render": "renders/072_ニューマ（obj）/003_cg195.png"
+        },
+        {
+          "index": -1,
+          "name": "cg196",
+          "json": "",
+          "render": "renders/072_ニューマ（obj）/004_cg196.png"
+        },
+        {
+          "index": -1,
+          "name": "cg197",
+          "json": "",
+          "render": "renders/072_ニューマ（obj）/005_cg197.png"
+        },
+        {
+          "index": -1,
+          "name": "cg198",
+          "json": "",
+          "render": "renders/072_ニューマ（obj）/006_cg198.png"
+        },
+        {
+          "index": -1,
+          "name": "cg199",
+          "json": "",
+          "render": "renders/072_ニューマ（obj）/007_cg199.png"
+        },
+        {
+          "index": -1,
+          "name": "cg200",
+          "json": "",
+          "render": "renders/072_ニューマ（obj）/008_cg200.png"
+        },
+        {
+          "index": -1,
+          "name": "cg201",
+          "json": "",
+          "render": "renders/072_ニューマ（obj）/009_cg201.png"
+        },
+        {
+          "index": -1,
+          "name": "cg202",
+          "json": "",
+          "render": "renders/072_ニューマ（obj）/010_cg202.png"
+        },
+        {
+          "index": -1,
+          "name": "cg203",
+          "json": "",
+          "render": "renders/072_ニューマ（obj）/011_cg203.png"
+        },
+        {
+          "index": -1,
+          "name": "cg204",
+          "json": "",
+          "render": "renders/072_ニューマ（obj）/012_cg204.png"
+        },
+        {
+          "index": -1,
+          "name": "cg205",
+          "json": "",
+          "render": "renders/072_ニューマ（obj）/013_cg205.png"
+        },
+        {
+          "index": -1,
+          "name": "cg206",
+          "json": "",
+          "render": "renders/072_ニューマ（obj）/014_cg206.png"
+        },
+        {
+          "index": -1,
+          "name": "cg207",
+          "json": "",
+          "render": "renders/072_ニューマ（obj）/015_cg207.png"
+        },
+        {
+          "index": -1,
+          "name": "cg208",
+          "json": "",
+          "render": "renders/072_ニューマ（obj）/016_cg208.png"
+        },
+        {
+          "index": -1,
+          "name": "cg209",
+          "json": "",
+          "render": "renders/072_ニューマ（obj）/017_cg209.png"
+        }
+      ]
+    },
+    {
+      "name": "ブレッシング詠唱",
+      "frames": [
+        {
+          "index": 213,
+          "name": "MAGIC_A",
+          "json": "poses/MAGIC_A.json",
+          "render": "renders/076_ブレッシング詠唱/000_MAGIC_A.png"
+        },
+        {
+          "index": 214,
+          "name": "PATTERN226",
+          "json": "poses/PATTERN226.json",
+          "render": "renders/076_ブレッシング詠唱/001_PATTERN226.png"
+        },
+        {
+          "index": 215,
+          "name": "PATTERN198",
+          "json": "poses/PATTERN198.json",
+          "render": "renders/076_ブレッシング詠唱/002_PATTERN198.png"
+        },
+        {
+          "index": 216,
+          "name": "PATTERN227",
+          "json": "poses/PATTERN227.json",
+          "render": "renders/076_ブレッシング詠唱/003_PATTERN227.png"
+        },
+        {
+          "index": 217,
+          "name": "PATTERN228",
+          "json": "poses/PATTERN228.json",
+          "render": "renders/076_ブレッシング詠唱/004_PATTERN228.png"
+        },
+        {
+          "index": 218,
+          "name": "PATTERN229",
+          "json": "poses/PATTERN229.json",
+          "render": "renders/076_ブレッシング詠唱/005_PATTERN229.png"
+        },
+        {
+          "index": 219,
+          "name": "PATTERN230",
+          "json": "poses/PATTERN230.json",
+          "render": "renders/076_ブレッシング詠唱/006_PATTERN230.png"
+        },
+        {
+          "index": 220,
+          "name": "PATTERN231",
+          "json": "poses/PATTERN231.json",
+          "render": "renders/076_ブレッシング詠唱/007_PATTERN231.png"
+        },
+        {
+          "index": 221,
+          "name": "PATTERN197",
+          "json": "poses/PATTERN197.json",
+          "render": "renders/076_ブレッシング詠唱/008_PATTERN197.png"
+        },
+        {
+          "index": 222,
+          "name": "PATTERN232",
+          "json": "poses/PATTERN232.json",
+          "render": "renders/076_ブレッシング詠唱/009_PATTERN232.png"
+        }
+      ]
+    },
+    {
+      "name": "[エフェクト]-ブレスちゃん１",
+      "frames": [
+        {
+          "index": 306,
+          "name": "PATTERN278",
+          "json": "poses/PATTERN278.json",
+          "render": "renders/077_[エフェクト]-ブレスちゃん１/000_PATTERN278.png"
+        },
+        {
+          "index": 307,
+          "name": "PATTERN279",
+          "json": "poses/PATTERN279.json",
+          "render": "renders/077_[エフェクト]-ブレスちゃん１/001_PATTERN279.png"
+        },
+        {
+          "index": 308,
+          "name": "PATTERN280",
+          "json": "poses/PATTERN280.json",
+          "render": "renders/077_[エフェクト]-ブレスちゃん１/002_PATTERN280.png"
+        },
+        {
+          "index": 302,
+          "name": "BLESSING_ANGEL",
+          "json": "poses/BLESSING_ANGEL.json",
+          "render": "renders/077_[エフェクト]-ブレスちゃん１/003_BLESSING_ANGEL.png"
+        },
+        {
+          "index": 303,
+          "name": "PATTERN275",
+          "json": "poses/PATTERN275.json",
+          "render": "renders/077_[エフェクト]-ブレスちゃん１/004_PATTERN275.png"
+        },
+        {
+          "index": 304,
+          "name": "PATTERN276",
+          "json": "poses/PATTERN276.json",
+          "render": "renders/077_[エフェクト]-ブレスちゃん１/005_PATTERN276.png"
+        },
+        {
+          "index": 305,
+          "name": "PATTERN277",
+          "json": "poses/PATTERN277.json",
+          "render": "renders/077_[エフェクト]-ブレスちゃん１/006_PATTERN277.png"
+        },
+        {
+          "index": 315,
+          "name": "BLESS_END_B",
+          "json": "poses/BLESS_END_B.json",
+          "render": "renders/077_[エフェクト]-ブレスちゃん１/007_BLESS_END_B.png"
+        },
+        {
+          "index": 316,
+          "name": "PATTERN289",
+          "json": "poses/PATTERN289.json",
+          "render": "renders/077_[エフェクト]-ブレスちゃん１/008_PATTERN289.png"
+        },
+        {
+          "index": 317,
+          "name": "PATTERN290",
+          "json": "poses/PATTERN290.json",
+          "render": "renders/077_[エフェクト]-ブレスちゃん１/009_PATTERN290.png"
+        },
+        {
+          "index": 318,
+          "name": "PATTERN291",
+          "json": "poses/PATTERN291.json",
+          "render": "renders/077_[エフェクト]-ブレスちゃん１/010_PATTERN291.png"
+        },
+        {
+          "index": 319,
+          "name": "PATTERN292",
+          "json": "poses/PATTERN292.json",
+          "render": "renders/077_[エフェクト]-ブレスちゃん１/011_PATTERN292.png"
+        },
+        {
+          "index": 320,
+          "name": "PATTERN293",
+          "json": "poses/PATTERN293.json",
+          "render": "renders/077_[エフェクト]-ブレスちゃん１/012_PATTERN293.png"
+        },
+        {
+          "index": 321,
+          "name": "PATTERN294",
+          "json": "poses/PATTERN294.json",
+          "render": "renders/077_[エフェクト]-ブレスちゃん１/013_PATTERN294.png"
+        }
+      ]
+    },
+    {
+      "name": "[エフェクト]-ブレスちゃん２",
+      "frames": [
+        {
+          "index": 302,
+          "name": "BLESSING_ANGEL",
+          "json": "poses/BLESSING_ANGEL.json",
+          "render": "renders/078_[エフェクト]-ブレスちゃん２/000_BLESSING_ANGEL.png"
+        },
+        {
+          "index": 303,
+          "name": "PATTERN275",
+          "json": "poses/PATTERN275.json",
+          "render": "renders/078_[エフェクト]-ブレスちゃん２/001_PATTERN275.png"
+        },
+        {
+          "index": 304,
+          "name": "PATTERN276",
+          "json": "poses/PATTERN276.json",
+          "render": "renders/078_[エフェクト]-ブレスちゃん２/002_PATTERN276.png"
+        },
+        {
+          "index": 305,
+          "name": "PATTERN277",
+          "json": "poses/PATTERN277.json",
+          "render": "renders/078_[エフェクト]-ブレスちゃん２/003_PATTERN277.png"
+        },
+        {
+          "index": 306,
+          "name": "PATTERN278",
+          "json": "poses/PATTERN278.json",
+          "render": "renders/078_[エフェクト]-ブレスちゃん２/004_PATTERN278.png"
+        },
+        {
+          "index": 307,
+          "name": "PATTERN279",
+          "json": "poses/PATTERN279.json",
+          "render": "renders/078_[エフェクト]-ブレスちゃん２/005_PATTERN279.png"
+        },
+        {
+          "index": 308,
+          "name": "PATTERN280",
+          "json": "poses/PATTERN280.json",
+          "render": "renders/078_[エフェクト]-ブレスちゃん２/006_PATTERN280.png"
+        },
+        {
+          "index": 309,
+          "name": "BLESS_END_A",
+          "json": "poses/BLESS_END_A.json",
+          "render": "renders/078_[エフェクト]-ブレスちゃん２/007_BLESS_END_A.png"
+        },
+        {
+          "index": 310,
+          "name": "PATTERN282",
+          "json": "poses/PATTERN282.json",
+          "render": "renders/078_[エフェクト]-ブレスちゃん２/008_PATTERN282.png"
+        },
+        {
+          "index": 311,
+          "name": "PATTERN283",
+          "json": "poses/PATTERN283.json",
+          "render": "renders/078_[エフェクト]-ブレスちゃん２/009_PATTERN283.png"
+        },
+        {
+          "index": 312,
+          "name": "PATTERN284",
+          "json": "poses/PATTERN284.json",
+          "render": "renders/078_[エフェクト]-ブレスちゃん２/010_PATTERN284.png"
+        },
+        {
+          "index": 313,
+          "name": "PATTERN285",
+          "json": "poses/PATTERN285.json",
+          "render": "renders/078_[エフェクト]-ブレスちゃん２/011_PATTERN285.png"
+        },
+        {
+          "index": 314,
+          "name": "PATTERN286",
+          "json": "poses/PATTERN286.json",
+          "render": "renders/078_[エフェクト]-ブレスちゃん２/012_PATTERN286.png"
+        }
+      ]
+    },
+    {
+      "name": "ブレスエフェクトジェネレーター",
+      "frames": [
+        {
+          "index": -1,
+          "name": "cg37",
+          "json": "",
+          "render": "renders/079_ブレスエフェクトジェネレーター/000_cg37.png"
+        },
+        {
+          "index": -1,
+          "name": "cg37",
+          "json": "",
+          "render": "renders/079_ブレスエフェクトジェネレーター/001_cg37.png"
+        },
+        {
+          "index": -1,
+          "name": "cg37",
+          "json": "",
+          "render": "renders/079_ブレスエフェクトジェネレーター/002_cg37.png"
+        }
+      ]
+    },
+    {
+      "name": "080_pattern",
+      "frames": [
+        {
+          "index": 466,
+          "name": "ブレス足下光",
+          "json": "poses/ブレス足下光.json",
+          "render": "renders/080_pattern/000_ブレス足下光.png"
+        },
+        {
+          "index": 467,
+          "name": "ブレス足下光消え",
+          "json": "poses/ブレス足下光消え.json",
+          "render": "renders/080_pattern/001_ブレス足下光消え.png"
+        }
+      ]
+    },
+    {
+      "name": "速度上昇",
+      "frames": [
+        {
+          "index": 223,
+          "name": "MAGIC_B",
+          "json": "poses/MAGIC_B.json",
+          "render": "renders/082_速度上昇/000_MAGIC_B.png"
+        },
+        {
+          "index": 224,
+          "name": "PATTERN234",
+          "json": "poses/PATTERN234.json",
+          "render": "renders/082_速度上昇/001_PATTERN234.png"
+        },
+        {
+          "index": 225,
+          "name": "PATTERN059",
+          "json": "poses/PATTERN059.json",
+          "render": "renders/082_速度上昇/002_PATTERN059.png"
+        },
+        {
+          "index": 226,
+          "name": "PATTERN235",
+          "json": "poses/PATTERN235.json",
+          "render": "renders/082_速度上昇/003_PATTERN235.png"
+        },
+        {
+          "index": 227,
+          "name": "PATTERN236",
+          "json": "poses/PATTERN236.json",
+          "render": "renders/082_速度上昇/004_PATTERN236.png"
+        },
+        {
+          "index": 228,
+          "name": "PATTERN180",
+          "json": "poses/PATTERN180.json",
+          "render": "renders/082_速度上昇/005_PATTERN180.png"
+        },
+        {
+          "index": 229,
+          "name": "PATTERN237",
+          "json": "poses/PATTERN237.json",
+          "render": "renders/082_速度上昇/006_PATTERN237.png"
+        },
+        {
+          "index": 230,
+          "name": "PATTERN238",
+          "json": "poses/PATTERN238.json",
+          "render": "renders/082_速度上昇/007_PATTERN238.png"
+        },
+        {
+          "index": 231,
+          "name": "PATTERN200",
+          "json": "poses/PATTERN200.json",
+          "render": "renders/082_速度上昇/008_PATTERN200.png"
+        },
+        {
+          "index": 232,
+          "name": "PATTERN239",
+          "json": "poses/PATTERN239.json",
+          "render": "renders/082_速度上昇/009_PATTERN239.png"
+        },
+        {
+          "index": 233,
+          "name": "PATTERN175",
+          "json": "poses/PATTERN175.json",
+          "render": "renders/082_速度上昇/010_PATTERN175.png"
+        },
+        {
+          "index": 234,
+          "name": "PATTERN199",
+          "json": "poses/PATTERN199.json",
+          "render": "renders/082_速度上昇/011_PATTERN199.png"
+        },
+        {
+          "index": 235,
+          "name": "PATTERN240",
+          "json": "poses/PATTERN240.json",
+          "render": "renders/082_速度上昇/012_PATTERN240.png"
+        }
+      ]
+    },
+    {
+      "name": "[エフェクト]-速度上昇",
+      "frames": [
+        {
+          "index": -1,
+          "name": "cg105",
+          "json": "",
+          "render": "renders/083_[エフェクト]-速度上昇/000_cg105.png"
+        },
+        {
+          "index": -1,
+          "name": "cg106",
+          "json": "",
+          "render": "renders/083_[エフェクト]-速度上昇/001_cg106.png"
+        },
+        {
+          "index": -1,
+          "name": "cg107",
+          "json": "",
+          "render": "renders/083_[エフェクト]-速度上昇/002_cg107.png"
+        },
+        {
+          "index": -1,
+          "name": "cg108",
+          "json": "",
+          "render": "renders/083_[エフェクト]-速度上昇/003_cg108.png"
+        },
+        {
+          "index": -1,
+          "name": "cg109",
+          "json": "",
+          "render": "renders/083_[エフェクト]-速度上昇/004_cg109.png"
+        },
+        {
+          "index": -1,
+          "name": "cg110",
+          "json": "",
+          "render": "renders/083_[エフェクト]-速度上昇/005_cg110.png"
+        },
+        {
+          "index": -1,
+          "name": "cg111",
+          "json": "",
+          "render": "renders/083_[エフェクト]-速度上昇/006_cg111.png"
+        },
+        {
+          "index": -1,
+          "name": "cg112",
+          "json": "",
+          "render": "renders/083_[エフェクト]-速度上昇/007_cg112.png"
+        },
+        {
+          "index": -1,
+          "name": "cg113",
+          "json": "",
+          "render": "renders/083_[エフェクト]-速度上昇/008_cg113.png"
+        },
+        {
+          "index": -1,
+          "name": "cg114",
+          "json": "",
+          "render": "renders/083_[エフェクト]-速度上昇/009_cg114.png"
+        },
+        {
+          "index": -1,
+          "name": "cg115",
+          "json": "",
+          "render": "renders/083_[エフェクト]-速度上昇/010_cg115.png"
+        },
+        {
+          "index": -1,
+          "name": "cg116",
+          "json": "",
+          "render": "renders/083_[エフェクト]-速度上昇/011_cg116.png"
+        },
+        {
+          "index": -1,
+          "name": "cg117",
+          "json": "",
+          "render": "renders/083_[エフェクト]-速度上昇/012_cg117.png"
+        },
+        {
+          "index": -1,
+          "name": "cg118",
+          "json": "",
+          "render": "renders/083_[エフェクト]-速度上昇/013_cg118.png"
+        },
+        {
+          "index": -1,
+          "name": "cg119",
+          "json": "",
+          "render": "renders/083_[エフェクト]-速度上昇/014_cg119.png"
+        },
+        {
+          "index": -1,
+          "name": "cg120",
+          "json": "",
+          "render": "renders/083_[エフェクト]-速度上昇/015_cg120.png"
+        },
+        {
+          "index": -1,
+          "name": "cg121",
+          "json": "",
+          "render": "renders/083_[エフェクト]-速度上昇/016_cg121.png"
+        },
+        {
+          "index": -1,
+          "name": "cg122",
+          "json": "",
+          "render": "renders/083_[エフェクト]-速度上昇/017_cg122.png"
+        },
+        {
+          "index": -1,
+          "name": "cg123",
+          "json": "",
+          "render": "renders/083_[エフェクト]-速度上昇/018_cg123.png"
+        },
+        {
+          "index": -1,
+          "name": "cg124",
+          "json": "",
+          "render": "renders/083_[エフェクト]-速度上昇/019_cg124.png"
+        },
+        {
+          "index": -1,
+          "name": "cg125",
+          "json": "",
+          "render": "renders/083_[エフェクト]-速度上昇/020_cg125.png"
+        },
+        {
+          "index": -1,
+          "name": "cg126",
+          "json": "",
+          "render": "renders/083_[エフェクト]-速度上昇/021_cg126.png"
+        },
+        {
+          "index": -1,
+          "name": "cg127",
+          "json": "",
+          "render": "renders/083_[エフェクト]-速度上昇/022_cg127.png"
+        },
+        {
+          "index": -1,
+          "name": "cg128",
+          "json": "",
+          "render": "renders/083_[エフェクト]-速度上昇/023_cg128.png"
+        },
+        {
+          "index": -1,
+          "name": "cg129",
+          "json": "",
+          "render": "renders/083_[エフェクト]-速度上昇/024_cg129.png"
+        },
+        {
+          "index": -1,
+          "name": "cg130",
+          "json": "",
+          "render": "renders/083_[エフェクト]-速度上昇/025_cg130.png"
+        },
+        {
+          "index": -1,
+          "name": "cg131",
+          "json": "",
+          "render": "renders/083_[エフェクト]-速度上昇/026_cg131.png"
+        },
+        {
+          "index": -1,
+          "name": "cg132",
+          "json": "",
+          "render": "renders/083_[エフェクト]-速度上昇/027_cg132.png"
+        },
+        {
+          "index": -1,
+          "name": "cg133",
+          "json": "",
+          "render": "renders/083_[エフェクト]-速度上昇/028_cg133.png"
+        },
+        {
+          "index": -1,
+          "name": "cg134",
+          "json": "",
+          "render": "renders/083_[エフェクト]-速度上昇/029_cg134.png"
+        },
+        {
+          "index": -1,
+          "name": "cg135",
+          "json": "",
+          "render": "renders/083_[エフェクト]-速度上昇/030_cg135.png"
+        }
+      ]
+    },
+    {
+      "name": "速度減少",
+      "frames": [
+        {
+          "index": 169,
+          "name": "ATTACK_EX",
+          "json": "poses/ATTACK_EX.json",
+          "render": "renders/084_速度減少/000_ATTACK_EX.png"
+        },
+        {
+          "index": 170,
+          "name": "PATTERN146",
+          "json": "poses/PATTERN146.json",
+          "render": "renders/084_速度減少/001_PATTERN146.png"
+        },
+        {
+          "index": 171,
+          "name": "PATTERN147",
+          "json": "poses/PATTERN147.json",
+          "render": "renders/084_速度減少/002_PATTERN147.png"
+        },
+        {
+          "index": 172,
+          "name": "PATTERN148",
+          "json": "poses/PATTERN148.json",
+          "render": "renders/084_速度減少/003_PATTERN148.png"
+        },
+        {
+          "index": 173,
+          "name": "PATTERN149",
+          "json": "poses/PATTERN149.json",
+          "render": "renders/084_速度減少/004_PATTERN149.png"
+        },
+        {
+          "index": 174,
+          "name": "PATTERN150",
+          "json": "poses/PATTERN150.json",
+          "render": "renders/084_速度減少/005_PATTERN150.png"
+        },
+        {
+          "index": 175,
+          "name": "PATTERN151",
+          "json": "poses/PATTERN151.json",
+          "render": "renders/084_速度減少/006_PATTERN151.png"
+        },
+        {
+          "index": 176,
+          "name": "PATTERN152",
+          "json": "poses/PATTERN152.json",
+          "render": "renders/084_速度減少/007_PATTERN152.png"
+        },
+        {
+          "index": 177,
+          "name": "PATTERN153",
+          "json": "poses/PATTERN153.json",
+          "render": "renders/084_速度減少/008_PATTERN153.png"
+        }
+      ]
+    },
+    {
+      "name": "[エフェクト]-速度減少",
+      "frames": [
+        {
+          "index": -1,
+          "name": "cg135",
+          "json": "",
+          "render": "renders/085_[エフェクト]-速度減少/000_cg135.png"
+        },
+        {
+          "index": -1,
+          "name": "cg134",
+          "json": "",
+          "render": "renders/085_[エフェクト]-速度減少/001_cg134.png"
+        },
+        {
+          "index": -1,
+          "name": "cg133",
+          "json": "",
+          "render": "renders/085_[エフェクト]-速度減少/002_cg133.png"
+        },
+        {
+          "index": -1,
+          "name": "cg132",
+          "json": "",
+          "render": "renders/085_[エフェクト]-速度減少/003_cg132.png"
+        },
+        {
+          "index": -1,
+          "name": "cg131",
+          "json": "",
+          "render": "renders/085_[エフェクト]-速度減少/004_cg131.png"
+        },
+        {
+          "index": -1,
+          "name": "cg130",
+          "json": "",
+          "render": "renders/085_[エフェクト]-速度減少/005_cg130.png"
+        },
+        {
+          "index": -1,
+          "name": "cg129",
+          "json": "",
+          "render": "renders/085_[エフェクト]-速度減少/006_cg129.png"
+        },
+        {
+          "index": -1,
+          "name": "cg128",
+          "json": "",
+          "render": "renders/085_[エフェクト]-速度減少/007_cg128.png"
+        },
+        {
+          "index": -1,
+          "name": "cg127",
+          "json": "",
+          "render": "renders/085_[エフェクト]-速度減少/008_cg127.png"
+        },
+        {
+          "index": -1,
+          "name": "cg126",
+          "json": "",
+          "render": "renders/085_[エフェクト]-速度減少/009_cg126.png"
+        },
+        {
+          "index": -1,
+          "name": "cg125",
+          "json": "",
+          "render": "renders/085_[エフェクト]-速度減少/010_cg125.png"
+        },
+        {
+          "index": -1,
+          "name": "cg124",
+          "json": "",
+          "render": "renders/085_[エフェクト]-速度減少/011_cg124.png"
+        },
+        {
+          "index": -1,
+          "name": "cg123",
+          "json": "",
+          "render": "renders/085_[エフェクト]-速度減少/012_cg123.png"
+        },
+        {
+          "index": -1,
+          "name": "cg122",
+          "json": "",
+          "render": "renders/085_[エフェクト]-速度減少/013_cg122.png"
+        },
+        {
+          "index": -1,
+          "name": "cg121",
+          "json": "",
+          "render": "renders/085_[エフェクト]-速度減少/014_cg121.png"
+        },
+        {
+          "index": -1,
+          "name": "cg120",
+          "json": "",
+          "render": "renders/085_[エフェクト]-速度減少/015_cg120.png"
+        },
+        {
+          "index": -1,
+          "name": "cg119",
+          "json": "",
+          "render": "renders/085_[エフェクト]-速度減少/016_cg119.png"
+        },
+        {
+          "index": -1,
+          "name": "cg118",
+          "json": "",
+          "render": "renders/085_[エフェクト]-速度減少/017_cg118.png"
+        },
+        {
+          "index": -1,
+          "name": "cg117",
+          "json": "",
+          "render": "renders/085_[エフェクト]-速度減少/018_cg117.png"
+        },
+        {
+          "index": -1,
+          "name": "cg116",
+          "json": "",
+          "render": "renders/085_[エフェクト]-速度減少/019_cg116.png"
+        },
+        {
+          "index": -1,
+          "name": "cg115",
+          "json": "",
+          "render": "renders/085_[エフェクト]-速度減少/020_cg115.png"
+        },
+        {
+          "index": -1,
+          "name": "cg114",
+          "json": "",
+          "render": "renders/085_[エフェクト]-速度減少/021_cg114.png"
+        },
+        {
+          "index": -1,
+          "name": "cg113",
+          "json": "",
+          "render": "renders/085_[エフェクト]-速度減少/022_cg113.png"
+        },
+        {
+          "index": -1,
+          "name": "cg112",
+          "json": "",
+          "render": "renders/085_[エフェクト]-速度減少/023_cg112.png"
+        },
+        {
+          "index": -1,
+          "name": "cg111",
+          "json": "",
+          "render": "renders/085_[エフェクト]-速度減少/024_cg111.png"
+        },
+        {
+          "index": -1,
+          "name": "cg110",
+          "json": "",
+          "render": "renders/085_[エフェクト]-速度減少/025_cg110.png"
+        },
+        {
+          "index": -1,
+          "name": "cg109",
+          "json": "",
+          "render": "renders/085_[エフェクト]-速度減少/026_cg109.png"
+        },
+        {
+          "index": -1,
+          "name": "cg108",
+          "json": "",
+          "render": "renders/085_[エフェクト]-速度減少/027_cg108.png"
+        },
+        {
+          "index": -1,
+          "name": "cg107",
+          "json": "",
+          "render": "renders/085_[エフェクト]-速度減少/028_cg107.png"
+        },
+        {
+          "index": -1,
+          "name": "cg106",
+          "json": "",
+          "render": "renders/085_[エフェクト]-速度減少/029_cg106.png"
+        },
+        {
+          "index": -1,
+          "name": "cg105",
+          "json": "",
+          "render": "renders/085_[エフェクト]-速度減少/030_cg105.png"
+        }
+      ]
+    },
+    {
+      "name": "アンゼルス詠唱",
+      "frames": [
+        {
+          "index": 382,
+          "name": "SPELL_01",
+          "json": "poses/SPELL_01.json",
+          "render": "renders/087_アンゼルス詠唱/000_SPELL_01.png"
+        },
+        {
+          "index": 383,
+          "name": "PATTERN204",
+          "json": "poses/PATTERN204.json",
+          "render": "renders/087_アンゼルス詠唱/001_PATTERN204.png"
+        },
+        {
+          "index": 384,
+          "name": "PATTERN202",
+          "json": "poses/PATTERN202.json",
+          "render": "renders/087_アンゼルス詠唱/002_PATTERN202.png"
+        },
+        {
+          "index": 385,
+          "name": "PATTERN350",
+          "json": "poses/PATTERN350.json",
+          "render": "renders/087_アンゼルス詠唱/003_PATTERN350.png"
+        },
+        {
+          "index": 386,
+          "name": "PATTERN351",
+          "json": "poses/PATTERN351.json",
+          "render": "renders/087_アンゼルス詠唱/004_PATTERN351.png"
+        },
+        {
+          "index": 387,
+          "name": "PATTERN352",
+          "json": "poses/PATTERN352.json",
+          "render": "renders/087_アンゼルス詠唱/005_PATTERN352.png"
+        },
+        {
+          "index": 388,
+          "name": "PATTERN353",
+          "json": "poses/PATTERN353.json",
+          "render": "renders/087_アンゼルス詠唱/006_PATTERN353.png"
+        },
+        {
+          "index": 389,
+          "name": "PATTERN354",
+          "json": "poses/PATTERN354.json",
+          "render": "renders/087_アンゼルス詠唱/007_PATTERN354.png"
+        },
+        {
+          "index": 390,
+          "name": "PATTERN355",
+          "json": "poses/PATTERN355.json",
+          "render": "renders/087_アンゼルス詠唱/008_PATTERN355.png"
+        },
+        {
+          "index": 391,
+          "name": "PATTERN203",
+          "json": "poses/PATTERN203.json",
+          "render": "renders/087_アンゼルス詠唱/009_PATTERN203.png"
+        },
+        {
+          "index": 392,
+          "name": "PATTERN099",
+          "json": "poses/PATTERN099.json",
+          "render": "renders/087_アンゼルス詠唱/010_PATTERN099.png"
+        },
+        {
+          "index": 393,
+          "name": "PATTERN356",
+          "json": "poses/PATTERN356.json",
+          "render": "renders/087_アンゼルス詠唱/011_PATTERN356.png"
+        }
+      ]
+    },
+    {
+      "name": "[エフェクト]-アンゼルスの鐘",
+      "frames": [
+        {
+          "index": 322,
+          "name": "ANGELTH_BELL",
+          "json": "poses/ANGELTH_BELL.json",
+          "render": "renders/088_[エフェクト]-アンゼルスの鐘/000_ANGELTH_BELL.png"
+        },
+        {
+          "index": 323,
+          "name": "PATTERN296",
+          "json": "poses/PATTERN296.json",
+          "render": "renders/088_[エフェクト]-アンゼルスの鐘/001_PATTERN296.png"
+        },
+        {
+          "index": 324,
+          "name": "PATTERN297",
+          "json": "poses/PATTERN297.json",
+          "render": "renders/088_[エフェクト]-アンゼルスの鐘/002_PATTERN297.png"
+        },
+        {
+          "index": 325,
+          "name": "PATTERN298",
+          "json": "poses/PATTERN298.json",
+          "render": "renders/088_[エフェクト]-アンゼルスの鐘/003_PATTERN298.png"
+        },
+        {
+          "index": 322,
+          "name": "ANGELTH_BELL",
+          "json": "poses/ANGELTH_BELL.json",
+          "render": "renders/088_[エフェクト]-アンゼルスの鐘/004_ANGELTH_BELL.png"
+        },
+        {
+          "index": 326,
+          "name": "PATTERN299",
+          "json": "poses/PATTERN299.json",
+          "render": "renders/088_[エフェクト]-アンゼルスの鐘/005_PATTERN299.png"
+        }
+      ]
+    },
+    {
+      "name": "キュアー（仮）",
+      "frames": [
+        {
+          "index": 178,
+          "name": "SPELL_02",
+          "json": "poses/SPELL_02.json",
+          "render": "renders/090_キュアー（仮）/000_SPELL_02.png"
+        },
+        {
+          "index": 179,
+          "name": "PATTERN020",
+          "json": "poses/PATTERN020.json",
+          "render": "renders/090_キュアー（仮）/001_PATTERN020.png"
+        },
+        {
+          "index": 180,
+          "name": "PATTERN155",
+          "json": "poses/PATTERN155.json",
+          "render": "renders/090_キュアー（仮）/002_PATTERN155.png"
+        },
+        {
+          "index": 181,
+          "name": "PATTERN156",
+          "json": "poses/PATTERN156.json",
+          "render": "renders/090_キュアー（仮）/003_PATTERN156.png"
+        },
+        {
+          "index": 182,
+          "name": "PATTERN157",
+          "json": "poses/PATTERN157.json",
+          "render": "renders/090_キュアー（仮）/004_PATTERN157.png"
+        },
+        {
+          "index": 183,
+          "name": "PATTERN158",
+          "json": "poses/PATTERN158.json",
+          "render": "renders/090_キュアー（仮）/005_PATTERN158.png"
+        },
+        {
+          "index": 184,
+          "name": "PATTERN160",
+          "json": "poses/PATTERN160.json",
+          "render": "renders/090_キュアー（仮）/006_PATTERN160.png"
+        },
+        {
+          "index": 185,
+          "name": "PATTERN161",
+          "json": "poses/PATTERN161.json",
+          "render": "renders/090_キュアー（仮）/007_PATTERN161.png"
+        },
+        {
+          "index": 186,
+          "name": "PATTERN028",
+          "json": "poses/PATTERN028.json",
+          "render": "renders/090_キュアー（仮）/008_PATTERN028.png"
+        },
+        {
+          "index": 187,
+          "name": "PATTERN036",
+          "json": "poses/PATTERN036.json",
+          "render": "renders/090_キュアー（仮）/009_PATTERN036.png"
+        },
+        {
+          "index": 188,
+          "name": "PATTERN162",
+          "json": "poses/PATTERN162.json",
+          "render": "renders/090_キュアー（仮）/010_PATTERN162.png"
+        }
+      ]
+    },
+    {
+      "name": "[エフェクト]-キュアーさん",
+      "frames": [
+        {
+          "index": 440,
+          "name": "QURE",
+          "json": "poses/QURE.json",
+          "render": "renders/091_[エフェクト]-キュアーさん/000_QURE.png"
+        },
+        {
+          "index": 441,
+          "name": "PATTERN390",
+          "json": "poses/PATTERN390.json",
+          "render": "renders/091_[エフェクト]-キュアーさん/001_PATTERN390.png"
+        },
+        {
+          "index": 442,
+          "name": "PATTERN287",
+          "json": "poses/PATTERN287.json",
+          "render": "renders/091_[エフェクト]-キュアーさん/002_PATTERN287.png"
+        },
+        {
+          "index": 443,
+          "name": "PATTERN391",
+          "json": "poses/PATTERN391.json",
+          "render": "renders/091_[エフェクト]-キュアーさん/003_PATTERN391.png"
+        }
+      ]
+    },
+    {
+      "name": "魔女のようなラリアット",
+      "frames": [
+        {
+          "index": 468,
+          "name": "AXBOMBER",
+          "json": "poses/AXBOMBER.json",
+          "render": "renders/093_魔女のようなラリアット/000_AXBOMBER.png"
+        },
+        {
+          "index": 469,
+          "name": "PATTERN417",
+          "json": "poses/PATTERN417.json",
+          "render": "renders/093_魔女のようなラリアット/001_PATTERN417.png"
+        },
+        {
+          "index": 470,
+          "name": "PATTERN418",
+          "json": "poses/PATTERN418.json",
+          "render": "renders/093_魔女のようなラリアット/002_PATTERN418.png"
+        },
+        {
+          "index": 471,
+          "name": "PATTERN419",
+          "json": "poses/PATTERN419.json",
+          "render": "renders/093_魔女のようなラリアット/003_PATTERN419.png"
+        },
+        {
+          "index": 472,
+          "name": "PATTERN389",
+          "json": "poses/PATTERN389.json",
+          "render": "renders/093_魔女のようなラリアット/004_PATTERN389.png"
+        },
+        {
+          "index": 473,
+          "name": "PATTERN393",
+          "json": "poses/PATTERN393.json",
+          "render": "renders/093_魔女のようなラリアット/005_PATTERN393.png"
+        },
+        {
+          "index": 474,
+          "name": "PATTERN378",
+          "json": "poses/PATTERN378.json",
+          "render": "renders/093_魔女のようなラリアット/006_PATTERN378.png"
+        },
+        {
+          "index": 475,
+          "name": "PATTERN420",
+          "json": "poses/PATTERN420.json",
+          "render": "renders/093_魔女のようなラリアット/007_PATTERN420.png"
+        },
+        {
+          "index": 477,
+          "name": "PATTERN408",
+          "json": "poses/PATTERN408.json",
+          "render": "renders/093_魔女のようなラリアット/008_PATTERN408.png"
+        },
+        {
+          "index": 476,
+          "name": "PATTERN370",
+          "json": "poses/PATTERN370.json",
+          "render": "renders/093_魔女のようなラリアット/009_PATTERN370.png"
+        },
+        {
+          "index": 477,
+          "name": "PATTERN408",
+          "json": "poses/PATTERN408.json",
+          "render": "renders/093_魔女のようなラリアット/010_PATTERN408.png"
+        },
+        {
+          "index": 476,
+          "name": "PATTERN370",
+          "json": "poses/PATTERN370.json",
+          "render": "renders/093_魔女のようなラリアット/011_PATTERN370.png"
+        },
+        {
+          "index": 478,
+          "name": "PATTERN422",
+          "json": "poses/PATTERN422.json",
+          "render": "renders/093_魔女のようなラリアット/012_PATTERN422.png"
+        },
+        {
+          "index": 479,
+          "name": "PATTERN423",
+          "json": "poses/PATTERN423.json",
+          "render": "renders/093_魔女のようなラリアット/013_PATTERN423.png"
+        },
+        {
+          "index": 480,
+          "name": "PATTERN424",
+          "json": "poses/PATTERN424.json",
+          "render": "renders/093_魔女のようなラリアット/014_PATTERN424.png"
+        },
+        {
+          "index": 481,
+          "name": "PATTERN411",
+          "json": "poses/PATTERN411.json",
+          "render": "renders/093_魔女のようなラリアット/015_PATTERN411.png"
+        },
+        {
+          "index": 480,
+          "name": "PATTERN424",
+          "json": "poses/PATTERN424.json",
+          "render": "renders/093_魔女のようなラリアット/016_PATTERN424.png"
+        },
+        {
+          "index": 482,
+          "name": "PATTERN410",
+          "json": "poses/PATTERN410.json",
+          "render": "renders/093_魔女のようなラリアット/017_PATTERN410.png"
+        },
+        {
+          "index": 483,
+          "name": "PATTERN427",
+          "json": "poses/PATTERN427.json",
+          "render": "renders/093_魔女のようなラリアット/018_PATTERN427.png"
+        },
+        {
+          "index": 484,
+          "name": "PATTERN409",
+          "json": "poses/PATTERN409.json",
+          "render": "renders/093_魔女のようなラリアット/019_PATTERN409.png"
+        },
+        {
+          "index": 485,
+          "name": "PATTERN428",
+          "json": "poses/PATTERN428.json",
+          "render": "renders/093_魔女のようなラリアット/020_PATTERN428.png"
+        }
+      ]
+    },
+    {
+      "name": "ホームラン（ＳＴＲ一定値以上）",
+      "frames": [
+        {
+          "index": 156,
+          "name": "ATTACK_DW_C",
+          "json": "poses/ATTACK_DW_C.json",
+          "render": "renders/094_ホームラン（ＳＴＲ一定値以上）/000_ATTACK_DW_C.png"
+        },
+        {
+          "index": 157,
+          "name": "PATTERN137",
+          "json": "poses/PATTERN137.json",
+          "render": "renders/094_ホームラン（ＳＴＲ一定値以上）/001_PATTERN137.png"
+        },
+        {
+          "index": 158,
+          "name": "PATTERN138",
+          "json": "poses/PATTERN138.json",
+          "render": "renders/094_ホームラン（ＳＴＲ一定値以上）/002_PATTERN138.png"
+        },
+        {
+          "index": 159,
+          "name": "PATTERN052",
+          "json": "poses/PATTERN052.json",
+          "render": "renders/094_ホームラン（ＳＴＲ一定値以上）/003_PATTERN052.png"
+        },
+        {
+          "index": 160,
+          "name": "PATTERN139",
+          "json": "poses/PATTERN139.json",
+          "render": "renders/094_ホームラン（ＳＴＲ一定値以上）/004_PATTERN139.png"
+        },
+        {
+          "index": 161,
+          "name": "PATTERN019",
+          "json": "poses/PATTERN019.json",
+          "render": "renders/094_ホームラン（ＳＴＲ一定値以上）/005_PATTERN019.png"
+        },
+        {
+          "index": 162,
+          "name": "PATTERN140",
+          "json": "poses/PATTERN140.json",
+          "render": "renders/094_ホームラン（ＳＴＲ一定値以上）/006_PATTERN140.png"
+        },
+        {
+          "index": 163,
+          "name": "PATTERN142",
+          "json": "poses/PATTERN142.json",
+          "render": "renders/094_ホームラン（ＳＴＲ一定値以上）/007_PATTERN142.png"
+        },
+        {
+          "index": 164,
+          "name": "PATTERN143",
+          "json": "poses/PATTERN143.json",
+          "render": "renders/094_ホームラン（ＳＴＲ一定値以上）/008_PATTERN143.png"
+        },
+        {
+          "index": 165,
+          "name": "PATTERN144",
+          "json": "poses/PATTERN144.json",
+          "render": "renders/094_ホームラン（ＳＴＲ一定値以上）/009_PATTERN144.png"
+        },
+        {
+          "index": 166,
+          "name": "PATTERN098",
+          "json": "poses/PATTERN098.json",
+          "render": "renders/094_ホームラン（ＳＴＲ一定値以上）/010_PATTERN098.png"
+        },
+        {
+          "index": 167,
+          "name": "PATTERN178",
+          "json": "poses/PATTERN178.json",
+          "render": "renders/094_ホームラン（ＳＴＲ一定値以上）/011_PATTERN178.png"
+        },
+        {
+          "index": 168,
+          "name": "PATTERN181",
+          "json": "poses/PATTERN181.json",
+          "render": "renders/094_ホームラン（ＳＴＲ一定値以上）/012_PATTERN181.png"
+        }
+      ]
+    },
+    {
+      "name": "弱攻撃コンボ１（DEX一定値以上）",
+      "frames": [
+        {
+          "index": 335,
+          "name": "ATTACK_02",
+          "json": "poses/ATTACK_02.json",
+          "render": "renders/096_弱攻撃コンボ１（DEX一定値以上）/000_ATTACK_02.png"
+        },
+        {
+          "index": 336,
+          "name": "PATTERN179",
+          "json": "poses/PATTERN179.json",
+          "render": "renders/096_弱攻撃コンボ１（DEX一定値以上）/001_PATTERN179.png"
+        },
+        {
+          "index": 337,
+          "name": "PATTERN308",
+          "json": "poses/PATTERN308.json",
+          "render": "renders/096_弱攻撃コンボ１（DEX一定値以上）/002_PATTERN308.png"
+        },
+        {
+          "index": 338,
+          "name": "PATTERN309",
+          "json": "poses/PATTERN309.json",
+          "render": "renders/096_弱攻撃コンボ１（DEX一定値以上）/003_PATTERN309.png"
+        },
+        {
+          "index": 339,
+          "name": "PATTERN310",
+          "json": "poses/PATTERN310.json",
+          "render": "renders/096_弱攻撃コンボ１（DEX一定値以上）/004_PATTERN310.png"
+        },
+        {
+          "index": 340,
+          "name": "PATTERN311",
+          "json": "poses/PATTERN311.json",
+          "render": "renders/096_弱攻撃コンボ１（DEX一定値以上）/005_PATTERN311.png"
+        },
+        {
+          "index": 341,
+          "name": "PATTERN312",
+          "json": "poses/PATTERN312.json",
+          "render": "renders/096_弱攻撃コンボ１（DEX一定値以上）/006_PATTERN312.png"
+        },
+        {
+          "index": 342,
+          "name": "PATTERN313",
+          "json": "poses/PATTERN313.json",
+          "render": "renders/096_弱攻撃コンボ１（DEX一定値以上）/007_PATTERN313.png"
+        }
+      ]
+    },
+    {
+      "name": "弱攻撃コンボ２（DEX・STR一定値以上）",
+      "frames": [
+        {
+          "index": 343,
+          "name": "ATTACK_03",
+          "json": "poses/ATTACK_03.json",
+          "render": "renders/097_弱攻撃コンボ２（DEX・STR一定値以上）/000_ATTACK_03.png"
+        },
+        {
+          "index": 344,
+          "name": "PATTERN315",
+          "json": "poses/PATTERN315.json",
+          "render": "renders/097_弱攻撃コンボ２（DEX・STR一定値以上）/001_PATTERN315.png"
+        },
+        {
+          "index": 345,
+          "name": "PATTERN316",
+          "json": "poses/PATTERN316.json",
+          "render": "renders/097_弱攻撃コンボ２（DEX・STR一定値以上）/002_PATTERN316.png"
+        },
+        {
+          "index": 346,
+          "name": "PATTERN189",
+          "json": "poses/PATTERN189.json",
+          "render": "renders/097_弱攻撃コンボ２（DEX・STR一定値以上）/003_PATTERN189.png"
+        },
+        {
+          "index": 347,
+          "name": "PATTERN317",
+          "json": "poses/PATTERN317.json",
+          "render": "renders/097_弱攻撃コンボ２（DEX・STR一定値以上）/004_PATTERN317.png"
+        },
+        {
+          "index": 348,
+          "name": "PATTERN318",
+          "json": "poses/PATTERN318.json",
+          "render": "renders/097_弱攻撃コンボ２（DEX・STR一定値以上）/005_PATTERN318.png"
+        },
+        {
+          "index": 349,
+          "name": "PATTERN319",
+          "json": "poses/PATTERN319.json",
+          "render": "renders/097_弱攻撃コンボ２（DEX・STR一定値以上）/006_PATTERN319.png"
+        },
+        {
+          "index": 350,
+          "name": "PATTERN321",
+          "json": "poses/PATTERN321.json",
+          "render": "renders/097_弱攻撃コンボ２（DEX・STR一定値以上）/007_PATTERN321.png"
+        },
+        {
+          "index": 351,
+          "name": "PATTERN322",
+          "json": "poses/PATTERN322.json",
+          "render": "renders/097_弱攻撃コンボ２（DEX・STR一定値以上）/008_PATTERN322.png"
+        },
+        {
+          "index": 352,
+          "name": "PATTERN201",
+          "json": "poses/PATTERN201.json",
+          "render": "renders/097_弱攻撃コンボ２（DEX・STR一定値以上）/009_PATTERN201.png"
+        },
+        {
+          "index": 353,
+          "name": "PATTERN193",
+          "json": "poses/PATTERN193.json",
+          "render": "renders/097_弱攻撃コンボ２（DEX・STR一定値以上）/010_PATTERN193.png"
+        },
+        {
+          "index": 354,
+          "name": "PATTERN323",
+          "json": "poses/PATTERN323.json",
+          "render": "renders/097_弱攻撃コンボ２（DEX・STR一定値以上）/011_PATTERN323.png"
+        }
+      ]
+    },
+    {
+      "name": "速度増加中使用可能な特殊攻撃",
+      "frames": [
+        {
+          "index": 422,
+          "name": "SP_ATK_01",
+          "json": "poses/SP_ATK_01.json",
+          "render": "renders/099_速度増加中使用可能な特殊攻撃/000_SP_ATK_01.png"
+        },
+        {
+          "index": 423,
+          "name": "PATTERN379",
+          "json": "poses/PATTERN379.json",
+          "render": "renders/099_速度増加中使用可能な特殊攻撃/001_PATTERN379.png"
+        },
+        {
+          "index": 424,
+          "name": "PATTERN274",
+          "json": "poses/PATTERN274.json",
+          "render": "renders/099_速度増加中使用可能な特殊攻撃/002_PATTERN274.png"
+        },
+        {
+          "index": 425,
+          "name": "PATTERN233",
+          "json": "poses/PATTERN233.json",
+          "render": "renders/099_速度増加中使用可能な特殊攻撃/003_PATTERN233.png"
+        },
+        {
+          "index": 426,
+          "name": "PATTERN380",
+          "json": "poses/PATTERN380.json",
+          "render": "renders/099_速度増加中使用可能な特殊攻撃/004_PATTERN380.png"
+        },
+        {
+          "index": 427,
+          "name": "PATTERN381",
+          "json": "poses/PATTERN381.json",
+          "render": "renders/099_速度増加中使用可能な特殊攻撃/005_PATTERN381.png"
+        },
+        {
+          "index": 428,
+          "name": "PATTERN382",
+          "json": "poses/PATTERN382.json",
+          "render": "renders/099_速度増加中使用可能な特殊攻撃/006_PATTERN382.png"
+        },
+        {
+          "index": 429,
+          "name": "PATTERN383",
+          "json": "poses/PATTERN383.json",
+          "render": "renders/099_速度増加中使用可能な特殊攻撃/007_PATTERN383.png"
+        },
+        {
+          "index": 430,
+          "name": "PATTERN241",
+          "json": "poses/PATTERN241.json",
+          "render": "renders/099_速度増加中使用可能な特殊攻撃/008_PATTERN241.png"
+        },
+        {
+          "index": 431,
+          "name": "PATTERN246",
+          "json": "poses/PATTERN246.json",
+          "render": "renders/099_速度増加中使用可能な特殊攻撃/009_PATTERN246.png"
+        },
+        {
+          "index": 432,
+          "name": "PATTERN281",
+          "json": "poses/PATTERN281.json",
+          "render": "renders/099_速度増加中使用可能な特殊攻撃/010_PATTERN281.png"
+        },
+        {
+          "index": 433,
+          "name": "PATTERN384",
+          "json": "poses/PATTERN384.json",
+          "render": "renders/099_速度増加中使用可能な特殊攻撃/011_PATTERN384.png"
+        },
+        {
+          "index": 434,
+          "name": "PATTERN257",
+          "json": "poses/PATTERN257.json",
+          "render": "renders/099_速度増加中使用可能な特殊攻撃/012_PATTERN257.png"
+        },
+        {
+          "index": 435,
+          "name": "PATTERN265",
+          "json": "poses/PATTERN265.json",
+          "render": "renders/099_速度増加中使用可能な特殊攻撃/013_PATTERN265.png"
+        },
+        {
+          "index": 436,
+          "name": "PATTERN385",
+          "json": "poses/PATTERN385.json",
+          "render": "renders/099_速度増加中使用可能な特殊攻撃/014_PATTERN385.png"
+        },
+        {
+          "index": 437,
+          "name": "PATTERN386",
+          "json": "poses/PATTERN386.json",
+          "render": "renders/099_速度増加中使用可能な特殊攻撃/015_PATTERN386.png"
+        },
+        {
+          "index": 438,
+          "name": "PATTERN387",
+          "json": "poses/PATTERN387.json",
+          "render": "renders/099_速度増加中使用可能な特殊攻撃/016_PATTERN387.png"
+        },
+        {
+          "index": 439,
+          "name": "PATTERN388",
+          "json": "poses/PATTERN388.json",
+          "render": "renders/099_速度増加中使用可能な特殊攻撃/017_PATTERN388.png"
+        }
+      ]
+    },
+    {
+      "name": "agi up",
+      "frames": [
+        {
+          "index": 460,
+          "name": "AGI UP",
+          "json": "poses/AGI UP.json",
+          "render": "renders/100_agi up/000_AGI UP.png"
+        },
+        {
+          "index": 461,
+          "name": "AGI UP消え",
+          "json": "poses/AGI UP消え.json",
+          "render": "renders/100_agi up/001_AGI UP消え.png"
+        }
+      ]
+    },
+    {
+      "name": "agi down",
+      "frames": [
+        {
+          "index": 462,
+          "name": "AGI DOWN",
+          "json": "poses/AGI DOWN.json",
+          "render": "renders/101_agi down/000_AGI DOWN.png"
+        },
+        {
+          "index": 463,
+          "name": "AGIDOWN傾き１",
+          "json": "poses/AGIDOWN傾き１.json",
+          "render": "renders/101_agi down/001_AGIDOWN傾き１.png"
+        },
+        {
+          "index": 464,
+          "name": "傾き２",
+          "json": "poses/傾き２.json",
+          "render": "renders/101_agi down/002_傾き２.png"
+        },
+        {
+          "index": 465,
+          "name": "AGIDOWN消え",
+          "json": "poses/AGIDOWN消え.json",
+          "render": "renders/101_agi down/003_AGIDOWN消え.png"
+        }
+      ]
+    },
+    {
+      "name": "Ｊ中ブレード",
+      "frames": [
+        {
+          "index": -1,
+          "name": "cg27",
+          "json": "",
+          "render": "renders/107_Ｊ中ブレード/000_cg27.png"
+        },
+        {
+          "index": -1,
+          "name": "cg28",
+          "json": "",
+          "render": "renders/107_Ｊ中ブレード/001_cg28.png"
+        },
+        {
+          "index": -1,
+          "name": "cg29",
+          "json": "",
+          "render": "renders/107_Ｊ中ブレード/002_cg29.png"
+        },
+        {
+          "index": -1,
+          "name": "cg30",
+          "json": "",
+          "render": "renders/107_Ｊ中ブレード/003_cg30.png"
+        },
+        {
+          "index": -1,
+          "name": "cg31",
+          "json": "",
+          "render": "renders/107_Ｊ中ブレード/004_cg31.png"
+        }
+      ]
+    },
+    {
+      "name": "しゃがみ強ブレード",
+      "frames": [
+        {
+          "index": -1,
+          "name": "cg15",
+          "json": "",
+          "render": "renders/108_しゃがみ強ブレード/000_cg15.png"
+        },
+        {
+          "index": -1,
+          "name": "cg16",
+          "json": "",
+          "render": "renders/108_しゃがみ強ブレード/001_cg16.png"
+        },
+        {
+          "index": -1,
+          "name": "cg17",
+          "json": "",
+          "render": "renders/108_しゃがみ強ブレード/002_cg17.png"
+        },
+        {
+          "index": -1,
+          "name": "cg18",
+          "json": "",
+          "render": "renders/108_しゃがみ強ブレード/003_cg18.png"
+        },
+        {
+          "index": -1,
+          "name": "cg19",
+          "json": "",
+          "render": "renders/108_しゃがみ強ブレード/004_cg19.png"
+        },
+        {
+          "index": -1,
+          "name": "cg20",
+          "json": "",
+          "render": "renders/108_しゃがみ強ブレード/005_cg20.png"
+        },
+        {
+          "index": -1,
+          "name": "cg21",
+          "json": "",
+          "render": "renders/108_しゃがみ強ブレード/006_cg21.png"
+        }
+      ]
+    },
+    {
+      "name": "[ブレード]-速度増加追加攻撃（前進中）",
+      "frames": [
+        {
+          "index": -1,
+          "name": "cg2",
+          "json": "",
+          "render": "renders/109_[ブレード]-速度増加追加攻撃（前進中）/000_cg2.png"
+        },
+        {
+          "index": -1,
+          "name": "cg3",
+          "json": "",
+          "render": "renders/109_[ブレード]-速度増加追加攻撃（前進中）/001_cg3.png"
+        },
+        {
+          "index": -1,
+          "name": "cg4",
+          "json": "",
+          "render": "renders/109_[ブレード]-速度増加追加攻撃（前進中）/002_cg4.png"
+        }
+      ]
+    },
+    {
+      "name": "[ブレード]-立ち中",
+      "frames": [
+        {
+          "index": -1,
+          "name": "cg0",
+          "json": "",
+          "render": "renders/110_[ブレード]-立ち中/000_cg0.png"
+        },
+        {
+          "index": -1,
+          "name": "cg1",
+          "json": "",
+          "render": "renders/110_[ブレード]-立ち中/001_cg1.png"
+        },
+        {
+          "index": -1,
+          "name": "cg2",
+          "json": "",
+          "render": "renders/110_[ブレード]-立ち中/002_cg2.png"
+        },
+        {
+          "index": -1,
+          "name": "cg3",
+          "json": "",
+          "render": "renders/110_[ブレード]-立ち中/003_cg3.png"
+        },
+        {
+          "index": -1,
+          "name": "cg4",
+          "json": "",
+          "render": "renders/110_[ブレード]-立ち中/004_cg4.png"
+        }
+      ]
+    },
+    {
+      "name": "[ブレード]-立ち強",
+      "frames": [
+        {
+          "index": -1,
+          "name": "cg5",
+          "json": "",
+          "render": "renders/111_[ブレード]-立ち強/000_cg5.png"
+        },
+        {
+          "index": -1,
+          "name": "cg6",
+          "json": "",
+          "render": "renders/111_[ブレード]-立ち強/001_cg6.png"
+        },
+        {
+          "index": -1,
+          "name": "cg7",
+          "json": "",
+          "render": "renders/111_[ブレード]-立ち強/002_cg7.png"
+        },
+        {
+          "index": -1,
+          "name": "cg8",
+          "json": "",
+          "render": "renders/111_[ブレード]-立ち強/003_cg8.png"
+        },
+        {
+          "index": -1,
+          "name": "cg9",
+          "json": "",
+          "render": "renders/111_[ブレード]-立ち強/004_cg9.png"
+        },
+        {
+          "index": -1,
+          "name": "cg10",
+          "json": "",
+          "render": "renders/111_[ブレード]-立ち強/005_cg10.png"
+        }
+      ]
+    },
+    {
+      "name": "[ブレード]-しゃがみ中",
+      "frames": [
+        {
+          "index": -1,
+          "name": "cg11",
+          "json": "",
+          "render": "renders/112_[ブレード]-しゃがみ中/000_cg11.png"
+        },
+        {
+          "index": -1,
+          "name": "cg12",
+          "json": "",
+          "render": "renders/112_[ブレード]-しゃがみ中/001_cg12.png"
+        },
+        {
+          "index": -1,
+          "name": "cg13",
+          "json": "",
+          "render": "renders/112_[ブレード]-しゃがみ中/002_cg13.png"
+        },
+        {
+          "index": -1,
+          "name": "cg14",
+          "json": "",
+          "render": "renders/112_[ブレード]-しゃがみ中/003_cg14.png"
+        }
+      ]
+    },
+    {
+      "name": "[ブレード]-Ｊ強",
+      "frames": [
+        {
+          "index": -1,
+          "name": "cg1",
+          "json": "",
+          "render": "renders/113_[ブレード]-Ｊ強/000_cg1.png"
+        },
+        {
+          "index": -1,
+          "name": "cg2",
+          "json": "",
+          "render": "renders/113_[ブレード]-Ｊ強/001_cg2.png"
+        },
+        {
+          "index": -1,
+          "name": "cg3",
+          "json": "",
+          "render": "renders/113_[ブレード]-Ｊ強/002_cg3.png"
+        },
+        {
+          "index": -1,
+          "name": "cg4",
+          "json": "",
+          "render": "renders/113_[ブレード]-Ｊ強/003_cg4.png"
+        }
+      ]
+    },
+    {
+      "name": "[ブレード]-中追加攻撃",
+      "frames": [
+        {
+          "index": -1,
+          "name": "cg32",
+          "json": "",
+          "render": "renders/114_[ブレード]-中追加攻撃/000_cg32.png"
+        },
+        {
+          "index": -1,
+          "name": "cg33",
+          "json": "",
+          "render": "renders/114_[ブレード]-中追加攻撃/001_cg33.png"
+        },
+        {
+          "index": -1,
+          "name": "cg34",
+          "json": "",
+          "render": "renders/114_[ブレード]-中追加攻撃/002_cg34.png"
+        },
+        {
+          "index": -1,
+          "name": "cg35",
+          "json": "",
+          "render": "renders/114_[ブレード]-中追加攻撃/003_cg35.png"
+        },
+        {
+          "index": -1,
+          "name": "cg36",
+          "json": "",
+          "render": "renders/114_[ブレード]-中追加攻撃/004_cg36.png"
+        }
+      ]
+    },
+    {
+      "name": "[ブレード]-デーモンベイン",
+      "frames": [
+        {
+          "index": -1,
+          "name": "cg37",
+          "json": "",
+          "render": "renders/115_[ブレード]-デーモンベイン/000_cg37.png"
+        },
+        {
+          "index": -1,
+          "name": "cg38",
+          "json": "",
+          "render": "renders/115_[ブレード]-デーモンベイン/001_cg38.png"
+        },
+        {
+          "index": -1,
+          "name": "cg39",
+          "json": "",
+          "render": "renders/115_[ブレード]-デーモンベイン/002_cg39.png"
+        },
+        {
+          "index": -1,
+          "name": "cg40",
+          "json": "",
+          "render": "renders/115_[ブレード]-デーモンベイン/003_cg40.png"
+        },
+        {
+          "index": -1,
+          "name": "cg41",
+          "json": "",
+          "render": "renders/115_[ブレード]-デーモンベイン/004_cg41.png"
+        },
+        {
+          "index": -1,
+          "name": "cg42",
+          "json": "",
+          "render": "renders/115_[ブレード]-デーモンベイン/005_cg42.png"
+        },
+        {
+          "index": -1,
+          "name": "cg43",
+          "json": "",
+          "render": "renders/115_[ブレード]-デーモンベイン/006_cg43.png"
+        },
+        {
+          "index": -1,
+          "name": "cg44",
+          "json": "",
+          "render": "renders/115_[ブレード]-デーモンベイン/007_cg44.png"
+        },
+        {
+          "index": -1,
+          "name": "cg45",
+          "json": "",
+          "render": "renders/115_[ブレード]-デーモンベイン/008_cg45.png"
+        },
+        {
+          "index": -1,
+          "name": "cg46",
+          "json": "",
+          "render": "renders/115_[ブレード]-デーモンベイン/009_cg46.png"
+        },
+        {
+          "index": -1,
+          "name": "cg47",
+          "json": "",
+          "render": "renders/115_[ブレード]-デーモンベイン/010_cg47.png"
+        },
+        {
+          "index": -1,
+          "name": "cg48",
+          "json": "",
+          "render": "renders/115_[ブレード]-デーモンベイン/011_cg48.png"
+        },
+        {
+          "index": -1,
+          "name": "cg49",
+          "json": "",
+          "render": "renders/115_[ブレード]-デーモンベイン/012_cg49.png"
+        },
+        {
+          "index": -1,
+          "name": "cg50",
+          "json": "",
+          "render": "renders/115_[ブレード]-デーモンベイン/013_cg50.png"
+        },
+        {
+          "index": -1,
+          "name": "cg51",
+          "json": "",
+          "render": "renders/115_[ブレード]-デーモンベイン/014_cg51.png"
+        },
+        {
+          "index": -1,
+          "name": "cg52",
+          "json": "",
+          "render": "renders/115_[ブレード]-デーモンベイン/015_cg52.png"
+        }
+      ]
+    },
+    {
+      "name": "[ブレード]-ホームラン",
+      "frames": [
+        {
+          "index": -1,
+          "name": "cg58",
+          "json": "",
+          "render": "renders/116_[ブレード]-ホームラン/000_cg58.png"
+        },
+        {
+          "index": -1,
+          "name": "cg59",
+          "json": "",
+          "render": "renders/116_[ブレード]-ホームラン/001_cg59.png"
+        },
+        {
+          "index": -1,
+          "name": "cg60",
+          "json": "",
+          "render": "renders/116_[ブレード]-ホームラン/002_cg60.png"
+        },
+        {
+          "index": -1,
+          "name": "cg61",
+          "json": "",
+          "render": "renders/116_[ブレード]-ホームラン/003_cg61.png"
+        }
+      ]
+    },
+    {
+      "name": "117_pattern",
+      "frames": [
+        {
+          "index": -1,
+          "name": "cg87",
+          "json": "",
+          "render": "renders/117_pattern/000_cg87.png"
+        },
+        {
+          "index": -1,
+          "name": "cg62",
+          "json": "",
+          "render": "renders/117_pattern/001_cg62.png"
+        },
+        {
+          "index": -1,
+          "name": "cg63",
+          "json": "",
+          "render": "renders/117_pattern/002_cg63.png"
+        },
+        {
+          "index": -1,
+          "name": "cg64",
+          "json": "",
+          "render": "renders/117_pattern/003_cg64.png"
+        },
+        {
+          "index": -1,
+          "name": "cg65",
+          "json": "",
+          "render": "renders/117_pattern/004_cg65.png"
+        },
+        {
+          "index": -1,
+          "name": "cg66",
+          "json": "",
+          "render": "renders/117_pattern/005_cg66.png"
+        },
+        {
+          "index": -1,
+          "name": "cg67",
+          "json": "",
+          "render": "renders/117_pattern/006_cg67.png"
+        },
+        {
+          "index": -1,
+          "name": "cg68",
+          "json": "",
+          "render": "renders/117_pattern/007_cg68.png"
+        },
+        {
+          "index": -1,
+          "name": "cg69",
+          "json": "",
+          "render": "renders/117_pattern/008_cg69.png"
+        },
+        {
+          "index": -1,
+          "name": "cg70",
+          "json": "",
+          "render": "renders/117_pattern/009_cg70.png"
+        },
+        {
+          "index": -1,
+          "name": "cg71",
+          "json": "",
+          "render": "renders/117_pattern/010_cg71.png"
+        },
+        {
+          "index": -1,
+          "name": "cg72",
+          "json": "",
+          "render": "renders/117_pattern/011_cg72.png"
+        },
+        {
+          "index": -1,
+          "name": "cg73",
+          "json": "",
+          "render": "renders/117_pattern/012_cg73.png"
+        },
+        {
+          "index": -1,
+          "name": "cg74",
+          "json": "",
+          "render": "renders/117_pattern/013_cg74.png"
+        },
+        {
+          "index": -1,
+          "name": "cg75",
+          "json": "",
+          "render": "renders/117_pattern/014_cg75.png"
+        },
+        {
+          "index": -1,
+          "name": "cg76",
+          "json": "",
+          "render": "renders/117_pattern/015_cg76.png"
+        },
+        {
+          "index": -1,
+          "name": "cg77",
+          "json": "",
+          "render": "renders/117_pattern/016_cg77.png"
+        }
+      ]
+    },
+    {
+      "name": "ホーリーライト",
+      "frames": [
+        {
+          "index": -1,
+          "name": "cg87",
+          "json": "",
+          "render": "renders/118_ホーリーライト/000_cg87.png"
+        },
+        {
+          "index": -1,
+          "name": "cg62",
+          "json": "",
+          "render": "renders/118_ホーリーライト/001_cg62.png"
+        },
+        {
+          "index": -1,
+          "name": "cg63",
+          "json": "",
+          "render": "renders/118_ホーリーライト/002_cg63.png"
+        },
+        {
+          "index": -1,
+          "name": "cg64",
+          "json": "",
+          "render": "renders/118_ホーリーライト/003_cg64.png"
+        },
+        {
+          "index": -1,
+          "name": "cg65",
+          "json": "",
+          "render": "renders/118_ホーリーライト/004_cg65.png"
+        },
+        {
+          "index": -1,
+          "name": "cg66",
+          "json": "",
+          "render": "renders/118_ホーリーライト/005_cg66.png"
+        },
+        {
+          "index": -1,
+          "name": "cg67",
+          "json": "",
+          "render": "renders/118_ホーリーライト/006_cg67.png"
+        },
+        {
+          "index": -1,
+          "name": "cg68",
+          "json": "",
+          "render": "renders/118_ホーリーライト/007_cg68.png"
+        },
+        {
+          "index": -1,
+          "name": "cg69",
+          "json": "",
+          "render": "renders/118_ホーリーライト/008_cg69.png"
+        },
+        {
+          "index": -1,
+          "name": "cg70",
+          "json": "",
+          "render": "renders/118_ホーリーライト/009_cg70.png"
+        },
+        {
+          "index": -1,
+          "name": "cg71",
+          "json": "",
+          "render": "renders/118_ホーリーライト/010_cg71.png"
+        },
+        {
+          "index": -1,
+          "name": "cg72",
+          "json": "",
+          "render": "renders/118_ホーリーライト/011_cg72.png"
+        },
+        {
+          "index": -1,
+          "name": "cg73",
+          "json": "",
+          "render": "renders/118_ホーリーライト/012_cg73.png"
+        },
+        {
+          "index": -1,
+          "name": "cg74",
+          "json": "",
+          "render": "renders/118_ホーリーライト/013_cg74.png"
+        },
+        {
+          "index": -1,
+          "name": "cg75",
+          "json": "",
+          "render": "renders/118_ホーリーライト/014_cg75.png"
+        },
+        {
+          "index": -1,
+          "name": "cg76",
+          "json": "",
+          "render": "renders/118_ホーリーライト/015_cg76.png"
+        },
+        {
+          "index": -1,
+          "name": "cg77",
+          "json": "",
+          "render": "renders/118_ホーリーライト/016_cg77.png"
+        },
+        {
+          "index": -1,
+          "name": "cg77",
+          "json": "",
+          "render": "renders/118_ホーリーライト/017_cg77.png"
+        }
+      ]
+    },
+    {
+      "name": "ホーリーライトのキラキラ",
+      "frames": [
+        {
+          "index": 0,
+          "name": "WORK",
+          "json": "poses/WORK.json",
+          "render": "renders/119_ホーリーライトのキラキラ/000_WORK.png"
+        },
+        {
+          "index": -1,
+          "name": "cg77",
+          "json": "",
+          "render": "renders/119_ホーリーライトのキラキラ/001_cg77.png"
+        },
+        {
+          "index": -1,
+          "name": "cg78",
+          "json": "",
+          "render": "renders/119_ホーリーライトのキラキラ/002_cg78.png"
+        },
+        {
+          "index": -1,
+          "name": "cg79",
+          "json": "",
+          "render": "renders/119_ホーリーライトのキラキラ/003_cg79.png"
+        },
+        {
+          "index": -1,
+          "name": "cg80",
+          "json": "",
+          "render": "renders/119_ホーリーライトのキラキラ/004_cg80.png"
+        },
+        {
+          "index": -1,
+          "name": "cg81",
+          "json": "",
+          "render": "renders/119_ホーリーライトのキラキラ/005_cg81.png"
+        },
+        {
+          "index": -1,
+          "name": "cg82",
+          "json": "",
+          "render": "renders/119_ホーリーライトのキラキラ/006_cg82.png"
+        },
+        {
+          "index": -1,
+          "name": "cg83",
+          "json": "",
+          "render": "renders/119_ホーリーライトのキラキラ/007_cg83.png"
+        },
+        {
+          "index": -1,
+          "name": "cg84",
+          "json": "",
+          "render": "renders/119_ホーリーライトのキラキラ/008_cg84.png"
+        },
+        {
+          "index": -1,
+          "name": "cg85",
+          "json": "",
+          "render": "renders/119_ホーリーライトのキラキラ/009_cg85.png"
+        },
+        {
+          "index": -1,
+          "name": "cg86",
+          "json": "",
+          "render": "renders/119_ホーリーライトのキラキラ/010_cg86.png"
+        },
+        {
+          "index": -1,
+          "name": "cg87",
+          "json": "",
+          "render": "renders/119_ホーリーライトのキラキラ/011_cg87.png"
+        }
+      ]
+    },
+    {
+      "name": "ホーリーライト　ヒット",
+      "frames": [
+        {
+          "index": -1,
+          "name": "cg88",
+          "json": "",
+          "render": "renders/120_ホーリーライト　ヒット/000_cg88.png"
+        },
+        {
+          "index": -1,
+          "name": "cg89",
+          "json": "",
+          "render": "renders/120_ホーリーライト　ヒット/001_cg89.png"
+        },
+        {
+          "index": -1,
+          "name": "cg90",
+          "json": "",
+          "render": "renders/120_ホーリーライト　ヒット/002_cg90.png"
+        },
+        {
+          "index": -1,
+          "name": "cg91",
+          "json": "",
+          "render": "renders/120_ホーリーライト　ヒット/003_cg91.png"
+        },
+        {
+          "index": -1,
+          "name": "cg92",
+          "json": "",
+          "render": "renders/120_ホーリーライト　ヒット/004_cg92.png"
+        },
+        {
+          "index": -1,
+          "name": "cg93",
+          "json": "",
+          "render": "renders/120_ホーリーライト　ヒット/005_cg93.png"
+        },
+        {
+          "index": -1,
+          "name": "cg94",
+          "json": "",
+          "render": "renders/120_ホーリーライト　ヒット/006_cg94.png"
+        },
+        {
+          "index": -1,
+          "name": "cg95",
+          "json": "",
+          "render": "renders/120_ホーリーライト　ヒット/007_cg95.png"
+        },
+        {
+          "index": -1,
+          "name": "cg96",
+          "json": "",
+          "render": "renders/120_ホーリーライト　ヒット/008_cg96.png"
+        },
+        {
+          "index": -1,
+          "name": "cg97",
+          "json": "",
+          "render": "renders/120_ホーリーライト　ヒット/009_cg97.png"
+        },
+        {
+          "index": -1,
+          "name": "cg98",
+          "json": "",
+          "render": "renders/120_ホーリーライト　ヒット/010_cg98.png"
+        },
+        {
+          "index": -1,
+          "name": "cg99",
+          "json": "",
+          "render": "renders/120_ホーリーライト　ヒット/011_cg99.png"
+        },
+        {
+          "index": -1,
+          "name": "cg100",
+          "json": "",
+          "render": "renders/120_ホーリーライト　ヒット/012_cg100.png"
+        },
+        {
+          "index": -1,
+          "name": "cg101",
+          "json": "",
+          "render": "renders/120_ホーリーライト　ヒット/013_cg101.png"
+        }
+      ]
+    },
+    {
+      "name": "[エフェクト]-ヒール",
+      "frames": [
+        {
+          "index": -1,
+          "name": "cg136",
+          "json": "",
+          "render": "renders/121_[エフェクト]-ヒール/000_cg136.png"
+        },
+        {
+          "index": -1,
+          "name": "cg137",
+          "json": "",
+          "render": "renders/121_[エフェクト]-ヒール/001_cg137.png"
+        },
+        {
+          "index": -1,
+          "name": "cg138",
+          "json": "",
+          "render": "renders/121_[エフェクト]-ヒール/002_cg138.png"
+        },
+        {
+          "index": -1,
+          "name": "cg139",
+          "json": "",
+          "render": "renders/121_[エフェクト]-ヒール/003_cg139.png"
+        },
+        {
+          "index": -1,
+          "name": "cg140",
+          "json": "",
+          "render": "renders/121_[エフェクト]-ヒール/004_cg140.png"
+        },
+        {
+          "index": -1,
+          "name": "cg141",
+          "json": "",
+          "render": "renders/121_[エフェクト]-ヒール/005_cg141.png"
+        },
+        {
+          "index": -1,
+          "name": "cg142",
+          "json": "",
+          "render": "renders/121_[エフェクト]-ヒール/006_cg142.png"
+        },
+        {
+          "index": -1,
+          "name": "cg143",
+          "json": "",
+          "render": "renders/121_[エフェクト]-ヒール/007_cg143.png"
+        },
+        {
+          "index": -1,
+          "name": "cg144",
+          "json": "",
+          "render": "renders/121_[エフェクト]-ヒール/008_cg144.png"
+        },
+        {
+          "index": -1,
+          "name": "cg145",
+          "json": "",
+          "render": "renders/121_[エフェクト]-ヒール/009_cg145.png"
+        },
+        {
+          "index": -1,
+          "name": "cg146",
+          "json": "",
+          "render": "renders/121_[エフェクト]-ヒール/010_cg146.png"
+        },
+        {
+          "index": -1,
+          "name": "cg147",
+          "json": "",
+          "render": "renders/121_[エフェクト]-ヒール/011_cg147.png"
+        },
+        {
+          "index": -1,
+          "name": "cg148",
+          "json": "",
+          "render": "renders/121_[エフェクト]-ヒール/012_cg148.png"
+        },
+        {
+          "index": -1,
+          "name": "cg149",
+          "json": "",
+          "render": "renders/121_[エフェクト]-ヒール/013_cg149.png"
+        },
+        {
+          "index": -1,
+          "name": "cg150",
+          "json": "",
+          "render": "renders/121_[エフェクト]-ヒール/014_cg150.png"
+        },
+        {
+          "index": -1,
+          "name": "cg151",
+          "json": "",
+          "render": "renders/121_[エフェクト]-ヒール/015_cg151.png"
+        },
+        {
+          "index": -1,
+          "name": "cg152",
+          "json": "",
+          "render": "renders/121_[エフェクト]-ヒール/016_cg152.png"
+        },
+        {
+          "index": -1,
+          "name": "cg153",
+          "json": "",
+          "render": "renders/121_[エフェクト]-ヒール/017_cg153.png"
+        },
+        {
+          "index": -1,
+          "name": "cg154",
+          "json": "",
+          "render": "renders/121_[エフェクト]-ヒール/018_cg154.png"
+        },
+        {
+          "index": -1,
+          "name": "cg155",
+          "json": "",
+          "render": "renders/121_[エフェクト]-ヒール/019_cg155.png"
+        },
+        {
+          "index": -1,
+          "name": "cg156",
+          "json": "",
+          "render": "renders/121_[エフェクト]-ヒール/020_cg156.png"
+        },
+        {
+          "index": -1,
+          "name": "cg157",
+          "json": "",
+          "render": "renders/121_[エフェクト]-ヒール/021_cg157.png"
+        },
+        {
+          "index": -1,
+          "name": "cg158",
+          "json": "",
+          "render": "renders/121_[エフェクト]-ヒール/022_cg158.png"
+        }
+      ]
+    },
+    {
+      "name": "[エフェクト]-ワープ",
+      "frames": [
+        {
+          "index": -1,
+          "name": "cg159",
+          "json": "",
+          "render": "renders/122_[エフェクト]-ワープ/000_cg159.png"
+        },
+        {
+          "index": -1,
+          "name": "cg160",
+          "json": "",
+          "render": "renders/122_[エフェクト]-ワープ/001_cg160.png"
+        },
+        {
+          "index": -1,
+          "name": "cg161",
+          "json": "",
+          "render": "renders/122_[エフェクト]-ワープ/002_cg161.png"
+        },
+        {
+          "index": -1,
+          "name": "cg162",
+          "json": "",
+          "render": "renders/122_[エフェクト]-ワープ/003_cg162.png"
+        },
+        {
+          "index": -1,
+          "name": "cg163",
+          "json": "",
+          "render": "renders/122_[エフェクト]-ワープ/004_cg163.png"
+        },
+        {
+          "index": -1,
+          "name": "cg164",
+          "json": "",
+          "render": "renders/122_[エフェクト]-ワープ/005_cg164.png"
+        },
+        {
+          "index": -1,
+          "name": "cg165",
+          "json": "",
+          "render": "renders/122_[エフェクト]-ワープ/006_cg165.png"
+        },
+        {
+          "index": -1,
+          "name": "cg166",
+          "json": "",
+          "render": "renders/122_[エフェクト]-ワープ/007_cg166.png"
+        },
+        {
+          "index": -1,
+          "name": "cg167",
+          "json": "",
+          "render": "renders/122_[エフェクト]-ワープ/008_cg167.png"
+        },
+        {
+          "index": -1,
+          "name": "cg168",
+          "json": "",
+          "render": "renders/122_[エフェクト]-ワープ/009_cg168.png"
+        },
+        {
+          "index": -1,
+          "name": "cg169",
+          "json": "",
+          "render": "renders/122_[エフェクト]-ワープ/010_cg169.png"
+        },
+        {
+          "index": -1,
+          "name": "cg170",
+          "json": "",
+          "render": "renders/122_[エフェクト]-ワープ/011_cg170.png"
+        },
+        {
+          "index": -1,
+          "name": "cg171",
+          "json": "",
+          "render": "renders/122_[エフェクト]-ワープ/012_cg171.png"
+        },
+        {
+          "index": -1,
+          "name": "cg172",
+          "json": "",
+          "render": "renders/122_[エフェクト]-ワープ/013_cg172.png"
+        },
+        {
+          "index": -1,
+          "name": "cg173",
+          "json": "",
+          "render": "renders/122_[エフェクト]-ワープ/014_cg173.png"
+        },
+        {
+          "index": -1,
+          "name": "cg174",
+          "json": "",
+          "render": "renders/122_[エフェクト]-ワープ/015_cg174.png"
+        },
+        {
+          "index": -1,
+          "name": "cg175",
+          "json": "",
+          "render": "renders/122_[エフェクト]-ワープ/016_cg175.png"
+        },
+        {
+          "index": -1,
+          "name": "cg176",
+          "json": "",
+          "render": "renders/122_[エフェクト]-ワープ/017_cg176.png"
+        },
+        {
+          "index": -1,
+          "name": "cg177",
+          "json": "",
+          "render": "renders/122_[エフェクト]-ワープ/018_cg177.png"
+        },
+        {
+          "index": -1,
+          "name": "cg178",
+          "json": "",
+          "render": "renders/122_[エフェクト]-ワープ/019_cg178.png"
+        },
+        {
+          "index": -1,
+          "name": "cg179",
+          "json": "",
+          "render": "renders/122_[エフェクト]-ワープ/020_cg179.png"
+        },
+        {
+          "index": -1,
+          "name": "cg180",
+          "json": "",
+          "render": "renders/122_[エフェクト]-ワープ/021_cg180.png"
+        },
+        {
+          "index": -1,
+          "name": "cg181",
+          "json": "",
+          "render": "renders/122_[エフェクト]-ワープ/022_cg181.png"
+        },
+        {
+          "index": -1,
+          "name": "cg182",
+          "json": "",
+          "render": "renders/122_[エフェクト]-ワープ/023_cg182.png"
+        },
+        {
+          "index": -1,
+          "name": "cg183",
+          "json": "",
+          "render": "renders/122_[エフェクト]-ワープ/024_cg183.png"
+        },
+        {
+          "index": -1,
+          "name": "cg184",
+          "json": "",
+          "render": "renders/122_[エフェクト]-ワープ/025_cg184.png"
+        },
+        {
+          "index": -1,
+          "name": "cg185",
+          "json": "",
+          "render": "renders/122_[エフェクト]-ワープ/026_cg185.png"
+        },
+        {
+          "index": -1,
+          "name": "cg186",
+          "json": "",
+          "render": "renders/122_[エフェクト]-ワープ/027_cg186.png"
+        },
+        {
+          "index": -1,
+          "name": "cg187",
+          "json": "",
+          "render": "renders/122_[エフェクト]-ワープ/028_cg187.png"
+        },
+        {
+          "index": -1,
+          "name": "cg188",
+          "json": "",
+          "render": "renders/122_[エフェクト]-ワープ/029_cg188.png"
+        },
+        {
+          "index": -1,
+          "name": "cg189",
+          "json": "",
+          "render": "renders/122_[エフェクト]-ワープ/030_cg189.png"
+        },
+        {
+          "index": -1,
+          "name": "cg190",
+          "json": "",
+          "render": "renders/122_[エフェクト]-ワープ/031_cg190.png"
+        },
+        {
+          "index": -1,
+          "name": "cg191",
+          "json": "",
+          "render": "renders/122_[エフェクト]-ワープ/032_cg191.png"
+        }
+      ]
+    },
+    {
+      "name": "真横ホーリーライト",
+      "frames": [
+        {
+          "index": -1,
+          "name": "cg68",
+          "json": "",
+          "render": "renders/123_真横ホーリーライト/000_cg68.png"
+        },
+        {
+          "index": -1,
+          "name": "cg67",
+          "json": "",
+          "render": "renders/123_真横ホーリーライト/001_cg67.png"
+        },
+        {
+          "index": -1,
+          "name": "cg68",
+          "json": "",
+          "render": "renders/123_真横ホーリーライト/002_cg68.png"
+        },
+        {
+          "index": -1,
+          "name": "cg69",
+          "json": "",
+          "render": "renders/123_真横ホーリーライト/003_cg69.png"
+        },
+        {
+          "index": -1,
+          "name": "cg70",
+          "json": "",
+          "render": "renders/123_真横ホーリーライト/004_cg70.png"
+        },
+        {
+          "index": -1,
+          "name": "cg71",
+          "json": "",
+          "render": "renders/123_真横ホーリーライト/005_cg71.png"
+        },
+        {
+          "index": -1,
+          "name": "cg72",
+          "json": "",
+          "render": "renders/123_真横ホーリーライト/006_cg72.png"
+        },
+        {
+          "index": -1,
+          "name": "cg73",
+          "json": "",
+          "render": "renders/123_真横ホーリーライト/007_cg73.png"
+        },
+        {
+          "index": -1,
+          "name": "cg74",
+          "json": "",
+          "render": "renders/123_真横ホーリーライト/008_cg74.png"
+        },
+        {
+          "index": -1,
+          "name": "cg75",
+          "json": "",
+          "render": "renders/123_真横ホーリーライト/009_cg75.png"
+        },
+        {
+          "index": -1,
+          "name": "cg76",
+          "json": "",
+          "render": "renders/123_真横ホーリーライト/010_cg76.png"
+        },
+        {
+          "index": -1,
+          "name": "cg77",
+          "json": "",
+          "render": "renders/123_真横ホーリーライト/011_cg77.png"
+        }
+      ]
+    },
+    {
+      "name": "ホーリーライト体キラキラジェネレーター",
+      "frames": [
+        {
+          "index": -1,
+          "name": "cg87",
+          "json": "",
+          "render": "renders/124_ホーリーライト体キラキラジェネレーター/000_cg87.png"
+        },
+        {
+          "index": -1,
+          "name": "cg87",
+          "json": "",
+          "render": "renders/124_ホーリーライト体キラキラジェネレーター/001_cg87.png"
+        },
+        {
+          "index": -1,
+          "name": "cg87",
+          "json": "",
+          "render": "renders/124_ホーリーライト体キラキラジェネレーター/002_cg87.png"
+        }
+      ]
+    },
+    {
+      "name": "ホーリーライト詠唱",
+      "frames": [
+        {
+          "index": 46,
+          "name": "HEAL",
+          "json": "poses/HEAL.json",
+          "render": "renders/125_ホーリーライト詠唱/000_HEAL.png"
+        },
+        {
+          "index": 47,
+          "name": "PATTERN048",
+          "json": "poses/PATTERN048.json",
+          "render": "renders/125_ホーリーライト詠唱/001_PATTERN048.png"
+        },
+        {
+          "index": 48,
+          "name": "PATTERN049",
+          "json": "poses/PATTERN049.json",
+          "render": "renders/125_ホーリーライト詠唱/002_PATTERN049.png"
+        },
+        {
+          "index": 49,
+          "name": "PATTERN050",
+          "json": "poses/PATTERN050.json",
+          "render": "renders/125_ホーリーライト詠唱/003_PATTERN050.png"
+        },
+        {
+          "index": 48,
+          "name": "PATTERN049",
+          "json": "poses/PATTERN049.json",
+          "render": "renders/125_ホーリーライト詠唱/004_PATTERN049.png"
+        },
+        {
+          "index": 50,
+          "name": "PATTERN051",
+          "json": "poses/PATTERN051.json",
+          "render": "renders/125_ホーリーライト詠唱/005_PATTERN051.png"
+        }
+      ]
+    },
+    {
+      "name": "テレポート（地上）",
+      "frames": [
+        {
+          "index": 201,
+          "name": "TELEPORT_A",
+          "json": "poses/TELEPORT_A.json",
+          "render": "renders/130_テレポート（地上）/000_TELEPORT_A.png"
+        },
+        {
+          "index": 202,
+          "name": "PATTERN216",
+          "json": "poses/PATTERN216.json",
+          "render": "renders/130_テレポート（地上）/001_PATTERN216.png"
+        },
+        {
+          "index": 203,
+          "name": "PATTERN217",
+          "json": "poses/PATTERN217.json",
+          "render": "renders/130_テレポート（地上）/002_PATTERN217.png"
+        },
+        {
+          "index": 204,
+          "name": "PATTERN218",
+          "json": "poses/PATTERN218.json",
+          "render": "renders/130_テレポート（地上）/003_PATTERN218.png"
+        },
+        {
+          "index": 205,
+          "name": "PATTERN219",
+          "json": "poses/PATTERN219.json",
+          "render": "renders/130_テレポート（地上）/004_PATTERN219.png"
+        },
+        {
+          "index": 205,
+          "name": "PATTERN219",
+          "json": "poses/PATTERN219.json",
+          "render": "renders/130_テレポート（地上）/005_PATTERN219.png"
+        },
+        {
+          "index": 206,
+          "name": "PATTERN220",
+          "json": "poses/PATTERN220.json",
+          "render": "renders/130_テレポート（地上）/006_PATTERN220.png"
+        },
+        {
+          "index": 207,
+          "name": "PATTERN221",
+          "json": "poses/PATTERN221.json",
+          "render": "renders/130_テレポート（地上）/007_PATTERN221.png"
+        },
+        {
+          "index": 208,
+          "name": "PATTERN222",
+          "json": "poses/PATTERN222.json",
+          "render": "renders/130_テレポート（地上）/008_PATTERN222.png"
+        },
+        {
+          "index": 209,
+          "name": "PATTERN223",
+          "json": "poses/PATTERN223.json",
+          "render": "renders/130_テレポート（地上）/009_PATTERN223.png"
+        },
+        {
+          "index": 210,
+          "name": "PATTERN224",
+          "json": "poses/PATTERN224.json",
+          "render": "renders/130_テレポート（地上）/010_PATTERN224.png"
+        }
+      ]
+    },
+    {
+      "name": "テレポート（空中）",
+      "frames": [
+        {
+          "index": 211,
+          "name": "TELEPORT_B",
+          "json": "poses/TELEPORT_B.json",
+          "render": "renders/131_テレポート（空中）/000_TELEPORT_B.png"
+        },
+        {
+          "index": 212,
+          "name": "PATTERN206",
+          "json": "poses/PATTERN206.json",
+          "render": "renders/131_テレポート（空中）/001_PATTERN206.png"
+        },
+        {
+          "index": 203,
+          "name": "PATTERN217",
+          "json": "poses/PATTERN217.json",
+          "render": "renders/131_テレポート（空中）/002_PATTERN217.png"
+        },
+        {
+          "index": 204,
+          "name": "PATTERN218",
+          "json": "poses/PATTERN218.json",
+          "render": "renders/131_テレポート（空中）/003_PATTERN218.png"
+        },
+        {
+          "index": 205,
+          "name": "PATTERN219",
+          "json": "poses/PATTERN219.json",
+          "render": "renders/131_テレポート（空中）/004_PATTERN219.png"
+        },
+        {
+          "index": 205,
+          "name": "PATTERN219",
+          "json": "poses/PATTERN219.json",
+          "render": "renders/131_テレポート（空中）/005_PATTERN219.png"
+        },
+        {
+          "index": 205,
+          "name": "PATTERN219",
+          "json": "poses/PATTERN219.json",
+          "render": "renders/131_テレポート（空中）/006_PATTERN219.png"
+        },
+        {
+          "index": 205,
+          "name": "PATTERN219",
+          "json": "poses/PATTERN219.json",
+          "render": "renders/131_テレポート（空中）/007_PATTERN219.png"
+        },
+        {
+          "index": 206,
+          "name": "PATTERN220",
+          "json": "poses/PATTERN220.json",
+          "render": "renders/131_テレポート（空中）/008_PATTERN220.png"
+        },
+        {
+          "index": 207,
+          "name": "PATTERN221",
+          "json": "poses/PATTERN221.json",
+          "render": "renders/131_テレポート（空中）/009_PATTERN221.png"
+        },
+        {
+          "index": 208,
+          "name": "PATTERN222",
+          "json": "poses/PATTERN222.json",
+          "render": "renders/131_テレポート（空中）/010_PATTERN222.png"
+        },
+        {
+          "index": 209,
+          "name": "PATTERN223",
+          "json": "poses/PATTERN223.json",
+          "render": "renders/131_テレポート（空中）/011_PATTERN223.png"
+        },
+        {
+          "index": 210,
+          "name": "PATTERN224",
+          "json": "poses/PATTERN224.json",
+          "render": "renders/131_テレポート（空中）/012_PATTERN224.png"
+        }
+      ]
+    },
+    {
+      "name": "[スキル]-シグナムスルシス",
+      "frames": [
+        {
+          "index": 236,
+          "name": "EISYOU_START",
+          "json": "poses/EISYOU_START.json",
+          "render": "renders/140_[スキル]-シグナムスルシス/000_EISYOU_START.png"
+        },
+        {
+          "index": 237,
+          "name": "PATTERN242",
+          "json": "poses/PATTERN242.json",
+          "render": "renders/140_[スキル]-シグナムスルシス/001_PATTERN242.png"
+        },
+        {
+          "index": 238,
+          "name": "PATTERN243",
+          "json": "poses/PATTERN243.json",
+          "render": "renders/140_[スキル]-シグナムスルシス/002_PATTERN243.png"
+        },
+        {
+          "index": 239,
+          "name": "PATTERN141",
+          "json": "poses/PATTERN141.json",
+          "render": "renders/140_[スキル]-シグナムスルシス/003_PATTERN141.png"
+        },
+        {
+          "index": 238,
+          "name": "PATTERN243",
+          "json": "poses/PATTERN243.json",
+          "render": "renders/140_[スキル]-シグナムスルシス/004_PATTERN243.png"
+        },
+        {
+          "index": 240,
+          "name": "PATTERN244",
+          "json": "poses/PATTERN244.json",
+          "render": "renders/140_[スキル]-シグナムスルシス/005_PATTERN244.png"
+        },
+        {
+          "index": 241,
+          "name": "PATTERN245",
+          "json": "poses/PATTERN245.json",
+          "render": "renders/140_[スキル]-シグナムスルシス/006_PATTERN245.png"
+        }
+      ]
+    },
+    {
+      "name": "アンゼルスの羽ジェネレータ",
+      "frames": [
+        {
+          "index": -1,
+          "name": "cg102",
+          "json": "",
+          "render": "renders/190_アンゼルスの羽ジェネレータ/000_cg102.png"
+        },
+        {
+          "index": -1,
+          "name": "cg103",
+          "json": "",
+          "render": "renders/190_アンゼルスの羽ジェネレータ/001_cg103.png"
+        },
+        {
+          "index": -1,
+          "name": "cg104",
+          "json": "",
+          "render": "renders/190_アンゼルスの羽ジェネレータ/002_cg104.png"
+        }
+      ]
+    },
+    {
+      "name": "191_pattern",
+      "frames": [
+        {
+          "index": 446,
+          "name": "PATTERN394",
+          "json": "poses/PATTERN394.json",
+          "render": "renders/191_pattern/000_PATTERN394.png"
+        },
+        {
+          "index": 445,
+          "name": "アンゼルス羽",
+          "json": "poses/アンゼルス羽.json",
+          "render": "renders/191_pattern/001_アンゼルス羽.png"
+        },
+        {
+          "index": 446,
+          "name": "PATTERN394",
+          "json": "poses/PATTERN394.json",
+          "render": "renders/191_pattern/002_PATTERN394.png"
+        },
+        {
+          "index": 447,
+          "name": "PATTERN395",
+          "json": "poses/PATTERN395.json",
+          "render": "renders/191_pattern/003_PATTERN395.png"
+        },
+        {
+          "index": 448,
+          "name": "PATTERN396",
+          "json": "poses/PATTERN396.json",
+          "render": "renders/191_pattern/004_PATTERN396.png"
+        },
+        {
+          "index": 447,
+          "name": "PATTERN395",
+          "json": "poses/PATTERN395.json",
+          "render": "renders/191_pattern/005_PATTERN395.png"
+        },
+        {
+          "index": 446,
+          "name": "PATTERN394",
+          "json": "poses/PATTERN394.json",
+          "render": "renders/191_pattern/006_PATTERN394.png"
+        },
+        {
+          "index": 445,
+          "name": "アンゼルス羽",
+          "json": "poses/アンゼルス羽.json",
+          "render": "renders/191_pattern/007_アンゼルス羽.png"
+        },
+        {
+          "index": 446,
+          "name": "PATTERN394",
+          "json": "poses/PATTERN394.json",
+          "render": "renders/191_pattern/008_PATTERN394.png"
+        },
+        {
+          "index": 447,
+          "name": "PATTERN395",
+          "json": "poses/PATTERN395.json",
+          "render": "renders/191_pattern/009_PATTERN395.png"
+        },
+        {
+          "index": 448,
+          "name": "PATTERN396",
+          "json": "poses/PATTERN396.json",
+          "render": "renders/191_pattern/010_PATTERN396.png"
+        },
+        {
+          "index": 447,
+          "name": "PATTERN395",
+          "json": "poses/PATTERN395.json",
+          "render": "renders/191_pattern/011_PATTERN395.png"
+        },
+        {
+          "index": 446,
+          "name": "PATTERN394",
+          "json": "poses/PATTERN394.json",
+          "render": "renders/191_pattern/012_PATTERN394.png"
+        },
+        {
+          "index": 446,
+          "name": "PATTERN394",
+          "json": "poses/PATTERN394.json",
+          "render": "renders/191_pattern/013_PATTERN394.png"
+        }
+      ]
+    },
+    {
+      "name": "192_pattern",
+      "frames": [
+        {
+          "index": 451,
+          "name": "PATTERN399",
+          "json": "poses/PATTERN399.json",
+          "render": "renders/192_pattern/000_PATTERN399.png"
+        },
+        {
+          "index": 450,
+          "name": "PATTERN398",
+          "json": "poses/PATTERN398.json",
+          "render": "renders/192_pattern/001_PATTERN398.png"
+        },
+        {
+          "index": 451,
+          "name": "PATTERN399",
+          "json": "poses/PATTERN399.json",
+          "render": "renders/192_pattern/002_PATTERN399.png"
+        },
+        {
+          "index": 452,
+          "name": "PATTERN400",
+          "json": "poses/PATTERN400.json",
+          "render": "renders/192_pattern/003_PATTERN400.png"
+        },
+        {
+          "index": 453,
+          "name": "PATTERN401",
+          "json": "poses/PATTERN401.json",
+          "render": "renders/192_pattern/004_PATTERN401.png"
+        },
+        {
+          "index": 452,
+          "name": "PATTERN400",
+          "json": "poses/PATTERN400.json",
+          "render": "renders/192_pattern/005_PATTERN400.png"
+        },
+        {
+          "index": 451,
+          "name": "PATTERN399",
+          "json": "poses/PATTERN399.json",
+          "render": "renders/192_pattern/006_PATTERN399.png"
+        },
+        {
+          "index": 450,
+          "name": "PATTERN398",
+          "json": "poses/PATTERN398.json",
+          "render": "renders/192_pattern/007_PATTERN398.png"
+        },
+        {
+          "index": 451,
+          "name": "PATTERN399",
+          "json": "poses/PATTERN399.json",
+          "render": "renders/192_pattern/008_PATTERN399.png"
+        },
+        {
+          "index": 452,
+          "name": "PATTERN400",
+          "json": "poses/PATTERN400.json",
+          "render": "renders/192_pattern/009_PATTERN400.png"
+        },
+        {
+          "index": 453,
+          "name": "PATTERN401",
+          "json": "poses/PATTERN401.json",
+          "render": "renders/192_pattern/010_PATTERN401.png"
+        },
+        {
+          "index": 452,
+          "name": "PATTERN400",
+          "json": "poses/PATTERN400.json",
+          "render": "renders/192_pattern/011_PATTERN400.png"
+        },
+        {
+          "index": 451,
+          "name": "PATTERN399",
+          "json": "poses/PATTERN399.json",
+          "render": "renders/192_pattern/012_PATTERN399.png"
+        },
+        {
+          "index": 451,
+          "name": "PATTERN399",
+          "json": "poses/PATTERN399.json",
+          "render": "renders/192_pattern/013_PATTERN399.png"
+        }
+      ]
+    },
+    {
+      "name": "193_pattern",
+      "frames": [
+        {
+          "index": 456,
+          "name": "PATTERN404",
+          "json": "poses/PATTERN404.json",
+          "render": "renders/193_pattern/000_PATTERN404.png"
+        },
+        {
+          "index": 455,
+          "name": "PATTERN403",
+          "json": "poses/PATTERN403.json",
+          "render": "renders/193_pattern/001_PATTERN403.png"
+        },
+        {
+          "index": 456,
+          "name": "PATTERN404",
+          "json": "poses/PATTERN404.json",
+          "render": "renders/193_pattern/002_PATTERN404.png"
+        },
+        {
+          "index": 457,
+          "name": "PATTERN405",
+          "json": "poses/PATTERN405.json",
+          "render": "renders/193_pattern/003_PATTERN405.png"
+        },
+        {
+          "index": 458,
+          "name": "PATTERN406",
+          "json": "poses/PATTERN406.json",
+          "render": "renders/193_pattern/004_PATTERN406.png"
+        },
+        {
+          "index": 457,
+          "name": "PATTERN405",
+          "json": "poses/PATTERN405.json",
+          "render": "renders/193_pattern/005_PATTERN405.png"
+        },
+        {
+          "index": 456,
+          "name": "PATTERN404",
+          "json": "poses/PATTERN404.json",
+          "render": "renders/193_pattern/006_PATTERN404.png"
+        },
+        {
+          "index": 455,
+          "name": "PATTERN403",
+          "json": "poses/PATTERN403.json",
+          "render": "renders/193_pattern/007_PATTERN403.png"
+        },
+        {
+          "index": 456,
+          "name": "PATTERN404",
+          "json": "poses/PATTERN404.json",
+          "render": "renders/193_pattern/008_PATTERN404.png"
+        },
+        {
+          "index": 457,
+          "name": "PATTERN405",
+          "json": "poses/PATTERN405.json",
+          "render": "renders/193_pattern/009_PATTERN405.png"
+        },
+        {
+          "index": 458,
+          "name": "PATTERN406",
+          "json": "poses/PATTERN406.json",
+          "render": "renders/193_pattern/010_PATTERN406.png"
+        },
+        {
+          "index": 457,
+          "name": "PATTERN405",
+          "json": "poses/PATTERN405.json",
+          "render": "renders/193_pattern/011_PATTERN405.png"
+        },
+        {
+          "index": 456,
+          "name": "PATTERN404",
+          "json": "poses/PATTERN404.json",
+          "render": "renders/193_pattern/012_PATTERN404.png"
+        },
+        {
+          "index": 456,
+          "name": "PATTERN404",
+          "json": "poses/PATTERN404.json",
+          "render": "renders/193_pattern/013_PATTERN404.png"
+        }
+      ]
+    },
+    {
+      "name": "ロービー用：すぐ生成",
+      "frames": [
+        {
+          "index": 0,
+          "name": "WORK",
+          "json": "poses/WORK.json",
+          "render": "renders/220_ロービー用：すぐ生成/000_WORK.png"
+        }
+      ]
+    },
+    {
+      "name": "イベント用：死亡待機",
+      "frames": [
+        {
+          "index": 78,
+          "name": "PATTERN075",
+          "json": "poses/PATTERN075.json",
+          "render": "renders/221_イベント用：死亡待機/000_PATTERN075.png"
+        },
+        {
+          "index": 78,
+          "name": "PATTERN075",
+          "json": "poses/PATTERN075.json",
+          "render": "renders/221_イベント用：死亡待機/001_PATTERN075.png"
+        },
+        {
+          "index": 78,
+          "name": "PATTERN075",
+          "json": "poses/PATTERN075.json",
+          "render": "renders/221_イベント用：死亡待機/002_PATTERN075.png"
+        },
+        {
+          "index": 79,
+          "name": "PATTERN076",
+          "json": "poses/PATTERN076.json",
+          "render": "renders/221_イベント用：死亡待機/003_PATTERN076.png"
+        },
+        {
+          "index": 80,
+          "name": "PATTERN077",
+          "json": "poses/PATTERN077.json",
+          "render": "renders/221_イベント用：死亡待機/004_PATTERN077.png"
+        },
+        {
+          "index": 81,
+          "name": "PATTERN078",
+          "json": "poses/PATTERN078.json",
+          "render": "renders/221_イベント用：死亡待機/005_PATTERN078.png"
+        },
+        {
+          "index": 82,
+          "name": "PATTERN079",
+          "json": "poses/PATTERN079.json",
+          "render": "renders/221_イベント用：死亡待機/006_PATTERN079.png"
+        },
+        {
+          "index": 83,
+          "name": "PATTERN125",
+          "json": "poses/PATTERN125.json",
+          "render": "renders/221_イベント用：死亡待機/007_PATTERN125.png"
+        },
+        {
+          "index": 84,
+          "name": "PATTERN080",
+          "json": "poses/PATTERN080.json",
+          "render": "renders/221_イベント用：死亡待機/008_PATTERN080.png"
+        }
+      ]
+    },
+    {
+      "name": "ランキング用：表示",
+      "frames": [
+        {
+          "index": 4,
+          "name": "STAND2",
+          "json": "poses/STAND2.json",
+          "render": "renders/227_ランキング用：表示/000_STAND2.png"
+        },
+        {
+          "index": 5,
+          "name": "PATTERN007",
+          "json": "poses/PATTERN007.json",
+          "render": "renders/227_ランキング用：表示/001_PATTERN007.png"
+        },
+        {
+          "index": 6,
+          "name": "PATTERN008",
+          "json": "poses/PATTERN008.json",
+          "render": "renders/227_ランキング用：表示/002_PATTERN008.png"
+        },
+        {
+          "index": 7,
+          "name": "PATTERN009",
+          "json": "poses/PATTERN009.json",
+          "render": "renders/227_ランキング用：表示/003_PATTERN009.png"
+        },
+        {
+          "index": 4,
+          "name": "STAND2",
+          "json": "poses/STAND2.json",
+          "render": "renders/227_ランキング用：表示/004_STAND2.png"
+        }
+      ]
+    },
+    {
+      "name": "イベント用：待機状態",
+      "frames": [
+        {
+          "index": 4,
+          "name": "STAND2",
+          "json": "poses/STAND2.json",
+          "render": "renders/230_イベント用：待機状態/000_STAND2.png"
+        },
+        {
+          "index": 5,
+          "name": "PATTERN007",
+          "json": "poses/PATTERN007.json",
+          "render": "renders/230_イベント用：待機状態/001_PATTERN007.png"
+        },
+        {
+          "index": 6,
+          "name": "PATTERN008",
+          "json": "poses/PATTERN008.json",
+          "render": "renders/230_イベント用：待機状態/002_PATTERN008.png"
+        },
+        {
+          "index": 7,
+          "name": "PATTERN009",
+          "json": "poses/PATTERN009.json",
+          "render": "renders/230_イベント用：待機状態/003_PATTERN009.png"
+        },
+        {
+          "index": 4,
+          "name": "STAND2",
+          "json": "poses/STAND2.json",
+          "render": "renders/230_イベント用：待機状態/004_STAND2.png"
+        }
+      ]
+    },
+    {
+      "name": "イベント用：移動",
+      "frames": [
+        {
+          "index": 0,
+          "name": "WORK",
+          "json": "poses/WORK.json",
+          "render": "renders/231_イベント用：移動/000_WORK.png"
+        },
+        {
+          "index": 1,
+          "name": "PATTERN003",
+          "json": "poses/PATTERN003.json",
+          "render": "renders/231_イベント用：移動/001_PATTERN003.png"
+        },
+        {
+          "index": 2,
+          "name": "PATTERN004",
+          "json": "poses/PATTERN004.json",
+          "render": "renders/231_イベント用：移動/002_PATTERN004.png"
+        },
+        {
+          "index": 3,
+          "name": "PATTERN005",
+          "json": "poses/PATTERN005.json",
+          "render": "renders/231_イベント用：移動/003_PATTERN005.png"
+        },
+        {
+          "index": 0,
+          "name": "WORK",
+          "json": "poses/WORK.json",
+          "render": "renders/231_イベント用：移動/004_WORK.png"
+        }
+      ]
+    },
+    {
+      "name": "イベント用：ジャンプ",
+      "frames": [
+        {
+          "index": 17,
+          "name": "JUMP_FR",
+          "json": "poses/JUMP_FR.json",
+          "render": "renders/232_イベント用：ジャンプ/000_JUMP_FR.png"
+        },
+        {
+          "index": 18,
+          "name": "PATTERN021",
+          "json": "poses/PATTERN021.json",
+          "render": "renders/232_イベント用：ジャンプ/001_PATTERN021.png"
+        },
+        {
+          "index": 19,
+          "name": "PATTERN022",
+          "json": "poses/PATTERN022.json",
+          "render": "renders/232_イベント用：ジャンプ/002_PATTERN022.png"
+        },
+        {
+          "index": 20,
+          "name": "PATTERN023",
+          "json": "poses/PATTERN023.json",
+          "render": "renders/232_イベント用：ジャンプ/003_PATTERN023.png"
+        },
+        {
+          "index": 20,
+          "name": "PATTERN023",
+          "json": "poses/PATTERN023.json",
+          "render": "renders/232_イベント用：ジャンプ/004_PATTERN023.png"
+        },
+        {
+          "index": 21,
+          "name": "PATTERN024",
+          "json": "poses/PATTERN024.json",
+          "render": "renders/232_イベント用：ジャンプ/005_PATTERN024.png"
+        },
+        {
+          "index": 23,
+          "name": "PATTERN025",
+          "json": "poses/PATTERN025.json",
+          "render": "renders/232_イベント用：ジャンプ/006_PATTERN025.png"
+        },
+        {
+          "index": 24,
+          "name": "PATTERN026",
+          "json": "poses/PATTERN026.json",
+          "render": "renders/232_イベント用：ジャンプ/007_PATTERN026.png"
+        },
+        {
+          "index": 25,
+          "name": "PATTERN027",
+          "json": "poses/PATTERN027.json",
+          "render": "renders/232_イベント用：ジャンプ/008_PATTERN027.png"
+        }
+      ]
+    },
+    {
+      "name": "イベント用：落下",
+      "frames": [
+        {
+          "index": 36,
+          "name": "PATTERN103",
+          "json": "poses/PATTERN103.json",
+          "render": "renders/233_イベント用：落下/000_PATTERN103.png"
+        },
+        {
+          "index": 37,
+          "name": "PATTERN038",
+          "json": "poses/PATTERN038.json",
+          "render": "renders/233_イベント用：落下/001_PATTERN038.png"
+        },
+        {
+          "index": 38,
+          "name": "PATTERN039",
+          "json": "poses/PATTERN039.json",
+          "render": "renders/233_イベント用：落下/002_PATTERN039.png"
+        },
+        {
+          "index": 37,
+          "name": "PATTERN038",
+          "json": "poses/PATTERN038.json",
+          "render": "renders/233_イベント用：落下/003_PATTERN038.png"
+        },
+        {
+          "index": 39,
+          "name": "PATTERN040",
+          "json": "poses/PATTERN040.json",
+          "render": "renders/233_イベント用：落下/004_PATTERN040.png"
+        },
+        {
+          "index": 40,
+          "name": "PATTERN041",
+          "json": "poses/PATTERN041.json",
+          "render": "renders/233_イベント用：落下/005_PATTERN041.png"
+        },
+        {
+          "index": 41,
+          "name": "PATTERN042",
+          "json": "poses/PATTERN042.json",
+          "render": "renders/233_イベント用：落下/006_PATTERN042.png"
+        }
+      ]
+    },
+    {
+      "name": "イベント用：初期化",
+      "frames": [
+        {
+          "index": 0,
+          "name": "WORK",
+          "json": "poses/WORK.json",
+          "render": "renders/234_イベント用：初期化/000_WORK.png"
+        }
+      ]
+    },
+    {
+      "name": "イベント用：開始時初期化",
+      "frames": [
+        {
+          "index": 0,
+          "name": "WORK",
+          "json": "poses/WORK.json",
+          "render": "renders/235_イベント用：開始時初期化/000_WORK.png"
+        }
+      ]
+    },
+    {
+      "name": "オブジェクト削除",
+      "frames": [
+        {
+          "index": 0,
+          "name": "WORK",
+          "json": "poses/WORK.json",
+          "render": "renders/255_オブジェクト削除/000_WORK.png"
+        }
+      ]
+    }
+  ]
+}

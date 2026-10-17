@@ -1,0 +1,2 @@
+=== MBAC
+SECTION cgm-bank: pass 50 fail 0 | images 26064 (undrawable 26), decode==CG 26038, differ 0 | type-1:26 type0:17706 type1:3060 type2:3503 type3:1557 type4:212

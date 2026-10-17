@@ -1,0 +1,61 @@
+#ifndef CGM_STRUCT_H_GUARD
+#define CGM_STRUCT_H_GUARD
+// Structural edits of a bank: add / clear / delete / move / permute images, make an image own its pixels, atlas page bookkeeping.
+// Every op that changes image ids fills `remap` (old id -> new id, -1 = removed) so frame references can be fixed up.
+#include "cgm_bank.h"
+#include <string>
+#include <vector>
+
+namespace cgm {
+
+struct NewImageSpec {
+	std::string name = "new.bmp";   // stored name (<= 31 bytes)
+	int type = -99;                 // -99 = auto: 2 (<=255 colours, binary alpha), 4 (<=255 colours, soft alpha) else 1; or force 0 / 1 / 2 / 4
+	int canvasW = 256, canvasH = 256;
+	int x1 = INT32_MIN, y1 = INT32_MIN;   // top-left of the sprite on the canvas (cell aligned); INT32_MIN = centred
+};
+
+// at = index the new image takes (later ids shift up); -1 = append. The PNG may have any size: it is padded with transparency to whole cells.
+bool AddImage(Bank &bank, int at, const NewImageSpec &spec, const uint8_t *rgba, int w, int h, std::vector<int> &remap, int *newId, std::string *err);
+// Replace image n by an empty type -1 placeholder (the engine's own "no sprite" entry), keeping every id. Refused while other images borrow its cells.
+bool ClearImage(Bank &bank, int n, std::string *err);
+// Remove image n and renumber the following ones. Dependants (images borrowing its cells) are made independent first when unshare is set, else refused.
+bool DeleteImage(Bank &bank, int n, bool unshareDependants, std::vector<int> &remap, std::string *err);
+// Image n takes position `to`; the ids in between shift by one.
+bool MoveImage(Bank &bank, int from, int to, std::vector<int> &remap, std::string *err);
+// newOrder[k] = old id that ends up at k (a permutation of 0..N-1).
+bool Permute(Bank &bank, const std::vector<int> &newOrder, std::vector<int> &remap, std::string *err);
+// Image n gets its own atlas cells for every block it borrows (pixels unchanged).
+bool UnshareImage(Bank &bank, int n, std::string *err);
+// Duplicate image n as a new, fully independent image at `at`.
+bool DuplicateImage(Bank &bank, int n, int at, std::vector<int> &remap, int *newId, std::string *err);
+// Replace image n by pixels of ANOTHER size (cgtool's re-crop): the sprite is re-cut into new blocks on free atlas cells, its old cells
+// are given up, and its bounds start at (x1, y1) on the canvas (the canvas grows when the sprite would leave it). Id, name and storage
+// type are kept, so every frame reference keeps pointing at it and the frame offsets stay right as long as (x1, y1) does: callers keep
+// the anchor (e.g. the bottom-centre of the old bounds) or take it from a canvas-sized PNG. Images that borrowed the old cells are
+// made independent first (listed in `unshared`).
+bool ReplaceImageResized(Bank &bank, int n, const uint8_t *rgba, int w, int h, int x1, int y1, std::vector<int> *unshared, std::string *err);
+// Bounding box of the non-transparent pixels (false = fully transparent).
+bool TrimToContent(const uint8_t *rgba, int w, int h, int &x0, int &y0, int &x1, int &y1);
+// Drop atlas pages nobody uses at the end (H0 = used pages).
+bool TrimPages(Bank &bank);
+// ---- PACNyx "effect" edits (an effect = one image of the bank) ----
+// Stored name (<= 31 bytes, as written in the image header).
+bool RenameImage(Bank &bank, int n, const std::string &name, std::string *err);
+// Move the sprite on its canvas by (dx, dy) pixels: the bounds and every block move, the canvas stays. The canvas origin is the
+// engine's anchor, so this is PACNyx's "set effect base point" seen from the other side. Refused when the sprite would leave the canvas.
+bool OffsetImage(Bank &bank, int n, int dx, int dy, std::string *err);
+// Block grid of image n: one cell (cellUnit() px) per entry, row-major, over the bounds rectangle extended left / up to the cell grid.
+// 1 = the cell is stored (a block covers it). originX/Y = canvas position of cell (0,0).
+std::vector<uint8_t> CellMask(const Bank &bank, int n, int &cols, int &rows, int &originX, int &originY);
+// Rebuild image n's blocks from bounds-size RGBA: cells with keep == 0 are dropped (transparent), and every fully transparent cell
+// is left out (PACNyx "calculate blocks"). Name, type (3 becomes auto), canvas and position are kept; the id does not change.
+// keep: cols x rows from CellMask (null = keep every cell that has pixels).
+bool ReblockImage(Bank &bank, int n, const uint8_t *rgba, int w, int h, const std::vector<uint8_t> *keep, std::string *err);
+
+// Ids that no remap would change are the identity: helpers.
+std::vector<int> IdentityRemap(size_t n);
+std::vector<int> InvertRemap(const std::vector<int> &remap, size_t newCount);   // for undo of a permutation / insert (removed ids have no inverse)
+
+} // namespace cgm
+#endif

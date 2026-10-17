@@ -1,0 +1,140 @@
+Test project /home/teo/dev/hantei-chan-wt/render9/build
+      Start  1: uni_dataloss
+      Start  2: game_labels
+      Start  3: cmdfile
+      Start  4: cmdfile_ui_smoke
+      Start  5: pattern_search
+      Start  6: shared_clipboard
+ 1/67 Test  #5: pattern_search ...................   Passed    2.17 sec
+      Start  7: fb_part_transform
+ 2/67 Test  #6: shared_clipboard .................   Passed    2.22 sec
+      Start  8: han2_parts_edit
+ 3/67 Test  #2: game_labels ......................   Passed    2.29 sec
+      Start  9: part_render_math
+ 4/67 Test  #4: cmdfile_ui_smoke .................   Passed    2.38 sec
+      Start 10: refs
+ 5/67 Test  #9: part_render_math .................   Passed    0.21 sec
+      Start 11: bgm
+ 6/67 Test  #7: fb_part_transform ................   Passed    0.54 sec
+      Start 12: hud
+ 7/67 Test  #8: han2_parts_edit ..................   Passed    0.55 sec
+      Start 13: ha4_convert
+ 8/67 Test #11: bgm ..............................   Passed    0.64 sec
+      Start 14: ha4_golden
+ 9/67 Test #12: hud ..............................   Passed    0.85 sec
+      Start 15: shortcut_router
+10/67 Test #10: refs .............................   Passed    1.23 sec
+      Start 16: live_reload
+11/67 Test #15: shortcut_router ..................   Passed    0.35 sec
+      Start 17: stage3d
+12/67 Test  #3: cmdfile ..........................   Passed    4.25 sec
+      Start 18: undo_manager
+13/67 Test #16: live_reload ......................   Passed    1.44 sec
+      Start 19: pat_safety
+14/67 Test #13: ha4_convert ......................   Passed    3.12 sec
+      Start 20: pat_safety_gamedata
+15/67 Test #18: undo_manager .....................   Passed   12.57 sec
+      Start 21: workspace_session
+16/67 Test #21: workspace_session ................   Passed    0.35 sec
+      Start 22: package_tools
+17/67 Test  #1: uni_dataloss .....................   Passed   19.05 sec
+      Start 23: game_link
+18/67 Test #19: pat_safety .......................   Passed   15.61 sec
+      Start 24: game_view
+19/67 Test #22: package_tools ....................   Passed    3.71 sec
+      Start 25: tag_tuning
+20/67 Test #25: tag_tuning .......................   Passed    5.04 sec
+      Start 26: tag_sidecar
+21/67 Test #23: game_link ........................   Passed   11.53 sec
+      Start 27: authoring_model
+22/67 Test #27: authoring_model ..................   Passed    0.54 sec
+      Start 28: frame_data
+23/67 Test #24: game_view ........................   Passed   11.30 sec
+      Start 29: hud_layout
+24/67 Test #29: hud_layout .......................   Passed    0.54 sec
+      Start 30: pcmod
+25/67 Test #26: tag_sidecar ......................   Passed    7.26 sec
+      Start 31: pcmod_cli
+26/67 Test #30: pcmod ............................   Passed    8.10 sec
+      Start 32: hmod
+27/67 Test #20: pat_safety_gamedata ..............   Passed   35.09 sec
+      Start 33: bg_textini
+28/67 Test #33: bg_textini .......................   Passed    0.40 sec
+      Start 34: stagecard
+29/67 Test #34: stagecard ........................   Passed    0.84 sec
+      Start 35: han2_pacselftest
+30/67 Test #28: frame_data .......................   Passed   11.48 sec
+      Start 36: sysconst
+31/67 Test #35: han2_pacselftest .................   Passed    0.94 sec
+      Start 37: headless_export
+32/67 Test #36: sysconst .........................   Passed    0.83 sec
+      Start 38: fxr_ini
+33/67 Test #38: fxr_ini ..........................   Passed    6.31 sec
+      Start 39: cgm_project_refs_mbaacc
+34/67 Test #31: pcmod_cli ........................   Passed   19.89 sec
+      Start 40: cgm_folder_mbaacc
+35/67 Test #32: hmod .............................   Passed   26.36 sec
+      Start 41: cgm_cc_palettes
+36/67 Test #41: cgm_cc_palettes ..................   Passed    1.05 sec
+      Start 42: cgm_project_refs_mbtl
+37/67 Test #37: headless_export ..................   Passed   27.35 sec
+      Start 43: cgm_palette_uni_mbtl
+38/67 Test #43: cgm_palette_uni_mbtl .............   Passed    0.16 sec
+      Start 44: pat_textures_x8
+39/67 Test #17: stage3d ..........................   Passed   69.50 sec
+      Start 45: cgm_ac_moon3_sion
+40/67 Test #42: cgm_project_refs_mbtl ............   Passed   18.32 sec
+      Start 46: cgm_ac_moon3_nero
+41/67 Test #45: cgm_ac_moon3_sion ................   Passed   16.11 sec
+      Start 47: cgm_cutter2_gakiha
+42/67 Test #47: cgm_cutter2_gakiha ...............   Passed    0.12 sec
+      Start 48: cgm_cutter2_gakiha_struct
+43/67 Test #44: pat_textures_x8 ..................   Passed   18.96 sec
+      Start 49: cgm_cutter2_gakiha_rt
+44/67 Test #48: cgm_cutter2_gakiha_struct ........   Passed    0.46 sec
+      Start 50: fxr_dgv_oracle
+45/67 Test #46: cgm_ac_moon3_nero ................   Passed   16.04 sec
+      Start 51: sqtool_fixture
+46/67 Test #51: sqtool_fixture ...................   Passed    0.79 sec
+      Start 52: sqtool_fixture_bad
+47/67 Test #52: sqtool_fixture_bad ...............   Passed    0.69 sec
+      Start 53: sqtool_mbtl
+48/67 Test #49: cgm_cutter2_gakiha_rt ............   Passed   15.05 sec
+      Start 54: sqtool_uni2
+49/67 Test #50: fxr_dgv_oracle ...................   Passed   14.66 sec
+      Start 55: squirrel_index
+50/67 Test #54: sqtool_uni2 ......................   Passed    0.77 sec
+      Start 56: squirrel_doc
+51/67 Test #53: sqtool_mbtl ......................   Passed    2.03 sec
+      Start 57: squirrel_doc_roundtrip
+52/67 Test #56: squirrel_doc .....................   Passed    1.00 sec
+      Start 58: pat_renumber_csel007_move
+53/67 Test #57: squirrel_doc_roundtrip ...........   Passed    1.61 sec
+      Start 59: pat_renumber_csel023_ops
+54/67 Test #55: squirrel_index ...................   Passed    5.42 sec
+      Start 60: pat_renumber_csel018_ops
+55/67 Test #58: pat_renumber_csel007_move ........   Passed    5.26 sec
+      Start 61: pat_renumber_csel018_refuse
+56/67 Test #60: pat_renumber_csel018_ops .........   Passed    2.00 sec
+      Start 62: pat_renumber_csel007_delete
+57/67 Test #61: pat_renumber_csel018_refuse ......   Passed    3.54 sec
+      Start 63: pat_renumber_effect
+58/67 Test #59: pat_renumber_csel023_ops .........   Passed    8.52 sec
+      Start 64: pat_append_arc
+59/67 Test #64: pat_append_arc ...................   Passed    0.35 sec
+      Start 65: pat_append_warc
+60/67 Test #65: pat_append_warc ..................   Passed    0.40 sec
+      Start 66: pat_append_hisui_sets
+61/67 Test #62: pat_renumber_csel007_delete ......   Passed    4.88 sec
+      Start 67: pat_append_mbaacc_to_uni2
+62/67 Test #66: pat_append_hisui_sets ............   Passed    0.51 sec
+63/67 Test #67: pat_append_mbaacc_to_uni2 ........   Passed    0.30 sec
+64/67 Test #63: pat_renumber_effect ..............   Passed    4.35 sec
+65/67 Test #14: ha4_golden .......................   Passed  122.04 sec
+66/67 Test #39: cgm_project_refs_mbaacc ..........   Passed  110.03 sec
+67/67 Test #40: cgm_folder_mbaacc ................   Passed  191.45 sec
+
+100% tests passed, 0 tests failed out of 67
+
+Total Test time (real) = 244.56 sec
+EXIT 0

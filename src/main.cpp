@@ -1,9 +1,11 @@
 #include "main.h"
+#include "startup_args.h"
 #include "context_gl.h"
 #include "main_frame.h"
 #include "test.h"
 #include "ini.h"
 #include "version.h"
+#include "workspace_viewports.h"
 
 #include <iostream>
 #include <fstream>
@@ -18,6 +20,8 @@
 #include <imgui_impl_win32.h>
 #include <windows.h>
 #include <shellapi.h>
+#include "png_writer.h"
+#include "app_log.h"
 
 #include <glad/glad.h>
 
@@ -33,7 +37,8 @@ ImVec2 clientRect;
 
 HWND mainWindowHandle;
 ContextGl *context = nullptr;
-static bool dragLeft = false, dragRight = false;
+static bool dragLeft = false, dragRight = false;   // pan / draw drags in progress
+static int dragButtonLeft = 0, dragButtonRight = 1; // the physical button (0 L, 1 R, 2 M) holding each
 static POINT mousePos;
 static bool justActivated = false;  // Track if window just became active
 bool init = false;
@@ -137,7 +142,7 @@ void LoadJapaneseFonts(ImGuiIO& io)
 					config.FontDataOwnedByAtlas = false;
 					japaneseFont = io.Fonts->AddFontFromMemoryTTF(notoFont, SizeofResource(hModule, res), gSettings.fontSize, &config, rangesToUse);
 					if(japaneseFont) {
-						printf("[Font] Noto Sans JP loaded with symbol support\n");
+						HC_LOG_INFO("[Font] Noto Sans JP loaded with symbol support");
 					}
 				}
 			}
@@ -150,7 +155,7 @@ void LoadJapaneseFonts(ImGuiIO& io)
 		strcpy(winFolder+appendAt, "\\Fonts\\meiryo.ttc");
 		japaneseFont = io.Fonts->AddFontFromFileTTF(winFolder, gSettings.fontSize, &config, rangesToUse);
 		if(japaneseFont) {
-			printf("[Font] Meiryo loaded with symbol support (Noto not available)\n");
+			HC_LOG_INFO("[Font] Meiryo loaded with symbol support (Noto not available)");
 			
 			// Try to merge Noto for missing glyphs if available
 			if(hModule) {
@@ -164,7 +169,7 @@ void LoadJapaneseFonts(ImGuiIO& io)
 							mergeConfig.MergeMode = true;
 							mergeConfig.FontDataOwnedByAtlas = false;
 							io.Fonts->AddFontFromMemoryTTF(notoFont, SizeofResource(hModule, res), gSettings.fontSize, &mergeConfig, rangesToUse);
-							printf("[Font] Noto merged into Meiryo for missing glyphs\n");
+							HC_LOG_INFO("[Font] Noto merged into Meiryo for missing glyphs");
 						}
 					}
 				}
@@ -175,21 +180,14 @@ void LoadJapaneseFonts(ImGuiIO& io)
 	// Set the Japanese font as the default font if it loaded successfully
 	if(japaneseFont) {
 		io.FontDefault = japaneseFont;
-		printf("[Font] Japanese font loaded with symbol support and set as default\n");
+		HC_LOG_INFO("[Font] Japanese font loaded with symbol support and set as default");
 		
 		// Debug: Check if specific glyphs are available
 		// Note: This check happens before Build(), so we can't verify glyphs yet
 		// But we can verify the ranges were set correctly
-		printf("[Font] Glyph ranges size: %d\n", g_fontGlyphRanges.Size);
-		if(g_fontGlyphRanges.Size > 0) {
-			printf("[Font] First few glyph ranges: ");
-			for(int i = 0; i < g_fontGlyphRanges.Size && i < 20; i++) {
-				printf("0x%04X ", g_fontGlyphRanges[i]);
-			}
-			printf("\n");
-		}
+		HC_LOG_INFO("[Font] Glyph ranges size: {}", g_fontGlyphRanges.Size);
 	} else {
-		printf("[Font] WARNING: Failed to load Japanese font! Japanese characters may not display correctly.\n");
+		HC_LOG_WARN("[Font] Failed to load Japanese font; Japanese characters may not display correctly");
 	}
 }
 
@@ -221,6 +219,86 @@ int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE, PWSTR pCmdLine, int nCmdShow
 			TestHa6();
 			LocalFree(argV);
 			return 0;
+		}
+		else if(i+1<argC && !strcmp(arg, "--fxr-selftest"))
+		{
+			// Effect recolour tab self-test: programmatic load/save/assign/new-rule + report, see fxr_panel.cpp. Pair with --capture <png>.
+			std::wstring w(argV[i+1]);
+			std::string v(WideCharToMultiByte(CP_UTF8, 0, w.c_str(), -1, nullptr, 0, nullptr, nullptr), 0);
+			WideCharToMultiByte(CP_UTF8, 0, w.c_str(), -1, v.data(), (int)v.size(), nullptr, nullptr);
+			if(!v.empty() && v.back() == 0) v.pop_back();
+			_putenv_s("HANTEI_FXR_SELFTEST", v.c_str()); _putenv_s("HANTEI_CGM_TAB", "fxr");
+			gStartup.tool = "cgm";
+			i++;
+		}
+		else if(i+1<argC && (!strcmp(arg, "--open") || !strcmp(arg, "--open-any") || !strcmp(arg, "--capture") || !strcmp(arg, "--cg") || !strcmp(arg, "--pattern")
+		                     || !strcmp(arg, "--frame") || !strcmp(arg, "--palette") || !strcmp(arg, "--game-link")
+		                     || !strcmp(arg, "--zoom") || !strcmp(arg, "--game")
+		                     || !strcmp(arg, "--compare") || !strcmp(arg, "--tool") || !strcmp(arg, "--tag-ini")
+		                     || !strcmp(arg, "--tag-char") || !strcmp(arg, "--tag-tab")
+		                     || !strncmp(arg, "--authoring-", 12)) && strcmp(arg, "--authoring-link") && strcmp(arg, "--authoring-load")
+		                     && strcmp(arg, "--authoring-unlock"))
+		{
+			// startup actions, see startup_args.h
+			std::wstring w(argV[i+1]);
+			std::string v(WideCharToMultiByte(CP_ACP, 0, w.c_str(), -1, nullptr, 0, nullptr, nullptr), 0);
+			WideCharToMultiByte(CP_ACP, 0, w.c_str(), -1, v.data(), (int)v.size(), nullptr, nullptr);
+			if(!v.empty() && v.back() == 0) v.pop_back();
+			if(!strcmp(arg, "--open")) gStartup.open = v;
+			else if(!strcmp(arg, "--open-any")) gStartup.openAny = v;
+			else if(!strcmp(arg, "--capture")) gStartup.capture = v;
+			else if(!strcmp(arg, "--cg")) gStartup.cg = v;
+			else if(!strcmp(arg, "--pattern")) gStartup.pattern = atoi(v.c_str());
+			else if(!strcmp(arg, "--frame")) gStartup.frame = atoi(v.c_str());
+			else if(!strcmp(arg, "--game-link")) gStartup.gameLinkSlot = atoi(v.c_str());
+			else if(!strcmp(arg, "--zoom")) gStartup.zoom = (float)atof(v.c_str());
+			else if(!strcmp(arg, "--game")) gStartup.game = v;
+			else if(!strcmp(arg, "--compare")) gStartup.compare = atoi(v.c_str());
+			else if(!strcmp(arg, "--tool")) gStartup.tool = v;
+			else if(!strcmp(arg, "--tag-ini")) gStartup.tagIni = v;
+			else if(!strcmp(arg, "--tag-char")) gStartup.tagChar = v;
+			else if(!strcmp(arg, "--tag-tab")) gStartup.tagTab = v;
+			else if(!strcmp(arg, "--authoring-tab")) gStartup.authoring.tab = v;
+			else if(!strcmp(arg, "--authoring-setup")) gStartup.authoring.setupHex = v;
+			else if(!strcmp(arg, "--authoring-game")) gStartup.authoring.gameDir = v;
+			else if(!strcmp(arg, "--authoring-tag-root")) gStartup.authoring.tagRoot = v;
+			else if(!strcmp(arg, "--authoring-char")) gStartup.authoring.charFile = v;
+			else if(!strcmp(arg, "--authoring-layer")) gStartup.authoring.layer = v;
+			else if(!strcmp(arg, "--authoring-view")) gStartup.authoring.subTab = v;
+			else if(!strcmp(arg, "--authoring-ab")) gStartup.authoring.abDemo = v;
+			else if(!strcmp(arg, "--authoring-pid")) gStartup.authoring.pid = (uint32_t)strtoul(v.c_str(), nullptr, 0);
+			else if(!strncmp(arg, "--authoring-", 12)) {}
+			else gStartup.palette = atoi(v.c_str());
+			i++;
+		}
+		else if(!strcmp(arg, "--tag-link"))
+		{
+			gStartup.tagLink = true;
+		}
+		else if(!strcmp(arg, "--authoring-link"))
+		{
+			gStartup.authoring.link = true;
+		}
+		else if(!strcmp(arg, "--authoring-load"))
+		{
+			gStartup.authoring.loadInGame = true;
+		}
+		else if(!strcmp(arg, "--authoring-unlock"))
+		{
+			gStartup.authoring.sessionUnlock = true;
+		}
+		else if(!strcmp(arg, "--tag-apply"))
+		{
+			gStartup.tagApply = true;
+		}
+		else if(!strcmp(arg, "--no-pups"))
+		{
+			gStartup.noPups = true;
+		}
+		else if(ParseWave2StartupArg(arg, i+1<argC ? argV[i+1] : nullptr, i))
+		{
+			// --tick/--onion/--detach/--capture-view/--export-*/--save-project
+			// (render checks, see startup_args.h); consumed its value if any.
 		}
 		else if(!strcmp(arg, "-i"))
 		{
@@ -262,17 +340,32 @@ int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE, PWSTR pCmdLine, int nCmdShow
 	::RegisterClassEx(&wc);
 	// Build version string with build number and git hash
 	std::wstring windowTitle = L"gonptéchan v" VERSION_WITH_COMMIT_W;
-	HWND hwnd = ::CreateWindow(wc.lpszClassName, windowTitle.c_str(), WS_OVERLAPPEDWINDOW,
+	// --headless: the same window and GL context, created hidden and never shown (a tool window, so no taskbar
+	// entry either). Views render into their FBOs and MainFrame::Draw sends the frame to an offscreen target.
+	HWND hwnd = ::CreateWindowEx(gStartup.headless ? (WS_EX_TOOLWINDOW | WS_EX_NOACTIVATE) : 0, wc.lpszClassName, windowTitle.c_str(), WS_OVERLAPPEDWINDOW,
 		gSettings.posX, gSettings.posY, gSettings.winSizeX, gSettings.winSizeY, NULL, NULL, wc.hInstance, nullptr);
 	mainWindowHandle = hwnd;
-
+	if (!hwnd) return 3;
 	init = true;
-	if(useIni)
-		ShowWindow(hwnd, gSettings.maximized ? SW_SHOWMAXIMIZED : SW_NORMAL);
+	if (gStartup.headless)
+	{
+		// No WM_SIZE arrives for a window that is never shown: take the client size (= the visible window's at
+		// the same ini size) directly.
+		RECT rc{};
+		GetClientRect(hwnd, &rc);
+		clientRect = ImVec2((float)rc.right, (float)rc.bottom);
+		if (MainFrame* mf = (MainFrame*)GetWindowLongPtr(hwnd, GWLP_USERDATA))
+			mf->UpdateBackProj(clientRect.x, clientRect.y);
+	}
 	else
-		ShowWindow(hwnd, nCmdShow);
-		
-	UpdateWindow(hwnd);
+	{
+		DragAcceptFiles(hwnd, TRUE);   // drop RBO / GOF2 files (.dt2 .dat .pat .chp .pac .img) on the window
+		if(useIni)
+			ShowWindow(hwnd, gSettings.maximized ? SW_SHOWMAXIMIZED : SW_NORMAL);
+		else
+			ShowWindow(hwnd, nCmdShow);
+		UpdateWindow(hwnd);
+	}
 
 	MSG msg = {};
 	bool done = false;
@@ -298,7 +391,7 @@ int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE, PWSTR pCmdLine, int nCmdShow
 		steady_clock::time_point currentTime = steady_clock::now();
 		duration<double> elapsed = duration_cast<duration<double>>(currentTime - lastFrameTime);
 		
-		if (elapsed.count() >= targetFrameTime)
+		if (gStartup.headless || elapsed.count() >= targetFrameTime)   // headless: no frame pacing
 		{
 			MainFrame* mf = (MainFrame*)GetWindowLongPtr(hwnd, GWLP_USERDATA);
 			if(mf)
@@ -318,13 +411,19 @@ int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE, PWSTR pCmdLine, int nCmdShow
 	UnregisterClass(wc.lpszClassName, wc.hInstance);
 
 	LocalFree(argV);
-	return 0;
+	return gStartup.exitCode;
 }
 
 // Forward declare message handler from imgui_impl_win32.cpp
 extern IMGUI_IMPL_API LRESULT ImGui_ImplWin32_WndProcHandler(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam);
 LRESULT WINAPI WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
 {
+	// A key that already ran a shortcut while a text field was focused (Num*
+	// / Num/ keyframe step) must not also type its character.
+	if (msg == WM_CHAR && MainFrame::s_swallowChar && (wchar_t)towlower((wint_t)wParam) == MainFrame::s_swallowChar) {
+		MainFrame::s_swallowChar = 0;
+		return 0;
+	}
 	if (ImGui_ImplWin32_WndProcHandler(hWnd, msg, wParam, lParam))
 		return true;
 
@@ -347,6 +446,18 @@ LRESULT WINAPI WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
 			io.ConfigFlags |= ImGuiConfigFlags_DockingEnable;
 			io.IniFilename = iniLocation;
 			InitIni();
+			if (gStartup.headless)
+				io.IniFilename = nullptr;   // settings and layout are read, never written back
+			// Multi-viewport: detached tabs become native windows that can
+			// live on other monitors (docs/HANTEI_WAVE2.md §5). It used to be
+			// off because the Background Inspector opened at a fixed desktop
+			// position behind the main window; that window is now placed
+			// relative to the main viewport. Restart-bound preference.
+			if (gSettings.detachableWindows && !gStartup.headless)   // headless: no extra OS windows
+				io.ConfigFlags |= ImGuiConfigFlags_ViewportsEnable;
+			// Native windows only move from their title bar, so dragging in a
+			// detached view pans it instead of moving the window.
+			io.ConfigWindowsMoveFromTitleBarOnly = true;
 
 			MainFrame* mf = new MainFrame(context);
 			SetWindowLongPtr(hWnd, GWLP_USERDATA, (LONG_PTR)mf);
@@ -360,8 +471,15 @@ LRESULT WINAPI WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
 			// Font atlas now handles sizing automatically
 			
 			//io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;     // Enable Keyboard Controls
-			ImGui_ImplWin32_Init(hWnd);
+			ImGui_ImplWin32_InitForOpenGL(hWnd);   // CS_OWNDC for platform windows
 			ImGui_ImplOpenGL3_Init("#version 330 core");
+			if (!WorkspaceViewports::Initialize(*context, hWnd,
+				(io.ConfigFlags & ImGuiConfigFlags_ViewportsEnable) != 0, MainFrame::DetachedKeyHook()))
+			{
+				// Fall back to single-window mode (detached tabs float inside
+				// the main window).
+				io.ConfigFlags &= ~ImGuiConfigFlags_ViewportsEnable;
+			}
 			
 			// Enable VSync control for better performance testing
 			typedef BOOL (WINAPI *wglSwapIntervalEXT_t)(int);
@@ -372,6 +490,20 @@ LRESULT WINAPI WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
 			
 			return 0;
 		}
+	case WM_DROPFILES:
+		{
+			HDROP h = (HDROP)wParam;
+			POINT pt{}; DragQueryPoint(h, &pt);
+			POINT sp = pt; ClientToScreen(hWnd, &sp);
+			if (mf) mf->setDropPoint((float)sp.x, (float)sp.y, (float)pt.x, (float)pt.y);
+			const UINT n = DragQueryFileW(h, 0xFFFFFFFF, nullptr, 0);
+			for (UINT i = 0; i < n; i++) {
+				wchar_t wp[1024]; DragQueryFileW(h, i, wp, 1024);
+				if (mf) mf->queueDroppedFile(WideToUtf8(wp));
+			}
+			DragFinish(h);
+		}
+		return 0;
 	case WM_MOVE:
 		{
 			RECT rect;
@@ -404,55 +536,71 @@ LRESULT WINAPI WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
 		}
 		return 0;
 	case WM_KEYDOWN:
-		if(!ImGui::GetIO().WantCaptureKeyboard)
-		{
-			if(mf->HandleKeys(wParam))
-				return 0;
-		}
-		break;
-	case WM_RBUTTONDOWN:
-		// Don't allow drag if window just became active - prevents dragging when clicking back into window
-		if(!ImGui::GetIO().WantCaptureMouse && !justActivated)
-		{
-			dragRight = true;
-			GetCursorPos(&mousePos);
-			ScreenToClient(hWnd, &mousePos);
-			SetCapture(hWnd);
-			mf->RightClick(mousePos.x, mousePos.y);
-
+		// The shortcut router decides: a focused ImGui text field keeps its
+		// keys (including its own Ctrl+Z); bit 30 = OS auto-repeat.
+		if(mf && mf->HandleKeys(wParam, (lParam & (1 << 30)) != 0,
+		                        ImGui::GetIO().WantCaptureKeyboard, ImGui::GetIO().WantTextInput))
 			return 0;
-		}
-		justActivated = false;  // Clear flag after first click
 		break;
-	case WM_RBUTTONUP:
-		if(dragRight)
-		{
-			if(!dragLeft)
-				ReleaseCapture();
-			dragRight = false;
-			return 0;
-		}
+	case WM_CANCELMODE:
+		if(mf) mf->CancelViewportGestures();
+		dragLeft = dragRight = false;
 		break;
+	// View mouse buttons. Which physical button pans and which draws (boxes, the PAT UV rectangle) is a preference
+	// (issue #9, Edit > Preferences > Mouse buttons); internally the roles keep their old names: dragLeft = pan,
+	// dragRight = draw. The middle button pans when it is not the draw button.
 	case WM_LBUTTONDOWN:
-		// Don't allow drag if window just became active - prevents dragging when clicking back into window
-		if(!ImGui::GetIO().WantCaptureMouse && !justActivated)
+	case WM_RBUTTONDOWN:
+	case WM_MBUTTONDOWN:
 		{
-			dragLeft = true;
-			GetCursorPos(&mousePos);
-			ScreenToClient(hWnd, &mousePos);
-			SetCapture(hWnd);
-
-			return 0;
+			const int button = msg == WM_LBUTTONDOWN ? 0 : msg == WM_RBUTTONDOWN ? 1 : 2;
+			const bool draw = button == gSettings.mouseDrawButton;
+			const bool pan = button == gSettings.mousePanButton || (button == 2 && !draw);
+			// Don't allow drag if window just became active - prevents dragging when clicking back into window
+			if((pan || draw) && !ImGui::GetIO().WantCaptureMouse && !justActivated && !(draw ? dragRight : dragLeft))
+			{
+				GetCursorPos(&mousePos);
+				ScreenToClient(hWnd, &mousePos);
+				SetCapture(hWnd);
+				if (draw) {
+					dragRight = true;
+					dragButtonRight = button;
+					if (mf) mf->RightClick(mousePos.x, mousePos.y);
+				} else {
+					dragLeft = true;
+					dragButtonLeft = button;
+					if (mf) mf->HandleMouseDown(false, true);
+					if (mf) mf->LeftClick(mousePos.x, mousePos.y);
+				}
+				if (mf) mf->SetMouseDragActive(true);
+				return 0;
+			}
+			justActivated = false;  // Clear flag after first click
 		}
-		justActivated = false;  // Clear flag after first click
 		break;
 	case WM_LBUTTONUP:
-		if(dragLeft)
+	case WM_RBUTTONUP:
+	case WM_MBUTTONUP:
 		{
-			if(!dragRight)
-				ReleaseCapture();
-			dragLeft = false;
-			return 0;
+			const int button = msg == WM_LBUTTONUP ? 0 : msg == WM_RBUTTONUP ? 1 : 2;
+			if(dragRight && button == dragButtonRight)
+			{
+				if(!dragLeft)
+					ReleaseCapture();
+				dragRight = false;
+				if (mf) mf->HandleMouseUp(true, false);
+				if (mf) mf->SetMouseDragActive(dragLeft);
+				return 0;
+			}
+			if(dragLeft && button == dragButtonLeft)
+			{
+				if(!dragRight)
+					ReleaseCapture();
+				dragLeft = false;
+				if (mf) mf->HandleMouseUp(false, true);
+				if (mf) mf->SetMouseDragActive(dragRight);
+				return 0;
+			}
 		}
 		break;
 	case WM_MOUSEMOVE:
@@ -470,11 +618,13 @@ LRESULT WINAPI WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
 		if(mf && !ImGui::GetIO().WantCaptureMouse && !(dragLeft || dragRight))
 		{
 			int wheelDelta = GET_WHEEL_DELTA_WPARAM(wParam);
-			if (wheelDelta > 0) {
-				mf->HandleMouseWheel(true);  // Scroll up = zoom in
-			} else {
-				mf->HandleMouseWheel(false); // Scroll down = zoom out
-			}
+			// WM_MOUSEWHEEL gives the cursor in screen coords; convert to
+			// client space for zoom-to-cursor.
+			POINT wheelPos;
+			wheelPos.x = (short)LOWORD(lParam);
+			wheelPos.y = (short)HIWORD(lParam);
+			ScreenToClient(hWnd, &wheelPos);
+			mf->HandleMouseWheel((wheelDelta > 0) != gSettings.invertWheelZoom, wheelPos.x, wheelPos.y);
 			return 0;
 		}
 		break;
@@ -489,9 +639,11 @@ LRESULT WINAPI WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
 			// Clear drag states when losing focus
 			if(dragLeft || dragRight)
 			{
+				if (mf) mf->CancelViewportGestures();
 				ReleaseCapture();
 				dragLeft = false;
 				dragRight = false;
+				if (mf) mf->SetMouseDragActive(false);
 			}
 		}
 		break;
@@ -501,6 +653,7 @@ LRESULT WINAPI WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
 		break;
 	case WM_DESTROY:
 		delete mf;
+		WorkspaceViewports::Shutdown();
 		ImGui_ImplOpenGL3_Shutdown();
 		ImGui_ImplWin32_Shutdown();
 		ImSearch::DestroyContext();

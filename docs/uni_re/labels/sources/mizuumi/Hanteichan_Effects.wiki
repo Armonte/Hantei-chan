@@ -1,0 +1,222 @@
+<!-- source: https://mizuumi.wiki/w/User:Pixloen/FPANModding/Hanteichan/Effects (MediaWiki API, 2026-10-15) -->
+== Layout ==
+{| class="wikitable" style="text-align:left; margin:auto; vertical-align:top; min-width:280px; width:{{{width|80}}}%;"
+|-
+! colspan="3" | Effect Type<br />
+! colspan="3" | Number / No.
+|-
+| 1|| 2|| 3|| 4|| 5|| 6
+|-
+| 7|| 8|| 9||10||11||12
+|}
+
+== Type 1: Spawn pattern from character ==
+{| class="wikitable" style="text-align:left; margin:auto; vertical-align:top; min-width:280px; width:{{{width|80}}}%;"
+|-
+! scope="row"| No.
+| Which pattern to spawn. Corresponds to the pattern ID.
+|-
+! scope="row"| Param 1
+| Relative X position to the pattern spawning the effect.
+|-
+! scope="row"| Param 2
+| Relative Y position to the pattern spawning the effect.
+|-
+! scope="row"| Param 3
+| Flagset 1:
+*'''Bit 0 [1]:''' Remove when parent gets hit (incl. shield, throw and throw tech). (same as applying _ObjFlags_EraseParentDamage)
+*'''Bit 1 [2]:''' Unused.
+*'''Bit 2 [4]:''' Follow parent position. (same as applying _ObjFlags_ParentMove)
+*'''Bit 3 [8]:''' Affected by hitstop affecting parent.
+*'''Bit 4 [16]:''' Spawns at center of camera.
+*'''Bit 5 [32]:''' Removed on parent pattern change. (same as applying _ObjFlags_EraseParentPatChange)
+*'''Bit 6 [64]:''' Can go below floor level (same as applying _ObjFlags_NoGround)
+*'''Bit 7 [128]:''' Always spawns on floor.
+|-
+! scope="row"| Param 4
+| Flagset 2:
+*'''Bit 0 [1]:''' Unused.
+*'''Bit 1 [2]:''' Follow parent position.
+*'''Bit 2 [4]:''' Remove when parent gets thrown.
+*'''Bit 3 [8]:''' Unused.
+*'''Bit 4 [16]:''' Unused.
+*'''Bit 5 [32]:''' Unused.
+*'''Bit 6 [64]:''' Doesn't freeze on super flash. (same as applying _ObjFlags_MoveTimeStop)
+*'''Bit 7 [128]:''' Doesn't move with camera. (same as applying _ObjFlags_NoCamera)
+*'''Bit 8 [256]:''' Position relative to opponent.
+*'''Bit 9 [512]:''' Spawns at position near center of stage.
+*'''Bit 10 [1024]:''' Spawns at position near center of stage, always faces right.
+|-
+! scope="row"| Param 8
+| Angle (same as using method SetAngle)
+|}
+
+== Type 4: Set Opponent Visual State (on Grab) ==
+'''Note: This type is succeeded by Type 14.'''
+{| class="wikitable" style="text-align:left; margin:auto; vertical-align:top; min-width:280px; width:{{{width|80}}}%;"
+|-
+! scope="row"| No.
+| Pattern to set the opponent to. Use hitstun patterns.
+|-
+! scope="row"| Param 1
+| Relative X position.
+|-
+! scope="row"| Param 2
+| Relative Y position.
+|-
+! scope="row"| Param 4
+| Flagset 1:
+*'''Bit 0 [1]:''' Play animation.
+*'''Bit 1 [2]:''' Reverse vector.
+*'''Bit 3 [8]:''' Can't otg.
+*'''Bit 5 [32]:''' Force hard knockdown.
+|-
+! scope="row"| Param 5
+| Set vector. Only applies when Param 4 bit 0 is applied.
+|-
+! scope="row"| Param 6
+| Set untech time. 0 = infinite.
+|-
+! scope="row"| Param 8
+| Set frame of animation, of pattern, of opponent.
+|}
+
+== Type 6: Character and Screen Modifier ==
+{| class="wikitable" style="text-align:left; margin:auto; vertical-align:top; min-width:280px; width:{{{width|80}}}%;"
+|-
+!rowspan="2"| No. 1 !!colspan="2"| Vertical Screenshake
+|-
+! scope="row"| Param 1
+|Duration of screenshake.
+|-
+!rowspan="2"| No. 2 !!colspan="2"| Ticker Text Display
+|-
+! scope="row"| Param 1
+|Display INVICIBILITY text. Set to 100 or higher to toggle.
+|-
+!rowspan="2"| No. 5 !!colspan="5"|  Round Recover 1 (wip)
+|-
+! scope="row"| Param 1
+|Init
+|-
+! No. 6 !!colspan="2"|  Locks pattern horizontal movement.
+|-
+! No. 8 !!colspan="2"|  Locks pattern vertical movement.
+|-
+!rowspan="4"| No. 12 !!colspan="2"| Pattern position modifier
+|-
+! scope="row"| Param 1
+| Horizontal position modifier.
+|-
+! scope="row"| Param 2
+| Vertical position modifier.
+|-
+! scope="row"| Param 3
+| Moves to the ground, towards the opponent. Unknown what exactly this value does.
+|-
+!rowspan="4"| No. 111 !!colspan="2"| Movement Vector Freeze
+|-
+! scope="row"| Param 1
+| End freeze.
+|-
+! scope="row"| Param 2
+| Start freeze.
+|-
+! scope="row"| Param 3
+| Y speed set after freeze.
+|-
+!rowspan="1"| No. 255 !!colspan="2"| Round Recover End (wip)
+|-
+|}
+
+== Type 8: Spawn pattern from system effects (effect.HA6) ==
+{| class="wikitable" style="text-align:left; margin:auto; vertical-align:top; min-width:280px; width:{{{width|80}}}%;"
+|-
+! scope="row"| No.
+| Which pattern to spawn. Corresponds to the pattern ID.
+|-
+! scope="row"| Param 1
+| Relative X position to the pattern spawning the effect.
+|-
+! scope="row"| Param 2
+| Relative Y position to the pattern spawning the effect.
+|-
+! scope="row"| Param 3
+| Flagset 1:
+*'''Bit 0 [1]:''' Remove when parent gets hit (incl. shield, throw and throw tech). (same as applying _ObjFlags_EraseParentDamage)
+*'''Bit 1 [2]:''' Unused.
+*'''Bit 2 [4]:''' Follow parent position. (same as applying _ObjFlags_ParentMove)
+*'''Bit 3 [8]:''' Affected by hitstop affecting parent.
+*'''Bit 4 [16]:''' Spawns at center of camera.
+*'''Bit 5 [32]:''' Removed on parent pattern change. (same as applying _ObjFlags_EraseParentPatChange)
+*'''Bit 6 [64]:''' Can go below floor level (same as applying _ObjFlags_NoGround)
+*'''Bit 7 [128]:''' Always spawns on floor.
+|-
+! scope="row"| Param 4
+| Flagset 2:
+*'''Bit 0 [1]:''' Unused.
+*'''Bit 1 [2]:''' Follow parent position.
+*'''Bit 2 [4]:''' Remove when parent gets thrown.
+*'''Bit 3 [8]:''' Unused.
+*'''Bit 4 [16]:''' Unused.
+*'''Bit 5 [32]:''' Unused.
+*'''Bit 6 [64]:''' Doesn't freeze on super flash. (same as applying _ObjFlags_MoveTimeStop)
+*'''Bit 7 [128]:''' Doesn't move with camera. (same as applying _ObjFlags_NoCamera)
+*'''Bit 8 [256]:''' Position relative to opponent.
+*'''Bit 9 [512]:''' Spawns at position near center of stage.
+*'''Bit 10 [1024]:''' Spawns at position near center of stage, always faces right.
+|-
+! scope="row"| Param 8
+| Angle (same as using method SetAngle)
+|}
+== Type 9: Play sound ==
+{| class="wikitable" style="text-align:left; margin:auto; vertical-align:top; min-width:280px; width:{{{width|80}}}%;"
+|-
+! scope="row"| No.
+| Set sound bank (0 = universal sounds <code>se\normal_se.txt</code>, 1 = character sounds <code>data\chrXXX\chrXXX_se_list.txt</code>)
+|-
+! scope="row"| Param 1
+| Sound ID.
+|-
+! scope="row"| Param 2
+| Probability of playing sound (0 = 100%)
+|-
+! scope="row"| Param 3
+| Number of different sounds to play. 1 and 0 are equivalent. IDs adjacent.
+|}
+
+== Type 14: Set Opponent Visual State 2 (on Grab) ==
+{| class="wikitable" style="text-align:left; margin:auto; vertical-align:top; min-width:280px; width:{{{width|80}}}%;"
+|-
+! scope="row"| No.
+| Pattern to set the opponent to. Use hitstun patterns.
+|-
+! scope="row"| Param 1
+| Relative X position. Only settable once per pattern.
+|-
+! scope="row"| Param 2
+| Relative Y position. Only settable once per pattern.
+|-
+! scope="row"| Param 3
+| Rotation value.
+|-
+! scope="row"| Param 4
+| Set vector ID.
+|-
+! scope="row"| Param 5
+| Grab position anchor. 
+0 = Position origin
+1-3 = Special box 10 - 12
+|-
+! scope="row"| Param 6
+| Set untech time.
+|-
+! scope="row"| Param 7
+| Set grab hold position.
+*'''Bit 0 [1]:''' Force player to opponent's location.
+*'''Bit 1 [2]:''' Force opponent to player's location.
+|}
+
+
+{{Navbox-MFPG}}
+[[Category:Modding French Bread Games]]

@@ -1,0 +1,17 @@
+effect.pat     v2=2117322 v3=2117302 vest@0x4e32 v2_minus_vest==v3:True
+lastload.pat   v2=3154603 v3=3154583 vest@0x21d3 v2_minus_vest==v3:True
+arc.pat        v2=1083700 v3=1083680 vest@0x88dc v2_minus_vest==v3:True
+ciel.pat       v2=1049204 v3=1049184 vest@0x21c v2_minus_vest==v3:True
+damien.pat     v2=1083700 v3=1083680 vest@0x88dc v2_minus_vest==v3:True
+g_chaos.pat    v2=5374566 v3=5374546 vest@0x2010e v2_minus_vest==v3:False first_rest_diff=0x42024a
+gakiha.pat     v2=2107550 v3=2107530 vest@0x2806 v2_minus_vest==v3:True
+hisui.pat      v2=3154603 v3=3154583 vest@0x21d3 v2_minus_vest==v3:True
+kohaku.pat     v2=1053840 v3=1053820 vest@0x1438 v2_minus_vest==v3:True
+len.pat        v2=526676 v3=526656 vest@0x8bc v2_minus_vest==v3:True
+m_hisui.pat    v2=1049680 v3=1049660 vest@0x3f8 v2_minus_vest==v3:True
+miyako.pat     v2=1049637 v3=1049617 vest@0x3cd v2_minus_vest==v3:True
+nechaos.pat    v2=1083700 v3=1083680 vest@0x88dc v2_minus_vest==v3:True
+neco.pat       v2=1083700 v3=1083680 vest@0x88dc v2_minus_vest==v3:True
+v_sion.pat     v2=2108116 v3=2108096 vest@0x2a3c v2_minus_vest==v3:True
+warakia.pat    v2=1048976 v3=1048956 vest@0x138 v2_minus_vest==v3:True
+warc.pat       v2=2115766 v3=2115746 vest@0x481e v2_minus_vest==v3:True

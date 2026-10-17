@@ -1,0 +1,50 @@
+Internal ctest changing into directory: /mnt/c/dev/hantei-chan/wt/parity/build
+Test project /mnt/c/dev/hantei-chan/wt/parity/build
+      Start  1: cmdfile
+ 1/22 Test  #1: cmdfile ..........................   Passed    0.24 sec
+      Start  2: cmdfile_ui_smoke
+ 2/22 Test  #2: cmdfile_ui_smoke .................   Passed    0.15 sec
+      Start  3: pattern_search
+ 3/22 Test  #3: pattern_search ...................   Passed    0.13 sec
+      Start  4: shared_clipboard
+ 4/22 Test  #4: shared_clipboard .................   Passed    0.14 sec
+      Start  5: fb_part_transform
+ 5/22 Test  #5: fb_part_transform ................   Passed    0.08 sec
+      Start  6: refs
+ 6/22 Test  #6: refs .............................   Passed    0.10 sec
+      Start  7: bgm
+ 7/22 Test  #7: bgm ..............................   Passed    0.07 sec
+      Start  8: hud
+ 8/22 Test  #8: hud ..............................   Passed    0.09 sec
+      Start  9: shortcut_router
+ 9/22 Test  #9: shortcut_router ..................   Passed    0.08 sec
+      Start 10: live_reload
+10/22 Test #10: live_reload ......................   Passed    0.43 sec
+      Start 11: undo_manager
+11/22 Test #11: undo_manager .....................   Passed    1.92 sec
+      Start 12: workspace_session
+12/22 Test #12: workspace_session ................   Passed    0.09 sec
+      Start 13: package_tools
+13/22 Test #13: package_tools ....................   Passed    0.27 sec
+      Start 14: game_link
+14/22 Test #14: game_link ........................   Passed    4.53 sec
+      Start 15: game_view
+15/22 Test #15: game_view ........................   Passed    6.58 sec
+      Start 16: tag_tuning
+16/22 Test #16: tag_tuning .......................   Passed    0.08 sec
+      Start 17: tag_sidecar
+17/22 Test #17: tag_sidecar ......................   Passed    0.42 sec
+      Start 18: authoring_model
+18/22 Test #18: authoring_model ..................   Passed    0.09 sec
+      Start 19: frame_data
+19/22 Test #19: frame_data .......................   Passed    1.54 sec
+      Start 20: hud_layout
+20/22 Test #20: hud_layout .......................   Passed    0.08 sec
+      Start 21: fxr_ini
+21/22 Test #21: fxr_ini ..........................   Passed    0.08 sec
+      Start 22: fxr_dgv_oracle
+22/22 Test #22: fxr_dgv_oracle ...................   Passed    4.25 sec
+
+100% tests passed, 0 tests failed out of 22
+
+Total Test time (real) =  23.28 sec

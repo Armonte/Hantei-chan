@@ -1,11 +1,19 @@
 name: Build
 
 on:
+  # Branches with an open PR build once, through pull_request; push builds only the main branches.
   push:
-    # Build on push to any branch
+    branches: [ main, master, develop ]
+    paths-ignore: [ 'docs/**', '**/*.md' ]
   pull_request:
     branches: [ main, master, develop ]
+    paths-ignore: [ 'docs/**', '**/*.md' ]
   workflow_dispatch:
+
+# A newer push to the same branch or PR cancels the run still in progress.
+concurrency:
+  group: build-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
 
 jobs:
   build-windows:
@@ -18,39 +26,48 @@ jobs:
       with:
         submodules: recursive
 
-    - name: Update imgui submodule to latest docking
-      run: |
-        cd imgui
-        $COMMIT = (git ls-remote https://github.com/ocornut/imgui.git refs/heads/docking | ForEach-Object { $_.Split()[0] })
-        git fetch https://github.com/ocornut/imgui.git $COMMIT
-        git checkout -f $COMMIT
-        cd ..
-      shell: pwsh
-
     - name: Setup CMake
       uses: jwlawson/actions-setup-cmake@v2
       with:
         cmake-version: '3.27.x'
 
+    - name: ccache
+      uses: hendrikmuhs/ccache-action@v1.2.14
+      with:
+        key: windows-mingw
+        max-size: 2G
+
     - name: Configure CMake
-      run: cmake -B build -G "MinGW Makefiles"
+      run: cmake -B build -G "MinGW Makefiles" -DCMAKE_C_COMPILER_LAUNCHER=ccache -DCMAKE_CXX_COMPILER_LAUNCHER=ccache
 
     - name: Build
-      run: cmake --build build --config Release
+      run: cmake --build build --config Release --parallel 4
+
+    # Unit tests and the committed fixtures. Tests that need game data or an outside install exit 77 when it is
+    # missing and ctest reports them as skipped (SKIP_RETURN_CODE), not failed. `gpu` tests need a real OpenGL 3.3
+    # driver, which the runner does not have. Git's bash comes first so `bash` is not the WSL launcher.
+    - name: Test
+      run: |
+        $env:PATH = "C:\Program Files\Git\bin;C:\Program Files\Git\usr\bin;" + $env:PATH
+        ctest --test-dir build -C Release -LE gpu --output-on-failure --timeout 600 -j 2
+        if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+      shell: pwsh
 
     - name: Package artifacts
       run: |
-        mkdir -p artifacts
-        cp build/gonptechan.exe artifacts/
-        if (Test-Path config) { cp -r config artifacts/ }
-        if (Test-Path res) { cp -r res artifacts/ }
+        New-Item -ItemType Directory -Force ci_package | Out-Null
+        cp build/gonptechan.exe ci_package/
+        if (Test-Path config) { cp -r config ci_package/ }
+        if (Test-Path res) { cp -r res ci_package/ }
+        New-Item -ItemType Directory -Force ci_package/res/squirrel | Out-Null
+        cp docs/squirrel/api/*_api.json ci_package/res/squirrel/
       shell: pwsh
 
     - name: Upload artifacts
       uses: actions/upload-artifact@v4
       with:
-        name: hantei-chan-${{ github.ref_name }}-windows-x64
-        path: artifacts/
+        name: hantei-chan-${{ github.run_number }}-${{ github.sha }}-windows-x64
+        path: ci_package/
         retention-days: 30
 
   build-linux-cross:
@@ -64,38 +81,38 @@ jobs:
       with:
         submodules: recursive
 
-    - name: Update imgui submodule to latest docking
-      run: |
-        cd imgui
-        COMMIT=$(git ls-remote https://github.com/ocornut/imgui.git refs/heads/docking | cut -f1)
-        git fetch https://github.com/ocornut/imgui.git $COMMIT
-        git checkout -f $COMMIT
-        cd ..
-
     - name: Install dependencies
       run: |
         sudo apt-get update
         sudo apt-get install -y mingw-w64 cmake
 
+    - name: ccache
+      uses: hendrikmuhs/ccache-action@v1.2.14
+      with:
+        key: linux-mingw-cross
+        max-size: 2G
+
     - name: Configure CMake
       run: |
         cmake -B build \
           -DCMAKE_TOOLCHAIN_FILE=mingw-toolchain.cmake \
-          -DCMAKE_BUILD_TYPE=Release
+          -DCMAKE_BUILD_TYPE=Release \
+          -DCMAKE_C_COMPILER_LAUNCHER=ccache -DCMAKE_CXX_COMPILER_LAUNCHER=ccache
 
     - name: Build
-      run: cmake --build build
+      run: cmake --build build --parallel 4
 
     - name: Package artifacts
       run: |
-        mkdir -p artifacts
-        cp build/gonptechan.exe artifacts/
-        [ -d config ] && cp -r config artifacts/ || true
-        [ -d res ] && cp -r res artifacts/ || true
+        mkdir -p ci_package
+        cp build/gonptechan.exe ci_package/
+        [ -d config ] && cp -r config ci_package/ || true
+        [ -d res ] && cp -r res ci_package/ || true
+        mkdir -p ci_package/res/squirrel && cp docs/squirrel/api/*_api.json ci_package/res/squirrel/
 
     - name: Upload artifacts
       uses: actions/upload-artifact@v4
       with:
-        name: hantei-chan-${{ github.ref_name }}-linux-mingw-build
-        path: artifacts/
+        name: hantei-chan-${{ github.run_number }}-${{ github.sha }}-linux-mingw-build
+        path: ci_package/
         retention-days: 30

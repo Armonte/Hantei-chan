@@ -1,0 +1,8 @@
+<!-- source: https://mizuumi.wiki/w/User:Pixloen/FPANModding/Mods (MediaWiki API, 2026-10-15) -->
+placeholder. 
+
+This page will soon contain some example mods for reference, as well as any other mods (given the consent of the original mod creators, that is). If you have a mizuumi account, feel free to add some, or message pixloen
+
+
+{{Navbox-MFPG}}
+[[Category:Modding French Bread Games]]

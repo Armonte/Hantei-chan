@@ -1,0 +1,20 @@
+{
+ "control": "mbtl_patctrl_chr001_p238f10",
+ "args": [
+  "mbtl_patctrl_chr001_p238f10",
+  "--game-name",
+  "mbtl_patctrl_chr001_p238f10_nb",
+  "--light 1,0;1,0;1,0",
+  "--grey",
+  "--bw",
+  "/home/teo/dev/hantei-chan-wt/render12/docs/audit_2026_10_14/evidence/compare/v2/editor_bw",
+  "--exact-reg",
+  "--refine",
+  "0"
+ ],
+ "subpix": [
+  0.25,
+  0.0
+ ],
+ "objective": "raw"
+}

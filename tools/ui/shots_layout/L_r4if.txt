@@ -1,0 +1,24 @@
+# Layout sweep round 4: the Conditions form alone (framenodes 4) on the UNI2 / MBTL label-table frames of L_r4.txt, EN then JA.
+openany C:/games/UNI2/data/chr017/chr017_0.txt
+wait 120
+framenodes 4
+pattern 110
+viewframe 16
+wait 40
+capture C:/dev/hantei-chan/work/ab/R08_uni2_if.png
+lang ja
+wait 20
+capture C:/dev/hantei-chan/work/ab/R08_uni2_if_ja.png
+lang en
+openany C:/games/MBTL/data/chr015/chr015_0.txt
+wait 120
+framenodes 4
+pattern 170
+viewframe 6
+wait 40
+capture C:/dev/hantei-chan/work/ab/R09_mbtl_if.png
+lang ja
+wait 20
+capture C:/dev/hantei-chan/work/ab/R09_mbtl_if_ja.png
+lang en
+quit

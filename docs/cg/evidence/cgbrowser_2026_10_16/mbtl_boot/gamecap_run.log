@@ -1,0 +1,21 @@
+wrote C:\Program Files (x86)\Steam\steamapps\common\MELTY BLOOD TYPE LUMINA\MBTL-IM\Mods\data\chr003\chr003.cg (30451880 bytes)
+gamecap C:\dev\fbmod\tests\ingame\.run_cgb_fbmod_mbtl_boot_training.gcs
+backup: C:\Program Files (x86)\Steam\steamapps\common\MELTY BLOOD TYPE LUMINA\MBTL-IM/MBTL_IM.ini -> C:\dev\hantei-chan\game_mod_backup\gamecap\mbtl_20261016_104308\file00_MBTL_IM.ini
+backup: C:\Program Files (x86)\Steam\steamapps\common\MELTY BLOOD TYPE LUMINA\winsave/48034167/_App.ini -> C:\dev\hantei-chan\game_mod_backup\gamecap\mbtl_20261016_104308\file01__App.ini
+launched MBTL.exe pid 28576 (suspended)
+agent attached: module base 0x00760000, hooks 0x39
+window 01762034 at 0,0 1296x759
+placed window at -640,307
+inject_dll: C:\dev\fbmod\build\inject\fbmod.dll loaded at 0x53380000
+captured C:\dev\hantei-chan\work\cgb_ev_mbtl\boot_battle.png (1280x720 fmt 22)
+peek p1_chara_no @0x01459345 = 3 (0x3)
+peek p2_chara_no @0x01459f89 = 5 (0x5)
+peek p1_color @0x00f6bed0 = 0 (0x0)
+peek p2_color @0x00f6bf10 = 0 (0x0)
+status: frame 1722 frozen 0 freeze 0 budget 0 hooks 0x3f cmd 1/1
+captured C:\dev\hantei-chan\work\cgb_ev_mbtl\pause_menu.png (1280x720 fmt 22)
+quit (quit): terminating pid 28576
+restored C:\Program Files (x86)\Steam\steamapps\common\MELTY BLOOD TYPE LUMINA\MBTL-IM/MBTL_IM.ini
+restored C:\Program Files (x86)\Steam\steamapps\common\MELTY BLOOD TYPE LUMINA\winsave/48034167/_App.ini
+script finished: 97 commands, 2 capture(s)
+restored C:\Program Files (x86)\Steam\steamapps\common\MELTY BLOOD TYPE LUMINA\MBTL-IM\Mods\data\chr003\chr003.cg

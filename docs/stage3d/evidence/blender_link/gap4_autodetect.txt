@@ -1,0 +1,6 @@
+# auto-detect with no configured Blender path: the launch command must name the newest install (5.2.2 portable)
+wait 10
+stage3d open C:/dev/hantei-chan/work/blender_live/uni2/bg bg001
+wait 5
+stage3d blender
+quit

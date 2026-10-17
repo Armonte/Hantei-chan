@@ -1,0 +1,14 @@
+openany C:/dev/hantei-chan/gamedata/mbtl/data/chr001/chr001_0.txt
+wait 30
+sq open C:/dev/hantei-chan/gamedata/mbtl
+sq file data/chr001/chr001_cmd_0.txt
+sq problems
+sq complete BMvTbl
+sq complete BMvEff
+sq complete Battle_Std
+sq search Mv_Atk_StdA
+sq file data/chr001/chr001_mv_0.txt
+sq problems
+sq file data/chr001/chr001_sc_0.txt
+sq problems
+quit

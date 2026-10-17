@@ -1,0 +1,34 @@
+# FXR next: MBAACC akiha opened like File > Open (AB_ARGS="--open C:\games\mbaacc\data\akiha.txt": .HA6 + .cg + .pal), Effect recolor tab,
+# palette-following DGV set driven by `cgm fxr` script commands (no env hooks). Run: tools/ui/ab_shot.sh <this file>
+wait 120
+cgm open
+wait 30
+cgm tab Effect recolor
+wait 90
+cgm fxr import dgv-accent
+cgm fxr rule dgv_00_acc
+cgm fxr pattern first
+cgm fxr slot 0
+cgm fxr status
+wait 40
+capture C:/dev/hantei-chan/work/ab/fxr_accent_slot00.png
+cgm fxr slot 3
+wait 40
+capture C:/dev/hantei-chan/work/ab/fxr_accent_slot03.png
+cgm fxr slot 16
+wait 40
+capture C:/dev/hantei-chan/work/ab/fxr_accent_slot16.png
+cgm fxr slot 30
+wait 40
+capture C:/dev/hantei-chan/work/ab/fxr_accent_slot30.png
+cgm fxr path C:/dev/hantei-chan/work/ab/fxr_accent_saved/akiha.ini
+cgm fxr save
+cgm fxr path
+cgm fxr status
+cgm fxr import dgv
+cgm fxr rule dgv_00
+cgm fxr slot 16
+cgm fxr status
+wait 40
+capture C:/dev/hantei-chan/work/ab/fxr_fixedred_slot16.png
+quit

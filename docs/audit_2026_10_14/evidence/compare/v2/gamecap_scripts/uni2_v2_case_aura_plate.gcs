@@ -1,0 +1,53 @@
+# = uni2_v2_case_aura.gcs + a same-session plate (${CASE}_game_plate.png) grabbed while still paused.
+# = uni2_v2_case.gcs, plus the P1 chara aura (the per-object add colour of every .pat part) in the sidecar.
+# v2 full-frame capture of one case (game must be FROZEN by gamecap in training, after uni2_to_training.gcs).
+# UNI2-IM's own Pause (F5) / Next frame (F6) / hitbox overlay (F2) are driven through its harness pipe
+# ("keys", injected inside this process only), so the game keeps presenting while paused:
+#   while UNI2-IM is paused the game does not render (UNI2-IM replays the frozen frame after gamecap's hook), so
+#   both shots are harness `grab`s: clean first, then with UNI2-IM's hitbox overlay (F2) to verify the frame.
+# SETFRAME = frame forced (0 for --tick cases, which then run naturally from the pattern start); FRAME/GTICK = the
+# frame and in-frame game tick that must be on screen (asserted).
+# Vars: CASE PAT FRAME GTICK OUTD STEPKEYS (GTICK presses of F6, comma separated: one UNI2-IM step each)
+include uni2.gcs
+unfreeze
+wait_frames 10
+pipe \\.\pipe\uni2-im-harness "keys F5" ok
+wait_frames 10
+peek i32 P1+OBJ_TICK tick_paused_a
+wait_frames 5
+peek i32 P1+OBJ_TICK tick_paused_b
+call Object_SetPatternFrame ecx=P1 edx=${PAT} ${SETFRAME}
+wait_frames 3
+peek u32 P1+OBJ_PAT pat_after_set
+peek u32 P1+OBJ_FRAME frame_after_set
+peek i32 P1+OBJ_TICK tick_after_set
+pipe \\.\pipe\uni2-im-harness "keys ${STEPKEYS}" ok
+wait_frames 6
+peek u32 P1+OBJ_PAT pat_s1
+peek u32 P1+OBJ_FRAME frame_s1
+peek i32 P1+OBJ_TICK tick_s1
+assert_mem u32 P1+OBJ_PAT == ${PAT}
+assert_mem u32 P1+OBJ_FRAME == ${FRAME}
+assert_mem i32 P1+OBJ_TICK == ${GTICK}
+set OUT_META ${OUTD}\${CASE}_game.json
+include uni2_meta_aura.gcs
+pipe \\.\pipe\uni2-im-harness "grab ${OUTD}\${CASE}_game.png" ok
+pipe \\.\pipe\uni2-im-harness "keys F2" ok
+wait_frames 4
+pipe \\.\pipe\uni2-im-harness "grab ${OUTD}\${CASE}_game_im.png" ok
+wait_frames 5
+peek i32 P1+OBJ_TICK tick_end
+pipe \\.\pipe\uni2-im-harness "keys F2" ok
+wait_frames 4
+# render-match2: same-session backdrop plate of this paused frame (UNI2-IM harness hides fighters + effects)
+pipe \\.\pipe\uni2-im-harness "hidefighters on" ok
+wait_frames 4
+# while UNI2-IM is paused it replays the frozen frame, so the hide only shows after one step (next tick's backdrop)
+pipe \\.\pipe\uni2-im-harness "keys F6" ok
+wait_frames 6
+pipe \\.\pipe\uni2-im-harness "grab ${OUTD}\${CASE}_game_plate.png" ok
+pipe \\.\pipe\uni2-im-harness "hidefighters off" ok
+wait_frames 4
+pipe \\.\pipe\uni2-im-harness "keys F5" ok
+wait_frames 4
+freeze

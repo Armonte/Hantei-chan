@@ -1,0 +1,62 @@
+== authoring_model_test.exe rc=0
+protocol mirror checked against PovertyCaster Proto.hpp
+roster mirror checked against PovertyCaster MbaaccRoster.hpp (31 entries)
+authoring_model_test: all 170 checks passed
+== bg_test.exe rc=1
+usage: bg_test <stage.dat> [<out.dat> | --sim N [--seed S] [--game g] | --info | --edit-test <out.dat>]
+== bgm_test.exe rc=0
+BGM_TEST_PASS
+== cmdfile_test.exe rc=1
+FAIL [fixtures] no fixture files found in tests\fixtures\cmdfile
+74 checks, 1 failed, 0 command files
+== cmdfile_ui_smoke.exe rc=2
+usage: cmdfile_ui_smoke FILE...
+== fb_part_transform_test.exe rc=0
+fb_part_transform_test: 19 checks, 0 failed
+== frame_data_test.exe rc=0
+MBAC: 22 [TeamChangeData] rows, 22 tag-in patterns summarized; SHIKI 241: no attack box, total 45
+MBAACC shiki_0: 241 no attack box, total 45; 1 startup 4, active 5-7 (3), recovery 11, total 18
+frame_data_test: 77 passed, 0 failed -> PASS
+== game_link_test.exe rc=1
+FAIL /mnt/c/dev/hantei-chan/wt/parity/tests/game_link_test.cpp:124  s.tuningSlot[3].moon == 1 && s.tuningSlot[3].values[tagtune::FindLever("entryStyle")] == 2
+FAIL /mnt/c/dev/hantei-chan/wt/parity/tests/game_link_test.cpp:125  wire::MaskBit(s.tuningSlot[3].moonMask, tagtune::FindLever("entryStyle"))
+game_link_test: 5 FAILED
+== game_view_test.exe rc=1
+FAIL /mnt/c/dev/hantei-chan/wt/parity/tests/game_view_test.cpp:366  mine.compare(0, 15, "// DUPLICATE OF") == 0
+PovertyCaster game_frame_share.h not configured (PC_FRAME_SHARE_H): drift check skipped
+game_view_test: 1 of 153 FAILED
+== hud_layout_test.exe rc=1
+FAIL /mnt/c/dev/hantei-chan/wt/parity/tests/hud_layout_test.cpp:81  !shipped.empty() && !local.empty()
+FAIL /mnt/c/dev/hantei-chan/wt/parity/tests/hud_layout_test.cpp:86  Eq(v.reservePortrait, 80, 4, 66, 37)
+hud_layout_test: 2 of 75 FAILED
+== hud_test.exe rc=0
+HUD_TEST_PASS
+== live_reload_test.exe rc=0
+live_reload_test: all passed
+== package_tools_test.exe rc=0
+package_tools_test: PASS
+== pattern_search_test.exe rc=1
+text-field keyframe step FAILED
+669 frame(s), 69 quer(ies), 0 ImGui assertion(s), 1 bad draw command(s)
+PATTERN_SEARCH_TEST_FAIL
+== refs_test.exe rc=0
+REFS_TEST_PASS
+== shared_clipboard_test.exe rc=0
+round 1: child exit code 0
+round 2: child exit code 0
+SHARED_CLIPBOARD_TEST_PASS
+== shortcut_router_test.exe rc=0
+SHORTCUT_ROUTER_TEST_PASS
+== tag_sidecar_test.exe rc=1
+cross-check edited trees: HC == PovertyCaster TagSidecar.hpp on G + 9 character x moon slots
+cross-check chars only, no global: HC == PovertyCaster TagSidecar.hpp on G + 6 character x moon slots
+tag_sidecar_test: 2 of 3842 FAILED
+== tag_tuning_test.exe rc=1
+FAIL: cannot read tests/fixtures/tag/tag_tuning.sample.ini
+== undo_manager_test.exe rc=0
+  baseline capture 29.25 ms, full-document diff+commit 6.779 ms/step, history 4977 KiB
+UNDO_MANAGER_TEST_PASS
+== uni_edit_test.exe rc=1
+usage: uni_edit_test OWN PATTERN OUT FILE0 [FILE1 ...]
+== workspace_session_test.exe rc=0
+workspace_session_test: PASS

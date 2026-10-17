@@ -1,0 +1,5 @@
+# Game link / hot-reload panel (run with --tool gamelink), MBAACC character open. No game is launched.
+openany C:/games/mbaacc/data/akiha_0.txt
+wait 120
+capture C:/dev/hantei-chan/work/ab/feat_gamelink_panel.png
+quit

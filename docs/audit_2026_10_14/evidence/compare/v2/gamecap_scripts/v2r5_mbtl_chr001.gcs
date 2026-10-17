@@ -1,0 +1,22 @@
+# render-match4 round 5 (2026-10-15): MBTL chr001 .pat-only controls for mbtl_flipV_chr001_p157f2 (AFGX type 1
+# on every layer, no PRRV / PRAL 2-3 / PRAS: render path unchanged by S1). p238 f10: set 275 (PRAL 1 alpha 0x66 +
+# translucent 0x99 parts); p277 f0: set 211. MBTL-IM bloom 0, same-session plates.
+include ../games/mbtl.gcs
+let P1CHR 1
+let P2CHR 1
+ini_set MBTL-IM/MBTL_IM.ini Stages BloomStrength 0
+include ../games/mbtl_to_training.gcs
+set OUTD C:\dev\hantei-chan\tools\gamecap\captures\v2\nobloom
+set NSTEPS 1
+set CASE mbtl_patctrl_chr001_p238f10
+set PAT 238
+set SETFRAME 10
+set FRAME 10
+set GTICK 1
+include ../games/mbtl_v2_case_plate.gcs
+set CASE mbtl_patctrl_chr001_p277f0
+set PAT 277
+set SETFRAME 0
+set FRAME 0
+include ../games/mbtl_v2_case_plate.gcs
+quit

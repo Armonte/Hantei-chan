@@ -1,0 +1,10 @@
+<!-- source: https://mizuumi.wiki/w/User:Pixloen/FPANModding/HUD (MediaWiki API, 2026-10-15) -->
+Generally the HUD for in battle is /grpdat/cockpit while general ui for anything else you'd like to edit is just in the main grpdat folder. (Announce is round intros/winners)(Vs is obviously versus ui and ani) All my edits are gonna assume you arent bottom of the barrel braincells just saying ahead of time especially on the simple stuff like THIS!
+
+'''Editing battle HUD'''
+Go to the cockpit folder and have a dds editor.... THATS IT! chara folders store the character hud icons and the base cockpit folder is the rest of the gauges and such.
+
+== Navigation ==
+
+{{Navbox-MFPG}}
+[[Category:Modding French Bread Games]]

@@ -1,0 +1,141 @@
+file	kind	bytes	result	line	col	error
+data/Aka_0/Aka_0.txt	other	174	fail	3	2	cannot brake deref/or comma needed after [exp]=exp slot declaration
+data/Aka_0/Aka_0_cmd.txt	squirrel	2895	ok	0	0	
+data/Aka_0/Aka_0_mv.txt	squirrel	6555	ok	0	0	
+data/Aka_0/Aka_0_sc.txt	squirrel	894	ok	0	0	
+data/BattleInfo.txt	other	2924	ok	0	0	
+data/BoundEff.txt	other	2650	ok	0	0	
+data/Car_0/Car_0.txt	other	197	fail	3	2	cannot brake deref/or comma needed after [exp]=exp slot declaration
+data/Car_0/Car_0_cmd.txt	squirrel	2747	ok	0	0	
+data/Car_0/Car_0_mv.txt	squirrel	49974	ok	0	0	
+data/Car_0/Car_0_sc.txt	squirrel	900	ok	0	0	
+data/Car_0/Car_0_selist.txt	other	7753	ok	0	0	
+data/Car_0/_com.txt	other	26464	ok	0	0	
+data/Car_0/_finish_list.txt	other	741	ok	0	0	
+data/Car_0/_se_list.txt	other	27132	ok	0	0	
+data/Elt_0/Elt_0.txt	other	195	fail	3	2	cannot brake deref/or comma needed after [exp]=exp slot declaration
+data/Elt_0/Elt_0_cmd.txt	squirrel	7421	ok	0	0	
+data/Elt_0/Elt_0_mv.txt	squirrel	67799	ok	0	0	
+data/Elt_0/Elt_0_sc.txt	squirrel	894	ok	0	0	
+data/Elt_0/Elt_0_selist.txt	other	9573	ok	0	0	
+data/Elt_0/_com.txt	other	31367	ok	0	0	
+data/Elt_0/_finish_list.txt	other	488	ok	0	0	
+data/Elt_0/_se_list.txt	other	36247	ok	0	0	
+data/Gor_0/Gor_0.txt	other	193	fail	3	2	cannot brake deref/or comma needed after [exp]=exp slot declaration
+data/Gor_0/Gor_0_cmd.txt	squirrel	2577	ok	0	0	
+data/Gor_0/Gor_0_mv.txt	squirrel	31811	ok	0	0	
+data/Gor_0/Gor_0_sc.txt	squirrel	974	ok	0	0	
+data/Gor_0/Gor_0_selist.txt	other	8615	ok	0	0	
+data/Gor_0/_com.txt	other	26837	ok	0	0	
+data/Gor_0/_finish_list.txt	other	386	ok	0	0	
+data/Gor_0/_se_list.txt	other	28633	ok	0	0	
+data/Hil_0/Hil_0.txt	other	195	fail	3	2	cannot brake deref/or comma needed after [exp]=exp slot declaration
+data/Hil_0/Hil_0_cmd.txt	squirrel	7100	ok	0	0	
+data/Hil_0/Hil_0_mv.txt	squirrel	95487	ok	0	0	
+data/Hil_0/Hil_0_sc.txt	squirrel	1009	ok	0	0	
+data/Hil_0/Hil_0_selist.txt	other	8968	ok	0	0	
+data/Hil_0/_com.txt	other	26610	ok	0	0	
+data/Hil_0/_finish_list.txt	other	555	ok	0	0	
+data/Hil_0/_se_list.txt	other	34697	ok	0	0	
+data/Hyd_0/Hyd_0.txt	other	215	fail	3	2	cannot brake deref/or comma needed after [exp]=exp slot declaration
+data/Hyd_0/Hyd_0_cmd.txt	squirrel	4688	ok	0	0	
+data/Hyd_0/Hyd_0_mv.txt	squirrel	37872	ok	0	0	
+data/Hyd_0/Hyd_0_sc.txt	squirrel	896	ok	0	0	
+data/Hyd_0/Hyd_0_selist.txt	other	9410	ok	0	0	
+data/Hyd_0/_com.txt	other	28036	ok	0	0	
+data/Hyd_0/_finish_list.txt	other	439	ok	0	0	
+data/Hyd_0/_se_list.txt	other	33192	ok	0	0	
+data/Lin_0/Lin_0.txt	other	195	fail	3	2	cannot brake deref/or comma needed after [exp]=exp slot declaration
+data/Lin_0/Lin_0_cmd.txt	squirrel	4580	ok	0	0	
+data/Lin_0/Lin_0_mv.txt	squirrel	43039	ok	0	0	
+data/Lin_0/Lin_0_sc.txt	squirrel	906	ok	0	0	
+data/Lin_0/Lin_0_selist.txt	other	9635	ok	0	0	
+data/Lin_0/_com.txt	other	32840	ok	0	0	
+data/Lin_0/_finish_list.txt	other	500	ok	0	0	
+data/Lin_0/_se_list.txt	other	28186	ok	0	0	
+data/Mer_0/Mer_0.txt	other	195	fail	3	2	cannot brake deref/or comma needed after [exp]=exp slot declaration
+data/Mer_0/Mer_0_cmd.txt	squirrel	3996	ok	0	0	
+data/Mer_0/Mer_0_mv.txt	squirrel	70747	ok	0	0	
+data/Mer_0/Mer_0_sc.txt	squirrel	1084	ok	0	0	
+data/Mer_0/Mer_0_selist.txt	other	8749	ok	0	0	
+data/Mer_0/_com.txt	other	29414	ok	0	0	
+data/Mer_0/_finish_list.txt	other	386	ok	0	0	
+data/Mer_0/_se_list.txt	other	40983	ok	0	0	
+data/Mik_0/Mik_0.txt	other	174	fail	3	2	cannot brake deref/or comma needed after [exp]=exp slot declaration
+data/Mik_0/Mik_0_cmd.txt	squirrel	5946	ok	0	0	
+data/Mik_0/Mik_0_mv.txt	squirrel	20591	ok	0	0	
+data/Mik_0/Mik_0_sc.txt	squirrel	894	ok	0	0	
+data/Mik_0/_finish_list.txt	other	377	ok	0	0	
+data/Nan_0/Nan_0.txt	other	174	fail	3	2	cannot brake deref/or comma needed after [exp]=exp slot declaration
+data/Nan_0/Nan_0_cmd.txt	squirrel	3710	ok	0	0	
+data/Nan_0/Nan_0_mv.txt	squirrel	1944	ok	0	0	
+data/Nan_0/Nan_0_sc.txt	squirrel	894	ok	0	0	
+data/Ori_0/Ori_0.txt	other	195	fail	3	2	cannot brake deref/or comma needed after [exp]=exp slot declaration
+data/Ori_0/Ori_0_cmd.txt	squirrel	3038	ok	0	0	
+data/Ori_0/Ori_0_mv.txt	squirrel	42074	ok	0	0	
+data/Ori_0/Ori_0_sc.txt	squirrel	896	ok	0	0	
+data/Ori_0/Ori_0_selist.txt	other	7674	ok	0	0	
+data/Ori_0/_com.txt	other	28738	ok	0	0	
+data/Ori_0/_finish_list.txt	other	489	ok	0	0	
+data/Ori_0/_se_list.txt	other	26518	ok	0	0	
+data/Set_0/Set_0.txt	other	195	fail	3	2	cannot brake deref/or comma needed after [exp]=exp slot declaration
+data/Set_0/Set_0_cmd.txt	squirrel	5874	ok	0	0	
+data/Set_0/Set_0_mv.txt	squirrel	69783	ok	0	0	
+data/Set_0/Set_0_sc.txt	squirrel	896	ok	0	0	
+data/Set_0/Set_0_selist.txt	other	11025	ok	0	0	
+data/Set_0/_com.txt	other	28127	ok	0	0	
+data/Set_0/_finish_list.txt	other	439	ok	0	0	
+data/Set_0/_se_list.txt	other	29399	ok	0	0	
+data/Vat_0/Vat_0.txt	other	195	fail	3	2	cannot brake deref/or comma needed after [exp]=exp slot declaration
+data/Vat_0/Vat_0_cmd.txt	squirrel	5834	ok	0	0	
+data/Vat_0/Vat_0_mv.txt	squirrel	67808	ok	0	0	
+data/Vat_0/Vat_0_sc.txt	squirrel	896	ok	0	0	
+data/Vat_0/Vat_0_selist.txt	other	8292	ok	0	0	
+data/Vat_0/_com.txt	other	26475	ok	0	0	
+data/Vat_0/_finish_list.txt	other	382	ok	0	0	
+data/Vat_0/_se_list.txt	other	33900	ok	0	0	
+data/VectorTable.txt	other	175482	ok	0	0	
+data/Wal_0/Wal_0.txt	other	195	fail	3	2	cannot brake deref/or comma needed after [exp]=exp slot declaration
+data/Wal_0/Wal_0_cmd.txt	squirrel	2162	ok	0	0	
+data/Wal_0/Wal_0_mv.txt	squirrel	49630	ok	0	0	
+data/Wal_0/Wal_0_sc.txt	squirrel	934	ok	0	0	
+data/Wal_0/Wal_0_selist.txt	other	10805	ok	0	0	
+data/Wal_0/_com.txt	other	27741	ok	0	0	
+data/Wal_0/_finish_list.txt	other	436	ok	0	0	
+data/Wal_0/_se_list.txt	other	27721	ok	0	0	
+data/Yuz_0/Yuz_0.txt	other	195	fail	3	2	cannot brake deref/or comma needed after [exp]=exp slot declaration
+data/Yuz_0/Yuz_0_cmd.txt	squirrel	17538	ok	0	0	
+data/Yuz_0/Yuz_0_mv.txt	squirrel	107006	ok	0	0	
+data/Yuz_0/Yuz_0_sc.txt	squirrel	896	ok	0	0	
+data/Yuz_0/Yuz_0_selist.txt	other	9957	ok	0	0	
+data/Yuz_0/_com.txt	other	27948	ok	0	0	
+data/Yuz_0/_finish_list.txt	other	509	ok	0	0	
+data/Yuz_0/_se_list.txt	other	40411	ok	0	0	
+data/_combase.txt	other	6780	ok	0	0	
+data/_csel/csel_Aka.txt	other	147	fail	3	2	cannot brake deref/or comma needed after [exp]=exp slot declaration
+data/_csel/csel_Car.txt	other	147	fail	3	2	cannot brake deref/or comma needed after [exp]=exp slot declaration
+data/_csel/csel_Elt.txt	other	147	fail	3	2	cannot brake deref/or comma needed after [exp]=exp slot declaration
+data/_csel/csel_Gor.txt	other	147	fail	3	2	cannot brake deref/or comma needed after [exp]=exp slot declaration
+data/_csel/csel_Hil.txt	other	147	fail	3	2	cannot brake deref/or comma needed after [exp]=exp slot declaration
+data/_csel/csel_Hyd.txt	other	147	fail	3	2	cannot brake deref/or comma needed after [exp]=exp slot declaration
+data/_csel/csel_Lin.txt	other	147	fail	3	2	cannot brake deref/or comma needed after [exp]=exp slot declaration
+data/_csel/csel_Mer.txt	other	147	fail	3	2	cannot brake deref/or comma needed after [exp]=exp slot declaration
+data/_csel/csel_Mik.txt	other	147	fail	3	2	cannot brake deref/or comma needed after [exp]=exp slot declaration
+data/_csel/csel_Nan.txt	other	147	fail	3	2	cannot brake deref/or comma needed after [exp]=exp slot declaration
+data/_csel/csel_Ori.txt	other	147	fail	3	2	cannot brake deref/or comma needed after [exp]=exp slot declaration
+data/_csel/csel_Set.txt	other	147	fail	3	2	cannot brake deref/or comma needed after [exp]=exp slot declaration
+data/_csel/csel_Vat.txt	other	173	fail	3	2	cannot brake deref/or comma needed after [exp]=exp slot declaration
+data/_csel/csel_Wal.txt	other	147	fail	3	2	cannot brake deref/or comma needed after [exp]=exp slot declaration
+data/_csel/csel_Yuz.txt	other	147	fail	3	2	cannot brake deref/or comma needed after [exp]=exp slot declaration
+data/effect.txt	other	234	fail	3	2	cannot brake deref/or comma needed after [exp]=exp slot declaration
+script/Battle_Init.txt	squirrel	337	ok	0	0	
+script/Battle_Std.txt	squirrel	1035	ok	0	0	
+script/btl_ChrTableFunc.txt	squirrel	47910	ok	0	0	
+script/btl_CmdCheck.txt	squirrel	14844	ok	0	0	
+script/btl_Define.txt	squirrel	36864	ok	0	0	
+script/btl_MvFunc.txt	squirrel	135541	ok	0	0	
+script/btl_SEDefine.txt	squirrel	629	ok	0	0	
+script/btl_StdCommdandTbl.txt	squirrel	62260	ok	0	0	
+script/btl_StdMoveTbl.txt	squirrel	298860	ok	0	0	
+script/btl_Std_BattleStatusTbl.txt	squirrel	9617	ok	0	0	
+script/btl_debugFunc.txt	squirrel	7833	ok	0	0	

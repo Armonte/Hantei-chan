@@ -1,0 +1,10 @@
+# S8 after: SION p65 f0 only Conditions (IF 51) held open.
+openany C:\dev\hantei-chan\gamedata\mbac_to_cc\roster_v2\sion\sion.txt
+wait 60
+framenodes 4
+pattern 65
+viewframe 0
+zoomview 1
+wait 40
+capture C:/dev/hantei-chan/wt/s8-ha4-converter/docs/audit_2026_10_14/evidence/s8/after_sion_p65_f0_shield_if51.png
+quit

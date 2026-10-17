@@ -1,0 +1,17 @@
+# MBTL v2: PUPS case
+include ../games/mbtl.gcs
+let P1CHR 11
+let P2CHR 11
+# render-match2: MBTL-IM stage bloom off (screen post-process halo around bright sprites; restored at quit)
+ini_set MBTL-IM/MBTL_IM.ini Stages BloomStrength 0
+include ../games/mbtl_to_training.gcs
+set OUTD C:\dev\hantei-chan\tools\gamecap\captures\v2\nobloom
+set NSTEPS 1
+
+set CASE mbtl_pups_chr011_p309
+set PAT 309
+set SETFRAME 0
+set FRAME 0
+set GTICK 1
+include ../games/mbtl_v2_case_plate.gcs
+quit

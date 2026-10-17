@@ -1,0 +1,59 @@
+Test project /mnt/c/dev/hantei-chan/wt/s3-uni-dataloss/build
+      Start  1: uni_dataloss
+ 1/23 Test  #1: uni_dataloss .....................   Passed    3.91 sec
+      Start  2: cmdfile
+ 2/23 Test  #2: cmdfile ..........................   Passed    0.29 sec
+      Start  3: cmdfile_ui_smoke
+ 3/23 Test  #3: cmdfile_ui_smoke .................   Passed    0.29 sec
+      Start  4: pattern_search
+ 4/23 Test  #4: pattern_search ...................   Passed    0.19 sec
+      Start  5: shared_clipboard
+ 5/23 Test  #5: shared_clipboard .................   Passed    0.21 sec
+      Start  6: fb_part_transform
+ 6/23 Test  #6: fb_part_transform ................   Passed    0.15 sec
+      Start  7: refs
+ 7/23 Test  #7: refs .............................   Passed    0.16 sec
+      Start  8: bgm
+ 8/23 Test  #8: bgm ..............................   Passed    0.12 sec
+      Start  9: hud
+ 9/23 Test  #9: hud ..............................   Passed    0.13 sec
+      Start 10: shortcut_router
+10/23 Test #10: shortcut_router ..................   Passed    0.17 sec
+      Start 11: live_reload
+11/23 Test #11: live_reload ......................   Passed    0.50 sec
+      Start 12: undo_manager
+12/23 Test #12: undo_manager .....................***Failed    4.17 sec
+  baseline capture 89.63 ms, full-document diff+commit 30.927 ms/step, history 4982 KiB
+FAIL /mnt/c/dev/hantei-chan/wt/s3-uni-dataloss/tests/undo_manager_test.cpp:303: commitMs < 16.0
+undo_manager_test: 1 failure(s)
+
+      Start 13: workspace_session
+13/23 Test #13: workspace_session ................   Passed    0.13 sec
+      Start 14: package_tools
+14/23 Test #14: package_tools ....................   Passed    0.34 sec
+      Start 15: game_link
+15/23 Test #15: game_link ........................   Passed    4.46 sec
+      Start 16: game_view
+16/23 Test #16: game_view ........................   Passed    6.68 sec
+      Start 17: tag_tuning
+17/23 Test #17: tag_tuning .......................   Passed    0.14 sec
+      Start 18: tag_sidecar
+18/23 Test #18: tag_sidecar ......................   Passed    0.44 sec
+      Start 19: authoring_model
+19/23 Test #19: authoring_model ..................   Passed    0.12 sec
+      Start 20: frame_data
+20/23 Test #20: frame_data .......................   Passed    1.47 sec
+      Start 21: hud_layout
+21/23 Test #21: hud_layout .......................   Passed    0.11 sec
+      Start 22: fxr_ini
+22/23 Test #22: fxr_ini ..........................   Passed    0.11 sec
+      Start 23: fxr_dgv_oracle
+23/23 Test #23: fxr_dgv_oracle ...................   Passed    5.95 sec
+
+96% tests passed, 1 tests failed out of 23
+
+Total Test time (real) =  31.27 sec
+
+The following tests FAILED:
+	 12 - undo_manager (Failed)
+Errors while running CTest

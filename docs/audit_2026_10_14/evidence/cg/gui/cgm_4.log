@@ -1,0 +1,54 @@
+[Font] Noto Sans JP loaded with symbol support
+[Font] Japanese font loaded with symbol support and set as default
+[Font] Glyph ranges size: 4663
+[Font] First few glyph ranges: 0x0020 0x00FF 0x2000 0x206F 0x2190 0x21FF 0x25A0 0x26FF 0x3000 0x30FF 0x31F0 0x31FF 0x4E00 0x4E01 0x4E03 0x4E03 0x4E07 0x4E0B 0x4E0D 0x4E0E 
+[LoadCompressed] SUCCESS: 2048x2048 type=5 DXT5 texture (GL ID=3, size=4194304)
+[LoadCompressed] SUCCESS: 2048x2048 type=5 DXT5 texture (GL ID=4, size=4194304)
+[LoadCompressed] SUCCESS: 2048x1024 type=5 DXT5 texture (GL ID=5, size=2097152)
+[LoadCompressed] SUCCESS: 1024x2048 type=5 DXT5 texture (GL ID=6, size=2097152)
+[LoadCompressed] SUCCESS: 2048x1024 type=1 DXT1 texture (GL ID=7, size=1048576)
+[LoadCompressed] SUCCESS: 2048x1024 type=1 DXT1 texture (GL ID=8, size=1048576)
+[LoadCompressed] SUCCESS: 2048x1024 type=1 DXT1 texture (GL ID=9, size=1048576)
+[LoadCompressed] SUCCESS: 2048x1024 type=1 DXT1 texture (GL ID=10, size=1048576)
+[LoadCompressed] SUCCESS: 2048x1024 type=1 DXT1 texture (GL ID=11, size=1048576)
+[LoadCompressed] SUCCESS: 2048x1024 type=1 DXT1 texture (GL ID=12, size=1048576)
+[LoadCompressed] SUCCESS: 2048x1024 type=1 DXT1 texture (GL ID=13, size=1048576)
+[LoadCompressed] SUCCESS: 2048x1024 type=1 DXT1 texture (GL ID=14, size=1048576)
+[LoadCompressed] SUCCESS: 2048x1024 type=1 DXT1 texture (GL ID=15, size=1048576)
+[LoadCompressed] SUCCESS: 2048x1024 type=1 DXT1 texture (GL ID=16, size=1048576)
+[LoadCompressed] SUCCESS: 2048x1024 type=1 DXT1 texture (GL ID=17, size=1048576)
+[LoadCompressed] SUCCESS: 2048x1024 type=1 DXT1 texture (GL ID=18, size=1048576)
+[LoadCompressed] SUCCESS: 2048x1024 type=1 DXT1 texture (GL ID=19, size=1048576)
+[LoadCompressed] SUCCESS: 2048x1024 type=1 DXT1 texture (GL ID=20, size=1048576)
+[LoadCompressed] SUCCESS: 2048x1024 type=1 DXT1 texture (GL ID=21, size=1048576)
+[LoadCompressed] SUCCESS: 2048x1024 type=1 DXT1 texture (GL ID=22, size=1048576)
+[LoadCompressed] SUCCESS: 2048x1024 type=1 DXT1 texture (GL ID=23, size=1048576)
+[LoadCompressed] SUCCESS: 2048x1024 type=1 DXT1 texture (GL ID=24, size=1048576)
+[LoadCompressed] SUCCESS: 2048x1024 type=1 DXT1 texture (GL ID=25, size=1048576)
+[LoadCompressed] SUCCESS: 2048x1024 type=1 DXT1 texture (GL ID=26, size=1048576)
+[LoadCompressed] SUCCESS: 2048x1024 type=1 DXT1 texture (GL ID=27, size=1048576)
+[LoadCompressed] SUCCESS: 2048x1024 type=1 DXT1 texture (GL ID=28, size=1048576)
+[LoadCompressed] SUCCESS: 2048x1024 type=1 DXT1 texture (GL ID=29, size=1048576)
+[LoadCompressed] SUCCESS: 2048x1024 type=1 DXT1 texture (GL ID=30, size=1048576)
+[LoadCompressed] SUCCESS: 2048x1024 type=1 DXT1 texture (GL ID=31, size=1048576)
+[LoadCompressed] SUCCESS: 2048x1024 type=1 DXT1 texture (GL ID=32, size=1048576)
+[LoadCompressed] SUCCESS: 2048x1024 type=1 DXT1 texture (GL ID=33, size=1048576)
+[LoadCompressed] SUCCESS: 2048x1024 type=1 DXT1 texture (GL ID=34, size=1048576)
+[LoadCompressed] SUCCESS: 2048x1024 type=1 DXT1 texture (GL ID=35, size=1048576)
+[LoadCompressed] SUCCESS: 512x1024 type=5 DXT5 texture (GL ID=36, size=524288)
+[LoadCompressed] SUCCESS: 1024x1024 type=5 DXT5 texture (GL ID=37, size=1048576)
+[LoadCompressed] SUCCESS: 2048x2048 type=5 DXT5 texture (GL ID=38, size=4194304)
+[Parts] Auto-loading palette: C:/dev/hantei-chan/work/ab_s45/fx/mbtl/data/chr000\chr000.pal
+[Parts] Palette loaded successfully
+[MvScript] chr000_0: 13 script spawn(s) parsed from move scripts
+exit 0
+line 8 'cgm status': status: Imported a folder without manifest: 1 replaced in place, 0 re-cut to a new size; 600 unchanged. Ids are unchanged.
+line 14 'cgm status': status: Built C:/dev/hantei-chan/work/ab_s45/fx/built.cg: 601 image(s), 0 of them 8-bit on the bank palette, 0 empty placeholder(s).
+line 19 'cgm status': status: Exported 601 images (1211 files) to C:/dev/hantei-chan/work/ab_s45/fx/export_gui
+--- files changed / added by the run (sha1 before vs after):
+> 4b52905fbdcc9eafe4db6464dc360aa678bcf726  ./built.cg
+SECTION cgm-bank: pass 1 fail 0 | images 601 (undrawable 0), decode==CG 601, differ 0 | type2:601
+indexed
+manifest.json
+palettes
+rgba

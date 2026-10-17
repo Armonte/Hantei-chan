@@ -3,6 +3,7 @@
 
 #include "frame_disp_common.h"
 #include "../cg.h"
+#include "../i18n.h"
 
 // ============================================================================
 // Action State (AS) Display
@@ -30,8 +31,6 @@ inline void AsDisplay(Frame_AS *as, FrameData *frameData = nullptr, int patternI
 		}
 	};
 
-	constexpr float width = 103.f;
-
 	unsigned int flagIndex = -1;
 	if(BitField("Movement Flags", &as->movementFlags, &flagIndex, 8)) {
 		markModified();
@@ -44,20 +43,25 @@ inline void AsDisplay(Frame_AS *as, FrameData *frameData = nullptr, int patternI
 		case 5: Tooltip("Add X"); break;
 	}
 
-	im::SetNextItemWidth(width*2);
-	if(im::InputInt2("Speed", as->speed)) {
-		markModified();
+	// Label-first form (ui_style.h LabelForm): one label column for every section of this display.
+	const bool uniAs = frameData && frameData->usesUniFormat();
+	const float lw = ui::LabelColW({LBL("Speed"), LBL("Max X speed"), LBL("Accel"), LBL("Number of hits"),
+		LBL("Player can move"), LBL("State"), LBL("Invincibility"), LBL("Counterhit"), LBL("Cancel normal"),
+		LBL("Cancel special"), LBL("Sinewave"), LBL("Phases"), uniAs ? LBL("ASCF") : ""});
+	if(ui::BeginLabelForm("##as_move", lw)) {
+		if(im::InputInt2(ui::FormRow(LBL("Speed")), as->speed)) {
+			markModified();
+		}
+		if(im::InputInt(ui::FormRow(LBL("Max X speed")), &as->maxSpeedX, 0, 0)) {
+			markModified();
+		}
+		if(im::InputInt2(ui::FormRow(LBL("Accel")), as->accel)) {
+			markModified();
+		}
+		ui::EndLabelForm();
 	}
-	im::SameLine(0.f, 20); im::SetNextItemWidth(width);
-	if(im::InputInt("Max X speed", &as->maxSpeedX, 0, 0)) {
-		markModified();
-	}
-	im::SetNextItemWidth(width*2);
-	if(im::InputInt2("Accel", as->accel)) {
-		markModified();
-	}
-	
-	im::Separator();
+
+	ui::FormSection(TXT("Flags"));
 	flagIndex = -1;
 	if(BitField("Flagset 1", &as->statusFlags[0], &flagIndex)) {
 		markModified();
@@ -86,33 +90,33 @@ inline void AsDisplay(Frame_AS *as, FrameData *frameData = nullptr, int patternI
 		case 31: Tooltip("Can't block"); break;
 	}
 
-	im::SetNextItemWidth(width);
-	if(im::InputInt("Number of hits", &as->hitsNumber, 0, 0)) {
-		markModified();
+	ui::FormSection(TXT("State"));
+	if(ui::BeginLabelForm("##as_state", lw)) {
+		if(im::InputInt(ui::FormRow(LBL("Number of hits")), &as->hitsNumber, 0, 0)) {
+			markModified();
+		}
+		if(im::Checkbox(ui::FormRow(LBL("Player can move")), &as->canMove)) {
+			markModified();
+		}
+		if(i18n::Combo(ui::FormRow(LBL("State")), &as->stanceState, stateList, IM_ARRAYSIZE(stateList))) {
+			markModified();
+		}
+		if(i18n::Combo(ui::FormRow(LBL("Invincibility")), &as->invincibility, invulList, IM_ARRAYSIZE(invulList))) {
+			markModified();
+		}
+		if(i18n::Combo(ui::FormRow(LBL("Counterhit")), &as->counterType, counterList, IM_ARRAYSIZE(counterList))) {
+			markModified();
+		}
+		if(i18n::Combo(ui::FormRow(LBL("Cancel normal")), &as->cancelNormal, cancelList, IM_ARRAYSIZE(cancelList))) {
+			markModified();
+		}
+		if(i18n::Combo(ui::FormRow(LBL("Cancel special")), &as->cancelSpecial, cancelList, IM_ARRAYSIZE(cancelList))) {
+			markModified();
+		}
+		ui::EndLabelForm();
 	}
-	im::SameLine(0,20.f);
-	if(im::Checkbox("Player can move", &as->canMove)) {
-		markModified();
-	}
-	if(im::Combo("State", &as->stanceState, stateList, IM_ARRAYSIZE(stateList))) {
-		markModified();
-	}
-	if(im::Combo("Invincibility", &as->invincibility, invulList, IM_ARRAYSIZE(invulList))) {
-		markModified();
-	}
-	if(im::Combo("Counterhit", &as->counterType, counterList, IM_ARRAYSIZE(counterList))) {
-		markModified();
-	}
-	if(im::Combo("Cancel normal", &as->cancelNormal, cancelList, IM_ARRAYSIZE(cancelList))) {
-		markModified();
-	}
-	if(im::Combo("Cancel special", &as->cancelSpecial, cancelList, IM_ARRAYSIZE(cancelList))) {
-		markModified();
-	}
-	
 
-	im::Separator();
-	if(im::CollapsingHeader("Sine flags")) {
+	if(im::CollapsingHeader(LBL("Sine flags"))) {
 		flagIndex = -1;
 		if(BitField("Flags", &as->sineFlags, &flagIndex, 8)) {
 			markModified();
@@ -122,16 +126,29 @@ inline void AsDisplay(Frame_AS *as, FrameData *frameData = nullptr, int patternI
 			case 0: Tooltip("Use Y"); break;
 			case 4: Tooltip("Use X"); break;
 		}
-		if(im::InputInt4("Sinewave", as->sineParameters)) {
+		if(ui::BeginLabelForm("##as_sine", lw)) {
+			ui::FormRow(LBL("Sinewave"));
+			im::SetNextItemWidth(im::GetContentRegionAvail().x - ui::LabelTextW("(?)") - im::GetStyle().ItemSpacing.x);
+			if(im::InputInt4(ui::HiddenId(LBL("Sinewave")), as->sineParameters)) {
+				markModified();
+			}
+			im::SameLine();
+			im::TextDisabled("(?)");
+			if(im::IsItemHovered())
+				Tooltip("Sine parameters:\nX dist, Y dist\nX frequency, Y frequency");
+			if(im::InputFloat2(ui::FormRow(LBL("Phases")), as->sinePhases)) {
+				markModified();
+			}
+			ui::EndLabelForm();
+		}
+	}
+	if(uniAs && ui::BeginLabelForm("##as_uni", lw)) {
+		if(im::InputInt(ui::FormRow(LBL("ASCF")), &as->ascf, 0, 0)) {
 			markModified();
 		}
-		im::SameLine();
-		im::TextDisabled("(?)");
 		if(im::IsItemHovered())
-			Tooltip("Sine parameters:\nX dist, Y dist\nX frequency, Y frequency");
-		if(im::InputFloat2("Phases", as->sinePhases)) {
-			markModified();
-		}
+			Tooltip("ASCF (UNI2/MBTL, AS +28): one int; used in a few UNI2/MBTL patterns.");
+		ui::EndLabelForm();
 	}
 }
 

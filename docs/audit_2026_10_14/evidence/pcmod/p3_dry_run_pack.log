@@ -1,0 +1,13 @@
+exe: 6d1415ca9573100e86a779ac2f81e9bedd322664e3daeae0229a67d13720310a (C:\games\mbaacc\MBAA.exe)
+class: sim (detected)
+files: 75, 74 in the online sim digest
+REPLACES vanilla data\_type.txt (loose in C:\games\mbaacc): the package must ship the whole file
+wrote C:\dev\hantei-chan\gamedata\pcmod_out\actcadenza\pcmod.json (75 files)
+wrote C:\dev\hantei-chan\gamedata\pcmod_out\actcadenza-1.0.3.zip
+package digest 7721d18a3b3f8984582ca65a27ceea41992d6c9db48958a4ea6503750c4b2fe9
+sim digest d6d72ad9295f0354dcabcfeffe06d06d2b031a07488460fd87c329e040026ef8
+package 7721d18a3b3f8984582ca65a27ceea41992d6c9db48958a4ea6503750c4b2fe9
+sim     d6d72ad9295f0354dcabcfeffe06d06d2b031a07488460fd87c329e040026ef8
+exe 6d1415ca9573100e86a779ac2f81e9bedd322664e3daeae0229a67d13720310a
+sim  actcadenza 1.0.3 priority 100 d6d72ad9295f0354dcabcfeffe06d06d2b031a07488460fd87c329e040026ef8 (sim digest)
+session digest 3e6b564cb0c7aa93d039a29337e2be8811fb6d83066a4ab9dc794d759f605901

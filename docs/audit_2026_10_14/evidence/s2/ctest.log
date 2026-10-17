@@ -1,0 +1,55 @@
+Test project /mnt/c/dev/hantei-chan/wt/s2-pat-safety/build
+      Start  1: cmdfile
+ 1/25 Test  #1: cmdfile ..........................   Passed    0.21 sec
+      Start  2: cmdfile_ui_smoke
+ 2/25 Test  #2: cmdfile_ui_smoke .................   Passed    0.15 sec
+      Start  3: pattern_search
+ 3/25 Test  #3: pattern_search ...................   Passed    0.13 sec
+      Start  4: shared_clipboard
+ 4/25 Test  #4: shared_clipboard .................   Passed    0.14 sec
+      Start  5: fb_part_transform
+ 5/25 Test  #5: fb_part_transform ................   Passed    0.09 sec
+      Start  6: part_render_math
+ 6/25 Test  #6: part_render_math .................   Passed    0.11 sec
+      Start  7: refs
+ 7/25 Test  #7: refs .............................   Passed    0.09 sec
+      Start  8: bgm
+ 8/25 Test  #8: bgm ..............................   Passed    0.09 sec
+      Start  9: hud
+ 9/25 Test  #9: hud ..............................   Passed    0.10 sec
+      Start 10: shortcut_router
+10/25 Test #10: shortcut_router ..................   Passed    0.08 sec
+      Start 11: live_reload
+11/25 Test #11: live_reload ......................   Passed    0.45 sec
+      Start 12: undo_manager
+12/25 Test #12: undo_manager .....................   Passed    1.70 sec
+      Start 13: pat_safety
+13/25 Test #13: pat_safety .......................   Passed    0.21 sec
+      Start 14: pat_safety_gamedata
+14/25 Test #14: pat_safety_gamedata ..............   Passed    2.52 sec
+      Start 15: workspace_session
+15/25 Test #15: workspace_session ................   Passed    0.08 sec
+      Start 16: package_tools
+16/25 Test #16: package_tools ....................   Passed    0.24 sec
+      Start 17: game_link
+17/25 Test #17: game_link ........................   Passed    4.49 sec
+      Start 18: game_view
+18/25 Test #18: game_view ........................   Passed    6.85 sec
+      Start 19: tag_tuning
+19/25 Test #19: tag_tuning .......................   Passed    0.08 sec
+      Start 20: tag_sidecar
+20/25 Test #20: tag_sidecar ......................   Passed    0.30 sec
+      Start 21: authoring_model
+21/25 Test #21: authoring_model ..................   Passed    0.07 sec
+      Start 22: frame_data
+22/25 Test #22: frame_data .......................   Passed    0.90 sec
+      Start 23: hud_layout
+23/25 Test #23: hud_layout .......................   Passed    0.07 sec
+      Start 24: fxr_ini
+24/25 Test #24: fxr_ini ..........................   Passed    0.10 sec
+      Start 25: fxr_dgv_oracle
+25/25 Test #25: fxr_dgv_oracle ...................   Passed    4.41 sec
+
+100% tests passed, 0 tests failed out of 25
+
+Total Test time (real) =  25.56 sec

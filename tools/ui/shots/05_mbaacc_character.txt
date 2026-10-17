@@ -1,0 +1,18 @@
+# MBAACC data folder: character list with thumbnails; AKIHA.HA6 previewed (thumbnail, patterns, sprites)
+browse C:\games\mbaacc
+waitidle
+select akiha.HA6
+waitidle
+wait 30
+capture C:/dev/hantei-chan/work/ab/shots/05_mbaacc_character.png
+type Sprite
+filter akiha.cg
+waitidle
+select akiha.cg
+waitidle
+wait 40
+palette 2
+frame 40
+wait 30
+capture C:/dev/hantei-chan/work/ab/shots/06_mbaacc_cg_bank.png
+quit

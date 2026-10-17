@@ -1,0 +1,40 @@
+{
+ "case": "flipHV_chr019_p153_solo4_z1",
+ "game": "flipHV_chr019_p153_solo4",
+ "plate": "/mnt/c/dev/hantei-chan/tools/gamecap/captures/v2/flipHV_chr019_p153_solo4_game_plate.png",
+ "light": [
+  [
+   1.0,
+   0.0
+  ],
+  [
+   1.0,
+   0.0
+  ],
+  [
+   1.0,
+   0.0
+  ]
+ ],
+ "raw": [
+  0.21382193726329657,
+  0.0
+ ],
+ "lit": [
+  0.21382193726329657,
+  0.0
+ ],
+ "band": [
+  0.20190134612218014,
+  0.0
+ ],
+ "band_px": 1,
+ "grad": null,
+ "glow": null,
+ "glow_ring": null,
+ "px": 30365,
+ "refine": [
+  0,
+  0
+ ]
+}

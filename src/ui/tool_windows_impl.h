@@ -1,0 +1,1196 @@
+#ifndef UI_TOOL_WINDOWS_IMPL_H_GUARD
+#define UI_TOOL_WINDOWS_IMPL_H_GUARD
+
+// ============================================================================
+// Tool windows opened from the Tools menu: variable batch replace (#75).
+// Included at the end of main_frame.cpp.
+// ============================================================================
+
+#include "../var_refs.h"
+#include "../pattern_refs.h"
+#include "../frame_disp/frame_disp_common.h"
+#include "../bgm_player.h"
+#include "../hud_colors.h"
+#include <filesystem>
+#include <cstdarg>
+#include <cstdio>
+
+// printf into a std::string (status lines are translated as whole formats).
+static std::string TwFmt(const char* fmt, ...)
+{
+	char buf[512];
+	va_list ap;
+	va_start(ap, fmt);
+	vsnprintf(buf, sizeof(buf), fmt, ap);
+	va_end(ap);
+	return buf;
+}
+
+// Commit a tool edit as one undo step and flag the character dirty.
+void MainFrame::markToolEdit(CharacterInstance* character)
+{
+	if (!character) return;
+	character->markModified();
+	character->undoManager.markModified();
+	for (auto& v : views) {
+		if (v->getCharacter() != character) continue;
+		v->getState().forceSpawnTreeRebuild = true;
+		if (v->getMainPane()) v->getMainPane()->RegenerateNames();
+	}
+}
+
+void MainFrame::navigateActiveView(int pattern, int frame)
+{
+	auto* view = getToolView();
+	auto* character = getToolCharacter();
+	if (!view || !character) return;
+	auto& st = view->getState();
+	st.animating = false;
+	st.pattern = pattern;
+	st.frame = frame < 0 ? 0 : frame;
+	Sequence* seq = character->frameData.get_sequence(pattern);
+	const int frames = seq ? (int)seq->frames.size() : 0;
+	if (st.frame >= frames) st.frame = frames > 0 ? frames - 1 : 0;
+	st.currentTick = frames > 0 ? CalculateTickFromFrame(&character->frameData, st.pattern, st.frame) : 0;
+	st.activeSpawns.clear();
+	if (view->getMainPane()) view->getMainPane()->RegenerateNames();
+}
+
+namespace {
+std::string LowerGeneric(const std::filesystem::path& p)
+{
+	std::string s = p.lexically_normal().generic_u8string();
+	for (auto& c : s) c = (char)tolower((unsigned char)c);
+	while (!s.empty() && s.back() == '/') s.pop_back();
+	return s;
+}
+} // namespace
+
+CharacterInstance* MainFrame::characterForScriptDir(const std::string& dirUtf8, bool openIfNeeded)
+{
+	namespace fs = std::filesystem;
+	const fs::path dir = fs::u8path(dirUtf8);
+	const std::string want = LowerGeneric(dir);
+	for (auto& c : characters) {
+		for (const std::string* p : {&c->getTxtPath(), &c->getTopHA6Path()})
+			if (!p->empty() && LowerGeneric(fs::u8path(*p).parent_path()) == want) return c.get();
+	}
+	// A character folder holds <name>_0.txt (the project list: ha6 stack, cg, pat). Shared script/ files
+	// have none and resolve against the character in the active tab.
+	const fs::path txt = dir / (dir.filename().u8string() + "_0.txt");
+	std::error_code ec;
+	if (!fs::exists(txt, ec)) return getToolCharacter();
+	if (!openIfNeeded) return nullptr;
+	openAnyFile(txt.u8string());
+	return findCharacterByPath(txt.u8string());
+}
+
+void MainFrame::wireScriptPanel()
+{
+	using Ref = sqedit::ScriptPanel::PatRef;
+	// Pattern index for a reference, or -1. An AFID prefers the active tab's pattern, then the first pattern holding it.
+	auto resolve = [this](CharacterInstance* ch, const Ref& r, int* frame, std::vector<int>* all) {
+		*frame = 0;
+		FrameData& fd = ch->frameData;
+		const int n = fd.get_sequence_count();
+		if (r.pattern >= 0) return r.pattern < n && fd.get_sequence(r.pattern) ? r.pattern : -1;
+		int found = -1;
+		CharacterView* view = getToolView();
+		const int cur = view && view->getCharacter() == ch ? view->getState().pattern : -1;
+		for (int i = 0; i < n; i++) {
+			const Sequence* s = fd.get_sequence(i);
+			if (!s) continue;
+			if (!r.code.empty()) {
+				if (s->codeName.c_str() == r.code) return i;
+				continue;
+			}
+			for (int f = 0; f < (int)s->frames.size(); f++) {
+				if (s->frames[f].AF.frameId != r.afid) continue;
+				if (all) all->push_back(i);
+				if (found < 0 || i == cur) { found = i; *frame = f; }
+				break;
+			}
+		}
+		return found;
+	};
+	scriptPanel->describeRef = [this, resolve](const std::string& dir, const Ref& r) -> std::string {
+		CharacterInstance* ch = characterForScriptDir(dir, false);
+		if (!ch) return "";
+		int frame = 0;
+		std::vector<int> all;
+		const int p = resolve(ch, r, &frame, &all);
+		std::string head = r.afid >= 0 ? "frame id (AFID) " + std::to_string(r.afid) + ": "
+			: !r.code.empty() ? "\"" + r.code + "\" -> " : "";
+		if (p < 0) return head + TXT("not found in the loaded HA6 stack");
+		const Sequence* s = ch->frameData.get_sequence(p);
+		std::string out = head + TXT("pattern") + std::string(" ") + std::to_string(p) + "  " + std::string(s->name.c_str());
+		if (r.afid >= 0) {
+			out += "  (" + std::string(TXT("frame")) + " " + std::to_string(frame) + ")";
+			if (all.size() > 1) {
+				out += "\n" + std::string(TXT("also in patterns")) + ":";
+				for (size_t i = 0; i < all.size() && i < 12; i++) if (all[i] != p) out += " " + std::to_string(all[i]);
+			}
+		}
+		return out;
+	};
+	scriptPanel->openRef = [this, resolve](const std::string& dir, const Ref& r) {
+		CharacterInstance* ch = characterForScriptDir(dir, true);
+		if (!ch) return;
+		for (int i = 0; i < (int)views.size(); i++)
+			if (views[i]->getCharacter() == ch) { setActiveView(i); break; }
+		int frame = 0;
+		const int p = resolve(ch, r, &frame, nullptr);
+		if (p >= 0) navigateActiveView(p, frame);
+	};
+	// Problems pane: a script reference the loaded HA6 cannot satisfy, or a pattern whose end can break the move
+	// (modder reports: a bad pattern end state can crash depending on the action). Only for a loaded character's own folder.
+	scriptPanel->checkRef = [this, resolve](const std::string& dir, const Ref& r) -> std::string {
+		namespace fs = std::filesystem;
+		const fs::path d = fs::u8path(dir);
+		std::error_code ec;
+		if (!fs::exists(d / (d.filename().u8string() + "_0.txt"), ec)) return "";
+		CharacterInstance* ch = characterForScriptDir(dir, false);
+		if (!ch) return "";
+		int frame = 0;
+		const int p = resolve(ch, r, &frame, nullptr);
+		if (p < 0) {
+			if (r.afid >= 0) return "frame id (AFID) " + std::to_string(r.afid) + " is not in any pattern of the loaded HA6";
+			if (!r.code.empty()) return "pattern code name \"" + r.code + "\" is not in the loaded HA6";
+			return "pattern " + std::to_string(r.pattern) + " does not exist in the loaded HA6";
+		}
+		if (r.afid >= 0) return "";
+		const Sequence* s = ch->frameData.get_sequence(p);
+		const std::string what = "pattern " + std::to_string(p) + " (" + std::string(s->name.c_str()) + ")";
+		if (s->frames.empty()) return what + " is empty: the move has nothing to play";
+		const int n = (int)s->frames.size();
+		const auto& last = s->frames.back().AF;
+		if (last.aniType == 1) return what + " ends on a Next frame with nothing after it: give the last frame an End or Jump";
+		for (int f = 0; f < n; f++) {
+			const auto& af = s->frames[f].AF;
+			if (af.aniType == 2 && (af.aniFlag & ~1u) == 0 && (af.jump < 0 || af.jump >= n))
+				return what + " frame " + std::to_string(f) + " jumps to frame " + std::to_string(af.jump) + ", past the last frame (" + std::to_string(n - 1) + ")";
+		}
+		return "";
+	};
+	MainPane::drawScriptRefs = [this](FrameData* fd, int pattern) {
+		if (!scriptPanel || !fd) return;
+		CharacterInstance* ch = nullptr;
+		for (auto& c : characters) if (&c->frameData == fd) ch = c.get();
+		if (!ch) return;
+		const std::string& path = !ch->getTxtPath().empty() ? ch->getTxtPath() : ch->getTopHA6Path();
+		if (path.empty()) return;
+		const Sequence* s = fd->get_sequence(pattern);
+		const auto refs = scriptPanel->refsToPattern(std::filesystem::u8path(path).parent_path().u8string(), pattern, s ? std::string(s->codeName.c_str()) : std::string());
+		const std::string head = std::string(TXT("Used by scripts")) + " (" + std::to_string(refs.size()) + ")###sqrefs";
+		if (refs.empty() || !ImGui::TreeNode(head.c_str())) return;
+		for (size_t i = 0; i < refs.size() && i < 200; i++) {
+			std::string t = refs[i].text;
+			while (!t.empty() && (t[0] == ' ' || t[0] == '\t')) t.erase(0, 1);
+			ImGui::PushID((int)i);
+			if (ImGui::Selectable((refs[i].file + ":" + std::to_string(refs[i].line + 1) + "  " + t).c_str())) scriptPanel->showAt(refs[i].file, refs[i].line);
+			ImGui::PopID();
+		}
+		ImGui::TreePop();
+	};
+	scriptPanel->searchHa6 = [this](const std::string& dir, const std::string& query) {
+		std::vector<std::pair<std::string, Ref>> out;
+		CharacterInstance* ch = characterForScriptDir(dir, false);
+		if (!ch || query.empty()) return out;
+		auto lower = [](std::string s) { for (auto& c : s) c = (char)tolower((unsigned char)c); return s; };
+		const std::string q = lower(query);
+		FrameData& fd = ch->frameData;
+		for (int i = 0; i < fd.get_sequence_count() && out.size() < 500; i++) {
+			const Sequence* s = fd.get_sequence(i);
+			if (!s) continue;
+			const std::string name = s->name.c_str(), code = s->codeName.c_str();
+			if (lower(name).find(q) == std::string::npos && lower(code).find(q) == std::string::npos) continue;
+			Ref r;
+			r.pattern = i;
+			out.push_back({std::to_string(i) + "  " + name + (code.empty() ? "" : "  [" + code + "]"), r});
+		}
+		return out;
+	};
+}
+
+void MainFrame::drawVarRefsWindow()
+{
+	if (!m_varRefs.open) return;
+	auto* character = getToolCharacter();
+	ui::FitNextWindow(620, 460);
+	if (!ImGui::Begin(LBL("Variable references"), &m_varRefs.open)) { ImGui::End(); return; }
+	if (!character) {
+		ImGui::TextDisabled("%s", TXT("Open a character first."));
+		ImGui::End();
+		return;
+	}
+	auto& w = m_varRefs;
+	ImGui::TextWrapped("%s", TXT("Find every effect/condition parameter that names a variable ID, and rename it in one step."));
+	ImGui::CheckboxFlags(LBL("Variables (EF2/105, IF25, IF31, IF38)"), &w.categories, varrefs::catVariable);
+	ImGui::CheckboxFlags(LBL("Projectile variables (EF1/101/1000/11/111, EF2/100-101, IF2, IF3, IF24)"), &w.categories, varrefs::catProjectile);
+	ImGui::CheckboxFlags(LBL("Spawn-once guard (EF1000 p6)"), &w.categories, varrefs::catOnceGuard);
+	ImGui::SetNextItemWidth(ui::Px(90));
+	ImGui::InputInt(LBL("Variable ID"), &w.from, 0, 0);
+	ImGui::SameLine();
+	if (ImGui::Button(LBL("Find"))) {
+		w.results = varrefs::Find(character->frameData, w.from, w.categories);
+		w.searched = true;
+		w.status.clear();
+	}
+	ImGui::SameLine();
+	if (ImGui::Button(LBL("List all IDs"))) {
+		w.results = varrefs::Find(character->frameData, -1, w.categories);
+		w.searched = true;
+		w.status.clear();
+	}
+	ImGui::SetNextItemWidth(ui::Px(90));
+	ImGui::InputInt(LBL("Replace with"), &w.to, 0, 0);
+	ImGui::SameLine();
+	if (ImGui::Button(LBL("Replace all"))) {
+		int skipped = 0;
+		const int n = varrefs::Replace(character->frameData, w.from, w.to, w.categories, &skipped);
+		if (n > 0) markToolEdit(character);
+		w.status = TwFmt(TXT("Replaced %d reference(s) to %d with %d (one undo step)."), n, (int)w.from, (int)w.to);
+		if (skipped) w.status += " " + TwFmt(TXT("Skipped %d value(s) that cannot hold that ID (negative in a tens place, or 0 where 0 means none)."), skipped);
+		w.results = varrefs::Find(character->frameData, w.to, w.categories);
+	}
+	if (!w.status.empty()) ImGui::TextWrapped("%s", w.status.c_str());
+	ImGui::Separator();
+	if (w.searched) {
+		ImGui::Text(TXT("%zu reference(s). Click one to go to it."), w.results.size());
+		if (ImGui::BeginChild("##varrefs", ImVec2(0, 0), ImGuiChildFlags_Borders)) {
+			ImGuiListClipper clip;
+			clip.Begin((int)w.results.size());
+			while (clip.Step()) {
+				for (int i = clip.DisplayStart; i < clip.DisplayEnd; ++i) {
+					const auto& r = w.results[i];
+					ImGui::PushID(i);
+					if (ImGui::Selectable(varrefs::Describe(r).c_str()))
+						navigateActiveView(r.pattern, r.frame);
+					ImGui::PopID();
+				}
+			}
+		}
+		ImGui::EndChild();
+	}
+	ImGui::End();
+}
+
+// ---------------------------------------------------------------------------
+// Pattern manager (#42, #44): select patterns, copy/paste them (also across
+// tabs and instances), move them with reference remapping, list callers.
+// ---------------------------------------------------------------------------
+
+void MainFrame::drawPatternManagerWindow()
+{
+	auto& w = m_patMgr;
+	if (!w.open) return;
+	auto* character = getToolCharacter();
+	auto* view = getToolView();
+	ui::FitNextWindow(760, 560);
+	if (!ImGui::Begin(LBL("Pattern manager"), &w.open)) { ImGui::End(); return; }
+	if (!character || !view || view->isStageView()) {
+		ImGui::TextDisabled("%s", TXT("Open a character first."));
+		ImGui::End();
+		return;
+	}
+	FrameData& fd = character->frameData;
+	const int count = fd.get_sequence_count();
+	if (w.character != character) { w.selection.clear(); w.character = character; w.lastClicked = -1; }
+	w.selection.erase(std::remove_if(w.selection.begin(), w.selection.end(),
+		[&](int p) { return p < 0 || p >= count; }), w.selection.end());
+	auto isSelected = [&](int p) { return std::find(w.selection.begin(), w.selection.end(), p) != w.selection.end(); };
+
+	// ---- left: pattern list ----
+	ImGui::BeginChild("##patlist", ImVec2(ui::Px(340), 0), ImGuiChildFlags_Borders | ImGuiChildFlags_ResizeX);
+	ImGui::SetNextItemWidth(-FLT_MIN);
+	ImGui::InputTextWithHint("##filter", TXT("Filter by number or name"), w.filter, sizeof(w.filter));
+	ImGui::Checkbox(LBL("Hide empty slots"), &w.hideEmpty);
+	i18n::TextDisabledWrapped("%s", TXT("Click, Ctrl+click, Shift+click. Order = click order."));
+	std::vector<int> rows;
+	std::string f = w.filter;
+	for (auto& c : f) c = (char)tolower((unsigned char)c);
+	for (int p = 0; p < count; ++p) {
+		if (w.hideEmpty && patrefs::IsEmptySlot(fd, p)) continue;
+		if (!f.empty()) {
+			std::string name = fd.GetDecoratedName(p);
+			for (auto& c : name) c = (char)tolower((unsigned char)c);
+			if (name.find(f) == std::string::npos) continue;
+		}
+		rows.push_back(p);
+	}
+	if (ImGui::BeginChild("##rows")) {
+		ImGuiListClipper clip;
+		clip.Begin((int)rows.size());
+		while (clip.Step()) {
+			for (int r = clip.DisplayStart; r < clip.DisplayEnd; ++r) {
+				const int p = rows[r];
+				const bool sel = isSelected(p);
+				std::string label = fd.GetDecoratedName(p);
+				if (sel) {
+					const int order = (int)(std::find(w.selection.begin(), w.selection.end(), p) - w.selection.begin()) + 1;
+					label = "[" + std::to_string(order) + "] " + label;
+				}
+				ImGui::PushID(p);
+				if (ImGui::Selectable(label.c_str(), sel)) {
+					const ImGuiIO& io = ImGui::GetIO();
+					if (io.KeyShift && w.lastClicked >= 0) {
+						const int a = std::min(w.lastClicked, p), b = std::max(w.lastClicked, p);
+						for (int q : rows) if (q >= a && q <= b && !isSelected(q)) w.selection.push_back(q);
+					} else if (io.KeyCtrl) {
+						if (sel) w.selection.erase(std::find(w.selection.begin(), w.selection.end(), p));
+						else w.selection.push_back(p);
+					} else {
+						w.selection.assign(1, p);
+					}
+					w.lastClicked = p;
+				}
+				if (ImGui::IsItemHovered() && ImGui::IsMouseDoubleClicked(0)) navigateActiveView(p, 0);
+				ImGui::PopID();
+			}
+		}
+	}
+	ImGui::EndChild();
+	ImGui::EndChild();
+	ImGui::SameLine();
+
+	// ---- right: operations ----
+	ImGui::BeginChild("##ops");
+	ImGui::Text(TXT("%zu selected"), w.selection.size());
+	ImGui::SameLine();
+	if (ImGui::SmallButton(LBL("Clear selection"))) w.selection.clear();
+	ImGui::SameLine();
+	if (ImGui::SmallButton(LBL("Select current"))) { w.selection.assign(1, view->getState().pattern); w.lastClicked = view->getState().pattern; }
+
+	CopyData* clip = view->getState().copied;
+	ImGui::SeparatorText(TXT("Clipboard"));
+	if (ImGui::Button(LBL("Copy selected")) && !w.selection.empty()) {
+		clip->patterns.clear();
+		clip->patternIds.clear();
+		for (int p : w.selection) {
+			Sequence_T<LinearAllocator> t;
+			t = *fd.get_sequence(p);
+			clip->patterns.push_back(t);
+			clip->patternIds.push_back(p);
+		}
+		snprintf(clip->patternSource, sizeof(clip->patternSource), "%s", character->getName().c_str());
+		w.status = TwFmt(TXT("Copied %zu pattern(s)."), w.selection.size());
+	}
+	ImGui::SameLine();
+	ImGui::TextDisabled(TXT("%zu pattern(s) from %s"), clip->patterns.size(),
+		clip->patternSource[0] ? clip->patternSource : "-");
+
+	const char* placements[] = {
+		TXT("Next empty slots from target"), TXT("Consecutive from target (overwrite)"), TXT("Original ids (overwrite)") };
+	ImGui::SetNextItemWidth(ui::Px(260));
+	i18n::Combo(LBL("Placement"), &w.placement, placements, IM_ARRAYSIZE(placements));
+	ImGui::SetNextItemWidth(ui::Px(90));
+	ImGui::InputInt(LBL("Target slot"), &w.target, 0, 0);
+	ImGui::SameLine();
+	if (ImGui::SmallButton(LBL("= current pattern"))) w.target = view->getState().pattern;
+	w.target = std::clamp(w.target, 0, std::max(0, count - 1));
+	ImGui::Checkbox(LBL("Remap references between the pasted patterns"), &w.remapPaste);
+	ImGui::Checkbox(LBL("Move: update every reference in the character"), &w.remapMove);
+
+	const auto how = (patrefs::Placement)w.placement;
+	// Preview for paste
+	std::vector<int> clipIds(clip->patternIds.begin(), clip->patternIds.end());
+	const auto pasteSlots = patrefs::PlanSlots(fd, (int)clip->patterns.size(), w.target, how, clipIds);
+	int pasteOverwrites = 0, pasteDropped = 0;
+	for (int s : pasteSlots) { if (s < 0) ++pasteDropped; else if (!patrefs::IsEmptySlot(fd, s)) ++pasteOverwrites; }
+	ImGui::BeginDisabled(clip->patterns.empty());
+	if (ImGui::Button(LBL("Paste"))) {
+		std::vector<Sequence> pats(clip->patterns.size());
+		for (size_t i = 0; i < pats.size(); ++i) pats[i] = clip->patterns[i];
+		Ha6ConvertReport conv;
+		const int refs = patrefs::PastePatterns(fd, pats, clipIds, pasteSlots, w.remapPaste, &conv);
+		markToolEdit(character);
+		w.refsFor = -1;
+		w.status = TwFmt(TXT("Pasted %zu pattern(s), %d reference(s) remapped. One undo step."), (size_t)(pats.size() - pasteDropped), refs);
+		const std::string convNotice = FormatConvertNotice(conv);
+		if (!convNotice.empty()) { w.status += " " + convNotice; view->getState().pasteNotice = convNotice; }
+		for (int s : pasteSlots) if (s >= 0) { navigateActiveView(s, 0); break; }
+	}
+	ImGui::EndDisabled();
+	ImGui::SameLine();
+	ImGui::TextDisabled(TXT("%d overwrite(s)%s"), pasteOverwrites, pasteDropped ? TXT(", some past the last slot") : "");
+
+	ImGui::SeparatorText(TXT("Selected patterns"));
+	const auto moveSlots = patrefs::PlanSlots(fd, (int)w.selection.size(), w.target, how, w.selection);
+	int moveOverwrites = 0;
+	for (int s : moveSlots)
+		if (s >= 0 && !patrefs::IsEmptySlot(fd, s) && std::find(w.selection.begin(), w.selection.end(), s) == w.selection.end())
+			++moveOverwrites;
+	ImGui::BeginDisabled(w.selection.empty() || how == patrefs::Placement::OriginalIds);
+	if (ImGui::Button(LBL("Move selected to target"))) {
+		std::vector<int> from, to;
+		for (size_t i = 0; i < w.selection.size(); ++i) if (moveSlots[i] >= 0) { from.push_back(w.selection[i]); to.push_back(moveSlots[i]); }
+		const int refs = patrefs::MovePatterns(fd, from, to, w.remapMove);
+		markToolEdit(character);
+		w.refsFor = -1;
+		w.status = TwFmt(TXT("Moved %zu pattern(s), %d reference(s) updated. One undo step."), from.size(), refs);
+		w.selection = to;
+		if (!to.empty()) navigateActiveView(to.front(), 0);
+	}
+	ImGui::EndDisabled();
+	ImGui::SameLine();
+	i18n::TextDisabledWrapped(TXT("%d non-selected pattern(s) would be overwritten"), moveOverwrites);
+	ImGui::BeginDisabled(w.selection.empty());
+	if (ImGui::Button(LBL("Clear selected patterns"))) ImGui::OpenPopup(LBL("Clear patterns?"));
+	ImGui::SameLine();
+	// Template for a fresh character (#44): only the selected patterns (e.g. the
+	// system states), at their own ids, in a new untitled character tab.
+	if (ImGui::Button(LBL("New character from selection"))) {
+		std::vector<Sequence> pats;
+		std::vector<int> ids;
+		for (int p : w.selection) { pats.push_back(*fd.get_sequence(p)); ids.push_back(p); }
+		auto fresh = std::make_unique<CharacterInstance>();
+		fresh->frameData.initEmpty((unsigned)std::max(count, 1));
+		fresh->setName(character->getName() + TXT(" template"));
+		patrefs::PastePatterns(fresh->frameData, pats, ids, ids, false);
+		characters.push_back(std::move(fresh));
+		createViewForCharacter(characters.back().get());
+		markProjectModified();
+		w.status = TwFmt(TXT("Created a character with %zu pattern(s) at their original ids."), pats.size());
+		ImGui::EndDisabled();
+		ImGui::EndChild();
+		ImGui::End();
+		return; // the active character changed; redraw next frame
+	}
+	if (ImGui::IsItemHovered(ImGuiHoveredFlags_AllowWhenDisabled))
+		ImGui::SetTooltip("%s", TXT("Start a new character that holds only the selected patterns\n(for example the system states) at the same ids. Save it with Save Character As."));
+	ImGui::EndDisabled();
+	if (ImGui::BeginPopupModal(LBL("Clear patterns?"), nullptr, ImGuiWindowFlags_AlwaysAutoResize)) {
+		ImGui::Text(TXT("Empty %zu pattern slot(s)? (Undo restores them.)"), w.selection.size());
+		if (ImGui::Button(LBL("Clear"))) {
+			for (int p : w.selection) { *fd.get_sequence(p) = Sequence{}; fd.mark_modified(p); }
+			markToolEdit(character);
+			w.refsFor = -1;
+			w.status = TwFmt(TXT("Cleared %zu pattern(s)."), w.selection.size());
+			ImGui::CloseCurrentPopup();
+		}
+		ImGui::SameLine();
+		if (ImGui::Button(LBL("Cancel"))) ImGui::CloseCurrentPopup();
+		ImGui::EndPopup();
+	}
+
+	if (!w.status.empty()) ImGui::TextWrapped("%s", w.status.c_str());
+
+	ImGui::SeparatorText(TXT("References to the first selected pattern"));
+	if (!w.selection.empty()) {
+		const int target = w.selection.front();
+		const bool refresh = ImGui::SmallButton(LBL("Refresh"));
+		ImGui::SameLine();
+		if (refresh || w.refsFor != target || w.refsVersion != fd.dataVersion) {
+			w.refs = patrefs::Find(fd, target);
+			w.refsFor = target;
+			w.refsVersion = fd.dataVersion;
+		}
+		ImGui::Text(TXT("%zu reference(s) to pattern %d"), w.refs.size(), target);
+		if (ImGui::BeginChild("##refs", ImVec2(0, 0), ImGuiChildFlags_Borders)) {
+			for (size_t i = 0; i < w.refs.size(); ++i) {
+				ImGui::PushID((int)i);
+				if (ImGui::Selectable(patrefs::Describe(w.refs[i]).c_str()))
+					navigateActiveView(w.refs[i].pattern, w.refs[i].frame);
+				ImGui::PopID();
+			}
+		}
+		ImGui::EndChild();
+	}
+	ImGui::EndChild();
+	ImGui::End();
+}
+
+// ---------------------------------------------------------------------------
+// Notes (#58): every annotation of the active character.
+// ---------------------------------------------------------------------------
+
+void MainFrame::drawNotesWindow()
+{
+	if (!m_showNotes) return;
+	auto* character = getToolCharacter();
+	ui::FitNextWindow(560, 380);
+	if (!ImGui::Begin(LBL("Notes"), &m_showNotes)) { ImGui::End(); return; }
+	if (!character) { ImGui::TextDisabled("%s", TXT("Open a character first.")); ImGui::End(); return; }
+	FrameData& fd = character->frameData;
+	ImGui::TextWrapped(TXT("Notes on patterns (Pattern data > Pattern note) and on effects/conditions "
+	                   "(right-click a record header). Saved with the character to %s."),
+	                   character->getTopHA6Path().empty() ? "<ha6>.notes.json"
+	                   : Ha6Notes::PathFor(character->getTopHA6Path()).c_str());
+	if (!character->notesError().empty())
+		ImGui::TextColored(ImVec4(1, 0.3f, 0.3f, 1), TXT("Notes file not loaded (it will not be overwritten): %s"),
+		                   character->notesError().c_str());
+	ImGui::Text(TXT("%zu note(s)%s"), fd.notes.notes.size(), fd.notes.dirty ? TXT(" (unsaved)") : "");
+	if (ImGui::BeginChild("##notes", ImVec2(0, 0), ImGuiChildFlags_Borders)) {
+		for (const auto& kv : fd.notes.notes) {
+			int p, f, idx, type; bool isEf;
+			if (!Ha6Notes::ParseKey(kv.first, &p, &f, &isEf, &idx, &type)) continue;
+			std::string where = TwFmt(TXT("Pattern %d"), p);
+			bool matched = fd.get_sequence(p) != nullptr;
+			if (f >= 0) {
+				where += TwFmt(TXT(" frame %d"), f) + (isEf ? " EF#" : " IF#") + std::to_string(idx) + TwFmt(TXT(" (type %d)"), type);
+				Sequence* seq = fd.get_sequence(p);
+				matched = seq && f < (int)seq->frames.size() &&
+					(isEf ? idx < (int)seq->frames[f].EF.size() && seq->frames[f].EF[idx].type == type
+					      : idx < (int)seq->frames[f].IF.size() && seq->frames[f].IF[idx].type == type);
+			}
+			if (!matched) where += TXT("  [unmatched: record moved, deleted or retyped]");
+			ImGui::PushID(kv.first.c_str());
+			if (ImGui::Selectable(where.c_str())) navigateActiveView(p, f < 0 ? 0 : f);
+			ImGui::Indent();
+			ImGui::PushTextWrapPos(0.0f);
+			ImGui::TextDisabled("%s", kv.second.c_str());
+			ImGui::PopTextWrapPos();
+			ImGui::Unindent();
+			ImGui::PopID();
+		}
+	}
+	ImGui::EndChild();
+	ImGui::End();
+}
+
+// ---------------------------------------------------------------------------
+// Keyboard shortcuts / mouse options (#9, #61).
+// ---------------------------------------------------------------------------
+
+void MainFrame::drawKeyBindingsWindow()
+{
+	if (!m_showKeyBindings) { m_keyCapture = -1; return; }
+	ui::FitNextWindow(560, 560);
+	if (!ImGui::Begin(LBL("Keyboard shortcuts"), &m_showKeyBindings)) { ImGui::End(); return; }
+	auto& reg = shortcuts.registry();
+	ImGui::TextWrapped("%s", TXT("Click a shortcut, then press the new key (with Ctrl/Shift/Alt). Esc cancels. "
+	                   "Changes are saved with the other settings."));
+	if (ImGui::Button(LBL("Reset all to defaults"))) {
+		reg.resetDefaults();
+		gSettings.keyBindings.clear();
+		ImGui::MarkIniSettingsDirty();
+	}
+	ImGui::SameLine();
+	if (ImGui::Checkbox(LBL("Invert mouse wheel zoom"), &gSettings.invertWheelZoom)) ImGui::MarkIniSettingsDirty();
+
+	if (ImGui::BeginTable("##keys", 3, ImGuiTableFlags_RowBg | ImGuiTableFlags_BordersInnerV | ImGuiTableFlags_ScrollY)) {
+		ImGui::TableSetupColumn(LBL("Action"));
+		ImGui::TableSetupColumn(LBL("Shortcut"), ImGuiTableColumnFlags_WidthFixed, 150);
+		ImGui::TableSetupColumn("", ImGuiTableColumnFlags_WidthFixed, 110);
+		ImGui::TableHeadersRow();
+		const auto& bindings = reg.bindings();
+		for (size_t i = 0; i < bindings.size(); ++i) {
+			const auto& b = bindings[i];
+			ImGui::PushID((int)i);
+			ImGui::TableNextRow();
+			ImGui::TableNextColumn();
+			ImGui::TextUnformatted(TXT(b.name));
+			if (b.reach == ShortcutReach::focusedContext) {
+				ImGui::SameLine();
+				ImGui::TextDisabled("%s", b.context == ShortcutContext::patEditor ? TXT("(PAT editor)")
+					: b.context == ShortcutContext::stageView ? TXT("(stage tab)") : TXT("(character view)"));
+			}
+			ImGui::TableNextColumn();
+			const bool capturing = m_keyCapture == (int)i;
+			std::string label = capturing ? TXT("press a key...") : ShortcutRegistry::ChordLabel(b.chord);
+			if (!reg.isDefault(i)) label += " *";
+			if (ImGui::Button(label.c_str(), ImVec2(-FLT_MIN, 0))) m_keyCapture = capturing ? -1 : (int)i;
+			const auto clash = reg.conflictsOf(i);
+			if (!clash.empty()) {
+				ImGui::SameLine();
+				ImGui::TextColored(ImVec4(1, 0.4f, 0.2f, 1), "!");
+				if (ImGui::IsItemHovered()) {
+					std::string t = TXT("Same key as:");
+					for (size_t j : clash) t += std::string("\n  ") + bindings[j].name;
+					ImGui::SetTooltip("%s", t.c_str());
+				}
+			}
+			ImGui::TableNextColumn();
+			if (ImGui::SmallButton(LBL("Clear"))) {
+				reg.setBindingChord(i, ShortcutChord{});
+				gSettings.keyBindings = reg.serializeOverrides();
+				ImGui::MarkIniSettingsDirty();
+			}
+			ImGui::SameLine();
+			ImGui::BeginDisabled(reg.isDefault(i));
+			if (ImGui::SmallButton(LBL("Default"))) {
+				ShortcutRegistry defaults;
+				reg.setBindingChord(i, defaults.bindings()[i].chord);
+				gSettings.keyBindings = reg.serializeOverrides();
+				ImGui::MarkIniSettingsDirty();
+			}
+			ImGui::EndDisabled();
+			ImGui::PopID();
+		}
+		ImGui::EndTable();
+	}
+	ImGui::End();
+}
+
+// ---------------------------------------------------------------------------
+// Pattern comparison (#63): overlay another pattern (any open character) in
+// the viewport, tinted and translucent, with its boxes as outlines.
+// ---------------------------------------------------------------------------
+
+// Frame and root position of the compare pattern at `tick`.
+static bool CompareFrameAt(MainFrame::CompareState& c, int tick, int* frame, float* x, float* y)
+{
+	if (!c.character) return false;
+	if (!c.sim) c.sim = std::make_shared<preview::PreviewSim>();
+	preview::Options o;
+	FrameData* effect = c.character->effectCharacter ? &c.character->effectCharacter->frameData : nullptr;
+	c.sim->setInputs(&c.character->frameData, effect, c.pattern, o);
+	preview::TickState ts;
+	if (!c.sim->getStateAt(tick, ts)) return false;
+	const preview::SimActor* root = ts.root();
+	if (!root) return false;
+	*frame = root->frame;
+	*x = root->x; *y = root->y;
+	return true;
+}
+
+void MainFrame::AddCompareLayers(CharacterView* view, CharacterInstance* active)
+{
+	auto& c = m_compare;
+	if (!c.enabled || !view || !active) return;
+	if (c.character && !isLiveCharacter(c.character)) { c.character = nullptr; c.sim.reset(); }
+	if (!c.character) return;
+	Sequence* seq = c.character->frameData.get_sequence(c.pattern);
+	if (!seq || seq->frames.empty()) return;
+
+	auto& st = view->getState();
+	int frame = std::clamp(c.frame, 0, (int)seq->frames.size() - 1);
+	float dx = 0.f, dy = 0.f;
+	if (c.followTick || c.movement) {
+		int f; float cx, cy;
+		if (CompareFrameAt(c, st.currentTick, &f, &cx, &cy)) {
+			if (c.followTick) { frame = std::clamp(f, 0, (int)seq->frames.size() - 1); c.frame = frame; }
+			if (c.movement) {
+				FrameData* effect = active->effectCharacter ? &active->effectCharacter->frameData : nullptr;
+				auto& mainSim = st.BindPreviewSim(&active->frameData, effect);
+				preview::TickState ts;
+				float mx = 0.f, my = 0.f;
+				if (mainSim.getStateAt(st.currentTick, ts) && ts.root()) { mx = ts.root()->x; my = ts.root()->y; }
+				dx = (c.mirror ? -1.f : 1.f) * cx - mx;
+				dy = cy - my;
+			}
+		}
+	}
+	Frame& fr = seq->frames[frame];
+	if (fr.AF.layers.empty()) fr.AF.layers.push_back({});
+	for (size_t li = 0; li < fr.AF.layers.size(); ++li) {
+		const auto& L = fr.AF.layers[li];
+		RenderLayer layer;
+		layer.spriteId = L.spriteId;
+		layer.spawnOffsetX = c.offsetX + (int)std::lround(dx);
+		layer.spawnOffsetY = c.offsetY + (int)std::lround(dy);
+		layer.frameOffsetX = c.mirror ? -L.offset_x : L.offset_x;
+		layer.frameOffsetY = L.offset_y;
+		layer.scaleX = c.mirror ? -L.scale[0] : L.scale[0];
+		layer.scaleY = L.scale[1];
+		layer.rotX = L.rotation[0]; layer.rotY = L.rotation[1]; layer.rotZ = L.rotation[2];
+		layer.AFRT = fr.AF.AFRT || L.afrt;
+		layer.blendMode = L.blend_mode;
+		layer.zPriority = LayerDrawBucket(L.priority, fr.AF.priority);
+		layer.pups = seq->pups;
+		layer.alpha = L.rgba[3] * c.alpha;
+		layer.tintColor = glm::vec4(L.rgba[0] * c.tint[0], L.rgba[1] * c.tint[1], L.rgba[2] * c.tint[2], 1.0f);
+		layer.isSpawned = true;
+		if (li == 0 && c.boxes) {
+			if (c.mirror) {
+				for (const auto& b : fr.hitboxes) {
+					Hitbox h = b.second;
+					const int x0 = -h.xy[2], x1 = -h.xy[0];
+					h.xy[0] = x0; h.xy[2] = x1;
+					layer.hitboxes[b.first] = h;
+				}
+			} else {
+				layer.hitboxes = fr.hitboxes;
+			}
+		}
+		layer.boxesOutlineOnly = true;
+		if (li == 0) layer.boxScale = c.character->frameData.boxDisplayScale(fr);
+		layer.sourceCG = &c.character->cg;
+		layer.usePat = L.usePat;
+		layer.sourceParts = &c.character->parts;
+		layer.patApplyPras = partrender::PartUsesPras(c.character->frameData.usesUniFormat(),
+			c.character->frameData.game() == Ha6Game::MBTL);
+		layer.patUniDialect = c.character->frameData.usesUniFormat();  // also picks the arc split (UNI2 / MBTL)
+		render.AddLayer(layer);
+	}
+}
+
+void MainFrame::drawCompareWindow()
+{
+	auto& c = m_compare;
+	if (!m_showCompare) return;
+	ui::FitNextWindow(440, 420);
+	if (!ImGui::Begin(LBL("Pattern comparison"), &m_showCompare)) { ImGui::End(); return; }
+	if (c.character && !isLiveCharacter(c.character)) { c.character = nullptr; c.sim.reset(); }
+	ImGui::Checkbox(LBL("Show comparison"), &c.enabled);
+	i18n::TextDisabledWrapped("%s", TXT("Drawn tinted over the active view; its boxes are outlines."));
+
+	const char* current = c.character ? c.character->getName().c_str() : TXT("(choose a character)");
+	if (ImGui::BeginCombo(LBL("Character"), current)) {
+		for (auto& ch : characters) {
+			ImGui::PushID(ch.get());
+			if (ImGui::Selectable(ch->getName().c_str(), ch.get() == c.character)) {
+				c.character = ch.get();
+				c.sim.reset();
+				c.enabled = true;
+			}
+			ImGui::PopID();
+		}
+		ImGui::EndCombo();
+	}
+	if (c.character) {
+		FrameData& fd = c.character->frameData;
+		ImGui::SetNextItemWidth(ui::Px(90));
+		if (ImGui::InputInt(LBL("Pattern"), &c.pattern)) c.pattern = std::clamp(c.pattern, 0, std::max(0, fd.get_sequence_count() - 1));
+		if (PatternPickerButton("Pattern", &c.pattern, &fd)) c.frame = 0;
+		ImGui::SameLine();
+		ImGui::TextDisabled("%s", fd.GetDecoratedName(c.pattern).c_str());
+		if (auto* view = getToolView()) {
+			if (ImGui::SmallButton(LBL("Same pattern as the view"))) c.pattern = view->getState().pattern;
+		}
+		Sequence* seq = fd.get_sequence(c.pattern);
+		const int frames = seq ? (int)seq->frames.size() : 0;
+		ImGui::Checkbox(LBL("Step with the view's tick"), &c.followTick);
+		ImGui::SameLine();
+		ImGui::Checkbox(LBL("Apply movement"), &c.movement);
+		if (ImGui::IsItemHovered())
+			ImGui::SetTooltip("%s", TXT("Offset the overlay by the difference in simulated root movement,\n"
+			                  "to compare effective range (the view's own pattern stays put)."));
+		ImGui::BeginDisabled(c.followTick || frames == 0);
+		ImGui::SliderInt(LBL("Frame"), &c.frame, 0, std::max(0, frames - 1));
+		ImGui::EndDisabled();
+		ImGui::SeparatorText(TXT("Placement"));
+		ImGui::DragInt(LBL("Offset X"), &c.offsetX, 0.5f);
+		ImGui::DragInt(LBL("Offset Y"), &c.offsetY, 0.5f);
+		if (ImGui::SmallButton(LBL("Snap X to 0"))) c.offsetX = 0;
+		ImGui::SameLine();
+		if (ImGui::SmallButton(LBL("Snap Y to 0"))) c.offsetY = 0;
+		ImGui::SameLine();
+		ImGui::Checkbox(LBL("Mirror"), &c.mirror);
+		ImGui::SeparatorText(TXT("Look"));
+		ImGui::SliderFloat(LBL("Opacity"), &c.alpha, 0.05f, 1.0f);
+		ImGui::ColorEdit3(LBL("Tint"), c.tint);
+		ImGui::Checkbox(LBL("Show boxes (outlines)"), &c.boxes);
+	}
+	ImGui::End();
+}
+
+// ---------------------------------------------------------------------------
+// BGM preview (#66): list the game's Bgm folder with bgm.txt loop points,
+// play a track, and jump near the end to hear the loop.
+// ---------------------------------------------------------------------------
+
+void MainFrame::drawBgmWindow()
+{
+	auto& b = m_bgm;
+	if (!m_showBgm) {
+		if (b.player && b.player->playing()) b.player->stop();
+		return;
+	}
+	ui::FitNextWindow(620, 480);
+	if (!ImGui::Begin(LBL("BGM preview"), &m_showBgm)) { ImGui::End(); return; }
+	if (!b.player) b.player = std::make_unique<BgmPlayer>();
+
+	auto scan = [&]() {
+		b.entries.clear();
+		b.status.clear();
+		namespace fs = std::filesystem;
+		const fs::path dir = fs::u8path(b.folder);
+		std::error_code ec;
+		if (!fs::is_directory(dir, ec)) { b.status = TwFmt(TXT("Not a folder: %s"), b.folder.c_str()); return; }
+		if (ParseBgmTxt((dir / "bgm.txt").string(), b.entries)) {
+			b.ini.Load((dir / "bgm.txt").u8string());
+			b.status = TwFmt(TXT("%zu track(s) from bgm.txt"), b.entries.size());
+		} else {
+			b.ini = bg::TextIni();
+			b.edit = false;
+			for (auto& e : fs::directory_iterator(dir, ec)) {
+				if (e.path().extension() != ".ogg" && e.path().extension() != ".OGG") continue;
+				BgmEntry be; be.file = e.path().stem().string(); be.section = be.file;
+				b.entries.push_back(be);
+			}
+			std::sort(b.entries.begin(), b.entries.end(), [](const BgmEntry& x, const BgmEntry& y) { return x.file < y.file; });
+			b.status = TwFmt(TXT("%zu .ogg file(s) (no bgm.txt: no loop points)"), b.entries.size());
+		}
+	};
+	if (b.folder.empty()) {
+		// Guess <game>/Bgm from the active character's folder (<game>/data).
+		if (auto* c = getToolCharacter()) {
+			namespace fs = std::filesystem;
+			const std::string src = !c->getTxtPath().empty() ? c->getTxtPath() : c->getTopHA6Path();
+			if (!src.empty()) {
+				const fs::path d = fs::path(src).parent_path();
+				for (const fs::path cand : {d.parent_path() / "Bgm", d / "Bgm", d.parent_path() / "bgm"}) {
+					std::error_code ec;
+					if (fs::is_directory(cand, ec)) { b.folder = cand.string(); break; }
+				}
+			}
+		}
+		if (!b.folder.empty()) scan();
+	}
+
+	char buf[512];
+	snprintf(buf, sizeof(buf), "%s", b.folder.c_str());
+	ImGui::SetNextItemWidth(-140);
+	if (ImGui::InputText("##bgmfolder", buf, sizeof(buf), ImGuiInputTextFlags_EnterReturnsTrue)) { b.folder = buf; scan(); }
+	ImGui::SameLine();
+	if (ImGui::Button(LBL("Scan folder"))) { b.folder = buf; scan(); }
+	if (!b.status.empty()) ImGui::TextDisabled("%s", b.status.c_str());
+
+	// Transport
+	BgmPlayer& pl = *b.player;
+	ImGui::SeparatorText(pl.loaded() ? std::filesystem::path(pl.path()).filename().string().c_str() : TXT("No track loaded"));
+	ImGui::BeginDisabled(!pl.loaded());
+	if (ImGui::Button(pl.playing() ? LBL("Stop") : LBL("Play"))) { if (pl.playing()) pl.stop(); else pl.play(); }
+	ImGui::SameLine();
+	float pos = (float)pl.position();
+	ImGui::SetNextItemWidth(-200);
+	if (ImGui::SliderFloat("##pos", &pos, 0.f, (float)std::max(0.001, pl.length()), "%.2f s")) pl.seek(pos);
+	ImGui::SameLine();
+	ImGui::Text(TXT("/ %.2f s"), pl.length());
+	ImGui::SetNextItemWidth(ui::Px(80));
+	ImGui::InputFloat(LBL("s before end"), &b.leadIn, 0, 0, "%.1f");
+	ImGui::SameLine();
+	if (ImGui::Button(LBL("Preview loop"))) {
+		pl.seek(std::max(0.0, pl.length() - b.leadIn));
+		if (!pl.playing()) pl.play();
+	}
+	if (ImGui::IsItemHovered())
+		ImGui::SetTooltip("%s", TXT("Jump just before the end of the track to hear it wrap to the loop point."));
+	ImGui::SameLine();
+	if (pl.looping()) ImGui::Text(TXT("Loop -> %.3f s (looped %d time(s))"), pl.loopPos(), pl.loopsDone());
+	else ImGui::TextDisabled("%s", TXT("No loop"));
+	float vol = b.volume;
+	ImGui::SetNextItemWidth(ui::Px(160));
+	if (ImGui::SliderFloat(LBL("Volume"), &vol, 0.f, 1.f)) { b.volume = vol; pl.setVolume(vol); }
+	ImGui::EndDisabled();
+
+	// Tracklist editing: bgm.txt values and the track title (the comment after File =, which the game ignores)
+	// change in place; everything else in the file stays byte-identical.
+	const bool canEdit = b.ini.IsLoaded();
+	ImGui::BeginDisabled(!canEdit);
+	ImGui::Checkbox(LBL("Edit bgm.txt"), &b.edit);
+	ImGui::EndDisabled();
+	if (b.edit && canEdit) {
+		auto reparse = [&] { ParseBgmText(b.ini.Text(), b.entries); };
+		ImGui::SameLine();
+		ImGui::BeginDisabled(!b.ini.IsDirty());
+		if (ImGui::Button(LBL("Save bgm.txt"))) b.status = b.ini.Save("") ? TXT("Saved.") : TXT("Save failed.");
+		ImGui::EndDisabled();
+		ImGui::SameLine();
+		if (ImGui::Button(LBL("Add track"))) {
+			int next = 0;
+			for (const auto& e : b.entries) if (e.section.rfind("BGM_", 0) == 0) next = std::max(next, std::atoi(e.section.c_str() + 4) + 1);
+			char sec[16];
+			snprintf(sec, sizeof sec, "BGM_%03d", next);
+			b.ini.AddSection(sec, {{"File", "bgmnew"}, {"IsLoop", "1"}, {"LoopPos", "0.0"}});
+			reparse();
+		}
+		ImGui::SameLine();
+		const bool haveSel = b.selected >= 0 && b.selected < (int)b.entries.size();
+		ImGui::BeginDisabled(!haveSel || !pl.loaded());
+		if (ImGui::Button(LBL("Set loop point at playhead")) && haveSel) {
+			char v[32];
+			snprintf(v, sizeof v, "%.3f", pl.position());
+			b.ini.Set(b.entries[b.selected].section, "LoopPos", v);
+			b.ini.Set(b.entries[b.selected].section, "IsLoop", "1");
+			reparse();
+		}
+		ImGui::EndDisabled();
+		if (b.ini.IsDirty()) { ImGui::SameLine(); ImGui::TextColored(ImVec4(1, 0.75f, 0.3f, 1), "%s", TXT("unsaved")); }
+	}
+
+	// Track list
+	const bool editing = b.edit && canEdit;
+	const bool stages = stageProject.IsOpen();
+	if (ImGui::BeginTable("##bgm", 5, ImGuiTableFlags_RowBg | ImGuiTableFlags_ScrollY | ImGuiTableFlags_BordersInnerV | ImGuiTableFlags_Resizable)) {
+		ImGui::TableSetupColumn(LBL("Section"), ImGuiTableColumnFlags_WidthFixed, 80);
+		ImGui::TableSetupColumn(LBL("File"), ImGuiTableColumnFlags_WidthFixed, 90);
+		ImGui::TableSetupColumn(LBL("Loop"), ImGuiTableColumnFlags_WidthFixed, editing ? 110 : 70);
+		ImGui::TableSetupColumn(LBL("Title"));
+		ImGui::TableSetupColumn(LBL("Stage"), ImGuiTableColumnFlags_WidthFixed, 150);
+		ImGui::TableHeadersRow();
+		std::string setSec, setKey, setVal, setTitle;
+		bool doTitle = false;
+		for (size_t i = 0; i < b.entries.size(); ++i) {
+			const auto& e = b.entries[i];
+			ImGui::TableNextRow();
+			ImGui::TableNextColumn();
+			ImGui::PushID((int)i);
+			const bool sel = (int)i == b.selected;
+			if (ImGui::Selectable(e.section.c_str(), sel, ImGuiSelectableFlags_AllowDoubleClick | (editing ? 0 : ImGuiSelectableFlags_SpanAllColumns))) {
+				b.selected = (int)i;
+				std::string err;
+				const std::string path = (std::filesystem::u8path(b.folder) / (e.file + ".ogg")).string();
+				const bool wasPlaying = pl.playing() || ImGui::IsMouseDoubleClicked(0);
+				if (pl.load(path, e.isLoop, e.loopPos, &err)) {
+					pl.setVolume(b.volume);
+					if (wasPlaying) pl.play();
+				} else {
+					b.status = err;
+				}
+			}
+			char buf2[256];
+			ImGui::TableNextColumn();
+			if (editing) {
+				snprintf(buf2, sizeof buf2, "%s", e.file.c_str());
+				ImGui::SetNextItemWidth(-1);
+				ImGui::InputText("##file", buf2, 33);   // bgm.txt: file names up to 32 characters, no extension
+				if (ImGui::IsItemDeactivatedAfterEdit() && e.file != buf2 && buf2[0]) { setSec = e.section; setKey = "File"; setVal = buf2; }
+				std::error_code ec;
+				if (!std::filesystem::exists(std::filesystem::u8path(b.folder) / (e.file + ".ogg"), ec) && ImGui::IsItemHovered())
+					ImGui::SetTooltip("%s", TXT("No such .ogg in the Bgm folder."));
+			} else ImGui::TextUnformatted(e.file.c_str());
+			ImGui::TableNextColumn();
+			if (editing) {
+				bool loop = e.isLoop;
+				if (ImGui::Checkbox("##loop", &loop)) { setSec = e.section; setKey = "IsLoop"; setVal = loop ? "1" : "0"; }
+				ImGui::SameLine();
+				float lp = (float)e.loopPos;
+				ImGui::SetNextItemWidth(-1);
+				ImGui::InputFloat("##lp", &lp, 0, 0, "%.3f");
+				if (ImGui::IsItemDeactivatedAfterEdit()) {
+					char v[32];
+					snprintf(v, sizeof v, "%.3f", lp);
+					setSec = e.section; setKey = "LoopPos"; setVal = v;
+				}
+			} else if (e.isLoop) ImGui::Text("%.3f", e.loopPos); else ImGui::TextDisabled("-");
+			ImGui::TableNextColumn();
+			if (editing) {
+				snprintf(buf2, sizeof buf2, "%s", e.comment.c_str());
+				ImGui::SetNextItemWidth(-1);
+				ImGui::InputText("##title", buf2, sizeof buf2);
+				if (ImGui::IsItemDeactivatedAfterEdit() && e.comment != buf2) { setSec = e.section; setTitle = buf2; doTitle = true; }
+			} else ImGui::TextUnformatted(e.comment.c_str());
+			ImGui::TableNextColumn();
+			// Battle BGM id = stage id ([BGM_0NN] plays on stage NN).
+			if (stages && e.section.rfind("BGM_", 0) == 0) {
+				if (const auto* st = stageProject.Find(std::atoi(e.section.c_str() + 4))) ImGui::TextDisabled("%s", st->Label().c_str());
+			}
+			ImGui::PopID();
+		}
+		ImGui::EndTable();
+		if (!setKey.empty()) { b.ini.Set(setSec, setKey, setVal); ParseBgmText(b.ini.Text(), b.entries); }
+		if (doTitle) { b.ini.SetComment(setSec, "File", utf82sj(setTitle)); ParseBgmText(b.ini.Text(), b.entries); }
+	}
+	ImGui::End();
+}
+
+// ---------------------------------------------------------------------------
+// HUD preview / colour editor (#56).
+// ---------------------------------------------------------------------------
+
+unsigned LoadPngTexture(const std::string& path, int* w, int* h);
+void FreeTexture(unsigned tex);
+
+static ImVec4 ArgbToVec(uint32_t c)
+{
+	return ImVec4(((c >> 16) & 0xff) / 255.f, ((c >> 8) & 0xff) / 255.f, (c & 0xff) / 255.f, ((c >> 24) & 0xff) / 255.f);
+}
+static uint32_t VecToArgb(const ImVec4& v)
+{
+	auto b = [](float f) { return (uint32_t)std::lround(std::clamp(f, 0.f, 1.f) * 255.f); };
+	return (b(v.w) << 24) | (b(v.x) << 16) | (b(v.y) << 8) | b(v.z);
+}
+
+void MainFrame::drawHudWindow()
+{
+	auto& h = m_hud;
+	if (!m_showHud) return;
+	namespace fs = std::filesystem;
+	const auto& slots = hud::Slots();
+	if (h.colors.size() != slots.size()) {
+		h.colors.clear();
+		for (auto& sl : slots) h.colors.push_back(sl.defaultArgb);
+	}
+	ui::FitNextWindow(760, 640);
+	if (!ImGui::Begin(LBL("HUD preview"), &m_showHud)) { ImGui::End(); return; }
+
+	if (h.gameDir.empty()) {
+		if (auto* c = getToolCharacter()) {
+			const std::string src = !c->getTxtPath().empty() ? c->getTxtPath() : c->getTopHA6Path();
+			if (!src.empty()) {
+				const fs::path d = fs::path(src).parent_path();
+				for (const fs::path cand : {d.parent_path(), d}) {
+					std::error_code ec;
+					if (fs::exists(cand / "MBAA.exe", ec) || fs::is_directory(cand / "GRP" / "gauge_AA", ec)) { h.gameDir = cand.string(); break; }
+				}
+			}
+		}
+	}
+	char buf[512];
+	snprintf(buf, sizeof(buf), "%s", h.gameDir.c_str());
+	ImGui::SetNextItemWidth(-120);
+	if (ImGui::InputText(LBL("Game folder"), buf, sizeof(buf), ImGuiInputTextFlags_EnterReturnsTrue)) { h.gameDir = buf; h.texturesFor.clear(); }
+	const std::string exePath = (fs::u8path(h.gameDir) / "MBAA.exe").string();
+
+	if (ImGui::BeginTabBar("##hudtabs")) {
+		if (ImGui::BeginTabItem(LBL("Colours"))) {
+			if (ImGui::Button(LBL("Read from MBAA.exe"))) {
+				std::vector<hud::ExeColor> exe;
+				std::string err;
+				if (hud::ReadExeColors(exePath, exe, &err)) {
+					int n = 0;
+					for (size_t i = 0; i < exe.size(); ++i) if (exe[i].found) { h.colors[i] = exe[i].argb; ++n; }
+					h.status = TwFmt(TXT("Read %d/%zu colour(s) from %s"), n, exe.size(), exePath.c_str());
+				} else h.status = err;
+			}
+			i18n::SameLineFit(i18n::ButtonWidth(LBL("Defaults")));
+			if (ImGui::Button(LBL("Defaults"))) for (size_t i = 0; i < slots.size(); ++i) h.colors[i] = slots[i].defaultArgb;
+			i18n::SameLineFit(i18n::ButtonWidth(LBL("Load hud_theme.json...")));
+			if (ImGui::Button(LBL("Load hud_theme.json..."))) {
+				std::string p = FileDialog(-1, false);
+				std::string err;
+				if (!p.empty()) h.status = hud::LoadThemeColors(p, h.colors, &err) ? TwFmt(TXT("Loaded %s"), p.c_str()) : err;
+			}
+			i18n::SameLineFit(i18n::ButtonWidth(LBL("Save hud_theme.json...")));
+			if (ImGui::Button(LBL("Save hud_theme.json..."))) {
+				std::string p = FileDialog(-1, true);
+				std::string err;
+				if (!p.empty()) h.status = hud::SaveThemeColors(p, h.colors, &err) ? TwFmt(TXT("Saved %s"), p.c_str()) : err;
+			}
+			i18n::SameLineFit(i18n::ButtonWidth(LBL("Write patched exe copy...")));
+			if (ImGui::Button(LBL("Write patched exe copy..."))) {
+				std::string p = FileDialog(-1, true);
+				std::string err;
+				if (!p.empty()) h.status = hud::WritePatchedExe(exePath, p, h.colors, &err)
+					? TwFmt(TXT("Wrote %s (the original MBAA.exe is untouched)"), p.c_str()) : err;
+			}
+			if (!h.status.empty()) ImGui::TextWrapped("%s", h.status.c_str());
+			i18n::TextDisabledWrapped("%s", TXT("Colours are ARGB immediates in MBAA.exe's gauge code; the patched copy changes only those bytes."));
+
+			for (size_t i = 0; i < slots.size(); ++i) {
+				ImVec4 v = ArgbToVec(h.colors[i]);
+				ImGui::PushID((int)i);
+				ImGui::SetNextItemWidth(ImGui::GetContentRegionAvail().x * 0.38f);
+				if (ImGui::ColorEdit4(LBL(slots[i].label), &v.x, ImGuiColorEditFlags_AlphaBar | ImGuiColorEditFlags_DisplayHex))
+					h.colors[i] = VecToArgb(v);
+				ImGui::SameLine();
+				ImGui::TextDisabled("%s", hud::ToHex(h.colors[i]).c_str());
+				if (slots[i].overlaySpeed) { ImGui::SameLine(); ImGui::TextDisabled(TXT("overlay %+d"), slots[i].overlaySpeed); }
+				ImGui::PopID();
+			}
+
+			// ---- live preview ----
+			ImGui::SeparatorText(TXT("Preview"));
+			const char* modes[] = {TXT("Normal"), "HEAT", "MAX", "BLOOD HEAT", "UNLIMITED", "BREAK"};
+			ImGui::SetNextItemWidth(ui::Px(140)); i18n::Combo(LBL("Meter state"), &h.meterMode, modes, IM_ARRAYSIZE(modes));
+			ImGui::SameLine(); ImGui::SetNextItemWidth(ui::Px(200)); ImGui::SliderFloat(LBL("Meter %"), &h.meterPct, 0.f, 300.f, "%.0f%%");
+			ImGui::SameLine(); ImGui::Checkbox(LBL("Half moon"), &h.halfMoon);
+			ImGui::SetNextItemWidth(ui::Px(200)); ImGui::SliderFloat(LBL("Guard quality"), &h.guardQuality, 0.f, 1.f);
+			ImGui::SameLine(); ImGui::Checkbox(LBL("Guard broken"), &h.guardBroken);
+
+			int slot = 0;
+			if (h.meterMode == 0) slot = h.meterPct < 100.f ? 0 : (h.meterPct < (h.halfMoon ? 150.f : 200.f) ? 1 : 2);
+			else slot = std::array<int, 6>{0, 4, 5, 6, 3, 7}[h.meterMode];
+			const float t = (float)ImGui::GetTime();
+			ImDrawList* dl = ImGui::GetWindowDrawList();
+			auto bar = [&](const char* label, float fill, uint32_t argb, int speed, bool blackShine) {
+				ImGui::TextUnformatted(label);
+				const ImVec2 p0 = ImGui::GetCursorScreenPos();
+				const float w = std::max(200.f, ImGui::GetContentRegionAvail().x - 10.f), hgt = 18.f;
+				dl->AddRectFilled(p0, ImVec2(p0.x + w, p0.y + hgt), IM_COL32(20, 20, 30, 255));
+				const float fw = w * std::clamp(fill, 0.f, 1.f);
+				dl->AddRectFilled(p0, ImVec2(p0.x + fw, p0.y + hgt), ImGui::ColorConvertFloat4ToU32(ArgbToVec(argb)));
+				if (speed != 0 && fw > 4) {
+					// Shine: a moving highlight, positive speed toward the timer (right).
+					const float period = 2.5f / std::abs((float)speed);
+					float ph = std::fmod(t / period, 1.f);
+					if (speed < 0) ph = 1.f - ph;
+					const float cx = p0.x + ph * fw, half = 30.f;
+					const ImU32 on = blackShine ? IM_COL32(0, 0, 0, 150) : IM_COL32(255, 255, 255, 120), off = on & 0x00ffffff;
+					dl->PushClipRect(p0, ImVec2(p0.x + fw, p0.y + hgt), true);
+					dl->AddRectFilledMultiColor(ImVec2(cx - half, p0.y), ImVec2(cx, p0.y + hgt), off, on, on, off);
+					dl->AddRectFilledMultiColor(ImVec2(cx, p0.y), ImVec2(cx + half, p0.y + hgt), on, off, off, on);
+					dl->PopClipRect();
+				}
+				dl->AddRect(p0, ImVec2(p0.x + w, p0.y + hgt), IM_COL32(255, 255, 255, 180));
+				ImGui::Dummy(ImVec2(w, hgt + 4));
+			};
+			const float fill = h.meterMode == 0 ? std::fmod(h.meterPct, 100.f) / 100.f + (h.meterPct >= 300.f ? 1.f : 0.f) : 1.f;
+			bar(TXT("Magic circuit"), fill, h.colors[slot], slots[slot].overlaySpeed, slot == 7);
+			uint32_t g;
+			if (h.guardBroken) g = h.colors[10];
+			else {
+				const ImVec4 hi = ArgbToVec(h.colors[8]), lo = ArgbToVec(h.colors[9]);
+				const float q = h.guardQuality;
+				g = VecToArgb(ImVec4(lo.x + (hi.x - lo.x) * q, lo.y + (hi.y - lo.y) * q, lo.z + (hi.z - lo.z) * q, 1.f));
+			}
+			bar(TXT("Guard bar"), h.guardBroken ? 1.f : 0.75f, g, 0, false);
+			i18n::TextDisabledWrapped("%s", TXT("The game blends the guard colour with part of gauge00.png; this shows the raw colour."));
+			ImGui::EndTabItem();
+		}
+		auto ensureTextures = [&]() {
+			if (h.texturesFor == h.gameDir) return;
+			for (auto& tx : h.textures) FreeTexture(tx.id);
+			h.textures.clear();
+			h.texturesFor = h.gameDir;
+			const fs::path dir = fs::u8path(h.gameDir) / "GRP" / "gauge_AA";
+			std::error_code ec;
+			std::vector<fs::path> files;
+			for (int i = 0; i <= 9; ++i) files.push_back(dir / ("gauge0" + std::to_string(i) + ".png"));
+			if (fs::is_directory(dir / "face", ec))
+				for (auto& e : fs::directory_iterator(dir / "face", ec))
+					if (e.path().extension() == ".png") files.push_back(e.path());
+			std::sort(files.begin() + std::min<size_t>(10, files.size()), files.end());
+			for (auto& f : files) {
+				HudTexture tx; tx.name = f.filename().string();
+				tx.id = LoadPngTexture(f.u8string(), &tx.w, &tx.h);
+				if (tx.id) h.textures.push_back(tx);
+			}
+		};
+		if (ImGui::BeginTabItem(LBL("Gauge sheets"))) {
+			ensureTextures();
+			const char* notes[] = {
+				TXT("top HUD (health, guard) and C/F moon magic circuit"), TXT("system font"), "MAX/HEAT/BLOOD HEAT/BREAK/UNLIMITED",
+				TXT("meter numbers"), TXT("round numbers, Sion/Roa/F-Maids hearts"), TXT("timer numbers"), TXT("moon icons"),
+				TXT("round counters"), TXT("spinning rings"), TXT("H moon magic circuit") };
+			int shown = 0;
+			for (auto& tx : h.textures) {
+				if (tx.name.rfind("gauge", 0) != 0) continue;
+				const int n = tx.name[6] - '0';
+				ImGui::Text("%s  -  %s", tx.name.c_str(), n >= 0 && n < 10 ? notes[n] : "");
+				const float scale = std::min(1.f, (ImGui::GetContentRegionAvail().x - 10) / (float)tx.w);
+				ImGui::Image((ImTextureID)(uintptr_t)tx.id, ImVec2(tx.w * scale, tx.h * scale));
+				++shown;
+			}
+			if (!shown) i18n::TextDisabledWrapped("%s", TXT("No GRP/gauge_AA/gauge0*.png under the game folder (extract 0003.p / 0008.p there)."));
+			ImGui::EndTabItem();
+		}
+		if (ImGui::BeginTabItem(LBL("Portraits"))) {
+			ensureTextures();
+			i18n::TextDisabledWrapped("%s", TXT("face<character>_<side>.png: side 00 = P1/left, 01 = P2/right."));
+			int col = 0;
+			for (auto& tx : h.textures) {
+				if (tx.name.rfind("face", 0) != 0) continue;
+				ImGui::BeginGroup();
+				ImGui::Image((ImTextureID)(uintptr_t)tx.id, ImVec2(tx.w * 0.5f, tx.h * 0.5f));
+				ImGui::TextUnformatted(tx.name.c_str());
+				ImGui::EndGroup();
+				if (++col % 4) ImGui::SameLine();
+			}
+			ImGui::EndTabItem();
+		}
+		ImGui::EndTabBar();
+	}
+	ImGui::End();
+}
+
+#endif /* UI_TOOL_WINDOWS_IMPL_H_GUARD */
+
+// CG manager (docs/cg/cg_manager_design.md): browse / search / edit the active character's sprite bank.
+void MainFrame::drawCgManagerWindow()
+{
+	if (!m_cgm.open) return;
+	cgm::WindowHost host;
+	host.navigate = [this](int pattern, int frame) { navigateActiveView(pattern, frame); };
+	host.markEdited = [this](CharacterInstance* c) { markToolEdit(c); };
+	host.saveCharacter = [this](CharacterInstance* c) { return saveCharacter(c); };
+	host.current = [this](int& pattern, int& frame) {
+		auto* view = getToolView();
+		if (!view) return false;
+		pattern = view->getState().pattern; frame = view->getState().frame;
+		return true;
+	};
+	m_cgm.draw(getToolCharacter(), host);
+}

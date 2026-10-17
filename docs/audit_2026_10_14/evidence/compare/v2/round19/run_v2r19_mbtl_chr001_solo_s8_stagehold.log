@@ -1,0 +1,38 @@
+=== v2r19_mbtl_chr001_solo_s8_stagehold.gcs
+gamecap C:\dev\hantei-chan\tools\gamecap\cases\v2r19_mbtl_chr001_solo_s8_stagehold.gcs
+backup: C:\Program Files (x86)\Steam\steamapps\common\MELTY BLOOD TYPE LUMINA\MBTL-IM/Mods/data/chr001/chr001.pat -> (new file, will be deleted)
+put C:\dev\hantei-chan\tools\gamecap\cases\../round10/chr001_solo21_s8.pat -> C:\Program Files (x86)\Steam\steamapps\common\MELTY BLOOD TYPE LUMINA\MBTL-IM/Mods/data/chr001/chr001.pat
+backup: C:\Program Files (x86)\Steam\steamapps\common\MELTY BLOOD TYPE LUMINA\MBTL-IM/MBTL_IM.ini -> C:\dev\hantei-chan\game_mod_backup\gamecap\mbtl_20261016_045204\file01_MBTL_IM.ini
+backup: C:\Program Files (x86)\Steam\steamapps\common\MELTY BLOOD TYPE LUMINA\winsave/48034167/_App.ini -> C:\dev\hantei-chan\game_mod_backup\gamecap\mbtl_20261016_045204\file02__App.ini
+launched MBTL.exe pid 78192 (suspended)
+agent attached: module base 0x00550000, hooks 0x39
+window 00bb1d98 at 0,0 1296x759
+placed window at -640,307
+tap_until met after 4 tap(s)
+frozen at frame 695
+peek stage_loaded @0x00b7e47c = 21 (0x15)
+echo: MBTL training ready: P1 1 vs P2 1
+frozen at frame 1703
+peek anim_before @0x00b800a0 = 0 (0x0)
+peek tick_paused_a @0x01249370 = 2 (0x2)
+peek tick_paused_b @0x01249370 = 2 (0x2)
+peek frame_after_set @0x01249360 = 2 (0x2)
+peek tick_after_set @0x01249370 = 0 (0x0)
+peek frame_s @0x01249360 = 2 (0x2)
+peek tick_s @0x01249370 = 1 (0x1)
+meta -> C:\dev\hantei-chan\tools\gamecap\captures\v2\nohud_st\mbtl_flipV_chr001_p157f2_solo_s8_sa_game.json
+captured window C:\dev\hantei-chan\tools\gamecap\captures\v2\nohud_st\mbtl_flipV_chr001_p157f2_solo_s8_sa_game.png (ok (black retried 1x))
+captured C:\dev\hantei-chan\tools\gamecap\captures\v2\nohud_st\mbtl_flipV_chr001_p157f2_solo_s8_sa_game_bb.png (1280x720 fmt 22)
+captured window C:\dev\hantei-chan\tools\gamecap\captures\v2\nohud_st\mbtl_flipV_chr001_p157f2_solo_s8_sa_game_im.png (ok)
+captured C:\dev\hantei-chan\tools\gamecap\captures\v2\nohud_st\mbtl_flipV_chr001_p157f2_solo_s8_sa_game_plate_b0.png (1280x720 fmt 22)
+peek tick_plate_b @0x01249370 = 2 (0x2)
+captured C:\dev\hantei-chan\tools\gamecap\captures\v2\nohud_st\mbtl_flipV_chr001_p157f2_solo_s8_sa_game_plate_bb.png (1280x720 fmt 22)
+captured window C:\dev\hantei-chan\tools\gamecap\captures\v2\nohud_st\mbtl_flipV_chr001_p157f2_solo_s8_sa_game_plate.png (ok (black retried 3x))
+frozen at frame 1919
+peek anim_after @0x00b800a0 = 0 (0x0)
+quit (quit): terminating pid 78192
+removed C:\Program Files (x86)\Steam\steamapps\common\MELTY BLOOD TYPE LUMINA\MBTL-IM/Mods/data/chr001/chr001.pat
+restored C:\Program Files (x86)\Steam\steamapps\common\MELTY BLOOD TYPE LUMINA\MBTL-IM/MBTL_IM.ini
+restored C:\Program Files (x86)\Steam\steamapps\common\MELTY BLOOD TYPE LUMINA\winsave/48034167/_App.ini
+script finished: 338 commands, 6 capture(s)
+failures: 0

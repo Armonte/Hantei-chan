@@ -1,0 +1,8 @@
+# FXR status shot: MBAACC akiha (--open + --cg), CG manager Effect recolor tab, DGV Akiha starter rules via HANTEI_FXR_DEMO=1
+wait 120
+cgm open
+wait 30
+cgm tab Effect recolor
+wait 90
+capture C:/dev/hantei-chan/work/ab_fxrstatus/fxr_status_akiha_dgv.png
+quit

@@ -1,0 +1,92 @@
+--- /mnt/c/dev/hantei-chan/tools/gamecap/src/agent.cpp.pre_modkeys_20261014	2026-10-14 22:14:10.607182500 -0400
++++ /mnt/c/dev/hantei-chan/tools/gamecap/src/agent.cpp	2026-10-14 22:14:20.151410000 -0400
+@@ -12,6 +12,7 @@
+ #include <stdio.h>
+ #include <stdint.h>
+ #include <string.h>
++#include <ctype.h>
+ #include "shared.h"
+ #include "png_write.h"
+ 
+@@ -47,8 +48,8 @@
+ 
+ // Patch every IAT slot of the main exe that imports `name` (by name) or currently points at `real`.
+ // Returns the number of slots patched; *orig receives the original pointer.
+-static int hook_iat(const char* name, void* real, void* repl, void** orig) {
+-	uint8_t* base = (uint8_t*)GetModuleHandleW(nullptr);
++static int hook_iat_in(HMODULE mod, const char* name, void* real, void* repl, void** orig) {
++	uint8_t* base = (uint8_t*)mod;
+ 	auto dos = (IMAGE_DOS_HEADER*)base;
+ 	auto nt = (IMAGE_NT_HEADERS*)(base + dos->e_lfanew);
+ 	auto& dir = nt->OptionalHeader.DataDirectory[IMAGE_DIRECTORY_ENTRY_IMPORT];
+@@ -71,6 +72,9 @@
+ 	}
+ 	return n;
+ }
++static int hook_iat(const char* name, void* real, void* repl, void** orig) {
++	return hook_iat_in(GetModuleHandleW(nullptr), name, real, repl, orig);
++}
+ 
+ // ---------------------------------------------------------------- virtual input
+ typedef DWORD(WINAPI* XInputGetState_t)(DWORD, XINPUT_STATE*);
+@@ -193,6 +197,17 @@
+ 	}
+ 	return r;
+ }
++// The game's device window (CreateDevice). An improvement-mod proxy (MBTL-IM dinput8.dll) only polls its hotkeys
++// while the game window is in the foreground: its own GetForegroundWindow import answers with this window, and its
++// GetAsyncKeyState import sees gamecap's virtual keys, so `key_tap F5` reaches the mod without any focus change
++// or global input. Only the mod module's IAT is patched (hook_mod_proxy_iat).
++static HWND g_game_hwnd = nullptr;
++typedef HWND(WINAPI* GetForegroundWindow_t)();
++static GetForegroundWindow_t o_GetForegroundWindow = nullptr;
++static HWND WINAPI h_GetForegroundWindow() {
++	if (g_game_hwnd && g_sh && g_sh->isolate_input) return g_game_hwnd;
++	return o_GetForegroundWindow ? o_GetForegroundWindow() : nullptr;
++}
+ static BOOL WINAPI h_SetForegroundWindow(HWND h) {
+ 	logf("SetForegroundWindow(%p) suppressed", h);
+ 	return TRUE;
+@@ -476,7 +491,7 @@
+ 	logf("CreateDevice hwnd=%p flags=%08lx bb=%ux%u fmt=%u ms=%u windowed=%d -> %08lx", w, fl, pp ? pp->BackBufferWidth : 0,
+ 	     pp ? pp->BackBufferHeight : 0, pp ? (unsigned)pp->BackBufferFormat : 0, pp ? (unsigned)pp->MultiSampleType : 0,
+ 	     pp ? pp->Windowed : -1, (unsigned long)hr);
+-	if (SUCCEEDED(hr) && out && *out) { g_dev = *out; hook_device(*out, false); }
++	if (SUCCEEDED(hr) && out && *out) { g_dev = *out; if (w) g_game_hwnd = w; hook_device(*out, false); }
+ 	return hr;
+ }
+ 
+@@ -528,7 +543,33 @@
+ 
+ // Something (the Steam overlay, in UNI2 battles) can re-patch the Present slots after us. Put ours back and chain
+ // to whatever it installed; nested calls go to the first original (see h_DevPresent).
++// MBTL-IM / UNI2-IM proxy dinput8.dll from the game folder (never the system one): its key and focus imports.
++static void hook_mod_proxy_iat() {
++	// MBTL only: UNI2-IM has its own in-process key injection (harness "keys"), which isolate_input would mask
++	static int is_mbtl = -1;
++	if (is_mbtl < 0) {
++		char exe[MAX_PATH] = {};
++		GetModuleFileNameA(nullptr, exe, MAX_PATH);
++		const char* b = strrchr(exe, '\\');
++		is_mbtl = _stricmp(b ? b + 1 : exe, "MBTL.exe") == 0;
++	}
++	if (!is_mbtl) return;
++	HMODULE m = GetModuleHandleA("dinput8.dll");
++	if (!m) return;
++	char path[MAX_PATH] = {};
++	GetModuleFileNameA(m, path, MAX_PATH);
++	for (char* c = path; *c; c++) *c = (char)tolower((unsigned char)*c);
++	if (strstr(path, "\\system32\\") || strstr(path, "\\syswow64\\")) return;
++	HMODULE u = GetModuleHandleA("user32.dll");
++	if (!o_GetForegroundWindow && u) o_GetForegroundWindow = (GetForegroundWindow_t)GetProcAddress(u, "GetForegroundWindow");
++	if (!o_GetAsyncKeyState && u) o_GetAsyncKeyState = (GetKeyState_t)GetProcAddress(u, "GetAsyncKeyState");
++	int a = hook_iat_in(m, "GetAsyncKeyState", (void*)o_GetAsyncKeyState, (void*)h_GetAsyncKeyState, nullptr);
++	int b = hook_iat_in(m, "GetForegroundWindow", (void*)o_GetForegroundWindow, (void*)h_GetForegroundWindow, nullptr);
++	if (a || b) logf("mod proxy %s: GetAsyncKeyState %d slot(s), GetForegroundWindow %d slot(s)", path, a, b);
++}
++
+ static void reassert_hooks() {
++	hook_mod_proxy_iat();
+ 	if (g_dev && !IsBadReadPtr(g_dev, 4)) hook_vt(*(void***)g_dev, "CreateDevice device");
+ 	// the device the game actually presents through, from its own device-pointer global (set by the script)
+ 	uint32_t dg = g_sh->device_global;

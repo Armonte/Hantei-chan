@@ -1,0 +1,22 @@
+diff --git a/imsearch.cpp b/imsearch.cpp
+index 9bfaf33..068839e 100644
+--- a/imsearch.cpp
++++ b/imsearch.cpp
+@@ -1032,12 +1032,16 @@ void ImSearch::HighlightSubstrings(const char* substrStart,
+ 
+ 				const int nextMatchEnd = matchEnd + glyphLength;
+ 
++				// Whitespace draws no triangles (glyphLength == 0) and matches
++				// trivially. A match can then sit exactly at endIdxIdx, so the
++				// index pointer must not go through ImVector::operator[], whose
++				// bounds assert aborted the app on queries like "OD DA" (issue #81).
+ 				if (nextMatchEnd <= endIdxIdx
+ 					&& DoDrawnGlyphsMatch(
+ 						queryDrawList,
+ 						queryDrawList.IdxBuffer.Data + glyph.mIdxIdxStart,
+ 						*drawList,
+-						&drawList->IdxBuffer[matchEnd],
++						drawList->IdxBuffer.Data + matchEnd,
+ 						glyphLength))
+ 				{
+ 					matchEnd = nextMatchEnd;

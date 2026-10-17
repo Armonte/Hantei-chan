@@ -1,6 +1,9 @@
 #include "parts.h"
+#include "part_transform.h"
+#include "part_render_math.h"
 #include "../misc.h"
 #include "../cg.h"
+#include "../app_log.h"
 
 #include <algorithm>
 #include <iostream>
@@ -30,6 +33,17 @@ unsigned int* Parts::MainLoad(unsigned int* data, const unsigned int* data_end)
     while (data < data_end) {
         unsigned int* buf = data;
         ++data;
+        struct RecordEnd {
+            Parts* self; const unsigned int* start; unsigned int*& cur; char kind; uint32_t id;
+            ~RecordEnd() {
+                if (kind) self->rawRecords.push_back({kind, id,
+                    std::string((const char*)start, (const char*)cur - (const char*)start), 0});
+            }
+        } rec{this, buf, data, 0, 0};
+        if (!memcmp(buf, "P_ST", 4)) { rec.kind = 'P'; rec.id = data[0]; }
+        else if (!memcmp(buf, "PPST", 4)) { rec.kind = 'C'; rec.id = data[0]; }
+        else if (!memcmp(buf, "PGST", 4)) { rec.kind = 'G'; rec.id = data[0]; }
+        else if (!memcmp(buf, "VEST", 4)) { rec.kind = 'V'; }
 
         if (!memcmp(buf, "P_ST", 4)) {
             // PartSet
@@ -38,8 +52,10 @@ unsigned int* Parts::MainLoad(unsigned int* data, const unsigned int* data_end)
             while(partSets.size() <= p_id) {
                 auto p = &partSets.emplace_back();
                 p->partId = partSets.size() - 1;
+                p->origId = p->partId;   // holes too: renumbering moves them like any slot
             }
             PartSet<>* partSet = &partSets[p_id];
+            partSet->wasLoaded = true;
             data = PartSet<>::P_Load(data, data_end, p_id, partSet);
         }
         else if (!memcmp(buf, "PPST", 4)) {
@@ -76,7 +92,7 @@ unsigned int* Parts::MainLoad(unsigned int* data, const unsigned int* data_end)
         else {
             char tag[5]{};
             memcpy(tag, buf, 4);
-            std::cout << "\tUnknown top level tag: " << tag << "\n";
+            HC_LOG_WARN("[Parts] unknown top level tag {}", tag);
         }
     }
     return data;
@@ -115,7 +131,13 @@ bool Parts::Load(const char* name)
     partVertices.Clear();
 
     // Parse file
+    rawRecords.clear();
+    rawHeader.assign(loadData, 0x24);
     MainLoad(d + 1, d_end);
+    for (auto& r : rawRecords)
+        r.fp = Fingerprint(r.kind, r.id);
+    diskIdOfOrig.resize(partSets.size());
+    for (size_t i = 0; i < partSets.size(); i++) diskIdOfOrig[i] = (int)i;
     
     // Count non-empty part sets
     int nonEmptyPartSets = 0;
@@ -123,18 +145,22 @@ bool Parts::Load(const char* name)
         if (!ps.groups.empty()) nonEmptyPartSets++;
     }
 
-    // Load textures into OpenGL
+    // Load textures into OpenGL (skipped in headless / no-GL builds).
+#ifndef PAT_HEADLESS
     for (size_t idx = 0; idx < gfxMeta.size(); idx++)
     {
         auto& gfx = gfxMeta[idx];
-        
+
         textures.push_back(new Texture);
         if (gfx.s3tc)
         {
-            if (gfx.type == 21)
+            if (gfx.type == 21 || gfx.type == 22)
             {
-                // Uncompressed BGRA (type 21 uses BGRA format)
-                textures.back()->LoadDirect((char*)gfx.s3tc, gfx.w, gfx.h, true);
+                // Uncompressed BGRA (21 = A8R8G8B8; 22 = X8R8G8B8, whose 4th byte is not alpha: drawn opaque)
+                std::vector<char> opaque;
+                char *src = (char*)gfx.s3tc;
+                if (gfx.type == 22) { opaque.assign(src, src + (size_t)gfx.w * gfx.h * 4); for (size_t k = 3; k < opaque.size(); k += 4) opaque[k] = (char)255; src = opaque.data(); }
+                textures.back()->LoadDirect(src, gfx.w, gfx.h, true);
                 // Default to GL_NEAREST; filtering will be applied per-part based on PRFL flag
                 textures.back()->Apply(false, false);  // repeat=false, linearFilter=false
             }
@@ -142,7 +168,7 @@ bool Parts::Load(const char* name)
             {
                 // Compressed (DXT1 or DXT5)
                 size_t compressedSize;
-                if (gfx.type == 5)
+                if (gfx.type == 5 || gfx.type == 3)
                     compressedSize = gfx.w * gfx.h;
                 else if (gfx.type == 1)
                     compressedSize = (gfx.w * gfx.h) * 3 / 6;
@@ -178,8 +204,32 @@ bool Parts::Load(const char* name)
             gfx.textureIndex = 0;
         }
     }
+#endif
 
     filePath = name;
+
+    // Detect MBAACC vs UNI format by inspecting the loaded texture data.
+    // MBAACC textures load via PGTX -> sets `data`, leaves `imageSize` at 0.
+    // UNI textures load via PGT2 -> sets `s3tc` / `imageSize`.
+    // For texture-less files we fall back to scanning the raw file for the
+    // signature legacy tag PANM, which doesn't appear in UNI/MBTL pats.
+    useMBAACCFormat = false;
+    for (const auto& gfx : gfxMeta) {
+        if (gfx.data != nullptr && gfx.imageSize == 0) {
+            useMBAACCFormat = true;
+            break;
+        }
+    }
+    if (!useMBAACCFormat && this->data != nullptr) {
+        unsigned int sz = size;
+        const char* raw = this->data;
+        for (unsigned int k = 0x20; k + 4 <= sz; ++k) {
+            if (raw[k] == 'P' && raw[k+1] == 'A' && raw[k+2] == 'N' && raw[k+3] == 'M') {
+                useMBAACCFormat = true;
+                break;
+            }
+        }
+    }
 
     // Auto-load .pal file if it exists (similar to how .txt loading auto-loads .pal for .cg)
     // This makes it easier to work with .pat files without manually loading palettes
@@ -188,12 +238,8 @@ bool Parts::Load(const char* name)
         if (extensionPos != std::string::npos) {
             auto palPath = filePath.substr(0, extensionPos) + ".pal";
             if (std::filesystem::exists(palPath)) {
-                std::cout << "[Parts] Auto-loading palette: " << palPath << std::endl;
-                if (cg->loadPalette(palPath.c_str())) {
-                    std::cout << "[Parts] Palette loaded successfully" << std::endl;
-                } else {
-                    std::cout << "[Parts] Failed to load palette" << std::endl;
-                }
+                if (!cg->loadPalette(palPath.c_str()))
+                    HC_LOG_WARN("[Parts] failed to auto-load palette {}", palPath);
             }
         }
     }
@@ -212,6 +258,10 @@ void Parts::Free()
     shapes.clear();
     gfxMeta.clear();
     loaded = false;
+    fbPartModel = false;
+    fbMaxPoses = 0;
+    ownedPixels.clear();
+    diskIdOfOrig.clear();
 }
 
 void Parts::initEmpty()
@@ -234,6 +284,18 @@ void Parts::updatePatEditorReferences(FrameState* state, RenderMode* mode)
 {
     currState = state;
     renderMode = mode;
+}
+
+std::vector<int> Parts::CurrentIndexOfOrig() const
+{
+    std::vector<int> cur(diskIdOfOrig.size(), -1);
+    for (size_t j = 0; j < partSets.size(); j++) {
+        const int o = partSets[j].origId;
+        if (o < 0) continue;
+        if (o >= (int)cur.size()) cur.resize(o + 1, -1);
+        cur[o] = (int)j;
+    }
+    return cur;
 }
 
 // Accessor methods
@@ -347,12 +409,10 @@ std::string Parts::GetTexturesDecorateName(int n) {
     return ss.str();
 }
 
-// Parts.cpp continues in next message due to length...
-// Parts rendering implementation - append to parts.cpp or include
-// This file contains the Draw() and DrawPart() methods which are the most complex
-
-#include "parts.h"
-#include <glm/gtc/matrix_transform.hpp>
+// ---------------------------------------------------------------------------------------------------------------
+// Drawing. Follows uni2.exe's part path (PatPartSet_Draw_PrimQueue 0x4BFFB0 -> PatPart_SetupDraw_PrimQueue
+// 0x415020 -> PatPart_DrawPrimitive_DispatchByShapeType 0x4C06D0); the per-rule references are in
+// part_render_math.h.
 
 void Parts::DrawPart(int i, bool useLinearFilter)
 {
@@ -361,28 +421,22 @@ void Parts::DrawPart(int i, bool useLinearFilter)
         return;
     }
 
-    // Validate cutOut index
-    if (i < 0 || i >= cutOuts.size()) {
-        printf("[DrawPart] Invalid cutOut index: %d (size=%zu)\n", i, cutOuts.size());
+    if (i < 0 || i >= (int)cutOuts.size()) {
+        HC_LOG_WARN_ONCE("[DrawPart] invalid cut-out index {} (size {})", i, cutOuts.size());
         return;
     }
 
     auto& cutout = cutOuts[i];
 
-    // Validate texture index (must be >= 0 and < gfxMeta.size())
-    if (cutout.texture < 0 || cutout.texture >= gfxMeta.size()) {
-        printf("[DrawPart] Invalid texture index: %d (gfxMeta.size=%zu)\n", cutout.texture, gfxMeta.size());
+    if (cutout.texture < 0 || cutout.texture >= (int)gfxMeta.size()) {
+        HC_LOG_WARN_ONCE("[DrawPart] invalid texture index {} (textures {})", cutout.texture, gfxMeta.size());
         return;
     }
 
-    // Validate that the texture was actually created
+    // Texture not created (empty slot or failed upload): skip.
     if (gfxMeta[cutout.texture].textureIndex == 0) {
-        static bool warnedOnce = false;
-        if (!warnedOnce) {
-            printf("[DrawPart] WARNING: Texture %d has ID 0 (not created)\n", cutout.texture);
-            warnedOnce = true;
-        }
-        return;  // Texture not loaded, skip silently
+        HC_LOG_WARN_ONCE("[DrawPart] texture {} has no GL id", cutout.texture);
+        return;
     }
 
     // Determine which texture to use
@@ -407,120 +461,148 @@ void Parts::DrawPart(int i, bool useLinearFilter)
         }
     }
 
-    // Validate texture ID before binding
-    if (curTexId != 0 && !glIsTexture(curTexId)) {
-        static bool warnedOnce = false;
-        if (!warnedOnce) {
-            printf("[DrawPart] WARNING: Texture ID %d is not a valid OpenGL texture\n", curTexId);
-            warnedOnce = true;
-        }
-        return;  // Invalid texture, skip rendering
-    }
-
-    // Clear any pending GL errors before binding
+    // (No glIsTexture validation here: it forces a GPU sync per part per frame,
+    // and the textureIndex != 0 guard above already covers missing textures.)
     while (glGetError() != GL_NO_ERROR);
 
-    // Bind texture
     glBindTexture(GL_TEXTURE_2D, curTexId);
-    
-    // Apply filtering based on part property's PRFL flag
-    // PRFL flag: 0 = GL_NEAREST (no filtering), non-zero = GL_LINEAR (bilinear filtering)
-    if (useLinearFilter) {
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-    } else {
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-    }
 
-    // Check for OpenGL errors after binding (only on errors)
+    // PRFL: exactly 1 = linear, anything else = point (D3D_SetTexFilterFromTable via PRAL_PRFL globals).
+    const GLint filter = useLinearFilter ? GL_LINEAR : GL_NEAREST;
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, filter);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, filter);
+
     GLenum err = glGetError();
     if (err != GL_NO_ERROR) {
-        printf("[TEXTURE RENDER] GL ERROR 0x%X after binding texture %d\n", err, curTexId);
+        HC_LOG_WARN_ONCE("[DrawPart] GL error 0x{:X} after binding texture {}", (unsigned)err, curTexId);
     }
-    
+
     partVertices.Draw(0);
 }
 
-void Parts::Draw(int pattern, int nextPattern, float interpolationFactor,
+namespace {
+// Blend state for one part (PRAL). Leaves the equation at ADD for every mode except subtract.
+void ApplyPartBlend(partrender::PartBlend mode)
+{
+    switch (mode) {
+    case partrender::kBlendAdd:
+        glBlendEquation(GL_FUNC_ADD);
+        glBlendFunc(GL_SRC_ALPHA, GL_ONE);
+        break;
+    case partrender::kBlendSub:
+        glBlendEquation(GL_FUNC_REVERSE_SUBTRACT);
+        glBlendFunc(GL_SRC_ALPHA, GL_ONE);
+        break;
+    default:
+        // Normal, and PRAL 3. uni2 1.42 draws character / effect .pat layers through the shader path
+        // (Han6Draw_DrawPatLayerParts_3D 0x4BF9A0 -> PatPart_SetBlendState_PRAL: 3 -> normal), which has no blur.
+        // The CharaPtBlur mask passes (sh_paniblur.txt, CharaPtBlur_BeginMaskTarget 0x87FBA0 /
+        // CharaPtBlur_DrawBlurWH_Passes 0x87F9A0) are queued only by the non-shader 2D path
+        // (Han6Draw_DrawPatLayerParts_2D 0x4C01D0). Measured in game (render-match17, chr020 set 991 slots forced
+        // to PRAL 3 vs PRAL 0): the same image.
+        glBlendEquation(GL_FUNC_ADD);
+        glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+        break;
+    }
+}
+
+int ToByte01(float v) { return (int)std::lround(std::clamp(v, 0.f, 1.f) * 255.f); }
+}
+
+partrender::PartBlend Parts::PartBlendOf(const PartProperty& part)
+{
+    // The editor's on/off view of PRAL plus the raw byte (2 and 3 are distinct modes, not "on").
+    if (!part.additive) return partrender::kBlendNormal;
+    return partrender::BlendFromPral(part.pral ? part.pral : 1);
+}
+
+void Parts::Draw(const DrawParams& params,
     std::function<void(glm::mat4)> setMatrix,
-    std::function<void(float, float, float)> setAddColor,
-    std::function<void(char)> setFlip,
+    std::function<void(const float*)> setAddColor,
     float color[4])
 {
+    using namespace partrender;
     curTexId = -1;
+    const int pattern = params.pattern;
 
     // Safety: Don't render if Parts is being freed or unloaded
     if (!loaded || partSets.empty() || cutOuts.empty()) {
-        static bool warnedUnloaded = false;
-        if (!warnedUnloaded) {
-            printf("[Parts::Draw] WARNING: Can't render - loaded=%d, partSets=%zu, cutOuts=%zu\n",
-                loaded, partSets.size(), cutOuts.size());
-            warnedUnloaded = true;
-        }
+        HC_LOG_WARN_ONCE("[Parts::Draw] nothing to draw: loaded={} partSets={} cutOuts={}", loaded, partSets.size(), cutOuts.size());
         return;
     }
 
-    // Validate pattern indices
-    if(pattern < 0 || pattern >= partSets.size() ||
-       nextPattern < 0 || nextPattern >= partSets.size()) {
-        printf("[Parts::Draw] ERROR: Invalid pattern indices: pattern=%d, next=%d, partSets.size=%zu\n",
-            pattern, nextPattern, partSets.size());
-        return;
-    }
-    
-    if (partSets[pattern].groups.empty()) {
+    if (pattern < 0 || pattern >= (int)partSets.size()) {
+        HC_LOG_WARN_ONCE("[Parts::Draw] invalid part set {} (count {})", pattern, partSets.size());
         return;
     }
 
-    // Sort groups by priority (higher priority = draw first)
+    // The texture / UV views draw one full-texture part (below) whatever the part set holds: the PAT tab shows part
+    // set 0 there, which is often empty (UNI2 chr000), and the view stayed blank.
+    const bool sheetView = renderMode && currState && *renderMode != DEFAULT && !currState->animating;
+    if (partSets[pattern].groups.empty() && !sheetView) {
+        return;
+    }
+
+    // Draw order: highest priority first (see part_transform.h).
     auto copyGroups = partSets[pattern].groups;
-    // Note: No reverse() needed - stable_sort with rbegin/rend handles ordering
-    std::stable_sort(copyGroups.rbegin(), copyGroups.rend(),
-        [](const PartProperty &a, const PartProperty &b) {
-            return a.priority < b.priority;
-    });
+    partxf::SortForDraw(fbPartModel, copyGroups);
 
-    constexpr float tau = glm::pi<float>() * 2.f;
-
-    // Triangle indices for generating geometry
     constexpr int tX[] = { 0,1,1, 1,0,0 };
     constexpr int tY[] = { 0,0,1, 1,1,0 };
+    const int *tXd = tX, *tYd = tY;
+    // The games queue every ring / arc / sphere / cone segment as one 4-vertex prim with UVs (u0,v0) (u1,v0) (u0,v1)
+    // (u1,v1) (uni2 1.42 CPAniPrimRender_DrawQuads 0x4C0F10 and the shape classes' corner getters) and draw it split
+    // along (u1,v0)-(u0,v1). Their segments are not parallelograms, so the split shows in the texture (render-match8:
+    // the 3-segment arc of chr019 p153, 29.45 -> 0.28). kSplit* is that split for shapes mapping u to tX and v to tY
+    // (arc). Both games' arcs use it: UNI2 measured in render-match8; MBTL's arc code is the same (MBTL 25646393
+    // CPAniPrimRender_DrawQuads 0x4A3480 + RenderBatch_AppendQuad_Idx012_321 0x40DBA0) and, measured with the
+    // footprint-independent registration (v2_model --exact-reg), flipV p157 goes 5.11 -> 4.62 (render-match10).
+    // MBAACC and the ring / sphere stay on the default split (no measured case isolates them).
+    constexpr int kSplitX[] = { 0,1,0, 1,1,0 };
+    constexpr int kSplitY[] = { 0,0,1, 0,1,1 };
 
     struct {
         float x, y, z, s, t, p, q;
     } point[6];
 
-    float width = 256.f;   // Texture UV width
-    float height = 256.f;  // Texture UV height
+    // UVs are in 1/256 of the texture (the tag-format UV unit).
+    constexpr float uvUnit = 256.f;
 
-    // TEXTURE_VIEW/UV_SETTING_VIEW: Clear parts and create single dummy part
-    // This renders the texture with default properties (no transforms) for raw display
-    if (renderMode && currState && *renderMode != DEFAULT && !currState->animating) {
+    // TEXTURE_VIEW/UV_SETTING_VIEW: one dummy part showing the whole texture.
+    const bool rawTextureView = renderMode && currState && *renderMode != DEFAULT && !currState->animating;
+    if (rawTextureView) {
         copyGroups.clear();
         auto prop = &copyGroups.emplace_back();
-        prop->ppId = 0;  // Use cutout 0 (will be overridden below)
-        // All other PartProperty fields use defaults:
-        //   position (0,0), scale (1,1), rotation (0,0,0), no flip, full opacity
+        prop->ppId = 0;
     }
+
+    // AFHK: the next frame's part set. Parts pair up by slot (PRST id), like the game's
+    // `next->slots[slot]` lookup in PatPartSet_Draw_PrimQueue.
+    const float t = params.curWeight;
+    const PartSet<>* nextSet = nullptr;
+    if (!rawTextureView && t < 1.f && params.nextPattern >= 0 && params.nextPattern < (int)partSets.size() &&
+        params.nextPattern != pattern)
+        nextSet = &partSets[params.nextPattern];
+
+    glDisable(GL_DEPTH_TEST);
+    glDepthMask(GL_FALSE);
 
     for (auto& part : copyGroups)
     {
         // Skip unused or invalid parts silently
-        if (part.ppId < 0 || part.ppId >= cutOuts.size()) {
+        if (part.ppId < 0 || part.ppId >= (int)cutOuts.size()) {
             continue;
         }
-        
+
         auto cutout = cutOuts[part.ppId];
-        
+
         // PatEditor: Override cutout for texture/UV viewing modes
         auto partGfx = GetPartGfx(currState ? currState->partGraph : 0);
         auto cutoutSelected = GetCutOut(currState ? currState->partCutOut : 0);
         if (renderMode && currState && *renderMode == UV_SETTING_VIEW && cutoutSelected != nullptr) {
             partGfx = GetPartGfx(cutoutSelected->texture);
         }
-        if (renderMode && currState && *renderMode != DEFAULT && !currState->animating && partGfx != nullptr) {
-            // Override cutout to show full texture
+        if (rawTextureView && partGfx != nullptr) {
             cutout.texture = partGfx->id;
             cutout.shapeIndex = 0;
             cutout.uv[0] = 0;
@@ -532,245 +614,228 @@ void Parts::Draw(int pattern, int nextPattern, float interpolationFactor,
             cutout.wh[0] = partGfx->w;
             cutout.wh[1] = partGfx->h;
         }
-        
+
         // Skip zero-size cutouts (like PACNyx Rectangle.Empty check)
         if (cutout.uv[2] == 0 && cutout.uv[3] == 0) {
             continue;
         }
-        
-        // Validate texture reference
-        if (cutout.texture < 0 || cutout.texture >= gfxMeta.size()) {
+
+        if (cutout.texture < 0 || cutout.texture >= (int)gfxMeta.size()) {
             continue;
         }
 
-        // Handle MBAACC format: create default plane shape if shapes array is empty
-        // MBAACC .pat files have 0 shapes and use implicit flat planes for all cutouts
+        // MBAACC .pat files have no shapes: every cut-out is an implicit plane.
         Shape currentShape;
-        if (shapes.empty() || cutout.shapeIndex < 0 || cutout.shapeIndex >= shapes.size()) {
-            // Default to flat plane for MBAACC compatibility
+        if (rawTextureView || shapes.empty() || cutout.shapeIndex < 0 || cutout.shapeIndex >= (int)shapes.size()) {
             currentShape.type = ShapeType::PLANE;
-            currentShape.vertexCount = 0;
-            currentShape.vertexCount2 = 0;
-            currentShape.length = 0;
-            currentShape.length2 = 0;
-            currentShape.radius = 0;
-            currentShape.dRadius = 0;
-            currentShape.width = 0;
-            currentShape.dz = 0;
         } else {
             currentShape = shapes[cutout.shapeIndex];
         }
 
-        glm::vec2 offset = glm::vec2(part.x, part.y);
+        // FB parts store the quad's top-left; the engine pivots scale and rotation about it + the cut-out
+        // origin (see part_transform.h). The quad below is drawn at -xy, so the matrix origin is the pivot.
+        glm::vec2 offset = partxf::Pivot(fbPartModel, (float)part.x, (float)part.y, cutout);
         glm::vec3 rotation = glm::vec3(part.rotation[1], part.rotation[2], part.rotation[3]);
         glm::vec2 scale = glm::vec2(part.scaleX, part.scaleY);
-        
+        glm::vec2 pras = params.applyPras ? glm::vec2((float)part.pras[0], (float)part.pras[1]) : glm::vec2(0.f);
+
         // Opacity handling: use full opacity in special render modes or when part is highlighted
-        float opacity = (renderMode && currState && *renderMode != DEFAULT && !currState->animating) ||
-                        partHighlight == -1 || partHighlight == part.propId ?
-                        part.bgra[3] : highlightOpacity * 255.f;
-        
-        glm::vec4 bgra = glm::vec4(part.bgra[0], part.bgra[1], part.bgra[2], opacity);
+        const bool fullOpacity = rawTextureView || partHighlight == -1 || partHighlight == part.propId;
+        int bgra[4] = { part.bgra[0], part.bgra[1], part.bgra[2], part.bgra[3] };
+        int spec[4] = { ToByte01(part.addColor[0]), ToByte01(part.addColor[1]), ToByte01(part.addColor[2]),
+                        ToByte01(part.addColor[3]) };
 
-        Shape outShape = currentShape; // Copy for potential interpolation
+        Shape outShape = currentShape;
 
-        // Prevent crash on invalid shapes
-        if(outShape.type != ShapeType::PLANE && outShape.type != ShapeType::UNK2 &&
+        // Prevent crash on invalid shapes. Must be continue, not return: one degenerate part must not drop
+        // every remaining part.
+        if(outShape.type != ShapeType::PLANE && outShape.type != ShapeType::RECT &&
             outShape.vertexCount == 0)
-            return;
+            continue;
         if((outShape.type == ShapeType::SPHERE || outShape.type == ShapeType::CONE) &&
            outShape.vertexCount2 == 0)
-            return;
+            continue;
 
-        // Interpolation between frames
-        if (interpolationFactor < 1 && !partSets[nextPattern].groups.empty()) {
-            auto copyNextGroups = partSets[nextPattern].groups;
-            std::reverse(copyNextGroups.begin(), copyNextGroups.end());
-            std::stable_sort(copyNextGroups.rbegin(), copyNextGroups.rend(),
-                [](const PartProperty &a, const PartProperty &b) {
-                    return a.priority < b.priority;
-            });
-
-            auto mix = [interpolationFactor](float a, float b) {
-                return a * interpolationFactor + b * (1 - interpolationFactor);
-            };
-            auto mixRotation = [interpolationFactor,mix](float a, float b) {
-                if (b - a > 0.5) {
-                    return a + (b - a - 1)* (1 - interpolationFactor);
+        // AFHK: lerp toward the same slot of the next frame's part set (PatPart_BuildTransformMatrix 0x4C0EC0,
+        // PatPart_LerpDiffuseColor_PRCL 0x413880, PatPart_ComputeSpecularAddColor_PRSP 0x413AE0,
+        // PrimRect_Setup 0x413E80). The cut-out, texture and blend stay the current frame's.
+        if (nextSet && part.propId >= 0 && part.propId < (int)nextSet->groups.size()) {
+            const PartProperty& np = nextSet->groups[part.propId];
+            if (np.ppId >= 0 && np.ppId < (int)cutOuts.size()) {
+                const auto& nextCutout = cutOuts[np.ppId];
+                const glm::vec2 nextOffset = partxf::Pivot(fbPartModel, (float)np.x, (float)np.y, nextCutout);
+                // MBAA.exe skips the transform lerp at weight 0 and draws the current part (PartLerpsTransform).
+                if (partrender::PartLerpsTransform(t, params.uniDialect)) {
+                    offset.x = Lerp(offset.x, nextOffset.x, t);
+                    offset.y = Lerp(offset.y, nextOffset.y, t);
+                    rotation[0] = LerpTurns(rotation[0], np.rotation[1], t);
+                    rotation[1] = LerpTurns(rotation[1], np.rotation[2], t);
+                    rotation[2] = LerpTurns(rotation[2], np.rotation[3], t);
+                    scale.x = Lerp(scale.x, np.scaleX, t);
+                    scale.y = Lerp(scale.y, np.scaleY, t);
+                    if (params.applyPras) {
+                        pras.x = Lerp(pras.x, (float)np.pras[0], t);
+                        pras.y = Lerp(pras.y, (float)np.pras[1], t);
+                    }
                 }
-                else if (b - a < -0.5) {
-                    return a + (b - a + 1) * (1 - interpolationFactor);
+                for (int c = 0; c < 4; c++)
+                    bgra[c] = LerpByte(bgra[c], np.bgra[c], t);
+                if (t == 0.f) {
+                    for (int c = 0; c < 4; c++) spec[c] = ToByte01(np.addColor[c]);
+                } else {
+                    // In between, the game rebuilds the specular colour from RGB only (alpha 0).
+                    for (int c = 0; c < 3; c++) spec[c] = LerpByte(spec[c], ToByte01(np.addColor[c]), t);
+                    spec[3] = 0;
                 }
-                return mix(a, b);
-            };
 
-            auto nextPart = std::find_if(copyNextGroups.begin(), copyNextGroups.end(),
-                [&part](const auto& pt) {return pt.propId == part.propId; });
-
-            if (nextPart != copyNextGroups.end() && (*nextPart).ppId < cutOuts.size()) {
-                auto nextCutout = cutOuts[(*nextPart).ppId];
-                if (nextCutout.shapeIndex < shapes.size()) {
-                    Shape nextShape = shapes[nextCutout.shapeIndex];
-
-                    offset[0] = mix(offset[0], (*nextPart).x);
-                    offset[1] = mix(offset[1], (*nextPart).y);
-                    rotation[0] = mixRotation(rotation[0], (*nextPart).rotation[1]);
-                    rotation[1] = mixRotation(rotation[1], (*nextPart).rotation[2]);
-                    rotation[2] = mixRotation(rotation[2], (*nextPart).rotation[3]);
-                    scale[0] = mix(scale[0], (*nextPart).scaleX);
-                    scale[1] = mix(scale[1], (*nextPart).scaleY);
-                    bgra[0] = mix(bgra[0], (*nextPart).bgra[0]);
-                    bgra[1] = mix(bgra[1], (*nextPart).bgra[1]);
-                    bgra[2] = mix(bgra[2], (*nextPart).bgra[2]);
-                    
-                    // Interpolate opacity with same highlighting logic
-                    float opacityNext = partHighlight == -1 || partHighlight == (*nextPart).propId ?
-                        (*nextPart).bgra[3] : highlightOpacity * 255.f;
-                    bgra[3] = mix(bgra[3], opacityNext);
-
-                    if ((int)currentShape.type > 2 && nextShape.type == currentShape.type) {
-                        outShape.dRadius = mix(outShape.dRadius, nextShape.dRadius);
-                        outShape.dz = mix(outShape.dz, nextShape.dz);
-                        outShape.length = mix(outShape.length, nextShape.length);
-                        outShape.length2 = mix(outShape.length2, nextShape.length2);
-                        outShape.radius = mix(outShape.radius, nextShape.radius);
-                        outShape.width = mix(outShape.width, nextShape.width);
+                if (nextCutout.shapeIndex >= 0 && nextCutout.shapeIndex < (int)shapes.size()) {
+                    const Shape<>& nextShape = shapes[nextCutout.shapeIndex];
+                    if (nextShape.type == currentShape.type) {
+                        auto mixi = [t](int a, int b) { return a + (int)((float)(b - a) * (1.f - t)); };
+                        if (currentShape.type == ShapeType::RECT) {
+                            outShape.rectW = mixi(outShape.rectW, nextShape.rectW);
+                            outShape.rectH = mixi(outShape.rectH, nextShape.rectH);
+                        } else if ((int)currentShape.type > 2) {
+                            outShape.dRadius = mixi(outShape.dRadius, nextShape.dRadius);
+                            outShape.dz = mixi(outShape.dz, nextShape.dz);
+                            outShape.length = mixi(outShape.length, nextShape.length);
+                            outShape.length2 = mixi(outShape.length2, nextShape.length2);
+                            outShape.radius = mixi(outShape.radius, nextShape.radius);
+                            outShape.width = mixi(outShape.width, nextShape.width);
+                        }
                     }
                 }
             }
         }
 
-        // Set up transformation matrix
-        glm::mat4 view = glm::mat4(1.f);
-        view = glm::translate(view, glm::vec3(offset[0], offset[1], 0.f));
-        view = glm::rotate(view, -rotation[1] * tau, glm::vec3(0.0, 1.f, 0.f));
-        view = glm::rotate(view, -rotation[0] * tau, glm::vec3(1.0, 0.f, 0.f));
-        view = glm::rotate(view, rotation[2] * tau, glm::vec3(0.0, 0.f, 1.f));
-        
-        setFlip(part.flip);
-        
-        view = glm::scale(view, glm::vec3(scale[0], scale[1], 1.f));
+        // Part matrix (uni2.exe PatPart_BuildTransformMatrix): scale -> PRAS -> rotZ -> rotX -> rotY ->
+        // translate, all angles positive turns. MBTL does not read PRAS.
+        glm::mat4 view = partxf::PartMatrix(offset, rotation, pras, scale);
         setMatrix(view);
 
-        // Disable depth test for proper alpha blending of 2D sprites
-        glDisable(GL_DEPTH_TEST);
-        glDepthMask(GL_FALSE);
+        ApplyPartBlend(rawTextureView ? kBlendNormal : PartBlendOf(part));
 
-        // Set blending mode
-        if (part.additive)
-            glBlendFunc(GL_SRC_ALPHA, GL_ONE);
-        else
-            glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-
-        // Apply color (including palette color if applicable)
+        // Diffuse = layer colour x PRCL; the palette colour slot (PPPA) tints RGB in the character shader
+        // (PS_CharaPtDrawV: out.rgb *= palette[PPPA].rgb). Slot 0 = no tint: MBAA's PAT loader
+        // (File_ParsePPTPChunks 0x404220) has no colour-slot tag, and palette entry 0 is the transparent
+        // key colour (tinting by it turned white material blue, EX report: Linne pattern 135).
+        // The tint reads the base <cg>.pal of the selected colour even while the pattern's PUPS bank is in
+        // effect (partrender::PartTintPalette; MBTL chr011 pattern 309 halo, slot 248).
         float newColor[4];
         memcpy(newColor, color, sizeof(float) * 4);
-        
-        // Debug first part render only
-        static bool debugOnce = true;
-        if (debugOnce) {
-            printf("[COLOR DEBUG] Part propId=%d, ppId=%d\n", part.propId, part.ppId);
-            printf("  part.bgra bytes: (%d, %d, %d, %d)\n", part.bgra[0], part.bgra[1], part.bgra[2], part.bgra[3]);
-            printf("  bgra vec4: (%.1f, %.1f, %.1f, %.1f)\n", bgra[0], bgra[1], bgra[2], bgra[3]);
-            printf("  color input: (%.3f, %.3f, %.3f, %.3f)\n", color[0], color[1], color[2], color[3]);
-            printf("  newColor initial: (%.3f, %.3f, %.3f, %.3f)\n", 
-                newColor[0], newColor[1], newColor[2], newColor[3]);
-        }
-        
-        if (cutout.colorSlot != -1 && cg) {
-            unsigned int palColor = cg->getColorFromPal(cutout.colorSlot);
+        const CG* tintCg = partrender::PartTintOwner(params.tintCg, (const CG*)cg);
+        if (params.paletteTint && cutout.colorSlot > 0 && cutout.colorSlot < 256 && tintCg) {
+            const unsigned *tintPal = partrender::PartTintPalette(tintCg->paletteAt(tintCg->paletteNumber(), 0), tintCg->getPalettePtr());
+            unsigned int palColor = tintPal ? tintPal[cutout.colorSlot] : 0;
             if (palColor) {
-                newColor[0] *= (palColor & 0xFF) / 255.f;
-                newColor[1] *= ((palColor >> 8) & 0xFF) / 255.f;
-                newColor[2] *= ((palColor >> 16) & 0xFF) / 255.f;
-                newColor[3] *= (palColor >> 24) / 255.f;
-                if (debugOnce) {
-                    printf("  After palette: (%.3f, %.3f, %.3f, %.3f)\n", 
-                        newColor[0], newColor[1], newColor[2], newColor[3]);
-                }
+                float rgb[3];
+                partrender::PaletteEntryRgb(palColor, rgb);
+                newColor[0] *= rgb[0];
+                newColor[1] *= rgb[1];
+                newColor[2] *= rgb[2];
             }
         }
-        // Apply part color (BGRA order like Eiton - swap B and R)
-        newColor[0] *= bgra[2] / 255.f; // RED = bgra[2]
-        newColor[1] *= bgra[1] / 255.f; // GREEN = bgra[1]
-        newColor[2] *= bgra[0] / 255.f; // BLUE = bgra[0]
-        newColor[3] *= bgra[3] / 255.f; // ALPHA = bgra[3]
-
-        if (debugOnce) {
-            printf("  Final color to GL: (%.3f, %.3f, %.3f, %.3f)\n", 
-                newColor[0], newColor[1], newColor[2], newColor[3]);
-            debugOnce = false;
-        }
+        newColor[0] *= bgra[2] / 255.f; // R
+        newColor[1] *= bgra[1] / 255.f; // G
+        newColor[2] *= bgra[0] / 255.f; // B
+        newColor[3] *= (fullOpacity ? (float)bgra[3] : highlightOpacity * 255.f) / 255.f;
 
         glVertexAttrib4fv(2, newColor);
-        // Note: addColor BGR->RGB swap when passing to shader
-        setAddColor(part.addColor[2] / 255.f, part.addColor[1] / 255.f, part.addColor[0] / 255.f);
+        // PRSP specular: stored R,G,B,A in addColor[0..3]; the shader adds it to the output, alpha included.
+        const float addRgba[4] = { spec[0] / 255.f, spec[1] / 255.f, spec[2] / 255.f, spec[3] / 255.f };
+        setAddColor(addRgba);
 
-        // Generate vertices based on shape type
+        // PRRV mirrors the UV rectangle only (PatPart_GetCutoutUVWithFlip 0x413C50); geometry is unchanged.
+        const UvRect uvr = FlipUv(cutout.uv[0], cutout.uv[1], cutout.uv[2], cutout.uv[3], rawTextureView ? 0 : part.flip);
+        auto uvS = [&](float f) { return (uvr.u + uvr.w * f) / uvUnit; };
+        auto uvT = [&](float f) { return (uvr.v + uvr.h * f) / uvUnit; };
+        // Plane / rect quads carry the games' per-corner UV bias (partrender::PartUvBiasU/V); not in the raw texture view.
+        auto uvSq = [&](float f) { return uvS(f) + (rawTextureView ? 0.f : partrender::PartUvBiasU(f)); };
+        auto uvTq = [&](float f) { return uvT(f) + (rawTextureView ? 0.f : partrender::PartUvBiasV(f)); };
+
         std::vector<float> vertexData;
-        auto size = 0;
 
         switch (outShape.type)
         {
         case ShapeType::PLANE:
-        case ShapeType::UNK2:
         {
-            // Simple plane (quad)
+            // Quad hanging at -PPCC, PPSS in size.
             for (int i = 0; i < 6; i++)
             {
                 point[i].x = -cutout.xy[0] + cutout.wh[0] * tX[i];
                 point[i].y = -cutout.xy[1] + cutout.wh[1] * tY[i];
                 point[i].z = 0;
-                point[i].s = float(cutout.uv[0] + cutout.uv[2] * tX[i]) / width;
-                point[i].t = float(cutout.uv[1] + cutout.uv[3] * tY[i]) / height;
-                point[i].p = float(cutout.uv[0] + cutout.uv[2] * (1 - tX[i])) / width;
-                point[i].q = float(cutout.uv[1] + cutout.uv[3] * (1 - tY[i])) / height;
+                point[i].s = point[i].p = uvSq((float)tX[i]);
+                point[i].t = point[i].q = uvTq((float)tY[i]);
             }
             partVertices.Prepare(6 * 7 * sizeof(float), &point[0]);
             break;
         }
+        case ShapeType::RECT:
+        {
+            // Shape type 2 (CPAniPrimRender_Rect): a quad at (x, y) of w x h from the shape itself, not the
+            // cut-out's PPCC/PPSS.
+            for (int i = 0; i < 6; i++)
+            {
+                point[i].x = (float)(outShape.rectX + outShape.rectW * tX[i]);
+                point[i].y = (float)(outShape.rectY + outShape.rectH * tY[i]);
+                point[i].z = 0;
+                point[i].s = point[i].p = uvSq((float)tX[i]);
+                point[i].t = point[i].q = uvTq((float)tY[i]);
+            }
+            partVertices.Prepare(6 * 7 * sizeof(float), &point[0]);
+            break;
+        }
+        // Shape z is the game's own sign (uni2 1.42 CPAniPrimRender_Ring 0x414120 / _Donuts 0x414590 / _Sphere 0x414A60 /
+        // _Corn 0x414DF0: dz steps and the sphere's start vertex (0, 0, -r) are in +z = away from the eye, the
+        // left-handed part space of partrender::PartPerspective). Before the perspective was made left-handed these
+        // were stored negated to make up for it.
         case ShapeType::RING:
         {
             // Cylindrical ring
             float angle = 0;
             float delta = glm::pi<float>() * outShape.length / 5000 / outShape.vertexCount;
-            vertexData.resize(size + 6 * outShape.vertexCount * 7);
+            vertexData.resize(6 * outShape.vertexCount * 7);
             for (int i = 0; i < outShape.vertexCount; i++) {
                 for (int j = 0; j < 6; j++)
                 {
                     point[j].x = float(outShape.radius - ((i + tY[j] == outShape.vertexCount && outShape.length == 10000) ? 0 : float(outShape.dRadius * (i + tY[j])) / outShape.vertexCount)) * glm::sin(angle + delta * tY[j]);
                     point[j].y = -float(outShape.radius - ((i + tY[j] == outShape.vertexCount && outShape.length == 10000) ? 0 : float(outShape.dRadius * (i + tY[j])) / outShape.vertexCount)) * glm::cos(angle + delta * tY[j]);
-                    point[j].z = float(outShape.width * -(tX[j] * 2 - 1) - float(outShape.dz * (i + tY[j])) / outShape.vertexCount);
-                    point[j].s = float(cutout.uv[0] + cutout.uv[2] * (tX[j])) / width;
-                    point[j].t = float(cutout.uv[1] + 1.0f * cutout.uv[3] * (i + tY[j]) / outShape.vertexCount) / height;
-                    point[j].p = float(cutout.uv[0] + cutout.uv[2] * (1 - tX[j])) / width;
-                    point[j].q = float(cutout.uv[1] + 1.0f * cutout.uv[3] * (outShape.vertexCount - i - tY[j]) / outShape.vertexCount) / height;
+                    point[j].z = float(outShape.width * (tX[j] * 2 - 1) + float(outShape.dz * (i + tY[j])) / outShape.vertexCount);
+                    point[j].s = point[j].p = uvS((float)tX[j]);
+                    point[j].t = point[j].q = uvT(1.0f * (i + tY[j]) / outShape.vertexCount);
                 }
                 angle += delta;
-                memcpy(&vertexData[size + 6 * 7 * i], point, sizeof(point));
+                memcpy(&vertexData[6 * 7 * i], point, sizeof(point));
             }
             partVertices.Prepare(6 * 7 * outShape.vertexCount * sizeof(float), &vertexData[0]);
             break;
         }
         case ShapeType::ARC:
         {
-            // Curved arc surface
+            // Curved arc surface (game corners: inner-cur, outer-cur, inner-next, outer-next; split as kSplit* in
+            // UNI2 and MBTL, the uniDialect games). MBAACC keeps the default split (not traced or measured).
+            const int *tX = params.uniDialect ? kSplitX : tXd, *tY = params.uniDialect ? kSplitY : tYd;
             float angle = 0;
             float delta = glm::pi<float>() * outShape.length / 5000 / outShape.vertexCount;
-            vertexData.resize(size + 6 * outShape.vertexCount * 7);
+            vertexData.resize(6 * outShape.vertexCount * 7);
             for (int i = 0; i < outShape.vertexCount; i++) {
                 for (int j = 0; j < 6; j++)
                 {
-                    point[j].x = float((outShape.radius - (1 - tX[j]) * outShape.width - ((i + tY[j] == outShape.vertexCount && outShape.length == 10000) ? 0 : float(outShape.dRadius * (i + tY[j])) / outShape.vertexCount)) * glm::sin(angle + delta * tY[j]));
-                    point[j].y = -float((outShape.radius - (1 - tX[j]) * outShape.width - ((i + tY[j] == outShape.vertexCount && outShape.length == 10000) ? 0 : float(outShape.dRadius * (i + tY[j])) / outShape.vertexCount)) * glm::cos(angle + delta * tY[j]));
-                    point[j].z = -float(outShape.dz * (i + tY[j])) / outShape.vertexCount;
-                    point[j].s = float(cutout.uv[0] + cutout.uv[2] * (tX[j])) / width;
-                    point[j].t = float(cutout.uv[1] + 1.0f * cutout.uv[3] * (i + tY[j]) / outShape.vertexCount) / height;
-                    point[j].p = float(cutout.uv[0] + cutout.uv[2] * (1 - tX[j])) / width;
-                    point[j].q = float(cutout.uv[1] + 1.0f * cutout.uv[3] * (outShape.vertexCount - i - tY[j]) / outShape.vertexCount) / height;
+                    // Geometric shrink of both edges (partrender::ArcEdgeScale, uni2 0x414590 / 0x4148D0). A closed
+                    // ring's last edge reuses the unshrunk start points, keeping the previous edge's z.
+                    const int e = i + tY[j];
+                    const bool closing = e == outShape.vertexCount && outShape.length == 10000;
+                    const float k = closing ? 1.f : partrender::ArcEdgeScale(outShape.radius, outShape.dRadius, outShape.vertexCount, e);
+                    const float r = (outShape.radius - (1 - tX[j]) * outShape.width) * k;
+                    point[j].x = r * glm::sin(angle + delta * tY[j]);
+                    point[j].y = -r * glm::cos(angle + delta * tY[j]);
+                    point[j].z = float(outShape.dz * (closing ? e - 1 : e)) / outShape.vertexCount;
+                    point[j].s = point[j].p = uvS((float)tX[j]);
+                    point[j].t = point[j].q = uvT(1.0f * (i + tY[j]) / outShape.vertexCount);
                 }
                 angle += delta;
-                memcpy(&vertexData[size + 6 * 7 * i], point, sizeof(point));
+                memcpy(&vertexData[6 * 7 * i], point, sizeof(point));
             }
             partVertices.Prepare(6 * 7 * outShape.vertexCount * sizeof(float), &vertexData[0]);
             break;
@@ -782,7 +847,7 @@ void Parts::Draw(int pattern, int nextPattern, float interpolationFactor,
             float delta = glm::pi<float>() * outShape.length / 5000 / outShape.vertexCount;
             float angle2 = 0;
             float delta2 = glm::pi<float>() * outShape.length2 / 10000 / outShape.vertexCount2;
-            vertexData.resize(size + 6 * outShape.vertexCount * outShape.vertexCount2 * 7);
+            vertexData.resize(6 * outShape.vertexCount * outShape.vertexCount2 * 7);
             for (int i = 0; i < outShape.vertexCount; i++) {
                 angle2 = 0;
                 for (int j = 0; j < outShape.vertexCount2; j++) {
@@ -790,13 +855,11 @@ void Parts::Draw(int pattern, int nextPattern, float interpolationFactor,
                     {
                         point[k].x = float((outShape.radius) * glm::sin(angle2 + delta2 * tX[k]) * glm::sin(angle + delta * tY[k]));
                         point[k].y = float((outShape.radius) * glm::sin(angle2 + delta2 * tX[k]) * glm::cos(angle + delta * tY[k]));
-                        point[k].z = outShape.radius * glm::cos(angle2 + delta2 * tX[k]);
-                        point[k].s = float(cutout.uv[0] + float(cutout.uv[2] * (i + tY[k])) / outShape.vertexCount) / width;
-                        point[k].t = float(cutout.uv[1] + float(cutout.uv[3] * (j + tX[k]) / outShape.vertexCount2)) / height;
-                        point[k].p = float(cutout.uv[0] + float(cutout.uv[2] * (outShape.vertexCount - i - tY[k])) / outShape.vertexCount) / width;
-                        point[k].q = float(cutout.uv[1] + float(cutout.uv[3] * (outShape.vertexCount2 - j - tX[k]) / outShape.vertexCount2)) / height;
+                        point[k].z = -outShape.radius * glm::cos(angle2 + delta2 * tX[k]);
+                        point[k].s = point[k].p = uvS(float(i + tY[k]) / outShape.vertexCount);
+                        point[k].t = point[k].q = uvT(float(j + tX[k]) / outShape.vertexCount2);
                     }
-                    memcpy(&vertexData[size + 6 * 7 * (outShape.vertexCount2 * i + j)], point, sizeof(point));
+                    memcpy(&vertexData[6 * 7 * (outShape.vertexCount2 * i + j)], point, sizeof(point));
                     angle2 += delta2;
                 }
                 angle += delta;
@@ -809,20 +872,18 @@ void Parts::Draw(int pattern, int nextPattern, float interpolationFactor,
             // Conical surface
             float angle = 0;
             float delta = glm::pi<float>() * outShape.length / 5000 / outShape.vertexCount;
-            vertexData.resize(size + 6 * outShape.vertexCount * outShape.vertexCount2 * 7);
+            vertexData.resize(6 * outShape.vertexCount * outShape.vertexCount2 * 7);
             float w = float(outShape.radius) / outShape.vertexCount2;
             for (int i = 0; i < outShape.vertexCount; i++) {
                 for (int j = 0; j < outShape.vertexCount2; j++) {
                     for (int k = 0; k < 6; k++) {
                         point[k].x = -w * (outShape.vertexCount2 - 1 - j + tX[k]) * glm::sin(angle + delta * tY[k]);
                         point[k].y = -w * (outShape.vertexCount2 - 1 - j + tX[k]) * glm::cos(angle + delta * tY[k]);
-                        point[k].z = -outShape.dz * float(j + (1 - tX[k])) / outShape.vertexCount2;
-                        point[k].s = float(cutout.uv[0] + 1.0f * cutout.uv[2] * (i + tY[k]) / outShape.vertexCount) / width;
-                        point[k].t = float(cutout.uv[1] + 1.0f * cutout.uv[3] * (1 + j - tX[k]) / outShape.vertexCount2) / height;
-                        point[k].p = float(cutout.uv[0] + 1.0f * cutout.uv[2] * (outShape.vertexCount - i - tY[k]) / outShape.vertexCount) / width;
-                        point[k].q = float(cutout.uv[1] + 1.0f * cutout.uv[3] * (outShape.vertexCount2 - 1 - j + tX[k]) / outShape.vertexCount2) / height;
+                        point[k].z = outShape.dz * float(j + (1 - tX[k])) / outShape.vertexCount2;
+                        point[k].s = point[k].p = uvS(1.0f * (i + tY[k]) / outShape.vertexCount);
+                        point[k].t = point[k].q = uvT(1.0f * (1 + j - tX[k]) / outShape.vertexCount2);
                     }
-                    memcpy(&vertexData[size + 6 * 7 * (outShape.vertexCount2 * i + j)], point, sizeof(point));
+                    memcpy(&vertexData[6 * 7 * (outShape.vertexCount2 * i + j)], point, sizeof(point));
                 }
                 angle += delta;
             }
@@ -833,15 +894,16 @@ void Parts::Draw(int pattern, int nextPattern, float interpolationFactor,
             continue;
         }
 
-        // Render the part
         partVertices.Load();
         partVertices.Bind();
-        // Pass the filter flag from part property (PRFL) to control texture filtering
-        DrawPart(part.ppId, part.filter);
+        // PRFL: exactly 1 draws linear; other non-zero bytes draw point like the game.
+        DrawPart(part.ppId, part.filter && (part.prfl == 0 || part.prfl == 1));
         partVertices.Clear();
     }
-    
-    // Restore depth test state
+
+    // Restore depth test and the default blend
+    glBlendEquation(GL_FUNC_ADD);
+    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
     glEnable(GL_DEPTH_TEST);
     glDepthMask(GL_TRUE);
 }
@@ -882,78 +944,211 @@ bool Parts::Save(const char* filename)
     }
     if(!hasData) return false;
 
-    std::ofstream file(filename, std::ios_base::out | std::ios_base::binary | std::ios_base::trunc);
-    if (!file.is_open())
-        return false;
+    // Built in memory and written with WriteFileAtomic (temp file + rename, as the HA6 save): a failed or interrupted
+    // save leaves the previous .pat untouched.
+    std::ostringstream file(std::ios_base::out | std::ios_base::binary);
 
-    // Write header
-    char header[32] = "PAniDataFile";
-    file.write(header, sizeof(header));
-    file.write("_STR", 4);
-
-    // Write PartSets
-    for(uint32_t i = 0; i < partSets.size(); i++)
-    {
-        if(!PartSet<>::IsModifiedData(&partSets[i]))
-            continue;
-        file.write("P_ST", 4);
-        file.write(VAL(i), 4);
-        PartSet<>::Save(file, &partSets[i]);
-        file.write("P_ED", 4);
+    // Write header (as loaded when possible)
+    if (rawHeader.size() == 0x24) {
+        file.write(rawHeader.data(), rawHeader.size());
+    } else {
+        char header[32] = "PAniDataFile";
+        file.write(header, sizeof(header));
+        file.write("_STR", 4);
     }
 
-    // Write CutOuts
-    for(uint32_t i = 0; i < cutOuts.size(); i++)
-    {
-        if(!CutOut<>::IsModifiedData(&cutOuts[i]))
-            continue;
-        file.write("PPST", 4);
-        file.write(VAL(i), 4);
-        CutOut<>::Save(file, &cutOuts[i]);
-        file.write("PPED", 4);
+    auto encode = [&](char kind, uint32_t i) {
+        std::ostringstream os(std::ios_base::out | std::ios_base::binary);
+        switch (kind) {
+        case 'P':
+            os.write("P_ST", 4); os.write(VAL(i), 4);
+            PartSet<>::Save(os, &partSets[i], useMBAACCFormat);
+            os.write("P_ED", 4);
+            break;
+        case 'C':
+            os.write("PPST", 4); os.write(VAL(i), 4);
+            CutOut<>::Save(os, &cutOuts[i], useMBAACCFormat);
+            os.write("PPED", 4);
+            break;
+        case 'G':
+            os.write("PGST", 4); os.write(VAL(i), 4);
+            PartGfx<>::Save(os, &gfxMeta[i]);
+            os.write("PGED", 4);
+            break;
+        case 'V': {
+            int paramSize = 16;
+            uint32_t shapeCount = (uint32_t)shapes.size();
+            os.write("VEST", 4);
+            os.write(VAL(shapeCount), 4);
+            os.write(VAL(paramSize), 4);
+            for (uint32_t k = 0; k < shapes.size(); k++)
+                Shape<>::Save(os, &shapes[k], false);
+            os.write("VNST", 4);
+            for (uint32_t k = 0; k < shapes.size(); k++)
+                Shape<>::Save(os, &shapes[k], true);
+            os.write("VEED", 4);
+            break;
+        }
+        }
+        return os.str();
+    };
+    auto exists = [&](char kind, uint32_t i) {
+        switch (kind) {
+        case 'P': return i < partSets.size();
+        case 'C': return i < cutOuts.size();
+        case 'G': return i < gfxMeta.size();
+        default: return true;
+        }
+    };
+
+    // Part sets: a loaded slot finds its record through origId. When renumbering moved slots (pat_renumber.h), every
+    // part set record is written as one ascending block where the first one was, a moved record with its original
+    // bytes and only the P_ST id changed.
+    const std::vector<int> curOfOrig = CurrentIndexOfOrig();
+    bool renumbered = false;
+    for (size_t o = 0; o < curOfOrig.size(); o++) if (curOfOrig[o] != (int)o) renumbered = true;
+    for (size_t j = 0; j < partSets.size(); j++) if (partSets[j].origId < 0 && PartSet<>::IsModifiedData(&partSets[j])) renumbered = true;
+    std::vector<int> rawOfOrig;
+    for (size_t k = 0; k < rawRecords.size(); k++)
+        if (rawRecords[k].kind == 'P') {
+            if (rawOfOrig.size() <= rawRecords[k].id) rawOfOrig.resize(rawRecords[k].id + 1, -1);
+            if (rawOfOrig[rawRecords[k].id] < 0) rawOfOrig[rawRecords[k].id] = (int)k;
+        }
+    auto rawOf = [&](size_t j) { const int o = partSets[j].origId; return o >= 0 && o < (int)rawOfOrig.size() ? rawOfOrig[o] : -1; };
+
+    // Loaded records in their original order: original bytes while the
+    // model is unchanged, re-encoded otherwise.
+    std::vector<uint8_t> doneP(partSets.size()), doneC(cutOuts.size()), doneG(gfxMeta.size());
+    bool doneV = false, blockP = false;
+    for (const auto& r : rawRecords) {
+        uint32_t rid = r.id;
+        if (r.kind == 'P') {
+            const int j = r.id < curOfOrig.size() ? curOfOrig[r.id] : -1;
+            if (j < 0) continue;   // deleted by renumbering
+            if (renumbered) {
+                if (blockP) continue;
+                blockP = true;
+                for (size_t k = 0; k < partSets.size(); k++) {
+                    const int ri = rawOf(k);
+                    if (ri < 0 && !PartSet<>::IsModifiedData(&partSets[k])) continue;
+                    doneP[k] = 1;
+                    if (ri >= 0 && Fingerprint('P', (uint32_t)k) == rawRecords[ri].fp) {
+                        std::string raw = rawRecords[ri].raw; const uint32_t id = (uint32_t)k;
+                        memcpy(&raw[4], &id, 4);
+                        file.write(raw.data(), raw.size());
+                    } else {
+                        const std::string e = encode('P', (uint32_t)k); file.write(e.data(), e.size());
+                    }
+                }
+                continue;
+            }
+            rid = (uint32_t)j;   // == r.id: not renumbered
+        }
+        if (!exists(r.kind, rid)) continue;
+        switch (r.kind) {
+        case 'P': if (doneP[rid]) continue; doneP[rid] = 1; break;
+        case 'C': if (doneC[rid]) continue; doneC[rid] = 1; break;
+        case 'G': if (doneG[rid]) continue; doneG[rid] = 1; break;
+        case 'V': if (doneV) continue; doneV = true; break;
+        }
+        if (Fingerprint(r.kind, rid) == r.fp)
+            file.write(r.raw.data(), r.raw.size());
+        else {
+            const std::string e = encode(r.kind, rid);
+            file.write(e.data(), e.size());
+        }
     }
 
-    // Write Shapes
-    int paramSize = 16;
-    size_t shapeCount = shapes.size();
-    file.write("VEST", 4);
-    file.write(VAL(shapeCount), 4);
-    file.write(VAL(paramSize), 4);
-
-    for(uint32_t i = 0; i < shapes.size(); i++)
-    {
-        if(!Shape<>::IsModifiedData(&shapes[i]))
-            continue;
-        Shape<>::Save(file, &shapes[i], false);
+    // Records created in the editor.
+    for (uint32_t i = 0; i < partSets.size(); i++)
+        if (!doneP[i] && (partSets[i].wasLoaded || PartSet<>::IsModifiedData(&partSets[i]))) {
+            const std::string e = encode('P', i); file.write(e.data(), e.size());
+        }
+    for (uint32_t i = 0; i < cutOuts.size(); i++)
+        if (!doneC[i] && CutOut<>::IsModifiedData(&cutOuts[i])) {
+            const std::string e = encode('C', i); file.write(e.data(), e.size());
+        }
+    // MBAACC files have no VEST block (MBAA.exe has no shapes); don't add one, also not to a New PAT in that layout.
+    if (!doneV && !useMBAACCFormat && (rawRecords.empty() || !shapes.empty())) {
+        const std::string e = encode('V', 0); file.write(e.data(), e.size());
     }
-
-    file.write("VNST", 4);
-    for(uint32_t i = 0; i < shapes.size(); i++)
-    {
-        if(!Shape<>::IsModifiedData(&shapes[i]))
-            continue;
-        Shape<>::Save(file, &shapes[i], true);
-    }
-
-    file.write("VEED", 4);
-
-    // Write Textures
-    for(uint32_t i = 0; i < gfxMeta.size(); i++)
-    {
-        if(!PartGfx<>::IsModifiedData(&gfxMeta[i]))
-            continue;
-        file.write("PGST", 4);
-        file.write(VAL(i), 4);
-        PartGfx<>::Save(file, &gfxMeta[i]);
-        file.write("PGED", 4);
-    }
+    for (uint32_t i = 0; i < gfxMeta.size(); i++)
+        if (!doneG[i] && PartGfx<>::IsModifiedData(&gfxMeta[i])) {
+            const std::string e = encode('G', i); file.write(e.data(), e.size());
+        }
 
     file.write("_END", 4);
-    file.close();
+    const std::string bytes = file.str();
+    if (!WriteFileAtomic(filename, bytes.data(), bytes.size())) return false;
+    for (size_t o = 0; o < diskIdOfOrig.size(); o++) diskIdOfOrig[o] = o < curOfOrig.size() ? curOfOrig[o] : -1;
     return true;
 }
 
 void Parts::SetHighlightOpacity(float opacity)
 {
     highlightOpacity = opacity;
+}
+
+// FNV-1a over the model of one record (see RawRecord in parts.h).
+namespace {
+struct Fnv {
+    uint64_t h = 1469598103934665603ull;
+    void add(const void* p, size_t n) {
+        const unsigned char* c = (const unsigned char*)p;
+        for (size_t i = 0; i < n; ++i) { h ^= c[i]; h *= 1099511628211ull; }
+    }
+    template<class T> void v(const T& x) { add(&x, sizeof(x)); }
+    void str(const std::string& s) { size_t n = s.size(); v(n); add(s.data(), n); }
+};
+}
+
+uint64_t Parts::Fingerprint(char kind, uint32_t id) const
+{
+    Fnv f;
+    f.v(kind);
+    switch (kind) {
+    case 'P': {
+        if (id >= partSets.size()) return 0;
+        const auto& ps = partSets[id];
+        f.str(std::string(ps.name.data(), ps.name.size()));
+        size_t n = ps.groups.size(); f.v(n);
+        for (const auto& pr : ps.groups) {
+            f.v(pr.propId); f.v(pr.priority); f.add(pr.rotation, sizeof(pr.rotation)); f.add(pr.pras, sizeof(pr.pras));
+            f.v(pr.x); f.v(pr.y); f.v(pr.scaleX); f.v(pr.scaleY); f.v(pr.ppId); f.v(pr.additive); f.v(pr.filter);
+            f.v(pr.pral); f.v(pr.prfl); f.v(pr.prpa); f.v(pr.hasPrpa); f.v(pr.flip);
+            f.add(pr.bgra, sizeof(pr.bgra)); f.add(pr.addColor, sizeof(pr.addColor));
+        }
+        break;
+    }
+    case 'C': {
+        if (id >= cutOuts.size()) return 0;
+        const auto& c = cutOuts[id];
+        f.str(std::string(c.name.data(), c.name.size()));
+        f.add(c.uv, sizeof(c.uv)); f.add(c.xy, sizeof(c.xy)); f.add(c.wh, sizeof(c.wh)); f.v(c.texture);
+        f.add(c.ppjp, sizeof(c.ppjp)); f.v(c.colorSlot); f.v(c.shapeIndex); f.add(c.ppte, sizeof(c.ppte));
+        f.v(c.pptx); f.v(c.altTags); f.v(c.nameFixed);
+        break;
+    }
+    case 'G': {
+        if (id >= gfxMeta.size()) return 0;
+        const auto& g = gfxMeta[id];
+        f.str(std::string(g.name.data(), g.name.size()));
+        f.v(g.w); f.v(g.h); f.v(g.bpp); f.v(g.type); f.add(g.pgte, sizeof(g.pgte)); f.v(g.pgtp);
+        f.v(g.noCompress); f.add(g.ddsHeader, sizeof(g.ddsHeader)); f.v(g.imageSize);
+        if (g.imageData && g.imageSize > 0) f.add(g.imageData, (size_t)g.imageSize);
+        if (g.data && g.imageSize == 0 && g.w > 0 && g.h > 0) f.add(g.data, (size_t)g.w * g.h * (g.bpp / 8));
+        break;
+    }
+    case 'V': {
+        size_t n = shapes.size(); f.v(n);
+        for (const auto& sh : shapes) {
+            f.str(std::string(sh.name.data(), sh.name.size()));
+            f.v(sh.type); f.v(sh.radius); f.v(sh.width); f.v(sh.vertexCount); f.v(sh.vertexCount2);
+            f.v(sh.length); f.v(sh.length2); f.v(sh.dz); f.v(sh.dRadius);
+            f.v(sh.rectW); f.v(sh.rectH); f.v(sh.rectX); f.v(sh.rectY);
+        }
+        break;
+    }
+    }
+    return f.h;
 }

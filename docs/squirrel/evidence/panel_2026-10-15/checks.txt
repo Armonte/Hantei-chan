@@ -1,0 +1,9 @@
+openany C:/dev/hantei-chan/work/sqtest/uni2/data/chr001/chr001_0.txt
+wait 30
+sq open C:/dev/hantei-chan/work/sqtest/uni2
+sq file data/chr001/chr001_mv_0.txt
+sq problems
+sq goto 370 0
+sq type BMvTbl.SetPattern(9999); BMvTbl.NoSuchNative(1); BMvTbl.JumpFrameID(77777); BMvTbl.SetPattern("NoSuchCode"); 
+sq problems
+quit

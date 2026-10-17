@@ -1,0 +1,25 @@
+UNI2 (UNDER NIGHT IN-BIRTH II Sys:Celes 1.42, Steam, + UNI2-IM v0.7.7) stage bg001 (city intersection) in-game captures
+Captured 2026-10-15 with gamecap (per-process injection only; no global input; no desktop grab; run under flock game_session.lock).
+
+Files (all 1280x720 PNG, game backbuffer via UNI2-IM harness "grab"):
+  uni2_bg001_game.png                    round-start camera, fighters hidden
+  uni2_bg001_game_side.png               camera scrolled right, fighters hidden
+  uni2_bg001_game{,_side}_withfighters.png  same frames' neighbours with fighters (reference only)
+  uni2_bg001_game{,_side}.json           sidecars: P1/P2 x/y, scales, screen matrix, camera view/proj, raw camera obj dump
+  stage3d_uni2_bg001.gcs.txt             copy of the case script
+
+Stage: training stage 1 set via UNI2-IM harness "stage 1" (= bg001, the clock-tower intersection).
+Fighters hidden: UNI2-IM harness pipe "hidefighters on" (skips character/effect draws). HUD off via UNI2-IM
+  [HudOpacity]=0 (ini_set, restored at quit). Game running (not paused); GRD gauges held at 0. Hyde vs Hyde.
+Command: cd /mnt/c/dev/hantei-chan/tools/gamecap && ./run.sh cases/stage3d_uni2_bg001.gcs
+Case:    /mnt/c/dev/hantei-chan/tools/gamecap/cases/stage3d_uni2_bg001.gcs (includes games/uni2.gcs, games/uni2_to_training.gcs)
+
+Camera values (camera object VA 0xC5CCA0 = UNI2-IM kCameraObject; layout inferred by diffing the two shots:
+  +0x8 i32 camera x (world units, 128/px), +0xC i32 camera y, +0x14 f32 zoom(?); repeated at +0x18/+0x30 copies):
+  centre: P1 x=-40960, P2 x=40960 (y 0)  -> camera x=0, y=0, zoom f32=1.0
+          view matrix translation (row 3) = (0, -0.777778, 2.414213)   [x,y in NDC-ish units, z = 1/tan(22.5deg)]
+          projection: 2.414213 diag (fovY 45deg, aspect handled by scale_x/scale_y), zn/zf from 1.0002/-0.20004
+          scale_common=1/128, scale_x=0.0015625 (=1/640), scale_y=-0.0027778 (=-1/360)
+  side:   P1/P2 poked to x=400000, game clamped them to 83200 / 96000 -> camera x=89600 (= midpoint), y=0, zoom 1.0
+          view translation x = -1.09375 (= 89600/128 px / 640). Fighters are near, not necessarily at, the right wall.
+  Camera y offset: view y translation -0.777778 = -280 px (camera sits 280 px above the floor line).

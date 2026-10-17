@@ -1,0 +1,13 @@
+wrote C:\Program Files (x86)\Steam\steamapps\common\UNDER NIGHT IN-BIRTH II Sys Celes\UNI2-IM\Mods\data\chr003\chr003.cg (39100136 bytes)
+gamecap C:\dev\fbmod\tests\ingame\.run_cgb_fbmod_uni2_boot_training.gcs
+backup: C:\Program Files (x86)\Steam\steamapps\common\UNDER NIGHT IN-BIRTH II Sys Celes\UNI2-IM/UNI2_IM.ini -> C:\dev\hantei-chan\game_mod_backup\gamecap\uni2_20261016_104221\file00_UNI2_IM.ini
+launched uni2.exe pid 88316 (suspended)
+agent attached: module base 0x00460000, hooks 0x39
+window 01772138 at 802,158 1296x759
+placed window at -640,307
+inject_dll: C:\dev\fbmod\build\inject\fbmod.dll loaded at 0x50950000
+FAILED: capture: use an absolute Windows path (got \\wsl.localhost\Ubuntu-24.04\home\teo\dev\hantei-chan-wt\cgbrowser\docs\cg\evidence\cgbrowser_2026_10_16\uni2_boot\boot_battle.png) (at C:\dev\fbmod\tests\ingame\.run_cgb_fbmod_uni2_boot_training.gcs:22)
+failure snapshot (game window only): C:\dev\hantei-chan\tools\gamecap\build\..\logs\fail_20261016_104250.png
+quit (failure): terminating pid 88316
+restored C:\Program Files (x86)\Steam\steamapps\common\UNDER NIGHT IN-BIRTH II Sys Celes\UNI2-IM/UNI2_IM.ini
+restored C:\Program Files (x86)\Steam\steamapps\common\UNDER NIGHT IN-BIRTH II Sys Celes\UNI2-IM\Mods\data\chr003\chr003.cg

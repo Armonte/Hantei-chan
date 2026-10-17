@@ -1,0 +1,534 @@
+{
+ "generated": "2026-10-16",
+ "metric": "mean |d| per channel (0-255) and % of pixels with |d| summed over RGB > 24, game capture vs each tool's render composited over the game's fighters-hidden plate with the same light model and registration; scored on the union of all tools' footprints (showcase_metric.py)",
+ "cases": [
+  {
+   "id": "uni2_set991",
+   "title": "UNI2 layered scene: CG + .pat part set 991 (additive flame, PRAS pivots, 3D ring arcs)",
+   "game": "UNI2",
+   "pattern_frame": "chr020 p5 f2 (zoom 1)",
+   "game_capture": "pras_chr020_p5f2_r3 (gamecap v2)",
+   "notes": "Additive point-sampled and PRFL-filtered .pat parts over the CG layer; the stage Bokashi pass and aura glow are modelled for every tool alike.",
+   "caveat": "Known residual for ours: the ring arcs (set 991 slots 41/44/45) change between game runs (render-match17); the per-layer bokashi split (--layers) is off here because only our editor can export per-layer shots.",
+   "metrics": {
+    "ours": {
+     "mean_abs_d": 1.32,
+     "pct_px_gt24": 1.9,
+     "native_footprint": {
+      "lit": 1.27,
+      "lit_pct": 1.8,
+      "px": 63496
+     },
+     "status": ""
+    },
+    "sosfiro": {
+     "mean_abs_d": 2.44,
+     "pct_px_gt24": 7.3,
+     "native_footprint": {
+      "lit": 2.27,
+      "lit_pct": 6.4,
+      "px": 62767
+     },
+     "status": ""
+    },
+    "gonp": {
+     "mean_abs_d": 39.37,
+     "pct_px_gt24": 50.1,
+     "native_footprint": {
+      "lit": 0.28,
+      "lit_pct": 0.0,
+      "px": 28843
+     },
+     "status": ""
+    }
+   },
+   "union_px": 64197,
+   "v2_model_args": [
+    "--game-name",
+    "pras_chr020_p5f2_r3",
+    "--grad-ctrl",
+    "ctrl_chr020_p0,ctrl_chr020_p0_r3",
+    "--glow",
+    "sq",
+    "--grey",
+    "--bokashi",
+    "0.0784",
+    "--subpix",
+    "/home/teo/dev/hantei-chan-wt/parity/docs/audit_2026_10_14/evidence/compare/v2/round13/reg/chr020_r3.json"
+   ],
+   "images": {
+    "sheet": "sheets/uni2_set991.jpg"
+   },
+   "what_others_got_wrong": {
+    "sosfiro": "Close to the game (second best): the additive flame edges and ring arcs differ more than ours.",
+    "gonp": "No .pat support: the whole set-991 flame/ring layer is missing; only the CG sprite is drawn."
+   }
+  },
+  {
+   "id": "uni2_p435",
+   "title": "UNI2 rotated CG mid-tween (AFHK 1 interpolation, AFAZ rotation lerp, tick 27 of 55)",
+   "game": "UNI2",
+   "pattern_frame": "chr020 p435 tick 27 (zoom 1)",
+   "game_capture": "afhk_cg_chr020_p435_t27_r3",
+   "notes": "Needs AFHK interpolation between two keyframes plus a rotated, palette-indexed CG sprite.",
+   "caveat": "gonp has no animation playback, so it is shown at frame 0 (the keyframe tick 27 belongs to); its failure here is the sprite decode/palette, not only the missing tween.",
+   "metrics": {
+    "ours": {
+     "mean_abs_d": 3.98,
+     "pct_px_gt24": 6.9,
+     "native_footprint": {
+      "lit": 0.63,
+      "lit_pct": 0.2,
+      "px": 4421
+     },
+     "status": ""
+    },
+    "sosfiro": {
+     "mean_abs_d": 85.5,
+     "pct_px_gt24": 94.6,
+     "native_footprint": {
+      "lit": 92.61,
+      "lit_pct": 92.0,
+      "px": 4532
+     },
+     "status": ""
+    },
+    "gonp": {
+     "mean_abs_d": 104.64,
+     "pct_px_gt24": 100.0,
+     "native_footprint": {
+      "lit": 120.68,
+      "lit_pct": 100.0,
+      "px": 4532
+     },
+     "status": ""
+    }
+   },
+   "union_px": 6670,
+   "v2_model_args": [
+    "--game-name",
+    "afhk_cg_chr020_p435_t27_r3",
+    "--grad-ctrl",
+    "ctrl_chr020_p0,ctrl_chr020_p0_r3",
+    "--glow",
+    "sq",
+    "--grey",
+    "--bokashi",
+    "0.0784",
+    "--subpix",
+    "/home/teo/dev/hantei-chan-wt/parity/docs/audit_2026_10_14/evidence/compare/v2/round13/reg/chr020_r3.json"
+   ],
+   "images": {
+    "sheet": "sheets/uni2_p435.jpg"
+   },
+   "what_others_got_wrong": {
+    "sosfiro": "Wrong palette (light-blue body) and wrong pose: the mid-tween AFAZ rotation is not interpolated as the game does.",
+    "gonp": "Sprite drawn as a solid green silhouette (UNI2 palette/format not decoded); no tween (no playback)."
+   }
+  },
+  {
+   "id": "uni2_pups",
+   "title": "UNI2 PUPS palette switch: CG 869 + .pat set 839 with PPPA-tinted parts",
+   "game": "UNI2",
+   "pattern_frame": "chr027 p449 f4 (zoom 1.5 editor vs zoom 1 game)",
+   "game_capture": "pups_chr027_p449f4_r5",
+   "notes": "Palette bank chosen by the pattern's PUPS, plus per-part palette (PPPA) tint on the .pat layer.",
+   "caveat": "Close-up: v2_model drops view-wide rows/columns from every footprint (its grid-line guard), so only the lower-right of the sprite is scored, the same pixels for every tool.",
+   "metrics": {
+    "ours": {
+     "mean_abs_d": 2.47,
+     "pct_px_gt24": 4.5,
+     "native_footprint": {
+      "lit": 2.45,
+      "lit_pct": 4.4,
+      "px": 61278
+     },
+     "status": ""
+    },
+    "sosfiro": {
+     "mean_abs_d": 129.25,
+     "pct_px_gt24": 87.5,
+     "native_footprint": {
+      "lit": 129.66,
+      "lit_pct": 87.4,
+      "px": 61063
+     },
+     "status": ""
+    },
+    "gonp": {
+     "mean_abs_d": 73.75,
+     "pct_px_gt24": 100.0,
+     "native_footprint": {
+      "lit": 73.89,
+      "lit_pct": 100.0,
+      "px": 61063
+     },
+     "status": ""
+    }
+   },
+   "union_px": 61635,
+   "v2_model_args": [
+    "--game-name",
+    "pups_chr027_p449f4_r5",
+    "--light",
+    "1,0;1,0;1,0",
+    "--grey",
+    "--grad-ctrl",
+    "ctrl_chr027_p0,ctrl_chr027_p0_r5",
+    "--bokashi",
+    "0.0784",
+    "--subpix",
+    "/home/teo/dev/hantei-chan-wt/parity/docs/audit_2026_10_14/evidence/compare/v2/round13/reg/chr027_r5.json"
+   ],
+   "images": {
+    "sheet": "sheets/uni2_pups.jpg"
+   },
+   "what_others_got_wrong": {
+    "sosfiro": "Wrong palette bank: the PUPS switch is not applied, so the coat comes out white/pink.",
+    "gonp": "Wrong palette (orange coat); no PUPS/PPPA, no .pat layer."
+   }
+  },
+  {
+   "id": "uni2_flipHV",
+   "title": "UNI2 .pat-only pattern with PRRV 3 (H+V flipped) streak parts",
+   "game": "UNI2",
+   "pattern_frame": "chr019 p153 f0 (zoom 1)",
+   "game_capture": "flipHV_chr019_p153_r5",
+   "notes": "Pure .pat effect (no CG sprite on the frame): a tool without .pat support draws nothing.",
+   "caveat": "",
+   "metrics": {
+    "ours": {
+     "mean_abs_d": 0.38,
+     "pct_px_gt24": 0.3,
+     "native_footprint": {
+      "lit": 0.32,
+      "lit_pct": 0.1,
+      "px": 101371
+     },
+     "status": ""
+    },
+    "sosfiro": {
+     "mean_abs_d": 18.03,
+     "pct_px_gt24": 35.5,
+     "native_footprint": {
+      "lit": 17.81,
+      "lit_pct": 35.0,
+      "px": 104608
+     },
+     "status": ""
+    },
+    "gonp": {
+     "mean_abs_d": 74.05,
+     "pct_px_gt24": 85.5,
+     "native_footprint": null,
+     "status": ""
+    }
+   },
+   "union_px": 107581,
+   "v2_model_args": [
+    "--game-name",
+    "flipHV_chr019_p153_r5",
+    "--light",
+    "1,0;1,0;1,0",
+    "--grey",
+    "--subpix",
+    "/home/teo/dev/hantei-chan-wt/parity/docs/audit_2026_10_14/evidence/compare/v2/round13/reg/chr019_r5_z1.json"
+   ],
+   "images": {
+    "sheet": "sheets/uni2_flipHV.jpg"
+   },
+   "what_others_got_wrong": {
+    "sosfiro": "Draws the streaks but the PRRV 3 (H+V) flipped parts land off the game geometry.",
+    "gonp": "No .pat support: draws nothing (the frame has no CG sprite)."
+   }
+  },
+  {
+   "id": "mbtl_patctrl_chr001_p238f10",
+   "title": "MBTL p238: translucent tray (.pat set 275, PRAL 1 + translucent parts) at real zoom 1.5",
+   "game": "MBTL",
+   "pattern_frame": "chr001 p238 f10 (zoom 1.5)",
+   "game_capture": "mbtl_patctrl_chr001_p238f10_z15sa (HUD-free, stage-held, plate_b0)",
+   "notes": "",
+   "caveat": "",
+   "metrics": {
+    "ours": {
+     "mean_abs_d": 0.39,
+     "pct_px_gt24": 0.4,
+     "native_footprint": {
+      "lit": 0.24,
+      "lit_pct": 0.1,
+      "px": 62034
+     },
+     "status": ""
+    },
+    "sosfiro": {
+     "mean_abs_d": 3.5,
+     "pct_px_gt24": 7.7,
+     "native_footprint": {
+      "lit": 3.53,
+      "lit_pct": 7.8,
+      "px": 61936
+     },
+     "status": ""
+    },
+    "gonp": {
+     "mean_abs_d": 78.57,
+     "pct_px_gt24": 84.6,
+     "native_footprint": null,
+     "status": ""
+    }
+   },
+   "union_px": 62971,
+   "v2_model_args": [
+    "--game",
+    "/mnt/c/dev/hantei-chan/tools/gamecap/captures/v2/nohud_st",
+    "--game-name",
+    "mbtl_patctrl_chr001_p238f10_z15sa",
+    "--plate",
+    "/mnt/c/dev/hantei-chan/tools/gamecap/captures/v2/nohud_st/mbtl_patctrl_chr001_p238f10_z15sa_game_plate_b0.png",
+    "--light",
+    "1,0;1,0;1,0",
+    "--grey",
+    "--subpix",
+    "0,0"
+   ],
+   "images": {
+    "sheet": "sheets/mbtl_patctrl_chr001_p238f10.jpg"
+   },
+   "what_others_got_wrong": {
+    "sosfiro": "Tray drawn, but the translucent purple glow parts are missing.",
+    "gonp": "No .pat support: draws nothing."
+   }
+  },
+  {
+   "id": "mbtl_flipV_chr001_p157f2",
+   "title": "MBTL p157: additive arcs (PRRV 2) + the puddle effect at real zoom 1.5",
+   "game": "MBTL",
+   "pattern_frame": "chr001 p157 f2 (zoom 1.5)",
+   "game_capture": "mbtl_flipV_chr001_p157f2_z15sa (HUD-free, stage-held, plate_b0)",
+   "notes": "",
+   "caveat": "The puddle (p158 spawn) is in the game frame; scored pixels are the union of the tools' footprints, so game-only pixels outside every tool's footprint are not scored.",
+   "metrics": {
+    "ours": {
+     "mean_abs_d": 0.26,
+     "pct_px_gt24": 0.2,
+     "native_footprint": {
+      "lit": 0.19,
+      "lit_pct": 0.0,
+      "px": 79644
+     },
+     "status": ""
+    },
+    "sosfiro": {
+     "mean_abs_d": 21.54,
+     "pct_px_gt24": 66.0,
+     "native_footprint": {
+      "lit": 21.83,
+      "lit_pct": 66.1,
+      "px": 84514
+     },
+     "status": ""
+    },
+    "gonp": {
+     "mean_abs_d": 50.87,
+     "pct_px_gt24": 77.9,
+     "native_footprint": null,
+     "status": ""
+    }
+   },
+   "union_px": 86959,
+   "v2_model_args": [
+    "--game",
+    "/mnt/c/dev/hantei-chan/tools/gamecap/captures/v2/nohud_st",
+    "--game-name",
+    "mbtl_flipV_chr001_p157f2_z15sa",
+    "--plate",
+    "/mnt/c/dev/hantei-chan/tools/gamecap/captures/v2/nohud_st/mbtl_flipV_chr001_p157f2_z15sa_game_plate_b0.png",
+    "--light",
+    "1,0;1,0;1,0",
+    "--grey",
+    "--subpix",
+    "0,0"
+   ],
+   "images": {
+    "sheet": "sheets/mbtl_flipV_chr001_p157f2.jpg"
+   },
+   "what_others_got_wrong": {
+    "sosfiro": "Arcs tinted red/magenta instead of white/cyan, and no puddle (no spawned-pattern preview).",
+    "gonp": "No .pat support: draws nothing."
+   }
+  },
+  {
+   "id": "mbtl_cg_z15",
+   "title": "MBTL CG sprite at zoom 1.5 with the game's CG zoom filter (Filter_V) and BgColor light",
+   "game": "MBTL",
+   "pattern_frame": "chr001 p0 f0 (zoom 1.5)",
+   "game_capture": "mbtl_ctrl_chr001_p0f0_z15sabb (backbuffer capture)",
+   "notes": "Plain idle sprite: every tool loads it; the difference is the zoom filter. The training frame counter box is excluded.",
+   "caveat": "Control-style case (one CG sprite) to show the zoom filter, not a complex scene. sosfiro and gonp give identical numbers: neither applies the game's CG zoom filter (Filter_V) at 1.5x.",
+   "metrics": {
+    "ours": {
+     "mean_abs_d": 0.67,
+     "pct_px_gt24": 0.0,
+     "native_footprint": {
+      "lit": 0.67,
+      "lit_pct": 0.0,
+      "px": 65405
+     },
+     "status": ""
+    },
+    "sosfiro": {
+     "mean_abs_d": 7.78,
+     "pct_px_gt24": 20.8,
+     "native_footprint": {
+      "lit": 7.43,
+      "lit_pct": 20.3,
+      "px": 63225
+     },
+     "status": ""
+    },
+    "gonp": {
+     "mean_abs_d": 7.78,
+     "pct_px_gt24": 20.8,
+     "native_footprint": {
+      "lit": 7.43,
+      "lit_pct": 20.3,
+      "px": 63225
+     },
+     "status": ""
+    }
+   },
+   "union_px": 66011,
+   "v2_model_args": [
+    "--game",
+    "/mnt/c/dev/hantei-chan/tools/gamecap/captures/v2/nohud_st",
+    "--game-name",
+    "mbtl_ctrl_chr001_p0f0_z15sabb",
+    "--plate",
+    "/mnt/c/dev/hantei-chan/tools/gamecap/captures/v2/nohud_st/mbtl_ctrl_chr001_p0f0_z15sabb_game_plate_b0.png",
+    "--mbtl-light",
+    "bg021,330",
+    "--grey",
+    "--subpix",
+    "0,0",
+    "--exclude",
+    "30,170,145,210"
+   ],
+   "images": {
+    "sheet": "sheets/mbtl_cg_z15.jpg"
+   },
+   "what_others_got_wrong": {
+    "sosfiro": "No CG zoom filter (Filter_V) at 1.5x.",
+    "gonp": "No CG zoom filter (Filter_V) at 1.5x (same numbers as sosfiro)."
+   }
+  },
+  {
+   "id": "mbaacc_actcadenza_p238",
+   "title": "ActCadenza moon-3 Akiha p238 frame 4 with effect.ha6 spawns (MBAACC data)",
+   "game": "MBAACC (ActCadenza moon 3)",
+   "pattern_frame": "akiha_3 p238 f4 (zoom 2)",
+   "game_capture": null,
+   "images": {
+    "sheet": "sheets/mbaacc_actcadenza_p238.jpg"
+   },
+   "metrics": {
+    "ours": null,
+    "sosfiro": null,
+    "gonp": null
+   },
+   "notes": "Editor-only, qualitative: ours previews the spawned effect patterns (red flame); gonp shows the character sprite correctly but no effects; sosfiro capture build crashed.",
+   "caveat": "No game column and no metric: gamecap drives UNI2 and MBTL only. The sosfiro capture build exits with code 5 (minidump) loading MBAACC akiha_0 or akiha_3 (.txt and .HA6); this was not reproduced in sosfiro's own UI, so it is NOT counted as a sosfiro failure. Manual check: sosfiro File > Load from .txt > akiha_3.txt, pattern 238, frame 4.",
+   "what_others_got_wrong": {
+    "sosfiro": "not shown (capture harness crash, unverified)",
+    "gonp": "no effect-spawn preview; the sprite itself is right"
+   }
+  }
+ ],
+ "tools": {
+  "ours": {
+   "name": "Hantei-chan update/parity-1014",
+   "build": "build/gonptechan.exe from commit e758112 (build.sh, mingw, ccache)",
+   "capture": "--headless --batch export (shoot_batch.sh)"
+  },
+  "sosfiro": {
+   "name": "sosfiro's fork, v3.0.0_alpha10 (Armonte/sosfiro_hantei 1c13f86)",
+   "build": "/mnt/c/dev/Hantei-chan/work/sosfiro_capture/build/hanteichan.exe (2026-10-14 capture build: capture_args.cpp only loads/selects/reads the GL back buffer; render code untouched)",
+   "capture": "scripts/shoot_others.sh sosfiro"
+  },
+  "gonp": {
+   "name": "gonp's Hantei-chan: gonpgonp/Hantei-chan master 7e97e19 (2025-07-29)",
+   "build": "/home/teo/dev/hantei-chan-wt/gonp_upstream + scripts/gonp_capture_args.patch (capture-only: file load, pattern/frame, zoom, clear colour, hide panels and axis lines, GL readback); mingw build needed -include cstring/cstdint/string, -DIMGUI_IMPL_WIN32_DISABLE_GAMEPAD and lowercase lib aliases, no source edits beyond the patch",
+   "capture": "scripts/shoot_others.sh gonp",
+   "identity": "\"Gonptechan\" is not a separate gonp tool: gonptechan is the name of our own fork's binary/releases (Armonte/Hantei-chan, release gonptechan0.0.2 2025-11); \"Gonptechan EX\" is bigorados' fork of ours. gonp's own editor is the upstream gonpgonp/Hantei-chan (HA6 + CG, one sprite per frame, no .pat, no playback). /mnt/c/games/gonp is an MBAACC install, not tooling."
+  }
+ },
+ "features": [
+  {
+   "title": "CG manager: MBAACC bank insert/replace, shown in game",
+   "images": [
+    "features/cgm_mbaacc_ingame_before_sion_vs_tatari.jpg",
+    "features/cgm_mbaacc_ingame_after_recolour_and_replaced_sprites.jpg"
+   ],
+   "source": "docs/cg/evidence/ (existing in-game captures, shrunk copies)",
+   "others": "no equivalent in sosfiro or gonp"
+  },
+  {
+   "title": "CG manager: UNI2 palette pairs (65 colours x 2 sets; palette 3 <-> 68)",
+   "images": [
+    "features/feat_cgm_uni2_palettes.png"
+   ],
+   "source": "scripts/ui/feat_cgm_uni2_palettes.txt via tools/ui/ab_shot.sh",
+   "others": "no equivalent"
+  },
+  {
+   "title": "CG manager: unified CG + .pat textures tab (UNI2 chr020: CG images and .pat textures, Used by, PNG import/export)",
+   "images": [
+    "features/feat_cgm_uni2_textures.png"
+   ],
+   "source": "scripts/ui/feat_cgm_uni2_textures.txt via tools/ui/ab_shot.sh",
+   "others": "no equivalent"
+  },
+  {
+   "title": "Squirrel script panel (UNI2 chr001 mv script, uni2 API table: hover on an engine native, Problems tab)",
+   "images": [
+    "features/feat_squirrel_hover.png",
+    "features/feat_squirrel_problems.png"
+   ],
+   "source": "scripts/ui/feat_squirrel.txt (`sq hoverat` pins the real hover tooltip to a text position)",
+   "others": "no equivalent"
+  },
+  {
+   "title": "3D stage view with MBAACC camera alignment (UNI2 bg001 cam 0, MBTL bg001 with clamp)",
+   "images": [
+    "features/feat_stage3d_uni2_align.png",
+    "features/feat_stage3d_mbtl_align.png"
+   ],
+   "source": "scripts/ui/feat_stage3d.txt",
+   "others": "no equivalent"
+  },
+  {
+   "title": "Game link / hot-reload panel (MBAACC)",
+   "images": [
+    "features/feat_gamelink_panel.png"
+   ],
+   "source": "scripts/ui/feat_gamelink.txt with --tool gamelink --hide-boxes (no game launched, so \"not connected\")",
+   "others": "no equivalent"
+  },
+  {
+   "title": "PovertyCaster .pcmod export",
+   "images": [
+    "features/pcmod_export_window.png",
+    "features/pcmod_export_done.png"
+   ],
+   "source": "scripts/ui/feat_pcmod.txt (tests/fixtures/pcmod files in C:/games/MyMod)",
+   "others": "no equivalent"
+  }
+ ],
+ "reproduce": [
+  "scripts/shoot_others.sh gonp|sosfiro <cases>  (and tools/uni/s1_compare/shoot_batch.sh for ours with OUTDIR=work/bw_ours)",
+  "scripts/run_cases.sh",
+  "python3 scripts/make_sheets.py; python3 scripts/mbaacc_sheet.py",
+  "scripts/ui/run_features.sh; python3 scripts/ui/crop_features.py <shot dir> features"
+ ],
+ "selection": "The 7 measured cases were chosen BEFORE measuring, from the brief (set 991, p435, PUPS, flips, MBTL p238/p157/zoom-1.5 CG) among the render-match cases that already have HUD-free game captures with a fighters-hidden plate. Not run (time, not results): flipH_chr000_p96f1, flipV_chr000_p383f1, afhk_pat_chr000_p72/chr019_p62, afhk_cg_chr020_p437, rect_chr024_p76, mbtl_pral2_chr004_p420f4, mbtl_pups_chr011_p309, mbtl p277. pral2_chr025_p133f1 has no plate capture. mbtl_cg_z15 is a single-sprite control, labelled as such. Registration (round13/reg/*.json) was fitted earlier on OUR editor's control shots; it is a game-camera offset and is applied unchanged to every tool."
+}

@@ -1,0 +1,33 @@
+# RboActor part 3: offsets 0x500..0x77F (decimal 1280..1919). Tuple format of table F in make_rbo_actor.py.
+# Only gap bytes are listed (existing named fields in this range: jumpCounter 0x524, pendingPattern 0x528, pendingFrame 0x52A,
+# pendingFlip 0x52C, pendingFlipNegatesVelocity 0x530, facingLeft 0x534, facingLeftPtr 0x538, altDrawMode 0x560, curFrame 0x564,
+# attackBoxCount 0x74C, curAttack 0x750, attackBoxRect[2] 0x754, attackBoxSlot[2] 0x75C, hurtBoxCount 0x770, hurtBoxRect[3] 0x774).
+# Nested types are in actor_part3_types.h (must precede RboActor in the generated header). Confidence: T=traced, I=inferred, U=unused.
+FIELDS = [
+ (1280, 32, 'int', 'patternHistoryTail[8]', 'T: tail (entries 8..15) of the 16-dword pattern history ring at +0x4E0..+0x51F (part 2 owns the head); sub_4415C0 shifts it and stores pattern +0x5C last (combo-repeat damage scaling)'),
+ (1312, 4, 'RboActor *', 'frameMirrorSource', 'T: Actor_GetFrameInterpolation 0x445A50 reads +104/+1380 of this actor when byte +0x2CC == 1; no writer found (only read)'),
+ (1325, 3, 'unsigned char', 'unused_52D[3]', 'U: pendingFlip is accessed only as byte at +0x52C (all 80 operands scanned), no access to 0x52D..0x52F'),
+ (1333, 3, 'unsigned char', 'unused_535[3]', 'U: facingLeft only accessed as byte (movsx/cmp byte ptr), no access to 0x535..0x537'),
+ (1340, 1, 'unsigned char', 'fixedFacingValue', 'T: sub_41ACF0 (child spawn, flags 0x100/0x200) stores 0/1 and redirects facingLeftPtr here; read only through facingLeftPtr'),
+ (1341, 1, 'unsigned char', 'landedLatch', 'T: sub_44BFF0 sets 1 on landing, sub_441850 clears; read sub_43DF20, sub_43F460, sub_44ABD0'),
+ (1342, 2, 'unsigned char', 'unused_53E[2]', 'U: alignment pad after the two bytes at +0x53C/+0x53D, no access'),
+ (1344, 4, 'int', 'aiActionParam', 'T: sub_43E730 (AI com_act_work call) passes it as script arg 2 and replaces it with result arg 3'),
+ (1348, 4, 'int', 'aiThinkTimer', 'T: sub_43EC50: <0 off, 0 = run sub_43E730 now, >0 counts down; frame-enter ops 9/15 and sub_44A1F0 case 8 write'),
+ (1352, 4, 'int', 'aiFlags', 'T: sub_43E730 tests bit 2 (face nearest edge); written by sub_44A750 script command'),
+ (1356, 4, 'int', 'scriptTag', 'T: frame-enter op 18 sets/adds; copied to spawned children (sub_41ACF0/41BF80); sub_449D50 filters script commands by it'),
+ (1360, 16, 'struct RboP3BufferedJump', 'bufferedJump', 'T: queued pattern/frame/flip request (kind -1 none) written by sub_41E020/41FA50/41FFA0, consumed by sub_41E500'),
+ (1384, 4, 'unsigned char', 'unused_568[4]', 'U: no operand with displacement 0x568 in the whole text; node pool starts at +0x570 and sub_41F900/41DA50 index from +0x568 only with +8/+48 constants'),
+ (1388, 4, 'int *', 'singleSlotTimedRule', 'T: Actor_LinkTransitionRuleEvent category 6 stores the event record; Actor_RunTimedJumpRules 0x420520 evaluates it first'),
+ (1392, 40, 'struct RboP3RuleNode', 'transitionNodePool[5]', 'T/I: Actor_RunFrameScriptList7 0x41F900 links nodes at actor+0x570+8*n; capacity 5 inferred from pool boundary (+0x598)'),
+ (1432, 240, 'struct RboP3EnterNode', 'frameEnterNodePool[20]', 'T/I: Actor_RunFrameScriptList6 0x41DA50 links nodes at actor+0x598+12*n; capacity 20 inferred from pool boundary (+0x688)'),
+ (1672, 48, 'struct RboP3TransitionHeads', 'transitionHeads', 'T: Actor_ClearTransitionRuleLists 0x41F7C0 / Actor_LinkTransitionRuleEvent 0x41F7F0 (6 heads, 8-byte stride)'),
+ (1720, 36, 'struct RboP3FrameEnterHeads', 'frameEnterHeads', 'T: Actor_ClearFrameEnterLists 0x41D990 / Actor_LinkFrameEnterEvent 0x41D9B0 (3 heads, 12-byte stride)'),
+ (1756, 4, 'int *', 'perTickScript', 'T: frame-enter op 0x81 (Actor_SetPerTickScript) stores a record {kind,type,index}; ActorTree_TickFrames runs it every tick via Actor_RunPerTickScript'),
+ (1760, 8, 'void *', 'attachedOverlayObj[2]', 'I: sub_43BD40 / sub_44A870 / sub_43BA00 pool objects (banner/caption overlays) with back pointer obj+128 = actor'),
+ (1768, 24, 'struct RboP3KillerRecord', 'killer', 'T: Actor_RecordKillerOnDeath 0x442150, sub_4419A0, sub_43F9F0, sub_43C750'),
+ (1792, 16, 'struct RboP3ArmorState', 'armor', 'T: super-armor state, Combat_ResolveDamageHit 0x444530, sub_443890, sub_4438C0, sub_441800, sub_440550'),
+ (1808, 4, 'RboP3ArmorDeathFlags', 'armorDeathFlags', 'T: frame-enter op 17 writes; Hit_ApplyHpDamage tests bit0 (keep armor state on lethal damage)'),
+ (1812, 32, 'struct RboP3AttackHitState', 'attackHit', 'T: head of the attack state at +0x714 (Actor_UpdateAttackState 0x441060, Hit_RegisterHitMask 0x4430D0, Combat_CountContactHit 0x4449D0); continues at +0x734 and +0x74C'),
+ (1844, 24, 'struct RboP3MultiHitGate', 'multiHitGate', 'T: Hit_MultiHitGateReady/Latch/Advance 0x4429A0/0x442960/0x4429E0 take actor+1844'),
+ (1892, 12, 'struct RboP3HurtTimers', 'hurtTimers', 'T: head of the hurt state at +0x764 (hurtBoxCount at +0x770); sub_440550, Hit_ClassifyGuardOutcome 0x443330'),
+]

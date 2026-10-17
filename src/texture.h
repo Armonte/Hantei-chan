@@ -13,6 +13,7 @@ public: //public only for ease of reading access, do not write anything.
 	unsigned int id; //OpenGL texture id.
 	bool isLoaded;
 	bool isApplied;
+	bool isIndexed = false; //8bpp GL_R8 texture; palette resolved in shader.
 	
 public:
 	Texture();

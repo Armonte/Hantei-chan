@@ -1,0 +1,15 @@
+case	mean_abs_diff	pct_sprite_px_diff_gt24	sprite_px	refine_dx	refine_dy	method
+pral2_chr025_p133f1	13.782	42.28	30040	0	-4	model
+flipH_chr000_p96f1	32.904	85.41	52933	10	-1	model
+flipV_chr000_p383f1	46.986	77.75	51905	10	-10	model
+flipHV_chr019_p153	43.327	90.76	62880	8	10	model
+afhk_pat_chr000_p72_t2	29.455	89.31	6661	-2	-5	model
+afhk_pat_chr019_p62_t7	23.454	66.33	176954	-8	7	model
+afhk_cg_chr020_p435_t27	35.742	80.69	4422	-1	1	model
+pups_chr027_p449	0.000	0.00	-1	6	-1	raw(ncc 0.00)
+rect_chr024_p76	17.544	73.89	540	0	-10	model
+pras_chr020_p5f2	31.730	78.83	92273	0	0	model
+afhk_cg_chr020_p437_t2	25.397	77.68	3530	-1	0	model
+mbtl_pral2_chr004_p420f4	0.000	0.00	-1	0	0	raw(ncc nan)
+mbtl_flipV_chr001_p157f2	66.530	97.29	26639	-10	-10	model
+mbtl_pups_chr011_p309	56.779	64.18	110503	0	0	model

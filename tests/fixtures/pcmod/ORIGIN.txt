@@ -1,0 +1,12 @@
+Copied unchanged from PovertyCaster (branch mods/pcmod-schema, commit 343706aa4; content identical at 96889671e),
+tests/pcmod_manifest/fixture/:
+  pcmod.json, data/SION_3.txt ("foo"), data/_type.txt ("bar"), grp/Gauge_AA/gauge00.png ("baz", not a real PNG).
+The manifest deliberately mixes case and separators ("data/SION_3.txt", "DATA\\_type.txt"). PovertyCaster pins its
+digests (computed there by an independent Python implementation of the schema-1 spec, re-pinned at 96889671e when the
+session digest switched to folding each package's SIM digest); tests/pcmod_test.cpp asserts Hantei-chan's exporter
+reproduces them byte for byte:
+  package digest  eb3db61182ed3ee9875f68f6f668a1671ff3744340e073dffcbfc966998ddf27
+  package sim     16a83aa066f3a94620eed7219529cb3b6463d158e080c02190345a1d1ddc6041  (data\ files only; grp\ is cosmetic)
+  session digest  8c4fe7957fcc0be5912de92c093dcab0a47d812b6d080e6ab5517588df7341cc  (exe = 63 zeros then '1', this package only)
+  vanilla set     f9956a1ae59ce26aa14e3c4d97597da9a665727f9b87539cd48432b10636c0db  (same exe, no sim package)
+Do not edit these files; the digests depend on every byte.

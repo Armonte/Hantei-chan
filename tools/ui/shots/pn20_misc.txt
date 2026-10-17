@@ -1,0 +1,23 @@
+# New IMG from PNG, archive browser (Refresh / Up / Down / Unmount), decoded RBO .FOB view, Japanese PAT editor, Close all tabs
+newimg C:\dev\hantei-chan\work\pacnyx\test_sheet_256.png
+wait 30
+capture C:/dev/hantei-chan/work/ab/shots/pn20_new_img.png
+browse C:\games\rbo_run
+waitidle
+pin on
+source Update01
+wait 20
+capture C:/dev/hantei-chan/work/ab/shots/m8_workfolder_tree.png
+source All archives
+type all
+filter ACOLYTE_F.FOB
+waitidle
+select ACOLYTE_F.FOB
+waitidle
+open
+wait 60
+capture C:/dev/hantei-chan/work/ab/shots/pn21_fob_decoded.png
+closealltabs
+wait 40
+capture C:/dev/hantei-chan/work/ab/shots/pn23_close_all_tabs.png
+quit

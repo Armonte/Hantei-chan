@@ -1,0 +1,45 @@
+# stage-shadow-cgfilter (2026-10-16): the CG-sprite row (chr001 p0 f0, a CG sprite) at a REAL camera zoom of 1.5, suffix _z15sa.
+# At elem0 zoom > 1, Han6Draw_SubmitCgSprite_ParentMtx 0x4A0C40 draws CG sprites with TecCharaDrawBgColorFilter_V /
+# ...SpecularFilter_V (sh_chara.txt). Camera and stage holds copied from v2r20_mbtl_chr001_zoom15.gcs (header below).
+#
+# MBTL IDB: CBtlCamera_Update 0x50B7F0 runs on every battle tick: it eases the elem1 zoom (g_CamElem1_Zoom 0xCABABC,
+# the sidecar cam_f32[11]) toward the half width wanted by g_CamElem2_ZoomTarget 0xCABAD4 (81920/z), copies elem1 into
+# elem0 (g_CamElem0_RenderZoom 0xCABAA4), applies the effect-camera lerps, then CBtlCamera_UpdateMatrices 0x509240
+# (eye distance 1/(elem0 zoom * g_CamElem3_ZoomMul 0xCABAEC)). All three zooms are held at 1.5 so the ease has
+# nothing to do (elem1 width == elem2 width) and the tick's matrices see 1.5. MBTL-IM's pause only suppresses ticks,
+# so the matrices refresh on the case's F6 step. Stage anime held as in round 19 (g_StageAnimFrame 0xA300A0).
+include ../games/mbtl.gcs
+sym g_BattleHudFader 0xAFC3C8
+sym g_BattleStageSel 0xAFC04C
+sym g_CurStageIndex 0xA2E47C
+sym g_StageAnimFrame 0xA300A0
+sym g_CamElem0_RenderZoom 0xCABAA4
+sym g_CamElem1_Zoom 0xCABABC
+sym g_CamElem2_ZoomTarget 0xCABAD4
+let STAGE 21
+let P1CHR 1
+let P2CHR 1
+ini_set MBTL-IM/MBTL_IM.ini Stages BloomStrength 0
+include ../games/mbtl_to_training_stage.gcs
+hold i32 g_StageAnimFrame 0
+hold f32 g_CamElem2_ZoomTarget 1.5
+hold f32 g_CamElem1_Zoom 1.5
+hold f32 g_CamElem0_RenderZoom 1.5
+step 30
+hold i32 [g_BattleHudFader]+8 2
+hold i32 [g_BattleHudFader]+16 0
+hold i32 [g_BattleHudFader]+20 0
+step 4
+set OUTD C:\dev\hantei-chan\tools\gamecap\captures\v2\nohud_st
+set NSTEPS 1
+set GTICK 1
+set CASE mbtl_ctrl_chr001_p0f0_z15sa
+set PAT 0
+set SETFRAME 0
+set FRAME 0
+peek i32 g_StageAnimFrame anim_before
+peek f32 g_CamElem0_RenderZoom zoom0_before
+include ../games/mbtl_v2_case_plate.gcs
+peek i32 g_StageAnimFrame anim_after
+peek f32 g_CamElem0_RenderZoom zoom0_after
+quit

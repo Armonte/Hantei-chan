@@ -1,0 +1,88 @@
+Internal ctest changing into directory: /mnt/c/dev/hantei-chan/wt/parity/build
+Test project /mnt/c/dev/hantei-chan/wt/parity/build
+      Start  1: uni_dataloss
+ 1/41 Test  #1: uni_dataloss .....................   Passed    1.89 sec
+      Start  2: cmdfile
+ 2/41 Test  #2: cmdfile ..........................   Passed    0.24 sec
+      Start  3: cmdfile_ui_smoke
+ 3/41 Test  #3: cmdfile_ui_smoke .................   Passed    0.19 sec
+      Start  4: pattern_search
+ 4/41 Test  #4: pattern_search ...................   Passed    0.14 sec
+      Start  5: shared_clipboard
+ 5/41 Test  #5: shared_clipboard .................   Passed    0.14 sec
+      Start  6: fb_part_transform
+ 6/41 Test  #6: fb_part_transform ................   Passed    0.08 sec
+      Start  7: han2_parts_edit
+ 7/41 Test  #7: han2_parts_edit ..................   Passed    0.09 sec
+      Start  8: part_render_math
+ 8/41 Test  #8: part_render_math .................   Passed    0.06 sec
+      Start  9: refs
+ 9/41 Test  #9: refs .............................   Passed    0.10 sec
+      Start 10: bgm
+10/41 Test #10: bgm ..............................   Passed    0.08 sec
+      Start 11: hud
+11/41 Test #11: hud ..............................   Passed    0.10 sec
+      Start 12: ha4_convert
+12/41 Test #12: ha4_convert ......................   Passed    0.66 sec
+      Start 13: ha4_golden
+13/41 Test #13: ha4_golden .......................   Passed   32.30 sec
+      Start 14: shortcut_router
+14/41 Test #14: shortcut_router ..................   Passed    0.12 sec
+      Start 15: live_reload
+15/41 Test #15: live_reload ......................   Passed    0.55 sec
+      Start 16: undo_manager
+16/41 Test #16: undo_manager .....................   Passed    3.17 sec
+      Start 17: pat_safety
+17/41 Test #17: pat_safety .......................   Passed    0.24 sec
+      Start 18: pat_safety_gamedata
+18/41 Test #18: pat_safety_gamedata ..............   Passed    3.71 sec
+      Start 19: workspace_session
+19/41 Test #19: workspace_session ................   Passed    0.13 sec
+      Start 20: package_tools
+20/41 Test #20: package_tools ....................   Passed    0.34 sec
+      Start 21: game_link
+21/41 Test #21: game_link ........................   Passed    4.60 sec
+      Start 22: game_view
+22/41 Test #22: game_view ........................   Passed    6.68 sec
+      Start 23: tag_tuning
+23/41 Test #23: tag_tuning .......................   Passed    0.23 sec
+      Start 24: tag_sidecar
+24/41 Test #24: tag_sidecar ......................   Passed    0.51 sec
+      Start 25: authoring_model
+25/41 Test #25: authoring_model ..................   Passed    0.10 sec
+      Start 26: frame_data
+26/41 Test #26: frame_data .......................   Passed    1.53 sec
+      Start 27: hud_layout
+27/41 Test #27: hud_layout .......................   Passed    0.09 sec
+      Start 28: pcmod
+28/41 Test #28: pcmod ............................   Passed    0.17 sec
+      Start 29: pcmod_cli
+29/41 Test #29: pcmod_cli ........................   Passed    1.68 sec
+      Start 30: headless_export
+30/41 Test #30: headless_export ..................   Passed    5.00 sec
+      Start 31: fxr_ini
+31/41 Test #31: fxr_ini ..........................   Passed    0.11 sec
+      Start 32: cgm_project_refs_mbaacc
+32/41 Test #32: cgm_project_refs_mbaacc ..........   Passed  111.30 sec
+      Start 33: cgm_folder_mbaacc
+33/41 Test #33: cgm_folder_mbaacc ................   Passed   34.25 sec
+      Start 34: cgm_cc_palettes
+34/41 Test #34: cgm_cc_palettes ..................   Passed    0.19 sec
+      Start 35: cgm_project_refs_mbtl
+35/41 Test #35: cgm_project_refs_mbtl ............   Passed    3.71 sec
+      Start 36: cgm_palette_uni_mbtl
+36/41 Test #36: cgm_palette_uni_mbtl .............   Passed    0.14 sec
+      Start 37: pat_textures_x8
+37/41 Test #37: pat_textures_x8 ..................   Passed    4.07 sec
+      Start 38: cgm_cutter2_gakiha
+38/41 Test #38: cgm_cutter2_gakiha ...............   Passed    0.21 sec
+      Start 39: cgm_cutter2_gakiha_struct
+39/41 Test #39: cgm_cutter2_gakiha_struct ........   Passed    0.47 sec
+      Start 40: cgm_cutter2_gakiha_rt
+40/41 Test #40: cgm_cutter2_gakiha_rt ............   Passed    0.85 sec
+      Start 41: fxr_dgv_oracle
+41/41 Test #41: fxr_dgv_oracle ...................   Passed    5.55 sec
+
+100% tests passed, 0 tests failed out of 41
+
+Total Test time (real) = 227.76 sec

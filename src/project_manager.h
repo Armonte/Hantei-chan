@@ -18,7 +18,8 @@ public:
 	                        int theme,
 	                        float zoomLevel,
 	                        bool smoothRender,
-	                        const float clearColor[3]);
+	                        const float clearColor[3],
+	                        const std::string& workspaceJson = std::string());
 
 	static bool LoadProject(const std::string& path,
 	                        std::vector<std::unique_ptr<CharacterInstance>>& characters,
@@ -28,7 +29,9 @@ public:
 	                        int* outTheme = nullptr,
 	                        float* outZoomLevel = nullptr,
 	                        bool* outSmoothRender = nullptr,
-	                        float* outClearColor = nullptr);
+	                        float* outClearColor = nullptr,
+	                        std::vector<std::string>* outFailedCharacters = nullptr,
+	                        std::string* outWorkspaceJson = nullptr);
 
 	// Legacy support (deprecated, uses temporary stubs)
 	static bool SaveProject(const std::string& path,
@@ -45,7 +48,8 @@ public:
 	                        int* outTheme = nullptr,
 	                        float* outZoomLevel = nullptr,
 	                        bool* outSmoothRender = nullptr,
-	                        float* outClearColor = nullptr);
+	                        float* outClearColor = nullptr,
+	                        std::vector<std::string>* outFailedCharacters = nullptr);
 
 	// Current project path management
 	static bool HasCurrentProject();

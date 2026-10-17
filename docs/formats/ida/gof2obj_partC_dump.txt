@@ -1,0 +1,1400 @@
+=== 0x1074 (4212) nfuncs=9
+  0x431000 Obj_InitDefaults
+      *(a1 + 4212) = 0;
+  0x4353c0 sub_4353C0
+      if ( *(this + 4544) != 0 && (*(this + 4216) != 0 || *(this + 4212) != 0) )
+  0x49e120 sub_49E120
+      v9 = i[1053];
+      i[1053] = v9 - 1;
+  0x49e830 sub_49E830
+      if ( v1[1053] != 0 )
+  0x4a0200 Battle_TickIdleStanceCounters
+      if ( g_SuperFreezeMode == 2 || (v2 = *v0, (result = Obj_IsSuperFrozen(*v0)) != 1) && v2[1053] == 0 && v2[1054] == 0 )
+  0x4a3960 sub_4A3960
+      if ( v0 == 2 || (v3 = *v2, (result = Obj_IsSuperFrozen(*v2)) != 1) && v3[1053] == 0 && v3[1054] == 0 )
+  0x4a3a80 sub_4A3A80
+      if ( *(g_PlayerCharaObj[0] + 4212) < v4 )
+      *(g_PlayerCharaObj[0] + 4212) = v4;
+      if ( *(dword_65B92C[0] + 4212) < v1 )
+  0x4a3c40 sub_4A3C40
+      if ( v0 == 2 || (v3 = *v1, (result = Obj_IsSuperFrozen(*v1)) != 1) && v3[1053] == 0 && v3[1054] == 0 )
+  0x4ec160 sub_4EC160
+      if ( *(v2 + 4212) < v3 )
+      *(v2 + 4212) = v3;
+=== 0x1078 (4216) nfuncs=17
+  0x42ece0 sub_42ECE0
+      if ( *(a1 + 4216) != 0 )
+  0x431000 Obj_InitDefaults
+      *(a1 + 4216) = 0;
+  0x433d00 sub_433D00
+      if ( v5 != 0 || (*(a1 + 620) - 28) > 2 || (&unk_1000000 & *(a1 + 432)) != 0 || *(a1 + 4216) != 0 )
+      if ( sub_433C70(a1) && (*(a1 + 664) & 0x10) == 0 && *(a1 + 4216) == 0 )
+      || *(a1 + 4216) != 0 )
+  0x4353c0 sub_4353C0
+      if ( *(this + 4544) != 0 && (*(this + 4216) != 0 || *(this + 4212) != 0) )
+  0x437c70 sub_437C70
+      a1[1054] = 0xFFFF;
+  0x463e30 CComWorkBase__vf21
+      if ( (*(v6 + 620) - 28) > 4 || *(v6 + 4216) < 30 || sub_465E80(*(this + 11)) != 1 )
+  0x464750 CComWorkBase__vf34
+      if ( *(v2 + 4216) < 30 )
+  0x496be0 Obj_RaiseHitStopFrames
+      if ( (a1[108] & 0x40000) != 0 || a1[1055] == 1 && a1[1054] >= a2 )
+      a1[1054] = a2;
+  0x496c30 sub_496C30
+      return a1[1054];
+  0x496ce0 HitJudge_ApplyHitStop
+      if ( a4 != -1 || victim[1054] == 0 )
+      if ( victim[1054] == 0 )
+  0x496dd0 sub_496DD0
+      if ( a4 != -1 || a2[1054] == 0 )
+      if ( a2[1054] == 0 )
+  0x49a090 sub_49A090
+      v7[1054] += *(g_ControllerManage[64] + 1320);
+  0x49a2f0 sub_49A2F0
+      if ( Obj_RaiseHitStopFrames(a1, a1[1054] + *(g_ControllerManage[64] + 464)) == 1 )
+  0x49e120 sub_49E120
+      v12 = i[1054];
+      i[1054] = v12 - 1;
+=== 0x107c (4220) nfuncs=5
+  0x430c80 sub_430C80
+      a1[1055] = 0;
+  0x431000 Obj_InitDefaults
+      *(a1 + 4220) = 1;
+  0x437c70 sub_437C70
+      a1[1055] = 1;
+  0x496be0 Obj_RaiseHitStopFrames
+      if ( (a1[108] & 0x40000) != 0 || a1[1055] == 1 && a1[1054] >= a2 )
+      a1[1055] = 1;
+  0x49a090 sub_49A090
+      v7[1055] = 1;
+=== 0x1080 (4224) nfuncs=3
+  0x431000 Obj_InitDefaults
+      *(a1 + 4224) = 0;
+  0x434f90 sub_434F90
+  0x49e120 sub_49E120
+      v28 = i[1056];
+      i[1056] = v28 - 1;
+=== 0x1084 (4228) nfuncs=8
+  0x431000 Obj_InitDefaults
+      *(a1 + 4228) = 0;
+  0x496c60 sub_496C60
+      a1[1057] = a2;
+  0x496cb0 sub_496CB0
+      return a1[1057];
+  0x496ce0 HitJudge_ApplyHitStop
+      if ( result[1057] != 0 )
+  0x496f90 sub_496F90
+      return sub_496C60(a1, *(g_ControllerManage[64] + 456) + a1[1057], a1[1058]);
+      return sub_496C60(a1, *(g_ControllerManage[64] + 456) + a1[1057], 6);
+      return sub_496C60(a1, *(g_ControllerManage[64] + 456) + a1[1057], 6);
+  0x49a090 sub_49A090
+      v8[1057] = *(g_ControllerManage[64] + 1320);
+  0x49a2f0 sub_49A2F0
+      return sub_496C60(a1, *(g_ControllerManage[64] + 464) + a1[1057], a1[1058]);
+      return sub_496C60(a1, *(g_ControllerManage[64] + 464) + a1[1057], a1[1058]);
+  0x49e120 sub_49E120
+      if ( i[1057] != 0 )
+      v11 = i[1057];
+      i[1057] = v11 - 1;
+=== 0x1088 (4232) nfuncs=5
+  0x431000 Obj_InitDefaults
+      *(a1 + 4232) = 0;
+  0x496c60 sub_496C60
+      a1[1058] = a3;
+  0x496f90 sub_496F90
+      return sub_496C60(a1, *(g_ControllerManage[64] + 456) + a1[1057], a1[1058]);
+  0x49a2f0 sub_49A2F0
+      return sub_496C60(a1, *(g_ControllerManage[64] + 464) + a1[1057], a1[1058]);
+      return sub_496C60(a1, *(g_ControllerManage[64] + 464) + a1[1057], a1[1058]);
+  0x49e120 sub_49E120
+      i[1060] = v10 * i[1058] * (++i[1059] % 2);
+=== 0x108c (4236) nfuncs=3
+  0x431000 Obj_InitDefaults
+      *(a1 + 4236) = 0;
+  0x496c60 sub_496C60
+      a1[1059] = 0;
+  0x49e120 sub_49E120
+      i[1060] = v10 * i[1058] * (++i[1059] % 2);
+=== 0x1090 (4240) nfuncs=3
+  0x431000 Obj_InitDefaults
+      *(a1 + 4240) = 0;
+      *(a1 + 4244) = a1 + 4240;
+      return a1 + 4240;
+  0x496c60 sub_496C60
+      a1[1060] = 0;
+  0x49e120 sub_49E120
+      i[1060] = v10 * i[1058] * (++i[1059] % 2);
+      i[1060] = 0;
+=== 0x1094 (4244) nfuncs=3
+  0x431000 Obj_InitDefaults
+      *(a1 + 4244) = a1 + 4240;
+  0x49ecb0 sub_49ECB0
+      v7 = *(a3 + 4604) + **(a3 + 4244);
+  0x49ef60 DrawHelper_Draw
+      v45 = *(a2 + 4604) + **(a2 + 4244);
+      v55 = **(a2 + 4244);
+=== 0x1098 (4248) nfuncs=3
+  0x430490 sub_430490
+  0x431000 Obj_InitDefaults
+      *(a1 + 4248) = 0;
+  0x49e120 sub_49E120
+      v30 = i[1062]++ == -1;
+      i[1062] = -1;
+=== 0x109c (4252) nfuncs=3
+  0x430490 sub_430490
+  0x431000 Obj_InitDefaults
+      *(a1 + 4252) = 0;
+  0x49e120 sub_49E120
+      v30 = i[1063]++ == -1;
+      i[1063] = -1;
+=== 0x10a0 (4256) nfuncs=4
+  0x430490 sub_430490
+  0x431000 Obj_InitDefaults
+      *(a1 + 4256) = 0;
+  0x434ad0 Obj_ScriptTick
+      v4 = (*(this + 4256))++ == -1;
+      *(this + 4256) = -1;
+  0x495620 sub_495620
+      v6 = *(g_ControllerManage[64] + 772) * (*(g_ControllerManage[64] + 768) * *(v4 + 4256) / 1000);
+=== 0x10a4 (4260) nfuncs=9
+  0x430c80 sub_430C80
+      a1[1065] = 0;
+      a1[1065] = 1;
+      a1[1065] = 0;
+  0x431000 Obj_InitDefaults
+      *(a1 + 4260) = 0;
+  0x438a70 sub_438A70
+      a2[1065] = v8;
+  0x47b700 sub_47B700
+      v3 = *(result + 4260) == 1;
+  0x496ce0 HitJudge_ApplyHitStop
+      if ( victim[1065] == 1 )
+  0x496dd0 sub_496DD0
+      if ( a2[1065] == 1 )
+  0x496f10 sub_496F10
+      if ( *(a1 + 4260) != -1 )
+      *(a1 + 4260) = 1;
+  0x4978b0 HitJudge_CollectPairs
+      if ( *(v50 + 620) == 40 && m[1065] == 1 )
+      m[1065] = -1;
+      if ( m[1065] == 1 )
+  0x4996a0 HitJudge_ResolveTick
+      if ( *(v11 + 4260) != -1 )
+      if ( (10000 * v14 / 0x7FFFFFFF) % 10000 < 0 && *(v11 + 4260) != -1 )
+      *(v11 + 4260) = 1;
+=== 0x10a8 (4264) nfuncs=6
+  0x430c80 sub_430C80
+      if ( a1[1066] == 1 )
+      a1[1066] = 0;
+  0x431000 Obj_InitDefaults
+      *(a1 + 4264) = 0;
+  0x438a70 sub_438A70
+      a2[1066] = 0;
+      a2[1066] = 0;
+      a2[1066] = 0;
+  0x4978b0 HitJudge_CollectPairs
+      m[1066] = 0;
+      m[1066] = 0;
+  0x4983a0 HitJudge_ApplyHit
+      a1[1066] = 1;
+      a1[1066] = 1;
+  0x49e120 sub_49E120
+      i[1066] = 1;
+      i[1066] = 1;
+      i[1066] = 1;
+=== 0x10ac (4268) nfuncs=6
+  0x430c80 sub_430C80
+      a1[1067] = 0;
+  0x431000 Obj_InitDefaults
+      *(a1 + 4268) = 0;
+  0x4356a0 Obj_ResetHanteiBoxObjects
+      a1[1067] = 0;
+  0x438a70 sub_438A70
+      a2[1067] = *v3++;
+      a2[1067] = 0;
+      a2[1067] = 0;
+  0x496f10 sub_496F10
+      v1 = *(a1 + 4268);
+      v3 = *(a1 + 4268);
+      *(a1 + 4268) = v4;
+  0x4978b0 HitJudge_CollectPairs
+      m[1067] = 0;
+      m[1067] = 0;
+=== 0x10b0 (4272) nfuncs=6
+  0x430c80 sub_430C80
+      a1[1068] = 0;
+  0x431000 Obj_InitDefaults
+      *(a1 + 4272) = 0;
+  0x4356a0 Obj_ResetHanteiBoxObjects
+      a1[1068] = 0;
+  0x438a70 sub_438A70
+      a2[1068] = 0;
+      a2[1068] = 0;
+      a2[1068] = 0;
+  0x4978b0 HitJudge_CollectPairs
+      m[1068] = 0;
+      m[1068] = 0;
+  0x4996a0 HitJudge_ResolveTick
+      ++*(v11 + 4272);
+=== 0x10b4 (4276) nfuncs=5
+  0x430c80 sub_430C80
+      a1[1069] = 0;
+      else if ( a1[1069] != 0 || a1[1070] > 0 || a1[1072] > 0 )
+  0x431000 Obj_InitDefaults
+      *(a1 + 4276) = 0;
+  0x438a70 sub_438A70
+      a2[1069] = v7;
+      a2[1069] = 0;
+      a2[1069] = 0;
+  0x4978b0 HitJudge_CollectPairs
+      m[1069] = 0;
+      m[1069] = 0;
+  0x49e120 sub_49E120
+      v17 = i[1069];
+      i[1069] = v18;
+=== 0x10b8 (4280) nfuncs=6
+  0x430c80 sub_430C80
+      a1[1070] = 0;
+      else if ( a1[1069] != 0 || a1[1070] > 0 || a1[1072] > 0 )
+  0x431000 Obj_InitDefaults
+      *(a1 + 4280) = 0;
+  0x438a70 sub_438A70
+      a2[1070] = 0;
+      a2[1070] = v10;
+      a2[1070] = 0;
+  0x4978b0 HitJudge_CollectPairs
+      m[1070] = 0;
+      m[1070] = 0;
+  0x4983a0 HitJudge_ApplyHit
+      v52 = a1[1070];
+      a1[1070] = v53;
+      a1[1070] = 0;
+  0x49e120 sub_49E120
+      i[1070] = 0;
+=== 0x10bc (4284) nfuncs=9
+  0x430c80 sub_430C80
+      a1[1071] = 0;
+  0x431000 Obj_InitDefaults
+      *(a1 + 4284) = 0;
+  0x438a70 sub_438A70
+      a2[1071] = 0;
+      a2[1071] = v9;
+      a2[1071] = 0;
+  0x45ce50 sub_45CE50
+      2304 * a3 + a1 + 4284,
+  0x45cff0 sub_45CFF0
+      v12 = 2304 * a3 + a1 + 4284;
+      v11 = 2304 * v6 + a1 + 4284;
+  0x45d120 sub_45D120
+      2304 * a3 + a1 + 4284,
+      v12 = v9 + 4284;
+      sub_45E280(v9 + 4284, v9 + 8892);
+  0x4978b0 HitJudge_CollectPairs
+      m[1071] = 0;
+      m[1071] = 0;
+  0x4983a0 HitJudge_ApplyHit
+      a1[1071] = 0;
+  0x49e120 sub_49E120
+      v19 = i[1071];
+      i[1071] = v20;
+=== 0x10c0 (4288) nfuncs=6
+  0x430c80 sub_430C80
+      a1[1072] = 0;
+      else if ( a1[1069] != 0 || a1[1070] > 0 || a1[1072] > 0 )
+  0x431000 Obj_InitDefaults
+      *(a1 + 4288) = 0;
+  0x438a70 sub_438A70
+      a2[1072] = 0;
+      a2[1072] = 0;
+      a2[1072] = v12;
+  0x4978b0 HitJudge_CollectPairs
+      m[1072] = 0;
+      m[1072] = 0;
+  0x4983a0 HitJudge_ApplyHit
+      v54 = a1[1072];
+      a1[1072] = v55;
+      a1[1072] = 0;
+  0x49e120 sub_49E120
+      i[1072] = 0;
+=== 0x10c4 (4292) nfuncs=6
+  0x430c80 sub_430C80
+      a1[1073] = 0;
+  0x431000 Obj_InitDefaults
+      *(a1 + 4292) = 0;
+  0x438a70 sub_438A70
+      a2[1073] = 0;
+      a2[1073] = 0;
+      a2[1073] = v11;
+  0x4978b0 HitJudge_CollectPairs
+      m[1073] = 0;
+      m[1073] = 0;
+  0x4983a0 HitJudge_ApplyHit
+      a1[1073] = 0;
+  0x49e120 sub_49E120
+      v21 = i[1073];
+      i[1073] = v22;
+=== 0x10c8 (4296) nfuncs=1
+  0x431000 Obj_InitDefaults
+      *(a1 + 4296) = 0;
+=== 0x10cc (4300) nfuncs=7
+  0x430120 Obj_IsSpecialCancelAllowed
+      && (*(this + 4300) <= 0 || sub_42F570(this) == 0) )
+  0x4301c0 Obj_GetNormalCancelStateScriptGated
+      if ( *(a1 + 4300) > 0 && sub_42F570(a1) != 0 )
+  0x4302e0 Obj_GetNormalCancelState
+      if ( v2 == 2 || *(this + 4300) > 0 && sub_42F570(this) != 0 )
+  0x431000 Obj_InitDefaults
+      *(a1 + 4300) = 0;
+  0x4356a0 Obj_ResetHanteiBoxObjects
+      a1[1075] = 0;
+  0x4944b0 sub_4944B0
+      v7 = *(v2 + 4300);
+  0x4978b0 HitJudge_CollectPairs
+      if ( *(v50 + 4300) > 0
+      if ( *v28 != 17 && v28[32] == 0 && ++m[1075] < 0 )
+      --m[1075];
+=== 0x10d0 (4304) nfuncs=24
+  0x4300b0 sub_4300B0
+      v5 = *(a2 + 4304);
+  0x430630 sub_430630
+      v2 = *(result + 4304);
+      **(v1 + 4304) = 0;
+  0x4306d0 sub_4306D0
+      v2 = a1[1076];
+      *a1[1076] = 0;
+  0x431000 Obj_InitDefaults
+      *(a1 + 4304) = 0;
+  0x431730 Obj_BindCharaRecordAndStartAction
+      a4[1076] = a9;
+  0x4334c0 sub_4334C0
+      if ( *(a2[1076] + 84) != 0 && (v8 - 60) <= 0x13 )
+  0x4353c0 sub_4353C0
+      if ( *(*(this + 4304) + 84) == 0 )
+      v8 = *(this + 4304);
+  0x436f40 sub_436F40
+      v11[1076] = 0;
+  0x43ebf0 sub_43EBF0
+      v1 = *(result + 4304);
+  0x4630d0 sub_4630D0
+      if ( !*(*(a2[4] + 4304) + 84) || (v12 - 60) > 0x13 || (v14 = sub_42F120(), v14 == -1) || !*(v15 + 4 * v14 + 4) )
+  0x4632c0 sub_4632C0
+      if ( *(*(*(a2 + 16) + 4304) + 84) == 0 )
+  0x494f30 sub_494F30
+      v4 = *(g_PlayerCharaObj[v3] + 4304);
+      v6 = *(g_PlayerCharaObj[*(a3 + 1484)] + 4304);
+  0x4996a0 HitJudge_ResolveTick
+      v17 = v16[1076];
+  0x49c7d0 sub_49C7D0
+      *(v3 + 4304) = 0;
+=== 0x10d4 (4308) nfuncs=16
+  0x431000 Obj_InitDefaults
+      *(a1 + 4308) = 0;
+  0x431730 Obj_BindCharaRecordAndStartAction
+      a4[1077] = v9 + 64588;
+  0x433d00 sub_433D00
+      result = sub_430910(*(a1 + 4308), a1);
+  0x4365d0 sub_4365D0
+      if ( !sub_430890(a1, *(a1[1077] + 8) + 24 * v2[2], &v10) )
+      if ( sub_42F7A0(*(*(a1[1077] + 8) + 24 * v2[2] + 16), 0, 0, a1) != 0 )
+      sub_42F7A0(*(*(a1[1077] + 8) + 24 * v2[2] + 16), 2, 0, a1);
+  0x436f40 sub_436F40
+      v11[1077] = v12;
+  0x49c7d0 sub_49C7D0
+      *(v3 + 4308) = v6;
+  0x49c910 sub_49C910
+      *(v5 + 4308) = v6;
+  0x49ca50 sub_49CA50
+      *(v3 + 4308) = *(v3 + 4320) + 64588;
+  0x49cb60 sub_49CB60
+      *(v5 + 4308) = v6;
+  0x49cc60 Effect_SpawnHitSpark
+      *(v5 + 4308) = *(v5 + 4320) + 64588;
+  0x49cda0 sub_49CDA0
+      *(v3 + 4308) = v4;
+  0x49cf20 sub_49CF20
+      *(v5 + 4308) = v6;
+  0x49d090 sub_49D090
+      *(v2 + 4308) = *(v2 + 4320) + 64588;
+  0x49ea10 ObjPool_SpawnTwoSystemObjs
+      v1[1077] = v1[1080] + 64588;
+=== 0x10d8 (4312) nfuncs=35
+  0x430890 sub_430890
+  0x431000 Obj_InitDefaults
+      *(a1 + 4312) = 0;
+  0x4315c0 Obj_ReleaseSubNodes
+      v7 = a1[1078];
+  0x431730 Obj_BindCharaRecordAndStartAction
+      a4[1078] = a8;
+  0x431780 Obj_ShareKeyCmdRef
+      result = *(a1 + 4312);
+      *(a2 + 4312) = result;
+      *(a2 + 4312) = 0;
+  0x433100 sub_433100
+  0x433770 sub_433770
+  0x433d00 sub_433D00
+      v2 = *(a1 + 4312);
+  0x435b10 HitJudge_ApplyKnockDirAndFacing
+      v10 = *(v6[1078] + 8) & 0xC;
+  0x435c10 HitJudge_ApplyKnockDirAndFacingNoFlipCheck
+      v13 = *(v6[1078] + 8) & 0xC;
+  0x4365d0 sub_4365D0
+  0x436800 sub_436800
+      v15 = a1[1078];
+      v15 = a1[1078];
+  0x436a50 sub_436A50
+      v2 = *(a1[1078] + 8);
+      v6 = *(a1[1078] + 8);
+  0x436f40 sub_436F40
+      v11[1078] = 0;
+=== 0x10dc (4316) nfuncs=4
+  0x431000 Obj_InitDefaults
+      *(a1 + 4316) = 0;
+  0x4316a0 Obj_BindCharaRecord
+      a2[1079] = a1;
+  0x4a00d0 CObjectLoopCallBackScriptCall__vf0
+      g_ScriptVm_ArgReg1[0] = a2[1079];
+  0x4b2110 sub_4B2110
+      v9[1079] = 0;
+=== 0x10e0 (4320) nfuncs=87
+  0x42f3a0 sub_42F3A0
+      if ( ScriptVm_CallSyncScript((a1[1080] + 64600), *v4, v4[1]) && g_ScriptVm_ArgReg0[0] == 0 )
+  0x42f7a0 sub_42F7A0
+      ScriptVm_CallSyncScript((a4[1080] + 64600), v4[1], v4[2]);
+      ScriptVm_CallSyncScript((a4[1080] + 64600), v40, v41);
+  0x4301c0 Obj_GetNormalCancelStateScriptGated
+      if ( ScriptVm_CallSyncScript((*(a1 + 4320) + 64600), 3u, 5u) && g_ScriptVm_ArgReg0[0] == 1 )
+  0x431000 Obj_InitDefaults
+      *(a1 + 4320) = 0;
+  0x4316a0 Obj_BindCharaRecord
+      a2[1080] = a3;
+  0x431730 Obj_BindCharaRecordAndStartAction
+      v9 = a4[1080];
+  0x4327f0 Obj_SpawnFrameEffectRecord
+  0x4336e0 sub_4336E0
+      v2 = ScriptVm_CallSyncScript((*(a2 + 4320) + 64600), 3u, 5u) ? a1 - 1 : -1;
+  0x433960 sub_433960
+      return ScriptVm_CallSyncScript((*(a2 + 4320) + 64600), 3u, 5u) ? a1 : 0;
+  0x433d00 sub_433D00
+      v21 = ScriptVm_CallSyncScript((*(a1 + 4320) + 64600), 3u, 5u) ? 8 : -1;
+      v21 = ScriptVm_CallSyncScript((*(a1 + 4320) + 64600), 3u, 5u) ? 8 : -1;
+  0x4361e0 Obj_RunFrameScriptLists
+      v5 = (*(a1 + 4320) + 64600);
+      v6 = (*(a1 + 4320) + 64600);
+  0x436b60 sub_436B60
+      if ( !ScriptVm_CallSyncScript((a2[1080] + 64600), *a1, a1[1]) || g_ScriptVm_ArgReg0[0] != 1 || g_ScriptVm_ArgReg1 != 0 )
+  0x436f40 sub_436F40
+      v12 = v11[1080] + 64588;
+  0x437270 sub_437270
+      v16 = v49[1080];
+=== 0x10e4 (4324) nfuncs=4
+  0x431000 Obj_InitDefaults
+      *(a1 + 4324) = 0;
+  0x432480 ObjScan_StoreAttackGuardInfo
+      a1[1081] = *(a2 + 24);
+      a1[1081] = 0;
+  0x4324f0 Obj_ScanAheadForAttackFrame
+      *(a1 + 4324) = 0;
+  0x434ad0 Obj_ScriptTick
+      v5 = *(this + 4324);
+      *(this + 4324) = v5 - 1;
+=== 0x10e8 (4328) nfuncs=3
+  0x431000 Obj_InitDefaults
+      *(a1 + 4328) = 0;
+  0x432480 ObjScan_StoreAttackGuardInfo
+      a1[1082] = 0;
+      a1[1082] = 2;
+      a1[1082] = 3;
+  0x4324f0 Obj_ScanAheadForAttackFrame
+      *(a1 + 4328) = 0;
+=== 0x10ec (4332) nfuncs=9
+  0x4306d0 sub_4306D0
+      if ( a1[1083] < 0 )
+      a1[1083] = 31;
+  0x430770 sub_430770
+      if ( result[1083] < 0 )
+      result[1083] = 31;
+  0x430830 sub_430830
+      a1[1083] = 0;
+  0x430a40 Obj_ApplyLandingFrameJump
+      v4 = *(a1 + 4332) < 0;
+      *(a1 + 4332) = 31;
+  0x431000 Obj_InitDefaults
+      v2 = (a1 + 4332);
+  0x4317b0 sub_4317B0
+      if ( *(result + 4332) < 0 )
+      *(result + 4332) = 31;
+  0x4317d0 HitJudge_StartHitEffect
+      if ( v3 <= 0 || (result = *(a1 + 4332)) == 0 || result >= -1 && result <= v3 )
+      result = sub_43EC80((a1 + 4332), v3);
+      result = sub_43EDE0((a1 + 4332), v3);
+  0x4996a0 HitJudge_ResolveTick
+      if ( *(v11 + 4332) == 0 && v26 != 0 )
+      if ( *(v11 + 4332) < 0 )
+      *(v11 + 4332) = 31;
+  0x49e120 sub_49E120
+=== 0x10f4 (4340) nfuncs=1
+  0x430830 sub_430830
+      a1[1085] = 255;
+=== 0x10f8 (4344) nfuncs=1
+  0x430830 sub_430830
+      a1[1086] = 255;
+=== 0x10fc (4348) nfuncs=1
+  0x430830 sub_430830
+      a1[1087] = 255;
+=== 0x1100 (4352) nfuncs=1
+  0x430830 sub_430830
+      a1[1088] = 0;
+=== 0x1104 (4356) nfuncs=1
+  0x430830 sub_430830
+      a1[1089] = 0;
+=== 0x1108 (4360) nfuncs=1
+  0x430830 sub_430830
+      a1[1090] = 0;
+=== 0x110c (4364) nfuncs=1
+  0x430830 sub_430830
+      a1[1091] = 0;
+=== 0x1110 (4368) nfuncs=1
+  0x430830 sub_430830
+      a1[1092] = nullsub_2;
+=== 0x1114 (4372) nfuncs=1
+  0x430830 sub_430830
+      a1[1093] = nullsub_1;
+=== 0x1118 (4376) nfuncs=5
+  0x4306d0 sub_4306D0
+      a1[1094] = 30;
+  0x430770 sub_430770
+      result[1094] = 30;
+  0x430a40 Obj_ApplyLandingFrameJump
+      *(a1 + 4376) = 30;
+  0x4317b0 sub_4317B0
+      *(result + 4376) = 30;
+  0x4996a0 HitJudge_ResolveTick
+      *(v11 + 4376) = 30;
+=== 0x112c (4396) nfuncs=2
+  0x431000 Obj_InitDefaults
+      *(a1 + 4396) = 0;
+      *(a1 + 4528) = a1 + 4396;
+  0x43dd40 sub_43DD40
+      a1[1099] = 0;
+=== 0x1134 (4404) nfuncs=1
+  0x431000 Obj_InitDefaults
+      *(a1 + 4404) = 255;
+=== 0x1138 (4408) nfuncs=1
+  0x431000 Obj_InitDefaults
+      *(a1 + 4408) = 255;
+=== 0x113c (4412) nfuncs=1
+  0x431000 Obj_InitDefaults
+      *(a1 + 4412) = 255;
+=== 0x1140 (4416) nfuncs=1
+  0x431000 Obj_InitDefaults
+      *(a1 + 4416) = 0;
+=== 0x1144 (4420) nfuncs=1
+  0x431000 Obj_InitDefaults
+      *(a1 + 4420) = 0;
+=== 0x1148 (4424) nfuncs=1
+  0x431000 Obj_InitDefaults
+      *(a1 + 4424) = 0;
+=== 0x114c (4428) nfuncs=2
+  0x431000 Obj_InitDefaults
+      *(a1 + 4428) = 0;
+  0x43dd40 sub_43DD40
+      v2 = a1[1107];
+      a1[1107] = 0;
+=== 0x1150 (4432) nfuncs=1
+  0x431000 Obj_InitDefaults
+      *(a1 + 4432) = nullsub_2;
+=== 0x1154 (4436) nfuncs=1
+  0x431000 Obj_InitDefaults
+      *(a1 + 4436) = nullsub_1;
+=== 0x116c (4460) nfuncs=1
+  0x431000 Obj_InitDefaults
+      *(a1 + 4460) = 0;
+      *(a1 + 4532) = a1 + 4460;
+=== 0x1174 (4468) nfuncs=1
+  0x431000 Obj_InitDefaults
+      *(a1 + 4468) = 255;
+=== 0x1178 (4472) nfuncs=1
+  0x431000 Obj_InitDefaults
+      *(a1 + 4472) = 255;
+=== 0x117c (4476) nfuncs=1
+  0x431000 Obj_InitDefaults
+      *(a1 + 4476) = 255;
+=== 0x1180 (4480) nfuncs=1
+  0x431000 Obj_InitDefaults
+      *(a1 + 4480) = 0;
+=== 0x1184 (4484) nfuncs=1
+  0x431000 Obj_InitDefaults
+      *(a1 + 4484) = 0;
+=== 0x118c (4492) nfuncs=1
+  0x431000 Obj_InitDefaults
+      *(a1 + 4492) = 0;
+=== 0x1190 (4496) nfuncs=1
+  0x431000 Obj_InitDefaults
+      *(a1 + 4496) = nullsub_2;
+=== 0x1194 (4500) nfuncs=1
+  0x431000 Obj_InitDefaults
+      *(a1 + 4500) = nullsub_1;
+=== 0x11ac (4524) nfuncs=1
+  0x431000 Obj_InitDefaults
+      *(a1 + 4524) = v2;
+=== 0x11b0 (4528) nfuncs=1
+  0x431000 Obj_InitDefaults
+      *(a1 + 4528) = a1 + 4396;
+=== 0x11b4 (4532) nfuncs=1
+  0x431000 Obj_InitDefaults
+      *(a1 + 4532) = a1 + 4460;
+=== 0x11b8 (4536) nfuncs=6
+  0x431b90 Obj_SetActionAndRunScript
+  0x434ad0 Obj_ScriptTick
+      *(this + 4536) = 268435471;
+  0x48fa20 sub_48FA20
+  0x49e0b0 sub_49E0B0
+      v2 = a1[1134];
+      a1[1134] = v2 & 0xFFFFFFFB;
+  0x49e120 sub_49E120
+      v26 = i[1134];
+      i[1134] = v26 & 0xFFFFFFF3;
+  0x49e830 sub_49E830
+      if ( (v1[1134] & 2) != 0 )
+      v1[1134] &= ~2u;
+=== 0x11bc (4540) nfuncs=45
+  0x42dbd0 sub_42DBD0
+      v6[1135] = 0;
+  0x42f7a0 sub_42F7A0
+      v27[1135] = a1;
+  0x4303b0 sub_4303B0
+      result[1135] = a2;
+  0x4303e0 sub_4303E0
+      result[1135] = 0;
+  0x430410 sub_430410
+      result[1135] = 0;
+  0x430450 sub_430450
+      result[1135] = 0;
+  0x430490 sub_430490
+  0x430a40 Obj_ApplyLandingFrameJump
+      *(a1 + 4540) = 0;
+  0x431000 Obj_InitDefaults
+      *(a1 + 4540) = 0;
+      *(a1 + 4540) = 0;
+  0x4327f0 Obj_SpawnFrameEffectRecord
+      i[1135] = 0;
+      i[1135] = 0;
+  0x432f50 sub_432F50
+      a2[1135] = 0;
+  0x432fe0 sub_432FE0
+      result[1135] = 0;
+  0x433060 sub_433060
+      result[1135] = 0;
+      result[1135] = v2;
+  0x4334c0 sub_4334C0
+      a2[1135] = 0;
+      a2[1135] = 0;
+=== 0x11c0 (4544) nfuncs=45
+  0x42dbd0 sub_42DBD0
+      v6[1136] = 0;
+  0x42f7a0 sub_42F7A0
+      v27[1136] = a3;
+  0x4303b0 sub_4303B0
+      result[1136] = a3;
+  0x4303e0 sub_4303E0
+      result[1136] = 0;
+  0x430410 sub_430410
+      result[1136] = 0;
+  0x430450 sub_430450
+      result[1136] = 0;
+  0x430490 sub_430490
+  0x430a40 Obj_ApplyLandingFrameJump
+      *(a1 + 4544) = 0;
+  0x431000 Obj_InitDefaults
+      *(a1 + 4544) = 0;
+      *(a1 + 4544) = 0;
+  0x4327f0 Obj_SpawnFrameEffectRecord
+      i[1136] = 0;
+      i[1136] = 0;
+  0x432f50 sub_432F50
+      a2[1136] = 1;
+  0x432fe0 sub_432FE0
+      result[1136] = 0;
+  0x433060 sub_433060
+      result[1136] = 0;
+      result[1136] = v2;
+  0x4334c0 sub_4334C0
+      a2[1136] = 0;
+      a2[1136] = 1;
+=== 0x11c4 (4548) nfuncs=48
+  0x42dbd0 sub_42DBD0
+      v6[1137] = 0;
+  0x42f7a0 sub_42F7A0
+      v27[1137] = 0;
+  0x4303b0 sub_4303B0
+      result[1137] = a4;
+  0x4303e0 sub_4303E0
+      result[1137] = 0;
+  0x430410 sub_430410
+      result[1137] = 0;
+  0x430450 sub_430450
+      result[1137] = 0;
+  0x430490 sub_430490
+  0x430a40 Obj_ApplyLandingFrameJump
+      *(a1 + 4548) = 0;
+  0x431000 Obj_InitDefaults
+      *(a1 + 4548) = 0;
+      *(a1 + 4548) = 0;
+  0x4327f0 Obj_SpawnFrameEffectRecord
+      i[1137] = 0;
+      i[1137] = 0;
+  0x432f50 sub_432F50
+      a2[1137] = 1;
+  0x432fe0 sub_432FE0
+      result[1137] = 0;
+  0x433060 sub_433060
+      result[1137] = 0;
+      result[1137] = v2;
+  0x4334c0 sub_4334C0
+      a2[1137] = 0;
+      a2[1137] = 1;
+=== 0x11c8 (4552) nfuncs=49
+  0x42dbd0 sub_42DBD0
+      v6[1138] = 0;
+  0x42f7a0 sub_42F7A0
+      v28 = a4[1138];
+      v27[1138] = 0;
+  0x4303b0 sub_4303B0
+      result[1138] = a5;
+  0x4303e0 sub_4303E0
+      result[1138] = 0;
+  0x430410 sub_430410
+      result[1138] = 0;
+  0x430450 sub_430450
+      result[1138] = 0;
+  0x430490 sub_430490
+  0x430a40 Obj_ApplyLandingFrameJump
+      *(a1 + 4552) = 0;
+  0x431000 Obj_InitDefaults
+      *(a1 + 4552) = 0;
+      *(a1 + 4552) = 0;
+  0x4327f0 Obj_SpawnFrameEffectRecord
+      i[1138] = 0;
+      i[1138] = 0;
+  0x432f50 sub_432F50
+      a2[1138] = 0;
+  0x432fe0 sub_432FE0
+      result[1138] = 0;
+  0x433060 sub_433060
+      result[1138] = 0;
+      result[1138] = v2;
+  0x433100 sub_433100
+      *(a1 + 4552) |= 8u;
+=== 0x11cc (4556) nfuncs=49
+  0x42dbd0 sub_42DBD0
+      v6[1139] = 0;
+  0x42f7a0 sub_42F7A0
+      v29 = a4[1139];
+      v27[1139] = 0;
+  0x4303b0 sub_4303B0
+      result[1139] = a6;
+  0x4303e0 sub_4303E0
+      result[1139] = 0;
+  0x430410 sub_430410
+      result[1139] = 0;
+  0x430450 sub_430450
+      result[1139] = 0;
+  0x430490 sub_430490
+  0x430a40 Obj_ApplyLandingFrameJump
+      *(a1 + 4556) = 0;
+  0x431000 Obj_InitDefaults
+      *(a1 + 4556) = 0;
+      *(a1 + 4556) = 0;
+  0x4327f0 Obj_SpawnFrameEffectRecord
+      i[1139] = 0;
+      i[1139] = 0;
+  0x432f50 sub_432F50
+      a2[1139] = 0;
+  0x432fe0 sub_432FE0
+      result[1139] = 0;
+  0x433060 sub_433060
+      result[1139] = 0;
+      result[1139] = v2;
+  0x4331c0 sub_4331C0
+      *(result + 4556) |= 4u;
+=== 0x11d0 (4560) nfuncs=8
+  0x430630 sub_430630
+      *(v1 + 4560) = 0;
+  0x4306d0 sub_4306D0
+      a1[1140] = 0;
+  0x430770 sub_430770
+      result[1140] = 0;
+  0x431b90 Obj_SetActionAndRunScript
+  0x43c530 sub_43C530
+      if ( (v9[1140] & 4) != 0 )
+  0x4c22d0 CharaSelect_UnconfirmSide
+  0x4c57f0 CharaSelect_SideCharaObjConfirmPose
+      *(result + 4560) = 0;
+  0x4c5840 CharaSelect_SideCharaObjIdlePose
+      *(result + 4560) = 0;
+=== 0x11d4 (4564) nfuncs=10
+  0x4301c0 Obj_GetNormalCancelStateScriptGated
+      if ( *(a1 + 4564) != 0 )
+  0x430630 sub_430630
+      *(v1 + 4564) = 0;
+  0x4306d0 sub_4306D0
+      a1[1141] = 0;
+  0x430770 sub_430770
+      result[1141] = 0;
+  0x430c80 sub_430C80
+      v1 = a1[1141];
+      a1[1141] = v1 - 1;
+  0x4353c0 sub_4353C0
+      *(this + 4564) = 0;
+  0x43c460 sub_43C460
+      *(a1 + 4564) = *(g_ControllerManage[64] + 1144);
+      result[1141] = *(g_ControllerManage[64] + 1144);
+  0x4c22d0 CharaSelect_UnconfirmSide
+  0x4c57f0 CharaSelect_SideCharaObjConfirmPose
+      *(result + 4564) = 0;
+  0x4c5840 CharaSelect_SideCharaObjIdlePose
+      *(result + 4564) = 0;
+=== 0x11d8 (4568) nfuncs=5
+  0x430630 sub_430630
+      *(v1 + 4568) = 0;
+  0x4306d0 sub_4306D0
+      a1[1142] = 0;
+  0x430770 sub_430770
+      result[1142] = 0;
+  0x433d00 sub_433D00
+      if ( *(a1 + 4568) == 0
+      if ( *(a1 + 4568) == 0
+      if ( *(a1 + 4568) != 0
+  0x43c530 sub_43C530
+      *(v6 + 4568) = 1;
+=== 0x11dc (4572) nfuncs=5
+  0x430630 sub_430630
+      *(v1 + 4572) = 0;
+  0x4306d0 sub_4306D0
+      a1[1143] = 0;
+  0x430770 sub_430770
+      result[1143] = 0;
+  0x433d00 sub_433D00
+      if ( *(a1 + 4572) == 0
+      if ( *(a1 + 4572) == 0
+      if ( *(a1 + 4572) != 0
+  0x43c530 sub_43C530
+      *(v6 + 4572) = 1;
+=== 0x11e0 (4576) nfuncs=4
+  0x431000 Obj_InitDefaults
+      *(a1 + 4576) = 0;
+  0x4357c0 Obj_UpdatePositionFromParent
+      result = a1[1144];
+  0x438660 sub_438660
+      a2[1144] = 0;
+      a2[1144] = a2[140];
+  0x4390d0 Obj_ResetOnDetach
+      *(v2 + 4576) = 0;
+      *(v2 + 4576) = a1;
+=== 0x11e4 (4580) nfuncs=5
+  0x431000 Obj_InitDefaults
+      *(a1 + 4580) = 0;
+  0x434f50 sub_434F50
+      result[1145] = 0;
+  0x4357c0 Obj_UpdatePositionFromParent
+      if ( a1[1145] != 0 )
+  0x438660 sub_438660
+      a2[1145] = v10;
+  0x4390d0 Obj_ResetOnDetach
+      *(v2 + 4580) = 0;
+      *(v2 + 4580) = 1;
+=== 0x11e8 (4584) nfuncs=5
+  0x431000 Obj_InitDefaults
+      *(a1 + 4584) = 0;
+  0x434f50 sub_434F50
+      result[1146] = 0;
+  0x4357c0 Obj_UpdatePositionFromParent
+      if ( a1[1146] != 0 )
+  0x438660 sub_438660
+      a2[1146] = v11;
+  0x4390d0 Obj_ResetOnDetach
+      *(v2 + 4584) = 0;
+      *(v2 + 4584) = 1;
+=== 0x11ec (4588) nfuncs=4
+  0x431000 Obj_InitDefaults
+      *(a1 + 4588) = 0;
+  0x434f50 sub_434F50
+      result[1147] = 0;
+  0x4357c0 Obj_UpdatePositionFromParent
+      if ( a1[1147] != 0 )
+  0x438660 sub_438660
+      a2[1147] = v12;
+=== 0x11f0 (4592) nfuncs=19
+  0x430a40 Obj_ApplyLandingFrameJump
+      (*(a1 + 724))(a1 + 4592, a1 + 4596, *(a1 + 4660), *(a1 + 4664), a1 + 712);
+      (*(a1 + 836))(a1 + 4592, a1 + 4596, 256, 256, a1 + 824);
+      if ( *(a1 + 928) != 0 && (*(a1 + 944))(a1 + 4592, a1 + 4596, 256, 256, a1 + 932) == 0 )
+  0x4316a0 Obj_BindCharaRecord
+      a2[1148] = a7;
+  0x4327f0 Obj_SpawnFrameEffectRecord
+      i[1148] = *(v2[146] + 20) * (*(v6 + 4) + *(v2[146] + 24));
+  0x434ad0 Obj_ScriptTick
+      i[1148] = *(*(this + 584) + 20) * (*(*(this + 584) + 24) + *(v13 + 4));
+  0x434f10 sub_434F10
+      result[1148] = -result[1148];
+  0x434f50 sub_434F50
+      result[1148] = result[1151];
+  0x4357c0 Obj_UpdatePositionFromParent
+      v2 = a1[1148];
+  0x438270 sub_438270
+      a1[1148] += v4;
+      a1[1148] = g_MiscCtx_72EC34[5] + a1[1148] - v5;
+      a1[1148] += dword_5A40F0 - v5 - 1;
+  0x438350 sub_438350
+      a2[1148] = *v5;
+  0x4390d0 Obj_ResetOnDetach
+      *(v2 + 4592) = *(v2 + 4604);
+      *(v2 + 4592) = v9;
+      *(v2 + 4592) = *(a1[146] + 20) * (*(v24 + 4) + *(a1[146] + 24));
+  0x43c530 sub_43C530
+      *(v6 + 4592) += v20;
+  0x43d110 ScriptVm_LoadArgsForObj
+      (*(a1 + 724))(a1 + 4592, a1 + 4596, *(a1 + 4660), *(a1 + 4664), a1 + 712);
+  0x49d780 sub_49D780
+      a1[1148] += v14 - v6;
+      a1[1148] += v10 - v6;
+      a1[1148] += v20 - v6;
+  0x49db20 sub_49DB20
+      v9 = *(v8 + 4592) + v45;
+      v10 = *(v8 + 4592) + v47;
+      *(v8 + 4592) += v14;
+=== 0x11f4 (4596) nfuncs=13
+  0x430a40 Obj_ApplyLandingFrameJump
+      (*(a1 + 724))(a1 + 4592, a1 + 4596, *(a1 + 4660), *(a1 + 4664), a1 + 712);
+      (*(a1 + 836))(a1 + 4592, a1 + 4596, 256, 256, a1 + 824);
+      if ( *(a1 + 928) != 0 && (*(a1 + 944))(a1 + 4592, a1 + 4596, 256, 256, a1 + 932) == 0 )
+  0x4316a0 Obj_BindCharaRecord
+      a2[1149] = a8;
+  0x4327f0 Obj_SpawnFrameEffectRecord
+      i[1149] = *(v2[146] + 28) + *(v6 + 8);
+  0x434ad0 Obj_ScriptTick
+      i[1149] = *(*(this + 584) + 28) + *(v13 + 8);
+  0x434f50 sub_434F50
+      result[1149] = v1;
+  0x4357c0 Obj_UpdatePositionFromParent
+      v3 = a1[1149];
+  0x438270 sub_438270
+      a1[1149] += v3;
+  0x438350 sub_438350
+      a2[1149] = *v5;
+  0x4390d0 Obj_ResetOnDetach
+      *(v2 + 4596) = v5;
+      *(v2 + 4596) = a2[3];
+      *(v2 + 4596) = *(v24 + 8) + *(a1[146] + 28);
+  0x43d110 ScriptVm_LoadArgsForObj
+      (*(a1 + 724))(a1 + 4592, a1 + 4596, *(a1 + 4660), *(a1 + 4664), a1 + 712);
+  0x49db20 sub_49DB20
+      v46 += *(v8 + 4596);
+      v11 = *(v8 + 4596) + v48;
+  0x49e120 sub_49E120
+      i[1155] = i[1149];
+  0x4b2110 sub_4B2110
+      v9[1149] = -24;
+=== 0x11f8 (4600) nfuncs=5
+  0x4316a0 Obj_BindCharaRecord
+      a2[1150] = 0;
+  0x434f50 sub_434F50
+      result[1150] = result[1153];
+  0x4357c0 Obj_UpdatePositionFromParent
+      v4 = a1[1150];
+  0x43d110 ScriptVm_LoadArgsForObj
+      *(a1 + 4600) = unk_5E76FC;
+  0x4b2110 sub_4B2110
+      v9[1150] = 0;
+=== 0x11fc (4604) nfuncs=64
+  0x42f2e0 sub_42F2E0
+      v2 = *(a1 + 4604);
+      v3 = *(a2 + 4604);
+  0x42f340 sub_42F340
+  0x430a40 Obj_ApplyLandingFrameJump
+      v5 = *(a1 + 4604);
+      v7 = *(a1 + 4604);
+      v10 = *(a1 + 4604);
+  0x433a60 sub_433A60
+      sub_49CDA0(v3, a2[1151], a2[1152]);
+  0x434f50 sub_434F50
+      result[1148] = result[1151];
+  0x4357c0 Obj_UpdatePositionFromParent
+      a1[1151] = v2;
+      a1[1151] = v2 + *(result + 4604);
+  0x4359e0 HitJudge_SetVictimFacing
+      v5 = *(a4 + 4604);
+      v6 = a3[1151];
+  0x435a80 HitJudge_SetKnockDirection
+      v5 = *(a4 + 4604);
+      v6 = a2[1151];
+  0x435c10 HitJudge_ApplyKnockDirAndFacingNoFlipCheck
+      v9 = v6[1151];
+      v10 = a2[1151];
+  0x436470 Obj_TestRelativePosition
+      if ( a2[1151] < *(v4 + 4604) )
+      else if ( *(v4 + 4604) < a2[1151] )
+  0x437270 sub_437270
+      v19 = v50[1151];
+      v21 = v49[1151];
+      v21 = v23[1151];
+  0x437f00 sub_437F00
+      v9 = v7[1151] + v8;
+      v23 = a2[1151];
+  0x438270 sub_438270
+      v5 = a1[1151];
+  0x4390d0 Obj_ResetOnDetach
+      *(v2 + 4592) = *(v2 + 4604);
+=== 0x1200 (4608) nfuncs=43
+  0x430a40 Obj_ApplyLandingFrameJump
+      *(a1 + 4596) = result - *(a1 + 4608);
+  0x433a60 sub_433A60
+      sub_49CDA0(v3, a2[1151], a2[1152]);
+  0x434f50 sub_434F50
+      v1 = result[1152];
+  0x4357c0 Obj_UpdatePositionFromParent
+      a1[1152] = v3;
+      result = v3 + *(result + 4608);
+      a1[1152] = result;
+  0x437270 sub_437270
+      v22 = v49[1152];
+      v22 = v23[1152];
+      v22 = v18[3] - v24[1152];
+  0x437f00 sub_437F00
+      v10 = v7[1152] + v2[2];
+      v24 = a2[1152];
+  0x4390d0 Obj_ResetOnDetach
+      v5 = *(v2 + 4608);
+  0x439f40 sub_439F40
+  0x43aaf0 Obj_ExecCmdListBetween
+      Effect_SpawnHitSpark(1, a3[172], v88 + a3[1151], v62 + a3[1152]);
+  0x43b560 sub_43B560
+      v23 = a1[1152];
+      v23 = (*a2)[1152];
+  0x43ba00 sub_43BA00
+      v6[2] = *(v5 + 4608) - 80;
+  0x43bb30 sub_43BB30
+      v18 += v4[1152];
+      v20 += v4[1152];
+      v7 = v3[1152] + v22;
+  0x43bda0 sub_43BDA0
+      v18 += v2[1152];
+      v20 += v2[1152];
+      v22 += v1[1152];
+  0x43bf40 sub_43BF40
+      v3 = *(v1 + 4608);
+      v7 = v6[1152] + v18;
+      v9 = v6[1152] + v20;
+=== 0x1204 (4612) nfuncs=3
+  0x434f50 sub_434F50
+      result[1150] = result[1153];
+  0x4357c0 Obj_UpdatePositionFromParent
+      a1[1153] = v4;
+      a1[1153] = v4;
+  0x439fd0 sub_439FD0
+=== 0x1208 (4616) nfuncs=2
+  0x49db20 sub_49DB20
+      if ( v13 % 2 != 0 && (*(a1 + 4604) - *(a1 + 4616)) % 2 != 0 )
+      v20 = *(a1 + 4616);
+      v32 = *(a1 + 4616);
+  0x49e120 sub_49E120
+      i[1154] = v4;
+=== 0x120c (4620) nfuncs=2
+  0x430a40 Obj_ApplyLandingFrameJump
+      if ( result >= 0 && *(a1 + 4620) < result && *(a1 + 352) == 0 )
+  0x49e120 sub_49E120
+      i[1155] = i[1149];
+=== 0x1210 (4624) nfuncs=14
+  0x431000 Obj_InitDefaults
+      *(a1 + 4624) = 0;
+  0x4315c0 Obj_ReleaseSubNodes
+  0x4317d0 HitJudge_StartHitEffect
+      v4 = a1 + 4624;
+      ObjEffect_RemoveById(a1 + 4624, 50000);
+      v4 = a1 + 4624;
+  0x4353c0 sub_4353C0
+      ObjEffect_RemoveById(this + 4624, 60060);
+  0x43a860 sub_43A860
+      else if ( ObjEffect_RemoveById(v3 + 4624, *v5) == 1 )
+  0x43dd40 sub_43DD40
+  0x495b60 sub_495B60
+  0x4967c0 HitJudge_OnAttackGuarded
+      ObjEffect_RemoveById(a1 + 4624, 60100);
+  0x496f90 sub_496F90
+  0x4996a0 HitJudge_ResolveTick
+      ObjEffect_RemoveById(v11 + 4624, 60090);
+  0x49bb70 sub_49BB70
+      ObjEffect_RemoveById(v33 + 4624, 60001);
+  0x49e830 sub_49E830
+  0x4a3cc0 sub_4A3CC0
+      v2 = g_PlayerCharaObj[v0] + 4624;
+      v4 = v3 + 4624;
+  0x4ec000 sub_4EC000
+=== 0x1214 (4628) nfuncs=12
+  0x431000 Obj_InitDefaults
+      *(a1 + 4628) = 0;
+  0x43b560 sub_43B560
+      if ( a1[1157] == 1 )
+  0x49a050 sub_49A050
+      if ( i[1157] == 1 )
+  0x49acb0 HitJudge_ResolveSecondaryBoxClashes
+      if ( v31[1157] == 1 )
+      if ( v3[1157] == 1 )
+      v29[1157] = 1;
+  0x49b940 sub_49B940
+      a1[1157] = 1;
+      a1[1157] = 1;
+  0x49b9f0 sub_49B9F0
+      *(a1 + 4628) = 1;
+      *(a1 + 4628) = 1;
+  0x49ba70 sub_49BA70
+      *(a1 + 4628) = 1;
+      *(a1 + 4628) = 1;
+  0x49baf0 sub_49BAF0
+      *(a1 + 4628) = 1;
+      *(a1 + 4628) = 1;
+  0x49c090 sub_49C090
+      if ( i[1157] == 1 )
+  0x49c0d0 sub_49C0D0
+      if ( *(j + 4628) == 1 )
+  0x4a3cc0 sub_4A3CC0
+      if ( *(*v14 + 4628) == 1 )
+  0x4ec000 sub_4EC000
+      if ( v1[1157] == 1 )
+=== 0x1218 (4632) nfuncs=9
+  0x42ed50 sub_42ED50
+      v1 = *(*v0 + 4632);
+  0x431000 Obj_InitDefaults
+      *(a1 + 4632) = 0;
+  0x43a860 sub_43A860
+      v17 = *(v3 + 4632);
+  0x49b940 sub_49B940
+      result = a1[1158];
+      v5 = a1[1158];
+      a1[1158] = v2;
+  0x49b9f0 sub_49B9F0
+      v5 = *(a1 + 4632);
+      *(a1 + 4632) = result;
+  0x49ba70 sub_49BA70
+      v4 = *(a1 + 4632);
+      *(a1 + 4632) = result;
+  0x49baf0 sub_49BAF0
+      v5 = *(a1 + 4632);
+      *(a1 + 4632) = result;
+  0x49e830 sub_49E830
+      if ( v1[1158] != 0 && sub_442430((v1 + 1156)) == 1 )
+  0x4ec000 sub_4EC000
+      if ( *(*v0 + 4632) != 0 )
+=== 0x121c (4636) nfuncs=6
+  0x42f7a0 sub_42F7A0
+      if ( (v15[1159] & 8) != 0 )
+  0x431000 Obj_InitDefaults
+      *(a1 + 4636) = 0;
+  0x4315c0 Obj_ReleaseSubNodes
+  0x435850 Obj_ConstructPoolSlot
+      *(this + 4636) = 0;
+  0x437270 sub_437270
+      sub_42EA60(v9 + 4636, v4 + 4636);
+      sub_42EA60((v14 + 1159), v4 + 4636);
+  0x43dd40 sub_43DD40
+      a1[1159] = 0;
+=== 0x1220 (4640) nfuncs=7
+  0x431000 Obj_InitDefaults
+      *(a1 + 4640) = 0;
+  0x435850 Obj_ConstructPoolSlot
+      *(this + 4640) = 0;
+  0x43dd40 sub_43DD40
+      a1[1160] = 0;
+  0x497120 sub_497120
+      if ( (*(a1 + 4640) & 8) == 0 )
+  0x497160 sub_497160
+      if ( (*(a1 + 4640) & 8) != 0 )
+  0x4983a0 HitJudge_ApplyHit
+      if ( (*(a2 + 4640) & 8) != 0 )
+  0x4996a0 HitJudge_ResolveTick
+      v27 = v40[1160];
+=== 0x1224 (4644) nfuncs=4
+  0x431000 Obj_InitDefaults
+      *(a1 + 4644) = 0;
+  0x431b90 Obj_SetActionAndRunScript
+  0x435850 Obj_ConstructPoolSlot
+      *(this + 4644) = 0;
+  0x49e120 sub_49E120
+      if ( i[1161] != 0 )
+=== 0x1228 (4648) nfuncs=6
+  0x431000 Obj_InitDefaults
+      *(a1 + 4648) = 0;
+  0x431b90 Obj_SetActionAndRunScript
+  0x434ad0 Obj_ScriptTick
+      if ( a2 == 0 && *(this + 4648) <= 0 )
+      *(this + 4648) += 256;
+  0x4353c0 sub_4353C0
+      if ( *(this + 4648) <= 0 )
+      *(this + 4648) += 256;
+  0x435850 Obj_ConstructPoolSlot
+      *(this + 4648) = 0;
+  0x49e120 sub_49E120
+      i[1162] -= 128;
+      i[1162] -= i[1163];
+      if ( i[1162] <= 0 )
+=== 0x122c (4652) nfuncs=10
+  0x431000 Obj_InitDefaults
+      *(a1 + 4652) = 128;
+  0x434a80 sub_434A80
+  0x435850 Obj_ConstructPoolSlot
+      *(this + 4652) = 128;
+  0x438660 sub_438660
+      a2[1163] = 256;
+      v6 = *(v5 + 4652);
+      a2[1163] = v6;
+  0x43dd40 sub_43DD40
+      a1[1163] = v5;
+  0x463e30 CComWorkBase__vf21
+      if ( *(*(a2 + 4) + 4652) >= (*(*(a2 + 4) + 4656) * 0.875) || sub_465E40(*(this + 11)) != 1 )
+  0x464660 CComWorkBase__vf32
+      if ( *(*(a2 + 4) + 4652) >= (*(*(a2 + 4) + 4656) * 0.875) )
+  0x46d4a0 CComWorkNormal__vf13
+      if ( v9[1163] < (v9[1164] * 0.875) )
+  0x46d710 CComWorkNormal__vf29
+      if ( v3[1163] < (v3[1164] * 0.875)
+  0x49e120 sub_49E120
+      i[1162] -= i[1163];
+=== 0x1230 (4656) nfuncs=9
+  0x431000 Obj_InitDefaults
+      *(a1 + 4656) = 128;
+  0x434a80 sub_434A80
+  0x435850 Obj_ConstructPoolSlot
+      *(this + 4656) = 128;
+  0x438660 sub_438660
+      a2[1164] = 256;
+      a2[1164] = *(v5 + 4656);
+      a2[1164] = *(v7 + 4656);
+  0x43dd40 sub_43DD40
+      v7 = a1[1164];
+  0x463e30 CComWorkBase__vf21
+      if ( *(*(a2 + 4) + 4652) >= (*(*(a2 + 4) + 4656) * 0.875) || sub_465E40(*(this + 11)) != 1 )
+  0x464660 CComWorkBase__vf32
+      if ( *(*(a2 + 4) + 4652) >= (*(*(a2 + 4) + 4656) * 0.875) )
+  0x46d4a0 CComWorkNormal__vf13
+      if ( v9[1163] < (v9[1164] * 0.875) )
+  0x46d710 CComWorkNormal__vf29
+      if ( v3[1163] < (v3[1164] * 0.875)
+=== 0x1234 (4660) nfuncs=8
+  0x430630 sub_430630
+      sub_42EB00((v1 + 4660));
+      sub_42EB60((v1 + 4660));
+  0x4306d0 sub_4306D0
+  0x430a40 Obj_ApplyLandingFrameJump
+      (*(a1 + 724))(a1 + 4592, a1 + 4596, *(a1 + 4660), *(a1 + 4664), a1 + 712);
+  0x431000 Obj_InitDefaults
+      *(a1 + 4660) = 256;
+  0x435850 Obj_ConstructPoolSlot
+      *(this + 4660) = 256;
+  0x43d110 ScriptVm_LoadArgsForObj
+      (*(a1 + 724))(a1 + 4592, a1 + 4596, *(a1 + 4660), *(a1 + 4664), a1 + 712);
+  0x495b60 sub_495B60
+  0x4983a0 HitJudge_ApplyHit
+      a1[1165] = a1[1171] * (v69 * a1[1167] / 256) / 256;
+=== 0x1238 (4664) nfuncs=4
+  0x430a40 Obj_ApplyLandingFrameJump
+      (*(a1 + 724))(a1 + 4592, a1 + 4596, *(a1 + 4660), *(a1 + 4664), a1 + 712);
+  0x431000 Obj_InitDefaults
+      *(a1 + 4664) = 256;
+  0x435850 Obj_ConstructPoolSlot
+      *(this + 4664) = 256;
+  0x43d110 ScriptVm_LoadArgsForObj
+      (*(a1 + 724))(a1 + 4592, a1 + 4596, *(a1 + 4660), *(a1 + 4664), a1 + 712);
+=== 0x123c (4668) nfuncs=3
+  0x431000 Obj_InitDefaults
+      *(a1 + 4668) = 256;
+  0x435850 Obj_ConstructPoolSlot
+      *(this + 4668) = 256;
+  0x4983a0 HitJudge_ApplyHit
+      a1[1165] = a1[1171] * (v69 * a1[1167] / 256) / 256;
+=== 0x1240 (4672) nfuncs=2
+  0x431000 Obj_InitDefaults
+      *(a1 + 4672) = 256;
+  0x435850 Obj_ConstructPoolSlot
+      *(this + 4672) = 256;
+=== 0x1244 (4676) nfuncs=2
+  0x431000 Obj_InitDefaults
+      *(a1 + 4676) = 256;
+  0x435850 Obj_ConstructPoolSlot
+      *(this + 4676) = 256;
+=== 0x1248 (4680) nfuncs=2
+  0x431000 Obj_InitDefaults
+      *(a1 + 4680) = 256;
+  0x435850 Obj_ConstructPoolSlot
+      *(this + 4680) = 256;
+=== 0x124c (4684) nfuncs=2
+  0x431000 Obj_InitDefaults
+      *(a1 + 4684) = 256;
+  0x435850 Obj_ConstructPoolSlot
+      *(this + 4684) = 256;
+=== 0x1250 (4688) nfuncs=2
+  0x431000 Obj_InitDefaults
+      *(a1 + 4688) = 256;
+  0x435850 Obj_ConstructPoolSlot
+      *(this + 4688) = 256;
+=== 0x1254 (4692) nfuncs=69
+  0x42f7a0 sub_42F7A0
+      v8 = sub_42F090(v4[1], *(a4[1173] + 12), v4[2]);
+      if ( (*(*a4[1173] + 8))(a4[1173], v10) >= 0 )
+      (*(*a4[1173] + 20))(a4[1173], v10);
+  0x430c60 sub_430C60
+      return *(*(a1 + 4692) + 28) != 1;
+  0x431000 Obj_InitDefaults
+      *(a1 + 4692) = 0;
+  0x431b90 Obj_SetActionAndRunScript
+  0x4327f0 Obj_SpawnFrameEffectRecord
+      if ( *(i[1173] + 28) == 1 )
+      if ( *(i[1173] + 28) == 1 )
+  0x433990 sub_433990
+      return *(a1[1173] + 28) != 1
+  0x4339f0 sub_4339F0
+      if ( *(*(a1 + 4692) + 28) == 1
+  0x433d00 sub_433D00
+      if ( *(*(a1 + 4692) + 112) != 0 )
+      v10 = *(a1 + 4692);
+      v11 = *(v10 + 8) - *(*(g_PlayerCharaObj[v9 ^ 1] + 4692) + 8);
+  0x435850 Obj_ConstructPoolSlot
+      *(this + 4692) = 0;
+  0x435ea0 Victim_EnterReactionState
+      if ( *(result[1173] + 28) == 1 )
+  0x435fa0 HitJudge_StartVictimReaction
+      v4 = *(*(victim + 4692) + 28);
+  0x4383d0 sub_4383D0
+      unk_5E76F4 = *(a5[1173] + 8);
+      dword_5E76F8 = *(a5[1173] + 12);
+      unk_5E76FC = (*(*a5[1173] + 28))(a5[1173]);
+  0x43aaf0 Obj_ExecCmdListBetween
+      v5 = a3[1173];
+      v11 = a3[1173];
+      v19 = *(a2[1173] + 64);
+  0x43b560 sub_43B560
+      if ( *v2 != 0 || (v4 = a1[1173]) == 0 || *(v4 + 28) != 1 )
+      v8 = *v6 * *(a1[1173] + 96) / 1000;
+      v10 = a1[1173];
+=== 0x1258 (4696) nfuncs=2
+  0x431000 Obj_InitDefaults
+      *(a1 + 4696) = 0;
+  0x435850 Obj_ConstructPoolSlot
+      *(this + 4696) = 0;
+=== 0x125c (4700) nfuncs=4
+  0x431000 Obj_InitDefaults
+      *(a1 + 4700) = 0;
+  0x435850 Obj_ConstructPoolSlot
+      *(this + 4700) = 0;
+  0x43dd40 sub_43DD40
+      v1 = a1[1175];
+      *(a1[1175] + 8) = v3;
+      *(a1[1175] + 12) = v4;
+  0x4944b0 sub_4944B0
+      v12 = a1[2] * *(*(*a1 + 4700) + 8) / 1000;
+      result = v12 * *(*(v11 + 4700) + 12) / 1000;
+=== 0x1260 (4704) nfuncs=2
+  0x431000 Obj_InitDefaults
+      *(a1 + 4704) = 0;
+  0x435850 Obj_ConstructPoolSlot
+      *(this + 4704) = 0;
