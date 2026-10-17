@@ -26,7 +26,7 @@ namespace {
 
 using Clock = std::chrono::steady_clock;
 
-struct HotJob { std::string pipe, request, chr, src, key; };   // src: the IM mod-folder file, key: its game path
+struct HotJob { std::string pipe, request, chr; };
 struct HotDone { sqedit::FpanimReply reply; HotJob job; long ms = 0; };
 
 struct HotSaveState {
@@ -44,20 +44,6 @@ HotDone RunJob(HotJob j)
 	const auto t0 = Clock::now();
 	HotDone d;
 	d.job = j;
-	// UNI2-IM / MBTL-IM index their Mods folder once at boot, so a file added there later is not seen by the running game.
-	// fpan-im rescans its own mods folder (the ping reply's mods=) on every reload: put the same file there too, as the
-	// Script panel does.
-	const sqedit::FpanimReply ping = sqedit::FpanimRequest(j.pipe, "ping", 3000);
-	if (!ping.connected || !ping.ok) { d.reply = ping; return d; }
-	const std::string live = sqedit::FpanimModsTarget(sqedit::FpanimModsDir(ping.text), j.key);
-	if (!live.empty() && !j.src.empty()) {
-		std::error_code ec;
-		const std::filesystem::path dst = std::filesystem::u8path(live);
-		std::filesystem::create_directories(dst.parent_path(), ec);
-		std::filesystem::copy_file(std::filesystem::u8path(j.src), dst, std::filesystem::copy_options::overwrite_existing, ec);
-		if (ec) { d.reply.connected = true; d.reply.text = "cannot copy to " + live + ": " + ec.message(); return d; }
-		HC_LOG_INFO("[hotsave] {} -> {} (fpan-im mods, live copy)", j.src, live);
-	}
 	// Engine rebuild: fpan-im waits up to 120 s for the training battle; live: up to 30 s (as the Script panel).
 	d.reply = sqedit::FpanimRequest(j.pipe, j.request, j.request.find(" live") != std::string::npos ? 35000 : 130000);
 	d.ms = (long)std::chrono::duration_cast<std::chrono::milliseconds>(Clock::now() - t0).count();
@@ -191,7 +177,7 @@ void MainFrame::onFileSaved(CharacterInstance* ch, const std::string& u8path)
 		g_hot.ok = false;
 		return;
 	}
-	Start({plan.pipe, plan.request, plan.chr, plan.modsDst, plan.key});
+	Start({plan.pipe, plan.request, plan.chr});
 }
 
 void MainFrame::DrawHotSaveStatus()

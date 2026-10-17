@@ -28,10 +28,8 @@ The mapping is `sqedit::FpanimPlanSave` in `src/squirrel/fpanim_link.h`, unit te
 - `hotsave status|on|off|mode rebuild|live|tomods uni2|mbtl on|off|gamedir uni2|mbtl <dir>`
 - `framedur <pattern> <frame> <ticks>`
 
-**Live copy:** UNI2-IM / MBTL-IM index their `Mods` folder once at boot, so a file that first appears there later is not loaded by the running game. Before each reload, Hantei-chan therefore also copies the file into fpan-im's own mods folder (the `mods=` path from the ping reply), which fpan-im rescans on every reload. The Script panel already did the same. "Restore mod folder" restores only the IM copy.
+**Needs fpan-im with the IM rescan (fpan-im `feat/hot-reload`, 2026-10-17):** fpan-im now reads `UNI2-IM\Mods` / `MBTL-IM\Mods` and their Packs even when the Improvement Mod is loaded. Every `reloadchara` / `reloadstd` rebuilds and rescans all of its layers first, and between `fpan-im\mods` and `<IM>\Mods` the newer file wins. A file saved into the IM folder after boot is therefore served on the next reload, and Hantei-chan writes only that one copy.
 
-**In-game proof (UNI2):** fpan-im `tests/ingame/run_mainsave.sh` with `fpanim_uni2_hotreload_mainsave.gcs` and `hc_mainsave_editor.txt`. Evidence is in fpan-im `docs/evidence/hotreload/mainsave_uni2_2026-10-17`.
+The older fpan-im skipped the IM layers whenever UNI2-IM was loaded, and UNI2-IM indexes its `Mods` only at boot. The first proof run hit exactly that: an OK rebuild, but the old HA6.
 
-- In the first boot, before the live copy existed, the editor's save was written to `UNI2-IM\Mods\data\chr000\chr000.ha6`. fpan-im answered `OK engine rebuild chr000: ...; ha6 root 1E980288 -> 37AC1728; back in battle after 1125 ms`.
-- The 5A frame 10 frames in was still 3, though, because fpan-im's VFS had 0 files and UNI2-IM had not indexed the new file. That run is what led to the live copy.
-- The live copy has not had its own boot yet.
+**In-game proof (UNI2):** fpan-im `tests/ingame/run_mainsave.sh` with `fpanim_uni2_hotreload_mainsave.gcs` and `hc_mainsave_editor.txt`. Evidence is in fpan-im `docs/evidence/hotreload/mainsave_uni2_2026-10-17` (run 1, old fpan-im) and `mainsave2_uni2_2026-10-17` (run 2).
