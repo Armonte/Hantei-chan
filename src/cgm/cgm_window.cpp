@@ -1574,13 +1574,20 @@ void Window::drawTextures(CharacterInstance &ch, const WindowHost &host) {
 
 	// ---- the selected item: header, actions, zoom, preview filling the column ----
 	ImGui::BeginGroup();
-	{   // the tab's own undo / redo: every replace and import here is one step (the PAT editor's history for French-Bread parts)
-		const bool live = PatChannelLive(ch);
-		const bool canU = hist.canUndo() && (bank || !hist.top().hasBank), canR = hist.canRedo() && (bank || !hist.topRedo().hasBank);
-		ImGui::BeginDisabled(!canU); if (CgmButton(LBL("Undo##cgmtb"))) undoRedo(ch, false, host); ImGui::EndDisabled();
-		ImGui::SameLine(); ImGui::BeginDisabled(!canR); if (CgmButton(LBL("Redo##cgmtb"))) undoRedo(ch, true, host); ImGui::EndDisabled();
-		if (hist.canUndo()) { ImGui::SameLine(); ImGui::TextDisabled("%s", hist.topLabel()); }   // re-read: the press above may have emptied it
-		if (live && tb.kind != 0) { ImGui::SameLine(); ImGui::TextDisabled("%s", TXT("(sheet / .pat steps: Edit > Undo, Ctrl+Z in the editor)")); }
+	{   // the tab's own undo / redo: every replace and import here is one step. French-Bread sheets (and a .pat document) keep their steps
+		// in the PAT editor's history, so with a sheet selected these buttons drive that history (the same step Edit > Undo reverts).
+		const bool viaParts = PatChannelLive(ch) && tb.kind != 0;
+		if (viaParts) {
+			UndoManager &um = ch.undoManager;
+			ImGui::BeginDisabled(!um.canUndo()); if (CgmButton(LBL("Undo##cgmtb")) && um.undo()) { tb.patGen++; ch.markModified(); status = std::string(TXT("Undone: ")) + (um.peekRedo() ? um.peekRedo()->label : std::string()); } ImGui::EndDisabled();
+			ImGui::SameLine(); ImGui::BeginDisabled(!um.canRedo()); if (CgmButton(LBL("Redo##cgmtb")) && um.redo()) { tb.patGen++; ch.markModified(); status = std::string(TXT("Redone: ")) + (um.peekUndo() ? um.peekUndo()->label : std::string()); } ImGui::EndDisabled();
+			if (um.peekUndo()) { ImGui::SameLine(); ImGui::TextDisabled("%s", um.peekUndo()->label.c_str()); }
+		} else {
+			const bool canU = hist.canUndo() && (bank || !hist.top().hasBank), canR = hist.canRedo() && (bank || !hist.topRedo().hasBank);
+			ImGui::BeginDisabled(!canU); if (CgmButton(LBL("Undo##cgmtb"))) undoRedo(ch, false, host); ImGui::EndDisabled();
+			ImGui::SameLine(); ImGui::BeginDisabled(!canR); if (CgmButton(LBL("Redo##cgmtb"))) undoRedo(ch, true, host); ImGui::EndDisabled();
+			if (hist.canUndo()) { ImGui::SameLine(); ImGui::TextDisabled("%s", hist.topLabel()); }   // re-read: the press above may have emptied it
+		}
 	}
 	if (!haveSel) ImGui::TextDisabled("%s", TXT("Select a CG image or a .pat texture."));
 	else {
@@ -1639,6 +1646,7 @@ bool Window::script(const std::string &cmd, const std::string &arg, std::string 
 	if (cmd == "path") { g_scriptPaths.push_back(arg); return true; }
 	if (cmd == "select") { selected = atoi(arg.c_str()); previewId = -1; return true; }
 	if (cmd == "texsel") { tb.kind = atoi(arg.c_str()); tb.sel = atoi(arg.c_str() + arg.find(' ') + 1); return true; }   // "texsel <0 CG | 1 .pat> <id>"
+	if (cmd == "texzoom") { tb.zoom = std::clamp((float)atof(arg.c_str()), 0.125f, 8.f); return true; }
 	if (cmd == "texgame") { tb.game = atoi(arg.c_str()); return true; }
 	if (cmd == "texdir") { const int gi = tb.game < 0 ? 0 : tb.game; tb.gameDir[gi] = arg; return true; }
 	if (cmd == "set") {

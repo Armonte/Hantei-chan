@@ -443,6 +443,15 @@ static int RealMain(int argc, char **argv) {
 	const std::string c = argv[1];
 	if (c == "selftest") return SelfTest();
 	if (c == "sheetcheck") return SheetCheck(argc - 2, argv + 2);
+	if (c == "sheetexport" && argc >= 5) {   // sheetexport <x.DAT|x.DT2|x.PAT> <sheet> <out.png>: one RBO / GOF2 part sheet as PNG
+		std::vector<uint8_t> b; han2::Han2File f; std::string err; if (!Slurp(argv[2], b)) { puts("error: cannot read"); return 1; }
+		const std::vector<uint8_t> &blob = han2::Parse(b.data(), b.size(), f, nullptr) ? f.area[han2::kAreaParts] : b;
+		Parts &p = *new Parts(nullptr);
+		if (!han2::PatSectionToParts(blob.data(), blob.size(), p, &err)) { printf("error: %s\n", err.c_str()); return 1; }
+		cgm::SheetTexSource s(p);
+		if (!cgm::ExportPng(s, atoi(argv[3]), argv[4], &err)) { printf("error: %s\n", err.c_str()); return 1; }
+		printf("exported sheet %s of %s -> %s\n", argv[3], argv[2], argv[4]); return 0;
+	}
 	if (c == "check") return Check(argc - 2, argv + 2);
 	if (c == "refs" && argc >= 4) return Refs(argv[2], argv[3]);
 	if (c == "stripe" && argc >= 6) return Stripe(argv[2], argv[3], argv[4], argv[5], argc > 6 ? argv[6] : nullptr);

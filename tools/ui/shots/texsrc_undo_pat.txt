@@ -6,6 +6,7 @@ wait 30
 cgm tab CG + .pat textures
 wait 10
 cgm texsel 1 0
+cgm texzoom 0.2
 wait 20
 capture C:/dev/hantei-chan/work/ab/shots/texsrc_pat_0_original.png
 cgm path C:/dev/hantei-chan/work/texundo/pat0_edit.png
