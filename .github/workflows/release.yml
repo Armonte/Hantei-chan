@@ -35,6 +35,18 @@ jobs:
     - name: Build
       run: cmake --build build --config Release
 
+    # Optional: fpan-im is a private repo. With the FPANIM_BUNDLE_URL secret set (a zip of winmm.dll +
+    # fpan-im/fpan-im.dll + VERSION, docs/FPANIM_BUNDLE.md), it lands in res/fpan-im and ships in the package.
+    - name: fpan-im bundle (optional)
+      env:
+        FPANIM_BUNDLE_URL: ${{ secrets.FPANIM_BUNDLE_URL }}
+      run: |
+        if (-not $env:FPANIM_BUNDLE_URL) { Write-Host "FPANIM_BUNDLE_URL not set: no fpan-im bundle"; exit 0 }
+        Invoke-WebRequest -Uri $env:FPANIM_BUNDLE_URL -OutFile fpanim_bundle.zip
+        New-Item -ItemType Directory -Force -Path res/fpan-im | Out-Null
+        Expand-Archive -Path fpanim_bundle.zip -DestinationPath res/fpan-im -Force
+      shell: pwsh
+
     - name: Package release
       run: |
         $version = if ($env:GITHUB_REF -match 'refs/tags/(.*)') { $matches[1] } else { "${{ inputs.version }}" }

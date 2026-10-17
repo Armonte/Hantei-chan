@@ -35,6 +35,7 @@
 #include "framedata_pb2k1.h"
 #include "han2/qoh_dat.h"
 #include "game_link_panel.h"
+#include "fpanim_install_panel.h"
 #include "tag_panel.h"
 #include "authoring/authoring_window.h"
 #include "authoring/game_view.h"

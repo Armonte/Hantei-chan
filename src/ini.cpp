@@ -106,6 +106,8 @@ static void ReadLine(ImGuiContext*, ImGuiSettingsHandler*, void* entry, const ch
 		gSettings.sqGameDirUni2 = line + 14;
 	} else if (strncmp(line, "SqGameDirMbtl=", 14) == 0){
 		gSettings.sqGameDirMbtl = line + 14;
+	} else if (strncmp(line, "FpanimBundleDir=", 16) == 0){
+		gSettings.fpanimBundleDir = line + 16;
 	} else if (strncmp(line, "Stage3dBlenderPath=", 19) == 0){
 		if (!s3d::BlenderPathIsPre5(line + 19)) gSettings.blenderPath = line + 19;
 		else HC_LOG_WARN("ini: Stage3dBlenderPath {} is older than Blender 5 (the add-on needs 5.2): using {}", line + 19, gSettings.blenderPath);
@@ -167,6 +169,7 @@ static void Write(ImGuiContext* ctx, ImGuiSettingsHandler* handler, ImGuiTextBuf
 	buf->appendf("SqHotReloadMode=%i\n", gSettings.sqHotReloadMode);
 	if (!gSettings.sqGameDirUni2.empty()) buf->appendf("SqGameDirUni2=%s\n", gSettings.sqGameDirUni2.c_str());
 	if (!gSettings.sqGameDirMbtl.empty()) buf->appendf("SqGameDirMbtl=%s\n", gSettings.sqGameDirMbtl.c_str());
+	if (!gSettings.fpanimBundleDir.empty()) buf->appendf("FpanimBundleDir=%s\n", gSettings.fpanimBundleDir.c_str());
 	if (!gSettings.blenderPath.empty()) buf->appendf("Stage3dBlenderPath=%s\n", gSettings.blenderPath.c_str());
 	for (const auto& k : gSettings.keyBindings)
 		buf->appendf("%s\n", k.c_str());
