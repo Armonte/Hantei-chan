@@ -1133,6 +1133,7 @@ endif()
 # cgmtex: the CG manager's unified CG + .pat texture layer (src/cgm/cgm_texsrc.h): unit tests, corpus checks, in-game proof edits.
 add_executable(cgmtex src/cgm/cgmtex.cpp src/cgm/cgm_texsrc.cpp ${CGM_CORE_SOURCES} src/cgm/cgm_usage.cpp src/framedata.cpp src/framedata_load.cpp src/framedata_save.cpp src/framedata_ha4.cpp ${HAN2_MODEL_SOURCES}
 	src/parts/parts.cpp src/app_log.cpp src/parts/parts_part.cpp src/parts/parts_partset.cpp src/parts/parts_shape.cpp src/parts/parts_texture.cpp src/parts/pat_texconv.cpp
+	src/han2_pat.cpp src/han2_pat_write.cpp src/han2_parts_edit.cpp
 	src/cg.cpp src/texture.cpp src/vao.cpp src/shader.cpp src/misc.cpp src/png_writer.cpp tinyalloc/tinyalloc.c)
 target_include_directories(cgmtex PRIVATE "." "src" "third_party" "${CMAKE_BINARY_DIR}/generated")
 target_compile_definitions(cgmtex PRIVATE WIN32_LEAN_AND_MEAN HA6GUIVERSION="${CMAKE_PROJECT_VERSION}" PAT_HEADLESS)
