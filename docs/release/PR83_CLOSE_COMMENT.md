@@ -1,4 +1,4 @@
-Closing in favour of #NNN (`update/parity-1014` → `master`).
+Closing in favour of #84 (`update/parity-1014` → `master`).
 
 That branch contains all of `update/ex-mbac` plus 276 later commits:
 - render parity measured against UNI2 and MBTL;
