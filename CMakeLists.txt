@@ -168,8 +168,13 @@ add_executable(${EXE}
 	src/cmdfile/cmd_editor_ui.cpp
 	src/ui/main_frame_cmdfile.cpp
 	src/ui/main_frame_gamelink.cpp
+	src/ui/main_frame_hotsave.cpp
 	src/game_link.cpp
 	src/game_link_panel.cpp
+	# fpan-im install / update / uninstall for UNI2 / MBTL (docs/FPANIM_BUNDLE.md)
+	src/fpanim_install.cpp
+	src/fpanim_install_panel.cpp
+	src/fpanim_play.cpp
 	# Tag / Team panel (experimental, docs/HANTEI_TAG_PANEL.md)
 	src/tag_tuning/tag_ini.cpp
 	src/tag_tuning/tag_assist.cpp
@@ -200,7 +205,7 @@ find_package(OpenGL REQUIRED)
 target_link_libraries(${EXE} PRIVATE imgui glad OpenGL::GL glm tinyalloc)
 if(WIN32)
 	# WIC PNG export, folder picker, detached-window subclassing; winmm for BGM preview (waveOut).
-	target_link_libraries(${EXE} PRIVATE windowscodecs ole32 uuid comctl32 winmm)
+	target_link_libraries(${EXE} PRIVATE windowscodecs ole32 uuid comctl32 winmm version)
 endif()
 
 if(MINGW)
@@ -1131,7 +1136,7 @@ if(MINGW)
 endif()
 
 # cgmtex: the CG manager's unified CG + .pat texture layer (src/cgm/cgm_texsrc.h): unit tests, corpus checks, in-game proof edits.
-add_executable(cgmtex src/cgm/cgmtex.cpp src/cgm/cgm_texsrc.cpp ${CGM_CORE_SOURCES} src/cgm/cgm_usage.cpp src/framedata.cpp src/framedata_load.cpp src/framedata_save.cpp src/framedata_ha4.cpp ${HAN2_MODEL_SOURCES}
+add_executable(cgmtex src/cgm/cgmtex.cpp src/cgm/cgm_texsrc.cpp src/squirrel/fpanim_link.cpp ${CGM_CORE_SOURCES} src/cgm/cgm_usage.cpp src/framedata.cpp src/framedata_load.cpp src/framedata_save.cpp src/framedata_ha4.cpp ${HAN2_MODEL_SOURCES}
 	src/parts/parts.cpp src/app_log.cpp src/parts/parts_part.cpp src/parts/parts_partset.cpp src/parts/parts_shape.cpp src/parts/parts_texture.cpp src/parts/pat_texconv.cpp
 	src/han2_pat.cpp src/han2_pat_write.cpp src/han2_parts_edit.cpp
 	src/cg.cpp src/texture.cpp src/vao.cpp src/shader.cpp src/misc.cpp src/png_writer.cpp tinyalloc/tinyalloc.c)
@@ -1293,6 +1298,22 @@ if(MINGW)
 	target_link_options(fpanim_link_test PRIVATE -static-libgcc -static-libstdc++ -static)
 endif()
 add_test(NAME fpanim_link COMMAND fpanim_link_test)
+# fpan-im install planning (src/fpanim_install.h): status, bundle layouts, backup/chainload, uninstall, file guard
+add_executable(fpanim_install_test tests/fpanim_install_test.cpp src/fpanim_install.cpp src/app_log.cpp)
+target_include_directories(fpanim_install_test PRIVATE "." "src")
+target_compile_definitions(fpanim_install_test PRIVATE WIN32_LEAN_AND_MEAN)
+target_link_libraries(fpanim_install_test PRIVATE version)
+if(MINGW)
+	target_link_options(fpanim_install_test PRIVATE -static-libgcc -static-libstdc++ -static)
+endif()
+add_test(NAME fpanim_install COMMAND fpanim_install_test)
+# Optional fpan-im bundle (tools/fpanim/bundle.sh fills res/fpan-im; git-ignored binaries): copied next to the exe when
+# present. Without it the build passes and the fpan-im window says "fpan-im not bundled".
+if(TARGET ${EXE} AND EXISTS "${CMAKE_SOURCE_DIR}/res/fpan-im/winmm.dll")
+	add_custom_command(TARGET ${EXE} POST_BUILD
+		COMMAND ${CMAKE_COMMAND} -E copy_directory "${CMAKE_SOURCE_DIR}/res/fpan-im" "$<TARGET_FILE_DIR:${EXE}>/res/fpan-im"
+		VERBATIM)
+endif()
 add_executable(squirrel_doc_test tests/squirrel_doc_test.cpp)
 target_link_libraries(squirrel_doc_test PRIVATE sqeditor_core)
 if(MINGW)
