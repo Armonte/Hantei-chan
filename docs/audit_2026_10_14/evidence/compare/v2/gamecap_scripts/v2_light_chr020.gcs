@@ -1,0 +1,40 @@
+# render-match2 (2026-10-14): CG-layer cases of chr020 (AFHK AFAZ/AFZM), lit (chara aura as the script left it,
+# recorded in the sidecar) and unlit (aura RGB held at 0: no specular add and no aura glow pass,
+# CharaObj_DrawWithStageLight 0x5CE3C0 -> CharaAura_DrawGlow 0x59D910), each with an idle control and a
+# same-session plate.
+include ../games/uni2.gcs
+let P1CHR 20
+let P2CHR 0
+include ../games/uni2_to_training.gcs
+set OUTD C:\dev\hantei-chan\tools\gamecap\captures\v2
+set CTRL ctrl_chr020_p0_lit
+include ../games/uni2_v2_ctrl_plate.gcs
+set CASE afhk_cg_chr020_p435_t27_lit
+set PAT 435
+set SETFRAME 0
+set FRAME 0
+set GTICK 28
+set STEPKEYS F6,F6,F6,F6,F6,F6,F6,F6,F6,F6,F6,F6,F6,F6,F6,F6,F6,F6,F6,F6,F6,F6,F6,F6,F6,F6,F6,F6
+include ../games/uni2_v2_case_aura_plate.gcs
+set CASE afhk_cg_chr020_p437_t2_lit
+set PAT 437
+set GTICK 3
+set STEPKEYS F6,F6,F6
+include ../games/uni2_v2_case_aura_plate.gcs
+hold f32 [P1+0x8C0]+0x40 0
+hold f32 [P1+0x8C0]+0x44 0
+hold f32 [P1+0x8C0]+0x48 0
+step 3
+set CTRL ctrl_chr020_p0_unlit
+include ../games/uni2_v2_ctrl_plate.gcs
+set CASE afhk_cg_chr020_p435_t27_unlit
+set PAT 435
+set GTICK 28
+set STEPKEYS F6,F6,F6,F6,F6,F6,F6,F6,F6,F6,F6,F6,F6,F6,F6,F6,F6,F6,F6,F6,F6,F6,F6,F6,F6,F6,F6,F6
+include ../games/uni2_v2_case_aura_plate.gcs
+set CASE afhk_cg_chr020_p437_t2_unlit
+set PAT 437
+set GTICK 3
+set STEPKEYS F6,F6,F6
+include ../games/uni2_v2_case_aura_plate.gcs
+quit

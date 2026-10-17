@@ -14,7 +14,29 @@
 // Forward declarations
 class Parts;
 
+namespace bg {
+	class Renderer;
+	struct Camera;
+}
+
 // Layer information for multi-layer rendering
+// Draw bucket of an AF layer, as the UNI2/MBTL renderer computes it
+// (Han6Object_Draw / Han6Draw_DrawLayer, MBTL.exe 0x596FA0 / 0x4A0070):
+// the layer is submitted to drawctx bucket[AFPL], where bucket 0 is the
+// object's priority + 256, 1 = 403, 2 = 338, 3 = object + 258 (just in
+// front), 4 = object + 254 (just behind). Buckets draw in ascending order;
+// inside a bucket the frame's layers draw 0 first (bottom) to last (top).
+inline int LayerDrawBucket(int afpl, int objectPriority)
+{
+	switch (afpl) {
+	case 1: return 403;
+	case 2: return 338;
+	case 3: return objectPriority + 258;
+	case 4: return objectPriority + 254;
+	default: return objectPriority + 256;
+	}
+}
+
 struct RenderLayer {
 	int spriteId;
 	int spawnOffsetX, spawnOffsetY;  // Offset from spawn parameters
@@ -35,6 +57,28 @@ struct RenderLayer {
 	// Spawn flags for positioning behavior
 	int spawnFlagset1;     // From effect parameters[2]
 	int spawnFlagset2;     // From effect parameters[3]
+
+	// PUPS of the pattern this layer belongs to: selects <cg>_pN.pal (issue #76).
+	int pups = 0;
+	// AFHK (PAT layers): part set of the next frame's same layer and the current frame's weight
+	// (1 = no interpolation). CG layers get their lerped colour/scale/rotation in the fields above.
+	int nextSpriteId = -1;
+	float curWeight = 1.f;
+	// PAT layers: PPPA palette tint (character parts only) and PRAS (MBTL ignores it).
+	bool patPaletteTint = true;
+	// Character whose base palette the PPPA tint reads (nullptr = the layer's own CG). Effect.ha6 layers
+	// point at the owner: the game tints every object from g_CharaResRecords[obj+4], which effects inherit.
+	CG* patTintCg = nullptr;
+	bool patApplyPras = true;
+	// AFHK weight 0: UNI2/MBTL lerp the part transform fully to the next part set, MBAACC keeps the current
+	// one (partrender::PartLerpsTransform).
+	bool patUniDialect = true;
+	// Pattern comparison overlay (issue #63): draw this layer's boxes as
+	// outlines only, so they read apart from the main pattern's filled boxes.
+	bool boxesOutlineOnly = false;
+	// Box coordinates -> CG pixels: 0.5 on MBAACC/MBAC usePat frames
+	// (FrameData::boxDisplayScale), 1 elsewhere.
+	float boxScale = 1.0f;
 
 	RenderLayer() :
 		spriteId(-1), spawnOffsetX(0), spawnOffsetY(0),
@@ -70,20 +114,68 @@ private:
 	float imageVertex[6*4];
 	std::vector<float> clientQuads;
 	int quadsToDraw;
+	bool gridLinesHaveOverlay = false;
 
 	int lProjectionS, lProjectionT, lProjectionParts;
 	int lAlphaS;
-	int lFlipParts, lAddColorParts;
+	int lAddColorParts;
+	int lIndexedT = -1;              //sTextured 'indexed' mode uniform
+	unsigned int paletteTexId = 0;   //256x1 palette texture on unit 1
 	Shader sSimple;
 	Shader sTextured;
-	Texture texture;
+
+	// Sprite textures, cached per (CG, CG generation, image id). Decoding and
+	// uploading a sprite on every switch made multi-actor scenes (spawns,
+	// onion-skin samples, several views) re-upload the same images many
+	// times per frame. LRU by byte budget; a CG load or palette change
+	// renews its generation, so stale entries are never hit (only evicted).
+	struct SpriteKey {
+		const CG* cg; unsigned long long generation; int id;
+		bool operator==(const SpriteKey& o) const { return cg == o.cg && generation == o.generation && id == o.id; }
+	};
+	struct SpriteKeyHash {
+		size_t operator()(const SpriteKey& k) const {
+			return std::hash<const void*>()(k.cg) ^ (std::hash<unsigned long long>()(k.generation) * 31u) ^ ((size_t)k.id * 0x9E3779B97F4A7C15ull);
+		}
+	};
+	struct CachedSprite {
+		unsigned int tex = 0;
+		int w = 0, h = 0, ox = 0, oy = 0;
+		bool indexed = false;
+		bool linear = false;   // GL filter currently set on tex
+		size_t bytes = 0;
+		unsigned long long lastUse = 0;
+	};
+	std::unordered_map<SpriteKey, CachedSprite, SpriteKeyHash> spriteCache;
+	size_t spriteCacheBytes = 0;
+	unsigned long long spriteUseClock = 0;
+	unsigned int spriteTex = 0;      // texture of the current sprite (0 = none)
+	bool spriteIndexed = false;
+	CachedSprite* curSprite = nullptr; // entry of spriteTex (map node, stable)
+	const CG* curImageCg = nullptr;
+	unsigned long long curImageGen = 0;
+	void EvictSprites(size_t budget);
+	void BindSpriteTexture();
 	float colorRgba[4];
+
+	//Set sTextured's indexed mode for the current sprite texture and, when
+	//indexed, upload the CG's current palette. Call with sTextured active.
+	void ApplySpriteTextureMode();
+
+	//Per-item draws for DrawLayers. Caller sets x/y/offsetX/offsetY and the
+	//GL baseline state; these must not rely on anything else being set.
+	void DrawPatLayerItem(const RenderLayer& layer, Parts* origParts);
+	void DrawCgLayerItem(const RenderLayer& layer, const float* baseColorRgba);
 
 	int curImageId;
 
 	// Multi-layer rendering support
 	std::vector<RenderLayer> renderLayers;
 	int currentLayerIndex;
+
+	// Background (stage) rendering — borrowed from MainFrame, not owned here.
+	bg::Renderer* bgRenderer = nullptr;
+	bg::Camera*   bgCamera   = nullptr;
 
 	void AdjustImageQuad(int x, int y, int w, int h);
 	void SetModelView(glm::mat4&& view);
@@ -92,7 +184,12 @@ private:
 	void SetBlendingMode();
 
 public:
+	// Switch to <cg>_pN.pal for layers of patterns with PUPS N (issue #76).
+	bool followPups = true;
 	bool filter;
+	// MBTL CG sprites at zoom > 1 (set per scene by the caller from the character's game and the View > Filter toggle):
+	// Han6Draw_SubmitCgSprite_ParentMtx 0x4A0C40 picks TecCharaDrawBgColorFilter_V when the camera zoom is > 1.
+	bool cgZoomFilter = false;
 	int x, offsetX;
 	int y, offsetY;
 	float scale;
@@ -104,18 +201,42 @@ public:
 	// Parts rendering state (public for PatEditor)
 	bool usePat = false;
 	int curPattern = 0;
-	int curNextPattern = 0;
-	float curInterp = 0.0f;
+	int curNextPattern = -1;
+	float curInterp = 1.0f;   // AFHK weight of the current frame (1 = no interpolation)
 	
 	Render();
+	~Render();
+	Render(const Render&) = delete;
+	Render& operator=(const Render&) = delete;
+	size_t SpriteCacheEntries() const { return spriteCache.size(); }
+
+	// Per-pass camera (docs/HANTEI_WAVE2.md §2). Every render pass (main
+	// view, detached view, onion sample, PNG export) calls BeginPass with its
+	// own target size and camera before drawing; x/y/scale/projection below
+	// are derived from it and nothing carries over from a previous pass.
+	struct PassParams {
+		int width = 1, height = 1;         // target size in pixels
+		float originX = 0.f, originY = 0.f; // target pixel of world (0,0)
+		float zoom = 1.f;                  // target pixels per world unit
+	};
+	void BeginPass(const PassParams& params);
+	const PassParams& CurrentPass() const { return pass; }
+private:
+	PassParams pass;
+public:
+
 	void Draw();
 	void DrawGridLines();   // Draw only grid lines
+	void ResetGridLines();  // Plain grid again (drops a PAT-editor overlay)
 	void DrawSpriteOnly(bool drawHitboxes = true);  // Draw sprite and optionally hitboxes
 	void UpdateProj(float w, float h);
 
 	void GenerateHitboxVertices(const BoxList &hitboxes);
 	bool GeneratePartCenterVertices();  // Draw origin cross for selected part in PatEditor
 	bool GenerateUVRectangleVertices();  // Draw UV bounds rectangle for selected cutout in TEXTURE_VIEW
+	// PAT editor overlay colours (Edit > Preferences > PAT editor, saved in the ini)
+	float patCenterColor[3]{1.0f, 0.5f, 1.0f};
+	float patUvRectColor[3]{0.0f, 1.0f, 1.0f};
 	void SetCg(CG *cg);
 	void SetParts(Parts *parts);
 	void SwitchImage(int id);
@@ -129,6 +250,23 @@ public:
 	void SortLayersByZPriority(int mainPatternPriority);
 	void DrawLayers();
 	bool HasLayers() const { return !renderLayers.empty(); }
+
+	// Background (stage) rendering.
+	void SetBackgroundRenderer(bg::Renderer* renderer, bg::Camera* camera);
+	void DrawBackground();
+
+	// Draw one PAT pattern for a stage object whose sprite-id is < 10000.
+	// (worldX, worldY) is the object's position in editor-world space
+	// WITHOUT the camera pan (render.x/y supplies that). Used by the bg
+	// Renderer for PAT-based stage objects.
+	void DrawBgPattern(Parts* parts, int pattern,
+	                   float worldX, float worldY, float alpha, int blendMode);
+	bg::Renderer* GetBackgroundRenderer() { return bgRenderer; }
+	bg::Camera*   GetBackgroundCamera()   { return bgCamera;   }
+
+	// Hooks the background renderer uses to draw quads through our shader/state.
+	void SetupSpriteShader();
+	void SetSpriteTransform(float x, float y, float scaleX, float scaleY);
 
 	enum blendType{
 		normal,

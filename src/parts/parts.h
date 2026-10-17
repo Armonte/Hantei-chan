@@ -10,8 +10,12 @@
 #include "parts_shape.h"
 #include "parts_part.h"
 #include "parts_partset.h"
+#include "part_render_math.h"
 #include <vector>
+#include <cstdint>
+#include <string>
 #include <functional>
+#include <memory>
 #include <glm/mat4x4.hpp>
 
 class Parts {
@@ -31,6 +35,43 @@ public:
 
     int curTexId = -1;
     bool loaded = false;
+    // True if the loaded .pat used MBAACC-era legacy tag names (PANM, PPNM,
+    // PPSS, PPCC, PPPA, PPPP, PPTP, PGTX). Save uses this to emit the same
+    // tag variants back instead of the canonical UNI ones (PANA, PPNA, PPWH,
+    // PPXY, PPCL, PPVT, PPGR, PGT2), preserving byte-1:1 with the original.
+    bool useMBAACCFormat = false;
+    // French-Bread HAN2RBO / GOF PAT (RBO, GOF2, GOF1): a part's position is its
+    // top-left corner, the cut-out's xy is the pivot OFFSET from that corner
+    // (scale and rotation about top-left + xy), and parts draw in ascending layer
+    // order (last = on top). See docs/formats/fb_part_transform.md. Everything
+    // else (MBAA / UNI / MBTL) keeps position = pivot and descending priority.
+    bool fbPartModel = false;
+    // French-Bread PAT: number of pose slots of the loaded block (1000 for v2/v3, 2000 for GOF2 v4); 0 = not a French-Bread PAT.
+    int fbMaxPoses = 0;
+
+    // Pixel buffers owned by this model (sprite sheets imported in the editor). Append-only until Free(), so a
+    // PartGfx::data pointer kept by an undo snapshot stays valid for the life of the loaded character.
+    std::vector<std::unique_ptr<char[]>> ownedPixels;
+    char* AdoptPixels(size_t bytes) { ownedPixels.emplace_back(new char[bytes ? bytes : 1]); return ownedPixels.back().get(); }
+
+    // Records as loaded, in file order, with a fingerprint of the model they
+    // decoded to. Save() writes a record's original bytes while its model is
+    // unchanged (so unmodified .pat files round-trip byte-identical, including
+    // their texture compression) and re-encodes only edited records.
+    struct RawRecord {
+        char kind;          // 'P' P_ST, 'C' PPST, 'G' PGST, 'V' VEST
+        uint32_t id;
+        std::string raw;    // tag .. end tag
+        uint64_t fp = 0;
+    };
+    std::vector<RawRecord> rawRecords;
+    std::string rawHeader;  // 0x20-byte header + "_STR"
+    // Part set renumbering: id each loaded slot (origId) has in the .pat on disk, -1 = not on disk. Identity after
+    // Load; Save updates it. Not undo state (it describes the file, not the model).
+    std::vector<int> diskIdOfOrig;
+    // origId -> current slot index (-1 = gone), from the live model.
+    std::vector<int> CurrentIndexOfOrig() const;
+    uint64_t Fingerprint(char kind, uint32_t id) const;
 
     // PatEditor highlighting
     int partHighlight = -1;        // Index of highlighted part property (-1 = none)
@@ -45,13 +86,25 @@ public:
     bool Save(const char* filename);
     unsigned int* MainLoad(unsigned int* data, const unsigned int* data_end);
 
-    // Rendering
-    void Draw(int pattern, int nextPattern, float interpolationFactor,
+    // Rendering. One part set, drawn the way uni2.exe's PatPartSet_Draw_PrimQueue 0x4BFFB0 does it
+    // (rules in part_render_math.h).
+    struct DrawParams {
+        int pattern = 0;          // part set
+        int nextPattern = -1;     // AFHK: part set of the next frame's same layer (-1 = none)
+        float curWeight = 1.f;    // AFHK: weight of the current frame (1 = no interpolation)
+        bool paletteTint = true;  // PPPA tint: the game applies it in the character shader path only
+        const CG* tintCg = nullptr; // palette owner for the PPPA tint (nullptr = this Parts' CG; partrender::PartTintOwner)
+        bool applyPras = true;    // PRAS: UNI2 applies it, MBTL does not read it
+        bool uniDialect = true;   // AFHK weight 0: MBAACC keeps the current part transform (PartLerpsTransform); arc split
+    };
+    // setAddColor gets the PRSP specular colour as RGBA 0..1 (added to the output, alpha included).
+    void Draw(const DrawParams& params,
         std::function<void(glm::mat4)> setMatrix,
-        std::function<void(float, float, float)> setAddColor,
-        std::function<void(char)> setFlip,
+        std::function<void(const float*)> setAddColor,
         float color[4]);
     void DrawPart(int id, bool useLinearFilter = false);
+    // PRAL blend a part draws with (the editor's on/off "additive" plus the raw byte).
+    static partrender::PartBlend PartBlendOf(const PartProperty& part);
 
     // Accessors
     PartSet<>* GetPartSet(unsigned int n);

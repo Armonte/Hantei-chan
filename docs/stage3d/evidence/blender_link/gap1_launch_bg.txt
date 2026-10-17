@@ -1,0 +1,16 @@
+# Gap 1: Open in Blender launch path with --background (stage3d blender launch-bg: Hantei-chan's exact command + --background):
+# the add-on probe (MBTL_HANTEI_PROBE) writes scene counts, moves the largest mesh, runs Export to Hantei-chan -> Hantei-chan sees bg.fbx.bin change -> Reload from Blender -> capture.
+wait 20
+stage3d open C:/dev/hantei-chan/work/blender_live/uni2/bg bg001
+wait 20
+stage3d status
+stage3d capture C:/dev/hantei-chan/work/blender_live/probe/hc_before.png
+stage3d blender
+stage3d blender launch-bg
+waits3dchange 180
+stage3d status
+stage3d reload
+wait 20
+stage3d status
+stage3d capture C:/dev/hantei-chan/work/blender_live/probe/hc_after.png
+quit

@@ -1,0 +1,349 @@
+{
+  "poseName": "PATTERN005",
+  "poseIndex": 3,
+  "partCount": 40,
+  "parts": [
+    {
+      "index": 0,
+      "isEmpty": false,
+      "spriteSheetIndex": 1,
+      "spriteSheetName": "tex1",
+      "srcRect": { "x": 120, "y": 8, "width": 88, "height": 88 },
+      "destRect": { "x": -48, "y": -179, "width": 88, "height": 88 },
+      "origin": { "x": 40, "y": 71 },
+      "layer": 25,
+      "drawOrder": 3,
+      "rotation": 0.036,
+      "xScale": 1,
+      "yScale": 1,
+      "flip": "None",
+      "flipValue": 0,
+      "color": { "a": 255, "r": 255, "g": 255, "b": 255 }
+    },
+    {
+      "index": 1,
+      "isEmpty": false,
+      "spriteSheetIndex": 1,
+      "spriteSheetName": "tex1",
+      "srcRect": { "x": 464, "y": 480, "width": 40, "height": 24 },
+      "destRect": { "x": -38, "y": -177, "width": 40, "height": 24 },
+      "origin": { "x": 20, "y": 12 },
+      "layer": 2,
+      "drawOrder": 0,
+      "rotation": 336.312,
+      "xScale": 1,
+      "yScale": 1,
+      "flip": "None",
+      "flipValue": 0,
+      "color": { "a": 255, "r": 255, "g": 255, "b": 255 }
+    },
+    {
+      "index": 2,
+      "isEmpty": false,
+      "spriteSheetIndex": 0,
+      "spriteSheetName": "tex0",
+      "srcRect": { "x": 8, "y": 8, "width": 40, "height": 40 },
+      "destRect": { "x": -21, "y": -108, "width": 40, "height": 40 },
+      "origin": { "x": 20, "y": 29 },
+      "layer": 63,
+      "drawOrder": 5,
+      "rotation": 349.38,
+      "xScale": 1,
+      "yScale": 1,
+      "flip": "None",
+      "flipValue": 0,
+      "color": { "a": 255, "r": 255, "g": 255, "b": 255 }
+    },
+    {
+      "index": 3,
+      "isEmpty": false,
+      "spriteSheetIndex": 0,
+      "spriteSheetName": "tex0",
+      "srcRect": { "x": 128, "y": 56, "width": 40, "height": 48 },
+      "destRect": { "x": -21, "y": -109, "width": 40, "height": 48 },
+      "origin": { "x": 21, "y": 12 },
+      "layer": 196,
+      "drawOrder": 11,
+      "rotation": 324.144,
+      "xScale": 0.95,
+      "yScale": 0.95,
+      "flip": "None",
+      "flipValue": 0,
+      "color": { "a": 255, "r": 255, "g": 255, "b": 255 }
+    },
+    {
+      "index": 4,
+      "isEmpty": false,
+      "spriteSheetIndex": 0,
+      "spriteSheetName": "tex0",
+      "srcRect": { "x": 184, "y": 48, "width": 40, "height": 56 },
+      "destRect": { "x": -7, "y": -90, "width": 40, "height": 56 },
+      "origin": { "x": 21, "y": 13 },
+      "layer": 135,
+      "drawOrder": 9,
+      "rotation": 311.796,
+      "xScale": 0.9,
+      "yScale": 0.9,
+      "flip": "None",
+      "flipValue": 0,
+      "color": { "a": 255, "r": 255, "g": 255, "b": 255 }
+    },
+    {
+      "index": 5,
+      "isEmpty": false,
+      "spriteSheetIndex": 0,
+      "spriteSheetName": "tex0",
+      "srcRect": { "x": 432, "y": 416, "width": 48, "height": 40 },
+      "destRect": { "x": 9, "y": -69, "width": 48, "height": 40 },
+      "origin": { "x": 26, "y": 11 },
+      "layer": 112,
+      "drawOrder": 8,
+      "rotation": 323.856,
+      "xScale": 0.95,
+      "yScale": 0.95,
+      "flip": "Horizontal",
+      "flipValue": 1,
+      "color": { "a": 255, "r": 255, "g": 255, "b": 255 }
+    },
+    {
+      "index": 6,
+      "isEmpty": false,
+      "spriteSheetIndex": 0,
+      "spriteSheetName": "tex0",
+      "srcRect": { "x": 128, "y": 56, "width": 40, "height": 48 },
+      "destRect": { "x": -28, "y": -109, "width": 40, "height": 48 },
+      "origin": { "x": 21, "y": 12 },
+      "layer": 10,
+      "drawOrder": 1,
+      "rotation": 319.824,
+      "xScale": 1,
+      "yScale": 1,
+      "flip": "None",
+      "flipValue": 0,
+      "color": { "a": 255, "r": 255, "g": 255, "b": 255 }
+    },
+    {
+      "index": 7,
+      "isEmpty": false,
+      "spriteSheetIndex": 0,
+      "spriteSheetName": "tex0",
+      "srcRect": { "x": 232, "y": 48, "width": 40, "height": 56 },
+      "destRect": { "x": -17, "y": -89, "width": 40, "height": 56 },
+      "origin": { "x": 21, "y": 11 },
+      "layer": 23,
+      "drawOrder": 2,
+      "rotation": 305.928,
+      "xScale": 1,
+      "yScale": 1,
+      "flip": "None",
+      "flipValue": 0,
+      "color": { "a": 255, "r": 255, "g": 255, "b": 255 }
+    },
+    {
+      "index": 8,
+      "isEmpty": false,
+      "spriteSheetIndex": 0,
+      "spriteSheetName": "tex0",
+      "srcRect": { "x": 384, "y": 416, "width": 40, "height": 40 },
+      "destRect": { "x": 17, "y": -63, "width": 40, "height": 40 },
+      "origin": { "x": 14, "y": 8 },
+      "layer": 32,
+      "drawOrder": 4,
+      "rotation": 325.116,
+      "xScale": 1,
+      "yScale": 1,
+      "flip": "None",
+      "flipValue": 0,
+      "color": { "a": 255, "r": 255, "g": 255, "b": 255 }
+    },
+    {
+      "index": 9,
+      "isEmpty": false,
+      "spriteSheetIndex": 0,
+      "spriteSheetName": "tex0",
+      "srcRect": { "x": 8, "y": 56, "width": 104, "height": 72 },
+      "destRect": { "x": -51, "y": -77, "width": 104, "height": 72 },
+      "origin": { "x": 53, "y": 9 },
+      "layer": 88,
+      "drawOrder": 6,
+      "rotation": 2.484,
+      "xScale": 1,
+      "yScale": 1,
+      "flip": "None",
+      "flipValue": 0,
+      "color": { "a": 255, "r": 255, "g": 255, "b": 255 }
+    },
+    {
+      "index": 10,
+      "isEmpty": false,
+      "spriteSheetIndex": 0,
+      "spriteSheetName": "tex0",
+      "srcRect": { "x": 72, "y": 464, "width": 48, "height": 40 },
+      "destRect": { "x": -3, "y": -47, "width": 48, "height": 40 },
+      "origin": { "x": 12, "y": 8 },
+      "layer": 169,
+      "drawOrder": 10,
+      "rotation": 45.036,
+      "xScale": 1,
+      "yScale": 1,
+      "flip": "None",
+      "flipValue": 0,
+      "color": { "a": 255, "r": 255, "g": 255, "b": 255 }
+    },
+    {
+      "index": 11,
+      "isEmpty": false,
+      "spriteSheetIndex": 0,
+      "spriteSheetName": "tex0",
+      "srcRect": { "x": 72, "y": 464, "width": 48, "height": 40 },
+      "destRect": { "x": -15, "y": -36, "width": 48, "height": 40 },
+      "origin": { "x": 12, "y": 8 },
+      "layer": 101,
+      "drawOrder": 7,
+      "rotation": 359.748,
+      "xScale": 1,
+      "yScale": 1,
+      "flip": "None",
+      "flipValue": 0,
+      "color": { "a": 255, "r": 255, "g": 255, "b": 255 }
+    },
+    {
+      "index": 12,
+      "isEmpty": false,
+      "spriteSheetIndex": 0,
+      "spriteSheetName": "tex0",
+      "srcRect": { "x": 16, "y": 200, "width": 64, "height": 80 },
+      "destRect": { "x": -48, "y": -121, "width": 64, "height": 80 },
+      "origin": { "x": 27, "y": 19 },
+      "layer": 225,
+      "drawOrder": 13,
+      "rotation": 49.896,
+      "xScale": 1,
+      "yScale": 1,
+      "flip": "None",
+      "flipValue": 0,
+      "color": { "a": 255, "r": 255, "g": 255, "b": 255 }
+    },
+    {
+      "index": 13,
+      "isEmpty": false,
+      "spriteSheetIndex": 0,
+      "spriteSheetName": "tex0",
+      "srcRect": { "x": 464, "y": 40, "width": 32, "height": 104 },
+      "destRect": { "x": -6, "y": -152, "width": 32, "height": 104 },
+      "origin": { "x": 17, "y": 79 },
+      "layer": 198,
+      "drawOrder": 12,
+      "rotation": 236.844,
+      "xScale": 1,
+      "yScale": 1,
+      "flip": "None",
+      "flipValue": 0,
+      "color": { "a": 255, "r": 255, "g": 255, "b": 255 }
+    },
+    {
+      "index": 14,
+      "isEmpty": true
+    },
+    {
+      "index": 15,
+      "isEmpty": true
+    },
+    {
+      "index": 16,
+      "isEmpty": true
+    },
+    {
+      "index": 17,
+      "isEmpty": true
+    },
+    {
+      "index": 18,
+      "isEmpty": true
+    },
+    {
+      "index": 19,
+      "isEmpty": true
+    },
+    {
+      "index": 20,
+      "isEmpty": true
+    },
+    {
+      "index": 21,
+      "isEmpty": true
+    },
+    {
+      "index": 22,
+      "isEmpty": true
+    },
+    {
+      "index": 23,
+      "isEmpty": true
+    },
+    {
+      "index": 24,
+      "isEmpty": true
+    },
+    {
+      "index": 25,
+      "isEmpty": true
+    },
+    {
+      "index": 26,
+      "isEmpty": true
+    },
+    {
+      "index": 27,
+      "isEmpty": true
+    },
+    {
+      "index": 28,
+      "isEmpty": true
+    },
+    {
+      "index": 29,
+      "isEmpty": true
+    },
+    {
+      "index": 30,
+      "isEmpty": true
+    },
+    {
+      "index": 31,
+      "isEmpty": true
+    },
+    {
+      "index": 32,
+      "isEmpty": true
+    },
+    {
+      "index": 33,
+      "isEmpty": true
+    },
+    {
+      "index": 34,
+      "isEmpty": true
+    },
+    {
+      "index": 35,
+      "isEmpty": true
+    },
+    {
+      "index": 36,
+      "isEmpty": true
+    },
+    {
+      "index": 37,
+      "isEmpty": true
+    },
+    {
+      "index": 38,
+      "isEmpty": true
+    },
+    {
+      "index": 39,
+      "isEmpty": true
+    }
+  ]
+}

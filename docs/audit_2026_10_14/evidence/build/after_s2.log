@@ -1,0 +1,481 @@
+[0;32m=== Hantei-chan Build Script ===[0m
+[0;34mCurrent build number: 515 (commit a09185a)[0m
+[1;33mConfiguring CMake with MinGW toolchain...[0m
+-- GLM: Version 1.0.3
+-- GLM: Build with C++ features auto detection
+statusWith -municode
+-- Configuring done (114.6s)
+-- Generating done (84.7s)
+-- Build files have been written to: /mnt/c/dev/hantei-chan/wt/parity/build
+[1;33mBuilding (version info will be auto-generated)...[0m
+make[1]: Warning: File 'CMakeFiles/Makefile2' has modification time 8.9 s in the future
+make[2]: Warning: File 'CMakeFiles/update_version.dir/progress.make' has modification time 7.9 s in the future
+make[2]: Warning: File 'CMakeFiles/bg_dxt32.dir/progress.make' has modification time 2.9 s in the future
+make[2]: Warning: File 'CMakeFiles/part_render_math_test.dir/progress.make' has modification time 5.9 s in the future
+make[2]: Warning: File 'CMakeFiles/shortcut_router_test.dir/progress.make' has modification time 6.9 s in the future
+make[2]: Warning: File 'CMakeFiles/bgm_test.dir/progress.make' has modification time 2.9 s in the future
+make[2]: Warning: File 'CMakeFiles/undo_manager_test.dir/progress.make' has modification time 7.3 s in the future
+make[2]: Warning: File 'CMakeFiles/tag_sidecar_test.dir/progress.make' has modification time 6.9 s in the future
+make[2]: Warning: File 'CMakeFiles/cmdfile_roundtrip.dir/progress.make' has modification time 3.2 s in the future
+make[2]: Warning: File 'CMakeFiles/glad.dir/progress.make' has modification time 4.3 s in the future
+make[2]: Warning: File 'CMakeFiles/cmdfile_test.dir/progress.make' has modification time 3.2 s in the future
+make[2]: Warning: File 'CMakeFiles/hud_layout_test.dir/progress.make' has modification time 5.2 s in the future
+make[2]: Warning: File 'CMakeFiles/shared_clipboard_test.dir/progress.make' has modification time 6.7 s in the future
+make[2]: Warning: File 'CMakeFiles/hud_test.dir/progress.make' has modification time 5.3 s in the future
+make[2]: Warning: File 'CMakeFiles/workspace_session_test.dir/progress.make' has modification time 7.6 s in the future
+make[2]: Warning: File 'CMakeFiles/authoring_model_test.dir/progress.make' has modification time 2.4 s in the future
+make[2]: Warning: File 'tinyalloc/CMakeFiles/tinyalloc.dir/progress.make' has modification time 7.2 s in the future
+make[2]: Warning: File 'CMakeFiles/cmdfile_ui_smoke.dir/progress.make' has modification time 3.3 s in the future
+make[2]: Warning: File 'CMakeFiles/fbarctool.dir/progress.make' has modification time 3.4 s in the future
+make[2]: Warning: File 'CMakeFiles/pal_roundtrip.dir/progress.make' has modification time 5.7 s in the future
+make[2]: Warning: File 'CMakeFiles/game_link_test.dir/progress.make' has modification time 3.8 s in the future
+make[2]: Warning: File 'CMakeFiles/tag_tuning_test.dir/progress.make' has modification time 7 s in the future
+make[2]: Warning: File 'CMakeFiles/game_view_test.dir/progress.make' has modification time 4.1 s in the future
+make[2]: Warning: File 'glm/glm/CMakeFiles/glm.dir/progress.make' has modification time 4.5 s in the future
+make[2]: warning:  Clock skew detected.  Your build may be incomplete.
+make[2]: warning:  Clock skew detected.  Your build may be incomplete.
+make[2]: Warning: File 'CMakeFiles/update_version.dir/progress.make' has modification time 6.9 s in the future
+make[2]: Warning: File 'CMakeFiles/bg_dxt32.dir/progress.make' has modification time 1.8 s in the future
+[  0%] Updating version information...
+make[2]: warning:  Clock skew detected.  Your build may be incomplete.
+[  0%] Built target bg_dxt32
+make[2]: warning:  Clock skew detected.  Your build may be incomplete.
+make[2]: Warning: File 'tinyalloc/CMakeFiles/tinyalloc.dir/progress.make' has modification time 3.7 s in the future
+make[2]: warning:  Clock skew detected.  Your build may be incomplete.
+[  0%] Built target tinyalloc
+make[2]: Warning: File 'CMakeFiles/uni_edit_test.dir/progress.make' has modification time 1.9 s in the future
+make[2]: Warning: File 'CMakeFiles/roundtrip.dir/progress.make' has modification time 0.93 s in the future
+make[2]: warning:  Clock skew detected.  Your build may be incomplete.
+make[2]: Warning: File 'CMakeFiles/part_render_math_test.dir/compiler_depend.make' has modification time 8.3 s in the future
+make[2]: warning:  Clock skew detected.  Your build may be incomplete.
+[  1%] Built target part_render_math_test
+make[2]: warning:  Clock skew detected.  Your build may be incomplete.
+make[2]: Warning: File 'CMakeFiles/workspace_session_test.dir/compiler_depend.make' has modification time 5.3 s in the future
+make[2]: warning:  Clock skew detected.  Your build may be incomplete.
+[  2%] Built target workspace_session_test
+make[2]: warning:  Clock skew detected.  Your build may be incomplete.
+make[2]: Warning: File 'CMakeFiles/shortcut_router_test.dir/compiler_depend.make' has modification time 4 s in the future
+[  2%] Building CXX object CMakeFiles/shortcut_router_test.dir/tests/shortcut_router_test.cpp.obj
+make[2]: warning:  Clock skew detected.  Your build may be incomplete.
+make[2]: Warning: File 'CMakeFiles/glad.dir/compiler_depend.make' has modification time 5.9 s in the future
+make[2]: warning:  Clock skew detected.  Your build may be incomplete.
+[  2%] Built target glad
+[  2%] Building CXX object CMakeFiles/shortcut_router_test.dir/src/shortcut_router.cpp.obj
+make[2]: warning:  Clock skew detected.  Your build may be incomplete.
+make[2]: warning:  Clock skew detected.  Your build may be incomplete.
+make[2]: Warning: File 'CMakeFiles/tag_tuning_test.dir/compiler_depend.make' has modification time 0.93 s in the future
+make[2]: Warning: File 'glm/glm/CMakeFiles/glm.dir/compiler_depend.make' has modification time 4.8 s in the future
+make[2]: warning:  Clock skew detected.  Your build may be incomplete.
+[  3%] Built target tag_tuning_test
+make[2]: warning:  Clock skew detected.  Your build may be incomplete.
+make[2]: Warning: File 'CMakeFiles/pal_roundtrip.dir/compiler_depend.make' has modification time 1.5 s in the future
+make[2]: warning:  Clock skew detected.  Your build may be incomplete.
+[  3%] Built target pal_roundtrip
+make[2]: warning:  Clock skew detected.  Your build may be incomplete.
+make[2]: warning:  Clock skew detected.  Your build may be incomplete.
+make[2]: Warning: File 'CMakeFiles/undo_manager_test.dir/compiler_depend.make' has modification time 0.24 s in the future
+[  4%] Building CXX object CMakeFiles/shared_clipboard_test.dir/tests/shared_clipboard_test.cpp.obj
+[  4%] Building CXX object CMakeFiles/undo_manager_test.dir/tests/undo_manager_test.cpp.obj
+make[2]: warning:  Clock skew detected.  Your build may be incomplete.
+make[2]: warning:  Clock skew detected.  Your build may be incomplete.
+[  4%] Built target hud_test
+[  5%] Built target bgm_test
+make[2]: warning:  Clock skew detected.  Your build may be incomplete.
+[  5%] Building CXX object CMakeFiles/shared_clipboard_test.dir/src/copy_data.cpp.obj
+[  5%] Building CXX object CMakeFiles/cmdfile_roundtrip.dir/src/i18n.cpp.obj
+[  5%] Linking CXX executable shortcut_router_test.exe
+make[2]: warning:  Clock skew detected.  Your build may be incomplete.
+[  6%] Built target glm
+make[2]: warning:  Clock skew detected.  Your build may be incomplete.
+[  6%] Built target authoring_model_test
+[  6%] Building CXX object CMakeFiles/undo_manager_test.dir/src/undo_manager.cpp.obj
+make[2]: warning:  Clock skew detected.  Your build may be incomplete.
+[  7%] Built target hud_layout_test
+make[2]: warning:  Clock skew detected.  Your build may be incomplete.
+make[2]: warning:  Clock skew detected.  Your build may be incomplete.
+[  8%] Built target tag_sidecar_test
+[  9%] Built target live_reload_test
+[ 10%] Built target fbarctool
+make[2]: warning:  Clock skew detected.  Your build may be incomplete.
+[ 10%] Building CXX object CMakeFiles/cmdfile_test.dir/src/i18n.cpp.obj
+[ 10%] Linking CXX executable cmdfile_roundtrip.exe
+[ 10%] Linking CXX executable shared_clipboard_test.exe
+[ 10%] Linking CXX executable undo_manager_test.exe
+make[2]: warning:  Clock skew detected.  Your build may be incomplete.
+[ 10%] Building CXX object CMakeFiles/cmdfile_ui_smoke.dir/src/i18n.cpp.obj
+make[2]: warning:  Clock skew detected.  Your build may be incomplete.
+make[2]: warning:  Clock skew detected.  Your build may be incomplete.
+make[2]: warning:  Clock skew detected.  Your build may be incomplete.
+make[2]: warning:  Clock skew detected.  Your build may be incomplete.
+[ 10%] Building CXX object CMakeFiles/roundtrip.dir/src/roundtrip.cpp.obj
+[ 11%] Building CXX object CMakeFiles/uni_edit_test.dir/tests/uni_edit_test.cpp.obj
+[ 11%] Building CXX object CMakeFiles/ha6_dump.dir/src/ha6_dump.cpp.obj
+[ 13%] Built target game_link_test
+[ 13%] Building CXX object CMakeFiles/uni_edit_test.dir/src/framedata.cpp.obj
+[ 14%] Linking CXX executable cmdfile_test.exe
+[ 14%] Built target imgui
+[ 15%] Built target game_view_test
+[ 15%] Building CXX object CMakeFiles/ha6_dump.dir/src/framedata.cpp.obj
+[ 15%] Building CXX object CMakeFiles/ha6_dump.dir/src/framedata_load.cpp.obj
+make[2]: warning:  Clock skew detected.  Your build may be incomplete.
+[ 15%] Built target update_version
+[ 15%] Building CXX object CMakeFiles/bg_test.dir/src/bg_test.cpp.obj
+[ 15%] Building CXX object CMakeFiles/uni_edit_test.dir/src/framedata_load.cpp.obj
+[ 15%] Building CXX object CMakeFiles/uni_edit_test.dir/src/framedata_save.cpp.obj
+[ 15%] Building CXX object CMakeFiles/roundtrip.dir/src/framedata.cpp.obj
+[ 15%] Building CXX object CMakeFiles/refs_test.dir/tests/refs_test.cpp.obj
+[ 15%] Building CXX object CMakeFiles/uni_edit_test.dir/src/framedata_ha4.cpp.obj
+[ 15%] Building CXX object CMakeFiles/bg_test.dir/src/background/bg_file.cpp.obj
+make[2]: warning:  Clock skew detected.  Your build may be incomplete.
+[ 15%] Built target shortcut_router_test
+[ 15%] Building CXX object CMakeFiles/uni_edit_test.dir/src/framedata_han2.cpp.obj
+[ 15%] Building CXX object CMakeFiles/frame_data_test.dir/tests/frame_data_test.cpp.obj
+[ 15%] Building CXX object CMakeFiles/mbaaccpackage.dir/src/mbaacc_package.cpp.obj
+[ 15%] Building CXX object CMakeFiles/ha6_dump.dir/src/framedata_save.cpp.obj
+[ 15%] Building CXX object CMakeFiles/roundtrip.dir/src/framedata_load.cpp.obj
+[ 15%] Building CXX object CMakeFiles/frame_data_test.dir/src/authoring/frame_summary.cpp.obj
+[ 16%] Linking CXX executable cmdfile_ui_smoke.exe
+[ 16%] Building CXX object CMakeFiles/package_tools_test.dir/tests/package_tools_test.cpp.obj
+[ 16%] Building CXX object CMakeFiles/pattern_search_test.dir/tests/pattern_search_test.cpp.obj
+[ 16%] Building CXX object CMakeFiles/refs_test.dir/src/var_refs.cpp.obj
+[ 16%] Building CXX object CMakeFiles/refs_test.dir/src/pattern_refs.cpp.obj
+[ 16%] Building CXX object CMakeFiles/bg_test.dir/src/cg.cpp.obj
+[ 17%] Building CXX object CMakeFiles/pattern_search_test.dir/src/framedata.cpp.obj
+[ 17%] Building CXX object CMakeFiles/frame_data_test.dir/src/authoring/mbac_reference.cpp.obj
+[ 17%] Building CXX object CMakeFiles/ha6_dump.dir/src/framedata_ha4.cpp.obj
+[ 18%] Building CXX object CMakeFiles/ha6_dump.dir/src/framedata_han2.cpp.obj
+make[2]: warning:  Clock skew detected.  Your build may be incomplete.
+[ 18%] Building CXX object CMakeFiles/ha6_dump.dir/src/han2_diff.cpp.obj
+[ 18%] Built target undo_manager_test
+[ 18%] Building CXX object CMakeFiles/ha6_dump.dir/src/han2_anim.cpp.obj
+[ 18%] Building CXX object CMakeFiles/pat_roundtrip.dir/src/pat_roundtrip.cpp.obj
+[ 18%] Building CXX object CMakeFiles/uni_edit_test.dir/src/han2_diff.cpp.obj
+[ 18%] Building CXX object CMakeFiles/cgmtool.dir/src/cgm/cgmtool.cpp.obj
+[ 18%] Built target shared_clipboard_test
+[ 18%] Building CXX object CMakeFiles/roundtrip.dir/src/framedata_save.cpp.obj
+[ 18%] Building CXX object CMakeFiles/roundtrip.dir/src/framedata_ha4.cpp.obj
+[ 18%] Building CXX object CMakeFiles/refs_test.dir/src/framedata.cpp.obj
+[ 18%] Linking CXX executable bg_test.exe
+[ 18%] Building CXX object CMakeFiles/preview_sim_tool.dir/src/preview_sim_tool.cpp.obj
+[ 18%] Building CXX object CMakeFiles/frame_data_test.dir/src/framedata.cpp.obj
+[ 18%] Building CXX object CMakeFiles/package_tools_test.dir/src/mbaacc_package.cpp.obj
+[ 18%] Building CXX object CMakeFiles/uni_edit_test.dir/src/han2_anim.cpp.obj
+[ 18%] Building CXX object CMakeFiles/cgmtool.dir/src/cgm/fxr_cli.cpp.obj
+[ 18%] Building CXX object CMakeFiles/cgmtool.dir/src/cgm/fxr_core.cpp.obj
+[ 18%] Building CXX object CMakeFiles/bg_render.dir/src/bg_render.cpp.obj
+[ 18%] Building CXX object CMakeFiles/pattern_search_test.dir/src/framedata_load.cpp.obj
+[ 18%] Building CXX object CMakeFiles/ha6_dump.dir/src/framedata_gof1.cpp.obj
+[ 18%] Building CXX object CMakeFiles/bg_render.dir/src/background/bg_file.cpp.obj
+[ 19%] Building CXX object CMakeFiles/roundtrip.dir/src/framedata_han2.cpp.obj
+[ 19%] Building CXX object CMakeFiles/uni_edit_test.dir/src/framedata_gof1.cpp.obj
+[ 20%] Building CXX object CMakeFiles/refs_test.dir/src/framedata_load.cpp.obj
+[ 21%] Building CXX object CMakeFiles/mbaaccpackage.dir/src/framedata.cpp.obj
+[ 21%] Building CXX object CMakeFiles/bg_render.dir/src/background/bg_renderer.cpp.obj
+[ 21%] Building CXX object CMakeFiles/frame_data_test.dir/src/framedata_load.cpp.obj
+[ 21%] Building CXX object CMakeFiles/pat_dump.dir/src/pat_dump.cpp.obj
+[ 21%] Building CXX object CMakeFiles/bg_render.dir/src/background/bg_gametex.cpp.obj
+[ 21%] Building CXX object CMakeFiles/cgmtool.dir/src/cgm/cgm_io.cpp.obj
+[ 21%] Building CXX object CMakeFiles/ha6_dump.dir/src/framedata_pb2k1.cpp.obj
+[ 22%] Building CXX object CMakeFiles/game_link_cli.dir/src/game_link_cli.cpp.obj
+[ 22%] Building CXX object CMakeFiles/mbaaccpackage.dir/src/framedata_load.cpp.obj
+[ 22%] Building CXX object CMakeFiles/uni_edit_test.dir/src/framedata_pb2k1.cpp.obj
+[ 23%] Building CXX object CMakeFiles/pat_roundtrip.dir/src/parts/parts.cpp.obj
+[ 23%] Building CXX object CMakeFiles/roundtrip.dir/src/han2_diff.cpp.obj
+[ 23%] Building CXX object CMakeFiles/cgmtool.dir/src/cgm/cgm_usage.cpp.obj
+[ 23%] Building CXX object CMakeFiles/preview_sim_tool.dir/src/preview_sim.cpp.obj
+[ 23%] Building CXX object CMakeFiles/ha6_dump.dir/src/framedata_qoh.cpp.obj
+[ 23%] Building CXX object CMakeFiles/refs_test.dir/src/framedata_save.cpp.obj
+[ 23%] Building CXX object CMakeFiles/refs_test.dir/src/framedata_ha4.cpp.obj
+[ 23%] Building CXX object CMakeFiles/fb_part_transform_test.dir/tests/fb_part_transform_test.cpp.obj
+[ 23%] Building CXX object CMakeFiles/uni_edit_test.dir/src/framedata_qoh.cpp.obj
+[ 23%] Building CXX object CMakeFiles/frame_data_test.dir/src/framedata_save.cpp.obj
+[ 23%] Building CXX object CMakeFiles/roundtrip.dir/src/han2_anim.cpp.obj
+[ 23%] Building CXX object CMakeFiles/frame_data_test.dir/src/framedata_ha4.cpp.obj
+[ 23%] Building CXX object CMakeFiles/cgmtool.dir/src/framedata.cpp.obj
+[ 23%] Building CXX object CMakeFiles/pattern_search_test.dir/src/framedata_save.cpp.obj
+[ 23%] Building CXX object CMakeFiles/package_tools_test.dir/src/framedata.cpp.obj
+[ 23%] Building CXX object CMakeFiles/pat_dump.dir/src/parts/parts.cpp.obj
+[ 23%] Building CXX object CMakeFiles/roundtrip.dir/src/framedata_gof1.cpp.obj
+[ 23%] Linking CXX executable ha6_dump.exe
+[ 23%] Building CXX object CMakeFiles/mbaaccpackage.dir/src/framedata_save.cpp.obj
+[ 23%] Building CXX object CMakeFiles/game_link_cli.dir/src/background/bg_file.cpp.obj
+[ 23%] Building CXX object CMakeFiles/mbaaccpackage.dir/src/framedata_ha4.cpp.obj
+[ 23%] Building CXX object CMakeFiles/refs_test.dir/src/framedata_han2.cpp.obj
+[ 24%] Building CXX object CMakeFiles/game_link_cli.dir/src/cg.cpp.obj
+[ 24%] Linking CXX executable uni_edit_test.exe
+[ 25%] Building CXX object CMakeFiles/package_tools_test.dir/src/framedata_load.cpp.obj
+[ 26%] Building CXX object CMakeFiles/frame_data_test.dir/src/framedata_han2.cpp.obj
+[ 26%] Building CXX object CMakeFiles/cgmtool.dir/src/framedata_load.cpp.obj
+[ 26%] Building CXX object CMakeFiles/bg_render.dir/src/parts/parts.cpp.obj
+[ 26%] Building CXX object CMakeFiles/bg_render.dir/src/parts/parts_texture.cpp.obj
+[ 26%] Building CXX object CMakeFiles/preview_sim_tool.dir/src/framedata.cpp.obj
+[ 26%] Building CXX object CMakeFiles/roundtrip.dir/src/framedata_pb2k1.cpp.obj
+[ 26%] Building CXX object CMakeFiles/pattern_search_test.dir/src/framedata_ha4.cpp.obj
+[ 26%] Building CXX object CMakeFiles/roundtrip.dir/src/framedata_qoh.cpp.obj
+[ 26%] Building CXX object CMakeFiles/mbaaccpackage.dir/src/framedata_han2.cpp.obj
+[ 26%] Building CXX object CMakeFiles/pat_dump.dir/src/parts/parts_texture.cpp.obj
+[ 26%] Building CXX object CMakeFiles/game_link_cli.dir/src/framedata.cpp.obj
+[ 26%] Building CXX object CMakeFiles/refs_test.dir/src/han2_diff.cpp.obj
+[ 26%] Building CXX object CMakeFiles/refs_test.dir/src/han2_anim.cpp.obj
+[ 27%] Building CXX object CMakeFiles/preview_sim_tool.dir/src/framedata_load.cpp.obj
+[ 27%] Building CXX object CMakeFiles/frame_data_test.dir/src/han2_diff.cpp.obj
+[ 27%] Linking CXX executable roundtrip.exe
+[ 27%] Building CXX object CMakeFiles/fb_part_transform_test.dir/src/han2_pat.cpp.obj
+[ 27%] Building CXX object CMakeFiles/package_tools_test.dir/src/framedata_save.cpp.obj
+[ 27%] Building CXX object CMakeFiles/game_link_cli.dir/src/framedata_load.cpp.obj
+[ 27%] Building CXX object CMakeFiles/pat_roundtrip.dir/src/parts/parts_texture.cpp.obj
+[ 27%] Building CXX object CMakeFiles/package_tools_test.dir/src/framedata_ha4.cpp.obj
+[ 27%] Building CXX object CMakeFiles/cgmtool.dir/src/framedata_save.cpp.obj
+[ 27%] Building CXX object CMakeFiles/refs_test.dir/src/framedata_gof1.cpp.obj
+[ 27%] Building CXX object CMakeFiles/pattern_search_test.dir/src/framedata_han2.cpp.obj
+[ 27%] Building CXX object CMakeFiles/frame_data_test.dir/src/han2_anim.cpp.obj
+[ 27%] Building CXX object CMakeFiles/mbaaccpackage.dir/src/han2_diff.cpp.obj
+[ 28%] Building CXX object CMakeFiles/ha4tool.dir/src/ha4tool.cpp.obj
+[ 29%] Building CXX object CMakeFiles/frame_data_test.dir/src/framedata_gof1.cpp.obj
+[ 29%] Building CXX object CMakeFiles/pat_roundtrip.dir/src/cg.cpp.obj
+[ 29%] Building CXX object CMakeFiles/pat_roundtrip.dir/src/texture.cpp.obj
+[ 29%] Building CXX object CMakeFiles/cgmtool.dir/src/framedata_ha4.cpp.obj
+[ 29%] Building CXX object CMakeFiles/mbaaccpackage.dir/src/han2_anim.cpp.obj
+[ 29%] Building CXX object CMakeFiles/package_tools_test.dir/src/framedata_han2.cpp.obj
+[ 29%] Building CXX object CMakeFiles/preview_sim_tool.dir/src/framedata_save.cpp.obj
+[ 29%] Building CXX object CMakeFiles/refs_test.dir/src/framedata_pb2k1.cpp.obj
+[ 29%] Building CXX object CMakeFiles/preview_sim_tool.dir/src/framedata_ha4.cpp.obj
+[ 29%] Building CXX object CMakeFiles/ha4tool.dir/src/framedata.cpp.obj
+[ 29%] Building CXX object CMakeFiles/game_link_cli.dir/src/framedata_save.cpp.obj
+[ 29%] Building CXX object CMakeFiles/frame_data_test.dir/src/framedata_pb2k1.cpp.obj
+[ 29%] Building CXX object CMakeFiles/mbaaccpackage.dir/src/framedata_gof1.cpp.obj
+[ 30%] Building CXX object CMakeFiles/pat_dump.dir/src/cg.cpp.obj
+[ 31%] Building CXX object CMakeFiles/cgmtool.dir/src/framedata_han2.cpp.obj
+[ 31%] Building CXX object CMakeFiles/cgmtool.dir/src/han2_diff.cpp.obj
+[ 31%] Building CXX object CMakeFiles/cgmtool.dir/src/han2_anim.cpp.obj
+[ 31%] Building CXX object CMakeFiles/pattern_search_test.dir/src/han2_diff.cpp.obj
+[ 31%] Building CXX object CMakeFiles/preview_sim_tool.dir/src/framedata_han2.cpp.obj
+[ 31%] Building CXX object CMakeFiles/refs_test.dir/src/framedata_qoh.cpp.obj
+[ 31%] Building CXX object CMakeFiles/preview_sim_tool.dir/src/han2_diff.cpp.obj
+[ 31%] Building CXX object CMakeFiles/fb_part_transform_test.dir/src/han2_pat_write.cpp.obj
+[ 32%] Building CXX object CMakeFiles/frame_data_test.dir/src/framedata_qoh.cpp.obj
+[ 32%] Building CXX object CMakeFiles/package_tools_test.dir/src/han2_diff.cpp.obj
+[ 32%] Building CXX object CMakeFiles/game_link_cli.dir/src/framedata_ha4.cpp.obj
+[ 32%] Building CXX object CMakeFiles/mbaaccpackage.dir/src/framedata_pb2k1.cpp.obj
+[ 32%] Building CXX object CMakeFiles/ha4tool.dir/src/framedata_load.cpp.obj
+[ 32%] Building CXX object CMakeFiles/ha4tool.dir/src/framedata_save.cpp.obj
+[ 32%] Building CXX object CMakeFiles/han2tool.dir/src/han2/han2tool.cpp.obj
+[ 32%] Building CXX object CMakeFiles/bg_render.dir/src/cg.cpp.obj
+[ 32%] Building CXX object CMakeFiles/bg_render.dir/src/texture.cpp.obj
+[ 32%] Building CXX object CMakeFiles/pattern_search_test.dir/src/han2_anim.cpp.obj
+[ 32%] Linking CXX executable pat_roundtrip.exe
+[ 32%] Building CXX object CMakeFiles/pat_dump.dir/src/texture.cpp.obj
+[ 32%] Linking CXX executable refs_test.exe
+[ 32%] Building CXX object CMakeFiles/package_tools_test.dir/src/han2_anim.cpp.obj
+[ 32%] Building CXX object CMakeFiles/cgmtool.dir/src/framedata_gof1.cpp.obj
+[ 32%] Building CXX object CMakeFiles/preview_sim_tool.dir/src/han2_anim.cpp.obj
+[ 32%] Linking CXX executable frame_data_test.exe
+[ 32%] Building CXX object CMakeFiles/mbaaccpackage.dir/src/framedata_qoh.cpp.obj
+[ 32%] Building CXX object CMakeFiles/game_link_cli.dir/src/framedata_han2.cpp.obj
+[ 32%] Building CXX object CMakeFiles/pattern_search_test.dir/src/framedata_gof1.cpp.obj
+[ 32%] Building CXX object CMakeFiles/ha4tool.dir/src/framedata_ha4.cpp.obj
+[ 32%] Built target cmdfile_roundtrip
+[ 32%] Building CXX object CMakeFiles/package_tools_test.dir/src/framedata_gof1.cpp.obj
+[ 32%] Building CXX object CMakeFiles/han2tool.dir/src/han2_pat.cpp.obj
+[ 32%] Building CXX object CMakeFiles/preview_sim_tool.dir/src/framedata_gof1.cpp.obj
+[ 32%] Building CXX object CMakeFiles/ha4tool.dir/src/framedata_han2.cpp.obj
+[ 32%] Building CXX object CMakeFiles/cgmtool.dir/src/framedata_pb2k1.cpp.obj
+[ 32%] Building CXX object CMakeFiles/package_tools_test.dir/src/framedata_pb2k1.cpp.obj
+[ 32%] Linking CXX executable mbaaccpackage.exe
+[ 32%] Building CXX object CMakeFiles/fb_part_transform_test.dir/src/parts/parts.cpp.obj
+[ 32%] Linking CXX executable pat_dump.exe
+[ 32%] Building CXX object CMakeFiles/ha4tool.dir/src/han2_diff.cpp.obj
+[ 32%] Linking CXX executable bg_render.exe
+[ 32%] Building CXX object CMakeFiles/preview_sim_tool.dir/src/framedata_pb2k1.cpp.obj
+[ 32%] Building CXX object CMakeFiles/pattern_search_test.dir/src/framedata_pb2k1.cpp.obj
+[ 32%] Building CXX object CMakeFiles/pattern_search_test.dir/src/framedata_qoh.cpp.obj
+[ 32%] Building CXX object CMakeFiles/game_link_cli.dir/src/han2_diff.cpp.obj
+[ 32%] Building CXX object CMakeFiles/cgmtool.dir/src/framedata_qoh.cpp.obj
+[ 32%] Building CXX object CMakeFiles/package_tools_test.dir/src/framedata_qoh.cpp.obj
+[ 33%] Built target cmdfile_test
+[ 33%] Building CXX object CMakeFiles/ha4tool.dir/src/han2_anim.cpp.obj
+[ 33%] Building CXX object CMakeFiles/pat_safety_test.dir/tests/pat_safety_test.cpp.obj
+[ 33%] Building CXX object CMakeFiles/game_link_cli.dir/src/han2_anim.cpp.obj
+[ 33%] Building CXX object CMakeFiles/preview_sim_tool.dir/src/framedata_qoh.cpp.obj
+[ 33%] Building CXX object CMakeFiles/game_link_cli.dir/src/framedata_gof1.cpp.obj
+[ 33%] Building CXX object CMakeFiles/game_link_cli.dir/src/framedata_pb2k1.cpp.obj
+[ 33%] Building CXX object CMakeFiles/han2tool.dir/src/han2_pat_write.cpp.obj
+[ 33%] Building CXX object CMakeFiles/pattern_search_test.dir/src/i18n.cpp.obj
+[ 33%] Building CXX object CMakeFiles/ha4tool.dir/src/framedata_gof1.cpp.obj
+[ 33%] Building CXX object CMakeFiles/cgmtool.dir/src/cg.cpp.obj
+[ 33%] Building CXX object CMakeFiles/fb_part_transform_test.dir/src/parts/parts_texture.cpp.obj
+[ 33%] Linking CXX executable package_tools_test.exe
+[ 33%] Building CXX object CMakeFiles/pat_safety_test.dir/src/file_backup.cpp.obj
+[ 33%] Linking CXX executable preview_sim_tool.exe
+[ 33%] Building CXX object CMakeFiles/game_link_cli.dir/src/framedata_qoh.cpp.obj
+[ 33%] Building CXX object CMakeFiles/ha4tool.dir/src/framedata_pb2k1.cpp.obj
+[ 34%] Building CXX object CMakeFiles/ha4tool.dir/src/framedata_qoh.cpp.obj
+[ 35%] Linking CXX executable cgmtool.exe
+[ 37%] Built target cmdfile_ui_smoke
+[ 37%] Building CXX object CMakeFiles/ha4tool.dir/src/ha4_parts.cpp.obj
+[ 37%] Linking CXX executable game_link_cli.exe
+[ 37%] Building CXX object CMakeFiles/ha4tool.dir/src/ha4_convert.cpp.obj
+[ 37%] Linking CXX executable pattern_search_test.exe
+[ 37%] Building CXX object CMakeFiles/han2tool.dir/src/han2_export.cpp.obj
+[ 37%] Building CXX object CMakeFiles/han2tool.dir/src/framedata.cpp.obj
+[ 37%] Building CXX object CMakeFiles/ha4tool.dir/src/parts/parts.cpp.obj
+[ 38%] Built target bg_test
+[ 38%] Building CXX object CMakeFiles/ha4tool.dir/src/parts/parts_texture.cpp.obj
+[ 38%] Building CXX object CMakeFiles/fb_part_transform_test.dir/src/cg.cpp.obj
+[ 39%] Building CXX object CMakeFiles/pat_safety_test.dir/src/parts/parts_undo.cpp.obj
+[ 39%] Building CXX object CMakeFiles/fb_part_transform_test.dir/src/texture.cpp.obj
+[ 39%] Building CXX object CMakeFiles/han2tool.dir/src/framedata_load.cpp.obj
+[ 39%] Building CXX object CMakeFiles/pat_safety_test.dir/src/undo_manager.cpp.obj
+[ 39%] Building CXX object CMakeFiles/fbchartool.dir/src/fbarc/fbchartool.cpp.obj
+[ 39%] Building CXX object CMakeFiles/ha4tool.dir/src/cg.cpp.obj
+[ 39%] Building CXX object CMakeFiles/fbchartool.dir/src/cgm/cgm_io.cpp.obj
+[ 39%] Building CXX object CMakeFiles/pat_safety_test.dir/src/parts/parts.cpp.obj
+[ 39%] Building CXX object CMakeFiles/fbchartool.dir/src/framedata.cpp.obj
+[ 39%] Building CXX object CMakeFiles/han2tool.dir/src/framedata_save.cpp.obj
+[ 39%] Building CXX object CMakeFiles/han2tool.dir/src/framedata_ha4.cpp.obj
+[ 39%] Building CXX object CMakeFiles/ha4tool.dir/src/texture.cpp.obj
+[ 39%] Linking CXX executable fb_part_transform_test.exe
+[ 40%] Built target ha6_dump
+[ 40%] Building CXX object CMakeFiles/fbchartool.dir/src/framedata_load.cpp.obj
+[ 41%] Building CXX object CMakeFiles/fbchartool.dir/src/framedata_save.cpp.obj
+[ 41%] Building CXX object CMakeFiles/han2tool.dir/src/framedata_han2.cpp.obj
+[ 41%] Building CXX object CMakeFiles/han2tool.dir/src/han2_diff.cpp.obj
+[ 43%] Built target uni_edit_test
+[ 43%] Building CXX object CMakeFiles/fbchartool.dir/src/framedata_ha4.cpp.obj
+[ 43%] Building CXX object CMakeFiles/han2tool.dir/src/han2_anim.cpp.obj
+[ 43%] Building CXX object CMakeFiles/fbchartool.dir/src/framedata_han2.cpp.obj
+[ 43%] Building CXX object CMakeFiles/fbchartool.dir/src/han2_diff.cpp.obj
+[ 43%] Building CXX object CMakeFiles/fbchartool.dir/src/han2_anim.cpp.obj
+[ 43%] Building CXX object CMakeFiles/han2tool.dir/src/framedata_gof1.cpp.obj
+[ 43%] Building CXX object CMakeFiles/han2tool.dir/src/framedata_pb2k1.cpp.obj
+[ 44%] Built target roundtrip
+[ 44%] Building CXX object CMakeFiles/fbchartool.dir/src/framedata_gof1.cpp.obj
+[ 44%] Linking CXX executable ha4tool.exe
+[ 45%] Building CXX object CMakeFiles/fbchartool.dir/src/framedata_pb2k1.cpp.obj
+[ 45%] Building CXX object CMakeFiles/fbchartool.dir/src/framedata_qoh.cpp.obj
+[ 45%] Building CXX object CMakeFiles/pat_safety_test.dir/src/app_log.cpp.obj
+[ 45%] Building CXX object CMakeFiles/pat_safety_test.dir/src/parts/parts_part.cpp.obj
+[ 45%] Building CXX object CMakeFiles/pat_safety_test.dir/src/parts/parts_partset.cpp.obj
+[ 45%] Building CXX object CMakeFiles/pat_safety_test.dir/src/parts/parts_shape.cpp.obj
+[ 45%] Building CXX object CMakeFiles/pat_safety_test.dir/src/parts/parts_texture.cpp.obj
+[ 46%] Building CXX object CMakeFiles/han2tool.dir/src/framedata_qoh.cpp.obj
+[ 46%] Building CXX object CMakeFiles/han2tool.dir/src/ha4_parts.cpp.obj
+[ 47%] Building CXX object CMakeFiles/pat_safety_test.dir/src/cg.cpp.obj
+[ 48%] Building CXX object CMakeFiles/fbchartool.dir/src/han2/mb_cg.cpp.obj
+[ 48%] Building CXX object CMakeFiles/han2tool.dir/src/ha4_convert.cpp.obj
+[ 48%] Building CXX object CMakeFiles/han2tool.dir/src/parts/parts.cpp.obj
+[ 48%] Building CXX object CMakeFiles/fbchartool.dir/src/han2/qoh_cg.cpp.obj
+[ 48%] Building CXX object CMakeFiles/pat_safety_test.dir/src/texture.cpp.obj
+[ 48%] Building CXX object CMakeFiles/fbchartool.dir/src/ha4_parts.cpp.obj
+[ 48%] Building CXX object CMakeFiles/han2tool.dir/src/parts/parts_texture.cpp.obj
+[ 48%] Building CXX object CMakeFiles/pat_safety_test.dir/src/vao.cpp.obj
+[ 48%] Building CXX object CMakeFiles/fbchartool.dir/src/ha4_convert.cpp.obj
+[ 50%] Built target refs_test
+[ 51%] Building CXX object CMakeFiles/fbchartool.dir/src/background/bg_file.cpp.obj
+[ 51%] Building CXX object CMakeFiles/han2tool.dir/src/cg.cpp.obj
+[ 51%] Building CXX object CMakeFiles/han2tool.dir/src/texture.cpp.obj
+[ 51%] Built target frame_data_test
+[ 51%] Building CXX object CMakeFiles/fbchartool.dir/src/parts/parts.cpp.obj
+[ 52%] Building CXX object CMakeFiles/fbchartool.dir/src/parts/parts_texture.cpp.obj
+[ 52%] Built target pat_roundtrip
+[ 52%] Building CXX object CMakeFiles/fbchartool.dir/src/cg.cpp.obj
+[ 52%] Building CXX object CMakeFiles/fbchartool.dir/src/texture.cpp.obj
+[ 52%] Building CXX object CMakeFiles/pat_safety_test.dir/src/shader.cpp.obj
+[ 52%] Building CXX object CMakeFiles/pat_safety_test.dir/src/misc.cpp.obj
+[ 52%] Building C object CMakeFiles/pat_safety_test.dir/tinyalloc/tinyalloc.c.obj
+[ 54%] Built target mbaaccpackage
+[ 54%] Built target pat_dump
+[ 56%] Built target preview_sim_tool
+[ 56%] Linking CXX executable han2tool.exe
+[ 57%] Built target package_tools_test
+[ 57%] Linking CXX executable pat_safety_test.exe
+[ 58%] Linking CXX executable fbchartool.exe
+[ 61%] Built target bg_render
+[ 64%] Built target game_link_cli
+[ 67%] Built target pattern_search_test
+[ 69%] Built target cgmtool
+[ 71%] Built target fb_part_transform_test
+[ 74%] Built target ha4tool
+[ 74%] Building CXX object CMakeFiles/gonptechan.dir/src/main.cpp.obj
+[ 74%] Building CXX object CMakeFiles/gonptechan.dir/src/main_frame.cpp.obj
+[ 74%] Building CXX object CMakeFiles/gonptechan.dir/src/main_pane.cpp.obj
+[ 74%] Building CXX object CMakeFiles/gonptechan.dir/src/right_pane.cpp.obj
+[ 74%] Building CXX object CMakeFiles/gonptechan.dir/src/box_pane.cpp.obj
+[ 74%] Building CXX object CMakeFiles/gonptechan.dir/src/render.cpp.obj
+[ 74%] Building CXX object CMakeFiles/gonptechan.dir/src/mbaacc_package.cpp.obj
+[ 75%] Building CXX object CMakeFiles/gonptechan.dir/src/texture.cpp.obj
+[ 75%] Building CXX object CMakeFiles/gonptechan.dir/src/framedata.cpp.obj
+[ 75%] Building CXX object CMakeFiles/gonptechan.dir/src/framedata_load.cpp.obj
+[ 75%] Building CXX object CMakeFiles/gonptechan.dir/src/framedata_save.cpp.obj
+[ 75%] Building CXX object CMakeFiles/gonptechan.dir/src/framedata_ha4.cpp.obj
+[ 75%] Building CXX object CMakeFiles/gonptechan.dir/src/framedata_han2.cpp.obj
+[ 75%] Building CXX object CMakeFiles/gonptechan.dir/src/han2_diff.cpp.obj
+[ 75%] Building CXX object CMakeFiles/gonptechan.dir/src/han2_anim.cpp.obj
+[ 75%] Building CXX object CMakeFiles/gonptechan.dir/src/framedata_gof1.cpp.obj
+[ 76%] Building CXX object CMakeFiles/gonptechan.dir/src/framedata_qoh.cpp.obj
+[ 76%] Building CXX object CMakeFiles/gonptechan.dir/src/framedata_pb2k1.cpp.obj
+[ 76%] Building CXX object CMakeFiles/gonptechan.dir/src/ha4_parts.cpp.obj
+[ 76%] Building CXX object CMakeFiles/gonptechan.dir/src/ha4_parts_gl.cpp.obj
+[ 76%] Building CXX object CMakeFiles/gonptechan.dir/src/ha4_convert.cpp.obj
+[ 76%] Built target pat_safety_test
+[ 76%] Building CXX object CMakeFiles/gonptechan.dir/src/ha4_character.cpp.obj
+[ 76%] Building CXX object CMakeFiles/gonptechan.dir/src/han2_character.cpp.obj
+[ 77%] Building CXX object CMakeFiles/gonptechan.dir/src/han2_pat.cpp.obj
+[ 77%] Building CXX object CMakeFiles/gonptechan.dir/src/han2_pat_write.cpp.obj
+[ 77%] Building CXX object CMakeFiles/gonptechan.dir/src/han2_export.cpp.obj
+[ 77%] Building CXX object CMakeFiles/gonptechan.dir/src/archive_browser.cpp.obj
+[ 78%] Building CXX object CMakeFiles/gonptechan.dir/src/han2_thumbs.cpp.obj
+[ 78%] Building CXX object CMakeFiles/gonptechan.dir/src/i18n.cpp.obj
+[ 78%] Building CXX object CMakeFiles/gonptechan.dir/src/han2_inspector.cpp.obj
+[ 78%] Building CXX object CMakeFiles/gonptechan.dir/src/han2/mb_cg.cpp.obj
+[ 83%] Built target han2tool
+[ 83%] Building CXX object CMakeFiles/gonptechan.dir/src/han2/qoh_cg.cpp.obj
+[ 83%] Building CXX object CMakeFiles/gonptechan.dir/src/cgm/cgm_io.cpp.obj
+[ 83%] Building CXX object CMakeFiles/gonptechan.dir/src/cgm/cgm_usage.cpp.obj
+[ 83%] Building CXX object CMakeFiles/gonptechan.dir/src/cgm/fxr_core.cpp.obj
+[ 84%] Building CXX object CMakeFiles/gonptechan.dir/src/cgm/fxr_panel.cpp.obj
+[ 84%] Building CXX object CMakeFiles/gonptechan.dir/src/cgm/cgm_window.cpp.obj
+[ 84%] Building CXX object CMakeFiles/gonptechan.dir/src/startup_args.cpp.obj
+[ 84%] Building CXX object CMakeFiles/gonptechan.dir/src/framestate.cpp.obj
+[ 84%] Building CXX object CMakeFiles/gonptechan.dir/src/copy_data.cpp.obj
+[ 84%] Building CXX object CMakeFiles/gonptechan.dir/src/var_refs.cpp.obj
+[ 85%] Building CXX object CMakeFiles/gonptechan.dir/src/pattern_refs.cpp.obj
+[ 85%] Building CXX object CMakeFiles/gonptechan.dir/src/preview_sim.cpp.obj
+[ 85%] Building CXX object CMakeFiles/gonptechan.dir/src/mv_script.cpp.obj
+[ 86%] Building CXX object CMakeFiles/gonptechan.dir/src/character_instance.cpp.obj
+[ 86%] Building CXX object CMakeFiles/gonptechan.dir/src/character_view.cpp.obj
+[ 86%] Building CXX object CMakeFiles/gonptechan.dir/src/project_manager.cpp.obj
+[ 86%] Building CXX object CMakeFiles/gonptechan.dir/src/cg.cpp.obj
+[ 87%] Building CXX object CMakeFiles/gonptechan.dir/src/test.cpp.obj
+[ 87%] Building CXX object CMakeFiles/gonptechan.dir/src/ini.cpp.obj
+[ 87%] Building CXX object CMakeFiles/gonptechan.dir/src/copy_manager.cpp.obj
+[ 87%] Building CXX object CMakeFiles/gonptechan.dir/src/undo_manager.cpp.obj
+[ 87%] Building CXX object CMakeFiles/gonptechan.dir/src/parts/parts_undo.cpp.obj
+[ 87%] Building CXX object CMakeFiles/gonptechan.dir/src/file_backup.cpp.obj
+[ 87%] Building CXX object CMakeFiles/gonptechan.dir/src/shortcut_router.cpp.obj
+[ 88%] Building CXX object CMakeFiles/gonptechan.dir/src/PatEditor/pat_partset_pane.cpp.obj
+[ 88%] Building CXX object CMakeFiles/gonptechan.dir/src/PatEditor/pat_part_pane.cpp.obj
+[ 88%] Building CXX object CMakeFiles/gonptechan.dir/src/PatEditor/pat_shape_pane.cpp.obj
+[ 90%] Built target fbchartool
+[ 90%] Building CXX object CMakeFiles/gonptechan.dir/src/PatEditor/pat_texture_pane.cpp.obj
+[ 90%] Building CXX object CMakeFiles/gonptechan.dir/src/PatEditor/pat_tool_pane.cpp.obj
+[ 91%] Building CXX object CMakeFiles/gonptechan.dir/src/parts/parts_texture.cpp.obj
+[ 91%] Building CXX object CMakeFiles/gonptechan.dir/src/parts/parts.cpp.obj
+[ 91%] Building CXX object CMakeFiles/gonptechan.dir/src/background/bg_file.cpp.obj
+[ 91%] Building CXX object CMakeFiles/gonptechan.dir/src/background/bg_renderer.cpp.obj
+[ 91%] Building CXX object CMakeFiles/gonptechan.dir/src/background/bg_gametex.cpp.obj
+[ 91%] Building CXX object CMakeFiles/gonptechan.dir/src/background/bg_inspector.cpp.obj
+[ 91%] Building CXX object CMakeFiles/gonptechan.dir/src/cmdfile/cmd_framedata.cpp.obj
+[ 91%] Building CXX object CMakeFiles/gonptechan.dir/src/ui/main_frame_cmdfile.cpp.obj
+[ 91%] Building CXX object CMakeFiles/gonptechan.dir/src/ui/main_frame_gamelink.cpp.obj
+[ 91%] Building CXX object CMakeFiles/gonptechan.dir/src/game_link_panel.cpp.obj
+[ 91%] Building CXX object CMakeFiles/gonptechan.dir/src/tag_panel.cpp.obj
+[ 91%] Building CXX object CMakeFiles/gonptechan.dir/src/authoring/authoring_tuning_ui.cpp.obj
+[ 92%] Building CXX object CMakeFiles/gonptechan.dir/src/authoring/frame_summary.cpp.obj
+[ 92%] Building CXX object CMakeFiles/gonptechan.dir/src/authoring/mbac_reference.cpp.obj
+[ 92%] Building CXX object CMakeFiles/gonptechan.dir/src/authoring/game_view.cpp.obj
+[ 92%] Linking CXX executable gonptechan.exe
+[100%] Built target gonptechan
+make[1]: warning:  Clock skew detected.  Your build may be incomplete.
+[0;32mBuild complete![0m
+Executable: [1;33mbuild/gonptechan.exe[0m

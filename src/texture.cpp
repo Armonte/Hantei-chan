@@ -1,3 +1,4 @@
+#include "app_log.h"
 #include "texture.h"
 #include "cg.h"
 #include <glad/glad.h>
@@ -9,8 +10,14 @@
 #include <cstring>
 
 // S3TC/DXT compression constants
+#ifndef GL_R8
+#define GL_R8 0x8229
+#endif
 #ifndef GL_COMPRESSED_RGBA_S3TC_DXT1_EXT
 #define GL_COMPRESSED_RGBA_S3TC_DXT1_EXT 0x83F1
+#endif
+#ifndef GL_COMPRESSED_RGBA_S3TC_DXT3_EXT
+#define GL_COMPRESSED_RGBA_S3TC_DXT3_EXT 0x83F2
 #endif
 #ifndef GL_COMPRESSED_RGBA_S3TC_DXT5_EXT
 #define GL_COMPRESSED_RGBA_S3TC_DXT5_EXT 0x83F3
@@ -85,6 +92,8 @@ void Texture::LoadCompressed(char* data, int width, int height, size_t compresse
 	GLenum format;
 	if (type == 1) {
 		format = GL_COMPRESSED_RGBA_S3TC_DXT1_EXT; // DXT1 (0x83F1)
+	} else if (type == 3) {
+		format = GL_COMPRESSED_RGBA_S3TC_DXT3_EXT; // DXT3 (0x83F2)
 	} else if (type == 5) {
 		format = GL_COMPRESSED_RGBA_S3TC_DXT5_EXT; // DXT5 (0x83F3)
 	} else {
@@ -97,12 +106,8 @@ void Texture::LoadCompressed(char* data, int width, int height, size_t compresse
 	// Check for OpenGL errors after compressed texture upload
 	GLenum err = glGetError();
 	if (err != GL_NO_ERROR) {
-		printf("[LoadCompressed] GL ERROR 0x%X uploading %dx%d type=%d compressed texture (size=%zu)\n",
-			err, width, height, type, compressedSize);
-		printf("[LoadCompressed] Format=0x%X, data=%p\n", format, data);
-	} else {
-		printf("[LoadCompressed] SUCCESS: %dx%d type=%d DXT%d texture (GL ID=%u, size=%zu)\n",
-			width, height, type, (type == 1 ? 1 : 5), id, compressedSize);
+		HC_LOG_ERROR("[LoadCompressed] GL error {:#x} uploading {}x{} type={} compressed texture (size={}, format={:#x})",
+			(unsigned)err, width, height, type, compressedSize, (unsigned)format);
 	}
 
 	// Create minimal ImageData for compatibility
@@ -145,6 +150,18 @@ void Texture::Apply(bool repeat, bool linearFilter)
 	{
 		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
 		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+	}
+
+	isIndexed = image->is8bpp;
+	if (isIndexed) {
+		//8bpp indexed: upload raw indices as R8; the sprite shader resolves the
+		//palette (and does its own bilinear), so sample NEAREST here.
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+		glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
+		glTexImage2D(GL_TEXTURE_2D, 0, GL_R8, image->width, image->height, 0, GL_RED, GL_UNSIGNED_BYTE, image->pixels);
+		glPixelStorei(GL_UNPACK_ALIGNMENT, 4);
+		return;
 	}
 
 	GLenum extType = image->bgr ? GL_BGRA : GL_RGBA;

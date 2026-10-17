@@ -1,0 +1,23 @@
+# gof2_live: P1 KANAE (chara 0) vs CPU, injected raw word. pat/frame/key(game word: 0x1000000=light edge)/gmask=*(obj+0x620)+0x7C (attack record guardMask) /atk=attackActive(obj+0x67C)
+# t in ms of sampler; hurtY = min y1..max y2 of hurt boxes
+# neutral crouch frame: key 0x0008 -> hurtY -211..-3 (pat 0); key 0x0004 -> -245..-3; neutral stand -241..-3
+t=34008 chara=0 pat=0 fr=3 key=0000 clash=0 c16=0 c19=0 hitstop=0 gmask=0 atk=0 stance=1 vuln=17F hurtY=-245..-3
+t=34650 chara=0 pat=0 fr=2 key=0008 clash=0 c16=0 c19=0 hitstop=0 gmask=0 atk=0 stance=1 vuln=17F hurtY=-211..-3
+t=35351 chara=0 pat=0 fr=1 key=0000 clash=0 c16=0 c19=0 hitstop=0 gmask=0 atk=0 stance=1 vuln=17F hurtY=-217..-3
+...
+t=39803 chara=0 pat=29 fr=9 key=0000 clash=0 c16=0 c19=0 hitstop=0 gmask=0 atk=0 stance=1 vuln=100 hurtY=-241..-3
+t=39820 chara=0 pat=0 fr=0 key=0000 clash=0 c16=0 c19=0 hitstop=0 gmask=0 atk=0 stance=1 vuln=17F hurtY=-241..-3
+t=39854 chara=0 pat=0 fr=0 key=0008 clash=0 c16=0 c19=0 hitstop=0 gmask=0 atk=0 stance=1 vuln=17F hurtY=-241..-3
+t=40157 chara=0 pat=0 fr=1 key=1000108 clash=0 c16=0 c19=0 hitstop=0 gmask=0 atk=0 stance=1 vuln=17F hurtY=-217..-3
+t=40191 chara=0 pat=66 fr=0 key=1000108 clash=0 c16=0 c19=0 hitstop=0 gmask=0 atk=0 stance=1 vuln=100 hurtY=-214..-1
+t=40364 chara=0 pat=66 fr=3 key=1000108 clash=0 c16=0 c19=0 hitstop=0 gmask=6 atk=1 stance=1 vuln=100 hurtY=-208..0
+t=40457 chara=0 pat=66 fr=4 key=0000 clash=0 c16=0 c19=0 hitstop=0 gmask=6 atk=1 stance=1 vuln=100 hurtY=-203..-3
+t=40526 chara=0 pat=66 fr=5 key=0000 clash=0 c16=0 c19=0 hitstop=0 gmask=6 atk=0 stance=1 vuln=100 hurtY=-210..0
+t=40844 chara=0 pat=0 fr=0 key=0000 clash=0 c16=0 c19=0 hitstop=0 gmask=6 atk=0 stance=1 vuln=17F hurtY=-241..-3
+t=41465 chara=0 pat=0 fr=3 key=0004 clash=0 c16=0 c19=0 hitstop=0 gmask=6 atk=0 stance=1 vuln=17F hurtY=-245..-3
+t=41672 chara=0 pat=0 fr=4 key=1000104 clash=0 c16=0 c19=0 hitstop=0 gmask=6 atk=0 stance=1 vuln=17F hurtY=-252..-3
+t=41707 chara=0 pat=74 fr=0 key=1000104 clash=0 c16=0 c19=0 hitstop=0 gmask=6 atk=0 stance=1 vuln=100 hurtY=-241..-3
+t=41846 chara=0 pat=74 fr=4 key=1000104 clash=0 c16=0 c19=0 hitstop=30 gmask=1 atk=1 stance=1 vuln=100 hurtY=-239..-2
+t=41983 chara=0 pat=74 fr=4 key=0000 clash=0 c16=0 c19=0 hitstop=14 gmask=1 atk=1 stance=1 vuln=100 hurtY=-239..-2
+t=42181 chara=0 pat=74 fr=5 key=0000 clash=0 c16=0 c19=0 hitstop=0 gmask=1 atk=0 stance=1 vuln=100 hurtY=-241..-5
+t=42406 chara=0 pat=29 fr=0 key=0000 clash=0 c16=0 c19=0 hitstop=50 gmask=1 atk=0 stance=1 vuln=100 hurtY=-253..-1

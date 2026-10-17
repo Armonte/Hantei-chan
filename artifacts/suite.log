@@ -1,0 +1,9 @@
+== archives found: 118
+== census
+== byte-exact rebuild (no edits)
+SECTION fbrt: pass 118 fail 0 skipped 0
+== EX3 Gage re-encode (decode -> encode must be bit-exact)
+SECTION ex3: pass 5580 fail 0 skipped 0
+== edited rebuild
+SECTION fbedit: pass 9 fail 0 skipped 0
+n/a: /mnt/c/games/gof/Data/{System00,uninst}.dat, /mnt/c/games/pb/pbex.dat are installer / trainer files, not archives (headers carry no archive magic)

@@ -1,0 +1,2015 @@
+{
+ "classes": [
+  {
+   "static": "0x364b5ac",
+   "cpp": "CComUpdateSt",
+   "name": "UpdateSt",
+   "parent_table": null,
+   "fields": [],
+   "methods": [
+    {
+     "name": "GetLevel",
+     "ea": "0x5407e2",
+     "wrapper": "SqratWrap_int__noargs_2"
+    },
+    {
+     "name": "GetSkill",
+     "ea": "0x540801",
+     "wrapper": "SqratWrap_int__noargs_2"
+    },
+    {
+     "name": "GetMove",
+     "ea": "0x540820",
+     "wrapper": "SqratWrap_int__noargs_2"
+    },
+    {
+     "name": "GetSkillTime",
+     "ea": "0x54083f",
+     "wrapper": "SqratWrap_int__noargs_2"
+    },
+    {
+     "name": "GetMoveTime",
+     "ea": "0x54085e",
+     "wrapper": "SqratWrap_int__noargs_2"
+    },
+    {
+     "name": "GetELenX",
+     "ea": "0x54087d",
+     "wrapper": "SqratWrap_int__noargs_3"
+    },
+    {
+     "name": "GetELenY",
+     "ea": "0x54089c",
+     "wrapper": "SqratWrap_int__noargs_3"
+    },
+    {
+     "name": "GetHPP",
+     "ea": "0x5408bb",
+     "wrapper": "SqratWrap_int__noargs_2"
+    },
+    {
+     "name": "GetEXS",
+     "ea": "0x5408da",
+     "wrapper": "SqratWrap_int__noargs_2"
+    },
+    {
+     "name": "IsPMoveable",
+     "ea": "0x5408f9",
+     "wrapper": "SqratWrap_int__noargs_2"
+    },
+    {
+     "name": "IsPBound",
+     "ea": "0x540918",
+     "wrapper": "SqratWrap_int__noargs_2"
+    },
+    {
+     "name": "CheckPosState",
+     "ea": "0x540937",
+     "wrapper": "SqratWrap_int__int_2"
+    },
+    {
+     "name": "CheckPosState_Enemy",
+     "ea": "0x540956",
+     "wrapper": "SqratWrap_int__int_2"
+    },
+    {
+     "name": "CheckPState",
+     "ea": "0x540975",
+     "wrapper": "SqratWrap_int__int_2"
+    },
+    {
+     "name": "CheckEState",
+     "ea": "0x540994",
+     "wrapper": "SqratWrap_int__int_2"
+    },
+    {
+     "name": "GetTobiTime",
+     "ea": "0x5409b3",
+     "wrapper": "SqratWrap_int__noargs_2"
+    },
+    {
+     "name": "GetComJumpLen",
+     "ea": "0x5409d2",
+     "wrapper": "SqratWrap_int__noargs_3"
+    },
+    {
+     "name": "GetPlayerMuteki",
+     "ea": "0x5409f1",
+     "wrapper": "SqratWrap_int__int_2"
+    }
+   ],
+   "site": "0x54076e",
+   "bind_ea": "0x540a02"
+  },
+  {
+   "static": "0x364b5d0",
+   "cpp": "CSceneOpenSecChar_St",
+   "name": "CStatus",
+   "parent_table": null,
+   "fields": [
+    {
+     "name": "OpenChar",
+     "offset": 0,
+     "ea": "0x76cccc",
+     "type": "int",
+     "binder": "Sqrat_Class_VarM"
+    },
+    {
+     "name": "OpenColor",
+     "offset": 4,
+     "ea": "0x76ccdb",
+     "type": "int",
+     "binder": "Sqrat_Class_VarM"
+    }
+   ],
+   "methods": [],
+   "site": "0x76cc68",
+   "bind_ea": "0x76ccec"
+  },
+  {
+   "static": "0x364b5fc",
+   "cpp": "CSceneVS_PlayerSt",
+   "name": "CPlayerSt",
+   "parent_table": null,
+   "fields": [
+    {
+     "name": "Player1",
+     "offset": 8,
+     "ea": "0x7bd93c",
+     "type": "string",
+     "binder": "Sqrat_Class_VarN"
+    },
+    {
+     "name": "Player2",
+     "offset": 32,
+     "ea": "0x7bd94b",
+     "type": "string",
+     "binder": "Sqrat_Class_VarN"
+    }
+   ],
+   "methods": [],
+   "site": "0x7bd8d8",
+   "bind_ea": "0x7bda27"
+  },
+  {
+   "static": "0x364b614",
+   "cpp": "CSceneWinDemo_St",
+   "name": "CStatus",
+   "parent_table": null,
+   "fields": [
+    {
+     "name": "WinnerNum",
+     "offset": 48,
+     "ea": "0x7c5858",
+     "type": "int",
+     "binder": "Sqrat_Class_VarA"
+    },
+    {
+     "name": "Player",
+     "offset": 12,
+     "ea": "0x7c5867",
+     "type": "int",
+     "binder": "Sqrat_Class_VarA"
+    },
+    {
+     "name": "Stage",
+     "offset": 4,
+     "ea": "0x7c5876",
+     "type": "int",
+     "binder": "Sqrat_Class_VarA"
+    },
+    {
+     "name": "NextStage",
+     "offset": 8,
+     "ea": "0x7c5885",
+     "type": "int",
+     "binder": "Sqrat_Class_VarA"
+    },
+    {
+     "name": "WinnerNumType",
+     "offset": 52,
+     "ea": "0x7c5894",
+     "type": "int",
+     "binder": "Sqrat_Class_VarA"
+    },
+    {
+     "name": "WinnerNumTypeSub",
+     "offset": 56,
+     "ea": "0x7c58a3",
+     "type": "int",
+     "binder": "Sqrat_Class_VarA"
+    },
+    {
+     "name": "WinnerSwitchFrame",
+     "offset": 60,
+     "ea": "0x7c58b2",
+     "type": "int",
+     "binder": "Sqrat_Class_VarA"
+    },
+    {
+     "name": "WinnerNumTypeSub0",
+     "offset": 56,
+     "ea": "0x7c58c1",
+     "type": "int",
+     "binder": "Sqrat_Class_VarA"
+    },
+    {
+     "name": "WinnerSwitchFrame0",
+     "offset": 60,
+     "ea": "0x7c58d0",
+     "type": "int",
+     "binder": "Sqrat_Class_VarA"
+    },
+    {
+     "name": "WinnerNumTypeSub1",
+     "offset": 64,
+     "ea": "0x7c58df",
+     "type": "int",
+     "binder": "Sqrat_Class_VarA"
+    },
+    {
+     "name": "WinnerSwitchFrame1",
+     "offset": 68,
+     "ea": "0x7c58ee",
+     "type": "int",
+     "binder": "Sqrat_Class_VarA"
+    },
+    {
+     "name": "WinnerNumTypeSub2",
+     "offset": 72,
+     "ea": "0x7c58fd",
+     "type": "int",
+     "binder": "Sqrat_Class_VarA"
+    },
+    {
+     "name": "WinnerSwitchFrame2",
+     "offset": 76,
+     "ea": "0x7c590c",
+     "type": "int",
+     "binder": "Sqrat_Class_VarA"
+    },
+    {
+     "name": "WinStreak",
+     "offset": 20,
+     "ea": "0x7c591b",
+     "type": "int",
+     "binder": "Sqrat_Class_VarA"
+    },
+    {
+     "name": "IsStageBG",
+     "offset": 84,
+     "ea": "0x7c592a",
+     "type": "bool",
+     "binder": "Sqrat_Class_VarE"
+    },
+    {
+     "name": "ResultType",
+     "offset": 88,
+     "ea": "0x7c5939",
+     "type": "int",
+     "binder": "Sqrat_Class_VarA"
+    },
+    {
+     "name": "Level",
+     "offset": 92,
+     "ea": "0x7c5948",
+     "type": "int",
+     "binder": "Sqrat_Class_VarA"
+    },
+    {
+     "name": "Rank",
+     "offset": 96,
+     "ea": "0x7c5957",
+     "type": "int",
+     "binder": "Sqrat_Class_VarA"
+    },
+    {
+     "name": "NewRecord",
+     "offset": 100,
+     "ea": "0x7c5966",
+     "type": "bool",
+     "binder": "Sqrat_Class_VarE"
+    },
+    {
+     "name": "TotalWins",
+     "offset": 104,
+     "ea": "0x7c5975",
+     "type": "int",
+     "binder": "Sqrat_Class_VarA"
+    },
+    {
+     "name": "Clear",
+     "offset": 108,
+     "ea": "0x7c5984",
+     "type": "bool",
+     "binder": "Sqrat_Class_VarE"
+    },
+    {
+     "name": "NecoVoiceType",
+     "offset": 112,
+     "ea": "0x7c5993",
+     "type": "int",
+     "binder": "Sqrat_Class_VarA"
+    },
+    {
+     "name": "Rankchange",
+     "offset": 120,
+     "ea": "0x7c59a2",
+     "type": "int",
+     "binder": "Sqrat_Class_VarA"
+    },
+    {
+     "name": "RankBefore",
+     "offset": 124,
+     "ea": "0x7c59b1",
+     "type": "int",
+     "binder": "Sqrat_Class_VarA"
+    },
+    {
+     "name": "RankAfter",
+     "offset": 128,
+     "ea": "0x7c59c3",
+     "type": "int",
+     "binder": "Sqrat_Class_VarA"
+    },
+    {
+     "name": "RankStageBefore",
+     "offset": 132,
+     "ea": "0x7c59d5",
+     "type": "int",
+     "binder": "Sqrat_Class_VarA"
+    },
+    {
+     "name": "RankStageAfter",
+     "offset": 136,
+     "ea": "0x7c59e7",
+     "type": "int",
+     "binder": "Sqrat_Class_VarA"
+    }
+   ],
+   "methods": [],
+   "site": "0x7c5729",
+   "bind_ea": "0x7c5ac3"
+  },
+  {
+   "static": "0x364b644",
+   "cpp": "CWinMessageTableCSVCallback::_WinMesTableLotCallbackInfo",
+   "name": "WinMesTableLotCallbackInfo",
+   "parent_table": null,
+   "fields": [
+    {
+     "name": "ModeType",
+     "offset": 0,
+     "ea": "0x7d39fa",
+     "type": "int",
+     "binder": "Sqrat_Class_VarB"
+    },
+    {
+     "name": "Stage",
+     "offset": 4,
+     "ea": "0x7d3a09",
+     "type": "int",
+     "binder": "Sqrat_Class_VarB"
+    },
+    {
+     "name": "WinCharaNo",
+     "offset": 8,
+     "ea": "0x7d3a18",
+     "type": "int",
+     "binder": "Sqrat_Class_VarB"
+    },
+    {
+     "name": "LoseCharaNo",
+     "offset": 12,
+     "ea": "0x7d3a27",
+     "type": "int",
+     "binder": "Sqrat_Class_VarB"
+    },
+    {
+     "name": "WinType",
+     "offset": 16,
+     "ea": "0x7d3a36",
+     "type": "int",
+     "binder": "Sqrat_Class_VarB"
+    },
+    {
+     "name": "Perfect",
+     "offset": 20,
+     "ea": "0x7d3a45",
+     "type": "int",
+     "binder": "Sqrat_Class_VarB"
+    },
+    {
+     "name": "StartPlayerLose",
+     "offset": 24,
+     "ea": "0x7d3a54",
+     "type": "int",
+     "binder": "Sqrat_Class_VarB"
+    },
+    {
+     "name": "SpecialFinish",
+     "offset": 28,
+     "ea": "0x7d3a63",
+     "type": "int",
+     "binder": "Sqrat_Class_VarB"
+    },
+    {
+     "name": "BaseMessageNo",
+     "offset": 32,
+     "ea": "0x7d3a72",
+     "type": "int",
+     "binder": "Sqrat_Class_VarB"
+    },
+    {
+     "name": "MessageNum",
+     "offset": 36,
+     "ea": "0x7d3a81",
+     "type": "int",
+     "binder": "Sqrat_Class_VarB"
+    },
+    {
+     "name": "MessageNo",
+     "offset": 40,
+     "ea": "0x7d3a90",
+     "type": "int",
+     "binder": "Sqrat_Class_VarB"
+    },
+    {
+     "name": "Average",
+     "offset": 44,
+     "ea": "0x7d3a9f",
+     "type": "int",
+     "binder": "Sqrat_Class_VarB"
+    },
+    {
+     "name": "NecoVoiceType",
+     "offset": 48,
+     "ea": "0x7d3aae",
+     "type": "int",
+     "binder": "Sqrat_Class_VarB"
+    },
+    {
+     "name": "BgNo",
+     "offset": 56,
+     "ea": "0x7d3b88",
+     "type": "int",
+     "binder": "Sqrat_Class_VarB"
+    }
+   ],
+   "methods": [],
+   "site": "0x7d399a",
+   "bind_ea": "0x7d3dd2"
+  },
+  {
+   "static": "0x364b504",
+   "cpp": "BtlSqCoreFunc::CCharaData",
+   "name": "CCharaData",
+   "parent_table": null,
+   "fields": [],
+   "methods": [
+    {
+     "name": "push",
+     "ea": "0x7f4dba",
+     "wrapper": "SqratWrap_int__noargs_3"
+    },
+    {
+     "name": "pop",
+     "ea": "0x7f4dd9",
+     "wrapper": "SqratWrap_int__noargs_3"
+    },
+    {
+     "name": "isdone",
+     "ea": "0x7f4df8",
+     "wrapper": "SqratWrap_int__noargs_3"
+    },
+    {
+     "name": "isPlayer",
+     "ea": "0x7f4e17",
+     "wrapper": "SqratWrap_int__noargs_3"
+    }
+   ],
+   "site": "0x7f4c7c",
+   "bind_ea": "0x7f4ef3"
+  },
+  {
+   "static": "0x364b668",
+   "cpp": "BtlSqCoreFunc::CFindObject",
+   "name": "CFindObject",
+   "parent_table": null,
+   "fields": [],
+   "methods": [
+    {
+     "name": "SetFirst",
+     "ea": "0x7f4fcb",
+     "wrapper": "SqratWrap_void__noargs"
+    },
+    {
+     "name": "Get",
+     "ea": "0x7f4fea",
+     "wrapper": "SqratWrap_instance__int_2"
+    }
+   ],
+   "site": "0x7f4f57",
+   "bind_ea": "0x7f4ffb"
+  },
+  {
+   "static": "0x364b6a8",
+   "cpp": "BtlSqEffObject::CPointStatus",
+   "name": "CPointStatus",
+   "parent_table": null,
+   "fields": [
+    {
+     "name": "distance",
+     "offset": 0,
+     "ea": "0x7f7ce0",
+     "type": "int",
+     "binder": "Sqrat_Class_VarD"
+    },
+    {
+     "name": "distance_x",
+     "offset": 4,
+     "ea": "0x7f7cef",
+     "type": "int",
+     "binder": "Sqrat_Class_VarD"
+    },
+    {
+     "name": "distance_y",
+     "offset": 8,
+     "ea": "0x7f7cfe",
+     "type": "int",
+     "binder": "Sqrat_Class_VarD"
+    },
+    {
+     "name": "pos_x",
+     "offset": 12,
+     "ea": "0x7f7d0d",
+     "type": "int",
+     "binder": "Sqrat_Class_VarD"
+    },
+    {
+     "name": "pos_y",
+     "offset": 16,
+     "ea": "0x7f7d1c",
+     "type": "int",
+     "binder": "Sqrat_Class_VarD"
+    }
+   ],
+   "methods": [],
+   "site": "0x7f7c7c",
+   "bind_ea": "0x7f7df8"
+  },
+  {
+   "static": "0x364b69c",
+   "cpp": "BtlSqEffObject::CBtlSqCheckRect",
+   "name": "CCheckRect",
+   "parent_table": null,
+   "fields": [],
+   "methods": [
+    {
+     "name": "Reset",
+     "ea": "0x7f89e2",
+     "wrapper": "SqratWrap_void__noargs"
+    },
+    {
+     "name": "SetPlayer",
+     "ea": "0x7f8a01",
+     "wrapper": "SqratWrap_void__noargs"
+    },
+    {
+     "name": "SetSrc",
+     "ea": "0x7f8a20",
+     "wrapper": null
+    },
+    {
+     "name": "SetDst",
+     "ea": "0x7f8a3f",
+     "wrapper": null
+    },
+    {
+     "name": "SetFlags",
+     "ea": "0x7f8a5e",
+     "wrapper": "SqratWrap_void__int_2"
+    },
+    {
+     "name": "Check",
+     "ea": "0x7f8a7d",
+     "wrapper": "SqratWrap_int__noargs_3"
+    },
+    {
+     "name": "GetCharaData",
+     "ea": "0x7f8a9c",
+     "wrapper": "SqratWrap_instance_CCharaData_4453B0"
+    }
+   ],
+   "site": "0x7f896b",
+   "bind_ea": "0x7f8aac"
+  },
+  {
+   "static": "0x364b6d4",
+   "cpp": "BtlSqDebugCode::PTClass",
+   "name": "ProcTimer",
+   "parent_table": null,
+   "fields": [],
+   "methods": [
+    {
+     "name": "End",
+     "ea": "0x8005e7",
+     "wrapper": "SqratWrap_void__noargs"
+    },
+    {
+     "name": "ReStart",
+     "ea": "0x800606",
+     "wrapper": "SqratWrap_void__noargs"
+    },
+    {
+     "name": "SetName",
+     "ea": "0x800625",
+     "wrapper": "SqratWrap_void__object"
+    },
+    {
+     "name": "GetTime",
+     "ea": "0x800644",
+     "wrapper": "SqratWrap_float__noargs_2"
+    },
+    {
+     "name": "PrintTime_Int",
+     "ea": "0x800663",
+     "wrapper": "SqratWrap_void__noargs"
+    },
+    {
+     "name": "GetNowTime",
+     "ea": "0x800682",
+     "wrapper": "SqratWrap_float__noargs_2"
+    },
+    {
+     "name": "PrintNowTime_Int",
+     "ea": "0x8006a1",
+     "wrapper": "SqratWrap_void__noargs"
+    },
+    {
+     "name": "EndPrint_Off",
+     "ea": "0x8006c0",
+     "wrapper": "SqratWrap_void__noargs"
+    }
+   ],
+   "site": "0x800573",
+   "bind_ea": "0x8006d1"
+  },
+  {
+   "static": "0x364b7fc",
+   "cpp": "BtlMvFunc::CSqBtlInfo",
+   "name": "CBtlInfo",
+   "parent_table": null,
+   "fields": [],
+   "methods": [
+    {
+     "name": "CheckCharaAlive",
+     "ea": "0x8060f2",
+     "wrapper": "SqratWrap_int__int_3"
+    },
+    {
+     "name": "CheckCharaAlive_str",
+     "ea": "0x806111",
+     "wrapper": "SqratWrap_int__object"
+    },
+    {
+     "name": "IsSelectBgm",
+     "ea": "0x806130",
+     "wrapper": "SqratWrap_int__noargs_3"
+    },
+    {
+     "name": "GetSelectBgm",
+     "ea": "0x80614f",
+     "wrapper": "SqratWrap_int__noargs_3"
+    },
+    {
+     "name": "IsBgmAuto",
+     "ea": "0x80616e",
+     "wrapper": "SqratWrap_int__noargs_3"
+    },
+    {
+     "name": "IsBgmMute",
+     "ea": "0x80618d",
+     "wrapper": "SqratWrap_int__noargs_3"
+    },
+    {
+     "name": "GetFixStageBGM",
+     "ea": "0x8061ac",
+     "wrapper": "SqratWrap_int__noargs_3"
+    },
+    {
+     "name": "SetBattleBgm",
+     "ea": "0x8061cb",
+     "wrapper": "SqratWrap_void__int_2"
+    }
+   ],
+   "site": "0x80607b",
+   "bind_ea": "0x8061db"
+  },
+  {
+   "static": "0x364b52c",
+   "cpp": "BtlMvFunc::CCharaVector",
+   "name": "CCharaVector",
+   "parent_table": null,
+   "fields": [
+    {
+     "name": "x",
+     "offset": 0,
+     "ea": "0x80d156",
+     "type": "int",
+     "binder": "Sqrat_Class_VarO"
+    },
+    {
+     "name": "y",
+     "offset": 4,
+     "ea": "0x80d165",
+     "type": "int",
+     "binder": "Sqrat_Class_VarO"
+    },
+    {
+     "name": "addx",
+     "offset": 8,
+     "ea": "0x80d174",
+     "type": "int",
+     "binder": "Sqrat_Class_VarO"
+    },
+    {
+     "name": "addy",
+     "offset": 12,
+     "ea": "0x80d183",
+     "type": "int",
+     "binder": "Sqrat_Class_VarO"
+    }
+   ],
+   "methods": [],
+   "site": "0x80d0f2",
+   "bind_ea": "0x80d194"
+  },
+  {
+   "static": "0x364b518",
+   "cpp": "BtlMvFunc::CCharaPosition",
+   "name": "CCharaPosition",
+   "parent_table": null,
+   "fields": [
+    {
+     "name": "x",
+     "offset": 0,
+     "ea": "0x80d25c",
+     "type": "int",
+     "binder": "Sqrat_Class_VarP"
+    },
+    {
+     "name": "y",
+     "offset": 4,
+     "ea": "0x80d26b",
+     "type": "int",
+     "binder": "Sqrat_Class_VarP"
+    }
+   ],
+   "methods": [],
+   "site": "0x80d1f8",
+   "bind_ea": "0x80d27c"
+  },
+  {
+   "static": "0x364b510",
+   "cpp": "BtlMvFunc::CCharaRect",
+   "name": "CCharaRect",
+   "parent_table": null,
+   "fields": [
+    {
+     "name": "sx",
+     "offset": 0,
+     "ea": "0x80d344",
+     "type": "int",
+     "binder": "Sqrat_Class_VarF"
+    },
+    {
+     "name": "sy",
+     "offset": 4,
+     "ea": "0x80d353",
+     "type": "int",
+     "binder": "Sqrat_Class_VarF"
+    },
+    {
+     "name": "ex",
+     "offset": 8,
+     "ea": "0x80d362",
+     "type": "int",
+     "binder": "Sqrat_Class_VarF"
+    },
+    {
+     "name": "ey",
+     "offset": 12,
+     "ea": "0x80d371",
+     "type": "int",
+     "binder": "Sqrat_Class_VarF"
+    }
+   ],
+   "methods": [],
+   "site": "0x80d2e0",
+   "bind_ea": "0x80d382"
+  },
+  {
+   "static": "0x364b768",
+   "cpp": "BtlMvFunc::CCharaPoint4",
+   "name": "CCharaPoint4",
+   "parent_table": null,
+   "fields": [
+    {
+     "name": "x0",
+     "offset": 0,
+     "ea": "0x80d44a",
+     "type": "int",
+     "binder": "Sqrat_Class_VarG"
+    },
+    {
+     "name": "y0",
+     "offset": 4,
+     "ea": "0x80d459",
+     "type": "int",
+     "binder": "Sqrat_Class_VarG"
+    },
+    {
+     "name": "x1",
+     "offset": 8,
+     "ea": "0x80d468",
+     "type": "int",
+     "binder": "Sqrat_Class_VarG"
+    },
+    {
+     "name": "y1",
+     "offset": 12,
+     "ea": "0x80d477",
+     "type": "int",
+     "binder": "Sqrat_Class_VarG"
+    },
+    {
+     "name": "x2",
+     "offset": 16,
+     "ea": "0x80d486",
+     "type": "int",
+     "binder": "Sqrat_Class_VarG"
+    },
+    {
+     "name": "y2",
+     "offset": 20,
+     "ea": "0x80d495",
+     "type": "int",
+     "binder": "Sqrat_Class_VarG"
+    },
+    {
+     "name": "x3",
+     "offset": 24,
+     "ea": "0x80d4a4",
+     "type": "int",
+     "binder": "Sqrat_Class_VarG"
+    },
+    {
+     "name": "y3",
+     "offset": 28,
+     "ea": "0x80d4b3",
+     "type": "int",
+     "binder": "Sqrat_Class_VarG"
+    }
+   ],
+   "methods": [],
+   "site": "0x80d3e6",
+   "bind_ea": "0x80d4c4"
+  },
+  {
+   "static": "0x364b874",
+   "cpp": "BtlMvFunc::MvStatus",
+   "name": "MvStatus",
+   "parent_table": null,
+   "fields": [
+    {
+     "name": "CharaNo",
+     "offset": 0,
+     "ea": "0x80d58c",
+     "type": "short",
+     "binder": "Sqrat_Class_VarH"
+    },
+    {
+     "name": "CallCount",
+     "offset": 2,
+     "ea": "0x80d59b",
+     "type": "short",
+     "binder": "Sqrat_Class_VarH"
+    },
+    {
+     "name": "FrameCallCount",
+     "offset": 4,
+     "ea": "0x80d5aa",
+     "type": "short",
+     "binder": "Sqrat_Class_VarH"
+    },
+    {
+     "name": "isUpdate",
+     "offset": 16,
+     "ea": "0x80d5b9",
+     "type": "short",
+     "binder": "Sqrat_Class_VarH"
+    },
+    {
+     "name": "MvCount",
+     "offset": 8,
+     "ea": "0x80d5c8",
+     "type": "int",
+     "binder": "Sqrat_Class_VarQ"
+    },
+    {
+     "name": "MvCountFrame",
+     "offset": 12,
+     "ea": "0x80d5d7",
+     "type": "int",
+     "binder": "Sqrat_Class_VarQ"
+    },
+    {
+     "name": "isFrameUpdate",
+     "offset": 18,
+     "ea": "0x80d5e6",
+     "type": "short",
+     "binder": "Sqrat_Class_VarH"
+    },
+    {
+     "name": "isLanding",
+     "offset": 24,
+     "ea": "0x80d5f5",
+     "type": "short",
+     "binder": "Sqrat_Class_VarH"
+    },
+    {
+     "name": "DataPattern",
+     "offset": 20,
+     "ea": "0x80d604",
+     "type": "short",
+     "binder": "Sqrat_Class_VarH"
+    },
+    {
+     "name": "DataFrame",
+     "offset": 22,
+     "ea": "0x80d613",
+     "type": "short",
+     "binder": "Sqrat_Class_VarH"
+    },
+    {
+     "name": "DataDelayVal",
+     "offset": 26,
+     "ea": "0x80d622",
+     "type": "short",
+     "binder": "Sqrat_Class_VarH"
+    },
+    {
+     "name": "DataDelay",
+     "offset": 28,
+     "ea": "0x80d631",
+     "type": "short",
+     "binder": "Sqrat_Class_VarH"
+    },
+    {
+     "name": "flags",
+     "offset": 30,
+     "ea": "0x80d640",
+     "type": "short",
+     "binder": "Sqrat_Class_VarH"
+    },
+    {
+     "name": "FrameID",
+     "offset": 32,
+     "ea": "0x80d64f",
+     "type": "short",
+     "binder": "Sqrat_Class_VarH"
+    },
+    {
+     "name": "Param0",
+     "offset": 34,
+     "ea": "0x80d65e",
+     "type": "short",
+     "binder": "Sqrat_Class_VarH"
+    },
+    {
+     "name": "Param1",
+     "offset": 36,
+     "ea": "0x80d66d",
+     "type": "short",
+     "binder": "Sqrat_Class_VarH"
+    },
+    {
+     "name": "Param2",
+     "offset": 38,
+     "ea": "0x80d67c",
+     "type": "short",
+     "binder": "Sqrat_Class_VarH"
+    },
+    {
+     "name": "Param3",
+     "offset": 40,
+     "ea": "0x80d68b",
+     "type": "short",
+     "binder": "Sqrat_Class_VarH"
+    }
+   ],
+   "methods": [
+    {
+     "name": "GetCharaNo",
+     "ea": "0x80d6aa",
+     "wrapper": "SqratWrap_int__noargs_2"
+    },
+    {
+     "name": "GetCallCount",
+     "ea": "0x80d6c9",
+     "wrapper": "SqratWrap_int__noargs_2"
+    },
+    {
+     "name": "GetMvCount",
+     "ea": "0x80d6e8",
+     "wrapper": "SqratWrap_int__noargs_3"
+    },
+    {
+     "name": "GetMvCountFrame",
+     "ea": "0x80d707",
+     "wrapper": "SqratWrap_int__noargs_3"
+    },
+    {
+     "name": "IsUpdate",
+     "ea": "0x80d726",
+     "wrapper": "SqratWrap_int__noargs_2"
+    },
+    {
+     "name": "IsFrameUpdate",
+     "ea": "0x80d745",
+     "wrapper": "SqratWrap_int__noargs_2"
+    },
+    {
+     "name": "GetDataPattern",
+     "ea": "0x80d764",
+     "wrapper": "SqratWrap_int__noargs_2"
+    },
+    {
+     "name": "GetDataFrame",
+     "ea": "0x80d783",
+     "wrapper": "SqratWrap_int__noargs_2"
+    },
+    {
+     "name": "GetFrameID",
+     "ea": "0x80d7a2",
+     "wrapper": "SqratWrap_int__noargs_2"
+    },
+    {
+     "name": "IsLanding",
+     "ea": "0x80d7c1",
+     "wrapper": "SqratWrap_int__noargs_2"
+    },
+    {
+     "name": "GetDataDelayVal",
+     "ea": "0x80d7e0",
+     "wrapper": "SqratWrap_int__noargs_2"
+    },
+    {
+     "name": "GetDataDelay",
+     "ea": "0x80d7ff",
+     "wrapper": "SqratWrap_int__noargs_2"
+    },
+    {
+     "name": "GetFlags",
+     "ea": "0x80d81e",
+     "wrapper": "SqratWrap_int__noargs_2"
+    },
+    {
+     "name": "GetParam0",
+     "ea": "0x80d83d",
+     "wrapper": "SqratWrap_int__noargs_2"
+    },
+    {
+     "name": "GetParam1",
+     "ea": "0x80d85c",
+     "wrapper": "SqratWrap_int__noargs_2"
+    },
+    {
+     "name": "GetParam2",
+     "ea": "0x80d87b",
+     "wrapper": "SqratWrap_int__noargs_2"
+    },
+    {
+     "name": "GetParam3",
+     "ea": "0x80d89a",
+     "wrapper": "SqratWrap_int__noargs_2"
+    }
+   ],
+   "site": "0x80d528",
+   "bind_ea": "0x80d8ab"
+  },
+  {
+   "static": "0x364b78c",
+   "cpp": "BtlMvFunc::MvHitStatus",
+   "name": "MvHitStatus",
+   "parent_table": null,
+   "fields": [
+    {
+     "name": "Type",
+     "offset": 0,
+     "ea": "0x80d973",
+     "type": "short",
+     "binder": "Sqrat_Class_VarI"
+    },
+    {
+     "name": "PosState",
+     "offset": 2,
+     "ea": "0x80d982",
+     "type": "short",
+     "binder": "Sqrat_Class_VarI"
+    },
+    {
+     "name": "isDown",
+     "offset": 4,
+     "ea": "0x80d991",
+     "type": "short",
+     "binder": "Sqrat_Class_VarI"
+    },
+    {
+     "name": "isFirstUpdate",
+     "offset": 8,
+     "ea": "0x80d9a0",
+     "type": "short",
+     "binder": "Sqrat_Class_VarI"
+    },
+    {
+     "name": "isCatchFlag",
+     "offset": 10,
+     "ea": "0x80d9af",
+     "type": "short",
+     "binder": "Sqrat_Class_VarI"
+    },
+    {
+     "name": "isMoveable",
+     "offset": 12,
+     "ea": "0x80d9be",
+     "type": "short",
+     "binder": "Sqrat_Class_VarI"
+    },
+    {
+     "name": "Count",
+     "offset": 6,
+     "ea": "0x80d9cd",
+     "type": "short",
+     "binder": "Sqrat_Class_VarI"
+    }
+   ],
+   "methods": [
+    {
+     "name": "IsDown",
+     "ea": "0x80d9ec",
+     "wrapper": "SqratWrap_int__noargs_3"
+    }
+   ],
+   "site": "0x80d90f",
+   "bind_ea": "0x80d9fd"
+  },
+  {
+   "static": "0x364b7d0",
+   "cpp": "BtlMvFunc::MvHitImpactInfo",
+   "name": "MvHitImpactInfo",
+   "parent_table": null,
+   "fields": [
+    {
+     "name": "type",
+     "offset": 0,
+     "ea": "0x80dac5",
+     "type": "short",
+     "binder": "Sqrat_Class_VarJ"
+    },
+    {
+     "name": "d_state",
+     "offset": 2,
+     "ea": "0x80dad4",
+     "type": "short",
+     "binder": "Sqrat_Class_VarJ"
+    },
+    {
+     "name": "atk_guard",
+     "offset": 4,
+     "ea": "0x80dae3",
+     "type": "int",
+     "binder": "Sqrat_Class_VarR"
+    },
+    {
+     "name": "atk_throw",
+     "offset": 8,
+     "ea": "0x80daf2",
+     "type": "short",
+     "binder": "Sqrat_Class_VarJ"
+    },
+    {
+     "name": "def_guard",
+     "offset": 10,
+     "ea": "0x80db01",
+     "type": "short",
+     "binder": "Sqrat_Class_VarJ"
+    },
+    {
+     "name": "grd_break",
+     "offset": 12,
+     "ea": "0x80db10",
+     "type": "short",
+     "binder": "Sqrat_Class_VarJ"
+    },
+    {
+     "name": "armor_break",
+     "offset": 14,
+     "ea": "0x80db1f",
+     "type": "short",
+     "binder": "Sqrat_Class_VarJ"
+    },
+    {
+     "name": "counterhit",
+     "offset": 16,
+     "ea": "0x80db2e",
+     "type": "short",
+     "binder": "Sqrat_Class_VarJ"
+    },
+    {
+     "name": "vectortype",
+     "offset": 18,
+     "ea": "0x80db3d",
+     "type": "short",
+     "binder": "Sqrat_Class_VarJ"
+    },
+    {
+     "name": "flags",
+     "offset": 20,
+     "ea": "0x80db4c",
+     "type": "int",
+     "binder": "Sqrat_Class_VarR"
+    }
+   ],
+   "methods": [],
+   "site": "0x80da61",
+   "bind_ea": "0x80db5d"
+  },
+  {
+   "static": "0x364b898",
+   "cpp": "BtlMvFunc::MvHitEffectInfo",
+   "name": "MvHitEffectInfo",
+   "parent_table": null,
+   "fields": [],
+   "methods": [],
+   "site": "0x80dbc1",
+   "bind_ea": "0x80dcf2"
+  },
+  {
+   "static": "0x364b890",
+   "cpp": "BtlMvFunc::MvInterruptInfo",
+   "name": "MvInterruptInfo",
+   "parent_table": null,
+   "fields": [
+    {
+     "name": "type",
+     "offset": 0,
+     "ea": "0x80ddba",
+     "type": "int",
+     "binder": "Sqrat_Class_VarK"
+    },
+    {
+     "name": "Param0",
+     "offset": 4,
+     "ea": "0x80ddc9",
+     "type": "int",
+     "binder": "Sqrat_Class_VarK"
+    },
+    {
+     "name": "Param1",
+     "offset": 8,
+     "ea": "0x80ddd8",
+     "type": "int",
+     "binder": "Sqrat_Class_VarK"
+    },
+    {
+     "name": "Param2",
+     "offset": 12,
+     "ea": "0x80dde7",
+     "type": "int",
+     "binder": "Sqrat_Class_VarK"
+    },
+    {
+     "name": "Param3",
+     "offset": 16,
+     "ea": "0x80ddf6",
+     "type": "int",
+     "binder": "Sqrat_Class_VarK"
+    },
+    {
+     "name": "Param4",
+     "offset": 20,
+     "ea": "0x80de05",
+     "type": "int",
+     "binder": "Sqrat_Class_VarK"
+    }
+   ],
+   "methods": [],
+   "site": "0x80dd56",
+   "bind_ea": "0x80de16"
+  },
+  {
+   "static": "0x364b7c4",
+   "cpp": "CPcRecoverStatus",
+   "name": "MvRecoverStatus",
+   "parent_table": null,
+   "fields": [
+    {
+     "name": "Type",
+     "offset": 0,
+     "ea": "0x80dede",
+     "type": "int",
+     "binder": "Sqrat_Class_VarS"
+    },
+    {
+     "name": "Stick",
+     "offset": 4,
+     "ea": "0x80deed",
+     "type": "int",
+     "binder": "Sqrat_Class_VarS"
+    }
+   ],
+   "methods": [],
+   "site": "0x80de7a",
+   "bind_ea": "0x80defe"
+  },
+  {
+   "static": "0x364b7bc",
+   "cpp": "BtlMvFunc::MvRoundStatus",
+   "name": "MvRoundStatus",
+   "parent_table": null,
+   "fields": [
+    {
+     "name": "Time",
+     "offset": 12,
+     "ea": "0x80dfc6",
+     "type": "short",
+     "binder": "Sqrat_Class_VarL"
+    },
+    {
+     "name": "TimeUpdate",
+     "offset": 14,
+     "ea": "0x80dfd5",
+     "type": "short",
+     "binder": "Sqrat_Class_VarL"
+    },
+    {
+     "name": "Round",
+     "offset": 16,
+     "ea": "0x80dfe4",
+     "type": "short",
+     "binder": "Sqrat_Class_VarL"
+    },
+    {
+     "name": "WinType",
+     "offset": 18,
+     "ea": "0x80dff3",
+     "type": "short",
+     "binder": "Sqrat_Class_VarL"
+    },
+    {
+     "name": "isKo",
+     "offset": 0,
+     "ea": "0x80e002",
+     "type": "short",
+     "binder": "Sqrat_Class_VarL"
+    },
+    {
+     "name": "isMyKo",
+     "offset": 2,
+     "ea": "0x80e011",
+     "type": "short",
+     "binder": "Sqrat_Class_VarL"
+    },
+    {
+     "name": "isWinRound",
+     "offset": 4,
+     "ea": "0x80e020",
+     "type": "short",
+     "binder": "Sqrat_Class_VarL"
+    },
+    {
+     "name": "isLoseRound",
+     "offset": 6,
+     "ea": "0x80e02f",
+     "type": "short",
+     "binder": "Sqrat_Class_VarL"
+    },
+    {
+     "name": "isExtraRound",
+     "offset": 8,
+     "ea": "0x80e03e",
+     "type": "short",
+     "binder": "Sqrat_Class_VarL"
+    },
+    {
+     "name": "isFirstLoseRound",
+     "offset": 10,
+     "ea": "0x80e04d",
+     "type": "short",
+     "binder": "Sqrat_Class_VarL"
+    },
+    {
+     "name": "CharaMoveMode",
+     "offset": 20,
+     "ea": "0x80e05c",
+     "type": "short",
+     "binder": "Sqrat_Class_VarL"
+    }
+   ],
+   "methods": [],
+   "site": "0x80df62",
+   "bind_ea": "0x80e06d"
+  },
+  {
+   "static": "0x364b830",
+   "cpp": "BtlMvFunc::MvNetworkInfo",
+   "name": "MvNetworkInfo",
+   "parent_table": null,
+   "fields": [
+    {
+     "name": "NetworkVsMode",
+     "offset": 2,
+     "ea": "0x80e135",
+     "type": "short",
+     "binder": "Sqrat_Class_VarT"
+    },
+    {
+     "name": "NetworkVsControlType",
+     "offset": 4,
+     "ea": "0x80e144",
+     "type": "short",
+     "binder": "Sqrat_Class_VarT"
+    }
+   ],
+   "methods": [],
+   "site": "0x80e0d1",
+   "bind_ea": "0x80e155"
+  },
+  {
+   "static": "0x364b8a8",
+   "cpp": "BtlMvFunc::MvStageStatus",
+   "name": "MvStageStatus",
+   "parent_table": null,
+   "fields": [],
+   "methods": [
+    {
+     "name": "IsStoryBattle",
+     "ea": "0x80e22d",
+     "wrapper": "SqratWrap_int__noargs_3"
+    },
+    {
+     "name": "IsTrainingBattle",
+     "ea": "0x80e24c",
+     "wrapper": "SqratWrap_int__noargs_3"
+    },
+    {
+     "name": "GetCpuChara",
+     "ea": "0x80e26b",
+     "wrapper": "SqratWrap_int__noargs_3"
+    },
+    {
+     "name": "GetPcChara",
+     "ea": "0x80e28a",
+     "wrapper": "SqratWrap_int__noargs_3"
+    },
+    {
+     "name": "GetStartSide",
+     "ea": "0x80e2a9",
+     "wrapper": "SqratWrap_int__noargs_3"
+    }
+   ],
+   "site": "0x80e1b9",
+   "bind_ea": "0x80e2ba"
+  },
+  {
+   "static": "0x364b794",
+   "cpp": "BtlMvStdFunc::MvBoundStatus",
+   "name": "MvBoundStatus",
+   "parent_table": null,
+   "fields": [
+    {
+     "name": "isDone",
+     "offset": 0,
+     "ea": "0x80f077",
+     "type": "short",
+     "binder": "Sqrat_Class_VarC"
+    },
+    {
+     "name": "isCapture",
+     "offset": 2,
+     "ea": "0x80f086",
+     "type": "short",
+     "binder": "Sqrat_Class_VarC"
+    },
+    {
+     "name": "isBound",
+     "offset": 4,
+     "ea": "0x80f095",
+     "type": "short",
+     "binder": "Sqrat_Class_VarC"
+    },
+    {
+     "name": "Num",
+     "offset": 10,
+     "ea": "0x80f0a4",
+     "type": "short",
+     "binder": "Sqrat_Class_VarC"
+    },
+    {
+     "name": "VecCount",
+     "offset": 12,
+     "ea": "0x80f0b3",
+     "type": "short",
+     "binder": "Sqrat_Class_VarC"
+    },
+    {
+     "name": "WallCount",
+     "offset": 18,
+     "ea": "0x80f0c2",
+     "type": "short",
+     "binder": "Sqrat_Class_VarC"
+    },
+    {
+     "name": "Power",
+     "offset": 24,
+     "ea": "0x80f19c",
+     "type": "short",
+     "binder": "Sqrat_Class_VarC"
+    },
+    {
+     "name": "AirUkemi",
+     "offset": 16,
+     "ea": "0x80f1ab",
+     "type": "short",
+     "binder": "Sqrat_Class_VarC"
+    },
+    {
+     "name": "VecMuki",
+     "offset": 14,
+     "ea": "0x80f1ba",
+     "type": "short",
+     "binder": "Sqrat_Class_VarC"
+    },
+    {
+     "name": "BoundTime",
+     "offset": 26,
+     "ea": "0x80f1c9",
+     "type": "short",
+     "binder": "Sqrat_Class_VarC"
+    },
+    {
+     "name": "BoundTimeAll",
+     "offset": 28,
+     "ea": "0x80f1d8",
+     "type": "short",
+     "binder": "Sqrat_Class_VarC"
+    },
+    {
+     "name": "BoundFlag",
+     "offset": 30,
+     "ea": "0x80f1e7",
+     "type": "short",
+     "binder": "Sqrat_Class_VarC"
+    }
+   ],
+   "methods": [
+    {
+     "name": "IsDone",
+     "ea": "0x80f206",
+     "wrapper": "SqratWrap_int__noargs_2"
+    },
+    {
+     "name": "IsCapture",
+     "ea": "0x80f225",
+     "wrapper": "SqratWrap_int__noargs_2"
+    },
+    {
+     "name": "IsBound",
+     "ea": "0x80f244",
+     "wrapper": "SqratWrap_int__noargs_2"
+    },
+    {
+     "name": "GetNum",
+     "ea": "0x80f263",
+     "wrapper": "SqratWrap_int__noargs_2"
+    },
+    {
+     "name": "GetVecCount",
+     "ea": "0x80f282",
+     "wrapper": "SqratWrap_int__noargs_2"
+    },
+    {
+     "name": "GetVecMuki",
+     "ea": "0x80f2a1",
+     "wrapper": "SqratWrap_int__noargs_2"
+    },
+    {
+     "name": "GetAirUkemi",
+     "ea": "0x80f2c0",
+     "wrapper": "SqratWrap_int__noargs_2"
+    },
+    {
+     "name": "GetWallCount",
+     "ea": "0x80f2df",
+     "wrapper": "SqratWrap_int__noargs_2"
+    },
+    {
+     "name": "GetName",
+     "ea": "0x80f2fe",
+     "wrapper": "SqratWrap_string__noargs_2"
+    },
+    {
+     "name": "GetPower",
+     "ea": "0x80f31d",
+     "wrapper": "SqratWrap_int__noargs_2"
+    },
+    {
+     "name": "GetBoundTime",
+     "ea": "0x80f33c",
+     "wrapper": "SqratWrap_int__noargs_2"
+    },
+    {
+     "name": "GetBoundTimeAll",
+     "ea": "0x80f35b",
+     "wrapper": "SqratWrap_int__noargs_2"
+    },
+    {
+     "name": "GetBoundFlag",
+     "ea": "0x80f37a",
+     "wrapper": "SqratWrap_int__noargs_2"
+    },
+    {
+     "name": "GetCountMax",
+     "ea": "0x80f399",
+     "wrapper": "SqratWrap_int__noargs_2"
+    },
+    {
+     "name": "GetCountMaxTrue",
+     "ea": "0x80f3b8",
+     "wrapper": "SqratWrap_int__noargs_2"
+    },
+    {
+     "name": "GetCountNow",
+     "ea": "0x80f3d7",
+     "wrapper": "SqratWrap_int__noargs_2"
+    },
+    {
+     "name": "GetAirUkemiTimeNow",
+     "ea": "0x80f3f6",
+     "wrapper": "SqratWrap_int__noargs_2"
+    },
+    {
+     "name": "GetAirUkemiTimeMax",
+     "ea": "0x80f415",
+     "wrapper": "SqratWrap_int__noargs_2"
+    },
+    {
+     "name": "GetVecX",
+     "ea": "0x80f434",
+     "wrapper": "SqratWrap_int__noargs_3"
+    },
+    {
+     "name": "GetVecY",
+     "ea": "0x80f453",
+     "wrapper": "SqratWrap_int__noargs_3"
+    },
+    {
+     "name": "IsDown",
+     "ea": "0x80f472",
+     "wrapper": "SqratWrap_int__noargs_3"
+    }
+   ],
+   "site": "0x80effa",
+   "bind_ea": "0x80f483"
+  },
+  {
+   "static": "0x364b804",
+   "cpp": "BtlMvStdFunc::MvBoundVectorStatus",
+   "name": "MvBoundVectorStatus",
+   "parent_table": null,
+   "fields": [],
+   "methods": [
+    {
+     "name": "IsDone",
+     "ea": "0x80f575",
+     "wrapper": "SqratWrap_int__noargs_2"
+    },
+    {
+     "name": "GetVectime",
+     "ea": "0x80f594",
+     "wrapper": "SqratWrap_int__noargs_2"
+    },
+    {
+     "name": "GetUkemifailedtime",
+     "ea": "0x80f5b3",
+     "wrapper": "SqratWrap_int__noargs_2"
+    },
+    {
+     "name": "GetUkeminum_g",
+     "ea": "0x80f5d2",
+     "wrapper": "SqratWrap_int__noargs_2"
+    },
+    {
+     "name": "GetPower",
+     "ea": "0x80f5f1",
+     "wrapper": "SqratWrap_int__noargs_2"
+    }
+   ],
+   "site": "0x80f4e8",
+   "bind_ea": "0x80f602"
+  },
+  {
+   "static": "0x364b944",
+   "cpp": "BtlCmdFunc::_LogsFile",
+   "name": "_LogsFile",
+   "parent_table": null,
+   "fields": [],
+   "methods": [
+    {
+     "name": "open",
+     "ea": "0x812045",
+     "wrapper": "SqratWrap_void__object"
+    },
+    {
+     "name": "opennew",
+     "ea": "0x812064",
+     "wrapper": "SqratWrap_void__object"
+    },
+    {
+     "name": "write",
+     "ea": "0x812083",
+     "wrapper": "SqratWrap_void__object"
+    },
+    {
+     "name": "write_r",
+     "ea": "0x8120a2",
+     "wrapper": "SqratWrap_void__object"
+    },
+    {
+     "name": "writeD",
+     "ea": "0x8120c1",
+     "wrapper": "SqratWrap_void__object"
+    },
+    {
+     "name": "writeD_r",
+     "ea": "0x8120e0",
+     "wrapper": "SqratWrap_void__object"
+    },
+    {
+     "name": "close",
+     "ea": "0x8120ff",
+     "wrapper": "SqratWrap_void__noargs"
+    }
+   ],
+   "site": "0x811fd1",
+   "bind_ea": "0x812110"
+  },
+  {
+   "static": "0x364b934",
+   "cpp": "CBtlCmdInfo",
+   "name": "CmdInfo",
+   "parent_table": null,
+   "fields": [],
+   "methods": [
+    {
+     "name": "GetLastButton",
+     "ea": "0x81277f",
+     "wrapper": "SqratWrap_int__int_3"
+    },
+    {
+     "name": "GetCancel",
+     "ea": "0x81279e",
+     "wrapper": "SqratWrap_int__int_3"
+    },
+    {
+     "name": "GetCancelFlag",
+     "ea": "0x8127bd",
+     "wrapper": "SqratWrap_int__int_3"
+    },
+    {
+     "name": "GetFrame",
+     "ea": "0x8127dc",
+     "wrapper": "SqratWrap_int__noargs_3"
+    },
+    {
+     "name": "GetNum",
+     "ea": "0x8127fb",
+     "wrapper": "SqratWrap_int__int_3"
+    }
+   ],
+   "site": "0x81270b",
+   "bind_ea": "0x81280c"
+  },
+  {
+   "static": "0x364b9b8",
+   "cpp": "CPaniData",
+   "name": "CDat",
+   "parent_table": null,
+   "fields": [],
+   "methods": [
+    {
+     "name": "Load",
+     "ea": "0x81451d",
+     "wrapper": "SqratWrap_int__object"
+    },
+    {
+     "name": "SetPosition",
+     "ea": "0x81453c",
+     "wrapper": "SqratWrap_void__int_int_2"
+    }
+   ],
+   "site": "0x8144a9",
+   "bind_ea": "0x81454d"
+  },
+  {
+   "static": "0x364b980",
+   "cpp": "CPaniData_Anime",
+   "name": "CAnime",
+   "parent_table": null,
+   "fields": [],
+   "methods": [
+    {
+     "name": "SetCDat",
+     "ea": "0x814625",
+     "wrapper": "SqratWrap_void__instance_3"
+    },
+    {
+     "name": "AddFrame",
+     "ea": "0x814644",
+     "wrapper": "SqratWrap_void__object_float"
+    },
+    {
+     "name": "AddFrameEx",
+     "ea": "0x814663",
+     "wrapper": "SqratWrap_void__object_float_int"
+    },
+    {
+     "name": "AddJump",
+     "ea": "0x814682",
+     "wrapper": "SqratWrap_void__int_2"
+    },
+    {
+     "name": "AddModeJump",
+     "ea": "0x8146a1",
+     "wrapper": "SqratWrap_void__int_int_int_2"
+    },
+    {
+     "name": "AddTagJump",
+     "ea": "0x8146c0",
+     "wrapper": "SqratWrap_void__object"
+    },
+    {
+     "name": "AddModeTagJump",
+     "ea": "0x8146df",
+     "wrapper": "SqratWrap_void__object_int_int"
+    },
+    {
+     "name": "AddTag",
+     "ea": "0x8146fe",
+     "wrapper": "SqratWrap_void__object"
+    },
+    {
+     "name": "AddSe",
+     "ea": "0x81471d",
+     "wrapper": "SqratWrap_void__int_2"
+    },
+    {
+     "name": "AddModeTag",
+     "ea": "0x81473c",
+     "wrapper": "SqratWrap_void__int_2"
+    },
+    {
+     "name": "SetPrio",
+     "ea": "0x81475b",
+     "wrapper": "SqratWrap_void__int_2"
+    },
+    {
+     "name": "SetMode",
+     "ea": "0x81477a",
+     "wrapper": "SqratWrap_void__int_2"
+    },
+    {
+     "name": "GetMode",
+     "ea": "0x814799",
+     "wrapper": "SqratWrap_int__noargs_3"
+    },
+    {
+     "name": "AddMode",
+     "ea": "0x8147b8",
+     "wrapper": "SqratWrap_void__int_2"
+    },
+    {
+     "name": "IsNull",
+     "ea": "0x8147d7",
+     "wrapper": "SqratWrap_int__noargs_3"
+    },
+    {
+     "name": "SetView",
+     "ea": "0x8147f6",
+     "wrapper": "SqratWrap_void__int_2"
+    },
+    {
+     "name": "GetView",
+     "ea": "0x814815",
+     "wrapper": "SqratWrap_int__noargs_3"
+    },
+    {
+     "name": "ClearFrame",
+     "ea": "0x814834",
+     "wrapper": "SqratWrap_void__noargs"
+    },
+    {
+     "name": "SetStartWait",
+     "ea": "0x814853",
+     "wrapper": "SqratWrap_void__float"
+    }
+   ],
+   "site": "0x8145b1",
+   "bind_ea": "0x814864"
+  },
+  {
+   "static": "0x364b978",
+   "cpp": "CPaniData_AnimeManager",
+   "name": "CAniManager",
+   "parent_table": null,
+   "fields": [],
+   "methods": [
+    {
+     "name": "Add",
+     "ea": "0x81493c",
+     "wrapper": "SqratWrap_instance__instance_object"
+    },
+    {
+     "name": "Render",
+     "ea": "0x81495b",
+     "wrapper": "SqratWrap_int__noargs_3"
+    },
+    {
+     "name": "Update",
+     "ea": "0x81497a",
+     "wrapper": "SqratWrap_int__noargs_3"
+    },
+    {
+     "name": "Reset",
+     "ea": "0x814999",
+     "wrapper": "SqratWrap_int__noargs_3"
+    },
+    {
+     "name": "Finalize",
+     "ea": "0x8149b8",
+     "wrapper": "SqratWrap_void__noargs"
+    },
+    {
+     "name": "SetMode",
+     "ea": "0x8149d7",
+     "wrapper": "SqratWrap_void__int_2"
+    },
+    {
+     "name": "GetCAnime",
+     "ea": "0x8149f6",
+     "wrapper": "SqratWrap_instance__object"
+    }
+   ],
+   "site": "0x8148c8",
+   "bind_ea": "0x814a07"
+  }
+ ],
+ "wrapper_returns": {
+  "SqratWrap_instance__noargs": "0x364b5ac",
+  "SqratWrap_instance__noargs_2": "0x364b5d0",
+  "SqratWrap_instance__noargs_3": "0x364b5fc",
+  "SqratWrap_instance__noargs_4": "0x364b614",
+  "SqratWrap_instance__noargs_5": "0x364b644",
+  "SqratWrap_instance__noargs_6": "0x364b504",
+  "SqratWrap_instance__int": "0x364b504",
+  "SqratWrap_instance__int_2": "0x364b504",
+  "SqratWrap_instance_CCharaData_443C50": "0x364b504",
+  "SqratWrap_instance__noargs_7": "0x364b518",
+  "SqratWrap_instance_CCharaData_4453B0": "0x364b504",
+  "SqratWrap_instance__string": "0x364b6a8",
+  "SqratWrap_instance__string_2": "0x364b52c",
+  "SqratWrap_instance__string_3": "0x364b510",
+  "SqratWrap_instance_CCharaPosition_445AA0": "0x364b518",
+  "SqratWrap_instance__noargs_13": "0x364b7c4",
+  "SqratWrap_instance__noargs_12": "0x364b830",
+  "SqratWrap_instance__noargs_11": "0x364b8a8",
+  "SqratWrap_instance__noargs_10": "0x364b7bc",
+  "SqratWrap_instance__noargs_9": "0x364b78c",
+  "SqratWrap_instance__noargs_8": "0x364b874",
+  "SqratWrap_instance__noargs_14": "0x364b794",
+  "SqratWrap_instance__int_int": "0x364b804",
+  "SqratWrap_instance__noargs_15": "0x364b934",
+  "SqratWrap_instance__int_3": "0x364b934",
+  "SqratWrap_instance__instance_object": "0x364b980",
+  "SqratWrap_instance__object": "0x364b980",
+  "SqratWrap_instance_MvHitEffectInfo_51F230": "0x364b898",
+  "SqratWrap_instance_MvHitImpactInfo_51F450": "0x364b7d0",
+  "SqratWrap_instance_MvInterruptInfo_520D10": "0x364b890",
+  "SqratWrap_instance_MvInterruptInfo_80F880": "0x364b890",
+  "SqratWrap_instance_MvHitEffectInfo_80FA40": "0x364b898",
+  "SqratWrap_instance_MvHitImpactInfo_80FC00": "0x364b7d0"
+ },
+ "unnamed_binders": []
+}

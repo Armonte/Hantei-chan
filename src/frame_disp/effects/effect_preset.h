@@ -1,4 +1,7 @@
 #ifndef EFFECT_PRESET_H_GUARD
+#include "../../i18n.h"
+#include "effect_form.h"
+#include "../../ui/ui_style.h"
 #define EFFECT_PRESET_H_GUARD
 
 // ============================================================================
@@ -12,7 +15,7 @@ static inline void DrawEffectPreset_Type3(Frame_EF& effect, FrameData* frameData
 {
 	int* p = effect.parameters;
 	int& no = effect.number;
-	constexpr float width = 75.f;
+	const float width = ui::Px(75.f);   // follows the font size (ui_style.h)
 
 	const char* const presetEffects[] = {
 				"1: Jump looking effect",
@@ -36,38 +39,32 @@ static inline void DrawEffectPreset_Type3(Frame_EF& effect, FrameData* frameData
 				"30: Massive dust cloud",
 			};
 
-			if(ShowComboWithManual("Effect Number", &no, presetEffects, IM_ARRAYSIZE(presetEffects), width*2, width)) {
+			if(EfComboManual("Effect Number", &no, presetEffects, IM_ARRAYSIZE(presetEffects), width*2, width)) {
 				markModified();
 			}
 
 			// Position (common to all)
-			im::SetNextItemWidth(width);
-			if(im::InputInt("Position X", &p[0], 0, 0)) markModified();
-			im::SameLine(0, 20);
-			im::SetNextItemWidth(width);
-			if(im::InputInt("Position Y", &p[1], 0, 0)) markModified();
+			if(im::InputInt(EfRow(LBL("Position X")), &p[0], 0, 0)) markModified();
+			if(im::InputInt(EfRow(LBL("Position Y")), &p[1], 0, 0)) markModified();
 
 			// Type-specific parameters
 			if(no == 1) { // Jump effect
-				im::Text("--- Jump Effect ---");
-				im::SetNextItemWidth(width);
-				im::DragInt("Duration", &p[2]);
+				EfSection(TXT("--- Jump Effect ---"));
+				im::DragInt(EfRow(LBL("Duration")), &p[2]);
 				if(im::IsItemEdited()) {
 				if (frameData && patternIndex >= 0) frameData->mark_modified(patternIndex);
 			}
 			if(im::IsItemDeactivatedAfterEdit()) {
 				markModified();
 			}
-				im::SetNextItemWidth(width);
-				im::DragInt("Size", &p[3]);
+				im::DragInt(EfRow(LBL("Size")), &p[3]);
 				if(im::IsItemEdited()) {
 				if (frameData && patternIndex >= 0) frameData->mark_modified(patternIndex);
 			}
 			if(im::IsItemDeactivatedAfterEdit()) {
 				markModified();
 			}
-				im::SetNextItemWidth(width);
-				im::DragInt("Growth rate", &p[4]);
+				im::DragInt(EfRow(LBL("Growth rate")), &p[4]);
 				if(im::IsItemEdited()) {
 				if (frameData && patternIndex >= 0) frameData->mark_modified(patternIndex);
 			}
@@ -75,9 +72,8 @@ static inline void DrawEffectPreset_Type3(Frame_EF& effect, FrameData* frameData
 				markModified();
 			}
 			} else if(no == 3 || no == 9) { // Hitsparks
-				im::Text("--- Hitspark ---");
-				im::SetNextItemWidth(width);
-				im::DragInt("Intensity", &p[2]);
+				EfSection(TXT("--- Hitspark ---"));
+				im::DragInt(EfRow(LBL("Intensity")), &p[2]);
 				if(im::IsItemEdited()) {
 				if (frameData && patternIndex >= 0) frameData->mark_modified(patternIndex);
 			}
@@ -85,45 +81,39 @@ static inline void DrawEffectPreset_Type3(Frame_EF& effect, FrameData* frameData
 				markModified();
 			}
 			} else if(no >= 27 && no <= 30) { // Dust clouds
-				im::Text("--- Dust Cloud ---");
-				im::SetNextItemWidth(width);
-				im::DragInt("X speed", &p[2]);
+				EfSection(TXT("--- Dust Cloud ---"));
+				im::DragInt(EfRow(LBL("X speed")), &p[2]);
 				if(im::IsItemEdited()) {
 				if (frameData && patternIndex >= 0) frameData->mark_modified(patternIndex);
 			}
 			if(im::IsItemDeactivatedAfterEdit()) {
 				markModified();
 			}
-				im::SetNextItemWidth(width);
-				im::DragInt("Y speed", &p[3]);
+				im::DragInt(EfRow(LBL("Y speed")), &p[3]);
 				if(im::IsItemEdited()) {
 				if (frameData && patternIndex >= 0) frameData->mark_modified(patternIndex);
 			}
 			if(im::IsItemDeactivatedAfterEdit()) {
 				markModified();
 			}
-				im::SetNextItemWidth(width);
-				im::DragInt("Duration", &p[4]);
+				im::DragInt(EfRow(LBL("Duration")), &p[4]);
 				if(im::IsItemEdited()) {
 				if (frameData && patternIndex >= 0) frameData->mark_modified(patternIndex);
 			}
 			if(im::IsItemDeactivatedAfterEdit()) {
 				markModified();
 			}
-				im::SetNextItemWidth(width);
-				if(im::Combo("Color", &p[5], "0: Brown\0001: Black\0002: Purple\0003: White\000")) {
+				if(i18n::Combo(EfRow(LBL("Color")), &p[5], "0: Brown\0001: Black\0002: Purple\0003: White\000")) {
 					markModified();
 				}
-				im::SetNextItemWidth(width);
-				im::DragInt("Flags", &p[6]);
+				im::DragInt(EfRow(LBL("Flags")), &p[6]);
 				if(im::IsItemEdited()) {
 				if (frameData && patternIndex >= 0) frameData->mark_modified(patternIndex);
 			}
 			if(im::IsItemDeactivatedAfterEdit()) {
 				markModified();
 			}
-				im::SetNextItemWidth(width);
-				im::DragInt("Amount", &p[7]);
+				im::DragInt(EfRow(LBL("Amount")), &p[7]);
 				if(im::IsItemEdited()) {
 				if (frameData && patternIndex >= 0) frameData->mark_modified(patternIndex);
 			}
@@ -132,7 +122,7 @@ static inline void DrawEffectPreset_Type3(Frame_EF& effect, FrameData* frameData
 			}
 	} else {
 		// Generic
-		im::Text("Parameters:");
+		im::Text(TXT("Parameters:"));
 		if(im::InputScalarN("##params", ImGuiDataType_S32, p, 6, NULL, NULL, "%d", 0)) {
 			markModified();
 		}

@@ -1,0 +1,13 @@
+mbtl_patctrl_chr001_p238f10_z1: raw 3.25 / 9.0%  lit 3.25 / 9.0%  band+-1 2.50 / 7.7%  (34044 px, refine +0,+0
+mbtl_patctrl_chr001_p277f0_z1: raw 0.00 / 0.0%  lit 0.00 / 0.0%  band+-1 0.00 / 0.0%  (9876 px, refine +0,+0) 
+mbtl_flipV_chr001_p157f2_z1: raw 1.28 / 3.6%  lit 1.28 / 3.6%  band+-1 0.82 / 0.6%  (49686 px, refine +0,+0)  
+mbtl_flipV_chr001_p157f2_solo_s8_z1: raw 0.79 / 3.6%  lit 0.79 / 3.6%  band+-1 0.55 / 1.1%  (43965 px, refine 
+mbtl_flipV_chr001_p157f2_solo_s456_z1: raw 0.75 / 0.8%  lit 0.75 / 0.8%  band+-1 0.70 / 0.5%  (13156 px, refin
+-- p157 (zoom 1.5, chr001 raw-fitted offset) split by the solo shots' coverage
+footprint px 35346  lit 4.48  raw 4.46
+mbtl_flipV_chr001_p157f2_solo_s456           px  12925  lit 8.94 (share 73.1%)  raw 8.97 (share 73.5%)
+(none of these shots)                        px  22421  lit 1.90 (share 26.9%)  raw 1.86 (share 26.5%)
+-- p157 zoom 1 split
+footprint px 49686  lit 1.33  raw 1.28
+mbtl_flipV_chr001_p157f2_solo_s456_z1        px  12871  lit 0.81 (share 15.7%)  raw 0.71 (share 14.4%)
+(none of these shots)                        px  36815  lit 1.52 (share 84.3%)  raw 1.48 (share 85.6%)

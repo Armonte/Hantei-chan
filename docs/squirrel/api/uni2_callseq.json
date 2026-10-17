@@ -1,0 +1,6355 @@
+{
+"(root/unbound:CSquirrel_ctor).SQ_LoadString": {
+"wrapper_seq": [
+"sq_getuserdata",
+"sq_tostring",
+"sq_getstring",
+"sq_pop",
+"?",
+"_invalid_parameter_noinfo_noreturn",
+"??3@YAXPAXI@Z",
+"sub_4125E0",
+"sub_419130",
+"_invalid_parameter_noinfo_noreturn",
+"??3@YAXPAXI@Z",
+"@__security_check_cookie@4",
+"@__security_check_cookie@4",
+"@__security_check_cookie@4"
+]
+},
+"(root/unbound:CSquirrel_ctor).__dofile__": {
+"wrapper_seq": [
+"sq_getuserdata",
+"sq_tostring",
+"sq_getstring",
+"sq_pop",
+"?",
+"sq_pushinteger"
+]
+},
+"SeFunc.GetParam": {
+"wrapper_seq": [
+"sq_getuserdata",
+"sq_getinteger",
+"?",
+"sq_pushinteger"
+]
+},
+"SeFunc.SetParam": {
+"wrapper_seq": [
+"sq_getuserdata",
+"sq_getinteger",
+"sq_getinteger",
+"?"
+]
+},
+"BCom.Move_Jump": {
+"wrapper_seq": [
+"sq_getuserdata",
+"Sqrat_ObjectFromStack",
+"?",
+"sub_45EE70",
+"sq_pushinteger",
+"@__security_check_cookie@4"
+]
+},
+"BCom.Move_Next": {
+"wrapper_seq": [
+"sq_getuserdata",
+"?",
+"sq_pushinteger"
+]
+},
+"BCom.Move_End": {
+"wrapper_seq": [
+"sq_getuserdata",
+"Sqrat_ObjectFromStack",
+"?",
+"sub_45EE70",
+"sq_pushinteger",
+"@__security_check_cookie@4"
+]
+},
+"BCom.GetMoveTag": {
+"wrapper_seq": [
+"sq_getuserdata",
+"?",
+"sq_pushstring"
+]
+},
+"BCom.SetReversalID": {
+"wrapper_seq": [
+"sq_getuserdata",
+"sq_getinteger",
+"?",
+"sq_pushinteger"
+]
+},
+"BCom.Tutorial_GetSkillPos": {
+"wrapper_seq": [
+"sq_getuserdata",
+"?",
+"sq_pushinteger"
+]
+},
+"BCom.GetStatus": {
+"wrapper_seq": [
+"sq_getuserdata",
+"?",
+"sq_pushobject",
+"sq_createinstance",
+"sub_45EEA0",
+"dword_48492E0",
+"sq_pop",
+"sq_pushnull"
+]
+},
+"UpdateSt.GetLevel": {
+"wrapper_seq": [
+"sq_getuserdata",
+"sq_getinstanceup",
+"",
+"sq_pushinteger"
+]
+},
+"UpdateSt.GetSkill": {
+"wrapper_seq": [
+"sq_getuserdata",
+"sq_getinstanceup",
+"",
+"sq_pushinteger"
+]
+},
+"UpdateSt.GetMove": {
+"wrapper_seq": [
+"sq_getuserdata",
+"sq_getinstanceup",
+"",
+"sq_pushinteger"
+]
+},
+"UpdateSt.GetSkillTime": {
+"wrapper_seq": [
+"sq_getuserdata",
+"sq_getinstanceup",
+"",
+"sq_pushinteger"
+]
+},
+"UpdateSt.GetMoveTime": {
+"wrapper_seq": [
+"sq_getuserdata",
+"sq_getinstanceup",
+"",
+"sq_pushinteger"
+]
+},
+"UpdateSt.GetELenX": {
+"wrapper_seq": [
+"sq_getuserdata",
+"sq_getinstanceup",
+"",
+"sq_pushinteger"
+]
+},
+"UpdateSt.GetELenY": {
+"wrapper_seq": [
+"sq_getuserdata",
+"sq_getinstanceup",
+"",
+"sq_pushinteger"
+]
+},
+"UpdateSt.GetHPP": {
+"wrapper_seq": [
+"sq_getuserdata",
+"sq_getinstanceup",
+"",
+"sq_pushinteger"
+]
+},
+"UpdateSt.GetEXS": {
+"wrapper_seq": [
+"sq_getuserdata",
+"sq_getinstanceup",
+"",
+"sq_pushinteger"
+]
+},
+"UpdateSt.IsPMoveable": {
+"wrapper_seq": [
+"sq_getuserdata",
+"sq_getinstanceup",
+"",
+"sq_pushinteger"
+]
+},
+"UpdateSt.IsPBound": {
+"wrapper_seq": [
+"sq_getuserdata",
+"sq_getinstanceup",
+"",
+"sq_pushinteger"
+]
+},
+"UpdateSt.CheckPosState": {
+"wrapper_seq": [
+"sq_getuserdata",
+"sq_getinstanceup",
+"sq_getinteger",
+"",
+"sq_pushinteger"
+]
+},
+"UpdateSt.CheckPosState_Enemy": {
+"wrapper_seq": [
+"sq_getuserdata",
+"sq_getinstanceup",
+"sq_getinteger",
+"",
+"sq_pushinteger"
+]
+},
+"UpdateSt.CheckPState": {
+"wrapper_seq": [
+"sq_getuserdata",
+"sq_getinstanceup",
+"sq_getinteger",
+"",
+"sq_pushinteger"
+]
+},
+"UpdateSt.CheckEState": {
+"wrapper_seq": [
+"sq_getuserdata",
+"sq_getinstanceup",
+"sq_getinteger",
+"",
+"sq_pushinteger"
+]
+},
+"UpdateSt.GetTobiTime": {
+"wrapper_seq": [
+"sq_getuserdata",
+"sq_getinstanceup",
+"",
+"sq_pushinteger"
+]
+},
+"UpdateSt.GetComJumpLen": {
+"wrapper_seq": [
+"sq_getuserdata",
+"sq_getinstanceup",
+"",
+"sq_pushinteger"
+]
+},
+"UpdateSt.GetPlayerMuteki": {
+"wrapper_seq": [
+"sq_getuserdata",
+"sq_getinstanceup",
+"sq_getinteger",
+"",
+"sq_pushinteger"
+]
+},
+"BtlTrainingMenu.CheckTrainingDummyReplayMoveEnemy": {
+"wrapper_seq": [
+"sq_getuserdata",
+"?",
+"sq_pushinteger"
+]
+},
+"tSceneOpenSecChar.GetStatus": {
+"wrapper_seq": [
+"sq_getuserdata",
+"?",
+"sq_pushobject",
+"sq_createinstance",
+"sub_45EEA0",
+"sq_setinstanceup",
+"sq_pop",
+"sq_pushnull"
+]
+},
+"sqfunc.GetExStringText": {
+"wrapper_seq": [
+"sq_getuserdata",
+"sq_tostring",
+"sq_getstring",
+"sq_pop",
+"?",
+"sq_pushstring"
+]
+},
+"tSceneVS.GetStatus": {
+"wrapper_seq": [
+"sq_getuserdata",
+"?",
+"sq_pushobject",
+"sq_createinstance",
+"sub_45EEA0",
+"sq_setinstanceup",
+"sq_pop",
+"sq_pushnull"
+]
+},
+"tSceneWinDemo.GetStatus": {
+"wrapper_seq": [
+"sq_getuserdata",
+"?",
+"sq_pushobject",
+"sq_createinstance",
+"sub_45EEA0",
+"sq_setinstanceup",
+"sq_pop",
+"sq_pushnull"
+]
+},
+"tWinMessageTableCSVCallback.GetWinMesTableLotCallbackInfo": {
+"wrapper_seq": [
+"sq_getuserdata",
+"?",
+"sq_pushobject",
+"sq_createinstance",
+"sub_45EEA0",
+"dword_4849370",
+"sq_pop",
+"sq_pushnull"
+]
+},
+"BMvCore.GetMyCharaData": {
+"wrapper_seq": [
+"sq_getuserdata",
+"?",
+"sq_pushobject",
+"sq_createinstance",
+"sub_45EEA0",
+"dword_4849220",
+"sq_pop",
+"sq_pushnull"
+]
+},
+"BMvCore.GetCaptureCharaData": {
+"wrapper_seq": [
+"sq_getuserdata",
+"?",
+"sq_pushobject",
+"sq_createinstance",
+"sub_45EEA0",
+"dword_4849220",
+"sq_pop",
+"sq_pushnull"
+]
+},
+"BMvCore.GetParentCharaData": {
+"wrapper_seq": [
+"sq_getuserdata",
+"?",
+"sq_pushobject",
+"sq_createinstance",
+"sub_45EEA0",
+"dword_4849220",
+"sq_pop",
+"sq_pushnull"
+]
+},
+"BMvCore.GetPlayerCharaData": {
+"wrapper_seq": [
+"sq_getuserdata",
+"?",
+"sq_pushobject",
+"sq_createinstance",
+"sub_45EEA0",
+"dword_4849220",
+"sq_pop",
+"sq_pushnull"
+]
+},
+"BMvCore.GetNearEnemyCharaData": {
+"wrapper_seq": [
+"sq_getuserdata",
+"?",
+"sq_pushobject",
+"sq_createinstance",
+"sub_45EEA0",
+"dword_4849220",
+"sq_pop",
+"sq_pushnull"
+]
+},
+"BMvCore.GetEnemyCharaData": {
+"wrapper_seq": [
+"sq_getuserdata",
+"Sqrat_ObjectFromStack",
+"?",
+"sub_45EE70",
+"sub_44AF90",
+"@__security_check_cookie@4"
+]
+},
+"BMvCore.GetLastDamageCharaData": {
+"wrapper_seq": [
+"sq_getuserdata",
+"sq_getinteger",
+"?",
+"sq_pushobject",
+"sq_createinstance",
+"sub_45EEA0",
+"dword_4849220",
+"sq_pop",
+"sq_pushnull"
+]
+},
+"BMvCore.SetLastDamageCharaData": {
+"wrapper_seq": [
+"sq_getuserdata",
+"sq_getobjtypetag",
+"sq_getinstanceup",
+"?"
+]
+},
+"BMvCore.GetLastHitCharaData": {
+"wrapper_seq": [
+"sq_getuserdata",
+"sq_getinteger",
+"?",
+"sq_pushobject",
+"sq_createinstance",
+"sub_45EEA0",
+"dword_4849220",
+"sq_pop",
+"sq_pushnull"
+]
+},
+"BMvCore.GetLastCatchCharaData": {
+"wrapper_seq": [
+"sq_getuserdata",
+"sq_getinteger",
+"?",
+"sq_pushobject",
+"sq_createinstance",
+"sub_45EEA0",
+"dword_4849220",
+"sq_pop",
+"sq_pushnull"
+]
+},
+"BMvCore.CallEntryBCCachePreTransfer": {
+"wrapper_seq": [
+"sq_getuserdata",
+"Sqrat_ObjectFromStack",
+"?",
+"sub_45EE70",
+"sq_pushinteger",
+"@__security_check_cookie@4"
+]
+},
+"BMvCore.Hiskoha_CallSwitch": {
+"wrapper_seq": [
+"sq_getuserdata",
+"?",
+"sq_pushinteger"
+]
+},
+"BMvCore.GetTagStatus": {
+"wrapper_seq": [
+"sq_getuserdata",
+"?",
+"sq_pushinteger"
+]
+},
+"BMvCore.GetCharaNo": {
+"wrapper_seq": [
+"sq_getuserdata",
+"?",
+"sq_pushinteger"
+]
+},
+"BMvCore.GetBossFlag": {
+"wrapper_seq": [
+"sq_getuserdata",
+"?",
+"sq_pushinteger"
+]
+},
+"BMvCore.GetBossRushFlag": {
+"wrapper_seq": [
+"sq_getuserdata",
+"?",
+"sq_pushinteger"
+]
+},
+"BMvCore.VsScreen_GetCharaNo": {
+"wrapper_seq": [
+"sq_getuserdata",
+"?",
+"sq_pushinteger"
+]
+},
+"BMvCore.GetActiveCharaData": {
+"wrapper_seq": [
+"sq_getuserdata",
+"?",
+"sq_pushobject",
+"sq_createinstance",
+"sub_45EEA0",
+"dword_4849220",
+"sq_pop",
+"sq_pushnull"
+]
+},
+"BMvCore.GetPertnerCharaData": {
+"wrapper_seq": [
+"sq_getuserdata",
+"?",
+"sq_pushobject",
+"sq_createinstance",
+"sub_45EEA0",
+"dword_4849220",
+"sq_pop",
+"sq_pushnull"
+]
+},
+"BMvCore.PushCharaData": {
+"wrapper_seq": [
+"sq_getuserdata",
+"sq_getobjtypetag",
+"sq_getinstanceup",
+"?",
+"sq_pushinteger"
+]
+},
+"BMvCore.PopCharaData": {
+"wrapper_seq": [
+"sq_getuserdata",
+"?",
+"sq_pushinteger"
+]
+},
+"BMvCore.GetParamCharaData": {
+"wrapper_seq": [
+"sq_getuserdata",
+"sq_getinteger",
+"?",
+"sq_pushobject",
+"sq_createinstance",
+"sub_45EEA0",
+"dword_4849220",
+"sq_pop",
+"sq_pushnull"
+]
+},
+"BMvCore.IsHan6Squirrel": {
+"wrapper_seq": [
+"sq_getuserdata",
+"?",
+"sq_pushinteger"
+]
+},
+"CCharaData.push": {
+"wrapper_seq": [
+"sq_getuserdata",
+"sq_getinstanceup",
+"",
+"sq_pushinteger"
+]
+},
+"CCharaData.pop": {
+"wrapper_seq": [
+"sq_getuserdata",
+"sq_getinstanceup",
+"",
+"sq_pushinteger"
+]
+},
+"CCharaData.isdone": {
+"wrapper_seq": [
+"sq_getuserdata",
+"sq_getinstanceup",
+"",
+"sq_pushinteger"
+]
+},
+"CCharaData.isPlayer": {
+"wrapper_seq": [
+"sq_getuserdata",
+"sq_getinstanceup",
+"",
+"sq_pushinteger"
+]
+},
+"CFindObject.SetFirst": {
+"wrapper_seq": [
+"sq_getuserdata",
+"sq_getinstanceup",
+""
+]
+},
+"CFindObject.Get": {
+"wrapper_seq": [
+"sq_getuserdata",
+"sq_getinstanceup",
+"sq_getinteger",
+"",
+"sq_pushobject",
+"sq_createinstance",
+"sub_45EEA0",
+"dword_4849220",
+"sq_pop",
+"sq_pushnull"
+]
+},
+"tDDC.Kirifuda_Add": {
+"wrapper_seq": [
+"sq_getuserdata",
+"sq_getinteger",
+"?",
+"sq_pushinteger"
+]
+},
+"tDDC.Kirifuda_GetValue": {
+"wrapper_seq": [
+"sq_getuserdata",
+"?",
+"sq_pushinteger"
+]
+},
+"tDDC.Kirifuda_GetMax": {
+"wrapper_seq": [
+"sq_getuserdata",
+"?",
+"sq_pushinteger"
+]
+},
+"tDDC.Kirifuda_TimeAdd": {
+"wrapper_seq": [
+"sq_getuserdata",
+"sq_getinteger",
+"sq_getinteger",
+"?",
+"sq_pushinteger"
+]
+},
+"tDDC.Kirifuda_CheckTime": {
+"wrapper_seq": [
+"sq_getuserdata",
+"?",
+"sq_pushinteger"
+]
+},
+"tDDC.Kirifuda_CheckStatus": {
+"wrapper_seq": [
+"sq_getuserdata",
+"?",
+"sq_pushinteger"
+]
+},
+"tDDC.Kirifuda_SetTimeValue": {
+"wrapper_seq": [
+"sq_getuserdata",
+"sq_getinteger",
+"sq_getinteger",
+"?"
+]
+},
+"tDDC.Kirifuda_GetTime": {
+"wrapper_seq": [
+"sq_getuserdata",
+"?",
+"sq_pushinteger"
+]
+},
+"tDDC.Kirifuda_SetInstallCount": {
+"wrapper_seq": [
+"sq_getuserdata",
+"sq_getinteger",
+"?"
+]
+},
+"tDDC.Kirifuda_TimeDamageMinus": {
+"wrapper_seq": [
+"sq_getuserdata",
+"sq_getinteger",
+"?"
+]
+},
+"tDDC.Kirifuda_FinalizeProc": {
+"wrapper_seq": [
+"sq_getuserdata",
+"?",
+"sq_pushinteger"
+]
+},
+"tDDC.Kirifuda_TimeClear": {
+"wrapper_seq": [
+"sq_getuserdata",
+"?"
+]
+},
+"tDDC.Kirifuda_SubMax": {
+"wrapper_seq": [
+"sq_getuserdata",
+"?",
+"sq_pushinteger"
+]
+},
+"tDDC.KirifudaWatch_SetEndPalette": {
+"wrapper_seq": [
+"sq_getuserdata",
+"sq_getinteger",
+"sq_getinteger",
+"?"
+]
+},
+"tDDC.KirifudaWatch_SetParam": {
+"wrapper_seq": [
+"sq_getuserdata",
+"sq_getinteger",
+"sq_getinteger",
+"?"
+]
+},
+"tDDC.KirifudaWatch_GetParam": {
+"wrapper_seq": [
+"sq_getuserdata",
+"sq_getinteger",
+"?",
+"sq_pushinteger"
+]
+},
+"tDDC.Blast_AddPoint": {
+"wrapper_seq": [
+"sq_getuserdata",
+"sq_getinteger",
+"?",
+"sq_pushinteger"
+]
+},
+"tDDC.Blast_IsUse": {
+"wrapper_seq": [
+"sq_getuserdata",
+"?",
+"sq_pushinteger"
+]
+},
+"tDDC.Blast_Use": {
+"wrapper_seq": [
+"sq_getuserdata",
+"sq_getinteger",
+"?",
+"sq_pushinteger"
+]
+},
+"tDDC.Blast_SetParam": {
+"wrapper_seq": [
+"sq_getuserdata",
+"Sqrat_ObjectFromStack",
+"?",
+"sub_45EE70",
+"sq_pushinteger",
+"@__security_check_cookie@4"
+]
+},
+"tDDC.Blast_SetFailed": {
+"wrapper_seq": [
+"sq_getuserdata",
+"sq_getinteger",
+"?",
+"sq_pushinteger"
+]
+},
+"tDDC.Blast_GetUseMode": {
+"wrapper_seq": [
+"sq_getuserdata",
+"?",
+"sq_pushinteger"
+]
+},
+"tDDC.Blast_CheckClimaxMode": {
+"wrapper_seq": [
+"sq_getuserdata",
+"?",
+"sq_pushinteger"
+]
+},
+"tDDC.Blast_EndClimaxMode": {
+"wrapper_seq": [
+"sq_getuserdata",
+"?",
+"sq_pushinteger"
+]
+},
+"tDDC.Blast_SetClimaxTime": {
+"wrapper_seq": [
+"sq_getuserdata",
+"sq_getinteger",
+"sq_getinteger",
+"?",
+"sq_pushinteger"
+]
+},
+"tDDC.Heat_CheckMode": {
+"wrapper_seq": [
+"sq_getuserdata",
+"?",
+"sq_pushinteger"
+]
+},
+"tDDC.Heat_GetTimeCost": {
+"wrapper_seq": [
+"sq_getuserdata",
+"?",
+"sq_pushinteger"
+]
+},
+"tDDC.Heat_UseGauge": {
+"wrapper_seq": [
+"sq_getuserdata",
+"?",
+"sq_pushinteger"
+]
+},
+"tDDC.Moon_GetType": {
+"wrapper_seq": [
+"sq_getuserdata",
+"?",
+"sq_pushinteger"
+]
+},
+"tDDC.Moon_SetType": {
+"wrapper_seq": [
+"sq_getuserdata",
+"sq_getinteger",
+"?",
+"sq_pushinteger"
+]
+},
+"tDDC.Moon_GetValue": {
+"wrapper_seq": [
+"sq_getuserdata",
+"?",
+"sq_pushinteger"
+]
+},
+"tDDC.Moon_SetValue": {
+"wrapper_seq": [
+"sq_getuserdata",
+"sq_getinteger",
+"?",
+"sq_pushinteger"
+]
+},
+"tDDC.Moon_AddValue": {
+"wrapper_seq": [
+"sq_getuserdata",
+"sq_getinteger",
+"?",
+"sq_pushinteger"
+]
+},
+"tDDC.Moon_ChangeMoonDriveTimeSpeed": {
+"wrapper_seq": [
+"sq_getuserdata",
+"sq_getinteger",
+"?",
+"sq_pushinteger"
+]
+},
+"tDDC.Moon_MoonDriveStart": {
+"wrapper_seq": [
+"sq_getuserdata",
+"Sqrat_ObjectFromStack",
+"?",
+"sub_45EE70",
+"sq_pushinteger",
+"@__security_check_cookie@4"
+]
+},
+"tDDC.Moon_MoonDriveEnd": {
+"wrapper_seq": [
+"sq_getuserdata",
+"?",
+"sq_pushinteger"
+]
+},
+"tDDC.Moon_MoonDriveIsInfinite": {
+"wrapper_seq": [
+"sq_getuserdata",
+"?",
+"sq_pushinteger"
+]
+},
+"tDDC.ReverseCorrect_Set": {
+"wrapper_seq": [
+"sq_getuserdata",
+"Sqrat_ObjectFromStack",
+"?",
+"sub_45EE70",
+"sq_pushinteger",
+"@__security_check_cookie@4"
+]
+},
+"tDDC.Support_IsUse": {
+"wrapper_seq": [
+"sq_getuserdata",
+"?",
+"sq_pushinteger"
+]
+},
+"tDDC.Support_Use": {
+"wrapper_seq": [
+"sq_getuserdata",
+"?",
+"sq_pushinteger"
+]
+},
+"tDDC.Support_SetFailed": {
+"wrapper_seq": [
+"sq_getuserdata",
+"sq_getinteger",
+"?",
+"sq_pushinteger"
+]
+},
+"tDDC.Support_StartRecast": {
+"wrapper_seq": [
+"sq_getuserdata",
+"sq_getinteger",
+"?",
+"sq_pushinteger"
+]
+},
+"tDDC.Support_SetPowerupRecastMax": {
+"wrapper_seq": [
+"sq_getuserdata",
+"sq_getinteger",
+"?"
+]
+},
+"tDDC.Support_GetCallCount": {
+"wrapper_seq": [
+"sq_getuserdata",
+"?",
+"sq_pushinteger"
+]
+},
+"tDDC.Support_SetRecastCost": {
+"wrapper_seq": [
+"sq_getuserdata",
+"sq_getinteger",
+"?",
+"sq_pushinteger"
+]
+},
+"tDDC.Support_GetRecastCost": {
+"wrapper_seq": [
+"sq_getuserdata",
+"?",
+"sq_pushinteger"
+]
+},
+"tDDC.Support_GetType": {
+"wrapper_seq": [
+"sq_getuserdata",
+"?",
+"sq_pushinteger"
+]
+},
+"tDDC.Support_GetCharaNo": {
+"wrapper_seq": [
+"sq_getuserdata",
+"?",
+"sq_pushinteger"
+]
+},
+"tDDC.Support_GetSelectColor": {
+"wrapper_seq": [
+"sq_getuserdata",
+"?",
+"sq_pushinteger"
+]
+},
+"tDDC.Support_SetMessage": {
+"wrapper_seq": [
+"sq_getuserdata",
+"sq_getinteger",
+"sq_getinteger",
+"sq_tostring",
+"sq_getstring",
+"sq_pop",
+"?",
+"sq_pushinteger"
+]
+},
+"tDDC.ExJem_Attack": {
+"wrapper_seq": [
+"sq_getuserdata",
+"sq_getinteger",
+"sq_getinteger",
+"?"
+]
+},
+"tDDC.Jem_AddCount": {
+"wrapper_seq": [
+"sq_getuserdata",
+"sq_getinteger",
+"?"
+]
+},
+"tDDC.Jem_GetRunFlag": {
+"wrapper_seq": [
+"sq_getuserdata",
+"sq_getinteger",
+"?",
+"sq_pushinteger"
+]
+},
+"tDDC.Jem_IsWorking": {
+"wrapper_seq": [
+"sq_getuserdata",
+"sq_getinteger",
+"?",
+"sq_pushinteger"
+]
+},
+"tDDC.Jem_IsWorkingEff": {
+"wrapper_seq": [
+"sq_getuserdata",
+"sq_getinteger",
+"?",
+"sq_pushinteger"
+]
+},
+"tDDC.Jem_SetMessage": {
+"wrapper_seq": [
+"sq_getuserdata",
+"sq_getinteger",
+"sq_tostring",
+"sq_getstring",
+"sq_pop",
+"?",
+"sq_pushinteger"
+]
+},
+"tDDC.Jem_SetMessageEx": {
+"wrapper_seq": [
+"sq_getuserdata",
+"sq_getinteger",
+"sq_tostring",
+"sq_getstring",
+"sq_pop",
+"sq_getinteger",
+"sq_getinteger",
+"?",
+"sq_pushinteger"
+]
+},
+"tDDC.HP_Add": {
+"wrapper_seq": [
+"sq_getuserdata",
+"Sqrat_ObjectFromStack",
+"?",
+"sub_45EE70",
+"sq_pushinteger",
+"@__security_check_cookie@4"
+]
+},
+"tDDC.HP_SourceDamMode": {
+"wrapper_seq": [
+"sq_getuserdata",
+"Sqrat_ObjectFromStack",
+"?",
+"sub_45EE70",
+"sq_pushinteger",
+"@__security_check_cookie@4"
+]
+},
+"tDDC.SkillCountPlus": {
+"wrapper_seq": [
+"sq_getuserdata",
+"sq_getinteger",
+"?"
+]
+},
+"tDDC.AchievementSousai": {
+"wrapper_seq": [
+"sq_getuserdata",
+"?"
+]
+},
+"tDDC.PowerUpSys_GetCount": {
+"wrapper_seq": [
+"sq_getuserdata",
+"sq_getinteger",
+"?",
+"sq_pushinteger"
+]
+},
+"tDDC.PowerUpSys_GetLast": {
+"wrapper_seq": [
+"sq_getuserdata",
+"?",
+"sq_pushinteger"
+]
+},
+"tDDC.PowerUpSys_IsDouble": {
+"wrapper_seq": [
+"sq_getuserdata",
+"sq_getinteger",
+"?",
+"sq_pushinteger"
+]
+},
+"tDDC.SubSp_GetChara": {
+"wrapper_seq": [
+"sq_getuserdata",
+"?",
+"sq_pushinteger"
+]
+},
+"tDDC.SubSp_GetType": {
+"wrapper_seq": [
+"sq_getuserdata",
+"?",
+"sq_pushinteger"
+]
+},
+"tDDC.IsSingleMode": {
+"wrapper_seq": [
+"sq_getuserdata",
+"?",
+"sq_pushinteger"
+]
+},
+"tDDC.IsNotPlayMode": {
+"wrapper_seq": [
+"sq_getuserdata",
+"?",
+"sq_pushinteger"
+]
+},
+"tDDC.IsNotEnemySide": {
+"wrapper_seq": [
+"sq_getuserdata",
+"?",
+"sq_pushinteger"
+]
+},
+"BMvEff.Random": {
+"wrapper_seq": [
+"sq_getuserdata",
+"?",
+"sq_pushinteger"
+]
+},
+"BMvEff.Random_F": {
+"wrapper_seq": [
+"sq_getuserdata",
+"?",
+"sq_pushfloat"
+]
+},
+"BMvEff.Random_Limit": {
+"wrapper_seq": [
+"sq_getuserdata",
+"sq_getinteger",
+"?",
+"sq_pushinteger"
+]
+},
+"BMvEff.Random_FAbs": {
+"wrapper_seq": [
+"sq_getuserdata",
+"sq_getinteger",
+"?",
+"sq_pushfloat"
+]
+},
+"BMvEff.Random_PointRect": {
+"wrapper_seq": [
+"sq_getuserdata",
+"Sqrat_ObjectFromStack",
+"?",
+"sub_45EE70",
+"sub_44CE50",
+"@__security_check_cookie@4"
+]
+},
+"BMvEff.Random_PointRad": {
+"wrapper_seq": [
+"sq_getuserdata",
+"Sqrat_ObjectFromStack",
+"?",
+"sub_45EE70",
+"sub_44CE50",
+"@__security_check_cookie@4"
+]
+},
+"BMvEff.StdCall": {
+"wrapper_seq": [
+"sq_getuserdata",
+"Sqrat_ObjectFromStack",
+"?",
+"sub_45EE70",
+"sq_pushinteger",
+"@__security_check_cookie@4"
+]
+},
+"BMvEff.ThrowRelease": {
+"wrapper_seq": [
+"sq_getuserdata",
+"Sqrat_ObjectFromStack",
+"?",
+"sub_45EE70",
+"sq_pushinteger",
+"@__security_check_cookie@4"
+]
+},
+"BMvEff.ThrowParam": {
+"wrapper_seq": [
+"sq_getuserdata",
+"Sqrat_ObjectFromStack",
+"?",
+"sub_45EE70",
+"sq_pushinteger",
+"@__security_check_cookie@4"
+]
+},
+"BMvEff.ThrowChara_SetJoint": {
+"wrapper_seq": [
+"sq_getuserdata",
+"sq_getinteger",
+"?",
+"sq_pushinteger"
+]
+},
+"BMvEff.ThrowChara_SetCamera": {
+"wrapper_seq": [
+"sq_getuserdata",
+"sq_getinteger",
+"?",
+"sq_pushinteger"
+]
+},
+"BMvEff.ThrowChara_Transfer": {
+"wrapper_seq": [
+"sq_getuserdata",
+"Sqrat_ObjectFromStack",
+"?",
+"sub_45EE70",
+"sq_pushinteger",
+"@__security_check_cookie@4"
+]
+},
+"BMvEff.CapturePlayer": {
+"wrapper_seq": [
+"sq_getuserdata",
+"Sqrat_ObjectFromStack",
+"?",
+"sub_45EE70",
+"sq_pushinteger",
+"@__security_check_cookie@4"
+]
+},
+"BMvEff.SetHitLimitCancel": {
+"wrapper_seq": [
+"sq_getuserdata",
+"sq_getinteger",
+"?",
+"sq_pushinteger"
+]
+},
+"BMvEff.GetFrameIDNum": {
+"wrapper_seq": [
+"sq_getuserdata",
+"sq_getinteger",
+"?",
+"sq_pushinteger"
+]
+},
+"BMvEff.GetFrameIDNum_Pat": {
+"wrapper_seq": [
+"sq_getuserdata",
+"sq_getinteger",
+"sq_getinteger",
+"?",
+"sq_pushinteger"
+]
+},
+"BMvEff.GetPatternNum": {
+"wrapper_seq": [
+"sq_getuserdata",
+"Sqrat_ObjectFromStack",
+"?",
+"sub_45EE70",
+"sq_pushinteger",
+"@__security_check_cookie@4"
+]
+},
+"BMvEff.CreateObject": {
+"wrapper_seq": [
+"sq_getuserdata",
+"Sqrat_ObjectFromStack",
+"?",
+"sub_45EE70",
+"sub_44AF90",
+"@__security_check_cookie@4"
+]
+},
+"BMvEff.SetObjectFlags": {
+"wrapper_seq": [
+"sq_getuserdata",
+"Sqrat_ObjectFromStack",
+"?",
+"sub_45EE70",
+"sq_pushinteger",
+"@__security_check_cookie@4"
+]
+},
+"BMvEff.CheckObjectFlags": {
+"wrapper_seq": [
+"sq_getuserdata",
+"Sqrat_ObjectFromStack",
+"?",
+"sub_45EE70",
+"sq_pushinteger",
+"@__security_check_cookie@4"
+]
+},
+"BMvEff.SetObjectRender": {
+"wrapper_seq": [
+"sq_getuserdata",
+"Sqrat_ObjectFromStack",
+"?",
+"sub_45EE70",
+"@__security_check_cookie@4"
+]
+},
+"BMvEff.EraseObjectFlags": {
+"wrapper_seq": [
+"sq_getuserdata",
+"Sqrat_ObjectFromStack",
+"?",
+"sub_45EE70",
+"sq_pushinteger",
+"@__security_check_cookie@4"
+]
+},
+"BMvEff.ObjProcFlags_Set": {
+"wrapper_seq": [
+"sq_getuserdata",
+"Sqrat_ObjectFromStack",
+"?",
+"sub_45EE70",
+"sq_pushinteger",
+"@__security_check_cookie@4"
+]
+},
+"BMvEff.ObjProcFlags_Erase": {
+"wrapper_seq": [
+"sq_getuserdata",
+"Sqrat_ObjectFromStack",
+"?",
+"sub_45EE70",
+"sq_pushinteger",
+"@__security_check_cookie@4"
+]
+},
+"BMvEff.ObjType_Set": {
+"wrapper_seq": [
+"sq_getuserdata",
+"Sqrat_ObjectFromStack",
+"?",
+"sub_45EE70",
+"sq_pushinteger",
+"@__security_check_cookie@4"
+]
+},
+"BMvEff.SetCamera_Quake": {
+"wrapper_seq": [
+"sq_getuserdata",
+"Sqrat_ObjectFromStack",
+"?",
+"sub_45EE70",
+"sq_pushinteger",
+"@__security_check_cookie@4"
+]
+},
+"BMvEff.SetCamera_Focus": {
+"wrapper_seq": [
+"sq_getuserdata",
+"Sqrat_ObjectFromStack",
+"?",
+"sub_45EE70",
+"sq_pushinteger",
+"@__security_check_cookie@4"
+]
+},
+"BMvEff.SetCamera_FocusKeep": {
+"wrapper_seq": [
+"sq_getuserdata",
+"sq_getinteger",
+"?"
+]
+},
+"BMvEff.SetCamera_Clipping": {
+"wrapper_seq": [
+"sq_getuserdata",
+"sq_getinteger",
+"?"
+]
+},
+"BMvEff.GetCamera_Clipping": {
+"wrapper_seq": [
+"sq_getuserdata",
+"?",
+"sq_pushinteger"
+]
+},
+"BMvEff.SetCamera_UpdateFlag": {
+"wrapper_seq": [
+"sq_getuserdata",
+"sq_getinteger",
+"sq_getinteger",
+"?"
+]
+},
+"BMvEff.ResetCamera": {
+"wrapper_seq": [
+"sq_getuserdata",
+"?"
+]
+},
+"BMvEff.UpdateCamera": {
+"wrapper_seq": [
+"sq_getuserdata",
+"?"
+]
+},
+"BMvEff.ResetViewCamera": {
+"wrapper_seq": [
+"sq_getuserdata",
+"?"
+]
+},
+"BMvEff.CameraShift_Set": {
+"wrapper_seq": [
+"sq_getuserdata",
+"Sqrat_ObjectFromStack",
+"?",
+"sub_45EE70",
+"@__security_check_cookie@4"
+]
+},
+"BMvEff.CameraShift_Clear": {
+"wrapper_seq": [
+"sq_getuserdata",
+"?"
+]
+},
+"BMvEff.SetStopTime": {
+"wrapper_seq": [
+"sq_getuserdata",
+"Sqrat_ObjectFromStack",
+"?",
+"sub_45EE70",
+"sq_pushinteger",
+"@__security_check_cookie@4"
+]
+},
+"BMvEff.SetStopTimeAll": {
+"wrapper_seq": [
+"sq_getuserdata",
+"Sqrat_ObjectFromStack",
+"?",
+"sub_45EE70",
+"sq_pushinteger",
+"@__security_check_cookie@4"
+]
+},
+"BMvEff.IsMyStopTime": {
+"wrapper_seq": [
+"sq_getuserdata",
+"sq_getinteger",
+"?",
+"sq_pushinteger"
+]
+},
+"BMvEff.ForceKO": {
+"wrapper_seq": [
+"sq_getuserdata",
+"?"
+]
+},
+"BMvEff.GetKOMode": {
+"wrapper_seq": [
+"sq_getuserdata",
+"?",
+"sq_pushinteger"
+]
+},
+"BMvEff.GetKOFadeOutTime": {
+"wrapper_seq": [
+"sq_getuserdata",
+"?",
+"sq_pushinteger"
+]
+},
+"BMvEff.IsKOSkip": {
+"wrapper_seq": [
+"sq_getuserdata",
+"?",
+"sq_pushinteger"
+]
+},
+"BMvEff.IsKoFinishType": {
+"wrapper_seq": [
+"sq_getuserdata",
+"?",
+"sq_pushinteger"
+]
+},
+"BMvEff.SetNoDamageFlag": {
+"wrapper_seq": [
+"sq_getuserdata",
+"sq_getinteger",
+"?"
+]
+},
+"BMvEff.SetHpGauge": {
+"wrapper_seq": [
+"sq_getuserdata",
+"Sqrat_ObjectFromStack",
+"?",
+"sub_45EE70",
+"sq_pushinteger",
+"@__security_check_cookie@4"
+]
+},
+"BMvEff.SetSpGauge": {
+"wrapper_seq": [
+"sq_getuserdata",
+"Sqrat_ObjectFromStack",
+"?",
+"sub_45EE70",
+"sq_pushinteger",
+"@__security_check_cookie@4"
+]
+},
+"BMvEff.SpGauge_SetLimit": {
+"wrapper_seq": [
+"sq_getuserdata",
+"Sqrat_ObjectFromStack",
+"?",
+"sub_45EE70",
+"sq_pushinteger",
+"@__security_check_cookie@4"
+]
+},
+"BMvEff.SpGauge_SetLimitCombo": {
+"wrapper_seq": [
+"sq_getuserdata",
+"Sqrat_ObjectFromStack",
+"?",
+"sub_45EE70",
+"sq_pushinteger",
+"@__security_check_cookie@4"
+]
+},
+"BMvEff.SpGauge_SetLimitBound": {
+"wrapper_seq": [
+"sq_getuserdata",
+"Sqrat_ObjectFromStack",
+"?",
+"sub_45EE70",
+"sq_pushinteger",
+"@__security_check_cookie@4"
+]
+},
+"BMvEff.SpGauge_SetZeroTime": {
+"wrapper_seq": [
+"sq_getuserdata",
+"Sqrat_ObjectFromStack",
+"?",
+"sub_45EE70",
+"sq_pushinteger",
+"@__security_check_cookie@4"
+]
+},
+"BMvEff.SpGauge_SetAwakens": {
+"wrapper_seq": [
+"sq_getuserdata",
+"sq_getinteger",
+"?",
+"sq_pushinteger"
+]
+},
+"BMvEff.SpGauge_GetAwakens": {
+"wrapper_seq": [
+"sq_getuserdata",
+"?",
+"sq_pushinteger"
+]
+},
+"BMvEff.SpGauge_GetPlusCorrect_ComboTimePos": {
+"wrapper_seq": [
+"sq_getuserdata",
+"?",
+"sq_pushinteger"
+]
+},
+"BMvEff.SetExist": {
+"wrapper_seq": [
+"sq_getuserdata",
+"Sqrat_ObjectFromStack",
+"?",
+"sub_45EE70",
+"@__security_check_cookie@4"
+]
+},
+"BMvEff.SetPaletteSlot": {
+"wrapper_seq": [
+"sq_getuserdata",
+"sq_getinteger",
+"sq_getinteger",
+"?"
+]
+},
+"BMvEff.GetPaletteSlot": {
+"wrapper_seq": [
+"sq_getuserdata",
+"?",
+"sq_pushinteger"
+]
+},
+"BMvEff.SetOtherPalette": {
+"wrapper_seq": [
+"sq_getuserdata",
+"sq_getinteger",
+"sq_getinteger",
+"?"
+]
+},
+"BMvEff.GetPointStatus": {
+"wrapper_seq": [
+"sq_getuserdata",
+"Sqrat_ObjectFromStack",
+"?",
+"sub_45EE70",
+"sq_pushobject",
+"sq_createinstance",
+"sub_45EEA0",
+"dword_48493BC",
+"sq_pop",
+"sq_pushnull",
+"@__security_check_cookie@4"
+]
+},
+"BMvEff.GetVector_FromAngle": {
+"wrapper_seq": [
+"sq_getuserdata",
+"Sqrat_ObjectFromStack",
+"?",
+"sub_45EE70",
+"sq_pushobject",
+"sq_createinstance",
+"sub_45EEA0",
+"dword_484924C",
+"sq_pop",
+"sq_pushnull",
+"@__security_check_cookie@4"
+]
+},
+"BMvEff.GetAngle_FromVector": {
+"wrapper_seq": [
+"sq_getuserdata",
+"Sqrat_ObjectFromStack",
+"?",
+"sub_45EE70",
+"sq_pushobject",
+"sq_createinstance",
+"sub_45EEA0",
+"dword_48493BC",
+"sq_pop",
+"sq_pushnull",
+"@__security_check_cookie@4"
+]
+},
+"BMvEff.SetBoundSt": {
+"wrapper_seq": [
+"sq_getuserdata",
+"Sqrat_ObjectFromStack",
+"?",
+"sub_45EE70",
+"sq_pushinteger",
+"@__security_check_cookie@4"
+]
+},
+"BMvEff.SetUkemiTime": {
+"wrapper_seq": [
+"sq_getuserdata",
+"Sqrat_ObjectFromStack",
+"?",
+"sub_45EE70",
+"sq_pushinteger",
+"@__security_check_cookie@4"
+]
+},
+"BMvEff.VecHitFlag_Set": {
+"wrapper_seq": [
+"sq_getuserdata",
+"sq_getinteger",
+"sq_getinteger",
+"?",
+"sq_pushinteger"
+]
+},
+"BMvEff.CheckHantei": {
+"wrapper_seq": [
+"sq_getuserdata",
+"Sqrat_ObjectFromStack",
+"?",
+"sub_45EE70",
+"sub_44AF90",
+"@__security_check_cookie@4"
+]
+},
+"BMvEff.CheckHantei2": {
+"wrapper_seq": [
+"sq_getuserdata",
+"Sqrat_ObjectFromStack",
+"?",
+"sub_45EE70",
+"sub_44AF90",
+"@__security_check_cookie@4"
+]
+},
+"BMvEff.GetHanteiRect": {
+"wrapper_seq": [
+"sq_getuserdata",
+"Sqrat_ObjectFromStack",
+"?",
+"sub_45EE70",
+"sq_pushobject",
+"sq_createinstance",
+"sub_45EEA0",
+"dword_4849250",
+"sq_pop",
+"sq_pushnull",
+"@__security_check_cookie@4"
+]
+},
+"BMvEff.IsAttackRect": {
+"wrapper_seq": [
+"sq_getuserdata",
+"?",
+"sq_pushinteger"
+]
+},
+"BMvEff.IsKuraiRect": {
+"wrapper_seq": [
+"sq_getuserdata",
+"?",
+"sq_pushinteger"
+]
+},
+"BMvEff.GetCameraPosition": {
+"wrapper_seq": [
+"sq_getuserdata",
+"Sqrat_ObjectFromStack",
+"?",
+"sub_45EE70",
+"sub_44CE50",
+"@__security_check_cookie@4"
+]
+},
+"BMvEff.GetCameraRect": {
+"wrapper_seq": [
+"sq_getuserdata",
+"Sqrat_ObjectFromStack",
+"?",
+"sub_45EE70",
+"sq_pushobject",
+"sq_createinstance",
+"sub_45EEA0",
+"dword_4849250",
+"sq_pop",
+"sq_pushnull",
+"@__security_check_cookie@4"
+]
+},
+"BMvEff.SetPlayerTimer": {
+"wrapper_seq": [
+"sq_getuserdata",
+"Sqrat_ObjectFromStack",
+"?",
+"sub_45EE70",
+"sq_pushinteger",
+"@__security_check_cookie@4"
+]
+},
+"BMvEff.GetPlayerMutekiTimer": {
+"wrapper_seq": [
+"sq_getuserdata",
+"sq_getinteger",
+"?",
+"sq_pushinteger"
+]
+},
+"BMvEff.GetPlayerMuteki": {
+"wrapper_seq": [
+"sq_getuserdata",
+"sq_getinteger",
+"?",
+"sq_pushinteger"
+]
+},
+"BMvEff.GetBoundVectorAngle": {
+"wrapper_seq": [
+"sq_getuserdata",
+"sq_getinteger",
+"?",
+"sq_pushfloat"
+]
+},
+"BMvEff.AddAttackHitNum": {
+"wrapper_seq": [
+"sq_getuserdata",
+"sq_getinteger",
+"?",
+"sq_pushinteger"
+]
+},
+"BMvEff.ClearAttackHitNum": {
+"wrapper_seq": [
+"sq_getuserdata",
+"?"
+]
+},
+"BMvEff.GetAttackHitPos": {
+"wrapper_seq": [
+"sq_getuserdata",
+"?",
+"sq_pushobject",
+"sq_createinstance",
+"sub_45EEA0",
+"dword_4849240",
+"sq_pop",
+"sq_pushnull"
+]
+},
+"BMvEff.Liberate_OK": {
+"wrapper_seq": [
+"sq_getuserdata",
+"?",
+"sq_pushinteger"
+]
+},
+"BMvEff.Liberate_Set": {
+"wrapper_seq": [
+"sq_getuserdata",
+"?"
+]
+},
+"BMvEff.Liberate_SetMinusValue": {
+"wrapper_seq": [
+"sq_getuserdata",
+"sq_getinteger",
+"?"
+]
+},
+"BMvEff.Liberate_Get": {
+"wrapper_seq": [
+"sq_getuserdata",
+"?",
+"sq_pushinteger"
+]
+},
+"BMvEff.Liberate_Calc": {
+"wrapper_seq": [
+"sq_getuserdata",
+"Sqrat_ObjectFromStack",
+"?",
+"sub_45EE70",
+"sq_pushinteger",
+"@__security_check_cookie@4"
+]
+},
+"BMvEff.Liberate_End": {
+"wrapper_seq": [
+"sq_getuserdata",
+"?"
+]
+},
+"BMvEff.Liberate_SetType": {
+"wrapper_seq": [
+"sq_getuserdata",
+"sq_getinteger",
+"?"
+]
+},
+"BMvEff.Liberate_GetType": {
+"wrapper_seq": [
+"sq_getuserdata",
+"?",
+"sq_pushinteger"
+]
+},
+"BMvEff.Liberate_GetTimeValue": {
+"wrapper_seq": [
+"sq_getuserdata",
+"?",
+"sq_pushinteger"
+]
+},
+"BMvEff.GRD_UseStock": {
+"wrapper_seq": [
+"sq_getuserdata",
+"Sqrat_ObjectFromStack",
+"?",
+"sub_45EE70",
+"sq_pushinteger",
+"@__security_check_cookie@4"
+]
+},
+"BMvEff.GRD_CheckStock": {
+"wrapper_seq": [
+"sq_getuserdata",
+"Sqrat_ObjectFromStack",
+"?",
+"sub_45EE70",
+"sq_pushinteger",
+"@__security_check_cookie@4"
+]
+},
+"BMvEff.GRD_GetJudgeResult": {
+"wrapper_seq": [
+"sq_getuserdata",
+"?",
+"sq_pushinteger"
+]
+},
+"BMvEff.GRD_GetJudgeWinCount": {
+"wrapper_seq": [
+"sq_getuserdata",
+"?",
+"sq_pushinteger"
+]
+},
+"BMvEff.GRD_IsBreakImpact": {
+"wrapper_seq": [
+"sq_getuserdata",
+"sq_getinteger",
+"?",
+"sq_pushinteger"
+]
+},
+"BMvEff.GRD_SetBreak": {
+"wrapper_seq": [
+"sq_getuserdata",
+"sq_getinteger",
+"sq_getinteger",
+"sq_getinteger",
+"?"
+]
+},
+"BMvEff.GRD_GetBreak": {
+"wrapper_seq": [
+"sq_getuserdata",
+"sq_getinteger",
+"?",
+"sq_pushinteger"
+]
+},
+"BMvEff.GRD_CorrectBreakTime": {
+"wrapper_seq": [
+"sq_getuserdata",
+"sq_getinteger",
+"sq_getinteger",
+"?"
+]
+},
+"BMvEff.GRD_ClearBreak": {
+"wrapper_seq": [
+"sq_getuserdata",
+"sq_getinteger",
+"?",
+"sq_pushinteger"
+]
+},
+"BMvEff.GRD_SetConvertBreak": {
+"wrapper_seq": [
+"sq_getuserdata",
+"Sqrat_ObjectFromStack",
+"?",
+"sub_45EE70",
+"sq_pushinteger",
+"@__security_check_cookie@4"
+]
+},
+"BMvEff.GRD_GetConvertCount": {
+"wrapper_seq": [
+"sq_getuserdata",
+"?",
+"sq_pushinteger"
+]
+},
+"BMvEff.GRD_ClearVorpal": {
+"wrapper_seq": [
+"sq_getuserdata",
+"sq_getinteger",
+"?",
+"sq_pushinteger"
+]
+},
+"BMvEff.GRD_GetTime": {
+"wrapper_seq": [
+"sq_getuserdata",
+"sq_getinteger",
+"?",
+"sq_pushinteger"
+]
+},
+"BMvEff.GRD_SetSpFlag": {
+"wrapper_seq": [
+"sq_getuserdata",
+"sq_getinteger",
+"?"
+]
+},
+"BMvEff.GRD_AddValue": {
+"wrapper_seq": [
+"sq_getuserdata",
+"Sqrat_ObjectFromStack",
+"?",
+"sub_45EE70",
+"sq_pushinteger",
+"@__security_check_cookie@4"
+]
+},
+"BMvEff.GRD_TS_SetPlusValue": {
+"wrapper_seq": [
+"sq_getuserdata",
+"Sqrat_ObjectFromStack",
+"?",
+"sub_45EE70",
+"sq_pushinteger",
+"@__security_check_cookie@4"
+]
+},
+"BMvEff.GRD_TS_AddValue": {
+"wrapper_seq": [
+"sq_getuserdata",
+"Sqrat_ObjectFromStack",
+"?",
+"sub_45EE70",
+"sq_pushinteger",
+"@__security_check_cookie@4"
+]
+},
+"BMvEff.SetPositionBufferFlag": {
+"wrapper_seq": [
+"sq_getuserdata",
+"sq_getinteger",
+"?"
+]
+},
+"BMvEff.GuardSP_Set": {
+"wrapper_seq": [
+"sq_getuserdata",
+"Sqrat_ObjectFromStack",
+"?",
+"sub_45EE70",
+"sq_pushinteger",
+"@__security_check_cookie@4"
+]
+},
+"BMvEff.GuardSP_Get": {
+"wrapper_seq": [
+"sq_getuserdata",
+"?",
+"sq_pushinteger"
+]
+},
+"BMvEff.GuardSP_Success": {
+"wrapper_seq": [
+"sq_getuserdata",
+"?",
+"sq_pushinteger"
+]
+},
+"BMvEff.ClearGuardSP_Success": {
+"wrapper_seq": [
+"sq_getuserdata",
+"?",
+"sq_pushinteger"
+]
+},
+"BMvEff.AttackInfoString_Set": {
+"wrapper_seq": [
+"sq_getuserdata",
+"Sqrat_ObjectFromStack",
+"?",
+"sub_45EE70",
+"@__security_check_cookie@4"
+]
+},
+"BMvEff.FadeProc_SetRenderFlag": {
+"wrapper_seq": [
+"sq_getuserdata",
+"sq_getinteger",
+"?"
+]
+},
+"BMvEff.FadeProc_Set": {
+"wrapper_seq": [
+"sq_getuserdata",
+"Sqrat_ObjectFromStack",
+"?",
+"sub_45EE70",
+"sq_pushinteger",
+"@__security_check_cookie@4"
+]
+},
+"BMvEff.FadeProc_Erase": {
+"wrapper_seq": [
+"sq_getuserdata",
+"Sqrat_ObjectFromStack",
+"?",
+"sub_45EE70",
+"sq_pushinteger",
+"@__security_check_cookie@4"
+]
+},
+"BMvEff.CutInProc_Set": {
+"wrapper_seq": [
+"sq_getuserdata",
+"Sqrat_ObjectFromStack",
+"?",
+"sub_45EE70",
+"sq_pushinteger",
+"@__security_check_cookie@4"
+]
+},
+"BMvEff.CutInProc_Erase": {
+"wrapper_seq": [
+"sq_getuserdata",
+"Sqrat_ObjectFromStack",
+"?",
+"sub_45EE70",
+"sq_pushinteger",
+"@__security_check_cookie@4"
+]
+},
+"BMvEff.CutInProc_SetResourceView": {
+"wrapper_seq": [
+"sq_getuserdata",
+"Sqrat_ObjectFromStack",
+"?",
+"sub_45EE70",
+"sq_pushinteger",
+"@__security_check_cookie@4"
+]
+},
+"BMvEff.SetCharaFlash": {
+"wrapper_seq": [
+"sq_getuserdata",
+"Sqrat_ObjectFromStack",
+"?",
+"sub_45EE70",
+"sq_pushinteger",
+"@__security_check_cookie@4"
+]
+},
+"BMvEff.SetCharaColor": {
+"wrapper_seq": [
+"sq_getuserdata",
+"Sqrat_ObjectFromStack",
+"?",
+"sub_45EE70",
+"sq_pushinteger",
+"@__security_check_cookie@4"
+]
+},
+"BMvEff.SetCharaDrawType": {
+"wrapper_seq": [
+"sq_getuserdata",
+"Sqrat_ObjectFromStack",
+"?",
+"sub_45EE70",
+"sq_pushinteger",
+"@__security_check_cookie@4"
+]
+},
+"BMvEff.PcAfterImage_Set": {
+"wrapper_seq": [
+"sq_getuserdata",
+"Sqrat_ObjectFromStack",
+"?",
+"sub_45EE70",
+"sq_pushinteger",
+"@__security_check_cookie@4"
+]
+},
+"BMvEff.PcAfterImage_Clear": {
+"wrapper_seq": [
+"sq_getuserdata",
+"?",
+"sq_pushinteger"
+]
+},
+"BMvEff.PcAfterImage_ClearEx": {
+"wrapper_seq": [
+"sq_getuserdata",
+"sq_getinteger",
+"?",
+"sq_pushinteger"
+]
+},
+"BMvEff.PcAuraEffect_Set": {
+"wrapper_seq": [
+"sq_getuserdata",
+"Sqrat_ObjectFromStack",
+"?",
+"sub_45EE70",
+"sq_pushinteger",
+"@__security_check_cookie@4"
+]
+},
+"BMvEff.PcAuraEffect_Clear": {
+"wrapper_seq": [
+"sq_getuserdata",
+"?",
+"sq_pushinteger"
+]
+},
+"BMvEff.Slowmotion_Set": {
+"wrapper_seq": [
+"sq_getuserdata",
+"Sqrat_ObjectFromStack",
+"?",
+"sub_45EE70",
+"sq_pushinteger",
+"@__security_check_cookie@4"
+]
+},
+"BMvEff.LinePrim_Set": {
+"wrapper_seq": [
+"sq_getuserdata",
+"Sqrat_ObjectFromStack",
+"?",
+"sub_45EE70",
+"sq_pushinteger",
+"@__security_check_cookie@4"
+]
+},
+"BMvEff.LinePrim_SetTypeParam": {
+"wrapper_seq": [
+"sq_getuserdata",
+"Sqrat_ObjectFromStack",
+"?",
+"sub_45EE70",
+"sq_pushinteger",
+"@__security_check_cookie@4"
+]
+},
+"BMvEff.Cockpit_SetView": {
+"wrapper_seq": [
+"sq_getuserdata",
+"Sqrat_ObjectFromStack",
+"?",
+"sub_45EE70",
+"sq_pushinteger",
+"@__security_check_cookie@4"
+]
+},
+"BMvEff.Cockpit_SetPrioU": {
+"wrapper_seq": [
+"sq_getuserdata",
+"sq_getinteger",
+"?",
+"sq_pushinteger"
+]
+},
+"BMvEff.ComboView_Clear": {
+"wrapper_seq": [
+"sq_getuserdata",
+"?"
+]
+},
+"BMvEff.ComboView_Set": {
+"wrapper_seq": [
+"sq_getuserdata",
+"Sqrat_ObjectFromStack",
+"?",
+"sub_45EE70",
+"sq_pushinteger",
+"@__security_check_cookie@4"
+]
+},
+"BMvEff.ComboView_Get": {
+"wrapper_seq": [
+"sq_getuserdata",
+"?",
+"sq_pushinteger"
+]
+},
+"BMvEff.ChangeStartCorrectTiming": {
+"wrapper_seq": [
+"sq_getuserdata",
+"?"
+]
+},
+"BMvEff.ChangeStartCorrectTimingPlus": {
+"wrapper_seq": [
+"sq_getuserdata",
+"?"
+]
+},
+"BMvEff.BGM_Set": {
+"wrapper_seq": [
+"sq_getuserdata",
+"Sqrat_ObjectFromStack",
+"?",
+"sub_45EE70",
+"@__security_check_cookie@4"
+]
+},
+"BMvEff.BG_GetNum": {
+"wrapper_seq": [
+"sq_getuserdata",
+"?",
+"sq_pushinteger"
+]
+},
+"BMvEff.AddSkillCount": {
+"wrapper_seq": [
+"sq_getuserdata",
+"sq_getinteger",
+"?",
+"sq_pushinteger"
+]
+},
+"BMvEff.GetEntranceCallCount": {
+"wrapper_seq": [
+"sq_getuserdata",
+"?",
+"sq_pushinteger"
+]
+},
+"BMvEff.IsReplayEntrance": {
+"wrapper_seq": [
+"sq_getuserdata",
+"?",
+"sq_pushinteger"
+]
+},
+"BMvEff.SetBgPrioEx": {
+"wrapper_seq": [
+"sq_getuserdata",
+"Sqrat_ObjectFromStack",
+"?",
+"sub_45EE70",
+"@__security_check_cookie@4"
+]
+},
+"BMvEff.GetMyObjectCount": {
+"wrapper_seq": [
+"sq_getuserdata",
+"?",
+"sq_pushinteger"
+]
+},
+"BMvEff.SetGuardPlusFlag": {
+"wrapper_seq": [
+"sq_getuserdata",
+"sq_getinteger",
+"?"
+]
+},
+"BMvEff.Chara_SetMessage": {
+"wrapper_seq": [
+"sq_getuserdata",
+"sq_getinteger",
+"sq_getinteger",
+"sq_tostring",
+"sq_getstring",
+"sq_pop",
+"sq_getinteger",
+"sq_getinteger",
+"?",
+"sq_pushinteger"
+]
+},
+"BMvEff.Chara_SetMessageBattle": {
+"wrapper_seq": [
+"sq_getuserdata",
+"sq_getinteger",
+"sq_getinteger",
+"sq_tostring",
+"sq_getstring",
+"sq_pop",
+"sq_getinteger",
+"sq_getinteger",
+"?",
+"sq_pushinteger"
+]
+},
+"BMvEff.Chara_SetMessagePC": {
+"wrapper_seq": [
+"sq_getuserdata",
+"sq_getinteger",
+"sq_getinteger",
+"sq_tostring",
+"sq_getstring",
+"sq_pop",
+"sq_getinteger",
+"sq_getinteger",
+"?",
+"sq_pushinteger"
+]
+},
+"BMvEff.Chara_SetMessageFontSize": {
+"wrapper_seq": [
+"sq_getuserdata",
+"sq_getinteger",
+"?"
+]
+},
+"BMvEff.Chara_SetMessageDelay": {
+"wrapper_seq": [
+"sq_getuserdata",
+"sq_getinteger",
+"?"
+]
+},
+"BMvEff.Chara_JoinMessage": {
+"wrapper_seq": [
+"sq_getuserdata",
+"sq_getinteger",
+"?",
+"sq_pushinteger"
+]
+},
+"BMvEff.Chara_ClearMessageAll": {
+"wrapper_seq": [
+"sq_getuserdata",
+"?"
+]
+},
+"BMvEff.SetAllKeyCheck": {
+"wrapper_seq": [
+"sq_getuserdata",
+"sq_getinteger",
+"?"
+]
+},
+"BMvEff.SetDefaultExtendedEffectDrawing": {
+"wrapper_seq": [
+"sq_getuserdata",
+"sq_getinteger",
+"?"
+]
+},
+"BMvEff.Score_Add": {
+"wrapper_seq": [
+"sq_getuserdata",
+"sq_getinteger",
+"?"
+]
+},
+"BMvEff.SetBgColor": {
+"wrapper_seq": [
+"sq_getuserdata",
+"Sqrat_ObjectFromStack",
+"?",
+"sub_45EE70",
+"@__security_check_cookie@4"
+]
+},
+"BMvEff.SetBgSpeculer": {
+"wrapper_seq": [
+"sq_getuserdata",
+"Sqrat_ObjectFromStack",
+"?",
+"sub_45EE70",
+"@__security_check_cookie@4"
+]
+},
+"BMvEff.GetSeType": {
+"wrapper_seq": [
+"sq_getuserdata",
+"?",
+"sq_pushinteger"
+]
+},
+"BMvEff.TM_IsHudHidden": {
+"wrapper_seq": [
+"sq_getuserdata",
+"?",
+"sq_pushinteger"
+]
+},
+"BMvEff.TM_GetCharaGauge": {
+"wrapper_seq": [
+"sq_getuserdata",
+"sq_getinteger",
+"?",
+"sq_pushinteger"
+]
+},
+"BMvEff.TM_IsEnemyAllShield": {
+"wrapper_seq": [
+"sq_getuserdata",
+"?",
+"sq_pushinteger"
+]
+},
+"BMvEff.TM_IsCelestialVorpalGRDMode": {
+"wrapper_seq": [
+"sq_getuserdata",
+"?",
+"sq_pushinteger"
+]
+},
+"BMvEff.TM_IsNormalVorpalGRDMode": {
+"wrapper_seq": [
+"sq_getuserdata",
+"?",
+"sq_pushinteger"
+]
+},
+"BMvEff.TM_IsQuickRecoverVorpalMode": {
+"wrapper_seq": [
+"sq_getuserdata",
+"?",
+"sq_pushinteger"
+]
+},
+"BMvEff.SetCounterAnnounce": {
+"wrapper_seq": [
+"sq_getuserdata",
+"?"
+]
+},
+"BMvEff.SetPunishAnnounce": {
+"wrapper_seq": [
+"sq_getuserdata",
+"?"
+]
+},
+"BMvEff.SetGrdBreakAnnounce": {
+"wrapper_seq": [
+"sq_getuserdata",
+"?"
+]
+},
+"CCheckRect.Reset": {
+"wrapper_seq": [
+"sq_getuserdata",
+"sq_getinstanceup",
+""
+]
+},
+"CCheckRect.SetPlayer": {
+"wrapper_seq": [
+"sq_getuserdata",
+"sq_getinstanceup",
+""
+]
+},
+"CCheckRect.SetSrc": {
+"wrapper_seq": [
+"sq_getuserdata",
+"sq_getinstanceup",
+"Sqrat_ObjectFromStack",
+"",
+"sub_45EE70",
+"@__security_check_cookie@4"
+]
+},
+"CCheckRect.SetDst": {
+"wrapper_seq": [
+"sq_getuserdata",
+"sq_getinstanceup",
+"Sqrat_ObjectFromStack",
+"",
+"sub_45EE70",
+"@__security_check_cookie@4"
+]
+},
+"CCheckRect.SetFlags": {
+"wrapper_seq": [
+"sq_getuserdata",
+"sq_getinstanceup",
+"sq_getinteger",
+""
+]
+},
+"CCheckRect.Check": {
+"wrapper_seq": [
+"sq_getuserdata",
+"sq_getinstanceup",
+"",
+"sq_pushinteger"
+]
+},
+"CCheckRect.GetCharaData": {
+"wrapper_seq": [
+"sq_getuserdata",
+"sq_getinstanceup",
+"",
+"sq_pushobject",
+"sq_createinstance",
+"sub_45EEA0",
+"dword_4849220",
+"sq_pop",
+"sq_pushnull"
+]
+},
+"ProcTimer.End": {
+"wrapper_seq": [
+"sq_getuserdata",
+"sq_getinstanceup",
+""
+]
+},
+"ProcTimer.ReStart": {
+"wrapper_seq": [
+"sq_getuserdata",
+"sq_getinstanceup",
+""
+]
+},
+"ProcTimer.SetName": {
+"wrapper_seq": [
+"sq_getuserdata",
+"sq_getinstanceup",
+"sq_tostring",
+"sq_getstring",
+"sq_pop",
+""
+]
+},
+"ProcTimer.GetTime": {
+"wrapper_seq": [
+"sq_getuserdata",
+"sq_getinstanceup",
+"",
+"sq_pushfloat"
+]
+},
+"ProcTimer.PrintTime_Int": {
+"wrapper_seq": [
+"sq_getuserdata",
+"sq_getinstanceup",
+""
+]
+},
+"ProcTimer.GetNowTime": {
+"wrapper_seq": [
+"sq_getuserdata",
+"sq_getinstanceup",
+"",
+"sq_pushfloat"
+]
+},
+"ProcTimer.PrintNowTime_Int": {
+"wrapper_seq": [
+"sq_getuserdata",
+"sq_getinstanceup",
+""
+]
+},
+"ProcTimer.EndPrint_Off": {
+"wrapper_seq": [
+"sq_getuserdata",
+"sq_getinstanceup",
+""
+]
+},
+"BSound.SE_Play": {
+"wrapper_seq": [
+"sq_getuserdata",
+"Sqrat_ObjectFromStack",
+"?",
+"sub_45EE70",
+"@__security_check_cookie@4"
+]
+},
+"BSound.SE_Stop": {
+"wrapper_seq": [
+"sq_getuserdata",
+"Sqrat_ObjectFromStack",
+"?",
+"sub_45EE70",
+"@__security_check_cookie@4"
+]
+},
+"BSound.SE_GetUserParam": {
+"wrapper_seq": [
+"sq_getuserdata",
+"Sqrat_ObjectFromStack",
+"?",
+"sub_45EE70",
+"sq_pushinteger",
+"@__security_check_cookie@4"
+]
+},
+"BSound.SE_GetBufferSize": {
+"wrapper_seq": [
+"sq_getuserdata",
+"Sqrat_ObjectFromStack",
+"?",
+"sub_45EE70",
+"sq_pushinteger",
+"@__security_check_cookie@4"
+]
+},
+"BSound.BGM_Mute": {
+"wrapper_seq": [
+"sq_getuserdata",
+"sq_getinteger",
+"?"
+]
+},
+"BSound.BGM_SetNum": {
+"wrapper_seq": [
+"sq_getuserdata",
+"sq_getinteger",
+"?"
+]
+},
+"BSound.BGM_SetFade": {
+"wrapper_seq": [
+"sq_getuserdata",
+"Sqrat_ObjectFromStack",
+"?",
+"sub_45EE70",
+"@__security_check_cookie@4"
+]
+},
+"BSound.SE_SetFade": {
+"wrapper_seq": [
+"sq_getuserdata",
+"Sqrat_ObjectFromStack",
+"?",
+"sub_45EE70",
+"@__security_check_cookie@4"
+]
+},
+"BSound.Voice_SetFade": {
+"wrapper_seq": [
+"sq_getuserdata",
+"Sqrat_ObjectFromStack",
+"?",
+"sub_45EE70",
+"@__security_check_cookie@4"
+]
+},
+"CBtlInfo.CheckCharaAlive": {
+"wrapper_seq": [
+"sq_getuserdata",
+"sq_getinstanceup",
+"sq_getinteger",
+"",
+"sq_pushinteger"
+]
+},
+"CBtlInfo.CheckCharaAlive_str": {
+"wrapper_seq": [
+"sq_getuserdata",
+"sq_getinstanceup",
+"sq_tostring",
+"sq_getstring",
+"sq_pop",
+"",
+"sq_pushinteger"
+]
+},
+"CBtlInfo.IsSelectBgm": {
+"wrapper_seq": [
+"sq_getuserdata",
+"sq_getinstanceup",
+"",
+"sq_pushinteger"
+]
+},
+"CBtlInfo.GetSelectBgm": {
+"wrapper_seq": [
+"sq_getuserdata",
+"sq_getinstanceup",
+"",
+"sq_pushinteger"
+]
+},
+"CBtlInfo.IsBgmAuto": {
+"wrapper_seq": [
+"sq_getuserdata",
+"sq_getinstanceup",
+"",
+"sq_pushinteger"
+]
+},
+"CBtlInfo.IsBgmMute": {
+"wrapper_seq": [
+"sq_getuserdata",
+"sq_getinstanceup",
+"",
+"sq_pushinteger"
+]
+},
+"CBtlInfo.GetFixStageBGM": {
+"wrapper_seq": [
+"sq_getuserdata",
+"sq_getinstanceup",
+"",
+"sq_pushinteger"
+]
+},
+"CBtlInfo.SetBattleBgm": {
+"wrapper_seq": [
+"sq_getuserdata",
+"sq_getinstanceup",
+"sq_getinteger",
+""
+]
+},
+"BMvTbl.GetPlayerSide": {
+"wrapper_seq": [
+"sq_getuserdata",
+"?",
+"sq_pushinteger"
+]
+},
+"BMvTbl.GetPlayerNo": {
+"wrapper_seq": [
+"sq_getuserdata",
+"?",
+"sq_pushinteger"
+]
+},
+"BMvTbl.IsActivePlayer": {
+"wrapper_seq": [
+"sq_getuserdata",
+"sq_getinteger",
+"?",
+"sq_pushinteger"
+]
+},
+"BMvTbl.SetPattern": {
+"wrapper_seq": [
+"sq_getuserdata",
+"Sqrat_ObjectFromStack",
+"?",
+"sub_45EE70",
+"sq_pushinteger",
+"@__security_check_cookie@4"
+]
+},
+"BMvTbl.SetPattern_Reserve": {
+"wrapper_seq": [
+"sq_getuserdata",
+"Sqrat_ObjectFromStack",
+"?",
+"sub_45EE70",
+"sq_pushinteger",
+"@__security_check_cookie@4"
+]
+},
+"BMvTbl.SetMuki": {
+"wrapper_seq": [
+"sq_getuserdata",
+"sq_getinteger",
+"?"
+]
+},
+"BMvTbl.GetMuki": {
+"wrapper_seq": [
+"sq_getuserdata",
+"?",
+"sq_pushinteger"
+]
+},
+"BMvTbl.CheckFurimuki": {
+"wrapper_seq": [
+"sq_getuserdata",
+"?",
+"sq_pushinteger"
+]
+},
+"BMvTbl.VGuard_CheckKeep": {
+"wrapper_seq": [
+"sq_getuserdata",
+"?",
+"sq_pushinteger"
+]
+},
+"BMvTbl.VGuard_Time": {
+"wrapper_seq": [
+"sq_getuserdata",
+"sq_getinteger",
+"?",
+"sq_pushinteger"
+]
+},
+"BMvTbl.CheckStickHold": {
+"wrapper_seq": [
+"sq_getuserdata",
+"sq_getinteger",
+"?",
+"sq_pushinteger"
+]
+},
+"BMvTbl.CheckStickHoldFrameKeyBuffer": {
+"wrapper_seq": [
+"sq_getuserdata",
+"sq_getinteger",
+"sq_getinteger",
+"?",
+"sq_pushinteger"
+]
+},
+"BMvTbl.CheckButtonHold": {
+"wrapper_seq": [
+"sq_getuserdata",
+"sq_getinteger",
+"?",
+"sq_pushinteger"
+]
+},
+"BMvTbl.CheckButtonHoldFrame": {
+"wrapper_seq": [
+"sq_getuserdata",
+"sq_getinteger",
+"sq_getinteger",
+"?",
+"sq_pushinteger"
+]
+},
+"BMvTbl.GetStickHold": {
+"wrapper_seq": [
+"sq_getuserdata",
+"?",
+"sq_pushinteger"
+]
+},
+"BMvTbl.GetButtonHold": {
+"wrapper_seq": [
+"sq_getuserdata",
+"?",
+"sq_pushinteger"
+]
+},
+"BMvTbl.IsStartTrigger": {
+"wrapper_seq": [
+"sq_getuserdata",
+"?",
+"sq_pushinteger"
+]
+},
+"BMvTbl.SetNextMoveTable": {
+"wrapper_seq": [
+"sq_getuserdata",
+"sq_tostring",
+"sq_getstring",
+"sq_pop",
+"?"
+]
+},
+"BMvTbl.SetDeleteMoveTable": {
+"wrapper_seq": [
+"sq_getuserdata",
+"?"
+]
+},
+"BMvTbl.SetFinalize": {
+"wrapper_seq": [
+"sq_getuserdata",
+"sq_getinteger",
+"?"
+]
+},
+"BMvTbl.SetFinalizeCode": {
+"wrapper_seq": [
+"sq_getuserdata",
+"sq_getinteger",
+"?"
+]
+},
+"BMvTbl.GetFinalizeCode": {
+"wrapper_seq": [
+"sq_getuserdata",
+"?",
+"sq_pushinteger"
+]
+},
+"BMvTbl.FromFinalize": {
+"wrapper_seq": [
+"sq_getuserdata",
+"?",
+"sq_pushinteger"
+]
+},
+"BMvTbl.SetMoveCode": {
+"wrapper_seq": [
+"sq_getuserdata",
+"sq_getinteger",
+"?"
+]
+},
+"BMvTbl.GetMoveCode": {
+"wrapper_seq": [
+"sq_getuserdata",
+"?",
+"sq_pushinteger"
+]
+},
+"BMvTbl.SetMoveCodeEx": {
+"wrapper_seq": [
+"sq_getuserdata",
+"sq_getinteger",
+"sq_getinteger",
+"?"
+]
+},
+"BMvTbl.GetMoveCodeEx": {
+"wrapper_seq": [
+"sq_getuserdata",
+"sq_getinteger",
+"?",
+"sq_pushinteger"
+]
+},
+"BMvTbl.GetCmdParam": {
+"wrapper_seq": [
+"sq_getuserdata",
+"sq_getinteger",
+"?",
+"sq_pushinteger"
+]
+},
+"BMvTbl.GetCmdNumber": {
+"wrapper_seq": [
+"sq_getuserdata",
+"?",
+"sq_pushinteger"
+]
+},
+"BMvTbl.GetSkillLv": {
+"wrapper_seq": [
+"sq_getuserdata",
+"?",
+"sq_pushinteger"
+]
+},
+"BMvTbl.SetSkillLv": {
+"wrapper_seq": [
+"sq_getuserdata",
+"sq_getinteger",
+"?"
+]
+},
+"BMvTbl.SetMvAction": {
+"wrapper_seq": [
+"sq_getuserdata",
+"sq_getinteger",
+"?"
+]
+},
+"BMvTbl.GetMvAction": {
+"wrapper_seq": [
+"sq_getuserdata",
+"?",
+"sq_pushinteger"
+]
+},
+"BMvTbl.SetMvDamageRateCorrect": {
+"wrapper_seq": [
+"sq_getuserdata",
+"sq_getinteger",
+"?"
+]
+},
+"BMvTbl.GetMvDamageRateCorrect": {
+"wrapper_seq": [
+"sq_getuserdata",
+"?",
+"sq_pushinteger"
+]
+},
+"BMvTbl.SetSparkDisableAttack": {
+"wrapper_seq": [
+"sq_getuserdata",
+"sq_getinteger",
+"?"
+]
+},
+"BMvTbl.GetSparkDisableAttack": {
+"wrapper_seq": [
+"sq_getuserdata",
+"?",
+"sq_pushinteger"
+]
+},
+"BMvTbl.SetSparkDisableMove": {
+"wrapper_seq": [
+"sq_getuserdata",
+"sq_getinteger",
+"?"
+]
+},
+"BMvTbl.GetSparkDisableMove": {
+"wrapper_seq": [
+"sq_getuserdata",
+"?",
+"sq_pushinteger"
+]
+},
+"BMvTbl.ChangeMv_GetMoveCodeEx": {
+"wrapper_seq": [
+"sq_getuserdata",
+"sq_getinteger",
+"?",
+"sq_pushinteger"
+]
+},
+"BMvTbl.ChangeMv_GetMvName": {
+"wrapper_seq": [
+"sq_getuserdata",
+"?",
+"sq_pushstring"
+]
+},
+"BMvTbl.ChangeMv_GetMvAction": {
+"wrapper_seq": [
+"sq_getuserdata",
+"?",
+"sq_pushinteger"
+]
+},
+"BMvTbl.ChangeMv_GetMvDamageRateCorrect": {
+"wrapper_seq": [
+"sq_getuserdata",
+"?",
+"sq_pushinteger"
+]
+},
+"BMvTbl.GetSP": {
+"wrapper_seq": [
+"sq_getuserdata",
+"sq_getinteger",
+"?",
+"sq_pushinteger"
+]
+},
+"BMvTbl.SetSP": {
+"wrapper_seq": [
+"sq_getuserdata",
+"sq_getinteger",
+"sq_getinteger",
+"?"
+]
+},
+"BMvTbl.AddSP": {
+"wrapper_seq": [
+"sq_getuserdata",
+"sq_getinteger",
+"sq_getinteger",
+"?",
+"sq_pushinteger"
+]
+},
+"BMvTbl.GetPP": {
+"wrapper_seq": [
+"sq_getuserdata",
+"sq_getinteger",
+"?",
+"sq_pushinteger"
+]
+},
+"BMvTbl.SetPP": {
+"wrapper_seq": [
+"sq_getuserdata",
+"sq_getinteger",
+"sq_getinteger",
+"?"
+]
+},
+"BMvTbl.AddPP": {
+"wrapper_seq": [
+"sq_getuserdata",
+"sq_getinteger",
+"sq_getinteger",
+"?",
+"sq_pushinteger"
+]
+},
+"BMvTbl.GetLP": {
+"wrapper_seq": [
+"sq_getuserdata",
+"sq_getinteger",
+"?",
+"sq_pushinteger"
+]
+},
+"BMvTbl.SetLP": {
+"wrapper_seq": [
+"sq_getuserdata",
+"sq_getinteger",
+"sq_getinteger",
+"?"
+]
+},
+"BMvTbl.AddLP": {
+"wrapper_seq": [
+"sq_getuserdata",
+"sq_getinteger",
+"sq_getinteger",
+"?",
+"sq_pushinteger"
+]
+},
+"BMvTbl.GetLPEx": {
+"wrapper_seq": [
+"sq_getuserdata",
+"sq_getinteger",
+"sq_getinteger",
+"?",
+"sq_pushinteger"
+]
+},
+"BMvTbl.SetLPEx": {
+"wrapper_seq": [
+"sq_getuserdata",
+"sq_getinteger",
+"sq_getinteger",
+"sq_getinteger",
+"?"
+]
+},
+"BMvTbl.AddLPEx": {
+"wrapper_seq": [
+"sq_getuserdata",
+"sq_getinteger",
+"sq_getinteger",
+"sq_getinteger",
+"?",
+"sq_pushinteger"
+]
+},
+"BMvTbl.SetComboLimit": {
+"wrapper_seq": [
+"sq_getuserdata",
+"sq_getinteger",
+"?"
+]
+},
+"BMvTbl.ClearComboLimit": {
+"wrapper_seq": [
+"sq_getuserdata",
+"sq_getinteger",
+"?"
+]
+},
+"BMvTbl.SetWallCount": {
+"wrapper_seq": [
+"sq_getuserdata",
+"sq_getinteger",
+"?",
+"sq_pushinteger"
+]
+},
+"BMvTbl.AddAirCount": {
+"wrapper_seq": [
+"sq_getuserdata",
+"sq_getinteger",
+"sq_getinteger",
+"?",
+"sq_pushinteger"
+]
+},
+"BMvTbl.SetAirJumpOK": {
+"wrapper_seq": [
+"sq_getuserdata",
+"sq_getinteger",
+"?"
+]
+},
+"BMvTbl.AddAirJumpCount": {
+"wrapper_seq": [
+"sq_getuserdata",
+"sq_getinteger",
+"?",
+"sq_pushinteger"
+]
+},
+"BMvTbl.ClearAllAirCounts": {
+"wrapper_seq": [
+"sq_getuserdata",
+"?"
+]
+},
+"BMvTbl.TobiParam_Func": {
+"wrapper_seq": [
+"sq_getuserdata",
+"Sqrat_ObjectFromStack",
+"?",
+"sub_45EE70",
+"sq_pushinteger",
+"@__security_check_cookie@4"
+]
+},
+"BMvTbl.TobiParamEndFlag_Func": {
+"wrapper_seq": [
+"sq_getuserdata",
+"Sqrat_ObjectFromStack",
+"?",
+"sub_45EE70",
+"sq_pushinteger",
+"@__security_check_cookie@4"
+]
+},
+"BMvTbl.CheckPosState": {
+"wrapper_seq": [
+"sq_getuserdata",
+"sq_getinteger",
+"?",
+"sq_pushinteger"
+]
+},
+"BMvTbl.CheckPattern": {
+"wrapper_seq": [
+"sq_getuserdata",
+"Sqrat_ObjectFromStack",
+"?",
+"sub_45EE70",
+"sq_pushinteger",
+"@__security_check_cookie@4"
+]
+},
+"BMvTbl.GetFrameParam": {
+"wrapper_seq": [
+"sq_getuserdata",
+"sq_getinteger",
+"?",
+"sq_pushinteger"
+]
+},
+"BMvTbl.GetFrameID": {
+"wrapper_seq": [
+"sq_getuserdata",
+"?",
+"sq_pushinteger"
+]
+},
+"BMvTbl.JumpFrameID": {
+"wrapper_seq": [
+"sq_getuserdata",
+"sq_getinteger",
+"?",
+"sq_pushinteger"
+]
+},
+"BMvTbl.JumpFrameID_Reserve": {
+"wrapper_seq": [
+"sq_getuserdata",
+"sq_getinteger",
+"?",
+"sq_pushinteger"
+]
+},
+"BMvTbl.Frame_Proc": {
+"wrapper_seq": [
+"sq_getuserdata",
+"sq_getinteger",
+"sq_getinteger",
+"?",
+"sq_pushinteger"
+]
+},
+"BMvTbl.CheckFrameFinalize": {
+"wrapper_seq": [
+"sq_getuserdata",
+"sq_getinteger",
+"?",
+"sq_pushinteger"
+]
+},
+"BMvTbl.SetPrio": {
+"wrapper_seq": [
+"sq_getuserdata",
+"sq_getinteger",
+"?"
+]
+},
+"BMvTbl.SetSpPrio": {
+"wrapper_seq": [
+"sq_getuserdata",
+"Sqrat_ObjectFromStack",
+"?",
+"sub_45EE70",
+"@__security_check_cookie@4"
+]
+},
+"BMvTbl.SetCommandLongDelay": {
+"wrapper_seq": [
+"sq_getuserdata",
+"sq_getinteger",
+"?"
+]
+},
+"BMvTbl.SetCommandShortDelay": {
+"wrapper_seq": [
+"sq_getuserdata",
+"sq_getinteger",
+"?"
+]
+},
+"BMvTbl.CheckCommand": {
+"wrapper_seq": [
+"sq_getuserdata",
+"Sqrat_ObjectFromStack",
+"?",
+"sub_45EE70",
+"sq_pushinteger",
+"@__security_check_cookie@4"
+]
+},
+"BMvTbl.CheckCommandString": {
+"wrapper_seq": [
+"sq_getuserdata",
+"Sqrat_ObjectFromStack",
+"?",
+"sub_45EE70",
+"sq_pushinteger",
+"@__security_check_cookie@4"
+]
+},
+"BMvTbl.CheckLastStick": {
+"wrapper_seq": [
+"sq_getuserdata",
+"Sqrat_ObjectFromStack",
+"?",
+"sub_45EE70",
+"sq_pushinteger",
+"@__security_check_cookie@4"
+]
+},
+"BMvTbl.ClearCommand": {
+"wrapper_seq": [
+"sq_getuserdata",
+"?",
+"sq_pushinteger"
+]
+},
+"BMvTbl.SetCommandFailTime": {
+"wrapper_seq": [
+"sq_getuserdata",
+"Sqrat_ObjectFromStack",
+"?",
+"sub_45EE70",
+"sq_pushinteger",
+"@__security_check_cookie@4"
+]
+},
+"BMvTbl.CheckCommandFailTime": {
+"wrapper_seq": [
+"sq_getuserdata",
+"Sqrat_ObjectFromStack",
+"?",
+"sub_45EE70",
+"sq_pushinteger",
+"@__security_check_cookie@4"
+]
+},
+"BMvTbl.GetMvStatus": {
+"wrapper_seq": [
+"sq_getuserdata",
+"?",
+"sq_pushobject",
+"sq_createinstance",
+"sub_45EEA0",
+"dword_4849544",
+"sq_pop",
+"sq_pushnull"
+]
+},
+"BMvTbl.GetMvStatusBF": {
+"wrapper_seq": [
+"sq_getuserdata",
+"?",
+"sq_pushobject",
+"sq_createinstance",
+"sub_45EEA0",
+"dword_4849544",
+"sq_pop",
+"sq_pushnull"
+]
+},
+"BMvTbl.CheckMvUniqueID": {
+"wrapper_seq": [
+"sq_getuserdata",
+"Sqrat_ObjectFromStack",
+"?",
+"sub_45EE70",
+"sq_pushinteger",
+"@__security_check_cookie@4"
+]
+},
+"BMvTbl.GetMvName": {
+"wrapper_seq": [
+"sq_getuserdata",
+"?",
+"sq_pushstring"
+]
+},
+"BMvTbl.SetMvHitStatus": {
+"wrapper_seq": [
+"sq_getuserdata",
+"sq_getobjtypetag",
+"sq_getinstanceup",
+"?"
+]
+},
+"BMvTbl.GetMvHitStatus": {
+"wrapper_seq": [
+"sq_getuserdata",
+"?",
+"sq_pushobject",
+"sq_createinstance",
+"sub_45EEA0",
+"dword_4849534",
+"sq_pop",
+"sq_pushnull"
+]
+},
+"BMvTbl.GetMvHitStatusBF": {
+"wrapper_seq": [
+"sq_getuserdata",
+"?",
+"sq_pushobject",
+"sq_createinstance",
+"sub_45EEA0",
+"dword_4849534",
+"sq_pop",
+"sq_pushnull"
+]
+},
+"BMvTbl.ClearHitStatus": {
+"wrapper_seq": [
+"sq_getuserdata",
+"?"
+]
+},
+"BMvTbl.SetHitStop": {
+"wrapper_seq": [
+"sq_getuserdata",
+"sq_getinteger",
+"sq_getinteger",
+"?"
+]
+},
+"BMvTbl.GetHitStop": {
+"wrapper_seq": [
+"sq_getuserdata",
+"?",
+"sq_pushinteger"
+]
+},
+"BMvTbl.SetVector": {
+"wrapper_seq": [
+"sq_getuserdata",
+"Sqrat_ObjectFromStack",
+"?",
+"sub_45EE70",
+"sq_pushinteger",
+"@__security_check_cookie@4"
+]
+},
+"BMvTbl.GetVector": {
+"wrapper_seq": [
+"sq_getuserdata",
+"Sqrat_ObjectFromStack",
+"?",
+"sub_45EE70",
+"sq_pushobject",
+"sq_createinstance",
+"sub_45EEA0",
+"dword_484924C",
+"sq_pop",
+"sq_pushnull",
+"@__security_check_cookie@4"
+]
+},
+"BMvTbl.SetVector_CCharaVector": {
+"wrapper_seq": [
+"sq_getuserdata",
+"Sqrat_ObjectFromStack",
+"sub_44C4E0",
+"?",
+"sub_45EE70",
+"sq_pushinteger",
+"@__security_check_cookie@4"
+]
+},
+"BMvTbl.ClearTriVector": {
+"wrapper_seq": [
+"sq_getuserdata",
+"Sqrat_ObjectFromStack",
+"?",
+"sub_45EE70",
+"sq_pushinteger",
+"@__security_check_cookie@4"
+]
+},
+"BMvTbl.SetVector_MaxX": {
+"wrapper_seq": [
+"sq_getuserdata",
+"sq_getinteger",
+"?"
+]
+},
+"BMvTbl.GetPosition": {
+"wrapper_seq": [
+"sq_getuserdata",
+"Sqrat_ObjectFromStack",
+"?",
+"sub_45EE70",
+"sub_44CE50",
+"@__security_check_cookie@4"
+]
+},
+"BMvTbl.SetPosition": {
+"wrapper_seq": [
+"sq_getuserdata",
+"Sqrat_ObjectFromStack",
+"?",
+"sub_45EE70",
+"sq_pushinteger",
+"@__security_check_cookie@4"
+]
+},
+"BMvTbl.MoveStartPosition": {
+"wrapper_seq": [
+"sq_getuserdata",
+"?",
+"sq_pushinteger"
+]
+},
+"BMvTbl.GetScreenPosition": {
+"wrapper_seq": [
+"sq_getuserdata",
+"?",
+"sq_pushobject",
+"sq_createinstance",
+"sub_45EEA0",
+"dword_4849240",
+"sq_pop",
+"sq_pushnull"
+]
+},
+"BMvTbl.SetAngle": {
+"wrapper_seq": [
+"sq_getuserdata",
+"Sqrat_ObjectFromStack",
+"?",
+"sub_45EE70",
+"sq_pushinteger",
+"@__security_check_cookie@4"
+]
+},
+"BMvTbl.GetAngle": {
+"wrapper_seq": [
+"sq_getuserdata",
+"?",
+"sq_pushinteger"
+]
+},
+"BMvTbl.SetScale": {
+"wrapper_seq": [
+"sq_getuserdata",
+"Sqrat_ObjectFromStack",
+"?",
+"sub_45EE70",
+"@__security_check_cookie@4"
+]
+},
+"BMvTbl.GetScale": {
+"wrapper_seq": [
+"sq_getuserdata",
+"?",
+"sq_pushobject",
+"sq_createinstance",
+"sub_45EEA0",
+"dword_4849240",
+"sq_pop",
+"sq_pushnull"
+]
+},
+"BMvTbl.TalkScript_IsDone": {
+"wrapper_seq": [
+"sq_getuserdata",
+"?",
+"sq_pushinteger"
+]
+},
+"BMvTbl.GetMvRoundStatus": {
+"wrapper_seq": [
+"sq_getuserdata",
+"?",
+"sq_pushobject",
+"sq_createinstance",
+"sub_45EEA0",
+"dword_4849478",
+"sq_pop",
+"sq_pushnull"
+]
+},
+"BMvTbl.GetMvStageStatus": {
+"wrapper_seq": [
+"sq_getuserdata",
+"?",
+"sq_pushobject",
+"sq_createinstance",
+"sub_45EEA0",
+"dword_48494AC",
+"sq_pop",
+"sq_pushnull"
+]
+},
+"BMvTbl.GetMvNetworkInfo": {
+"wrapper_seq": [
+"sq_getuserdata",
+"?",
+"sq_pushobject",
+"sq_createinstance",
+"sub_45EEA0",
+"dword_4849454",
+"sq_pop",
+"sq_pushnull"
+]
+},
+"BMvTbl.SetRoundEnd": {
+"wrapper_seq": [
+"sq_getuserdata",
+"?"
+]
+},
+"BMvTbl.SetRoundStart": {
+"wrapper_seq": [
+"sq_getuserdata",
+"?"
+]
+},
+"BMvTbl.SetRoundStartType": {
+"wrapper_seq": [
+"sq_getuserdata",
+"sq_getinteger",
+"?"
+]
+},
+"BMvTbl.SetMoveableFlag": {
+"wrapper_seq": [
+"sq_getuserdata",
+"Sqrat_ObjectFromStack",
+"?",
+"sub_45EE70",
+"sq_pushinteger",
+"@__security_check_cookie@4"
+]
+},
+"BMvTbl.SetMoveableFlagEx": {
+"wrapper_seq": [
+"sq_getuserdata",
+"Sqrat_ObjectFromStack",
+"?",
+"sub_45EE70",
+"sq_pushinteger",
+"@__security_check_cookie@4"
+]
+},
+"BMvTbl.SetAsFlag": {
+"wrapper_seq": [
+"sq_getuserdata",
+"Sqrat_ObjectFromStack",
+"?",
+"sub_45EE70",
+"sq_pushinteger",
+"@__security_check_cookie@4"
+]
+},
+"BMvTbl.SetAsStatusFlag": {
+"wrapper_seq": [
+"sq_getuserdata",
+"Sqrat_ObjectFromStack",
+"?",
+"sub_45EE70",
+"sq_pushinteger",
+"@__security_check_cookie@4"
+]
+},
+"BMvTbl.SetAsPosStatusFlag": {
+"wrapper_seq": [
+"sq_getuserdata",
+"Sqrat_ObjectFromStack",
+"?",
+"sub_45EE70",
+"sq_pushinteger",
+"@__security_check_cookie@4"
+]
+},
+"BMvTbl.SetAtkGuardFlag": {
+"wrapper_seq": [
+"sq_getuserdata",
+"Sqrat_ObjectFromStack",
+"?",
+"sub_45EE70",
+"sq_pushinteger",
+"@__security_check_cookie@4"
+]
+},
+"BMvTbl.GetAtkGuardFlag": {
+"wrapper_seq": [
+"sq_getuserdata",
+"?",
+"sq_pushinteger"
+]
+},
+"BMvTbl.SetChipDamStatus": {
+"wrapper_seq": [
+"sq_getuserdata",
+"Sqrat_ObjectFromStack",
+"?",
+"sub_45EE70",
+"sq_pushinteger",
+"@__security_check_cookie@4"
+]
+},
+"BMvTbl.SetNoBoundCorrectFlag": {
+"wrapper_seq": [
+"sq_getuserdata",
+"Sqrat_ObjectFromStack",
+"?",
+"sub_45EE70",
+"sq_pushinteger",
+"@__security_check_cookie@4"
+]
+},
+"BMvTbl.SetAtkCatchFlag": {
+"wrapper_seq": [
+"sq_getuserdata",
+"Sqrat_ObjectFromStack",
+"?",
+"sub_45EE70",
+"sq_pushinteger",
+"@__security_check_cookie@4"
+]
+},
+"BMvTbl.GetAtkCatchIsDone": {
+"wrapper_seq": [
+"sq_getuserdata",
+"Sqrat_ObjectFromStack",
+"?",
+"sub_45EE70",
+"sq_pushinteger",
+"@__security_check_cookie@4"
+]
+},
+"BMvTbl.IsExistAtkCatchRect": {
+"wrapper_seq": [
+"sq_getuserdata",
+"Sqrat_ObjectFromStack",
+"?",
+"sub_45EE70",
+"sq_pushinteger",
+"@__security_check_cookie@4"
+]
+},
+"BMvTbl.GetAtkCatchHanteiPos": {
+"wrapper_seq": [
+"sq_getuserdata",
+"Sqrat_ObjectFromStack",
+"?",
+"sub_45EE70",
+"sq_pushinteger",
+"@__security_check_cookie@4"
+]
+},
+"BMvTbl.SetSousaiFlag": {
+"wrapper_seq": [
+"sq_getuserdata",
+"Sqrat_ObjectFromStack",
+"?",
+"sub_45EE70",
+"sq_pushinteger",
+"@__security_check_cookie@4"
+]
+},
+"BMvTbl.CalcHitValue": {
+"wrapper_seq": [
+"sq_getuserdata",
+"sq_getinteger",
+"?",
+"sq_pushinteger"
+]
+},
+"BMvTbl.GetRecoverStatus": {
+"wrapper_seq": [
+"sq_getuserdata",
+"?",
+"sq_pushobject",
+"sq_createinstance",
+"sub_45EEA0",
+"dword_4849580",
+"sq_pop",
+"sq_pushnull"
+]
+},
+"BMvTbl.CheckRecoverCommandTiming": {
+"wrapper_seq": [
+"sq_getuserdata",
+"?",
+"sq_pushinteger"
+]
+},
+"BMvTbl.PcGauge_Set": {
+"wrapper_seq": [
+"sq_getuserdata",
+"Sqrat_ObjectFromStack",
+"?",
+"sub_45EE70",
+"sq_pushinteger",
+"@__security_check_cookie@4"
+]
+},
+"BMvTbl.BoundCorrect_Calc": {
+"wrapper_seq": [
+"sq_getuserdata",
+"Sqrat_ObjectFromStack",
+"?",
+"sub_45EE70",
+"sq_pushinteger",
+"@__security_check_cookie@4"
+]
+},
+"BMvTbl.ComboPoint_Calc": {
+"wrapper_seq": [
+"sq_getuserdata",
+"Sqrat_ObjectFromStack",
+"?",
+"sub_45EE70",
+"sq_pushinteger",
+"@__security_check_cookie@4"
+]
+},
+"BMvTbl.UseSkill_Check": {
+"wrapper_seq": [
+"sq_getuserdata",
+"Sqrat_ObjectFromStack",
+"?",
+"sub_45EE70",
+"sq_pushinteger",
+"@__security_check_cookie@4"
+]
+},
+"BMvTbl.HitPat_Check": {
+"wrapper_seq": [
+"sq_getuserdata",
+"Sqrat_ObjectFromStack",
+"?",
+"sub_45EE70",
+"sq_pushinteger",
+"@__security_check_cookie@4"
+]
+},
+"BMvTbl.SetHitCheckFlag": {
+"wrapper_seq": [
+"sq_getuserdata",
+"Sqrat_ObjectFromStack",
+"?",
+"sub_45EE70",
+"sq_pushinteger",
+"@__security_check_cookie@4"
+]
+},
+"BMvTbl.GetHitCheckFlag": {
+"wrapper_seq": [
+"sq_getuserdata",
+"sq_getinteger",
+"?",
+"sq_pushinteger"
+]
+},
+"BMvTbl.AddHitCheckFlag": {
+"wrapper_seq": [
+"sq_getuserdata",
+"sq_getinteger",
+"sq_getinteger",
+"?",
+"sq_pushinteger"
+]
+},
+"BMvTbl.EraseHitCheckFlag": {
+"wrapper_seq": [
+"sq_getuserdata",
+"sq_getinteger",
+"sq_getinteger",
+"?",
+"sq_pushinteger"
+]
+},
+"BMvTbl.GetHitCheckMvFlag": {
+"wrapper_seq": [
+"sq_getuserdata",
+"?",
+"sq_pushinteger"
+]
+},
+"BMvTbl.SetNoHoseiFlag": {
+"wrapper_seq": [
+"sq_getuserdata",
+"Sqrat_ObjectFromStack",
+"?",
+"sub_45EE70",
+"sq_pushinteger",
+"@__security_check_cookie@4"
+]
+},
+"BMvTbl.SetNoUkemiTimeLimitFlag": {
+"wrapper_seq": [
+"sq_getuserdata",
+"Sqrat_ObjectFromStack",
+"?",
+"sub_45EE70",
+"sq_pushinteger",
+"@__security_check_cookie@4"
+]
+},
+"BMvTbl.SetSuperArmorFlag": {
+"wrapper_seq": [
+"sq_getuserdata",
+"Sqrat_ObjectFromStack",
+"?",
+"sub_45EE70",
+"sq_pushinteger",
+"@__security_check_cookie@4"
+]
+},
+"BMvTbl.GetSuperArmorFlag": {
+"wrapper_seq": [
+"sq_getuserdata",
+"?",
+"sq_pushinteger"
+]
+},
+"BMvTbl.SetVirtualGuardFlag": {
+"wrapper_seq": [
+"sq_getuserdata",
+"Sqrat_ObjectFromStack",
+"?",
+"sub_45EE70",
+"sq_pushinteger",
+"@__security_check_cookie@4"
+]
+},
+"BMvTbl.SetKasanariValue": {
+"wrapper_seq": [
+"sq_getuserdata",
+"Sqrat_ObjectFromStack",
+"?",
+"sub_45EE70",
+"sq_pushinteger",
+"@__security_check_cookie@4"
+]
+},
+"BMvTbl.SetDrawAlpha": {
+"wrapper_seq": [
+"sq_getuserdata",
+"Sqrat_ObjectFromStack",
+"?",
+"sub_45EE70",
+"sq_pushinteger",
+"@__security_check_cookie@4"
+]
+},
+"BMvTbl.GetDrawAlpha": {
+"wrapper_seq": [
+"sq_getuserdata",
+"Sqrat_ObjectFromStack",
+"?",
+"sub_45EE70",
+"sq_pushinteger",
+"@__security_check_cookie@4"
+]
+},
+"BMvTbl.SetCaptureHitFlag": {
+"wrapper_seq": [
+"sq_getuserdata",
+"Sqrat_ObjectFromStack",
+"?",
+"sub_45EE70",
+"sq_pushinteger",
+"@__security_check_cookie@4"
+]
+},
+"BMvTbl.GetNoHoseiHitFlag": {
+"wrapper_seq": [
+"sq_getuserdata",
+"?",
+"sq_pushinteger"
+]
+},
+"BMvTbl.SetNoHoseiHitFlag": {
+"wrapper_seq": [
+"sq_getuserdata",
+"Sqrat_ObjectFromStack",
+"?",
+"sub_45EE70",
+"sq_pushinteger",
+"@__security_check_cookie@4"
+]
+},
+"BMvTbl.SetAliveFlag": {
+"wrapper_seq": [
+"sq_getuserdata",
+"Sqrat_ObjectFromStack",
+"?",
+"sub_45EE70",
+"sq_pushinteger",
+"@__security_check_cookie@4"
+]
+},
+"BMvTbl.SetCounterHitFlag": {
+"wrapper_seq": [
+"sq_getuserdata",
+"Sqrat_ObjectFromStack",
+"?",
+"sub_45EE70",
+"sq_pushinteger",
+"@__security_check_cookie@4"
+]
+},
+"BMvTbl.GetCounterHitFlag": {
+"wrapper_seq": [
+"sq_getuserdata",
+"?",
+"sq_pushinteger"
+]
+},
+"BMvTbl.SetPartnerFlag": {
+"wrapper_seq": [
+"sq_getuserdata",
+"Sqrat_ObjectFromStack",
+"?",
+"sub_45EE70",
+"sq_pushinteger",
+"@__security_check_cookie@4"
+]
+},
+"BMvTbl.SetForceUkemiTimeLimitFlag": {
+"wrapper_seq": [
+"sq_getuserdata",
+"Sqrat_ObjectFromStack",
+"?",
+"sub_45EE70",
+"sq_pushinteger",
+"@__security_check_cookie@4"
+]
+},
+"BMvTbl.SetVsValue": {
+"wrapper_seq": [
+"sq_getuserdata",
+"Sqrat_ObjectFromStack",
+"?",
+"sub_45EE70",
+"sq_pushinteger",
+"@__security_check_cookie@4"
+]
+},
+"BMvTbl.GetVsValue_HP": {
+"wrapper_seq": [
+"sq_getuserdata",
+"sq_getinteger",
+"?",
+"sq_pushinteger"
+]
+},
+"BMvTbl.SetVsAtkValue": {
+"wrapper_seq": [
+"sq_getuserdata",
+"Sqrat_ObjectFromStack",
+"?",
+"sub_45EE70",
+"sq_pushinteger",
+"@__security_check_cookie@4"
+]
+},
+"BMvTbl.SetVsDefValue": {
+"wrapper_seq": [
+"sq_getuserdata",
+"Sqrat_ObjectFromStack",
+"?",
+"sub_45EE70",
+"sq_pushinteger",
+"@__security_check_cookie@4"
+]
+},
+"BMvTbl.SetInvAtkFlag": {
+"wrapper_seq": [
+"sq_getuserdata",
+"Sqrat_ObjectFromStack",
+"?",
+"sub_45EE70",
+"sq_pushinteger",
+"@__security_check_cookie@4"
+]
+},
+"BMvTbl.SetInvDefFlag": {
+"wrapper_seq": [
+"sq_getuserdata",
+"Sqrat_ObjectFromStack",
+"?",
+"sub_45EE70",
+"sq_pushinteger",
+"@__security_check_cookie@4"
+]
+},
+"BMvTbl.GetInvAtkFlag": {
+"wrapper_seq": [
+"sq_getuserdata",
+"sq_getinteger",
+"?",
+"sq_pushinteger"
+]
+},
+"BMvTbl.GetInvDefFlag": {
+"wrapper_seq": [
+"sq_getuserdata",
+"sq_getinteger",
+"?",
+"sq_pushinteger"
+]
+},
+"BMvTbl.SetHoseiMinValue": {
+"wrapper_seq": [
+"sq_getuserdata",
+"sq_getinteger",
+"?",
+"sq_pushinteger"
+]
+},
+"BMvTbl.GetHoseiMinValue": {
+"wrapper_seq": [
+"sq_getuserdata",
+"?",
+"sq_pushinteger"
+]
+},
+"BMvTbl.SetHoseiBaseMinValue": {
+"wrapper_seq": [
+"sq_getuserdata",
+"sq_getinteger",
+"?",
+"sq_pushinteger"
+]
+},
+"BMvTbl.GetHoseiBaseMinValue": {
+"wrapper_seq": [
+"sq_getuserdata",
+"?",
+"sq_pushinteger"
+]
+},
+"BMvTbl.SetCelestialVorpalMode": {
+"wrapper_seq": [
+"sq_getuserdata",
+"sq_getinteger",
+"?",
+"sq_pushinteger"
+]
+},
+"BMvTbl.GetCelestialVorpalMode": {
+"wrapper_seq": [
+"sq_getuserdata",
+"?",
+"sq_pushinteger"
+]
+},
+"BMvTbl.SetGrdLimit": {
+"wrapper_seq": [
+"sq_getuserdata",
+"sq_getinteger",
+"?",
+"sq_pushinteger"
+]
+},
+"BMvTbl.AddComboRate": {
+"wrapper_seq": [
+"sq_getuserdata",
+"?"
+]
+},
+"BMvTbl.SetComboRateValue": {
+"wrapper_seq": [
+"sq_getuserdata",
+"sq_getinteger",
+"?"
+]
+},
+"BMvTbl.GetComboInfo": {
+"wrapper_seq": [
+"sq_getuserdata",
+"sq_getinteger",
+"?",
+"sq_pushinteger"
+]
+},
+"BMvTbl.AddComboCount": {
+"wrapper_seq": [
+"sq_getuserdata",
+"sq_getinteger",
+"?"
+]
+},
+"BMvTbl.SetHan6LayerMask": {
+"wrapper_seq": [
+"sq_getuserdata",
+"Sqrat_ObjectFromStack",
+"?",
+"sub_45EE70",
+"sq_pushinteger",
+"@__security_check_cookie@4"
+]
+},
+"BMvTbl.CheckBlast_IsNGStatus": {
+"wrapper_seq": [
+"sq_getuserdata",
+"Sqrat_ObjectFromStack",
+"?",
+"sub_45EE70",
+"sq_pushinteger",
+"@__security_check_cookie@4"
+]
+},
+"BMvTbl.CheckBlast_BoundInit": {
+"wrapper_seq": [
+"sq_getuserdata",
+"Sqrat_ObjectFromStack",
+"?",
+"sub_45EE70",
+"sq_pushinteger",
+"@__security_check_cookie@4"
+]
+},
+"BMvTbl.DamageFlag_Func": {
+"wrapper_seq": [
+"sq_getuserdata",
+"sq_getinteger",
+"sq_getinteger",
+"?",
+"sq_pushinteger"
+]
+},
+"BMvTbl.DamageFlag_IsBound": {
+"wrapper_seq": [
+"sq_getuserdata",
+"Sqrat_ObjectFromStack",
+"?",
+"sub_45EE70",
+"sq_pushinteger",
+"@__security_check_cookie@4"
+]
+},
+"BMvTbl.GetSelectColor": {
+"wrapper_seq": [
+"sq_getuserdata",
+"?",
+"sq_pushinteger"
+]
+},
+"BMvTbl.GetCharaNo": {
+"wrapper_seq": [
+"sq_getuserdata",
+"?",
+"sq_pushinteger"
+]
+},
+"BMvTbl.SetTutoMvFlag": {
+"wrapper_seq": [
+"sq_getuserdata",
+"sq_getinteger",
+"?"
+]
+},
+"BMvTbl.GetTutoMvFlag": {
+"wrapper_seq": [
+"sq_getuserdata",
+"?",
+"sq_pushinteger"
+]
+},
+"BMvTbl.AirSkill_Begin": {
+"wrapper_seq": [
+"sq_getuserdata",
+"?"
+]
+},
+"BMvTbl.AirSkill_Check": {
+"wrapper_seq": [
+"sq_getuserdata",
+"?"
+]
+},
+"BMvTbl.TM_SetDownStatus": {
+"wrapper_seq": [
+"sq_getuserdata",
+"?"
+]
+},
+"BMvTbl.TM_GetCancelShieldTiming": {
+"wrapper_seq": [
+"sq_getuserdata",
+"?",
+"sq_pushinteger"
+]
+},
+"BMvTbl.GetMvCancel": {
+"wrapper_seq": [
+"sq_getuserdata",
+"sq_getinteger",
+"?",
+"sq_pushinteger"
+]
+},
+"BMvTbl.IsCpu": {
+"wrapper_seq": [
+"sq_getuserdata",
+"?",
+"sq_pushinteger"
+]
+},
+"BMvTbl.IsStartSide": {
+"wrapper_seq": [
+"sq_getuserdata",
+"?",
+"sq_pushinteger"
+]
+},
+"BMvTbl.IsMissionSample": {
+"wrapper_seq": [
+"sq_getuserdata",
+"?",
+"sq_pushinteger"
+]
+},
+"BMvTbl.GetBoss": {
+"wrapper_seq": [
+"sq_getuserdata",
+"?",
+"sq_pushinteger"
+]
+},
+"BMvTbl.GetPositionBuffer": {
+"wrapper_seq": [
+"sq_getuserdata",
+"sq_getinteger",
+"?",
+"sq_pushinteger"
+]
+},
+"BMvTbl.GetControlType": {
+"wrapper_seq": [
+"sq_getuserdata",
+"?",
+"sq_pushinteger"
+]
+},
+"BMvTbl.GetRapidBeatType": {
+"wrapper_seq": [
+"sq_getuserdata",
+"sq_getinteger",
+"?",
+"sq_pushinteger"
+]
+},
+"BMvTbl.Achievement_Unlock": {
+"wrapper_seq": [
+"sq_getuserdata",
+"sq_getinteger",
+"?"
+]
+},
+"BMvTbl.BattleActivity_Increment": {
+"wrapper_seq": [
+"sq_getuserdata",
+"sq_getinteger",
+"?"
+]
+},
+"BMvTbl.SetRecoverMvFlags": {
+"wrapper_seq": [
+"sq_getuserdata",
+"sq_getinteger",
+"?"
+]
+},
+"BMvTbl.GetRecoverMvFlags": {
+"wrapper_seq": [
+"sq_getuserdata",
+"?",
+"sq_pushinteger"
+]
+},
+"BMvTbl.GenarateCmdUniqueID": {
+"wrapper_seq": [
+"sq_getuserdata",
+"?",
+"sq_pushinteger"
+]
+},
+"BMvTbl.SetCmdUniqueID": {
+"wrapper_seq": [
+"sq_getuserdata",
+"sq_getinteger",
+"?",
+"sq_pushinteger"
+]
+},
+"BMvTbl.GetCmdUniqueID": {
+"wrapper_seq": [
+"sq_getuserdata",
+"?",
+"sq_pushinteger"
+]
+},
+"BMvTbl.GetSubtitleFlag": {
+"wrapper_seq": [
+"sq_getuserdata",
+"?",
+"sq_pushinteger"
+]
+},
+"CCharaVector.x": {
+"wrapper_seq": [
+"sq_getinstanceup",
+"sq_getuserdata",
+"sq_getinteger"
+]
+},
+"CCharaVector.y": {
+"wrapper_seq": [
+"sq_getinstanceup",
+"sq_getuserdata",
+"sq_getinteger"
+]
+},
+"CCharaVector.addx": {
+"wrapper_seq": [
+"sq_getinstanceup",
+"sq_getuserdata",
+"sq_getinteger"
+]
+},
+"CCharaVector.addy": {
+"wrapper_seq": [
+"sq_getinstanceup",
+"sq_getuserdata",
+"sq_getinteger"
+]
+},
+"CCharaPosition.x": {
+"wrapper_seq": [
+"sq_getinstanceup",
+"sq_getuserdata",
+"sq_getinteger"
+]
+},
+"CCharaPosition.y": {
+"wrapper_seq": [
+"sq_getinstanceup",
+"sq_getuserdata",
+"sq_getinteger"
+]
+},
+"CCharaRect.sx": {
+"wrapper_seq": [
+"sq_getinstanceup",
+"sq_getuserdata",
+"sq_getinteger"
+]
+},
+"CCharaRect.sy": {
+"wrapper_seq": [
+"sq_getinstanceup",
+"sq_getuserdata",
+"sq_getinteger"
+]
+},
+"CCharaRect.ex": {
+"wrapper_seq": [
+"sq_getinstanceup",
+"sq_getuserdata",
+"sq_getinteger"
+]
+},
+"CCharaRect.ey": {
+"wrapper_seq": [
+"sq_getinstanceup",
+"sq_getuserdata",
+"sq_getinteger"
+]
+},
+"CCharaPoint4.x0": {
+"wrapper_seq": [
+"sq_getinstanceup",
+"sq_getuserdata",
+"sq_getinteger"
+]
+},
+"CCharaPoint4.y0": {
+"wrapper_seq": [
+"sq_getinstanceup",
+"sq_getuserdata",
+"sq_getinteger"
+]
+},
+"CCharaPoint4.x1": {
+"wrapper_seq": [
+"sq_getinstanceup",
+"sq_getuserdata",
+"sq_getinteger"
+]
+},
+"CCharaPoint4.y1": {
+"wrapper_seq": [
+"sq_getinstanceup",
+"sq_getuserdata",
+"sq_getinteger"
+]
+},
+"CCharaPoint4.x2": {
+"wrapper_seq": [
+"sq_getinstanceup",
+"sq_getuserdata",
+"sq_getinteger"
+]
+},
+"CCharaPoint4.y2": {
+"wrapper_seq": [
+"sq_getinstanceup",
+"sq_getuserdata",
+"sq_getinteger"
+]
+},
+"CCharaPoint4.x3": {
+"wrapper_seq": [
+"sq_getinstanceup",
+"sq_getuserdata",
+"sq_getinteger"
+]
+},
+"CCharaPoint4.y3": {
+"wrapper_seq": [
+"sq_getinstanceup",
+"sq_getuserdata",
+"sq_getinteger"
+]
+},
+"MvStatus.CharaNo": {
+"wrapper_seq": [
+"sq_getinstanceup",
+"sq_getuserdata",
+"sq_getinteger"
+]
+},
+"MvStatus.CallCount": {
+"wrapper_seq": [
+"sq_getinstanceup",
+"sq_getuserdata",
+"sq_getinteger"
+]
+},
+"MvStatus.FrameCallCount": {
+"wrapper_seq": [
+"sq_getinstanceup",
+"sq_getuserdata",
+"sq_getinteger"
+]
+},
+"MvStatus.isUpdate": {
+"wrapper_seq": [
+"sq_getinstanceup",
+"sq_getuserdata",
+"sq_getinteger"
+]
+},
+"MvStatus.MvCount": {
+"wrapper_seq": [
+"sq_getinstanceup",
+"sq_getuserdata",
+"sq_getinteger"
+]
+},
+"MvStatus.MvCountFrame": {
+"wrapper_seq": [
+"sq_getinstanceup",
+"sq_getuserdata",
+"sq_getinteger"
+]
+},
+"MvStatus.isFrameUpdate": {
+"wrapper_seq": [
+"sq_getinstanceup",
+"sq_getuserdata",
+"sq_getinteger"
+]
+},
+"MvStatus.isLanding": {
+"wrapper_seq": [
+"sq_getinstanceup",
+"sq_getuserdata",
+"sq_getinteger"
+]
+},
+"MvStatus.DataPattern": {
+"wrapper_seq": [
+"sq_getinstanceup",
+"sq_getuserdata",
+"sq_getinteger"
+]
+},
+"MvStatus.DataFrame": {
+"wrapper_seq": [
+"sq_getinstanceup",
+"sq_getuserdata",
+"sq_getinteger"
+]
+},
+"MvStatus.DataDelayVal": {
+"wrapper_seq": [
+"sq_getinstanceup",
+"sq_getuserdata",
+"sq_getinteger"
+]
+},
+"MvStatus.DataDelay": {
+"wrapper_seq": [
+"sq_getinstanceup",
+"sq_getuserdata",
+"sq_getinteger"
+]
+},
+"MvStatus.flags": {
+"wrapper_seq": [
+"sq_getinstanceup",
+"sq_getuserdata",
+"sq_getinteger"
+]
+},
+"MvStatus.FrameID": {
+"wrapper_seq": [
+"sq_getinstanceup",
+"sq_getuserdata",
+"sq_getinteger"
+]
+},
+"MvStatus.Param0": {
+"wrapper_seq": [
+"sq_getinstanceup",
+"sq_getuserdata",
+"sq_getinteger"
+]
+},
+"MvStatus.Param1": {
+"wrapper_seq": [
+"sq_getinstanceup",
+"sq_getuserdata",
+"sq_getinteger"
+]
+},
+"MvStatus.Param2": {
+"wrapper_seq": [
+"sq_getinstanceup",
+"sq_getuserdata",
+"sq_getinteger"
+]
+},
+"MvStatus.Param3": {
+"wrapper_seq": [
+"sq_getinstanceup",
+"sq_getuserdata",
+"sq_getinteger"
+]
+},
+"MvStatus.GetCharaNo": {
+"wrapper_seq": [
+"sq_getuserdata",
+"sq_getinstanceup",
+"",
+"sq_pushinteger"
+]
+},
+"MvStatus.GetCallCount": {
+"wrapper_seq": [
+"sq_getuserdata",
+"sq_getinstanceup",
+"",
+"sq_pushinteger"
+]
+},
+"MvStatus.GetMvCount": {
+"wrapper_seq": [
+"sq_getuserdata",
+"sq_getinstanceup",
+"",
+"sq_pushinteger"
+]
+},
+"MvStatus.GetMvCountFrame": {
+"wrapper_seq": [
+"sq_getuserdata",
+"sq_getinstanceup",
+"",
+"sq_pushinteger"
+]
+},
+"MvStatus.IsUpdate": {
+"wrapper_seq": [
+"sq_getuserdata",
+"sq_getinstanceup",
+"",
+"sq_pushinteger"
+]
+},
+"MvStatus.IsFrameUpdate": {
+"wrapper_seq": [
+"sq_getuserdata",
+"sq_getinstanceup",
+"",
+"sq_pushinteger"
+]
+},
+"MvStatus.GetDataPattern": {
+"wrapper_seq": [
+"sq_getuserdata",
+"sq_getinstanceup",
+"",
+"sq_pushinteger"
+]
+},
+"MvStatus.GetDataFrame": {
+"wrapper_seq": [
+"sq_getuserdata",
+"sq_getinstanceup",
+"",
+"sq_pushinteger"
+]
+},
+"MvStatus.GetFrameID": {
+"wrapper_seq": [
+"sq_getuserdata",
+"sq_getinstanceup",
+"",
+"sq_pushinteger"
+]
+},
+"MvStatus.IsLanding": {
+"wrapper_seq": [
+"sq_getuserdata",
+"sq_getinstanceup",
+"",
+"sq_pushinteger"
+]
+},
+"MvStatus.GetDataDelayVal": {
+"wrapper_seq": [
+"sq_getuserdata",
+"sq_getinstanceup",
+"",
+"sq_pushinteger"
+]
+},
+"MvStatus.GetDataDelay": {
+"wrapper_seq": [
+"sq_getuserdata",
+"sq_getinstanceup",
+"",
+"sq_pushinteger"
+]
+},
+"MvStatus.GetFlags": {
+"wrapper_seq": [
+"sq_getuserdata",
+"sq_getinstanceup",
+"",
+"sq_pushinteger"
+]
+},
+"MvStatus.GetParam0": {
+"wrapper_seq": [
+"sq_getuserdata",
+"sq_getinstanceup",
+"",
+"sq_pushinteger"
+]
+},
+"MvStatus.GetParam1": {
+"wrapper_seq": [
+"sq_getuserdata",
+"sq_getinstanceup",
+"",
+"sq_pushinteger"
+]
+},
+"MvStatus.GetParam2": {
+"wrapper_seq": [
+"sq_getuserdata",
+"sq_getinstanceup",
+"",
+"sq_pushinteger"
+]
+},
+"MvStatus.GetParam3": {
+"wrapper_seq": [
+"sq_getuserdata",
+"sq_getinstanceup",
+"",
+"sq_pushinteger"
+]
+},
+"MvHitStatus.Type": {
+"wrapper_seq": [
+"sq_getinstanceup",
+"sq_getuserdata",
+"sq_getinteger"
+]
+},
+"MvHitStatus.PosState": {
+"wrapper_seq": [
+"sq_getinstanceup",
+"sq_getuserdata",
+"sq_getinteger"
+]
+},
+"MvHitStatus.isDown": {
+"wrapper_seq": [
+"sq_getinstanceup",
+"sq_getuserdata",
+"sq_getinteger"
+]
+},
+"MvHitStatus.isFirstUpdate": {
+"wrapper_seq": [
+"sq_getinstanceup",
+"sq_getuserdata",
+"sq_getinteger"
+]
+},
+"MvHitStatus.isCatchFlag": {
+"wrapper_seq": [
+"sq_getinstanceup",
+"sq_getuserdata",
+"sq_getinteger"
+]
+},
+"MvHitStatus.isMoveable": {
+"wrapper_seq": [
+"sq_getinstanceup",
+"sq_getuserdata",
+"sq_getinteger"
+]
+},
+"MvHitStatus.Count": {
+"wrapper_seq": [
+"sq_getinstanceup",
+"sq_getuserdata",
+"sq_getinteger"
+]
+},
+"MvHitStatus.IsDown": {
+"wrapper_seq": [
+"sq_getuserdata",
+"sq_getinstanceup",
+"",
+"sq_pushinteger"
+]
+},
+"MvHitImpactInfo.type": {
+"wrapper_seq": [
+"sq_getinstanceup",
+"sq_getuserdata",
+"sq_getinteger"
+]
+},
+"MvHitImpactInfo.d_state": {
+"wrapper_seq": [
+"sq_getinstanceup",
+"sq_getuserdata",
+"sq_getinteger"
+]
+},
+"MvHitImpactInfo.atk_guard": {
+"wrapper_seq": [
+"sq_getinstanceup",
+"sq_getuserdata",
+"sq_getinteger"
+]
+},
+"MvHitImpactInfo.atk_throw": {
+"wrapper_seq": [
+"sq_getinstanceup",
+"sq_getuserdata",
+"sq_getinteger"
+]
+},
+"MvHitImpactInfo.def_guard": {
+"wrapper_seq": [
+"sq_getinstanceup",
+"sq_getuserdata",
+"sq_getinteger"
+]
+},
+"MvHitImpactInfo.grd_break": {
+"wrapper_seq": [
+"sq_getinstanceup",
+"sq_getuserdata",
+"sq_getinteger"
+]
+},
+"MvHitImpactInfo.armor_break": {
+"wrapper_seq": [
+"sq_getinstanceup",
+"sq_getuserdata",
+"sq_getinteger"
+]
+},
+"MvHitImpactInfo.counterhit": {
+"wrapper_seq": [
+"sq_getinstanceup",
+"sq_getuserdata",
+"sq_getinteger"
+]
+},
+"MvHitImpactInfo.counterhittmp": {
+"wrapper_seq": [
+"sq_getinstanceup",
+"sq_getuserdata",
+"sq_getinteger"
+]
+},
+"MvHitImpactInfo.vectortype": {
+"wrapper_seq": [
+"sq_getinstanceup",
+"sq_getuserdata",
+"sq_getinteger"
+]
+},
+"MvHitImpactInfo.flags": {
+"wrapper_seq": [
+"sq_getinstanceup",
+"sq_getuserdata",
+"sq_getinteger"
+]
+},
+"MvInterruptInfo.type": {
+"wrapper_seq": [
+"sq_getinstanceup",
+"sq_getuserdata",
+"sq_getinteger"
+]
+},
+"MvInterruptInfo.Param0": {
+"wrapper_seq": [
+"sq_getinstanceup",
+"sq_getuserdata",
+"sq_getinteger"
+]
+},
+"MvInterruptInfo.Param1": {
+"wrapper_seq": [
+"sq_getinstanceup",
+"sq_getuserdata",
+"sq_getinteger"
+]
+},
+"MvInterruptInfo.Param2": {
+"wrapper_seq": [
+"sq_getinstanceup",
+"sq_getuserdata",
+"sq_getinteger"
+]
+},
+"MvInterruptInfo.Param3": {
+"wrapper_seq": [
+"sq_getinstanceup",
+"sq_getuserdata",
+"sq_getinteger"
+]
+},
+"MvInterruptInfo.Param4": {
+"wrapper_seq": [
+"sq_getinstanceup",
+"sq_getuserdata",
+"sq_getinteger"
+]
+},
+"MvRecoverStatus.Type": {
+"wrapper_seq": [
+"sq_getinstanceup",
+"sq_getuserdata",
+"sq_getinteger"
+]
+},
+"MvRecoverStatus.Stick": {
+"wrapper_seq": [
+"sq_getinstanceup",
+"sq_getuserdata",
+"sq_getinteger"
+]
+},
+"MvRoundStatus.Time": {
+"wrapper_seq": [
+"sq_getinstanceup",
+"sq_getuserdata",
+"sq_getinteger"
+]
+},
+"MvRoundStatus.TimeUpdate": {
+"wrapper_seq": [
+"sq_getinstanceup",
+"sq_getuserdata",
+"sq_getinteger"
+]
+},
+"MvRoundStatus.Round": {
+"wrapper_seq": [
+"sq_getinstanceup",
+"sq_getuserdata",
+"sq_getinteger"
+]
+},
+"MvRoundStatus.WinType": {
+"wrapper_seq": [
+"sq_getinstanceup",
+"sq_getuserdata",
+"sq_getinteger"
+]
+},
+"MvRoundStatus.isKo": {
+"wrapper_seq": [
+"sq_getinstanceup",
+"sq_getuserdata",
+"sq_getinteger"
+]
+},
+"MvRoundStatus.isMyKo": {
+"wrapper_seq": [
+"sq_getinstanceup",
+"sq_getuserdata",
+"sq_getinteger"
+]
+},
+"MvRoundStatus.isWinRound": {
+"wrapper_seq": [
+"sq_getinstanceup",
+"sq_getuserdata",
+"sq_getinteger"
+]
+},
+"MvRoundStatus.isLoseRound": {
+"wrapper_seq": [
+"sq_getinstanceup",
+"sq_getuserdata",
+"sq_getinteger"
+]
+},
+"MvRoundStatus.isExtraRound": {
+"wrapper_seq": [
+"sq_getinstanceup",
+"sq_getuserdata",
+"sq_getinteger"
+]
+},
+"MvRoundStatus.isFirstLoseRound": {
+"wrapper_seq": [
+"sq_getinstanceup",
+"sq_getuserdata",
+"sq_getinteger"
+]
+},
+"MvRoundStatus.CharaMoveMode": {
+"wrapper_seq": [
+"sq_getinstanceup",
+"sq_getuserdata",
+"sq_getinteger"
+]
+},
+"MvNetworkInfo.NetworkVsMode": {
+"wrapper_seq": [
+"sq_getinstanceup",
+"sq_getuserdata",
+"sq_getinteger"
+]
+},
+"MvNetworkInfo.NetworkVsControlType": {
+"wrapper_seq": [
+"sq_getinstanceup",
+"sq_getuserdata",
+"sq_getinteger"
+]
+},
+"MvStageStatus.IsStoryBattle": {
+"wrapper_seq": [
+"sq_getuserdata",
+"sq_getinstanceup",
+"",
+"sq_pushinteger"
+]
+},
+"MvStageStatus.IsTrainingBattle": {
+"wrapper_seq": [
+"sq_getuserdata",
+"sq_getinstanceup",
+"",
+"sq_pushinteger"
+]
+},
+"MvStageStatus.GetCpuChara": {
+"wrapper_seq": [
+"sq_getuserdata",
+"sq_getinstanceup",
+"",
+"sq_pushinteger"
+]
+},
+"MvStageStatus.GetPcChara": {
+"wrapper_seq": [
+"sq_getuserdata",
+"sq_getinstanceup",
+"",
+"sq_pushinteger"
+]
+},
+"MvStageStatus.GetStartSide": {
+"wrapper_seq": [
+"sq_getuserdata",
+"sq_getinstanceup",
+"",
+"sq_pushinteger"
+]
+},
+"BtlMvStd.GetBoundStatus": {
+"wrapper_seq": [
+"sq_getuserdata",
+"?",
+"sq_pushobject",
+"sq_createinstance",
+"sub_45EEA0",
+"dword_48494C8",
+"sq_pop",
+"sq_pushnull"
+]
+},
+"BtlMvStd.SetBoundStatus": {
+"wrapper_seq": [
+"sq_getuserdata",
+"?",
+"sq_pushinteger"
+]
+},
+"BtlMvStd.SetBoundFinalize": {
+"wrapper_seq": [
+"sq_getuserdata",
+"?",
+"sq_pushinteger"
+]
+},
+"BtlMvStd.ClearBound": {
+"wrapper_seq": [
+"sq_getuserdata",
+"?",
+"sq_pushinteger"
+]
+},
+"BtlMvStd.SetGuardStatus": {
+"wrapper_seq": [
+"sq_getuserdata",
+"?",
+"sq_pushinteger"
+]
+},
+"BtlMvStd.SetGuardFinalize": {
+"wrapper_seq": [
+"sq_getuserdata",
+"?",
+"sq_pushinteger"
+]
+},
+"BtlMvStd.ClearGuard": {
+"wrapper_seq": [
+"sq_getuserdata",
+"?",
+"sq_pushinteger"
+]
+},
+"BtlMvStd.IsFileAlive": {
+"wrapper_seq": [
+"sq_getuserdata",
+"sq_tostring",
+"sq_getstring",
+"sq_pop",
+"?",
+"sq_pushinteger"
+]
+},
+"BtlMvStd.CheckHan6Data": {
+"wrapper_seq": [
+"sq_getuserdata",
+"Sqrat_ObjectFromStack",
+"?",
+"sub_45EE70",
+"sq_pushinteger",
+"@__security_check_cookie@4"
+]
+},
+"BtlMvStd.GetBoundVectorStatus": {
+"wrapper_seq": [
+"sq_getuserdata",
+"sq_getinteger",
+"sq_getinteger",
+"?",
+"sq_pushobject",
+"sq_createinstance",
+"sub_45EEA0",
+"dword_4849434",
+"sq_pop",
+"sq_pushnull"
+]
+},
+"MvBoundStatus.IsDone": {
+"wrapper_seq": [
+"sq_getuserdata",
+"sq_getinstanceup",
+"",
+"sq_pushinteger"
+]
+},
+"MvBoundStatus.IsCapture": {
+"wrapper_seq": [
+"sq_getuserdata",
+"sq_getinstanceup",
+"",
+"sq_pushinteger"
+]
+},
+"MvBoundStatus.IsBound": {
+"wrapper_seq": [
+"sq_getuserdata",
+"sq_getinstanceup",
+"",
+"sq_pushinteger"
+]
+},
+"MvBoundStatus.GetNum": {
+"wrapper_seq": [
+"sq_getuserdata",
+"sq_getinstanceup",
+"",
+"sq_pushinteger"
+]
+},
+"MvBoundStatus.GetVecCount": {
+"wrapper_seq": [
+"sq_getuserdata",
+"sq_getinstanceup",
+"",
+"sq_pushinteger"
+]
+},
+"MvBoundStatus.GetVecMuki": {
+"wrapper_seq": [
+"sq_getuserdata",
+"sq_getinstanceup",
+"",
+"sq_pushinteger"
+]
+},
+"MvBoundStatus.GetAirUkemi": {
+"wrapper_seq": [
+"sq_getuserdata",
+"sq_getinstanceup",
+"",
+"sq_pushinteger"
+]
+},
+"MvBoundStatus.GetWallCount": {
+"wrapper_seq": [
+"sq_getuserdata",
+"sq_getinstanceup",
+"",
+"sq_pushinteger"
+]
+},
+"MvBoundStatus.GetName": {
+"wrapper_seq": [
+"sq_getuserdata",
+"sq_getinstanceup",
+"",
+"sq_pushstring"
+]
+},
+"MvBoundStatus.GetPower": {
+"wrapper_seq": [
+"sq_getuserdata",
+"sq_getinstanceup",
+"",
+"sq_pushinteger"
+]
+},
+"MvBoundStatus.GetBoundTime": {
+"wrapper_seq": [
+"sq_getuserdata",
+"sq_getinstanceup",
+"",
+"sq_pushinteger"
+]
+},
+"MvBoundStatus.GetBoundTimeAll": {
+"wrapper_seq": [
+"sq_getuserdata",
+"sq_getinstanceup",
+"",
+"sq_pushinteger"
+]
+},
+"MvBoundStatus.GetBoundFlag": {
+"wrapper_seq": [
+"sq_getuserdata",
+"sq_getinstanceup",
+"",
+"sq_pushinteger"
+]
+},
+"MvBoundStatus.GetCountMax": {
+"wrapper_seq": [
+"sq_getuserdata",
+"sq_getinstanceup",
+"",
+"sq_pushinteger"
+]
+},
+"MvBoundStatus.GetCountMaxTrue": {
+"wrapper_seq": [
+"sq_getuserdata",
+"sq_getinstanceup",
+"",
+"sq_pushinteger"
+]
+},
+"MvBoundStatus.GetCountNow": {
+"wrapper_seq": [
+"sq_getuserdata",
+"sq_getinstanceup",
+"",
+"sq_pushinteger"
+]
+},
+"MvBoundStatus.GetAirUkemiTimeNow": {
+"wrapper_seq": [
+"sq_getuserdata",
+"sq_getinstanceup",
+"",
+"sq_pushinteger"
+]
+},
+"MvBoundStatus.GetAirUkemiTimeMax": {
+"wrapper_seq": [
+"sq_getuserdata",
+"sq_getinstanceup",
+"",
+"sq_pushinteger"
+]
+},
+"MvBoundStatus.GetVecX": {
+"wrapper_seq": [
+"sq_getuserdata",
+"sq_getinstanceup",
+"",
+"sq_pushinteger"
+]
+},
+"MvBoundStatus.GetVecY": {
+"wrapper_seq": [
+"sq_getuserdata",
+"sq_getinstanceup",
+"",
+"sq_pushinteger"
+]
+},
+"MvBoundStatus.IsDown": {
+"wrapper_seq": [
+"sq_getuserdata",
+"sq_getinstanceup",
+"",
+"sq_pushinteger"
+]
+},
+"MvBoundVectorStatus.IsDone": {
+"wrapper_seq": [
+"sq_getuserdata",
+"sq_getinstanceup",
+"",
+"sq_pushinteger"
+]
+},
+"MvBoundVectorStatus.GetVectime": {
+"wrapper_seq": [
+"sq_getuserdata",
+"sq_getinstanceup",
+"",
+"sq_pushinteger"
+]
+},
+"MvBoundVectorStatus.GetUkemifailedtime": {
+"wrapper_seq": [
+"sq_getuserdata",
+"sq_getinstanceup",
+"",
+"sq_pushinteger"
+]
+},
+"MvBoundVectorStatus.GetUkeminum_g": {
+"wrapper_seq": [
+"sq_getuserdata",
+"sq_getinstanceup",
+"",
+"sq_pushinteger"
+]
+},
+"MvBoundVectorStatus.GetPower": {
+"wrapper_seq": [
+"sq_getuserdata",
+"sq_getinstanceup",
+"",
+"sq_pushinteger"
+]
+},
+"debuglog.write": {
+"wrapper_seq": [
+"sq_getuserdata",
+"sq_tostring",
+"sq_getstring",
+"sq_pop",
+"?"
+]
+},
+"debuglog.write_r": {
+"wrapper_seq": [
+"sq_getuserdata",
+"sq_tostring",
+"sq_getstring",
+"sq_pop",
+"?"
+]
+},
+"_LogsFile.open": {
+"wrapper_seq": [
+"sq_getuserdata",
+"sq_getinstanceup",
+"sq_tostring",
+"sq_getstring",
+"sq_pop",
+""
+]
+},
+"_LogsFile.opennew": {
+"wrapper_seq": [
+"sq_getuserdata",
+"sq_getinstanceup",
+"sq_tostring",
+"sq_getstring",
+"sq_pop",
+""
+]
+},
+"_LogsFile.write": {
+"wrapper_seq": [
+"sq_getuserdata",
+"sq_getinstanceup",
+"sq_tostring",
+"sq_getstring",
+"sq_pop",
+""
+]
+},
+"_LogsFile.write_r": {
+"wrapper_seq": [
+"sq_getuserdata",
+"sq_getinstanceup",
+"sq_tostring",
+"sq_getstring",
+"sq_pop",
+""
+]
+},
+"_LogsFile.writeD": {
+"wrapper_seq": [
+"sq_getuserdata",
+"sq_getinstanceup",
+"sq_tostring",
+"sq_getstring",
+"sq_pop",
+""
+]
+},
+"_LogsFile.writeD_r": {
+"wrapper_seq": [
+"sq_getuserdata",
+"sq_getinstanceup",
+"sq_tostring",
+"sq_getstring",
+"sq_pop",
+""
+]
+},
+"_LogsFile.close": {
+"wrapper_seq": [
+"sq_getuserdata",
+"sq_getinstanceup",
+""
+]
+},
+"debugfont.setprio": {
+"wrapper_seq": [
+"sq_getuserdata",
+"sq_getinteger",
+"?"
+]
+},
+"debugfont.setcolor": {
+"wrapper_seq": [
+"sq_getuserdata",
+"sq_getinteger",
+"?"
+]
+},
+"debugfont.draw": {
+"wrapper_seq": [
+"sq_getuserdata",
+"sq_tostring",
+"sq_getstring",
+"sq_pop",
+"sq_getinteger",
+"sq_getinteger",
+"?"
+]
+},
+"debugfontL.setprio": {
+"wrapper_seq": [
+"sq_getuserdata",
+"sq_getinteger",
+"?"
+]
+},
+"debugfontL.setcolor": {
+"wrapper_seq": [
+"sq_getuserdata",
+"sq_getinteger",
+"?"
+]
+},
+"debugfontL.draw": {
+"wrapper_seq": [
+"sq_getuserdata",
+"sq_tostring",
+"sq_getstring",
+"sq_pop",
+"sq_getinteger",
+"sq_getinteger",
+"?"
+]
+},
+"debugfontL.draw_message": {
+"wrapper_seq": [
+"sq_getuserdata",
+"sq_tostring",
+"sq_getstring",
+"sq_pop",
+"?"
+]
+},
+"BCMDTbl.GetHP": {
+"wrapper_seq": [
+"sq_getuserdata",
+"?",
+"sq_pushinteger"
+]
+},
+"BCMDTbl.GetHPRatio": {
+"wrapper_seq": [
+"sq_getuserdata",
+"?",
+"sq_pushinteger"
+]
+},
+"BCMDTbl.GetComboGauge": {
+"wrapper_seq": [
+"sq_getuserdata",
+"?",
+"sq_pushinteger"
+]
+},
+"BCMDTbl.GetComboGaugeEx": {
+"wrapper_seq": [
+"sq_getuserdata",
+"?",
+"sq_pushinteger"
+]
+},
+"BCMDTbl.CheckPosState": {
+"wrapper_seq": [
+"sq_getuserdata",
+"sq_getinteger",
+"?",
+"sq_pushinteger"
+]
+},
+"BCMDTbl.IsMoveAble": {
+"wrapper_seq": [
+"sq_getuserdata",
+"?",
+"sq_pushinteger"
+]
+},
+"BCMDTbl.IsAddCommand": {
+"wrapper_seq": [
+"sq_getuserdata",
+"?",
+"sq_pushinteger"
+]
+},
+"BCMDTbl.CheckPattern": {
+"wrapper_seq": [
+"sq_getuserdata",
+"Sqrat_ObjectFromStack",
+"?",
+"sub_45EE70",
+"sq_pushinteger",
+"@__security_check_cookie@4"
+]
+},
+"BCMDTbl.GetFrameID": {
+"wrapper_seq": [
+"sq_getuserdata",
+"?",
+"sq_pushinteger"
+]
+},
+"BCMDTbl.CheckFireballLimit": {
+"wrapper_seq": [
+"sq_getuserdata",
+"sq_getinteger",
+"?",
+"sq_pushinteger"
+]
+},
+"BCMDTbl.CheckState": {
+"wrapper_seq": [
+"sq_getuserdata",
+"sq_getinteger",
+"?",
+"sq_pushinteger"
+]
+},
+"BCMDTbl.CheckCancelFlag": {
+"wrapper_seq": [
+"sq_getuserdata",
+"sq_getinteger",
+"?",
+"sq_pushinteger"
+]
+},
+"BCMDTbl.GetCancelFlagData": {
+"wrapper_seq": [
+"sq_getuserdata",
+"sq_getinteger",
+"?",
+"sq_pushinteger"
+]
+},
+"BCMDTbl.CheckCancel": {
+"wrapper_seq": [
+"sq_getuserdata",
+"sq_getinteger",
+"?",
+"sq_pushinteger"
+]
+},
+"BCMDTbl.CheckDash": {
+"wrapper_seq": [
+"sq_getuserdata",
+"sq_getinteger",
+"sq_getinteger",
+"?",
+"sq_pushinteger"
+]
+},
+"BCMDTbl.CheckAirJump": {
+"wrapper_seq": [
+"sq_getuserdata",
+"sq_getinteger",
+"?",
+"sq_pushinteger"
+]
+},
+"BCMDTbl.ResetAirJump": {
+"wrapper_seq": [
+"sq_getuserdata",
+"?",
+"sq_pushinteger"
+]
+},
+"BCMDTbl.SetAirJump": {
+"wrapper_seq": [
+"sq_getuserdata",
+"sq_getinteger",
+"?",
+"sq_pushinteger"
+]
+},
+"BCMDTbl.CheckComboLimit": {
+"wrapper_seq": [
+"sq_getuserdata",
+"sq_getinteger",
+"?",
+"sq_pushinteger"
+]
+},
+"BCMDTbl.GetComboLimitLevel": {
+"wrapper_seq": [
+"sq_getuserdata",
+"?",
+"sq_pushinteger"
+]
+},
+"BCMDTbl.CheckUserParam": {
+"wrapper_seq": [
+"sq_getuserdata",
+"sq_getinteger",
+"?",
+"sq_pushinteger"
+]
+},
+"BCMDTbl.CheckSeedCost": {
+"wrapper_seq": [
+"sq_getuserdata",
+"sq_getinteger",
+"?",
+"sq_pushinteger"
+]
+},
+"BCMDTbl.CheckMoveName": {
+"wrapper_seq": [
+"sq_getuserdata",
+"Sqrat_ObjectFromStack",
+"?",
+"sub_45EE70",
+"sq_pushinteger",
+"@__security_check_cookie@4"
+]
+},
+"BCMDTbl.SetSpUseBufferTmp": {
+"wrapper_seq": [
+"sq_getuserdata",
+"Sqrat_ObjectFromStack",
+"?",
+"sub_45EE70",
+"sq_pushinteger",
+"@__security_check_cookie@4"
+]
+},
+"BCMDTbl.GetSpUseBufferTmp": {
+"wrapper_seq": [
+"sq_getuserdata",
+"?",
+"sq_pushinteger"
+]
+},
+"BCMDTbl.GetSpCommandFlag": {
+"wrapper_seq": [
+"sq_getuserdata",
+"sq_getinteger",
+"?",
+"sq_pushinteger"
+]
+},
+"BCMDTbl.IsDirectCommand": {
+"wrapper_seq": [
+"sq_getuserdata",
+"?",
+"sq_pushinteger"
+]
+},
+"BCMDTbl.GetCmdInfo": {
+"wrapper_seq": [
+"sq_getuserdata",
+"?",
+"sq_pushobject",
+"sq_createinstance",
+"sub_45EEA0",
+"dword_4849650",
+"sq_pop",
+"sq_pushnull"
+]
+},
+"BCMDTbl.GetCmdInfoEx": {
+"wrapper_seq": [
+"sq_getuserdata",
+"sq_getinteger",
+"?",
+"sq_pushobject",
+"sq_createinstance",
+"sub_45EEA0",
+"dword_4849650",
+"sq_pop",
+"sq_pushnull"
+]
+},
+"BCMDTbl.GetSuccessButton": {
+"wrapper_seq": [
+"sq_getuserdata",
+"?",
+"sq_pushinteger"
+]
+},
+"BCMDTbl.GetSuccessButtonPos": {
+"wrapper_seq": [
+"sq_getuserdata",
+"?",
+"sq_pushinteger"
+]
+},
+"CmdInfo.GetLastButton": {
+"wrapper_seq": [
+"sq_getuserdata",
+"sq_getinstanceup",
+"sq_getinteger",
+"",
+"sq_pushinteger"
+]
+},
+"CmdInfo.GetCancel": {
+"wrapper_seq": [
+"sq_getuserdata",
+"sq_getinstanceup",
+"sq_getinteger",
+"",
+"sq_pushinteger"
+]
+},
+"CmdInfo.GetCancelFlag": {
+"wrapper_seq": [
+"sq_getuserdata",
+"sq_getinstanceup",
+"sq_getinteger",
+"",
+"sq_pushinteger"
+]
+},
+"CmdInfo.GetFrame": {
+"wrapper_seq": [
+"sq_getuserdata",
+"sq_getinstanceup",
+"",
+"sq_pushinteger"
+]
+},
+"CmdInfo.GetNum": {
+"wrapper_seq": [
+"sq_getuserdata",
+"sq_getinstanceup",
+"sq_getinteger",
+"",
+"sq_pushinteger"
+]
+},
+"CDat.Load": {
+"wrapper_seq": [
+"sq_getuserdata",
+"sq_getinstanceup",
+"sq_tostring",
+"sq_getstring",
+"sq_pop",
+"",
+"sq_pushinteger"
+]
+},
+"CDat.SetPosition": {
+"wrapper_seq": [
+"sq_getuserdata",
+"sq_getinstanceup",
+"sq_getinteger",
+"sq_getinteger",
+""
+]
+},
+"CAnime.SetCDat": {
+"wrapper_seq": [
+"sq_getuserdata",
+"sq_getinstanceup",
+"sq_getobjtypetag",
+"sq_getinstanceup",
+""
+]
+},
+"CAnime.AddFrame": {
+"wrapper_seq": [
+"sq_getuserdata",
+"sq_getinstanceup",
+"sq_getfloat",
+"sq_tostring",
+"sq_getstring",
+"sq_pop",
+""
+]
+},
+"CAnime.AddFrameEx": {
+"wrapper_seq": [
+"sq_getuserdata",
+"sq_getinstanceup",
+"sq_getinteger",
+"sq_getfloat",
+"sq_tostring",
+"sq_getstring",
+"sq_pop",
+""
+]
+},
+"CAnime.AddJump": {
+"wrapper_seq": [
+"sq_getuserdata",
+"sq_getinstanceup",
+"sq_getinteger",
+""
+]
+},
+"CAnime.AddModeJump": {
+"wrapper_seq": [
+"sq_getuserdata",
+"sq_getinstanceup",
+"sq_getinteger",
+"sq_getinteger",
+"sq_getinteger",
+""
+]
+},
+"CAnime.AddTagJump": {
+"wrapper_seq": [
+"sq_getuserdata",
+"sq_getinstanceup",
+"sq_tostring",
+"sq_getstring",
+"sq_pop",
+""
+]
+},
+"CAnime.AddModeTagJump": {
+"wrapper_seq": [
+"sq_getuserdata",
+"sq_getinstanceup",
+"sq_getinteger",
+"sq_getinteger",
+"sq_tostring",
+"sq_getstring",
+"sq_pop",
+""
+]
+},
+"CAnime.AddTag": {
+"wrapper_seq": [
+"sq_getuserdata",
+"sq_getinstanceup",
+"sq_tostring",
+"sq_getstring",
+"sq_pop",
+""
+]
+},
+"CAnime.AddSe": {
+"wrapper_seq": [
+"sq_getuserdata",
+"sq_getinstanceup",
+"sq_getinteger",
+""
+]
+},
+"CAnime.AddModeTag": {
+"wrapper_seq": [
+"sq_getuserdata",
+"sq_getinstanceup",
+"sq_getinteger",
+""
+]
+},
+"CAnime.SetPrio": {
+"wrapper_seq": [
+"sq_getuserdata",
+"sq_getinstanceup",
+"sq_getinteger",
+""
+]
+},
+"CAnime.SetMode": {
+"wrapper_seq": [
+"sq_getuserdata",
+"sq_getinstanceup",
+"sq_getinteger",
+""
+]
+},
+"CAnime.GetMode": {
+"wrapper_seq": [
+"sq_getuserdata",
+"sq_getinstanceup",
+"",
+"sq_pushinteger"
+]
+},
+"CAnime.AddMode": {
+"wrapper_seq": [
+"sq_getuserdata",
+"sq_getinstanceup",
+"sq_getinteger",
+""
+]
+},
+"CAnime.IsNull": {
+"wrapper_seq": [
+"sq_getuserdata",
+"sq_getinstanceup",
+"",
+"sq_pushinteger"
+]
+},
+"CAnime.SetView": {
+"wrapper_seq": [
+"sq_getuserdata",
+"sq_getinstanceup",
+"sq_getinteger",
+""
+]
+},
+"CAnime.GetView": {
+"wrapper_seq": [
+"sq_getuserdata",
+"sq_getinstanceup",
+"",
+"sq_pushinteger"
+]
+},
+"CAnime.ClearFrame": {
+"wrapper_seq": [
+"sq_getuserdata",
+"sq_getinstanceup",
+""
+]
+},
+"CAnime.SetStartWait": {
+"wrapper_seq": [
+"sq_getuserdata",
+"sq_getinstanceup",
+"sq_getfloat",
+""
+]
+},
+"CAniManager.Add": {
+"wrapper_seq": [
+"sq_getuserdata",
+"sq_getinstanceup",
+"sq_tostring",
+"sq_getstring",
+"sq_pop",
+"sq_getobjtypetag",
+"sq_getinstanceup",
+"",
+"sq_pushobject",
+"sq_createinstance",
+"sub_45EEA0",
+"sq_setinstanceup",
+"sq_pop",
+"sq_pushnull"
+]
+},
+"CAniManager.Render": {
+"wrapper_seq": [
+"sq_getuserdata",
+"sq_getinstanceup",
+"",
+"sq_pushinteger"
+]
+},
+"CAniManager.Update": {
+"wrapper_seq": [
+"sq_getuserdata",
+"sq_getinstanceup",
+"",
+"sq_pushinteger"
+]
+},
+"CAniManager.Reset": {
+"wrapper_seq": [
+"sq_getuserdata",
+"sq_getinstanceup",
+"",
+"sq_pushinteger"
+]
+},
+"CAniManager.Finalize": {
+"wrapper_seq": [
+"sq_getuserdata",
+"sq_getinstanceup",
+""
+]
+},
+"CAniManager.SetMode": {
+"wrapper_seq": [
+"sq_getuserdata",
+"sq_getinstanceup",
+"sq_getinteger",
+""
+]
+},
+"CAniManager.GetCAnime": {
+"wrapper_seq": [
+"sq_getuserdata",
+"sq_getinstanceup",
+"sq_tostring",
+"sq_getstring",
+"sq_pop",
+"",
+"sq_pushobject",
+"sq_createinstance",
+"sub_45EEA0",
+"sq_setinstanceup",
+"sq_pop",
+"sq_pushnull"
+]
+},
+"TalkSqCallback.UseFileInSquirrel": {
+"wrapper_seq": [
+"sq_getuserdata",
+"Sqrat_ObjectFromStack",
+"?",
+"sub_45EE70",
+"@__security_check_cookie@4"
+]
+},
+"@Sqrat_TableBase_BindFunc": {
+"seq": [
+"",
+"sq_pushobject",
+"sq_pushstring",
+"sq_newuserdata",
+"sq_newclosure",
+"sq_createslot",
+"sq_pop"
+]
+},
+"@Sqrat_Class_BindMethod": {
+"seq": [
+"sq_pushobject",
+"sq_pushstring",
+"sq_newuserdata",
+"sq_newclosure",
+"sq_createslot",
+"sq_pop"
+]
+},
+"@Sqrat_TableBase_SetValueInt": {
+"seq": [
+"",
+"sq_pushobject",
+"sq_pushstring",
+"sq_pushinteger",
+"sq_createslot",
+"sq_pop"
+]
+},
+"@CSquirrel_ctor": {
+"seq": [
+"sq_open",
+"sub_45F410",
+"sq_pushroottable",
+"sqstd_register_bloblib",
+"sqstd_register_iolib",
+"sqstd_register_systemlib",
+"sqstd_register_mathlib",
+"sqstd_register_stringlib",
+"sqstd_seterrorhandlers",
+"sub_45EEB0",
+"sq_pushroottable",
+"sub_45D8D0",
+"sub_45C6B0",
+"sq_pop",
+"Sqrat_TableBase_BindFunc",
+"sub_45EE70",
+"sub_45EEB0",
+"sq_pushroottable",
+"sub_45D8D0",
+"sub_45C6B0",
+"sq_pop",
+"Sqrat_TableBase_BindFunc",
+"sub_45EE70",
+"sub_418C60",
+"@__security_check_cookie@4"
+]
+},
+"@Sq_CompileBufferAndRun": {
+"seq": [
+"??$_Append@D@?$basic_string@DU?$char_traits@D@std@@V?$allocator@D@2@@std@@AAEAAV01@QBDI@Z",
+"std_string_push_back_char",
+"sq_push",
+"sq_compilebuffer",
+"sq_push",
+"sq_call",
+"sub_45EEA0",
+"sq_pop",
+"sq_pop",
+"_invalid_parameter_noinfo_noreturn",
+"??3@YAXPAXI@Z",
+"@__security_check_cookie@4",
+"@__security_check_cookie@4",
+"@__security_check_cookie@4"
+]
+},
+"@Sqrat_Enumeration_ConstInt": {
+"seq": [
+"Sqrat_TableBase_SetValueInt"
+]
+},
+"@sq_base_register": {
+"seq": [
+"sq_pushroottable",
+"sq_pushstring",
+"sq_newclosure",
+"sub_45F1F0",
+"sub_45F2D0",
+"sq_createslot",
+"sq_pushstring",
+"sq_pushstring",
+"sq_createslot",
+"sq_pushstring",
+"sq_pushinteger",
+"sq_createslot",
+"sq_pushstring",
+"sq_pushinteger",
+"sq_createslot",
+"sq_pushstring",
+"sq_pushinteger",
+"sq_createslot",
+"sq_pop"
+]
+}
+}

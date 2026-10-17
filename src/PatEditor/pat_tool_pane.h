@@ -22,6 +22,7 @@ private:
     std::string openpopupWithId;
     std::string customPopUpMessage;
     std::string *partSetDecoratedNames;
+    int partSetNamesCount = -1;
 };
 
 #endif /* PATTOOLPANEASDASD_H_GUARD */

@@ -1,0 +1,13 @@
+# 3D stage view shot for docs/stage3d/evidence (run: tools/stage3d/shot.sh tools/stage3d/bg001_shot.txt)
+wait 10
+stage3d open C:/dev/hantei-chan/gamedata/uni2/bg bg001
+wait 10
+stage3d status
+stage3d cam 0 0 1
+stage3d capture C:/dev/hantei-chan/work/ab/s3d_bg001_center.png
+stage3d cam 700 0 1
+stage3d capture C:/dev/hantei-chan/work/ab/s3d_bg001_side.png
+stage3d cam 0 0 1
+wait 5
+capture C:/dev/hantei-chan/work/ab/s3d_bg001_window.png
+quit

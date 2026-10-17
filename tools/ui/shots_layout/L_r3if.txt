@@ -1,0 +1,24 @@
+# Layout sweep round 3: the Conditions (IF) form alone on akiha p73 f5 (two conditions), EN then JA. Read-only.
+openany C:/games/mbaacc/data/akiha.HA6
+wait 120
+framenodes 4
+pattern 73
+viewframe 5
+wait 40
+capture C:/dev/hantei-chan/work/ab/R06_mbaacc_if.png
+lang ja
+wait 20
+capture C:/dev/hantei-chan/work/ab/R06_mbaacc_if_ja.png
+lang en
+openany C:/games/UNI2/data/chr020/chr020_0.txt
+wait 120
+framenodes 6
+pattern 40
+viewframe 2
+wait 40
+capture C:/dev/hantei-chan/work/ab/R07_uni2_ifef.png
+lang ja
+wait 20
+capture C:/dev/hantei-chan/work/ab/R07_uni2_ifef_ja.png
+lang en
+quit

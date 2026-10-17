@@ -1,0 +1,9 @@
+In-game proof 2 (RBO, copy of the game dir, windowed via dgVoodoo, loose files under .\Data\Chara\Player\<name>\<name>.dt2):
+the player actor's live hurt box was read from the running rbo.exe with ReadProcessMemory (work/dumpactors.ps1: actor pool at
+0x2430324 + 2376*slot, hurtBoxCount at actor+0x770, hurtBoxRect[] pointers at +0x774, rect = 4 x int16; same layout as RboActor).
+
+baseline (no loose .dt2):            slot0 player 0 pat 8 frame 1  hurt 1 [-42,-143,47,-1]    atk 1 a[-6,-72,86,17]
+edited   (every box grown by 300):   slot0 player 0 pat 56 frame 0 hurt 1 [-342,-443,347,299]
+file data for MAGICIAN_M pattern 56 frame 0: original (-42,-143,47,-1)  -> edited (-342,-443,347,299)   (han2tool shift <in> <out.DT2> 0 0 300)
+=> the engine's live hurt rect equals the rectangle written by han2 into the loose .DT2 (monsters in slot1 keep their own [-50,-89,58,7]).
+Proof 1 (frame offsets, screenshots): m4_offset_edit_ingame.png - the player sprite is drawn 90 px higher with the offset edit.

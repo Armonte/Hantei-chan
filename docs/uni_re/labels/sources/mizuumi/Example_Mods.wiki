@@ -1,0 +1,11 @@
+<!-- source: https://mizuumi.wiki/w/User:Pixloen/FPANModding/Example_Mods (MediaWiki API, 2026-10-15) -->
+{{DISPLAYTITLE:Example Mods}}
+{{PIXL BeginNav}}
+
+
+=== Guides & Tutorial Samples ===
+*[https://www.mediafire.com/file/ny738h8tfhjhvrm/FPANModdingSample_HydeCustomMission.7z/file Hyde Custom Mission Combos], by pixloen. Adds [[Under_Night_In-Birth/UNI2/Hyde/Combos#Starter_Combos|Hyde's Starter Combos]] from the UNI2 Mizuumi Wiki, into the game.
+
+==Navigation==
+{{Navbox-MFPG}}
+[[Category:Modding French Bread Games]]

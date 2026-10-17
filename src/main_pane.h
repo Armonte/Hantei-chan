@@ -1,5 +1,6 @@
 #ifndef MAINPANE_H_GUARD
 #define MAINPANE_H_GUARD
+#include <functional>
 #include "draw_window.h"
 #include "framedata.h"
 #include "render.h"
@@ -11,6 +12,8 @@ class MainPane : public DrawWindow
 {
 public:
 	MainPane(Render* render, FrameData *frameData, FrameState &fs);
+	// Drawn under the pattern fields: the script lines that use this pattern (set by the main frame with the Script panel).
+	static inline std::function<void(FrameData*, int pattern)> drawScriptRefs;
 	void Draw();
 
 	void RegenerateNames();
@@ -18,6 +21,7 @@ public:
 	// Pattern name search
 	bool showPatternSearch = false;  // Popup window visibility
 	bool showPatternSearchBar = true;  // Search bar visibility (always visible when enabled)
+	int patternListShown = -1;         // left pane pattern list: the pattern its selection last followed (scrolls only on change)
 
 private:
 	bool copyThisFrame = true;
@@ -25,6 +29,7 @@ private:
 
 	// UTF-8 buffers for text editing (ImGui expects UTF-8)
 	std::string nameEditBuffer;
+	std::string noteEditBuffer;
 	std::string codeNameEditBuffer;
 
 	struct SequenceWId {

@@ -1,0 +1,27 @@
+# = uni2_v2_ctrl.gcs + a same-session plate (${CTRL}_game_plate.png).
+# v2 idle control grab (game FROZEN by gamecap on entry and exit): UNI2-IM pause, P1 forced to pattern 0 frame 0,
+# two UNI2-IM steps, harness grab -> ${OUTD}\${CTRL}_game.png (+ sidecar). Vars: CTRL OUTD
+unfreeze
+wait_frames 10
+pipe \\.\pipe\uni2-im-harness "keys F5" ok
+wait_frames 10
+call Object_SetPatternFrame ecx=P1 edx=0 0
+wait_frames 3
+pipe \\.\pipe\uni2-im-harness "keys F6,F6" ok
+wait_frames 6
+assert_mem u32 P1+OBJ_PAT == 0
+set OUT_META ${OUTD}\${CTRL}_game.json
+include uni2_meta_aura.gcs
+pipe \\.\pipe\uni2-im-harness "grab ${OUTD}\${CTRL}_game.png" ok
+wait_frames 3
+pipe \\.\pipe\uni2-im-harness "hidefighters on" ok
+wait_frames 4
+# while UNI2-IM is paused it replays the frozen frame, so the hide only shows after one step (next tick's backdrop)
+pipe \\.\pipe\uni2-im-harness "keys F6" ok
+wait_frames 6
+pipe \\.\pipe\uni2-im-harness "grab ${OUTD}\${CTRL}_game_plate.png" ok
+pipe \\.\pipe\uni2-im-harness "hidefighters off" ok
+wait_frames 4
+pipe \\.\pipe\uni2-im-harness "keys F5" ok
+wait_frames 4
+freeze

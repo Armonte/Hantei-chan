@@ -1,0 +1,373 @@
+# IDAPython: extract the Sqrat classes of a French-Bread Squirrel game and which class each instance-returning wrapper pushes.
+# Run inside IDA (ida-mcp execute_python): exec(open(PATH).read()); r = extract_classes(); json.dump(r, open(OUT, "w"))
+#
+# Method (docs/squirrel/RE_MBTL_LOAD.md, "Sqrat classes"):
+#  * a class registration is `mov [ebp+x], offset Sqrat::Class<T,...>::vftable` ... `push offset <ClassObject static>` ...
+#    `call Sqrat_CreateClass`, followed by Sqrat_Class_Var*(name, offset) / BindFunc(name, ...) calls and ended by a
+#    `*_BindTable("<ScriptName>")` call;
+#  * an instance wrapper (calls sq_createinstance) pushes `dword <ClassObject static>` right before;
+#  * a field's type is read from the getter its binder installs (Sqrat_SetClosure target): *(_DWORD*) int, *(__int16*) short,
+#    unsigned __int8 bool, float float.
+# Needs the binder names (Sqrat_CreateClass, Sqrat_Class_Var*, Sqrat_*BindTable, Sqrat_TableBase_BindFunc, Sqrat_SetClosure)
+# applied in the IDB first.
+import re, idautils, idc, ida_hexrays, ida_funcs
+
+def _name_ea(n):
+    ea = idc.get_name_ea_simple(n)
+    return None if ea == idc.BADADDR else ea
+
+def _pseudo(ea):
+    try:
+        return str(ida_hexrays.decompile(ea))
+    except Exception:
+        return ''
+
+def _push_imm_before(ea, n=12):
+    """Values pushed before the call at ea, nearest first: [(kind, value)] kind = 'str' | 'imm' | 'off'."""
+    out, h = [], ea
+    for _ in range(n):
+        h = idc.prev_head(h)
+        if h == idc.BADADDR:
+            break
+        m = idc.print_insn_mnem(h)
+        if m == 'call':
+            break
+        if m == 'push':
+            t = idc.get_operand_type(h, 0)
+            v = idc.get_operand_value(h, 0)
+            fn = ida_funcs.get_func(v) if t == idc.o_imm else None
+            if fn is not None and fn.start_ea == v:
+                out.append(('imm', v))   # a function pointer argument, never a string
+                continue
+            s = idc.get_strlit_contents(v, -1, idc.STRTYPE_C) if t in (idc.o_imm, idc.o_mem) else None
+            if s:
+                out.append(('str', s.decode('cp932', 'replace')))
+            elif t == idc.o_imm:
+                out.append(('imm', v))
+            else:
+                out.append(('other', idc.print_operand(h, 0)))
+    return out
+
+_ACCESSOR_FN_CACHE = {}
+def _field_closures(binder_ea):
+    """Function pointers a binder installs that read an instance field (sq_getinstanceup + sq_getuserdata): [getter, setter]
+    in source order. Works for Sqrat_Class_Var (sq_newclosure / Sqrat_SetClosure) and DFCI's helper-call layout."""
+    if binder_ea in _ACCESSOR_FN_CACHE:
+        return _ACCESSOR_FN_CACHE[binder_ea]
+    t = _pseudo(binder_ea)
+    out = []
+    for name in re.findall(r'\b((?:sub|Sqrat\w*|SqratVar\w*)_?[0-9A-Fa-z_]*)\b', t):
+        ea = _name_ea(name)
+        if ea is None or ea == binder_ea or ea in out:
+            continue
+        f = ida_funcs.get_func(ea)
+        if f is None or f.start_ea != ea:
+            continue
+        body = _pseudo(ea)
+        if 'sq_getinstanceup' in body and 'sq_getuserdata' in body:
+            out.append(ea)
+    _ACCESSOR_FN_CACHE[binder_ea] = out
+    return out
+
+# Squirrel 2.2 object type tags pushed by the sq_push* family (SQVM_Push of {type, value}).
+_PUSH_TAGS = {'83886082': 'int', '83886084': 'float', '16777224': 'bool', '134217744': 'string'}
+_PUSH_NAMES = {'sq_pushinteger': 'int', 'sq_pushfloat': 'float', 'sq_pushbool': 'bool', 'sq_pushstring': 'string'}
+def _push_kind(ea, depth=3, seen=None):
+    """What the function (or its callees, `depth` levels) pushes onto the Squirrel stack: int/float/bool/string/None."""
+    seen = seen if seen is not None else set()
+    if ea in seen or depth < 0:
+        return None
+    seen.add(ea)
+    t = _pseudo(ea)
+    if 'sq_createinstance(' in t:
+        # pushes an instance: of the class whose object the accessor called just before returns ("instance@<static>")
+        for callee in re.findall(r'\b(sub_[0-9A-F]+|SqClass_\w+)\(\)', t):
+            st = _accessor_static(_name_ea(callee) or 0)
+            if st:
+                return 'instance@' + hex(st)
+        return 'instance'
+    for n, k in _PUSH_NAMES.items():
+        if n + '(' in t:
+            return k
+    if t.count('\n') < 40:   # a small push helper: the object type tag it builds identifies it
+        for tag, k in _PUSH_TAGS.items():
+            # the tag prints as a number, or as &unk_<hex> when IDA reads it as an address inside the image
+            if re.search(r'=\s*(?:' + tag + r'|\([^)]*\)\s*&unk_' + format(int(tag), 'X') + r'|&unk_' + format(int(tag), 'X') + r')\s*;', t):
+                return k
+    # follow the call instructions by address: library signatures can mislabel folded helpers (UNIB's int push shows up as
+    # "operator delete(...)" after identical-code folding)
+    # The value push is the last call that is not a read / error helper: walk the calls backwards.
+    f = ida_funcs.get_func(ea)
+    if f is not None:
+        calls = [h for h in idautils.FuncItems(f.start_ea)
+                 if idc.print_insn_mnem(h) == 'call' and idc.get_operand_type(h, 0) in (idc.o_near, idc.o_far)]
+        for h in reversed(calls):
+            tgt = idc.get_operand_value(h, 0)
+            n = idc.get_name(tgt)
+            if n.startswith(('sq_get', 'sq_throwerror', 'sq_aux', 'sq_pop', 'sq_settop')):
+                continue
+            k = _push_kind(tgt, depth - 1, seen)
+            if k:
+                return k
+    return None
+
+_TYPE_CACHE = {}
+def _getter_type(binder_ea):
+    """Field type from the getter closure a Sqrat_Class_Var* binder installs (first Sqrat_SetClosure target)."""
+    if binder_ea in _TYPE_CACHE:
+        return _TYPE_CACHE[binder_ea]
+    ty = '?'
+    getters = [f for f in _field_closures(binder_ea) if _push_kind(f) or 'StdString' in idc.get_name(f)]
+    if getters:
+        gname = idc.get_name(getters[0])
+        g = _pseudo(getters[0])
+        kind = 'string' if 'Getter_StdString' in gname else _push_kind(getters[0])
+        if kind == 'int' and '__int16 *)' in g:
+            ty = 'short'
+        elif kind == 'int' and ('unsigned __int8 *)' in g or 'unsigned __int8)' in g):
+            ty = 'bool'
+        else:
+            ty = kind or '?'
+    _TYPE_CACHE[binder_ea] = ty
+    return ty
+
+def _vftable_class(ea, back=40):
+    """C++ class T from the nearest preceding `offset Sqrat::Class<T,...>::vftable` operand."""
+    h = ea
+    for _ in range(back):
+        h = idc.prev_head(h)
+        if h == idc.BADADDR:
+            break
+        for op in (0, 1):
+            v = idc.get_operand_value(h, op)
+            n = idc.get_name(v) or ''
+            dn = idc.demangle_name(n, idc.get_inf_attr(idc.INF_SHORT_DEMNAMES)) or n
+            m = re.search(r'Sqrat::Class<([^,<>]+(?:<[^<>]*>)?),', dn)
+            if m:
+                return m.group(1)
+    return None
+
+_BINDER_CACHE = {}
+def _is_var_binder(ea):
+    """A field binder by shape: installs a getter and a setter closure carrying the field offset in a stack slot."""
+    if ea not in _BINDER_CACHE:
+        t = _pseudo(ea)
+        _BINDER_CACHE[ea] = len(_field_closures(ea)) >= 2
+    return _BINDER_CACHE[ea]
+
+def _closure_type(fn_ea):
+    """Field type from a getter closure body; None when the closure is a setter."""
+    g = _pseudo(fn_ea)
+    if 'sq_push' not in g:
+        return None
+    if 'sq_pushfloat' in g or '(float *)' in g:
+        return 'float'
+    if '__int16 *)' in g:
+        return 'short'
+    if 'unsigned __int8' in g:
+        return 'bool'
+    if 'sq_pushstring' in g:
+        return 'string'
+    return 'int'
+
+def _offset_before(h, n=14):
+    """The field offset a UNI2-style bind passes by reference: the last `mov [ebp+var], imm` before the call."""
+    for _ in range(n):
+        h = idc.prev_head(h)
+        if idc.print_insn_mnem(h) == 'call':
+            break
+        if idc.print_insn_mnem(h) == 'mov' and idc.get_operand_type(h, 0) == idc.o_displ and idc.get_operand_type(h, 1) == idc.o_imm:
+            return idc.get_operand_value(h, 1)
+    return None
+
+_CLASS_CTORS = set()
+
+def _walk_bindings(start, rec, var_binders, bind_table, bind_func, create):
+    """Forward from `start` in its function: field binders, method binds, up to the *_BindTable call that names the class."""
+    f = ida_funcs.get_func(start)
+    h = start
+    while h != idc.BADADDR and h < f.end_ea:
+        h = idc.next_head(h, f.end_ea)
+        if idc.print_insn_mnem(h) != 'call':
+            continue
+        tgt = idc.get_operand_value(h, 0)
+        pushed = _push_imm_before(h)
+        strs = [v for k, v in pushed if k == 'str']
+        if tgt not in var_binders and strs and tgt not in bind_table and idc.get_name(tgt) != 'Sqrat_Class_BindVarClosure' and _is_var_binder(tgt):
+            var_binders[tgt] = idc.get_name(tgt)
+        if idc.get_name(tgt) == 'Sqrat_Class_BindVarClosure' and strs:
+            # UNI2: one call per closure (getter into the get table, setter into the set table); record the field on its getter
+            fns = [v for k, v in pushed if k == 'imm' and ida_funcs.get_func(v) is not None and ida_funcs.get_func(v).start_ea == v]
+            ty = _closure_type(fns[0]) if fns else None
+            if ty and not any(f['name'] == strs[0] for f in rec['fields']):
+                rec['fields'].append({'name': strs[0], 'offset': _offset_before(h), 'ea': hex(h), 'type': ty, 'binder': 'Sqrat_Class_BindVarClosure'})
+            continue
+        if tgt in var_binders and strs:
+            imms = [v for k, v in pushed if k == 'imm']
+            rec['fields'].append({'name': strs[0], 'offset': imms[0] if imms else None, 'ea': hex(h),
+                                  'type': _getter_type(tgt), 'binder': var_binders[tgt]})
+        elif tgt in bind_func and tgt not in var_binders and strs:
+            wrappers = [v for k, v in pushed if k == 'imm' and idc.get_name(v).startswith('SqratWrap_')]
+            rec['methods'].append({'name': strs[0], 'ea': hex(h), 'wrapper': idc.get_name(wrappers[0]) if wrappers else None})
+        elif tgt in bind_table and strs:
+            rec['name'] = strs[0]
+            rec['bind_ea'] = hex(h)
+            return
+        elif tgt == create or tgt in _CLASS_CTORS:
+            return   # the next class's creation: this class was not bound to a name here
+
+_ACC_CACHE = {}
+def _accessor_static(fn_ea):
+    """DFCI layout: a tiny function `return &g_Class;` / `*a1 = g_Class; a1[1] = ...` (Sqrat ClassType<T>::ClassObject())
+    -> the static it exposes, else None."""
+    if fn_ea in _ACC_CACHE:
+        return _ACC_CACHE[fn_ea]
+    st = None
+    f = ida_funcs.get_func(fn_ea)
+    if f and f.start_ea == fn_ea and f.end_ea - f.start_ea < 0x30:
+        # exactly `mov eax, offset X` ... `retn`: returns the ADDRESS of the class object (a VM getter loads a value instead)
+        for h in idautils.FuncItems(fn_ea):
+            if idc.print_insn_mnem(h) == 'mov' and idc.print_operand(h, 0) == 'eax' and idc.get_operand_type(h, 1) == idc.o_imm:
+                v = idc.get_operand_value(h, 1)
+                if idc.get_name(v).startswith(('dword_', 'unk_', 'g_SqClass_')) and ida_funcs.get_func(v) is None:
+                    st = v
+                    break
+    _ACC_CACHE[fn_ea] = st
+    return st
+
+def extract_classes():
+    create = _name_ea('sq_newclass') or _name_ea('Sqrat_CreateClass')
+    var_binders = {ea: n for ea, n in idautils.Names() if n.startswith('Sqrat_Class_Var')}
+    bind_table = {ea for ea, n in idautils.Names() if n.endswith('_BindTable')}
+    # older compilers (DFCI) keep one instance per signature, named <role>_<ADDR>: accept the whole family
+    bind_func = {ea for ea, n in idautils.Names() if re.match(r'^(Sqrat_TableBase_BindFunc|Sqrat_Class_BindMethod)(_[0-9A-F]{5,8})?$', n)
+                 and n != 'Sqrat_Class_BindVarClosure'}
+    classes = {}      # static ea -> class record
+    # functions that create a class (per-class constructors in UNI2/DFCI/UNIB): the name walk stops at the next one
+    _CLASS_CTORS.clear()
+    for x in idautils.XrefsTo(create):
+        f = ida_funcs.get_func(x.frm)
+        if f is not None:
+            _CLASS_CTORS.add(f.start_ea)
+    for x in idautils.XrefsTo(create):
+        if not x.iscode:
+            continue
+        call = x.frm
+        # the ClassObject static: `push offset dword_X` among the next instructions (SetClassParent/GetStackValue/AddRef)
+        static, h = None, call
+        for _ in range(8):
+            h = idc.next_head(h)
+            if idc.print_insn_mnem(h) == 'push' and idc.get_operand_type(h, 0) == idc.o_imm:
+                v = idc.get_operand_value(h, 0)
+                if idc.get_name(v).startswith(('dword_', 'unk_', 'g_')):   # a data symbol, never an immediate like -1
+                    static = v
+                    break
+        if static is None:
+            # DFCI: the class object is reached through an accessor call around sq_newclass
+            h = call
+            for _ in range(10):
+                h = idc.prev_head(h)
+                if idc.print_insn_mnem(h) == 'call':
+                    static = _accessor_static(idc.get_operand_value(h, 0))
+                    if static:
+                        break
+        if static is None:
+            continue
+        cpp = _vftable_class(call)
+        rec = {'static': hex(static), 'cpp': cpp, 'name': None, 'parent_table': None, 'fields': [], 'methods': [],
+               'site': hex(call)}
+        _walk_bindings(call, rec, var_binders, bind_table, bind_func, create)
+        # UNI2 / DFCI layouts: the class is created in a per-class constructor and the fields / the table that names it are
+        # bound further up (DFCI: two levels). Climb callers until a *_BindTable names it.
+        frontier = [call]
+        for _ in range(3):
+            if rec['name'] is not None:
+                break
+            nxt = []
+            for site in frontier:
+                f = ida_funcs.get_func(site)
+                for cx in idautils.XrefsTo(f.start_ea):
+                    if cx.iscode:
+                        _walk_bindings(cx.frm, rec, var_binders, bind_table, bind_func, create)
+                        nxt.append(cx.frm)
+                        if rec['name']:
+                            rec['site'] = hex(cx.frm)
+                            break
+                if rec['name']:
+                    break
+            frontier = nxt
+        classes[static] = rec
+    # instance wrappers -> class static
+    returns = {}
+    sq_ci = _name_ea('sq_createinstance')
+    for x in idautils.XrefsTo(sq_ci):
+        f = ida_funcs.get_func(x.frm)
+        if not f:
+            continue
+        wname = idc.get_func_name(f.start_ea)
+        h = x.frm
+        for _ in range(24):
+            h = idc.prev_head(h)
+            v = None
+            if idc.print_insn_mnem(h) == 'push' and idc.get_operand_type(h, 0) == idc.o_mem:
+                v = idc.get_operand_value(h, 0)
+            elif idc.print_insn_mnem(h) == 'call':
+                v = _accessor_static(idc.get_operand_value(h, 0))
+            if v in classes and classes[v]['name']:
+                returns[wname] = classes[v]['static']
+                break
+    # sqstdlib's own classes (blob, stream) register without a *_BindTable name: not game API
+    classes = {k: v for k, v in classes.items() if v['name']}
+    # instance fields: name the class
+    for c in classes.values():
+        for f in c['fields']:
+            if f['type'].startswith('instance@'):
+                st = int(f['type'][9:], 16)
+                # a ClassType that no sq_newclass ever fills: the push fails in game and the getter returns null
+                f['type'] = 'instance:' + classes[st]['name'] if st in classes and classes[st]['name'] else 'null:unregistered-class'
+    unnamed = sorted(n for n in var_binders.values() if not n.startswith('Sqrat_'))
+    return {'classes': list(classes.values()), 'wrapper_returns': returns, 'unnamed_binders': unnamed}
+
+
+def derive_native_rets(api, classes_result):
+    """Older compilers (DFCI, UNIB): each per-signature BindFunc binder asks a selector for its wrapper and binds it with the
+    native pointer. Re-derive every native's return type from what that wrapper pushes, and list the registrations whose binder
+    is a field binder (filed as methods by the first extraction). Adds 'native_rets' / 'field_bind_eas' to classes_result."""
+    statname = {int(c['static'], 16): c['name'] for c in classes_result['classes']}
+
+    def wrapper_of_binder(b):
+        t = _pseudo(b)
+        for sel in re.findall(r'=\s*(sub_[0-9A-F]+|\w+Selector\w*)\(\w*\);', t):
+            st = _pseudo(_name_ea(sel) or 0)
+            m = re.search(r'return (\w+);', st)
+            if m and st.count('\n') < 8:
+                return _name_ea(m.group(1))
+        return None
+
+    def kind_of(w):
+        k = _push_kind(w)
+        if k is None:
+            return 'void' if re.search(r'return 0;', _pseudo(w)) else None
+        if k.startswith('instance@'):
+            return 'instance:' + statname.get(int(k[9:], 16), 'unregistered')
+        return k
+
+    cache, rets, fields = {}, {}, []
+    for e in api:
+        if not e.get('ea') or e.get('kind') not in ('func', 'method'):
+            continue
+        site = int(e['ea'], 16)
+        if idc.print_insn_mnem(site) != 'call':
+            continue
+        b = idc.get_operand_value(site, 0)
+        if _is_var_binder(b):
+            fields.append(e['ea'])
+            continue
+        if b not in cache:
+            w = wrapper_of_binder(b)
+            cache[b] = kind_of(w) if w else None
+        if cache[b]:
+            rets[e['ea']] = cache[b]
+    classes_result['native_rets'] = rets
+    classes_result['field_bind_eas'] = fields
+    return len(rets), len(fields)

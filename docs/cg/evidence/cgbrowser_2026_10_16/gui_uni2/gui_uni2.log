@@ -1,0 +1,5 @@
+[MvScript] chr003_0: 64 script spawn(s) parsed from move scripts
+exit 0
+line 189 'cgm status': status: Image 580 replaced. Save the bank to keep it.
+line 195 'cgm status': status: Wrote C:\dev\hantei-chan\work\cgb_gamedir_uni2\UNI2-IM\Mods\data\chr003\chr003.cg (39100136 bytes). The improvement mod / fbmod serve it in place of the archived file.
+-rwxrwxrwx 1 teo teo 39100136 Oct 16  2026 /mnt/c/dev/hantei-chan/work/cgb_gamedir_uni2/UNI2-IM/Mods/data/chr003/chr003.cg

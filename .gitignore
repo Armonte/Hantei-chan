@@ -12,4 +12,8 @@
 .claude/settings.local.json
 
 # Generated version info
+test_files/
+gamedata/
+HUD_THEME_STATUS.md
 generated/
+__pycache__/

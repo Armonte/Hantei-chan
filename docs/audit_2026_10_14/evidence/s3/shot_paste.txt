@@ -1,0 +1,29 @@
+# D13 paste notice + per-file format (UNI2 tab, MBTL tab, UNIB tab). Nothing is saved.
+openany C:\dev\hantei-chan\gamedata\uni2\data\chr000\chr000_0.txt
+waitidle
+wait 30
+openany C:\dev\hantei-chan\gamedata\mbtl\data\chr000\chr000_0.txt
+waitidle
+wait 30
+switchview 0
+wait 5
+copypattern 0
+switchview 1
+wait 5
+opentrees 1
+pastepattern 900
+wait 30
+capture C:\dev\hantei-chan\wt\s3-uni-dataloss\docs\audit_2026_10_14\evidence\s3\s3_paste_notice_mbtl.png
+switchview 0
+opentrees 1
+pattern 0
+wait 30
+capture C:\dev\hantei-chan\wt\s3-uni-dataloss\docs\audit_2026_10_14\evidence\s3\s3_format_uni2.png
+openany C:\games\unib\data\Hyd_0\Hyd_0.txt
+waitidle
+wait 30
+opentrees 1
+pattern 0
+wait 30
+capture C:\dev\hantei-chan\wt\s3-uni-dataloss\docs\audit_2026_10_14\evidence\s3\s3_format_unib.png
+quit

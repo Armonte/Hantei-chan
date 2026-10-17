@@ -1,0 +1,17 @@
+# uni2: grid view then list view of the character list (all visible thumbnails loaded before each capture)
+browse C:\Program Files (x86)\Steam\steamapps\common\UNDER NIGHT IN-BIRTH II Sys Celes
+waitidle
+grid on
+wait 20
+waitidle
+wait 20
+capture C:/dev/hantei-chan/work/ab/shots/uni2_grid.png
+grid off
+wait 20
+waitidle
+wait 20
+capture C:/dev/hantei-chan/work/ab/shots/uni2_list.png
+icons large
+wait 20
+capture C:/dev/hantei-chan/work/ab/shots/uni2_list_large.png
+quit

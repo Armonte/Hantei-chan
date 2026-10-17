@@ -1,0 +1,54 @@
+# S2 PAT editor evidence (docs/audit_2026_10_14/evidence/s2): PAT tab, highlight + outline, nudge/undo dirty flag,
+# UV right-drag, auto backup on save, unsaved prompt, New PAT, preferences. Works on a scratch copy of a UNI2 .pat:
+#   mkdir -p work/ab_s2-pat-safety/s2 && cp gamedata/uni2/data/chr000/chr000.pat work/ab_s2-pat-safety/s2/  (tools/ui/ab_shot.sh folder)
+patopen C:/dev/hantei-chan/work/ab/s2/chr000.pat
+wait 120
+zoomview 0.5
+patsel 30 0
+wait 30
+capture C:/dev/hantei-chan/work/ab/shots/s2_01_pat_tab.png
+shortcut togglePartHighlight
+patsel 30 2
+wait 30
+capture C:/dev/hantei-chan/work/ab/shots/s2_02_highlight_outline.png
+patinfo
+shortcut nudgeLayerRightFast
+shortcut nudgeLayerDownFast
+wait 10
+patinfo
+capture C:/dev/hantei-chan/work/ab/shots/s2_03_nudged_dirty.png
+shortcut undo
+wait 5
+shortcut undo
+wait 10
+patinfo
+shortcut redo
+wait 10
+patinfo
+patmode uv
+patsel -1 -1 3
+zoomview 0.4
+panview -200 -400
+wait 20
+capture C:/dev/hantei-chan/work/ab/shots/s2_04_uv_before.png
+uvdrag 420 900 560 1010
+wait 20
+patinfo
+capture C:/dev/hantei-chan/work/ab/shots/s2_05_uv_dragged.png
+shortcut undo
+wait 10
+patinfo
+patmode default
+zoomview 0.5
+panview 0 150
+shortcut nudgeLayerLeft
+wait 10
+savechar
+patinfo
+shortcut nudgeLayerLeft
+wait 10
+patinfo
+shortcut closeView
+wait 20
+capture C:/dev/hantei-chan/work/ab/shots/s2_06_unsaved_prompt.png
+quit

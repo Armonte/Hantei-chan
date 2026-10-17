@@ -1,0 +1,6 @@
+=== UNIB
+SECTION cgm-bank: pass 30 fail 0 | images 10298 (undrawable 3), decode==CG 10295, differ 0 | type-1:3 type0:10295
+SECTION cgm-palette: pass 30 fail 0 | palettes checked 120 (raw exact, .act/.gpl/.png round trip, neutral recolour identity)
+SECTION texsrc-pat: pass 14 fail 0 | 63 items decoded, 63 PNG export -> import round trips with no byte changed, 14/14 containers byte-exact on parse -> serialize; 6 texture(s) of a kind the loader does not read (listed, not editable)
+SECTION texsrc-cg: pass 6 fail 0 | 2034 items decoded, 96 PNG export -> import round trips with no byte changed, 6/6 containers byte-exact on parse -> serialize; 0 texture(s) of a kind the loader does not read (listed, not editable)
+EXIT 0

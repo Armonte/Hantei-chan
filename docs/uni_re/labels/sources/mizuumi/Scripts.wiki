@@ -1,0 +1,109 @@
+<!-- source: https://mizuumi.wiki/w/User:Pixloen/FPANModding/Scripts (MediaWiki API, 2026-10-15) -->
+== Character_0.txt ==
+
+This text file contains a list of files to load for the character, as well as character project name. Self-explanatory.
+
+An example .txt from Akatsuki's folder. 
+<pre> 
+[System]
+ProjectName=Aka
+[DataFile]
+FileNum= 3
+File00=_temp.HA6
+File01=Aka.HA6
+File02=../BaseData.HA6
+[BmpcutFile]
+FileNum= 
+File00=Aka.cg
+[PAniFile]
+FileNum= 1
+File00=Aka_ef00.pat
+</pre>
+
+== Character_cmd_0.txt ==
+
+This text file contains all '''unique''' moves that this character can do. Note that it only has the '''move commands''' in the list and does not contain any actual framedata or graphics. However, conditions such as timing, move followups and inputs can be applied here.
+Moves 5A, 5B, 5C, 2A, 2B, 2C, j.A, j.B and j.C are universal across all characters.
+
+Special moves are listed as Skills, and normals are listed as Atk_Std, Atk_Cro, and Atk_Air for Standing, Crouching and Air normals respectively.
+EX moves that take meter such as 236C are listed as 236EX, and Super attacks such as Infinite Worth and Arc Drive are listed with SP.
+
+In MBTL, character move commands must start with <code>cmd.</code>. 
+Examples include
+<pre>
+
+Skill_0202EX = {},	
+Skill_0202BorC = {},
+Skill_0202A = {},	
+
+Atk_Std6B = {},
+Atk_Std6C = {},	
+Atk_Air2C = {},
+Atk_Air6C = {},
+
+Skill_J0202A = 
+	{
+		command = ["0202","2+A+B"],
+		flags = [ "lastdelay" ],
+		
+		CmdCheck = {
+			HeightLimit = def_POS_AirDashLimitHeight,
+			SkillType="SpecialDouji",
+		}
+	},
+
+Skill_41236SP_ABC = {}, //Last Arc and Infinite Worth's need both (input)SP AND (input)SP_ABC
+Skill_41236SP = {},     //Don't know why but they do
+</pre>
+
+Despite the names containing motions, these commands can have different inputs if desired. Inside the curly braces many functions and variables can be set.
+===List of Variables===
+{| class="wikitable"
+|+ List of Things That Can be Set (incomplete)
+|-
+! Function Name !! Comment
+|-
+| <code>command = [x, y]</code> || Sets the command that this move is registered to. Multiple inputs can be set, such as <code>command = [2A+B, 0202]</code>
+|-
+| <code>num = def_CN_Atk_AddCommandn</code> || Used to create moves such as 6CC. Each AddCommand has a unique number n to differentiate.
+|-
+| <code>name = "Cmd_x"</code> || Sets the name of the move that will be looked up in the .ha6, or something like that.
+|-
+| <code>UpdateTable = {name = ______}</code> || Updates the pattern that is used from the .ha6, and the MoveTable.
+|-
+| <code>flags =</code> || Sets flag conditions? Havent experimented and not too sure
+|-
+| <code>CmdCheck = {} || Adds conditions that must be fulfilled in order for the move to register. Commonly used for conditions such as having less that 5 fireballs on screen or being on a certain pattern/move.
+|}
+
+{| class="wikitable"
+|+ CmdCheck Functions (incomplete)
+|-
+! Function Name !! Comment
+|-
+| <code>SkillType = </code> || Sets what skill type this move is, such as "AddCommand".
+|-
+| <code>MvCheck = </code> || Makes it so this move can only be done during other moves.
+|-
+| <code>Cost = {ComboGauge = ___}"Cmd_x"</code> || Adds a meter requirement to this move.
+|-
+| <code>PosState = </code> || Adds a position state requirement to this move, such as "Air"
+|-
+| <code>FrameIDCheck = { Only = ___ }</code> || Makes it so this move can only be done if the current frame matches the FrameIDCheck
+|-
+|}
+
+== Character_mv_0.txt ==
+
+'''This is where the bulk of the code is stored, and hence this section will not cover everything. You'll have to do a lot of trial and error.'''
+
+The MoveTable lists every move + functions for Skills, as well as handling UI Elements and character-unique meters (Noel keys, Yuzuriha Icons, Eltnum Bullets)
+
+=== Editing Moves ===
+
+=== Editing Skills ===
+
+=== List of Variables===
+
+{{Navbox-MFPG}}
+[[Category:Modding French Bread Games]]

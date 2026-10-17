@@ -1,0 +1,38 @@
+# MBTL v2 full-frame capture of one case (after mbtl_to_training.gcs, which leaves the game frozen by gamecap).
+# MBTL-IM's own Pause (F5) / Next frame (F6) / hitbox overlay (F2), pressed with gamecap's virtual keys: the agent
+# patches only the MBTL-IM proxy's GetAsyncKeyState/GetForegroundWindow imports (no focus change, no global input).
+# MBTL-IM pauses by suppressing ticks, so MBTL's catch-up timer never runs a burst of updates (the drift of the old
+# gamecap-freeze method). Shots: capture_window (PrintWindow of our HWND), clean and then with the hitbox overlay.
+# Vars: CASE PAT SETFRAME FRAME GTICK NSTEPS OUTD
+include mbtl.gcs
+unfreeze
+wait_frames 30
+key_tap F5 3 10
+wait_frames 10
+peek i32 p1+OBJ_TICK tick_paused_a
+wait_frames 10
+peek i32 p1+OBJ_TICK tick_paused_b
+call Object_SetPatternFrame ecx=p1 edx=${PAT} ${SETFRAME}
+wait_frames 4
+peek i32 p1+OBJ_PATTERN pat_after_set
+peek i32 p1+OBJ_FRAME frame_after_set
+peek i32 p1+OBJ_TICK tick_after_set
+include mbtl_v2_steps_${NSTEPS}.gcs
+wait_frames 6
+peek i32 p1+OBJ_PATTERN pat_s
+peek i32 p1+OBJ_FRAME frame_s
+peek i32 p1+OBJ_TICK tick_s
+assert_mem i32 p1+OBJ_PATTERN == ${PAT}
+assert_mem i32 p1+OBJ_FRAME == ${FRAME}
+assert_mem i32 p1+OBJ_TICK == ${GTICK}
+set OUT_META ${OUTD}\${CASE}_game.json
+include mbtl_meta.gcs
+capture_window ${OUTD}\${CASE}_game.png
+capture ${OUTD}\${CASE}_game_bb.png
+key_tap F2 3 10
+wait_frames 6
+capture_window ${OUTD}\${CASE}_game_im.png
+key_tap F2 3 10
+key_tap F5 3 10
+wait_frames 4
+freeze

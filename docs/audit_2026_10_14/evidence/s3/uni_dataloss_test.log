@@ -1,0 +1,16 @@
+rc=0
+detect UNI2: 115 files, 0 wrong
+detect MBTL: 147 files, 0 wrong
+detect UNIB: 61 files, 0 wrong
+UNIB mv script: found
+templates C:/dev/hantei-chan/gamedata/uni2/data/chr000: 48 template-backed pattern(s) (expected 48)
+templates C:/dev/hantei-chan/gamedata/mbtl/data/chr000: 39 template-backed pattern(s) (expected 39)
+VectorTable uni2: 287 names
+VectorTable mbtl: 211 names
+VectorTable uni2 #0 bytes: e9 a0 ad e3 82 84 e3 82 89 e3 82 8c e5 bc b1
+same-game paste /uni2/data/chr000/chr000.ha6: 0 pattern(s) changed, bytes identical
+same-game paste /mbtl/data/chr000/chr000.ha6: 0 pattern(s) changed, bytes identical
+187 checks, 0 failed
+UNI_DATALOSS_PASS
+
+[exited with code 0]

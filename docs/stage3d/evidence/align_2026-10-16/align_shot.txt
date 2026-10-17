@@ -1,0 +1,47 @@
+# MBAACC alignment end to end (run: tools/stage3d/shot.sh tools/stage3d/align_shot.txt): one stage per game, align on, window shots, stage3d.ini
+wait 10
+stage3d open C:/dev/hantei-chan/work/align_stages/uni2/bg bg001
+wait 10
+stage3d status
+stage3d align on 0 1 1 0
+wait 5
+capture C:/dev/hantei-chan/work/ab/align_uni2_cam0.png
+stage3d align on 300 0.8 0.9 0.5
+wait 5
+capture C:/dev/hantei-chan/work/ab/align_uni2_clamp.png
+stage3d alignini
+stage3d align off
+stage3d open C:/dev/hantei-chan/work/align_stages/mbtl/bg bg001
+wait 10
+stage3d status
+stage3d align on 0 1 1 0
+wait 5
+capture C:/dev/hantei-chan/work/ab/align_mbtl_cam0.png
+stage3d align on 300 0.8 0.9 0.5
+wait 5
+capture C:/dev/hantei-chan/work/ab/align_mbtl_clamp.png
+stage3d alignini
+stage3d align off
+stage3d open C:/dev/hantei-chan/work/align_stages/dfci/bg bg01
+wait 10
+stage3d status
+stage3d align on 0 1 1 0
+wait 5
+capture C:/dev/hantei-chan/work/ab/align_dfci_cam0.png
+stage3d align on 300 0.8 0.9 0.5
+wait 5
+capture C:/dev/hantei-chan/work/ab/align_dfci_clamp.png
+stage3d alignini
+stage3d align off
+stage3d open C:/dev/hantei-chan/work/align_stages/unib/bg bg01
+wait 10
+stage3d status
+stage3d align on 0 1 1 0
+wait 5
+capture C:/dev/hantei-chan/work/ab/align_unib_cam0.png
+stage3d align on 300 0.8 0.9 0.5
+wait 5
+capture C:/dev/hantei-chan/work/ab/align_unib_clamp.png
+stage3d alignini
+stage3d align off
+quit

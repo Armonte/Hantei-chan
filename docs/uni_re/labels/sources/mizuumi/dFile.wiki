@@ -1,0 +1,14 @@
+<!-- source: https://mizuumi.wiki/w/User:Pixloen/FPANModding/dFile (MediaWiki API, 2026-10-15) -->
+{{DISPLAYTITLE:Editing D Files (UNICLR)}}
+
+UNDER NIGHT IN-BIRTH's engine encrypts it's assets into seemingly random files found in the d folder (referred to as D files from here on out). While the D files are used to extract the assets from the game, in certain cases the same D files will force a hardcoded load (meaning your modifications may not work).
+Notable examples of hardcoded assets include
+
+*Character Select Graphics
+*Dialogue Text
+*Character Names
+
+These hardcoded assets can be removed by simply editing the D file that loads the asset. 
+
+{{Navbox-MFPG}}
+[[Category:Modding French Bread Games]]

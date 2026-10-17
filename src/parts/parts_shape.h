@@ -13,7 +13,8 @@
 
 enum class ShapeType {
     PLANE = 1,   // Flat quad
-    UNK2 = 2,    // Unknown (treated like plane)
+    RECT = 2,    // Rect from the shape's own x/y/w/h (CPAniPrimRender_Rect)
+    UNK2 = RECT, // old name
     RING = 3,    // Cylindrical section
     ARC = 4,     // Curved surface
     SPHERE = 5,  // Spherical surface
@@ -34,13 +35,16 @@ public:
     int dRadius = 0;       // Radius delta
     int width = 0;         // Width
     int dz = 0;            // Depth delta
+    // RECT (type 2): VEST params 3..6 = w, h, x, y (uni2.exe PrimRect_Setup 0x413E80; corners
+    // CPAniPrimRender_Rect vtable 0x940A44: (x, y) .. (x + w, y + h)).
+    int rectW = 0, rectH = 0, rectX = 0, rectY = 0;
 
     // Loading
     static unsigned int* VeLoad(unsigned int* data, const unsigned int* data_end, int amount, int len, std::vector<Shape<>>* shapes);
     static unsigned int* VnLoad(unsigned int* data, const unsigned int* data_end, int amount, std::vector<Shape<>>* shapes);
 
     // Saving
-    static void Save(std::ofstream &file, const Shape *shape, bool saveName);
+    static void Save(std::ostream &file, const Shape *shape, bool saveName);
     static bool IsModifiedData(const Shape *shape);
 
     // Utilities

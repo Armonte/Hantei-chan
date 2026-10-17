@@ -1,4 +1,5 @@
 #include "parts_shape.h"
+#include "../app_log.h"
 #include <fstream>
 #include <cstring>
 
@@ -14,9 +15,15 @@ unsigned int* Shape<>::VeLoad(unsigned int* data, const unsigned int* data_end, 
         {
             // Plane
             case ShapeType::PLANE:
-            // Type 2 - unknown, treated like plane
-            case ShapeType::UNK2:
                 // No additional parameters
+                break;
+
+            // Rect: its own w, h, x, y
+            case ShapeType::RECT:
+                sh.rectW = data[3];
+                sh.rectH = data[4];
+                sh.rectX = data[5];
+                sh.rectY = data[6];
                 break;
 
             // Ring, Arc
@@ -49,7 +56,7 @@ unsigned int* Shape<>::VeLoad(unsigned int* data, const unsigned int* data_end, 
                 break;
 
             default:
-                std::cout << "\tUnknown Shape type: " << (int)sh.type << "\n";
+                HC_LOG_WARN("Unknown Shape type: {}", (int)sh.type);
                 break;
         }
 
@@ -84,7 +91,7 @@ unsigned int* Shape<>::VnLoad(unsigned int* data, const unsigned int* data_end, 
         else {
             char tag[5]{};
             memcpy(tag, buf, 4);
-            std::cout << "\tUnknown VE level tag: " << tag << "\n";
+            HC_LOG_WARN("Unknown VE level tag: {}", (const char *)tag);
         }
     }
 
@@ -92,7 +99,7 @@ unsigned int* Shape<>::VnLoad(unsigned int* data, const unsigned int* data_end, 
 }
 
 template<>
-void Shape<>::Save(std::ofstream &file, const Shape<> *shape, bool saveName)
+void Shape<>::Save(std::ostream &file, const Shape<> *shape, bool saveName)
 {
     if(saveName) {
         // Save name (32-byte field)
@@ -112,6 +119,13 @@ void Shape<>::Save(std::ofstream &file, const Shape<> *shape, bool saveName)
 
         switch(shape->type)
         {
+            case ShapeType::RECT:
+                params[3] = shape->rectW;
+                params[4] = shape->rectH;
+                params[5] = shape->rectX;
+                params[6] = shape->rectY;
+                break;
+
             case ShapeType::RING:
             case ShapeType::ARC:
                 params[3] = shape->radius;
@@ -155,6 +169,11 @@ bool Shape<>::IsModifiedData(const Shape<> *shape)
 
     switch(shape->type)
     {
+        case ShapeType::RECT:
+            if(shape->rectW != 0 || shape->rectH != 0 || shape->rectX != 0 || shape->rectY != 0)
+                return true;
+            break;
+
         case ShapeType::RING:
         case ShapeType::ARC:
             if(shape->radius != 0 ||
@@ -204,4 +223,8 @@ void Shape<>::CopyTo(Shape<>* shape)
     shape->dRadius = dRadius;
     shape->width = width;
     shape->dz = dz;
+    shape->rectW = rectW;
+    shape->rectH = rectH;
+    shape->rectX = rectX;
+    shape->rectY = rectY;
 }

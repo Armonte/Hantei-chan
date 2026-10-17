@@ -1,0 +1,3 @@
+line 10 'cgm fxr status': fxr status: path='C:\games\mbaacc\fxrecolor\akiha.ini' auto=1 rules=9 rule=0 pattern=64 slot=0 | Imported 9 DGV groups, palette-following (accent tokens; Akiha only: sprite ids are Akiha's)
+line 25 'cgm fxr status': fxr status: path='C:\games\mbaacc\fxrecolor\akiha.ini' auto=1 rules=9 rule=0 pattern=64 slot=30 | Saved 9 rules to C:/dev/hantei-chan/work/ab_fxr2/fxr_accent_saved/akiha.ini
+line 29 'cgm fxr status': fxr status: path='C:\games\mbaacc\fxrecolor\akiha.ini' auto=1 rules=9 rule=0 pattern=64 slot=16 | Imported 9 DGV groups (Akiha only: sprite ids are Akiha's)

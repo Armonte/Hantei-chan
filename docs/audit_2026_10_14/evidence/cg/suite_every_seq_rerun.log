@@ -1,0 +1,83 @@
+=== UNI2
+SECTION cgm-bank: pass 84 fail 0 | images 21447 (undrawable 0), decode==CG 21447, differ 0 | type0:21447
+SECTION cgm-palette: pass 86 fail 0 | palettes checked 344 (raw exact, .act/.gpl/.png round trip, neutral recolour identity)
+SECTION cgm-palette-uni: pass 57 fail 0 | pair move/swap round trip, layout conversion, UNI single export, import of any index
+=== MBTL
+SECTION cgm-bank: pass 88 fail 0 | images 22850 (undrawable 0), decode==CG 22850, differ 0 | type0:22850
+SECTION cgm-palette: pass 106 fail 0 | palettes checked 424 (raw exact, .act/.gpl/.png round trip, neutral recolour identity)
+SECTION cgm-palette-uni: pass 81 fail 0 | pair move/swap round trip, layout conversion, UNI single export, import of any index
+=== MBAC
+FAIL C:\dev\hantei-chan\gamedata\mbac\05\BG00.DAT: parse: not a BMP Cutter bank
+FAIL C:\dev\hantei-chan\gamedata\mbac\05\BG00_S.DAT: parse: not a BMP Cutter bank
+FAIL C:\dev\hantei-chan\gamedata\mbac\05\BG01.DAT: parse: not a BMP Cutter bank
+FAIL C:\dev\hantei-chan\gamedata\mbac\05\BG01_S.DAT: parse: not a BMP Cutter bank
+FAIL C:\dev\hantei-chan\gamedata\mbac\05\BG02.DAT: parse: not a BMP Cutter bank
+FAIL C:\dev\hantei-chan\gamedata\mbac\05\BG02_S.DAT: parse: not a BMP Cutter bank
+FAIL C:\dev\hantei-chan\gamedata\mbac\05\BG03.DAT: parse: not a BMP Cutter bank
+FAIL C:\dev\hantei-chan\gamedata\mbac\05\BG03_S.DAT: parse: not a BMP Cutter bank
+FAIL C:\dev\hantei-chan\gamedata\mbac\05\BG04.DAT: parse: not a BMP Cutter bank
+FAIL C:\dev\hantei-chan\gamedata\mbac\05\BG04_S.DAT: parse: not a BMP Cutter bank
+FAIL C:\dev\hantei-chan\gamedata\mbac\05\BG05.DAT: parse: not a BMP Cutter bank
+FAIL C:\dev\hantei-chan\gamedata\mbac\05\BG05_S.DAT: parse: not a BMP Cutter bank
+FAIL C:\dev\hantei-chan\gamedata\mbac\05\BG06.DAT: parse: not a BMP Cutter bank
+FAIL C:\dev\hantei-chan\gamedata\mbac\05\BG06_S.DAT: parse: not a BMP Cutter bank
+FAIL C:\dev\hantei-chan\gamedata\mbac\05\BG07.DAT: parse: not a BMP Cutter bank
+FAIL C:\dev\hantei-chan\gamedata\mbac\05\BG07_S.DAT: parse: not a BMP Cutter bank
+FAIL C:\dev\hantei-chan\gamedata\mbac\05\BG08.DAT: parse: not a BMP Cutter bank
+FAIL C:\dev\hantei-chan\gamedata\mbac\05\BG08_S.DAT: parse: not a BMP Cutter bank
+FAIL C:\dev\hantei-chan\gamedata\mbac\05\BG09.DAT: parse: not a BMP Cutter bank
+FAIL C:\dev\hantei-chan\gamedata\mbac\05\BG09_S.DAT: parse: not a BMP Cutter bank
+FAIL C:\dev\hantei-chan\gamedata\mbac\05\BG10.DAT: parse: not a BMP Cutter bank
+FAIL C:\dev\hantei-chan\gamedata\mbac\05\BG10_S.DAT: parse: not a BMP Cutter bank
+FAIL C:\dev\hantei-chan\gamedata\mbac\05\BG11.DAT: parse: not a BMP Cutter bank
+FAIL C:\dev\hantei-chan\gamedata\mbac\05\BG11_S.DAT: parse: not a BMP Cutter bank
+FAIL C:\dev\hantei-chan\gamedata\mbac\05\BG12.DAT: parse: not a BMP Cutter bank
+FAIL C:\dev\hantei-chan\gamedata\mbac\05\BG12_S.DAT: parse: not a BMP Cutter bank
+FAIL C:\dev\hantei-chan\gamedata\mbac\05\BG13.DAT: parse: not a BMP Cutter bank
+FAIL C:\dev\hantei-chan\gamedata\mbac\05\BG13_S.DAT: parse: not a BMP Cutter bank
+FAIL C:\dev\hantei-chan\gamedata\mbac\05\BG14.DAT: parse: not a BMP Cutter bank
+FAIL C:\dev\hantei-chan\gamedata\mbac\05\BG14_S.DAT: parse: not a BMP Cutter bank
+FAIL C:\dev\hantei-chan\gamedata\mbac\05\BG15.DAT: parse: not a BMP Cutter bank
+FAIL C:\dev\hantei-chan\gamedata\mbac\05\BG15_S.DAT: parse: not a BMP Cutter bank
+FAIL C:\dev\hantei-chan\gamedata\mbac\05\BG16.DAT: parse: not a BMP Cutter bank
+FAIL C:\dev\hantei-chan\gamedata\mbac\05\BG16_S.DAT: parse: not a BMP Cutter bank
+FAIL C:\dev\hantei-chan\gamedata\mbac\05\BG17.DAT: parse: not a BMP Cutter bank
+FAIL C:\dev\hantei-chan\gamedata\mbac\05\BG17_S.DAT: parse: not a BMP Cutter bank
+FAIL C:\dev\hantei-chan\gamedata\mbac\05\BG18.DAT: parse: not a BMP Cutter bank
+FAIL C:\dev\hantei-chan\gamedata\mbac\05\BG18_S.DAT: parse: not a BMP Cutter bank
+FAIL C:\dev\hantei-chan\gamedata\mbac\05\BG19.DAT: parse: not a BMP Cutter bank
+FAIL C:\dev\hantei-chan\gamedata\mbac\05\BG19_S.DAT: parse: not a BMP Cutter bank
+FAIL C:\dev\hantei-chan\gamedata\mbac\05\BG20.DAT: parse: not a BMP Cutter bank
+FAIL C:\dev\hantei-chan\gamedata\mbac\05\BG20_S.DAT: parse: not a BMP Cutter bank
+FAIL C:\dev\hantei-chan\gamedata\mbac\05\BG21.DAT: parse: not a BMP Cutter bank
+FAIL C:\dev\hantei-chan\gamedata\mbac\05\BG21_S.DAT: parse: not a BMP Cutter bank
+FAIL C:\dev\hantei-chan\gamedata\mbac\05\BG22.DAT: parse: not a BMP Cutter bank
+FAIL C:\dev\hantei-chan\gamedata\mbac\05\BG22_S.DAT: parse: not a BMP Cutter bank
+FAIL C:\dev\hantei-chan\gamedata\mbac\05\BG23.DAT: parse: not a BMP Cutter bank
+FAIL C:\dev\hantei-chan\gamedata\mbac\05\BG23_S.DAT: parse: not a BMP Cutter bank
+FAIL C:\dev\hantei-chan\gamedata\mbac\05\BG24.DAT: parse: not a BMP Cutter bank
+FAIL C:\dev\hantei-chan\gamedata\mbac\05\BG24_S.DAT: parse: not a BMP Cutter bank
+FAIL C:\dev\hantei-chan\gamedata\mbac\05\BG25.DAT: parse: not a BMP Cutter bank
+FAIL C:\dev\hantei-chan\gamedata\mbac\05\BG25_S.DAT: parse: not a BMP Cutter bank
+FAIL C:\dev\hantei-chan\gamedata\mbac\05\BG26.DAT: parse: not a BMP Cutter bank
+FAIL C:\dev\hantei-chan\gamedata\mbac\05\BG26_S.DAT: parse: not a BMP Cutter bank
+FAIL C:\dev\hantei-chan\gamedata\mbac\05\BG27.DAT: parse: not a BMP Cutter bank
+FAIL C:\dev\hantei-chan\gamedata\mbac\05\BG27_S.DAT: parse: not a BMP Cutter bank
+FAIL C:\dev\hantei-chan\gamedata\mbac\05\BG28.DAT: parse: not a BMP Cutter bank
+FAIL C:\dev\hantei-chan\gamedata\mbac\05\BG28_S.DAT: parse: not a BMP Cutter bank
+FAIL C:\dev\hantei-chan\gamedata\mbac\05\BG29.DAT: parse: not a BMP Cutter bank
+FAIL C:\dev\hantei-chan\gamedata\mbac\05\BG29_S.DAT: parse: not a BMP Cutter bank
+FAIL C:\dev\hantei-chan\gamedata\mbac\05\BG30.DAT: parse: not a BMP Cutter bank
+FAIL C:\dev\hantei-chan\gamedata\mbac\05\BG30_S.DAT: parse: not a BMP Cutter bank
+FAIL C:\dev\hantei-chan\gamedata\mbac\05\BG31.DAT: parse: not a BMP Cutter bank
+FAIL C:\dev\hantei-chan\gamedata\mbac\05\BG31_S.DAT: parse: not a BMP Cutter bank
+FAIL C:\dev\hantei-chan\gamedata\mbac\05\BG32.DAT: parse: not a BMP Cutter bank
+FAIL C:\dev\hantei-chan\gamedata\mbac\05\BG32_S.DAT: parse: not a BMP Cutter bank
+FAIL C:\dev\hantei-chan\gamedata\mbac\05\BG33.DAT: parse: not a BMP Cutter bank
+FAIL C:\dev\hantei-chan\gamedata\mbac\05\BG33_S.DAT: parse: not a BMP Cutter bank
+SECTION cgm-bank: pass 50 fail 68 | images 26064 (undrawable 26), decode==CG 26038, differ 0 | type-1:26 type0:17706 type1:3060 type2:3503 type3:1557 type4:212
+!! check C:\dev\hantei-chan\gamedata\mbac\02\AKAAKIHA.DAT exited 1
+
+real	1m59.096s
+user	0m1.207s
+sys	0m2.018s

@@ -1,9 +1,29 @@
 #include "character_view.h"
+#include "ini.h"
 #include "render.h"
+
+namespace {
+uint64_t g_nextViewId = 1;
+}
+
+void CharacterView::setId(uint64_t id)
+{
+	if (id == 0) return;
+	m_id = id;
+	if (id >= g_nextViewId) g_nextViewId = id + 1;
+}
 
 CharacterView::CharacterView(CharacterInstance* character, Render* render)
 	: m_character(character), m_viewNumber(0)
 {
+	m_id = g_nextViewId++;
+	// A new view starts from the character's last camera (projects store it
+	// per character for older files).
+	if (character) {
+		m_camera.panX = (float)character->renderX;
+		m_camera.panY = (float)character->renderY;
+	}
+
 	// Initialize independent state for this view
 	m_state.pattern = 0;
 	m_state.frame = 0;
@@ -19,6 +39,9 @@ CharacterView::~CharacterView()
 
 std::string CharacterView::getDisplayName() const
 {
+	if (isStageView()) {
+		return std::string("Stage: ") + m_stageDisplayName;
+	}
 	if (!m_character) {
 		return "Unknown";
 	}
@@ -33,7 +56,47 @@ std::string CharacterView::getDisplayName() const
 	// Always add pattern number (e.g., "Ciel #2 - 400")
 	name += " - " + std::to_string(m_state.pattern);
 
+	// ...and the start of the pattern's name, so tabs on the same character
+	// can be told apart (issue #4): at most 12 characters, cut on a UTF-8
+	// boundary.
+	if (const Sequence* seq = m_character->frameData.get_sequence(m_state.pattern)) {
+		const std::string& pat = seq->name.empty() ? seq->codeName : seq->name;
+		constexpr int maxChars = 12;
+		size_t end = 0;
+		int chars = 0;
+		while (end < pat.size() && chars < maxChars) {
+			const unsigned char c = (unsigned char)pat[end];
+			const size_t len = c < 0x80 ? 1 : (c >> 5) == 0x6 ? 2 : (c >> 4) == 0xE ? 3 : (c >> 3) == 0x1E ? 4 : 1;
+			if (end + len > pat.size()) break;
+			end += len;
+			++chars;
+		}
+		std::string shortName = pat.substr(0, end);
+		while (!shortName.empty() && shortName.back() == ' ') shortName.pop_back();
+		// "##" in a label would hide the rest of it (ImGui ID syntax).
+		for (auto& ch : shortName) if (ch == '#') ch = '-';
+		if (!shortName.empty()) {
+			name += " " + shortName;
+			if (end < pat.size()) name += "...";
+		}
+	}
+
 	return name;
+}
+
+void CharacterView::setStageFile(std::unique_ptr<bg::File> file, const std::string& displayName)
+{
+	m_stageFile = std::move(file);
+	m_stageDisplayName = displayName;
+	// Stage tabs default to scale 1.0 — u4ick's tool also renders 1:1, so
+	// the bg sprites end up at the same pixel size you'd see in his editor.
+	// The pan anchor (m_stageRenderX/Y) is *not* set here; it gets
+	// initialized by MainFrame::loadStageFile once clientRect is known so
+	// world (0, 0) lands at the proportional position 401/1280, 538/720
+	// (the character-feet anchor in u4ick's render window) regardless of the
+	// user's window dimensions. Setting it here would jitter on load.
+	m_camera.zoom = 1.0f;
+	m_stageRenderInit = false;
 }
 
 void CharacterView::refreshPanes(Render* render)
@@ -48,10 +111,17 @@ void CharacterView::refreshPanes(Render* render)
 	m_boxPane = std::make_unique<BoxPane>(render, &m_character->frameData, m_state);
 
 	// Set modification callbacks to mark the character (not the view) as modified
+	// Pane widgets edit the view's pattern: an indexed mark keeps the commit to that pattern (cross-pattern pane
+	// operations also call FrameData::mark_modified(), which feeds the undo manager).
 	auto modifyCallback = [this]() {
 		m_character->markModified();
-		m_character->undoManager.markModified();
+		m_character->undoManager.markModified(m_state.pattern);
 	};
+
+	// Panel visibility of new tabs follows the Window menu (saved in the ini).
+	if (m_mainPane) m_mainPane->isVisible = gSettings.showAnimPane;
+	if (m_rightPane) m_rightPane->isVisible = gSettings.showAttackPane;
+	if (m_boxPane) m_boxPane->isVisible = gSettings.showBoxPane;
 
 	if (m_mainPane) {
 		m_mainPane->onModified = modifyCallback;
@@ -87,6 +157,8 @@ void CharacterView::refreshPanes(Render* render)
 		m_stateRef.currentPatFilePath = nullptr;
 		m_stateRef.parts = &m_character->parts;
 		m_stateRef.renderMode = &m_state.renderMode;
+		m_stateRef.onEdited = [this] { m_character->undoManager.markModified(m_state.pattern); };
+		m_stateRef.isPatDocument = [this] { return m_character->isPatDocument(); };
 		
 		// Update Parts references for PatEditor support
 		m_character->parts.updatePatEditorReferences(&m_state, &m_state.renderMode);
@@ -97,6 +169,12 @@ void CharacterView::refreshPanes(Render* render)
 		m_shapePane = std::make_unique<PatShapePane>(render, &m_stateRef);
 		m_texturePane = std::make_unique<PatTexturePane>(render, &m_stateRef);
 		m_toolPane = std::make_unique<PatToolPane>(render, &m_stateRef);
+
+		m_partsetPane->isVisible = gSettings.showPatPartSetPane;
+		m_partPane->isVisible = gSettings.showPatPartPane;
+		m_shapePane->isVisible = gSettings.showPatShapePane;
+		m_texturePane->isVisible = gSettings.showPatTexturePane;
+		m_toolPane->isVisible = gSettings.showPatToolPane;
 
 		// Regenerate names for all PatEditor panes
 		if (m_partsetPane) {

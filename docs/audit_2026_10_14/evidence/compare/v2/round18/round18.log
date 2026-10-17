@@ -1,0 +1,34 @@
+-- mbtl_flipV_chr001_p157f2_z1 vs _st split by the s8 / s456 solo shots (additive coverage)
+(none of these shots)                        px   5154  lit 2.52 (share 25.2%)  raw 2.52 (share 26.4%)
+-- exclusive regions (edge = within 1 px of a coverage boundary)
+(none)           edge  px   1356  raw 2.50 signed +2.50 (share  6.9%)  |d|>8 px 38
+(none)           inner px   3798  raw 2.52 signed +2.52 (share 19.5%)  |d|>8 px 57
+s8_z1            edge  px   9503  raw 0.64 signed +0.61 (share 12.3%)  |d|>8 px 321
+s8_z1            inner px  20910  raw 0.99 signed +0.98 (share 42.2%)  |d|>8 px 961
+s456_z1          edge  px      3  raw 0.82 signed -0.80 (share  0.0%)  |d|>8 px 0
+s8_z1+s456_z1    edge  px  11483  raw 0.69 signed +0.17 (share 16.1%)  |d|>8 px 59
+s8_z1+s456_z1    inner px   2633  raw 0.54 signed +0.03 (share  2.9%)  |d|>8 px 0
+-- |d|>8 edge px 418: game==plate(<3) 0, model==plate(<3) 0, neither 418; signed mean +9.06
+   rows 249-270 cols 250-395
+-- mbtl_flipV_chr001_p157f2_solo_s456_z1 vs _st
+mbtl_flipV_chr001_p157f2_solo_s456_z1: raw 7.73 / 13.5%  lit 7.73 / 13.5%  band+-1 3.82 / 6.9%  (13156 px, ref
+-- mbtl_flipV_chr001_p157f2_solo_s456_z1 vs _stbb
+mbtl_flipV_chr001_p157f2_solo_s456_z1: raw 0.72 / 0.8%  lit 0.72 / 0.8%  band+-1 0.67 / 0.3%  (13156 px, refin
+-- mbtl_flipV_chr001_p157f2_solo_s8_z1 vs _st
+mbtl_flipV_chr001_p157f2_solo_s8_z1: raw 0.83 / 5.4%  lit 0.83 / 5.4%  band+-1 0.52 / 0.9%  (43965 px, refine 
+-- mbtl_flipV_chr001_p157f2_solo_s8_z1 vs _stbb
+mbtl_flipV_chr001_p157f2_solo_s8_z1: raw 4.23 / 5.2%  lit 4.23 / 5.2%  band+-1 2.42 / 0.4%  (43965 px, refine 
+-- mbtl_flipV_chr001_p157f2_solo_s8_z1 vs _nbl
+mbtl_flipV_chr001_p157f2_solo_s8_z1: raw 2.29 / 12.3%  lit 2.29 / 12.3%  band+-1 1.53 / 5.5%  (43965 px, refin
+-- lamp check mbtl_flipV_chr001_p157f2_solo_s8_z1 vs _solo_s8_st (alt plate = plate_b0)
+lamp fit: 28019 backdrop px, lam R/G/B +0.042 +0.044 +0.234; backdrop |G-B| 0.27 -> 0.52
+footprint 43965 px: raw 0.83 -> lamp-matched 0.98 (signed +0.82 -> +0.32)
+-- lamp check mbtl_flipV_chr001_p157f2_solo_s8_z1 vs _solo_s8_nbl (alt plate = plate_b0)
+lamp fit: 15965 backdrop px, lam R/G/B +0.046 +0.049 +0.256; backdrop |G-B| 0.42 -> 0.76
+footprint 43965 px: raw 2.29 -> lamp-matched 2.27 (signed -0.63 -> -1.00)
+-- lamp check mbtl_flipV_chr001_p157f2_solo_s456_z1 vs _solo_s456_st (alt plate = plate_b0)
+lamp fit: 5021 backdrop px, lam R/G/B +0.460 +0.505 +0.840; backdrop |G-B| 3.58 -> 1.34
+footprint 13156 px: raw 7.73 -> lamp-matched 5.11 (signed -7.51 -> -5.01)
+-- lamp check mbtl_flipV_chr001_p157f2_z1 vs _st (alt plate = plate_b0)
+lamp fit: 303 backdrop px, lam R/G/B +1.003 +1.161 +2.565; backdrop |G-B| 1.50 -> 0.34
+footprint 49686 px: raw 0.99 -> lamp-matched 0.85 (signed +0.83 -> -0.67)

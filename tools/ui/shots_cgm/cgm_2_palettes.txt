@@ -1,0 +1,27 @@
+# CG manager smoke 2 (MBTL chr000 .pal, 65 colours x 2 sets): pair move, new _p1.pal, in-place Save .pal.
+openany C:/dev/hantei-chan/work/ab_s45/fx/mbtl/data/chr000/chr000_0.txt
+wait 120
+cgm open
+wait 30
+cgm tab Palettes
+wait 20
+cgm set palNumber 3
+wait 20
+capture C:/dev/hantei-chan/work/ab_s45/shots/cgm_2_01_palettes_pair.png
+cgm press Move down
+wait 20
+cgm status
+capture C:/dev/hantei-chan/work/ab_s45/shots/cgm_2_02_pair_moved_3_to_4.png
+cgm set newPups 1
+cgm press New PUPS bank _pN.pal
+wait 30
+cgm status
+capture C:/dev/hantei-chan/work/ab_s45/shots/cgm_2_03_new_p1_pal.png
+cgm set palBank 0
+cgm set palNumber 4
+wait 10
+cgm press Save .pal
+wait 30
+cgm status
+capture C:/dev/hantei-chan/work/ab_s45/shots/cgm_2_04_saved_pal.png
+quit

@@ -1,0 +1,65 @@
+gamecap C:\dev\hantei-chan\wt\s3-uni-dataloss\docs\audit_2026_10_14\evidence\s3\ingame\s3_tint_mem.gcs
+launched uni2.exe pid 22756 (suspended)
+agent attached: module base 0x005e0000, hooks 0x39
+window 00dc09f6 at 802,158 1296x759
+placed window at -640,307
+frozen at frame 3917
+poke g_MenuPlayerSide @0x00b85940 <- 0
+poke g_TitleBootMode @0x00b84a88 <- 2
+poke g_TitleResult @0x00bcfff4 <- 8
+poke g_TitleState4Timer @0x00bcfffc <- 0
+poke g_TitleStateTimer @0x00bcffe4 <- 0
+poke g_TitleState @0x00bcffe0 <- 4
+step_until met after 16 frame(s) (value 24)
+step_until met after 2 frame(s) (value 8)
+poke g_CSS_LastChara @0x00b84324 <- 0
+poke g_CSS_LastChara+4 @0x00b84328 <- 1
+poke g_CSS_LastColor @0x00d56bd0 <- 0
+poke g_CSS_LastColor+4 @0x00d56bd4 <- 0
+step_until met after 8 frame(s) (value 15)
+status: frame 4051 frozen 0 freeze 0 budget 0 hooks 0x3f cmd 0/0
+status: frame 4151 frozen 0 freeze 0 budget 0 hooks 0x3f cmd 0/0
+frozen at frame 4272
+peek p1_x @0x012452e4 = -40960 (0xffffffffffff6000)
+peek p2_x @0x01245ea4 = 40960 (0xa000)
+peek p1_facing @0x012458c4 = 0 (0x0)
+peek p1_pattern @0x0124529c = 0 (0x0)
+echo: uni2 training ready: P1 chr0 vs P2 chr1 (frozen)
+call 0x0071c2e0 -> 0x00000000
+step_until met after 1 frame(s) (value 1)
+peek tick @0x012452b0 = 1 (0x1)
+peek afhk_progress @0x012452c8 = 0
+peek duration @0x2ef6fe56 = 7 (0x7)
+peek frame_id @0x2ef6fe5c = 0 (0x0)
+peek facing @0x012458c4 = 0 (0x0)
+meta -> C:\dev\hantei-chan\wt\s3-uni-dataloss\docs\audit_2026_10_14\evidence\s3\ingame\mem_vanilla_p0_f0.meta.txt
+captured C:\dev\hantei-chan\wt\s3-uni-dataloss\docs\audit_2026_10_14\evidence\s3\ingame\mem_vanilla_p0_f0.png (1280x720 fmt 22)
+peek afrg_r_before @0x2ef6fd70 = 255 (0xff)
+peek afrg_g_before @0x2ef6fd71 = 255 (0xff)
+peek afrg_b_before @0x2ef6fd72 = 255 (0xff)
+poke [P1+OBJ_FRAMEDATA]+0x10 @0x2ef6fd70 <- 255
+poke [P1+OBJ_FRAMEDATA]+0x11 @0x2ef6fd71 <- 77
+poke [P1+OBJ_FRAMEDATA]+0x12 @0x2ef6fd72 <- 77
+call 0x0071c2e0 -> 0x00000000
+step_until met after 1 frame(s) (value 1)
+peek tick @0x012452b0 = 1 (0x1)
+peek afhk_progress @0x012452c8 = 0
+peek duration @0x2ef6fe56 = 7 (0x7)
+peek frame_id @0x2ef6fe5c = 0 (0x0)
+peek facing @0x012458c4 = 0 (0x0)
+meta -> C:\dev\hantei-chan\wt\s3-uni-dataloss\docs\audit_2026_10_14\evidence\s3\ingame\mem_tinted_p0_f0.meta.txt
+captured C:\dev\hantei-chan\wt\s3-uni-dataloss\docs\audit_2026_10_14\evidence\s3\ingame\mem_tinted_p0_f0.png (1280x720 fmt 22)
+peek afrg_r_after @0x2ef6fd70 = 255 (0xff)
+peek afrg_g_after @0x2ef6fd71 = 77 (0x4d)
+peek afrg_b_after @0x2ef6fd72 = 77 (0x4d)
+call 0x0071c2e0 -> 0x00000000
+step_until met after 1 frame(s) (value 1)
+peek tick @0x012452b0 = 1 (0x1)
+peek afhk_progress @0x012452c8 = 0
+peek duration @0x30bd1ece = 4 (0x4)
+peek frame_id @0x30bd1ed4 = 0 (0x0)
+peek facing @0x012458c4 = 0 (0x0)
+meta -> C:\dev\hantei-chan\wt\s3-uni-dataloss\docs\audit_2026_10_14\evidence\s3\ingame\mem_tinted_p96_f1.meta.txt
+captured C:\dev\hantei-chan\wt\s3-uni-dataloss\docs\audit_2026_10_14\evidence\s3\ingame\mem_tinted_p96_f1.png (1280x720 fmt 22)
+quit (quit): terminating pid 22756
+script finished: 496 commands, 3 capture(s)

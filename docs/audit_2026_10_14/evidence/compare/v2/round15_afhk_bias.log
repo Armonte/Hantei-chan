@@ -1,0 +1,42 @@
+== ctrl_chr020_p0  grad-ctrl ctrl_chr020_p0,ctrl_chr020_p0_r3
+ctrl_chr020_p0: raw 14.04 / 97.7%  lit 0.28 / 0.0%  band+-1 0.24 / 0.0%  (37551 px, refine +0,+0)  free fit k,c = (0.99,15), (1.01,10), (1.01,16)
+footprint            px 37551  lit 0.28  signed R/G/B +0.00 -0.00 +0.00
+interior (eroded 2)  px 31900  lit 0.28  signed R/G/B +0.00 +0.00 +0.00
+edge                 px  5651  lit 0.28  signed R/G/B -0.01 -0.02 -0.01
+best constant per channel +0.00 -0.00 +0.00 -> lit 0.28
+without the 0 |d|>5 px: lit 0.28; with the constant removed too: 0.28
+== ctrl_chr020_p0  grad-ctrl ctrl_chr020_p0,ctrl_chr020_p0_r3
+ctrl_chr020_p0: raw 14.04 / 97.7%  lit 0.28 / 0.0%  band+-1 0.24 / 0.0%  (37551 px, refine +0,+0)  free fit k,c = (0.99,15), (1.01,10), (1.01,16)
+footprint            px 37551  lit 0.28  signed R/G/B +0.00 -0.00 +0.00
+interior (eroded 2)  px 31900  lit 0.28  signed R/G/B +0.00 +0.00 +0.00
+edge                 px  5651  lit 0.28  signed R/G/B -0.01 -0.02 -0.01
+best constant per channel +0.00 -0.00 +0.00 -> lit 0.28
+without the 0 |d|>5 px: lit 0.28; with the constant removed too: 0.28
+== afhk_cg_chr020_p435_t27  grad-ctrl ctrl_chr020_p0,ctrl_chr020_p0_r3
+afhk_cg_chr020_p435_t27: raw 11.30 / 78.4%  lit 0.63 / 0.2%  band+-1 0.21 / 0.0%  (4421 px, refine +0,+0)  free fit k,c = (0.96,14), (0.97,14), (0.97,17)
+footprint            px  4421  lit 0.63  signed R/G/B -0.05 -0.08 -0.11
+interior (eroded 2)  px  2733  lit 0.66  signed R/G/B -0.09 -0.11 -0.14
+edge                 px  1688  lit 0.60  signed R/G/B +0.03 -0.04 -0.05
+best constant per channel -0.05 -0.08 -0.11 -> lit 0.66
+without the 8 |d|>5 px: lit 0.43; with the constant removed too: 0.45
+== afhk_cg_chr020_p435_t27  grad-ctrl afhk_cg_chr020_p435_t27,afhk_cg_chr020_p435_t27_r3
+afhk_cg_chr020_p435_t27: raw 11.30 / 78.4%  lit 0.65 / 0.2%  band+-1 0.22 / 0.0%  (4421 px, refine +0,+0)  free fit k,c = (0.96,14), (0.97,14), (0.97,17)
+footprint            px  4421  lit 0.65  signed R/G/B +0.05 +0.05 +0.05
+interior (eroded 2)  px  2733  lit 0.67  signed R/G/B -0.01 +0.00 -0.00
+edge                 px  1688  lit 0.61  signed R/G/B +0.14 +0.11 +0.13
+best constant per channel +0.05 +0.05 +0.05 -> lit 0.65
+without the 8 |d|>5 px: lit 0.44; with the constant removed too: 0.44
+== afhk_cg_chr020_p437_t2  grad-ctrl ctrl_chr020_p0,ctrl_chr020_p0_r3
+afhk_cg_chr020_p437_t2: raw 12.02 / 75.7%  lit 0.27 / 0.0%  band+-1 0.20 / 0.0%  (3517 px, refine +0,+0)  free fit k,c = (0.95,16), (0.97,14), (0.95,19)
+footprint            px  3517  lit 0.27  signed R/G/B +0.05 -0.11 +0.01
+interior (eroded 2)  px  2170  lit 0.26  signed R/G/B +0.04 -0.12 +0.01
+edge                 px  1347  lit 0.29  signed R/G/B +0.06 -0.10 +0.02
+best constant per channel +0.05 -0.11 +0.01 -> lit 0.28
+without the 0 |d|>5 px: lit 0.27; with the constant removed too: 0.28
+== afhk_cg_chr020_p437_t2  grad-ctrl afhk_cg_chr020_p437_t2,afhk_cg_chr020_p437_t2_r3
+afhk_cg_chr020_p437_t2: raw 12.02 / 75.7%  lit 0.26 / 0.0%  band+-1 0.19 / 0.0%  (3517 px, refine +0,+0)  free fit k,c = (0.95,16), (0.97,14), (0.95,19)
+footprint            px  3517  lit 0.26  signed R/G/B -0.00 +0.00 +0.00
+interior (eroded 2)  px  2170  lit 0.25  signed R/G/B -0.00 -0.01 -0.00
+edge                 px  1347  lit 0.28  signed R/G/B +0.00 +0.02 +0.01
+best constant per channel -0.00 +0.00 +0.00 -> lit 0.26
+without the 0 |d|>5 px: lit 0.26; with the constant removed too: 0.26

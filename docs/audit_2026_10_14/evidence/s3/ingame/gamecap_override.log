@@ -1,0 +1,47 @@
+gamecap C:\dev\hantei-chan\wt\s3-uni-dataloss\docs\audit_2026_10_14\evidence\s3\ingame\s3_tint.gcs
+launched uni2.exe pid 21812 (suspended)
+agent attached: module base 0x00c10000, hooks 0x39
+window 00cd1ab8 at 802,158 1296x759
+placed window at -640,307
+frozen at frame 4679
+poke g_MenuPlayerSide @0x011b5940 <- 0
+poke g_TitleBootMode @0x011b4a88 <- 2
+poke g_TitleResult @0x011ffff4 <- 8
+poke g_TitleState4Timer @0x011ffffc <- 0
+poke g_TitleStateTimer @0x011fffe4 <- 0
+poke g_TitleState @0x011fffe0 <- 4
+step_until met after 16 frame(s) (value 24)
+step_until met after 2 frame(s) (value 8)
+poke g_CSS_LastChara @0x011b4324 <- 0
+poke g_CSS_LastChara+4 @0x011b4328 <- 1
+poke g_CSS_LastColor @0x01386bd0 <- 0
+poke g_CSS_LastColor+4 @0x01386bd4 <- 0
+step_until met after 8 frame(s) (value 15)
+status: frame 4755 frozen 0 freeze 0 budget 0 hooks 0x3f cmd 0/0
+status: frame 4867 frozen 0 freeze 0 budget 0 hooks 0x3f cmd 0/0
+frozen at frame 4988
+peek p1_x @0x018752e4 = -40960 (0xffffffffffff6000)
+peek p2_x @0x01875ea4 = 40960 (0xa000)
+peek p1_facing @0x018758c4 = 0 (0x0)
+peek p1_pattern @0x0187529c = 0 (0x0)
+echo: uni2 training ready: P1 chr0 vs P2 chr1 (frozen)
+peek start_pat @0x0187529c = 0 (0x0)
+captured C:\dev\hantei-chan\wt\s3-uni-dataloss\docs\audit_2026_10_14\evidence\s3\ingame\override_training_start.png (1280x720 fmt 22)
+call 0x00d4c2e0 -> 0x00000000
+step_until met after 1 frame(s) (value 1)
+peek tick @0x018752b0 = 1 (0x1)
+peek afhk_progress @0x018752c8 = 0
+peek duration @0x1af73f66 = 7 (0x7)
+peek frame_id @0x1af73f6c = 0 (0x0)
+peek facing @0x018758c4 = 0 (0x0)
+captured C:\dev\hantei-chan\wt\s3-uni-dataloss\docs\audit_2026_10_14\evidence\s3\ingame\override_p0_f0.png (1280x720 fmt 22)
+call 0x00d4c2e0 -> 0x00000000
+step_until met after 1 frame(s) (value 1)
+peek tick @0x018752b0 = 1 (0x1)
+peek afhk_progress @0x018752c8 = 0
+peek duration @0x2cb339a6 = 4 (0x4)
+peek frame_id @0x2cb339ac = 0 (0x0)
+peek facing @0x018758c4 = 0 (0x0)
+captured C:\dev\hantei-chan\wt\s3-uni-dataloss\docs\audit_2026_10_14\evidence\s3\ingame\override_p96_f1.png (1280x720 fmt 22)
+quit (quit): terminating pid 21812
+script finished: 336 commands, 3 capture(s)

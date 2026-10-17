@@ -16,18 +16,21 @@ public:
     bool isUnkParams = false;
 	void Draw();
     void DrawPartCutOut();
-    void BoxStart(int x, int y);
-    void BoxDrag(int x, int y);
+    // UV view right-drag (sosfiro): the rectangle from the press point to the cursor becomes the selected cut-out's
+    // UV rectangle. Sheet pixels (0..w, 0..h of the cut-out's texture). Returns false when there is nothing to edit.
+    bool BoxStart(float px, float py);
+    void BoxDrag(float px, float py);
     void DrawPopUp();
     void RegeneratePartCutOutsNames();
 
 private:
-    void SetButtonCenterCalc(std::string label, int xy[], CutOut<>* cutOut);
+    void SetButtonCenterCalc(const char* label, int x, int y, CutOut<>* cutOut);
+    int cutOutsNamesCount = -1;
     std::string openpopupWithId;
     std::string customPopUpMessage;
     std::string *cutOutsDecoratedNames;
     PatPartSetPane* partsetPane;
-    float dragxy[2];
+    float dragxy[2]{};
 
 
 };

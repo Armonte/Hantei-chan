@@ -1,0 +1,11 @@
+# GOF1: EX3 (byte-pair compressed BMP) previewed without extracting
+browse C:\games\gof1\run
+waitidle
+type Images
+filter .ex3
+waitidle
+select AKIKO00.EX3
+waitidle
+wait 30
+capture C:/dev/hantei-chan/work/ab/shots/04_ex3_image.png
+quit

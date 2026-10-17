@@ -1,0 +1,49 @@
+# PACNyx parity: RBO character -> PAT editor (pose controls, part list, layer / nudge / rotate), sheet view with a mouse-style selection,
+# PNG sheet import (square check), add part from the selection, undo, Save As .DT2 (the .DAT companion carries parts / CG / names)
+browse C:\games\rbo_run
+waitidle
+select ACOLYTE_F.DT2
+waitidle
+open
+wait 160
+partseditor
+wait 60
+pose 3
+part 2
+wait 30
+capture C:/dev/hantei-chan/work/ab/shots/pn01_pose_controls.png
+importsheet C:\dev\hantei-chan\work\pacnyx\not_square_256x200.png
+importsheet C:\dev\hantei-chan\work\pacnyx\test_sheet_256.png
+sheetview on
+sheetsel 8 8 112 112
+# the sheet is drawn from world (0,0): centre it (zoom 1.5, 256-px sheet -> 384 px on screen)
+zoomview 1.5
+viewpan -192 -192
+wait 30
+capture C:/dev/hantei-chan/work/ab/shots/pn02_sheet_selection.png
+addpart
+sheetview off
+zoomview 3
+viewpan 0 150
+wait 20
+nudge 30 -40
+rotate 15
+layer front
+dirty
+wait 30
+capture C:/dev/hantei-chan/work/ab/shots/pn03_part_added.png
+undo
+undo
+dirty
+wait 20
+capture C:/dev/hantei-chan/work/ab/shots/pn04_after_undo.png
+redo
+redo
+dirty
+addpose MY_NEW_POSE
+basepoint 4 0
+savechar-as C:\dev\hantei-chan\work\pacnyx\out\ACOLYTE_F.DT2
+dirty
+wait 30
+capture C:/dev/hantei-chan/work/ab/shots/pn05_saved.png
+quit

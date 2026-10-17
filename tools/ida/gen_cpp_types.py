@@ -1,0 +1,138 @@
+#!/usr/bin/env python3
+"""IDA decl header(s) -> C++ header with packed structs, enums, static_asserts on sizeof/offsetof and a field reflection table.
+
+The IDA decl files (docs/formats/ida/*_types.h) are the source of truth shared with the IDA database (idc.parse_decls).
+Offsets in the `// +0xNN` comments are CHECKED against the computed layout, so a wrong comment fails generation.
+
+usage: gen_cpp_types.py out.h in1.h [in2.h ...]
+"""
+import re, sys
+
+PRIM = {'char': 1, 'unsigned char': 1, 'signed char': 1, '__int8': 1, 'unsigned __int8': 1,
+        '__int16': 2, 'unsigned __int16': 2, 'short': 2, 'unsigned short': 2,
+        'int': 4, 'unsigned int': 4, '__int32': 4, 'unsigned __int32': 4, 'float': 4,
+        '__int64': 8, 'unsigned __int64': 8,
+        'int8_t': 1, 'uint8_t': 1, 'int16_t': 2, 'uint16_t': 2, 'int32_t': 4, 'uint32_t': 4}
+CT = {'char': 'char', 'unsigned char': 'uint8_t', 'signed char': 'int8_t', '__int8': 'int8_t', 'unsigned __int8': 'uint8_t',
+      '__int16': 'int16_t', 'unsigned __int16': 'uint16_t', 'short': 'int16_t', 'unsigned short': 'uint16_t',
+      'int': 'int32_t', 'unsigned int': 'uint32_t', '__int32': 'int32_t', 'unsigned __int32': 'uint32_t', 'float': 'float',
+      '__int64': 'int64_t', 'unsigned __int64': 'uint64_t',
+      'int8_t': 'int8_t', 'uint8_t': 'uint8_t', 'int16_t': 'int16_t', 'uint16_t': 'uint16_t', 'int32_t': 'int32_t', 'uint32_t': 'uint32_t'}
+UND = {'unsigned short': 'uint16_t', 'short': 'int16_t', 'char': 'int8_t', 'unsigned char': 'uint8_t', 'unsigned int': 'uint32_t', 'int': 'int32_t', 'unsigned __int16': 'uint16_t', '__int16': 'int16_t', 'int32_t': 'int32_t', 'uint32_t': 'uint32_t', 'uint8_t': 'uint8_t', 'uint16_t': 'uint16_t', 'int8_t': 'int8_t', 'int16_t': 'int16_t'}
+
+text = ''
+for p in sys.argv[2:]:
+    text += open(p, encoding='utf-8').read() + '\n'
+def _split_one_liners(t):   # `struct X { a; b; };` on one line -> one field per line (agents write compact helper structs)
+    out = []
+    for line in t.split('\n'):
+        m = re.match(r'^(\s*struct\s+\w+\s*\{)(.*;)\s*\}\s*;(\s*//.*)?$', line)
+        if m and ';' in m.group(2):
+            out.append(m.group(1))
+            out += [' ' + f.strip() + ';' for f in m.group(2).split(';') if f.strip()]
+            out.append('};' + (m.group(3) or ''))
+        else:
+            out.append(line)
+    return '\n'.join(out)
+text = _split_one_liners(text)
+text = re.sub(r'^(\s*)[\w\s\*]+?\(\s*\*\s*(\w+)\s*\)\s*\([^)]*\)\s*;', r'\1unsigned int \2;', text, flags=re.M)   # function-pointer FIELDS become 32-bit pointers (typedefs are handled below)
+text = re.sub(r'^\s*struct\s+\w+\s*;\s*$', '', text, flags=re.M)   # forward declarations
+
+enums = {}   # name -> (underlying, [(n,v)])
+for m in re.finditer(r'enum\s+(\w+)\s*:\s*([\w ]+?)\s*\{(.*?)\};', text, re.S):
+    items = []
+    for it in m.group(3).split(','):
+        it = re.sub(r'//.*', '', it).strip()
+        if not it: continue
+        n, v = [x.strip() for x in it.split('=')]
+        items.append((n, v))
+    enums[m.group(1)] = (m.group(2).strip(), items)
+
+fnptr = set(re.findall(r'typedef\s+[^;]*?\(\s*(?:__\w+\s+)?\*\s*(\w+)\s*\)\s*\([^;]*\)\s*;', text))
+text = re.sub(r'typedef\s+[^;]*?\([^;]*\)\s*;', '', text)
+unions = set()
+structs = {}  # name -> list of (ctype, name, count, off, comment)
+sizes = {}
+order = []
+for m in re.finditer(r'(struct|union)\s+(\w+)\s*\{(.*?)\n\};', text, re.S):
+    isunion = m.group(1) == 'union'
+    name = m.group(2); fields = []; off = 0; usz = 0
+    for line in m.group(3).split('\n'):
+        line = line.strip()
+        if not line or line.startswith('//'): continue
+        mm = re.match(r'(.+?)\s+(\*?\w+)((?:\[\w+\])*);\s*(?://\s*(.*))?$', line)
+        if not mm: raise SystemExit('cannot parse: ' + line)
+        ty, fn, dims, cm = mm.group(1).strip(), mm.group(2), mm.group(3), mm.group(4) or ''
+        cnt = None
+        if dims:
+            cnt = 1
+            for d in re.findall(r'\[(\w+)\]', dims): cnt *= int(d, 0)
+            cnt = str(cnt)
+        ty = re.sub(r'^(struct|union|enum)\s+', '', ty)
+        ptr = fn.startswith('*') or ty.endswith('*') or ty in fnptr
+        fn = fn.lstrip('*')
+        if ptr: sz = 4; cty = 'uint32_t'   # 32-bit game pointers kept as plain u32 in file/in-memory images
+        elif ty in PRIM: sz = PRIM[ty]; cty = CT[ty]
+        elif ty in enums: sz = PRIM[enums[ty][0]]; cty = ty
+        elif ty in sizes: sz = sizes[ty]; cty = ty
+        else: raise SystemExit('unknown type %s in %s' % (ty, name))
+        n = int(cnt, 0) if cnt else 1
+        mo = re.search(r'\+0x([0-9A-Fa-f]+)', cm)
+        if mo and not isunion and int(mo.group(1), 16) != off:
+            raise SystemExit('%s.%s: comment says +0x%s but layout puts it at 0x%X' % (name, fn, mo.group(1), off))
+        fields.append((cty, fn, cnt and n, 0 if isunion else off, cm, ty, sz))
+        if isunion: usz = max(usz, sz * n)
+        else: off += sz * n
+    structs[name] = fields; sizes[name] = usz if isunion else off; order.append(name)
+    if isunion: unions.add(name)
+
+import os
+tag = ''.join(w.capitalize() for w in os.path.basename(sys.argv[1]).replace('_gen.h', '').split('_'))
+out = ['// GENERATED by tools/ida/gen_cpp_types.py from docs/formats/ida/*_types.h. DO NOT EDIT.',
+       '#pragma once', '#include <cstddef>', '#include <cstdint>', '#include "han2_reflect.h"', '']
+for n, (u, items) in enums.items():
+    out.append('enum %s : %s {' % (n, UND[u]))
+    for a, b in items: out.append('\t%s = %s,' % (a, b))
+    out.append('};')
+out.append('')
+out.append('#pragma pack(push, 1)')
+for n in order:
+    out.append(('union %s {' if n in unions else 'struct %s {') % n)
+    for cty, fn, cnt, off, cm, ty, sz in structs[n]:
+        out.append('\t%s %s%s;%s' % (cty, fn, '[%d]' % cnt if cnt else '', ('  // ' + cm) if cm else ''))
+    out.append('};')
+out.append('#pragma pack(pop)')
+out.append('')
+for n in order:
+    out.append('static_assert(sizeof(%s) == 0x%X, "%s size");' % (n, sizes[n], n))
+    for cty, fn, cnt, off, cm, ty, sz in structs[n]:
+        if n in unions: continue
+        out.append('static_assert(offsetof(%s, %s) == 0x%X, "%s.%s");' % (n, fn, off, n, fn))
+out.append('')
+for n, (u, items) in enums.items():
+    out.append('static const Han2EnumValue k%sValues[] = {' % n)
+    for a, b in items: out.append('\t{"%s", (int64_t)(%s)},' % (a, b))
+    out.append('};')
+out.append('static const Han2EnumInfo k%sEnums[] = {' % tag)
+for n, (u, items) in enums.items():
+    vals = [int(b, 0) for a, b in items]
+    isflags = ('Flags' in n) or (all(v == 0 or (v & (v - 1)) == 0 for v in vals) and len([v for v in vals if v]) > 1 and 'Flags' in n)
+    out.append('\t{"%s", k%sValues, %d, %s},' % (n, n, len(items), 'true' if isflags else 'false'))
+out.append('};')
+out.append('')
+# reflection table: kind 0 = unsigned, 1 = signed, 2 = enum, 3 = flags enum, 4 = nested struct, 5 = char[] text, 6 = float (5 and 6 are only emitted by headers generated after 2026-10-03)
+for n in order:
+    out.append('static const Han2FieldInfo k%sFields[] = {' % n)
+    for cty, fn, cnt, off, cm, ty, sz in structs[n]:
+        if ty in enums: kind = 2
+        elif ty.startswith('unsigned') or ty == 'char': kind = 0
+        else: kind = 1
+        if ty == 'char' and (cnt or 1) > 1: kind = 5     # fixed-size text field (CP932, NUL padded)
+        if ty == 'float': kind = 6
+        if ty not in PRIM and ty not in enums: kind = 4   # nested struct
+        en = '"%s"' % ty if ty in enums else 'nullptr'
+        cmt = cm.replace('\\', '\\\\').replace('"', '\\"')
+        out.append('\t{"%s", 0x%X, %d, %d, %d, %s, "%s"},' % (fn, off, sz, cnt or 1, kind, en, cmt))
+    out.append('};')
+open(sys.argv[1], 'w', encoding='utf-8').write('\n'.join(out) + '\n')
+print('wrote %s: %d enums, %d structs' % (sys.argv[1], len(enums), len(order)))

@@ -1,0 +1,161 @@
+[0;32m=== Hantei-chan Build Script ===[0m
+[0;34mCurrent build number: 515 (commit 70a3473)[0m
+[1;33mConfiguring CMake with MinGW toolchain...[0m
+-- GLM: Version 1.0.3
+-- GLM: Build with C++ features auto detection
+statusWith -municode
+-- Configuring done (42.0s)
+-- Generating done (63.5s)
+-- Build files have been written to: /mnt/c/dev/hantei-chan/wt/s3-uni-dataloss/build
+[1;33mBuilding (version info will be auto-generated)...[0m
+make[1]: Warning: File 'CMakeFiles/Makefile2' has modification time 9.5 s in the future
+make[2]: Warning: File 'CMakeFiles/update_version.dir/progress.make' has modification time 8.7 s in the future
+make[2]: Warning: File 'CMakeFiles/bg_dxt32.dir/progress.make' has modification time 3.1 s in the future
+make[2]: Warning: File 'CMakeFiles/pal_roundtrip.dir/progress.make' has modification time 6.6 s in the future
+make[2]: Warning: File 'CMakeFiles/hud_test.dir/progress.make' has modification time 6 s in the future
+make[2]: Warning: File 'CMakeFiles/cmdfile_roundtrip.dir/progress.make' has modification time 3.7 s in the future
+make[2]: Warning: File 'CMakeFiles/shared_clipboard_test.dir/progress.make' has modification time 7.6 s in the future
+make[2]: Warning: File 'CMakeFiles/cmdfile_test.dir/progress.make' has modification time 3.8 s in the future
+make[2]: Warning: File 'CMakeFiles/glad.dir/progress.make' has modification time 5.2 s in the future
+make[2]: Warning: File 'CMakeFiles/bgm_test.dir/progress.make' has modification time 3.5 s in the future
+make[2]: Warning: File 'CMakeFiles/shortcut_router_test.dir/progress.make' has modification time 7.7 s in the future
+make[2]: Warning: File 'CMakeFiles/fbarctool.dir/progress.make' has modification time 4.3 s in the future
+make[2]: Warning: File 'CMakeFiles/undo_manager_test.dir/progress.make' has modification time 8.2 s in the future
+make[2]: Warning: File 'CMakeFiles/authoring_model_test.dir/progress.make' has modification time 2.9 s in the future
+make[2]: Warning: File 'CMakeFiles/game_link_test.dir/progress.make' has modification time 4.9 s in the future
+make[2]: Warning: File 'CMakeFiles/tag_tuning_test.dir/progress.make' has modification time 7.9 s in the future
+make[2]: Warning: File 'CMakeFiles/cmdfile_ui_smoke.dir/progress.make' has modification time 3.9 s in the future
+make[2]: Warning: File 'CMakeFiles/workspace_session_test.dir/progress.make' has modification time 8.7 s in the future
+make[2]: Warning: File 'CMakeFiles/tag_sidecar_test.dir/progress.make' has modification time 7.8 s in the future
+make[2]: Warning: File 'CMakeFiles/game_view_test.dir/progress.make' has modification time 5 s in the future
+make[2]: Warning: File 'CMakeFiles/hud_layout_test.dir/progress.make' has modification time 5.9 s in the future
+make[2]: Warning: File 'tinyalloc/CMakeFiles/tinyalloc.dir/progress.make' has modification time 8 s in the future
+make[2]: Warning: File 'glm/glm/CMakeFiles/glm.dir/progress.make' has modification time 5.3 s in the future
+make[2]: warning:  Clock skew detected.  Your build may be incomplete.
+make[2]: warning:  Clock skew detected.  Your build may be incomplete.
+make[2]: Warning: File 'CMakeFiles/bg_dxt32.dir/progress.make' has modification time 2.7 s in the future
+make[2]: Warning: File 'CMakeFiles/update_version.dir/progress.make' has modification time 8.3 s in the future
+make[2]: warning:  Clock skew detected.  Your build may be incomplete.
+[  0%] Updating version information...
+[  0%] Built target bg_dxt32
+make[2]: warning:  Clock skew detected.  Your build may be incomplete.
+make[2]: Warning: File 'tinyalloc/CMakeFiles/tinyalloc.dir/progress.make' has modification time 6.4 s in the future
+make[2]: warning:  Clock skew detected.  Your build may be incomplete.
+[  0%] Built target tinyalloc
+make[2]: Warning: File 'CMakeFiles/roundtrip.dir/progress.make' has modification time 4.7 s in the future
+make[2]: Warning: File 'CMakeFiles/uni_dataloss_test.dir/progress.make' has modification time 5.6 s in the future
+make[2]: Warning: File 'CMakeFiles/ha6_dump.dir/progress.make' has modification time 3 s in the future
+make[2]: Warning: File 'CMakeFiles/uni_edit_test.dir/progress.make' has modification time 5.7 s in the future
+make[2]: warning:  Clock skew detected.  Your build may be incomplete.
+make[2]: Warning: File 'CMakeFiles/workspace_session_test.dir/progress.make' has modification time 4.5 s in the future
+make[2]: warning:  Clock skew detected.  Your build may be incomplete.
+make[2]: warning:  Clock skew detected.  Your build may be incomplete.
+[  1%] Built target workspace_session_test
+make[2]: Warning: File 'CMakeFiles/shortcut_router_test.dir/progress.make' has modification time 3.2 s in the future
+make[2]: Warning: File 'CMakeFiles/pattern_search_test.dir/progress.make' has modification time 2.3 s in the future
+make[2]: warning:  Clock skew detected.  Your build may be incomplete.
+[  2%] Built target shortcut_router_test
+make[2]: Warning: File 'CMakeFiles/refs_test.dir/progress.make' has modification time 1.8 s in the future
+make[2]: warning:  Clock skew detected.  Your build may be incomplete.
+make[2]: Warning: File 'CMakeFiles/undo_manager_test.dir/progress.make' has modification time 2.5 s in the future
+make[2]: warning:  Clock skew detected.  Your build may be incomplete.
+make[2]: warning:  Clock skew detected.  Your build may be incomplete.
+[  3%] Built target undo_manager_test
+make[2]: Warning: File 'CMakeFiles/glad.dir/compiler_depend.make' has modification time 8.2 s in the future
+make[2]: warning:  Clock skew detected.  Your build may be incomplete.
+[  3%] Built target glad
+make[2]: warning:  Clock skew detected.  Your build may be incomplete.
+make[2]: warning:  Clock skew detected.  Your build may be incomplete.
+make[2]: Warning: File 'CMakeFiles/tag_tuning_test.dir/progress.make' has modification time 0.53 s in the future
+make[2]: Warning: File 'glm/glm/CMakeFiles/glm.dir/compiler_depend.make' has modification time 7.9 s in the future
+make[2]: warning:  Clock skew detected.  Your build may be incomplete.
+[  4%] Built target tag_tuning_test
+make[2]: warning:  Clock skew detected.  Your build may be incomplete.
+make[2]: Warning: File 'CMakeFiles/pal_roundtrip.dir/compiler_depend.make' has modification time 6.4 s in the future
+make[2]: warning:  Clock skew detected.  Your build may be incomplete.
+[  5%] Built target pal_roundtrip
+make[2]: warning:  Clock skew detected.  Your build may be incomplete.
+make[2]: Warning: File 'CMakeFiles/shared_clipboard_test.dir/compiler_depend.make' has modification time 5.2 s in the future
+make[2]: warning:  Clock skew detected.  Your build may be incomplete.
+[  5%] Built target shared_clipboard_test
+make[2]: warning:  Clock skew detected.  Your build may be incomplete.
+make[2]: Warning: File 'CMakeFiles/hud_test.dir/compiler_depend.make' has modification time 3.6 s in the future
+make[2]: warning:  Clock skew detected.  Your build may be incomplete.
+make[2]: warning:  Clock skew detected.  Your build may be incomplete.
+make[2]: Warning: File 'CMakeFiles/bgm_test.dir/compiler_depend.make' has modification time 2.1 s in the future
+[  6%] Built target hud_test
+make[2]: warning:  Clock skew detected.  Your build may be incomplete.
+make[2]: warning:  Clock skew detected.  Your build may be incomplete.
+[  6%] Built target bgm_test
+make[2]: Warning: File 'CMakeFiles/cmdfile_roundtrip.dir/compiler_depend.make' has modification time 1.6 s in the future
+make[2]: warning:  Clock skew detected.  Your build may be incomplete.
+[  6%] Built target cmdfile_roundtrip
+make[2]: warning:  Clock skew detected.  Your build may be incomplete.
+make[2]: warning:  Clock skew detected.  Your build may be incomplete.
+[  7%] Built target glm
+[  7%] Built target authoring_model_test
+make[2]: Warning: File 'CMakeFiles/live_reload_test.dir/compiler_depend.make' has modification time 2.4 s in the future
+make[2]: warning:  Clock skew detected.  Your build may be incomplete.
+make[2]: warning:  Clock skew detected.  Your build may be incomplete.
+[  8%] Built target live_reload_test
+make[2]: warning:  Clock skew detected.  Your build may be incomplete.
+make[2]: warning:  Clock skew detected.  Your build may be incomplete.
+[  9%] Built target hud_layout_test
+[ 10%] Built target fbarctool
+[ 10%] Built target tag_sidecar_test
+make[2]: warning:  Clock skew detected.  Your build may be incomplete.
+[ 11%] Built target cmdfile_test
+make[2]: Warning: File 'CMakeFiles/imgui.dir/compiler_depend.make' has modification time 1.6 s in the future
+make[2]: warning:  Clock skew detected.  Your build may be incomplete.
+[ 12%] Built target imgui
+make[2]: warning:  Clock skew detected.  Your build may be incomplete.
+[ 15%] Built target cmdfile_ui_smoke
+make[2]: warning:  Clock skew detected.  Your build may be incomplete.
+make[2]: warning:  Clock skew detected.  Your build may be incomplete.
+make[2]: warning:  Clock skew detected.  Your build may be incomplete.
+make[2]: warning:  Clock skew detected.  Your build may be incomplete.
+make[2]: warning:  Clock skew detected.  Your build may be incomplete.
+[ 16%] Built target bg_test
+[ 17%] Built target game_link_test
+[ 19%] Built target game_view_test
+[ 25%] Built target roundtrip
+[ 25%] Built target ha6_dump
+make[2]: warning:  Clock skew detected.  Your build may be incomplete.
+[ 28%] Built target uni_edit_test
+[ 30%] Built target uni_dataloss_test
+make[2]: warning:  Clock skew detected.  Your build may be incomplete.
+[ 33%] Built target refs_test
+[ 36%] Built target frame_data_test
+[ 39%] Built target mbaaccpackage
+[ 41%] Built target package_tools_test
+make[2]: warning:  Clock skew detected.  Your build may be incomplete.
+[ 42%] Built target pat_roundtrip
+[ 46%] Built target pattern_search_test
+[ 48%] Built target pat_dump
+[ 51%] Built target preview_sim_tool
+[ 57%] Built target cgmtool
+[ 58%] Built target fb_part_transform_test
+[ 61%] Built target bg_render
+[ 66%] Built target game_link_cli
+make[2]: warning:  Clock skew detected.  Your build may be incomplete.
+[ 66%] Built target update_version
+[ 70%] Built target ha4tool
+[ 75%] Built target han2tool
+[ 81%] Built target fbchartool
+[ 81%] Building CXX object CMakeFiles/gonptechan.dir/src/main.cpp.obj
+[ 81%] Building CXX object CMakeFiles/gonptechan.dir/src/main_frame.cpp.obj
+[ 81%] Building CXX object CMakeFiles/gonptechan.dir/src/main_pane.cpp.obj
+[ 81%] Building CXX object CMakeFiles/gonptechan.dir/src/right_pane.cpp.obj
+[ 81%] Building CXX object CMakeFiles/gonptechan.dir/src/startup_args.cpp.obj
+[ 81%] Building CXX object CMakeFiles/gonptechan.dir/src/PatEditor/pat_partset_pane.cpp.obj
+[ 82%] Building CXX object CMakeFiles/gonptechan.dir/src/PatEditor/pat_part_pane.cpp.obj
+[ 82%] Building CXX object CMakeFiles/gonptechan.dir/src/PatEditor/pat_shape_pane.cpp.obj
+[ 82%] Building CXX object CMakeFiles/gonptechan.dir/src/PatEditor/pat_texture_pane.cpp.obj
+[ 82%] Building CXX object CMakeFiles/gonptechan.dir/src/PatEditor/pat_tool_pane.cpp.obj
+[ 82%] Building CXX object CMakeFiles/gonptechan.dir/src/ui/main_frame_cmdfile.cpp.obj
+[ 82%] Building CXX object CMakeFiles/gonptechan.dir/src/ui/main_frame_gamelink.cpp.obj
+[ 82%] Linking CXX executable gonptechan.exe
+[100%] Built target gonptechan
+make[1]: warning:  Clock skew detected.  Your build may be incomplete.
+[0;32mBuild complete![0m
+Executable: [1;33mbuild/gonptechan.exe[0m

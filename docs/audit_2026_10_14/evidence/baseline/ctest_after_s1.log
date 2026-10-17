@@ -1,0 +1,58 @@
+Internal ctest changing into directory: /mnt/c/dev/hantei-chan/wt/parity/build
+Test project /mnt/c/dev/hantei-chan/wt/parity/build
+      Start  1: cmdfile
+ 1/23 Test  #1: cmdfile ..........................   Passed    0.38 sec
+      Start  2: cmdfile_ui_smoke
+ 2/23 Test  #2: cmdfile_ui_smoke .................   Passed    0.22 sec
+      Start  3: pattern_search
+ 3/23 Test  #3: pattern_search ...................   Passed    0.22 sec
+      Start  4: shared_clipboard
+ 4/23 Test  #4: shared_clipboard .................   Passed    0.23 sec
+      Start  5: fb_part_transform
+ 5/23 Test  #5: fb_part_transform ................   Passed    0.16 sec
+      Start  6: part_render_math
+ 6/23 Test  #6: part_render_math .................   Passed    0.12 sec
+      Start  7: refs
+ 7/23 Test  #7: refs .............................   Passed    0.14 sec
+      Start  8: bgm
+ 8/23 Test  #8: bgm ..............................   Passed    0.16 sec
+      Start  9: hud
+ 9/23 Test  #9: hud ..............................   Passed    0.18 sec
+      Start 10: shortcut_router
+10/23 Test #10: shortcut_router ..................   Passed    0.19 sec
+      Start 11: live_reload
+11/23 Test #11: live_reload ......................   Passed    0.57 sec
+      Start 12: undo_manager
+12/23 Test #12: undo_manager .....................***Failed    4.40 sec
+      Start 13: workspace_session
+13/23 Test #13: workspace_session ................   Passed    0.17 sec
+      Start 14: package_tools
+14/23 Test #14: package_tools ....................   Passed    0.49 sec
+      Start 15: game_link
+15/23 Test #15: game_link ........................   Passed    4.54 sec
+      Start 16: game_view
+16/23 Test #16: game_view ........................   Passed    6.94 sec
+      Start 17: tag_tuning
+17/23 Test #17: tag_tuning .......................   Passed    0.15 sec
+      Start 18: tag_sidecar
+18/23 Test #18: tag_sidecar ......................   Passed    0.65 sec
+      Start 19: authoring_model
+19/23 Test #19: authoring_model ..................   Passed    0.16 sec
+      Start 20: frame_data
+20/23 Test #20: frame_data .......................   Passed    2.47 sec
+      Start 21: hud_layout
+21/23 Test #21: hud_layout .......................   Passed    0.10 sec
+      Start 22: fxr_ini
+22/23 Test #22: fxr_ini ..........................   Passed    0.11 sec
+      Start 23: fxr_dgv_oracle
+23/23 Test #23: fxr_dgv_oracle ...................   Passed    4.93 sec
+
+96% tests passed, 1 tests failed out of 23
+
+Total Test time (real) =  29.81 sec
+
+The following tests FAILED:
+	 12 - undo_manager (Failed)
+Errors while running CTest
+Output from these tests are in: /mnt/c/dev/hantei-chan/wt/parity/build/Testing/Temporary/LastTest.log
+Use "--rerun-failed --output-on-failure" to re-run the failed cases verbosely.

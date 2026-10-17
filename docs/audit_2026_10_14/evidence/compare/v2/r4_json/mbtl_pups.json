@@ -1,0 +1,40 @@
+{
+ "case": "mbtl_pups_chr011_p309",
+ "game": "mbtl_pups_chr011_p309_nb",
+ "plate": "/mnt/c/dev/hantei-chan/tools/gamecap/captures/v2/mbtl_pups_chr011_p309_nb_game_plate.png",
+ "light": [
+  [
+   1.0,
+   0.0
+  ],
+  [
+   1.0,
+   0.0
+  ],
+  [
+   1.0,
+   0.0
+  ]
+ ],
+ "raw": [
+  0.9112925310613391,
+  1.9288540974609318
+ ],
+ "lit": [
+  0.9112925310613391,
+  1.9288540974609318
+ ],
+ "band": [
+  0.35540634260028214,
+  0.3906814177185938
+ ],
+ "band_px": 1,
+ "grad": null,
+ "glow": null,
+ "glow_ring": null,
+ "px": 138476,
+ "refine": [
+  0,
+  0
+ ]
+}

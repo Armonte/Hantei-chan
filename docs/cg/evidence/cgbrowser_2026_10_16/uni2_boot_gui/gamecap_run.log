@@ -1,0 +1,35 @@
+wrote C:\Program Files (x86)\Steam\steamapps\common\UNDER NIGHT IN-BIRTH II Sys Celes\UNI2-IM\Mods\data\chr003\chr003.cg (39100136 bytes)
+gamecap C:\dev\fbmod\tests\ingame\.run_cgb_fbmod_uni2_boot_training.gcs
+backup: C:\Program Files (x86)\Steam\steamapps\common\UNDER NIGHT IN-BIRTH II Sys Celes\UNI2-IM/UNI2_IM.ini -> C:\dev\hantei-chan\game_mod_backup\gamecap\uni2_20261016_105036\file00_UNI2_IM.ini
+launched uni2.exe pid 88604 (suspended)
+agent attached: module base 0x007f0000, hooks 0x39
+window 03c20ff2 at 802,158 1296x759
+placed window at -640,307
+inject_dll: C:\dev\fbmod\build\inject\fbmod.dll loaded at 0x555a0000
+captured C:\dev\hantei-chan\work\cgb_ev_uni2\boot_battle.png (1280x720 fmt 22)
+peek p1_color @0x00f66bd0 = 0 (0x0)
+peek p2_color @0x00f66bd4 = 0 (0x0)
+peek boot_mode @0x00d94a88 = 0 (0x0)
+status: frame 1141 frozen 0 freeze 0 budget 0 hooks 0x3f cmd 1/1
+status: frame 1320 frozen 0 freeze 0 budget 0 hooks 0x3f cmd 1/1
+status: frame 1363 frozen 0 freeze 0 budget 0 hooks 0x3f cmd 1/1
+captured C:\dev\hantei-chan\work\cgb_ev_uni2\training_menu.png (1280x720 fmt 22)
+captured C:\dev\hantei-chan\work\cgb_ev_uni2\menu_last_item.png (1280x720 fmt 22)
+captured C:\dev\hantei-chan\work\cgb_ev_uni2\menu_after_a.png (1280x720 fmt 22)
+peek scene_after_a @0x00d94a84 = 1 (0x1)
+peek scene_after_confirm @0x00d94a84 = 5 (0x5)
+captured C:\dev\hantei-chan\work\cgb_ev_uni2\menu_after_confirm.png (1280x720 fmt 22)
+peek scene_later @0x00d94a84 = 5 (0x5)
+captured C:\dev\hantei-chan\work\cgb_ev_uni2\menu_later.png (1280x720 fmt 22)
+captured C:\dev\hantei-chan\work\cgb_ev_uni2\second_training_submenu.png (1280x720 fmt 22)
+tap_until met after 4 tap(s)
+captured C:\dev\hantei-chan\work\cgb_ev_uni2\second_css.png (1280x720 fmt 22)
+tap_until met after 2 tap(s)
+captured C:\dev\hantei-chan\work\cgb_ev_uni2\second_battle.png (1280x720 fmt 22)
+peek second_p1 @0x01455285 = 3 (0x3)
+peek second_p2 @0x01455e45 = 5 (0x5)
+peek second_quickselect @0x00f66b8f = 0 (0x0)
+quit (quit): terminating pid 88604
+restored C:\Program Files (x86)\Steam\steamapps\common\UNDER NIGHT IN-BIRTH II Sys Celes\UNI2-IM/UNI2_IM.ini
+script finished: 152 commands, 9 capture(s)
+restored C:\Program Files (x86)\Steam\steamapps\common\UNDER NIGHT IN-BIRTH II Sys Celes\UNI2-IM\Mods\data\chr003\chr003.cg

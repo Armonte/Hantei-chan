@@ -1,0 +1,15 @@
+# gof2_live: controller config read via ReadProcessMemory (keycfg.py), GOF2 copy, ctrl array base = *(0x7395D4) = 0x58F359C, stride 336
+# slot k: type @+4+4k, code @+164+4k, game bit @+244+4k (Input_ReadDeviceRawWord 0x408BD0 layout)
+ctrl 1 (keyboard, type 1; DirectInput scancode):
+ slot 0 type 1 code 0x23 (H)  bit 0x004   -> direction bit 4 (up/stand side)
+ slot 1 type 1 code 0x31 (N)  bit 0x008   -> direction bit 8 (down/crouch side)
+ slot 2 type 1 code 0x30 (B)  bit 0x002
+ slot 3 type 1 code 0x32 (M)  bit 0x001
+ slot 4 type 1 code 0x2C (Z)  bit 0x100   light attack
+ slot 5 type 1 code 0x2D (X)  bit 0x200   heavy attack
+ slot 6 type 1 code 0x2E (C)  bit 0x400   guard (Defense)
+ slot 7 type 1 code 0x2F (V)  bit 0x800   pause
+ slot 8 type 1 code 0x10 (Q)  bit 0x1000
+ctrl 0 (pad, type 2): code==bit, 0x4,0x8,0x2,0x1,0x100..0x800000
+Note: SendInput scancodes never reached the game's DirectInput keyboard buffer in this session (kbstate.py showed no key down); inputs were injected
+by a debugger breakpoint at 0x409249 (after Input_ReadDeviceRawWord in Input_BuildControllerRawWords) that overwrites ctrl[i]+0x144 (raw word).

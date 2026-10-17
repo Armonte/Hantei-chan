@@ -1,0 +1,402 @@
+<!-- source: https://mizuumi.wiki/w/User:Pixloen/FPANModding/Classes_and_Methods (MediaWiki API, 2026-10-15) -->
+<!--
+
+    Hello editors pixloen here
+    indeed, the way this is formatted is a bit of a mess. it's the best i can do lol
+
+    https://docs.google.com/spreadsheets/d/1auwDpokh_Hpe8063rH37DWTe-_KJTBQ7bh5xtOH7djM/edit?usp=sharing 
+    refer to this spreadsheet for a list of all the functions / flags / types and whether they have been documented
+
+    considering there's 900+ of these things we may have to split this into a few pages
+
+
+    template
+===FunctionName()===
+{{MFPG Content Box
+|header=FunctionName( void ) 
+|content=
+Description
+''int'' number: description on what this value does
+}}
+
+
+  sort these entries by alphabetical order.
+
+-->
+= Terminology Guide =
+<!--
+
+    note: i don't actually know what im talking about here. i'm basing this off of several other documentations ive read
+
+-->
+
+{| class="wikitable mw-collapsible mw-collapsed" style="width:60%"
+|-
+! colspan="2" | Terminology
+|-
+| colspan="2" |'''Disclaimer''': These are categorized arbitrarily.
+|-
+! ''void''
+| Nothing needs to be put into the brackets of the function. Usually reserved for functions that return a value.
+|-
+! ''int''
+| An integer can be supplied.
+|-
+! ''int2''
+| 2 integers can be supplied. This often comes in the form of variables with both an x or y value, or two integers surrounded by brackets.
+|-
+! ''float''
+| A float can be supplied.
+|-
+! ''string''
+| A line of text surrounded by ".
+|-
+! ''text''
+| A line of text. Not surrounded by ".
+|-
+! ''color''
+| A aRGB color index in hex form.
+|-
+! ''type''
+| Types specific to a subset of methods. 
+|-
+! ''flags''
+| Flags that can change properties can be supplied. If more than one is specified, they are to be separated using a vertical slash.
+|-
+! ''pattern''
+| Either an integer, corresponding to the number of the pattern in a HA6, or a string corresponding to the code name of a pattern.
+|-
+! ''data''
+| Data of a class or object can be supplied. Often obtained through methods like <code>GetPlayerCharaData()</code>.
+|}
+= How to use this page, and additional info =
+
+<pre>
+Each header represents a class, with a method listed underneath. For example:
+
+BMvCore + GetEnemyCharaData( void ) would be written as
+BMvCore.GetEnemyCharaData();
+
+In the brackets of a method, different things can be supplied. Refer to the terminology guide!
+</pre>
+
+A full list of ALL classes and methods can be found [https://docs.google.com/spreadsheets/d/1auwDpokh_Hpe8063rH37DWTe-_KJTBQ7bh5xtOH7djM/edit?usp=sharing here]. This does not contain any documentation.
+= Classes and Methods =
+==BMvCore==
+===GetEnemyCharaData()===
+{{MFPG Content Box
+|header=GetEnemyCharaData( ''void'' )
+|content=
+Gets enemy character data.
+}}
+===GetNearEnemyCharaData()===
+{{MFPG Content Box
+|header=GetNearEnemyCharaData( ''void'' )
+|content=
+}}
+===GetParentCharaData()===
+{{MFPG Content Box
+|header=GetParentCharaData( ''void'' )
+|content=
+}}
+===GetPlayerCharaData()===
+{{MFPG Content Box
+|header=GetPlayerCharaData( ''void'' )
+|content=
+Gets player character data.
+}}
+===PopCharaData()===
+{{MFPG Content Box
+|header=PopCharaData( ''data'' playerdata )
+|content=
+}}
+===PushCharaData()===
+{{MFPG Content Box
+|header=PushCharaData( ''data'' playerdata )
+|content=
+}}
+==BMvEff==
+===AttackInfoString_Set()===
+{{MFPG Content Box
+|header=AttackInfoString_Set({ word = ''string'' })
+|content=
+Displays Attack Info, which is used for the text pop-ups that display on the sides. This is used for pop-ups such as Vorpal, Chain Shift (UNI), and Reversal, Invincible, Super Armor (MBTL).
+|values=
+''string'' word = The string to display.
+}}
+===BGM_Set()===
+{{MFPG Content Box
+|header=BGM_Set({ ''int'' })
+|content=
+Sets the BGM.
+|values=
+''int'' number: The BGM number to play.
+}}
+===BG_GetNum()===
+{{MFPG Content Box
+|header=BG_GetNum( ''void'' )
+|content=
+Returns the background number.
+}}
+===CockpitSetView()===
+{{MFPG Content Box
+|header=CockpitSetView({ mode = ''int'' })
+|content=
+Creates an object that has properties based on the array. Not all of the above properties are needed.
+|values=
+''int'' mode = whether to enable the Cockpit (1 or 0).
+}}
+===CreateObject()===
+{{MFPG Content Box
+|header=CreateObject({ x = ''int'' , y = ''int'' , pat = ''int'' , start_pat = ''int'' , mvname = ''string'' , flags = ''flags'' })
+|content=
+Creates an object that has properties based on the array. Not all of the above properties are needed.
+|values=
+''int'' x = X position of the object.<br />
+''int'' y = Y position of the object.<br />
+''int'' pat = Sets the pattern based on it's number in the HA6.<br />
+''pattern'' start_pat = Sets the object to the given pattern.<br />
+''string'' mvname = Sets the mv clause based on the name. e.g. <code>mvname = "Mv_Startup"</code><br />
+''flags'' flags = Assigns the object flags. 
+}}
+
+===EraseObjectFlags()===
+{{MFPG Content Box
+|header=EraseObjectFlags({ flags = ''flags'' })
+|content=
+Erases object flags.
+|values=
+''flags'' flags = The flags that will be erased.
+}}
+===GetPointStatus()===
+{{MFPG Content Box
+|header=GetPointStatus({ position = ''int2'' })
+|content=
+|values=
+}}
+===PcAfterImage_Clear()===
+{{MFPG Content Box
+|header=PcAfterImage_Clear( ''void'' )
+|content=
+Clears any afterimage effects on the player.
+}}
+===PcAfterImage_Set()===
+{{MFPG Content Box
+|header=PcAfterImage_Set({ type = ''int'', range = ''int'', delay = ''int'', color = ''color'', blendmode = ''int'' })
+|content=
+Applies a trail of afterimages on the player. Used for dash attacks (UNICLR), Moon Skills (MBTL), and Creeping Edge (UNI2).
+|values=
+'''int''' type: The type of afterimage.
+'''int''' range: The amount of afterimages that compose the trail.
+'''int''' delay: The amount of frames of delay between each after effect.
+'''color''' color: The color of each after effect, which is applies a multiply blend onto each after image, as well as an alpha value.
+'''int''' blendmode: Whether or not each after image has additive blend. (1 or 0)
+}}
+===PcAuraEffect_Clear()===
+{{MFPG Content Box
+|header=PcAuraEffect_Clear( ''void'' )
+|content=
+Clears any aura effects on the player.
+}}
+
+===PcAuraEffect_Set()===
+{{MFPG Content Box
+|header=PcAuraEffect_Set({ type = ''int'', time = ''int'', power = ''float'', color = ''color'', colorB = ''color'', color_chara = ''color'', blendmode = ''int'', delay = ''int'' })
+|content=
+Adds a color effect to the player's sprite. Does not apply to effects or objects spawned by the player. This is used for various effects just as VORPAL.
+|values=
+''int'' type = The type of aura. Type 0's aura has a consistent width. Type 1 creates a pulsing effect. <br/>
+''int'' time = The amount of frames this effect lasts for.<br/>
+''float'' power = The strength of the effect, changes the "width" of the aura.<br/>
+''color'' color = The first color of the aura.<br/>
+''color'' colorB = The second color of the aura.<br/>
+''color'' color_chara = The color the character sprite turns to. This appears at the same time colorB fades in.<br/>
+''int'' blendmode: Whether or not each after image has additive blend. (1 or 0)<br/>
+''int'' delay: The amount of frames it takes to fade from color to colorB.
+}}
+
+===SetCharaColor()===
+{{MFPG Content Box
+|header=SetCharaColor({ color = ''color'', intime = ''int'', time = ''int'', outtime = ''int'', type = ''int'' })
+|content=
+Adds a color effect to the player's sprite. Does not apply to effects or objects spawned by the player.
+}}
+===SetObjectFlags()===
+{{MFPG Content Box
+|header=SetObjectFlags({ flags = ''flags'' })
+|content=
+Adds object flags.
+|values=
+''flags'' flags = The flags that will be added.
+}}
+
+==BMvTbl==
+===CBtlInfo()===
+{{MFPG Content Box
+|header=CBtlInfo( ''void'' )
+|content=
+Collects info about the current battle.
+}}
+===CBtlInfo.GetSelectBgm()===
+{{MFPG Content Box
+|header=CBtlInfo.GetSelectBgm( ''void'' )
+|content=
+Returns the current BGM number. -2 is Off / MUTE.
+}}
+===CBtlInfo.IsSelectBgm()===
+{{MFPG Content Box
+|header=CBtlInfo.IsSelectBgm( ''void'' )
+|content=
+Whether the current playing BGM was player-chosen. Returns a bool.
+}}
+===CBtlInfo.SetSelectBgm()===
+{{MFPG Content Box
+|header=CBtlInfo.SetSelectBgm( ''int'' number )
+|content=
+Sets the BGM.
+|values=
+''int'' number: The BGM number to play.
+}}
+
+===GetMuki()===
+{{MFPG Content Box
+|header=GetMuki( ''void'' )
+|content=
+Returns the facing direction of the object as either -1 or 1 (facing left and right respectively).
+}}
+===GetMvRoundStatus===
+{{MFPG Content Box
+|header=GetMvRoundStatus( ''void'' )
+|content=
+Returns the round status.
+}}
+===GetMvRoundStatus.CharaMoveMode===
+{{MFPG Content Box
+|header=GetMvRoundStatus.CharaMoveMode( ''void'' )
+|content=
+}}
+===GetMvRoundStatus.Round===
+{{MFPG Content Box
+|header=GetMvRoundStatus.Round( ''void'' )
+|content=
+Returns the round number, starting from 0.
+}}
+===GetMvRoundStatus.isDown===
+{{MFPG Content Box
+|header=GetMvRoundStatus.isDown( ''void'' )
+|content=
+}}
+===GetMvRoundStatus.isFinalRound===
+{{MFPG Content Box
+|header=GetMvRoundStatus.isFinalRound( ''void'' )
+|content=
+Returns if the current round is the final round in the form of a bool.
+Not found in UNI2.
+}}
+
+===GetMvRoundStatus.isKO===
+{{MFPG Content Box
+|header=GetMvRoundStatus.isKO( ''void'' )
+|content=
+}}
+===GetMvRoundStatus.isLoseRound===
+{{MFPG Content Box
+|header=GetMvRoundStatus.isWinRound( ''void'' )
+|content=
+}}
+===GetMvRoundStatus.isMyKO===
+{{MFPG Content Box
+|header=GetMvRoundStatus.isMyKO( ''void'' )
+|content=
+}}
+===GetMvRoundStatus.isWinRound===
+{{MFPG Content Box
+|header=GetMvRoundStatus.isWinRound( ''void'' )
+|content=
+}}
+===GetMvStatus()===
+{{MFPG Content Box
+|header=GetMvStatus( ''void'' )
+|content=
+Returns the status data of the current object's movetable.
+}}
+===GetMvStatus.CallCount()===
+{{MFPG Content Box
+|header=GetMvStatus.CallCount( ''void'' )
+}}
+===GetMvStatus.DataPattern()===
+{{MFPG Content Box
+|header=GetMvStatus.DataPattern( ''void'' )
+}}
+===GetMvStatus.FrameID()===
+{{MFPG Content Box
+|header=GetMvStatus.FrameID( ''void'' )
+|content=
+Returns the Frame ID of the current object, if there is one on the current frame.
+}}
+===GetMvStatus.isLanding()===
+{{MFPG Content Box
+|header=GetMvStatus.isLanding( ''void'' )
+|content=
+Returns a bool for the isLanding state.
+}}
+===GetMvStatus.MvCount()===
+{{MFPG Content Box
+|header=GetMvStatus.MvCount( ''void'' )
+}}
+===GetMvStatus.Param0()===
+{{MFPG Content Box
+|header=GetMvStatus.Param0( ''void'' )
+|content=
+Returns the current value of Param0.
+}}
+===GetMvStatus.Param1()===
+{{MFPG Content Box
+|header=GetMvStatus.Param0( ''void'' )
+|content=
+Returns the current value of Param1.
+}}
+===GetMvStatus.Param2()===
+{{MFPG Content Box
+|header=GetMvStatus.Param0( ''void'' )
+|content=
+Returns the current value of Param2.
+}}
+===GetMvStatus.Param3()===
+{{MFPG Content Box
+|header=GetMvStatus.Param0( ''void'' )
+|content=
+Returns the current value of Param3.
+}}
+===GetMvStatus.CharaNo()===
+{{MFPG Content Box
+|header=GetMvStatus.CharaNo( ''void'' )
+|content=
+Returns the character number.
+}}
+===GetPlayerSide()===
+{{MFPG Content Box
+|header=GetPlayerSide( ''void'' )
+|content=
+Returns the player side, as either 0 or 1 (Player 1 and Player 2 respectively).
+}}
+===SetMuki()===
+{{MFPG Content Box
+|header=SetMuki( ''type'' direction )
+|content=
+Sets the facing direction of the object.
+''type'' direction: <code>_Direction_Left, _Direction_Right, _Direction_Auto, _Direction_Reverse</code>
+}}
+===SetPattern()===
+{{MFPG Content Box
+|header=SetPattern( ''pattern'' pattern )
+|content=
+Sets the pattern of the object.
+|values=
+''pattern'' pattern: Sets the pattern based on it's number in the HA6 or the code name.
+}}
+
+= Navigation =
+
+{{Navbox-MFPG}}
+[[Category:Modding French Bread Games]]

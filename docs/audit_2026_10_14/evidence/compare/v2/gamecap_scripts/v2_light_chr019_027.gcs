@@ -1,0 +1,38 @@
+# v2 chara-aura experiment, part 2 (render-match 2026-10-14): flipHV chr019 p153 and PUPS chr027 p449, each lit
+# (aura as the character script left it, values in the sidecar) and unlit (aura RGB held at 0), plus idle controls
+# and a fighters-hidden plate. See v2_light_chr027.gcs for the addresses.
+include ../games/uni2.gcs
+let P1CHR 19
+let P2CHR 0
+include ../games/uni2_to_training.gcs
+set OUTD C:\dev\hantei-chan\tools\gamecap\captures\v2
+set CTRL ctrl_chr019_p0_lit
+include ../games/uni2_v2_ctrl.gcs
+set CASE flipHV_chr019_p153_lit
+set PAT 153
+set SETFRAME 0
+set FRAME 0
+set GTICK 1
+set STEPKEYS F6
+include ../games/uni2_v2_case_aura.gcs
+# plate: the same paused frame with the fighters hidden
+unfreeze
+wait_frames 10
+pipe \\.\pipe\uni2-im-harness "keys F5" ok
+wait_frames 6
+pipe \\.\pipe\uni2-im-harness "hidefighters on" ok
+wait_frames 6
+pipe \\.\pipe\uni2-im-harness "grab ${OUTD}\flipHV_chr019_p153_plate.png" ok
+pipe \\.\pipe\uni2-im-harness "hidefighters off" ok
+pipe \\.\pipe\uni2-im-harness "keys F5" ok
+wait_frames 4
+freeze
+hold f32 [P1+0x8C0]+0x40 0
+hold f32 [P1+0x8C0]+0x44 0
+hold f32 [P1+0x8C0]+0x48 0
+step 3
+set CTRL ctrl_chr019_p0_unlit
+include ../games/uni2_v2_ctrl.gcs
+set CASE flipHV_chr019_p153_unlit
+include ../games/uni2_v2_case_aura.gcs
+quit

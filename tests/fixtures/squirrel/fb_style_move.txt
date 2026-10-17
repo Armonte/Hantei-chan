@@ -1,0 +1,23 @@
+// Hand-written fixture in the style of the French-Bread move scripts (no game data).
+// Squirrel 2.x syntax: <- new slot, table/array literals with trailing commas, functions in tables.
+local cmd = {};
+cmd.Throw_F_Hit_Add2 <-
+{
+	num = 7,
+	command = "2",
+	CmdCheck =
+	{
+		SkillType = "CaptureAdd",
+		MvCheck = { Only = ["Mv_Throw_F_Hit",] },
+		ParamFlagCheck = { Only = { [1] = 4 } },
+	},
+	function CmdAfterFunc()
+	{
+		return 0;
+	}
+	UpdateTable = { name = "Mv_Throw_F_Hit_Add2", },
+}
+const kAirDash = 3;
+enum eSide { Left, Right = 4 }
+local t = { a = (1<<4)|(1<<7), b = eSide.Right + kAirDash };
+foreach (k, v in t) { local x = typeof v; }

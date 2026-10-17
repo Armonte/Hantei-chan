@@ -1,0 +1,22 @@
+# CG manager smoke 4 (MBTL chr000): import a plain cgtool folder with one edited PNG, build a new bank from a folder, export all.
+openany C:/dev/hantei-chan/work/ab_s45/fx/mbtl/data/chr000/chr000_0.txt
+wait 120
+cgm open
+wait 40
+cgm path C:/dev/hantei-chan/work/ab_s45/fx/plain
+cgm press Import folder...
+wait 120
+cgm status
+capture C:/dev/hantei-chan/work/ab_s45/shots/cgm_4_01_import_plain.png
+cgm path C:/dev/hantei-chan/work/ab_s45/fx/plain
+cgm path C:/dev/hantei-chan/work/ab_s45/fx/built.cg
+cgm press New bank from PNG folder...
+wait 240
+cgm status
+capture C:/dev/hantei-chan/work/ab_s45/shots/cgm_4_02_build_from_folder.png
+cgm path C:/dev/hantei-chan/work/ab_s45/fx/export_gui
+cgm press Export all...
+wait 240
+cgm status
+capture C:/dev/hantei-chan/work/ab_s45/shots/cgm_4_03_export_all.png
+quit

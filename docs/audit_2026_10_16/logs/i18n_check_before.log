@@ -1,0 +1,82 @@
+BARE    src/PatEditor/pat_shape_pane.cpp:192  ImGui::DragInt("Dz", &shape->dz, 1, 0, INT32_MAX);
+BARE    src/archive_browser_ui.cpp:715  ImGui::TableSetupColumn("src", ImGuiTableColumnFlags_WidthFixed, 230.f);
+BARE    src/archive_browser_ui.cpp:716  ImGui::TableSetupColumn("list", ImGuiTableColumnFlags_WidthStretch, 3.f);
+BARE    src/archive_browser_ui.cpp:717  ImGui::TableSetupColumn("prev", ImGuiTableColumnFlags_WidthStretch, 2.4f);
+BARE    src/archive_browser_ui.cpp:830  ImGui::SetWindowFontScale(1.5f); ImGui::TextUnformatted("Hantei-chan"); ImGui::SetWindowFontScale(1.f);
+BARE    src/authoring/authoring_tuning_ui.cpp:631  if (cmds.empty()) ImGui::TextDisabled("no %s", ctxt.c_str());
+BARE    src/authoring/authoring_window.cpp:316  ImGui::TextDisabled("(%s, %u ms)", st.lastPath == 1 ? TXT("hot") : TXT("cold"), (unsigned)st.lastDurationMs);
+BARE    src/background/bg_browser.cpp:184  ImGui::TableSetupColumn("Id", ImGuiTableColumnFlags_WidthFixed, 34);
+BARE    src/background/bg_inspector.cpp:406  ImGui::Text("#%zu", i);
+BARE    src/cgm/fxr_panel.cpp:250  ImGui::SetItemTooltip("index %d", c.index);
+BARE    src/cgm/fxr_panel.cpp:303  if (shown++ >= 24) { ImGui::SameLine(); ImGui::TextDisabled("+%zu", row->fixedSprites.size() - 24); break; }
+BARE    src/cgm/fxr_panel.cpp:393  ImGui::SameLine(); ImGui::Text("(%zu)", picked.size());
+BARE    src/cgm/fxr_panel.cpp:396  ImGui::TableSetupColumn("", ImGuiTableColumnFlags_WidthFixed, 22); ImGui::TableSetupColumn("pat", ImGuiTableCo
+BARE    src/cgm/fxr_panel.cpp:396  ImGui::TableSetupColumn("", ImGuiTableColumnFlags_WidthFixed, 22); ImGui::TableSetupColumn("pat", ImGuiTableCo
+BARE    src/cgm/fxr_panel.cpp:397  ImGui::TableSetupColumn("fx/all", ImGuiTableColumnFlags_WidthFixed, 56); ImGui::TableSetupColumn("%", ImGuiTab
+BARE    src/cgm/fxr_panel.cpp:397  ImGui::TableSetupColumn("fx/all", ImGuiTableColumnFlags_WidthFixed, 56); ImGui::TableSetupColumn("%", ImGuiTab
+BARE    src/cgm/fxr_panel.cpp:398  ImGui::TableSetupColumn("shr", ImGuiTableColumnFlags_WidthFixed, 32); ImGui::TableSetupColumn("rule");
+BARE    src/cgm/fxr_panel.cpp:398  ImGui::TableSetupColumn("shr", ImGuiTableColumnFlags_WidthFixed, 32); ImGui::TableSetupColumn("rule");
+BARE    src/cmdfile/cmd_editor_ui.cpp:499  ImGui::TableSetupColumn("ID", ImGuiTableColumnFlags_WidthFixed, 44);
+BARE    src/cmdfile/cmd_editor_ui.cpp:964  ImGui::TableSetupColumn("ID"); ImGui::TableSetupColumn(LBL("Input")); ImGui::TableSetupColumn(LBL("Pattern"));
+BARE    src/frame_disp/frame_disp_at.h:316  if(im::InputInt("ID##Hit effect", &at->hitEffect, 0, 0)) {
+BARE    src/frame_disp/frame_disp_at.h:332  if(im::InputInt("ID##Added effect", &at->addedEffect, 0, 0)) {
+BARE    src/han2_pac_window.cpp:460  if (!it.isInsn) { ImGui::TextDisabled("  %05x  .data %zu bytes", it.pc, it.raw.size()); continue; }
+BARE    src/han2_pac_window.cpp:467  else if (it.insn.op == 0x19 || it.insn.op == 0x2D) { ImGui::SameLine(); ImGui::Text("kind=%#x -> %#x", it.insn
+BARE    src/han2_pac_window.cpp:514  if (!it.isInsn) { ImGui::TextDisabled("  %05x  .data %zu bytes  %s", it.pc, it.raw.size(), lab.c_str()); conti
+BARE    src/han2_thumbs.cpp:74  if (!ImGui::Begin("Animations###animlist", &showAnimList)) { ImGui::End(); return; }
+BARE    src/main_pane.cpp:110  + im::CalcTextSize("ID").x + 10.f + 30.f;
+BARE    src/main_pane.cpp:145  if(im::InputInt("ID##Pattern", &currState.pattern, 0, 0)) {
+BARE    src/pcmod/pcmod_export_ui.cpp:356  ImGui::TableSetupColumn("SHA-256", ImGuiTableColumnFlags_WidthFixed, 150);
+BARE    src/pcmod/pcmod_export_ui.cpp:374  ImGui::TextDisabled("cosmetic");
+BARE    src/squirrel/script_panel.cpp:496  if (!o.command.empty()) ImGui::Text("command = [%s]", o.command.c_str());
+BARE    src/squirrel/script_panel.cpp:645  else if (ref.afid >= 0) ImGui::Text("frame id (AFID) %d", ref.afid);
+BARE    src/squirrel/script_panel.cpp:646  else if (!ref.code.empty()) ImGui::Text("pattern code name (PTCN) \"%s\"", ref.code.c_str());
+BARE    src/squirrel/script_panel.cpp:647  else ImGui::Text("pattern %d", ref.pattern);
+BARE    src/squirrel/script_panel.cpp:648  if (owner->openRef) ImGui::TextDisabled("Ctrl+click: open in the HA6 editor");
+BARE    src/squirrel/script_panel.cpp:680  if (shown++ == 4) { ImGui::TextDisabled("... %zu more definitions", defs.size() - 4); break; }
+BARE    src/squirrel/script_panel.cpp:697  if (!defs.empty()) ImGui::TextDisabled("Ctrl+click / F12: go to definition, Shift+F12: find usages");
+BARE    src/squirrel/script_panel.cpp:1201  if (ImGui::SmallButton("Add blank state")) {
+BARE    src/squirrel/script_panel.cpp:1207  if (ImGui::IsItemHovered()) ImGui::SetTooltip("Writes an empty %s <- { } into %s, named exactly as referenced.
+BARE    src/squirrel/script_panel.cpp:1226  ImGui::SameLine(); go |= ImGui::Checkbox("Regex", &searchOpt.regex);
+BARE    src/squirrel/script_panel.cpp:1227  ImGui::SameLine(); go |= ImGui::Checkbox("Whole word", &searchOpt.wholeWord);
+BARE    src/squirrel/script_panel.cpp:1228  ImGui::SameLine(); go |= ImGui::Checkbox("Match case", &searchOpt.matchCase);
+BARE    src/squirrel/script_panel.cpp:1229  ImGui::SameLine(); go |= ImGui::Checkbox("Skip comments", &searchOpt.codeOnly);
+BARE    src/squirrel/script_panel.cpp:1267  if (ImGui::BeginPopupModal("Missing moves##sq", nullptr, ImGuiWindowFlags_AlwaysAutoResize)) {
+BARE    src/squirrel/script_panel.cpp:1268  ImGui::TextUnformatted("These moves are referenced but not found in the character's mv file:");
+BARE    src/squirrel/script_panel.cpp:1272  if (!guess.empty() && guess != p.fixArg) { ImGui::SameLine(); ImGui::TextDisabled("did you mean %s?", guess.c_
+BARE    src/squirrel/script_panel.cpp:1276  ImGui::TextDisabled("Save them as blank states in the mv file? A missing move can reset the character to neutr
+BARE    src/squirrel/script_panel.cpp:1280  if (ImGui::Button("Add blank states and save")) {
+BARE    src/squirrel/script_panel.cpp:1289  if (ImGui::Button("Save without adding")) { skipMovePromptOnce = true; owner->requestSave(); ImGui::CloseCurre
+BARE    src/squirrel/script_panel.cpp:1291  if (ImGui::Button("Cancel")) { forceNextSave = false; ImGui::CloseCurrentPopup(); }
+BARE    src/squirrel/script_panel.cpp:1539  if (ImGui::Button("Open game folder...")) {
+BARE    src/squirrel/script_panel.cpp:1550  if (ImGui::Combo("Profile", &gi, games, 5)) {
+BARE    src/squirrel/script_panel.cpp:1557  if (ImGui::Button("Save (Ctrl+S)")) m_saveRequested = true;
+BARE    src/squirrel/script_panel.cpp:1559  if (ImGui::Button("Check")) {
+BARE    src/squirrel/script_panel.cpp:1575  if (ImGui::Button("Save anyway")) { m->offerSaveAnyway = false; m->forceNextSave = true; m_saveRequested = tru
+BARE    src/squirrel/script_panel.cpp:1617  } else ImGui::TextDisabled("Open a game folder (the one holding script/ and data/), then pick a script.");
+BARE    src/stage3d/s3d_view.cpp:569  if (ImGui::MenuItem("3D Stage view (UNI2 / UNI / MBTL)...", nullptr, show)) show = !show;
+BARE    src/stage3d/s3d_view.cpp:577  if (!ImGui::Begin("3D Stage", &show)) { ImGui::End(); return; }
+BARE    src/stage3d/s3d_view.cpp:579  ImGui::InputText("bg folder", s.bgDir, sizeof(s.bgDir));
+BARE    src/stage3d/s3d_view.cpp:581  if (ImGui::Button("Scan")) { std::string err; s3d::LoadBgListFile(std::string(s.bgDir) + "/BgList.txt", s.list
+BARE    src/stage3d/s3d_view.cpp:584  if (ImGui::BeginCombo("stage", s.dataFile.c_str())) {
+BARE    src/ui/han2_ui_impl.h:129  if (ImGuiWindow* w = ImGui::FindWindowByName("Box Pane")) han2ui::dockAnimId = w->DockId;
+BARE    src/ui/han2_ui_impl.h:130  if (ImGuiWindow* w = ImGui::FindWindowByName("Right Pane")) han2ui::dockInspectorId = w->DockId;
+BARE    src/ui/han2_ui_impl.h:134  if (ImGuiWindow* lp = ImGui::FindWindowByName("Left Pane")) if (lp->DockId && ImGui::DockBuilderGetNode(lp->Do
+BARE    src/ui/main_menu_impl.h:778  if (ImGui::MenuItem("MBAACC", nullptr, cur == Ha6Game::MBAACC))
+BARE    src/ui/main_menu_impl.h:797  if (ImGui::BeginMenu("Language / \xe8\xa8\x80\xe8\xaa\x9e###Language")) {
+BARE    src/ui/main_menu_impl.h:798  if (ImGui::MenuItem("English", nullptr, i18n::language == 0)) { i18n::language = 0; han2ui::SaveHan2Settings()
+BARE    src/ui/main_ui_impl.h:51  ImGui::Begin("Dock Window", nullptr,
+BARE    src/ui/main_ui_impl.h:526  ImGui::Text("bgCamera pan=(%.1f, %.1f) panLast=(%.1f, %.1f) dragging=%d",
+BARE    src/ui/main_ui_impl.h:534  ImGui::Text("view zoom=%.2f pass x=%d y=%d",
+BARE    src/ui/main_ui_impl.h:536  ImGui::Text("viewport clientRect=(%.0f, %.0f)", clientRect.x, clientRect.y);
+BARE    src/ui/main_ui_impl.h:544  ImGui::Text("obj[0].f[%d/%d] sprId=%d offset=(%d, %d)",
+BARE    src/ui/main_ui_impl.h:547  ImGui::Text("  -> screen=(%.1f, %.1f)", screenPx, screenPy);
+BARE    src/ui/main_ui_impl.h:567  ImGui::Text("  [%zu] spr=%d  %dx%d  origin=(%d, %d)",
+BARE    src/vectors.h:81  ImGui::TableSetupColumn("No.");
+DUPLICATE key 'English' (in i18n_ja_han2.inc and i18n_ja_menu.inc)
+DUPLICATE key 'Play' (in i18n_ja_han2.inc and i18n_ja_menu.inc)
+DUPLICATE key 'Pause' (in i18n_ja_han2.inc and i18n_ja_menu.inc)
+DUPLICATE key 'English' (in i18n_ja_han2.inc and i18n_ja_tools.inc)
+DUPLICATE key 'English' (in i18n_ja_han2.inc and i18n_ja_windows.inc)
+DUPLICATE key 'Pattern' (in i18n_ja_han2.inc and i18n_ja_windows.inc)
+files=485 unique keys=3246 table rows=4153 missing=0 duplicates=6

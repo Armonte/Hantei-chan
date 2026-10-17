@@ -1,0 +1,12 @@
+sq open C:/dev/hantei-chan/gamedata/mbtl
+sq file data/chr001/chr001_mv_0.txt
+sq check
+sq file data/chr001/chr001_cmd_0.txt
+sq check
+sq open C:/dev/hantei-chan/work/sqtest/mbtl
+sq file data/chr001/chr001_mv_0.txt
+sq check
+sq tab 1
+wait 20
+capture C:/dev/hantei-chan/work/ab/sq_loadcheck.png
+quit

@@ -1,0 +1,3 @@
+# name | project .txt under gamedata/ (..\work\showcase_mbaacc = MBAACC akiha* + effect.* + the ActCadenza moon-3 akiha_3.*) | pattern | frame | tick | zoom | note
+ac_akiha3_p238f4 | ../work/showcase_mbaacc/data/akiha_3.txt | 238 | 4 | -1 | 2 | ActCadenza moon-3 Akiha p238 (MBAACC-converted), frame 4 with effect.ha6 spawns
+mbaacc_akiha0_p238f4 | ../work/showcase_mbaacc/data/akiha_0.txt | 238 | 4 | -1 | 2 | vanilla MBAACC Akiha (moon 0) p238 frame 4

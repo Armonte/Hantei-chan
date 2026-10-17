@@ -1,0 +1,63 @@
+== ctrl_chr020_r3: v2_model.py ctrl_chr020_p0 --game-name ctrl_chr020_p0_r3 --grad-ctrl ctrl_chr020_p0,ctrl_chr020_p0_r3
+stage chara gradient (base, height) per RGB from ctrl_chr020_p0_r3: [(10.3, 11.9), (9.1, 3.2), (11.5, 13.7)]
+ctrl_chr020_p0: raw 14.04 / 97.7%  lit 1.29 / 0.6%  band+-1 1.27 / 0.6%  (37551 px, refine +0,+0)  free fit k,c = (0.99,15), (1.01,10), (1.01,16)
+== ctrl_chr024_unlit: v2_model.py ctrl_chr024_p0 --game-name ctrl_chr024_p0_unlit --grad-ctrl ctrl_chr024_p0,ctrl_chr024_p0_unlit
+stage chara gradient (base, height) per RGB from ctrl_chr024_p0_unlit: [(11.3, 12.0), (11.9, -0.5), (13.7, 12.8)]
+ctrl_chr024_p0: raw 16.24 / 99.1%  lit 1.71 / 0.4%  band+-1 1.70 / 0.4%  (16695 px, refine +0,+0)  free fit k,c = (1.00,17), (1.02,10), (1.00,20)
+== ctrl_chr019_unlit: v2_model.py ctrl_chr019_p0 --game-name ctrl_chr019_p0_unlit --plate /mnt/c/dev/hantei-chan/tools/gamecap/captures/v2/flipHV_chr019_p153_plate.png --grad-ctrl ctrl_chr019_p0,ctrl_chr019_p0_unlit --light 1,0;1,0;1,0
+stage chara gradient (base, height) per RGB from ctrl_chr019_p0_unlit: [(8.6, 14.4), (8.9, 4.0), (11.4, 15.0)]
+ctrl_chr019_p0: raw 15.79 / 94.0%  lit 3.39 / 8.1%  band+-1 1.64 / 3.4%  (61067 px, refine +0,-1)  free fit k,c = (1.00,15), (1.00,11), (0.98,19)
+== ctrl_chr027_unlit: v2_model.py ctrl_chr027_p0 --game-name ctrl_chr027_p0_unlit --plate /mnt/c/dev/hantei-chan/tools/gamecap/captures/s1_compare/game/pups_chr027_p449_game_plate.png --grad-ctrl ctrl_chr027_p0,ctrl_chr027_p0_unlit --light 1,0;1,0;1,0
+stage chara gradient (base, height) per RGB from ctrl_chr027_p0_unlit: [(10.6, 9.1), (11.3, 0.3), (13.7, 10.9)]
+ctrl_chr027_p0: raw 16.58 / 97.5%  lit 4.48 / 9.7%  band+-1 2.10 / 2.5%  (27689 px, refine +0,-1)  free fit k,c = (0.97,19), (1.02,9), (1.01,18)
+== ctrl_chr000: v2_model.py ctrl_chr000_p0f0 --game /mnt/c/dev/hantei-chan/tools/gamecap/captures/s1_compare/control --aura-fit
+ctrl_chr000_p0f0: raw 47.54 / 94.1%  lit 2.66 / 4.1%  band+-1 2.65 / 4.0%  (26083 px, refine +0,+0)  free fit k,c = (0.97,17), (0.82,61), (0.73,100)
+== ctrl_chr025: v2_model.py ctrl_chr025_p0f0 --game /mnt/c/dev/hantei-chan/tools/gamecap/captures/s1_compare/control --aura-fit
+ctrl_chr025_p0f0: raw 49.01 / 96.0%  lit 2.48 / 0.7%  band+-1 2.47 / 0.7%  (32911 px, refine +0,+0)  free fit k,c = (0.99,17), (0.90,55), (0.79,97)
+== mbtl_ctrl: v2_model.py mbtl_ctrl_chr001_p0f0 --game-name mbtl_ctrl_chr001_p0f0_nb --mbtl-light bg007,330
+mbtl_ctrl_chr001_p0f0: raw 13.02 / 70.7%  lit 0.27 / 0.0%  band+-1 0.24 / 0.0%  (28272 px, refine +0,+0)  free fit k,c = (1.07,2), (1.04,3), (1.05,5)
+== flipHV: v2_model.py flipHV_chr019_p153 --game-name flipHV_chr019_p153_unlit --plate /mnt/c/dev/hantei-chan/tools/gamecap/captures/v2/flipHV_chr019_p153_plate.png --light 1,0;1,0;1,0
+flipHV_chr019_p153: raw 9.23 / 27.4%  lit 9.23 / 27.4%  band+-1 3.85 / 10.3%  (72853 px, refine +0,+1)  free fit k,c = (1.03,-4), (1.02,-4), (1.01,-2)
+== pups_chr027: v2_model.py pups_chr027_p449 --game-name pups_chr027_p449_unlit --plate /mnt/c/dev/hantei-chan/tools/gamecap/captures/s1_compare/game/pups_chr027_p449_game_plate.png --grad-ctrl ctrl_chr027_p0,ctrl_chr027_p0_unlit
+stage chara gradient (base, height) per RGB from ctrl_chr027_p0_unlit: [(10.6, 9.1), (11.3, 0.3), (13.7, 10.9)]
+== pral2_chr025_p133f1: v2_model.py pral2_chr025_p133f1 --plate /mnt/c/dev/hantei-chan/tools/gamecap/captures/s1_compare/game/pral2_chr025_p133f1_game_plate.png --aura-fit
+pral2_chr025_p133f1: raw 3.31 / 5.1%  lit 2.72 / 4.5%  band+-1 2.25 / 3.9%  (15065 px, refine +0,+0)  free fit k,c = (1.04,-7), (0.00,23), (0.72,61)
+== flipH_chr000_p96f1: v2_model.py flipH_chr000_p96f1 --plate /mnt/c/dev/hantei-chan/tools/gamecap/captures/s1_compare/game/flipH_chr000_p96f1_game_plate.png --aura-fit
+flipH_chr000_p96f1: raw 14.47 / 81.8%  lit 0.84 / 1.1%  band+-1 0.35 / 0.0%  (68051 px, refine +1,+1)  free fit k,c = (1.00,-0), (0.00,20), (0.00,33)
+== flipV_chr000_p383f1: v2_model.py flipV_chr000_p383f1 --plate /mnt/c/dev/hantei-chan/tools/gamecap/captures/s1_compare/game/flipV_chr000_p383f1_game_plate.png --aura-fit
+flipV_chr000_p383f1: raw 2.59 / 3.6%  lit 1.66 / 2.6%  band+-1 0.96 / 0.6%  (126568 px, refine +1,-1)  free fit k,c = (1.03,-6), (0.00,4), (0.00,6)
+== afhk_pat_chr000_p72_t2: v2_model.py afhk_pat_chr000_p72_t2 --plate /mnt/c/dev/hantei-chan/tools/gamecap/captures/s1_compare/game/afhk_pat_chr000_p72_t2_game_plate.png --aura-fit
+afhk_pat_chr000_p72_t2: raw 11.22 / 68.2%  lit 3.07 / 9.1%  band+-1 1.55 / 2.0%  (5338 px, refine +0,+0)  free fit k,c = (0.52,94), (0.41,21), (0.60,35)
+== afhk_pat_chr019_p62_t7: v2_model.py afhk_pat_chr019_p62_t7 --plate /mnt/c/dev/hantei-chan/tools/gamecap/captures/s1_compare/game/afhk_pat_chr019_p62_t7_game_plate.png --aura-fit
+afhk_pat_chr019_p62_t7: raw 1.61 / 3.1%  lit 1.61 / 3.1%  band+-1 0.79 / 0.8%  (149268 px, refine +1,+0)  free fit k,c = (1.00,-6), (0.98,-9), (0.97,0)
+== afhk_cg_p435: v2_model.py afhk_cg_chr020_p435_t27 --game-name afhk_cg_chr020_p435_t27_r3 --grad-ctrl ctrl_chr020_p0,ctrl_chr020_p0_r3 --glow sq
+stage chara gradient (base, height) per RGB from ctrl_chr020_p0_r3: [(10.3, 11.9), (9.1, 3.2), (11.5, 13.7)]
+aura glow (sq, ARGB 1000aaff, power 1.00): ring 7160 px  no glow 4.33 / 6.3%  glow model 3.70 / 6.4%
+afhk_cg_chr020_p435_t27: raw 11.15 / 78.4%  lit 2.06 / 2.1%  band+-1 2.01 / 2.0%  (4422 px, refine +0,+0)  free fit k,c = (0.97,14), (0.97,13), (0.97,16)
+== afhk_cg_p437: v2_model.py afhk_cg_chr020_p437_t2 --game-name afhk_cg_chr020_p437_t2_r3 --grad-ctrl ctrl_chr020_p0,ctrl_chr020_p0_r3 --glow sq
+stage chara gradient (base, height) per RGB from ctrl_chr020_p0_r3: [(10.3, 11.9), (9.1, 3.2), (11.5, 13.7)]
+aura glow (sq, ARGB 8d00aaff, power 1.00): ring 5847 px  no glow 16.02 / 37.9%  glow model 6.99 / 19.0%
+afhk_cg_chr020_p437_t2: raw 12.02 / 75.7%  lit 2.31 / 4.4%  band+-1 2.30 / 4.4%  (3517 px, refine +0,+0)  free fit k,c = (0.95,16), (0.97,14), (0.95,19)
+== pras: v2_model.py pras_chr020_p5f2 --game-name pras_chr020_p5f2_r3 --grad-ctrl ctrl_chr020_p0,ctrl_chr020_p0_r3 --glow sq
+stage chara gradient (base, height) per RGB from ctrl_chr020_p0_r3: [(10.3, 11.9), (9.1, 3.2), (11.5, 13.7)]
+aura glow (sq, ARGB 1600aaff, power 1.00): ring 22366 px  no glow 37.84 / 56.7%  glow model 36.64 / 54.9%
+pras_chr020_p5f2: raw 8.83 / 46.0%  lit 4.29 / 8.5%  band+-1 1.63 / 1.4%  (63403 px, refine +0,-1)  free fit k,c = (1.03,11), (0.97,12), (0.94,19)
+== pras_layers: v2_model.py pras_chr020_p5f2 --game-name pras_chr020_p5f2_r3 --grad-ctrl ctrl_chr020_p0,ctrl_chr020_p0_r3 --glow sq --layers pras_chr020_p5f2_cg,pras_chr020_p5f2_pat
+stage chara gradient (base, height) per RGB from ctrl_chr020_p0_r3: [(10.3, 11.9), (9.1, 3.2), (11.5, 13.7)]
+per-layer gradient: CG pras_chr020_p5f2_cg, .pat pras_chr020_p5f2_pat, CG over pat (layer composite vs all-layer shot: mean |d| 0.071)
+aura glow (sq, ARGB 1600aaff, power 1.00): ring 22366 px  no glow 37.84 / 56.7%  glow model 36.64 / 54.9%
+pras_chr020_p5f2: raw 8.83 / 46.0%  lit 4.33 / 8.7%  band+-1 1.64 / 1.4%  (63403 px, refine +0,-1)  free fit k,c = (1.03,11), (0.97,12), (0.94,19)
+== rect_px: v2_model.py rect_chr024_p76 --game-name rect_chr024_p76_unlit
+rect_chr024_p76: raw 11.85 / 62.0%  lit 11.85 / 62.0%  band+-1 5.64 / 25.6%  (492 px, refine +1,-3)  free fit k,c = (0.70,0), (0.97,-35), (0.84,34)
+== rect thin
+centre (R-weighted, px from origin): game -0.10 editor -0.10  d +0.00
+width (px with R > 5): game 6 editor 6  d +0
+top endpoint (row from origin): game -1 editor +0  d +1
+R integral across the line: game 240.4 editor 240.4  ratio 1.000
+R profile mean |d| over the line columns: 0.00
+== mbtl_flipV: v2_model.py mbtl_flipV_chr001_p157f2 --game-name mbtl_flipV_chr001_p157f2_nb --light 1,0;1,0;1,0
+mbtl_flipV_chr001_p157f2: raw 4.03 / 13.5%  lit 4.03 / 13.5%  band+-1 2.20 / 4.7%  (35344 px, refine +0,+0)  free fit k,c = (0.95,14), (1.02,-1), (1.04,-11)
+== mbtl_pups: v2_model.py mbtl_pups_chr011_p309 --game-name mbtl_pups_chr011_p309_nb --light 1,0;1,0;1,0
+mbtl_pups_chr011_p309: raw 0.91 / 1.9%  lit 0.91 / 1.9%  band+-1 0.36 / 0.4%  (138476 px, refine +0,+0)  free fit k,c = (1.00,-1), (1.00,-1), (1.00,-1)
+== mbtl_pral2 full frame
+mbtl_pral2_chr004_p420f4 vs mbtl_pral2_chr004_p420f4 rect (200, 100, 1080, 600) add [0.0, 0.0, 0.0]: mean |d| 1.23, 0.9% px > 24 (game mean [249.4, 248.5, 247.5], editor mean [248.3, 247.5, 246.3])

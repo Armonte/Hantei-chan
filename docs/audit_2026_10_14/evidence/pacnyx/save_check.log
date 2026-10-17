@@ -1,0 +1,33 @@
+# save_check: the .DT2 + companion .DAT written by Hantei-chan's Save As in tools/ui/shots/pn01_parts_editor.txt (savechar-as, run 2026-10-14 18:13),
+# read back by han2tool partsinfo (build c5610fd), against the original ACOLYTE_F.DAT (han2tool extract C:\games\rbo_run\Data\DATA02.PAC ACOLYTE_F.DAT).
+# expected: original 5 sheets -> saved 6 (the 256x256 test_sheet_256.png), pose 3 one part more, pose 444 'MY_NEW_POSE' new.
+
+== original DATA02.PAC:ACOLYTE_F.DAT
+HAN2RBO kind 0 sub 1, parts 4705196 bytes, CG 8933104 bytes
+sheets 5: 512x512 512x512 256x256 256x256 256x256
+last sheet pixel hash 45422904292aedbe
+pose slots 486, poses with parts 482
+pose 3 'PATTERN005': 14 parts [0 sheet 1 (-48,-179) L25 rot 0.0001] [1 sheet 1 (-38,-177) L2 rot 0.9342] [2 sheet 0 (-21,-108) L63 rot 0.9705] [3 sheet 0 (-21,-109) L196 rot 0.9004] [4 sheet 0 (-7,-90) L135 rot 0.8661] [5 sheet 0 (9,-69) L112 rot 0.8996] [6 sheet 0 (-28,-109) L10 rot 0.8884] [7 sheet 0 (-17,-89) L23 rot 0.8498] [8 sheet 0 (17,-63) L32 rot 0.9031] [9 sheet 0 (-51,-77) L88 rot 0.0069] [10 sheet 0 (-3,-47) L169 rot 0.1251] [11 sheet 0 (-15,-36) L101 rot 0.9993] [12 sheet 0 (-48,-121) L225 rot 0.1386] [13 sheet 0 (-6,-152) L198 rot 0.6579]
+pose 444 '': 0 parts
+
+== saved work/pacnyx/out/ACOLYTE_F.DAT (written by the app)
+HAN2RBO kind 0 sub 1, parts 4971020 bytes, CG 8933104 bytes
+sheets 6: 512x512 512x512 256x256 256x256 256x256 256x256
+last sheet pixel hash 87fe6a731c60a9c1
+pose slots 486, poses with parts 482
+pose 3 'PATTERN005': 15 parts [0 sheet 1 (-48,-179) L25 rot 0.0001] [1 sheet 1 (-38,-177) L2 rot 0.9342] [2 sheet 0 (-21,-108) L63 rot 0.9705] [3 sheet 0 (-21,-109) L196 rot 0.9004] [4 sheet 0 (-7,-90) L135 rot 0.8661] [5 sheet 0 (9,-69) L112 rot 0.8996] [6 sheet 0 (-28,-109) L10 rot 0.8884] [7 sheet 0 (-17,-89) L23 rot 0.8498] [8 sheet 0 (17,-63) L32 rot 0.9031] [9 sheet 0 (-51,-77) L88 rot 0.0069] [10 sheet 0 (-3,-47) L169 rot 0.1251] [11 sheet 0 (-15,-36) L101 rot 0.9993] [12 sheet 0 (-48,-121) L225 rot 0.1386] [13 sheet 0 (-6,-152) L198 rot 0.6579] [14 sheet 5 (-26,-152) L226 rot 0.0417]
+pose 444 'MY_NEW_POSE': 0 parts
+
+== sizes / md5
+13964100 2026-10-14_17:39 orig/ACOLYTE_F.DAT
+309416 2026-10-14_17:39 orig/ACOLYTE_F.DT2
+14232744 2026-10-14_18:11 out/ACOLYTE_F.DAT
+14232744 2026-10-14_18:11 out/ACOLYTE_F.DAT.bak
+312236 2026-10-14_18:11 out/ACOLYTE_F.DT2
+312236 2026-10-14_18:11 out/ACOLYTE_F.DT2.bak
+dad5de9545663c450be2439bf2d5d6eb  orig/ACOLYTE_F.DAT
+a5db8531148150f329d82338056e40a0  orig/ACOLYTE_F.DT2
+4b09f39e31b599ad975343b540e60524  out/ACOLYTE_F.DAT
+4b09f39e31b599ad975343b540e60524  out/ACOLYTE_F.DAT.bak
+3232d4431593ff977a10b963ae5aca19  out/ACOLYTE_F.DT2
+3232d4431593ff977a10b963ae5aca19  out/ACOLYTE_F.DT2.bak

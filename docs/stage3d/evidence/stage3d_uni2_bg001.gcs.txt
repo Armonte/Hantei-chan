@@ -1,0 +1,67 @@
+# stage3d: UNI2 1.42 stage bg001 (city intersection, training stage 1) clean backdrop captures for the
+# Hantei-chan stage3d comparison. Fighters hidden with the UNI2-IM harness "hidefighters on" (stage only).
+# Shot 1: training round-start camera (P1/P2 at their spawn x, camera centred, default zoom).
+# Shot 2: both fighters poked into the right corner, camera scrolled right.
+# Each shot writes a JSON sidecar: P1/P2 x/y, scales, screen matrix, camera view/projection, and a raw dump of the
+# camera object (0xC5CCA0, UNI2-IM kCameraObject) as f32 + i32 so the camera x/zoom fields can be found by diffing.
+include ../games/uni2.gcs
+let P1CHR 0
+let P2CHR 0
+let STAGE 1
+let OUTD C:\dev\hantei-chan\tools\gamecap\captures\stage3d
+let SIDEX 400000
+include ../games/uni2_to_training.gcs
+sym g_CameraObj 0xC5CCA0
+
+# ---------- shot 1: round-start camera ----------
+unfreeze
+pipe \\.\pipe\uni2-im-harness "hidefighters on" ok
+wait_frames 10
+pipe \\.\pipe\uni2-im-harness "grab ${OUTD}\uni2_bg001_game.png" ok
+wait_frames 2
+meta i32 P1+OBJ_X p1_x
+meta i32 P1+OBJ_Y p1_y
+meta i32 P2+OBJ_X p2_x
+meta i32 P2+OBJ_Y p2_y
+meta f32 g_ScaleCommon scale_common
+meta f32 g_ScaleX scale_x
+meta f32 g_ScaleY scale_y
+meta f32 g_ScreenMatrix screen_matrix 16
+meta f32 g_CameraObj+0x278 camera_view 16
+meta f32 g_CameraObj+0x2F8 camera_proj 16
+meta f32 g_CameraObj camera_obj_f32 256
+meta i32 g_CameraObj camera_obj_i32 256
+meta_write ${OUTD}\uni2_bg001_game.json
+pipe \\.\pipe\uni2-im-harness "hidefighters off" ok
+wait_frames 4
+pipe \\.\pipe\uni2-im-harness "grab ${OUTD}\uni2_bg001_game_withfighters.png" ok
+wait_frames 2
+
+# ---------- shot 2: corner ----------
+poke i32 P1+OBJ_X ${SIDEX}
+poke i32 P2+OBJ_X ${SIDEX}
+wait_frames 180
+peek i32 P1+OBJ_X p1_x_after
+peek i32 P2+OBJ_X p2_x_after
+pipe \\.\pipe\uni2-im-harness "hidefighters on" ok
+wait_frames 10
+pipe \\.\pipe\uni2-im-harness "grab ${OUTD}\uni2_bg001_game_side.png" ok
+wait_frames 2
+meta i32 P1+OBJ_X p1_x
+meta i32 P1+OBJ_Y p1_y
+meta i32 P2+OBJ_X p2_x
+meta i32 P2+OBJ_Y p2_y
+meta f32 g_ScaleCommon scale_common
+meta f32 g_ScaleX scale_x
+meta f32 g_ScaleY scale_y
+meta f32 g_ScreenMatrix screen_matrix 16
+meta f32 g_CameraObj+0x278 camera_view 16
+meta f32 g_CameraObj+0x2F8 camera_proj 16
+meta f32 g_CameraObj camera_obj_f32 256
+meta i32 g_CameraObj camera_obj_i32 256
+meta_write ${OUTD}\uni2_bg001_game_side.json
+pipe \\.\pipe\uni2-im-harness "hidefighters off" ok
+wait_frames 4
+pipe \\.\pipe\uni2-im-harness "grab ${OUTD}\uni2_bg001_game_side_withfighters.png" ok
+wait_frames 2
+quit

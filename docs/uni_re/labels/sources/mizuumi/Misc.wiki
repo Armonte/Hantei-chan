@@ -1,0 +1,165 @@
+<!-- source: https://mizuumi.wiki/w/User:Pixloen/FPANModding/Misc (MediaWiki API, 2026-10-15) -->
+== Adding Singleplayer Functionality to New Characters ==
+
+By default new characters will not have a complete functioning arcade mode. Instead, arcades consist of a singular fight against character ID 0 (Arcueid or Hyde).
+Adding proper arcade mode functions is done through <code>BattleRes\BattleTable</code>. Each battle_table_charactername_short.txt contains multiple nested arrays which tell the game which characters to load on certain stages, as well as which characters cannot appear randomly.
+
+Copy and pasting another character's .txt file and renaming it accordingly will work as a quick way to experience singleplayer.
+
+=== Example ===
+<pre>
+//Example of Hyde's BattleTable.
+// TODO - add english comments to the rest of the .txt
+
+Stage_Table <-
+{
+	List = [],
+};
+
+local tbl00 = 
+{
+	InvalidCharaList = [ "", ],		// This part of the code tells the game which characters cannot appear randomly.
+	StageTable =
+	[
+		{ enemy="",    bg=-1,	bgm=-1 }, // Stage1        // Leaving the enemy field blank means the CPU character is randomized
+		{ enemy="",    bg=-1,	bgm=-1 }, // Stage2        // BG and BGM set to -1 also means they are randomized.
+		{ enemy="yuz", bg=-1,	bgm=-1 }, // Stage3
+		{ enemy="",    bg=-1,	bgm=-1 }, // Stage4
+		{ enemy="",    bg=-1,	bgm=-1 }, // Stage5
+		{ enemy="ori", bg=-1,	bgm=-1 }, // Stage6
+		{ enemy="",    bg=-1,	bgm=-1 }, // Stage7
+		{ enemy="",    bg=-1,	bgm=-1 }, // Stage8
+		{ enemy="lin", bg=-1,	bgm=-1 }, // Stage9
+		{ enemy="hil", bg= 9,	bgm=-1 }, // Stage10  ¦ED‚ÅStage9‚Ì”wŒi‚È‚Ì‚ÅBGŒÅ’è
+	]
+};
+Stage_Table.List.append( tbl00 ); // ‚Ì‚¹‚é
+
+local tbl00 = 
+[
+	{ enemy=9, bg=1, bgm=-1, script=0 },
+	{ enemy=2, bg=2, bgm=-1, script=0 },
+	{ enemy=3, bg=3, bgm=-1, script=0 },
+	{ enemy=5, bg=4, bgm=-1, script=0 },
+	{ enemy=4, bg=5, bgm=-1, script=1 },   // script set to 1 means a cutscene occurs on this stage.
+	{ enemy=6, bg=6, bgm=-1, script=0 },
+	{ enemy=7, bg=7, bgm=-1, script=0 },
+	{ enemy=8, bg=8, bgm=-1, script=0 },
+	{ enemy=1, bg=9, bgm=-1, script=1 },
+	{ enemy=10, bg=10, bgm=-1, script=1 },
+];
+Stage_Table.List.append( tbl00 ); // ‚Ì‚¹‚é
+*/
+/*
+local tbl00 = 
+[
+	{ enemy=1, bg=4, bgm=-1, script=0 },
+	{ enemy=2, bg=5, bgm=-1, script=0 },
+	{ enemy=3, bg=2, bgm=-1, script=0 },
+	{ enemy=4, bg=7, bgm=-1, script=0 },
+	{ enemy=5, bg=8, bgm=-1, script=0 },
+];
+Stage_Table.List.append( tbl00 ); 
+
+local tbl01 = 
+[
+	{ enemy=5, bg=7, bgm=-1, script=0 },
+	{ enemy=4, bg=2, bgm=-1, script=0 },
+	{ enemy=3, bg=5, bgm=-1, script=0 },
+	{ enemy=2, bg=8, bgm=-1, script=0 },
+	{ enemy=1, bg=1, bgm=-1, script=0 },
+];
+Stage_Table.List.append( tbl01 ); 
+
+local tbl02 = 
+[
+	{ enemy=3, bg=8, bgm=-1, script=0 },
+	{ enemy=5, bg=1, bgm=-1, script=0 },
+	{ enemy=2, bg=2, bgm=-1, script=0 },
+	{ enemy=1, bg=4, bgm=-1, script=0 },
+	{ enemy=4, bg=5, bgm=-1, script=0 },
+];
+Stage_Table.List.append( tbl02 );
+*/
+
+
+ScoreAttack_Table <-
+{
+	List = [],
+};
+
+local sc_tbl = 
+{
+	InvalidCharaList = [ "", ],		// “oê‹ÖŽ~ƒLƒƒƒ‰ƒŠƒXƒg(Šg’£—p‚É—\–ñ)
+	StageTable =
+	[
+		{ enemy="hyd",    bg=-1,	bgm=-1,	script=0 }, // Stage1
+		{ enemy="cha",    bg=-1,	bgm=-1,	script=0 }, // Stage2
+		{ enemy="yuz",    bg=-1,	bgm=-1,	script=0 }, // Stage3
+		{ enemy="wal",    bg=-1,	bgm=-1,	script=0 }, // Stage4
+		{ enemy="elt", 	  bg=-1,	bgm=-1,	script=0 }, // Stage5
+		{ enemy="ori",    bg=-1,	bgm=-1,	script=0 }, // Stage6
+		{ enemy="mer",    bg=-1,	bgm=-1,	script=0 }, // Stage7
+		{ enemy="set",    bg=-1,	bgm=-1,	script=0 }, // Stage8
+		{ enemy="gor",	  bg=-1,	bgm=-1,	script=0 }, // Stage9
+		{ enemy="hil", 	  bg= 9,	bgm=-1,	script=0 }, // Stage10
+	]
+};
+ScoreAttack_Table.List.append( sc_tbl ); // ‚Ì‚¹‚é
+
+TimeAttack_Table <-
+{
+	List = [],
+};
+
+local ta_tbl = 
+{
+	InvalidCharaList = [ "", ],		
+	StageTable =
+	[
+		{ enemy="hyd",    bg=-1,	bgm=-1,	script=0 }, // Stage1
+		{ enemy="yuz",    bg=-1,	bgm=-1,	script=0 }, // Stage2
+		{ enemy="car",    bg=-1,	bgm=-1,	script=0 }, // Stage3
+		{ enemy="set",    bg=-1,	bgm=-1,	script=0 }, // Stage4
+		{ enemy="lin", 	  bg=-1,	bgm=-1,	script=0 }, // Stage5
+		{ enemy="vat",    bg=-1,	bgm=-1,	script=0 }, // Stage6
+		{ enemy="cha",    bg=-1,	bgm=-1,	script=0 }, // Stage7
+		{ enemy="mer",    bg=-1,	bgm=-1,	script=0 }, // Stage8
+		{ enemy="elt", 	  bg=-1,	bgm=-1,	script=0 }, // Stage9
+		{ enemy="hil",	  bg= 9,	bgm=-1,	script=0 }, // Stage10
+	]
+};
+TimeAttack_Table.List.append( ta_tbl );
+
+
+
+
+
+
+
+
+/*
+
+09, 01, 0, 0,  -1, 0 // Stage01 
+02, 02, 0, 0,  -1, 0 // Stage02 
+03, 03, 0, 0,  -1, 0 // Stage03 
+05, 04, 0, 0,  -1, 0 // Stage04 
+04, 05, 0, 0,  -1, 0 // Stage05 ƒIƒŠƒGŒÅ’è
+06, 06, 0, 0,  -1, 0 // Stage09 
+07, 07, 0, 0,  -1, 0 // Stage09 
+08, 08, 0, 0,  -1, 0 // Stage09 
+01, 09, 0, 0,  -1, 0 // Stage09 ƒŠƒ“ƒlŒÅ’è
+10, 10, 0, 0,  -1, 0 // Stage10 ƒqƒ‹ƒ_ŒÅ’è
+
+
+ED
+*/
+
+</pre>
+
+== Modding Color Palettes ==
+
+== Adding Movelists ==
+
+{{Navbox-MFPG}}
+[[Category:Modding French Bread Games]]

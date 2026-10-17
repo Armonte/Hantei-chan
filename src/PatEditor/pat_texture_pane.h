@@ -16,11 +16,18 @@ public:
     void DrawTexture();
     void DrawPopUp();
     void RegenerateTexturesNames();
+    // RBO / GOF2 / GOF1 sprite sheets (32-bit square images inside the PAT): PNG import / export, add, remove.
+    void DrawFbSheets();
+    // A PNG dropped on the editor: added as a new sheet (or replaces the selected one). Returns the message to show.
+    std::string ImportSheetFile(const std::string &path, bool replaceSelected);
 
 private:
     std::string openpopupWithId;
     std::string customPopUpMessage;
     std::string *textureDecoratedNames;
+    std::string fbMessage;
+    bool fbConfirmRemove = false;
+    int textureNamesCount = -1;
 };
 
 #endif /* PATTEXTUREPANEASDASD_H_GUARD */

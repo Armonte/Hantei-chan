@@ -1,0 +1,273 @@
+<!-- source: https://mizuumi.wiki/w/User:Pixloen/FPANModding/HA6 (MediaWiki API, 2026-10-15) -->
+{{DISPLAYTITLE:Modding French Bread Games: Characters}}
+== Using Hantei-chan == 
+
+The HanteiKun File, also known as HA6 can either be edited using hex or more commonly Hantei-chan. You can load the .HA6 as well as the .cg, .pat and .pal files by using <code>File > Load from .txt</code> and opening a character's <code>ID_0.txt</code>.
+
+[[File:PIXL hantei-chan.png|720px|center|Some options have been hidden to fit everything into this one screenshot.]]
+
+=== 1) Navigation ===
+----
+You can switch patterns and frames by using the navigation bars on the top left, or by pressing the arrow keys (Up/Down for patterns, Left/Right for frames). The pattern bar is dropdown as well, you can click the down arrow next to it to see a list of all the patterns on this HA6.
+Pressing animate underneath plays the animation frame-by-frame. Pressing it again will stop the animation.
+
+=== 2) Pattern Data ===
+----
+Holds the current Pattern's name and codename. The code name is used to map the current pattern to an [[User:Pixloen/FPANModding/Scripts#Character_cmd_0.txt|input command]] or for use in the [[User:Pixloen/FPANModding/Scripts#Character_mv_0.txt|mv scripts]]. PUPS sets this pattern's palette to the corresponding [[User:Pixloen/FPANModding/Files|numbered pal file]] found in the character folder. You can also copy and paste patterns to new slots using the Copy Pattern and Paste Pattern buttons.
+
+=== 3) Viewbox ===
+----
+Displays the current frame's animation and hitboxes. The two lines represent the ground centerpoint. 
+
+*Left click to drag the view around.
+*Right click and hold to draw the currently selected box found in the Box Data menu.
+
+=== 4) Box Data ===
+----
+Shows which box is currently being edited, as well as co-ordinates for the four corners of the box.
+*Click the box dragdown to see a list of available boxes.
+*Enable "Highlight Selected" to see your selected box turn purple, if it is visible.
+
+=== 5) State Data ===
+----
+The top half shows the movement options for this frame. Horizontal and Vertical Speeds and Accelerations can be set. Note that a positive vertical speed/acceleration correlates to move downwards on the screen.
+The tick boxes tell the game engine what to do with the typed-in values underneath. The left two boxes correspond to X Speed and X Accel, the right boxes correspond to Y Speed and Y Accel.
+
+Underneath, various flags can be set. Hover over them to see what they do.
+Number of hits determines the amount of hits this frame will inflict. Zero hits means that the hitbox won't be active at all.
+
+The dropdowns underneath set the state for type of position, counterhits, movement and cancels.
+=== 6) Animation Data ===
+----
+The top half animation data section is used for everything visual-- this includes what sprite to display, where to position sprites, as well as adding blending or color data. Each of these boxes can be dragged up and down, like a knob, to quickly alter their value. Or double click on a box to type in a custom value.
+
+Rotation values are based on a float scale -- (from 0 to 1 equals a 360 degree rotation in the specified axis). Layer priority will determine how each of the layers are rendered.
+
+Underneath is a section dedicated to how the frame or animation of the move is played, including setting Frame IDs which can be used in code to check for specific frames of animation. 
+
+The animation tab is the most important when making new or existing animations: here's what each does.
+*Go to pattern - At the end of this frame, the object will jump to the pattern specified by the "Go to" box.
+*Next frame - Will advance a frame after the duration is finished.
+*Go to frame - At the end of this frame, the object will jump to the frame specified by the "Go to" box.
+*End - Ends the animation. For a player object, this means resetting to the Neutral animation, but for projectiles or effects it means that the object disappears.
+
+Interpolation can be used for .pat effects to tween between two frames. This is used to create smooth effects from only a few frames of .pat animation. Interpolation '''cannot''' be used on sprites.
+
+Z-Priority is used to set the priority of the ''object'', and typically ranges from 8-35. Smaller values result in the object being rendered above both players, larger Z-priority values will render the object behind both players and some effects.
+
+=== 7) Attack Data ===
+----
+The top section consists of a bunch of tickboxes with unique properties, though not all of them are documented. Hover over each box to find out what each one does. The top half flags deal with guard properties and the bottom half deals with hit properties.
+
+Underneath are a few more boxes used to create many grabs -- this is used in conjunction with mv code to create command throws and regular throws alike. 
+
+Underneath are many of the values that you'd typically expect to see in a fighting game editor. Note that hitstun decay does NOT actually change the hitstun of the move but instead determines how the hitstun combo bar animates. For that, Guard Vectors and Hit Vectors determine how the opponent reacts when hit. Each vector corresponds to a unique animation which has it's own hitstun, recovery and techable time. You can look at the file Data/VectorTable.txt, or more simply you can copy and paste various vectors from other characters. 
+
+Each vector has unique properties:
+*The amount of hitstun
+*The trajectory of the opponent, pushback and knockback
+*The animation, and consequentially the position state the opponent is put it (Standing/Crouching/Air, and Block/Hit)
+*Interactions with walls (Wallbounce)
+
+=== 8) Effects ===
+----
+
+Effects are essentially unique calls which can spawn objects, play sound effects and even control momentum of some characters. 
+In general:
+
+* 1-type effects spawn objects from the Character HA6 corresponding to the Number value.
+* 6-type effects alter the momentum or movement of some characters. (E.g. Orie j.214X)
+* 8-type effects spawn objects from the universal Sys_Effect.HA6 found in the data folder.
+* 9-type effects play system sound effects using the top-left number in the grid.
+
+=== 9) Conditions ===
+----
+Not entirely sure what the general purpose of conditions are -- but this section can be used to create vacuum regions.
+*Vacuums are made using Type 56. The top left value sets the speed of the vacuum and the value to the right sets the x-position range.
+
+=== 10) Tools ===
+----
+The backbone of the editor. Use this section to copy and paste frames, delete frames... etc.
+
+== Editing .cg ==
+
+The .cg files contain all sprites used for characters, as well as anything that is pixelated. Every sprite is 256-indexed (meaning it has only 256 unique colors). The colors stored in the .cg are overwritten by the oalette files in-game.
+[https://drive.google.com/drive/folders/15cGQmmbqk2wSmuX-oTkSfwuC818sn4wT?usp=sharing CGlib] is used for extracting sprites, and [https://drive.google.com/drive/folders/15cGQmmbqk2wSmuX-oTkSfwuC818sn4wT?usp=sharing CGTool] is used to recompile sprite folders into .cg files for use in-game.
+
+There are no requirements on resolution and sprite complexity, as long as the image is indexed correctly. Do note that sprites cannot be translucent and images with translucency such as Akiha's Arc Drive Hair must be handled in effects / .pat.
+
+== Editing .pat ==
+The .pat files are the files that hold the animations for the effects such as Hyde's red and black slashes, Neco's Vtuber model, and basically anything that isn't a 2d pixelated sprite. These aren't required for a character to function, and if the effects are already sprites such as Ragna's drive snakes or Yu's sword smear frames, those can just be put in the .cg file and used as a normal sprite. But since the .cg requires all the images to be indexed, stuff like Hazama's chains or literally any of the Eff3D textures in BlazBlue would go into the .pat.
+
+
+'''Basics and limitations of the .pat file'''
+
+The .pat files have quite a few limitations to their parameters that might get a little confusing to work with. For starters, interpolation will only happen to layers that have the same number on the next sprite. For example, layer 0 will only interpolate to the layer 0 of the next sprite called in the .ha6. Layer 0 will '''''not''''' interpolate to any other layer number. And on the topic of layers, Uni, Dfc, and BBTag all have a max layer count of 40, while Lumina has a max layer count of 80 (idk about Actress Again and earlier, but those are presumably 40 too). If you put a .pat with a layer number of 40 or higher or a sprite with more than 40 layers in general into UNI and Dfc, nothing will happen except some of the layers not appearing in game, but if you put a .pat that has a layer number of 40 or higher at all into BBTag, the game will crash upon loading the .pat, but this isn't BBTag modding, this is fpan modding. Some more limitations of .pats that you should keep in mind is that images must be a .dds file with either DXT1 compression, DXT5 compression, or no compression at all, and if it does compression, you will need to further compress it with a [https://drive.google.com/file/d/1K_rFSzR-kU4gLPNJCwtrDGHNGg5wO28b/view?usp=sharing compression tool made by u4ick]. It is also recommended to make the .dds files width and height multiples of 256 due to the next limitation, the UVs. UVs in .pats are weird, cause instead of being on a by pixel basis, every unit in the UV is the width/height (depending on if the unit is on the X axis or Y axis) of the image divided by 256 pixels. So if the X coordinate of the UV was 8 units, on an image of a width of 2048, that would be 64 pixels in, but if say the Y coordinate was 8 on an image with a height of 1024, that would be 32 pixels down.
+
+
+'''"Blocks" of a .pat file'''
+
+While although not required to be in this order, as these are only like this for organizational purposes, the .pat file is split into 4 "blocks" of sorts, with the first block containing the "Sprite" data, which is every parameter that starts with P_ and PR. This is where you make the actual sprites that will be shown in-game and all of the properties that will be interpolated. This is basically the AT (animation data) of a .ha6 file. Then up next is the "Object" or "Particle" data, which is every parameter that starts with PP. These are where you make the pieces that will go into a sprite. None of the data here gets interpolated. Then is the "Shape" data, which is every parameter that starts with VE or VN. This is where all that data that is used to make the special shapes that aren't just flat planes such as the green sphere in Aoko's Last Arc being a "Sphere Shape" or the web in Byakuya's Infinite Worth being made up of multiple "Ring Shapes". This data won't be interpolated either. And last but not least, the "Page" or "Texture" data, which is every parameter that starts with PG. This is what takes up 80% of the file as it is the images itself.
+
+== Adding New Characters ==
+
+To add new characters instead of replacing existing ones, first follow the character format structure on a new folder inside the \data folder. This can be done by either duplicating an existing character's folder and changing their id/name or making one from scratch.
+Then, all that needs to be done is adding them to <code>System\BtlCharaTbl.txt</code>, using the existing character slots as an example;
+
+<pre>
+chara_no[0] =   // character number. used for the character select but doesn't decide the order of the characters in training mode, for example.
+{
+	name_short="HYD",    // name used to find the corresponding \data and \grpdat assets.
+	name_long="Hyde",   
+	name_str="ƒnƒCƒh",
+	name_master="ƒnƒCƒh",
+	isAlive=1
+
+	stage = 1, // ŽsŠX’n’†•EŒð·“_
+	bgm = 1, // Scraper Sky HighiƒnƒCƒhj
+
+	order = 0             // decides the order of the characters in training mode and customize.
+}; // 
+</pre>
+
+Then, check <code>System\BtlCharaTbl_str.txt</code> and add your character's full name under the character number.
+
+After you do this, you'll have one last step. You'll need to add their character id to the object define list. To do this you'll need to go to <code>script\btl_Define.txt</code> or if this is Lumina go to <code>script\btl_Define_Chara.txt</code>. You can technically put them anywhere, but for organization, you should search where they're all at. Just search for "Def_ChrNo_" and it should bring you to where all the ids are.
+It should look like this:
+
+<pre>
+const Def_ChrNo_Hyd		= 0;
+</pre>
+
+After the "Def_ChrNo_" is the id string. Just make this the same as the name short. After that is the characters number. This has to be the same as the number you set back in <code>BtlCharaTbl_R</code>. Once you do this, the character should be fully selectable.
+
+== Making Them Selectable ==
+
+The file <code>System\BtlCharaTbl.txt</code> contains references to every character, including their file name and order on Training Quick Select / Customize.
+
+=== Now on the CSS ===
+Head to <code>D:\SteamLibrary\steamapps\common\UNDER NIGHT In-Birth Exe Late[st]\System\BtlCharaTbl.txt</code>
+
+<pre>
+//Section from UNICLR
+Chara_Table <-
+{
+	// ƒLƒƒƒ‰ƒZƒŒƒNƒg—p”z’u 99 ‚ªƒ‰ƒ“ƒ_ƒ€A•K‚¸‚QŽŸŒ³”z—ñ‚É‚È‚é‚æ‚¤‚É
+	// E”z—ñ‚Í“à•”‚Ì’l‚Å‚·AƒAƒCƒRƒ“‚ÌˆÊ’u‚ªˆÚ“®‚µ‚½‚è‚Í‚µ‚Ü‚¹‚ñB
+	// E“¯‚¶ƒLƒƒƒ‰”Ô†‚ª”z’u‚³‚ê‚Ä‚¢‚é‚Æ‚½‚Ô‚ñ³í‚É“®ì‚µ‚È‚¢
+	// E’·‚³‚O‚Ì”z—ñ‚ª‚ ‚é‚Æ—Ž‚¿‚é
+	// E”z—ñ”‚Ícx‰¡‚ª100–¢–ž‚É‚È‚é‚æ‚¤‚É
+	SelectTable = 
+	[
+		[ 24,12,08,02,00,99,01,03,09,13,21 ],  // ‚±‚Ì—ñ‚ª‰ŠúˆÊ’u
+		[ 11,10,06,04,16,18,17,05,07,15,14 ],
+	],
+	SelectDefault = [ 0, 1 ],  // ‰ŠúˆÊ’u 1P 2P
+
+	// ‹­§‚Åƒtƒ‰ƒO‚ð—§‚Ä‚éŽd—l ¦ƒZ[ƒuƒf[ƒ^‚ªã‘‚«‚³‚ê‚é
+	_FileType = 0, //
+	//_SecretFlag = 0, // ƒNƒŠƒA
+	// _SecretFlag = (1<<0), // ƒGƒ‹ƒgƒiƒ€‚ªŽg‚¦‚é
+
+	// ‰æ–Êã•”ƒƒbƒZ[ƒWA‘SŠp16•¶Žš‚Ü‚Å
+	AcVsMes0 = "‰SŽÒ—ûK’†I",
+	AcVsMes1 = "—“üŠ½Œ}I ’§íŽÒ‹‚ÞI",
+	AcVsMes2 = "ƒ‰ƒCƒoƒ‹•åW’†I",
+
+
+	Status = [],
+};
+</pre>
+
+This section of code handles the cursor selection. 99 is random and every other number corresponds to a character. -1 corresponds to null or unselectable.
+
+Player 1 and Player 2's cursors start at character 00 and 01 respectively (defined by SelectDefault)
+When a player inputs directions, the cursor switches to the character corresponding to the direction. For example, moving left on 00 will set the character to 02, etc.
+If you want to add characters around the vanilla UNI characters, you can set up something like this (using characters 25 and 26 as an example)
+
+<pre>
+SelectTable = 
+	[
+		[ -1,24,12,08,02,00,99,01,03,09,13,21 ], // character -1/null is to the left of 24/Phonon, so pressing left on Phonon will wrap around to character 21/Mika
+		[ 26,11,10,06,04,16,18,17,05,07,15,14 ], // character 26 is to the left of 11/Eltnum, so pressing left on Eltnum will select character 26.
+                [ -1,25,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1 ], // character 25 is underneath 11, so pressing down on Eltnum will select character 25.
+	],
+// Note that these characters' CSel icons will not appear in relative positions because this handles cursor logic; not visual placement
+</pre>
+
+=== Adding CSS Visuals ===
+To add portraits, head to <code>grpdat/CSel/chara</code>, and copy/paste a .pat. These .pats will require minimal effort.
+
+'''Steps to take'''
+* Rename the file to correspond to the character project name
+* Edit the dds file using the easy .pat guide
+
+
+For the table that has all the small icons, this process is somewhat different between games, all of which require .pat editing. This won't go into detail about the pat editing itself, just the basics on what needs to be done. Look at DamienIsPoggers .pat documentation for details on all of the .pat parameters
+Lumina is easier, so lets start with that. 
+
+'''Steps to take'''
+*Get the file names csel00.pat at <code>grpdat/Csel/</code>
+*So the very first thing you'll need to make 2 "Objects" which have UVs set to the icon of the character, and the characters name in the file.
+*After that, just copy the "Sprite" data from everything that has "chr000" and make new sprites with it
+*Change the PRID in the sprites name "icon_chr000" from the layer with Arcueid's icon object to the new icon object.
+*Change the "chr000" in the name to the new character's project name.
+*In all the sprites named "name_chr000", change the PRID in the layers that have Arcueid's name object to the new name object.
+*Change the "chr000" in the name to be the new character's project name.
+*In CSelAnim.ini in the same folder, copy and paste this template.
+<pre>
+[000]
+icon = icon_chr000
+position_x = -30
+position_y = 178
+delay = 88
+on_1p = cursor_0_1p
+on_2p = cursor_0_2p
+on_1p_2p = cursor_0_3p
+</pre>
+Change the number on the first line to the new character's number id and change the chr000 to the new character's project name.
+The positions is the position of the icon relative to the center top of the screen. The delay is how many frames before it appears on screen, and the on_ is the curser box that surrounds the icon when being hovered over. Just keep the 0 if the icon is on the left side of the screen and make the 0 a 1 if its on the right side of the screen.
+
+
+Now that were done with Lumina, lets do Uni, which is a bit harder. Creating the sprites is the same process as Lumina (although with Uni, csel00.pat is used for when Londrekia is unlocked and csel01.pat is when he's not), but there's a bit more work that needs to go into this. First off, the animation for the icons coming in. In Uni, the icons coming in is just one long animation of all of the icons coming in. Although I am unsure on how to do edit this due to the names being quirky and not messing around with it enough, but I believe the are '''''not hardcoded''''' despite popular belief. The table itself isn't made up of all the icons doing their own thing though, but instead its one big sprite that just hangs around. This is the last sprite of the animation (sprite 23), when they light up, it becomes it's own icon. Speaking of it's own icon, you have to edits it's placement directly in the .pat. Uni doesn't have a CselAnim.ini. But besides from these, and instead of searching for chr000, search for hyd instead, if you follow the guide above, it should work.
+
+
+Dfc is weird I am not sure how those work honestly.
+
+== Troubleshooting ==
+
+A lot of bugs and errors can cause some glitch messes with your character / mods. Here are a few I've dealt with and some ideas for solutions.
+
+=== My character freezes! / Can't Input Anything! ===
+
+Caused usually by a error in the MoveTable(CMD file). Check formatting for any missed comments. Also, check that variables, skills and functions are defined before they are used.
+
+=== When I do a move my character gets cloned! ===
+
+Caused by a spawn effect/projectile error/MV script error. Spawning a pattern that doesn't exist causes the projectile/effect to set itself to pattern 0, or the idle animation. Check that the patterns you spawn are in the HA6, and that the names match that of the MoveTable. Check if you indented/edited something wrong in your MV file.
+
+=== My character turns invisible when airdashing / jumping / when hit! ===
+
+Caused by Hanteichan being a nuisance and crashing while saving, corrupting the HA6 file. Nothing you can do other than save backups constantly. Usually happens when you copy and paste frames too much, so save every time before you intend to copy a frame. 
+
+=== The game doesn't load / gets stuck in a loop before battle! ===
+
+Most likely caused by a faulty .pat or project file.
+
+=== My character's grab glitches out the opponent / sticks the opponent! ===
+
+Caused by incorrect .txt encoding. The UNICLR/MBTL engine use japanese characters to define types of grabs, which can be corrupted if you save with the wrong encoding. French bread uses SHIFT-JIS.
+For custom characters, grabs can use vector numbers as well without having to remember the japanese characters, which is recommended.
+
+=== My character crashes the game! ===
+
+The big one. There are a few causes which I only know so few.
+
+*Loading character slots past (28 on MBTL) will crash the game.
+*Faulty scripts
+*Can't find HA6/HA6 is corrupt
+*.pat is corrupt
+
+
+{{Navbox-MFPG}}
+[[Category:Modding French Bread Games]]
