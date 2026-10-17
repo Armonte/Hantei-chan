@@ -8,6 +8,7 @@
 #include "pattern_search.h"
 #include "i18n.h"
 #include "ui/ui_style.h"
+#include "fpanim_play.h"
 #include "paste_notice.h"
 
 MainPane::MainPane(Render* render, FrameData *framedata, FrameState &fs) : DrawWindow(render, framedata, fs),
@@ -62,6 +63,9 @@ void MainPane::Draw()
 				im::TextColored(modifiedColor, TXT("[Modified]"));
 			}
 		}
+
+		// UNI2/MBTL: play this pattern in the running game (fpan-im playpattern).
+		fpanimplay::DrawPlayButton(frameData, currState.pattern);
 
 		// Update current pattern's decorated name in case it was modified
 		decoratedNames[currState.pattern] = frameData->GetDecoratedName(currState.pattern);
