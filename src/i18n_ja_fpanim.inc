@@ -33,3 +33,8 @@
 {"Failed: ", "失敗: "},
 {"UNI2-IM / MBTL-IM (dinput8.dll) are never touched. fpan-im\\mods, fpan-im.ini and logs stay on uninstall.",
  "UNI2-IM / MBTL-IM (dinput8.dll) には触れません。アンインストール後も fpan-im\\mods・fpan-im.ini・ログは残ります。"},
+// Play in game (fpanim_play.cpp)
+{"Play in game", "ゲーム内で再生"},
+{"P1 plays this pattern in the running game (fpan-im, training battle only). With script hot reload on, the character is reloaded first so the saved edit plays. Shortcut: F5",
+ "起動中のゲームで P1 がこのパターンを再生します (fpan-im、トレーニング中のみ)。スクリプトのホットリロードが有効なら、保存した編集が反映されるよう先にキャラクターを再読み込みします。ショートカット: F5"},
+{"Sending...", "送信中..."},
