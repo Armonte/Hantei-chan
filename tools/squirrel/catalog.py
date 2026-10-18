@@ -7,7 +7,8 @@ usage: catalog.py <game> <data dir> [--sqtool path/to/sqtool.exe] [--out docs/sq
 Emits <out>/<game>_files.json, <game>_names.json, <game>_catalog.md. Translations come from
 <out>/<game>_tr.json ({jp: en}); every translated string carries "tr":"machine" until reviewed.
 Game data is only read, never copied into the output beyond names, values and comments.
-Only UNI2 1.42 has load-site rules so far (LOADSITES); other games fall back to "untraced".
+UNI2 1.42 and MBTL 25646393 have load-site rules (LOADSITES); other games fall back to "untraced".
+Per-game layout differences (extra file kinds, cmd table syntax, variant scripts) live in GAMES.
 """
 import json, os, re, subprocess, sys, collections
 
@@ -99,6 +100,8 @@ SCRIPT_PURPOSE = {
     'btl_Std_BattleStatusTbl.txt': 'default Battle_Status values shared by characters',
     'cmn_SetPosition.txt': 'round start position helpers',
     'sq_stagebgm.txt': 'stage BGM script (stage_bgm.initround)',
+    'btl_StdNpcMoveTbl.txt': 'standard NPC moves (story/talk NPC objects)',
+    'cmn_Pertner.txt': 'partner object helpers (assist/partner characters)',
 }
 
 # load site / timing / hot reload, UNI2 1.42 (RE_MBTL_LOAD.md UNI2 section, TRAINING_CHARA_SWITCH.md section 10)
@@ -123,10 +126,58 @@ LOADSITES = {
         (r'^data/_coloredit/', 'colour edit scene (untraced)', 'CSS', 'no'),
         (r'^data/effect\.txt$', 'battle load (system effect record)', 'battle load', 'reloadchara (rebuild only)'),
     ],
+    # MBTL 25646393 (RE_MBTL_LOAD.md, TRAINING_CHARA_SWITCH.md section 10 "MBTL 25646393")
+    'mbtl': [
+        (r'^script/Battle_Init\.txt$', 'Sq_InitBattleVM 0x7F4710 -> Sq_RunScriptFile 0x815380 "BattleInit"', 'boot (battle VM)', 'reloadstd'),
+        (r'^script/Battle_Std\.txt$', 'Sq_InitBattleVM 0x7F4710 -> Sq_RunScriptFile "BattleScript"', 'boot (battle VM)', 'reloadstd'),
+        (r'^script/btl_SEDefine\.txt$', '__dofile__ from <chr>_se_list.txt', 'chara load', 'reloadchara (rebuild only)'),
+        (r'^script/btl_(Define\w*|debugFunc)\.txt$', '__dofile__ from Battle_Init.txt', 'boot (battle VM)', 'reloadstd'),
+        (r'^script/(btl_\w+|cmn_\w+|sq_stagebgm)\.txt$', '__dofile__ from Battle_Std.txt', 'boot (battle VM)', 'reloadstd'),
+        (r'^data/_combase\.txt$', 'Sq_InitBattleVM 0x7F4710 "_com_base_"', 'boot (battle VM)', 'reloadstd'),
+        (r'^data/_combase_boss\d*\.txt$', '__dofile__ from <chr>_com_7/8/9.txt (boss COM)', 'chara load', 'reloadchara (rebuild only)'),
+        (r'^data/VectorTable\.txt$', 'Boot_LoadGlobalResources 0x84E7A0 -> VectorTable_LoadGlobal 0x4FE250', 'boot', 'reloadstd'),
+        (r'^data/BattleInfo\.txt$', 'Boot_LoadGlobalResources -> BattleInfo_LoadGlobal 0x504B50', 'boot', 'reloadstd'),
+        (r'^data/BoundEff\.txt$', 'Boot_LoadGlobalResources -> BoundEff_LoadGlobal 0x56C5D0', 'boot', 'reloadstd'),
+        (r'^data/chr\d+\w*/chr\d+_sc_\d+\.txt$', 'Chara_LoadBattleScripts 0x607650 -> CharaScript_BuildScPath 0x608C90 + CharaDatSq_LoadBattleStatus 0x802A20', 'chara load', 'reloadchara'),
+        (r'^data/chr\d+\w*/chr\d+_cmd_\d+\.txt$', 'Chara_LoadBattleScripts -> Chara_LoadCommandList 0x6089B0 -> CBtlSkillCommandList_LoadFromScript 0x812A80', 'chara load', 'reloadchara'),
+        (r'^data/chr\d+\w*/chr\d+_mv_\d+\.txt$', 'Chara_LoadBattleScripts -> Chara_LoadMoveList 0x6085A0', 'chara load', 'reloadchara'),
+        (r'^data/chr\d+\w*/chr\d+_com\w*_\d+\.txt$', 'Chara_LoadBattleScripts -> COM loader 0x606B60 -> CharaScript_BuildComPath 0x606EE0', 'chara load', 'reloadchara (rebuild only)'),
+        (r'^data/chr\d+\w*/chr\d+_se_\w+\.txt$', 'chara load (se_list via mv; se_category via mv __dofile__)', 'chara load', 'reloadchara (rebuild only)'),
+        (r'^data/chr\d+\w*/chr\d+(_\d+\w*)?\.txt$', 'chara resource load (HA6 stack ini; variant 0 -> _0, N -> _N, 999 -> no suffix)', 'chara load', 'reloadchara (rebuild only)'),
+        (r'^data/_csel/', 'character select scene (untraced)', 'CSS', 'no'),
+        (r'^data/_coloredit/', 'colour edit scene (untraced)', 'CSS', 'no'),
+        (r'^data/effect\.txt$', 'battle load (system effect record)', 'battle load', 'reloadchara (rebuild only)'),
+    ],
 }
 
-def classify(rel):
-    for rx, kind, sub, purpose in KINDS:
+# per-game layout. UNI2 uses the defaults (empty dict).
+GAMES = {
+    'uni2': {},
+    'mbtl': {
+        'kinds': [
+            (r'^data/chr\d+\w*/chr\d+_se_category_\d+\.txt$', 'character script', 'se_category', 'sound effect categories for variant N (Battle_Std.SeTable[chr])'),
+            (r'^data/chr\d+\w*/chr\d+\.txt$', 'list or ini', 'ha6_stack', 'HA6/CG/PAT file stack for the character, variant 999 (no suffix)'),
+            (r'^data/chr\d+\w*/chr\d+_\d+_\w+\.txt$', 'list or ini', 'ha6_stack', 'alternative HA6/CG/PAT file stack (ini)'),
+            (r'^data/_combase_boss\d*\.txt$', 'data table', 'combase', 'boss CPU AI base classes (pulled in by the variant com files)'),
+            (r'^data/_talk/npc\d+/npc\d+_sc\.txt$', 'character script', 'npc_sc', 'story/talk NPC Battle_Status'),
+            (r'^data/_talk/npc\d+/npc\d+_cmd\.txt$', 'character script', 'npc_cmd', 'story/talk NPC command table'),
+            (r'^data/_talk/npc\d+/npc\d+_mv\.txt$', 'character script', 'npc_mv', 'story/talk NPC move table'),
+            (r'^data/_talk/npc\d+/npc\d+_se_list\.txt$', 'character script', 'npc_se_list', 'story/talk NPC sound effect list'),
+            (r'^data/_talk/npc\d+/npc\d+\.txt$', 'list or ini', 'ha6_stack', 'story/talk NPC HA6/CG/PAT file stack (ini)'),
+        ],
+        # cmd files: `cmd.Skill_X <- {...}`; `command = "236A"` is a string, `{}` takes everything from the name
+        'cmd_prefix': r'^\s*(?:t|cmd)\.(\w+)\s*<-',
+        'cmd_string': True,
+        # chr001solo etc. are full character folders; folders without an mv file (solos8) are HA6-only
+        'chara_dir': r'^chr\d{3}\w*$',
+        # chrNNN_{mv,cmd,sc}_N.txt for N != 0 (story/boss variants), stack chrNNN_N.txt
+        'variants': True,
+        'states': 'mbtl',
+    },
+}
+
+def classify(rel, game=None):
+    for rx, kind, sub, purpose in GAMES.get(game, {}).get('kinds', []) + KINDS:
         if re.search(rx, rel):
             if sub == 'script':
                 purpose = SCRIPT_PURPOSE.get(os.path.basename(rel), 'shared battle script')
@@ -271,7 +322,7 @@ def trailing_comment(text, line):
     ln = text.splitlines()[line - 1] if line - 1 < len(text.splitlines()) else ''
     return ln.split('//', 1)[1].strip() if '//' in ln else None
 
-def parse_commands(text, tr, prefix=r'^\s*t\.(\w+)\s*<-'):
+def parse_commands(text, tr, prefix=r'^\s*t\.(\w+)\s*<-', cmd_string=False):
     out = []
     lines = text.splitlines()
     entries = list(parse_table_entries(text, prefix))
@@ -284,6 +335,10 @@ def parse_commands(text, tr, prefix=r'^\s*t\.(\w+)\s*<-'):
         m = re.search(r'\bcommand\s*=\s*\[([^\]]*)\]', blk)
         if m:
             e['command'] = [c.strip().strip('"') for c in strip_comment(m.group(1)).split(',') if c.strip()][:8]
+        elif cmd_string:
+            m = re.search(r'\bcommand\s*=\s*"([^"]*)"', blk)
+            if m:
+                e['command'] = [m.group(1)]
         m = re.search(r'UpdateTable\s*=\s*\{\s*name\s*=\s*"(\w+)"', blk)
         if m:
             e['move'] = m.group(1)
@@ -368,11 +423,27 @@ STATES = [
     ('exs', 'EXS gauge', ['EXS', 'Exs']),
 ]
 
-def state_map(api, consts, std_moves):
+# MBTL: the UNI2-only systems (Vorpal, Veil Off, Chain Shift, EXS) replaced by MBTL's
+STATES_MBTL = [x for x in STATES[:9] if x[0] != 'shield'] + [
+    ('shield', 'Shield (MBTL Shield / Air Shield)', ['Shield']),
+    ('throw', 'throw / being thrown', ['Throw', 'Nage']),
+    ('dash', 'dash / backdash', ['Dash', 'BackStep']),
+    ('counter', 'counter hit', ['Counter']),
+    ('moondrive', 'Moon Drive', ['MoonDrive']),
+    ('moonskill', 'Moon Skill', ['MoonSkill']),
+    ('moon', 'Moon gauge (Moon Drive, Moon Skill, Moon values)', ['Moon']),
+    ('rapidbeat', 'Rapid Beat', ['RapidBeat', 'Rapid']),
+    ('lastarc', 'Last Arc', ['LastArc']),
+    ('blast', 'Blast (Moon Drive activation)', ['Blast']),
+    ('krypt', 'Krypt (Krypt Arts)', ['Krypt']),
+    ('heat', 'Heat / Magic Circuit', ['Heat', 'Circuit']),
+]
+
+def state_map(api, consts, std_moves, states=STATES):
     api_c = [x for x in api if x.get('kind') == 'const' and re.match(r'_(PosState|State|Status|GuardFlag|MvStFlag)_', x['name'])]
     mvst = [x for x in api if x.get('kind') == 'var' and x.get('table') == 'MvStatus']
     out = []
-    for key, en, words in STATES:
+    for key, en, words in states:
         rx = re.compile('|'.join(words))
         e = {'state': key, 'en': en}
         e['engine_consts'] = sorted({f"{x.get('qualified_table', x.get('table'))}.{x['name']}={x.get('value')}" for x in api_c if rx.search(x['name'])})[:20]
@@ -409,7 +480,7 @@ def main():
     files = []
     for rel in rels:
         text = rd(os.path.join(root, rel))
-        kind, sub, purpose = classify(rel)
+        kind, sub, purpose = classify(rel, game)
         # content check: a "unknown" file that defines a MoveTable/CommandTable is a character script
         if kind == 'unknown' and re.search(r'_MoveTable|_CommandTable|Battle_Status\s*<-', text):
             kind = 'character script'
@@ -448,15 +519,16 @@ def main():
             chrnames[int(c['value'])].append(m.group(1))
 
     # ---- per character
+    cfg = GAMES.get(game, {})
+    cmd_prefix = cfg.get('cmd_prefix', r'^\s*t\.(\w+)\s*<-')
+    cmd_string = cfg.get('cmd_string', False)
     chars = {}
     base_pats = {}
+    ha6_cache = {}
     ddir = os.path.join(root, 'data')
-    for cd in sorted(os.listdir(ddir)) if os.path.isdir(ddir) else []:
-        if not re.match(r'^chr\d{3}$', cd):
-            continue
-        cpath = os.path.join(ddir, cd)
-        num = int(cd[3:])
-        stack = ha6_stack(cpath, os.path.join(cpath, f'{cd}_0.txt'))
+
+    def load_stack(stack, skip=()):
+        """(pats_by_code, pat_list, errs) for an HA6 stack; files in skip are resolved but not listed."""
         pats_by_code, pat_list, errs = {}, [], []
         for hf in stack:
             if not os.path.exists(hf):
@@ -465,23 +537,26 @@ def main():
             if isbase and base_pats:
                 pp = base_pats
             else:
-                pp, err = ha6_patterns(hf)
+                if hf not in ha6_cache:
+                    ha6_cache[hf] = ha6_patterns(hf)
+                pp, err = ha6_cache[hf]
                 if err:
                     errs.append(f'{os.path.basename(hf)}: {err}')
                 if isbase:
-                    base_pats = pp
+                    base_pats.update(pp)
             for pid in sorted(pp):
                 code = pp[pid].get('code')
                 if code and code not in pats_by_code:
                     pats_by_code[code] = (pid, os.path.basename(hf))
-                if not isbase and (pp[pid].get('title') or code):
+                if not isbase and hf not in skip and (pp[pid].get('title') or code):
                     t = tr(pp[pid].get('title'))
                     pat_list.append({'id': pid, 'ha6': os.path.basename(hf), 'code': code,
                                      **({'title': t} if t else {})})
-        mv = rf(f'data/{cd}/{cd}_mv_0.txt')
-        cmd = rf(f'data/{cd}/{cd}_cmd_0.txt')
-        moves = parse_moves(mv, tr, r'^\s*t\.(Mv_\w+)\s*<-')
-        cmds = parse_commands(cmd, tr)
+        return pats_by_code, pat_list, errs
+
+    def load_scripts(cd, pfx, sfx, pats_by_code):
+        moves = parse_moves(rf(f'data/{cd}/{pfx}_mv_{sfx}.txt'), tr, r'^\s*t\.(Mv_\w+)\s*<-')
+        cmds = parse_commands(rf(f'data/{cd}/{pfx}_cmd_{sfx}.txt'), tr, cmd_prefix, cmd_string)
         by_move = collections.defaultdict(list)
         for c in cmds:
             mvn = c.get('move') or ('Mv_' + c['name'] if c['name'].startswith('Skill_') else None)
@@ -505,16 +580,47 @@ def main():
             if res:
                 m['ha6_patterns'] = res
             m.pop('patterns', None)
-        sc = rf(f'data/{cd}/{cd}_sc_0.txt')
+        return moves, cmds, rf(f'data/{cd}/{pfx}_sc_{sfx}.txt')
+
+    for cd in sorted(os.listdir(ddir)) if os.path.isdir(ddir) else []:
+        if not re.match(cfg.get('chara_dir', r'^chr\d{3}$'), cd):
+            continue
+        cpath = os.path.join(ddir, cd)
+        pfx = cd[:6]
+        if pfx != cd and not os.path.exists(os.path.join(cpath, f'{pfx}_mv_0.txt')):
+            continue  # HA6-only folder (no scripts)
+        num = int(cd[3:6])
+        stack = ha6_stack(cpath, os.path.join(cpath, f'{pfx}_0.txt'))
+        pats_by_code, pat_list, errs = load_stack(stack)
+        moves, cmds, sc = load_scripts(cd, pfx, '0', pats_by_code)
         chars[cd] = {'num': num, 'short': chrnames.get(num, []), 'ha6_stack': [os.path.relpath(h, root).replace(os.sep, '/') for h in stack],
                      'moves': moves, 'commands': cmds, 'patterns': pat_list,
                      **({'ha6_errors': errs} if errs else {})}
         if sc:
             chars[cd]['sc_fields'] = sorted(set(re.findall(r'^\s*(\w+)\s*=', sc, re.M)))
+        if cfg.get('variants'):
+            vs = {}
+            for f in sorted(os.listdir(cpath)):
+                vm = re.match(rf'^{pfx}_mv_(\d+)\.txt$', f)
+                if not vm or vm.group(1) == '0':
+                    continue
+                sfx = vm.group(1)
+                vstack = ha6_stack(cpath, os.path.join(cpath, f'{pfx}_{sfx}.txt'))
+                vp, vlist, verrs = load_stack(vstack, skip=set(stack))
+                vmoves, vcmds, vsc = load_scripts(cd, pfx, sfx, vp)
+                names0 = {m['name'] for m in moves}
+                vs[sfx] = {'ha6_stack': [os.path.relpath(h, root).replace(os.sep, '/') for h in vstack],
+                           'moves': vmoves, 'commands': vcmds, 'patterns': vlist,
+                           'new_moves': [m['name'] for m in vmoves if m['name'] not in names0],
+                           **({'ha6_errors': verrs} if verrs else {})}
+                if vsc:
+                    vs[sfx]['sc_fields'] = sorted(set(re.findall(r'^\s*(\w+)\s*=', vsc, re.M)))
+            if vs:
+                chars[cd]['variants'] = vs
 
     base_list = [{'id': pid, 'code': v.get('code'), **({'title': tr(v['title'])} if v.get('title') else {})}
                  for pid, v in sorted(base_pats.items())]
-    states = state_map(api, consts, std_moves)
+    states = state_map(api, consts, std_moves, STATES_MBTL if cfg.get('states') == 'mbtl' else STATES)
 
     if '--dump-jp' in opt:
         json.dump(sorted(tr.missing), open(opt['--dump-jp'], 'w', encoding='utf-8'), ensure_ascii=False, indent=0)
@@ -602,6 +708,17 @@ def write_md(out, game, files, names, tr):
             t = p.get('title')
             L.append(f"| {p['id']} | {p['ha6'].replace('.ha6', '')} | {p.get('code') or ''} | {en(t)}{' (' + jp(t) + ')' if jp(t) else ''} |")
         L += ['', '</details>', '']
+        for sfx, v in c.get('variants', {}).items():
+            L += [f"<details><summary>variant _{sfx}: {len(v['moves'])} moves, {len(v['commands'])} commands, "
+                  f"{len(v['patterns'])} named patterns in the variant HA6</summary>", '',
+                  f"HA6 stack: {', '.join(v['ha6_stack'])}. Moves not in _0: {', '.join(v['new_moves']) or 'none'}.", '',
+                  '| move | command | HA6 patterns | EN |', '|---|---|---|---|']
+            for m in v['moves']:
+                if m['name'] not in v['new_moves']:
+                    continue
+                pats = ', '.join(f"{p['code'] or ''}={p['num'] if p['num'] is not None else '?'}" for p in m.get('ha6_patterns', []))
+                L.append(f"| `{m['name']}` | {', '.join(x['cmd'] for x in m.get('commands', []))} | {pats[:80]} | {en(m.get('comment'))} |")
+            L += ['', '</details>', '']
     with open(os.path.join(out, f'{game}_catalog.md'), 'w', encoding='utf-8') as f:
         f.write('\n'.join(L) + '\n')
 
