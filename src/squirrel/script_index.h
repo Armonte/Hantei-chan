@@ -10,6 +10,7 @@
 // modders asked for: create the missing Mv_ state, name for name, with its brackets, so the character cannot get stuck.
 
 #include <cstdint>
+#include <functional>
 #include <map>
 #include <string>
 #include <vector>
@@ -57,7 +58,9 @@ struct SearchOptions {
 class ScriptIndex {
 public:
 	// rootUtf8: the folder holding script/ and data/; files: game-relative paths of the Squirrel scripts.
-	void build(const std::string& rootUtf8, const std::vector<std::string>& files);
+	// pathOf (optional): the file to read for a rel (layered mod folders, script_layers.h); "" or unset = rootUtf8/rel.
+	void build(const std::string& rootUtf8, const std::vector<std::string>& files,
+		const std::function<std::string(const std::string&)>& pathOf = {});
 	// Re-parse one file from editor text (live editing); adds it if new.
 	void updateFile(const std::string& rel, const std::string& utf8Text);
 

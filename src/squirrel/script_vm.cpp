@@ -30,6 +30,7 @@ namespace sqedit {
 struct ScriptVM::Impl {
 	HSQUIRRELVM v = nullptr;
 	fs::path root;
+	ScriptVM::PathFn resolver;
 	std::string apiPath;
 	LoadProfile profile;
 	LogFn log;
@@ -42,6 +43,7 @@ struct ScriptVM::Impl {
 	Diagnostic bootDiag;
 
 	void say(const std::string& s) { if (log) log(s); }
+	fs::path at(const std::string& rel) const;
 };
 
 namespace {
@@ -96,14 +98,35 @@ SQInteger RuntimeErrorHandler(HSQUIRRELVM v)
 }
 
 // Resolves a script path below the game root; refuses anything that escapes it.
-bool ResolveInRoot(const fs::path& root, const std::string& rel, fs::path& out)
+// With a path resolver (layered mod folders), a game-relative path goes to the copy the game reads.
+bool ResolveInRoot(const ScriptVM::Impl* c, const std::string& rel, fs::path& out)
 {
+	const fs::path& root = c->root;
+	if (c->resolver && rel.find("..") == std::string::npos) {
+		std::string r = rel;
+		for (char& ch : r) if (ch == '\\') ch = '/';
+		while (r.rfind("./", 0) == 0) r.erase(0, 2);
+		const std::string hit = c->resolver(r);
+		if (!hit.empty()) { out = fs::u8path(hit); return true; }
+	}
 	fs::path p = (root / fs::path(rel)).lexically_normal();
 	auto r = root.lexically_normal().generic_string();
 	if (p.generic_string().rfind(r, 0) != 0) return false;
 	out = p;
 	return true;
 }
+
+} // namespace
+
+fs::path ScriptVM::Impl::at(const std::string& rel) const
+{
+	fs::path p;
+	return ResolveInRoot(this, rel, p) ? p : root / fs::u8path(rel);
+}
+
+void ScriptVM::setPathResolver(PathFn fn) { m->resolver = std::move(fn); }
+
+namespace {
 
 Diagnostic CompileIn(HSQUIRRELVM v, const std::string& src, const std::string& name)
 {
@@ -156,7 +179,7 @@ SQInteger Native_dofile(HSQUIRRELVM v)
 	const SQChar* path = nullptr;
 	if (SQ_FAILED(sq_getstring(v, 2, &path))) return sq_throwerror(v, "__dofile__: string expected");
 	fs::path p;
-	if (!ResolveInRoot(c->root, path, p)) return sq_throwerror(v, "__dofile__: path outside the game root");
+	if (!ResolveInRoot(c, path, p)) return sq_throwerror(v, "__dofile__: path outside the game root");
 	if (c->dofileDepth > 32) return sq_throwerror(v, "__dofile__: recursion too deep");
 	++c->dofileDepth;
 	Diagnostic d = RunFile(v, p, path);
@@ -173,7 +196,7 @@ SQInteger Native_LoadString(HSQUIRRELVM v)
 	if (SQ_FAILED(sq_getstring(v, 2, &path))) return sq_throwerror(v, "SQ_LoadString: string expected");
 	std::string s;
 	fs::path p;
-	if (ResolveInRoot(c->root, path, p)) ReadFile(p, s);
+	if (ResolveInRoot(c, path, p)) ReadFile(p, s);
 	sq_pushstring(v, s.c_str(), static_cast<SQInteger>(s.size()));
 	return 1;
 }
@@ -208,7 +231,7 @@ SQInteger Native_Stub(HSQUIRRELVM v)
 		const SQChar* path = nullptr;
 		fs::path p;
 		std::error_code ec;
-		const bool alive = SQ_SUCCEEDED(sq_getstring(v, 2, &path)) && ResolveInRoot(Ctx(v)->root, path, p) && fs::exists(p, ec);
+		const bool alive = SQ_SUCCEEDED(sq_getstring(v, 2, &path)) && ResolveInRoot(Ctx(v), path, p) && fs::exists(p, ec);
 		sq_pushinteger(v, alive ? 1 : 0);
 		return 1;
 	}
@@ -292,7 +315,8 @@ Diagnostic ScriptVM::bootstrap()
 	m->bootDiag = {};
 	for (const char* entry : {"script/Battle_Init.txt", "script/Battle_Std.txt", "data/_combase.txt"}) {
 		if (!m->profile.comBase && std::string(entry) == "data/_combase.txt") continue;
-		const fs::path p = m->root / entry;
+		fs::path p;
+		if (!ResolveInRoot(m.get(), entry, p)) continue;
 		if (!fs::exists(p)) continue;
 		Diagnostic d = RunFile(m->v, p, std::string("./") + entry);
 		sq_settop(m->v, 0);
@@ -326,7 +350,7 @@ CharaLoadResult ScriptVM::checkCharacter(const std::string& chrDirRel, LoadConte
 			d = CompileIn(m->v, overrideBytes, "./" + rel);
 			if (d.ok) d = RunCompiled(m->v);
 		} else
-			d = RunFile(m->v, m->root / fs::u8path(rel), "./" + rel);
+			d = RunFile(m->v, m->at(rel), "./" + rel);
 		sq_settop(m->v, 0);
 		if (!d.ok) {
 			*e = d.message;
@@ -337,12 +361,12 @@ CharaLoadResult ScriptVM::checkCharacter(const std::string& chrDirRel, LoadConte
 	};
 	auto exists = [&](const std::string& rel) {
 		std::error_code ec;
-		return rel == overrideRel || fs::exists(m->root / fs::u8path(rel), ec);
+		return rel == overrideRel || fs::exists(m->at(rel), ec);
 	};
 	auto read = [&](const std::string& rel) {
 		if (rel == overrideRel) return overrideBytes;
 		std::string b;
-		ReadFile(m->root / fs::u8path(rel), b);
+		ReadFile(m->at(rel), b);
 		return b;
 	};
 	return LoadCharacterScripts(m->v, chrDirRel, ctx, run, exists, read, m->profile);
