@@ -273,16 +273,18 @@ std::string PartGfx<>::DecodeDds(const char* file, size_t size, std::vector<uint
     const size_t avail = size - 128;
     bgra.assign((size_t)w * h * 4, 0);
     if (pfFlags & 4) {   // DDPF_FOURCC
-        const bool dxt1 = !memcmp(&d[21], "DXT1", 4), dxt5 = !memcmp(&d[21], "DXT5", 4);
-        if (!dxt1 && !dxt5) return "DDS compression must be DXT1 or DXT5 (or uncompressed 32-bit)";
+        const bool dxt1 = !memcmp(&d[21], "DXT1", 4), dxt5 = !memcmp(&d[21], "DXT5", 4), dxt3 = !memcmp(&d[21], "DXT3", 4);
+        if (!dxt1 && !dxt5 && !dxt3) return "DDS compression must be DXT1, DXT3 or DXT5 (or uncompressed 32-bit)";
         const int bw = (w + 3) / 4, bh = (h + 3) / 4, bsz = dxt1 ? 8 : 16;
         if (avail < (size_t)bw * bh * bsz) return "The DDS file is truncated";
         for (int by = 0; by < bh; by++)
             for (int bx = 0; bx < bw; bx++) {
                 const uint8_t* blk = px + ((size_t)by * bw + bx) * bsz;
                 uint8_t out[16][4];
-                DecodeBc1Colors(dxt5 ? blk + 8 : blk, out, dxt1);
+                DecodeBc1Colors(dxt1 ? blk : blk + 8, out, dxt1);
                 if (dxt5) DecodeBc3Alpha(blk, out);
+                if (dxt3)   // BC2: explicit 4-bit alpha, pixel i in nibble i (low nibble first)
+                    for (int i = 0; i < 16; i++) out[i][3] = (uint8_t)(((blk[i >> 1] >> ((i & 1) * 4)) & 15) * 17);
                 for (int i = 0; i < 16; i++) {
                     const int x = bx * 4 + (i & 3), y = by * 4 + (i >> 2);
                     if (x < w && y < h) memcpy(&bgra[((size_t)y * w + x) * 4], out[i], 4);
@@ -397,9 +399,12 @@ std::string PartGfx<>::ImportTexture(const char *filename, std::vector<Texture*>
     else if (!memcmp(typeBuf, "DXT5", 4)) {
         type = 5; // DXT5
     }
+    else if (!memcmp(typeBuf, "DXT3", 4)) {
+        type = 3; // DXT3 (BC2): stored as is, like DXT1 / DXT5 (UNIB ef00.pat)
+    }
     else {
         delete[] data;
-        return "DDS compression must be DXT1 or DXT5 (or uncompressed)";
+        return "DDS compression must be DXT1, DXT3 or DXT5 (or uncompressed)";
     }
 
     // Copy DDS header
@@ -430,7 +435,7 @@ std::string PartGfx<>::ImportTexture(const char *filename, std::vector<Texture*>
     else
     {
         // Compressed (DXT1 or DXT5)
-        size_t compressedSize = type == 5 ? (size_t)w * h : (size_t)w * h / 2;
+        size_t compressedSize = (type == 5 || type == 3) ? (size_t)w * h : (size_t)w * h / 2;
         texture->LoadCompressed((char*)s3tc, w, h, compressedSize, type);
         // LoadCompressed creates texture internally, set default filtering
         // Actual filtering will be applied per-part based on PRFL flag in DrawPart()
