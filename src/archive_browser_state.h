@@ -119,6 +119,11 @@ struct State {
 	// thread instead of on the worker, so a capture at a fixed frame number does
 	// not depend on how busy the workers are. Set by ArchiveBrowser::SetDeterministic.
 	bool deterministicSync = false;
+	// --deterministic: do not read or write the on-disk thumbnail cache
+	// (LOCALAPPDATA\Hantei-chan\thumbcache). Its contents depend on what ran
+	// before, so a run would otherwise render whatever the last run left there
+	// (PLAN.md 4.3).
+	bool deterministicNoCache = false;
 	// settings
 	std::string lastBrowsed;
 	std::vector<std::string> recent;
