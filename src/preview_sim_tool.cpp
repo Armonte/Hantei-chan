@@ -501,6 +501,41 @@ int SelfTest()
 		CHECK(allOk, "position-tool placement == simulated spawn position (48 combos)");
 	}
 
+	// 14) aniType 3 End (UNI2 0x4BD1C0 / MBTL 0x49FD00 case 3): the root holds its last frame and
+	//     ends without changing pattern (link 0x20 children live on); not "loops". MBAACC loads
+	//     AFFL 3 as next frame, so the same data runs off the end instead.
+	for (Ha6Game g : { Ha6Game::UNI, Ha6Game::MBTL, Ha6Game::MBAACC }) {
+		FrameData u, ufx;
+		u.initEmpty(); ufx.initEmpty();
+		u.setGameOverride(g);
+		AddFrame(u, 5, 3, 1);
+		Frame& e = AddFrame(u, 5, 4, 3);
+		AddEF(e, 1, 6, {0, 0, 0x20, 0});
+		AddFrame(u, 6, 100, 0);
+		preview::PreviewSim sim;
+		sim.setInputs(&u, &ufx, 5, opt);
+		const int endTick = sim.rootEndTick();
+		if (g != Ha6Game::MBAACC) {
+			CHECK(endTick == 7 && sim.rootEndKind() == preview::RootEndKind::EndHold, "End (aniType 3) ends the root, holding");
+			sim.getStateAt(20, st);
+			CHECK(st.actors[0].frame == 1 && ByPattern(st, 6), "End holds the last frame; link 0x20 child survives");
+			CHECK(std::string(preview::RootEndKindText(sim.rootEndKind())) == "ends (holds last frame)", "End summary text");
+		} else {
+			CHECK(endTick == 7 && sim.rootEndKind() == preview::RootEndKind::RanOffEnd, "MBAACC AFFL 3 = next frame, runs off the end");
+		}
+	}
+	// 15) An aniType without an engine case holds the frame forever: reported as a hold, not a loop.
+	{
+		FrameData u, ufx;
+		u.initEmpty(); ufx.initEmpty();
+		u.setGameOverride(Ha6Game::UNI);
+		AddFrame(u, 5, 2, 7);
+		preview::PreviewSim sim;
+		sim.setInputs(&u, &ufx, 5, opt);
+		CHECK(sim.rootEndTick() == 2 && sim.rootEndKind() == preview::RootEndKind::HoldFrame, "unhandled aniType = held frame");
+		CHECK(std::string(preview::RootEndKindText(preview::RootEndKind::None)) == "loops", "None reads as loops");
+	}
+
 	std::printf("\nselftest: %s (%d failure(s))\n", g_fail ? "FAILED" : "passed", g_fail);
 	return g_fail ? 4 : 0;
 }

@@ -232,6 +232,7 @@ struct PreviewSim::Impl {
 
 	std::vector<int> rootTrack;   // root frame at each frontier tick
 	int rootEnd = -1;
+	RootEndKind rootEndKind = RootEndKind::None;
 	int settled = -1;             // first tick with only a finished root left
 	bool rootValid = false;
 	std::set<IfKey> reportedUnmodeled;
@@ -575,12 +576,16 @@ void EnterFrame(Ctx& c, PreviewSim::State& s, size_t idx, int frame, int tick, i
 }
 
 // Root finished or would leave its pattern: hold the last frame.
-void EndRoot(Ctx& c, PreviewSim::State& s, size_t idx, int tick, int queued, const char* why)
+void EndRoot(Ctx& c, PreviewSim::State& s, size_t idx, int tick, int queued, const char* why,
+             RootEndKind kind = RootEndKind::PatternChange)
 {
 	SimActor& a = s.actors[idx];
 	if (a.rootEnded) return;
 	a.rootEnded = true;
+	a.rootEndKind = (uint8_t)kind;
 	Event(c, tick, EventKind::RootEnded, a.id, queued, 0, why);
+	// End / an unhandled aniType hold the frame inside the same pattern: nothing changes pattern.
+	if (kind == RootEndKind::EndHold || kind == RootEndKind::HoldFrame) return;
 	// The character really starts another pattern here: children linked with
 	// 0x20 ("remove when parent changes pattern") die with it.
 	KillLinkedChildren(c, s.actors, a.id, 0x20, tick, "parent changed pattern (link 0x20)");
@@ -615,7 +620,7 @@ void RanOffEnd(Ctx& c, PreviewSim::State& s, size_t idx, int tick)
 		// Keep a displayable frame.
 		Sequence* seq = GetSeq(c, false, s.actors[idx].pattern);
 		if (seq) s.actors[idx].frame = std::clamp(s.actors[idx].frame, 0, (int)seq->frames.size() - 1);
-		EndRoot(c, s, idx, tick, 0, "frame index past the end (engine resets to pattern 0)");
+		EndRoot(c, s, idx, tick, 0, "frame index past the end (engine resets to pattern 0)", RootEndKind::RanOffEnd);
 		return;
 	}
 	Kill(c, s.actors, s.actors[idx].id, tick, "frame index past the end (engine resets to pattern 0)");
@@ -731,17 +736,20 @@ void Update(Ctx& c, PreviewSim::State& s, size_t idx, int tick)
 	if (!seq || a.frame >= (int)seq->frames.size()) { RanOffEnd(c, s, idx, tick); return; }
 	const auto& fr = seq->frames[a.frame];
 	const auto& af = fr.AF;
+	// The game's own reading of aniType/aniFlag (MBAACC loader rewrites AFFL 3-5).
+	FrameData* owner = a.effectHa6 ? c.effect : c.main;
+	const EngineAniStep st = EngineAniStepFor(owner ? owner->game() : Ha6Game::MBAACC, af.aniType, af.aniFlag);
 
 	a.frameTimer++;
 	if (a.frameTimer < af.duration) return; // frame lasts max(1, duration) ticks
 
-	switch (af.aniType) {
+	switch (st.type) {
 	case 0: {
 		// End: +0x1F set; IF2 p3 destroys, otherwise start pattern AF jump.
 		bool destroy = false;
 		for (const auto& cond : fr.IF)
 			if (cond.type == 2 && cond.parameters[2]) destroy = true;
-		int target = af.jump + ((af.aniFlag & 4) ? a.pattern : 0);
+		int target = af.jump + ((st.flags & 4) ? a.pattern : 0);
 		if (a.isRoot) {
 			EndRoot(c, s, idx, tick, target, "pattern end (aniType 0)");
 			a.frameTimer = std::max(1, af.duration);
@@ -757,15 +765,22 @@ void Update(Ctx& c, PreviewSim::State& s, size_t idx, int tick)
 	case 2: {
 		if (a.loopCounter) a.loopCounter--;
 		int next;
-		if (!(af.aniFlag & 2) || a.loopCounter)
-			next = (af.aniFlag & 4) ? a.frame + af.jump : af.jump;
+		if (!(st.flags & 2) || a.loopCounter)
+			next = (st.flags & 4) ? a.frame + af.jump : af.jump;
 		else
-			next = (af.aniFlag & 8) ? a.frame + af.loopEnd : af.loopEnd;
+			next = (st.flags & 8) ? a.frame + af.loopEnd : af.loopEnd;
 		JumpToFrame(c, s, idx, next, tick); // re-enters (and re-fires) on self-jumps
 		return;
 	}
+	case 3:
+		// UNI2 0x4BD1C0 / MBTL 0x49FD00 case 3 End: the frame is held, the tick stops and the
+		// ended flag is raised; no pattern change. (MBAACC never gets here: its loader maps AFFL 3.)
+		if (a.isRoot) EndRoot(c, s, idx, tick, -1, "End (aniType 3): holds the last frame", RootEndKind::EndHold);
+		return;
 	default:
-		return; // other aniTypes hold the frame (timer keeps counting)
+		// other aniTypes hold the frame (timer keeps counting); the root never moves on
+		if (a.isRoot) EndRoot(c, s, idx, tick, -1, "aniType without an engine case: frame held", RootEndKind::HoldFrame);
+		return;
 	}
 }
 
@@ -943,6 +958,7 @@ void PreviewSim::invalidate()
 	I.rootTrack.clear();
 	I.reportedUnmodeled.clear();
 	I.rootEnd = -1;
+	I.rootEndKind = RootEndKind::None;
 	I.settled = -1;
 	I.rootValid = false;
 	m_records.clear();
@@ -1020,7 +1036,7 @@ void PreviewSim::ensureSimulatedTo(int tick)
 		m_stats.frontierTicks++;
 		const SimActor& root = I.frontier.actors[0];
 		I.rootTrack.push_back(root.frame);
-		if (root.rootEnded && I.rootEnd < 0) I.rootEnd = I.frontier.tick;
+		if (root.rootEnded && I.rootEnd < 0) { I.rootEnd = I.frontier.tick; I.rootEndKind = (RootEndKind)root.rootEndKind; }
 		if (I.settled < 0 && IsQuiescent(I.frontier, m_scheduled)) I.settled = I.frontier.tick;
 		if (I.frontier.tick % N == 0) I.checkpoints.push_back(I.frontier);
 	}
@@ -1078,6 +1094,23 @@ int PreviewSim::rootEndTick()
 {
 	ensureSimulatedTo(m_options.horizonTicks);
 	return m_impl->rootEnd;
+}
+
+RootEndKind PreviewSim::rootEndKind()
+{
+	ensureSimulatedTo(m_options.horizonTicks);
+	return m_impl->rootEndKind;
+}
+
+const char* RootEndKindText(RootEndKind k)
+{
+	switch (k) {
+	case RootEndKind::PatternChange: return "ends (next pattern)";
+	case RootEndKind::EndHold: return "ends (holds last frame)";
+	case RootEndKind::HoldFrame: return "holds the frame (no engine case for this aniType)";
+	case RootEndKind::RanOffEnd: return "ends (runs past the last frame, engine resets to pattern 0)";
+	default: return "loops";
+	}
 }
 
 int PreviewSim::settledTick()

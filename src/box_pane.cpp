@@ -474,9 +474,16 @@ void BoxPane::DrawSpawnTimeline()
 			               "Per-condition overrides are in 'Runtime conditions' below."));
 	}
 
+	// Root end: the tick plus how it ended (End holds the last frame, it does not loop).
+	std::string rootEndText = TXT("loops");
+	if (rootEnd >= 0) {
+		char rb[160];
+		std::snprintf(rb, sizeof rb, TXT("%s at tick %d"), TXT(preview::RootEndKindText(sim.rootEndKind())), rootEnd);
+		rootEndText = rb;
+	}
 	im::Text(TXT("Frame: %d / %d  |  Tick: %d  |  Root ends: %s  |  Settles: %s"), currState.frame, mainFrameCount - 1,
 	         currState.currentTick,
-	         rootEnd >= 0 ? std::to_string(rootEnd).c_str() : TXT("loops"),
+	         rootEndText.c_str(),
 	         settled >= 0 ? std::to_string(settled).c_str() : TXT("never (looping actor)"));
 
 	auto seekTick = [&](int tick) {

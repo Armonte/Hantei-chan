@@ -194,16 +194,38 @@ inline void AfDisplay(Frame_AF *af, int &selectedLayer, FrameData *frameData = n
 
 	ui::FormSection(TXT("Animation"));
 
-	unsigned int flagIndex = -1;
-	if(BitField("Animation flags", &af->aniFlag, &flagIndex, 4)) {
-		markModified();
-	}
-	switch (flagIndex)
 	{
-		case 0: Tooltip("Landing frame: Land to pattern"); break;
-		case 1: Tooltip("Loop: Decrement loops and go to end if 0"); break;
-		case 2: Tooltip("Go to: Use relative offset"); break;
-		case 3: Tooltip("End of loop: Use relative offset"); break;
+		// Only the bits this game's engine reads are toggles (AniFlagBitsRead, traced per game in
+		// framedata.h). Bits set in data that the game never reads stay visible read-only, and the
+		// whole value stays editable as a raw number.
+		const unsigned readMask = AniFlagBitsRead(game);
+		int shown = 0;
+		for (int b = 0; b < 32; ++b) if (readMask & (1u << b)) shown = b + 1;
+		const unsigned before = af->aniFlag;
+		unsigned int flagIndex = -1;
+		if (shown > 0 && BitField("Animation flags", &af->aniFlag, &flagIndex, shown)) {
+			af->aniFlag = (af->aniFlag & readMask) | (before & ~readMask);   // unread bits are not toggles
+			if (af->aniFlag != before) markModified();
+		}
+		if (flagIndex < 32) {
+			if (const char* lbl = AniFlagBitLabel(game, (int)flagIndex)) Tooltip(lbl);
+			else {
+				char b[96];
+				std::snprintf(b, sizeof b, TXT("Bit %u (not read by the game)"), flagIndex);
+				Tooltip(b);
+			}
+		}
+		const unsigned unread = af->aniFlag & ~readMask;
+		if (unread) {
+			im::TextDisabled(TXT("Bits 0x%X set (not read by the game)"), unread);
+		}
+		if (shown == 0 || unread) {
+			int raw = (int)af->aniFlag;
+			if (im::InputInt(LBL("Animation flags (raw)"), &raw, 0, 0)) { af->aniFlag = (unsigned)raw; markModified(); }
+			if (im::IsItemHovered())
+				Tooltip(shown == 0 ? "AFFE value. The flag bits this game reads are not traced yet, so it is edited as a number."
+				                   : "AFFE value, including bits the game does not read");
+		}
 	}
 
 	const bool afTiming = ui::BeginLabelForm("##af_timing", lw);
@@ -217,7 +239,8 @@ inline void AfDisplay(Frame_AF *af, int &selectedLayer, FrameData *frameData = n
 		markModified();
 	}
 	if(im::IsItemHovered() && af->aniType == 3)
-		Tooltip("End: hold this frame and stop the pattern (AFFL 3)");
+		Tooltip(Ha6GameIsUni(game) ? "End: hold this frame and stop the pattern (AFFL 3)"
+		                           : "MBAACC loads AFFL 3 as Next frame with the landing flag, not End");
 
 	if(im::InputInt(ui::FormRow(LBL("Go to")), &af->jump, 0, 0)) {
 		markModified();
