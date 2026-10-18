@@ -59,6 +59,10 @@ public:
 		const std::string& overrideBytes);
 	// The game's load profile (LoadProfileFor): whether the setup runs data/_combase.txt, the file order, the object push.
 	void setLoadProfile(const LoadProfile& p);
+	// Layered games (UNI2 / MBTL with fpan-im / IM mod folders, script_layers.h): maps a game-relative path
+	// ("data/chr001/chr001_mv_0.txt") to the file the game would read ("" = not known: the game root is used). Kept across open().
+	using PathFn = std::function<std::string(const std::string& rel)>;
+	void setPathResolver(PathFn fn);
 
 	int nativeCount() const;
 	int sandboxBlockedCount() const;
