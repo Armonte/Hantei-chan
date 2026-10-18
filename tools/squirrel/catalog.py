@@ -14,6 +14,7 @@ import json, os, re, subprocess, sys, collections
 HERE = os.path.dirname(os.path.abspath(__file__))
 REPO = os.path.abspath(os.path.join(HERE, '..', '..'))
 sys.path.insert(0, os.path.join(REPO, 'tools', 'uni'))
+sys.path.insert(0, HERE)
 import ha6walk  # noqa: E402
 
 JP_RE = re.compile(r'[　-ヿ一-鿿＀-￯]')
@@ -524,6 +525,13 @@ def main():
     names = {'game': game, 'schema': 1,
              'consts': consts, 'std_moves': std_moves, 'std_commands': std_cmds,
              'states': states, 'basedata_patterns': base_list, 'characters': chars}
+    if '--legacy' not in a:   # schema 2: traced load sites, HA6 stack rule, runtime patterns, split output
+        import catalog_ext
+        stats = catalog_ext.finish(game, root, out, files, names, tr, ha6walk, opt)
+        for k, v in stats.items():
+            print(f'{k}: {v}')
+        print('translated (machine)', tr.used, 'untranslated JP', len(tr.missing))
+        return
     def dump(obj, name):
         with open(os.path.join(out, name), 'w', encoding='utf-8') as f:
             json.dump(obj, f, ensure_ascii=False, separators=(',', ':'))
