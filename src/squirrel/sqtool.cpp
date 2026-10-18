@@ -306,7 +306,8 @@ static std::string TakeRuntimeError()
 
 static void TraceCharacterPatterns(HSQUIRRELVM v, const std::string &chr, sqedit::LoadContext &ctx)
 {
-	std::string CHR = chr;
+	// DFCI/UNIB folders are <Name>_0 and the table is <NAME>_MoveTable (same rule as LoadCharacterScripts)
+	std::string CHR = (chr.size() > 2 && chr.compare(chr.size() - 2, 2, "_0") == 0 && chr.rfind("chr", 0) != 0) ? chr.substr(0, chr.size() - 2) : chr;
 	for (auto &c : CHR) c = (char)toupper((unsigned char)c);
 	json moves = json::object();
 	int withSets = 0, withErr = 0;

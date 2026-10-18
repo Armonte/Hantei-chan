@@ -15,24 +15,18 @@ runtime fields are left out. `--legacy` writes the schema 1 monolithic files ins
 | `<game>_tr.json` | the translation map `{jp: en}` the generator reads (hand-maintained, machine first pass) |
 | `tools/squirrel/loadsites/<game>.json` | traced load sites (regex on path -> loader), generator input |
 | `tools/squirrel/states/<game>.json` | traced state map, generator input |
+| `tools/squirrel/annotations/*.json` | human-verified file purposes by folder (`purpose_src` names the source); they replace the generated `purpose` for every listed game |
 
 JSON is minified; the `.md` files are the readable view. Hantei-chan needs only `<game>/chrNNN.json` for one character
 (its `patterns` and `moves[].ha6_patterns` are self-contained); the index is only needed for consts and shared files.
 
-Games: UNI2 1.42, DFCI (`dfci+transmission`) and UNIB arcade (RingGame.exe sha cf96fd7f) are done. DFCI and UNIB use the
-`data/<Name>_0/<Name>_0_{sc,cmd,mv}.txt` layout (support characters `data/<Name>_s_0/`): folder rules in `KINDS_GAME`,
-file names in `CHARA_LAYOUT`, character number from `Def_ChrNo_<Name>`, and the character key is the folder name.
-MBTL uses the same tool; it needs its load-site rules in `LOADSITES` (from `../RE_MBTL_LOAD.md`) and a `<game>_tr.json`.
-
-Games: UNI2 1.42 and MBTL (Steam 25646393) are done. DFCI and UNIB use the same tool; they need their load-site rules in
-`LOADSITES` (from `../RE_MBTL_LOAD.md`), a `<game>_tr.json` and the folder rules checked. Per-game layout lives in `GAMES`
-in the generator: extra `kinds` rules (tried before `KINDS`), the cmd-table syntax, which folders are characters, whether
-variant scripts are read, and the state-name list. UNI2 uses the defaults, and its output is byte-identical to the first
-pass.
-
-Games: UNI2 1.42 is done. MBTL (#95) and DFCI/UNIB (#94) were generated with schema 1; once merged they need
-regenerating through `catalog_ext.finish()` (stack rule, split output), plus `loadsites/<game>.json` and
-`states/<game>.json` for their exes.
+Games: UNI2 1.42, MBTL (Steam 25646393), DFCI (`dfci+transmission`) and UNIB arcade (RingGame.exe sha cf96fd7f), all
+schema 2 with the split output. Per-game layout lives in the generator: `GAMES` (extra `kinds` rules, cmd-table syntax,
+which folders are characters, variant scripts, state-name list; MBTL) and `KINDS_GAME` / `CHARA_LAYOUT` (the
+`data/<Name>_0/<Name>_0_{sc,cmd,mv}.txt` layout of DFCI and UNIB, support characters `data/<Name>_s_0/`; character number
+from `Def_ChrNo_<Name>`, character key = folder name, so DFCI/UNIB files are `<game>/<Name>_0.json`). UNI2 uses the
+defaults. The HA6 stack rule (`catalog_ext.resolve_ha6_stack`) is applied to every game, and to MBTL variant stacks.
+Traced (`--trace`): UNI2, MBTL, DFCI. UNIB is static only.
 
 ## Schema (schema 2)
 
@@ -112,6 +106,10 @@ Related standards this builds on rather than repeats: EF/IF labels `../../uni_re
 `../api/<game>_api.json`, load order `../RE_MBTL_LOAD.md`, shared-file load sites and `reloadstd`
 `fbmod/docs/TRAINING_CHARA_SWITCH.md` section 10.
 
+File purposes: `files[].purpose` is generated from the path rules unless an annotation matches. Annotated files also carry
+`purpose_src` (now `"modder (BootySama, 2026-10-18)"` for `BattleTable`, `talk` and `win_mes` in all four games); prefer
+it over the machine summary.
+
 ## Consumers
 
 - **fpan-im**: `hot_reload` tells the mod panel which command applies a changed file (`reloadstd` for script/* and the
@@ -134,7 +132,8 @@ Related standards this builds on rather than repeats: EF/IF labels `../../uni_re
   See `loadsites/uni2.json` `untraced`.
 - Runtime patterns: 26 links are still open. 25 moves set no pattern with stub engine state, because they pick it on a
   hit/frame/opponent branch the sandbox cannot reach. 1 move is not in the built move table. 28 std-move `Init_Std`
-  calls fail on `BtlMvStd.SetGroundUkemiStatus`, which is missing from the API table.
+  calls fail on `BtlMvStd.SetGroundUkemiStatus`. It is not in `uni2_raw.json`, and the UNI2 1.42 IDB has no
+  such string (only `SetUkemiTime`, `AirUkemi` and the like), so the exe registers no such native and it stays out of the API table.
 - States: 9 of 16 are traced (stand, air, crouch, ground, guard, bound, counter, vorpal, dash). throw, shield, hitstun
   and knockdown have natives found but their fields are not decompiled. exs is traced only for the CPU AI getter. veiloff
   and chainshift have no native in the API table. Each carries its reason.
@@ -143,29 +142,37 @@ Related standards this builds on rather than repeats: EF/IF labels `../../uni_re
   in the character HA6 stack (often a BaseData or effect pattern, or a computed name).
 - `states` is a name match, not traced.
 
-## Known gaps (MBTL 25646393, first pass)
+## Known gaps (MBTL 25646393, schema 2)
 
 - Translations: strings shared with UNI2 reuse `uni2_tr.json`; the rest are a machine first pass. None are reviewed.
-- Load sites come from RE_MBTL_LOAD.md and TRAINING_CHARA_SWITCH.md section 10 (MBTL rows). `_combase_boss*.txt` is marked
-  as loaded by the variant com files from their own `__dofile__` line, not from an exe trace. talk, win_mes, BattleTable,
-  System, Shader, bg and the story NPC folders (`data/_talk/npcNNN`) are `untraced`; `_finish_list.txt` (load step 4) is not
-  in this extract.
+- Load sites: 265 of 875 files carry a load site, from the schema 1 rules (RE_MBTL_LOAD.md and TRAINING_CHARA_SWITCH.md
+  section 10, MBTL rows); there is no `loadsites/mbtl.json` from an exe trace yet. `_combase_boss*.txt` is marked as loaded
+  by the variant com files from their own `__dofile__` line. talk, win_mes, BattleTable, System, Shader, bg and the story NPC
+  folders (`data/_talk/npcNNN`) are `untraced`; `_finish_list.txt` (load step 4) is not in this extract.
 - The COM loader 0x606B60 has no name in the IDB yet.
-- Pattern codes resolve first-match through the stack as the engine does; in MBTL `_temp.ha6` comes first and holds most
-  move codes, so `ha6` is usually `_temp.ha6`, not `chrNNN.ha6`.
+- HA6 stack: the engine rule applies (last to first, framed pattern kept, PFLG&1 templates merge), so `chrNNN.ha6` wins over
+  `_temp.ha6` for a number both define; `_temp.ha6` is the source of 173 of 5920 pattern rows and no move link.
+- Runtime patterns: 3 links stay open on the `_0` moves (moves not in the built move table). The variant (`variants.<N>`)
+  moves are not traced: sqtool loads only variant 0, so 30 variant links that are not in their stack stay `num: null`.
 - The variant 999 stack (`chrNNN.txt`, no suffix) and `chr019_0_nobase.txt` are listed as files but not walked as a variant.
-  HA6-only folders (`chr001solos456`, `chr001solos8`) are listed as files only.
+  HA6-only folders (`chr001solos456`, `chr001solos8`) are listed as files only; `chr001solo` is not traced (sqtool walks
+  `chrNNN` folders only).
 - Story NPC scripts are classified, but their moves and commands are not read into `names`.
-- `states` uses an MBTL word list (Shield, Moon Drive, Moon Skill, Rapid Beat, Last Arc, Blast, Krypt, Heat/Magic Circuit).
-  It is a name match, not traced.
+- States: no `states/mbtl.json`; 0 of 20 are traced. `states` is the MBTL word list (Shield, Moon Drive, Moon Skill, Rapid
+  Beat, Last Arc, Blast, Krypt, Heat/Magic Circuit) matched by name.
 
-## Known gaps (DFCI and UNIB, first pass)
+## Known gaps (DFCI and UNIB, schema 2)
 
 - Translations are a machine first pass; none are reviewed. Strings also in UNI2 reuse `uni2_tr.json` (DFCI 664 of 2142,
   UNIB 1103 of 1591); the rest are new. Character and move names in DFCI comments are romanised guesses in places.
 - `hot_reload` is `no` for every file: fpan-im has no DFCI or UNIB build, so there is no reload command to name.
-- Load sites come from `../RE_MBTL_LOAD.md` (DFCI and UNIB sections). Untraced: talk, win_mes, BattleTable, System,
-  Shader, bg, grpdat, `_string.txt`, and the `_se_list.txt` call site.
+- Load sites (DFCI 261 of 980, UNIB 68 of 282) come from the schema 1 rules in `../RE_MBTL_LOAD.md` (DFCI and UNIB
+  sections); there is no `loadsites/<game>.json` from an exe trace. Untraced: talk, win_mes, BattleTable, System, Shader,
+  bg, grpdat, `_string.txt`, and the `_se_list.txt` call site.
+- States: no `states/<game>.json`; 0 of 16 traced for either game.
+- DFCI runtime patterns: traced. 24 links stay open, all on moves whose Init/FrameUpdate fail in the sandbox with
+  `the index '-1' does not exist` at `script/btl_MvFunc.txt:567` (a table lookup on engine state the stubs return as -1).
+- UNIB runtime patterns: not traced; 101 links resolve statically to no pattern.
 - UNIB: the exe never loads `data/_combase.txt` (`Sq_InitBattleVM` 0x787B00 runs Battle_Init and Battle_Std only); it is
   marked `untraced`, and its consts are still listed. cmd/mv load before sc and no object is pushed (load_site says so).
   RE_MBTL_LOAD.md says this build ships no `_com.txt`, but 12 of the 15 folders on disk have one; its load is untraced.
