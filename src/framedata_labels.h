@@ -426,11 +426,17 @@ static const char* const interpolationList[] = {
 	"Slow middle", //Never used, but it works.
 };
 
+// Index = AF aniType (AFF1/AFF2/AFFL). UNI2 1.42 AnimState_AdvanceTick_ComputeNext (0x4BD1C0):
+// 0 go to pattern (AFJP), 1 next frame, 2 go to frame (loops), 3 End: hold the last frame and
+// stop ticking (saved as AFFL 3). Keep the count in sync with kAnimationTypeCount.
 static const char* const animationList[] = {
 	"Go to pattern",
 	"Next frame",
-	"Go to frame"
+	"Go to frame",
+	"End"
 };
+static constexpr int kAnimationTypeCount = 4;
+static_assert(sizeof(animationList) / sizeof(animationList[0]) == kAnimationTypeCount, "animationList size");
 
 #endif /* FRAMEDATA_LABELS_H_GUARD */
 

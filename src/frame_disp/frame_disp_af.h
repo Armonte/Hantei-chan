@@ -208,9 +208,16 @@ inline void AfDisplay(Frame_AF *af, int &selectedLayer, FrameData *frameData = n
 
 	const bool afTiming = ui::BeginLabelForm("##af_timing", lw);
 	if(afTiming) {
-	if(i18n::Combo(ui::FormRow(LBL("Animation")), &af->aniType, animationList, IM_ARRAYSIZE(animationList))) {
+	if(af->aniType >= 0 && af->aniType < kAnimationTypeCount) {
+		if(i18n::Combo(ui::FormRow(LBL("Animation")), &af->aniType, animationList, kAnimationTypeCount)) {
+			markModified();
+		}
+	} else if(im::InputInt(ui::FormRow(LBL("Animation")), &af->aniType, 0, 0)) {
+		// An aniType the list has no name for stays editable as a number instead of a blank combo.
 		markModified();
 	}
+	if(im::IsItemHovered() && af->aniType == 3)
+		Tooltip("End: hold this frame and stop the pattern (AFFL 3)");
 
 	if(im::InputInt(ui::FormRow(LBL("Go to")), &af->jump, 0, 0)) {
 		markModified();

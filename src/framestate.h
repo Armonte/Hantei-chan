@@ -127,7 +127,7 @@ struct FrameState
 	int selectedLayer = 0;  // Track currently selected layer in UI
 	bool rangeAllLayers = false; // range paste tools: every layer instead of selectedLayer (D16)
 	std::string pasteNotice; // last paste conversion notice (D13), shown in the main pane
-	bool scriptOpenTrees = false; // --ui-script 'opentrees': open the frame data trees (evidence shots)
+	int scriptOpenTrees = 0; // --ui-script 'opentrees N': 1 open the frame data trees, 2 only Animation data (evidence shots)
 
 	// Animation playback
 	bool animating = false;
