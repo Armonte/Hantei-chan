@@ -147,7 +147,14 @@ void PostJob(std::function<void()> f, bool low)
 	// content. The corpus ui-scripts put preview and thumbnail jobs behind
 	// waitidle; without this, whether a thumbnail had landed by the capture
 	// frame depended on how busy the three workers were.
-	if (S().deterministicSync) { try { f(); } catch (...) {} return; }
+	if (S().deterministicSync) {
+		// Same environment the worker gives its jobs: character loads here must
+		// not create GL textures (thumbnails only decode pixels).
+		han2::SetNoGlUpload(true);
+		try { f(); } catch (...) {}
+		han2::SetNoGlUpload(false);
+		return;
+	}
 	Worker &w = W();
 	{ std::lock_guard<std::mutex> lk(w.mx); w.start(); (low ? w.lo : w.hi).push_back(std::move(f)); }
 	w.cv.notify_one();
