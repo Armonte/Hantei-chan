@@ -101,6 +101,17 @@ struct Options {
 	bool operator!=(const Options& o) const { return !(*this == o); }
 };
 
+// How the root pattern stopped advancing.
+enum class RootEndKind : uint8_t {
+	None = 0,
+	PatternChange,   // aniType 0 / queued pattern: the character starts another pattern
+	EndHold,         // UNI2/MBTL aniType 3 End: holds the last frame, the pattern stops
+	HoldFrame,       // an aniType the engine has no case for: the frame is held forever
+	RanOffEnd,       // frame index past the end (engine resets to pattern 0)
+};
+// Text for the timeline summary ("Root ends: ...").
+const char* RootEndKindText(RootEndKind k);
+
 // One simulated actor. Consumers treat this as read-only state.
 struct SimActor {
 	int id = -1;
@@ -110,6 +121,7 @@ struct SimActor {
 	bool isPreset = false;    // EF3 preset / script impact marker (no pattern)
 	bool isScript = false;    // from a ScheduledSpawn
 	bool rootEnded = false;   // root pattern finished; frame is held
+	uint8_t rootEndKind = 0;  // RootEndKind once rootEnded
 
 	int pattern = -1;         // pattern (or preset number when isPreset)
 	bool effectHa6 = false;   // pattern lives in effect.ha6
@@ -223,6 +235,8 @@ public:
 	int settledTick();
 	// First tick the root ended (-1 if it never ends within the horizon).
 	int rootEndTick();
+	// How the root ended (valid when rootEndTick() >= 0).
+	RootEndKind rootEndKind();
 	// First tick at which the root enters `frame`, or -1 if never (within
 	// the frontier after ensureSimulatedTo(settledTick())).
 	int firstTickOfRootFrame(int frame);

@@ -16,6 +16,7 @@
 #include <string>
 #include <vector>
 #include "framedata.h"
+#include "framedata_labels.h"
 #include "mv_script.h"
 #include "uni_vector_table.h"
 
@@ -434,6 +435,42 @@ static void TestSameGamePasteByteExact()
 	}
 }
 
+// AF "End" (aniType 3, AFFL 3): UNI2 1.42 AnimState_AdvanceTick_ComputeNext 0x4BD1C0 case 3 holds the
+// frame and ends the pattern. The Animation combo must name it, and set/save/load must keep it.
+static void TestAfEndAnimationType()
+{
+	CHECK(kAnimationTypeCount == 4 && std::strcmp(animationList[3], "End") == 0);
+	CHECK(std::strcmp(animationList[0], "Go to pattern") == 0 && std::strcmp(animationList[1], "Next frame") == 0
+	      && std::strcmp(animationList[2], "Go to frame") == 0);
+	const struct { Ha6Game g; const char* tag; } games[] = {
+		{Ha6Game::UNI, "uni2"}, {Ha6Game::MBTL, "mbtl"}, {Ha6Game::MBAACC, "mbaacc"}};
+	for (const auto& gt : games) {
+		FrameData fd; MakeFile(fd, gt.g);
+		const std::string base = Tmp((std::string("afend_") + gt.tag + "_a.ha6").c_str());
+		CHECK(fd.save(base.c_str()));
+		FrameData a;
+		CHECK(a.load(base.c_str()));
+		a.setGameOverride(gt.g);
+		const std::string same = Tmp((std::string("afend_") + gt.tag + "_b.ha6").c_str());
+		CHECK(a.save(same.c_str()));
+		CHECK(ReadAll(base) == ReadAll(same));   // unchanged file is byte-exact
+		a.get_sequence(0)->frames[0].AF.aniType = 3;   // what picking "End" in the combo writes
+		const std::string ended = Tmp((std::string("afend_") + gt.tag + "_c.ha6").c_str());
+		CHECK(a.save(ended.c_str()));
+		const std::string b = ReadAll(ended);
+		const size_t at = b.find("AFFL");
+		CHECK(at != std::string::npos);
+		if (at != std::string::npos) { int32_t v; memcpy(&v, &b[at + 4], 4); CHECK(v == 3); }
+		FrameData r;
+		CHECK(r.load(ended.c_str()));
+		CHECK(r.get_sequence(0)->frames[0].AF.aniType == 3);
+		r.setGameOverride(gt.g);
+		const std::string again = Tmp((std::string("afend_") + gt.tag + "_d.ha6").c_str());
+		CHECK(r.save(again.c_str()));
+		CHECK(ReadAll(ended) == ReadAll(again));
+	}
+}
+
 int main()
 {
 	TestPasteConversion();
@@ -445,6 +482,7 @@ int main()
 	TestTemplateDetectionData();
 	TestVectorTable();
 	TestSameGamePasteByteExact();
+	TestAfEndAnimationType();
 	std::printf("%d checks, %d failed\n", g_checks, g_fail);
 	if (g_fail) { std::printf("UNI_DATALOSS_FAIL\n"); return 1; }
 	std::printf("UNI_DATALOSS_PASS\n");

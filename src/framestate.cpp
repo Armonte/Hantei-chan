@@ -405,6 +405,7 @@ int FindLoopPeriod(FrameData* frameData, int patternId, int maxTicks)
 		}
 		
 		auto& frame = seq->frames[currentFrame];
+		const EngineAniStep step = EngineAniStepFor(frameData->game(), frame.AF.aniType, frame.AF.aniFlag);
 		int frameDur = frame.AF.duration;
 		if (frameDur <= 0) frameDur = 1;
 		
@@ -413,29 +414,29 @@ int FindLoopPeriod(FrameData* frameData, int patternId, int maxTicks)
 			
 			// Calculate next frame using actual Hantei animation logic
 			int nextFrame = currentFrame;
-			if (frame.AF.aniType == 1) {
+			if (step.type == 1) {
 				// Sequential advance
 				if (currentFrame + 1 >= seq->frames.size()) {
 					break;  // Reached end
 				}
 				nextFrame = currentFrame + 1;
 			}
-			else if (frame.AF.aniType == 2) {
+			else if (step.type == 2) {
 				// Jump/loop logic (same as GetNextFrame in main_ui_impl.h)
-				if ((frame.AF.aniFlag & 0x2) && loopCounter < 0) {
+				if ((step.flags & 0x2) && loopCounter < 0) {
 					// Loop count exhausted - use loopEnd
-					if (frame.AF.aniFlag & 0x8) {
+					if (step.flags & 0x8) {
 						nextFrame = currentFrame + frame.AF.loopEnd;
 					} else {
 						nextFrame = frame.AF.loopEnd;
 					}
 				} else {
 					// Decrement loop counter if needed
-					if (frame.AF.aniFlag & 0x2) {
+					if (step.flags & 0x2) {
 						loopCounter--;
 					}
 					// Jump to next frame
-					if (frame.AF.aniFlag & 0x4) {
+					if (step.flags & 0x4) {
 						nextFrame = currentFrame + frame.AF.jump;
 					} else {
 						nextFrame = frame.AF.jump;

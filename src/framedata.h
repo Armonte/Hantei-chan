@@ -409,6 +409,20 @@ enum class Ha6Game { Auto = 0, MBAACC = 1, UNI = 2, MBTL = 3, UNIB = 4, UNIST = 
 const char* Ha6GameName(Ha6Game g);
 bool Ha6GameIsUni(Ha6Game g);          // any AFGX/ATV2 dialect
 int Ha6GameLayerCount(Ha6Game g);      // AFGX layers the game reads (1 for MBAACC)
+// How the game's frame step treats an AF aniType/aniFlag pair (traced 2026-10-17):
+//  UNI2 1.42 AnimState_AdvanceTick_ComputeNext 0x4BD1C0 / MBTL 25646393 ObjMotion_AdvanceTick 0x49FD00:
+//    0 go to pattern, 1 next frame, 2 go to frame / loop, 3 End (hold the frame, the tick stops, the
+//    ended flag is raised), anything else holds the frame.
+//  MBAACC: the HA6 loader (HA6_ParseAnimationFrameChunks 0x409489) rewrites AFFL 3 -> type 1 | flag 1,
+//    4 -> type 2 | flag 1, 5 -> type 2 | flag 2; Character_AdvanceFrameByAniFlag 0x461150 then reads 0..2.
+struct EngineAniStep { int type; unsigned flags; };
+EngineAniStep EngineAniStepFor(Ha6Game g, int aniType, unsigned aniFlag);
+// AF animation-flag (AFFE) bits the game reads. UNI2/MBTL: bits 0-3 in the frame step plus bit 7 in
+// AnimState_FillDrawInterpCtx (UNI2 0x431E2B, MBTL 0x42A6DB). MBAACC: bits 0-3 (landing bit 0 in
+// Character_ApplyLandingFrameJump 0x461726). UNIB/UNIST: not traced, 0 (show the raw value).
+unsigned AniFlagBitsRead(Ha6Game g);
+// Label for AFFE bit `bit` (nullptr when the game does not read it).
+const char* AniFlagBitLabel(Ha6Game g, int bit);
 // Command-line default (--game). Applies to files with no per-file override.
 extern Ha6Game g_ha6GameOverride;
 

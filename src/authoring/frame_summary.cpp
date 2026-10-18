@@ -6,6 +6,7 @@
 //   aniType 1 (next)  -> frame + 1
 //   aniType 2 (jump)  -> loop counter (set from AF loopCount on frame entry) decremented; while it is non-zero or
 //                        aniFlag 2 is clear: AF.jump (relative with aniFlag 4); else AF.loopEnd (relative with 8)
+//   aniType 3 (End, UNI2/MBTL) -> the frame is held and the pattern stops (MBAACC loads AFFL 3 as next)
 //   other             -> the frame is held
 // Boxes (box_pane.cpp's classification): 0 collision, 1..8 hurt, 9..24 clash / projectile / special, 25+ attack.
 // Invulnerable = no hurt box on the frame, or AS invincibility 3 ("strike invincible", hantei4 labels).
@@ -37,6 +38,7 @@ MoveSummary SummarizePattern(const FrameData& fd, int pattern)
 	m.pattern = pattern;
 	if (pattern < 0 || pattern >= (int)fd.m_sequences.size()) { m.note = "no such pattern"; return m; }
 	const Sequence& seq = fd.m_sequences[pattern];
+	const Ha6Game game = fd.game();
 	if (seq.frames.empty()) { m.note = "pattern has no frames"; return m; }
 	m.valid = true;
 	m.name = std::string(seq.name.data(), seq.name.size());
@@ -80,9 +82,11 @@ MoveSummary SummarizePattern(const FrameData& fd, int pattern)
 		tick += s.duration;
 
 		bool stop = false;
-		switch (af.aniType) {
+		// the game's reading of the pair (MBAACC's loader rewrites AFFL 3-5; framedata.h)
+		const EngineAniStep st = EngineAniStepFor(game, af.aniType, af.aniFlag);
+		switch (st.type) {
 		case 0: {
-			const int target = af.jump + ((af.aniFlag & 4) ? pattern : 0);
+			const int target = af.jump + ((st.flags & 4) ? pattern : 0);
 			char b[80];
 			if (target == pattern) { m.loops = true; std::snprintf(b, sizeof b, "restarts itself at the end"); }
 			else std::snprintf(b, sizeof b, "ends into pattern %d", target);
@@ -97,8 +101,8 @@ MoveSummary SummarizePattern(const FrameData& fd, int pattern)
 		case 2: {
 			if (loopCounter) --loopCounter;
 			int next;
-			if (!(af.aniFlag & 2) || loopCounter) next = (af.aniFlag & 4) ? frame + af.jump : af.jump;
-			else next = (af.aniFlag & 8) ? frame + af.loopEnd : af.loopEnd;
+			if (!(st.flags & 2) || loopCounter) next = (st.flags & 4) ? frame + af.jump : af.jump;
+			else next = (st.flags & 8) ? frame + af.loopEnd : af.loopEnd;
 			if (next < 0 || next >= nFrames) {
 				char b[80];
 				std::snprintf(b, sizeof b, "jumps out of the pattern (frame %d)", next);
@@ -110,6 +114,11 @@ MoveSummary SummarizePattern(const FrameData& fd, int pattern)
 			}
 			break;
 		}
+		case 3:
+			// UNI2 0x4BD1C0 / MBTL 0x49FD00 End: hold this frame, the pattern stops
+			m.note = "ends (holds last frame)";
+			stop = true;
+			break;
 		default: {
 			char b[80];
 			std::snprintf(b, sizeof b, "holds frame %d (aniType %d)", frame, af.aniType);

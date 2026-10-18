@@ -112,7 +112,7 @@ static void TestSynthetic()
 		std::vector<Frame> v = { F(2, 1, false), F(2, 2, false) };
 		v[1].AF.jump = 9;
 		Put(fd, 15, v);
-		std::vector<Frame> h = { F(2, 1, false), F(5, 3, true) };
+		std::vector<Frame> h = { F(2, 1, false), F(5, 6, true) };   // aniType 6: no engine case, held
 		Put(fd, 16, h);
 		std::vector<Frame> r = { F(2, 1, false), F(2, 1, false) };
 		Put(fd, 17, r);
@@ -123,6 +123,34 @@ static void TestSynthetic()
 	CHECK(m.totalTicks == 7 && m.note.find("holds frame 1") == 0 && m.startup == 2 && m.active == 5 && m.recovery == 0);
 	m = SummarizePattern(fd, 17);
 	CHECK(m.totalTicks == 4 && m.note == "ends after the last frame");
+
+	// aniType 3 (AFFL 3): UNI2/MBTL End holds the last frame and stops (0x4BD1C0 / 0x49FD00 case 3), never a loop;
+	// MBAACC's loader reads AFFL 3 as next frame + landing flag (0x409489), so it runs on.
+	{
+		FrameData u;
+		std::vector<Frame> e = { F(2, 1, false), F(3, 3, false) };
+		Put(u, 1, e);
+		std::vector<Frame> e2 = { F(2, 3, false), F(3, 1, false) };
+		Put(u, 2, e2);
+		for (Ha6Game g : { Ha6Game::UNI, Ha6Game::MBTL }) {
+			u.setGameOverride(g);
+			MoveSummary s1 = SummarizePattern(u, 1);
+			CHECK(!s1.loops && s1.note == "ends (holds last frame)" && s1.totalTicks == 5);
+			MoveSummary s2 = SummarizePattern(u, 2);
+			CHECK(!s2.loops && s2.note == "ends (holds last frame)" && s2.totalTicks == 2 && s2.strip.size() == 1);
+		}
+		u.setGameOverride(Ha6Game::MBAACC);
+		MoveSummary s3 = SummarizePattern(u, 2);
+		CHECK(!s3.loops && s3.note == "ends after the last frame" && s3.totalTicks == 5);
+	}
+
+	// AFFE bits the game reads (framedata.h): UNI2/MBTL bits 0-3 + 7, MBAACC 0-3; bits 4-6 unread everywhere.
+	CHECK(AniFlagBitsRead(Ha6Game::UNI) == 0x8Fu && AniFlagBitsRead(Ha6Game::MBTL) == 0x8Fu);
+	CHECK(AniFlagBitsRead(Ha6Game::MBAACC) == 0x0Fu);
+	CHECK(AniFlagBitLabel(Ha6Game::UNI, 7) != nullptr && AniFlagBitLabel(Ha6Game::MBAACC, 7) == nullptr);
+	CHECK(AniFlagBitLabel(Ha6Game::MBTL, 5) == nullptr && AniFlagBitLabel(Ha6Game::MBAACC, 0) != nullptr);
+	CHECK(EngineAniStepFor(Ha6Game::MBAACC, 5, 0).type == 2 && EngineAniStepFor(Ha6Game::MBAACC, 5, 0).flags == 2u);
+	CHECK(EngineAniStepFor(Ha6Game::UNI, 3, 0).type == 3);
 
 	// invulnerability: no hurt box, or AS invincibility 3 (strike invincible)
 	{

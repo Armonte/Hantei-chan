@@ -289,7 +289,7 @@ static void RunUiScript(MainFrame &mf, HDC dc, const std::function<void(const st
 			}
 		}
 		// Edits through the same model calls as the UI (S3 evidence): copypattern N | pastepattern N |
-		// gameformat auto|mbaacc|uni2|unist|unib|mbtl | layer N | switchview N | opentrees 0/1 | tint R G B
+		// gameformat auto|mbaacc|uni2|unist|unib|mbtl | layer N | switchview N | opentrees 0/1/anim | tint R G B
 		if (cmd == "captureview") { if (!editCmd(cmd, arg)) gStartup.exitCode = 1; continue; }   // the active view's FBO (works under --headless)
 		if (cmd == "copypattern" || cmd == "pastepattern" || cmd == "gameformat" || cmd == "layer" || cmd == "switchview" || cmd == "opentrees" || cmd == "tint") {
 			if (!editCmd(cmd, arg)) { FILE *lf = fopen((gStartup.uiScript + ".log").c_str(), "a"); if (lf) { fprintf(lf, "script line %zu '%s' failed\n", pc, line.c_str()); fclose(lf); } }
@@ -363,7 +363,7 @@ void MainFrame::ProcessStartupArgs()
 				FrameState &st = vw->getState();
 				FrameData &fd = ch->frameData;
 				if (cmd == "layer") { st.selectedLayer = atoi(arg.c_str()); return true; }
-				if (cmd == "opentrees") { st.scriptOpenTrees = arg != "0"; return true; }
+				if (cmd == "opentrees") { st.scriptOpenTrees = arg == "anim" ? 2 : arg != "0" ? 1 : 0; return true; }
 				if (cmd == "tint") {
 					// tint R G B (0..1): AFRG of every layer with a sprite in the current pattern
 					float c[3] = {1, 1, 1};

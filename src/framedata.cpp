@@ -354,6 +354,41 @@ bool Ha6GameIsUni(Ha6Game g)
 	return g == Ha6Game::UNI || g == Ha6Game::MBTL || g == Ha6Game::UNIB || g == Ha6Game::UNIST;
 }
 
+EngineAniStep EngineAniStepFor(Ha6Game g, int aniType, unsigned aniFlag)
+{
+	if (g == Ha6Game::MBAACC || g == Ha6Game::Auto) {
+		switch (aniType) {
+		case 3: return { 1, aniFlag | 1u };
+		case 4: return { 2, aniFlag | 1u };
+		case 5: return { 2, aniFlag | 2u };
+		default: break;
+		}
+	}
+	return { aniType, aniFlag };
+}
+
+unsigned AniFlagBitsRead(Ha6Game g)
+{
+	switch (g) {
+	case Ha6Game::UNI: case Ha6Game::MBTL: return 0x8Fu;
+	case Ha6Game::MBAACC: case Ha6Game::Auto: return 0x0Fu;
+	default: return 0u;
+	}
+}
+
+const char* AniFlagBitLabel(Ha6Game g, int bit)
+{
+	if (bit < 0 || bit > 31 || !(AniFlagBitsRead(g) & (1u << bit))) return nullptr;
+	switch (bit) {
+	case 0: return "Landing frame: Land to pattern";
+	case 1: return "Loop: Decrement loops and go to end if 0";
+	case 2: return "Go to: Use relative offset";
+	case 3: return "End of loop: Use relative offset";
+	case 7: return "Interpolation: draw blend mode 3 instead of 1 (AFHK frames)";
+	default: return nullptr;
+	}
+}
+
 int Ha6GameLayerCount(Ha6Game g)
 {
 	switch (g) {
