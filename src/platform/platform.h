@@ -9,6 +9,7 @@
 // (mainWindowHandle, clientRect), so the port stays a small mechanical diff.
 
 #include <cstdint>
+#include <cstdio>
 #include <string>
 
 struct ImVec2;
@@ -73,6 +74,20 @@ void* WindowDeviceContext();  // HDC on Windows, nullptr elsewhere
 
 // DPI scale of the display the window is on (1.0 when unknown).
 float DisplayScale();
+
+// SDL scancode -> Win32 virtual-key code. The shortcut registry, the ini
+// bindings and --post-key are all expressed in virtual-key codes, so the SDL
+// event loop translates instead of changing them (PLAN.md 6 P0 step 3 keeps the
+// wWinMain argument semantics). Takes the scancode as int to avoid an SDL
+// include here; returns 0 for a key the app has no binding for.
+uint32_t VkFromScancode(int sdlScancode);
+// The reverse, for --post-key (PLAN.md 6 P0 step 6): builds an SDL_EVENT_KEY_DOWN
+// for the virtual key. Returns 0 when the key has no scancode.
+int ScancodeFromVk(uint32_t vk);
+
+// MessageBox() lives in platform_message.h (header only, no link dependency):
+// the small tool targets share src/shader.cpp and src/vao.cpp with the app but
+// do not build this layer. platform_message.h is the include for callers.
 
 // Event pump: the caller keeps its own message handling; this only translates
 // SDL events into the app's callbacks.

@@ -638,7 +638,7 @@ void MainFrame::Menu(unsigned int errorPopupId)
 			}
 
 			ImGui::Separator();
-			if (ImGui::MenuItem(LBL("Exit"))) PostQuitMessage(0);
+			if (ImGui::MenuItem(LBL("Exit"))) gAppQuit = true;
 			ImGui::EndMenu();
 		}
 		if (ImGui::BeginMenu(LBL("Edit")))

@@ -7,7 +7,7 @@ namespace abrowser { struct OpenRequest; }
 #include "var_refs.h"
 #include "bgm_player.h"
 #include "pattern_refs.h"
-#include "context_gl.h"
+#include "platform/platform.h"
 #include "render.h"
 #include "main_pane.h"
 #include "right_pane.h"
@@ -48,7 +48,7 @@ struct ImRect;
 class MainFrame
 {
 public:
-	MainFrame(ContextGl *context);
+	MainFrame();
 	~MainFrame();
 	
 	void Draw();
@@ -95,7 +95,6 @@ public:
 	double m_lastSceneMs = 0.0;   // CPU time of the last main-view scene pass
 
 private:
-	ContextGl *context;
 	float clearColor[3];
 	int style_idx = 0;
 	float zoom_idx = 3.0f;
@@ -581,6 +580,7 @@ public:
 	// main.cpp: a pan / box / UV drag runs in the main view (shortcuts wait for the drop). Detached windows report
 	// theirs from DrawDetachedHosts each frame; the router blocks while either is active.
 	void SetMouseDragActive(bool active) { m_mainMouseDrag = active; shortcuts.setMouseDrag(m_mainMouseDrag || m_detachedMouseDrag); }
+	bool IsMouseDragActive() const { return m_mainMouseDrag || m_detachedMouseDrag; }
 	void SetDetachedMouseDrag(bool active) { m_detachedMouseDrag = active; shortcuts.setMouseDrag(m_mainMouseDrag || m_detachedMouseDrag); }
 private:
 	bool m_mainMouseDrag = false;

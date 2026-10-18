@@ -1,4 +1,5 @@
 #include "shader.h"
+#include "platform/platform_message.h"
 
 #include <sstream>
 #include <fstream>
@@ -49,7 +50,7 @@ GLuint CreateShader(const char **src, GLenum type)
 				ss << "Other ";
 		}
 		ss << "Shader error:\n" << log;
-		MessageBoxA(nullptr, ss.str().c_str(), "Shader compile error", MB_ICONSTOP);
+		platform::MessageBox("Shader compile error", ss.str().c_str(), 2);
 	}
 	return shader;
 }
@@ -58,7 +59,7 @@ Shader::Shader(): program(0)
 {
 	program = glCreateProgram();
 	if (program == 0)
-		MessageBoxA(nullptr, "Shader program creation failed", "Shader program", MB_ICONSTOP);
+		platform::MessageBox("Shader program", "Shader program creation failed", 2);
 }
 Shader::~Shader()
 {
@@ -126,7 +127,7 @@ void Shader::LoadShader(const char *vertex_path, const char *fragment_path, bool
 	}
 
 	if(!ss.str().empty())
-		MessageBoxA(nullptr, ss.str().c_str(), "Shader program", MB_ICONSTOP);
+		platform::MessageBox("Shader program", ss.str().c_str(), 2);
 
 	glDeleteShader(myVertexShader);
 	glDeleteShader(myFragShader);

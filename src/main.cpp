@@ -1,6 +1,6 @@
 #include "main.h"
 #include "startup_args.h"
-#include "context_gl.h"
+#include "platform/platform.h"
 #include "main_frame.h"
 #include "test.h"
 #include "ini.h"
@@ -17,7 +17,11 @@
 #include "imsearch.h"
 
 #include <imgui_impl_opengl3.h>
-#include <imgui_impl_win32.h>
+#include <imgui_impl_sdl3.h>
+#include <SDL3/SDL.h>
+// SDL provides the Windows entry point (wWinMain under UNICODE) and renames our
+// main to SDL_main; including this is what wires the two together.
+#include <SDL3/SDL_main.h>
 #include <windows.h>
 #include <shellapi.h>
 #include "png_writer.h"
@@ -34,6 +38,7 @@
 char iniLocation[512] {};
 
 ImVec2 clientRect;
+bool gAppQuit = false;
 
 HWND mainWindowHandle;
 ContextGl *context = nullptr;
@@ -192,8 +197,7 @@ void LoadJapaneseFonts(ImGuiIO& io)
 }
 
 
-LRESULT WINAPI WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam);
-int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE, PWSTR pCmdLine, int nCmdShow)
+int main(int argC, char** argV)
 {
 	// Allocate console for debug output with Shift-JIS support (DISABLED FOR RELEASE)
 	//AllocConsole();
@@ -205,28 +209,24 @@ int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE, PWSTR pCmdLine, int nCmdShow
 	//printf("=== Hantei-chan Debug Console (UTF-8) ===\n\n");
 	
 	bool useIni = true;
-	int argC;
-	PWSTR* argV = CommandLineToArgvW(pCmdLine, &argC);
+	// SDL3 hands over UTF-8 argv (the Windows backend converts the command line
+	// with CP_UTF8; libc's argv is UTF-8 on Linux), so no wide conversion and no
+	// CommandLineToArgvW/LocalFree anymore.
 	for(int i=0; i<argC; i++)
 	{
-		char * arg = (char*)(argV[i]);
-		wcstombs(arg, argV[i], wcslen(argV[i])+1);
+		const char * arg = argV[i];
 		if(!strcmp(arg, "--test"))
 		{
 			std::ofstream coutFile, cerrFile;
 			coutFile.open("cout.txt");
 			auto cout_buf = std::cout.rdbuf(coutFile.rdbuf());
 			TestHa6();
-			LocalFree(argV);
 			return 0;
 		}
 		else if(i+1<argC && !strcmp(arg, "--fxr-selftest"))
 		{
 			// Effect recolour tab self-test: programmatic load/save/assign/new-rule + report, see fxr_panel.cpp. Pair with --capture <png>.
-			std::wstring w(argV[i+1]);
-			std::string v(WideCharToMultiByte(CP_UTF8, 0, w.c_str(), -1, nullptr, 0, nullptr, nullptr), 0);
-			WideCharToMultiByte(CP_UTF8, 0, w.c_str(), -1, v.data(), (int)v.size(), nullptr, nullptr);
-			if(!v.empty() && v.back() == 0) v.pop_back();
+			const std::string v = argV[i+1];
 			_putenv_s("HANTEI_FXR_SELFTEST", v.c_str()); _putenv_s("HANTEI_CGM_TAB", "fxr");
 			gStartup.tool = "cgm";
 			i++;
@@ -240,10 +240,7 @@ int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE, PWSTR pCmdLine, int nCmdShow
 		                     && strcmp(arg, "--authoring-unlock"))
 		{
 			// startup actions, see startup_args.h
-			std::wstring w(argV[i+1]);
-			std::string v(WideCharToMultiByte(CP_ACP, 0, w.c_str(), -1, nullptr, 0, nullptr, nullptr), 0);
-			WideCharToMultiByte(CP_ACP, 0, w.c_str(), -1, v.data(), (int)v.size(), nullptr, nullptr);
-			if(!v.empty() && v.back() == 0) v.pop_back();
+			const std::string v = argV[i+1];
 			if(!strcmp(arg, "--open")) gStartup.open = v;
 			else if(!strcmp(arg, "--open-any")) gStartup.openAny = v;
 			else if(!strcmp(arg, "--capture")) gStartup.capture = v;
@@ -309,11 +306,7 @@ int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE, PWSTR pCmdLine, int nCmdShow
 			i+=1;
 			int res[2];
 			for(int j = 0; j < 2; j++)
-			{
-				char * arg = (char*)(argV[i+j]);
-				wcstombs(arg, argV[i+j], wcslen(argV[i+j])+1);
-				res[j] = atoi(arg);
-			}
+				res[j] = atoi(argV[i+j]);
 			gSettings.winSizeX = res[0];
 			gSettings.winSizeY = res[1];
 		}
@@ -326,78 +319,125 @@ int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE, PWSTR pCmdLine, int nCmdShow
 		strcpy(iniLocation+appendAt, "\\hanteichan.ini");
 	}
 	
-	WNDCLASSEX wc = {
-		sizeof(WNDCLASSEX),
-		CS_CLASSDC,
-		WndProc,
-		0L, 0L,
-		hInstance,
-		NULL, NULL, NULL, NULL,
-		L"Main window", NULL 
-	};
-
-	
-	::RegisterClassEx(&wc);
 	// Build version string with build number and git hash
-	std::wstring windowTitle = L"gonptéchan v" VERSION_WITH_COMMIT_W;
-	// --headless: the same window and GL context, created hidden and never shown (a tool window, so no taskbar
-	// entry either). Views render into their FBOs and MainFrame::Draw sends the frame to an offscreen target.
-	HWND hwnd = ::CreateWindowEx(gStartup.headless ? (WS_EX_TOOLWINDOW | WS_EX_NOACTIVATE) : 0, wc.lpszClassName, windowTitle.c_str(), WS_OVERLAPPEDWINDOW,
-		gSettings.posX, gSettings.posY, gSettings.winSizeX, gSettings.winSizeY, NULL, NULL, wc.hInstance, nullptr);
-	mainWindowHandle = hwnd;
-	if (!hwnd) return 3;
+	std::string windowTitle = "gonpt\xc3\xa9chan v" VERSION_WITH_COMMIT;
+
+	// --headless: a hidden window and a hidden GL context, never shown and with
+	// no taskbar entry (SDL_WINDOW_HIDDEN | SDL_WINDOW_UTILITY, the old
+	// WS_EX_TOOLWINDOW | WS_EX_NOACTIVATE). Views render into their FBOs and
+	// MainFrame::Draw sends the frame to an offscreen target.
+	platform::InitDesc desc;
+	desc.title = windowTitle;
+	desc.w = gSettings.winSizeX;
+	desc.h = gSettings.winSizeY;
+	desc.x = gSettings.posX;
+	desc.y = gSettings.posY;
+	desc.headless = gStartup.headless;
+	desc.maximized = useIni && gSettings.maximized;
+	desc.openGL = true;
+	desc.allowViewports = gSettings.detachableWindows && !gStartup.headless;
+	std::string platformError;
+	if (!platform::Init(desc, platformError)) {
+		HC_LOG_ERROR("platform: {}", platformError);
+		MessageBoxA(nullptr, platformError.c_str(), "gonptechan", MB_ICONERROR | MB_OK);
+		return 3;
+	}
+	mainWindowHandle = (HWND)platform::NativeWindowHandle();
 	init = true;
-	if (gStartup.headless)
+
+	int cw = 0, ch = 0;
+	platform::ClientSize(cw, ch);
+	clientRect = ImVec2((float)cw, (float)ch);
+
+	context = nullptr;   // the GL context lives in the platform layer now
+
+	// ImGui platform + GL backend. The window and context are already up, so
+	// this is the WM_CREATE body without the wgl/glad part.
 	{
-		// No WM_SIZE arrives for a window that is never shown: take the client size (= the visible window's at
-		// the same ini size) directly.
-		RECT rc{};
-		GetClientRect(hwnd, &rc);
-		clientRect = ImVec2((float)rc.right, (float)rc.bottom);
-		if (MainFrame* mf = (MainFrame*)GetWindowLongPtr(hwnd, GWLP_USERDATA))
-			mf->UpdateBackProj(clientRect.x, clientRect.y);
-	}
-	else
-	{
-		DragAcceptFiles(hwnd, TRUE);   // drop RBO / GOF2 files (.dt2 .dat .pat .chp .pac .img) on the window
-		if(useIni)
-			ShowWindow(hwnd, gSettings.maximized ? SW_SHOWMAXIMIZED : SW_NORMAL);
-		else
-			ShowWindow(hwnd, nCmdShow);
-		UpdateWindow(hwnd);
+		IMGUI_CHECKVERSION();
+		ImGui::CreateContext();
+		ImSearch::CreateContext();
+		ImGuiIO& io = ImGui::GetIO();
+		io.ConfigFlags |= ImGuiConfigFlags_DockingEnable;
+		io.IniFilename = useIni ? iniLocation : nullptr;
+		if (useIni) InitIni();
+		if (gStartup.headless)
+			io.IniFilename = nullptr;   // settings and layout are read, never written back
+		if (desc.allowViewports)
+			io.ConfigFlags |= ImGuiConfigFlags_ViewportsEnable;
+		io.ConfigWindowsMoveFromTitleBarOnly = true;
+
+		LoadJapaneseFonts(io);
+		ImGui_ImplSDL3_InitForOpenGL((SDL_Window*)platform::Window(), platform::GlContextHandle());
+		ImGui_ImplOpenGL3_Init("#version 330 core");
+		// vsync off, as wglSwapIntervalEXT(0) did.
+		platform::SetSwapInterval(0);
 	}
 
-	MSG msg = {};
-	bool done = false;
+	MainFrame* frame = new MainFrame();
+
+	// The SDL event pump owns the input translation; the app's own switch runs
+	// after ImGui has seen each event (the old WndProc order). PostQuitMessage is
+	// replaced by setting gAppQuit, which the loop below reads.
+	platform::EventHandlers handlers;
+	handlers.user = frame;
+	handlers.onResize = [](int fbW, int fbH, void* user) {
+		MainFrame* mf = (MainFrame*)user;
+		int ww = 0, wh = 0; platform::WindowSize(ww, wh);
+		gSettings.winSizeX = ww; gSettings.winSizeY = wh;
+		int px = 0, py = 0; platform::WindowPos(px, py);
+		gSettings.posX = px; gSettings.posY = py;
+		gSettings.maximized = platform::IsMaximized();
+		clientRect = ImVec2((float)fbW, (float)fbH);
+		if (mf) mf->UpdateBackProj(clientRect.x, clientRect.y);
+	};
+	handlers.onMove = [](int x, int y, void*) { gSettings.posX = x; gSettings.posY = y; };
+	handlers.onDropPoint = [](float sx, float sy, float cx, float cy, void* user) {
+		if (user) ((MainFrame*)user)->setDropPoint(sx, sy, cx, cy);
+	};
+	handlers.onDropFile = [](const char* path, void* user) {
+		if (user) ((MainFrame*)user)->queueDroppedFile(path);
+	};
+	handlers.onEvent = [](const void* ev, void* user) {
+		const SDL_Event& e = *(const SDL_Event*)ev;
+		MainFrame* mf = (MainFrame*)user;
+		switch (e.type) {
+		case SDL_EVENT_KEY_DOWN: {
+			// The shortcut router decides: a focused text field keeps its keys.
+			const uint32_t vk = platform::VkFromScancode((int)e.key.scancode);
+			if (vk && mf && mf->HandleKeys(vk, e.key.repeat,
+			                               ImGui::GetIO().WantCaptureKeyboard, ImGui::GetIO().WantTextInput))
+				return;
+			break;
+		}
+		case SDL_EVENT_MOUSE_WHEEL:
+			if (mf && !ImGui::GetIO().WantCaptureMouse && !mf->IsMouseDragActive()) {
+				float wx = 0, wy = 0;
+				SDL_GetMouseState(&wx, &wy);
+				mf->HandleMouseWheel(e.wheel.y > 0 != gSettings.invertWheelZoom, (int)wx, (int)wy);
+			}
+			break;
+		default:
+			break;
+		}
+	};
+	platform::SetEventHandlers(handlers);
+
 	const double targetFrameTime = 0.0165; // Slightly faster than 60 FPS to compensate for overhead
-
 	using namespace std::chrono;
 	steady_clock::time_point lastFrameTime = steady_clock::now();
 
-	while (!done)
+	for (;;)
 	{
-		// Process all pending messages
-		while (PeekMessage(&msg, NULL, 0, 0, PM_REMOVE))
-		{
-			TranslateMessage(&msg);
-			DispatchMessage(&msg);
-			if (msg.message == WM_QUIT)
-				done = true;
-		}
-		if (done)
-			break;
+		if (!platform::PollEvents()) break;
+		if (gAppQuit) break;
 
-		// Frame rate limiting - only render if enough time has passed
 		steady_clock::time_point currentTime = steady_clock::now();
 		duration<double> elapsed = duration_cast<duration<double>>(currentTime - lastFrameTime);
-		
+
 		if (gStartup.headless || elapsed.count() >= targetFrameTime)   // headless: no frame pacing
 		{
-			MainFrame* mf = (MainFrame*)GetWindowLongPtr(hwnd, GWLP_USERDATA);
-			if(mf)
-			{
-				mf->Draw();
-			}
+			frame->Draw();
 			lastFrameTime = currentTime;
 		}
 		else
@@ -407,262 +447,13 @@ int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE, PWSTR pCmdLine, int nCmdShow
 		}
 	}
 
-	DestroyWindow(hwnd);
-	UnregisterClass(wc.lpszClassName, wc.hInstance);
+	delete frame;
+	ImGui_ImplOpenGL3_Shutdown();
+	ImGui_ImplSDL3_Shutdown();
+	ImSearch::DestroyContext();
+	ImGui::DestroyContext();
+	platform::Shutdown();
 
-	LocalFree(argV);
+
 	return gStartup.exitCode;
-}
-
-// Forward declare message handler from imgui_impl_win32.cpp
-extern IMGUI_IMPL_API LRESULT ImGui_ImplWin32_WndProcHandler(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam);
-LRESULT WINAPI WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
-{
-	// A key that already ran a shortcut while a text field was focused (Num*
-	// / Num/ keyframe step) must not also type its character.
-	if (msg == WM_CHAR && MainFrame::s_swallowChar && (wchar_t)towlower((wint_t)wParam) == MainFrame::s_swallowChar) {
-		MainFrame::s_swallowChar = 0;
-		return 0;
-	}
-	if (ImGui_ImplWin32_WndProcHandler(hWnd, msg, wParam, lParam))
-		return true;
-
-	MainFrame* mf = (MainFrame*)GetWindowLongPtr(hWnd, GWLP_USERDATA);
-	switch (msg)
-	{
-	case WM_CREATE:
-		{
-			context = new ContextGl(hWnd);
-			if(!gladLoadGL())
-			{
-				MessageBox(0, L"glad fail", L"gladLoadGL()", 0);
-				PostQuitMessage(1);
-				return 1;
-			}
-			IMGUI_CHECKVERSION();
-			ImGui::CreateContext();
-			ImSearch::CreateContext();
-			ImGuiIO& io = ImGui::GetIO();
-			io.ConfigFlags |= ImGuiConfigFlags_DockingEnable;
-			io.IniFilename = iniLocation;
-			InitIni();
-			if (gStartup.headless)
-				io.IniFilename = nullptr;   // settings and layout are read, never written back
-			// Multi-viewport: detached tabs become native windows that can
-			// live on other monitors (docs/HANTEI_WAVE2.md §5). It used to be
-			// off because the Background Inspector opened at a fixed desktop
-			// position behind the main window; that window is now placed
-			// relative to the main viewport. Restart-bound preference.
-			if (gSettings.detachableWindows && !gStartup.headless)   // headless: no extra OS windows
-				io.ConfigFlags |= ImGuiConfigFlags_ViewportsEnable;
-			// Native windows only move from their title bar, so dragging in a
-			// detached view pans it instead of moving the window.
-			io.ConfigWindowsMoveFromTitleBarOnly = true;
-
-			MainFrame* mf = new MainFrame(context);
-			SetWindowLongPtr(hWnd, GWLP_USERDATA, (LONG_PTR)mf);
-			
-			MoveWindow(hWnd, gSettings.posX, gSettings.posY, gSettings.winSizeX, gSettings.winSizeY, false);
-			
-
-			LoadJapaneseFonts(io);
-			
-			// Note: TexDesiredWidth was removed in ImGui 1.92.0
-			// Font atlas now handles sizing automatically
-			
-			//io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;     // Enable Keyboard Controls
-			ImGui_ImplWin32_InitForOpenGL(hWnd);   // CS_OWNDC for platform windows
-			ImGui_ImplOpenGL3_Init("#version 330 core");
-			if (!WorkspaceViewports::Initialize(*context, hWnd,
-				(io.ConfigFlags & ImGuiConfigFlags_ViewportsEnable) != 0, MainFrame::DetachedKeyHook()))
-			{
-				// Fall back to single-window mode (detached tabs float inside
-				// the main window).
-				io.ConfigFlags &= ~ImGuiConfigFlags_ViewportsEnable;
-			}
-			
-			// Enable VSync control for better performance testing
-			typedef BOOL (WINAPI *wglSwapIntervalEXT_t)(int);
-			wglSwapIntervalEXT_t wglSwapIntervalEXT = (wglSwapIntervalEXT_t)wglGetProcAddress("wglSwapIntervalEXT");
-			if (wglSwapIntervalEXT) {
-				wglSwapIntervalEXT(0);  // Disable VSync for maximum FPS
-			}
-			
-			return 0;
-		}
-	case WM_DROPFILES:
-		{
-			HDROP h = (HDROP)wParam;
-			POINT pt{}; DragQueryPoint(h, &pt);
-			POINT sp = pt; ClientToScreen(hWnd, &sp);
-			if (mf) mf->setDropPoint((float)sp.x, (float)sp.y, (float)pt.x, (float)pt.y);
-			const UINT n = DragQueryFileW(h, 0xFFFFFFFF, nullptr, 0);
-			for (UINT i = 0; i < n; i++) {
-				wchar_t wp[1024]; DragQueryFileW(h, i, wp, 1024);
-				if (mf) mf->queueDroppedFile(WideToUtf8(wp));
-			}
-			DragFinish(h);
-		}
-		return 0;
-	case WM_MOVE:
-		{
-			RECT rect;
-			GetWindowRect(hWnd, &rect);
-			gSettings.posX = rect.left;
-			gSettings.posY = rect.top;
-		}
-		break;
-	case WM_SIZE:
-		if(init)
-		{
-			if (wParam == SIZE_MAXIMIZED)
-				gSettings.maximized = true;
-			else if (wParam == SIZE_RESTORED)
-				gSettings.maximized = false;
-			if (wParam != SIZE_MINIMIZED)
-			{
-				RECT rect;
-				GetWindowRect(hWnd, &rect);
-				gSettings.posX = rect.left;
-				gSettings.posY = rect.top;
-				gSettings.winSizeX = rect.right-rect.left;
-				gSettings.winSizeY = rect.bottom-rect.top;
-
-
-				GetClientRect(hWnd, &rect);
-				clientRect = ImVec2((float)rect.right, (float)rect.bottom);
-				mf->UpdateBackProj(clientRect.x, clientRect.y);
-			}
-		}
-		return 0;
-	case WM_KEYDOWN:
-		// The shortcut router decides: a focused ImGui text field keeps its
-		// keys (including its own Ctrl+Z); bit 30 = OS auto-repeat.
-		if(mf && mf->HandleKeys(wParam, (lParam & (1 << 30)) != 0,
-		                        ImGui::GetIO().WantCaptureKeyboard, ImGui::GetIO().WantTextInput))
-			return 0;
-		break;
-	case WM_CANCELMODE:
-		if(mf) mf->CancelViewportGestures();
-		dragLeft = dragRight = false;
-		break;
-	// View mouse buttons. Which physical button pans and which draws (boxes, the PAT UV rectangle) is a preference
-	// (issue #9, Edit > Preferences > Mouse buttons); internally the roles keep their old names: dragLeft = pan,
-	// dragRight = draw. The middle button pans when it is not the draw button.
-	case WM_LBUTTONDOWN:
-	case WM_RBUTTONDOWN:
-	case WM_MBUTTONDOWN:
-		{
-			const int button = msg == WM_LBUTTONDOWN ? 0 : msg == WM_RBUTTONDOWN ? 1 : 2;
-			const bool draw = button == gSettings.mouseDrawButton;
-			const bool pan = button == gSettings.mousePanButton || (button == 2 && !draw);
-			// Don't allow drag if window just became active - prevents dragging when clicking back into window
-			if((pan || draw) && !ImGui::GetIO().WantCaptureMouse && !justActivated && !(draw ? dragRight : dragLeft))
-			{
-				GetCursorPos(&mousePos);
-				ScreenToClient(hWnd, &mousePos);
-				SetCapture(hWnd);
-				if (draw) {
-					dragRight = true;
-					dragButtonRight = button;
-					if (mf) mf->RightClick(mousePos.x, mousePos.y);
-				} else {
-					dragLeft = true;
-					dragButtonLeft = button;
-					if (mf) mf->HandleMouseDown(false, true);
-					if (mf) mf->LeftClick(mousePos.x, mousePos.y);
-				}
-				if (mf) mf->SetMouseDragActive(true);
-				return 0;
-			}
-			justActivated = false;  // Clear flag after first click
-		}
-		break;
-	case WM_LBUTTONUP:
-	case WM_RBUTTONUP:
-	case WM_MBUTTONUP:
-		{
-			const int button = msg == WM_LBUTTONUP ? 0 : msg == WM_RBUTTONUP ? 1 : 2;
-			if(dragRight && button == dragButtonRight)
-			{
-				if(!dragLeft)
-					ReleaseCapture();
-				dragRight = false;
-				if (mf) mf->HandleMouseUp(true, false);
-				if (mf) mf->SetMouseDragActive(dragLeft);
-				return 0;
-			}
-			if(dragLeft && button == dragButtonLeft)
-			{
-				if(!dragRight)
-					ReleaseCapture();
-				dragLeft = false;
-				if (mf) mf->HandleMouseUp(false, true);
-				if (mf) mf->SetMouseDragActive(dragRight);
-				return 0;
-			}
-		}
-		break;
-	case WM_MOUSEMOVE:
-		if(dragLeft || dragRight)
-		{
-			POINT newMousePos;
-			newMousePos.x = (short) LOWORD(lParam);
-			newMousePos.y = (short) HIWORD(lParam);
-
-			mf->HandleMouseDrag(newMousePos.x-mousePos.x, newMousePos.y-mousePos.y, dragRight, dragLeft);
-			mousePos = newMousePos;
-		}
-		break;
-	case WM_MOUSEWHEEL:
-		if(mf && !ImGui::GetIO().WantCaptureMouse && !(dragLeft || dragRight))
-		{
-			int wheelDelta = GET_WHEEL_DELTA_WPARAM(wParam);
-			// WM_MOUSEWHEEL gives the cursor in screen coords; convert to
-			// client space for zoom-to-cursor.
-			POINT wheelPos;
-			wheelPos.x = (short)LOWORD(lParam);
-			wheelPos.y = (short)HIWORD(lParam);
-			ScreenToClient(hWnd, &wheelPos);
-			mf->HandleMouseWheel((wheelDelta > 0) != gSettings.invertWheelZoom, wheelPos.x, wheelPos.y);
-			return 0;
-		}
-		break;
-	case WM_ACTIVATE:
-		// Set flag when window becomes active
-		if(LOWORD(wParam) != WA_INACTIVE)
-		{
-			justActivated = true;
-		}
-		else
-		{
-			// Clear drag states when losing focus
-			if(dragLeft || dragRight)
-			{
-				if (mf) mf->CancelViewportGestures();
-				ReleaseCapture();
-				dragLeft = false;
-				dragRight = false;
-				if (mf) mf->SetMouseDragActive(false);
-			}
-		}
-		break;
-	case WM_SYSCOMMAND:
-		if ((wParam & 0xfff0) == SC_KEYMENU) // Disable ALT application menu
-			return 0;
-		break;
-	case WM_DESTROY:
-		delete mf;
-		WorkspaceViewports::Shutdown();
-		ImGui_ImplOpenGL3_Shutdown();
-		ImGui_ImplWin32_Shutdown();
-		ImSearch::DestroyContext();
-		ImGui::DestroyContext();
-		delete context;
-		SetWindowLongPtr(hWnd, GWLP_USERDATA, 0);
-		::PostQuitMessage(0);
-		return 0;
-	}
-
-	return ::DefWindowProc(hWnd, msg, wParam, lParam);
 }

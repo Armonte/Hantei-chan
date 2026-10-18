@@ -1,5 +1,6 @@
 // MainFrame startup actions (--open / --capture); see startup_args.h.
 #include "startup_args.h"
+#include "main.h"
 #include "fpanim_play.h"
 #include "archive_browser.h"
 #include "game_table.h"
@@ -84,9 +85,12 @@ static bool ParseLayerArg(const std::string &v)
 	gStartup.layerMask = m; return true;
 }
 
-bool ParseWave2StartupArg(const char* arg, const wchar_t* next, int& i)
+bool ParseWave2StartupArg(const char* arg, const char* next, int& i)
 {
-	auto value = [&](unsigned cp) { ++i; return WideArg(next, cp); };
+	// argv is UTF-8 under SDL3 (the Windows backend converts the command line
+	// with CP_UTF8, libc's argv is UTF-8 on Linux). No codepage conversion
+	// needed; the old CP_ACP/CP_UTF8 split disappears with wWinMain.
+	auto value = [&](unsigned) { ++i; return next ? std::string(next) : std::string(); };
 	if (!strcmp(arg, "--detach")) { gStartup.detach = true; return true; }
 	if (!strcmp(arg, "--quit")) { gStartup.quit = true; return true; }
 	if (!strcmp(arg, "--export-boxes")) { gStartup.exportBoxes = true; return true; }
@@ -224,7 +228,7 @@ static void LogLine(const char* text)
 }
 
 // Scripted UI session (--ui-script): runs between render and swap, so `capture` sees exactly what this frame drew.
-static void RunUiScript(MainFrame &mf, HDC dc, const std::function<void(const std::string &)> &openAny, const std::function<void(int, int)> &setView, const std::function<bool()> &saveActive,
+static void RunUiScript(MainFrame &mf, const std::function<void(const std::string &)> &openAny, const std::function<void(int, int)> &setView, const std::function<bool()> &saveActive,
                         const std::function<bool(const std::string &, const std::string &)> &editCmd,
 	const std::function<bool(const std::string &, const std::string &, std::string *)> &cgmScript)
 {
@@ -235,7 +239,7 @@ static void RunUiScript(MainFrame &mf, HDC dc, const std::function<void(const st
 		std::ifstream f(std::filesystem::u8path(gStartup.uiScript));
 		std::string l;
 		while (std::getline(f, l)) { while (!l.empty() && (l.back() == '\r' || l.back() == ' ')) l.pop_back(); if (!l.empty() && l[0] != '#') lines.push_back(l); }
-		if (lines.empty()) { done = true; gStartup.exitCode = 2; PostQuitMessage(2); return; }
+		if (lines.empty()) { done = true; gStartup.exitCode = 2; gAppQuit = true; return; }
 	}
 	if (waitFrames > 0) { waitFrames--; return; }
 	{   // wall-clock waits: `waitms <ms>`, `waits3dchange <seconds>` (until the 3D stage's watched file changes, e.g. a Blender export)
@@ -272,7 +276,7 @@ static void RunUiScript(MainFrame &mf, HDC dc, const std::function<void(const st
 		if (cmd == "waitidle") { waitIdle = true; return; }
 		if (cmd == "waitms") { pendingWaitMs = std::max(1, atoi(arg.c_str())); return; }
 		if (cmd == "waits3dchange") { pendingWaitMs = std::max(1, atoi(arg.c_str())) * 1000; pendingWaitS3d = true; return; }
-		if (cmd == "quit") { done = true; PostQuitMessage(gStartup.exitCode); return; }
+		if (cmd == "quit") { done = true; gAppQuit = true; return; }
 		if (cmd == "openany") { openAny(arg); continue; }
 		if (cmd == "pattern") { setView(0, atoi(arg.c_str())); continue; }
 		if (cmd == "savechar") { const bool ok = saveActive(); FILE *lf = fopen((gStartup.uiScript + ".log").c_str(), "a"); if (lf) { fprintf(lf, "savechar -> %s\n", ok ? "ok" : "FAILED"); fclose(lf); } waitFrames = 20; return; }
@@ -311,8 +315,8 @@ static void RunUiScript(MainFrame &mf, HDC dc, const std::function<void(const st
 		}
 		if (cmd == "framenodes") { extern int gUiScriptOpenFrameNodes; gUiScriptOpenFrameNodes = atoi(arg.c_str()); continue; }
 		if (cmd == "capture") {
-			RECT r; GetClientRect(WindowFromDC(dc), &r);
-			int w = r.right - r.left, h = r.bottom - r.top;
+			int w = 0, h = 0;
+			platform::ClientSize(w, h);
 			std::vector<uint8_t> rgba((size_t)w * h * 4), rgb((size_t)w * h * 3);
 			glReadBuffer(gStartup.headless ? GL_COLOR_ATTACHMENT0 : GL_BACK); glPixelStorei(GL_PACK_ALIGNMENT, 1);   // headless: MainFrame::Draw's frame target
 			glReadPixels(0, 0, w, h, GL_RGBA, GL_UNSIGNED_BYTE, rgba.data());
@@ -351,14 +355,14 @@ static void RunUiScript(MainFrame &mf, HDC dc, const std::function<void(const st
 		}
 		if (cmd == "browse" || cmd == "source" || cmd == "select" || cmd == "type" || cmd == "filter" || cmd == "open" || cmd == "key") { waitFrames = 3; return; }   // let the UI process it
 	}
-	done = true; PostQuitMessage(gStartup.exitCode);
+	done = true; gAppQuit = true;
 }
 
 void MainFrame::ProcessStartupArgs()
 {
 	int n = ++gStartup.frameCounter;
 	if (!gStartup.uiScript.empty() && n > 3)
-		RunUiScript(*this, context->dc, [this](const std::string &p) { openAnyFile(p); },
+		RunUiScript(*this, [this](const std::string &p) { openAnyFile(p); },
 			[this](int what, int v) { if (auto *vw = getActiveView()) { if (what == 0) vw->getState().pattern = v; else if (what == 2) vw->setZoom(v / 100.f); else vw->getState().frame = v; } },
 			[this]() { return getActiveCharacter() ? saveCharacter(getActiveCharacter()) : false; },
 			[this](const std::string &cmd, const std::string &arg) -> bool {
@@ -608,7 +612,7 @@ void MainFrame::ProcessStartupArgs()
 		!gStartup.captureWindows.empty() || !gStartup.stats.empty() ||
 		!gStartup.exportDir.empty() || gStartup.quit;
 	if (gStartup.capture.empty() && anyWave2 && n == 22 && gStartup.batch.empty())
-		PostQuitMessage(gStartup.exitCode);
+		gAppQuit = true;
 	// --batch <file>: one shot per line, commands split by ';' (see startup_args.h). Settings carry over between
 	// lines; each `export` waits a few frames (more after an open) so the view has drawn the new state, then writes
 	// the view's render target. Exit code: 0 all shots written, 1 a shot failed, 2 the batch could not be read.
@@ -619,7 +623,7 @@ void MainFrame::ProcessStartupArgs()
 		static std::string pendingOut;
 		static bool loaded = false, done = false;
 		static std::map<std::string, uint64_t> openedViews;   // path -> view id: a repeated `open` reuses the view
-		auto finish = [](int code) { done = true; if (code > gStartup.exitCode) gStartup.exitCode = code; PostQuitMessage(gStartup.exitCode); };
+		auto finish = [](int code) { done = true; if (code > gStartup.exitCode) gStartup.exitCode = code; gAppQuit = true; };
 		if (!done && !loaded) {
 			loaded = true;
 			std::ifstream f(std::filesystem::u8path(gStartup.batch));
@@ -695,8 +699,8 @@ void MainFrame::ProcessStartupArgs()
 	if (n == 2 && gStartup.gameLinkSlot >= 1 && gStartup.gameLinkSlot <= 4)
 		gamelink::StartFollowing(gStartup.gameLinkSlot - 1);
 	if (!gStartup.capture.empty() && n == ((gStartup.gameLinkSlot || gStartup.tagLink || gStartup.authoring.link) ? 240 : 20)) {
-		RECT r; GetClientRect(WindowFromDC(context->dc), &r);
-		int w = r.right - r.left, h = r.bottom - r.top;
+		int w = 0, h = 0;
+		platform::ClientSize(w, h);
 		std::vector<uint8_t> rgba((size_t)w * h * 4), rgb((size_t)w * h * 3);
 		glReadBuffer(gStartup.headless ? GL_COLOR_ATTACHMENT0 : GL_BACK);
 		glPixelStorei(GL_PACK_ALIGNMENT, 1);
@@ -706,8 +710,8 @@ void MainFrame::ProcessStartupArgs()
 				for (int k = 0; k < 3; k++)
 					rgb[((size_t)(h - 1 - y) * w + x) * 3 + k] = rgba[((size_t)y * w + x) * 4 + k];
 		WritePng(gStartup.capture, rgb.data(), w, h);
-		if (gStartup.saveProject.empty()) PostQuitMessage(0);
+		if (gStartup.saveProject.empty()) gAppQuit = true;
 	}
 	if (!gStartup.capture.empty() && !gStartup.saveProject.empty() && n == 22)
-		PostQuitMessage(0);
+		gAppQuit = true;
 }

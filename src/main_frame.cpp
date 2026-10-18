@@ -1,4 +1,5 @@
 #include "main_frame.h"
+#include "app_log.h"
 #include "ui/ui_style.h"
 #include "startup_args.h"
 #include "render_target.h"
@@ -45,7 +46,7 @@
 #include <imgui.h>
 #include <imgui_internal.h>
 #include <imgui_impl_opengl3.h>
-#include <imgui_impl_win32.h>
+#include <imgui_impl_sdl3.h>
 #include <windows.h>
 
 #include <glad/glad.h>
@@ -62,8 +63,7 @@
 
 wchar_t MainFrame::s_swallowChar = 0;
 
-MainFrame::MainFrame(ContextGl *context_):
-context(context_)
+MainFrame::MainFrame()
 {
 	LoadSettings();
 	// User key bindings (issue #9); unknown or stale entries are ignored.
@@ -124,7 +124,7 @@ void MainFrame::Draw()
 		}
 	}
 	ImGui_ImplOpenGL3_NewFrame();
-	ImGui_ImplWin32_NewFrame();
+	ImGui_ImplSDL3_NewFrame();
 	// --deterministic: ImGui fades the modal dim background with io.DeltaTime
 	// (imgui.cpp DimBgRatio = +DeltaTime * 6.0f). Pin the frame step so the fade
 	// reaches the same value on every machine. The parity harness relies on it.
@@ -147,7 +147,7 @@ void MainFrame::Draw()
 	WorkspaceViewports::RenderSecondaryWindows();
 
 	if (gStartup.headless) glBindFramebuffer(GL_FRAMEBUFFER, 0);   // nothing is presented
-	else SwapBuffers(context->dc);
+	else platform::SwapGlBuffers();
 
 	gSettings.theme = style_idx;
 	gSettings.zoomLevel = zoom_idx;

@@ -42,6 +42,7 @@ set(HMOD_SOURCES src/modproject/hmod_ha6.cpp src/modproject/hmod_vanilla.cpp src
 add_executable(${EXE}
 	src/main.cpp
 	src/platform/platform.cpp
+	src/platform/platform_keys.cpp
 	src/main_frame.cpp
 	src/main_pane.cpp
 	src/right_pane.cpp
