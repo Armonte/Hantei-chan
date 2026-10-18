@@ -720,6 +720,8 @@ void MainFrame::loadProjectFromPath(const std::string& path, bool isRecent)
 			setActiveView(activeViewIndex);
 		}
 		RestoreWorkspace(workspaceJson);
+		// Restored PAT editor tabs need their PAT panes docked (as addPatDocumentView does).
+		for (const auto& v : views) if (v->isPatEditor()) { needsDockRebuild = true; break; }
 
 		// Effect loading is now automatic per-character in CharacterInstance::loadFromTxt()
 
