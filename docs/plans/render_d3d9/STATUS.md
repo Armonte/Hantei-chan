@@ -95,8 +95,8 @@ of the affected areas, byte-identical.
 
 | gate | result | run | counts | date |
 |---|---|---|---|---|
-| H1 (two baseline runs byte-identical) | **PASS** | `golden/<BASELINE>` vs `..._repeat` | 2847 cases, 0 differing | 2026-10-18 |
-| H2 (`test_diff.py` + `diff.py golden golden`) | **PASS** | local | test_diff 14/14; diff golden golden 2757/2757 PASS | 2026-10-18 |
+| H1 (two baseline runs byte-identical) | **PASS** | `golden/<BASELINE>` vs `..._repeat`, report `runs/h1_report.md` | 2847 cases, 0 differing | 2026-10-18 |
+| H2 (`test_diff.py` + `diff.py golden golden`) | **PASS** | `runs/h2_report.md` | test_diff 14/14; diff golden golden 2847/2847 PASS | 2026-10-18 |
 | ctest | **PASS** | `build/ctest -j8` | 93/93, incl. `render_parity` 60/60 (45 s) and `render_parity_tools` | 2026-10-18 |
 
 ## BLOCKED
