@@ -138,6 +138,8 @@ def load_allowlist(path):
             line = line.rstrip("\n")
             if not line.strip() or line.lstrip().startswith("#"):
                 continue
+            if line.split("\t")[0] == "case_glob":   # the committed header row
+                continue
             entries.append(Allow(line.split("\t"), i))
     return entries
 
