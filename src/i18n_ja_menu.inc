@@ -221,6 +221,7 @@
 {"Auto-detect from effects", "エフェクトから自動検出"},
 {"Show offset lines", "オフセット線を表示"},
 {"Show pattern labels", "パターンラベルを表示"},
+{"Show spawned boxes (outline)", "生成パターンの判定を表示（枠線）"},
 {"Show preset effects (Type 3)", "プリセットエフェクトを表示 (タイプ 3)"},
 {"Show on all frames", "全フレームで表示"},
 {"Opacity", "不透明度"},
