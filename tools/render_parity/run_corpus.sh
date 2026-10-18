@@ -17,6 +17,7 @@ OUT="${2:?usage: run_corpus.sh <exe-dir> <out-dir> [--renderer gl|d3d9] [--only 
 shift 2
 RENDERER=gl; ONLY=""; ROUND=1; FORCE=0; TIMEOUT="${RP_TIMEOUT:-300}"
 RESET=1
+LIMIT=0
 while [ $# -gt 0 ]; do
 	case "$1" in
 		--renderer) RENDERER="$2"; shift 2 ;;
@@ -25,6 +26,7 @@ while [ $# -gt 0 ]; do
 		--timeout) TIMEOUT="$2"; shift 2 ;;
 		--force) FORCE=1; shift ;;
 		--no-reset) RESET=0; shift ;;
+		--limit) LIMIT="$2"; shift 2 ;;
 		*) echo "unknown option $1" >&2; exit 2 ;;
 	esac
 done
@@ -60,14 +62,38 @@ run_file() {   # <corpus-file> <kind>
 	local src="$1" kind="$2"
 	local base; base="$(basename "$src")"
 	local case_base="${base%.*}"
-	[ -n "$ONLY" ] && case "$case_base" in $(echo "$ONLY" | tr ',' '|')) ;; *) return 0 ;; esac
+	if [ -n "$ONLY" ]; then
+		# comma-separated shell patterns, matched one at a time (a case pattern
+		# list built with command substitution does not word-split reliably).
+		local hit=0
+		local OLDIFS="$IFS"; IFS=','
+		for pat in $ONLY; do
+			case "$case_base" in $pat) hit=1 ;; esac
+		done
+		IFS="$OLDIFS"
+		[ "$hit" = 1 ] || return 0
+	fi
 	local st="$OUT/$case_base.status"
 	if [ "$FORCE" = 0 ] && [ -f "$st" ] && grep -q '^done ' "$st"; then return 0; fi
 	# rewrite OUT/ to this run's shot folder (never touches the committed corpus)
 	sed "s#OUT/#$WSL_OUT/#g" "$src" > "$W/$base"
-	local arg
-	if [ "$kind" = batch ]; then arg=--batch; else arg=--ui-script; fi
-	( cd "$W" && timeout "$TIMEOUT" ./gonptechan.exe "${RUN_ARGS[@]}" "$arg" "$(win "$W/$base")" </dev/null >"$W/$base.log" 2>&1 )
+	# A "#mode: plain" file (areas B and E) carries its own exe arguments on a
+	# "#args:" line instead of a script body: those options are startup-only.
+	local arg=() extra=() line mode=script
+	while IFS= read -r line; do
+		case "$line" in
+			'#mode:'*) mode="${line#*:}"; mode="${mode// /}" ;;
+			'#args:'*) read -r -a extra <<< "${line#*:}" ;;
+		esac
+	done < "$W/$base"
+	if [ "$mode" = plain ]; then
+		# No script argument at all: the file only supplies startup arguments
+		# such as --export-png / --onion / --compare.
+		( cd "$W" && timeout "$TIMEOUT" ./gonptechan.exe "${RUN_ARGS[@]}" "${extra[@]}" </dev/null >"$W/$base.log" 2>&1 )
+	else
+		[ "$kind" = batch ] && arg=(--batch) || arg=(--ui-script)
+		( cd "$W" && timeout "$TIMEOUT" ./gonptechan.exe "${RUN_ARGS[@]}" "${extra[@]}" "${arg[@]}" "$(win "$W/$base")" </dev/null >"$W/$base.log" 2>&1 )
+	fi
 	local rc=$?
 	printf 'done %d\n' "$rc" > "$st"
 	echo "== $case_base exit $rc"
@@ -75,8 +101,21 @@ run_file() {   # <corpus-file> <kind>
 	return 0
 }
 
-for f in "$CORPUS"/*.batch; do [ -e "$f" ] && run_file "$f" batch; done
-for f in "$CORPUS"/ui/*.txt; do [ -e "$f" ] && run_file "$f" ui; done
+# --limit N: stop after N corpus files (the smoke subset: the same first files in
+# the same order every time, so its manifest is a stable prefix of the corpus).
+ran=0
+for f in "$CORPUS"/*.batch; do
+	[ -e "$f" ] || continue
+	[ "$LIMIT" -gt 0 ] && [ "$ran" -ge "$LIMIT" ] && break
+	run_file "$f" batch
+	ran=$((ran + 1))
+done
+for f in "$CORPUS"/ui/*.txt; do
+	[ -e "$f" ] || continue
+	[ "$LIMIT" -gt 0 ] && [ "$ran" -ge "$LIMIT" ] && break
+	run_file "$f" ui
+	ran=$((ran + 1))
+done
 
 # manifest: every PNG under the shot folder, one case per file
 python3 - "$OUT" "$ROUND" <<'PY'

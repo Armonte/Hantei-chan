@@ -1384,6 +1384,22 @@ endif()
 
 # Game-data-free HA6 load -> save byte round trip on the committed fixture (runs in CI; the full corpus is tools/uni/uni_regress.sh).
 add_test(NAME ha6_roundtrip_fixture COMMAND roundtrip --bytes tests/fixtures/headless/chr000.ha6 "${CMAKE_BINARY_DIR}/ha6_roundtrip_fixture.ha6" WORKING_DIRECTORY ${CMAKE_SOURCE_DIR})
+
+# Render-parity harness (docs/plans/render_d3d9/PLAN.md 4). render_parity_tools is
+# pure Python on synthetic PNGs, so CI runs it. rhi_lint is a grep, no GPU.
+# render_parity renders the smoke subset through the real (hidden) GL window and
+# diffs it against golden_smoke/: GPU and game data, so it is labelled gpu and
+# fails only when those are present (the script exits 77 = skip otherwise).
+add_test(NAME render_parity_tools
+	COMMAND python3 "${CMAKE_SOURCE_DIR}/tools/render_parity/test_diff.py"
+	WORKING_DIRECTORY ${CMAKE_SOURCE_DIR})
+add_test(NAME rhi_lint
+	COMMAND bash "${CMAKE_SOURCE_DIR}/tools/render_parity/rhi_lint.sh" "${CMAKE_SOURCE_DIR}"
+	WORKING_DIRECTORY ${CMAKE_SOURCE_DIR})
+add_test(NAME render_parity
+	COMMAND bash "${CMAKE_SOURCE_DIR}/tools/render_parity/run_smoke.sh" "${CMAKE_SOURCE_DIR}" "$<TARGET_FILE:gonptechan>"
+	WORKING_DIRECTORY ${CMAKE_SOURCE_DIR})
+set_tests_properties(render_parity PROPERTIES LABELS gpu TIMEOUT 900)
 # Opens a real (hidden) OpenGL 3.3 window: CI runners have no GPU driver, so CI runs `ctest -LE gpu`.
 set_tests_properties(headless_export PROPERTIES LABELS gpu)
 # Every test that needs game data or an outside install exits 77 when it is missing: count that as skipped, never failed.

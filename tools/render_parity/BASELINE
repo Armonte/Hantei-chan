@@ -5,8 +5,14 @@ exe_sha256=a347a3e7aa1d3d535f93c5857515bb8e6ebe532ee1224316b1ce5e724cda9c1b
 # stage background animation and the ImGui modal dim fade both step on wall
 # clock). The baseline binary is therefore rebuilt from <baseline_sha> plus the
 # single determinism commit, which is the binary every golden comes from.
-determ_sha=81a948ad6647dd520733ad7ee47558bc68889134
-determ_exe_sha256=2e7039ee321db132f231d66d982f594e2558adfa5d7cdb3a62f4a18052f4e304
+# The baseline binary is <baseline_sha> plus these four commits and nothing else
+# (all they touch is the pinning of wall-clock / worker-timing effects):
+#   81a948a  --deterministic: stage animation tick + ImGui modal dim fade
+#   f2e1cc0  install scan runs inline (the welcome screen's "found via" column)
+#   a4eb48f  browser preview/thumbnail jobs run inline
+#   4f6ba36  keep the no-GL-upload flag around those inline jobs
+determ_sha=4f6ba36c549de2ed6138f383b2172c06ab91c2a9
+determ_exe_sha256=cf92645f1c77f7bd9780631d1d6e46fdd2b445b96e16150f7f7842de1aad7113
 built=2026-10-18
 worktree=/home/teo/dev/hantei-chan-wt/render-baseline
 staged=/mnt/c/dev/hantei-chan/render_parity/baseline_bin/45ea8ae59c1efd7bb6c1a9bc884c4205cef3174a_det
