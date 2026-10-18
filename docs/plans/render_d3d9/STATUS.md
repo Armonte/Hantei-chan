@@ -113,6 +113,34 @@ of the affected areas, byte-identical.
 - [ ] 3. `main.cpp` SDL main loop.
 - [ ] 4. ImGui backends.
 
+**P0 step 3, first: the `WndProc` message list (PLAN.md 6 P0 step 3 asks for it
+before the loop is rewritten). Read from `src/main.cpp` `WndProc`, which is the
+complete list: there is no `WM_SETFOCUS`, `WM_KILLFOCUS`, `WM_DPICHANGED`,
+`WM_SETTINGCHANGE`, `WM_ENTERSIZEMOVE`, `WM_NCHITTEST` or `WM_GETMINMAXINFO`
+handler today.**
+
+| message | what happens now | SDL mapping (P0) |
+|---|---|---|
+| `WM_CHAR` (before ImGui's handler) | `MainFrame::s_swallowChar` guard: a key that already ran a shortcut while a text field was focused must not also type its character | `SDL_EVENT_TEXT_INPUT` (drop the first char when it is the swallowed one) |
+| (ImGui first) | `ImGui_ImplWin32_WndProcHandler` gets every message before the app | `ImGui_ImplSDL3_ProcessEvent` before the app's own switch |
+| `WM_CREATE` | `ContextGl` (wgl), `gladLoadGL`, `ImGui::CreateContext`, `ImSearch::CreateContext`, `IniFilename` (null when headless), `InitIni`, viewports flag, `new MainFrame(context)` into `GWLP_USERDATA`, `MoveWindow`, `LoadJapaneseFonts`, `ImGui_ImplWin32_InitForOpenGL`, `ImGui_ImplOpenGL3_Init("#version 330 core")`, `WorkspaceViewports::Initialize`, `wglSwapIntervalEXT(0)` (vsync off) | `Platform::Init` + `MainFrame::CreateUi` |
+| `WM_DROPFILES` | `setDropPoint` then `queueDroppedFile` per file (`DragAcceptFiles` registered at window create) | `SDL_EVENT_DROP_FILE` / `SDL_EVENT_DROP_POSITION` |
+| `WM_MOVE` | save `gSettings.posX/posY` | `SDL_EVENT_WINDOW_MOVED` |
+| `WM_SIZE` | maximized/restored flag, save pos+size, `clientRect`, `MainFrame::UpdateBackProj` | `SDL_EVENT_WINDOW_RESIZED` (+ `PIXEL_SIZE_CHANGED` for the framebuffer size) |
+| `WM_KEYDOWN` | `MainFrame::HandleKeys(wParam, autoRepeat, WantCaptureKeyboard, WantTextInput)`; returning true suppresses the key. Bit 30 is OS auto-repeat | `SDL_EVENT_KEY_DOWN` |
+| `WM_CANCELMODE` | `CancelViewportGestures`, clear the drag flags | `SDL_EVENT_WINDOW_FOCUS_LOST` / `SDL_EVENT_KEY_UP` (Escape) |
+| `WM_LBUTTONDOWN`/`RBUTTON`/`MBUTTON` | pan/draw button preference (`gSettings.mousePanButton`/`mouseDrawButton`), `justActivated` guard, `SetCapture`, `RightClick`/`LeftClick`/`HandleMouseDown`, `SetMouseDragActive` | `SDL_EVENT_MOUSE_BUTTON_DOWN` (`SDL_CaptureMouse`) |
+| `WM_LBUTTONUP`/`RBUTTON`/`MBUTTON` | release the drag for the matching button, `ReleaseCapture` when neither is held | `SDL_EVENT_MOUSE_BUTTON_UP` |
+| `WM_MOUSEMOVE` | while dragging: `HandleMouseDrag(dx, dy, dragRight, dragLeft)` | `SDL_EVENT_MOUSE_MOTION` |
+| `WM_MOUSEWHEEL` | only when ImGui does not capture the mouse and nothing is being dragged: `HandleMouseWheel(up != invertWheelZoom, x, y)` with the point converted to client space | `SDL_EVENT_MOUSE_WHEEL` |
+| `WM_ACTIVATE` | `WA_INACTIVE`: `CancelViewportGestures`, `ReleaseCapture`, clear drags, `SetMouseDragActive(false)`; activating sets `justActivated` | `SDL_EVENT_WINDOW_FOCUS_GAINED` / `LOST` |
+| `WM_SYSCOMMAND` `SC_KEYMENU` | swallowed (no Alt menu) | n/a (SDL has no window menu) |
+| `WM_DESTROY` | `delete MainFrame`, `WorkspaceViewports::Shutdown`, ImGui GL3/Win32 shutdown, `ImSearch::DestroyContext`, `ImGui::DestroyContext`, `delete context`, quit | `Platform::Shutdown` after the loop |
+
+Mouse handling that lives in `WndProc` (the pan/draw button split, `justActivated`,
+the drag capture) is the part of `main.cpp` that needs the most care in P0; it is
+not ImGui's, so the SDL port has to reproduce it message for message.
+
 None.
 
 ## Allowlist changes
