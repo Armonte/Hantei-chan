@@ -1134,7 +1134,7 @@ void Window::draw(CharacterInstance *ch, const WindowHost &host) {
 		// every other bank format (strip / tile banks): batch export and import and single-image replace go through the CG object, no
 		// structural edits. MB / QoH banks snapshot themselves (CgForeignBank::clone): their replace / import is one undo step each.
 		CgIO io(ch->cg);
-		if (ch->cg.foreign() && ch->cg.foreign()->clone()) {
+		if (ch->cg.foreign() && (hist.canUndo() || hist.canRedo())) {   // steps exist only for banks that snapshot (no per-frame clone)
 			ImGui::BeginDisabled(!hist.canUndo()); if (CgmButton(LBL("Undo##cgmforeign"))) undoRedo(*ch, false, host); ImGui::EndDisabled();
 			ImGui::SameLine(); ImGui::BeginDisabled(!hist.canRedo()); if (CgmButton(LBL("Redo##cgmforeign"))) undoRedo(*ch, true, host); ImGui::EndDisabled();
 			if (hist.canUndo()) { ImGui::SameLine(); ImGui::TextDisabled("%s", hist.topLabel()); }
