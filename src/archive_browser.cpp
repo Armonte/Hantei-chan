@@ -1102,6 +1102,8 @@ static void DecodePreviewJob(SourceP src, Item item, CharJob cj, bool charOk, ui
 	if (!ReadItem(*src, item, d, &err, cap)) { pv->kind = Preview::Message; pv->text = err; finish(); return; }
 	pv->canOpen = true;
 	if (type == Type::Parts && han2::IsPat(d.data(), d.size())) pv->facts.push_back({ "Format", "French Bread PAT parts file (poses made of cut-out parts)" });
+	else if (type == Type::Parts && d.size() >= 12 && memcmp(d.data(), "PAniDataFile", 12) == 0)
+		pv->facts.push_back({ "Format", "French Bread PAniDataFile parts (.pat): Open shows it in a PAT editor tab" });
 	if (type == Type::Audio) {
 		if (d.size() > 12 && memcmp(d.data(), "RIFF", 4) == 0) {
 			han2::Riff r; if (han2::ParseRiff(d.data(), d.size(), r, nullptr)) { char b[96]; snprintf(b, sizeof b, "WAVE, %u Hz, %u ch, %u-bit", r.sampleRate, r.channels, r.bits); pv->facts.push_back({ "Format", b }); }

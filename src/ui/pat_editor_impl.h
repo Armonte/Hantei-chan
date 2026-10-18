@@ -99,6 +99,7 @@ void MainFrame::createPatEditorView(const std::string& patPath)
 	}
 	character->makePatDocument();
 	addPatDocumentView(std::move(character));
+	addRecentFile(patPath);   // every PAT entry point (File > Open, PAT menu, drag-drop, archive browser, --open) reopens from Recent
 }
 
 void MainFrame::createNewPatView(bool mbaaccFormat)
@@ -161,6 +162,14 @@ bool MainFrame::savePatOf(CharacterInstance* character, const std::string& path)
 		requestErrorPopup(w.errors.empty() ? "Notice" : "Save Error", rep);
 	}
 	if (character->isPatDocument()) character->setName(FileNameOf(target));
+	{   // a working copy of an archive entry (archive browser): write it back into that archive like a character entry.
+		// UNI2 d\ and MBTL archives are read-only (no origin): the copy is kept, and onFileSaved below covers the mod folder.
+		std::string err; bool had = false;
+		if (!abrowser::SaveEntryBytesIntoArchive(target, &err, &had) && had) {
+			requestErrorPopup("Save Error", std::string(TXT("Saved the working copy, but could not write back into the archive: ")) + err);
+			return false;
+		}
+	}
 	reloadPatInOtherTabs(character, target);
 	updateWindowTitle();
 	onFileSaved(character, AcpToUtf8Rn(target));   // UNI2 / MBTL: IM mod folder + fpan-im hot reload
