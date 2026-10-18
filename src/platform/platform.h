@@ -64,6 +64,12 @@ void MakeGlCurrent();
 void SwapGlBuffers();
 // wglSwapIntervalEXT(0) / SDL_GL_SetSwapInterval: vsync off, as before.
 void SetSwapInterval(int interval);
+// The raw GL context and the main window's device context, for the Win32
+// multi-viewport bridge: it makes one context current on several HDCs so an FBO
+// texture made in the main window can be blitted into a detached one. P2
+// replaces that bridge with the D3D9 backend's swap chains.
+void* GlContextHandle();   // HGLRC on Windows
+void* WindowDeviceContext();  // HDC on Windows, nullptr elsewhere
 
 // DPI scale of the display the window is on (1.0 when unknown).
 float DisplayScale();
@@ -75,12 +81,17 @@ struct EventHandlers {
 	void (*onMove)(int x, int y, void* user) = nullptr;
 	void (*onDropFile)(const char* utf8Path, void* user) = nullptr;
 	void (*onDropPoint)(float screenX, float screenY, float clientX, float clientY, void* user) = nullptr;
+	// Runs for every event after ImGui has seen it (ImGui first, then the app),
+	// which is the order the old WndProc used.
+	void (*onEvent)(const void* sdlEvent, void* user) = nullptr;
+	// True once the app wants out of the loop (window close request).
+	bool (*onQuitRequested)(void* user) = nullptr;
 	void* user = nullptr;
 };
 void SetEventHandlers(const EventHandlers& h);
 
 // One pump step: translates every queued SDL event (input goes to ImGui through
-// imgui_impl_sdl3 first, then to the app's own switch) and returns false once a
+// imgui_impl_sdl3 first, then to the app's own onEvent) and returns false once a
 // quit was requested.
 bool PollEvents();
 

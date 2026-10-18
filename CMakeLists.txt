@@ -41,6 +41,7 @@ set(HMOD_SOURCES src/modproject/hmod_ha6.cpp src/modproject/hmod_vanilla.cpp src
 
 add_executable(${EXE}
 	src/main.cpp
+	src/platform/platform.cpp
 	src/main_frame.cpp
 	src/main_pane.cpp
 	src/right_pane.cpp
@@ -204,7 +205,7 @@ add_custom_target(update_version ALL
 add_dependencies(${EXE} update_version)
 
 find_package(OpenGL REQUIRED)
-target_link_libraries(${EXE} PRIVATE imgui glad OpenGL::GL glm tinyalloc)
+target_link_libraries(${EXE} PRIVATE imgui glad OpenGL::GL glm tinyalloc SDL3-static)
 if(WIN32)
 	# WIC PNG export, folder picker, detached-window subclassing; winmm for BGM preview (waveOut).
 	target_link_libraries(${EXE} PRIVATE windowscodecs ole32 uuid comctl32 winmm version)
