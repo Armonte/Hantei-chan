@@ -228,9 +228,10 @@ void MainFrame::ProcessDroppedFiles()
 			std::ifstream in(std::filesystem::u8path(f), std::ios::binary);
 			std::vector<uint8_t> b((std::istreambuf_iterator<char>(in)), std::istreambuf_iterator<char>());
 			han2ui::OpenFileViewer(utf82sj(std::filesystem::u8path(f).filename().string()), std::move(b), "dropped");
-		} else if (ext == ".dt2" || ext == ".dat" || ext == ".pat" || ext == ".chp" || ext == ".pac") {
+		} else if (ext == ".dt2" || ext == ".dat" || ext == ".chp" || ext == ".pac") {
 			openHan2File(f);
-		} else if (ext == ".ha6" || ext == ".txt" || ext == ".hproj" || ext == ".p") {
+		} else if (ext == ".ha6" || ext == ".txt" || ext == ".hproj" || ext == ".p" || ext == ".pat") {
+			// .pat by header: French-Bread PAniDataFile -> PAT editor tab, RBO / GOF2 .PAT -> the RBO loader
 			openAnyFile(f);   // same header-based routing as File > Open...
 		} else if (ext == ".png" || ext == ".bmp" || ext == ".jpg" || ext == ".jpeg" || ext == ".tif" || ext == ".tiff") {
 			const std::string msg = RouteDroppedImage(f);
