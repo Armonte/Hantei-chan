@@ -162,7 +162,7 @@ Each of these hand-rolls `glGenTextures`/`glTexImage2D`/`glTexParameteri`/`glDel
 
 ### 3.6 ImGui build (`cmake/imgui.cmake`)
 
-`imgui_impl_opengl3.cpp` + `imgui_impl_win32.cpp`, compiled with `IMGUI_IMPL_OPENGL_LOADER_GLAD IMGUI_IMPL_OPENGL_ES2`, linking `glad imm32 dwmapi`. ES2 mode means no `glDrawElementsBaseVertex`, so ImGui can't use vertex offsets. PR #99 added 32-bit `ImDrawIdx` as a workaround. The imgui submodule is pinned at the 1.92.x docking tag the repo uses. Don't bump it unless a phase needs it, and if you do, record why.
+`imgui_impl_opengl3.cpp` + `imgui_impl_win32.cpp`, compiled with `IMGUI_IMPL_OPENGL_LOADER_GLAD IMGUI_IMPL_OPENGL_ES2`, linking `glad imm32 dwmapi`. ES2 mode means no `glDrawElementsBaseVertex`, so ImGui can't use vertex offsets. PR #99 added 32-bit `ImDrawIdx` as a workaround. The imgui submodule is pinned at v1.93.0-docking. Don't bump it unless a phase needs it, and if you do, record why.
 
 ### 3.7 Headless and capture paths (the parity harness depends on these)
 - `--headless`: hidden window, the views render into their FBO, and `MainFrame::Draw` sends the frame to an offscreen default target (`RenderTarget::setDefaultFramebuffer`).
