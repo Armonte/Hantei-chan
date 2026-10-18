@@ -63,7 +63,6 @@ void ApplyPreview(std::shared_ptr<Preview> pv)
 	if (pv->serial != st.prevSerial) return;   // the user moved on
 	FreeTex(st.prevTex);
 	st.prev = std::move(*pv);
-	{ unsigned h = 2166136261u; for (uint8_t c : st.prev.rgba) { h ^= c; h *= 16777619u; } HC_LOG_INFO("DBGPV kind={} w={} h={} n={} hash={:08x}", (int)st.prev.kind, st.prev.w, st.prev.h, st.prev.rgba.size(), h); }
 	if (st.prev.kind == Preview::Image && !st.prev.rgba.empty()) { st.prevTex = MakeTex(st.prev.rgba.data(), st.prev.w, st.prev.h); st.prevTexW = st.prev.w; st.prevTexH = st.prev.h; st.view2.fit = true; }
 	st.bankTexFrame = -2;
 	if (st.prev.kind == Preview::Bank && st.prev.bank) {   // first drawable image

@@ -114,6 +114,19 @@ def main(argv=None):
     else:
         print("fixtures: cgmtool.exe or chr000.cg missing, 'plain' not rebuilt", file=sys.stderr)
 
+    # ---- /mnt/c/games/rbo_run: the RBO shots browse it. It was a copy of the
+    # install at capture time and later went missing, so the browser listed a
+    # different number of entries. Point it at the install again (a symlink),
+    # which is what the golden's file counts came from.
+    rbo_link = '/mnt/c/games/rbo_run'
+    rbo_src = '/mnt/c/games/rbo'
+    if os.path.isdir(rbo_src) and not os.path.exists(rbo_link):
+        try:
+            os.symlink(rbo_src, rbo_link)
+            say('C:/games/rbo_run -> C:/games/rbo')
+        except OSError as e:
+            print('fixtures: could not link rbo_run: %s' % e, file=sys.stderr)
+
     # ---- read-only PNG inputs the scripts import --------------------------
     needed = [
         os.path.join(work, "pacnyx/test_sheet_256.png"),
