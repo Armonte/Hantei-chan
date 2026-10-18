@@ -109,7 +109,10 @@ of the affected areas, byte-identical.
       `cmake/sdl3.cmake` (`SDL_STATIC ON`, `SDL_SHARED OFF`,
       `SDL_TEST_LIBRARY OFF`). Verified with `make SDL3-static`: SDL 3.4.18
       cross-compiles cleanly with x86_64-w64-mingw32 into `libSDL3.a`.
-- [ ] 2. `src/platform/platform.{h,cpp}`.
+- [~] 2. `src/platform/platform.{h,cpp}`: `platform.h` is in (window,
+      framebuffer size, native handle, GL context, swap interval, DPI scale, the
+      event-handler hooks and the pump). `platform.cpp` (the SDL3
+      implementation) is next.
 - [ ] 3. `main.cpp` SDL main loop.
 - [ ] 4. ImGui backends.
 
