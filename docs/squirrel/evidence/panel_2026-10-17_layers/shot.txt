@@ -1,0 +1,7 @@
+sq open C:/dev/hantei-chan/work/sqfiles_fixture/UNDER NIGHT IN-BIRTH II Sys Celes/UNI2-IM/Packs/___UniTM/data
+wait 20
+sq file data/chr001/chr001_tm_extra.txt
+wait 20
+sq state
+capture C:/dev/hantei-chan/work/ab/sq_layers.png
+quit
