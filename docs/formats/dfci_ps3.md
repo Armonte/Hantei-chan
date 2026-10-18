@@ -150,4 +150,84 @@ Only 1 of the 327 files is fully byte-identical. The differences are mostly cont
 Open items: what the u32 at part+16 and table 6 mean, PPPP, and a value-level comparison (parse both sides into models) to separate converter errors from content changes.
 
 
-<!-- PKG -->
+## PS3 package
+
+### What is installed
+
+- RPCS3 has **no installed copy** of BLJM61322. `dev_hdd0/game/` holds only
+  NPEB00563, NPJB00076, NPUB30505 and TEST12345, and there is no `dev_hdd0/disc`.
+  `cache/BLJM61322/` holds only a PPU cache of EBOOT.BIN.
+- There is no disc folder, so the base-game disc data is **not available**.
+
+### The pkg file
+
+The file is `BLJM-61322 (install this pkg).pkg`, 174,834,240 bytes.
+
+| field | value |
+|---|---|
+| magic | `7F 50 4B 47` |
+| pkg_revision | `0x0000`, a **debug** pkg (not encrypted with a retail key) |
+| pkg_type | 1 (PS3) |
+| item count | 1688 |
+| data offset / size | `0x1B0` / `0x0A6BC030` |
+| content id | `2PATCH-BLJM61322_00-DFCIGNITION00001` |
+| `USRDIR/PatchVersion.txt` | `1.01` |
+
+- The pkg decrypts with the public debug key stream: SHA1 over the QA digest at 0x60, plus a 64-bit block counter.
+- `tools/dfci_ps3/pkg_list.py` lists the items and, with `--extract DIR`, extracts them. Extract only into a scratch dir.
+- The pkg is a **game-data / update patch**, not the full game. It holds a signed `USRDIR/EBOOT.BIN` (SCE header). The content id and the text show it is a community English patch built on the 1.01 update.
+- Only one item is NPD-encrypted: `USRDIR/cli-exe-data00.edat` (320 bytes, an NPD license stub). **All game files are plain once the pkg is decrypted.** No klicensee is needed.
+
+### Contents, compared with the arcade/SDCS install
+
+Counts exclude directories.
+
+| PS3 path | count | format | compared with arcade |
+|---|---|---|---|
+| `PackFile/data/<Chr>.pac.gz` | 39 | gzip around **UKArc** (see below), one per character `data/<Chr>_0/` | see the per-format table |
+| `PackFile/se/battle_se` | 1 | UKArc | not checked |
+| `data/` (loose) | 25 | HA6/LST/cg/pal/pat/txt | `BaseData.HA6`, `effect_s.HA6`, `*.LST`, `_csel/*.cg` are identical. `effect.HA6`, `_csel/*.pal` and `sys_effect.pat` (PANIBin) differ. 8 `*_se_list.txt` exist only on PS3 |
+| `grpdat/` | 698 | dds.gz / pat / csv / txt | 364 dds.gz and 21 pat are identical to `grpdat_ps3`. **146 dds.gz and 25 pat differ** (1.01 updates of CSel, Challenger and others). 22 dds.gz and 2 pat exist only here (`MainMenuCS/main_chara/main_018yuk`, `main_020ako`) |
+| `script/` | 7 | Squirrel txt | 2 identical. 5 differ: the PS3 copies have no `debug_HitMuteki*` hitbox-viewer code, and `btl_MvFunc` / `btl_StdMoveTbl` are the 1.01 versions |
+| `System/` | 29 | csv/ini/txt | identical except `str_jp/PadSet.csv` (PS3 pad layout) |
+| `BattleRes/` | 228 | txt/csv, `st_face/*.psb.gz` | 113 txt identical, 111 txt differ (only the English translation wording), 2 `st_face_00{18,20}.psb.gz` exist only on PS3. The arcade build uses plain `.psb`; gunzip gives the M2 `PSB\0` v3 |
+| `se/` | 502 | `.vag` = **MSF** (`MSFC`, codec 3 = PS-ADPCM), 193 files; `.msf` = MSF codec 7 = MP3 (voices), 309 files | the arcade build uses RIFF WAV PCM16 (8,497 files). None match |
+| `bg/BgList_str.txt` | 1 | txt | identical |
+
+### UKArc (`.pac`, `cgarc.uka`)
+
+All fields are big-endian. The `0x1234` byte-order marker is the same one PANIBin uses.
+
+```
+0x00 char[8] "UKArc\0\0\0"
+0x08 u16 version (=2)   u16 bom (=0x1234)   u32 count
+0x10 entry[count], 0x4C bytes each:
+       char name[0x40]   u32 size   u32 unk (hash?)   u32 offset   ; data at 0x10+offset, stored uncompressed
+```
+
+`tools/dfci_ps3/ukarc.py PACK[.gz] [--extract DIR] [--compare GAMEROOT]` reads this format.
+
+### Per-format result inside the 39 character packs
+
+| ext | identical | differ | PS3 only | notes |
+|---|---|---|---|---|
+| HA6 | 77 | 2 (Oni.HA6, Oni `_temp.HA6`) | - | Same `Hantei6DataFile`. Oni comes from 1.01, so the content differs but the format does not |
+| LST | 84 | 3 (Oni) | - | same format |
+| txt | 285 | 3 (`Fro_s/Mou_s/Oni _mv.txt`) | - | content only (1.01) |
+| cg | 0 | **39** | - | PS3 `BmpCutBin\0`, BE, BOM 0x1234, about 100 KB. It keeps the palette and cut table, but **the pixel data is removed** and moved to `cgarc.uka` |
+| uka | - | - | 39 | `cgarc.uka` is a UKArc of `<Chr>NNN_NN.dds.gz`. Each is a DDS **L8** (8-bit luminance = palette index) per BMP cut |
+| pal | 0 | 41 | - | Same size (65,540). The PS3 file is the original. The SDCS arcade pals carry **custom palettes** from slot 24 on (`DFCI_custom_palettes_credits.txt`). Keep the arcade pals |
+| pat | 0 | 39 | - | PS3 `<Chr>_ef00.pat` is **PANIBin** (as in grpdat_ps3). Arcade is PAniDataFile |
+| dds | - | - | 65 | `*_cut.dds`, `rendering*.dds`, `*_potential.dds`, `*_ef0NN.dds`: textures external to the PANIBin effect pats (in arcade they are embedded in the PAniDataFile `PGST` blocks) |
+
+### What each format needs to load in the arcade build (RingGame.exe)
+
+- **HA6 / LST / txt / script / csv / ini:** no conversion. Copy them over to take the 1.01 balance changes. The `script/` copies lose the hitbox-viewer debug helpers.
+- **cg:** convert to arcade `BMP Cutter3`. Take the cut table and palette from `BmpCutBin` (byteswap it), and put the L8 DDS pixel data from `cgarc.uka` back inline. This is a lossless repack. **It is not needed for the 39 characters**, because their arcade `.cg` files exist and the HA6 files are identical.
+- **pal:** keep the arcade files. The PS3 copies lack the SDCS custom palettes.
+- **pat (PANIBin) + external dds:** convert with `panibin2pat.py` and embed the referenced `.dds` files as PGST texture blocks. RingGame.exe's pat loader is `dfci_PAniDataFile_Load` @0x76D000. It accepts only `PAniDataFile`, through `dfci_PAniDataFile_CheckMagic` @0x769940.
+- **dds.gz:** gunzip it. The DDS inside is byte-identical to the arcade DDS. The executable has no gzip path for assets: zlib is used only by amCts networking (`amCts_zlib_Compress/Decompress`) and by the emote device model loader (`%s.gz`).
+- **psb.gz:** gunzip it to `.psb`.
+- **se `.vag`/`.msf`:** MSF decode (PS-ADPCM / MP3) to PCM16 WAV, for example with vgmstream. Only needed if PS3-only sounds are wanted; the arcade build has a full WAV set.
+- **EBOOT.BIN / edat:** irrelevant to the arcade build.
+
