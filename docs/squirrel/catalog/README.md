@@ -19,6 +19,11 @@ runtime fields are left out. `--legacy` writes the schema 1 monolithic files ins
 JSON is minified; the `.md` files are the readable view. Hantei-chan needs only `<game>/chrNNN.json` for one character
 (its `patterns` and `moves[].ha6_patterns` are self-contained); the index is only needed for consts and shared files.
 
+Games: UNI2 1.42, DFCI (`dfci+transmission`) and UNIB arcade (RingGame.exe sha cf96fd7f) are done. DFCI and UNIB use the
+`data/<Name>_0/<Name>_0_{sc,cmd,mv}.txt` layout (support characters `data/<Name>_s_0/`): folder rules in `KINDS_GAME`,
+file names in `CHARA_LAYOUT`, character number from `Def_ChrNo_<Name>`, and the character key is the folder name.
+MBTL uses the same tool; it needs its load-site rules in `LOADSITES` (from `../RE_MBTL_LOAD.md`) and a `<game>_tr.json`.
+
 Games: UNI2 1.42 and MBTL (Steam 25646393) are done. DFCI and UNIB use the same tool; they need their load-site rules in
 `LOADSITES` (from `../RE_MBTL_LOAD.md`), a `<game>_tr.json` and the folder rules checked. Per-game layout lives in `GAMES`
 in the generator: extra `kinds` rules (tried before `KINDS`), the cmd-table syntax, which folders are characters, whether
@@ -153,3 +158,17 @@ Related standards this builds on rather than repeats: EF/IF labels `../../uni_re
 - Story NPC scripts are classified, but their moves and commands are not read into `names`.
 - `states` uses an MBTL word list (Shield, Moon Drive, Moon Skill, Rapid Beat, Last Arc, Blast, Krypt, Heat/Magic Circuit).
   It is a name match, not traced.
+
+## Known gaps (DFCI and UNIB, first pass)
+
+- Translations are a machine first pass; none are reviewed. Strings also in UNI2 reuse `uni2_tr.json` (DFCI 664 of 2142,
+  UNIB 1103 of 1591); the rest are new. Character and move names in DFCI comments are romanised guesses in places.
+- `hot_reload` is `no` for every file: fpan-im has no DFCI or UNIB build, so there is no reload command to name.
+- Load sites come from `../RE_MBTL_LOAD.md` (DFCI and UNIB sections). Untraced: talk, win_mes, BattleTable, System,
+  Shader, bg, grpdat, `_string.txt`, and the `_se_list.txt` call site.
+- UNIB: the exe never loads `data/_combase.txt` (`Sq_InitBattleVM` 0x787B00 runs Battle_Init and Battle_Std only); it is
+  marked `untraced`, and its consts are still listed. cmd/mv load before sc and no object is pushed (load_site says so).
+  RE_MBTL_LOAD.md says this build ships no `_com.txt`, but 12 of the 15 folders on disk have one; its load is untraced.
+- DFCI: support characters (`*_s_0`) set `<NAME>_CommandTable <- 0` and so list no commands. Their `short` is `Name_s`.
+- `script/btl_Define_LocalDebug - Hitbox Viewer.txt` (DFCI, a user file with a space in its name) has `squirrel: null`:
+  the compile result parser does not handle spaces.
