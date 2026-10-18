@@ -31,6 +31,7 @@ extern struct Settings
 	int stageGame = 0;                       // 0 MBAACC, 1 MBAC
 	bool stagePatAuthoring = true;           // PAT placement: Authoring (default) / Game-exact
 	bool stageClampCamera = true;            // keep the stage view's game camera inside the game's limits
+	bool openBrowserOnStartup = false;       // Edit > Preferences: show the archive browser (game list) when the editor starts; no key = off
 	bool mbtlCgZoomFilter = true;            // View > Filter: MBTL CG sprites at zoom > 1 use the game's *Filter_V 3x3 palette blur
 
 	// Edit > Preferences > Auto backup: copy the file a save is about to overwrite (file_backup.h)

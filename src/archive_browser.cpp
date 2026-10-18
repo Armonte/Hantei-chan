@@ -39,6 +39,7 @@ namespace fs = std::filesystem;
 namespace abrowser {
 
 bool show = false;
+unsigned dockTarget = 0;
 
 // ---- tiny helpers -------------------------------------------------------------------------------------------------------------------------------------
 static std::string Lower(std::string s) { for (auto &c : s) c = (char)tolower((unsigned char)c); return s; }
