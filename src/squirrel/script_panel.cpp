@@ -7,6 +7,8 @@
 #include "ptcn_stack.h"
 #include "script_vm.h"
 #include "fpanim_link.h"
+#include "script_layers.h"
+#include "../fbarc/fb_archive.h"
 
 #include "../app_log.h"
 #include "../i18n.h"
@@ -93,17 +95,6 @@ bool WriteBackup(const fs::path& target, const std::string& bytes, std::string* 
 		return true;
 	}
 	return false;
-}
-
-// Same classification as sqtool (exe loader path formats, SCOPE.md §1.4).
-bool IsSquirrelScript(const std::string& relGeneric)
-{
-	if (relGeneric.rfind("script/", 0) == 0) return true;
-	const std::string f = relGeneric.substr(relGeneric.find_last_of('/') + 1);
-	static const std::regex re(R"(^(chr|npc)\d+_(mv|sc|cmd|com|com_ranking)(_\d+)?\.txt$|^(chr|npc)\d+_se_list\.txt$)"
-	                           R"(|^[A-Za-z]+(_s)?_\d+_(mv|sc|cmd|com)\.txt$)",
-		std::regex::icase);
-	return std::regex_match(f, re);
 }
 
 // Squirrel 2.2.4 grammar for the widget: C-like, keywords from sqlexer.cpp, '#' line comments.
@@ -220,8 +211,135 @@ struct ScriptPanel::Impl {
 	TextEditor editor;
 	ScriptDocument doc;
 	ScriptVM vm;
-	std::string root, game, apiPath;
-	std::vector<std::string> files; // relative, generic
+	std::string root, game, apiPath;   // root: the game install (script_layers.h ResolveScriptRoot)
+	std::vector<std::string> files; // relative, generic (winning copies)
+	// Merged list over fpan-im / IM mods and packs, loose files and the archive (script_layers.h).
+	std::vector<ScriptLayer> layers;
+	std::vector<ScriptFile> sfiles;
+	std::map<std::string, size_t> sfileByKey;   // lower-case rel -> sfiles index
+	std::string currentPath;                     // the file the editor holds (the copy that was opened)
+	std::string editRoot, editTag;               // a pack / mod folder chosen as the game folder: every save goes there
+	std::string profileArg;                      // the Profile choice ("" = auto)
+	std::unique_ptr<fbarc::Archive> archive;
+	std::string archiveCache;                    // %TEMP%/hantei_archive/<game>_scripts
+	std::string watchSig;                        // folder signature of the last scan (rescan when it changes)
+	double lastWatch = 0.0;
+	bool wasFocused = false;
+
+	static std::string LowerS(std::string v) { for (char& c : v) c = static_cast<char>(tolower(static_cast<unsigned char>(c))); return v; }
+	// The file of one copy; an archive copy is extracted once into the cache folder.
+	std::string pathOfCopy(const ScriptFile& f, const ScriptCopy& c)
+	{
+		if (!c.path.empty()) return c.path;
+		if (!archive || archiveCache.empty()) return "";
+		const fs::path dst = U8(archiveCache) / U8(f.rel);
+		std::error_code ec;
+		if (fs::exists(dst, ec)) return ToU8(dst);
+		const auto& es = archive->entries();
+		int idx = -1;
+		for (size_t i = 0; i < es.size() && idx < 0; i++) {
+			std::string r = fbarc::NameToUtf8(archive->relativePath(i));
+			for (char& ch : r) if (ch == '\\') ch = '/';
+			while (r.rfind("./", 0) == 0) r.erase(0, 2);
+			if (LowerS(r) == LowerS(f.rel)) idx = static_cast<int>(i);
+		}
+		std::vector<uint8_t> plain;
+		std::string err;
+		if (idx < 0 || !archive->read(static_cast<size_t>(idx), plain, &err)) { say("archive: cannot read " + f.rel + (err.empty() ? "" : ": " + err)); return ""; }
+		fs::create_directories(dst.parent_path(), ec);
+		if (!WriteAtomic(dst, std::string(plain.begin(), plain.end()), &err)) { say("archive: " + err); return ""; }
+		return ToU8(dst);
+	}
+	// The file the game reads for a game-relative path ("" = not listed).
+	std::string pathOf(const std::string& rel)
+	{
+		const auto it = sfileByKey.find(LowerS(rel));
+		if (it == sfileByKey.end()) return "";
+		const ScriptFile& f = sfiles[it->second];
+		return f.winner < 0 ? "" : pathOfCopy(f, f.copies[static_cast<size_t>(f.winner)]);
+	}
+	std::string pathOrRoot(const std::string& rel) { const std::string p = pathOf(rel); return p.empty() ? ToU8(U8(root) / U8(rel)) : p; }
+	static bool Under(const std::string& path, const std::string& dir)
+	{
+		if (dir.empty()) return false;
+		const std::string a = LowerS(ToU8(U8(path).lexically_normal())), b = LowerS(ToU8(U8(dir).lexically_normal()));
+		return a.size() > b.size() && a.compare(0, b.size(), b) == 0 && a[b.size()] == '/';
+	}
+	const ScriptLayer* layerOfPath(const std::string& path) const
+	{
+		const ScriptLayer* best = nullptr;
+		for (const ScriptLayer& l : layers)
+			if (!l.root.empty() && Under(path, l.root) && (!best || l.root.size() > best->root.size())) best = &l;
+		return best;
+	}
+	// Where a save of `rel` goes: the chosen pack / mod folder; else the opened copy, except an archive copy, which goes
+	// to the IM mod folder (UNI2-IM\Mods / MBTL-IM\Mods) or, for other games, loose under the game folder.
+	std::string saveTargetFor(const std::string& rel, const std::string& openedPath)
+	{
+		if (!editRoot.empty()) return ToU8(U8(editRoot) / U8(rel));
+		if (!openedPath.empty() && !(archiveCache.size() && Under(openedPath, archiveCache))) return openedPath;
+		const std::string im = FpanimImModsRoot(game, root);
+		return ToU8(U8(im.empty() ? root : im) / U8(rel));
+	}
+	// Folder signature for the cheap watch: the write times of every layer folder and its data / script directories.
+	std::string folderSignature() const
+	{
+		std::string sig;
+		std::error_code ec;
+		auto stamp = [&](const fs::path& d) {
+			std::error_code es;
+			const auto t = fs::last_write_time(d, es);
+			if (!es) sig += std::to_string(static_cast<long long>(t.time_since_epoch().count())) + ";";
+		};
+		for (const char* d : {"fpan-im/mods", "fpan-im/packs", "UNI2-IM", "UNI2-IM/Packs", "UNI2-IM/Mods", "MBTL-IM", "MBTL-IM/Packs", "MBTL-IM/Mods"}) stamp(U8(root) / d);
+		for (const ScriptLayer& l : layers) {
+			if (l.root.empty()) continue;
+			stamp(U8(l.root));
+			for (const char* sub : {"script", "data"}) {
+				const fs::path d = U8(l.root) / sub;
+				if (!fs::is_directory(d, ec)) continue;
+				for (auto it = fs::recursive_directory_iterator(d, ec); !ec && it != fs::recursive_directory_iterator(); it.increment(ec)) {
+					std::error_code e2;
+					if (it->is_directory(e2)) {
+						if (it->path().filename() == ".hantei-backups") { it.disable_recursion_pending(); continue; }
+						stamp(it->path());
+					}
+				}
+				stamp(d);
+			}
+		}
+		return sig;
+	}
+	// Rebuilds the merged list and the index (new files appear; the open file and its unsaved text stay).
+	void rescan(bool quiet)
+	{
+		layers = ScriptLayersFor(root, game);
+		std::vector<std::string> arch;
+		if (archive)
+			for (size_t i = 0; i < archive->entries().size(); i++) arch.push_back(fbarc::NameToUtf8(archive->relativePath(i)));
+		sfiles = ListScriptFiles(layers, arch);
+		sfileByKey.clear();
+		files.clear();
+		for (size_t i = 0; i < sfiles.size(); i++) {
+			sfileByKey[LowerS(sfiles[i].rel)] = i;
+			if (sfiles[i].winner >= 0) files.push_back(sfiles[i].rel);
+		}
+		index.build(root, files, [this](const std::string& rel) { return pathOf(rel); });
+		if (dirty && !currentRel.empty()) index.updateFile(currentRel, editor.GetText());
+		indexGen++;
+		watchSig = folderSignature();
+		if (!quiet) say("rescanned: " + std::to_string(files.size()) + " Squirrel scripts in " + std::to_string(layers.size()) + " layer(s)");
+	}
+	void watchFolders(bool focused)
+	{
+		const double now = ImGui::GetTime();
+		const bool gained = focused && !wasFocused;
+		wasFocused = focused;
+		if (root.empty() || (!gained && now - lastWatch < 2.0)) return;
+		lastWatch = now;
+		const std::string sig = folderSignature();
+		if (sig != watchSig) rescan(false);
+	}
 	std::string filter;
 	std::string currentRel;
 	bool dirty = false;
@@ -274,6 +392,7 @@ struct ScriptPanel::Impl {
 		bool reload = false;   // false: ping only
 		bool live = false;     // reloadchara <chr> live (in-place, keeps state) instead of the engine rebuild
 		bool shared = false;   // a shared battle file (script/*, data/VectorTable...): reloadstd [live]
+		bool copy = true;      // false: the file already sits in a folder fpan-im serves (its mods / packs, the IM's Mods / Packs)
 		std::string pipe, gameDir, srcFile, chr, fileName, rel;
 	};
 	struct HotResult {
@@ -313,6 +432,7 @@ struct ScriptPanel::Impl {
 		if (!t.reload) return {true, ping.text};
 		std::string mods = FpanimModsDir(ping.text);
 		if (mods.empty()) mods = ToU8(U8(t.gameDir) / "fpan-im" / "mods");
+		if (t.copy) {
 		// The file goes to the same game-relative path under the mods folder (fpan-im's VFS serves it from there).
 		const std::string dstU8 = FpanimModsTarget(mods, t.rel);
 		if (dstU8.empty()) return {false, "not a game-relative path: " + t.rel};
@@ -323,6 +443,7 @@ struct ScriptPanel::Impl {
 		fs::copy_file(U8(t.srcFile), dst, fs::copy_options::overwrite_existing, ec);
 		if (ec) return {false, "cannot copy to " + ToU8(dst) + ": " + ec.message()};
 		HC_LOG_INFO("[script] hot reload: copied {} to {}", t.srcFile, ToU8(dst));
+		} else HC_LOG_INFO("[script] hot reload: {} is served by fpan-im from its own folder (no copy)", t.srcFile);
 		// Engine rebuild: fpan-im waits up to 120 s for the training battle to tick again; live: up to 30 s.
 		const std::string req = t.shared ? FpanimStdReloadRequest(t.live) : FpanimReloadRequest(t.chr, t.live);
 		const FpanimReply r = FpanimRequest(t.pipe, req, t.live ? 35000 : 130000);
@@ -375,8 +496,9 @@ struct ScriptPanel::Impl {
 		t.live = gSettings.sqHotReloadMode == 1;
 		t.pipe = hotPipe;
 		t.gameDir = hotGameDir();
-		t.srcFile = ToU8(U8(root) / U8(currentRel));
-		t.rel = currentRel;
+		t.srcFile = currentPath.empty() ? ToU8(U8(root) / U8(currentRel)) : currentPath;
+		t.rel = currentRel;   // the data/... key: a pack / mod copy reloads like the archived file it replaces
+		if (const ScriptLayer* l = layerOfPath(t.srcFile)) t.copy = !(l->served && l->enabled);
 		if (!t.shared) {
 			t.chr = mm[1].str();
 			t.fileName = mm[2].str();
@@ -598,11 +720,10 @@ struct ScriptPanel::Impl {
 	{
 		consts.clear();
 		static const std::regex c(R"(^\s*const\s+([A-Za-z_]\w*)\s*=\s*(-?\d+)\s*;)");
-		std::error_code ec;
-		for (auto it = fs::directory_iterator(U8(root) / "script", ec); it != fs::directory_iterator(); it.increment(ec)) {
-			if (ec) break;
-			if (it->path().extension() != ".txt") continue;
-			std::ifstream f(it->path(), std::ios::binary);
+		// script/*.txt from the merged list (the copy the game reads: a pack, a mod folder, loose or the archive)
+		for (const std::string& rel : files) {
+			if (rel.rfind("script/", 0) != 0 || rel.find('/', 7) != std::string::npos) continue;
+			std::ifstream f(U8(pathOrRoot(rel)), std::ios::binary);
 			std::string line;
 			std::smatch mm;
 			while (std::getline(f, line))
@@ -810,7 +931,7 @@ struct ScriptPanel::Impl {
 		if (rel != currentRel) {
 			if (dirty) { setStatus("unsaved changes in " + currentRel + ": save first", true); return false; }
 			std::string err;
-			if (!owner->openFile(ToU8(U8(root) / U8(rel)), &err)) { setStatus(err, true); return false; }
+			if (!owner->openFile(pathOrRoot(rel), &err)) { setStatus(err, true); return false; }
 		}
 		editor.SetCursor(TextEditor::DocPos(static_cast<size_t>(line), static_cast<size_t>(std::max(0, col))));
 		editor.ScrollToLine(static_cast<size_t>(line), TextEditor::Scroll::alignMiddle);
@@ -930,8 +1051,8 @@ struct ScriptPanel::Impl {
 		if (apiPath.empty() || game.empty() || (!uni && !std::regex_match(currentRel, m, reArc))) return false;
 		const std::string dir = "data/" + m[1].str();
 		const auto t0 = std::chrono::steady_clock::now();
-		const auto codes = LoadPatternCodes(ToU8(U8(root) / U8(dir) / U8(m[1].str() + (uni ? "_0.txt" : ".txt"))));
-		const auto effect = LoadPatternCodes(ToU8(U8(root) / "data" / "effect.txt"));
+		const auto codes = LoadPatternCodes(pathOrRoot(ToU8(U8(dir) / U8(m[1].str() + (uni ? "_0.txt" : ".txt")))));
+		const auto effect = LoadPatternCodes(pathOrRoot("data/effect.txt"));
 		LoadContext ctx;
 		ctx.charaNo = ctx.vsCharaNo = uni ? std::stoi(m[2].str()) : -1;
 		ctx.patternByCode = [&](int dt, const std::string& code) {
@@ -999,16 +1120,20 @@ struct ScriptPanel::Impl {
 			say("added a blank move table " + name + " to " + fixFile + " (unsaved)");
 			return true;
 		}
-		const fs::path path = U8(root) / U8(fixFile);
+		const std::string src = pathOrRoot(fixFile);
+		const fs::path path = U8(saveTargetFor(fixFile, src));
 		std::string bytes;
-		if (!ReadBytes(path, bytes)) { setStatus("cannot read " + fixFile, true); return false; }
+		if (!ReadBytes(U8(src), bytes)) { setStatus("cannot read " + fixFile, true); return false; }
+		{ std::error_code ec; fs::create_directories(path.parent_path(), ec); }
 		ScriptDocument d;
 		d.loadBytes(bytes);
 		const std::string updated = ScriptIndex::InsertMoveTableStub(d.utf8Text(), name);
 		std::string out, backup, err;
 		std::vector<EncodeError> errs;
 		if (!d.encode(SplitLines(updated), out, &errs)) { setStatus("cannot encode " + fixFile, true); return false; }
-		if (!WriteBackup(path, bytes, &backup) || !WriteAtomic(path, out, &err)) { setStatus("cannot write " + fixFile, true); return false; }
+		std::error_code eex;
+		if ((fs::exists(path, eex) && !WriteBackup(path, bytes, &backup)) || !WriteAtomic(path, out, &err)) { setStatus("cannot write " + fixFile, true); return false; }
+		if (ToU8(path) != src) rescan(true);
 		index.updateFile(fixFile, updated);
 		indexGen++;
 		say("added a blank move table " + name + " to " + fixFile + " (saved, backup kept)");
@@ -1371,37 +1496,44 @@ bool ScriptPanel::hasUnsavedChanges() const { return m->dirty; }
 
 bool ScriptPanel::openGameRoot(const std::string& rootUtf8, const std::string& profile, std::string* error)
 {
-	const fs::path r = U8(rootUtf8);
-	std::error_code ec;
-	if (!fs::exists(r / "script", ec) && !fs::exists(r / "data", ec)) {
-		if (error) *error = "no script/ or data/ folder in " + rootUtf8;
+	// The chosen folder may be the install, its data/ or script/, a UNI2-IM / MBTL-IM pack or Mods folder (or their data/),
+	// or an fpan-im mods / pack folder: the install above it is the game root, and a pack / mod is where saves go.
+	const ScriptRootInfo ri = ResolveScriptRoot(rootUtf8);
+	if (!ri.error.empty()) {
+		if (error) *error = ri.error;
 		return false;
 	}
-	m->root = rootUtf8;
-	m->game = profile.empty() ? GuessGame(rootUtf8) : profile;
+	const fs::path r = U8(ri.gameDir);
+	std::error_code ec;
+	m->root = ri.gameDir;
+	m->editRoot = ri.editRoot;
+	m->editTag = ri.editTag;
+	m->profileArg = profile;
+	m->game = profile.empty() ? GuessGame(ri.gameDir) : profile;
 	m->apiPath = FindApiProfile(m->game);
 	m->loadApi(m->apiPath);
-	m->loadConsts();
-	m->files.clear();
-	for (const char* sub : {"script", "data"}) {
-		if (!fs::exists(r / sub, ec)) continue;
-		for (auto it = fs::recursive_directory_iterator(r / sub, ec); it != fs::recursive_directory_iterator(); it.increment(ec)) {
-			if (ec) break;
-			if (!it->is_regular_file(ec) || it->path().extension() != ".txt") continue;
-			const std::string rel = it->path().lexically_relative(r).generic_u8string();
-			if (IsSquirrelScript(rel)) m->files.push_back(rel);
-		}
+	// The game archive (UNI2: <install>/d, MBTL: the table in MBTL.exe): its script / data names join the list; an entry
+	// is extracted to %TEMP%/hantei_archive/<game>_scripts when it is opened or indexed.
+	m->archive.reset();
+	m->archiveCache.clear();
+	{
+		std::string aerr;
+		if (m->game == "uni2" && fs::is_directory(r / "d", ec)) m->archive = fbarc::OpenUni2Data(ToU8(r / "d"), &aerr);
+		else if (m->game == "mbtl" && fs::exists(r / "MBTL.exe", ec)) m->archive = fbarc::OpenMbtlExe(ToU8(r / "MBTL.exe"), &aerr);
+		if (m->archive) m->archiveCache = ToU8(fs::temp_directory_path(ec) / "hantei_archive" / (m->game + "_scripts"));
+		else if (!aerr.empty()) m->say("archive: " + aerr);
 	}
-	std::sort(m->files.begin(), m->files.end());
-	m->index.build(rootUtf8, m->files);
-	m->indexGen++;
+	m->rescan(true);
+	m->loadConsts();
 	m->problems.clear();
 	std::string vmErr;
 	m->vm.setLoadProfile(LoadProfileFor(m->game));
+	m->vm.setPathResolver([this](const std::string& rel) { return m->pathOf(rel); });
 	m->vmReady = m->vm.open(ToU8(r), m->apiPath, [this](const std::string& s) { m->say(s); }, &vmErr);
 	if (!m->vmReady) m->vm.open(ToU8(r), "", [this](const std::string& s) { m->say(s); }, &vmErr);
 	m->setStatus(std::to_string(m->files.size()) + " Squirrel scripts; profile " + (m->game.empty() ? "none" : m->game) +
-			(m->apiPath.empty() ? " (no API table found: compile-only)" : " (" + std::to_string(m->vm.nativeCount()) + " natives)"),
+			(m->apiPath.empty() ? " (no API table found: compile-only)" : " (" + std::to_string(m->vm.nativeCount()) + " natives)") +
+			(m->editTag.empty() ? "" : "; editing " + m->editTag),
 		false);
 	return true;
 }
@@ -1421,7 +1553,19 @@ bool ScriptPanel::openFile(const std::string& pathUtf8, std::string* error)
 	m->offerSaveAnyway = false;
 	std::error_code ec;
 	(void)ec;
+	// The game-relative key: below the install (loose), else from the data/ or script/ folder on (a pack, mod or archive copy).
+	m->currentPath = ToU8(U8(pathUtf8).lexically_normal());
 	m->currentRel = m->root.empty() ? pathUtf8 : U8(pathUtf8).lexically_normal().lexically_relative(U8(m->root).lexically_normal()).generic_u8string();
+	{
+		const std::string low = Impl::LowerS(m->currentRel);
+		if (m->root.empty() || !(low.rfind("data/", 0) == 0 || low.rfind("script/", 0) == 0)) {
+			const std::string key = FpanimGameKey(pathUtf8);
+			if (!key.empty()) {
+				const size_t sl = key.find('/');
+				m->currentRel = Impl::LowerS(key.substr(0, sl)) + key.substr(sl);
+			}
+		}
+	}
 	m->lastEditTime = -1.0;
 	m->recheck();
 	m->setStatus("opened " + m->currentRel + " (" + std::to_string(bytes.size()) + " bytes, " + std::to_string(m->doc.lineCount()) + " lines)", false);
@@ -1476,7 +1620,8 @@ bool ScriptPanel::scriptCommand(const std::string& sub, const std::string& arg, 
 {
 	std::string out, err;
 	if (sub == "open") { if (!openGameRoot(arg, "", &err)) out = err; else out = m->status; }
-	else if (sub == "file") { if (!openFile(ToU8(U8(m->root) / U8(arg)), &err)) out = err; else out = std::to_string(m->problems.size()) + " problem(s)"; }
+	else if (sub == "rescan") { m->rescan(false); out = std::to_string(m->files.size()) + " Squirrel scripts"; }
+	else if (sub == "file") { if (!openFile(m->pathOrRoot(arg), &err)) out = err; else out = std::to_string(m->problems.size()) + " problem(s)"; }
 	else if (sub == "goto") {
 		int line = 0, col = 0;
 		sscanf(arg.c_str(), "%d %d", &line, &col);
@@ -1575,6 +1720,7 @@ void ScriptPanel::draw()
 		return;
 	}
 	m_focused = ImGui::IsWindowFocused(ImGuiFocusedFlags_RootAndChildWindows);
+	m->watchFolders(m_focused);
 
 	if (ImGui::Button(LBL("Open game folder..."))) {
 		const std::string dir = BrowseForFolderUtf8(m->root);
@@ -1589,8 +1735,11 @@ void ScriptPanel::draw()
 	for (int i = 1; i < 5; i++) if (m->game == games[i]) gi = i;
 	if (ImGui::Combo(LBL("Profile"), &gi, games, 5)) {
 		std::string err;
-		openGameRoot(m->root, gi ? games[gi] : "", &err);
+		openGameRoot(m->editRoot.empty() ? m->root : m->editRoot, gi ? games[gi] : "", &err);
 	}
+	ImGui::SameLine();
+	if (ImGui::Button(LBL("Rescan"))) m->rescan(false);
+	if (ImGui::IsItemHovered()) ImGui::SetTooltip("%s", TXT("Read the script folders again (new files appear). The list also refreshes by itself when the panel gets focus or a folder changes."));
 	ImGui::EndDisabled();
 	ImGui::SameLine();
 	ImGui::BeginDisabled(m->currentRel.empty());
@@ -1652,13 +1801,30 @@ void ScriptPanel::draw()
 	char buf[128];
 	snprintf(buf, sizeof buf, "%s", m->filter.c_str());
 	if (ImGui::InputTextWithHint("##filter", "filter", buf, sizeof buf)) m->filter = buf;
-	for (const auto& rel : m->files) {
-		if (!m->filter.empty() && rel.find(m->filter) == std::string::npos) continue;
-		if (ImGui::Selectable(rel.c_str(), rel == m->currentRel)) {
-			if (m->dirty && rel != m->currentRel) m->setStatus("unsaved changes in " + m->currentRel + ": save first", true);
+	if (!m->editTag.empty()) {
+		ImGui::TextColored(WarnCol(), TXT("Editing: %s"), m->editTag.c_str());
+		if (ImGui::IsItemHovered()) ImGui::SetTooltip(TXT("Saves go into %s"), m->editRoot.c_str());
+	}
+	// One row per file with the tag of the copy the game reads; the copies it overrides follow, indented and dimmed.
+	for (const ScriptFile& f : m->sfiles) {
+		if (!m->filter.empty() && f.rel.find(m->filter) == std::string::npos) continue;
+		for (size_t ci = 0; ci < f.copies.size(); ci++) {
+			const bool win = static_cast<int>(ci) == f.winner || (f.winner < 0 && ci == 0);
+			const ScriptCopy& c = f.copies[ci];
+			const std::string tag = "[" + m->layers[static_cast<size_t>(c.layer)].tag + "]";
+			const std::string cp = c.path.empty() ? std::string() : ToU8(U8(c.path).lexically_normal());
+			const bool sel = f.rel == m->currentRel && (cp.empty() ? Impl::Under(m->currentPath, m->archiveCache) : Impl::LowerS(cp) == Impl::LowerS(m->currentPath));
+			const std::string label = (win ? f.rel : "    " + std::string(TXT("overridden"))) + "  " + tag + "###" + f.rel + "#" + std::to_string(ci);
+			if (!win) ImGui::PushStyleColor(ImGuiCol_Text, ImGui::GetStyle().Colors[ImGuiCol_TextDisabled]);
+			const bool click = ImGui::Selectable(label.c_str(), sel);
+			if (!win) ImGui::PopStyleColor();
+			if (ImGui::IsItemHovered()) ImGui::SetTooltip("%s", (cp.empty() ? std::string(TXT("in the game archive")) : cp).c_str());
+			if (!click) continue;
+			if (m->dirty && !sel) m->setStatus("unsaved changes in " + m->currentRel + ": save first", true);
 			else {
 				std::string err;
-				if (!openFile(ToU8(U8(m->root) / U8(rel)), &err)) m->setStatus(err, true);
+				const std::string path = m->pathOfCopy(f, c);
+				if (path.empty() || !openFile(path, &err)) m->setStatus(err.empty() ? "cannot read " + f.rel : err, true);
 			}
 		}
 	}
@@ -1755,11 +1921,20 @@ void ScriptPanel::draw()
 		m->hotReloadSaved();   // unchanged file: still push it (first sync after turning hot reload on)
 		return;
 	}
-	// 3. Backup + atomic replace.
-	const fs::path target = U8(m->root) / U8(m->currentRel);
+	// 3. Backup + atomic replace. The target: the chosen pack / mod folder, else the copy that was opened (an archive copy
+	//    goes to the IM mod folder). A new copy in a pack shadows the lower layers, like fpan-im's VFS.
+	const fs::path target = U8(m->saveTargetFor(m->currentRel, m->currentPath));
 	std::string backup, err;
-	if (!WriteBackup(target, m->doc.originalBytes(), &backup)) { m->setStatus("not saved: cannot write backup", true); return; }
+	std::error_code tec;
+	const bool newCopy = !fs::exists(target, tec);
+	if (newCopy) fs::create_directories(target.parent_path(), tec);
+	else if (!WriteBackup(target, m->doc.originalBytes(), &backup)) { m->setStatus("not saved: cannot write backup", true); return; }
 	if (!WriteAtomic(target, bytes, &err)) { m->setStatus("not saved: " + err, true); return; }
+	if (Impl::LowerS(ToU8(target.lexically_normal())) != Impl::LowerS(m->currentPath)) {
+		m->say("saved a new copy of " + m->currentRel + " into " + ToU8(target));
+		m->currentPath = ToU8(target.lexically_normal());
+		m->rescan(true);
+	}
 	m->doc.commit(bytes);
 	m->dirty = false;
 	if (d.ok) m->setStatus("saved " + m->currentRel + " (" + std::to_string(bytes.size()) + " bytes); compiles" + (m->apiPath.empty() ? "" : " and runs against the " + m->game + " stubs"), false);
