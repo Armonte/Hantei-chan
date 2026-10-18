@@ -123,6 +123,7 @@ static void AddFrameLayers(Render& render, Frame& frame, CG* cg, Parts* parts, c
 		layer.tintColor = glm::vec4(rgba.r * s.tint.r, rgba.g * s.tint.g, rgba.b * s.tint.b, 1.0f);
 		layer.isSpawned = s.spawned;
 		if (li == 0 && s.boxes) layer.hitboxes = frame.hitboxes;
+		if (li == 0 && s.boxes && s.spawned) layer.boxesOutlineOnly = true;
 		if (li == 0 && s.patBoxesHalf && L.usePat) layer.boxScale = 0.5f;
 		layer.sourceCG = cg;
 		layer.usePat = L.usePat;
@@ -259,7 +260,9 @@ void MainFrame::AddSimulatedActorLayers(CharacterView* view, const preview::Tick
 		s.alphaMul = vizAlpha * state.vizSettings.spawnedOpacity * alphaMul;
 		s.tint = glm::vec3(vizTint.r, vizTint.g, vizTint.b);
 		if (sampleTint) s.tint *= *sampleTint;
-		s.boxes = boxes;
+		// A spawned actor's boxes are not this frame's (e.g. a 600x600 attraction box on an
+		// effect read as "Hurtbox 1"): hidden unless asked for, and then outline only.
+		s.boxes = boxes && state.vizSettings.showSpawnedBoxes;
 		s.spawned = true;
 		s.pups = spawnedSeq->pups;
 		s.uniDialect = uniDialect;
