@@ -140,6 +140,34 @@ def apply_ha6_stack(root, names, ha6walk, tr):
                 row['shadowed_in'] = e['shadowed_in']
             plist.append(row)
         c['patterns'] = plist
+        for v in c.get('variants', {}).values():   # MBTL story/boss variants: own stack, rows only for files not in _0
+            veff, vlookup = resolve_ha6_stack([(os.path.basename(rel), scan(rel)) for rel in v['ha6_stack']])
+            own = {os.path.basename(rel) for rel in v['ha6_stack']} - {n for n, _ in stack}
+            vrows = []
+            for pid in sorted(veff):
+                e = veff[pid]
+                if e['source'] not in own or not (e.get('code') or e.get('title')):
+                    continue
+                row = {'id': pid, 'pattern_source': e['source'], 'code': e.get('code')}
+                t = tr(e.get('title'))
+                if t:
+                    row['title'] = t
+                if e['merged_from']:
+                    row['merged_from'] = e['merged_from']
+                if e['shadowed_in']:
+                    row['shadowed_in'] = e['shadowed_in']
+                vrows.append(row)
+            v['patterns'] = vrows
+            for m in v['moves']:
+                for p in m.get('ha6_patterns', []):
+                    if p.get('code') is None:
+                        continue
+                    pid = vlookup.get(p['code'])
+                    changed += p.get('num') != pid
+                    p['num'] = pid
+                    p.pop('ha6', None)
+                    if pid is not None:
+                        p['pattern_source'] = veff[pid]['source']
         for m in c['moves']:
             for p in m.get('ha6_patterns', []):
                 if p.get('code') is None:
@@ -392,17 +420,43 @@ def _write_index_md(path, game, files, names, extra):
         f.write('\n'.join(L) + '\n')
 
 # ---------------------------------------------------------------- entry
+def apply_annotations(game, files):
+    """tools/squirrel/annotations/*.json: human-verified purposes by folder; they replace the generated purpose."""
+    adir = os.path.join(HERE, 'annotations')
+    n = 0
+    for fn in sorted(os.listdir(adir)) if os.path.isdir(adir) else []:
+        if not fn.endswith('.json'):
+            continue
+        ann = json.load(open(os.path.join(adir, fn), encoding='utf-8'))
+        if game not in ann.get('games', [game]):
+            continue
+        for f in files:
+            parts = f['path'].split('/')[:-1]
+            hit = next((x for x in ann['folders'] if x['folder'] in parts), None)
+            if hit:
+                f['purpose'] = hit['purpose']
+                f['purpose_src'] = hit['purpose_src']
+                n += 1
+    return n
+
 def finish(game, root, out, files, names, tr, ha6walk, opt):
     """Applies the extensions and writes the split output. Returns the stats dict."""
+    nann = apply_annotations(game, files)
     nsites, untraced = apply_loadsites(game, files)
     changed = apply_ha6_stack(root, names, ha6walk, tr)
     trace_path = opt.get('--trace')   # sqtool check <dir> --api <game>_api.json --trace-patterns out.json
     stats = {'load sites traced': f"{nsites}/{len(files)} files", 'pattern links changed by the stack rule': changed}
+    if nann:
+        stats['file purposes from annotations'] = nann
     if trace_path and os.path.exists(trace_path):
         trace = compact_trace(json.load(open(trace_path, encoding='utf-8')))
         def read_mv(cd):
-            p = os.path.join(root, 'data', cd, f'{cd}_mv_0.txt')
-            return open(p, 'rb').read().decode('cp932', 'replace') if os.path.exists(p) else ''
+            # UNI2/MBTL data/chrNNN/chrNNN_mv_0.txt (chr001solo -> chr001_mv_0.txt); DFCI/UNIB data/<Name>_0/<Name>_0_mv.txt
+            for fn in (f'{cd}_mv_0.txt', f'{cd[:6]}_mv_0.txt', f'{cd}_mv.txt'):
+                p = os.path.join(root, 'data', cd, fn)
+                if os.path.exists(p):
+                    return open(p, 'rb').read().decode('cp932', 'replace')
+            return ''
         b, a, reasons = apply_runtime(names, trace, read_mv)
         stats['unresolved pattern links before runtime trace'] = b
         stats['unresolved pattern links after runtime trace'] = a
