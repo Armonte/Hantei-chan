@@ -1274,7 +1274,7 @@ set_tests_properties(sqtool_mbtl sqtool_uni2 sqtool_dfci sqtool_unib PROPERTIES 
 # Squirrel script editor (phase P2/P3, docs/squirrel/SCOPE.md §2.4): CP932 document model + sandboxed
 # in-editor VM, and the dockable "Script" panel. Widget: goossens/ImGuiColorTextEdit (MIT, vendored,
 # docs/squirrel/EDITOR_WIDGET_TRIAGE.md).
-add_library(sqeditor_core STATIC src/squirrel/script_document.cpp src/squirrel/script_vm.cpp src/squirrel/script_index.cpp src/squirrel/sq_api.cpp src/squirrel/sq_internals.cpp src/squirrel/chara_load.cpp src/cmdfile/cmd_io.cpp)
+add_library(sqeditor_core STATIC src/squirrel/script_document.cpp src/squirrel/script_vm.cpp src/squirrel/script_index.cpp src/squirrel/script_outline.cpp src/squirrel/sq_api.cpp src/squirrel/sq_internals.cpp src/squirrel/chara_load.cpp src/cmdfile/cmd_io.cpp)
 target_include_directories(sqeditor_core PUBLIC "src" "third_party")
 target_compile_definitions(sqeditor_core PRIVATE WIN32_LEAN_AND_MEAN)
 target_link_libraries(sqeditor_core PUBLIC squirrel224)
@@ -1336,6 +1336,18 @@ if(MINGW)
 	target_link_options(squirrel_doc_test PRIVATE -static-libgcc -static-libstdc++ -static)
 endif()
 add_test(NAME squirrel_doc COMMAND squirrel_doc_test WORKING_DIRECTORY ${CMAKE_SOURCE_DIR})
+# script_big_test: the Script panel on large files (fix/script-panel-big-files). The real TextEditor rendered headless at
+# 9,999 / 10,001 / 14,230 / 100,000 / 150,000 (~5 MB) lines: the editor's draw list must stay within the visible rows
+# (a 16-bit index budget), the document and line count must survive, and the outline must fold repeated table entries.
+add_executable(script_big_test tests/script_big_test.cpp third_party/ImGuiColorTextEdit/TextEditor.cpp
+	imgui/imgui.cpp imgui/imgui_draw.cpp imgui/imgui_tables.cpp imgui/imgui_widgets.cpp)
+target_include_directories(script_big_test PRIVATE "src" "third_party" "imgui")
+target_compile_definitions(script_big_test PRIVATE WIN32_LEAN_AND_MEAN IMGUI_USER_CONFIG="${CMAKE_SOURCE_DIR}/tests/imgui_assert_config.h")
+target_link_libraries(script_big_test PRIVATE sqeditor_core)
+if(MINGW)
+	target_link_options(script_big_test PRIVATE -static-libgcc -static-libstdc++ -static)
+endif()
+add_test(NAME script_big COMMAND script_big_test WORKING_DIRECTORY ${CMAKE_SOURCE_DIR})
 # Every shipped .txt of each extracted game must round-trip byte-identical (skipped when absent).
 add_test(NAME squirrel_doc_roundtrip COMMAND squirrel_doc_test --games ${SQTOOL_GAMEDATA_DIR}/mbtl ${SQTOOL_GAMEDATA_DIR}/uni2 D:/Games/unib WORKING_DIRECTORY ${CMAKE_SOURCE_DIR})
 set_tests_properties(squirrel_doc_roundtrip PROPERTIES SKIP_RETURN_CODE 77)

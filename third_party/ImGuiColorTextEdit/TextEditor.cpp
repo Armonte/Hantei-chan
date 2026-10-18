@@ -436,10 +436,14 @@ void TextEditor::renderMatchingBracketLines() {
 			if (bracket->visible && bracket->end.line - bracket->start.line > 1) {
 				const auto column = std::min(docPos2VisPos(bracket->start).column, docPos2VisPos(bracket->end).column);
 
+				// only the visible rows (hantei-chan: this used to submit one line per document line of every
+				// multi-line bracket pair, ~4 vertices a line, which overflowed 16-bit draw indices on big files)
 				for (size_t i = bracket->start.line + 1; i < bracket->end.line; i++) {
 					const auto& line = document[i];
 
 					if (line.foldingState != FoldingState::hidden) {
+						if (line.row > lastVisibleRow) break;
+						if (line.row + line.rows <= firstVisibleRow) continue;
 						const auto lineX = cursorScreenPos.x + textLeftOffset + column * glyphSize.x;
 						const auto startY = cursorScreenPos.y + line.row * glyphSize.y;
 						const auto endY = startY +  line.rows * glyphSize.y;
