@@ -16,6 +16,7 @@ EXE_DIR="${1:?usage: run_corpus.sh <exe-dir> <out-dir> [--renderer gl|d3d9] [--o
 OUT="${2:?usage: run_corpus.sh <exe-dir> <out-dir> [--renderer gl|d3d9] [--only glob] [--round N]}"
 shift 2
 RENDERER=gl; ONLY=""; ROUND=1; FORCE=0; TIMEOUT="${RP_TIMEOUT:-300}"
+RESET=1
 while [ $# -gt 0 ]; do
 	case "$1" in
 		--renderer) RENDERER="$2"; shift 2 ;;
@@ -23,11 +24,19 @@ while [ $# -gt 0 ]; do
 		--round) ROUND="$2"; shift 2 ;;
 		--timeout) TIMEOUT="$2"; shift 2 ;;
 		--force) FORCE=1; shift ;;
+		--no-reset) RESET=0; shift ;;
 		*) echo "unknown option $1" >&2; exit 2 ;;
 	esac
 done
+
 D="$(cd "$(dirname "$0")/../.." && pwd)"
 CORPUS="$D/tools/render_parity/corpus"
+
+# Rebuild the mutable scratch fixtures the UI scripts read and write back, so a
+# run never inherits the previous run's edits (PLAN.md 4.3). --no-reset skips it.
+if [ "$RESET" = 1 ]; then
+	python3 "$D/tools/render_parity/prepare_fixtures.py" || echo "run_corpus: fixture reset failed" >&2
+fi
 mkdir -p "$OUT"
 SHOTS="$OUT/shots"; mkdir -p "$SHOTS"
 W="/mnt/c/dev/hantei-chan/work/render_parity/run_$(basename "$OUT")"

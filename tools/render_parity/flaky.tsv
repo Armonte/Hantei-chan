@@ -1,0 +1,7 @@
+feature	backend	cause	status	evidence
+# PLAN.md 4.3: what differed between two plain-baseline runs, and what was done
+# about it. status = fixed (cause removed, re-verified byte-identical) or open
+# (still flaky; would need an allowlist entry).
+bg::Renderer::Update animation step	*	counted real time and ran up to 8 steps per frame	fixed	--deterministic (81a948a): one 1/60 s step per rendered frame; three repeated stages_2d runs byte-identical
+ImGui modal dim fade	*	DimBgRatio advances by io.DeltaTime	fixed	--deterministic (81a948a): io.DeltaTime pinned to 1/60 s; s2_pat_editor modal shots byte-identical across runs
+corpus ui-scripts write back their scratch fixtures	*	work/ab/s2/chr000.pat (savechar) and work/ab_s45/fx (CG-manager saves) accumulated edits, so run 2 began from run 1's output	fixed	run_corpus.sh now runs prepare_fixtures.py before every run (rebuilds both trees from their game-data sources, as tools/ui/cgm_smoke.sh does)

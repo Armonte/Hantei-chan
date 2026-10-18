@@ -1,9 +1,13 @@
 baseline_sha=45ea8ae59c1efd7bb6c1a9bc884c4205cef3174a
 exe=gonptechan.exe
 exe_sha256=a347a3e7aa1d3d535f93c5857515bb8e6ebe532ee1224316b1ce5e724cda9c1b
-# Determinism commit: none yet (Gate H1 measured first). If 4.3 needs one, the
-# baseline binary is rebuilt from <baseline_sha> + that single commit and both
-# shas are recorded here as determ_sha= / determ_exe_sha256=.
+# PLAN.md 4.3: two runs of the plain baseline differed on 39/2757 cases (the
+# stage background animation and the ImGui modal dim fade both step on wall
+# clock). The baseline binary is therefore rebuilt from <baseline_sha> plus the
+# single determinism commit, which is the binary every golden comes from.
+determ_sha=81a948ad6647dd520733ad7ee47558bc68889134
+determ_exe_sha256=2e7039ee321db132f231d66d982f594e2558adfa5d7cdb3a62f4a18052f4e304
 built=2026-10-18
 worktree=/home/teo/dev/hantei-chan-wt/render-baseline
-staged=/mnt/c/dev/hantei-chan/render_parity/baseline_bin/45ea8ae59c1efd7bb6c1a9bc884c4205cef3174a
+staged=/mnt/c/dev/hantei-chan/render_parity/baseline_bin/45ea8ae59c1efd7bb6c1a9bc884c4205cef3174a_det
+golden=/mnt/c/dev/hantei-chan/render_parity/golden/45ea8ae59c1efd7bb6c1a9bc884c4205cef3174a
