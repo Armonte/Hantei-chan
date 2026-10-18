@@ -115,6 +115,10 @@ struct State {
 	std::unordered_map<std::string, Thumb> thumbCache;
 	uint64_t useClock = 0;
 	int thumbsPending = 0;
+	// --deterministic (PLAN.md 4.3): run Preview/Thumbnail jobs inline on the UI
+	// thread instead of on the worker, so a capture at a fixed frame number does
+	// not depend on how busy the workers are. Set by ArchiveBrowser::SetDeterministic.
+	bool deterministicSync = false;
 	// settings
 	std::string lastBrowsed;
 	std::vector<std::string> recent;
