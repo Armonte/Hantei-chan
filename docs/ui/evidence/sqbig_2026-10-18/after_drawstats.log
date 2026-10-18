@@ -1,0 +1,48 @@
+lang en -> ok
+231 Squirrel scripts; profile uni2 (536 natives)
+0 problem(s)
+VtxOffset OFF, ImDrawIdx 32-bit, 11360 lines, 356 outline items, 22 outline rows, visible rows 1-23
+  ##welcome/##games_DD4FC3F5: 6020 vtx, 9030 idx, 1 cmds
+  Script###SquirrelScript/##sqcols_C0697233/##edit_DE10140B/##sqtext_09976055: 3392 vtx, 6108 idx, 3 cmds
+  Script###SquirrelScript/##sqcols_C0697233/##files_A60A584C: 1688 vtx, 2634 idx, 2 cmds
+  ##welcome: 1076 vtx, 1626 idx, 2 cmds
+0 problem(s)
+VtxOffset OFF, ImDrawIdx 32-bit, 9999 lines, 317 outline items, 22 outline rows, visible rows 1-23
+  ##welcome/##games_DD4FC3F5: 6020 vtx, 9030 idx, 1 cmds
+  Script###SquirrelScript/##sqcols_C0697233/##edit_DE10140B/##sqtext_09976055: 3392 vtx, 6108 idx, 3 cmds
+  Script###SquirrelScript/##sqcols_C0697233/##files_A60A584C: 1684 vtx, 2628 idx, 2 cmds
+  ##welcome: 1076 vtx, 1626 idx, 2 cmds
+0 problem(s)
+VtxOffset OFF, ImDrawIdx 32-bit, 10001 lines, 317 outline items, 22 outline rows, visible rows 1-23
+  ##welcome/##games_DD4FC3F5: 6020 vtx, 9030 idx, 1 cmds
+  Script###SquirrelScript/##sqcols_C0697233/##edit_DE10140B/##sqtext_09976055: 3392 vtx, 6108 idx, 3 cmds
+  Script###SquirrelScript/##sqcols_C0697233/##files_A60A584C: 1684 vtx, 2628 idx, 2 cmds
+  ##welcome: 1076 vtx, 1626 idx, 2 cmds
+0 problem(s)
+VtxOffset OFF, ImDrawIdx 32-bit, 14230 lines, 473 outline items, 44 outline rows, visible rows 1-23
+  ##welcome/##games_DD4FC3F5: 6020 vtx, 9030 idx, 1 cmds
+  Script###SquirrelScript/##sqcols_C0697233/##edit_DE10140B/##sqtext_09976055: 3392 vtx, 6108 idx, 3 cmds
+  Script###SquirrelScript/##sqcols_C0697233/##files_A60A584C: 1684 vtx, 2628 idx, 2 cmds
+  Script###SquirrelScript/##bottom_EF0F78A4/##log_6EEBF5E9: 1344 vtx, 2016 idx, 1 cmds
+VtxOffset OFF, ImDrawIdx 32-bit, 14230 lines, 473 outline items, 44 outline rows, visible rows 6989-7011
+  ##welcome/##games_DD4FC3F5: 6020 vtx, 9030 idx, 1 cmds
+  Script###SquirrelScript/##sqcols_C0697233/##edit_DE10140B/##sqtext_09976055: 2980 vtx, 5562 idx, 3 cmds
+  Script###SquirrelScript/##sqcols_C0697233/##files_A60A584C: 1684 vtx, 2628 idx, 2 cmds
+  Script###SquirrelScript/##bottom_EF0F78A4/##log_6EEBF5E9: 1344 vtx, 2016 idx, 1 cmds
+0 problem(s)
+VtxOffset OFF, ImDrawIdx 32-bit, 100000 lines, 3144 outline items, 198 outline rows, visible rows 1-23
+  ##welcome/##games_DD4FC3F5: 6020 vtx, 9030 idx, 1 cmds
+  Script###SquirrelScript/##sqcols_C0697233/##edit_DE10140B/##sqtext_09976055: 3400 vtx, 6120 idx, 3 cmds
+  Script###SquirrelScript/##sqcols_C0697233/##files_A60A584C: 1684 vtx, 2628 idx, 2 cmds
+  Script###SquirrelScript/##bottom_EF0F78A4/##log_6EEBF5E9: 1684 vtx, 2526 idx, 1 cmds
+VtxOffset OFF, ImDrawIdx 32-bit, 100000 lines, 3144 outline items, 198 outline rows, visible rows 99979-100000
+  ##welcome/##games_DD4FC3F5: 6020 vtx, 9030 idx, 1 cmds
+  Script###SquirrelScript/##sqcols_C0697233/##edit_DE10140B/##sqtext_09976055: 3216 vtx, 6078 idx, 3 cmds
+  Script###SquirrelScript/##sqcols_C0697233/##files_A60A584C: 1684 vtx, 2628 idx, 2 cmds
+  Script###SquirrelScript/##bottom_EF0F78A4/##log_6EEBF5E9: 1684 vtx, 2526 idx, 1 cmds
+0 problem(s)
+VtxOffset OFF, ImDrawIdx 32-bit, 150000 lines, 4732 outline items, 308 outline rows, visible rows 1-23
+  ##welcome/##games_DD4FC3F5: 6020 vtx, 9030 idx, 1 cmds
+  Script###SquirrelScript/##sqcols_C0697233/##edit_DE10140B/##sqtext_09976055: 3400 vtx, 6120 idx, 3 cmds
+  Script###SquirrelScript/##bottom_EF0F78A4/##log_6EEBF5E9: 2024 vtx, 3036 idx, 1 cmds
+  Script###SquirrelScript/##sqcols_C0697233/##files_A60A584C: 1684 vtx, 2628 idx, 2 cmds

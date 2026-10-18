@@ -1,0 +1,38 @@
+# Squirrel panel on large files (fix/script-panel-big-files): stock VectorTable, then synthetic VectorTable-shaped
+# files at the 10k-line boundary and beyond (tools/ui/sqbig/gen_big.py -> C:/dev/hantei-chan/work/sqbig_files).
+lang en
+prefswindow off
+sq open C:/games/UNI2
+sq file data/VectorTable.txt
+wait 30
+capture C:/dev/hantei-chan/work/ab/S_vt_stock.png
+sq drawstats
+sq file C:/dev/hantei-chan/work/sqbig_files/big_9999.txt
+wait 30
+capture C:/dev/hantei-chan/work/ab/S_9999.png
+sq drawstats
+sq file C:/dev/hantei-chan/work/sqbig_files/big_10001.txt
+wait 30
+capture C:/dev/hantei-chan/work/ab/S_10001.png
+sq drawstats
+sq file C:/dev/hantei-chan/work/sqbig_files/big_14230.txt
+wait 30
+capture C:/dev/hantei-chan/work/ab/S_14230.png
+sq drawstats
+sq goto 7000 0
+wait 20
+capture C:/dev/hantei-chan/work/ab/S_14230_mid.png
+sq drawstats
+sq file C:/dev/hantei-chan/work/sqbig_files/big_100000.txt
+wait 30
+capture C:/dev/hantei-chan/work/ab/S_100000.png
+sq drawstats
+sq goto 99990 0
+wait 20
+capture C:/dev/hantei-chan/work/ab/S_100000_end.png
+sq drawstats
+sq file C:/dev/hantei-chan/work/sqbig_files/big_150000.txt
+wait 30
+capture C:/dev/hantei-chan/work/ab/S_150000.png
+sq drawstats
+quit
