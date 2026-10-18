@@ -130,6 +130,10 @@ void MainFrame::openAnyFile(const std::string& path)
 		if (characters.size() > before || isArchive) addRecentFile(path);
 		return;
 	}
+	if (starts("PAniDataFile", 12)) {   // French-Bread .pat (MBAACC, UNIB, UNI2, MBTL): opens as a PAT document, same as File > Open PAT
+		createPatEditorView(path);   // adds the recent entry on success
+		return;
+	}
 	if (starts("bgmake", 6)) {   // stage .DAT
 		loadStageFile(path);
 		addRecentFile(path);
