@@ -302,6 +302,16 @@ bool CG::image_is_8bpp(unsigned int n) {
 	return image && image->type_id != -1 && image->bpp <= 8;
 }
 
+ImageData *CG::draw_texture_pal(unsigned int n, const unsigned int *pal, bool to_pow2_flg, bool draw_8bpp) {
+	if (!pal) return draw_texture(n, to_pow2_flg, draw_8bpp);
+	if (m_foreign) return n < m_foreign->imageCount() ? m_foreign->draw(n, to_pow2_flg, draw_8bpp, pal) : nullptr;
+	unsigned int *keep = palette;   // copy_cells reads `palette` for the images that follow the bank palette (type 0)
+	palette = const_cast<unsigned int *>(pal);
+	ImageData *r = draw_texture(n, to_pow2_flg, draw_8bpp);
+	palette = keep;
+	return r;
+}
+
 ImageData *CG::draw_texture(unsigned int n, bool to_pow2_flg, bool draw_8bpp) {
 	if (m_foreign) return n < m_foreign->imageCount() ? m_foreign->draw(n, to_pow2_flg, draw_8bpp, palette) : nullptr;
 	const CG_Image *image = get_image(n);
