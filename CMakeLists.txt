@@ -1240,7 +1240,7 @@ target_compile_options(squirrel224 PRIVATE -w)
 
 # sqtool: compile every script of a game with its exact VM; --run executes Battle_Init/Battle_Std
 # against native stubs generated from the IDB API table (docs/squirrel/api/<game>_api.json).
-add_executable(sqtool src/squirrel/sqtool.cpp src/squirrel/ptcn_stack.cpp
+add_executable(sqtool src/squirrel/sqtool.cpp src/squirrel/ptcn_stack.cpp src/squirrel/move_trace.cpp
 	src/framedata.cpp src/framedata_load.cpp src/app_log.cpp src/framedata_save.cpp src/framedata_ha4.cpp ${HAN2_MODEL_SOURCES}
 	src/misc.cpp tinyalloc/tinyalloc.c)
 target_include_directories(sqtool PRIVATE "." "third_party" "${CMAKE_BINARY_DIR}/generated")
