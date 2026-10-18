@@ -127,5 +127,13 @@ bool WriteModFile(const std::string &dst, const std::vector<uint8_t> &bytes, std
 // Undo WriteModFile: puts <file>.hcbak back, or removes the file when there was none.
 bool RestoreModFile(const std::string &dst, std::string *err);
 
+// A file-writing action as one undo step (New PUPS bank, the PovertyCaster palette export): every file it may write, as it was
+// before (null = not there) and after. Undo puts the old bytes back and deletes the files the action created; redo writes them again.
+struct FileWrite { std::string path; std::shared_ptr<const std::vector<uint8_t>> before, after; };
+std::vector<FileWrite> SnapshotFiles(const std::vector<std::string> &utf8Paths);   // before the action
+void FinishFileWrites(std::vector<FileWrite> &w);   // after it: reads `after`, drops the files it left alone
+bool ApplyFileWrites(const std::vector<FileWrite> &w, bool redo, std::string *err);
+int CountCreatedFiles(const std::vector<FileWrite> &w);   // files undo deletes (the UI asks first)
+
 } // namespace cgm
 #endif

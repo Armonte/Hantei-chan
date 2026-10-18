@@ -6,6 +6,7 @@
 #include "cgm_palette.h"
 #include "cgm_usage.h"
 #include "cgm_texsrc.h"
+#include "../cg.h"
 #include <string>
 #include <vector>
 
@@ -26,6 +27,11 @@ struct HistoryEntry {
 	// a write into the UNI2-IM / MBTL-IM mod folder ("Save .pal to mod folder", "Save to mod folder"): the file before (null = none) / after
 	std::string modDst;
 	std::shared_ptr<const std::vector<uint8_t>> modBefore, modAfter;
+	// a foreign bank (MB / QoH strips and tiles, CgForeignBank) before / after the step: snapshots, cloned again when applied
+	std::shared_ptr<const CgForeignBank> foreignBefore, foreignAfter;
+	// files an action wrote (New PUPS bank, the PovertyCaster export); newPupsBank >= 0: the bank it added (dropped on undo)
+	std::vector<FileWrite> files;
+	int newPupsBank = -1;
 };
 
 class History {

@@ -41,6 +41,7 @@ public:
 	bool dirty() const override { return m_dirty; }
 	void clearDirty() override { m_dirty = false; }
 	void serialize(std::vector<uint8_t> &out) const override { out = m_blob; }
+	std::shared_ptr<CgForeignBank> clone() const override { return std::make_shared<MbCgBank>(*this); }
 private:
 	struct Img { uint32_t off = 0; bool present = false; uint32_t firstPiece = 0, pieceCount = 0; size_t dataOff = 0; };
 	std::vector<uint8_t> m_blob;

@@ -67,6 +67,8 @@ struct CgForeignBank {
 	virtual bool dirty() const = 0;
 	virtual void clearDirty() = 0;
 	virtual void serialize(std::vector<uint8_t> &out) const = 0;    // the stored bank bytes
+	// An independent copy (the CG manager's undo snapshots). Null = this format has no snapshot: its edits record no step.
+	virtual std::shared_ptr<CgForeignBank> clone() const { return nullptr; }
 };
 
 class CG {
@@ -157,6 +159,11 @@ public:
 	// Foreign (non Cutter) bank: see CgForeignBank. Replaces whatever is loaded.
 	bool loadForeign(std::shared_ptr<CgForeignBank> bank);
 	CgForeignBank *foreign() const { return m_foreign.get(); }
+	// Undo / redo of a foreign bank edit: swap in a snapshot of the same bank (the palette number stays). False when no
+	// foreign bank is loaded.
+	bool restoreForeign(std::shared_ptr<CgForeignBank> bank);
+	// Undo of "New PUPS bank": forget bank 1..7 (its file is gone).
+	void dropPupsBank(int bank);
 	bool loadPalette(const char *name);
 	// Re-parse palette bytes (a .pal file image) as bank `bank` (0 = <cg>.pal, 1..7 = PUPS): live palette editing in the CG manager. Keeps the selection.
 	bool setPaletteBytes(int bank, const void *bytes, unsigned size);

@@ -24,6 +24,7 @@ public:
 	bool dirty() const override { return m_dirty; }
 	void clearDirty() override { m_dirty = false; }
 	void serialize(std::vector<uint8_t> &out) const override { out = m_file; }
+	std::shared_ptr<CgForeignBank> clone() const override { return std::make_shared<QohCgBank>(*this); }
 private:
 	std::vector<uint8_t> m_file; qoh::Layout m_layout; bool m_dirty = false;
 	unsigned m_pal[16][256];
