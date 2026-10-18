@@ -9,6 +9,8 @@
 //     exactly as the game does (raw bytes, sq_compilebuffer). With --run it also executes
 //     script/Battle_Init.txt and script/Battle_Std.txt against native stubs generated from the
 //     IDB-extracted API table, with a working __dofile__.
+//     --trace-patterns out.json: after each character loads, calls every move's Init and FrameUpdate closure with traced
+//     natives and writes the patterns each move sets (move_trace.h).
 //   sqtool compile <file.txt>...   compile single files
 //
 // Exit code: 0 when every Squirrel file compiled (and --run succeeded), 1 otherwise,
@@ -20,6 +22,7 @@
 #include "sq_api.h"
 #include "chara_load.h"
 #include "ptcn_stack.h"
+#include "move_trace.h"
 #include <windows.h>
 #include <sqstdaux.h>
 #include <sqstdblob.h>
@@ -199,6 +202,7 @@ static SQInteger Native_Stub(HSQUIRRELVM v)
 {
 	const std::string tag = sqedit::StubTag(v);
 	g_stubCalls[tag.substr(tag.find('|') + 1)]++;
+	sqedit::MoveTrace_OnNative(v, tag.substr(tag.find('|') + 1));
 	if (const SQInteger r = sqedit::CallTracedNative(v, tag); r >= 0)
 		return r;
 	// File-existence probes answer truthfully (read-only, inside the game root): the bootstrap branches on them
@@ -214,6 +218,9 @@ static SQInteger Native_Stub(HSQUIRRELVM v)
 		sq_pushinteger(v, alive ? 1 : 0);
 		return 1;
 	}
+	const std::string ret = tag.substr(0, tag.find('|'));
+	if ((ret == "value" || ret == "object" || ret == "instance:BMvCore.CCharaData") && sqedit::MoveTrace_PushAny(v))
+		return 1;
 	return sqedit::PushStubReturn(v, tag);
 }
 
@@ -287,6 +294,41 @@ struct Result {
 // Load-time context settings (sqtool check ... --side N --mode M --rapidbeat T).
 static std::string g_game;   // from --game or the API file name (<game>_api.json)
 static int g_side = 0, g_gameMode = 1, g_gameModeSub = 0, g_rapidBeat = 0;
+static std::string g_tracePatternsPath;   // --trace-patterns out.json: run each move's Init/FrameUpdate, record its patterns
+static json g_tracePatterns = json::object();
+
+static std::string TakeRuntimeError()
+{
+	std::string e = g_runtimeError;
+	g_runtimeError.clear();
+	return e;
+}
+
+static void TraceCharacterPatterns(HSQUIRRELVM v, const std::string &chr, sqedit::LoadContext &ctx)
+{
+	// DFCI/UNIB folders are <Name>_0 and the table is <NAME>_MoveTable (same rule as LoadCharacterScripts)
+	std::string CHR = (chr.size() > 2 && chr.compare(chr.size() - 2, 2, "_0") == 0 && chr.rfind("chr", 0) != 0) ? chr.substr(0, chr.size() - 2) : chr;
+	for (auto &c : CHR) c = (char)toupper((unsigned char)c);
+	json moves = json::object();
+	int withSets = 0, withErr = 0;
+	for (const auto &t : sqedit::TraceMovePatterns(v, CHR, ctx, TakeRuntimeError)) {
+		json m = json::object();
+		json sets = json::array();
+		for (const auto &s : t.sets) {
+			json e = {{"slot", s.slot}, {"native", s.native}, {"num", s.num}};
+			if (!s.code.empty()) e["code"] = s.code;
+			sets.push_back(e);
+		}
+		m["sets"] = sets;
+		if (!t.errors.empty()) m["errors"] = t.errors;
+		m["slots"] = t.slots;
+		withSets += !t.sets.empty();
+		withErr += !t.errors.empty();
+		moves[t.move] = m;
+	}
+	LOGI("sqtool: trace: {}: {} moves, {} set a pattern, {} with runtime errors", chr, moves.size(), withSets, withErr);
+	g_tracePatterns[chr] = moves;
+}
 
 static bool RunCharacters(HSQUIRRELVM v, const fs::path &root)
 {
@@ -326,6 +368,8 @@ static bool RunCharacters(HSQUIRRELVM v, const fs::path &root)
 			},
 			[&](const std::string &rel) { return fs::exists(root / rel, ec); },
 			[&](const std::string &rel) { std::string b; ReadFile(root / rel, b); return b; }, sqedit::LoadProfileFor(g_game));
+		if (!g_tracePatternsPath.empty())
+			TraceCharacterPatterns(v, chr, ctx);
 		int devw = 0;
 		for (const auto &i : r.issues) {
 			switch (i.kind) {
@@ -434,6 +478,11 @@ static int CmdCheck(const fs::path &root, const std::string &apiPath, bool run, 
 		sq_close(rv);
 	}
 
+	if (!g_tracePatternsPath.empty()) {
+		std::ofstream o(g_tracePatternsPath, std::ios::binary);
+		o << g_tracePatterns.dump();
+		LOGI("sqtool: trace: patterns written to {}", g_tracePatternsPath);
+	}
 	if (!reportPath.empty()) {
 		std::ofstream o(reportPath, std::ios::binary);
 		o << "file\tkind\tbytes\tresult\tline\tcol\terror\n";
@@ -490,6 +539,10 @@ int main(int argc, char **argv)
 				run = true;
 			else if (args[i] == "--chars")
 				run = chars = true;
+			else if (args[i] == "--trace-patterns" && i + 1 < args.size()) {
+				g_tracePatternsPath = args[++i];
+				run = chars = true;
+			}
 			else if (args[i] == "--calls")
 				calls = true;
 			else if (args[i] == "--side" && i + 1 < args.size())
@@ -505,7 +558,7 @@ int main(int argc, char **argv)
 	} else if (args.size() >= 2 && args[0] == "compile") {
 		rc = CmdCompile(std::vector<std::string>(args.begin() + 1, args.end()));
 	} else {
-		LOGI("usage: sqtool check <gamedir> [--api <game>_api.json] [--run] [--chars] [--calls] [--game uni2|mbtl|dfci|unib] [--side 0|1] [--mode N|--training] [--rapidbeat 0-3] [--report out.tsv]");
+		LOGI("usage: sqtool check <gamedir> [--api <game>_api.json] [--run] [--chars] [--calls] [--game uni2|mbtl|dfci|unib] [--side 0|1] [--mode N|--training] [--rapidbeat 0-3] [--report out.tsv] [--trace-patterns out.json]");
 		LOGI("       sqtool compile <file.txt>...");
 	}
 	g_log->flush_log();

@@ -1,0 +1,12 @@
+{
+  "games": ["uni2", "mbtl", "dfci", "unib"],
+  "match": "a path component equal to `folder` (BattleRes/BattleTable/..., BattleRes/talk/..., BattleRes/win_mes/...)",
+  "folders": [
+    {"folder": "BattleTable", "purpose_src": "modder (BootySama, 2026-10-18)",
+     "purpose": "arcade routes, including occasional predetermined fights. Every character needs one for a full arcade run; without it you get a test match that ends after one fight"},
+    {"folder": "talk", "purpose_src": "modder (BootySama, 2026-10-18)",
+     "purpose": "scripts for every dialogue box in single player (the arcade content plus Chronicle mode); also holds the ending CG defines and the music each scene uses"},
+    {"folder": "win_mes", "purpose_src": "modder (BootySama, 2026-10-18)",
+     "purpose": "win quotes: the lottery that picks a quote, which characters get the lottery spin, each character's win quotes with their defines, and the win-quote scene function"}
+  ]
+}
