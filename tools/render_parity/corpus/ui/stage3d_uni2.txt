@@ -1,0 +1,292 @@
+# 3D stage view: every uni2 stage in bg/BgList.txt, three camera positions
+stage3d open C:\dev\hantei-chan\gamedata\uni2\bg bg001
+stage3d frame 0
+stage3d cam 0 0 1
+capture OUT/stage3d_uni2_bg001_c.png
+stage3d frame 0
+stage3d cam -3 0 1
+capture OUT/stage3d_uni2_bg001_l.png
+stage3d frame 0
+stage3d cam 3 0 1
+capture OUT/stage3d_uni2_bg001_r.png
+stage3d open C:\dev\hantei-chan\gamedata\uni2\bg bg002
+stage3d frame 0
+stage3d cam 0 0 1
+capture OUT/stage3d_uni2_bg002_c.png
+stage3d frame 0
+stage3d cam -3 0 1
+capture OUT/stage3d_uni2_bg002_l.png
+stage3d frame 0
+stage3d cam 3 0 1
+capture OUT/stage3d_uni2_bg002_r.png
+stage3d open C:\dev\hantei-chan\gamedata\uni2\bg bg003
+stage3d frame 0
+stage3d cam 0 0 1
+capture OUT/stage3d_uni2_bg003_c.png
+stage3d frame 0
+stage3d cam -3 0 1
+capture OUT/stage3d_uni2_bg003_l.png
+stage3d frame 0
+stage3d cam 3 0 1
+capture OUT/stage3d_uni2_bg003_r.png
+stage3d open C:\dev\hantei-chan\gamedata\uni2\bg bg004
+stage3d frame 0
+stage3d cam 0 0 1
+capture OUT/stage3d_uni2_bg004_c.png
+stage3d frame 0
+stage3d cam -3 0 1
+capture OUT/stage3d_uni2_bg004_l.png
+stage3d frame 0
+stage3d cam 3 0 1
+capture OUT/stage3d_uni2_bg004_r.png
+stage3d open C:\dev\hantei-chan\gamedata\uni2\bg bg005
+stage3d frame 0
+stage3d cam 0 0 1
+capture OUT/stage3d_uni2_bg005_c.png
+stage3d frame 0
+stage3d cam -3 0 1
+capture OUT/stage3d_uni2_bg005_l.png
+stage3d frame 0
+stage3d cam 3 0 1
+capture OUT/stage3d_uni2_bg005_r.png
+stage3d open C:\dev\hantei-chan\gamedata\uni2\bg bg006
+stage3d frame 0
+stage3d cam 0 0 1
+capture OUT/stage3d_uni2_bg006_c.png
+stage3d frame 0
+stage3d cam -3 0 1
+capture OUT/stage3d_uni2_bg006_l.png
+stage3d frame 0
+stage3d cam 3 0 1
+capture OUT/stage3d_uni2_bg006_r.png
+stage3d open C:\dev\hantei-chan\gamedata\uni2\bg bg007
+stage3d frame 0
+stage3d cam 0 0 1
+capture OUT/stage3d_uni2_bg007_c.png
+stage3d frame 0
+stage3d cam -3 0 1
+capture OUT/stage3d_uni2_bg007_l.png
+stage3d frame 0
+stage3d cam 3 0 1
+capture OUT/stage3d_uni2_bg007_r.png
+stage3d open C:\dev\hantei-chan\gamedata\uni2\bg bg008
+stage3d frame 0
+stage3d cam 0 0 1
+capture OUT/stage3d_uni2_bg008_c.png
+stage3d frame 0
+stage3d cam -3 0 1
+capture OUT/stage3d_uni2_bg008_l.png
+stage3d frame 0
+stage3d cam 3 0 1
+capture OUT/stage3d_uni2_bg008_r.png
+stage3d open C:\dev\hantei-chan\gamedata\uni2\bg bg009
+stage3d frame 0
+stage3d cam 0 0 1
+capture OUT/stage3d_uni2_bg009_c.png
+stage3d frame 0
+stage3d cam -3 0 1
+capture OUT/stage3d_uni2_bg009_l.png
+stage3d frame 0
+stage3d cam 3 0 1
+capture OUT/stage3d_uni2_bg009_r.png
+stage3d open C:\dev\hantei-chan\gamedata\uni2\bg bg010
+stage3d frame 0
+stage3d cam 0 0 1
+capture OUT/stage3d_uni2_bg010_c.png
+stage3d frame 0
+stage3d cam -3 0 1
+capture OUT/stage3d_uni2_bg010_l.png
+stage3d frame 0
+stage3d cam 3 0 1
+capture OUT/stage3d_uni2_bg010_r.png
+stage3d open C:\dev\hantei-chan\gamedata\uni2\bg bg011
+stage3d frame 0
+stage3d cam 0 0 1
+capture OUT/stage3d_uni2_bg011_c.png
+stage3d frame 0
+stage3d cam -3 0 1
+capture OUT/stage3d_uni2_bg011_l.png
+stage3d frame 0
+stage3d cam 3 0 1
+capture OUT/stage3d_uni2_bg011_r.png
+stage3d open C:\dev\hantei-chan\gamedata\uni2\bg bg012
+stage3d frame 0
+stage3d cam 0 0 1
+capture OUT/stage3d_uni2_bg012_c.png
+stage3d frame 0
+stage3d cam -3 0 1
+capture OUT/stage3d_uni2_bg012_l.png
+stage3d frame 0
+stage3d cam 3 0 1
+capture OUT/stage3d_uni2_bg012_r.png
+stage3d open C:\dev\hantei-chan\gamedata\uni2\bg bg013
+stage3d frame 0
+stage3d cam 0 0 1
+capture OUT/stage3d_uni2_bg013_c.png
+stage3d frame 0
+stage3d cam -3 0 1
+capture OUT/stage3d_uni2_bg013_l.png
+stage3d frame 0
+stage3d cam 3 0 1
+capture OUT/stage3d_uni2_bg013_r.png
+stage3d open C:\dev\hantei-chan\gamedata\uni2\bg bg014
+stage3d frame 0
+stage3d cam 0 0 1
+capture OUT/stage3d_uni2_bg014_c.png
+stage3d frame 0
+stage3d cam -3 0 1
+capture OUT/stage3d_uni2_bg014_l.png
+stage3d frame 0
+stage3d cam 3 0 1
+capture OUT/stage3d_uni2_bg014_r.png
+stage3d open C:\dev\hantei-chan\gamedata\uni2\bg bg015
+stage3d frame 0
+stage3d cam 0 0 1
+capture OUT/stage3d_uni2_bg015_c.png
+stage3d frame 0
+stage3d cam -3 0 1
+capture OUT/stage3d_uni2_bg015_l.png
+stage3d frame 0
+stage3d cam 3 0 1
+capture OUT/stage3d_uni2_bg015_r.png
+stage3d open C:\dev\hantei-chan\gamedata\uni2\bg bg016
+stage3d frame 0
+stage3d cam 0 0 1
+capture OUT/stage3d_uni2_bg016_c.png
+stage3d frame 0
+stage3d cam -3 0 1
+capture OUT/stage3d_uni2_bg016_l.png
+stage3d frame 0
+stage3d cam 3 0 1
+capture OUT/stage3d_uni2_bg016_r.png
+stage3d open C:\dev\hantei-chan\gamedata\uni2\bg bg017
+stage3d frame 0
+stage3d cam 0 0 1
+capture OUT/stage3d_uni2_bg017_c.png
+stage3d frame 0
+stage3d cam -3 0 1
+capture OUT/stage3d_uni2_bg017_l.png
+stage3d frame 0
+stage3d cam 3 0 1
+capture OUT/stage3d_uni2_bg017_r.png
+stage3d open C:\dev\hantei-chan\gamedata\uni2\bg bg018
+stage3d frame 0
+stage3d cam 0 0 1
+capture OUT/stage3d_uni2_bg018_c.png
+stage3d frame 0
+stage3d cam -3 0 1
+capture OUT/stage3d_uni2_bg018_l.png
+stage3d frame 0
+stage3d cam 3 0 1
+capture OUT/stage3d_uni2_bg018_r.png
+stage3d open C:\dev\hantei-chan\gamedata\uni2\bg bg019
+stage3d frame 0
+stage3d cam 0 0 1
+capture OUT/stage3d_uni2_bg019_c.png
+stage3d frame 0
+stage3d cam -3 0 1
+capture OUT/stage3d_uni2_bg019_l.png
+stage3d frame 0
+stage3d cam 3 0 1
+capture OUT/stage3d_uni2_bg019_r.png
+stage3d open C:\dev\hantei-chan\gamedata\uni2\bg bg020
+stage3d frame 0
+stage3d cam 0 0 1
+capture OUT/stage3d_uni2_bg020_c.png
+stage3d frame 0
+stage3d cam -3 0 1
+capture OUT/stage3d_uni2_bg020_l.png
+stage3d frame 0
+stage3d cam 3 0 1
+capture OUT/stage3d_uni2_bg020_r.png
+stage3d open C:\dev\hantei-chan\gamedata\uni2\bg bg021
+stage3d frame 0
+stage3d cam 0 0 1
+capture OUT/stage3d_uni2_bg021_c.png
+stage3d frame 0
+stage3d cam -3 0 1
+capture OUT/stage3d_uni2_bg021_l.png
+stage3d frame 0
+stage3d cam 3 0 1
+capture OUT/stage3d_uni2_bg021_r.png
+stage3d open C:\dev\hantei-chan\gamedata\uni2\bg bg022
+stage3d frame 0
+stage3d cam 0 0 1
+capture OUT/stage3d_uni2_bg022_c.png
+stage3d frame 0
+stage3d cam -3 0 1
+capture OUT/stage3d_uni2_bg022_l.png
+stage3d frame 0
+stage3d cam 3 0 1
+capture OUT/stage3d_uni2_bg022_r.png
+stage3d open C:\dev\hantei-chan\gamedata\uni2\bg bg023
+stage3d frame 0
+stage3d cam 0 0 1
+capture OUT/stage3d_uni2_bg023_c.png
+stage3d frame 0
+stage3d cam -3 0 1
+capture OUT/stage3d_uni2_bg023_l.png
+stage3d frame 0
+stage3d cam 3 0 1
+capture OUT/stage3d_uni2_bg023_r.png
+stage3d open C:\dev\hantei-chan\gamedata\uni2\bg bg024
+stage3d frame 0
+stage3d cam 0 0 1
+capture OUT/stage3d_uni2_bg024_c.png
+stage3d frame 0
+stage3d cam -3 0 1
+capture OUT/stage3d_uni2_bg024_l.png
+stage3d frame 0
+stage3d cam 3 0 1
+capture OUT/stage3d_uni2_bg024_r.png
+stage3d open C:\dev\hantei-chan\gamedata\uni2\bg bg025
+stage3d frame 0
+stage3d cam 0 0 1
+capture OUT/stage3d_uni2_bg025_c.png
+stage3d frame 0
+stage3d cam -3 0 1
+capture OUT/stage3d_uni2_bg025_l.png
+stage3d frame 0
+stage3d cam 3 0 1
+capture OUT/stage3d_uni2_bg025_r.png
+stage3d open C:\dev\hantei-chan\gamedata\uni2\bg bg026
+stage3d frame 0
+stage3d cam 0 0 1
+capture OUT/stage3d_uni2_bg026_c.png
+stage3d frame 0
+stage3d cam -3 0 1
+capture OUT/stage3d_uni2_bg026_l.png
+stage3d frame 0
+stage3d cam 3 0 1
+capture OUT/stage3d_uni2_bg026_r.png
+stage3d open C:\dev\hantei-chan\gamedata\uni2\bg bg027
+stage3d frame 0
+stage3d cam 0 0 1
+capture OUT/stage3d_uni2_bg027_c.png
+stage3d frame 0
+stage3d cam -3 0 1
+capture OUT/stage3d_uni2_bg027_l.png
+stage3d frame 0
+stage3d cam 3 0 1
+capture OUT/stage3d_uni2_bg027_r.png
+stage3d open C:\dev\hantei-chan\gamedata\uni2\bg bg028
+stage3d frame 0
+stage3d cam 0 0 1
+capture OUT/stage3d_uni2_bg028_c.png
+stage3d frame 0
+stage3d cam -3 0 1
+capture OUT/stage3d_uni2_bg028_l.png
+stage3d frame 0
+stage3d cam 3 0 1
+capture OUT/stage3d_uni2_bg028_r.png
+stage3d open C:\dev\hantei-chan\gamedata\uni2\bg bg090
+stage3d frame 0
+stage3d cam 0 0 1
+capture OUT/stage3d_uni2_bg090_c.png
+stage3d frame 0
+stage3d cam -3 0 1
+capture OUT/stage3d_uni2_bg090_l.png
+stage3d frame 0
+stage3d cam 3 0 1
+capture OUT/stage3d_uni2_bg090_r.png
+quit

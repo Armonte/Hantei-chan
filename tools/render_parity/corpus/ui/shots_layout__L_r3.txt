@@ -1,0 +1,45 @@
+# Layout sweep round 3 (docs/ui/LAYOUT_AUDIT_2026-10-16.md): IF / EF smart forms and every CG manager tab, EN then JA.
+# Run through run_layout.sh <tag> [exe] L_r3.txt (two window sizes). Read-only: nothing is saved.
+# akiha p73 f5 has three effects and two conditions; framenodes 6 holds Effects + Conditions open.
+openany C:/games/mbaacc/data/akiha.HA6
+wait 120
+framenodes 6
+pattern 73
+viewframe 5
+wait 40
+capture OUT/shots_layout_L_r3_R01_mbaacc_ifef.png
+lang ja
+wait 20
+capture OUT/shots_layout_L_r3_R01_mbaacc_ifef_ja.png
+lang en
+openany C:/games/UNI2/data/chr020/chr020_0.txt
+wait 120
+cgm open
+wait 30
+cgm tab Browser
+wait 20
+capture OUT/shots_layout_L_r3_R02_cgm_browser.png
+cgm tab CG + .pat textures
+wait 20
+cgm texsel 0 0
+wait 30
+capture OUT/shots_layout_L_r3_R03_cgm_textures.png
+lang ja
+wait 20
+capture OUT/shots_layout_L_r3_R03_cgm_textures_ja.png
+lang en
+cgm tab Palettes
+wait 30
+capture OUT/shots_layout_L_r3_R04_cgm_palettes.png
+lang ja
+wait 20
+capture OUT/shots_layout_L_r3_R04_cgm_palettes_ja.png
+lang en
+cgm tab Effect recolor
+wait 30
+capture OUT/shots_layout_L_r3_R05_cgm_fxr.png
+lang ja
+wait 20
+capture OUT/shots_layout_L_r3_R05_cgm_fxr_ja.png
+lang en
+quit

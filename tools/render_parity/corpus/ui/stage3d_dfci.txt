@@ -1,0 +1,52 @@
+# 3D stage view: five dfci stages, three camera positions
+stage3d open C:\dev\transmission\dfci+transmission\bg bg01
+stage3d frame 0
+stage3d cam 0 0 1
+capture OUT/stage3d_dfci_bg01_c.png
+stage3d frame 0
+stage3d cam -3 0 1
+capture OUT/stage3d_dfci_bg01_l.png
+stage3d frame 0
+stage3d cam 3 0 1
+capture OUT/stage3d_dfci_bg01_r.png
+stage3d open C:\dev\transmission\dfci+transmission\bg bg02
+stage3d frame 0
+stage3d cam 0 0 1
+capture OUT/stage3d_dfci_bg02_c.png
+stage3d frame 0
+stage3d cam -3 0 1
+capture OUT/stage3d_dfci_bg02_l.png
+stage3d frame 0
+stage3d cam 3 0 1
+capture OUT/stage3d_dfci_bg02_r.png
+stage3d open C:\dev\transmission\dfci+transmission\bg bg04
+stage3d frame 0
+stage3d cam 0 0 1
+capture OUT/stage3d_dfci_bg04_c.png
+stage3d frame 0
+stage3d cam -3 0 1
+capture OUT/stage3d_dfci_bg04_l.png
+stage3d frame 0
+stage3d cam 3 0 1
+capture OUT/stage3d_dfci_bg04_r.png
+stage3d open C:\dev\transmission\dfci+transmission\bg bg05
+stage3d frame 0
+stage3d cam 0 0 1
+capture OUT/stage3d_dfci_bg05_c.png
+stage3d frame 0
+stage3d cam -3 0 1
+capture OUT/stage3d_dfci_bg05_l.png
+stage3d frame 0
+stage3d cam 3 0 1
+capture OUT/stage3d_dfci_bg05_r.png
+stage3d open C:\dev\transmission\dfci+transmission\bg bg07
+stage3d frame 0
+stage3d cam 0 0 1
+capture OUT/stage3d_dfci_bg07_c.png
+stage3d frame 0
+stage3d cam -3 0 1
+capture OUT/stage3d_dfci_bg07_l.png
+stage3d frame 0
+stage3d cam 3 0 1
+capture OUT/stage3d_dfci_bg07_r.png
+quit

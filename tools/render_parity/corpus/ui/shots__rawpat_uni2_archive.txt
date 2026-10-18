@@ -1,0 +1,17 @@
+# UNI2 .pat from the archive browser (d\ index files): select data/chr000/chr000.pat, Open -> a working copy opens in a PAT editor tab
+# (before fix/open-raw-pat the generic open route had no PAniDataFile case, so only File > Open .pat worked)
+browse C:\Program Files (x86)\Steam\steamapps\common\UNDER NIGHT IN-BIRTH II Sys Celes
+waitidle
+type all
+filter chr000.pat
+waitidle
+select data/chr000/chr000.pat
+waitidle
+wait 30
+capture OUT/shots_rawpat_uni2_archive_rawpat_01_browser.png
+open
+wait 200
+zoomview 0.5
+wait 60
+capture OUT/shots_rawpat_uni2_archive_rawpat_02_pat_tab.png
+quit
