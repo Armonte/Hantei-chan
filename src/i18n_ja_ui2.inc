@@ -1305,6 +1305,8 @@
 	{"Fast middle", "高速の中間"},
 	{"Fast->Slow", "速->遅"},
 	{"Flagset 1 bit", "フラグセット 1 ビット"},
+	{"End", "終了"},
+	{"End: hold this frame and stop the pattern (AFFL 3)", "終了: このフレームで止まり、パターンを終了 (AFFL 3)"},
 	{"Flagset 2 bit", "フラグセット 2 ビット"},
 	{"Flip Horizontally", "左右反転"},
 	{"Flip Vertically", "上下反転"},
