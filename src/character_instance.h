@@ -147,4 +147,8 @@ private:
 	std::unique_ptr<PartsUndoChannel> m_patDocUndo;  // declared after undoManager: destroyed first
 };
 
+// The placeholder character of a PAT editor tab: one pattern with one frame whose layer 0 draws the
+// selected part set. The caller loads or creates the parts and calls makePatDocument().
+std::unique_ptr<CharacterInstance> MakePatPlaceholderCharacter(const std::string& name);
+
 #endif /* CHARACTER_INSTANCE_H_GUARD */

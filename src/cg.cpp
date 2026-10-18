@@ -603,6 +603,31 @@ bool CG::setPaletteBytes(int bank, const void *bytes, unsigned size)
 	return true;
 }
 
+bool CG::restoreForeign(std::shared_ptr<CgForeignBank> bank) {
+	if (!m_foreign || !bank) return false;
+	touch();
+	m_foreign = std::move(bank);
+	palMax = m_foreign->paletteCount();
+	if (curPalIndex < 0 || curPalIndex >= palMax) curPalIndex = 0;
+	palette = (unsigned int *)m_foreign->palette(curPalIndex); origPalette = palette;
+	m_nimages = m_foreign->imageCount();
+	return true;
+}
+
+void CG::dropPupsBank(int bank)
+{
+	if (bank <= 0 || bank >= kPupsBanks) return;
+	delete[] pupsData[bank];
+	pupsData[bank] = nullptr;
+	pupsMax[bank] = 0;
+	palPaths[bank].clear();
+	if (curPups == bank) curPups = 0;
+	appliedBank = -1;
+	applyPalette();
+	if (appliedBank < 0) appliedBank = 0;
+	touch();
+}
+
 void CG::freePupsBanks()
 {
 	touch();

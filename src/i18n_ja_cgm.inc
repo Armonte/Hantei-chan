@@ -256,3 +256,8 @@
 {"pose %d places part %d", "ポーズ%dがパーツ%dを配置"},
 {"(sheet / .pat steps: Edit > Undo, Ctrl+Z in the editor)", "（シート / .patの操作: 編集 > 元に戻す、エディタでCtrl+Z）"},
 {"Part sheet %d: %s, %d x %d, %s", "パーツシート%d: %s, %d x %d, %s"},
+{"Undo \"%s\" deletes the file(s) it created:", "「%s」を元に戻すと、作成したファイルが削除されます:"},
+{"Delete and undo", "削除して元に戻す"},
+{"New PUPS bank %d", "新規PUPSバンク %d"},
+{"Export for PovertyCaster", "PovertyCaster用に書き出し"},
+{"Import folder", "フォルダーから読み込み"},

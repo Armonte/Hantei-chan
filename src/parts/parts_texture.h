@@ -74,8 +74,8 @@ public:
 
     // Texture management
     Texture* GetTextureFromId(std::vector<Texture*> textures);
-    // Import a .dds into this slot. UNI / MBTL .pat files keep it as PGT2 (DXT1 / DXT5 / 32-bit, sizes a multiple of
-    // 256). MBAACC files (mbaaccFormat) only read PGTX, 32-bit BGRA pixels: the DDS is decoded (DXT1 / DXT5 / 32-bit)
+    // Import a .dds into this slot. UNI / MBTL .pat files keep it as PGT2 (DXT1 / DXT3 / DXT5 / 32-bit, sizes a multiple of
+    // 256). MBAACC files (mbaaccFormat) only read PGTX, 32-bit BGRA pixels: the DDS is decoded (DXT1 / DXT3 / DXT5 / 32-bit)
     // and stored that way, never as PGT2. Returns an error message, empty on success.
     std::string ImportTexture(const char *filename, std::vector<Texture*>& textures, bool mbaaccFormat = false);
     // Export as .dds: PGT2 textures as stored, MBAACC PGTX textures as an uncompressed 32-bit DDS. Written atomically.

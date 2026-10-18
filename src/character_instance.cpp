@@ -401,6 +401,20 @@ void CharacterInstance::makePatDocument()
 	undoManager.reset();
 }
 
+std::unique_ptr<CharacterInstance> MakePatPlaceholderCharacter(const std::string& name)
+{
+	auto character = std::make_unique<CharacterInstance>();
+	character->frameData.initEmpty();
+	character->setName(name);
+	if (auto seq = character->frameData.get_sequence(0)) {
+		auto frame = &seq->frames.emplace_back();
+		if (frame->AF.layers.empty()) frame->AF.layers.push_back({});
+		frame->AF.layers[0].usePat = true;
+		frame->AF.layers[0].spriteId = 0;   // the first part set
+	}
+	return character;
+}
+
 void CharacterInstance::newPatDocument(bool mbaaccFormat)
 {
 	parts.initEmpty();

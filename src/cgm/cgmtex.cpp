@@ -228,6 +228,86 @@ static int SelfTest() {
 		std::vector<uint8_t> a1, b1; pattex::EncodeDxt(rgba.data(), 128, 128, true, a1); pattex::EncodeDxtKind(rgba.data(), 128, 128, 5, b1); CHECK(a1 == b1);
 		pattex::EncodeDxt(rgba.data(), 128, 128, false, a1); pattex::EncodeDxtKind(rgba.data(), 128, 128, 1, b1); CHECK(a1 == b1);
 	}
+	// CG manager undo of foreign banks (MB / QoH): a snapshot restored through CG::restoreForeign is the bank before the edit, and
+	// one History step undoes / redoes the replace
+	{
+		struct FakeBank : CgForeignBank {
+			std::vector<uint8_t> px = std::vector<uint8_t>(4 * 4 * 4, 7); unsigned pal[2][256] = {};
+			unsigned imageCount() const override { return 1; }
+			const char *imageName(unsigned) const override { return "img"; }
+			bool imageInfo(unsigned, int &bpp, int &t, int &x1, int &y1, int &x2, int &y2) const override { bpp = 32; t = 0; x1 = y1 = 0; x2 = y2 = 4; return true; }
+			bool imageCells(unsigned, std::vector<CgCellRect> &o) const override { o = {{0, 0, 4, 4}}; return true; }
+			ImageData *draw(unsigned, bool, bool, const unsigned *) const override { return nullptr; }
+			int paletteCount() const override { return 2; }
+			const unsigned *palette(int i) const override { return pal[i & 1]; }
+			bool replaceImage(unsigned, const unsigned char *rgba, int w, int h, int, std::string *) override { px.assign(rgba, rgba + (size_t)w * h * 4); return true; }
+			bool dirty() const override { return false; }
+			void clearDirty() override {}
+			void serialize(std::vector<uint8_t> &out) const override { out = px; }
+			std::shared_ptr<CgForeignBank> clone() const override { return std::make_shared<FakeBank>(*this); }
+		};
+		CG cg; CHECK(cg.loadForeign(std::make_shared<FakeBank>()));
+		CHECK(cg.changePaletteNumber(1));
+		cgm::History hist;
+		std::shared_ptr<CgForeignBank> before = cg.foreign()->clone();
+		const std::vector<uint8_t> red(4 * 4 * 4, 200); std::string err;
+		CHECK(cg.replace_image_rgba(0, red.data(), 4, 4, &err, false));
+		cgm::HistoryEntry h; h.label = "Replace image 0"; h.foreignBefore = before; h.foreignAfter = cg.foreign()->clone(); hist.push(std::move(h));
+		auto bytes = [&] { std::vector<uint8_t> b; cg.foreign()->serialize(b); return b; };
+		CHECK(bytes() == red);
+		{ cgm::HistoryEntry e = hist.undo(); CHECK(cg.restoreForeign(e.foreignBefore->clone())); }
+		CHECK(bytes() == std::vector<uint8_t>(4 * 4 * 4, 7) && !hist.canUndo() && hist.canRedo());
+		CHECK(cg.paletteAt(1, 0) == cg.foreign()->palette(1));   // the palette number survives the swap
+		{ cgm::HistoryEntry e = hist.redo(); CHECK(cg.restoreForeign(e.foreignAfter->clone())); }
+		CHECK(bytes() == red);
+		{ cgm::HistoryEntry e = hist.undo(); CHECK(cg.restoreForeign(e.foreignBefore->clone())); }
+		{ cgm::HistoryEntry e = hist.redo(); CHECK(cg.restoreForeign(e.foreignAfter->clone())); }
+		CHECK(bytes() == red);   // the stored snapshots were never edited through
+		CG cutter; CHECK(!cutter.restoreForeign(std::make_shared<FakeBank>()));   // only over a foreign bank
+	}
+	// file-creating actions (New PUPS bank, PovertyCaster export) as one step: undo restores overwritten files and deletes created
+	// ones, redo writes them again; untouched paths are not part of the step
+	{
+		const std::string a = tmp + "/fw_a.pal", b = tmp + "/fw_b.png", c = tmp + "/fw_c.png";
+		auto put = [](const std::string &p, const std::string &t) { std::ofstream(std::filesystem::u8path(p), std::ios::binary) << t; };
+		auto get = [](const std::string &p) { std::ifstream f(std::filesystem::u8path(p), std::ios::binary); return f ? std::string((std::istreambuf_iterator<char>(f)), std::istreambuf_iterator<char>()) : std::string("<none>"); };
+		std::error_code ec; std::filesystem::remove(std::filesystem::u8path(b), ec); std::filesystem::remove(std::filesystem::u8path(c), ec);
+		put(a, "old");
+		std::vector<cgm::FileWrite> fw = cgm::SnapshotFiles({a, b, c});
+		put(a, "new"); put(b, "png");   // c is never written
+		cgm::FinishFileWrites(fw);
+		CHECK(fw.size() == 2 && cgm::CountCreatedFiles(fw) == 1);
+		std::string err;
+		CHECK(cgm::ApplyFileWrites(fw, false, &err) && get(a) == "old" && get(b) == "<none>" && get(c) == "<none>");
+		CHECK(cgm::ApplyFileWrites(fw, true, &err) && get(a) == "new" && get(b) == "png");
+		std::vector<cgm::FileWrite> none = cgm::SnapshotFiles({c}); cgm::FinishFileWrites(none); CHECK(none.empty());
+	}
+	// standalone DXT3 .dds import (PAT editor "Import texture"): kept as stored in a UNI / MBTL .pat, so exporting it
+	// unchanged gives back the same file byte for byte; an MBAACC .pat decodes it to PGTX pixels
+	{
+		const int W = 256;
+		std::vector<uint8_t> rgba((size_t)W * W * 4);
+		for (size_t i = 0; i < rgba.size(); i++) rgba[i] = (uint8_t)((i * 37 + (i >> 10) * 11) & 0xFF);
+		PartGfx<> src; std::string err; src.type = 3; src.w = src.h = 1; src.imageData = new char[16](); src.imageSize = 16;
+		CHECK(pattex::Encode(src, rgba.data(), W, W, 3, &err) && src.type == 3);
+		std::vector<char> dds(4 + 124 + src.imageSize);
+		memcpy(dds.data(), "DDS ", 4); memcpy(dds.data() + 4, src.ddsHeader, 124); memcpy(dds.data() + 128, src.imageData, src.imageSize);
+		const std::string in = tmp + "/in_dxt3.dds", out = tmp + "/out_dxt3.dds";
+		{ std::ofstream f(std::filesystem::u8path(in), std::ios::binary); f.write(dds.data(), (std::streamsize)dds.size()); }
+		std::vector<Texture *> texs;
+		PartGfx<> g; CHECK(g.ImportTexture(in.c_str(), texs, false).empty() && g.type == 3 && g.w == W && g.h == W && g.imageSize == (int)src.imageSize);
+		CHECK(g.ExportTexture(out.c_str()).empty());
+		std::ifstream f(std::filesystem::u8path(out), std::ios::binary); std::vector<char> back((std::istreambuf_iterator<char>(f)), std::istreambuf_iterator<char>());
+		CHECK(back == dds);   // byte-exact round trip
+		std::vector<uint8_t> dec, ref((size_t)W * W * 4); int dw = 0, dh = 0;
+		CHECK(PartGfx<>::DecodeDds(dds.data(), dds.size(), dec, dw, dh).empty() && dw == W && dh == W);
+		pattex::DecodeDxtKind((const uint8_t *)src.imageData, W, W, 3, ref.data());   // RGBA
+		bool same = dec.size() == ref.size();
+		for (size_t i = 0; same && i < dec.size(); i += 4) same = dec[i] == ref[i + 2] && dec[i + 1] == ref[i + 1] && dec[i + 2] == ref[i] && dec[i + 3] == ref[i + 3];
+		CHECK(same);   // the DDS decoder (BGRA) agrees with pat_texconv's BC2 decoder (RGBA)
+		PartGfx<> m; CHECK(m.ImportTexture(in.c_str(), texs, true).empty() && m.type == 0 && m.data && m.imageSize == 0);
+		CHECK(m.data && !memcmp(m.data, dec.data(), dec.size()));
+	}
 	// mod folder
 	{
 		CHECK(cgm::UsesModFolder("uni2") && cgm::UsesModFolder("mbtl") && !cgm::UsesModFolder("mbaacc"));
