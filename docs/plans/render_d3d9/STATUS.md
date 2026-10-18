@@ -11,9 +11,10 @@ Naming the two shas, as PLAN.md 4.2/4.3 asks.
 |---|---|
 | `BASELINE` = origin/main when the phase started | `45ea8ae59c1efd7bb6c1a9bc884c4205cef3174a` |
 | plain baseline exe sha256 | `a347a3e7aa1d3d535f93c5857515bb8e6ebe532ee1224316b1ce5e724cda9c1b` |
-| determinism commit (BASELINE + this only is the golden binary) | `81a948ad6647dd520733ad7ee47558bc68889134` |
-| determinism exe sha256 | `2e7039ee321db132f231d66d982f594e2558adfa5d7cdb3a62f4a18052f4e304` |
+| determinism commits (BASELINE + these four only is the golden binary) | `81a948a`, `f2e1cc0`, `a4eb48f`, `4f6ba36` |
+| determinism exe sha256 | `cf92645f1c77f7bd9780631d1d6e46fdd2b445b96e16150f7f7842de1aad7113` |
 | golden | `/mnt/c/dev/hantei-chan/render_parity/golden/45ea8ae59c1efd7bb6c1a9bc884c4205cef3174a` |
+| smoke golden (60 cases, outside git) | `/mnt/c/dev/hantei-chan/render_parity/golden_smoke` |
 | runs | `/mnt/c/dev/hantei-chan/render_parity/runs/<run-id>` |
 
 ## Phase H: parity harness (PLAN.md 4)
@@ -24,20 +25,31 @@ Naming the two shas, as PLAN.md 4.2/4.3 asks.
       plus `test_diff.py` (ctest `render_parity_tools`, no GPU).
 - [x] 3. Corpus generated (2635 cases); two plain-baseline runs rendered; the
       flakiness found (39/2757 cases) and fixed with `--deterministic`.
-- [ ] 4. Render the golden with the determinism binary.
+- [x] 4. Golden rendered with the determinism binary, twice.
+
+**Gate H1: PASS.** Two runs of the determinism binary are byte-identical on
+2847/2847 cases (0 differing).
+
+**Gate H2: PASS.** `test_diff.py` 14/14 and `diff.py golden golden` = 2757/2757
+PASS (the earlier corpus size; the current corpus is 2847).
 
 **Corpus** (committed `tools/render_parity/corpus/`): `chars_<game>.batch` for
 uni2 832, mbtl 463, unib 188, dfci 372, mbaacc 532; `stages_2d.batch` 9;
 `ui/stage3d_*.txt` 230; `ui/mbac_chars.txt` 12; `ui/stages_mbac.txt` 2; and one
 ui-script per committed shot set (39 files) covering areas D and E.
 
-| area | where |
-|---|---|
-| A character frames | `corpus/chars_*.batch` (every listed game; variants zoom 1/2/0.5, boxes 0/1, bg 0 and 255, one 1920x1080 and one 333x257 body) |
-| B onion skin / compare overlay | not yet written (5 + 5 cases) |
-| C stages | `corpus/stages_2d.batch` (MBAACC/MBAC 2D, 3 camera positions each) and `corpus/ui/stage3d_{uni2,mbtl,dfci,unib}.txt` (every BgList stage, centre/left/right) |
-| D UI | `corpus/ui/<set>__<script>.txt` for every `tools/ui/shots*/` script |
-| E PNG export | not yet written (5 patterns) |
+| area | where | cases |
+|---|---|---|
+| A character frames | `corpus/chars_*.batch` (every listed game; variants zoom 1/2/0.5, boxes 0/1, bg 0 and 255, one 1920x1080 and one 333x257 body) | 2387 |
+| B onion skin / compare overlay | `corpus/ui/overlay_*_onion224.txt` and `..._cmp.txt` (5 + 5, one process each) | 10 |
+| C stages | `corpus/stages_2d.batch` (MBAACC/MBAC 2D, 3 camera positions each) and `corpus/ui/stage3d_{uni2,mbtl,dfci,unib}.txt` (every BgList stage, centre/left/right) | 248 (+230 stage3d shots) |
+| D UI | `corpus/ui/<set>__<script>.txt` for every `tools/ui/shots*/` script (39 files) | ~180 |
+| E PNG export | `corpus/ui/export_{tr,ed,bx,ns}_*.txt`, 5 patterns each, scale 2 | 20 |
+| smoke subset | `corpus/smoke.batch` (idle frame of every character, zoom 1/2 + the 333x257 body) | 60 |
+
+MBAC ActCadenza characters (.DAT) open through the header-based File > Open route
+(a batch `open` sends .DAT to the stage loader): `corpus/ui/mbac_chars.txt` and
+`corpus/ui/stages_mbac.txt`.
 
 ## Flakiness (PLAN.md 4.3)
 
@@ -60,6 +72,13 @@ to 1/60 s the way the game's own background tick works:
    chr000 + BaseData.HA6 + MBAACC akiha sources, `new_sprite.png` and the cgtool
    `plain` export exactly as `tools/ui/cgm_smoke.sh` builds them. --no-reset
    skips it. Fixing the cause, not the golden.
+4. The welcome screen's install scan and the archive browser's preview and
+   thumbnail jobs run on worker threads, so under load a thumbnail could still
+   be missing at the frame a capture was taken (3 cases, 1-4 pixels, in one run
+   of 24). `--deterministic` now runs the install scan
+   (`abrowser::g_installScanSync`) and the browser jobs
+   (`abrowser::SetDeterministic`) inline, and keeps the workers' no-GL-upload
+   flag around the inline job.
 
 Fixed entry in `tools/render_parity/flaky.tsv`. Verified by three repeated runs
 of the affected areas, byte-identical.
@@ -68,8 +87,9 @@ of the affected areas, byte-identical.
 
 | gate | result | run | counts | date |
 |---|---|---|---|---|
-| H1 (two baseline runs byte-identical) | pending | | | 2026-10-18 |
-| H2 (`test_diff.py` + `diff.py golden golden`) | `test_diff.py` 14/14 PASS | local | 14 ok | 2026-10-18 |
+| H1 (two baseline runs byte-identical) | **PASS** | `golden/<BASELINE>` vs `..._repeat` | 2847 cases, 0 differing | 2026-10-18 |
+| H2 (`test_diff.py` + `diff.py golden golden`) | **PASS** | local | test_diff 14/14; diff golden golden 2757/2757 PASS | 2026-10-18 |
+| ctest | **PASS** | `build/ctest -j8` | 93/93, incl. `render_parity` 60/60 (45 s) and `render_parity_tools` | 2026-10-18 |
 
 ## BLOCKED
 
