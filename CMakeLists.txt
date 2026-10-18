@@ -23,6 +23,7 @@ include(GenerateVersionInfo)
 
 include(glad)
 include(imgui)
+include(sdl3)
 add_subdirectory(glm)
 add_subdirectory(tinyalloc)
 
