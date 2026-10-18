@@ -51,6 +51,14 @@ MBAC ActCadenza characters (.DAT) open through the header-based File > Open rout
 (a batch `open` sends .DAT to the stage loader): `corpus/ui/mbac_chars.txt` and
 `corpus/ui/stages_mbac.txt`.
 
+**Detached windows (area D, the last item of PLAN.md 4.2 D) are not in the
+byte-identical corpus.** `--detach` only creates an OS window when the app is
+not headless (`MainFrame::ProcessStartupArgs` skips it under `--headless`, and
+ImGui's viewports are off there), so the harness cannot capture them. They are
+covered by the P0 gate's visible run instead ("run every `tools/ui/shots*/`
+script visibly once with `AB_VISIBLE=1`"), where `--detach` +
+`--capture-windows` and `--post-key` are exercised by hand.
+
 ## Flakiness (PLAN.md 4.3)
 
 Two plain-baseline runs differed on 39 of 2757 cases. Two wall-clock sources,
@@ -92,6 +100,18 @@ of the affected areas, byte-identical.
 | ctest | **PASS** | `build/ctest -j8` | 93/93, incl. `render_parity` 60/60 (45 s) and `render_parity_tools` | 2026-10-18 |
 
 ## BLOCKED
+
+## Phase P0: SDL3 platform, GL kept (PLAN.md 6 P0)
+
+- [x] 1. SDL3 vendored as a submodule `deps/SDL`, pinned at the
+      `release-3.4.18` tag (`829a65d769d935c4852f8159e964312c0957260a`,
+      published 2026-10-02, 16 days old). Built static from the submodule by
+      `cmake/sdl3.cmake` (`SDL_STATIC ON`, `SDL_SHARED OFF`,
+      `SDL_TEST_LIBRARY OFF`). Verified with `make SDL3-static`: SDL 3.4.18
+      cross-compiles cleanly with x86_64-w64-mingw32 into `libSDL3.a`.
+- [ ] 2. `src/platform/platform.{h,cpp}`.
+- [ ] 3. `main.cpp` SDL main loop.
+- [ ] 4. ImGui backends.
 
 None.
 
