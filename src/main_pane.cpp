@@ -324,7 +324,7 @@ void MainPane::Draw()
 					if(currState.frame >= (int)tmpl->frames.size())
 						im::TextColored(ImVec4(1.0f, 0.4f, 0.4f, 1.0f), "%s", TXT("This frame is past the template's last frame: the game never shows it."));
 				}
-				if (currState.scriptOpenTrees) im::SetNextItemOpen(true);
+				if (currState.scriptOpenTrees) im::SetNextItemOpen(currState.scriptOpenTrees == 1);
 				if(im::TreeNode(LBL("State data")))
 				{
 					im::BeginDisabled(tmpl != nullptr);
