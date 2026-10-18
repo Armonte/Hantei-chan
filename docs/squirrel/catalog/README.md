@@ -19,6 +19,12 @@ runtime fields are left out. `--legacy` writes the schema 1 monolithic files ins
 JSON is minified; the `.md` files are the readable view. Hantei-chan needs only `<game>/chrNNN.json` for one character
 (its `patterns` and `moves[].ha6_patterns` are self-contained); the index is only needed for consts and shared files.
 
+Games: UNI2 1.42 and MBTL (Steam 25646393) are done. DFCI and UNIB use the same tool; they need their load-site rules in
+`LOADSITES` (from `../RE_MBTL_LOAD.md`), a `<game>_tr.json` and the folder rules checked. Per-game layout lives in `GAMES`
+in the generator: extra `kinds` rules (tried before `KINDS`), the cmd-table syntax, which folders are characters, whether
+variant scripts are read, and the state-name list. UNI2 uses the defaults, and its output is byte-identical to the first
+pass.
+
 Games: UNI2 1.42 is done. MBTL (#95) and DFCI/UNIB (#94) were generated with schema 1; once merged they need
 regenerating through `catalog_ext.finish()` (stack rule, split output), plus `loadsites/<game>.json` and
 `states/<game>.json` for their exes.
@@ -92,6 +98,10 @@ translation in the map yet.
 - `characters.<chrNNN>`: `num`, `short` (from `Def_ChrNo_<Short>`), `ha6_stack` (from `chrNNN_0.txt`), `moves`,
   `commands`, `patterns` (`id`, `ha6`, `code` PTCN, `title` PTT2, read with `tools/uni/ha6walk.py`), `sc_fields`
   (Battle_Status keys). `basedata_patterns` holds the shared BaseData.ha6 names once.
+- MBTL only: `characters.<chr>.variants.<N>` for each `chrNNN_mv_N.txt` with N != 0 (story/boss variants; RE_MBTL_LOAD.md:
+  "0 -> `_0`, 9 -> `_9` or `_N`, 999 -> no suffix"): `ha6_stack` (from `chrNNN_N.txt`), `moves`, `commands`, `sc_fields`,
+  `patterns` (only the HA6 files that are not in the `_0` stack) and `new_moves` (moves the `_0` mv file does not have).
+  Character keys are folder names, so `chr001solo` is its own entry (`num` 1).
 
 Related standards this builds on rather than repeats: EF/IF labels `../../uni_re/labels/LABELS.md`, natives
 `../api/<game>_api.json`, load order `../RE_MBTL_LOAD.md`, shared-file load sites and `reloadstd`
@@ -124,3 +134,22 @@ Related standards this builds on rather than repeats: EF/IF labels `../../uni_re
   and knockdown have natives found but their fields are not decompiled. exs is traced only for the CPU AI getter. veiloff
   and chainshift have no native in the API table. Each carries its reason.
 - Move code is listed as the `def_MC*` flags a move sets; behaviour inside closures is not summarised.
+- Pattern codes set through variables (`usepat`) or built strings are not resolved; `num: null` marks a code not found
+  in the character HA6 stack (often a BaseData or effect pattern, or a computed name).
+- `states` is a name match, not traced.
+
+## Known gaps (MBTL 25646393, first pass)
+
+- Translations: strings shared with UNI2 reuse `uni2_tr.json`; the rest are a machine first pass. None are reviewed.
+- Load sites come from RE_MBTL_LOAD.md and TRAINING_CHARA_SWITCH.md section 10 (MBTL rows). `_combase_boss*.txt` is marked
+  as loaded by the variant com files from their own `__dofile__` line, not from an exe trace. talk, win_mes, BattleTable,
+  System, Shader, bg and the story NPC folders (`data/_talk/npcNNN`) are `untraced`; `_finish_list.txt` (load step 4) is not
+  in this extract.
+- The COM loader 0x606B60 has no name in the IDB yet.
+- Pattern codes resolve first-match through the stack as the engine does; in MBTL `_temp.ha6` comes first and holds most
+  move codes, so `ha6` is usually `_temp.ha6`, not `chrNNN.ha6`.
+- The variant 999 stack (`chrNNN.txt`, no suffix) and `chr019_0_nobase.txt` are listed as files but not walked as a variant.
+  HA6-only folders (`chr001solos456`, `chr001solos8`) are listed as files only.
+- Story NPC scripts are classified, but their moves and commands are not read into `names`.
+- `states` uses an MBTL word list (Shield, Moon Drive, Moon Skill, Rapid Beat, Last Arc, Blast, Krypt, Heat/Magic Circuit).
+  It is a name match, not traced.
