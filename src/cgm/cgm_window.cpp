@@ -5,6 +5,7 @@
 #include "../character_instance.h"
 #include "../i18n.h"
 #include "../filedialog.h"
+#include "../app_log.h"
 #include "../png_writer.h"
 #include "cgm_ops.h"
 #include "cgm_export.h"
@@ -294,6 +295,14 @@ bool Window::fetch(CharacterInstance &ch, int id, int pal, int pups, std::vector
 
 void Window::upload(Thumb &t, const std::vector<uint8_t> &src, int w, int h, int maxSide, bool linear) {
 	std::vector<uint8_t> tmp; const uint8_t *px = src.data(); int tw = w, th = h;
+	// A decode with a bad size (negative / zero side, fewer pixels than w*h, past the GPU limit) made glTexImage2D fail with
+	// GL_INVALID_VALUE: a black tile, and the error surfaced in the main view as a GL error box on every scroll (issue #87).
+	GLint maxTex = 0; glGetIntegerv(GL_MAX_TEXTURE_SIZE, &maxTex);
+	if (w <= 0 || h <= 0 || src.size() < (size_t)w * h * 4) {
+		HC_LOG_WARN("CG manager: image decoded with an unusable size {}x{} ({} bytes); shown empty", w, h, src.size());
+		t.w = t.h = 0; t.empty = true; return;
+	}
+	if (maxTex > 0 && std::max(w, h) > maxTex && (maxSide <= 0 || maxSide > maxTex)) maxSide = maxTex;
 	if (maxSide > 0 && std::max(w, h) > maxSide) {   // box filter down to the thumbnail size
 		const float s = (float)maxSide / (float)std::max(w, h);
 		tw = std::max(1, (int)(w * s)); th = std::max(1, (int)(h * s));
@@ -311,7 +320,12 @@ void Window::upload(Thumb &t, const std::vector<uint8_t> &src, int w, int h, int
 	if (!t.tex) glGenTextures(1, &t.tex);
 	glBindTexture(GL_TEXTURE_2D, t.tex);
 	glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
+	while (glGetError() != GL_NO_ERROR) {}   // only this upload's error below
 	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, tw, th, 0, GL_RGBA, GL_UNSIGNED_BYTE, px);
+	if (const GLenum e = glGetError(); e != GL_NO_ERROR) {
+		HC_LOG_WARN("CG manager: texture upload {}x{} failed (GL 0x{:x}); shown empty", tw, th, (unsigned)e);
+		t.w = t.h = 0; t.empty = true; return;
+	}
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, linear ? GL_LINEAR : GL_NEAREST);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, linear ? GL_LINEAR : GL_NEAREST);
 	t.w = tw; t.h = th;
