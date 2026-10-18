@@ -11,8 +11,10 @@ exe_sha256=a347a3e7aa1d3d535f93c5857515bb8e6ebe532ee1224316b1ce5e724cda9c1b
 #   f2e1cc0  install scan runs inline (the welcome screen's "found via" column)
 #   a4eb48f  browser preview/thumbnail jobs run inline
 #   4f6ba36  keep the no-GL-upload flag around those inline jobs
-determ_sha=4f6ba36c549de2ed6138f383b2172c06ab91c2a9
-determ_exe_sha256=cf92645f1c77f7bd9780631d1d6e46fdd2b445b96e16150f7f7842de1aad7113
+#   b791bdb  bypass the on-disk thumbnail cache (LOCALAPPDATA) so the browser
+#            thumbnails are the ones this build renders, not the last run's
+determ_sha=b791bdb155672c2becbe68b051606805afda83d2
+determ_exe_sha256=0497a82c5c90c5d7b530e29ec9164c3c8f6153d7d98e639a36f898aeb7c004ea
 built=2026-10-18
 worktree=/home/teo/dev/hantei-chan-wt/render-baseline
 staged=/mnt/c/dev/hantei-chan/render_parity/baseline_bin/45ea8ae59c1efd7bb6c1a9bc884c4205cef3174a_det

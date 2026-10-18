@@ -1,5 +1,7 @@
 // Archive browser: the ImGui window (sources, listing with thumbnails, inline preview) and the welcome screen.
 #include "ui/ui_style.h"
+#include "imgui_utils.h"
+#include "app_log.h"
 #include "archive_browser_state.h"
 #include "game_table.h"
 #include "cgm/cgm_bank.h"
@@ -61,6 +63,7 @@ void ApplyPreview(std::shared_ptr<Preview> pv)
 	if (pv->serial != st.prevSerial) return;   // the user moved on
 	FreeTex(st.prevTex);
 	st.prev = std::move(*pv);
+	{ unsigned h = 2166136261u; for (uint8_t c : st.prev.rgba) { h ^= c; h *= 16777619u; } HC_LOG_INFO("DBGPV kind={} w={} h={} n={} hash={:08x}", (int)st.prev.kind, st.prev.w, st.prev.h, st.prev.rgba.size(), h); }
 	if (st.prev.kind == Preview::Image && !st.prev.rgba.empty()) { st.prevTex = MakeTex(st.prev.rgba.data(), st.prev.w, st.prev.h); st.prevTexW = st.prev.w; st.prevTexH = st.prev.h; st.view2.fit = true; }
 	st.bankTexFrame = -2;
 	if (st.prev.kind == Preview::Bank && st.prev.bank) {   // first drawable image
@@ -201,7 +204,7 @@ static void DrawImageView(unsigned tex, int w, int h, ViewState &v, const char *
 				dl->AddRectFilled(ImVec2(x, y), ImVec2(std::min(x + tile, c1.x), std::min(y + tile, c1.y)), ((ix + iy) & 1) ? IM_COL32(86, 86, 92, 255) : IM_COL32(64, 64, 70, 255));
 			}
 	}
-	if (tex) dl->AddImage((ImTextureID)(intptr_t)tex, a, b);
+	if (tex) ui::ImageWithOwnSampler(dl, (ImTextureID)(intptr_t)tex, a, b);
 	dl->AddRect(a, b, IM_COL32(120, 120, 130, 160));
 	dl->PopClipRect();
 	ImGui::EndChild();
@@ -343,7 +346,13 @@ static void DrawPreviewPane(State &st, OpenRequest &req, bool &open)
 			float z = std::min(av.x / pv.w, av.y / pv.h); if (z > 1.f) z = std::floor(z);
 			const ImVec2 sz(pv.w * z, pv.h * z);
 			ImGui::SetCursorPos(ImVec2(ImGui::GetCursorPosX() + (av.x - sz.x) * 0.5f, ImGui::GetCursorPosY() + (av.y - sz.y) * 0.5f));
-			ImGui::Image((ImTextureID)(intptr_t)st.prevTex, sz);
+			// The preview is pixel art uploaded with GL_NEAREST; keep its own
+			// sampler (see ui::ImageWithOwnSampler).
+			{
+				const ImVec2 a = ImGui::GetCursorScreenPos();
+				ui::ImageWithOwnSampler(ImGui::GetWindowDrawList(), (ImTextureID)(intptr_t)st.prevTex, a, ImVec2(a.x + sz.x, a.y + sz.y));
+				ImGui::Dummy(sz);
+			}
 			ImGui::EndChild();
 			DrawFacts(pv);
 		} else {
@@ -505,7 +514,7 @@ static void DrawList(State &st, OpenRequest &req, bool &open)
 				dl->AddRectFilled(p, ImVec2(p.x + cw - 6, p.y + ch - 6), ImGui::GetColorU32(selected ? ImGuiCol_Header : hov ? ImGuiCol_HeaderHovered : ImGuiCol_FrameBg), 4.f);
 				dl->AddRect(p, ImVec2(p.x + cw - 6, p.y + ch - 6), ImGui::GetColorU32(selected ? ImGuiCol_HeaderActive : ImGuiCol_Border), 4.f);
 				Thumb *t = ThumbFor(st.selSource, (int)st.view[pos], true);
-				if (t) { const float z = std::min(100.f / t->w, 100.f / t->h); const ImVec2 sz(t->w * z, t->h * z); const ImVec2 q(p.x + (cw - 6 - sz.x) * 0.5f, p.y + 6 + (100 - sz.y) * 0.5f); dl->AddImage((ImTextureID)(intptr_t)t->tex, q, ImVec2(q.x + sz.x, q.y + sz.y)); }
+				if (t) { const float z = std::min(100.f / t->w, 100.f / t->h); const ImVec2 sz(t->w * z, t->h * z); const ImVec2 q(p.x + (cw - 6 - sz.x) * 0.5f, p.y + 6 + (100 - sz.y) * 0.5f); ui::ImageWithOwnSampler(dl, (ImTextureID)(intptr_t)t->tex, q, ImVec2(q.x + sz.x, q.y + sz.y)); }
 				else DrawBadge(dl, ImVec2(p.x + (cw - 6 - 48) * 0.5f, p.y + 30), 48, it.type);
 				std::string nm = it.name; const size_t sl = nm.find_last_of('/'); if (sl != std::string::npos) nm = nm.substr(sl + 1);
 				dl->PushClipRect(p, ImVec2(p.x + cw - 8, p.y + ch - 6), true);
@@ -556,7 +565,7 @@ static void DrawList(State &st, OpenRequest &req, bool &open)
 		float tx = p.x + 2;
 		if (thumbs) {
 			Thumb *t = ThumbFor(st.selSource, (int)idx, true);
-			if (t) { const float z = std::min(icon / t->w, icon / t->h); const ImVec2 sz(t->w * z, t->h * z); const ImVec2 q(p.x + 2 + (icon - sz.x) * 0.5f, p.y + 2 + (icon - sz.y) * 0.5f); dl->AddImage((ImTextureID)(intptr_t)t->tex, q, ImVec2(q.x + sz.x, q.y + sz.y)); }
+			if (t) { const float z = std::min(icon / t->w, icon / t->h); const ImVec2 sz(t->w * z, t->h * z); const ImVec2 q(p.x + 2 + (icon - sz.x) * 0.5f, p.y + 2 + (icon - sz.y) * 0.5f); ui::ImageWithOwnSampler(dl, (ImTextureID)(intptr_t)t->tex, q, ImVec2(q.x + sz.x, q.y + sz.y)); }
 			else DrawBadge(dl, ImVec2(p.x + 2, p.y + 2), icon, it.type);
 			tx += icon + 6;
 		}
@@ -895,3 +904,4 @@ std::string DrawWelcome(const std::vector<std::string> &recentFiles)
 }
 
 } // namespace abrowser
+#include "app_log.h"

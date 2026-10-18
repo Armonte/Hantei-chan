@@ -46,6 +46,11 @@ mkdir -p "$W"
 cp "$EXE_DIR/gonptechan.exe" "$W/gonptechan.exe"
 cp -r "$EXE_DIR/res" "$W/" 2>/dev/null || true
 mkdir -p "$W/res/squirrel" && cp "$D"/docs/squirrel/api/*_api.json "$W/res/squirrel/" 2>/dev/null || true
+# The archive browser remembers the folders it last opened in han2_settings.ini
+# and the welcome screen draws them ("Recent game folders and archives"). A run
+# would otherwise show whatever the previous run left, so the file starts from a
+# fixed state (PLAN.md 4.3).
+printf '[browser]\nThumbs=1\n' > "$W/han2_settings.ini"
 
 WSL_OUT="$(wslpath -m "$SHOTS")"
 win() { wslpath -w "$1"; }
