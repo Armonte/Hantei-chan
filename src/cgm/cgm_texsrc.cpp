@@ -267,4 +267,42 @@ bool RestoreModFile(const std::string &dst, std::string *err) {
 	return !ec;
 }
 
+static std::shared_ptr<const std::vector<uint8_t>> ReadSnapshot(const std::string &utf8Path) {
+	std::ifstream f(fs::u8path(utf8Path), std::ios::binary);
+	if (!f) return nullptr;
+	return std::make_shared<std::vector<uint8_t>>(std::istreambuf_iterator<char>(f), std::istreambuf_iterator<char>());
+}
+
+std::vector<FileWrite> SnapshotFiles(const std::vector<std::string> &paths) {
+	std::vector<FileWrite> w;
+	for (const std::string &p : paths) w.push_back({p, ReadSnapshot(p), nullptr});
+	return w;
+}
+
+void FinishFileWrites(std::vector<FileWrite> &w) {
+	for (FileWrite &f : w) f.after = ReadSnapshot(f.path);
+	w.erase(std::remove_if(w.begin(), w.end(), [](const FileWrite &f) {
+		if (!f.before || !f.after) return !f.before && !f.after;
+		return *f.before == *f.after;
+	}), w.end());
+}
+
+bool ApplyFileWrites(const std::vector<FileWrite> &w, bool redo, std::string *err) {
+	bool ok = true;
+	for (const FileWrite &f : w) {
+		const auto &want = redo ? f.after : f.before;
+		std::error_code ec;
+		if (!want) { fs::remove(fs::u8path(f.path), ec); if (ec) { ok = false; if (err) *err = f.path + ": " + ec.message(); } continue; }
+		const fs::path t = fs::u8path(f.path); fs::path tmp = t; tmp += ".hctmp";
+		{ std::ofstream o(tmp, std::ios::binary); o.write((const char *)want->data(), (std::streamsize)want->size()); if (!o) { ok = false; if (err) *err = "Could not write " + f.path; continue; } }
+		fs::rename(tmp, t, ec);
+		if (ec) { fs::remove(tmp, ec); ok = false; if (err) *err = "Could not write " + f.path; }
+	}
+	return ok;
+}
+
+int CountCreatedFiles(const std::vector<FileWrite> &w) {
+	int n = 0; for (const FileWrite &f : w) n += !f.before && f.after; return n;
+}
+
 } // namespace cgm

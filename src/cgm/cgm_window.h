@@ -149,7 +149,11 @@ private:
 	void drawEffect(CharacterInstance &ch, const WindowHost &host);
 	void drawBlockOverlay(const ImVec2 &p0, float zoom, int x1, int y1);
 	void clickBlock(const ImVec2 &p0, float zoom, int x1, int y1);
-	void undoRedo(CharacterInstance &ch, bool redo, const WindowHost &host);
+	// confirmed: the user agreed to delete the files the step created (asked first otherwise, see drawUndoDeleteConfirm)
+	void undoRedo(CharacterInstance &ch, bool redo, const WindowHost &host, bool confirmed = false);
+	bool askUndoDelete = false;
+	void drawUndoDeleteConfirm(CharacterInstance &ch, const WindowHost &host);
+	void pushForeignStep(CharacterInstance &ch, const std::string &label, std::shared_ptr<CgForeignBank> before);
 	void clearThumbs();
 	bool fetch(CharacterInstance &ch, int id, int pal, int pups, std::vector<uint8_t> &px, int &w, int &h);
 	void upload(Thumb &t, const std::vector<uint8_t> &px, int w, int h, int maxSide, bool linear);
