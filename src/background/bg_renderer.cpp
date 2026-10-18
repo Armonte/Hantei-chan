@@ -254,19 +254,27 @@ void Renderer::Update() {
 	if (!enabled || !file || paused) return;
 	// The game's background tick runs at a fixed 60 Hz. The editor renders
 	// at the display refresh rate, so accumulate real time and step at 60 Hz.
+	// --deterministic: one step per rendered frame instead, so the same shot
+	// taken on a fast and a loaded machine lands on the same animation tick
+	// (the parity harness captures a fixed frame number, not a wall-clock time).
 	using clock = std::chrono::steady_clock;
 	static clock::time_point last = clock::now();
 	static double accum = 0.0;
-	clock::time_point now = clock::now();
-	double dt = std::chrono::duration<double>(now - last).count();
-	last = now;
-	if (dt > 0.25) dt = 0.25;            // clamp after a pause / window stall
-	accum += dt;
 	const double STEP = 1.0 / 60.0;
-	for (int steps = 0; accum >= STEP && steps < 8; ++steps) {
+	double dt = STEP;
+	if (!deterministic) {
+		clock::time_point now = clock::now();
+		dt = std::chrono::duration<double>(now - last).count();
+		last = now;
+		if (dt > 0.25) dt = 0.25;        // clamp after a pause / window stall
+	}
+	accum += dt;
+	const int maxSteps = deterministic ? 1 : 8;
+	for (int steps = 0; accum >= STEP && steps < maxSteps; ++steps) {
 		file->UpdateAnimations();
 		accum -= STEP;
 	}
+	if (deterministic) accum = 0.0;
 }
 
 // ---- texture cache ---------------------------------------------------------

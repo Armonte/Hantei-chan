@@ -93,6 +93,7 @@ bool ParseWave2StartupArg(const char* arg, const wchar_t* next, int& i)
 	if (!strcmp(arg, "--hide-boxes")) { gStartup.hideBoxes = true; return true; }
 	if (!strcmp(arg, "--hide-spawns")) { gStartup.hideSpawns = true; return true; }
 	if (!strcmp(arg, "--headless")) { gStartup.headless = true; return true; }
+	if (!strcmp(arg, "--deterministic")) { gStartup.deterministic = true; return true; }
 	if (!next) return false;
 	if (!strcmp(arg, "--size")) { const std::string v = value(CP_ACP); return ParseSizeArg(v), true; }
 	if (!strcmp(arg, "--center")) { const std::string v = value(CP_ACP); return ParseCenterArg(v), true; }
