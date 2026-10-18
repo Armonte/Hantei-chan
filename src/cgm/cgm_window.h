@@ -60,6 +60,7 @@ private:
 	const CharacterInstance *owner = nullptr;
 	unsigned long long cgGen = ~0ull;
 	std::unique_ptr<Bank> bank;     // parsed model (null for foreign banks / unparsable)
+	std::string bankErr;            // why the model rejected a BMP Cutter bank (shown in the limited-format note)
 	std::unordered_map<uint32_t, int> atlas;
 	UsageIndex usage;
 	std::vector<int> shown;         // ids passing the filters

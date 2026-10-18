@@ -261,3 +261,5 @@
 {"New PUPS bank %d", "新規PUPSバンク %d"},
 {"Export for PovertyCaster", "PovertyCaster用に書き出し"},
 {"Import folder", "フォルダーから読み込み"},
+{"Could not write %s", "%s を書き込めませんでした"},
+{"The bank editor could not read this bank as a standard BMP Cutter bank: %s", "このバンクを標準のBMP Cutterバンクとして読めませんでした: %s"},
