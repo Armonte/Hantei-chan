@@ -29,7 +29,12 @@ struct GameInfo {
 // Looks at file names only (no archive is opened). Game::None when the folder holds nothing recognisable.
 GameInfo DetectGame(const std::string &dir);
 
-extern bool show;                        // the dockable window
+extern bool show;                        // the dockable window (closed at startup unless Preferences > "Open the archive browser on startup")
+// Dock node the window joins as a tab the first time it opens (MainFrame sets it to the Right Pane's node; 0 = float, sized by ui::FitNextWindow).
+// Only used while imgui.ini has nothing for the window: a size / dock place the user picked is kept.
+extern unsigned dockTarget;
+// Shows the window; gamesPage = the game list (every supported game, install found or Locate..., recent folders / files) instead of the listing.
+void ShowWindow(bool gamesPage = false);
 // Opens a game folder, an archive or a loose file's folder in the browser (and shows the window). Returns an error text or empty.
 std::string OpenPath(const std::string &path);
 // File dialogs + OpenPath.
@@ -47,8 +52,8 @@ struct OpenRequest {
 	std::string archivePath, entryName, origin;            // Gof1Entry / write-back target
 	std::string path;                                      // LooseFile: a file on disk (loose, or a managed working copy of an archive entry)
 };
-// Draws the window; true when the user opened something (req filled).
-bool Draw(OpenRequest &req);
+// Draws the window; true when the user opened something (req filled). recentFiles: the editor's recent files (games page).
+bool Draw(OpenRequest &req, const std::vector<std::string> &recentFiles);
 
 // ---- writing back -----------------------------------------------------------------------------------------------------------------------------------
 struct EntryEdit { std::string name; std::vector<uint8_t> data; };   // name as stored (CP932 for PAC / GOF1)
@@ -67,8 +72,10 @@ bool SwapRebuiltArchive(const std::string &archivePath, const std::string &rebui
 // ---- scripted UI (tests / screenshots without the real mouse) ----------------------------------------------------------------------------------------
 // Commands (MainFrame's --ui-script runner forwards them): browse <path> | source <substring> | filter <text> | type <name|all> | select <substring> | next | prev
 //   | open | key <Up|Down|Enter|Home|End|PageDown|PageUp> | frame <n> | palette <n> | zoom <fit|1|2|4> | thumbs <on|off>
+//   | browser <open|games|close> (show the window / show it on the game list / close it)
 bool ScriptCommand(const std::string &cmd, const std::string &arg, std::string *msg);
-// Welcome screen (shown when no character is open): game buttons, recent folders / files. Returns a file the user picked to open ('' = none).
+// Start card (nothing open and the browser closed): a small centred panel with "Archive Browser (Ctrl+B)", "Game list" and "Open...".
+// Returns a file the user picked to open ('' = none).
 std::string DrawWelcome(const std::vector<std::string> &recentFiles);
 bool Busy();          // loads / previews / thumbnails still running
 
