@@ -45,6 +45,10 @@ const Install &InstallOf(Game g);
 bool ScanDone();
 // Runs on the browser worker: Steam libraryfolders.vdf + appmanifests, common paths, the remembered folder per game. Each candidate must DetectGame() as the row's game.
 void RescanInstalls();
+// --deterministic: run that scan inline on the first call instead of on the
+// worker, so a fixed frame number always shows the scanned welcome screen
+// (PLAN.md 4.3). Defined in game_table.cpp; set from the --deterministic flag.
+extern bool g_installScanSync;
 // Remembered folder (han2_settings.ini [browser] Dir_<id>).
 std::string RememberedDir(Game g);
 void RememberDir(Game g, const std::string &dir);

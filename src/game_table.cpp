@@ -12,6 +12,14 @@ namespace fs = std::filesystem;
 
 namespace abrowser {
 
+// --deterministic (defined in startup_args.cpp, main target only; the headless
+// tool targets that link this file never set it). PLAN.md 4.3: the install scan
+// runs on the browser worker, so under load the welcome screen's "found via /
+// change..." column can still read "looking for the install..." at the frame a
+// capture is taken. When set, the scan runs inline on the first call instead,
+// so a fixed frame number always shows the scanned state.
+bool g_installScanSync = false;
+
 const char *FamilyName(Family f, bool ja)
 {
 	switch (f) {
@@ -170,7 +178,7 @@ bool ScanDone() { std::lock_guard<std::mutex> lk(g_mx); return g_done; }
 void RescanInstalls()
 {
 	{ std::lock_guard<std::mutex> lk(g_mx); if (g_started) return; g_started = true; }
-	PostJob([] {
+	auto scan = [] {
 		std::map<Game, Install> found;
 		const auto apps = SteamApps();
 		std::error_code ec;
@@ -184,8 +192,12 @@ void RescanInstalls()
 			for (auto &a : apps) for (auto *n : d.steamNames) if (Lower(a.name).find(Lower(n)) != std::string::npos) tryDir(a.dir, "Steam");
 			for (auto *c : d.commonPaths) tryDir(c, "common path");
 		}
-		PostMain([found] { std::lock_guard<std::mutex> lk(g_mx); g_found = found; g_done = true; });
-	});
+		std::lock_guard<std::mutex> lk(g_mx);
+		g_found = std::move(found);
+		g_done = true;
+	};
+	if (g_installScanSync) { scan(); return; }
+	PostJob([scan] { scan(); });
 }
 
 } // namespace abrowser
