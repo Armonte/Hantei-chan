@@ -1,0 +1,26 @@
+# S8 converter evidence (before): roster conversion of G_CHAOS / SION in the editor. Scripted only (no desktop input).
+openany C:\dev\hantei-chan\gamedata\mbac_to_cc\roster\g_chaos\g_chaos.txt
+wait 60
+framenodes 7
+pattern 100
+viewframe 10
+wait 30
+capture OUT/s8_shots_before_before_gchaos_p100_f10_arcdrive.png
+pattern 0
+viewframe 0
+zoomview 1
+wait 30
+capture OUT/s8_shots_before_before_gchaos_p0_f0_boxes.png
+pattern 64
+viewframe 2
+zoomview 1
+wait 30
+capture OUT/s8_shots_before_before_gchaos_p64_f2_parts_ef.png
+openany C:\dev\hantei-chan\gamedata\mbac_to_cc\roster\sion\sion.txt
+wait 60
+framenodes 7
+pattern 65
+viewframe 0
+wait 30
+capture OUT/s8_shots_before_before_sion_p65_f0_shield.png
+quit

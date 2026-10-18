@@ -1,0 +1,17 @@
+# PartSet / PAT editor pane on RBO ACOLYTE_F (C:\games\rbo_run used by L_all.txt is gone; this reads the lineage sample).
+# Read-only: nothing is saved.
+browse C:\games\rbo\_lineage_samples
+waitidle
+select ACOLYTE_F.DT2
+waitidle
+wait 30
+open
+wait 160
+partseditor
+wait 40
+capture OUT/shots_layout_L_pat_L10_rbo_parts.png
+lang ja
+wait 20
+capture OUT/shots_layout_L_pat_L10_rbo_parts_ja.png
+lang en
+quit

@@ -1,0 +1,15 @@
+# CG manager smoke 3 (MBAACC akiha copy): PovertyCaster palette export, palettes 0..1 as slots 37..38, plus the grown .pal.
+openany C:/dev/hantei-chan/work/ab_s45/fx/mbaacc/data/akiha.txt
+wait 150
+cgm open
+wait 30
+cgm tab Palettes
+wait 20
+cgm set ccFrom 0
+cgm set ccTo 1
+cgm set ccFirst 37
+cgm press Export to <game>\palettes
+wait 30
+cgm status
+capture OUT/shots_cgm_cgm_3_cc_palettes_cgm_3_01_cc_export.png
+quit

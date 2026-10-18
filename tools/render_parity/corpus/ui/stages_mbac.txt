@@ -1,0 +1,8 @@
+# MBAC stages (.DAT via header-based open)
+openany C:\dev\hantei-chan\gamedata\mbac\05\BG00.DAT
+wait 120
+capture OUT/stage_mbac_bg00.png
+openany C:\dev\hantei-chan\gamedata\mbac\05\BG01.DAT
+wait 120
+capture OUT/stage_mbac_bg01.png
+quit

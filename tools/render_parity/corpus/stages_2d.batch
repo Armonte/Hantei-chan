@@ -1,0 +1,9 @@
+open C:\games\mbaacc\bg\bg01.dat; zoom 1; size 1280x720; bg 0,0,0; boxes 0; center 0,0; export OUT/stage_mbaacc_bg01_c.png
+open C:\games\mbaacc\bg\bg01.dat; zoom 1; size 1280x720; bg 0,0,0; boxes 0; center -120,0; export OUT/stage_mbaacc_bg01_l.png
+open C:\games\mbaacc\bg\bg01.dat; zoom 1; size 1280x720; bg 0,0,0; boxes 0; center 120,0; export OUT/stage_mbaacc_bg01_r.png
+open C:\games\mbaacc\bg\bg10.dat; zoom 1; size 1280x720; bg 0,0,0; boxes 0; center 0,0; export OUT/stage_mbaacc_bg10_c.png
+open C:\games\mbaacc\bg\bg10.dat; zoom 1; size 1280x720; bg 0,0,0; boxes 0; center -120,0; export OUT/stage_mbaacc_bg10_l.png
+open C:\games\mbaacc\bg\bg10.dat; zoom 1; size 1280x720; bg 0,0,0; boxes 0; center 120,0; export OUT/stage_mbaacc_bg10_r.png
+open C:\games\mbaacc\bg\bg18.dat; zoom 1; size 1280x720; bg 0,0,0; boxes 0; center 0,0; export OUT/stage_mbaacc_bg18_c.png
+open C:\games\mbaacc\bg\bg18.dat; zoom 1; size 1280x720; bg 0,0,0; boxes 0; center -120,0; export OUT/stage_mbaacc_bg18_l.png
+open C:\games\mbaacc\bg\bg18.dat; zoom 1; size 1280x720; bg 0,0,0; boxes 0; center 120,0; export OUT/stage_mbaacc_bg18_r.png

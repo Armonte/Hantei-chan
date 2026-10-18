@@ -1,0 +1,33 @@
+# CG manager smoke 1 (MBTL chr000, 4 projects + shared BaseData): add at 0, move, delete with confirmation, then the one save.
+# Fixture: tools/ui/cgm_smoke.sh copies gamedata/mbtl/data/chr000 + BaseData.HA6 to work/ab_s45/fx first.
+openany C:/dev/hantei-chan/work/ab_s45/fx/mbtl/data/chr000/chr000_0.txt
+wait 120
+cgm open
+wait 40
+cgm select 1
+wait 20
+capture OUT/shots_cgm_cgm_1_structure_save_cgm_1_01_open.png
+cgm set insertAt 0
+cgm path C:/dev/hantei-chan/work/ab_s45/fx/new_sprite.png
+cgm press Add image from PNG...
+wait 40
+cgm status
+capture OUT/shots_cgm_cgm_1_structure_save_cgm_1_02_added_at_0.png
+cgm select 2
+cgm set moveTarget 100
+cgm press Move
+wait 40
+cgm status
+capture OUT/shots_cgm_cgm_1_structure_save_cgm_1_03_moved_2_to_100.png
+cgm select 50
+cgm press Delete (renumber)
+wait 20
+capture OUT/shots_cgm_cgm_1_structure_save_cgm_1_04_delete_confirm.png
+cgm press Do it
+wait 40
+cgm status
+cgm press Save bank, its projects and this character
+wait 90
+cgm status
+capture OUT/shots_cgm_cgm_1_structure_save_cgm_1_05_saved.png
+quit

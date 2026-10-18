@@ -1,0 +1,19 @@
+openany C:\dev\hantei-chan\gamedata\mbac_to_cc\roster_v2\g_chaos\g_chaos.txt
+wait 60
+pattern 0
+viewframe 0
+zoomview 1
+wait 30
+pattern 100
+viewframe 10
+zoomview 1
+wait 60
+capture OUT/s8_shots_control_s8_probe_a.png
+openany C:\dev\hantei-chan\gamedata\mbac_to_cc\roster\g_chaos\g_chaos.txt
+wait 60
+pattern 100
+viewframe 10
+zoomview 1
+wait 60
+capture OUT/s8_shots_control_s8_probe_b.png
+quit

@@ -1,0 +1,17 @@
+# CG window drop/import + CG manager effect section (rename, base point, block grid)
+browse C:\games\rbo_run
+waitidle
+select ACOLYTE_F.DT2
+waitidle
+open
+wait 160
+cgm on
+cgmselect 2
+wait 40
+capture OUT/shots_pn10_cg_effects_pn10_cgm_effect_blocks.png
+cgm off
+cgwindow on
+cgimport C:\dev\hantei-chan\work\pacnyx\effect_96x64.png
+wait 30
+capture OUT/shots_pn10_cg_effects_pn11_cg_window_import.png
+quit

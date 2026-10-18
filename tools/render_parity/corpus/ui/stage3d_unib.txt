@@ -1,0 +1,52 @@
+# 3D stage view: five unib stages, three camera positions
+stage3d open D:\Games\unib\bg bg01
+stage3d frame 0
+stage3d cam 0 0 1
+capture OUT/stage3d_unib_bg01_c.png
+stage3d frame 0
+stage3d cam -3 0 1
+capture OUT/stage3d_unib_bg01_l.png
+stage3d frame 0
+stage3d cam 3 0 1
+capture OUT/stage3d_unib_bg01_r.png
+stage3d open D:\Games\unib\bg bg02
+stage3d frame 0
+stage3d cam 0 0 1
+capture OUT/stage3d_unib_bg02_c.png
+stage3d frame 0
+stage3d cam -3 0 1
+capture OUT/stage3d_unib_bg02_l.png
+stage3d frame 0
+stage3d cam 3 0 1
+capture OUT/stage3d_unib_bg02_r.png
+stage3d open D:\Games\unib\bg bg03
+stage3d frame 0
+stage3d cam 0 0 1
+capture OUT/stage3d_unib_bg03_c.png
+stage3d frame 0
+stage3d cam -3 0 1
+capture OUT/stage3d_unib_bg03_l.png
+stage3d frame 0
+stage3d cam 3 0 1
+capture OUT/stage3d_unib_bg03_r.png
+stage3d open D:\Games\unib\bg bg04
+stage3d frame 0
+stage3d cam 0 0 1
+capture OUT/stage3d_unib_bg04_c.png
+stage3d frame 0
+stage3d cam -3 0 1
+capture OUT/stage3d_unib_bg04_l.png
+stage3d frame 0
+stage3d cam 3 0 1
+capture OUT/stage3d_unib_bg04_r.png
+stage3d open D:\Games\unib\bg bg05
+stage3d frame 0
+stage3d cam 0 0 1
+capture OUT/stage3d_unib_bg05_c.png
+stage3d frame 0
+stage3d cam -3 0 1
+capture OUT/stage3d_unib_bg05_l.png
+stage3d frame 0
+stage3d cam 3 0 1
+capture OUT/stage3d_unib_bg05_r.png
+quit
