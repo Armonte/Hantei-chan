@@ -228,6 +228,32 @@ static int SelfTest() {
 		std::vector<uint8_t> a1, b1; pattex::EncodeDxt(rgba.data(), 128, 128, true, a1); pattex::EncodeDxtKind(rgba.data(), 128, 128, 5, b1); CHECK(a1 == b1);
 		pattex::EncodeDxt(rgba.data(), 128, 128, false, a1); pattex::EncodeDxtKind(rgba.data(), 128, 128, 1, b1); CHECK(a1 == b1);
 	}
+	// standalone DXT3 .dds import (PAT editor "Import texture"): kept as stored in a UNI / MBTL .pat, so exporting it
+	// unchanged gives back the same file byte for byte; an MBAACC .pat decodes it to PGTX pixels
+	{
+		const int W = 256;
+		std::vector<uint8_t> rgba((size_t)W * W * 4);
+		for (size_t i = 0; i < rgba.size(); i++) rgba[i] = (uint8_t)((i * 37 + (i >> 10) * 11) & 0xFF);
+		PartGfx<> src; std::string err; src.type = 3; src.w = src.h = 1; src.imageData = new char[16](); src.imageSize = 16;
+		CHECK(pattex::Encode(src, rgba.data(), W, W, 3, &err) && src.type == 3);
+		std::vector<char> dds(4 + 124 + src.imageSize);
+		memcpy(dds.data(), "DDS ", 4); memcpy(dds.data() + 4, src.ddsHeader, 124); memcpy(dds.data() + 128, src.imageData, src.imageSize);
+		const std::string in = tmp + "/in_dxt3.dds", out = tmp + "/out_dxt3.dds";
+		{ std::ofstream f(std::filesystem::u8path(in), std::ios::binary); f.write(dds.data(), (std::streamsize)dds.size()); }
+		std::vector<Texture *> texs;
+		PartGfx<> g; CHECK(g.ImportTexture(in.c_str(), texs, false).empty() && g.type == 3 && g.w == W && g.h == W && g.imageSize == (int)src.imageSize);
+		CHECK(g.ExportTexture(out.c_str()).empty());
+		std::ifstream f(std::filesystem::u8path(out), std::ios::binary); std::vector<char> back((std::istreambuf_iterator<char>(f)), std::istreambuf_iterator<char>());
+		CHECK(back == dds);   // byte-exact round trip
+		std::vector<uint8_t> dec, ref((size_t)W * W * 4); int dw = 0, dh = 0;
+		CHECK(PartGfx<>::DecodeDds(dds.data(), dds.size(), dec, dw, dh).empty() && dw == W && dh == W);
+		pattex::DecodeDxtKind((const uint8_t *)src.imageData, W, W, 3, ref.data());   // RGBA
+		bool same = dec.size() == ref.size();
+		for (size_t i = 0; same && i < dec.size(); i += 4) same = dec[i] == ref[i + 2] && dec[i + 1] == ref[i + 1] && dec[i + 2] == ref[i] && dec[i + 3] == ref[i + 3];
+		CHECK(same);   // the DDS decoder (BGRA) agrees with pat_texconv's BC2 decoder (RGBA)
+		PartGfx<> m; CHECK(m.ImportTexture(in.c_str(), texs, true).empty() && m.type == 0 && m.data && m.imageSize == 0);
+		CHECK(m.data && !memcmp(m.data, dec.data(), dec.size()));
+	}
 	// mod folder
 	{
 		CHECK(cgm::UsesModFolder("uni2") && cgm::UsesModFolder("mbtl") && !cgm::UsesModFolder("mbaacc"));
