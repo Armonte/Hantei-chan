@@ -80,6 +80,7 @@ context(context_)
 	// go to the stage and Ctrl+S saves the stage file.
 	bgRenderer.SetPatPlacement(gSettings.stagePatAuthoring ? bg::Renderer::PatPlacement::Authoring
 	                                                       : bg::Renderer::PatPlacement::Game);
+	bgRenderer.SetDeterministic(gStartup.deterministic);   // --deterministic: fixed animation tick per frame
 	bgCamera.clampToGame = gSettings.stageClampCamera;
 	bg::g_onPatPlacementChanged = [](bool a) { gSettings.stagePatAuthoring = a; };
 	shortcuts.setContextHandler(ShortcutContext::stageView, [this](ShortcutAction a) {
@@ -124,6 +125,10 @@ void MainFrame::Draw()
 	}
 	ImGui_ImplOpenGL3_NewFrame();
 	ImGui_ImplWin32_NewFrame();
+	// --deterministic: ImGui fades the modal dim background with io.DeltaTime
+	// (imgui.cpp DimBgRatio = +DeltaTime * 6.0f). Pin the frame step so the fade
+	// reaches the same value on every machine. The parity harness relies on it.
+	if (gStartup.deterministic) ImGui::GetIO().DeltaTime = 1.0f / 60.0f;
 	ImGui::NewFrame();
 	// imgui 1.92.9 made numeric fields apply typed values only on deactivation. Hantei-chan relies on
 	// live edits (preview while typing, keyframe step from a focused field #61), and a deferred apply

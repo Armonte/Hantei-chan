@@ -103,6 +103,12 @@ struct StartupArgs {
 
 	// Headless render / export (startup_args.cpp RunBatch)
 	bool headless = false;
+	// --deterministic: pin every wall-clock-driven effect so the render-parity
+	// harness (PLAN.md 4.3) is byte-reproducible. Two things read the clock
+	// while drawing today: the stage background animation steps on real time,
+	// and ImGui's modal dim fade advances by io.DeltaTime. Both become a fixed
+	// 1/60 s per frame. Never on by default.
+	bool deterministic = false;
 	int exitCode = 0;
 	int sizeW = 0, sizeH = 0;         // --size: view render target size override (0 = client size)
 	bool hasCenter = false; float centerX = 0.f, centerY = 0.f;

@@ -41,6 +41,11 @@ public:
 
 	// Per-frame animation tick. Skipped when paused.
 	void   Update();
+	// --deterministic parity runs: step exactly one 1/60 s animation tick per
+	// rendered frame instead of accumulating real time, so a fixed frame number
+	// renders the same on a fast and a loaded machine (PLAN.md 4.3).
+	void   SetDeterministic(bool v)      { deterministic = v; }
+	bool   IsDeterministic() const       { return deterministic; }
 
 	// Draw all objects in `file` into the current GL framebuffer using the
 	// viewport (clientW, clientH). Camera state is read live every call.
@@ -103,6 +108,7 @@ private:
 	::Render* hostRender    = nullptr;
 	bool  enabled           = false;
 	bool  paused            = false;
+	bool  deterministic     = false;
 	bool  parallaxEnabled   = true;
 	bool  showDebugOverlay  = true;  // u4ick draws them unconditionally.
 	bool  showWeather       = true;
