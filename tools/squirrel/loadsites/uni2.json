@@ -1,0 +1,35 @@
+{
+ "_source": "UNI2 1.42 IDB C:\\dev\\ida\\server\\uni2_142_4ebed985.exe.i64, traced 2026-10-17 from each path string's xref to the opening function and up its callers. First matching regex wins (posix path relative to the data dir).",
+ "sites": [
+  ["^BattleRes/talk/script/chr\\d+/talk_chr", {"fn":"SingleMode_OpenCharaTalkScript","addr":"0x8219B0","when":"single/story mode, when a character's talk starts (callers 0x824530/0x824880 <- 0x824AC0; exact scene of 0x824AC0 not confirmed)","consumer":"talk scene player (CBtlTalk); path copied to byte_9EFF28"}],
+  ["^BattleRes/talk/script/99story/_table\\.txt$", {"fn":"Story99_LoadTable","addr":"0x65E8F0","when":"story mode scene (vtable method, no direct caller)","consumer":"story episode table"}],
+  ["^BattleRes/talk/script/(Arcade)?TalkMessageConfig\\.ini$", {"fn":"TalkMessageConfig_Load","addr":"0x8D35D0","when":"boot (Boot_LoadGlobalResources 0x8DD0F0 at 0x8DD4AA)","consumer":"CTalkMessageConfig"}],
+  ["^BattleRes/talk/script/sub\\.txt$", {"fn":"Talk_LoadSubScript","addr":"0x8CCD40","when":"talk scene init","consumer":"talk scene setup"}],
+  ["^BattleRes/talk/script/", {"fn":"TalkScript_BuildPath / TalkScript_BuildPathScene","addr":"0x8C5F60 / 0x8C5E70","when":"talk scene start (vtable calls 0x8C5C17..0x8C5DBB; 98br/, <chr>_NN/, 99story/%04d variants)","consumer":"CTalkScriptFileData (talk script reader)"}],
+  ["^BattleRes/talk/st_bgm", {"fn":"TalkBgm_BuildPath","addr":"0x8EF240","when":"during a talk scene (BGM command)","consumer":"CTalkSoundBGM; story BGM table at 0x938BB0"}],
+  ["^BattleRes/win_mes/win_mes_table\\.txt$", {"fn":"WinMesTable_Load","addr":"0x85C9D0","when":"winner demo after a match","consumer":"Squirrel 'WinMesTable' (callback WinMesTableLotCallback.Initialize): win quote lottery"}],
+  ["^BattleRes/win_mes/win_mes_table\\.csv$", {"fn":"WinnerDemo_LoadResources","addr":"0x84BC40","when":"winner demo after a match","consumer":"win quote lottery table"}],
+  ["^BattleRes/win_mes/", {"fn":"WinMes_LoadCharaWinmesAndCG","addr":"0x7F21E0","when":"win demo scene (sub_635680 <- Scene_DispatchUpdate 0x5CB3D0; also WinnerDemo_LoadWinmes 0x84C110 <- WinnerDemo_LoadResources 0x84BC40)","consumer":"win quote display dword_9EFEAC, cg_image_font / message_line_cg textures"}],
+  ["^BattleRes/BattleTable/", {"fn":"BattleTable_LoadForChara","addr":"0x581150","when":"character select, when an arcade/story route is picked (0x581420/0x581470/0x5814C0 <- CharaSelect_UpdateStateMachine 0x650C90)","consumer":"Sq_RunScriptFile in a new CSquirrel -> BattleTable_BuildFromSq 0x5673C0 (stage table; name from call shape)"}],
+  ["^System/cmd_chr\\d+\\.txt$|^System/cmd__common\\.txt$", {"fn":"TrainingCmdList_LoadForChara","addr":"0x590850","when":"chara load (Chara_LoadBattleScripts 0x645E50, directly and through sub_590130)","consumer":"TrainingCmdList_ReadFile 0x590770 -> TrainingCmdList_ParseText 0x5903C0 -> command list vector dword_9A599C..9A59A0 (dword_9A5998 = chara)"}],
+  ["^System/BtlCharaTbl\\.txt$", {"fn":"BtlCharaTbl_LoadFromSq","addr":"0x55F410","when":"boot (BtlCharaTbl_LoadAll 0x52D230 <- Boot_LoadGlobalResources 0x8DD0F0)","consumer":"Squirrel table _CBtlCharaTable -> battle character table"}],
+  ["^System/BtlCharaTbl_str\\.ini$", {"fn":"BtlCharaTbl_LoadStrIni","addr":"0x52D3C0","when":"boot (BtlCharaTbl_LoadAll)","consumer":"character table display strings"}],
+  ["^System/PlayBonusTbl\\.txt$", {"fn":"PlayBonusTbl_Load","addr":"0x60F740","when":"boot (Boot_LoadGlobalResources)","consumer":"Squirrel table PlayBonus_Table"}],
+  ["^System/Header\\w+\\.txt$", {"fn":"Replay_SaveWithHeaderVS","addr":"0x859360","when":"replay save after a VS match (sub_857910 <- sub_85B8A0)","consumer":"replay header template, expanded by Replay_ExpandHeaderTemplate 0x622360 into ./Replay/<1PNAME>x<2PNAME>_<date>.rep"}],
+  ["^System/str_jp/bannedword\\.txt$", {"fn":"BannedWord_Load","addr":"0x8DA370","when":"boot (Boot_LoadGlobalResources)","consumer":"online name filter"}],
+  ["^System/str_jp/bannedPhoneNumber\\.txt$", {"fn":"BannedPhoneNumber_Load","addr":"0x8D9F20","when":"boot (Boot_LoadGlobalResources)","consumer":"online name filter"}],
+  ["^System/str_jp/pausemenu\\.ini$", {"fn":"PauseMenu_LoadIni","addr":"0x58F130","when":"boot and pause menu build","consumer":"pause menu strings"}],
+  ["^System/str_jp/trainingmenu\\.ini$", {"fn":"TrainingMenu_LoadIni","addr":"0x5995E0","when":"boot, and TrainingMenu_BuildOptionList 0x5974F0","consumer":"training menu strings"}],
+  ["^Shader/", {"fn":"Shader_LoadAllTechniques","addr":"0x880050","when":"boot (App_InitGraphicsAndShaders 0x8DEFE0 <- WinMain; name from call shape)","consumer":"Shader_LoadTechnique 0x4AEE00(file, slot, technique) -> D3DX effect slots (sh_chara, sh_paniblur, sh_panimask, sh_blur, sh_mono, sh_talkmono, sh_bgobject, sh_bgspeculer, bg.txt, bg1_1..bg11_11)"}],
+  ["^bg/BgList_str\\.txt$", {"fn":"BgList_LoadStrings","addr":"0x51E720","when":"boot (BgList_LoadAll <- Boot_LoadGlobalResources)","consumer":"stage/background display names"}],
+  ["^bg/BgList\\.txt$", {"fn":"BgList_LoadAll","addr":"0x51C140","when":"boot (Boot_LoadGlobalResources)","consumer":"stage/background list"}],
+  ["^bg/.+/object\\.txt$", {"fn":"BgObject_LoadObjectTxt","addr":"0x5192A0","when":"battle load (Bg_LoadStageForBattle 0x51B150 <- BattleLoad_ScriptsAndRoundSetupA 0x8465B0 / B 0x847A90)","consumer":"stage objects (bgobject.cpp)"}],
+  ["^data/_csel/|^data/_coloredit/", {"fn":"CharaRes_LoadCselAndColorEdit","addr":"0x648E30","when":"character select (sub_64FF80 <- sub_64BA70) and single mode (sub_826890 <- sub_824880); dir from CharaRes_BuildCselColorEditDir 0x6490C0","consumer":"CharaRes_LoadOrGetCached: csel_<chr>.txt / edit_<chr>.txt for the character select and colour edit screens"}]
+ ],
+ "untraced": {
+  "System/str_jp/*.csv and other System files": "each CSV has its own loader (Customize*, Gallery*, SingleMode*, Option* screens), seen in the string dump but not followed; boot ones (DLC.csv, global_replace_word.csv, key_guide_replace_word.csv) come from Boot_LoadGlobalResources 0x8DD0F0; LanguageFirstPathList.csv via SearchPath_ReloadLanguageSlots 0x8A7EF0, _sysfont.ini 0x8A76A0, stringfile.csv 0x82CBA0",
+  "BattleTable strings at 0x566DF3 / 0x5676D9": "references outside any defined function, not followed",
+  "other talk resources (st_ending, st_bg, st_ev, st_face, talk_*.csv)": "functions 0x8B9AF0, 0x8BB2D0, 0x8BF650, 0x8B8830, 0x8C6C30, 0x8BA710 seen, not named",
+  "bg/bg_chara_height.csv": "StageCharaLight_LoadHeightCsv 0x517CB0 (already named; not a .txt so not in the file list)"
+ }
+}
