@@ -1,0 +1,3 @@
+# area B: --compare 0 on chr020 p435
+#mode: plain
+#args: --compare 0 --open C:\dev\hantei-chan\gamedata\uni2\data\chr020\chr020_0.txt --pattern 435 --frame 0 --zoom 1 --size 640x480 --bg 0,0,0 --capture-view OUT/overlay_uni2_chr020_p435_cmp.png --quit

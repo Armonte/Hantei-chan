@@ -242,6 +242,98 @@ def bglist_entries(game):
 # 3D stage view (area C): centre, far left, far right.
 S3D_CAMS = [("c", 0.0, 0.0, 1.0), ("l", -3.0, 0.0, 1.0), ("r", 3.0, 0.0, 1.0)]
 
+# Area B (onion skin, pattern compare) and area E (PNG export) both use
+# startup-only options, so every case needs its own process: one corpus file per
+# case, marked "#mode: plain" so run_corpus.sh passes the file's #args: line to
+# the exe without --batch / --ui-script.
+B_CASES = [
+    ("uni2", "data/chr000/chr000_0.txt", "chr000", 71),
+    ("uni2", "data/chr019/chr019_0.txt", "chr019", 62),
+    ("uni2", "data/chr020/chr020_0.txt", "chr020", 435),
+    ("mbtl", "data/chr001/chr001.txt", "chr001", 157),
+    ("mbaacc", "data/akiha.txt", "akiha", 0),
+]
+E_CASES = [
+    ("uni2", "data/chr000/chr000_0.txt", "chr000", 71),
+    ("uni2", "data/chr019/chr019_0.txt", "chr019", 153),
+    ("uni2", "data/chr024/chr024_0.txt", "chr024", 76),
+    ("mbtl", "data/chr001/chr001.txt", "chr001", 157),
+    ("mbaacc", "data/akiha.txt", "akiha", 10),
+]
+E_VARIANTS = [
+    ("tr", "--export-bg transparent --export-scale 2 --export-crop each"),
+    ("ed", "--export-bg editor --export-scale 2 --export-crop each"),
+    ("bx", "--export-bg transparent --export-scale 2 --export-boxes"),
+    ("ns", "--export-bg transparent --export-scale 2 --export-nospawns"),
+]
+
+
+def plain_case(out_dir, name, args, note):
+    """One process, one case: the file carries the exe's arguments."""
+    with open(os.path.join(out_dir, "ui", name + ".txt"), "w", encoding="utf-8") as f:
+        f.write("# %s\n#mode: plain\n#args: %s\n" % (note, args))
+
+
+def build_overlay_export(out_dir, log):
+    n = 0
+    for game, rel, tag, pat in B_CASES:
+        p = os.path.join(ROOTS[game], rel)
+        if not os.path.exists(p):
+            log.append("skip overlay %s/%s (missing)" % (game, rel))
+            continue
+        w = wslpath(p)
+        for kind, opt in (("onion224", "--onion 2,2,4"), ("cmp", "--compare 0")):
+            name = "overlay_%s_%s_p%d_%s" % (game, tag, pat, kind)
+            plain_case(out_dir, name,
+                       "%s --open %s --pattern %d --frame 0 --zoom 1 --size 640x480 "
+                       "--bg 0,0,0 --capture-view OUT/%s.png --quit"
+                       % (opt, w, pat, name),
+                       "area B: %s on %s p%d" % (opt, tag, pat))
+            n += 1
+    for game, rel, tag, pat in E_CASES:
+        p = os.path.join(ROOTS[game], rel)
+        if not os.path.exists(p):
+            log.append("skip export %s/%s (missing)" % (game, rel))
+            continue
+        w = wslpath(p)
+        for vtag, opts in E_VARIANTS:
+            name = "export_%s_%s_%s_p%d" % (vtag, game, tag, pat)
+            plain_case(out_dir, name,
+                       "--export-png OUT/%s --export-range current %s --open %s "
+                       "--pattern %d --frame 0 --zoom 1 --size 640x480 --bg 0,0,0"
+                       % (name, opts, w, pat),
+                       "area E: %s on %s p%d" % (vtag, tag, pat))
+            n += 1
+    return n
+
+
+# The smoke subset (PLAN.md 4.4: about 60 cases for quick local checks). One
+# committed batch file, so the ctest render_parity run is one process per game
+# instead of the whole corpus. Pick is deterministic: the idle frame of every
+# listed character, zoom 1 and 2, plus the two odd-size bodies.
+SMOKE_VARIANTS = [(1.0, 0, 480, 360), (2.0, 0, 480, 360), (1.0, 0, 333, 257)]
+
+
+def build_smoke(out_dir, log):
+    lines = []
+    for game, entries in (("uni2", CHARS["uni2"]), ("mbtl", CHARS["mbtl"]),
+                          ("unib", CHARS["unib"]), ("dfci", CHARS["dfci"]),
+                          ("mbaacc", CHARS["mbaacc"])):
+        for rel in entries:
+            p = os.path.join(ROOTS[game], rel)
+            if not os.path.exists(p):
+                continue
+            tag = os.path.splitext(os.path.basename(rel))[0]
+            for zoom, boxes, w, h in SMOKE_VARIANTS:
+                name = "smoke_%s_%s_p0_f0_z%g_%dx%d" % (game, tag, zoom, w, h)
+                lines.append("open %s; pattern 0; frame 0; zoom %g; size %dx%d; bg 0,0,0; "
+                             "boxes %d; spawns 0; export OUT/%s.png"
+                             % (wslpath(p), zoom, w, h, boxes, name))
+    if lines:
+        with open(os.path.join(out_dir, "smoke.batch"), "w", encoding="utf-8") as f:
+            f.write("\n".join(lines) + "\n")
+    return len(lines)
+
 
 def build_stages(out_dir, log):
     """Area C: the MBAACC/MBAC 2D stage tabs as --batch, every UNI2/MBTL stage
@@ -395,7 +487,11 @@ def main(argv=None):
     print("%-8s %5d shots" % ("stages", stages))
     ui = build_ui(args.out, log)
     print("%-8s %5d scripts" % ("ui", ui))
-    print("total %d cases" % total)
+    overlay = build_overlay_export(args.out, log)
+    total += overlay
+    print("%-8s %5d cases" % ("overlay+export", overlay))
+    smoke = build_smoke(args.out, log)
+    print("%-8s %5d cases" % ("smoke", smoke))
     for l in log:
         print("  " + l)
     print("total %d" % total)

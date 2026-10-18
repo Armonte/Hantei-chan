@@ -1,0 +1,3 @@
+# area B: --compare 0 on akiha p0
+#mode: plain
+#args: --compare 0 --open C:\games\mbaacc\data\akiha.txt --pattern 0 --frame 0 --zoom 1 --size 640x480 --bg 0,0,0 --capture-view OUT/overlay_mbaacc_akiha_p0_cmp.png --quit

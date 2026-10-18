@@ -1,0 +1,3 @@
+# area E: ns on chr019 p153
+#mode: plain
+#args: --export-png OUT/export_ns_uni2_chr019_p153 --export-range current --export-bg transparent --export-scale 2 --export-nospawns --open C:\dev\hantei-chan\gamedata\uni2\data\chr019\chr019_0.txt --pattern 153 --frame 0 --zoom 1 --size 640x480 --bg 0,0,0
