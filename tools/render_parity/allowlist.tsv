@@ -1,0 +1,6 @@
+case_glob	backend	class	max_abs	max_pixels	region	evidence	note
+# PLAN.md 4.6. Empty on purpose: Phase H and P0/P1 expect byte-identical output,
+# so any entry here needs evidence the plan accepts. Columns: case_glob (one
+# feature group at most, never a whole area), backend (gl|d3d9|*), class
+# (EMU|AA|FLT|GAME), max_abs and max_pixels bounds, region (empty or "edges"),
+# evidence, note.
