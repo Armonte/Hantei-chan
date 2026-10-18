@@ -664,6 +664,13 @@ if(MINGW)
 	target_link_options(part_render_math_test PRIVATE -static-libgcc -static-libstdc++ -static)
 endif()
 add_test(NAME part_render_math COMMAND part_render_math_test)
+# cgm_preview_layout_test: CG manager preview layout math (Fit / centre / scroll of images larger than the pane).
+add_executable(cgm_preview_layout_test tests/cgm_preview_layout_test.cpp)
+target_include_directories(cgm_preview_layout_test PRIVATE "src")
+if(MINGW)
+	target_link_options(cgm_preview_layout_test PRIVATE -static-libgcc -static-libstdc++ -static)
+endif()
+add_test(NAME cgm_preview_layout COMMAND cgm_preview_layout_test)
 # refs_test: variable / pattern reference tools (issues #75, #44).
 add_executable(refs_test
 	tests/refs_test.cpp

@@ -1,0 +1,43 @@
+# CG manager previews of a big UNI2 image (chr016 image 375, 2048x1504): Browser at zoom 1 / 2 / 4 with Fit (default) and
+# without, CG + .pat textures with and without Fit, Palettes preview. tools/ui/ab_shot.sh tools/ui/shots_cgbig/cgbig_browser.txt
+openany C:/dev/hantei-chan/gamedata/uni2/data/chr016/chr016_0.txt
+wait 150
+cgm open
+wait 30
+cgm tab Browser
+wait 10
+cgm select 375
+wait 30
+cgm set zoom 1
+wait 10
+capture C:/dev/hantei-chan/work/ab/cgbig_browser_z1.png
+cgm set zoom 2
+wait 10
+capture C:/dev/hantei-chan/work/ab/cgbig_browser_z2.png
+cgm set zoom 4
+wait 10
+capture C:/dev/hantei-chan/work/ab/cgbig_browser_z4.png
+cgm set fit 0
+cgm set zoom 2
+wait 10
+capture C:/dev/hantei-chan/work/ab/cgbig_browser_z2_nofit.png
+cgm set zoom 4
+wait 10
+capture C:/dev/hantei-chan/work/ab/cgbig_browser_z4_nofit.png
+cgm set fit 1
+cgm tab CG + .pat textures
+wait 10
+cgm texsel 0 375
+cgm texzoom 2
+wait 30
+capture C:/dev/hantei-chan/work/ab/cgbig_textures_z2_fit.png
+cgm texfit 0
+wait 10
+capture C:/dev/hantei-chan/work/ab/cgbig_textures_z2_nofit.png
+cgm tab Palettes
+wait 10
+cgm set palPreviewImage 375
+wait 30
+capture C:/dev/hantei-chan/work/ab/cgbig_palettes.png
+cgm status
+quit
