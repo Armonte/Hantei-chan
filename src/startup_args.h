@@ -118,7 +118,8 @@ struct StartupArgs {
 };
 
 // Parses one wave-2 option; advances i past its value. False if not ours.
-bool ParseWave2StartupArg(const char* arg, const wchar_t* next, int& i);
+// The next argument is UTF-8 (as SDL3 hands over argv) or null.
+bool ParseWave2StartupArg(const char* arg, const char* next, int& i);
 extern StartupArgs gStartup;
 
 #endif

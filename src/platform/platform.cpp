@@ -12,6 +12,7 @@
 // on Windows this module only owns the window, the context and the swap.
 
 #include "platform.h"
+#include "platform_message.h"
 #include "../app_log.h"
 
 #include <SDL3/SDL.h>
@@ -41,6 +42,7 @@ bool Init(const InitDesc& desc, std::string& error)
 {
 	g.desc = desc;
 	g.headless = desc.headless;
+	g_platformHeadless = desc.headless;
 
 	SDL_SetHint(SDL_HINT_APP_NAME, "gonptechan");
 
@@ -59,7 +61,12 @@ bool Init(const InitDesc& desc, std::string& error)
 	if (desc.openGL) {
 		SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, 3);
 		SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, 3);
-		SDL_GL_SetAttribute(SDL_GL_CONTEXT_PROFILE_MASK, SDL_GL_CONTEXT_PROFILE_CORE);
+		// The old ContextGl used wglCreateContext, which is a compatibility
+		// profile; the app's GLSL is #version 330 core, which both profiles
+		// accept, but the default vertex array object and the client-array
+		// entry points only work under compatibility. Keeping it is what makes
+		// P0 output-identical.
+		SDL_GL_SetAttribute(SDL_GL_CONTEXT_PROFILE_MASK, SDL_GL_CONTEXT_PROFILE_COMPATIBILITY);
 		SDL_GL_SetAttribute(SDL_GL_DEPTH_SIZE, 24);
 		SDL_GL_SetAttribute(SDL_GL_STENCIL_SIZE, 8);
 		SDL_GL_SetAttribute(SDL_GL_DOUBLEBUFFER, 1);
@@ -201,6 +208,7 @@ void* WindowDeviceContext()
 }
 
 void SetEventHandlers(const EventHandlers& h) { g_handlers = h; }
+
 
 bool PollEvents()
 {
