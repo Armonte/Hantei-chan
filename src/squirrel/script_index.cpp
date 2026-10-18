@@ -65,14 +65,16 @@ int EditDistance(const std::string& a, const std::string& b)
 
 static std::string DocFor(const std::vector<std::string>& lines, int line);
 
-void ScriptIndex::build(const std::string& rootUtf8, const std::vector<std::string>& files)
+void ScriptIndex::build(const std::string& rootUtf8, const std::vector<std::string>& files,
+	const std::function<std::string(const std::string&)>& pathOf)
 {
 	m_root = rootUtf8;
 	m_files = files;
 	m_data.clear();
 	m_fileDefs.clear();
 	for (const std::string& rel : files) {
-		std::ifstream f(fs::u8path(rootUtf8) / fs::u8path(rel), std::ios::binary);
+		const std::string alt = pathOf ? pathOf(rel) : std::string();
+		std::ifstream f(alt.empty() ? fs::u8path(rootUtf8) / fs::u8path(rel) : fs::u8path(alt), std::ios::binary);
 		if (!f) continue;
 		std::ostringstream ss;
 		ss << f.rdbuf();
