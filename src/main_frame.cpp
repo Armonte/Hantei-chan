@@ -125,6 +125,13 @@ void MainFrame::Draw()
 	}
 	ImGui_ImplOpenGL3_NewFrame();
 	ImGui_ImplSDL3_NewFrame();
+	// The Win32 backend left io.DisplayFramebufferScale at 1 and reported the
+	// client area as DisplaySize; the SDL3 backend derives the scale from the
+	// window's DPI scale, which grows every widget and offset. The frame is
+	// always drawn into an offscreen target at the pixel size, so the scale
+	// stays 1 here (P0 keeps the output byte-identical).
+	ImGui::GetIO().DisplayFramebufferScale = ImVec2(1.0f, 1.0f);
+	{ static int n = 0; if (n++ < 2) HC_LOG_INFO("DBG disp {}x{} scale {}x{} client {}x{}", ImGui::GetIO().DisplaySize.x, ImGui::GetIO().DisplaySize.y, ImGui::GetIO().DisplayFramebufferScale.x, ImGui::GetIO().DisplayFramebufferScale.y, clientRect.x, clientRect.y); }
 	// --deterministic: ImGui fades the modal dim background with io.DeltaTime
 	// (imgui.cpp DimBgRatio = +DeltaTime * 6.0f). Pin the frame step so the fade
 	// reaches the same value on every machine. The parity harness relies on it.

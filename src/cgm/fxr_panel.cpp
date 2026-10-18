@@ -1,3 +1,4 @@
+#include "imgui_utils.h"
 #include "../ui/ui_style.h"
 #include "../ui/ui_layout2.h"
 #include "fxr_panel.h"
@@ -247,7 +248,7 @@ static void DrawTex(const FxPanel *, unsigned id, int w, int h, float box) {
 	if (!id || w <= 0) return;
 	const float s = std::min(box / w, box / h); const float dw = w * s, dh = h * s;
 	const ImVec2 a(p0.x + (box - dw) / 2, p0.y + (box - dh) / 2);
-	dl->AddImage((ImTextureID)(intptr_t)id, a, ImVec2(a.x + dw, a.y + dh));
+	ui::ImageWithOwnSampler(dl, (ImTextureID)(intptr_t)id, a, ImVec2(a.x + dw, a.y + dh));
 }
 
 void FxPanel::drawStops(std::vector<fx::Stop> &stops, fx::Rgb accent, const char *idp) {

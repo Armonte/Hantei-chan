@@ -1,3 +1,4 @@
+#include "imgui_utils.h"
 #include "han2_thumbs.h"
 #include "ui/ui_style.h"
 #include "character_instance.h"
@@ -104,7 +105,7 @@ void DrawAnimListWindow(CharacterInstance *ch, FrameState &state)
 		if (ImGui::Selectable("##r", state.pattern == p, 0, ImVec2(0, rowH - 2))) { state.pattern = p; state.frame = 0; }
 		ImDrawList *dl = ImGui::GetWindowDrawList();
 		unsigned tex; int w, h;
-		if (FrameThumb(*ch, p, 0, tex, w, h)) { const float z = std::min(40.f / w, 40.f / h); const ImVec2 sz(w * z, h * z); const ImVec2 a(q.x + 2 + (40 - sz.x) * 0.5f, q.y + 2 + (40 - sz.y) * 0.5f); dl->AddImage((ImTextureID)(intptr_t)tex, a, ImVec2(a.x + sz.x, a.y + sz.y)); }
+		if (FrameThumb(*ch, p, 0, tex, w, h)) { const float z = std::min(40.f / w, 40.f / h); const ImVec2 sz(w * z, h * z); const ImVec2 a(q.x + 2 + (40 - sz.x) * 0.5f, q.y + 2 + (40 - sz.y) * 0.5f); ui::ImageWithOwnSampler(dl, (ImTextureID)(intptr_t)tex, a, ImVec2(a.x + sz.x, a.y + sz.y)); }
 		char l[160]; snprintf(l, sizeof l, "%03d  %s", p, sq.name.c_str());
 		dl->AddText(ImVec2(q.x + 48, q.y + 4), ImGui::GetColorU32(ImGuiCol_Text), l);
 		snprintf(l, sizeof l, "%zu %s", sq.frames.size(), Tr("frames", "\xe3\x83\x95\xe3\x83\xac\xe3\x83\xbc\xe3\x83\xa0"));

@@ -1,3 +1,4 @@
+#include "imgui_utils.h"
 #include "cgm_window.h"
 #include "../ui/ui_style.h"
 #include "../ui/ui_layout2.h"
@@ -448,7 +449,7 @@ void Window::drawPalPreview(CharacterInstance &ch, const WindowHost &host, const
 	const ImVec2 sz(pp.w * z, pp.h * z), c0 = ImGui::GetCursorScreenPos();
 	const ImVec2 o(c0.x + std::floor((boxW - sz.x) * 0.5f), c0.y);
 	Checker(ImGui::GetWindowDrawList(), c0, ImVec2(c0.x + boxW, c0.y + std::max(sz.y, ui::Em(4.f))));
-	ImGui::GetWindowDrawList()->AddImage((ImTextureID)(intptr_t)pp.tex.tex, o, ImVec2(o.x + sz.x, o.y + sz.y));
+	ui::ImageWithOwnSampler(ImGui::GetWindowDrawList(), (ImTextureID)(intptr_t)pp.tex.tex, o, ImVec2(o.x + sz.x, o.y + sz.y));
 	ImGui::InvisibleButton("##pppick", ImVec2(boxW, std::max(sz.y, ui::Em(4.f))));
 	if (ImGui::IsItemHovered()) {
 		const ImVec2 m = ImGui::GetMousePos(); const int x = (int)((m.x - o.x) / z), y = (int)((m.y - o.y) / z);
@@ -1266,7 +1267,7 @@ void Window::draw(CharacterInstance *ch, const WindowHost &host) {
 			if (t.tex) {
 				const float s = std::min((float)thumbSize / t.w, (float)thumbSize / t.h);
 				const ImVec2 sz(t.w * s, t.h * s), o(a.x + (thumbSize - sz.x) * 0.5f, a.y + (thumbSize - sz.y) * 0.5f);
-				dl->AddImage((ImTextureID)(intptr_t)t.tex, o, ImVec2(o.x + sz.x, o.y + sz.y));
+				ui::ImageWithOwnSampler(dl, (ImTextureID)(intptr_t)t.tex, o, ImVec2(o.x + sz.x, o.y + sz.y));
 			} else if (t.empty) dl->AddText(ImVec2(a.x + 6, a.y + 6), ImGui::GetColorU32(ImGuiCol_TextDisabled), "-");
 			const bool unused = usage.count(id) == 0;
 			dl->AddRect(a, b, id == selected ? IM_COL32(255, 200, 60, 255) : hov ? IM_COL32(180, 200, 255, 255) : unused ? IM_COL32(200, 90, 90, 200) : IM_COL32(110, 110, 120, 255), 0, 0, id == selected ? 2.f : 1.f);
@@ -1331,7 +1332,7 @@ void Window::draw(CharacterInstance *ch, const WindowHost &host) {
 			const ImVec2 p0 = ImGui::GetCursorScreenPos(), sz(preview.w * zoom, preview.h * zoom);
 			ImGui::Dummy(sz);
 			Checker(ImGui::GetWindowDrawList(), p0, ImVec2(p0.x + sz.x, p0.y + sz.y));
-			ImGui::GetWindowDrawList()->AddImage((ImTextureID)(intptr_t)preview.tex, p0, ImVec2(p0.x + sz.x, p0.y + sz.y));
+			ui::ImageWithOwnSampler(ImGui::GetWindowDrawList(), (ImTextureID)(intptr_t)preview.tex, p0, ImVec2(p0.x + sz.x, p0.y + sz.y));
 			if (bank && blk.id == selected && blk.show) {
 				drawBlockOverlay(p0, zoom, x1, y1);
 				if (ImGui::IsItemClicked(ImGuiMouseButton_Left)) clickBlock(p0, zoom, x1, y1);
@@ -1702,7 +1703,7 @@ void Window::drawTextures(CharacterInstance &ch, const WindowHost &host) {
 			const ImVec2 p0 = ImGui::GetCursorScreenPos(), sz(tb.view.w * tb.zoom, tb.view.h * tb.zoom);
 			ImGui::Dummy(sz);
 			Checker(ImGui::GetWindowDrawList(), p0, ImVec2(p0.x + sz.x, p0.y + sz.y));
-			ImGui::GetWindowDrawList()->AddImage((ImTextureID)(intptr_t)tb.view.tex, p0, ImVec2(p0.x + sz.x, p0.y + sz.y));
+			ui::ImageWithOwnSampler(ImGui::GetWindowDrawList(), (ImTextureID)(intptr_t)tb.view.tex, p0, ImVec2(p0.x + sz.x, p0.y + sz.y));
 		} else ImGui::TextDisabled("%s", TXT("Nothing to show."));
 		ImGui::EndChild();
 	}
