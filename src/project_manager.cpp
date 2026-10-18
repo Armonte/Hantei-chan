@@ -1,4 +1,5 @@
 #include "project_manager.h"
+#include "project_entries.h"
 #include "character_view.h"
 #include "hud_theme_exporter.h"
 #include "misc.h"
@@ -49,50 +50,65 @@ bool ProjectManager::HasCurrentProject()
 	return !s_currentProjectPath.empty();
 }
 
-// Helper: Convert absolute path to relative (relative to project file)
-static std::string MakeRelativePath(const std::string& filePath, const std::string& projectPath)
-{
-	try {
-		std::filesystem::path file(filePath);
-		std::filesystem::path project(projectPath);
-		std::filesystem::path projectDir = project.parent_path();
+using projentry::MakeRelativePath;
+using projentry::MakeAbsolutePath;
 
-		// If same drive/root, make relative
-		if (file.root_path() == projectDir.root_path()) {
-			auto rel = std::filesystem::relative(file, projectDir);
-			return rel.string();
+static projentry::CharacterInfo InfoOf(const CharacterInstance& c)
+{
+	projentry::CharacterInfo i;
+	i.name = c.getName();
+	i.txtPath = c.getTxtPath();
+	i.ha6Path = c.getTopHA6Path();
+	i.patDocument = c.isPatDocument();
+	i.patPath = !c.getPATPath().empty() ? c.getPATPath() : (c.isPatDocument() ? c.parts.filePath : std::string());
+	i.patMbaacc = c.parts.useMBAACCFormat;
+	return i;
+}
+
+// Load one "characters" entry. Null (and a line in `failed`) when its file did not load. A .pat the
+// entry names that is gone or unreadable is reported too, but the character itself is kept.
+static std::unique_ptr<CharacterInstance> LoadCharacterEntry(const json& charObj, const std::string& projectPath,
+                                                             std::vector<std::string>& failed)
+{
+	const projentry::LoadPlan plan = projentry::PlanCharacterLoad(charObj, projectPath);
+	std::unique_ptr<CharacterInstance> character;
+	bool loaded = false;
+	switch (plan.kind) {
+	case projentry::LoadPlan::Kind::Txt:
+		character = std::make_unique<CharacterInstance>();
+		loaded = character->loadFromTxt(plan.path);
+		break;
+	case projentry::LoadPlan::Kind::Ha6:
+		character = std::make_unique<CharacterInstance>();
+		loaded = character->loadHA6(plan.path, false);
+		break;
+	case projentry::LoadPlan::Kind::Pat:
+		character = MakePatPlaceholderCharacter(charObj.value("name", std::string()));
+		loaded = character->loadPAT(plan.path);
+		if (loaded) {
+			// A texture-less .pat has nothing to tell the layouts apart: keep the one it was saved with.
+			if (plan.hasPatFormat && character->parts.gfxMeta.empty())
+				character->parts.useMBAACCFormat = plan.patMbaacc;
+			character->makePatDocument();
 		}
-	} catch (...) {
-		// Fall through to return absolute
+		break;
+	case projentry::LoadPlan::Kind::None:
+		break;
 	}
-	return filePath;
-}
-
-// Helper: Convert relative path to absolute (relative to project file)
-static std::string MakeAbsolutePath(const std::string& filePath, const std::string& projectPath)
-{
-	std::filesystem::path file(filePath);
-	if (file.is_absolute()) {
-		return filePath;
+	if (!loaded) {
+		const std::string what = projentry::DescribeFailed(charObj, plan.path);
+		HC_LOG_WARN("Project {}: character skipped: {}", projectPath, what);
+		failed.push_back(what);
+		return nullptr;
 	}
-
-	std::filesystem::path project(projectPath);
-	std::filesystem::path projectDir = project.parent_path();
-	auto absolute = projectDir / file;
-	return absolute.string();
-}
-
-// Helper: Get current timestamp in ISO 8601 format
-// The text shown and logged for a project character that did not load: its path, flagged when the
-// file is simply not there (moved or deleted since the project was saved) so it reads differently
-// from a file that exists but failed to parse.
-static std::string DescribeFailedCharacter(const json& charObj, const std::string& absolutePath)
-{
-	if (absolutePath.empty()) return charObj.value("name", std::string("(unnamed)"));
-	std::error_code ec;
-	if (!std::filesystem::exists(std::filesystem::u8path(absolutePath), ec))
-		return absolutePath + " (file not found)";
-	return absolutePath;
+	if (!plan.patPath.empty() && plan.kind != projentry::LoadPlan::Kind::Pat && !character->parts.loaded) {
+		if (!character->loadPAT(plan.patPath)) {
+			const std::string what = projentry::DescribeFailed(charObj, plan.patPath);
+			HC_LOG_WARN("Project {}: .pat of {} not loaded: {}", projectPath, plan.path, what);
+			failed.push_back(what);
+		}
+	}
+	return character;
 }
 
 static std::string GetCurrentTimestamp()
@@ -156,24 +172,9 @@ bool ProjectManager::SaveProject(
 		// Characters array
 		json charactersArray = json::array();
 		for (const auto& character : characters) {
-			json charObj;
-
-			charObj["name"] = character->getName();
-
-			// Determine type and path
-			const auto& txtPath = character->getTxtPath();
-			const auto& ha6Path = character->getTopHA6Path();
-
-			if (!txtPath.empty()) {
-				charObj["type"] = "txt";
-				charObj["path"] = MakeRelativePath(txtPath, path);
-			} else if (!ha6Path.empty()) {
-				charObj["type"] = "ha6";
-				charObj["path"] = MakeRelativePath(ha6Path, path);
-			} else {
-				// Skip unsaved characters
-				continue;
-			}
+			// txt / ha6 (+ its .pat) or a standalone PAT tab; unsaved ones are skipped
+			json charObj = projentry::MakeCharacterEntry(InfoOf(*character), path);
+			if (charObj.is_null()) continue;
 
 			// Render state
 			charObj["render_x"] = character->renderX;
@@ -238,27 +239,11 @@ bool ProjectManager::LoadProject(
 		// Load characters
 		if (j.contains("characters") && j["characters"].is_array()) {
 			for (const auto& charObj : j["characters"]) {
-				auto character = std::make_unique<CharacterInstance>();
-
-				// Load based on type
-				std::string type = charObj.value("type", "");
-				std::string relativePath = charObj.value("path", "");
-				std::string absolutePath = MakeAbsolutePath(relativePath, path);
-
-				bool loaded = false;
-				if (type == "txt") {
-					loaded = character->loadFromTxt(absolutePath);
-				} else if (type == "ha6") {
-					loaded = character->loadHA6(absolutePath, false);
-				}
-
-				if (!loaded) {
-					// Never skip silently: log it and hand it back so the caller can show it.
-					const std::string what = DescribeFailedCharacter(charObj, absolutePath);
-					HC_LOG_WARN("Project {}: character skipped: {}", path, what);
-					if (outFailedCharacters) outFailedCharacters->push_back(what);
-					continue;
-				}
+				// Never skip silently: failures are logged and handed back so the caller can show them.
+				std::vector<std::string> failed;
+				auto character = LoadCharacterEntry(charObj, path, failed);
+				if (outFailedCharacters) outFailedCharacters->insert(outFailedCharacters->end(), failed.begin(), failed.end());
+				if (!character) continue;
 
 				// Restore render state
 				character->renderX = charObj.value("render_x", 0);
@@ -335,24 +320,9 @@ bool ProjectManager::SaveProject(
 		json charactersArray = json::array();
 		std::vector<std::pair<const CharacterInstance*, int>> savedIndex;
 		for (const auto& character : characters) {
-			json charObj;
-
-			charObj["name"] = character->getName();
-
-			// Determine type and path
-			const auto& txtPath = character->getTxtPath();
-			const auto& ha6Path = character->getTopHA6Path();
-
-			if (!txtPath.empty()) {
-				charObj["type"] = "txt";
-				charObj["path"] = MakeRelativePath(txtPath, path);
-			} else if (!ha6Path.empty()) {
-				charObj["type"] = "ha6";
-				charObj["path"] = MakeRelativePath(ha6Path, path);
-			} else {
-				// Skip unsaved characters
-				continue;
-			}
+			// txt / ha6 (+ its .pat) or a standalone PAT tab; unsaved ones are skipped
+			json charObj = projentry::MakeCharacterEntry(InfoOf(*character), path);
+			if (charObj.is_null()) continue;
 
 			// Render state
 			charObj["render_x"] = character->renderX;
@@ -489,24 +459,8 @@ bool ProjectManager::LoadProject(
 		// Load characters
 		if (j.contains("characters") && j["characters"].is_array()) {
 			for (const auto& charObj : j["characters"]) {
-				auto character = std::make_unique<CharacterInstance>();
-
-				// Load based on type
-				std::string type = charObj.value("type", "");
-				std::string relativePath = charObj.value("path", "");
-				std::string absolutePath = MakeAbsolutePath(relativePath, path);
-
-				bool loaded = false;
-				if (type == "txt") {
-					loaded = character->loadFromTxt(absolutePath);
-				} else if (type == "ha6") {
-					loaded = character->loadHA6(absolutePath, false);
-				}
-
-				if (!loaded) {
-					const std::string what = DescribeFailedCharacter(charObj, absolutePath);
-					HC_LOG_WARN("Project {}: character skipped: {}", path, what);
-					failed.push_back(what);
+				auto character = LoadCharacterEntry(charObj, path, failed);
+				if (!character) {
 					fileToLoaded.push_back(nullptr);
 					continue;
 				}

@@ -122,6 +122,7 @@ add_executable(${EXE}
 	src/character_instance.cpp
 	src/character_view.cpp
 	src/project_manager.cpp
+	src/project_entries.cpp
 	src/hud_theme_exporter.cpp
 	src/cg.cpp
 	src/vectors.cpp
@@ -946,6 +947,13 @@ endforeach()
 if(PAT_SAFETY_SAMPLES)
 	add_test(NAME pat_safety_gamedata COMMAND pat_safety_test ${PAT_SAFETY_SAMPLES} WORKING_DIRECTORY ${CMAKE_SOURCE_DIR})
 endif()
+# project_entries_test: .hproj character entries (txt / ha6 + its .pat, standalone PAT tabs, missing files).
+add_executable(project_entries_test tests/project_entries_test.cpp src/project_entries.cpp)
+target_include_directories(project_entries_test PRIVATE "src" "third_party")
+if(MINGW)
+	target_link_options(project_entries_test PRIVATE -static-libgcc -static-libstdc++ -static)
+endif()
+add_test(NAME project_entries COMMAND project_entries_test)
 add_executable(workspace_session_test tests/workspace_session_test.cpp src/workspace_session.cpp)
 target_include_directories(workspace_session_test PRIVATE "src")
 if(MINGW)

@@ -60,19 +60,9 @@ static std::string FileNameOf(const std::string& p)
 	return s == std::string::npos ? p : p.substr(s + 1);
 }
 
-// The placeholder character of a PAT tab: one pattern with one frame whose layer 0 draws the selected part set.
 static std::unique_ptr<CharacterInstance> MakePatPlaceholder(const std::string& name)
 {
-	auto character = std::make_unique<CharacterInstance>();
-	character->frameData.initEmpty();
-	character->setName(name);
-	if (auto seq = character->frameData.get_sequence(0)) {
-		auto frame = &seq->frames.emplace_back();
-		if (frame->AF.layers.empty()) frame->AF.layers.push_back({});
-		frame->AF.layers[0].usePat = true;
-		frame->AF.layers[0].spriteId = 0;   // the first part set
-	}
-	return character;
+	return MakePatPlaceholderCharacter(name);   // shared with project restore (project_manager.cpp)
 }
 
 void MainFrame::addPatDocumentView(std::unique_ptr<CharacterInstance> character)
