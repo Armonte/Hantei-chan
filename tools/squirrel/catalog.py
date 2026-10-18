@@ -7,7 +7,8 @@ usage: catalog.py <game> <data dir> [--sqtool path/to/sqtool.exe] [--out docs/sq
 Emits <out>/<game>_files.json, <game>_names.json, <game>_catalog.md. Translations come from
 <out>/<game>_tr.json ({jp: en}); every translated string carries "tr":"machine" until reviewed.
 Game data is only read, never copied into the output beyond names, values and comments.
-Only UNI2 1.42 has load-site rules so far (LOADSITES); other games fall back to "untraced".
+Load-site rules (LOADSITES) exist for UNI2 1.42, DFCI and UNIB arcade; other games fall back to "untraced".
+DFCI/UNIB use the data/<Name>_0/<Name>_0_{sc,cmd,mv}.txt layout (KINDS_GAME, CHARA_LAYOUT).
 """
 import json, os, re, subprocess, sys, collections
 
@@ -81,6 +82,36 @@ KINDS = [
     (r'^bg/', 'list or ini', 'bg', 'background list/info'),
 ]
 
+# DFCI / UNIB: data/<Name>_0/ (support characters data/<Name>_s_0/), checked before KINDS
+ASCII_KINDS = [
+    (r'^data/\w+_0/\w+_0_sc\.txt$', 'character script', 'sc', 'Battle_Status: per-character stats (attack rate, guts, gauge rates, positions)'),
+    (r'^data/\w+_0/\w+_0_cmd\.txt$', 'character script', 'cmd', '<CHR>_CommandTable: command inputs and the moves they start'),
+    (r'^data/\w+_0/\w+_0_mv\.txt$', 'character script', 'mv', '<CHR>_MoveTable: move behaviour (patterns, effects, cancels)'),
+    (r'^data/\w+_0/_com\.txt$', 'character script', 'com', 'CPU AI (CCom) behaviour for the character'),
+    (r'^data/\w+_0/_se_list\.txt$', 'character script', 'se_list', 'sound effect list (pulls in script/btl_SEDefine.txt)'),
+    (r'^data/\w+_0/\w+_0_selist\.txt$', 'character script', 'se_category', 'per-character sound effect table (run by the mv file)'),
+    (r'^data/\w+_0/_finish_list\.txt$', 'data table', 'finish_list', 'finish list (CBtlFinishList)'),
+    (r'^data/\w+_0/_string\.txt$', 'data table', 'string', 'character string table (support/cut-in messages)'),
+    (r'^data/\w+_0/\w+_0\.txt$', 'list or ini', 'ha6_stack', 'HA6/CG/PAT file stack for the character (ini)'),
+    (r'^data/\w+_0/\w+_0_NoBaseData\.txt$', 'list or ini', 'ha6_stack', 'HA6/CG/PAT file stack without BaseData.HA6 (ini)'),
+    (r'^data/\w+_0/', 'unknown', 'chara_misc', 'character-folder file'),
+    (r'^grpdat/CharaColorBar/', 'data table', 'colorbar', 'per-character colour bar / palette select layout'),
+    (r'^grpdat/command/\w+_str\.txt$', 'data table', 'cmdlist_str', 'command list display strings for the character'),
+    (r'^grpdat/command/', 'data table', 'training_cmdlist', 'command list display (CmdList)'),
+    (r'^grpdat/', 'data table', 'grpdat', 'screen layout script (gauge, continue, VS screen, winner demo)'),
+    (r'^se/', 'list or ini', 'se', 'system sound effect list'),
+    (r'^[Mm]ovie/', 'list or ini', 'movie', 'movie list'),
+    (r'^Bgm/', 'list or ini', 'bgm', 'BGM list'),
+]
+KINDS_GAME = {'dfci': ASCII_KINDS, 'unib': ASCII_KINDS}
+
+# character folder layout: folder regex, file names ({cd} = folder name)
+CHARA_LAYOUT = {
+    'uni2': {'dir': r'^chr\d{3}$', 'ini': '{cd}_0.txt', 'mv': '{cd}_mv_0.txt', 'cmd': '{cd}_cmd_0.txt', 'sc': '{cd}_sc_0.txt'},
+    'ascii': {'dir': r'^\w+_0$', 'ini': '{cd}.txt', 'mv': '{cd}_mv.txt', 'cmd': '{cd}_cmd.txt', 'sc': '{cd}_sc.txt'},
+}
+CHARA_LAYOUT['dfci'] = CHARA_LAYOUT['unib'] = CHARA_LAYOUT['ascii']
+
 SCRIPT_PURPOSE = {
     'Battle_Init.txt': 'battle VM init: loads the btl_Define* constants and debug helpers',
     'Battle_Std.txt': 'battle VM std script: Battle_Std/BtlPl/BtlOb/BtlPt tables, pulls in the btl_* std files',
@@ -99,6 +130,10 @@ SCRIPT_PURPOSE = {
     'btl_Std_BattleStatusTbl.txt': 'default Battle_Status values shared by characters',
     'cmn_SetPosition.txt': 'round start position helpers',
     'sq_stagebgm.txt': 'stage BGM script (stage_bgm.initround)',
+    'btl_SupportChrTableFunc.txt': 'MakeMoveTable/MakeCommandTable variants for support (assist) characters',
+    'btl_Define_LocalDebug.txt': 'debug switches, run instead of btl_Define_NoLocalDebug when present',
+    'sq_powerup.txt': 'power-up script (pulled in by Battle_Std.txt)',
+    'BtlFunc.txt': 'shared battle helper functions',
 }
 
 # load site / timing / hot reload, UNI2 1.42 (RE_MBTL_LOAD.md UNI2 section, TRAINING_CHARA_SWITCH.md section 10)
@@ -123,10 +158,43 @@ LOADSITES = {
         (r'^data/_coloredit/', 'colour edit scene (untraced)', 'CSS', 'no'),
         (r'^data/effect\.txt$', 'battle load (system effect record)', 'battle load', 'reloadchara (rebuild only)'),
     ],
+    # DFCI RingGame.exe (RE_MBTL_LOAD.md DFCI section). fpan-im has no DFCI/UNIB build, so hot_reload is "no".
+    'dfci': [
+        (r'^script/Battle_Init\.txt$', 'Sq_InitBattleVM 0x814230 "BattleInit"', 'boot (battle VM)', 'no'),
+        (r'^script/Battle_Std\.txt$', 'Sq_InitBattleVM 0x814230 "BattleScript"', 'boot (battle VM)', 'no'),
+        (r'^script/btl_SEDefine\.txt$', '__dofile__ from <Name>_0/_se_list.txt', 'chara load', 'no'),
+        (r'^script/btl_(Define(_NoLocalDebug|_LocalDebug)?|debugFunc)\.txt$', '__dofile__ from Battle_Init.txt', 'boot (battle VM)', 'no'),
+        (r'^script/(btl_\w+|sq_powerup|sq_stagebgm)\.txt$', '__dofile__ from Battle_Std.txt', 'boot (battle VM)', 'no'),
+        (r'^data/_combase\.txt$', 'Sq_InitBattleVM -> Sq_LoadComBase 0x882D10 (also __dofile__ from each _com.txt)', 'boot (battle VM)', 'no'),
+        (r'^data/\w+_0/\w+_0_sc\.txt$', 'dfci_battle_load_characters -> dfci_load_chara_battle_status_sq (all characters first)', 'chara load', 'no'),
+        (r'^data/\w+_0/\w+_0_cmd\.txt$', 'dfci_battle_load_characters -> ObjectStack_Push 0x414FE0, Chara_LoadCommandAndMoveList 0x7E5930 (<NAME>_CommandTable)', 'chara load', 'no'),
+        (r'^data/\w+_0/\w+_0_mv\.txt$', 'dfci_battle_load_characters -> Chara_LoadCommandAndMoveList 0x7E5930 (<NAME>_MoveTable)', 'chara load', 'no'),
+        (r'^data/\w+_0/_finish_list\.txt$', 'dfci_battle_load_characters (CBtlFinishList)', 'chara load', 'no'),
+        (r'^data/\w+_0/_com\.txt$', 'dfci_battle_load_characters (COM)', 'chara load', 'no'),
+        (r'^data/\w+_0/\w+_0_selist\.txt$', '__dofile__ from <Name>_0_mv.txt', 'chara load', 'no'),
+        (r'^data/\w+_0/_se_list\.txt$', 'chara load (se_list, untraced call site)', 'chara load', 'no'),
+        (r'^data/\w+_0/\w+_0\.txt$', 'chara resource load (HA6 stack ini)', 'chara load', 'no'),
+        (r'^data/_csel/', 'character select scene (untraced)', 'CSS', 'no'),
+    ],
+    # UNIB arcade RingGame.exe sha cf96fd7f: Init+Std only, no _combase; cmd/mv BEFORE sc; no object pushed
+    'unib': [
+        (r'^script/Battle_Init\.txt$', 'Sq_InitBattleVM 0x787B00 "BattleInit"', 'boot (battle VM)', 'no'),
+        (r'^script/Battle_Std\.txt$', 'Sq_InitBattleVM 0x787B00 "BattleScript"', 'boot (battle VM)', 'no'),
+        (r'^script/btl_SEDefine\.txt$', 'dofile from <Name>_0/_se_list.txt', 'chara load', 'no'),
+        (r'^script/btl_(Define|debugFunc)\.txt$', 'dofile from Battle_Init.txt', 'boot (battle VM)', 'no'),
+        (r'^script/btl_\w+\.txt$', 'dofile from Battle_Std.txt', 'boot (battle VM)', 'no'),
+        (r'^data/_combase\.txt$', 'not loaded by Sq_InitBattleVM 0x787B00 (only dofile from _com.txt, whose load is untraced)', 'untraced', 'no'),
+        (r'^data/\w+_0/\w+_0_cmd\.txt$', 'Chara_LoadBattleScripts 0x72AD80 -> Chara_LoadCommandAndMoveList 0x72A950 (<NAME>_CommandTable, before sc, no object pushed)', 'chara load', 'no'),
+        (r'^data/\w+_0/\w+_0_mv\.txt$', 'Chara_LoadBattleScripts 0x72AD80 -> Chara_LoadCommandAndMoveList 0x72A950 (<NAME>_MoveTable, before sc)', 'chara load', 'no'),
+        (r'^data/\w+_0/\w+_0_sc\.txt$', 'Chara_LoadBattleScripts 0x72AD80 -> CharaDatSq_LoadBattleStatus 0x7DA4B0 (after cmd/mv)', 'chara load', 'no'),
+        (r'^data/\w+_0/\w+_0_selist\.txt$', 'dofile from <Name>_0_mv.txt', 'chara load', 'no'),
+        (r'^data/\w+_0/\w+_0\.txt$', 'chara resource load (HA6 stack ini)', 'chara load', 'no'),
+        (r'^data/_csel/', 'character select scene (untraced)', 'CSS', 'no'),
+    ],
 }
 
-def classify(rel):
-    for rx, kind, sub, purpose in KINDS:
+def classify(rel, game=None):
+    for rx, kind, sub, purpose in KINDS_GAME.get(game, []) + KINDS:
         if re.search(rx, rel):
             if sub == 'script':
                 purpose = SCRIPT_PURPOSE.get(os.path.basename(rel), 'shared battle script')
@@ -409,7 +477,7 @@ def main():
     files = []
     for rel in rels:
         text = rd(os.path.join(root, rel))
-        kind, sub, purpose = classify(rel)
+        kind, sub, purpose = classify(rel, game)
         # content check: a "unknown" file that defines a MoveTable/CommandTable is a character script
         if kind == 'unknown' and re.search(r'_MoveTable|_CommandTable|Battle_Status\s*<-', text):
             kind = 'character script'
@@ -451,12 +519,21 @@ def main():
     chars = {}
     base_pats = {}
     ddir = os.path.join(root, 'data')
+    lay = CHARA_LAYOUT.get(game, CHARA_LAYOUT['uni2'])
+    cval = {c['name']: c['value'] for c in consts}
     for cd in sorted(os.listdir(ddir)) if os.path.isdir(ddir) else []:
-        if not re.match(r'^chr\d{3}$', cd):
+        if not re.match(lay['dir'], cd):
             continue
         cpath = os.path.join(ddir, cd)
-        num = int(cd[3:])
-        stack = ha6_stack(cpath, os.path.join(cpath, f'{cd}_0.txt'))
+        if lay is CHARA_LAYOUT['uni2']:
+            num = int(cd[3:])
+        else:  # data/Asu_0 -> Def_ChrNo_Asu, data/Acr_s_0 -> Def_ChrNo_Acr_s or Def_ChrNo_Acr
+            if not os.path.exists(os.path.join(cpath, lay['mv'].format(cd=cd))):
+                continue
+            base = cd[:-2]
+            v = next((cval[k] for k in (f'Def_ChrNo_{base}', f'Def_ChrNo_{base[:-2]}' if base.endswith('_s') else None) if k in cval), None)
+            num = int(v) if v is not None and re.match(r'^\d+$', v) else None
+        stack = ha6_stack(cpath, os.path.join(cpath, lay['ini'].format(cd=cd)))
         pats_by_code, pat_list, errs = {}, [], []
         for hf in stack:
             if not os.path.exists(hf):
@@ -478,8 +555,8 @@ def main():
                     t = tr(pp[pid].get('title'))
                     pat_list.append({'id': pid, 'ha6': os.path.basename(hf), 'code': code,
                                      **({'title': t} if t else {})})
-        mv = rf(f'data/{cd}/{cd}_mv_0.txt')
-        cmd = rf(f'data/{cd}/{cd}_cmd_0.txt')
+        mv = rf(f"data/{cd}/{lay['mv'].format(cd=cd)}")
+        cmd = rf(f"data/{cd}/{lay['cmd'].format(cd=cd)}")
         moves = parse_moves(mv, tr, r'^\s*t\.(Mv_\w+)\s*<-')
         cmds = parse_commands(cmd, tr)
         by_move = collections.defaultdict(list)
@@ -505,8 +582,9 @@ def main():
             if res:
                 m['ha6_patterns'] = res
             m.pop('patterns', None)
-        sc = rf(f'data/{cd}/{cd}_sc_0.txt')
-        chars[cd] = {'num': num, 'short': chrnames.get(num, []), 'ha6_stack': [os.path.relpath(h, root).replace(os.sep, '/') for h in stack],
+        sc = rf(f"data/{cd}/{lay['sc'].format(cd=cd)}")
+        short = chrnames.get(num, []) if lay is CHARA_LAYOUT['uni2'] else list(dict.fromkeys(chrnames.get(num, [])))
+        chars[cd] = {'num': num, 'short': short, 'ha6_stack': [os.path.relpath(h, root).replace(os.sep, '/') for h in stack],
                      'moves': moves, 'commands': cmds, 'patterns': pat_list,
                      **({'ha6_errors': errs} if errs else {})}
         if sc:
