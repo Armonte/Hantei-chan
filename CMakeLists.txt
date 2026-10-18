@@ -1399,6 +1399,13 @@ add_test(NAME render_parity_tools
 add_test(NAME rhi_lint
 	COMMAND bash "${CMAKE_SOURCE_DIR}/tools/render_parity/rhi_lint.sh" "${CMAKE_SOURCE_DIR}"
 	WORKING_DIRECTORY ${CMAKE_SOURCE_DIR})
+
+# Lane HLSL (docs/plans/render_d3d9/PLAN.md 5.2).  glsl_identity is pure Python over the
+# repo text: res/shaders/*.glsl.* must stay byte-identical to the inline GLSL until P1
+# switches the C++ over to loading them.
+add_test(NAME glsl_identity
+	COMMAND python3 "${CMAKE_SOURCE_DIR}/tests/hlsl_glsl_identity_test.py"
+	WORKING_DIRECTORY ${CMAKE_SOURCE_DIR})
 add_test(NAME render_parity
 	COMMAND bash "${CMAKE_SOURCE_DIR}/tools/render_parity/run_smoke.sh" "${CMAKE_SOURCE_DIR}" "$<TARGET_FILE:gonptechan>"
 	WORKING_DIRECTORY ${CMAKE_SOURCE_DIR})
