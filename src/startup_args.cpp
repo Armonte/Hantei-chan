@@ -97,6 +97,7 @@ bool ParseWave2StartupArg(const char* arg, const wchar_t* next, int& i)
 	if (!strcmp(arg, "--deterministic")) {
 		gStartup.deterministic = true;
 		abrowser::g_installScanSync = true;   // the install scan runs inline (PLAN.md 4.3)
+		abrowser::SetDeterministic(true);     // preview / thumbnail jobs run inline too
 		return true;
 	}
 	if (!next) return false;

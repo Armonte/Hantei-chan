@@ -138,8 +138,16 @@ struct Worker {
 Worker &W() { static Worker *w = new Worker(); return *w; }   // leaked on purpose: the detached workers may outlive static destruction
 }
 
+void SetDeterministic(bool on) { S().deterministicSync = on; }
+
 void PostJob(std::function<void()> f, bool low)
 {
+	// --deterministic (PLAN.md 4.3): run the job inline on this thread instead of
+	// on the worker, so a fixed frame number always shows the same browser
+	// content. The corpus ui-scripts put preview and thumbnail jobs behind
+	// waitidle; without this, whether a thumbnail had landed by the capture
+	// frame depended on how busy the three workers were.
+	if (S().deterministicSync) { try { f(); } catch (...) {} return; }
 	Worker &w = W();
 	{ std::lock_guard<std::mutex> lk(w.mx); w.start(); (low ? w.lo : w.hi).push_back(std::move(f)); }
 	w.cv.notify_one();
