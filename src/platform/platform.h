@@ -16,9 +16,9 @@ struct ImVec2;
 
 namespace platform {
 
-// Opaque handle to the app's single main window. On Windows the underlying HWND
-// is still available (see NativeWindowHandle): P0 keeps the Win32 ImGui
-// backend's expectations, P2 hands the same handle to D3D9.
+// Opaque handle to the app's main window (an SDL_Window). On Windows the
+// underlying HWND is still available (see NativeWindowHandle) for the file
+// dialogs' owner, and P2 hands the same handle to D3D9.
 struct AppWindow;
 
 // Window + GL context + ImGui platform state. headless creates a hidden window
@@ -65,12 +65,17 @@ void MakeGlCurrent();
 void SwapGlBuffers();
 // wglSwapIntervalEXT(0) / SDL_GL_SetSwapInterval: vsync off, as before.
 void SetSwapInterval(int interval);
-// The raw GL context and the main window's device context, for the Win32
-// multi-viewport bridge: it makes one context current on several HDCs so an FBO
-// texture made in the main window can be blitted into a detached one. P2
-// replaces that bridge with the D3D9 backend's swap chains.
-void* GlContextHandle();   // HGLRC on Windows
-void* WindowDeviceContext();  // HDC on Windows, nullptr elsewhere
+// The main window's SDL_GLContext, for ImGui_ImplSDL3_InitForOpenGL: the SDL3
+// backend creates each detached window's context sharing objects with it
+// (SDL_GL_SHARE_WITH_CURRENT_CONTEXT), so the views' FBO textures made here
+// can be drawn into a detached window.
+void* GlContextHandle();
+
+// The main window's SDL_WindowID. Every SDL event names the window it belongs
+// to; with detached windows (ImGui viewports) the queue carries their events
+// too, and the app's own handling (resize, move, close, view mouse drags) is
+// for the main window only, like the old WndProc.
+uint32_t MainWindowId();
 
 // DPI scale of the display the window is on (1.0 when unknown).
 float DisplayScale();
@@ -95,9 +100,12 @@ struct EventHandlers {
 	void (*onResize)(int fbW, int fbH, void* user) = nullptr;
 	void (*onMove)(int x, int y, void* user) = nullptr;
 	void (*onDropFile)(const char* utf8Path, void* user) = nullptr;
+	// The drop point in desktop coordinates and in the main window's client
+	// coordinates (a drop on a detached window lands outside the client area).
 	void (*onDropPoint)(float screenX, float screenY, float clientX, float clientY, void* user) = nullptr;
-	// Runs for every event after ImGui has seen it (ImGui first, then the app),
-	// which is the order the old WndProc used.
+	// Runs for every event, from every window. It feeds ImGui first
+	// (ImGui_ImplSDL3_ProcessEvent) and then runs the app's own switch, which
+	// is the order the old WndProc used.
 	void (*onEvent)(const void* sdlEvent, void* user) = nullptr;
 	// True once the app wants out of the loop (window close request).
 	bool (*onQuitRequested)(void* user) = nullptr;
@@ -105,9 +113,9 @@ struct EventHandlers {
 };
 void SetEventHandlers(const EventHandlers& h);
 
-// One pump step: translates every queued SDL event (input goes to ImGui through
-// imgui_impl_sdl3 first, then to the app's own onEvent) and returns false once a
-// quit was requested.
+// One pump step: translates every queued SDL event into the callbacks above and
+// returns false once a quit was requested (SDL_EVENT_QUIT, or the main window's
+// close button; a detached window's close button only closes that window).
 bool PollEvents();
 
 }  // namespace platform

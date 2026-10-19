@@ -3,9 +3,10 @@
 // The backends do the work: imgui_impl_sdl3 creates a native window and a GL
 // context that shares objects with the main one
 // (SDL_GL_SHARE_WITH_CURRENT_CONTEXT), and imgui_impl_opengl3 renders each
-// viewport's draw data into it. This module only re-establishes the main
-// context afterwards and implements --capture-windows, which the old
-// PrintWindow bridge used to do.
+// viewport's draw data into it. This module re-establishes the main context
+// afterwards and implements --capture-windows through the renderer's
+// per-viewport hook (Renderer_RenderWindow), where the Win32 bridge read
+// GL_BACK in its own swap hook.
 
 #include "viewports.h"
 
@@ -25,15 +26,16 @@ bool g_enabled = false;
 CaptureFn g_captureFn = nullptr;
 void* g_captureUser = nullptr;
 int g_captureIndex = 0;
-// The backend hooks we wrap (restored in Shutdown).
+// The renderer hook we wrap (restored in Shutdown).
 void (*g_backendRenderWindow)(ImGuiViewport*, void*) = nullptr;
-void (*g_backendSwapBuffers)(ImGuiViewport*, void*) = nullptr;
 
-// Reads the back buffer of the window currently current, flips it to
-// top-down RGBA (GL reads bottom-up) and hands it to the capture callback.
-void CaptureCurrentWindow(SDL_Window* window)
+// Reads the back buffer of the viewport just drawn (its context is current),
+// flips it to top-down RGBA (GL reads bottom-up) and hands it to the capture
+// callback.
+void CaptureViewport(ImGuiViewport* viewport)
 {
-	if (!g_captureFn || !window) return;
+	SDL_Window* window = SDL_GetWindowFromID((SDL_WindowID)(intptr_t)viewport->PlatformHandle);
+	if (!window) return;
 	int w = 0, h = 0;
 	SDL_GetWindowSizeInPixels(window, &w, &h);
 	if (w <= 0 || h <= 0) return;
@@ -47,13 +49,15 @@ void CaptureCurrentWindow(SDL_Window* window)
 	g_captureFn(++g_captureIndex, w, h, down.data(), g_captureUser);
 }
 
-// Wraps the backend's swap so the capture happens after the ImGui draw and
-// before the present, exactly where the Win32 bridge read GL_BACK.
-void SwapBuffersHooked(ImGuiViewport* viewport, void* arg)
+// RenderPlatformWindowsDefault calls, per secondary viewport:
+// Platform_RenderWindow (make its context current), Renderer_RenderWindow
+// (draw), Platform_SwapBuffers (present). Reading after the draw and before
+// the present is exactly the frame the window shows.
+void RenderWindowHooked(ImGuiViewport* viewport, void* arg)
 {
+	if (g_backendRenderWindow) g_backendRenderWindow(viewport, arg);
 	if (g_captureFn && viewport && viewport->PlatformHandle)
-		CaptureCurrentWindow(SDL_GetWindowFromID((SDL_WindowID)(intptr_t)viewport->PlatformHandle));
-	if (g_backendSwapBuffers) g_backendSwapBuffers(viewport, arg);
+		CaptureViewport(viewport);
 }
 
 }  // namespace
@@ -63,14 +67,14 @@ bool Initialize(bool enabled)
 	g_enabled = enabled;
 	if (!enabled) return true;
 	ImGuiPlatformIO& io = ImGui::GetPlatformIO();
-	// Without both backends there is nothing to render a detached window
-	// with; the caller then turns ViewportsEnable back off.
+	// Without both backends' hooks there is nothing to open or draw a
+	// detached window with.
 	if (!io.Platform_CreateWindow || !io.Platform_SwapBuffers || !io.Renderer_RenderWindow) {
 		g_enabled = false;
 		return false;
 	}
-	g_backendSwapBuffers = io.Platform_SwapBuffers;
-	io.Platform_SwapBuffers = SwapBuffersHooked;
+	g_backendRenderWindow = io.Renderer_RenderWindow;
+	io.Renderer_RenderWindow = RenderWindowHooked;
 	return true;
 }
 
@@ -79,8 +83,8 @@ void RenderSecondaryWindows()
 	if (!g_enabled) return;
 	ImGui::UpdatePlatformWindows();
 	ImGui::RenderPlatformWindowsDefault();
-	// The per-viewport render made that viewport's context current; the rest
-	// of the frame (and the next one) expects the main window's.
+	// Each viewport's render made its own context current; the main window's
+	// present and the next frame expect the main one.
 	platform::MakeGlCurrent();
 	g_captureFn = nullptr;
 	g_captureUser = nullptr;
@@ -102,12 +106,12 @@ void Shutdown()
 {
 	if (g_enabled && ImGui::GetCurrentContext()) {
 		ImGuiPlatformIO& io = ImGui::GetPlatformIO();
-		if (io.Platform_SwapBuffers == SwapBuffersHooked)
-			io.Platform_SwapBuffers = g_backendSwapBuffers;
+		if (io.Renderer_RenderWindow == RenderWindowHooked)
+			io.Renderer_RenderWindow = g_backendRenderWindow;
 		ImGui::DestroyPlatformWindows();
+		platform::MakeGlCurrent();
 	}
 	g_enabled = false;
-	g_backendSwapBuffers = nullptr;
 	g_backendRenderWindow = nullptr;
 	g_captureFn = nullptr;
 	g_captureUser = nullptr;

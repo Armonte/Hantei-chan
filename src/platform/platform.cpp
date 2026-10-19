@@ -1,12 +1,11 @@
 // SDL3 implementation of src/platform/platform.h (PLAN.md 6 P0 step 2).
 //
 // P0 keeps the GL backend, so this creates an SDL window with an OpenGL 3.3
-// core context (the same attributes ContextGl used: 24-bit depth, 8-bit
-// stencil) and loads glad through SDL_GL_GetProcAddress. The Win32 HWND is
-// still reachable (NativeWindowHandle) because the vendored
-// imgui_impl_win32 backend needs it and because the per-window GL bridge in
-// workspace_viewports.cpp is written against it; P2 replaces both with the
-// SDL3 ImGui backend and the D3D9 swap chains.
+// context (the same attributes ContextGl used: 24-bit depth, 8-bit stencil)
+// and loads glad through SDL_GL_GetProcAddress. The Win32 HWND is still
+// reachable (NativeWindowHandle) for the file dialogs' owner window. Detached
+// windows are ImGui viewports, created by imgui_impl_sdl3 with their own
+// shared GL context (src/platform/viewports.cpp).
 //
 // The frame is always drawn into an offscreen target and blitted, so with GL
 // on Windows this module only owns the window, the context and the swap.
@@ -203,25 +202,12 @@ float DisplayScale()
 
 void* GlContextHandle()
 {
-#ifdef _WIN32
-	// SDL's Windows GL context is the HGLRC itself (see
-	// SDL_windowsopengl.c: GL_CreateContext stores the HGLRC as SDL_GLContext).
 	return (void*)g.gl;
-#else
-	return nullptr;
-#endif
 }
 
-void* WindowDeviceContext()
+uint32_t MainWindowId()
 {
-#ifdef _WIN32
-	if (!g.window) return nullptr;
-	// SDL exposes the window's HDC directly; it is stable for the window's life.
-	return SDL_GetPointerProperty(SDL_GetWindowProperties(g.window),
-	                              SDL_PROP_WINDOW_WIN32_HDC_POINTER, nullptr);
-#else
-	return nullptr;
-#endif
+	return g.window ? (uint32_t)SDL_GetWindowID(g.window) : 0;
 }
 
 void SetEventHandlers(const EventHandlers& h) { g_handlers = h; }
@@ -231,31 +217,47 @@ bool PollEvents()
 {
 	if (!g.window) return false;
 	bool running = true;
+	const SDL_WindowID mainId = SDL_GetWindowID(g.window);
 	SDL_Event e;
 	while (SDL_PollEvent(&e)) {
-		// The app's own switch runs after ImGui has seen the event, matching the
-		// old WndProc (ImGui_ImplWin32_WndProcHandler first, then the switch).
+		// Window events from a detached window (an ImGui viewport) are the SDL3
+		// backend's business: its close button, size and position are not the
+		// main window's, and must not quit the app or overwrite the ini.
+		const bool mainWindow = e.window.windowID == mainId;
 		switch (e.type) {
 		case SDL_EVENT_QUIT:
-		case SDL_EVENT_WINDOW_CLOSE_REQUESTED:
 			running = false;
+			break;
+		case SDL_EVENT_WINDOW_CLOSE_REQUESTED:
+			if (mainWindow) running = false;
 			break;
 		case SDL_EVENT_WINDOW_PIXEL_SIZE_CHANGED:
 		case SDL_EVENT_WINDOW_RESIZED:
-			if (g_handlers.onResize) {
+			if (mainWindow && g_handlers.onResize) {
 				int w = 0, h = 0;
 				SDL_GetWindowSizeInPixels(g.window, &w, &h);
 				g_handlers.onResize(w, h, g_handlers.user);
 			}
 			break;
 		case SDL_EVENT_WINDOW_MOVED:
-			if (g_handlers.onMove) g_handlers.onMove(e.window.data1, e.window.data2, g_handlers.user);
+			if (mainWindow && g_handlers.onMove) g_handlers.onMove(e.window.data1, e.window.data2, g_handlers.user);
 			break;
 		case SDL_EVENT_DROP_POSITION:
-			if (g_handlers.onDropPoint) g_handlers.onDropPoint(e.drop.x, e.drop.y, e.drop.x, e.drop.y, g_handlers.user);
-			break;
 		case SDL_EVENT_DROP_FILE:
-			if (g_handlers.onDropFile) g_handlers.onDropFile(e.drop.data, g_handlers.user);
+			if (g_handlers.onDropPoint) {
+				// SDL gives the point relative to the window under it; the app
+				// wants it on the desktop (ImGui viewports work in desktop
+				// coordinates) and in the main window's client area, as
+				// WM_DROPFILES' DragQueryPoint + ClientToScreen gave it. A drop
+				// on a detached window is routed by the desktop point.
+				int wx = 0, wy = 0, mx = 0, my = 0;
+				if (SDL_Window* w = SDL_GetWindowFromID(e.drop.windowID)) SDL_GetWindowPosition(w, &wx, &wy);
+				SDL_GetWindowPosition(g.window, &mx, &my);
+				const float sx = (float)wx + e.drop.x, sy = (float)wy + e.drop.y;
+				g_handlers.onDropPoint(sx, sy, sx - (float)mx, sy - (float)my, g_handlers.user);
+			}
+			if (e.type == SDL_EVENT_DROP_FILE && g_handlers.onDropFile && e.drop.data)
+				g_handlers.onDropFile(e.drop.data, g_handlers.user);
 			break;
 		default:
 			break;
