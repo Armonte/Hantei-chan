@@ -706,6 +706,10 @@ void MainFrame::Menu(unsigned int errorPopupId)
 					ImGui::EndMenu();
 				}
 				DrawDetachPreference();
+				if (ImGui::MenuItem(LBL("Open the archive browser on startup"), nullptr, gSettings.openBrowserOnStartup)) {
+					gSettings.openBrowserOnStartup = !gSettings.openBrowserOnStartup;
+					ImGui::MarkIniSettingsDirty();
+				}
 				ImGui::Separator();
 				DrawPatPreferences();
 				ImGui::EndMenu();
@@ -1006,6 +1010,9 @@ void MainFrame::Menu(unsigned int errorPopupId)
 			auto* view = getActiveView();
 			bool hasView = (view != nullptr);
 			bool isPatEditor = hasView && view->isPatEditor();
+			if (ImGui::MenuItem(han2ui::Tr("Archive Browser", "\xe3\x82\xa2\xe3\x83\xbc\xe3\x82\xab\xe3\x82\xa4\xe3\x83\x96\xe3\x83\x96\xe3\x83\xa9\xe3\x82\xa6\xe3\x82\xb6"), "Ctrl+B", abrowser::show))
+				abrowser::show = !abrowser::show;
+			ImGui::Separator();
 
 			// HA6 Editor panes (only show when not in PAT editor mode)
 			if (!isPatEditor && hasView) {
