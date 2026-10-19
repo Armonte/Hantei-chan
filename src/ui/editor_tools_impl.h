@@ -616,7 +616,8 @@ bool MainFrame::PositionSpriteHit(int kind,int index,float x,float y,const Chara
 
 positionpick::Key MainFrame::PositionKey(const PositionTarget& t,const CharacterView* view) const
 {
-	if(!view) view=getActiveView(); if(!view) return {};
+	if(!view) view=getActiveView();
+	if(!view) return {};
 	const auto& st=view->getState();
 	return {int(t.kind),t.index,t.instance,t.sourcePattern>=0?t.sourcePattern:st.pattern,t.sourceFrame>=0?t.sourceFrame:st.frame};
 }
@@ -646,7 +647,8 @@ std::vector<positionpick::Key> MainFrame::PositionHits(const std::vector<Positio
 
 positionpick::Key MainFrame::PickPosition(const std::vector<PositionTarget>& targets,float x,float y,bool sprites,int direction,CharacterView* view)
 {
-	if(!view) view=getActiveView(); if(!view || !view->getCharacter()) return {};
+	if(!view) view=getActiveView();
+	if(!view || !view->getCharacter()) return {};
 	auto& st=view->getState(); auto& pick=st.positionSelection;
 	pick.sync(st.pattern,st.frame,st.PreviewTick(&view->getCharacter()->frameData),view->getCharacter()->frameData.dataVersion);
 	const auto before=pick.selected;
@@ -657,7 +659,8 @@ positionpick::Key MainFrame::PickPosition(const std::vector<PositionTarget>& tar
 
 bool MainFrame::CyclePositionTarget(int direction,int x,int y,bool underCursor,CharacterView* view)
 {
-	if(!view) view=getActiveView(); if(!view || m_posDrag.active) return false;
+	if(!view) view=getActiveView();
+	if(!view || m_posDrag.active) return false;
 	auto targets=CollectPositionTargets(view); if(targets.empty()) return false;
 	if(underCursor) { PickPosition(targets,float(x),float(y),true,direction,view); return true; }
 	auto& st=view->getState(); auto& pick=st.positionSelection;
@@ -668,7 +671,8 @@ bool MainFrame::CyclePositionTarget(int direction,int x,int y,bool underCursor,C
 
 bool MainFrame::TogglePositionSolo(CharacterView* view)
 {
-	if(!view) view=getActiveView(); if(!view || m_posDrag.active || CollectPositionTargets(view).empty()) return false;
+	if(!view) view=getActiveView();
+	if(!view || m_posDrag.active || CollectPositionTargets(view).empty()) return false;
 	auto& st=view->getState(); auto& pick=st.positionSelection;
 	pick.sync(st.pattern,st.frame,st.PreviewTick(&view->getCharacter()->frameData),view->getCharacter()->frameData.dataVersion);
 	if(pick.solo.kind<0) {
@@ -710,7 +714,8 @@ void MainFrame::DrawPositionSettings()
 
 void MainFrame::DrawPositionTool(CharacterView* view,ImDrawList* drawList,bool surfaceHovered)
 {
- if(!view) view=getActiveView(); if(!view) return;
+ if(!view) view=getActiveView();
+ if(!view) return;
  auto& surface=SurfaceFor(view);
 	m_posHoverKind = m_posHoverIndex = -1;
 	m_posHoverInstance=-1;

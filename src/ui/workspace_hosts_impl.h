@@ -555,7 +555,7 @@ void MainFrame::DrawDetachedViewSurface(uint64_t hostId, CharacterView* view, Im
 		m_detachedDragThisFrame = true;
 
 	if (hovered && io.MouseWheel != 0.f && (io.KeyCtrl || io.KeyAlt) && CyclePositionTarget(io.MouseWheel>0?1:-1,localX,localY,true,view)) {
- } else if (hovered && io.MouseWheel != 0.f && !positionOwned) {
+	} else if (hovered && io.MouseWheel != 0.f && !positionOwned) {
 		// Zoom around the cursor: keep the world point under it fixed.
 		const float z0 = cam.zoom;
 		const float z1 = std::clamp(z0 + (((io.MouseWheel > 0) != gSettings.invertWheelZoom) ? 0.25f : -0.25f), 0.25f, 20.f);
@@ -581,7 +581,7 @@ void MainFrame::DrawDetachedViewSurface(uint64_t hostId, CharacterView* view, Im
 	BoxPane* boxPane = view->getBoxPane();
 	const bool sheetView = character && view->isPatEditor() && character->parts.fbPartModel && view->getState().renderMode != RenderMode::DEFAULT;
 	if (claimed) {
- } else if (character && sheetView) {   // French-Bread sprite sheet shown: the draw button selects a sheet rectangle (as in the main window)
+	} else if (character && sheetView) {   // French-Bread sprite sheet shown: the draw button selects a sheet rectangle (as in the main window)
 		auto& st = view->getState();
 		const float wx = (io.MousePos.x - origin.x) / cam.zoom, wy = (io.MousePos.y - origin.y) / cam.zoom;
 		if (ImGui::IsItemClicked(drawButton)) { st.sheetSelecting = true; st.sheetSelAnchor[0] = st.sheetSelCur[0] = wx; st.sheetSelAnchor[1] = st.sheetSelCur[1] = wy; UpdateSheetSelection(view); }

@@ -75,7 +75,8 @@ static void Synthetic(const fs::path& root) {
 	Write(saveAs + ".legacy-backup", "another migration"); CHECK(n.save(saveAs));
 	CHECK(Read(saveAs + ".legacy-backup") == "another migration" && Read(saveAs + ".legacy-backup.1") == original);
 	CHECK(n.save(saveAs) && !std::filesystem::exists(saveAs + ".legacy-backup.2")); // already backed up: no new copy
-	for (int k = 0; k < 100; ++k) n.event("bounded event"); CHECK(n.trace.size() == 64);
+	for (int k = 0; k < 100; ++k) n.event("bounded event");
+	CHECK(n.trace.size() == 64);
 	// Actual pattern-manager model entry points must move notes in the same
 	// undo entry even when reference remapping is disabled.
 	FrameData fd; fd.initEmpty(3); fd.m_sequences = Doc();
