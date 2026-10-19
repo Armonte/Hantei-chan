@@ -2,6 +2,7 @@
 .cache
 /win64
 /build
+/build-linux
 /rel
 /data
 
@@ -20,3 +21,7 @@ __pycache__/
 
 # Optional fpan-im bundle (tools/fpanim/bundle.sh; private binaries, never committed)
 /res/fpan-im/
+
+# DXVK native release, fetched by tools/linux/fetch_dxvk.sh (prebuilt binaries never committed)
+/deps/dxvk-native/*
+!/deps/dxvk-native/README.md
