@@ -19,3 +19,8 @@ built=2026-10-18
 worktree=/home/teo/dev/hantei-chan-wt/render-baseline
 staged=/mnt/c/dev/hantei-chan/render_parity/baseline_bin/45ea8ae59c1efd7bb6c1a9bc884c4205cef3174a_det
 golden=/mnt/c/dev/hantei-chan/render_parity/golden/45ea8ae59c1efd7bb6c1a9bc884c4205cef3174a
+# The golden was re-rendered on 2026-10-18 after the environment drifted:
+# C:/games/rbo_run (a copy of the RBO install the RBO shots browse) had gone
+# missing, so the browser listed a different number of files. prepare_fixtures.py
+# now re-creates that path, and the golden was re-rendered from this same
+# determinism binary. No test was weakened: the change is a pinned fixture.
