@@ -74,12 +74,20 @@ std::string FpanimImModsRoot(const std::string& game, const std::string& gameDir
 // The game-relative path of a saved file: the part from its last "data/" or "script/" folder on
 // ("C:/tmp/hantei_archive/uni2_d/data/chr003/chr003.ha6" -> "data/chr003/chr003.ha6"); "" when there is none.
 std::string FpanimGameKey(const std::string& path);
+// The character folder of a game-relative key, lowercased: "data/<folder>/<file>" where <file> starts with <folder>
+// (chr003/chr003.ha6, chr000/chr000_mv_0.txt, and custom-named UNI2-IM characters such as Okita/Okita.ha6 or
+// Okita/Okita_0.txt) and the folder is a name fpan-im accepts (a-z 0-9 _, at most 32). "" for anything else
+// (shared files, data/_csel/..., deeper paths). fpan-im finds the loaded character by that folder in its resource paths.
+std::string FpanimCharaFolder(const std::string& key);
+// True when the saved file already sits inside an improvement mod's own folders, which fpan-im rescans before every
+// reload: <...>/UNI2-IM/Mods/... or <...>/UNI2-IM/Packs/<pack>/... (MBTL-IM likewise). Saving there needs no copy.
+bool FpanimInImFolder(const std::string& game, const std::string& savedPath);
 // What a save from the main editor does. Pure: no file is touched.
 struct FpanimSavePlan {
 	std::string key;        // game-relative path ("" -> not a game file: no mod-folder copy, no reload)
 	std::string modsDst;    // where the file goes in the IM mod folder ("" = not copied: setting off, no game folder, bad key)
-	bool alreadyInMods = false; // the saved file is the mod-folder file itself (CG manager "Save to mod folder")
-	std::string chr;        // "chr003" for data/chrNNN/<file>
+	bool alreadyInMods = false; // the saved file is already in UNI2-IM/MBTL-IM Mods or a Pack (CG manager "Save to mod folder", or a pack being edited in place)
+	std::string chr;        // the character folder (FpanimCharaFolder): "chr003", or a custom name such as "okita"
 	bool shared = false;    // a shared battle file (FpanimIsSharedFile): reloadstd
 	std::string request;    // "reloadchara chr003 [live]" / "reloadstd [live]"; "" = no reload (hot reload off, or neither kind)
 	std::string pipe;       // FpanimPipeForGame(game)
