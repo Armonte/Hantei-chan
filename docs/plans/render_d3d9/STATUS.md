@@ -176,7 +176,23 @@ of the affected areas, byte-identical.
 - [x] 6. `--post-key` pushes an `SDL_EVENT_KEY_DOWN` (+ the key up, so ImGui
       does not hold the key) with the scancode mapped from the VK, aimed like
       the old `PostMessage` at the first detached window (else the main one).
-      Landed with step 5; exercised by `detach_check.sh` above.
+      Landed with step 5; exercised by `detach_check.sh` above. Closed out on
+      2026-10-19 (commit after `1010cc0`): the old `PostMessage` passed any VK
+      through, including the generic modifiers `VK_SHIFT`/`VK_CONTROL`/`VK_MENU`
+      (0x10-0x12) that are not in the scancode table, so `ScancodeFromVk` now
+      maps them to the left key (one way; `VkFromScancode` is unchanged, so
+      the event loop's VKs are not affected). Differences from the old path,
+      both deliberate: the key up (the old WM_KEYDOWN with no WM_KEYUP left the
+      key held in ImGui) and the main-window target when nothing is detached
+      (the old code posted nothing). The only caller of `--post-key` in the
+      repo is `detach_check.sh`, which always detaches, so it behaves as before.
+      Evidence: `./build.sh` clean; ctest 100/100 at `-j8` (incl.
+      `cgm_folder_mbaacc` 256 s); smoke corpus run `runs/smoke_20261019_145606`
+      PASS 60 / ALLOWED 0 / FAIL 0 (no rendering code touched, so no full
+      corpus run); `detach_check.sh` PASS (key run `view_onion_enabled` 1,
+      control 0, both detached captures 1130x672); a headless run with
+      `--post-key 0x11` logs no warning, and `--post-key 0xFF` (no scancode)
+      still logs `--post-key 255: no SDL scancode for this virtual key`.
 - [ ] 8. Remove `context_gl.h`.
 
 **Gate P0: parity and ctest PASS.**
