@@ -5,6 +5,7 @@ namespace abrowser { struct OpenRequest; }
 #include "background/bg_browser.h"
 #include <functional>
 #include "var_refs.h"
+#include "state_transfer.h"
 #include "bgm_player.h"
 #include "pattern_refs.h"
 #include "context_gl.h"
@@ -41,6 +42,7 @@ namespace abrowser { struct OpenRequest; }
 #include <memory>
 #include <map>
 #include <optional>
+#include <unordered_map>
 #include "cgm/cgm_window.h"
 
 struct ImRect;
@@ -128,7 +130,7 @@ private:
 	struct ClosedTab { std::string path; bool isTxt = false; int pattern = 0; int frame = 0; };
 	std::vector<ClosedTab> m_closedTabs;   // most recent last (max 10)
 	bool reopenClosedTab();
-	void createPatEditorView(const std::string& patPath);
+	bool createPatEditorView(const std::string& patPath); // Native PAniDataFile or HAN2 PAT, chosen by content.
 	int countViewsForCharacter(CharacterInstance* character);
 
 	void DrawBack();
@@ -167,6 +169,12 @@ private:
 	uint64_t m_focusHostRequest = 0;            // bring this window to the front
 	std::map<uint64_t, uint64_t> m_tabShown;    // tab ImGui showed selected, per host
 	std::map<uint64_t, bool> m_tabPushPending;
+	std::map<uint64_t,std::vector<uint64_t>> m_tabBarOrder;
+	std::map<uint64_t,uint64_t> m_tabBarRevision;
+	bool BeginViewTabBar(uint64_t hostId,const char* name);
+	struct TabUi { ImVec2 min{},max{}; ImGuiID item=0; };
+	std::map<uint64_t,TabUi> m_tabUi;
+	std::map<uint64_t,bool> m_tabOrderMatches;
 	struct TabDrag { bool active = false; bool dropped = false; uint64_t viewId = 0; ImVec2 start{}; } m_tabDrag;
 	struct PendingTabMove { uint64_t viewId = 0; uint64_t hostId = 0; std::optional<size_t> index; bool valid = false; } m_pendingTabMove;
 	int m_pendingTabClose = -1;
@@ -436,6 +444,19 @@ private:
 		uint64_t refsVersion = 0;
 	} m_patMgr;
 	void drawPatternManagerWindow();
+    struct StateTransferWindow {
+        bool open=false,ready=false;
+        uint64_t view=0,version=0;
+        unsigned hostViewport=0;
+        statetransfer::Request request;
+        statetransfer::Plan plan;
+        std::string message;
+    } m_stateTransfer;
+    void OpenStateTransfer(CharacterView* view);
+    void PreviewStateTransfer();
+    bool ApplyStateTransfer();
+    void DrawStateTransfer();
+    void TraceStateTransfer(const char* action);
 	cgm::Window m_cgm;
 	void drawCgManagerWindow();
 	bool m_showNotes = false;
@@ -494,6 +515,17 @@ public:
 private:
 	CompareState m_compare;
 	void drawCompareWindow();
+	bool m_showOpponent = false;
+	uint64_t m_opponentSettingsView=0;
+	bool m_raiseOpponentSettings=false;
+	ImGuiTextFilter m_shortcutFilter;
+	bool m_raiseKeyBindings=false;
+	std::unordered_map<std::string,std::unique_ptr<CharacterInstance>> m_opponentCache;
+	void RefreshOpponentRoster(CharacterView* view);
+	bool SelectOpponent(CharacterView* view,const std::string& path);
+	bool CycleOpponent(CharacterView* view,int direction);
+	void drawOpponentWindow();
+	void AddOpponentLayers(CharacterView* view, const preview::TickState& ts, int tick, float alpha=1.f,const glm::vec3* tint=nullptr,bool sample=false);
 	void AddCompareLayers(CharacterView* view, CharacterInstance* active);
 	void drawNotesWindow();
 	void markToolEdit(CharacterInstance* character);
@@ -511,11 +543,18 @@ private:
 	CharacterView* m_reverseView = nullptr;
 	void UpdateTransport();
 	void StepTick(CharacterView* view, int dir);
+	CharacterView* m_scrubHeldView=nullptr;
+	ShortcutChord m_scrubHeldChord{};
+	int m_scrubHeldDir=0;
+	double m_scrubNextTime=0;
 	void StopTransport(CharacterView* view);
 
 	// Viewport position tool.
 	struct PositionTarget {
-		enum Kind { Layer, Effect } kind = Layer;
+		enum Kind { Layer, Effect, PersistentEffect, OpponentPose } kind = Layer;
+		int rotationParam=7;
+		float rotationSign=0.f; // zero: derive from spawn X mapping
+		int sourcePattern=-1, sourceFrame=-1, instance=-1;
 		int index = -1;           // layer index or EF index
 		int xParam = 0, yParam = 1; // EF parameter slots (Effect only)
 		ImVec2 screen{};          // handle position in client pixels
@@ -526,15 +565,44 @@ private:
 	};
 	struct PositionDrag {
 		bool active = false;
+		uint64_t viewId=0;
 		CharacterInstance* character = nullptr;
 		int pattern = -1, frame = -1;
+		int viewPattern=-1, viewFrame=-1, viewTick=-1;
 		PositionTarget target;
 		int startX = 0, startY = 0;
 		float totalDX = 0, totalDY = 0;
+		bool rotating=false;
+		float startRotation=0, angleDelta=0, pointerX=0, pointerY=0;
 	} m_posDrag;
 	int m_posHoverKind = -1, m_posHoverIndex = -1;
-	std::vector<PositionTarget> CollectPositionTargets();
-	void DrawPositionTool();
+	int m_posHoverInstance=-1;
+	// Host adapters provide geometry only. Every view owns its live render snapshot;
+	// tools never borrow the last-drawn window's footprints or opponent descriptor.
+	struct ViewSurface {
+		ImVec2 desktopOrigin{},size{},canvasMin{},canvasMax{};
+		ImGuiID viewport=0;
+		std::vector<Render::PositionFootprint> footprints;
+		int pattern=-1,frame=-1,tick=-1;
+		PositionTarget opponentTarget;
+		bool opponentReady=false;
+		uint64_t opponentVersion=0;
+	};
+	std::map<uint64_t,ViewSurface> m_viewSurfaces;
+	ViewSurface& SurfaceFor(CharacterView* view);
+	const ViewSurface* FindSurface(const CharacterView* view) const;
+	bool PositionSpriteHit(int kind,int index,float x,float y,const CharacterView* view=nullptr) const;
+	bool BeginPositionRotation(int x,int y,CharacterView* view=nullptr);
+	void BeginPositionDrag(CharacterView* view,int x,int y);
+	bool m_positionPressClaimed=false;
+	std::vector<PositionTarget> CollectPositionTargets(CharacterView* view=nullptr);
+	positionpick::Key PositionKey(const PositionTarget& target,const CharacterView* view=nullptr) const;
+	std::vector<positionpick::Key> PositionHits(const std::vector<PositionTarget>& targets,float x,float y,bool sprites,CharacterView* view) const;
+	positionpick::Key PickPosition(const std::vector<PositionTarget>& targets,float x,float y,bool sprites,int direction=0,CharacterView* view=nullptr);
+	bool CyclePositionTarget(int direction,int x,int y,bool underCursor=true,CharacterView* view=nullptr);
+	bool TogglePositionSolo(CharacterView* view=nullptr);
+	void DrawPositionSettings();
+	void DrawPositionTool(CharacterView* view=nullptr,ImDrawList* drawList=nullptr,bool surfaceHovered=false);
 	void PositionDragBy(int dx, int dy);
 	void EndPositionDrag(bool cancel);
 

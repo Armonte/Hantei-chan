@@ -3,6 +3,7 @@
 
 #include "framedata.h"
 #include "preview_sim.h"
+#include "position_selection.h"
 #include "hitbox.h"
 #include "enums.h"
 #include <linear_allocator.hpp>
@@ -122,6 +123,17 @@ struct VisualizationSettings {
 
 struct FrameState
 {
+	// Per-view grab-preview controls; persisted with the project views.
+	bool opponentEnabled = false, opponentFollow = false;
+	std::string opponentTargetPath, opponentStatus;
+	bool opponentSettingsRequested=false, opponentOnion=false;
+	bool opponentSeparatePool=false;
+	bool opponentPoolInitialized=false;
+	bool opponentReleaseVectors=false, opponentReleaseGround=true, opponentVectorLoadTried=false;
+	float opponentOpacity=1.f;
+	std::string opponentCatalogRoot;
+	std::string opponentFailedPath;
+	std::vector<std::string> opponentRoster, opponentCyclePool;
 	int pattern;
 	int frame;
 	int spriteId;
@@ -132,6 +144,28 @@ struct FrameState
 
 	// Animation playback
 	bool animating = false;
+	bool playbackLoop=true, playbackFinished=false, authoredInspection=false;
+	int authoredOffset=0;
+	bool absoluteScrub=true;
+	positionpick::Selection positionSelection;
+	bool positionSettingsRequested=false, positionSettingsOpen=false;
+	bool positionHandleHover=false, positionHighlight=true;
+	int positionFeedbackCount=0;
+	int routeStart=0, routePattern=-1;
+	bool playAllRoutes=false;
+	std::vector<preview::DiscoveredRoute> discoveredRoutes;
+	FrameData* routeData=nullptr;
+	FrameData* routeEffects=nullptr;
+	uint64_t routeVersion=0, routeEffectVersion=0;
+	preview::Options routeOptions;
+	void DiscoverPaths(FrameData* data,FrameData* effects);
+	void SelectPath(FrameData* data,FrameData* effects,int start);
+	bool AdvanceRoute(FrameData* data,FrameData* effects);
+	int AuthoredTick(FrameData* data) const;
+	int PreviewTick(FrameData* data) const { return absoluteScrub && authoredInspection?AuthoredTick(data):currentTick; }
+	void ScrubTimeline(FrameData* data,FrameData* effects,int tick);
+	void InspectState(FrameData* data,int state,int offset=0);
+	void SeekTimelineTick(FrameData* data,FrameData* effects,int tick,const char* origin);
 	int animeSeq = 0;
 	int currentTick = 0;  // Actual game ticks elapsed (accounts for frame durations)
 	int previousFrame = -1;  // Track previous frame for spawn detection

@@ -357,7 +357,24 @@ bool ProjectManager::SaveProject(
 			const auto& state = view->getState();
 			viewObj["pattern"] = state.pattern;
 			viewObj["frame"] = state.frame;
+			viewObj["playback_tick"] = state.currentTick;
+			viewObj["playback_loop"]=state.playbackLoop;
+			viewObj["route_start"]=state.routePattern==state.pattern?state.routeStart:0;
+			viewObj["position_tool_settings"]={{"handle_hover",state.positionHandleHover},{"highlight",state.positionHighlight}};
+			viewObj["absolute_scrub"]=state.absoluteScrub;
+			viewObj["simulate_movement"]=state.previewOptions.simulateMovement;
+			viewObj["authored_inspection"]=state.authoredInspection;
+			viewObj["authored_offset"]=state.authoredOffset;
+			const auto& oo = view->opponentOnion();
+			viewObj["opponent_onion"] = {{"before",oo.before},{"after",oo.after},{"spacing",oo.spacing},
+				{"alpha",oo.alpha},{"falloff",oo.falloff},{"past_tint",{oo.pastTint.x,oo.pastTint.y,oo.pastTint.z}},
+				{"future_tint",{oo.futureTint.x,oo.futureTint.y,oo.futureTint.z}}};
 			viewObj["selected_layer"] = state.selectedLayer;
+			viewObj["grab_preview"]={{"enabled",state.opponentEnabled},{"follow",state.opponentFollow},
+				{"opacity",state.opponentOpacity},{"onion",state.opponentOnion},{"target",state.opponentTargetPath},
+				{"separate_pool",state.opponentSeparatePool},{"pool",state.opponentCyclePool},{"pool_initialized",state.opponentPoolInitialized}};
+			viewObj["grab_preview"]["release_vectors"]=state.opponentReleaseVectors;
+			viewObj["grab_preview"]["release_ground"]=state.opponentReleaseGround;
 			viewObj["sprite_id"] = state.spriteId;
 			
 			// View-specific render settings
@@ -511,7 +528,37 @@ bool ProjectManager::LoadProject(
 				auto& state = view->getState();
 				state.pattern = viewObj.value("pattern", 0);
 				state.frame = viewObj.value("frame", 0);
+				state.currentTick = std::clamp(viewObj.value("playback_tick", CalculateTickFromFrame(&character->frameData,state.pattern,state.frame)),0,3000);
+				if(viewObj.contains("opponent_onion") && viewObj["opponent_onion"].is_object()) {
+					const auto& j = viewObj["opponent_onion"]; auto& o = view->opponentOnion();
+					o.before=std::clamp(j.value("before",2),0,16); o.after=std::clamp(j.value("after",2),0,16);
+					o.spacing=std::clamp(j.value("spacing",3),1,600);
+					o.alpha=std::clamp(j.value("alpha",.45f),0.f,1.f); o.falloff=std::clamp(j.value("falloff",.65f),0.f,1.f);
+					for(auto key : {"past_tint","future_tint"}) if(j.contains(key) && j[key].is_array() && j[key].size()==3) {
+						auto& tint=std::string(key)=="past_tint"?o.pastTint:o.futureTint;
+						for(int k=0;k<3;++k) tint[k]=std::clamp(j[key][k].get<float>(),0.f,1.f);
+					}
+				}
 				state.selectedLayer = viewObj.value("selected_layer", 0);
+				state.playbackLoop=viewObj.value("playback_loop",true);
+				state.routeStart=std::max(0,viewObj.value("route_start",0)); state.routePattern=state.pattern;
+				if(viewObj.contains("position_tool_settings") && viewObj["position_tool_settings"].is_object()) {
+					const auto& j=viewObj["position_tool_settings"]; state.positionHandleHover=j.value("handle_hover",false); state.positionHighlight=j.value("highlight",true);
+				}
+				state.absoluteScrub=viewObj.value("absolute_scrub",true);
+				state.previewOptions.simulateMovement=viewObj.value("simulate_movement",false);
+				state.authoredInspection=viewObj.value("authored_inspection",false);
+				state.authoredOffset=std::max(0,viewObj.value("authored_offset",0));
+				if(viewObj.contains("grab_preview") && viewObj["grab_preview"].is_object()) {
+					const auto& p=viewObj["grab_preview"];
+					state.opponentEnabled=p.value("enabled",false); state.opponentFollow=p.value("follow",false);
+					state.opponentOpacity=std::clamp(p.value("opacity",1.f),0.f,1.f); state.opponentOnion=p.value("onion",false);
+					state.opponentTargetPath=p.value("target",std::string());
+					state.opponentCyclePool=p.value("pool",std::vector<std::string>());
+					state.opponentPoolInitialized=p.value("pool_initialized",false);
+					state.opponentSeparatePool=p.value("separate_pool",false);
+					state.opponentReleaseVectors=p.value("release_vectors",false); state.opponentReleaseGround=p.value("release_ground",true);
+				}
 				state.spriteId = viewObj.value("sprite_id", -1);
 				
 				// Restore view-specific render settings

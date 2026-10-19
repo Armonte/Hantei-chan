@@ -6,6 +6,7 @@
 #include "cg.h"
 #include "parts/parts.h"
 #include "undo_manager.h"
+#include "ha6_notes_undo.h"
 #include "parts/parts_undo.h"
 #include "mv_script.h"
 #include <memory>
@@ -101,6 +102,7 @@ public:
 	UndoManager undoManager;
 	// PAT-editor edits of a French-Bread character join undoManager's history through this channel (parts/parts_undo.h).
 	PartsUndoChannel partsUndo{&parts};
+	Ha6NotesUndoChannel notesUndo{&frameData.notes};
 
 	// RBO / GOF2 CG window: whole-bank snapshots of sprite imports (max 8), per character.
 	std::vector<std::vector<char>> cgImportUndo, cgImportRedo;

@@ -153,15 +153,19 @@ inline void AfDisplay(Frame_AF *af, int &selectedLayer, FrameData *frameData = n
 	// Sprite and .pat (per-layer properties)
 	ui::FormSection(TXT("Sprite"));
 	if(ui::BeginLabelForm("##af_sprite", lw)) {
-		if(im::InputInt(ui::FormRow(LBL("Sprite")), &layer.spriteId)) {
+		const char* spriteId=ui::FormRow(LBL("Sprite"));
+		if(gSettings.compactUi) im::SetNextItemWidth(ui::Em(7));
+		if(im::InputInt(spriteId, &layer.spriteId)) {
 			markModified();
 		}
-		if(im::Checkbox(ui::FormRow(LBL("Use .pat")), &layer.usePat)) {
+		if(gSettings.compactUi) {im::SameLine();ui::RowLabel("Use .pat");im::SameLine();}
+		if(im::Checkbox(gSettings.compactUi?"##usePat":ui::FormRow(LBL("Use .pat")), &layer.usePat)) {
 			markModified();
 		}
 		ui::EndLabelForm();
 	}
 
+	auto animationClipboard = [&]() {
 	if(im::SmallButton(LBL("Copy animation"))) {
 		copiedAnimationLayer.spriteId = layer.spriteId;
 		copiedAnimationLayer.usePat = layer.usePat;
@@ -192,8 +196,14 @@ inline void AfDisplay(Frame_AF *af, int &selectedLayer, FrameData *frameData = n
 	}
 	if(im::IsItemHovered()) Tooltip("Paste sprite, duration, jumps, priority, and loops");
 
+	im::EndDisabled();
+	};
+	if(!gSettings.compactUi) animationClipboard();
+
 	ui::FormSection(TXT("Animation"));
 
+	im::BeginDisabled(templateLocked);
+	im::BeginGroup();
 	{
 		// Only the bits this game's engine reads are toggles (AniFlagBitsRead, traced per game in
 		// framedata.h). Bits set in data that the game never reads stay visible read-only, and the
@@ -228,13 +238,38 @@ inline void AfDisplay(Frame_AF *af, int &selectedLayer, FrameData *frameData = n
 		}
 	}
 
-	const bool afTiming = ui::BeginLabelForm("##af_timing", lw);
+	im::EndGroup();im::EndDisabled();
+	if(gSettings.compactUi) {
+		im::SameLine();
+		const float clipboardWidth=i18n::ButtonWidth(LBL("Copy animation"))+i18n::ButtonWidth(LBL("Paste animation"))+im::GetStyle().ItemSpacing.x;
+		im::SetCursorPosX(std::max(im::GetCursorPosX(),im::GetWindowContentRegionMax().x-clipboardWidth));
+		im::BeginGroup();animationClipboard();im::EndGroup();
+	}
+	im::BeginDisabled(templateLocked);
+
+	auto timingRow=[&](const char* label,int row,int column)->const char* {
+		if(!gSettings.compactUi) return ui::FormRow(label);
+		if(column==0) im::TableNextRow();
+		im::TableSetColumnIndex(column);ui::RowLabel(label);im::TableSetColumnIndex(column+1);im::SetNextItemWidth(-FLT_MIN);
+		return ui::HiddenId(label);
+	};
+	const bool afTiming = gSettings.compactUi
+		? im::BeginTable("##af_timing",6,ImGuiTableFlags_SizingFixedFit|ImGuiTableFlags_NoSavedSettings|ImGuiTableFlags_NoClip)
+		: ui::BeginLabelForm("##af_timing",lw);
+	if(afTiming && gSettings.compactUi) {
+		im::TableSetupColumn("##label",ImGuiTableColumnFlags_WidthFixed,ui::Em(6.5f));
+		im::TableSetupColumn("##animation",ImGuiTableColumnFlags_WidthFixed,ui::Em(6));
+		im::TableSetupColumn("##jumpLabel",ImGuiTableColumnFlags_WidthFixed,ui::Em(3.5f));
+		im::TableSetupColumn("##jump",ImGuiTableColumnFlags_WidthFixed,ui::Em(2.7f));
+		im::TableSetupColumn("##priorityLabel",ImGuiTableColumnFlags_WidthFixed,ui::Em(5));
+		im::TableSetupColumn("##priority",ImGuiTableColumnFlags_WidthStretch);
+	}
 	if(afTiming) {
 	if(af->aniType >= 0 && af->aniType < kAnimationTypeCount) {
-		if(i18n::Combo(ui::FormRow(LBL("Animation")), &af->aniType, animationList, kAnimationTypeCount)) {
+		if(i18n::Combo(timingRow(LBL("Animation"),0,0), &af->aniType, animationList, kAnimationTypeCount)) {
 			markModified();
 		}
-	} else if(im::InputInt(ui::FormRow(LBL("Animation")), &af->aniType, 0, 0)) {
+	} else if(im::InputInt(timingRow(LBL("Animation"),0,0), &af->aniType, 0, 0)) {
 		// An aniType the list has no name for stays editable as a number instead of a blank combo.
 		markModified();
 	}
@@ -242,10 +277,11 @@ inline void AfDisplay(Frame_AF *af, int &selectedLayer, FrameData *frameData = n
 		Tooltip(Ha6GameIsUni(game) ? "End: hold this frame and stop the pattern (AFFL 3)"
 		                           : "MBAACC loads AFFL 3 as Next frame with the landing flag, not End");
 
-	if(im::InputInt(ui::FormRow(LBL("Go to")), &af->jump, 0, 0)) {
+	if(im::InputInt(timingRow(LBL("Go to"),0,2), &af->jump, 0, 0)) {
 		markModified();
 	}
-	if(im::InputInt(ui::FormRow(LBL("Landing frame")), &af->landJump, 0, 0)) {
+	if(gSettings.compactUi && im::InputInt(timingRow(LBL("Z-Priority"),0,4),&af->priority,0,0)) markModified();
+	if(im::InputInt(timingRow(LBL("Landing frame"),1,0), &af->landJump, 0, 0)) {
 		markModified();
 	}
 
@@ -254,12 +290,12 @@ inline void AfDisplay(Frame_AF *af, int &selectedLayer, FrameData *frameData = n
 		static int landingFrameToolValue = 0;
 		static int landingFrameRange[2] = {0, 0};
 
-		ui::FormRow("");
-		im::SetNextItemWidth(ui::FieldW());
+		if(gSettings.compactUi) {timingRow("<-",1,2);im::SetNextItemWidth(-FLT_MIN);}
+		else {ui::FormRow("");im::SetNextItemWidth(ui::FieldW());}
 		im::InputInt("##LandingValue", &landingFrameToolValue, 0, 0);
 		if(im::IsItemHovered()) Tooltip("Landing frame value to set");
 
-		im::SameLine();
+		if(gSettings.compactUi) im::TableSetColumnIndex(4);else im::SameLine();
 		if(im::SmallButton(LBL("Set All"))) {
 			auto seq = frameData->get_sequence(patternIndex);
 			if(seq) {
@@ -272,7 +308,7 @@ inline void AfDisplay(Frame_AF *af, int &selectedLayer, FrameData *frameData = n
 		}
 		if(im::IsItemHovered()) Tooltip("Apply landing frame to all frames in pattern");
 
-		im::SameLine();
+		if(gSettings.compactUi) im::TableSetColumnIndex(5);else im::SameLine();
 		if(im::SmallButton(LBL("Set Range"))) {
 			im::OpenPopup("LandingFrameRange");
 		}
@@ -310,21 +346,26 @@ inline void AfDisplay(Frame_AF *af, int &selectedLayer, FrameData *frameData = n
 			}
 			im::EndPopup();
 		}
+
 	}
 
-	if(im::InputInt(ui::FormRow(LBL("Z-Priority")), &af->priority, 0, 0)) {
+	if(!gSettings.compactUi) {
+if(im::InputInt(ui::FormRow(LBL("Z-Priority")), &af->priority, 0, 0)) {
 		markModified();
 	}
-	if(im::InputInt(ui::FormRow(LBL("Loop N times")), &af->loopCount, 0, 0)) {
+	}
+	if(gSettings.compactUi && im::InputInt(timingRow(LBL("Duration"),2,0),&af->duration,1,0)) markModified();
+
+	if(im::InputInt(timingRow(LBL("Loop N"),2,2), &af->loopCount, 0, 0)) {
 		markModified();
 	}
-	if(im::InputInt(ui::FormRow(LBL("End of loop")), &af->loopEnd, 0, 0)) {
+	if(im::InputInt(timingRow(LBL("End of loop"),2,4), &af->loopEnd, 0, 0)) {
 		markModified();
 	}
-	if(im::InputInt(ui::FormRow(LBL("Duration")), &af->duration, 1, 0)) {
+	if(!gSettings.compactUi && im::InputInt(ui::FormRow(LBL("Duration")), &af->duration, 1, 0)) {
 		markModified();
 	}
-	ui::EndLabelForm();
+	if(gSettings.compactUi) im::EndTable();else ui::EndLabelForm();
 	}
 	im::EndDisabled(); // templateLocked (timing)
 
@@ -335,6 +376,7 @@ inline void AfDisplay(Frame_AF *af, int &selectedLayer, FrameData *frameData = n
 	static bool copiedTransformAFRT = false;
 	static int copiedTransformInterpolationType = 0;
 	im::BeginDisabled(templateLocked);
+	auto copyTransforms=[&](){
 	if(im::SmallButton(LBL("Copy transforms"))) {
 		copiedTransformLayer.offset_x = layer.offset_x;
 		copiedTransformLayer.offset_y = layer.offset_y;
@@ -347,7 +389,9 @@ inline void AfDisplay(Frame_AF *af, int &selectedLayer, FrameData *frameData = n
 		copiedTransformInterpolationType = af->interpolationType;
 	}
 	if(im::IsItemHovered()) Tooltip("Copy offset, rotation, scale, color, blend mode, and interpolation");
-	im::SameLine();
+	};
+	auto pasteTransforms=[&](){
+
 	if(im::SmallButton(LBL("Paste transforms"))) {
 		layer.offset_x = copiedTransformLayer.offset_x;
 		layer.offset_y = copiedTransformLayer.offset_y;
@@ -361,7 +405,38 @@ inline void AfDisplay(Frame_AF *af, int &selectedLayer, FrameData *frameData = n
 	}
 	if(im::IsItemHovered()) Tooltip("Paste offset, rotation, scale, color, blend mode, and interpolation");
 
-	if(ui::BeginLabelForm("##af_interp", lw)) {
+	};
+
+	if(gSettings.compactUi) {
+		im::EndDisabled(); // offset is still editable on a BaseData template
+		if(im::BeginTable("##af_transform_rows",5,ImGuiTableFlags_SizingFixedFit|ImGuiTableFlags_NoSavedSettings|ImGuiTableFlags_NoClip)) {
+			im::TableSetupColumn("##label",ImGuiTableColumnFlags_WidthFixed,ui::Em(4));
+			for(int i=0;i<3;++i) im::TableSetupColumn("##axis",ImGuiTableColumnFlags_WidthStretch);
+			im::TableSetupColumn("##tools",ImGuiTableColumnFlags_WidthFixed,ui::Em(7.5f));
+			im::TableNextRow();im::TableSetColumnIndex(0);ui::RowLabel("Position");
+			im::TableSetColumnIndex(1);ui::AxisLabel(0);im::DragInt("##x",&layer.offset_x);if(im::IsItemDeactivatedAfterEdit()) markModified();
+			im::TableSetColumnIndex(2);ui::AxisLabel(1);im::DragInt("##y",&layer.offset_y);if(im::IsItemDeactivatedAfterEdit()) markModified();
+			im::TableSetColumnIndex(3);ui::RowLabel("Interpolation");im::TableSetColumnIndex(4);im::SetNextItemWidth(-FLT_MIN);
+			im::BeginDisabled(templateLocked);if(i18n::Combo("##interp",&af->interpolationType,interpolationList,IM_ARRAYSIZE(interpolationList))) markModified();im::EndDisabled();
+			im::BeginDisabled(templateLocked);
+			im::TableNextRow();im::TableSetColumnIndex(0);ui::RowLabel("Rot");
+			for(int axis=0;axis<3;++axis) {im::TableSetColumnIndex(axis+1);im::PushID(axis);ui::AxisLabel(axis);im::DragFloat("##rot",&layer.rotation[axis],.005f);if(im::IsItemDeactivatedAfterEdit()) markModified();im::PopID();}
+			im::TableSetColumnIndex(4);copyTransforms();
+			im::TableNextRow();im::TableSetColumnIndex(0);ui::RowLabel("Scale");
+			for(int axis=0;axis<2;++axis) {im::TableSetColumnIndex(axis+1);im::PushID(axis);ui::AxisLabel(axis);im::DragFloat("##scale",&layer.scale[axis],.1f);if(im::IsItemDeactivatedAfterEdit()) markModified();im::PopID();}
+			im::TableSetColumnIndex(4);pasteTransforms();
+			im::TableNextRow();im::TableSetColumnIndex(0);ui::RowLabel("Color");im::TableSetColumnIndex(1);
+			const float colorWidth=im::GetCurrentTable()->Columns[4].MinX-im::GetCursorScreenPos().x-im::GetStyle().ItemSpacing.x;
+			im::SetNextItemWidth(colorWidth);if(im::ColorEdit4("##color",layer.rgba)) markModified();
+			im::TableSetColumnIndex(4);ui::RowLabel("Blend");im::SameLine();
+			im::SetNextItemWidth(-FLT_MIN);int mode=std::max(0,layer.blend_mode-1);
+			if(i18n::Combo("##blend",&mode,"Normal\0Additive\0Subtractive\0")) {layer.blend_mode=mode+1;markModified();}
+			im::EndDisabled();im::EndTable();
+		}
+	} else {
+		copyTransforms();im::SameLine();pasteTransforms();
+
+	if(!gSettings.compactUi && ui::BeginLabelForm("##af_interp", lw)) {
 		if(i18n::Combo(ui::FormRow(LBL("Interpolation")), &af->interpolationType, interpolationList, IM_ARRAYSIZE(interpolationList))) {
 			markModified();
 		}
@@ -369,7 +444,7 @@ inline void AfDisplay(Frame_AF *af, int &selectedLayer, FrameData *frameData = n
 	}
 	im::EndDisabled(); // templateLocked
 
-	if(ui::BeginLabelForm("##af_offset", lw)) {
+	if(ui::BeginPropertyForm("##af_offset", lw, gSettings.compactUi, 3, ui::Em(9))) {
 		im::DragInt(ui::FormRow("X"), &layer.offset_x);
 		if(im::IsItemDeactivatedAfterEdit()) {
 			markModified();
@@ -378,11 +453,16 @@ inline void AfDisplay(Frame_AF *af, int &selectedLayer, FrameData *frameData = n
 		if(im::IsItemDeactivatedAfterEdit()) {
 			markModified();
 		}
+		if (gSettings.compactUi) {
+			im::BeginDisabled(templateLocked);
+			if(i18n::Combo(ui::FormRow(LBL("Interpolation")), &af->interpolationType, interpolationList, IM_ARRAYSIZE(interpolationList))) markModified();
+			im::EndDisabled();
+		}
 		ui::EndLabelForm();
 	}
 
 	im::BeginDisabled(templateLocked);
-	const bool afLook = ui::BeginLabelForm("##af_look", lw);
+	const bool afLook = ui::BeginPropertyForm("##af_look", lw, gSettings.compactUi, 2, ui::Em(15));
 	if(afLook) {
 	// MBAA blend numbering, confirmed in MBAA.exe: HA6_ParseAnimationFrameChunks stores AFAL int0 at
 	// frame+0x1B; SpriteAnimation_Render 0x407462 maps 0 -> preset 0 (Sprite_EmitTransformedQuad: preset 1 with
@@ -408,16 +488,20 @@ inline void AfDisplay(Frame_AF *af, int &selectedLayer, FrameData *frameData = n
 		markModified();
 	}
 
-	im::DragFloat3(ui::FormRow(LBL("Rot XYZ")), layer.rotation, 0.005);
-	if(im::IsItemDeactivatedAfterEdit()) {
+	ui::FormRow(LBL("Rot XYZ"));
+	if(ui::AxisFloats("rotation",layer.rotation,3,.005f)) {
 		markModified();
 	}
-	im::DragFloat2(ui::FormRow(LBL("Scale")), layer.scale, 0.1);
-	if(im::IsItemDeactivatedAfterEdit()) {
+	ui::FormRow(LBL("Scale"));
+	if(ui::AxisFloats("scale",layer.scale,2,.1f)) {
 		markModified();
 	}
 	ui::EndLabelForm();
 	}
+		im::EndDisabled(); // legacy look controls
+	}
+	im::BeginDisabled(templateLocked);
+
 	if (uni) {
 		// UNI2/MBTL store AFRT per layer (Han6_LoadFrameAF, layer +32).
 		if(im::Checkbox(LBL("Rotation keeps scale set by EF (AFRT, this layer)"), &layer.afrt)) {

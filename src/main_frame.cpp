@@ -1,4 +1,5 @@
 #include "main_frame.h"
+#include "timeline_navigation.h"
 #include "ui/ui_style.h"
 #include "startup_args.h"
 #include "render_target.h"
@@ -96,6 +97,7 @@ context(context_)
 
 MainFrame::~MainFrame()
 {
+	abrowser::ShutdownWorkers();
 	if (!gStartup.headless) authoring::SaveSettings();   // --headless leaves the user's settings alone
 	clearStage();
 	ImGui::SaveIniSettingsToDisk(ImGui::GetCurrentContext()->IO.IniFilename);   // null under --headless: no write
@@ -180,6 +182,7 @@ void MainFrame::Draw()
 #include "ui/editor_tools_impl.h"
 #include "paste_notice.h"
 #include "ui/tool_windows_impl.h"
+#include "ui/state_transfer_impl.h"
 
 // ============================================================================
 // PAT editor: auto backup, PAT documents, UV drag, navigation, layer tools
@@ -708,6 +711,8 @@ void MainFrame::loadProjectFromPath(const std::string& path, bool isRecent)
 		views = std::move(newViews);
 		characters = std::move(newCharacters);
 		activeViewIndex = newActiveView;
+		m_opponentSettingsView = 0;
+		m_opponentCache.clear();
 
 		// Apply loaded UI state
 		LoadTheme(loadedTheme);

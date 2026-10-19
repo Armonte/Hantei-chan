@@ -20,6 +20,21 @@
 
 void MainFrame::DrawUi()
 {
+	// One update per host's active view, regardless of its rendering adapter.
+	SyncWorkspaceSession();
+	for(auto& entry:views) {
+		auto owner=m_session.owner(entry->getId());
+		auto* host=owner?m_session.host(*owner):nullptr;
+		if(host && host->active==entry->getId()) {
+   const bool playing=entry->getState().animating; const int before=entry->getState().currentTick;
+   AdvanceViewPlayback(entry.get());
+   static unsigned playbackTrace=0;
+   if(playing) if(auto* f=fopen("view_playback_trace.log",playbackTrace++%512==0?"w":"a")) {
+    fprintf(f,"frame=%d host=%llu view=%llu tick=%d->%d playing=%d\n",ImGui::GetFrameCount(),(unsigned long long)*owner,(unsigned long long)entry->getId(),before,entry->getState().currentTick,entry->getState().animating); fclose(f);
+   }
+  }
+	}
+
 	ImGuiID errorPopupId = ImGui::GetID(LBL("Loading Error"));
 	shortcuts.beginFrame();
 	SyncWorkspaceSession();
@@ -66,7 +81,7 @@ void MainFrame::DrawUi()
 		// ui/workspace_hosts_impl.h). Order and selection come from the
 		// workspace session; tabs can be dragged between windows.
 		const ImVec2 mainBarMin = ImGui::GetCursorScreenPos();
-		if (ImGui::BeginTabBar("##character_tabs", ImGuiTabBarFlags_AutoSelectNewTabs | ImGuiTabBarFlags_FittingPolicyScroll)) {
+		if (BeginViewTabBar(WorkspaceSession::MainHost,"##character_tabs")) {
 			DrawHostTabs(WorkspaceSession::MainHost);
 
 			// Right-click context menu popup
@@ -480,11 +495,13 @@ void MainFrame::DrawUi()
 	seWindow.draw();
 	stageCardWindow.draw();
 	drawPatternManagerWindow();
+	DrawStateTransfer();
 	drawCgManagerWindow();
 	stage3dview::Draw();
 	drawNotesWindow();
 	drawKeyBindingsWindow();
 	drawCompareWindow();
+	drawOpponentWindow();
 	drawBgmWindow();
 	drawHudWindow();
 	drawStageBrowser();
@@ -638,6 +655,7 @@ void MainFrame::DrawUi()
 		if (!bgRes.openPath.empty()) loadStageFile(bgRes.openPath);
 	}
 
+	DrawPositionSettings();
 	DrawPositionTool();
 	shortcuts.endFrame();
 	RenderUpdate();
@@ -677,7 +695,7 @@ void MainFrame::RenderUpdate()
 		if (nSets == 0) render.DontDraw();
 		return;
 	}
-	AdvanceViewPlayback(view);
+	// Playback belongs to views, not the legacy main-window renderer.
 	if((seq = active->frameData.get_sequence(state.pattern)) &&
 		seq->frames.size() > 0)
 	{
@@ -770,17 +788,36 @@ void MainFrame::AdvanceViewPlayback(CharacterView* view)
 	if (!seq || seq->frames.empty()) return;
 	state.animeSeq = state.pattern;
 	if (state.animating) {
+		const bool resumeAuthored=state.authoredInspection;
+		const int visibleState=state.frame,visibleOffset=state.authoredOffset;
+		state.authoredInspection=false;
 		FrameData* effectData = active->effectCharacter ? &active->effectCharacter->frameData : nullptr;
 		auto& sim = state.BindPreviewSim(&active->frameData, effectData);
-		int next = state.currentTick + 1;
+		if(resumeAuthored) {
+			int resume=-1;
+			sim.ensureSimulatedTo(sim.horizon());
+			const auto& track=sim.rootFrameTrack();
+			for(int t=0;t<(int)track.size();++t) if(track[t]==visibleState) {
+				preview::TickState sample;sim.getStateAt(t,sample);
+				if(sample.root() && sample.root()->frameTimer==visibleOffset) {resume=t;break;}
+			}
+			if(resume<0) {
+				state.routeStart=visibleState;state.routePattern=state.pattern;
+				state.BindPreviewSim(&active->frameData,effectData);resume=visibleOffset;
+			}
+			state.currentTick=resume;state.playbackFinished=false;
+		} else if(state.playbackFinished) { state.currentTick=0; state.playbackFinished=false; }
 		const int settled = sim.settledTick();          // cached after the first call
-		const int wrapAt = settled >= 0 ? settled : sim.horizon();
-		if (next > wrapAt) next = 0;
-		sim.ensureSimulatedTo(next);
-		const auto& track = sim.rootFrameTrack();
-		state.currentTick = next;
-		if (next < (int)track.size())
-			state.frame = track[next];
+		int wrapAt = settled >= 0 ? settled : sim.horizon();
+		if(state.playAllRoutes) for(const auto& route:state.discoveredRoutes)
+			if(route.start==state.routeStart) wrapAt=route.lastTick;
+		if(state.playAllRoutes && state.currentTick>=wrapAt) {
+			if(!state.AdvanceRoute(&active->frameData,effectData)) { state.animating=false; state.playbackFinished=true; }
+			return;
+		}
+		const auto advance=timeline::Next(state.currentTick,wrapAt,state.playAllRoutes?false:state.playbackLoop);
+		state.SeekTimelineTick(&active->frameData,effectData,advance.tick,"playback");
+		if(advance.stopped) { state.animating=false; state.playbackFinished=true; }
 	}
 	if (state.frame < 0 || state.frame >= (int)seq->frames.size())
 		state.frame = std::clamp(state.frame, 0, (int)seq->frames.size() - 1);
@@ -800,6 +837,7 @@ void MainFrame::AdvancePattern(CharacterView* view, int dir)
 		state.pattern = active->frameData.get_sequence_count()-1;
 	state.frame = 0;
 	state.currentTick = 0;  // Reset tick when changing pattern
+	state.authoredInspection=false; state.playbackFinished=false;
 }
 
 void MainFrame::AdvanceFrame(CharacterView* view, int dir)
@@ -817,7 +855,7 @@ void MainFrame::AdvanceFrame(CharacterView* view, int dir)
 		state.frame = seq->frames.size()-1;
 
 	// Sync ticks when seeking with keyboard
-	state.currentTick = CalculateTickFromFrame(&active->frameData, state.pattern, state.frame);
+	state.InspectState(&active->frameData,state.frame);
 }
 
 void MainFrame::UpdateBackProj(float x, float y)
@@ -863,7 +901,7 @@ void MainFrame::HandleMouseUp(bool dragRight, bool dragLeft)
 	if (dragRight) if (auto* v = getActiveView()) v->getState().sheetSelecting = false;
 	if (dragRight && m_uvDrag.active) EndUvDrag(false);
 	if (dragRight && m_boxDragCharacter) EndBoxDrag();
-	if (dragLeft && m_posDrag.active) EndPositionDrag(false);
+	if ((dragLeft || dragRight) && m_posDrag.active) EndPositionDrag(false);
 	auto* view = getActiveView();
 	if (view && view->isStageView() && dragLeft) {
 		bgCamera.EndDrag();
@@ -899,7 +937,7 @@ void MainFrame::HandleMouseDrag(int x_, int y_, bool dragRight, bool dragLeft)
 	if (!active) return;
 
 	// A position-tool drag owns the left button (no panning while it runs).
-	if (dragLeft && m_posDrag.active)
+	if ((dragLeft || dragRight) && m_posDrag.active)
 	{
 		PositionDragBy(x_, y_);
 		return;
@@ -932,6 +970,7 @@ void MainFrame::HandleMouseDrag(int x_, int y_, bool dragRight, bool dragLeft)
 
 void MainFrame::RightClick(int x_, int y_)
 {
+	if(BeginPositionRotation(x_,y_) || m_positionPressClaimed) return;
 	auto* view = getActiveView();
 	if (!view) return;
 	// Stage tab uses RMB for camera pan (handled in HandleMouseDown/Drag);
@@ -999,6 +1038,7 @@ void MainFrame::SetZoom(float level)
 
 void MainFrame::HandleMouseWheel(bool isIncrease, int mouseX, int mouseY)
 {
+	if(m_posDrag.active) return;
 	auto* view = getActiveView();
 	if (!view) return;
 
@@ -1023,6 +1063,8 @@ void MainFrame::HandleMouseWheel(bool isIncrease, int mouseX, int mouseY)
 	}
 
 	// Character / PAT views — unchanged stepped zoom.
+	if((GetKeyState(VK_CONTROL)|GetKeyState(VK_MENU))&0x8000)
+		if(CyclePositionTarget((isIncrease!=gSettings.invertWheelZoom)?1:-1,mouseX,mouseY)) return;
 	float currentZoom = view->getZoom();
 	float newZoomVal = currentZoom;
 

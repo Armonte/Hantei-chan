@@ -110,20 +110,22 @@ struct Worker {
 	std::deque<std::function<void()>> hi, lo;
 	std::deque<std::function<void()>> results;
 	bool started = false, stop = false;
+	std::vector<std::thread> threads;
 	std::atomic<int> active{0};
 	void start()
 	{
 		if (started) return;
 		started = true;
 		for (int i = 0; i < 3; i++) {
-			std::thread th([this] {
+			threads.emplace_back([this] {
 				han2::SetNoGlUpload(true);   // thumbnails load characters without creating GL textures
 				for (;;) {
 					std::function<void()> f;
 					{
 						std::unique_lock<std::mutex> lk(mx);
 						cv.wait(lk, [this] { return stop || !hi.empty() || !lo.empty(); });
-						if (stop) return;
+						// Finish accepted work, including extraction writes, before exit.
+						if (stop && hi.empty() && lo.empty()) return;
 						if (!hi.empty()) { f = std::move(hi.front()); hi.pop_front(); }
 						else { f = std::move(lo.back()); lo.pop_back(); }
 						active++;
@@ -132,17 +134,44 @@ struct Worker {
 					active--;
 				}
 			});
-			th.detach();
 		}
 	}
 };
-Worker &W() { static Worker *w = new Worker(); return *w; }   // leaked on purpose: the detached workers may outlive static destruction
+Worker &W() { static Worker *w = new Worker(); return *w; } // process-owned; explicitly joined before UI/static teardown
+}
+
+void ShutdownWorkers()
+{
+	Worker &w = W();
+	{
+		std::lock_guard<std::mutex> lk(w.mx);
+		if (w.stop) return; // UI thread only; shutdown is terminal and idempotent.
+		w.stop = true;
+		// Bounded lifecycle trace: overwrite each shutdown, no paths/annotation data.
+		if (FILE *f = fopen("browser_worker_shutdown_trace.log", "w")) {
+			fprintf(f, "stopping threads=%zu active=%d queued=%zu results=%zu\n", w.threads.size(), w.active.load(), w.hi.size() + w.lo.size(), w.results.size());
+			fclose(f);
+		}
+	}
+	w.cv.notify_all();
+	for (auto &thread : w.threads) if (thread.joinable()) thread.join();
+	// Never run result callbacks while destroying the UI. Destroy their captures
+	// outside mx: a capture's destructor must not run under the queue lock.
+	std::deque<std::function<void()>> discarded;
+	{
+		std::lock_guard<std::mutex> lk(w.mx);
+		discarded.swap(w.results);
+		if (FILE *f = fopen("browser_worker_shutdown_trace.log", "a")) {
+			fprintf(f, "joined threads=%zu active=%d queued=%zu discarded=%zu\n", w.threads.size(), w.active.load(), w.hi.size() + w.lo.size(), discarded.size());
+			fclose(f);
+		}
+	}
 }
 
 void PostJob(std::function<void()> f, bool low)
 {
 	Worker &w = W();
-	{ std::lock_guard<std::mutex> lk(w.mx); w.start(); (low ? w.lo : w.hi).push_back(std::move(f)); }
+	{ std::lock_guard<std::mutex> lk(w.mx); if (w.stop) return; w.start(); (low ? w.lo : w.hi).push_back(std::move(f)); }
 	w.cv.notify_one();
 }
 void PostMain(std::function<void()> f) { Worker &w = W(); std::lock_guard<std::mutex> lk(w.mx); w.results.push_back(std::move(f)); }

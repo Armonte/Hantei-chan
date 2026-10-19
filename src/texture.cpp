@@ -1,6 +1,7 @@
 #include "app_log.h"
 #include "texture.h"
 #include "cg.h"
+#include "parts/parts_texture.h"
 #include <glad/glad.h>
 
 #include <fstream>
@@ -29,6 +30,8 @@ Texture::Texture() : id(0), isLoaded(false), isApplied(false){}; //initializes a
 Texture::Texture(Texture&& texture)
 {
 	image = std::move(texture.image);
+	pickMask=std::move(texture.pickMask);
+	isIndexed=texture.isIndexed;
 	id = texture.id;
 	isLoaded = texture.isLoaded;
 	isApplied = texture.isApplied;
@@ -51,12 +54,14 @@ Texture::~Texture()
 void Texture::Load(ImageData *data)
 {
 	const char *palette = nullptr;
+	pickMask.reset();
 	image.reset(data);
 	isLoaded = true;
 }
 
 void Texture::LoadDirect(char* data, int width, int height, bool bgr)
 {
+	pickMask.reset();
 	// Load uncompressed RGB/RGBA data
 	ImageData* imgData = new ImageData();
 	imgData->width = width;
@@ -64,6 +69,7 @@ void Texture::LoadDirect(char* data, int width, int height, bool bgr)
 	imgData->offsetX = 0;
 	imgData->offsetY = 0;
 	imgData->bgr = bgr;
+	imgData->is8bpp = false;
 	imgData->pixels = new unsigned char[width * height * 4];
 
 	// Copy RGBA/BGRA data
@@ -75,6 +81,9 @@ void Texture::LoadDirect(char* data, int width, int height, bool bgr)
 
 void Texture::LoadCompressed(char* data, int width, int height, size_t compressedSize, int type)
 {
+	pickMask.reset();
+	image.reset();
+	isIndexed=false;
 	// For compressed textures (DXT1/DXT5), we need to upload directly to OpenGL
 	// without going through ImageData
 	isLoaded = true;
@@ -102,6 +111,17 @@ void Texture::LoadCompressed(char* data, int width, int height, size_t compresse
 	}
 
 	glCompressedTexImage2D(GL_TEXTURE_2D, 0, format, width, height, 0, compressedSize, data);
+ // The source compressed bytes may be released immediately after upload.
+ // Decode coverage once here; picking never reads GL textures or decodes on hover.
+ if(data && width>0 && height>0 && width<=8192 && height<=8192 && compressedSize<=size_t(width)*height*4) {
+  std::vector<uint32_t> dds((128+compressedSize+3)/4,0);
+  memcpy(dds.data(),"DDS ",4); dds[1]=124; dds[3]=height; dds[4]=width; dds[19]=32; dds[20]=4;
+  memcpy(&dds[21],type==1?"DXT1":type==3?"DXT3":"DXT5",4);
+  memcpy(reinterpret_cast<char*>(dds.data())+128,data,compressedSize);
+  std::vector<uint8_t> rgba; int w=0,h=0;
+  if(PartGfx<>::DecodeDds(reinterpret_cast<const char*>(dds.data()),128+compressedSize,rgba,w,h).empty())
+   pickMask=spritepick::Mask::Build(rgba.data(),w,h,false);
+ }
 	
 	// Check for OpenGL errors after compressed texture upload
 	GLenum err = glGetError();
@@ -185,5 +205,12 @@ void Texture::Unapply()
 void Texture::Unload()
 {
 	isLoaded = false;
+	pickMask.reset();
 	image.reset();
+}
+
+std::shared_ptr<const spritepick::Mask> Texture::coverage() const
+{
+ if(!pickMask && image) pickMask=spritepick::Mask::Build(image->pixels,image->width,image->height,image->is8bpp);
+ return pickMask;
 }

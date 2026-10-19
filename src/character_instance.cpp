@@ -24,6 +24,7 @@ CharacterInstance::CharacterInstance()
 	partsUndo.enabled = [this] { return parts.fbPartModel && frameData.isHan2(); };
 	partsUndo.onSheetsRestored = [this] { han2::UploadPartsTextures(parts); };
 	undoManager.addChannel(&partsUndo);
+	undoManager.addChannel(&notesUndo);
 	state.pattern = 0;
 	state.frame = 0;
 	state.spriteId = -1;
@@ -242,7 +243,7 @@ void CharacterInstance::loadNotes()
 {
 	if (m_topHA6Path.empty()) return;
 	std::string error;
-	if (!frameData.notes.load(Ha6Notes::PathFor(m_topHA6Path), &error))
+	if (!frameData.notes.loadForHa6(m_topHA6Path, frameData.m_sequences, &error))
 		m_notesError = error;
 	else
 		m_notesError.clear();
@@ -256,7 +257,8 @@ bool CharacterInstance::saveNotes(const std::string& ha6Path)
 	if (!m_notesError.empty()) return false;
 	if (frameData.notes.notes.empty() && !frameData.notes.dirty) return true;
 	if (!frameData.notes.save(Ha6Notes::PathFor(ha6Path))) return false;
-	frameData.notes.dirty = false;
+	frameData.notes.markSaved();
+	frameData.notes.event("sidecar saved");
 	return true;
 }
 
@@ -299,6 +301,7 @@ static void SyncHa4Cg(CharacterInstance& ch)
 bool CharacterInstance::save()
 {
 	m_lastSaveError.clear();
+	if (!m_notesError.empty()) { m_lastSaveError = "Notes could not be loaded: " + m_notesError; return false; }
 	if (m_topHA6Path.empty()) {
 		return false;
 	}
@@ -316,7 +319,7 @@ bool CharacterInstance::save()
 		return false;
 	}
 	if (frameData.isHan2()) { std::string perr; if (!han2::SaveCompanions(*this, m_topHA6Path, &perr)) { m_lastSaveError = perr; return false; } }
-	saveNotes(m_topHA6Path);
+	if (!saveNotes(m_topHA6Path)) { m_lastSaveError = "Could not save notes: " + m_notesError; return false; }
 	m_isModified = false;
 	undoManager.markClean();  // undoing back to this revision clears dirty
 	return true;
@@ -325,6 +328,7 @@ bool CharacterInstance::save()
 bool CharacterInstance::saveAs(const std::string& ha6Path)
 {
 	m_lastSaveError.clear();
+	if (!m_notesError.empty()) { m_lastSaveError = "Notes could not be loaded: " + m_notesError; return false; }
 	undoManager.flush();
 	SyncHa4Cg(*this);
 	if (frameData.isHan2()) {
@@ -336,7 +340,7 @@ bool CharacterInstance::saveAs(const std::string& ha6Path)
 	}
 	if (frameData.isHan2()) { std::string perr; if (!han2::SaveCompanions(*this, ha6Path, &perr)) { m_lastSaveError = perr; return false; } }
 	frameData.notes.dirty = frameData.notes.dirty || !frameData.notes.notes.empty();
-	saveNotes(ha6Path);
+	if (!saveNotes(ha6Path)) { m_lastSaveError = "Could not save notes: " + m_notesError; return false; }
 	m_topHA6Path = ha6Path;
 
 	// Update ha6 paths list
@@ -350,9 +354,13 @@ bool CharacterInstance::saveAs(const std::string& ha6Path)
 
 bool CharacterInstance::saveModifiedOnly(const std::string& ha6Path)
 {
+	m_lastSaveError.clear();
+	if (!m_notesError.empty()) { m_lastSaveError = "Notes could not be loaded: " + m_notesError; return false; }
+	undoManager.flush();
 	if (!frameData.save_modified_only(ha6Path.c_str())) {
 		return false;
 	}
+	if (!saveNotes(ha6Path)) { m_lastSaveError = "Could not save notes: " + m_notesError; return false; }
 
 	// Add to .txt if we have one
 	if (!m_txtPath.empty()) {

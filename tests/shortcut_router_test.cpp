@@ -35,10 +35,10 @@ int main()
 	CHECK(reg.conflicts().empty());
 
 	// J/K/L only in a character view.
-	CHECK(act(reg.resolve({'J', 0}, ShortcutContext::characterView, false, false)) == ShortcutAction::playReverse);
+	CHECK(act(reg.resolve({'J', 0}, ShortcutContext::characterView, false, false)) == ShortcutAction::stepTickBackward);
 	CHECK(act(reg.resolve({'K', 0}, ShortcutContext::characterView, false, false)) == ShortcutAction::togglePlayback);
-	CHECK(act(reg.resolve({'L', 0}, ShortcutContext::characterView, false, false)) == ShortcutAction::playForward);
-	CHECK(act(reg.resolve({'L', shortcutShift}, ShortcutContext::characterView, false, false)) == ShortcutAction::stepTickForward);
+	CHECK(act(reg.resolve({'L', 0}, ShortcutContext::characterView, false, false)) == ShortcutAction::stepTickForward);
+	CHECK(act(reg.resolve({'L', shortcutShift}, ShortcutContext::characterView, false, false)) == ShortcutAction::playForward);
 	// Wave 2 rendering bindings: view-scoped, never while typing.
 	CHECK(act(reg.resolve({'O', 0}, ShortcutContext::characterView, false, false)) == ShortcutAction::toggleOnionSkin);
 	CHECK(act(reg.resolve({'O', shortcutCtrl}, ShortcutContext::characterView, false, false)) == ShortcutAction::openProject);
@@ -66,7 +66,7 @@ int main()
 
 	// Auto-repeat: one-shot actions ignore it, stepping accepts it.
 	CHECK(reg.resolve({'K', 0}, ShortcutContext::characterView, false, true) == nullptr);
-	CHECK(act(reg.resolve({'J', shortcutShift}, ShortcutContext::characterView, false, true)) == ShortcutAction::stepTickBackward);
+	CHECK(act(reg.resolve({'J', 0}, ShortcutContext::characterView, false, true)) == ShortcutAction::stepTickBackward);
 	CHECK(act(reg.resolve({'Z', shortcutCtrl}, ShortcutContext::characterView, false, true)) == ShortcutAction::undo);
 
 	// Rebinding into an overlapping chord is reported.
@@ -174,7 +174,7 @@ int main()
 		// F / L / H: L is play forward in a character tab, the axis toggle in a PAT tab (G in a character tab).
 		CHECK(act(r.resolve({'F', 0}, C::characterView, none)) == ShortcutAction::toggleHideUi);
 		CHECK(act(r.resolve({'F', 0}, C::stageView, none)) == ShortcutAction::toggleHideUi);
-		CHECK(act(r.resolve({'L', 0}, C::characterView, none)) == ShortcutAction::playForward);
+		CHECK(act(r.resolve({'L', 0}, C::characterView, none)) == ShortcutAction::stepTickForward);
 		CHECK(act(r.resolve({'L', 0}, C::patEditor, none)) == ShortcutAction::toggleAxis);
 		CHECK(act(r.resolve({'G', 0}, C::characterView, none)) == ShortcutAction::toggleAxis);
 		CHECK(act(r.resolve({'H', 0}, C::characterView, none)) == ShortcutAction::toggleBoxes);
@@ -208,6 +208,29 @@ int main()
 		CHECK(ShortcutRegistry::ActionId(ShortcutAction::togglePartHighlight) == std::string("togglePartHighlight"));
 	}
 
+	{
+		ShortcutRegistry grab;
+		using C=ShortcutContext;
+		ShortcutInput none;
+		CHECK(act(grab.resolve({0xBC,shortcutAlt},C::characterView,none))==ShortcutAction::previousOpponentPreview);
+		CHECK(act(grab.resolve({0xBE,shortcutAlt},C::characterView,none))==ShortcutAction::nextOpponentPreview);
+		CHECK(grab.resolve({0xBE,shortcutAlt},C::commands,none)==nullptr);
+		ShortcutInput text; text.textInput=true;
+		CHECK(grab.resolve({0xBE,shortcutAlt},C::characterView,text)==nullptr);
+		grab.applyOverride("Key=nextOpponentPreview#0=66,1");
+		CHECK(act(grab.resolve({'B',shortcutCtrl},C::characterView,none))==ShortcutAction::nextOpponentPreview);
+	}
+	{
+		ShortcutRegistry r; ShortcutInput none,text,drag; text.textInput=true; drag.mouseDrag=true;
+		CHECK(act(r.resolve({0xDD,shortcutAlt},ShortcutContext::characterView,none))==ShortcutAction::nextPositionTarget);
+		CHECK(r.resolve({0xDD,shortcutAlt},ShortcutContext::commands,none)==nullptr);
+		CHECK(r.resolve({0xDD,shortcutAlt},ShortcutContext::characterView,text)==nullptr);
+		CHECK(r.resolve({0xDD,shortcutAlt},ShortcutContext::characterView,drag)==nullptr);
+		r.applyOverride("Key=nextPositionTarget#0=66,1");
+		CHECK(act(r.resolve({'S',shortcutAlt},ShortcutContext::characterView,none))==ShortcutAction::togglePositionSolo);
+		CHECK(r.resolve({'S',shortcutAlt},ShortcutContext::characterView,text)==nullptr);
+		CHECK(act(r.resolve({'B',shortcutCtrl},ShortcutContext::characterView,none))==ShortcutAction::nextPositionTarget);
+	}
 	if (g_failures) {
 		std::fprintf(stderr, "shortcut_router_test: %d failure(s)\n", g_failures);
 		return 1;

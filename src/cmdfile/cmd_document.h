@@ -161,6 +161,10 @@ public:
 
 	// ---- TeamChangeData ----
 	bool setTeamChange(int tagIn, int tagOut, std::string* error = nullptr);
+	// Surgical BOF tail edit: preserves all other lines and stable line uids.
+	// Duplicate sections/keys are ambiguous and rejected without changing bytes.
+	bool setGrabProfileValue(const std::string& section, const std::string& key,
+		const std::optional<std::string>& value, std::string* error = nullptr);
 
 private:
 	std::vector<Line> m_lines;

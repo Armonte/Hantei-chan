@@ -837,6 +837,48 @@ bool Document::moveCheck(std::size_t sourceRow, std::size_t targetRow, bool afte
 
 // ---------------------------------------------------------------------------------------
 
+bool Document::setGrabProfileValue(const std::string& section, const std::string& key,
+    const std::optional<std::string>& value, std::string* error)
+{
+    auto fail = [&](const char* message) { if (error) *error = message; return false; };
+    if (!endLine) return fail("Grab profiles require END before metadata sections.");
+    if (section != "GameplayExtension.ThrowTechRoutes.v1" && section != "GameplayExtension.ThrowTechVectors.v1")
+        return fail("Unsupported grab-profile section.");
+    if (key.rfind("Profile.", 0) != 0 || key.find_first_of("\r\n=[]/") != std::string::npos ||
+        (value && value->find_first_of("\r\n") != std::string::npos)) return fail("Invalid metadata key or multiline value.");
+    std::size_t header = m_lines.size(), stop = m_lines.size(), match = m_lines.size();
+    int headers = 0, matches = 0;
+    for (std::size_t i = *endLine + 1; i < m_lines.size(); ++i) {
+        const auto name = HeaderName(m_lines[i].text);
+        if (name && *name == section) { ++headers; header = i; }
+    }
+    if (headers > 1) return fail("Duplicate grab-profile sections: resolve ambiguity in the source file first.");
+    if (headers) {
+        for (std::size_t i = header + 1; i < m_lines.size(); ++i) {
+            if (HeaderName(m_lines[i].text)) { stop = i; break; }
+            const auto spans = AssignmentSpans(m_lines[i].text);
+            if (spans && m_lines[i].text.substr(spans->keyBegin, spans->keyEnd - spans->keyBegin) == key) { ++matches; match = i; }
+        }
+    }
+    if (matches > 1) return fail("Duplicate grab-profile keys: resolve ambiguity in the source file first.");
+    if (matches) {
+        if (value) {
+            const auto spans = *AssignmentSpans(m_lines[match].text);
+            m_lines[match].text.replace(spans.valueBegin, spans.valueEnd - spans.valueBegin, *value);
+        } else m_lines.erase(m_lines.begin() + match);
+    } else if (value) {
+        if (!headers) {
+            if (!m_lines.empty()) ensureTerminated(m_lines.size() - 1);
+            m_lines.push_back(makeLine("[" + section + "]"));
+            stop = m_lines.size();
+        }
+        if (stop > 0) ensureTerminated(stop - 1);
+        m_lines.insert(m_lines.begin() + stop, makeLine(key + "=" + *value));
+    }
+    reindex();
+    return true;
+}
+
 bool Document::setTeamChange(int tagIn, int tagOut, std::string* error)
 {
 	if (!teamChange.present) { if (error) *error = "The file has no [TeamChangeData] section"; return false; }

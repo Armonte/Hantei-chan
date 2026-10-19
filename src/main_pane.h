@@ -15,6 +15,7 @@ public:
 	// Drawn under the pattern fields: the script lines that use this pattern (set by the main frame with the Script panel).
 	static inline std::function<void(FrameData*, int pattern)> drawScriptRefs;
 	void Draw();
+	void DrawPatternList();
 
 	void RegenerateNames();
 
