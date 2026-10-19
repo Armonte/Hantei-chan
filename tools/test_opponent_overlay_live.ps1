@@ -11,13 +11,13 @@ $releaseTrace=Join-Path $artifacts 'release.jsonl'
  'opponentpreview 1','wait 12','opponentinspect',"transformtrace $poseTrace",'wait 6',
  "captureview $artifacts/held.png",'viewframe 11','wait 8','opponentinspect',
  "transformtrace $releaseTrace",'wait 6','quit') | Set-Content -LiteralPath $script
-$process=Start-Process -FilePath $exe -ArgumentList ('--headless --game mbaacc --open "'+$root+'/iori_0.txt" --ui-script "'+$script+'"') -WindowStyle Hidden -PassThru
+$process=Start-Process -FilePath $exe -ArgumentList ('--headless --game mbaacc --open "'+$root+'/iori_0.txt" --ui-script "'+$script+'"') -WorkingDirectory $artifacts -WindowStyle Hidden -PassThru
 if(-not $process.WaitForExit(30000)) { $process.Kill(); throw 'Hidden diagnostic timed out' }
 if($process.ExitCode -ne 0) { throw 'Overlay app failed' }
 $log=Get-Content -LiteralPath ($script+'.log') -Raw
 if($log -notmatch 'Selected state: 26 / 10' -or $log -notmatch 'Release vectors disabled') { throw "Unexpected pose/release resolution: $log" }
-$held=@(Get-Content -LiteralPath $poseTrace | ForEach-Object { $_ | ConvertFrom-Json })
+$held=@(& "$PSScriptRoot/read_transform_trace.ps1" -Log (Join-Path $artifacts 'hanteichan.log') -Tag $poseTrace)
 if(@($held | Where-Object { $_.pattern -eq 26 -and $_.state -eq 10 -and $_.texture_available }).Count -ne 1) { throw 'Held target not rendered once with real CG' }
-$released=@(Get-Content -LiteralPath $releaseTrace | ForEach-Object { $_ | ConvertFrom-Json })
+$released=@(& "$PSScriptRoot/read_transform_trace.ps1" -Log (Join-Path $artifacts 'hanteichan.log') -Tag $releaseTrace)
 if(@($released | Where-Object { $_.pattern -eq 26 }).Count -ne 0) { throw 'Release retained stale opponent overlay' }
 Write-Host "OPPONENT OVERLAY SMOKE PASS: $artifacts (editor contract, not runtime equivalence)"

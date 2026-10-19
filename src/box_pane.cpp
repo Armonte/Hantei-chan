@@ -1,5 +1,6 @@
 #include "ui/ui_style.h"
 #include "box_pane.h"
+#include "app_log.h"
 #include "timeline_navigation.h"
 #include "ui/ui_layout2.h"
 #include "i18n.h"
@@ -453,8 +454,7 @@ bool BoxPane::EndDurationResize(bool cancel)
 	const auto d=durationDrag; durationDrag.active=false;
 	bool committed=false;
 	if(!cancel && currState.pattern==d.pattern && frameData->dataVersion==d.version && d.original!=d.preview && onResizeDuration) committed=onResizeDuration(d.pattern,d.state,d.preview);
-	static int count=0;
-	if(count++<128) if(auto* f=fopen("timeline_duration_trace.log","a")) { fprintf(f,"resize pattern=%d state=%d original=%d preview=%d cancel=%d commit=%d version=%llu\n",d.pattern,d.state,d.original,d.preview,cancel,committed,(unsigned long long)frameData->dataVersion); fclose(f); }
+	HC_LOG_DEBUG("timeline resize pattern={} state={} original={} preview={} cancel={} commit={} version={}",d.pattern,d.state,d.original,d.preview,cancel,committed,(unsigned long long)frameData->dataVersion);
 	return committed;
 }
 
@@ -612,12 +612,6 @@ void BoxPane::DrawSpawnTimeline()
 	float yPos = origin.y;
 	auto tickX = [&](int t) { return timeline::BoundaryX(origin.x+labelWidth,tickWidth,t); };
 	auto mouseTick = [&]() { return (int)((io.MousePos.x - origin.x - labelWidth) / tickWidth); };
-	auto traceCell=[&](const char* row,int i) {
-		static unsigned serial=0;
-		if(auto* f=fopen("timeline_cell_trace.log",serial++%4096==0?"w":"a")) {
-			fprintf(f,"frame=%d window=%s row=%s state=%d x0=%.2f x1=%.2f y=%.2f duration=%d\n",im::GetFrameCount(),im::GetCurrentWindow()->Name,row,i,tickX(kfStart[i]),tickX(kfStart[i+1]),yPos,kfStart[i+1]-kfStart[i]);fclose(f);
-		}
-	};
 	auto rowLabel = [&](const char* text, ImU32 col = IM_COL32(220, 220, 220, 255)) {
 		labels.push_back({yPos + 2, text, col});
 	};
@@ -651,7 +645,6 @@ void BoxPane::DrawSpawnTimeline()
 	rowLabel(currState.absoluteScrub?"Authored time":TXT("Main (sim)"));
 	if(currState.absoluteScrub) {
 		for(int i=0;i<mainFrameCount;++i) {
-			traceCell("authored",i);
 			drawList->AddRectFilled(ImVec2(tickX(kfStart[i]),yPos),ImVec2(tickX(kfStart[i+1]),yPos+rowHeight),i%2?IM_COL32(80,80,200,200):IM_COL32(100,100,240,200));
 			drawList->AddLine(ImVec2(tickX(kfStart[i]),yPos),ImVec2(tickX(kfStart[i]),yPos+rowHeight),IM_COL32(180,210,255,170),1.f);
    if((kfStart[i+1]-kfStart[i])*tickWidth>14) drawList->AddText(ImVec2(tickX(kfStart[i])+2,yPos+3),IM_COL32(255,255,255,220),std::to_string(i).c_str());
@@ -676,7 +669,6 @@ void BoxPane::DrawSpawnTimeline()
 	// Duration and Keyframes share the exact authored state boundaries.
 	rowLabel(TXT("Duration"));
 	for(int i=0;i<mainFrameCount;++i) {
-		traceCell("duration",i);
 		const float x0=tickX(kfStart[i]),x1=tickX(kfStart[i+1]);
 		drawList->AddRectFilled(ImVec2(x0,yPos),ImVec2(x1,yPos+rowHeight),i%2?IM_COL32(45,52,67,200):IM_COL32(55,62,77,200));
 		const std::string text=std::to_string(kfStart[i+1]-kfStart[i]);
@@ -700,7 +692,6 @@ void BoxPane::DrawSpawnTimeline()
 		im::SetTooltip("State %d right edge: %d -> %d frames. Alt+right-drag; Esc cancels.",resizeHover,mainSeq->frames[resizeHover].AF.duration,durationDrag.active?durationDrag.preview:mainSeq->frames[resizeHover].AF.duration);
 	}
 	for (int i = 0; i < mainFrameCount; ++i) {
-		traceCell("keyframes",i);
 		const float x0 = tickX(kfStart[i]), x1 = tickX(kfStart[i + 1]);
 		const bool cur = i == currState.frame;
 		drawList->AddRectFilled(ImVec2(x0, yPos), ImVec2(x1, yPos + rowHeight),
@@ -837,11 +828,6 @@ void BoxPane::DrawSpawnTimeline()
 	authoredLocal=std::clamp(authoredLocal,0,std::max(1,durationDrag.active && durationDrag.state==selected?durationDrag.preview:mainSeq->frames[selected].AF.duration)-1);
 	const float authoredX=tickX(kfStart[selected]+authoredLocal);
 	if(currState.absoluteScrub) currentX=authoredX;
-	{
-		static std::string lastMarker; static int traces=0;
-		const auto key=std::to_string(currState.pattern)+":"+std::to_string(currState.frame)+":"+std::to_string(currState.currentTick)+":"+std::to_string(authoredLocal)+":"+std::to_string(currState.authoredInspection)+":"+std::to_string(tickWidth);
-		if(key!=lastMarker && traces<128) { lastMarker=key; ++traces; if(auto* f=fopen("timeline_navigation_trace.log","a")) { fprintf(f,"markers pattern=%d state=%d tick=%d local=%d authored=%d runtime_x=%.3f authored_x=%.3f width=%.3f\n",currState.pattern,currState.frame,currState.currentTick,authoredLocal,currState.authoredInspection,currentX,authoredX,tickWidth); fclose(f); } }
-	}
 	drawList->AddLine(ImVec2(authoredX,kfY),ImVec2(authoredX,yPos),IM_COL32(255,170,40,230),2.f);
 	auto runtimeMarker=[&](float bottom) {
 		const ImU32 color=currState.authoredInspection && !currState.absoluteScrub?IM_COL32(150,150,150,130):IM_COL32(255,255,0,200);

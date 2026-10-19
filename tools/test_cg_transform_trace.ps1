@@ -26,14 +26,14 @@ $script = Join-Path $artifacts 'trace.txt'
 # Generated input for the existing application script runner, not source code.
 @('waitidle','wait 15',('transformtrace ' + $trace),'wait 5','quit') | Set-Content -LiteralPath $script
 $args = '--headless --game mbaacc --open "' + $descriptor + '" --pattern ' + $Pattern + ' --tick ' + $Tick + ' --ui-script "' + $script + '"'
-$process = Start-Process -FilePath $exe -ArgumentList $args -WindowStyle Hidden -PassThru
+$process = Start-Process -FilePath $exe -ArgumentList $args -WorkingDirectory $artifacts -WindowStyle Hidden -PassThru
 if (-not $process.WaitForExit(30000)) {
     # This is our isolated hidden diagnostic process, never the daily editor.
     $process.Kill()
     throw "Diagnostic exceeded 30 seconds; artifacts: $artifacts"
 }
 if ($process.ExitCode -ne 0) { throw "Diagnostic exited $($process.ExitCode)" }
-$rows = @(Get-Content -LiteralPath $trace | ForEach-Object { $_ | ConvertFrom-Json })
+$rows = @(& "$PSScriptRoot/read_transform_trace.ps1" -Log (Join-Path $artifacts 'hanteichan.log') -Tag $trace)
 $target = @($rows | Where-Object { $_.pattern -eq $TargetPattern -and $_.state -eq $TargetState })
 if ($target.Count -ne 1) { throw "Expected one target, found $($target.Count): $trace" }
 if (-not $target[0].texture_available) { throw "Missing real sprite texture: $trace" }

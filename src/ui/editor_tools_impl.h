@@ -651,10 +651,7 @@ positionpick::Key MainFrame::PickPosition(const std::vector<PositionTarget>& tar
 	pick.sync(st.pattern,st.frame,st.PreviewTick(&view->getCharacter()->frameData),view->getCharacter()->frameData.dataVersion);
 	const auto before=pick.selected;
 	const auto result=pick.choose(PositionHits(targets,x,y,sprites,view),direction);
-	static int count=0;
-	if(!(before==pick.selected) && count++<256) if(auto* f=fopen("position_selection_trace.log","a")) {
-		fprintf(f,"pick view=%llu pattern=%d state=%d tick=%d version=%llu xy=%.1f,%.1f direction=%d candidates=%zu kind=%d index=%d instance=%d source=%d/%d\n",(unsigned long long)view->getId(),st.pattern,st.frame,pick.tick,(unsigned long long)pick.version,x,y,direction,pick.candidates.size(),pick.selected.kind,pick.selected.index,pick.selected.instance,pick.selected.pattern,pick.selected.state); fclose(f);
-	}
+	if(!(before==pick.selected)) HC_LOG_DEBUG("position pick view={} pattern={} state={} tick={} version={} xy={:.1f},{:.1f} direction={} candidates={} kind={} index={} instance={} source={}/{}",(unsigned long long)view->getId(),st.pattern,st.frame,pick.tick,(unsigned long long)pick.version,x,y,direction,pick.candidates.size(),pick.selected.kind,pick.selected.index,pick.selected.instance,pick.selected.pattern,pick.selected.state);
 	return result;
 }
 
@@ -786,12 +783,8 @@ void MainFrame::DrawPositionTool(CharacterView* view,ImDrawList* drawList,bool s
 		}
 	}
 	ImVec2 canvasMin=surface.canvasMin,canvasMax=surface.canvasMax;
-	static int feedbackTrace=0;
 	if(pick.solo.kind>=0 && !io.KeyCtrl && !io.KeyAlt)
 		dl->AddText(ImVec2(canvasMin.x+ui::Px(8.f),canvasMax.y-ImGui::GetTextLineHeight()-ui::Px(8.f)),IM_COL32(255,220,100,255),"Solo preview | Alt+S: show all");
-	if(auto* f=fopen("position_feedback_trace.log",feedbackTrace++%512==0?"w":"a")) {
-		fprintf(f,"frame=%d view=%llu ctrl=%d alt=%d capture=%d hover=%d/%d selected=%d/%d polygons=%d solo=%d/%d canvas=%.0f,%.0f,%.0f,%.0f mouse=%.1f,%.1f owner=%s\n",ImGui::GetFrameCount(),(unsigned long long)view->getId(),io.KeyCtrl,io.KeyAlt,io.WantCaptureMouse,m_posHoverKind,m_posHoverIndex,pick.selected.kind,pick.selected.index,st.positionFeedbackCount,pick.solo.kind,pick.solo.index,canvasMin.x,canvasMin.y,canvasMax.x,canvasMax.y,mouse.x,mouse.y,ImGui::GetCurrentContext()->HoveredWindow?ImGui::GetCurrentContext()->HoveredWindow->Name:"none"); fclose(f);
-	}
 	if(pick.candidates.size()>1 && (io.KeyCtrl || io.KeyAlt)) {
 		ImGui::SetNextWindowViewport(surface.viewport);
 		ImGui::SetNextWindowPos(ImVec2(canvasMax.x-ui::Px(8.f),canvasMax.y-ui::Px(8.f)),ImGuiCond_Always,ImVec2(1,1));
@@ -832,8 +825,7 @@ void MainFrame::BeginPositionDrag(CharacterView* view,int x,int y)
 		if(PositionKey(t,view)==key) { hit=&t; break; }
 	}
 	if (!hit || !hit->invertible) {
-		static int misses=0;
-		if(misses++<32) if(auto* f=fopen("position_tool_trace.log","a")) { fprintf(f,"miss x=%d y=%d ctrl=%d alt=%d targets=%zu ready=%d version=%llu/%llu\n",x,y,GetKeyState(VK_CONTROL),GetKeyState(VK_MENU),targets.size(),SurfaceFor(view).opponentReady,(unsigned long long)SurfaceFor(view).opponentVersion,(unsigned long long)active->frameData.dataVersion); fclose(f); }
+		HC_LOG_DEBUG("position miss x={} y={} targets={} ready={} version={}/{}",x,y,targets.size(),SurfaceFor(view).opponentReady,(unsigned long long)SurfaceFor(view).opponentVersion,(unsigned long long)active->frameData.dataVersion);
 		return;
 	}
 
@@ -862,8 +854,7 @@ void MainFrame::BeginPositionDrag(CharacterView* view,int x,int y)
 	StopTransport(view);
 	active->undoManager.beginTransaction((std::string(TXT("Move")) + " " + hit->label).c_str());
 	m_posDrag.active = true;
-	static int traces=0;
-	if(traces++<128) if(auto* log=fopen("position_tool_trace.log","a")) { fprintf(log,"begin view=%llu pattern=%d state=%d source=%d/%d kind=%d index=%d instance=%d runtime_tick=%d preview_tick=%d pointer=%d,%d handle=%.3f,%.3f footprints=%zu\n",(unsigned long long)view->getId(),st.pattern,st.frame,sourcePattern,sourceFrame,int(hit->kind),hit->index,hit->instance,st.currentTick,st.PreviewTick(&active->frameData),x,y,hit->screen.x,hit->screen.y,SurfaceFor(view).footprints.size()); fclose(log); }
+	HC_LOG_DEBUG("position begin view={} pattern={} state={} source={}/{} kind={} index={} instance={} runtime_tick={} preview_tick={} pointer={},{} handle={:.3f},{:.3f} footprints={}",(unsigned long long)view->getId(),st.pattern,st.frame,sourcePattern,sourceFrame,int(hit->kind),hit->index,hit->instance,st.currentTick,st.PreviewTick(&active->frameData),x,y,hit->screen.x,hit->screen.y,SurfaceFor(view).footprints.size());
 }
 
 bool MainFrame::BeginPositionRotation(int x,int y,CharacterView* view)
