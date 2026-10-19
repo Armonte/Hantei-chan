@@ -28,8 +28,8 @@ static void Synthetic()
 	fd.initEmpty(8);
 	Sequence* s = fd.get_sequence(3);
 	s->frames.resize(2);
-	s->frames[0].EF.push_back(Ef(2, 105, 0, 7));   // change variable 7
-	s->frames[0].EF.push_back(Ef(2, 100, 0, 73));  // proj var 7, +3
+	s->frames[0].EF.push_back(Ef(6, 105, 0, 7));   // change variable 7 (EF6/105)
+	s->frames[0].EF.push_back(Ef(6, 100, 0, 73));  // proj var 7, +3 (EF6/100)
 	s->frames[0].EF.push_back(Ef(1, 0, 8, 7));     // EF1 proj var 7
 	s->frames[0].EF.push_back(Ef(2, 102, 0, 7));   // dash var amount: not an ID
 	s->frames[1].IF.push_back(If(25, 1, 7));       // compare var 7
