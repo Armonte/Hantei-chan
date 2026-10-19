@@ -1,4 +1,5 @@
 #include "paths.h"
+#include "process.h"   // NowMs (the temp-name tick)
 
 #include <algorithm>
 #include <cctype>
@@ -13,6 +14,8 @@
 #include <windows.h>
 #include <process.h>
 #else
+#include <cerrno>
+#include <iconv.h>
 #include <unistd.h>
 #endif
 
@@ -113,6 +116,83 @@ std::string CurrentDir()
 	return n > 0 ? std::string(buf, n) : std::string();
 }
 
+// The misc.cpp sj2utf8 body, kept call for call: a strict CP932 pass
+// (MB_ERR_INVALID_CHARS) so a bad sequence is reported, then the lenient pass
+// the original fell back to; a conversion that still fails gives "".
+std::string SjisToUtf8(const std::string& sjis)
+{
+	if (sjis.empty()) return std::string();
+	const UINT cp = 932;
+	SetLastError(0);
+	int wideLen = MultiByteToWideChar(cp, MB_ERR_INVALID_CHARS, sjis.c_str(), (int)sjis.size(), nullptr, 0);
+	if (wideLen == 0) {
+		const DWORD error = GetLastError();
+		if (error == ERROR_NO_UNICODE_TRANSLATION) {
+			SetLastError(0);
+			wideLen = MultiByteToWideChar(cp, 0, sjis.c_str(), (int)sjis.size(), nullptr, 0);
+			if (wideLen == 0) return std::string();
+		} else {
+			return std::string();
+		}
+	}
+	std::wstring wide((size_t)wideLen, L'\0');
+	if (MultiByteToWideChar(cp, 0, sjis.c_str(), (int)sjis.size(), wide.data(), wideLen) == 0) return std::string();
+	return NarrowUtf8(wide);
+}
+
+// The misc.cpp utf82sj body: UTF-8 to UTF-16, then UTF-16 to CP932. Unlike the
+// forward direction the original has no strict/lenient retry here, and it trims
+// the result to the length the second call reported.
+std::string Utf8ToSjis(const std::string& utf8)
+{
+	if (utf8.empty()) return std::string();
+	const UINT cp = 932;
+	const int wideLen = MultiByteToWideChar(CP_UTF8, 0, utf8.c_str(), (int)utf8.size(), nullptr, 0);
+	if (wideLen == 0) return std::string();
+	std::wstring wide((size_t)wideLen, L'\0');
+	if (MultiByteToWideChar(CP_UTF8, 0, utf8.c_str(), (int)utf8.size(), wide.data(), wideLen) == 0) return std::string();
+	const int sjisLen = WideCharToMultiByte(cp, 0, wide.c_str(), wideLen, nullptr, 0, nullptr, nullptr);
+	if (sjisLen == 0) return std::string();
+	std::string out((size_t)sjisLen, '\0');
+	const int result = WideCharToMultiByte(cp, 0, wide.c_str(), wideLen, out.data(), sjisLen, nullptr, nullptr);
+	if (result == 0) return std::string();
+	out.resize((size_t)result);
+	return out;
+}
+
+// The misc.cpp ReadInMem body. The caller owns the buffer (delete[]) and an
+// empty file still gets a one-byte allocation, exactly as before.
+bool ReadFileAlloc(const std::string& utf8Path, char*& data, unsigned& size)
+{
+	data = nullptr;
+	size = 0;
+	HANDLE file = CreateFileA(utf8Path.c_str(), GENERIC_READ, FILE_SHARE_READ | FILE_SHARE_WRITE, nullptr,
+	                          OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL | FILE_FLAG_SEQUENTIAL_SCAN, nullptr);
+	if (file == INVALID_HANDLE_VALUE) return false;
+	LARGE_INTEGER fileSize{};
+	if (!GetFileSizeEx(file, &fileSize) || fileSize.QuadPart > 0x7FFFFFFF) {
+		CloseHandle(file);
+		return false;
+	}
+	const DWORD wanted = (DWORD)fileSize.QuadPart;
+	char* buffer = new (std::nothrow) char[wanted ? wanted : 1];
+	if (!buffer) {
+		CloseHandle(file);
+		return false;
+	}
+	DWORD readBytes = 0;
+	const BOOL ok = ReadFile(file, buffer, wanted, &readBytes, nullptr);
+	CloseHandle(file);
+	if (!ok || readBytes != wanted) {
+		delete[] buffer;
+		return false;
+	}
+	data = buffer;
+	size = wanted;
+	return true;
+}
+
+
 #else  /* POSIX */
 
 namespace {
@@ -181,22 +261,62 @@ std::wstring Utf8ToWideLocal(const std::string& s)
 
 }  // namespace
 
+// ---- iconv-backed code page conversion (CP932 and friends) ----
+//
+// glibc ships the CP932 (Shift-JIS) converter in libc, so the games' Japanese
+// names decode without vendoring a table or a libiconv submodule. cp 0 (the
+// "ANSI" code page, which on POSIX is UTF-8) and 65001 are the identity, and any
+// other code page is iconv's name for it.
+static std::string IconvConvert(const std::string& in, const char* from, const char* to, bool lenient)
+{
+	iconv_t cd = iconv_open(to, from);
+	if (cd == (iconv_t)-1) return std::string();
+	std::string out;
+	out.reserve(in.size());
+	char buf[4096];
+	char* src = const_cast<char*>(in.data());
+	size_t left = in.size();
+	for (;;) {
+		char* dst = buf;
+		size_t room = sizeof buf;
+		const size_t rc = iconv(cd, left ? &src : nullptr, &left, &dst, &room);
+		out.append(buf, (size_t)(dst - buf));
+		if (rc != (size_t)-1) break;
+		if (errno == E2BIG) continue;           // buffer full, output is fine
+		if (errno == EILSEQ && lenient) {
+			// This is the Windows lenient pass (MultiByteToWideChar without
+			// MB_ERR_INVALID_CHARS): the offending byte becomes U+FFFD and the
+			// conversion continues, so one bad byte does not lose the rest.
+			out.append("\xef\xbf\xbd");
+			if (left) { ++src; --left; }
+			continue;
+		}
+		iconv_close(cd);
+		return std::string();                  // EILSEQ strict, or EINVAL (truncated)
+	}
+	iconv_close(cd);
+	return out;
+}
+
 std::string CpToUtf8(const std::string& bytes, unsigned cp)
 {
-	// On POSIX the editor's "ANSI" paths are already UTF-8, and the only other
-	// code page the games use is cp932 (Shift-JIS). iconv is not a dependency
-	// the plan allows, so cp932 is not decoded here yet: the caller that needs it
-	// keeps the existing sj2utf8() until P5 decides between a small table and a
-	// libiconv submodule. cp 0 and cp 65001 are identity.
-	(void)cp;
-	return bytes;
+	if (bytes.empty()) return std::string();
+	// cp 0 is "the ANSI code page": cp932 on a Japanese Windows machine, and
+	// UTF-8 on POSIX, which is what the editor's Ansi* helpers mean on each
+	// platform. 65001 is UTF-8 explicitly. Both are the identity here.
+	if (cp == 0 || cp == 65001 || cp == 1200 || cp == 1201) return bytes;
+	const std::string name = "CP" + std::to_string(cp);
+	return IconvConvert(bytes, name.c_str(), "UTF-8", true);
 }
 
 std::string Utf8ToCp(const std::string& utf8, unsigned cp)
 {
-	(void)cp;
-	return utf8;
+	if (utf8.empty()) return std::string();
+	if (cp == 0 || cp == 65001 || cp == 1200 || cp == 1201) return utf8;
+	const std::string name = "CP" + std::to_string(cp);
+	return IconvConvert(utf8, "UTF-8", name.c_str(), true);
 }
+// ---- end iconv ----
 
 // The names png_writer.h already exports, kept so moving the definition here is
 // a drop-in for the callers that use them.
@@ -213,6 +333,51 @@ std::string ExecutablePath()
 	if (n <= 0) return std::string();
 	buf[n] = '\0';
 	return std::string(buf, (size_t)n);
+}
+
+// The misc.cpp sj2utf8 pair, on the same two-attempt contract as the Windows
+// body: a strict CP932 pass, then the lenient pass the original fell back to.
+// A conversion that fails in both gives "".
+std::string SjisToUtf8(const std::string& sjis)
+{
+	if (sjis.empty()) return std::string();
+	std::string out = IconvConvert(sjis, "CP932", "UTF-8", false);
+	if (out.empty()) out = IconvConvert(sjis, "CP932", "UTF-8", true);
+	return out;
+}
+
+// UTF-8 to CP932: the Windows body has no strict/lenient retry in this
+// direction, and neither does this one.
+std::string Utf8ToSjis(const std::string& utf8)
+{
+	if (utf8.empty()) return std::string();
+	return IconvConvert(utf8, "UTF-8", "CP932", false);
+}
+
+// The misc.cpp ReadInMem body (POSIX side): the whole file into a caller-owned
+// new char[], shared for read. An empty file still gets a one-byte allocation.
+bool ReadFileAlloc(const std::string& utf8Path, char*& data, unsigned& size)
+{
+	data = nullptr;
+	size = 0;
+	std::error_code ec;
+	const uintmax_t n = fs::file_size(fs::u8path(utf8Path), ec);
+	if (ec || n > 0x7FFFFFFFu) return false;
+	const unsigned wanted = (unsigned)n;
+	char* buffer = new (std::nothrow) char[wanted ? wanted : 1];
+	if (!buffer) return false;
+	std::ifstream f(fs::u8path(utf8Path), std::ios::binary);
+	if (!f || (wanted && !f.read(buffer, (std::streamsize)wanted))) {
+		delete[] buffer;
+		return false;
+	}
+	if (f.gcount() != (std::streamsize)wanted) {
+		delete[] buffer;
+		return false;
+	}
+	data = buffer;
+	size = wanted;
+	return true;
 }
 
 std::string UserDataDir()
@@ -294,7 +459,11 @@ namespace {
 std::string TempSiblingPath(const std::string& utf8Path)
 {
 	static unsigned counter = 0;
-	return utf8Path + ".tmp" + std::to_string(Pid()) + "_" + std::to_string(++counter);
+	// Byte for byte the name misc.cpp's WriteFileAtomic built: the target, ".tmp",
+	// the pid, the monotonic tick and a per-process counter. The tick is only
+	// there to separate two instances saving at the same millisecond; the
+	// counter already separates two saves inside one process.
+	return utf8Path + ".tmp" + std::to_string(Pid()) + "_" + std::to_string(NowMs()) + "_" + std::to_string(++counter);
 }
 
 }  // namespace
