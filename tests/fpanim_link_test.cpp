@@ -83,6 +83,26 @@ int main()
 		CHECK(!p.alreadyInMods && p.chr == "chr003" && !p.shared);
 		CHECK(p.request == "reloadchara chr003" && p.pipe == "fpan-im-uni2");
 	}
+	// Custom-named UNI2-IM characters (data/Okita/Okita.ha6) reload like chrNNN ones; fpan-im finds them by folder.
+	CHECK(FpanimCharaFolder("data/chr003/chr003.ha6") == "chr003" && FpanimCharaFolder("data/chr000/chr000_mv_0.txt") == "chr000");
+	CHECK(FpanimCharaFolder("data/Okita/Okita.ha6") == "okita" && FpanimCharaFolder("data/Okita/Okita_0.txt") == "okita");
+	CHECK(FpanimCharaFolder("data/Okita/okita_cmd_0.txt") == "okita");
+	CHECK(FpanimCharaFolder("data/_csel/csel.ha6").empty() && FpanimCharaFolder("data/effect.HA6").empty());
+	CHECK(FpanimCharaFolder("data/chr003/chr0030.ha6").empty() && FpanimCharaFolder("data/chr003/sub/chr003.ha6").empty());
+	CHECK(FpanimCharaFolder("data/Oki ta/Oki ta.ha6").empty() && FpanimCharaFolder("script/btl_MvFunc.txt").empty());
+	{   // BootySama's case: a custom character edited in place inside an IM pack, no game folder set
+		const std::string src = "E:\\SteamLibrary\\steamapps\\common\\UNDER NIGHT IN-BIRTH II Sys Celes\\UNI2-IM\\Packs\\___UniTM\\data\\Okita\\Okita.ha6";
+		CHECK(FpanimInImFolder("uni2", src) && !FpanimInImFolder("mbtl", src));
+		auto p = FpanimPlanSave("uni2", "", src, true, true, false);
+		CHECK(p.key == "data/Okita/Okita.ha6" && p.chr == "okita" && !p.shared);
+		CHECK(p.alreadyInMods && p.modsDst == "E:/SteamLibrary/steamapps/common/UNDER NIGHT IN-BIRTH II Sys Celes/UNI2-IM/Packs/___UniTM/data/Okita/Okita.ha6");
+		CHECK(p.request == "reloadchara okita");
+		// with the game folder set and "save into the IM mod folder" on, it is still not copied into Mods (it would shadow the pack)
+		auto q = FpanimPlanSave("uni2", "E:\\SteamLibrary\\steamapps\\common\\UNDER NIGHT IN-BIRTH II Sys Celes", src, true, true, true);
+		CHECK(q.alreadyInMods && q.modsDst == p.modsDst && q.request == "reloadchara okita live");
+	}
+	CHECK(!FpanimInImFolder("uni2", "C:/g/UNI2-IM/Packs/") && !FpanimInImFolder("uni2", "C:/g/UNI2-IM/x/data/chr000/chr000.ha6"));
+	CHECK(FpanimInImFolder("mbtl", "D:/MBTL/MBTL-IM/Mods/data/chr001/chr001.ha6"));
 	{   // MBTL, live mode
 		auto p = FpanimPlanSave("mbtl", "C:\\MBTL", "C:/w/mbtl_data000/data/chr012/chr012.pal", true, true, true);
 		CHECK(p.modsDst == "C:/MBTL/MBTL-IM/Mods/data/chr012/chr012.pal" && p.request == "reloadchara chr012 live" && p.pipe == "fpan-im-mbtl");
