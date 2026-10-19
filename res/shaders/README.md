@@ -241,7 +241,7 @@ disabled for this pass (s3d_view.cpp:452-454). This is the composite of
 
 ## HLSL ports
 
-One file per program above, `vs_3_0`/`ps_3_0`, entry points `VSMain`/`PSMain`
+One file per program, `vs_3_0`/`ps_3_0`, entry points `VSMain`/`PSMain`
 (the two heat passes are separate files because they have separate pixel entry
 points, and each carries its own copy of the shared full-screen vertex stage).
 The maths is the GLSL's, line for line, and the uniform names are the same, minus
@@ -260,6 +260,24 @@ the ones the RHI turns into vertex-shader constants:
 | `gl_VertexID` triangle (s3d_grade) | three vertices `(0,0) (2,0) (0,2)` from a vertex buffer | vs_3_0 has no `gl_VertexID`; `Position = p * 2 - 1` is unchanged |
 | `out vec4 FragColor` | `float4 PSMain(...) : COLOR` | |
 | MRT `layout(location = 0/1) out` (bg_heat_a) | `float4 oT0 : COLOR0; float4 oT1 : COLOR1;` | |
+
+| Program | HLSL file | Entry points |
+|---|---|---|
+| `simple` | `simple.hlsl` | `VSMain` `PSMain` |
+| `textured` | `textured.hlsl` | `VSMain` `PSMain` |
+| `parts` | `parts.hlsl` | `VSMain` `PSMain` |
+| `bg_object` | `bg_object.hlsl` | `VSMain` `PSMain` |
+| `bg_blur` | `bg_blur.hlsl` | `VSMain` `PSMain` |
+| `bg_heat` pass A | `bg_heat_a.hlsl` | `VSMain` `PSMain` |
+| `bg_heat` pass B | `bg_heat_b.hlsl` | `VSMain` `PSMain` |
+| `s3d` | `s3d.hlsl` | `VSMain` `PSMain` |
+| `s3d_grade` | `s3d_grade.hlsl` | `VSMain` `PSMain` |
+
+So there is one HLSL file per program, except `bg_heat`: it is one GLSL program
+whose two passes have different pixel shaders, so it becomes two files with the
+shared vertex stage repeated in each.  Every file has exactly one `VSMain` and one
+`PSMain` (18 entry points over the 9 files), which is what the runtime loader in
+P2 will want; the split is by technique pass, not by stage.
 
 `palLookup` keeps `idx * (255.0/256.0) + (0.5/256.0)` exactly, in every copy.
 Samplers keep their GLSL names and take the same registers as the units in the
