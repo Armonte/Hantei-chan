@@ -148,8 +148,9 @@ void MainFrame::Draw()
 	ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
 	ProcessStartupArgs();
 
-	// Detached windows (ImGui platform windows) render through the same GL
-	// context, each with its own DC; the main window is current again after.
+	// Detached windows (ImGui viewports) render through their own GL contexts,
+	// which share the views' textures with this one (src/platform/viewports.cpp);
+	// the main window's context is current again after.
 	viewports::RenderSecondaryWindows();
 
 	if (gStartup.headless) glBindFramebuffer(GL_FRAMEBUFFER, 0);   // nothing is presented
