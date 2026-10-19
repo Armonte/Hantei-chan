@@ -46,7 +46,8 @@ inline bool AxisFloats(const char* id,float* values,int count,float speed) {
     const float total=ImGui::GetContentRegionAvail().x;
     const float cell=(total-ImGui::GetStyle().ItemSpacing.x*(count-1))/count;
     for(int axis=0;axis<count;++axis) {
-        if(axis) ImGui::SameLine();ImGui::PushID(axis);
+        if(axis) ImGui::SameLine();
+        ImGui::PushID(axis);
         AxisLabel(axis);ImGui::SetNextItemWidth(std::max(1.f,cell-LabelTextW("X")-ImGui::GetStyle().ItemInnerSpacing.x));
         ImGui::DragFloat("##value",&values[axis],speed);edited|=ImGui::IsItemDeactivatedAfterEdit();ImGui::PopID();
     }

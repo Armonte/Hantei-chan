@@ -921,7 +921,8 @@ bool MainFrame::PatScriptCommand(const std::string& command, const std::string& 
  if(cmd=="detachedtoolinspect" && gStartup.headless && !m_hosts.empty()) {
   const auto* host=m_session.host(m_hosts.begin()->first); auto* v=host?findViewById(host->active):nullptr; if(!v) return false;
   auto& st=v->getState(); auto* seq=v->getCharacter()->frameData.get_sequence(st.pattern);
-  if(!seq || seq->frames.empty()) return false; const auto& layer=seq->frames[0].AF.layers[0];
+  if(!seq || seq->frames.empty()) return false;
+  const auto& layer=seq->frames[0].AF.layers[0];
   if(msg) *msg="detachedtoolinspect: x="+std::to_string(layer.offset_x)+" y="+std::to_string(layer.offset_y)+" rotation="+std::to_string(layer.rotation[2])+" tick="+std::to_string(st.currentTick)+" footprints="+std::to_string(SurfaceFor(v).footprints.size())+" active="+std::to_string(m_posDrag.active);
   return true;
  }
@@ -957,7 +958,8 @@ bool MainFrame::PatScriptCommand(const std::string& command, const std::string& 
 	}
 	if(cmd=="detachedsurfaceinspect" && gStartup.headless && !m_hosts.empty()) {
 		const auto* host=m_session.host(m_hosts.begin()->first); auto* v=host?findViewById(host->active):nullptr; if(!v) return false;
-		if(msg) *msg="detachedsurfaceinspect: zoom="+std::to_string(v->getZoom())+" pan="+std::to_string(v->camera().panX)+","+std::to_string(v->camera().panY)+" dirty="+std::to_string(!v->getCharacter()->undoManager.isClean()); return true;
+		if(msg) *msg="detachedsurfaceinspect: zoom="+std::to_string(v->getZoom())+" pan="+std::to_string(v->camera().panX)+","+std::to_string(v->camera().panY)+" dirty="+std::to_string(!v->getCharacter()->undoManager.isClean());
+		return true;
 	}
 	if(cmd=="absolutescrub" && view && ch) { view->getState().absoluteScrub=true; view->getState().ScrubTimeline(&ch->frameData,ch->effectCharacter?&ch->effectCharacter->frameData:nullptr,atoi(arg.c_str())); return true; }
 	if(cmd=="absolutepreviewfixture" && view && ch && gStartup.headless) {
@@ -1056,7 +1058,8 @@ bool MainFrame::PatScriptCommand(const std::string& command, const std::string& 
 		once &= end>=0 && st.currentTick==end && !st.animating;
 		st.animating=false;
 		st.InspectState(&ch->frameData,0,1);
-		if(msg) *msg="timelinenavigationtest: inspect="+std::to_string(inspect)+" replay="+std::to_string(replay)+" policy="+std::to_string(policy)+" once="+std::to_string(once)+" loop="+std::to_string(wrap)+" absolute="+std::to_string(absolute); return true;
+		if(msg) *msg="timelinenavigationtest: inspect="+std::to_string(inspect)+" replay="+std::to_string(replay)+" policy="+std::to_string(policy)+" once="+std::to_string(once)+" loop="+std::to_string(wrap)+" absolute="+std::to_string(absolute);
+		return true;
 	}
 	if(cmd=="opponenteditfixture" && view && ch && gStartup.headless) {
 		auto& st=view->getState(); auto* seq=ch->frameData.get_sequence(st.pattern); if(!seq || seq->frames.empty()) return false;
@@ -1131,7 +1134,8 @@ bool MainFrame::PatScriptCommand(const std::string& command, const std::string& 
 		const auto targets=CollectPositionTargets(); if(targets.empty()) return false;
 		const auto vp=ImGui::GetMainViewport()->Pos;
 		ImGui::GetIO().AddMousePosEvent(vp.x+targets.front().screen.x,vp.y+targets.front().screen.y);
-		if(msg) *msg="positionfeedbackprobe: requested="+std::to_string(vp.x+targets.front().screen.x)+","+std::to_string(vp.y+targets.front().screen.y); return true;
+		if(msg) *msg="positionfeedbackprobe: requested="+std::to_string(vp.x+targets.front().screen.x)+","+std::to_string(vp.y+targets.front().screen.y);
+		return true;
 	}
 	if(cmd=="positionsolo" && view && gStartup.headless) {
 		if(arg=="cycle") return CyclePositionTarget(1,0,0,false);
@@ -1141,7 +1145,8 @@ bool MainFrame::PatScriptCommand(const std::string& command, const std::string& 
 			for(const auto& t:CollectPositionTargets()) if(PositionKey(t)==key) {
 				LeftClick(int(t.screen.x),int(t.screen.y)); bool routed=m_posDrag.active && PositionKey(m_posDrag.target)==key;
 				if(m_posDrag.active) { PositionDragBy(20,10); EndPositionDrag(true); }
-				if(msg) *msg="positionsoloedit: retained="+std::to_string(routed && pick.solo==key); return true;
+				if(msg) *msg="positionsoloedit: retained="+std::to_string(routed && pick.solo==key);
+				return true;
 			}
 			return false;
 		}
@@ -1154,7 +1159,8 @@ bool MainFrame::PatScriptCommand(const std::string& command, const std::string& 
 		if(window && window->WasActive) if(auto* host=ImGui::FindWindowByName("Dock Window")) if(auto* central=ImGui::DockBuilderGetCentralNode(host->GetID("Dock Space"))) {
 			anchor=std::fabs(window->Pos.x+window->Size.x-(central->Pos.x+central->Size.x-ui::Px(8.f)))<=2 && std::fabs(window->Pos.y+window->Size.y-(central->Pos.y+central->Size.y-ui::Px(8.f)))<=2;
 		}
-		if(msg) *msg="positiontoolinspect: feedback="+std::to_string(st.positionFeedbackCount>0)+" anchor="+std::to_string(anchor)+" solo="+std::to_string(st.positionSelection.solo.kind>=0)+" footprints="+std::to_string(SurfaceFor(view).footprints.size())+" handle_hover="+std::to_string(st.positionHandleHover)+" highlight="+std::to_string(st.positionHighlight); return true;
+		if(msg) *msg="positiontoolinspect: feedback="+std::to_string(st.positionFeedbackCount>0)+" anchor="+std::to_string(anchor)+" solo="+std::to_string(st.positionSelection.solo.kind>=0)+" footprints="+std::to_string(SurfaceFor(view).footprints.size())+" handle_hover="+std::to_string(st.positionHandleHover)+" highlight="+std::to_string(st.positionHighlight);
+		return true;
 	}
 	if(cmd=="positionconfigopen" && view && gStartup.headless) { view->getState().positionSettingsRequested=true; return true; }
 	if(cmd=="positionoverlapfixture" && view && ch && gStartup.headless) {
@@ -1245,7 +1251,8 @@ bool MainFrame::PatScriptCommand(const std::string& command, const std::string& 
 		const bool footprint=PositionSpriteHit(hit->kind,pickIndex,point.x,point.y,view);
 		const bool testMove=arg!="opponent-rotate" && arg!="opponent-undo";
 		const bool testRotation=arg!="opponent-move" && arg!="opponent-undo";
-		if(testMove) BeginPositionDrag(view,int(point.x),int(point.y)); bool moved=!testMove || m_posDrag.active;
+		if(testMove) BeginPositionDrag(view,int(point.x),int(point.y));
+		bool moved=!testMove || m_posDrag.active;
 		if(testMove && moved) { PositionDragBy(20,10); EndPositionDrag(true); }
 		bool rotated=!testRotation || BeginPositionRotation(int(point.x),int(point.y),view);
 		if(testRotation && rotated) {
@@ -1284,7 +1291,8 @@ bool MainFrame::PatScriptCommand(const std::string& command, const std::string& 
 			if(msg) *msg="persistent source routing/undo/redo: "+std::to_string(routed&&committed&&undone&&redone);
 		}
 		SetKeyboardState(saved);
-		if(msg) *msg=std::string("positiongesturetest: footprint=")+(footprint?"1":"0")+" move="+(moved?"1":"0")+" rotation="+(rotated?"1":"0")+" point="+std::to_string(point.x)+","+std::to_string(point.y)+" kind="+std::to_string(hit->kind)+" index="+std::to_string(pickIndex); return true;
+		if(msg) *msg=std::string("positiongesturetest: footprint=")+(footprint?"1":"0")+" move="+(moved?"1":"0")+" rotation="+(rotated?"1":"0")+" point="+std::to_string(point.x)+","+std::to_string(point.y)+" kind="+std::to_string(hit->kind)+" index="+std::to_string(pickIndex);
+		return true;
 	}
 	if(cmd=="opponentonionconfig" && view) { auto& o=view->opponentOnion(); o.before=4; o.after=1; o.spacing=7; o.alpha=.27f; view->onion().enabled=false; return true; }
 	if (cmd=="opponentpreview" && view) {
@@ -1299,7 +1307,8 @@ bool MainFrame::PatScriptCommand(const std::string& command, const std::string& 
 	}
 	if(cmd=="opponentroster" && view) {
 		RefreshOpponentRoster(view);
-		if(msg) *msg="opponentroster: "+std::to_string(view->getState().opponentRoster.size()); return true;
+		if(msg) *msg="opponentroster: "+std::to_string(view->getState().opponentRoster.size());
+		return true;
 	}
 	if(cmd=="opponentselect" && view) return SelectOpponent(view,arg);
 	if(cmd=="opponentcycle" && view) { const bool ok=CycleOpponent(view,atoi(arg.c_str())); if(msg) *msg=ok?"opponentcycle: selected":"opponentcycle: empty pool or unavailable"; return true; }
@@ -1316,7 +1325,8 @@ bool MainFrame::PatScriptCommand(const std::string& command, const std::string& 
 		m_showKeyBindings=true;
 		snprintf(m_shortcutFilter.InputBuf,sizeof(m_shortcutFilter.InputBuf),"Opponent"); m_shortcutFilter.Build();
 		int count=0; for(const auto& b:shortcuts.registry().bindings()) if(m_shortcutFilter.PassFilter(b.name)) ++count;
-		if(msg) *msg="opponentkeys: visible registry rows="+std::to_string(count); return true;
+		if(msg) *msg="opponentkeys: visible registry rows="+std::to_string(count);
+		return true;
 	}
 	if(cmd=="opponentsystemkeytest" && view && gStartup.headless) {
 		BYTE saved[256],pressed[256]; GetKeyboardState(saved); memcpy(pressed,saved,256); pressed[VK_MENU]=0x80;
@@ -1327,7 +1337,8 @@ bool MainFrame::PatScriptCommand(const std::string& command, const std::string& 
 		SendMessage(mainWindowHandle,WM_SYSKEYDOWN,0xBE,1u<<29);
 		SendMessage(mainWindowHandle,WM_SYSCHAR,L'.',1u<<29);
 		io.WantCaptureKeyboard=wanted; SetKeyboardState(saved);
-		if(msg) *msg=std::string("opponentsystemkeytest: ")+(before!=view->getState().opponentTargetPath?"cycled":"FAILED"); return true;
+		if(msg) *msg=std::string("opponentsystemkeytest: ")+(before!=view->getState().opponentTargetPath?"cycled":"FAILED");
+		return true;
 	}
 	if(cmd=="opponentreleasefixture" && ch && gStartup.headless) {
 		auto* seq=ch->frameData.get_sequence(view->getState().pattern);
@@ -1338,7 +1349,8 @@ bool MainFrame::PatScriptCommand(const std::string& command, const std::string& 
 		Frame_EF pose{}; pose.type=4; pose.number=26; pose.parameters[7]=10; held.EF.push_back(pose);
 		Frame_EF release{}; release.type=14; release.number=26; release.parameters[3]=1; release.parameters[4]=36; released.EF.push_back(release);
 		seq->frames={held,released}; ch->frameData.mark_modified(view->getState().pattern);
-		if(msg) *msg="opponentreleasefixture: in-memory owner only; never saved"; return true;
+		if(msg) *msg="opponentreleasefixture: in-memory owner only; never saved";
+		return true;
 	}
 	if(cmd=="opponentprojectsave" && gStartup.headless) { ProjectManager::SetCurrentProjectPath(arg); saveProject(); return true; }
 	if(cmd=="opponentcontrolsinspect" && view) {

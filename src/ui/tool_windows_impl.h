@@ -915,7 +915,8 @@ void MainFrame::drawOpponentWindow()
 			changed |= ImGui::SliderFloat("Falloff##opp",&o.falloff,0.f,1.f);
 			changed |= ImGui::ColorEdit3("Past tint##opp",&o.pastTint.x,ImGuiColorEditFlags_NoInputs);
 			changed |= ImGui::ColorEdit3("Future tint##opp",&o.futureTint.x,ImGuiColorEditFlags_NoInputs);
-			if(changed) markProjectModified(); ImGui::TreePop();
+			if(changed) markProjectModified();
+			ImGui::TreePop();
 		}
 		ImGui::TextWrapped("Selected opponent: %s",std::filesystem::u8path(st.opponentTargetPath).stem().string().c_str());
 		ImGui::TextWrapped("%s",st.opponentStatus.c_str());
